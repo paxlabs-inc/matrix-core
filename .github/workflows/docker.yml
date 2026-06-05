@@ -36,6 +36,10 @@ concurrency:
   group: docker-${{ github.ref }}
   cancel-in-progress: true
 
+# GHCR push requires one of:
+#   a) Org Settings → Actions → General → Workflow permissions → "Read and write"
+#   b) A PAT with write:packages stored as secret GHCR_TOKEN in the repo/org.
+# Option (b) is the fallback used in the login step below.
 permissions:
   contents: read
   packages: write
@@ -70,7 +74,7 @@ jobs:
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          password: ${{ secrets.GHCR_TOKEN || secrets.GITHUB_TOKEN }}
 
       - name: metadata
         id: meta

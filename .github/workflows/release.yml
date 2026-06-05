@@ -1,0 +1,161 @@
+name: release
+
+on:
+  push:
+    tags:
+      - "v[0-9]*"
+  workflow_dispatch:
+    inputs:
+      publish:
+        description: "Create a draft GitHub Release from this run"
+        required: false
+        type: boolean
+        default: false
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+env:
+  GO_VERSION: "1.21.x"
+  CGO_ENABLED: "0"
+
+# ---------------------------------------------------------------------------
+# Fan out across OS × arch. executor / bridge depend on cortex + MCL via
+# `replace` directives; go -C <module> resolves them through the sibling
+# dirs that actions/checkout lands side-by-side.
+# ---------------------------------------------------------------------------
+jobs:
+  binaries:
+    name: build ${{ matrix.goos }}/${{ matrix.goarch }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - goos: linux
+            goarch: amd64
+          - goos: linux
+            goarch: arm64
+          - goos: darwin
+            goarch: amd64
+          - goos: darwin
+            goarch: arm64
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache: true
+          cache-dependency-path: |
+            cortex/go.sum
+            MCL/go.sum
+            bridge/go.sum
+            executor/go.sum
+            gateway/go.sum
+            router/go.sum
+
+      - name: download deps
+        run: |
+          go -C cortex   mod download
+          go -C MCL      mod download
+          go -C bridge   mod download
+          go -C executor mod download
+          go -C gateway  mod download
+          go -C router   mod download
+
+      - name: build
+        env:
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+        run: |
+          platform="${{ matrix.goos }}_${{ matrix.goarch }}"
+          ldflags="-s -w"
+          mkdir -p dist
+
+          go -C cortex   build -ldflags="$ldflags" -trimpath \
+            -o "../dist/cortex-shell_${platform}"     ./cmd/cortex-shell
+
+          go -C MCL      build -ldflags="$ldflags" -trimpath \
+            -o "../dist/mclc_${platform}"             ./cmd/mclc
+
+          go -C bridge   build -ldflags="$ldflags" -trimpath \
+            -o "../dist/mclc-cortex_${platform}"      ./cmd/mclc-cortex
+
+          go -C executor build -ldflags="$ldflags" -trimpath \
+            -o "../dist/mcl-execute_${platform}"      ./cmd/mcl-execute
+
+          go -C executor build -ldflags="$ldflags" -trimpath \
+            -o "../dist/mcl-tools_${platform}"        ./cmd/mcl-tools
+
+          go -C executor build -ldflags="$ldflags" -trimpath \
+            -o "../dist/mcl-e2e_${platform}"          ./cmd/mcl-e2e
+
+          go -C gateway  build -ldflags="$ldflags" -trimpath \
+            -o "../dist/matrix-gateway_${platform}"   ./cmd/matrix-gateway
+
+          go -C router   build -ldflags="$ldflags" -trimpath \
+            -o "../dist/matrix-router_${platform}"    ./cmd/matrix-router
+
+      - name: checksums
+        run: |
+          cd dist
+          sha256sum * > SHA256SUMS_${{ matrix.goos }}_${{ matrix.goarch }}.txt
+          cat SHA256SUMS_${{ matrix.goos }}_${{ matrix.goarch }}.txt
+
+      - name: upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: binaries-${{ matrix.goos }}-${{ matrix.goarch }}
+          path: dist/
+          retention-days: 7
+
+  # -------------------------------------------------------------------------
+  # Merge all platform artifacts and publish a GitHub Release.
+  # Runs on tag pushes and when workflow_dispatch.publish == true.
+  # -------------------------------------------------------------------------
+  release:
+    name: github release
+    runs-on: ubuntu-latest
+    needs: binaries
+    if: startsWith(github.ref, 'refs/tags/') || inputs.publish == true
+
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+
+      - name: list assets
+        run: ls -lh dist/
+
+      - name: publish
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/**
+          draft: ${{ !startsWith(github.ref, 'refs/tags/') }}
+          prerelease: ${{ contains(github.ref_name, '-') }}
+          generate_release_notes: true
+          name: "Matrix Protocol ${{ github.ref_name }}"
+          body: |
+            ## Binaries
+
+            Pre-built static binaries for Linux and macOS (amd64 + arm64).
+
+            | Binary | Description |
+            |--------|-------------|
+            | `matrix-gateway` | Metered LLM proxy (deploy to prod box) |
+            | `matrix-router` | Fly Machine front-door (deploy to prod box) |
+            | `mcl-execute` | Per-user daemon (baked into Fly image) |
+            | `cortex-shell` | Cortex CLI |
+            | `mclc` | MatrixScript compiler CLI |
+            | `mclc-cortex` | Bridge CLI |
+            | `mcl-tools` | Executor tool harness |
+            | `mcl-e2e` | End-to-end test harness |
+
+            Verify with the matching `SHA256SUMS_<os>_<arch>.txt` file.

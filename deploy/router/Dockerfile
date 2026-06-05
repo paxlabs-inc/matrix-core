@@ -39,7 +39,8 @@ RUN go mod download
 WORKDIR /src
 COPY router/ router/
 WORKDIR /src/router
-RUN go build -ldflags="-s -w -X main.version=${VERSION}" -o /out/matrix-router ./cmd/matrix-router
+RUN mkdir -p /out && \
+    go build -ldflags="-s -w -X main.version=${VERSION}" -o /out/matrix-router ./cmd/matrix-router
 
 # -------- 2. Runtime --------
 FROM debian:bookworm-slim AS runtime
