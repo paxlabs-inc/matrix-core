@@ -38,8 +38,7 @@ RUN go mod download
 WORKDIR /src
 COPY gateway/ gateway/
 WORKDIR /src/gateway
-RUN mkdir -p /out && \
-    go build -ldflags="-s -w" -o /out/matrix-gateway ./cmd/matrix-gateway
+RUN go build -ldflags="-s -w" -o /out/matrix-gateway ./cmd/matrix-gateway
 
 # -------- 2. Runtime --------
 FROM debian:bookworm-slim AS runtime

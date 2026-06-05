@@ -43,19 +43,14 @@ COPY MCL/go.mod     MCL/go.sum     MCL/
 COPY bridge/go.mod  bridge/go.sum  bridge/
 COPY executor/go.mod executor/go.sum executor/
 
-# Now the source (replace directives are local, so source must land
-# before go mod download resolves them).
+# Now the source.
 COPY cortex/   cortex/
 COPY MCL/      MCL/
 COPY bridge/   bridge/
 COPY executor/ executor/
 
-# Pre-fetch all external deps so go build runs offline.
 WORKDIR /src/executor
-RUN go mod download
-
-RUN mkdir -p /out && \
-    go build -ldflags="-s -w" -o /out/mcl-execute ./cmd/mcl-execute
+RUN go build -ldflags="-s -w" -o /out/mcl-execute ./cmd/mcl-execute
 
 # -------- 2. Runtime --------
 FROM debian:bookworm-slim AS runtime
