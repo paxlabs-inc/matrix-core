@@ -1,0 +1,130 @@
+version: 2
+
+updates:
+  # ---- Go modules (one entry per top-level go.mod) -----------------------
+  - package-ecosystem: gomod
+    directory: /cortex
+    schedule:
+      interval: weekly
+      day: monday
+      time: "09:00"
+      timezone: Europe/Amsterdam
+    open-pull-requests-limit: 5
+    labels:
+      - dependencies
+      - go
+      - cortex
+    commit-message:
+      prefix: cortex
+      include: scope
+    groups:
+      go-deps:
+        applies-to: version-updates
+        update-types:
+          - minor
+          - patch
+
+  - package-ecosystem: gomod
+    directory: /MCL
+    schedule:
+      interval: weekly
+      day: monday
+      time: "09:00"
+      timezone: Europe/Amsterdam
+    open-pull-requests-limit: 5
+    labels:
+      - dependencies
+      - go
+      - mcl
+    commit-message:
+      prefix: mcl
+      include: scope
+    groups:
+      go-deps:
+        applies-to: version-updates
+        update-types:
+          - minor
+          - patch
+
+  - package-ecosystem: gomod
+    directory: /bridge
+    schedule:
+      interval: weekly
+      day: monday
+      time: "09:00"
+      timezone: Europe/Amsterdam
+    open-pull-requests-limit: 5
+    labels:
+      - dependencies
+      - go
+      - bridge
+    commit-message:
+      prefix: bridge
+      include: scope
+    groups:
+      go-deps:
+        applies-to: version-updates
+        update-types:
+          - minor
+          - patch
+
+  - package-ecosystem: gomod
+    directory: /executor
+    schedule:
+      interval: weekly
+      day: monday
+      time: "09:00"
+      timezone: Europe/Amsterdam
+    open-pull-requests-limit: 5
+    labels:
+      - dependencies
+      - go
+      - executor
+    commit-message:
+      prefix: executor
+      include: scope
+    groups:
+      go-deps:
+        applies-to: version-updates
+        update-types:
+          - minor
+          - patch
+
+  # ---- GitHub Actions ----------------------------------------------------
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "09:00"
+      timezone: Europe/Amsterdam
+    open-pull-requests-limit: 5
+    labels:
+      - dependencies
+      - github-actions
+    commit-message:
+      prefix: ci
+      include: scope
+    groups:
+      actions:
+        applies-to: version-updates
+        update-types:
+          - minor
+          - patch
+
+  # ---- Daemon Docker image ----------------------------------------------
+  - package-ecosystem: docker
+    directory: /deploy/daemon
+    schedule:
+      interval: weekly
+      day: monday
+      time: "09:00"
+      timezone: Europe/Amsterdam
+    open-pull-requests-limit: 3
+    labels:
+      - dependencies
+      - docker
+      - deploy
+    commit-message:
+      prefix: deploy
+      include: scope

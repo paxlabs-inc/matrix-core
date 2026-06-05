@@ -1,0 +1,104 @@
+# Copyright © 2026 Paxlabs Inc. All rights reserved. SPDX-License-Identifier: LicenseRef-Paxlabs-Matrix-Protocol
+# Contact · license@Paxeer.app · legal@Paxeer.app
+
+# paxeer-read — read the entire Paxeer network (MatrixScript manifest)
+# Companion prose body lives in SKILL.md. Pure read surface: direct node RPC,
+# the PaxScan explorer, the Argus portfolio + PaxSpot market indexers, price
+# feeds, and the agent-economy precompile views. No value ever moves here.
+
+§SKILL
+id=paxeer-read
+version=0.1.0
+display="Paxeer Read"
+author=did:pax:0xMATRIX
+description="Read anything on Paxeer. Direct EVM JSON-RPC node access, the PaxScan/Blockscout explorer (addresses, transactions, tokens, holders, logs, search, network stats), the Argus portfolio indexer (pnl, rank, performance), PaxSpot market data, off-chain price feeds, and the agent-economy precompile views (oracle 0x0903 prices, OROB 0x0901 relative pricing, PoFQ 0x0904 reputation, streams 0x0906, scheduler 0x0905, staking 0x0800). Strictly read-only — no transaction is ever sent."
+mcl.verbs=analyze find
+determinism=seedable
+seed_policy=per_intent
+
+§INPUTS
+slot target: ArtifactRef
+  optional
+  hint="What to read: an address, tx hash, token, validator, market, stream/job id, or a question like 'PAX price' / 'my portfolio' / 'top holders of USDC'."
+
+slot constraints: Constraint[]
+  optional
+  hint="Read constraints (which data source to prefer, pagination limits, freshness)."
+
+§CORTEX
+reads=Identity Fact Capability Constraint Goal Event Pattern
+tags=paxeer read data explorer rpc oracle portfolio price
+
+§TOOLS
+matrix://tool/mcp/paxeer-net/chain_info@0.1.0
+matrix://tool/mcp/paxeer-net/rpc_call@0.1.0
+matrix://tool/mcp/paxeer-net/eth_call@0.1.0
+matrix://tool/mcp/paxeer-net/contract_read@0.1.0
+matrix://tool/mcp/paxeer-net/get_balance@0.1.0
+matrix://tool/mcp/paxeer-net/token_balance@0.1.0
+matrix://tool/mcp/paxeer-net/address_overview@0.1.0
+matrix://tool/mcp/paxeer-net/address_transactions@0.1.0
+matrix://tool/mcp/paxeer-net/tx@0.1.0
+matrix://tool/mcp/paxeer-net/token_info@0.1.0
+matrix://tool/mcp/paxeer-net/search@0.1.0
+matrix://tool/mcp/paxeer-net/network_stats@0.1.0
+matrix://tool/mcp/paxeer-net/paxscan_get@0.1.0
+matrix://tool/mcp/paxeer-net/portfolio@0.1.0
+matrix://tool/mcp/paxeer-net/trending@0.1.0
+matrix://tool/mcp/paxeer-net/price@0.1.0
+matrix://tool/mcp/paxeer-net/market_get@0.1.0
+matrix://tool/mcp/paxeer-net/points@0.1.0
+matrix://tool/mcp/paxeer-net/oracle_price@0.1.0
+matrix://tool/mcp/paxeer-net/orob_resolve@0.1.0
+matrix://tool/mcp/paxeer-net/stream_status@0.1.0
+matrix://tool/mcp/paxeer-net/job_status@0.1.0
+matrix://tool/mcp/paxeer-net/delegation@0.1.0
+
+§SUB_SKILLS
+none
+
+§PROCEDURE
+on verb=analyze
+  kind="reason"
+  output_cardinality=1
+  prompt
+    system="You are the Matrix planner running paxeer-read — the Paxeer network read layer. Output a PlanTree, not prose. A data question REQUIRES at least one read tool_call followed by exactly one report step that consumes it; NEVER answer a network-data question from reasoning or memory alone. Route to the right source: balances/blocks/sync -> chain_info, get_balance, token_balance; account history + holdings + token metadata + holders + search + gas/market stats -> the PaxScan tools (address_overview, address_transactions, tx, token_info, search, network_stats, or the generic paxscan_get for any other Blockscout v2 route); pnl/rank/performance -> portfolio; trending tokens -> trending; off-chain PAX/major price -> price; PaxSpot market data -> market_get; rewards points -> points; an arbitrary contract read -> contract_read (signature+outputs) or eth_call; agent-economy primitives -> oracle_price (validator price for a market), orob_resolve (oracle-relative price from basis-point offset), stream_status, job_status, delegation. Prefer address_overview for 'tell me about this address'. You MAY issue several read tool_calls in parallel and correlate them. Finish with exactly ONE reason step that answers Andrew in natural conversational prose (sentences + short bullet lists where useful), grounded ENTIRELY in the tool results wired into that step — quote concrete numbers (balances, prices, counts) verbatim and never fabricate a value that no tool returned."
+    user="Read request: {slot.target.prose}\n\nVerb: {verb}\n\nResolved scope:\n{slots}\n\nRelevant cortex context (identity, prior facts, watched addresses):\n{cortex.bundle}\n\nProduce the plan_tree@1 now."
+  end
+  resolve slot.target <- cortex.find(type=Fact, near=slot.target.prose, limit=8)
+end
+
+on verb=find
+  kind="reason"
+  output_cardinality=1
+  prompt
+    system="You are the Matrix planner running paxeer-read in discovery mode. Output a PlanTree, not prose. Use paxeer-net.search for entity lookup, trending for token discovery, token_info for holder/metadata depth, and paxscan_get / market_get for any documented explorer or market route. Finish with exactly ONE reason step that presents the discovered entities to Andrew in conversational prose grounded in the tool results — name each result with its key identifier (address/symbol/hash) verbatim."
+    user="Discovery request: {slot.target.prose}\n\nVerb: {verb}\n\nResolved scope:\n{slots}\n\nCortex context:\n{cortex.bundle}\n\nProduce the plan_tree@1 now."
+  end
+  resolve slot.target <- cortex.find(type=Fact, near=slot.target.prose, limit=8)
+end
+
+§OUTPUTS
+slot report: Event
+  required
+  hint="The answer to the read/discovery request, grounded in tool results."
+
+§FAILURE_MODES
+rpc_unreachable
+  action=fail
+  reason=external_failure
+
+indexer_unreachable
+  action=fail
+  reason=external_failure
+
+not_found
+  action=succeed
+  reason=unknown_information
+
+§HASH
+v=1
+algo=sha256_ast
+digest=
+
+# Copyright © 2026 Paxlabs Inc. All rights reserved.

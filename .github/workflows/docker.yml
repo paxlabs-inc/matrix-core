@@ -1,0 +1,109 @@
+name: docker
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "cortex/**"
+      - "MCL/**"
+      - "bridge/**"
+      - "executor/**"
+      - "gateway/**"
+      - "router/**"
+      - "skills/**"
+      - "agents/**"
+      - "tools/paxeer/**"
+      - "deploy/daemon/**"
+      - "deploy/gateway/**"
+      - "deploy/router/**"
+      - ".github/workflows/docker.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "deploy/daemon/**"
+      - "deploy/gateway/**"
+      - "deploy/router/**"
+      - ".github/workflows/docker.yml"
+  workflow_dispatch:
+    inputs:
+      push:
+        description: "Push images to GHCR"
+        required: false
+        type: boolean
+        default: false
+
+concurrency:
+  group: docker-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  packages: write
+  id-token: write
+
+env:
+  REGISTRY: ghcr.io
+
+jobs:
+  build:
+    name: build ${{ matrix.image }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - image: matrix-daemon
+            dockerfile: deploy/daemon/Dockerfile
+          - image: matrix-gateway
+            dockerfile: deploy/gateway/Dockerfile
+          - image: matrix-router
+            dockerfile: deploy/router/Dockerfile
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
+
+      - name: registry login
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ github.repository }}/${{ matrix.image }}
+          tags: |
+            type=sha,format=short,prefix=
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
+
+      - name: build (and push on main)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ${{ matrix.dockerfile }}
+          platforms: linux/amd64
+          push: ${{ github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || inputs.push == true) }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha,scope=${{ matrix.image }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.image }}
+          provenance: true
+          sbom: true
+
+      - name: image summary
+        run: |
+          {
+            echo "### ${{ matrix.image }}"
+            echo ""
+            echo '```'
+            echo "${{ steps.meta.outputs.tags }}"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"

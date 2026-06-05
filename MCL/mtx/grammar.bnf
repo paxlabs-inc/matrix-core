@@ -1,0 +1,311 @@
+(* MatrixScript (.mtx) — Formal Grammar (EBNF) *)
+(* Version: 0.1  |  Canonical reference for the mclc lexer/parser *)
+
+(* ------------------------------------------------------------------ *)
+(* TOP LEVEL                                                           *)
+(* ------------------------------------------------------------------ *)
+
+file          = { comment | blank_line | section } EOF ;
+
+section       = section_header { section_entry } ;
+section_header= "§" section_name NEWLINE ;
+section_name  = UPPER_LETTER { UPPER_LETTER | DIGIT | "_" } ;
+
+section_entry = comment
+              | blank_line
+              | slot_decl
+              | on_block
+              | fail_entry
+              | kv_pair
+              | ref_entry
+              | none_entry
+              ;
+
+none_entry    = "none" NEWLINE ;
+ref_entry     = uri_lit NEWLINE ;
+
+(* ------------------------------------------------------------------ *)
+(* COMMENTS AND WHITESPACE                                             *)
+(* ------------------------------------------------------------------ *)
+
+comment       = "#" { any_char_except_newline } NEWLINE ;
+blank_line    = NEWLINE ;
+INDENT        = "  " ;   (* exactly 2 spaces *)
+
+(* ------------------------------------------------------------------ *)
+(* KEY-VALUE PAIRS                                                     *)
+(* ------------------------------------------------------------------ *)
+
+kv_pair       = key "=" value NEWLINE ;
+
+key           = IDENT { "." IDENT } ;
+
+value         = string_lit
+              | bool_lit
+              | int_lit
+              | float_lit
+              | uri_lit
+              | enum_type
+              | space_list
+              | IDENT
+              ;
+
+space_list    = IDENT { " " IDENT } ;   (* one or more space-separated idents *)
+
+(* ------------------------------------------------------------------ *)
+(* TYPED SLOT DECLARATIONS                                             *)
+(* ------------------------------------------------------------------ *)
+
+slot_decl     = "slot" " " IDENT ":" " " type_ref NEWLINE
+                { slot_modifier }
+                ;
+
+slot_modifier = INDENT slot_mod_kw NEWLINE ;
+
+slot_mod_kw   = "required"
+              | "optional"
+              | "default=" value
+              | "hint=" string_lit
+              | "max=" int_lit
+              ;
+
+(* ------------------------------------------------------------------ *)
+(* TYPE SYSTEM                                                         *)
+(* ------------------------------------------------------------------ *)
+
+type_ref      = base_type
+              | enum_type
+              | list_type
+              | uri_wildcard_type
+              ;
+
+list_type     = type_ref "[]" ;
+
+base_type     = "string"       | "uint"        | "float"       | "bool"
+              | "ulid"         | "iso8601"      | "did"         | "sha256"
+              | "ArtifactRef"  | "Constraint"   | "Predicate"   | "Unknown"
+              | "PlanDraft"    | "SkillRef"     | "ToolRef"     | "CortexRef"
+              | "SlotPath"     | "AssetAmount"  | "AgentRef"    | "UserRef"
+              | named_type
+              ;
+
+named_type    = UPPER_LETTER { LETTER | DIGIT | "_" } ;
+
+enum_type     = "enum<" IDENT { "|" IDENT } ">" ;
+
+uri_wildcard_type = "matrix://" uri_authority "/" uri_type "/..." ;
+
+(* ------------------------------------------------------------------ *)
+(* ON-BLOCK (decision tree node)                                       *)
+(* ------------------------------------------------------------------ *)
+
+on_block      = "on" " " condition NEWLINE
+                { on_entry }
+                "end" NEWLINE
+                ;
+
+condition     = verb_cond
+              | confidence_cond
+              | slot_val_cond
+              | "unknown"
+              ;
+
+verb_cond     = "verb=" verb_name ;
+confidence_cond = "confidence" comparator float_lit ;
+slot_val_cond = "slot." IDENT "=" value ;
+comparator    = "<" | "<=" | ">" | ">=" | "==" ;
+
+verb_name     = "find"      | "acquire"   | "build"    | "modify"
+              | "deliver"   | "analyze"   | "negotiate"| "schedule"
+              | "monitor"   | "delegate"
+              | "x:" IDENT                 (* extension verbs *)
+              ;
+
+on_entry      = comment
+              | blank_line
+              | prompt_block
+              | resolve_stmt
+              | unknown_block
+              | clarify_block
+              | kv_pair
+              | on_block                   (* nested conditions *)
+              ;
+
+(* ------------------------------------------------------------------ *)
+(* PROMPT BLOCK                                                        *)
+(* ------------------------------------------------------------------ *)
+
+prompt_block  = "prompt" NEWLINE
+                { prompt_role_entry }
+                "end" NEWLINE
+                ;
+
+prompt_role_entry = INDENT role_name "=" string_lit NEWLINE ;
+
+role_name     = "system" | "user" | "assistant" ;
+
+(* ------------------------------------------------------------------ *)
+(* RESOLVE STATEMENT (D13 mandatory pre-resolution)                    *)
+(* ------------------------------------------------------------------ *)
+
+resolve_stmt  = "resolve" " " "slot." IDENT " " "<-" " " cortex_expr NEWLINE ;
+
+cortex_expr   = cortex_fn "(" cortex_arg_list ")" ;
+
+cortex_fn     = "cortex.find"
+              | "cortex.resolve"
+              | "cortex.context"
+              ;
+
+cortex_arg_list = [ cortex_arg { "," " " cortex_arg } ] ;
+
+cortex_arg    = IDENT "=" cortex_arg_value ;
+
+cortex_arg_value = value
+                 | slot_expr
+                 ;
+
+slot_expr     = "slot." IDENT { "." IDENT } ;  (* e.g. slot.target.prose *)
+
+(* ------------------------------------------------------------------ *)
+(* UNKNOWN BLOCK                                                       *)
+(* ------------------------------------------------------------------ *)
+
+unknown_block = "unknown" " " "slot." IDENT NEWLINE
+                { unknown_modifier }
+                "end" NEWLINE
+                ;
+
+unknown_modifier = INDENT unknown_mod_kw NEWLINE ;
+
+unknown_mod_kw = "severity=" severity_name
+               | "reason=" string_lit
+               | "default=" value
+               | "options=" option_expr
+               ;
+
+severity_name = "blocking" | "preferred" | "optional" ;
+
+option_expr   = "[" option_item { " " option_item } "]"
+              | slot_expr                              (* dynamic list from cortex *)
+              ;
+
+option_item   = string_lit | IDENT | uri_lit ;
+
+(* ------------------------------------------------------------------ *)
+(* CLARIFY BLOCK                                                       *)
+(* ------------------------------------------------------------------ *)
+
+clarify_block = "clarify" " " "slot." IDENT NEWLINE
+                { clarify_modifier }
+                "end" NEWLINE
+                ;
+
+clarify_modifier = INDENT clarify_mod_kw NEWLINE ;
+
+clarify_mod_kw = "prompt=" string_lit
+               | "type=" type_ref
+               | "required=" bool_lit
+               | "options=" option_expr
+               | "default=" value
+               ;
+
+(* ------------------------------------------------------------------ *)
+(* FAILURE MODES                                                       *)
+(* ------------------------------------------------------------------ *)
+
+fail_entry    = fail_name NEWLINE { fail_modifier } ;
+
+fail_name     = IDENT ;    (* free identifier naming the failure mode *)
+
+fail_modifier = INDENT fail_mod_kw NEWLINE ;
+
+fail_mod_kw   = "action=" fail_action
+              | "suggest=" suggest_action
+              | "reason=" failure_reason
+              ;
+
+fail_action   = "fail" | "retry" | "gate" ;
+
+suggest_action = "raise_budget"      | "extend_deadline"
+               | "amend_constraint"  | "delegate"
+               | "abandon"
+               ;
+
+failure_reason = "unknown_information"  | "policy_violation"
+               | "out_of_budget"        | "out_of_scope"
+               | "ambiguous_request"    | "tool_failure"
+               | "external_failure"     | "timeout"
+               | "cancelled_by_user"    | "correction_invalid"
+               ;
+
+(* ------------------------------------------------------------------ *)
+(* LITERALS                                                            *)
+(* ------------------------------------------------------------------ *)
+
+string_lit    = '"' { string_char } '"' ;
+string_char   = any_unicode_char
+              | escape_seq
+              | interp_expr           (* slot interpolation *)
+              ;
+escape_seq    = "\\" ( '"' | "\\" | "n" | "t" ) ;
+interp_expr   = "{" interp_path "}" ;
+interp_path   = "prose"
+              | "verb"
+              | "cortex.bundle"
+              | "slots"
+              | "unknowns"
+              | "slot." IDENT { "." IDENT }
+              ;
+
+bool_lit      = "true" | "false" ;
+int_lit       = DIGIT { DIGIT } ;
+float_lit     = int_lit "." DIGIT { DIGIT } ;
+
+uri_lit       = "matrix://" uri_authority "/" uri_type "/" uri_id [ "@" uri_version ] ;
+uri_authority = IDENT ;
+uri_type      = IDENT ;
+uri_id        = IDENT { "/" IDENT } ;
+uri_version   = semver | sha256_prefix | "latest" ;  (* "latest" only valid in §HASH *)
+
+sha256_prefix = "sha256:" hex_digit { hex_digit } ;
+semver        = DIGIT { DIGIT } "." DIGIT { DIGIT } "." DIGIT { DIGIT } { "-" IDENT } ;
+
+(* ------------------------------------------------------------------ *)
+(* CHARACTER CLASSES                                                   *)
+(* ------------------------------------------------------------------ *)
+
+IDENT         = LETTER { LETTER | DIGIT | "_" | "-" } ;
+LETTER        = LOWER_LETTER | UPPER_LETTER ;
+LOWER_LETTER  = "a" | "b" | ... | "z" ;
+UPPER_LETTER  = "A" | "B" | ... | "Z" ;
+DIGIT         = "0" | "1" | ... | "9" ;
+hex_digit     = DIGIT | "a"-"f" | "A"-"F" ;
+
+NEWLINE       = "\n" ;
+EOF           = end of input ;
+
+(* ------------------------------------------------------------------ *)
+(* NOTES                                                               *)
+(* ------------------------------------------------------------------ *)
+(*
+  N1. Indentation: section_entry items start at column 0.
+      slot_modifier, prompt_role_entry, unknown_modifier, clarify_modifier,
+      fail_modifier all require exactly 2-space indent (INDENT token).
+
+  N2. on-block body entries start at column 0 (not indented relative to
+      the on-header). The "end" keyword terminates the block at column 0.
+
+  N3. Nested on-blocks are valid. Each level has its own "end" at column 0.
+
+  N4. The §HASH section is read-only at publish time. The parser accepts
+      it for round-trip but mtx-validate rejects a manually-written digest
+      that doesn't match the computed AST hash.
+
+  N5. Space-separated list values (space_list) are used for multi-value
+      fields like mcl.verbs and reads. They are parsed as []string by the
+      runtime.
+
+  N6. cortex_arg_value allows slot_expr references (e.g. near=slot.target.prose)
+      so that resolve statements can reference not-yet-resolved slot text.
+*)

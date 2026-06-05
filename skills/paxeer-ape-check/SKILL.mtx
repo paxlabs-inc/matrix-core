@@ -1,0 +1,102 @@
+# Copyright © 2026 Paxlabs Inc. All rights reserved. SPDX-License-Identifier: LicenseRef-Paxlabs-Matrix-Protocol
+# Contact · license@Paxeer.app · legal@Paxeer.app
+
+# paxeer-ape-check — pre-trade token & contract safety verdict (MatrixScript manifest)
+# Companion prose body lives in SKILL.md and carries the same anti-fake mandate.
+# STRICTLY READ-ONLY: this skill has no write tools — no approval, no transaction
+# is ever signed. Composes the Paxeer read layer (PaxScan explorer + node RPC +
+# market data) into a single BUY-OK / CAUTION / AVOID verdict grounded in
+# on-chain evidence. Every claim MUST cite a real tool result — never guess.
+
+§SKILL
+id=paxeer-ape-check
+version=0.1.0
+display="Ape Check"
+author=did:pax:0xMATRIX
+description="'Check this before I ape.' Given a token or contract (0x address or symbol), run a strictly read-only safety review on Paxeer and return a clear BUY-OK / CAUTION / AVOID verdict with evidence: contract verification + age, owner/admin privileges (mint, pause, blacklist, fee/tax, upgradeable proxy), holder concentration + top-holder share, liquidity + recent transfer/dump activity, and price context. No approval and no transaction is ever signed. Every red/green flag is grounded verbatim in a PaxScan/RPC/market tool result; checks that cannot be completed are reported as unknown, never fabricated."
+mcl.verbs=analyze monitor
+determinism=seedable
+seed_policy=per_intent
+
+§INPUTS
+slot target: ArtifactRef
+  required
+  hint="The token/contract to vet: a 0x address or a symbol (e.g. 'is 0xabc... safe', 'check PEPE before I ape'). May include a position size for risk context."
+
+slot constraints: Constraint[]
+  optional
+  hint="Review constraints (risk tolerance, which checks to emphasize, max position)."
+
+§CORTEX
+reads=Identity Fact Capability Constraint Goal Event Pattern
+tags=paxeer safety token contract rug honeypot audit ape
+
+§TOOLS
+matrix://tool/mcp/paxeer-net/search@0.1.0
+matrix://tool/mcp/paxeer-net/token_info@0.1.0
+matrix://tool/mcp/paxeer-net/address_overview@0.1.0
+matrix://tool/mcp/paxeer-net/address_transactions@0.1.0
+matrix://tool/mcp/paxeer-net/contract_read@0.1.0
+matrix://tool/mcp/paxeer-net/eth_call@0.1.0
+matrix://tool/mcp/paxeer-net/paxscan_get@0.1.0
+matrix://tool/mcp/paxeer-net/token_balance@0.1.0
+matrix://tool/mcp/paxeer-net/price@0.1.0
+matrix://tool/mcp/paxeer-net/market_get@0.1.0
+matrix://tool/mcp/paxeer-net/trending@0.1.0
+
+§SUB_SKILLS
+none
+
+§PROCEDURE
+on verb=analyze
+  kind="reason"
+  output_cardinality=1
+  prompt
+    system="You are the Matrix planner running paxeer-ape-check — a READ-ONLY pre-trade safety auditor for Paxeer tokens/contracts. Output a PlanTree, not prose. This skill has NO write tools: never emit an approval or transaction; no value is ever signed. A verdict REQUIRES real read tool_calls followed by exactly one report step that consumes them; NEVER judge a token from reasoning or memory alone. Steps: (1) resolve the subject — if given a symbol or name, use search to find the 0x token/contract address; (2) pull token_info (metadata + top holders, to compute concentration: top-1 and top-10 holder share and whether top holders are LP/burn addresses), address_overview (is the contract verified, its age, tx counters, token balances) and address_transactions (recent activity: large transfers, LP add/remove, owner moves); (3) probe the owner/admin privilege surface with contract_read / eth_call: owner()/getOwner()/admin, paused() and pause authority, mint authority and totalSupply mutability, blacklist/allowlist gates, transfer fee/tax getters, and proxy/upgradeability (implementation() / EIP-1967 slot); (4) read liquidity and price context with market_get / price / trending. You MAY issue several reads in parallel and correlate them. Then produce exactly ONE report step giving Andrew a clear verdict — one of BUY-OK, CAUTION, or AVOID — followed by the specific RED flags and GREEN flags, EACH grounded verbatim in a tool result (cite the concrete number: top-holder percent, owner address, tax percent, liquidity, contract age). If a check could not be completed, list it explicitly as unknown — do NOT infer or fabricate a value no tool returned. Close with a one-line plain-English bottom line a non-technical user can act on, plus a short reminder that this is informational, read-only, and not financial advice."
+    user="Ape-check request: {slot.target.prose}\n\nVerb: {verb}\n\nResolved scope:\n{slots}\n\nRelevant cortex context (identity, risk constraints, prior checks, watched tokens):\n{cortex.bundle}\n\nProduce the plan_tree@1 now."
+  end
+  resolve slot.target <- cortex.find(type=Fact, near=slot.target.prose, limit=8)
+end
+
+on verb=monitor
+  kind="reason"
+  output_cardinality=1
+  prompt
+    system="You are the Matrix planner running paxeer-ape-check in monitor mode — re-checking a previously-vetted token for NEW risk since the last look. Output a PlanTree, not prose. Read-only: no write tool exists here. Re-pull token_info (holder-concentration drift), address_transactions (new large transfers, LP removals, or owner actions since the last check) and price / market_get (liquidity and price move). Finish with exactly ONE report step stating what CHANGED and whether the prior verdict still holds, grounded verbatim in the tool results; if nothing material changed, say so plainly."
+    user="Re-check request: {slot.target.prose}\n\nVerb: {verb}\n\nResolved scope:\n{slots}\n\nCortex context (prior verdict + watched token):\n{cortex.bundle}\n\nProduce the plan_tree@1 now."
+  end
+  resolve slot.target <- cortex.find(type=Event, near=slot.target.prose, limit=8)
+end
+
+§OUTPUTS
+slot report: Event
+  required
+  hint="The safety verdict (BUY-OK / CAUTION / AVOID) with evidence-grounded red and green flags."
+
+slot findings: Fact[]
+  optional
+  hint="Each material risk/green flag persisted as a Fact (with its on-chain evidence) for future re-checks."
+
+§FAILURE_MODES
+token_unresolved
+  action=fail
+  reason=unknown_information
+
+explorer_unreachable
+  action=fail
+  reason=external_failure
+
+rpc_unreachable
+  action=fail
+  reason=external_failure
+
+insufficient_data
+  action=succeed
+  reason=unknown_information
+
+§HASH
+v=1
+algo=sha256_ast
+digest=
+
+# Copyright © 2026 Paxlabs Inc. All rights reserved.

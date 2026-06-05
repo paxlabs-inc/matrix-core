@@ -1,0 +1,87 @@
+# Copyright © 2026 Paxlabs Inc. All rights reserved. SPDX-License-Identifier: LicenseRef-Paxlabs-Matrix-Protocol
+# Contact · license@Paxeer.app · legal@Paxeer.app
+
+# MCL core module: compiler pipeline
+# Declares the 6-stage pipeline the mclc runtime executes for every intent.draft.
+# Stage order is fixed. Each stage is a named module reference.
+# Loaded by mclc at startup. Contributes to mtx_digest (D11).
+
+§PIPELINE
+
+# Number of stages — must match the stages declared below.
+stage_count=6
+
+# Stage 1: Normalise
+# Pure function. NFC normalisation, whitespace collapse, length cap.
+# No LLM call. No cortex call.
+stage.1.id=normalise
+stage.1.type=pure
+stage.1.input=intent.draft.prose
+stage.1.output=normalised_prose
+stage.1.max_input_chars=8192
+stage.1.on_overflow=truncate_warn
+
+# Stage 2: Classify verb
+# Grammar-constrained LLM call. Output = one of the D7 closed verbs.
+# Seeded. Fast (~10 output tokens).
+stage.2.id=classify_verb
+stage.2.type=llm_constrained
+stage.2.module=core/verb.mtx
+stage.2.input=normalised_prose
+stage.2.output=candidate_verb
+stage.2.grammar=verb_vocab@1
+stage.2.max_output_tokens=8
+
+# Stage 3: Cortex pre-fetch (cold-start bundle)
+# Pure function over cortex_snapshot_hash. No LLM call.
+# Calls cortex.context() using the candidate verb for tier routing.
+stage.3.id=cortex_prefetch
+stage.3.type=cortex
+stage.3.input=candidate_verb normalised_prose
+stage.3.output=cortex_bundle
+stage.3.cortex_call=cortex.context
+stage.3.budget_tokens=3000
+stage.3.form=medium
+
+# Stage 4: Frame extraction
+# Main grammar-constrained LLM call. Output = filled Frame JSON.
+# Seeded with D11 seed. This is the only nondeterministic stage.
+# The skill's §PROCEDURE on-block supplies the prompt for this stage.
+stage.4.id=extract_frame
+stage.4.type=llm_constrained
+stage.4.input=normalised_prose cortex_bundle candidate_verb skill_procedure
+stage.4.output=raw_frame_json
+stage.4.grammar=intent_frame@1
+stage.4.seed=per_intent
+stage.4.max_output_tokens=2048
+
+# Stage 5: Entity resolution (D13 mandatory pre-resolution)
+# Pure function over cortex_snapshot_hash. No LLM call.
+# Each NL reference in raw_frame_json resolved to matrix:// URI.
+# Unresolvable references → Unknown entries.
+stage.5.id=resolve_entities
+stage.5.type=cortex
+stage.5.input=raw_frame_json cortex_bundle
+stage.5.output=resolved_frame unknowns
+stage.5.resolution=mandatory          # D13: no unresolved NL refs past this point
+stage.5.on_ambiguous=add_unknown_disambiguate
+stage.5.on_missing=add_unknown_blocking
+
+# Stage 6: Score + sign
+# Pure function. Aggregate slot-level confidences into overall confidence.
+# If confidence < threshold OR any blocking unknowns exist: emit intent.clarify.
+# Otherwise: sign and emit intent.compiled.
+stage.6.id=score_and_sign
+stage.6.type=pure
+stage.6.input=resolved_frame unknowns candidate_verb
+stage.6.output=intent_compiled
+stage.6.confidence_threshold=0.75
+stage.6.auto_accept_threshold=0.90    # no clarify round if confidence > 0.90 and unknowns=0
+stage.6.sign=agent_key                # compiler signs as the agent; user signs at intent.accept
+
+# Pipeline-level settings
+pipeline.on_stage_error=fail_fast     # any stage error aborts the pipeline and emits intent.fail
+pipeline.max_clarify_rounds=3         # after 3 rounds of clarify/answer with no resolution: intent.fail ambiguous_request
+pipeline.timeout_ms=5000              # hard wall-clock ceiling for the full pipeline
+
+# Copyright © 2026 Paxlabs Inc. All rights reserved.

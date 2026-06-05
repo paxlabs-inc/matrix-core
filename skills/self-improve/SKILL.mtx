@@ -1,0 +1,135 @@
+# Copyright © 2026 Paxlabs Inc. All rights reserved. SPDX-License-Identifier: LicenseRef-Paxlabs-Matrix-Protocol
+# Contact · license@Paxeer.app · legal@Paxeer.app
+
+# self-improve — Matrix recursive self-optimization suite (5/5: THE LOOP)
+# The recursive driver. Sub-dispatches map -> diagnose -> GATE(architect) -> optimize -> verify,
+# then attests the outcome so the NEXT pass's cold-start cortex.context() reads what this pass learned.
+# This is what makes the optimization recursive: every leaf skill writes memories this skill's
+# successor will read. Companion prose body lives in SKILL.md and MUST carry the same mandate.
+
+§SKILL
+id=self-improve
+version=0.1.0
+display="Self Improve"
+author=did:pax:0xMATRIX
+description="Drive one full recursive self-optimization pass over the Matrix system: map a subsystem, diagnose and rank surfaces, gate the architect for the pick, optimize, verify, and attest so accumulated self-knowledge compounds across passes."
+mcl.verbs=build delegate
+determinism=seedable
+seed_policy=per_intent
+
+§INPUTS
+slot target: ArtifactRef
+  required
+  hint="The subsystem to improve this pass (path under /root/matrix), or 'next' to let diagnose pick from prior maps"
+
+slot constraints: Constraint[]
+  optional
+  hint="Loop constraints (one surface per pass, no daemon-code edits, gate required before any write)"
+
+slot preferences: Preference[]
+  optional
+  hint="Architect preferences (favor planner/executor/cortex/skills, leverage vs risk)"
+
+§CORTEX
+reads=Goal Pattern Fact Event Constraint Preference Identity
+tags=matrix self improve loop
+
+§TOOLS
+matrix://tool/mcp/git/git_status@2026.1.14
+matrix://tool/mcp/forge-bridge/shell_exec@0.1.0
+
+§SUB_SKILLS
+matrix://skill/self-map@0.1.0
+matrix://skill/self-diagnose@0.1.0
+matrix://skill/self-optimize@0.1.0
+matrix://skill/self-verify@0.1.0
+
+§PROCEDURE
+on verb=build
+  kind="hard_reason"
+  output_cardinality=1
+  prompt
+    system="You are the Matrix planner running self-improve, the recursive self-optimization loop. Output a SEQUENTIAL PlanTree of sub_dispatch and gate nodes, never a reason-only plan. Emit exactly: (1) sub_dispatch matrix://skill/self-map@0.1.0 on slot.target to refresh the topology map in cortex; (2) sub_dispatch matrix://skill/self-diagnose@0.1.0 on the mapped scope to write a ranked surface Pattern; (3) a gate node addressed to the architect, Question = the ranked surfaces with their leverage and criteria, Options = pick a surface to optimize now / show full ranked list / stop and let me issue the next Intent / deepen analysis on one subsystem; (4) sub_dispatch matrix://skill/self-optimize@0.1.0 on the surface the gate selected; (5) sub_dispatch matrix://skill/self-verify@0.1.0 on the changed module; (6) a reason step deciding keep|retry|revert from the verify verdict; (7) tool_call forge-bridge.shell_exec POSTing a Goal-progress Event tagged matrix:self,improve,loop. NEVER skip the gate before step 4: no write lands without architect approval. NEVER mark the pass complete without a verify verdict."
+    user="Run one self-improvement pass.\nScope: {slot.target.prose}\n\nVerb: {verb}\nIdentity, active goals, prior passes, and accumulated self-knowledge in cortex:\n{cortex.bundle}\n\nResolved slots:\n{slots}\nPending unknowns:\n{unknowns}\n\nMap, diagnose, GATE the architect, optimize the pick, verify, then record the loop Event. One surface this pass."
+  end
+  resolve slot.target <- cortex.find(type=Pattern, near=slot.target.prose, limit=8)
+  unknown slot.target
+    severity=preferred
+    reason="No scope given; diagnose can pick the highest-leverage surface from prior maps, but an explicit scope is faster"
+    default="next"
+  end
+end
+
+on verb=delegate
+  kind="hard_reason"
+  output_cardinality=1
+  prompt
+    system="You are the Matrix planner running self-improve in delegate mode: the architect wants only the analysis half this pass. Emit a SEQUENTIAL PlanTree: (1) sub_dispatch matrix://skill/self-map@0.1.0; (2) sub_dispatch matrix://skill/self-diagnose@0.1.0; (3) a gate node presenting the ranked surfaces to the architect and STOPPING there. Do not sub_dispatch self-optimize. No reason-only plan."
+    user="Analyze and present, do not act this pass.\nScope: {slot.target.prose}\n\nVerb: {verb}\nContext:\n{cortex.bundle}\n\nResolved slots:\n{slots}\nPending unknowns:\n{unknowns}\n\nMap, diagnose, gate with the ranked list, then stop."
+  end
+  resolve slot.target <- cortex.find(type=Pattern, near=slot.target.prose, limit=8)
+  unknown slot.target
+    severity=preferred
+    reason="No scope given; diagnose will rank across all prior maps"
+    default="next"
+  end
+end
+
+on confidence<0.75
+  clarify slot.target
+    prompt="What should this self-improvement pass focus on? A subsystem path under /root/matrix, or 'next' to optimize the highest-leverage surface diagnose finds."
+    type=ArtifactRef
+    required=false
+  end
+end
+
+on unknown
+  clarify slot.target
+    prompt="Scope is unclear. Name a subsystem to improve, or say 'next' and I will let self-diagnose pick from the existing maps."
+    type=ArtifactRef
+    required=false
+  end
+end
+
+§OUTPUTS
+slot result: ArtifactRef
+  required
+  hint="The pass summary: surface picked, change applied, verify verdict, and the loop Event written"
+
+slot loop_event: Event
+  optional
+  hint="The Goal-progress Event closing this pass and seeding the next"
+
+slot unknowns: Unknown[]
+  optional
+
+§FAILURE_MODES
+gate_not_emitted
+  action=fail
+  reason=policy_violation
+
+write_before_gate
+  action=fail
+  reason=policy_violation
+
+subdispatch_failed
+  action=fail
+  reason=external_failure
+
+verify_failed
+  action=retry
+  suggest=revert_or_refine_change
+
+deadline_exceeded
+  action=fail
+  reason=timeout
+
+budget_exceeded
+  suggest=raise_budget
+
+§HASH
+v=1
+algo=sha256_ast
+digest=
+
+# Copyright © 2026 Paxlabs Inc. All rights reserved.

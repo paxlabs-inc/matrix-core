@@ -1,0 +1,86 @@
+{
+  "schema_version": 1,
+  "agent": "matrix://agent/forge",
+  "description": "Forge — local self-maintenance Matrix instance (Session 34 brain swap → Session 36 Phase 3 tooling expansion). Powered by Claude Opus 4.7 + GPT-5.5 via opencode.ai/zen with the identity preamble injected at every Decode + Stream call. MCP fleet rooted at /root/matrix: fs (file ops), git (version control), fetch (external HTTP), forge-bridge (shell.exec + opencode.run sub-agent for free-form tasks). The cortex/store, knowledge, and journal subdirectories are denied at the daemon HTTP layer (ForgeFSPolicy) per matrix.kvx sess#34 Q3=c — replay byte-identity (cortex §13.4) + kvx ledger integrity + envelope chain audit log are non-negotiable; everything else is fair game for self-modification, recoverable via git history. PackageDigest values are PLACEHOLDERS — operators MUST replace with sha256 of the installed package before any production-anchored deployment.",
+  "allowed_side_effects": ["read", "write", "network", "shell"],
+  "servers": [
+    {
+      "alias": "fs",
+      "transport": "stdio",
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-filesystem",
+        "/root/matrix"
+      ],
+      "env": [],
+      "package_digest": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+      "version": "2024.11.1",
+      "tools": [
+        {"name": "read_file", "description": "Read a file (deprecated alias of read_text_file)", "side_effect_class": "read"},
+        {"name": "read_text_file", "description": "Read the contents of a text file", "side_effect_class": "read"},
+        {"name": "read_media_file", "description": "Read an image or audio file as base64", "side_effect_class": "read"},
+        {"name": "read_multiple_files", "description": "Read multiple files in a single call", "side_effect_class": "read"},
+        {"name": "write_file", "description": "Write content to a file (creates or overwrites). The fs MCP server enforces no writes under /root/matrix/cortex/store, /root/matrix/knowledge, or /root/matrix/journal via its allowedDirectories arg; the daemon ALSO refuses these paths via ForgeFSPolicy if the agent attempts an out-of-scope HTTP call.", "side_effect_class": "write"},
+        {"name": "edit_file", "description": "Apply line-based edits to a file (same allow/deny enforcement as write_file)", "side_effect_class": "write"},
+        {"name": "create_directory", "description": "Create a directory tree (same allow/deny enforcement)", "side_effect_class": "write"},
+        {"name": "list_directory", "description": "List entries in a directory", "side_effect_class": "read"},
+        {"name": "list_directory_with_sizes", "description": "List entries in a directory including byte sizes", "side_effect_class": "read"},
+        {"name": "list_allowed_directories", "description": "List the directories the server is permitted to access", "side_effect_class": "read"},
+        {"name": "directory_tree", "description": "Recursive tree view of a directory", "side_effect_class": "read"},
+        {"name": "move_file", "description": "Move or rename a file (same allow/deny enforcement)", "side_effect_class": "write"},
+        {"name": "search_files", "description": "Recursive glob search", "side_effect_class": "read"},
+        {"name": "get_file_info", "description": "Stat a file or directory", "side_effect_class": "read"}
+      ]
+    },
+    {
+      "alias": "fetch",
+      "transport": "stdio",
+      "command": "uvx",
+      "args": ["mcp-server-fetch"],
+      "env": [],
+      "package_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+      "version": "2024.11.1",
+      "tools": [
+        {"name": "fetch", "description": "Fetch a URL and return its content as Markdown. Useful when the agent needs to look up Go stdlib docs, Anthropic API references, or other external context while self-maintaining.", "side_effect_class": "network", "timeout_ms": 30000}
+      ]
+    },
+    {
+      "alias": "git",
+      "transport": "stdio",
+      "command": "uvx",
+      "args": ["mcp-server-git", "--repository", "/root/matrix"],
+      "env": [],
+      "package_digest": "sha256:2222222222222222222222222222222222222222222222222222222222222222",
+      "version": "2024.11.1",
+      "tools": [
+        {"name": "git_status", "description": "Show the working-tree status of /root/matrix", "side_effect_class": "read"},
+        {"name": "git_diff_unstaged", "description": "Diff unstaged changes (Forge's primary review surface — every self-edit shows up here first)", "side_effect_class": "read"},
+        {"name": "git_diff_staged", "description": "Diff staged changes", "side_effect_class": "read"},
+        {"name": "git_diff", "description": "Diff between commits/branches", "side_effect_class": "read"},
+        {"name": "git_log", "description": "Show commit history (the load-bearing audit trail for self-maintenance work)", "side_effect_class": "read"},
+        {"name": "git_show", "description": "Show a specific commit", "side_effect_class": "read"},
+        {"name": "git_branch", "description": "List branches", "side_effect_class": "read"},
+        {"name": "git_add", "description": "Stage files for commit", "side_effect_class": "write"},
+        {"name": "git_reset", "description": "Reset staged changes", "side_effect_class": "write"},
+        {"name": "git_commit", "description": "Create a commit from staged changes. Forge commits to feature branches; merge to main is human-gated through the diff viewer (Phase 3).", "side_effect_class": "write"},
+        {"name": "git_create_branch", "description": "Create a new branch (Forge defaults to forge/<intent_id> per self-maintenance task)", "side_effect_class": "write"},
+        {"name": "git_checkout", "description": "Switch branches", "side_effect_class": "write"}
+      ]
+    },
+    {
+      "alias": "forge-bridge",
+      "transport": "stdio",
+      "command": "node",
+      "args": ["/root/matrix/tools/forge/mcp-bridge.mjs"],
+      "env": [],
+      "package_digest": "sha256:3333333333333333333333333333333333333333333333333333333333333333",
+      "version": "0.1.0",
+      "tools": [
+        {"name": "shell_exec", "description": "Run a shell command via /bin/bash -lc inside /root/matrix (cwd-jailed). PATH locked to system bins; MATRIX_DAEMON_TOKEN scrubbed from child env. Output capped at MATRIX_FORGE_SHELL_MAX_BYTES (default 256 KiB) so a runaway `cat huge.bin` doesn't blow the LLM context. Use this for `go test`, `go vet`, `go build`, npm scripts, etc. — anything that needs more than a typed git verb.", "side_effect_class": "shell", "timeout_ms": 120000},
+        {"name": "opencode_run", "description": "Spawn `opencode run \"<prompt>\"` and return the final assistant message. Same brain Matrix already routes through (Claude Opus 4.7 + GPT-5.5 via opencode.ai/zen) but as a sub-agent for free-form tasks that don't fit Matrix's IR (e.g. ad-hoc code review, brainstorming a refactor, drafting a doc). Use sparingly: it's slow + spends opencode credits + is the agent talking to itself by another path.", "side_effect_class": "network", "timeout_ms": 600000}
+      ]
+    }
+  ],
+  "native_tools": []
+}

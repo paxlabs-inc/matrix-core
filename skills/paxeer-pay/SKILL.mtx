@@ -1,0 +1,100 @@
+# Copyright © 2026 Paxlabs Inc. All rights reserved. SPDX-License-Identifier: LicenseRef-Paxlabs-Matrix-Protocol
+# Contact · license@Paxeer.app · legal@Paxeer.app
+
+# paxeer-pay — machine payments on Paxeer (MatrixScript manifest)
+# Companion prose body lives in SKILL.md and carries the same tool-call mandate.
+# L2 of the machine-commerce stack: one-shot transfers + continuous payment
+# streams (0x0906). Writes value via the embedded wallet; spend policy is
+# enforced network-side AND by the PaxeerSpendPolicy gate below the plan.
+
+§SKILL
+id=paxeer-pay
+version=0.1.0
+display="Paxeer Pay"
+author=did:pax:0xMATRIX
+description="Pay on Paxeer: send native PAX or ERC-20 tokens, and open/settle/close/retune continuous PaymentStreams (0x0906) for per-second machine settlement of compute, data, and services. Signs through the embedded wallet (network-side custody + spend enforcement). Confirms balance and recipient before sending; every send is persisted as an Event with its tx hash."
+mcl.verbs=deliver monitor
+determinism=seedable
+seed_policy=per_intent
+
+§INPUTS
+slot target: ArtifactRef
+  required
+  hint="The payment intent: recipient + amount (+ token), or a stream to open/settle/close, or 'settle my due streams'."
+
+slot constraints: Constraint[]
+  optional
+  hint="Spend constraints (max amount, allowed tokens, allowed recipients, dry-run)."
+
+§CORTEX
+reads=Identity Constraint Capability Goal Event Fact
+tags=paxeer pay transfer stream settlement m2m
+
+§TOOLS
+matrix://tool/mcp/paxeer-net/wallet_info@0.1.0
+matrix://tool/mcp/paxeer-net/get_balance@0.1.0
+matrix://tool/mcp/paxeer-net/token_balance@0.1.0
+matrix://tool/mcp/paxeer-net/transfer@0.1.0
+matrix://tool/mcp/paxeer-net/approve@0.1.0
+matrix://tool/mcp/paxeer-net/stream_open@0.1.0
+matrix://tool/mcp/paxeer-net/stream_settle@0.1.0
+matrix://tool/mcp/paxeer-net/stream_close@0.1.0
+matrix://tool/mcp/paxeer-net/stream_update_rate@0.1.0
+matrix://tool/mcp/paxeer-net/stream_status@0.1.0
+
+§SUB_SKILLS
+none
+
+§PROCEDURE
+on verb=deliver
+  kind="hard_reason"
+  output_cardinality=1
+  prompt
+    system="You are the Matrix planner running paxeer-pay in deliver mode — moving value on Paxeer. Output a PlanTree, not prose. SAFETY FIRST: before any send, the plan MUST include a read-only balance check (paxeer-net.get_balance for native PAX, or token_balance for an ERC-20) so the report can confirm funds cover the amount; resolve the agent address with wallet_info if needed. Then choose the primitive: a one-shot payment -> paxeer-net.transfer (token omitted/\"PAX\" for native, else symbol or 0x); a continuous/per-second payment for a service or subscription -> paxeer-net.stream_open (payee, token, ratePerSecond, optional cap/stop). For ERC-20 flows that a contract must pull, add approve first. Amounts are human units (the bridge converts by token decimals). Emit at most the sends the request authorizes — never batch extra transfers. Each write tool result returns a tx_hash; the FINAL single hard_reason step MUST brief Andrew in natural conversational prose: what was paid, to whom, how much, and the tx hash(es) verbatim from the tool results, plus the resulting balance impact. NEVER claim a payment succeeded without a tx_hash in a wired tool result. The two spend gates (PaxeerSpendPolicy per-call ceiling + any cortex Constraint spend limit) are enforced below your plan; do not route around them, and if the amount looks unbounded or exceeds a known constraint, STOP and ask rather than send."
+    user="Payment request: {slot.target.prose}\n\nVerb: {verb}\n\nResolved scope:\n{slots}\n\nIdentity, spend constraints, goals, and recent payment events from cortex:\n{cortex.bundle}\n\nProduce the plan_tree@1 now."
+  end
+  resolve slot.target <- cortex.find(type=Constraint, near=slot.target.prose, limit=8)
+end
+
+on verb=monitor
+  kind="reason"
+  output_cardinality=1
+  prompt
+    system="You are the Matrix planner running paxeer-pay in monitor mode. Output a PlanTree, not prose. Begin with read-only paxeer-net.stream_status for the stream(s) in scope to read accrued + active state. Settle (paxeer-net.stream_settle) or close (stream_close) ONLY when the request authorizes it; a pure status request never triggers a settle. Finish with exactly ONE reason step reporting accrued amounts and any action taken to Andrew in conversational prose, grounded in the tool results (tx hash verbatim for any settle/close)."
+    user="Stream monitor request: {slot.target.prose}\n\nVerb: {verb}\n\nResolved scope:\n{slots}\n\nCortex context (open streams, identity):\n{cortex.bundle}\n\nProduce the plan_tree@1 now."
+  end
+  resolve slot.target <- cortex.find(type=Event, near=slot.target.prose, limit=8)
+end
+
+§OUTPUTS
+slot report: Event
+  required
+  hint="The payment report (what was paid/streamed, tx hashes, balance impact)."
+
+slot payments: Event[]
+  optional
+  hint="Each send/settle persisted as an Event with its tx hash for the chronology."
+
+§FAILURE_MODES
+wallet_unconfigured
+  action=fail
+  reason=external_failure
+
+insufficient_balance
+  action=fail
+  reason=out_of_budget
+
+spend_limit_exceeded
+  action=fail
+  reason=policy_violation
+
+recipient_unresolved
+  action=fail
+  reason=unknown_information
+
+§HASH
+v=1
+algo=sha256_ast
+digest=
+
+# Copyright © 2026 Paxlabs Inc. All rights reserved.

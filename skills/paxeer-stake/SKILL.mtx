@@ -1,0 +1,97 @@
+# Copyright © 2026 Paxlabs Inc. All rights reserved. SPDX-License-Identifier: LicenseRef-Paxlabs-Matrix-Protocol
+# Contact · license@Paxeer.app · legal@Paxeer.app
+
+# paxeer-stake — stake PAX to back the network (MatrixScript manifest)
+# Companion prose body lives in SKILL.md and carries the same tool-call mandate.
+# Staking precompile 0x0800: delegate / undelegate / redelegate + delegation
+# reads. Capital commitment that secures the network and earns yield — the
+# agent-capital / PLV-underwriting layer of the machine economy.
+
+§SKILL
+id=paxeer-stake
+version=0.1.0
+display="Paxeer Stake"
+author=did:pax:0xMATRIX
+description="Manage an agent's staked PAX on Paxeer via the staking precompile (0x0800): delegate to a validator, undelegate (unbond), redelegate between validators, and read current delegation (shares + balance). Validator addresses are bech32 paxvaloper.... Signs through the embedded wallet with network-side spend enforcement; confirms balance and validator before committing; persists every stake action as an Event with its tx hash."
+mcl.verbs=build modify
+determinism=seedable
+seed_policy=per_intent
+
+§INPUTS
+slot target: ArtifactRef
+  required
+  hint="The staking intent: delegate N PAX to a validator, undelegate from one, redelegate between two, or 'show my delegations'."
+
+slot constraints: Constraint[]
+  optional
+  hint="Stake constraints (max stake, allowed validators, min self-balance to retain, dry-run)."
+
+§CORTEX
+reads=Identity Constraint Capability Goal Event Fact
+tags=paxeer stake delegate validator yield capital
+
+§TOOLS
+matrix://tool/mcp/paxeer-net/wallet_info@0.1.0
+matrix://tool/mcp/paxeer-net/get_balance@0.1.0
+matrix://tool/mcp/paxeer-net/delegation@0.1.0
+matrix://tool/mcp/paxeer-net/delegate@0.1.0
+matrix://tool/mcp/paxeer-net/undelegate@0.1.0
+matrix://tool/mcp/paxeer-net/redelegate@0.1.0
+matrix://tool/mcp/paxeer-net/contract_read@0.1.0
+
+§SUB_SKILLS
+none
+
+§PROCEDURE
+on verb=build
+  kind="hard_reason"
+  output_cardinality=1
+  prompt
+    system="You are the Matrix planner running paxeer-stake in build mode — committing PAX as stake. Output a PlanTree, not prose. SAFETY FIRST: before delegating, the plan MUST include a read-only paxeer-net.get_balance so the report can confirm the agent retains enough native PAX for gas + any required self-balance, and SHOULD read current paxeer-net.delegation for the target validator. Then delegate with paxeer-net.delegate (validator is a bech32 paxvaloper... string, amount in human PAX). Only stake the amount the request authorizes — never sweep the whole balance unless explicitly told. The FINAL single hard_reason step MUST brief Andrew in natural conversational prose: validator, amount, remaining liquid balance, and the tx hash verbatim from the delegate result. NEVER claim a delegation succeeded without a tx_hash in a wired tool result. Spend gates (PaxeerSpendPolicy + cortex Constraint limits) are enforced below the plan; if the amount is unbounded or would leave too little for gas, STOP and ask."
+    user="Stake request: {slot.target.prose}\n\nVerb: {verb}\n\nResolved scope:\n{slots}\n\nIdentity, stake constraints, goals, prior stake events from cortex:\n{cortex.bundle}\n\nProduce the plan_tree@1 now."
+  end
+  resolve slot.target <- cortex.find(type=Constraint, near=slot.target.prose, limit=8)
+end
+
+on verb=modify
+  kind="hard_reason"
+  output_cardinality=1
+  prompt
+    system="You are the Matrix planner running paxeer-stake in modify mode — adjusting existing stake. Output a PlanTree, not prose. Begin with a read-only paxeer-net.delegation for the validator(s) in scope to ground current shares/balance. Then apply the change: paxeer-net.undelegate (unbond from a validator) or paxeer-net.redelegate (move stake src->dst), amounts in human PAX. A pure 'show my delegations' request is read-only and ends after the delegation read. The FINAL single hard_reason step MUST report the action to Andrew in conversational prose grounded in tool results — validator(s), amount, unbonding completion time if returned, and the tx hash verbatim. Spend/policy gates are enforced below the plan."
+    user="Stake change request: {slot.target.prose}\n\nVerb: {verb}\n\nResolved scope:\n{slots}\n\nCortex context (current delegations, identity, constraints):\n{cortex.bundle}\n\nProduce the plan_tree@1 now."
+  end
+  resolve slot.target <- cortex.find(type=Event, near=slot.target.prose, limit=8)
+end
+
+§OUTPUTS
+slot report: Event
+  required
+  hint="The staking report (validator, amount, delegation state, tx hash)."
+
+slot actions: Event[]
+  optional
+  hint="Each delegate/undelegate/redelegate persisted as an Event with its tx hash."
+
+§FAILURE_MODES
+wallet_unconfigured
+  action=fail
+  reason=external_failure
+
+insufficient_balance
+  action=fail
+  reason=out_of_budget
+
+validator_unresolved
+  action=fail
+  reason=unknown_information
+
+spend_limit_exceeded
+  action=fail
+  reason=policy_violation
+
+§HASH
+v=1
+algo=sha256_ast
+digest=
+
+# Copyright © 2026 Paxlabs Inc. All rights reserved.

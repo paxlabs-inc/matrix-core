@@ -1,0 +1,101 @@
+# Copyright © 2026 Paxlabs Inc. All rights reserved. SPDX-License-Identifier: LicenseRef-Paxlabs-Matrix-Protocol
+# Contact · license@Paxeer.app · legal@Paxeer.app
+
+# paxeer-airdrop — eligibility scan + claim (MatrixScript manifest)
+# Companion prose body lives in SKILL.md and carries the same anti-fake mandate.
+# analyze = READ-ONLY eligibility check. deliver = CLAIM via contract_write
+# through the embedded wallet; spend/state gates are enforced network-side AND
+# by the PaxeerSpendPolicy below the plan. A claim is never reported without a
+# wired tx_hash, and eligibility is never asserted without a confirming read.
+
+§SKILL
+id=paxeer-airdrop
+version=0.1.0
+display="Paxeer Airdrop"
+author=did:pax:0xMATRIX
+description="Check airdrop/claim eligibility on Paxeer and claim what is owed. analyze: for a claim/distributor contract (named or discovered), read the on-chain claimable amount / eligibility for the user's address and report it — strictly read-only. deliver: execute the claim through the embedded wallet ONLY when a read confirmed a nonzero claimable and the user authorized it. Eligibility is always grounded in a contract read; a claim is never reported without a wired tx_hash; the exact claim contract + function are confirmed before sending, and an unknown amount or contract stops to ask."
+mcl.verbs=analyze deliver
+determinism=seedable
+seed_policy=per_intent
+
+§INPUTS
+slot target: ArtifactRef
+  required
+  hint="The claim to check/execute: a distributor/claim contract address or campaign name, and optionally the recipient (defaults to the agent wallet)."
+
+slot constraints: Constraint[]
+  optional
+  hint="Constraints (which campaigns to include, min claimable to bother, dry-run)."
+
+§CORTEX
+reads=Identity Constraint Capability Goal Event Fact
+tags=paxeer airdrop claim eligibility rewards distributor
+
+§TOOLS
+matrix://tool/mcp/paxeer-net/wallet_info@0.1.0
+matrix://tool/mcp/paxeer-net/search@0.1.0
+matrix://tool/mcp/paxeer-net/address_overview@0.1.0
+matrix://tool/mcp/paxeer-net/token_info@0.1.0
+matrix://tool/mcp/paxeer-net/contract_read@0.1.0
+matrix://tool/mcp/paxeer-net/eth_call@0.1.0
+matrix://tool/mcp/paxeer-net/encode_call@0.1.0
+matrix://tool/mcp/paxeer-net/paxscan_get@0.1.0
+matrix://tool/mcp/paxeer-net/points@0.1.0
+matrix://tool/mcp/paxeer-net/contract_write@0.1.0
+
+§SUB_SKILLS
+none
+
+§PROCEDURE
+on verb=analyze
+  kind="reason"
+  output_cardinality=1
+  prompt
+    system="You are the Matrix planner running paxeer-airdrop in eligibility mode — a READ-ONLY claim check on Paxeer. Output a PlanTree, not prose. Emit NO write tools in analyze. Steps: (1) resolve the recipient (wallet_info, or the address in scope) and the claim/distributor contract (search / paxscan_get when only a name is given); (2) read the contract's verified ABI via paxscan_get to find the eligibility/claim view (commonly claimable(address) -> uint256, getClaimable(address), isEligible(address) -> bool, or claimed(address) -> bool); (3) read it with contract_read using the discovered signature + outputs; pull token_info for the reward token decimals/symbol and points for any off-chain reward balance. Then produce exactly ONE report step stating, per campaign: eligible yes/no, the claimable amount (human units, grounded in the read) and the reward token — each cited verbatim from a tool result. If the contract's claim interface cannot be determined from the ABI, say so (unknown) rather than guessing a function. Close with a plain bottom line and offer to claim the nonzero ones."
+    user="Eligibility request: {slot.target.prose}\n\nVerb: {verb}\n\nResolved scope:\n{slots}\n\nRelevant cortex context (identity, watched campaigns, prior claims):\n{cortex.bundle}\n\nProduce the plan_tree@1 now."
+  end
+  resolve slot.target <- cortex.find(type=Fact, near=slot.target.prose, limit=8)
+end
+
+on verb=deliver
+  kind="hard_reason"
+  output_cardinality=1
+  prompt
+    system="You are the Matrix planner running paxeer-airdrop in claim mode — executing a claim on Paxeer. Output a PlanTree, not prose. SAFETY FIRST: before any claim, the plan MUST (a) read the verified ABI (paxscan_get) to identify the EXACT claim function and (b) read the claimable amount (contract_read) so the report can confirm there is something to claim — NEVER send a claim against an unconfirmed-eligible address or a guessed function. Then execute the claim with contract_write against the distributor contract, providing the discovered signature + args (use encode_call first if you need to inspect the calldata). Claim ONLY the campaigns the request authorizes and only when the read showed a nonzero claimable; if the contract/function/amount is unknown or unbounded, STOP and ask. Each contract_write returns a tx_hash; the FINAL single hard_reason step MUST brief Andrew in conversational prose: which campaign was claimed, the amount + token, and the tx hash verbatim from the tool result. NEVER claim a payout landed without a tx_hash in a wired tool result. The spend/state gates (PaxeerSpendPolicy + cortex Constraint + network custody policy) are enforced below your plan; do not route around them, and report any policy denial honestly."
+    user="Claim request: {slot.target.prose}\n\nVerb: {verb}\n\nResolved scope:\n{slots}\n\nIdentity, constraints, and prior claim events from cortex:\n{cortex.bundle}\n\nProduce the plan_tree@1 now."
+  end
+  resolve slot.target <- cortex.find(type=Constraint, near=slot.target.prose, limit=8)
+end
+
+§OUTPUTS
+slot report: Event
+  required
+  hint="The eligibility report or the claim report (campaign, amount, token, tx hash)."
+
+slot claims: Event[]
+  optional
+  hint="Each claim persisted as an Event with its tx hash for the chronology."
+
+§FAILURE_MODES
+wallet_unconfigured
+  action=fail
+  reason=external_failure
+
+contract_unresolved
+  action=fail
+  reason=unknown_information
+
+not_eligible
+  action=succeed
+  reason=unknown_information
+
+spend_limit_exceeded
+  action=fail
+  reason=policy_violation
+
+§HASH
+v=1
+algo=sha256_ast
+digest=
+
+# Copyright © 2026 Paxlabs Inc. All rights reserved.

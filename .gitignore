@@ -1,0 +1,167 @@
+# =============================================================================
+# Matrix monorepo .gitignore
+# =============================================================================
+
+# --- Secrets ---------------------------------------------------------------
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+!**/testdata/**/*.key
+*.crt
+deploy/**/secrets/
+
+# --- Built binaries (one entry per top-level CLI in the 4 modules) --------
+bin/
+cortex/cortex-shell
+cortex/two-model-smoke
+cortex/embed-smoke
+MCL/mclc
+MCL/mcl-fmt
+MCL/mcl-validate
+bridge/mclc-cortex
+executor/mcl-execute
+executor/mcl-e2e
+executor/mcl-tools
+
+# --- Go build / test / coverage -------------------------------------------
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+*.prof
+*.cover
+coverage/
+profile.cov
+
+# Go workspace files (we use replace directives in each module's go.mod).
+go.work
+go.work.sum
+
+# --- Runtime data ---------------------------------------------------------
+data/
+tmp/
+temp/
+*.log
+*.pid
+
+# Cortex Pebble stores (per-actor DBs land under runs/ or user-specified roots).
+**/cortex-data/
+**/MANIFEST-*
+**/CURRENT
+**/OPTIONS-*
+**/*.sst
+**/*.log.zst
+
+# Vector index files written by cortex/embedder.go.
+**/vec/
+
+# Journal mirrors written by mcl-execute / mcl-e2e harness.
+journal/logs/*/
+!journal/logs/.gitkeep
+
+# Sweep harness outputs.
+tools/e2e/sweeps/
+sweeps/
+
+# --- Editors / IDEs -------------------------------------------------------
+.idea/
+*.swp
+*.swo
+*.swn
+*~
+.\#*
+\#*\#
+
+# VSCode: keep .vscode/ tracked because it ships the matrix-kvx language
+# extension VSIX, but ignore user-only state.
+.vscode/.history/
+.vscode/launch.json
+.vscode/settings.json
+
+# JetBrains GoLand.
+**/.idea/workspace.xml
+**/.idea/tasks.xml
+**/.idea/shelf/
+
+# --- OS noise -------------------------------------------------------------
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+
+# --- Python tooling (tools/skills/, tools/e2e/aggregate_sweep.py) ---------
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+
+# --- Node / npm scratch (used only by MCP server install caches) ---------
+node_modules/
+npm-debug.log*
+
+# --- Docker / deploy artefacts -------------------------------------------
+deploy/daemon/.build/
+fly.toml
+!deploy/daemon/fly.toml.tmpl
+
+# --- Generated docs / static analysis ------------------------------------
+docs/_build/
+site/
+*.bak
+*.orig
+temp/*
+
+# --- Gideon runtime (secrets + local cortex + logs/pids) -----------------
+# gideon.env holds OPENCODE_API_KEY and local config — NEVER commit.
+.matrix/gideon.env
+# Local single-writer Pebble cortex store for the gideon actor.
+.matrix/gideon-cortex/
+# Detached process logs + recorded PIDs for the launch/stop scripts.
+.matrix/logs/
+.matrix/run/
+.matrix/
+deploy/box
+executor/gideon-ingest
+executor/${n02.target_path}
+executor/mcl-e2e
+executor/mcl-execute
+executor/bin/
+executor/cmd/**/mcl-execute
+executor/cmd/**/mcl-e2e
+gideon/
+journal/**
+!journal/.gitkeep
+knowledge/HyperPax-OS
+knowledge/core_chats
+knowledge/**
+!knowledge/.gitkeep
+protocol/**
+!protocol/.gitkeep
+runs/**
+!runs/.gitkeep
+website/
+nohup.out
+client/
+deploy/gideon
+deploy/deploy.sh
+.archive/
+.logs/
+research/**
+!research/.gitkeep
+tools/forge/
+skills/gideon-ops
+agents/gideon.json

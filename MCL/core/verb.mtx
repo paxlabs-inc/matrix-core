@@ -1,0 +1,47 @@
+# Copyright © 2026 Paxlabs Inc. All rights reserved. SPDX-License-Identifier: LicenseRef-Paxlabs-Matrix-Protocol
+# Contact · license@Paxeer.app · legal@Paxeer.app
+
+# MCL core module: verb classifier
+# Defines the closed D7 verb vocabulary and classification routing.
+# Loaded by mclc at startup. Contributes to mtx_digest (D11).
+
+§VERB
+
+# Closed vocabulary — exactly 10 core verbs (D7).
+# Any intent.draft must resolve to one of these (or an x: extension).
+vocab=find acquire build modify deliver analyze negotiate schedule monitor delegate
+
+# Extension namespace.
+# x: verbs are not first-class for routing or registry purposes.
+# Adding a core verb requires an MCL minor-version bump.
+extension_prefix=x:
+
+# Verb routing — maps each verb to the cortex memory types most relevant
+# for cold-start context retrieval (used by stage3_prefetch).
+route.find=Fact Knowledge Preference Event
+route.acquire=Preference Constraint Goal Event Capability
+route.build=Goal Preference Constraint Fact Pattern
+route.modify=Fact Constraint Preference Event
+route.deliver=Goal Constraint Capability Fact
+route.analyze=Fact Belief Event Pattern Knowledge
+route.negotiate=Preference Constraint Goal Event
+route.schedule=Goal Constraint Preference Event
+route.monitor=Goal Constraint Event Fact
+route.delegate=Goal Capability Constraint AgentRef
+
+# Classifier prompt — used in compiler pipeline stage2_classify.
+# Grammar-constrained to the closed vocab above (one token output).
+classifier.prompt
+  system="You are a verb classifier for the Matrix Communication Layer. Given a user's natural language goal, output exactly one verb from the closed vocabulary: find, acquire, build, modify, deliver, analyze, negotiate, schedule, monitor, delegate. Output the single word only."
+  user="User goal: {prose}\n\nVerb:"
+end
+
+# Confidence threshold for verb classification.
+# Below this, the runtime marks the verb as Unknown severity=preferred.
+classifier.threshold=0.80
+
+# How many top-K verb candidates the classifier can return before picking.
+# The runtime picks the highest-confidence one above threshold.
+classifier.top_k=3
+
+# Copyright © 2026 Paxlabs Inc. All rights reserved.

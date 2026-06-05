@@ -1,0 +1,100 @@
+# Copyright © 2026 Paxlabs Inc. All rights reserved. SPDX-License-Identifier: LicenseRef-Paxlabs-Matrix-Protocol
+# Contact · license@Paxeer.app · legal@Paxeer.app
+
+# paxeer-forensics — trace funds + scam/incident investigation (MatrixScript manifest)
+# Companion prose body lives in SKILL.md and carries the same anti-fake mandate.
+# STRICTLY READ-ONLY: this skill has no write tools — no transaction is ever
+# signed. Follows value across addresses on Paxeer (PaxScan + node RPC) and
+# produces a readable incident report. Every address/amount/hash MUST come
+# verbatim from a tool result — never fabricated.
+
+§SKILL
+id=paxeer-forensics
+version=0.1.0
+display="Paxeer Forensics"
+author=did:pax:0xMATRIX
+description="'Where did my money go?' Trace value across Paxeer addresses for a hack, scam, or any transaction of interest. Given a tx hash, address, or victim wallet, follow the flow hop by hop, label each address (EOA vs contract, known DEX/bridge), surface the sink(s) and amounts, and produce a readable incident report. Strictly read-only — no transaction is ever signed. Every address, amount, and tx hash is quoted verbatim from a PaxScan/RPC tool result; gaps are reported as unknown, never fabricated."
+mcl.verbs=analyze find
+determinism=seedable
+seed_policy=per_intent
+
+§INPUTS
+slot target: ArtifactRef
+  required
+  hint="The thing to investigate: a tx hash, an address, or a victim wallet (e.g. 'trace where the funds from 0xhash went', 'who drained 0xwallet')."
+
+slot constraints: Constraint[]
+  optional
+  hint="Investigation constraints (max hops to follow, time window, which token to trace)."
+
+§CORTEX
+reads=Identity Fact Capability Constraint Goal Event Pattern
+tags=paxeer forensics trace scam incident funds investigation
+
+§TOOLS
+matrix://tool/mcp/paxeer-net/search@0.1.0
+matrix://tool/mcp/paxeer-net/tx@0.1.0
+matrix://tool/mcp/paxeer-net/address_overview@0.1.0
+matrix://tool/mcp/paxeer-net/address_transactions@0.1.0
+matrix://tool/mcp/paxeer-net/token_info@0.1.0
+matrix://tool/mcp/paxeer-net/contract_read@0.1.0
+matrix://tool/mcp/paxeer-net/eth_call@0.1.0
+matrix://tool/mcp/paxeer-net/paxscan_get@0.1.0
+matrix://tool/mcp/paxeer-net/portfolio@0.1.0
+
+§SUB_SKILLS
+none
+
+§PROCEDURE
+on verb=analyze
+  kind="reason"
+  output_cardinality=1
+  prompt
+    system="You are the Matrix planner running paxeer-forensics — a READ-ONLY on-chain investigator for Paxeer. Output a PlanTree, not prose. This skill has NO write tools; no value is ever signed. A trace REQUIRES real read tool_calls followed by exactly one report step; NEVER reconstruct a money trail from reasoning or memory alone. Steps: (1) resolve the starting point — a tx hash -> tx for full detail (from, to, value, token transfers, logs); an address or symbol -> search then address_overview; (2) follow the value hop by hop with address_transactions on each receiving address, prioritising the largest token/native outflows that match the incident; for each address visited, call address_overview to label it (EOA vs contract, verified name, token holdings) and token_info when a specific token is being traced; (3) stop at a sink (exchange/bridge deposit or a dormant holding address) or when the hop budget in constraints is reached. You MAY fan out reads in parallel across sibling hops. Then produce exactly ONE report step laying out the trail to Andrew in plain prose: an ordered hop list (from -> to, amount, token, tx hash verbatim), each address labelled, the identified sink(s), and the total traced versus unaccounted. Quote every address, amount, and hash verbatim from a tool result. Where a hop could not be resolved, mark it unknown — never invent an address or amount. Close with a plain bottom line (recoverable, reported to which sink) and note this is investigative, not legal advice."
+    user="Investigation request: {slot.target.prose}\n\nVerb: {verb}\n\nResolved scope:\n{slots}\n\nRelevant cortex context (identity, prior incidents, watched addresses):\n{cortex.bundle}\n\nProduce the plan_tree@1 now."
+  end
+  resolve slot.target <- cortex.find(type=Fact, near=slot.target.prose, limit=8)
+end
+
+on verb=find
+  kind="reason"
+  output_cardinality=1
+  prompt
+    system="You are the Matrix planner running paxeer-forensics in discovery mode — locating the on-chain entities involved in an incident. Output a PlanTree, not prose. Read-only: no write tool exists here. Use search to resolve names/symbols to addresses, address_overview + address_transactions to enumerate counterparties, and token_info for token context. Finish with exactly ONE report step naming each discovered entity (address/hash verbatim) and its role, grounded entirely in the tool results — never fabricate an identifier."
+    user="Discovery request: {slot.target.prose}\n\nVerb: {verb}\n\nResolved scope:\n{slots}\n\nCortex context:\n{cortex.bundle}\n\nProduce the plan_tree@1 now."
+  end
+  resolve slot.target <- cortex.find(type=Fact, near=slot.target.prose, limit=8)
+end
+
+§OUTPUTS
+slot report: Event
+  required
+  hint="The incident report: ordered hop trail, labelled addresses, sinks, totals traced."
+
+slot findings: Fact[]
+  optional
+  hint="Each labelled address / sink persisted as a Fact (with evidence) for follow-up."
+
+§FAILURE_MODES
+target_unresolved
+  action=fail
+  reason=unknown_information
+
+explorer_unreachable
+  action=fail
+  reason=external_failure
+
+rpc_unreachable
+  action=fail
+  reason=external_failure
+
+partial_trace
+  action=succeed
+  reason=unknown_information
+
+§HASH
+v=1
+algo=sha256_ast
+digest=
+
+# Copyright © 2026 Paxlabs Inc. All rights reserved.

@@ -1,0 +1,105 @@
+# Copyright © 2026 Paxlabs Inc. All rights reserved. SPDX-License-Identifier: LicenseRef-Paxlabs-Matrix-Protocol
+# Contact · license@Paxeer.app · legal@Paxeer.app
+
+# self-diagnose — Matrix recursive self-optimization suite (2/5: ORIENT)
+# Reads the persisted topology map + the live code, ranks optimization surfaces by leverage,
+# and persists a ranked Pattern memory so the architect gate and self-optimize have a target list.
+# Companion prose body lives in SKILL.md and MUST carry the same tool-call mandate.
+
+§SKILL
+id=self-diagnose
+version=0.1.0
+display="Self Diagnose"
+author=did:pax:0xMATRIX
+description="Read the topology map and the code it points at, rank the highest-leverage optimization surfaces of the Matrix system, and persist a ranked Pattern memory the next loop pass can act on."
+mcl.verbs=analyze
+determinism=seedable
+seed_policy=per_intent
+
+§INPUTS
+slot target: ArtifactRef
+  required
+  hint="The subsystem or whole-system scope to diagnose (path under /root/matrix, or matrix://cortex map ref)"
+
+slot constraints: Constraint[]
+  optional
+  hint="Ranking constraints (max surfaces, exclude subsystems, leverage threshold)"
+
+§CORTEX
+reads=Fact Pattern Goal Event Constraint
+tags=matrix self diagnose surfaces leverage
+
+§TOOLS
+matrix://tool/mcp/fs/read_text_file@2024.11.1
+matrix://tool/mcp/fs/list_directory@2024.11.1
+matrix://tool/mcp/git/git_diff@2026.1.14
+matrix://tool/mcp/forge-bridge/shell_exec@0.1.0
+
+§SUB_SKILLS
+none
+
+§PROCEDURE
+on verb=analyze
+  kind="hard_reason"
+  output_cardinality=1
+  prompt
+    system="You are the Matrix planner running self-diagnose. Output a PlanTree, not prose. You MUST emit tool_call nodes: (1) tool_call fs.read_text_file on the files the cortex map cites for slot.target so the ranking is grounded in real code, not narrative; (2) an optional tool_call git.git_diff to see what changed since the last pass; (3) a single reason step that ranks optimization surfaces by leverage with a concrete file path and a falsifiable success criterion for each; (4) a tool_call forge-bridge.shell_exec that POSTs ONE ranked Pattern memory to the MATRIX_DAEMON /memory route, statement = the ordered surface list with paths and criteria, tagged matrix:self,diagnose,surfaces. Findings with no file path and no measurable criterion are FORBIDDEN."
+    user="Diagnose scope: {slot.target.prose}\n\nVerb: {verb}\nTopology map and prior findings in cortex:\n{cortex.bundle}\n\nResolved slots:\n{slots}\nPending unknowns:\n{unknowns}\n\nRead the cited files, then emit the ranked Pattern. Rank by (impact on the self-improvement loop) divided by (edit size)."
+  end
+  resolve slot.target <- cortex.find(type=Fact, near=slot.target.prose, limit=12)
+  unknown slot.target
+    severity=blocking
+    reason="No diagnose scope supplied; self-diagnose needs a mapped subsystem to rank surfaces against"
+  end
+end
+
+on confidence<0.75
+  clarify slot.target
+    prompt="What scope should I diagnose? A mapped subsystem path, or 'whole system' to rank across everything self-map has covered."
+    type=ArtifactRef
+    required=true
+  end
+end
+
+on unknown
+  clarify slot.target
+    prompt="That scope has no topology map yet. Run self-map on it first, or confirm a different scope."
+    type=ArtifactRef
+    required=true
+  end
+end
+
+§OUTPUTS
+slot result: Pattern
+  required
+  hint="The ranked optimization-surface Pattern memory written to cortex"
+
+slot ranked_surfaces: Pattern[]
+  optional
+  hint="Ordered surfaces, each with file path, leverage rationale, and success criterion"
+
+slot unknowns: Unknown[]
+  optional
+
+§FAILURE_MODES
+target_not_found
+  action=fail
+  reason=unknown_information
+
+map_missing
+  action=fail
+  suggest=run_self_map_first
+
+unranked_findings
+  action=fail
+  reason=policy_violation
+
+budget_exceeded
+  suggest=raise_budget
+
+§HASH
+v=1
+algo=sha256_ast
+digest=
+
+# Copyright © 2026 Paxlabs Inc. All rights reserved.

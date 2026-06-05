@@ -1,0 +1,109 @@
+name: Bug report
+description: Something is wrong with cortex, MCL, bridge, executor, or deploy.
+title: "bug: "
+labels: [bug, triage]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for filing. Bugs that include a minimal reproduction land fastest.
+        For security issues, **do not file here** — see [SECURITY.md](https://github.com/paxlabs-inc/matrix/blob/main/SECURITY.md).
+
+  - type: dropdown
+    id: module
+    attributes:
+      label: Module
+      description: Which Go module is affected? Pick the closest match.
+      options:
+        - cortex
+        - MCL
+        - bridge
+        - executor
+        - deploy
+        - skills / agents
+        - research / knowledge
+        - meta (.github / Makefile / root docs)
+        - unsure
+    validations:
+      required: true
+
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: One paragraph. What is broken?
+    validations:
+      required: true
+
+  - type: textarea
+    id: repro
+    attributes:
+      label: Reproduction
+      description: |
+        Minimal steps or a snippet someone can paste into a fresh checkout.
+        If the bug shows up via a CLI binary, include the exact invocation.
+      placeholder: |
+        $ git clone https://github.com/paxlabs-inc/matrix
+        $ cd matrix
+        $ make build/cortex
+        $ ./cortex/cortex-shell ...
+      render: bash
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behaviour
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behaviour
+      description: Include stack traces, JSONL transcript snippets, OverallRoot mismatches, etc.
+    validations:
+      required: true
+
+  - type: input
+    id: commit
+    attributes:
+      label: Commit / version
+      placeholder: "git rev-parse HEAD (or release tag)"
+    validations:
+      required: true
+
+  - type: input
+    id: go-version
+    attributes:
+      label: Go version
+      placeholder: "go version (e.g. go1.21.6 linux/amd64)"
+    validations:
+      required: false
+
+  - type: input
+    id: os
+    attributes:
+      label: OS / arch
+      placeholder: "uname -a (e.g. Ubuntu 24.04 / x86_64)"
+    validations:
+      required: false
+
+  - type: dropdown
+    id: severity
+    attributes:
+      label: Severity
+      options:
+        - "1 — replay invariant violated (cortex OverallRoot drift, journal gap, etc.)"
+        - "2 — production blocker (daemon crash, deploy failure)"
+        - "3 — feature broken (wrong result but no data loss)"
+        - "4 — cosmetic / docs"
+    validations:
+      required: true
+
+  - type: textarea
+    id: notes
+    attributes:
+      label: Additional context
+      description: Logs, transcripts, links to related issues, anything else.

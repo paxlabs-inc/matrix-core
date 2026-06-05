@@ -1,0 +1,53 @@
+# https://editorconfig.org/
+# Matrix monorepo — consistent whitespace across 4 Go modules + skill corpus.
+
+root = true
+
+[*]
+charset                  = utf-8
+end_of_line              = lf
+insert_final_newline     = true
+trim_trailing_whitespace = true
+indent_style             = space
+indent_size              = 2
+
+# Go: tabs, never spaces. gofmt enforces this; this hint keeps editors aligned.
+[*.go]
+indent_style = tab
+indent_size  = 4
+
+# Makefiles: tabs are syntactic.
+[{Makefile,*.mk,GNUmakefile}]
+indent_style             = tab
+trim_trailing_whitespace = false
+
+# Shell scripts.
+[*.sh]
+indent_style = space
+indent_size  = 2
+
+# Python (tooling only — converters, sweep aggregator).
+[*.py]
+indent_style = space
+indent_size  = 4
+
+# MatrixScript and KVX use 2-space indent per MCL spec §2.
+[*.{mtx,kvx}]
+indent_style = space
+indent_size  = 2
+
+# Markdown — keep trailing whitespace so hard line breaks stay intact.
+[*.md]
+trim_trailing_whitespace = false
+
+# JSON / YAML / TOML.
+[*.{json,yaml,yml,toml}]
+indent_style = space
+indent_size  = 2
+
+# CBOR / Pebble / vector-index binaries — leave alone.
+[*.{cbor,bin,pebble,db,sst}]
+charset                  = unset
+end_of_line              = unset
+insert_final_newline     = unset
+trim_trailing_whitespace = unset

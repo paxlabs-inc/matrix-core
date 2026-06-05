@@ -1,0 +1,103 @@
+# Writing Plans — compile-time procedure
+# Produces a structured plan_draft from a build/modify/delegate intent
+
+§SKILL
+id=writing-plans
+version=1.0.0
+display=Writing Plans
+author=did:pax:0xPLACEHOLDER
+description=Converts a build, modify, or delegate intent into a structured executable plan
+mcl.verbs=build modify delegate
+determinism=seedable
+seed_policy=per_intent
+
+§INPUTS
+slot target: ArtifactRef
+  required
+  hint="The artifact the user wants to create or change"
+
+slot style: enum<formal|casual|technical>
+  optional
+  default=formal
+
+slot constraints: Constraint[]
+  optional
+
+§CORTEX
+reads=Preference Goal Constraint Event Fact Pattern
+tags=writing planning
+
+§TOOLS
+none
+
+§SUB_SKILLS
+matrix://skill/executing-plans@1.0.0
+
+§PROCEDURE
+on verb=build
+  prompt
+    system="You are the Matrix plan compiler. Extract the Frame for a 'build' intent as JSON matching the Intent IR schema. Output only valid JSON."
+    user="User goal: {prose}\n\nCortex context:\n{cortex.bundle}\n\nCurrently resolved slots:\n{slots}\n\nFill all Frame fields. Use matrix:// URIs for any resolved references."
+  end
+  resolve slot.target <- cortex.find(type=Fact, near=slot.target.prose, limit=5)
+  unknown slot.target
+    severity=blocking
+    reason="Cannot identify the target artifact — needs explicit reference or selection"
+  end
+end
+
+on verb=modify
+  prompt
+    system="You are the Matrix plan compiler. Extract the Frame for a 'modify' intent as JSON. Output only valid JSON."
+    user="User wants to modify: {prose}\n\nCortex context:\n{cortex.bundle}\n\nCurrently resolved slots:\n{slots}\n\nFill all Frame fields."
+  end
+  resolve slot.target <- cortex.resolve(slot.target.prose)
+  unknown slot.target
+    severity=blocking
+    reason="Need to identify exactly what is being modified"
+  end
+end
+
+on verb=delegate
+  prompt
+    system="You are the Matrix plan compiler. Identify the agent to delegate to and the sub-goal."
+    user="User wants to delegate: {prose}\n\nCortex context:\n{cortex.bundle}\n\nFill all Frame fields including the target agent reference."
+  end
+end
+
+on confidence<0.75
+  clarify slot.target
+    prompt="Which artifact are you referring to?"
+    type=ArtifactRef
+    required=true
+  end
+end
+
+§OUTPUTS
+slot plan_draft: PlanDraft
+  required
+
+slot alternatives: SkillRef[]
+  optional
+  max=3
+  hint="Alternative skills the user could choose instead"
+
+slot unknowns: Unknown[]
+  optional
+
+§FAILURE_MODES
+budget_exceeded
+  suggest=raise_budget
+
+policy_violation
+  action=fail
+  reason=policy_violation
+
+tool_missing
+  action=fail
+  reason=tool_failure
+
+§HASH
+v=1
+algo=sha256_ast
+digest=

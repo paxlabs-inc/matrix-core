@@ -1,0 +1,39 @@
+# Matrix daemon image — keep the build context tight.
+#
+# We INCLUDE: the four Go modules + skills/ + agents/.
+# We EXCLUDE: everything else.
+
+# Default-deny patterns first.
+**/*
+
+# Then allowlist what the Dockerfile actually copies.
+!cortex/**
+!MCL/**
+!bridge/**
+!executor/**
+!skills/**
+!agents/**
+!deploy/daemon/entrypoint.sh
+
+# Re-exclude noise inside the allowed trees.
+**/.git
+**/.gitignore
+**/node_modules
+**/__pycache__
+**/*.test
+**/testdata/large
+**/runs
+**/journal/logs/**
+**/journal/logs
+**/.matrix
+**/coverage*
+**/dist
+**/build
+**/tmp
+**/.cache
+**/.venv
+**/venv
+**/*.log
+**/*.pyc
+*.tar
+*.tar.zst

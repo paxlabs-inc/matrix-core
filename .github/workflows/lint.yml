@@ -1,0 +1,98 @@
+name: lint
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch: {}
+
+concurrency:
+  group: lint-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  GO_VERSION: "1.21.x"
+  GOLANGCI_VERSION: "v1.61.0"
+
+jobs:
+  golangci:
+    name: golangci-lint / ${{ matrix.module }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        module: [cortex, MCL, bridge, executor, gateway, router]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache: true
+          cache-dependency-path: ${{ matrix.module }}/go.sum
+
+      - uses: golangci/golangci-lint-action@v6
+        with:
+          version: ${{ env.GOLANGCI_VERSION }}
+          working-directory: ${{ matrix.module }}
+          args: --config=${{ github.workspace }}/.golangci.yml --timeout=5m
+
+  shellcheck:
+    name: shellcheck
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: install shellcheck
+        run: sudo apt-get update && sudo apt-get install -y shellcheck
+      - name: run shellcheck
+        run: |
+          set -euo pipefail
+          found=0
+          while IFS= read -r -d '' f; do
+            found=1
+            shellcheck -x "$f"
+          done < <(find deploy tools -type f -name "*.sh" -print0 2>/dev/null || true)
+          if [ "$found" = "0" ]; then
+            echo "no shell scripts found — skipping"
+          fi
+
+  yaml:
+    name: yamllint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: install yamllint
+        run: pip install --quiet yamllint==1.35.1
+      - name: yamllint
+        run: |
+          yamllint -d "{extends: relaxed, rules: {line-length: {max: 200}, truthy: disable, document-start: disable}}" \
+            .github/ deploy/ agents/ 2>&1 | tee /tmp/yamllint.log
+          # yamllint exits 0 on warnings; only fail on errors.
+          grep -E "error" /tmp/yamllint.log && exit 1 || exit 0
+
+  actionlint:
+    name: actionlint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: actionlint
+        uses: raven-actions/actionlint@v2
+        with:
+          fail-on-error: true
+
+  markdown-links:
+    name: markdown link check
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: gaurav-nelson/github-action-markdown-link-check@v1
+        with:
+          config-file: .github/markdown-link-check.json
+          use-quiet-mode: yes
+          use-verbose-mode: yes
+          check-modified-files-only: yes
+          base-branch: main

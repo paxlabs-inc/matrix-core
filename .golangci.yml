@@ -1,0 +1,128 @@
+# golangci-lint config — Matrix monorepo.
+# Targets golangci-lint v1.61.x (last stable on Go 1.21 toolchain).
+#
+# Philosophy: surface real bugs, do not pile on style noise. The codebase
+# already runs `go vet` clean in CI and has ~33k LOC; adding rigid stylistic
+# linters retroactively produces churn without value. Add new linters one
+# at a time after a clean baseline.
+
+run:
+  timeout: 5m
+  go: "1.21"
+  tests: true
+  modules-download-mode: readonly
+  allow-parallel-runners: true
+
+issues:
+  max-issues-per-linter: 0
+  max-same-issues: 0
+  exclude-dirs:
+    - runs
+    - deploy
+    - skills
+    - knowledge
+    - research
+  exclude-rules:
+    # Test files: be lenient about unchecked errors and magic numbers.
+    - path: _test\.go
+      linters:
+        - errcheck
+        - gosec
+        - gocyclo
+        - dupl
+    # Generated CLI mains often have repeated flag-parse boilerplate.
+    - path: cmd/.*main\.go
+      linters:
+        - gocyclo
+        - dupl
+    # cortex/cmd/two-model-smoke is a harness, not production.
+    - path: cortex/cmd/two-model-smoke/.*\.go
+      linters:
+        - errcheck
+        - gosec
+        - gocyclo
+    # executor/cmd/mcl-e2e is the live harness — same posture.
+    - path: executor/cmd/mcl-e2e/.*\.go
+      linters:
+        - errcheck
+        - gosec
+        - gocyclo
+
+linters:
+  disable-all: true
+  enable:
+    - errcheck       # ignored errors
+    - gosimple       # obvious simplifications
+    - govet          # superset of `go vet`
+    - ineffassign    # dead assignments
+    - staticcheck    # bug detection
+    - typecheck      # always on
+    - unused         # dead code
+    - misspell       # docstring/comment typos
+    - bodyclose      # http.Response.Body unclosed
+    - rowserrcheck   # sql rows.Err()
+    - gocritic       # extra correctness rules
+    - revive         # lightweight style (replaces golint)
+    - unconvert      # redundant type conversions
+    - prealloc       # slice prealloc hints
+    - exportloopref  # loop var capture (pre-Go-1.22 idiom)
+
+linters-settings:
+  govet:
+    enable-all: true
+    disable:
+      - fieldalignment   # cosmetic; cortex/memory CBOR layout is deliberate
+      - shadow           # too noisy for `err :=` idiom
+  revive:
+    rules:
+      - name: blank-imports
+      - name: context-as-argument
+      - name: context-keys-type
+      - name: dot-imports
+      - name: error-return
+      - name: error-strings
+      - name: errorf
+      - name: exported
+        arguments:
+          - "checkPrivateReceivers"
+          - "disableStutteringCheck"
+      - name: indent-error-flow
+      - name: range
+      - name: receiver-naming
+      - name: redefines-builtin-id
+      - name: superfluous-else
+      - name: unused-parameter
+        disabled: true
+      - name: unreachable-code
+      - name: var-declaration
+      - name: var-naming
+  gocritic:
+    disabled-checks:
+      - ifElseChain
+      - singleCaseSwitch
+      - paramTypeCombine
+      # Options-pattern APIs (cortex.Attest(AttestOpts), cortex.Compact(CompactOpts),
+      # bridge.New(...), etc.) deliberately pass structs by value. The 80-150 byte
+      # copy is dwarfed by the Pebble I/O and HTTP calls those APIs perform.
+      - hugeParam
+    enabled-tags:
+      - diagnostic
+      - performance
+      - style
+  misspell:
+    locale: US
+    # cancelled / cancellation are wire-format strings in the MCL lifecycle
+    # protocol (research/02 §7) and lifecycle state values across MCL +
+    # executor. Keep British spelling there until a v2 schema migration.
+    ignore-words:
+      - cancelled
+      - cancellation
+  unused:
+    field-writes-are-uses: true
+    exported-fields-are-used: true
+    local-variables-are-used: true
+
+output:
+  sort-results: true
+  print-issued-lines: true
+  print-linter-name: true

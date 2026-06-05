@@ -1,0 +1,74 @@
+name: Feature request
+description: Propose new functionality. Read the relevant research/ doc first.
+title: "feat: "
+labels: [enhancement, triage]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Matrix is design-doc-driven: every locked decision lives in `research/`
+        and the canonical state lives in `knowledge/matrix.kvx`.
+        Before filing, check whether a deferral or open Q-lock already covers
+        this — see `matrix.kvx` deferrals tables.
+
+  - type: dropdown
+    id: module
+    attributes:
+      label: Module
+      options:
+        - cortex
+        - MCL
+        - bridge
+        - executor
+        - deploy
+        - skills / agents
+        - research / knowledge
+        - meta (.github / Makefile / root docs)
+        - unsure / cross-cutting
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem statement
+      description: What can you not do today? Cite a concrete workflow.
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed change
+      description: One paragraph. Concrete behaviour, not abstract goals.
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: What did you reject, and why?
+    validations:
+      required: false
+
+  - type: dropdown
+    id: invariant-impact
+    attributes:
+      label: Touches a load-bearing invariant?
+      description: |
+        e.g. cortex replay determinism (§13.4), URI version pinning (D13),
+        closed verb vocab (D7), closed obj_kind v1, MCL atomic-batch semantics.
+      options:
+        - "No — additive surface only"
+        - "Yes — and the proposal preserves it"
+        - "Yes — and the proposal requires extending it (schema bump, etc.)"
+        - "Unsure"
+    validations:
+      required: true
+
+  - type: textarea
+    id: notes
+    attributes:
+      label: Additional context
+      description: Links to research/ chapters, prior art, related issues.

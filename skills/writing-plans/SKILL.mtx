@@ -1,0 +1,137 @@
+# Copyright © 2026 Paxlabs Inc. All rights reserved. SPDX-License-Identifier: LicenseRef-Paxlabs-Matrix-Protocol
+# Contact · license@Paxeer.app · legal@Paxeer.app
+
+# Writing Plans — MatrixScript skill definition
+# Replaces SKILL.md for the MCL compiler.
+# The compiler-LLM follows §PROCEDURE when the user's intent matches mcl.verbs.
+
+§SKILL
+id=writing-plans
+version=1.0.0
+display=Writing Plans
+author=did:pax:0xPLACEHOLDER...
+description=Converts a build, modify, or delegate intent into a structured, bite-sized, executable implementation plan with zero-ambiguity task steps
+mcl.verbs=build modify delegate
+determinism=seedable
+seed_policy=per_intent
+
+§INPUTS
+slot target: ArtifactRef
+  required
+  hint="The feature, system, or component the user wants to create or change"
+
+slot style: enum<formal|casual|technical>
+  optional
+  default=technical
+  hint="Tone of the generated plan document"
+
+slot granularity: enum<fine|medium|coarse>
+  optional
+  default=fine
+  hint="Step granularity — fine = 2-5 min tasks, medium = 30 min tasks, coarse = half-day tasks"
+
+slot constraints: Constraint[]
+  optional
+  hint="Hard constraints the plan must satisfy (budget, deadline, policy)"
+
+slot architecture_ref: CortexRef
+  optional
+  hint="Reference to a prior architecture or spec memory to ground the plan in"
+
+§CORTEX
+reads=Goal Preference Constraint Fact Pattern Event
+tags=writing planning implementation
+
+§TOOLS
+none
+
+§SUB_SKILLS
+matrix://skill/executing-plans@1.0.0
+
+§PROCEDURE
+on verb=build
+  prompt
+    system="You are the Matrix plan compiler. Your task is to extract a fully-typed Frame for a 'build' intent. The user wants to CREATE something new. Output valid JSON matching the intent_frame@1 schema. No prose. No explanation. Only the JSON Frame object."
+    user="User goal: {prose}\n\nCortex context (resolved memories):\n{cortex.bundle}\n\nCurrently resolved slots:\n{slots}\n\nPending unknowns:\n{unknowns}\n\nExtract the Frame. Resolve all object references to matrix:// URIs where possible. Flag any that cannot be resolved as unknowns."
+  end
+  resolve slot.target <- cortex.find(type=Fact, near=slot.target.prose, limit=5)
+  resolve slot.architecture_ref <- cortex.find(type=Fact, near="architecture spec design", limit=3)
+  unknown slot.target
+    severity=blocking
+    reason="Cannot identify what to build — the target artifact is ambiguous or not in cortex"
+  end
+end
+
+on verb=modify
+  prompt
+    system="You are the Matrix plan compiler. Your task is to extract a fully-typed Frame for a 'modify' intent. The user wants to CHANGE something that already exists. Output valid JSON matching the intent_frame@1 schema. No prose. Only the JSON Frame object."
+    user="User wants to modify: {prose}\n\nCortex context:\n{cortex.bundle}\n\nCurrently resolved slots:\n{slots}\n\nExtract the Frame. Resolve slot.target to its current versioned cortex URI."
+  end
+  resolve slot.target <- cortex.resolve(slot.target.prose)
+  unknown slot.target
+    severity=blocking
+    reason="Cannot identify what to modify — need a specific artifact reference"
+  end
+end
+
+on verb=delegate
+  prompt
+    system="You are the Matrix plan compiler. The user wants to DELEGATE a planning task to another agent. Extract the Frame identifying the sub-agent and the sub-goal. Output valid JSON matching intent_frame@1. No prose."
+    user="User wants to delegate: {prose}\n\nCortex context:\n{cortex.bundle}\n\nIdentify: (1) who to delegate to, (2) what the sub-goal is, (3) what budget/deadline constraints apply."
+  end
+  unknown slot.target
+    severity=preferred
+    reason="Delegation target agent is unspecified — will use default registry lookup"
+  end
+end
+
+on confidence<0.75
+  clarify slot.target
+    prompt="What specifically do you want to build or modify?"
+    type=ArtifactRef
+    required=true
+  end
+end
+
+on unknown
+  clarify slot.target
+    prompt="I couldn't find a reference for that in your memories. Can you describe it more specifically or select from your recent work?"
+    type=ArtifactRef
+    required=true
+  end
+end
+
+§OUTPUTS
+slot plan_draft: PlanDraft
+  required
+
+slot alternatives: SkillRef[]
+  optional
+  max=3
+  hint="Other skills that could handle this intent"
+
+slot unknowns: Unknown[]
+  optional
+
+§FAILURE_MODES
+target_not_found
+  action=fail
+  reason=unknown_information
+
+budget_exceeded
+  suggest=raise_budget
+
+policy_violation
+  action=fail
+  reason=policy_violation
+
+ambiguous_after_clarify
+  action=fail
+  reason=ambiguous_request
+
+§HASH
+v=1
+algo=sha256_ast
+digest=
+
+# Copyright © 2026 Paxlabs Inc. All rights reserved.

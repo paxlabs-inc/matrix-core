@@ -1,0 +1,48 @@
+[Unit]
+Description=Matrix LLM Gateway (sess#32 ambient-architect)
+Documentation=https://github.com/paxeer/matrix/tree/main/gateway
+After=network-online.target postgresql.service
+Wants=network-online.target postgresql.service
+
+[Service]
+Type=simple
+User=matrix
+Group=matrix
+WorkingDirectory=/opt/matrix-gateway
+EnvironmentFile=/etc/matrix/gateway.env
+ExecStart=/opt/matrix-gateway/matrix-gateway \
+    -addr 127.0.0.1:9090 \
+    -postgres-uri ${MATRIX_GATEWAY_POSTGRES_URI} \
+    -free-tier-only=true \
+    -log-format=json \
+    -default-cap-pax=10 \
+    -rate-per-sec=5 \
+    -rate-burst=25
+Restart=always
+RestartSec=5
+# Streaming SSE responses can be long-lived; do NOT lower this without
+# coordinating with the daemon-side step.text.delta path.
+TimeoutStopSec=30
+
+# Hardening
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectHostname=true
+ProtectClock=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectKernelLogs=true
+ProtectControlGroups=true
+RestrictAddressFamilies=AF_INET AF_INET6
+RestrictNamespaces=true
+LockPersonality=true
+RestrictRealtime=true
+RestrictSUIDSGID=true
+SystemCallArchitectures=native
+ReadWritePaths=/opt/matrix-gateway
+
+[Install]
+WantedBy=multi-user.target

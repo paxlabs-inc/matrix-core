@@ -1,0 +1,107 @@
+# Copyright © 2026 Paxlabs Inc. All rights reserved. SPDX-License-Identifier: LicenseRef-Paxlabs-Matrix-Protocol
+# Contact · license@Paxeer.app · legal@Paxeer.app
+
+# self-map — Matrix recursive self-optimization suite (1/5: OBSERVE)
+# Reads a subsystem of /root/matrix off disk and persists one Fact memory per file/package.
+# FIX FOR sess#37 BUG: declares REAL tools + a tool-call mandate so the planner emits
+# fs.list_directory + fs.read_text_file fan-out + a persistence step, NOT a reason-only plan.
+# Companion prose body lives in SKILL.md and MUST carry the same tool-call mandate (planner reads it).
+
+§SKILL
+id=self-map
+version=0.1.0
+display="Self Map"
+author=did:pax:0xMATRIX
+description="Read a named subsystem of the Matrix codebase off disk and persist a typed Fact memory for every file and package so later passes have a durable topology map in cortex."
+mcl.verbs=analyze
+determinism=seedable
+seed_policy=per_intent
+
+§INPUTS
+slot target: ArtifactRef
+  required
+  hint="The subsystem path under /root/matrix to map (e.g. MCL/llm, executor/runtime, cortex/query)"
+
+slot constraints: Constraint[]
+  optional
+  hint="Hard constraints on the mapping (depth caps, file globs, exclusions)"
+
+§CORTEX
+reads=Fact Pattern Constraint
+tags=matrix self map topology
+
+§TOOLS
+matrix://tool/mcp/fs/directory_tree@2024.11.1
+matrix://tool/mcp/fs/list_directory@2024.11.1
+matrix://tool/mcp/fs/read_text_file@2024.11.1
+matrix://tool/mcp/git/git_status@2026.1.14
+matrix://tool/mcp/forge-bridge/shell_exec@0.1.0
+
+§SUB_SKILLS
+none
+
+§PROCEDURE
+on verb=analyze
+  kind="code"
+  output_cardinality=16
+  prompt
+    system="You are the Matrix planner running self-map. Your output is a PlanTree, not prose. The target is a real filesystem path; reason-only plans are FORBIDDEN. You MUST emit tool_call nodes. Produce this shape exactly: (1) one tool_call fs.directory_tree on slot.target with depth<=3 to enumerate files; (2) a PARALLEL fan-out of tool_call fs.read_text_file, ONE child per source file discovered; (3) for each file a tool_call forge-bridge.shell_exec that POSTs a Fact memory to the daemon via curl -s -X POST to the MATRIX_DAEMON /memory route, where the Fact subject is the matrix:// path of the file and the statement is the package, exported symbols, and one-line role, tagged matrix:self,map,topology. Never claim a file was read without a tool_call that actually read it."
+    user="Map this subsystem: {slot.target.prose}\n\nVerb: {verb}\nPrior topology already in cortex (do not re-map unchanged files):\n{cortex.bundle}\n\nResolved slots:\n{slots}\nPending unknowns:\n{unknowns}\n\nEmit the tool_call PlanTree. One read per file, one Fact write per file."
+  end
+  resolve slot.target <- cortex.find(type=Fact, near=slot.target.prose, limit=8)
+  unknown slot.target
+    severity=blocking
+    reason="No subsystem path supplied; self-map cannot read or persist without a concrete /root/matrix path"
+  end
+end
+
+on confidence<0.75
+  clarify slot.target
+    prompt="Which subsystem under /root/matrix should I map? Give a directory path (e.g. MCL/llm or executor/runtime)."
+    type=ArtifactRef
+    required=true
+  end
+end
+
+on unknown
+  clarify slot.target
+    prompt="I could not resolve that path against the existing map. Confirm the exact directory under /root/matrix to read."
+    type=ArtifactRef
+    required=true
+  end
+end
+
+§OUTPUTS
+slot result: ArtifactRef
+  required
+  hint="The set of Fact memories written, keyed by file path"
+
+slot files_mapped: Fact[]
+  optional
+  hint="One Fact per file actually read and persisted"
+
+slot unknowns: Unknown[]
+  optional
+
+§FAILURE_MODES
+target_not_found
+  action=fail
+  reason=unknown_information
+
+read_returned_empty
+  action=fail
+  reason=tool_failure
+
+no_tool_calls_emitted
+  action=fail
+  reason=policy_violation
+
+budget_exceeded
+  suggest=raise_budget
+
+§HASH
+v=1
+algo=sha256_ast
+digest=
+
+# Copyright © 2026 Paxlabs Inc. All rights reserved.

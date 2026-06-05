@@ -1,0 +1,50 @@
+# Copyright © 2026 Paxlabs Inc. All rights reserved. SPDX-License-Identifier: LicenseRef-Paxlabs-Matrix-Protocol
+# Contact · license@Paxeer.app · legal@Paxeer.app
+
+# MCL core module: Frame type schema
+# Defines the typed source-of-truth surface of every Intent.
+# The compiler-LLM fills these slots. The runtime validates the output against this schema.
+# Loaded by mclc at startup. Contributes to mtx_digest (D11).
+
+§FRAME
+
+# Frame is the typed source-of-truth surface of an Intent IR.
+# Every intent.compiled carries exactly one Frame.
+# Prose is display-only; Frame is what gets signed and executed.
+
+# The Frame has five named fields. Each is a typed slot.
+slot verb: enum<find|acquire|build|modify|deliver|analyze|negotiate|schedule|monitor|delegate>
+  required
+  hint="The action the user wants performed — one of the D7 closed verbs"
+
+slot objects: string[]
+  required
+  hint="Named referents the verb acts on — resolved to matrix:// URIs by pre-resolution (D13)"
+
+slot constraints: Constraint[]
+  optional
+  hint="Typed predicates that must hold throughout execution"
+
+slot success_criteria: Predicate[]
+  optional
+  hint="Checkable predicates that determine completion — must all be true to emit intent.attest"
+
+slot preferences: string[]
+  optional
+  hint="Soft tie-breakers that do not fail the intent if violated"
+
+# Output validation — the compiler-LLM's JSON output is checked against these rules.
+# The runtime rejects any Frame that fails validation before emitting intent.compiled.
+validate.verb_in_vocab=true
+validate.objects_nonempty=true
+validate.uri_resolved=true                  # all matrix:// URIs must be pinned versions
+validate.constraints_typed=true             # every constraint must match a known type
+validate.success_criteria_typed=true        # every predicate must match a known type
+
+# Grammar constraint schema name.
+# This is the identifier used in agent manifests:
+#   decoding: { grammar: intent_frame@1, temperature: 0 }
+# The runtime looks this up to load the corresponding JSON Schema / GBNF.
+grammar_id=intent_frame@1
+
+# Copyright © 2026 Paxlabs Inc. All rights reserved.

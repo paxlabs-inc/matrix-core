@@ -1,0 +1,107 @@
+# Copyright © 2026 Paxlabs Inc. All rights reserved. SPDX-License-Identifier: LicenseRef-Paxlabs-Matrix-Protocol
+# Contact · license@Paxeer.app · legal@Paxeer.app
+
+# Finishing A Development Branch — MatrixScript skill manifest (generated from SKILL.md)
+# Source: skills/finishing-a-development-branch/SKILL.md (frontmatter)
+# Prose body remains in SKILL.md; this manifest is the compiler-participating surface.
+
+§SKILL
+id=finishing-a-development-branch
+version=0.1.0
+display="Finishing A Development Branch"
+author=did:pax:0xPLACEHOLDER
+description="implementation is complete, all tests pass, and you need to decide how to integrate the work - guides completion of development work by presenting structured options for merge, PR, or cleanup"
+mcl.verbs=analyze build
+determinism=seedable
+seed_policy=per_intent
+
+§INPUTS
+slot target: ArtifactRef
+  required
+  hint="The artifact, system, or topic this skill should be applied to"
+
+slot constraints: Constraint[]
+  optional
+  hint="Hard constraints the skill output must satisfy"
+
+§CORTEX
+reads=Fact Goal Pattern Event Constraint Preference
+tags=finishing a development branch
+
+§TOOLS
+none
+
+§SUB_SKILLS
+none
+
+§PROCEDURE
+on verb=analyze
+  prompt
+    system="You are the Matrix compiler invoking the finishing-a-development-branch skill: implementation is complete, all tests pass, and you need to decide how to integrate the work - guides completion of development work by presenting structured options for merge, PR, or cleanup Extract a fully-typed Frame for this 'analyze' intent. Output valid JSON matching intent_frame@1. No prose. No explanation."
+    user="User goal: {prose}\\n\\nCortex context (resolved memories):\\n{cortex.bundle}\\n\\nCurrently resolved slots:\\n{slots}\\n\\nPending unknowns:\\n{unknowns}\\n\\nExtract the Frame. Resolve all object references to matrix:// URIs where possible."
+  end
+  resolve slot.target <- cortex.find(type=Fact, near=slot.target.prose, limit=5)
+  unknown slot.target
+    severity=blocking
+    reason="Cannot identify the target for the finishing-a-development-branch skill from the user's phrasing"
+  end
+end
+
+on verb=build
+  prompt
+    system="You are the Matrix compiler invoking the finishing-a-development-branch skill: implementation is complete, all tests pass, and you need to decide how to integrate the work - guides completion of development work by presenting structured options for merge, PR, or cleanup Extract a fully-typed Frame for this 'build' intent. Output valid JSON matching intent_frame@1. No prose. No explanation."
+    user="User goal: {prose}\\n\\nCortex context (resolved memories):\\n{cortex.bundle}\\n\\nCurrently resolved slots:\\n{slots}\\n\\nPending unknowns:\\n{unknowns}\\n\\nExtract the Frame. Resolve all object references to matrix:// URIs where possible."
+  end
+  resolve slot.target <- cortex.find(type=Fact, near=slot.target.prose, limit=5)
+  unknown slot.target
+    severity=blocking
+    reason="Cannot identify the target for the finishing-a-development-branch skill from the user's phrasing"
+  end
+end
+
+on confidence<0.75
+  clarify slot.target
+    prompt="What specifically should the Finishing A Development Branch skill operate on?"
+    type=ArtifactRef
+    required=true
+  end
+end
+
+on unknown
+  clarify slot.target
+    prompt="I could not find a matching reference in your memories. Can you describe the target more specifically?"
+    type=ArtifactRef
+    required=true
+  end
+end
+
+§OUTPUTS
+slot result: ArtifactRef
+  required
+  hint="The artifact, plan, or report produced by this skill"
+
+slot unknowns: Unknown[]
+  optional
+
+§FAILURE_MODES
+target_not_found
+  action=fail
+  reason=unknown_information
+
+ambiguous_after_clarify
+  action=fail
+  reason=ambiguous_request
+
+policy_violation
+  action=fail
+  reason=policy_violation
+
+budget_exceeded
+  suggest=raise_budget
+
+§HASH
+v=1
+algo=sha256_ast
+digest=
+
+# Copyright © 2026 Paxlabs Inc. All rights reserved.

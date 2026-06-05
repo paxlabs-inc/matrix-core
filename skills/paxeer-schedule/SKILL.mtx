@@ -1,0 +1,98 @@
+# Copyright © 2026 Paxlabs Inc. All rights reserved. SPDX-License-Identifier: LicenseRef-Paxlabs-Matrix-Protocol
+# Contact · license@Paxeer.app · legal@Paxeer.app
+
+# paxeer-schedule — deferred + recurring autonomous actions (MatrixScript manifest)
+# Companion prose body lives in SKILL.md and carries the same tool-call mandate.
+# Scheduler precompile 0x0905: schedule a call (target + callData) for a future
+# block, cancel, reschedule, and read job state. The "autonomy over time" rail —
+# an agent can commit a future action now and let the network execute it.
+
+§SKILL
+id=paxeer-schedule
+version=0.1.0
+display="Paxeer Schedule"
+author=did:pax:0xMATRIX
+description="Schedule future on-chain actions via the Scheduler precompile (0x0905). Encode any precompile/contract call (encode_call), pick a future block (relative to the live head from chain_info), and schedule it with a gas deposit; cancel or reschedule pending jobs; read job status and a creator's pending jobs. The network executes the job at the target block with no agent online. Signs through the embedded wallet with network-side spend enforcement; persists every job as an Event with its tx hash + jobId."
+mcl.verbs=schedule monitor
+determinism=seedable
+seed_policy=per_intent
+
+§INPUTS
+slot target: ArtifactRef
+  required
+  hint="The scheduling intent: 'do <action> at block N / in T time', cancel a job, reschedule a job, or 'show my pending jobs'."
+
+slot constraints: Constraint[]
+  optional
+  hint="Schedule constraints (max gas deposit, allowed targets, latest acceptable block, dry-run)."
+
+§CORTEX
+reads=Identity Constraint Capability Goal Event Fact
+tags=paxeer schedule scheduler deferred recurring automation
+
+§TOOLS
+matrix://tool/mcp/paxeer-net/wallet_info@0.1.0
+matrix://tool/mcp/paxeer-net/chain_info@0.1.0
+matrix://tool/mcp/paxeer-net/encode_call@0.1.0
+matrix://tool/mcp/paxeer-net/schedule_job@0.1.0
+matrix://tool/mcp/paxeer-net/cancel_job@0.1.0
+matrix://tool/mcp/paxeer-net/reschedule_job@0.1.0
+matrix://tool/mcp/paxeer-net/job_status@0.1.0
+matrix://tool/mcp/paxeer-net/jobs_pending@0.1.0
+
+§SUB_SKILLS
+none
+
+§PROCEDURE
+on verb=schedule
+  kind="hard_reason"
+  output_cardinality=1
+  prompt
+    system="You are the Matrix planner running paxeer-schedule in schedule mode — committing a future on-chain action. Output a PlanTree, not prose. Steps: (1) paxeer-net.chain_info to read the live head block, so a relative time/'in N blocks' request resolves to an absolute executeAtBlock (NEVER schedule into the past). (2) Build the action's calldata with paxeer-net.encode_call (signature + args) for the target precompile/contract — unless raw callData is supplied. (3) paxeer-net.schedule_job with target, callData, executeAtBlock, gasLimit, and a `deposit` (human PAX) that funds the future execution's gas. Only schedule the single action the request authorizes. The FINAL single hard_reason step MUST brief Andrew in natural conversational prose: what will run, the target block (and rough time given block cadence), the gas deposit, and the jobId + tx hash verbatim from the schedule_job result. NEVER claim a job was scheduled without a tx_hash in a wired tool result. Spend/policy gates (PaxeerSpendPolicy + cortex Constraints) are enforced below the plan; if the deposit is unbounded or the target is disallowed, STOP and ask."
+    user="Schedule request: {slot.target.prose}\n\nVerb: {verb}\n\nResolved scope:\n{slots}\n\nIdentity, schedule constraints, goals, prior jobs from cortex:\n{cortex.bundle}\n\nProduce the plan_tree@1 now."
+  end
+  resolve slot.target <- cortex.find(type=Constraint, near=slot.target.prose, limit=8)
+end
+
+on verb=monitor
+  kind="reason"
+  output_cardinality=1
+  prompt
+    system="You are the Matrix planner running paxeer-schedule in monitor mode. Output a PlanTree, not prose. Begin with read-only paxeer-net.jobs_pending (a creator's open jobs) and/or paxeer-net.job_status (a specific job). Cancel (paxeer-net.cancel_job) or reschedule (paxeer-net.reschedule_job, against a fresh chain_info head) ONLY when the request authorizes it; a pure status request stays read-only. Finish with exactly ONE reason step reporting pending jobs / job state / any change to Andrew in conversational prose grounded in the tool results — list each jobId with its target block and active state, and cite the tx hash verbatim for any cancel/reschedule."
+    user="Schedule monitor request: {slot.target.prose}\n\nVerb: {verb}\n\nResolved scope:\n{slots}\n\nCortex context (open jobs, identity):\n{cortex.bundle}\n\nProduce the plan_tree@1 now."
+  end
+  resolve slot.target <- cortex.find(type=Event, near=slot.target.prose, limit=8)
+end
+
+§OUTPUTS
+slot report: Event
+  required
+  hint="The scheduling report (action, target block, deposit, jobId, tx hash)."
+
+slot jobs: Event[]
+  optional
+  hint="Each scheduled/cancelled/rescheduled job persisted as an Event with jobId + tx hash."
+
+§FAILURE_MODES
+wallet_unconfigured
+  action=fail
+  reason=external_failure
+
+block_in_past
+  action=fail
+  reason=out_of_scope
+
+insufficient_deposit
+  action=fail
+  reason=out_of_budget
+
+spend_limit_exceeded
+  action=fail
+  reason=policy_violation
+
+§HASH
+v=1
+algo=sha256_ast
+digest=
+
+# Copyright © 2026 Paxlabs Inc. All rights reserved.

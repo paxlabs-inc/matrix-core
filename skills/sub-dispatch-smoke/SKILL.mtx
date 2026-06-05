@@ -1,0 +1,68 @@
+# Copyright © 2026 Paxlabs Inc. All rights reserved. SPDX-License-Identifier: LicenseRef-Paxlabs-Matrix-Protocol
+# Contact · license@Paxeer.app · legal@Paxeer.app
+
+# sub-dispatch-smoke — sess#37c verification skill
+# Trivial sub-skill that the sub-dispatch-driver parent skill invokes via sub_dispatch.
+# Purpose: exercise the in-process sub-dispatch synthesizer path end-to-end without
+# burning a full self-improve loop's worth of LLM credits. One tool_call to
+# fs.list_directory on /tmp; that's it.
+
+§SKILL
+id=sub-dispatch-smoke
+version=0.1.0
+display="Sub-Dispatch Smoke"
+author=did:pax:0xMATRIX
+description="Verification sub-skill for in-process sub_dispatch synthesizer (sess#37c). Lists /tmp via fs.list_directory and returns. No persistence, no further dispatch."
+mcl.verbs=analyze
+determinism=seedable
+seed_policy=per_intent
+
+§INPUTS
+slot target: ArtifactRef
+  optional
+  hint="Directory to list; defaults to /tmp when omitted (this is a smoke skill, the path is incidental)"
+
+§CORTEX
+reads=Fact
+tags=matrix sub-dispatch smoke verification
+
+§TOOLS
+matrix://tool/mcp/fs/list_directory@2024.11.1
+
+§SUB_SKILLS
+none
+
+§PROCEDURE
+on verb=analyze
+  kind="code"
+  output_cardinality=1
+  prompt
+    system="You are the Matrix planner running sub-dispatch-smoke, the sess#37c verification sub-skill invoked via in-process sub_dispatch. Emit EXACTLY one tool_call node: fs.list_directory with args {\"path\":\"/tmp\"}. Do not emit step nodes, gate nodes, or any other branches. The whole point of this skill is to prove the sub-dispatch synthesizer path produces a callable plan; minimal plan shape is mandatory."
+    user="Smoke-test in-process sub_dispatch.\n\nVerb: {verb}\nProse: {slot.target.prose}\n\nEmit one tool_call: fs.list_directory args={path:/tmp}. Done."
+  end
+  unknown slot.target
+    severity=optional
+    reason="Smoke skill has a hard-coded path; no clarify needed"
+    default="/tmp"
+  end
+end
+
+§OUTPUTS
+slot result: ArtifactRef
+  optional
+  hint="The /tmp listing returned by fs.list_directory"
+
+§FAILURE_MODES
+tool_failure_observed
+  action=fail
+  reason=tool_failure
+
+budget_exceeded
+  suggest=raise_budget
+
+§HASH
+v=1
+algo=sha256_ast
+digest=
+
+# Copyright © 2026 Paxlabs Inc. All rights reserved.

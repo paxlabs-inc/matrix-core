@@ -1,0 +1,95 @@
+# Copyright © 2026 Paxlabs Inc. All rights reserved. SPDX-License-Identifier: LicenseRef-Paxlabs-Matrix-Protocol
+# Contact · license@Paxeer.app · legal@Paxeer.app
+
+# paxeer-audit — smart-contract security review (MatrixScript manifest)
+# Companion prose body lives in SKILL.md and carries the same anti-fake mandate.
+# STRICTLY READ-ONLY: this skill has no write tools — no transaction is ever
+# signed. Reviews a Paxeer contract's verified source/bytecode + privileged
+# surface and produces a severity-rated security report. Every finding MUST cite
+# the source/read evidence — never invent a vulnerability.
+
+§SKILL
+id=paxeer-audit
+version=0.1.0
+display="Paxeer Audit"
+author=did:pax:0xMATRIX
+description="Read-only smart-contract security review on Paxeer. Given a contract address, pull its verified source (or bytecode when unverified), enumerate the privileged surface (owner/admin, mint, pause, blacklist, upgradeable proxy, withdraw/sweep, delegatecall), flag risky patterns, and produce a severity-rated report (LOW / MEDIUM / HIGH / CRITICAL) with concrete findings. Strictly read-only — no transaction is ever signed. Every finding cites the source excerpt, function selector, or read result it is grounded in; an unverified contract is flagged as such and never assumed safe; nothing is fabricated."
+mcl.verbs=analyze find
+determinism=seedable
+seed_policy=per_intent
+
+§INPUTS
+slot target: ArtifactRef
+  required
+  hint="The contract to review: a 0x address (e.g. 'audit 0xrouter', 'is this contract safe to approve')."
+
+slot constraints: Constraint[]
+  optional
+  hint="Review constraints (depth, which risk classes to emphasize, a specific function of concern)."
+
+§CORTEX
+reads=Identity Fact Capability Constraint Goal Event Pattern
+tags=paxeer audit security contract solidity review vulnerability
+
+§TOOLS
+matrix://tool/mcp/paxeer-net/search@0.1.0
+matrix://tool/mcp/paxeer-net/address_overview@0.1.0
+matrix://tool/mcp/paxeer-net/contract_read@0.1.0
+matrix://tool/mcp/paxeer-net/eth_call@0.1.0
+matrix://tool/mcp/paxeer-net/paxscan_get@0.1.0
+matrix://tool/mcp/paxeer-net/token_info@0.1.0
+matrix://tool/mcp/paxeer-net/tx@0.1.0
+matrix://tool/mcp/paxeer-net/address_transactions@0.1.0
+
+§SUB_SKILLS
+none
+
+§PROCEDURE
+on verb=analyze
+  kind="reason"
+  output_cardinality=1
+  prompt
+    system="You are the Matrix planner running paxeer-audit — a READ-ONLY smart-contract security reviewer for Paxeer. Output a PlanTree, not prose. This skill has NO write tools; nothing is ever signed. A security verdict REQUIRES real read tool_calls followed by exactly one report step; NEVER report a vulnerability you did not ground in retrieved source, bytecode, or a read result. Steps: (1) resolve the contract — a symbol or name -> search; (2) pull the verified source + ABI + metadata via paxscan_get against the Blockscout v2 smart-contract route (path /api/v2/smart-contracts/ + the address) and address_overview for verification status, age, and counters; if the contract is UNVERIFIED, say so explicitly and fall back to bytecode + selector + behaviour analysis — never assume an unverified contract is safe; (3) enumerate the privileged surface with contract_read / eth_call: ownership (owner/getOwner/admin/role admin), upgradeability (EIP-1967 implementation slot, proxy admin), mint authority and supply mutability, pause, blacklist/allowlist, fee/tax setters, withdraw/sweep/rescue functions, and any delegatecall or selfdestruct in the source; (4) review recent privileged activity with address_transactions. Then produce exactly ONE report step: an overall risk rating (LOW / MEDIUM / HIGH / CRITICAL) and an itemised findings list, EACH with a severity and the concrete evidence (function name/selector, source excerpt, or read result) it rests on. Separate confirmed findings from areas you could not inspect (mark unknown). Close with a plain-English bottom line: is it safe to interact with or approve, and under what caution. State this is an automated review, not a substitute for a full manual audit."
+    user="Audit request: {slot.target.prose}\n\nVerb: {verb}\n\nResolved scope:\n{slots}\n\nRelevant cortex context (identity, prior audits, risk constraints):\n{cortex.bundle}\n\nProduce the plan_tree@1 now."
+  end
+  resolve slot.target <- cortex.find(type=Fact, near=slot.target.prose, limit=8)
+end
+
+on verb=find
+  kind="reason"
+  output_cardinality=1
+  prompt
+    system="You are the Matrix planner running paxeer-audit in discovery mode — locating the contracts/functions relevant to a security question. Output a PlanTree, not prose. Read-only: no write tool exists here. Use search to resolve a contract, paxscan_get for its source/ABI, and contract_read to confirm a specific function's behaviour. Finish with exactly ONE report step naming the relevant contract(s)/function(s) (address + selector verbatim) and what each does, grounded in the tool results — never fabricate."
+    user="Discovery request: {slot.target.prose}\n\nVerb: {verb}\n\nResolved scope:\n{slots}\n\nCortex context:\n{cortex.bundle}\n\nProduce the plan_tree@1 now."
+  end
+  resolve slot.target <- cortex.find(type=Fact, near=slot.target.prose, limit=8)
+end
+
+§OUTPUTS
+slot report: Event
+  required
+  hint="The security report: overall risk rating + itemised findings with severity + evidence."
+
+slot findings: Fact[]
+  optional
+  hint="Each finding persisted as a Fact (severity + evidence) for re-review."
+
+§FAILURE_MODES
+contract_unresolved
+  action=fail
+  reason=unknown_information
+
+explorer_unreachable
+  action=fail
+  reason=external_failure
+
+source_unverified
+  action=succeed
+  reason=unknown_information
+
+§HASH
+v=1
+algo=sha256_ast
+digest=
+
+# Copyright © 2026 Paxlabs Inc. All rights reserved.

@@ -1,0 +1,108 @@
+# Copyright © 2026 Paxlabs Inc. All rights reserved. SPDX-License-Identifier: LicenseRef-Paxlabs-Matrix-Protocol
+# Contact · license@Paxeer.app · legal@Paxeer.app
+
+# paxeer-defi-guardian — position risk monitor + protective unwind (MatrixScript manifest)
+# Companion prose body lives in SKILL.md and carries the same anti-fake mandate.
+# monitor = READ-ONLY risk assessment of DeFi positions. deliver = execute an
+# authorized protective action (exit/repay/withdraw/close-stream/move-to-safety)
+# through the embedded wallet; spend/state gates are enforced network-side AND by
+# the PaxeerSpendPolicy below the plan. Never act on an unread position or claim
+# a protective action without a wired tx_hash.
+
+§SKILL
+id=paxeer-defi-guardian
+version=0.1.0
+display="Paxeer DeFi Guardian"
+author=did:pax:0xMATRIX
+description="Watch a Paxeer wallet's DeFi positions and protect them. monitor: read LP, lending, staking, and payment-stream positions, price the exposure, and assess concrete risk (impermanent-loss drift, liquidation proximity, depeg, stream drain) — strictly read-only. deliver: execute the protective action the user authorized — exit/withdraw/repay via the position contract, close/settle a stream, or move funds to safety — through the embedded wallet. Every assessment is grounded in real reads; every protective action reads the position + correct function first and is never claimed without a wired tx_hash."
+mcl.verbs=monitor deliver
+determinism=seedable
+seed_policy=per_intent
+
+§INPUTS
+slot target: ArtifactRef
+  required
+  hint="The wallet/positions to guard (defaults to the agent wallet) and any rule (e.g. 'alert if my LP drops 20%', 'exit if health factor under 1.2', 'close my stream if it drains')."
+
+slot constraints: Constraint[]
+  optional
+  hint="Guard rules + limits (risk thresholds, which positions, max size to unwind, dry-run)."
+
+§CORTEX
+reads=Identity Constraint Capability Goal Event Fact Pattern
+tags=paxeer defi risk liquidation impermanent-loss unwind guardian
+
+§TOOLS
+matrix://tool/mcp/paxeer-net/wallet_info@0.1.0
+matrix://tool/mcp/paxeer-net/portfolio@0.1.0
+matrix://tool/mcp/paxeer-net/address_overview@0.1.0
+matrix://tool/mcp/paxeer-net/token_info@0.1.0
+matrix://tool/mcp/paxeer-net/token_balance@0.1.0
+matrix://tool/mcp/paxeer-net/oracle_price@0.1.0
+matrix://tool/mcp/paxeer-net/price@0.1.0
+matrix://tool/mcp/paxeer-net/market_get@0.1.0
+matrix://tool/mcp/paxeer-net/stream_status@0.1.0
+matrix://tool/mcp/paxeer-net/delegation@0.1.0
+matrix://tool/mcp/paxeer-net/contract_read@0.1.0
+matrix://tool/mcp/paxeer-net/eth_call@0.1.0
+matrix://tool/mcp/paxeer-net/contract_write@0.1.0
+matrix://tool/mcp/paxeer-net/stream_settle@0.1.0
+matrix://tool/mcp/paxeer-net/stream_close@0.1.0
+matrix://tool/mcp/paxeer-net/transfer@0.1.0
+
+§SUB_SKILLS
+none
+
+§PROCEDURE
+on verb=monitor
+  kind="reason"
+  output_cardinality=1
+  prompt
+    system="You are the Matrix planner running paxeer-defi-guardian in monitor mode — a READ-ONLY risk assessment of a Paxeer wallet's DeFi positions. Output a PlanTree, not prose. Emit NO write tool here. Steps: (1) resolve the wallet (wallet_info, or the address in scope); (2) read holdings + positions with portfolio, token_balance, address_overview, and contract_read against the position contracts (LP pair reserves + the wallet's LP share, lending account health/collateral/debt, staking via delegation, open payment streams via stream_status); (3) price the exposure with oracle_price / price / market_get. Assess concrete risk: impermanent-loss drift versus hold, liquidation proximity (current health factor versus the liquidation threshold), depeg, or a stream draining faster than funded. Then produce exactly ONE report step stating each position, its current value, the specific risk and how close to danger (every number grounded verbatim in a tool result), and a recommended protective action with the threshold that would trigger it. Never invent a position, price, balance, or health factor the reads did not return; mark anything unreadable as unknown."
+    user="Position monitor request: {slot.target.prose}\n\nVerb: {verb}\n\nResolved scope:\n{slots}\n\nRelevant cortex context (identity, guard rules, watched positions):\n{cortex.bundle}\n\nProduce the plan_tree@1 now."
+  end
+  resolve slot.target <- cortex.find(type=Fact, near=slot.target.prose, limit=8)
+end
+
+on verb=deliver
+  kind="hard_reason"
+  output_cardinality=1
+  prompt
+    system="You are the Matrix planner running paxeer-defi-guardian in protect mode — executing an authorized protective action on Paxeer. Output a PlanTree, not prose. SAFETY FIRST: before acting, READ the position's current state AND the correct exit/repay/withdraw function (contract_read against the position contract; stream_status for a stream) so the action is grounded and targeted — NEVER act on a guessed function or an unread position. Execute ONLY the action the user authorized: exit/withdraw/repay via contract_write against the position contract, stop a stream via stream_close or stream_settle, or move funds to safety via transfer. If the safe exit cannot be determined from reads, or the size is unbounded, STOP and ask rather than acting. Each write returns a tx_hash; the FINAL single hard_reason step MUST brief Andrew in conversational prose: what was unwound or protected, the resulting position state, and the tx hash(es) verbatim from the tool results. NEVER claim a protective action succeeded without a tx_hash in a wired tool result. The spend/state gates (PaxeerSpendPolicy + cortex Constraint + network custody policy) are enforced below your plan; do not route around them and report any policy denial honestly."
+    user="Protect request: {slot.target.prose}\n\nVerb: {verb}\n\nResolved scope:\n{slots}\n\nIdentity, guard rules, and recent position events from cortex:\n{cortex.bundle}\n\nProduce the plan_tree@1 now."
+  end
+  resolve slot.target <- cortex.find(type=Constraint, near=slot.target.prose, limit=8)
+end
+
+§OUTPUTS
+slot report: Event
+  required
+  hint="The risk assessment or the protective-action report (what was done, resulting state, tx hashes)."
+
+slot actions: Event[]
+  optional
+  hint="Each protective action persisted as an Event with its tx hash for the chronology."
+
+§FAILURE_MODES
+wallet_unconfigured
+  action=fail
+  reason=external_failure
+
+position_unresolved
+  action=fail
+  reason=unknown_information
+
+rpc_unreachable
+  action=fail
+  reason=external_failure
+
+spend_limit_exceeded
+  action=fail
+  reason=policy_violation
+
+§HASH
+v=1
+algo=sha256_ast
+digest=
+
+# Copyright © 2026 Paxlabs Inc. All rights reserved.

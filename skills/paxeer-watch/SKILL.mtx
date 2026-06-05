@@ -1,0 +1,105 @@
+# Copyright © 2026 Paxlabs Inc. All rights reserved. SPDX-License-Identifier: LicenseRef-Paxlabs-Matrix-Protocol
+# Contact · license@Paxeer.app · legal@Paxeer.app
+
+# paxeer-watch — autonomous on-chain watch + scheduled action (MatrixScript manifest)
+# Companion prose body lives in SKILL.md and carries the same anti-fake mandate.
+# deliver = SCHEDULE a future/recurring on-chain action via the Scheduler
+# precompile (0x0905) through the embedded wallet. monitor = inspect/cancel/
+# reschedule pending jobs. Spend/state gates are enforced network-side AND by the
+# PaxeerSpendPolicy below the plan; the scheduled job ALSO re-runs under the same
+# wallet policy at execution time. Never claim a job scheduled without a tx_hash.
+
+§SKILL
+id=paxeer-watch
+version=0.1.0
+display="Paxeer Watch"
+author=did:pax:0xMATRIX
+description="Set an autonomous on-chain watch or scheduled action on Paxeer using the Scheduler precompile (0x0905). deliver: schedule a target contract call to run at a future block (or recurring), funded with a gas deposit, through the embedded wallet. monitor: list pending jobs and inspect, cancel, or reschedule them. The target + method are read and confirmed before scheduling; the calldata is built with encode_call; the execute block is computed from the live chain head; and a job is never reported as scheduled without a wired tx_hash + jobId. The scheduled action itself re-runs under the same wallet policy at execution time."
+mcl.verbs=deliver monitor
+determinism=seedable
+seed_policy=per_intent
+
+§INPUTS
+slot target: ArtifactRef
+  required
+  hint="The watch/action to schedule (e.g. 'settle my stream every day', 'claim at block N', 'rebalance weekly'), or the job to inspect/cancel/reschedule."
+
+slot constraints: Constraint[]
+  optional
+  hint="Constraints (interval, max deposit, end condition, which job id)."
+
+§CORTEX
+reads=Identity Constraint Capability Goal Event Fact
+tags=paxeer scheduler watch automation recurring job
+
+§TOOLS
+matrix://tool/mcp/paxeer-net/wallet_info@0.1.0
+matrix://tool/mcp/paxeer-net/chain_info@0.1.0
+matrix://tool/mcp/paxeer-net/contract_read@0.1.0
+matrix://tool/mcp/paxeer-net/eth_call@0.1.0
+matrix://tool/mcp/paxeer-net/encode_call@0.1.0
+matrix://tool/mcp/paxeer-net/address_overview@0.1.0
+matrix://tool/mcp/paxeer-net/token_info@0.1.0
+matrix://tool/mcp/paxeer-net/price@0.1.0
+matrix://tool/mcp/paxeer-net/jobs_pending@0.1.0
+matrix://tool/mcp/paxeer-net/job_status@0.1.0
+matrix://tool/mcp/paxeer-net/schedule_job@0.1.0
+matrix://tool/mcp/paxeer-net/cancel_job@0.1.0
+matrix://tool/mcp/paxeer-net/reschedule_job@0.1.0
+
+§SUB_SKILLS
+none
+
+§PROCEDURE
+on verb=deliver
+  kind="hard_reason"
+  output_cardinality=1
+  prompt
+    system="You are the Matrix planner running paxeer-watch in schedule mode — setting up an autonomous on-chain action on Paxeer via the Scheduler precompile (0x0905). Output a PlanTree, not prose. Steps: (1) determine the target contract + method the user wants run later or recurring, and READ it first (contract_read / address_overview) to confirm the contract exists and the signature is correct — never schedule a call to a guessed method; (2) build the calldata with encode_call (signature + args); (3) read the live head with chain_info (blockNumber) and compute executeAtBlock = head + delay, translating any time delay to blocks via the chain block time; (4) schedule with schedule_job (target, callData, executeAtBlock, gasLimit, and a deposit sized to fund the gas). Schedule ONLY what the request authorizes; if the action is unbounded, moves value without a clear cap, or the target/method is unknown, STOP and ask. schedule_job returns a tx_hash and a jobId; the FINAL single hard_reason step MUST brief Andrew in conversational prose: what was scheduled, the execute block (and approx time), the deposit, and the tx hash + jobId verbatim from the tool result. NEVER claim a job was scheduled without a tx_hash in a wired tool result. The spend/state gates (PaxeerSpendPolicy + cortex Constraint + network custody policy) are enforced below your plan; and note that the scheduled job will itself re-run under the SAME wallet policy at execution time, so a future value-moving action stays gated."
+    user="Schedule request: {slot.target.prose}\n\nVerb: {verb}\n\nResolved scope:\n{slots}\n\nIdentity, constraints, and prior jobs from cortex:\n{cortex.bundle}\n\nProduce the plan_tree@1 now."
+  end
+  resolve slot.target <- cortex.find(type=Constraint, near=slot.target.prose, limit=8)
+end
+
+on verb=monitor
+  kind="reason"
+  output_cardinality=1
+  prompt
+    system="You are the Matrix planner running paxeer-watch in monitor mode — reviewing scheduled jobs on Paxeer. Output a PlanTree, not prose. Begin with read-only jobs_pending (for the wallet, via wallet_info if needed) and job_status (per jobId) to read what is scheduled (target, executeAtBlock, deposit, active). Cancel (cancel_job) or move (reschedule_job) a job ONLY when the request explicitly authorizes it; a pure status request NEVER cancels or reschedules. Finish with exactly ONE report step listing the jobs (target, execute block, deposit, active state) and any action taken, grounded verbatim in the tool results — tx hash verbatim for any cancel or reschedule. Never invent a jobId or job detail a read did not return."
+    user="Job monitor request: {slot.target.prose}\n\nVerb: {verb}\n\nResolved scope:\n{slots}\n\nCortex context (prior jobs, identity):\n{cortex.bundle}\n\nProduce the plan_tree@1 now."
+  end
+  resolve slot.target <- cortex.find(type=Event, near=slot.target.prose, limit=8)
+end
+
+§OUTPUTS
+slot report: Event
+  required
+  hint="The schedule confirmation (job id, execute block, deposit, tx hash) or the job-status/action report."
+
+slot jobs: Event[]
+  optional
+  hint="Each schedule/cancel/reschedule persisted as an Event with its tx hash for the chronology."
+
+§FAILURE_MODES
+wallet_unconfigured
+  action=fail
+  reason=external_failure
+
+target_unresolved
+  action=fail
+  reason=unknown_information
+
+scheduler_unreachable
+  action=fail
+  reason=external_failure
+
+spend_limit_exceeded
+  action=fail
+  reason=policy_violation
+
+§HASH
+v=1
+algo=sha256_ast
+digest=
+
+# Copyright © 2026 Paxlabs Inc. All rights reserved.

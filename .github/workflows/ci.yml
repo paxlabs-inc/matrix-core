@@ -1,0 +1,212 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch: {}
+
+# Cancel in-flight runs on a branch when a new commit lands. Saves Actions
+# minutes on hot PR threads.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  GO_VERSION: "1.21.x"
+
+jobs:
+  # -------------------------------------------------------------------------
+  # Fan out across the four sibling Go modules. Each job is independent so a
+  # cortex regression does not mask an MCL regression. `fail-fast: false`
+  # keeps the full grid visible on failure.
+  # -------------------------------------------------------------------------
+  build:
+    name: build / ${{ matrix.module }} / ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        module: [cortex, MCL, bridge, executor, gateway, router]
+        os: [ubuntu-latest]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache: true
+          cache-dependency-path: ${{ matrix.module }}/go.sum
+
+      - name: go env
+        run: go version && go env GOMODCACHE GOCACHE
+
+      - name: go mod download
+        working-directory: ${{ matrix.module }}
+        run: go mod download
+
+      - name: gofmt
+        working-directory: ${{ matrix.module }}
+        run: |
+          unformatted=$(gofmt -l .)
+          if [ -n "$unformatted" ]; then
+            echo "::error::gofmt needs to be run on:"
+            echo "$unformatted"
+            exit 1
+          fi
+
+      - name: go vet
+        working-directory: ${{ matrix.module }}
+        run: go vet ./...
+
+      - name: go build
+        working-directory: ${{ matrix.module }}
+        run: go build ./...
+
+      - name: go test
+        working-directory: ${{ matrix.module }}
+        run: go test -count=1 -race -timeout=10m ./...
+
+  # -------------------------------------------------------------------------
+  # Coverage — collect a single artefact so reviewers can audit per-module
+  # surface without firing up a local toolchain.
+  # -------------------------------------------------------------------------
+  coverage:
+    name: coverage
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.event_name == 'pull_request' || github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache: true
+
+      - name: cover (cortex)
+        working-directory: cortex
+        run: go test -count=1 -covermode=atomic -coverprofile=coverage.out ./...
+
+      - name: cover (MCL)
+        working-directory: MCL
+        run: go test -count=1 -covermode=atomic -coverprofile=coverage.out ./...
+
+      - name: cover (bridge)
+        working-directory: bridge
+        run: go test -count=1 -covermode=atomic -coverprofile=coverage.out ./...
+
+      - name: cover (executor)
+        working-directory: executor
+        run: go test -count=1 -covermode=atomic -coverprofile=coverage.out ./...
+
+      - name: cover (gateway)
+        working-directory: gateway
+        run: go test -count=1 -covermode=atomic -coverprofile=coverage.out ./...
+
+      - name: cover (router)
+        working-directory: router
+        run: go test -count=1 -covermode=atomic -coverprofile=coverage.out ./...
+
+      - name: upload coverage artefacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage
+          path: |
+            cortex/coverage.out
+            MCL/coverage.out
+            bridge/coverage.out
+            executor/coverage.out
+            gateway/coverage.out
+            router/coverage.out
+          if-no-files-found: error
+          retention-days: 14
+
+  # -------------------------------------------------------------------------
+  # Replay invariant — the §13.4 byte-identical OverallRoot test is the
+  # most load-bearing single check in the codebase (see matrix.kvx INVARIANT
+  # block). Run it explicitly so a regression here always blocks merge,
+  # even if a contributor adds skip-marker discipline elsewhere.
+  # -------------------------------------------------------------------------
+  replay-invariant:
+    name: cortex replay invariant
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache: true
+          cache-dependency-path: cortex/go.sum
+
+      - name: rebuild_test
+        working-directory: cortex
+        run: go test -count=1 -run TestRebuild -timeout=5m ./...
+
+      - name: replay_test
+        working-directory: cortex
+        run: go test -count=1 -timeout=2m ./replay/...
+
+  # -------------------------------------------------------------------------
+  # mtx corpus — every SKILL.mtx must parse + validate.  Catches drift in
+  # the 159-skill corpus introduced by tools/skills/convert_to_mtx.py runs.
+  # -------------------------------------------------------------------------
+  mtx-corpus:
+    name: skills/SKILL.mtx validate
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+          cache: true
+          cache-dependency-path: MCL/go.sum
+
+      # NOTE: MCL/cmd/mcl-validate/ is an empty scaffold dir (sess#15
+      # placeholder; never implemented as a standalone binary). The
+      # validation surface ships inside mclc itself — `mclc validate
+      # <file>` covers spec §11. Build mclc and use that.
+      - name: build mclc
+        working-directory: MCL
+        run: go build -o /tmp/mclc ./cmd/mclc
+
+      - name: validate every SKILL.mtx in corpus
+        run: |
+          set -euo pipefail
+          shopt -s nullglob
+          failed=0
+          count=0
+          for f in skills/*/SKILL.mtx; do
+            count=$((count + 1))
+            if ! /tmp/mclc validate "$f" >/dev/null 2>&1; then
+              echo "::error file=$f::SKILL.mtx failed validation"
+              failed=$((failed + 1))
+            fi
+          done
+          echo "checked $count SKILL.mtx files, $failed failed"
+          exit $failed
+
+  # -------------------------------------------------------------------------
+  # Aggregator job — branch protection should require `ci-passed` only.
+  # Any added/removed leaf job stays decoupled from the protection rule.
+  # -------------------------------------------------------------------------
+  ci-passed:
+    name: ci-passed
+    runs-on: ubuntu-latest
+    needs: [build, replay-invariant, mtx-corpus]
+    if: always()
+    steps:
+      - name: aggregate
+        run: |
+          if [ "${{ contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') }}" = "true" ]; then
+            echo "::error::one or more upstream jobs failed"
+            exit 1
+          fi
+          echo "all checks passed"

@@ -1,0 +1,101 @@
+# Copyright © 2026 Paxlabs Inc. All rights reserved. SPDX-License-Identifier: LicenseRef-Paxlabs-Matrix-Protocol
+# Contact · license@Paxeer.app · legal@Paxeer.app
+
+# paxeer-guard — wallet approval/drainer audit + revoke (MatrixScript manifest)
+# Companion prose body lives in SKILL.md and carries the same anti-fake mandate.
+# analyze = READ-ONLY approval audit. deliver = REVOKE risky approvals
+# (approve(spender, 0)) through the embedded wallet; spend/state gates are
+# enforced network-side AND by the PaxeerSpendPolicy below the plan. Never
+# claim a revoke landed without a tx_hash from a wired tool result.
+
+§SKILL
+id=paxeer-guard
+version=0.1.0
+display="Paxeer Guard"
+author=did:pax:0xMATRIX
+description="Audit and clean up a Paxeer wallet's risk surface. analyze: enumerate outstanding ERC-20 approvals and exposure (which spenders can move which tokens, how much, and whether the spender is unverified/unlimited) — strictly read-only. deliver: REVOKE the approvals the user authorizes by setting their allowance to 0 through the embedded wallet (network-side custody + spend enforcement). Confirms each allowance with a read before revoking; every revoke returns a tx hash that the report cites verbatim; a revoke is never claimed without a wired tx_hash, and an ambiguous scope (e.g. 'revoke everything') stops to confirm."
+mcl.verbs=analyze deliver
+determinism=seedable
+seed_policy=per_intent
+
+§INPUTS
+slot target: ArtifactRef
+  required
+  hint="The wallet to audit (defaults to the agent wallet) and/or the approvals to revoke (e.g. 'what can drain my wallet', 'revoke the approval to 0xspender')."
+
+slot constraints: Constraint[]
+  optional
+  hint="Constraints (which tokens/spenders to include, only-unlimited, dry-run)."
+
+§CORTEX
+reads=Identity Constraint Capability Goal Event Fact
+tags=paxeer security approvals revoke drainer wallet hygiene
+
+§TOOLS
+matrix://tool/mcp/paxeer-net/wallet_info@0.1.0
+matrix://tool/mcp/paxeer-net/search@0.1.0
+matrix://tool/mcp/paxeer-net/address_overview@0.1.0
+matrix://tool/mcp/paxeer-net/address_transactions@0.1.0
+matrix://tool/mcp/paxeer-net/token_info@0.1.0
+matrix://tool/mcp/paxeer-net/token_balance@0.1.0
+matrix://tool/mcp/paxeer-net/contract_read@0.1.0
+matrix://tool/mcp/paxeer-net/eth_call@0.1.0
+matrix://tool/mcp/paxeer-net/paxscan_get@0.1.0
+matrix://tool/mcp/paxeer-net/approve@0.1.0
+
+§SUB_SKILLS
+none
+
+§PROCEDURE
+on verb=analyze
+  kind="reason"
+  output_cardinality=1
+  prompt
+    system="You are the Matrix planner running paxeer-guard in audit mode — a READ-ONLY approval/exposure review for a Paxeer wallet. Output a PlanTree, not prose. Emit NO write tools in analyze. Steps: (1) resolve the wallet (wallet_info for the agent wallet, or the address in scope); (2) discover outstanding approvals — use address_transactions / paxscan_get to find this wallet's Approval-event history (the (token, spender) pairs it has ever approved); (3) for each (token, spender) read the CURRENT on-chain allowance with contract_read signature 'allowance(address,address)' outputs ['uint256'] args [owner, spender], and read token metadata + the spender's nature with token_info / address_overview (verified contract? unlimited allowance? scam/dust token?); (4) keep only nonzero allowances. Then produce exactly ONE report step listing each live approval as: token (symbol + 0x), spender (0x + label), allowance amount (or 'unlimited'), and a risk note — each grounded verbatim in a tool result. Rank by danger (unlimited allowance to an unverified spender first). Close with a plain bottom line and offer to revoke the risky ones. Never invent an approval or allowance the reads did not return."
+    user="Approval audit request: {slot.target.prose}\n\nVerb: {verb}\n\nResolved scope:\n{slots}\n\nRelevant cortex context (identity, prior audits, watched spenders):\n{cortex.bundle}\n\nProduce the plan_tree@1 now."
+  end
+  resolve slot.target <- cortex.find(type=Fact, near=slot.target.prose, limit=8)
+end
+
+on verb=deliver
+  kind="hard_reason"
+  output_cardinality=1
+  prompt
+    system="You are the Matrix planner running paxeer-guard in revoke mode — moving the wallet to a safer state on Paxeer. Output a PlanTree, not prose. SAFETY FIRST: before any revoke, the plan MUST read the current allowance (contract_read 'allowance(address,address)' -> ['uint256']) so the report can confirm the approval is live and the revoke is needed; skip any (token, spender) already at 0. Revoke by emitting approve with the token, the spender, and amount 0 (this sets the allowance to zero). Revoke ONLY the approvals the request authorizes — if the scope is ambiguous (e.g. 'revoke everything') or unbounded, STOP and ask which to revoke rather than mass-revoking. Each approve returns a tx_hash; the FINAL single hard_reason step MUST brief Andrew in conversational prose: which approvals were revoked (token, spender), the tx hash(es) verbatim from the tool results, and the resulting allowance (0). NEVER claim an approval was revoked without a tx_hash in a wired tool result. The spend/state gates (PaxeerSpendPolicy + any cortex Constraint + the network custody policy) are enforced below your plan; do not route around them, and if the wallet policy denies a revoke (e.g. spender not on the withdrawal allowlist), report that denial honestly rather than pretending it succeeded."
+    user="Revoke request: {slot.target.prose}\n\nVerb: {verb}\n\nResolved scope:\n{slots}\n\nIdentity, constraints, and recent approval events from cortex:\n{cortex.bundle}\n\nProduce the plan_tree@1 now."
+  end
+  resolve slot.target <- cortex.find(type=Constraint, near=slot.target.prose, limit=8)
+end
+
+§OUTPUTS
+slot report: Event
+  required
+  hint="The audit (live approvals + risk) or the revoke report (what was revoked, tx hashes)."
+
+slot revocations: Event[]
+  optional
+  hint="Each revoke persisted as an Event with its tx hash for the chronology."
+
+§FAILURE_MODES
+wallet_unconfigured
+  action=fail
+  reason=external_failure
+
+explorer_unreachable
+  action=fail
+  reason=external_failure
+
+spend_limit_exceeded
+  action=fail
+  reason=policy_violation
+
+scope_ambiguous
+  action=fail
+  reason=unknown_information
+
+§HASH
+v=1
+algo=sha256_ast
+digest=
+
+# Copyright © 2026 Paxlabs Inc. All rights reserved.

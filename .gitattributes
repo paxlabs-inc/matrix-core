@@ -1,0 +1,47 @@
+# Normalise line endings — Matrix is local-first, but contributors may run any
+# OS. CRLF in checked-in files would break .mtx/.kvx lexers, Pebble fixtures,
+# and the canonical CBOR roots of cortex snapshots.
+
+* text=auto eol=lf
+
+# Source.
+*.go        text eol=lf
+*.py        text eol=lf
+*.sh        text eol=lf
+*.mtx       text eol=lf
+*.kvx       text eol=lf
+*.md        text eol=lf
+*.toml      text eol=lf
+*.yaml      text eol=lf
+*.yml       text eol=lf
+*.json      text eol=lf
+
+# Generated / binary — never normalise.
+*.vsix      binary
+*.zip       binary
+*.tar.zst   binary
+*.cbor      binary
+*.bin       binary
+*.pebble    binary
+*.db        binary
+*.sst       binary
+*.so        binary
+*.dylib     binary
+*.dll       binary
+*.png       binary
+*.jpg       binary
+*.jpeg      binary
+*.gif       binary
+*.webp      binary
+
+# Linguist hints — keep GitHub's language stats honest.
+skills/**       linguist-documentation
+research/**     linguist-documentation
+knowledge/**    linguist-documentation
+deploy/**       linguist-documentation
+*.mtx           linguist-language=Plain-Text
+*.kvx           linguist-language=Plain-Text
+
+# Exclude generated fixtures from diffs.
+runs/**         -diff
+*.vsix          -diff

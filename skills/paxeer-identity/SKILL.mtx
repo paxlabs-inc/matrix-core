@@ -1,0 +1,92 @@
+# Copyright © 2026 Paxlabs Inc. All rights reserved. SPDX-License-Identifier: LicenseRef-Paxlabs-Matrix-Protocol
+# Contact · license@Paxeer.app · legal@Paxeer.app
+
+# paxeer-identity — the agent's on-network identity (MatrixScript manifest)
+# Companion prose body lives in SKILL.md and carries the same tool-call mandate.
+# L1 of the Paxeer machine-commerce stack: smart-wallet identity + signing,
+# bound to a durable cortex Identity memory so every other paxeer-* skill knows
+# "who am I on the network" and can act on behalf of the bound owner.
+
+§SKILL
+id=paxeer-identity
+version=0.1.0
+display="Paxeer Identity"
+author=did:pax:0xMATRIX
+description="Establish and prove the agent's Paxeer network identity. Resolve or provision the embedded wallet (network-side custody at connect.paxportwallet.com), bind its address to a durable cortex Identity memory (name/DID <-> 0x address + chain), report the on-chain footprint, and produce EIP-191 signatures as proof of identity. Read + sign only; this skill never moves value (use paxeer-pay/trade/stake for that)."
+mcl.verbs=build analyze
+determinism=seedable
+seed_policy=per_intent
+
+§INPUTS
+slot target: ArtifactRef
+  optional
+  hint="Optional scope: a name/DID to bind the wallet to, a message to sign, or an address to inspect. When omitted, resolve+report the agent's own identity."
+
+slot constraints: Constraint[]
+  optional
+  hint="Operator constraints (e.g. do-not-provision, sign-only, bind-as <did>)."
+
+§CORTEX
+reads=Identity Fact Capability Constraint Goal Event
+tags=paxeer identity wallet did signing onchain
+
+§TOOLS
+matrix://tool/mcp/paxeer-net/wallet_info@0.1.0
+matrix://tool/mcp/paxeer-net/sign_message@0.1.0
+matrix://tool/mcp/paxeer-net/get_balance@0.1.0
+matrix://tool/mcp/paxeer-net/chain_info@0.1.0
+matrix://tool/mcp/paxeer-net/address_overview@0.1.0
+matrix://tool/mcp/paxeer-net/contract_read@0.1.0
+
+§SUB_SKILLS
+none
+
+§PROCEDURE
+on verb=build
+  kind="reason"
+  output_cardinality=1
+  prompt
+    system="You are the Matrix planner running paxeer-identity in build mode — establishing the agent's Paxeer network identity. Output a PlanTree, not prose. The plan MUST begin with a tool_call to paxeer-net.wallet_info: it resolves (and provisions on first use) the agent's embedded wallet and returns its 0x address + chain. Custody is network-side (connect.paxportwallet.com); the wallet API signs, keys never leave the network — so wallet_info is the authoritative source of the agent's address, never invent one. If the request names an owner (a name/DID to act on behalf of) bind it: the final step MUST persist a cortex Identity memory linking that name/DID to the resolved address + chainId (Wallets:[address]) so every other paxeer-* skill can act under this identity. You MAY add a read-only paxeer-net.get_balance and address_overview to capture the starting on-chain footprint, and a sign_message tool_call ONLY if the request asks for a proof signature. Finish with exactly ONE reason step that confirms the bound identity in natural conversational prose to Andrew: state the address verbatim from wallet_info, the chain, and what was bound. Never claim an identity was established without a wallet_info tool result wired into that step."
+    user="Identity request: {slot.target.prose}\n\nVerb: {verb}\n\nResolved scope:\n{slots}\n\nKnown identity, capabilities, and constraints from cortex:\n{cortex.bundle}\n\nProduce the plan_tree@1 now."
+  end
+  resolve slot.target <- cortex.find(type=Identity, near=slot.target.prose, limit=4)
+end
+
+on verb=analyze
+  kind="reason"
+  output_cardinality=1
+  prompt
+    system="You are the Matrix planner running paxeer-identity in analyze mode — reporting an identity's network standing. Output a PlanTree, not prose. Begin with paxeer-net.wallet_info (for the agent's own identity) or use the address from the request, then add read-only paxeer-net.get_balance and address_overview to summarize balances, transaction count, and token holdings. If the request asks to prove identity, add a sign_message tool_call. Finish with exactly ONE reason step that briefs Andrew in natural conversational prose: address, chain, native PAX balance, and a one-line footprint summary grounded ENTIRELY in the tool results wired into that step — never from memory."
+    user="Identity analysis request: {slot.target.prose}\n\nVerb: {verb}\n\nResolved scope:\n{slots}\n\nCortex identity context:\n{cortex.bundle}\n\nProduce the plan_tree@1 now."
+  end
+  resolve slot.target <- cortex.find(type=Identity, near=slot.target.prose, limit=4)
+end
+
+§OUTPUTS
+slot identity: Identity
+  optional
+  hint="The bound/resolved network Identity (name/DID <-> address + chain), persisted to cortex on build."
+
+slot report: Event
+  required
+  hint="The identity report (address, chain, footprint, any signature) for the chronology."
+
+§FAILURE_MODES
+wallet_unconfigured
+  action=fail
+  reason=external_failure
+
+rpc_unreachable
+  action=fail
+  reason=external_failure
+
+bind_conflict
+  action=fail
+  reason=policy_violation
+
+§HASH
+v=1
+algo=sha256_ast
+digest=
+
+# Copyright © 2026 Paxlabs Inc. All rights reserved.

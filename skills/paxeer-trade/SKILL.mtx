@@ -1,0 +1,106 @@
+# Copyright © 2026 Paxlabs Inc. All rights reserved. SPDX-License-Identifier: LicenseRef-Paxlabs-Matrix-Protocol
+# Contact · license@Paxeer.app · legal@Paxeer.app
+
+# paxeer-trade — markets, pricing, reputation, and swaps (MatrixScript manifest)
+# Companion prose body lives in SKILL.md and carries the same tool-call mandate.
+# L3 of the machine-commerce stack: oracle-relative pricing (OROB 0x0901),
+# uniform clearing (0x0902), fill-quality reputation (PoFQ 0x0904), oracle
+# prices (0x0903), and DEX swaps on the WIRED routers via the embedded wallet.
+
+§SKILL
+id=paxeer-trade
+version=0.1.0
+display="Paxeer Trade"
+author=did:pax:0xMATRIX
+description="Quote, price, and trade on Paxeer. Read oracle prices (0x0903), compute oracle-relative quotes (OROB 0x0901), uniform clearing (0x0902), and fill-quality/reputation scores (PoFQ 0x0904); read off-chain prices and PaxSpot market data; and execute swaps on the wired DEX routers (PECOR meta-aggregator + Sidiora + HyperPax DEX) through the embedded wallet with an explicit min-out. Quote before swapping; approve before routing ERC-20s; persist every fill as an Event with its tx hash and fill-quality score."
+mcl.verbs=acquire analyze
+determinism=seedable
+seed_policy=per_intent
+
+§INPUTS
+slot target: ArtifactRef
+  required
+  hint="The trade or pricing intent: a swap (sell X get Y, with size + slippage), a quote, a market/price lookup, or a fill-quality/reputation query."
+
+slot constraints: Constraint[]
+  optional
+  hint="Trade constraints (max size, min-out / max-slippage bps, allowed tokens/venues, dry-run)."
+
+§CORTEX
+reads=Identity Constraint Capability Goal Event Fact Pattern
+tags=paxeer trade swap dex oracle orob pofq pricing reputation
+
+§TOOLS
+matrix://tool/mcp/paxeer-net/wallet_info@0.1.0
+matrix://tool/mcp/paxeer-net/get_balance@0.1.0
+matrix://tool/mcp/paxeer-net/token_balance@0.1.0
+matrix://tool/mcp/paxeer-net/price@0.1.0
+matrix://tool/mcp/paxeer-net/market_get@0.1.0
+matrix://tool/mcp/paxeer-net/oracle_price@0.1.0
+matrix://tool/mcp/paxeer-net/orob_resolve@0.1.0
+matrix://tool/mcp/paxeer-net/clearing_compute@0.1.0
+matrix://tool/mcp/paxeer-net/pofq_score@0.1.0
+matrix://tool/mcp/paxeer-net/contract_read@0.1.0
+matrix://tool/mcp/paxeer-net/approve@0.1.0
+matrix://tool/mcp/paxeer-net/contract_write@0.1.0
+
+§SUB_SKILLS
+none
+
+§PROCEDURE
+on verb=acquire
+  kind="hard_reason"
+  output_cardinality=1
+  prompt
+    system="You are the Matrix planner running paxeer-trade in acquire mode — executing a swap on Paxeer. Output a PlanTree, not prose. SAFETY + QUOTE FIRST: (1) check the input balance (paxeer-net.token_balance or get_balance); (2) get a quote BEFORE swapping — use paxeer-net.contract_read against a quoter (Sidiora Quoter, HyperPax DEX Quoter, or HLPMM quoter — addresses in SKILL.md) and/or oracle_price + orob_resolve to derive a fair oracle-relative price; from the quote and the requested slippage compute an explicit minimum-out. (3) For an ERC-20 input, add paxeer-net.approve for the router BEFORE the swap. (4) Execute with paxeer-net.contract_write to the WIRED router (the PECOR V4 PECORRouter is the source-of-truth swap entry; SKILL.md lists routers + signatures), passing the computed min-out so the trade reverts rather than fills at a bad price. Amounts are human units. NEVER swap without a min-out / slippage bound. The FINAL single hard_reason step MUST brief Andrew in natural conversational prose: pair, size, quoted vs expected price, min-out, and the tx hash verbatim from the contract_write result; if a fill price is known, you MAY include a PoFQ fill-quality read. The spend gates (PaxeerSpendPolicy + cortex Constraint limits) are enforced below the plan — do not route around them; if size is unbounded or exceeds a constraint, STOP and ask."
+    user="Trade request: {slot.target.prose}\n\nVerb: {verb}\n\nResolved scope:\n{slots}\n\nIdentity, trade constraints, goals, prior fills from cortex:\n{cortex.bundle}\n\nProduce the plan_tree@1 now."
+  end
+  resolve slot.target <- cortex.find(type=Constraint, near=slot.target.prose, limit=8)
+end
+
+on verb=analyze
+  kind="reason"
+  output_cardinality=1
+  prompt
+    system="You are the Matrix planner running paxeer-trade in analyze mode — pricing, market, and reputation reads (no value moves). Output a PlanTree, not prose. Route: a fair price -> oracle_price (validator price for the market) then orob_resolve to apply a basis-point offset; off-chain reference price -> price; live market stats / depth -> market_get or contract_read against a quoter; batch clearing -> clearing_compute; counterparty/fill reliability -> pofq_score (Proof of Fill Quality reputation). Finish with exactly ONE reason step answering Andrew in conversational prose, grounded ENTIRELY in the tool results — quote concrete prices/scores verbatim and never invent a number."
+    user="Pricing/analysis request: {slot.target.prose}\n\nVerb: {verb}\n\nResolved scope:\n{slots}\n\nCortex context:\n{cortex.bundle}\n\nProduce the plan_tree@1 now."
+  end
+  resolve slot.target <- cortex.find(type=Pattern, near=slot.target.prose, limit=8)
+end
+
+§OUTPUTS
+slot report: Event
+  required
+  hint="The trade/pricing report (pair, size, price, min-out, tx hash, fill-quality)."
+
+slot fills: Event[]
+  optional
+  hint="Each executed swap persisted as an Event with its tx hash + fill-quality score."
+
+§FAILURE_MODES
+wallet_unconfigured
+  action=fail
+  reason=external_failure
+
+insufficient_balance
+  action=fail
+  reason=out_of_budget
+
+slippage_unbounded
+  action=fail
+  reason=policy_violation
+
+quote_unavailable
+  action=fail
+  reason=external_failure
+
+spend_limit_exceeded
+  action=fail
+  reason=policy_violation
+
+§HASH
+v=1
+algo=sha256_ast
+digest=
+
+# Copyright © 2026 Paxlabs Inc. All rights reserved.
