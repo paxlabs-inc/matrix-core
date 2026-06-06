@@ -28,6 +28,8 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sort"
+	"strings"
 	"sync"
 	"time"
 )
@@ -54,8 +56,20 @@ type convTurn struct {
 // list of turns for one conversation_id.
 type conversationRecord struct {
 	ConversationID string     `json:"conversation_id"`
+	Title          string     `json:"title,omitempty"`
 	Turns          []convTurn `json:"turns"`
 	Updated        time.Time  `json:"updated"`
+}
+
+// conversationSummary is the compact list shape for GET /conversations:
+// enough to render a sidebar entry (title + preview + timestamp) without
+// shipping the whole turn log.
+type conversationSummary struct {
+	ConversationID string    `json:"conversation_id"`
+	Title          string    `json:"title"`
+	Preview        string    `json:"preview"`
+	TurnCount      int       `json:"turn_count"`
+	Updated        time.Time `json:"updated"`
 }
 
 // conversationStore is the daemon-wide durable conversation memory. A
@@ -179,6 +193,93 @@ func (s *conversationStore) AppendUser(convID, text string) {
 
 func (s *conversationStore) AppendAssistant(convID, intentID, text string) {
 	s.Append(convID, convTurn{Role: "assistant", Text: text, IntentID: intentID})
+}
+
+// Get returns the full (bounded) turn log for one conversation, or nil
+// when there are none / persistence is disabled.
+func (s *conversationStore) Get(convID string) *conversationRecord {
+	if !s.enabled() || convID == "" {
+		return nil
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	rec := s.loadLocked(convID)
+	if len(rec.Turns) == 0 {
+		return nil
+	}
+	return rec
+}
+
+// List returns a summary of every persisted conversation, newest-first.
+// It is bounded by the on-disk file set; the daemon serves one user so
+// every file belongs to them. Best-effort: unreadable files are skipped.
+func (s *conversationStore) List() []conversationSummary {
+	if !s.enabled() {
+		return nil
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	entries, err := os.ReadDir(s.dir)
+	if err != nil {
+		return nil
+	}
+	out := make([]conversationSummary, 0, len(entries))
+	for _, e := range entries {
+		name := e.Name()
+		if e.IsDir() || !strings.HasSuffix(name, ".json") {
+			continue
+		}
+		convID := strings.TrimSuffix(name, ".json")
+		rec := s.loadLocked(convID)
+		if len(rec.Turns) == 0 {
+			continue
+		}
+		out = append(out, conversationSummary{
+			ConversationID: convID,
+			Title:          conversationTitle(rec),
+			Preview:        conversationPreview(rec),
+			TurnCount:      len(rec.Turns),
+			Updated:        rec.Updated,
+		})
+	}
+	sort.Slice(out, func(i, j int) bool { return out[i].Updated.After(out[j].Updated) })
+	return out
+}
+
+// conversationTitle derives a short human label for a conversation: the
+// explicit Title when set, else the first user turn trimmed to a sane
+// length, else a generic fallback.
+func conversationTitle(rec *conversationRecord) string {
+	if rec.Title != "" {
+		return rec.Title
+	}
+	for _, t := range rec.Turns {
+		if t.Role == "user" && t.Text != "" {
+			return truncateLabel(t.Text, 60)
+		}
+	}
+	return "New chat"
+}
+
+// conversationPreview returns the most recent turn's text, trimmed, for
+// the sidebar second line.
+func conversationPreview(rec *conversationRecord) string {
+	if len(rec.Turns) == 0 {
+		return ""
+	}
+	last := rec.Turns[len(rec.Turns)-1]
+	return truncateLabel(last.Text, 100)
+}
+
+// truncateLabel collapses whitespace and clamps to n runes with an
+// ellipsis when longer.
+func truncateLabel(s string, n int) string {
+	s = strings.Join(strings.Fields(s), " ")
+	r := []rune(s)
+	if len(r) <= n {
+		return s
+	}
+	return string(r[:n]) + "…"
 }
 
 // renderConversationHistory formats recent turns into a compact block

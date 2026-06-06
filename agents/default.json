@@ -112,6 +112,23 @@
       ]
     },
     {
+      "alias": "exec",
+      "transport": "stdio",
+      "command": "node",
+      "args": ["/root/matrix/tools/exec/exec.mjs"],
+      "env": [],
+      "package_digest": "sha256:089cd0465f64fda18cb07b890dc796a6b09791382f5247a9f319caf04a0671df",
+      "version": "0.1.0",
+      "tools": [
+        {"name": "shell", "description": "Run a shell command (bash -lc) to completion and return exit code + stdout + stderr. Install deps, build, run scripts, inspect the filesystem. Runs in /workspace by default. For a process that must keep running use service_start. args: command (required), cwd?, timeout_ms?, env?.", "side_effect_class": "shell", "timeout_ms": 600000},
+        {"name": "service_start", "description": "Start or replace a long-lived background service that keeps running after the call and is respawned on machine restart (web servers, bots, workers). Output captured to a log. args: name (required), command (required), cwd?, env?, autostart?.", "side_effect_class": "shell", "timeout_ms": 30000},
+        {"name": "service_list", "description": "List supervised services with status (running/stopped), pid, uptime, command, cwd, log file. Read-only.", "side_effect_class": "read", "timeout_ms": 15000},
+        {"name": "service_logs", "description": "Read the tail of a service's combined stdout+stderr log to verify or debug it. Read-only. args: name (required), lines?.", "side_effect_class": "read", "timeout_ms": 15000},
+        {"name": "service_stop", "description": "Stop a supervised service (SIGTERM then SIGKILL the process group); disables autostart until restarted. args: name (required).", "side_effect_class": "shell", "timeout_ms": 15000},
+        {"name": "service_restart", "description": "Restart a supervised service from its recorded command and re-enable autostart. args: name (required).", "side_effect_class": "shell", "timeout_ms": 30000}
+      ]
+    },
+    {
       "alias": "paxeer-net",
       "transport": "stdio",
       "command": "node",

@@ -97,6 +97,10 @@ func newDaemonMux(d *daemonState, t *transcript) http.Handler {
 	// Chat: the Liaison front door (triage → reply or dispatch+narrate).
 	mux.HandleFunc("/chat", d.handleChat(t))
 
+	// Conversations: durable Liaison thread memory (list + reopen past chats).
+	mux.HandleFunc("/conversations", d.handleConversationsRouter)
+	mux.HandleFunc("/conversations/", d.handleConversationsRouter)
+
 	// Messages: sync (legacy) + async.
 	mux.HandleFunc("/messages", d.handleMessages(t))
 	mux.HandleFunc("/messages/async", d.handleMessagesAsyncStart(t))

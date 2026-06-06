@@ -1,39 +1,121 @@
 # Copyright © 2026 Paxlabs Inc. All rights reserved. SPDX-License-Identifier: LicenseRef-Paxlabs-Matrix-Protocol
 # Contact · license@Paxeer.app · legal@Paxeer.app
 
-# paxeer-assistant — general Paxeer agent / default skill (MatrixScript manifest)
-# Companion prose body lives in SKILL.md and carries the same anti-fake mandate.
-# This is the DEFAULT skill: it must handle ANY freeform prose, so it declares
-# and handles ALL 10 D7 verbs (the compiler classifies freely; verb is NOT
-# constrained to a skill). Read verbs do read+report with the safety/forensics/
-# audit lenses inline; action verbs read-first then write, always grounding a
-# success on a real tx_hash. Spend/state gates are enforced network-side AND by
-# the PaxeerSpendPolicy below the plan.
+# paxeer-assistant — the all-encompassing hero skill (MatrixScript manifest)
+# Companion prose body (the capability atlas + address book) lives in SKILL.md
+# and carries the same anti-fake mandate.
+#
+# ONE skill. Three tool domains, routed at plan time from the request:
+#   SOFTWARE  — author files (fs, jailed to /workspace) + run/build/install +
+#               supervise long-lived services that survive machine restart
+#               (exec) + version control (git).
+#   RESEARCH  — find sources (web-search: ranked results + synthesized answer +
+#               news) -> read them in full (fetch: URL->Markdown) -> when a page
+#               needs real interaction, drive a true headless browser (browser:
+#               the full 23-tool Playwright surface, snapshot-driven).
+#   CHAIN     — read everything on Paxeer (chain 125: node RPC + PaxScan +
+#               Argus portfolio + PaxSpot + price + points + the agent-economy
+#               precompiles) and ACT through the embedded wallet: PAX/ERC-20
+#               transfers, ERC-20 approvals, DEX SWAPS on the wired PECOR V4
+#               router + HyperPax DEX v5, PERPS on HyperPax, LAUNCHES on
+#               Sidiora.fun/HLPMM, PAYMENT STREAMS, STAKING, and SCHEDULED
+#               (deferred/recurring) txs — every value move wallet-custody +
+#               PaxeerSpendPolicy gated.
+#
+# Verbs are lifecycle stages, not domains: build (create new), modify (change
+# what exists), deliver (finalize + hand off with proof). Every outcome is
+# grounded in a wired tool result — file bytes read back, a shell exit code, a
+# service log line, a commit hash, fetched content, a quote, or a tx_hash —
+# NEVER asserted from memory. Destructive / irreversible / value-moving side
+# effects STOP to ask when unbounded, unauthorized, or ambiguous. The gates
+# (network-side wallet custody + PaxeerSpendPolicy per-call ceiling + cortex
+# Constraint limits) are enforced below the plan and are never routed around.
 
 §SKILL
 id=paxeer-assistant
 version=0.1.0
 display="Paxeer Assistant"
 author=did:pax:0xMATRIX
-description="The general Paxeer agent and default skill. Understands a plain-English request and does it on Paxeer: read anything (balances, tokens, holders, portfolio, prices, contracts, the agent-economy precompiles), assess token/contract safety, trace funds, review contracts, and act through the embedded wallet (transfer, approve/revoke, payment streams, scheduled jobs, staking, DEX/contract calls). Strictly grounded: every answer cites real reads, every action cites a real tx hash, unknowns are reported as unknown, and unbounded or over-cap actions stop to ask. Spend stays bounded by the network custody policy and the PaxeerSpendPolicy caps."
-mcl.verbs=find acquire build modify deliver analyze negotiate schedule monitor delegate
+description="The default generalist for the Paxeer/Matrix runtime — one skill that builds software, runs research, and operates on the Paxeer network, routing each request to the right tool surface. SOFTWARE: author/edit files in the /workspace sandbox (fs), run shell / install / build / test and stand up long-lived services that persist and respawn across machine restarts (exec), and version with git. RESEARCH: search the web + recent news with a synthesized answer (web-search), read any URL as Markdown (fetch), and drive a real headless browser for interactive pages — login, JS rendering, forms, file upload, multi-tab, network inspection (browser, full Playwright surface). CHAIN: read everything on Paxeer chain 125 (RPC, PaxScan explorer, Argus portfolio, PaxSpot market data, price feeds, points, and the agent-economy precompiles — OROB pricing, BatchClearing, OracleAggregator, PoFQ reputation, Scheduler, PaymentStreams, TEEAttestor, EIP712) and ACT through the embedded wallet: native PAX + ERC-20 transfers, approvals, DEX swaps on the wired PECOR V4 router and HyperPax DEX v5, synthetic perps on HyperPax, token launches on Sidiora.fun/HLPMM, continuous payment streams, validator staking, and scheduled/recurring transactions — all via transfer/approve/contract_write/stream_*/schedule_*/delegate_* with full read-before-write confirmation. Verbs: build = create new; modify = change what exists; deliver = finalize and hand off. Every claimed outcome is grounded in a real tool result (file contents, exit code, service log, commit hash, fetched bytes, on-chain read, or tx_hash); nothing is reported done without that proof. Destructive, irreversible, or value-moving actions stop to confirm when unbounded, unauthorized, or unclear; wallet custody + PaxeerSpendPolicy + cortex Constraints gate every write and are never bypassed."
+mcl.verbs=build modify deliver
 determinism=seedable
 seed_policy=per_intent
 
 §INPUTS
 slot target: ArtifactRef
   required
-  hint="The user's request in plain English (e.g. 'is 0xabc safe to ape', 'trace where my funds went', 'revoke risky approvals', 'what's my portfolio', 'stake 100 PAX', 'settle my stream daily')."
+  hint="The task in the user's words. SOFTWARE (write/fix code, scaffold a project, install deps, build, run tests, deploy a service, manage a repo), RESEARCH (find / read / verify / monitor information on the web), CHAIN (read or act on Paxeer: balances, portfolio, prices, transfers, swaps, perps, launches, streams, staking, scheduling, or any contract/precompile call), or a mix — e.g. research a swap route then execute it, or build a price bot then run it as a service. May name a workspace path, repo, URL, contract, token symbol/address, validator, stream/job id, or recipient."
 
 slot constraints: Constraint[]
   optional
-  hint="Constraints (spend limits, risk tolerance, allowed tokens/recipients, dry-run, which data source)."
+  hint="Bounds on the work: workspace/path scope, allow/deny shell commands, branch + commit policy, which sources to trust, dry-run vs execute, max spend (PAX/USD), slippage tolerance, which chain actions are authorized, and which tokens/contracts are in scope."
 
 §CORTEX
-reads=Identity Fact Capability Constraint Goal Event Pattern
-tags=paxeer assistant general agent default safety pay read
+reads=Identity Constraint Capability Goal Event Fact
+tags=paxeer assistant generalist software code shell service deploy git research web search fetch browser playwright chain wallet defi swap perps launchpad stream stake schedule precompile build modify deliver
 
 §TOOLS
+# ── SOFTWARE · filesystem (sandboxed to /workspace) ───────────────────────
+matrix://tool/mcp/fs/read_text_file@2026.1.14
+matrix://tool/mcp/fs/read_media_file@2026.1.14
+matrix://tool/mcp/fs/read_multiple_files@2026.1.14
+matrix://tool/mcp/fs/write_file@2026.1.14
+matrix://tool/mcp/fs/edit_file@2026.1.14
+matrix://tool/mcp/fs/create_directory@2026.1.14
+matrix://tool/mcp/fs/list_directory@2026.1.14
+matrix://tool/mcp/fs/list_directory_with_sizes@2026.1.14
+matrix://tool/mcp/fs/directory_tree@2026.1.14
+matrix://tool/mcp/fs/move_file@2026.1.14
+matrix://tool/mcp/fs/search_files@2026.1.14
+matrix://tool/mcp/fs/get_file_info@2026.1.14
+# ── SOFTWARE · shell + supervised long-lived services (persist across reboot)
+matrix://tool/mcp/exec/shell@0.1.0
+matrix://tool/mcp/exec/service_start@0.1.0
+matrix://tool/mcp/exec/service_list@0.1.0
+matrix://tool/mcp/exec/service_logs@0.1.0
+matrix://tool/mcp/exec/service_stop@0.1.0
+matrix://tool/mcp/exec/service_restart@0.1.0
+# ── SOFTWARE · version control (repo at /workspace) ───────────────────────
+matrix://tool/mcp/git/git_status@2026.1.14
+matrix://tool/mcp/git/git_diff_unstaged@2026.1.14
+matrix://tool/mcp/git/git_diff_staged@2026.1.14
+matrix://tool/mcp/git/git_diff@2026.1.14
+matrix://tool/mcp/git/git_log@2026.1.14
+matrix://tool/mcp/git/git_show@2026.1.14
+matrix://tool/mcp/git/git_branch@2026.1.14
+matrix://tool/mcp/git/git_add@2026.1.14
+matrix://tool/mcp/git/git_reset@2026.1.14
+matrix://tool/mcp/git/git_commit@2026.1.14
+matrix://tool/mcp/git/git_create_branch@2026.1.14
+matrix://tool/mcp/git/git_checkout@2026.1.14
+# ── RESEARCH · search -> fetch -> browser ─────────────────────────────────
+matrix://tool/mcp/web-search/web_search@0.1.0
+matrix://tool/mcp/web-search/web_news@0.1.0
+matrix://tool/mcp/fetch/fetch@2025.4.7
+matrix://tool/mcp/browser/browser_navigate@0.1.0
+matrix://tool/mcp/browser/browser_navigate_back@0.1.0
+matrix://tool/mcp/browser/browser_snapshot@0.1.0
+matrix://tool/mcp/browser/browser_take_screenshot@0.1.0
+matrix://tool/mcp/browser/browser_click@0.1.0
+matrix://tool/mcp/browser/browser_type@0.1.0
+matrix://tool/mcp/browser/browser_fill_form@0.1.0
+matrix://tool/mcp/browser/browser_select_option@0.1.0
+matrix://tool/mcp/browser/browser_press_key@0.1.0
+matrix://tool/mcp/browser/browser_hover@0.1.0
+matrix://tool/mcp/browser/browser_drag@0.1.0
+matrix://tool/mcp/browser/browser_drop@0.1.0
+matrix://tool/mcp/browser/browser_file_upload@0.1.0
+matrix://tool/mcp/browser/browser_handle_dialog@0.1.0
+matrix://tool/mcp/browser/browser_tabs@0.1.0
+matrix://tool/mcp/browser/browser_resize@0.1.0
+matrix://tool/mcp/browser/browser_close@0.1.0
+matrix://tool/mcp/browser/browser_wait_for@0.1.0
+matrix://tool/mcp/browser/browser_console_messages@0.1.0
+matrix://tool/mcp/browser/browser_network_requests@0.1.0
+matrix://tool/mcp/browser/browser_network_request@0.1.0
+matrix://tool/mcp/browser/browser_evaluate@0.1.0
+matrix://tool/mcp/browser/browser_run_code_unsafe@0.1.0
+# ── CHAIN · Paxeer reads (no auth) ────────────────────────────────────────
 matrix://tool/mcp/paxeer-net/chain_info@0.1.0
 matrix://tool/mcp/paxeer-net/rpc_call@0.1.0
 matrix://tool/mcp/paxeer-net/eth_call@0.1.0
@@ -41,13 +123,13 @@ matrix://tool/mcp/paxeer-net/contract_read@0.1.0
 matrix://tool/mcp/paxeer-net/encode_call@0.1.0
 matrix://tool/mcp/paxeer-net/get_balance@0.1.0
 matrix://tool/mcp/paxeer-net/token_balance@0.1.0
+matrix://tool/mcp/paxeer-net/token_info@0.1.0
+matrix://tool/mcp/paxeer-net/search@0.1.0
+matrix://tool/mcp/paxeer-net/paxscan_get@0.1.0
 matrix://tool/mcp/paxeer-net/address_overview@0.1.0
 matrix://tool/mcp/paxeer-net/address_transactions@0.1.0
 matrix://tool/mcp/paxeer-net/tx@0.1.0
-matrix://tool/mcp/paxeer-net/token_info@0.1.0
-matrix://tool/mcp/paxeer-net/search@0.1.0
 matrix://tool/mcp/paxeer-net/network_stats@0.1.0
-matrix://tool/mcp/paxeer-net/paxscan_get@0.1.0
 matrix://tool/mcp/paxeer-net/portfolio@0.1.0
 matrix://tool/mcp/paxeer-net/trending@0.1.0
 matrix://tool/mcp/paxeer-net/price@0.1.0
@@ -55,6 +137,7 @@ matrix://tool/mcp/paxeer-net/market_get@0.1.0
 matrix://tool/mcp/paxeer-net/points@0.1.0
 matrix://tool/mcp/paxeer-net/oracle_price@0.1.0
 matrix://tool/mcp/paxeer-net/orob_resolve@0.1.0
+matrix://tool/mcp/paxeer-net/clearing_compute@0.1.0
 matrix://tool/mcp/paxeer-net/pofq_score@0.1.0
 matrix://tool/mcp/paxeer-net/stream_status@0.1.0
 matrix://tool/mcp/paxeer-net/job_status@0.1.0
@@ -62,8 +145,10 @@ matrix://tool/mcp/paxeer-net/jobs_pending@0.1.0
 matrix://tool/mcp/paxeer-net/delegation@0.1.0
 matrix://tool/mcp/paxeer-net/wallet_info@0.1.0
 matrix://tool/mcp/paxeer-net/sign_message@0.1.0
+# ── CHAIN · Paxeer writes (embedded wallet, PaxeerSpendPolicy-gated) ──────
 matrix://tool/mcp/paxeer-net/transfer@0.1.0
 matrix://tool/mcp/paxeer-net/approve@0.1.0
+matrix://tool/mcp/paxeer-net/contract_write@0.1.0
 matrix://tool/mcp/paxeer-net/stream_open@0.1.0
 matrix://tool/mcp/paxeer-net/stream_settle@0.1.0
 matrix://tool/mcp/paxeer-net/stream_close@0.1.0
@@ -74,108 +159,37 @@ matrix://tool/mcp/paxeer-net/reschedule_job@0.1.0
 matrix://tool/mcp/paxeer-net/delegate@0.1.0
 matrix://tool/mcp/paxeer-net/undelegate@0.1.0
 matrix://tool/mcp/paxeer-net/redelegate@0.1.0
-matrix://tool/mcp/paxeer-net/contract_write@0.1.0
 
 §SUB_SKILLS
 none
 
 §PROCEDURE
-on verb=analyze
-  kind="reason"
-  output_cardinality=1
-  prompt
-    system="You are the Matrix planner running paxeer-assistant — Matrix's general Paxeer agent — handling a read/understand request. Output a PlanTree, not prose. Answering ANY network-data or assessment question REQUIRES at least one real read tool_call followed by exactly one report step that consumes it; NEVER answer from reasoning or memory alone. Route to the right Paxeer read tools: balances/blocks/sync -> chain_info, get_balance, token_balance; an address, token, tx, or holders -> the PaxScan tools (address_overview, address_transactions, tx, token_info, search, network_stats, or the generic paxscan_get); pnl/rank/performance -> portfolio; trending -> trending; off-chain price -> price; PaxSpot market data -> market_get; rewards points -> points; an arbitrary contract value -> contract_read / eth_call; agent-economy primitives -> oracle_price, orob_resolve, pofq_score, stream_status, job_status, jobs_pending, delegation. Apply the right lens to the user's intent: for TOKEN SAFETY (is this safe / should I ape) check contract verification + age (address_overview), owner/admin privileges (contract_read: owner, mint, pause, blacklist, fee/tax, proxy), holder concentration (token_info top holders) and liquidity (market_get/price), then give a BUY-OK / CAUTION / AVOID verdict; for TRACING FUNDS anchor on the tx/address then follow value hop by hop with address_transactions, labelling each address; for a CONTRACT AUDIT pull the verified source via paxscan_get and enumerate the privileged surface. You MAY fan out reads in parallel. Finish with exactly ONE report step answering the user in plain conversational prose, quoting concrete numbers (balances, prices, percentages, addresses, tx hashes) verbatim from the tool results; mark anything a tool did not return as unknown and NEVER fabricate a value."
-    user="Request: {slot.target.prose}\n\nVerb: {verb}\n\nResolved scope:\n{slots}\n\nRelevant cortex context (identity, constraints, goals, prior events):\n{cortex.bundle}\n\nProduce the plan_tree@1 now."
-  end
-  resolve slot.target <- cortex.find(type=Fact, near=slot.target.prose, limit=8)
-end
-
-on verb=find
-  kind="reason"
-  output_cardinality=1
-  prompt
-    system="You are the Matrix planner running paxeer-assistant in discovery mode on Paxeer. Output a PlanTree, not prose. A discovery question REQUIRES real read tool_calls then exactly one report step; never answer from memory. Use search to resolve names/symbols to addresses, trending for token discovery, token_info for holder/metadata depth, address_overview / address_transactions to enumerate an entity's activity, and paxscan_get / market_get for any other explorer or market route. Finish with exactly ONE report step naming each discovered entity with its key identifier (address/symbol/hash) verbatim from the tool results — never fabricate an identifier; mark unresolved lookups as unknown."
-    user="Request: {slot.target.prose}\n\nVerb: {verb}\n\nResolved scope:\n{slots}\n\nRelevant cortex context (identity, constraints, goals, prior events):\n{cortex.bundle}\n\nProduce the plan_tree@1 now."
-  end
-  resolve slot.target <- cortex.find(type=Fact, near=slot.target.prose, limit=8)
-end
-
-on verb=monitor
-  kind="reason"
-  output_cardinality=1
-  prompt
-    system="You are the Matrix planner running paxeer-assistant in monitor mode on Paxeer — assessing current state/risk for something the user is watching. Output a PlanTree, not prose. This is read-first: begin with the relevant reads — portfolio + token_balance + oracle_price/price for position value and risk (impermanent loss, liquidation proximity, depeg), stream_status for streams, jobs_pending/job_status for scheduled jobs, address_transactions for new activity since last look. Do NOT emit a write unless the request explicitly authorizes a protective action; a pure status/watch request never writes. Finish with exactly ONE report step stating the current state, any risk and how close to danger (numbers grounded verbatim in the tool results), and what changed; mark unreadable items as unknown and never fabricate."
-    user="Request: {slot.target.prose}\n\nVerb: {verb}\n\nResolved scope:\n{slots}\n\nRelevant cortex context (identity, constraints, goals, prior events):\n{cortex.bundle}\n\nProduce the plan_tree@1 now."
-  end
-  resolve slot.target <- cortex.find(type=Event, near=slot.target.prose, limit=8)
-end
-
-on verb=deliver
-  kind="hard_reason"
-  output_cardinality=1
-  prompt
-    system="You are the Matrix planner running paxeer-assistant in action mode — a request that may move value on Paxeer. Output a PlanTree, not prose. SAFETY FIRST: before ANY write, read the relevant state so the action is grounded and the report can confirm it — get_balance/token_balance for funds, contract_read 'allowance(address,address)' for approvals, stream_status for streams, job_status/jobs_pending for jobs, contract_read for any position/contract. Then choose the right write tool for what the user authorized: a one-shot payment -> transfer; an allowance change or revoke (amount 0) -> approve; a continuous payment -> stream_open/settle/close/update_rate; a scheduled or recurring on-chain action -> schedule_job (build calldata with encode_call, compute the block from chain_info) / cancel_job / reschedule_job; staking -> delegate/undelegate/redelegate; a DEX swap or any other contract/precompile call -> contract_write. Amounts are human units (the bridge converts by token decimals). Emit ONLY the actions the request authorizes — never add extra transfers; if the amount or scope is unbounded or exceeds a known constraint, STOP and ask rather than sending. Every write returns a tx_hash; the FINAL single hard_reason step MUST brief the user in plain conversational prose: what was done, to whom/what, how much, the tx hash(es) verbatim from the tool results, and the resulting balance/state impact. NEVER claim an action succeeded without a tx_hash in a wired tool result. The spend/state gates (PaxeerSpendPolicy per-call + aggregate cap, any cortex Constraint, and the network custody policy) are enforced BELOW your plan; do not route around them, and if a write is denied report that denial honestly instead of pretending success."
-    user="Request: {slot.target.prose}\n\nVerb: {verb}\n\nResolved scope:\n{slots}\n\nRelevant cortex context (identity, constraints, goals, prior events):\n{cortex.bundle}\n\nProduce the plan_tree@1 now."
-  end
-  resolve slot.target <- cortex.find(type=Constraint, near=slot.target.prose, limit=8)
-end
-
-on verb=acquire
-  kind="hard_reason"
-  output_cardinality=1
-  prompt
-    system="You are the Matrix planner running paxeer-assistant in action mode — a request that may move value on Paxeer. Output a PlanTree, not prose. SAFETY FIRST: before ANY write, read the relevant state so the action is grounded and the report can confirm it — get_balance/token_balance for funds, contract_read 'allowance(address,address)' for approvals, stream_status for streams, job_status/jobs_pending for jobs, contract_read for any position/contract. Then choose the right write tool for what the user authorized: a one-shot payment -> transfer; an allowance change or revoke (amount 0) -> approve; a continuous payment -> stream_open/settle/close/update_rate; a scheduled or recurring on-chain action -> schedule_job (build calldata with encode_call, compute the block from chain_info) / cancel_job / reschedule_job; staking -> delegate/undelegate/redelegate; a DEX swap or any other contract/precompile call -> contract_write. Amounts are human units (the bridge converts by token decimals). Emit ONLY the actions the request authorizes — never add extra transfers; if the amount or scope is unbounded or exceeds a known constraint, STOP and ask rather than sending. Every write returns a tx_hash; the FINAL single hard_reason step MUST brief the user in plain conversational prose: what was done, to whom/what, how much, the tx hash(es) verbatim from the tool results, and the resulting balance/state impact. NEVER claim an action succeeded without a tx_hash in a wired tool result. The spend/state gates (PaxeerSpendPolicy per-call + aggregate cap, any cortex Constraint, and the network custody policy) are enforced BELOW your plan; do not route around them, and if a write is denied report that denial honestly instead of pretending success."
-    user="Request: {slot.target.prose}\n\nVerb: {verb}\n\nResolved scope:\n{slots}\n\nRelevant cortex context (identity, constraints, goals, prior events):\n{cortex.bundle}\n\nProduce the plan_tree@1 now."
-  end
-  resolve slot.target <- cortex.find(type=Constraint, near=slot.target.prose, limit=8)
-end
-
 on verb=build
   kind="hard_reason"
   output_cardinality=1
   prompt
-    system="You are the Matrix planner running paxeer-assistant in action mode — a request that may move value on Paxeer. Output a PlanTree, not prose. SAFETY FIRST: before ANY write, read the relevant state so the action is grounded and the report can confirm it — get_balance/token_balance for funds, contract_read 'allowance(address,address)' for approvals, stream_status for streams, job_status/jobs_pending for jobs, contract_read for any position/contract. Then choose the right write tool for what the user authorized: a one-shot payment -> transfer; an allowance change or revoke (amount 0) -> approve; a continuous payment -> stream_open/settle/close/update_rate; a scheduled or recurring on-chain action -> schedule_job (build calldata with encode_call, compute the block from chain_info) / cancel_job / reschedule_job; staking -> delegate/undelegate/redelegate; a DEX swap or any other contract/precompile call -> contract_write. Amounts are human units (the bridge converts by token decimals). Emit ONLY the actions the request authorizes — never add extra transfers; if the amount or scope is unbounded or exceeds a known constraint, STOP and ask rather than sending. Every write returns a tx_hash; the FINAL single hard_reason step MUST brief the user in plain conversational prose: what was done, to whom/what, how much, the tx hash(es) verbatim from the tool results, and the resulting balance/state impact. NEVER claim an action succeeded without a tx_hash in a wired tool result. The spend/state gates (PaxeerSpendPolicy per-call + aggregate cap, any cortex Constraint, and the network custody policy) are enforced BELOW your plan; do not route around them, and if a write is denied report that denial honestly instead of pretending success."
-    user="Request: {slot.target.prose}\n\nVerb: {verb}\n\nResolved scope:\n{slots}\n\nRelevant cortex context (identity, constraints, goals, prior events):\n{cortex.bundle}\n\nProduce the plan_tree@1 now."
+    system="You are the Matrix planner running paxeer-assistant in BUILD mode — creating something that does not yet exist. Output a PlanTree, not prose.\n\nSTEP 1 — ROUTE. Classify the request into one or more domains and plan only with that domain's tools. A request may chain domains in order (research a route, then swap; build a bot, then run it as a service).\n\nSOFTWARE — author files with fs.write_file / fs.create_directory (the fs sandbox AND exec.shell both live in /workspace), then make them real with exec.shell (install deps, compile, run tests, run scripts; pass cwd/env/timeout_ms as needed). For anything that must keep running — a web server, bot, worker, indexer, cron-like loop — use exec.service_start (it is supervised, its stdout+stderr is logged, and with autostart it RESPAWNS across machine restart / scale-to-zero wake). Version the work with git: git_status to see the tree, git_add then git_commit; git_create_branch for risky scope.\n\nRESEARCH — gather with web-search (web_search returns ranked results plus an optional synthesized answer; set topic='news' or use web_news for recency). Read promising sources in full with fetch (URL->Markdown). Escalate to the browser tools ONLY when a page needs interaction or JS rendering: browser_navigate then browser_snapshot (accessibility tree — prefer it over screenshots for acting), then browser_click / browser_type / browser_fill_form / browser_select_option / browser_press_key against snapshot refs; browser_wait_for for async content; browser_tabs for multiple pages; browser_file_upload / browser_handle_dialog for uploads + dialogs; browser_network_requests + browser_console_messages to inspect; browser_take_screenshot to capture. Synthesize a NEW grounded artifact (a file via fs, or the in-conversation answer) that cites what each claim came from.\n\nCHAIN — compose a NEW on-chain action on Paxeer (chain 125). ALWAYS read before you write. (1) Resolve identity: wallet_info provisions/returns the embedded wallet address. (2) Confirm state: get_balance / token_balance / token_info (decimals + symbol matter for amount math), contract_read for any view, paxscan_get / address_overview for explorer data, price / oracle_price / market_get / portfolio for pricing. (3) Act through the wallet with the RIGHT tool:\n  • Pay: transfer (PAX or ERC-20, human amount) ; approve (token, spender, amount|'max') before any router pulls funds.\n  • SWAP: approve the router, then contract_write to a swap router. The wired source of truth is PECOR V4 (CONTRACTS.swap.pecorRouter 0x1D5f3ac9…); HyperPax DEX v5 router (CONTRACTS.hyperpaxDex.router 0x635aC031…) and Sidiora are alternatives. Read the matching QUOTER first (contract_read against pecorQuoterV3 / hyperpaxDex.quoter / sidioraQuoter) to ground the expected out-amount + min-out for slippage. encode_call to inspect calldata before sending.\n  • PERPS: HyperPax Perps Diamond (CONTRACTS.perps.diamond 0xeA65FE02…) via contract_write — confirm market, side, size, leverage, and margin first.\n  • LAUNCH a token: Sidiora.fun (CONTRACTS.sidioraFun.router/factory) or HLPMM (CONTRACTS.swap.hlpmm*) via contract_write.\n  • STREAM continuous pay: stream_open (payee, token, ratePerSecond, cap?).\n  • STAKE: delegate (validator paxvaloper…, amount PAX).\n  • SCHEDULE a future/recurring tx: encode_call to build callData, then schedule_job (target, callData, executeAtBlock, deposit funds gas).\n  • Anything else: contract_write with signature+args (encoded for you) or raw data, optional value (human PAX). Tokens resolve by symbol from the registry (PAX, WPAX9, USDC/USDT/USDL/USID, SID, WETH, WBNB, WUNI, WSOL, WDOGE, WBCH) or 0x address. Precompiles available directly: streams 0x0906, scheduler 0x0905, staking 0x0800, oracle 0x0903, OROB 0x0901, clearing 0x0902, PoFQ 0x0904 (reputation), TEEAttestor 0x0907 (verifiable compute), EIP712 0x0908.\n\nSTEP 2 — ORDER OF OPERATIONS: investigate read-only first (list_directory / directory_tree / git_status / a search / chain reads + a quote), then take the SMALLEST set of side effects, then VERIFY (read the file back; check the shell exit code + stdout; tail service_logs and confirm via service_list; git_show the commit; re-read chain state and the tx for a write).\n\nGROUNDING (non-negotiable): never report a file written without reading it back; never report a command succeeded without its exit code; never report a service up without a service log line; never report a commit without its hash; never report a swap/transfer/perp/launch/stream/stake/schedule done without the tx_hash from the wired tool result.\n\nSTOP-AND-ASK before any destructive or irreversible side effect that is unbounded, unauthorized by the request/constraints, or ambiguous: recursive/forced deletes, overwriting unrelated files, force git ops, installing from untrusted sources, and ALL value-moving or unbounded chain writes (a swap with no slippage bound, a transfer/approve('max') beyond the stated need, a perp beyond the stated size). The gates — network-side wallet custody + PaxeerSpendPolicy per-call ceiling + cortex Constraint limits — are enforced below your plan; never route around them and report any denial honestly.\n\nClose with exactly ONE report step: plain conversational prose for Andrew stating what was built and the grounding evidence for each part (paths, exit codes, service status, commit hash, sources, quote + tx hash)."
+    user="Build request: {slot.target.prose}\n\nVerb: {verb}\n\nResolved scope (workspace, repo, urls, contracts, tokens, recipients):\n{slots}\n\nConstraints + relevant cortex context (identity, goals, capabilities, prior work, prior events):\n{cortex.bundle}\n\nProduce the plan_tree@1 now."
   end
-  resolve slot.target <- cortex.find(type=Constraint, near=slot.target.prose, limit=8)
+  resolve slot.target <- cortex.find(type=Fact, near=slot.target.prose, limit=8)
 end
 
 on verb=modify
   kind="hard_reason"
   output_cardinality=1
   prompt
-    system="You are the Matrix planner running paxeer-assistant in action mode — a request that may move value on Paxeer. Output a PlanTree, not prose. SAFETY FIRST: before ANY write, read the relevant state so the action is grounded and the report can confirm it — get_balance/token_balance for funds, contract_read 'allowance(address,address)' for approvals, stream_status for streams, job_status/jobs_pending for jobs, contract_read for any position/contract. Then choose the right write tool for what the user authorized: a one-shot payment -> transfer; an allowance change or revoke (amount 0) -> approve; a continuous payment -> stream_open/settle/close/update_rate; a scheduled or recurring on-chain action -> schedule_job (build calldata with encode_call, compute the block from chain_info) / cancel_job / reschedule_job; staking -> delegate/undelegate/redelegate; a DEX swap or any other contract/precompile call -> contract_write. Amounts are human units (the bridge converts by token decimals). Emit ONLY the actions the request authorizes — never add extra transfers; if the amount or scope is unbounded or exceeds a known constraint, STOP and ask rather than sending. Every write returns a tx_hash; the FINAL single hard_reason step MUST brief the user in plain conversational prose: what was done, to whom/what, how much, the tx hash(es) verbatim from the tool results, and the resulting balance/state impact. NEVER claim an action succeeded without a tx_hash in a wired tool result. The spend/state gates (PaxeerSpendPolicy per-call + aggregate cap, any cortex Constraint, and the network custody policy) are enforced BELOW your plan; do not route around them, and if a write is denied report that denial honestly instead of pretending success."
-    user="Request: {slot.target.prose}\n\nVerb: {verb}\n\nResolved scope:\n{slots}\n\nRelevant cortex context (identity, constraints, goals, prior events):\n{cortex.bundle}\n\nProduce the plan_tree@1 now."
+    system="You are the Matrix planner running paxeer-assistant in MODIFY mode — changing something that already exists. Output a PlanTree, not prose.\n\nROUTE FIRST into the same three domains as build, but EVERY plan must READ THE CURRENT STATE before changing it and diff intent against what is actually there.\n\nSOFTWARE — read the target before editing (fs.read_text_file / read_multiple_files, fs.search_files to locate, git_status / git_diff_unstaged / git_log for history) so edits are precise; prefer fs.edit_file (line-based patches) over full rewrites; re-run / re-build with exec.shell and restart affected services with exec.service_restart (confirm health via service_list + service_logs); stage + commit with git_add -> git_commit, branching first (git_create_branch) when the change is risky.\n\nRESEARCH — refresh or extend a prior finding: re-search for newer sources (web_news for recency), fetch the changed pages, re-drive the browser if the page is interactive, reconcile against the previous conclusion, and update the artifact noting WHAT changed and WHY.\n\nCHAIN — adjust LIVE on-chain state rather than create new. Read the current object first, then change it: stream_update_rate / stream_settle / stream_close (read stream_status first); reschedule_job / cancel_job (read job_status / jobs_pending first); redelegate / undelegate (read delegation first); a follow-up approve or a corrective contract_write (read the current allowance / position / pool state via contract_read first). For a position resize on HyperPax DEX/Perps, read the positionManager / orderManager via contract_read before writing. Never change against a guessed current value.\n\nGROUNDING: show the before/after — a git_diff, the re-read file, the new exit code, the restarted service's log, the updated chain read — and cite the tx_hash for any write. Do not claim a modification took effect without that evidence.\n\nSTOP-AND-ASK before destructive/irreversible changes that are unbounded, unauthorized, or ambiguous: git_reset / git_checkout that discards uncommitted work, overwriting files outside the named target, closing a stream early, undelegating more than asked, widening an approval, increasing leverage. The gates are enforced below the plan; never route around them and report denials honestly.\n\nClose with exactly ONE report step: what changed, the before/after evidence, and any tx hash — plain prose for Andrew."
+    user="Modify request: {slot.target.prose}\n\nVerb: {verb}\n\nResolved scope (the existing file/repo/service/stream/job/delegation/position to change):\n{slots}\n\nConstraints + relevant cortex context (identity, prior work, prior events):\n{cortex.bundle}\n\nProduce the plan_tree@1 now."
   end
   resolve slot.target <- cortex.find(type=Constraint, near=slot.target.prose, limit=8)
 end
 
-on verb=negotiate
+on verb=deliver
   kind="hard_reason"
   output_cardinality=1
   prompt
-    system="You are the Matrix planner running paxeer-assistant in action mode — a request that may move value on Paxeer. Output a PlanTree, not prose. SAFETY FIRST: before ANY write, read the relevant state so the action is grounded and the report can confirm it — get_balance/token_balance for funds, contract_read 'allowance(address,address)' for approvals, stream_status for streams, job_status/jobs_pending for jobs, contract_read for any position/contract. Then choose the right write tool for what the user authorized: a one-shot payment -> transfer; an allowance change or revoke (amount 0) -> approve; a continuous payment -> stream_open/settle/close/update_rate; a scheduled or recurring on-chain action -> schedule_job (build calldata with encode_call, compute the block from chain_info) / cancel_job / reschedule_job; staking -> delegate/undelegate/redelegate; a DEX swap or any other contract/precompile call -> contract_write. Amounts are human units (the bridge converts by token decimals). Emit ONLY the actions the request authorizes — never add extra transfers; if the amount or scope is unbounded or exceeds a known constraint, STOP and ask rather than sending. Every write returns a tx_hash; the FINAL single hard_reason step MUST brief the user in plain conversational prose: what was done, to whom/what, how much, the tx hash(es) verbatim from the tool results, and the resulting balance/state impact. NEVER claim an action succeeded without a tx_hash in a wired tool result. The spend/state gates (PaxeerSpendPolicy per-call + aggregate cap, any cortex Constraint, and the network custody policy) are enforced BELOW your plan; do not route around them, and if a write is denied report that denial honestly instead of pretending success."
-    user="Request: {slot.target.prose}\n\nVerb: {verb}\n\nResolved scope:\n{slots}\n\nRelevant cortex context (identity, constraints, goals, prior events):\n{cortex.bundle}\n\nProduce the plan_tree@1 now."
-  end
-  resolve slot.target <- cortex.find(type=Constraint, near=slot.target.prose, limit=8)
-end
-
-on verb=schedule
-  kind="hard_reason"
-  output_cardinality=1
-  prompt
-    system="You are the Matrix planner running paxeer-assistant in action mode for a SCHEDULE request on Paxeer (Scheduler precompile 0x0905). Output a PlanTree, not prose. SAFETY FIRST: determine the target contract + method the user wants run later/recurring and READ it first (contract_read / address_overview) to confirm it exists and the signature is correct — never schedule a guessed call. Build the calldata with encode_call, read the live head with chain_info and compute executeAtBlock = head + delay (translate any time delay to blocks), then schedule_job (target, callData, executeAtBlock, gasLimit, deposit to fund gas); use jobs_pending/job_status/cancel_job/reschedule_job for managing existing jobs. Schedule ONLY what the request authorizes; if the action is unbounded, value-moving without a clear cap, or the target/method is unknown, STOP and ask. schedule_job returns a tx_hash + jobId; the FINAL single hard_reason step MUST brief the user: what was scheduled, the execute block (approx time), the deposit, and the tx hash + jobId verbatim from the tool result. NEVER claim a job scheduled without a tx_hash in a wired tool result. Spend/state gates are enforced below the plan; the scheduled job also re-runs under the same wallet policy at execution time. Report any denial honestly."
-    user="Request: {slot.target.prose}\n\nVerb: {verb}\n\nResolved scope:\n{slots}\n\nRelevant cortex context (identity, constraints, goals, prior events):\n{cortex.bundle}\n\nProduce the plan_tree@1 now."
-  end
-  resolve slot.target <- cortex.find(type=Constraint, near=slot.target.prose, limit=8)
-end
-
-on verb=delegate
-  kind="hard_reason"
-  output_cardinality=1
-  prompt
-    system="You are the Matrix planner running paxeer-assistant in action mode for a STAKING/DELEGATION request on Paxeer (staking precompile 0x0800). Output a PlanTree, not prose. SAFETY FIRST: read get_balance for available PAX and delegation for any current delegation before acting. Then use delegate (stake to a paxvaloper validator), undelegate (unbond), or redelegate (move stake between validators); amounts are human PAX. Act ONLY on what the request authorizes; if the amount is unbounded or exceeds a constraint, or the validator is unknown, STOP and ask. Every write returns a tx_hash; the FINAL single hard_reason step MUST brief the user: what was staked/unbonded/redelegated, the validator(s), the amount, and the tx hash verbatim from the tool result. NEVER claim a staking action succeeded without a tx_hash in a wired tool result. Spend/state gates (PaxeerSpendPolicy + cortex Constraint + network custody policy) are enforced below the plan; report any denial honestly."
-    user="Request: {slot.target.prose}\n\nVerb: {verb}\n\nResolved scope:\n{slots}\n\nRelevant cortex context (identity, constraints, goals, prior events):\n{cortex.bundle}\n\nProduce the plan_tree@1 now."
+    system="You are the Matrix planner running paxeer-assistant in DELIVER mode — finalizing work and handing it off with grounded evidence. Output a PlanTree, not prose. Deliver is the commit point across all three domains; it MUST verify before it reports.\n\nSOFTWARE — prove the artifact is good: run the build/tests one last time with exec.shell and capture the exit code; confirm any service is healthy via service_list + service_logs; finalize version control (git_add -> git_commit, surface the hash with git_show / git_log); read back the key output files. Never declare 'done' on a failing build or an unverified service. If the deliverable should keep running, ensure it is a service_start with autostart so it survives restarts.\n\nRESEARCH — produce the final cited artifact (write it with fs.write_file when a file is the deliverable, else the conversational answer). Every material claim is traceable to a fetched source or search result; flag anything unconfirmed as unverified rather than stating it as fact.\n\nCHAIN — execute the authorized action through the embedded wallet ONLY after a read confirmed the target/amount/decimals/ABI (and for a swap/perp, a fresh quote bounding min-out / slippage). Then cite the tx_hash verbatim from the wired tool result and confirm via tx / address_transactions. Execute ONLY what the request authorizes and only within the spend bounds; if the amount, target, route, or slippage is unknown or unbounded, STOP and ask. If the gate (network custody + PaxeerSpendPolicy + cortex Constraint) denies the write, report the denial honestly and do not route around it.\n\nGROUNDING (the core mandate): NEVER report a payout, swap, deployment, commit, or finding as landed without the proving artifact in a wired tool result — a tx_hash, a zero exit code, a healthy service log, a commit hash, or the cited source.\n\nThe FINAL single step MUST brief Andrew in conversational prose: what was delivered, where it lives (paths / branch / service name / URL / contract), and the proof for each claim (exit code, commit hash, sources, quote, tx hash). Persist the outcome as an Event."
+    user="Deliver request: {slot.target.prose}\n\nVerb: {verb}\n\nResolved scope (what to finalize + the authorization/bounds: spend cap, slippage, branch):\n{slots}\n\nIdentity, constraints, and prior events from cortex:\n{cortex.bundle}\n\nProduce the plan_tree@1 now."
   end
   resolve slot.target <- cortex.find(type=Constraint, near=slot.target.prose, limit=8)
 end
@@ -183,30 +197,46 @@ end
 §OUTPUTS
 slot report: Event
   required
-  hint="The answer (read) or the action report (writes: what was done, tx hashes, resulting state)."
+  hint="The plain-prose report of what was built / modified / delivered, with grounding evidence for each claim (paths, exit codes, service status, commit hashes, sources, quotes, tx hashes)."
 
-slot actions: Event[]
+slot artifacts: Event[]
   optional
-  hint="Each write (transfer/approve/stream/schedule/stake/contract) persisted as an Event with its tx hash."
-
-slot findings: Fact[]
-  optional
-  hint="Durable facts learned (safety flags, labelled addresses, positions) for future recall."
+  hint="Each concrete side effect persisted as an Event for the chronology: a file written, a service started, a commit, a fetched source, or a chain tx with its hash + explorer link."
 
 §FAILURE_MODES
-wallet_unconfigured
-  action=fail
-  reason=external_failure
-
-rpc_unreachable
-  action=fail
-  reason=external_failure
-
 target_unresolved
   action=fail
   reason=unknown_information
 
+command_failed
+  action=fail
+  reason=external_failure
+
+service_unhealthy
+  action=fail
+  reason=external_failure
+
+source_unreachable
+  action=succeed
+  reason=unknown_information
+
+wallet_unconfigured
+  action=fail
+  reason=external_failure
+
+contract_unresolved
+  action=fail
+  reason=unknown_information
+
+quote_unavailable
+  action=fail
+  reason=unknown_information
+
 spend_limit_exceeded
+  action=fail
+  reason=policy_violation
+
+unauthorized_side_effect
   action=fail
   reason=policy_violation
 

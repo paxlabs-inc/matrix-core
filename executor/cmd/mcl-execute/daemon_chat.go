@@ -126,6 +126,15 @@ func (d *daemonState) handleChat(t *transcript) http.HandlerFunc {
 				ConversationID: conversationID,
 				UserName:       req.UserName,
 			}
+			// Record the user's turn stamped with the run it kicked off.
+			// The intent linkage lets the client detect a still-in-flight
+			// run when reopening the thread (a trailing user turn whose
+			// run hasn't produced its closing answer) and reconnect.
+			d.convStore.Append(conversationID, convTurn{
+				Role:     "user",
+				Text:     req.Message,
+				IntentID: intentID,
+			})
 			if _, err := d.asyncReg.CreateQueued(intentID, userID, mreq); err != nil {
 				writeJSON(w, http.StatusConflict, map[string]string{"error": err.Error()})
 				return
@@ -142,8 +151,8 @@ func (d *daemonState) handleChat(t *transcript) http.HandlerFunc {
 
 		// Clarify re-entry: a prior run asked for input; the client sends
 		// the original intent + the answers. Skip triage, re-dispatch.
+		// dispatch records the user's turn (stamped with the intent).
 		if req.IntentID != "" && len(req.SlotValues) > 0 {
-			d.convStore.AppendUser(conversationID, req.Message)
 			dispatch(req.Message)
 			return
 		}
@@ -155,11 +164,11 @@ func (d *daemonState) handleChat(t *transcript) http.HandlerFunc {
 		history := d.convStore.Recent(conversationID, convRecallTurns)
 		triageIntent := synthIntentID(req.Message, "triage")
 		dec := d.triageMessage(ctx, triageIntent, req.Message, req.UserName, history, t)
-		// Record the user's turn AFTER triage (so triage saw only prior
-		// turns) but BEFORE responding, so the thread memory is durable
-		// regardless of what happens next.
-		d.convStore.AppendUser(conversationID, req.Message)
 		if dec.Action == "reply" {
+			// Record the user's turn AFTER triage (so triage saw only
+			// prior turns) — the dispatch branch records it inside
+			// dispatch (stamped with the intent) instead.
+			d.convStore.AppendUser(conversationID, req.Message)
 			// A direct reply is itself a conversation turn — persist it
 			// so the next message recalls it.
 			d.convStore.AppendAssistant(conversationID, "", dec.Reply)

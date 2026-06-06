@@ -22,6 +22,7 @@ mkdir -p \
     "${DATA_DIR}/journal" \
     "${DATA_DIR}/transcripts" \
     "${DATA_DIR}/workspace" \
+    "${DATA_DIR}/services" \
     "${DATA_DIR}/.matrix"
 
 # 2. Symlink /workspace → /data/workspace so MCP fs/git see the persisted

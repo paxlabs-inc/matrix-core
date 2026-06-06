@@ -12,6 +12,9 @@
 #   /opt/matrix/tools/browser/           browser stdio MCP proxy (Node.js) ->
 #                                        shared matrix-browser Fly app via
 #                                        MATRIX_BROWSER_URL
+#   /opt/matrix/tools/exec/              exec stdio MCP server (Node.js): shell
+#                                        + long-lived service supervisor; state
+#                                        persisted to /data/services
 #   /opt/matrix/entrypoint.sh            init script: prep volume + exec daemon
 #   /root/matrix -> /opt/matrix          symlink so default.json's hard-coded
 #                                        /root/matrix/tools/paxeer/paxeer-net.mjs
@@ -22,6 +25,7 @@
 #     /data/journal/                     signed envelope journal
 #     /data/transcripts/                 per-message JSONL transcripts
 #     /data/workspace/                   user's working filesystem
+#     /data/services/                    exec service registry + per-service logs
 #     /data/.matrix/executor.key         ed25519 actor key (persisted)
 #
 # MCP servers are pre-cached at build time so cold starts don't hit the
@@ -110,6 +114,7 @@ COPY agents/         /opt/matrix/agents/
 COPY tools/paxeer    /opt/matrix/tools/paxeer
 COPY tools/websearch /opt/matrix/tools/websearch
 COPY tools/browser   /opt/matrix/tools/browser
+COPY tools/exec      /opt/matrix/tools/exec
 
 # agents/default.json hard-codes /root/matrix/tools/paxeer/paxeer-net.mjs
 # (matches the dev-box layout). Symlink /root/matrix → /opt/matrix so the
