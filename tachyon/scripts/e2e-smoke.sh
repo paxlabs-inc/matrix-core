@@ -103,6 +103,11 @@ log "call simulate_only via REST"
 CALL=$(curl_json POST /v1/call '{"simulate_only":true,"rpc_url":"https://public-mainnet.rpcpaxeer.online/evm","to":"0x0000000000000000000000000000000000000000","data":"0x"}')
 assert_ok "POST /v1/call simulate_only" "$CALL"
 
+log "call simulate_only with ABI method+args encoding (inline abi)"
+ENC_ABI='[{"type":"function","name":"transfer","inputs":[{"name":"to","type":"address"},{"name":"amount","type":"uint256"}],"outputs":[{"name":"","type":"bool"}]}]'
+ENC_CALL=$(curl_json POST /v1/call "{\"simulate_only\":true,\"rpc_url\":\"${PAX_RPC}\",\"to\":\"0x0000000000000000000000000000000000000000\",\"abi\":${ENC_ABI},\"method\":\"transfer\",\"args\":[\"0x1111111111111111111111111111111111111111\",\"1000000000000000000\"]}")
+assert_ok "POST /v1/call method+args encode" "$ENC_CALL"
+
 log "deploy without wallet (expect policy/artifact error)"
 DEP=$(curl -s -X POST "${BASE}/v1/deploy" -H 'Content-Type: application/json' \
   -d '{"idempotency_key":"e2e-deploy-1","chain_id":"e2e-anvil","contract":"Create2"}')

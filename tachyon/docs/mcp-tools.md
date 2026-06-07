@@ -45,3 +45,30 @@ Tool errors return MCP results with `isError: true` and JSON text:
   }
 }
 ```
+
+## Example: call
+
+Calldata is resolved one of two ways:
+
+- **`method` + `args`** — ABI-encoded by the engine. Provide the ABI inline via
+  `abi`, or resolve it from a compiled artifact via `contract` (and optional
+  `project_id`). `args` is a JSON array; integers may be decimal or `0x` hex
+  strings (use strings for values beyond 2^53), addresses are hex strings, and
+  tuples accept either an ordered array or an object keyed by field name.
+- **`data`** — a pre-encoded hex calldata string (used when `method` is empty).
+
+Set `simulate_only: true` for a read-only `eth_call`; omit it to broadcast a
+signed transaction (requires a configured wallet).
+
+```json
+{
+  "name": "tachyon_call",
+  "arguments": {
+    "chain_id": "paxeer",
+    "to": "0xToken...",
+    "contract": "BridgeERC20",
+    "method": "transfer",
+    "args": ["0xRecipient...", "1000000000000000000"]
+  }
+}
+```

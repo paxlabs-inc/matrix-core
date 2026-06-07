@@ -1,7 +1,6 @@
 package deployer
 
 import (
-	"bytes"
 	"context"
 	"encoding/hex"
 	"encoding/json"
@@ -9,9 +8,9 @@ import (
 	"math/big"
 	"strings"
 
-	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/paxlabs-inc/tachyon-tools/internal/abienc"
 	"github.com/paxlabs-inc/tachyon-tools/internal/chains"
 	"github.com/paxlabs-inc/tachyon-tools/internal/compiler"
 	"github.com/paxlabs-inc/tachyon-tools/internal/evm"
@@ -178,15 +177,7 @@ func packConstructor(art registry.ArtifactRecord, args json.RawMessage) ([]byte,
 	if len(args) == 0 || string(args) == "null" {
 		return bytecode, nil
 	}
-	parsed, err := abi.JSON(bytes.NewReader(art.ABI))
-	if err != nil {
-		return nil, err
-	}
-	var rawArgs []interface{}
-	if err := json.Unmarshal(args, &rawArgs); err != nil {
-		return nil, err
-	}
-	packed, err := parsed.Constructor.Inputs.Pack(rawArgs...)
+	packed, err := abienc.PackConstructorArgs(art.ABI, args)
 	if err != nil {
 		return nil, fmt.Errorf("pack constructor: %w", err)
 	}

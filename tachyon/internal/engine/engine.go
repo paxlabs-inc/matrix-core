@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/ethereum/go-ethereum/accounts/abi"
+	"github.com/paxlabs-inc/tachyon-tools/internal/abienc"
 	"github.com/paxlabs-inc/tachyon-tools/internal/chains"
 	"github.com/paxlabs-inc/tachyon-tools/internal/compiler"
 	"github.com/paxlabs-inc/tachyon-tools/internal/config"
@@ -83,7 +83,7 @@ func New(cfg config.Config) (*Engine, error) {
 			ForgePath:    cfg.ForgePath,
 			ArtifactsDir: artifactsDir,
 		},
-		Tester: &tester.Tester{ForgePath: cfg.ForgePath},
+		Tester:    &tester.Tester{ForgePath: cfg.ForgePath},
 		Simulator: &simulate.Simulator{Chains: cm},
 		Deployer: &deployer.Deployer{
 			Chains:      cm,
@@ -154,18 +154,26 @@ func (e *Engine) Deploy(ctx context.Context, req types.DeployRequest) types.Enve
 	return types.OK(data)
 }
 
-// Call invokes or simulates a contract call.
+// Call invokes or simulates a contract call. Calldata is either ABI-encoded
+// from Method+Args (ABI resolved inline or from the registry) or taken verbatim
+// from the pre-encoded hex Data field.
 func (e *Engine) Call(ctx context.Context, req types.CallRequest) types.Envelope[types.CallResponse] {
 	if strings.TrimSpace(req.To) == "" {
 		return types.Fail[types.CallResponse](types.NewError(types.CodeInvalidRequest, "to required", false, nil))
 	}
+
+	data, derr := e.callData(req)
+	if derr != nil {
+		return types.Fail[types.CallResponse](derr)
+	}
+
 	if req.SimulateOnly {
 		sim, err := e.Simulator.Simulate(ctx, types.SimulateRequest{
 			ChainID: req.ChainID,
 			RPCURL:  req.RPCURL,
 			From:    req.From,
 			To:      req.To,
-			Data:    req.Data,
+			Data:    "0x" + hex.EncodeToString(data),
 			Value:   req.Value,
 		}, e.Reg.ActiveChainID())
 		if err != nil {
@@ -182,15 +190,11 @@ func (e *Engine) Call(ctx context.Context, req types.CallRequest) types.Envelope
 	if cerr != nil {
 		return types.Fail[types.CallResponse](cerr)
 	}
-	client, derr := evm.Dial(profile.RPCURL, profile.ChainID)
-	if derr != nil {
-		return types.Fail[types.CallResponse](types.NewError(types.CodeChainRPCFailed, derr.Error(), true, nil))
+	client, dialErr := evm.Dial(profile.RPCURL, profile.ChainID)
+	if dialErr != nil {
+		return types.Fail[types.CallResponse](types.NewError(types.CodeChainRPCFailed, dialErr.Error(), true, nil))
 	}
 
-	data, derr := hex.DecodeString(strings.TrimPrefix(req.Data, "0x"))
-	if derr != nil {
-		return types.Fail[types.CallResponse](types.NewError(types.CodeInvalidRequest, "data must be hex: "+derr.Error(), false, nil))
-	}
 	value, ok := parseWei(req.Value)
 	if !ok {
 		return types.Fail[types.CallResponse](types.NewError(types.CodeInvalidRequest, "invalid value", false, nil))
@@ -227,6 +231,47 @@ func (e *Engine) Call(ctx context.Context, req types.CallRequest) types.Envelope
 		return types.Fail[types.CallResponse](types.NewError(types.CodeCallFailed, "signer produced neither raw tx nor tx hash", false, nil))
 	}
 	return types.OK(types.CallResponse{TxHash: txHash})
+}
+
+// callData resolves the calldata for a call: ABI-encoded from Method+Args when
+// Method is set, otherwise the pre-encoded hex Data field.
+func (e *Engine) callData(req types.CallRequest) ([]byte, *types.Error) {
+	if strings.TrimSpace(req.Method) != "" {
+		abiJSON, aerr := e.resolveABI(req)
+		if aerr != nil {
+			return nil, aerr
+		}
+		data, err := abienc.Pack(abiJSON, req.Method, req.Args)
+		if err != nil {
+			return nil, types.NewError(types.CodeInvalidRequest, "encode call: "+err.Error(), false, nil)
+		}
+		return data, nil
+	}
+	data, err := hex.DecodeString(strings.TrimPrefix(req.Data, "0x"))
+	if err != nil {
+		return nil, types.NewError(types.CodeInvalidRequest, "data must be hex: "+err.Error(), false, nil)
+	}
+	return data, nil
+}
+
+// resolveABI returns the ABI JSON to encode against: an inline ABI if provided,
+// otherwise the ABI of the named contract artifact from the registry.
+func (e *Engine) resolveABI(req types.CallRequest) ([]byte, *types.Error) {
+	if len(req.ABI) > 0 && strings.TrimSpace(string(req.ABI)) != "null" {
+		return req.ABI, nil
+	}
+	if strings.TrimSpace(req.Contract) == "" {
+		return nil, types.NewError(types.CodeInvalidRequest, "method encoding requires an inline abi or a contract name to resolve the abi from the registry", false, nil)
+	}
+	projectID := strings.TrimSpace(req.ProjectID)
+	if projectID == "" {
+		projectID = compiler.ProjectID(e.Cfg.ProjectRoot)
+	}
+	rec, ok := e.Reg.GetArtifact(projectID, req.Contract)
+	if !ok {
+		return nil, types.NewError(types.CodeArtifactNotFound, "artifact not found for abi: "+req.Contract, false, nil)
+	}
+	return rec.ABI, nil
 }
 
 // parseWei parses a decimal or 0x-hex wei amount; empty => 0.
@@ -309,11 +354,7 @@ func (e *Engine) Health(forgeVersion string) types.HealthData {
 
 // EncodeContractCall packs ABI method + args into calldata (helper for agents).
 func EncodeContractCall(artifactABI []byte, method string, args []interface{}) (string, error) {
-	parsed, err := abi.JSON(strings.NewReader(string(artifactABI)))
-	if err != nil {
-		return "", err
-	}
-	data, err := parsed.Pack(method, args...)
+	data, err := abienc.Pack(artifactABI, method, args)
 	if err != nil {
 		return "", err
 	}
