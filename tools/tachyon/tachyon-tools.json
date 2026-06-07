@@ -47,7 +47,7 @@
       "type": "object",
       "additionalProperties": true,
       "properties": {
-        "chain_id": { "type": "string", "description": "Configured chain profile id (e.g. \"paxeer\")." },
+        "chain_id": { "type": "string", "description": "Configured chain profile id or numeric EVM chain id. Paxeer is \"paxeer-mainnet\" (or just \"125\")." },
         "rpc_url": { "type": "string", "description": "Explicit RPC URL instead of a chain profile." },
         "from": { "type": "string", "description": "Caller address (0x...)." },
         "to": { "type": "string", "description": "Target contract address (0x...). Required." },
@@ -66,7 +66,7 @@
       "additionalProperties": true,
       "properties": {
         "idempotency_key": { "type": "string", "description": "Caller-chosen key; repeat to dedupe a redeploy. Required." },
-        "chain_id": { "type": "string", "description": "Target chain profile id. Required." },
+        "chain_id": { "type": "string", "description": "Target chain profile id or numeric EVM chain id. Paxeer is \"paxeer-mainnet\" (or \"125\"). Required." },
         "contract": { "type": "string", "description": "Contract name to deploy (must exist in the registry for project_id). Required." },
         "project_id": { "type": "string", "description": "Project id from tachyon_compile that owns the artifact." },
         "constructor_args": { "type": "array", "description": "Constructor arguments, in ABI order.", "items": {} },
@@ -83,7 +83,7 @@
       "type": "object",
       "additionalProperties": true,
       "properties": {
-        "chain_id": { "type": "string", "description": "Target chain profile id." },
+        "chain_id": { "type": "string", "description": "Target chain profile id or numeric EVM chain id. Paxeer is \"paxeer-mainnet\" (or \"125\")." },
         "rpc_url": { "type": "string", "description": "Explicit RPC URL instead of a chain profile." },
         "to": { "type": "string", "description": "Target contract address (0x...). Required." },
         "from": { "type": "string", "description": "Caller address (defaults to the agent wallet)." },
@@ -112,7 +112,7 @@
       "type": "object",
       "additionalProperties": true,
       "properties": {
-        "id": { "type": "string", "description": "Short profile id (e.g. \"paxeer\"). Required." },
+        "id": { "type": "string", "description": "Short profile id (e.g. \"paxeer-mainnet\"). NOTE: Paxeer chain 125 is already preconfigured as \"paxeer-mainnet\" — only register OTHER chains. Required." },
         "name": { "type": "string", "description": "Human-readable name. Required." },
         "rpc_url": { "type": "string", "description": "JSON-RPC URL. Required." },
         "chain_id": { "type": "number", "description": "EVM chain id (uint). Required." },

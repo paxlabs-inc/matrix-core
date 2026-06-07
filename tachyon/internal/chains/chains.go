@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"sync"
 
@@ -111,6 +112,26 @@ func (m *Manager) Get(id string) (types.ChainProfile, bool) {
 				return cp, true
 			}
 			return cp, cp.RPCURLEnv == "" // preset without env unset is not usable
+		}
+	}
+	// Numeric EVM chain-id fallback: callers (and agents) commonly pass the
+	// chain number ("125") rather than the profile id ("paxeer-mainnet").
+	// Map it to the matching profile so deploy/call/simulate resolve either way.
+	if n, err := strconv.ParseUint(strings.TrimSpace(id), 10, 64); err == nil && n != 0 {
+		for _, p := range m.presets {
+			if p.ChainID == n {
+				cp := p
+				m.resolveEnv(&cp)
+				if cp.RPCURL != "" {
+					return cp, true
+				}
+				return cp, cp.RPCURLEnv == ""
+			}
+		}
+		for _, p := range m.custom {
+			if p.ChainID == n {
+				return p, true
+			}
 		}
 	}
 	p, ok := m.custom[id]

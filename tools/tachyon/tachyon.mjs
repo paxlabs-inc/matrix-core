@@ -72,6 +72,43 @@ try {
 const TOOL_NAMES = tools.map((t) => t.name)
 const TOOL_SET = new Set(TOOL_NAMES)
 
+// ── schema-driven arg re-coercion ─────────────────────────────────────────────
+// The Matrix plan IR carries every tool-call arg as a string (MCL/ir/plan.go),
+// and the executor's schema-blind coerceArg (executor/runtime/coerce.go) then
+// greedily turns numeric-looking strings into JSON numbers — so chain_id "125"
+// reaches this proxy as the number 125. tachyond's request structs type
+// chain_id / value / spend_cap_wei / idempotency_key as Go strings, so a JSON
+// number fails to unmarshal ("cannot unmarshal number into Go struct field ...
+// of type string"). Using each tool's own inputSchema as the source of truth,
+// re-stringify any value the schema declares a string; objects/arrays (sources,
+// constructor_args, args, abi) and genuinely numeric fields (chain_register's
+// chain_id) are left untouched.
+const STRING_PROPS_BY_TOOL = new Map(
+  tools.map((t) => {
+    const props = t.inputSchema?.properties || {}
+    const stringKeys = new Set()
+    for (const [key, spec] of Object.entries(props)) {
+      const declared = spec && spec.type
+      if (declared === 'string' || (Array.isArray(declared) && declared.includes('string'))) {
+        stringKeys.add(key)
+      }
+    }
+    return [t.name, stringKeys]
+  })
+)
+
+function coerceArgsToSchema(name, args) {
+  const stringKeys = STRING_PROPS_BY_TOOL.get(name)
+  if (!stringKeys || !args || typeof args !== 'object') return args
+  for (const key of stringKeys) {
+    const val = args[key]
+    if (typeof val === 'number' || typeof val === 'boolean') {
+      args[key] = String(val)
+    }
+  }
+  return args
+}
+
 // ── result shaping ───────────────────────────────────────────────────────────
 function errResult(tool, error, extra = {}) {
   return {
@@ -246,7 +283,7 @@ function needsWalletToken(name, args) {
 
 // ── JSON-RPC stdio server (daemon-facing) ─────────────────────────────────────
 async function callRemoteTool(name, args) {
-  const params = { ...(args || {}) }
+  const params = coerceArgsToSchema(name, { ...(args || {}) })
   if (needsWalletToken(name, params) && !params.wallet_token) {
     if (AGENT.disabled) {
       return errResult(name, 'broadcast requires an agent wallet token, but agent auth is disabled (PAXEER_AGENT_AUTH_DISABLE=1)')
@@ -380,6 +417,33 @@ function runSelftest() {
     console.error('tachyon SELFTEST FAILED: manifest drift would crash the daemon at boot (Manager.verifyTools)')
     process.exit(1)
   }
+
+  // arg-coercion regression: the executor delivers numeric-looking string args
+  // as JSON numbers; schema string fields MUST be re-stringified for tachyond,
+  // while containers and numeric fields stay intact.
+  const cFails = []
+  const dep = coerceArgsToSchema('tachyon_deploy', {
+    chain_id: 125,
+    idempotency_key: 1,
+    contract: 'MatrixFlowTest',
+    constructor_args: ['MatrixFlowTest', 1000000],
+  })
+  if (dep.chain_id !== '125') cFails.push(`deploy.chain_id ${JSON.stringify(dep.chain_id)} != "125"`)
+  if (dep.idempotency_key !== '1') cFails.push(`deploy.idempotency_key ${JSON.stringify(dep.idempotency_key)} != "1"`)
+  if (dep.contract !== 'MatrixFlowTest') cFails.push('deploy.contract mutated')
+  if (!Array.isArray(dep.constructor_args) || dep.constructor_args[1] !== 1000000) {
+    cFails.push('deploy.constructor_args array mangled')
+  }
+  const reg = coerceArgsToSchema('tachyon_chain_register', { chain_id: 125 })
+  if (reg.chain_id !== 125) cFails.push(`chain_register.chain_id ${JSON.stringify(reg.chain_id)} should stay numeric`)
+  const lk = coerceArgsToSchema('tachyon_registry_lookup', { chain_id: 125, idempotency_key: 'k' })
+  if (lk.chain_id !== '125') cFails.push(`registry_lookup.chain_id ${JSON.stringify(lk.chain_id)} != "125"`)
+  if (cFails.length) {
+    console.error('tachyon SELFTEST FAILED (arg coercion): ' + cFails.join('; '))
+    process.exit(1)
+  }
+  console.log('tachyon: arg coercion OK (string fields re-stringified, containers + numeric fields intact)')
+
   console.log(`tachyon OK (${checked} manifest${checked === 1 ? '' : 's'} verified)`)
   process.exit(0)
 }

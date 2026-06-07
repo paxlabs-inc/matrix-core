@@ -385,7 +385,7 @@ func DefaultRegistry() *ModelRegistry {
 	}
 	// LongCtx: GLM-5.1's 202k window for plans with extensive context.
 	plannerLongCtx := Config{
-		Model:       "accounts/fireworks/models/glm-5.1",
+		Model:       "accounts/fireworks/routers/glm-5p1-fast",
 		Temperature: 0.2,
 		Seed:        42,
 		MaxTokens:   3072,
@@ -395,7 +395,7 @@ func DefaultRegistry() *ModelRegistry {
 
 	// --- SlotExecutor: KindReason (default agentic) --------------------------
 	executorReason := Config{
-		Model:       "accounts/fireworks/models/glm-5.1",
+		Model:       "accounts/fireworks/routers/glm-5p1-fast",
 		Temperature: 0.4,
 		MaxTokens:   1536,
 		GrammarMode: GrammarNone,
@@ -419,7 +419,7 @@ func DefaultRegistry() *ModelRegistry {
 
 	// --- SlotExecutor: KindWrite (prose specialist) --------------------------
 	executorWrite := Config{
-		Model:       "accounts/fireworks/models/kimi-k2.6",
+		Model:       "accounts/fireworks/routers/kimi-k2p6-fast",
 		Temperature: 0.6,
 		MaxTokens:   2048,
 		GrammarMode: GrammarNone,
@@ -504,8 +504,8 @@ const (
 	ForgeModelGPT55Pro     = "gpt-5.5-pro"
 	ForgeModelGPT54Mini    = "gpt-5.4-mini"
 	ForgeModelGPT53Codex   = "gpt-5.3-codex"
-	ForgeModelKimiK26      = "kimi-k2.6"
-	ForgeModelGLM51        = "glm-5.1"
+	ForgeModelKimiK26      = "kimi-k2p6-fast"
+	ForgeModelGLM51        = "glm-5p1-fast"
 )
 
 // ForgeRegistry returns the v1 Forge model router populated per matrix.kvx

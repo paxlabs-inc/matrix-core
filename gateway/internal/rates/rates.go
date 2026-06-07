@@ -99,7 +99,7 @@ const (
 	ModelExecutorFreeTier = "accounts/fireworks/models/deepseek-v4-flash"
 	ModelDeepSeekV4Flash  = "accounts/fireworks/models/deepseek-v4-flash"
 	ModelDeepSeekV4Pro    = "accounts/fireworks/models/deepseek-v4-pro"
-	ModelKimiK26          = "accounts/fireworks/models/kimi-k2p6"
+	ModelKimiK26          = "accounts/fireworks/routers/kimi-k2p6-fast"
 	ModelGPTOSS120B       = "accounts/fireworks/models/gpt-oss-120b"
 	ModelGPTOSS20B        = "accounts/fireworks/models/gpt-oss-20b"
 	ModelQwenCoder        = "Qwen/Qwen3-Coder-480B-A35B-Instruct-FP8"

@@ -71,6 +71,12 @@ COPY tachyon/lib           /opt/tachyon/lib
 COPY tachyon/foundry.toml  /opt/tachyon/foundry.toml
 COPY tachyon/remappings.txt /opt/tachyon/remappings.txt
 
+# Chain presets (id/chain_id/explorer; RPC URLs resolved from env at boot).
+# Without this the engine boots with ZERO chains — tachyon_chain_list returns
+# [] and every deploy/call/simulate fails "chain not found". The paxeer-mainnet
+# preset (chain 125) takes its RPC from PAXEER_RPC_URL (set in fly.toml).
+COPY tachyon/chains        /opt/tachyon/chains
+
 # Warm the pinned solc (0.8.27, per foundry.toml) into the image so the first
 # real compile doesn't pay a solc download. Uses a throwaway project so a
 # corpus quirk can never fail the image build.
