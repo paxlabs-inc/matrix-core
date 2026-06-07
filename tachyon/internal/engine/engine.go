@@ -111,7 +111,7 @@ func (e *Engine) defaultRoot(reqRoot string) string {
 func (e *Engine) Compile(ctx context.Context, req types.CompileRequest) types.Envelope[types.CompileResponse] {
 	_ = ctx
 	if len(req.Sources) > 0 {
-		dir, cleanup, perr := e.prepareSourceWorkdir(req.Sources)
+		dir, cleanup, perr := e.prepareSourceWorkdir(req.Sources, req.EVMVersion)
 		if perr != nil {
 			return types.Fail[types.CompileResponse](perr)
 		}
@@ -135,7 +135,7 @@ func (e *Engine) Compile(ctx context.Context, req types.CompileRequest) types.En
 func (e *Engine) Test(ctx context.Context, req types.TestRequest) types.Envelope[types.TestResponse] {
 	_ = ctx
 	if len(req.Sources) > 0 {
-		dir, cleanup, perr := e.prepareSourceWorkdir(req.Sources)
+		dir, cleanup, perr := e.prepareSourceWorkdir(req.Sources, req.EVMVersion)
 		if perr != nil {
 			return types.Fail[types.TestResponse](perr)
 		}

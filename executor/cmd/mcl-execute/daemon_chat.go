@@ -97,16 +97,20 @@ func (d *daemonState) handleChat(t *transcript) http.HandlerFunc {
 		if conversationID == "" {
 			conversationID = synthConversationID(req.Message)
 		}
-		skill := req.Skill
-		if skill == "" {
-			skill = d.defaultSkillURI
-		}
+		// An explicit client-pinned skill is respected; otherwise the skill
+		// is selected per-prose inside dispatch (selectSkill routes contract
+		// intents to tachyon-engineer, else the configured default).
+		pinnedSkill := req.Skill
 		userID := userIDFromContext(ctx)
 
 		// dispatch kicks off the normal async pipeline. The narrator
 		// (spawned in runMessage when liaison is enabled) narrates it as
 		// chat.assistant turns stamped with conversationID.
 		dispatch := func(prose string) {
+			skill := pinnedSkill
+			if skill == "" {
+				skill = d.selectSkill(prose, "chat")
+			}
 			if skill == "" {
 				writeJSON(w, http.StatusBadRequest, map[string]string{
 					"error": "skill URI required (no daemon default configured)",

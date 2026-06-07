@@ -57,8 +57,22 @@ type daemonState struct {
 	compileConfidenceThreshold float64
 	seed                       int64
 	maxRetry                   int
-	broker                     *sseBroker
-	startedAt                  time.Time
+	// criticEnabled turns on the completeness critic + re-plan gate
+	// (Phase 10.5): after a clean walk, an LLM auditor checks whether the
+	// executed work satisfied every requested deliverable; unmet items
+	// trigger a bounded re-plan (DriveCorrectMaterial → re-synthesize →
+	// re-walk) and a still-incomplete run NEVER attests as success. Set via
+	// -completeness-critic / MATRIX_COMPLETENESS_CRITIC (default on; "0"
+	// disables). Off (struct zero) for direct-constructed test daemons, so
+	// existing pipeline tests are unaffected.
+	criticEnabled bool
+	// criticModel overrides the auditor LLM (else criticMod() falls back to
+	// the planner/executor model). Set via -critic-model / MATRIX_CRITIC_MODEL.
+	criticModel string
+	// maxReplan bounds critic-driven re-plan rounds (default 2).
+	maxReplan int
+	broker    *sseBroker
+	startedAt time.Time
 
 	// allowSubDispatch enables in-process sub-dispatch (Q6 v1
 	// carve-out). When false, the walker uses
@@ -261,6 +275,11 @@ func runDaemon(args []string) {
 		gatewayURL            = fs.String("gateway-url", os.Getenv("MATRIX_GATEWAY_URL"), "MatrixGateway base URL (host portion, no /v1/...). When set, EVERY routed LLM call (compile, planner, executor) is proxied through ${gateway-url}/v1/chat/completions with X-Matrix-Actor-DID + X-Matrix-Intent-ID + X-Matrix-Slot headers and is metered against the credit_ledger. Empty (default) preserves the legacy direct-provider posture. Sess#32 ambient-architect plan §5.16. Defaults to env MATRIX_GATEWAY_URL.")
 		seed                  = fs.Int64("seed", 42, "compiler seed (D11)")
 		maxRetry              = fs.Int("max-retry", 2, "max plan-synthesis retry rounds")
+		criticEnabled         = fs.Bool("completeness-critic", os.Getenv("MATRIX_COMPLETENESS_CRITIC") != "0",
+			"enable the completeness critic + re-plan gate (Phase 10.5): after a clean walk, an LLM auditor verifies every requested deliverable was actually produced; unmet items trigger a bounded re-plan and a still-incomplete run is reported as failed, never falsely 'completed'. Default on; set MATRIX_COMPLETENESS_CRITIC=0 to disable.")
+		criticModel = fs.String("critic-model", os.Getenv("MATRIX_CRITIC_MODEL"),
+			"override the completeness-critic auditor LLM. Empty falls back to the planner/executor model. Routes on the gateway planner slot, so an override must be planner-slot whitelisted.")
+		maxReplan = fs.Int("max-replan", 2, "max critic-driven re-plan rounds before a still-incomplete run is failed honestly")
 		allowSubDisp          = fs.Bool("allow-sub-dispatch", false, "enable in-process sub-dispatch (Q6 v1 carve-out: same agent, in-process only)")
 		workspaceRoot         = fs.String("workspace-root", "", "absolute path agents' MCP fs/git servers are scoped to (announced to the synthesizer prompt; empty = section omitted)")
 		withEmbedder          = fs.Bool("with-embedder", false, "start cortex hash embedder (in-process)")
@@ -473,6 +492,9 @@ func runDaemon(args []string) {
 		actorDID:         actor.DID,
 		seed:             *seed,
 		maxRetry:         *maxRetry,
+		criticEnabled:    *criticEnabled,
+		criticModel:      *criticModel,
+		maxReplan:        *maxReplan,
 		broker:           broker,
 		startedAt:        time.Now().UTC(),
 		authToken:        os.Getenv("MATRIX_DAEMON_TOKEN"),

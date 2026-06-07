@@ -748,7 +748,7 @@ func (d *daemonState) handleMessagesAsyncStart(t *transcript) http.HandlerFunc {
 			return
 		}
 		if req.SkillURI == "" {
-			req.SkillURI = d.defaultSkillURI
+			req.SkillURI = d.selectSkill(req.Prose, req.Verb)
 		}
 		if req.SkillURI == "" {
 			writeJSON(w, http.StatusBadRequest, map[string]string{

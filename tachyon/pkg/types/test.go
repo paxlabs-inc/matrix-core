@@ -12,6 +12,11 @@ type TestRequest struct {
 	MatchPath     string            `json:"match_path,omitempty"`
 	MatchContract string            `json:"match_contract,omitempty"`
 	Filter        string            `json:"filter,omitempty"`
+	// EVMVersion pins the solc/EVM target for an uploaded-source test build
+	// (e.g. "shanghai", "paris", "cancun"). Empty uses the engine's
+	// conservative default (shanghai), matching the compile/deploy target so
+	// the suite exercises the same opcode set that will run on-chain.
+	EVMVersion string `json:"evm_version,omitempty"`
 }
 
 // TestCaseResult is one forge test outcome.

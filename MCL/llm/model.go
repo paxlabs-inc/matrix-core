@@ -397,7 +397,7 @@ func DefaultRegistry() *ModelRegistry {
 	executorReason := Config{
 		Model:       "accounts/fireworks/routers/glm-5p1-fast",
 		Temperature: 0.4,
-		MaxTokens:   1536,
+		MaxTokens:   10000,
 		GrammarMode: GrammarNone,
 	}
 

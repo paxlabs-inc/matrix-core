@@ -46,13 +46,18 @@ func coerceArg(v string) interface{} {
 		return v
 	}
 	// Structured JSON (object/array). Only attempt a parse when the
-	// trimmed value is unambiguously a JSON container so plain strings
-	// that merely contain braces are never mangled; on any parse error
-	// we fall through and keep the verbatim string.
-	if s := strings.TrimSpace(v); len(s) > 0 && (s[0] == '{' || s[0] == '[') {
-		var j interface{}
-		if err := json.Unmarshal([]byte(s), &j); err == nil {
-			return j
+	// candidate is unambiguously a JSON container so plain strings that
+	// merely contain braces are never mangled; on any parse error we fall
+	// through and keep the verbatim string. A codegen step that emits a
+	// `sources` map and is threaded in via ${node.output} arrives wrapped in
+	// a Markdown code fence (```json ... ```), so we also try the
+	// fence-stripped body — never the mangled original on failure.
+	for _, s := range jsonCandidates(v) {
+		if len(s) > 0 && (s[0] == '{' || s[0] == '[') {
+			var j interface{}
+			if err := json.Unmarshal([]byte(s), &j); err == nil {
+				return j
+			}
 		}
 	}
 	if isAllDigitsOptSign(v) {
@@ -70,6 +75,127 @@ func coerceArg(v string) interface{} {
 		}
 	}
 	return v
+}
+
+// normalizeToolArg coerces a (already ref-resolved) tool-call arg VALUE, with
+// the arg KEY available so it can repair the two realistic ways an upstream
+// codegen/reason step mis-shapes a structured arg before a strict MCP tool
+// (e.g. tachyon_compile's `sources` map) consumes it:
+//
+//  1. Wrapper nesting — the step emits {"sources": {<path>:<content>}} (echoing
+//     the tool-call arg name) instead of the bare {<path>:<content>} map. When
+//     the parsed value is a single-key object whose key equals the arg name and
+//     whose inner value is itself a container, unwrap it.
+//  2. Prose/fence wrapping — the step narrates ("I'll write the contract…") and
+//     then emits the JSON inside a ```json fence. coerceArg only parses when the
+//     trimmed value (or a LEADING fence body) is a container, so leading prose
+//     defeats it and the raw string reaches the engine ("cannot unmarshal string
+//     into map"). When the raw value carries a Markdown code fence — the
+//     unambiguous "an LLM wrapped my structured output" signal — scan for the
+//     first embedded JSON container and use it. Gating on the fence keeps a
+//     legitimate string arg that merely embeds braces (e.g. a file's content)
+//     from being mangled.
+//
+// Falls back to coerceArg's result unchanged for every other arg.
+func normalizeToolArg(key, raw string) interface{} {
+	coerced := coerceArg(raw)
+	switch c := coerced.(type) {
+	case map[string]interface{}:
+		return unwrapWrapper(key, c)
+	case string:
+		if containsCodeFence(raw) {
+			if v, ok := decodeEmbeddedJSON(raw); ok {
+				if m, ok := v.(map[string]interface{}); ok {
+					return unwrapWrapper(key, m)
+				}
+				return v
+			}
+		}
+		return c
+	default:
+		return coerced
+	}
+}
+
+// unwrapWrapper returns m's single inner container when m is exactly
+// {<key>: <container>} (the arg name echoed as a wrapper), else m verbatim. The
+// exact key match + container-only inner keeps a real single-file `sources` map
+// (whose key is a path like "src/A.sol", never the arg name) untouched.
+func unwrapWrapper(key string, m map[string]interface{}) interface{} {
+	if len(m) == 1 {
+		if inner, ok := m[key]; ok {
+			switch inner.(type) {
+			case map[string]interface{}, []interface{}:
+				return inner
+			}
+		}
+	}
+	return m
+}
+
+// decodeEmbeddedJSON returns the first complete JSON object/array embedded in s,
+// ignoring any surrounding prose or Markdown fence. It walks each '{'/'[' and
+// lets encoding/json decode one value from that offset (the decoder respects
+// string quoting, so braces inside Solidity source strings never confuse it)
+// and stops at the first position that yields a container. Trailing prose after
+// the value is ignored by the streaming decoder.
+func decodeEmbeddedJSON(s string) (interface{}, bool) {
+	for i := 0; i < len(s); i++ {
+		if s[i] != '{' && s[i] != '[' {
+			continue
+		}
+		dec := json.NewDecoder(strings.NewReader(s[i:]))
+		var v interface{}
+		if err := dec.Decode(&v); err != nil {
+			continue
+		}
+		switch v.(type) {
+		case map[string]interface{}, []interface{}:
+			return v, true
+		}
+	}
+	return nil, false
+}
+
+// containsCodeFence reports whether s carries a Markdown code fence.
+func containsCodeFence(s string) bool {
+	return strings.Contains(s, "```")
+}
+
+// jsonCandidates returns the substrings of v worth attempting a JSON parse on,
+// in priority order: the trimmed value first, then a fence-stripped body when v
+// is wrapped in a Markdown code fence. coerceArg only ever returns a parse that
+// SUCCEEDS, so offering the fence-stripped candidate can never mangle a plain
+// string (a failed parse falls through to the verbatim original).
+func jsonCandidates(v string) []string {
+	trimmed := strings.TrimSpace(v)
+	stripped := stripCodeFence(trimmed)
+	if stripped == trimmed {
+		return []string{trimmed}
+	}
+	return []string{trimmed, stripped}
+}
+
+// stripCodeFence removes a leading Markdown code fence (``` or ```lang) and a
+// matching trailing fence from s, returning the inner body. An upstream codegen
+// step's text output (threaded into a tool arg via ${node.output}) commonly
+// arrives fenced; the strict tool parser needs the bare JSON. Returns the
+// trimmed input unchanged when there is no leading fence.
+func stripCodeFence(s string) string {
+	t := strings.TrimSpace(s)
+	if !strings.HasPrefix(t, "```") {
+		return t
+	}
+	nl := strings.IndexByte(t, '\n')
+	if nl < 0 {
+		// Single-line "```...": nothing parseable inside.
+		return strings.TrimSpace(strings.TrimPrefix(t, "```"))
+	}
+	body := t[nl+1:]
+	if idx := strings.LastIndex(body, "```"); idx >= 0 {
+		body = body[:idx]
+	}
+	return strings.TrimSpace(body)
 }
 
 func isAllDigitsOptSign(s string) bool {

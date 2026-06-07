@@ -63,6 +63,14 @@ type synthesizeOpts struct {
 	// resolves from llm.ForgeRegistry (opencode.ai/zen + identity
 	// preamble). Empty preserves legacy DefaultRegistry posture.
 	ForgeMode bool
+
+	// ContinuationNote, when non-empty, marks this synthesis as a RE-PLAN
+	// driven by the completeness critic (Phase 10.5). It is appended to the
+	// planner user prompt and tells the model what already ran successfully
+	// (do not repeat) and which required items are still missing (plan only
+	// those). Empty preserves the original single-shot planning prompt
+	// byte-for-byte, so non-replan synthesis is unchanged.
+	ContinuationNote string
 }
 
 // synthesizeResult bundles the produced plan + audit metadata.
@@ -180,7 +188,7 @@ func synthesize(ctx context.Context, opts synthesizeOpts, t *transcript) (*synth
 	})
 
 	systemMsg := buildSystemPrompt(opts.Skill, opts.Manifest, opts.Manager, opts.WorkspaceRoot)
-	userBase := buildUserPrompt(opts.Intent, opts.Skill)
+	userBase := buildUserPrompt(opts.Intent, opts.Skill, opts.ContinuationNote)
 
 	var (
 		lastErr    error
@@ -491,8 +499,10 @@ Output ONLY the JSON. Do not wrap in markdown fences. Do not narrate.
 	return sb.String()
 }
 
-// buildUserPrompt renders the intent + a minimal directive.
-func buildUserPrompt(intent *ir.Intent, skill *runtime.LoadedSkill) string {
+// buildUserPrompt renders the intent + a minimal directive. continuation, when
+// non-empty, appends the completeness-critic re-plan directive (what already
+// ran + what is still missing) so a re-synthesis targets only the gap.
+func buildUserPrompt(intent *ir.Intent, skill *runtime.LoadedSkill, continuation string) string {
 	var sb strings.Builder
 	sb.WriteString("== Intent ==\n")
 	sb.WriteString(fmt.Sprintf("ID:   %s\n", intent.ID))
@@ -530,6 +540,9 @@ func buildUserPrompt(intent *ir.Intent, skill *runtime.LoadedSkill) string {
 	}
 	sb.WriteString("\nProduce a plan_tree@1 JSON document that fulfills this Intent ")
 	sb.WriteString("using the available tools.\n")
+	if strings.TrimSpace(continuation) != "" {
+		sb.WriteString(continuation)
+	}
 	return sb.String()
 }
 

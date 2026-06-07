@@ -457,9 +457,13 @@ func (h *llmStepHandler) buildUser(plan *ir.PlanTree, node *ir.PlanNode) string 
 // outputRefPattern matches plan-step input references of the form
 // ${<nodeID>.output}, ${<nodeID>.text}, or bare ${<nodeID>}. The planner
 // emits these in Step.Inputs to wire a prior node's output into a later
-// step (e.g. "fleet_summary": "${n02.output}"). nodeID is the loose set
-// of chars used for plan node ids (alphanumerics, _, -).
-var outputRefPattern = regexp.MustCompile(`\$\{([A-Za-z0-9_-]+)(?:\.(?:output|text))?\}`)
+// step (e.g. "fleet_summary": "${n02.output}"). Liberal in what it accepts:
+// both ${...} and Jinja-style {{...}} delimiters, and any dotted suffix
+// (.output / .text / .outputs / .outputs.<field>) — all resolve to the whole
+// upstream node output. Mirrors runtime/argref.go so step inputs and tool-call
+// args share one reference grammar. nodeID is the loose set of chars used for
+// plan node ids (alphanumerics, _, -).
+var outputRefPattern = regexp.MustCompile(`(?:\$\{|\{\{)\s*([A-Za-z0-9_-]+)(?:\.[A-Za-z0-9_.]+)?\s*\}{1,2}`)
 
 // collectNodeOutputs walks the plan tree and returns nodeID → recorded
 // runtime output text (ResultText). Populated by the walker as tool
@@ -491,7 +495,7 @@ func collectNodeOutputs(plan *ir.PlanTree) map[string]string {
 // explicit marker rather than left as a literal placeholder, so the
 // model is told the data is unavailable instead of silently inventing it.
 func resolveOutputRefs(val string, outputs map[string]string) string {
-	if !strings.Contains(val, "${") {
+	if !strings.Contains(val, "${") && !strings.Contains(val, "{{") {
 		return val
 	}
 	return outputRefPattern.ReplaceAllStringFunc(val, func(match string) string {

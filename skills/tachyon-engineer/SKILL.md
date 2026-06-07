@@ -39,6 +39,17 @@ you pass (workdir-relative path -> file content):
 - **Chains** — `tachyon_chain_list` (read), `tachyon_chain_register` (add a
   custom RPC profile).
 - **Lookup** — `tachyon_artifact_get`, `tachyon_registry_lookup` (read).
+- **Wallet** — `wallet_info` (the deployer/agent wallet address) and
+  `get_balance` (its native PAX balance). These two `paxeer-net` reads are the
+  ONLY non-tachyon tools available — use them when the request asks who is
+  deploying or how much gas/PAX the wallet holds.
+
+**Stay on the engine, not the disk.** All contract reads and writes go through
+`tachyon_call` (ABI resolved from `contract` + `project_id`) — never
+`contract_read` / `contract_write`. NEVER write contract files to a local
+filesystem or shell out to `solc` / `forge` / `cast`: the shared engine compiles
+only the inline `sources` you upload to `tachyon_compile`, so a file on disk is
+invisible to it.
 
 ## Custody + enforcement
 

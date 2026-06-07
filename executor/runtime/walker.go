@@ -514,9 +514,19 @@ func (w *Walker) execToolCall(ctx context.Context, plan *ir.PlanTree, n *ir.Plan
 		return fmt.Errorf("runtime: registry.Get %s: %w", tc.ToolRef, err)
 	}
 
+	// Resolve ${<nodeID>.output} references against the real upstream node
+	// outputs the walker recorded on the plan tree, then coerce. Tool-call
+	// args were previously passed verbatim (only NodeStep inputs were
+	// resolved), so a plan that generated a value in one node (e.g. a codegen
+	// step producing a tachyon_compile `sources` map) and referenced it in a
+	// later tool_call sent the literal ${...} placeholder to the tool. The
+	// snapshot is taken under the shared lock because parallel branches mutate
+	// PlanNode.ResultText concurrently.
+	var outputs map[string]string
+	withLock(mu, func() { outputs = collectNodeOutputs(plan) })
 	args := make(map[string]interface{}, len(tc.Args))
 	for k, v := range tc.Args {
-		args[k] = coerceArg(v)
+		args[k] = normalizeToolArg(k, resolveOutputRefs(v, outputs))
 	}
 
 	timeoutMs := tc.TimeoutMs

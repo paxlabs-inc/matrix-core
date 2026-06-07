@@ -22,6 +22,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"path/filepath"
@@ -112,6 +113,32 @@ func collectPlanAnswer(plan *ir.PlanTree) string {
 	return strings.TrimSpace(strings.Join(parts, "\n\n"))
 }
 
+// reasonIncompletePlan is the intent.fail reason the completeness critic uses
+// when a run is still missing requested deliverables after the re-plan budget
+// is exhausted (or a re-plan synthesis failed). The "x:" prefix marks it as a
+// custom reason per the research/02-protocol.md §13 taxonomy ("x:custom").
+const reasonIncompletePlan = "x:incomplete_plan"
+
+// walkFailure inspects a completed walk and returns a terminal failure
+// reason+detail when (a) the walk returned a hard error, (b) a tool reported an
+// in-band IsError, or (c) a step's LLM decode/transport errored (recorded in
+// WalkResult.Errors). failed=false means the walk was CLEAN — every node that
+// ran succeeded (which is NOT the same as the plan being complete; that is what
+// the completeness critic audits). Factored out of runMessage so the first walk
+// and every critic-driven re-plan walk share identical terminal semantics.
+func walkFailure(walkRes *runtime.WalkResult, werr error) (reason, detail string, failed bool) {
+	if werr != nil {
+		return classifyWalkError(werr), werr.Error(), true
+	}
+	if hasIsErrors(walkRes) {
+		return "tool_error", "tool reported in-band failure", true
+	}
+	if nodeID, errMsg, ok := firstWalkError(walkRes); ok {
+		return classifyStepError(errMsg), fmt.Sprintf("step %s: %s", nodeID, errMsg), true
+	}
+	return "", "", false
+}
+
 // clarifyRequiredError is returned when the compiler produced blocking
 // unknowns that the client must resolve. Mapped to HTTP 422 by the
 // server with a structured body containing the questions.
@@ -155,7 +182,7 @@ func runMessage(
 		return nil, fmt.Errorf("daemon: prose is required")
 	}
 	if req.SkillURI == "" {
-		req.SkillURI = d.defaultSkillURI
+		req.SkillURI = d.selectSkill(req.Prose, req.Verb)
 	}
 	if req.SkillURI == "" {
 		return nil, fmt.Errorf("daemon: skill URI is required (no default configured)")
@@ -388,32 +415,137 @@ func runMessage(
 		"changed":      preRoot != postRoot,
 	})
 
-	// Phase 11 — terminal envelope.
-	if werr != nil {
-		reason := classifyWalkError(werr)
-		_, _ = signTerminalFail(ctx, drv, d.infra.cortex, compRes.Intent, synthRes.Plan,
-			walkRes, reason, werr.Error(), t)
-		return makeFailedResult(intentID, compRes.IntentHash, drv, walkRes, synthRes.Plan, reason, werr.Error(), start), nil
-	}
-	if hasIsErrors(walkRes) {
-		_, _ = signTerminalFail(ctx, drv, d.infra.cortex, compRes.Intent, synthRes.Plan,
-			walkRes, "tool_error", "tool reported in-band failure", t)
-		return makeFailedResult(intentID, compRes.IntentHash, drv, walkRes, synthRes.Plan, "tool_error", "tool reported in-band failure", start), nil
-	}
-	// A step's LLM decode (or transport) errored — e.g. a budget_exhausted
-	// 429. The walker records these in WalkResult.Errors and continues, so
-	// without this check a plan whose content step failed would attest as
-	// "completed" and the user would be falsely told it succeeded. Promote
-	// it to a terminal failure so the true outcome is always surfaced; any
-	// partial node output is still folded into the answer by makeFailedResult.
-	if nodeID, errMsg, ok := firstWalkError(walkRes); ok {
-		reason := classifyStepError(errMsg)
-		detail := fmt.Sprintf("step %s: %s", nodeID, errMsg)
+	// Phase 11 — first-walk terminal failure checks. A hard walk error, an
+	// in-band tool error, or a failed step decode is terminal immediately; the
+	// completeness critic only audits an otherwise-CLEAN walk (a clean walk
+	// means every node that RAN succeeded — not that the plan was complete).
+	if reason, detail, failed := walkFailure(walkRes, werr); failed {
 		_, _ = signTerminalFail(ctx, drv, d.infra.cortex, compRes.Intent, synthRes.Plan,
 			walkRes, reason, detail, t)
 		return makeFailedResult(intentID, compRes.IntentHash, drv, walkRes, synthRes.Plan, reason, detail, start), nil
 	}
-	if _, err := signTerminalAttest(ctx, drv, d.infra.cortex, compRes.Intent, synthRes.Plan, walkRes, t); err != nil {
+
+	// Phase 11.5 — completeness critic + bounded re-plan gate.
+	//
+	// The Matrix pipeline plans once then executes blind, so a fast planner
+	// can emit a partial plan (e.g. only the first of several requested
+	// deliverables) that walks cleanly and would otherwise attest as
+	// "completed". The critic audits the EXECUTED work (real tool calls +
+	// results) against the user's original request; unmet items drive a rewind
+	// (intent.correct material → accepted) + a continuation re-synthesis +
+	// another walk, bounded by d.maxReplan. A run still incomplete after the
+	// budget is signed as a terminal FAILURE — never a false success. When the
+	// first plan is already complete the loop signs no envelopes (critic is a
+	// pure side-channel), so the chain + D11 replay roots are unchanged.
+	activePlan := synthRes.Plan
+	activeWalk := walkRes
+	answerParts := []string{collectPlanAnswer(activePlan)}
+	if d.criticEnabled {
+		executedDigest := buildExecutionDigest(activePlan)
+		complete := true
+		var lastMissing []string
+		for iter := 1; iter <= d.maxReplan+1; iter++ {
+			verdict, cerr := d.critiquePlan(ctx, req.Prose, executedDigest, intentID, req.GoalID(), t, costAcc)
+			if cerr != nil {
+				// Fail OPEN: a critic hiccup must never turn a clean walk
+				// into a failure. Attest the work that did run.
+				t.Event("critic.error", "verify", map[string]interface{}{"iter": iter, "error": cerr.Error()})
+				complete = true
+				break
+			}
+			t.Event("critic.verdict", "verify", map[string]interface{}{
+				"iter": iter, "complete": verdict.Complete, "missing": verdict.Missing, "rationale": verdict.Rationale,
+			})
+			if verdict.Complete {
+				complete = true
+				break
+			}
+			complete = false
+			lastMissing = verdict.Missing
+			if iter == d.maxReplan+1 {
+				break // out of re-plan budget; remain incomplete → terminal fail below
+			}
+
+			// Rewind executing → accepted (material correction), then ride a
+			// clean accepted → executing transition for the continuation plan.
+			missingJSON, _ := json.Marshal(verdict.Missing)
+			if _, derr := drv.DriveCorrectMaterial(reasonIncompletePlan, missingJSON); derr != nil {
+				return nil, fmt.Errorf("daemon: rewind for re-plan: %w", derr)
+			}
+			t.Event("replan.start", "synth", map[string]interface{}{"iter": iter, "missing": verdict.Missing})
+			gwRe := d.llmConfigFor(llm.SlotPlanner.String(), "", intentID, req.GoalID(), t, costAcc)
+			contRes, serr := synthesize(ctx, synthesizeOpts{
+				Skill:            skill,
+				Intent:           compRes.Intent,
+				Manifest:         d.infra.manifest,
+				Registry:         d.infra.registry,
+				Manager:          d.infra.manager,
+				Agent:            d.actor.AgentURI,
+				Model:            d.synthMod(),
+				BaseURL:          d.llmBaseURL,
+				Seed:             d.seed,
+				MaxRetry:         d.maxRetry,
+				WorkspaceRoot:    d.workspaceRoot,
+				GatewayURL:       gwRe.GatewayURL,
+				ActorDID:         gwRe.ActorDID,
+				IntentID:         intentID,
+				GoalID:           gwRe.GoalID,
+				CostHook:         gwRe.CostHook,
+				ForgeMode:        forgeMode,
+				ContinuationNote: buildContinuationNote(executedDigest, verdict.Missing),
+			}, t)
+			if serr != nil {
+				detail := fmt.Sprintf("re-plan synthesis failed: %v", serr)
+				_, _ = signTerminalFail(ctx, drv, d.infra.cortex, compRes.Intent, activePlan,
+					activeWalk, reasonIncompletePlan, detail, t)
+				return makeFailedResult(intentID, compRes.IntentHash, drv, activeWalk, activePlan, reasonIncompletePlan, detail, start), nil
+			}
+			if _, derr := drv.DrivePlanProposed(contRes.PlanJSON); derr != nil {
+				return nil, fmt.Errorf("daemon: drive re-plan: %w", derr)
+			}
+			// Re-run the plan-time spend gate on the continuation plan (it can
+			// carry value-moving writes like deploy/transfer).
+			if blocked, gerr := d.enforcePaxeerSpend(ctx, intentID, contRes.Plan, t); gerr != nil {
+				return nil, fmt.Errorf("daemon: paxeer spend evaluation (re-plan): %w", gerr)
+			} else if blocked != nil {
+				_, _ = signTerminalFail(ctx, drv, d.infra.cortex, compRes.Intent, contRes.Plan, nil,
+					"policy_denied", blocked.Reason, t)
+				return makeFailedResult(intentID, compRes.IntentHash, drv, nil, contRes.Plan, "policy_denied", blocked.Reason, start), nil
+			}
+			// Fresh walker per re-plan round (no cross-run state).
+			reWalker, bwerr := buildDaemonWalker(d, drv, stream, skill, t, intentID, req.GoalID(), costAcc)
+			if bwerr != nil {
+				return nil, fmt.Errorf("daemon: build re-plan walker: %w", bwerr)
+			}
+			cWalk, cWErr := reWalker.Run(ctx, contRes.Plan)
+			postRoot = captureRoot(d.infra.cortex)
+			t.Event("walk.cortex.post", "walk", map[string]interface{}{
+				"overall_root": postRoot, "changed": preRoot != postRoot, "replan_iter": iter,
+			})
+			if reason, detail, failed := walkFailure(cWalk, cWErr); failed {
+				_, _ = signTerminalFail(ctx, drv, d.infra.cortex, compRes.Intent, contRes.Plan,
+					cWalk, reason, detail, t)
+				return makeFailedResult(intentID, compRes.IntentHash, drv, cWalk, contRes.Plan, reason, detail, start), nil
+			}
+			activePlan = contRes.Plan
+			activeWalk = cWalk
+			answerParts = append(answerParts, collectPlanAnswer(contRes.Plan))
+			executedDigest = truncate(executedDigest+"\n"+buildExecutionDigest(contRes.Plan), criticDigestCap)
+		}
+
+		if !complete {
+			detail := "task incomplete after the re-plan budget was exhausted"
+			if len(lastMissing) > 0 {
+				detail += "; still missing: " + strings.Join(lastMissing, "; ")
+			}
+			_, _ = signTerminalFail(ctx, drv, d.infra.cortex, compRes.Intent, activePlan,
+				activeWalk, reasonIncompletePlan, detail, t)
+			return makeFailedResult(intentID, compRes.IntentHash, drv, activeWalk, activePlan, reasonIncompletePlan, detail, start), nil
+		}
+	}
+
+	// Phase 12 — success terminal envelope.
+	if _, err := signTerminalAttest(ctx, drv, d.infra.cortex, compRes.Intent, activePlan, activeWalk, t); err != nil {
 		return nil, fmt.Errorf("daemon: drive attest: %w", err)
 	}
 
@@ -425,13 +557,14 @@ func runMessage(
 		PreReplayRoot:  preRoot,
 		PostReplayRoot: postRoot,
 		WalkErrors:     0,
-		NodeCount:      nodesIn(walkRes),
-		EventCount:     eventsIn(walkRes),
+		NodeCount:      nodesIn(activeWalk),
+		EventCount:     eventsIn(activeWalk),
 		DurationMS:     time.Since(start).Milliseconds(),
 		// Deterministic ground-truth deliverable (Leg B): the real
-		// executed-plan output, captured from node ResultText, not the
-		// truncated SSE previews and not the Liaison's prose.
-		Answer: collectPlanAnswer(synthRes.Plan),
+		// executed-plan output across every walk (including critic-driven
+		// re-plans), captured from node ResultText — not the truncated SSE
+		// previews and not the Liaison's prose.
+		Answer: strings.TrimSpace(strings.Join(answerParts, "\n\n")),
 	}
 	t.Event("message.complete", "summary", map[string]interface{}{
 		"intent_id":   intentID,
@@ -604,6 +737,8 @@ func friendlyFailLine(reason string) string {
 		return "I couldn't finish this in time — a step timed out before it produced a result. Please try again in a moment."
 	case "tool_error":
 		return "I couldn't finish this because one of the tools I used reported an error. Please try again, or rephrase the request."
+	case reasonIncompletePlan:
+		return "I completed part of this but couldn't finish every step you asked for, even after re-planning. The work that did land is above; please retry or narrow the request so I can finish the rest."
 	default:
 		return "I couldn't complete this task. Please try again, or rephrase what you'd like."
 	}

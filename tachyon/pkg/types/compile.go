@@ -19,6 +19,12 @@ type CompileRequest struct {
 	Targets     []string          `json:"targets,omitempty"`
 	Optimize    *bool             `json:"optimize,omitempty"`
 	ViaIR       *bool             `json:"via_ir,omitempty"`
+	// EVMVersion pins the solc/EVM target for an uploaded-source compile
+	// (e.g. "shanghai", "paris", "cancun"). Empty uses the engine's
+	// conservative default (shanghai) so artifacts don't emit Cancun-only
+	// opcodes (MCOPY) that pre-Cancun chains like Paxeer 125 reject. Ignored
+	// when the caller uploads their own foundry.toml.
+	EVMVersion string `json:"evm_version,omitempty"`
 }
 
 // CompilerSettings mirrors solc optimizer metadata.

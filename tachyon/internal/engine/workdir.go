@@ -15,17 +15,36 @@ import (
 // payloads). Solidity files comfortably fit well under this.
 const maxSourceBytes = 8 << 20 // 8 MiB
 
-// defaultFoundryToml is written into an uploaded-source workdir when the caller
-// did not provide their own. Contracts live under src/, tests under test/; the
-// box's dependency tree is linked in as lib/ (see prepareSourceWorkdir).
-const defaultFoundryToml = `[profile.default]
+// defaultEVMVersion is the solc/EVM target used for uploaded-source compiles
+// when the caller does not pin one. Deliberately conservative: Paxeer mainnet
+// (chain 125) and many other EVM chains are PRE-Cancun, so solc 0.8.27's
+// default ("cancun") emits the MCOPY opcode (0x5E) — string/dynamic-memory
+// calls like name()/symbol() then revert on-chain with "invalid opcode: opcode
+// 0x5e not defined". "shanghai" still emits PUSH0 (which Paxeer supports) but
+// no Cancun-only opcodes, so it deploys and runs everywhere modern. Callers can
+// override per-chain via CompileRequest/TestRequest.EVMVersion (e.g. "cancun"
+// for a chain that supports it, or "paris" for a PUSH0-less node).
+const defaultEVMVersion = "shanghai"
+
+// foundryTomlFor renders the uploaded-source foundry.toml written when the
+// caller did not provide their own. Contracts live under src/, tests under
+// test/; the box's dependency tree is linked in as lib/ (see
+// prepareSourceWorkdir). The EVM version is pinned (caller override falls back
+// to defaultEVMVersion) so artifacts target an opcode set the deploy chain runs.
+func foundryTomlFor(evmVersion string) string {
+	if strings.TrimSpace(evmVersion) == "" {
+		evmVersion = defaultEVMVersion
+	}
+	return `[profile.default]
 src = "src"
 test = "test"
 out = "out"
 libs = ["lib"]
 optimizer = true
 optimizer_runs = 200
+evm_version = "` + evmVersion + `"
 `
+}
 
 // sourcesProjectID derives a deterministic project id from the uploaded source
 // set, so a compile and a later deploy/call resolve the same registry entries
@@ -58,8 +77,10 @@ func sourcesProjectID(sources map[string]string) string {
 //	                                remapping @openzeppelin/contracts/=.oz/)
 //
 // Caller-provided foundry.toml / remappings.txt / lib files take precedence.
+// evmVersion pins the generated foundry.toml's evm_version (empty →
+// defaultEVMVersion); ignored when the caller uploads their own foundry.toml.
 // Returns the workdir and a cleanup func the caller must always defer.
-func (e *Engine) prepareSourceWorkdir(sources map[string]string) (string, func(), *types.Error) {
+func (e *Engine) prepareSourceWorkdir(sources map[string]string, evmVersion string) (string, func(), *types.Error) {
 	dir, err := os.MkdirTemp("", "tachyon-src-")
 	if err != nil {
 		return "", func() {}, types.NewError(types.CodeInternal, "create workdir: "+err.Error(), false, nil)
@@ -103,7 +124,7 @@ func (e *Engine) prepareSourceWorkdir(sources map[string]string) (string, func()
 	}
 
 	if !provided["foundry.toml"] {
-		if err := os.WriteFile(filepath.Join(dir, "foundry.toml"), []byte(defaultFoundryToml), 0o644); err != nil {
+		if err := os.WriteFile(filepath.Join(dir, "foundry.toml"), []byte(foundryTomlFor(evmVersion)), 0o644); err != nil {
 			cleanup()
 			return "", func() {}, types.NewError(types.CodeInternal, err.Error(), false, nil)
 		}
