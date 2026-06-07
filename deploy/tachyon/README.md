@@ -45,8 +45,23 @@ app-scoped deploy token for `matrix-daemon` — it CANNOT create new apps. App
 creation + the first deploy need an org-capable credential (`flyctl auth
 login`). `flyctl` prefers `$FLY_API_TOKEN`, so `unset` it first.
 
-The build context is the **repo root** (the Dockerfile COPYs `tachyon/...`),
-so run `flyctl deploy` from `/root/matrix`:
+**Recommended — use the script** (idempotent: creates the app on first run,
+re-deploys after; verifies private networking + health):
+
+```bash
+flyctl auth login            # org-capable login (once)
+deploy/tachyon/deploy.sh     # create (if needed) + deploy + verify
+```
+
+The script resolves the repo root itself, unsets the daemon-scoped
+`FLY_API_TOKEN` so it can't shadow your login, initializes the `tachyon/lib`
+Foundry submodules if empty, creates `matrix-tachyon` as a private app, deploys,
+and probes `/healthz`. Knobs: `FLY_ORG` (default `personal`), `TACHYON_AUTH_TOKEN`
+(sets the engine bearer secret), `FOUNDRY_VERSION`, or
+`MATRIX_TACHYON_DEPLOY_TOKEN` (an app-scoped token to skip interactive login).
+
+**Manual equivalent** — the build context is the **repo root** (the Dockerfile
+COPYs `tachyon/...`), so run `flyctl deploy` from `/root/matrix`:
 
 ```bash
 unset FLY_API_TOKEN                       # stop the app-scoped token shadowing login

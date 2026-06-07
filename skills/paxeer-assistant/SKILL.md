@@ -12,9 +12,11 @@ and it never reports an outcome it can't prove with a real tool result.
 It runs on the **default** Matrix agent, which already bundles every server it
 needs: the `/workspace` filesystem (`fs`), the shell + service supervisor
 (`exec`), version control (`git`), web search (`web-search`), URL fetch
-(`fetch`), a real headless browser (`browser`), and the Paxeer network bridge
-(`paxeer-net`). Reads are free; chain writes sign through the embedded wallet
-with custody and spend policy enforced network-side.
+(`fetch`), a real headless browser (`browser`), the Paxeer network bridge
+(`paxeer-net`), and the shared Solidity/EVM engine (`tachyon`, a Foundry/forge
+proxy to the matrix-tachyon app). Reads are free; chain writes and contract
+deployments sign through the embedded wallet with custody and spend policy
+enforced network-side.
 
 ## Two axes: domain (what kind of work) × verb (lifecycle stage)
 
@@ -136,6 +138,42 @@ source of truth for swap execution):
   callData, executeAtBlock, gas deposit) for deferred / recurring txs.
 - **Identity:** `wallet_info` provisions/returns the agent wallet;
   `sign_message` for EIP-191 proof.
+
+## Domain 4 — CONTRACTS (author, compile, test, deploy Solidity)
+
+When the work is a **smart contract** — write it, compile it, test it, or DEPLOY
+it — use the `tachyon` tools. **Never hand-roll `solc` / `solcjs` / `npm` via
+`exec.shell`: the daemon image has no solc and that path always fails.** The
+engine is a shared Foundry (forge) box reached over the private network; it
+holds no wallet seed — deployments are signed by *your* embedded wallet, with
+the agent identity forwarded automatically.
+
+- **`tachyon_compile`** — pass the contract as a `sources` map (`path`->content;
+  contracts under `src/`, tests under `test/`). `@openzeppelin/contracts/...`
+  and `forge-std/...` imports resolve automatically. Returns the ABI +
+  bytecode and a stable **`project_id`** that threads into deploy/call.
+- **`tachyon_test`** — run the Forge suite; per-case pass/fail/gas. Narrow with
+  `match_path` / `match_contract` / `filter`.
+- **`tachyon_simulate`** — read-only `eth_call` dry-run against a chain (no
+  broadcast); returns return-data + any revert reason.
+- **`tachyon_deploy`** — sign + broadcast the deployment via the embedded wallet.
+  Resolve by contract name + `project_id`; pass an `idempotency_key` so a retry
+  is safe. Returns the **contract address + tx_hash**.
+- **`tachyon_call`** — invoke a method. `simulate_only=true` is a read; otherwise
+  a wallet-signed write. Encode by `method`+`args` (ABI from inline `abi` or
+  `contract`+`project_id`) or pass pre-encoded `data`.
+- **`tachyon_chain_list` / `tachyon_chain_register`** — list / add RPC profiles
+  (Paxeer is chain 125).
+- **`tachyon_artifact_get` / `tachyon_registry_lookup`** — fetch a cached
+  artifact (ABI + bytecode) by name + `project_id`, or resolve a prior
+  deployment by `idempotency_key` + `chain_id`.
+
+*Recipe — deploy a token (e.g. an ERC-20):* `tachyon_compile` the source ->
+`tachyon_test` -> `tachyon_simulate` -> `tachyon_deploy` (capture address +
+tx_hash) -> `tachyon_call` to read/verify (e.g. `name` / `symbol` /
+`totalSupply`, `simulate_only=true`). **Take the address and tx_hash verbatim
+from the tachyon result — never fabricate a `PLACEHOLDER` value; if a step
+errors, report the error.**
 
 ## Order of operations (every verb)
 
