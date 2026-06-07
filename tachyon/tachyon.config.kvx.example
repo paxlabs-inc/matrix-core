@@ -1,0 +1,50 @@
+# tachyon.config.kvx — daemon configuration (self-host & hosted).
+#
+# Copy to `tachyon.config.kvx` and edit. Precedence: environment > this file > defaults.
+# String values use double quotes. ${ENV_VAR} is interpolated from the environment,
+# so secrets can stay out of the file. Lists use ["a", "b"].
+#
+# NEVER commit a real tachyon.config.kvx — it is gitignored by default.
+
+[server]
+addr       = "127.0.0.1:8645"     # bind loopback by default; front with TLS if public
+auth_token = "${TACHYON_AUTH_TOKEN}"   # require Bearer <token> on every request (recommended)
+# project_root  = "."
+# artifacts_dir = "artifacts"
+# registry_path = "registry.json"
+# forge_path    = "forge"
+
+# ── Wallet ─────────────────────────────────────────────────────────────────
+# Two modes:
+#   self_hosted → you hold the key (raw | keystore | env)
+#   embedded    → Paxeer embedded wallet signs server-side via the agent DID lane
+[wallet]
+mode = "self_hosted"
+
+# --- self_hosted ---
+[wallet.self_hosted]
+# signer = raw | keystore | env
+signer       = "env"
+private_key  = "${DEPLOYER_PK}"          # raw/env: 0x-hex key (prefer ${ENV})
+# keystore_path     = "/secure/deployer.json"   # keystore: web3 secret-storage (geth v3) JSON
+# keystore_password = "${KEYSTORE_PASSWORD}"
+
+# --- embedded (Matrix agents; no local keys) ---
+[wallet.embedded]
+# keyfile = "/data/.matrix/executor.key"  # ed25519 seed (64-hex) → did:matrix:<label>:<keyfp>
+# label   = "executor"
+# api     = "https://connect.paxportwallet.com"
+
+# ── Capability profiles ──────────────────────────────────────────────────────
+# Referenced by `capability_token` on deploy/call. The local Gate enforces these
+# in self_hosted mode; in embedded mode the wallet enforces custody server-side.
+[policy.default]
+spend_cap_wei = "100000000000000000"     # 0.1 ETH
+allow         = []                        # allow-list of destination addresses ([] = any)
+chains        = ["paxeer-mainnet"]
+
+# ── Custom chains ────────────────────────────────────────────────────────────
+[chains.anvil]
+name     = "Local Anvil"
+rpc_url  = "http://127.0.0.1:8545"
+chain_id = 31337
