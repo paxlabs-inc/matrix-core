@@ -29,14 +29,14 @@ Read in order for a full picture; jump to a section for a specific task.
 | 03 | [`03-data-model.md`](./03-data-model.md) | Postgres schema, pgvector index, on-chain state, entities |
 | 04 | [`04-onchain.md`](./04-onchain.md) | `ServiceRegistry` contract + Paxeer precompile integration |
 | 05 | [`05-api.md`](./05-api.md) | REST API surface, request/response schemas, error model |
-| 06 | [`06-execution-hosting.md`](./06-execution-hosting.md) | Where it runs (Fly), proxy vs hosted listings, sandbox, invocation gateway |
+| 06 | [`06-execution-hosting.md`](./06-execution-hosting.md) | Where it runs (Paxeer Cloud / Appwrite), proxy vs hosted listings, sandbox, invocation gateway |
 | 07 | [`07-discovery.md`](./07-discovery.md) | Plain-language semantic search, embeddings, ranking |
 | 08 | [`08-payments-billing.md`](./08-payments-billing.md) | Per-call micro-payments, streaming, net settlement, economics |
 | 09 | [`09-security.md`](./09-security.md) | Threat model, auth, isolation, confidential (TEE) services, abuse |
 | 10 | [`10-integration.md`](./10-integration.md) | Matrix MCP proxy, agent registry, embedded-wallet, agent fee lane |
 | 11 | [`11-modules.md`](./11-modules.md) | Go module + package responsibility breakdown |
 | 12 | [`12-file-by-file.md`](./12-file-by-file.md) | Every file, its content direction, and the syntax to use |
-| 13 | [`13-deployment.md`](./13-deployment.md) | `deploy/deus` Fly apps, env vars, install & ops |
+| 13 | [`13-deployment.md`](./13-deployment.md) | `deploy/deus` control plane + Paxeer Cloud hosting, env vars, install & ops |
 | 14 | [`14-roadmap.md`](./14-roadmap.md) | Phased milestones, MVP scope, exit criteria |
 
 ---
@@ -67,7 +67,7 @@ existing spend policy; the platform takes **zero** fee.
 | **Service** | A callable unit listed on Deus. Either a **data API** (returns information) or an **agent service** (performs work). |
 | **Listing** | A service's registry entry: manifest, pricing, endpoints, owner, quality score. |
 | **Proxy listing** | Deus forwards calls to the developer's own HTTPS endpoint; Deus meters + settles. |
-| **Hosted listing** | Developer uploads code/container; Deus builds and runs it on Fly (free hosting). |
+| **Hosted listing** | Developer uploads code/container; Deus deploys + runs it on **Paxeer Cloud** (the Appwrite fork) — free hosting. |
 | **Manifest** | The machine-readable description of a service: schema, pricing, capabilities, auth, attestation method. |
 | **Invocation** | A single billable call to a service. |
 | **Call receipt** | An EIP-712-signed record of an invocation (caller, service, price, result hash, outcome). |

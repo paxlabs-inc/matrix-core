@@ -62,10 +62,10 @@
         ================================================================================
                            |
               +------------v------------------------------+
-              |  EXECUTION LAYER (Fly Machines, Node)      |
-              |  - Hosted-service runners (scale-to-zero)  |
+              |  EXECUTION LAYER (Paxeer Cloud / Appwrite) |
+              |  - Hosted Functions/Sites (scale-to-zero)  |
               |  - Proxy egress to developer endpoints     |
-              |  - Confidential (TEE) runners (v1.x)       |
+              |  - Confidential (TEE) runtime (v1.x)       |
               +-------------------------------------------+
 ```
 
@@ -192,4 +192,5 @@ report data) before finalizing the receipt and releasing payment.
   developer/window, not per call).
 - Runners: per-service scale-to-zero; hot services pinned warm.
 - Postgres: read replicas for discovery; pgvector index (HNSW) for search.
-- Hard ceiling for v1 mirrors the launch cap (Fly machine budget); raise later.
+- Hard ceiling for v1 mirrors the launch cap (the free-hosting budget on Paxeer
+  Cloud, §6.7); raise later.

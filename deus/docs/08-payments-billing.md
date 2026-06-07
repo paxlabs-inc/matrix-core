@@ -19,9 +19,9 @@
 
 | Rail | Shape | Mechanism | Default for |
 | ---- | ----- | --------- | ----------- |
-| **Net settlement** | many tiny calls | off-chain meter → batched on-chain payout per developer per window | per-call APIs (the default) |
+| **Direct** | single call | inline transfer via caller wallet `agent/send` before result release | **the launch MVP rail** + expensive one-shot calls |
+| **Net settlement (channel)** | many tiny calls | per-window channel + caller vouchers → batched on-chain payout per developer per window | per-call APIs (steady-state default; **fast-follow** after MVP) |
 | **Stream** | continuous/long | PaymentStreams `0x0906` rate-per-second | sessions, subscriptions-by-the-second, agent services that run a while |
-| **Direct** | single high-value | inline transfer via caller wallet `agent/send` before result release | expensive one-shot calls |
 
 ### Why net settlement is the default
 Sub-cent calls cannot each afford a chain write. The gateway meters off-chain

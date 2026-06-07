@@ -419,9 +419,9 @@ existing repo file.
 ### `deploy/daemon/Dockerfile` `[EDIT]`
 - `COPY tools/deus` into the daemon image.
 
-### `deploy/deus/{Dockerfile,fly.toml,README.md}` `[NEW]` (control plane)
-### `deploy/deus/runner/{Dockerfile,fly.toml}` `[NEW]` (runner pool)
-### `deploy/deus/deploy.sh` `[NEW]` (org-capable flyctl deploy; mirror deploy/tachyon)
+### `deploy/deus/{Dockerfile,fly.toml,README.md}` `[NEW]` (control plane only)
+### `deploy/deus/runner/{node20,container}/` `[NEW]` (Paxeer Cloud function/Site templates — NOT a Fly app)
+### `deploy/deus/deploy.sh` `[NEW]` (org-capable flyctl deploy for `deus-control`; mirror deploy/tachyon)
 ### `deploy/deus/install.sh` `[NEW]` (box: binary + systemd + migrations + env)
 
 ---

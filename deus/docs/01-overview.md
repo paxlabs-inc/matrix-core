@@ -73,8 +73,8 @@ be the canonical map of the ecosystem's agent capabilities.
   + immediate on-chain registration ([`05-api.md`](./05-api.md), [`04-onchain.md`](./04-onchain.md)).
 - *Keep 100%; platform takes nothing* → settlement pays the developer's payout
   address directly; no fee skim ([`08-payments-billing.md`](./08-payments-billing.md)).
-- *Free hosting; Paxeer runs it* → **hosted listings** on Fly
-  ([`06-execution-hosting.md`](./06-execution-hosting.md)).
+- *Free hosting; Paxeer runs it* → **hosted listings** on **Paxeer Cloud** (the
+  Appwrite fork) ([`06-execution-hosting.md`](./06-execution-hosting.md)).
 - *Instantly discoverable* → indexed + embedded on listing
   ([`07-discovery.md`](./07-discovery.md)).
 - *Quality score, not a comment section* → PoFQ ([`04-onchain.md`](./04-onchain.md)).

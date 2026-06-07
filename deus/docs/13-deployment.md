@@ -1,43 +1,62 @@
 # 13 — Deployment & Operations
 
-Deus follows the proven Matrix deploy pattern: a shared private control plane on
-Fly, data on the Paxeer box, scale-to-zero runners, and a daemon-baked MCP proxy.
-Mirror `deploy/browser` and `deploy/tachyon`.
+Deus follows the proven Matrix deploy pattern for the **control plane** (a shared
+private Go service + data on the Paxeer box + a daemon-baked MCP proxy), but
+**hosted-service execution runs on Paxeer Cloud** (the deployed Appwrite fork),
+not on bespoke Fly runners. Mirror `deploy/browser` and `deploy/tachyon` for the
+control-plane shape only.
 
-## 13.1 Fly apps
+## 13.1 Control-plane placement (`deus-control`)
 
-| App | Public IP? | Shape | Notes |
-| --- | ---------- | ----- | ----- |
-| `deus-control` | Yes (TLS) | N instances, stateless | the `deusd` Go server; public API |
-| `deus-runner` | No (6PN) | scale-to-zero shared pool | node20 function tenants |
-| `deus-svc-<id>` | No (6PN) | scale-to-zero per service | dedicated/confidential services |
+The `deusd` Go server is stateless and can run wherever is convenient; pick one:
 
-> If the public API should be box-fronted (nginx) like the gateway/router rather
-> than a public Fly IP, run `deus-control` private (6PN) and add an nginx
-> `/deus/` location on the box (mirror `deploy/box/nginx/...` `/gw/`). Pick one;
-> the spec assumes a public `deus-control` for simplicity.
+| Option | Public? | Shape | Notes |
+| ------ | ------- | ----- | ----- |
+| Fly app `deus-control` | Yes (TLS) or 6PN | N instances | mirrors `deploy/tachyon`; public IP or box-fronted |
+| Paxeer box (systemd) | via nginx | N instances | `deusd` next to gateway/router; nginx `/deus/` location |
+| Paxeer Cloud container | via Appwrite ingress | N instances | co-located with hosted execution |
+
+> If box-fronted (like the gateway/router), run `deus-control` private and add an
+> nginx `/deus/` location (mirror `deploy/box/nginx/...` `/gw/`). The hosted
+> **execution tier is always Paxeer Cloud** regardless of where the control plane
+> runs.
+
+## 13.1b Hosted execution (Paxeer Cloud / Appwrite fork)
+
+- Hosted listings are **Paxeer Cloud Functions** (node20 source) or **container
+  Sites** (heavier/confidential), created via the **Appwrite Server API** by
+  `internal/hosting`. Appwrite owns build, scale-to-zero, routing, secrets
+  (function variables), and logs.
+- No `deus-runner` / `deus-svc-<id>` Fly apps. The free-hosting **budget +
+  kill-switch** ([`06-execution-hosting.md`](./06-execution-hosting.md) §6.7) is
+  enforced by the orchestrator against Paxeer Cloud consumption.
+- Confidential services use the Paxeer Cloud TEE runtime where available, else a
+  dedicated runner.
 
 ## 13.2 `deploy/deus/` files
 
 ```text
 deploy/deus/
   Dockerfile          multi-stage: golang:1.22-bookworm build deusd -> debian-slim
-  fly.toml            deus-control app (public service :PORT, TLS, N machines)
+  fly.toml            deus-control app (service :PORT, TLS, N machines) [if Fly]
   deploy.sh           org-capable flyctl deploy (unset FLY_API_TOKEN; flyctl auth login)
   install.sh          box install: binary + systemd unit + env + migrations
-  runner/
-    Dockerfile        node20 runner base image (harness + runtimes baked)
-    fly.toml          deus-runner shared pool (private, scale-to-zero)
+  runner/             Paxeer Cloud function/Site templates (NOT a Fly app)
+    node20/           Appwrite node20 function template (harness + handler shim)
+    container/        container Site template (Dockerfile + entry shim)
+    README.md         how internal/hosting packages + deploys these via Appwrite API
   README.md           deploy runbook (mirror deploy/tachyon/README.md)
 ```
 
 - **Dockerfile (control):** build `cmd/deusd`, copy `migrations/`, `configs/`,
   `pkg/manifest/schema.json`. `CMD ["deusd"]`.
-- **Dockerfile (runner):** Node 20, bake `runner/` harness + runtimes; entry is
-  the private HTTP server; egress allowlist applied.
-- **deploy.sh:** org-level flyctl creds (the box `FLY_API_TOKEN` is app-scoped to
-  `matrix-daemon` and cannot create new apps — use ambient `flyctl auth login`,
-  like the Tachyon/Browser READMEs). Builds, pushes, deploys.
+- **runner/ templates:** the harness + runtime shims that `internal/hosting`
+  uploads to **Paxeer Cloud** as Functions/Sites — there is **no runner Fly app
+  and no machine image to push**. Egress allowlist + caps are applied on the
+  function spec + enforced by the harness.
+- **deploy.sh (control only):** org-level flyctl creds (the box `FLY_API_TOKEN`
+  is app-scoped to `matrix-daemon` and cannot create new apps — use ambient
+  `flyctl auth login`). Builds, pushes, deploys `deus-control` if on Fly.
 - **install.sh (box):** install `deusd` binary, write systemd unit, write
   `/etc/matrix/deus.env`, run `deusctl migrate`. Idempotent (mirror
   `gateway/deploy/install.sh`).
@@ -56,11 +75,15 @@ DEUS_GATEWAY_SIGNING_KEY_REF=...           # receipts/quotes signer (secret ref)
 DEUS_SETTLER_KEY_REF=...                   # escrow/settlement signer (secret ref)
 MATRIX_WALLET_API_URL=https://connect.paxportwallet.com   # embedded wallet
 DEUS_EMBED_PROVIDER=fireworks DEUS_EMBED_API_KEY=...
-DEUS_FLY_API_TOKEN=...                      # runner orchestration (scoped)
+DEUS_APPWRITE_ENDPOINT=...                  # Paxeer Cloud (Appwrite) Server API
+DEUS_APPWRITE_PROJECT=...                   # Paxeer Cloud project id
+DEUS_APPWRITE_API_KEY=...                   # Appwrite server API key (secret ref)
+DEUS_HOSTING_BUDGET_PAX=...                 # aggregate free-hosting ceiling
 DEUS_PORT=9095
 ```
-Optional: worker counts, settlement window seconds, fleet cap, feature flags
-(`DEUS_CONFIDENTIAL_ENABLED`, `DEUS_HOSTED_ENABLED`).
+Optional: worker counts, settlement window seconds, feature flags
+(`DEUS_CONFIDENTIAL_ENABLED`, `DEUS_HOSTED_ENABLED`, `DEUS_HOSTING_KILLSWITCH`).
+`DEUS_FLY_*` only if `deus-control` itself runs on Fly.
 
 ## 13.4 Data tier (Paxeer box)
 
@@ -92,13 +115,17 @@ Optional: worker counts, settlement window seconds, fleet cap, feature flags
 
 ## 13.7 Rollout order
 
-1. Deploy contracts (registry + anchor) to chain 125.
+1. Deploy `ServiceRegistry` to chain 125 (Phase 1). (`SettlementAnchor` +
+   channel/escrow contracts come with Phase 2.5.)
 2. Stand up Postgres `deus` DB + MinIO bucket; `deusctl migrate`.
-3. Deploy `deus-control` (proxy listings + discovery + invoke + net settlement).
-4. Deploy `deus-runner` pool; enable hosted listings.
-5. Bake + ship `tools/deus` in the daemon image; wire router env.
-6. Deploy the console.
-7. Enable streaming, then confidential (TEE), then scheduler-recurring (v1.x).
+3. Deploy `deus-control` for the **direct-rail MVP** (proxy listings + discovery
+   + invoke + direct-transfer pay + PoFQ). No escrow/net settlement yet.
+4. Bake + ship `tools/deus` in the daemon image; wire router env.
+5. Deploy the console.
+6. **Fast-follow (Phase 2.5):** deploy `SettlementAnchor` + channel/escrow
+   contracts; enable the payment channel + net settlement.
+7. Enable hosted listings on **Paxeer Cloud** (Phase 3); wire the hosting budget.
+8. Enable streaming, then confidential (TEE), then scheduler-recurring (v1.x).
 
 ## 13.8 Observability & ops
 
@@ -109,9 +136,10 @@ Optional: worker counts, settlement window seconds, fleet cap, feature flags
   drift.
 - Alerts: settlement lag > window, indexer lag > N blocks, escrow drift > 0,
   denial spike, runner error rate.
-- Runbooks in `deploy/deus/README.md`: redeploy control, redeploy runner,
-  replay indexer (`deusctl index replay --from`), force settle, rotate signing
-  keys, pause a service.
+- Runbooks in `deploy/deus/README.md`: redeploy control, redeploy a hosted
+  service on Paxeer Cloud, replay indexer (`deusctl index replay --from`), force
+  settle, rotate signing keys, pause a service, trip/reset the hosting budget
+  kill-switch.
 
 ## 13.9 Backups & DR
 
