@@ -23,6 +23,12 @@ type TxIntent struct {
 	Data  []byte
 	Value *big.Int
 	Gas   uint64 // 0 => estimate
+
+	// AuthToken is an optional forwarded embedded-wallet bearer. Remote
+	// signers (the embedded wallet) use it to act as a specific agent
+	// without holding that agent's seed — the basis for a shared,
+	// multi-tenant engine. Local signers ignore it.
+	AuthToken string
 }
 
 // SignResult is returned by a Signer. Exactly one of RawTx / TxHash is populated:

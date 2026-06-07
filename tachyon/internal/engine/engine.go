@@ -210,10 +210,11 @@ func (e *Engine) Call(ctx context.Context, req types.CallRequest) types.Envelope
 		return types.Fail[types.CallResponse](perr)
 	}
 	res, werr := e.Wallet.Sign(ctx, client, wallet.TxIntent{
-		From:  req.From,
-		To:    req.To,
-		Data:  data,
-		Value: value,
+		From:      req.From,
+		To:        req.To,
+		Data:      data,
+		Value:     value,
+		AuthToken: strings.TrimSpace(req.WalletToken),
 	}, policy)
 	if werr != nil {
 		return types.Fail[types.CallResponse](werr)

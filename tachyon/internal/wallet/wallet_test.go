@@ -1,6 +1,7 @@
 package wallet
 
 import (
+	"context"
 	"math/big"
 	"os"
 	"path/filepath"
@@ -165,13 +166,37 @@ func TestNewEmbeddedSignerDID(t *testing.T) {
 }
 
 func TestNewEmbeddedSignerErrors(t *testing.T) {
-	if _, err := NewEmbeddedSigner(config.WalletConfig{}); err == nil {
-		t.Error("expected error for missing keyfile")
+	// No keyfile is valid: token-only multi-tenant mode (the shared engine).
+	// Every signing request must then carry a forwarded wallet_token, but
+	// construction succeeds with no local seed and no DID.
+	s, err := NewEmbeddedSigner(config.WalletConfig{})
+	if err != nil {
+		t.Fatalf("seedless construction must succeed (token-only mode): %v", err)
 	}
+	if s.DID() != "" {
+		t.Errorf("token-only signer should have no DID, got %q", s.DID())
+	}
+	// A bad keyfile, when one IS provided, is still an error.
 	dir := t.TempDir()
 	bad := filepath.Join(dir, "bad.key")
 	_ = os.WriteFile(bad, []byte("not-hex"), 0o600)
 	if _, err := NewEmbeddedSigner(config.WalletConfig{Keyfile: bad}); err == nil {
 		t.Error("expected error for invalid seed")
+	}
+}
+
+// TestEmbeddedSignerSeedlessRequiresToken verifies a token-only signer fails
+// cleanly when a request arrives without a forwarded bearer.
+func TestEmbeddedSignerSeedlessRequiresToken(t *testing.T) {
+	s, err := NewEmbeddedSigner(config.WalletConfig{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = s.Sign(context.Background(), nil, TxIntent{To: "0x0000000000000000000000000000000000000001"})
+	if err == nil {
+		t.Fatal("expected error: seedless signer with no forwarded token")
+	}
+	if !strings.Contains(err.Error(), "forwarded wallet_token is required") {
+		t.Errorf("unexpected error: %v", err)
 	}
 }

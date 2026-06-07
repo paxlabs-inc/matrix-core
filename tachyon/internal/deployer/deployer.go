@@ -79,7 +79,7 @@ func (d *Deployer) Deploy(ctx context.Context, req types.DeployRequest) (types.D
 
 	// Build the signing intent. CREATE2 routes through a deterministic factory
 	// (calldata = salt ++ initCode); plain deploys are a creation tx (to = nil).
-	intent := wallet.TxIntent{From: strings.TrimSpace(req.From), Value: big.NewInt(0)}
+	intent := wallet.TxIntent{From: strings.TrimSpace(req.From), Value: big.NewInt(0), AuthToken: strings.TrimSpace(req.WalletToken)}
 	var create2Addr common.Address
 	if req.Create2 != nil {
 		create2Addr, err = computeCreate2(req.Create2.Deployer, req.Create2.Salt, initCode)

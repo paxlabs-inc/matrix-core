@@ -20,6 +20,10 @@ type DeployRequest struct {
 	From           string          `json:"from,omitempty"`
 	CapabilityToken string         `json:"capability_token,omitempty"`
 	SpendCapWei    string          `json:"spend_cap_wei,omitempty"`
+	// WalletToken is a forwarded embedded-wallet bearer (the agent's
+	// short-lived did:matrix token). When set, the shared engine signs +
+	// broadcasts as that agent server-side without holding any seed.
+	WalletToken string `json:"wallet_token,omitempty"`
 }
 
 // DeployResponse records an on-chain deployment.
