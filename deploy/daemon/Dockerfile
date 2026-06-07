@@ -15,6 +15,9 @@
 #   /opt/matrix/tools/exec/              exec stdio MCP server (Node.js): shell
 #                                        + long-lived service supervisor; state
 #                                        persisted to /data/services
+#   /opt/matrix/tools/tachyon/           tachyon stdio MCP proxy (Node.js) ->
+#                                        shared matrix-tachyon Fly app via
+#                                        MATRIX_TACHYON_URL (Solidity/EVM engine)
 #   /opt/matrix/entrypoint.sh            init script: prep volume + exec daemon
 #   /root/matrix -> /opt/matrix          symlink so default.json's hard-coded
 #                                        /root/matrix/tools/paxeer/paxeer-net.mjs
@@ -115,6 +118,7 @@ COPY tools/paxeer    /opt/matrix/tools/paxeer
 COPY tools/websearch /opt/matrix/tools/websearch
 COPY tools/browser   /opt/matrix/tools/browser
 COPY tools/exec      /opt/matrix/tools/exec
+COPY tools/tachyon   /opt/matrix/tools/tachyon
 
 # agents/default.json hard-codes /root/matrix/tools/paxeer/paxeer-net.mjs
 # (matches the dev-box layout). Symlink /root/matrix → /opt/matrix so the

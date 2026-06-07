@@ -1,11 +1,17 @@
 package types
 
 // TestRequest runs forge tests.
+//
+// Sources mirrors CompileRequest.Sources: a non-empty map (workdir-relative
+// path -> content) makes the request self-contained so a shared tachyond can
+// test a caller's uploaded contracts in an ephemeral Foundry project (tests
+// under test/, contracts under src/; forge-std + @openzeppelin available).
 type TestRequest struct {
-	ProjectRoot   string `json:"project_root,omitempty"`
-	MatchPath     string `json:"match_path,omitempty"`
-	MatchContract string `json:"match_contract,omitempty"`
-	Filter        string `json:"filter,omitempty"`
+	ProjectRoot   string            `json:"project_root,omitempty"`
+	Sources       map[string]string `json:"sources,omitempty"`
+	MatchPath     string            `json:"match_path,omitempty"`
+	MatchContract string            `json:"match_contract,omitempty"`
+	Filter        string            `json:"filter,omitempty"`
 }
 
 // TestCaseResult is one forge test outcome.

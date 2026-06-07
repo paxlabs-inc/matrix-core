@@ -1,0 +1,104 @@
+# Copyright © 2026 Paxlabs Inc. All rights reserved. SPDX-License-Identifier: LicenseRef-Paxlabs-Matrix-Protocol
+# Contact · license@Paxeer.app · legal@Paxeer.app
+
+# tachyon-engineer — Solidity/EVM engineering on Paxeer (MatrixScript manifest)
+# Companion prose body lives in SKILL.md and carries the same tool-call mandate.
+# Drives the shared Tachyon engine (matrix-tachyon): compile + test uploaded
+# Solidity, dry-run, and deploy/interact on-chain. WRITES sign through the
+# caller's embedded wallet (the proxy forwards the agent's bearer; the shared
+# engine holds no seed). Custody + spend policy are enforced network-side.
+
+§SKILL
+id=tachyon-engineer
+version=0.1.0
+display="Tachyon Engineer"
+author=did:pax:0xMATRIX
+description="Write, compile, test, and ship smart contracts on Paxeer (and any EVM chain) with the Tachyon engine. Uploads Solidity sources (OpenZeppelin + forge-std available), compiles with forge, runs the test suite, dry-runs via eth_call, then deploys and interacts on-chain. Deploys/broadcasts sign through the embedded wallet (network-side custody + spend enforcement); confirms a clean compile + green tests before any deploy, and reports every on-chain action with its tx hash verbatim."
+mcl.verbs=build deliver
+determinism=seedable
+seed_policy=per_intent
+
+§INPUTS
+slot target: ArtifactRef
+  required
+  hint="The engineering intent: a contract to write/compile/test, or a deploy/interact request (which contract, which chain, constructor/args)."
+
+slot constraints: Constraint[]
+  optional
+  hint="Constraints (target chain, spend cap, allowed contracts, dry-run only)."
+
+§CORTEX
+reads=Identity Constraint Capability Goal Event Fact
+tags=tachyon solidity evm contract compile test deploy forge
+
+§TOOLS
+matrix://tool/mcp/tachyon/tachyon_compile@0.1.0
+matrix://tool/mcp/tachyon/tachyon_test@0.1.0
+matrix://tool/mcp/tachyon/tachyon_simulate@0.1.0
+matrix://tool/mcp/tachyon/tachyon_deploy@0.1.0
+matrix://tool/mcp/tachyon/tachyon_call@0.1.0
+matrix://tool/mcp/tachyon/tachyon_chain_list@0.1.0
+matrix://tool/mcp/tachyon/tachyon_chain_register@0.1.0
+matrix://tool/mcp/tachyon/tachyon_artifact_get@0.1.0
+matrix://tool/mcp/tachyon/tachyon_registry_lookup@0.1.0
+
+§SUB_SKILLS
+none
+
+§PROCEDURE
+on verb=build
+  kind="reason"
+  output_cardinality=1
+  prompt
+    system="You are the Matrix planner running tachyon-engineer in build mode — authoring and validating Solidity, NO on-chain writes. Output a PlanTree, not prose. The Tachyon engine is SHARED and stateless about your files: you MUST pass the contract source(s) inline. Use tachyon_compile with a `sources` map of workdir-relative path -> file content (contracts under src/, tests under test/); imports of @openzeppelin/contracts/... and forge-std/... resolve automatically against the engine's baked corpus. When the request includes or implies tests, also call tachyon_test with the SAME sources and report per-case pass/fail. Capture the project_id the compile returns — it is how a later deploy/interact resolves the artifact. If compilation fails, surface the solc/forge error verbatim and STOP (do not fabricate an artifact). The FINAL single reason step MUST brief Andrew in natural conversational prose: what compiled, the artifact name(s) + project_id, and the test results. Never claim success without a real compile/test tool result."
+    user="Build request: {slot.target.prose}\n\nVerb: {verb}\n\nResolved scope:\n{slots}\n\nIdentity, constraints, goals, and recent contract events from cortex:\n{cortex.bundle}\n\nProduce the plan_tree@1 now."
+  end
+  resolve slot.target <- cortex.find(type=Fact, near=slot.target.prose, limit=8)
+end
+
+on verb=deliver
+  kind="hard_reason"
+  output_cardinality=1
+  prompt
+    system="You are the Matrix planner running tachyon-engineer in deliver mode — deploying and interacting with contracts on-chain. Output a PlanTree, not prose. SAFETY FIRST: a deploy MUST be preceded by a successful tachyon_compile (pass the source `sources` inline; capture the returned project_id) so the artifact exists — never deploy an uncompiled contract. Resolve the target chain with tachyon_chain_list (register it with tachyon_chain_register only if the request names an unknown chain). For a state-changing contract method, FIRST dry-run with tachyon_call simulate_only=true and only broadcast (simulate_only=false) when it returns without revert. Deploy with tachyon_deploy (idempotency_key chosen from the intent so a retry dedupes; contract + project_id; constructor_args in ABI order). WRITES (tachyon_deploy and broadcast tachyon_call) sign through the caller's embedded wallet — the agent's spend authority + custody policy are enforced network-side; do not route around them, and if the intent looks unbounded or exceeds a known Constraint, STOP and ask. Each write returns a tx_hash (deploy also returns an address). The FINAL single hard_reason step MUST brief Andrew in natural conversational prose: what was deployed/called, the contract address and/or tx hash(es) VERBATIM from the tool results, and the resulting state. NEVER claim an on-chain action succeeded without a tx_hash in a wired tool result."
+    user="Deploy/interact request: {slot.target.prose}\n\nVerb: {verb}\n\nResolved scope:\n{slots}\n\nIdentity, spend constraints, goals, and recent deployments from cortex:\n{cortex.bundle}\n\nProduce the plan_tree@1 now."
+  end
+  resolve slot.target <- cortex.find(type=Constraint, near=slot.target.prose, limit=8)
+end
+
+§OUTPUTS
+slot report: Event
+  required
+  hint="The engineering report (what compiled/tested/deployed, artifact + project_id, addresses, tx hashes)."
+
+slot actions: Event[]
+  optional
+  hint="Each deploy/broadcast persisted as an Event with its tx hash for the chronology."
+
+§FAILURE_MODES
+compile_failed
+  action=fail
+  reason=external_failure
+
+tests_failed
+  action=fail
+  reason=external_failure
+
+wallet_unconfigured
+  action=fail
+  reason=external_failure
+
+spend_limit_exceeded
+  action=fail
+  reason=policy_violation
+
+artifact_unresolved
+  action=fail
+  reason=unknown_information
+
+§HASH
+v=1
+algo=sha256_ast
+digest=
+
+# Copyright © 2026 Paxlabs Inc. All rights reserved.

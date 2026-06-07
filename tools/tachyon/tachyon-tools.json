@@ -1,0 +1,150 @@
+[
+  {
+    "name": "tachyon_compile",
+    "description": "Compile Solidity with forge and return normalized artifacts (ABI + bytecode) plus a stable project_id. Self-contained: pass `sources` as a map of workdir-relative path -> file content (contracts under src/, tests under test/); @openzeppelin/contracts/... and forge-std/... resolve automatically against the shared engine's baked corpus. The returned project_id threads into tachyon_deploy / tachyon_call to resolve the ABI.",
+    "inputSchema": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "sources": {
+          "type": "object",
+          "description": "Map of workdir-relative path (e.g. \"src/Token.sol\") to Solidity source. Contracts under src/, tests under test/.",
+          "additionalProperties": { "type": "string" }
+        },
+        "targets": {
+          "type": "array",
+          "description": "Optional contract names to return artifacts for; empty returns all.",
+          "items": { "type": "string" }
+        },
+        "project_id": { "type": "string", "description": "Override the derived project id (normally let it default to the deterministic sources hash)." },
+        "optimize": { "type": "boolean", "description": "Enable the solc optimizer." },
+        "via_ir": { "type": "boolean", "description": "Compile through the Yul IR pipeline." }
+      }
+    }
+  },
+  {
+    "name": "tachyon_test",
+    "description": "Run a Forge test suite and return structured per-case results (pass/fail/gas). Like tachyon_compile, pass `sources` (tests under test/, contracts under src/; forge-std + @openzeppelin available) to test uploaded contracts on the shared engine. Optionally narrow with match_path / match_contract / filter.",
+    "inputSchema": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "sources": {
+          "type": "object",
+          "description": "Map of workdir-relative path -> content (tests under test/, contracts under src/).",
+          "additionalProperties": { "type": "string" }
+        },
+        "match_path": { "type": "string", "description": "forge --match-path glob (e.g. test/Token.t.sol)." },
+        "match_contract": { "type": "string", "description": "forge --match-contract filter." },
+        "filter": { "type": "string", "description": "forge --match-test test-name filter." }
+      }
+    }
+  },
+  {
+    "name": "tachyon_simulate",
+    "description": "Dry-run an eth_call against a chain without broadcasting. Read-only. Returns the raw return data (and revert reason if it reverts). Provide pre-encoded `data`, the target `to`, and a `chain_id` (or rpc_url).",
+    "inputSchema": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "chain_id": { "type": "string", "description": "Configured chain profile id (e.g. \"paxeer\")." },
+        "rpc_url": { "type": "string", "description": "Explicit RPC URL instead of a chain profile." },
+        "from": { "type": "string", "description": "Caller address (0x...)." },
+        "to": { "type": "string", "description": "Target contract address (0x...). Required." },
+        "data": { "type": "string", "description": "Pre-encoded calldata hex (0x...)." },
+        "value": { "type": "string", "description": "Wei value as decimal or 0x-hex." },
+        "block": { "type": "string", "description": "Block tag/number (default latest)." }
+      },
+      "required": ["to"]
+    }
+  },
+  {
+    "name": "tachyon_deploy",
+    "description": "Deploy a compiled contract on-chain. WRITE: signs + broadcasts via the caller's embedded wallet (the daemon's agent identity is forwarded automatically; custody policy is enforced wallet-side). Resolve the contract by `contract` name + the `project_id` returned from tachyon_compile. `idempotency_key` makes redeploys safe (a prior deploy with the same key + chain returns the existing address).",
+    "inputSchema": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "idempotency_key": { "type": "string", "description": "Caller-chosen key; repeat to dedupe a redeploy. Required." },
+        "chain_id": { "type": "string", "description": "Target chain profile id. Required." },
+        "contract": { "type": "string", "description": "Contract name to deploy (must exist in the registry for project_id). Required." },
+        "project_id": { "type": "string", "description": "Project id from tachyon_compile that owns the artifact." },
+        "constructor_args": { "type": "array", "description": "Constructor arguments, in ABI order.", "items": {} },
+        "from": { "type": "string", "description": "Deployer address override (defaults to the agent wallet)." },
+        "spend_cap_wei": { "type": "string", "description": "Optional per-tx spend cap (wei)." }
+      },
+      "required": ["idempotency_key", "chain_id", "contract"]
+    }
+  },
+  {
+    "name": "tachyon_call",
+    "description": "Invoke a contract method. With simulate_only=true it is a read (eth_call, no wallet). Otherwise it is a WRITE that signs + broadcasts via the caller's embedded wallet (agent identity forwarded automatically). Encode by `method` + `args` (ABI resolved from inline `abi` or from `contract` + `project_id`), or pass pre-encoded `data`.",
+    "inputSchema": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "chain_id": { "type": "string", "description": "Target chain profile id." },
+        "rpc_url": { "type": "string", "description": "Explicit RPC URL instead of a chain profile." },
+        "to": { "type": "string", "description": "Target contract address (0x...). Required." },
+        "from": { "type": "string", "description": "Caller address (defaults to the agent wallet)." },
+        "method": { "type": "string", "description": "Function name to ABI-encode (with args). Omit to use pre-encoded data." },
+        "args": { "type": "array", "description": "Arguments for method, in ABI order.", "items": {} },
+        "abi": { "description": "Inline ABI JSON to encode against (else resolved from contract+project_id)." },
+        "contract": { "type": "string", "description": "Contract name to resolve the ABI from the registry." },
+        "project_id": { "type": "string", "description": "Project id owning the artifact for ABI resolution." },
+        "data": { "type": "string", "description": "Pre-encoded calldata hex (0x...) when method is omitted." },
+        "value": { "type": "string", "description": "Wei value as decimal or 0x-hex." },
+        "simulate_only": { "type": "boolean", "description": "true = eth_call read (no broadcast, no wallet); false = broadcast." },
+        "spend_cap_wei": { "type": "string", "description": "Optional per-tx spend cap (wei) for the broadcast." }
+      },
+      "required": ["to"]
+    }
+  },
+  {
+    "name": "tachyon_chain_list",
+    "description": "List the chain RPC profiles the engine knows about (id, name, chain_id, explorer) and which is active. Read-only.",
+    "inputSchema": { "type": "object", "additionalProperties": true, "properties": {} }
+  },
+  {
+    "name": "tachyon_chain_register",
+    "description": "Register (or update) a custom chain RPC profile so later compile/deploy/call can target it by id.",
+    "inputSchema": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "id": { "type": "string", "description": "Short profile id (e.g. \"paxeer\"). Required." },
+        "name": { "type": "string", "description": "Human-readable name. Required." },
+        "rpc_url": { "type": "string", "description": "JSON-RPC URL. Required." },
+        "chain_id": { "type": "number", "description": "EVM chain id (uint). Required." },
+        "explorer": { "type": "string", "description": "Block explorer base URL." }
+      },
+      "required": ["id", "name", "rpc_url", "chain_id"]
+    }
+  },
+  {
+    "name": "tachyon_artifact_get",
+    "description": "Fetch a cached compile artifact (ABI + bytecode) by contract name and project_id. Read-only.",
+    "inputSchema": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "name": { "type": "string", "description": "Contract name. Required." },
+        "project_id": { "type": "string", "description": "Project id from tachyon_compile." }
+      },
+      "required": ["name"]
+    }
+  },
+  {
+    "name": "tachyon_registry_lookup",
+    "description": "Resolve a prior deployment by idempotency_key + chain_id (returns address, tx hash, confirmation state, or found=false). Read-only.",
+    "inputSchema": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "idempotency_key": { "type": "string", "description": "The key used at deploy time. Required." },
+        "chain_id": { "type": "string", "description": "Chain id the deploy targeted. Required." }
+      },
+      "required": ["idempotency_key", "chain_id"]
+    }
+  }
+]

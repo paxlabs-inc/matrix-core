@@ -89,6 +89,26 @@
       ]
     },
     {
+      "alias": "tachyon",
+      "transport": "stdio",
+      "command": "node",
+      "args": ["/root/matrix/tools/tachyon/tachyon.mjs"],
+      "env": [],
+      "package_digest": "sha256:2b795d2a304eae11ac697f2576c928b9c1107513fd6badfafe91d58c7ffe86c0",
+      "version": "0.1.0",
+      "tools": [
+        {"name": "tachyon_compile", "description": "Compile Solidity with forge and return artifacts (ABI + bytecode) + a stable project_id. Pass sources as a map of path->content (contracts under src/, tests under test/); @openzeppelin/contracts/... and forge-std/... resolve automatically. The project_id threads into tachyon_deploy / tachyon_call.", "side_effect_class": "shell", "timeout_ms": 180000},
+        {"name": "tachyon_test", "description": "Run a Forge test suite and return per-case results (pass/fail/gas). Pass sources (tests under test/, contracts under src/); narrow with match_path / match_contract / filter.", "side_effect_class": "shell", "timeout_ms": 300000},
+        {"name": "tachyon_simulate", "description": "Dry-run an eth_call against a chain without broadcasting (read-only). Provide to, pre-encoded data, and chain_id or rpc_url; returns return data + any revert reason.", "side_effect_class": "network", "timeout_ms": 30000},
+        {"name": "tachyon_deploy", "description": "Deploy a compiled contract on-chain. WRITE: signs + broadcasts via the caller's embedded wallet (agent identity forwarded automatically). Resolve by contract name + project_id; idempotency_key makes redeploys safe.", "side_effect_class": "write", "timeout_ms": 120000},
+        {"name": "tachyon_call", "description": "Invoke a contract method. simulate_only=true is a read (eth_call); otherwise a WRITE that signs + broadcasts via the caller's embedded wallet. Encode by method+args (ABI from inline abi or contract+project_id) or pass pre-encoded data.", "side_effect_class": "write", "timeout_ms": 60000},
+        {"name": "tachyon_chain_list", "description": "List configured chain RPC profiles (id, name, chain_id, explorer) and the active chain. Read-only.", "side_effect_class": "read", "timeout_ms": 15000},
+        {"name": "tachyon_chain_register", "description": "Register or update a custom chain RPC profile (id, name, rpc_url, chain_id, explorer) so later ops can target it by id.", "side_effect_class": "write", "timeout_ms": 15000},
+        {"name": "tachyon_artifact_get", "description": "Fetch a cached compile artifact (ABI + bytecode) by contract name + project_id. Read-only.", "side_effect_class": "read", "timeout_ms": 15000},
+        {"name": "tachyon_registry_lookup", "description": "Resolve a prior deployment by idempotency_key + chain_id (address, tx hash, confirmation state, or found=false). Read-only.", "side_effect_class": "read", "timeout_ms": 15000}
+      ]
+    },
+    {
       "alias": "git",
       "transport": "stdio",
       "command": "uvx",

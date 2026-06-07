@@ -166,6 +166,19 @@ func main() {
 			// sessions). MATRIX_BROWSER_TOKEN (optional) is sent as a bearer.
 			"MATRIX_BROWSER_URL":   envOr("MATRIX_BROWSER_URL", "http://matrix-browser.internal:8931/mcp"),
 			"MATRIX_BROWSER_TOKEN": os.Getenv("MATRIX_BROWSER_TOKEN"),
+			// Shared Solidity/EVM engine (tools/tachyon/tachyon.mjs stdio proxy
+			// in the daemon image -> the matrix-tachyon Fly app running tachyond
+			// over its JSON-RPC /rpc transport). Like the browser proxy, it
+			// answers initialize/tools/list locally so an unreachable engine
+			// never bricks daemon boot; it dials MATRIX_TACHYON_URL lazily on
+			// the first tachyon_* call. Defaults to the private 6PN address.
+			// WRITE tools (deploy / broadcast call) are signed by the caller's
+			// OWN embedded wallet: the proxy mints + forwards the agent's
+			// did:matrix bearer per request (reusing the daemon's executor key,
+			// same as the paxeer lane), so the shared engine holds NO seed.
+			// MATRIX_TACHYON_TOKEN (optional) is the engine's own bearer.
+			"MATRIX_TACHYON_URL":   envOr("MATRIX_TACHYON_URL", "http://matrix-tachyon.internal:8645/rpc"),
+			"MATRIX_TACHYON_TOKEN": os.Getenv("MATRIX_TACHYON_TOKEN"),
 		},
 		Log: logf,
 	}

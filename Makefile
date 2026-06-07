@@ -10,7 +10,7 @@ SHELL              := /usr/bin/env bash
 .SHELLFLAGS        := -eu -o pipefail -c
 .DEFAULT_GOAL      := help
 
-MODULES            := cortex MCL bridge executor gateway router
+MODULES            := MCL bridge executor gateway router cortex
 GO                 ?= go
 GOFLAGS            ?=
 GOTEST_FLAGS       ?= -count=1

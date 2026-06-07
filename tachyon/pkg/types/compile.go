@@ -3,12 +3,22 @@ package types
 import "encoding/json"
 
 // CompileRequest builds Solidity contracts via forge.
+//
+// Sources, when non-empty, makes the request self-contained: the engine
+// materializes the map (workdir-relative path -> file content) into an
+// ephemeral Foundry project, links the box's baked dependency tree
+// (forge-std + the @openzeppelin/contracts/ corpus), runs forge there, and
+// derives a deterministic ProjectID from the source set. This is how a SHARED
+// tachyond compiles a caller's own contracts without those files ever living
+// on the box. Convention: contracts under src/, tests under test/; OZ
+// (@openzeppelin/contracts/...) and forge-std/... resolve automatically.
 type CompileRequest struct {
-	ProjectRoot string   `json:"project_root,omitempty"`
-	ProjectID   string   `json:"project_id,omitempty"`
-	Targets     []string `json:"targets,omitempty"`
-	Optimize    *bool    `json:"optimize,omitempty"`
-	ViaIR       *bool    `json:"via_ir,omitempty"`
+	ProjectRoot string            `json:"project_root,omitempty"`
+	ProjectID   string            `json:"project_id,omitempty"`
+	Sources     map[string]string `json:"sources,omitempty"`
+	Targets     []string          `json:"targets,omitempty"`
+	Optimize    *bool             `json:"optimize,omitempty"`
+	ViaIR       *bool             `json:"via_ir,omitempty"`
 }
 
 // CompilerSettings mirrors solc optimizer metadata.

@@ -103,10 +103,26 @@ func (e *Engine) defaultRoot(reqRoot string) string {
 	return e.Cfg.ProjectRoot
 }
 
-// Compile builds contracts.
+// Compile builds contracts. When req.Sources is non-empty the request is
+// self-contained: the source set is materialized into an ephemeral Foundry
+// project (the box's forge-std + @openzeppelin corpus linked in) and the
+// ProjectID is derived deterministically from the sources so a later
+// deploy/call resolves the same artifacts.
 func (e *Engine) Compile(ctx context.Context, req types.CompileRequest) types.Envelope[types.CompileResponse] {
 	_ = ctx
-	req.ProjectRoot = e.defaultRoot(req.ProjectRoot)
+	if len(req.Sources) > 0 {
+		dir, cleanup, perr := e.prepareSourceWorkdir(req.Sources)
+		if perr != nil {
+			return types.Fail[types.CompileResponse](perr)
+		}
+		defer cleanup()
+		req.ProjectRoot = dir
+		if strings.TrimSpace(req.ProjectID) == "" {
+			req.ProjectID = sourcesProjectID(req.Sources)
+		}
+	} else {
+		req.ProjectRoot = e.defaultRoot(req.ProjectRoot)
+	}
 	data, err := e.Compiler.Compile(req, e.Reg)
 	if err != nil {
 		return types.Fail[types.CompileResponse](err)
@@ -114,10 +130,20 @@ func (e *Engine) Compile(ctx context.Context, req types.CompileRequest) types.En
 	return types.OK(data)
 }
 
-// Test runs forge tests.
+// Test runs forge tests. Like Compile, a non-empty req.Sources runs the suite
+// in an ephemeral uploaded-source workdir.
 func (e *Engine) Test(ctx context.Context, req types.TestRequest) types.Envelope[types.TestResponse] {
 	_ = ctx
-	req.ProjectRoot = e.defaultRoot(req.ProjectRoot)
+	if len(req.Sources) > 0 {
+		dir, cleanup, perr := e.prepareSourceWorkdir(req.Sources)
+		if perr != nil {
+			return types.Fail[types.TestResponse](perr)
+		}
+		defer cleanup()
+		req.ProjectRoot = dir
+	} else {
+		req.ProjectRoot = e.defaultRoot(req.ProjectRoot)
+	}
 	data, err := e.Tester.Test(req)
 	if err != nil {
 		// Return partial results with failure envelope
