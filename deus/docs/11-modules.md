@@ -21,18 +21,19 @@ deus/
     registry/                 listing CRUD, manifest validation, on-chain register
     discovery/                search: embed, vector KNN, lexical, rank
     gateway/                  invoke pipeline: auth->quote->policy->meter->route->receipt
-    metering/                 ledger writes, reserve/finalize/void state machine
+    metering/                 ledger writes, reserve/finalize/void; atomic channel decrement
     pricing/                  pure pricing math (units->wei), versioned   [see pkg note]
-    settlement/               batch selection, merkle, net/stream/direct rails
+    channels/                 per-window payment channels + caller-co-signed vouchers
+    settlement/               batch selection, merkle, direct/net/stream rails, voucher redemption
     quality/                  PoFQ sampling + rolling-score update + on-chain write
     indexer/                  event tailer, idempotent upserts, cursor
-    hosting/                  Fly orchestrator: build, deploy, scale-to-zero
+    hosting/                  Paxeer Cloud (Appwrite) orchestrator: deploy, lifecycle, budget
     chain/                    go-ethereum client, contract bindings, precompile calls
     wallet/                   embedded-wallet agent-auth + spend authorization client
     store/                    postgres access (pgx), queries, migrations runner
     objstore/                 S3/MinIO client (artifacts, receipts, bodies, logs)
     auth/                     caller/dev/internal authN + DID verify
-    receipts/                 EIP-712 quote+receipt build/sign/verify, merkle
+    receipts/                 EIP-712 quote+receipt+voucher build/sign/verify, merkle
     telemetry/                logging, metrics, tracing
   pkg/                        public, importable (by tools, tests, sdk)
     manifest/                 manifest types, canonicalization, JSON Schema, hashing
@@ -69,18 +70,19 @@ deus/
 | `internal/registry` | listing lifecycle + validation + register tx | chain, store, manifest | manifest_hash matches chain |
 | `internal/discovery` | search + rank | store(pgvector), embed | degrade to filters on embed failure |
 | `internal/gateway` | invoke pipeline | metering, pricing, wallet, chain, hosting, receipts | no charge without delivery |
-| `internal/metering` | append-only ledger + state machine | store | idempotent; never edits history |
+| `internal/metering` | append-only ledger + state machine + **atomic channel reserve** | store | idempotent; never edits history; reserve = transactional channel decrement |
 | `internal/pricing` | unit→wei (wraps pkg/pricingmath) | — | pure, versioned, deterministic |
-| `internal/settlement` | batching + rails + anchor | store, chain, receipts | sum(finalized) == paid; never double-pay |
-| `internal/quality` | sample + PoFQ rolling update | chain, store | scores reproducible |
+| `internal/channels` | per-window payment channels + **caller-co-signed vouchers** | store, chain, receipts, wallet | fund per window not per reserve; voucher monotonic |
+| `internal/settlement` | batching + rails (direct/net/stream) + anchor | store, chain, channels, receipts | sum(finalized) == paid; redeem highest voucher; never double-pay |
+| `internal/quality` | sample + PoFQ rolling update | chain, store | scores reproducible; samples bilateral once caller co-signs |
 | `internal/indexer` | chain→db mirror | chain, store | idempotent + replay-safe |
-| `internal/hosting` | Fly build/deploy/lifecycle | objstore, fly api | scale-to-zero; cap-aware |
+| `internal/hosting` | Paxeer Cloud (Appwrite) deploy/lifecycle | objstore, appwrite api | native scale-to-zero; free-hosting budget-aware |
 | `internal/chain` | RPC + bindings + precompile calls | go-ethereum | reuse on-chain abis |
 | `internal/wallet` | agent-auth + spend authz | embedded wallet api | Deus holds no caller keys |
 | `internal/store` | pgx pool, queries, migrations | postgres | big-int as text |
 | `internal/objstore` | blob IO by hash | S3/MinIO | content-addressed |
 | `internal/auth` | authN, DID verify, roles | wallet | least privilege |
-| `internal/receipts` | EIP-712 + merkle | chain(0x0908) | digest == on-chain digest |
+| `internal/receipts` | EIP-712 (quote/receipt/**voucher**) + merkle | chain(0x0908) | digest == on-chain digest |
 | `internal/telemetry` | logs/metrics/traces | — | redact secrets |
 | `pkg/manifest` | manifest schema + canonical hash | — | canonicalization is versioned + stable |
 | `pkg/types` | wire types | — | JSON tags stable across versions |
@@ -103,7 +105,10 @@ deus/runner/                 (Node 20, ESM, TypeScript)
   package.json               "type":"module"
   tsconfig.json
 ```
-Builder/runtime images live under `deploy/deus/runner/`.
+Runtime adapters/templates are packaged as **Paxeer Cloud (Appwrite) Functions**
+(node20 runtime) or container **Sites**; templates live under
+`deploy/deus/runner/`. Appwrite owns build/scale-to-zero/secrets — there is no
+bespoke machine image to manage.
 
 ## 11.4 Web console
 

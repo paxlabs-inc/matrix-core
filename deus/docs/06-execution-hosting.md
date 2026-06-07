@@ -1,15 +1,16 @@
 # 06 — Execution & Hosting
 
 This is the "Paxeer runs it for you" layer and the invocation gateway that sits
-in front of it. Two listing modes, one gateway, scale-to-zero compute on Fly.
+in front of it. Two listing modes, one gateway, scale-to-zero compute on
+**Paxeer Cloud** (Paxeer's deployed Appwrite fork).
 
 ## 6.1 Listing modes
 
 | Mode | Who runs the code | When to use |
 | ---- | ----------------- | ----------- |
 | **Proxy** | The developer (their own HTTPS endpoint). Deus meters + settles + signs receipts. | Existing APIs, services that must run in the dev's infra. |
-| **Hosted** | Paxeer (Fly Machine built from uploaded code/container). Free hosting. | Devs who don't want to run servers; the "list and earn" path. |
-| **Confidential (v1.x)** | Paxeer, inside a TEE; attestation verified on-chain. | Regulated/enterprise, verifiable compute. |
+| **Hosted** | Paxeer Cloud (an Appwrite Function or container Site built from uploaded code). Free hosting. | Devs who don't want to run servers; the "list and earn" path. |
+| **Confidential (v1.x)** | Paxeer Cloud TEE-backed execution (or a dedicated runner); attestation verified on-chain. | Regulated/enterprise, verifiable compute. |
 
 Mode is recorded in the manifest and on-chain (`hosted`, `confidential`).
 
@@ -25,11 +26,12 @@ validate quote (matches on-chain pricingHash, !expired) -> 409 quote_expired / 4
   └─ recompute price; verify EIP-712 signature
 check spend policy (embedded wallet + grants cache)     -> 403 policy_denied / 402
   └─ confirm against wallet on the spend path (not just cache)
-reserve charge in metering ledger (idempotent)          -> 409 on dup key (returns prior)
+reserve = ATOMIC channel-balance decrement + ledger row (idempotent)  -> 409 dup / 402 insufficient
+  └─ single transactional UPDATE; never a per-call chain write (see below)
 route:
   proxy   -> egress to manifest.endpoint.proxy_url
-  hosted  -> EnsureStarted(machine) then call runner_ref
-  conf.   -> TEE runner; require attestation
+  hosted  -> invoke Paxeer Cloud function execution / function domain
+  conf.   -> TEE-backed execution; require attestation
 apply request policy (timeout, max bytes, retries)      -> 503 service_unavailable
 capture result, hash args+result
 sign receipt (gateway EIP-712, runner co-sign if hosted)
@@ -53,17 +55,52 @@ return result to caller
   quality sample.
 - Settlement only ever reads `finalized` rows.
 
-## 6.3 Hosted runner (Node on Fly)
+### Reserve invariant — atomic channel-balance decrement (load-bearing)
+The control plane is stateless and N-instance (§2.8) and the `spend_grants`
+cache is a *fast pre-check only* (§9.3). Two concurrent invokes with different
+idempotency keys can both clear the cache and **oversell** the caller's payment
+channel before any authoritative check fires. Therefore the reserve **must** be
+a single serialized, transactional decrement of the caller's channel/escrow
+balance — not a cache read:
 
-### Build pipeline (Hosting orchestrator)
-1. Developer uploads an artifact: either (a) a container image ref, or (b) a
-   source bundle with a declared runtime (`node20`, `python311`, `static`,
-   `wasm`). v1 supports **container** + **node20 function** first.
-2. For source bundles, build with a baked builder image (Nixpacks/Buildpacks or a
-   thin Dockerfile per runtime) → push to `registry.fly.io/deus-runner-<id>`.
-3. Create/Update a Fly app `deus-svc-<id>` (or a shared pool slot) with
-   `auto_stop_machines=suspend`, `min_machines_running=0`. Private (6PN only).
-4. Record `deployments` row + `runner_ref` = `http://deus-svc-<id>.internal:PORT`.
+```sql
+UPDATE channels
+   SET reserved = reserved + :max_total_wei
+ WHERE channel_id = :id
+   AND (balance - reserved) >= :max_total_wei;   -- 0 rows affected => 402 insufficient
+```
+
+- The decrement is a **Postgres row lock** (the per-caller channel row is the
+  serialization point), bounded by the on-chain escrow cap. It is **never** an
+  on-chain write per reserve (that would kill lazy-net, [`08-payments-billing.md`](./08-payments-billing.md) §8.3).
+- The off-chain ledger is thus the concurrency authority *within* a window; the
+  escrow contract is the authority *across* windows.
+- `finalize` releases the unused portion of the reservation back to
+  `balance - reserved`; `void` releases the whole reservation.
+- This is an implementation-critical invariant: violating it lets a caller (or
+  a buggy parallel agent) spend past its funded channel.
+
+## 6.3 Hosted runner (Paxeer Cloud / Appwrite fork)
+
+Hosted execution runs on **Paxeer Cloud**, Paxeer's deployed Appwrite fork,
+which already provides multi-runtime serverless **Functions**, **container
+Sites**, **databases**, **edge/web-workers**, and **proxies** with native
+scale-to-zero. Deus does not hand-roll machine orchestration; it drives the
+Appwrite **Server API** and lets the platform handle build, routing, scaling,
+secrets, and logs.
+
+### Build / deploy pipeline (Hosting orchestrator → Appwrite Server API)
+1. Developer uploads an artifact: either (a) a source bundle with a declared
+   runtime (`node20`, `python311`, `static`, …) or (b) a container image ref.
+   v1 supports **node20 function** + **container Site** first.
+2. The orchestrator creates/updates a **Paxeer Cloud Function** (source bundle)
+   or **Site** (container) via the Appwrite Server API; Appwrite builds and
+   deploys it. No Fly registry/Machine management.
+3. Per-service secrets are set as **Appwrite function variables**; resource caps
+   (timeout, memory) are set on the function spec.
+4. Record `deployments` row + `runner_ref` = the function's **execution endpoint
+   / function domain** (used by the gateway to invoke; via the Appwrite
+   `executions` API or the function's HTTP domain).
 
 ### Runner contract (the harness the uploaded code runs inside)
 Hosted code implements a tiny handler interface; the harness wraps it:
@@ -72,20 +109,22 @@ Hosted code implements a tiny handler interface; the harness wraps it:
 export async function handle(op: string, args: unknown, ctx: DeusCtx): Promise<unknown>
 // ctx gives: { callerDid, invocationId, deadlineMs, logger, secrets }
 ```
-The harness:
-- Receives the gateway's invoke over the private network.
-- Enforces `timeout_ms`, `max_response_bytes`, memory/CPU caps.
+The harness runs *inside* the Paxeer Cloud function/Site and:
+- Receives the gateway's invoke (function execution payload or HTTP request).
+- Enforces `timeout_ms`, `max_response_bytes` (within Appwrite's own function
+  timeout/memory caps).
 - Reports `units` and `outcome`, **co-signs** the receipt with the runner key.
-- Streams logs to the object store.
+- Emits logs (captured by Paxeer Cloud; mirrored to the object store).
 - Is **network-egress-restricted** by default (allowlist) — see [`09-security.md`](./09-security.md).
 
 ### Scale-to-zero
-- Idle machines suspend (Fly `suspend`); the gateway calls `EnsureStarted` before
-  routing and waits for `/healthz` (reuse the matrix-router `waitDaemonReady`
-  pattern: any HTTP response = ready, transport errors retry, timeout → 503 +
-  `Retry-After`).
-- Hot services can pin `min_machines_running >= 1` (developer setting; may carry
-  a PAX cost to the dev later, but free in v1 within the fleet cap).
+- Paxeer Cloud functions are **natively scale-to-zero** and cold-start on
+  invocation, so Deus does not run a bespoke `EnsureStarted`/suspend loop — the
+  platform owns lifecycle. The gateway treats a cold invocation's latency as
+  first-call latency and surfaces a `cold_start_ms` hint in quotes.
+- Hot services can request **always-warm** execution (a developer setting);
+  always-warm capacity counts against the free-hosting budget (§6.7) and may
+  require the developer to stake/pay or earn it via volume.
 
 ## 6.4 Proxy egress
 
@@ -99,29 +138,43 @@ The harness:
 
 ## 6.5 Where it runs (concrete)
 
-Mirrors the proven `deploy/browser` + `deploy/tachyon` shared-private-app pattern.
+| Tier | Purpose | Platform |
+| ---- | ------- | -------- |
+| `deus-control` (`deusd` Go) | control plane / public API | Fly app **or** the Paxeer box **or** a Paxeer Cloud container; N instances, stateless |
+| Hosted service functions | developers' hosted node20 functions | **Paxeer Cloud** Functions (scale-to-zero, multi-tenant) |
+| Hosted service Sites | heavier / containerized services | **Paxeer Cloud** container Sites |
+| Confidential services (v1.x) | TEE-backed execution | Paxeer Cloud TEE runtime, else a dedicated runner |
+| Postgres + pgvector + object store | data | the Paxeer box (Postgres + MinIO/S3) |
 
-| App | Purpose | Public? | Shape |
-| --- | ------- | ------- | ----- |
-| `deus-control` | Go control plane (`deusd`) | Yes (behind gateway TLS) | N instances, stateless |
-| `deus-runner` (shared pool) | hosted node20 functions, multi-tenant | No (6PN) | scale-to-zero pool |
-| `deus-svc-<id>` | dedicated container per heavy/confidential service | No (6PN) | scale-to-zero per service |
-| Postgres + MinIO | data | No | on the Paxeer box |
-
-Region: primary near the Paxeer box / matrix fleet (e.g. `fra`/`iad`); pin
-runners to the same region to keep gateway↔runner latency low.
+The control plane (Fly/box) and Paxeer Cloud should sit in the same region to
+keep gateway↔function latency low.
 
 ## 6.6 Cold-start budget
 
-- Gateway adds `EnsureStarted + waitReady` to first-call latency for a cold
-  hosted service. Mitigations: keep a warm shared `deus-runner` pool for node20
-  functions (no per-service cold start), suspend (not stop) so resume is fast,
-  and surface a `cold_start_ms` hint in quotes so agents can prefer warm
-  services.
+- A cold Paxeer Cloud function adds its cold-start to first-call latency.
+  Mitigations: prefer the shared node20 function runtime (warm pool semantics
+  where Paxeer Cloud supports it), allow opt-in always-warm for hot services
+  (§6.7 budget), and surface a `cold_start_ms` hint in quotes so agents can
+  prefer warm services.
 
-## 6.7 Limits & quotas (v1)
+## 6.7 Limits, quotas & the free-hosting budget (v1)
 
-- Max artifact size, max response bytes, max `timeout_ms` (e.g. 30s), max memory
-  per runner — all in `configs/limits.<env>.yaml`.
-- Fleet machine cap mirrors the launch ceiling; the orchestrator refuses new
-  dedicated machines past the cap and falls back to the shared pool.
+- Per-service caps — max artifact size, max response bytes, max `timeout_ms`
+  (e.g. 30s), max memory — live in `configs/limits.<env>.yaml` and are applied
+  to the Paxeer Cloud function/Site spec + enforced by the harness.
+- **Free hosting is a subsidy and gets an explicit budget, not an emergent one.**
+  Because the platform fee is 0%, hosted execution is a deliberate cost center.
+  v1 commits to an **aggregate free-hosting budget** (a number in
+  `configs/limits.<env>.yaml`) with an allocation policy and a **kill-switch**,
+  rather than letting the ceiling be whatever the Paxeer Cloud bill happens to
+  be:
+  - **Free tier = scale-to-zero functions only.** Idle hosted services cost
+    ~nothing; cold unused services are evicted after an inactivity window.
+  - **Always-warm / dedicated capacity is not free** — the developer stakes/pays
+    PAX or earns warmth via invoke volume.
+  - The orchestrator tracks aggregate hosted consumption against the budget and
+    **refuses new always-warm/dedicated allocations** past the ceiling (new
+    scale-to-zero functions still allowed), alerting ops.
+- This makes "free hosting for N listings" a chosen, bounded subsidy that the
+  business bets recovers via PAX/network activity — with a tripwire, not a
+  surprise invoice.

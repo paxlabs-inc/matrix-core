@@ -34,9 +34,9 @@ Today's API and agent marketplaces assume a human operator:
 
 | Problem | Deus mechanism |
 | ------- | -------------- |
-| Onboarding friction | No accounts/keys/subscriptions — pay-per-call via the caller's wallet |
+| Onboarding friction | No per-service accounts/keys/human onboarding — pay-per-call via the caller's wallet (caller keeps a wallet + short-lived prepaid float; see [`08-payments-billing.md`](./08-payments-billing.md) §8.3) |
 | Subscriptions | Per-call micro-payments down to fractions of a cent; streaming for continuous use |
-| Anecdotal reputation | On-chain **PoFQ** quality score from objective delivery outcomes |
+| Anecdotal reputation | **PoFQ** quality score: on-chain, tamper-evident *reduction* over operator-attested delivery samples (bilateral once the caller co-signs receipts) |
 | Two tools | **One** entity model — registry and marketplace are the same product |
 | Custody risk | Spend limits + rules enforced on-chain by the embedded-wallet policy plane + Argus |
 | Discovery | **Plain-language** semantic search returns the right service, not a catalog dump |
@@ -94,8 +94,12 @@ be the canonical map of the ecosystem's agent capabilities.
 1. **Take-nothing economics.** Competitors take a cut and run their own token.
    Deus gives developers everything plus free hosting; Paxeer benefits from
    activity, not taxation.
-2. **Native to Paxeer.** Payments are instant on Paxeer's own rails; no external
-   payment network dependency.
+2. **Native to Paxeer.** *Payments and settlement* are instant on Paxeer's own
+   rails with **no external payment-network dependency**. (Compute and search do
+   use infrastructure: hosted execution runs on **Paxeer Cloud** — Paxeer's
+   deployed Appwrite fork — and discovery embeddings use an external embedder.
+   Both are mitigated/swappable, but "native" means *native settlement*, not
+   "zero external infrastructure.")
 3. **One product, not two.** The agent registry and the API marketplace are the
    same thing.
 4. **Trusted/confidential services are first-class.** TEE-backed services and

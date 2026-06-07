@@ -45,8 +45,9 @@ Read in order for a full picture; jump to a section for a specific task.
 
 Deus has a **Go control plane** (`github.com/paxlabs-inc/deus`) that owns the
 registry, discovery, metering, settlement, and the public/agent APIs; a
-**Node execution layer** that hosts uploaded services and proxies external
-ones on Fly Machines; an **on-chain layer** — a `ServiceRegistry` Solidity
+**Node execution layer** that hosts uploaded services on **Paxeer Cloud**
+(Paxeer's deployed Appwrite fork) and proxies external ones; an **on-chain
+layer** — a `ServiceRegistry` Solidity
 contract plus the Paxeer agent precompiles (PoFQ `0x0904` for quality,
 PaymentStreams `0x0906` for streaming pay, EIP-712 `0x0908` for signed
 receipts, TEEAttestor `0x0907` for confidential services, Scheduler `0x0905`
@@ -97,10 +98,11 @@ rationale. Change them **here first**, then propagate.
 | **D-4** | The registry is **on-chain first** via a `ServiceRegistry` contract; Postgres is a **read-optimized mirror**. | The whitepaper L3 registry + agent fee lane `Registry` field imply on-chain truth; off-chain index for search speed. |
 | **D-5** | One product: the **agent registry == the API marketplace**. | Per the brief: "one product, not two." A single `services` entity serves both. |
 | **D-6** | Payments via the caller's **Paxeer embedded agent wallet**; **platform fee = 0**. | "Take-nothing economics." Paxeer earns from gas/activity, not a cut. |
-| **D-7** | Three payment rails: **per-call net settlement** (default), **PaymentStreams `0x0906`** (continuous), **direct transfer** (high-value one-shot). | Match call shape to cost: micro-calls batch, long sessions stream. |
-| **D-8** | Quality via **PoFQ `0x0904`**, not a comment section. | Objective, on-chain, portable reputation. |
+| **D-7** | Three payment rails: **direct transfer** (MVP + high-value one-shot), **per-call net settlement via payment channel** (sub-cent default, fast-follow), **PaymentStreams `0x0906`** (continuous). | Match call shape to cost. **Launch MVP ships direct-rail-only** to de-risk the money code (see D-7a, `14-roadmap.md`). |
+| **D-7a** | Caller funding = **per-window unidirectional payment channel**: fund once/window, **caller co-signs a monotonic cumulative voucher** per call, settle the highest voucher. Reserve = **atomic channel-balance decrement** (row lock), never a per-call chain write. | Closes the gateway-only-attestation hole (charge bilaterally provable, esp. `per_unit`), keeps lazy-net economics, and prevents concurrent-reserve oversell. Funding-and-signing are one mechanism. See `08-payments-billing.md` §8.3. |
+| **D-8** | Quality via **PoFQ `0x0904`**: on-chain *tamper-evident reduction* over **operator-attested** delivery samples (bilateral once the caller co-signs). | Portable, hard-to-fake-without-delivering reputation — but honestly *operator-attested input*, not "objective/unfakeable." |
 | **D-9** | Confidential/trusted services via **TEEAttestor `0x0907`** + signed outputs. | Enables regulated/enterprise + verifiable compute. |
-| **D-10** | Hosting on **Fly Machines**, scale-to-zero, shared private apps (6PN `.internal`). | Reuses the proven `deploy/browser` + `deploy/tachyon` pattern. |
+| **D-10** | Hosted-service execution on **Paxeer Cloud** (Paxeer's deployed **Appwrite fork**): Functions / container Sites, native scale-to-zero, secrets, proxies. Go control plane runs on **Fly app / the box / a Paxeer Cloud container**. | Appwrite already provides build, scale-to-zero, routing, secrets, and edge/proxy — no bespoke machine orchestration. |
 | **D-11** | Discovery = **plain-language semantic search** (pgvector) + structured filters. | "Describe what you need and get the right service back." |
 | **D-12** | Matrix integration via a **`deus.mjs` stdio MCP proxy** baked into the daemon image. | Same idiom as `tools/tachyon/tachyon.mjs`; makes every service an agent tool. |
 | **D-13** | Spend safety delegated to the **embedded-wallet policy plane + Argus VM**, never re-implemented in Deus. | Single source of truth for agent spend limits/rules. |

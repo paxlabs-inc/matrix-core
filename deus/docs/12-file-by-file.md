@@ -64,7 +64,10 @@ existing repo file.
 - Required env (fail fast if missing in prod): `DEUS_POSTGRES_URI`,
   `PAXEER_RPC_URL`, `DEUS_OBJSTORE_*`, `DEUS_GATEWAY_SIGNING_KEY_REF`,
   `DEUS_SETTLER_KEY_REF`, `DEUS_SERVICE_REGISTRY_ADDR`, `MATRIX_WALLET_API_URL`,
-  `DEUS_EMBED_*`. Optional: `DEUS_FLY_API_TOKEN`, worker counts, ports.
+  `DEUS_EMBED_*`. Hosted-exec (Phase 3): `DEUS_APPWRITE_ENDPOINT`,
+  `DEUS_APPWRITE_PROJECT`, `DEUS_APPWRITE_API_KEY` (secret ref). Optional:
+  `DEUS_HOSTING_BUDGET_*` (free-hosting ceiling/kill-switch), worker counts,
+  ports. (`DEUS_FLY_*` only if the control plane runs on Fly.)
 - Syntax: env via `os.Getenv` + a small `envOr`/`mustEnv` helper (mirror the
   router's `envOr`). Validate ranges. Never log secret values.
 
@@ -175,8 +178,28 @@ existing repo file.
   + retry-safe; advisory lock.
 
 ### `internal/settlement/rails.go` `[NEW]`
-- `netSettle`, `streamSettle` (calls `0x0906 settle/close`), `directSettle`.
-  Each returns a `tx_hash`. Reuses `internal/chain`.
+- `directSettle` (MVP: inline `agent/send` per call), `netSettle` (redeems the
+  highest caller-co-signed voucher from a channel; one transfer/developer/window
+  + `SettlementAnchor.anchor`), `streamSettle` (calls `0x0906 settle/close`).
+  Each returns a `tx_hash`. Reuses `internal/chain` + `internal/channels`.
+
+---
+
+## 12.10b `internal/channels` (Phase 2.5)
+
+### `internal/channels/channels.go` `[NEW]`
+- `Open(callerDID, windowCap)` (funds the per-window escrow, one chain write),
+  `Reserve(channelID, maxWei)` (the **atomic decrement**, the load-bearing
+  invariant from §6.2 — single transactional `UPDATE` / row lock), `Finalize`,
+  `Void`, `Close` (refund remainder).
+
+### `internal/channels/voucher.go` `[NEW]`
+- Build the `DeusVoucher` EIP-712 struct, return it for the caller to co-sign,
+  verify the caller signature (`recoverTypedSigner` on `0x0908`), persist the
+  monotonic `(cumulative_wei, nonce)`. The voucher is the bilateral charge proof
+  ([`08-payments-billing.md`](./08-payments-billing.md) §8.3) and carries the
+  `outcome` bit that makes the quality sample bilateral (§4.3). Reject
+  non-monotonic nonces.
 
 ---
 
@@ -204,13 +227,18 @@ existing repo file.
 ## 12.13 `internal/hosting`
 
 ### `internal/hosting/orchestrator.go` `[NEW]`
-- `Deploy(serviceID, artifact)`, `Redeploy`, `EnsureStarted(machine)`,
-  `Suspend`, `Logs`. Talks the Fly Machines API. Cap-aware (refuse past fleet
-  ceiling → shared pool). Mirrors matrix-router's `EnsureStarted` + `waitReady`.
+- `Deploy(serviceID, artifact)`, `Redeploy`, `Logs`, `Delete`. Talks the
+  **Paxeer Cloud (Appwrite) Server API**: create/update a Function (node20
+  source) or container Site, set function variables (secrets), set resource
+  caps, read the execution endpoint/domain into `deployments.exec_endpoint`.
+  No machine lifecycle loop — Appwrite owns scale-to-zero. **Budget-aware**:
+  enforce the free-hosting aggregate budget + kill-switch ([`06-execution-hosting.md`](./06-execution-hosting.md) §6.7);
+  refuse new always-warm/dedicated allocations past the ceiling.
 
-### `internal/hosting/build.go` `[NEW]`
-- Build source bundles → image (node20 function adapter / container shim). Pin
-  versions; record provenance.
+### `internal/hosting/appwrite.go` `[NEW]`
+- Thin Appwrite Server API client (project + API key from config): functions,
+  deployments, variables, executions. Keep it isolated so the hosting backend is
+  swappable.
 
 ---
 

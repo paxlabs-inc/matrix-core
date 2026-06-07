@@ -129,6 +129,8 @@ Short-lived signed price promises. `id`, `service_id`, `endpoint_id`,
 | `eip712_digest` | `text` | the signed digest |
 | `gateway_sig` | `text` | gateway signature |
 | `runner_sig` | `text null` | runner co-sign (hosted/confidential) |
+| `caller_sig` | `text null` | caller co-sign (channel rail; the voucher signature) |
+| `voucher_id` | `uuid null fk` | the cumulative voucher this charge belongs to |
 | `attestation` | `jsonb null` | TEE attestation for confidential calls |
 | `blob_ref` | `text` | object-store key of full receipt JSON |
 | `anchored_tx` | `text null` | tx hash when the batch root was anchored |
@@ -146,15 +148,55 @@ Short-lived signed price promises. `id`, `service_id`, `endpoint_id`,
 | `window_start`/`window_end` | `timestamptz` | |
 | `status` | `text` | `pending \| confirmed \| failed` |
 
+### `channels` (per-caller payment channel — the funding authority within a window)
+The **concurrency + spend authority** for the net/channel rail (see
+[`08-payments-billing.md`](./08-payments-billing.md) §8.3,
+[`06-execution-hosting.md`](./06-execution-hosting.md) §6.2). On-chain escrow is
+the outer bound; this row is the in-window serialization point.
+
+| column | type | notes |
+| ------ | ---- | ----- |
+| `id` (`channel_id`) | `uuid pk` | |
+| `caller_did` | `text not null` | owner |
+| `caller_wallet` | `text not null` | funder/refund address |
+| `escrow_addr` | `text` | on-chain escrow / settlement-module address |
+| `balance_wei` | `text` | funded amount this window (string big-int) |
+| `reserved_wei` | `text` | sum of open reservations (atomic decrement target) |
+| `cumulative_wei` | `text` | total admitted by the latest co-signed voucher |
+| `nonce` | `bigint` | latest voucher nonce (monotonic) |
+| `last_voucher_sig` | `text` | caller signature over the latest voucher |
+| `window_start`/`window_end` | `timestamptz` | funding window |
+| `status` | `text` | `open`, `settling`, `closed` |
+| `fund_tx`/`settle_tx` | `text null` | on-chain open/settle txns |
+
+Reserve is the transactional guard `UPDATE ... WHERE balance_wei - reserved_wei >= :amount`
+(row lock). `finalize` lowers `reserved_wei` to the real charge; `void` releases
+it entirely. **Never** a per-call chain write.
+
+### `vouchers` (caller-co-signed cumulative payment vouchers)
+| column | type | notes |
+| ------ | ---- | ----- |
+| `id` | `uuid pk` | |
+| `channel_id` | `uuid fk` | |
+| `cumulative_wei` | `text` | monotonically increasing total spend |
+| `nonce` | `bigint` | strictly increasing per channel |
+| `last_receipt_hash` | `text` | binds the voucher to the receipt chain |
+| `eip712_digest` | `text` | `DeusVoucher` digest |
+| `caller_sig` | `text not null` | caller signature (the bilateral proof) |
+| `redeemed_in` | `uuid null fk` | settlement that redeemed this voucher (highest nonce) |
+| `created_at` | `timestamptz` | |
+
 ### `spend_grants` (mirror of wallet policy — read-only cache)
 `caller_did`, `service_id null` (null = any), `max_per_call_wei`,
 `max_total_wei`, `spent_wei`, `expires_at`, `source` (`argus|wallet_policy`).
 Authoritative copy lives in the embedded wallet; this is a cache the gateway
 checks fast, then confirms against the wallet on the spend path.
 
-### `deployments` (hosted only)
-`id`, `service_id`, `fly_app`, `fly_machine_id`, `image_ref`, `status`,
-`region`, `last_invoked_at`, `min_machines`, `created_at`.
+### `deployments` (hosted only — Paxeer Cloud)
+`id`, `service_id`, `appwrite_function_id` (or `site_id`), `runtime`,
+`deployment_id`, `exec_endpoint` (function domain / executions URL), `status`,
+`region`, `last_invoked_at`, `always_warm` (bool, counts against hosting budget),
+`created_at`.
 
 ### `index_cursor`
 Single-row indexer bookmark: `last_block`, `last_log_index`, `updated_at`.

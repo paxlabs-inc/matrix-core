@@ -15,6 +15,17 @@ Adversaries: malicious developers, malicious callers/agents, compromised
 runners, network MITM, and a curious-but-honest operator (minimize trust in Deus
 itself).
 
+> **Where the honest-operator assumption currently bites.** Until the caller is
+> in the signing loop, two paths trust the operator more than "minimize trust"
+> implies: (1) **billing** — a gateway-signed receipt alone attests units within
+> the channel/quote cap, so a curious operator could bill up to the cap and the
+> caller couldn't disprove it; (2) **reputation** — quality samples are
+> operator-computed (§4.3). Both are closed by the **caller-co-signed cumulative
+> voucher** ([`08-payments-billing.md`](./08-payments-billing.md) §8.3), which
+> makes the charge *and* the `outcome` sample bilaterally provable. The voucher
+> is therefore a security control, not just a payments detail — it is mandatory
+> for `per_unit` pricing.
+
 ## 9.2 Authentication & authorization
 
 - **Callers/agents** authenticate with the embedded-wallet **agent bearer**
@@ -40,13 +51,23 @@ itself).
   all expressible as wallet policy and **enforced on-chain**, so even a
   compromised Deus cannot exceed them.
 - Quotes are **signed and bounded** (`max_total_wei`); a caller can never be
-  charged beyond the quote it approved.
+  charged beyond the quote it approved, and — on the channel rail — never beyond
+  its **last co-signed voucher**.
+- **Concurrency is a spend-safety property, not just correctness.** Because the
+  control plane is stateless/N-instance and the grants cache is a fast
+  pre-check, the reserve **must** be an *atomic transactional decrement* of the
+  caller's channel balance (Postgres row lock bounded by the on-chain escrow
+  cap), or two parallel invokes can oversell the channel before the authoritative
+  check fires. This invariant is specified in
+  [`06-execution-hosting.md`](./06-execution-hosting.md) §6.2 and is required for
+  the spend guarantee to hold under load.
 
 ## 9.4 Tenant isolation (hosted services)
 
-- Each hosted service runs in its **own Fly Machine / Firecracker microVM**
-  (dedicated) or an isolated sandbox in the shared `deus-runner` pool
-  (separate process + cgroup + seccomp + read-only FS + per-tenant tmp).
+- Each hosted service runs as an **isolated Paxeer Cloud Function / container
+  Site** (the Appwrite fork's per-function sandboxing: separate execution
+  context, resource caps, no shared FS between tenants). Heavy/confidential
+  services get a dedicated runtime.
 - **Network egress allowlist** by default: a hosted service can reach only what
   its manifest declares; no lateral access to other tenants, the control plane's
   DB, or the chain signer.
@@ -85,9 +106,12 @@ itself).
 - Ledger is append-only; settlement is read-only over it; idempotency keys
   prevent double charges.
 - Receipts are signed and Merkle-anchored, so neither over- nor under-payment
-  can be hidden.
-- The escrow/settlement contract moves caller funds **only** against anchored
-  receipts and the caller's signed authorization.
+  can be hidden. On the channel rail the **caller co-signs a cumulative
+  voucher**, so the charge is bilaterally provable — the caller holds proof, not
+  just the developer.
+- The escrow/settlement contract moves caller funds **only** against the
+  highest caller-co-signed voucher and the anchored receipts — it can never pay
+  out more than the caller admitted.
 
 ## 9.8 Transport & data protection
 
@@ -133,3 +157,28 @@ itself).
   the substrate for regulated use (data residency via region pinning, evidence
   retention, provable execution). Full compliance certifications are post-v1 but
   the architecture does not preclude them.
+
+## 9.13 Honest limitations & trust assumptions (own them)
+
+The spec deliberately states what Deus does **not** guarantee, so claims match
+the threat model:
+
+- **External infrastructure exists.** "Native to Paxeer" is about *settlement*,
+  not infrastructure. Hosted execution depends on **Paxeer Cloud** (the Appwrite
+  fork) and discovery on an **external embedder**. Both are mitigated (search
+  degrades to lexical+filters; hosting is swappable) but they are real
+  dependencies, not zero.
+- **Operator-attested inputs (until caller co-sign).** Billing units and quality
+  samples are operator-computed; the caller-co-signed voucher (§8.3) is what
+  removes this. Stated plainly in §9.1.
+- **Proxy reachability is TOCTOU.** The registration reachability probe (§2.5,
+  [`06-execution-hosting.md`](./06-execution-hosting.md) §6.4) is necessary, not
+  sufficient: a proxy endpoint can pass at listing time then rot. The real
+  backstop is **continuous health-checking + a circuit breaker** that auto-pauses
+  a flapping listing, with PoFQ decay as a lagging signal — not the one-time
+  probe.
+- **`result_hash` is evidence, not proof-of-correctness.** It binds *the bytes
+  returned*, not *that the answer is right*. For non-deterministic agent/LLM
+  services, correctness is unverifiable outside the TEE path (and TEE proves the
+  attested code ran, not that its output is correct). Receipts are
+  dispute-evidence, not a correctness oracle ([`08-payments-billing.md`](./08-payments-billing.md) §8.6).

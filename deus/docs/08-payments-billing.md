@@ -5,8 +5,10 @@
 1. **Take-nothing.** Platform fee = **0**. Developers keep **100%**. Paxeer
    monetizes the on-chain activity Deus generates (gas, settlement, quality
    writes), not a cut of revenue.
-2. **Pay per call, down to fractions of a cent.** No accounts, keys, or
-   subscriptions. The caller's wallet pays for exactly what it used.
+2. **Pay per call, down to fractions of a cent.** No per-service accounts, API
+   keys, or human onboarding. The caller's wallet pays for exactly what it used.
+   (The caller does carry a wallet and, on the channel rail, a short-lived
+   prepaid float — see §8.3 for the honest framing of "no accounts.")
 3. **Native rails.** All settlement is on Paxeer; instant finality; no external
    payment network.
 4. **Custody stays with the caller's wallet.** Deus never holds caller keys and
@@ -32,33 +34,64 @@ window (~seconds to minutes), the **Settlement** component:
    `SettlementAnchor.anchor(developer, receiptsRoot, total_wei, count)`.
 5. Marks the rows `settled` with the `settlement_id` + `tx_hash`.
 
-This is the lazy-net pattern (5–10× cheaper settlement) applied to services.
+This is the lazy-net pattern (5–10× cheaper settlement) applied to services. On
+the caller side it runs over per-caller **payment channels**: the caller funds a
+channel once per window and co-signs a cumulative voucher per call, so neither
+side needs a chain write per invocation (§8.3).
 
-## 8.3 Funding model — who holds the float between call and settlement?
+## 8.3 Funding model — the per-window payment channel (D-7a, decided)
 
-The caller is charged at **reserve** time, the developer is paid at
-**settlement** time. The PAX in between must be custodied without Deus holding
-caller keys. Options (decision **D-7a**, pick at implementation):
+The caller is charged at **reserve** and the developer is paid at
+**settlement**; the PAX in between is held without Deus ever holding caller keys.
+The model is a **unidirectional payment channel** per caller, **funded per
+window — not per call**. This is the only construction consistent with *both*
+lazy-net economics (§8.2) *and* the "minimize trust in Deus" threat model
+(§9.1):
 
-- **(A) Reserve-to-escrow (recommended).** At reserve, the gateway has the
-  caller wallet move `max_total_wei` into a **per-caller escrow** controlled by a
-  Deus settlement module contract (caller-signed, policy-checked). Finalize
-  draws the real charge; the remainder is returned at window close or reused for
-  the caller's next calls. Settlement pays developers from escrow. Caller funds
-  never leave a contract the caller can audit; Deus can only move funds per
-  signed, anchored receipts.
-- **(B) Prepaid balance.** Caller tops up a Deus balance (on-chain deposit);
-  calls debit it; refundable on withdrawal. Simpler UX, weaker "no account"
-  story.
-- **(C) Streaming-only for untrusted callers.** Force a stream for any caller
-  without escrow, so the chain holds the cap.
+1. **Open / fund — one chain write per caller per window.** The caller's wallet
+   funds a per-caller escrow (a Deus settlement-module contract, caller-signed,
+   policy-checked) up to a window cap. Funding is **per window, not per
+   reserve** — the 5–10× lazy-net saving lives here, so a per-reserve deposit is
+   explicitly **forbidden** (it would reintroduce a chain write per call).
+2. **Pay — off-chain, bilaterally signed.** On each invocation the gateway
+   returns a **monotonically increasing cumulative voucher**
+   `{channel_id, cumulative_wei, nonce, last_receipt_hash}` and the **caller
+   co-signs it** (EIP-712, `0x0908`). The voucher is the caller's signed
+   admission of total spend so far, so the charge is now **bilaterally
+   provable** rather than gateway-attested. This is the fix for the
+   gateway-only-attestation gap and is **mandatory for `per_unit`** (where the
+   gateway would otherwise solely attest the unit count) and hardening for
+   `per_call`.
+3. **Settle — lazy, one chain write per developer per window.** Settlement
+   submits the **highest co-signed voucher**; the escrow releases exactly that
+   cumulative amount, split across the window's developers, and anchors the
+   receipts root (§4.2). The caller cannot be charged beyond its last signed
+   voucher; Deus cannot pay out more than the caller admitted.
+4. **Close / refund.** At window end (or on caller request) the unspent escrow
+   remainder is returned or rolled into the next window.
 
-v1 default: **(A)** with a short window so float is minimal; **(C)** as the
-fallback when a caller declines escrow.
+Funding the channel and co-signing vouchers are **one mechanism**: this unifies
+the receipt-signing scheme with the funding model. A **reserve** is an *atomic
+decrement* of the channel's available balance (see [`06-execution-hosting.md`](./06-execution-hosting.md)
+§6.2) — never a chain write.
 
-> Whichever is chosen, the invariant holds: **a caller is never charged more
-> than its signed quote, and a developer is always paid exactly the sum of
-> finalized receipts in the anchored batch.**
+**Honest tradeoff (owned, not hidden):** a per-window-funded channel is a
+**short-lived prepaid balance**. So "no accounts/subscriptions" precisely means
+*no per-service accounts, no API keys, no human onboarding* — the caller still
+carries a wallet and a rolling prepaid float. That remains a categorical
+improvement over per-service signup, but the spec does not pretend the float
+doesn't exist.
+
+**Fallbacks (no channel required).** A caller that declines a channel is served
+on the **direct rail** (one inline transfer per call, §8.2) or **streaming**
+(`0x0906`), both of which keep the cap on-chain and need no escrow. The launch
+MVP ships **direct-rail-only** (see [`14-roadmap.md`](./14-roadmap.md) Phase 2);
+the channel is the immediate fast-follow.
+
+> Invariant: a caller is never charged beyond its **last co-signed voucher**,
+> and a developer is always paid exactly the sum of finalized receipts in the
+> anchored batch. **Both sides hold cryptographic proof** — not just the
+> developer.
 
 ## 8.4 Pricing model
 
@@ -85,11 +118,21 @@ settled, always. A pricing change bumps `pricing_plans.version` and re-registers
 ## 8.6 Receipts & auditability
 
 Every finalized invocation produces an **EIP-712 receipt**
-([`04-onchain.md`](./04-onchain.md) §4.5), stored in the object store and hashed
+([`04-onchain.md`](./04-onchain.md) §4.5): gateway-signed, runner-co-signed for
+hosted/confidential, and — on the channel rail — **caller-co-signed via the
+cumulative voucher (§8.3)**. Receipts are stored in the object store and hashed
 into the settlement Merkle root. A developer or caller can prove any single
 charge was (or wasn't) included in a settled batch via Merkle proof against the
-on-chain `receiptsRoot`. This is the dispute-evidence substrate (arbitration
-itself is post-v1).
+on-chain `receiptsRoot`. The caller's voucher signature is what makes the charge
+provable *to the caller*, not only auditable by the developer. This is the
+dispute-evidence substrate (arbitration itself is post-v1).
+
+> **Evidence, not proof-of-correctness.** `result_hash` binds *"these are the
+> bytes you received"* — it is not proof the answer was *correct*. For
+> non-deterministic agent/LLM services, correctness is unverifiable outside the
+> TEE path (and even there the attestation proves the attested code ran, not
+> that its output is "right"). Treat receipts as evidence of what was returned
+> and charged, not as a correctness oracle.
 
 ## 8.7 Refunds & failures
 

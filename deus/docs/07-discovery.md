@@ -81,8 +81,14 @@ invoke, in one pass.
 
 ## 7.6 Anti-gaming
 
-- Quality is on-chain PoFQ from **objective outcomes**, not reviews — hard to
-  fake without actually delivering.
+- Quality is a PoFQ score with an **on-chain, tamper-evident reduction** over
+  **operator-attested delivery samples** (success/latency/schema-validity), not
+  reviews. A developer cannot fake their own score; the operator attests the
+  inputs (honest-operator assumption, [`09-security.md`](./09-security.md) §9.1),
+  which the **caller-co-signed receipt/voucher** ([`04-onchain.md`](./04-onchain.md)
+  §4.3, [`08-payments-billing.md`](./08-payments-billing.md) §8.3) upgrades to
+  bilateral attestation. It is hard to fake *without actually delivering*, but it
+  is not "objective, unfakeable reputation."
 - Embedding spam (keyword-stuffed manifests) is mitigated by: capping document
   length, weighting structured fields over free description, and demoting
   services with high impressions but low invoke-through / low quality.

@@ -122,6 +122,18 @@ exponentially-decayed rolling score (`scoreFill`, `scoreBatch`,
 - The resulting score is cached in `services.quality_score` and is the primary
   **visibility/ranking** signal in discovery — reliable services rank higher.
 
+> **Honest scope of the trust claim.** The PoFQ *reduction* is on-chain and
+> tamper-evident; the *samples* (success / latency / schema-validity) are
+> computed **off-chain by the Deus operator** — so the score is
+> **operator-attested input, on-chain reduction**, not "objective, unfakeable
+> reputation." A developer cannot fake their own score, but the honest-operator
+> assumption (§9.1) applies to the *inputs*. The fix that removes it is the same
+> one that closes the billing gap: when the **caller co-signs the receipt /
+> cumulative voucher** ([`08-payments-billing.md`](./08-payments-billing.md)
+> §8.3, including the `outcome` bit), the delivery sample becomes
+> **bilaterally attested** rather than operator-attested. Build the channel and
+> reputation integrity comes with it.
+
 > PoFQ math is stateless precompile math; Deus holds the per-service
 > `(score, weight)` state (in Postgres, mirrored/anchored), and uses the
 > precompile as the canonical, audited reducer so scores are reproducible and
@@ -134,11 +146,15 @@ exponentially-decayed rolling score (`scoreFill`, `scoreBatch`,
 Full economics in [`08-payments-billing.md`](./08-payments-billing.md). On-chain
 mechanics:
 
-- **Per-call net settlement (default).** No on-chain write per call. The gateway
-  meters off-chain; per developer per window the **Settlement** component pays
-  the net total via a single transfer from a Deus settlement module (funded from
-  caller wallets at reserve time) to `payout`, and anchors the receipts root.
-  This is the "5–10× cheaper settlement" lazy-net pattern, applied to services.
+- **Per-call net settlement (default rail, post-MVP).** No on-chain write per
+  call. Callers fund a **per-window payment channel** (one write per caller per
+  window) and co-sign a cumulative voucher per call; per developer per window
+  the **Settlement** component pays the net total via a single transfer from the
+  Deus settlement module to `payout` against the highest co-signed voucher, and
+  anchors the receipts root. This is the "5–10× cheaper settlement" lazy-net
+  pattern, applied to services. Funding is **per window, not per reserve** (see
+  [`08-payments-billing.md`](./08-payments-billing.md) §8.3). The launch MVP
+  ships on the **direct rail** first ([`14-roadmap.md`](./14-roadmap.md)).
 - **Streaming (`0x0906`).** For continuous services the caller opens a stream
   (`open(payee=payout, token, ratePerSecond, start, stop, cap)`); the gateway
   meters against `accrued()` and calls `settle()` on intervals; `close()`
@@ -162,6 +178,12 @@ every spend. Deus never holds caller keys.
   `{invocationId, serviceId, caller, argsHash, resultHash, priceWei, units,
   outcome, ts}`. Signed by the gateway and (for hosted/confidential) co-signed by
   the runner. Anchored in batches (4.2).
+- **Voucher (channel rail)**: `domainSeparator(name="DeusVoucher", ...)`; struct
+  hash over `{channelId, cumulativeWei, nonce, lastReceiptHash}`, **co-signed by
+  the caller** each call. The voucher is what makes the charge bilaterally
+  provable (not gateway-attested) and doubles as the integrity signature for the
+  quality `outcome` sample (§4.3). Settlement redeems the highest-nonce voucher.
+  See [`08-payments-billing.md`](./08-payments-billing.md) §8.3.
 - Both reuse the `EIP712_ABI` helper for `hashTypedData` / `domainSeparator` /
   `recoverTypedSigner` so on-chain and off-chain agree byte-for-byte.
 

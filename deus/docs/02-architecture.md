@@ -82,15 +82,15 @@
 | **Settlement** | Batches ledger entries → net settlement / stream settle / direct transfer | [`08-payments-billing.md`](./08-payments-billing.md) |
 | **Indexer** | Tails `ServiceRegistry` + settlement events → updates Postgres mirror | [`03-data-model.md`](./03-data-model.md) |
 | **Quality** | Computes per-service score via PoFQ from delivery outcomes; writes on-chain | [`04-onchain.md`](./04-onchain.md) |
-| **Hosting orchestrator** | Builds + deploys hosted listings to Fly; lifecycle, scale-to-zero | [`06-execution-hosting.md`](./06-execution-hosting.md) |
+| **Hosting orchestrator** | Deploys hosted listings to **Paxeer Cloud** (Appwrite Server API); lifecycle, budget | [`06-execution-hosting.md`](./06-execution-hosting.md) |
 
-### Execution layer (Node on Fly)
-- **Hosted runner** — runs a developer's uploaded container/function, invoked
-  per call, scaled to zero when idle.
+### Execution layer (Node on Paxeer Cloud / Appwrite fork)
+- **Hosted runner** — a developer's uploaded function/container deployed as a
+  **Paxeer Cloud Function / Site**, invoked per call, natively scaled to zero.
 - **Proxy egress** — forwards to a developer's external HTTPS endpoint, applying
   timeout/size/retry policy and capturing the result for metering + receipts.
-- **Confidential runner (v1.x)** — runs inside a TEE; emits an attestation quote
-  verified by `0x0907`.
+- **Confidential runner (v1.x)** — runs inside a TEE (Paxeer Cloud TEE runtime or
+  a dedicated runner); emits an attestation quote verified by `0x0907`.
 
 ### Web (Next.js)
 - Developer console (list/manage/analytics), discovery UI, spend dashboard,
@@ -109,14 +109,14 @@
 
 | Tier | What runs there | Hosting |
 | ---- | --------------- | ------- |
-| Control plane | `deusd` Go server (registry/discovery/gateway/settlement/indexer/quality) | Fly app `deus-control` (public via gateway), or the shared Paxeer box; multiple instances behind Fly proxy |
-| Execution | hosted runners + proxy egress | Fly app(s) `deus-runner-*`, scale-to-zero Machines per service or shared pool |
+| Control plane | `deusd` Go server (registry/discovery/gateway/settlement/indexer/quality) | Fly app `deus-control`, the shared Paxeer box, or a Paxeer Cloud container; multiple stateless instances |
+| Execution | hosted services + proxy egress | **Paxeer Cloud** (Appwrite fork): Functions / container Sites, native scale-to-zero |
 | Data | Postgres + pgvector, object store | The Paxeer box (Postgres, like matrix) + MinIO/S3 |
 | Chain | `ServiceRegistry` + precompiles | Paxeer mainnet 125 |
 | Web | Next.js console | Static/SSR deploy (Netlify/Fly), like `client/` |
 | Agent bridge | `deus.mjs` MCP proxy | Inside each Matrix per-user daemon image |
 
-See [`13-deployment.md`](./13-deployment.md) for the concrete Fly apps + env.
+See [`13-deployment.md`](./13-deployment.md) for the concrete deploy targets + env.
 
 ## 2.5 Key request flows
 
@@ -133,9 +133,9 @@ See [`13-deployment.md`](./13-deployment.md) for the concrete Fly apps + env.
 6. Service is live and discoverable. Time target: < 10 min, mostly the dev typing.
 
 ### B. Developer lists a service (hosted listing)
-Same as A, plus: artifact upload → object store → Hosting orchestrator builds a
-container → deploys a scale-to-zero Fly Machine → endpoint URL is the internal
-runner URL. The on-chain listing records `hosted=true`.
+Same as A, plus: artifact upload → object store → Hosting orchestrator creates a
+**Paxeer Cloud Function / Site** (Appwrite Server API) → endpoint URL is the
+function execution endpoint / domain. The on-chain listing records `hosted=true`.
 
 ### C. Agent discovers + calls a service (the hero path)
 1. Agent (via `deus.mjs` or agent API) sends a **plain-language need**:
