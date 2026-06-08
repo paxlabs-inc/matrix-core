@@ -77,7 +77,13 @@ make -C deus deus-build deus-test deus-lint deus-contracts deus-mcp-selftest
 DEUS_RUN_ANVIL_TESTS=1 go test -tags=integration ./test/e2e/...   # from deus/
 ```
 
-**Phase 2 invoke loop:** `POST /v1/quote/{id}` → `POST /v1/invoke/{id}` (direct rail only; rejects `net`/`stream`) → EIP-712 receipt. Dev caller auth: `Authorization: Bearer …` plus `X-Caller-DID` / `X-Caller-Wallet`. Gateway uses `wallet.DevClient` when `DEUS_DEV=1` and no `MATRIX_WALLET_API_URL`.
+**Phase 2 invoke loop:** `POST /v1/quote/{id}` → `POST /v1/invoke/{id}` (direct rail) → EIP-712 receipt.
+
+**Phase 3 hosted listings:** `POST /v1/services/{id}/artifacts` → `POST /v1/services/{id}/deploy` → publish (requires active deployment) → gateway invokes `deployments.exec_endpoint` at `POST /invoke`. Dev: `DEUS_HOSTING_DEV_EXEC_URL` + in-memory objstore. Prod: `DEUS_APPWRITE_ENDPOINT`, `DEUS_APPWRITE_PROJECT_ID`, `DEUS_APPWRITE_API_KEY`. Budget: `DEUS_HOSTING_KILL_SWITCH`, `DEUS_HOSTING_MAX_ALWAYS_WARM`.
+
+**Phase 4 discovery:** plain-language `POST /v1/discover` runs constraint extraction → lexical (`websearch_to_tsquery`) + optional vector KNN (when `DEUS_EMBED_ENDPOINT` set). Ranking weights in `deus/configs/ranking.yaml`. Listings are indexed on create/publish via `SetManifestIndexer`. Dev uses hash embedder (lexical-only search path). Migration `003_discovery_search.sql` adds `search_document` + HNSW index.
+
+Dev caller auth: `Authorization: Bearer …` plus `X-Caller-DID` / `X-Caller-Wallet`. Gateway uses `wallet.DevClient` when `DEUS_DEV=1` and no `MATRIX_WALLET_API_URL`.
 
 **MCP:** `tools/deus/deus.mjs` + `agents/default.json` `deus` server; router injects `MATRIX_DEUS_URL` (default `http://deus-control.internal:9095`).
 
