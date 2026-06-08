@@ -20,6 +20,8 @@
 #   /opt/matrix/tools/tachyon/           tachyon stdio MCP proxy (Node.js) ->
 #                                        shared matrix-tachyon Fly app via
 #                                        MATRIX_TACHYON_URL (Solidity/EVM engine)
+#   /opt/matrix/tools/deus/              deus stdio MCP proxy (Node.js) ->
+#                                        Deus control plane via MATRIX_DEUS_URL
 #   /opt/matrix/entrypoint.sh            init script: prep volume + run (neo front + daemon back)
 #   /root/matrix -> /opt/matrix          symlink so default.json's hard-coded
 #                                        /root/matrix/tools/paxeer/paxeer-net.mjs
@@ -131,6 +133,9 @@ COPY tools/websearch /opt/matrix/tools/websearch
 COPY tools/browser   /opt/matrix/tools/browser
 COPY tools/exec      /opt/matrix/tools/exec
 COPY tools/tachyon   /opt/matrix/tools/tachyon
+# deus stdio MCP proxy -> Deus control plane via MATRIX_DEUS_URL. Declared in
+# agents/default.json; the daemon's strict spawn check exits if it's missing.
+COPY tools/deus      /opt/matrix/tools/deus
 
 # agents/default.json hard-codes /root/matrix/tools/paxeer/paxeer-net.mjs
 # (matches the dev-box layout). Symlink /root/matrix → /opt/matrix so the

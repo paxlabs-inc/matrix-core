@@ -11,6 +11,7 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"time"
 )
 
 // Server is Neo's HTTP front. It owns the conversational surface (POST /chat +
@@ -44,6 +45,7 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("/chat", s.handleChat)
 	mux.HandleFunc("/events", s.handleEvents)
 	mux.HandleFunc("/events/replay/", s.handleReplay)
+	mux.HandleFunc("/messages/async/", s.handleAsyncPoll)
 	mux.HandleFunc("/intents/", s.handleIntents)
 	mux.HandleFunc("/", s.proxy.ServeHTTP) // healthz, /messages, /memory, /tools, … → daemon
 	return mux
@@ -111,6 +113,32 @@ func (s *Server) handleReplay(w http.ResponseWriter, r *http.Request) {
 	s.streamSSE(w, r, id, since, false)
 }
 
+// handleAsyncPoll answers the poll_url that POST /chat advertises for a Neo run
+// (GET /messages/async/<id>). The web client polls it on reload to decide
+// whether to reconnect a still-live run; without this it would be proxied to
+// the daemon, which has never heard of a neo_ intent and returns 404. Daemon
+// async jobs (non-Neo intents) fall through to the proxy unchanged.
+func (s *Server) handleAsyncPoll(w http.ResponseWriter, r *http.Request) {
+	id := strings.TrimPrefix(r.URL.Path, "/messages/async/")
+	if id == "" || !s.engine.broker.has(id) {
+		s.proxy.ServeHTTP(w, r)
+		return
+	}
+	// lookupRun is non-nil only while the run is in flight; once it settles the
+	// run is unregistered but its topic lingers (replay grace), so a poll in
+	// that window reports completed rather than a misleading "running".
+	status := "completed"
+	if s.engine.lookupRun(id) != nil {
+		status = "running"
+	}
+	writeJSON(w, http.StatusOK, map[string]interface{}{
+		"intent_id":  id,
+		"status":     status,
+		"request":    map[string]string{"prose": ""},
+		"created_at": time.Now().UTC().Format(time.RFC3339Nano),
+	})
+}
+
 // handleIntents intercepts only the gate-answer for a live Neo run; every other
 // /intents/* route proxies to the daemon.
 func (s *Server) handleIntents(w http.ResponseWriter, r *http.Request) {
@@ -165,10 +193,21 @@ func (s *Server) streamSSE(w http.ResponseWriter, r *http.Request, id string, si
 		return
 	}
 	ctx := r.Context()
+	// Comment-ping every 15s so the client's heartbeat watchdog (30s in
+	// lib/realtime/sse.ts) doesn't abort+reconnect during long tool/model gaps
+	// — a research turn can run many seconds between visible events. Matches
+	// the daemon's documented 15s ping cadence.
+	hb := time.NewTicker(15 * time.Second)
+	defer hb.Stop()
 	for {
 		select {
 		case <-ctx.Done():
 			return
+		case <-hb.C:
+			if _, err := fmt.Fprint(w, ": heartbeat\n\n"); err != nil {
+				return
+			}
+			flusher.Flush()
 		case ev, open := <-ch:
 			if !open {
 				return

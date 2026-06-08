@@ -108,6 +108,13 @@ func (e *Engine) newSession(convID string) *session {
 func (s *session) start(message string) *run {
 	r := &run{id: synthRunID(message), convID: s.id, sess: s}
 	s.engine.registerRun(r)
+	// Create the SSE topic NOW, before returning the dispatch (and before the
+	// background goroutine's first publish). This closes the dispatch→subscribe
+	// race: the client connects to /events the moment it has the intent_id, and
+	// must find a Neo-owned topic or the request is reverse-proxied to the
+	// daemon's empty stream. The replay buffer then backfills any events
+	// published between this point and the client's connect.
+	s.engine.broker.ensure(r.id)
 	go s.drive(r, message)
 	return r
 }

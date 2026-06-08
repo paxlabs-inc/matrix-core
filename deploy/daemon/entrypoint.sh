@@ -96,6 +96,9 @@ build_daemon_argv() {
     [[ -n "${PAXEER_SPEND_CAP_WEI:-}" ]]           && DAEMON_ARGV+=( -paxeer-cap-wei "${PAXEER_SPEND_CAP_WEI}" )
     [[ -n "${PAXEER_AGG_CAP_WEI:-}" ]]             && DAEMON_ARGV+=( -paxeer-aggregate-cap-wei "${PAXEER_AGG_CAP_WEI}" )
     [[ -n "${PAXEER_SPEND_POLICY_DISABLE:-}" ]]    && DAEMON_ARGV+=( -paxeer-spend-policy-disable )
+    # IMPORTANT: a trailing `[[ … ]] && …` whose test is false returns 1, which
+    # under `set -e` would abort the caller. Always return success.
+    return 0
 }
 
 # wait_for_health URL [TRIES] -> 0 once the URL answers (any HTTP), else 1.
@@ -137,7 +140,12 @@ case "${1:-neo}" in
         export MATRIX_EXEC_STATE_DIR="${DATA_DIR}/neo/services"
         export NEO_DAEMON_URL="http://127.0.0.1:${NEO_BACKEND_PORT}"
         export NEO_DAEMON_TOKEN="${MATRIX_DAEMON_TOKEN:-}"
-        export NEO_ACTOR_DID="${MATRIX_USER_ID:-neo}"
+        # The gateway requires a DID-shaped actor (auth.looksLikeDID:
+        # did:<method>:<id>). A BARE user id is rejected with
+        # "actor_invalid: malformed X-Matrix-Actor-DID". Use a per-user,
+        # Neo-scoped DID so Neo's metered LLM spend attributes distinctly from
+        # the MCL daemon's (did:matrix:<user>:<key16>) in the credit ledger.
+        export NEO_ACTOR_DID="did:matrix:${MATRIX_USER_ID:-neo}:neo"
         export NEO_SKILLS_ROOT="${MATRIX_HOME}/skills"
 
         "${MATRIX_HOME}/bin/neo" serve \

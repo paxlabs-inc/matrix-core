@@ -67,6 +67,15 @@ func (b *broker) has(id string) bool {
 	return ok
 }
 
+// ensure creates the topic for id if absent. session.start calls this at
+// dispatch time — BEFORE POST /chat returns and before the run's first publish
+// — so handleEvents/handleReplay/handleAsyncPoll recognise the id as Neo's the
+// instant the client connects. Without it the client's immediate subscribe
+// loses the race against the first publish, has(id) is false, and the stream
+// is reverse-proxied to the daemon's (empty) event stream forever — the run
+// completes but the user never sees the answer.
+func (b *broker) ensure(id string) { b.topic(id) }
+
 // publish stamps and appends an event, then fans it out to live subscribers.
 func (b *broker) publish(id, typ, phase string, fields map[string]interface{}) Event {
 	ts := b.topic(id)
