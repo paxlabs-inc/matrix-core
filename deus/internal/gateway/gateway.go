@@ -14,6 +14,7 @@ import (
 	"github.com/paxlabs-inc/deus/internal/pricing"
 	"github.com/paxlabs-inc/deus/internal/quality"
 	"github.com/paxlabs-inc/deus/internal/receipts"
+	"github.com/paxlabs-inc/deus/internal/streams"
 	"github.com/paxlabs-inc/deus/internal/store"
 	"github.com/paxlabs-inc/deus/internal/wallet"
 	"github.com/paxlabs-inc/deus/pkg/pricingmath"
@@ -33,6 +34,7 @@ type Gateway struct {
 	signer   *receipts.Signer
 	quality  *quality.Service
 	hosting  HostingRouter
+	streams  *streams.Service
 	chainID  int64
 }
 
@@ -45,6 +47,7 @@ type Config struct {
 	Signer  *receipts.Signer
 	Quality *quality.Service
 	Hosting HostingRouter
+	Streams *streams.Service
 	ChainID int64
 }
 
@@ -58,6 +61,7 @@ func New(cfg Config) *Gateway {
 		signer:  cfg.Signer,
 		quality: cfg.Quality,
 		hosting: cfg.Hosting,
+		streams: cfg.Streams,
 		chainID: cfg.ChainID,
 	}
 }
@@ -69,6 +73,7 @@ type InvokeRequest struct {
 	Args           map[string]any
 	QuoteID        string
 	PaymentRail    string
+	StreamID       string
 	IdempotencyKey string
 }
 
@@ -98,8 +103,11 @@ func (g *Gateway) Invoke(ctx context.Context, caller auth.Caller, req InvokeRequ
 	if rail == "" {
 		rail = "direct"
 	}
+	if rail == "stream" {
+		return g.invokeStream(ctx, caller, req)
+	}
 	if rail != "direct" {
-		return InvokeResponse{}, &Error{Code: "invalid_request", Message: "only direct rail supported in MVP", HTTPStatus: 400}
+		return InvokeResponse{}, &Error{Code: "invalid_request", Message: "unsupported payment rail", HTTPStatus: 400}
 	}
 
 	svc, err := g.store.GetServiceByID(ctx, req.ServiceID)
