@@ -324,14 +324,19 @@ func (d *daemonState) handleIntentPlan(w http.ResponseWriter, r *http.Request, i
 			})
 			return
 		}
-		// PlanJSON is the canonical-JSON ir.PlanTree; pass through
-		// without re-marshaling so the frontend sees byte-equal bytes.
-		var planObj interface{}
-		_ = json.Unmarshal(body.PlanJSON, &planObj)
+		// PlanJSON is the canonical-JSON ir.PlanTree. Forward the raw bytes
+		// via json.RawMessage so the frontend sees them byte-for-byte:
+		// round-tripping through interface{} would reorder object keys and
+		// collapse int64 to float64 (precision loss above 2^53), diverging
+		// from the canonical AST the replay/anchoring flow hashes.
+		plan := json.RawMessage(body.PlanJSON)
+		if len(plan) == 0 {
+			plan = json.RawMessage("null")
+		}
 		writeJSON(w, http.StatusOK, map[string]interface{}{
 			"intent_id":   intentID,
 			"envelope_id": env.body.ID,
-			"plan":        planObj,
+			"plan":        plan,
 		})
 		return
 	}

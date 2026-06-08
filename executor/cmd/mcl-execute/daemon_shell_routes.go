@@ -47,7 +47,9 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
+	"net/url"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -135,11 +137,70 @@ type shellExitMessage struct {
 var shellUpgrader = websocket.Upgrader{
 	ReadBufferSize:  4096,
 	WriteBufferSize: 4096,
-	// Local-only daemon. Vite proxy will be the immediate client; on
-	// loopback there's no realistic origin spoofing surface. Tightening
-	// to specific origins is a Phase 4 (Tauri) concern.
-	CheckOrigin:  func(r *http.Request) bool { return true },
+	// Origin-pinned: this route lands in an interactive shell, so an
+	// unrestricted CheckOrigin would be a cross-site WebSocket-hijacking /
+	// DNS-rebinding path — any page a logged-in operator visits could open
+	// the socket against the loopback daemon. shellOriginAllowed admits
+	// non-browser clients (no Origin header, e.g. curl/CLI), same-origin
+	// requests, loopback origins (the Vite dev proxy + Tauri WebView), and
+	// any origin explicitly allowlisted via MATRIX_FORGE_ALLOWED_ORIGINS;
+	// everything else is rejected at the handshake.
+	CheckOrigin:  shellOriginAllowed,
 	Subprotocols: []string{"matrix-shell.v1"},
+}
+
+// shellOriginAllowed is the WebSocket upgrade Origin guard for the Forge
+// shell route. It returns true iff the request is safe to upgrade:
+//
+//   - No Origin header — non-browser clients (curl, the CLI) never set one;
+//     browsers always do, so an absent Origin means there is no cross-site
+//     surface to defend against.
+//   - Origin host is loopback (localhost / 127.0.0.0/8 / ::1) — the Vite dev
+//     proxy and the Tauri WebView (tauri://localhost) live here.
+//   - Origin host matches the request Host — a genuine same-origin client.
+//   - Origin is listed verbatim in MATRIX_FORGE_ALLOWED_ORIGINS (comma list)
+//     — escape hatch for a custom packaged-app scheme.
+//
+// Any other Origin (a remote page the operator merely visited) is rejected.
+func shellOriginAllowed(r *http.Request) bool {
+	origin := strings.TrimSpace(r.Header.Get("Origin"))
+	if origin == "" {
+		return true
+	}
+	u, err := url.Parse(origin)
+	if err != nil {
+		return false
+	}
+	host := u.Hostname()
+	if isLoopbackHost(host) {
+		return true
+	}
+	if u.Host != "" && r.Host != "" && strings.EqualFold(u.Host, r.Host) {
+		return true
+	}
+	for _, allowed := range strings.Split(os.Getenv("MATRIX_FORGE_ALLOWED_ORIGINS"), ",") {
+		allowed = strings.TrimSpace(allowed)
+		if allowed != "" && strings.EqualFold(allowed, origin) {
+			return true
+		}
+	}
+	return false
+}
+
+// isLoopbackHost reports whether host is a loopback name or IP. Empty host
+// (e.g. a schemes-only origin like "tauri://localhost" parses host
+// "localhost") is handled by the caller.
+func isLoopbackHost(host string) bool {
+	if host == "" {
+		return false
+	}
+	if strings.EqualFold(host, "localhost") {
+		return true
+	}
+	if ip := net.ParseIP(host); ip != nil {
+		return ip.IsLoopback()
+	}
+	return false
 }
 
 // handleForgeShellExec upgrades the connection to WS, validates auth
