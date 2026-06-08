@@ -20,7 +20,10 @@ func (s *Server) mountInvokeRoutes(r chi.Router) {
 		r.Post("/invoke/{id}", s.handleInvoke)
 		r.Get("/invocations/{id}", s.handleGetInvocation)
 		r.Get("/receipts/{id}", s.handleGetReceipt)
+		r.Post("/channels", s.handleOpenChannel)
+		r.Post("/vouchers/cosign", s.handleVoucherCosign)
 	})
+	r.Post("/internal/settle/run", s.handleSettleRun)
 }
 
 func (s *Server) handleQuote(w http.ResponseWriter, r *http.Request) {
@@ -90,16 +93,29 @@ func (s *Server) handleInvoke(w http.ResponseWriter, r *http.Request) {
 		rail = body.Payment.Rail
 	}
 	res, err := s.deps.Gateway.Invoke(r.Context(), caller, gateway.InvokeRequest{
-		ServiceID:      serviceID,
-		Operation:      body.Operation,
-		Args:           body.Args,
-		QuoteID:        body.QuoteID,
-		PaymentRail:    rail,
-		IdempotencyKey: idem,
+		ServiceID:        serviceID,
+		Operation:        body.Operation,
+		Args:             body.Args,
+		QuoteID:          body.QuoteID,
+		PaymentRail:      rail,
+		IdempotencyKey:   idem,
+		CallerVoucherSig: body.CallerVoucherSig,
 	})
 	if err != nil {
 		s.writeGatewayErr(w, err)
 		return
+	}
+	var voucher *types.VoucherSummary
+	if res.Voucher != nil {
+		voucher = &types.VoucherSummary{
+			ChannelID:       res.Voucher.ChannelID,
+			CumulativeWei:   res.Voucher.CumulativeWei,
+			Nonce:           res.Voucher.Nonce,
+			LastReceiptHash: res.Voucher.LastReceiptHash,
+			Digest:          res.Voucher.Digest,
+			NeedsSignature:  res.Voucher.NeedsSignature,
+			VoucherID:       res.Voucher.VoucherID,
+		}
 	}
 	writeJSON(w, http.StatusOK, types.InvokeResponse{
 		InvocationID: res.InvocationID,
@@ -112,6 +128,7 @@ func (s *Server) handleInvoke(w http.ResponseWriter, r *http.Request) {
 			GatewaySig: res.Receipt.GatewaySig,
 			RunnerSig:  res.Receipt.RunnerSig,
 		},
+		Voucher: voucher,
 	})
 }
 

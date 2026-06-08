@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/paxlabs-inc/deus/internal/auth"
+	"github.com/paxlabs-inc/deus/internal/channels"
 	"github.com/paxlabs-inc/deus/internal/metering"
 	"github.com/paxlabs-inc/deus/internal/pricing"
 	"github.com/paxlabs-inc/deus/internal/quality"
@@ -27,30 +28,36 @@ type Gateway struct {
 	wallet   wallet.Client
 	signer   *receipts.Signer
 	quality  *quality.Service
+	channels *channels.Service
+	vouchers *channels.VoucherService
 	chainID  int64
 }
 
 // Config wires gateway dependencies.
 type Config struct {
-	Store   *store.Store
-	Pricing *pricing.Service
-	Meter   *metering.Ledger
-	Wallet  wallet.Client
-	Signer  *receipts.Signer
-	Quality *quality.Service
-	ChainID int64
+	Store    *store.Store
+	Pricing  *pricing.Service
+	Meter    *metering.Ledger
+	Wallet   wallet.Client
+	Signer   *receipts.Signer
+	Quality  *quality.Service
+	Channels *channels.Service
+	Vouchers *channels.VoucherService
+	ChainID  int64
 }
 
 // New constructs a Gateway.
 func New(cfg Config) *Gateway {
 	return &Gateway{
-		store:   cfg.Store,
-		pricing: cfg.Pricing,
-		meter:   cfg.Meter,
-		wallet:  cfg.Wallet,
-		signer:  cfg.Signer,
-		quality: cfg.Quality,
-		chainID: cfg.ChainID,
+		store:    cfg.Store,
+		pricing:  cfg.Pricing,
+		meter:    cfg.Meter,
+		wallet:   cfg.Wallet,
+		signer:   cfg.Signer,
+		quality:  cfg.Quality,
+		channels: cfg.Channels,
+		vouchers: cfg.Vouchers,
+		chainID:  cfg.ChainID,
 	}
 }
 
@@ -59,9 +66,10 @@ type InvokeRequest struct {
 	ServiceID      string
 	Operation      string
 	Args           map[string]any
-	QuoteID        string
-	PaymentRail    string
-	IdempotencyKey string
+	QuoteID          string
+	PaymentRail      string
+	IdempotencyKey   string
+	CallerVoucherSig string
 }
 
 // InvokeResponse is a successful invoke result.
@@ -72,6 +80,18 @@ type InvokeResponse struct {
 	ChargedWei   string
 	LatencyMS    int
 	Receipt      ReceiptSummary
+	Voucher      *VoucherSummary
+}
+
+// VoucherSummary is a cumulative channel voucher (net rail).
+type VoucherSummary struct {
+	ChannelID       string `json:"channel_id"`
+	CumulativeWei   string `json:"cumulative_wei"`
+	Nonce           int64  `json:"nonce"`
+	LastReceiptHash string `json:"last_receipt_hash"`
+	Digest          string `json:"digest"`
+	NeedsSignature  bool   `json:"needs_signature"`
+	VoucherID       string `json:"voucher_id,omitempty"`
 }
 
 // ReceiptSummary is the inline receipt envelope.
@@ -90,8 +110,11 @@ func (g *Gateway) Invoke(ctx context.Context, caller auth.Caller, req InvokeRequ
 	if rail == "" {
 		rail = "direct"
 	}
+	if rail == "net" {
+		return g.invokeNet(ctx, caller, req)
+	}
 	if rail != "direct" {
-		return InvokeResponse{}, &Error{Code: "invalid_request", Message: "only direct rail supported in MVP", HTTPStatus: 400}
+		return InvokeResponse{}, &Error{Code: "invalid_request", Message: "unsupported payment rail", HTTPStatus: 400}
 	}
 
 	svc, err := g.store.GetServiceByID(ctx, req.ServiceID)

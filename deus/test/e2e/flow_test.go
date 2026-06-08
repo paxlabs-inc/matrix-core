@@ -17,11 +17,7 @@ import (
 	"github.com/paxlabs-inc/deus/internal/chain"
 	"github.com/paxlabs-inc/deus/internal/config"
 	"github.com/paxlabs-inc/deus/internal/discovery"
-	"github.com/paxlabs-inc/deus/internal/gateway"
 	"github.com/paxlabs-inc/deus/internal/indexer"
-	"github.com/paxlabs-inc/deus/internal/metering"
-	"github.com/paxlabs-inc/deus/internal/pricing"
-	"github.com/paxlabs-inc/deus/internal/quality"
 	"github.com/paxlabs-inc/deus/internal/receipts"
 	"github.com/paxlabs-inc/deus/internal/registry"
 	"github.com/paxlabs-inc/deus/internal/server"
@@ -84,15 +80,7 @@ func TestInvokeFlowDirectRail(t *testing.T) {
 		t.Fatalf("signer: %v", err)
 	}
 	devWallet := &wallet.DevClient{MaxPerCallWei: "1000000000000000000"}
-	gw := gateway.New(gateway.Config{
-		Store:   db,
-		Pricing: pricing.New(db),
-		Meter:   metering.New(db),
-		Wallet:  devWallet,
-		Signer:  signer,
-		Quality: quality.New(db),
-		ChainID: cfg.ChainID,
-	})
+	gw, _, _ := buildGateway(db, signer, devWallet)
 
 	srv := server.New(server.Deps{
 		Log:               telemetry.NewLogger(),
