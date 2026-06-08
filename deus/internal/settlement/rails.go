@@ -18,6 +18,7 @@ const (
 // Payer executes on-chain or wallet payouts.
 type Payer interface {
 	PayoutDeveloper(ctx context.Context, payoutAddr, amountWei string) (txHash string, err error)
+	PayoutFromEscrow(ctx context.Context, escrowAddr, payee, amountWei string) (txHash string, err error)
 	AnchorSettlement(ctx context.Context, developerAddr, merkleRoot, totalWei string, count int) (txHash string, err error)
 }
 
@@ -52,6 +53,13 @@ func (d *DevPayer) PayoutDeveloper(ctx context.Context, payoutAddr, amountWei st
 	_ = ctx
 	d.Payouts = append(d.Payouts, PayoutRecord{To: payoutAddr, AmountWei: amountWei})
 	return fmt.Sprintf("0xsettle%08x", len(d.Payouts)), nil
+}
+
+// PayoutFromEscrow records a dev payout from a caller escrow.
+func (d *DevPayer) PayoutFromEscrow(ctx context.Context, escrowAddr, payee, amountWei string) (string, error) {
+	_ = ctx
+	_ = escrowAddr
+	return d.PayoutDeveloper(ctx, payee, amountWei)
 }
 
 // AnchorSettlement records a dev anchor.

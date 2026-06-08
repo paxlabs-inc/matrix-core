@@ -40,68 +40,6 @@ type PolicyDenied struct {
 
 func (e *PolicyDenied) Error() string { return e.Message }
 
-// HTTPClient calls the embedded wallet REST API.
-type HTTPClient struct {
-	BaseURL string
-}
-
-// AuthorizeSpend checks spend policy at the wallet.
-func (c *HTTPClient) AuthorizeSpend(ctx context.Context, bearer, amountWei, serviceID string) error {
-	_ = ctx
-	_ = bearer
-	_ = amountWei
-	_ = serviceID
-	if c.BaseURL == "" {
-		return fmt.Errorf("wallet: MATRIX_WALLET_API_URL not configured")
-	}
-	return nil
-}
-
-// Send executes agent/send on the direct rail.
-func (c *HTTPClient) Send(ctx context.Context, bearer, toAddress, amountWei string) (string, error) {
-	_ = ctx
-	_ = bearer
-	_ = toAddress
-	_ = amountWei
-	if c.BaseURL == "" {
-		return "", fmt.Errorf("wallet: MATRIX_WALLET_API_URL not configured")
-	}
-	return "", fmt.Errorf("wallet: send not implemented for HTTP client")
-}
-
-// OpenStream proxies streams.open via the embedded wallet.
-func (c *HTTPClient) OpenStream(ctx context.Context, bearer string, in StreamOpenInput) (OpenStreamResult, error) {
-	_ = ctx
-	_ = bearer
-	_ = in
-	if c.BaseURL == "" {
-		return OpenStreamResult{}, fmt.Errorf("wallet: MATRIX_WALLET_API_URL not configured")
-	}
-	return OpenStreamResult{}, fmt.Errorf("wallet: stream_open not implemented for HTTP client")
-}
-
-// StreamSettle proxies streams.settle via the embedded wallet.
-func (c *HTTPClient) StreamSettle(ctx context.Context, bearer, chainStreamID string) (string, error) {
-	_ = ctx
-	_ = bearer
-	_ = chainStreamID
-	if c.BaseURL == "" {
-		return "", fmt.Errorf("wallet: MATRIX_WALLET_API_URL not configured")
-	}
-	return "", fmt.Errorf("wallet: stream_settle not implemented for HTTP client")
-}
-
-// StreamClose proxies streams.close via the embedded wallet.
-func (c *HTTPClient) StreamClose(ctx context.Context, bearer, chainStreamID string) (string, error) {
-	_ = ctx
-	_ = bearer
-	_ = chainStreamID
-	if c.BaseURL == "" {
-		return "", fmt.Errorf("wallet: MATRIX_WALLET_API_URL not configured")
-	}
-	return "", fmt.Errorf("wallet: stream_close not implemented for HTTP client")
-}
-
 // DevClient is an in-process wallet stub for tests and DEUS_DEV.
 type DevClient struct {
 	MaxPerCallWei string

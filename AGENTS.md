@@ -79,6 +79,8 @@ DEUS_RUN_ANVIL_TESTS=1 go test -tags=integration ./test/e2e/...   # from deus/
 
 **Phase 2 invoke loop:** `POST /v1/quote/{id}` → `POST /v1/invoke/{id}` (direct rail) → EIP-712 receipt.
 
+**Production net settlement:** set `DEUS_SETTLER_KEY`, `DEUS_SETTLEMENT_ANCHOR_ADDR`, and `MATRIX_WALLET_API_URL`; net settler uses `ChainPayer` (not dev-only). Migration `002_invocation_rail.sql` adds `invocations.payment_rail` so net settlement batches exclude direct/stream rows.
+
 **Phase 3 hosted listings:** `POST /v1/services/{id}/artifacts` → `POST /v1/services/{id}/deploy` → publish (requires active deployment) → gateway invokes `deployments.exec_endpoint` at `POST /invoke`. Dev: `DEUS_HOSTING_DEV_EXEC_URL` + in-memory objstore. Prod: `DEUS_APPWRITE_ENDPOINT`, `DEUS_APPWRITE_PROJECT_ID`, `DEUS_APPWRITE_API_KEY`. Budget: `DEUS_HOSTING_KILL_SWITCH`, `DEUS_HOSTING_MAX_ALWAYS_WARM`.
 
 **Phase 4 discovery:** plain-language `POST /v1/discover` runs constraint extraction → lexical (`websearch_to_tsquery`) + optional vector KNN (when `DEUS_EMBED_ENDPOINT` set). Ranking weights in `deus/configs/ranking.yaml`. Listings are indexed on create/publish via `SetManifestIndexer`. Dev uses hash embedder (lexical-only search path). Migration `003_discovery_search.sql` adds `search_document` + HNSW index.

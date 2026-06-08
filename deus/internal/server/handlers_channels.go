@@ -30,13 +30,13 @@ func (s *Server) handleOpenChannel(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusCreated, types.ChannelResponse{
-		ID:           ch.ID,
-		CallerDID:    ch.CallerDID,
-		BalanceWei:   ch.BalanceWei,
-		ReservedWei:  ch.ReservedWei,
+		ID:            ch.ID,
+		CallerDID:     ch.CallerDID,
+		BalanceWei:    ch.BalanceWei,
+		ReservedWei:   ch.ReservedWei,
 		CumulativeWei: ch.CumulativeWei,
-		WindowEnd:    ch.WindowEnd,
-		Status:       ch.Status,
+		WindowEnd:     ch.WindowEnd,
+		Status:        ch.Status,
 	})
 }
 

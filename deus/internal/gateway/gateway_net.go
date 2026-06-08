@@ -36,6 +36,17 @@ func (g *Gateway) CosignVoucher(ctx context.Context, caller auth.Caller, in chan
 	return g.vouchers.Cosign(ctx, in)
 }
 
+func (g *Gateway) replayNet(ctx context.Context, row store.InvocationRow) (InvokeResponse, error) {
+	res, err := g.replaySuccess(ctx, row)
+	if err != nil {
+		return res, err
+	}
+	if row.Outcome == "pending_voucher" {
+		res.Voucher = &VoucherSummary{NeedsSignature: true}
+	}
+	return res, nil
+}
+
 func (g *Gateway) invokeNet(ctx context.Context, caller auth.Caller, req InvokeRequest) (InvokeResponse, error) {
 	if g.channels == nil || g.vouchers == nil {
 		return InvokeResponse{}, &Error{Code: "internal_error", Message: "net rail not configured", HTTPStatus: 503}
@@ -89,8 +100,8 @@ func (g *Gateway) invokeNet(ctx context.Context, caller auth.Caller, req InvokeR
 		_ = g.channels.Void(ctx, ch.ID, chargeWei)
 		return InvokeResponse{}, &Error{Code: "internal_error", Message: err.Error(), HTTPStatus: 500}
 	}
-	if row.Outcome == "ok" {
-		return g.replaySuccess(ctx, row)
+	if row.Outcome == "ok" || row.Outcome == "pending_voucher" {
+		return g.replayNet(ctx, row)
 	}
 
 	proxyURL := ""
@@ -135,18 +146,30 @@ func (g *Gateway) invokeNet(ctx context.Context, caller auth.Caller, req InvokeR
 		_ = g.channels.Void(ctx, ch.ID, chargeWei)
 		return InvokeResponse{}, &Error{Code: "internal_error", Message: err.Error(), HTTPStatus: 500}
 	}
-	if err := g.meter.Finalize(ctx, row.ID, "ok", resultHash, q.MaxUnits, chargeWei, proxyRes.LatencyMS); err != nil {
-		_ = g.channels.Void(ctx, ch.ID, chargeWei)
-		return InvokeResponse{}, &Error{Code: "internal_error", Message: err.Error(), HTTPStatus: 500}
-	}
-	_ = g.store.InsertReceipt(ctx, store.ReceiptRow{InvocationID: row.ID, Digest: digest, GatewaySig: sig})
-	_ = g.quality.Sample(ctx, req.ServiceID, "ok", proxyRes.LatencyMS)
+	sigIn := strings.TrimSpace(req.CallerVoucherSig)
+	inlineCosign := sigIn != ""
 
 	ch, _ = g.store.GetChannelByID(ctx, ch.ID)
 	pending, err := g.vouchers.BuildPending(ch, chargeWei, digest)
 	if err != nil {
+		_ = g.meter.Void(ctx, row.ID)
+		_ = g.channels.Void(ctx, ch.ID, chargeWei)
 		return InvokeResponse{}, &Error{Code: "internal_error", Message: err.Error(), HTTPStatus: 500}
 	}
+
+	if inlineCosign {
+		if err := g.meter.Finalize(ctx, row.ID, "ok", resultHash, q.MaxUnits, chargeWei, "net", proxyRes.LatencyMS); err != nil {
+			_ = g.channels.Void(ctx, ch.ID, chargeWei)
+			return InvokeResponse{}, &Error{Code: "internal_error", Message: err.Error(), HTTPStatus: 500}
+		}
+	} else {
+		if err := g.meter.FinalizePendingVoucher(ctx, row.ID, resultHash, q.MaxUnits, chargeWei, proxyRes.LatencyMS); err != nil {
+			_ = g.channels.Void(ctx, ch.ID, chargeWei)
+			return InvokeResponse{}, &Error{Code: "internal_error", Message: err.Error(), HTTPStatus: 500}
+		}
+	}
+	_ = g.store.InsertReceipt(ctx, store.ReceiptRow{InvocationID: row.ID, Digest: digest, GatewaySig: sig})
+	_ = g.quality.Sample(ctx, req.ServiceID, "ok", proxyRes.LatencyMS)
 
 	voucher := &VoucherSummary{
 		ChannelID:       pending.ChannelID,
@@ -154,10 +177,14 @@ func (g *Gateway) invokeNet(ctx context.Context, caller auth.Caller, req InvokeR
 		Nonce:           pending.Nonce,
 		LastReceiptHash: pending.LastReceiptHash,
 		Digest:          pending.Digest,
-		NeedsSignature:  true,
+		NeedsSignature:  !inlineCosign,
+	}
+	outcome := "ok"
+	if !inlineCosign {
+		outcome = "pending_voucher"
 	}
 
-	if sigIn := strings.TrimSpace(req.CallerVoucherSig); sigIn != "" {
+	if inlineCosign {
 		vid, err := g.vouchers.Cosign(ctx, channels.CosignInput{
 			ChannelID:       pending.ChannelID,
 			CumulativeWei:   pending.CumulativeWei,
@@ -177,7 +204,7 @@ func (g *Gateway) invokeNet(ctx context.Context, caller auth.Caller, req InvokeR
 
 	return InvokeResponse{
 		InvocationID: row.ID,
-		Outcome:      "ok",
+		Outcome:      outcome,
 		Result:       result,
 		ChargedWei:   chargeWei,
 		LatencyMS:    proxyRes.LatencyMS,

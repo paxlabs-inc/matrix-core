@@ -169,12 +169,18 @@ func run() int {
 		} else {
 			var wal wallet.Client
 			if cfg.WalletAPIURL != "" {
-				wal = &wallet.HTTPClient{BaseURL: cfg.WalletAPIURL}
+				wal = &wallet.HTTPClient{BaseURL: cfg.WalletAPIURL, ChainID: cfg.ChainID}
 			} else if cfg.Dev {
 				wal = &wallet.DevClient{MaxPerCallWei: ""}
 			}
 			if wal != nil {
 				chSvc := channels.New(db, wal)
+				if chainClient != nil && !cfg.Dev {
+					if err := chSvc.WithChain(chainClient); err != nil {
+						log.Error().Err(err).Msg("payment channel bind failed")
+						return 1
+					}
+				}
 				vSvc := channels.NewVoucherService(db, signer)
 				var streamBackend streams.AccrualBackend
 				var devStreams *streams.DevBackend
@@ -204,8 +210,19 @@ func run() int {
 					Streams:  streamSvc,
 					ChainID:  cfg.ChainID,
 				})
+				var payer settlement.Payer
 				if cfg.Dev {
-					settler = settlement.NewSettler(db, &settlement.DevPayer{})
+					payer = &settlement.DevPayer{}
+				} else if chainClient != nil && cfg.SettlerKey != "" && cfg.SettlementAnchorAddr != "" {
+					cp, err := settlement.NewChainPayer(chainClient, cfg.SettlerKey, cfg.SettlementAnchorAddr)
+					if err != nil {
+						log.Error().Err(err).Msg("chain payer init failed")
+						return 1
+					}
+					payer = cp
+				}
+				if payer != nil {
+					settler = settlement.NewSettler(db, payer, chSvc)
 				}
 			}
 		}

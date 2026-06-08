@@ -114,7 +114,9 @@ func TestHostedInvokeFlow(t *testing.T) {
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("X-Developer-Wallet", "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266")
 	resp, _ := http.DefaultClient.Do(req)
-	var created struct{ ID string `json:"id"` }
+	var created struct {
+		ID string `json:"id"`
+	}
 	_ = json.NewDecoder(resp.Body).Decode(&created)
 	resp.Body.Close()
 
@@ -147,7 +149,9 @@ func TestHostedInvokeFlow(t *testing.T) {
 	qReq.Header.Set("Content-Type", "application/json")
 	callerHeaders(qReq)
 	qResp, _ := http.DefaultClient.Do(qReq)
-	var quote struct{ QuoteID string `json:"quote_id"` }
+	var quote struct {
+		QuoteID string `json:"quote_id"`
+	}
 	_ = json.NewDecoder(qResp.Body).Decode(&quote)
 	qResp.Body.Close()
 

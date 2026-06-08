@@ -1,13 +1,18 @@
 package receipts
 
 import (
+	"bytes"
 	"encoding/hex"
 	"fmt"
-	"bytes"
 	"sort"
 	"strings"
 
 	"github.com/ethereum/go-ethereum/crypto"
+)
+
+const (
+	merkleLeafPrefix = 0x00
+	merkleNodePrefix = 0x01
 )
 
 // MerkleRoot builds a deterministic binary merkle root over receipt digests.
@@ -21,7 +26,7 @@ func MerkleRoot(digests []string) (string, error) {
 		if err != nil {
 			return "", err
 		}
-		layer = append(layer, b)
+		layer = append(layer, hashLeaf(b))
 	}
 	sort.Slice(layer, func(i, j int) bool {
 		return bytes.Compare(layer[i], layer[j]) < 0
@@ -29,19 +34,34 @@ func MerkleRoot(digests []string) (string, error) {
 	for len(layer) > 1 {
 		var next [][]byte
 		for i := 0; i < len(layer); i += 2 {
-			if i+1 == len(layer) {
-				next = append(next, layer[i])
-				continue
+			left := layer[i]
+			right := left
+			if i+1 < len(layer) {
+				right = layer[i+1]
 			}
-			pair := make([]byte, 0, len(layer[i])+len(layer[i+1]))
-			pair = append(pair, layer[i]...)
-			pair = append(pair, layer[i+1]...)
-			h := crypto.Keccak256(pair)
-			next = append(next, h)
+			next = append(next, hashNode(left, right))
 		}
 		layer = next
 	}
 	return "0x" + hex.EncodeToString(layer[0]), nil
+}
+
+func hashLeaf(leaf []byte) []byte {
+	buf := make([]byte, 0, 1+len(leaf))
+	buf = append(buf, merkleLeafPrefix)
+	buf = append(buf, leaf...)
+	return crypto.Keccak256(buf)
+}
+
+func hashNode(left, right []byte) []byte {
+	if bytes.Compare(left, right) > 0 {
+		left, right = right, left
+	}
+	buf := make([]byte, 0, 1+len(left)+len(right))
+	buf = append(buf, merkleNodePrefix)
+	buf = append(buf, left...)
+	buf = append(buf, right...)
+	return crypto.Keccak256(buf)
 }
 
 func decodeHash(s string) ([]byte, error) {

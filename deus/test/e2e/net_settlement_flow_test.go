@@ -19,8 +19,8 @@ import (
 	"github.com/paxlabs-inc/deus/internal/config"
 	"github.com/paxlabs-inc/deus/internal/discovery"
 	"github.com/paxlabs-inc/deus/internal/indexer"
-	"github.com/paxlabs-inc/deus/internal/registry"
 	"github.com/paxlabs-inc/deus/internal/receipts"
+	"github.com/paxlabs-inc/deus/internal/registry"
 	"github.com/paxlabs-inc/deus/internal/server"
 	"github.com/paxlabs-inc/deus/internal/store"
 	"github.com/paxlabs-inc/deus/internal/telemetry"
@@ -89,7 +89,9 @@ func TestNetSettlementFlow(t *testing.T) {
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("X-Developer-Wallet", "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266")
 	resp, _ := http.DefaultClient.Do(req)
-	var created struct{ ID string `json:"id"` }
+	var created struct {
+		ID string `json:"id"`
+	}
 	_ = json.NewDecoder(resp.Body).Decode(&created)
 	resp.Body.Close()
 
@@ -99,7 +101,7 @@ func TestNetSettlementFlow(t *testing.T) {
 	pubResp.Body.Close()
 
 	svc, _ := db.GetServiceByID(ctx, created.ID)
-	beforeUnsettled, err := db.UnsettledInvocations(ctx, svc.DeveloperID)
+	beforeUnsettled, err := db.UnsettledInvocations(ctx, svc.DeveloperID, "net")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -133,7 +135,9 @@ func TestNetSettlementFlow(t *testing.T) {
 	qReq.Header.Set("Content-Type", "application/json")
 	callerHeaders(qReq)
 	qResp, _ := http.DefaultClient.Do(qReq)
-	var quote struct{ QuoteID string `json:"quote_id"` }
+	var quote struct {
+		QuoteID string `json:"quote_id"`
+	}
 	_ = json.NewDecoder(qResp.Body).Decode(&quote)
 	qResp.Body.Close()
 
@@ -153,10 +157,10 @@ func TestNetSettlementFlow(t *testing.T) {
 	}
 	var invoke1 struct {
 		Voucher *struct {
-			Digest        string `json:"digest"`
-			CumulativeWei string `json:"cumulative_wei"`
-			Nonce         int64  `json:"nonce"`
-			ChannelID     string `json:"channel_id"`
+			Digest          string `json:"digest"`
+			CumulativeWei   string `json:"cumulative_wei"`
+			Nonce           int64  `json:"nonce"`
+			ChannelID       string `json:"channel_id"`
 			LastReceiptHash string `json:"last_receipt_hash"`
 		} `json:"voucher"`
 	}
@@ -171,13 +175,13 @@ func TestNetSettlementFlow(t *testing.T) {
 		t.Fatal(err)
 	}
 	cosignBody, _ := json.Marshal(map[string]any{
-		"channel_id": invoke1.Voucher.ChannelID,
-		"cumulative_wei": invoke1.Voucher.CumulativeWei,
-		"charge_wei": chargeWei,
-		"nonce": invoke1.Voucher.Nonce,
+		"channel_id":        invoke1.Voucher.ChannelID,
+		"cumulative_wei":    invoke1.Voucher.CumulativeWei,
+		"charge_wei":        chargeWei,
+		"nonce":             invoke1.Voucher.Nonce,
 		"last_receipt_hash": invoke1.Voucher.LastReceiptHash,
-		"digest": invoke1.Voucher.Digest,
-		"caller_sig": sig,
+		"digest":            invoke1.Voucher.Digest,
+		"caller_sig":        sig,
 	})
 	cReq, _ := http.NewRequest(http.MethodPost, ts.URL+"/v1/vouchers/cosign", bytes.NewReader(cosignBody))
 	cReq.Header.Set("Content-Type", "application/json")
@@ -189,7 +193,7 @@ func TestNetSettlementFlow(t *testing.T) {
 	cResp.Body.Close()
 
 	settleBody, _ := json.Marshal(map[string]any{
-		"developer_id": svc.DeveloperID,
+		"developer_id":   svc.DeveloperID,
 		"payout_address": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
 	})
 	sReq, _ := http.NewRequest(http.MethodPost, ts.URL+"/internal/settle/run", bytes.NewReader(settleBody))

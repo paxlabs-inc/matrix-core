@@ -10,20 +10,20 @@ import (
 
 // ChannelRow is a per-caller payment channel mirror.
 type ChannelRow struct {
-	ID              string
-	CallerDID       string
-	CallerWallet    string
-	EscrowAddr      string
-	BalanceWei      string
-	ReservedWei     string
-	CumulativeWei   string
-	Nonce           int64
-	LastVoucherSig  *string
-	WindowStart     time.Time
-	WindowEnd       time.Time
-	Status          string
-	FundTx          *string
-	SettleTx        *string
+	ID             string
+	CallerDID      string
+	CallerWallet   string
+	EscrowAddr     string
+	BalanceWei     string
+	ReservedWei    string
+	CumulativeWei  string
+	Nonce          int64
+	LastVoucherSig *string
+	WindowStart    time.Time
+	WindowEnd      time.Time
+	Status         string
+	FundTx         *string
+	SettleTx       *string
 }
 
 // OpenChannel inserts a new open channel row.

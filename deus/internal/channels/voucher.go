@@ -78,10 +78,7 @@ func (v *VoucherService) Cosign(ctx context.Context, in CosignInput) (string, er
 	if err := v.signer.VerifyVoucherCaller(in.Digest, in.CallerSig, in.CallerWallet); err != nil {
 		return "", err
 	}
-	if err := v.store.FinalizeChannelCharge(ctx, in.ChannelID, in.ChargeWei, in.Nonce, in.CumulativeWei, in.CallerSig); err != nil {
-		return "", err
-	}
-	return v.store.InsertVoucher(ctx, store.VoucherRow{
+	vid, err := v.store.CosignVoucherAtomic(ctx, in.ChannelID, in.ChargeWei, in.Nonce, in.CumulativeWei, in.CallerSig, store.VoucherRow{
 		ChannelID:       in.ChannelID,
 		CumulativeWei:   in.CumulativeWei,
 		Nonce:           in.Nonce,
@@ -89,4 +86,11 @@ func (v *VoucherService) Cosign(ctx context.Context, in CosignInput) (string, er
 		Digest:          in.Digest,
 		CallerSig:       in.CallerSig,
 	})
+	if err != nil {
+		return "", err
+	}
+	if inv, err := v.store.PendingInvocationByReceiptDigest(ctx, ch.CallerDID, in.LastReceiptHash); err == nil {
+		_ = v.store.CompletePendingVoucher(ctx, inv.ID)
+	}
+	return vid, nil
 }

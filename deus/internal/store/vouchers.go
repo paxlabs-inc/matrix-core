@@ -19,6 +19,57 @@ type VoucherRow struct {
 	CreatedAt       time.Time
 }
 
+// CosignVoucherAtomic finalizes channel charge and inserts voucher in one transaction.
+func (s *Store) CosignVoucherAtomic(ctx context.Context, channelID, chargeWei string, nonce int64, cumulativeWei, voucherSig string, v VoucherRow) (string, error) {
+	tx, err := s.pool.Begin(ctx)
+	if err != nil {
+		return "", fmt.Errorf("store: begin cosign tx: %w", err)
+	}
+	defer func() { _ = tx.Rollback(ctx) }()
+
+	ct, err := tx.Exec(ctx, `
+		UPDATE channels SET
+			reserved_wei = GREATEST((reserved_wei::numeric - $2::numeric), 0)::text,
+			cumulative_wei = $3,
+			nonce = $4,
+			last_voucher_sig = $5
+		WHERE id = $1`, channelID, chargeWei, cumulativeWei, nonce, voucherSig,
+	)
+	if err != nil {
+		return "", fmt.Errorf("store: finalize channel in tx: %w", err)
+	}
+	if ct.RowsAffected() == 0 {
+		return "", fmt.Errorf("store: channel not found")
+	}
+
+	var id string
+	err = tx.QueryRow(ctx, `
+		INSERT INTO vouchers (
+			channel_id, cumulative_wei, nonce, last_receipt_hash, eip712_digest, caller_sig
+		) VALUES ($1,$2,$3,$4,$5,$6)
+		RETURNING id::text`,
+		v.ChannelID, v.CumulativeWei, v.Nonce, v.LastReceiptHash, v.Digest, v.CallerSig,
+	).Scan(&id)
+	if err != nil {
+		return "", fmt.Errorf("store: insert voucher in tx: %w", err)
+	}
+	if err := tx.Commit(ctx); err != nil {
+		return "", fmt.Errorf("store: commit cosign tx: %w", err)
+	}
+	return id, nil
+}
+
+// MarkVoucherRedeemed records settlement redemption for a voucher.
+func (s *Store) MarkVoucherRedeemed(ctx context.Context, voucherID, settlementID string) error {
+	_, err := s.pool.Exec(ctx, `
+		UPDATE vouchers SET redeemed_in = $2::uuid WHERE id = $1`, voucherID, settlementID,
+	)
+	if err != nil {
+		return fmt.Errorf("store: mark voucher redeemed: %w", err)
+	}
+	return nil
+}
+
 // InsertVoucher stores a co-signed voucher.
 func (s *Store) InsertVoucher(ctx context.Context, v VoucherRow) (string, error) {
 	var id string

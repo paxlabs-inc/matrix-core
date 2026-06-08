@@ -45,30 +45,6 @@ func LoadRankingWeights(path string) RankingWeights {
 	return w
 }
 
-// RankInput is per-candidate scoring context.
-type RankInput struct {
-	Candidate   store.DiscoverCandidate
-	MaxPriceWei string
-}
-
-// BlendScore computes the final discovery score for a candidate.
-func BlendScore(w RankingWeights, in RankInput) float64 {
-	c := in.Candidate
-	sem := clamp01(c.SemanticSim)
-	if c.LexicalRank > 0 {
-		lex := clamp01(c.LexicalRank)
-		if sem < lex {
-			sem = lex
-		}
-	}
-	qual := qualityNorm(c.QualityScore)
-	up := uptimeNorm(c.UptimeBPS)
-	price := priceAffinity(in.MaxPriceWei, c.ID) // filled by caller via min price lookup in search
-	_ = price
-	fresh := 0.5
-	return w.Semantic*sem + w.Quality*qual + w.Uptime*up + w.Price*price + w.Freshness*fresh
-}
-
 // BlendScoreWithPrice includes resolved min price wei for the service.
 func BlendScoreWithPrice(w RankingWeights, c store.DiscoverCandidate, maxPriceWei, minPriceWei string) float64 {
 	sem := clamp01(c.SemanticSim)
@@ -122,12 +98,6 @@ func priceAffinityWei(maxPriceWei, minPriceWei string) float64 {
 	ratio := new(big.Float).Quo(new(big.Float).SetInt(diff), new(big.Float).SetInt(maxP))
 	r, _ := ratio.Float64()
 	return clamp01(1.0 - math.Min(r, 1.0))
-}
-
-func priceAffinity(maxPriceWei, serviceID string) float64 {
-	_ = maxPriceWei
-	_ = serviceID
-	return 0.5
 }
 
 func clamp01(v float64) float64 {
