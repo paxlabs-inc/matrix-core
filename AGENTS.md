@@ -4,7 +4,7 @@
 
 ### Repository overview
 
-This is the **Matrix** monorepo (`matrix-core`): Go cognition/runtime layers (`cortex`, `MCL`, `bridge`, `executor`, `gateway`, `router`) plus **`deus/`** (agent-service registry + invoke gateway). Deus Phases 0–2.5 are implemented; see `deus/docs/14-roadmap.md`.
+This is the **Matrix** monorepo (`matrix-core`): Go cognition/runtime layers (`cortex`, `MCL`, `bridge`, `executor`, `gateway`, `router`) plus **`deus/`** (agent-service registry + invoke gateway). Deus Phases 0–4, 2.5 (net settlement), and 6 (streaming rail) are implemented; see `deus/docs/14-roadmap.md`.
 
 Standard build/test commands live in the root `Makefile` and `CONTRIBUTING.md`.
 
@@ -77,13 +77,17 @@ make -C deus deus-build deus-test deus-lint deus-contracts deus-mcp-selftest
 DEUS_RUN_ANVIL_TESTS=1 go test -tags=integration ./test/e2e/...   # from deus/
 ```
 
-**Phase 2 invoke loop (direct rail):** `POST /v1/quote/{id}` → `POST /v1/invoke/{id}` with `"payment": {"rail": "direct"}` (default) → inline wallet transfer → EIP-712 receipt.
+**Phase 2 invoke loop:** `POST /v1/quote/{id}` → `POST /v1/invoke/{id}` (direct rail) → EIP-712 receipt.
 
-**Phase 2.5 net settlement:** `POST /v1/channels` (open funded window) → quote → `POST /v1/invoke/{id}` with `"payment": {"rail": "net"}` → pending `DeusVoucher` digest → `POST /v1/vouchers/cosign` (caller co-sign) → `POST /internal/settle/run` batches unsettled invocations (dev `DevPayer` stub on-chain). Contracts: `SettlementAnchor.sol`, `PaymentChannel.sol` (forge tests in `deus/contracts/test/`).
+**Phase 3 hosted listings:** `POST /v1/services/{id}/artifacts` → `POST /v1/services/{id}/deploy` → publish (requires active deployment) → gateway invokes `deployments.exec_endpoint` at `POST /invoke`. Dev: `DEUS_HOSTING_DEV_EXEC_URL` + in-memory objstore. Prod: `DEUS_APPWRITE_ENDPOINT`, `DEUS_APPWRITE_PROJECT_ID`, `DEUS_APPWRITE_API_KEY`. Budget: `DEUS_HOSTING_KILL_SWITCH`, `DEUS_HOSTING_MAX_ALWAYS_WARM`.
 
-Dev caller auth: `Authorization: Bearer …` plus `X-Caller-DID` / `X-Caller-Wallet`. Anvil mnemonic index-1 key for E2E cosign: `0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d` → `0x70997970C51812dc3A010C7d01b50e0d17dc79C8`. Gateway uses `wallet.DevClient` when `DEUS_DEV=1` and no `MATRIX_WALLET_API_URL`.
+**Phase 4 discovery:** plain-language `POST /v1/discover` runs constraint extraction → lexical (`websearch_to_tsquery`) + optional vector KNN (when `DEUS_EMBED_ENDPOINT` set). Ranking weights in `deus/configs/ranking.yaml`. Listings are indexed on create/publish via `SetManifestIndexer`. Dev uses hash embedder (lexical-only search path). Migration `003_discovery_search.sql` adds `search_document` + HNSW index.
 
-**Chi routing:** channel/voucher routes share the `/v1` group with invoke routes in `mountInvokeRoutes` (do not mount a second `/v1` subtree).
+**Phase 2.5 net settlement:** `POST /v1/channels` funds a per-window channel; invoke with `payment.rail: "net"` returns a cumulative voucher for caller co-sign (`POST /v1/vouchers/cosign`). Settlement batches via `POST /internal/settle/run`. Contracts: `PaymentChannel.sol`, `SettlementAnchor.sol`.
+
+**Phase 6 streaming:** `POST /v1/streams` opens a PaymentStreams session; invoke with `payment.rail: "stream"` + `stream_id` meters against `accrued()` (no per-call direct send). `POST /v1/streams/{id}/settle` and `/close` for settle/refund.
+
+Dev caller auth: `Authorization: Bearer …` plus `X-Caller-DID` / `X-Caller-Wallet`. Gateway uses `wallet.DevClient` when `DEUS_DEV=1` and no `MATRIX_WALLET_API_URL`.
 
 **MCP:** `tools/deus/deus.mjs` + `agents/default.json` `deus` server; router injects `MATRIX_DEUS_URL` (default `http://deus-control.internal:9095`).
 

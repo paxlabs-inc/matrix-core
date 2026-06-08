@@ -200,3 +200,71 @@ type ReceiptDetail struct {
 	GatewaySig   string  `json:"gateway_sig"`
 	RunnerSig    *string `json:"runner_sig,omitempty"`
 }
+
+// UploadArtifactResponse is POST /v1/services/{id}/artifacts.
+type UploadArtifactResponse struct {
+	ArtifactKey string `json:"artifact_key"`
+	URL         string `json:"url,omitempty"`
+}
+
+// DeployServiceRequest is POST /v1/services/{id}/deploy.
+type DeployServiceRequest struct {
+	ArtifactKey string `json:"artifact_key"`
+	Runtime     string `json:"runtime"`
+	AlwaysWarm  bool   `json:"always_warm"`
+	Region      string `json:"region,omitempty"`
+}
+
+// DeployServiceResponse is POST /v1/services/{id}/deploy.
+type DeployServiceResponse struct {
+	DeploymentID string `json:"deployment_id"`
+	Status       string `json:"status"`
+	ExecEndpoint string `json:"exec_endpoint,omitempty"`
+	Runtime      string `json:"runtime"`
+}
+
+// OpenStreamRequest is POST /v1/streams.
+type OpenStreamRequest struct {
+	ServiceID string `json:"service_id"`
+	Operation string `json:"operation,omitempty"`
+	CapWei    string `json:"cap_wei"`
+	StopTime  uint64 `json:"stop_time,omitempty"`
+}
+
+// OpenStreamResponse is POST /v1/streams success body.
+type OpenStreamResponse struct {
+	StreamID         string `json:"stream_id"`
+	ChainStreamID    string `json:"chain_stream_id"`
+	ServiceID        string `json:"service_id"`
+	RatePerSecondWei string `json:"rate_per_second_wei"`
+	CapWei           string `json:"cap_wei"`
+	Status           string `json:"status"`
+	OpenTx           string `json:"open_tx,omitempty"`
+}
+
+// StreamStateResponse is GET /v1/streams/{id} and settle/close responses.
+type StreamStateResponse struct {
+	StreamID         string `json:"stream_id"`
+	ChainStreamID    string `json:"chain_stream_id"`
+	ServiceID        string `json:"service_id"`
+	RatePerSecondWei string `json:"rate_per_second_wei"`
+	CapWei           string `json:"cap_wei"`
+	AccruedWei       string `json:"accrued_wei"`
+	SettledWei       string `json:"settled_wei"`
+	MeteredWei       string `json:"metered_wei"`
+	Status           string `json:"status"`
+	OpenTx           string `json:"open_tx,omitempty"`
+	LastSettleTx     string `json:"last_settle_tx,omitempty"`
+	CloseTx          string `json:"close_tx,omitempty"`
+	RefundWei        string `json:"refund_wei,omitempty"`
+}
+
+// DeploymentResponse is GET /v1/services/{id}/deployments/{deployment_id}.
+type DeploymentResponse struct {
+	ID           string `json:"id"`
+	ServiceID    string `json:"service_id"`
+	Status       string `json:"status"`
+	Runtime      string `json:"runtime"`
+	ExecEndpoint string `json:"exec_endpoint,omitempty"`
+	AlwaysWarm   bool   `json:"always_warm"`
+}

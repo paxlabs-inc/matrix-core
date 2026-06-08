@@ -62,8 +62,9 @@ func TestRegistryPublishDiscoverFlow(t *testing.T) {
 		t.Fatalf("registry bind: %v", err)
 	}
 	ix := indexer.New(chainReg, db)
-	regSvc := registry.NewService(db, chainReg, ix)
 	discSvc := discovery.New(db)
+	regSvc := registry.NewService(db, chainReg, ix)
+	regSvc.SetManifestIndexer(discSvc)
 
 	srv := server.New(server.Deps{
 		Log:               telemetry.NewLogger(),

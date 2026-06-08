@@ -17,16 +17,21 @@ import (
 	"github.com/paxlabs-inc/deus/internal/chain"
 	"github.com/paxlabs-inc/deus/internal/config"
 	"github.com/paxlabs-inc/deus/internal/discovery"
+	"github.com/paxlabs-inc/deus/internal/gateway"
 	"github.com/paxlabs-inc/deus/internal/indexer"
+	"github.com/paxlabs-inc/deus/internal/metering"
+	"github.com/paxlabs-inc/deus/internal/pricing"
+	"github.com/paxlabs-inc/deus/internal/quality"
 	"github.com/paxlabs-inc/deus/internal/receipts"
 	"github.com/paxlabs-inc/deus/internal/registry"
 	"github.com/paxlabs-inc/deus/internal/server"
 	"github.com/paxlabs-inc/deus/internal/store"
+	"github.com/paxlabs-inc/deus/internal/streams"
 	"github.com/paxlabs-inc/deus/internal/telemetry"
 	"github.com/paxlabs-inc/deus/internal/wallet"
 )
 
-func TestInvokeFlowDirectRail(t *testing.T) {
+func TestStreamRailFlow(t *testing.T) {
 	if os.Getenv("DEUS_RUN_ANVIL_TESTS") != "1" {
 		t.Skip("set DEUS_RUN_ANVIL_TESTS=1 for integration flow")
 	}
@@ -36,10 +41,7 @@ func TestInvokeFlowDirectRail(t *testing.T) {
 
 	regAddr := deployRegistry(t)
 	proxySrv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		_ = json.NewEncoder(w).Encode(map[string]any{
-			"tempC":   14.2,
-			"summary": "Partly cloudy",
-		})
+		_ = json.NewEncoder(w).Encode(map[string]any{"ok": true, "step": "tick"})
 	}))
 	defer proxySrv.Close()
 
@@ -80,8 +82,26 @@ func TestInvokeFlowDirectRail(t *testing.T) {
 	if err != nil {
 		t.Fatalf("signer: %v", err)
 	}
-	devWallet := &wallet.DevClient{MaxPerCallWei: "1000000000000000000"}
-	gw, _, _ := buildGateway(db, signer, devWallet)
+	devWallet := &wallet.DevClient{MaxPerCallWei: ""}
+	devStreams := streams.NewDevBackend()
+	pricingSvc := pricing.New(db)
+	streamSvc := streams.New(streams.Config{
+		Store:   db,
+		Pricing: pricingSvc,
+		Wallet:  devWallet,
+		Backend: devStreams,
+		Dev:     devStreams,
+	})
+	gw := gateway.New(gateway.Config{
+		Store:   db,
+		Pricing: pricingSvc,
+		Meter:   metering.New(db),
+		Wallet:  devWallet,
+		Signer:  signer,
+		Quality: quality.New(db),
+		Streams: streamSvc,
+		ChainID: cfg.ChainID,
+	})
 
 	srv := server.New(server.Deps{
 		Log:               telemetry.NewLogger(),
@@ -90,13 +110,14 @@ func TestInvokeFlowDirectRail(t *testing.T) {
 		Registry:          regSvc,
 		Discovery:         discSvc,
 		Gateway:           gw,
+		Streams:           streamSvc,
 		DevMode:           true,
 		PublishPrivateKey: cfg.PublishPrivateKey,
 	})
 	ts := httptest.NewServer(srv.Handler())
 	defer ts.Close()
 
-	manifestRaw, err := os.ReadFile(filepath.Join("..", "fixtures", "proxy-weather.json"))
+	manifestRaw, err := os.ReadFile(filepath.Join("..", "fixtures", "proxy-agent-stream.json"))
 	if err != nil {
 		t.Fatalf("fixture: %v", err)
 	}
@@ -104,7 +125,7 @@ func TestInvokeFlowDirectRail(t *testing.T) {
 	_ = json.Unmarshal(manifestRaw, &manifest)
 	manifest["owner"] = "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266"
 	manifest["payout_address"] = manifest["owner"]
-	manifest["slug"] = "weather.flow." + strings.ReplaceAll(time.Now().Format("150405.000"), ".", "")
+	manifest["slug"] = "agent.stream." + strings.ReplaceAll(time.Now().Format("150405.000"), ".", "")
 	manifest["endpoint"] = map[string]any{"proxy_url": proxySrv.URL}
 	body, _ := json.Marshal(map[string]any{"manifest": manifest})
 
@@ -131,11 +152,45 @@ func TestInvokeFlowDirectRail(t *testing.T) {
 
 	callerHeaders := func(req *http.Request) {
 		req.Header.Set("Authorization", "Bearer test-agent")
-		req.Header.Set("X-Caller-DID", "did:matrix:e2e:caller")
+		req.Header.Set("X-Caller-DID", "did:matrix:e2e:stream")
 		req.Header.Set("X-Caller-Wallet", "0x70997970C51812dc3A010C7d01b50e0d17dc79C8")
 	}
 
-	quoteBody, _ := json.Marshal(map[string]any{"operation": "forecast", "estimated_units": "1"})
+	capWei := "10000000000000000"
+	openBody, _ := json.Marshal(map[string]any{
+		"service_id": created.ID,
+		"operation":  "run",
+		"cap_wei":    capWei,
+	})
+	oReq, _ := http.NewRequest(http.MethodPost, ts.URL+"/v1/streams", bytes.NewReader(openBody))
+	oReq.Header.Set("Content-Type", "application/json")
+	callerHeaders(oReq)
+	oResp, err := http.DefaultClient.Do(oReq)
+	if err != nil {
+		t.Fatalf("open stream: %v", err)
+	}
+	defer oResp.Body.Close()
+	if oResp.StatusCode != http.StatusCreated {
+		t.Fatalf("open stream status %d", oResp.StatusCode)
+	}
+	var opened struct {
+		StreamID         string `json:"stream_id"`
+		RatePerSecondWei string `json:"rate_per_second_wei"`
+	}
+	_ = json.NewDecoder(oResp.Body).Decode(&opened)
+	if opened.StreamID == "" {
+		t.Fatal("missing stream_id")
+	}
+	if opened.RatePerSecondWei != "1000000000000" {
+		t.Fatalf("rate %s", opened.RatePerSecondWei)
+	}
+	if len(devWallet.StreamOpens) != 1 {
+		t.Fatalf("expected 1 stream open, got %d", len(devWallet.StreamOpens))
+	}
+
+	time.Sleep(2 * time.Second)
+
+	quoteBody, _ := json.Marshal(map[string]any{"operation": "run", "estimated_units": "2"})
 	qReq, _ := http.NewRequest(http.MethodPost, ts.URL+"/v1/quote/"+created.ID, bytes.NewReader(quoteBody))
 	qReq.Header.Set("Content-Type", "application/json")
 	callerHeaders(qReq)
@@ -148,24 +203,16 @@ func TestInvokeFlowDirectRail(t *testing.T) {
 		t.Fatalf("quote status %d", qResp.StatusCode)
 	}
 	var quote struct {
-		QuoteID     string `json:"quote_id"`
-		MaxTotalWei string `json:"max_total_wei"`
-		EIP712      struct {
-			Digest    string `json:"digest"`
-			Signature string `json:"signature"`
-		} `json:"eip712"`
+		QuoteID string `json:"quote_id"`
 	}
 	_ = json.NewDecoder(qResp.Body).Decode(&quote)
-	if quote.QuoteID == "" || quote.EIP712.Digest == "" {
-		t.Fatalf("quote incomplete: %+v", quote)
-	}
 
 	invokeBody, _ := json.Marshal(map[string]any{
-		"operation":       "forecast",
-		"args":            map[string]any{"lat": 37.77, "lng": -122.41},
+		"operation":       "run",
+		"args":            map[string]any{"step": "tick"},
 		"quote_id":        quote.QuoteID,
-		"idempotency_key": "e2e-" + time.Now().Format("150405.000000"),
-		"payment":         map[string]any{"rail": "direct"},
+		"idempotency_key": "stream-e2e-" + time.Now().Format("150405.000000"),
+		"payment":         map[string]any{"rail": "stream", "stream_id": opened.StreamID},
 	})
 	iReq, _ := http.NewRequest(http.MethodPost, ts.URL+"/v1/invoke/"+created.ID, bytes.NewReader(invokeBody))
 	iReq.Header.Set("Content-Type", "application/json")
@@ -179,51 +226,62 @@ func TestInvokeFlowDirectRail(t *testing.T) {
 		t.Fatalf("invoke status %d", iResp.StatusCode)
 	}
 	var invoke struct {
-		InvocationID string `json:"invocation_id"`
-		Outcome      string `json:"outcome"`
-		ChargedWei   string `json:"charged_wei"`
-		Receipt      struct {
-			Digest     string `json:"digest"`
-			GatewaySig string `json:"gateway_sig"`
-		} `json:"receipt"`
-		Result map[string]any `json:"result"`
+		Outcome    string `json:"outcome"`
+		ChargedWei string `json:"charged_wei"`
 	}
 	_ = json.NewDecoder(iResp.Body).Decode(&invoke)
 	if invoke.Outcome != "ok" {
 		t.Fatalf("invoke outcome %q", invoke.Outcome)
 	}
-	if invoke.ChargedWei != "200000000000000" {
-		t.Fatalf("charged %s", invoke.ChargedWei)
+	if invoke.ChargedWei == "0" {
+		t.Fatalf("expected stream-metered charge, got %s", invoke.ChargedWei)
 	}
-	if invoke.Receipt.Digest == "" || invoke.Receipt.GatewaySig == "" {
-		t.Fatalf("missing receipt: %+v", invoke.Receipt)
-	}
-	if invoke.Result["tempC"] == nil {
-		t.Fatalf("result missing: %+v", invoke.Result)
-	}
-	if len(devWallet.Sends) != 1 {
-		t.Fatalf("expected 1 wallet send, got %d", len(devWallet.Sends))
-	}
-	if devWallet.Sends[0].AmountWei != "200000000000000" {
-		t.Fatalf("send amount %s", devWallet.Sends[0].AmountWei)
+	if len(devWallet.Sends) != 0 {
+		t.Fatalf("stream rail must not direct-send, got %d sends", len(devWallet.Sends))
 	}
 
-	svc, err := db.GetServiceByID(ctx, created.ID)
+	sReq, _ := http.NewRequest(http.MethodPost, ts.URL+"/v1/streams/"+opened.StreamID+"/settle", nil)
+	callerHeaders(sReq)
+	sResp, err := http.DefaultClient.Do(sReq)
 	if err != nil {
-		t.Fatalf("service: %v", err)
+		t.Fatalf("settle: %v", err)
 	}
-	if svc.QualityScore == nil {
-		t.Fatal("quality score not updated")
+	defer sResp.Body.Close()
+	if sResp.StatusCode != http.StatusOK {
+		t.Fatalf("settle status %d", sResp.StatusCode)
+	}
+	var settled struct {
+		SettledWei string `json:"settled_wei"`
+		AccruedWei string `json:"accrued_wei"`
+	}
+	_ = json.NewDecoder(sResp.Body).Decode(&settled)
+	if settled.SettledWei == "0" {
+		t.Fatalf("expected settled > 0, got %s", settled.SettledWei)
 	}
 
-	recReq, _ := http.NewRequest(http.MethodGet, ts.URL+"/v1/receipts/"+invoke.InvocationID, nil)
-	callerHeaders(recReq)
-	recResp, err := http.DefaultClient.Do(recReq)
+	cReq, _ := http.NewRequest(http.MethodPost, ts.URL+"/v1/streams/"+opened.StreamID+"/close", nil)
+	callerHeaders(cReq)
+	cResp, err := http.DefaultClient.Do(cReq)
 	if err != nil {
-		t.Fatalf("receipt: %v", err)
+		t.Fatalf("close: %v", err)
 	}
-	recResp.Body.Close()
-	if recResp.StatusCode != http.StatusOK {
-		t.Fatalf("receipt status %d", recResp.StatusCode)
+	defer cResp.Body.Close()
+	if cResp.StatusCode != http.StatusOK {
+		t.Fatalf("close status %d", cResp.StatusCode)
+	}
+	var closed struct {
+		Status    string `json:"status"`
+		RefundWei string `json:"refund_wei"`
+		CapWei    string `json:"cap_wei"`
+	}
+	_ = json.NewDecoder(cResp.Body).Decode(&closed)
+	if closed.Status != "closed" {
+		t.Fatalf("status %q", closed.Status)
+	}
+	if closed.RefundWei == "" || closed.RefundWei == "0" {
+		t.Fatalf("expected refund of unspent cap, got %s", closed.RefundWei)
+	}
+	if closed.RefundWei == capWei {
+		t.Fatalf("refund should be less than full cap after accrual, got %s", closed.RefundWei)
 	}
 }

@@ -1,0 +1,41 @@
+{
+  "schema_version": "1",
+  "slug": "finance.rates",
+  "kind": "data",
+  "display_name": "FX Rates",
+  "summary": "Foreign exchange spot rates and currency conversion.",
+  "tags": ["finance", "fx", "currency"],
+  "owner": "0x0000000000000000000000000000000000000001",
+  "payout_address": "0x0000000000000000000000000000000000000001",
+  "mode": "proxy",
+  "confidential": false,
+  "operations": [
+    {
+      "name": "convert",
+      "method": "POST",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "from": { "type": "string" },
+          "to": { "type": "string" },
+          "amount": { "type": "number" }
+        },
+        "required": ["from", "to", "amount"]
+      },
+      "output_schema": { "type": "object" },
+      "timeout_ms": 5000
+    }
+  ],
+  "pricing": [
+    {
+      "operation": "convert",
+      "model": "per_call",
+      "unit": "call",
+      "price_wei": "200000000000000",
+      "min_charge_wei": "200000000000000"
+    }
+  ],
+  "endpoint": {
+    "proxy_url": "https://api.example.com/fx"
+  }
+}

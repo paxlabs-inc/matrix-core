@@ -98,6 +98,7 @@ func (s *Server) handleInvoke(w http.ResponseWriter, r *http.Request) {
 		Args:             body.Args,
 		QuoteID:          body.QuoteID,
 		PaymentRail:      rail,
+		StreamID:         body.Payment.StreamID,
 		IdempotencyKey:   idem,
 		CallerVoucherSig: body.CallerVoucherSig,
 	})

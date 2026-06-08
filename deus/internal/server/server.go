@@ -14,13 +14,15 @@ import (
 	"github.com/paxlabs-inc/deus/internal/chain"
 	"github.com/paxlabs-inc/deus/internal/discovery"
 	"github.com/paxlabs-inc/deus/internal/gateway"
+	"github.com/paxlabs-inc/deus/internal/hosting"
 	"github.com/paxlabs-inc/deus/internal/registry"
 	"github.com/paxlabs-inc/deus/internal/settlement"
+	"github.com/paxlabs-inc/deus/internal/streams"
 	"github.com/paxlabs-inc/deus/internal/store"
 	"github.com/paxlabs-inc/deus/pkg/types"
 )
 
-const version = "0.1.0-phase2.5"
+const version = "0.1.0-phase6"
 
 // Deps are long-lived services shared across handlers.
 type Deps struct {
@@ -31,6 +33,9 @@ type Deps struct {
 	Discovery         *discovery.Service
 	Gateway           *gateway.Gateway
 	Settler           *settlement.Settler
+	Streams           *streams.Service
+	Hosting           *hosting.Orchestrator
+	BlobURL           func(string) string
 	DevMode           bool
 	PublishPrivateKey string
 }
@@ -56,6 +61,7 @@ func New(deps Deps) *Server {
 	s.mountRegistryRoutes(r)
 	s.mountDiscoveryRoutes(r)
 	s.mountInvokeRoutes(r)
+	s.mountStreamRoutes(r)
 
 	s.mux = r
 	return s

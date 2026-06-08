@@ -16,6 +16,7 @@ import (
 	"github.com/paxlabs-inc/deus/internal/config"
 	"github.com/paxlabs-inc/deus/internal/discovery"
 	"github.com/paxlabs-inc/deus/internal/gateway"
+	"github.com/paxlabs-inc/deus/internal/hosting"
 	"github.com/paxlabs-inc/deus/internal/indexer"
 	"github.com/paxlabs-inc/deus/internal/metering"
 	"github.com/paxlabs-inc/deus/internal/objstore"
@@ -26,6 +27,7 @@ import (
 	"github.com/paxlabs-inc/deus/internal/server"
 	"github.com/paxlabs-inc/deus/internal/settlement"
 	"github.com/paxlabs-inc/deus/internal/store"
+	"github.com/paxlabs-inc/deus/internal/streams"
 	"github.com/paxlabs-inc/deus/internal/telemetry"
 	"github.com/paxlabs-inc/deus/internal/wallet"
 )
@@ -77,8 +79,9 @@ func run() int {
 		defer chainClient.Close()
 	}
 
+	var blobStore hosting.BlobStore
 	if cfg.ObjStoreEndpoint != "" {
-		_, err = objstore.New(ctx, objstore.Config{
+		s3, err := objstore.New(ctx, objstore.Config{
 			Endpoint:  cfg.ObjStoreEndpoint,
 			AccessKey: cfg.ObjStoreAccessKey,
 			SecretKey: cfg.ObjStoreSecretKey,
@@ -92,7 +95,13 @@ func run() int {
 				log.Error().Err(err).Msg("objstore connect failed")
 				return 1
 			}
+		} else {
+			blobStore = s3
 		}
+	}
+	if blobStore == nil && cfg.Dev {
+		blobStore = objstore.NewMem(cfg.ObjStoreBucket)
+		log.Info().Msg("using in-memory objstore (dev)")
 	}
 
 	var chainRegistry *chain.Registry
@@ -111,11 +120,39 @@ func run() int {
 	if chainRegistry != nil {
 		ix = indexer.New(chainRegistry, db)
 	}
+	rankPath := filepath.Join(moduleRoot(), "configs", "ranking.yaml")
+	discSvc := discovery.New(db,
+		discovery.WithEmbedder(discovery.NewEmbedderFromConfig(cfg.EmbedEndpoint, cfg.EmbedModel)),
+		discovery.WithRankingWeights(discovery.LoadRankingWeights(rankPath)),
+	)
 	regSvc := registry.NewService(db, chainRegistry, ix)
-	discSvc := discovery.New(db)
+	regSvc.SetManifestIndexer(discSvc)
+
+	var hostOrchestrator *hosting.Orchestrator
+	if blobStore != nil {
+		limits := hosting.LimitsFromEnv()
+		if cfg.HostingKillSwitch {
+			limits.KillSwitch = true
+		}
+		var backend hosting.Backend
+		if cfg.AppwriteEndpoint != "" && cfg.AppwriteProjectID != "" && cfg.AppwriteAPIKey != "" {
+			backend = hosting.NewAppwriteBackend(hosting.AppwriteConfig{
+				Endpoint:  cfg.AppwriteEndpoint,
+				ProjectID: cfg.AppwriteProjectID,
+				APIKey:    cfg.AppwriteAPIKey,
+			}, blobStore)
+		} else if cfg.Dev {
+			backend = &hosting.DevBackend{ExecURL: cfg.HostingDevExecURL}
+		}
+		if backend != nil {
+			hostOrchestrator = hosting.NewOrchestrator(db, blobStore, backend, limits)
+		}
+	}
 
 	var gw *gateway.Gateway
 	var settler *settlement.Settler
+	var streamSvc *streams.Service
+	pricingSvc := pricing.New(db)
 	signKey := cfg.GatewaySigningKey
 	if signKey == "" && cfg.Dev {
 		signKey = cfg.PublishPrivateKey
@@ -139,15 +176,32 @@ func run() int {
 			if wal != nil {
 				chSvc := channels.New(db, wal)
 				vSvc := channels.NewVoucherService(db, signer)
+				var streamBackend streams.AccrualBackend
+				var devStreams *streams.DevBackend
+				if cfg.Dev {
+					devStreams = streams.NewDevBackend()
+					streamBackend = devStreams
+				}
+				if streamBackend != nil {
+					streamSvc = streams.New(streams.Config{
+						Store:   db,
+						Pricing: pricingSvc,
+						Wallet:  wal,
+						Backend: streamBackend,
+						Dev:     devStreams,
+					})
+				}
 				gw = gateway.New(gateway.Config{
 					Store:    db,
-					Pricing:  pricing.New(db),
+					Pricing:  pricingSvc,
 					Meter:    metering.New(db),
 					Wallet:   wal,
 					Signer:   signer,
 					Quality:  quality.New(db),
 					Channels: chSvc,
 					Vouchers: vSvc,
+					Hosting:  hostOrchestrator,
+					Streams:  streamSvc,
 					ChainID:  cfg.ChainID,
 				})
 				if cfg.Dev {
@@ -157,6 +211,10 @@ func run() int {
 		}
 	}
 
+	blobURL := func(key string) string { return "" }
+	if blobStore != nil {
+		blobURL = blobStore.URL
+	}
 	srv := server.New(server.Deps{
 		Log:               log,
 		Store:             db,
@@ -165,6 +223,9 @@ func run() int {
 		Discovery:         discSvc,
 		Gateway:           gw,
 		Settler:           settler,
+		Streams:           streamSvc,
+		Hosting:           hostOrchestrator,
+		BlobURL:           blobURL,
 		DevMode:           cfg.Dev,
 		PublishPrivateKey: cfg.PublishPrivateKey,
 	})

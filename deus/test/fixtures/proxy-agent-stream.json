@@ -1,0 +1,45 @@
+{
+  "schema_version": "1",
+  "slug": "agent.tick",
+  "kind": "agent",
+  "display_name": "Agent Tick",
+  "summary": "Long-running agent tick billed per second via PaymentStreams.",
+  "description": "Phase 6 streaming rail fixture.",
+  "tags": ["agent", "stream"],
+  "owner": "0x0000000000000000000000000000000000000001",
+  "payout_address": "0x0000000000000000000000000000000000000001",
+  "mode": "proxy",
+  "confidential": false,
+  "operations": [
+    {
+      "name": "run",
+      "method": "POST",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "step": { "type": "string" }
+        }
+      },
+      "output_schema": { "type": "object" },
+      "timeout_ms": 5000,
+      "max_response_bytes": 262144
+    }
+  ],
+  "pricing": [
+    {
+      "operation": "run",
+      "model": "per_second",
+      "unit": "second",
+      "price_wei": "1000000000000",
+      "min_charge_wei": "1000000000000"
+    }
+  ],
+  "endpoint": {
+    "proxy_url": "https://api.example.com/agent/run"
+  },
+  "sla": {
+    "target_uptime_bps": 9900,
+    "p99_latency_ms": 800
+  },
+  "attestation": null
+}
