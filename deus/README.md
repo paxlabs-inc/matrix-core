@@ -58,8 +58,24 @@ The full, implementable spec lives in [`docs/`](./docs/00-index.md):
 
 ## Status
 
-Specification (pre-implementation). The Go scaffold exists; no code yet. Build
-order and MVP are in [`docs/14-roadmap.md`](./docs/14-roadmap.md).
+**Phase 1 (registry)** — in progress. `ServiceRegistry.sol` + registry HTTP handlers,
+indexer mirror, and lexical discovery are implemented. See
+[`docs/14-roadmap.md`](./docs/14-roadmap.md) for the full roadmap.
+
+### Quick start (Phase 0)
+
+```bash
+export DEUS_POSTGRES_URI='postgres://deus:deus@127.0.0.1:5432/deus?sslmode=disable'
+export DEUS_DEV=1   # relaxes optional integrations for local skeleton boot
+
+make deus-build deus-test deus-lint
+make deus-migrate
+go run ./cmd/deusctl manifest validate test/fixtures/proxy-weather.json
+go run ./cmd/deusd
+```
+
+> Postgres must have `pgcrypto` and `pgvector` extensions installed (superuser
+> once): `CREATE EXTENSION IF NOT EXISTS pgcrypto; CREATE EXTENSION IF NOT EXISTS vector;`
 
 ## Repo layout (target)
 

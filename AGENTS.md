@@ -4,7 +4,7 @@
 
 ### Repository overview
 
-This is the **Matrix** monorepo (`matrix-core`): Go cognition/runtime layers (`cortex`, `MCL`, `bridge`, `executor`, `gateway`, `router`). The `deus/` tree is **spec-only** (Phases 0–2 not implemented yet); see `deus/docs/00-index.md` and `14-roadmap.md`.
+This is the **Matrix** monorepo (`matrix-core`): Go cognition/runtime layers (`cortex`, `MCL`, `bridge`, `executor`, `gateway`, `router`) plus **`deus/`** (agent-service registry + invoke gateway). Deus Phases 0–2 are implemented; see `deus/docs/14-roadmap.md`.
 
 Standard build/test commands live in the root `Makefile` and `CONTRIBUTING.md`.
 
@@ -63,9 +63,25 @@ make lint                     # golangci-lint per module
 - `gateway/internal/rates` and `proxy` tests expect different PAX pricing constants.
 - `router` and `cortex` test suites pass cleanly.
 
-### Deus (not runnable yet)
+### Deus control plane
 
-Deus quality targets (`deus-build`, `deus-test`, `deus-contracts`, `deus-mcp-selftest`) are documented in `deus/docs/11-modules.md` but **no Makefile targets or Go module exist yet**. Do not expect `deus/` to build until Phase 0 is implemented.
+From `deus/` (Postgres + optional Anvil for integration tests):
+
+```bash
+export DEUS_POSTGRES_URI='postgres://deus:deus@127.0.0.1:5432/deus?sslmode=disable'
+export DEUS_DEV=1 DEUS_ROOT=/workspace/deus
+export PAXEER_RPC_URL=http://127.0.0.1:8545 DEUS_CHAIN_ID=31337
+export DEUS_SERVICE_REGISTRY_ADDR=<deployed> DEUS_PUBLISH_PRIVATE_KEY=<anvil-key>
+export DEUS_GATEWAY_SIGNING_KEY=<same-or-other-key>
+make -C deus deus-build deus-test deus-lint deus-contracts deus-mcp-selftest
+DEUS_RUN_ANVIL_TESTS=1 go test -tags=integration ./test/e2e/...   # from deus/
+```
+
+**Phase 2 invoke loop:** `POST /v1/quote/{id}` → `POST /v1/invoke/{id}` (direct rail only; rejects `net`/`stream`) → EIP-712 receipt. Dev caller auth: `Authorization: Bearer …` plus `X-Caller-DID` / `X-Caller-Wallet`. Gateway uses `wallet.DevClient` when `DEUS_DEV=1` and no `MATRIX_WALLET_API_URL`.
+
+**MCP:** `tools/deus/deus.mjs` + `agents/default.json` `deus` server; router injects `MATRIX_DEUS_URL` (default `http://deus-control.internal:9095`).
+
+**Swarm rule:** Deus work is staged locally; the user commits (cloud agents should not push Deus feature commits unless asked).
 
 ### Running the daemon in tmux
 

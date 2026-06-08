@@ -179,6 +179,9 @@ func main() {
 			// MATRIX_TACHYON_TOKEN (optional) is the engine's own bearer.
 			"MATRIX_TACHYON_URL":   envOr("MATRIX_TACHYON_URL", "http://matrix-tachyon.internal:8645/rpc"),
 			"MATRIX_TACHYON_TOKEN": os.Getenv("MATRIX_TACHYON_TOKEN"),
+			// Deus agent-service gateway (tools/deus/deus.mjs stdio proxy).
+			"MATRIX_DEUS_URL":        envOr("MATRIX_DEUS_URL", "http://deus-control.internal:9095"),
+			"MATRIX_DEUS_TIMEOUT_MS": os.Getenv("MATRIX_DEUS_TIMEOUT_MS"),
 		},
 		Log: logf,
 	}
