@@ -117,8 +117,13 @@ func run() int {
 	if chainRegistry != nil {
 		ix = indexer.New(chainRegistry, db)
 	}
+	rankPath := filepath.Join(moduleRoot(), "configs", "ranking.yaml")
+	discSvc := discovery.New(db,
+		discovery.WithEmbedder(discovery.NewEmbedderFromConfig(cfg.EmbedEndpoint, cfg.EmbedModel)),
+		discovery.WithRankingWeights(discovery.LoadRankingWeights(rankPath)),
+	)
 	regSvc := registry.NewService(db, chainRegistry, ix)
-	discSvc := discovery.New(db)
+	regSvc.SetManifestIndexer(discSvc)
 
 	var hostOrchestrator *hosting.Orchestrator
 	if blobStore != nil {

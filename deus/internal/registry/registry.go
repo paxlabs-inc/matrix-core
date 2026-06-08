@@ -16,16 +16,27 @@ import (
 	"github.com/paxlabs-inc/deus/pkg/manifest"
 )
 
+// ManifestIndexer embeds listings for discovery (Phase 4).
+type ManifestIndexer interface {
+	IndexService(ctx context.Context, serviceID string, raw json.RawMessage) error
+}
+
 // Service orchestrates listing CRUD and publish.
 type Service struct {
 	store    *store.Store
 	registry *chain.Registry
 	indexer  *indexer.Indexer
+	embedIdx ManifestIndexer
 }
 
 // NewService wires registry dependencies.
 func NewService(st *store.Store, reg *chain.Registry, ix *indexer.Indexer) *Service {
 	return &Service{store: st, registry: reg, indexer: ix}
+}
+
+// SetManifestIndexer hooks async discovery indexing on create/publish.
+func (s *Service) SetManifestIndexer(ix ManifestIndexer) {
+	s.embedIdx = ix
 }
 
 // CreateInput is the POST /v1/services body.
@@ -88,6 +99,11 @@ func (s *Service) Create(ctx context.Context, in CreateInput) (CreateResult, err
 	}
 	if err := s.syncChildren(ctx, id, m); err != nil {
 		return CreateResult{}, err
+	}
+	if s.embedIdx != nil {
+		if err := s.embedIdx.IndexService(ctx, id, raw); err != nil {
+			return CreateResult{}, fmt.Errorf("registry: index: %w", err)
+		}
 	}
 	return CreateResult{
 		ID:           id,
@@ -176,6 +192,11 @@ func (s *Service) Publish(ctx context.Context, in PublishInput) (PublishResult, 
 
 	if err := s.store.ActivateFromChain(ctx, row.ID, int64(res.ChainServiceID), manifestHash, pricingHash, m.Mode == "hosted", m.Confidential); err != nil {
 		return PublishResult{}, err
+	}
+	if s.embedIdx != nil {
+		if err := s.embedIdx.IndexService(ctx, row.ID, row.Manifest); err != nil {
+			return PublishResult{}, fmt.Errorf("registry: index: %w", err)
+		}
 	}
 	if s.indexer != nil {
 		_ = s.indexer.Sync(ctx, int64(res.BlockNumber))

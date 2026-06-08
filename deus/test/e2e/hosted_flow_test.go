@@ -83,8 +83,9 @@ func TestHostedInvokeFlow(t *testing.T) {
 	defer chainClient.Close()
 	chainReg, _ := chain.NewRegistry(chainClient, cfg.ServiceRegistryAddr)
 	ix := indexer.New(chainReg, db)
-	regSvc := registry.NewService(db, chainReg, ix)
 	discSvc := discovery.New(db)
+	regSvc := registry.NewService(db, chainReg, ix)
+	regSvc.SetManifestIndexer(discSvc)
 
 	signer, _ := receipts.NewSignerFromHex(cfg.ChainID, cfg.ServiceRegistryAddr, cfg.GatewaySigningKey)
 	gw := gateway.New(gateway.Config{
