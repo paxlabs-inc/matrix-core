@@ -139,6 +139,11 @@ func (s *Service) Publish(ctx context.Context, in PublishInput) (PublishResult, 
 	if !val.OK {
 		return PublishResult{}, fmt.Errorf("registry: manifest invalid: %v", val.Errors)
 	}
+	if m.Mode == "hosted" {
+		if _, err := s.store.ActiveDeploymentForService(ctx, row.ID); err != nil {
+			return PublishResult{}, fmt.Errorf("registry: hosted service requires active deployment before publish")
+		}
+	}
 	manifestHash, err := manifest.Hash(m)
 	if err != nil {
 		return PublishResult{}, err

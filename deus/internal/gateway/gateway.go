@@ -19,6 +19,11 @@ import (
 	"github.com/paxlabs-inc/deus/pkg/pricingmath"
 )
 
+// HostingRouter resolves active hosted execution endpoints.
+type HostingRouter interface {
+	ActiveEndpoint(ctx context.Context, serviceID string) (string, error)
+}
+
 // Gateway orchestrates quote → policy → reserve → route → pay → receipt.
 type Gateway struct {
 	store    *store.Store
@@ -27,6 +32,7 @@ type Gateway struct {
 	wallet   wallet.Client
 	signer   *receipts.Signer
 	quality  *quality.Service
+	hosting  HostingRouter
 	chainID  int64
 }
 
@@ -38,6 +44,7 @@ type Config struct {
 	Wallet  wallet.Client
 	Signer  *receipts.Signer
 	Quality *quality.Service
+	Hosting HostingRouter
 	ChainID int64
 }
 
@@ -50,6 +57,7 @@ func New(cfg Config) *Gateway {
 		wallet:  cfg.Wallet,
 		signer:  cfg.Signer,
 		quality: cfg.Quality,
+		hosting: cfg.Hosting,
 		chainID: cfg.ChainID,
 	}
 }
@@ -101,10 +109,17 @@ func (g *Gateway) Invoke(ctx context.Context, caller auth.Caller, req InvokeRequ
 	if svc.Status != "active" {
 		return InvokeResponse{}, &Error{Code: "service_unavailable", Message: "service not active", HTTPStatus: 503}
 	}
-	if svc.Mode != "proxy" {
-		return InvokeResponse{}, &Error{Code: "service_unavailable", Message: "hosted mode not available in phase 2", HTTPStatus: 503}
+	switch svc.Mode {
+	case "proxy":
+		return g.invokeProxy(ctx, caller, req, svc)
+	case "hosted":
+		return g.invokeHosted(ctx, caller, req, svc)
+	default:
+		return InvokeResponse{}, &Error{Code: "service_unavailable", Message: "unsupported service mode", HTTPStatus: 503}
 	}
+}
 
+func (g *Gateway) invokeProxy(ctx context.Context, caller auth.Caller, req InvokeRequest, svc store.ServiceRow) (InvokeResponse, error) {
 	q, charge, err := g.validateQuote(ctx, caller, req)
 	if err != nil {
 		return InvokeResponse{}, err
@@ -244,6 +259,178 @@ func (g *Gateway) Invoke(ctx context.Context, caller auth.Caller, req InvokeRequ
 			GatewaySig: sig,
 		},
 	}, nil
+}
+
+func (g *Gateway) invokeHosted(ctx context.Context, caller auth.Caller, req InvokeRequest, svc store.ServiceRow) (InvokeResponse, error) {
+	if g.hosting == nil {
+		return InvokeResponse{}, &Error{Code: "service_unavailable", Message: "hosting not configured", HTTPStatus: 503}
+	}
+	q, charge, err := g.validateQuote(ctx, caller, req)
+	if err != nil {
+		return InvokeResponse{}, err
+	}
+
+	grant, _ := g.store.ActiveGrantForCaller(ctx, caller.DID, req.ServiceID)
+	if ok, msg := store.GrantAllows(grant, pricingmath.FormatWei(charge)); !ok {
+		return InvokeResponse{}, &Error{Code: "policy_denied", Message: msg, HTTPStatus: 403}
+	}
+	if err := g.wallet.AuthorizeSpend(ctx, caller.Bearer, pricingmath.FormatWei(charge), req.ServiceID); err != nil {
+		var pd *wallet.PolicyDenied
+		if errors.As(err, &pd) {
+			return InvokeResponse{}, &Error{
+				Code: "policy_denied", Message: pd.Message, HTTPStatus: 403,
+				Detail: map[string]any{"cap_wei": pd.CapWei, "quote_wei": pricingmath.FormatWei(charge)},
+			}
+		}
+		return InvokeResponse{}, &Error{Code: "payment_required", Message: err.Error(), HTTPStatus: 402}
+	}
+
+	ep, err := g.store.EndpointByServiceOperation(ctx, req.ServiceID, req.Operation)
+	if err != nil {
+		return InvokeResponse{}, &Error{Code: "invalid_request", Message: "unknown operation", HTTPStatus: 400}
+	}
+	argsHash, err := receipts.HashPayload(req.Args)
+	if err != nil {
+		return InvokeResponse{}, &Error{Code: "invalid_request", Message: err.Error(), HTTPStatus: 400}
+	}
+
+	row, err := g.meter.Reserve(ctx, metering.ReserveInput{
+		IdempotencyKey: req.IdempotencyKey,
+		ServiceID:      req.ServiceID,
+		EndpointID:     ep.ID,
+		CallerDID:      caller.DID,
+		CallerWallet:   caller.Wallet,
+		QuoteID:        req.QuoteID,
+		Units:          q.MaxUnits,
+		PriceWei:       pricingmath.FormatWei(charge),
+		PricingVersion: q.PricingVersion,
+		ArgsHash:       argsHash,
+	})
+	if err != nil {
+		return InvokeResponse{}, &Error{Code: "internal_error", Message: err.Error(), HTTPStatus: 500}
+	}
+	if row.Outcome == "ok" {
+		return g.replaySuccess(ctx, row)
+	}
+	if row.Outcome == "voided" {
+		return InvokeResponse{}, &Error{Code: "conflict", Message: "prior invocation voided", HTTPStatus: 409}
+	}
+
+	execURL, err := g.hosting.ActiveEndpoint(ctx, req.ServiceID)
+	if err != nil {
+		_ = g.meter.Void(ctx, row.ID)
+		return InvokeResponse{}, &Error{Code: "service_unavailable", Message: "hosted deployment not ready", HTTPStatus: 503}
+	}
+
+	timeoutMS, maxBytes := operationCaps(svc, req.Operation)
+	hostedRes, hostedErr := CallHosted(ctx, execURL, HostedInvokeRequest{
+		InvocationID: row.ID,
+		Operation:    req.Operation,
+		Args:         req.Args,
+		CallerDID:    caller.DID,
+		DeadlineMS:   timeoutMS,
+	}, timeoutMS, maxBytes)
+	if hostedErr != nil || hostedRes.Outcome != "ok" {
+		_ = g.meter.Void(ctx, row.ID)
+		_ = g.quality.Sample(ctx, req.ServiceID, "voided", hostedRes.LatencyMS)
+		msg := "hosted execution failed"
+		if hostedErr != nil {
+			msg = hostedErr.Error()
+		}
+		return InvokeResponse{}, &Error{Code: "service_unavailable", Message: msg, HTTPStatus: 503}
+	}
+	result := hostedRes.Result
+	if result == nil {
+		result = map[string]any{}
+	}
+
+	payout, err := g.store.DeveloperPayoutByService(ctx, req.ServiceID)
+	if err != nil {
+		_ = g.meter.Void(ctx, row.ID)
+		return InvokeResponse{}, &Error{Code: "internal_error", Message: err.Error(), HTTPStatus: 500}
+	}
+	if _, err := g.wallet.Send(ctx, caller.Bearer, payout, pricingmath.FormatWei(charge)); err != nil {
+		_ = g.meter.Void(ctx, row.ID)
+		var pd *wallet.PolicyDenied
+		if errors.As(err, &pd) {
+			return InvokeResponse{}, &Error{Code: "policy_denied", Message: pd.Message, HTTPStatus: 403}
+		}
+		return InvokeResponse{}, &Error{Code: "payment_required", Message: err.Error(), HTTPStatus: 402}
+	}
+
+	resultHash, err := receipts.HashPayload(result)
+	if err != nil {
+		_ = g.meter.Void(ctx, row.ID)
+		return InvokeResponse{}, &Error{Code: "internal_error", Message: err.Error(), HTTPStatus: 500}
+	}
+	now := time.Now().UTC()
+	rf := receipts.ReceiptFields{
+		InvocationID: row.ID,
+		ServiceID:    req.ServiceID,
+		Caller:       caller.DID,
+		ArgsHash:     argsHash,
+		ResultHash:   resultHash,
+		PriceWei:     pricingmath.FormatWei(charge),
+		Units:        hostedRes.Units,
+		Outcome:      "ok",
+		Timestamp:    now,
+	}
+	digest, sig, err := g.signer.SignReceipt(rf)
+	if err != nil {
+		_ = g.meter.Void(ctx, row.ID)
+		return InvokeResponse{}, &Error{Code: "internal_error", Message: err.Error(), HTTPStatus: 500}
+	}
+	if err := g.meter.Finalize(ctx, row.ID, "ok", resultHash, hostedRes.Units, pricingmath.FormatWei(charge), hostedRes.LatencyMS); err != nil {
+		return InvokeResponse{}, &Error{Code: "internal_error", Message: err.Error(), HTTPStatus: 500}
+	}
+	_ = g.store.InsertReceipt(ctx, store.ReceiptRow{
+		InvocationID: row.ID,
+		Digest:       digest,
+		GatewaySig:   sig,
+		RunnerSig:    hostedRes.RunnerSig,
+	})
+	_ = g.quality.Sample(ctx, req.ServiceID, "ok", hostedRes.LatencyMS)
+	if dep, err := g.store.ActiveDeploymentForService(ctx, req.ServiceID); err == nil {
+		_ = g.store.TouchDeploymentInvoked(ctx, dep.ID)
+	}
+
+	return InvokeResponse{
+		InvocationID: row.ID,
+		Outcome:      "ok",
+		Result:       result,
+		ChargedWei:   pricingmath.FormatWei(charge),
+		LatencyMS:    hostedRes.LatencyMS,
+		Receipt: ReceiptSummary{
+			Digest:     digest,
+			GatewaySig: sig,
+			RunnerSig:  hostedRes.RunnerSig,
+		},
+	}, nil
+}
+
+func operationCaps(svc store.ServiceRow, operation string) (timeoutMS, maxBytes int) {
+	timeoutMS = 5000
+	maxBytes = 262144
+	var m struct {
+		Operations []struct {
+			Name             string `json:"name"`
+			TimeoutMS        int    `json:"timeout_ms"`
+			MaxResponseBytes int    `json:"max_response_bytes"`
+		} `json:"operations"`
+	}
+	_ = json.Unmarshal(svc.Manifest, &m)
+	for _, op := range m.Operations {
+		if op.Name == operation {
+			if op.TimeoutMS > 0 {
+				timeoutMS = op.TimeoutMS
+			}
+			if op.MaxResponseBytes > 0 {
+				maxBytes = op.MaxResponseBytes
+			}
+			break
+		}
+	}
+	return timeoutMS, maxBytes
 }
 
 func (g *Gateway) validateQuote(ctx context.Context, caller auth.Caller, req InvokeRequest) (store.QuoteRow, *big.Int, error) {

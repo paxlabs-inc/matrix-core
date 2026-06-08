@@ -154,3 +154,35 @@ type ReceiptDetail struct {
 	GatewaySig   string  `json:"gateway_sig"`
 	RunnerSig    *string `json:"runner_sig,omitempty"`
 }
+
+// UploadArtifactResponse is POST /v1/services/{id}/artifacts.
+type UploadArtifactResponse struct {
+	ArtifactKey string `json:"artifact_key"`
+	URL         string `json:"url,omitempty"`
+}
+
+// DeployServiceRequest is POST /v1/services/{id}/deploy.
+type DeployServiceRequest struct {
+	ArtifactKey string `json:"artifact_key"`
+	Runtime     string `json:"runtime"`
+	AlwaysWarm  bool   `json:"always_warm"`
+	Region      string `json:"region,omitempty"`
+}
+
+// DeployServiceResponse is POST /v1/services/{id}/deploy.
+type DeployServiceResponse struct {
+	DeploymentID string `json:"deployment_id"`
+	Status       string `json:"status"`
+	ExecEndpoint string `json:"exec_endpoint,omitempty"`
+	Runtime      string `json:"runtime"`
+}
+
+// DeploymentResponse is GET /v1/services/{id}/deployments/{deployment_id}.
+type DeploymentResponse struct {
+	ID           string `json:"id"`
+	ServiceID    string `json:"service_id"`
+	Status       string `json:"status"`
+	Runtime      string `json:"runtime"`
+	ExecEndpoint string `json:"exec_endpoint,omitempty"`
+	AlwaysWarm   bool   `json:"always_warm"`
+}

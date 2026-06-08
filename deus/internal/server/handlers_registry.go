@@ -19,6 +19,9 @@ func (s *Server) mountRegistryRoutes(r chi.Router) {
 			r.Use(DevDeveloperAuth(s.deps.DevMode))
 			r.Post("/", s.handleCreateService)
 			r.Post("/{id}/publish", s.handlePublishService)
+			r.Post("/{id}/artifacts", s.handleUploadArtifact)
+			r.Post("/{id}/deploy", s.handleDeployService)
+			r.Get("/{id}/deployments/{deployment_id}", s.handleGetDeployment)
 		})
 	})
 }

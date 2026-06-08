@@ -4,7 +4,7 @@
 
 ### Repository overview
 
-This is the **Matrix** monorepo (`matrix-core`): Go cognition/runtime layers (`cortex`, `MCL`, `bridge`, `executor`, `gateway`, `router`) plus **`deus/`** (agent-service registry + invoke gateway). Deus Phases 0–2 are implemented; see `deus/docs/14-roadmap.md`.
+This is the **Matrix** monorepo (`matrix-core`): Go cognition/runtime layers (`cortex`, `MCL`, `bridge`, `executor`, `gateway`, `router`) plus **`deus/`** (agent-service registry + invoke gateway). Deus Phases 0–3 are implemented; see `deus/docs/14-roadmap.md`.
 
 Standard build/test commands live in the root `Makefile` and `CONTRIBUTING.md`.
 

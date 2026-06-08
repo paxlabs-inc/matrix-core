@@ -15,6 +15,7 @@ import (
 	"github.com/paxlabs-inc/deus/internal/config"
 	"github.com/paxlabs-inc/deus/internal/discovery"
 	"github.com/paxlabs-inc/deus/internal/gateway"
+	"github.com/paxlabs-inc/deus/internal/hosting"
 	"github.com/paxlabs-inc/deus/internal/indexer"
 	"github.com/paxlabs-inc/deus/internal/metering"
 	"github.com/paxlabs-inc/deus/internal/objstore"
@@ -75,8 +76,9 @@ func run() int {
 		defer chainClient.Close()
 	}
 
+	var blobStore hosting.BlobStore
 	if cfg.ObjStoreEndpoint != "" {
-		_, err = objstore.New(ctx, objstore.Config{
+		s3, err := objstore.New(ctx, objstore.Config{
 			Endpoint:  cfg.ObjStoreEndpoint,
 			AccessKey: cfg.ObjStoreAccessKey,
 			SecretKey: cfg.ObjStoreSecretKey,
@@ -90,7 +92,13 @@ func run() int {
 				log.Error().Err(err).Msg("objstore connect failed")
 				return 1
 			}
+		} else {
+			blobStore = s3
 		}
+	}
+	if blobStore == nil && cfg.Dev {
+		blobStore = objstore.NewMem(cfg.ObjStoreBucket)
+		log.Info().Msg("using in-memory objstore (dev)")
 	}
 
 	var chainRegistry *chain.Registry
@@ -111,6 +119,27 @@ func run() int {
 	}
 	regSvc := registry.NewService(db, chainRegistry, ix)
 	discSvc := discovery.New(db)
+
+	var hostOrchestrator *hosting.Orchestrator
+	if blobStore != nil {
+		limits := hosting.LimitsFromEnv()
+		if cfg.HostingKillSwitch {
+			limits.KillSwitch = true
+		}
+		var backend hosting.Backend
+		if cfg.AppwriteEndpoint != "" && cfg.AppwriteProjectID != "" && cfg.AppwriteAPIKey != "" {
+			backend = hosting.NewAppwriteBackend(hosting.AppwriteConfig{
+				Endpoint:  cfg.AppwriteEndpoint,
+				ProjectID: cfg.AppwriteProjectID,
+				APIKey:    cfg.AppwriteAPIKey,
+			}, blobStore)
+		} else if cfg.Dev {
+			backend = &hosting.DevBackend{ExecURL: cfg.HostingDevExecURL}
+		}
+		if backend != nil {
+			hostOrchestrator = hosting.NewOrchestrator(db, blobStore, backend, limits)
+		}
+	}
 
 	var gw *gateway.Gateway
 	signKey := cfg.GatewaySigningKey
@@ -141,12 +170,17 @@ func run() int {
 					Wallet:  wal,
 					Signer:  signer,
 					Quality: quality.New(db),
+					Hosting: hostOrchestrator,
 					ChainID: cfg.ChainID,
 				})
 			}
 		}
 	}
 
+	blobURL := func(key string) string { return "" }
+	if blobStore != nil {
+		blobURL = blobStore.URL
+	}
 	srv := server.New(server.Deps{
 		Log:               log,
 		Store:             db,
@@ -154,6 +188,8 @@ func run() int {
 		Registry:          regSvc,
 		Discovery:         discSvc,
 		Gateway:           gw,
+		Hosting:           hostOrchestrator,
+		BlobURL:           blobURL,
 		DevMode:           cfg.Dev,
 		PublishPrivateKey: cfg.PublishPrivateKey,
 	})
