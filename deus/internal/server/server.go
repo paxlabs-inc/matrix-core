@@ -20,7 +20,7 @@ import (
 	"github.com/paxlabs-inc/deus/pkg/types"
 )
 
-const version = "0.1.0-phase3"
+const version = "0.1.0-phase4"
 
 // Deps are long-lived services shared across handlers.
 type Deps struct {
