@@ -418,7 +418,7 @@ func TestIsOpencodeModelID(t *testing.T) {
 		"gpt-5.5", "gpt-5.5-pro", "gpt-5.4-mini", "gpt-5.3-codex", "gpt-5-nano",
 		"gemini-3.5-flash", "gemini-3-flash",
 		"qwen3.6-plus", "qwen3.5-plus",
-		"kimi-k2.6", "kimi-k2.5",
+		"kimi-k2p6-fast", "kimi-k2.5",
 		"glm-5.1", "glm-5",
 		"minimax-m2.7",
 		"grok-build-0.1",

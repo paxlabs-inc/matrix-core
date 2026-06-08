@@ -119,10 +119,15 @@ func TestProxyForwardsAndDebits(t *testing.T) {
 	if cost == "" {
 		t.Fatalf("cost header missing; headers=%+v", w.Header())
 	}
-	// gpt-oss-120b: 60 in/Mtoken + 120 out/Mtoken
-	// 1M in + 0.5M out → 60 + 60 = 120 PAX
-	if !strings.HasPrefix(cost, "120.") {
-		t.Fatalf("expected ~120 PAX, got %q", cost)
+	// gpt-oss-120b (v3 rate card, 1 PAX = $11.43):
+	//   in  = $0.60/Mtoken → 0.052493438 PAX/Mtoken
+	//   out = $1.20/Mtoken → 0.104986877 PAX/Mtoken
+	// 1M in + 0.5M out →
+	//   (1e6*0.052493438 + 5e5*0.104986877) / 1e6
+	//   = (52493.438 + 52493.4385) / 1e6
+	//   = 0.1049868765 PAX (≈ $1.20).
+	if cost != "0.104986876500" {
+		t.Fatalf("expected 0.104986876500, got %q", cost)
 	}
 }
 
@@ -444,9 +449,15 @@ func TestProxyStreamingForcesUsageAndDebits(t *testing.T) {
 	if rows[0].Model != rates.ModelKimiK26 || rows[0].TokensInput != 1000 || rows[0].TokensOutput != 500 {
 		t.Fatalf("debit row mismatch: %+v", rows[0])
 	}
-	// kimi-k2p6: 80 in/Mtoken + 160 out/Mtoken → 0.08 + 0.08 = 0.16 PAX.
-	if !strings.HasPrefix(rows[0].CostPax, "0.16") {
-		t.Fatalf("expected ~0.16 PAX debit, got %q", rows[0].CostPax)
+	// kimi-k2.6 (v3 rate card, 1 PAX = $11.43):
+	//   in  = $0.80/Mtoken → 0.069991251 PAX/Mtoken
+	//   out = $1.60/Mtoken → 0.139982502 PAX/Mtoken
+	// 1000 in + 500 out →
+	//   (1000*0.069991251 + 500*0.139982502) / 1e6
+	//   = (69.991251 + 69.991251) / 1e6
+	//   = 1.39982502e-4 PAX.
+	if rows[0].CostPax != "0.000139982502" {
+		t.Fatalf("expected 0.000139982502 PAX debit, got %q", rows[0].CostPax)
 	}
 }
 

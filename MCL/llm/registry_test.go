@@ -327,8 +327,8 @@ func TestDefaultRegistryPlannerSlot(t *testing.T) {
 func TestDefaultRegistryExecutorReasonIsDefault(t *testing.T) {
 	cfg := DefaultRegistry().Resolve(RouteKey{Slot: SlotExecutor, Kind: KindReason})
 	// Sess#31a headline pick: GLM-5.1 for long-horizon agentic loops.
-	if !strings.Contains(cfg.Model, "glm-5.1") {
-		t.Errorf("executor reason model = %q, want glm-5.1", cfg.Model)
+	if !strings.Contains(cfg.Model, "glm-5p1-fast") {
+		t.Errorf("executor reason model = %q, want glm-5p1-fast", cfg.Model)
 	}
 	if cfg.GrammarMode != GrammarNone {
 		t.Errorf("executor reason grammar mode = %v, want GrammarNone (free-form)", cfg.GrammarMode)
@@ -346,7 +346,7 @@ func TestDefaultRegistryExecutorKindSpecialists(t *testing.T) {
 	}{
 		{KindCode, "Qwen3-Coder", GrammarNone},
 		{KindSummarize, "deepseek-v4-flash", GrammarNone},
-		{KindWrite, "kimi-k2.6", GrammarNone},
+		{KindWrite, "kimi-k2p6-fast", GrammarNone},
 		{KindTransform, "gpt-oss-20b", GrammarNone},
 		{KindClassify, "gpt-oss-20b", GrammarJSONSchema},
 		{KindHardReason, "deepseek-v4-pro", GrammarNone},

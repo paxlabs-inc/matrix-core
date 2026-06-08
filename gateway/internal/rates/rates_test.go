@@ -18,14 +18,17 @@ func TestLookupKnownAndUnknown(t *testing.T) {
 }
 
 func TestCostBasic(t *testing.T) {
-	// gpt-oss-20b: 20 PAX/Mtoken in, 40 PAX/Mtoken out.
-	// 1M in + 1M out → 60 PAX exactly.
+	// gpt-oss-20b (v3 rate card, 1 PAX = $11.43):
+	//   in  = $0.20/Mtoken → 0.017497813 PAX/Mtoken
+	//   out = $0.40/Mtoken → 0.034995626 PAX/Mtoken
+	// 1M in + 1M out → exactly (in_rate + out_rate)
+	//   = 0.017497813 + 0.034995626 = 0.052493439 PAX (≈ $0.60).
 	cost, err := Cost(ModelGPTOSS20B, 1_000_000, 1_000_000)
 	if err != nil {
 		t.Fatalf("Cost: %v", err)
 	}
-	if !strings.HasPrefix(cost, "60.000000000000") {
-		t.Fatalf("expected 60.0…, got %q", cost)
+	if cost != "0.052493439000" {
+		t.Fatalf("expected 0.052493439000, got %q", cost)
 	}
 }
 
@@ -42,15 +45,20 @@ func TestCostUnknownModelRejected(t *testing.T) {
 }
 
 func TestCostSmallTokensPrecision(t *testing.T) {
-	// deepseek-v4-flash: 30 in + 90 out per Mtoken.
-	// 100 prompt + 50 completion → (100*30 + 50*90)/1e6 = 7500/1e6 = 0.0075
+	// deepseek-v4-flash (v3 rate card, 1 PAX = $11.43):
+	//   in  = $0.30/Mtoken → 0.026246719 PAX/Mtoken
+	//   out = $0.90/Mtoken → 0.078740157 PAX/Mtoken
+	// 100 prompt + 50 completion →
+	//   (100*0.026246719 + 50*0.078740157) / 1e6
+	//   = (2.6246719 + 3.93700785) / 1e6
+	//   = 6.56167975e-6 PAX.
 	cost, err := Cost(ModelDeepSeekV4Flash, 100, 50)
 	if err != nil {
 		t.Fatalf("Cost: %v", err)
 	}
-	// Expect 0.007500000000 at 12 decimals (decimal-string fixed-point).
-	if cost != "0.007500000000" {
-		t.Fatalf("expected 0.007500000000, got %q", cost)
+	// Formatted at 12 decimals (NUMERIC(20,12)): 0.000006561680.
+	if cost != "0.000006561680" {
+		t.Fatalf("expected 0.000006561680, got %q", cost)
 	}
 }
 

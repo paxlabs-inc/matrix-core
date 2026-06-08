@@ -213,10 +213,10 @@ func TestStepHandler_cfgFor_DefaultsPerKind(t *testing.T) {
 		kind      llm.StepKind
 		modelFrag string
 	}{
-		{llm.KindReason, "glm-5.1"},
+		{llm.KindReason, "glm-5p1-fast"},
 		{llm.KindCode, "Qwen3-Coder"},
 		{llm.KindSummarize, "deepseek-v4-flash"},
-		{llm.KindWrite, "kimi-k2.6"},
+		{llm.KindWrite, "kimi-k2p6-fast"},
 		{llm.KindTransform, "gpt-oss-20b"},
 		{llm.KindClassify, "gpt-oss-20b"},
 		{llm.KindHardReason, "deepseek-v4-pro"},
@@ -410,8 +410,8 @@ func TestStepHandler_HandleStep_EmptyKindRoutesToReason(t *testing.T) {
 		}
 		if k, ok := e.Fields["kind"].(string); ok && k == "reason" {
 			saw = true
-			if m, ok := e.Fields["model"].(string); !ok || !strings.Contains(strings.ToLower(m), "glm-5.1") {
-				t.Errorf("event model = %v, want glm-5.1 from DefaultRegistry", e.Fields["model"])
+			if m, ok := e.Fields["model"].(string); !ok || !strings.Contains(strings.ToLower(m), "glm-5p1-fast") {
+				t.Errorf("event model = %v, want glm-5p1-fast from DefaultRegistry", e.Fields["model"])
 			}
 		}
 	}
