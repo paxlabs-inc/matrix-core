@@ -25,6 +25,7 @@ import (
 	"github.com/paxlabs-inc/deus/internal/registry"
 	"github.com/paxlabs-inc/deus/internal/server"
 	"github.com/paxlabs-inc/deus/internal/store"
+	"github.com/paxlabs-inc/deus/internal/streams"
 	"github.com/paxlabs-inc/deus/internal/telemetry"
 	"github.com/paxlabs-inc/deus/internal/wallet"
 )
@@ -147,6 +148,8 @@ func run() int {
 	}
 
 	var gw *gateway.Gateway
+	var streamSvc *streams.Service
+	pricingSvc := pricing.New(db)
 	signKey := cfg.GatewaySigningKey
 	if signKey == "" && cfg.Dev {
 		signKey = cfg.PublishPrivateKey
@@ -168,14 +171,30 @@ func run() int {
 				wal = &wallet.DevClient{MaxPerCallWei: ""}
 			}
 			if wal != nil {
+				var streamBackend streams.AccrualBackend
+				var devStreams *streams.DevBackend
+				if cfg.Dev {
+					devStreams = streams.NewDevBackend()
+					streamBackend = devStreams
+				}
+				if streamBackend != nil {
+					streamSvc = streams.New(streams.Config{
+						Store:   db,
+						Pricing: pricingSvc,
+						Wallet:  wal,
+						Backend: streamBackend,
+						Dev:     devStreams,
+					})
+				}
 				gw = gateway.New(gateway.Config{
 					Store:   db,
-					Pricing: pricing.New(db),
+					Pricing: pricingSvc,
 					Meter:   metering.New(db),
 					Wallet:  wal,
 					Signer:  signer,
 					Quality: quality.New(db),
 					Hosting: hostOrchestrator,
+					Streams: streamSvc,
 					ChainID: cfg.ChainID,
 				})
 			}
@@ -193,6 +212,7 @@ func run() int {
 		Registry:          regSvc,
 		Discovery:         discSvc,
 		Gateway:           gw,
+		Streams:           streamSvc,
 		Hosting:           hostOrchestrator,
 		BlobURL:           blobURL,
 		DevMode:           cfg.Dev,
