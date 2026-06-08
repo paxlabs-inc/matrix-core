@@ -4,7 +4,7 @@
 
 ### Repository overview
 
-This is the **Matrix** monorepo (`matrix-core`): Go cognition/runtime layers (`cortex`, `MCL`, `bridge`, `executor`, `gateway`, `router`) plus **`deus/`** (agent-service registry + invoke gateway). Deus Phases 0–2 are implemented; see `deus/docs/14-roadmap.md`.
+This is the **Matrix** monorepo (`matrix-core`): Go cognition/runtime layers (`cortex`, `MCL`, `bridge`, `executor`, `gateway`, `router`) plus **`deus/`** (agent-service registry + invoke gateway). Deus Phases 0–2.5 are implemented; see `deus/docs/14-roadmap.md`.
 
 Standard build/test commands live in the root `Makefile` and `CONTRIBUTING.md`.
 
@@ -77,7 +77,13 @@ make -C deus deus-build deus-test deus-lint deus-contracts deus-mcp-selftest
 DEUS_RUN_ANVIL_TESTS=1 go test -tags=integration ./test/e2e/...   # from deus/
 ```
 
-**Phase 2 invoke loop:** `POST /v1/quote/{id}` → `POST /v1/invoke/{id}` (direct rail only; rejects `net`/`stream`) → EIP-712 receipt. Dev caller auth: `Authorization: Bearer …` plus `X-Caller-DID` / `X-Caller-Wallet`. Gateway uses `wallet.DevClient` when `DEUS_DEV=1` and no `MATRIX_WALLET_API_URL`.
+**Phase 2 invoke loop (direct rail):** `POST /v1/quote/{id}` → `POST /v1/invoke/{id}` with `"payment": {"rail": "direct"}` (default) → inline wallet transfer → EIP-712 receipt.
+
+**Phase 2.5 net settlement:** `POST /v1/channels` (open funded window) → quote → `POST /v1/invoke/{id}` with `"payment": {"rail": "net"}` → pending `DeusVoucher` digest → `POST /v1/vouchers/cosign` (caller co-sign) → `POST /internal/settle/run` batches unsettled invocations (dev `DevPayer` stub on-chain). Contracts: `SettlementAnchor.sol`, `PaymentChannel.sol` (forge tests in `deus/contracts/test/`).
+
+Dev caller auth: `Authorization: Bearer …` plus `X-Caller-DID` / `X-Caller-Wallet`. Anvil mnemonic index-1 key for E2E cosign: `0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d` → `0x70997970C51812dc3A010C7d01b50e0d17dc79C8`. Gateway uses `wallet.DevClient` when `DEUS_DEV=1` and no `MATRIX_WALLET_API_URL`.
+
+**Chi routing:** channel/voucher routes share the `/v1` group with invoke routes in `mountInvokeRoutes` (do not mount a second `/v1` subtree).
 
 **MCP:** `tools/deus/deus.mjs` + `agents/default.json` `deus` server; router injects `MATRIX_DEUS_URL` (default `http://deus-control.internal:9095`).
 

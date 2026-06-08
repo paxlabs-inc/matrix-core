@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/paxlabs-inc/deus/internal/chain"
+	"github.com/paxlabs-inc/deus/internal/channels"
 	"github.com/paxlabs-inc/deus/internal/config"
 	"github.com/paxlabs-inc/deus/internal/discovery"
 	"github.com/paxlabs-inc/deus/internal/gateway"
@@ -23,6 +24,7 @@ import (
 	"github.com/paxlabs-inc/deus/internal/receipts"
 	"github.com/paxlabs-inc/deus/internal/registry"
 	"github.com/paxlabs-inc/deus/internal/server"
+	"github.com/paxlabs-inc/deus/internal/settlement"
 	"github.com/paxlabs-inc/deus/internal/store"
 	"github.com/paxlabs-inc/deus/internal/telemetry"
 	"github.com/paxlabs-inc/deus/internal/wallet"
@@ -113,6 +115,7 @@ func run() int {
 	discSvc := discovery.New(db)
 
 	var gw *gateway.Gateway
+	var settler *settlement.Settler
 	signKey := cfg.GatewaySigningKey
 	if signKey == "" && cfg.Dev {
 		signKey = cfg.PublishPrivateKey
@@ -134,15 +137,22 @@ func run() int {
 				wal = &wallet.DevClient{MaxPerCallWei: ""}
 			}
 			if wal != nil {
+				chSvc := channels.New(db, wal)
+				vSvc := channels.NewVoucherService(db, signer)
 				gw = gateway.New(gateway.Config{
-					Store:   db,
-					Pricing: pricing.New(db),
-					Meter:   metering.New(db),
-					Wallet:  wal,
-					Signer:  signer,
-					Quality: quality.New(db),
-					ChainID: cfg.ChainID,
+					Store:    db,
+					Pricing:  pricing.New(db),
+					Meter:    metering.New(db),
+					Wallet:   wal,
+					Signer:   signer,
+					Quality:  quality.New(db),
+					Channels: chSvc,
+					Vouchers: vSvc,
+					ChainID:  cfg.ChainID,
 				})
+				if cfg.Dev {
+					settler = settlement.NewSettler(db, &settlement.DevPayer{})
+				}
 			}
 		}
 	}
@@ -154,6 +164,7 @@ func run() int {
 		Registry:          regSvc,
 		Discovery:         discSvc,
 		Gateway:           gw,
+		Settler:           settler,
 		DevMode:           cfg.Dev,
 		PublishPrivateKey: cfg.PublishPrivateKey,
 	})
