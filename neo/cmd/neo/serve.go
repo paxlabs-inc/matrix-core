@@ -23,6 +23,7 @@ import (
 
 	"matrix/neo/internal/agent"
 	"matrix/neo/internal/config"
+	"matrix/neo/internal/conversation"
 	"matrix/neo/internal/memory"
 	"matrix/neo/internal/server"
 	"matrix/neo/internal/tools"
@@ -103,16 +104,26 @@ func runServe(args []string) {
 		cons = wc
 	}
 
+	// Durable conversation history: an explicit NEO_CONVERSATIONS_DIR wins,
+	// else it derives from the cortex root's parent — the SAME dir the MCL
+	// daemon uses (/data/conversations in prod), so Neo + daemon threads list
+	// as one unified history and survive reload / suspend / redeploy.
+	convDir := conversation.Dir(os.Getenv("NEO_CONVERSATIONS_DIR"), cfg.CortexRoot)
+
 	engine := server.NewEngine(server.EngineOptions{
-		Config:       cfg,
-		Main:         main,
-		Cheap:        cheap,
-		Tools:        tm,
-		Pager:        pager,
-		Consolidator: cons,
-		BackendURL:   backendURL,
-		BackendToken: os.Getenv("NEO_DAEMON_TOKEN"),
+		Config:          cfg,
+		Main:            main,
+		Cheap:           cheap,
+		Tools:           tm,
+		Pager:           pager,
+		Consolidator:    cons,
+		ConversationDir: convDir,
+		BackendURL:      backendURL,
+		BackendToken:    os.Getenv("NEO_DAEMON_TOKEN"),
 	})
+	if convDir != "" {
+		fmt.Printf("  history: %s\n", convDir)
+	}
 
 	srv, err := server.New(engine, backendURL)
 	if err != nil {

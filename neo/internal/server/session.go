@@ -13,6 +13,8 @@ import (
 	"time"
 
 	"matrix/neo/internal/agent"
+	"matrix/neo/internal/conversation"
+	"matrix/neo/internal/llm"
 )
 
 // A session is one conversation thread: its own agent loop (transcript +
@@ -99,7 +101,42 @@ func (e *Engine) newSession(convID string) *session {
 		Consolidator: e.consolidator,
 		Observer:     func(ev agent.ToolEvent) { e.surfaceTool(s.cur, ev) },
 	})
+	// Resume continuity: if this conversation already has durable turns (a
+	// reopened thread, or one that outlived a restart), seed the fresh agent's
+	// transcript so it remembers the thread instead of starting blank.
+	if e.conv.Enabled() {
+		if turns := e.conv.Recent(convID, conversation.DefaultRecallTurns); len(turns) > 0 {
+			s.agent.Seed(seedMessages(turns), firstUserText(turns))
+		}
+	}
 	return s
+}
+
+// seedMessages converts durable turns into transcript messages (oldest-first),
+// keeping only the user/assistant text turns that prime context.
+func seedMessages(turns []conversation.Turn) []llm.Message {
+	out := make([]llm.Message, 0, len(turns))
+	for _, t := range turns {
+		text := strings.TrimSpace(t.Text)
+		if text == "" {
+			continue
+		}
+		if t.Role == "assistant" {
+			out = append(out, llm.AssistantMessage(text))
+		} else {
+			out = append(out, llm.UserMessage(text))
+		}
+	}
+	return out
+}
+
+func firstUserText(turns []conversation.Turn) string {
+	for _, t := range turns {
+		if t.Role == "user" && strings.TrimSpace(t.Text) != "" {
+			return t.Text
+		}
+	}
+	return ""
 }
 
 // start kicks off a turn: it returns the run (so the handler can reply with the
@@ -145,6 +182,7 @@ func (s *session) drive(r *run, message string) {
 		}
 		s.engine.broker.publish(r.id, "message.complete", "neo", map[string]interface{}{"status": status})
 		s.engine.broker.publish(r.id, "chat.assistant", "neo", s.chatFields(r, text, true))
+		s.engine.conv.AppendAssistant(s.id, r.id, text)
 		r.closed = true
 	}
 	s.engine.broker.closeRun(r.id)
@@ -212,6 +250,8 @@ func (r *sseReporter) Say(text string) {
 	}
 	s.engine.broker.publish(run.id, "message.complete", "neo", map[string]interface{}{"status": "completed"})
 	s.engine.broker.publish(run.id, "chat.assistant", "neo", s.chatFields(run, text, true))
+	// Persist the closing answer so the thread is durable and reopenable.
+	s.engine.conv.AppendAssistant(s.id, run.id, text)
 	run.closed = true
 }
 

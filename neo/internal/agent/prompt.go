@@ -4,11 +4,20 @@
 package agent
 
 import (
+	_ "embed"
 	"fmt"
 	"strings"
 
 	"matrix/neo/internal/memory"
 )
+
+// groundTruth is Neo's always-injected factual grounding (who it is, that
+// Paxeer is a real live chain, the canonical RPC/explorer/docs endpoints, and
+// how to answer chain questions with its read tools instead of blind web
+// search). Embedded so it ships in the binary and can't drift from the build.
+//
+//go:embed knowledge.md
+var groundTruth string
 
 // buildSystem composes the single system block injected each turn:
 // behavior + pinned identity/rules/goal + consolidated summary + page-faulted
@@ -72,5 +81,11 @@ func (a *Agent) systemPrompt() string {
 	}
 	b.WriteString("\nVoice:\n")
 	b.WriteString("- Speak plainly and concretely. Explain what you're doing in human terms; keep internal machinery and jargon out of what the user sees.\n")
+
+	if g := strings.TrimSpace(groundTruth); g != "" {
+		b.WriteString("\n")
+		b.WriteString(g)
+		b.WriteString("\n")
+	}
 	return b.String()
 }

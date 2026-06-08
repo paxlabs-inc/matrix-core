@@ -11,6 +11,20 @@ import * as wallet from './wallet.mjs'
 import * as pc from './precompiles.mjs'
 import { encodeCall, decode } from './abi.mjs'
 
+// READS-ONLY surface (PAXEER_READS_ONLY=1): expose the full chain DATA layer
+// but NO signing/spending tools. This is the lane the Neo conversational agent
+// gets — frozen-spec invariant i1 ("Neo never holds a signing key; all money
+// crosses into MCL"): Neo reads the chain directly, but value-moving actions go
+// through core_execute to the MCL daemon. When the flag is UNSET (the daemon's
+// default), behaviour is byte-identical to before: the full read+write registry.
+const READS_ONLY = process.env.PAXEER_READS_ONLY === '1'
+const WRITE_TOOL_NAMES = new Set([
+  'wallet_info', 'sign_message', 'transfer', 'approve',
+  'stream_open', 'stream_settle', 'stream_close', 'stream_update_rate',
+  'schedule_job', 'cancel_job', 'reschedule_job',
+  'delegate', 'undelegate', 'redelegate', 'contract_write',
+])
+
 function unitsFor(tokenRef) {
   const t = resolveToken(tokenRef)
   return t ? t.decimals : 18
@@ -89,6 +103,16 @@ function decodeRpcResult(result) {
 
 // ── dispatch ────────────────────────────────────────────────────────────────
 export async function dispatch(name, args = {}) {
+  // Defence-in-depth: on the read-only surface, refuse any signing/spending
+  // tool even if one were somehow requested (they are not advertised either).
+  if (READS_ONLY && WRITE_TOOL_NAMES.has(name)) {
+    return ok({
+      ok: false,
+      tool: name,
+      error: 'read-only paxeer surface: signing/spending tools are disabled here',
+      hint: 'money & signature actions run through the secure execution path (core_execute), not this read-only bridge',
+    })
+  }
   switch (name) {
     // —— direct node RPC ——
     case 'rpc_call': {
@@ -294,7 +318,7 @@ const A = (props, required = []) => ({ type: 'object', properties: props, requir
 const S = (description) => ({ type: 'string', description })
 const N = (description) => ({ type: 'number', description })
 
-export const tools = [
+const ALL_TOOLS = [
   // reads — node
   { name: 'rpc_call', description: 'Direct EVM JSON-RPC call (read-only). args: method, params[].', inputSchema: A({ method: S('JSON-RPC method e.g. eth_getBlockByNumber'), params: { type: 'array' } }, ['method']) },
   { name: 'eth_call', description: 'Read-only eth_call against a contract. Does NOT send a tx.', inputSchema: A({ to: S('contract address'), data: S('0x calldata'), block: S('block tag') }, ['to']) },
@@ -347,6 +371,10 @@ export const tools = [
   // writes — generic (DEX swaps + any contract/precompile)
   { name: 'contract_write', description: 'Sign+send a contract/precompile write via the wallet. Provide signature+args (encoded for you) OR raw data. args: to, signature?, args[]?, data?, value? (human PAX). Use for DEX swaps on CONTRACTS.swap routers.', inputSchema: A({ to: S('contract/precompile 0x'), signature: S('method signature'), args: { type: 'array' }, data: S('0x calldata (overrides signature)'), value: S('human PAX to attach'), gas: S('gas limit') }, ['to']) },
 ]
+
+// `tools` is the advertised registry. In reads-only mode the signing/spending
+// tools are withheld so the surface is structurally incapable of moving value.
+export const tools = READS_ONLY ? ALL_TOOLS.filter((t) => !WRITE_TOOL_NAMES.has(t.name)) : ALL_TOOLS
 
 export const TOOL_NAMES = tools.map((t) => t.name)
 export { CONTRACTS, TOKENS }

@@ -15,6 +15,33 @@ func tc(name, args string) llm.ToolCall {
 	return llm.ToolCall{ID: name, Type: "function", Function: llm.FunctionCall{Name: name, Arguments: args}}
 }
 
+func TestSystemPromptHasPaxeerGrounding(t *testing.T) {
+	a := New(Options{Config: config.Default()})
+	sp := a.systemPrompt()
+	// The grounding must be present so Neo knows Paxeer is real and where to
+	// reach it — instead of denying it exists or blind web-searching.
+	for _, want := range []string{
+		"Paxeer", "125", "public-mainnet.rpcpaxeer.online", "paxscan.paxeer.app", "core_execute",
+	} {
+		if !strings.Contains(sp, want) {
+			t.Errorf("system prompt missing grounding fact %q", want)
+		}
+	}
+}
+
+func TestSeedPrimesTranscriptOnce(t *testing.T) {
+	a := New(Options{Config: config.Default()})
+	a.Seed([]llm.Message{llm.UserMessage("hi"), llm.AssistantMessage("hello")}, "hi")
+	if len(a.working) != 2 || a.activeGoal != "hi" {
+		t.Fatalf("seed should prime 2 turns + goal, got %d turns goal=%q", len(a.working), a.activeGoal)
+	}
+	// A second seed must not clobber an in-flight transcript.
+	a.Seed([]llm.Message{llm.UserMessage("other")}, "other")
+	if len(a.working) != 2 || a.activeGoal != "hi" {
+		t.Error("seed must be a no-op once the transcript has content")
+	}
+}
+
 func TestBatchSignatureOrderIndependent(t *testing.T) {
 	a := []llm.ToolCall{tc("read", `{"p":1}`), tc("write", `{"p":2}`)}
 	b := []llm.ToolCall{tc("write", `{"p":2}`), tc("read", `{"p":1}`)}

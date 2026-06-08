@@ -12,6 +12,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"matrix/neo/internal/conversation"
 )
 
 // Server is Neo's HTTP front. It owns the conversational surface (POST /chat +
@@ -47,6 +49,12 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("/events/replay/", s.handleReplay)
 	mux.HandleFunc("/messages/async/", s.handleAsyncPoll)
 	mux.HandleFunc("/intents/", s.handleIntents)
+	// Neo owns conversation history now (it persists every Neo turn); serve the
+	// list/detail from Neo's own durable store instead of proxying to the
+	// daemon, which never saw a Neo conversation. Falls through to the proxy
+	// when persistence is disabled (dev/CLI) so the daemon's store still works.
+	mux.HandleFunc("/conversations", s.handleConversations)
+	mux.HandleFunc("/conversations/", s.handleConversations)
 	mux.HandleFunc("/", s.proxy.ServeHTTP) // healthz, /messages, /memory, /tools, … → daemon
 	return mux
 }
@@ -77,7 +85,11 @@ func (s *Server) handleChat(w http.ResponseWriter, r *http.Request) {
 	if convID == "" {
 		convID = synthConvID(msg)
 	}
+	// Mint/resume the session FIRST (it seeds from durable history that does
+	// NOT yet include this message), THEN persist the user turn so a reload or
+	// restart can list and reopen the thread.
 	sess := s.engine.sessions.get(convID)
+	s.engine.conv.AppendUser(convID, msg)
 	run := sess.start(msg)
 	writeJSON(w, http.StatusAccepted, map[string]interface{}{
 		"conversation_id": convID,
@@ -86,6 +98,42 @@ func (s *Server) handleChat(w http.ResponseWriter, r *http.Request) {
 		"events_url":      "/events?intent_id=" + run.id,
 		"poll_url":        "/messages/async/" + run.id,
 	})
+}
+
+// handleConversations serves GET /conversations (list) and
+// GET /conversations/<id> (full turn log) from Neo's durable store. The shape
+// mirrors the daemon's routes (and the web client's expectations) exactly:
+// list → {"items":[summary...]}, detail → the record. When persistence is
+// disabled it proxies to the daemon so the legacy store still answers.
+func (s *Server) handleConversations(w http.ResponseWriter, r *http.Request) {
+	if !s.engine.conv.Enabled() {
+		s.proxy.ServeHTTP(w, r)
+		return
+	}
+	if r.Method != http.MethodGet {
+		w.Header().Set("Allow", "GET")
+		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "method not allowed"})
+		return
+	}
+	id := strings.Trim(strings.TrimPrefix(r.URL.Path, "/conversations"), "/")
+	if id == "" {
+		items := s.engine.conv.List()
+		if items == nil {
+			items = []conversation.Summary{}
+		}
+		writeJSON(w, http.StatusOK, map[string]interface{}{"items": items})
+		return
+	}
+	if strings.ContainsAny(id, "/\\") {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "conversation id required"})
+		return
+	}
+	rec := s.engine.conv.Get(id)
+	if rec == nil {
+		writeJSON(w, http.StatusNotFound, map[string]string{"error": "conversation not found"})
+		return
+	}
+	writeJSON(w, http.StatusOK, rec)
 }
 
 // handleEvents serves the live SSE stream for a Neo run, or proxies to the

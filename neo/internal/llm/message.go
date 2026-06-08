@@ -112,6 +112,12 @@ func UserMessage(content string) Message {
 	return Message{Role: RoleUser, Content: content}
 }
 
+// AssistantMessage builds an assistant-role text message (no tool calls). Used
+// to seed a resumed conversation's transcript from durable history.
+func AssistantMessage(content string) Message {
+	return Message{Role: RoleAssistant, Content: content}
+}
+
 // ToolResult builds a tool-role message answering a specific tool call.
 func ToolResult(callID, name, content string) Message {
 	return Message{Role: RoleTool, ToolCallID: callID, Name: name, Content: content}

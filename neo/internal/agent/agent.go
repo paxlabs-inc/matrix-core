@@ -213,6 +213,21 @@ func (a *Agent) Reset() {
 	a.activeGoal = ""
 }
 
+// Seed primes a freshly-minted agent with a resumed conversation's durable
+// history (user/assistant text turns, oldest-first) and goal, so reopening a
+// past thread — or continuing one after a restart — retains context instead of
+// starting blank. No-op once the live transcript has any content, so it never
+// clobbers an in-flight conversation.
+func (a *Agent) Seed(history []llm.Message, goal string) {
+	if len(a.working) > 0 || len(history) == 0 {
+		return
+	}
+	a.working = append(a.working, history...)
+	if a.activeGoal == "" {
+		a.activeGoal = strings.TrimSpace(goal)
+	}
+}
+
 func (a *Agent) faultMemory(ctx context.Context, q string) []memory.Snippet {
 	if a.pager == nil {
 		return nil

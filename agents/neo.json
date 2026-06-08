@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "agent": "matrix://agent/neo",
-  "description": "Neo front-agent manifest — the REVERSIBLE-ONLY tool surface for the Neo conversational agent (matrix/neo). Neo holds no signing key (frozen-spec invariant i1: 'Neo never holds a signing key; all money crosses into MCL'), so the money/signature MCP servers (paxeer-net, tachyon, deus) are deliberately EXCLUDED from this manifest — Neo reaches those only by DELEGATING to the co-located MCL daemon via core_execute. Bundles fs + fetch + web-search + browser + git + exec. The exec server's service registry is isolated to /data/neo/services via MATRIX_EXEC_STATE_DIR (exported by the daemon image entrypoint for the Neo process) so it never collides with the co-located MCL daemon's /data/services. PackageDigest values mirror agents/default.json (PLACEHOLDERS where the daemon manifest is placeholder; operators replace before production / chain-anchoring).",
+  "description": "Neo front-agent manifest — the REVERSIBLE-ONLY tool surface for the Neo conversational agent (matrix/neo). Neo holds no signing key (frozen-spec invariant i1: 'Neo never holds a signing key; all money crosses into MCL'), so the SIGNING/SPENDING surfaces (tachyon, deus, and the paxeer-net write lane: transfer/approve/stream_*/schedule_*/delegate/contract_write/sign_message/wallet_info) are deliberately EXCLUDED — Neo reaches those only by DELEGATING to the co-located MCL daemon via core_execute. It DOES carry the paxeer READ surface (alias 'paxeer', PAXEER_READS_ONLY=1): the full Paxeer chain data layer (RPC + PaxScan + Argus + PaxSpot + price + agent-economy precompile reads) with zero value-moving tools, because on-chain reads are a Natural action — this is what lets Neo answer Paxeer questions (RPC, chain id, balances, prices, txs) directly instead of blind web search. Also bundles fs + fetch + web-search + browser + git + exec. The exec server's service registry is isolated to /data/neo/services via MATRIX_EXEC_STATE_DIR (exported by the daemon image entrypoint for the Neo process) so it never collides with the co-located MCL daemon's /data/services. PackageDigest values mirror agents/default.json (PLACEHOLDERS where the daemon manifest is placeholder; operators replace before production / chain-anchoring).",
   "allowed_side_effects": ["read", "write", "network", "shell"],
   "servers": [
     {
@@ -126,6 +126,44 @@
         {"name": "service_logs", "description": "Read the tail of a service's combined stdout+stderr log to verify or debug it. Read-only. args: name (required), lines?.", "side_effect_class": "read", "timeout_ms": 15000},
         {"name": "service_stop", "description": "Stop a supervised service (SIGTERM then SIGKILL the process group); disables autostart until restarted. args: name (required).", "side_effect_class": "shell", "timeout_ms": 15000},
         {"name": "service_restart", "description": "Restart a supervised service from its recorded command and re-enable autostart. args: name (required).", "side_effect_class": "shell", "timeout_ms": 30000}
+      ]
+    },
+    {
+      "alias": "paxeer",
+      "transport": "stdio",
+      "command": "node",
+      "args": ["/root/matrix/tools/paxeer/paxeer-net.mjs"],
+      "env": ["PAXEER_READS_ONLY=1"],
+      "package_digest": "sha256:7777777777777777777777777777777777777777777777777777777777777777",
+      "version": "0.1.0",
+      "tools": [
+        {"name": "rpc_call", "description": "Direct EVM JSON-RPC read against the Paxeer node (PAXEER_RPC_URL, default public-mainnet.rpcpaxeer.online/evm). Read-only.", "side_effect_class": "network", "timeout_ms": 15000},
+        {"name": "eth_call", "description": "Read-only eth_call against a contract. Does NOT send a tx.", "side_effect_class": "network", "timeout_ms": 15000},
+        {"name": "contract_read", "description": "Encode a method + eth_call + decode outputs (signature + outputs[]). Read-only.", "side_effect_class": "network", "timeout_ms": 15000},
+        {"name": "encode_call", "description": "Pure ABI-encode a method call to 0x calldata. No network, no send.", "side_effect_class": "read", "timeout_ms": 5000},
+        {"name": "chain_info", "description": "Paxeer chain id, head block, sync status, RPC URL. Read-only.", "side_effect_class": "network", "timeout_ms": 15000},
+        {"name": "get_balance", "description": "Native PAX balance of an address. Read-only.", "side_effect_class": "network", "timeout_ms": 15000},
+        {"name": "token_balance", "description": "ERC-20 balance + symbol/decimals for a holder. Read-only.", "side_effect_class": "network", "timeout_ms": 15000},
+        {"name": "paxscan_get", "description": "Generic PaxScan/Blockscout v2 GET passthrough (any documented route). Read-only.", "side_effect_class": "network", "timeout_ms": 20000},
+        {"name": "address_overview", "description": "PaxScan address info + counters + token balances in one call. Read-only.", "side_effect_class": "network", "timeout_ms": 20000},
+        {"name": "address_transactions", "description": "PaxScan transaction list for an address. Read-only.", "side_effect_class": "network", "timeout_ms": 20000},
+        {"name": "tx", "description": "PaxScan transaction detail by hash. Read-only.", "side_effect_class": "network", "timeout_ms": 20000},
+        {"name": "token_info", "description": "PaxScan token metadata + top holders. Read-only.", "side_effect_class": "network", "timeout_ms": 20000},
+        {"name": "search", "description": "PaxScan global search (addresses, tokens, txs, blocks). Read-only.", "side_effect_class": "network", "timeout_ms": 20000},
+        {"name": "network_stats", "description": "PaxScan network stats (gas, market, tx counts). Read-only.", "side_effect_class": "network", "timeout_ms": 20000},
+        {"name": "portfolio", "description": "Argus portfolio indexer: pnl + rank + performance for an address. Read-only.", "side_effect_class": "network", "timeout_ms": 20000},
+        {"name": "trending", "description": "Trending tokens from the discovery indexer. Read-only.", "side_effect_class": "network", "timeout_ms": 20000},
+        {"name": "price", "description": "Off-chain price for PAX or a bridged major (pax|sol|eth|bnb|sid). Read-only.", "side_effect_class": "network", "timeout_ms": 15000},
+        {"name": "market_get", "description": "Generic PaxSpot DEX market-data GET passthrough. Read-only.", "side_effect_class": "network", "timeout_ms": 20000},
+        {"name": "points", "description": "Sidiora points/rewards balance for an address. Read-only.", "side_effect_class": "network", "timeout_ms": 15000},
+        {"name": "oracle_price", "description": "OracleAggregator 0x0903 validator price for a market (bytes32). Read-only.", "side_effect_class": "network", "timeout_ms": 15000},
+        {"name": "orob_resolve", "description": "OROB 0x0901 oracle-relative price from a basis-point offset. Read-only (pure).", "side_effect_class": "network", "timeout_ms": 15000},
+        {"name": "clearing_compute", "description": "BatchClearing 0x0902 uniform-price clearing over buy/sell offset+size arrays. Read-only (pure).", "side_effect_class": "network", "timeout_ms": 15000},
+        {"name": "pofq_score", "description": "PoFQ 0x0904 fill-quality / reputation score (fillPrice vs oraclePrice). Read-only (pure).", "side_effect_class": "network", "timeout_ms": 15000},
+        {"name": "stream_status", "description": "PaymentStreams 0x0906 stream detail + accrued amount. Read-only.", "side_effect_class": "network", "timeout_ms": 15000},
+        {"name": "job_status", "description": "Scheduler 0x0905 job detail. Read-only.", "side_effect_class": "network", "timeout_ms": 15000},
+        {"name": "jobs_pending", "description": "Scheduler 0x0905 pending job ids for a creator. Read-only.", "side_effect_class": "network", "timeout_ms": 15000},
+        {"name": "delegation", "description": "Staking 0x0800 delegation (shares + balance) for a validator. Read-only.", "side_effect_class": "network", "timeout_ms": 15000}
       ]
     }
   ],

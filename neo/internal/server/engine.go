@@ -19,6 +19,7 @@ import (
 
 	"matrix/neo/internal/agent"
 	"matrix/neo/internal/config"
+	"matrix/neo/internal/conversation"
 	"matrix/neo/internal/delegate"
 	"matrix/neo/internal/llm"
 	"matrix/neo/internal/memory"
@@ -35,6 +36,7 @@ type Engine struct {
 	tools        *tools.Manager
 	pager        *memory.Pager
 	consolidator agent.Consolidator
+	conv         *conversation.Store // durable chat-thread history (per conversation_id)
 
 	backendURL   string // co-located MCL daemon (core_execute + reverse proxy)
 	backendToken string // optional bearer for the daemon
@@ -49,14 +51,15 @@ type Engine struct {
 // EngineOptions configures NewEngine. Main + Tools are required; the rest are
 // optional (a nil pager/consolidator degrades gracefully).
 type EngineOptions struct {
-	Config       config.Config
-	Main         *llm.Client
-	Cheap        *llm.Client
-	Tools        *tools.Manager
-	Pager        *memory.Pager
-	Consolidator agent.Consolidator
-	BackendURL   string
-	BackendToken string
+	Config          config.Config
+	Main            *llm.Client
+	Cheap           *llm.Client
+	Tools           *tools.Manager
+	Pager           *memory.Pager
+	Consolidator    agent.Consolidator
+	ConversationDir string // durable conversation store dir ("" disables persistence)
+	BackendURL      string
+	BackendToken    string
 }
 
 // NewEngine assembles the engine and wires core_execute delegation through the
@@ -69,6 +72,7 @@ func NewEngine(o EngineOptions) *Engine {
 		tools:        o.Tools,
 		pager:        o.Pager,
 		consolidator: o.Consolidator,
+		conv:         conversation.Open(o.ConversationDir),
 		backendURL:   strings.TrimRight(o.BackendURL, "/"),
 		backendToken: o.BackendToken,
 		broker:       newBroker(),
