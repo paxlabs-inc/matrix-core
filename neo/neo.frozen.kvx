@@ -1,0 +1,240 @@
+# neo.frozen.kvx — FROZEN architecture spec for the Neo default agent.
+#
+# Neo is Matrix's DEFAULT conversational agent module: a predictable, robust,
+# lower-complexity agent for significant-but-reversible tasks. It coexists with
+# the existing MCL compile->plan->execute pipeline (kept for rigorous tasks) and
+# DELEGATES to it whenever a task requires a user wallet signature.
+#
+# Format: sectioned KV per the Matrix .kvx convention (see tachyon/internal/config/kvx.go).
+#   [section] / [section.sub]   key = "string"   num = 80   list = ["a","b"]   ${ENV}
+# String-typed values are ALWAYS double-quoted (Matrix .mtx lexer convention).
+#
+# STATUS: FROZEN. Design locked with Andrew on 2026-06-08. Persisted to cortex
+# (actor=cursor-agent) as 4 decision records. Changes require a new version.
+
+[meta]
+name        = "Neo"
+codename    = "neo"
+kind        = "default-conversational-agent-module"
+version     = "1.0.0"
+status      = "frozen"
+frozen_at   = "2026-06-08"
+authors     = ["Andrew", "cursor-agent"]
+relation    = "coexists with MCL core pipeline; delegates rigorous/monetary tasks to it"
+supersedes  = "none"
+
+[mission]
+goal       = "make Matrix the future of machine interactions by shipping a familiar, trustworthy DEFAULT agent"
+why        = "humans prefer familiarity over raw efficiency; the MCL 'smart computer' is optimal but unfamiliar; the business must meet users where they are"
+positioning= "better than a typical agent, but a conversational agent (not the rigorous compile->plan->execute machine)"
+not_a      = "replacement for MCL — MCL remains the rigorous rail for irreversible/high-stakes work"
+
+[principles]
+familiarity_over_efficiency = "default to the human-legible conversational shape even when a compiled plan would be more efficient"
+security_from_structure     = "safety comes from architecture + chain consensus, NOT from throttles/gates/allowlists on execution"
+permissive_when_reversible  = "fully permissive on reversible actions (shell, code, fetch); rigorous ONLY where irreversible (money)"
+transparency_rule           = "hide the MECHANISM (cortex/Merkle/replay jargon); SURFACE the INTENTION in human cognitive-state terms"
+ground_truth                = "cortex is durable ground truth; the context window is a disposable cache"
+no_false_success            = "never attest success that did not happen; surface honest partials"
+
+# ============================ CONTROL ARCHITECTURE ============================
+
+[control]
+model       = "recursive LLM tool-calling loop"
+state_model = "the conversation transcript IS the state; the LLM is stateless between calls"
+effector    = "the harness is the ONLY effector; the model emits text + tool-call intents, never touches side effects directly"
+
+[control.loop]
+step_1 = "append user message to transcript"
+step_2 = "pack window = system + pinned_memory + retrieved(faulted) + working_transcript; inject context-budget stat"
+step_3 = "if budget >= hard_pct: force compaction before calling the model"
+step_4 = "call LLM with window + tool schemas"
+step_5 = "background consolidation pass sweeps the new turn into cortex (write-back option B)"
+step_6 = "if tool_calls: execute (incl. core_execute delegation), append results; if budget >= soft_pct AND at atomic boundary: compact; loop"
+step_7 = "else: run termination self-check; if goal unmet and not blocked, continue; else append + end turn"
+
+# ====================== RELATION TO CORE (HYBRID + HANDOFF) ==================
+
+[relation]
+mode      = "hybrid-with-handoff"
+default   = "Neo runs the conversation self-contained"
+escalation= "Neo DELEGATES rigorous/monetary tasks to the MCL pipeline via a tool"
+rationale = "best-effort chat by default; rigorous replayable execution only where it matters"
+
+[relation.delegation]
+tool            = "core_execute(prose_intent)"
+reuses          = "existing async pipeline + in-walk approval gates (gate.invoked) + Merkle replay"
+runs            = "out-of-band; barely consumes Neo's context window (delegation is also a context-conservation strategy)"
+returns         = "verifiable envelope (tx hash / receipt / EIP-712 attestation)"
+neo_records     = "the OUTCOME only (episodic memory); core owns the rigor + replay journal"
+approval_ux     = "MCL approval gate fires IN-CONVERSATION; user Approves/Denies the spend inline"
+
+# ============================ EXECUTION SURFACE =============================
+
+[execution]
+escalation_trigger = "the action requires a USER WALLET SIGNATURE (commits or moves the user's on-chain funds)"
+clarifier          = "operator cost != user funds — a paid third-party API call (e.g. image/video gen) stays Natural"
+
+[execution.natural]
+# Stays at the Neo (Natural) level — reversible, no wallet signature.
+allow = ["web_search", "git", "fetch_data", "write_code", "write_docs", "image_video_generation", "non_monetary_workflows", "scheduled_tasks", "onchain_reads", "shell", "long_lived_processes"]
+note  = "fully permissive; no throttles/gates/allowlists (per Andrew's exec preference)"
+
+[execution.escalate]
+# Crosses the wall into MCL — requires a wallet signature.
+actions = ["send_value", "swap", "token_approve", "contract_deploy_gas", "fund_payment_stream", "fund_channel", "settle"]
+approve_note  = "token approve ESCALATES too (it authorizes a future drain — arguably more dangerous than a send)"
+deferred_note = "time-deferred money escalates at FIRE time, not schedule time; any scheduler/cron Neo sets up must route its monetary payload through MCL when it fires"
+
+[execution.security]
+philosophy   = "two structural backstops, zero throttles"
+backstop_1   = "key-isolation wall: Neo holds NO signing key, so it structurally CANNOT move funds without crossing into MCL"
+backstop_2   = "Argus + 78% validator control: catches theft/mistake, low-level call blacklists the wallet and freezes funds"
+honesty      = "Argus makes theft low-odds and RECOVERABLE, not impossible — defense-in-depth, not a proof"
+throttles    = "none — consistent with permissive-execution preference"
+
+# ================================ MEMORY ===================================
+
+[memory]
+mental_model = "context window = RAM (scarce), cortex = disk (durable), a memory-controller = the PAGER"
+invariant    = "cortex is ground truth; the window is a cache; summaries are disposable + re-derivable (kills summary-drift)"
+conflict_rule= "live conversation wins over stored memory, then update the store"
+
+[memory.tiers]
+working      = "live transcript / current task — always in-window"
+episodic     = "past sessions + outcomes — retrieved on relevance"
+semantic     = "durable facts about user/repo/env — mostly retrieved, some pinned"
+procedural   = "learned how-to patterns — retrieved on task-match (see [procedural])"
+relationship = "identity, preferences, hard rules, communication style — pinned"
+
+[memory.mechanisms]
+pinned    = "small high-salience block injected EVERY turn: identity + hard rules + active goal"
+retrieval = "page-fault: top-K relevant cortex records by relevance (reuse Deus vector/HNSW + cortex salience composer)"
+compaction= "swap-out: summarize + evict older turns when the window fills (see [memory.compaction])"
+writeback = "consolidation: promote durable learnings to cortex (see [memory.writeback])"
+
+[memory.writeback]
+chosen        = "B = automatic background consolidation"
+how           = "a cheap model / sub-agent reads each turn and extracts durable facts into cortex"
+not           = "NOT agent-must-remember — the main agent never has to consciously call remember()"
+composes_with = "keeps the durable store current, so compaction only has to capture the EPHEMERAL story-so-far"
+
+[memory.budget]
+self_aware   = true
+inject       = "harness injects a budget stat every turn, e.g. '[context: 62% used]'"
+soft_pct     = 80
+hard_pct     = 92
+soft_behavior= "cooperative: finish the current atomic step, then compact"
+hard_behavior= "forced: compact now regardless (runaway backstop)"
+headroom_note= "the 20% above soft is the room needed to generate the summary + leave output space"
+
+[memory.compaction]
+summary_blend  = "active-session (generated, ephemeral) + long-term (RE-FAULTED fresh from cortex, not carried through the lossy summary)"
+verbatim_rule  = "high-entropy tokens (tx hashes, addresses, IDs, file paths) are copied VERBATIM, never paraphrased"
+verbatim_is    = "the trust contract — a paraphrased 0x... is a corrupted memory"
+
+[memory.schema.active_session]
+# The fixed template the compaction summary MUST fill (nothing load-bearing dropped).
+goal         = "the task we are on"
+decisions    = "choices made + 1-line rationale"
+artifacts    = "files / addresses / tx hashes / IDs — VERBATIM"
+open         = "unresolved questions / blockers"
+last_results = "still-live tool outputs that matter"
+next         = "planned next step(s)"
+
+# ============================ TRANSPARENCY ================================
+
+[transparency]
+principle    = "hide the mechanism, surface the intention in human cognitive-state terms"
+example_say  = "approaching my context window — give me a few seconds to summarize our trajectory so I stay sharp and focused"
+why          = "users read self-narrated diligence as reliability, not fragility (builds trust)"
+read_path    = "applies to memory reads too, e.g. 'I remember you commit yourself — I will not touch git'"
+money_path   = "announce escalation, e.g. 'this moves real funds, routing through the secure path — I will need your go-ahead'"
+
+[transparency.spoken_promise]
+# Announcing compaction makes it a promise; these conditions or it backfires.
+honest       = "it happens for that real reason at the real threshold — never theater"
+proportionate= "rare, not every few minutes — frequent narration reads as 'about to fall over'"
+seamless     = "resumption must actually retain everything (verbatim discipline is the contract)"
+specific     = "first-person, calm, references the actual task ('consolidate where we are on the rates fix')"
+
+[transparency.authorship]
+author     = "the agent self-authors its handoff (first-person voice continuity)"
+validator  = "a silent cheap pass validates the summary against the active-session schema and confirms verbatim tokens survived before the window resets"
+
+# ========================= PROCEDURAL MEMORY =============================
+
+[procedural]
+definition = "reusable how-to knowledge (workflows/recipes), distinct from semantic facts and episodic events"
+why        = "a typical agent re-derives the HOW every time; Neo recognizes a task shape and runs the proven path — competence that compounds"
+nursery    = "procedural memory is the nursery for MCL skills"
+
+[procedural.pattern_schema]
+name             = "human label, e.g. 'deploy ERC-20 on Paxeer'"
+trigger          = "when to apply (semantic match on the goal)"
+preconditions    = "what must be true first — CHECKED BEFORE applying"
+steps            = "the proven tool sequence + params"
+gotchas          = "learned failure modes, e.g. 'pre-Cancun chain -> MCOPY revert'"
+success_criteria = "how to know it worked — VERIFIED AFTER applying"
+confidence       = "rolling success rate — drives injection + pruning"
+
+[procedural.lifecycle]
+stage_1 = "EXPERIENCE: an episodic event ('this worked')"
+stage_2 = "DISTILL: background write-back pass abstracts the successful sequence into a CANDIDATE pattern"
+stage_3 = "REINFORCE: confidence++ and refine steps/gotchas on each success; decrement + attach failure mode on failure"
+stage_4 = "PROMOTE: a proven + rigorous pattern graduates into an authored MCL .mtx skill"
+
+[procedural.retrieval]
+how    = "match current goal against pattern triggers; fault top-K by relevance x confidence into the window as guidance"
+inject = "'you have done this before — proven path: [...]; gotchas: [...]; 6/6 success'"
+
+[procedural.guards]
+anti_overfit       = "require N successes before a candidate becomes active/injected (stays candidate until proven)"
+anti_stale         = "patterns record the context/version they were learned in; failures flag for REVISION not blind reuse"
+anti_confident_wrong = "gate application on preconditions (before) + verify success_criteria (after)"
+anti_bloat         = "top-K, tight budget, confidence-weighted — same discipline as fact retrieval"
+
+# ===================== LOOP DISCIPLINE (final calls) ====================
+# Decided by cursor-agent at Andrew's delegation, grounded in existing patterns:
+# autonomy-first preference, no-false-success fix, browser anti-rabbit-hole rule.
+
+[loop_discipline.autonomy]
+default        = "act autonomously; pick reasonable defaults for naming/formatting/approach and note them"
+ask_when       = ["genuine intent-ambiguity that materially changes the outcome", "destructive/irreversible NON-monetary action (e.g. data wipe, overwriting user work)", "scope expansion beyond the stated request"]
+money_excluded = "monetary actions are NOT in ask_when — they self-escalate to MCL which owns the approval gate"
+mechanism      = "one crisp clarifying question (multiple-choice when possible), never a barrage; bias to a well-chosen default + note over interrupting"
+
+[loop_discipline.termination]
+ends_when       = "the model emits no tool calls AND a success-criteria self-check passes (or the agent is blocked needing the human)"
+anti_premature  = "before yielding, re-read the active goal + success_criteria; if unmet and not blocked, continue"
+anti_infinite   = "per-turn step budget (max tool-call iterations) + no-progress detection (repeated same failing call / no state change)"
+step_budget     = 50
+no_progress_stall = 4
+on_budget_exhausted = "summarize progress + what remains + hand back honestly; NEVER fabricate success"
+
+[loop_discipline.recovery]
+ladder_1_retry    = "transient/idempotent failures (network blips, timeouts) with bounded backoff"
+ladder_2_adapt    = "if retry will not help (bad args/approach), revise using the error as signal"
+ladder_3_escalate = "money/rigor boundary -> MCL; missing capability -> surface"
+ladder_4_surface  = "after the bounded ladder is exhausted OR progress stalls, STOP and report: what was tried, what failed, the most likely next step"
+max_retries_per_tool = 3
+max_adapt_attempts   = 2
+feedback          = "every failure is a write-back signal: the background pass records the failure mode -> updates pattern confidence/gotchas"
+never             = "never silently swallow an error; never loop forever; never fabricate success"
+
+# ============================== INVARIANTS ==============================
+
+[invariants]
+i1 = "Neo never holds a signing key; all money crosses into MCL"
+i2 = "cortex is ground truth; the window is a cache"
+i3 = "compaction preserves high-entropy tokens verbatim"
+i4 = "no throttles/gates on reversible execution; safety is structural"
+i5 = "hide the mechanism, surface the intention"
+i6 = "no false success — honest partials only"
+i7 = "procedural patterns are gated by preconditions (before) and success_criteria (after)"
+
+# ============================ DEFERRED / NEXT =========================
+
+[deferred]
+implementation = "this is a FROZEN design spec — no code yet"
+next_steps     = ["choose the cheap consolidation/validation model", "define the cortex Pattern type (or map onto existing types)", "implement the memory-controller (pager) + budget injector", "implement core_execute delegation client against the existing async daemon", "wire the transparent compaction narration"]

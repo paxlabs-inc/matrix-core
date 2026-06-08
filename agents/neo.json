@@ -1,0 +1,133 @@
+{
+  "schema_version": 1,
+  "agent": "matrix://agent/neo",
+  "description": "Neo front-agent manifest — the REVERSIBLE-ONLY tool surface for the Neo conversational agent (matrix/neo). Neo holds no signing key (frozen-spec invariant i1: 'Neo never holds a signing key; all money crosses into MCL'), so the money/signature MCP servers (paxeer-net, tachyon, deus) are deliberately EXCLUDED from this manifest — Neo reaches those only by DELEGATING to the co-located MCL daemon via core_execute. Bundles fs + fetch + web-search + browser + git + exec. The exec server's service registry is isolated to /data/neo/services via MATRIX_EXEC_STATE_DIR (exported by the daemon image entrypoint for the Neo process) so it never collides with the co-located MCL daemon's /data/services. PackageDigest values mirror agents/default.json (PLACEHOLDERS where the daemon manifest is placeholder; operators replace before production / chain-anchoring).",
+  "allowed_side_effects": ["read", "write", "network", "shell"],
+  "servers": [
+    {
+      "alias": "fs",
+      "transport": "stdio",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", "/workspace"],
+      "env": [],
+      "package_digest": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+      "version": "2026.1.14",
+      "tools": [
+        {"name": "read_file", "description": "Read a file (deprecated alias of read_text_file)", "side_effect_class": "read"},
+        {"name": "read_text_file", "description": "Read the contents of a text file", "side_effect_class": "read"},
+        {"name": "read_media_file", "description": "Read an image or audio file as base64", "side_effect_class": "read"},
+        {"name": "read_multiple_files", "description": "Read multiple files in a single call", "side_effect_class": "read"},
+        {"name": "write_file", "description": "Write content to a file (creates or overwrites)", "side_effect_class": "write"},
+        {"name": "edit_file", "description": "Apply line-based edits to a file", "side_effect_class": "write"},
+        {"name": "create_directory", "description": "Create a directory tree", "side_effect_class": "write"},
+        {"name": "list_directory", "description": "List entries in a directory", "side_effect_class": "read"},
+        {"name": "list_directory_with_sizes", "description": "List entries in a directory including byte sizes", "side_effect_class": "read"},
+        {"name": "list_allowed_directories", "description": "List the directories the server is permitted to access", "side_effect_class": "read"},
+        {"name": "directory_tree", "description": "Recursive tree view of a directory", "side_effect_class": "read"},
+        {"name": "move_file", "description": "Move or rename a file", "side_effect_class": "write"},
+        {"name": "search_files", "description": "Recursive glob search", "side_effect_class": "read"},
+        {"name": "get_file_info", "description": "Stat a file or directory", "side_effect_class": "read"}
+      ]
+    },
+    {
+      "alias": "fetch",
+      "transport": "stdio",
+      "command": "uvx",
+      "args": ["mcp-server-fetch"],
+      "env": [],
+      "package_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+      "version": "2025.4.7",
+      "tools": [
+        {"name": "fetch", "description": "Fetch a URL and return its content as Markdown", "side_effect_class": "network", "timeout_ms": 30000}
+      ]
+    },
+    {
+      "alias": "web-search",
+      "transport": "stdio",
+      "command": "node",
+      "args": ["/root/matrix/tools/websearch/web-search.mjs"],
+      "env": [],
+      "package_digest": "sha256:7da2e53ce32872c9ab314f252d71d8109b393cef0e0004c4bc0333c4ecd25c92",
+      "version": "0.1.0",
+      "tools": [
+        {"name": "web_search", "description": "Search the public web for a query; returns ranked results (title, url, snippet) plus an optional synthesized answer. Pair with `fetch` to read a result URL in full. Read-only. args: query (required), max_results?, topic? (general|news), include_answer?", "side_effect_class": "network", "timeout_ms": 20000},
+        {"name": "web_news", "description": "Search recent news for a query; returns ranked articles (title, url, snippet, published). Read-only. args: query (required), max_results?", "side_effect_class": "network", "timeout_ms": 20000}
+      ]
+    },
+    {
+      "alias": "browser",
+      "transport": "stdio",
+      "command": "node",
+      "args": ["/root/matrix/tools/browser/browser.mjs"],
+      "env": [],
+      "package_digest": "sha256:83887ed1fae35949de1dc907861e5195ef30321bde47ead3424d75524a6b4221",
+      "version": "0.1.0",
+      "tools": [
+        {"name": "browser_navigate", "description": "Navigate the shared headless browser to a URL.", "side_effect_class": "network", "timeout_ms": 60000},
+        {"name": "browser_navigate_back", "description": "Go back to the previous page in history.", "side_effect_class": "network", "timeout_ms": 30000},
+        {"name": "browser_snapshot", "description": "Capture an accessibility snapshot of the current page (preferred over screenshot for acting on elements).", "side_effect_class": "read", "timeout_ms": 30000},
+        {"name": "browser_take_screenshot", "description": "Screenshot the current page (png/jpeg). For viewing only; use browser_snapshot to act.", "side_effect_class": "read", "timeout_ms": 30000},
+        {"name": "browser_click", "description": "Click an element identified by a snapshot ref/selector.", "side_effect_class": "network", "timeout_ms": 30000},
+        {"name": "browser_type", "description": "Type text into an editable element (optionally submit).", "side_effect_class": "network", "timeout_ms": 30000},
+        {"name": "browser_fill_form", "description": "Fill multiple form fields in one call.", "side_effect_class": "network", "timeout_ms": 30000},
+        {"name": "browser_select_option", "description": "Select option(s) in a dropdown.", "side_effect_class": "network", "timeout_ms": 30000},
+        {"name": "browser_press_key", "description": "Press a keyboard key or character.", "side_effect_class": "network", "timeout_ms": 30000},
+        {"name": "browser_hover", "description": "Hover the mouse over an element.", "side_effect_class": "network", "timeout_ms": 30000},
+        {"name": "browser_drag", "description": "Drag and drop between two elements.", "side_effect_class": "network", "timeout_ms": 30000},
+        {"name": "browser_drop", "description": "Drop files or MIME-typed data onto an element.", "side_effect_class": "network", "timeout_ms": 30000},
+        {"name": "browser_file_upload", "description": "Upload one or more files to a file chooser.", "side_effect_class": "network", "timeout_ms": 30000},
+        {"name": "browser_handle_dialog", "description": "Accept or dismiss a browser dialog (alert/confirm/prompt).", "side_effect_class": "network", "timeout_ms": 30000},
+        {"name": "browser_tabs", "description": "List, create, close, or select a browser tab.", "side_effect_class": "network", "timeout_ms": 30000},
+        {"name": "browser_resize", "description": "Resize the browser window.", "side_effect_class": "network", "timeout_ms": 15000},
+        {"name": "browser_close", "description": "Close the current page.", "side_effect_class": "network", "timeout_ms": 15000},
+        {"name": "browser_wait_for", "description": "Wait for text to appear/disappear or a fixed time to pass.", "side_effect_class": "read", "timeout_ms": 60000},
+        {"name": "browser_console_messages", "description": "Return collected console messages.", "side_effect_class": "read", "timeout_ms": 15000},
+        {"name": "browser_network_requests", "description": "List network requests made since page load.", "side_effect_class": "read", "timeout_ms": 15000},
+        {"name": "browser_network_request", "description": "Full details (headers/body) of one network request by index.", "side_effect_class": "read", "timeout_ms": 15000},
+        {"name": "browser_evaluate", "description": "Evaluate a JavaScript function on the page or an element. WARNING: arbitrary code execution.", "side_effect_class": "shell", "timeout_ms": 30000},
+        {"name": "browser_run_code_unsafe", "description": "Run an arbitrary Playwright code snippet in the server process. UNSAFE: RCE-equivalent on the shared browser host.", "side_effect_class": "shell", "timeout_ms": 30000}
+      ]
+    },
+    {
+      "alias": "git",
+      "transport": "stdio",
+      "command": "uvx",
+      "args": ["mcp-server-git", "--repository", "/workspace"],
+      "env": [],
+      "package_digest": "sha256:2222222222222222222222222222222222222222222222222222222222222222",
+      "version": "2026.1.14",
+      "tools": [
+        {"name": "git_status", "description": "Show the working-tree status", "side_effect_class": "read"},
+        {"name": "git_diff_unstaged", "description": "Diff unstaged changes", "side_effect_class": "read"},
+        {"name": "git_diff_staged", "description": "Diff staged changes", "side_effect_class": "read"},
+        {"name": "git_diff", "description": "Diff between commits/branches", "side_effect_class": "read"},
+        {"name": "git_log", "description": "Show commit history", "side_effect_class": "read"},
+        {"name": "git_show", "description": "Show a specific commit", "side_effect_class": "read"},
+        {"name": "git_branch", "description": "List branches", "side_effect_class": "read"},
+        {"name": "git_add", "description": "Stage files for commit", "side_effect_class": "write"},
+        {"name": "git_reset", "description": "Reset staged changes", "side_effect_class": "write"},
+        {"name": "git_commit", "description": "Create a commit from staged changes", "side_effect_class": "write"},
+        {"name": "git_create_branch", "description": "Create a new branch", "side_effect_class": "write"},
+        {"name": "git_checkout", "description": "Switch branches", "side_effect_class": "write"}
+      ]
+    },
+    {
+      "alias": "exec",
+      "transport": "stdio",
+      "command": "node",
+      "args": ["/root/matrix/tools/exec/exec.mjs"],
+      "env": [],
+      "package_digest": "sha256:089cd0465f64fda18cb07b890dc796a6b09791382f5247a9f319caf04a0671df",
+      "version": "0.1.0",
+      "tools": [
+        {"name": "shell", "description": "Run a shell command (bash -lc) to completion and return exit code + stdout + stderr. Install deps, build, run scripts, inspect the filesystem. Runs in /workspace by default. For a process that must keep running use service_start. args: command (required), cwd?, timeout_ms?, env?.", "side_effect_class": "shell", "timeout_ms": 600000},
+        {"name": "service_start", "description": "Start or replace a long-lived background service that keeps running after the call and is respawned on machine restart (web servers, bots, workers). Output captured to a log. args: name (required), command (required), cwd?, env?, autostart?.", "side_effect_class": "shell", "timeout_ms": 30000},
+        {"name": "service_list", "description": "List supervised services with status (running/stopped), pid, uptime, command, cwd, log file. Read-only.", "side_effect_class": "read", "timeout_ms": 15000},
+        {"name": "service_logs", "description": "Read the tail of a service's combined stdout+stderr log to verify or debug it. Read-only. args: name (required), lines?.", "side_effect_class": "read", "timeout_ms": 15000},
+        {"name": "service_stop", "description": "Stop a supervised service (SIGTERM then SIGKILL the process group); disables autostart until restarted. args: name (required).", "side_effect_class": "shell", "timeout_ms": 15000},
+        {"name": "service_restart", "description": "Restart a supervised service from its recorded command and re-enable autostart. args: name (required).", "side_effect_class": "shell", "timeout_ms": 30000}
+      ]
+    }
+  ],
+  "native_tools": []
+}

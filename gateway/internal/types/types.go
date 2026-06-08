@@ -34,8 +34,8 @@ const (
 	HeaderGoalID = "X-Matrix-Goal-ID"
 
 	// HeaderSlot identifies the model slot the daemon resolved for
-	// this call: compiler|planner|executor|liaison. Drives the free-tier
-	// whitelist in routing.go.
+	// this call: compiler|planner|executor|liaison|neo. Drives the
+	// free-tier whitelist in routing.go.
 	HeaderSlot = "X-Matrix-Slot"
 
 	// HeaderKindRoute identifies the executor sub-route (reason|code|
@@ -76,10 +76,16 @@ const (
 	SlotCompiler = "compiler"
 	SlotPlanner  = "planner"
 	SlotExecutor = "executor"
-	// SlotLiaison is the user-facing conversational agent (the Liaison)
-	// that narrates the pipeline to the human. Reuses already-priced
-	// models (see rates.FreeTierWhitelist) so it adds no rate-card change.
+	// SlotLiaison is the pipeline NARRATOR — a passive, read-only
+	// observability side-channel that humanizes plan/walk events for the
+	// user. It does not drive work. Reuses already-priced models.
 	SlotLiaison = "liaison"
+	// SlotNeo is the Neo default conversational AGENT (matrix/neo): the
+	// first-class function-calling agent that fronts the per-user runtime,
+	// runs its own tools, and delegates rigorous/money tasks to MCL. Neo is
+	// NOT the Liaison (which only narrates) — it gets its OWN slot so its
+	// LLM spend is metered under its own identity. See rates.FreeTierWhitelist.
+	SlotNeo = "neo"
 )
 
 // BudgetExhaustedResponse is the JSON body returned with 429 when

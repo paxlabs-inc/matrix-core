@@ -88,7 +88,7 @@ type Decision struct {
 	UserAPIKey string
 
 	// Slot is the requested ModelSlot label (compiler|planner|
-	// executor|liaison). Echoed for downstream metrics.
+	// executor|liaison|neo). Echoed for downstream metrics.
 	Slot string
 
 	// KindRoute is the executor sub-route label, optional.
@@ -236,7 +236,7 @@ func enforceFreeTier(slot, model string) error {
 // the metering audit has provenance.
 func validSlot(s string) bool {
 	switch s {
-	case types.SlotCompiler, types.SlotPlanner, types.SlotExecutor, types.SlotLiaison:
+	case types.SlotCompiler, types.SlotPlanner, types.SlotExecutor, types.SlotLiaison, types.SlotNeo:
 		return true
 	}
 	return false

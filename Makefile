@@ -10,7 +10,7 @@ SHELL              := /usr/bin/env bash
 .SHELLFLAGS        := -eu -o pipefail -c
 .DEFAULT_GOAL      := help
 
-MODULES            := MCL bridge executor gateway router cortex tachyon deus
+MODULES            := MCL bridge executor gateway router cortex tachyon deus neo
 GO                 ?= go
 GOFLAGS            ?=
 GOTEST_FLAGS       ?= -count=1
@@ -89,6 +89,7 @@ install: ## Install runnable binaries into ./bin.
 	@$(GO) -C executor build -o $(BIN_DIR)/mcl-e2e         ./cmd/mcl-e2e
 	@$(GO) -C gateway  build -o $(BIN_DIR)/matrix-gateway  ./cmd/matrix-gateway
 	@$(GO) -C router   build -o $(BIN_DIR)/matrix-router   ./cmd/matrix-router
+	@$(GO) -C neo      build -o $(BIN_DIR)/neo             ./cmd/neo
 	@printf "  $(C_GREEN)binaries$(C_RESET) -> $(BIN_DIR)\n"
 	@ls -1 $(BIN_DIR) | sed 's/^/    /'
 
@@ -219,6 +220,7 @@ clean: ## Remove build artefacts, coverage, bin/, transient runs/.
 	@rm -f executor/mcl-execute executor/mcl-e2e executor/mcl-tools
 	@rm -f gateway/matrix-gateway
 	@rm -f router/matrix-router
+	@rm -f neo/neo
 
 .PHONY: verify-modules
 verify-modules: ## Sanity-check every module's go.mod (version + module path).

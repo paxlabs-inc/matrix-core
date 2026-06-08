@@ -3,9 +3,11 @@
 # Matrix v1 daemon image.
 #
 # Runtime layout inside the container:
-#   /opt/matrix/bin/mcl-execute          static go binary (the daemon)
+#   /opt/matrix/bin/mcl-execute          static go binary (the MCL daemon, backend :8081)
+#   /opt/matrix/bin/neo                  static go binary (the Neo conversational front :8080)
 #   /opt/matrix/skills/                  baked-in skill corpus (read-only)
-#   /opt/matrix/agents/default.json      MCP server manifest (read-only)
+#   /opt/matrix/agents/default.json      MCP manifest — daemon (full, incl. money tools)
+#   /opt/matrix/agents/neo.json          MCP manifest — Neo front (reversible-only, no money)
 #   /opt/matrix/tools/paxeer/            paxeer-net stdio MCP bridge (Node.js)
 #   /opt/matrix/tools/websearch/         web-search stdio MCP bridge (Node.js;
 #                                        needs TAVILY_API_KEY or BRAVE_API_KEY in env)
@@ -18,7 +20,7 @@
 #   /opt/matrix/tools/tachyon/           tachyon stdio MCP proxy (Node.js) ->
 #                                        shared matrix-tachyon Fly app via
 #                                        MATRIX_TACHYON_URL (Solidity/EVM engine)
-#   /opt/matrix/entrypoint.sh            init script: prep volume + exec daemon
+#   /opt/matrix/entrypoint.sh            init script: prep volume + run (neo front + daemon back)
 #   /root/matrix -> /opt/matrix          symlink so default.json's hard-coded
 #                                        /root/matrix/tools/paxeer/paxeer-net.mjs
 #                                        path resolves at runtime
@@ -28,7 +30,8 @@
 #     /data/journal/                     signed envelope journal
 #     /data/transcripts/                 per-message JSONL transcripts
 #     /data/workspace/                   user's working filesystem
-#     /data/services/                    exec service registry + per-service logs
+#     /data/services/                    exec service registry + logs (MCL daemon)
+#     /data/neo/services/                exec service registry + logs (Neo front; isolated)
 #     /data/.matrix/executor.key         ed25519 actor key (persisted)
 #
 # MCP servers are pre-cached at build time so cold starts don't hit the
@@ -49,15 +52,22 @@ COPY cortex/go.mod  cortex/go.sum  cortex/
 COPY MCL/go.mod     MCL/go.sum     MCL/
 COPY bridge/go.mod  bridge/go.sum  bridge/
 COPY executor/go.mod executor/go.sum executor/
+COPY neo/go.mod     neo/go.sum     neo/
 
 # Now the source.
 COPY cortex/   cortex/
 COPY MCL/      MCL/
 COPY bridge/   bridge/
 COPY executor/ executor/
+COPY neo/      neo/
 
 WORKDIR /src/executor
 RUN go build -ldflags="-s -w" -o /out/mcl-execute ./cmd/mcl-execute
+
+# Neo — the conversational FRONT (matrix/neo). Reuses cortex/MCL/executor via
+# the sibling replace directives in neo/go.mod (those trees are copied above).
+WORKDIR /src/neo
+RUN go build -ldflags="-s -w" -o /out/neo ./cmd/neo
 
 # -------- 2. Runtime --------
 FROM debian:bookworm-slim AS runtime
@@ -106,8 +116,10 @@ RUN set -eux; \
 
 WORKDIR /opt/matrix
 
-# Copy the static binary first.
+# Copy the static binaries first. mcl-execute = the MCL daemon (backend);
+# neo = the Neo conversational front (matrix/neo serve).
 COPY --from=builder /out/mcl-execute /opt/matrix/bin/mcl-execute
+COPY --from=builder /out/neo         /opt/matrix/bin/neo
 
 # Bake the skill corpus + agent manifest + chain-bridge tools. These are
 # part of the image identity — same image SHA implies same skill hashes
@@ -129,9 +141,10 @@ RUN mkdir -p /root && ln -sfn /opt/matrix /root/matrix
 COPY deploy/daemon/entrypoint.sh /opt/matrix/entrypoint.sh
 RUN chmod +x /opt/matrix/entrypoint.sh
 
-# Health-check probe (Fly will hit /healthz on its own; keep this for
-# `docker run` smoke tests).
-HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
+# Health-check probe. In the default `neo` run mode :8080 is the Neo front,
+# which reverse-proxies /healthz to the MCL daemon backend on :8081 — so a
+# 200 here proves BOTH processes are up. Start period covers the two boots.
+HEALTHCHECK --interval=30s --timeout=5s --start-period=40s --retries=3 \
     CMD curl -fsS http://127.0.0.1:8080/healthz >/dev/null || exit 1
 
 EXPOSE 8080
@@ -140,4 +153,6 @@ EXPOSE 8080
 VOLUME ["/data"]
 
 ENTRYPOINT ["/usr/bin/tini", "-g", "--", "/opt/matrix/entrypoint.sh"]
-CMD ["daemon"]
+# Default to the Neo front (Neo :8080 + MCL daemon :8081 co-located). The
+# matrix-telegram sidecar overrides this with `daemon` for the solo daemon.
+CMD ["neo"]
