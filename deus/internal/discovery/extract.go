@@ -14,10 +14,10 @@ type ExtractedQuery struct {
 }
 
 var (
-	reMaxPAX   = regexp.MustCompile(`(?i)under\s+(\d+(?:\.\d+)?)\s*pax`)
-	reMaxWei   = regexp.MustCompile(`(?i)under\s+(\d+)\s*wei`)
-	reUptime   = regexp.MustCompile(`(?i)(?:>|at\s+least\s+)(\d+(?:\.\d+)?)\s*%\s*uptime`)
-	reKindData = regexp.MustCompile(`(?i)\bdata\s+service\b`)
+	reMaxPAX    = regexp.MustCompile(`(?i)under\s+(\d+(?:\.\d+)?)\s*pax`)
+	reMaxWei    = regexp.MustCompile(`(?i)under\s+(\d+)\s*wei`)
+	reUptime    = regexp.MustCompile(`(?i)(?:>|at\s+least\s+)(\d+(?:\.\d+)?)\s*%\s*uptime`)
+	reKindData  = regexp.MustCompile(`(?i)\bdata\s+service\b`)
 	reKindAgent = regexp.MustCompile(`(?i)\bagent\s+service\b`)
 )
 

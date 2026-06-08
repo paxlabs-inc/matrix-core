@@ -78,10 +78,9 @@ func (v *VoucherService) Cosign(ctx context.Context, in CosignInput) (string, er
 	if err := v.signer.VerifyVoucherCaller(in.Digest, in.CallerSig, in.CallerWallet); err != nil {
 		return "", err
 	}
-	if err := v.store.FinalizeChannelCharge(ctx, in.ChannelID, in.ChargeWei, in.Nonce, in.CumulativeWei, in.CallerSig); err != nil {
-		return "", err
-	}
-	return v.store.InsertVoucher(ctx, store.VoucherRow{
+	// Finalize + persist atomically (audit F5): the channel nonce/cumulative must
+	// never advance without a matching voucher row, or the chain corrupts.
+	return v.store.CosignVoucher(ctx, in.ChargeWei, store.VoucherRow{
 		ChannelID:       in.ChannelID,
 		CumulativeWei:   in.CumulativeWei,
 		Nonce:           in.Nonce,

@@ -15,9 +15,10 @@ const (
 	RailStream Rail = "stream"
 )
 
-// Payer executes on-chain or wallet payouts.
+// Payer executes on-chain or wallet payouts. PayoutDeveloper releases amountWei
+// from the funding caller's channel escrow (escrowAddr) to the developer.
 type Payer interface {
-	PayoutDeveloper(ctx context.Context, payoutAddr, amountWei string) (txHash string, err error)
+	PayoutDeveloper(ctx context.Context, escrowAddr, payoutAddr, amountWei string) (txHash string, err error)
 	AnchorSettlement(ctx context.Context, developerAddr, merkleRoot, totalWei string, count int) (txHash string, err error)
 }
 
@@ -35,6 +36,7 @@ type DevPayer struct {
 
 // PayoutRecord is a dev-mode developer payout.
 type PayoutRecord struct {
+	Escrow    string
 	To        string
 	AmountWei string
 }
@@ -48,9 +50,9 @@ type AnchorRecord struct {
 }
 
 // PayoutDeveloper records a dev payout.
-func (d *DevPayer) PayoutDeveloper(ctx context.Context, payoutAddr, amountWei string) (string, error) {
+func (d *DevPayer) PayoutDeveloper(ctx context.Context, escrowAddr, payoutAddr, amountWei string) (string, error) {
 	_ = ctx
-	d.Payouts = append(d.Payouts, PayoutRecord{To: payoutAddr, AmountWei: amountWei})
+	d.Payouts = append(d.Payouts, PayoutRecord{Escrow: escrowAddr, To: payoutAddr, AmountWei: amountWei})
 	return fmt.Sprintf("0xsettle%08x", len(d.Payouts)), nil
 }
 

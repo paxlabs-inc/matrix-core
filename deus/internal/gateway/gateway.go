@@ -15,8 +15,8 @@ import (
 	"github.com/paxlabs-inc/deus/internal/pricing"
 	"github.com/paxlabs-inc/deus/internal/quality"
 	"github.com/paxlabs-inc/deus/internal/receipts"
-	"github.com/paxlabs-inc/deus/internal/streams"
 	"github.com/paxlabs-inc/deus/internal/store"
+	"github.com/paxlabs-inc/deus/internal/streams"
 	"github.com/paxlabs-inc/deus/internal/wallet"
 	"github.com/paxlabs-inc/deus/pkg/pricingmath"
 )
@@ -75,8 +75,8 @@ func New(cfg Config) *Gateway {
 
 // InvokeRequest is POST /v1/invoke/{service_id}.
 type InvokeRequest struct {
-	ServiceID      string
-	Operation      string
+	ServiceID        string
+	Operation        string
 	Args             map[string]any
 	QuoteID          string
 	PaymentRail      string
@@ -191,6 +191,7 @@ func (g *Gateway) invokeProxy(ctx context.Context, caller auth.Caller, req Invok
 		PriceWei:       pricingmath.FormatWei(charge),
 		PricingVersion: q.PricingVersion,
 		ArgsHash:       argsHash,
+		Rail:           "direct",
 	})
 	if err != nil {
 		return InvokeResponse{}, &Error{Code: "internal_error", Message: err.Error(), HTTPStatus: 500}
@@ -336,6 +337,7 @@ func (g *Gateway) invokeHosted(ctx context.Context, caller auth.Caller, req Invo
 		PriceWei:       pricingmath.FormatWei(charge),
 		PricingVersion: q.PricingVersion,
 		ArgsHash:       argsHash,
+		Rail:           "hosted",
 	})
 	if err != nil {
 		return InvokeResponse{}, &Error{Code: "internal_error", Message: err.Error(), HTTPStatus: 500}

@@ -7,11 +7,11 @@ import (
 
 // Limits configures free-hosting budget and resource caps (docs/06-execution-hosting.md §6.7).
 type Limits struct {
-	BudgetPAXWei           string
-	MaxAlwaysWarm          int
-	KillSwitch             bool
-	MaxArtifactBytes       int64
-	DefaultTimeoutMS       int
+	BudgetPAXWei            string
+	MaxAlwaysWarm           int
+	KillSwitch              bool
+	MaxArtifactBytes        int64
+	DefaultTimeoutMS        int
 	DefaultMaxResponseBytes int
 }
 
@@ -21,7 +21,7 @@ func LimitsFromEnv() Limits {
 		BudgetPAXWei:            envOr("DEUS_HOSTING_BUDGET_PAX_WEI", "1000000000000000000"),
 		MaxAlwaysWarm:           envInt("DEUS_HOSTING_MAX_ALWAYS_WARM", 10),
 		KillSwitch:              envBool("DEUS_HOSTING_KILL_SWITCH"),
-		MaxArtifactBytes:      int64(envInt("DEUS_HOSTING_MAX_ARTIFACT_BYTES", 10*1024*1024)),
+		MaxArtifactBytes:        int64(envInt("DEUS_HOSTING_MAX_ARTIFACT_BYTES", 10*1024*1024)),
 		DefaultTimeoutMS:        envInt("DEUS_HOSTING_DEFAULT_TIMEOUT_MS", 30000),
 		DefaultMaxResponseBytes: envInt("DEUS_HOSTING_MAX_RESPONSE_BYTES", 262144),
 	}

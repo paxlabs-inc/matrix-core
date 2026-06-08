@@ -54,13 +54,13 @@ type OpenInput struct {
 
 // OpenResult is a newly opened stream.
 type OpenResult struct {
-	StreamID          string
-	ChainStreamID     string
-	ServiceID         string
-	RatePerSecondWei  string
-	CapWei            string
-	Status            string
-	OpenTx            string
+	StreamID         string
+	ChainStreamID    string
+	ServiceID        string
+	RatePerSecondWei string
+	CapWei           string
+	Status           string
+	OpenTx           string
 }
 
 // Open opens a stream for a per_second operation on a service.
@@ -104,10 +104,10 @@ func (s *Service) Open(ctx context.Context, caller auth.Caller, in OpenInput) (O
 	}
 
 	openRes, err := s.wallet.OpenStream(ctx, caller.Bearer, wallet.StreamOpenInput{
-		Payee:           payout,
+		Payee:            payout,
 		RatePerSecondWei: plan.UnitPriceWei,
-		CapWei:          in.CapWei,
-		StopTime:        in.StopTime,
+		CapWei:           in.CapWei,
+		StopTime:         in.StopTime,
 	})
 	if err != nil {
 		return OpenResult{}, &Error{Code: "payment_required", Message: err.Error(), HTTPStatus: 402}

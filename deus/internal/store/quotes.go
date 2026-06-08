@@ -10,16 +10,16 @@ import (
 
 // QuoteRow is a persisted signed quote.
 type QuoteRow struct {
-	ID              string
-	ServiceID       string
-	EndpointID      string
-	PricingVersion  int
-	UnitPriceWei    string
-	MaxUnits        string
-	ExpiresAt       time.Time
-	Signature       string
-	CallerDID       string
-	Digest          string
+	ID             string
+	ServiceID      string
+	EndpointID     string
+	PricingVersion int
+	UnitPriceWei   string
+	MaxUnits       string
+	ExpiresAt      time.Time
+	Signature      string
+	CallerDID      string
+	Digest         string
 }
 
 // InsertQuote persists a quote.

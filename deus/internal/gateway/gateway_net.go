@@ -14,17 +14,22 @@ import (
 )
 
 // OpenChannel opens a funded payment channel for the caller.
-func (g *Gateway) OpenChannel(ctx context.Context, caller auth.Caller, capWei, fundTx string) (store.ChannelRow, error) {
+func (g *Gateway) OpenChannel(ctx context.Context, caller auth.Caller, capWei, fundTx, escrowAddr string) (store.ChannelRow, error) {
 	if g.channels == nil {
 		return store.ChannelRow{}, &Error{Code: "internal_error", Message: "channels not configured", HTTPStatus: 503}
 	}
-	return g.channels.Open(ctx, channels.OpenInput{
+	ch, err := g.channels.Open(ctx, channels.OpenInput{
 		CallerDID:    caller.DID,
 		CallerWallet: caller.Wallet,
 		CapWei:       capWei,
+		EscrowAddr:   escrowAddr,
 		FundTx:       fundTx,
 		Bearer:       caller.Bearer,
 	})
+	if err != nil {
+		return store.ChannelRow{}, &Error{Code: "payment_required", Message: err.Error(), HTTPStatus: 402}
+	}
+	return ch, nil
 }
 
 // CosignVoucher persists a caller-signed cumulative voucher.
@@ -84,6 +89,8 @@ func (g *Gateway) invokeNet(ctx context.Context, caller auth.Caller, req InvokeR
 		PriceWei:       chargeWei,
 		PricingVersion: q.PricingVersion,
 		ArgsHash:       argsHash,
+		Rail:           "net",
+		ChannelID:      ch.ID,
 	})
 	if err != nil {
 		_ = g.channels.Void(ctx, ch.ID, chargeWei)

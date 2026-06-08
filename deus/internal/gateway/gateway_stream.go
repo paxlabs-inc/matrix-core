@@ -11,8 +11,8 @@ import (
 	"github.com/paxlabs-inc/deus/internal/auth"
 	"github.com/paxlabs-inc/deus/internal/metering"
 	"github.com/paxlabs-inc/deus/internal/receipts"
-	"github.com/paxlabs-inc/deus/internal/streams"
 	"github.com/paxlabs-inc/deus/internal/store"
+	"github.com/paxlabs-inc/deus/internal/streams"
 )
 
 func (g *Gateway) invokeStream(ctx context.Context, caller auth.Caller, req InvokeRequest) (InvokeResponse, error) {
@@ -95,6 +95,7 @@ func (g *Gateway) invokeStream(ctx context.Context, caller auth.Caller, req Invo
 		PriceWei:       chargeWei,
 		PricingVersion: q.PricingVersion,
 		ArgsHash:       argsHash,
+		Rail:           "stream",
 	})
 	if err != nil {
 		return InvokeResponse{}, &Error{Code: "internal_error", Message: err.Error(), HTTPStatus: 500}

@@ -13,15 +13,22 @@ import (
 
 const defaultWindow = 10 * time.Minute
 
+// EscrowReader reads the on-chain funded balance of a caller's PaymentChannel so
+// the off-chain mirror can be bounded by real escrow (docs/06 §6.2, §8.3; F7).
+type EscrowReader interface {
+	FundedWei(ctx context.Context, escrowAddr string) (string, error)
+}
+
 // Service coordinates channel lifecycle.
 type Service struct {
 	store  *store.Store
 	wallet wallet.Client
+	escrow EscrowReader
 }
 
-// New returns a channel service.
-func New(st *store.Store, wal wallet.Client) *Service {
-	return &Service{store: st, wallet: wal}
+// New returns a channel service. escrow may be nil in dev (no on-chain check).
+func New(st *store.Store, wal wallet.Client, escrow EscrowReader) *Service {
+	return &Service{store: st, wallet: wal, escrow: escrow}
 }
 
 // OpenInput funds a new channel window.
@@ -34,21 +41,48 @@ type OpenInput struct {
 	Bearer       string
 }
 
-// Open creates a channel row after wallet funding.
+// Open creates a channel row after verifying on-chain escrow funding. The
+// credited balance is bounded by the contract's fundedWei so the off-chain
+// reserve can never exceed real escrow (audit F7).
 func (s *Service) Open(ctx context.Context, in OpenInput) (store.ChannelRow, error) {
 	if in.CapWei == "" {
 		return store.ChannelRow{}, fmt.Errorf("channels: cap required")
 	}
+	capWei, ok := new(big.Int).SetString(in.CapWei, 10)
+	if !ok || capWei.Sign() <= 0 {
+		return store.ChannelRow{}, fmt.Errorf("channels: invalid cap")
+	}
 	now := time.Now().UTC()
 	end := now.Add(defaultWindow)
-	if in.EscrowAddr == "" {
+
+	balanceWei := in.CapWei
+	if s.escrow != nil {
+		// Production: the escrow contract must exist and be funded on-chain.
+		if in.EscrowAddr == "" {
+			return store.ChannelRow{}, fmt.Errorf("channels: escrow_addr required")
+		}
+		fundedStr, err := s.escrow.FundedWei(ctx, in.EscrowAddr)
+		if err != nil {
+			return store.ChannelRow{}, fmt.Errorf("channels: verify escrow: %w", err)
+		}
+		funded, ok := new(big.Int).SetString(fundedStr, 10)
+		if !ok || funded.Sign() <= 0 {
+			return store.ChannelRow{}, fmt.Errorf("channels: escrow not funded")
+		}
+		// Credit no more than what is actually escrowed on-chain.
+		if funded.Cmp(capWei) < 0 {
+			balanceWei = funded.Text(10)
+		}
+	} else if in.EscrowAddr == "" {
+		// Dev only: no chain verifier wired.
 		in.EscrowAddr = "0xescrow-dev"
 	}
+
 	_, err := s.store.OpenChannel(ctx, store.ChannelRow{
 		CallerDID:    in.CallerDID,
 		CallerWallet: in.CallerWallet,
 		EscrowAddr:   in.EscrowAddr,
-		BalanceWei:   in.CapWei,
+		BalanceWei:   balanceWei,
 		WindowStart:  now,
 		WindowEnd:    end,
 		FundTx:       &in.FundTx,

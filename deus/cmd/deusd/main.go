@@ -120,6 +120,24 @@ func run() int {
 	if chainRegistry != nil {
 		ix = indexer.New(chainRegistry, db)
 	}
+
+	// Chain-backed settlement payer + escrow reader (PaymentChannel.payout +
+	// SettlementAnchor.anchor). Required to move PAX in production.
+	var chainPayer *chain.Payer
+	if chainClient != nil && cfg.SettlerPrivateKey != "" && cfg.SettlementAnchorAddr != "" {
+		chainPayer, err = chain.NewPayer(chainClient, cfg.SettlerPrivateKey, cfg.SettlementAnchorAddr)
+		if err != nil {
+			if cfg.Dev {
+				log.Warn().Err(err).Msg("chain payer init failed (dev mode continues)")
+			} else {
+				log.Error().Err(err).Msg("chain payer init failed")
+				return 1
+			}
+		}
+	}
+	if chainPayer == nil && !cfg.Dev {
+		log.Warn().Msg("no chain settler key/anchor configured: net settlement payouts disabled")
+	}
 	rankPath := filepath.Join(moduleRoot(), "configs", "ranking.yaml")
 	discSvc := discovery.New(db,
 		discovery.WithEmbedder(discovery.NewEmbedderFromConfig(cfg.EmbedEndpoint, cfg.EmbedModel)),
@@ -174,7 +192,11 @@ func run() int {
 				wal = &wallet.DevClient{MaxPerCallWei: ""}
 			}
 			if wal != nil {
-				chSvc := channels.New(db, wal)
+				var escrowReader channels.EscrowReader
+				if chainPayer != nil {
+					escrowReader = chainPayer
+				}
+				chSvc := channels.New(db, wal, escrowReader)
 				vSvc := channels.NewVoucherService(db, signer)
 				var streamBackend streams.AccrualBackend
 				var devStreams *streams.DevBackend
@@ -204,7 +226,9 @@ func run() int {
 					Streams:  streamSvc,
 					ChainID:  cfg.ChainID,
 				})
-				if cfg.Dev {
+				if chainPayer != nil {
+					settler = settlement.NewSettler(db, chainPayer)
+				} else if cfg.Dev {
 					settler = settlement.NewSettler(db, &settlement.DevPayer{})
 				}
 			}
@@ -242,6 +266,25 @@ func run() int {
 		if err := httpSrv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			log.Error().Err(err).Msg("http server failed")
 			cancel()
+		}
+	}()
+
+	// Reservation reaper (audit F4): release escrow reserved by callers who
+	// opened a window but never co-signed a voucher, once the window has ended.
+	go func() {
+		ticker := time.NewTicker(time.Minute)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-ticker.C:
+				if n, err := db.ReleaseExpiredChannelReserves(ctx); err != nil {
+					log.Warn().Err(err).Msg("reserve reaper failed")
+				} else if n > 0 {
+					log.Info().Int64("channels", n).Msg("released expired channel reserves")
+				}
+			}
 		}
 	}()
 

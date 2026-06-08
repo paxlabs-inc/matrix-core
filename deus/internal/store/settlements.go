@@ -74,6 +74,62 @@ func (s *Store) UnsettledInvocations(ctx context.Context, developerID string) ([
 	return out, rows.Err()
 }
 
+// UnsettledNetInvocations lists finalized unsettled NET-rail rows for a
+// developer, joined to their funding channel. Direct/hosted rows are paid inline
+// and stream rows settle on 0x0906, so only the net rail batches here. Rows are
+// ordered by channel then time so the settler can walk each channel's spend in
+// voucher order.
+func (s *Store) UnsettledNetInvocations(ctx context.Context, developerID string) ([]InvocationRow, error) {
+	rows, err := s.pool.Query(ctx, `
+		SELECT i.id::text, i.idempotency_key, i.service_id::text, i.endpoint_id::text,
+		       i.caller_did, COALESCE(i.caller_wallet,''), i.quote_id::text, i.units, i.price_wei,
+		       i.pricing_version, COALESCE(i.args_hash,''), COALESCE(i.result_hash,''),
+		       i.outcome, i.latency_ms, COALESCE(i.rail,'direct'), i.channel_id::text, i.created_at
+		FROM invocations i
+		JOIN services s ON s.id = i.service_id
+		WHERE s.developer_id = $1
+		  AND i.outcome = 'ok'
+		  AND i.rail = 'net'
+		  AND i.channel_id IS NOT NULL
+		  AND i.settlement_id IS NULL
+		ORDER BY i.channel_id, i.created_at ASC`, developerID,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("store: unsettled net invocations: %w", err)
+	}
+	defer rows.Close()
+	var out []InvocationRow
+	for rows.Next() {
+		var row InvocationRow
+		var quoteID *string
+		if err := rows.Scan(
+			&row.ID, &row.IdempotencyKey, &row.ServiceID, &row.EndpointID,
+			&row.CallerDID, &row.CallerWallet, &quoteID, &row.Units, &row.PriceWei,
+			&row.PricingVersion, &row.ArgsHash, &row.ResultHash, &row.Outcome,
+			&row.LatencyMS, &row.Rail, &row.ChannelID, &row.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		row.QuoteID = quoteID
+		out = append(out, row)
+	}
+	return out, rows.Err()
+}
+
+// MarkVoucherRedeemed stamps the settlement that redeemed a voucher.
+func (s *Store) MarkVoucherRedeemed(ctx context.Context, voucherID, settlementID string) error {
+	if voucherID == "" {
+		return nil
+	}
+	_, err := s.pool.Exec(ctx, `
+		UPDATE vouchers SET redeemed_in = $2 WHERE id = $1`, voucherID, settlementID,
+	)
+	if err != nil {
+		return fmt.Errorf("store: mark voucher redeemed: %w", err)
+	}
+	return nil
+}
+
 // MarkInvocationsSettled attaches settlement_id to invocation rows.
 func (s *Store) MarkInvocationsSettled(ctx context.Context, settlementID string, invocationIDs []string) error {
 	if len(invocationIDs) == 0 {

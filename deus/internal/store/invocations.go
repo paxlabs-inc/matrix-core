@@ -10,35 +10,43 @@ import (
 
 // InvocationRow is a ledger entry for one invoke.
 type InvocationRow struct {
-	ID              string
-	IdempotencyKey  string
-	ServiceID       string
-	EndpointID      string
-	CallerDID       string
-	CallerWallet    string
-	QuoteID         *string
-	Units           string
-	PriceWei        string
-	PricingVersion  int
-	ArgsHash        string
-	ResultHash      string
-	Outcome         string
-	LatencyMS       *int
-	CreatedAt       time.Time
+	ID             string
+	IdempotencyKey string
+	ServiceID      string
+	EndpointID     string
+	CallerDID      string
+	CallerWallet   string
+	QuoteID        *string
+	Units          string
+	PriceWei       string
+	PricingVersion int
+	ArgsHash       string
+	ResultHash     string
+	Outcome        string
+	LatencyMS      *int
+	Rail           string
+	ChannelID      *string
+	CreatedAt      time.Time
 }
 
 // InsertReservedInvocation creates a reserved ledger row (idempotent).
 func (s *Store) InsertReservedInvocation(ctx context.Context, row InvocationRow) (string, error) {
 	var id string
+	rail := row.Rail
+	if rail == "" {
+		rail = "direct"
+	}
 	err := s.pool.QueryRow(ctx, `
 		INSERT INTO invocations (
 			idempotency_key, service_id, endpoint_id, caller_did, caller_wallet,
-			quote_id, units, price_wei, pricing_version, args_hash, outcome
-		) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,'reserved')
+			quote_id, units, price_wei, pricing_version, args_hash, outcome,
+			rail, channel_id
+		) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,'reserved',$11,$12)
 		ON CONFLICT (idempotency_key) DO NOTHING
 		RETURNING id::text`,
 		row.IdempotencyKey, row.ServiceID, row.EndpointID, row.CallerDID, row.CallerWallet,
 		row.QuoteID, row.Units, row.PriceWei, row.PricingVersion, row.ArgsHash,
+		rail, row.ChannelID,
 	).Scan(&id)
 	if err != nil {
 		if err == pgx.ErrNoRows {
@@ -70,13 +78,13 @@ func (s *Store) scanInvocation(ctx context.Context, where string, arg any) (Invo
 		SELECT id::text, idempotency_key, service_id::text, endpoint_id::text,
 		       caller_did, COALESCE(caller_wallet,''), quote_id::text, units, price_wei,
 		       pricing_version, COALESCE(args_hash,''), COALESCE(result_hash,''),
-		       outcome, latency_ms, created_at
+		       outcome, latency_ms, COALESCE(rail,'direct'), channel_id::text, created_at
 		FROM invocations WHERE %s`, where)
 	err := s.pool.QueryRow(ctx, q, arg).Scan(
 		&row.ID, &row.IdempotencyKey, &row.ServiceID, &row.EndpointID,
 		&row.CallerDID, &row.CallerWallet, &quoteID, &row.Units, &row.PriceWei,
 		&row.PricingVersion, &row.ArgsHash, &row.ResultHash, &row.Outcome,
-		&row.LatencyMS, &row.CreatedAt,
+		&row.LatencyMS, &row.Rail, &row.ChannelID, &row.CreatedAt,
 	)
 	if err != nil {
 		if err == pgx.ErrNoRows {

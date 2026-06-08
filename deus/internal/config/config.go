@@ -11,10 +11,10 @@ import (
 
 // Config aggregates environment-driven settings for the Deus control plane.
 type Config struct {
-	Port         int
-	PostgresURI  string
-	RPCURL       string
-	ChainID      int64
+	Port          int
+	PostgresURI   string
+	RPCURL        string
+	ChainID       int64
 	MigrationsDir string
 
 	ObjStoreEndpoint  string
@@ -23,17 +23,18 @@ type Config struct {
 	ObjStoreBucket    string
 	ObjStoreUseSSL    bool
 
-	WalletAPIURL          string
-	ServiceRegistryAddr   string
-	SettlementAnchorAddr  string
-	GatewaySigningKeyRef  string
-	SettlerKeyRef         string
+	WalletAPIURL         string
+	ServiceRegistryAddr  string
+	SettlementAnchorAddr string
+	GatewaySigningKeyRef string
+	SettlerKeyRef        string
 
 	EmbedEndpoint string
 	EmbedModel    string
 
 	PublishPrivateKey string
 	GatewaySigningKey string
+	SettlerPrivateKey string
 
 	AppwriteEndpoint  string
 	AppwriteProjectID string
@@ -72,6 +73,7 @@ func Load() (*Config, error) {
 
 		PublishPrivateKey: strings.TrimSpace(os.Getenv("DEUS_PUBLISH_PRIVATE_KEY")),
 		GatewaySigningKey: strings.TrimSpace(os.Getenv("DEUS_GATEWAY_SIGNING_KEY")),
+		SettlerPrivateKey: strings.TrimSpace(os.Getenv("DEUS_SETTLER_PRIVATE_KEY")),
 
 		AppwriteEndpoint:  strings.TrimSpace(os.Getenv("DEUS_APPWRITE_ENDPOINT")),
 		AppwriteProjectID: strings.TrimSpace(os.Getenv("DEUS_APPWRITE_PROJECT_ID")),

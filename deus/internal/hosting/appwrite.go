@@ -71,18 +71,18 @@ func (a *AppwriteBackend) Deploy(ctx context.Context, in DeployInput) (DeployRes
 
 func (a *AppwriteBackend) ensureFunction(ctx context.Context, name string, alwaysWarm bool) (string, error) {
 	body := map[string]any{
-		"functionId":  "unique()",
-		"name":        name,
-		"runtime":     "node-20.0",
-		"execute":     []string{"any"},
-		"enabled":     true,
-		"logging":     true,
-		"timeout":     30,
-		"scopes":      []string{"users.read"},
-		"events":      []string{},
-		"schedule":    "",
-		"entrypoint":  "src/main.js",
-		"commands":    "npm install",
+		"functionId": "unique()",
+		"name":       name,
+		"runtime":    "node-20.0",
+		"execute":    []string{"any"},
+		"enabled":    true,
+		"logging":    true,
+		"timeout":    30,
+		"scopes":     []string{"users.read"},
+		"events":     []string{},
+		"schedule":   "",
+		"entrypoint": "src/main.js",
+		"commands":   "npm install",
 	}
 	if alwaysWarm {
 		body["specification"] = "s-1vcpu-512mb"

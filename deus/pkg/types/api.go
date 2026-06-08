@@ -144,26 +144,27 @@ type VoucherSummary struct {
 
 // ReceiptSummary is inline receipt metadata.
 type ReceiptSummary struct {
-	Digest     string  `json:"digest"`
-	GatewaySig string  `json:"gateway_sig"`
-	RunnerSig  *string `json:"runner_sig"`
-	Attestation any    `json:"attestation"`
+	Digest      string  `json:"digest"`
+	GatewaySig  string  `json:"gateway_sig"`
+	RunnerSig   *string `json:"runner_sig"`
+	Attestation any     `json:"attestation"`
 }
 
 // InvocationResponse is GET /v1/invocations/{id}.
 type InvocationResponse struct {
-	ID          string         `json:"id"`
-	ServiceID   string         `json:"service_id"`
-	Outcome     string         `json:"outcome"`
-	ChargedWei  string         `json:"charged_wei"`
-	LatencyMS   *int           `json:"latency_ms,omitempty"`
-	Receipt     *ReceiptDetail `json:"receipt,omitempty"`
+	ID         string         `json:"id"`
+	ServiceID  string         `json:"service_id"`
+	Outcome    string         `json:"outcome"`
+	ChargedWei string         `json:"charged_wei"`
+	LatencyMS  *int           `json:"latency_ms,omitempty"`
+	Receipt    *ReceiptDetail `json:"receipt,omitempty"`
 }
 
 // OpenChannelRequest is POST /v1/channels.
 type OpenChannelRequest struct {
-	CapWei  string `json:"cap_wei"`
-	FundTx  string `json:"fund_tx,omitempty"`
+	CapWei     string `json:"cap_wei"`
+	FundTx     string `json:"fund_tx,omitempty"`
+	EscrowAddr string `json:"escrow_addr,omitempty"`
 }
 
 // ChannelResponse is POST /v1/channels response.

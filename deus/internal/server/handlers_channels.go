@@ -24,19 +24,19 @@ func (s *Server) handleOpenChannel(w http.ResponseWriter, r *http.Request) {
 		writeAPIError(w, http.StatusBadRequest, "invalid_request", "invalid json", nil)
 		return
 	}
-	ch, err := s.deps.Gateway.OpenChannel(r.Context(), caller, body.CapWei, body.FundTx)
+	ch, err := s.deps.Gateway.OpenChannel(r.Context(), caller, body.CapWei, body.FundTx, body.EscrowAddr)
 	if err != nil {
 		s.writeGatewayErr(w, err)
 		return
 	}
 	writeJSON(w, http.StatusCreated, types.ChannelResponse{
-		ID:           ch.ID,
-		CallerDID:    ch.CallerDID,
-		BalanceWei:   ch.BalanceWei,
-		ReservedWei:  ch.ReservedWei,
+		ID:            ch.ID,
+		CallerDID:     ch.CallerDID,
+		BalanceWei:    ch.BalanceWei,
+		ReservedWei:   ch.ReservedWei,
 		CumulativeWei: ch.CumulativeWei,
-		WindowEnd:    ch.WindowEnd,
-		Status:       ch.Status,
+		WindowEnd:     ch.WindowEnd,
+		Status:        ch.Status,
 	})
 }
 

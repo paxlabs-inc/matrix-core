@@ -49,7 +49,7 @@ func TestValidateRejectsProxyWithoutURL(t *testing.T) {
 		Mode:          "proxy",
 		Operations: []Operation{{
 			Name: "op", Method: "POST",
-			InputSchema: map[string]any{"type": "object"},
+			InputSchema:  map[string]any{"type": "object"},
 			OutputSchema: map[string]any{"type": "object"},
 		}},
 		Pricing: []Pricing{{

@@ -36,9 +36,9 @@ func NewHashEmbedder() *HashEmbedder {
 	return &HashEmbedder{dim: defaultEmbedDim, model: "hash-stub@v1"}
 }
 
-func (h *HashEmbedder) Dim() int          { return h.dim }
-func (h *HashEmbedder) Model() string     { return h.model }
-func (h *HashEmbedder) Semantic() bool    { return false }
+func (h *HashEmbedder) Dim() int       { return h.dim }
+func (h *HashEmbedder) Model() string  { return h.model }
+func (h *HashEmbedder) Semantic() bool { return false }
 
 func (h *HashEmbedder) Embed(_ context.Context, text string) ([]float32, error) {
 	sum := sha256.Sum256([]byte(text))
@@ -82,9 +82,9 @@ func NewHTTPEmbedder(endpoint, model string, dim int) *HTTPEmbedder {
 	}
 }
 
-func (h *HTTPEmbedder) Dim() int          { return h.Dimension }
-func (h *HTTPEmbedder) Model() string     { return h.modelName }
-func (h *HTTPEmbedder) Semantic() bool    { return true }
+func (h *HTTPEmbedder) Dim() int       { return h.Dimension }
+func (h *HTTPEmbedder) Model() string  { return h.modelName }
+func (h *HTTPEmbedder) Semantic() bool { return true }
 
 func (h *HTTPEmbedder) Embed(ctx context.Context, text string) ([]float32, error) {
 	body, _ := json.Marshal(map[string]any{

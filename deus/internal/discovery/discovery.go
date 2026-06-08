@@ -13,8 +13,8 @@ import (
 
 // Service provides discovery queries.
 type Service struct {
-	store  *store.Store
-	embed  Embedder
+	store   *store.Store
+	embed   Embedder
 	weights RankingWeights
 }
 

@@ -13,12 +13,12 @@ import (
 
 // HostedInvokeRequest is POST {exec_endpoint}/invoke from the gateway.
 type HostedInvokeRequest struct {
-	InvocationID string         `json:"invocation_id"`
-	Operation    string         `json:"operation"`
-	Args         map[string]any `json:"args"`
-	CallerDID    string         `json:"caller_did"`
-	DeadlineMS   int            `json:"deadline_ms"`
-	ReceiptDigest string        `json:"receipt_digest,omitempty"`
+	InvocationID  string         `json:"invocation_id"`
+	Operation     string         `json:"operation"`
+	Args          map[string]any `json:"args"`
+	CallerDID     string         `json:"caller_did"`
+	DeadlineMS    int            `json:"deadline_ms"`
+	ReceiptDigest string         `json:"receipt_digest,omitempty"`
 }
 
 // HostedInvokeResponse is the runner harness response envelope.
