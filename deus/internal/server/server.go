@@ -14,12 +14,13 @@ import (
 	"github.com/paxlabs-inc/deus/internal/chain"
 	"github.com/paxlabs-inc/deus/internal/discovery"
 	"github.com/paxlabs-inc/deus/internal/gateway"
+	"github.com/paxlabs-inc/deus/internal/hosting"
 	"github.com/paxlabs-inc/deus/internal/registry"
 	"github.com/paxlabs-inc/deus/internal/store"
 	"github.com/paxlabs-inc/deus/pkg/types"
 )
 
-const version = "0.1.0-phase2"
+const version = "0.1.0-phase3"
 
 // Deps are long-lived services shared across handlers.
 type Deps struct {
@@ -29,6 +30,8 @@ type Deps struct {
 	Registry          *registry.Service
 	Discovery         *discovery.Service
 	Gateway           *gateway.Gateway
+	Hosting           *hosting.Orchestrator
+	BlobURL           func(string) string
 	DevMode           bool
 	PublishPrivateKey string
 }

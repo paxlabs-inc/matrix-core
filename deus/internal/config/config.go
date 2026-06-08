@@ -35,6 +35,12 @@ type Config struct {
 	PublishPrivateKey string
 	GatewaySigningKey string
 
+	AppwriteEndpoint  string
+	AppwriteProjectID string
+	AppwriteAPIKey    string
+	HostingDevExecURL string
+	HostingKillSwitch bool
+
 	Dev bool
 }
 
@@ -66,6 +72,12 @@ func Load() (*Config, error) {
 
 		PublishPrivateKey: strings.TrimSpace(os.Getenv("DEUS_PUBLISH_PRIVATE_KEY")),
 		GatewaySigningKey: strings.TrimSpace(os.Getenv("DEUS_GATEWAY_SIGNING_KEY")),
+
+		AppwriteEndpoint:  strings.TrimSpace(os.Getenv("DEUS_APPWRITE_ENDPOINT")),
+		AppwriteProjectID: strings.TrimSpace(os.Getenv("DEUS_APPWRITE_PROJECT_ID")),
+		AppwriteAPIKey:    strings.TrimSpace(os.Getenv("DEUS_APPWRITE_API_KEY")),
+		HostingDevExecURL: strings.TrimSpace(os.Getenv("DEUS_HOSTING_DEV_EXEC_URL")),
+		HostingKillSwitch: envBool("DEUS_HOSTING_KILL_SWITCH", false),
 
 		Dev: dev,
 	}
