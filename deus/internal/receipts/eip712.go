@@ -18,9 +18,9 @@ import (
 
 // Signer holds gateway signing material for quotes and receipts.
 type Signer struct {
-	ChainID            int64
-	VerifyingContract  common.Address
-	PrivateKey         *ecdsa.PrivateKey
+	ChainID           int64
+	VerifyingContract common.Address
+	PrivateKey        *ecdsa.PrivateKey
 }
 
 // NewSignerFromHex parses a gateway private key and registry address.
@@ -44,13 +44,13 @@ func (s *Signer) GatewayAddress() common.Address {
 
 // QuoteFields are the EIP-712 DeusQuote struct fields.
 type QuoteFields struct {
-	ServiceID       string
-	EndpointID      string
-	PricingVersion  int
-	UnitPriceWei    string
-	MaxUnits        string
-	Caller          string
-	ExpiresAt       time.Time
+	ServiceID      string
+	EndpointID     string
+	PricingVersion int
+	UnitPriceWei   string
+	MaxUnits       string
+	Caller         string
+	ExpiresAt      time.Time
 }
 
 // SignQuote returns digest hex and signature hex.

@@ -28,7 +28,7 @@ type PaymentStreams struct {
 	abi    abi.ABI
 }
 
-// NewPaymentStreams returns a PaymentStreams helper bound to a chain client.
+// NewPaymentStreams returns a PaymentStreams helper (client may be nil for encoding only).
 func NewPaymentStreams(c *Client) (*PaymentStreams, error) {
 	parsed, err := abi.JSON(strings.NewReader(paymentStreamsABI))
 	if err != nil {
@@ -52,8 +52,11 @@ func (p *PaymentStreams) EncodeClose(streamID *big.Int) ([]byte, error) {
 	return p.abi.Pack("close", streamID)
 }
 
-// Accrued eth_calls accrued(streamId).
+// Accrued eth_calls accrued(streamId) (requires a chain client).
 func (p *PaymentStreams) Accrued(ctx context.Context, streamID *big.Int) (*big.Int, error) {
+	if p.client == nil {
+		return nil, fmt.Errorf("chain: client required")
+	}
 	data, err := p.abi.Pack("accrued", streamID)
 	if err != nil {
 		return nil, err

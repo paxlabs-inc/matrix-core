@@ -57,18 +57,31 @@ func (l *Ledger) Reserve(ctx context.Context, in ReserveInput) (store.Invocation
 	if err != nil {
 		return store.InvocationRow{}, err
 	}
-	if row.Outcome != "reserved" && row.Outcome != "ok" && row.Outcome != "voided" {
+	if row.Outcome != "reserved" && row.Outcome != "ok" && row.Outcome != "voided" && row.Outcome != "pending_voucher" {
 		return store.InvocationRow{}, fmt.Errorf("metering: unexpected outcome %q", row.Outcome)
 	}
 	return row, nil
 }
 
 // Finalize marks delivery and charge.
-func (l *Ledger) Finalize(ctx context.Context, invocationID, outcome, resultHash, units, priceWei string, latencyMS int) error {
-	return l.store.FinalizeInvocation(ctx, invocationID, outcome, resultHash, units, priceWei, latencyMS)
+func (l *Ledger) Finalize(ctx context.Context, invocationID, outcome, resultHash, units, priceWei, paymentRail string, latencyMS int) error {
+	if paymentRail == "" {
+		paymentRail = "direct"
+	}
+	return l.store.FinalizeInvocation(ctx, invocationID, outcome, resultHash, units, priceWei, paymentRail, latencyMS)
 }
 
 // Void releases a reservation without charge.
 func (l *Ledger) Void(ctx context.Context, invocationID string) error {
 	return l.store.VoidInvocation(ctx, invocationID)
+}
+
+// FinalizePendingVoucher marks delivery awaiting caller voucher co-sign.
+func (l *Ledger) FinalizePendingVoucher(ctx context.Context, invocationID, resultHash, units, priceWei string, latencyMS int) error {
+	return l.store.FinalizePendingVoucher(ctx, invocationID, resultHash, units, priceWei, latencyMS)
+}
+
+// CompletePendingVoucher promotes pending_voucher → ok after co-sign.
+func (l *Ledger) CompletePendingVoucher(ctx context.Context, invocationID string) error {
+	return l.store.CompletePendingVoucher(ctx, invocationID)
 }

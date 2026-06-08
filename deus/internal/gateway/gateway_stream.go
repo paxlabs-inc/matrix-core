@@ -11,8 +11,8 @@ import (
 	"github.com/paxlabs-inc/deus/internal/auth"
 	"github.com/paxlabs-inc/deus/internal/metering"
 	"github.com/paxlabs-inc/deus/internal/receipts"
-	"github.com/paxlabs-inc/deus/internal/streams"
 	"github.com/paxlabs-inc/deus/internal/store"
+	"github.com/paxlabs-inc/deus/internal/streams"
 )
 
 func (g *Gateway) invokeStream(ctx context.Context, caller auth.Caller, req InvokeRequest) (InvokeResponse, error) {
@@ -158,7 +158,7 @@ func (g *Gateway) invokeStream(ctx context.Context, caller auth.Caller, req Invo
 		_ = g.meter.Void(ctx, row.ID)
 		return InvokeResponse{}, &Error{Code: "internal_error", Message: err.Error(), HTTPStatus: 500}
 	}
-	if err := g.meter.Finalize(ctx, row.ID, "ok", resultHash, q.MaxUnits, chargeWei, proxyRes.LatencyMS); err != nil {
+	if err := g.meter.Finalize(ctx, row.ID, "ok", resultHash, q.MaxUnits, chargeWei, "stream", proxyRes.LatencyMS); err != nil {
 		return InvokeResponse{}, &Error{Code: "internal_error", Message: err.Error(), HTTPStatus: 500}
 	}
 	if err := g.streams.RecordMeter(ctx, streamRow.ID, accrued); err != nil {

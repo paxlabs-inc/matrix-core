@@ -48,7 +48,7 @@ func buildGateway(db *store.Store, signer *receipts.Signer, wal wallet.Client) (
 		ChainID:  31337,
 	})
 	payer := &settlement.DevPayer{}
-	return gw, settlement.NewSettler(db, payer), payer
+	return gw, settlement.NewSettler(db, payer, chSvc), payer
 }
 
 func signDigestHex(digestHex, privateKeyHex string) (string, error) {

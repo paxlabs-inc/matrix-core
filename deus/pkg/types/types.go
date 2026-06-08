@@ -13,15 +13,15 @@ const (
 
 // ServiceSummary is a compact listing view for discovery responses.
 type ServiceSummary struct {
-	ID            string        `json:"id"`
-	Slug          string        `json:"slug"`
-	Kind          string        `json:"kind"`
-	Mode          string        `json:"mode"`
-	DisplayName   string        `json:"display_name"`
-	Summary       string        `json:"summary"`
-	Status        ServiceStatus `json:"status"`
-	QualityScore  string        `json:"quality_score,omitempty"`
-	ManifestHash  string        `json:"manifest_hash"`
+	ID           string        `json:"id"`
+	Slug         string        `json:"slug"`
+	Kind         string        `json:"kind"`
+	Mode         string        `json:"mode"`
+	DisplayName  string        `json:"display_name"`
+	Summary      string        `json:"summary"`
+	Status       ServiceStatus `json:"status"`
+	QualityScore string        `json:"quality_score,omitempty"`
+	ManifestHash string        `json:"manifest_hash"`
 }
 
 // HealthResponse is returned by /internal/healthz.

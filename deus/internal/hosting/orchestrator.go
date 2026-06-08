@@ -95,10 +95,10 @@ func (o *Orchestrator) Deploy(ctx context.Context, req DeployRequest) (DeployOut
 	}
 
 	depID, err := o.store.InsertDeployment(ctx, store.DeploymentRow{
-		ServiceID: req.ServiceID,
-		Runtime:   runtime,
-		Status:    "pending",
-		Region:    strPtr(req.Region),
+		ServiceID:  req.ServiceID,
+		Runtime:    runtime,
+		Status:     "pending",
+		Region:     strPtr(req.Region),
 		AlwaysWarm: req.AlwaysWarm,
 	})
 	if err != nil {

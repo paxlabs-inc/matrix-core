@@ -38,19 +38,20 @@ func (s *Store) InsertSettlement(ctx context.Context, row SettlementRow) (string
 	return id, nil
 }
 
-// UnsettledInvocations lists finalized unsettled rows for a developer.
-func (s *Store) UnsettledInvocations(ctx context.Context, developerID string) ([]InvocationRow, error) {
+// UnsettledInvocations lists finalized unsettled rows for a developer on a payment rail.
+func (s *Store) UnsettledInvocations(ctx context.Context, developerID, rail string) ([]InvocationRow, error) {
 	rows, err := s.pool.Query(ctx, `
 		SELECT i.id::text, i.idempotency_key, i.service_id::text, i.endpoint_id::text,
 		       i.caller_did, COALESCE(i.caller_wallet,''), i.quote_id::text, i.units, i.price_wei,
 		       i.pricing_version, COALESCE(i.args_hash,''), COALESCE(i.result_hash,''),
-		       i.outcome, i.latency_ms, i.created_at
+		       i.outcome, COALESCE(i.payment_rail,'direct'), i.latency_ms, i.created_at
 		FROM invocations i
 		JOIN services s ON s.id = i.service_id
 		WHERE s.developer_id = $1
 		  AND i.outcome = 'ok'
 		  AND i.settlement_id IS NULL
-		ORDER BY i.created_at ASC`, developerID,
+		  AND COALESCE(i.payment_rail,'direct') = $2
+		ORDER BY i.created_at ASC`, developerID, rail,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("store: unsettled invocations: %w", err)
@@ -64,7 +65,7 @@ func (s *Store) UnsettledInvocations(ctx context.Context, developerID string) ([
 			&row.ID, &row.IdempotencyKey, &row.ServiceID, &row.EndpointID,
 			&row.CallerDID, &row.CallerWallet, &quoteID, &row.Units, &row.PriceWei,
 			&row.PricingVersion, &row.ArgsHash, &row.ResultHash, &row.Outcome,
-			&row.LatencyMS, &row.CreatedAt,
+			&row.PaymentRail, &row.LatencyMS, &row.CreatedAt,
 		); err != nil {
 			return nil, err
 		}

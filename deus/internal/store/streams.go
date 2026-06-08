@@ -10,23 +10,23 @@ import (
 
 // StreamRow mirrors a PaymentStreams session.
 type StreamRow struct {
-	ID                string
-	ChainStreamID     string
-	ServiceID         string
-	CallerDID         string
-	CallerWallet      string
-	PayeeAddress      string
-	RatePerSecondWei  string
-	CapWei            string
-	SettledWei        string
-	MeteredWei        string
-	Status            string
-	OpenTx            *string
-	LastSettleTx      *string
-	CloseTx           *string
-	OpenedAt          time.Time
-	ClosedAt          *time.Time
-	LastMeteredAt     time.Time
+	ID               string
+	ChainStreamID    string
+	ServiceID        string
+	CallerDID        string
+	CallerWallet     string
+	PayeeAddress     string
+	RatePerSecondWei string
+	CapWei           string
+	SettledWei       string
+	MeteredWei       string
+	Status           string
+	OpenTx           *string
+	LastSettleTx     *string
+	CloseTx          *string
+	OpenedAt         time.Time
+	ClosedAt         *time.Time
+	LastMeteredAt    time.Time
 }
 
 // InsertStream persists a newly opened stream.

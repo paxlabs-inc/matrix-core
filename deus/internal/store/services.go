@@ -10,20 +10,20 @@ import (
 
 // ServiceRow is a persisted listing mirror.
 type ServiceRow struct {
-	ID            string
-	ChainID       *int64
-	DeveloperID   string
-	Slug          string
-	Kind          string
-	Mode          string
-	DisplayName   string
-	Summary       string
-	Manifest      json.RawMessage
-	ManifestHash  string
-	Status        string
-	Confidential  bool
-	QualityScore  *string
-	UptimeBPS     *int
+	ID           string
+	ChainID      *int64
+	DeveloperID  string
+	Slug         string
+	Kind         string
+	Mode         string
+	DisplayName  string
+	Summary      string
+	Manifest     json.RawMessage
+	ManifestHash string
+	Status       string
+	Confidential bool
+	QualityScore *string
+	UptimeBPS    *int
 }
 
 // InsertDraftService creates a draft listing from manifest fields.

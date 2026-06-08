@@ -15,8 +15,8 @@ import (
 	"github.com/paxlabs-inc/deus/internal/pricing"
 	"github.com/paxlabs-inc/deus/internal/quality"
 	"github.com/paxlabs-inc/deus/internal/receipts"
-	"github.com/paxlabs-inc/deus/internal/streams"
 	"github.com/paxlabs-inc/deus/internal/store"
+	"github.com/paxlabs-inc/deus/internal/streams"
 	"github.com/paxlabs-inc/deus/internal/wallet"
 	"github.com/paxlabs-inc/deus/pkg/pricingmath"
 )
@@ -75,8 +75,8 @@ func New(cfg Config) *Gateway {
 
 // InvokeRequest is POST /v1/invoke/{service_id}.
 type InvokeRequest struct {
-	ServiceID      string
-	Operation      string
+	ServiceID        string
+	Operation        string
 	Args             map[string]any
 	QuoteID          string
 	PaymentRail      string
@@ -269,7 +269,7 @@ func (g *Gateway) invokeProxy(ctx context.Context, caller auth.Caller, req Invok
 		_ = g.meter.Void(ctx, row.ID)
 		return InvokeResponse{}, &Error{Code: "internal_error", Message: err.Error(), HTTPStatus: 500}
 	}
-	if err := g.meter.Finalize(ctx, row.ID, "ok", resultHash, q.MaxUnits, pricingmath.FormatWei(charge), proxyRes.LatencyMS); err != nil {
+	if err := g.meter.Finalize(ctx, row.ID, "ok", resultHash, q.MaxUnits, pricingmath.FormatWei(charge), "direct", proxyRes.LatencyMS); err != nil {
 		return InvokeResponse{}, &Error{Code: "internal_error", Message: err.Error(), HTTPStatus: 500}
 	}
 	_ = g.store.InsertReceipt(ctx, store.ReceiptRow{
@@ -411,7 +411,7 @@ func (g *Gateway) invokeHosted(ctx context.Context, caller auth.Caller, req Invo
 		_ = g.meter.Void(ctx, row.ID)
 		return InvokeResponse{}, &Error{Code: "internal_error", Message: err.Error(), HTTPStatus: 500}
 	}
-	if err := g.meter.Finalize(ctx, row.ID, "ok", resultHash, hostedRes.Units, pricingmath.FormatWei(charge), hostedRes.LatencyMS); err != nil {
+	if err := g.meter.Finalize(ctx, row.ID, "ok", resultHash, hostedRes.Units, pricingmath.FormatWei(charge), "direct", hostedRes.LatencyMS); err != nil {
 		return InvokeResponse{}, &Error{Code: "internal_error", Message: err.Error(), HTTPStatus: 500}
 	}
 	_ = g.store.InsertReceipt(ctx, store.ReceiptRow{
