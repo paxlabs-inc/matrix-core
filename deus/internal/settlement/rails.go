@@ -29,8 +29,8 @@ type StreamSettler interface {
 
 // DevPayer records settlements without chain writes.
 type DevPayer struct {
-	Payouts  []PayoutRecord
-	Anchors  []AnchorRecord
+	Payouts []PayoutRecord
+	Anchors []AnchorRecord
 }
 
 // PayoutRecord is a dev-mode developer payout.

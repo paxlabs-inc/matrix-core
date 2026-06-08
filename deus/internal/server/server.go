@@ -16,6 +16,7 @@ import (
 	"github.com/paxlabs-inc/deus/internal/gateway"
 	"github.com/paxlabs-inc/deus/internal/hosting"
 	"github.com/paxlabs-inc/deus/internal/registry"
+	"github.com/paxlabs-inc/deus/internal/settlement"
 	"github.com/paxlabs-inc/deus/internal/streams"
 	"github.com/paxlabs-inc/deus/internal/store"
 	"github.com/paxlabs-inc/deus/pkg/types"
@@ -31,6 +32,7 @@ type Deps struct {
 	Registry          *registry.Service
 	Discovery         *discovery.Service
 	Gateway           *gateway.Gateway
+	Settler           *settlement.Settler
 	Streams           *streams.Service
 	Hosting           *hosting.Orchestrator
 	BlobURL           func(string) string

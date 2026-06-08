@@ -86,7 +86,8 @@ func TestRegistryPublishDiscoverFlow(t *testing.T) {
 	_ = json.Unmarshal(manifestRaw, &manifest)
 	manifest["owner"] = "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266"
 	manifest["payout_address"] = manifest["owner"]
-	manifest["slug"] = "weather.e2e." + strings.ReplaceAll(time.Now().Format("150405.000"), ".", "")
+	wantSlug := "weather.e2e." + strings.ReplaceAll(time.Now().Format("150405.000"), ".", "")
+	manifest["slug"] = wantSlug
 	body, _ := json.Marshal(map[string]any{"manifest": manifest})
 
 	req, _ := http.NewRequest(http.MethodPost, ts.URL+"/v1/services", bytes.NewReader(body))
@@ -116,7 +117,7 @@ func TestRegistryPublishDiscoverFlow(t *testing.T) {
 		t.Fatalf("publish status %d", pubResp.StatusCode)
 	}
 
-	discBody := []byte(`{"query":"weather","limit":5}`)
+	discBody := []byte(`{"query":"` + wantSlug + `","limit":10}`)
 	discReq, _ := http.NewRequest(http.MethodPost, ts.URL+"/v1/discover", bytes.NewReader(discBody))
 	discReq.Header.Set("Content-Type", "application/json")
 	discResp, err := http.DefaultClient.Do(discReq)
@@ -136,8 +137,15 @@ func TestRegistryPublishDiscoverFlow(t *testing.T) {
 	if len(disc.Results) == 0 {
 		t.Fatalf("discover empty: %+v", disc.Results)
 	}
-	if !strings.Contains(disc.Results[0].Slug, "weather") {
-		t.Fatalf("discover unexpected slug: %+v", disc.Results)
+	found := false
+	for _, r := range disc.Results {
+		if r.Slug == wantSlug {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Fatalf("discover missing slug %q: %+v", wantSlug, disc.Results)
 	}
 }
 

@@ -106,11 +106,12 @@ type EIP712Sig struct {
 
 // InvokeRequest is POST /v1/invoke/{id}.
 type InvokeRequest struct {
-	Operation      string         `json:"operation"`
-	Args           map[string]any `json:"args"`
-	QuoteID        string         `json:"quote_id"`
-	Payment        PaymentRail    `json:"payment"`
-	IdempotencyKey string         `json:"idempotency_key"`
+	Operation        string         `json:"operation"`
+	Args             map[string]any `json:"args"`
+	QuoteID          string         `json:"quote_id"`
+	Payment          PaymentRail    `json:"payment"`
+	IdempotencyKey   string         `json:"idempotency_key"`
+	CallerVoucherSig string         `json:"caller_voucher_sig,omitempty"`
 }
 
 // PaymentRail selects settlement path.
@@ -121,12 +122,24 @@ type PaymentRail struct {
 
 // InvokeResponse is POST /v1/invoke/{id} success body.
 type InvokeResponse struct {
-	InvocationID string         `json:"invocation_id"`
-	Outcome      string         `json:"outcome"`
-	Result       map[string]any `json:"result"`
-	ChargedWei   string         `json:"charged_wei"`
-	LatencyMS    int            `json:"latency_ms"`
-	Receipt      ReceiptSummary `json:"receipt"`
+	InvocationID string          `json:"invocation_id"`
+	Outcome      string          `json:"outcome"`
+	Result       map[string]any  `json:"result"`
+	ChargedWei   string          `json:"charged_wei"`
+	LatencyMS    int             `json:"latency_ms"`
+	Receipt      ReceiptSummary  `json:"receipt"`
+	Voucher      *VoucherSummary `json:"voucher,omitempty"`
+}
+
+// VoucherSummary is inline net-rail voucher metadata.
+type VoucherSummary struct {
+	ChannelID       string `json:"channel_id"`
+	CumulativeWei   string `json:"cumulative_wei"`
+	Nonce           int64  `json:"nonce"`
+	LastReceiptHash string `json:"last_receipt_hash"`
+	Digest          string `json:"digest"`
+	NeedsSignature  bool   `json:"needs_signature"`
+	VoucherID       string `json:"voucher_id,omitempty"`
 }
 
 // ReceiptSummary is inline receipt metadata.
@@ -145,6 +158,39 @@ type InvocationResponse struct {
 	ChargedWei  string         `json:"charged_wei"`
 	LatencyMS   *int           `json:"latency_ms,omitempty"`
 	Receipt     *ReceiptDetail `json:"receipt,omitempty"`
+}
+
+// OpenChannelRequest is POST /v1/channels.
+type OpenChannelRequest struct {
+	CapWei  string `json:"cap_wei"`
+	FundTx  string `json:"fund_tx,omitempty"`
+}
+
+// ChannelResponse is POST /v1/channels response.
+type ChannelResponse struct {
+	ID            string    `json:"id"`
+	CallerDID     string    `json:"caller_did"`
+	BalanceWei    string    `json:"balance_wei"`
+	ReservedWei   string    `json:"reserved_wei"`
+	CumulativeWei string    `json:"cumulative_wei"`
+	WindowEnd     time.Time `json:"window_end"`
+	Status        string    `json:"status"`
+}
+
+// VoucherCosignRequest is POST /v1/vouchers/cosign.
+type VoucherCosignRequest struct {
+	ChannelID       string `json:"channel_id"`
+	CumulativeWei   string `json:"cumulative_wei"`
+	ChargeWei       string `json:"charge_wei"`
+	Nonce           int64  `json:"nonce"`
+	LastReceiptHash string `json:"last_receipt_hash"`
+	Digest          string `json:"digest"`
+	CallerSig       string `json:"caller_sig"`
+}
+
+// VoucherCosignResponse is POST /v1/vouchers/cosign response.
+type VoucherCosignResponse struct {
+	VoucherID string `json:"voucher_id"`
 }
 
 // ReceiptDetail is GET /v1/receipts/{id}.

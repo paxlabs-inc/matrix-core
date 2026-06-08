@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/paxlabs-inc/deus/internal/chain"
+	"github.com/paxlabs-inc/deus/internal/channels"
 	"github.com/paxlabs-inc/deus/internal/config"
 	"github.com/paxlabs-inc/deus/internal/discovery"
 	"github.com/paxlabs-inc/deus/internal/gateway"
@@ -24,6 +25,7 @@ import (
 	"github.com/paxlabs-inc/deus/internal/receipts"
 	"github.com/paxlabs-inc/deus/internal/registry"
 	"github.com/paxlabs-inc/deus/internal/server"
+	"github.com/paxlabs-inc/deus/internal/settlement"
 	"github.com/paxlabs-inc/deus/internal/store"
 	"github.com/paxlabs-inc/deus/internal/streams"
 	"github.com/paxlabs-inc/deus/internal/telemetry"
@@ -148,6 +150,7 @@ func run() int {
 	}
 
 	var gw *gateway.Gateway
+	var settler *settlement.Settler
 	var streamSvc *streams.Service
 	pricingSvc := pricing.New(db)
 	signKey := cfg.GatewaySigningKey
@@ -171,6 +174,8 @@ func run() int {
 				wal = &wallet.DevClient{MaxPerCallWei: ""}
 			}
 			if wal != nil {
+				chSvc := channels.New(db, wal)
+				vSvc := channels.NewVoucherService(db, signer)
 				var streamBackend streams.AccrualBackend
 				var devStreams *streams.DevBackend
 				if cfg.Dev {
@@ -187,16 +192,21 @@ func run() int {
 					})
 				}
 				gw = gateway.New(gateway.Config{
-					Store:   db,
-					Pricing: pricingSvc,
-					Meter:   metering.New(db),
-					Wallet:  wal,
-					Signer:  signer,
-					Quality: quality.New(db),
-					Hosting: hostOrchestrator,
-					Streams: streamSvc,
-					ChainID: cfg.ChainID,
+					Store:    db,
+					Pricing:  pricingSvc,
+					Meter:    metering.New(db),
+					Wallet:   wal,
+					Signer:   signer,
+					Quality:  quality.New(db),
+					Channels: chSvc,
+					Vouchers: vSvc,
+					Hosting:  hostOrchestrator,
+					Streams:  streamSvc,
+					ChainID:  cfg.ChainID,
 				})
+				if cfg.Dev {
+					settler = settlement.NewSettler(db, &settlement.DevPayer{})
+				}
 			}
 		}
 	}
@@ -212,6 +222,7 @@ func run() int {
 		Registry:          regSvc,
 		Discovery:         discSvc,
 		Gateway:           gw,
+		Settler:           settler,
 		Streams:           streamSvc,
 		Hosting:           hostOrchestrator,
 		BlobURL:           blobURL,

@@ -4,7 +4,7 @@
 
 ### Repository overview
 
-This is the **Matrix** monorepo (`matrix-core`): Go cognition/runtime layers (`cortex`, `MCL`, `bridge`, `executor`, `gateway`, `router`) plus **`deus/`** (agent-service registry + invoke gateway). Deus Phases 0–4 and Phase 6 (streaming rail) are implemented; see `deus/docs/14-roadmap.md`.
+This is the **Matrix** monorepo (`matrix-core`): Go cognition/runtime layers (`cortex`, `MCL`, `bridge`, `executor`, `gateway`, `router`) plus **`deus/`** (agent-service registry + invoke gateway). Deus Phases 0–4, 2.5 (net settlement), and 6 (streaming rail) are implemented; see `deus/docs/14-roadmap.md`.
 
 Standard build/test commands live in the root `Makefile` and `CONTRIBUTING.md`.
 
@@ -82,6 +82,10 @@ DEUS_RUN_ANVIL_TESTS=1 go test -tags=integration ./test/e2e/...   # from deus/
 **Phase 3 hosted listings:** `POST /v1/services/{id}/artifacts` → `POST /v1/services/{id}/deploy` → publish (requires active deployment) → gateway invokes `deployments.exec_endpoint` at `POST /invoke`. Dev: `DEUS_HOSTING_DEV_EXEC_URL` + in-memory objstore. Prod: `DEUS_APPWRITE_ENDPOINT`, `DEUS_APPWRITE_PROJECT_ID`, `DEUS_APPWRITE_API_KEY`. Budget: `DEUS_HOSTING_KILL_SWITCH`, `DEUS_HOSTING_MAX_ALWAYS_WARM`.
 
 **Phase 4 discovery:** plain-language `POST /v1/discover` runs constraint extraction → lexical (`websearch_to_tsquery`) + optional vector KNN (when `DEUS_EMBED_ENDPOINT` set). Ranking weights in `deus/configs/ranking.yaml`. Listings are indexed on create/publish via `SetManifestIndexer`. Dev uses hash embedder (lexical-only search path). Migration `003_discovery_search.sql` adds `search_document` + HNSW index.
+
+**Phase 2.5 net settlement:** `POST /v1/channels` funds a per-window channel; invoke with `payment.rail: "net"` returns a cumulative voucher for caller co-sign (`POST /v1/vouchers/cosign`). Settlement batches via `POST /internal/settle/run`. Contracts: `PaymentChannel.sol`, `SettlementAnchor.sol`.
+
+**Phase 6 streaming:** `POST /v1/streams` opens a PaymentStreams session; invoke with `payment.rail: "stream"` + `stream_id` meters against `accrued()` (no per-call direct send). `POST /v1/streams/{id}/settle` and `/close` for settle/refund.
 
 Dev caller auth: `Authorization: Bearer …` plus `X-Caller-DID` / `X-Caller-Wallet`. Gateway uses `wallet.DevClient` when `DEUS_DEV=1` and no `MATRIX_WALLET_API_URL`.
 
