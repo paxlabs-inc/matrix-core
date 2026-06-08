@@ -1,0 +1,47 @@
+{
+  "schema_version": "1",
+  "slug": "weather.now",
+  "kind": "data",
+  "display_name": "Weather Now",
+  "summary": "Current conditions and short-range forecast by lat/lng.",
+  "description": "Longer markdown description used in console and search.",
+  "tags": ["weather", "geo", "forecast"],
+  "owner": "0x0000000000000000000000000000000000000001",
+  "payout_address": "0x0000000000000000000000000000000000000001",
+  "mode": "proxy",
+  "confidential": false,
+  "operations": [
+    {
+      "name": "forecast",
+      "method": "POST",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "lat": { "type": "number" },
+          "lng": { "type": "number" }
+        },
+        "required": ["lat", "lng"]
+      },
+      "output_schema": { "type": "object" },
+      "timeout_ms": 5000,
+      "max_response_bytes": 262144
+    }
+  ],
+  "pricing": [
+    {
+      "operation": "forecast",
+      "model": "per_call",
+      "unit": "call",
+      "price_wei": "200000000000000",
+      "min_charge_wei": "200000000000000"
+    }
+  ],
+  "endpoint": {
+    "proxy_url": "https://api.example.com/forecast"
+  },
+  "sla": {
+    "target_uptime_bps": 9900,
+    "p99_latency_ms": 800
+  },
+  "attestation": null
+}

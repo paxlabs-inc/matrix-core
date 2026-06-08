@@ -1,0 +1,73 @@
+[
+  {
+    "name": "deus_discover",
+    "description": "Search Deus service listings (plain-language + filters). Read-only.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "query": { "type": "string" },
+        "filters": { "type": "object" },
+        "limit": { "type": "integer" }
+      }
+    }
+  },
+  {
+    "name": "deus_get_service",
+    "description": "Get a Deus service listing by id. Read-only.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "service_id": { "type": "string" }
+      },
+      "required": ["service_id"]
+    }
+  },
+  {
+    "name": "deus_quote",
+    "description": "Get a signed EIP-712 price quote for a service operation. Read-only.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "service_id": { "type": "string" },
+        "operation": { "type": "string" },
+        "estimated_units": { "type": "string" }
+      },
+      "required": ["service_id", "operation"]
+    }
+  },
+  {
+    "name": "deus_invoke",
+    "description": "Invoke a Deus proxy service (direct-rail pay + signed receipt). WRITE: spends via agent wallet.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "service_id": { "type": "string" },
+        "operation": { "type": "string" },
+        "args": { "type": "object" },
+        "quote_id": { "type": "string" },
+        "idempotency_key": { "type": "string" },
+        "payment_rail": { "type": "string" }
+      },
+      "required": ["service_id", "operation", "quote_id", "idempotency_key"]
+    }
+  },
+  {
+    "name": "deus_invocation_status",
+    "description": "Get invocation status and receipt metadata. Read-only.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "invocation_id": { "type": "string" }
+      },
+      "required": ["invocation_id"]
+    }
+  },
+  {
+    "name": "deus_my_spend",
+    "description": "Placeholder for caller spend summary (not implemented server-side in phase 2).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {}
+    }
+  }
+]

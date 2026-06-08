@@ -1,0 +1,90 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://deus.paxeer.app/schemas/manifest/v1.json",
+  "title": "DeusServiceManifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "slug",
+    "kind",
+    "display_name",
+    "summary",
+    "owner",
+    "payout_address",
+    "mode",
+    "operations",
+    "pricing"
+  ],
+  "properties": {
+    "schema_version": { "type": "string", "const": "1" },
+    "slug": { "type": "string", "minLength": 1, "pattern": "^[a-z0-9][a-z0-9._-]*$" },
+    "kind": { "type": "string", "enum": ["data", "agent"] },
+    "display_name": { "type": "string", "minLength": 1 },
+    "summary": { "type": "string", "minLength": 1 },
+    "description": { "type": "string" },
+    "tags": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "owner": { "type": "string", "minLength": 1 },
+    "payout_address": { "type": "string", "minLength": 1 },
+    "mode": { "type": "string", "enum": ["proxy", "hosted"] },
+    "confidential": { "type": "boolean" },
+    "operations": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/operation" }
+    },
+    "pricing": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/pricing" }
+    },
+    "endpoint": { "$ref": "#/$defs/endpoint" },
+    "sla": { "$ref": "#/$defs/sla" },
+    "attestation": { "type": ["object", "null"] }
+  },
+  "$defs": {
+    "operation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "method", "input_schema", "output_schema"],
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "method": { "type": "string", "enum": ["GET", "POST", "PUT", "PATCH", "DELETE"] },
+        "input_schema": { "type": "object" },
+        "output_schema": { "type": "object" },
+        "timeout_ms": { "type": "integer", "minimum": 1 },
+        "max_response_bytes": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "pricing": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["operation", "model", "unit", "price_wei", "min_charge_wei"],
+      "properties": {
+        "operation": { "type": "string", "minLength": 1 },
+        "model": { "type": "string", "enum": ["per_call", "per_unit", "per_second"] },
+        "unit": { "type": "string", "enum": ["call", "token", "request", "second"] },
+        "price_wei": { "type": "string", "pattern": "^[0-9]+$" },
+        "min_charge_wei": { "type": "string", "pattern": "^[0-9]+$" }
+      }
+    },
+    "endpoint": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "proxy_url": { "type": "string", "format": "uri" }
+      }
+    },
+    "sla": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "target_uptime_bps": { "type": "integer", "minimum": 0, "maximum": 10000 },
+        "p99_latency_ms": { "type": "integer", "minimum": 1 }
+      }
+    }
+  }
+}
