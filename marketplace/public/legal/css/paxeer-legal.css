@@ -503,6 +503,88 @@ details.toc-collapse[open] > summary .chev { transform: rotate(90deg); }
   background: linear-gradient(90deg, var(--border-strong), transparent);
 }
 
+/* tables */
+.doc-body .table-wrap {
+  margin-top: var(--space-5);
+  border: 1px solid var(--border-hairline);
+  border-radius: var(--radius-lg);
+  background: var(--bg-elevated);
+  box-shadow: var(--shadow-02);
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.doc-body table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14.5px;
+  min-width: 480px;
+}
+.doc-body thead th {
+  text-align: left;
+  font-family: var(--font-mono);
+  font-size: 11px; letter-spacing: var(--track-meta);
+  text-transform: uppercase; color: var(--fg-subtle);
+  font-weight: var(--fw-medium);
+  padding: var(--space-3) var(--space-4);
+  background: var(--bg-subtle);
+  border-bottom: 1px solid var(--border-strong);
+  white-space: nowrap;
+}
+.doc-body tbody td {
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--border-hairline);
+  color: var(--color-neutral-300);
+  font-weight: var(--fw-light);
+  line-height: 1.5;
+  vertical-align: top;
+}
+.doc-body tbody tr:last-child td { border-bottom: 0; }
+.doc-body tbody tr:hover td { background: rgba(255,255,255,0.018); }
+.doc-body td strong, .doc-body th strong { color: var(--fg); font-weight: var(--fw-medium); }
+
+/* bullet lists */
+.doc-body ul.bullets {
+  list-style: none; padding: 0;
+  display: flex; flex-direction: column; gap: var(--space-3);
+  margin-top: var(--space-4);
+}
+.doc-body ul.bullets > li {
+  position: relative;
+  padding-left: var(--space-5);
+  color: var(--color-neutral-300);
+  font-weight: var(--fw-light);
+  line-height: 1.6;
+}
+.doc-body ul.bullets:not(.tasks) > li::before {
+  content: "";
+  position: absolute; left: 4px; top: 0.62em;
+  width: 5px; height: 5px;
+  background: var(--accent-ink);
+  transform: rotate(45deg);
+}
+/* task checklist */
+.doc-body ul.tasks > li.task {
+  display: grid;
+  grid-template-columns: 1.4em 1fr;
+  gap: var(--space-3);
+  padding-left: 0;
+  align-items: start;
+}
+.doc-body ul.tasks > li.task::before { content: none; }
+.doc-body .check {
+  width: 18px; height: 18px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--bg-subtle);
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 11px; color: var(--color-neutral-100);
+  margin-top: 0.15em;
+}
+.doc-body .check.on {
+  background: var(--accent-ink);
+  border-color: var(--accent-ink);
+}
+
 /* document footer */
 .doc-footer {
   margin-top: var(--space-9);
