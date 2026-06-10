@@ -42,7 +42,7 @@
 # and the paxeer-net bridge runs directly on Node.
 
 # -------- 1. Builder --------
-FROM golang:1.22-bookworm AS builder
+FROM golang:1.26-bookworm AS builder
 
 WORKDIR /src
 ENV CGO_ENABLED=0 \
