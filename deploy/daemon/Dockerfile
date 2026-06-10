@@ -82,14 +82,20 @@ ENV DEBIAN_FRONTEND=noninteractive \
 
 # Core runtime deps + Node (for the fs MCP server) + Python (for fetch/git
 # MCP servers) + uv (the python tool runner used in agents/default.json).
+# Node MUST be >= 22.12 (NodeSource, NOT Debian bookworm's node 18): the fetch
+# MCP server's readabilipy pipeline pins html-encoding-sniffer@6, which
+# require()s the ESM-only @exodus/bytes — ERR_REQUIRE_ESM on node 18 broke
+# every fetch__fetch article extraction (ExtractArticle.js non-zero exit).
 RUN set -eux; \
     apt-get update; \
     apt-get install -y --no-install-recommends \
-        ca-certificates curl git tini \
+        ca-certificates curl git tini gnupg \
         python3 python3-pip python3-venv \
-        nodejs npm \
         zstd; \
+    curl -fsSL https://deb.nodesource.com/setup_22.x | bash -; \
+    apt-get install -y --no-install-recommends nodejs; \
     rm -rf /var/lib/apt/lists/*; \
+    node --version | grep -E '^v2[2-9]\.'; \
     pip3 install --break-system-packages --no-cache-dir uv; \
     npm config set update-notifier false; \
     update-ca-certificates
@@ -102,7 +108,23 @@ RUN set -eux; \
     uv tool install mcp-server-git==2026.1.14; \
     command -v mcp-server-filesystem; \
     command -v mcp-server-fetch; \
-    command -v mcp-server-git
+    command -v mcp-server-git; \
+    # readabilipy's node extraction pipeline (what fetch__fetch uses for
+    # article mode) needs its OWN npm deps — the wheel ships javascript/
+    # package.json but NO node_modules and NO lockfile (it npm-installs lazily
+    # at first call, which is why a fresh machine's first fetch was slow/flaky).
+    # Install at build time, then smoke-test: ExtractArticle.js must parse HTML
+    # and exit 0. (Also requires node >= 22: html-encoding-sniffer@6 resolves
+    # here and require()s the ESM-only @exodus/bytes — ERR_REQUIRE_ESM on 18.)
+    # NOTE: ExtractArticle.js writes JSON to -o (NOT stdout), and Readability
+    # rejects short documents — the probe article must clear its char threshold.
+    js_dir="$(find /root/.local/share/uv/tools/mcp-server-fetch -type d -name javascript -path '*readabilipy*' | head -1)"; \
+    test -n "$js_dir"; \
+    (cd "$js_dir" && npm install --omit=dev --no-audit --no-fund); \
+    python3 -c "body = '<p>' + ('readability probe padding sentence for the char threshold. ' * 20) + 'probe-marker</p>'; open('/tmp/extract-probe.html','w').write('<html><head><title>t</title></head><body><article><h1>t</h1>' + body * 3 + '</article></body></html>')"; \
+    (cd "$js_dir" && node ExtractArticle.js -i /tmp/extract-probe.html -o /tmp/extract-probe.json); \
+    grep -q probe-marker /tmp/extract-probe.json; \
+    rm -f /tmp/extract-probe.html /tmp/extract-probe.json
 
 # Pre-install the MinIO client (`mc`) for snapshot sync. Phase 3 wires
 # this into the daemon as a goroutine; for now `mc` is shelled.

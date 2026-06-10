@@ -40,7 +40,7 @@ export const ENDPOINTS = {
   // Alternate documented EVM RPC.
   rpcAlt: pick('PAXEER_RPC_ALT_URL') ?? 'https://public-rpc.paxeer.app/rpc',
   // PaxScan = Paxeer's Blockscout v2 explorer. Client hits `${paxscan}/api/v2/...`.
-  paxscan: (pick('PAXEER_PAXSCAN_URL') ?? 'https://paxscan.paxeer.app').replace(/\/+$/, ''),
+  paxscan: (pick('PAXEER_PAXSCAN_URL') ?? 'https://api.paxscan.io').replace(/\/+$/, ''),
   // Portfolio / Argus user-stats indexer (pnl, rank, performance, charts, rewards).
   portfolio: (pick('PAXEER_PORTFOLIO_URL') ?? 'https://us-east-1.user-stats.sidiora.exchange').replace(/\/+$/, ''),
   // PaxSpot DEX market-data API.
@@ -55,7 +55,7 @@ export const ENDPOINTS = {
 // Agents sign/send here; keys never leave the server. Auth = Supabase JWT.
 export const WALLET_API = {
   base: (pick('PAXEER_WALLET_API', 'PAXNET_WALLET_API') ?? 'https://connect.paxportwallet.com').replace(/\/+$/, ''),
-  supabaseUrl: (pick('PAXEER_SUPABASE_URL') ?? 'https://zezsqawedbikldiedlse.supabase.co').replace(/\/+$/, ''),
+  supabaseUrl: (pick('PAXEER_SUPABASE_URL') ?? 'https://supabase.paxeer.app').replace(/\/+$/, ''),
   supabaseAnonKey: pick('PAXEER_SUPABASE_ANON_KEY', 'PAXEER_SUPABASE_PUBLISHABLE_KEY'),
   // Headless agent auth (server-side). Provide ONE of:
   //   PAXEER_WALLET_TOKEN  — a ready Supabase access_token (Bearer JWT), OR

@@ -80,6 +80,26 @@ func TestWireRoundTrip(t *testing.T) {
 	}
 }
 
+func TestSplitInlineThink(t *testing.T) {
+	cases := []struct {
+		in, visible, reasoning string
+	}{
+		{"plain answer", "plain answer", ""},
+		{"<think>hmm</think>the answer", "the answer", "hmm"},
+		{"  <thinking>deep\nthought</thinking>  final", "final", "deep\nthought"},
+		// Unterminated tag (truncated generation): the WHOLE remainder is
+		// reasoning — nothing may leak to the visible channel.
+		{"<think>I should run echo iVBOR...", "", "I should run echo iVBOR..."},
+		{"mid <think>x</think> sentence", "mid <think>x</think> sentence", ""},
+	}
+	for _, c := range cases {
+		v, r := splitInlineThink(c.in)
+		if v != c.visible || r != c.reasoning {
+			t.Errorf("splitInlineThink(%q) = (%q, %q), want (%q, %q)", c.in, v, r, c.visible, c.reasoning)
+		}
+	}
+}
+
 func TestFromWireRespMessageReasoningAndDefaults(t *testing.T) {
 	// content null + only a reasoning channel + empty role.
 	m := fromWireRespMessage(wireRespMessage{

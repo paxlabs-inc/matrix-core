@@ -329,12 +329,39 @@ func fromWireRespMessage(m wireRespMessage) Message {
 	if role == "" {
 		role = RoleAssistant
 	}
+	content, inlineReasoning := splitInlineThink(m.Content)
+	reasoning := m.ReasoningContent
+	if reasoning == "" {
+		reasoning = inlineReasoning
+	}
 	return Message{
 		Role:      role,
-		Content:   m.Content,
+		Content:   content,
 		ToolCalls: m.ToolCalls,
-		Reasoning: m.ReasoningContent,
+		Reasoning: reasoning,
 	}
+}
+
+// splitInlineThink moves a provider-inlined chain-of-thought block out of the
+// visible content and into the reasoning channel. Some providers/models emit
+// `<think>…</think>` (or `<thinking>…</thinking>`) inside `content` instead of
+// the separate `reasoning_content` field; leaving it in place leaks internal
+// monologue into the chat. An unterminated opening tag (truncated generation)
+// means the WHOLE remainder is reasoning.
+func splitInlineThink(content string) (visible, reasoning string) {
+	trimmed := strings.TrimLeft(content, " \t\r\n")
+	for _, tag := range [2]string{"think", "thinking"} {
+		open, close := "<"+tag+">", "</"+tag+">"
+		if !strings.HasPrefix(trimmed, open) {
+			continue
+		}
+		rest := trimmed[len(open):]
+		if i := strings.Index(rest, close); i >= 0 {
+			return strings.TrimSpace(rest[i+len(close):]), strings.TrimSpace(rest[:i])
+		}
+		return "", strings.TrimSpace(rest)
+	}
+	return content, ""
 }
 
 type chatErrorBody struct {

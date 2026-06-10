@@ -83,10 +83,11 @@ func (c *Consolidator) loop() {
 const consolidatePrompt = `You are a memory consolidator for an AI agent. Read the interaction transcript and extract ONLY durable learnings worth keeping beyond this session. Be very selective — most interactions yield nothing, and that is the correct, common answer.
 
 Return STRICT JSON, nothing else, in exactly this shape:
-{"facts": ["..."], "patterns": [{"name": "...", "trigger": "...", "preconditions": ["..."], "steps": ["..."], "gotchas": ["..."], "success_criteria": ["..."]}], "outcome": {"summary": "...", "status": "success|failure|partial"}}
+{"facts": ["..."], "user_facts": ["..."], "patterns": [{"name": "...", "trigger": "...", "preconditions": ["..."], "steps": ["..."], "gotchas": ["..."], "success_criteria": ["..."]}], "outcome": {"summary": "...", "status": "success|failure|partial"}}
 
 Rules:
-- facts: objective, durable truths about the user, their repo, or their environment (NOT transient chit-chat, NOT the question itself). Usually [].
+- facts: objective, durable truths about the user's repo, environment, or domain (NOT transient chit-chat, NOT the question itself). Usually [].
+- user_facts: durable truths about the USER THEMSELVES — their name, role, stated identity, or stable working preferences (e.g. "The user's name is Andrew"). These are pinned to every future conversation, so include ONLY what the user actually asserted about themselves. Usually [].
 - patterns: reusable how-to recipes worth reapplying to similar future tasks. Each is an object — name (short label), trigger (when to apply it), preconditions (what must be true first), steps (the proven tool sequence), gotchas (learned failure modes), success_criteria (how to know it worked). Omit a field if unknown. Usually [].
 - outcome: include ONLY if a concrete task was actually completed or failed in this transcript; otherwise set it to null.
 - Copy identifiers (addresses, tx hashes, IDs, file paths, numbers) VERBATIM.
@@ -102,9 +103,10 @@ type patternJSON struct {
 }
 
 type extract struct {
-	Facts    []string      `json:"facts"`
-	Patterns []patternJSON `json:"patterns"`
-	Outcome  *struct {
+	Facts     []string      `json:"facts"`
+	UserFacts []string      `json:"user_facts"`
+	Patterns  []patternJSON `json:"patterns"`
+	Outcome   *struct {
 		Summary string `json:"summary"`
 		Status  string `json:"status"`
 	} `json:"outcome"`
@@ -137,6 +139,14 @@ func (c *Consolidator) process(transcript string) {
 		}
 		if s := strings.TrimSpace(f); s != "" {
 			_, _ = c.pager.RememberFact(ctx, s)
+		}
+	}
+	for i, f := range out.UserFacts {
+		if i >= 5 {
+			break
+		}
+		if s := strings.TrimSpace(f); s != "" {
+			_, _ = c.pager.RememberUserFact(ctx, s)
 		}
 	}
 	for i, pj := range out.Patterns {

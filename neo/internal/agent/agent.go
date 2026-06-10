@@ -137,6 +137,19 @@ func (a *Agent) Chat(ctx context.Context, userInput string) error {
 	prevSig := ""
 
 	for step := 0; step < a.cfg.StepBudget; step++ {
+		// Mid-turn page-fault refresh: long tool loops drift away from the
+		// opening ask, so periodically re-fault against the latest assistant
+		// narration. Injection stays system-block-only — the transcript
+		// never pays for it.
+		if step > 0 && step%refaultEvery == 0 {
+			q := userInput
+			if c := lastAssistantText(a.working, 400); c != "" {
+				q = q + "\n" + c
+			}
+			retrieved = a.faultMemory(ctx, q)
+			procedural = a.faultPatterns(ctx, q)
+		}
+
 		pinned := ""
 		if a.pager != nil {
 			pinned = a.pager.Pinned(ctx, a.activeGoal)
@@ -162,6 +175,14 @@ func (a *Agent) Chat(ctx context.Context, userInput string) error {
 		// No tool calls → the model decided it is done. (Termination.)
 		if !res.HasToolCalls() {
 			answer := strings.TrimSpace(res.Message.Content)
+			// Truncated generation (finish_reason=length) is NEVER a final
+			// answer: the cut-off text is half-formed monologue/payload (the
+			// model may have been inlining a large blob). Saying it raw leaks
+			// internal thoughts into the chat. Nudge and let it retry compactly.
+			if res.FinishReason == "length" {
+				a.working = append(a.working, llm.UserMessage("(your last message was cut off by the output limit — don't inline large payloads in prose; call a tool with compact arguments, or give a concise final answer)"))
+				continue
+			}
 			if answer == "" {
 				// anti-premature: empty AND no tools → nudge once to continue.
 				a.working = append(a.working, llm.UserMessage("(continue: either call a tool to make progress, or give the final answer)"))
@@ -226,6 +247,32 @@ func (a *Agent) Seed(history []llm.Message, goal string) {
 	if a.activeGoal == "" {
 		a.activeGoal = strings.TrimSpace(goal)
 	}
+}
+
+// refaultEvery is how many loop steps pass between mid-turn page-fault
+// refreshes. Small enough to track sub-goal drift in long tool loops,
+// large enough that retrieval cost (one embed call) stays negligible.
+const refaultEvery = 6
+
+// lastAssistantText returns the most recent non-empty assistant content in
+// the working transcript, truncated to maxLen bytes — the freshest signal of
+// what the agent is currently pursuing.
+func lastAssistantText(working []llm.Message, maxLen int) string {
+	for i := len(working) - 1; i >= 0; i-- {
+		m := working[i]
+		if m.Role != llm.RoleAssistant {
+			continue
+		}
+		c := strings.TrimSpace(m.Content)
+		if c == "" {
+			continue
+		}
+		if len(c) > maxLen {
+			c = c[:maxLen]
+		}
+		return c
+	}
+	return ""
 }
 
 func (a *Agent) faultMemory(ctx context.Context, q string) []memory.Snippet {

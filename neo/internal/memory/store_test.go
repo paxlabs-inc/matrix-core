@@ -156,6 +156,45 @@ func TestPinnedIncludesIdentityRulesAndHardConstraint(t *testing.T) {
 	}
 }
 
+func TestUserProfilePinnedAndDeduped(t *testing.T) {
+	cfg := testCfg(t)
+	p, err := Open(cfg)
+	if err != nil {
+		t.Fatalf("Open: %v", err)
+	}
+	defer p.Close()
+	ctx := context.Background()
+
+	if _, err := p.RememberUserFact(ctx, "The user's name is Andrew"); err != nil {
+		t.Fatalf("RememberUserFact: %v", err)
+	}
+	// A generic (non-user) fact must NOT enter the profile.
+	if _, err := p.RememberFact(ctx, "The repo uses Go 1.26"); err != nil {
+		t.Fatalf("RememberFact: %v", err)
+	}
+	// Repeats (even with case/spacing drift) dedupe instead of duplicating.
+	if _, err := p.RememberUserFact(ctx, "  the user's NAME is Andrew "); err != nil {
+		t.Fatalf("RememberUserFact dup: %v", err)
+	}
+
+	profile := p.UserProfile(ctx)
+	if len(profile) != 1 {
+		t.Fatalf("UserProfile = %v, want exactly the one deduped user fact", profile)
+	}
+	if profile[0] != "The user's name is Andrew" {
+		t.Errorf("profile[0] = %q", profile[0])
+	}
+
+	pinned := p.Pinned(ctx, "")
+	if !strings.Contains(pinned, "What you know about your user:") ||
+		!strings.Contains(pinned, "The user's name is Andrew") {
+		t.Errorf("pinned block should carry the user profile, got:\n%s", pinned)
+	}
+	if strings.Contains(pinned, "Go 1.26") {
+		t.Error("generic facts must not leak into the pinned profile")
+	}
+}
+
 func TestActiveGoalRoundTrip(t *testing.T) {
 	cfg := testCfg(t)
 	p, err := Open(cfg)

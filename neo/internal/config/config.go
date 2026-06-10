@@ -33,6 +33,7 @@ type Config struct {
 	// --- models (provider-qualified ids; see matrix/mcl/llm DetectProvider) ---
 	MainModel  string // the conversational tool-calling loop
 	CheapModel string // background write-back, compaction + summary validation
+	EmbedModel string // semantic page-fault embeddings (gateway /v1/embeddings or direct provider)
 
 	// --- memory budget (context window = RAM; cortex = disk) ---
 	ContextWindowTokens   int // total model context window, for budget math
@@ -73,6 +74,7 @@ func Default() Config {
 
 		MainModel:  "accounts/fireworks/routers/kimi-k2p6-fast",
 		CheapModel: "accounts/fireworks/routers/glm-5p1-fast",
+		EmbedModel: "nomic-ai/nomic-embed-text-v1.5",
 
 		ContextWindowTokens:   256000,
 		SoftPct:               80,
@@ -134,6 +136,7 @@ func (c *Config) applyDoc(d *kvxDoc) {
 	if d.has("models") {
 		c.MainModel = d.strOr("models", "main", c.MainModel)
 		c.CheapModel = d.strOr("models", "cheap", c.CheapModel)
+		c.EmbedModel = d.strOr("models", "embed", c.EmbedModel)
 	}
 	if d.has("memory") {
 		c.ContextWindowTokens = d.intOr("memory", "context_window_tokens", c.ContextWindowTokens)
@@ -166,6 +169,7 @@ func (c *Config) applyDoc(d *kvxDoc) {
 func (c *Config) applyEnv() {
 	c.MainModel = envOr("NEO_MAIN_MODEL", c.MainModel)
 	c.CheapModel = envOr("NEO_CHEAP_MODEL", c.CheapModel)
+	c.EmbedModel = envOr("NEO_EMBED_MODEL", c.EmbedModel)
 	c.CortexRoot = envOr("NEO_CORTEX_ROOT", c.CortexRoot)
 	c.CortexActor = envOr("NEO_CORTEX_ACTOR", c.CortexActor)
 	c.DaemonURL = envOr("NEO_DAEMON_URL", c.DaemonURL)

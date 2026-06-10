@@ -249,6 +249,11 @@ func detectProvider(model string) (Provider, error) {
 	switch {
 	case strings.HasPrefix(model, "accounts/fireworks/"):
 		return ProviderFireworks, nil
+	// nomic-ai/* embedding models are Fireworks-hosted but use the bare
+	// vendor/model id on the embeddings API — they must not fall into the
+	// generic '<vendor>/<model>' → Together branch below.
+	case strings.HasPrefix(model, "nomic-ai/"):
+		return ProviderFireworks, nil
 	case strings.Contains(model, "/"):
 		return ProviderTogether, nil
 	}

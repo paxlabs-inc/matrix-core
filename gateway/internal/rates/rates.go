@@ -51,7 +51,12 @@ import (
 // slot (Neo's cheap background model: write-back / compaction / summary
 // validation). NOTE: the glm rate below is a PLACEHOLDER mirrored from the
 // deepseek-v4-flash tier — Andrew to replace with the real provider price.
-const RateTableVersion = 4
+//
+// v5 (2026-06-10, Andrew approved) adds nomic-embed-text-v1.5 for the `neo`
+// slot: Neo's cortex pager now does real semantic page-faulting through the
+// gateway /v1/embeddings route. Embeddings are input-only (no completion
+// side), so the output rate is 0. USD target $0.008/Mtoken (Fireworks list).
+const RateTableVersion = 5
 
 // PaxUsdReference is the USD price of 1 PAX the v3 rate card was
 // denominated against. Exposed so ops/telemetry can re-derive or
@@ -110,6 +115,9 @@ const (
 	ModelGPTOSS20B        = "accounts/fireworks/models/gpt-oss-20b"
 	ModelQwenCoder        = "Qwen/Qwen3-Coder-480B-A35B-Instruct-FP8"
 	ModelLlama405B        = "meta-llama/Llama-3.1-405B-Instruct"
+	// ModelNomicEmbed is the Fireworks-hosted embedding model behind the
+	// gateway's /v1/embeddings route (768-dim; matches cortex DefaultDim).
+	ModelNomicEmbed = "nomic-ai/nomic-embed-text-v1.5"
 )
 
 // Rate is the per-Mtoken price in PAX for a single model. Both prompt
@@ -187,6 +195,13 @@ var rateTable = []Rate{
 		OutputPaxPerMTokens: 0.078740157, // ≈ $0.90 / Mtoken  [PLACEHOLDER — Andrew to set real glm-5.1 rate]
 		Notes:               "Fireworks glm-5p1-fast — Neo's cheap background model (write-back/compaction/validation). PLACEHOLDER rate (deepseek-v4-flash tier) pending real provider price.",
 	},
+	{
+		Model:               ModelNomicEmbed,
+		Group:               GroupOther,
+		InputPaxPerMTokens:  0.000699912, // ≈ $0.008 / Mtoken (Fireworks list)
+		OutputPaxPerMTokens: 0,           // embeddings have no completion side
+		Notes:               "Fireworks nomic-embed-text-v1.5 — Neo cortex semantic page-faulting via gateway /v1/embeddings (768-dim).",
+	},
 }
 
 // rateIndex maps model id -> Rate. Initialised once at package load.
@@ -247,8 +262,10 @@ func FreeTierWhitelist() map[string][]string {
 		// Liaison — Neo drives the conversation + tools and delegates money
 		// to MCL. main = kimi-k2.6 (already priced; shared with executor/
 		// planner/liaison); cheap = glm-5p1-fast (background write-back/
-		// compaction/validation), added to the rate card in v4.
-		"neo": {ModelKimiK26, ModelGLM5p1Fast},
+		// compaction/validation), added to the rate card in v4. v5 adds
+		// nomic-embed-text-v1.5 so Neo's cortex pager can page-fault
+		// semantically through the metered /v1/embeddings route.
+		"neo": {ModelKimiK26, ModelGLM5p1Fast, ModelNomicEmbed},
 	}
 }
 

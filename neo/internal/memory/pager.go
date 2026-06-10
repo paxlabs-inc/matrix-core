@@ -25,7 +25,6 @@ import (
 	"time"
 
 	"matrix/cortex"
-	"matrix/cortex/embed"
 	"matrix/cortex/memory"
 	"matrix/cortex/query"
 	"matrix/cortex/store"
@@ -67,7 +66,7 @@ func Open(cfg config.Config) (*Pager, error) {
 
 	p := &Pager{cfg: cfg, cortex: c, store: s}
 
-	if serr := c.StartEmbedder(cortex.EmbedderOptions{Embedder: embed.NewHashEmbedder()}); serr == nil {
+	if serr := c.StartEmbedder(cortex.EmbedderOptions{Embedder: pickEmbedder(cfg)}); serr == nil {
 		p.hasEmbedder = true
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 		_ = c.DrainEmbedder(ctx)
@@ -141,6 +140,15 @@ func (p *Pager) Pinned(ctx context.Context, goal string) string {
 		b.WriteString("\n")
 	}
 
+	if profile := p.UserProfile(ctx); len(profile) > 0 {
+		b.WriteString("What you know about your user:\n")
+		for _, line := range profile {
+			b.WriteString("- ")
+			b.WriteString(line)
+			b.WriteString("\n")
+		}
+	}
+
 	goal = strings.TrimSpace(goal)
 	if goal == "" {
 		goal = p.ActiveGoal()
@@ -151,6 +159,46 @@ func (p *Pager) Pinned(ctx context.Context, goal string) string {
 	fmt.Fprintf(&b, "Current goal: %s\n", goal)
 
 	return truncateTokens(b.String(), p.cfg.PinnedBudgetTokens)
+}
+
+// userProfileMax bounds the pinned profile so it can never crowd out the
+// rules/goal inside the pinned token budget.
+const userProfileMax = 12
+
+// UserProfile returns the durable facts stored about the user themselves
+// (subject matrix://knowledge/user), newest-versions-first, bounded.
+func (p *Pager) UserProfile(ctx context.Context) []string {
+	res, err := p.cortex.Find(query.Query{
+		Type:  []memory.Type{memory.TypeFact},
+		Limit: 64,
+	})
+	if err != nil || res == nil {
+		return nil
+	}
+	var out []string
+	for _, m := range res.Memories {
+		data, derr := memory.DecodeData(m.Version.Type, m.Version.Data)
+		if derr != nil {
+			continue
+		}
+		var fd memory.FactData
+		switch x := data.(type) {
+		case memory.FactData:
+			fd = x
+		case *memory.FactData:
+			fd = *x
+		default:
+			continue
+		}
+		if fd.Subject != userFactSubject || strings.TrimSpace(fd.Statement) == "" {
+			continue
+		}
+		out = append(out, strings.TrimSpace(fd.Statement))
+		if len(out) >= userProfileMax {
+			break
+		}
+	}
+	return out
 }
 
 // invariantRules are Neo's hard rules, lifted from the frozen spec invariants

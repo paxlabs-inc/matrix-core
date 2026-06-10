@@ -31,6 +31,13 @@ func (p *Pager) head(importance uint8) memory.Head {
 const (
 	factSubject   = "matrix://knowledge/neo"
 	factPredicate = "note"
+
+	// userFactSubject scopes facts that describe THE USER (name, role,
+	// stable preferences). They get their own subject so the pager can pin
+	// them every turn — identity questions must never depend on retrieval
+	// luck.
+	userFactSubject   = "matrix://knowledge/user"
+	userFactPredicate = "profile"
 )
 
 // RememberFact stores a durable objective fact (semantic memory).
@@ -42,6 +49,33 @@ func (p *Pager) RememberFact(ctx context.Context, statement string) (string, err
 			Statement:     statement,
 			Subject:       factSubject,
 			Predicate:     factPredicate,
+		},
+		p.writeMeta(),
+	)
+	return string(uri), err
+}
+
+// RememberUserFact stores a durable fact about the user themselves (their
+// name, role, stable preferences). Pinned every turn via UserProfile, and
+// deduped on the normalized statement so repeats don't bloat the profile.
+func (p *Pager) RememberUserFact(ctx context.Context, statement string) (string, error) {
+	statement = strings.TrimSpace(statement)
+	if statement == "" {
+		return "", nil
+	}
+	norm := normalizeStatement(statement)
+	for _, existing := range p.UserProfile(ctx) {
+		if normalizeStatement(existing) == norm {
+			return "", nil
+		}
+	}
+	uri, err := p.cortex.Write(
+		p.head(7),
+		memory.FactData{
+			SchemaVersion: 1,
+			Statement:     statement,
+			Subject:       userFactSubject,
+			Predicate:     userFactPredicate,
 		},
 		p.writeMeta(),
 	)

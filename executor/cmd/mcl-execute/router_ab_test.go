@@ -106,7 +106,7 @@ func abOpenCortex(t *testing.T) *cortex.Cortex {
 // and a minimal prompt block that our fake LLM can satisfy.
 func abLoadSkill(t *testing.T) *runtime.LoadedSkill {
 	t.Helper()
-	loader := runtime.NewSkillLoader("/root/matrix-core/skills")
+	loader := runtime.NewSkillLoader("/root/matrix/skills")
 	skill, err := loader.Load("matrix://skill/brainstorming@0.1.0")
 	if err != nil {
 		t.Fatalf("load brainstorming skill: %v", err)
