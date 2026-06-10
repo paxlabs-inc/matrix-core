@@ -67,6 +67,39 @@ func (s *Store) ActiveDeploymentForService(ctx context.Context, serviceID string
 	return row, nil
 }
 
+// ListDeploymentsForService returns all deployments for a service, newest first.
+func (s *Store) ListDeploymentsForService(ctx context.Context, serviceID string, limit int) ([]DeploymentRow, error) {
+	if limit <= 0 || limit > 200 {
+		limit = 50
+	}
+	rows, err := s.pool.Query(ctx, `
+		SELECT id::text, service_id::text, appwrite_function_id, site_id, runtime,
+		       deployment_id, exec_endpoint, status, region, last_invoked_at, always_warm, created_at
+		FROM deployments
+		WHERE service_id = $1
+		ORDER BY created_at DESC
+		LIMIT $2`, serviceID, limit,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("store: list deployments: %w", err)
+	}
+	defer rows.Close()
+
+	var out []DeploymentRow
+	for rows.Next() {
+		var row DeploymentRow
+		if err := rows.Scan(
+			&row.ID, &row.ServiceID, &row.AppwriteFunctionID, &row.SiteID, &row.Runtime,
+			&row.DeploymentID, &row.ExecEndpoint, &row.Status, &row.Region, &row.LastInvokedAt,
+			&row.AlwaysWarm, &row.CreatedAt,
+		); err != nil {
+			return nil, fmt.Errorf("store: scan deployment: %w", err)
+		}
+		out = append(out, row)
+	}
+	return out, rows.Err()
+}
+
 // GetDeployment loads a deployment by id.
 func (s *Store) GetDeployment(ctx context.Context, id string) (DeploymentRow, error) {
 	var row DeploymentRow

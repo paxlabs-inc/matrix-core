@@ -28,17 +28,19 @@ type HostingRouter interface {
 
 // Gateway orchestrates quote → policy → reserve → route → pay → receipt.
 type Gateway struct {
-	store    *store.Store
-	pricing  *pricing.Service
-	meter    *metering.Ledger
-	wallet   wallet.Client
-	signer   *receipts.Signer
-	quality  *quality.Service
-	channels *channels.Service
-	vouchers *channels.VoucherService
-	hosting  HostingRouter
-	streams  *streams.Service
-	chainID  int64
+	store           *store.Store
+	pricing         *pricing.Service
+	meter           *metering.Ledger
+	wallet          wallet.Client
+	signer          *receipts.Signer
+	quality         *quality.Service
+	channels        *channels.Service
+	vouchers        *channels.VoucherService
+	hosting         HostingRouter
+	streams         *streams.Service
+	chainID         int64
+	appwriteProject string
+	appwriteKey     string
 }
 
 // Config wires gateway dependencies.
@@ -54,22 +56,29 @@ type Config struct {
 	Hosting  HostingRouter
 	Streams  *streams.Service
 	ChainID  int64
+	// AppwriteProject/AppwriteKey authenticate the Appwrite executions API when
+	// a hosted deployment routes through Paxeer Cloud (exec endpoint ends in
+	// /executions). Empty for dev/runner endpoints.
+	AppwriteProject string
+	AppwriteKey     string
 }
 
 // New constructs a Gateway.
 func New(cfg Config) *Gateway {
 	return &Gateway{
-		store:    cfg.Store,
-		pricing:  cfg.Pricing,
-		meter:    cfg.Meter,
-		wallet:   cfg.Wallet,
-		signer:   cfg.Signer,
-		quality:  cfg.Quality,
-		channels: cfg.Channels,
-		vouchers: cfg.Vouchers,
-		hosting:  cfg.Hosting,
-		streams:  cfg.Streams,
-		chainID:  cfg.ChainID,
+		store:           cfg.Store,
+		pricing:         cfg.Pricing,
+		meter:           cfg.Meter,
+		wallet:          cfg.Wallet,
+		signer:          cfg.Signer,
+		quality:         cfg.Quality,
+		channels:        cfg.Channels,
+		vouchers:        cfg.Vouchers,
+		hosting:         cfg.Hosting,
+		streams:         cfg.Streams,
+		chainID:         cfg.ChainID,
+		appwriteProject: cfg.AppwriteProject,
+		appwriteKey:     cfg.AppwriteKey,
 	}
 }
 
@@ -356,13 +365,24 @@ func (g *Gateway) invokeHosted(ctx context.Context, caller auth.Caller, req Invo
 	}
 
 	timeoutMS, maxBytes := operationCaps(svc, req.Operation)
-	hostedRes, hostedErr := CallHosted(ctx, execURL, HostedInvokeRequest{
+	hostedReq := HostedInvokeRequest{
 		InvocationID: row.ID,
 		Operation:    req.Operation,
 		Args:         req.Args,
 		CallerDID:    caller.DID,
 		DeadlineMS:   timeoutMS,
-	}, timeoutMS, maxBytes)
+		// Pre-execution binding digest the runner co-signs (runner_sig). The
+		// final EIP-712 receipt digest depends on the result and is computed
+		// gateway-side below; this commits the request the runner executed.
+		ReceiptDigest: hostedRequestDigest(row.ID, req.ServiceID, caller.DID, argsHash),
+	}
+	var hostedRes HostedResult
+	var hostedErr error
+	if isAppwriteExecutionsURL(execURL) {
+		hostedRes, hostedErr = CallAppwriteExecution(ctx, execURL, g.appwriteProject, g.appwriteKey, hostedReq, timeoutMS, maxBytes)
+	} else {
+		hostedRes, hostedErr = CallHosted(ctx, execURL, hostedReq, timeoutMS, maxBytes)
+	}
 	if hostedErr != nil || hostedRes.Outcome != "ok" {
 		_ = g.meter.Void(ctx, row.ID)
 		_ = g.quality.Sample(ctx, req.ServiceID, "voided", hostedRes.LatencyMS)
@@ -439,6 +459,23 @@ func (g *Gateway) invokeHosted(ctx context.Context, caller auth.Caller, req Invo
 			RunnerSig:  hostedRes.RunnerSig,
 		},
 	}, nil
+}
+
+// hostedRequestDigest binds the fields the gateway knows before execution into
+// a stable digest the runner can co-sign. It is keccak256 over canonical JSON
+// (same hashing as receipt payloads) and does not include the result hash,
+// which is unknown until the runner returns.
+func hostedRequestDigest(invocationID, serviceID, callerDID, argsHash string) string {
+	d, err := receipts.HashPayload(map[string]any{
+		"invocation_id": invocationID,
+		"service_id":    serviceID,
+		"caller_did":    callerDID,
+		"args_hash":     argsHash,
+	})
+	if err != nil {
+		return ""
+	}
+	return d
 }
 
 func operationCaps(svc store.ServiceRow, operation string) (timeoutMS, maxBytes int) {

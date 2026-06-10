@@ -1,0 +1,61 @@
+# Deus control plane, co-located with the Supabase stack on this box.
+# Joins the existing supabase_default network so deusd reaches supabase-db
+# (Postgres) and supabase-storage (S3) by container hostname, and so the
+# supabase-caddy reverse proxy can front it. No host port is published.
+#
+#   docker compose -f deploy/deus/docker-compose.yml up -d --build
+#
+# Secrets live ONLY in /opt/deus/deus.env (chmod 600), never in the repo.
+
+name: deus
+
+services:
+  # Dedicated object store for Deus artifacts/receipts/bodies. Supabase Storage's
+  # S3 API is path-prefixed (/storage/v1/s3), which the minio-go client in
+  # deus/internal/objstore cannot target (it takes a bare host endpoint only), so
+  # Deus runs its own MinIO instead of reusing supabase-storage.
+  deus-minio:
+    image: minio/minio:latest
+    container_name: deus-minio
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    env_file:
+      - /opt/deus/deus.env
+    volumes:
+      - deus_minio_data:/data
+    networks:
+      - supabase_default
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  deus-control:
+    image: deus-control:latest
+    build:
+      context: ../../deus
+      dockerfile: ../deploy/deus/Dockerfile
+    container_name: deus-control
+    restart: unless-stopped
+    env_file:
+      - /opt/deus/deus.env
+    depends_on:
+      deus-minio:
+        condition: service_healthy
+    networks:
+      - supabase_default
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:9095/internal/healthz"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+volumes:
+  deus_minio_data:
+
+networks:
+  supabase_default:
+    external: true

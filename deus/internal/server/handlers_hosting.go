@@ -16,7 +16,7 @@ func (s *Server) handleUploadArtifact(w http.ResponseWriter, r *http.Request) {
 		writeAPIError(w, http.StatusServiceUnavailable, "internal_error", "hosting not configured", nil)
 		return
 	}
-	serviceID := chi.URLParam(r, "id")
+	serviceID := s.resolveServiceID(r, chi.URLParam(r, "id"))
 	if err := r.ParseMultipartForm(12 << 20); err != nil {
 		writeAPIError(w, http.StatusBadRequest, "invalid_request", "multipart required", nil)
 		return
@@ -47,7 +47,7 @@ func (s *Server) handleDeployService(w http.ResponseWriter, r *http.Request) {
 		writeAPIError(w, http.StatusServiceUnavailable, "internal_error", "hosting not configured", nil)
 		return
 	}
-	serviceID := chi.URLParam(r, "id")
+	serviceID := s.resolveServiceID(r, chi.URLParam(r, "id"))
 	var body types.DeployServiceRequest
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		writeAPIError(w, http.StatusBadRequest, "invalid_request", "invalid json", nil)
@@ -94,6 +94,38 @@ func (s *Server) handleGetDeployment(w http.ResponseWriter, r *http.Request) {
 		Runtime:      row.Runtime,
 		ExecEndpoint: exec,
 		AlwaysWarm:   row.AlwaysWarm,
+	})
+}
+
+func (s *Server) handleListDeployments(w http.ResponseWriter, r *http.Request) {
+	if s.deps.Store == nil {
+		writeAPIError(w, http.StatusServiceUnavailable, "internal_error", "store not configured", nil)
+		return
+	}
+	serviceID := s.resolveServiceID(r, chi.URLParam(r, "id"))
+	rows, err := s.deps.Store.ListDeploymentsForService(r.Context(), serviceID, 0)
+	if err != nil {
+		writeAPIError(w, http.StatusInternalServerError, "internal_error", err.Error(), nil)
+		return
+	}
+	deps := make([]types.DeploymentResponse, 0, len(rows))
+	for _, row := range rows {
+		var exec string
+		if row.ExecEndpoint != nil {
+			exec = *row.ExecEndpoint
+		}
+		deps = append(deps, types.DeploymentResponse{
+			ID:           row.ID,
+			ServiceID:    row.ServiceID,
+			Status:       row.Status,
+			Runtime:      row.Runtime,
+			ExecEndpoint: exec,
+			AlwaysWarm:   row.AlwaysWarm,
+		})
+	}
+	writeJSON(w, http.StatusOK, types.DeploymentListResponse{
+		ServiceID:   serviceID,
+		Deployments: deps,
 	})
 }
 

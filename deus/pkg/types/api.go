@@ -269,3 +269,149 @@ type DeploymentResponse struct {
 	ExecEndpoint string `json:"exec_endpoint,omitempty"`
 	AlwaysWarm   bool   `json:"always_warm"`
 }
+
+// DeploymentListResponse is GET /v1/services/{id}/deployments.
+type DeploymentListResponse struct {
+	ServiceID   string               `json:"service_id"`
+	Deployments []DeploymentResponse `json:"deployments"`
+}
+
+// CatalogItem is one published listing in the public catalog.
+type CatalogItem struct {
+	ID           string   `json:"id"`
+	Slug         string   `json:"slug"`
+	Kind         string   `json:"kind"`
+	Mode         string   `json:"mode"`
+	DisplayName  string   `json:"display_name"`
+	Summary      string   `json:"summary"`
+	Status       string   `json:"status"`
+	ManifestHash string   `json:"manifest_hash"`
+	QualityScore string   `json:"quality_score,omitempty"`
+	UptimeBPS    int      `json:"uptime_bps,omitempty"`
+	PriceWei     string   `json:"price_wei,omitempty"`
+	Unit         string   `json:"unit,omitempty"`
+	Tags         []string `json:"tags,omitempty"`
+}
+
+// CatalogResponse is GET /v1/catalog (public, paginated).
+type CatalogResponse struct {
+	Services []CatalogItem `json:"services"`
+	Total    int           `json:"total"`
+	Limit    int           `json:"limit"`
+	Offset   int           `json:"offset"`
+}
+
+// ServiceStatusResponse is POST /v1/services/{id}/pause|delist.
+type ServiceStatusResponse struct {
+	ID     string `json:"id"`
+	Status string `json:"status"`
+}
+
+// LogLine is one dashboard activity-log entry.
+type LogLine struct {
+	TS      time.Time `json:"ts"`
+	Level   string    `json:"level"`
+	Message string    `json:"message"`
+}
+
+// LogsResponse is GET /v1/services/{id}/logs.
+type LogsResponse struct {
+	Logs []LogLine `json:"logs"`
+}
+
+// AnalyticsPoint is one day in the analytics series.
+type AnalyticsPoint struct {
+	Date         string  `json:"date"`
+	Invocations  int     `json:"invocations"`
+	RevenueWei   string  `json:"revenue_wei"`
+	AvgLatencyMS int     `json:"avg_latency_ms"`
+	SuccessRate  float64 `json:"success_rate"`
+}
+
+// TopOperation is per-operation usage in analytics.
+type TopOperation struct {
+	Operation   string `json:"operation"`
+	Invocations int    `json:"invocations"`
+	RevenueWei  string `json:"revenue_wei"`
+}
+
+// ServiceAnalyticsResponse is GET /v1/services/{id}/analytics.
+type ServiceAnalyticsResponse struct {
+	ServiceID        string           `json:"service_id"`
+	TotalInvocations int              `json:"total_invocations"`
+	TotalRevenueWei  string           `json:"total_revenue_wei"`
+	AvgLatencyMS     int              `json:"avg_latency_ms"`
+	SuccessRate      float64          `json:"success_rate"`
+	UptimeBPS        int              `json:"uptime_bps"`
+	Series           []AnalyticsPoint `json:"series"`
+	TopOperations    []TopOperation   `json:"top_operations"`
+}
+
+// PayoutRequest is POST /v1/services/{id}/payout.
+type PayoutRequest struct {
+	PayoutAddress string `json:"payout_address"`
+}
+
+// PayoutResponse is POST /v1/services/{id}/payout success body.
+type PayoutResponse struct {
+	SettlementID string `json:"settlement_id"`
+}
+
+// MeResponse is GET /v1/me.
+type MeResponse struct {
+	DID         string `json:"did"`
+	Wallet      string `json:"wallet,omitempty"`
+	DisplayName string `json:"display_name,omitempty"`
+}
+
+// MyService is one developer-owned listing with usage aggregates.
+type MyService struct {
+	ID           string `json:"id"`
+	Slug         string `json:"slug"`
+	DisplayName  string `json:"display_name"`
+	Status       string `json:"status"`
+	Kind         string `json:"kind"`
+	Mode         string `json:"mode"`
+	Invocations  int    `json:"invocations"`
+	RevenueWei   string `json:"revenue_wei"`
+	UptimeBPS    int    `json:"uptime_bps,omitempty"`
+	QualityScore string `json:"quality_score,omitempty"`
+}
+
+// MyServicesResponse is GET /v1/me/services.
+type MyServicesResponse struct {
+	Services []MyService `json:"services"`
+}
+
+// SettlementSummary is one payout window in earnings.
+type SettlementSummary struct {
+	ID          string    `json:"id"`
+	WindowStart time.Time `json:"window_start"`
+	WindowEnd   time.Time `json:"window_end"`
+	AmountWei   string    `json:"amount_wei"`
+	Status      string    `json:"status"`
+	TxHash      string    `json:"tx_hash,omitempty"`
+}
+
+// EarningsResponse is GET /v1/me/earnings.
+type EarningsResponse struct {
+	TotalEarnedWei string              `json:"total_earned_wei"`
+	PendingWei     string              `json:"pending_wei"`
+	AvailableWei   string              `json:"available_wei"`
+	PayoutAddress  string              `json:"payout_address,omitempty"`
+	Settlements    []SettlementSummary `json:"settlements"`
+}
+
+// SpendEntry is one service's share of caller spend.
+type SpendEntry struct {
+	ServiceID   string `json:"service_id"`
+	DisplayName string `json:"display_name"`
+	Invocations int    `json:"invocations"`
+	TotalWei    string `json:"total_wei"`
+}
+
+// SpendResponse is GET /v1/me/spend.
+type SpendResponse struct {
+	TotalSpentWei string       `json:"total_spent_wei"`
+	Entries       []SpendEntry `json:"entries"`
+}

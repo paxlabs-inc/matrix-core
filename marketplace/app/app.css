@@ -1,0 +1,580 @@
+@import 'tailwindcss';
+@import 'tw-animate-css';
+
+@custom-variant dark (&:is(.dark *));
+
+/* Paxeer Design Tokens — Brand Identity System v3.0 · Premium · 2026
+   ─────────────────────────────────────────────────────────────────
+   · Cool obsidian neutrals (slate-tinted, not warm gray)
+   · Sophisticated ink blue accent (deeper, less electric)
+   · Tighter tracking, lighter weights, slower motion
+   · Continuous-corner radii + layered cinematic shadows
+   ───────────────────────────────────────────────────────────────── */
+
+/* ——— Fonts ——————————————————————————————————— */
+/* Brand display: PP Pangram Sans Rounded — kept, but weight floor lowered. */
+@font-face {
+  font-family: 'Paxeer Grand Sans';
+  src: url('/fonts/PPPangramSansRounded-Thin.otf') format('opentype');
+  font-weight: 100;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Paxeer Grand Sans';
+  src: url('/fonts/PPPangramSansRounded-Light.otf') format('opentype');
+  font-weight: 200 300;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Paxeer Grand Sans';
+  src: url('/fonts/PPPangramSansRounded-Medium.otf') format('opentype');
+  font-weight: 400 500;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Paxeer Grand Sans';
+  src: url('/fonts/PPPangramSansRounded-Semibold.otf') format('opentype');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Paxeer Grand Sans';
+  src: url('/fonts/PPPangramSansRounded-Bold.otf') format('opentype');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Paxeer Grand Sans';
+  src: url('/fonts/PPPangramSansRounded-CompressedExtrabold.otf') format('opentype');
+  font-weight: 800 900;
+  font-style: normal;
+  font-stretch: condensed;
+  font-display: swap;
+}
+
+/* Body face: Inter, loaded from Google Fonts (alongside next/font Inter). */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+:root {
+  /* ——— Brand accent (Sophisticated Ink Blue) ————————————————————————— */
+  --color-primary-brand:   #2841B8; /* Paxeer Ink */
+  --color-black:           #04050A;
+
+  /* ——— Neutral scale — Cool / Slate-tinted ————————————————————————— */
+  --color-neutral-800:     #0A0C10; /* Obsidian — page canvas */
+  --color-neutral-700:     #1A1E27; /* Graphite */
+  --color-neutral-600:     #3A4151; /* Storm */
+  --color-neutral-500:     #6F7686; /* Slate */
+  --color-neutral-400:     #9DA3B2; /* Mist */
+  --color-neutral-300:     #CFD3DB; /* Smoke */
+  --color-neutral-200:     #EFF1F5; /* Porcelain */
+  --color-neutral-100:     #FFFFFF; /* Paper */
+
+  /* ——— System — Ink Blue (Primary) ————————————————— */
+  --color-blue-400:        #2841B8;
+  --color-blue-300:        #1F3294;
+  --color-blue-200:        #8E9AE0;
+  --color-blue-100:        #E5E8F8;
+
+  /* ——— System — Green (Success) · forest-leaning ————— */
+  --color-green-400:       #167356;
+  --color-green-300:       #2F9F75;
+  --color-green-200:       #9BD3B7;
+  --color-green-100:       #E1F0E8;
+
+  /* ——— System — Red (Error) · wine-leaning ————————— */
+  --color-red-400:         #B23244;
+  --color-red-300:         #D14D5E;
+  --color-red-200:         #F0AEB6;
+  --color-red-100:         #F8E8EB;
+
+  /* ——— System — Amber (Warning) · bronze-leaning ————— */
+  --color-orange-400:      #9C5512;
+  --color-orange-300:      #CB7C25;
+  --color-orange-200:      #ECC18B;
+  --color-orange-100:      #F7ECDA;
+
+  /* Legacy — do not use in new work */
+  --color-legacy-cyan:     #00E0FF;
+
+  /* ——— Semantic roles (dark-first) ——————————————— */
+  --bg:            var(--color-neutral-800);   /* page surface — obsidian */
+  --bg-elevated:   #11141B;                    /* cards, panels */
+  --bg-subtle:     #14171F;                    /* inputs, recessed surfaces */
+  --bg-overlay:    rgba(10, 12, 16, 0.72);
+  --border-hairline:    rgba(255, 255, 255, 0.07);
+  --border-strong: rgba(255, 255, 255, 0.12);
+  --border-glow:   rgba(255, 255, 255, 0.04);
+
+  --fg:            #ECEEF4;
+  --fg-muted:      var(--color-neutral-400);
+  --fg-subtle:     var(--color-neutral-500);
+  --fg-inverse:    var(--color-black);
+
+  --accent-ink:        var(--color-primary-brand);
+  --accent-hover:      var(--color-blue-300);
+  --accent-fore:       var(--color-blue-200);
+  --accent-tint:       rgba(40, 65, 184, 0.14);
+
+  --success:       var(--color-green-300);
+  --warning:       var(--color-orange-300);
+  --danger:        var(--color-red-300);
+
+  /* ——— Typography ————————————————————————————— */
+  --font-display:  'Paxeer Grand Sans', 'Inter', system-ui, sans-serif;
+  --font-body:     'Inter', system-ui, -apple-system, sans-serif;
+  --font-mono-stack: 'JetBrains Mono', ui-monospace, 'SF Mono', monospace;
+
+  /* Weight scale — premium leans light. Reserve 600+ for emphasis only. */
+  --fw-thin:       200;
+  --fw-light:      300;
+  --fw-regular:    400;
+  --fw-medium:     500;
+  --fw-semi:       600;
+
+  /* Tracking */
+  --track-display: -0.028em;
+  --track-h1:      -0.024em;
+  --track-h2:      -0.02em;
+  --track-h3:      -0.014em;
+  --track-body:    -0.008em;
+  --track-meta:    0.14em;
+
+  /* Type scale */
+  --fs-display-1:  72px;  --lh-display-1: 1.08;
+  --fs-display-2:  54px;  --lh-display-2: 1.10;
+  --fs-display-3:  34px;  --lh-display-3: 1.18;
+  --fs-display-4:  24px;  --lh-display-4: 1.33;
+  --fs-h1:         54px;  --lh-h1:        1.10;
+  --fs-h2:         38px;  --lh-h2:        1.20;
+  --fs-h3:         24px;  --lh-h3:        1.30;
+  --fs-body-lg:    24px;  --lh-body-lg:   1.50;
+  --fs-body:       18px;  --lh-body:      1.60;
+  --fs-body-sm:    14px;  --lh-body-sm:   1.65;
+  --fs-mono:       14px;  --lh-mono:      1.5;
+
+  /* ——— Spacing scale (4px base) ————————————————— */
+  --space-1:  4px;
+  --space-2:  8px;
+  --space-3:  12px;
+  --space-4:  16px;
+  --space-5:  24px;
+  --space-6:  32px;
+  --space-7:  48px;
+  --space-8:  64px;
+  --space-9:  96px;
+  --space-10: 128px;
+
+  /* ——— Radii — continuous-corner friendly ————————————————————————— */
+  --radius-token-sm:  6px;
+  --radius-token-md:  10px;
+  --radius-token-lg:  14px;
+  --radius-token-xl:  22px;
+  --radius-token-2xl: 32px;
+  --radius-token-3xl: 44px;
+  --radius-token-4xl: 56px;
+  --radius-pill:      999px;
+  --squircle-filter:  url(#SkiperSquiCircleFilterLayout);
+
+  /* ——— Shadows — Cinematic depth ——————————————————————— */
+  --shadow-01: 0 1px 2px rgba(0,0,0,0.18), inset 0 1px 0 rgba(255,255,255,0.04);
+  --shadow-02: 0 2px 6px rgba(0,0,0,0.22), inset 0 1px 0 rgba(255,255,255,0.05);
+  --shadow-03: 0 6px 16px rgba(0,0,0,0.28), 0 1px 2px rgba(0,0,0,0.14), inset 0 1px 0 rgba(255,255,255,0.05);
+  --shadow-04: 0 14px 32px rgba(0,0,0,0.36), 0 4px 10px rgba(0,0,0,0.18), inset 0 1px 0 rgba(255,255,255,0.06);
+  --shadow-05: 0 28px 64px rgba(0,0,0,0.46), 0 10px 20px rgba(0,0,0,0.22), inset 0 1px 0 rgba(255,255,255,0.06);
+  --shadow-06: 0 56px 110px rgba(0,0,0,0.58), 0 20px 40px rgba(0,0,0,0.28), inset 0 1px 0 rgba(255,255,255,0.07);
+
+  --shadow-hairline:    0 0 0 1px rgba(255,255,255,0.06), 0 1px 0 rgba(0,0,0,0.6);
+  --shadow-glass:       0 8px 24px rgba(0,0,0,0.32), inset 0 1px 0 rgba(255,255,255,0.08), inset 0 0 0 1px rgba(255,255,255,0.04);
+  --shadow-glow-accent: 0 0 0 1px rgba(40,65,184,0.45), 0 0 48px rgba(40,65,184,0.30);
+
+  --shadow-focus: 0 0 0 3px rgba(40, 65, 184, 0.42);
+
+  /* ——— Motion ————————————————————————————————— */
+  --ease-standard:        cubic-bezier(0.32, 0.72, 0, 1);
+  --ease-emphasis:        cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-snap:            cubic-bezier(0.4, 0, 0.2, 1);
+
+  --duration-instant:     100ms;
+  --duration-snappy:      200ms;
+  --duration-standard:    320ms;
+  --duration-deliberate:  520ms;
+
+  --spring-soft-stiffness:    200;   --spring-soft-damping:    30;   --spring-soft-bounce:    0.30;
+  --spring-firm-stiffness:    350;   --spring-firm-damping:    35;   --spring-firm-bounce:    0.16;
+  --spring-island-stiffness:  400;   --spring-island-damping:  28;   --spring-island-bounce:  0.50;
+
+  --blur-soft:       blur(4px);
+  --blur-strong:     blur(10px);
+
+  --backdrop-blur:   blur(20px) saturate(140%);
+  --backdrop-blur-strong: blur(28px) saturate(160%);
+
+  /* ——— shadcn / Tailwind semantic mapping ———————————————————————
+     The rest of the site references --background, --foreground, --card,
+     --primary, etc. via Tailwind utilities (bg-background, text-primary…).
+     Bind those names onto the v3 tokens above so the new system drives
+     every existing component without touching markup. */
+  --background:               var(--bg);
+  --foreground:               var(--fg);
+  --card:                     var(--bg-elevated);
+  --card-foreground:          var(--fg);
+  --popover:                  var(--bg-elevated);
+  --popover-foreground:       var(--fg);
+  --primary:                  var(--accent-ink);
+  --primary-foreground:       var(--color-neutral-100);
+  --secondary:                var(--bg-subtle);
+  --secondary-foreground:     var(--fg);
+  --muted:                    var(--bg-subtle);
+  --muted-foreground:         var(--fg-muted);
+  --accent:                   var(--accent-hover);
+  --accent-foreground:        var(--fg);
+  --destructive:              var(--danger);
+  --destructive-foreground:   var(--color-neutral-100);
+  --border:                   var(--border-hairline);
+  --input:                    var(--border-strong);
+  --ring:                     var(--accent-ink);
+
+  --chart-1: var(--color-blue-400);
+  --chart-2: var(--color-green-300);
+  --chart-3: var(--color-orange-300);
+  --chart-4: var(--color-red-300);
+  --chart-5: var(--color-neutral-500);
+
+  /* Base radius for shadcn (drives radius-sm/md/lg/xl in @theme below). */
+  --radius: 14px; /* maps to --radius-token-lg */
+
+  /* Sidebar — same brand system on slightly-elevated surface. */
+  --sidebar:                       var(--bg-elevated);
+  --sidebar-foreground:            var(--fg);
+  --sidebar-primary:               var(--accent-ink);
+  --sidebar-primary-foreground:    var(--color-neutral-100);
+  --sidebar-accent:                var(--bg-subtle);
+  --sidebar-accent-foreground:     var(--fg);
+  --sidebar-border:                var(--border-hairline);
+  --sidebar-ring:                  var(--accent-ink);
+
+  /* Legacy paxeer aliases preserved for any stray references. */
+  --pax-blue:     var(--accent-ink);
+  --pax-blue-dim: var(--accent-hover);
+  --pax-blue-bg:  var(--accent-tint);
+  --black:        var(--bg);
+  --surface:      var(--bg-elevated);
+  --card-ui:      var(--bg-elevated);
+  --border-ui:    var(--border-strong);
+  --mid-dark:     var(--color-neutral-600);
+  --mid:          var(--color-neutral-500);
+  --subtle:       var(--color-neutral-400);
+  --light:        var(--color-neutral-200);
+  --white:        var(--color-neutral-100);
+}
+
+/* Keep .dark in lock-step with :root — the site is dark-first. */
+.dark {
+  --background:             var(--bg);
+  --foreground:             var(--fg);
+  --card:                   var(--bg-elevated);
+  --card-foreground:        var(--fg);
+  --popover:                var(--bg-elevated);
+  --popover-foreground:     var(--fg);
+  --primary:                var(--accent-ink);
+  --primary-foreground:     var(--color-neutral-100);
+  --secondary:              var(--bg-subtle);
+  --secondary-foreground:   var(--fg);
+  --muted:                  var(--bg-subtle);
+  --muted-foreground:       var(--fg-muted);
+  --accent:                 var(--accent-hover);
+  --accent-foreground:      var(--fg);
+  --destructive:            var(--danger);
+  --destructive-foreground: var(--color-neutral-100);
+  --border:                 var(--border-hairline);
+  --input:                  var(--border-strong);
+  --ring:                   var(--accent-ink);
+}
+
+@theme inline {
+  --font-sans:    var(--font-inter), 'Inter', system-ui, sans-serif;
+  --font-mono:    var(--font-jetbrains), 'JetBrains Mono', ui-monospace, monospace;
+  --font-display: 'Paxeer Grand Sans', var(--font-inter), 'Inter', system-ui, sans-serif;
+
+  --color-background:            var(--background);
+  --color-foreground:            var(--foreground);
+  --color-card:                  var(--card);
+  --color-card-foreground:       var(--card-foreground);
+  --color-popover:               var(--popover);
+  --color-popover-foreground:    var(--popover-foreground);
+  --color-primary:               var(--primary);
+  --color-primary-foreground:    var(--primary-foreground);
+  --color-secondary:             var(--secondary);
+  --color-secondary-foreground:  var(--secondary-foreground);
+  --color-muted:                 var(--muted);
+  --color-muted-foreground:      var(--muted-foreground);
+  --color-accent:                var(--accent);
+  --color-accent-foreground:     var(--accent-foreground);
+  --color-destructive:           var(--destructive);
+  --color-destructive-foreground:var(--destructive-foreground);
+  --color-border:                var(--border);
+  --color-input:                 var(--input);
+  --color-ring:                  var(--ring);
+  --color-chart-1:               var(--chart-1);
+  --color-chart-2:               var(--chart-2);
+  --color-chart-3:               var(--chart-3);
+  --color-chart-4:               var(--chart-4);
+  --color-chart-5:               var(--chart-5);
+
+  /* v3 radius scale */
+  --radius-sm: var(--radius-token-sm);
+  --radius-md: var(--radius-token-md);
+  --radius-lg: var(--radius-token-lg);
+  --radius-xl: var(--radius-token-xl);
+  --radius-2xl: var(--radius-token-2xl);
+  --radius-3xl: var(--radius-token-3xl);
+
+  /* smoothui brand hooks (sanctioned by BUILD_PLAN §4): the vendored
+     components consume text-brand / bg-brand / var(--color-brand). Map them
+     onto the v3 accent — no new colors introduced. */
+  --color-brand:           var(--accent-ink);
+  --color-brand-secondary: var(--accent-fore);
+
+  --color-sidebar:                       var(--sidebar);
+  --color-sidebar-foreground:            var(--sidebar-foreground);
+  --color-sidebar-primary:               var(--sidebar-primary);
+  --color-sidebar-primary-foreground:    var(--sidebar-primary-foreground);
+  --color-sidebar-accent:                var(--sidebar-accent);
+  --color-sidebar-accent-foreground:     var(--sidebar-accent-foreground);
+  --color-sidebar-border:                var(--sidebar-border);
+  --color-sidebar-ring:                  var(--sidebar-ring);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-family: var(--font-body);
+    font-size: var(--fs-body);
+    line-height: var(--lh-body);
+    letter-spacing: var(--track-body);
+    font-weight: var(--fw-regular);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
+@layer components {
+  /* ——— Semantic type classes (v3) ———————————————— */
+  .display-1, .display-2, .display-3 {
+    font-family: var(--font-display);
+    font-weight: var(--fw-light);
+    letter-spacing: var(--track-display);
+    margin: 0;
+  }
+  .display-1 { font-size: var(--fs-display-1); line-height: var(--lh-display-1); }
+  .display-2 { font-size: var(--fs-display-2); line-height: var(--lh-display-2); }
+  .display-3 { font-size: var(--fs-display-3); line-height: var(--lh-display-3); letter-spacing: var(--track-h1); }
+  .display-4 {
+    font-family: var(--font-body);
+    font-size: var(--fs-display-4);
+    line-height: var(--lh-display-4);
+    font-weight: var(--fw-regular);
+    letter-spacing: var(--track-h2);
+    margin: 0;
+  }
+
+  .text-h1 { font-family: var(--font-body); font-size: var(--fs-h1); line-height: var(--lh-h1); font-weight: var(--fw-regular); letter-spacing: var(--track-h1); margin: 0; }
+  .text-h2 { font-family: var(--font-body); font-size: var(--fs-h2); line-height: var(--lh-h2); font-weight: var(--fw-regular); letter-spacing: var(--track-h2); margin: 0; }
+  .text-h3 { font-family: var(--font-body); font-size: var(--fs-h3); line-height: var(--lh-h3); font-weight: var(--fw-medium); letter-spacing: var(--track-h3); margin: 0; }
+
+  .body-lg { font-size: var(--fs-body-lg); line-height: var(--lh-body-lg); letter-spacing: var(--track-body); }
+  .body    { font-size: var(--fs-body);    line-height: var(--lh-body);    letter-spacing: var(--track-body); }
+  .body-sm { font-size: var(--fs-body-sm); line-height: var(--lh-body-sm); }
+  .mono    { font-family: var(--font-mono-stack); font-size: var(--fs-mono); line-height: var(--lh-mono); }
+
+  .eyebrow {
+    font-family: var(--font-mono-stack);
+    font-size: 11px;
+    line-height: 1;
+    letter-spacing: var(--track-meta);
+    text-transform: uppercase;
+    color: var(--fg-muted);
+  }
+
+  /* ——— Shadow utility classes ————————————————————— */
+  .shadow-01 { box-shadow: var(--shadow-01); }
+  .shadow-02 { box-shadow: var(--shadow-02); }
+  .shadow-03 { box-shadow: var(--shadow-03); }
+  .shadow-04 { box-shadow: var(--shadow-04); }
+  .shadow-05 { box-shadow: var(--shadow-05); }
+  .shadow-06 { box-shadow: var(--shadow-06); }
+  .shadow-hairline    { box-shadow: var(--shadow-hairline); }
+  .shadow-glass {
+    box-shadow: var(--shadow-glass);
+    backdrop-filter: blur(20px) saturate(140%);
+    -webkit-backdrop-filter: blur(20px) saturate(140%);
+    background: rgba(20, 23, 31, 0.62);
+  }
+  .shadow-glow-accent { box-shadow: var(--shadow-glow-accent); }
+
+  /* ——— Glass surfaces ————————————————————————— */
+  .glass {
+    background: rgba(20, 23, 31, 0.55);
+    backdrop-filter: var(--backdrop-blur);
+    -webkit-backdrop-filter: var(--backdrop-blur);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.08),
+      inset 0 0 0 1px rgba(255, 255, 255, 0.05),
+      0 8px 24px rgba(0, 0, 0, 0.32);
+  }
+  .glass-strong {
+    background: rgba(15, 18, 25, 0.65);
+    backdrop-filter: var(--backdrop-blur-strong);
+    -webkit-backdrop-filter: var(--backdrop-blur-strong);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.10),
+      inset 0 0 0 1px rgba(255, 255, 255, 0.06),
+      0 24px 64px rgba(0, 0, 0, 0.52);
+  }
+  .glass-light {
+    background: rgba(255, 255, 255, 0.68);
+    backdrop-filter: var(--backdrop-blur);
+    -webkit-backdrop-filter: var(--backdrop-blur);
+    color: var(--fg-inverse);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.8),
+      inset 0 0 0 1px rgba(0, 0, 0, 0.04),
+      0 8px 24px rgba(0, 0, 0, 0.10);
+  }
+
+  /* ——— Blur-morph transition helper ————————————————— */
+  .blur-morph {
+    transition:
+      opacity var(--duration-standard) var(--ease-standard),
+      filter var(--duration-standard) var(--ease-standard),
+      transform var(--duration-standard) var(--ease-standard);
+  }
+  .blur-morph.out,
+  .blur-morph[aria-hidden="true"] {
+    opacity: 0;
+    filter: var(--blur-soft);
+    pointer-events: none;
+  }
+}
+
+@layer utilities {
+  .font-display {
+    font-family: var(--font-display);
+  }
+
+  .text-stroke {
+    -webkit-text-stroke: 1.5px currentColor;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .marquee {
+    animation: marquee 30s linear infinite;
+  }
+
+  .marquee-reverse {
+    animation: marquee-reverse 25s linear infinite;
+  }
+
+  @keyframes marquee {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
+  }
+
+  @keyframes marquee-reverse {
+    0% { transform: translateX(-50%); }
+    100% { transform: translateX(0); }
+  }
+
+  .line-reveal {
+    clip-path: inset(0 100% 0 0);
+    animation: line-reveal 0.8s var(--ease-emphasis) forwards;
+  }
+
+  @keyframes line-reveal {
+    to { clip-path: inset(0 0 0 0); }
+  }
+
+  .hover-lift {
+    transition: transform var(--duration-standard) var(--ease-emphasis);
+  }
+
+  .hover-lift:hover {
+    transform: translateY(-4px);
+  }
+
+  .letter-spin {
+    display: inline-block;
+    transition: transform 0.6s var(--ease-emphasis);
+  }
+
+  .letter-spin:hover {
+    transform: rotateY(360deg);
+  }
+
+  .animate-char-in {
+    animation: char-in 0.5s var(--ease-emphasis) forwards;
+    opacity: 0;
+    filter: blur(40px);
+    transform: translateY(100%);
+  }
+
+  @keyframes char-in {
+    0% {
+      opacity: 0;
+      filter: blur(40px);
+      transform: translateY(100%);
+    }
+    100% {
+      opacity: 1;
+      filter: blur(0);
+      transform: translateY(0);
+    }
+  }
+
+  .noise-overlay {
+    position: relative;
+  }
+
+  .noise-overlay::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+    opacity: 0.01;
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  .border-sketch {
+    border: 1px solid transparent;
+    background:
+      linear-gradient(var(--background), var(--background)) padding-box,
+      linear-gradient(135deg, var(--foreground) 25%, transparent 25%, transparent 50%, var(--foreground) 50%, var(--foreground) 75%, transparent 75%) border-box;
+    background-size: 100% 100%, 8px 8px;
+  }
+
+  /* Squircle filter — opt-in only.
+     CSS `filter` rasterizes the entire subtree of the element it's
+     applied to, which crushes text anti-aliasing (the alpha-threshold
+     in #SkiperSquiCircleFilterLayout makes glyph edges jagged). The
+     premium continuous-corner aesthetic is now carried by the v3
+     radius scale (--radius-token-xl…4xl) plus layered shadows.
+
+     If a strictly decorative shape ever needs the SVG goo filter,
+     wrap it in a `.squicircle-shape` element that contains NO text. */
+  .squicircle-shape {
+    filter: url(#SkiperSquiCircleFilterLayout);
+  }
+}

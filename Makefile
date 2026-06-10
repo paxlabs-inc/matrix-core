@@ -11,7 +11,7 @@ SHELL              := /usr/bin/env bash
 .DEFAULT_GOAL      := help
 
 MODULES            := MCL bridge executor gateway router cortex tachyon deus neo
-GO                 ?= go
+GO                 ?= /usr/local/go/bin/go
 GOFLAGS            ?=
 GOTEST_FLAGS       ?= -count=1
 GOLANGCI_LINT      ?= golangci-lint

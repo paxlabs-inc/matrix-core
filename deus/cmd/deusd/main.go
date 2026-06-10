@@ -148,7 +148,7 @@ func run() int {
 
 	var hostOrchestrator *hosting.Orchestrator
 	if blobStore != nil {
-		limits := hosting.LimitsFromEnv()
+		limits := hosting.LoadLimits()
 		if cfg.HostingKillSwitch {
 			limits.KillSwitch = true
 		}
@@ -158,7 +158,7 @@ func run() int {
 				Endpoint:  cfg.AppwriteEndpoint,
 				ProjectID: cfg.AppwriteProjectID,
 				APIKey:    cfg.AppwriteAPIKey,
-			}, blobStore)
+			}, blobStore, limits)
 		} else if cfg.Dev {
 			backend = &hosting.DevBackend{ExecURL: cfg.HostingDevExecURL}
 		}
@@ -214,17 +214,19 @@ func run() int {
 					})
 				}
 				gw = gateway.New(gateway.Config{
-					Store:    db,
-					Pricing:  pricingSvc,
-					Meter:    metering.New(db),
-					Wallet:   wal,
-					Signer:   signer,
-					Quality:  quality.New(db),
-					Channels: chSvc,
-					Vouchers: vSvc,
-					Hosting:  hostOrchestrator,
-					Streams:  streamSvc,
-					ChainID:  cfg.ChainID,
+					Store:           db,
+					Pricing:         pricingSvc,
+					Meter:           metering.New(db),
+					Wallet:          wal,
+					Signer:          signer,
+					Quality:         quality.New(db),
+					Channels:        chSvc,
+					Vouchers:        vSvc,
+					Hosting:         hostOrchestrator,
+					Streams:         streamSvc,
+					ChainID:         cfg.ChainID,
+					AppwriteProject: cfg.AppwriteProjectID,
+					AppwriteKey:     cfg.AppwriteAPIKey,
 				})
 				if chainPayer != nil {
 					settler = settlement.NewSettler(db, chainPayer)

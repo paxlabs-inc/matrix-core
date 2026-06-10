@@ -31,7 +31,7 @@ func (s *Server) handleQuote(w http.ResponseWriter, r *http.Request) {
 		writeAPIError(w, http.StatusServiceUnavailable, "internal_error", "gateway not configured", nil)
 		return
 	}
-	serviceID := chi.URLParam(r, "id")
+	serviceID := s.resolveServiceID(r, chi.URLParam(r, "id"))
 	caller, ok := auth.FromContext(r.Context())
 	if !ok {
 		writeAPIError(w, http.StatusUnauthorized, "unauthorized", "caller required", nil)
@@ -73,7 +73,7 @@ func (s *Server) handleInvoke(w http.ResponseWriter, r *http.Request) {
 		writeAPIError(w, http.StatusServiceUnavailable, "internal_error", "gateway not configured", nil)
 		return
 	}
-	serviceID := chi.URLParam(r, "id")
+	serviceID := s.resolveServiceID(r, chi.URLParam(r, "id"))
 	caller, ok := auth.FromContext(r.Context())
 	if !ok {
 		writeAPIError(w, http.StatusUnauthorized, "unauthorized", "caller required", nil)

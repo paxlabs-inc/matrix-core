@@ -1,0 +1,36 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "deus-marketplace",
+  "compatibility_date": "2025-05-05",
+  "compatibility_flags": ["nodejs_compat"],
+  "main": "./workers/app.ts",
+  "assets": {
+    "directory": "./build/client"
+  },
+  // Workers Logs. Sampling is tuned per-environment for 1M traffic + budget.
+  "observability": {
+    "enabled": true,
+    "head_sampling_rate": 1
+  },
+  // Non-sensitive only. Secrets (Supabase service key, signing keys) go via
+  // `wrangler secret put` / dashboard — NEVER here and never in the bundle.
+  "vars": {
+    "DEUS_API_URL": "https://deus.paxeer.app"
+  },
+  // Per-environment overrides. Production caps CPU to bound runaway SSR cost
+  // and downsamples logs; local `vite dev` uses the permissive top-level env.
+  "env": {
+    "production": {
+      "vars": {
+        "DEUS_API_URL": "https://deus.paxeer.app"
+      },
+      "limits": {
+        "cpu_ms": 200
+      },
+      "observability": {
+        "enabled": true,
+        "head_sampling_rate": 0.1
+      }
+    }
+  }
+}

@@ -64,6 +64,10 @@ type DeployRequest struct {
 	Runtime     string
 	AlwaysWarm  bool
 	Region      string
+	// Env is optional per-service config/secrets forwarded to the backend as
+	// function variables. The HTTP handler does not populate it yet; it is a
+	// clean seam for a future "service config" API.
+	Env map[string]string
 }
 
 // DeployOutput is returned to API callers.
@@ -112,6 +116,7 @@ func (o *Orchestrator) Deploy(ctx context.Context, req DeployRequest) (DeployOut
 		AlwaysWarm:   req.AlwaysWarm,
 		Region:       req.Region,
 		FunctionName: "deus-" + svc.Slug,
+		Env:          req.Env,
 	})
 	if err != nil {
 		_ = o.store.UpdateDeploymentStatus(ctx, depID, "failed", nil)

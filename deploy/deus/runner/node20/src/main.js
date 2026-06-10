@@ -1,32 +1,36 @@
-import { runHandle } from './harness.js';
-import { handle } from './handler.js';
-import http from 'node:http';
+import { dispatch } from './dispatch.js';
 
-const port = Number(process.env.PORT || 3000);
-
-http.createServer(async (req, res) => {
-  if (req.method !== 'POST' || req.url !== '/invoke') {
-    res.writeHead(404).end('not found');
-    return;
+// Appwrite Node.js (node-20.0) function entrypoint.
+//
+// Appwrite invokes the default export with an execution context. The gateway
+// (CallAppwriteExecution) sends the HostedInvokeRequest as the execution body
+// with path "/invoke"; we parse it, dispatch to the developer handler, and
+// return the HostedInvokeResponse envelope as JSON.
+export default async ({ req, res, log, error }) => {
+  let payload;
+  try {
+    payload = parsePayload(req);
+  } catch (err) {
+    if (typeof error === 'function') error(`invalid invoke payload: ${err}`);
+    return res.json({ outcome: 'error', result: { error: 'invalid payload' }, units: '1' }, 400);
   }
-  const raw = await readBody(req);
-  const body = JSON.parse(raw);
-  const out = await runHandle(handle, body.operation, body.args || {}, {
-    callerDid: body.caller_did,
-    invocationId: body.invocation_id,
-    deadlineMs: body.deadline_ms || 5000,
-    logger: console,
-    secrets: process.env,
-  });
-  res.writeHead(200, { 'Content-Type': 'application/json' });
-  res.end(JSON.stringify(out));
-}).listen(port);
 
-function readBody(req) {
-  return new Promise((resolve, reject) => {
-    const chunks = [];
-    req.on('data', (c) => chunks.push(c));
-    req.on('end', () => resolve(Buffer.concat(chunks).toString('utf8')));
-    req.on('error', reject);
-  });
+  if (typeof log === 'function' && payload.invocation_id) {
+    log(`invoke ${payload.operation || ''} (${payload.invocation_id})`);
+  }
+
+  const out = await dispatch(payload, process.env);
+  const status = out.outcome === 'ok' ? 200 : 500;
+  return res.json(out, status);
+};
+
+// parsePayload reads the invoke body across Appwrite runtime shapes: bodyJson
+// (already-parsed object), bodyText / bodyRaw / body (string), or an object.
+function parsePayload(req) {
+  if (!req) return {};
+  if (req.bodyJson && typeof req.bodyJson === 'object') return req.bodyJson;
+  const raw = req.bodyText ?? req.bodyRaw ?? req.body ?? '';
+  if (raw && typeof raw === 'object') return raw;
+  if (typeof raw === 'string' && raw.trim().length) return JSON.parse(raw);
+  return {};
 }

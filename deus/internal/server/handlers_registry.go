@@ -19,9 +19,16 @@ func (s *Server) mountRegistryRoutes(r chi.Router) {
 			r.Use(DevDeveloperAuth(s.deps.DevMode))
 			r.Post("/", s.handleCreateService)
 			r.Post("/{id}/publish", s.handlePublishService)
+			r.Post("/{id}/pause", s.handleSetServiceStatus("paused"))
+			r.Post("/{id}/delist", s.handleSetServiceStatus("delisted"))
 			r.Post("/{id}/artifacts", s.handleUploadArtifact)
 			r.Post("/{id}/deploy", s.handleDeployService)
+			r.Post("/{id}/redeploy", s.handleDeployService)
+			r.Get("/{id}/deployments", s.handleListDeployments)
 			r.Get("/{id}/deployments/{deployment_id}", s.handleGetDeployment)
+			r.Get("/{id}/logs", s.handleServiceLogs)
+			r.Get("/{id}/analytics", s.handleServiceAnalytics)
+			r.Post("/{id}/payout", s.handleServicePayout)
 		})
 	})
 }
@@ -58,8 +65,12 @@ func (s *Server) handleCreateService(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) handleGetService(w http.ResponseWriter, r *http.Request) {
-	id := chi.URLParam(r, "id")
-	row, err := s.deps.Registry.Get(r.Context(), id)
+	if s.deps.Store == nil {
+		writeAPIError(w, http.StatusServiceUnavailable, "internal_error", "store not configured", nil)
+		return
+	}
+	// Public pages link services by slug; internal flows use the uuid.
+	row, err := s.deps.Store.GetServiceByIDOrSlug(r.Context(), chi.URLParam(r, "id"))
 	if err != nil {
 		writeAPIError(w, http.StatusNotFound, "not_found", "service not found", nil)
 		return
@@ -81,7 +92,7 @@ func (s *Server) handleGetService(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) handlePublishService(w http.ResponseWriter, r *http.Request) {
-	id := chi.URLParam(r, "id")
+	id := s.resolveServiceID(r, chi.URLParam(r, "id"))
 	key := strings.TrimSpace(os.Getenv("DEUS_PUBLISH_PRIVATE_KEY"))
 	if key == "" {
 		key = s.deps.PublishPrivateKey

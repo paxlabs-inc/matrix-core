@@ -62,6 +62,7 @@ func New(deps Deps) *Server {
 	s.mountDiscoveryRoutes(r)
 	s.mountInvokeRoutes(r)
 	s.mountStreamRoutes(r)
+	s.mountDashboardRoutes(r)
 
 	s.mux = r
 	return s

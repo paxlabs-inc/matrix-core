@@ -230,6 +230,51 @@ func (s *Store) ListDiscoverable(ctx context.Context, query, kind string, limit 
 	return out, rows.Err()
 }
 
+// ListPublishedServices returns active (published, listable) services for the
+// public catalog, ordered by quality then name, with limit/offset pagination.
+// It also returns the total count of active services for client paging.
+func (s *Store) ListPublishedServices(ctx context.Context, limit, offset int) ([]ServiceRow, int, error) {
+	if limit <= 0 || limit > 100 {
+		limit = 20
+	}
+	if offset < 0 {
+		offset = 0
+	}
+	var total int
+	if err := s.pool.QueryRow(ctx, `SELECT COUNT(*)::int FROM services WHERE status = 'active'`).Scan(&total); err != nil {
+		return nil, 0, fmt.Errorf("store: count published: %w", err)
+	}
+	rows, err := s.pool.Query(ctx, `
+		SELECT id::text, chain_id, developer_id::text, slug, kind, mode,
+		       display_name, summary, manifest, manifest_hash, status,
+		       confidential, quality_score::text, uptime_bps
+		FROM services
+		WHERE status = 'active'
+		ORDER BY quality_score DESC NULLS LAST, display_name ASC
+		LIMIT $1 OFFSET $2`, limit, offset,
+	)
+	if err != nil {
+		return nil, 0, fmt.Errorf("store: list published: %w", err)
+	}
+	defer rows.Close()
+
+	var out []ServiceRow
+	for rows.Next() {
+		var row ServiceRow
+		var chainID *int64
+		if err := rows.Scan(
+			&row.ID, &chainID, &row.DeveloperID, &row.Slug, &row.Kind, &row.Mode,
+			&row.DisplayName, &row.Summary, &row.Manifest, &row.ManifestHash, &row.Status,
+			&row.Confidential, &row.QualityScore, &row.UptimeBPS,
+		); err != nil {
+			return nil, 0, fmt.Errorf("store: scan published: %w", err)
+		}
+		row.ChainID = chainID
+		out = append(out, row)
+	}
+	return out, total, rows.Err()
+}
+
 // InsertEndpoints replaces endpoint rows for a service from manifest operations.
 func (s *Store) InsertEndpoints(ctx context.Context, serviceID string, ops []EndpointRow) error {
 	tx, err := s.pool.Begin(ctx)
