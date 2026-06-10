@@ -1,0 +1,225 @@
+# connections.frozen.kvx — FROZEN architecture spec for UWAC (Universal Web Agent Connector).
+#
+# UWAC is the Matrix subsystem that gives any Matrix agent (Neo first, the MCL
+# pipeline too) AUTHENTICATED reach into apps OUTSIDE the Paxeer ecosystem —
+# Gmail, Calendar, Drive, Slack, Notion, GitHub, Stripe, and the long tail —
+# WITHOUT rebuilding OAuth from scratch exposes each connected app to the agent as MCP tools,
+# turns connected apps into ambient triggers, and lets third parties publish
+# connectors through the existing Deus marketplace.
+#
+# Format: sectioned KV per the Matrix .kvx convention (see tachyon/internal/config/kvx.go).
+#   [section] / [section.sub]   key = "string"   num = 80   list = ["a","b"]   ${ENV}
+# String-typed values are ALWAYS double-quoted (Matrix .mtx lexer convention).
+#
+# STATUS: FROZEN. Design locked with Andrew on 2026-06-10
+
+[meta]
+name        = "Universal Web Agent Connector"
+codename    = "uwac"
+kind        = "external-app-connector-subsystem"
+version     = "1.0.0"
+status      = "frozen"
+frozen_at   = "2026-06-10"
+authors     = ["Andrew", "Jason", "Luis", "cursor-agent"]
+relation    = "extends the agent execution surface (Neo + MCL) with authenticated third-party app reach; coexists with paxeer-net, browser, tachyon, deus"
+supersedes  = "none"
+
+[repo]
+form        = "git submodule (own repo), mirroring tachyon's shape"
+path        = "/root/matrix/uwac"
+module      = "github.com/paxlabs-inc/uwac"
+dev_box_git = "the USER drives all commits/submodule wiring; the agent never commits/pushes on the dev box"
+bakes_into  = "daemon image (deploy/daemon/Dockerfile COPY tools/uwac) like tachyon/browser"
+
+# ================================ MISSION ==================================
+
+[mission]
+goal       = "make Matrix agents the only consumer agents that can ACT across a user's real apps, WATCH them ambiently, and PAY — all from one connect-once grant"
+why        = "Neo is already crypto-native, can run code, hold long-lived processes, schedule on-chain actions, and pay other services; the missing surface is authenticated reach into the everyday SaaS layer (email, calendar, docs, messaging, commerce)"
+positioning= "the connect-once hub that turns 'a chatbot that drafts text' into 'an agent that does the thing in your actual accounts'"
+not_a      = "a replacement for the browser tool (unauthenticated, brittle); UWAC is the AUTHENTICATED, durable, refreshable rail"
+unmatched  = "email + calendar + native money + ambient triggers + compounding memory in ONE agent — no competitor has the money rail or the persistent per-user runtime Matrix already shipped"
+
+# ============================== PRINCIPLES =================================
+
+[principles]
+leverage_front_door   = "we ALREADY own the Google/GitHub OAuth front door via self-hosted GoTrue; UWAC extends that flow, it does NOT build a new identity stack"
+dont_rebuild          = "design after proven systems (Nango, n8n, MCP registry) and WRITE THE CODE OURSELVES; never vendor, never design from scratch what already exists"
+key_isolation_extended= "OAuth tokens are secrets handled EXACTLY like the wallet key — vaulted server-side, injected by the harness at call-time, NEVER placed in the agent context window (Neo invariant i1 generalized)"
+connect_once_act      = "a user grants an app once; every relevant tool + trigger lights up for the agent automatically"
+least_privilege       = "request the narrowest scopes the task needs; elevate incrementally, never a god-grant up front"
+structural_security   = "safety from architecture (key isolation, scopes, revocation, consensus backstops), NOT from throttles on execution (consistent with Neo's permissive-when-reversible stance)"
+reversible_is_natural = "reversible app actions stay at the Natural (Neo) level; irreversible / high-consequence / external-money actions get an explicit confirmation (folds into Neo loop_discipline.ask_when)"
+honest_partials       = "never attest an external action succeeded that did not; surface provider errors verbatim"
+
+# ============================== REFERENCES =================================
+# Proven systems we model on (implement ourselves; do not vendor).
+
+[references]
+nango        = "open-source connector hub — the reference for declarative provider specs (auth/token URLs + scopes + refresh strategy), the token vault with auto-refresh, the unified credential-injecting proxy, and syncs/webhooks as event sources"
+n8n          = "open-source workflow engine — the reference for the trigger model (webhook vs poll trigger nodes, event->action)"
+trigger_dev  = "the reference for durable, restart-surviving background jobs"
+mcp_registry = "the reference for connector discovery/distribution as listings"
+deus         = "our EXISTING control plane — already does discovery + metered invoke + signed EIP-712 receipts; a connector is just a new listing type, so the marketplace layer is mostly reuse"
+gotrue       = "our self-hosted Supabase Auth — already the live Google/GitHub front door; the substrate UWAC extends"
+
+# ============================ ARCHITECTURE =================================
+
+[architecture]
+connector_is = "a triple: { oauth_spec, mcp_tool_adapter, event_sources }"
+insight      = "build ONE substrate around that triple and all three chosen vectors (connector hub + ambient triggers + marketplace) fall out of it"
+agent_view   = "to the agent, a connected app is simply more MCP tools that appear in its manifest; UWAC owns all the credential plumbing beneath"
+
+[architecture.layers]
+layer_1 = "connections-core: OAuth scope-elevation + token vault + refresher + per-user dynamic MCP tool injection"
+layer_2 = "trigger-engine: connector event-sources (webhook/poll) -> event bus -> fires the agent via the existing scheduler + long-lived services"
+layer_3 = "marketplace: connectors published/discovered/monetized as Deus listings (third-party coverage grows itself)"
+
+# ===================== IDENTITY (THE FRONT DOOR WE OWN) ====================
+
+[identity]
+substrate     = "self-hosted GoTrue (Supabase Auth); users already sign into Neo with Google or GitHub"
+client_today  = "client/app/[locale]/login/login-form.tsx calls signInWithOAuth('google'|'github') with DEFAULT (identity) scopes only"
+marketplace_today = "marketplace/app/lib/auth.server.ts runs server-side PKCE (exchangeOAuthCode -> /auth/v1/token?grant_type=pkce) and reads ONLY data.user — it DISCARDS the provider tokens in the same response"
+finding       = "we own the front door and currently ask for identity only and throw the provider tokens away; UWAC = extend the flow we already run, not a greenfield build"
+
+[identity.gotchas]
+# The three things that gate a correct implementation.
+g1_offline_consent = "Google only returns a provider_refresh_token when the authorize request carries access_type=offline AND prompt=consent (queryParams) ALONGSIDE the elevated scopes; that refresh token is the durable credential we vault"
+g2_gotrue_norefresh= "GoTrue does NOT auto-refresh provider tokens — it only refreshes its OWN Supabase JWT; UWAC MUST vault provider_refresh_token and refresh against the provider's token endpoint itself"
+g3_provider_asymmetry = "per-provider: Google issues refresh tokens; GitHub OAuth-app tokens do not expire (no refresh); GitHub Apps DO expire; the connector spec must model the refresh strategy per provider"
+
+# =============================== OAUTH ====================================
+
+[oauth]
+flow         = "extend the existing server-side PKCE authorization-code flow; tokens never touch a URL or client JS"
+elevation    = "scope elevation is a SECOND consented authorize round (incremental authorization), separate from first-login identity — the user connects an app on demand, not at signup"
+capture      = "on the elevated callback, capture provider_token + provider_refresh_token from the token-exchange response (the fields marketplace currently discards)"
+
+[oauth.flow]
+step_1 = "agent (or user) requests connecting app X for a task that needs scope S"
+step_2 = "UWAC builds the GoTrue authorize URL for the provider with scopes=S, access_type=offline, prompt=consent, S256 PKCE challenge in an httpOnly cookie"
+step_3 = "user consents at the provider; GoTrue redirects back with ?code="
+step_4 = "server exchanges code + verifier -> provider_token + provider_refresh_token + granted scopes"
+step_5 = "vault the refresh token (encrypted, keyed by user+provider+connector); record granted scopes"
+step_6 = "the connector's MCP tools become available to that user's agent from the next turn"
+
+[oauth.scopes]
+discipline   = "least-privilege; map each tool to the minimal scope set; request only what the connected tools need"
+incremental  = "adding a tool that needs a wider scope triggers a fresh consent for the delta, not a re-grant of everything"
+display      = "the consent ask is surfaced to the user in plain language (what the agent will be able to do), never raw scope strings"
+
+# =============================== VAULT ====================================
+
+[vault]
+store        = "Postgres, encrypted at rest; one row per (user_id, provider, connector_id)"
+holds        = "provider_refresh_token (durable), last provider_token (short-lived cache), granted_scopes, expiry, status"
+refresher    = "a background refresher mints fresh provider_tokens from the refresh token before expiry (Nango model); per-provider refresh strategy from the connector spec"
+revocation   = "user can disconnect an app -> token revoked at the provider + row tombstoned + tools removed from the manifest"
+
+[vault.security]
+isolation    = "tokens live ONLY server-side; the agent NEVER sees a raw OAuth token in its context window"
+effector     = "the harness injects the credential at tool-call time — same effector pattern as the wallet; the model emits intent, the harness holds the secret"
+maps_to      = "Neo invariant i1 generalized: just as Neo holds NO signing key, the agent holds NO OAuth token"
+audit        = "every credential use is logged (user, connector, tool, time) for revocation + honesty"
+
+# ============================= CONNECTORS ==================================
+
+[connectors]
+definition   = "a declarative spec packaging the triple {oauth_spec, mcp_tools, event_sources} for one external app"
+first_party  = "Matrix authors the tier-1 connectors; third parties publish the long tail via the marketplace"
+exposure     = "connectors compile to MCP tools injected PER-USER into the agent manifest based on what that user has connected"
+
+[connector.schema]
+id               = "stable connector id, e.g. \"uwac/google-workspace\""
+provider         = "oauth provider key, e.g. \"google\" | \"github\" | \"slack\""
+display          = "human label, e.g. \"Google Workspace\""
+oauth_spec       = "authorize_url, token_url, refresh strategy, scope catalog (per [oauth])"
+tools            = "list of MCP tool defs (name, description, args schema, side_effect_class, scope requirement)"
+event_sources    = "optional list of webhook/poll sources this connector can emit (per [triggers])"
+pricing          = "optional Deus pricing if a paid/third-party connector (per [marketplace])"
+
+[connector.tiers]
+tier_1 = ["google-workspace (gmail+calendar+drive+docs+sheets)", "github", "slack"]
+tier_2 = ["notion", "linear", "telegram", "discord", "dropbox"]
+tier_3 = ["stripe", "shopify", "x-twitter", "maps-places", "weather", "travel"]
+note   = "tier-1 lands first because we already have Google + GitHub identity grants to extend"
+
+# ============================ TOOL SURFACE =================================
+
+[tools]
+injection    = "dynamic per-user: a connector's tools appear in the manifest ONLY when that user has an active grant (e.g. gmail_send shows only if Gmail is linked)"
+naming       = "connector-namespaced, e.g. gmail_send, gmail_search, calendar_create_event, drive_get, github_create_issue"
+classes      = "each tool declares a side_effect_class (read | write | network | shell) AND a consequence tier (see [consequence])"
+available_to = "BOTH Neo and the MCL pipeline — they are ordinary MCP servers in agents/default.json, so the rigorous rail can use them too"
+
+# ============================== TRIGGERS ===================================
+
+[triggers]
+purpose      = "turn connected apps into ambient automations: event -> agent action, so the agent works while the user sleeps (vector C)"
+sources      = "connector-declared webhook (push) or poll sources, e.g. gmail.new_message, github.new_issue, calendar.upcoming_event, wallet.transfer"
+engine       = "an event bus consumes sources, applies the user's filter, and dispatches the agent with a prose intent (n8n trigger model)"
+fires_via    = "the primitives that ALREADY exist — Scheduler precompile 0x0905 (schedule_job) for time-based + service_start long-lived workers for stream/poll watchers"
+
+[trigger.schema]
+name        = "human label, e.g. \"draft replies to important email\""
+source      = "the connector event-source key, e.g. \"gmail.new_message\""
+filter      = "predicate over the event payload, e.g. importance=high"
+action      = "the prose intent handed to the agent when it fires, e.g. \"draft a reply to this email and save as a draft\""
+enabled     = "user toggle"
+
+[trigger.execution]
+runs         = "out-of-band like core_execute delegation — barely consumes the conversational window"
+deferred_money = "time-deferred or trigger-fired MONEY escalates at FIRE time through MCL, NOT at schedule time (inherits Neo execution.escalate deferred_note)"
+honesty      = "a trigger that fires and fails reports the failure; it never fabricates that it acted"
+
+# ============================= MARKETPLACE =================================
+
+[marketplace]
+mechanism    = "a connector is a new Deus LISTING TYPE; publish/discover/monetize reuse the existing Deus control plane"
+reuse        = "Deus already does plain-language discovery, metered invoke, and signed EIP-712 receipts — the connector marketplace is mostly wiring, not new infra"
+third_party  = "external devs publish a connector spec; users discover + connect; paid connectors meter through the existing rails"
+network_fx   = "coverage grows itself — the long tail of apps arrives without Matrix hand-building every API; this is how breadth becomes UNMATCHED"
+trust        = "connector quality folds through the existing Deus PoFQ quality scoring (deus/internal/quality)"
+
+# ========================= CONSEQUENCE BOUNDARY ============================
+# How UWAC actions map onto Neo's reversible/irreversible execution wall.
+
+[consequence]
+natural      = "reversible, low-stakes app reads/writes stay at the Neo Natural level, fully permissive (read email, list events, fetch a doc, draft — not send)"
+confirm      = "irreversible / high-consequence external actions get an explicit user confirmation (send email, post publicly, delete data, send a message to others) — folds into Neo loop_discipline.ask_when 'destructive/irreversible NON-monetary action'"
+external_money = "actions moving REAL money through a connected app (e.g. a Stripe charge, a PayPal send) are irreversible value moves: they ALWAYS confirm, even though they do NOT touch the Paxeer wallet"
+paxeer_money = "anything requiring a Paxeer WALLET signature still escalates to MCL exactly as in neo.frozen.kvx [execution.escalate] — UWAC does not change the wallet boundary"
+clarifier    = "operator/API cost (a metered connector call) is NOT user funds and stays Natural (inherits Neo execution.natural clarifier)"
+
+# =========================== RELATION TO AGENTS ============================
+
+[relation]
+to_neo  = "UWAC widens Neo's execution.natural allow-list with authenticated app tools; high-consequence ones use Neo's existing ask_when gate; the money wall is unchanged"
+to_mcl  = "connectors are plain MCP servers, so the rigorous compile->plan->execute pipeline can also use them; UWAC is agent-agnostic"
+to_browser = "UWAC is the authenticated/durable complement to the browser tool; prefer a UWAC connector when one exists, fall back to the browser for un-connectored apps"
+
+# ============================== INVARIANTS =================================
+
+[invariants]
+i1 = "the agent never holds a raw OAuth token; all credentials are vaulted server-side and injected by the harness at call-time"
+i2 = "least-privilege scopes; capabilities elevate incrementally via fresh consent, never a god-grant"
+i3 = "tokens are refreshed by UWAC (GoTrue does not); refresh strategy is per-provider"
+i4 = "reversible app actions are permissive; irreversible / external-money actions require explicit confirmation"
+i5 = "the Paxeer wallet boundary is unchanged — wallet signatures still cross into MCL"
+i6 = "no false success — external-action outcomes are reported honestly, provider errors surfaced verbatim"
+i7 = "a disconnected app's tokens are revoked at the provider and its tools removed from the manifest"
+
+# ========================= FIRST VERTICAL SLICE ===========================
+
+[slice]
+prove_on     = "Google — we already have Google login to extend"
+spine        = "elevate scopes -> vault refresh token -> expose gmail + calendar MCP tools -> ONE trigger (new important email -> agent drafts a reply)"
+validates    = "the whole connections-core + trigger spine + the vault, end-to-end, on one connector"
+then         = "marketplace (Deus listing type) layers on after the substrate exists; tier-2/3 connectors are then just more specs"
+
+# ========================== DEFERRED / NEXT ===============================
+
+[deferred]
+implementation = "this is a FROZEN design spec — no code yet"
+next_steps     = ["scaffold the uwac submodule (Go control plane + tools/uwac MCP proxy, mirroring tachyon)", "extend the GoTrue PKCE flow with scope elevation + access_type=offline + prompt=consent", "build the encrypted per-user token vault + background refresher", "author the google-workspace connector spec (gmail+calendar first)", "implement dynamic per-user MCP tool injection into the agent manifest", "build the trigger engine on top of schedule_job + service_start", "add the connector Deus listing type for the marketplace", "wire router MachineEnv to inject the UWAC service URL/token like MATRIX_TACHYON_URL"]

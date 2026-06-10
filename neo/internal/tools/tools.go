@@ -32,10 +32,21 @@ import (
 // rigorous / money-moving tasks to the MCL pipeline.
 const CoreExecuteTool = "core_execute"
 
+// MemoryRecallTool is the synthetic function Neo exposes for explicitly
+// searching its own durable cortex memory. Ambient page-faulting injects
+// memory automatically each turn, but when the user asks "what do you
+// remember?" the model needs a deliberate lookup it can actually perform.
+const MemoryRecallTool = "memory_recall"
+
 // DelegateFunc runs a prose intent through the MCL pipeline and returns its
 // verifiable outcome. Injected by the agent wiring (see internal/delegate);
 // nil until wired, in which case core_execute reports it is unavailable.
 type DelegateFunc func(ctx context.Context, proseIntent string) (string, error)
+
+// RecallFunc searches the durable memory store and returns a rendered,
+// user-presentable digest. Injected from the pager; nil until wired, in
+// which case memory_recall is not advertised at all.
+type RecallFunc func(ctx context.Context, query string) (string, error)
 
 // boundTool is a manifest tool bound to its canonical URI + advertised schema.
 type boundTool struct {
@@ -56,6 +67,7 @@ type Manager struct {
 	registry   *tool.Registry
 	classifier *Classifier
 	delegate   DelegateFunc
+	recall     RecallFunc
 
 	byFunc    map[string]*boundTool
 	order     []string // sorted natural func names (advertised)
@@ -191,14 +203,18 @@ func (m *Manager) bind(spawned map[string]bool) {
 }
 
 // Schemas returns the function schemas advertised to the model: every Natural
-// tool plus the synthetic core_execute delegation tool. Deterministic order.
+// tool plus the synthetic core_execute delegation tool (and memory_recall
+// when a memory store is wired). Deterministic order.
 func (m *Manager) Schemas() []llm.Tool {
-	out := make([]llm.Tool, 0, len(m.order)+1)
+	out := make([]llm.Tool, 0, len(m.order)+2)
 	for _, fn := range m.order {
 		bt := m.byFunc[fn]
 		out = append(out, llm.NewFunctionTool(fn, bt.desc, bt.params))
 	}
 	out = append(out, coreExecuteSchema())
+	if m.recall != nil {
+		out = append(out, memoryRecallSchema())
+	}
 	return out
 }
 
@@ -213,6 +229,9 @@ func (m *Manager) Schemas() []llm.Tool {
 func (m *Manager) Dispatch(ctx context.Context, funcName string, args map[string]interface{}) (string, bool, error) {
 	if funcName == CoreExecuteTool {
 		return m.dispatchCoreExecute(ctx, args)
+	}
+	if funcName == MemoryRecallTool {
+		return m.dispatchMemoryRecall(ctx, args)
 	}
 	bt, ok := m.byFunc[funcName]
 	if !ok {
@@ -252,9 +271,25 @@ func (m *Manager) dispatchCoreExecute(ctx context.Context, args map[string]inter
 	return out, false, nil
 }
 
+func (m *Manager) dispatchMemoryRecall(ctx context.Context, args map[string]interface{}) (string, bool, error) {
+	if m.recall == nil {
+		return "the durable memory store is not connected in this session.", true, nil
+	}
+	q, _ := args["query"].(string)
+	out, err := m.recall(ctx, strings.TrimSpace(q))
+	if err != nil {
+		return fmt.Sprintf("memory lookup failed: %v", err), true, nil
+	}
+	return out, false, nil
+}
+
 // SetDelegate wires the MCL delegation function after construction (the
 // delegate often needs the agent assembled first).
 func (m *Manager) SetDelegate(d DelegateFunc) { m.delegate = d }
+
+// SetRecall wires the durable-memory lookup after construction (the pager
+// and tool manager are built independently).
+func (m *Manager) SetRecall(r RecallFunc) { m.recall = r }
 
 // NaturalToolNames returns the advertised (directly-callable) function names.
 func (m *Manager) NaturalToolNames() []string { return append([]string{}, m.order...) }
@@ -287,6 +322,22 @@ func coreExecuteSchema() llm.Tool {
 				},
 			},
 			"required": []string{"intent"},
+		},
+	)
+}
+
+func memoryRecallSchema() llm.Tool {
+	return llm.NewFunctionTool(
+		MemoryRecallTool,
+		"Search your own durable memory (the cortex) for what you know: the user's profile, stored facts, past outcomes, preferences, and proven approaches. Use this whenever the user asks what you remember, who they are, or about past sessions — and whenever prior context would help the current task. Returns a rendered digest; it persists across conversations and restarts.",
+		map[string]interface{}{
+			"type": "object",
+			"properties": map[string]interface{}{
+				"query": map[string]interface{}{
+					"type":        "string",
+					"description": "What to look for (a topic, name, project, or question). Empty returns the most salient memories plus the user profile.",
+				},
+			},
 		},
 	)
 }

@@ -90,6 +90,11 @@ func runServe(args []string) {
 			tm = nil
 		}
 	}
+	// Explicit memory lookup: "what do you remember?" must be an action the
+	// model can take, not an apology about missing tools.
+	if tm != nil && pager != nil {
+		tm.SetRecall(pager.Recall)
+	}
 
 	// --- background write-back consolidation ---
 	var cons agent.Consolidator

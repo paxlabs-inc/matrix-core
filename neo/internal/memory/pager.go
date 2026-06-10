@@ -265,28 +265,92 @@ func (p *Pager) identityDID() string {
 	return ""
 }
 
-// Retrieve page-faults the top-K records relevant to queryText. Uses semantic
-// HNSW search when an embedder is running, else salience-ranked recall over
-// the durable memory types. Bounded by cfg.RetrievalBudgetTokens.
+// Retrieve page-faults the top-K records relevant to queryText. Semantic
+// (HNSW) results lead when an embedder is running, ALWAYS merged with a
+// salience-ranked lane over the durable types: the embedding worker is
+// async, so a memory written seconds ago is invisible to the vector index —
+// without the salience lane a "remember this" → "what do you know?" round
+// trip inside one session comes back empty. Bounded by RetrievalTopK total.
 func (p *Pager) Retrieve(ctx context.Context, queryText string) ([]Snippet, error) {
-	q := query.Query{
+	var (
+		out  []Snippet
+		seen = map[string]bool{}
+	)
+	add := func(snips []Snippet) {
+		for _, s := range snips {
+			if len(out) >= p.cfg.RetrievalTopK {
+				return
+			}
+			if s.URI == "" || seen[s.URI] {
+				continue
+			}
+			seen[s.URI] = true
+			out = append(out, s)
+		}
+	}
+
+	if p.hasEmbedder && strings.TrimSpace(queryText) != "" {
+		res, err := p.cortex.Find(query.Query{
+			Near:         queryText,
+			Limit:        p.cfg.RetrievalTopK,
+			BudgetTokens: p.cfg.RetrievalBudgetTokens,
+			Form:         query.FormMedium,
+		})
+		if err == nil {
+			add(renderSnippets(res))
+		}
+	}
+
+	res, err := p.cortex.Find(query.Query{
+		Type: []memory.Type{
+			memory.TypeFact, memory.TypeEvent, memory.TypePattern,
+			memory.TypePreference, memory.TypeGoal,
+		},
 		Limit:        p.cfg.RetrievalTopK,
 		BudgetTokens: p.cfg.RetrievalBudgetTokens,
 		Form:         query.FormMedium,
-	}
-	if p.hasEmbedder && strings.TrimSpace(queryText) != "" {
-		q.Near = queryText
-	} else {
-		q.Type = []memory.Type{
-			memory.TypeFact, memory.TypeEvent, memory.TypePattern,
-			memory.TypePreference, memory.TypeGoal,
-		}
-	}
-	res, err := p.cortex.Find(q)
+	})
 	if err != nil {
+		if len(out) > 0 {
+			return out, nil
+		}
 		return nil, err
 	}
-	return renderSnippets(res), nil
+	add(renderSnippets(res))
+	return out, nil
+}
+
+// Recall renders an explicit, user-visible memory lookup: the pinned user
+// profile plus the merged retrieval for the query. This backs Neo's
+// memory_recall tool so "check your memory" is an action, not an apology.
+func (p *Pager) Recall(ctx context.Context, queryText string) (string, error) {
+	var b strings.Builder
+	if profile := p.UserProfile(ctx); len(profile) > 0 {
+		b.WriteString("User profile (durable):\n")
+		for _, line := range profile {
+			b.WriteString("- ")
+			b.WriteString(line)
+			b.WriteString("\n")
+		}
+	}
+	snips, err := p.Retrieve(ctx, queryText)
+	if err != nil && b.Len() == 0 {
+		return "", err
+	}
+	if len(snips) > 0 {
+		b.WriteString("Relevant memories:\n")
+		for _, s := range snips {
+			b.WriteString("- [")
+			b.WriteString(s.Type)
+			b.WriteString("] ")
+			b.WriteString(strings.TrimSpace(s.Text))
+			b.WriteString("\n")
+		}
+	}
+	if b.Len() == 0 {
+		return "(no durable memories stored yet)", nil
+	}
+	return b.String(), nil
 }
 
 // Procedural returns proven how-to patterns whose trigger matches the goal,

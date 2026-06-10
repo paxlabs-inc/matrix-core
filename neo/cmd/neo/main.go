@@ -125,6 +125,11 @@ func runInteractive() {
 		tm.SetDelegate(dele.Run)
 	}
 
+	// Explicit memory lookup tool (mirrors serve.go).
+	if tm != nil && pager != nil {
+		tm.SetRecall(pager.Recall)
+	}
+
 	// --- background write-back consolidation (best-effort, needs memory) ---
 	var cons agent.Consolidator
 	if pager != nil {
