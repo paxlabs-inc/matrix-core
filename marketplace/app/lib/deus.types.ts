@@ -242,7 +242,8 @@ export interface CatalogItem {
   manifest_hash?: string;
   quality_score?: string;
   uptime_bps?: number;
-  // Enrichments not in the Go CatalogItem; present on discover results.
+  // Emitted by the Go handler from the stored manifest (headline pricing +
+  // tags); also synthesized client-side on the discover-adapted path.
   price_wei?: string;
   unit?: string;
   tags?: string[];
@@ -256,12 +257,15 @@ export interface CatalogResponse {
   offset: number;
 }
 
-// ─── Dashboard extensions ─────────────────────────────────────────────────────
-// Backed by the local mock today and (stretch) by new Go read endpoints.
+// ─── Dashboard endpoints ──────────────────────────────────────────────────────
+// Backed by the real Go handlers (deus/internal/server/handlers_dashboard.go):
+// /v1/me, /v1/me/spend, /v1/me/services, /v1/me/earnings, and the per-service
+// logs/analytics/payout/pause/delist routes. The local mock mirrors them.
 
 export interface MeResponse {
   did: string;
   wallet?: string;
+  /** Not emitted by the Go backend; populated from the Supabase session. */
   email?: string;
   display_name?: string;
 }

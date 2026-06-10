@@ -228,13 +228,15 @@ func run() int {
 					AppwriteProject: cfg.AppwriteProjectID,
 					AppwriteKey:     cfg.AppwriteAPIKey,
 				})
-				if chainPayer != nil {
-					settler = settlement.NewSettler(db, chainPayer)
-				} else if cfg.Dev {
-					settler = settlement.NewSettler(db, &settlement.DevPayer{})
-				}
 			}
 		}
+	}
+	// Settlement only needs the store + a payer; it must not depend on the
+	// gateway signer being configured (payout works on a bare dev boot too).
+	if chainPayer != nil {
+		settler = settlement.NewSettler(db, chainPayer)
+	} else if cfg.Dev {
+		settler = settlement.NewSettler(db, &settlement.DevPayer{})
 	}
 
 	blobURL := func(key string) string { return "" }
