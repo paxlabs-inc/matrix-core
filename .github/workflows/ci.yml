@@ -194,13 +194,111 @@ jobs:
           exit $failed
 
   # -------------------------------------------------------------------------
+  # Deus control plane — separate job because it pins its own Go toolchain
+  # (go.mod 1.22, go-ethereum) and needs a pgvector Postgres for the handler
+  # test suite (tests skip cleanly when the service is absent locally).
+  # -------------------------------------------------------------------------
+  deus:
+    name: build / deus
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_PASSWORD: ci
+          POSTGRES_DB: deus_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: deus/go.mod
+          cache: true
+          cache-dependency-path: deus/go.sum
+
+      - name: go mod download
+        working-directory: deus
+        run: go mod download
+
+      - name: gofmt
+        working-directory: deus
+        run: |
+          unformatted=$(gofmt -l internal cmd pkg)
+          if [ -n "$unformatted" ]; then
+            echo "::error::gofmt needs to be run on:"
+            echo "$unformatted"
+            exit 1
+          fi
+
+      - name: go vet
+        working-directory: deus
+        run: go vet ./...
+
+      - name: go build
+        working-directory: deus
+        run: go build ./...
+
+      - name: go test (with throwaway Postgres)
+        working-directory: deus
+        env:
+          DEUS_TEST_POSTGRES_URI: postgres://postgres:ci@127.0.0.1:5432/deus_test?sslmode=disable
+        run: go test -count=1 -race -timeout=10m ./...
+
+  # -------------------------------------------------------------------------
+  # Marketplace frontend — typecheck, unit tests, and a production build of
+  # the Cloudflare Workers SSR app. Wrangler runs in offline typegen mode.
+  # -------------------------------------------------------------------------
+  marketplace:
+    name: build / marketplace
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+          cache-dependency-path: marketplace/pnpm-lock.yaml
+
+      - name: install
+        working-directory: marketplace
+        run: pnpm install --frozen-lockfile
+
+      - name: typecheck
+        working-directory: marketplace
+        run: pnpm typecheck
+
+      - name: test
+        working-directory: marketplace
+        run: pnpm test
+
+      - name: build
+        working-directory: marketplace
+        run: pnpm build
+
+  # -------------------------------------------------------------------------
   # Aggregator job — branch protection should require `ci-passed` only.
   # Any added/removed leaf job stays decoupled from the protection rule.
   # -------------------------------------------------------------------------
   ci-passed:
     name: ci-passed
     runs-on: ubuntu-latest
-    needs: [build, replay-invariant, mtx-corpus]
+    needs: [build, replay-invariant, mtx-corpus, deus, marketplace]
     if: always()
     steps:
       - name: aggregate

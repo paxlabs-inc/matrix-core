@@ -19,7 +19,7 @@ import type { Route } from "./+types/service";
 import { getEnv } from "@/lib/env";
 import {
   callerIdentityFor,
-  developerIdentityFor,
+  getDeveloperIdentity,
   getWallet,
   requireUser,
 } from "@/lib/auth.server";
@@ -38,7 +38,7 @@ export async function loader({ request, params, context }: Route.LoaderArgs) {
   const user = await requireUser(request, env);
   const wallet = await getWallet(request, env);
   const deus = createDeusClient(env, {
-    developer: developerIdentityFor(wallet),
+    developer: await getDeveloperIdentity(request, env),
     caller: callerIdentityFor(user, wallet),
   });
   const id = params.id;
@@ -72,7 +72,7 @@ export async function action({ request, params, context }: Route.ActionArgs) {
   const user = await requireUser(request, env);
   const wallet = await getWallet(request, env);
   const deus = createDeusClient(env, {
-    developer: developerIdentityFor(wallet),
+    developer: await getDeveloperIdentity(request, env),
     caller: callerIdentityFor(user, wallet),
   });
   const id = params.id;

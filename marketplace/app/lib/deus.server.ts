@@ -6,6 +6,8 @@ import type {
   DeployServiceResponse,
   DeploymentLogLine,
   DeploymentResponse,
+  DeveloperAuthResponse,
+  DeveloperNonceResponse,
   DiscoverRequest,
   DiscoverResponse,
   EarningsResponse,
@@ -21,6 +23,7 @@ import type {
   SpendResponse,
   UploadArtifactResponse,
 } from "./deus.types";
+import { currentRequestId } from "./request-context.server";
 
 const DEFAULT_BASE = "https://deus.paxeer.app";
 const DEFAULT_TIMEOUT_MS = 15_000;
@@ -37,6 +40,8 @@ export interface CallerIdentity {
 
 export interface DeveloperIdentity {
   wallet?: string;
+  /** SIWE-minted deusd developer token; the production credential. */
+  token?: string;
 }
 
 export interface DeusClientOptions {
@@ -96,6 +101,11 @@ export class DeusClient {
 
   private developerHeaders(): Record<string, string> {
     const h: Record<string, string> = {};
+    // The token is the production credential; deusd derives the wallet from
+    // it. Bare wallet headers remain only for DEUS_DEV=1 backends/mocks.
+    if (this.developer?.token) {
+      h["X-Developer-Token"] = this.developer.token;
+    }
     if (this.developer?.wallet) {
       h["X-Developer-Wallet"] = this.developer.wallet;
       h["X-Developer-Address"] = this.developer.wallet;
@@ -107,10 +117,15 @@ export class DeusClient {
     const url = `${this.baseUrl}${path}`;
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), this.timeoutMs);
+    const headers: Record<string, string> = { ...init.headers };
+    const requestId = currentRequestId();
+    if (requestId && !headers["X-Request-ID"]) {
+      headers["X-Request-ID"] = requestId;
+    }
     try {
       const res = await fetch(url, {
         method: init.method ?? "GET",
-        headers: init.headers,
+        headers,
         body: init.body,
         signal: controller.signal,
       });
@@ -224,6 +239,21 @@ export class DeusClient {
     return this.request<InvokeResponse>(
       `/v1/invoke/${encodeURIComponent(serviceId)}`,
       this.jsonInit("POST", req, headers)
+    );
+  }
+
+  // ─── Developer auth (SIWE) ──────────────────────────────────────────────
+  developerNonce(): Promise<DeveloperNonceResponse> {
+    return this.request<DeveloperNonceResponse>(
+      "/v1/developers/nonce",
+      this.jsonInit("POST", {})
+    );
+  }
+
+  developerAuth(message: string, signature: string): Promise<DeveloperAuthResponse> {
+    return this.request<DeveloperAuthResponse>(
+      "/v1/developers/auth",
+      this.jsonInit("POST", { message, signature })
     );
   }
 

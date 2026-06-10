@@ -7,8 +7,10 @@ import AnimatedTabs from "../../../components/ui/smoothui/animated-tabs";
 import BasicDropdown from "../../../components/ui/smoothui/basic-dropdown";
 import type { Route } from "./+types/new";
 import { getEnv } from "@/lib/env";
-import { developerIdentityFor, getWallet, requireUser } from "@/lib/auth.server";
+import { getDeveloperIdentity, getWallet, requireUser } from "@/lib/auth.server";
 import { createDeusClient, DeusApiError } from "@/lib/deus.server";
+import { listingSchema, operationRowSchema, parseForm } from "@/lib/validate.server";
+import { claimFormToken, mintFormToken } from "@/lib/once.server";
 import { paxToWei } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { Badge, KindBadge } from "@/components/ui";
@@ -53,32 +55,55 @@ export function meta() {
   return [{ title: "New listing · Deus" }];
 }
 
+export async function loader({ request, context }: Route.LoaderArgs) {
+  const env = getEnv(context);
+  await requireUser(request, env);
+  return { formToken: mintFormToken() };
+}
+
 export async function action({ request, context }: Route.ActionArgs) {
   const env = getEnv(context);
   await requireUser(request, env);
   const wallet = await getWallet(request, env);
   const form = await request.formData();
-  const get = (k: string) => String(form.get(k) ?? "").trim();
 
-  const display_name = get("display_name");
-  const slug = get("slug") || slugify(display_name);
-  const kind = get("kind") || "data";
-  const mode = get("mode") || "proxy";
-  const summary = get("summary");
-  const description = get("description");
-  const proxy_url = get("proxy_url");
-  const tags = get("tags").split(",").map((t) => t.trim()).filter(Boolean);
+  // One-shot token: a double-click or browser resubmit must not create
+  // duplicate listings.
+  if (!(await claimFormToken(env, String(form.get("form_token") ?? "")))) {
+    return { error: "This listing was already submitted. Refresh to create another." };
+  }
+
+  const parsed = parseForm(listingSchema, form, [
+    "display_name",
+    "slug",
+    "kind",
+    "mode",
+    "summary",
+    "description",
+    "proxy_url",
+    "tags",
+    "operations_json",
+  ]);
+  if (!parsed.ok) return { error: parsed.error };
+
+  const { display_name, kind, mode, summary, description, proxy_url } = parsed.data;
+  const slug = parsed.data.slug || slugify(display_name);
+  const tags = parsed.data.tags.split(",").map((t) => t.trim()).filter(Boolean);
 
   let rows: OpRow[] = [];
   try {
-    const parsed = JSON.parse(get("operations_json") || "[]");
-    if (Array.isArray(parsed)) rows = parsed as OpRow[];
+    const rawRows = JSON.parse(parsed.data.operations_json || "[]");
+    if (Array.isArray(rawRows)) {
+      rows = rawRows
+        .map((r) => operationRowSchema.safeParse(r))
+        .filter((r) => r.success)
+        .map((r) => r.data);
+    }
   } catch {
     // fall through to validation below
   }
   rows = rows.filter((r) => r && r.name && r.name.trim());
 
-  if (!display_name) return { error: "Give your service a name." };
   if (rows.length === 0) return { error: "Add at least one operation with a name." };
 
   for (const r of rows) {
@@ -122,7 +147,7 @@ export async function action({ request, context }: Route.ActionArgs) {
     ...(mode === "proxy" && proxy_url ? { endpoint: { proxy_url } } : {}),
   };
 
-  const deus = createDeusClient(env, { developer: developerIdentityFor(wallet) });
+  const deus = createDeusClient(env, { developer: await getDeveloperIdentity(request, env) });
   try {
     const res = await deus.createService(manifest);
     if (res.validation && !res.validation.ok) {
@@ -152,7 +177,8 @@ function Field({ label, hint, children }: { label: string; hint?: string; childr
 
 const METHODS = ["POST", "GET", "PUT", "DELETE"];
 
-export default function NewListing({ actionData }: Route.ComponentProps) {
+export default function NewListing({ loaderData, actionData }: Route.ComponentProps) {
+  const { formToken } = loaderData;
   const navigation = useNavigation();
   const submitting = navigation.state !== "idle" && navigation.formMethod === "POST";
 
@@ -202,6 +228,7 @@ export default function NewListing({ actionData }: Route.ComponentProps) {
       <ActionToast message={actionData?.error} type="error" />
 
       <Form method="post" className="grid grid-cols-1 gap-6 lg:grid-cols-[1.6fr_1fr]">
+        <input type="hidden" name="form_token" value={formToken} />
         {/* hidden mirrors of the smoothui-controlled fields */}
         <input type="hidden" name="display_name" value={displayName} />
         <input type="hidden" name="slug" value={effectiveSlug} />

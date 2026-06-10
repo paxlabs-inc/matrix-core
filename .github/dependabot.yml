@@ -90,6 +90,51 @@ updates:
           - minor
           - patch
 
+  - package-ecosystem: gomod
+    directory: /deus
+    schedule:
+      interval: weekly
+      day: monday
+      time: "09:00"
+      timezone: Europe/Amsterdam
+    open-pull-requests-limit: 5
+    labels:
+      - dependencies
+      - go
+      - deus
+    commit-message:
+      prefix: deus
+      include: scope
+    groups:
+      go-deps:
+        applies-to: version-updates
+        update-types:
+          - minor
+          - patch
+
+  # ---- Marketplace frontend (npm/pnpm workspace) --------------------------
+  - package-ecosystem: npm
+    directory: /marketplace
+    schedule:
+      interval: weekly
+      day: monday
+      time: "09:00"
+      timezone: Europe/Amsterdam
+    open-pull-requests-limit: 5
+    labels:
+      - dependencies
+      - javascript
+      - marketplace
+    commit-message:
+      prefix: marketplace
+      include: scope
+    groups:
+      npm-deps:
+        applies-to: version-updates
+        update-types:
+          - minor
+          - patch
+
   # ---- GitHub Actions ----------------------------------------------------
   - package-ecosystem: github-actions
     directory: /

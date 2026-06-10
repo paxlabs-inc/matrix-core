@@ -22,6 +22,9 @@ export default [
 
   // ─── Resource routes (no UI) ────────────────────────────────────────────
   route("api/wallet", "routes/api.wallet.tsx"),
+  route("robots.txt", "routes/robots.tsx"),
+  route("sitemap.xml", "routes/sitemap.tsx"),
+  route("healthz", "routes/healthz.tsx"),
 
   // ─── Authenticated dev dashboard ────────────────────────────────────────
   ...prefix("dashboard", [

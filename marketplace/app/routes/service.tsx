@@ -3,12 +3,15 @@ import type { Route } from "./+types/service";
 import { getEnv } from "@/lib/env";
 import { createDeusClient, DeusApiError } from "@/lib/deus.server";
 import { callerIdentityFor, getUser, getWallet, isDevAuth } from "@/lib/auth.server";
+import { allowRequest, clientKey } from "@/lib/limits.server";
+import { verifyTurnstile } from "@/lib/turnstile.server";
+import { parseForm, tryItSchema } from "@/lib/validate.server";
 import { Badge, KindBadge, SectionHeading, StatusBadge, Stat } from "@/components/ui";
 import { PaxFlow } from "@/components/pax";
 import { TryItPanel } from "@/components/try-it";
 import Breadcrumb from "../../components/ui/smoothui/breadcrumb";
 import BasicAccordion from "../../components/ui/smoothui/basic-accordion";
-import { formatUptime, shortAddress } from "@/lib/format";
+import { formatUptime, shortAddress, weiToPax } from "@/lib/format";
 import type { ManifestOperation } from "@/lib/deus.types";
 
 export function meta({ data }: Route.MetaArgs) {
@@ -17,12 +20,44 @@ export function meta({ data }: Route.MetaArgs) {
   const title = `${s.display_name}Deus`;
   const desc = s.summary;
   const canonical = `${data.origin}/services/${s.slug}`;
+  const priceWei = s.manifest?.pricing?.[0]?.price_wei;
   return [
     { title },
     { name: "description", content: desc },
+    { property: "og:type", content: "website" },
+    { property: "og:site_name", content: "Deus" },
     { property: "og:title", content: title },
     { property: "og:description", content: desc },
+    { property: "og:url", content: canonical },
+    { property: "og:image", content: `${data.origin}/icon.svg` },
+    { name: "twitter:card", content: "summary" },
+    { name: "twitter:title", content: title },
+    { name: "twitter:description", content: desc },
     { tagName: "link", rel: "canonical", href: canonical },
+    {
+      "script:ld+json": {
+        "@context": "https://schema.org",
+        "@type": "Product",
+        name: s.display_name,
+        description: desc,
+        url: canonical,
+        brand: { "@type": "Brand", name: "Deus" },
+        ...(priceWei
+          ? {
+              offers: {
+                "@type": "Offer",
+                priceCurrency: "PAX",
+                price: weiToPax(priceWei),
+                availability:
+                  s.status === "active"
+                    ? "https://schema.org/InStock"
+                    : "https://schema.org/Discontinued",
+                url: canonical,
+              },
+            }
+          : {}),
+      },
+    },
   ];
 }
 
@@ -37,13 +72,15 @@ export async function loader({ request, params, context }: Route.LoaderArgs) {
     if (err instanceof DeusApiError && err.status === 404) {
       throw new Response("Service not found", { status: 404 });
     }
-    throw err;
+    // Backend blip: surface a retryable 503 (branded error page), not a 500.
+    throw new Response("Service temporarily unavailable", { status: 503 });
   }
   const wallet = await getWallet(request, env);
   return {
     service,
     wallet,
     allowDev: isDevAuth(env),
+    turnstileSiteKey: env.TURNSTILE_SITE_KEY || null,
     origin: new URL(request.url).origin,
   };
 }
@@ -55,10 +92,13 @@ export async function action({ request, params, context }: Route.ActionArgs) {
   const deus = createDeusClient(env, { caller: callerIdentityFor(user, wallet) });
   const form = await request.formData();
   const intent = String(form.get("intent") ?? "");
-  const operation = String(form.get("operation") ?? "");
+
+  const parsed = parseForm(tryItSchema, form, ["operation", "units", "args"]);
+  if (!parsed.ok) return { intent, error: parsed.error };
+  const { operation, units: unitCount, args: rawArgs } = parsed.data;
+  const units = String(unitCount);
 
   if (intent === "quote") {
-    const units = String(form.get("units") ?? "1");
     try {
       const quote = await deus.quote(id, { operation, estimated_units: units });
       return { intent, quote };
@@ -69,18 +109,29 @@ export async function action({ request, params, context }: Route.ActionArgs) {
 
   if (intent === "run") {
     if (!wallet) return { intent, error: "Connect a wallet to run this call." };
-    let parsed: Record<string, unknown> = {};
+
+    // Invoke spends real money — rate-limit per wallet (falling back to IP)
+    // and require the bot challenge when Turnstile is provisioned.
+    const limitKey = wallet ?? clientKey(request);
+    if (!(await allowRequest(env.RL_INVOKE, limitKey))) {
+      return { intent, error: "Too many calls. Slow down and try again shortly." };
+    }
+    const captcha = String(form.get("cf-turnstile-response") ?? "") || null;
+    if (!(await verifyTurnstile(env, captcha, clientKey(request)))) {
+      return { intent, error: "Verification failed. Complete the challenge and retry." };
+    }
+
+    let parsedArgs: Record<string, unknown> = {};
     try {
-      parsed = JSON.parse(String(form.get("args") ?? "{}"));
+      parsedArgs = JSON.parse(rawArgs || "{}");
     } catch {
       return { intent, error: "Arguments must be valid JSON." };
     }
-    const units = String(form.get("units") ?? "1") || "1";
     try {
       const quote = await deus.quote(id, { operation, estimated_units: units });
       const result = await deus.invoke(id, {
         operation,
-        args: parsed,
+        args: parsedArgs,
         quote_id: quote.quote_id,
         payment: { rail: "direct" },
         idempotency_key: crypto.randomUUID(),
@@ -100,7 +151,7 @@ function errMsg(err: unknown): string {
 }
 
 export default function ServiceDetail({ loaderData }: Route.ComponentProps) {
-  const { service, wallet, allowDev } = loaderData;
+  const { service, wallet, allowDev, turnstileSiteKey } = loaderData;
   const manifest = service.manifest;
   const operations: ManifestOperation[] = manifest?.operations ?? [];
   const pricing = manifest?.pricing ?? [];
@@ -197,6 +248,15 @@ export default function ServiceDetail({ loaderData }: Route.ComponentProps) {
             <span className="mono">{shortAddress(service.manifest_hash, 8)}</span>
             <span>· integrity-checked manifest</span>
           </div>
+
+          <a
+            href={`mailto:abuse@paxeer.app?subject=${encodeURIComponent(
+              `Report service: ${service.slug}`
+            )}`}
+            className="text-xs text-muted-foreground underline-offset-4 transition-colors hover:text-foreground hover:underline"
+          >
+            Report this service
+          </a>
         </div>
 
         {/* Try it (sticky) */}
@@ -207,6 +267,7 @@ export default function ServiceDetail({ loaderData }: Route.ComponentProps) {
               pricing={pricing}
               wallet={wallet}
               allowDev={allowDev}
+              turnstileSiteKey={turnstileSiteKey}
             />
           </div>
         </div>

@@ -3,7 +3,7 @@ import { Boxes, Plus } from "lucide-react";
 import SmoothButton from "@repo/smoothui/components/smooth-button";
 import type { Route } from "./+types/index";
 import { getEnv } from "@/lib/env";
-import { callerIdentityFor, developerIdentityFor, getWallet, requireUser } from "@/lib/auth.server";
+import { callerIdentityFor, getDeveloperIdentity, getWallet, requireUser } from "@/lib/auth.server";
 import { createDeusClient } from "@/lib/deus.server";
 import type { MyService } from "@/lib/deus.types";
 import { formatUptime } from "@/lib/format";
@@ -15,7 +15,7 @@ export async function loader({ request, context }: Route.LoaderArgs) {
   const user = await requireUser(request, env);
   const wallet = await getWallet(request, env);
   const deus = createDeusClient(env, {
-    developer: developerIdentityFor(wallet),
+    developer: await getDeveloperIdentity(request, env),
     caller: callerIdentityFor(user, wallet),
   });
   const services = await deus.myServices();

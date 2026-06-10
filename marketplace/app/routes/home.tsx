@@ -3,6 +3,7 @@ import { Search, Sparkles, Boxes, Wallet, ArrowRight } from "lucide-react";
 import type { Route } from "./+types/home";
 import { getEnv } from "@/lib/env";
 import { createDeusClient } from "@/lib/deus.server";
+import { cachedJson } from "@/lib/cache.server";
 import { ServiceCard, toCardModel } from "@/components/service-card";
 import { SectionHeading, Surface } from "@/components/ui";
 import { SearchDock } from "@/components/search-dock";
@@ -24,9 +25,12 @@ export function meta(_: Route.MetaArgs) {
 const EXAMPLES = ["weather forecast", "translate text", "image recognition", "market data"];
 
 export async function loader({ context }: Route.LoaderArgs) {
-  const deus = createDeusClient(getEnv(context));
+  const env = getEnv(context);
+  const deus = createDeusClient(env);
   try {
-    const cat = await deus.catalog({ limit: 24 });
+    // Hot path on every home view — served from the KV data cache (60s TTL,
+    // stale-on-error) so the Go backend sees a trickle, not the full fanout.
+    const cat = await cachedJson(env, "home:catalog:24", 60, () => deus.catalog({ limit: 24 }));
     const featured = cat.services.slice(0, 6).map(toCardModel);
     const dataCount = cat.services.filter((s) => s.kind === "data").length;
     const agentCount = cat.services.filter((s) => s.kind === "agent").length;

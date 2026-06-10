@@ -5,7 +5,7 @@ import type { Route } from "./+types/account";
 import { getEnv } from "@/lib/env";
 import {
   callerIdentityFor,
-  developerIdentityFor,
+  getDeveloperIdentity,
   getWallet,
   isDevAuth,
   requireUser,
@@ -24,7 +24,7 @@ export async function loader({ request, context }: Route.LoaderArgs) {
   const user = await requireUser(request, env);
   const wallet = await getWallet(request, env);
   const deus = createDeusClient(env, {
-    developer: developerIdentityFor(wallet),
+    developer: await getDeveloperIdentity(request, env),
     caller: callerIdentityFor(user, wallet),
   });
   const [me, spend] = await Promise.all([deus.me(), deus.spend()]);

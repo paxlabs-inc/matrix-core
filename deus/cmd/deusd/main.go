@@ -256,6 +256,9 @@ func run() int {
 		BlobURL:           blobURL,
 		DevMode:           cfg.Dev,
 		PublishPrivateKey: cfg.PublishPrivateKey,
+
+		DeveloperAuthSecret: cfg.DeveloperAuthSecret,
+		SIWEDomain:          cfg.SIWEDomain,
 	})
 
 	addr := fmt.Sprintf(":%d", cfg.Port)

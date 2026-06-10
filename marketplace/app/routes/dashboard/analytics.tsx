@@ -4,7 +4,7 @@ import { ArrowLeft } from "lucide-react";
 import AnimatedTabs from "../../../components/ui/smoothui/animated-tabs";
 import type { Route } from "./+types/analytics";
 import { getEnv } from "@/lib/env";
-import { developerIdentityFor, getWallet, requireUser } from "@/lib/auth.server";
+import { getDeveloperIdentity, getWallet, requireUser } from "@/lib/auth.server";
 import { createDeusClient } from "@/lib/deus.server";
 import type { AnalyticsPoint } from "@/lib/deus.types";
 import { formatCount, formatPax, formatUptime, weiToPax } from "@/lib/format";
@@ -15,7 +15,7 @@ export async function loader({ request, params, context }: Route.LoaderArgs) {
   const env = getEnv(context);
   await requireUser(request, env);
   const wallet = await getWallet(request, env);
-  const deus = createDeusClient(env, { developer: developerIdentityFor(wallet) });
+  const deus = createDeusClient(env, { developer: await getDeveloperIdentity(request, env) });
   const id = params.id;
   const [analytics, service] = await Promise.all([deus.analytics(id), deus.getService(id)]);
   return { analytics, service };

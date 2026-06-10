@@ -21,7 +21,7 @@ func (s *Server) mountDashboardRoutes(r chi.Router) {
 		r.Get("/", s.handleMe)
 		r.Get("/spend", s.handleMySpend)
 		r.Group(func(r chi.Router) {
-			r.Use(DevDeveloperAuth(s.deps.DevMode))
+			r.Use(s.requireDeveloperAuth())
 			r.Get("/services", s.handleMyServices)
 			r.Get("/earnings", s.handleMyEarnings)
 		})
@@ -202,10 +202,7 @@ func (s *Server) handleServicePayout(w http.ResponseWriter, r *http.Request) {
 
 func (s *Server) handleMe(w http.ResponseWriter, r *http.Request) {
 	caller, callerErr := auth.ResolveRequest(r, s.deps.DevMode)
-	devWallet := strings.TrimSpace(r.Header.Get("X-Developer-Wallet"))
-	if devWallet == "" && s.deps.DevMode {
-		devWallet = strings.TrimSpace(r.Header.Get("X-Developer-Address"))
-	}
+	devWallet, _ := resolveDeveloperWallet(r, s.deps.DevMode, s.devAuth)
 	if callerErr != nil && devWallet == "" {
 		writeAPIError(w, http.StatusUnauthorized, "unauthorized", "caller or developer identity required", nil)
 		return

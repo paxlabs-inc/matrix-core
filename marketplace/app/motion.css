@@ -1,0 +1,14 @@
+/* Reduced-motion guard: collapse CSS animations/transitions for users who
+ * ask for it. JS-driven animation (motion/gsap) is additionally tamed via
+ * <MotionConfig reducedMotion="user"> in root.tsx. */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

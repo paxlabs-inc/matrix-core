@@ -129,11 +129,23 @@ export default function Discover({ loaderData }: Route.ComponentProps) {
         </div>
       </Form>
 
-      <p className="mt-8 body-sm text-muted-foreground">
+      <p className="mt-8 body-sm text-muted-foreground" role="status">
         {results.length} {results.length === 1 ? "service" : "services"} found
       </p>
 
-      {results.length > 0 ? (
+      {loaderData.failed ? (
+        <EmptyState
+          className="mt-4"
+          icon={<Activity className="size-6" />}
+          title="Search is temporarily unavailable"
+          description="The marketplace backend isn't responding. Give it a few seconds and try again."
+          action={
+            <Link to={`/discover?q=${encodeURIComponent(loaderData.q)}`}>
+              <SmoothButton variant="secondary" size="sm">Retry</SmoothButton>
+            </Link>
+          }
+        />
+      ) : results.length > 0 ? (
         <div className="mt-4 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {results.map((r) => (
             <ServiceCard key={r.id} service={toCardModel(r)} />

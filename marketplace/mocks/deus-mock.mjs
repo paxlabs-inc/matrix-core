@@ -230,6 +230,29 @@ const server = createServer(async (req, res) => {
       return send(200, { ok: true, postgres: true, chain: true, version: "mock-1.0" });
     }
 
+    // Developer auth (SIWE) — mirrors deus/internal/server/devauth.go. The
+    // mock skips real signature recovery and trusts the message's address
+    // line (line 2 of the EIP-4361 layout).
+    if (path === "/v1/developers/nonce" && method === "POST") {
+      return send(200, {
+        nonce: "mock-nonce-" + randomHex(12),
+        expires_at: new Date(Date.now() + 5 * 60_000).toISOString(),
+      });
+    }
+    if (path === "/v1/developers/auth" && method === "POST") {
+      const body = await readJson(req);
+      const lines = String(body.message || "").split("\n");
+      const wallet = (lines[1] || "").trim().toLowerCase();
+      if (!/^0x[0-9a-f]{40}$/.test(wallet) || !body.signature) {
+        return err(401, "unauthorized", "invalid siwe message");
+      }
+      return send(200, {
+        wallet,
+        token: "mock-dev-token-" + randomHex(12),
+        expires_at: new Date(Date.now() + 24 * 3600_000).toISOString(),
+      });
+    }
+
     if (path === "/v1/discover" && method === "POST") {
       const body = await readJson(req);
       return send(200, runDiscover(body.query || "", body.filters || {}, body.limit || 24));

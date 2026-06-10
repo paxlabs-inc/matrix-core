@@ -5,6 +5,7 @@ import SmoothButton from "@repo/smoothui/components/smooth-button";
 import AnimatedTabs from "../../components/ui/smoothui/animated-tabs";
 import NumberFlow from "../../components/ui/smoothui/number-flow";
 import { WalletButton } from "@/components/wallet";
+import { TurnstileWidget } from "@/components/turnstile";
 import { Badge, Spinner } from "@/components/ui";
 import { ActionToast } from "@/components/feedback";
 import { PaxFlow } from "@/components/pax";
@@ -37,11 +38,13 @@ export function TryItPanel({
   pricing,
   wallet,
   allowDev,
+  turnstileSiteKey = null,
 }: {
   operations: ManifestOperation[];
   pricing: ManifestPricing[];
   wallet: string | null;
   allowDev: boolean;
+  turnstileSiteKey?: string | null;
 }) {
   const [op, setOp] = useState(operations[0]?.name ?? "");
   const [units, setUnits] = useState(1);
@@ -123,6 +126,7 @@ export function TryItPanel({
         <input type="hidden" name="operation" value={op} />
         <input type="hidden" name="units" value={units} />
         <input type="hidden" name="args" value={args} />
+        {wallet ? <TurnstileWidget siteKey={turnstileSiteKey} /> : null}
         {wallet ? (
           <SmoothButton type="submit" variant="default" size="lg" disabled={running}>
             {running ? <Spinner /> : <Play className="size-4" />}

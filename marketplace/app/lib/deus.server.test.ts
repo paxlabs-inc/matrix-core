@@ -311,4 +311,61 @@ describe("auth header injection", () => {
     await c.createService({ slug: "s" });
     expect(seen["X-Developer-Wallet"]).toBe("0xdev");
   });
+
+  it("attaches the SIWE developer token when present", async () => {
+    let seen: Record<string, string> = {};
+    mockFetch((_url, init) => {
+      seen = init.headers ?? {};
+      return json({ services: [] });
+    });
+    const c = new DeusClient({
+      baseUrl: "https://api.test",
+      developer: { wallet: "0xdev", token: "tok.abc" },
+    });
+    await c.myServices();
+    expect(seen["X-Developer-Token"]).toBe("tok.abc");
+    expect(seen["X-Developer-Wallet"]).toBe("0xdev");
+  });
+});
+
+describe("developer auth (SIWE) endpoints", () => {
+  it("developerNonce POSTs /v1/developers/nonce", async () => {
+    mockFetch((url, init) => {
+      expect(url).toBe("https://api.test/v1/developers/nonce");
+      expect(init.method).toBe("POST");
+      return json({ nonce: "n1", expires_at: "2026-06-10T00:05:00Z" });
+    });
+    const c = new DeusClient({ baseUrl: "https://api.test" });
+    const r = await c.developerNonce();
+    expect(r.nonce).toBe("n1");
+  });
+
+  it("developerAuth POSTs message + signature and parses the token grant", async () => {
+    mockFetch((url, init) => {
+      expect(url).toBe("https://api.test/v1/developers/auth");
+      const body = JSON.parse(String(init.body));
+      expect(body.message).toContain("wants you to sign in");
+      expect(body.signature).toMatch(/^0x/);
+      return json({
+        wallet: "0xabc0000000000000000000000000000000000abc",
+        token: "tok.signed",
+        expires_at: "2026-06-11T00:00:00Z",
+      });
+    });
+    const c = new DeusClient({ baseUrl: "https://api.test" });
+    const r = await c.developerAuth(
+      "market.example wants you to sign in with your Ethereum account:\n0xabc0000000000000000000000000000000000abc\n\nNonce: n1",
+      "0xdeadbeef"
+    );
+    expect(r.token).toBe("tok.signed");
+  });
+
+  it("developerAuth surfaces a 401 as DeusApiError", async () => {
+    mockFetch(() => json({ error: "unauthorized", message: "signature does not match account" }, 401));
+    const c = new DeusClient({ baseUrl: "https://api.test" });
+    await expect(c.developerAuth("bad", "0x00")).rejects.toMatchObject({
+      status: 401,
+      code: "unauthorized",
+    });
+  });
 });

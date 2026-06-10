@@ -36,6 +36,12 @@ type Config struct {
 	GatewaySigningKey string
 	SettlerPrivateKey string
 
+	// DeveloperAuthSecret keys SIWE developer-auth nonces and tokens.
+	// Falls back to GatewaySigningKey so existing prod deploys stay valid.
+	DeveloperAuthSecret string
+	// SIWEDomain pins the EIP-4361 message domain (marketplace host). Optional.
+	SIWEDomain string
+
 	AppwriteEndpoint  string
 	AppwriteProjectID string
 	AppwriteAPIKey    string
@@ -75,6 +81,9 @@ func Load() (*Config, error) {
 		GatewaySigningKey: strings.TrimSpace(os.Getenv("DEUS_GATEWAY_SIGNING_KEY")),
 		SettlerPrivateKey: strings.TrimSpace(os.Getenv("DEUS_SETTLER_PRIVATE_KEY")),
 
+		DeveloperAuthSecret: strings.TrimSpace(os.Getenv("DEUS_DEVELOPER_AUTH_SECRET")),
+		SIWEDomain:          strings.TrimSpace(os.Getenv("DEUS_SIWE_DOMAIN")),
+
 		AppwriteEndpoint:  strings.TrimSpace(os.Getenv("DEUS_APPWRITE_ENDPOINT")),
 		AppwriteProjectID: strings.TrimSpace(os.Getenv("DEUS_APPWRITE_PROJECT_ID")),
 		AppwriteAPIKey:    strings.TrimSpace(os.Getenv("DEUS_APPWRITE_API_KEY")),
@@ -106,6 +115,9 @@ func Load() (*Config, error) {
 	}
 	if cfg.Port < 1 || cfg.Port > 65535 {
 		return nil, fmt.Errorf("config: DEUS_PORT out of range: %d", cfg.Port)
+	}
+	if cfg.DeveloperAuthSecret == "" {
+		cfg.DeveloperAuthSecret = cfg.GatewaySigningKey
 	}
 	return cfg, nil
 }

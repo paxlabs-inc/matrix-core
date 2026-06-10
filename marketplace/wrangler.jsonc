@@ -15,14 +15,68 @@
   // Non-sensitive only. Secrets (Supabase service key, signing keys) go via
   // `wrangler secret put` / dashboard — NEVER here and never in the bundle.
   "vars": {
-    "DEUS_API_URL": "https://deus.paxeer.app"
+    "DEUS_API_URL": "https://deus.paxeer.app",
+    "ENVIRONMENT": "development",
+    // Public widget key; pair secret goes via `wrangler secret put
+    // TURNSTILE_SECRET_KEY`. Empty disables Turnstile (dev default).
+    "TURNSTILE_SITE_KEY": ""
+  },
+  // KV namespaces (provisioned per OPS_RUNBOOK.md; code falls back gracefully
+  // when absent, so these stay commented until the namespaces exist):
+  //   SESSIONS_KV — server-side session store (rotation + revocation)
+  //   CACHE_KV    — short-TTL data cache for hot Deus reads
+  // "kv_namespaces": [
+  //   { "binding": "SESSIONS_KV", "id": "<wrangler kv namespace create marketplace-sessions>" },
+  //   { "binding": "CACHE_KV", "id": "<wrangler kv namespace create marketplace-cache>" }
+  // ],
+  // Workers Rate Limiting (per-PoP sliding window). Optional everywhere in
+  // code: absent bindings no-op, so local dev/tests run unchanged.
+  "unsafe": {
+    "bindings": [
+      { "type": "ratelimit", "name": "RL_LOGIN", "namespace_id": "1101", "simple": { "limit": 10, "period": 60 } },
+      { "type": "ratelimit", "name": "RL_WALLET", "namespace_id": "1102", "simple": { "limit": 20, "period": 60 } },
+      { "type": "ratelimit", "name": "RL_INVOKE", "namespace_id": "1103", "simple": { "limit": 60, "period": 60 } }
+    ]
   },
   // Per-environment overrides. Production caps CPU to bound runaway SSR cost
   // and downsamples logs; local `vite dev` uses the permissive top-level env.
   "env": {
-    "production": {
+    // Staging mirrors production behavior (CSP on, dev auth off) on an
+    // isolated worker. Provision separate KV namespaces + secrets for it.
+    "staging": {
+      "name": "deus-marketplace-staging",
       "vars": {
-        "DEUS_API_URL": "https://deus.paxeer.app"
+        "DEUS_API_URL": "https://deus.paxeer.app",
+        "ENVIRONMENT": "staging",
+        "TURNSTILE_SITE_KEY": ""
+      },
+      "limits": {
+        "cpu_ms": 200
+      },
+      "observability": {
+        "enabled": true,
+        "head_sampling_rate": 1
+      }
+    },
+    "production": {
+      // Never expose this worker on workers.dev in production; traffic comes
+      // through the custom domain only.
+      "workers_dev": false,
+      "vars": {
+        "DEUS_API_URL": "https://deus.paxeer.app",
+        "ENVIRONMENT": "production",
+        "TURNSTILE_SITE_KEY": ""
+      },
+      // "kv_namespaces": [
+      //   { "binding": "SESSIONS_KV", "id": "<prod namespace id>" },
+      //   { "binding": "CACHE_KV", "id": "<prod namespace id>" }
+      // ],
+      "unsafe": {
+        "bindings": [
+          { "type": "ratelimit", "name": "RL_LOGIN", "namespace_id": "1101", "simple": { "limit": 10, "period": 60 } },
+          { "type": "ratelimit", "name": "RL_WALLET", "namespace_id": "1102", "simple": { "limit": 20, "period": 60 } },
+          { "type": "ratelimit", "name": "RL_INVOKE", "namespace_id": "1103", "simple": { "limit": 60, "period": 60 } }
+        ]
       },
       "limits": {
         "cpu_ms": 200

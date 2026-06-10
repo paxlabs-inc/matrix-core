@@ -1,18 +1,25 @@
 import { useState } from "react";
-import { Form, Link, redirect } from "react-router";
+import { data, Form, Link, redirect } from "react-router";
 import SmoothButton from "@repo/smoothui/components/smooth-button";
 import AnimatedInput from "../../components/ui/smoothui/animated-input";
 import { ActionToast } from "@/components/feedback";
 import type { Route } from "./+types/login";
 import { getEnv } from "@/lib/env";
 import {
+  commitPkceVerifier,
   commitSession,
   devLoginUser,
+  generatePkce,
   getSession,
   getUser,
   isDevAuth,
   oauthAuthorizeUrl,
+  rotateSession,
 } from "@/lib/auth.server";
+import { allowRequest, clientKey } from "@/lib/limits.server";
+import { emailSchema } from "@/lib/validate.server";
+import { verifyTurnstile } from "@/lib/turnstile.server";
+import { TurnstileWidget } from "@/components/turnstile";
 
 /** Only allow same-site relative redirects to avoid open-redirect abuse. */
 function safeNext(value: string | null | undefined): string {
@@ -24,6 +31,11 @@ export function meta() {
   return [{ title: "Sign in · Deus" }];
 }
 
+/** Carries the PKCE cookie — never cacheable. */
+export function headers() {
+  return { "Cache-Control": "private, no-store" };
+}
+
 export async function loader({ request, context }: Route.LoaderArgs) {
   const env = getEnv(context);
   const url = new URL(request.url);
@@ -32,30 +44,54 @@ export async function loader({ request, context }: Route.LoaderArgs) {
   const user = await getUser(request, env);
   if (user) throw redirect(next);
 
+  // PKCE: the S256 challenge rides the authorize URL; the verifier stays in a
+  // short-lived signed cookie until the /auth/callback code exchange.
   const callback = `${url.origin}/auth/callback?next=${encodeURIComponent(next)}`;
-  return {
-    isDev: isDevAuth(env),
-    next,
-    oauth: {
-      google: oauthAuthorizeUrl(env, "google", callback),
-      github: oauthAuthorizeUrl(env, "github", callback),
+  const pkce = await generatePkce();
+  return data(
+    {
+      isDev: isDevAuth(env),
+      next,
+      turnstileSiteKey: env.TURNSTILE_SITE_KEY || null,
+      oauth: {
+        google: oauthAuthorizeUrl(env, "google", callback, pkce.challenge),
+        github: oauthAuthorizeUrl(env, "github", callback, pkce.challenge),
+      },
     },
-  };
+    { headers: { "Set-Cookie": await commitPkceVerifier(env, pkce.verifier) } }
+  );
 }
 
 export async function action({ request, context }: Route.ActionArgs) {
   const env = getEnv(context);
+
+  // The dev email login is an explicit local-only backdoor. Without this
+  // gate a direct POST /login would sign in as anyone, even in production.
+  if (!isDevAuth(env)) {
+    throw new Response("Not Found", { status: 404 });
+  }
+
+  const ip = clientKey(request);
+  if (!(await allowRequest(env.RL_LOGIN, ip))) {
+    return { error: "Too many sign-in attempts. Try again in a minute." };
+  }
+
   const url = new URL(request.url);
   const form = await request.formData();
-  const next = safeNext((form.get("next") as string) || url.searchParams.get("next"));
-  const email = String(form.get("email") ?? "").trim();
 
-  if (!email || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
+  const captcha = String(form.get("cf-turnstile-response") ?? "") || null;
+  if (!(await verifyTurnstile(env, captcha, ip))) {
+    return { error: "Verification failed. Please complete the challenge and retry." };
+  }
+
+  const next = safeNext((form.get("next") as string) || url.searchParams.get("next"));
+  const parsedEmail = emailSchema.safeParse(String(form.get("email") ?? ""));
+  if (!parsedEmail.success) {
     return { error: "Enter a valid email address to continue." };
   }
 
-  const user = devLoginUser(email);
-  const session = await getSession(request, env);
+  const user = devLoginUser(parsedEmail.data);
+  const session = await rotateSession(env, await getSession(request, env));
   session.set("user", JSON.stringify(user));
   return redirect(next, {
     headers: { "Set-Cookie": await commitSession(env, session) },
@@ -82,7 +118,7 @@ function GithubMark() {
 }
 
 export default function Login({ loaderData, actionData }: Route.ComponentProps) {
-  const { isDev, oauth, next } = loaderData;
+  const { isDev, oauth, next, turnstileSiteKey } = loaderData;
   const [email, setEmail] = useState("");
 
   return (
@@ -133,6 +169,7 @@ export default function Login({ loaderData, actionData }: Route.ComponentProps) 
                   onChange={setEmail}
                   placeholder="you@studio.dev"
                 />
+                <TurnstileWidget siteKey={turnstileSiteKey} />
                 <ActionToast message={actionData?.error} type="error" />
                 <SmoothButton type="submit" size="lg" className="w-full justify-center">
                   Continue

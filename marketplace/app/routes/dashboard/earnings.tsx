@@ -1,17 +1,19 @@
-import { Form } from "react-router";
+import { Form, useNavigation } from "react-router";
 import { ArrowDownToLine } from "lucide-react";
 import SmoothButton from "@repo/smoothui/components/smooth-button";
 import type { Route } from "./+types/earnings";
 import { getEnv } from "@/lib/env";
 import {
   callerIdentityFor,
-  developerIdentityFor,
+  getDeveloperIdentity,
   getWallet,
   requireUser,
 } from "@/lib/auth.server";
 import { createDeusClient, DeusApiError } from "@/lib/deus.server";
+import { evmAddressSchema } from "@/lib/validate.server";
+import { claimFormToken, mintFormToken } from "@/lib/once.server";
 import { formatDate, shortAddress } from "@/lib/format";
-import { CopyChip, EmptyState, StatusBadge, Surface } from "@/components/ui";
+import { CopyChip, EmptyState, Spinner, StatusBadge, Surface } from "@/components/ui";
 import { ActionToast } from "@/components/feedback";
 import { PaxFlow } from "@/components/pax";
 
@@ -23,9 +25,9 @@ export async function loader({ request, context }: Route.LoaderArgs) {
   const env = getEnv(context);
   await requireUser(request, env);
   const wallet = await getWallet(request, env);
-  const deus = createDeusClient(env, { developer: developerIdentityFor(wallet) });
+  const deus = createDeusClient(env, { developer: await getDeveloperIdentity(request, env) });
   const earnings = await deus.earnings();
-  return { earnings };
+  return { earnings, formToken: mintFormToken() };
 }
 
 export async function action({ request, context }: Route.ActionArgs) {
@@ -33,13 +35,23 @@ export async function action({ request, context }: Route.ActionArgs) {
   const user = await requireUser(request, env);
   const wallet = await getWallet(request, env);
   const deus = createDeusClient(env, {
-    developer: developerIdentityFor(wallet),
+    developer: await getDeveloperIdentity(request, env),
     caller: callerIdentityFor(user, wallet),
   });
   const form = await request.formData();
+
+  // Payout moves money: claim the one-shot token to defeat double submits
+  // and browser form-resubmission replays.
+  if (!(await claimFormToken(env, String(form.get("form_token") ?? "")))) {
+    return { error: "This payout request was already submitted. Refresh to retry." };
+  }
+
   const payoutAddress = String(form.get("payout_address") ?? "").trim() || wallet || "";
 
   if (!payoutAddress) return { error: "Connect a wallet to receive payouts." };
+  if (!evmAddressSchema.safeParse(payoutAddress).success) {
+    return { error: "Payout address must be a valid EVM address." };
+  }
   try {
     const mine = await deus.myServices();
     if (mine.length === 0) return { error: "You have no services to settle yet." };
@@ -52,7 +64,9 @@ export async function action({ request, context }: Route.ActionArgs) {
 }
 
 export default function Earnings({ loaderData, actionData }: Route.ComponentProps) {
-  const { earnings } = loaderData;
+  const { earnings, formToken } = loaderData;
+  const navigation = useNavigation();
+  const submitting = navigation.state !== "idle" && navigation.formMethod === "POST";
 
   return (
     <div className="flex flex-col gap-8">
@@ -98,12 +112,13 @@ export default function Earnings({ loaderData, actionData }: Route.ComponentProp
             )}
           </div>
           <Form method="post">
+            <input type="hidden" name="form_token" value={formToken} />
             {earnings.payout_address ? (
               <input type="hidden" name="payout_address" value={earnings.payout_address} />
             ) : null}
-            <SmoothButton type="submit">
-              <ArrowDownToLine className="size-4" />
-              Request payout
+            <SmoothButton type="submit" disabled={submitting}>
+              {submitting ? <Spinner className="size-4" /> : <ArrowDownToLine className="size-4" />}
+              {submitting ? "Requesting…" : "Request payout"}
             </SmoothButton>
           </Form>
         </div>

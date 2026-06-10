@@ -12,6 +12,11 @@ export interface DashboardOutletContext {
   allowDev: boolean;
 }
 
+/** Per-user content: keep it out of every shared cache. */
+export function headers() {
+  return { "Cache-Control": "private, no-store" };
+}
+
 export function meta() {
   return [{ title: "Dashboard · Deus" }];
 }

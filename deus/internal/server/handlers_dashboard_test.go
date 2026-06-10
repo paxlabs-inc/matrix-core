@@ -123,9 +123,10 @@ func newFixture(t *testing.T) *fixture {
 	}
 
 	s := New(Deps{
-		Store:   st,
-		Settler: settlement.NewSettler(st, &settlement.DevPayer{}),
-		DevMode: true,
+		Store:               st,
+		Settler:             settlement.NewSettler(st, &settlement.DevPayer{}),
+		DevMode:             true,
+		DeveloperAuthSecret: "test-developer-auth-secret",
 	})
 	f.srv = httptest.NewServer(s.Handler())
 	t.Cleanup(f.srv.Close)

@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { useFetcher } from "react-router";
 import { Wallet, X } from "lucide-react";
 import SmoothButton from "@repo/smoothui/components/smooth-button";
@@ -27,29 +28,69 @@ export function WalletButton({
   className?: string;
 }) {
   const fetcher = useFetcher();
-  const busy = fetcher.state !== "idle";
+  const [signing, setSigning] = useState(false);
+  const busy = fetcher.state !== "idle" || signing;
+
+  const serverError = (fetcher.data as { error?: string } | undefined)?.error;
+  useEffect(() => {
+    if (serverError) alert(serverError);
+  }, [serverError]);
 
   async function connect() {
-    let address: string | undefined;
-    if (typeof window !== "undefined" && window.ethereum) {
-      try {
-        const accounts = (await window.ethereum.request({
-          method: "eth_requestAccounts",
-        })) as string[];
-        address = accounts?.[0];
-      } catch {
-        address = undefined;
+    const provider = typeof window !== "undefined" ? window.ethereum : undefined;
+
+    if (!provider) {
+      if (allowDev) {
+        // Local-dev fallback (no signature, server-gated to dev auth only).
+        fetcher.submit(
+          { intent: "dev-link", address: DEV_WALLET },
+          { method: "post", action: "/api/wallet" }
+        );
+        return;
       }
-    }
-    if (!address && allowDev) address = DEV_WALLET;
-    if (!address) {
       alert("No EVM wallet detected. Install a wallet extension to connect.");
       return;
     }
-    fetcher.submit(
-      { intent: "link", address },
-      { method: "post", action: "/api/wallet" }
-    );
+
+    setSigning(true);
+    try {
+      const accounts = (await provider.request({
+        method: "eth_requestAccounts",
+      })) as string[];
+      const address = accounts?.[0];
+      if (!address) return;
+
+      // 1. Ask the server for the SIWE message (it fetches a deusd nonce).
+      const prepareBody = new URLSearchParams({ intent: "prepare", address });
+      const prepared = (await (
+        await fetch("/api/wallet", { method: "POST", body: prepareBody })
+      ).json()) as { message?: string; error?: string };
+      if (!prepared.message) {
+        alert(prepared.error ?? "Wallet linking is unavailable right now.");
+        return;
+      }
+
+      // 2. personal_sign the message (hex-encoded per EIP-191 conventions).
+      const hexMessage =
+        "0x" +
+        Array.from(new TextEncoder().encode(prepared.message))
+          .map((b) => b.toString(16).padStart(2, "0"))
+          .join("");
+      const signature = (await provider.request({
+        method: "personal_sign",
+        params: [hexMessage, address],
+      })) as string;
+
+      // 3. Server forwards to deusd, which recovers + verifies the signer.
+      fetcher.submit(
+        { intent: "link", message: prepared.message, signature },
+        { method: "post", action: "/api/wallet" }
+      );
+    } catch {
+      // User rejected the wallet prompt or the provider errored; no-op.
+    } finally {
+      setSigning(false);
+    }
   }
 
   function disconnect() {

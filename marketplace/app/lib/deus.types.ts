@@ -338,3 +338,16 @@ export interface SpendResponse {
 }
 
 export type ServiceStatus = "draft" | "active" | "paused" | "delisted";
+
+// ─── Developer auth (SIWE, EIP-4361) ────────────────────────────────────────
+
+export interface DeveloperNonceResponse {
+  nonce: string;
+  expires_at: string;
+}
+
+export interface DeveloperAuthResponse {
+  wallet: string;
+  token: string;
+  expires_at: string;
+}

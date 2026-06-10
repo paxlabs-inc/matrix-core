@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"strings"
 )
@@ -16,20 +17,44 @@ func DeveloperWalletFromContext(ctx context.Context) string {
 	return v
 }
 
-// DevDeveloperAuth resolves developer identity for Phase 1.
-// Production uses wallet-signed requests (docs/05-api.md §5.1).
-func DevDeveloperAuth(devMode bool) func(http.Handler) http.Handler {
+// resolveDeveloperWallet authenticates the developer identity on a request.
+// A verified X-Developer-Token (minted by the SIWE flow in devauth.go) always
+// wins. The bare X-Developer-Wallet / X-Developer-Address headers are pure
+// trust-me assertions and are honored ONLY in dev mode (DEUS_DEV=1) — in
+// production they previously let anyone act as any developer.
+func resolveDeveloperWallet(r *http.Request, devMode bool, verifier *DeveloperAuth) (string, error) {
+	if token := strings.TrimSpace(r.Header.Get("X-Developer-Token")); token != "" {
+		if verifier == nil {
+			return "", errors.New("developer auth not configured")
+		}
+		wallet, err := verifier.VerifyToken(token)
+		if err != nil {
+			return "", err
+		}
+		return strings.ToLower(wallet), nil
+	}
+	if devMode {
+		wallet := strings.TrimSpace(r.Header.Get("X-Developer-Wallet"))
+		if wallet == "" {
+			wallet = strings.TrimSpace(r.Header.Get("X-Developer-Address"))
+		}
+		if wallet != "" {
+			return strings.ToLower(wallet), nil
+		}
+	}
+	return "", errors.New("developer authentication required")
+}
+
+// requireDeveloperAuth guards owner-scoped routes.
+func (s *Server) requireDeveloperAuth() func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			wallet := strings.TrimSpace(r.Header.Get("X-Developer-Wallet"))
-			if wallet == "" && devMode {
-				wallet = strings.TrimSpace(r.Header.Get("X-Developer-Address"))
-			}
-			if wallet == "" {
-				writeAPIError(w, http.StatusUnauthorized, "unauthorized", "developer wallet required", nil)
+			wallet, err := resolveDeveloperWallet(r, s.deps.DevMode, s.devAuth)
+			if err != nil {
+				writeAPIError(w, http.StatusUnauthorized, "unauthorized", err.Error(), nil)
 				return
 			}
-			ctx := context.WithValue(r.Context(), developerWalletKey, strings.ToLower(wallet))
+			ctx := context.WithValue(r.Context(), developerWalletKey, wallet)
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}

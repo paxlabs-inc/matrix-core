@@ -3,6 +3,7 @@ import { Boxes } from "lucide-react";
 import type { Route } from "./+types/catalog";
 import { getEnv } from "@/lib/env";
 import { createDeusClient } from "@/lib/deus.server";
+import { cachedJson } from "@/lib/cache.server";
 import { ServiceCard, toCardModel } from "@/components/service-card";
 import { EmptyState, SectionHeading } from "@/components/ui";
 import SmoothButton from "@repo/smoothui/components/smooth-button";
@@ -23,14 +24,17 @@ export async function loader({ request, context }: Route.LoaderArgs) {
   const deus = createDeusClient(env);
   try {
     // Real Go endpoint paginates by limit/offset ({services,total,limit,offset}).
-    const cat = await deus.catalog({
-      limit: PAGE_SIZE,
-      offset: (page - 1) * PAGE_SIZE,
-      kind: kind || undefined,
-    });
-    return { items: cat.services, total: cat.total, page, kind };
+    // KV data cache (60s, stale-on-error) keyed per page+kind variant.
+    const cat = await cachedJson(env, `catalog:${page}:${kind}`, 60, () =>
+      deus.catalog({
+        limit: PAGE_SIZE,
+        offset: (page - 1) * PAGE_SIZE,
+        kind: kind || undefined,
+      })
+    );
+    return { items: cat.services, total: cat.total, page, kind, failed: false };
   } catch {
-    return { items: [], total: 0, page, kind };
+    return { items: [], total: 0, page, kind, failed: true };
   }
 }
 
@@ -95,11 +99,17 @@ export default function Catalog({ loaderData }: Route.ComponentProps) {
         <EmptyState
           className="mt-8"
           icon={<Boxes className="size-6" />}
-          title="Nothing here yet"
-          description="No services match this filter."
+          title={loaderData.failed ? "Catalog is temporarily unavailable" : "Nothing here yet"}
+          description={
+            loaderData.failed
+              ? "The marketplace backend isn't responding. Give it a few seconds and try again."
+              : "No services match this filter."
+          }
           action={
             <Link to="/catalog">
-              <SmoothButton variant="secondary" size="sm">Reset</SmoothButton>
+              <SmoothButton variant="secondary" size="sm">
+                {loaderData.failed ? "Retry" : "Reset"}
+              </SmoothButton>
             </Link>
           }
         />

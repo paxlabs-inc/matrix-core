@@ -38,17 +38,28 @@ type Deps struct {
 	BlobURL           func(string) string
 	DevMode           bool
 	PublishPrivateKey string
+
+	// DeveloperAuthSecret keys SIWE nonces + developer tokens (devauth.go).
+	// Empty disables the SIWE endpoints; owner routes then work only in dev.
+	DeveloperAuthSecret string
+	// SIWEDomain, when set, pins the EIP-4361 message domain (the marketplace
+	// host). Empty skips the domain check.
+	SIWEDomain string
 }
 
 // Server hosts HTTP routes.
 type Server struct {
-	deps Deps
-	mux  chi.Router
+	deps    Deps
+	devAuth *DeveloperAuth
+	mux     chi.Router
 }
 
 // New constructs a Server with middleware and routes.
 func New(deps Deps) *Server {
-	s := &Server{deps: deps}
+	s := &Server{
+		deps:    deps,
+		devAuth: NewDeveloperAuth(deps.DeveloperAuthSecret, deps.SIWEDomain),
+	}
 	r := chi.NewRouter()
 	r.Use(middleware.RequestID)
 	r.Use(middleware.RealIP)
@@ -58,6 +69,7 @@ func New(deps Deps) *Server {
 	r.Get("/internal/healthz", s.handleHealthz)
 	r.Handle("/internal/metrics", promStub())
 
+	s.mountDeveloperAuthRoutes(r)
 	s.mountRegistryRoutes(r)
 	s.mountDiscoveryRoutes(r)
 	s.mountInvokeRoutes(r)

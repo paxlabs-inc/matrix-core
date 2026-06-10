@@ -16,7 +16,7 @@ func (s *Server) mountRegistryRoutes(r chi.Router) {
 	r.Route("/v1/services", func(r chi.Router) {
 		r.Get("/{id}", s.handleGetService)
 		r.Group(func(r chi.Router) {
-			r.Use(DevDeveloperAuth(s.deps.DevMode))
+			r.Use(s.requireDeveloperAuth())
 			r.Post("/", s.handleCreateService)
 			r.Post("/{id}/publish", s.handlePublishService)
 			r.Post("/{id}/pause", s.handleSetServiceStatus("paused"))
