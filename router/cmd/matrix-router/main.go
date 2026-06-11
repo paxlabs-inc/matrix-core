@@ -154,6 +154,17 @@ func main() {
 			"TAVILY_API_KEY":     os.Getenv("TAVILY_API_KEY"),
 			"BRAVE_API_KEY":      os.Getenv("BRAVE_API_KEY"),
 			"WEBSEARCH_PROVIDER": os.Getenv("WEBSEARCH_PROVIDER"),
+			// Media I/O (tools/media/media.mjs stdio bridge in the daemon image
+			// -> Together AI image/video/audio). The bridge boots even with no
+			// key (the media_* tools degrade to a structured "not configured"
+			// result, so an empty key never bricks daemon boot) and reads
+			// TOGETHER_API_KEY from the inherited Machine env (its manifest
+			// entry in BOTH default.json and neo.json uses env:[]). Set this in
+			// /etc/matrix/router.env to enable image generation / editing,
+			// video generation, and audio transcription fleet-wide; empty
+			// leaves the media tools dormant. Outputs land on the per-Machine
+			// volume at /data/media and are served by the Neo front at /media.
+			"TOGETHER_API_KEY": os.Getenv("TOGETHER_API_KEY"),
 			// Shared headless browser (tools/browser/browser.mjs stdio proxy in
 			// the daemon image -> the matrix-browser Fly app running
 			// @playwright/mcp over Streamable HTTP). The proxy answers

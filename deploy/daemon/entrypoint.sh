@@ -39,9 +39,21 @@ mkdir -p \
     "${DATA_DIR}/journal" \
     "${DATA_DIR}/transcripts" \
     "${DATA_DIR}/workspace" \
+    "${DATA_DIR}/media" \
     "${DATA_DIR}/services" \
     "${DATA_DIR}/neo/services" \
     "${DATA_DIR}/.matrix"
+
+# 1b. Media plane. Generated + uploaded images/video/audio live on the volume
+#     at /data/media and are served by the Neo front at /media. Export the dir
+#     (and URL base) so BOTH the MCL daemon (agents/default.json) and the Neo
+#     front (agents/neo.json) spawn their `media` MCP bridge writing to the
+#     SAME served directory. Neo also derives this path itself, but exporting
+#     it keeps the daemon-side bridge consistent. The bridge needs
+#     TOGETHER_API_KEY in the machine env to actually call the upstream API;
+#     without it the bridge still starts (boot-safe) and errors only at call.
+export MATRIX_MEDIA_DIR="${MATRIX_MEDIA_DIR:-${DATA_DIR}/media}"
+export MATRIX_MEDIA_BASE="${MATRIX_MEDIA_BASE:-/media}"
 
 # 2. Symlink /workspace → /data/workspace so MCP fs/git see the persisted
 #    user filesystem. agents/*.json hardcode /workspace.

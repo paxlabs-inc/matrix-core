@@ -165,6 +165,21 @@
         {"name": "jobs_pending", "description": "Scheduler 0x0905 pending job ids for a creator. Read-only.", "side_effect_class": "network", "timeout_ms": 15000},
         {"name": "delegation", "description": "Staking 0x0800 delegation (shares + balance) for a validator. Read-only.", "side_effect_class": "network", "timeout_ms": 15000}
       ]
+    },
+    {
+      "alias": "media",
+      "transport": "stdio",
+      "command": "node",
+      "args": ["/root/matrix/tools/media/media.mjs"],
+      "env": [],
+      "package_digest": "sha256:9999999999999999999999999999999999999999999999999999999999999999",
+      "version": "0.1.0",
+      "tools": [
+        {"name": "generate_image", "description": "Generate a NEW image from a text description (text-to-image, FLUX.1-kontext-pro). Writes the result to the agent's media volume and returns {ok, kind:\"image\", url}. The url is surfaced to the user automatically.", "side_effect_class": "network", "timeout_ms": 120000},
+        {"name": "edit_image", "description": "Edit/transform an EXISTING image with a text instruction (image+text-to-image, FLUX.1-kontext-pro). image is a /media reference or public URL. Returns {ok, kind:\"image\", url}.", "side_effect_class": "network", "timeout_ms": 120000},
+        {"name": "generate_video", "description": "Generate a short video from text, or animate an image (text/image-to-video, Seedance-2.0). Async: blocks until ready (minutes). Returns {ok, kind:\"video\", url}.", "side_effect_class": "network", "timeout_ms": 600000},
+        {"name": "transcribe_audio", "description": "Transcribe spoken audio into text (speech-to-text, whisper-large-v3). audio is a /media reference or public URL. Returns {ok, kind:\"transcript\", text}.", "side_effect_class": "network", "timeout_ms": 120000}
+      ]
     }
   ],
   "native_tools": []

@@ -22,6 +22,9 @@
 #                                        MATRIX_TACHYON_URL (Solidity/EVM engine)
 #   /opt/matrix/tools/deus/              deus stdio MCP proxy (Node.js) ->
 #                                        Deus control plane via MATRIX_DEUS_URL
+#   /opt/matrix/tools/media/             media stdio MCP bridge (Node.js) ->
+#                                        Together AI image/video/audio via
+#                                        TOGETHER_API_KEY; writes to /data/media
 #   /opt/matrix/entrypoint.sh            init script: prep volume + run (neo front + daemon back)
 #   /root/matrix -> /opt/matrix          symlink so default.json's hard-coded
 #                                        /root/matrix/tools/paxeer/paxeer-net.mjs
@@ -32,6 +35,7 @@
 #     /data/journal/                     signed envelope journal
 #     /data/transcripts/                 per-message JSONL transcripts
 #     /data/workspace/                   user's working filesystem
+#     /data/media/                       generated + uploaded media (served at /media)
 #     /data/services/                    exec service registry + logs (MCL daemon)
 #     /data/neo/services/                exec service registry + logs (Neo front; isolated)
 #     /data/.matrix/executor.key         ed25519 actor key (persisted)
@@ -158,7 +162,11 @@ COPY tools/tachyon   /opt/matrix/tools/tachyon
 # deus stdio MCP proxy -> Deus control plane via MATRIX_DEUS_URL. Declared in
 # agents/default.json; the daemon's strict spawn check exits if it's missing.
 COPY tools/deus      /opt/matrix/tools/deus
-
+# media stdio MCP bridge -> Together AI image/video/audio (needs TOGETHER_API_KEY
+# in env). Declared in BOTH agents/default.json and agents/neo.json; the strict
+# spawn check exits if the file is missing, so it MUST be baked.
+COPY tools/media     /opt/matrix/tools/media
+COPY tools/uwac     /opt/matrix/tools/uwac
 # agents/default.json hard-codes /root/matrix/tools/paxeer/paxeer-net.mjs
 # (matches the dev-box layout). Symlink /root/matrix → /opt/matrix so the
 # baked-in path resolves inside the container without templating.
