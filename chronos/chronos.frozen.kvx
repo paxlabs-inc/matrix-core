@@ -1,0 +1,282 @@
+# chronos.frozen.kvx — FROZEN architecture spec for Chronos (agent scheduler / wake system).
+#
+# Chronos is Matrix's CENTRALIZED agent coordination + time-tracking + task-scheduling
+# + wake-up service: ONE always-on control plane, used by ALL per-user agents. An agent
+# POSTs an alarm — a one-time task at a specific time, a "wait N minutes then resume", or
+# a recurring (full-cron) job — together with a CONTEXT payload. When the time is due,
+# Chronos wakes the agent by injecting a context-rich chat turn into the agent's stored
+# conversation, so it picks up exactly where it left off.
+#
+# Format: sectioned KV per the Matrix .kvx convention (see tachyon/internal/config/kvx.go).
+#   [section] / [section.sub]   key = "string"   num = 80   list = ["a","b"]   ${ENV}
+# String-typed values are ALWAYS double-quoted (Matrix .mtx lexer convention).
+#
+# STATUS: FROZEN. Design locked with Andrew on 2026-06-11.
+# Changes require a new version.
+
+[meta]
+name        = "Chronos"
+codename    = "chronos"
+kind        = "centralized-agent-scheduler-and-wake-subsystem"
+version     = "1.0.0"
+status      = "frozen"
+frozen_at   = "2026-06-11"
+authors     = ["Andrew", "cursor-agent"]
+relation    = "shared scheduling substrate for Neo scheduled_tasks + UWAC time-triggers; coexists with router, gateway, deus, uwac, tachyon, browser"
+supersedes  = "the UWAC trigger plan's 'fires_via on-chain Scheduler 0x0905 for time-based triggers' — off-chain agent wakes now route through Chronos"
+
+[repo]
+form        = "new top-level module, mirroring tachyon / uwac / deus shape"
+path        = "/root/matrix/chronos"
+module      = "github.com/paxlabs-inc/chronos"
+binary      = "chronosd (cmd/chronosd), installed to ./bin like deusd/uwacd"
+makefile    = "add chronos to root Makefile MODULES + install target"
+dev_box_git = "the USER drives all commits/submodule wiring; the agent never commits/pushes on the dev box"
+bakes_into  = "the MCP proxy tools/chronos baked into the daemon image (deploy/daemon/Dockerfile COPY tools/chronos) like tachyon/uwac; chronosd itself ships to the box (see [deploy])"
+
+# ================================ MISSION ==================================
+
+[mission]
+goal       = "give every Matrix agent a reliable sense of time: schedule future work, defer mid-task, recur daily, and get woken with enough context to resume seamlessly"
+why        = "agents are episodic — a per-user daemon scales to zero between requests and has no way to act later or wait without holding an expensive live process; a centralized durable scheduler lets an agent set work down, release the machine, and be woken precisely when due"
+positioning= "the agent alarm clock + reminder service: post-an-alarm, get-woken-with-context"
+not_a      = "a workflow engine, a job queue for heavy compute, or an on-chain trustless scheduler — Chronos is off-chain timing + contextful wake delivery only"
+
+# ============================== PRINCIPLES =================================
+
+[principles]
+centralized          = "ONE chronosd serves the whole fleet; agents are clients, not schedulers — no per-daemon timer that dies on scale-to-zero"
+durable_by_default   = "every alarm is a Postgres row; a process restart never loses a scheduled wake (timers live in the DB, not in memory)"
+context_is_the_point = "the value is the WAKE PAYLOAD — the agent stores enough context at post time that the wake message lets it resume with zero re-derivation"
+at_least_once        = "delivery is at-least-once with idempotency; better to wake twice (dedup-able) than to silently miss a due alarm"
+did_scoped           = "an agent can only create/list/cancel its OWN alarms; the wake target is derived from the verified agent DID, never caller-supplied"
+off_chain_only       = "Chronos is pure off-chain infra; the on-chain Scheduler precompile 0x0905 stays reserved for Deus trustless/economic triggers and the MCL pipeline's monetary/irreversible on-chain TX"
+structural_safety    = "no throttles/allowlists on what an agent may schedule (consistent with the permissive-execution preference); safety is structural — deferred MONEY escalates to MCL at FIRE time, not schedule time"
+honest_failure       = "a wake that cannot be delivered is retried then surfaced; Chronos never fabricates that an agent was woken"
+
+# ============================ ARCHITECTURE =================================
+
+[architecture]
+shape        = "Go control plane (chronosd) + Postgres durable store + a dispatch worker + a thin MCP stdio proxy (tools/chronos/chronos.mjs) the per-user daemons speak to"
+core_insight = "the HARD half (waking a suspended agent) already exists in the router; Chronos owns only the EASY half (durable timing + context storage) and hands the fire off to the router's proven wake-then-proxy path"
+agent_view   = "to the agent, Chronos is three MCP tools (alarm_set / alarm_list / alarm_cancel); all timing + wake plumbing lives behind them"
+
+[architecture.layers]
+layer_1 = "store: Postgres alarms table — the durable timer (see [data_model])"
+layer_2 = "schedule: parse + next-fire computation for once / cron kinds (see [schedule])"
+layer_3 = "dispatch: a worker that claims due alarms and fires them (see [dispatch])"
+layer_4 = "wake: deliver the contextful turn to the agent via the router (see [wake])"
+layer_5 = "api + auth: HTTP surface for the MCP proxy, two-layer authenticated (see [api], [auth])"
+
+# ============================== TOPOLOGY ===================================
+# Where Chronos sits and the three network directions. Grounded in the live
+# prod box (redacted_for_security) running systemd matrix-router + matrix-gateway, the
+# per-user Fly daemon model, and the existing public nginx /gw/ gateway route.
+
+[topology]
+runs_on      = "the core-infra box redacted_for_security, alongside systemd matrix-router (:8088 internal / :8443 public) + matrix-gateway (:9090)"
+form_on_box  = "a systemd service matrix-chronos (binary), mirroring the router/gateway deploy pattern on THIS box (NOT the docker pattern deus uses on the 178.18.246.58 box)"
+postgres     = "the SAME shared Postgres on the box (127.0.0.1:5432, db=matrix) that router + gateway use; Chronos adds its own alarms table + migration"
+listen       = "127.0.0.1:9096 (box-local; configurable CHRONOS_PORT)"
+
+[topology.direction_inbound]
+what = "agent (Fly daemon) -> chronosd: post/list/cancel alarms"
+path = "the daemon's tools/chronos/chronos.mjs dials MATRIX_CHRONOS_URL over a public nginx route (e.g. https://matrix.paxeer.app/chronos/ -> 127.0.0.1:9096), exactly like the gateway /gw/ route Fly machines already use"
+
+[topology.direction_wake]
+what = "chronosd -> router: request a wake when an alarm fires"
+path = "box-local POST http://127.0.0.1:8088/internal/wake (router internal listener), authenticated by a shared wake token"
+
+[topology.direction_deliver]
+what = "router -> daemon: actually wake the machine + deliver the turn"
+path = "router resolves user -> fly.EnsureStarted -> waitDaemonReady -> POST daemon :8080/chat over Fly 6PN (the EXISTING proxy wake path; reused, no daemon code change)"
+
+# =============================== AUTH =====================================
+# Two-layer, mirroring UWAC's credential_flow: a shared transport bearer proves
+# "a legitimate Matrix daemon", and an ed25519 agent-DID handshake proves WHICH
+# owner, so alarms are scoped + the wake target resolves from the DID alone.
+
+[auth.transport]
+what = "proves the caller is a legitimate Matrix daemon"
+how  = "shared bearer MATRIX_CHRONOS_TOKEN injected by the router into every machine (exactly like MATRIX_TACHYON_TOKEN / MATRIX_UWAC_TOKEN)"
+not  = "a shared token alone cannot scope to an owner — per-owner scoping comes from the principal auth below"
+
+[auth.principal]
+what     = "proves WHICH agent/owner is posting, so the alarm is owned + the wake routes to the right daemon"
+how      = "ed25519 agent-DID challenge/verify against chronosd, reusing the daemon executor.key (the same handshake tools/paxeer/lib/agentauth.mjs + tools/tachyon/tachyon.mjs use); chronosd owns both sides"
+keystone = "the agent DID label IS the Supabase user UUID (did:matrix:<MATRIX_USER_ID>:<keyfp>) — the UWAC keystone; verify DID signature -> extract label -> that label is the router's user_id for the wake lookup"
+token    = "verify mints a short-lived HMAC token (keyed by CHRONOS_AGENT_AUTH_SECRET) carrying {did, user_id, exp}, mirroring deus/internal/server/devauth.go"
+key_fmt  = "64-hex ed25519 SEED on disk at ${MATRIX_DATA_DIR|/data}/.matrix/executor.key; DID = did:matrix:<label>:<hex(pubkey)[:16]> (matches executor/cmd/mcl-execute/identity.go)"
+
+# ============================= DATA MODEL ==================================
+
+[data_model]
+table = "alarms"
+note  = "one row per scheduled wake; the row IS the durable timer"
+
+[data_model.alarm]
+id               = "uuid primary key"
+owner_did        = "the full agent DID that created it (did:matrix:<user_id>:<keyfp>)"
+user_id          = "Supabase user UUID extracted from the DID label — the router wake target"
+label            = "short human label, e.g. \"daily portfolio summary\""
+kind             = "once | cron"
+fire_at          = "timestamptz — for kind=once, the absolute moment to fire (computed from delay or explicit time at post)"
+cron_expr        = "standard 5-field cron string (or @descriptor / @every) — for kind=cron"
+timezone         = "IANA tz for cron evaluation, default \"UTC\""
+next_fire_at     = "timestamptz — the next scheduled fire; the dispatch worker's claim key (indexed)"
+conversation_id  = "the conversation to resume into; empty -> the agent opens a fresh conversation on wake"
+wake_message     = "the agent-authored resume text delivered as the chat turn (the contextful prompt-to-self)"
+payload          = "opaque JSONB the agent stashed (task state, ids, cursors) — echoed back on wake for full resume context"
+status           = "active | fired | cancelled | failed"
+idempotency_key  = "optional per-owner dedup key so re-posting the same alarm does not duplicate it"
+max_failures     = "wake-delivery retry ceiling before status=failed (default from config)"
+failure_count    = "running count of failed wake deliveries"
+last_error       = "last wake-delivery error text (honest failure surfacing)"
+created_at       = "timestamptz"
+updated_at       = "timestamptz"
+last_fired_at    = "timestamptz — last successful fire (time-tracking / observability)"
+
+# ============================== SCHEDULE ===================================
+
+[schedule]
+kinds = ["once", "cron"]
+maps  = "the three user cases collapse onto two kinds: 'in 10 minutes' + 'at a specific time' = once; 'every day' / 'every hour' / 'every N' = cron"
+
+[schedule.once]
+input    = "either a relative delay_seconds (e.g. 600 for 'wait 10 min') OR an absolute fire_at timestamp"
+behavior = "fires once; on fire status=fired (retained for audit/time-tracking, not deleted)"
+
+[schedule.cron]
+input    = "a full standard cron expression from day one (5-field), plus @descriptors (@daily/@hourly) and @every Nm — parsed by robfig/cron/v3 (Schedule.Next), evaluated in the alarm's timezone"
+behavior = "on fire, recompute next_fire_at = Schedule.Next(now) and stay active; never self-deletes (cancel is explicit)"
+examples = ["0 9 * * * = every day 09:00", "*/15 * * * * = every 15 min", "@every 10m = every 10 minutes"]
+
+[schedule.timezone]
+default = "UTC"
+rule    = "cron expressions evaluate in the alarm's IANA timezone; once alarms are absolute instants (tz-independent)"
+
+# =============================== CONTEXT ===================================
+# THE KEY FEATURE (Andrew): the wake must let the agent resume right where it
+# left off. Context is captured at POST time and replayed at FIRE time.
+
+[context]
+principle    = "the agent writes a message TO ITS FUTURE SELF at post time; Chronos is a faithful courier that delivers it at the due moment, unchanged"
+wake_message = "agent-authored, first-person, self-sufficient — what it was doing, what to do now, any ids/state needed (e.g. \"Resume the airdrop you paused: cursor at holder 240/512, batch size 50, contract 0x...; continue from holder 241\")"
+payload      = "structured side-channel for state too bulky/precise for prose (verbatim ids, hashes, cursors) — echoed back so high-entropy tokens survive intact (same verbatim discipline as Neo compaction)"
+conversation = "delivering into the stored conversation_id means the agent ALSO regains its full prior transcript + cortex memory for that thread — the wake message is the trigger, the conversation is the continuity"
+marker       = "the delivered turn is tagged as a scheduled wake (origin=chronos, alarm_id) so the agent knows it was woken by a timer, not typed by the user"
+
+# ================================ WAKE =====================================
+
+[wake]
+mechanism    = "Chronos NEVER talks to Fly or the daemon directly; it asks the router to wake + deliver, reusing the router's battle-tested EnsureStarted + waitDaemonReady + 6PN reverse-proxy path"
+reuse        = "POST daemon :8080/chat already accepts {message, conversation_id} and runs the agent turn — no new daemon endpoint needed for v1; a dedicated /wake endpoint is a possible later refinement"
+new_surface  = "the ONE new piece: router internal POST /internal/wake (wake-token auth) that resolves user -> EnsureStarted -> waitDaemonReady -> POST /chat with X-Matrix-User + the context turn"
+
+[wake.path]
+step_1 = "dispatch worker claims a due alarm (status=active, next_fire_at <= now) FOR UPDATE SKIP LOCKED"
+step_2 = "chronosd POSTs http://127.0.0.1:8088/internal/wake {user_id, conversation_id, message, payload, alarm_id} with the shared wake token"
+step_3 = "router looks up user_id -> fly.EnsureStarted(machine) -> waitDaemonReady(/healthz)"
+step_4 = "router POSTs the woken daemon :8080/chat {message, conversation_id} over Fly 6PN with X-Matrix-User=user_id"
+step_5 = "Neo resumes conversation_id (seeds from cortex/Recent), reads the contextful turn + payload, and continues the task"
+step_6 = "router returns 2xx -> chronosd marks the fire done (cron: reschedule next_fire_at; once: status=fired); non-2xx -> retry ladder"
+
+# ============================== DISPATCH ===================================
+
+[dispatch]
+model        = "durable poll-and-claim worker, single instance now, HA-ready by construction"
+claim        = "SELECT ... WHERE status='active' AND next_fire_at <= now() ORDER BY next_fire_at FOR UPDATE SKIP LOCKED — so concurrent/future workers never double-claim a row"
+tick         = "short poll interval (e.g. 1s) for sub-minute precision; the DB is the source of truth, the ticker is just a heartbeat"
+delivery     = "at-least-once: a fire is recorded only AFTER the router returns success; a crash mid-fire re-claims the row on restart"
+idempotency  = "the wake carries alarm_id + fire instant so a duplicate delivery is dedup-able downstream"
+
+[dispatch.retry]
+ladder_1 = "transient wake failure (machine waking, daemon not ready, 5xx) -> bounded backoff retry, failure_count++"
+ladder_2 = "persistent failure past max_failures -> status=failed + last_error recorded; never silently dropped"
+ladder_3 = "cron alarms still advance next_fire_at on permanent failure so one bad fire does not wedge the whole series (configurable: skip-and-advance vs hold)"
+honesty  = "a failed wake is observable (status + last_error); Chronos never reports a wake it did not deliver"
+
+# ================================ API ======================================
+# HTTP surface chronosd exposes; the MCP proxy is the only intended client.
+
+[api]
+healthz                       = "GET /healthz -> {status, version} (+ db ping)"
+agent_auth_challenge          = "POST /v1/agent/auth/challenge {did} -> {message, nonce}"
+agent_auth_verify             = "POST /v1/agent/auth/verify {did, public_key, nonce, signature} -> {token}"
+alarms_create                 = "POST /v1/alarms (agent token) -> create an alarm; returns {id, next_fire_at}"
+alarms_list                   = "GET /v1/alarms (agent token) -> the caller's own alarms"
+alarms_get                    = "GET /v1/alarms/{id} (agent token, owner-checked)"
+alarms_cancel                 = "DELETE /v1/alarms/{id} (agent token, owner-checked) -> status=cancelled"
+internal_note                 = "all /v1/alarms* require BOTH the transport bearer AND a valid agent token; owner scoping is enforced from the token DID, never a request field"
+
+# ============================= TOOL SURFACE ================================
+# The MCP stdio proxy mirrors tools/tachyon/tachyon.mjs: initialize/tools/list
+# answered LOCALLY from chronos-tools.json (so an unreachable chronosd never
+# bricks daemon boot), tools/call forwarded to MATRIX_CHRONOS_URL. The proxy
+# mints the agent-DID token (reusing executor.key) for every call.
+
+[tools]
+proxy        = "tools/chronos/chronos.mjs (stdio), registry tools/chronos/chronos-tools.json, baked into the daemon image"
+selftest     = "node tools/chronos/chronos.mjs --selftest = offline drift guard; the advertised set MUST equal the agents/*.json declared set or Manager.verifyTools makes daemon boot fatal"
+wiring       = "add a chronos server entry to agents/default.json AND agents/neo.json; add the tool URIs to skills/paxeer-assistant §TOOLS so the freeform hero path can schedule"
+available_to = "BOTH Neo and the MCL pipeline (ordinary MCP server)"
+
+[tools.set]
+alarm_set    = "schedule an alarm: {label, kind(once|cron), delay_seconds?|fire_at?|cron_expr?, timezone?, conversation_id?, wake_message, payload?, idempotency_key?} -> {id, next_fire_at}"
+alarm_list   = "list the caller's own active/recent alarms"
+alarm_cancel = "cancel one of the caller's alarms by id"
+naming_note  = "exactly these three in v1; keep chronos-tools.json <-> manifest in strict bijection"
+
+# =============================== CONFIG ====================================
+
+[config]
+CHRONOS_PORT                = "box-local listen port (default 9096)"
+CHRONOS_POSTGRES_URI        = "shared matrix DB on the box (db=matrix); required"
+CHRONOS_TOKEN               = "shared transport bearer the MCP proxy must present (= MATRIX_CHRONOS_TOKEN on the daemon side)"
+CHRONOS_AGENT_AUTH_SECRET   = "HMAC secret keying agent-auth nonces + tokens (mirrors DEUS_DEVELOPER_AUTH_SECRET)"
+CHRONOS_ROUTER_WAKE_URL     = "router internal wake endpoint (default http://127.0.0.1:8088/internal/wake)"
+CHRONOS_WAKE_TOKEN          = "shared secret matching the router's ROUTER_WAKE_TOKEN for /internal/wake"
+CHRONOS_TICK_MS             = "dispatch poll interval (default 1000)"
+CHRONOS_MAX_FAILURES        = "default wake-delivery retry ceiling per alarm (default 5)"
+CHRONOS_DEV                 = "relaxes required-secret checks for local skeleton boot (mirrors DEUS_DEV)"
+
+[config.router_side]
+ROUTER_WAKE_TOKEN   = "router: shared secret gating POST /internal/wake (new router config key)"
+MATRIX_CHRONOS_URL  = "router MachineEnv: injected into every daemon -> the chronos.mjs proxy dials it (default the public nginx /chronos/ route)"
+MATRIX_CHRONOS_TOKEN= "router MachineEnv: the transport bearer the proxy presents (= CHRONOS_TOKEN)"
+
+# =============================== DEPLOY ====================================
+
+[deploy]
+target   = "box redacted_for_security (core infra), as systemd matrix-chronos, mirroring gateway/deploy/install.sh"
+artifacts= "deploy/chronos: install.sh (binary + systemd unit + chronos.env + migration apply), matrix-chronos.service, env example, README"
+nginx    = "add a public /chronos/ location to deploy/box/nginx/matrix.paxeer.app.conf (strip /chronos/ -> 127.0.0.1:9096), mirroring the existing /gw/ gateway route, so Fly daemons can reach it"
+db       = "chronosd auto-migrates its alarms table at boot (forward-only SQL, same runner as deus store.Migrate)"
+drives   = "the USER deploys; the agent stages artifacts only and does NOT touch prod (Andrew drives prod redeploys)"
+
+# ============================= RELATION ====================================
+
+[relation]
+to_neo   = "concrete backend for Neo execution.natural 'scheduled_tasks' — Neo sets an alarm via the MCP tool, gets woken into the same conversation; the deferred-money rule still holds (money escalates to MCL at FIRE time, not schedule time)"
+to_uwac  = "Chronos is the off-chain scheduler that backs UWAC time-based triggers; SUPERSEDES the UWAC spec note that time-triggers fire via on-chain Scheduler 0x0905 — a UWAC poll/cron trigger schedules a Chronos alarm whose wake re-enters the agent"
+to_mcl   = "ordinary MCP server, so the rigorous compile->plan->execute pipeline can schedule too; Chronos is agent-agnostic"
+to_router= "Chronos depends on ONE new router surface (POST /internal/wake); everything else is reused"
+to_chain = "off-chain only; the on-chain Scheduler precompile 0x0905 stays for Deus trustless/economic triggers + the MCL monetary/irreversible on-chain rail"
+
+# ============================== INVARIANTS =================================
+
+[invariants]
+i1 = "alarms are durable — a Chronos restart never loses a scheduled wake (state lives in Postgres, not memory)"
+i2 = "DID-scoped — an agent can only create/list/cancel its own alarms; the wake target is derived from the verified DID, never caller-supplied"
+i3 = "at-least-once delivery with idempotency — a fire is recorded only after the router confirms; duplicates are dedup-able"
+i4 = "context fidelity — wake_message + payload are delivered verbatim; high-entropy tokens (ids/hashes/cursors) are never paraphrased"
+i5 = "off-chain only — Chronos holds no signing key and performs no on-chain action; deferred money escalates to MCL at fire time"
+i6 = "honest failure — an undeliverable wake is retried then surfaced (status + last_error); never fabricated"
+i7 = "Chronos never writes cortex / signs envelopes / touches plan-walk — it delivers a chat turn via the existing /chat path; the agent does the work"
+i8 = "tool registry <-> manifest stay in strict bijection (chronos-tools.json == agents/*.json) or daemon boot is fatal"
+
+# ============================ DEFERRED / NEXT ==============================
+
+[deferred]
+implementation = "this is a FROZEN design spec — no code yet; scaffolding is the NEXT session"
+next_steps     = ["scaffold the chronos Go module (cmd/chronosd + internal config/store/schedule/dispatch/wake/auth/server/telemetry, mirroring deus/uwac)", "alarms migration + store queries (create/list/get/cancel/claim-due/reschedule)", "cron engine via robfig/cron/v3 (parse + Next) + once delay/absolute", "dispatch worker (poll + FOR UPDATE SKIP LOCKED claim + retry ladder)", "agent-DID challenge/verify + HMAC token (mirror deus devauth.go)", "router POST /internal/wake (ROUTER_WAKE_TOKEN) reusing proxy EnsureStarted/waitDaemonReady + POST /chat", "router MachineEnv MATRIX_CHRONOS_URL/TOKEN injection", "tools/chronos/chronos.mjs + chronos-tools.json (alarm_set/list/cancel) + --selftest; wire agents/default.json + neo.json + paxeer-assistant TOOLS", "deploy/chronos (systemd unit + install.sh + nginx /chronos/ route + README) staged for the box", "per-module build/vet/test green + chronos.mjs --selftest + manifest bijection"]
