@@ -1,0 +1,32 @@
+# uwac.config.kvx — uwacd configuration overlay (env always wins).
+# Copy to uwac.config.kvx, or configure entirely via environment variables.
+# Format matches tachyon's loader; ${ENV} is interpolated from the process env.
+
+[server]
+addr            = ":8646"
+# env = "development" relaxes the prod fail-closed checks (lets UWAC_VAULT_KEY
+# fall back to a dev key). NEVER set this in production.
+env             = "development"
+# Externally reachable base used to build the OAuth redirect_to. Must be in
+# GoTrue's redirect allowlist. e.g. "https://uwac.matrix.paxeer.app"
+public_base_url = "${UWAC_PUBLIC_BASE_URL}"
+# Shared transport bearer the router injects into every daemon (MATRIX_UWAC_TOKEN).
+auth_token      = "${MATRIX_UWAC_TOKEN}"
+
+[auth]
+challenge_ttl_seconds = 120
+
+[gotrue]
+# Self-hosted Supabase/GoTrue we extend for the scope-elevation PKCE flow.
+url      = "${UWAC_SUPABASE_URL}"
+anon_key = "${UWAC_SUPABASE_ANON_KEY}"
+
+[vault]
+# AES-256-GCM key material for encrypting provider tokens at rest (sha256'd).
+# REQUIRED in production. Generate: openssl rand -hex 32
+key          = "${UWAC_VAULT_KEY}"
+# Postgres DSN. Empty -> in-memory store (dev only; tokens lost on restart).
+database_uri = "${UWAC_DATABASE_URI}"
+
+[connectors]
+dir = "connectors"

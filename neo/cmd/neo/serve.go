@@ -61,6 +61,19 @@ func runServe(args []string) {
 		backendURL = cfg.DaemonURL
 	}
 
+	// Media plane: generated + uploaded media live on the machine volume,
+	// derived from the cortex root's parent (e.g. /data/media) unless overridden
+	// by NEO_MEDIA_DIR. Export it (and the URL base) into the environment BEFORE
+	// spawning MCP servers so the co-located media bridge (tools/media) writes
+	// its outputs into the exact directory Neo serves from GET /media/.
+	mediaPath := server.MediaDir(os.Getenv("NEO_MEDIA_DIR"), cfg.CortexRoot)
+	if mediaPath != "" {
+		_ = os.Setenv("MATRIX_MEDIA_DIR", mediaPath)
+		if os.Getenv("MATRIX_MEDIA_BASE") == "" {
+			_ = os.Setenv("MATRIX_MEDIA_BASE", "/media")
+		}
+	}
+
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
 
@@ -123,11 +136,15 @@ func runServe(args []string) {
 		Pager:           pager,
 		Consolidator:    cons,
 		ConversationDir: convDir,
+		MediaDir:        mediaPath,
 		BackendURL:      backendURL,
 		BackendToken:    os.Getenv("NEO_DAEMON_TOKEN"),
 	})
 	if convDir != "" {
 		fmt.Printf("  history: %s\n", convDir)
+	}
+	if mediaPath != "" {
+		fmt.Printf("  media: %s (served at /media)\n", mediaPath)
 	}
 
 	srv, err := server.New(engine, backendURL)

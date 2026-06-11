@@ -6,10 +6,8 @@ import { ActionToast } from "@/components/feedback";
 import type { Route } from "./+types/login";
 import { getEnv } from "@/lib/env";
 import {
-  commitPkceVerifier,
   commitSession,
   devLoginUser,
-  generatePkce,
   getSession,
   getUser,
   isDevAuth,
@@ -31,7 +29,7 @@ export function meta() {
   return [{ title: "Sign in · Deus" }];
 }
 
-/** Carries the PKCE cookie — never cacheable. */
+/** Auth surface — never cacheable. */
 export function headers() {
   return { "Cache-Control": "private, no-store" };
 }
@@ -44,22 +42,18 @@ export async function loader({ request, context }: Route.LoaderArgs) {
   const user = await getUser(request, env);
   if (user) throw redirect(next);
 
-  // PKCE: the S256 challenge rides the authorize URL; the verifier stays in a
-  // short-lived signed cookie until the /auth/callback code exchange.
+  // Implicit flow: GoTrue returns tokens in the URL fragment to the callback
+  // page, which posts them to the server for verification.
   const callback = `${url.origin}/auth/callback?next=${encodeURIComponent(next)}`;
-  const pkce = await generatePkce();
-  return data(
-    {
-      isDev: isDevAuth(env),
-      next,
-      turnstileSiteKey: env.TURNSTILE_SITE_KEY || null,
-      oauth: {
-        google: oauthAuthorizeUrl(env, "google", callback, pkce.challenge),
-        github: oauthAuthorizeUrl(env, "github", callback, pkce.challenge),
-      },
+  return data({
+    isDev: isDevAuth(env),
+    next,
+    turnstileSiteKey: env.TURNSTILE_SITE_KEY || null,
+    oauth: {
+      google: oauthAuthorizeUrl(env, "google", callback),
+      github: oauthAuthorizeUrl(env, "github", callback),
     },
-    { headers: { "Set-Cookie": await commitPkceVerifier(env, pkce.verifier) } }
-  );
+  });
 }
 
 export async function action({ request, context }: Route.ActionArgs) {

@@ -55,6 +55,11 @@ func (s *Server) Handler() http.Handler {
 	// when persistence is disabled (dev/CLI) so the daemon's store still works.
 	mux.HandleFunc("/conversations", s.handleConversations)
 	mux.HandleFunc("/conversations/", s.handleConversations)
+	// Media plane: generated + uploaded images/video/audio live on the agent's
+	// machine volume. These are Neo-owned routes (the daemon has never heard of
+	// them), registered before the catch-all proxy.
+	mux.HandleFunc("/media/", s.handleMedia)
+	mux.HandleFunc("/upload", s.handleUpload)
 	mux.HandleFunc("/", s.proxy.ServeHTTP) // healthz, /messages, /memory, /tools, … → daemon
 	return mux
 }

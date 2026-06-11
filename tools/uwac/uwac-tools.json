@@ -1,0 +1,120 @@
+[
+  {
+    "name": "calendar_create_event",
+    "description": "Create an event on the owner's primary calendar. IRREVERSIBLE: requires user confirmation. args: summary, start (RFC3339), end (RFC3339), description?.",
+    "inputSchema": {
+      "additionalProperties": true,
+      "properties": {
+        "description": {
+          "description": "Optional event description.",
+          "type": "string"
+        },
+        "end": {
+          "description": "End time, RFC3339.",
+          "type": "string"
+        },
+        "start": {
+          "description": "Start time, RFC3339 (e.g. 2026-06-12T15:00:00Z).",
+          "type": "string"
+        },
+        "summary": {
+          "description": "Event title.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "summary",
+        "start",
+        "end"
+      ],
+      "type": "object"
+    }
+  },
+  {
+    "name": "calendar_list_events",
+    "description": "List upcoming events on the owner's primary calendar. Read-only. args: max_results?, time_min? (RFC3339, default now).",
+    "inputSchema": {
+      "additionalProperties": true,
+      "properties": {
+        "max_results": {
+          "description": "Max events (default 10).",
+          "type": "number"
+        },
+        "time_min": {
+          "description": "RFC3339 lower bound (default now).",
+          "type": "string"
+        }
+      },
+      "type": "object"
+    }
+  },
+  {
+    "name": "gmail_get_message",
+    "description": "Fetch one Gmail message (headers + snippet + body) by id. Read-only. args: id.",
+    "inputSchema": {
+      "additionalProperties": true,
+      "properties": {
+        "format": {
+          "description": "metadata | full (default full).",
+          "type": "string"
+        },
+        "id": {
+          "description": "Gmail message id (from gmail_search).",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id"
+      ],
+      "type": "object"
+    }
+  },
+  {
+    "name": "gmail_search",
+    "description": "Search the owner's Gmail. Returns matching message ids + thread ids. Read-only. args: query (Gmail search syntax, e.g. \"is:unread from:boss\"), max_results?.",
+    "inputSchema": {
+      "additionalProperties": true,
+      "properties": {
+        "max_results": {
+          "description": "Max messages to return (default 10).",
+          "type": "number"
+        },
+        "query": {
+          "description": "Gmail search query (e.g. \"is:unread newer_than:2d\").",
+          "type": "string"
+        }
+      },
+      "required": [
+        "query"
+      ],
+      "type": "object"
+    }
+  },
+  {
+    "name": "gmail_send",
+    "description": "Send an email from the owner's Gmail. IRREVERSIBLE: requires user confirmation. args: to, subject, body.",
+    "inputSchema": {
+      "additionalProperties": true,
+      "properties": {
+        "body": {
+          "description": "Plain-text body.",
+          "type": "string"
+        },
+        "subject": {
+          "description": "Subject line.",
+          "type": "string"
+        },
+        "to": {
+          "description": "Recipient email address.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "to",
+        "subject",
+        "body"
+      ],
+      "type": "object"
+    }
+  }
+]

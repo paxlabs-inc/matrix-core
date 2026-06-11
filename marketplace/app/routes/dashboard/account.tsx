@@ -10,7 +10,8 @@ import {
   isDevAuth,
   requireUser,
 } from "@/lib/auth.server";
-import { createDeusClient } from "@/lib/deus.server";
+import { createDeusClient, DeusApiError } from "@/lib/deus.server";
+import type { MeResponse, SpendResponse } from "@/lib/deus.types";
 import { CopyChip, EmptyState, Stat, Surface } from "@/components/ui";
 import { CountFlow, PaxFlow } from "@/components/pax";
 import { WalletButton } from "@/components/wallet";
@@ -18,6 +19,11 @@ import { WalletButton } from "@/components/wallet";
 export function meta() {
   return [{ title: "Account · Deus" }];
 }
+
+/** Spend is keyed to an authenticated agent caller (bearer); a marketplace
+ * web user has only DID/wallet headers, which deusd accepts solely in dev
+ * mode. Treat an auth failure as "no spend yet" rather than a page-level 500. */
+const EMPTY_SPEND: SpendResponse = { total_spent_wei: "0", entries: [] };
 
 export async function loader({ request, context }: Route.LoaderArgs) {
   const env = getEnv(context);
@@ -27,7 +33,24 @@ export async function loader({ request, context }: Route.LoaderArgs) {
     developer: await getDeveloperIdentity(request, env),
     caller: callerIdentityFor(user, wallet),
   });
-  const [me, spend] = await Promise.all([deus.me(), deus.spend()]);
+
+  const fallbackMe: MeResponse = {
+    did: user.did,
+    wallet: wallet ?? "",
+    display_name: user.displayName ?? "",
+    email: user.email ?? "",
+  };
+
+  const [me, spend] = await Promise.all([
+    deus.me().catch((err) => {
+      if (err instanceof DeusApiError) return fallbackMe;
+      throw err;
+    }),
+    deus.spend().catch((err) => {
+      if (err instanceof DeusApiError) return EMPTY_SPEND;
+      throw err;
+    }),
+  ]);
   return { me, spend, user, wallet, allowDev: isDevAuth(env) };
 }
 

@@ -166,6 +166,21 @@
       ]
     },
     {
+      "alias": "media",
+      "transport": "stdio",
+      "command": "node",
+      "args": ["/root/matrix/tools/media/media.mjs"],
+      "env": [],
+      "package_digest": "sha256:9999999999999999999999999999999999999999999999999999999999999999",
+      "version": "0.1.0",
+      "tools": [
+        {"name": "generate_image", "description": "Generate a NEW image from a text description (text-to-image, FLUX.1-kontext-pro). Writes the result to the agent's media volume and returns {ok, kind:\"image\", url}. The url is surfaced to the user automatically.", "side_effect_class": "network", "timeout_ms": 120000},
+        {"name": "edit_image", "description": "Edit/transform an EXISTING image with a text instruction (image+text-to-image, FLUX.1-kontext-pro). image is a /media reference or public URL. Returns {ok, kind:\"image\", url}.", "side_effect_class": "network", "timeout_ms": 120000},
+        {"name": "generate_video", "description": "Generate a short video from text, or animate an image (text/image-to-video, Seedance-2.0). Async: blocks until ready (minutes). Returns {ok, kind:\"video\", url}.", "side_effect_class": "network", "timeout_ms": 600000},
+        {"name": "transcribe_audio", "description": "Transcribe spoken audio into text (speech-to-text, whisper-large-v3). audio is a /media reference or public URL. Returns {ok, kind:\"transcript\", text}.", "side_effect_class": "network", "timeout_ms": 120000}
+      ]
+    },
+    {
       "alias": "paxeer-net",
       "transport": "stdio",
       "command": "node",
@@ -216,6 +231,22 @@
         {"name": "undelegate", "description": "Unbond PAX from a validator. WRITE.", "side_effect_class": "write", "timeout_ms": 30000},
         {"name": "redelegate", "description": "Move stake between validators. WRITE: gated by PaxeerSpendPolicy.", "side_effect_class": "write", "timeout_ms": 30000},
         {"name": "contract_write", "description": "Sign+send a generic contract/precompile write (DEX swaps + any method). Provide signature+args or raw data, optional value. WRITE: gated by PaxeerSpendPolicy.", "side_effect_class": "write", "timeout_ms": 30000}
+      ]
+    },
+    {
+      "alias": "uwac",
+      "transport": "stdio",
+      "command": "node",
+      "args": ["/root/matrix/tools/uwac/uwac.mjs"],
+      "env": [],
+      "package_digest": "sha256:8888888888888888888888888888888888888888888888888888888888888888",
+      "version": "0.1.0",
+      "tools": [
+        {"name": "calendar_create_event", "description": "Create an event on the owner's connected Google primary calendar. IRREVERSIBLE: pass confirmed=true once the user approves. args: summary, start (RFC3339), end (RFC3339), description?.", "side_effect_class": "write", "timeout_ms": 30000},
+        {"name": "calendar_list_events", "description": "List upcoming events on the owner's connected Google primary calendar. Read-only. args: max_results?, time_min? (RFC3339).", "side_effect_class": "network", "timeout_ms": 30000},
+        {"name": "gmail_get_message", "description": "Fetch one Gmail message (headers + snippet + body) by id from the owner's connected Google account. Read-only. args: id, format? (metadata|full).", "side_effect_class": "network", "timeout_ms": 30000},
+        {"name": "gmail_search", "description": "Search the owner's connected Gmail. Returns matching message ids + thread ids. Read-only. args: query (Gmail search syntax), max_results?.", "side_effect_class": "network", "timeout_ms": 30000},
+        {"name": "gmail_send", "description": "Send an email from the owner's connected Gmail. IRREVERSIBLE: pass confirmed=true once the user approves. args: to, subject, body.", "side_effect_class": "write", "timeout_ms": 30000}
       ]
     }
   ],

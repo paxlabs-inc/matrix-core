@@ -37,6 +37,7 @@ type Engine struct {
 	pager        *memory.Pager
 	consolidator agent.Consolidator
 	conv         *conversation.Store // durable chat-thread history (per conversation_id)
+	mediaDir     string              // machine-volume dir for generated + uploaded media ("" disables)
 
 	backendURL   string // co-located MCL daemon (core_execute + reverse proxy)
 	backendToken string // optional bearer for the daemon
@@ -58,6 +59,7 @@ type EngineOptions struct {
 	Pager           *memory.Pager
 	Consolidator    agent.Consolidator
 	ConversationDir string // durable conversation store dir ("" disables persistence)
+	MediaDir        string // machine-volume media dir ("" disables image/video/audio I/O)
 	BackendURL      string
 	BackendToken    string
 }
@@ -73,6 +75,7 @@ func NewEngine(o EngineOptions) *Engine {
 		pager:        o.Pager,
 		consolidator: o.Consolidator,
 		conv:         conversation.Open(o.ConversationDir),
+		mediaDir:     strings.TrimRight(o.MediaDir, "/"),
 		backendURL:   strings.TrimRight(o.BackendURL, "/"),
 		backendToken: o.BackendToken,
 		broker:       newBroker(),
@@ -191,6 +194,21 @@ func (e *Engine) surfaceTool(r *run, ev agent.ToolEvent) {
 			return
 		}
 	}
+	// Generated/edited media → a rich media card the client renders inline
+	// (image thumbnail / video player). Transcripts are plain text and flow
+	// through the model's answer, so they don't get a media card.
+	if m, ok := parseMedia(ev.Result); ok && (m.Kind == "image" || m.Kind == "video") {
+		e.broker.publish(r.id, "tool.media", "neo", map[string]interface{}{
+			"intent_id":       r.id,
+			"conversation_id": r.convID,
+			"tool":            ev.Name,
+			"kind":            m.Kind,
+			"url":             m.URL,
+			"mime":            m.MIME,
+			"prompt":          m.Prompt,
+		})
+		return
+	}
 	// Generic: a compact "did X" so even non-search tools show their work.
 	e.broker.publish(r.id, "tool.result", "neo", map[string]interface{}{
 		"intent_id":       r.id,
@@ -239,6 +257,31 @@ func parseSearch(raw string) (searchPayload, bool) {
 	return s, true
 }
 
+// mediaPayload mirrors the media MCP tool's JSON result for image/video output.
+type mediaPayload struct {
+	OK     bool   `json:"ok"`
+	Kind   string `json:"kind"`
+	URL    string `json:"url"`
+	MIME   string `json:"mime"`
+	Prompt string `json:"prompt"`
+}
+
+// parseMedia recognises a successful media-tool result ({ok:true, kind, url}).
+func parseMedia(raw string) (mediaPayload, bool) {
+	raw = strings.TrimSpace(raw)
+	if raw == "" || raw[0] != '{' {
+		return mediaPayload{}, false
+	}
+	var m mediaPayload
+	if err := json.Unmarshal([]byte(raw), &m); err != nil {
+		return mediaPayload{}, false
+	}
+	if !m.OK || m.URL == "" || m.Kind == "" {
+		return mediaPayload{}, false
+	}
+	return m, true
+}
+
 func (s searchPayload) cards() []map[string]interface{} {
 	out := make([]map[string]interface{}, 0, len(s.Results))
 	for _, r := range s.Results {
@@ -267,6 +310,14 @@ func toolLabel(name string) string {
 		return "Checked the repository"
 	case strings.Contains(name, "shell"), strings.Contains(name, "exec"):
 		return "Ran a command"
+	case strings.HasSuffix(name, "generate_image"):
+		return "Created an image"
+	case strings.HasSuffix(name, "edit_image"):
+		return "Edited an image"
+	case strings.HasSuffix(name, "generate_video"):
+		return "Generated a video"
+	case strings.HasSuffix(name, "transcribe_audio"):
+		return "Transcribed audio"
 	case name == tools.CoreExecuteTool:
 		return "Routed to secure execution"
 	default:

@@ -123,6 +123,43 @@ effector     = "the harness injects the credential at tool-call time — same ef
 maps_to      = "Neo invariant i1 generalized: just as Neo holds NO signing key, the agent holds NO OAuth token"
 audit        = "every credential use is logged (user, connector, tool, time) for revocation + honesty"
 
+# ========================== CREDENTIAL FLOW ===============================
+# How an agent on an ephemeral per-user daemon reaches its OWNER's vaulted
+# credentials that live on a DIFFERENT server (the UWAC control plane).
+# Grounded in the live wallet agent-auth lane (paxeer-embeded-wallets
+# src/routes/agentAuth.ts) + the daemon identity (executor/cmd/mcl-execute).
+
+[credential_flow]
+principle    = "the agent NEVER fetches the raw credential; it calls a UWAC MCP tool and the remote UWAC service does the lookup + injection + provider call server-side, returning only the RESULT"
+mirrors      = "the embedded wallet exactly — the daemon holds no signing key yet still sends txns because the wallet API signs network-side; UWAC is a second vault next to that custody, reached the same way"
+token_never_leaves = "the OAuth token never crosses the wire to the Fly machine; only scoped results return"
+
+[credential_flow.transport_auth]
+what   = "proves the caller is a legitimate Matrix daemon"
+how    = "shared bearer MATRIX_UWAC_TOKEN injected by the router into every machine (exactly like MATRIX_TACHYON_TOKEN)"
+not    = "a shared token alone CANNOT scope to an owner — per-owner scoping comes from the principal auth below"
+
+[credential_flow.principal_auth]
+what   = "proves WHICH owner this daemon acts for, so UWAC fetches the RIGHT user's tokens"
+how    = "ed25519 agent-DID challenge/verify against UWAC, reusing the daemon executor.key (the same handshake tools/paxeer/lib/agentauth.mjs uses for the wallet)"
+keystone = "the agent DID label IS the Supabase user UUID (did:matrix:<MATRIX_USER_ID>:<keyfp>); the wallet lane already binds owner_user_id this way (AGENT_BIND_OWNER_FROM_DID + labelIsUuid)"
+resolves = "verify DID signature -> extract label -> Supabase user_id -> vault lookup (user_id, provider); this is the SAME user_id that consented the app via GoTrue, so the binding closes itself with zero extra wiring"
+challenge_msg = "UWAC owns both sides (uwac.mjs signs, uwacd verifies); message = \"matrix-uwac-auth:\" + did + \":\" + nonce, single-use nonce, ed25519 over the public key in the DID"
+
+[credential_flow.invoke_path]
+step_1 = "agent emits a tool intent, e.g. gmail_send"
+step_2 = "tools/uwac/uwac.mjs (the stdio MCP proxy) POSTs /v1/invoke {tool, args} to MATRIX_UWAC_URL with the shared bearer + a freshly-minted agent-DID token"
+step_3 = "uwacd verifies transport + principal, resolves owner user_id from the DID label"
+step_4 = "vault fetches the (user_id, provider) refresh token; refresher mints a fresh provider access token"
+step_5 = "uwacd calls the provider API (Gmail) server-side, injecting the token"
+step_6 = "only the RESULT returns to the daemon — the agent never saw a token"
+
+[credential_flow.why_separate_server]
+r1 = "the daemon is the LEAST-trusted host (it runs permissive arbitrary shell + browser); long-lived OAuth refresh tokens must never sit on an ephemeral VM that runs user code and scales to zero"
+r2 = "one revocation point: disconnect an app -> kill one vault row -> every machine instantly loses the capability"
+r3 = "tokens are not sprayed across 100 per-user VMs; they live in one hardened place"
+caveat = "a compromised daemon cannot STEAL the refresh token (never sent) but could INVOKE scoped actions as the agent; mitigated structurally by audit logging + confirmation on irreversible/external-money actions + instant revocation (same threat model as the wallet: low-odds + recoverable, not impossible)"
+
 # ============================= CONNECTORS ==================================
 
 [connectors]

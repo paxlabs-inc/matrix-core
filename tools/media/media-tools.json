@@ -1,0 +1,55 @@
+[
+  {
+    "name": "generate_image",
+    "description": "Generate a NEW image from a text description (text-to-image). Use this when the user wants a picture/illustration/art created from scratch. Craft a single, vivid, detailed prompt: subject, style, composition, lighting, colors, mood. The result is shown to the user automatically — in your reply just describe what you made, do NOT paste the URL. Returns JSON {ok, kind:\"image\", url, prompt}. args: prompt (required), aspect_ratio? (one of 1:1, 16:9, 9:16, 4:3, 3:2; default 1:1), seed? (integer for reproducibility).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "prompt": { "type": "string", "description": "A vivid, detailed description of the image to create (subject, style, composition, lighting, colors, mood)." },
+        "aspect_ratio": { "type": "string", "description": "Output aspect ratio: 1:1, 16:9, 9:16, 4:3, or 3:2. Default 1:1.", "enum": ["1:1", "16:9", "9:16", "4:3", "3:2"] },
+        "seed": { "type": "integer", "description": "Optional random seed for reproducible results." }
+      },
+      "required": ["prompt"]
+    }
+  },
+  {
+    "name": "edit_image",
+    "description": "Transform or edit an EXISTING image with a text instruction (image+text-to-image): style transfer, change colors, add/remove elements, change the scene, restyle a portrait. Use this when the user attached an image (referenced like /media/<id>.png) or asks to change a picture you already made. Describe the change clearly in the prompt. The result is shown automatically; describe it in your reply, do not paste the URL. Returns JSON {ok, kind:\"image\", url, prompt}. args: prompt (required, the change to apply), image (required, the /media reference or public image URL to edit), aspect_ratio?, seed?.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "prompt": { "type": "string", "description": "The transformation to apply, e.g. 'make his shirt yellow', 'turn this into a watercolor painting'." },
+        "image": { "type": "string", "description": "The source image to edit: a /media/<id> reference (an attachment or a previously generated image) or a public https image URL." },
+        "aspect_ratio": { "type": "string", "description": "Output aspect ratio: 1:1, 16:9, 9:16, 4:3, or 3:2.", "enum": ["1:1", "16:9", "9:16", "4:3", "3:2"] },
+        "seed": { "type": "integer", "description": "Optional random seed for reproducible results." }
+      },
+      "required": ["prompt", "image"]
+    }
+  },
+  {
+    "name": "generate_video",
+    "description": "Generate a short video from a text description (text-to-video) or animate an existing image (image-to-video). Use this when the user wants a clip/animation. This runs asynchronously and can take a few minutes — it blocks until the video is ready, so only call it once and wait. The result is shown to the user automatically; describe it in your reply, do not paste the URL. Returns JSON {ok, kind:\"video\", url, prompt}. args: prompt (required), image? (a /media reference or public image URL to animate), seconds? (clip length in seconds, default 5), aspect_ratio?.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "prompt": { "type": "string", "description": "A vivid description of the video: subject, action, camera movement, style, mood." },
+        "image": { "type": "string", "description": "Optional source image to animate (image-to-video): a /media/<id> reference or a public https image URL." },
+        "seconds": { "type": "integer", "description": "Clip length in seconds (default 5)." },
+        "aspect_ratio": { "type": "string", "description": "Output aspect ratio: 1:1, 16:9, 9:16, 4:3, or 3:2.", "enum": ["1:1", "16:9", "9:16", "4:3", "3:2"] }
+      },
+      "required": ["prompt"]
+    }
+  },
+  {
+    "name": "transcribe_audio",
+    "description": "Transcribe spoken audio into text (speech-to-text). Use this when the user attaches an audio file (referenced like /media/<id>.mp3) or links a public audio URL and wants it transcribed, summarized, or acted on. Returns JSON {ok, kind:\"transcript\", text}. args: audio (required, the /media reference or public audio URL), language? (ISO 639-1 code like 'en'; omit to auto-detect).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "audio": { "type": "string", "description": "The audio to transcribe: a /media/<id> reference (an attachment) or a public https audio URL. Formats: wav, mp3, m4a, webm, flac, ogg, opus, aac." },
+        "language": { "type": "string", "description": "Optional ISO 639-1 language code (e.g. 'en', 'es'). Omit to auto-detect." }
+      },
+      "required": ["audio"]
+    }
+  }
+]

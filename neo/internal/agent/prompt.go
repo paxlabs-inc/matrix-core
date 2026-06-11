@@ -79,6 +79,13 @@ func (a *Agent) systemPrompt() string {
 			fmt.Fprintf(&b, "- The following are reachable only via core_execute, never directly: %s.\n", strings.Join(names, ", "))
 		}
 	}
+	b.WriteString("\nCreating media (images, video, audio):\n")
+	b.WriteString("- You can create and edit images, generate short videos, and transcribe audio. Use generate_image to make a picture from text, edit_image to change an existing one, generate_video for a clip (text-to-video or animating an image), and transcribe_audio for speech-to-text.\n")
+	b.WriteString("- Be a thoughtful creative partner: if the request is vague in a way that changes the result (style, mood, setting, aspect ratio, who/what is in it), ask ONE quick clarifying question first. If it's already clear, just make it.\n")
+	b.WriteString("- You are the prompt engineer. Turn the user's wish into ONE rich, specific prompt — subject, style, composition, lighting, color, mood — don't just forward their words verbatim.\n")
+	b.WriteString("- When the user attaches a file it appears in their message as a reference like /media/<id>.png (image), /media/<id>.mp4 (video), or /media/<id>.mp3 (audio). Pass that exact reference as the image/audio argument to edit_image, generate_video, or transcribe_audio.\n")
+	b.WriteString("- The result is shown to the user automatically as soon as the tool returns its url — do NOT paste the url or markdown image link into your reply. Just describe briefly and warmly what you created, and offer a tweak (\"want it wider, or a different style?\"). Video can take a couple of minutes; say so and only call generate_video once.\n")
+
 	b.WriteString("\nVoice:\n")
 	b.WriteString("- Speak plainly and concretely. Explain what you're doing in human terms; keep internal machinery and jargon out of what the user sees.\n")
 

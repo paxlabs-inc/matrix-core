@@ -179,6 +179,17 @@ func main() {
 			// MATRIX_TACHYON_TOKEN (optional) is the engine's own bearer.
 			"MATRIX_TACHYON_URL":   envOr("MATRIX_TACHYON_URL", "http://matrix-tachyon.internal:8645/rpc"),
 			"MATRIX_TACHYON_TOKEN": os.Getenv("MATRIX_TACHYON_TOKEN"),
+			// UWAC connector hub (tools/uwac/uwac.mjs stdio proxy in the daemon
+			// image -> the shared uwacd Fly app: OAuth connector vault + tool
+			// invoke). Like the browser/tachyon proxies it answers
+			// initialize/tools/list locally so an unreachable hub never bricks
+			// daemon boot; it dials MATRIX_UWAC_URL lazily on the first uwac_*
+			// call. The daemon mints its OWN agent-DID principal token (reusing
+			// the executor key, label = MATRIX_USER_ID) so uwacd scopes the
+			// vault lookup to this owner. MATRIX_UWAC_TOKEN is the shared
+			// transport bearer; OAuth tokens never reach the daemon.
+			"MATRIX_UWAC_URL":   envOr("MATRIX_UWAC_URL", "http://matrix-uwac.internal:8646"),
+			"MATRIX_UWAC_TOKEN": os.Getenv("MATRIX_UWAC_TOKEN"),
 			// Deus agent-service gateway (tools/deus/deus.mjs stdio proxy).
 			"MATRIX_DEUS_URL":        envOr("MATRIX_DEUS_URL", "http://deus-control.internal:9095"),
 			"MATRIX_DEUS_TIMEOUT_MS": os.Getenv("MATRIX_DEUS_TIMEOUT_MS"),

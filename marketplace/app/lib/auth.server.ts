@@ -273,19 +273,19 @@ export function clearPkceVerifier(env: AuthEnv): Promise<string> {
   return pkceCookie(env).serialize("", { maxAge: 0 });
 }
 
-/** Supabase OAuth authorize URL (Google / GitHub), PKCE S256. */
+/** Supabase OAuth authorize URL (Google / GitHub), implicit flow — matches
+ * the GoTrue deployment every other Paxeer app signs in through. Tokens
+ * return in the URL fragment and the callback page posts them to the server
+ * for verification. */
 export function oauthAuthorizeUrl(
   env: AuthEnv,
   provider: "google" | "github",
-  redirectTo: string,
-  codeChallenge: string
+  redirectTo: string
 ): string {
   const base = (env.SUPABASE_URL ?? "").replace(/\/+$/, "");
   const params = new URLSearchParams({
     provider,
     redirect_to: redirectTo,
-    code_challenge: codeChallenge,
-    code_challenge_method: "s256",
   });
   return `${base}/auth/v1/authorize?${params.toString()}`;
 }
@@ -331,6 +331,33 @@ export async function exchangeOAuthCode(
     const data = (await res.json()) as { user?: SupabaseUserPayload };
     if (!data.user?.id) return null;
     return appUserFromSupabase(data.user);
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Verify an implicit-flow access token server-side: GoTrue's /auth/v1/user
+ * authenticates the bearer token and returns the user it belongs to. The
+ * token itself is never stored — the session is our own httpOnly cookie.
+ */
+export async function verifyAccessToken(
+  env: AuthEnv,
+  accessToken: string
+): Promise<AppUser | null> {
+  const base = env.SUPABASE_URL?.replace(/\/+$/, "");
+  if (!base || !env.SUPABASE_ANON_KEY) return null;
+  try {
+    const res = await fetch(`${base}/auth/v1/user`, {
+      headers: {
+        apikey: env.SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${accessToken}`,
+      },
+    });
+    if (!res.ok) return null;
+    const data = (await res.json()) as SupabaseUserPayload;
+    if (!data?.id) return null;
+    return appUserFromSupabase(data);
   } catch {
     return null;
   }
