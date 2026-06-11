@@ -1,4 +1,4 @@
-999<!--
+<!--
 parent:
   order: false
 -->
@@ -24,8 +24,8 @@ parent:
   <a href="https://github.com/paxlabs-inc/matrix-core/actions/workflows/ci.yml"><img src="https://github.com/paxlabs-inc/matrix-core/actions/workflows/ci.yml/badge.svg?branch=main" alt="ci" /></a>
   <a href="https://github.com/paxlabs-inc/matrix-core/actions/workflows/lint.yml"><img src="https://github.com/paxlabs-inc/matrix-core/actions/workflows/lint.yml/badge.svg?branch=main" alt="lint" /></a>
   <a href="https://github.com/paxlabs-inc/matrix-core/actions/workflows/docker.yml"><img src="https://github.com/paxlabs-inc/matrix-core/actions/workflows/docker.yml/badge.svg?branch=main" alt="docker" /></a>
-  <img src="https://img.shields.io/badge/Go-1.21-004CED?logo=go&logoColor=white" alt="Go 1.21" />
-  <img src="https://img.shields.io/badge/Modules-4-004CED" alt="4 Go modules" />
+  <img src="https://img.shields.io/badge/Go-1.22-004CED?logo=go&logoColor=white" alt="Go 1.22" />
+  <img src="https://img.shields.io/badge/Modules-9-004CED" alt="9 Go modules" />
 </p>
 
 ---
@@ -42,16 +42,30 @@ that break non-dev ↔ agent workflows today:
 3. **No shared ontology** — user and agent disagree about which entity is being referred to.
 4. **No structured correction** — drift forces the user to rewrite from scratch.
 
-The solution is layered:
+Matrix ships **two agent rails** over one shared memory + execution substrate:
 
-| Layer       | Role                                                                                          |
-| ----------- | --------------------------------------------------------------------------------------------- |
-| **MCL**     | Protocol turning NL → typed Intent IR. Verbs are closed (10), objects are closed (8 kinds).   |
-| **cortex**  | Per-actor typed memory graph on Pebble. Append-only journal, Merkle-anchored snapshots.       |
-| **bridge**  | Glue wiring the MCL compiler's `Cortex` interface to a live cortex instance.                  |
-| **executor**| Plan walker, lifecycle machine, MCP tool dispatch, long-running daemon, end-to-end harness.   |
-| **agents**  | DID-bound manifests. Protocol, not personality.                                               |
-| **tools**   | Only layer permitted to touch the Paxeer chain.                                               |
+- **Neo** — the *default* conversational tool-calling agent: familiar, robust, fully
+  permissive on reversible work (shell, code, fetch, web). It delegates anything
+  monetary or irreversible to the rigorous rail.
+- **MCL pipeline** — the *rigorous* rail: natural language → typed Intent IR →
+  plan → replayable walk, for high-stakes / on-chain / irreversible work.
+
+The stack is layered:
+
+| Layer        | Role                                                                                          |
+| ------------ | --------------------------------------------------------------------------------------------- |
+| **MCL**      | Protocol turning NL → typed Intent IR. Verbs are closed (10), objects are closed (8 kinds).   |
+| **cortex**   | Per-actor typed memory graph on Pebble. Append-only journal, Merkle-anchored snapshots.       |
+| **bridge**   | Glue wiring the MCL compiler's `Cortex` interface to a live cortex instance.                  |
+| **executor** | Plan walker, lifecycle machine, MCP tool dispatch, per-user daemon, Liaison narrator, e2e harness. |
+| **neo**      | The default conversational agent — tool-calling loop with paged cortex memory.                |
+| **gateway**  | Metered LLM proxy + PAX credit ledger (free-tier whitelist + rate card).                       |
+| **router**   | Per-user Fly Machine provisioning + wake-then-reverse-proxy front door.                        |
+| **deus**     | Agent-service marketplace: registry, discovery, metered invoke, EIP-712 receipts, hosting.    |
+| **uwac**     | Universal Web Agent Connector — OAuth vault → per-user MCP tools.                              |
+| **tachyon**  | Agent-native Solidity/EVM engine — compile / test / simulate / deploy.                         |
+| **agents**   | DID-bound manifests. Protocol, not personality.                                               |
+| **tools**    | MCP servers the agents call (the chain-touching ones included).                               |
 
 
 ---
@@ -60,34 +74,46 @@ The solution is layered:
 
 ```text
 matrix/
-├── cortex/        Pebble-backed typed memory graph + replay invariant + snapshots/Merkle
-├── MCL/           MatrixScript compiler — lexer/parser/validator/canonical/interpreter + IR + envelope + LLM client
+├── cortex/        Typed per-actor memory graph (Pebble) + replay invariant + Merkle snapshots
+├── MCL/           MatrixScript compiler — lexer/parser/validator/canonical/interpreter + Intent IR + envelopes + LLM client
 ├── bridge/        MCL ↔ cortex adapter (separate Go module; replace-directive linked)
-├── executor/      Lifecycle, runtime walker, MCP client + tool registry, mcl-execute CLI, daemon, e2e harness
-├── deploy/        Dockerfile (matrix-daemon), Fly.io Machine template, Paxeer storage box bootstrap
-├── skills/        159 SKILL.mtx capability manifests + SKILL.md prose bodies
-├── agents/        Agent manifests (default.json + MCP server templates)
-├── rules/         Identity + per-language coding rules (Andrew profile + 14 language sets)
-├── tools/         Chain-touching wrappers (deferred to v1.1) + skill corpus utilities
-├── research/      Design docs (00-decisions through 06-agents)
-├── knowledge/     Canonical refs (matrix.kvx — load-bearing project state, models.kvx, whitepaper)
-├── journal/       Unified temporal store (plan/, notes/, thoughts/, logs/)
-├── workflows/     Multi-step orchestrations
-├── router/        Per-user Fly Machine routing (Phase 4 of deploy)
+├── executor/      Lifecycle machine, runtime walker, MCP client + tool registry, per-user daemon (+ Liaison narrator), e2e harness
+├── neo/           Neo — the default conversational tool-calling agent (delegates monetary/irreversible work to MCL)
+├── gateway/       Metered LLM proxy + PAX credit ledger (free-tier whitelist + rate card)
+├── router/        Per-user Fly Machine provisioning + wake-then-reverse-proxy front door
+├── deus/          Agent-service marketplace: registry, discovery, metered invoke, EIP-712 receipts, hosted execution
+├── uwac/          Universal Web Agent Connector — OAuth vault → per-user MCP tools (building)
+├── tachyon/       Agent-native Solidity/EVM engine — compile/test/simulate/deploy (git submodule)
+├── chronos/       Centralized agent scheduler / wake-up system (design frozen)
+├── agents/        DID-bound agent manifests (default.json, neo.json) + MCP server templates
+├── tools/         MCP servers — paxeer, browser, tachyon, deus, uwac, web-search, media, cortex
+├── skills/        SKILL.mtx capability manifests + SKILL.md prose bodies
+├── client/        Matrix consumer app (Next.js / React)
+├── marketplace/   Deus marketplace + developer dashboard (React Router on Cloudflare Workers)
+├── deploy/        Daemon image, Fly Machine deploy, shared-service images, box install scripts
+├── rules/         Identity + per-language coding rules
+├── knowledge/     Canonical refs (matrix.kvx project state, models)
 └── runs/          Transient harness output (gitignored)
 ```
 
-### The four Go modules
+### The Go modules
 
-Each top-level module is independently `go build`/`go test`able and has its own `go.mod`.
-Cross-module imports use `replace` directives during development; production publish swaps
-them for explicit versions.
+The root `Makefile` drives **nine** sibling Go modules — MCL, bridge, executor, gateway,
+router, cortex, tachyon, deus, neo — alongside **uwac** (and **chronos**, in progress).
+Each is independently `go build`/`go test`able with its own `go.mod`; cross-module imports
+use `replace` directives during development and explicit versions on publish.
 
 ```text
-cortex   → matrix/cortex   (~18.7k prod LOC, 16 packages, 365+ tests)
-MCL      → matrix/mcl      (~6.3k  prod LOC, 11 packages, 174+ tests)
-bridge   → matrix/bridge   (~1.0k  prod LOC,  2 packages,  23  tests)
-executor → matrix/executor (~12.5k prod LOC,  8 packages,  ~100 tests)
+cortex   → matrix/cortex                    typed memory graph, replay invariant, snapshots/Merkle
+MCL      → matrix/mcl                       compiler + Intent IR + envelopes + LLM client
+bridge   → matrix/bridge                    MCL ↔ cortex adapter
+executor → matrix/executor                  plan walker, lifecycle, MCP dispatch, daemon, Liaison
+neo      → matrix/neo                       default conversational agent
+gateway  → matrix/gateway                   metered LLM proxy + PAX credit ledger
+router   → matrix/router                    per-user Fly Machine routing
+deus     → github.com/paxlabs-inc/deus      agent-service marketplace
+uwac     → github.com/paxlabs-inc/uwac      external app connectors
+tachyon  → github.com/paxlabs-inc/tachyon-tools   Solidity/EVM engine (submodule)
 ```
 
 ---
@@ -96,7 +122,7 @@ executor → matrix/executor (~12.5k prod LOC,  8 packages,  ~100 tests)
 
 ### Prerequisites
 
-- Go **1.21** (toolchain pinned across every module).
+- Go **1.22+** (toolchain pinned across every module).
 - `make` (GNU make 4.x).
 - For the MCP-server-driven flows: `node` ≥ 20, `npx`, `python3` ≥ 3.11, `uv`.
 - For the daemon image: `docker` with buildx.
@@ -105,9 +131,9 @@ executor → matrix/executor (~12.5k prod LOC,  8 packages,  ~100 tests)
 
 ```bash
 git clone https://github.com/paxlabs-inc/matrix-core.git
-cd matrix
-make build           # builds all 4 modules
-make install         # drops the 8 user-facing CLIs into ./bin
+cd matrix-core
+make build           # builds all nine Go modules
+make install         # drops the runnable CLIs into ./bin
 make test            # `go test -count=1 -race ./...` per module
 make vet             # `go vet ./...` per module
 make ci              # gofmt-check + vet + tests (mirrors GitHub Actions)
@@ -169,30 +195,36 @@ an Intent + PlanTree, walks the plan, journals every step as a cortex Event, and
 
 Routes:
 
-| Method | Path             | Purpose                              |
-| ------ | ---------------- | ------------------------------------ |
-| GET    | `/healthz`       | Liveness + SSE broker stats          |
-| GET    | `/events`        | Server-Sent Events tail (transcript) |
-| POST   | `/messages`      | Submit a prose message               |
-| GET    | `/intents/{id}`  | Read intent envelope chain by ID     |
-| POST   | `/shutdown`      | Graceful drain                       |
+| Method | Path             | Purpose                                  |
+| ------ | ---------------- | ---------------------------------------- |
+| GET    | `/healthz`       | Liveness + SSE broker stats              |
+| POST   | `/chat`          | Converse with the agent (Neo front door) |
+| GET    | `/events`        | Server-Sent Events tail (transcript)     |
+| POST   | `/messages`      | Submit a prose message (rigorous rail)   |
+| GET    | `/intents/{id}`  | Read intent envelope chain by ID         |
+| GET    | `/me`            | Per-user settings + identity             |
+| POST   | `/shutdown`      | Graceful drain                           |
 
 ---
 
 ## Status
 
-- **Cortex**: v1 functionally complete. Phases 1–14 done (Pebble shell, typed memory,
-  replay invariant, snapshots/Merkle, salience EMA, rate-limiting, real embedder).
-- **MCL**: Go runtime complete (lexer, parser, validator, canonical, interpreter, IR,
-  envelope), real LLM wired via OpenAI-compat (Fireworks/Together).
-- **bridge**: Adapter live. Compile-time `cortex.Find`/`Resolve`/`Context` works against
-  a live cortex actor.
-- **executor**: Plan walker, MCP client + tool registry, materiality classifier (D9),
-  daemon HTTP+SSE server, mcl-execute CLI, mcl-e2e live harness — all in.
-- **deploy**: Daemon Dockerfile, Fly Machines template, Paxeer storage box bootstrap
-  authored. Live deploy execution = next session.
+Matrix runs as a **hosted v1**: each user gets an isolated per-user runtime (a Fly
+Machine) provisioned and woken on demand by the router, with every LLM call metered
+through the gateway's PAX credit ledger.
 
-Full per-phase status table lives in `knowledge/matrix.kvx`.
+- **cortex** — v1 complete: typed memory, append-only journal, replay invariant, Merkle snapshots, salience, real embedder.
+- **MCL** — compiler complete (lexer/parser/validator/canonical/interpreter/IR/envelopes); real LLM via OpenAI-compat (Fireworks/Together).
+- **bridge** — live MCL ↔ cortex adapter (compile-time `Find`/`Resolve`/`Context`).
+- **executor** — plan walker, MCP client + tool registry, materiality classifier (D9), per-user daemon (HTTP + SSE), Liaison narrator.
+- **neo** — the default conversational agent: tool-calling loop, paged cortex memory, delegates monetary/irreversible work to MCL.
+- **gateway** — metered LLM proxy + PAX credit ledger (free-tier whitelist + rate card), live.
+- **router** — per-user Fly Machine provisioning + wake-then-proxy front door, live.
+- **tachyon** — agent-native Solidity/EVM engine; proven live on Paxeer chain 125.
+- **uwac** — universal web app connectors (OAuth vault → MCP tools).
+- **chronos** — centralized agent scheduler / wake-up system: design frozen.
+
+
 
 ---
 
