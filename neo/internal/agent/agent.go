@@ -26,6 +26,7 @@ import (
 	"matrix/neo/internal/config"
 	"matrix/neo/internal/llm"
 	"matrix/neo/internal/memory"
+	"matrix/neo/internal/recall"
 	"matrix/neo/internal/tools"
 )
 
@@ -34,6 +35,15 @@ import (
 // Implemented by internal/writeback; optional (nil disables write-back).
 type Consolidator interface {
 	Consolidate(transcript string)
+}
+
+// ConvRecaller surfaces the most relevant PAST turns of this conversation
+// (beyond the live transcript / resume seed) for a given query. Implemented by
+// internal/recall; optional (nil disables conversational recall). It is the
+// additive read-lane that lets an unbounded thread stay coherent — relevance
+// over raw recency — without growing the in-window transcript.
+type ConvRecaller interface {
+	Relevant(ctx context.Context, query string) []recall.Hit
 }
 
 // ToolEvent is a single observed tool call and its result, surfaced to the
@@ -62,6 +72,7 @@ type Agent struct {
 	pager        *memory.Pager
 	out          Reporter
 	consolidator Consolidator
+	recaller     ConvRecaller
 	observer     ToolObserver
 
 	schemas      []llm.Tool
@@ -90,6 +101,7 @@ type Options struct {
 	Pager        *memory.Pager
 	Reporter     Reporter
 	Consolidator Consolidator // optional: background write-back
+	Recaller     ConvRecaller // optional: relevant past-turn recall (additive read-lane)
 	Observer     ToolObserver // optional: per-tool-result surfacing (show the work)
 }
 
@@ -107,6 +119,7 @@ func New(o Options) *Agent {
 		pager:        o.Pager,
 		out:          out,
 		consolidator: o.Consolidator,
+		recaller:     o.Recaller,
 		observer:     o.Observer,
 	}
 	if a.tools != nil {
@@ -132,6 +145,9 @@ func (a *Agent) Chat(ctx context.Context, userInput string) error {
 	// Page-fault relevant memory + proven patterns for this ask (once/turn).
 	retrieved := a.faultMemory(ctx, userInput)
 	procedural := a.faultPatterns(ctx, userInput)
+	// Conversational recall: relevant PAST turns beyond the live transcript —
+	// the additive read-lane that keeps an unbounded thread coherent.
+	recalled := a.recallTurns(ctx, userInput)
 
 	repeats := 0
 	prevSig := ""
@@ -148,18 +164,19 @@ func (a *Agent) Chat(ctx context.Context, userInput string) error {
 			}
 			retrieved = a.faultMemory(ctx, q)
 			procedural = a.faultPatterns(ctx, q)
+			recalled = a.recallTurns(ctx, q)
 		}
 
 		pinned := ""
 		if a.pager != nil {
 			pinned = a.pager.Pinned(ctx, a.activeGoal)
 		}
-		baseSystem := a.buildSystem(pinned, retrieved, procedural)
+		baseSystem := a.buildSystem(pinned, retrieved, procedural, recalled)
 
 		// [control.loop] step_3: forced compaction if over the hard threshold.
 		if a.budgetPct(baseSystem) >= a.cfg.HardPct {
 			a.compact(ctx, "hard")
-			baseSystem = a.buildSystem(pinned, retrieved, procedural)
+			baseSystem = a.buildSystem(pinned, retrieved, procedural, recalled)
 		}
 		pct := a.budgetPct(baseSystem)
 		system := baseSystem + fmt.Sprintf("\n\n[context: %d%% used]\n", pct)
@@ -195,7 +212,7 @@ func (a *Agent) Chat(ctx context.Context, userInput string) error {
 				a.consolidator.Consolidate(renderTranscript(a.working))
 			}
 			// [control.loop] step_6: cooperative compaction at a clean boundary.
-			if a.budgetPct(a.buildSystem(pinned, retrieved, procedural)) >= a.cfg.SoftPct {
+			if a.budgetPct(a.buildSystem(pinned, retrieved, procedural, recalled)) >= a.cfg.SoftPct {
 				a.compact(ctx, "soft")
 			}
 			return nil
@@ -284,6 +301,16 @@ func (a *Agent) faultMemory(ctx context.Context, q string) []memory.Snippet {
 		return nil
 	}
 	return snips
+}
+
+// recallTurns asks the optional conversational recaller for the most relevant
+// PAST turns of this thread (beyond the live transcript). Best-effort: a nil
+// recaller or empty result simply yields no recall section.
+func (a *Agent) recallTurns(ctx context.Context, q string) []recall.Hit {
+	if a.recaller == nil {
+		return nil
+	}
+	return a.recaller.Relevant(ctx, q)
 }
 
 func (a *Agent) faultPatterns(ctx context.Context, q string) []memory.Pattern {

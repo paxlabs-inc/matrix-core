@@ -15,6 +15,7 @@ import (
 	"matrix/neo/internal/agent"
 	"matrix/neo/internal/conversation"
 	"matrix/neo/internal/llm"
+	"matrix/neo/internal/recall"
 )
 
 // A session is one conversation thread: its own agent loop (transcript +
@@ -91,6 +92,16 @@ func (e *Engine) newSession(convID string) *session {
 		engine: e,
 		gates:  map[string]chan gateAnswer{},
 	}
+	// Conversational recall lane: relevant PAST turns of this (now unbounded)
+	// thread, beyond the live transcript + resume seed. Reuses the pager's
+	// embedder so the whole agent shares one embedding model; a disabled store
+	// or absent embedder yields a nil recaller (no-op).
+	var recaller agent.ConvRecaller
+	if e.conv.Enabled() && e.pager != nil {
+		if emb := e.pager.Embedder(); emb != nil {
+			recaller = recall.New(e.conv, convID, emb, e.cfg.RecallTopK, e.cfg.RecallBudgetTokens)
+		}
+	}
 	s.agent = agent.New(agent.Options{
 		Config:       e.cfg,
 		Main:         e.main,
@@ -99,6 +110,7 @@ func (e *Engine) newSession(convID string) *session {
 		Pager:        e.pager,
 		Reporter:     &sseReporter{sess: s},
 		Consolidator: e.consolidator,
+		Recaller:     recaller,
 		Observer:     func(ev agent.ToolEvent) { e.surfaceTool(s.cur, ev) },
 	})
 	// Resume continuity: if this conversation already has durable turns (a

@@ -1,0 +1,354 @@
+# assembler.frozen.kvx — FROZEN architecture spec for the Context Assembler ("Loom").
+#
+# The Context Assembler is Matrix's per-turn CONTEXT COMPOSITION subsystem: the
+# thing that, every single model call, looks at the live situation and a hard
+# token budget and emits the ONE window the LLM should see — pinned
+# non-negotiables + relevance-ranked memory + a conversational recall slice +
+# procedural guidance + outcomes — conflict-resolved, deduped, budget-trimmed,
+# ordered for attention, with headroom left for the answer.
+#
+# CORE THESIS (locked with Andrew, 2026-06-12): the field built better and
+# better STORES (vector DBs, our cortex) and mistook storage for the hard
+# problem. The hard problem is per-turn COMPOSITION under a budget, left
+# everywhere as ad-hoc glue inside each agent loop. There is no first-class,
+# model-agnostic, reusable "context assembler" as a named subsystem. This spec
+# defines one — and we already own ~60-70% of the parts, because the MCL
+# compiler is structurally a declarative staged compiler we can retarget.
+#
+# FOUNDATION (the key insight): the MCL compiler is a `prose -> signed Intent IR`
+# compiler built on a DECLARATIVE, staged, budget-aware, cortex-integrated,
+# deterministic runtime (pipeline.mtx §PIPELINE; stage types pure/llm_constrained/
+# cortex; per-stage budget_tokens; verb->memory-type routing in verb.mtx;
+# confidence scoring in confidence.mtx; seeds + mtx_digest determinism).
+# The Context Assembler is a `situation -> rendered Window` compiler on the SAME
+# runtime: a SECOND pipeline target with a different stage list + a different
+# terminal IR. We reuse the engine; we do NOT build a new one.
+#
+# Format: sectioned KV per the Matrix .kvx convention (see tachyon/internal/config/kvx.go).
+#   [section] / [section.sub]   key = "string"   num = 80   list = ["a","b"]   ${ENV}
+# String-typed values are ALWAYS double-quoted (Matrix .mtx lexer convention).
+#
+# STATUS: FROZEN. Design locked with Andrew on 2026-06-12. Changes require a new version.
+
+[meta]
+name        = "Context Assembler"
+codename    = "loom"
+proper_name = "Loom — it weaves the disparate threads (pinned, recalled, conversational, procedural, outcomes) into one cloth (the window) every turn"
+kind        = "per-turn context-composition subsystem (a second MCL pipeline target)"
+version     = "1.0.0"
+status      = "frozen"
+frozen_at   = "2026-06-12"
+authors     = ["Andrew", "cursor-agent"]
+relation    = "built ON the MCL compiler runtime; reads cortex + a conversational side-lane; consumed by Neo AND the MCL pipeline AND the daemon"
+supersedes  = "Neo's inline pager glue (Pinned/Retrieve/Procedural split + the conversation JSON Recent(16) seed) — unified under one budgeted assembler"
+filename_note = "follows the <name>.frozen.kvx repo convention (cf. neo.frozen.kvx, chronos.frozen.kvx); the request 'frozen.assembler.kvx' maps here"
+
+# ================================ MISSION ==================================
+
+[mission]
+goal       = "give every Matrix agent the single missing primitive: an intelligent, budgeted, per-turn context composer, so thread length and total history size become IRRELEVANT to model quality"
+why        = "the LLM is stateless and only ever sees one assembled window per call; quality is bounded by that window, not by what is stored; a long verbatim thread DILUTES signal (lost-in-the-middle, distraction, context-rot) and degrades the model even when it fits"
+positioning= "the desk, not the filing cabinet — cortex/HNSW/the side-lane are SOURCES; the assembler decides what gets laid out in front of the model right now"
+not_a      = "a new memory store, a new retrieval engine, or a replacement for cortex/MCL — it is the composition layer that arbitrates existing sources under a budget"
+differentiator = "deterministic, declarative, auditable, reproducible context assembly (inherits MCL seeds + mtx_digest + grammar-constrained stages) — most 'memory' products assemble context with opaque inline glue; ours is a hashable, testable, swappable .mtx pipeline"
+
+# ============================== THE GAP ====================================
+# Why this subsystem must exist — the problem statement, frozen so we never
+# re-litigate it.
+
+[the_gap]
+storage_solved   = "vector DBs, KV stores, cortex (typed, tamper-evident, salience-scored) — DONE"
+retrieval_solved = "HNSW, BM25, hybrid search, cortex.Find+Near — DONE as a primitive"
+model_solved     = "a stateless function from one window to one completion — DONE"
+assembler_missing= "the per-turn arbitration of WHAT THE MODEL SEES has no home — improvised inline in every agent loop; this is the gap"
+root_cause       = "the field said 'we need memory' and built stores; a store is a filing cabinet, assembly is the desk; we kept hand-carrying folders to the desk"
+
+[the_gap.failure_modes]
+# The general LLM context/memory failures the assembler exists to defeat.
+finite_flat_window = "one ordered list; no native tiers/pinning/relevance; output tokens eat input budget; cost/latency ~O(n^2)"
+stateless          = "no memory across calls; 'conversation memory' is an illusion created by re-sending — intelligence lives in WHAT is re-sent"
+lost_in_the_middle = "models attend to the start + end of the window, weakly to the middle; position matters as much as presence"
+dilution           = "irrelevant-but-present text measurably degrades reasoning; a big thread makes the model WORSE at the current step"
+context_rot        = "as a thread grows the relevant:irrelevant ratio falls; quality degrades long before the hard limit"
+conflicts          = "old now-wrong statements sit beside corrected ones; no inherent supersede; recency/contradiction must be resolved by the composer"
+summary_drift      = "summarize-a-summary erodes detail multiplicatively; paraphrased high-entropy tokens (0x..., hashes, paths) are CORRUPT memory"
+retrieval_gaps     = "query-formulation quality, embedding-semantics != task-relevance, chunking, recency-vs-relevance blend, stale async index (freshness gap)"
+
+# ============================== PRINCIPLES =================================
+
+[principles]
+one_objective       = "every turn answers ONE question: given a token budget + everything I could include, which minimal slice maximizes quality for THIS next step?"
+window_is_the_product= "thread length / store size are irrelevant IF the composer is smart; optimize the feeder, not the thread"
+sources_not_silos   = "cortex, HNSW, the conversational side-lane, procedural patterns, outcomes are all SOURCES ranked + arbitrated against one budget"
+relevance_over_recency= "rank by relevance x recency x importance — never raw recency; raw last-N is the dilution bug"
+verbatim_is_sacred  = "high-entropy tokens (addresses, tx hashes, IDs, paths, exact numbers) flow through VERBATIM; a paraphrased identifier is worse than absence (inherits Neo i3)"
+freshness_gap_is_permanent= "any async index has a write->retrievable lag; a short verbatim recent tail ALWAYS covers it; this is a design constant, not a bug to fix once"
+live_wins           = "when the live turn contradicts stored memory, the live turn wins, then the store updates (inherits Neo conflict_rule)"
+ground_truth        = "cortex is durable ground truth; the assembled window is a disposable cache; the side-lane is derivable/disposable too (inherits Neo i2)"
+deterministic_by_default= "same (situation, budget, snapshot, seed) -> byte-identical window; assembly is auditable + testable (inherits MCL D11)"
+headroom_always     = "never fill the context to the brim; reserve output space — budget is for INPUT, the answer needs room"
+reuse_over_rebuild  = "retarget the MCL runtime; add the minimum new stage types; do not fork a parallel engine"
+
+# ============================ ARCHITECTURE =================================
+
+[architecture]
+shape        = "a new MCL §PIPELINE ('assemble') run by the existing stage executor, plus a thin cortex-side conversational side-lane the recall stage reads, plus a render terminal stage that emits ordered window bytes"
+core_insight = "MCL already IS a declarative staged compiler with pure/LLM/cortex stage types, per-stage budgets, a cortex bridge (injected interface, no cortex import), confidence scoring, and determinism — the assembler is a second stage list + a new terminal IR on that engine"
+two_compilers= "MCL = prose -> signed Intent IR (UNDERSTAND intent, once per intent, signed/replayable). Loom = situation -> rendered Window (COMPOSE the window, every step, read-side cache-filler)."
+boundary     = "the MCL module never imports cortex; the assembler reaches cortex + the side-lane through the SAME injected interfaces (interpreter.Cortex extended with Recall) — module hygiene preserved"
+
+[architecture.reuse]
+# ~60-70% inherited from the MCL runtime AS-IS or lightly extended.
+stage_executor   = "the data-driven pipeline runner that walks §PIPELINE stage 1..N by declared type — reused"
+stage_types      = "pure / llm_constrained / cortex — reused; the assembler adds cortex_recall, resolve_conflicts (pure), render"
+normalise_stage  = "MCL stage 1 (NFC, whitespace, length cap) — reused as-is for the situation text"
+classify_stage   = "MCL stage 2 verb classifier (grammar-constrained, ~8 tokens, seeded) — reused to route relevance"
+verb_routing     = "verb.mtx route.<verb>=Fact Goal Pattern... is ALREADY a relevance-routing table (which memory types matter per step) — reused directly"
+cortex_bridge    = "interpreter.Cortex {Find, Resolve, Context} injected interface — reused + extended with Recall"
+budget_primitive = "per-stage budget_tokens + cortex budget-trim (salience-asc) — reused, then globalized (see [budget])"
+scoring          = "confidence.mtx weighted aggregation — reused as the quality/salience scorer"
+determinism      = "per-intent seed + mtx_digest + grammar constraints + pipeline.timeout_ms fail-fast — reused; assembly becomes reproducible + hashable"
+
+[architecture.new]
+# ~30-40% genuinely new work. Honest accounting — 'just modify MCL' undersells this.
+recall_stage     = "a cortex_recall stage type doing SEMANTIC (HNSW Near) + CONVERSATIONAL (side-lane) retrieval — cortex.Context() is cold-start ONLY and forbids Near by design, so this is new"
+side_lane        = "the conversational turn index: embedded + salience-scored, OUT of the replay chain (see [side_lane]) — new cortex-side work"
+budget_arbiter   = "global budget arbitration across pinned/recalled/conversational/procedural/outcomes under ONE window ceiling, trim-lowest-value-first — MCL only budgets per stage; new"
+render_stage     = "a terminal render stage emitting ORDERED window bytes (attention-aware placement), not a signed frame — new output type"
+conflict_stage   = "a resolve_conflicts pure stage that supersedes stale turns/facts by recency before render — new"
+hot_path         = "per-STEP invocation with a cached pinned tier + recall-only-on-situation-change; MCL compiles once per intent, the assembler runs every loop step — new caching discipline"
+
+# =============================== PIPELINE ==================================
+# The 'assemble' §PIPELINE. Mirrors MCL's pipeline.mtx shape (stage.N.id/type/
+# input/output/budget). Ships as MCL/core/assemble.mtx (a sibling of pipeline.mtx).
+# Stage order is fixed; the executor walks it top-to-bottom, fail-fast.
+
+[pipeline]
+id            = "assemble"
+declared_in   = "MCL/core/assemble.mtx (§PIPELINE id=assemble)"
+stage_count   = 7
+terminal_ir   = "rendered Window (ordered text blocks + manifest), NOT intent.compiled"
+timeout_ms    = 1500
+on_stage_error= "degrade_safe — a failed non-essential stage (recall/procedural) yields its source empty rather than aborting; pinned + recent tail ALWAYS survive (never fail the turn)"
+note          = "degrade_safe DIFFERS from MCL pipeline.on_stage_error=fail_fast — assembly must never block a chat turn; a thin window beats no window"
+
+[pipeline.stage.1]
+id     = "normalise"
+type   = "pure"
+input  = "situation.raw (current input + any tool-result deltas)"
+output = "normalised_situation"
+note   = "reuses MCL stage 1 (NFC, whitespace collapse, length cap)"
+
+[pipeline.stage.2]
+id     = "classify"
+type   = "llm_constrained"
+input  = "normalised_situation"
+output = "step_verb + step_kind"
+grammar= "verb_vocab@1"
+budget_tokens = 8
+note   = "reuses MCL verb classifier; output routes relevance via verb.mtx route.<verb>; cheap model; cacheable while the active goal is unchanged"
+
+[pipeline.stage.3]
+id     = "pin"
+type   = "cortex"
+input  = "actor_identity"
+output = "pinned_block"
+cortex_call = "cortex.context (pinned tier only)"
+note   = "identity + hard rules + user profile + active goal — small, ALWAYS included, never trimmed; CACHED across steps (invalidate on goal change). Reuses cortex.Context() Pinned tier."
+
+[pipeline.stage.4]
+id     = "recall"
+type   = "cortex_recall"
+input  = "normalised_situation + step_verb"
+output = "semantic_hits + conversation_hits + procedural_hits"
+cortex_semantic     = "cortex.Find Near (HNSW) over durable memories, type-routed by verb.mtx route.<verb>"
+cortex_conversation = "side-lane HNSW Near over conversational turns (see [side_lane]) + a short verbatim recent tail"
+cortex_procedural   = "pattern triggers matched on the goal, ranked relevance x confidence (Neo [procedural].retrieval)"
+budget_tokens       = 4000
+note   = "the NEW stage; the only place vector recall happens; runs only when the situation changed materially (else reuse last recall)"
+
+[pipeline.stage.5]
+id     = "resolve_conflicts"
+type   = "pure"
+input  = "pinned_block + semantic_hits + conversation_hits + procedural_hits"
+output = "deduped_resolved_sources"
+note   = "the NEW pure stage; supersede-by-recency: when two sources assert conflicting facts, keep the most recent/corrected; dedup near-identical hits; live situation outranks all stored (live_wins)"
+
+[pipeline.stage.6]
+id     = "budget_arbitrate"
+type   = "pure"
+input  = "deduped_resolved_sources + window_budget"
+output = "selected_blocks"
+note   = "the NEW global arbiter; ONE budget across all sources; fill order = pinned (mandatory) -> recent tail (mandatory, small) -> highest blended-salience hits until budget; trim lowest-value first; ALWAYS reserve output headroom (see [budget])"
+
+[pipeline.stage.7]
+id     = "render"
+type   = "render"
+input  = "selected_blocks"
+output = "window (ordered bytes + manifest)"
+note   = "the NEW terminal stage; attention-aware ordering (see [ordering]); emits the final window the harness hands the model + a manifest (what was included, scores, tokens) for audit + determinism hashing"
+
+# ========================== NEW STAGE TYPES ================================
+# Contracts for the three stage types the assembler adds to the MCL runtime.
+
+[stage_types.cortex_recall]
+purpose = "semantic + conversational + procedural retrieval under a sub-budget"
+reads   = "cortex HNSW (durable), the conversational side-lane HNSW, the procedural pattern index"
+contract= "returns ranked hits with (source, text, blended_salience, recency, tokens); NEVER mutates cortex or the replay chain; pure read"
+degrade = "on embedder/index unavailability returns empty hits (the recent verbatim tail + pinned still carry the turn)"
+extends = "interpreter.Cortex gains Recall(ctx, {situation, verb, k, budget}) []Hit alongside Find/Resolve/Context"
+
+[stage_types.resolve_conflicts]
+purpose = "produce a single coherent source set with no contradictions or duplicates"
+rule_1  = "supersede by recency — a newer assertion about the same subject replaces the older"
+rule_2  = "live wins — the current situation text outranks any stored claim"
+rule_3  = "dedup — collapse near-identical hits (same memory surfaced via two lanes)"
+purity  = "deterministic pure function; no LLM, no I/O"
+
+[stage_types.render]
+purpose = "emit the final ordered window + an audit/determinism manifest"
+ordering= "attention-aware (see [ordering])"
+verbatim= "high-entropy tokens copied byte-for-byte from source; render NEVER paraphrases"
+manifest= "{included:[{source,id,score,tokens}], dropped_count, total_tokens, budget, seed, situation_hash} — hashable for determinism + auditable"
+
+# =============================== SOURCES ===================================
+# The tiers the assembler arbitrates. Maps onto Neo [memory.tiers] but unifies
+# them under ONE budget instead of separate Pinned/Retrieve/Procedural slices.
+
+[sources]
+pinned       = "identity, hard rules, user profile, active goal — ALWAYS in-window, never trimmed, cached across steps"
+semantic     = "durable facts/knowledge/preferences/constraints from cortex — HNSW Near, verb-type-routed, relevance-ranked"
+conversational= "past turns of THIS user's permanent thread — from the side-lane (relevant past turns) + a short verbatim recent tail (freshness)"
+procedural   = "learned how-to patterns whose triggers match the goal — relevance x confidence (Neo nursery for MCL skills)"
+outcomes     = "recent episodic results (what worked/failed) — carried for continuity + recovery signal"
+working      = "the CURRENT step's tool-call/result deltas — held by the harness loop, fed verbatim; bounded by step budget, not cross-turn"
+
+[sources.precedence]
+# When budget is tight, this is the keep-priority (high to low).
+order = ["pinned", "recent_verbatim_tail", "live_situation", "highest_salience_hits", "procedural", "outcomes"]
+note  = "pinned + a small recent verbatim tail + the live situation are MANDATORY; everything else competes on blended salience for the remaining budget"
+
+# ============================ CONVERSATIONAL SIDE-LANE =====================
+# The NEW cortex-side store. THE load-bearing constraint: turns must NOT enter
+# the signed replay chain. Reason (verified in cortex/embedder.go): every
+# cortex.Write goes through the journal + memories SMT + signed OverallRoot, and
+# the embedder even StageMemoryUpdate()s the Head. Writing thousands of chat
+# turns as normal memories would bloat the replay journal and the signed root.
+# So turns live in a PARALLEL, journal-free lane that reuses the standalone
+# vector + embed packages (both have zero journal dependency).
+
+[side_lane]
+decision     = "turns = embedded + salience-scored side-lane index, DELIBERATELY out of the replay chain (preserves the existing side-channel invariant)"
+why_not_cortex_write = "cortex.Write -> journal + SMT + signed OverallRoot (+ embedder rewrites Head into the SMT); chat turns must not enter the signed, replayable, monotonic journal"
+reuses       = "the STANDALONE cortex/vector HNSW (own Save/Load file, journal-free) + cortex/embed.Embedder (deterministic, Embed/Dim/Model) — both already journal-independent"
+storage      = "own Pebble namespace OR own dir under <root>/<actor>/thread/, fully separate from the cortex store; turn rows + per-turn vectors + an HNSW index file"
+write_path   = "Append(turn) persists the turn synchronously, then embeds + adds to the side-lane HNSW (best-effort/async); embed failure stores the turn unembedded (recoverable) — never blocks the chat turn"
+read_path    = "Relevant(query,k) = HNSW Near over turn vectors; Recent(n) = verbatim tail; the recall stage blends both"
+replaces     = "Neo's conversation JSON side-channel (maxTurns=80 cap + dumb Recent(16) seed) — the dilution source we diagnosed"
+one_thread   = "exactly one permanent thread per user that never resets; thread length is irrelevant because the recall stage only surfaces the relevant slice + a short tail per turn"
+disposable   = "the side-lane is derivable/disposable (re-embeddable from stored turns); it is NOT ground truth; losing it loses no signed state"
+
+[side_lane.salience]
+# Turn 'salience' = a blend, NOT raw recency and NOT pure cosine.
+blend   = "relevance (HNSW cosine) x recency (decay) x importance (turn markers: decisions, artifacts, escalations)"
+note    = "reuses the cortex salience philosophy (relevance x recency x importance x access) but a LIGHTWEIGHT turn-local score — does NOT import the journal-driven salience EMA"
+recency_tail = "the most-recent N turns are ALWAYS eligible regardless of cosine (covers the async-embed freshness gap)"
+
+# =============================== BUDGET ====================================
+
+[budget]
+model        = "ONE window budget arbitrated across ALL sources (vs MCL's per-stage budgets) by stage 6"
+self_aware   = true
+window_budget= "configured per consumer (Neo vs MCL planner vs daemon); the assembler is told the ceiling, fills to it minus headroom"
+headroom     = "always reserve output space — the budget caps INPUT; the answer needs room (inherits Neo soft/hard headroom logic)"
+trim_rule    = "trim lowest blended-salience first; pinned + recent tail + live situation are never trimmed"
+fill_order   = "pinned (mandatory) -> recent verbatim tail (mandatory) -> live situation (mandatory) -> highest-salience semantic/conversational/procedural hits until budget exhausted"
+at_least_one = "always keep the mandatory floor even under a pathologically tight budget"
+
+# =============================== ORDERING ==================================
+# Lost-in-the-middle mitigation: WHERE a block sits in the window matters as
+# much as whether it is present.
+
+[ordering]
+principle = "place the highest-value blocks at the EDGES (start + end) where attention is strongest; bury nothing load-bearing in the middle"
+layout    = ["system + pinned (identity/rules/goal) at the TOP", "supporting semantic + procedural + outcomes in the MIDDLE", "conversational recent tail + the live situation/question at the BOTTOM (closest to generation)"]
+verbatim  = "high-entropy tokens rendered byte-for-byte; ordering never reorders inside a verbatim block"
+why       = "the most decision-critical context (who you are, the rules, and the immediate question) gets the two strongest attention positions"
+
+# ============================= DETERMINISM =================================
+
+[determinism]
+property   = "same (situation, budget, cortex snapshot, side-lane state, seed) -> byte-identical window"
+inherits   = "MCL per-intent seed + mtx_digest + grammar-constrained stages + the deterministic HashEmbedder for tests"
+manifest   = "the render manifest carries situation_hash + seed + included-set so any window is reproducible + diffable"
+why_it_matters = "auditable ('why did the model see THIS?'), testable (golden-window tests), and a genuine differentiator vs opaque inline context glue"
+caveat     = "the assembler is a READ-side composer — it is NOT signed into the replay chain (unlike intent.compiled); determinism here is for audit + test, not consensus"
+
+# =============================== HOT PATH ==================================
+# MCL compiles ONCE per intent (5s ceiling fine). The assembler runs EVERY loop
+# step, so it must be cheap.
+
+[hot_path]
+budget_ms      = 1500
+pin_cache      = "the pinned tier is computed once per goal and cached; invalidated on goal change or explicit pin update"
+recall_gate    = "the recall stage runs only when the situation changed materially (new user turn / significant tool result); otherwise reuse the last recall set"
+classify_cache = "the verb/step-kind classification is cached while the active goal is stable"
+embed_async    = "side-lane embedding is background/best-effort; the recent verbatim tail covers any not-yet-embedded turn"
+degrade_safe   = "any slow/failed source yields empty; pinned + recent tail + live situation always produce a usable window within budget_ms"
+
+# ============================== INTERFACE ==================================
+# The ONE public contract. The agent loop stops doing prompt glue and calls this.
+
+[interface]
+signature = "Assemble(ctx, Situation, Budget) -> Window"
+situation = "{ input, active_goal, recent_turns, verb_hint?, tool_deltas? } — the live state"
+budget    = "{ window_tokens, reserve_output_tokens, recall_k? }"
+window    = "{ rendered_bytes (ordered), manifest (included/dropped/scores/tokens/seed/situation_hash) }"
+purity    = "read-only w.r.t. cortex + the replay chain; MAY append/embed turns into the side-lane (the only write, journal-free)"
+form      = "implemented as the 'assemble' MCL pipeline; exposed to Go consumers via a thin assembler.Assemble() wrapper that runs the pipeline with injected LLM + Cortex(+Recall)"
+
+# ============================== CONSUMERS ==================================
+
+[consumers]
+neo        = "Neo's loop calls Assemble each step instead of hand-packing system + pinned + faulted + Recent(16); the cross-turn transcript stops growing in-window — continuity comes from the recall slice + tail, not a seeded blob"
+mcl        = "the MCL pipeline reuses the assembler for stage-3-style cold-start context (cortex_prefetch can become an Assemble call), unifying compile-time + run-time context"
+daemon     = "any per-user daemon agent gets the same composer — assembly is agent-agnostic, mirroring how Chronos is fleet-wide infra"
+reuse_goal = "one assembler, every agent — kills the per-agent reinvention of prompt glue"
+
+[consumers.neo_wiring]
+session    = "newSession stops seeding the transcript with Recent(16); the agent holds an assembler handle + the permanent thread id"
+loop_step  = "each step: window = Assemble(situation, budget); call model with window + tool schemas; on tool results, append deltas to the bounded working set"
+turn_end   = "append the user + assistant turns to the side-lane (persist + embed); the working transcript is per-turn-ephemeral, NOT cross-turn-accumulating"
+compaction = "within-turn growth still compacted (Neo [memory.compaction]); cross-turn memory is now the assembler's job, not compaction's"
+verbatim   = "the compaction verbatim discipline + the side-lane verbatim tail share the same trust contract (Neo i3)"
+
+# ============================== RELATION ===================================
+
+[relation]
+to_mcl    = "built on the MCL runtime as a second pipeline target; reuses stage executor, stage types, verb routing, confidence scoring, determinism; adds 3 stage types + 1 pipeline declaration; preserves the no-cortex-import boundary via injected interfaces"
+to_cortex = "cortex is the durable ground-truth SOURCE for the semantic tier (Find/Near) + pinned tier (Context); the assembler NEVER writes cortex or the replay chain; the conversational side-lane is a NEW journal-free cortex-adjacent store reusing cortex/vector + cortex/embed"
+to_neo    = "supersedes Neo's inline pager glue + conversation JSON seed; implements Neo [memory.mechanisms] (pinned/retrieval) as one budgeted composer; honors Neo invariants i2/i3 (ground-truth/verbatim) + conflict_rule (live wins)"
+to_chronos= "orthogonal — Chronos delivers a wake TURN; the assembler composes the WINDOW for that turn (and every turn); a woken agent resumes via the side-lane recall + the wake payload"
+to_argus  = "none — the assembler is read-side composition; no keys, no funds, no on-chain action"
+
+# ============================== INVARIANTS =================================
+
+[invariants]
+i1 = "the model only ever sees one assembled window per call; the assembler owns that composition and nothing else does"
+i2 = "conversational turns NEVER enter the signed replay chain — the side-lane is journal-free, derivable, disposable (preserves the cortex side-channel invariant)"
+i3 = "high-entropy tokens flow through verbatim end-to-end; the assembler never paraphrases an identifier"
+i4 = "pinned non-negotiables (identity, hard rules, active goal) + a short recent verbatim tail + the live situation are ALWAYS in-window, never trimmed"
+i5 = "rank by relevance x recency x importance, never raw recency; raw last-N is forbidden as the primary mechanism"
+i6 = "always reserve output headroom — the budget caps input, never the whole context"
+i7 = "highest-value blocks at the window edges (attention-aware); nothing load-bearing buried mid-window"
+i8 = "degrade-safe — a failed/slow source yields empty; assembly never blocks or fails a chat turn"
+i9 = "the assembler is read-only w.r.t. cortex + replay; its ONLY write is appending/embedding turns into the journal-free side-lane"
+i10= "live conversation wins over stored memory on conflict, then the store updates (inherits Neo conflict_rule)"
+i11= "assembly is deterministic for audit/test (seed + situation_hash + manifest); it is NOT signed into consensus"
+
+# ============================ DEFERRED / NEXT ==============================
+
+[deferred]
+implementation = "this is a FROZEN design spec — no code yet"
+open_questions = ["exact window-token defaults per consumer (Neo vs MCL planner vs daemon)", "recent-tail length N (freshness coverage vs dilution) — start small, tune", "side-lane storage: own Pebble dir vs a non-journaled namespace in the actor store", "blended-salience weights for turns (relevance/recency/importance) — reuse confidence.mtx shape vs a new turn-salience table", "whether MCL stage-3 cortex_prefetch fully folds into Assemble in v1 or v2"]
+next_steps     = ["write MCL/core/assemble.mtx (§PIPELINE id=assemble, the 7 stages)", "implement the cortex conversational side-lane (turn store + cortex/vector HNSW + cortex/embed, journal-free) with Append/Recent/Relevant", "extend interpreter.Cortex with Recall() + add the cortex_recall / resolve_conflicts / render stage types to the runtime", "implement the global budget_arbitrate + attention-aware render + audit manifest", "wrap as assembler.Assemble(situation, budget) -> Window", "wire Neo: drop Recent(16) seed, call Assemble per step, append turns to the side-lane at turn end, make the working transcript per-turn-ephemeral", "golden-window determinism tests (HashEmbedder) + degrade-safe + budget-trim + lost-in-the-middle ordering tests", "per-module build/vet/test green"]

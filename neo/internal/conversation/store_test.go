@@ -100,15 +100,23 @@ func TestDisabledStoreNoop(t *testing.T) {
 	}
 }
 
-func TestRetentionBound(t *testing.T) {
+func TestUnbounded(t *testing.T) {
 	s := Open(t.TempDir())
-	for i := 0; i < maxTurns+25; i++ {
+	const n = 200
+	for i := 0; i < n; i++ {
 		s.AppendUser("c", "turn")
 	}
 	rec := s.Get("c")
-	if rec == nil || len(rec.Turns) != maxTurns {
-		t.Fatalf("turns should be bounded to %d, got %d", maxTurns, len(rec.Turns))
+	if rec == nil || len(rec.Turns) != n {
+		t.Fatalf("all turns should be retained (no cap), want %d got %d", n, lenTurns(rec))
 	}
+}
+
+func lenTurns(rec *Record) int {
+	if rec == nil {
+		return 0
+	}
+	return len(rec.Turns)
 }
 
 func TestDir(t *testing.T) {

@@ -34,9 +34,6 @@ import (
 )
 
 const (
-	// maxTurns bounds retained turns per conversation so a long thread can't
-	// grow its file without limit.
-	maxTurns = 80
 	// DefaultRecallTurns is how many recent turns are seeded back into a
 	// resumed conversation's working context by default.
 	DefaultRecallTurns = 16
@@ -74,13 +71,12 @@ type Summary struct {
 type Store struct {
 	mu  sync.Mutex
 	dir string
-	max int
 }
 
 // Open builds a store rooted at dir. An empty dir yields a disabled store
 // (every method is a safe no-op) so dev/CLI runs work unchanged.
 func Open(dir string) *Store {
-	return &Store{dir: strings.TrimSpace(dir), max: maxTurns}
+	return &Store{dir: strings.TrimSpace(dir)}
 }
 
 // Enabled reports whether persistence is on (a non-empty directory).
@@ -111,9 +107,9 @@ func (s *Store) loadLocked(convID string) *Record {
 	return rec
 }
 
-// Append records one turn, trims to the retention bound, and persists
-// atomically (tmp + rename). Best-effort: IO errors are logged, never fatal. A
-// blank conversation id or text is ignored.
+// Append records one turn (retained for the life of the thread — no cap) and
+// persists atomically (tmp + rename). Best-effort: IO errors are logged, never
+// fatal. A blank conversation id or text is ignored.
 func (s *Store) Append(convID string, turn Turn) {
 	if !s.Enabled() || convID == "" || strings.TrimSpace(turn.Text) == "" {
 		return
@@ -126,9 +122,6 @@ func (s *Store) Append(convID string, turn Turn) {
 
 	rec := s.loadLocked(convID)
 	rec.Turns = append(rec.Turns, turn)
-	if len(rec.Turns) > s.max {
-		rec.Turns = rec.Turns[len(rec.Turns)-s.max:]
-	}
 	rec.Updated = time.Now().UTC()
 
 	if err := os.MkdirAll(s.dir, 0o755); err != nil {

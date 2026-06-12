@@ -42,6 +42,8 @@ type Config struct {
 	RetrievalTopK         int // page-fault: top-K cortex records per retrieval
 	RetrievalBudgetTokens int // token ceiling for retrieved records
 	PinnedBudgetTokens    int // token ceiling for the always-injected pinned block
+	RecallTopK            int // conversational recall: top-K relevant past turns per turn
+	RecallBudgetTokens    int // token ceiling for the recalled past-turns block
 
 	// --- loop discipline ---
 	StepBudget        int // max tool-call iterations per turn (anti-infinite)
@@ -82,6 +84,8 @@ func Default() Config {
 		RetrievalTopK:         8,
 		RetrievalBudgetTokens: 6000,
 		PinnedBudgetTokens:    2000,
+		RecallTopK:            6,
+		RecallBudgetTokens:    2500,
 
 		StepBudget:        50,
 		NoProgressStall:   4,
@@ -145,6 +149,8 @@ func (c *Config) applyDoc(d *kvxDoc) {
 		c.RetrievalTopK = d.intOr("memory", "retrieval_top_k", c.RetrievalTopK)
 		c.RetrievalBudgetTokens = d.intOr("memory", "retrieval_budget_tokens", c.RetrievalBudgetTokens)
 		c.PinnedBudgetTokens = d.intOr("memory", "pinned_budget_tokens", c.PinnedBudgetTokens)
+		c.RecallTopK = d.intOr("memory", "recall_top_k", c.RecallTopK)
+		c.RecallBudgetTokens = d.intOr("memory", "recall_budget_tokens", c.RecallBudgetTokens)
 	}
 	if d.has("loop") {
 		c.StepBudget = d.intOr("loop", "step_budget", c.StepBudget)

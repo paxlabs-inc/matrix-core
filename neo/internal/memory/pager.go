@@ -25,6 +25,7 @@ import (
 	"time"
 
 	"matrix/cortex"
+	"matrix/cortex/embed"
 	"matrix/cortex/memory"
 	"matrix/cortex/query"
 	"matrix/cortex/store"
@@ -37,6 +38,7 @@ type Pager struct {
 	cfg         config.Config
 	cortex      *cortex.Cortex
 	store       *store.Store
+	embedder    embed.Embedder
 	hasEmbedder bool
 
 	mu         sync.RWMutex
@@ -64,9 +66,10 @@ func Open(cfg config.Config) (*Pager, error) {
 	}
 	c := cortex.New(s)
 
-	p := &Pager{cfg: cfg, cortex: c, store: s}
+	emb := pickEmbedder(cfg)
+	p := &Pager{cfg: cfg, cortex: c, store: s, embedder: emb}
 
-	if serr := c.StartEmbedder(cortex.EmbedderOptions{Embedder: pickEmbedder(cfg)}); serr == nil {
+	if serr := c.StartEmbedder(cortex.EmbedderOptions{Embedder: emb}); serr == nil {
 		p.hasEmbedder = true
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 		_ = c.DrainEmbedder(ctx)
@@ -105,6 +108,17 @@ func (p *Pager) ActiveGoal() string {
 
 // HasEmbedder reports whether semantic (HNSW) retrieval is available.
 func (p *Pager) HasEmbedder() bool { return p.hasEmbedder }
+
+// Embedder returns the embedding backend Neo selected at open time (gateway,
+// direct provider, or the deterministic hash fallback — never nil in practice).
+// Sibling read-lanes (e.g. conversational recall) reuse it so the whole agent
+// shares one embedding model. Returns nil only on a nil pager.
+func (p *Pager) Embedder() embed.Embedder {
+	if p == nil {
+		return nil
+	}
+	return p.embedder
+}
 
 // Pinned composes the always-injected pinned block: identity, the inviolable
 // operating rules (Neo's invariants + any hard constraints in cortex), and

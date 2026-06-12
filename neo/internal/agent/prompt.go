@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"matrix/neo/internal/memory"
+	"matrix/neo/internal/recall"
 )
 
 // groundTruth is Neo's always-injected factual grounding (who it is, that
@@ -20,10 +21,10 @@ import (
 var groundTruth string
 
 // buildSystem composes the single system block injected each turn:
-// behavior + pinned identity/rules/goal + consolidated summary + page-faulted
-// memory + proven patterns. Re-derived every turn so nothing here drifts (the
-// budget stat is appended by the caller).
-func (a *Agent) buildSystem(pinned string, retrieved []memory.Snippet, procedural []memory.Pattern) string {
+// behavior + pinned identity/rules/goal + consolidated summary + recalled past
+// turns + page-faulted memory + proven patterns. Re-derived every turn so
+// nothing here drifts (the budget stat is appended by the caller).
+func (a *Agent) buildSystem(pinned string, retrieved []memory.Snippet, procedural []memory.Pattern, recalled []recall.Hit) string {
 	var b strings.Builder
 	b.WriteString(a.systemPrompt())
 
@@ -36,6 +37,11 @@ func (a *Agent) buildSystem(pinned string, retrieved []memory.Snippet, procedura
 		b.WriteString("\nStory so far (consolidated working memory; the live conversation overrides it on any conflict):\n")
 		b.WriteString(strings.TrimSpace(a.summary))
 		b.WriteString("\n")
+	}
+
+	if lines := a.renderRecall(recalled); lines != "" {
+		b.WriteString("\nRelevant earlier in this conversation (the live exchange below is more current — it wins on any conflict):\n")
+		b.WriteString(lines)
 	}
 
 	if len(retrieved) > 0 {
@@ -54,6 +60,43 @@ func (a *Agent) buildSystem(pinned string, retrieved []memory.Snippet, procedura
 		}
 	}
 
+	return b.String()
+}
+
+// renderRecall formats relevant past turns for injection, DEDUPED against the
+// live transcript: a turn already present in a.working (the RAM tier / resume
+// seed) is skipped so the same text never appears twice in the window. Returns
+// "" when nothing survives. High-entropy tokens are copied verbatim (the trust
+// contract — recall never paraphrases).
+func (a *Agent) renderRecall(recalled []recall.Hit) string {
+	if len(recalled) == 0 {
+		return ""
+	}
+	inWindow := make(map[string]struct{}, len(a.working))
+	for _, m := range a.working {
+		if c := strings.TrimSpace(m.Content); c != "" {
+			inWindow[c] = struct{}{}
+		}
+	}
+	name := a.cfg.AgentName
+	if name == "" {
+		name = "Neo"
+	}
+	var b strings.Builder
+	for _, h := range recalled {
+		text := strings.TrimSpace(h.Text)
+		if text == "" {
+			continue
+		}
+		if _, dup := inWindow[text]; dup {
+			continue
+		}
+		who := "User"
+		if h.Role == "assistant" {
+			who = name
+		}
+		fmt.Fprintf(&b, "- %s: %s\n", who, text)
+	}
 	return b.String()
 }
 
