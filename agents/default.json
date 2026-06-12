@@ -126,6 +126,21 @@
       ]
     },
     {
+      "alias": "chronos",
+      "transport": "stdio",
+      "command": "node",
+      "args": ["/root/matrix/tools/chronos/chronos.mjs"],
+      "env": [],
+      "package_digest": "sha256:c40000000000000000000000000000000000000000000000000000000000000c",
+      "version": "0.1.0",
+      "tools": [
+        {"name": "alarm_set", "description": "Schedule a future wake for yourself. kind='once' with delay_seconds (relative) or fire_at (absolute RFC3339); kind='cron' with cron_expr (+ optional IANA timezone) for recurring. wake_message is REQUIRED — the contextful turn delivered to your future self on fire. Optional conversation_id resumes a thread; payload is opaque state echoed back. Durable: survives restarts.", "side_effect_class": "write", "timeout_ms": 30000},
+        {"name": "alarm_list", "description": "List your scheduled alarms (status, next_fire_at, failure info). Read-only.", "side_effect_class": "network", "timeout_ms": 15000},
+        {"name": "alarm_get", "description": "Fetch one of your alarms by id (wake_message, payload, schedule, status). Read-only. args: id.", "side_effect_class": "network", "timeout_ms": 15000},
+        {"name": "alarm_cancel", "description": "Cancel one of your active alarms by id so it never fires. args: id.", "side_effect_class": "write", "timeout_ms": 15000}
+      ]
+    },
+    {
       "alias": "git",
       "transport": "stdio",
       "command": "uvx",

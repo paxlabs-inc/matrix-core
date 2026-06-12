@@ -80,6 +80,11 @@ type Config struct {
 	ProxyTimeout       time.Duration
 	ProbeInterval      time.Duration
 	DaemonReadyTimeout time.Duration
+
+	// WakeToken authenticates the internal POST /internal/wake endpoint used
+	// by chronosd (the centralized scheduler) to wake a user's Machine and
+	// deliver a timer-triggered chat turn. Empty disables /internal/wake.
+	WakeToken string
 }
 
 // Defaults — applied when an env value is unset or empty.
@@ -107,6 +112,7 @@ func Load() (*Config, error) {
 		S3Endpoint:              os.Getenv("S3_ENDPOINT"),
 		S3Bucket:                os.Getenv("S3_BUCKET"),
 		DaemonPort:              getOrDefault("ROUTER_DAEMON_PORT", DefaultDaemonPort),
+		WakeToken:               os.Getenv("ROUTER_WAKE_TOKEN"),
 	}
 
 	var err error

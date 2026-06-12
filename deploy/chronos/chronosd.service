@@ -1,0 +1,42 @@
+[Unit]
+Description=Matrix Chronos — centralized agent scheduler / wake control plane
+Documentation=https://github.com/paxeer/matrix/tree/main/chronos
+After=network-online.target postgresql.service
+Wants=network-online.target postgresql.service
+
+[Service]
+Type=simple
+User=matrix
+Group=matrix
+WorkingDirectory=/opt/matrix-chronos
+EnvironmentFile=/etc/matrix/chronos.env
+# CHRONOS_ROOT lets chronosd resolve the relative migrations dir shipped
+# alongside the binary; the rest of the config comes from the env file.
+Environment=CHRONOS_ROOT=/opt/matrix-chronos
+ExecStart=/opt/matrix-chronos/chronosd
+Restart=always
+RestartSec=5
+TimeoutStopSec=30
+
+# Hardening
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectHostname=true
+ProtectClock=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectKernelLogs=true
+ProtectControlGroups=true
+RestrictAddressFamilies=AF_INET AF_INET6
+RestrictNamespaces=true
+LockPersonality=true
+RestrictRealtime=true
+RestrictSUIDSGID=true
+SystemCallArchitectures=native
+ReadWritePaths=/opt/matrix-chronos
+
+[Install]
+WantedBy=multi-user.target

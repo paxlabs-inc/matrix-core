@@ -1,0 +1,55 @@
+[
+  {
+    "name": "alarm_set",
+    "description": "Schedule a future wake for yourself. Chronos durably stores the alarm and, when it fires, wakes you with `wake_message` as a new turn (optionally resuming `conversation_id`) plus your opaque `payload`. Use kind='once' with either `delay_seconds` (relative, e.g. 600 = in 10 minutes) or `fire_at` (absolute RFC3339, e.g. 2026-06-01T09:00:00Z). Use kind='cron' with `cron_expr` (5-field, @daily/@hourly/etc, or @every 30m) and an optional IANA `timezone` for recurring wakes. Write `wake_message` to your FUTURE self with enough context to act without re-deriving state.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "label": { "type": "string", "description": "Short human label for this alarm (for your own listing/recall)." },
+        "kind": { "type": "string", "enum": ["once", "cron"], "description": "'once' = single fire; 'cron' = recurring." },
+        "delay_seconds": { "type": "integer", "description": "once: fire this many seconds from now. Mutually exclusive with fire_at." },
+        "fire_at": { "type": "string", "description": "once: absolute RFC3339 instant to fire at (UTC or with offset). Mutually exclusive with delay_seconds." },
+        "cron_expr": { "type": "string", "description": "cron: a 5-field expression ('0 9 * * *'), an @descriptor (@daily, @hourly, @weekly), or '@every 30m'." },
+        "timezone": { "type": "string", "description": "cron: IANA timezone for evaluation (e.g. 'America/New_York'). Defaults to UTC." },
+        "conversation_id": { "type": "string", "description": "Optional conversation to resume into. Omit to start a fresh conversation on wake." },
+        "wake_message": { "type": "string", "description": "REQUIRED. The turn delivered to you when the alarm fires — write it as a contextful instruction to your future self." },
+        "payload": { "type": "object", "description": "Opaque JSON echoed back to you verbatim on wake (state you want to carry forward)." },
+        "idempotency_key": { "type": "string", "description": "Optional per-owner dedup key; re-setting the same key returns the existing alarm instead of duplicating." },
+        "max_failures": { "type": "integer", "description": "Optional wake-delivery retry ceiling before a once alarm is marked failed (default 5)." }
+      },
+      "required": ["kind", "wake_message"]
+    }
+  },
+  {
+    "name": "alarm_list",
+    "description": "List your scheduled alarms (most recent first), including status, next_fire_at, and failure info. Use this to recall what wakes you have pending before setting new ones.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "limit": { "type": "integer", "description": "Max alarms to return (default 100)." }
+      }
+    }
+  },
+  {
+    "name": "alarm_get",
+    "description": "Fetch one of your alarms by id, including its wake_message, payload, schedule, and current status.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "The alarm id returned by alarm_set / alarm_list." }
+      },
+      "required": ["id"]
+    }
+  },
+  {
+    "name": "alarm_cancel",
+    "description": "Cancel one of your active alarms by id so it never fires (recurring cron alarms stop; once alarms are retired). Already-fired or already-cancelled alarms are returned unchanged.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "The alarm id to cancel." }
+      },
+      "required": ["id"]
+    }
+  }
+]

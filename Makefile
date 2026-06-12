@@ -10,7 +10,7 @@ SHELL              := /usr/bin/env bash
 .SHELLFLAGS        := -eu -o pipefail -c
 .DEFAULT_GOAL      := help
 
-MODULES            := MCL bridge executor gateway router cortex tachyon deus neo
+MODULES            := MCL bridge executor gateway router cortex tachyon deus neo chronos
 GO                 ?= /usr/local/go/bin/go
 GOFLAGS            ?=
 GOTEST_FLAGS       ?= -count=1
@@ -90,6 +90,7 @@ install: ## Install runnable binaries into ./bin.
 	@$(GO) -C gateway  build -o $(BIN_DIR)/matrix-gateway  ./cmd/matrix-gateway
 	@$(GO) -C router   build -o $(BIN_DIR)/matrix-router   ./cmd/matrix-router
 	@$(GO) -C neo      build -o $(BIN_DIR)/neo             ./cmd/neo
+	@$(GO) -C chronos  build -o $(BIN_DIR)/chronosd        ./cmd/chronosd
 	@printf "  $(C_GREEN)binaries$(C_RESET) -> $(BIN_DIR)\n"
 	@ls -1 $(BIN_DIR) | sed 's/^/    /'
 

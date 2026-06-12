@@ -257,6 +257,17 @@ func main() {
 		logf("admin: DISABLED (ROUTER_ADMIN_TOKEN unset)")
 	}
 
+	// Scheduler wake door: chronosd POSTs here when a durable alarm fires; the
+	// router resolves the user's Machine, wakes it, and delivers the chat turn
+	// (reuses the proxy's EnsureStarted + waitDaemonReady path). Wake-token
+	// auth (constant-time bearer). Empty token leaves it unmounted.
+	if cfg.WakeToken != "" {
+		internalMux.Handle("/internal/wake", mw.Admin(cfg.WakeToken, logf)(proxyH.WakeHandler()))
+		logf("wake: enabled at %s/internal/wake", cfg.InternalAddr)
+	} else {
+		logf("wake: DISABLED (ROUTER_WAKE_TOKEN unset)")
+	}
+
 	internalSrv := &http.Server{
 		Addr:              cfg.InternalAddr,
 		Handler:           mw.AccessLog(logf)(internalMux),
