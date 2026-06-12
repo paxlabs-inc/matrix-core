@@ -204,6 +204,18 @@ func main() {
 			// Deus agent-service gateway (tools/deus/deus.mjs stdio proxy).
 			"MATRIX_DEUS_URL":        envOr("MATRIX_DEUS_URL", "http://deus-control.internal:9095"),
 			"MATRIX_DEUS_TIMEOUT_MS": os.Getenv("MATRIX_DEUS_TIMEOUT_MS"),
+			// Centralized scheduler (tools/chronos/chronos.mjs stdio proxy ->
+			// the box-side chronosd at MATRIX_CHRONOS_URL). Unlike the
+			// browser/tachyon/uwac/deus Fly apps, chronosd runs co-located with
+			// the router on the front-door box, so Fly Machines reach it over
+			// the public nginx /chronos/ route (NOT a 6PN .internal address).
+			// The proxy answers initialize/tools/list locally so an unreachable
+			// scheduler never bricks daemon boot; it dials MATRIX_CHRONOS_URL
+			// lazily on the first alarm_* call and presents MATRIX_CHRONOS_TOKEN
+			// (== chronosd CHRONOS_TOKEN) as a bearer. Override the URL via
+			// /etc/matrix/router.env if the public host changes.
+			"MATRIX_CHRONOS_URL":   envOr("MATRIX_CHRONOS_URL", "https://matrix.paxeer.app/chronos"),
+			"MATRIX_CHRONOS_TOKEN": os.Getenv("MATRIX_CHRONOS_TOKEN"),
 		},
 		Log: logf,
 	}

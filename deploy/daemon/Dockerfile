@@ -167,6 +167,12 @@ COPY tools/deus      /opt/matrix/tools/deus
 # spawn check exits if the file is missing, so it MUST be baked.
 COPY tools/media     /opt/matrix/tools/media
 COPY tools/uwac     /opt/matrix/tools/uwac
+# chronos stdio MCP proxy -> the centralized chronosd scheduler via
+# MATRIX_CHRONOS_URL. Declared in BOTH agents/default.json and agents/neo.json;
+# the daemon's strict spawn check exits(1) if the file is missing, so it MUST
+# be baked. The proxy answers initialize/tools/list locally so an unreachable
+# scheduler never bricks daemon boot.
+COPY tools/chronos   /opt/matrix/tools/chronos
 # agents/default.json hard-codes /root/matrix/tools/paxeer/paxeer-net.mjs
 # (matches the dev-box layout). Symlink /root/matrix → /opt/matrix so the
 # baked-in path resolves inside the container without templating.
