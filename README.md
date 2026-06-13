@@ -214,6 +214,7 @@ Routes:
 - [`SECURITY.md`](./SECURITY.md) — vulnerability disclosure
 - [`CHANGELOG.md`](./CHANGELOG.md) — Keep-a-Changelog release notes
 - [`deploy/daemon/README.md`](./deploy/daemon/README.md) — image build + Fly deploy
+- [`docs/MCL-docs/README.md`](./docs/MCL-docs/index.md) — MCL documentation
 ---
 
 ## License
