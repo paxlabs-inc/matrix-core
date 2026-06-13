@@ -207,27 +207,6 @@ Routes:
 
 ---
 
-## Status
-
-Matrix runs as a **hosted v1**: each user gets an isolated per-user runtime (a Fly
-Machine) provisioned and woken on demand by the router, with every LLM call metered
-through the gateway's PAX credit ledger.
-
-- **cortex** — v1 complete: typed memory, append-only journal, replay invariant, Merkle snapshots, salience, real embedder.
-- **MCL** — compiler complete (lexer/parser/validator/canonical/interpreter/IR/envelopes); real LLM via OpenAI-compat (Fireworks/Together).
-- **bridge** — live MCL ↔ cortex adapter (compile-time `Find`/`Resolve`/`Context`).
-- **executor** — plan walker, MCP client + tool registry, materiality classifier (D9), per-user daemon (HTTP + SSE), Liaison narrator.
-- **neo** — the default conversational agent: tool-calling loop, paged cortex memory, delegates monetary/irreversible work to MCL.
-- **gateway** — metered LLM proxy + PAX credit ledger (free-tier whitelist + rate card), live.
-- **router** — per-user Fly Machine provisioning + wake-then-proxy front door, live.
-- **tachyon** — agent-native Solidity/EVM engine; proven live on Paxeer chain 125.
-- **uwac** — universal web app connectors (OAuth vault → MCP tools).
-- **chronos** — centralized agent scheduler / wake-up system: design frozen.
-
-
-
----
-
 ## Documentation
 
 - [`ARCHITECTURE.md`](./ARCHITECTURE.md) — system map, module boundaries, key invariants
