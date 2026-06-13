@@ -1,0 +1,70 @@
+{
+  "name": "Matrix",
+  "image": "mcr.microsoft.com/devcontainers/base:bookworm",
+
+  "features": {
+    "ghcr.io/devcontainers/features/go:1": {
+      "version": "1.22"
+    },
+    "ghcr.io/devcontainers/features/node:1": {
+      "version": "22",
+      "nodeGypDependencies": false
+    },
+    "ghcr.io/devcontainers/features/python:1": {
+      "version": "3.12"
+    },
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {
+      "version": "latest",
+      "moby": true
+    }
+  },
+
+  "postCreateCommand": "bash .devcontainer/setup.sh",
+
+  "remoteUser": "root",
+
+  "remoteEnv": {
+    "PATH": "${containerEnv:PATH}:/root/.foundry/bin:/root/.local/bin"
+  },
+
+  "forwardPorts": [5173, 8080, 8081, 8645, 9090, 9095, 9096],
+
+  "portsAttributes": {
+    "5173": { "label": "Marketplace dev (vite)" },
+    "8080": { "label": "Neo front" },
+    "8081": { "label": "MCL daemon" },
+    "8645": { "label": "tachyond" },
+    "9090": { "label": "matrix-gateway" },
+    "9095": { "label": "deusd" },
+    "9096": { "label": "chronosd" }
+  },
+
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "golang.Go",
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode",
+        "bradlc.vscode-tailwindcss",
+        "ms-vscode.makefile-tools",
+        "redhat.vscode-yaml",
+        "ms-azuretools.vscode-docker",
+        "tamasfe.even-better-toml"
+      ],
+      "settings": {
+        "go.toolsManagement.checkForUpdates": "off",
+        "go.useLanguageServer": true,
+        "[go]": {
+          "editor.formatOnSave": true,
+          "editor.defaultFormatter": "golang.Go"
+        },
+        "[typescript]": {
+          "editor.defaultFormatter": "esbenp.prettier-vscode"
+        },
+        "[typescriptreact]": {
+          "editor.defaultFormatter": "esbenp.prettier-vscode"
+        }
+      }
+    }
+  }
+}

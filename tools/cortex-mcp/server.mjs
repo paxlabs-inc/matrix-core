@@ -28,11 +28,12 @@ const SCRIPT = process.env.CORTEX_MEM_SCRIPT ?? `${process.env.HOME}/.cursor/cor
 async function cs(...args) {
   try {
     const { stdout } = await execFileAsync('bash', [SCRIPT, ...args], {
-      timeout: 30_000,
+      timeout: 60_000,
       env: { ...process.env },
     })
     return { ok: true, text: stdout.trim() }
   } catch (err) {
+    console.error(`cs(${args.join(' ')}) failed:`, err?.stderr?.trim() || err?.message || String(err))
     const msg = err?.stderr?.trim() || err?.message || String(err)
     return { ok: false, text: msg }
   }
