@@ -28,7 +28,7 @@ const SCRIPT = process.env.CORTEX_MEM_SCRIPT ?? `${process.env.HOME}/.cursor/cor
 async function cs(...args) {
   try {
     const { stdout } = await execFileAsync('bash', [SCRIPT, ...args], {
-      timeout: 60_000,
+      timeout: 120_000,
       env: { ...process.env },
     })
     return { ok: true, text: stdout.trim() }
