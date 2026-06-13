@@ -11,6 +11,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -329,7 +330,22 @@ func fromWireRespMessage(m wireRespMessage) Message {
 	if role == "" {
 		role = RoleAssistant
 	}
-	content, inlineReasoning := splitInlineThink(m.Content)
+	content := m.Content
+	toolCalls := m.ToolCalls
+	// Defensive: Kimi/Moonshot K2-family models inline their tool calls in
+	// `content` using a special-token grammar instead of the structured
+	// `tool_calls` array when the upstream provider does not parse them
+	// server-side. Left in place the whole section (control tokens + JSON
+	// arguments) leaks into the chat as a "final answer". Extract them so they
+	// execute as real calls. Only attempt this when no structured calls came
+	// back, so a well-behaved provider response is never disturbed.
+	if len(toolCalls) == 0 {
+		if stripped, extracted := extractTokenToolCalls(content); len(extracted) > 0 {
+			content = stripped
+			toolCalls = extracted
+		}
+	}
+	content, inlineReasoning := splitInlineThink(content)
 	reasoning := m.ReasoningContent
 	if reasoning == "" {
 		reasoning = inlineReasoning
@@ -337,9 +353,115 @@ func fromWireRespMessage(m wireRespMessage) Message {
 	return Message{
 		Role:      role,
 		Content:   content,
-		ToolCalls: m.ToolCalls,
+		ToolCalls: toolCalls,
 		Reasoning: reasoning,
 	}
+}
+
+// Special-token grammar Kimi/Moonshot K2 models use to emit tool calls inside
+// `content`. A section wraps one or more calls; each call is a
+// `functions.<name>:<index>` header, an argument-begin marker, the JSON
+// arguments, then a call-end marker.
+const (
+	kimiSectionBegin = "<|tool_calls_section_begin|>"
+	kimiSectionEnd   = "<|tool_calls_section_end|>"
+	kimiCallBegin    = "<|tool_call_begin|>"
+	kimiArgBegin     = "<|tool_call_argument_begin|>"
+	kimiCallEnd      = "<|tool_call_end|>"
+)
+
+// extractTokenToolCalls pulls any token-grammar tool calls out of content and
+// returns the content with those spans removed plus the structured calls. It
+// tolerates a missing section wrapper and an unterminated section (truncated
+// generation): everything from the first marker onward is consumed so nothing
+// leaks. Returns (content, nil) when there is nothing to extract.
+func extractTokenToolCalls(content string) (string, []ToolCall) {
+	hasSection := strings.Contains(content, kimiSectionBegin)
+	hasCall := strings.Contains(content, kimiCallBegin)
+	if !hasSection && !hasCall {
+		return content, nil
+	}
+	if !hasSection {
+		// Variant/truncated emission without the section wrapper: treat from
+		// the first call marker onward as a single section.
+		idx := strings.Index(content, kimiCallBegin)
+		calls := parseTokenSection(content[idx:], 0)
+		if len(calls) == 0 {
+			return content, nil
+		}
+		return strings.TrimRight(content[:idx], " \t\r\n"), calls
+	}
+
+	var b strings.Builder
+	var calls []ToolCall
+	rest := content
+	for {
+		start := strings.Index(rest, kimiSectionBegin)
+		if start < 0 {
+			break
+		}
+		b.WriteString(rest[:start])
+		after := rest[start+len(kimiSectionBegin):]
+		end := strings.Index(after, kimiSectionEnd)
+		if end < 0 {
+			// Unterminated section (truncated): consume the remainder.
+			calls = append(calls, parseTokenSection(after, len(calls))...)
+			rest = ""
+			break
+		}
+		calls = append(calls, parseTokenSection(after[:end], len(calls))...)
+		rest = after[end+len(kimiSectionEnd):]
+	}
+	b.WriteString(rest)
+	if len(calls) == 0 {
+		return content, nil
+	}
+	return strings.TrimSpace(b.String()), calls
+}
+
+// parseTokenSection decodes the calls inside one token-grammar section. base is
+// the running call count, used to synthesize stable call IDs.
+func parseTokenSection(section string, base int) []ToolCall {
+	var calls []ToolCall
+	for _, part := range strings.Split(section, kimiCallBegin) {
+		part = strings.TrimSpace(part)
+		if part == "" {
+			continue
+		}
+		header, args := part, ""
+		if i := strings.Index(part, kimiArgBegin); i >= 0 {
+			header = part[:i]
+			args = part[i+len(kimiArgBegin):]
+		}
+		if j := strings.Index(args, kimiCallEnd); j >= 0 {
+			args = args[:j]
+		}
+		header = strings.TrimSpace(strings.TrimSuffix(strings.TrimSpace(header), kimiCallEnd))
+		name := tokenFuncName(header)
+		if name == "" {
+			continue
+		}
+		calls = append(calls, ToolCall{
+			ID:       "call_" + strconv.Itoa(base+len(calls)),
+			Type:     "function",
+			Function: FunctionCall{Name: name, Arguments: strings.TrimSpace(args)},
+		})
+	}
+	return calls
+}
+
+// tokenFuncName turns a `functions.<name>:<index>` header into the bare tool
+// name. The `functions.` prefix and a trailing `:<int>` index are both
+// optional in observed emissions.
+func tokenFuncName(header string) string {
+	h := strings.TrimSpace(header)
+	h = strings.TrimPrefix(h, "functions.")
+	if i := strings.LastIndex(h, ":"); i >= 0 {
+		if _, err := strconv.Atoi(h[i+1:]); err == nil {
+			h = h[:i]
+		}
+	}
+	return strings.TrimSpace(h)
 }
 
 // splitInlineThink moves a provider-inlined chain-of-thought block out of the
