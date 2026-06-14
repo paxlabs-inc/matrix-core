@@ -216,7 +216,7 @@ func TestStepHandler_cfgFor_DefaultsPerKind(t *testing.T) {
 		{llm.KindReason, "glm-5p1-fast"},
 		{llm.KindCode, "Qwen3-Coder"},
 		{llm.KindSummarize, "deepseek-v4-flash"},
-		{llm.KindWrite, "kimi-k2p6-fast"},
+		{llm.KindWrite, "kimi-k2p7-code"},
 		{llm.KindTransform, "gpt-oss-20b"},
 		{llm.KindClassify, "gpt-oss-20b"},
 		{llm.KindHardReason, "deepseek-v4-pro"},

@@ -38,7 +38,7 @@ type Client struct {
 
 ```go
 client, err := llm.New(mcllm.Config{
-    Model:       "accounts/fireworks/routers/kimi-k2p6-fast",
+    Model:       "accounts/fireworks/models/kimi-k2p7-code",
     Temperature: 0.4,
     MaxTokens:   4096,
     GatewayURL:  cfg.GatewayURL,

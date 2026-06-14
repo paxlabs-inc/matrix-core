@@ -30,7 +30,7 @@ func TestDefaultsMatchFrozenSpec(t *testing.T) {
 			t.Errorf("%s = %d, want %d", ch.name, ch.got, ch.want)
 		}
 	}
-	if c.MainModel != "accounts/fireworks/routers/kimi-k2p6-fast" {
+	if c.MainModel != "accounts/fireworks/models/kimi-k2p7-code" {
 		t.Errorf("MainModel = %q", c.MainModel)
 	}
 	if c.CheapModel != "accounts/fireworks/routers/glm-5p1-fast" {

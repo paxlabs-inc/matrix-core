@@ -74,7 +74,7 @@ func Default() Config {
 		ManifestPath: "agents/default.json",
 		SkillsRoot:   "skills",
 
-		MainModel:  "accounts/fireworks/routers/kimi-k2p6-fast",
+		MainModel:  "accounts/fireworks/models/kimi-k2p7-code",
 		CheapModel: "accounts/fireworks/routers/glm-5p1-fast",
 		EmbedModel: "nomic-ai/nomic-embed-text-v1.5",
 

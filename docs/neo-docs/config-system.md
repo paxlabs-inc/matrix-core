@@ -29,7 +29,7 @@ type Config struct {
     SkillsRoot   string // "skills"
 
     // Models (provider-qualified ids)
-    MainModel  string // "accounts/fireworks/routers/kimi-k2p6-fast"
+    MainModel  string // "accounts/fireworks/models/kimi-k2p7-code"
     CheapModel string // "accounts/fireworks/routers/glm-5p1-fast"
     EmbedModel string // "nomic-ai/nomic-embed-text-v1.5"
 
