@@ -130,3 +130,36 @@ func TestTruncate(t *testing.T) {
 		t.Errorf("truncate wrong: %q", got)
 	}
 }
+
+func TestCapToolResult(t *testing.T) {
+	small := strings.Repeat("x", 100)
+	if capToolResult(small) != small {
+		t.Error("under-limit tool result must be unchanged")
+	}
+	big := strings.Repeat("y", maxToolResultChars*3)
+	got := capToolResult(big)
+	// Bounded well under the original size, marker present, head+tail kept.
+	if len(got) >= len(big) {
+		t.Errorf("oversized result not bounded: got %d of %d", len(got), len(big))
+	}
+	if !strings.Contains(got, "tool result truncated") {
+		t.Error("truncation marker missing")
+	}
+	if !strings.HasPrefix(got, "y") || !strings.HasSuffix(got, "y") {
+		t.Error("head and tail of the result must be preserved")
+	}
+}
+
+func TestWindowBytes(t *testing.T) {
+	a := New(Options{Config: config.Default()})
+	empty := a.windowBytes("sys")
+	a.working = []llm.Message{
+		llm.UserMessage(strings.Repeat("a", 5000)),
+		{Role: llm.RoleAssistant, ToolCalls: []llm.ToolCall{tc("f", strings.Repeat("b", 5000))}},
+	}
+	full := a.windowBytes("sys")
+	// Byte proxy must grow with transcript content + tool-call argument bytes.
+	if full <= empty+10000 {
+		t.Errorf("windowBytes should count content + tool args: empty=%d full=%d", empty, full)
+	}
+}

@@ -7,6 +7,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -17,6 +18,12 @@ import (
 
 	mcllm "matrix/mcl/llm"
 )
+
+// ErrRequestTooLarge marks a provider reject where the request body exceeded
+// the provider's hard byte cap (e.g. Fireworks HTTP 413 "body_too_large",
+// 1,048,576 bytes). It is recoverable: the caller can compact the window and
+// retry. Detect with errors.Is(err, llm.ErrRequestTooLarge).
+var ErrRequestTooLarge = errors.New("neo/llm: request body too large")
 
 // Client is an OpenAI-compatible chat-completions client that speaks native
 // function calling (tools + tool_calls + tool-role results).
@@ -163,8 +170,23 @@ func (c *Client) Chat(ctx context.Context, req ChatRequest) (*ChatResult, error)
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		var parsed chatResponseWire
 		_ = json.Unmarshal(respBody, &parsed)
-		if parsed.Error != nil && parsed.Error.Message != "" {
-			return nil, fmt.Errorf("neo/llm: %s http %d: %s (type=%s)", c.provider, resp.StatusCode, parsed.Error.Message, parsed.Error.Type)
+		errMsg, errType := "", ""
+		if parsed.Error != nil {
+			errMsg, errType = parsed.Error.Message, parsed.Error.Type
+		}
+		// Body-size reject (recoverable: the caller compacts + retries).
+		if resp.StatusCode == http.StatusRequestEntityTooLarge ||
+			errType == "body_too_large" ||
+			strings.Contains(errMsg, "body_too_large") ||
+			strings.Contains(errMsg, "body exceeds") {
+			detail := errMsg
+			if detail == "" {
+				detail = truncate(string(respBody), 256)
+			}
+			return nil, fmt.Errorf("%w (%s http %d): %s", ErrRequestTooLarge, c.provider, resp.StatusCode, detail)
+		}
+		if errMsg != "" {
+			return nil, fmt.Errorf("neo/llm: %s http %d: %s (type=%s)", c.provider, resp.StatusCode, errMsg, errType)
 		}
 		return nil, fmt.Errorf("neo/llm: %s http %d: %s", c.provider, resp.StatusCode, truncate(string(respBody), 512))
 	}

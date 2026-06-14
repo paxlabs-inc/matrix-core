@@ -261,6 +261,7 @@ type stdoutReporter struct{}
 func (stdoutReporter) Say(text string)    { fmt.Printf("\nneo> %s\n", strings.TrimSpace(text)) }
 func (stdoutReporter) Status(text string) { fmt.Fprintf(os.Stderr, "  · %s\n", oneLine(text)) }
 func (stdoutReporter) Notice(text string) { fmt.Fprintf(os.Stderr, "  » %s\n", oneLine(text)) }
+func (stdoutReporter) Think(text string)  { fmt.Fprintf(os.Stderr, "  ~ %s\n", oneLine(text)) }
 
 func oneLine(s string) string {
 	s = strings.TrimSpace(s)

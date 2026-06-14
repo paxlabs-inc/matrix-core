@@ -173,13 +173,27 @@ func (e *Engine) unregisterRun(id string) {
 	}()
 }
 
-// surfaceTool turns a tool result into a user-facing event. Web search/news
-// become rich source+snippet cards (the transparency differentiator); other
-// tools get a compact activity line.
+// surfaceTool turns a tool call into the live "Neo Workspace" — a single
+// `tool.step` event the client renders as an ANIMATED VIEWPORT of the action
+// itself: a terminal when Neo runs a command, a browser window when it
+// browses, an editor when it reads/writes files. The same step id is updated
+// from running→done across the start/end pair, so the viewport fills in place
+// rather than appending a new card. Web-search results and generated media ALSO
+// keep their dedicated rich events (cards / media grid) on completion.
 func (e *Engine) surfaceTool(r *run, ev agent.ToolEvent) {
 	if r == nil {
 		return
 	}
+	// The animated workspace step (start paints "running"; end fills it in).
+	step := describeStep(ev)
+	step["intent_id"] = r.id
+	step["conversation_id"] = r.convID
+	e.broker.publish(r.id, "tool.step", "neo", step)
+
+	if ev.Phase != agent.ToolEnd {
+		return
+	}
+	// On completion, web search/news also emit rich source+snippet cards.
 	if isSearchTool(ev.Name) {
 		if s, ok := parseSearch(ev.Result); ok {
 			e.broker.publish(r.id, "tool.search", "neo", map[string]interface{}{
@@ -191,7 +205,6 @@ func (e *Engine) surfaceTool(r *run, ev agent.ToolEvent) {
 				"answer":          s.Answer,
 				"results":         s.cards(),
 			})
-			return
 		}
 	}
 	// Generated/edited media → a rich media card the client renders inline
@@ -207,17 +220,7 @@ func (e *Engine) surfaceTool(r *run, ev agent.ToolEvent) {
 			"mime":            m.MIME,
 			"prompt":          m.Prompt,
 		})
-		return
 	}
-	// Generic: a compact "did X" so even non-search tools show their work.
-	e.broker.publish(r.id, "tool.result", "neo", map[string]interface{}{
-		"intent_id":       r.id,
-		"conversation_id": r.convID,
-		"tool":            ev.Name,
-		"label":           toolLabel(ev.Name),
-		"ok":              !ev.IsErr,
-		"summary":         firstLine(ev.Result, 240),
-	})
 }
 
 func isSearchTool(name string) bool {
@@ -295,50 +298,9 @@ func (s searchPayload) cards() []map[string]interface{} {
 	return out
 }
 
-// toolLabel maps a function name to a friendly present-tense activity label.
-func toolLabel(name string) string {
-	switch {
-	case strings.HasSuffix(name, "web_search"):
-		return "Searched the web"
-	case strings.HasSuffix(name, "web_news"):
-		return "Searched the news"
-	case strings.Contains(name, "fetch"):
-		return "Read a page"
-	case strings.Contains(name, "read_file"), strings.Contains(name, "directory"), strings.Contains(name, "list"):
-		return "Read files"
-	case strings.Contains(name, "git"):
-		return "Checked the repository"
-	case strings.Contains(name, "shell"), strings.Contains(name, "exec"):
-		return "Ran a command"
-	case strings.HasSuffix(name, "generate_image"):
-		return "Created an image"
-	case strings.HasSuffix(name, "edit_image"):
-		return "Edited an image"
-	case strings.HasSuffix(name, "generate_video"):
-		return "Generated a video"
-	case strings.HasSuffix(name, "transcribe_audio"):
-		return "Transcribed audio"
-	case name == tools.CoreExecuteTool:
-		return "Routed to secure execution"
-	default:
-		return "Used " + humanizeTool(name)
-	}
-}
-
 func humanizeTool(name string) string {
 	if i := strings.Index(name, "__"); i >= 0 {
 		name = name[i+2:]
 	}
 	return strings.ReplaceAll(name, "_", " ")
-}
-
-func firstLine(s string, max int) string {
-	s = strings.TrimSpace(s)
-	if i := strings.IndexByte(s, '\n'); i >= 0 {
-		s = s[:i]
-	}
-	if len(s) > max {
-		s = s[:max] + "…"
-	}
-	return s
 }

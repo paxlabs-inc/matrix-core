@@ -18,6 +18,7 @@ package agent
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"sort"
 	"strings"
@@ -52,11 +53,23 @@ type ConvRecaller interface {
 // transparency differentiator: users see the real evidence behind an answer,
 // not just a synthesized paragraph.
 type ToolEvent struct {
+	ID     string                 // tool-call id — stable across the start/end pair so the UI updates one step
 	Name   string                 // function name dispatched (e.g. "web-search__web_search")
 	Args   map[string]interface{} // parsed call arguments
-	Result string                 // tool result content (raw text/JSON the tool returned)
+	Result string                 // tool result content (raw text/JSON the tool returned); empty at start
 	IsErr  bool                   // the tool reported an error result
+	Phase  ToolPhase              // start (dispatched, no result yet) or end (completed)
 }
+
+// ToolPhase distinguishes the two observer callbacks for one tool call: a
+// start (so the surface can paint a live "running" viewport immediately) and
+// an end (the result lands). The harness correlates them by ToolEvent.ID.
+type ToolPhase string
+
+const (
+	ToolStart ToolPhase = "start"
+	ToolEnd   ToolPhase = "end"
+)
 
 // ToolObserver receives every tool result as it happens. Optional; nil
 // disables surfacing. The harness (CLI or SSE server) decides how to render —
@@ -77,6 +90,7 @@ type Agent struct {
 
 	schemas      []llm.Tool
 	schemaTokens int
+	schemaBytes  int
 
 	// working is the live transcript (user / assistant / tool messages). The
 	// system block (identity + rules + retrieved memory + budget stat) is
@@ -126,6 +140,7 @@ func New(o Options) *Agent {
 		a.schemas = a.tools.Schemas()
 	}
 	a.schemaTokens = estimateToolTokens(a.schemas)
+	a.schemaBytes = estimateToolBytes(a.schemas)
 	return a
 }
 
@@ -178,6 +193,16 @@ func (a *Agent) Chat(ctx context.Context, userInput string) error {
 			a.compact(ctx, "hard")
 			baseSystem = a.buildSystem(pinned, retrieved, procedural, recalled)
 		}
+		// Byte-budget backstop: the provider enforces a hard request-BODY
+		// byte cap (Fireworks: 1 MiB) that is independent of the token budget
+		// above. The token estimate undercounts the serialized JSON (message
+		// envelope + tool schemas + escaping), so a window within token budget
+		// can still exceed the byte cap and 413. Force a compaction when the
+		// approximate body size crosses the ceiling.
+		if a.windowBytes(baseSystem) >= maxRequestBodyBytes {
+			a.compact(ctx, "hard")
+			baseSystem = a.buildSystem(pinned, retrieved, procedural, recalled)
+		}
 		pct := a.budgetPct(baseSystem)
 		system := baseSystem + fmt.Sprintf("\n\n[context: %d%% used]\n", pct)
 
@@ -185,9 +210,29 @@ func (a *Agent) Chat(ctx context.Context, userInput string) error {
 
 		res, err := a.chatWithRetry(ctx, llm.ChatRequest{Messages: window, Tools: a.schemas})
 		if err != nil {
-			return fmt.Errorf("neo: model call failed: %w", err)
+			// HTTP 413 (provider request-body byte cap) is recoverable: the
+			// window serialized past the byte limit even though it was within
+			// the token budget. Force a compaction and retry once with the
+			// shrunken window rather than failing the whole turn.
+			if errors.Is(err, llm.ErrRequestTooLarge) {
+				a.compact(ctx, "hard")
+				baseSystem = a.buildSystem(pinned, retrieved, procedural, recalled)
+				system = baseSystem + fmt.Sprintf("\n\n[context: %d%% used]\n", a.budgetPct(baseSystem))
+				window = append([]llm.Message{llm.SystemMessage(system)}, a.working...)
+				res, err = a.chatWithRetry(ctx, llm.ChatRequest{Messages: window, Tools: a.schemas})
+			}
+			if err != nil {
+				return fmt.Errorf("neo: model call failed: %w", err)
+			}
 		}
 		a.working = append(a.working, res.Message)
+
+		// Show SOME of the thinking: surface a trimmed glimpse of this turn's
+		// chain-of-thought as a secondary channel so the user sees how Neo is
+		// reasoning before it acts. Never the answer, never persisted.
+		if think := glimpseReasoning(res.Message.Reasoning); think != "" {
+			a.out.Think(think)
+		}
 
 		// No tool calls → the model decided it is done. (Termination.)
 		if !res.HasToolCalls() {
@@ -292,6 +337,26 @@ func lastAssistantText(working []llm.Message, maxLen int) string {
 	return ""
 }
 
+// maxThinkChars bounds the reasoning glimpse surfaced to the UI — enough to
+// read the gist of the current thought, never the whole monologue.
+const maxThinkChars = 480
+
+// glimpseReasoning condenses a turn's chain-of-thought into a short, readable
+// glimpse for the "thinking" channel: collapse whitespace, keep the leading
+// substance, and cap the length. Returns "" when there is nothing worth
+// showing so the surface stays quiet on non-reasoning models.
+func glimpseReasoning(reasoning string) string {
+	s := strings.TrimSpace(reasoning)
+	if s == "" {
+		return ""
+	}
+	s = strings.Join(strings.Fields(s), " ")
+	if len(s) > maxThinkChars {
+		s = strings.TrimSpace(s[:maxThinkChars]) + "…"
+	}
+	return s
+}
+
 func (a *Agent) faultMemory(ctx context.Context, q string) []memory.Snippet {
 	if a.pager == nil {
 		return nil
@@ -353,12 +418,23 @@ func (a *Agent) runToolCalls(ctx context.Context, calls []llm.ToolCall) {
 			continue
 		}
 		a.out.Status("• " + name)
-		content, isErr := a.dispatchWithRetry(ctx, name, args)
-		a.working = append(a.working, llm.ToolResult(call.ID, name, content))
-		// Surface the work (web-search snippets, fetched pages, …) so the
-		// product can show real evidence, not just a synthesized answer.
+		// Paint the live viewport the instant the call is dispatched (no result
+		// yet) so the surface shows Neo at work — a terminal opening, a browser
+		// navigating — before the tool returns.
 		if a.observer != nil {
-			a.observer(ToolEvent{Name: name, Args: args, Result: content, IsErr: isErr})
+			a.observer(ToolEvent{ID: call.ID, Name: name, Args: args, Phase: ToolStart})
+		}
+		content, isErr := a.dispatchWithRetry(ctx, name, args)
+		// Cap the transcript copy: a single oversized tool result (large
+		// fetch / file read / MCP payload) can blow the provider's request-
+		// body byte cap on its own. The observer below still gets the full,
+		// untruncated content so the product shows real evidence.
+		a.working = append(a.working, llm.ToolResult(call.ID, name, capToolResult(content)))
+		// Surface the completed work (command output, fetched page, file
+		// contents, web-search snippets, …) so the product renders real
+		// evidence, not just a synthesized answer.
+		if a.observer != nil {
+			a.observer(ToolEvent{ID: call.ID, Name: name, Args: args, Result: content, IsErr: isErr, Phase: ToolEnd})
 		}
 	}
 }
@@ -437,6 +513,68 @@ func estimateToolTokens(schemas []llm.Tool) int {
 		return 0
 	}
 	return memory.EstimateTokens(string(b))
+}
+
+// maxRequestBodyBytes is the approximate serialized request-body ceiling Neo
+// keeps the outgoing window under. It sits below the provider's hard cap
+// (Fireworks rejects bodies over 1,048,576 bytes with HTTP 413
+// "body_too_large") with headroom for JSON structure + escaping that the byte
+// estimate does not model exactly.
+const maxRequestBodyBytes = 900000
+
+// maxToolResultChars caps how much of a single tool result enters the working
+// transcript. A large fetch / file read / MCP payload appended verbatim can
+// blow the provider's request-body byte cap on its own; the MCL walker bounds
+// tool output for the same reason (runtime/walker.go). The full, untruncated
+// result is still handed to the observer so the product can show real
+// evidence — only the model-facing transcript copy is bounded.
+const maxToolResultChars = 32000
+
+// estimateToolBytes returns the serialized byte size of the tool schemas,
+// which ride along on every chat request. Byte proxy for windowBytes,
+// distinct from estimateToolTokens (token proxy).
+func estimateToolBytes(schemas []llm.Tool) int {
+	if len(schemas) == 0 {
+		return 0
+	}
+	b, err := json.Marshal(schemas)
+	if err != nil {
+		return 0
+	}
+	return len(b)
+}
+
+// windowBytes approximates the serialized chat-completions request body in
+// BYTES: the system block + every working message's content and tool-call
+// arguments + the tool schemas. It is a byte proxy (NOT a token estimate)
+// because the provider's 413 cap is on raw body bytes, which the token budget
+// does not track. The per-message constant covers JSON structural overhead
+// (role/keys/braces/quoting).
+func (a *Agent) windowBytes(system string) int {
+	total := len(system) + a.schemaBytes
+	for _, m := range a.working {
+		total += len(m.Content) + 48
+		for _, tc := range m.ToolCalls {
+			total += len(tc.Function.Name) + len(tc.Function.Arguments) + 48
+		}
+	}
+	return total
+}
+
+// capToolResult bounds a single tool result to maxToolResultChars for the
+// transcript, keeping a head + tail so both the leading structure and any
+// trailing digest/summary survive (some tools place the salient result at the
+// end). Cuts are byte-wise; a split multibyte rune is harmless (JSON marshal
+// replaces it) and the marker makes the truncation explicit.
+func capToolResult(s string) string {
+	if len(s) <= maxToolResultChars {
+		return s
+	}
+	head := maxToolResultChars * 3 / 4
+	tail := maxToolResultChars - head
+	return s[:head] +
+		fmt.Sprintf("\n…(tool result truncated for working memory: %d of %d bytes shown)…\n", maxToolResultChars, len(s)) +
+		s[len(s)-tail:]
 }
 
 func estimateMessagesTokens(msgs []llm.Message) int {

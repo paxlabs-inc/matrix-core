@@ -19,6 +19,11 @@ type Reporter interface {
 	// Notice emits a deliberate, visible notice — surfaced prominently because
 	// it is a spoken promise (compaction, escalation to the secure path).
 	Notice(text string)
+	// Think emits a glimpse of the model's chain-of-thought (reasoning channel)
+	// as the loop works. It is NEVER the answer and NEVER persisted to the
+	// thread — a secondary, dismissible "thinking" channel the surface may show
+	// so the user sees SOME of how Neo is reasoning, not the full monologue.
+	Think(text string)
 }
 
 // nopReporter discards everything. Default when none is supplied.
@@ -27,3 +32,4 @@ type nopReporter struct{}
 func (nopReporter) Say(string)    {}
 func (nopReporter) Status(string) {}
 func (nopReporter) Notice(string) {}
+func (nopReporter) Think(string)  {}

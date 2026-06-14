@@ -277,16 +277,11 @@ func (r *sseReporter) Status(text string) {
 	if text == "" {
 		return
 	}
-	// Tool-start markers ("• <tool>") become a compact activity chip; the
-	// observer emits the rich result. Everything else is model narration.
+	// Tool-start markers ("• <tool>") are now driven by the tool observer,
+	// which paints a rich animated workspace step (terminal / browser / editor)
+	// from the call's real arguments — so we drop the bare marker here. Only
+	// genuine model narration becomes an assistant turn.
 	if strings.HasPrefix(text, "• ") {
-		name := strings.TrimSpace(strings.TrimPrefix(text, "• "))
-		s.engine.broker.publish(run.id, "tool.activity", "neo", map[string]interface{}{
-			"intent_id":       run.id,
-			"conversation_id": s.id,
-			"tool":            name,
-			"label":           toolLabel(name),
-		})
 		return
 	}
 	s.engine.broker.publish(run.id, "chat.assistant", "neo", s.chatFields(run, text, false))
@@ -299,6 +294,27 @@ func (r *sseReporter) Notice(text string) {
 		return
 	}
 	s.engine.broker.publish(run.id, "chat.assistant", "neo", s.chatFields(run, text, false))
+}
+
+// Think surfaces a glimpse of the model's reasoning as a dedicated, secondary
+// "thinking" channel. It is NEVER persisted to the durable thread (unlike Say)
+// and carries no role — the client renders it as a dismissible thought, not an
+// answer turn.
+func (r *sseReporter) Think(text string) {
+	s := r.sess
+	run := s.cur
+	if run == nil {
+		return
+	}
+	text = strings.TrimSpace(text)
+	if text == "" {
+		return
+	}
+	s.engine.broker.publish(run.id, "chat.thinking", "neo", map[string]interface{}{
+		"intent_id":       run.id,
+		"conversation_id": s.id,
+		"text":            text,
+	})
 }
 
 func synthRunID(seed string) string {
