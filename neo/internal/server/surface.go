@@ -95,6 +95,11 @@ func describeStep(ev agent.ToolEvent) map[string]interface{} {
 
 // fillBrowser maps a browser_* tool onto the browser surface: the action verb,
 // the URL it's on, the human element it's acting on, and any typed text.
+//
+// Playwright's tools return a structured page report (Page URL / Page Title /
+// a YAML accessibility snapshot), NOT human prose. We parse the real URL +
+// title into the browser chrome and distil the snapshot into readable page
+// text — so the surface renders like a page, never a raw JSON/YAML dump.
 func fillBrowser(step map[string]interface{}, bare string, ev agent.ToolEvent, running bool) {
 	action := strings.TrimPrefix(bare, "browser_")
 	step["action"] = action
@@ -117,12 +122,113 @@ func fillBrowser(step map[string]interface{}, bare string, ev agent.ToolEvent, r
 	default:
 		step["title"] = "Browsing"
 	}
-	if !running && action != "navigate" {
-		// A short readable trace of what came back (never the full snapshot
-		// dump). Navigation results are mostly accessibility trees, so we omit
-		// them — the chrome + URL is the signal there.
-		step["excerpt"] = clip(ev.Result, maxExcerptChars)
+	if running {
+		return
 	}
+	// Lift the real page identity out of the tool report so the chrome shows
+	// where Neo actually is (the URL in args may be empty for click/type/etc.).
+	url, title, body := parseBrowserReport(ev.Result)
+	if url != "" {
+		step["url"] = url
+	}
+	if title != "" {
+		step["page_title"] = title
+	}
+	if body != "" {
+		step["excerpt"] = body
+	}
+}
+
+// parseBrowserReport pulls the URL, title, and a readable text rendering out of
+// a Playwright tool result. The result looks like:
+//
+//	- Page URL: https://example.com
+//	- Page Title: Example Domain
+//	- Page Snapshot:
+//	```yaml
+//	- heading "Example Domain" [level=1] [ref=e1]
+//	- paragraph: This domain is for use in examples.
+//	- link "More information..." [ref=e2]
+//	```
+//
+// We render the snapshot as the visible text of the page (headings, prose,
+// links, buttons), dropping the YAML scaffolding and [ref=…]/[level=…]
+// annotations — turning the machine snapshot into a page-like view.
+func parseBrowserReport(result string) (url, title, body string) {
+	lines := strings.Split(result, "\n")
+	var text []string
+	inSnapshot := false
+	for _, raw := range lines {
+		ln := strings.TrimSpace(raw)
+		if ln == "" {
+			continue
+		}
+		if v, ok := afterLabel(ln, "Page URL:"); ok {
+			url = v
+			continue
+		}
+		if v, ok := afterLabel(ln, "Page Title:"); ok {
+			title = v
+			continue
+		}
+		if strings.Contains(ln, "Page Snapshot:") {
+			inSnapshot = true
+			continue
+		}
+		if strings.HasPrefix(ln, "```") {
+			continue // open/close of the yaml fence
+		}
+		if !inSnapshot {
+			continue
+		}
+		if t := snapshotLineText(ln); t != "" {
+			// Collapse consecutive duplicates (repeated nav labels, etc.).
+			if len(text) == 0 || text[len(text)-1] != t {
+				text = append(text, t)
+			}
+		}
+		if len(text) >= maxSnapshotLines {
+			break
+		}
+	}
+	body = clip(strings.Join(text, "\n"), maxExcerptChars)
+	return url, title, body
+}
+
+// afterLabel returns the trimmed remainder after a "- <label>" / "<label>"
+// prefix, and whether the line carried that label.
+func afterLabel(ln, label string) (string, bool) {
+	ln = strings.TrimPrefix(ln, "- ")
+	if strings.HasPrefix(ln, label) {
+		return strings.TrimSpace(strings.TrimPrefix(ln, label)), true
+	}
+	return "", false
+}
+
+// snapshotLineText distils one accessibility-snapshot line to its visible text,
+// or "" for pure-structure nodes (generic/list/region with no own label).
+func snapshotLineText(ln string) string {
+	ln = strings.TrimPrefix(ln, "- ")
+	// Drop trailing [ref=…], [level=…], [cursor=…], [checked], … annotations.
+	if i := strings.Index(ln, " ["); i >= 0 {
+		ln = ln[:i]
+	}
+	ln = strings.TrimSpace(ln)
+	// "role: value" (e.g. paragraph: text, text: hello) → value, but only when
+	// the part before the colon is a bare role token (no quote/space).
+	if i := strings.Index(ln, ": "); i >= 0 {
+		head := ln[:i]
+		if !strings.ContainsAny(head, "\" ") {
+			return strings.Trim(strings.TrimSpace(ln[i+2:]), `"`)
+		}
+	}
+	// `role "Label"` (heading/link/button/…) → Label.
+	if a := strings.Index(ln, "\""); a >= 0 {
+		if b := strings.LastIndex(ln, "\""); b > a {
+			return strings.TrimSpace(ln[a+1 : b])
+		}
+	}
+	return ""
 }
 
 // fillEditor maps a filesystem tool onto the editor surface: the action, the
@@ -181,9 +287,10 @@ func fillEditor(step map[string]interface{}, bare string, ev agent.ToolEvent, ru
 // Display caps — generous enough to look real in a scrolling viewport, bounded
 // so a giant payload never floods the SSE stream or the client.
 const (
-	maxTermChars    = 6000
-	maxEditorChars  = 6000
-	maxExcerptChars = 800
+	maxTermChars     = 6000
+	maxEditorChars   = 6000
+	maxExcerptChars  = 1600
+	maxSnapshotLines = 60
 )
 
 func isMediaTool(bare string) bool {
