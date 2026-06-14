@@ -410,19 +410,27 @@ func (a *Agent) chatWithRetry(ctx context.Context, req llm.ChatRequest) (*llm.Ch
 }
 
 func (a *Agent) runToolCalls(ctx context.Context, calls []llm.ToolCall) {
-	for _, call := range calls {
+	for i, call := range calls {
 		name := call.Function.Name
 		args, perr := call.ParseArgs()
 		if perr != nil {
 			a.working = append(a.working, llm.ToolResult(call.ID, name, fmt.Sprintf("could not parse arguments (%v). Re-issue the call with valid JSON arguments.", perr)))
 			continue
 		}
+		// Stable surface id for this call: some providers omit tool_call ids, so
+		// fall back to a per-turn index. Shared across the start/end pair below
+		// so the UI updates ONE viewport (running→done) instead of dropping the
+		// event (empty id) or stacking duplicates.
+		stepID := call.ID
+		if stepID == "" {
+			stepID = fmt.Sprintf("call-%d", i)
+		}
 		a.out.Status("• " + name)
 		// Paint the live viewport the instant the call is dispatched (no result
 		// yet) so the surface shows Neo at work — a terminal opening, a browser
 		// navigating — before the tool returns.
 		if a.observer != nil {
-			a.observer(ToolEvent{ID: call.ID, Name: name, Args: args, Phase: ToolStart})
+			a.observer(ToolEvent{ID: stepID, Name: name, Args: args, Phase: ToolStart})
 		}
 		content, isErr := a.dispatchWithRetry(ctx, name, args)
 		// Cap the transcript copy: a single oversized tool result (large
@@ -434,7 +442,7 @@ func (a *Agent) runToolCalls(ctx context.Context, calls []llm.ToolCall) {
 		// contents, web-search snippets, …) so the product renders real
 		// evidence, not just a synthesized answer.
 		if a.observer != nil {
-			a.observer(ToolEvent{ID: call.ID, Name: name, Args: args, Result: content, IsErr: isErr, Phase: ToolEnd})
+			a.observer(ToolEvent{ID: stepID, Name: name, Args: args, Result: content, IsErr: isErr, Phase: ToolEnd})
 		}
 	}
 }
