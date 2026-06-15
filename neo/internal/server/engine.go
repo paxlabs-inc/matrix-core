@@ -84,6 +84,9 @@ func NewEngine(o EngineOptions) *Engine {
 	e.sessions = newSessionRegistry(e)
 	if e.tools != nil {
 		e.tools.SetDelegate(e.coreExecute)
+		// Task-scoped concurrent sub-agents (the Agent Swarm). Capped per call
+		// by config so one spawn can't fan out unbounded.
+		e.tools.SetSwarm(e.runSwarm, o.Config.MaxSubagents)
 	}
 	return e
 }

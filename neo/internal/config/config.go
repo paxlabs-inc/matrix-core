@@ -51,6 +51,11 @@ type Config struct {
 	MaxRetriesPerTool int // recovery ladder rung 1: bounded retries for transient failures
 	MaxAdaptAttempts  int // recovery ladder rung 2: bounded approach revisions
 
+	// --- sub-agent swarm (task-scoped concurrent helpers; see [swarm]) ---
+	MaxSubagents           int // hard cap on sub-agents spawned in one spawn_subagents call
+	MaxConcurrentSubagents int // semaphore: how many sub-agents run at once (the rest queue)
+	SubagentStepBudget     int // per-sub-agent tool-call iteration budget (smaller than the parent's)
+
 	// --- procedural memory guards ---
 	MinPatternSuccesses int // successes required before a candidate pattern is injected
 
@@ -91,6 +96,10 @@ func Default() Config {
 		NoProgressStall:   4,
 		MaxRetriesPerTool: 3,
 		MaxAdaptAttempts:  2,
+
+		MaxSubagents:           8,
+		MaxConcurrentSubagents: 4,
+		SubagentStepBudget:     24,
 
 		MinPatternSuccesses: 3,
 
@@ -158,6 +167,11 @@ func (c *Config) applyDoc(d *kvxDoc) {
 		c.MaxRetriesPerTool = d.intOr("loop", "max_retries_per_tool", c.MaxRetriesPerTool)
 		c.MaxAdaptAttempts = d.intOr("loop", "max_adapt_attempts", c.MaxAdaptAttempts)
 	}
+	if d.has("swarm") {
+		c.MaxSubagents = d.intOr("swarm", "max_subagents", c.MaxSubagents)
+		c.MaxConcurrentSubagents = d.intOr("swarm", "max_concurrent_subagents", c.MaxConcurrentSubagents)
+		c.SubagentStepBudget = d.intOr("swarm", "subagent_step_budget", c.SubagentStepBudget)
+	}
 	if d.has("procedural") {
 		c.MinPatternSuccesses = d.intOr("procedural", "min_pattern_successes", c.MinPatternSuccesses)
 	}
@@ -190,6 +204,20 @@ func (c *Config) applyEnv() {
 			c.ContextWindowTokens = n
 		}
 	}
+	c.MaxSubagents = envInt("NEO_MAX_SUBAGENTS", c.MaxSubagents)
+	c.MaxConcurrentSubagents = envInt("NEO_MAX_CONCURRENT_SUBAGENTS", c.MaxConcurrentSubagents)
+	c.SubagentStepBudget = envInt("NEO_SUBAGENT_STEP_BUDGET", c.SubagentStepBudget)
+}
+
+// envInt overlays a positive integer from the environment, keeping the
+// fallback when the var is absent or not a positive integer.
+func envInt(key string, fallback int) int {
+	if v := strings.TrimSpace(os.Getenv(key)); v != "" {
+		if n, err := strconv.Atoi(v); err == nil && n > 0 {
+			return n
+		}
+	}
+	return fallback
 }
 
 func envOr(key, fallback string) string {

@@ -16,12 +16,13 @@
 name        = "Neo"
 codename    = "neo"
 kind        = "default-conversational-agent-module"
-version     = "1.0.0"
+version     = "1.1.0"
 status      = "frozen"
 frozen_at   = "2026-06-08"
 authors     = ["Andrew", "cursor-agent"]
 relation    = "coexists with MCL core pipeline; delegates rigorous/monetary tasks to it"
 supersedes  = "none"
+changelog   = "1.1.0 (2026-06-15, Andrew + cursor-agent): added task-scoped CONCURRENT sub-agents (the Agent Swarm) — see [swarm]"
 
 [mission]
 goal       = "make Matrix the future of machine interactions by shipping a familiar, trustworthy DEFAULT agent"
@@ -92,6 +93,44 @@ backstop_1   = "key-isolation wall: Neo holds NO signing key, so it structurally
 backstop_2   = "Argus + 78% validator control: catches theft/mistake, low-level call blacklists the wallet and freezes funds"
 honesty      = "Argus makes theft low-odds and RECOVERABLE, not impossible — defense-in-depth, not a proof"
 throttles    = "none — consistent with permissive-execution preference"
+
+# ========================= SUB-AGENT SWARM (v1.1.0) ========================
+# Task-scoped, CONCURRENT sub-agents. Neo (the top-level agent) may fan a
+# parallelizable task out to several headless helpers that run at the same time,
+# each in its OWN isolated context window, then synthesize their distilled
+# results. This is a context-conservation strategy as much as a parallelism one:
+# the heavy tool work (reading a repo, crawling pages) happens in the sub-agents'
+# windows; only compact findings return to Neo's. Added with Andrew 2026-06-15.
+
+[swarm]
+tool          = "spawn_subagents(agents:[{name,persona,task}])"
+model         = "fan-out -> bounded-concurrency worker pool -> fan-in (synchronous from the parent's view: one tool call blocks until all finish)"
+why           = "parallelism for independent work + context conservation (sub-agent windows absorb the heavy exploration)"
+isolation     = "each sub-agent is its own agent.Agent loop with a fresh transcript; sub-agents cannot see each other or the parent conversation"
+returns        = "an aggregated, index-ordered digest of every sub-agent's report, which the parent reads to compose its answer"
+
+[swarm.surface]
+# Sub-agents run with the FULL Natural (reversible) toolset, NOT a read-only one.
+tools_allowed = ["shell", "filesystem read/write", "browser", "web_search", "fetch", "git", "image_video_generation"]
+tools_denied  = ["core_execute (money stays with the user-facing parent — a background sub-agent can't service an inline approval gate)", "spawn_subagents (no recursion / fork-bombs)", "memory_recall"]
+headless      = "no human in the loop: a sub-agent NEVER asks questions or waits for approval — it assumes a sensible default, notes it, and proceeds"
+write_safety  = "each sub-agent should write to a DISTINCT output path; the orchestrator frames tasks to avoid concurrent writes to the same file"
+
+[swarm.bounds]
+min_agents              = 2
+max_subagents           = 8   # hard cap on agents requested in one spawn call (NEO_MAX_SUBAGENTS)
+max_concurrent_subagents= 4   # semaphore: how many run at once; the rest queue (NEO_MAX_CONCURRENT_SUBAGENTS)
+subagent_step_budget    = 24  # per-sub-agent tool-call iteration budget, smaller than the parent's 50 (NEO_SUBAGENT_STEP_BUDGET)
+subagent_turn_timeout   = "12m per sub-agent, independent of the parent turn budget"
+
+[swarm.failure]
+isolation     = "one sub-agent erroring NEVER fails the swarm; its honest partial is collected and reported"
+no_false_success = "the digest marks any sub-agent that didn't fully complete; the parent must relay that honestly (invariant i6)"
+
+[swarm.transparency]
+# Streamed onto the parent conversation's event stream as a live Agent Swarm.
+events        = ["swarm.started", "subagent.created", "subagent.step", "subagent.note", "subagent.status", "swarm.completed"]
+surface_rule  = "subagent.step reuses the workspace describeStep (terminal/browser/editor) tagged with the agent index, so each sub-agent renders in its own window — never a bare label"
 
 # ================================ MEMORY ===================================
 
@@ -232,6 +271,7 @@ i4 = "no throttles/gates on reversible execution; safety is structural"
 i5 = "hide the mechanism, surface the intention"
 i6 = "no false success — honest partials only"
 i7 = "procedural patterns are gated by preconditions (before) and success_criteria (after)"
+i8 = "sub-agents are headless and key-isolated: no human in their loop, no core_execute, no recursion — money and approvals stay with the user-facing parent (extends i1/i4)"
 
 # ============================ DEFERRED / NEXT =========================
 

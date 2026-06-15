@@ -104,6 +104,12 @@ type Agent struct {
 	// agent (not the pager) so many conversations can share one cortex store
 	// without clobbering each other's goal.
 	activeGoal string
+
+	// persona, when set, frames this agent as a task-scoped SUB-AGENT with a
+	// specific role. Sub-agents run headless (no human in the loop): they get
+	// a restricted tool surface, never ask the user questions, and end by
+	// reporting their findings back to the orchestrating agent.
+	persona string
 }
 
 // Options configures New.
@@ -117,6 +123,15 @@ type Options struct {
 	Consolidator Consolidator // optional: background write-back
 	Recaller     ConvRecaller // optional: relevant past-turn recall (additive read-lane)
 	Observer     ToolObserver // optional: per-tool-result surfacing (show the work)
+
+	// Persona frames this as a task-scoped sub-agent with a specific role
+	// (empty = the top-level conversational agent).
+	Persona string
+	// RestrictTools advertises the SUB-AGENT tool surface (full Natural set,
+	// minus core_execute / memory_recall / spawn_subagents) instead of the
+	// full one. Set for sub-agents so money stays with the parent and a
+	// sub-agent can't spawn its own sub-agents.
+	RestrictTools bool
 }
 
 // New assembles an Agent.
@@ -135,9 +150,14 @@ func New(o Options) *Agent {
 		consolidator: o.Consolidator,
 		recaller:     o.Recaller,
 		observer:     o.Observer,
+		persona:      strings.TrimSpace(o.Persona),
 	}
 	if a.tools != nil {
-		a.schemas = a.tools.Schemas()
+		if o.RestrictTools {
+			a.schemas = a.tools.SubagentSchemas()
+		} else {
+			a.schemas = a.tools.Schemas()
+		}
 	}
 	a.schemaTokens = estimateToolTokens(a.schemas)
 	a.schemaBytes = estimateToolBytes(a.schemas)

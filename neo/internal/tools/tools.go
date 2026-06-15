@@ -38,6 +38,15 @@ const CoreExecuteTool = "core_execute"
 // remember?" the model needs a deliberate lookup it can actually perform.
 const MemoryRecallTool = "memory_recall"
 
+// SpawnSubagentsTool is the synthetic function Neo exposes to fan a task out
+// to several task-scoped sub-agents that run CONCURRENTLY, each in its own
+// isolated context window, and to collect their distilled results. It is a
+// context-conservation strategy as much as a parallelism one: the heavy tool
+// work (reading a repo, crawling pages) happens in the sub-agents' windows and
+// only a compact result returns to Neo's. Reachable only from the top-level
+// agent — sub-agents do NOT get this tool (no recursion / fork-bombs).
+const SpawnSubagentsTool = "spawn_subagents"
+
 // DelegateFunc runs a prose intent through the MCL pipeline and returns its
 // verifiable outcome. Injected by the agent wiring (see internal/delegate);
 // nil until wired, in which case core_execute reports it is unavailable.
@@ -47,6 +56,21 @@ type DelegateFunc func(ctx context.Context, proseIntent string) (string, error)
 // user-presentable digest. Injected from the pager; nil until wired, in
 // which case memory_recall is not advertised at all.
 type RecallFunc func(ctx context.Context, query string) (string, error)
+
+// SubagentSpec describes one task-scoped sub-agent the model wants to spawn:
+// a short human name, a persona/role framing, and the self-contained task it
+// should carry out. Mirrors the model-facing spawn_subagents schema.
+type SubagentSpec struct {
+	Name    string `json:"name"`
+	Persona string `json:"persona"`
+	Task    string `json:"task"`
+}
+
+// SwarmFunc runs a set of sub-agents concurrently and returns an aggregated,
+// model-readable digest of their results. Injected by the engine wiring (see
+// internal/server); nil until wired, in which case spawn_subagents reports it
+// is unavailable and is not advertised at all.
+type SwarmFunc func(ctx context.Context, specs []SubagentSpec) (string, error)
 
 // boundTool is a manifest tool bound to its canonical URI + advertised schema.
 type boundTool struct {
@@ -68,6 +92,8 @@ type Manager struct {
 	classifier *Classifier
 	delegate   DelegateFunc
 	recall     RecallFunc
+	swarm      SwarmFunc
+	maxAgents  int
 
 	byFunc    map[string]*boundTool
 	order     []string // sorted natural func names (advertised)
@@ -215,6 +241,22 @@ func (m *Manager) Schemas() []llm.Tool {
 	if m.recall != nil {
 		out = append(out, memoryRecallSchema())
 	}
+	if m.swarm != nil {
+		out = append(out, spawnSubagentsSchema())
+	}
+	return out
+}
+
+// SubagentSchemas is the tool surface advertised to a SUB-AGENT: every Natural
+// tool, but NOT core_execute (money stays with the user-facing parent — a
+// background sub-agent can't service an inline approval gate), memory_recall,
+// or spawn_subagents (no recursion). Deterministic order.
+func (m *Manager) SubagentSchemas() []llm.Tool {
+	out := make([]llm.Tool, 0, len(m.order))
+	for _, fn := range m.order {
+		bt := m.byFunc[fn]
+		out = append(out, llm.NewFunctionTool(fn, bt.desc, bt.params))
+	}
 	return out
 }
 
@@ -232,6 +274,9 @@ func (m *Manager) Dispatch(ctx context.Context, funcName string, args map[string
 	}
 	if funcName == MemoryRecallTool {
 		return m.dispatchMemoryRecall(ctx, args)
+	}
+	if funcName == SpawnSubagentsTool {
+		return m.dispatchSpawnSubagents(ctx, args)
 	}
 	bt, ok := m.byFunc[funcName]
 	if !ok {
@@ -271,6 +316,65 @@ func (m *Manager) dispatchCoreExecute(ctx context.Context, args map[string]inter
 	return out, false, nil
 }
 
+func (m *Manager) dispatchSpawnSubagents(ctx context.Context, args map[string]interface{}) (string, bool, error) {
+	if m.swarm == nil {
+		return "running sub-agents is not available in this session.", true, nil
+	}
+	specs := parseSubagentSpecs(args)
+	if len(specs) == 0 {
+		return "spawn_subagents needs an 'agents' array, each with a 'name', a 'persona' (its role), and a 'task' (a clear, self-contained instruction).", true, nil
+	}
+	if len(specs) < 2 {
+		return "spawn_subagents is for parallel work — give it at least 2 agents, or just do this single task yourself.", true, nil
+	}
+	if m.maxAgents > 0 && len(specs) > m.maxAgents {
+		return fmt.Sprintf("that's %d sub-agents; the most you can run in one call is %d. Group the work into fewer, broader agents.", len(specs), m.maxAgents), true, nil
+	}
+	out, err := m.swarm(ctx, specs)
+	if err != nil {
+		return "", true, fmt.Errorf("spawn_subagents: %w", err)
+	}
+	return out, false, nil
+}
+
+// parseSubagentSpecs reads the model's spawn_subagents arguments into specs,
+// tolerating the loose JSON shapes models emit (objects vs. maps, missing
+// fields). An entry with no task is dropped.
+func parseSubagentSpecs(args map[string]interface{}) []SubagentSpec {
+	raw, ok := args["agents"].([]interface{})
+	if !ok {
+		return nil
+	}
+	out := make([]SubagentSpec, 0, len(raw))
+	for i, e := range raw {
+		m, ok := e.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		task := strings.TrimSpace(asString(m["task"]))
+		if task == "" {
+			continue
+		}
+		name := strings.TrimSpace(asString(m["name"]))
+		if name == "" {
+			name = fmt.Sprintf("Agent %02d", i+1)
+		}
+		out = append(out, SubagentSpec{
+			Name:    name,
+			Persona: strings.TrimSpace(asString(m["persona"])),
+			Task:    task,
+		})
+	}
+	return out
+}
+
+func asString(v interface{}) string {
+	if s, ok := v.(string); ok {
+		return s
+	}
+	return ""
+}
+
 func (m *Manager) dispatchMemoryRecall(ctx context.Context, args map[string]interface{}) (string, bool, error) {
 	if m.recall == nil {
 		return "the durable memory store is not connected in this session.", true, nil
@@ -286,6 +390,14 @@ func (m *Manager) dispatchMemoryRecall(ctx context.Context, args map[string]inte
 // SetDelegate wires the MCL delegation function after construction (the
 // delegate often needs the agent assembled first).
 func (m *Manager) SetDelegate(d DelegateFunc) { m.delegate = d }
+
+// SetSwarm wires the sub-agent fan-out runner after construction (the runner
+// needs the engine assembled first). maxAgents caps how many sub-agents one
+// spawn_subagents call may request; <= 0 leaves it unbounded.
+func (m *Manager) SetSwarm(s SwarmFunc, maxAgents int) {
+	m.swarm = s
+	m.maxAgents = maxAgents
+}
 
 // SetRecall wires the durable-memory lookup after construction (the pager
 // and tool manager are built independently).
@@ -338,6 +450,41 @@ func memoryRecallSchema() llm.Tool {
 					"description": "What to look for (a topic, name, project, or question). Empty returns the most salient memories plus the user profile.",
 				},
 			},
+		},
+	)
+}
+
+func spawnSubagentsSchema() llm.Tool {
+	return llm.NewFunctionTool(
+		SpawnSubagentsTool,
+		"Spawn several task-scoped sub-agents that run CONCURRENTLY and return their combined results. Use this for work that splits into independent parts — e.g. analyzing different modules of a codebase, researching several topics at once, or comparing options in parallel. Each sub-agent runs in its OWN fresh context with the full reversible toolset (shell, files, browser, web, git), so heavy exploration stays out of your window and only the distilled findings come back. Give each a clear, self-contained task that does NOT depend on another sub-agent's output (they run at the same time and can't talk to each other). They CANNOT move funds (no core_execute) or spawn their own sub-agents. Use only when the task genuinely parallelizes; otherwise just do it yourself.",
+		map[string]interface{}{
+			"type": "object",
+			"properties": map[string]interface{}{
+				"agents": map[string]interface{}{
+					"type":        "array",
+					"description": "The sub-agents to run in parallel (2 or more). Keep them coarse — a few broad agents beat many tiny ones.",
+					"items": map[string]interface{}{
+						"type": "object",
+						"properties": map[string]interface{}{
+							"name": map[string]interface{}{
+								"type":        "string",
+								"description": "A short human name for this sub-agent, shown to the user (e.g. \"Go Code Analyst\").",
+							},
+							"persona": map[string]interface{}{
+								"type":        "string",
+								"description": "The role/expertise framing it should adopt (e.g. \"a senior Go reviewer focused on concurrency and error handling\").",
+							},
+							"task": map[string]interface{}{
+								"type":        "string",
+								"description": "A complete, self-contained instruction: what to investigate or do, where to look, and exactly what to report back. Include any context it needs — it does NOT see this conversation.",
+							},
+						},
+						"required": []interface{}{"name", "task"},
+					},
+				},
+			},
+			"required": []interface{}{"agents"},
 		},
 	)
 }
