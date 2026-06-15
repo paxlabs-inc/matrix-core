@@ -297,7 +297,7 @@ func (i *Index) chooseLevel() int {
 //  2. Walk down from the current entry point through layers > l using ef=1
 //     (greedy nearest), refining the search entry.
 //  3. From min(maxLevel, l) down to 0: search_layer(ef=efConstruction),
-//     pick M closest, wire bidirectional edges, shrink the neighbour
+//     pick M closest, wire bidirectional edges, shrink the neighbor
 //     of each victim if degree exceeds Mmax at that level.
 //  4. If l > current max, become the new entry point.
 func (i *Index) Add(vid uint64, mid MemoryID, vec []float32) error {
@@ -344,7 +344,7 @@ func (i *Index) Add(vid uint64, mid MemoryID, vec []float32) error {
 	}
 
 	// Phase B: at each layer from min(maxLevel, level) down to 0, run
-	// search_layer with efConstruction, pick M neighbours, wire edges.
+	// search_layer with efConstruction, pick M neighbors, wire edges.
 	for lc := minInt(i.maxLevel, level); lc >= 0; lc-- {
 		candidates := i.searchLayer(store, vec, ep, i.params.EfConstruction, lc, vid)
 		// Sort ascending by distance.
@@ -410,8 +410,8 @@ func (i *Index) Add(vid uint64, mid MemoryID, vec []float32) error {
 	return nil
 }
 
-// greedyDescend takes ep at layer lc and walks to the closest neighbour
-// repeatedly until no neighbour improves. Returns the final (ep, dist).
+// greedyDescend takes ep at layer lc and walks to the closest neighbor
+// repeatedly until no neighbor improves. Returns the final (ep, dist).
 func (i *Index) greedyDescend(store VectorStore, q []float32, ep uint64, dist float32, lc int) (uint64, float32) {
 	for {
 		nd := i.nodes[ep]
@@ -461,7 +461,7 @@ type candidate struct {
 // searchLayer is Algorithm 2 from the paper. Returns up to ef candidates
 // closest to q at layer lc, starting from entry. excludeID may be set to
 // skip a known-pending insert (so a node doesn't try to be its own
-// neighbour during Add); 0 = no exclusion (vertex IDs are 1-indexed by
+// neighbor during Add); 0 = no exclusion (vertex IDs are 1-indexed by
 // the embedder).
 func (i *Index) searchLayer(store VectorStore, q []float32, entry uint64, ef int, lc int, excludeID uint64) []candidate {
 	visited := map[uint64]struct{}{entry: {}}
@@ -518,7 +518,7 @@ func (i *Index) searchLayer(store VectorStore, q []float32, entry uint64, ef int
 	return out
 }
 
-// shrinkNeighbours keeps the Mmax closest neighbours by recomputing
+// shrinkNeighbours keeps the Mmax closest neighbors by recomputing
 // distances against the node's own vector and sorting ascending.
 func (i *Index) shrinkNeighbours(store VectorStore, nd *node, lc int, Mmax int) []uint64 {
 	current := nd.neighbors[lc]
@@ -554,7 +554,7 @@ func (i *Index) shrinkNeighbours(store VectorStore, nd *node, lc int, Mmax int) 
 // Search returns the up-to-k vertex IDs closest to q, ordered closest
 // first. Tombstoned vertices are skipped. Returns ErrEmptyIndex if the
 // index has no entry point yet. Concurrent-safe with readers only.
-// Uses the VectorStore bound via BindStore to resolve neighbour vectors;
+// Uses the VectorStore bound via BindStore to resolve neighbor vectors;
 // returns an error if no store is bound and the graph is non-empty.
 func (i *Index) Search(q []float32, k int) ([]Hit, error) {
 	if len(q) != i.params.Dim {
@@ -887,7 +887,7 @@ func (s *overlayStore) GetVector(vid uint64) ([]float32, bool) {
 	return s.primary.GetVector(vid)
 }
 
-// BindStore sets the VectorStore that Add will use to resolve neighbour
+// BindStore sets the VectorStore that Add will use to resolve neighbor
 // vectors. The cortex embedder calls this once at startup with a
 // Pebble-backed store; tests call it with a MapStore.
 //

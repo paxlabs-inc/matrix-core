@@ -4,7 +4,7 @@
 // Phase 14 integration tests — rate limiting on the two sub-agent DoS
 // surfaces flagged by EXTERNAL_REVIEW_2026_05_22 (R5 + R3b). These
 // drive cortex.ResolveScoped + cortex.Attest at burst rates with a
-// fixed mock clock and assert the gate behaviour observable from
+// fixed mock clock and assert the gate behavior observable from
 // outside (journal entry counts, returned errors, salience mutation
 // absence on rejection).
 
@@ -345,7 +345,7 @@ func (c *testClock) advance(d time.Duration) {
 
 // openCortexUnlimited is openCortex + WithRateLimits(UnlimitedRateLimits()).
 // Used by tests that need to drive the API past production rate caps to
-// exercise unrelated behaviour.
+// exercise unrelated behavior.
 func openCortexUnlimited(t *testing.T) *Cortex {
 	t.Helper()
 	dir := t.TempDir()

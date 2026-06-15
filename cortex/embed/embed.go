@@ -79,7 +79,7 @@ const DefaultDim = 768
 // HashEmbedder is a deterministic embedder that derives a pseudo-vector
 // from sha256(text) seed material. It is NOT a real embedding model — the
 // geometry of its output reflects sha256 chaos, not text semantics — so
-// nearest-neighbour queries against it are only meaningful for tests where
+// nearest-neighbor queries against it are only meaningful for tests where
 // "identical text recalls identical text" is the property under test.
 //
 // Why this exists: lets every Phase 5 test (vector worker, HNSW index,

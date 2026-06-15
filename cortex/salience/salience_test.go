@@ -302,7 +302,7 @@ func TestColdScoreWithDefaultEqualsColdScore(t *testing.T) {
 	}
 }
 
-// TestColdScoreWithLearnedWeightsRanks — learned weights that favour
+// TestColdScoreWithLearnedWeightsRanks — learned weights that favor
 // citations heavily must rank a high-citation memory above a high-
 // recency one, even when default weights would have ranked them in
 // the opposite order.

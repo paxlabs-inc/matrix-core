@@ -127,7 +127,7 @@ func TestDropDerivedIdempotent(t *testing.T) {
 }
 
 // TestRebuildEmptyStoreReproducesEmptyRoot — empty input produces
-// empty MMR + empty SMTs + recognisable empty OverallRoot.
+// empty MMR + empty SMTs + recognizable empty OverallRoot.
 func TestRebuildEmptyStoreReproducesEmptyRoot(t *testing.T) {
 	s := openStore(t, "empty")
 	st := snapshot.New(s)

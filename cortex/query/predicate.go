@@ -31,7 +31,7 @@ import (
 )
 
 // Predicate is the closed AST of typed where-clauses. The eval method is
-// package-private so callers cannot synthesise predicate types outside this
+// package-private so callers cannot synthesize predicate types outside this
 // package; only the constructors below are valid.
 type Predicate interface {
 	predicate()

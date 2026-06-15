@@ -351,7 +351,7 @@ func TestIterEdgesOutFiltersTombstonedAndType(t *testing.T) {
 	}
 }
 
-// TestFindFromOneHopOut: BFS from A returns direct outgoing neighbours.
+// TestFindFromOneHopOut: BFS from A returns direct outgoing neighbors.
 func TestFindFromOneHopOut(t *testing.T) {
 	c := openCortex(t)
 	a := writePref(t, c, "a", 5)
@@ -420,7 +420,7 @@ func TestFindFromMultiHopOut(t *testing.T) {
 	}
 }
 
-// TestFindFromMinHops: MinHops=2 excludes 1-hop neighbours.
+// TestFindFromMinHops: MinHops=2 excludes 1-hop neighbors.
 func TestFindFromMinHops(t *testing.T) {
 	c := openCortex(t)
 	a := writePref(t, c, "a", 5)
@@ -446,7 +446,7 @@ func TestFindFromMinHops(t *testing.T) {
 	}
 }
 
-// TestFindFromIncoming: DirIn returns incoming neighbours.
+// TestFindFromIncoming: DirIn returns incoming neighbors.
 func TestFindFromIncoming(t *testing.T) {
 	c := openCortex(t)
 	a := writePref(t, c, "a", 5)
@@ -473,7 +473,7 @@ func TestFindFromIncoming(t *testing.T) {
 	}
 }
 
-// TestFindFromBoth: DirBoth unions out and in neighbours.
+// TestFindFromBoth: DirBoth unions out and in neighbors.
 func TestFindFromBoth(t *testing.T) {
 	c := openCortex(t)
 	a := writePref(t, c, "a", 5)

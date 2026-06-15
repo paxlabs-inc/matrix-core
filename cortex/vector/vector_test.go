@@ -96,7 +96,7 @@ func TestEmptyIndexSearch(t *testing.T) {
 }
 
 // TestSearchSelfRecallTop1 verifies the simplest correctness property: a
-// vector we Add to the index is its own closest neighbour. Hub of every
+// vector we Add to the index is its own closest neighbor. Hub of every
 // downstream HNSW use case.
 func TestSearchSelfRecallTop1(t *testing.T) {
 	t.Parallel()
@@ -131,7 +131,7 @@ func TestSearchRecallVsBruteForce(t *testing.T) {
 	idx, store := buildIndex(t, Params{Dim: dim}, n)
 
 	// Sample queries that are NOT in the index so we exercise the
-	// general nearest-neighbour case, not just self-recall.
+	// general nearest-neighbor case, not just self-recall.
 	totalRecall := 0
 	queries := 32
 	for q := 0; q < queries; q++ {
@@ -175,7 +175,7 @@ func TestSearchRecallVsBruteForce(t *testing.T) {
 }
 
 // TestPersistenceRoundTrip verifies Save → Load returns an identical index
-// (same nodes, same neighbours, same entry point, same search behaviour).
+// (same nodes, same neighbors, same entry point, same search behavior).
 func TestPersistenceRoundTrip(t *testing.T) {
 	t.Parallel()
 	idx, store := buildIndex(t, Params{Dim: 16, Seed: 42, Model: "test-model@abc"}, 32)
@@ -208,7 +208,7 @@ func TestPersistenceRoundTrip(t *testing.T) {
 		t.Fatalf("entry drift: ep=%d maxL=%d vs ep=%d maxL=%d",
 			loaded.entryPoint, loaded.maxLevel, idx.entryPoint, idx.maxLevel)
 	}
-	// Compare every node and its neighbour lists byte-for-byte.
+	// Compare every node and its neighbor lists byte-for-byte.
 	for vid, want := range idx.nodes {
 		got := loaded.nodes[vid]
 		if got == nil {
@@ -219,7 +219,7 @@ func TestPersistenceRoundTrip(t *testing.T) {
 		}
 		for lc := 0; lc <= want.level; lc++ {
 			if !equalU64(got.neighbors[lc], want.neighbors[lc]) {
-				t.Fatalf("vid=%d L%d neighbour drift: %v vs %v", vid, lc, got.neighbors[lc], want.neighbors[lc])
+				t.Fatalf("vid=%d L%d neighbor drift: %v vs %v", vid, lc, got.neighbors[lc], want.neighbors[lc])
 			}
 		}
 	}

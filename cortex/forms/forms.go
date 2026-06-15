@@ -32,7 +32,7 @@ import (
 
 // Render returns auto-generated Short and Medium for the (head, data) pair.
 // Full is computed separately via RenderFull because it is never persisted
-// in the Forms struct and is only materialised on demand (e.g. when a Find
+// in the Forms struct and is only materialized on demand (e.g. when a Find
 // caller selects FormFull).
 //
 // Returned Forms always satisfy memory.CountTokens(short) ≤ MaxShortTokens
@@ -62,7 +62,7 @@ func RenderFull(h *memory.Head, data memory.TypedData) string {
 // renderForType returns (short, medium) before truncation. Templates are
 // per-type and field-presence aware: optional fields collapse cleanly when
 // empty so the renders stay legible at the budgeted size.
-func renderForType(h *memory.Head, data memory.TypedData) (string, string) {
+func renderForType(h *memory.Head, data memory.TypedData) (short, medium string) {
 	switch d := data.(type) {
 	case memory.IdentityData:
 		return renderIdentity(d)
@@ -101,8 +101,8 @@ func renderFullForType(h *memory.Head, data memory.TypedData) string {
 
 // --- per-type renderers ---------------------------------------------------
 
-func renderIdentity(d memory.IdentityData) (string, string) {
-	short := d.Name
+func renderIdentity(d memory.IdentityData) (short, medium string) {
+	short = d.Name
 	if d.DID != "" {
 		short = fmt.Sprintf("%s (%s)", d.Name, d.DID)
 	}
@@ -116,17 +116,17 @@ func renderIdentity(d memory.IdentityData) (string, string) {
 	if len(d.PublicKeys) > 0 {
 		parts = append(parts, fmt.Sprintf("keys=%d", len(d.PublicKeys)))
 	}
-	medium := short
+	medium = short
 	if len(parts) > 0 {
 		medium = short + " — " + strings.Join(parts, ", ")
 	}
 	return short, medium
 }
 
-func renderFact(d memory.FactData) (string, string) {
+func renderFact(d memory.FactData) (short, medium string) {
 	// Predicate is a bounded vocab (e.g. "knows", "owns") so this reads
 	// cleanly: predicate(subject)=statement.
-	short := fmt.Sprintf("%s(%s)=%s", d.Predicate, d.Subject, d.Statement)
+	short = fmt.Sprintf("%s(%s)=%s", d.Predicate, d.Subject, d.Statement)
 	parts := []string{}
 	if d.AsOf != nil {
 		parts = append(parts, "as_of="+d.AsOf.UTC().Format(time.RFC3339))
@@ -134,30 +134,30 @@ func renderFact(d memory.FactData) (string, string) {
 	if d.Source != "" {
 		parts = append(parts, "source="+d.Source)
 	}
-	medium := short
+	medium = short
 	if len(parts) > 0 {
 		medium = short + " — " + strings.Join(parts, ", ")
 	}
 	return short, medium
 }
 
-func renderPreference(d memory.PreferenceData) (string, string) {
-	short := fmt.Sprintf("prefers %s (%s, strength=%.2f)", d.Topic, d.Polarity, d.StrengthVal)
-	medium := short
+func renderPreference(d memory.PreferenceData) (short, medium string) {
+	short = fmt.Sprintf("prefers %s (%s, strength=%.2f)", d.Topic, d.Polarity, d.StrengthVal)
+	medium = short
 	if d.Rationale != "" {
 		medium = short + " — " + d.Rationale
 	}
 	return short, medium
 }
 
-func renderBelief(d memory.BeliefData) (string, string) {
-	short := fmt.Sprintf("%s %s", d.Stance, d.Statement)
-	medium := fmt.Sprintf("%s — %d for / %d against", short, len(d.EvidenceFor), len(d.EvidenceAgainst))
+func renderBelief(d memory.BeliefData) (short, medium string) {
+	short = fmt.Sprintf("%s %s", d.Stance, d.Statement)
+	medium = fmt.Sprintf("%s — %d for / %d against", short, len(d.EvidenceFor), len(d.EvidenceAgainst))
 	return short, medium
 }
 
-func renderEvent(d memory.EventData) (string, string) {
-	short := fmt.Sprintf("%s %s", d.OutcomeVal, d.Kind)
+func renderEvent(d memory.EventData) (short, medium string) {
+	short = fmt.Sprintf("%s %s", d.OutcomeVal, d.Kind)
 	if d.Counterparty != "" {
 		short += " with " + d.Counterparty
 	}
@@ -177,15 +177,15 @@ func renderEvent(d memory.EventData) (string, string) {
 	if d.Summary != "" {
 		parts = append(parts, d.Summary)
 	}
-	medium := short
+	medium = short
 	if len(parts) > 0 {
 		medium = short + " — " + strings.Join(parts, ", ")
 	}
 	return short, medium
 }
 
-func renderGoal(d memory.GoalData) (string, string) {
-	short := fmt.Sprintf("[%s] %s", d.Status, d.Statement)
+func renderGoal(d memory.GoalData) (short, medium string) {
+	short = fmt.Sprintf("[%s] %s", d.Status, d.Statement)
 	parts := []string{}
 	if d.HorizonEnd != nil {
 		parts = append(parts, "by="+d.HorizonEnd.UTC().Format(time.RFC3339))
@@ -196,36 +196,36 @@ func renderGoal(d memory.GoalData) (string, string) {
 	if len(d.Subgoals) > 0 {
 		parts = append(parts, fmt.Sprintf("subgoals=%d", len(d.Subgoals)))
 	}
-	medium := short
+	medium = short
 	if len(parts) > 0 {
 		medium = short + " — " + strings.Join(parts, ", ")
 	}
 	return short, medium
 }
 
-func renderConstraint(d memory.ConstraintData) (string, string) {
-	short := fmt.Sprintf("[%s] %s %s", d.StrengthVal, d.Polarity, d.Statement)
+func renderConstraint(d memory.ConstraintData) (short, medium string) {
+	short = fmt.Sprintf("[%s] %s %s", d.StrengthVal, d.Polarity, d.Statement)
 	parts := []string{"source=" + string(d.Source)}
 	if d.Trigger != "" {
 		parts = append(parts, "trigger="+d.Trigger)
 	}
-	medium := short + " — " + strings.Join(parts, ", ")
+	medium = short + " — " + strings.Join(parts, ", ")
 	return short, medium
 }
 
-func renderCapability(d memory.CapabilityData) (string, string) {
+func renderCapability(d memory.CapabilityData) (short, medium string) {
 	verified := "unverified"
 	if d.Verified {
 		verified = "verified"
 	}
-	short := fmt.Sprintf("%s can %s (%s)", d.Subject, d.Capability, verified)
-	medium := fmt.Sprintf("%s — last_observed=%s", short, d.LastObserved.UTC().Format(time.RFC3339))
+	short = fmt.Sprintf("%s can %s (%s)", d.Subject, d.Capability, verified)
+	medium = fmt.Sprintf("%s — last_observed=%s", short, d.LastObserved.UTC().Format(time.RFC3339))
 	return short, medium
 }
 
-func renderPattern(d memory.PatternData) (string, string) {
-	short := fmt.Sprintf("%s (strength=%.2f, coverage=%d)", d.Statement, d.Strength, d.Coverage)
-	medium := short
+func renderPattern(d memory.PatternData) (short, medium string) {
+	short = fmt.Sprintf("%s (strength=%.2f, coverage=%d)", d.Statement, d.Strength, d.Coverage)
+	medium = short
 	if len(d.DerivedFrom) > 0 {
 		medium = fmt.Sprintf("%s — derived from %d", short, len(d.DerivedFrom))
 	}

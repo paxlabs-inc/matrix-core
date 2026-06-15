@@ -806,7 +806,7 @@ func TestWriteHonoursFormsOverride(t *testing.T) {
 		t.Fatalf("Resolve: %v", err)
 	}
 	if m.Version.Forms != override {
-		t.Fatalf("override not honoured: got %+v want %+v", m.Version.Forms, override)
+		t.Fatalf("override not honored: got %+v want %+v", m.Version.Forms, override)
 	}
 	if !m.Version.FormsOverride {
 		t.Fatalf("FormsOverride flag not persisted")
@@ -1095,7 +1095,7 @@ func TestEmbedderEmbedsExistingMemories(t *testing.T) {
 	}
 }
 
-// TestEmbedderEmbedsAfterStart verifies live behaviour: writes that
+// TestEmbedderEmbedsAfterStart verifies live behavior: writes that
 // happen AFTER StartEmbedder are also processed (the notify channel
 // works end-to-end).
 func TestEmbedderEmbedsAfterStart(t *testing.T) {

@@ -243,8 +243,8 @@ func (m *MMR) StageAppend(setter Setter, leafHash [32]byte) error {
 	curPos := pos
 	for i := 0; i < merges; i++ {
 		// Sibling at height i: cur is at relative offset (2^(i+1) - 1)
-		// from its same-height neighbour (a height-i tree contains
-		// 2^(i+1) - 1 nodes). The neighbour's peak is therefore at
+		// from its same-height neighbor (a height-i tree contains
+		// 2^(i+1) - 1 nodes). The neighbor's peak is therefore at
 		// curPos - that offset.
 		off := uint64(1)<<uint(i+1) - 1
 		siblingPos := curPos - off

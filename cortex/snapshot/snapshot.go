@@ -452,7 +452,7 @@ func (st *State) IterSnapshots(fn func(*Manifest) error) error {
 // Used by the scope verifier (research/06-agents.md §7.2 step 2:
 // "Verifies the scope's snapshot_hash is still resolvable") so a sub-
 // agent can be certain the root the scope was anchored against is one
-// the cortex still recognises (i.e. has not been retention-policy-GC'd).
+// the cortex still recognizes (i.e. has not been retention-policy-GC'd).
 //
 // O(N) scan over snap/. For v1 actor counts this is microseconds; the
 // reverse index idx/snap_root/<root:32> can land later if profiling

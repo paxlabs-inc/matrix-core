@@ -149,7 +149,7 @@ type Query struct {
 	Near string
 
 	// NearURI selects a memory whose embedding is reused as the query
-	// vector (semantic neighbours of an existing memory). cortex.Find
+	// vector (semantic neighbors of an existing memory). cortex.Find
 	// resolves the URI, loads vec/meta, and populates NearVector before
 	// dispatching here.
 	NearURI *memory.URI
@@ -168,7 +168,7 @@ type Query struct {
 
 	// NearK controls the HNSW overshoot factor. The planner asks the
 	// index for max(NearK, Limit, EfSearch) candidates so the Where
-	// post-filter has slack to discard non-matching neighbours without
+	// post-filter has slack to discard non-matching neighbors without
 	// running out. Zero falls back to 4*Limit.
 	NearK int
 

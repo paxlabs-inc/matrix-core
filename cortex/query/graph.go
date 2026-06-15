@@ -9,10 +9,10 @@
 // per-ID hop count. Where / Type / IncludeTombstoned filters apply
 // post-BFS in Run; this file is concerned only with graph reachability.
 //
-// Determinism: BFS visits neighbours in byte-ascending (edge_type, dst-or-
+// Determinism: BFS visits neighbors in byte-ascending (edge_type, dst-or-
 // src) order — the same order Pebble surfaces them — so results are
 // reproducible across runs given the same store state. Cycles terminate
-// because every visited ID is marked in `seen` before its neighbours
+// because every visited ID is marked in `seen` before its neighbors
 // expand. The MaxHops cap (default 1, hard ceiling MaxHopsCap=6) is the
 // other backstop.
 
@@ -122,8 +122,8 @@ func parseFromURI(uri memory.URI) (memory.ID, error) {
 // Direction:
 //   - DirOut  → walk e/from/<src>/...
 //   - DirIn   → walk e/to/<dst>/...
-//   - DirBoth → both, deduplicating by neighbour ID before adding to the
-//     queue (a neighbour reachable both directions is one neighbour).
+//   - DirBoth → both, deduplicating by neighbor ID before adding to the
+//     queue (a neighbor reachable both directions is one neighbor).
 func planCandidatesGraph(s *store.Store, q Query) ([]memory.ID, int, map[memory.ID]int, error) {
 	if q.From == nil {
 		return nil, 0, nil, errors.New("query: planCandidatesGraph called without From")
@@ -137,7 +137,7 @@ func planCandidatesGraph(s *store.Store, q Query) ([]memory.ID, int, map[memory.
 
 	// hops[id] = shortest hop distance from startID; the start vertex is
 	// at hop 0 but is excluded from the candidate list (callers want
-	// "neighbours of From", not From itself).
+	// "neighbors of From", not From itself).
 	hops := map[memory.ID]int{startID: 0}
 	queue := []memory.ID{startID}
 	scanned := 0
@@ -150,9 +150,9 @@ func planCandidatesGraph(s *store.Store, q Query) ([]memory.ID, int, map[memory.
 			continue
 		}
 
-		// Collect neighbours by direction. For DirBoth we union; the
+		// Collect neighbors by direction. For DirBoth we union; the
 		// hop distance is identical so the order doesn't matter.
-		neighbours := map[memory.ID]struct{}{}
+		neighbors := map[memory.ID]struct{}{}
 		walk := func(outgoing bool) error {
 			anchor := keys.ULID{}
 			copy(anchor[:], current[:])
@@ -182,7 +182,7 @@ func planCandidatesGraph(s *store.Store, q Query) ([]memory.ID, int, map[memory.
 				} else {
 					nb = rec.Src
 				}
-				neighbours[nb] = struct{}{}
+				neighbors[nb] = struct{}{}
 				return nil
 			})
 		}
@@ -206,7 +206,7 @@ func planCandidatesGraph(s *store.Store, q Query) ([]memory.ID, int, map[memory.
 		}
 
 		nextHop := curHop + 1
-		for nb := range neighbours {
+		for nb := range neighbors {
 			if _, seen := hops[nb]; seen {
 				continue
 			}
@@ -241,7 +241,7 @@ func sortByULID(ids []memory.ID) {
 	// Simple sort.Slice would import sort; this file already uses
 	// fmt/strings — keeping the import surface tight by writing a tiny
 	// insertion sort. Phase 6 BFS sets are bounded by reachable
-	// neighbours over <= 6 hops; usually tens, not thousands.
+	// neighbors over <= 6 hops; usually tens, not thousands.
 	for i := 1; i < len(ids); i++ {
 		j := i
 		for j > 0 && lessULID(ids[j], ids[j-1]) {

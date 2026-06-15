@@ -129,7 +129,7 @@ func TestRateLimiterScopeViolationKeysIndependent(t *testing.T) {
 	}
 }
 
-// TestRateLimiterAttestConsumesBurst is the Attest analogue of the
+// TestRateLimiterAttestConsumesBurst is the Attest analog of the
 // scope-violation burst test. Smaller burst (5 by default).
 func TestRateLimiterAttestConsumesBurst(t *testing.T) {
 	r := newRateLimiter()

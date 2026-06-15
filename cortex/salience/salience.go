@@ -55,7 +55,7 @@ import (
 const SchemaVersion uint8 = 1
 
 // Cold weights from §8.2. They sum to 1.0. These are the DEFAULT weights
-// used when meta/salience_weights is absent (i.e. a freshly initialised
+// used when meta/salience_weights is absent (i.e. a freshly initialized
 // actor) and the floor that BumpFor* helpers use to recompute sc.Cached.
 // Authoritative live ranking uses the learned Weights via ColdScoreWith.
 const (

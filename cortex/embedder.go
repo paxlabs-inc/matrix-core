@@ -298,7 +298,7 @@ func (c *Cortex) notifyEmbedder() {
 }
 
 // Index returns the live HNSW index handle if the embedder is running;
-// nil otherwise. Query.Run reads this to honour Near / NearURI.
+// nil otherwise. Query.Run reads this to honor Near / NearURI.
 func (c *Cortex) Index() *vector.Index {
 	if c.embed == nil {
 		return nil
@@ -485,7 +485,7 @@ func (s *embedderState) processWriteEntry(entry *journal.Entry) error {
 		s.store.put(vid, vec)
 		// HNSW updates are not supported by the simple Add path; we
 		// model "update embedding" as "replace vector for the same
-		// vertex". The graph stays connected because neighbours remain
+		// vertex". The graph stays connected because neighbors remain
 		// reachable by id. Recall on the updated node may degrade
 		// slightly until a future rebuild compacts the graph; this is
 		// the simple-mode tradeoff documented in vector/vector.go.
@@ -753,7 +753,7 @@ func writeMetaUint64(s *store.Store, key []byte, v uint64) error {
 
 // pebbleVectorStore reads vectors from vec/meta in the per-actor Pebble
 // DB. It caches recently-read vectors so HNSW search doesn't pay a
-// decode hit per neighbour distance probe — caches are small and bounded.
+// decode hit per neighbor distance probe — caches are small and bounded.
 type pebbleVectorStore struct {
 	s     *store.Store
 	mu    sync.RWMutex
@@ -765,7 +765,7 @@ func newPebbleVectorStore(s *store.Store) *pebbleVectorStore {
 }
 
 // put inserts vec into the cache. Called by the embedder after computing
-// a new vector so subsequent neighbour probes during Add don't have to
+// a new vector so subsequent neighbor probes during Add don't have to
 // hit Pebble for it.
 func (p *pebbleVectorStore) put(vid uint64, vec []float32) {
 	p.mu.Lock()
@@ -785,7 +785,7 @@ func (p *pebbleVectorStore) GetVector(vid uint64) ([]float32, bool) {
 	}
 	p.mu.RUnlock()
 	// Slow path: scan vec/meta for the matching VertexID. We don't have
-	// a vid→id index, so this is O(N); the cache amortises it after the
+	// a vid→id index, so this is O(N); the cache amortizes it after the
 	// first miss. Phase 5 leaves this O(N) deliberately — a vid→id idx
 	// is a Phase 8 follow-on if profile pressure shows it.
 	var found []float32

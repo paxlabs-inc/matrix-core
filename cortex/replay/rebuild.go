@@ -301,7 +301,7 @@ func rebuildSalienceFromJournal(s *store.Store, now time.Time) (uint64, error) {
 	return totalBumps, nil
 }
 
-// salienceBumpKind enumerates the three Phase 11.5 mutation flavours.
+// salienceBumpKind enumerates the three Phase 11.5 mutation flavors.
 type salienceBumpKind int
 
 const (

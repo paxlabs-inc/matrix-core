@@ -14,7 +14,7 @@
 //
 // Tier composition (research/03 §2.3 table line):
 //   "30% pinned, 50% frame-relevant, 20% outcomes  |  flexible"
-// We honour `flexible` literally: no hard per-tier ratios. All three
+// We honor `flexible` literally: no hard per-tier ratios. All three
 // tiers are loaded fully, then a single global salience-asc trim brings
 // total rendered tokens under BudgetTokens. Pinned-tier members receive
 // a salience floor of PinnedFloor (§8.2) so they survive a tight budget
