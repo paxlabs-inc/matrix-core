@@ -79,7 +79,7 @@ func Default() Config {
 		ManifestPath: "agents/default.json",
 		SkillsRoot:   "skills",
 
-		MainModel:  "accounts/fireworks/models/kimi-k2p7-code",
+		MainModel:  "Qwen/Qwen3.7-Max",
 		CheapModel: "accounts/fireworks/routers/glm-5p1-fast",
 		EmbedModel: "nomic-ai/nomic-embed-text-v1.5",
 
@@ -99,7 +99,7 @@ func Default() Config {
 
 		MaxSubagents:           8,
 		MaxConcurrentSubagents: 4,
-		SubagentStepBudget:     24,
+		SubagentStepBudget:     40,
 
 		MinPatternSuccesses: 3,
 

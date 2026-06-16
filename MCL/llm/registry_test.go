@@ -346,7 +346,7 @@ func TestDefaultRegistryExecutorKindSpecialists(t *testing.T) {
 	}{
 		{KindCode, "Qwen3-Coder", GrammarNone},
 		{KindSummarize, "deepseek-v4-flash", GrammarNone},
-		{KindWrite, "kimi-k2p7-code", GrammarNone},
+		{KindWrite, "Qwen3.7-Max", GrammarNone},
 		{KindTransform, "gpt-oss-20b", GrammarNone},
 		{KindClassify, "gpt-oss-20b", GrammarJSONSchema},
 		{KindHardReason, "deepseek-v4-pro", GrammarNone},

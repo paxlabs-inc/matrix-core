@@ -139,8 +139,8 @@ func main() {
 			// whitelist changes.
 			"MATRIX_COMPILER_MODEL":          envOr("MATRIX_COMPILER_MODEL", "accounts/fireworks/models/gpt-oss-120b"),
 			"MATRIX_COMPILER_ESCALATE_MODEL": envOr("MATRIX_COMPILER_ESCALATE_MODEL", "accounts/fireworks/models/deepseek-v4-pro"),
-			"MATRIX_PLANNER_MODEL":           envOr("MATRIX_PLANNER_MODEL", "accounts/fireworks/models/kimi-k2p7-code"),
-			"MATRIX_EXECUTOR_MODEL":          envOr("MATRIX_EXECUTOR_MODEL", "accounts/fireworks/models/kimi-k2p7-code"),
+			"MATRIX_PLANNER_MODEL":           envOr("MATRIX_PLANNER_MODEL", "Qwen/Qwen3.7-Max"),
+			"MATRIX_EXECUTOR_MODEL":          envOr("MATRIX_EXECUTOR_MODEL", "Qwen/Qwen3.7-Max"),
 			"MATRIX_LIAISON_MODEL":           envOr("MATRIX_LIAISON_MODEL", "accounts/fireworks/models/deepseek-v4-pro"),
 			"MATRIX_DEFAULT_SKILL":           envOr("MATRIX_DEFAULT_SKILL", "matrix://skill/paxeer-assistant@0.1.0"),
 			// Web search (tools/websearch/web-search.mjs MCP server in the

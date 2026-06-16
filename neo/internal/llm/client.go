@@ -4,6 +4,7 @@
 package llm
 
 import (
+	"bufio"
 	"bytes"
 	"context"
 	"encoding/json"
@@ -12,6 +13,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -133,6 +135,18 @@ func (c *Client) Chat(ctx context.Context, req ChatRequest) (*ChatResult, error)
 		Temperature: c.temperature,
 		MaxTokens:   c.maxTokens,
 		Tools:       req.Tools,
+		// Stream unconditionally: some providers (e.g. Together's Qwen3.7-Max)
+		// ONLY accept stream=true and 400 otherwise, and the gateway prefers
+		// streaming so it can scan usage from the final chunk for metering.
+		// Both Fireworks + Together emit the same OpenAI SSE shape, which
+		// aggregateStream below folds back into a single assistant turn.
+		Stream: true,
+	}
+	// On the direct path we ask for a usage chunk ourselves; on the gateway
+	// path the gateway injects stream_options.include_usage for us (and may
+	// rewrite the body), so leave it untouched to avoid a double-insert.
+	if c.gatewayURL == "" {
+		wire.StreamOptions = &streamOptions{IncludeUsage: true}
 	}
 	if c.seed != 0 {
 		s := c.seed
@@ -155,6 +169,7 @@ func (c *Client) Chat(ctx context.Context, req ChatRequest) (*ChatResult, error)
 	if err != nil {
 		return nil, err
 	}
+	httpReq.Header.Set("Accept", "text/event-stream")
 
 	resp, err := c.httpClient.Do(httpReq)
 	if err != nil {
@@ -191,26 +206,124 @@ func (c *Client) Chat(ctx context.Context, req ChatRequest) (*ChatResult, error)
 		return nil, fmt.Errorf("neo/llm: %s http %d: %s", c.provider, resp.StatusCode, truncate(string(respBody), 512))
 	}
 
-	var parsed chatResponseWire
-	if err := json.Unmarshal(respBody, &parsed); err != nil {
-		return nil, fmt.Errorf("neo/llm: %s parse response: %w", c.provider, err)
+	msg, finish, usage, err := aggregateStream(respBody)
+	if err != nil {
+		return nil, fmt.Errorf("neo/llm: %s parse stream: %w", c.provider, err)
 	}
-	if parsed.Error != nil && parsed.Error.Message != "" {
-		return nil, fmt.Errorf("neo/llm: %s api error: %s", c.provider, parsed.Error.Message)
-	}
-	if len(parsed.Choices) == 0 {
-		return nil, fmt.Errorf("neo/llm: empty choices in response")
-	}
-
-	choice := parsed.Choices[0]
 	res := &ChatResult{
-		Message:      fromWireRespMessage(choice.Message),
-		FinishReason: choice.FinishReason,
+		Message:      fromWireRespMessage(msg),
+		FinishReason: finish,
 	}
-	if parsed.Usage != nil {
-		res.Usage = *parsed.Usage
+	if usage != nil {
+		res.Usage = *usage
 	}
 	return res, nil
+}
+
+// aggregateStream reconstructs a single assistant turn from an OpenAI-style
+// SSE chat-completions stream (the response shape Together requires for some
+// models; Fireworks + the gateway emit the same shape). It concatenates
+// content + reasoning_content deltas, merges tool_call argument fragments by
+// index, and captures the terminal finish_reason + usage. The whole stream is
+// already buffered by the caller, so this is a pure parse over the bytes; the
+// agent loop consumes a complete turn, so no incremental delivery is needed
+// here. The folded message is handed to fromWireRespMessage, which still runs
+// the Kimi token-grammar + inline-<think> normalization.
+func aggregateStream(body []byte) (wireRespMessage, string, *Usage, error) {
+	msg := wireRespMessage{Role: RoleAssistant}
+	var content, reasoning strings.Builder
+	type aggCall struct {
+		id, typ, name string
+		args          strings.Builder
+	}
+	calls := map[int]*aggCall{}
+	var order []int
+	finish := ""
+	var usage *Usage
+	sawData := false
+
+	sc := bufio.NewScanner(bytes.NewReader(body))
+	sc.Buffer(make([]byte, 0, 64*1024), 8*1024*1024)
+	for sc.Scan() {
+		line := strings.TrimSpace(sc.Text())
+		if line == "" || !strings.HasPrefix(line, "data:") {
+			continue
+		}
+		payload := strings.TrimSpace(strings.TrimPrefix(line, "data:"))
+		if payload == "" || payload == "[DONE]" {
+			continue
+		}
+		var chunk chatStreamChunk
+		if err := json.Unmarshal([]byte(payload), &chunk); err != nil {
+			// Tolerate keepalive/comment lines rather than failing the turn.
+			continue
+		}
+		sawData = true
+		if chunk.Error != nil && chunk.Error.Message != "" {
+			return msg, finish, usage, fmt.Errorf("%s (type=%s)", chunk.Error.Message, chunk.Error.Type)
+		}
+		if chunk.Usage != nil {
+			usage = chunk.Usage
+		}
+		for _, ch := range chunk.Choices {
+			if ch.Delta.Role != "" {
+				msg.Role = ch.Delta.Role
+			}
+			content.WriteString(ch.Delta.Content)
+			reasoning.WriteString(ch.Delta.ReasoningContent)
+			for _, tc := range ch.Delta.ToolCalls {
+				ac := calls[tc.Index]
+				if ac == nil {
+					ac = &aggCall{}
+					calls[tc.Index] = ac
+					order = append(order, tc.Index)
+				}
+				if tc.ID != "" {
+					ac.id = tc.ID
+				}
+				if tc.Type != "" {
+					ac.typ = tc.Type
+				}
+				if tc.Function.Name != "" {
+					ac.name = tc.Function.Name
+				}
+				ac.args.WriteString(tc.Function.Arguments)
+			}
+			if ch.FinishReason != "" {
+				finish = ch.FinishReason
+			}
+		}
+	}
+	if err := sc.Err(); err != nil {
+		return msg, finish, usage, err
+	}
+	if !sawData {
+		return msg, finish, usage, fmt.Errorf("empty stream")
+	}
+
+	msg.Content = content.String()
+	msg.ReasoningContent = reasoning.String()
+	sort.Ints(order)
+	for _, idx := range order {
+		ac := calls[idx]
+		if ac.name == "" {
+			continue
+		}
+		typ := ac.typ
+		if typ == "" {
+			typ = "function"
+		}
+		id := ac.id
+		if id == "" {
+			id = "call_" + strconv.Itoa(idx)
+		}
+		msg.ToolCalls = append(msg.ToolCalls, ToolCall{
+			ID:       id,
+			Type:     typ,
+			Function: FunctionCall{Name: ac.name, Arguments: ac.args.String()},
+		})
+	}
+	return msg, finish, usage, nil
 }
 
 // newHTTPRequest builds the POST. Mirrors matrix/mcl/llm's gateway posture:
@@ -294,14 +407,22 @@ func truncate(s string, n int) string {
 // --- wire types (OpenAI chat-completions with tools) ---
 
 type chatRequestWire struct {
-	Model       string        `json:"model"`
-	Messages    []wireMessage `json:"messages"`
-	Temperature float64       `json:"temperature"`
-	MaxTokens   int           `json:"max_tokens,omitempty"`
-	Seed        *int64        `json:"seed,omitempty"`
-	Tools       []Tool        `json:"tools,omitempty"`
-	ToolChoice  interface{}   `json:"tool_choice,omitempty"`
-	Stream      bool          `json:"stream,omitempty"`
+	Model         string         `json:"model"`
+	Messages      []wireMessage  `json:"messages"`
+	Temperature   float64        `json:"temperature"`
+	MaxTokens     int            `json:"max_tokens,omitempty"`
+	Seed          *int64         `json:"seed,omitempty"`
+	Tools         []Tool         `json:"tools,omitempty"`
+	ToolChoice    interface{}    `json:"tool_choice,omitempty"`
+	Stream        bool           `json:"stream,omitempty"`
+	StreamOptions *streamOptions `json:"stream_options,omitempty"`
+}
+
+// streamOptions asks the provider to emit a final usage chunk on the SSE
+// stream (OpenAI `stream_options.include_usage`). Used on the direct path; the
+// gateway injects its own on the metered path.
+type streamOptions struct {
+	IncludeUsage bool `json:"include_usage"`
 }
 
 // wireMessage is the request-side message shape. It deliberately omits the
@@ -336,6 +457,36 @@ type chatResponseWire struct {
 	} `json:"choices"`
 	Usage *Usage         `json:"usage,omitempty"`
 	Error *chatErrorBody `json:"error,omitempty"`
+}
+
+// chatStreamChunk is one SSE `data:` frame of a streaming chat-completion. The
+// delta carries incremental content/reasoning and tool_call fragments (id +
+// name arrive once, arguments stream across frames keyed by index).
+type chatStreamChunk struct {
+	Choices []struct {
+		Index        int         `json:"index"`
+		Delta        streamDelta `json:"delta"`
+		FinishReason string      `json:"finish_reason"`
+	} `json:"choices"`
+	Usage *Usage         `json:"usage,omitempty"`
+	Error *chatErrorBody `json:"error,omitempty"`
+}
+
+type streamDelta struct {
+	Role             string            `json:"role"`
+	Content          string            `json:"content"`
+	ReasoningContent string            `json:"reasoning_content"`
+	ToolCalls        []streamToolDelta `json:"tool_calls"`
+}
+
+type streamToolDelta struct {
+	Index    int    `json:"index"`
+	ID       string `json:"id"`
+	Type     string `json:"type"`
+	Function struct {
+		Name      string `json:"name"`
+		Arguments string `json:"arguments"`
+	} `json:"function"`
 }
 
 // wireRespMessage is the response-side assistant message; content may be JSON

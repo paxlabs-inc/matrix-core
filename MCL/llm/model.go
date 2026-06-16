@@ -419,7 +419,7 @@ func DefaultRegistry() *ModelRegistry {
 
 	// --- SlotExecutor: KindWrite (prose specialist) --------------------------
 	executorWrite := Config{
-		Model:       "accounts/fireworks/models/kimi-k2p7-code",
+		Model:       "Qwen/Qwen3.7-Max",
 		Temperature: 0.6,
 		MaxTokens:   2048,
 		GrammarMode: GrammarNone,
@@ -504,7 +504,7 @@ const (
 	ForgeModelGPT55Pro     = "gpt-5.5-pro"
 	ForgeModelGPT54Mini    = "gpt-5.4-mini"
 	ForgeModelGPT53Codex   = "gpt-5.3-codex"
-	ForgeModelKimiK26      = "kimi-k2p7-code"
+	ForgeModelKimiK26      = "Qwen3.7-Max"
 	ForgeModelGLM51        = "glm-5p1-fast"
 )
 
