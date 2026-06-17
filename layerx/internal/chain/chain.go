@@ -10,6 +10,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"time"
 )
 
 // NetDelta is a per-DID net settlement amount (micro-USDX; positive = net
@@ -22,10 +23,11 @@ type NetDelta struct {
 }
 
 // Settler submits a sealed batch's commitment to Paxeer and returns the anchor
-// tx hash. Implementations MUST be idempotent on rootHex (a retried submit of
+// tx hash. windowEnd is the settlement window's close time (recorded on-chain in
+// the batch). Implementations MUST be idempotent on rootHex (a retried submit of
 // the same root must not double-anchor).
 type Settler interface {
-	AnchorBatch(ctx context.Context, rootHex string, transferCount int, deltas []NetDelta) (txHash string, err error)
+	AnchorBatch(ctx context.Context, rootHex string, transferCount int, windowEnd time.Time, deltas []NetDelta) (txHash string, err error)
 }
 
 // DevSettler is an offline stand-in: it derives a deterministic pseudo tx hash
@@ -38,7 +40,7 @@ func NewDevSettler() *DevSettler { return &DevSettler{} }
 
 // AnchorBatch returns a deterministic fake tx hash (sha256 of the root) so dev
 // flows can mark a batch anchored.
-func (d *DevSettler) AnchorBatch(_ context.Context, rootHex string, _ int, _ []NetDelta) (string, error) {
+func (d *DevSettler) AnchorBatch(_ context.Context, rootHex string, _ int, _ time.Time, _ []NetDelta) (string, error) {
 	sum := sha256.Sum256([]byte("dev-anchor:" + rootHex))
 	return "0x" + hex.EncodeToString(sum[:]), nil
 }

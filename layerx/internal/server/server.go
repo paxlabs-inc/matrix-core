@@ -1,9 +1,15 @@
-// Package server exposes layerxd over HTTP: the agent-DID auth lane and the
-// value surface (balance/deposit/pay/receipt/withdraw/settle). Two-layer auth
-// (layerx.frozen.kvx [auth]): a shared transport bearer (LAYERX_TOKEN) proves "a
-// legitimate Matrix daemon", and an ed25519 agent-DID principal token
-// (X-LayerX-Agent) proves WHICH account — so balances/receipts scope on the
-// verified DID, never a request field (invariant i6).
+// Package server exposes layerxd over HTTP. Since PHASE 4 (full-transparency
+// rollup model, layerx.frozen.kvx [api] overridden 2026-06-17) the surface is
+// split into two groups:
+//
+//   - a PUBLIC, unauthenticated READ surface — the explorer/RPC: info, supply
+//     (the reserve proof, invariant i1), batches, anchors, receipts, transfers,
+//     accounts. Anyone can read it so receipts/roots are independently
+//     verifiable (i4/i5) and the reserve is publicly auditable (i1).
+//   - a WRITE/principal surface authorized by the DID signature ALONE (invariant
+//     i6): pay/withdraw accept a directly DID-signed intent, OR an X-LayerX-Agent
+//     principal token as a convenience. The shared transport bearer (LAYERX_TOKEN)
+//     is now an OPTIONAL fleet gate (RequireTransport), never the public gate.
 package server
 
 import (
@@ -13,6 +19,7 @@ import (
 	"errors"
 	"io"
 	"log/slog"
+	"math/big"
 	"net/http"
 	"regexp"
 	"strconv"
@@ -20,11 +27,20 @@ import (
 	"time"
 
 	"github.com/paxlabs-inc/layerx/internal/auth"
+	"github.com/paxlabs-inc/layerx/internal/chain"
 	"github.com/paxlabs-inc/layerx/internal/ledger"
 	"github.com/paxlabs-inc/layerx/internal/settle"
 	"github.com/paxlabs-inc/layerx/internal/store"
 	"github.com/paxlabs-inc/layerx/pkg/types"
 )
+
+// ReserveReader reads the on-chain USDL reserve held in the vault — the
+// on-chain side of the public reserve proof (invariant i1). *chain.Watcher
+// satisfies it; it is nil when the chain is not configured (dev), in which case
+// /v1/supply reports circulating supply only.
+type ReserveReader interface {
+	ReserveBalance(ctx context.Context) (*big.Int, error)
+}
 
 // Version is the layerxd build identity surfaced on /healthz and /.
 const Version = "0.1.0"
@@ -36,30 +52,60 @@ const maxBodyBytes = 256 << 10
 // text.
 var swapOutRe = regexp.MustCompile(`^[A-Z0-9]{1,12}$`)
 
+// evmAddrRe validates a 20-byte hex EVM payout address (0x + 40 hex chars).
+var evmAddrRe = regexp.MustCompile(`^0x[0-9a-fA-F]{40}$`)
+
+// uuidRe validates a batch id so a malformed path returns 404, not a Postgres
+// type-cast 500.
+var uuidRe = regexp.MustCompile(`^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$`)
+
 // Server bundles the HTTP dependencies.
 type Server struct {
-	store          *store.Store
-	ledger         *ledger.Ledger
-	settler        *settle.Worker
-	challenges     *auth.Challenges
-	tokens         *auth.Tokens
-	log            *slog.Logger
-	transportToken string
-	vaultAddr      string
-	reserveAsset   string
+	store            *store.Store
+	ledger           *ledger.Ledger
+	settler          *settle.Worker
+	challenges       *auth.Challenges
+	tokens           *auth.Tokens
+	reserve          ReserveReader
+	log              *slog.Logger
+	transportToken   string
+	requireTransport bool
+	vaultAddr        string
+	reserveAsset     string
+
+	// public /v1/info descriptors
+	chainID         int64
+	anchorAddr      string
+	usdlAddr        string
+	dexRouter       string
+	sequencerPubHex string
+	window          time.Duration
+	microThreshold  int64
+	chainConfigured bool
 }
 
 // Deps configures a Server.
 type Deps struct {
-	Store          *store.Store
-	Ledger         *ledger.Ledger
-	Settler        *settle.Worker
-	Challenges     *auth.Challenges
-	Tokens         *auth.Tokens
-	Log            *slog.Logger
-	TransportToken string
-	VaultAddr      string
-	ReserveAsset   string
+	Store            *store.Store
+	Ledger           *ledger.Ledger
+	Settler          *settle.Worker
+	Challenges       *auth.Challenges
+	Tokens           *auth.Tokens
+	Reserve          ReserveReader
+	Log              *slog.Logger
+	TransportToken   string
+	RequireTransport bool
+	VaultAddr        string
+	ReserveAsset     string
+
+	ChainID         int64
+	AnchorAddr      string
+	USDLAddr        string
+	DEXRouter       string
+	SequencerPubHex string
+	Window          time.Duration
+	MicroThreshold  int64
+	ChainConfigured bool
 }
 
 // New builds the Server.
@@ -71,39 +117,66 @@ func New(d Deps) *Server {
 		d.ReserveAsset = "USDL"
 	}
 	return &Server{
-		store:          d.Store,
-		ledger:         d.Ledger,
-		settler:        d.Settler,
-		challenges:     d.Challenges,
-		tokens:         d.Tokens,
-		log:            d.Log,
-		transportToken: d.TransportToken,
-		vaultAddr:      d.VaultAddr,
-		reserveAsset:   d.ReserveAsset,
+		store:            d.Store,
+		ledger:           d.Ledger,
+		settler:          d.Settler,
+		challenges:       d.Challenges,
+		tokens:           d.Tokens,
+		reserve:          d.Reserve,
+		log:              d.Log,
+		transportToken:   d.TransportToken,
+		requireTransport: d.RequireTransport,
+		vaultAddr:        d.VaultAddr,
+		reserveAsset:     d.ReserveAsset,
+		chainID:          d.ChainID,
+		anchorAddr:       d.AnchorAddr,
+		usdlAddr:         d.USDLAddr,
+		dexRouter:        d.DEXRouter,
+		sequencerPubHex:  d.SequencerPubHex,
+		window:           d.Window,
+		microThreshold:   d.MicroThreshold,
+		chainConfigured:  d.ChainConfigured,
 	}
 }
 
-// Handler returns the fully-wired HTTP handler (transport auth wrapping the mux).
+// Handler returns the fully-wired HTTP handler (optional transport auth wrapping
+// the mux). The public READ surface and the auth lane are never transport-gated.
 func (s *Server) Handler() http.Handler {
 	mux := http.NewServeMux()
+
+	// Public read / explorer / RPC surface (no auth, PHASE 4).
 	mux.HandleFunc("GET /healthz", s.handleHealthz)
 	mux.HandleFunc("GET /", s.handleRoot)
+	mux.HandleFunc("GET /v1/info", s.handleInfo)
+	mux.HandleFunc("GET /v1/supply", s.handleSupply)
+	mux.HandleFunc("GET /v1/batches", s.handleBatches)
+	mux.HandleFunc("GET /v1/batch/{id}", s.handleBatch)
+	mux.HandleFunc("GET /v1/anchor/{root}", s.handleAnchor)
+	mux.HandleFunc("GET /v1/receipt/{seq}", s.handleReceipt)
+	mux.HandleFunc("GET /v1/transfers", s.handleTransfers)
+	mux.HandleFunc("GET /v1/account/{did}", s.handleAccount)
+
+	// Auth lane (public; mints a principal token only on a valid DID signature).
 	mux.HandleFunc("POST /v1/agent/auth/challenge", s.handleChallenge)
 	mux.HandleFunc("POST /v1/agent/auth/verify", s.handleVerify)
+
+	// Write / principal surface (DID-signed intent or principal token).
 	mux.HandleFunc("GET /v1/balance", s.handleBalance)
 	mux.HandleFunc("GET /v1/deposit", s.handleDeposit)
+	mux.HandleFunc("POST /v1/account/evm", s.handleBindEVM)
 	mux.HandleFunc("POST /v1/pay", s.handlePay)
-	mux.HandleFunc("GET /v1/receipt/{seq}", s.handleReceipt)
 	mux.HandleFunc("POST /v1/withdraw", s.handleWithdraw)
 	mux.HandleFunc("POST /v1/settle", s.handleSettle)
 	return s.transportMiddleware(mux)
 }
 
-// transportMiddleware enforces the shared transport bearer on every path except
-// the public healthz/root.
+// transportMiddleware enforces the shared transport bearer on the
+// write/principal endpoints ONLY when RequireTransport is set (legacy
+// private-fleet mode). The public READ surface + auth lane are never gated, so
+// the explorer/RPC works for anyone (PHASE 4, full-transparency model).
 func (s *Server) transportMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if s.transportToken == "" || isPublicPath(r) {
+		if !s.requireTransport || s.transportToken == "" || isPublicPath(r) {
 			next.ServeHTTP(w, r)
 			return
 		}
@@ -115,8 +188,25 @@ func (s *Server) transportMiddleware(next http.Handler) http.Handler {
 	})
 }
 
+// isPublicPath reports whether a request targets the always-open surface (the
+// explorer/RPC reads + healthz/root + the auth lane), which the transport bearer
+// never gates even in RequireTransport mode.
 func isPublicPath(r *http.Request) bool {
-	return r.Method == http.MethodGet && (r.URL.Path == "/" || r.URL.Path == "/healthz")
+	p := r.URL.Path
+	if r.Method == http.MethodGet {
+		switch p {
+		case "/", "/healthz", "/v1/info", "/v1/supply", "/v1/batches", "/v1/transfers":
+			return true
+		}
+		if strings.HasPrefix(p, "/v1/batch/") || strings.HasPrefix(p, "/v1/anchor/") ||
+			strings.HasPrefix(p, "/v1/receipt/") || strings.HasPrefix(p, "/v1/account/") {
+			return true
+		}
+	}
+	if r.Method == http.MethodPost && (p == "/v1/agent/auth/challenge" || p == "/v1/agent/auth/verify") {
+		return true
+	}
+	return false
 }
 
 func (s *Server) handleRoot(w http.ResponseWriter, r *http.Request) {
@@ -229,19 +319,48 @@ func (s *Server) handleDeposit(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
+	// Register the DID claim so the on-chain deposit watcher can reverse the
+	// Vault Deposit `did` bytes32 (= keccak256(DID)) back to this account.
+	claim := chain.DIDClaimHex(claims.DID)
+	if err := s.store.RegisterDIDClaim(r.Context(), claim, claims.DID); err != nil {
+		s.log.Error("register did claim failed", "error", err.Error())
+		writeFail(w, http.StatusInternalServerError, types.CodeInternal, "could not prepare deposit claim")
+		return
+	}
 	writeJSON(w, http.StatusOK, types.OK(types.DepositResponse{
 		VaultAddress: s.vaultAddr,
 		ReserveAsset: s.reserveAsset,
-		DIDClaim:     "layerx-deposit-claim:" + claims.DID,
-		Note:         "deposit USDL for 1:1 USDX, or USDC/USDT/PAX (atomically swapped to USDL at deposit). Funding from the user wallet escalates to MCL.",
+		DIDClaim:     "0x" + claim,
+		Note:         "pass did_claim as the on-chain deposit `did` argument. Deposit USDL for 1:1 USDX, or USDC/USDT/PAX (atomically swapped to USDL at deposit); the depositing EVM address becomes your payout address. Funding from the user wallet escalates to MCL.",
 	}))
 }
 
-func (s *Server) handlePay(w http.ResponseWriter, r *http.Request) {
+// handleBindEVM records/updates the caller DID's mapped Paxeer payout address
+// (spec [usdx.account].binding). The address is scoped to the verified DID from
+// the principal token, never a request field (invariant i6).
+func (s *Server) handleBindEVM(w http.ResponseWriter, r *http.Request) {
 	claims, ok := s.principal(w, r)
 	if !ok {
 		return
 	}
+	var req types.BindEVMRequest
+	if !decode(w, r, &req) {
+		return
+	}
+	evm := strings.TrimSpace(req.EVMAddress)
+	if !evmAddrRe.MatchString(evm) {
+		writeFail(w, http.StatusBadRequest, types.CodeInvalidRequest, "evm_address must be a 0x-prefixed 20-byte hex address")
+		return
+	}
+	if err := s.store.SetEVMAddress(r.Context(), claims.DID, evm); err != nil {
+		s.log.Error("bind evm failed", "error", err.Error())
+		writeFail(w, http.StatusInternalServerError, types.CodeInternal, "could not bind payout address")
+		return
+	}
+	writeJSON(w, http.StatusOK, types.OK(types.BindEVMResponse{DID: claims.DID, EVMAddress: evm}))
+}
+
+func (s *Server) handlePay(w http.ResponseWriter, r *http.Request) {
 	var req types.PayRequest
 	if !decode(w, r, &req) {
 		return
@@ -255,7 +374,15 @@ func (s *Server) handlePay(w http.ResponseWriter, r *http.Request) {
 		writeFail(w, http.StatusBadRequest, types.CodeInvalidRequest, "amount_usdx must be a positive USDX decimal")
 		return
 	}
-	receipt, err := s.ledger.Pay(r.Context(), claims.DID, req.ToDID, amount)
+	// Authorize by the X-LayerX-Agent token OR a DID-signed pay intent. The
+	// canonical signed amount is the normalized 6dp decimal so the client and
+	// server agree regardless of input formatting (invariant i6).
+	preimage := auth.IntentMessage("pay", req.FromDID, req.Nonce, req.ToDID, types.FormatUSDX(amount))
+	fromDID, ok := s.writeCaller(w, r, req.FromDID, req.PublicKey, req.Nonce, req.Signature, preimage)
+	if !ok {
+		return
+	}
+	receipt, err := s.ledger.Pay(r.Context(), fromDID, req.ToDID, amount)
 	if err != nil {
 		switch {
 		case errors.Is(err, store.ErrInsufficientFunds):
@@ -279,24 +406,22 @@ func (s *Server) handlePay(w http.ResponseWriter, r *http.Request) {
 			}
 		}()
 	}
-	s.log.Info("transfer accepted", "seq", receipt.Seq, "from", claims.DID, "to", req.ToDID, "tier", receipt.Tier)
+	s.log.Info("transfer accepted", "seq", receipt.Seq, "from", fromDID, "to", req.ToDID, "tier", receipt.Tier)
 	writeJSON(w, http.StatusOK, types.OK(receipt))
 }
 
+// handleReceipt is a PUBLIC read (PHASE 4): any signed receipt + inclusion proof
+// + anchor is independently verifiable by anyone, with no DID-ownership scoping.
 func (s *Server) handleReceipt(w http.ResponseWriter, r *http.Request) {
-	claims, ok := s.principal(w, r)
-	if !ok {
-		return
-	}
 	seq, err := strconv.ParseInt(r.PathValue("seq"), 10, 64)
 	if err != nil {
 		writeFail(w, http.StatusBadRequest, types.CodeInvalidRequest, "seq must be an integer")
 		return
 	}
-	receipt, err := s.ledger.Receipt(r.Context(), seq, claims.DID)
+	receipt, err := s.ledger.ReceiptPublic(r.Context(), seq)
 	if err != nil {
 		if errors.Is(err, store.ErrNotFound) {
-			writeFail(w, http.StatusNotFound, types.CodeNotFound, "receipt not found or not owned")
+			writeFail(w, http.StatusNotFound, types.CodeNotFound, "receipt not found")
 			return
 		}
 		s.log.Error("get receipt failed", "error", err.Error())
@@ -307,10 +432,6 @@ func (s *Server) handleReceipt(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) handleWithdraw(w http.ResponseWriter, r *http.Request) {
-	claims, ok := s.principal(w, r)
-	if !ok {
-		return
-	}
 	var req types.WithdrawRequest
 	if !decode(w, r, &req) {
 		return
@@ -325,8 +446,15 @@ func (s *Server) handleWithdraw(w http.ResponseWriter, r *http.Request) {
 		writeFail(w, http.StatusBadRequest, types.CodeInvalidRequest, "swap_out must be an asset ticker [A-Z0-9]{1,12} (or empty for USDL)")
 		return
 	}
+	// Authorize by the X-LayerX-Agent token OR a DID-signed withdraw intent over
+	// the normalized 6dp amount + the canonical swap-out asset (invariant i6).
+	preimage := auth.IntentMessage("withdraw", req.FromDID, req.Nonce, types.FormatUSDX(amount), swapOut)
+	callerDID, ok := s.writeCaller(w, r, req.FromDID, req.PublicKey, req.Nonce, req.Signature, preimage)
+	if !ok {
+		return
+	}
 	// Withdrawals always force-settle (they move real reserve out of the vault).
-	id, err := s.store.QueueWithdrawal(r.Context(), claims.DID, amount, swapOut, types.TierMaterial)
+	id, err := s.store.QueueWithdrawal(r.Context(), callerDID, amount, swapOut, types.TierMaterial)
 	if err != nil {
 		switch {
 		case errors.Is(err, store.ErrInsufficientFunds):
@@ -338,6 +466,17 @@ func (s *Server) handleWithdraw(w http.ResponseWriter, r *http.Request) {
 			writeFail(w, http.StatusInternalServerError, types.CodeInternal, "could not queue withdrawal")
 		}
 		return
+	}
+	// Withdrawals move real reserve out of the vault, so they force-settle: kick
+	// an async payout pass (idempotent + crash-safe) rather than wait for the window.
+	if s.settler != nil {
+		go func() {
+			ctx, cancel := context.WithTimeout(context.Background(), 90*time.Second)
+			defer cancel()
+			if _, err := s.settler.SettleWithdrawals(ctx); err != nil {
+				s.log.Error("auto withdrawal payout failed", "withdrawal", id, "error", err.Error())
+			}
+		}()
 	}
 	writeJSON(w, http.StatusOK, types.OK(types.WithdrawResponse{
 		WithdrawalID: id,
@@ -361,16 +500,272 @@ func (s *Server) handleSettle(w http.ResponseWriter, r *http.Request) {
 		writeFail(w, http.StatusInternalServerError, types.CodeInternal, "settlement failed: "+err.Error())
 		return
 	}
+	payoutRoot, err := s.settler.SettleWithdrawals(r.Context())
+	if err != nil {
+		s.log.Error("force withdrawal payout failed", "error", err.Error())
+		writeFail(w, http.StatusInternalServerError, types.CodeInternal, "withdrawal payout failed: "+err.Error())
+		return
+	}
 	note := "nothing to settle"
 	status := "noop"
-	if batchID != "" {
-		note = "batch sealed + anchored"
+	if batchID != "" || payoutRoot != "" {
+		note = "settlement submitted"
 		status = "anchored"
 	}
 	writeJSON(w, http.StatusOK, types.OK(types.SettleResponse{BatchID: batchID, Status: status, Note: note}))
 }
 
+// writeCaller authorizes a value write and returns the caller DID. It accepts
+// EITHER the X-LayerX-Agent principal token (convenience) OR a DID-signed intent
+// (the signature IS the authorization, invariant i6): from_did + public_key +
+// nonce + signature over preimage. The nonce must be a live single-use challenge
+// nonce bound to from_did, giving replay protection; it is consumed only after
+// the signature verifies so a bad signature never burns a legitimate nonce.
+func (s *Server) writeCaller(w http.ResponseWriter, r *http.Request, fromDID, pubHex, nonce, sigHex, preimage string) (string, bool) {
+	if strings.TrimSpace(r.Header.Get("X-LayerX-Agent")) != "" {
+		claims, ok := s.principal(w, r)
+		if !ok {
+			return "", false
+		}
+		return claims.DID, true
+	}
+	if fromDID == "" || sigHex == "" {
+		writeFail(w, http.StatusUnauthorized, types.CodeUnauthorized, "authorize with an X-LayerX-Agent token or a DID-signed intent (from_did, public_key, nonce, signature)")
+		return "", false
+	}
+	if _, err := auth.ParseDID(fromDID); err != nil {
+		writeFail(w, http.StatusBadRequest, types.CodeInvalidRequest, "from_did must be a valid did:matrix")
+		return "", false
+	}
+	if err := auth.VerifyIntentSignature(fromDID, pubHex, sigHex, preimage); err != nil {
+		writeFail(w, http.StatusUnauthorized, types.CodeUnauthorized, "intent signature: "+err.Error())
+		return "", false
+	}
+	if !s.challenges.Consume(nonce, fromDID) {
+		writeFail(w, http.StatusUnauthorized, types.CodeUnauthorized, "unknown, expired, or already-used nonce")
+		return "", false
+	}
+	return fromDID, true
+}
+
+// ─── public read / explorer surface (PHASE 4) ───────────────────────────────
+
+func (s *Server) handleInfo(w http.ResponseWriter, r *http.Request) {
+	writeJSON(w, http.StatusOK, types.OK(types.InfoResponse{
+		Service:            "layerxd",
+		Version:            Version,
+		ChainID:            s.chainID,
+		VaultAddress:       s.vaultAddr,
+		AnchorAddress:      s.anchorAddr,
+		USDLAddress:        s.usdlAddr,
+		DEXRouter:          s.dexRouter,
+		ReserveAsset:       s.reserveAsset,
+		SequencerPubkey:    s.sequencerPubHex,
+		WindowSeconds:      int64(s.window.Seconds()),
+		MicroThresholdUSDX: types.FormatUSDX(s.microThreshold),
+		MicroPerUSDX:       types.MicroPerUSDX,
+		ChainConfigured:    s.chainConfigured,
+		TransportAuthGated: s.requireTransport && s.transportToken != "",
+	}))
+}
+
+func (s *Server) handleSupply(w http.ResponseWriter, r *http.Request) {
+	stats, err := s.store.Supply(r.Context())
+	if err != nil {
+		s.log.Error("supply read failed", "error", err.Error())
+		writeFail(w, http.StatusInternalServerError, types.CodeInternal, "could not read supply")
+		return
+	}
+	resp := types.SupplyResponse{
+		CirculatingUSDX: types.FormatUSDX(stats.CirculatingMicroUSDX),
+		Accounts:        stats.Accounts,
+		Transfers:       stats.Transfers,
+	}
+	// The on-chain reserve makes this the auditable reserve proof (invariant i1).
+	// In dev / chain-unconfigured it is unavailable; report circulating only.
+	if s.reserve != nil {
+		reserve, rerr := s.reserve.ReserveBalance(r.Context())
+		if rerr != nil {
+			s.log.Warn("supply: reserve read failed", "error", rerr.Error())
+		} else if reserve != nil {
+			drift := new(big.Int).Sub(big.NewInt(stats.CirculatingMicroUSDX), reserve)
+			resp.ReserveUSDL = formatBigMicro(reserve)
+			resp.DriftUSDX = formatBigMicro(drift)
+			resp.Reserved = drift.Sign() == 0
+			resp.ReserveKnown = true
+		}
+	}
+	writeJSON(w, http.StatusOK, types.OK(resp))
+}
+
+func (s *Server) handleBatches(w http.ResponseWriter, r *http.Request) {
+	limit, offset := parsePage(r)
+	rows, err := s.store.ListBatches(r.Context(), limit, offset)
+	if err != nil {
+		s.log.Error("list batches failed", "error", err.Error())
+		writeFail(w, http.StatusInternalServerError, types.CodeInternal, "could not list batches")
+		return
+	}
+	views := make([]types.BatchView, 0, len(rows))
+	for _, b := range rows {
+		views = append(views, toBatchView(b))
+	}
+	writeJSON(w, http.StatusOK, types.OK(types.BatchesResponse{
+		Batches: views, Limit: limit, Offset: offset, Count: len(views),
+	}))
+}
+
+func (s *Server) handleBatch(w http.ResponseWriter, r *http.Request) {
+	id := strings.TrimSpace(r.PathValue("id"))
+	if !uuidRe.MatchString(id) {
+		writeFail(w, http.StatusNotFound, types.CodeNotFound, "batch not found")
+		return
+	}
+	b, err := s.store.GetBatch(r.Context(), id)
+	if err != nil {
+		if errors.Is(err, store.ErrNotFound) {
+			writeFail(w, http.StatusNotFound, types.CodeNotFound, "batch not found")
+			return
+		}
+		s.log.Error("get batch failed", "error", err.Error())
+		writeFail(w, http.StatusInternalServerError, types.CodeInternal, "could not read batch")
+		return
+	}
+	writeJSON(w, http.StatusOK, types.OK(toBatchView(b)))
+}
+
+func (s *Server) handleAnchor(w http.ResponseWriter, r *http.Request) {
+	root := strings.ToLower(strings.TrimPrefix(strings.TrimSpace(r.PathValue("root")), "0x"))
+	b, err := s.store.GetBatchByRoot(r.Context(), root)
+	if err != nil {
+		if errors.Is(err, store.ErrNotFound) {
+			writeFail(w, http.StatusNotFound, types.CodeNotFound, "no batch for that root")
+			return
+		}
+		s.log.Error("get anchor failed", "error", err.Error())
+		writeFail(w, http.StatusInternalServerError, types.CodeInternal, "could not read anchor")
+		return
+	}
+	writeJSON(w, http.StatusOK, types.OK(types.AnchorResponse{
+		RootHex:      b.RootHex,
+		BatchID:      b.ID,
+		Status:       b.Status,
+		AnchorTxHash: b.AnchorTx,
+		Anchored:     b.Status == "anchored",
+	}))
+}
+
+func (s *Server) handleTransfers(w http.ResponseWriter, r *http.Request) {
+	limit, offset := parsePage(r)
+	did := strings.TrimSpace(r.URL.Query().Get("did"))
+	if did != "" {
+		if _, err := auth.ParseDID(did); err != nil {
+			writeFail(w, http.StatusBadRequest, types.CodeInvalidRequest, "did filter must be a valid did:matrix")
+			return
+		}
+	}
+	rows, err := s.store.ListTransfers(r.Context(), did, limit, offset)
+	if err != nil {
+		s.log.Error("list transfers failed", "error", err.Error())
+		writeFail(w, http.StatusInternalServerError, types.CodeInternal, "could not list transfers")
+		return
+	}
+	views := make([]types.TransferView, 0, len(rows))
+	for _, t := range rows {
+		views = append(views, toTransferView(t))
+	}
+	writeJSON(w, http.StatusOK, types.OK(types.TransfersResponse{
+		Transfers: views, DID: did, Limit: limit, Offset: offset, Count: len(views),
+	}))
+}
+
+func (s *Server) handleAccount(w http.ResponseWriter, r *http.Request) {
+	did := strings.TrimSpace(r.PathValue("did"))
+	if _, err := auth.ParseDID(did); err != nil {
+		writeFail(w, http.StatusBadRequest, types.CodeInvalidRequest, "did must be a valid did:matrix")
+		return
+	}
+	resp := types.AccountResponse{
+		DID:         did,
+		BalanceUSDX: types.FormatUSDX(0),
+		EscrowUSDX:  types.FormatUSDX(0),
+		History:     []types.TransferView{},
+	}
+	acct, err := s.store.GetAccount(r.Context(), did)
+	switch {
+	case err == nil:
+		resp.EVMAddress = acct.EVMAddress
+		resp.BalanceUSDX = types.FormatUSDX(acct.BalanceUSDX)
+		resp.EscrowUSDX = types.FormatUSDX(acct.EscrowUSDX)
+	case errors.Is(err, store.ErrNotFound):
+		// Unknown account: zero balances + empty history (not a 404), so the
+		// explorer can render any DID uniformly.
+	default:
+		s.log.Error("get account failed", "error", err.Error())
+		writeFail(w, http.StatusInternalServerError, types.CodeInternal, "could not read account")
+		return
+	}
+	limit, offset := parsePage(r)
+	rows, terr := s.store.ListTransfers(r.Context(), did, limit, offset)
+	if terr != nil {
+		s.log.Error("account history read failed", "error", terr.Error())
+		writeFail(w, http.StatusInternalServerError, types.CodeInternal, "could not read account history")
+		return
+	}
+	for _, t := range rows {
+		resp.History = append(resp.History, toTransferView(t))
+	}
+	writeJSON(w, http.StatusOK, types.OK(resp))
+}
+
 // ─── helpers ──────────────────────────────────────────────────────────────
+
+// parsePage reads ?limit= and ?offset= query params (the store clamps them to
+// safe bounds).
+func parsePage(r *http.Request) (int, int) {
+	limit, _ := strconv.Atoi(r.URL.Query().Get("limit"))
+	offset, _ := strconv.Atoi(r.URL.Query().Get("offset"))
+	return limit, offset
+}
+
+// formatBigMicro renders a micro-precision big.Int as a 6dp USDX decimal when it
+// fits in int64, else its raw integer string (defensive; reserves never realistically
+// exceed int64 micro-USDX).
+func formatBigMicro(v *big.Int) string {
+	if v != nil && v.IsInt64() {
+		return types.FormatUSDX(v.Int64())
+	}
+	return v.String()
+}
+
+func toBatchView(b store.BatchSummary) types.BatchView {
+	return types.BatchView{
+		ID:            b.ID,
+		RootHex:       b.RootHex,
+		Status:        b.Status,
+		AnchorTxHash:  b.AnchorTx,
+		TransferCount: b.TransferCount,
+		WindowStart:   b.WindowStart,
+		WindowEnd:     b.WindowEnd,
+		CreatedAt:     b.CreatedAt,
+	}
+}
+
+func toTransferView(t store.TransferSummary) types.TransferView {
+	return types.TransferView{
+		Seq:          t.Seq,
+		BatchID:      t.BatchID,
+		FromDID:      t.FromDID,
+		ToDID:        t.ToDID,
+		AmountUSDX:   types.FormatUSDX(t.AmountMicro),
+		Tier:         t.Tier,
+		LeafHashHex:  t.LeafHex,
+		BatchRootHex: t.BatchRootHex,
+		AnchorTxHash: t.AnchorTx,
+		Settled:      t.Settled,
+		TS:           t.TS,
+	}
+}
 
 func bearerToken(r *http.Request) string {
 	h := r.Header.Get("Authorization")

@@ -1,0 +1,67 @@
+[
+  {
+    "name": "layerx_balance",
+    "description": "Your LayerX USDX balance: spendable balance + escrow bound + mapped Paxeer payout address. USDX is USD-denominated, escrow-backed agent money. Read-only (authorized as your agent DID).",
+    "inputSchema": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {}
+    }
+  },
+  {
+    "name": "layerx_deposit",
+    "description": "Get the on-chain vault deposit address + your DID-claim payload to fund your LayerX balance. Pass the returned did_claim as the deposit `did` argument; deposit USDL for 1:1 USDX, or USDC/USDT/PAX (atomically swapped to USDL). The depositing EVM address becomes your payout address. The actual on-chain deposit FROM the funding wallet moves user funds and escalates to a wallet signature. Read-only.",
+    "inputSchema": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {}
+    }
+  },
+  {
+    "name": "layerx_pay",
+    "description": "Pay another agent instantly and gaslessly by DID, spending your escrow-backed USDX balance. Returns a sequencer-signed receipt (with an inclusion proof + anchor once settled). Micropayments net-batch on the settlement window; material amounts force-settle. args: to_did (did:matrix recipient), amount_usdx (decimal USDX, e.g. \"1.50\").",
+    "inputSchema": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "to_did": { "type": "string", "description": "Recipient agent DID (did:matrix:<label>:<keyfp>). Required." },
+        "amount_usdx": { "type": "string", "description": "Amount in decimal USDX, up to 6 dp (e.g. \"1\", \"1.50\", \"0.000001\"). Required." }
+      },
+      "required": ["to_did", "amount_usdx"]
+    }
+  },
+  {
+    "name": "layerx_receipt",
+    "description": "Fetch the signed inclusion receipt for a transfer sequence number: sequencer signature, Merkle leaf + inclusion path, batch root, and the Paxeer anchor tx once the batch settles. Public + independently verifiable. args: seq (the transfer sequence number from a pay receipt). Read-only.",
+    "inputSchema": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "seq": { "type": "string", "description": "Transfer sequence number (the `seq` from a layerx_pay receipt). Required." }
+      },
+      "required": ["seq"]
+    }
+  },
+  {
+    "name": "layerx_withdraw",
+    "description": "Burn USDX to release real USDL out of the vault to your mapped Paxeer EVM payout address, optionally swapping out to another asset. Bounded by your escrow-backed balance; force-settled. args: amount_usdx (decimal USDX), swap_out (optional target asset ticker, e.g. \"USDC\"; empty = USDL).",
+    "inputSchema": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "amount_usdx": { "type": "string", "description": "Amount in decimal USDX, up to 6 dp. Required." },
+        "swap_out": { "type": "string", "description": "Optional target asset ticker [A-Z0-9] to swap the released USDL into (empty = receive USDL)." }
+      },
+      "required": ["amount_usdx"]
+    }
+  },
+  {
+    "name": "layerx_settle",
+    "description": "Force-settle now: seal the current window and anchor its Merkle root (and any queued withdrawal payouts) to Paxeer immediately instead of waiting for the settlement window. Read-mostly control op (idempotent + crash-safe).",
+    "inputSchema": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {}
+    }
+  }
+]

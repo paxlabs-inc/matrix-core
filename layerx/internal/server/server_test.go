@@ -20,11 +20,27 @@ func newTestServer() (*Server, *auth.Tokens) {
 	challenges := auth.NewChallenges(time.Minute)
 	tokens := auth.NewTokens("agent-secret", time.Hour)
 	// Store/Ledger/Settler are nil: these tests only hit auth-lane + middleware
-	// paths that never touch them.
+	// + info paths that never touch them. Default public mode (transport not
+	// required), matching the PHASE 4 rollup posture.
 	srv := New(Deps{
 		Challenges:     challenges,
 		Tokens:         tokens,
 		TransportToken: testTransport,
+		ChainID:        125,
+	})
+	return srv, tokens
+}
+
+// newFleetServer is the legacy private-fleet posture: the transport bearer is
+// enforced on the write/principal endpoints.
+func newFleetServer() (*Server, *auth.Tokens) {
+	challenges := auth.NewChallenges(time.Minute)
+	tokens := auth.NewTokens("agent-secret", time.Hour)
+	srv := New(Deps{
+		Challenges:       challenges,
+		Tokens:           tokens,
+		TransportToken:   testTransport,
+		RequireTransport: true,
 	})
 	return srv, tokens
 }
@@ -54,8 +70,8 @@ func TestRootIsPublic(t *testing.T) {
 	}
 }
 
-func TestTransportAuthEnforced(t *testing.T) {
-	srv, _ := newTestServer()
+func TestTransportFleetModeEnforced(t *testing.T) {
+	srv, _ := newFleetServer()
 	h := srv.Handler()
 
 	// No transport bearer -> 401 before any handler logic.
@@ -69,6 +85,102 @@ func TestTransportAuthEnforced(t *testing.T) {
 	// Valid transport bearer but missing principal token -> 401 (principal lane).
 	if rr := do(h, http.MethodGet, "/v1/balance", testTransport, "", nil); rr.Code != http.StatusUnauthorized {
 		t.Fatalf("missing principal status = %d, want 401", rr.Code)
+	}
+}
+
+func TestPrincipalRequiredInPublicMode(t *testing.T) {
+	srv, _ := newTestServer() // public mode: transport not required
+	h := srv.Handler()
+	// /v1/balance is still a principal endpoint: no X-LayerX-Agent token -> 401,
+	// even though the transport bearer is no longer required.
+	if rr := do(h, http.MethodGet, "/v1/balance", "", "", nil); rr.Code != http.StatusUnauthorized {
+		t.Fatalf("missing principal status = %d, want 401", rr.Code)
+	}
+}
+
+func TestInfoIsPublicNoAuth(t *testing.T) {
+	srv, _ := newTestServer()
+	rr := do(srv.Handler(), http.MethodGet, "/v1/info", "", "", nil)
+	if rr.Code != http.StatusOK {
+		t.Fatalf("info status = %d body=%s", rr.Code, rr.Body.String())
+	}
+	var env struct {
+		Ok   bool               `json:"ok"`
+		Data types.InfoResponse `json:"data"`
+	}
+	if err := json.Unmarshal(rr.Body.Bytes(), &env); err != nil {
+		t.Fatalf("decode info: %v", err)
+	}
+	if !env.Ok || env.Data.ChainID != 125 || env.Data.Service != "layerxd" {
+		t.Fatalf("bad info response: %+v", env)
+	}
+}
+
+// TestInfoPublicEvenInFleetMode proves the public read surface is never gated by
+// the transport bearer, even when RequireTransport is set.
+func TestInfoPublicEvenInFleetMode(t *testing.T) {
+	srv, _ := newFleetServer()
+	rr := do(srv.Handler(), http.MethodGet, "/v1/info", "", "", nil)
+	if rr.Code != http.StatusOK {
+		t.Fatalf("info in fleet mode status = %d, want 200 (public read must bypass transport)", rr.Code)
+	}
+}
+
+func TestPayRejectsBadIntentSignature(t *testing.T) {
+	srv, _ := newTestServer()
+	h := srv.Handler()
+
+	pub, _, _ := ed25519.GenerateKey(nil)
+	did := "did:matrix:payer:" + hex.EncodeToString(pub)[:16]
+
+	// Garbage signature on the signed-intent path -> 401 BEFORE any ledger touch
+	// (the nil ledger is never reached, proving auth fails closed).
+	req := types.PayRequest{
+		ToDID:      "did:matrix:payee:0123456789abcdef",
+		AmountUSDX: "1.0",
+		FromDID:    did,
+		PublicKey:  hex.EncodeToString(pub),
+		Nonce:      "nonce-1",
+		Signature:  hex.EncodeToString([]byte("not-a-valid-signature-not-a-valid-signatur")),
+	}
+	if rr := do(h, http.MethodPost, "/v1/pay", "", "", req); rr.Code != http.StatusUnauthorized {
+		t.Fatalf("bad-signature pay status = %d, want 401", rr.Code)
+	}
+}
+
+func TestPayRejectsWrongDIDSignature(t *testing.T) {
+	srv, _ := newTestServer()
+	h := srv.Handler()
+
+	pub, _, _ := ed25519.GenerateKey(nil)
+	_, attacker, _ := ed25519.GenerateKey(nil)
+	did := "did:matrix:payer:" + hex.EncodeToString(pub)[:16]
+	nonce := "nonce-2"
+	amount := "1.000000"
+	preimage := auth.IntentMessage("pay", did, nonce, "did:matrix:payee:0123456789abcdef", amount)
+
+	// Sign with an unrelated key — the pubkey still matches the DID fp, but the
+	// signature does not verify under it, so authorization must fail closed.
+	forged := ed25519.Sign(attacker, []byte(preimage))
+	req := types.PayRequest{
+		ToDID:      "did:matrix:payee:0123456789abcdef",
+		AmountUSDX: amount,
+		FromDID:    did,
+		PublicKey:  hex.EncodeToString(pub),
+		Nonce:      nonce,
+		Signature:  hex.EncodeToString(forged),
+	}
+	if rr := do(h, http.MethodPost, "/v1/pay", "", "", req); rr.Code != http.StatusUnauthorized {
+		t.Fatalf("wrong-DID-signature pay status = %d, want 401", rr.Code)
+	}
+}
+
+func TestPayRejectsMissingAuthorization(t *testing.T) {
+	srv, _ := newTestServer()
+	// No X-LayerX-Agent token and no signed-intent fields -> 401.
+	req := types.PayRequest{ToDID: "did:matrix:payee:0123456789abcdef", AmountUSDX: "1.0"}
+	if rr := do(srv.Handler(), http.MethodPost, "/v1/pay", "", "", req); rr.Code != http.StatusUnauthorized {
+		t.Fatalf("unauthorized pay status = %d, want 401", rr.Code)
 	}
 }
 

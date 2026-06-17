@@ -63,3 +63,39 @@ func (s *Store) MarkBatchFailed(ctx context.Context, batchID, errText string) er
 	}
 	return nil
 }
+
+// PendingBatch is a sealed-but-not-yet-anchored batch — the input to crash
+// recovery (re-anchor the durable open window at-least-once).
+type PendingBatch struct {
+	ID            string
+	RootHex       string
+	WindowEnd     time.Time
+	TransferCount int
+	Status        string
+}
+
+// ListUnanchoredBatches returns batches that were sealed (and possibly
+// submitted/failed) but never confirmed anchored — the set the settlement
+// worker re-submits on startup to honor at-least-once. Oldest first.
+func (s *Store) ListUnanchoredBatches(ctx context.Context) ([]PendingBatch, error) {
+	rows, err := s.pool.Query(ctx, `
+		SELECT b.id, b.root, b.window_end, b.status, COUNT(t.seq)
+		FROM batches b
+		LEFT JOIN transfers t ON t.batch_id = b.id
+		WHERE b.status IN ('sealed', 'submitted', 'failed')
+		GROUP BY b.id, b.root, b.window_end, b.status, b.created_at
+		ORDER BY b.created_at ASC`)
+	if err != nil {
+		return nil, fmt.Errorf("store: list unanchored batches: %w", err)
+	}
+	defer rows.Close()
+	var out []PendingBatch
+	for rows.Next() {
+		var b PendingBatch
+		if err := rows.Scan(&b.ID, &b.RootHex, &b.WindowEnd, &b.Status, &b.TransferCount); err != nil {
+			return nil, fmt.Errorf("store: scan unanchored batch: %w", err)
+		}
+		out = append(out, b)
+	}
+	return out, rows.Err()
+}

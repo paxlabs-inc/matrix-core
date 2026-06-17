@@ -3,24 +3,25 @@ package chain
 import (
 	"context"
 	"testing"
+	"time"
 )
 
 func TestDevSettlerDeterministicAndIdempotent(t *testing.T) {
 	d := NewDevSettler()
 	ctx := context.Background()
 
-	tx1, err := d.AnchorBatch(ctx, "abc123", 3, nil)
+	tx1, err := d.AnchorBatch(ctx, "abc123", 3, time.Time{}, nil)
 	if err != nil {
 		t.Fatalf("AnchorBatch: %v", err)
 	}
-	tx2, err := d.AnchorBatch(ctx, "abc123", 3, nil)
+	tx2, err := d.AnchorBatch(ctx, "abc123", 3, time.Time{}, nil)
 	if err != nil {
 		t.Fatalf("AnchorBatch retry: %v", err)
 	}
 	if tx1 != tx2 {
 		t.Fatal("same root must yield the same anchor tx (idempotent)")
 	}
-	other, err := d.AnchorBatch(ctx, "def456", 1, nil)
+	other, err := d.AnchorBatch(ctx, "def456", 1, time.Time{}, nil)
 	if err != nil {
 		t.Fatalf("AnchorBatch other: %v", err)
 	}

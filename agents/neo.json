@@ -195,6 +195,23 @@
         {"name": "alarm_get", "description": "Fetch one of your alarms by id (wake_message, payload, schedule, status). Read-only. args: id.", "side_effect_class": "network", "timeout_ms": 15000},
         {"name": "alarm_cancel", "description": "Cancel one of your active alarms by id so it never fires. args: id.", "side_effect_class": "write", "timeout_ms": 15000}
       ]
+    },
+    {
+      "alias": "layerx",
+      "transport": "stdio",
+      "command": "node",
+      "args": ["/root/matrix/tools/layerx/layerx.mjs"],
+      "env": [],
+      "package_digest": "sha256:1a0000000000000000000000000000000000000000000000000000000000001a",
+      "version": "0.1.0",
+      "tools": [
+        {"name": "layerx_balance", "description": "Your LayerX USDX balance: spendable balance + escrow bound + mapped Paxeer payout address. USDX is USD-denominated, escrow-backed agent money. Read-only (authorized as your agent DID).", "side_effect_class": "network", "timeout_ms": 15000},
+        {"name": "layerx_deposit", "description": "Get the on-chain vault deposit address + your DID-claim payload to fund your LayerX balance. Deposit USDL for 1:1 USDX, or USDC/USDT/PAX (atomically swapped). The actual on-chain deposit FROM the funding wallet escalates to a wallet signature. Read-only.", "side_effect_class": "network", "timeout_ms": 15000},
+        {"name": "layerx_pay", "description": "Pay another agent instantly and gaslessly by DID, spending your escrow-backed USDX. Returns a sequencer-signed receipt. args: to_did (did:matrix recipient), amount_usdx (decimal USDX).", "side_effect_class": "write", "timeout_ms": 30000},
+        {"name": "layerx_receipt", "description": "Fetch the signed inclusion receipt for a transfer seq: sequencer signature, Merkle inclusion path, batch root, and the Paxeer anchor tx once settled. Public + independently verifiable. args: seq. Read-only.", "side_effect_class": "network", "timeout_ms": 15000},
+        {"name": "layerx_withdraw", "description": "Burn USDX to release real USDL out of the vault to your mapped Paxeer payout address, optionally swapping out. Bounded by your escrow-backed balance; force-settled. args: amount_usdx, swap_out? (target asset ticker).", "side_effect_class": "write", "timeout_ms": 30000},
+        {"name": "layerx_settle", "description": "Force-settle now: seal the current window and anchor its Merkle root (and queued withdrawal payouts) to Paxeer immediately instead of waiting for the window. Idempotent + crash-safe.", "side_effect_class": "write", "timeout_ms": 60000}
+      ]
     }
   ],
   "native_tools": []

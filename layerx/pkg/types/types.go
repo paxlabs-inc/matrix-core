@@ -248,19 +248,27 @@ type BalanceResponse struct {
 	EscrowUSDX  string `json:"escrow_usdx"`
 }
 
-// PayRequest is POST /v1/pay (and the layerx_pay tool args). Signed by the
-// payer DID; the sig authorizes the debit.
+// PayRequest is POST /v1/pay (and the layerx_pay tool args).
+//
+// Two authorization paths (PHASE 4): present the X-LayerX-Agent principal token
+// (convenience), OR authorize the write by a DID-signed intent ALONE — set
+// from_did/public_key/nonce/signature where the signature is ed25519 over the
+// canonical pay-intent bytes (invariant i6: the signature IS the authorization).
 type PayRequest struct {
 	ToDID      string `json:"to_did"`
 	AmountUSDX string `json:"amount_usdx"` // decimal USDX
-	Nonce      string `json:"nonce,omitempty"`
-	Signature  string `json:"signature,omitempty"` // hex(ed25519) over the canonical intent
+	FromDID    string `json:"from_did,omitempty"`
+	PublicKey  string `json:"public_key,omitempty"` // hex(ed25519 pubkey) for the signed-intent path
+	Nonce      string `json:"nonce,omitempty"`      // server-issued challenge nonce (single-use)
+	Signature  string `json:"signature,omitempty"`  // hex(ed25519) over the canonical pay intent
 }
 
-// WithdrawRequest is POST /v1/withdraw.
+// WithdrawRequest is POST /v1/withdraw. Same dual authorization as PayRequest.
 type WithdrawRequest struct {
 	AmountUSDX string `json:"amount_usdx"`
 	SwapOut    string `json:"swap_out,omitempty"` // "" = USDL, else target asset symbol
+	FromDID    string `json:"from_did,omitempty"`
+	PublicKey  string `json:"public_key,omitempty"`
 	Nonce      string `json:"nonce,omitempty"`
 	Signature  string `json:"signature,omitempty"`
 }
@@ -271,6 +279,18 @@ type WithdrawResponse struct {
 	AmountUSDX   string `json:"amount_usdx"`
 	Tier         string `json:"settlement_tier"`
 	Status       string `json:"status"`
+}
+
+// BindEVMRequest is POST /v1/account/evm: register/update the caller DID's
+// mapped Paxeer payout address (spec [usdx.account].binding).
+type BindEVMRequest struct {
+	EVMAddress string `json:"evm_address"`
+}
+
+// BindEVMResponse confirms the DID -> payout-address binding.
+type BindEVMResponse struct {
+	DID        string `json:"did"`
+	EVMAddress string `json:"evm_address"`
 }
 
 // DepositResponse tells the agent where + how to fund its account on-chain.
@@ -286,4 +306,101 @@ type SettleResponse struct {
 	BatchID string `json:"batch_id"`
 	Status  string `json:"status"`
 	Note    string `json:"note"`
+}
+
+// ─── public RPC / explorer shapes (PHASE 4) ──────────────────────────────────
+
+// InfoResponse is GET /v1/info: the public "RPC info" call describing the
+// sequencer + its on-chain wiring so a client can verify receipts independently.
+type InfoResponse struct {
+	Service            string `json:"service"`
+	Version            string `json:"version"`
+	ChainID            int64  `json:"chain_id"`
+	VaultAddress       string `json:"vault_address,omitempty"`
+	AnchorAddress      string `json:"anchor_address,omitempty"`
+	USDLAddress        string `json:"usdl_address,omitempty"`
+	DEXRouter          string `json:"dex_router,omitempty"`
+	ReserveAsset       string `json:"reserve_asset"`
+	SequencerPubkey    string `json:"sequencer_pubkey"`
+	WindowSeconds      int64  `json:"window_seconds"`
+	MicroThresholdUSDX string `json:"micro_threshold_usdx"`
+	MicroPerUSDX       int64  `json:"micro_per_usdx"`
+	ChainConfigured    bool   `json:"chain_configured"`
+	TransportAuthGated bool   `json:"transport_auth_required"`
+}
+
+// SupplyResponse is GET /v1/supply: the public reserve proof (invariant i1).
+// circulating_usdx is the off-chain sum of balances; reserve_usdl is the USDL
+// held on-chain in the vault; drift_usdx is circulating - reserve (zero when the
+// invariant holds). reserve fields are absent when the chain is not configured.
+type SupplyResponse struct {
+	CirculatingUSDX string `json:"circulating_usdx"`
+	ReserveUSDL     string `json:"reserve_usdl,omitempty"`
+	DriftUSDX       string `json:"drift_usdx,omitempty"`
+	Reserved        bool   `json:"fully_reserved"` // true when drift == 0
+	ReserveKnown    bool   `json:"reserve_known"`  // false in dev / chain unconfigured
+	Accounts        int64  `json:"accounts"`
+	Transfers       int64  `json:"transfers"`
+}
+
+// BatchView is the public view of a settlement batch.
+type BatchView struct {
+	ID            string    `json:"id"`
+	RootHex       string    `json:"root"`
+	Status        string    `json:"status"`
+	AnchorTxHash  string    `json:"anchor_tx,omitempty"`
+	TransferCount int       `json:"transfer_count"`
+	WindowStart   time.Time `json:"window_start"`
+	WindowEnd     time.Time `json:"window_end"`
+	CreatedAt     time.Time `json:"created_at"`
+}
+
+// BatchesResponse is GET /v1/batches (paginated).
+type BatchesResponse struct {
+	Batches []BatchView `json:"batches"`
+	Limit   int         `json:"limit"`
+	Offset  int         `json:"offset"`
+	Count   int         `json:"count"`
+}
+
+// AnchorResponse is GET /v1/anchor/{root}: the Paxeer settlement tx for a root.
+type AnchorResponse struct {
+	RootHex      string `json:"root"`
+	BatchID      string `json:"batch_id"`
+	Status       string `json:"status"`
+	AnchorTxHash string `json:"anchor_tx,omitempty"`
+	Anchored     bool   `json:"anchored"`
+}
+
+// TransferView is the public explorer view of a transfer.
+type TransferView struct {
+	Seq          int64     `json:"seq"`
+	BatchID      string    `json:"batch_id,omitempty"`
+	FromDID      string    `json:"from_did"`
+	ToDID        string    `json:"to_did"`
+	AmountUSDX   string    `json:"amount_usdx"`
+	Tier         string    `json:"tier"`
+	LeafHashHex  string    `json:"leaf_hash"`
+	BatchRootHex string    `json:"batch_root,omitempty"`
+	AnchorTxHash string    `json:"anchor_tx,omitempty"`
+	Settled      bool      `json:"settled"`
+	TS           time.Time `json:"ts"`
+}
+
+// TransfersResponse is GET /v1/transfers (paginated, optional ?did=).
+type TransfersResponse struct {
+	Transfers []TransferView `json:"transfers"`
+	DID       string         `json:"did,omitempty"`
+	Limit     int            `json:"limit"`
+	Offset    int            `json:"offset"`
+	Count     int            `json:"count"`
+}
+
+// AccountResponse is GET /v1/account/{did}: the public account view.
+type AccountResponse struct {
+	DID         string         `json:"did"`
+	EVMAddress  string         `json:"evm_address,omitempty"`
+	BalanceUSDX string         `json:"balance_usdx"`
+	EscrowUSDX  string         `json:"escrow_usdx"`
+	History     []TransferView `json:"history"`
 }

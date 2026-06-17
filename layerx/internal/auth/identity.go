@@ -51,6 +51,29 @@ func ChallengeMessage(did, nonce string) string {
 // AND that the supplied public key matches the fingerprint embedded in the DID
 // (so a caller cannot present an unrelated key for a known DID).
 func VerifySignature(didStr, pubHex, nonce, sigHex string) error {
+	return verifyDIDSig(didStr, pubHex, sigHex, []byte(ChallengeMessage(didStr, nonce)))
+}
+
+// IntentMessage builds the canonical, domain-separated preimage an agent signs
+// to authorize a value write directly — the "DID-signed intent ALONE" path
+// (PHASE 4, invariant i6: the signature IS the authorization). op names the
+// operation ("pay"/"withdraw"); fields are its ordered canonical arguments;
+// nonce is a single-use server-issued challenge nonce binding the intent to one
+// submission (replay protection). MUST stay in lockstep with
+// tools/layerx/layerx.mjs.
+func IntentMessage(op, did, nonce string, fields ...string) string {
+	return "matrix-layerx-intent:" + op + ":" + did + ":" + strings.Join(fields, ":") + ":" + nonce
+}
+
+// VerifyIntentSignature verifies an ed25519 signature over message (built by
+// IntentMessage) and that pubHex matches the DID fingerprint.
+func VerifyIntentSignature(didStr, pubHex, sigHex, message string) error {
+	return verifyDIDSig(didStr, pubHex, sigHex, []byte(message))
+}
+
+// verifyDIDSig is the shared ed25519 check: the public key must match the DID
+// fingerprint and sign the exact message bytes.
+func verifyDIDSig(didStr, pubHex, sigHex string, msg []byte) error {
 	d, err := ParseDID(didStr)
 	if err != nil {
 		return err
@@ -66,7 +89,7 @@ func VerifySignature(didStr, pubHex, nonce, sigHex string) error {
 	if err != nil {
 		return errors.New("auth: invalid signature encoding")
 	}
-	if !ed25519.Verify(ed25519.PublicKey(pub), []byte(ChallengeMessage(didStr, nonce)), sig) {
+	if !ed25519.Verify(ed25519.PublicKey(pub), msg, sig) {
 		return errors.New("auth: signature verification failed")
 	}
 	return nil

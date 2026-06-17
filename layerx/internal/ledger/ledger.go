@@ -106,6 +106,39 @@ func (l *Ledger) Receipt(ctx context.Context, seq int64, callerDID string) (type
 	return r, nil
 }
 
+// ReceiptPublic returns the signed receipt for any transfer by seq, WITHOUT
+// caller-DID ownership scoping — the public explorer/RPC receipt read (PHASE 4,
+// full-transparency model). Like Receipt, it populates the Merkle root +
+// inclusion path (and anchor tx once anchored) so the receipt is independently
+// verifiable by anyone.
+func (l *Ledger) ReceiptPublic(ctx context.Context, seq int64) (types.Receipt, error) {
+	row, err := l.st.GetTransferPublic(ctx, seq)
+	if err != nil {
+		return types.Receipt{}, err
+	}
+	r := types.Receipt{
+		Seq:          row.Seq,
+		BatchID:      row.BatchID,
+		FromDID:      row.FromDID,
+		ToDID:        row.ToDID,
+		AmountUSDX:   types.FormatUSDX(row.AmountMicro),
+		Tier:         row.Tier,
+		TS:           row.TS,
+		LeafHashHex:  row.LeafHex,
+		SequencerSig: row.SigHex,
+		SequencerKey: l.signer.PublicHex(),
+		BatchRootHex: row.BatchRootHex,
+		AnchorTxHash: row.AnchorTx,
+		Settled:      row.Settled,
+	}
+	if row.BatchID != "" && row.BatchRootHex != "" {
+		if path, perr := l.inclusionPath(ctx, row.BatchID, seq); perr == nil {
+			r.InclusionPath = path
+		}
+	}
+	return r, nil
+}
+
 // inclusionPath recomputes the Merkle proof for seq within its sealed batch.
 func (l *Ledger) inclusionPath(ctx context.Context, batchID string, seq int64) ([]string, error) {
 	leavesRows, err := l.st.ListBatchLeaves(ctx, batchID)
