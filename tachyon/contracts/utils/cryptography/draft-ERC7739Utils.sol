@@ -1,5 +1,5 @@
-// SPDX-License-Identifier: LicenseRef-Paxlabs-Tachyon-Protocol
-// Copyright © 2026 Paxlabs Inc. All rights reserved.(last updated v5.6.0) (utils/cryptography/draft-ERC7739Utils.sol)
+// SPDX-License-Identifier: MIT
+// OpenZeppelin Contracts (last updated v5.6.0) (utils/cryptography/draft-ERC7739Utils.sol)
 
 pragma solidity ^0.8.20;
 

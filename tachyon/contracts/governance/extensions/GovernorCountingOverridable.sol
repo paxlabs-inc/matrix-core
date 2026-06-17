@@ -1,5 +1,5 @@
-// SPDX-License-Identifier: LicenseRef-Paxlabs-Tachyon-Protocol
-// Copyright © 2026 Paxlabs Inc. All rights reserved.(last updated v5.4.0) (governance/extensions/GovernorCountingOverridable.sol)
+// SPDX-License-Identifier: MIT
+// OpenZeppelin Contracts (last updated v5.4.0) (governance/extensions/GovernorCountingOverridable.sol)
 
 pragma solidity ^0.8.24;
 

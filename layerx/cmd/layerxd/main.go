@@ -26,6 +26,7 @@ import (
 	"github.com/paxlabs-inc/layerx/internal/config"
 	"github.com/paxlabs-inc/layerx/internal/deposit"
 	"github.com/paxlabs-inc/layerx/internal/ledger"
+	"github.com/paxlabs-inc/layerx/internal/ratelimit"
 	"github.com/paxlabs-inc/layerx/internal/server"
 	"github.com/paxlabs-inc/layerx/internal/settle"
 	"github.com/paxlabs-inc/layerx/internal/sig"
@@ -161,6 +162,39 @@ func run() int {
 
 	led := ledger.New(st, signer, cfg.MicroThresholdUSDX)
 
+	// Application-level rate limiting (defense in depth behind the nginx edge):
+	// per-client token buckets, swept periodically to bound memory.
+	var rl server.RateLimit
+	if !cfg.RateLimitDisabled {
+		rl = server.RateLimit{
+			Enabled:    true,
+			TrustProxy: cfg.RateLimitTrustProxy,
+			Read:       ratelimit.New(float64(cfg.RateLimitReadRPS), cfg.RateLimitReadBurst),
+			Write:      ratelimit.New(float64(cfg.RateLimitWriteRPS), cfg.RateLimitWriteBurst),
+			Auth:       ratelimit.New(float64(cfg.RateLimitAuthRPS), cfg.RateLimitAuthBurst),
+		}
+		go func() {
+			t := time.NewTicker(time.Minute)
+			defer t.Stop()
+			const maxIdle = 10 * time.Minute
+			for {
+				select {
+				case <-ctx.Done():
+					return
+				case <-t.C:
+					rl.Read.Purge(maxIdle)
+					rl.Write.Purge(maxIdle)
+					rl.Auth.Purge(maxIdle)
+				}
+			}
+		}()
+		log.Info("rate limiting enabled",
+			"trust_proxy", cfg.RateLimitTrustProxy,
+			"read_rps", cfg.RateLimitReadRPS, "write_rps", cfg.RateLimitWriteRPS, "auth_rps", cfg.RateLimitAuthRPS)
+	} else {
+		log.Warn("application rate limiting DISABLED (LAYERX_RATELIMIT_DISABLE=1): relying on the nginx edge limiter only")
+	}
+
 	srv := server.New(server.Deps{
 		Store:            st,
 		Ledger:           led,
@@ -181,6 +215,7 @@ func run() int {
 		Window:           cfg.Window,
 		MicroThreshold:   cfg.MicroThresholdUSDX,
 		ChainConfigured:  chainConfigured,
+		RateLimit:        rl,
 	})
 	if cfg.RequireTransport && cfg.TransportToken != "" {
 		log.Info("transport bearer ENFORCED on write/principal endpoints (private-fleet mode); public read surface stays open")
@@ -188,7 +223,7 @@ func run() int {
 		log.Info("public RPC mode: read surface + DID-signed writes are open; transport bearer NOT required (set LAYERX_REQUIRE_TRANSPORT=1 to gate writes)")
 	}
 
-	addr := fmt.Sprintf(":%d", cfg.Port)
+	addr := fmt.Sprintf("%s:%d", cfg.BindAddr, cfg.Port)
 	httpSrv := &http.Server{
 		Addr:              addr,
 		Handler:           srv.Handler(),

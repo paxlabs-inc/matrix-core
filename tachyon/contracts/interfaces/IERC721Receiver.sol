@@ -1,5 +1,5 @@
-// SPDX-License-Identifier: LicenseRef-Paxlabs-Tachyon-Protocol
-// Copyright © 2026 Paxlabs Inc. All rights reserved.(last updated v5.4.0) (interfaces/IERC721Receiver.sol)
+// SPDX-License-Identifier: MIT
+// OpenZeppelin Contracts (last updated v5.4.0) (interfaces/IERC721Receiver.sol)
 
 pragma solidity >=0.5.0;
 

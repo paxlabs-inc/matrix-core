@@ -1,5 +1,5 @@
-// SPDX-License-Identifier: LicenseRef-Paxlabs-Tachyon-Protocol
-// Copyright © 2026 Paxlabs Inc. All rights reserved.(last updated v5.3.0) (utils/TransientSlot.sol)
+// SPDX-License-Identifier: MIT
+// OpenZeppelin Contracts (last updated v5.3.0) (utils/TransientSlot.sol)
 // This file was procedurally generated from scripts/generate/templates/TransientSlot.js.
 
 pragma solidity ^0.8.24;

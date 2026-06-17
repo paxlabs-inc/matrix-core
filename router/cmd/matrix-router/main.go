@@ -216,6 +216,20 @@ func main() {
 			// /etc/matrix/router.env if the public host changes.
 			"MATRIX_CHRONOS_URL":   envOr("MATRIX_CHRONOS_URL", "https://matrix.paxeer.app/chronos"),
 			"MATRIX_CHRONOS_TOKEN": os.Getenv("MATRIX_CHRONOS_TOKEN"),
+			// LayerX settlement fabric (tools/layerx/layerx.mjs stdio proxy ->
+			// the box-side layerxd at MATRIX_LAYERX_URL). layerxd runs on its OWN
+			// dedicated box behind its own domain (public-mapi.matrixlayerx.com),
+			// serving the /v1/* RPC at the domain root — so the proxy appends
+			// /v1/... directly to this URL (no path prefix). The proxy answers
+			// initialize/tools/list locally so an unreachable layerxd never
+			// bricks daemon boot; it dials the URL lazily on the first layerx_*
+			// call. LayerX is a full-transparency rollup so the transport bearer
+			// is OPTIONAL (writes are authorized by the DID signature, invariant
+			// i6); MATRIX_LAYERX_TOKEN is sent only when set (== layerxd
+			// LAYERX_TOKEN, legacy fleet mode). Override either in
+			// /etc/matrix/router.env if the public host changes.
+			"MATRIX_LAYERX_URL":   envOr("MATRIX_LAYERX_URL", "https://public-mapi.matrixlayerx.com"),
+			"MATRIX_LAYERX_TOKEN": os.Getenv("MATRIX_LAYERX_TOKEN"),
 		},
 		Log: logf,
 	}

@@ -44,6 +44,7 @@ const (
 	CodeInsufficientFunds = "insufficient_funds" // escrow-bounded spend exceeded
 	CodeConflict          = "conflict"
 	CodeInternal          = "internal"
+	CodeRateLimited       = "rate_limited" // per-client request rate exceeded
 )
 
 // OK wraps a success payload.

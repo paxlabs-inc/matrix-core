@@ -19,7 +19,9 @@ import (
 	"errors"
 	"io"
 	"log/slog"
+	"math"
 	"math/big"
+	"net"
 	"net/http"
 	"regexp"
 	"strconv"
@@ -29,6 +31,7 @@ import (
 	"github.com/paxlabs-inc/layerx/internal/auth"
 	"github.com/paxlabs-inc/layerx/internal/chain"
 	"github.com/paxlabs-inc/layerx/internal/ledger"
+	"github.com/paxlabs-inc/layerx/internal/ratelimit"
 	"github.com/paxlabs-inc/layerx/internal/settle"
 	"github.com/paxlabs-inc/layerx/internal/store"
 	"github.com/paxlabs-inc/layerx/pkg/types"
@@ -82,6 +85,21 @@ type Server struct {
 	window          time.Duration
 	microThreshold  int64
 	chainConfigured bool
+
+	rl RateLimit
+}
+
+// RateLimit holds the application-level per-client limiters (defense in depth
+// behind the nginx edge limiter). Each limiter is keyed by client IP. When
+// Enabled is false (or a limiter is nil) that class is not throttled.
+type RateLimit struct {
+	Enabled bool
+	// TrustProxy reads the client IP from X-Real-IP / X-Forwarded-For (set by
+	// the nginx edge). Disable only when layerxd is directly internet-facing.
+	TrustProxy bool
+	Read       *ratelimit.Limiter // public reads / explorer
+	Write      *ratelimit.Limiter // pay / withdraw / settle / account binding
+	Auth       *ratelimit.Limiter // agent-auth challenge / verify
 }
 
 // Deps configures a Server.
@@ -106,6 +124,8 @@ type Deps struct {
 	Window          time.Duration
 	MicroThreshold  int64
 	ChainConfigured bool
+
+	RateLimit RateLimit
 }
 
 // New builds the Server.
@@ -136,6 +156,7 @@ func New(d Deps) *Server {
 		window:           d.Window,
 		microThreshold:   d.MicroThreshold,
 		chainConfigured:  d.ChainConfigured,
+		rl:               d.RateLimit,
 	}
 }
 
@@ -167,7 +188,73 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("POST /v1/pay", s.handlePay)
 	mux.HandleFunc("POST /v1/withdraw", s.handleWithdraw)
 	mux.HandleFunc("POST /v1/settle", s.handleSettle)
-	return s.transportMiddleware(mux)
+	// Rate limit is the OUTERMOST layer (defense in depth behind nginx): it
+	// throttles per client IP before auth so a flood can't even reach the
+	// ledger or the token verifier.
+	return s.rateLimitMiddleware(s.transportMiddleware(mux))
+}
+
+// rateLimitMiddleware applies the per-client token-bucket limiter for the
+// request's class (read / write / auth). /healthz and / are exempt so liveness
+// probes are never throttled. A denial returns 429 + Retry-After and the stable
+// rate_limited code.
+func (s *Server) rateLimitMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !s.rl.Enabled || r.URL.Path == "/" || r.URL.Path == "/healthz" {
+			next.ServeHTTP(w, r)
+			return
+		}
+		lim := s.limiterFor(r)
+		if lim == nil {
+			next.ServeHTTP(w, r)
+			return
+		}
+		ok, retry := lim.Allow(s.clientIP(r))
+		if !ok {
+			secs := int(math.Ceil(retry.Seconds()))
+			if secs < 1 {
+				secs = 1
+			}
+			w.Header().Set("Retry-After", strconv.Itoa(secs))
+			writeFail(w, http.StatusTooManyRequests, types.CodeRateLimited, "rate limit exceeded; slow down")
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
+}
+
+// limiterFor classifies a request into a limiter class. The agent-auth lane and
+// the value-write POSTs get the tighter limiters; everything else is a read.
+func (s *Server) limiterFor(r *http.Request) *ratelimit.Limiter {
+	p := r.URL.Path
+	if r.Method == http.MethodPost && (p == "/v1/agent/auth/challenge" || p == "/v1/agent/auth/verify") {
+		return s.rl.Auth
+	}
+	if r.Method == http.MethodPost {
+		return s.rl.Write
+	}
+	return s.rl.Read
+}
+
+// clientIP extracts the throttling key. Behind the nginx edge (TrustProxy) it
+// honors X-Real-IP then the first X-Forwarded-For hop; otherwise it uses the
+// transport peer address.
+func (s *Server) clientIP(r *http.Request) string {
+	if s.rl.TrustProxy {
+		if xr := strings.TrimSpace(r.Header.Get("X-Real-IP")); xr != "" {
+			return xr
+		}
+		if xff := r.Header.Get("X-Forwarded-For"); xff != "" {
+			if i := strings.IndexByte(xff, ','); i >= 0 {
+				return strings.TrimSpace(xff[:i])
+			}
+			return strings.TrimSpace(xff)
+		}
+	}
+	if host, _, err := net.SplitHostPort(r.RemoteAddr); err == nil {
+		return host
+	}
+	return r.RemoteAddr
 }
 
 // transportMiddleware enforces the shared transport bearer on the

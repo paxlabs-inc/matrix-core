@@ -1,5 +1,5 @@
-// SPDX-License-Identifier: LicenseRef-Paxlabs-Tachyon-Protocol
-// Copyright © 2026 Paxlabs Inc. All rights reserved.(last updated v5.6.0) (utils/cryptography/MerkleProof.sol)
+// SPDX-License-Identifier: MIT
+// OpenZeppelin Contracts (last updated v5.6.0) (utils/cryptography/MerkleProof.sol)
 // This file was procedurally generated from scripts/generate/templates/MerkleProof.js.
 
 pragma solidity ^0.8.20;

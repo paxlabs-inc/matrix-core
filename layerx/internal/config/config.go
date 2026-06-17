@@ -16,6 +16,12 @@ import (
 type Config struct {
 	// Port is the box-local listen port (default 9098).
 	Port int
+	// BindAddr is the interface layerxd listens on. Default 127.0.0.1 (loopback
+	// only): layerxd is designed to sit behind the box's nginx edge, so the raw
+	// HTTP port must NOT be publicly reachable (that would bypass TLS + the edge
+	// rate limits, method allowlist, and body cap). Set LAYERX_BIND_ADDR=0.0.0.0
+	// only for a deploy with no fronting proxy.
+	BindAddr string
 	// PostgresURI is the layerx ledger DB DSN. Required.
 	PostgresURI string
 	// MigrationsDir holds the forward-only SQL migrations (default "migrations").
@@ -69,18 +75,40 @@ type Config struct {
 	// batched micropayment; at/above it auto-promotes to force-settle.
 	MicroThresholdUSDX int64
 
+	// Application-level rate limiting (defense in depth behind the nginx edge).
+	// RateLimitDisabled turns off the in-process per-client limiter entirely.
+	RateLimitDisabled bool
+	// RateLimitTrustProxy reads the client IP from X-Real-IP / X-Forwarded-For
+	// (set by nginx). Default true (layerxd sits behind the nginx edge).
+	RateLimitTrustProxy bool
+	// Per-client (per-IP) request budgets: sustained rate (req/sec) + burst.
+	RateLimitReadRPS, RateLimitReadBurst   int
+	RateLimitWriteRPS, RateLimitWriteBurst int
+	RateLimitAuthRPS, RateLimitAuthBurst   int
+
 	// Dev relaxes prod fail-closed secret checks (LAYERX_DEV=1).
 	Dev bool
 }
 
 const (
 	defaultPort           = 9098
+	defaultBindAddr       = "127.0.0.1"
 	defaultChallengeTTL   = 120 * time.Second
 	defaultTokenTTL       = 24 * time.Hour
 	defaultWindow         = 12 * time.Hour
 	defaultMicroThreshold = 1_000_000 // 1 USDX in micro-USDX
 	defaultReserveAsset   = "USDL"
 	defaultDepositPoll    = 15 * time.Second
+
+	// Per-client rate-limit defaults (per source IP). Reads are generous (an
+	// explorer client polls); writes + auth are tight (each is a ledger or
+	// crypto operation).
+	defaultRLReadRPS    = 50
+	defaultRLReadBurst  = 100
+	defaultRLWriteRPS   = 5
+	defaultRLWriteBurst = 10
+	defaultRLAuthRPS    = 5
+	defaultRLAuthBurst  = 10
 )
 
 // Load resolves configuration: kvx overlay first, env overrides, then defaults.
@@ -96,9 +124,13 @@ func Load() (*Config, error) {
 
 	dev := pick("LAYERX_DEV", doc.str("server", "dev"), "") == "1"
 	requireTransport := isTruthy(pick("LAYERX_REQUIRE_TRANSPORT", doc.str("auth", "require_transport"), ""))
+	rlDisabled := isTruthy(pick("LAYERX_RATELIMIT_DISABLE", doc.str("ratelimit", "disable"), ""))
+	// Trust the nginx-set client-IP headers by default; opt out explicitly.
+	rlTrustProxy := !isTruthy(pick("LAYERX_RATELIMIT_TRUST_PROXY_OFF", doc.str("ratelimit", "trust_proxy_off"), ""))
 
 	cfg := &Config{
 		Port:                int(pickUint("LAYERX_PORT", doc.uint64Or("server", "port", defaultPort), defaultPort)),
+		BindAddr:            pick("LAYERX_BIND_ADDR", doc.str("server", "bind_addr"), defaultBindAddr),
 		PostgresURI:         pick("LAYERX_POSTGRES_URI", doc.str("store", "postgres_uri"), ""),
 		MigrationsDir:       pick("LAYERX_MIGRATIONS_DIR", doc.str("store", "migrations_dir"), "migrations"),
 		TransportToken:      pick("LAYERX_TOKEN", doc.str("auth", "transport_token"), ""),
@@ -119,6 +151,14 @@ func Load() (*Config, error) {
 		DepositPollInterval: time.Duration(pickUint("LAYERX_DEPOSIT_POLL_SECONDS", doc.uint64Or("chain", "deposit_poll_seconds", uint64(defaultDepositPoll/time.Second)), uint64(defaultDepositPoll/time.Second))) * time.Second,
 		Window:              time.Duration(pickUint("LAYERX_WINDOW_SECONDS", doc.uint64Or("settlement", "window_seconds", uint64(defaultWindow/time.Second)), uint64(defaultWindow/time.Second))) * time.Second,
 		MicroThresholdUSDX:  int64(pickUint("LAYERX_MICRO_THRESHOLD", doc.uint64Or("settlement", "micro_threshold_micro_usdx", defaultMicroThreshold), defaultMicroThreshold)),
+		RateLimitDisabled:   rlDisabled,
+		RateLimitTrustProxy: rlTrustProxy,
+		RateLimitReadRPS:    int(pickUint("LAYERX_RATELIMIT_READ_RPS", doc.uint64Or("ratelimit", "read_rps", defaultRLReadRPS), defaultRLReadRPS)),
+		RateLimitReadBurst:  int(pickUint("LAYERX_RATELIMIT_READ_BURST", doc.uint64Or("ratelimit", "read_burst", defaultRLReadBurst), defaultRLReadBurst)),
+		RateLimitWriteRPS:   int(pickUint("LAYERX_RATELIMIT_WRITE_RPS", doc.uint64Or("ratelimit", "write_rps", defaultRLWriteRPS), defaultRLWriteRPS)),
+		RateLimitWriteBurst: int(pickUint("LAYERX_RATELIMIT_WRITE_BURST", doc.uint64Or("ratelimit", "write_burst", defaultRLWriteBurst), defaultRLWriteBurst)),
+		RateLimitAuthRPS:    int(pickUint("LAYERX_RATELIMIT_AUTH_RPS", doc.uint64Or("ratelimit", "auth_rps", defaultRLAuthRPS), defaultRLAuthRPS)),
+		RateLimitAuthBurst:  int(pickUint("LAYERX_RATELIMIT_AUTH_BURST", doc.uint64Or("ratelimit", "auth_burst", defaultRLAuthBurst), defaultRLAuthBurst)),
 		Dev:                 dev,
 	}
 

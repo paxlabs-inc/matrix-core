@@ -1,5 +1,5 @@
-// SPDX-License-Identifier: LicenseRef-Paxlabs-Tachyon-Protocol
-// Copyright © 2026 Paxlabs Inc. All rights reserved.(last updated v5.6.0) (utils/structs/EnumerableSet.sol)
+// SPDX-License-Identifier: MIT
+// OpenZeppelin Contracts (last updated v5.6.0) (utils/structs/EnumerableSet.sol)
 // This file was procedurally generated from scripts/generate/templates/EnumerableSet.js.
 
 pragma solidity ^0.8.24;

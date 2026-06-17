@@ -289,8 +289,10 @@ async function callRemoteTool(name, rawArgs) {
     }
     case 'layerx_receipt': {
       if (!args.seq) return errResult(name, 'seq is required')
-      // Public read — no principal token.
-      return envelopeResult(await httpJson('GET', `/v1/receipt/${encodeURIComponent(args.seq)}`, null))
+      // Public read — no principal token. Omit the options arg entirely: the
+      // `= {}` default only applies to `undefined`, NOT `null` (passing null
+      // would throw on destructuring the options object).
+      return envelopeResult(await httpJson('GET', `/v1/receipt/${encodeURIComponent(args.seq)}`))
     }
     case 'layerx_withdraw': {
       if (!args.amount_usdx) return errResult(name, 'amount_usdx is required')

@@ -33,6 +33,9 @@ func TestLoadDevDefaults(t *testing.T) {
 	if cfg.Port != defaultPort {
 		t.Errorf("Port = %d, want %d", cfg.Port, defaultPort)
 	}
+	if cfg.BindAddr != defaultBindAddr {
+		t.Errorf("BindAddr = %q, want %q (loopback-only behind nginx)", cfg.BindAddr, defaultBindAddr)
+	}
 	if cfg.Window != defaultWindow {
 		t.Errorf("Window = %v, want %v", cfg.Window, defaultWindow)
 	}
@@ -55,6 +58,7 @@ func TestLoadEnvOverrides(t *testing.T) {
 	t.Setenv("LAYERX_DEV", "1")
 	t.Setenv("LAYERX_POSTGRES_URI", "postgres://x")
 	t.Setenv("LAYERX_PORT", "9999")
+	t.Setenv("LAYERX_BIND_ADDR", "0.0.0.0")
 	t.Setenv("LAYERX_WINDOW_SECONDS", "60")
 	t.Setenv("LAYERX_MICRO_THRESHOLD", "500000")
 
@@ -64,6 +68,9 @@ func TestLoadEnvOverrides(t *testing.T) {
 	}
 	if cfg.Port != 9999 {
 		t.Errorf("Port = %d, want 9999", cfg.Port)
+	}
+	if cfg.BindAddr != "0.0.0.0" {
+		t.Errorf("BindAddr = %q, want 0.0.0.0", cfg.BindAddr)
 	}
 	if cfg.Window != 60*time.Second {
 		t.Errorf("Window = %v, want 60s", cfg.Window)
