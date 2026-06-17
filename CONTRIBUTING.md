@@ -1,14 +1,51 @@
 # Contributing to Matrix
 
-Thanks for considering a contribution. This document covers the dev setup,
-the test/lint discipline expected of every patch, and how to scope a PR so
-it lands quickly.
+## Contribution policy — please read first
+
+Matrix is open source and you are free to **fork it and modify it as much
+as you want**. That is exactly what the license is for: build on it, ship
+your own version, take it wherever you like.
+
+What we do **not** run is an open contribution model on `main`. The main
+branch is developed strictly by the Matrix core team, and it will continue
+to be. This is a deliberate decision, not an oversight or a lack of
+bandwidth:
+
+- The codebase is spec-driven and the surface is load-bearing — replay
+  determinism, closed vocabularies, signed envelopes. A patch that looks
+  correct in isolation can silently break an invariant that is not visible
+  at the diff level.
+- We merge an outside change only when we have **worked directly with the
+  contributor** and understand the quality and intent of their work. That
+  trust is earned through collaboration, not inferred from a single pull
+  request.
+
+Concretely:
+
+- **Unsolicited pull requests will generally not be merged**, regardless
+  of how good they are. This is not a judgment of your work — it is how we
+  keep the trunk coherent.
+- **Issues, bug reports, and security disclosures are welcome.** Open an
+  issue, or for a security issue follow [`SECURITY.md`](./SECURITY.md).
+- **If you want to contribute to `main`, talk to us first.** Reach out,
+  work with us on something, and once we understand your work we are glad
+  to bring you in.
+- **Forks are first-class.** Everything below this section is the
+  engineering bar we hold ourselves to — useful if you are maintaining a
+  fork, or if we have already agreed to collaborate.
+
+---
+
+The rest of this document covers the dev setup and the test/lint discipline
+expected of every change — whether you are on the core team, a collaborator
+we are working with, or maintaining your own fork.
 
 If you are reporting a security issue, **stop** and read
 [`SECURITY.md`](./SECURITY.md) instead.
 
 ## Table of contents
 
+- [Contribution policy](#contribution-policy--please-read-first)
 - [Ground rules](#ground-rules)
 - [Dev setup](#dev-setup)
 - [Branching and commits](#branching-and-commits)
@@ -277,7 +314,8 @@ covering both directions.
 
 ---
 
-Welcome aboard. The bar is high because the surface is load-bearing,
-but every contribution that lands is a permanent improvement to the
-substrate non-developers will use to talk to agents. We appreciate the
+The bar is high because the surface is load-bearing. If you are working in
+your own fork, this is the standard the code was built to — hold it and it
+will serve you well. If you are collaborating with us directly, this is the
+standard we will hold the work to together. Either way, we appreciate the
 care.

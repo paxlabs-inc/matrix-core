@@ -216,6 +216,14 @@ Intent + PlanTree，遍历该计划，将每一步作为 cortex 事件记入日�
 - [`deploy/daemon/README.md`](./deploy/daemon/README.md) — 镜像构建 + Fly 部署
 ---
 
+## 贡献
+
+Matrix Core 是开源项目，你可以**自由地复刻（fork）和修改**。不过，`main` 分支严格由核心团队开发：未经邀约的 Pull Request 通常不会被合并，外部改动仅在我们与贡献者直接合作、了解其工作质量之后才会接受。
+
+在提交任何内容之前，请阅读 [贡献指南](./CONTRIBUTING.md) 开头的贡献政策。Issue、缺陷报告与安全漏洞披露始终欢迎。
+
+---
+
 ## 许可证
 
 以 **Matrix-Protocol License** 形式提供源代码可用——参见 [`LICENSE.md`](./LICENSE.md)。

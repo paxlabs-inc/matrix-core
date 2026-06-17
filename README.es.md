@@ -218,6 +218,14 @@ Rutas:
 - [`deploy/daemon/README.md`](./deploy/daemon/README.md) — construcción de imagen + despliegue en Fly
 ---
 
+## Contribuir
+
+Matrix Core es de código abierto y puedes **bifurcarlo y modificarlo** con total libertad. Sin embargo, la rama `main` la desarrolla estrictamente el equipo central: las pull requests no solicitadas no suelen fusionarse, y los cambios externos solo se aceptan después de haber trabajado directamente con quien contribuye y entender la calidad de su trabajo.
+
+Antes de abrir nada, lee la política de contribución al inicio de la [Guía de contribución](./CONTRIBUTING.md). Los issues, reportes de errores y divulgaciones de seguridad son siempre bienvenidos.
+
+---
+
 ## Licencia
 
 Disponible en código fuente bajo la **Matrix-Protocol License** — consulta [`LICENSE.md`](./LICENSE.md).
