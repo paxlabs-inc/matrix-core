@@ -1,7 +1,7 @@
-<h1 align="center">Matrix Agent Framework</h1>
+<h1 align="center">Agent Operating Framework</h1>
 
 <p align="center">
-  <strong>Cognition and UX Layer for the Paxeer Network</strong>
+  <img src="https://docs.matrixmcl.com/_jd/logo/wordmark.webp?v=mqi8nza6"
 </p>
 
 <p align="center">
