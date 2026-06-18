@@ -146,6 +146,14 @@ func (s *Surface) validatePayload() error {
 		if !primitives.ValidAskKind(s.Ask.AskKind) {
 			return fmt.Errorf("construct: unknown ask kind %q", s.Ask.AskKind)
 		}
+	case KindMetric:
+		if !primitives.ValidMetricDisplay(s.Metric.Display) {
+			return fmt.Errorf("construct: unknown metric display %q", s.Metric.Display)
+		}
+	case KindCanvas:
+		if s.Canvas.Chart != nil && !primitives.ValidChartKind(s.Canvas.Chart.Kind) {
+			return fmt.Errorf("construct: unknown chart kind %q", s.Canvas.Chart.Kind)
+		}
 	}
 	return nil
 }

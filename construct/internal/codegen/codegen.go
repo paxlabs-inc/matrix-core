@@ -45,6 +45,7 @@ func enums() []enumDef {
 			string(primitives.TrendDown),
 			string(primitives.TrendFlat),
 		}},
+		{"MetricDisplay", metricDisplayStrings(primitives.MetricDisplayValues)},
 		{"AffordanceKind", []string{
 			string(primitives.AffordanceLink),
 			string(primitives.AffordanceAsk),
@@ -59,6 +60,7 @@ func enums() []enumDef {
 			string(primitives.MediaPage),
 			string(primitives.MediaChart),
 		}},
+		{"ChartKind", chartKindStrings(primitives.ChartKindValues)},
 		{"AskKind", askKindStrings(primitives.AskKindValues)},
 	}
 }
@@ -82,6 +84,9 @@ func structs() []reflect.Type {
 		reflect.TypeOf(primitives.TimelineStep{}),
 		reflect.TypeOf(primitives.Timeline{}),
 		reflect.TypeOf(primitives.CanvasMedia{}),
+		reflect.TypeOf(primitives.ChartSeries{}),
+		reflect.TypeOf(primitives.ChartPoint{}),
+		reflect.TypeOf(primitives.Chart{}),
 		reflect.TypeOf(primitives.CanvasRegion{}),
 		reflect.TypeOf(primitives.Canvas{}),
 		reflect.TypeOf(primitives.AskOption{}),
@@ -271,6 +276,22 @@ func stepStatusStrings(in []primitives.StepStatus) []string {
 }
 
 func askKindStrings(in []primitives.AskKind) []string {
+	out := make([]string, len(in))
+	for i, v := range in {
+		out[i] = string(v)
+	}
+	return out
+}
+
+func metricDisplayStrings(in []primitives.MetricDisplay) []string {
+	out := make([]string, len(in))
+	for i, v := range in {
+		out[i] = string(v)
+	}
+	return out
+}
+
+func chartKindStrings(in []primitives.ChartKind) []string {
 	out := make([]string, len(in))
 	for i, v := range in {
 		out[i] = string(v)

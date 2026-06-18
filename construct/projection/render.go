@@ -48,12 +48,12 @@ Only render when you are actually doing a task or have something concrete to sho
 
 Pick ONE primitive per call via "kind" and fill "payload" for that kind:
 - narration: your reasoning/answer text. payload {text, role?: thinking|intent|answer}
-- metric: a single named value. payload {label, value, unit?, magnitude?, trend?: up|down|flat}
-- entity: a referenceable object (a tx, token, file, account). payload {type, identity, label?, fields?: [{key,value}], affordances?: [{id,label,kind?: link|copy|ask, href?, ask_ref?}]}
+- metric: a single named value. payload {label, value, unit?, magnitude?, scale?: human-readable magnitude hint e.g. "K"|"M"|"B", trend?: up|down|flat, display?: plain|bar|gauge (gauge renders a radial dial — use with magnitude+threshold), threshold?: {warn?, limit?}}
+- entity: a referenceable object (a tx, token, file, account). payload {type, identity, label?, fields?: [{key,value,ref?}], affordances?: [{id,label,kind?: link|copy|ask, href?, ask_ref?}]}
 - structure: a collection. payload {shape: list|table|tree, columns?: [..], records: [{id?,label?,ref?,cells?:{col:val},children?:[..]}]}
-- stream: append-only text (logs, a trace). payload {source?, title?, chunks: [{seq,text,channel?}], closed?}
-- timeline: stateful steps over time (a plan, jobs, sub-agents). payload {title?, steps: [{id,label,status: pending|running|done|failed, detail?, ref?}]}
-- canvas: a media blob. payload {media: {kind: image|video|audio|page|chart, url?, mime?, alt?}, caption?}
+- stream: append-only text (logs, a trace, a code block — set channel:"command" for shell, or a language for code). payload {source?, title?, chunks: [{seq,text,channel?}], closed?}
+- timeline: stateful steps over time (a plan, jobs, sub-agents, a to-do/workflow). payload {title?, steps: [{id,label,status: pending|running|done|failed, detail?, ref?}]}
+- canvas: a media blob OR a data-driven chart. For media: payload {media: {kind: image|video|audio|page, url, mime?, alt?}, caption?}. For a CHART, set media.kind="chart" and fill "chart": payload {media: {kind: "chart"}, chart: {kind: area|bar|line|pie|radar|scatter, series?: [{key, name?, color?}], points: [{label?, values: {seriesKey: number}}], x_label?, y_label?, stacked?}, caption?}. Charts are drawn from DATA (always prefer this over a chart image).
 - ask: a question that needs a typed human answer. payload {ask_kind: choose|input|confirm|sign|upload, prompt, options?: [{id,label}], expected?, required?}
 
 Reuse the same "id" to UPDATE a surface you already rendered (e.g. flip a timeline step to done). Optional "attributes" decorate any surface: {stakes: fact|hypothesis|decision|irreversible, confidence: 0..1, cost: {amount, unit, cap}, temporality: point|stream|persistent}. Tag an irreversible action with stakes=irreversible so it renders with the right weight.`

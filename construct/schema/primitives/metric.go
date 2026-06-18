@@ -12,6 +12,31 @@ const (
 	TrendFlat Trend = "flat"
 )
 
+// MetricDisplay selects how a metric renders its magnitude: as plain text, a
+// linear fill bar, or a radial gauge. Empty lets the renderer choose (a bar
+// when a threshold is present, else plain) — preserving prior behaviour.
+type MetricDisplay string
+
+const (
+	MetricDisplayPlain MetricDisplay = "plain"
+	MetricDisplayBar   MetricDisplay = "bar"
+	MetricDisplayGauge MetricDisplay = "gauge"
+)
+
+// MetricDisplayValues is the frozen-ordered set of metric display modes.
+var MetricDisplayValues = []MetricDisplay{MetricDisplayPlain, MetricDisplayBar, MetricDisplayGauge}
+
+// ValidMetricDisplay reports whether d is a known display mode (empty allowed:
+// renderer chooses).
+func ValidMetricDisplay(d MetricDisplay) bool {
+	switch d {
+	case "", MetricDisplayPlain, MetricDisplayBar, MetricDisplayGauge:
+		return true
+	default:
+		return false
+	}
+}
+
 // MetricThreshold marks where a metric crosses from nominal into warning or
 // limit territory, so the renderer can colour a gauge/bar without inventing
 // thresholds itself.
@@ -38,8 +63,15 @@ type Metric struct {
 	Unit string `json:"unit,omitempty"`
 	// Magnitude is the optional numeric value for bar/gauge rendering.
 	Magnitude float64 `json:"magnitude,omitempty"`
+	// Scale is an optional human-readable magnitude scale hint (e.g. "K",
+	// "M", "B", "thousands") the renderer may show alongside the value, so a
+	// large number reads at a glance without the agent pre-formatting Value.
+	Scale string `json:"scale,omitempty"`
 	// Trend is the optional direction-of-change (up|down|flat).
 	Trend Trend `json:"trend,omitempty"`
+	// Display selects the render treatment (plain|bar|gauge); empty lets the
+	// renderer choose from the threshold.
+	Display MetricDisplay `json:"display,omitempty"`
 	// Threshold marks warning/limit bands for the value.
 	Threshold *MetricThreshold `json:"threshold,omitempty"`
 }
