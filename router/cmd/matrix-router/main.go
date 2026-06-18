@@ -230,6 +230,15 @@ func main() {
 			// /etc/matrix/router.env if the public host changes.
 			"MATRIX_LAYERX_URL":   envOr("MATRIX_LAYERX_URL", "https://public-mapi.matrixlayerx.com"),
 			"MATRIX_LAYERX_TOKEN": os.Getenv("MATRIX_LAYERX_TOKEN"),
+			// Paxeer Cloud control plane (the `paxc` CLI baked into the daemon
+			// image; the agent runs it via the exec shell tool to deploy static
+			// sites). PAXC_API is the control-plane base URL; PAXC_TOKEN is the
+			// API bearer. Both inherit into the Machine env, so the shell tool's
+			// child processes (and thus paxc) see them. Override either in
+			// /etc/matrix/router.env. PAXC_TOKEN is sent only when set; with no
+			// token paxc errors at call time (boot-safe — it is not a server).
+			"PAXC_API":   envOr("PAXC_API", "https://cloud.hyperpaxeer.com"),
+			"PAXC_TOKEN": os.Getenv("PAXC_TOKEN"),
 		},
 		Log: logf,
 	}

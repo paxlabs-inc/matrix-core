@@ -184,6 +184,14 @@ COPY tools/chronos   /opt/matrix/tools/chronos
 # be baked. The proxy answers initialize/tools/list locally so an unreachable
 # sequencer never bricks daemon boot.
 COPY tools/layerx    /opt/matrix/tools/layerx
+# Paxeer Cloud CLI (static linux/amd64 Go binary). NOT an MCP server — the
+# agent drives it through the `exec` shell tool to deploy static sites
+# (create / deploy / promote / domains). It reads the control plane from
+# PAXC_API + PAXC_TOKEN (injected by the router into the Machine env). Bake it
+# and symlink onto PATH so `paxc` resolves from any shell cwd.
+COPY tools/paxeer-cloud /opt/matrix/tools/paxeer-cloud
+RUN chmod +x /opt/matrix/tools/paxeer-cloud/paxc \
+    && ln -sfn /opt/matrix/tools/paxeer-cloud/paxc /usr/local/bin/paxc
 # agents/default.json hard-codes /root/matrix/tools/paxeer/paxeer-net.mjs
 # (matches the dev-box layout). Symlink /root/matrix → /opt/matrix so the
 # baked-in path resolves inside the container without templating.
