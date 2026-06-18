@@ -21,9 +21,9 @@ func (s *Store) SealBatch(ctx context.Context, rootHex string, seqs []int64, win
 
 	var id string
 	if err := tx.QueryRow(ctx, `
-		INSERT INTO batches (root, window_start, window_end, status)
-		VALUES ($1, $2, $3, 'sealed')
-		RETURNING id`, rootHex, windowStart, windowEnd).Scan(&id); err != nil {
+		INSERT INTO batches (root, window_start, window_end, status, transfer_count)
+		VALUES ($1, $2, $3, 'sealed', $4)
+		RETURNING id`, rootHex, windowStart, windowEnd, len(seqs)).Scan(&id); err != nil {
 		return "", fmt.Errorf("store: insert batch: %w", err)
 	}
 	if _, err := tx.Exec(ctx, `UPDATE transfers SET batch_id = $1 WHERE seq = ANY($2)`, id, seqs); err != nil {
@@ -79,11 +79,9 @@ type PendingBatch struct {
 // worker re-submits on startup to honor at-least-once. Oldest first.
 func (s *Store) ListUnanchoredBatches(ctx context.Context) ([]PendingBatch, error) {
 	rows, err := s.pool.Query(ctx, `
-		SELECT b.id, b.root, b.window_end, b.status, COUNT(t.seq)
+		SELECT b.id, b.root, b.window_end, b.status, b.transfer_count
 		FROM batches b
-		LEFT JOIN transfers t ON t.batch_id = b.id
 		WHERE b.status IN ('sealed', 'submitted', 'failed')
-		GROUP BY b.id, b.root, b.window_end, b.status, b.created_at
 		ORDER BY b.created_at ASC`)
 	if err != nil {
 		return nil, fmt.Errorf("store: list unanchored batches: %w", err)

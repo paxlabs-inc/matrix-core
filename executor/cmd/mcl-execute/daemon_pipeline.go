@@ -238,6 +238,17 @@ func runMessage(
 		defer func() { d.emitFinalTurn(t, narrator, req, result, retErr) }()
 	}
 
+	// Construct passive projector (side-channel): when enabled, project the
+	// pipeline's events onto Construct surfaces (construct.surface) so the
+	// client renders typed surfaces instead of a raw dump. Subscribed BEFORE
+	// message.start so it sees the whole stream; shutdown() drains + detaches
+	// before t.Close(). Pure side-channel — never signs, writes cortex, or
+	// touches plan/walk, so it cannot perturb D11 replay (daemon_construct.go).
+	if d.constructEnabled() {
+		projector := d.startConstructProjector(ctx, t, intentID, req.ConversationID)
+		defer projector.shutdown()
+	}
+
 	t.Event("message.start", "boot", map[string]interface{}{
 		"intent_id": intentID,
 		"prose":     req.Prose,

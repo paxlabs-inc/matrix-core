@@ -4,6 +4,7 @@ go 1.21
 
 require (
 	github.com/fxamacker/cbor/v2 v2.6.0
+	matrix/construct v0.0.0
 	matrix/mcl v0.0.0
 )
 
@@ -45,6 +46,8 @@ require (
 	golang.org/x/time v0.5.0 // indirect
 	google.golang.org/protobuf v1.28.1 // indirect
 )
+
+replace matrix/construct => ../construct
 
 replace matrix/cortex => ../cortex
 

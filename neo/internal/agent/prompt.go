@@ -150,6 +150,13 @@ func (a *Agent) systemPrompt() string {
 	b.WriteString("- When the user attaches a file it appears in their message as a reference like /media/<id>.png (image), /media/<id>.mp4 (video), or /media/<id>.mp3 (audio). Pass that exact reference as the image/audio argument to edit_image, generate_video, or transcribe_audio.\n")
 	b.WriteString("- The result is shown to the user automatically as soon as the tool returns its url — do NOT paste the url or markdown image link into your reply. Just describe briefly and warmly what you created, and offer a tweak (\"want it wider, or a different style?\"). Video can take a couple of minutes; say so and only call generate_video once.\n")
 
+	if a.tools != nil && a.tools.SurfaceEnabled() {
+		b.WriteString("\nShowing things on screen:\n")
+		b.WriteString("- You can render rich visual surfaces onto the user's screen with construct_render — a value, an object (a tx, token, file, or account), a list or table, your live progress, a media artifact, or a question you need answered. Use it to SHOW structured results while you work, instead of only describing them in text.\n")
+		b.WriteString("- Render WHEN YOU'RE DOING A TASK or have something concrete to show. If the user is just chatting — a greeting, small talk, or a question about you — do NOT render; keep the screen to chat.\n")
+		b.WriteString("- Pick the primitive that fits: metric for a single value, entity for an object, structure for a collection, timeline for steps over time, canvas for an image/page, ask for a question that needs a typed answer. Tag anything irreversible with stakes=irreversible. Reuse the same id to update a surface you already rendered. The surface appears automatically — describe it briefly in your reply, don't repeat its contents.\n")
+	}
+
 	b.WriteString("\nVoice:\n")
 	b.WriteString("- Speak plainly and concretely. Explain what you're doing in human terms; keep internal machinery and jargon out of what the user sees.\n")
 

@@ -388,13 +388,15 @@ type TransferView struct {
 	TS           time.Time `json:"ts"`
 }
 
-// TransfersResponse is GET /v1/transfers (paginated, optional ?did=).
+// TransfersResponse is GET /v1/transfers (KEYSET-paginated, optional ?did=).
+// NextBefore is the cursor for the next older page: pass it as ?before= to
+// continue. It is 0/absent when the last page has been reached.
 type TransfersResponse struct {
-	Transfers []TransferView `json:"transfers"`
-	DID       string         `json:"did,omitempty"`
-	Limit     int            `json:"limit"`
-	Offset    int            `json:"offset"`
-	Count     int            `json:"count"`
+	Transfers  []TransferView `json:"transfers"`
+	DID        string         `json:"did,omitempty"`
+	Limit      int            `json:"limit"`
+	NextBefore int64          `json:"next_before,omitempty"`
+	Count      int            `json:"count"`
 }
 
 // AccountResponse is GET /v1/account/{did}: the public account view.

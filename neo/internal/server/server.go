@@ -13,6 +13,8 @@ import (
 	"strings"
 	"time"
 
+	"matrix/construct/backchannel"
+	"matrix/construct/schema/primitives"
 	"matrix/neo/internal/conversation"
 )
 
@@ -192,9 +194,14 @@ func (s *Server) handleAsyncPoll(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// handleIntents intercepts only the gate-answer for a live Neo run; every other
-// /intents/* route proxies to the daemon.
+// handleIntents intercepts the gate-answer and the Construct Ask-answer for a
+// live Neo run; every other /intents/* route proxies to the daemon.
 func (s *Server) handleIntents(w http.ResponseWriter, r *http.Request) {
+	// Construct Ask back-channel: POST /intents/{id}/asks/{ask_id}/answer.
+	if id, askID, ok := parseAskAnswerPath(r.URL.Path); ok && r.Method == http.MethodPost && s.engine.lookupRun(id) != nil {
+		s.handleAskAnswer(w, r, id, askID)
+		return
+	}
 	id, nodeID, ok := parseGateAnswerPath(r.URL.Path)
 	if !ok || r.Method != http.MethodPost || s.engine.lookupRun(id) == nil {
 		s.proxy.ServeHTTP(w, r)
@@ -214,6 +221,39 @@ func (s *Server) handleIntents(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "node_id": nodeID, "approved": body.Approved})
+}
+
+// handleAskAnswer delivers a typed human response to a parked Construct Ask
+// (the back-channel of the construct_render(kind=ask) tool call). It validates
+// the posted AskResponse against the Ask it answers BEFORE delivering it, so a
+// malformed or off-contract answer is rejected (the run stays parked) rather
+// than resuming the agent with garbage. A stale/duplicate/unknown ask_id is a
+// 404. The caller has already confirmed the run is live.
+func (s *Server) handleAskAnswer(w http.ResponseWriter, r *http.Request, id, askID string) {
+	run := s.engine.lookupRun(id)
+	if run == nil {
+		writeJSON(w, http.StatusNotFound, map[string]string{"error": "no live run for that intent"})
+		return
+	}
+	ask, ok := run.sess.pendingAsk(askID)
+	if !ok {
+		writeJSON(w, http.StatusNotFound, map[string]string{"error": "no pending ask for that id"})
+		return
+	}
+	var resp primitives.AskResponse
+	if err := json.NewDecoder(r.Body).Decode(&resp); err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "decode body: " + err.Error()})
+		return
+	}
+	if err := backchannel.ValidateResponse(ask, &resp); err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": err.Error()})
+		return
+	}
+	if !run.sess.answerAsk(askID, &resp) {
+		writeJSON(w, http.StatusConflict, map[string]string{"error": "ask already answered or expired"})
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "intent_id": id, "ask_id": askID})
 }
 
 // streamSSE writes the run's events as text/event-stream. When live is true it
@@ -288,6 +328,15 @@ func writeEvent(w http.ResponseWriter, ev Event) bool {
 func parseGateAnswerPath(p string) (id, nodeID string, ok bool) {
 	parts := strings.Split(strings.Trim(p, "/"), "/")
 	if len(parts) != 5 || parts[0] != "intents" || parts[2] != "gates" || parts[4] != "answer" {
+		return "", "", false
+	}
+	return parts[1], parts[3], true
+}
+
+// parseAskAnswerPath matches /intents/{id}/asks/{ask_id}/answer.
+func parseAskAnswerPath(p string) (id, askID string, ok bool) {
+	parts := strings.Split(strings.Trim(p, "/"), "/")
+	if len(parts) != 5 || parts[0] != "intents" || parts[2] != "asks" || parts[4] != "answer" {
 		return "", "", false
 	}
 	return parts[1], parts[3], true

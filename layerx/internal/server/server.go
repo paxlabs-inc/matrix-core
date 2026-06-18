@@ -17,6 +17,7 @@ import (
 	"crypto/subtle"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"log/slog"
 	"math"
@@ -30,6 +31,7 @@ import (
 
 	"github.com/paxlabs-inc/layerx/internal/auth"
 	"github.com/paxlabs-inc/layerx/internal/chain"
+	"github.com/paxlabs-inc/layerx/internal/events"
 	"github.com/paxlabs-inc/layerx/internal/ledger"
 	"github.com/paxlabs-inc/layerx/internal/ratelimit"
 	"github.com/paxlabs-inc/layerx/internal/settle"
@@ -86,6 +88,8 @@ type Server struct {
 	microThreshold  int64
 	chainConfigured bool
 
+	events *events.Broker // live SSE fan-out; nil = streaming disabled
+
 	rl RateLimit
 }
 
@@ -125,6 +129,10 @@ type Deps struct {
 	MicroThreshold  int64
 	ChainConfigured bool
 
+	// Events is the live SSE broker for GET /v1/stream. Optional; nil disables
+	// streaming (the endpoint then returns 503).
+	Events *events.Broker
+
 	RateLimit RateLimit
 }
 
@@ -156,6 +164,7 @@ func New(d Deps) *Server {
 		window:           d.Window,
 		microThreshold:   d.MicroThreshold,
 		chainConfigured:  d.ChainConfigured,
+		events:           d.Events,
 		rl:               d.RateLimit,
 	}
 }
@@ -176,6 +185,7 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /v1/receipt/{seq}", s.handleReceipt)
 	mux.HandleFunc("GET /v1/transfers", s.handleTransfers)
 	mux.HandleFunc("GET /v1/account/{did}", s.handleAccount)
+	mux.HandleFunc("GET /v1/stream", s.handleStream)
 
 	// Auth lane (public; mints a principal token only on a valid DID signature).
 	mux.HandleFunc("POST /v1/agent/auth/challenge", s.handleChallenge)
@@ -282,7 +292,7 @@ func isPublicPath(r *http.Request) bool {
 	p := r.URL.Path
 	if r.Method == http.MethodGet {
 		switch p {
-		case "/", "/healthz", "/v1/info", "/v1/supply", "/v1/batches", "/v1/transfers":
+		case "/", "/healthz", "/v1/info", "/v1/supply", "/v1/batches", "/v1/transfers", "/v1/stream":
 			return true
 		}
 		if strings.HasPrefix(p, "/v1/batch/") || strings.HasPrefix(p, "/v1/anchor/") ||
@@ -494,7 +504,30 @@ func (s *Server) handlePay(w http.ResponseWriter, r *http.Request) {
 		}()
 	}
 	s.log.Info("transfer accepted", "seq", receipt.Seq, "from", fromDID, "to", req.ToDID, "tier", receipt.Tier)
+	s.publishTransfer(receipt, fromDID, req.ToDID)
 	writeJSON(w, http.StatusOK, types.OK(receipt))
+}
+
+// publishTransfer fans a newly-accepted transfer onto the live SSE stream so
+// explorer clients see it without polling. Best-effort + nil-safe.
+func (s *Server) publishTransfer(receipt types.Receipt, fromDID, toDID string) {
+	if s.events == nil {
+		return
+	}
+	data, err := json.Marshal(types.TransferView{
+		Seq:         receipt.Seq,
+		FromDID:     fromDID,
+		ToDID:       toDID,
+		AmountUSDX:  receipt.AmountUSDX,
+		Tier:        receipt.Tier,
+		LeafHashHex: receipt.LeafHashHex,
+		Settled:     receipt.Settled,
+		TS:          receipt.TS,
+	})
+	if err != nil {
+		return
+	}
+	s.events.Publish(events.Event{Type: events.TypeTransfer, Seq: receipt.Seq, Data: data})
 }
 
 // handleReceipt is a PUBLIC read (PHASE 4): any signed receipt + inclusion proof
@@ -743,7 +776,8 @@ func (s *Server) handleAnchor(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) handleTransfers(w http.ResponseWriter, r *http.Request) {
-	limit, offset := parsePage(r)
+	limit := parseLimit(r)
+	before := parseInt64(r.URL.Query().Get("before"))
 	did := strings.TrimSpace(r.URL.Query().Get("did"))
 	if did != "" {
 		if _, err := auth.ParseDID(did); err != nil {
@@ -751,7 +785,7 @@ func (s *Server) handleTransfers(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	rows, err := s.store.ListTransfers(r.Context(), did, limit, offset)
+	rows, err := s.store.ListTransfers(r.Context(), did, limit, before)
 	if err != nil {
 		s.log.Error("list transfers failed", "error", err.Error())
 		writeFail(w, http.StatusInternalServerError, types.CodeInternal, "could not list transfers")
@@ -761,9 +795,91 @@ func (s *Server) handleTransfers(w http.ResponseWriter, r *http.Request) {
 	for _, t := range rows {
 		views = append(views, toTransferView(t))
 	}
-	writeJSON(w, http.StatusOK, types.OK(types.TransfersResponse{
-		Transfers: views, DID: did, Limit: limit, Offset: offset, Count: len(views),
-	}))
+	resp := types.TransfersResponse{Transfers: views, DID: did, Limit: limit, Count: len(views)}
+	// A full page implies more history; the smallest seq (DESC order = last row)
+	// is the keyset cursor for the next older page (?before=).
+	if len(views) == limit && limit > 0 {
+		resp.NextBefore = views[len(views)-1].Seq
+	}
+	writeJSON(w, http.StatusOK, types.OK(resp))
+}
+
+// handleStream is the PUBLIC live event stream (SSE) backing the explorer — the
+// scalable replacement for polling /v1/transfers. It emits `transfer` events
+// (id = seq) as payments are accepted and `anchor` events as batches settle. On
+// (re)connect it replays any transfers missed since the client's Last-Event-ID
+// from the DB before joining the live tail, so no payment is ever silently
+// dropped; a client that falls too far behind is told to resync + reconnect.
+func (s *Server) handleStream(w http.ResponseWriter, r *http.Request) {
+	if s.events == nil {
+		writeFail(w, http.StatusServiceUnavailable, types.CodeInternal, "streaming not enabled")
+		return
+	}
+	flusher, ok := w.(http.Flusher)
+	if !ok {
+		writeFail(w, http.StatusInternalServerError, types.CodeInternal, "streaming unsupported")
+		return
+	}
+	h := w.Header()
+	h.Set("Content-Type", "text/event-stream")
+	h.Set("Cache-Control", "no-cache")
+	h.Set("Connection", "keep-alive")
+	h.Set("X-Accel-Buffering", "no") // belt-and-suspenders: tell nginx not to buffer
+	w.WriteHeader(http.StatusOK)
+
+	// Replay cursor: Last-Event-ID (set by the browser on auto-reconnect) or an
+	// explicit ?since= on first connect.
+	cursor := parseInt64(r.Header.Get("Last-Event-ID"))
+	if cursor <= 0 {
+		cursor = parseInt64(r.URL.Query().Get("since"))
+	}
+
+	// Subscribe BEFORE replaying so live events during replay are buffered, not lost.
+	ch, cancel := s.events.Subscribe()
+	defer cancel()
+
+	_, _ = io.WriteString(w, "retry: 3000\n\n")
+	flusher.Flush()
+
+	if cursor > 0 {
+		if missed, mErr := s.store.ListTransfersSince(r.Context(), cursor, 500); mErr == nil {
+			for _, t := range missed {
+				if data, jErr := json.Marshal(toTransferView(t)); jErr == nil {
+					writeSSE(w, t.Seq, events.TypeTransfer, data)
+					cursor = t.Seq
+				}
+			}
+			flusher.Flush()
+		}
+	}
+
+	heartbeat := time.NewTicker(25 * time.Second)
+	defer heartbeat.Stop()
+	ctx := r.Context()
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-heartbeat.C:
+			_, _ = io.WriteString(w, ": keepalive\n\n")
+			flusher.Flush()
+		case ev, open := <-ch:
+			if !open {
+				// Dropped for lagging: instruct the client to reconnect + replay.
+				_, _ = io.WriteString(w, "event: resync\ndata: {\"reason\":\"lagged\"}\n\n")
+				flusher.Flush()
+				return
+			}
+			if ev.Type == events.TypeTransfer && ev.Seq <= cursor {
+				continue // already replayed
+			}
+			writeSSE(w, ev.Seq, ev.Type, ev.Data)
+			if ev.Type == events.TypeTransfer && ev.Seq > cursor {
+				cursor = ev.Seq
+			}
+			flusher.Flush()
+		}
+	}
 }
 
 func (s *Server) handleAccount(w http.ResponseWriter, r *http.Request) {
@@ -792,8 +908,7 @@ func (s *Server) handleAccount(w http.ResponseWriter, r *http.Request) {
 		writeFail(w, http.StatusInternalServerError, types.CodeInternal, "could not read account")
 		return
 	}
-	limit, offset := parsePage(r)
-	rows, terr := s.store.ListTransfers(r.Context(), did, limit, offset)
+	rows, terr := s.store.ListTransfers(r.Context(), did, parseLimit(r), 0)
 	if terr != nil {
 		s.log.Error("account history read failed", "error", terr.Error())
 		writeFail(w, http.StatusInternalServerError, types.CodeInternal, "could not read account history")
@@ -808,11 +923,39 @@ func (s *Server) handleAccount(w http.ResponseWriter, r *http.Request) {
 // ─── helpers ──────────────────────────────────────────────────────────────
 
 // parsePage reads ?limit= and ?offset= query params (the store clamps them to
-// safe bounds).
+// safe bounds). Used by the low-cardinality batch feed.
 func parsePage(r *http.Request) (int, int) {
 	limit, _ := strconv.Atoi(r.URL.Query().Get("limit"))
 	offset, _ := strconv.Atoi(r.URL.Query().Get("offset"))
 	return limit, offset
+}
+
+// parseLimit reads ?limit=, clamped to [1,200] (default 50) to mirror the
+// store's clamp so the handler can compute the keyset NextBefore cursor.
+func parseLimit(r *http.Request) int {
+	n, _ := strconv.Atoi(r.URL.Query().Get("limit"))
+	if n <= 0 {
+		n = 50
+	}
+	if n > 200 {
+		n = 200
+	}
+	return n
+}
+
+// parseInt64 parses a base-10 int64 query/header value, 0 on absence/parse error.
+func parseInt64(s string) int64 {
+	n, _ := strconv.ParseInt(strings.TrimSpace(s), 10, 64)
+	return n
+}
+
+// writeSSE writes one Server-Sent Event frame. A non-positive id omits the `id:`
+// line (non-transfer events do not advance the Last-Event-ID cursor).
+func writeSSE(w io.Writer, id int64, eventType string, data []byte) {
+	if id > 0 {
+		_, _ = fmt.Fprintf(w, "id: %d\n", id)
+	}
+	_, _ = fmt.Fprintf(w, "event: %s\ndata: %s\n\n", eventType, data)
 }
 
 // formatBigMicro renders a micro-precision big.Int as a 6dp USDX decimal when it

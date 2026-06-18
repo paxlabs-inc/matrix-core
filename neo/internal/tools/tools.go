@@ -23,6 +23,10 @@ import (
 	"strings"
 	"time"
 
+	"matrix/construct/backchannel"
+	"matrix/construct/projection"
+	"matrix/construct/schema"
+	"matrix/construct/schema/primitives"
 	"matrix/executor/mcp"
 	"matrix/executor/tool"
 	"matrix/neo/internal/llm"
@@ -46,6 +50,15 @@ const MemoryRecallTool = "memory_recall"
 // only a compact result returns to Neo's. Reachable only from the top-level
 // agent — sub-agents do NOT get this tool (no recursion / fork-bombs).
 const SpawnSubagentsTool = "spawn_subagents"
+
+// ConstructRenderTool is the synthetic function Neo exposes to deliberately
+// render a Construct surface onto the user's screen — the agent-authored ACTIVE
+// tier of the Construct projection engine. Neo IS the projector: it chooses one
+// of the 8 frozen primitives and fills it, and the handler validates that
+// choice against the frozen schema before emitting (invariant i2 — the agent
+// fills a trusted primitive, never emits arbitrary UI). Like core_execute it is
+// NOT a real MCP server, so it never enters the manifest tool-bijection check.
+const ConstructRenderTool = projection.ConstructRenderTool
 
 // DelegateFunc runs a prose intent through the MCL pipeline and returns its
 // verifiable outcome. Injected by the agent wiring (see internal/delegate);
@@ -72,6 +85,19 @@ type SubagentSpec struct {
 // is unavailable and is not advertised at all.
 type SwarmFunc func(ctx context.Context, specs []SubagentSpec) (string, error)
 
+// SurfaceFunc emits a validated Construct surface onto the active run's event
+// stream as a construct.surface event. Injected by the engine wiring (see
+// internal/server); nil until wired, in which case construct_render reports it
+// is unavailable and is not advertised at all.
+type SurfaceFunc func(ctx context.Context, s *schema.Surface) error
+
+// AskFunc emits a validated Ask surface, PARKS the run on the back-channel
+// (invariant i5), and returns the human's typed response once it is posted —
+// or an error if the run is cancelled or the ask expires unanswered. Injected
+// by the engine wiring (see internal/server); nil leaves construct_render able
+// to SHOW an ask but not block for an answer.
+type AskFunc func(ctx context.Context, s *schema.Surface) (*primitives.AskResponse, error)
+
 // boundTool is a manifest tool bound to its canonical URI + advertised schema.
 type boundTool struct {
 	funcName   string
@@ -93,6 +119,8 @@ type Manager struct {
 	delegate   DelegateFunc
 	recall     RecallFunc
 	swarm      SwarmFunc
+	surface    SurfaceFunc
+	ask        AskFunc
 	maxAgents  int
 
 	byFunc    map[string]*boundTool
@@ -244,6 +272,9 @@ func (m *Manager) Schemas() []llm.Tool {
 	if m.swarm != nil {
 		out = append(out, spawnSubagentsSchema())
 	}
+	if m.surface != nil {
+		out = append(out, constructRenderSchema())
+	}
 	return out
 }
 
@@ -277,6 +308,9 @@ func (m *Manager) Dispatch(ctx context.Context, funcName string, args map[string
 	}
 	if funcName == SpawnSubagentsTool {
 		return m.dispatchSpawnSubagents(ctx, args)
+	}
+	if funcName == ConstructRenderTool {
+		return m.dispatchConstructRender(ctx, args)
 	}
 	bt, ok := m.byFunc[funcName]
 	if !ok {
@@ -403,6 +437,62 @@ func (m *Manager) SetSwarm(s SwarmFunc, maxAgents int) {
 // and tool manager are built independently).
 func (m *Manager) SetRecall(r RecallFunc) { m.recall = r }
 
+// SetSurfaceEmitter wires the Construct surface emitter after construction (the
+// emitter needs the engine + per-run event stream assembled first). nil leaves
+// construct_render unadvertised.
+func (m *Manager) SetSurfaceEmitter(f SurfaceFunc) { m.surface = f }
+
+// SetAskResponder wires the Construct Ask back-channel after construction (it
+// needs the engine + per-run session assembled first). nil leaves
+// construct_render able to show an ask but not block for an answer.
+func (m *Manager) SetAskResponder(f AskFunc) { m.ask = f }
+
+// dispatchConstructRender is the ACTIVE-tier handler: it maps the model's
+// construct_render arguments onto a validated Construct surface and emits it.
+// A validation error is returned in-band (isError=true, err=nil) so the model
+// reads it and corrects the call rather than the harness retrying.
+func (m *Manager) dispatchConstructRender(ctx context.Context, args map[string]interface{}) (string, bool, error) {
+	if m.surface == nil {
+		return "rendering a surface to the screen is not available in this session.", true, nil
+	}
+	s, err := projection.ParseRender(args)
+	if err != nil {
+		return err.Error(), true, nil
+	}
+	// Ask is the one inherently bidirectional primitive (invariant i5): it does
+	// not just paint a surface, it BLOCKS for a typed human answer and resumes
+	// the agent with it. Route it through the back-channel responder.
+	if s.Kind == schema.KindAsk {
+		return m.dispatchAsk(ctx, s)
+	}
+	if err := m.surface(ctx, s); err != nil {
+		return "", true, fmt.Errorf("construct_render: %w", err)
+	}
+	return fmt.Sprintf("Rendered a %s surface (id %q) onto the user's screen.", s.Kind, s.ID), false, nil
+}
+
+// dispatchAsk emits an Ask surface and parks the tool call until the human
+// answers (or the run is cancelled / the ask expires). The human's typed
+// response returns to the model as the tool result — an INPUT it reads and
+// acts on, exactly like a user message. When no back-channel responder is
+// wired (dev/CLI), the ask is still SHOWN, but the model is told it cannot
+// block and should proceed.
+func (m *Manager) dispatchAsk(ctx context.Context, s *schema.Surface) (string, bool, error) {
+	if m.ask == nil {
+		_ = m.surface(ctx, s)
+		return "asking the user is not interactive in this session, so I can't wait for an answer here. Proceed without it, or state what you need.", true, nil
+	}
+	resp, err := m.ask(ctx, s)
+	if err != nil {
+		return fmt.Sprintf("the user didn't answer (%v). Proceed without that input or try another approach.", err), true, nil
+	}
+	return backchannel.Summarize(s.Ask, resp), false, nil
+}
+
+// SurfaceEnabled reports whether the Construct render tool is wired this
+// session (the agent-authored ACTIVE projection tier is available).
+func (m *Manager) SurfaceEnabled() bool { return m != nil && m.surface != nil }
+
 // NaturalToolNames returns the advertised (directly-callable) function names.
 func (m *Manager) NaturalToolNames() []string { return append([]string{}, m.order...) }
 
@@ -487,6 +577,14 @@ func spawnSubagentsSchema() llm.Tool {
 			"required": []interface{}{"agents"},
 		},
 	)
+}
+
+// constructRenderSchema advertises the single agent-facing render tool, whose
+// contract is owned by the construct module (projection.RenderTools), so the
+// vocabulary stays single-source.
+func constructRenderSchema() llm.Tool {
+	spec := projection.RenderTools()[0]
+	return llm.NewFunctionTool(spec.Name, spec.Description, spec.Params)
 }
 
 func funcName(alias, name string) string {

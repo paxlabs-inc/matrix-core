@@ -10,6 +10,7 @@ import (
 	"crypto/sha256"
 	"encoding/binary"
 	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -20,6 +21,7 @@ import (
 
 	"github.com/paxlabs-inc/layerx/internal/accumulator"
 	"github.com/paxlabs-inc/layerx/internal/chain"
+	"github.com/paxlabs-inc/layerx/internal/events"
 	"github.com/paxlabs-inc/layerx/internal/store"
 	"github.com/paxlabs-inc/layerx/pkg/types"
 )
@@ -50,7 +52,29 @@ type Worker struct {
 	settler chain.Settler
 	log     *slog.Logger
 	window  time.Duration
-	mu      sync.Mutex // serializes settlement passes (window ticker vs force-settle)
+	pub     events.Publisher // optional live SSE sink; nil = no streaming
+	mu      sync.Mutex       // serializes settlement passes (window ticker vs force-settle)
+}
+
+// SetPublisher wires the live SSE event sink. Optional; nil-safe.
+func (w *Worker) SetPublisher(p events.Publisher) { w.pub = p }
+
+// publishAnchor emits a live "anchor" event when a batch confirms on-chain, so
+// streaming explorer clients see settlement without polling. Best-effort.
+func (w *Worker) publishAnchor(batchID, rootHex, anchorTx string, transferCount int) {
+	if w.pub == nil {
+		return
+	}
+	data, err := json.Marshal(map[string]any{
+		"batch_id":       batchID,
+		"root":           rootHex,
+		"anchor_tx":      anchorTx,
+		"transfer_count": transferCount,
+	})
+	if err != nil {
+		return
+	}
+	w.pub.Publish(events.Event{Type: events.TypeAnchor, Data: data})
 }
 
 // New constructs a settlement Worker.
@@ -145,6 +169,7 @@ func (w *Worker) SettleNow(ctx context.Context) (string, error) {
 		return "", fmt.Errorf("settle: mark anchored: %w", err)
 	}
 	w.log.Info("batch anchored", "batch", batchID, "transfers", len(seqs), "root", rootHex, "anchor_tx", txHash)
+	w.publishAnchor(batchID, rootHex, txHash, len(seqs))
 	return batchID, nil
 }
 
@@ -233,6 +258,7 @@ func (w *Worker) RecoverPending(ctx context.Context) error {
 			continue
 		}
 		w.log.Info("recovered batch anchored", "batch", b.ID, "anchor_tx", txHash)
+		w.publishAnchor(b.ID, b.RootHex, txHash, b.TransferCount)
 	}
 	return nil
 }

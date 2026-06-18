@@ -46,11 +46,13 @@ type BatchSummary struct {
 	CreatedAt     time.Time
 }
 
+// batchSelect reads the denormalized transfer_count column (set at SealBatch)
+// instead of re-aggregating child transfers via a LEFT JOIN + GROUP BY on every
+// page — the latter re-counts thousands of leaves per batch on each feed hit.
 const batchSelect = `
 	SELECT b.id, b.root, b.window_start, b.window_end, b.status,
-	       COALESCE(b.anchor_tx, ''), COUNT(t.seq), b.created_at
-	FROM batches b
-	LEFT JOIN transfers t ON t.batch_id = b.id`
+	       COALESCE(b.anchor_tx, ''), b.transfer_count, b.created_at
+	FROM batches b`
 
 func scanBatch(row pgx.Row) (BatchSummary, error) {
 	var b BatchSummary
@@ -64,8 +66,9 @@ func scanBatch(row pgx.Row) (BatchSummary, error) {
 // ListBatches returns settlement batches newest-first, paginated.
 func (s *Store) ListBatches(ctx context.Context, limit, offset int) ([]BatchSummary, error) {
 	limit, offset = clampPage(limit, offset)
+	// Batches are low-cardinality (one per settlement window), so OFFSET
+	// pagination here is cheap and kept for back-compat.
 	rows, err := s.pool.Query(ctx, batchSelect+`
-		GROUP BY b.id
 		ORDER BY b.created_at DESC
 		LIMIT $1 OFFSET $2`, limit, offset)
 	if err != nil {
@@ -85,7 +88,7 @@ func (s *Store) ListBatches(ctx context.Context, limit, offset int) ([]BatchSumm
 
 // GetBatch returns a single batch by id, or ErrNotFound.
 func (s *Store) GetBatch(ctx context.Context, id string) (BatchSummary, error) {
-	b, err := scanBatch(s.pool.QueryRow(ctx, batchSelect+` WHERE b.id = $1 GROUP BY b.id`, id))
+	b, err := scanBatch(s.pool.QueryRow(ctx, batchSelect+` WHERE b.id = $1`, id))
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return BatchSummary{}, ErrNotFound
@@ -98,7 +101,7 @@ func (s *Store) GetBatch(ctx context.Context, id string) (BatchSummary, error) {
 // GetBatchByRoot returns the batch that committed rootHex, or ErrNotFound — the
 // backing query for GET /v1/anchor/{root} (the public root -> anchor-tx lookup).
 func (s *Store) GetBatchByRoot(ctx context.Context, rootHex string) (BatchSummary, error) {
-	b, err := scanBatch(s.pool.QueryRow(ctx, batchSelect+` WHERE b.root = $1 GROUP BY b.id ORDER BY b.created_at DESC LIMIT 1`, rootHex))
+	b, err := scanBatch(s.pool.QueryRow(ctx, batchSelect+` WHERE b.root = $1 ORDER BY b.created_at DESC LIMIT 1`, rootHex))
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return BatchSummary{}, ErrNotFound
@@ -142,22 +145,63 @@ func scanTransfer(rows pgx.Rows) (TransferSummary, error) {
 	return t, nil
 }
 
-// ListTransfers returns transfers newest-first (by seq), paginated. When did is
-// non-empty, only transfers that DID is a party to (payer or payee) are returned.
-func (s *Store) ListTransfers(ctx context.Context, did string, limit, offset int) ([]TransferSummary, error) {
-	limit, offset = clampPage(limit, offset)
+// ListTransfers returns transfers newest-first (by seq), KEYSET-paginated: pass
+// beforeSeq = the smallest seq from the previous page (0 for the first page) to
+// get the next older page. Keyset (WHERE seq < cursor) is O(limit) regardless of
+// how deep the page is, unlike OFFSET which walks + discards every skipped row —
+// the difference between a feed that stays fast and one that degrades linearly as
+// the table grows into the millions.
+//
+// When did is non-empty, only transfers that DID is a party to are returned. A
+// single `from_did = $ OR to_did = $` cannot use either composite index for an
+// ordered LIMIT (the planner falls back to a BitmapOr + sort), so it is split
+// into a UNION ALL of two index-ordered legs (each rides its own
+// (from_did|to_did, seq DESC) index) merged + re-limited. Self-pay is rejected,
+// so from_did != to_did always and the legs never produce duplicate rows.
+func (s *Store) ListTransfers(ctx context.Context, did string, limit int, beforeSeq int64) ([]TransferSummary, error) {
+	limit, _ = clampPage(limit, 0)
 	var rows pgx.Rows
 	var err error
 	if did == "" {
 		rows, err = s.pool.Query(ctx, transferSelect+`
-			ORDER BY t.seq DESC LIMIT $1 OFFSET $2`, limit, offset)
+			WHERE ($1 <= 0 OR t.seq < $1)
+			ORDER BY t.seq DESC LIMIT $2`, beforeSeq, limit)
 	} else {
-		rows, err = s.pool.Query(ctx, transferSelect+`
-			WHERE t.from_did = $1 OR t.to_did = $1
-			ORDER BY t.seq DESC LIMIT $2 OFFSET $3`, did, limit, offset)
+		rows, err = s.pool.Query(ctx, `
+			SELECT * FROM (
+				(`+transferSelect+`
+				  WHERE t.from_did = $1 AND ($3 <= 0 OR t.seq < $3)
+				  ORDER BY t.seq DESC LIMIT $2)
+				UNION ALL
+				(`+transferSelect+`
+				  WHERE t.to_did = $1 AND ($3 <= 0 OR t.seq < $3)
+				  ORDER BY t.seq DESC LIMIT $2)
+			) u ORDER BY u.seq DESC LIMIT $2`, did, limit, beforeSeq)
 	}
 	if err != nil {
 		return nil, fmt.Errorf("store: list transfers: %w", err)
+	}
+	defer rows.Close()
+	var out []TransferSummary
+	for rows.Next() {
+		t, err := scanTransfer(rows)
+		if err != nil {
+			return nil, fmt.Errorf("store: scan transfer: %w", err)
+		}
+		out = append(out, t)
+	}
+	return out, rows.Err()
+}
+
+// ListTransfersSince returns transfers with seq > sinceSeq in ASCENDING seq
+// order (capped at limit) — the replay query the SSE stream uses to backfill a
+// reconnecting client from its Last-Event-ID before resuming the live tail.
+func (s *Store) ListTransfersSince(ctx context.Context, sinceSeq int64, limit int) ([]TransferSummary, error) {
+	limit, _ = clampPage(limit, 0)
+	rows, err := s.pool.Query(ctx, transferSelect+`
+		WHERE t.seq > $1 ORDER BY t.seq ASC LIMIT $2`, sinceSeq, limit)
+	if err != nil {
+		return nil, fmt.Errorf("store: list transfers since: %w", err)
 	}
 	defer rows.Close()
 	var out []TransferSummary
@@ -224,7 +268,19 @@ func (s *Store) Supply(ctx context.Context) (SupplyStats, error) {
 		Scan(&st.CirculatingMicroUSDX, &st.Accounts); err != nil {
 		return SupplyStats{}, fmt.Errorf("store: supply accounts: %w", err)
 	}
-	if err := s.pool.QueryRow(ctx, `SELECT COUNT(*) FROM transfers`).Scan(&st.Transfers); err != nil {
+	// transfers is the largest, append-only table; an exact COUNT(*) is a full
+	// scan that gets linearly slower forever on a public, pollable endpoint. The
+	// transfer count here is purely descriptive (the reserve proof is
+	// circulating-vs-reserve, not this), so use the planner's row estimate.
+	// GREATEST handles both shapes: a plain table (reltuples on the relation) and
+	// the RANGE-partitioned table (parent reltuples is 0; sum the partitions).
+	if err := s.pool.QueryRow(ctx, `
+		SELECT GREATEST(
+			(SELECT reltuples::bigint FROM pg_class WHERE oid = 'transfers'::regclass),
+			COALESCE((SELECT SUM(c.reltuples)::bigint
+			          FROM pg_inherits i JOIN pg_class c ON c.oid = i.inhrelid
+			          WHERE i.inhparent = 'transfers'::regclass), 0),
+			0)`).Scan(&st.Transfers); err != nil {
 		return SupplyStats{}, fmt.Errorf("store: supply transfers: %w", err)
 	}
 	return st, nil

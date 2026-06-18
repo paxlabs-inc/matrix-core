@@ -25,6 +25,7 @@ import (
 	"github.com/paxlabs-inc/layerx/internal/chain"
 	"github.com/paxlabs-inc/layerx/internal/config"
 	"github.com/paxlabs-inc/layerx/internal/deposit"
+	"github.com/paxlabs-inc/layerx/internal/events"
 	"github.com/paxlabs-inc/layerx/internal/ledger"
 	"github.com/paxlabs-inc/layerx/internal/ratelimit"
 	"github.com/paxlabs-inc/layerx/internal/server"
@@ -76,6 +77,31 @@ func run() int {
 		return 1
 	}
 	log.Info("migrations applied", "dir", migDir)
+
+	// Pre-create the transfers seq-range partitions ahead of the cursor (migration
+	// 005), and keep doing so periodically so inserts never spill into the DEFAULT
+	// overflow partition. No-op when transfers is not partitioned.
+	if err := st.EnsureTransferPartitions(ctx); err != nil {
+		log.Warn("ensure transfer partitions failed (continuing; DEFAULT partition is the safety net)", "error", err.Error())
+	}
+	go func() {
+		t := time.NewTicker(time.Hour)
+		defer t.Stop()
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-t.C:
+				if err := st.EnsureTransferPartitions(ctx); err != nil {
+					log.Warn("periodic ensure transfer partitions failed", "error", err.Error())
+				}
+			}
+		}
+	}()
+
+	// Live SSE event broker (GET /v1/stream): the settlement worker + the pay
+	// handler publish onto it so explorer clients stream instead of polling.
+	broker := events.NewBroker(256)
 
 	// Sequencer receipt-signing key (ed25519). Empty seed -> ephemeral (dev).
 	signer, ephemeral, err := sig.New(cfg.SequencerSeedHex)
@@ -147,6 +173,7 @@ func run() int {
 		log.Warn("chain not fully configured (need LAYERX_CHAIN_RPC + LAYERX_VAULT_ADDR + LAYERX_ANCHOR_ADDR + LAYERX_OPERATOR_KEY): using DevSettler — batches anchor with a pseudo tx hash, NOT on Paxeer; deposit watcher disabled")
 	}
 	worker := settle.New(st, settler, log, cfg.Window)
+	worker.SetPublisher(broker)
 	// At-least-once: re-anchor any transfer batch or withdrawal payout that was
 	// sealed but never confirmed (e.g. a crash mid-settle). Idempotent on the root.
 	if err := worker.RecoverPending(ctx); err != nil {
@@ -215,6 +242,7 @@ func run() int {
 		Window:           cfg.Window,
 		MicroThreshold:   cfg.MicroThresholdUSDX,
 		ChainConfigured:  chainConfigured,
+		Events:           broker,
 		RateLimit:        rl,
 	})
 	if cfg.RequireTransport && cfg.TransportToken != "" {

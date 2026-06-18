@@ -12,6 +12,7 @@ import (
 	"sync"
 	"time"
 
+	"matrix/construct/schema/primitives"
 	"matrix/neo/internal/agent"
 	"matrix/neo/internal/conversation"
 	"matrix/neo/internal/llm"
@@ -33,6 +34,17 @@ type session struct {
 
 	gatesMu sync.Mutex
 	gates   map[string]chan gateAnswer // node_id -> waiter, for delegated MCL gates
+
+	asksMu sync.Mutex
+	asks   map[string]*askWaiter // ask surface id -> waiter, for Construct Ask back-channel
+}
+
+// askWaiter parks a construct_render(kind=ask) tool call until the human posts
+// a typed response. It carries the originating Ask so the HTTP receiver can
+// validate the posted response against its contract before delivering it.
+type askWaiter struct {
+	ask *primitives.Ask
+	ch  chan *primitives.AskResponse
 }
 
 // run is a single user turn. id doubles as the SSE topic + the intent_id the
@@ -91,6 +103,7 @@ func (e *Engine) newSession(convID string) *session {
 		id:     convID,
 		engine: e,
 		gates:  map[string]chan gateAnswer{},
+		asks:   map[string]*askWaiter{},
 	}
 	// Conversational recall lane: relevant PAST turns of this (now unbounded)
 	// thread, beyond the live transcript + resume seed. Reuses the pager's
@@ -244,6 +257,61 @@ func (s *session) clearGate(nodeID string) {
 	s.gatesMu.Lock()
 	delete(s.gates, nodeID)
 	s.gatesMu.Unlock()
+}
+
+// --- ask waiters (Construct Ask back-channel) ---
+//
+// Mirrors the gate waiters: a construct_render(kind=ask) tool call registers a
+// waiter keyed by the Ask surface id and parks on the channel; the HTTP
+// receiver (POST /intents/{id}/asks/{ask_id}/answer) validates the posted
+// response and delivers it. The answer re-enters the agent as the tool result
+// — an INPUT on the same footing as a user message, never a plan/walk/cortex
+// mutation.
+
+func (s *session) registerAsk(askID string, ask *primitives.Ask) <-chan *primitives.AskResponse {
+	w := &askWaiter{ask: ask, ch: make(chan *primitives.AskResponse, 1)}
+	s.asksMu.Lock()
+	s.asks[askID] = w
+	s.asksMu.Unlock()
+	return w.ch
+}
+
+// pendingAsk returns the Ask a waiter is parked on, so the receiver can
+// validate a posted response against its contract before delivering it.
+func (s *session) pendingAsk(askID string) (*primitives.Ask, bool) {
+	s.asksMu.Lock()
+	defer s.asksMu.Unlock()
+	w, ok := s.asks[askID]
+	if !ok {
+		return nil, false
+	}
+	return w.ask, true
+}
+
+// answerAsk delivers a validated response to the parked tool call and retires
+// the waiter. Reports whether a waiter was actually waiting (so a stale or
+// duplicate post is rejected).
+func (s *session) answerAsk(askID string, resp *primitives.AskResponse) bool {
+	s.asksMu.Lock()
+	w, ok := s.asks[askID]
+	if ok {
+		delete(s.asks, askID)
+	}
+	s.asksMu.Unlock()
+	if !ok {
+		return false
+	}
+	select {
+	case w.ch <- resp:
+	default:
+	}
+	return true
+}
+
+func (s *session) clearAsk(askID string) {
+	s.asksMu.Lock()
+	delete(s.asks, askID)
+	s.asksMu.Unlock()
 }
 
 // sseReporter maps the agent's Reporter calls onto the conversation's event

@@ -52,20 +52,25 @@ WORKDIR /src
 ENV CGO_ENABLED=0 \
     GOFLAGS=-trimpath
 
-# Copy the four Go modules. Order chosen so the module manifests land
-# first for layer caching.
+# Copy the Go modules. Order chosen so the module manifests land first for
+# layer caching. construct is a pure-stdlib module (no go.sum) that both
+# executor and neo pull in via `replace matrix/construct => ../construct`
+# (the Construct projection engine + transport + Ask back-channel), so its
+# tree MUST be present or `go build` can't resolve the replace target.
 COPY cortex/go.mod  cortex/go.sum  cortex/
 COPY MCL/go.mod     MCL/go.sum     MCL/
 COPY bridge/go.mod  bridge/go.sum  bridge/
+COPY construct/go.mod              construct/
 COPY executor/go.mod executor/go.sum executor/
 COPY neo/go.mod     neo/go.sum     neo/
 
 # Now the source.
-COPY cortex/   cortex/
-COPY MCL/      MCL/
-COPY bridge/   bridge/
-COPY executor/ executor/
-COPY neo/      neo/
+COPY cortex/    cortex/
+COPY MCL/       MCL/
+COPY bridge/    bridge/
+COPY construct/ construct/
+COPY executor/  executor/
+COPY neo/       neo/
 
 WORKDIR /src/executor
 RUN go build -ldflags="-s -w" -o /out/mcl-execute ./cmd/mcl-execute

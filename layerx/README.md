@@ -42,6 +42,8 @@ go run ./cmd/layerxd
 | GET | `/v1/receipt/{seq}` | signed inclusion receipt (+ anchor proof once settled) |
 | POST | `/v1/withdraw` | burn USDX → release USDL |
 | POST | `/v1/settle` | force-settle the open window now |
+| GET | `/v1/transfers` | public transfer feed — KEYSET-paginated (`?limit=&before=&did=`); response carries `next_before` |
+| GET | `/v1/stream` | public live event stream (SSE): `transfer` + `anchor` events; reconnect replays via `Last-Event-ID` |
 
 ## Invariants
 

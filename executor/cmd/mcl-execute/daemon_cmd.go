@@ -185,6 +185,14 @@ type daemonState struct {
 	// envelopes, or the plan/walk, so it cannot perturb D11 replay.
 	liaison *liaisonState
 
+	// construct, when non-nil, enables the Construct passive projector
+	// (daemon_construct.go): a side-channel subscriber that projects pipeline
+	// events onto Construct surfaces (construct.surface). Set at boot unless
+	// -construct-disable. nil leaves the pipeline emitting no surfaces. Pure
+	// side-channel — never touches cortex, envelopes, or the plan/walk, so it
+	// cannot perturb D11 replay.
+	construct *constructState
+
 	// sess#34 / Forge Phase 1: filesystem allow/deny policy for the
 	// Forge HTTP surface (GET /fs/tree, GET /fs/read, POST /fs/write).
 	// nil when the daemon is NOT running in Forge mode — the routes
@@ -271,6 +279,7 @@ func runDaemon(args []string) {
 		compileConfThreshold  = fs.Float64("compile-confidence-threshold", 0, "frame-confidence floor (0..1) below which the compiler escalates; 0 uses the built-in default (0.75)")
 		liaisonModel          = fs.String("liaison-model", os.Getenv("MATRIX_LIAISON_MODEL"), "override the Liaison (user-facing conversational narrator) LLM model. Empty uses the SlotLiaison registry default (deepseek-v4-flash). Must be on the gateway liaison-slot whitelist. Defaults to env MATRIX_LIAISON_MODEL.")
 		liaisonDisable        = fs.Bool("liaison-disable", os.Getenv("MATRIX_LIAISON_DISABLE") == "1", "disable the Liaison conversational agent: no per-run narration and POST /chat returns 503. Defaults to env MATRIX_LIAISON_DISABLE==1.")
+		constructDisable      = fs.Bool("construct-disable", os.Getenv("MATRIX_CONSTRUCT_DISABLE") == "1", "disable the Construct passive projector: the pipeline emits no construct.surface events. Pure side-channel; deterministic, no model. Defaults to env MATRIX_CONSTRUCT_DISABLE==1.")
 		llmBaseURL            = fs.String("llm-base-url", "", "override LLM endpoint base URL (e.g. https://matrix.paxeer.app/gw for MatrixGateway, or https://api.fireworks.ai/inference for BYO). Empty falls back to MCL/llm's per-provider default. Path '/v1/chat/completions' is appended by the client.")
 		gatewayURL            = fs.String("gateway-url", os.Getenv("MATRIX_GATEWAY_URL"), "MatrixGateway base URL (host portion, no /v1/...). When set, EVERY routed LLM call (compile, planner, executor) is proxied through ${gateway-url}/v1/chat/completions with X-Matrix-Actor-DID + X-Matrix-Intent-ID + X-Matrix-Slot headers and is metered against the credit_ledger. Empty (default) preserves the legacy direct-provider posture. Sess#32 ambient-architect plan §5.16. Defaults to env MATRIX_GATEWAY_URL.")
 		seed                  = fs.Int64("seed", 42, "compiler seed (D11)")
@@ -279,14 +288,14 @@ func runDaemon(args []string) {
 			"enable the completeness critic + re-plan gate (Phase 10.5): after a clean walk, an LLM auditor verifies every requested deliverable was actually produced; unmet items trigger a bounded re-plan and a still-incomplete run is reported as failed, never falsely 'completed'. Default on; set MATRIX_COMPLETENESS_CRITIC=0 to disable.")
 		criticModel = fs.String("critic-model", os.Getenv("MATRIX_CRITIC_MODEL"),
 			"override the completeness-critic auditor LLM. Empty falls back to the planner/executor model. Routes on the gateway planner slot, so an override must be planner-slot whitelisted.")
-		maxReplan = fs.Int("max-replan", 2, "max critic-driven re-plan rounds before a still-incomplete run is failed honestly")
-		allowSubDisp          = fs.Bool("allow-sub-dispatch", false, "enable in-process sub-dispatch (Q6 v1 carve-out: same agent, in-process only)")
-		workspaceRoot         = fs.String("workspace-root", "", "absolute path agents' MCP fs/git servers are scoped to (announced to the synthesizer prompt; empty = section omitted)")
-		withEmbedder          = fs.Bool("with-embedder", false, "start cortex hash embedder (in-process)")
-		withFireworks         = fs.Bool("with-fireworks-embedder", false, "start cortex Fireworks embedder (REAL)")
-		bootTimeout           = fs.Duration("boot-timeout", 2*time.Minute, "infra boot timeout")
-		shutdownTimeout       = fs.Duration("shutdown-timeout", 30*time.Second, "graceful shutdown drain budget")
-		bufferSize            = fs.Int("sse-buffer", 256, "per-subscriber SSE buffer size")
+		maxReplan       = fs.Int("max-replan", 2, "max critic-driven re-plan rounds before a still-incomplete run is failed honestly")
+		allowSubDisp    = fs.Bool("allow-sub-dispatch", false, "enable in-process sub-dispatch (Q6 v1 carve-out: same agent, in-process only)")
+		workspaceRoot   = fs.String("workspace-root", "", "absolute path agents' MCP fs/git servers are scoped to (announced to the synthesizer prompt; empty = section omitted)")
+		withEmbedder    = fs.Bool("with-embedder", false, "start cortex hash embedder (in-process)")
+		withFireworks   = fs.Bool("with-fireworks-embedder", false, "start cortex Fireworks embedder (REAL)")
+		bootTimeout     = fs.Duration("boot-timeout", 2*time.Minute, "infra boot timeout")
+		shutdownTimeout = fs.Duration("shutdown-timeout", 30*time.Second, "graceful shutdown drain budget")
+		bufferSize      = fs.Int("sse-buffer", 256, "per-subscriber SSE buffer size")
 		// sess#34 / Forge Phase 1: enables GET /fs/tree, GET /fs/read,
 		// POST /fs/write with the Q3=c allowlist (full RW under
 		// /root/matrix EXCEPT cortex/store + knowledge + journal).
@@ -526,6 +535,12 @@ func runDaemon(args []string) {
 	// door out of the box. Pure side-channel; see daemon_liaison.go.
 	if !*liaisonDisable {
 		state.liaison = &liaisonState{model: *liaisonModel}
+	}
+	// Construct passive projector: wired unless explicitly disabled, so every
+	// public runtime projects its pipeline events onto Construct surfaces out
+	// of the box. Deterministic, no model; pure side-channel (daemon_construct.go).
+	if !*constructDisable {
+		state.construct = &constructState{}
 	}
 	// PaxeerSpendPolicy is wired unconditionally on the public per-
 	// user daemon: paxeer-net is folded into agents/default.json so

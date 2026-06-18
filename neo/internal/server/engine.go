@@ -13,10 +13,15 @@ package server
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"strings"
 	"sync"
 	"time"
 
+	"matrix/construct/backchannel"
+	"matrix/construct/schema"
+	"matrix/construct/schema/primitives"
+	"matrix/construct/transport"
 	"matrix/neo/internal/agent"
 	"matrix/neo/internal/config"
 	"matrix/neo/internal/conversation"
@@ -87,8 +92,106 @@ func NewEngine(o EngineOptions) *Engine {
 		// Task-scoped concurrent sub-agents (the Agent Swarm). Capped per call
 		// by config so one spawn can't fan out unbounded.
 		e.tools.SetSwarm(e.runSwarm, o.Config.MaxSubagents)
+		// Construct ACTIVE tier: let the agent render typed surfaces onto the
+		// user's screen via the construct_render tool (pure side-channel).
+		e.tools.SetSurfaceEmitter(e.emitConstructSurface)
+		// Construct Ask back-channel: an Ask surface BLOCKS the agent for a
+		// typed human answer (invariant i5), delivered over Neo's gate-style
+		// answer endpoint and returned to the tool call as its result.
+		e.tools.SetAskResponder(e.respondAsk)
 	}
 	return e
+}
+
+// neoSurfaceSink adapts the engine's per-run event broker to the construct
+// transport EventSink interface, so the Construct emit logic stays
+// single-source (transport.EmitSurface validates the surface + builds the
+// event fields).
+type neoSurfaceSink struct {
+	e     *Engine
+	runID string
+}
+
+func (s neoSurfaceSink) Event(typ, phase string, fields map[string]interface{}) {
+	s.e.broker.publish(s.runID, typ, phase, fields)
+}
+
+// emitConstructSurface is the ACTIVE-tier Construct emitter wired into the tool
+// manager: it streams an agent-authored surface onto the active run's event
+// stream as a construct.surface event. Pure side-channel — it only publishes a
+// transcript event, exactly like surfaceTool / notifyFor; it never signs,
+// writes cortex, or touches the plan/walk.
+func (e *Engine) emitConstructSurface(ctx context.Context, s *schema.Surface) error {
+	r := runFromContext(ctx)
+	if r == nil {
+		return fmt.Errorf("construct: no active run on context")
+	}
+	return transport.EmitSurface(neoSurfaceSink{e: e, runID: r.id}, r.id, r.convID, s)
+}
+
+// askWaitTimeout bounds how long a parked Ask waits for a human answer before
+// it expires and the agent is told to proceed without it (still inside the
+// run's own 20-minute ceiling). Long enough for a deliberate human decision
+// (read a tx, pick an option), short enough not to wedge a run forever.
+const askWaitTimeout = 10 * time.Minute
+
+// respondAsk is the ACTIVE-tier Construct back-channel (invariant i5): it shows
+// an Ask surface, PARKS the agent's construct_render tool call on a per-ask
+// waiter keyed by the surface id, and returns the human's typed response once
+// it is posted to /intents/{id}/asks/{ask_id}/answer. It mirrors approverFor
+// (the in-walk gate) exactly — register the waiter FIRST so a fast answer can't
+// race the park, then emit; on answer, patch the Ask surface to its settled
+// state so the rendered control resolves. Pure side-channel: it publishes
+// transcript events and returns the answer as a tool result (an agent INPUT);
+// it never signs, writes cortex, or touches the plan/walk.
+func (e *Engine) respondAsk(ctx context.Context, s *schema.Surface) (*primitives.AskResponse, error) {
+	r := runFromContext(ctx)
+	if r == nil {
+		return nil, fmt.Errorf("construct: no active run on context")
+	}
+	askID := s.ID
+	ch := r.sess.registerAsk(askID, s.Ask)
+	sink := neoSurfaceSink{e: e, runID: r.id}
+
+	// Show the question (the renderer paints the control), then announce the
+	// run is parked awaiting a human answer.
+	if err := transport.EmitSurface(sink, r.id, r.convID, s); err != nil {
+		r.sess.clearAsk(askID)
+		return nil, err
+	}
+	e.broker.publish(r.id, "ask.awaiting", transport.Phase, map[string]interface{}{
+		"intent_id":       r.id,
+		"conversation_id": r.convID,
+		"ask_id":          askID,
+		"ask_kind":        string(s.Ask.AskKind),
+	})
+
+	select {
+	case <-ctx.Done():
+		r.sess.clearAsk(askID)
+		return nil, ctx.Err()
+	case <-time.After(askWaitTimeout):
+		r.sess.clearAsk(askID)
+		e.broker.publish(r.id, "ask.expired", transport.Phase, map[string]interface{}{
+			"intent_id":       r.id,
+			"conversation_id": r.convID,
+			"ask_id":          askID,
+		})
+		return nil, fmt.Errorf("timed out after %s waiting for an answer", askWaitTimeout)
+	case resp := <-ch:
+		// Settle the rendered control: patch the Ask with its response so the
+		// client flips from the live control to the answered state (mirrors
+		// gate.decided). A patch failure is non-fatal — the answer still flows.
+		if answered, err := backchannel.Answered(s, resp); err == nil {
+			_ = transport.PatchSurface(sink, r.id, r.convID, askID, answered)
+		}
+		e.broker.publish(r.id, "ask.answered", transport.Phase, map[string]interface{}{
+			"intent_id":       r.id,
+			"conversation_id": r.convID,
+			"ask_id":          askID,
+		})
+		return resp, nil
+	}
 }
 
 // coreExecute is the in-conversation bridge to the MCL pipeline. It reads the
