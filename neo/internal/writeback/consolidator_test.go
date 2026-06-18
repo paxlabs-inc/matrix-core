@@ -4,6 +4,7 @@
 package writeback
 
 import (
+	"strings"
 	"testing"
 
 	"matrix/neo/internal/memory"
@@ -51,6 +52,24 @@ func TestParseLooseJSONStructuredPattern(t *testing.T) {
 	}
 	if out.Outcome == nil || out.Outcome.Status != "success" {
 		t.Errorf("outcome not decoded: %+v", out.Outcome)
+	}
+}
+
+func TestParseLooseJSONPreferencesAndCorrections(t *testing.T) {
+	in := `{"facts":[],"user_facts":[],"preferences":[{"topic":"render a Construct surface while working","polarity":"do","strength":0.85,"rationale":"user wants to see work"}],"corrections":["Always render a Construct surface when performing a task, not just describe it"],"patterns":[],"outcome":null}`
+	var out extract
+	if err := parseLooseJSON(in, &out); err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	if len(out.Preferences) != 1 {
+		t.Fatalf("want 1 preference, got %d", len(out.Preferences))
+	}
+	pf := out.Preferences[0]
+	if pf.Polarity != "do" || pf.Strength != 0.85 || pf.Topic == "" {
+		t.Errorf("preference not decoded: %+v", pf)
+	}
+	if len(out.Corrections) != 1 || !strings.Contains(out.Corrections[0], "Construct surface") {
+		t.Errorf("corrections not decoded: %+v", out.Corrections)
 	}
 }
 

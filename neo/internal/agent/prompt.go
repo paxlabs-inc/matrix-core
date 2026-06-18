@@ -24,13 +24,35 @@ var groundTruth string
 // behavior + pinned identity/rules/goal + consolidated summary + recalled past
 // turns + page-faulted memory + proven patterns. Re-derived every turn so
 // nothing here drifts (the budget stat is appended by the caller).
-func (a *Agent) buildSystem(pinned string, retrieved []memory.Snippet, procedural []memory.Pattern, recalled []recall.Hit) string {
+func (a *Agent) buildSystem(pinned string, retrieved []memory.Snippet, procedural []memory.Pattern, triggered []memory.Snippet, recalled []recall.Hit) string {
 	var b strings.Builder
 	b.WriteString(a.systemPrompt())
 
 	if strings.TrimSpace(pinned) != "" {
 		b.WriteString("\n")
 		b.WriteString(pinned)
+	}
+
+	// Trigger-matched behavioral guidance (Phase 3): learned constraints /
+	// trigger-bearing patterns whose trigger fits THIS request, surfaced even
+	// when their global salience is low. Placed right after the pinned tier so
+	// the right behavior fires on the right turn.
+	if len(triggered) > 0 {
+		b.WriteString("\nApply to this request (behaviors you've learned that fit what you're doing now):\n")
+		seen := make(map[string]struct{}, len(triggered))
+		for _, s := range triggered {
+			line := strings.TrimSpace(s.Text)
+			if line == "" {
+				continue
+			}
+			if _, dup := seen[line]; dup {
+				continue
+			}
+			seen[line] = struct{}{}
+			b.WriteString("- ")
+			b.WriteString(line)
+			b.WriteString("\n")
+		}
 	}
 
 	if strings.TrimSpace(a.summary) != "" {
@@ -49,6 +71,11 @@ func (a *Agent) buildSystem(pinned string, retrieved []memory.Snippet, procedura
 		for _, s := range retrieved {
 			b.WriteString("- ")
 			b.WriteString(strings.TrimSpace(s.Text))
+			if s.Note != "" {
+				b.WriteString(" [")
+				b.WriteString(s.Note)
+				b.WriteString("]")
+			}
 			b.WriteString("\n")
 		}
 	}
@@ -153,7 +180,7 @@ func (a *Agent) systemPrompt() string {
 	if a.tools != nil && a.tools.SurfaceEnabled() {
 		b.WriteString("\nShowing things on screen:\n")
 		b.WriteString("- You can render rich visual surfaces onto the user's screen with construct_render — a value, an object (a tx, token, file, or account), a list or table, your live progress, a media artifact, or a question you need answered. Use it to SHOW structured results while you work, instead of only describing them in text.\n")
-		b.WriteString("- Render WHEN YOU'RE DOING A TASK or have something concrete to show. If the user is just chatting — a greeting, small talk, or a question about you — do NOT render; keep the screen to chat.\n")
+		b.WriteString("- Default to rendering whenever you're DOING A TASK or have something concrete to show — make the surface your primary output and your chat reply a brief narration of it, not a text-only substitute. If the user is just chatting — a greeting, small talk, or a question about you — do NOT render; keep the screen to chat.\n")
 		b.WriteString("- Pick the primitive that fits: metric for a single value, entity for an object, structure for a collection, timeline for steps over time, canvas for an image/page, ask for a question that needs a typed answer. Tag anything irreversible with stakes=irreversible. Reuse the same id to update a surface you already rendered. The surface appears automatically — describe it briefly in your reply, don't repeat its contents.\n")
 	}
 

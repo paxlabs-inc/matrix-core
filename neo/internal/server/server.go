@@ -197,6 +197,19 @@ func (s *Server) handleAsyncPoll(w http.ResponseWriter, r *http.Request) {
 // handleIntents intercepts the gate-answer and the Construct Ask-answer for a
 // live Neo run; every other /intents/* route proxies to the daemon.
 func (s *Server) handleIntents(w http.ResponseWriter, r *http.Request) {
+	// Explicit interrupt: POST /intents/{id}/stop cancels a live Neo turn (the
+	// "stop" button). Barge-in via a new message is automatic; this is the
+	// deliberate path to stop without sending one.
+	if id, ok := parseStopPath(r.URL.Path); ok && r.Method == http.MethodPost {
+		run := s.engine.lookupRun(id)
+		if run == nil {
+			writeJSON(w, http.StatusNotFound, map[string]string{"error": "no live run for that intent"})
+			return
+		}
+		run.sess.interrupt(run)
+		writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "intent_id": id, "status": "interrupting"})
+		return
+	}
 	// Construct Ask back-channel: POST /intents/{id}/asks/{ask_id}/answer.
 	if id, askID, ok := parseAskAnswerPath(r.URL.Path); ok && r.Method == http.MethodPost && s.engine.lookupRun(id) != nil {
 		s.handleAskAnswer(w, r, id, askID)
@@ -340,6 +353,15 @@ func parseAskAnswerPath(p string) (id, askID string, ok bool) {
 		return "", "", false
 	}
 	return parts[1], parts[3], true
+}
+
+// parseStopPath matches /intents/{id}/stop.
+func parseStopPath(p string) (id string, ok bool) {
+	parts := strings.Split(strings.Trim(p, "/"), "/")
+	if len(parts) != 3 || parts[0] != "intents" || parts[2] != "stop" {
+		return "", false
+	}
+	return parts[1], true
 }
 
 func atoiSafe(s string) int {

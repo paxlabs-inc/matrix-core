@@ -25,11 +25,14 @@ OPEN: <unresolved questions or blockers>
 LAST_RESULTS: <still-relevant tool outputs worth carrying forward>
 NEXT: <the planned next step(s)>`
 
-// compact swaps out older working history into a consolidated summary when the
-// window fills. It announces itself (the spoken promise — transparency rule),
-// re-derives a fresh summary via the cheap model against the active-session
-// schema, and trims the live transcript. Best-effort: on failure it degrades
-// to a safe tail rather than risking a runaway window.
+// compact swaps OLDER working history into a consolidated summary when the
+// window fills, while keeping the most recent turns VERBATIM (Phase 4.2). It
+// announces itself (the spoken promise — transparency rule), summarizes only
+// the older section (folding any prior summary forward so nothing accumulated
+// is lost), strips dead-weight inline image payloads from that section first,
+// validates that every high-entropy token survived, and keeps the recent tail
+// intact. Best-effort: on failure it degrades to the recent tail rather than
+// risking a runaway window.
 //
 // reason is "hard" (forced, over the hard threshold) or "soft" (cooperative,
 // at a clean boundary) — used only to tune the spoken notice.
@@ -44,34 +47,57 @@ func (a *Agent) compact(ctx context.Context, reason string) {
 		a.out.Notice("We've covered a lot — let me quickly consolidate where we are so I stay sharp.")
 	}
 
-	transcript := renderTranscript(a.working)
-	client := a.cheap
-	if client == nil {
-		client = a.main
-	}
-
-	res, err := client.Chat(ctx, llm.ChatRequest{
-		Messages: []llm.Message{
-			llm.SystemMessage(compactionSystemPrompt),
-			llm.UserMessage("Transcript to consolidate:\n\n" + transcript),
-		},
-	})
-	if err != nil || res == nil || strings.TrimSpace(res.Message.Content) == "" {
-		// Consolidation failed — keep a safe recent tail so the window can't
-		// run away, but never silently lose everything.
+	// Keep the most recent turns verbatim; summarize only what is older.
+	older, recent := splitForCompaction(a.working, keepRecentUserTurns)
+	if older == nil {
+		// Too short to carve a clean older section but still over budget — the
+		// window is dominated by large payloads. Strip inline images and keep a
+		// safe tail rather than summarizing recent verbatim context away.
+		a.stripOldImages()
 		a.working = safeTail(a.working)
 		return
 	}
 
-	// Re-derived fresh from the current transcript (kills summary drift). The
-	// long-term half of context is re-faulted from cortex separately each turn.
-	//
+	// Inline image payloads in the older section are dead weight once they are
+	// being summarized to text — strip them before rendering so the summarizer
+	// and the validator operate on text, not base64.
+	stripImagesIn(older)
+
+	transcript := renderTranscript(older)
+	prior := strings.TrimSpace(a.summary)
+	source := transcript
+	userMsg := "Transcript to consolidate:\n\n" + transcript
+	if prior != "" {
+		// Fold the existing summary forward so previously-evicted context is
+		// carried, not dropped; validate against both halves.
+		source = prior + "\n" + transcript
+		userMsg = "Summary so far (extend it; keep everything load-bearing):\n" + prior + "\n\n" + userMsg
+	}
+
+	client := a.cheap
+	if client == nil {
+		client = a.main
+	}
+	res, err := client.Chat(ctx, llm.ChatRequest{
+		Messages: []llm.Message{
+			llm.SystemMessage(compactionSystemPrompt),
+			llm.UserMessage(userMsg),
+		},
+	})
+	if err != nil || res == nil || strings.TrimSpace(res.Message.Content) == "" {
+		// Consolidation failed — keep the prior summary and the recent verbatim
+		// tail so nothing recent is lost and the window still shrinks (the older
+		// raw turns drop, but they were the least recent and image-stripped).
+		a.working = recent
+		return
+	}
+
 	// [transparency.authorship] validator: a silent pass confirms every
-	// high-entropy token survived verbatim before the window resets — the
-	// trust contract (i3). Dropped identifiers are re-appended, never lost.
-	summary, _ := validateSummary(transcript, res.Message.Content)
+	// high-entropy token survived verbatim before the older turns are evicted —
+	// the trust contract (i3). Dropped identifiers are re-appended, never lost.
+	summary, _ := validateSummary(source, res.Message.Content)
 	a.summary = summary
-	a.working = nil
+	a.working = recent
 }
 
 // renderTranscript flattens the working messages into a plain-text transcript

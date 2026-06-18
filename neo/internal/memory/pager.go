@@ -50,6 +50,11 @@ type Snippet struct {
 	Text string
 	URI  string
 	Type string
+	// Note carries an optional one-line advisory the pager attaches when a
+	// memory needs reconciliation before it is trusted — currently set when a
+	// surfaced memory is joined to another surfaced memory by a live
+	// contradiction edge. Empty for ordinary memories.
+	Note string
 }
 
 // Open opens (creating if needed) the cortex brain at cfg.CortexRoot for
@@ -152,6 +157,15 @@ func (p *Pager) Pinned(ctx context.Context, goal string) string {
 		b.WriteString("- ")
 		b.WriteString(r)
 		b.WriteString("\n")
+	}
+
+	if guide := p.LearnedGuidance(ctx); len(guide) > 0 {
+		b.WriteString("Working guidance you've learned (apply it unless the user says otherwise):\n")
+		for _, g := range guide {
+			b.WriteString("- ")
+			b.WriteString(g)
+			b.WriteString("\n")
+		}
 	}
 
 	if profile := p.UserProfile(ctx); len(profile) > 0 {
@@ -257,6 +271,96 @@ func (p *Pager) hardConstraints(ctx context.Context) []string {
 	return out
 }
 
+// learnedGuidanceMax bounds the pinned learned-guidance block so it can never
+// crowd out the rules/profile/goal inside the pinned token budget.
+const learnedGuidanceMax = 8
+
+// learnedPrefFloor is the minimum StrengthVal a learned Preference must carry
+// to be pinned — weak preferences stay in salience-ranked retrieval rather
+// than occupying scarce pinned space every turn.
+const learnedPrefFloor float32 = 0.5
+
+// LearnedGuidance returns short behavioral guidance lines Neo has LEARNED:
+// non-hard learned/declared Constraints (hard ones are pinned verbatim by
+// hardConstraints) followed by strong durable Preferences. This is the
+// structural fix for "Neo keeps forgetting a learned behavior" — a correction
+// or working preference (e.g. "render a Construct surface while working")
+// becomes a line pinned to EVERY turn, changing behavior reliably instead of
+// depending on salience-ranked retrieval luck. Ranked by the Find planner's
+// salience-desc default and bounded by learnedGuidanceMax.
+func (p *Pager) LearnedGuidance(ctx context.Context) []string {
+	_ = ctx
+	var out []string
+
+	if res, err := p.cortex.Find(query.Query{Type: []memory.Type{memory.TypeConstraint}, Limit: 32}); err == nil && res != nil {
+		for _, m := range res.Memories {
+			data, derr := memory.DecodeData(m.Version.Type, m.Version.Data)
+			if derr != nil {
+				continue
+			}
+			var cd memory.ConstraintData
+			switch x := data.(type) {
+			case memory.ConstraintData:
+				cd = x
+			case *memory.ConstraintData:
+				cd = *x
+			default:
+				continue
+			}
+			if cd.StrengthVal == memory.StrengthHard || strings.TrimSpace(cd.Statement) == "" {
+				continue // hard rules already pinned verbatim by hardConstraints
+			}
+			out = append(out, strings.TrimSpace(cd.Statement))
+			if len(out) >= learnedGuidanceMax {
+				return out
+			}
+		}
+	}
+
+	if res, err := p.cortex.Find(query.Query{Type: []memory.Type{memory.TypePreference}, Limit: 32}); err == nil && res != nil {
+		for _, m := range res.Memories {
+			data, derr := memory.DecodeData(m.Version.Type, m.Version.Data)
+			if derr != nil {
+				continue
+			}
+			var pd memory.PreferenceData
+			switch x := data.(type) {
+			case memory.PreferenceData:
+				pd = x
+			case *memory.PreferenceData:
+				pd = *x
+			default:
+				continue
+			}
+			if pd.StrengthVal < learnedPrefFloor || strings.TrimSpace(pd.Topic) == "" {
+				continue
+			}
+			out = append(out, renderPreference(pd))
+			if len(out) >= learnedGuidanceMax {
+				return out
+			}
+		}
+	}
+	return out
+}
+
+// renderPreference turns a stored Preference into a one-line imperative for
+// the pinned guidance block.
+func renderPreference(pd memory.PreferenceData) string {
+	verb := "Prefer to"
+	switch pd.Polarity {
+	case memory.PolarityAvoid, memory.PolarityDont:
+		verb = "Avoid"
+	case memory.PolarityDo:
+		verb = "Always"
+	}
+	s := verb + " " + strings.TrimSpace(pd.Topic)
+	if r := strings.TrimSpace(pd.Rationale); r != "" {
+		s += " — " + r
+	}
+	return s
+}
+
 func (p *Pager) identityDID() string {
 	ids, err := p.cortex.ListByType(memory.TypeIdentity, 1)
 	if err != nil || len(ids) == 0 {
@@ -279,42 +383,63 @@ func (p *Pager) identityDID() string {
 	return ""
 }
 
-// Retrieve page-faults the top-K records relevant to queryText. Semantic
-// (HNSW) results lead when an embedder is running, ALWAYS merged with a
-// salience-ranked lane over the durable types: the embedding worker is
-// async, so a memory written seconds ago is invisible to the vector index —
-// without the salience lane a "remember this" → "what do you know?" round
-// trip inside one session comes back empty. Bounded by RetrievalTopK total.
+// Retrieve page-faults the top-K records relevant to queryText. Seeds come
+// from two lanes scored 1.0: semantic (HNSW) results when an embedder is
+// running, ALWAYS merged with a salience-ranked lane over the durable types
+// (the embedding worker is async, so a memory written seconds ago is invisible
+// to the vector index — without the salience lane a "remember this" → "what do
+// you know?" round trip inside one session comes back empty).
+//
+// The seeds then cascade over the relationship graph (cortex edges, depth 2,
+// both directions) so connected memories surface with a hop-decayed score
+// (0.7^hop). A supersession filter drops any candidate a newer memory replaces
+// (live inbound EdgeSupersedes) so Neo sees the current version; contradiction
+// edges annotate the conflicting pair so Neo reconciles before trusting. Sorted
+// by score desc (stable on first-seen order) and bounded by RetrievalTopK.
 func (p *Pager) Retrieve(ctx context.Context, queryText string) ([]Snippet, error) {
+	type cand struct {
+		snip  Snippet
+		id    memory.ID
+		score float32
+		order int
+	}
 	var (
-		out  []Snippet
-		seen = map[string]bool{}
+		cands []cand
+		idx   = map[string]int{} // uri -> index into cands
 	)
-	add := func(snips []Snippet) {
-		for _, s := range snips {
-			if len(out) >= p.cfg.RetrievalTopK {
-				return
-			}
-			if s.URI == "" || seen[s.URI] {
-				continue
-			}
-			seen[s.URI] = true
-			out = append(out, s)
+	addScored := func(s Snippet, score float32) {
+		if s.URI == "" {
+			return
 		}
+		if j, ok := idx[s.URI]; ok {
+			if score > cands[j].score { // keep the strongest path to a memory
+				cands[j].score = score
+			}
+			return
+		}
+		var id memory.ID
+		if _, mid, _, err := cortex.ParseURI(memory.URI(s.URI)); err == nil {
+			id = mid
+		}
+		idx[s.URI] = len(cands)
+		cands = append(cands, cand{snip: s, id: id, score: score, order: len(cands)})
 	}
 
+	// --- seed lanes (base score 1.0): semantic HNSW + the always-on
+	// salience lane (covers memories written this session that the async
+	// embedder hasn't indexed yet). ---
 	if p.hasEmbedder && strings.TrimSpace(queryText) != "" {
-		res, err := p.cortex.Find(query.Query{
+		if res, err := p.cortex.Find(query.Query{
 			Near:         queryText,
 			Limit:        p.cfg.RetrievalTopK,
 			BudgetTokens: p.cfg.RetrievalBudgetTokens,
 			Form:         query.FormMedium,
-		})
-		if err == nil {
-			add(renderSnippets(res))
+		}); err == nil {
+			for _, s := range renderSnippets(res) {
+				addScored(s, 1.0)
+			}
 		}
 	}
-
 	res, err := p.cortex.Find(query.Query{
 		Type: []memory.Type{
 			memory.TypeFact, memory.TypeEvent, memory.TypePattern,
@@ -324,14 +449,196 @@ func (p *Pager) Retrieve(ctx context.Context, queryText string) ([]Snippet, erro
 		BudgetTokens: p.cfg.RetrievalBudgetTokens,
 		Form:         query.FormMedium,
 	})
-	if err != nil {
-		if len(out) > 0 {
-			return out, nil
-		}
+	if err != nil && len(cands) == 0 {
 		return nil, err
 	}
-	add(renderSnippets(res))
+	if err == nil {
+		for _, s := range renderSnippets(res) {
+			addScored(s, 1.0)
+		}
+	}
+
+	// --- cascade: pull edge-connected neighbors of the seeds into the pool
+	// with a hop-decayed score (0.7^hop, depth 2). Snapshot the seed URIs
+	// first so neighbors added mid-loop aren't themselves re-expanded. ---
+	seeds := make([]string, len(cands))
+	for i := range cands {
+		seeds[i] = cands[i].snip.URI
+	}
+	if len(seeds) > cascadeSeedCap {
+		seeds = seeds[:cascadeSeedCap]
+	}
+	for _, seedURI := range seeds {
+		for _, ns := range p.cascadeNeighbors(seedURI) {
+			addScored(ns.snip, ns.score)
+		}
+	}
+
+	// --- supersession filter: drop any candidate a newer memory supersedes
+	// (a live inbound EdgeSupersedes) so Neo sees the current version, not the
+	// stale one it corrects. ---
+	kept := cands[:0]
+	for _, c := range cands {
+		if !c.id.IsZero() && p.isSuperseded(c.id) {
+			continue
+		}
+		kept = append(kept, c)
+	}
+	cands = kept
+
+	// --- contradiction surfacing: when two surviving candidates are joined by
+	// a live contradiction edge, annotate them so Neo reconciles rather than
+	// silently trusting one. ---
+	liveIDs := make(map[memory.ID]bool, len(cands))
+	for _, c := range cands {
+		if !c.id.IsZero() {
+			liveIDs[c.id] = true
+		}
+	}
+	for i := range cands {
+		if !cands[i].id.IsZero() && p.contradictsAnyOf(cands[i].id, liveIDs) {
+			cands[i].snip.Note = contradictionNote
+		}
+	}
+
+	// --- per-type half-life re-rank (Neo-side, read-time only): different
+	// memory types live on different timescales, so scale each candidate's
+	// score by a recency multiplier keyed by its type before the final top-K
+	// cut. Cortex's stored Score, sc.Cached, and the journaled 90d half-life
+	// are untouched — this only re-orders Neo's working set. ---
+	now := time.Now().UTC()
+	for i := range cands {
+		cands[i].score *= recencyMultiplier(cands[i].snip.Type, p.lastUsedNano(cands[i].id), now)
+	}
+
+	// --- order by score desc (seeds before cascade neighbors, nearer hops
+	// before farther), stable on insertion order, bounded to RetrievalTopK. ---
+	sort.SliceStable(cands, func(a, b int) bool {
+		if cands[a].score != cands[b].score {
+			return cands[a].score > cands[b].score
+		}
+		return cands[a].order < cands[b].order
+	})
+	out := make([]Snippet, 0, p.cfg.RetrievalTopK)
+	for _, c := range cands {
+		if len(out) >= p.cfg.RetrievalTopK {
+			break
+		}
+		out = append(out, c.snip)
+	}
 	return out, nil
+}
+
+// cascadeFollowTypes are the relationship edges Retrieve traverses out from
+// each seed to pull connected context into the candidate pool.
+var cascadeFollowTypes = []memory.EdgeType{
+	memory.EdgeSupersedes, memory.EdgeContradicts, memory.EdgeDerivedFrom,
+	memory.EdgeCorroborates, memory.EdgeReferences,
+}
+
+// cascadeSeedCap bounds how many seeds we expand so graph fan-out stays cheap
+// (risk R4). The hop cap (2) and dedup do the rest.
+const cascadeSeedCap = 6
+
+// contradictionNote is the reconcile-first advisory attached to a surfaced
+// memory that contradicts another surfaced one. Plain text (no symbols) per the
+// output rules.
+const contradictionNote = "conflicting memories surfaced — reconcile before trusting either"
+
+// hopDecay returns the cascade score multiplier at hop distance hop: 0.7^hop
+// (hop1 -> 0.7, hop2 -> 0.49). Cheap integer-power loop; hops are 1 or 2.
+func hopDecay(hop int) float32 {
+	m := float32(1)
+	for i := 0; i < hop; i++ {
+		m *= 0.7
+	}
+	return m
+}
+
+// scoredSnip pairs a rendered cascade neighbor with its hop-decayed score.
+type scoredSnip struct {
+	snip  Snippet
+	score float32
+}
+
+// cascadeNeighbors runs a depth-2, both-direction BFS from seedURI over the
+// relationship edges and returns the reachable memories rendered as snippets
+// with a hop-decayed score. Best-effort context: any error or an unparseable
+// seed yields no neighbors (cascade is never load-bearing on its own).
+func (p *Pager) cascadeNeighbors(seedURI string) []scoredSnip {
+	from := memory.URI(seedURI)
+	res, err := p.cortex.Find(query.Query{
+		From: &from,
+		Follow: &query.EdgeExpr{
+			Types:     cascadeFollowTypes,
+			MaxHops:   2,
+			Direction: query.DirBoth,
+		},
+		Limit:        p.cfg.RetrievalTopK,
+		BudgetTokens: p.cfg.RetrievalBudgetTokens,
+		Form:         query.FormMedium,
+	})
+	if err != nil || res == nil {
+		return nil
+	}
+	out := make([]scoredSnip, 0, len(res.Memories))
+	for i, m := range res.Memories {
+		text := ""
+		if i < len(res.Rendered) {
+			text = res.Rendered[i]
+		}
+		if text == "" {
+			text = m.Version.Forms.Medium
+		}
+		if strings.TrimSpace(text) == "" {
+			continue
+		}
+		out = append(out, scoredSnip{
+			snip: Snippet{
+				Text: text,
+				URI:  string(cortex.BuildURI(m.Head.Type, m.Head.ID, m.Head.CurrentVersion)),
+				Type: m.Head.Type.String(),
+			},
+			score: hopDecay(res.Hops[m.Head.ID]),
+		})
+	}
+	return out
+}
+
+// isSuperseded reports whether a live EdgeSupersedes points AT id (i.e. a newer
+// memory supersedes it). Edges are written new -> old, so an inbound supersedes
+// edge marks id as the stale side. Best-effort: an iter error reads as "not
+// superseded" so a transient fault never hides a real memory.
+func (p *Pager) isSuperseded(id memory.ID) bool {
+	found := false
+	_ = p.cortex.IterEdgesIn(id, cortex.IterEdgesOptions{
+		Types: []memory.EdgeType{memory.EdgeSupersedes},
+	}, func(*memory.EdgeRecord) error {
+		found = true
+		return nil
+	})
+	return found
+}
+
+// contradictsAnyOf reports whether id is joined by a live contradiction edge to
+// any OTHER id in set. Contradiction is symmetric, so both directions are
+// scanned.
+func (p *Pager) contradictsAnyOf(id memory.ID, set map[memory.ID]bool) bool {
+	hit := false
+	visit := func(rec *memory.EdgeRecord) error {
+		other := rec.Dst
+		if other == id {
+			other = rec.Src
+		}
+		if other != id && set[other] {
+			hit = true
+		}
+		return nil
+	}
+	opts := cortex.IterEdgesOptions{Types: []memory.EdgeType{memory.EdgeContradicts}}
+	_ = p.cortex.IterEdgesOut(id, opts, visit)
+	_ = p.cortex.IterEdgesIn(id, opts, visit)
+	return hit
 }
 
 // Recall renders an explicit, user-visible memory lookup: the pinned user
@@ -358,6 +665,11 @@ func (p *Pager) Recall(ctx context.Context, queryText string) (string, error) {
 			b.WriteString(s.Type)
 			b.WriteString("] ")
 			b.WriteString(strings.TrimSpace(s.Text))
+			if s.Note != "" {
+				b.WriteString(" [")
+				b.WriteString(s.Note)
+				b.WriteString("]")
+			}
 			b.WriteString("\n")
 		}
 	}

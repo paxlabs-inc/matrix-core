@@ -20,6 +20,14 @@ import (
 // parent turn's budget, so one stuck sub-agent can't hold the swarm open.
 const subagentTurnTimeout = 12 * time.Minute
 
+// subagentMaxAttempts is how many times a sub-agent's whole task is attempted
+// before giving up: one initial run plus bounded recovery retries. A sub-agent
+// whose loop hard-fails (a model/transport error that survives the in-loop
+// retry ladder) used to die on the spot with an empty report; instead it gets a
+// fresh window and another go, so a transient provider hiccup no longer wastes
+// the whole sub-agent.
+const subagentMaxAttempts = 2
+
 // swarmActiveKey marks a context as already running inside a swarm, so a
 // sub-agent that somehow reaches spawn_subagents is refused (no recursion /
 // fork-bombs). Sub-agents are never advertised the tool, so this is a backstop.
@@ -130,11 +138,10 @@ func (e *Engine) runSwarm(ctx context.Context, specs []tools.SubagentSpec) (stri
 
 // runOneSubagent builds and runs a single headless sub-agent to completion,
 // streaming its workspace activity onto the parent stream tagged with its
-// index, and returns its distilled report.
+// index, and returns its distilled report. A hard failure with no usable output
+// is retried with a fresh window (bounded by subagentMaxAttempts) so a
+// transient provider error doesn't kill the sub-agent outright.
 func (e *Engine) runOneSubagent(ctx context.Context, r *run, swarmID string, index int, spec tools.SubagentSpec) subResult {
-	cctx, cancel := context.WithTimeout(withSwarmActive(ctx), subagentTurnTimeout)
-	defer cancel()
-
 	// A fresh config with the sub-agent's name + smaller step budget.
 	cfg := e.cfg
 	cfg.AgentName = spec.Name
@@ -142,24 +149,55 @@ func (e *Engine) runOneSubagent(ctx context.Context, r *run, swarmID string, ind
 		cfg.StepBudget = e.cfg.SubagentStepBudget
 	}
 
-	rep := &captureReporter{engine: e, run: r, swarmID: swarmID, index: index, name: spec.Name}
-	sub := agent.New(agent.Options{
-		Config:        cfg,
-		Main:          e.main,
-		Cheap:         e.cheap,
-		Tools:         e.tools,
-		Pager:         e.pager, // shared cortex READ lane; no consolidator (no write-back noise)
-		Reporter:      rep,
-		Observer:      func(ev agent.ToolEvent) { e.surfaceSubagentStep(r, swarmID, index, spec.Name, ev) },
-		Persona:       spec.Persona,
-		RestrictTools: true,
-	})
+	var (
+		text    string
+		ok      bool
+		lastErr error
+	)
+	for attempt := 1; attempt <= subagentMaxAttempts; attempt++ {
+		// Each attempt is a brand-new headless agent over a clean window, so a
+		// retry never inherits the corrupted state that failed the last one.
+		rep := &captureReporter{engine: e, run: r, swarmID: swarmID, index: index, name: spec.Name}
+		sub := agent.New(agent.Options{
+			Config:        cfg,
+			Main:          e.main,
+			Cheap:         e.cheap,
+			Tools:         e.tools,
+			Pager:         e.pager, // shared cortex READ lane; no consolidator (no write-back noise)
+			Reporter:      rep,
+			Observer:      func(ev agent.ToolEvent) { e.surfaceSubagentStep(r, swarmID, index, spec.Name, ev) },
+			Persona:       spec.Persona,
+			RestrictTools: true,
+		})
 
-	err := sub.Chat(cctx, spec.Task)
-	text := strings.TrimSpace(rep.final())
-	ok := err == nil
-	if err != nil && text == "" {
-		text = "couldn't finish — " + friendlyErr(err)
+		cctx, cancel := context.WithTimeout(withSwarmActive(ctx), subagentTurnTimeout)
+		err := sub.Chat(cctx, spec.Task)
+		cancel()
+
+		text = strings.TrimSpace(rep.final())
+		ok = err == nil
+		lastErr = err
+		if ok {
+			break
+		}
+		if !shouldRetrySubagent(attempt, subagentMaxAttempts, err, text != "", ctx.Err()) {
+			break
+		}
+		// Transient hard failure with no usable output: announce the retry, back
+		// off briefly (honoring parent cancellation), then rebuild a fresh window.
+		e.publishSubagent(r, swarmID, index, "subagent.status", map[string]interface{}{
+			"name":    spec.Name,
+			"status":  "retrying",
+			"attempt": attempt + 1,
+			"reason":  clip(friendlyErr(err), 200),
+		})
+		if !swarmBackoff(ctx, attempt) {
+			break
+		}
+	}
+
+	if lastErr != nil && text == "" {
+		text = "couldn't finish — " + friendlyErr(lastErr)
 	}
 	if text == "" {
 		text = "(no findings returned)"
@@ -176,6 +214,33 @@ func (e *Engine) runOneSubagent(ctx context.Context, r *run, swarmID string, ind
 		"ok":      ok,
 	})
 	return subResult{index: index, name: spec.Name, persona: spec.Persona, text: text, ok: ok}
+}
+
+// shouldRetrySubagent decides whether a failed sub-agent attempt warrants a
+// fresh retry. Retry ONLY when the agent hard-failed (err != nil) and produced
+// NO usable output, the parent context is still alive (ctxErr == nil), and
+// attempts remain. A clean finish or any partial findings are accepted as-is —
+// we never burn a retry on a sub-agent that already returned something useful,
+// and a cancelled/timed-out parent stops immediately.
+func shouldRetrySubagent(attempt, maxAttempts int, err error, haveText bool, ctxErr error) bool {
+	return err != nil && !haveText && ctxErr == nil && attempt < maxAttempts
+}
+
+// swarmBackoff sleeps a bounded, attempt-scaled interval before a sub-agent
+// retry, returning false if the parent context is cancelled during the wait.
+func swarmBackoff(ctx context.Context, attempt int) bool {
+	d := time.Duration(attempt) * 500 * time.Millisecond
+	if d > 3*time.Second {
+		d = 3 * time.Second
+	}
+	t := time.NewTimer(d)
+	defer t.Stop()
+	select {
+	case <-ctx.Done():
+		return false
+	case <-t.C:
+		return true
+	}
 }
 
 // surfaceSubagentStep mirrors surfaceTool for a sub-agent: the same animated

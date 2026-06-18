@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"matrix/construct/schema/primitives"
@@ -31,6 +32,9 @@ type session struct {
 
 	mu  sync.Mutex // serializes turns in this conversation
 	cur *run       // the in-flight turn (read by the reporter/observer)
+
+	actMu  sync.Mutex // guards active; held only briefly (never across a turn)
+	active *run       // latest dispatched run, for barge-in interruption
 
 	gatesMu sync.Mutex
 	gates   map[string]chan gateAnswer // node_id -> waiter, for delegated MCL gates
@@ -54,6 +58,9 @@ type run struct {
 	convID string
 	sess   *session
 	closed bool // a closing (final) turn has been emitted
+
+	cancel  context.CancelFunc // cancels this turn's ctx (barge-in / explicit stop)
+	stopped atomic.Bool        // set when interrupted, so drive closes quietly
 }
 
 type gateAnswer struct {
@@ -125,6 +132,7 @@ func (e *Engine) newSession(convID string) *session {
 		Consolidator: e.consolidator,
 		Recaller:     recaller,
 		Observer:     func(ev agent.ToolEvent) { e.surfaceTool(s.cur, ev) },
+		ConvID:       convID,
 	})
 	// Resume continuity: if this conversation already has durable turns (a
 	// reopened thread, or one that outlived a restart), seed the fresh agent's
@@ -167,7 +175,12 @@ func firstUserText(turns []conversation.Turn) string {
 // start kicks off a turn: it returns the run (so the handler can reply with the
 // intent_id immediately) and drives agent.Chat on a background goroutine,
 // streaming every event to the run's topic.
+//
+// Barge-in: a new message INTERRUPTS any turn already in flight for this
+// conversation (the user "cutting in"), so the latest message always takes over
+// instead of queuing behind a long-running turn.
 func (s *session) start(message string) *run {
+	s.interruptActive()
 	r := &run{id: synthRunID(message), convID: s.id, sess: s}
 	s.engine.registerRun(r)
 	// Create the SSE topic NOW, before returning the dispatch (and before the
@@ -184,6 +197,16 @@ func (s *session) start(message string) *run {
 func (s *session) drive(r *run, message string) {
 	defer s.engine.unregisterRun(r.id)
 
+	// Detached from any HTTP request; bounded so a stuck turn can't run forever.
+	// The cancel is registered as THIS run's barge-in/stop handle BEFORE the
+	// turn lock, so a newer message can cancel it even while it queues behind a
+	// still-running turn.
+	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Minute)
+	defer cancel()
+	r.cancel = cancel
+	s.setActive(r)
+	defer s.clearActive(r)
+
 	s.mu.Lock()
 	s.cur = r
 	defer func() {
@@ -191,11 +214,19 @@ func (s *session) drive(r *run, message string) {
 		s.mu.Unlock()
 	}()
 
-	// Detached from any HTTP request; bounded so a stuck turn can't run forever.
-	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Minute)
-	defer cancel()
-
 	err := s.agent.Chat(withRun(ctx, r), message)
+
+	// Barge-in / explicit stop: this turn was intentionally interrupted. Close
+	// it quietly as "interrupted" rather than emitting a failure message — the
+	// user moved on; the next turn is already taking over.
+	if r.stopped.Load() {
+		if !r.closed {
+			s.engine.broker.publish(r.id, "message.complete", "neo", map[string]interface{}{"status": "interrupted"})
+			r.closed = true
+		}
+		s.engine.broker.closeRun(r.id)
+		return
+	}
 
 	// The agent emits its closing turn via Reporter.Say (always terminal). If
 	// it returned without one (a model-call error), synthesize an honest close
@@ -211,6 +242,51 @@ func (s *session) drive(r *run, message string) {
 		r.closed = true
 	}
 	s.engine.broker.closeRun(r.id)
+}
+
+// setActive / clearActive / interruptActive coordinate barge-in. active is the
+// latest dispatched run; interruptActive cancels it (LIFO), so each new message
+// supersedes the one before whether it is running or still queued. clearActive
+// only nils active when it still points at r, so a turn that has already been
+// superseded never clears its successor.
+func (s *session) setActive(r *run) {
+	s.actMu.Lock()
+	s.active = r
+	s.actMu.Unlock()
+}
+
+func (s *session) clearActive(r *run) {
+	s.actMu.Lock()
+	if s.active == r {
+		s.active = nil
+	}
+	s.actMu.Unlock()
+}
+
+// interruptActive stops the latest dispatched turn (if any). Returns its id, or
+// "" when nothing was in flight.
+func (s *session) interruptActive() string {
+	s.actMu.Lock()
+	r := s.active
+	s.actMu.Unlock()
+	s.interrupt(r)
+	if r == nil {
+		return ""
+	}
+	return r.id
+}
+
+// interrupt marks a specific run stopped and cancels its context, so its agent
+// loop unwinds at the next cancellation checkpoint and drive closes it quietly.
+// Safe on a nil run or a run whose cancel is not yet set.
+func (s *session) interrupt(r *run) {
+	if r == nil {
+		return
+	}
+	r.stopped.Store(true)
+	if r.cancel != nil {
+		r.cancel()
+	}
 }
 
 func (s *session) chatFields(r *run, text string, final bool) map[string]interface{} {

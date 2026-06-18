@@ -110,6 +110,17 @@ type Agent struct {
 	// a restricted tool surface, never ask the user questions, and end by
 	// reporting their findings back to the orchestrating agent.
 	persona string
+
+	// convID scopes the per-turn attestation IntentID for audit; empty on the
+	// CLI path (falls back to "cli"). turnSeq counts user turns this session so
+	// each attest has a distinct, stable IntentID.
+	convID  string
+	turnSeq int
+
+	// topic tracks the rolling topic centroid so a pivot to an unrelated
+	// subject can reset the per-turn retrieved working set (Phase 3). nil when
+	// no embedder is available (topic detection is inherently semantic).
+	topic *topicTracker
 }
 
 // Options configures New.
@@ -127,6 +138,9 @@ type Options struct {
 	// Persona frames this as a task-scoped sub-agent with a specific role
 	// (empty = the top-level conversational agent).
 	Persona string
+	// ConvID is the conversation this agent serves; stamped on the per-turn
+	// attestation IntentID for audit. Empty on the CLI path.
+	ConvID string
 	// RestrictTools advertises the SUB-AGENT tool surface (full Natural set,
 	// minus core_execute / memory_recall / spawn_subagents) instead of the
 	// full one. Set for sub-agents so money stays with the parent and a
@@ -151,6 +165,7 @@ func New(o Options) *Agent {
 		recaller:     o.Recaller,
 		observer:     o.Observer,
 		persona:      strings.TrimSpace(o.Persona),
+		convID:       strings.TrimSpace(o.ConvID),
 	}
 	if a.tools != nil {
 		if o.RestrictTools {
@@ -158,6 +173,9 @@ func New(o Options) *Agent {
 		} else {
 			a.schemas = a.tools.Schemas()
 		}
+	}
+	if o.Pager != nil {
+		a.topic = newTopicTracker(o.Pager.Embedder())
 	}
 	a.schemaTokens = estimateToolTokens(a.schemas)
 	a.schemaBytes = estimateToolBytes(a.schemas)
@@ -175,14 +193,38 @@ func (a *Agent) Chat(ctx context.Context, userInput string) error {
 	if a.activeGoal == "" {
 		a.activeGoal = userInput
 	}
+	a.turnSeq++
 	a.working = append(a.working, llm.UserMessage(userInput))
 
-	// Page-fault relevant memory + proven patterns for this ask (once/turn).
+	// Topic-shift detection (Phase 3): if this turn pivots to an unrelated
+	// subject, the previous topic's recalled past-turns must not bleed into it.
+	// The pinned tier and the durable cortex retrieval (re-faulted fresh below)
+	// are preserved; only the conversational-recall working set is reset.
+	pivoted := a.observeTopic(userInput)
+
+	// Page-fault relevant memory + proven patterns + trigger-matched behavioral
+	// guidance for this ask (once/turn).
 	retrieved := a.faultMemory(ctx, userInput)
 	procedural := a.faultPatterns(ctx, userInput)
+	triggered := a.faultTriggers(ctx, userInput)
 	// Conversational recall: relevant PAST turns beyond the live transcript —
-	// the additive read-lane that keeps an unbounded thread coherent.
+	// the additive read-lane that keeps an unbounded thread coherent. Reset on a
+	// topic pivot so a fresh subject starts clean.
 	recalled := a.recallTurns(ctx, userInput)
+	if pivoted {
+		recalled = nil
+	}
+	// Track every cortex memory surfaced this turn so a successful completion
+	// can attest them as USED — the usage-salience + EMA learning signal that
+	// keeps Neo's durable store ranking by what actually helps. surfacedSnips
+	// keeps the retrieved snippets' text/type too, so completion can also send
+	// the NEGATIVE signal for memories that were surfaced but demonstrably
+	// ignored (off-topic to the produced turn).
+	surfaced := map[string]struct{}{}
+	surfacedSnips := map[string]memory.Snippet{}
+	collectSurfaced(surfaced, retrieved, procedural)
+	collectSurfaced(surfaced, triggered, nil)
+	collectSurfacedSnips(surfacedSnips, retrieved)
 
 	repeats := 0
 	prevSig := ""
@@ -199,19 +241,26 @@ func (a *Agent) Chat(ctx context.Context, userInput string) error {
 			}
 			retrieved = a.faultMemory(ctx, q)
 			procedural = a.faultPatterns(ctx, q)
+			triggered = a.faultTriggers(ctx, q)
 			recalled = a.recallTurns(ctx, q)
+			if pivoted {
+				recalled = nil
+			}
+			collectSurfaced(surfaced, retrieved, procedural)
+			collectSurfaced(surfaced, triggered, nil)
+			collectSurfacedSnips(surfacedSnips, retrieved)
 		}
 
 		pinned := ""
 		if a.pager != nil {
 			pinned = a.pager.Pinned(ctx, a.activeGoal)
 		}
-		baseSystem := a.buildSystem(pinned, retrieved, procedural, recalled)
+		baseSystem := a.buildSystem(pinned, retrieved, procedural, triggered, recalled)
 
 		// [control.loop] step_3: forced compaction if over the hard threshold.
 		if a.budgetPct(baseSystem) >= a.cfg.HardPct {
 			a.compact(ctx, "hard")
-			baseSystem = a.buildSystem(pinned, retrieved, procedural, recalled)
+			baseSystem = a.buildSystem(pinned, retrieved, procedural, triggered, recalled)
 		}
 		// Byte-budget backstop: the provider enforces a hard request-BODY
 		// byte cap (Fireworks: 1 MiB) that is independent of the token budget
@@ -220,8 +269,13 @@ func (a *Agent) Chat(ctx context.Context, userInput string) error {
 		// can still exceed the byte cap and 413. Force a compaction when the
 		// approximate body size crosses the ceiling.
 		if a.windowBytes(baseSystem) >= maxRequestBodyBytes {
-			a.compact(ctx, "hard")
-			baseSystem = a.buildSystem(pinned, retrieved, procedural, recalled)
+			// Drop dead-weight inline image payloads from older turns first — a
+			// cheaper, less lossy step than a full compaction (Phase 4.2).
+			a.stripOldImages()
+			if a.windowBytes(baseSystem) >= maxRequestBodyBytes {
+				a.compact(ctx, "hard")
+				baseSystem = a.buildSystem(pinned, retrieved, procedural, triggered, recalled)
+			}
 		}
 		pct := a.budgetPct(baseSystem)
 		system := baseSystem + fmt.Sprintf("\n\n[context: %d%% used]\n", pct)
@@ -235,11 +289,21 @@ func (a *Agent) Chat(ctx context.Context, userInput string) error {
 			// the token budget. Force a compaction and retry once with the
 			// shrunken window rather than failing the whole turn.
 			if errors.Is(err, llm.ErrRequestTooLarge) {
-				a.compact(ctx, "hard")
-				baseSystem = a.buildSystem(pinned, retrieved, procedural, recalled)
-				system = baseSystem + fmt.Sprintf("\n\n[context: %d%% used]\n", a.budgetPct(baseSystem))
-				window = append([]llm.Message{llm.SystemMessage(system)}, a.working...)
-				res, err = a.chatWithRetry(ctx, llm.ChatRequest{Messages: window, Tools: a.schemas})
+				// Recover in two escalating steps (Phase 4.2): first strip
+				// dead-weight inline images from older turns and retry — far less
+				// lossy than discarding context. Only if that still 413s do we
+				// fall back to a full compaction and retry once more.
+				if a.stripOldImages() > 0 {
+					window = append([]llm.Message{llm.SystemMessage(system)}, a.working...)
+					res, err = a.chatWithRetry(ctx, llm.ChatRequest{Messages: window, Tools: a.schemas})
+				}
+				if err != nil && errors.Is(err, llm.ErrRequestTooLarge) {
+					a.compact(ctx, "hard")
+					baseSystem = a.buildSystem(pinned, retrieved, procedural, triggered, recalled)
+					system = baseSystem + fmt.Sprintf("\n\n[context: %d%% used]\n", a.budgetPct(baseSystem))
+					window = append([]llm.Message{llm.SystemMessage(system)}, a.working...)
+					res, err = a.chatWithRetry(ctx, llm.ChatRequest{Messages: window, Tools: a.schemas})
+				}
 			}
 			if err != nil {
 				return fmt.Errorf("neo: model call failed: %w", err)
@@ -276,8 +340,15 @@ func (a *Agent) Chat(ctx context.Context, userInput string) error {
 			if a.consolidator != nil {
 				a.consolidator.Consolidate(renderTranscript(a.working))
 			}
+			// Attest this turn's surfaced memories so cortex salience + EMA
+			// learn from what helped AND what merely crowded the budget: the
+			// USED set (surfaced, on-topic) is reinforced (+citation), while a
+			// surfaced-but-ignored, off-topic, non-pinned subset is penalized
+			// (−citation, EMA-away). Cheap, best-effort; the user already has
+			// the answer above.
+			a.attestTurn(ctx, surfaced, surfacedSnips, userInput, answer)
 			// [control.loop] step_6: cooperative compaction at a clean boundary.
-			if a.budgetPct(a.buildSystem(pinned, retrieved, procedural, recalled)) >= a.cfg.SoftPct {
+			if a.budgetPct(a.buildSystem(pinned, retrieved, procedural, triggered, recalled)) >= a.cfg.SoftPct {
 				a.compact(ctx, "soft")
 			}
 			return nil
@@ -377,6 +448,89 @@ func glimpseReasoning(reasoning string) string {
 	return s
 }
 
+// collectSurfaced records the cortex URIs injected into this turn so the loop
+// can attest them as USED on a successful completion — the cortex usage-salience
+// + EMA learning signal. Accumulates across the opening fault and every
+// mid-turn refault (a set, so re-surfacing across refaults isn't double-counted
+// within the turn).
+func collectSurfaced(set map[string]struct{}, retrieved []memory.Snippet, procedural []memory.Pattern) {
+	for _, s := range retrieved {
+		if s.URI != "" {
+			set[s.URI] = struct{}{}
+		}
+	}
+	for _, p := range procedural {
+		if p.URI != "" {
+			set[p.URI] = struct{}{}
+		}
+	}
+}
+
+// collectSurfacedSnips records the retrieved snippets (URI -> text/type) so the
+// completion's rejection gate can score them for off-topic relevance. Keyed by
+// URI so re-surfacing across refaults dedups within the turn. Patterns are
+// intentionally excluded: they are coverage-gated and never penalized.
+func collectSurfacedSnips(set map[string]memory.Snippet, retrieved []memory.Snippet) {
+	for _, s := range retrieved {
+		if s.URI != "" {
+			set[s.URI] = s
+		}
+	}
+}
+
+// attestTurn closes the usage-learning loop for a successful turn. It splits
+// the surfaced set into USED (reinforced) and IGNORED (penalized): a
+// surfaced-but-ignored memory is one the rejection gate flags as off-topic to
+// the produced turn AND of a non-pinned type. The two attests are disjoint so
+// no memory is both bumped and decremented in the same turn. Best-effort: a
+// nil pager or empty set is a no-op, and neither attest blocks the turn.
+func (a *Agent) attestTurn(ctx context.Context, surfaced map[string]struct{}, surfacedSnips map[string]memory.Snippet, turnInput, answer string) {
+	if a.pager == nil || len(surfaced) == 0 {
+		return
+	}
+	// Determine which surfaced memories were demonstrably ignored (off-topic
+	// to the produced turn, non-pinned type). turnText pairs the ask with the
+	// produced answer so a memory's relevance is judged against what the turn
+	// actually delivered.
+	turnText := strings.TrimSpace(turnInput + "\n" + answer)
+	snips := make([]memory.Snippet, 0, len(surfacedSnips))
+	for _, s := range surfacedSnips {
+		snips = append(snips, s)
+	}
+	ignored := a.pager.RejectionCandidates(turnText, snips)
+	ignoredSet := make(map[string]bool, len(ignored))
+	for _, u := range ignored {
+		ignoredSet[u] = true
+	}
+
+	used := make([]string, 0, len(surfaced))
+	for u := range surfaced {
+		if ignoredSet[u] {
+			continue
+		}
+		used = append(used, u)
+	}
+	sort.Strings(used) // deterministic order (map iteration is randomized)
+
+	intentID := a.turnIntentID()
+	if len(used) > 0 {
+		a.pager.AttestUsed(ctx, intentID, used, true)
+	}
+	if len(ignored) > 0 {
+		a.pager.AttestRejected(ctx, intentID, ignored)
+	}
+}
+
+// turnIntentID is the per-turn attestation IntentID, conversation-scoped for
+// audit. Falls back to "cli" when there is no conversation (the CLI path).
+func (a *Agent) turnIntentID() string {
+	cid := a.convID
+	if cid == "" {
+		cid = "cli"
+	}
+	return fmt.Sprintf("neo-turn:%s:%d", cid, a.turnSeq)
+}
+
 func (a *Agent) faultMemory(ctx context.Context, q string) []memory.Snippet {
 	if a.pager == nil {
 		return nil
@@ -407,6 +561,18 @@ func (a *Agent) faultPatterns(ctx context.Context, q string) []memory.Pattern {
 		return nil
 	}
 	return pats
+}
+
+// faultTriggers surfaces behavioral guidance whose trigger matches this turn by
+// embedding similarity, independent of global salience (Phase 3). This is the
+// structural fix for "Neo forgets a learned behavior": a learned constraint or
+// trigger-bearing pattern fires on the turns it is ABOUT even after its
+// salience has decayed below the pinned learned-guidance cap. Best-effort.
+func (a *Agent) faultTriggers(ctx context.Context, q string) []memory.Snippet {
+	if a.pager == nil {
+		return nil
+	}
+	return a.pager.TriggeredGuidance(ctx, q)
 }
 
 func (a *Agent) chatWithRetry(ctx context.Context, req llm.ChatRequest) (*llm.ChatResult, error) {
@@ -608,7 +774,10 @@ func capToolResult(s string) string {
 func estimateMessagesTokens(msgs []llm.Message) int {
 	total := 0
 	for _, m := range msgs {
-		total += memory.EstimateTokens(m.Content) + 4
+		// Image-aware: an inline base64 image is charged a flat per-image cost
+		// rather than its (5-10x larger) base64 length, so a single thumbnail
+		// can't trip a spurious compaction (Phase 4.2).
+		total += imageAwareTokens(m.Content) + 4
 		for _, tc := range m.ToolCalls {
 			total += memory.EstimateTokens(tc.Function.Name) + memory.EstimateTokens(tc.Function.Arguments) + 4
 		}
