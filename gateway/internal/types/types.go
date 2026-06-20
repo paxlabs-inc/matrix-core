@@ -86,6 +86,13 @@ const (
 	// NOT the Liaison (which only narrates) — it gets its OWN slot so its
 	// LLM spend is metered under its own identity. See rates.FreeTierWhitelist.
 	SlotNeo = "neo"
+	// SlotCassandra is the epistemic-completeness faculty (matrix/cassandra):
+	// the cross-rail auditor that adjudicates whether a claimed completion is
+	// actually grounded before an agent may terminate/attest. The MCL
+	// completeness critic routes here (was the planner slot); Cassandra
+	// declares her OWN slot so audit spend is metered under her identity.
+	// Reuses already-priced models — no rateTable row, no version bump.
+	SlotCassandra = "cassandra"
 )
 
 // BudgetExhaustedResponse is the JSON body returned with 429 when

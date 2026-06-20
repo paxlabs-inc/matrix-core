@@ -34,6 +34,13 @@ type Config struct {
 	MainModel  string // the conversational tool-calling loop
 	CheapModel string // background write-back, compaction + summary validation
 	EmbedModel string // semantic page-fault embeddings (gateway /v1/embeddings or direct provider)
+	// CassandraModel is the cheap/fast Cassandra completeness auditor (the
+	// completion-gate adjudicator, metered on the dedicated "cassandra" slot);
+	// CassandraEscalateModel is the stronger second-opinion model consulted on
+	// low-certainty high-stakes audits ("" disables escalation). Both must be on
+	// the gateway's cassandra-slot whitelist.
+	CassandraModel         string
+	CassandraEscalateModel string
 
 	// --- memory budget (context window = RAM; cortex = disk) ---
 	ContextWindowTokens   int // total model context window, for budget math
@@ -82,6 +89,11 @@ func Default() Config {
 		MainModel:  "Qwen/Qwen3.7-Max",
 		CheapModel: "accounts/fireworks/routers/glm-5p1-fast",
 		EmbedModel: "nomic-ai/nomic-embed-text-v1.5",
+		// Cassandra completeness auditor: a cheap/fast primary + a stronger
+		// escalation model, both on the gateway cassandra-slot whitelist
+		// (gateway rates.FreeTierWhitelist "cassandra").
+		CassandraModel:         "accounts/fireworks/models/deepseek-v4-flash",
+		CassandraEscalateModel: "accounts/fireworks/models/deepseek-v4-pro",
 
 		ContextWindowTokens:   256000,
 		SoftPct:               80,
@@ -150,6 +162,8 @@ func (c *Config) applyDoc(d *kvxDoc) {
 		c.MainModel = d.strOr("models", "main", c.MainModel)
 		c.CheapModel = d.strOr("models", "cheap", c.CheapModel)
 		c.EmbedModel = d.strOr("models", "embed", c.EmbedModel)
+		c.CassandraModel = d.strOr("models", "cassandra", c.CassandraModel)
+		c.CassandraEscalateModel = d.strOr("models", "cassandra_escalate", c.CassandraEscalateModel)
 	}
 	if d.has("memory") {
 		c.ContextWindowTokens = d.intOr("memory", "context_window_tokens", c.ContextWindowTokens)
@@ -190,6 +204,8 @@ func (c *Config) applyEnv() {
 	c.MainModel = envOr("NEO_MAIN_MODEL", c.MainModel)
 	c.CheapModel = envOr("NEO_CHEAP_MODEL", c.CheapModel)
 	c.EmbedModel = envOr("NEO_EMBED_MODEL", c.EmbedModel)
+	c.CassandraModel = envOr("NEO_CASSANDRA_MODEL", c.CassandraModel)
+	c.CassandraEscalateModel = envOr("NEO_CASSANDRA_ESCALATE_MODEL", c.CassandraEscalateModel)
 	c.CortexRoot = envOr("NEO_CORTEX_ROOT", c.CortexRoot)
 	c.CortexActor = envOr("NEO_CORTEX_ACTOR", c.CortexActor)
 	c.DaemonURL = envOr("NEO_DAEMON_URL", c.DaemonURL)

@@ -21,6 +21,7 @@ import (
 	"os/signal"
 	"strings"
 
+	"matrix/cassandra"
 	mcllm "matrix/mcl/llm"
 
 	"matrix/neo/internal/agent"
@@ -151,6 +152,9 @@ func runInteractive() {
 		Pager:        pager,
 		Reporter:     rep,
 		Consolidator: cons,
+		// Cassandra completion-gate adjudicator (Phase 3); nil falls back to
+		// the deterministic grounding check.
+		Adjudicator: newCassandraAdjudicator(cfg),
 	})
 
 	printBanner(cfg, tm, pager)
@@ -189,14 +193,44 @@ func runInteractive() {
 }
 
 func newClient(model string, temp float64, maxTok int, cfg config.Config) (*neollm.Client, error) {
+	return newSlotClient(model, temp, maxTok, "neo", cfg)
+}
+
+// newSlotClient builds a gateway-metered chat client tagged with the given
+// slot label, so spend is attributed correctly (Neo's own "neo" slot, or
+// Cassandra's dedicated "cassandra" slot for completeness audits).
+func newSlotClient(model string, temp float64, maxTok int, slot string, cfg config.Config) (*neollm.Client, error) {
 	return neollm.New(mcllm.Config{
 		Model:       model,
 		Temperature: temp,
 		MaxTokens:   maxTok,
 		GatewayURL:  cfg.GatewayURL,
 		ActorDID:    cfg.ActorDID,
-		SlotLabel:   "neo",
+		SlotLabel:   slot,
 	})
+}
+
+// newCassandraAdjudicator builds the Cassandra completion-gate adjudicator over
+// a dedicated cassandra-slot client: a cheap/fast primary auditor plus, when
+// configured, a stronger escalation auditor for low-certainty high-stakes
+// turns ([adjudicator].slot). Best-effort — it returns nil when no auditor
+// client can be built (no API key / gateway), so the gate falls back to the
+// deterministic grounding check (i_cass_5 fail-open).
+func newCassandraAdjudicator(cfg config.Config) *cassandra.Adjudicator {
+	if strings.TrimSpace(cfg.CassandraModel) == "" {
+		return nil
+	}
+	primary, err := newSlotClient(cfg.CassandraModel, 0.0, 1024, "cassandra", cfg)
+	if err != nil {
+		return nil
+	}
+	adj := &cassandra.Adjudicator{Primary: agent.NewLLMDecoder(primary)}
+	if strings.TrimSpace(cfg.CassandraEscalateModel) != "" {
+		if esc, eerr := newSlotClient(cfg.CassandraEscalateModel, 0.0, 1024, "cassandra", cfg); eerr == nil {
+			adj.Escalate = agent.NewLLMDecoder(esc)
+		}
+	}
+	return adj
 }
 
 // newApprover returns an Approver that prompts on the shared stdin reader.

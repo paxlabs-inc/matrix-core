@@ -135,6 +135,7 @@ func runServe(args []string) {
 		Tools:           tm,
 		Pager:           pager,
 		Consolidator:    cons,
+		Adjudicator:     newCassandraAdjudicator(cfg),
 		ConversationDir: convDir,
 		MediaDir:        mediaPath,
 		BackendURL:      backendURL,

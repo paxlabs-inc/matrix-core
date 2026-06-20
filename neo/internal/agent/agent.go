@@ -24,6 +24,7 @@ import (
 	"strings"
 	"time"
 
+	"matrix/cassandra"
 	"matrix/neo/internal/config"
 	"matrix/neo/internal/llm"
 	"matrix/neo/internal/memory"
@@ -88,6 +89,13 @@ type Agent struct {
 	recaller     ConvRecaller
 	observer     ToolObserver
 
+	// adjudicator is the shared Cassandra epistemic-completeness faculty
+	// consulted at the completion gate on state-touching turns (Phase 3). nil
+	// falls back to the deterministic local grounding check. auditObserver
+	// streams cassandra.* audit events to the harness; nil discards them.
+	adjudicator   *cassandra.Adjudicator
+	auditObserver AuditObserver
+
 	schemas      []llm.Tool
 	schemaTokens int
 	schemaBytes  int
@@ -135,6 +143,13 @@ type Options struct {
 	Recaller     ConvRecaller // optional: relevant past-turn recall (additive read-lane)
 	Observer     ToolObserver // optional: per-tool-result surfacing (show the work)
 
+	// Adjudicator is the shared Cassandra completeness faculty consulted at the
+	// completion gate on state-touching turns (Phase 3). nil falls back to the
+	// deterministic local grounding check. AuditObserver streams cassandra.*
+	// audit events to the harness; nil discards them.
+	Adjudicator   *cassandra.Adjudicator
+	AuditObserver AuditObserver
+
 	// Persona frames this as a task-scoped sub-agent with a specific role
 	// (empty = the top-level conversational agent).
 	Persona string
@@ -155,17 +170,19 @@ func New(o Options) *Agent {
 		out = nopReporter{}
 	}
 	a := &Agent{
-		cfg:          o.Config,
-		main:         o.Main,
-		cheap:        o.Cheap,
-		tools:        o.Tools,
-		pager:        o.Pager,
-		out:          out,
-		consolidator: o.Consolidator,
-		recaller:     o.Recaller,
-		observer:     o.Observer,
-		persona:      strings.TrimSpace(o.Persona),
-		convID:       strings.TrimSpace(o.ConvID),
+		cfg:           o.Config,
+		main:          o.Main,
+		cheap:         o.Cheap,
+		tools:         o.Tools,
+		pager:         o.Pager,
+		out:           out,
+		consolidator:  o.Consolidator,
+		recaller:      o.Recaller,
+		observer:      o.Observer,
+		adjudicator:   o.Adjudicator,
+		auditObserver: o.AuditObserver,
+		persona:       strings.TrimSpace(o.Persona),
+		convID:        strings.TrimSpace(o.ConvID),
 	}
 	if a.tools != nil {
 		if o.RestrictTools {
@@ -228,6 +245,11 @@ func (a *Agent) Chat(ctx context.Context, userInput string) error {
 
 	repeats := 0
 	prevSig := ""
+	// stateTouched latches once this turn reaches the irreversible seam
+	// (core_execute). It selects the strict completion path (a full grounded
+	// completeness object) over the reversible light path — the placement rule
+	// of the Cassandra Phase 1 completion gate.
+	stateTouched := false
 
 	for step := 0; step < a.cfg.StepBudget; step++ {
 		// Mid-turn page-fault refresh: long tool loops drift away from the
@@ -310,6 +332,9 @@ func (a *Agent) Chat(ctx context.Context, userInput string) error {
 			}
 		}
 		a.working = append(a.working, res.Message)
+		if batchTouchesState(res.Message.ToolCalls) {
+			stateTouched = true
+		}
 
 		// Show SOME of the thinking: surface a trimmed glimpse of this turn's
 		// chain-of-thought as a secondary channel so the user sees how Neo is
@@ -318,7 +343,11 @@ func (a *Agent) Chat(ctx context.Context, userInput string) error {
 			a.out.Think(think)
 		}
 
-		// No tool calls → the model decided it is done. (Termination.)
+		// Positive-proof termination (Cassandra Phase 1). A turn no longer ends
+		// on the mere ABSENCE of tool calls (i_cass_1): a bare final message may
+		// close only a reversible, non-state-touching turn (the light path). A
+		// turn that reached the irreversible seam must finish through the
+		// validated task_complete gate handled below.
 		if !res.HasToolCalls() {
 			answer := strings.TrimSpace(res.Message.Content)
 			// Truncated generation (finish_reason=length) is NEVER a final
@@ -334,24 +363,49 @@ func (a *Agent) Chat(ctx context.Context, userInput string) error {
 				a.working = append(a.working, llm.UserMessage("(continue: either call a tool to make progress, or give the final answer)"))
 				continue
 			}
-			a.out.Say(answer)
-			// [memory.writeback] step_5: hand the completed turn to the
-			// background consolidation pass before any compaction nils it.
-			if a.consolidator != nil {
-				a.consolidator.Consolidate(renderTranscript(a.working))
+			// State-touching turns may not end with an unaudited bare message:
+			// nudge toward the completion gate so completion is proven, not
+			// assumed. Reversible chat rides the light path (i_cass_5,
+			// placement-by-reversibility) and ends frictionlessly.
+			if stateTouched {
+				a.working = append(a.working, llm.UserMessage("(you took an action this turn, so don't finish with a plain message — call task_complete with an honest completeness object: a summary for the user, coverage, the real evidence behind your claims, and anything still open.)"))
+				continue
 			}
-			// Attest this turn's surfaced memories so cortex salience + EMA
-			// learn from what helped AND what merely crowded the budget: the
-			// USED set (surfaced, on-topic) is reinforced (+citation), while a
-			// surfaced-but-ignored, off-topic, non-pinned subset is penalized
-			// (−citation, EMA-away). Cheap, best-effort; the user already has
-			// the answer above.
-			a.attestTurn(ctx, surfaced, surfacedSnips, userInput, answer)
+			a.finishTurn(ctx, answer, surfaced, surfacedSnips, userInput)
 			// [control.loop] step_6: cooperative compaction at a clean boundary.
 			if a.budgetPct(a.buildSystem(pinned, retrieved, procedural, triggered, recalled)) >= a.cfg.SoftPct {
 				a.compact(ctx, "soft")
 			}
 			return nil
+		}
+
+		// Completion gate (Cassandra Phase 1): the model called task_complete.
+		// Adjudicate the completeness object against the working transcript (the
+		// ground truth — real tool results) before the turn may end. Sibling
+		// tool calls in the same batch still run (they make progress); every
+		// tool_call receives a result so the transcript stays well-formed.
+		if cc, rest := splitCompletion(res.Message.ToolCalls); cc != nil {
+			if len(rest) > 0 {
+				a.runToolCalls(ctx, rest)
+				if batchTouchesState(rest) {
+					stateTouched = true
+				}
+				a.working = append(a.working, llm.ToolResult(cc.ID, tools.TaskCompleteTool, "You called task_complete alongside other tools. Review their results above, then call task_complete on its own once you are actually done."))
+				continue
+			}
+			verdict := a.validateCompletion(ctx, cc, stateTouched, userInput)
+			if verdict.ok {
+				a.working = append(a.working, llm.ToolResult(cc.ID, tools.TaskCompleteTool, "Completion accepted."))
+				a.finishTurn(ctx, verdict.answer, surfaced, surfacedSnips, userInput)
+				if a.budgetPct(a.buildSystem(pinned, retrieved, procedural, triggered, recalled)) >= a.cfg.SoftPct {
+					a.compact(ctx, "soft")
+				}
+				return nil
+			}
+			// Rejected: feed the actionable reason back as the tool result and
+			// keep working (advisor-not-effector — the agent enacts the fix).
+			a.working = append(a.working, llm.ToolResult(cc.ID, tools.TaskCompleteTool, verdict.feedback))
+			continue
 		}
 
 		// Surface any preamble the model wrote alongside its tool calls.

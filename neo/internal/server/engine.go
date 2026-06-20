@@ -18,6 +18,7 @@ import (
 	"sync"
 	"time"
 
+	"matrix/cassandra"
 	"matrix/construct/backchannel"
 	"matrix/construct/schema"
 	"matrix/construct/schema/primitives"
@@ -41,8 +42,9 @@ type Engine struct {
 	tools        *tools.Manager
 	pager        *memory.Pager
 	consolidator agent.Consolidator
-	conv         *conversation.Store // durable chat-thread history (per conversation_id)
-	mediaDir     string              // machine-volume dir for generated + uploaded media ("" disables)
+	adjudicator  *cassandra.Adjudicator // shared Cassandra completeness faculty (Phase 3); nil = deterministic fallback
+	conv         *conversation.Store    // durable chat-thread history (per conversation_id)
+	mediaDir     string                 // machine-volume dir for generated + uploaded media ("" disables)
 
 	backendURL   string // co-located MCL daemon (core_execute + reverse proxy)
 	backendToken string // optional bearer for the daemon
@@ -63,7 +65,8 @@ type EngineOptions struct {
 	Tools           *tools.Manager
 	Pager           *memory.Pager
 	Consolidator    agent.Consolidator
-	ConversationDir string // durable conversation store dir ("" disables persistence)
+	Adjudicator     *cassandra.Adjudicator // shared Cassandra completeness faculty (Phase 3)
+	ConversationDir string                 // durable conversation store dir ("" disables persistence)
 	MediaDir        string // machine-volume media dir ("" disables image/video/audio I/O)
 	BackendURL      string
 	BackendToken    string
@@ -79,6 +82,7 @@ func NewEngine(o EngineOptions) *Engine {
 		tools:        o.Tools,
 		pager:        o.Pager,
 		consolidator: o.Consolidator,
+		adjudicator:  o.Adjudicator,
 		conv:         conversation.Open(o.ConversationDir),
 		mediaDir:     strings.TrimRight(o.MediaDir, "/"),
 		backendURL:   strings.TrimRight(o.BackendURL, "/"),
@@ -238,6 +242,22 @@ func (e *Engine) approverFor(r *run) delegate.Approver {
 			return a.approved, a.answer
 		}
 	}
+}
+
+// publishAudit streams a Cassandra audit event onto the run's event stream as
+// a cassandra.* event (cassandra.frozen.kvx [audit].events). Pure observability
+// side-channel — it only publishes a transcript event, exactly like surfaceTool
+// / notifyFor; the adjudicator signs nothing and writes no cortex (i_cass_4,
+// i_cass_6).
+func (e *Engine) publishAudit(r *run, ev agent.AuditEvent) {
+	if r == nil {
+		return
+	}
+	f := map[string]interface{}{"intent_id": r.id, "conversation_id": r.convID}
+	for k, v := range ev.Fields {
+		f[k] = v
+	}
+	e.broker.publish(r.id, ev.Type, "cassandra", f)
 }
 
 func (e *Engine) notifyFor(r *run) func(string) {

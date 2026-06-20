@@ -60,6 +60,17 @@ const SpawnSubagentsTool = "spawn_subagents"
 // NOT a real MCP server, so it never enters the manifest tool-bijection check.
 const ConstructRenderTool = projection.ConstructRenderTool
 
+// TaskCompleteTool is the synthetic completion gate (Cassandra Phase 1): the
+// ONLY legal way for Neo to end a turn that touched state. It carries a
+// completeness object (summary + coverage + evidence + open_gaps +
+// assumptions) that the agent loop validates against the working transcript
+// (the ground truth) before the turn may terminate — positive-proof of
+// completion, never the mere absence of further tool calls. Like core_execute
+// it is synthetic (no MCP server, no manifest bijection); unlike the others it
+// is intercepted in the agent loop, not routed through Manager.Dispatch,
+// because the validator needs the live transcript the Manager cannot see.
+const TaskCompleteTool = "task_complete"
+
 // DelegateFunc runs a prose intent through the MCL pipeline and returns its
 // verifiable outcome. Injected by the agent wiring (see internal/delegate);
 // nil until wired, in which case core_execute reports it is unavailable.
@@ -275,6 +286,9 @@ func (m *Manager) Schemas() []llm.Tool {
 	if m.surface != nil {
 		out = append(out, constructRenderSchema())
 	}
+	// The completion gate is ALWAYS advertised to the top-level agent: it is
+	// the only sanctioned way to end a state-touching turn (Cassandra Phase 1).
+	out = append(out, taskCompleteSchema())
 	return out
 }
 
@@ -585,6 +599,46 @@ func spawnSubagentsSchema() llm.Tool {
 func constructRenderSchema() llm.Tool {
 	spec := projection.RenderTools()[0]
 	return llm.NewFunctionTool(spec.Name, spec.Description, spec.Params)
+}
+
+// taskCompleteSchema advertises the completion gate (Cassandra Phase 1). The
+// model calls it to declare the turn done, carrying the completeness object the
+// agent loop validates against the working transcript before it may terminate.
+func taskCompleteSchema() llm.Tool {
+	return llm.NewFunctionTool(
+		TaskCompleteTool,
+		"Declare this turn complete. Call this ONLY when you are actually done — it is the single way to finish a turn in which you took an action, ran a tool, changed state, or made a claim about real-world facts. Provide an honest completeness object: what you accomplished, whether every requested deliverable was produced, the concrete evidence behind your load-bearing claims, anything still unfinished or unconfirmed, and any assumptions you made. Be truthful — claims you cannot back with real tool results, and gaps you leave open, are checked against what you actually did. If you are not done, keep working instead of calling this.",
+		map[string]interface{}{
+			"type": "object",
+			"properties": map[string]interface{}{
+				"summary": map[string]interface{}{
+					"type":        "string",
+					"description": "Your final answer / narration to the user, in plain human terms — the substance they are meant to read.",
+				},
+				"coverage": map[string]interface{}{
+					"type":        "string",
+					"enum":        []string{"full", "partial"},
+					"description": "\"full\" only if EVERY explicitly requested deliverable was produced; otherwise \"partial\".",
+				},
+				"evidence": map[string]interface{}{
+					"type":        "array",
+					"items":       map[string]interface{}{"type": "string"},
+					"description": "Concrete evidence backing your load-bearing claims: the tool results, command output, file paths, URLs, or transaction hashes you actually obtained this turn. Each item must correspond to something you really did — do not invent evidence.",
+				},
+				"open_gaps": map[string]interface{}{
+					"type":        "array",
+					"items":       map[string]interface{}{"type": "string"},
+					"description": "Things still unsatisfied or NOT confirmed that arguably should have been — phrased as concrete items. An empty list is an explicit claim of \"nothing left open\", so only leave it empty if that is true. Required to be empty when coverage is \"full\".",
+				},
+				"assumptions": map[string]interface{}{
+					"type":        "array",
+					"items":       map[string]interface{}{"type": "string"},
+					"description": "Defaults you silently chose that materially shape the result, surfaced rather than buried.",
+				},
+			},
+			"required": []string{"summary", "coverage"},
+		},
+	)
 }
 
 func funcName(alias, name string) string {

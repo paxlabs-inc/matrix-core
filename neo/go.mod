@@ -3,6 +3,7 @@ module matrix/neo
 go 1.21
 
 require (
+	matrix/cassandra v0.0.0
 	matrix/construct v0.0.0
 	matrix/cortex v0.0.0
 	matrix/executor v0.0.0-00010101000000-000000000000
@@ -41,6 +42,8 @@ require (
 	golang.org/x/time v0.5.0 // indirect
 	google.golang.org/protobuf v1.28.1 // indirect
 )
+
+replace matrix/cassandra => ../cassandra
 
 replace matrix/construct => ../construct
 

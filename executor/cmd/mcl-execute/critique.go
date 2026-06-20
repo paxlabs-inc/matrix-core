@@ -25,28 +25,23 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"sort"
 	"strings"
 	"time"
 
+	"matrix/cassandra"
 	"matrix/mcl/ir"
 	"matrix/mcl/llm"
 	"matrix/mcl/mtx/interpreter"
 )
 
-// criticVerdict is the structured judgement the auditor LLM returns.
-type criticVerdict struct {
-	// Complete is true only when EVERY explicitly requested deliverable was
-	// produced by a real executed step with a real tool result.
-	Complete bool `json:"complete"`
-	// Missing enumerates the still-unsatisfied sub-tasks, phrased as concrete
-	// actionable items the re-planner can turn into plan nodes.
-	Missing []string `json:"missing"`
-	// Rationale is a one-line explanation (audit/transcript only).
-	Rationale string `json:"rationale"`
-}
+// criticSlot is the gateway slot completeness audits route + meter on. The
+// legacy critic borrowed the planner slot; Cassandra declares her OWN slot
+// (cassandra.frozen.kvx [adjudicator.slot]) so audit spend is attributed under
+// her identity. Must be on the gateway cassandra-slot whitelist
+// (gateway rates.FreeTierWhitelist).
+const criticSlot = "cassandra"
 
 const (
 	// criticNodeResultCap bounds each node's result text in the digest so a
@@ -137,34 +132,72 @@ func oneLine(s string) string {
 	return strings.Join(strings.Fields(r.Replace(s)), " ")
 }
 
-// critiquePlan asks the auditor LLM whether the executed work satisfies the
-// user's original request. executedDigest is the cumulative buildExecutionDigest
-// across every walk so far. Returns the verdict, or an error if the LLM call /
-// parse failed (the caller fails OPEN on error: a critic hiccup must never
-// convert an otherwise-clean walk into a failure).
-func (d *daemonState) critiquePlan(ctx context.Context, prose, executedDigest, intentID, goalID string, t *transcript, acc *intentCostAccumulator) (*criticVerdict, error) {
+// criticDecoder adapts an MCL llm client to cassandra.Decoder, preserving the
+// reasoning-aware decode and the critic.decode transcript event so the
+// re-home's observability is byte-identical to the legacy critic.
+type criticDecoder struct {
+	client interpreter.LLM
+	model  string
+	t      *transcript
+}
+
+func (c *criticDecoder) Decode(ctx context.Context, system, user string) (string, error) {
+	messages := []interpreter.Message{
+		{Role: "system", Content: system},
+		{Role: "user", Content: user},
+	}
+	t0 := time.Now()
+	var (
+		raw  string
+		derr error
+	)
+	if rd, ok := c.client.(reasoningDecoder); ok {
+		raw, _, derr = rd.DecodeWithReasoning(ctx, messages, "")
+	} else {
+		raw, derr = c.client.Decode(ctx, messages, "")
+	}
+	c.t.Event("critic.decode", "verify", map[string]interface{}{
+		"ms":    time.Since(t0).Milliseconds(),
+		"bytes": len(raw),
+		"model": c.model,
+		"error": errStr(derr),
+	})
+	return raw, derr
+}
+
+// critiquePlan asks the Cassandra adjudicator whether the executed work
+// satisfies the user's original request. executedDigest is the cumulative
+// buildExecutionDigest across every walk so far. Returns the verdict, or an
+// error if the LLM call / parse failed (the caller fails OPEN on error: a
+// critic hiccup must never convert an otherwise-clean walk into a failure).
+//
+// This is the MCL seam of the shared Cassandra faculty (cassandra.frozen.kvx
+// [seams.mcl]): the verdict-shaped logic now lives in matrix/cassandra; the
+// MCL gate consults verdict.CoverageComplete(), preserving the legacy
+// criticVerdict.Complete behaviour byte-for-byte.
+func (d *daemonState) critiquePlan(ctx context.Context, prose, executedDigest, intentID, goalID string, t *transcript, acc *intentCostAccumulator) (*cassandra.Verdict, error) {
 	cfg := llm.DefaultPlannerModel()
 	if m := d.criticMod(); m != "" {
 		cfg.Model = m
 	}
-	// Free-form JSON: the critic schema is not the plan_tree grammar that
-	// DefaultPlannerModel pre-loads, so disable grammar and parse the object
-	// out of the raw output ourselves.
+	// Free-form JSON: the verdict schema is not the plan_tree grammar that
+	// DefaultPlannerModel pre-loads, so disable grammar and let cassandra
+	// parse the object out of the raw output.
 	cfg.GrammarMode = llm.GrammarNone
 	cfg.Grammars = nil
 	cfg.Seed = d.seed
 	if d.llmBaseURL != "" {
 		cfg.Endpoint = strings.TrimRight(d.llmBaseURL, "/") + "/v1/chat/completions"
 	}
-	// Route on the planner slot (gateway-whitelisted) so credit metering +
-	// cost telemetry behave like synthesis.
-	gw := d.llmConfigFor(llm.SlotPlanner.String(), "", intentID, goalID, t, acc)
+	// Route + meter on the dedicated cassandra slot ([adjudicator.slot]) so
+	// completeness-audit spend is attributed to Cassandra, not the planner.
+	gw := d.llmConfigFor(criticSlot, "", intentID, goalID, t, acc)
 	if gw.GatewayURL != "" {
 		cfg.GatewayURL = gw.GatewayURL
 		cfg.ActorDID = gw.ActorDID
 		cfg.IntentID = intentID
 		cfg.GoalID = goalID
-		cfg.SlotLabel = llm.SlotPlanner.String()
+		cfg.SlotLabel = criticSlot
 		cfg.OnResponseHeaders = gw.CostHook
 	}
 	client, err := llm.New(&cfg)
@@ -172,54 +205,16 @@ func (d *daemonState) critiquePlan(ctx context.Context, prose, executedDigest, i
 		return nil, fmt.Errorf("critique: llm.New: %w", err)
 	}
 
-	messages := []interpreter.Message{
-		{Role: "system", Content: criticSystemPrompt},
-		{Role: "user", Content: "== USER REQUEST (the contract to satisfy) ==\n" + prose +
-			"\n\n== WHAT WAS ACTUALLY EXECUTED (tool calls + real results) ==\n" + executedDigest +
-			"\n\nAudit now. Output ONLY the JSON verdict."},
-	}
-
-	t0 := time.Now()
-	var (
-		raw  string
-		derr error
-	)
-	if rd, ok := client.(reasoningDecoder); ok {
-		raw, _, derr = rd.DecodeWithReasoning(ctx, messages, "")
-	} else {
-		raw, derr = client.Decode(ctx, messages, "")
-	}
-	dur := time.Since(t0)
-	t.Event("critic.decode", "verify", map[string]interface{}{
-		"ms":    dur.Milliseconds(),
-		"bytes": len(raw),
-		"model": cfg.Model,
-		"error": errStr(derr),
+	// Single Primary decoder, no Escalate: reproduces the legacy single-model
+	// critic exactly. The deterministic priors run as a cheap advisory pre-pass
+	// ([adjudicator].priors); they inform the auditor prompt but never decide
+	// the gate, so the MCL re-plan behaviour is unchanged.
+	adj := &cassandra.Adjudicator{Primary: &criticDecoder{client: client, model: cfg.Model, t: t}}
+	return adj.Adjudicate(ctx, cassandra.AuditInput{
+		Request:  prose,
+		Evidence: executedDigest,
+		Priors:   cassandra.ScanPriors(cassandra.PriorInput{Evidence: executedDigest}),
 	})
-	if derr != nil {
-		return nil, fmt.Errorf("critique: decode: %w", derr)
-	}
-
-	clean := extractPlanJSON(raw) // reused: strips fences/reasoning, pulls first {...}
-	var v criticVerdict
-	if uerr := json.Unmarshal([]byte(clean), &v); uerr != nil {
-		return nil, fmt.Errorf("critique: unmarshal verdict: %w (raw: %s)", uerr, truncate(clean, 300))
-	}
-	// Normalize: drop blank missing entries.
-	cleaned := v.Missing[:0]
-	for _, m := range v.Missing {
-		if strings.TrimSpace(m) != "" {
-			cleaned = append(cleaned, strings.TrimSpace(m))
-		}
-	}
-	v.Missing = cleaned
-	// Coherence guard: "complete" with a non-empty missing list is
-	// contradictory — treat as incomplete (fail toward doing more work, not
-	// toward a false success).
-	if v.Complete && len(v.Missing) > 0 {
-		v.Complete = false
-	}
-	return &v, nil
 }
 
 // buildContinuationNote produces the re-plan directive appended to the planner
@@ -240,25 +235,5 @@ func buildContinuationNote(executedDigest string, missing []string) string {
 	b.WriteString("later step needs an earlier result (e.g. a compiled project_id or a deployed address).\n")
 	return b.String()
 }
-
-// criticSystemPrompt instructs the auditor. It is deliberately strict:
-// intentions, plans, and partial work do NOT count — only deliverables backed
-// by a real executed tool result.
-const criticSystemPrompt = `You are the Matrix completeness critic — a strict, literal auditor.
-
-You are given (1) a user's request, which may enumerate MULTIPLE deliverables, and (2) a transcript of what the agent ACTUALLY executed: the real tool calls it made and the real results those tools returned.
-
-Your ONLY job: decide whether EVERY deliverable the user explicitly asked for was actually produced, each backed by a real executed tool result in the transcript.
-
-Rules:
-- Be literal and exhaustive. Walk the user's request clause by clause. If the user asked for 8 things and the transcript shows 3, it is INCOMPLETE.
-- A deliverable counts as done ONLY if a tool result in the transcript demonstrates it (e.g. a deploy tx hash, a contract address, a test pass/fail table, a read-back value). An intention, a plan, or a step that was never run does NOT count.
-- Do not be charitable. "The agent could have done X" is not "the agent did X".
-- If the request was a single simple ask and the transcript satisfies it, that is COMPLETE.
-
-Output ONLY a JSON object, no prose, no code fences:
-{"complete": <true|false>, "missing": ["<concrete unmet item phrased as an action>", ...], "rationale": "<one short line>"}
-
-When complete is true, "missing" MUST be an empty array.`
 
 // Copyright © 2026 Paxlabs Inc. All rights reserved.

@@ -465,9 +465,11 @@ func runMessage(
 				break
 			}
 			t.Event("critic.verdict", "verify", map[string]interface{}{
-				"iter": iter, "complete": verdict.Complete, "missing": verdict.Missing, "rationale": verdict.Rationale,
+				"iter": iter, "complete": verdict.CoverageComplete(), "missing": verdict.Missing, "rationale": verdict.Rationale,
+				"coverage": string(verdict.Coverage), "grounded": verdict.Grounded, "certainty": verdict.Certainty,
+				"unverified_claims": verdict.UnverifiedClaims, "open_unknowns": verdict.OpenUnknowns,
 			})
-			if verdict.Complete {
+			if verdict.CoverageComplete() {
 				complete = true
 				break
 			}

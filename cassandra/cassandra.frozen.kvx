@@ -1,0 +1,208 @@
+# cassandra.frozen.kvx — FROZEN architecture spec for the Cassandra questioning faculty.
+#
+# Cassandra is Matrix's EPISTEMIC-COMPLETENESS faculty: a questioning layer that
+# refuses to let the ABSENCE of an error be read as the PRESENCE of success. She
+# audits whether an agent's claimed completion is actually grounded — every
+# requested deliverable produced, every load-bearing claim backed by real
+# executed evidence, every assumption and unknown surfaced as an explicit object
+# rather than left as invisible negative space. Only on a positive, validated
+# completeness verdict may an agent terminate a turn or attest a run.
+#
+# WHY THE NAME. In myth Cassandra saw the danger others missed but was never
+# believed. This module inverts the tragedy: her verdict BINDS at the completion
+# seam, so the agent structurally cannot ignore her. She is heeded by design.
+#
+# Cassandra is the GENERALIZATION of the existing MCL completeness critic
+# (executor/cmd/mcl-execute/critique.go, Phase 11.5) into a first-class, shared,
+# cross-rail faculty that also covers Neo — which today has NO completion audit
+# and terminates on the mere absence of tool calls.
+#
+# Cassandra is the EPISTEMIC mirror of Atlas. Atlas judges external INTENT (is
+# someone misusing the agent?) and fails CLOSED at the seam. Cassandra judges
+# internal CONFIDENCE (does the agent unwarrantedly believe it is done?) and
+# fails OPEN on reversible turns. They never overlap: Atlas explicitly delegates
+# "honest agent errors" out to "the completeness critic" — that critic is now
+# Cassandra (atlas.frozen.kvx [scope.delegated_elsewhere] + [non_goals]).
+#
+# Format: sectioned KV per the Matrix .kvx convention (see tachyon/internal/config/kvx.go).
+#   [section] / [section.sub]   key = "string"   num = 80   list = ["a","b"]   ${ENV}
+# String-typed values are ALWAYS double-quoted (Matrix .mtx lexer convention).
+#
+# STATUS: FROZEN. Design locked with Andrew on 2026-06-20. Persisted to cortex
+# (actor=cursor-agent) as decision + fact records. Changes require a new version.
+
+[meta]
+name        = "Cassandra"
+codename    = "cassandra"
+kind        = "epistemic-completeness-faculty-module"
+version     = "1.0.0"
+status      = "frozen"
+frozen_at   = "2026-06-20"
+authors     = ["Andrew", "cursor-agent"]
+relation    = "shared top-level module (like cortex/atlas); consumed by Neo + the MCL pipeline; absorbs + generalizes the MCL completeness critic"
+supersedes  = "the inline MCL completeness critic (executor/cmd/mcl-execute/critique.go) — Cassandra subsumes it; MCL Phase 11.5 becomes a Cassandra consumer"
+
+[mission]
+goal        = "be the faculty that makes machine autonomy trustworthy: convert 'the agent stopped and nothing looked wrong' into 'the agent produced a positive, audited proof that it is actually done'"
+why         = "an LLM does not perceive absence — a missing deliverable, an unverified claim, an unread remainder exert zero force on the next token; the gap is invisible from the inside, so it must be hunted from the outside and made into a present object"
+positioning = "the enforcement mechanism of 'no false success' (Neo i6) across BOTH rails; the questioning second perspective that the single forward pass cannot generate for itself"
+not_a       = "NOT a safety/intent sentinel (that is Atlas), NOT a spend/consequence control, NOT a correctness proof — Cassandra lowers the odds of unwarranted confidence and makes the negative space legible"
+
+# =============================== CORE THESIS ================================
+# The single load-bearing idea the whole module exists to enforce.
+
+[thesis]
+inversion   = "proceed ONLY on the presence of a positive completeness object — never on the mere non-appearance of an error"
+absence_law = "absence of an error is NOT presence of safety; absence of a deliverable is NOT completion; silence about a gap is NOT the absence of a gap"
+mechanism   = "manufacture PRESENCE for the negative space: every unknown, assumption, and unverified claim must be emitted as an explicit, checkable object, because an LLM cannot weight what is not in its context"
+ground_truth= "a completeness claim is verified by CODE against the executed transcript/plan (real tool calls + results), NOT by the model grading its own work"
+
+# =============================== SCOPE BOUNDARY =============================
+
+[scope]
+purpose       = "ONE purpose: adjudicate epistemic completeness at the moment an agent would declare done, and force continue / honest-partial / downgrade when the claim is not grounded"
+in_scope      = ["deliverable_coverage", "evidence_grounding", "unsurfaced_unknowns", "unstated_assumptions", "premature_termination", "truncated_or_partial_reads_treated_as_complete"]
+out_of_scope  = ["adversarial_intent", "prompt_injection", "spend_caps", "chain_state_loss", "theft_recovery", "operator_throttling"]
+boundary_note = "Cassandra asks 'is this actually, verifiably done?' — never 'is this an attempt to cause harm?' (that is Atlas) and never 'does this cost too much?' (that is the spend policy)"
+
+[scope.sibling_boundaries]
+atlas              = "Atlas = EXTERNAL malice/intent, fail-closed at seam. Cassandra = INTERNAL confidence/completeness, fail-open on reversible. Orthogonal; Atlas delegates agent-errors TO Cassandra by name."
+spend_policy       = "PaxeerSpendPolicy owns value caps; Cassandra never evaluates cost"
+key_isolation      = "key-isolation wall + Argus own theft; Cassandra never touches funds"
+liaison_construct  = "Liaison narrates, Construct projects surfaces — both are presentation side-channels; Cassandra is a DECISION faculty whose verdict gates termination"
+
+# ================================ PRINCIPLES ===============================
+
+[principles]
+positive_proof_only        = "termination/attestation requires a VALIDATED completeness object; a bare 'no more tool calls' or 'clean walk' is insufficient"
+verify_against_ground_truth= "the verdict is computed against the executed evidence digest (tool calls + real results), not against the model's narration of itself"
+make_absence_present       = "the verdict schema FORCES enumeration of gaps/unknowns/assumptions; an empty list is an explicit, attributable claim of 'none', not silence"
+advisor_not_effector       = "Cassandra emits a verdict; the active agent (Neo/MCL) enacts continue/finish/downgrade through its own existing effector surface — Cassandra signs nothing on the happy path"
+fail_open_reversible       = "a Cassandra error/timeout on a reversible turn NEVER converts a clean run into a failure or breaks chat (inherits critique.go's fail-open posture)"
+engineer_disagreement      = "when run as a parallel instance, value comes from STRUCTURED friction, not concurrency — same model = correlated blind spots, so role/inputs/criteria must differ by construction"
+placement_by_reversibility = "heavyweight questioning at the seams that matter; let face-value run free on cheap reversible turns (no false-alarm tax)"
+coherence_toward_more_work = "an incoherent verdict ('complete' with a non-empty missing list) resolves to INCOMPLETE — bias toward doing more work, never toward a false success"
+side_channel_purity        = "on the happy path Cassandra writes no cortex envelopes and perturbs no replay root; extra envelopes appear ONLY on a genuine re-plan/continue (more work was really done) — preserves MCL D11 byte-identity"
+
+[principles.reconciliation]
+# Reconciles with Andrew's standing exec-permissive preference (no safety
+# throttles/gates/allowlists on reversible execution).
+not_a_throttle = "Cassandra does NOT gate capability; she gates the CLAIM OF COMPLETION, and only at the declare-done seam"
+why_consistent = "permissive execution is about doing the work freely; Cassandra only engages when the agent asserts it is finished, so normal reversible work stays frictionless"
+
+# ============================== THE VERDICT ================================
+# The single structured object every Cassandra adjudication returns. It
+# GENERALIZES the existing criticVerdict{Complete, Missing[], Rationale}.
+
+[verdict]
+schema = "{ grounded: bool, coverage: full|partial, missing: [], unverified_claims: [], assumptions: [], open_unknowns: [], certainty: 0..1, rationale: string }"
+
+[verdict.fields]
+grounded          = "true ONLY if every load-bearing claim in the answer is backed by a real executed step + real result in the evidence digest"
+coverage          = "full only if every explicitly requested deliverable was produced; else partial"
+missing           = "still-unsatisfied requested deliverables, phrased as concrete actionable items a re-planner/continuation can turn into work"
+unverified_claims = "assertions the agent made that NO executed evidence supports — the hallucination surface"
+assumptions       = "defaults the agent silently chose that materially shape the result (must be surfaced, not buried)"
+open_unknowns     = "the absence-as-object field: things NOT confirmed that should have been; empty = an explicit checkable claim of 'no unknowns'"
+certainty         = "Cassandra's confidence in her own verdict; low certainty on a reversible turn => fail-open (defer to the agent)"
+
+[verdict.coherence_guards]
+g1 = "coverage=full with non-empty missing -> force coverage=partial (toward more work)"
+g2 = "grounded=true with non-empty unverified_claims -> force grounded=false"
+g3 = "a cited evidence ref absent from the transcript/digest -> grounded=false (no phantom evidence)"
+
+# ============================== COUPLING MODEL =============================
+# Mirrors Atlas's proven detect/prevent split, re-polarized for completeness.
+
+[coupling]
+chosen        = "audit-at-the-declare-done-seam; bind the verdict to termination/attestation"
+reversible    = "fail-OPEN — a hiccup or low certainty must never break a reversible/conversational turn; the agent proceeds and Cassandra's miss is acceptable (it is reversible)"
+high_stakes   = "stricter — a turn that touched an irreversible seam (money/chain/file-overwrite/external-write) OR makes claims-of-fact about external state requires a FULL grounded verdict before attest/finish"
+advisor       = "Cassandra recommends continue / finish / honest-partial / downgrade; the agent enacts it"
+no_false_succ = "still-incomplete after the bounded continue budget -> honest terminal PARTIAL/FAIL, never a fabricated success (i6 / i-cass-1)"
+
+# ================================ SEAMS ====================================
+# Where Cassandra is consulted. One shared adjudicator, two rail seams today,
+# a third parallel mode at maturity.
+
+[seams.neo]
+id       = "N"
+where    = "neo/internal/agent/agent.go Chat() termination branch (currently line ~322: '!res.HasToolCalls() -> done')"
+mechanism= "replace absence-based termination with a task_complete completion gate: the only legal way to end a turn is a validated completeness object; consider ToolChoice=required so a bare final answer is structurally impossible"
+verdict  = "Cassandra adjudicates the proposed completion against the working transcript (tool results = ground truth); reject -> tool-result feedback -> loop continues"
+placement= "full grounded verdict required when the turn invoked core_execute / changed state / asserts external facts; light path for pure reversible chat"
+
+[seams.mcl]
+id       = "M"
+where    = "executor/cmd/mcl-execute/daemon_pipeline.go Phase 11.5 (after a clean walk, before signTerminalAttest)"
+mechanism= "the existing critic loop is RE-HOMED onto Cassandra's shared verdict schema + adjudicator; bounded re-plan (DriveCorrectMaterial -> re-synthesize -> re-walk) behavior is preserved exactly"
+preserves= "pure side-channel on the happy path (no envelopes, no cortex writes) so D11 replay byte-identity is unchanged; fail-open on critic error retained"
+budget   = "bounded by maxReplan (default 2); still-incomplete after budget -> signTerminalFail(reason=x:incomplete_plan)"
+
+[seams.parallel]
+id       = "P"
+where    = "Phase 4 — a dedicated concurrent Cassandra INSTANCE alongside the worker"
+mechanism= "built on the swarm substrate (neo/internal/server/swarm.go runOneSubagent pattern) but as a FACULTY role, not a labor split: a second instance whose sole job is to hunt the negative space and push back BEFORE completion"
+why      = "the sequential gate audits at the end; the parallel instance questions DURING the work, the 'second instance introduces the questioning factor' design"
+discipline = "engineered disagreement — different role, inputs, success criteria; never just N copies of the worker (correlated failure)"
+
+# ============================= THE ADJUDICATOR =============================
+
+[adjudicator]
+model      = "tiered, mirrors Atlas + the compiler escalation: cheap deterministic priors short-circuit the obvious; an LLM auditor renders the verdict on substantive turns; escalate to a stronger model on low certainty / high stakes"
+priors     = "deterministic signal extractors run first and free: truncation markers in tool results, empty/degenerate results, explicit TODO/'could not'/'unable' strings, requested-deliverable count vs produced count, finish_reason=length"
+digest     = "audits buildExecutionDigest-style ground truth (dispatch-ordered tool calls + truncated real results), NOT the plan's intent and NOT the narration"
+free_form  = "verdict is free-form JSON (not the plan grammar); parse the object out of raw output; normalize + apply coherence guards"
+
+[adjudicator.slot]
+label    = "cassandra"
+register = "types.SlotCassandra + validSlot in gateway routing.go (mirrors the dedicated 'atlas'/'neo' slot pattern)"
+whitelist= "rates.go whitelist for the cheap+fast prior/scan model + the stronger escalation adjudication model"
+metering = "every Cassandra LLM call is metered against the gateway like compiler/planner/neo/atlas slots"
+do_not   = "do NOT borrow the planner/neo/atlas slot; Cassandra declares her OWN slot by design (note: the legacy MCL critic routed on the planner slot — Phase 2 moves it onto the cassandra slot)"
+
+# ================================ MEMORY ===================================
+
+[memory]
+reads   = "cortex for prior completeness episodes + actor/task standing; proven INCOMPLETENESS shapes (procedural) — task patterns that historically under-verify"
+writes  = "confirmed incompleteness/absence episodes + patterns back to cortex, so Cassandra LEARNS which task shapes tend to fake completion (mirrors Atlas's misuse-pattern learning loop)"
+posture = "per-turn/per-run verdict is faculty-local working state; durable patterns are promoted to cortex"
+respect = "Cassandra stores NO secrets/tokens/keys; episodes record shape + verdict + missing-class, never payloads"
+
+# ================================== UX =====================================
+
+[ux]
+surface_rule = "show the OUTCOME in human terms ('I verified X and Y; I could not confirm Z, so I'm flagging it' / honest partial); HIDE the Cassandra mechanism"
+tone         = "first-person diligence read as reliability, not fragility (matches Neo transparency_rule); never theatrical"
+honesty      = "a flagged gap is stated plainly with the concrete unknown — the user always learns what was NOT confirmed"
+no_style     = "no emojis, no purple gradients, no glow (hard UI rule); separation by surface tone, never border strokes"
+
+# ================================ AUDIT ====================================
+
+[audit]
+events    = ["cassandra.audit", "cassandra.verdict", "cassandra.continue", "cassandra.partial", "cassandra.gate"]
+d11       = "Cassandra is OUTSIDE the MCL replay journal on the happy path (like the Liaison + the legacy critic); only the existing fail/correct path writes to the chain"
+appealable= "verdicts carry rationale + evidence refs + the missing/unknown lists, so a continue or honest-partial is explainable and contestable"
+
+# ============================== INVARIANTS =================================
+
+[invariants]
+i_cass_1 = "no false success — an ungrounded or partial run is reported honestly, never attested/finished as complete (this IS the enforcement of Neo i6 across both rails)"
+i_cass_2 = "verdict truth is computed by code against executed ground truth, never by the model grading itself"
+i_cass_3 = "absence is converted to a present object — gaps/unknowns/assumptions are enumerated, never left implicit"
+i_cass_4 = "advisor-not-effector — Cassandra signs nothing on the happy path; the agent enacts the safeguard"
+i_cass_5 = "fail-open on reversible turns; stricter (full grounded verdict) only at irreversible seams / external-fact claims"
+i_cass_6 = "side-channel purity — no cortex writes / no envelopes on the happy path; MCL D11 byte-identity preserved; extra envelopes only on a genuine continue"
+i_cass_7 = "incoherent verdicts resolve toward MORE work (coverage->partial, grounded->false), never toward false success"
+i_cass_8 = "Cassandra never adjudicates intent/malice (Atlas) or cost (spend policy) — completeness only"
+
+# ============================ DEFERRED / NEXT =============================
+
+[deferred]
+implementation = "this is a FROZEN design spec — no code yet; build proceeds per CASSANDRA_SESSIONS_GUIDE.md, one phase per session"
+phase_0        = "DONE — this spec + sessions guide + cortex lock (2026-06-20)"
+phase_1        = "Neo completion gate (task_complete) — flip absence-based termination to positive-proof termination with a deterministic local validator"
+phase_2        = "cassandra/ top-level Go module — shared verdict schema + tiered adjudicator + deterministic priors + cassandra gateway slot; re-home the MCL critic onto it"
+phase_3        = "wire Cassandra's adjudicator into Neo's gate (broaden from coverage to full grounded verdict: assumptions, unverified claims, unknowns)"
+phase_4        = "the parallel Cassandra instance — concurrent questioning faculty that pushes back DURING the work (the 'second instance')"
+phase_5        = "cortex incompleteness-pattern learning loop + threshold tuning against real traffic + appeal/override UX"

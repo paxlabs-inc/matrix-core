@@ -4,10 +4,10 @@
 package main
 
 import (
-	"encoding/json"
 	"strings"
 	"testing"
 
+	"matrix/cassandra"
 	"matrix/mcl/ir"
 )
 
@@ -108,20 +108,20 @@ func TestCriticMod_Precedence(t *testing.T) {
 	}
 }
 
-// The verdict JSON the auditor emits must round-trip into criticVerdict, and a
-// fenced/reasoning-wrapped object must still be extractable via extractPlanJSON
-// (the same extractor critiquePlan uses).
+// The verdict JSON the auditor emits must round-trip through the re-homed
+// cassandra parser, and a fenced/reasoning-wrapped object must still be
+// extractable — the exact path critiquePlan now uses via cassandra.ParseVerdict.
 func TestCriticVerdict_ParseFromFenced(t *testing.T) {
 	raw := "Here is my audit.\n```json\n{\"complete\": false, \"missing\": [\"Deploy the contract\", \"\"], \"rationale\": \"only compiled\"}\n```"
-	clean := extractPlanJSON(raw)
-	var v criticVerdict
-	if err := json.Unmarshal([]byte(clean), &v); err != nil {
-		t.Fatalf("unmarshal verdict: %v (clean=%q)", err, clean)
+	v, err := cassandra.ParseVerdict(raw)
+	if err != nil {
+		t.Fatalf("ParseVerdict: %v", err)
 	}
-	if v.Complete {
+	if v.CoverageComplete() {
 		t.Error("verdict should be incomplete")
 	}
-	if len(v.Missing) != 2 {
-		t.Errorf("missing len = %d, want 2 (pre-normalization)", len(v.Missing))
+	// The canonical parser drops the blank entry, leaving the one real item.
+	if len(v.Missing) != 1 || v.Missing[0] != "Deploy the contract" {
+		t.Errorf("missing = %v, want [\"Deploy the contract\"]", v.Missing)
 	}
 }

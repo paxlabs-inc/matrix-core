@@ -132,7 +132,12 @@ func (e *Engine) newSession(convID string) *session {
 		Consolidator: e.consolidator,
 		Recaller:     recaller,
 		Observer:     func(ev agent.ToolEvent) { e.surfaceTool(s.cur, ev) },
-		ConvID:       convID,
+		// Cassandra Phase 3: the shared completeness faculty audits the
+		// completion gate on state-touching turns; its verdicts stream as
+		// cassandra.* events onto the live run.
+		Adjudicator:   e.adjudicator,
+		AuditObserver: func(ev agent.AuditEvent) { e.publishAudit(s.cur, ev) },
+		ConvID:        convID,
 	})
 	// Resume continuity: if this conversation already has durable turns (a
 	// reopened thread, or one that outlived a restart), seed the fresh agent's

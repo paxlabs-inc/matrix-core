@@ -236,7 +236,7 @@ func enforceFreeTier(slot, model string) error {
 // the metering audit has provenance.
 func validSlot(s string) bool {
 	switch s {
-	case types.SlotCompiler, types.SlotPlanner, types.SlotExecutor, types.SlotLiaison, types.SlotNeo:
+	case types.SlotCompiler, types.SlotPlanner, types.SlotExecutor, types.SlotLiaison, types.SlotNeo, types.SlotCassandra:
 		return true
 	}
 	return false

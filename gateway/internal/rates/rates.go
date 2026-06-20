@@ -266,6 +266,16 @@ func FreeTierWhitelist() map[string][]string {
 		// nomic-embed-text-v1.5 so Neo's cortex pager can page-fault
 		// semantically through the metered /v1/embeddings route.
 		"neo": {ModelKimiK26, ModelGLM5p1Fast, ModelNomicEmbed},
+		// cassandra: the epistemic-completeness faculty (SlotCassandra). The
+		// MCL completeness critic moved here off the planner slot. The critic's
+		// model is criticMod() = the -critic-model knob, else the planner/
+		// executor model, else the gpt-oss-120b planner default — so this lane
+		// mirrors the planner whitelist's breadth to guarantee NO 403
+		// regression on the slot move, plus deepseek-v4-flash as the cheap/fast
+		// prior+scan model and deepseek-v4-pro as the strong escalation
+		// adjudicator. Every model here is ALREADY on the rate card, so adding
+		// this lane needs NO rateTable row and NO RateTableVersion bump.
+		"cassandra": {ModelDeepSeekV4Flash, ModelDeepSeekV4Pro, ModelKimiK26, ModelCompilerFreeTier},
 	}
 }
 
