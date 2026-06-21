@@ -177,12 +177,8 @@ func (c *Client) Chat(ctx context.Context, req ChatRequest) (*ChatResult, error)
 	}
 	defer resp.Body.Close()
 
-	respBody, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("neo/llm: %s read body: %w", c.provider, err)
-	}
-
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		respBody, _ := io.ReadAll(resp.Body)
 		var parsed chatResponseWire
 		_ = json.Unmarshal(respBody, &parsed)
 		errMsg, errType := "", ""
@@ -206,7 +202,11 @@ func (c *Client) Chat(ctx context.Context, req ChatRequest) (*ChatResult, error)
 		return nil, fmt.Errorf("neo/llm: %s http %d: %s", c.provider, resp.StatusCode, truncate(string(respBody), 512))
 	}
 
-	msg, finish, usage, err := aggregateStream(respBody)
+	// 2xx: fold the SSE stream into one assistant turn, delivering coalesced,
+	// pre-cleaned incremental fragments to req.OnDelta (when set) as the bytes
+	// arrive off the wire — real token-by-token streaming, not a post-hoc
+	// replay of a buffered body. With OnDelta nil this is a pure parse.
+	msg, finish, usage, err := aggregateStreamReader(resp.Body, req.OnDelta)
 	if err != nil {
 		return nil, fmt.Errorf("neo/llm: %s parse stream: %w", c.provider, err)
 	}
@@ -220,16 +220,37 @@ func (c *Client) Chat(ctx context.Context, req ChatRequest) (*ChatResult, error)
 	return res, nil
 }
 
-// aggregateStream reconstructs a single assistant turn from an OpenAI-style
-// SSE chat-completions stream (the response shape Together requires for some
-// models; Fireworks + the gateway emit the same shape). It concatenates
-// content + reasoning_content deltas, merges tool_call argument fragments by
-// index, and captures the terminal finish_reason + usage. The whole stream is
-// already buffered by the caller, so this is a pure parse over the bytes; the
-// agent loop consumes a complete turn, so no incremental delivery is needed
-// here. The folded message is handed to fromWireRespMessage, which still runs
-// the Kimi token-grammar + inline-<think> normalization.
+// aggregateStream reconstructs a single assistant turn from a fully-buffered
+// OpenAI-style SSE chat-completions stream. It is a thin wrapper over
+// aggregateStreamReader with no incremental delivery — kept for callers/tests
+// that hold the whole body in memory.
 func aggregateStream(body []byte) (wireRespMessage, string, *Usage, error) {
+	return aggregateStreamReader(bytes.NewReader(body), nil)
+}
+
+// deltaFlushChars is the coalescing threshold for live streaming: incremental
+// fragments are buffered until at least this many new visible/reasoning chars
+// have accumulated, then flushed via onDelta. Small enough for a smooth
+// "typing" cadence, large enough to keep the SSE event volume sane (one event
+// per ~handful of tokens rather than one per token).
+const deltaFlushChars = 18
+
+// aggregateStreamReader reconstructs a single assistant turn from an
+// OpenAI-style SSE chat-completions stream read incrementally off r (the
+// response shape Together requires for some models; Fireworks + the gateway
+// emit the same shape). It concatenates content + reasoning_content deltas,
+// merges tool_call argument fragments by index, and captures the terminal
+// finish_reason + usage.
+//
+// When onDelta is non-nil it ALSO delivers coalesced, pre-cleaned incremental
+// fragments as the bytes arrive — true token-by-token streaming. Visible
+// content fragments are run through the same normalization the folded turn
+// gets (leading <think> blocks and the Kimi tool-call token grammar are
+// withheld) plus a partial-marker holdback, so a consumer can render them
+// verbatim without leaking internal monologue or control tokens. The folded
+// message is still handed to fromWireRespMessage for the authoritative final
+// cleaning.
+func aggregateStreamReader(r io.Reader, onDelta func(Delta)) (wireRespMessage, string, *Usage, error) {
 	msg := wireRespMessage{Role: RoleAssistant}
 	var content, reasoning strings.Builder
 	type aggCall struct {
@@ -242,7 +263,34 @@ func aggregateStream(body []byte) (wireRespMessage, string, *Usage, error) {
 	var usage *Usage
 	sawData := false
 
-	sc := bufio.NewScanner(bytes.NewReader(body))
+	// Live-streaming cursors: how many cleaned visible / reasoning chars have
+	// already been delivered via onDelta. flush emits everything past them,
+	// gated by the coalescing threshold (or forced at end of stream).
+	var contentEmitted, reasoningEmitted int
+	flush := func(force bool) {
+		if onDelta == nil {
+			return
+		}
+		var cFrag, rFrag string
+		if vis := holdbackPartial(previewVisible(content.String())); len(vis) > contentEmitted {
+			if cand := vis[contentEmitted:]; force || len(cand) >= deltaFlushChars {
+				cFrag = cand
+			}
+		}
+		if rs := reasoning.String(); len(rs) > reasoningEmitted {
+			if cand := rs[reasoningEmitted:]; force || len(cand) >= deltaFlushChars {
+				rFrag = cand
+			}
+		}
+		if cFrag == "" && rFrag == "" {
+			return
+		}
+		onDelta(Delta{Content: cFrag, Reasoning: rFrag})
+		contentEmitted += len(cFrag)
+		reasoningEmitted += len(rFrag)
+	}
+
+	sc := bufio.NewScanner(r)
 	sc.Buffer(make([]byte, 0, 64*1024), 8*1024*1024)
 	for sc.Scan() {
 		line := strings.TrimSpace(sc.Text())
@@ -293,6 +341,7 @@ func aggregateStream(body []byte) (wireRespMessage, string, *Usage, error) {
 				finish = ch.FinishReason
 			}
 		}
+		flush(false)
 	}
 	if err := sc.Err(); err != nil {
 		return msg, finish, usage, err
@@ -300,6 +349,7 @@ func aggregateStream(body []byte) (wireRespMessage, string, *Usage, error) {
 	if !sawData {
 		return msg, finish, usage, fmt.Errorf("empty stream")
 	}
+	flush(true)
 
 	msg.Content = content.String()
 	msg.ReasoningContent = reasoning.String()
@@ -324,6 +374,41 @@ func aggregateStream(body []byte) (wireRespMessage, string, *Usage, error) {
 		})
 	}
 	return msg, finish, usage, nil
+}
+
+// previewVisible returns the portion of an in-progress content buffer that is
+// safe to show as the visible answer so far: a leading <think>/<thinking>
+// block is moved out (held back until it closes) and any Kimi tool-call token
+// grammar is stripped. It reuses the exact helpers the final fold uses, so the
+// streamed prefix never diverges from the authoritative cleaned content.
+func previewVisible(content string) string {
+	v, _ := splitInlineThink(content)
+	if stripped, extracted := extractTokenToolCalls(v); len(extracted) > 0 {
+		v = stripped
+	}
+	return v
+}
+
+// holdbackPartial withholds a trailing fragment that could be the start of a
+// control marker (<think>, <thinking>, or the Kimi tool-call section/call
+// tokens) so a half-arrived marker is never streamed as visible text. A normal
+// '<' in prose (e.g. "a < b") is left intact — only a tail that is a genuine
+// prefix of a known marker is held back, to be resolved once more bytes arrive.
+func holdbackPartial(s string) string {
+	i := strings.LastIndex(s, "<")
+	if i < 0 {
+		return s
+	}
+	tail := s[i:]
+	if strings.Contains(tail, ">") {
+		return s
+	}
+	for _, m := range [...]string{"<think>", "<thinking>", kimiSectionBegin, kimiCallBegin} {
+		if strings.HasPrefix(m, tail) {
+			return s[:i]
+		}
+	}
+	return s
 }
 
 // newHTTPRequest builds the POST. Mirrors matrix/mcl/llm's gateway posture:

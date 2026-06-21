@@ -466,6 +466,30 @@ func (r *sseReporter) Think(text string) {
 	})
 }
 
+// Delta streams an incremental fragment of the CURRENT turn as it generates —
+// the live "typing" channel. channel is "content" (the visible answer being
+// typed) or "reasoning" (the live thinking). turn is the agent-loop step index
+// so the client can reset its per-channel buffer when a new turn begins. It is
+// NEVER persisted (the durable thread is written from Say); the authoritative
+// final text always follows as a chat.assistant turn that the client commits.
+func (r *sseReporter) Delta(turn int, channel, text string) {
+	if text == "" {
+		return
+	}
+	s := r.sess
+	run := s.cur
+	if run == nil {
+		return
+	}
+	s.engine.broker.publish(run.id, "chat.delta", "neo", map[string]interface{}{
+		"intent_id":       run.id,
+		"conversation_id": s.id,
+		"channel":         channel,
+		"turn":            turn,
+		"text":            text,
+	})
+}
+
 func synthRunID(seed string) string {
 	h := sha256.Sum256([]byte(fmt.Sprintf("neo|%d|%s", time.Now().UnixNano(), seed)))
 	return "neo_" + hex.EncodeToString(h[:10])

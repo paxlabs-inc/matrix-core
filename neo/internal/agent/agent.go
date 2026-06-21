@@ -311,7 +311,23 @@ func (a *Agent) Chat(ctx context.Context, userInput string) error {
 
 		window := append([]llm.Message{llm.SystemMessage(system)}, a.working...)
 
-		res, err := a.chatWithRetry(ctx, llm.ChatRequest{Messages: window, Tools: a.schemas})
+		// Live "typing" channel: stream the model's incremental fragments as
+		// they generate so the user sees Neo thinking + answering in real time
+		// instead of staring at a blank surface until the whole turn lands.
+		// reasoning → the live thinking channel; content → the answer being
+		// typed. step segments the stream so the client resets per turn.
+		streamedReasoning := false
+		onDelta := func(d llm.Delta) {
+			if d.Reasoning != "" {
+				streamedReasoning = true
+				a.out.Delta(step, "reasoning", d.Reasoning)
+			}
+			if d.Content != "" {
+				a.out.Delta(step, "content", d.Content)
+			}
+		}
+
+		res, err := a.chatWithRetry(ctx, llm.ChatRequest{Messages: window, Tools: a.schemas, OnDelta: onDelta})
 		if err != nil {
 			// HTTP 413 (provider request-body byte cap) is recoverable: the
 			// window serialized past the byte limit even though it was within
@@ -324,14 +340,14 @@ func (a *Agent) Chat(ctx context.Context, userInput string) error {
 				// fall back to a full compaction and retry once more.
 				if a.stripOldImages() > 0 {
 					window = append([]llm.Message{llm.SystemMessage(system)}, a.working...)
-					res, err = a.chatWithRetry(ctx, llm.ChatRequest{Messages: window, Tools: a.schemas})
+					res, err = a.chatWithRetry(ctx, llm.ChatRequest{Messages: window, Tools: a.schemas, OnDelta: onDelta})
 				}
 				if err != nil && errors.Is(err, llm.ErrRequestTooLarge) {
 					a.compact(ctx, "hard")
 					baseSystem = a.buildSystem(pinned, retrieved, procedural, triggered, recalled)
 					system = baseSystem + fmt.Sprintf("\n\n[context: %d%% used]\n", a.budgetPct(baseSystem))
 					window = append([]llm.Message{llm.SystemMessage(system)}, a.working...)
-					res, err = a.chatWithRetry(ctx, llm.ChatRequest{Messages: window, Tools: a.schemas})
+					res, err = a.chatWithRetry(ctx, llm.ChatRequest{Messages: window, Tools: a.schemas, OnDelta: onDelta})
 				}
 			}
 			if err != nil {
@@ -345,9 +361,15 @@ func (a *Agent) Chat(ctx context.Context, userInput string) error {
 
 		// Show SOME of the thinking: surface a trimmed glimpse of this turn's
 		// chain-of-thought as a secondary channel so the user sees how Neo is
-		// reasoning before it acts. Never the answer, never persisted.
-		if think := glimpseReasoning(res.Message.Reasoning); think != "" {
-			a.out.Think(think)
+		// reasoning before it acts. Never the answer, never persisted. Skip it
+		// when the reasoning already streamed live (above) — the surface holds
+		// the full thinking and a post-hoc glimpse would only truncate it. This
+		// fallback covers models that return reasoning at fold time (inline
+		// <think>) rather than as a separate streamed channel.
+		if !streamedReasoning {
+			if think := glimpseReasoning(res.Message.Reasoning); think != "" {
+				a.out.Think(think)
+			}
 		}
 
 		// Positive-proof termination (Cassandra Phase 1). A turn no longer ends

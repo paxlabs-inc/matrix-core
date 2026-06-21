@@ -297,6 +297,10 @@ func (stdoutReporter) Status(text string) { fmt.Fprintf(os.Stderr, "  · %s\n", 
 func (stdoutReporter) Notice(text string) { fmt.Fprintf(os.Stderr, "  » %s\n", oneLine(text)) }
 func (stdoutReporter) Think(text string)  { fmt.Fprintf(os.Stderr, "  ~ %s\n", oneLine(text)) }
 
+// Delta is a no-op for the CLI: the terminal prints the complete answer at the
+// end (Say); live token streaming is an SSE/UI affordance.
+func (stdoutReporter) Delta(int, string, string) {}
+
 func oneLine(s string) string {
 	s = strings.TrimSpace(s)
 	if i := strings.IndexByte(s, '\n'); i >= 0 {

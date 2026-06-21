@@ -129,6 +129,25 @@ type ChatRequest struct {
 	Tools    []Tool
 	// ToolChoice is "auto" (default when Tools present), "none", or "required".
 	ToolChoice string
+	// OnDelta, when set, is invoked with incremental fragments of the model's
+	// CURRENT turn as they stream from the provider, BEFORE the folded turn is
+	// returned. It lets the caller surface a live "typing" channel (the visible
+	// answer being typed) and a live "thinking" channel (the reasoning). The
+	// visible-content fragments are already cleaned (leading <think> blocks and
+	// the Kimi tool-call token grammar are withheld), so they are safe to show
+	// verbatim. Fragments are best-effort coalesced and never delivered after
+	// Chat returns. Leave nil to disable streaming (buffered turn only).
+	OnDelta func(Delta)
+}
+
+// Delta is one coalesced streaming fragment of an in-flight assistant turn.
+// At most one of the two channels is non-empty per call.
+type Delta struct {
+	// Content is a fragment of the visible answer text being generated.
+	Content string
+	// Reasoning is a fragment of the model's chain-of-thought (reasoning
+	// channel). Never part of the answer.
+	Reasoning string
 }
 
 // ChatResult is the model's single assistant turn plus metadata.

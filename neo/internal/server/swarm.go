@@ -344,6 +344,10 @@ func (c *captureReporter) Status(text string) {
 func (c *captureReporter) Notice(text string) { c.note(text, "notice") }
 func (c *captureReporter) Think(text string)  { c.note(text, "thinking") }
 
+// Delta is a no-op for sub-agents: a swarm member reports through its distilled
+// notes + final summary, not a live token stream (it has no own chat thread).
+func (c *captureReporter) Delta(int, string, string) {}
+
 func (c *captureReporter) note(text, kind string) {
 	text = strings.TrimSpace(text)
 	if text == "" {

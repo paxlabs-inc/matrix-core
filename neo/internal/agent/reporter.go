@@ -24,12 +24,21 @@ type Reporter interface {
 	// thread — a secondary, dismissible "thinking" channel the surface may show
 	// so the user sees SOME of how Neo is reasoning, not the full monologue.
 	Think(text string)
+	// Delta streams an incremental fragment of the CURRENT model turn as it is
+	// generated, before the turn settles. channel is "content" (the visible
+	// answer being typed out) or "reasoning" (the live thinking). turn is the
+	// agent-loop step index so a consumer can segment the stream per turn
+	// (resetting its buffer when turn advances). It is best-effort — fragments
+	// may be coalesced or dropped — and NEVER persisted: the durable thread is
+	// still written from Say. A consumer that does not stream may ignore it.
+	Delta(turn int, channel, text string)
 }
 
 // nopReporter discards everything. Default when none is supplied.
 type nopReporter struct{}
 
-func (nopReporter) Say(string)    {}
-func (nopReporter) Status(string) {}
-func (nopReporter) Notice(string) {}
-func (nopReporter) Think(string)  {}
+func (nopReporter) Say(string)                {}
+func (nopReporter) Status(string)             {}
+func (nopReporter) Notice(string)             {}
+func (nopReporter) Think(string)              {}
+func (nopReporter) Delta(int, string, string) {}
