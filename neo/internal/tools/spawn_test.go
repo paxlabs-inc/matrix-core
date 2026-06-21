@@ -6,6 +6,7 @@ package tools
 import (
 	"context"
 	"testing"
+	"time"
 )
 
 func TestParseSubagentSpecs(t *testing.T) {
@@ -51,7 +52,7 @@ func TestSubagentSchemasExcludeSynthetic(t *testing.T) {
 	}
 	// Wire the synthetics so the FULL surface would advertise them.
 	m.delegate = func(context.Context, string) (string, error) { return "", nil }
-	m.recall = func(context.Context, string) (string, error) { return "", nil }
+	m.recall = func(context.Context, string, []string, int, *time.Time) (string, error) { return "", nil }
 	m.swarm = func(context.Context, []SubagentSpec) (string, error) { return "", nil }
 
 	names := map[string]bool{}

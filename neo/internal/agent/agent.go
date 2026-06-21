@@ -220,8 +220,13 @@ func (a *Agent) Chat(ctx context.Context, userInput string) error {
 	pivoted := a.observeTopic(userInput)
 
 	// Page-fault relevant memory + proven patterns + trigger-matched behavioral
-	// guidance for this ask (once/turn).
-	retrieved := a.faultMemory(ctx, userInput)
+	// guidance for this ask (once/turn). The bulk semantic memory is now only a
+	// THIN ambient seed (v3 #1: reasoning-time retrieval) — capped to
+	// cfg.AmbientRetrievalTopK, or off entirely at 0 so the model pulls what it
+	// needs mid-thought with memory_recall instead of being force-fed a blob.
+	// Proven patterns and trigger-matched guidance are targeted (not the bulk
+	// blob) and stay on the push path.
+	retrieved := a.ambientMemory(ctx, userInput)
 	procedural := a.faultPatterns(ctx, userInput)
 	triggered := a.faultTriggers(ctx, userInput)
 	// Conversational recall: relevant PAST turns beyond the live transcript —
@@ -255,13 +260,15 @@ func (a *Agent) Chat(ctx context.Context, userInput string) error {
 		// Mid-turn page-fault refresh: long tool loops drift away from the
 		// opening ask, so periodically re-fault against the latest assistant
 		// narration. Injection stays system-block-only — the transcript
-		// never pays for it.
-		if step > 0 && step%refaultEvery == 0 {
+		// never pays for it. v3 #1: this ambient refresh is opt-in — it runs
+		// only when AmbientRetrievalTopK > 0. Fully tool-driven (0), the model
+		// re-pulls mid-thought with memory_recall instead.
+		if a.cfg.AmbientRetrievalTopK > 0 && step > 0 && step%refaultEvery == 0 {
 			q := userInput
 			if c := lastAssistantText(a.working, 400); c != "" {
 				q = q + "\n" + c
 			}
-			retrieved = a.faultMemory(ctx, q)
+			retrieved = a.ambientMemory(ctx, q)
 			procedural = a.faultPatterns(ctx, q)
 			triggered = a.faultTriggers(ctx, q)
 			recalled = a.recallTurns(ctx, q)
@@ -592,6 +599,25 @@ func (a *Agent) faultMemory(ctx context.Context, q string) []memory.Snippet {
 	snips, err := a.pager.Retrieve(ctx, q)
 	if err != nil {
 		return nil
+	}
+	return snips
+}
+
+// ambientMemory returns the THIN ambient memory seed injected into the system
+// block this turn (v3 #1: reasoning-time retrieval). It is the bulk semantic
+// retrieval demoted from a forced blob to a small seed, capped to
+// cfg.AmbientRetrievalTopK. A cap of 0 means fully tool-driven retrieval: no
+// ambient seed at all — the model pulls exactly what it needs mid-thought with
+// the memory_recall tool. The pinned tier (identity, hard rules, learned
+// guidance, active goal, user profile) is injected separately and is NEVER
+// gated by this cap.
+func (a *Agent) ambientMemory(ctx context.Context, q string) []memory.Snippet {
+	if a.cfg.AmbientRetrievalTopK <= 0 {
+		return nil
+	}
+	snips := a.faultMemory(ctx, q)
+	if len(snips) > a.cfg.AmbientRetrievalTopK {
+		snips = snips[:a.cfg.AmbientRetrievalTopK]
 	}
 	return snips
 }

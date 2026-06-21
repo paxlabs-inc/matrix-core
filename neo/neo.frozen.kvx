@@ -16,13 +16,13 @@
 name        = "Neo"
 codename    = "neo"
 kind        = "default-conversational-agent-module"
-version     = "1.1.0"
+version     = "1.2.0"
 status      = "frozen"
 frozen_at   = "2026-06-08"
 authors     = ["Andrew", "cursor-agent"]
 relation    = "coexists with MCL core pipeline; delegates rigorous/monetary tasks to it"
 supersedes  = "none"
-changelog   = "1.1.0 (2026-06-15, Andrew + cursor-agent): added task-scoped CONCURRENT sub-agents (the Agent Swarm) — see [swarm]"
+changelog   = "1.2.0 (2026-06-21, Andrew + cursor-agent): Memory Capabilities v3 #1 — reasoning-time retrieval. Demoted ambient page-fault from a forced blob to a thin seed (cfg.AmbientRetrievalTopK, default 2; 0 = fully tool-driven) and promoted memory_recall to the PRIMARY pull verb — see [memory.retrieval]. | 1.1.0 (2026-06-15): added task-scoped CONCURRENT sub-agents (the Agent Swarm) — see [swarm]"
 
 [mission]
 goal       = "make Matrix the future of machine interactions by shipping a familiar, trustworthy DEFAULT agent"
@@ -151,6 +151,18 @@ pinned    = "small high-salience block injected EVERY turn: identity + hard rule
 retrieval = "page-fault: top-K relevant cortex records by relevance (reuse Deus vector/HNSW + cortex salience composer)"
 compaction= "swap-out: summarize + evict older turns when the window fills (see [memory.compaction])"
 writeback = "consolidation: promote durable learnings to cortex (see [memory.writeback])"
+
+[memory.retrieval]
+# v3 #1 (LOCKED 2026-06-21): reasoning-time / PULL retrieval. Retrieval is no
+# longer a forced pre-load blob — the model fetches, reasons, and fetches again
+# with a refined query. The pinned tier (identity, hard rules, learned guidance,
+# active goal, user profile) is ALWAYS injected and is NOT gated by this.
+model        = "PULL (agentic, iterative) is primary; ambient PUSH is a thin seed or off"
+ambient_seed = "cfg.AmbientRetrievalTopK caps the ambient semantic seed injected each turn (default 2). 0 = fully tool-driven (no seed, no mid-turn refault). Aggressiveness is eval-driven — sweep 0 vs 2."
+primary_verb = "memory_recall — call iteratively with a narrowing query, an optional type filter, a result cap k, and an optional bi-temporal as_of instant (ties to #2)"
+structured   = "memory_recall returns each hit with its type, contradiction advisory, valid-until (when closed), and cortex URI — so the model can cite + iterate and the verification layer (#5) can surface grounding"
+refault_rule = "the every-N-step mid-turn ambient refresh is opt-in: it runs only when AmbientRetrievalTopK > 0; fully tool-driven, the model re-pulls mid-thought instead"
+knob         = "config: ambient_retrieval_top_k ([memory]) / env NEO_AMBIENT_RETRIEVAL_TOP_K (accepts 0)"
 
 [memory.writeback]
 chosen        = "B = automatic background consolidation"

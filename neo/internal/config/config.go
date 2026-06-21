@@ -48,9 +48,16 @@ type Config struct {
 	HardPct               int // forced compaction threshold (runaway backstop)
 	RetrievalTopK         int // page-fault: top-K cortex records per retrieval
 	RetrievalBudgetTokens int // token ceiling for retrieved records
-	PinnedBudgetTokens    int // token ceiling for the always-injected pinned block
-	RecallTopK            int // conversational recall: top-K relevant past turns per turn
-	RecallBudgetTokens    int // token ceiling for the recalled past-turns block
+	// AmbientRetrievalTopK caps the ambient (push) memory seed injected into
+	// the system block each turn (v3 #1: reasoning-time retrieval). 0 = fully
+	// tool-driven (no forced seed and no mid-turn refault — the model pulls
+	// with memory_recall); N = a thin top-N seed plus the pinned tier. The
+	// pinned tier (identity, hard rules, learned guidance, active goal, user
+	// profile) is ALWAYS injected and is unaffected by this knob.
+	AmbientRetrievalTopK int
+	PinnedBudgetTokens   int // token ceiling for the always-injected pinned block
+	RecallTopK           int // conversational recall: top-K relevant past turns per turn
+	RecallBudgetTokens   int // token ceiling for the recalled past-turns block
 
 	// --- loop discipline ---
 	StepBudget        int // max tool-call iterations per turn (anti-infinite)
@@ -100,6 +107,7 @@ func Default() Config {
 		HardPct:               92,
 		RetrievalTopK:         8,
 		RetrievalBudgetTokens: 6000,
+		AmbientRetrievalTopK:  2,
 		PinnedBudgetTokens:    2000,
 		RecallTopK:            6,
 		RecallBudgetTokens:    2500,
@@ -171,6 +179,7 @@ func (c *Config) applyDoc(d *kvxDoc) {
 		c.HardPct = d.intOr("memory", "hard_pct", c.HardPct)
 		c.RetrievalTopK = d.intOr("memory", "retrieval_top_k", c.RetrievalTopK)
 		c.RetrievalBudgetTokens = d.intOr("memory", "retrieval_budget_tokens", c.RetrievalBudgetTokens)
+		c.AmbientRetrievalTopK = d.intOr("memory", "ambient_retrieval_top_k", c.AmbientRetrievalTopK)
 		c.PinnedBudgetTokens = d.intOr("memory", "pinned_budget_tokens", c.PinnedBudgetTokens)
 		c.RecallTopK = d.intOr("memory", "recall_top_k", c.RecallTopK)
 		c.RecallBudgetTokens = d.intOr("memory", "recall_budget_tokens", c.RecallBudgetTokens)
@@ -223,6 +232,9 @@ func (c *Config) applyEnv() {
 	c.MaxSubagents = envInt("NEO_MAX_SUBAGENTS", c.MaxSubagents)
 	c.MaxConcurrentSubagents = envInt("NEO_MAX_CONCURRENT_SUBAGENTS", c.MaxConcurrentSubagents)
 	c.SubagentStepBudget = envInt("NEO_SUBAGENT_STEP_BUDGET", c.SubagentStepBudget)
+	// AmbientRetrievalTopK accepts 0 (fully tool-driven), so it uses the
+	// non-negative variant rather than envInt (which rejects 0).
+	c.AmbientRetrievalTopK = envIntNonNeg("NEO_AMBIENT_RETRIEVAL_TOP_K", c.AmbientRetrievalTopK)
 }
 
 // envInt overlays a positive integer from the environment, keeping the
@@ -230,6 +242,19 @@ func (c *Config) applyEnv() {
 func envInt(key string, fallback int) int {
 	if v := strings.TrimSpace(os.Getenv(key)); v != "" {
 		if n, err := strconv.Atoi(v); err == nil && n > 0 {
+			return n
+		}
+	}
+	return fallback
+}
+
+// envIntNonNeg overlays a non-negative integer from the environment, keeping
+// the fallback when the var is absent or not a non-negative integer. Unlike
+// envInt it accepts 0 — used for knobs where zero is a meaningful setting
+// (e.g. AmbientRetrievalTopK=0 = fully tool-driven retrieval).
+func envIntNonNeg(key string, fallback int) int {
+	if v := strings.TrimSpace(os.Getenv(key)); v != "" {
+		if n, err := strconv.Atoi(v); err == nil && n >= 0 {
 			return n
 		}
 	}

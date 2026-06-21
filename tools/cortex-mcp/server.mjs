@@ -9,6 +9,7 @@
 //   cortex_guard               print hard+firm rules before risky action
 //   cortex_verify              Merkle tamper-check
 //   cortex_brief               salience-ranked context bundle
+//   cortex_search              targeted semantic pull (mid-thought, iterative)
 //   cortex_remember_fact       store a fact
 //   cortex_remember_preference store a preference
 //   cortex_remember_constraint store a constraint/rule
@@ -64,6 +65,23 @@ const TOOLS = [
         budget: { type: 'number', description: 'Approximate token budget (default 2000)' },
       },
       required: [],
+    },
+  },
+  {
+    name: 'cortex_search',
+    description: 'Targeted semantic search of persistent memory for a mid-thought PULL — distinct from cortex_recall (load-all bootstrap, call once at session start) and cortex_brief (budget bundle). Use this iteratively while reasoning: query for what you need to know NOW, read the hits, then search again with a narrower query as you learn. Returns salience-ranked hits, each with its memory type and cortex URI.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        query: { type: 'string', description: 'What to look for (a topic, name, project, or question).' },
+        k:     { type: 'number', description: 'Max hits to return (default 8).' },
+        type:  {
+          type: 'string',
+          description: 'Optional: restrict to one memory type.',
+          enum: ['Fact', 'Preference', 'Belief', 'Event', 'Goal', 'Constraint', 'Capability', 'Pattern', 'Identity'],
+        },
+      },
+      required: ['query'],
     },
   },
   {
@@ -140,6 +158,17 @@ async function callTool(name, args) {
       return cs('verify')
     case 'cortex_brief':
       return cs('brief', ...(args.budget != null ? [String(args.budget)] : []))
+    case 'cortex_search': {
+      // The shell `search` verb is positional: <query> [limit] [Type]. A Type
+      // can only be passed when a limit is also present, so default the limit
+      // to 8 whenever a type is supplied.
+      const limit = args.k != null ? String(args.k) : (args.type ? '8' : null)
+      return cs(
+        'search', String(args.query ?? ''),
+        ...(limit != null ? [limit] : []),
+        ...(args.type ? [String(args.type)] : []),
+      )
+    }
     case 'cortex_remember_fact':
       return cs(
         'remember-fact', args.text,

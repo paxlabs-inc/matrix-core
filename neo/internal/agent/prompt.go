@@ -67,7 +67,7 @@ func (a *Agent) buildSystem(pinned string, retrieved []memory.Snippet, procedura
 	}
 
 	if len(retrieved) > 0 {
-		b.WriteString("\nRelevant memory (durable; may be stale — the live conversation wins):\n")
+		b.WriteString("\nMemory seed (a few durable items that may relate; call memory_recall for the rest — may be stale, the live conversation wins):\n")
 		for _, s := range retrieved {
 			b.WriteString("- ")
 			b.WriteString(strings.TrimSpace(s.Text))
@@ -162,6 +162,12 @@ func (a *Agent) systemPrompt() string {
 	b.WriteString("- Act autonomously on reversible work: pick sensible defaults and proceed, noting the choice. Ask at most one short clarifying question, and only when the intent is genuinely ambiguous in a way that changes the outcome, when an action is destructive (e.g. deleting the user's work), or when the request expands in scope.\n")
 	b.WriteString("- Work in a loop: call a tool, read its result, and keep going until the task is done — then finish by calling task_complete with your final answer.\n")
 	b.WriteString("- When something fails, read the error and adapt your approach. Don't repeat the same failing call. If you're truly blocked, say what you tried and what you need.\n\n")
+
+	if a.tools != nil && a.tools.RecallEnabled() {
+		b.WriteString("Your memory:\n")
+		b.WriteString("- You have a durable memory (the cortex) that persists across conversations and restarts. Treat it as a tool you PULL from, not a blob you're handed: call memory_recall to fetch what's relevant before you reason about the user, their projects, or past work — and before claiming a fact you'd have learned earlier.\n")
+		b.WriteString("- Use it iteratively: start with a broad query, read what comes back, then call memory_recall again with a narrower query (or a type filter) as you learn what you actually need. Narrow with 'types' (e.g. fact, preference, pattern) and pass 'as_of' to ask what was true at a past time. Only the pinned essentials (who the user is, your hard rules, the active goal) are always in front of you; everything else you fetch on demand.\n\n")
+	}
 
 	b.WriteString("Finishing a task:\n")
 	b.WriteString("- End every turn by calling task_complete: put your answer to the user in 'summary', set 'coverage' to \"full\" (everything they asked for is done) or \"partial\" (something is still unresolved), and be honest about what's left in 'open_gaps' and any 'assumptions' you made.\n")

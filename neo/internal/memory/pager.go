@@ -644,10 +644,135 @@ func (p *Pager) contradictsAnyOf(id memory.ID, set map[memory.ID]bool) bool {
 	return hit
 }
 
+// RecallHit is one structured result from an explicit memory_recall lookup
+// (v3 #1). Unlike the ambient Snippet — rendered for silent system-block
+// injection — a RecallHit carries the cortex URI, type, utility-keyed salience
+// score (v3 #4), and closed valid-time (v3 #2) so the model can cite it, judge
+// its freshness, and iterate with a narrower follow-up query, and so the
+// verification layer (v3 #5) can surface a grounding/provenance marker.
+type RecallHit struct {
+	URI        string
+	Type       string
+	Text       string
+	Score      float32
+	ValidUntil *time.Time // nil = still valid; set = closed/superseded at this instant
+	Note       string     // reconcile-first advisory (e.g. a live contradiction)
+}
+
+// recallTypeAliases maps the lowercase type names the model passes in the
+// memory_recall 'types' filter onto cortex memory types. Unknown names are
+// ignored so a bad filter degrades to the default durable set rather than
+// erroring the lookup.
+var recallTypeAliases = map[string]memory.Type{
+	"identity":   memory.TypeIdentity,
+	"fact":       memory.TypeFact,
+	"preference": memory.TypePreference,
+	"belief":     memory.TypeBelief,
+	"event":      memory.TypeEvent,
+	"goal":       memory.TypeGoal,
+	"constraint": memory.TypeConstraint,
+	"capability": memory.TypeCapability,
+	"pattern":    memory.TypePattern,
+}
+
+// defaultRecallTypes is the durable set a non-semantic recall (no embedder or
+// empty query) scans when the caller gives no explicit type filter — cortex
+// refuses an unbounded full-store scan, so a type predicate is mandatory there.
+var defaultRecallTypes = []memory.Type{
+	memory.TypeFact, memory.TypeEvent, memory.TypePattern,
+	memory.TypePreference, memory.TypeGoal, memory.TypeBelief,
+	memory.TypeConstraint, memory.TypeIdentity,
+}
+
+// parseRecallTypes resolves the model-supplied type names to cortex types,
+// dropping unknowns and duplicates. Returns nil when none resolve.
+func parseRecallTypes(names []string) []memory.Type {
+	if len(names) == 0 {
+		return nil
+	}
+	out := make([]memory.Type, 0, len(names))
+	seen := make(map[memory.Type]bool, len(names))
+	for _, n := range names {
+		if t, ok := recallTypeAliases[strings.ToLower(strings.TrimSpace(n))]; ok && !seen[t] {
+			out = append(out, t)
+			seen[t] = true
+		}
+	}
+	return out
+}
+
+// RecallHits runs the structured, parameterized memory lookup behind the
+// memory_recall tool (v3 #1: reasoning-time retrieval). It honours an optional
+// type filter, a result cap k (<=0 = RetrievalTopK), and a bi-temporal as-of
+// instant (nil = now; v3 #2). Results are ranked by utility-keyed salience
+// (v3 #4 default) and each hit carries its URI, type, score, closed valid-time,
+// and a contradiction advisory when two surfaced hits disagree — the structure
+// the model iterates over and the verification layer surfaces.
+func (p *Pager) RecallHits(_ context.Context, queryText string, types []string, k int, asOf *time.Time) ([]RecallHit, error) {
+	if k <= 0 {
+		k = p.cfg.RetrievalTopK
+	}
+	q := query.Query{
+		Limit:        k,
+		BudgetTokens: p.cfg.RetrievalBudgetTokens,
+		Form:         query.FormMedium,
+		AsOf:         asOf,
+	}
+	if p.hasEmbedder && strings.TrimSpace(queryText) != "" {
+		q.Near = queryText
+	}
+	if tf := parseRecallTypes(types); len(tf) > 0 {
+		q.Type = tf
+	} else if q.Near == "" {
+		q.Type = defaultRecallTypes
+	}
+	res, err := p.cortex.Find(q)
+	if err != nil {
+		return nil, err
+	}
+	live := make(map[memory.ID]bool, len(res.Memories))
+	for _, m := range res.Memories {
+		if !m.Head.ID.IsZero() {
+			live[m.Head.ID] = true
+		}
+	}
+	hits := make([]RecallHit, 0, len(res.Memories))
+	for i, m := range res.Memories {
+		text := ""
+		if i < len(res.Rendered) {
+			text = res.Rendered[i]
+		}
+		if text == "" {
+			text = m.Version.Forms.Medium
+		}
+		if strings.TrimSpace(text) == "" {
+			continue
+		}
+		note := ""
+		if !m.Head.ID.IsZero() && p.contradictsAnyOf(m.Head.ID, live) {
+			note = contradictionNote
+		}
+		hits = append(hits, RecallHit{
+			URI:        string(cortex.BuildURI(m.Head.Type, m.Head.ID, m.Head.CurrentVersion)),
+			Type:       m.Head.Type.String(),
+			Text:       strings.TrimSpace(text),
+			Score:      res.Scores[m.Head.ID],
+			ValidUntil: m.Version.ValidUntil,
+			Note:       note,
+		})
+	}
+	return hits, nil
+}
+
 // Recall renders an explicit, user-visible memory lookup: the pinned user
-// profile plus the merged retrieval for the query. This backs Neo's
-// memory_recall tool so "check your memory" is an action, not an apology.
-func (p *Pager) Recall(ctx context.Context, queryText string) (string, error) {
+// profile plus the structured retrieval for the query. This backs Neo's
+// memory_recall tool so "check your memory" is an action, not an apology, and
+// is now the PRIMARY reasoning-time retrieval verb (v3 #1) — the model calls
+// it iteratively with narrowing queries/type filters instead of being
+// force-fed an ambient blob. Each rendered line carries the memory's type, a
+// contradiction advisory when present, its valid-until when closed (the as-of
+// time-travel signal), and its cortex URI for citation/provenance.
+func (p *Pager) Recall(ctx context.Context, queryText string, types []string, k int, asOf *time.Time) (string, error) {
 	var b strings.Builder
 	if profile := p.UserProfile(ctx); len(profile) > 0 {
 		b.WriteString("User profile (durable):\n")
@@ -657,23 +782,30 @@ func (p *Pager) Recall(ctx context.Context, queryText string) (string, error) {
 			b.WriteString("\n")
 		}
 	}
-	snips, err := p.Retrieve(ctx, queryText)
+	hits, err := p.RecallHits(ctx, queryText, types, k, asOf)
 	if err != nil && b.Len() == 0 {
 		return "", err
 	}
-	if len(snips) > 0 {
+	if len(hits) > 0 {
 		b.WriteString("Relevant memories:\n")
-		for _, s := range snips {
+		for _, h := range hits {
 			b.WriteString("- [")
-			b.WriteString(s.Type)
+			b.WriteString(h.Type)
 			b.WriteString("] ")
-			b.WriteString(strings.TrimSpace(s.Text))
-			if s.Note != "" {
+			b.WriteString(h.Text)
+			if h.Note != "" {
 				b.WriteString(" [")
-				b.WriteString(s.Note)
+				b.WriteString(h.Note)
 				b.WriteString("]")
 			}
-			b.WriteString("\n")
+			if h.ValidUntil != nil {
+				b.WriteString(" (valid until ")
+				b.WriteString(h.ValidUntil.UTC().Format(time.RFC3339))
+				b.WriteString(")")
+			}
+			b.WriteString(" <")
+			b.WriteString(h.URI)
+			b.WriteString(">\n")
 		}
 	}
 	if b.Len() == 0 {

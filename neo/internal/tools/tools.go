@@ -37,9 +37,10 @@ import (
 const CoreExecuteTool = "core_execute"
 
 // MemoryRecallTool is the synthetic function Neo exposes for explicitly
-// searching its own durable cortex memory. Ambient page-faulting injects
-// memory automatically each turn, but when the user asks "what do you
-// remember?" the model needs a deliberate lookup it can actually perform.
+// searching its own durable cortex memory. It is the PRIMARY reasoning-time
+// retrieval verb (v3 #1): ambient injection is now only a thin seed (or off),
+// so the model PULLS what it needs mid-thought — iteratively, with a narrowing
+// query, type filter, and optional as-of instant — instead of being force-fed.
 const MemoryRecallTool = "memory_recall"
 
 // SpawnSubagentsTool is the synthetic function Neo exposes to fan a task out
@@ -77,9 +78,12 @@ const TaskCompleteTool = "task_complete"
 type DelegateFunc func(ctx context.Context, proseIntent string) (string, error)
 
 // RecallFunc searches the durable memory store and returns a rendered,
-// user-presentable digest. Injected from the pager; nil until wired, in
-// which case memory_recall is not advertised at all.
-type RecallFunc func(ctx context.Context, query string) (string, error)
+// user-presentable digest. It is the PRIMARY reasoning-time retrieval verb
+// (v3 #1): the model calls it iteratively with a narrowing query, an optional
+// type filter, a result cap, and an optional bi-temporal as-of instant
+// (nil = now). Injected from the pager; nil until wired, in which case
+// memory_recall is not advertised at all.
+type RecallFunc func(ctx context.Context, query string, types []string, k int, asOf *time.Time) (string, error)
 
 // SubagentSpec describes one task-scoped sub-agent the model wants to spawn:
 // a short human name, a persona/role framing, and the self-contained task it
@@ -428,11 +432,59 @@ func (m *Manager) dispatchMemoryRecall(ctx context.Context, args map[string]inte
 		return "the durable memory store is not connected in this session.", true, nil
 	}
 	q, _ := args["query"].(string)
-	out, err := m.recall(ctx, strings.TrimSpace(q))
+	types := asStringSlice(args["types"])
+	k := asInt(args["k"])
+	asOf := asTime(args["as_of"])
+	out, err := m.recall(ctx, strings.TrimSpace(q), types, k, asOf)
 	if err != nil {
 		return fmt.Sprintf("memory lookup failed: %v", err), true, nil
 	}
 	return out, false, nil
+}
+
+// asStringSlice coerces a JSON array argument into a []string, dropping
+// non-string / blank entries. Returns nil for a missing or non-array value.
+func asStringSlice(v interface{}) []string {
+	arr, ok := v.([]interface{})
+	if !ok {
+		return nil
+	}
+	out := make([]string, 0, len(arr))
+	for _, e := range arr {
+		if s := strings.TrimSpace(asString(e)); s != "" {
+			out = append(out, s)
+		}
+	}
+	return out
+}
+
+// asInt coerces a JSON number argument into an int (JSON unmarshals numbers as
+// float64). Returns 0 for a missing or non-numeric value.
+func asInt(v interface{}) int {
+	switch n := v.(type) {
+	case float64:
+		return int(n)
+	case int:
+		return n
+	}
+	return 0
+}
+
+// asTime parses an ISO-8601 / RFC3339 (or bare YYYY-MM-DD) string argument into
+// a UTC instant for bi-temporal as-of queries (v3 #2). Returns nil for a
+// missing or unparseable value (the caller then reads against "now").
+func asTime(v interface{}) *time.Time {
+	s := strings.TrimSpace(asString(v))
+	if s == "" {
+		return nil
+	}
+	for _, layout := range []string{time.RFC3339, "2006-01-02"} {
+		if t, err := time.Parse(layout, s); err == nil {
+			t = t.UTC()
+			return &t
+		}
+	}
+	return nil
 }
 
 // SetDelegate wires the MCL delegation function after construction (the
@@ -507,6 +559,11 @@ func (m *Manager) dispatchAsk(ctx context.Context, s *schema.Surface) (string, b
 // session (the agent-authored ACTIVE projection tier is available).
 func (m *Manager) SurfaceEnabled() bool { return m != nil && m.surface != nil }
 
+// RecallEnabled reports whether the memory_recall tool is wired this session
+// (a durable cortex store is connected). The system prompt uses this to teach
+// the model to PULL memory mid-thought (v3 #1) only when it can actually do so.
+func (m *Manager) RecallEnabled() bool { return m != nil && m.recall != nil }
+
 // NaturalToolNames returns the advertised (directly-callable) function names.
 func (m *Manager) NaturalToolNames() []string { return append([]string{}, m.order...) }
 
@@ -545,13 +602,32 @@ func coreExecuteSchema() llm.Tool {
 func memoryRecallSchema() llm.Tool {
 	return llm.NewFunctionTool(
 		MemoryRecallTool,
-		"Search your own durable memory (the cortex) for what you know: the user's profile, stored facts, past outcomes, preferences, and proven approaches. Use this whenever the user asks what you remember, who they are, or about past sessions — and whenever prior context would help the current task. Returns a rendered digest; it persists across conversations and restarts.",
+		"Search your own durable memory (the cortex) — the user's profile, stored facts, past outcomes, preferences, and proven approaches — which persists across conversations and restarts. This is your PRIMARY way to bring in prior context: PULL from it before you reason about the user, their projects, or past work, and before claiming a fact you'd have learned earlier. Use it ITERATIVELY: start broad, read what comes back, then call again with a narrower query (or a type filter) as you learn what you actually need. Each result line shows the memory's type, any contradiction to reconcile, and its cortex URI so you can cite it. Returns a rendered digest, ranked by how useful each memory has proven.",
 		map[string]interface{}{
 			"type": "object",
 			"properties": map[string]interface{}{
 				"query": map[string]interface{}{
 					"type":        "string",
 					"description": "What to look for (a topic, name, project, or question). Empty returns the most salient memories plus the user profile.",
+				},
+				"types": map[string]interface{}{
+					"type":        "array",
+					"description": "Optional filter: restrict results to these memory types. Narrow with this as you iterate (e.g. [\"preference\"] for how the user likes to work, [\"pattern\"] for a proven approach, [\"fact\"] for objective truths).",
+					"items": map[string]interface{}{
+						"type": "string",
+						"enum": []string{
+							"fact", "preference", "belief", "event", "goal",
+							"constraint", "capability", "pattern", "identity",
+						},
+					},
+				},
+				"k": map[string]interface{}{
+					"type":        "integer",
+					"description": "Optional cap on how many memories to return. Omit for a sensible default; raise it when you want a wider sweep.",
+				},
+				"as_of": map[string]interface{}{
+					"type":        "string",
+					"description": "Optional point in time (RFC3339, e.g. \"2026-01-15T00:00:00Z\", or a date \"2026-01-15\") to ask what was true THEN — memories superseded or expired after that instant are excluded. Omit to read the current truth.",
 				},
 			},
 		},
