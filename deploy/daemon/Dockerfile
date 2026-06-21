@@ -63,6 +63,7 @@ COPY bridge/go.mod  bridge/go.sum  bridge/
 COPY construct/go.mod              construct/
 COPY executor/go.mod executor/go.sum executor/
 COPY neo/go.mod     neo/go.sum     neo/
+COPY cassandra/go.mod              cassandra/
 
 # Now the source.
 COPY cortex/    cortex/
@@ -71,6 +72,7 @@ COPY bridge/    bridge/
 COPY construct/ construct/
 COPY executor/  executor/
 COPY neo/       neo/
+COPY cassandra/ cassandra/ 
 
 WORKDIR /src/executor
 RUN go build -ldflags="-s -w" -o /out/mcl-execute ./cmd/mcl-execute

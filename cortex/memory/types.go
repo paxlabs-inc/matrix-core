@@ -281,6 +281,19 @@ type Version struct {
 	Forms         Forms      `cbor:"10,keyasint"`
 	FormsOverride bool       `cbor:"11,keyasint,omitempty"` // true if Forms.Short/Medium were skill-supplied
 	Hash          [32]byte   `cbor:"12,keyasint"`           // SHA-256 over canonical body
+	// ValidFrom / ValidUntil are the bi-temporal valid-time interval (v3
+	// #2), distinct from the transaction-time CreatedAt. ValidFrom is when
+	// the assertion BECAME true (event time; defaults to CreatedAt when
+	// nil); ValidUntil is when it STOPPED being true (nil = still valid).
+	// The interval is treated half-open [ValidFrom, ValidUntil) by query.Run
+	// so a supersession that stamps ValidUntil = successor.ValidFrom leaves
+	// no overlap at the boundary instant. Both are omitempty: existing
+	// versions decode unchanged and a write that sets neither hashes
+	// byte-identically to the pre-v3 layout. Closing ValidUntil on
+	// supersession is a NEW journaled Version (cortex.CloseValidity), never
+	// an in-place Head mutation — replay-byte-safe (§6, v3 §8 lock).
+	ValidFrom  *time.Time `cbor:"13,keyasint,omitempty"`
+	ValidUntil *time.Time `cbor:"14,keyasint,omitempty"`
 }
 
 // Memory is the ergonomic combined view used by callers of cortex.Write and

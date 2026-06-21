@@ -67,7 +67,7 @@ type EngineOptions struct {
 	Consolidator    agent.Consolidator
 	Adjudicator     *cassandra.Adjudicator // shared Cassandra completeness faculty (Phase 3)
 	ConversationDir string                 // durable conversation store dir ("" disables persistence)
-	MediaDir        string // machine-volume media dir ("" disables image/video/audio I/O)
+	MediaDir        string                 // machine-volume media dir ("" disables image/video/audio I/O)
 	BackendURL      string
 	BackendToken    string
 }

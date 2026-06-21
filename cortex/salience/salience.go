@@ -280,6 +280,53 @@ func ColdScoreWith(s *Score, w Weights, now time.Time) float32 {
 	return score
 }
 
+// ColdScoreWithV computes salience(m) using the supplied weights with the
+// V (vector-similarity) term LIVE — the q.near-SET counterpart to
+// ColdScoreWith. The §8.1 V(m,q) = cos(embedding(m), embedding(q)) term is
+// recovered from the HNSW distance: distance is 1 - cosine in unit-norm
+// space (vector package), so v := 1 - dist/2 maps dist∈[0,2] back to a
+// cosine-like proximity in [0,1] (dist=0 → v=1, dist=2 → v=0). v is clamped
+// to [0,1] defensively.
+//
+// All five weights already sum to 1.0 (DefaultWeights and the EMA
+// renormaliser both preserve this), so — unlike ColdScoreWith, which
+// redistributes WV across the other four when q.near is unset — no
+// renormalisation denominator is applied here. Utility stays primary by
+// weight (WC=0.30 citations, plus WR/WA/WD) dwarfing WV=0.10, so semantic
+// proximity refines the utility ranking rather than dominating it.
+//
+// Pinned memories floor at PinnedFloor; the result is clamped to [0,1].
+func ColdScoreWithV(s *Score, w Weights, dist float32, now time.Time) float32 {
+	if s == nil {
+		return 0
+	}
+	r := recency(s.LastUsed, now)
+	a := logSat(s.AccessCount)
+	c := logSat(s.Citations)
+	d := float32(s.Importance) / 10.0
+	if d > 1 {
+		d = 1
+	}
+	v := 1 - dist/2
+	if v < 0 {
+		v = 0
+	}
+	if v > 1 {
+		v = 1
+	}
+	score := w.WR*r + w.WA*a + w.WC*c + w.WD*d + w.WV*v
+	if s.Pinned && score < PinnedFloor {
+		score = PinnedFloor
+	}
+	if score < 0 {
+		score = 0
+	}
+	if score > 1 {
+		score = 1
+	}
+	return score
+}
+
 // factorProfile returns the (R, A, C, D) factor contributions for one
 // Score at the given clock, normalised against the cold-weight denominator.
 // V is omitted (Phase 12 trains four-factor only; vector signal lands when

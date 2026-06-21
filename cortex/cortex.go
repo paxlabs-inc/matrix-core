@@ -178,6 +178,8 @@ func (c *Cortex) Write(h memory.Head, data memory.TypedData, meta WriteMeta) (me
 		Provenance:    meta.Provenance,
 		Forms:         renderedForms,
 		FormsOverride: meta.FormsOverride,
+		ValidFrom:     meta.ValidFrom,
+		ValidUntil:    meta.ValidUntil,
 	}
 	if v.Confidence == 0 {
 		v.Confidence = 1.0
@@ -314,6 +316,14 @@ type WriteMeta struct {
 	Provenance    memory.Provenance
 	Forms         memory.Forms
 	FormsOverride bool
+	// ValidFrom / ValidUntil set the bi-temporal valid-time interval on the
+	// written Version (v3 #2). Both nil (the common case) leaves the
+	// interval open: query.Run defaults ValidFrom to CreatedAt and treats a
+	// nil ValidUntil as "still valid", so a write that sets neither behaves
+	// exactly as pre-v3. ValidUntil is normally closed later via
+	// CloseValidity on supersession rather than supplied here.
+	ValidFrom  *time.Time
+	ValidUntil *time.Time
 }
 
 // Resolve fetches the memory pointed to by uri. The URI must include an
@@ -551,6 +561,8 @@ func (c *Cortex) Update(uri memory.URI, newData memory.TypedData, meta WriteMeta
 		Provenance:    meta.Provenance,
 		Forms:         renderedForms,
 		FormsOverride: meta.FormsOverride,
+		ValidFrom:     meta.ValidFrom,
+		ValidUntil:    meta.ValidUntil,
 	}
 	if v.Confidence == 0 {
 		v.Confidence = 1.0
@@ -626,6 +638,131 @@ func (c *Cortex) Update(uri memory.URI, newData memory.TypedData, meta WriteMeta
 	// Phase 7: stage memories SMT update with the rewritten Head bytes.
 	if err := c.snap.StageMemoryUpdate(wb, id, headBytes); err != nil {
 		return "", fmt.Errorf("cortex.Update: stage SMT: %w", err)
+	}
+	if err := wb.Commit(); err != nil {
+		return "", err
+	}
+	c.notifyEmbedder()
+	return BuildURI(t, id, nextVer), nil
+}
+
+// CloseValidity stamps a closing valid-time bound on the memory identified
+// by uri, recording that the assertion stopped being true at `until` (v3
+// #2). It is the supersession companion to Update: when a newer memory
+// supersedes an older one, the older one's ValidUntil is closed so AsOf
+// queries past `until` no longer surface it, while the version history and
+// the EdgeSupersedes provenance are preserved.
+//
+// The close is written as a NEW immutable Version via the Update path,
+// never an in-place Head mutation, so journal replay reproduces it
+// byte-for-byte (v3 §8 lock). The new version reuses the previous version's
+// Data, Confidence, Provenance, Forms, ExpiresAt and ValidFrom unchanged —
+// only ValidUntil and the version metadata (Version/CreatedAt/CreatedBy)
+// move. Salience is intentionally left untouched: closing validity is not a
+// "use" of the memory.
+//
+// A zero `until` defaults to c.now() — the instant the supersession is
+// recorded, which is the successor's effective valid-from. Idempotent: a
+// memory whose latest version already carries a ValidUntil is returned
+// unchanged so repeated supersedes (e.g. an AddEdge revive) don't churn
+// versions.
+func (c *Cortex) CloseValidity(uri memory.URI, until time.Time, by string) (memory.URI, error) {
+	t, id, _, err := ParseURI(uri)
+	if err != nil {
+		return "", err
+	}
+	prev, err := c.ResolveLatest(id)
+	if err != nil {
+		return "", fmt.Errorf("cortex.CloseValidity: resolve latest: %w", err)
+	}
+	if prev.Head.Tombstoned != nil {
+		return "", memory.ErrTombstoned
+	}
+	if prev.Version.ValidUntil != nil {
+		// Already closed — idempotent no-op.
+		return BuildURI(t, id, prev.Head.CurrentVersion), nil
+	}
+	if until.IsZero() {
+		until = c.now()
+	}
+	until = until.UTC()
+
+	now := c.now()
+	nextVer := prev.Head.CurrentVersion + 1
+
+	h := prev.Head
+	h.CurrentVersion = nextVer
+	h.LastUpdatedAt = now
+
+	// Reuse the previous version verbatim; only the closing bound and the
+	// version metadata move. Data/Forms are unchanged so Head.Forms stays
+	// correct without a re-render. CreatedAt (transaction time) advances to
+	// the close instant, so pin ValidFrom to the assertion's ORIGINAL event
+	// time first — otherwise the default "ValidFrom == CreatedAt" would
+	// wrongly mark the memory "not yet valid" for the entire pre-close window.
+	v := prev.Version
+	if v.ValidFrom == nil {
+		from := v.CreatedAt
+		v.ValidFrom = &from
+	}
+	v.Version = nextVer
+	v.CreatedAt = now
+	v.CreatedBy = by
+	v.ValidUntil = &until
+	v.Hash = [32]byte{}
+
+	data, err := memory.DecodeData(v.Type, v.Data)
+	if err != nil {
+		return "", fmt.Errorf("cortex.CloseValidity: decode data: %w", err)
+	}
+	if err := memory.ValidateMemory(&h, &v, data); err != nil {
+		return "", fmt.Errorf("cortex.CloseValidity: validate: %w", err)
+	}
+	hash, err := memory.HashVersion(&v)
+	if err != nil {
+		return "", err
+	}
+	v.Hash = hash
+
+	headBytes, err := memory.EncodeHead(&h)
+	if err != nil {
+		return "", err
+	}
+	verBytes, err := memory.EncodeVersion(&v)
+	if err != nil {
+		return "", err
+	}
+
+	wb := c.s.BeginWrite()
+	defer wb.Abort()
+	if err := wb.Set(keys.MemoryHeadKey(toKeysULID(id)), headBytes); err != nil {
+		return "", err
+	}
+	if err := wb.Set(keys.MemoryVersionKey(toKeysULID(id), nextVer), verBytes); err != nil {
+		return "", err
+	}
+	up := &journal.WritePayload{
+		SchemaVersion: 1,
+		ID:            id,
+		Version:       nextVer,
+		Type:          uint8(t),
+		Hash:          v.Hash,
+	}
+	upBytes, err := journal.EncodeWritePayload(up)
+	if err != nil {
+		return "", fmt.Errorf("cortex.CloseValidity: encode payload: %w", err)
+	}
+	je := &journal.Entry{
+		Kind:      journal.KindUpdate,
+		CreatedAt: now.UnixNano(),
+		CreatedBy: []byte(by),
+		Payload:   upBytes,
+	}
+	if err := wb.AppendJournal(je); err != nil {
+		return "", err
+	}
+	if err := c.snap.StageMemoryUpdate(wb, id, headBytes); err != nil {
+		return "", fmt.Errorf("cortex.CloseValidity: stage SMT: %w", err)
 	}
 	if err := wb.Commit(); err != nil {
 		return "", err

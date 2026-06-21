@@ -116,6 +116,24 @@ type OrderClause struct {
 	Direction OrderDirection
 }
 
+// RankMode selects how Near/semantic queries are ranked (v3 #4). It has no
+// effect on non-Near queries (those already default to OrderSalience desc),
+// nor on calls that supply an explicit OrderBy.
+type RankMode string
+
+const (
+	// RankSalience (the zero value, hence the default) ranks Near queries
+	// by utility-keyed salience including the recovered vector term
+	// (salience.ColdScoreWithV) and orders OrderSalience desc — "did this
+	// memory help" outranks "is this similar". HNSW still supplies the
+	// candidate recall set; salience supplies the ranking.
+	RankSalience RankMode = ""
+	// RankDistance is the one-flag rollback to pre-v3 behaviour: score Near
+	// candidates with the pure-utility salience.ColdScoreWith and order by
+	// ascending HNSW distance (closest first).
+	RankDistance RankMode = "rank_distance"
+)
+
 // Query is the typed find spec. See research/04-cortex.md §12.2.
 //
 // Phase 4 honors: Type, Where, OrderBy, Limit, Offset, IncludeTombstoned,
@@ -190,6 +208,23 @@ type Query struct {
 	// VerifyScope once before invoking query.Run; raw query.Run callers
 	// MUST do the same. query.Run treats q.Scope as already-verified.
 	Scope *scope.Scope
+
+	// RankMode selects salience-primary (default) vs distance-primary
+	// ranking for Near/semantic queries (v3 #4). Read-time only — it
+	// changes neither the canonical store nor any anchored root, so it has
+	// zero replay impact. See RankMode.
+	RankMode RankMode
+
+	// AsOf is the bi-temporal valid-time the query reads against (v3 #2).
+	// nil defaults to "now": a candidate is dropped when AsOf falls outside
+	// its half-open valid interval [ValidFrom, ValidUntil) or at/after its
+	// ExpiresAt, so the caller never acts on a superseded or expired truth.
+	// Setting AsOf to a past instant answers "what was true at T". The
+	// filter is read-time only (it inspects already-stored Version fields)
+	// → zero replay impact. Graph traversals (From set) and IncludeTombstoned
+	// audits bypass the filter so supersession provenance and "what changed"
+	// answers stay reachable.
+	AsOf *time.Time
 }
 
 // Result carries the output of one Find call.
@@ -306,6 +341,15 @@ func Run(s *store.Store, q Query) (*Result, error) {
 
 	now := time.Now().UTC()
 
+	// v3 #2: the valid-time the query reads against. Defaults to now; an
+	// explicit past AsOf answers "what was true at T". Kept distinct from
+	// `now` (which drives salience decay) so a time-travel query still ranks
+	// by current utility.
+	asOf := now
+	if q.AsOf != nil {
+		asOf = q.AsOf.UTC()
+	}
+
 	// Phase 12: load per-actor learned weights once, reuse for every
 	// candidate. Cold start (no key) falls back to DefaultWeights. Hot
 	// path: O(1) Pebble Get per Find, then in-memory math per candidate.
@@ -373,6 +417,16 @@ func Run(s *store.Store, q Query) (*Result, error) {
 			return nil, fmt.Errorf("query: decode version: %w", err)
 		}
 
+		// v3 #2: bi-temporal valid-time filter. Drop a candidate whose valid
+		// interval / expiry does not contain asOf so the agent never acts on
+		// a superseded or expired truth. Graph traversals (From) and
+		// IncludeTombstoned audits bypass this so supersession provenance and
+		// "what changed" answers stay reachable; cortex.Find with a past AsOf
+		// gets deliberate time-travel.
+		if q.From == nil && !q.IncludeTombstoned && !withinValidity(&v, asOf) {
+			continue
+		}
+
 		mem := &memory.Memory{Head: h, Version: v}
 
 		if q.Where != nil {
@@ -401,15 +455,24 @@ func Run(s *store.Store, q Query) (*Result, error) {
 		if err != nil {
 			return nil, err
 		}
-		var score float32
-		if ok {
-			score = salience.ColdScoreWith(sc, weights, now)
-		} else {
-			seed := salience.Score{
+		scoreInput := sc
+		if !ok {
+			scoreInput = &salience.Score{
 				LastUsed:   v.CreatedAt.UnixNano(),
 				Importance: h.DeclaredImportance,
 			}
-			score = salience.ColdScoreWith(&seed, weights, now)
+		}
+		// v3 #4: on a Near/semantic query the default (salience-primary)
+		// mode keeps the V (vector) term live via ColdScoreWithV so utility
+		// and recovered cosine rank together; RankDistance rolls back to the
+		// pure-utility ColdScoreWith paired with distance ordering. The
+		// dist-present guard means a future mixed-source plan (e.g. union of
+		// Near and tag scans) still scores its non-HNSW candidates correctly.
+		var score float32
+		if dist, dOK := distances[h.ID]; q.NearVector != nil && q.RankMode != RankDistance && dOK {
+			score = salience.ColdScoreWithV(scoreInput, weights, dist, now)
+		} else {
+			score = salience.ColdScoreWith(scoreInput, weights, now)
 		}
 		// Tombstoned memories that slipped through (IncludeTombstoned=true)
 		// always rank at zero per §8.2.
@@ -421,7 +484,7 @@ func Run(s *store.Store, q Query) (*Result, error) {
 	}
 	res.Total = len(res.Memories)
 
-	if err := orderResults(res, q.OrderBy); err != nil {
+	if err := orderResults(res, q.OrderBy, q.RankMode); err != nil {
 		return nil, err
 	}
 
@@ -610,6 +673,30 @@ func validatePredicate(p Predicate) error {
 	return fmt.Errorf("query: unknown predicate %T", p)
 }
 
+// withinValidity reports whether v's bi-temporal valid-time interval and
+// expiry contain asOf (v3 #2). ValidFrom defaults to CreatedAt when nil;
+// ValidUntil nil means "still valid"; ExpiresAt nil means "never expires".
+// The valid interval is half-open [ValidFrom, ValidUntil) so a supersession
+// that stamps ValidUntil = successor.ValidFrom leaves no overlap at the
+// boundary instant. ExpiresAt — dead since Phase 2 — is finally honoured
+// here with the same at/after-close semantics.
+func withinValidity(v *memory.Version, asOf time.Time) bool {
+	from := v.CreatedAt
+	if v.ValidFrom != nil {
+		from = *v.ValidFrom
+	}
+	if asOf.Before(from) {
+		return false
+	}
+	if v.ValidUntil != nil && !asOf.Before(*v.ValidUntil) {
+		return false
+	}
+	if v.ExpiresAt != nil && !asOf.Before(*v.ExpiresAt) {
+		return false
+	}
+	return true
+}
+
 func typeMatches(t memory.Type, allowed []memory.Type) bool {
 	for _, a := range allowed {
 		if t == a {
@@ -776,17 +863,23 @@ func scanByTypes(s *store.Store, types []memory.Type) ([]memory.ID, int, error) 
 
 // orderResults sorts res.Memories in place. Default ordering:
 //   - if res.Hops is populated (From query) → OrderHop ascending
-//   - else if res.Distances is populated (Near query) → OrderDistance ascending
+//   - else if res.Distances is populated (Near query) → OrderSalience
+//     descending (v3 #4 default, utility-primary), unless rankMode is
+//     RankDistance, which restores OrderDistance ascending
 //   - else → OrderSalience descending
 //
 // ULID ascending is the deterministic tie-break in every case.
-func orderResults(res *Result, clauses []OrderClause) error {
+func orderResults(res *Result, clauses []OrderClause, rankMode RankMode) error {
 	if len(clauses) == 0 {
 		switch {
 		case len(res.Hops) > 0:
 			clauses = []OrderClause{{Field: OrderHop, Direction: OrderAsc}}
 		case len(res.Distances) > 0:
-			clauses = []OrderClause{{Field: OrderDistance, Direction: OrderAsc}}
+			if rankMode == RankDistance {
+				clauses = []OrderClause{{Field: OrderDistance, Direction: OrderAsc}}
+			} else {
+				clauses = []OrderClause{{Field: OrderSalience, Direction: OrderDesc}}
+			}
 		default:
 			clauses = []OrderClause{{Field: OrderSalience, Direction: OrderDesc}}
 		}

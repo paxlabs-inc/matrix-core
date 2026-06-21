@@ -392,28 +392,35 @@ func (p *Pager) identityDID() string {
 //
 // The seeds then cascade over the relationship graph (cortex edges, depth 2,
 // both directions) so connected memories surface with a hop-decayed score
-// (0.7^hop). A supersession filter drops any candidate a newer memory replaces
-// (live inbound EdgeSupersedes) so Neo sees the current version; contradiction
-// edges annotate the conflicting pair so Neo reconciles before trusting. Sorted
-// by score desc (stable on first-seen order) and bounded by RetrievalTopK.
+// (0.7^hop). A bi-temporal validity filter (v3 #2) drops any candidate whose
+// valid-time has been closed (ValidUntil <= now, stamped on supersession) so
+// Neo sees the current version; contradiction edges annotate the conflicting
+// pair so Neo reconciles before trusting. Sorted by score desc (stable on
+// first-seen order) and bounded by RetrievalTopK.
 func (p *Pager) Retrieve(ctx context.Context, queryText string) ([]Snippet, error) {
 	type cand struct {
-		snip  Snippet
-		id    memory.ID
-		score float32
-		order int
+		snip       Snippet
+		id         memory.ID
+		score      float32
+		order      int
+		validUntil *time.Time // v3 #2: closed valid-time of the memory's current version
 	}
 	var (
 		cands []cand
 		idx   = map[string]int{} // uri -> index into cands
 	)
-	addScored := func(s Snippet, score float32) {
+	addScored := func(s Snippet, score float32, validUntil *time.Time) {
 		if s.URI == "" {
 			return
 		}
 		if j, ok := idx[s.URI]; ok {
 			if score > cands[j].score { // keep the strongest path to a memory
 				cands[j].score = score
+			}
+			// A later lane (e.g. cascade) may carry the closing bound the
+			// first lane lacked; adopt it so the validity filter still fires.
+			if cands[j].validUntil == nil && validUntil != nil {
+				cands[j].validUntil = validUntil
 			}
 			return
 		}
@@ -422,12 +429,14 @@ func (p *Pager) Retrieve(ctx context.Context, queryText string) ([]Snippet, erro
 			id = mid
 		}
 		idx[s.URI] = len(cands)
-		cands = append(cands, cand{snip: s, id: id, score: score, order: len(cands)})
+		cands = append(cands, cand{snip: s, id: id, score: score, order: len(cands), validUntil: validUntil})
 	}
 
-	// --- seed lanes (base score 1.0): semantic HNSW + the always-on
-	// salience lane (covers memories written this session that the async
-	// embedder hasn't indexed yet). ---
+	// --- seed lanes: semantic HNSW + the always-on salience lane (covers
+	// memories written this session that the async embedder hasn't indexed
+	// yet). v3 #4: seeds carry cortex's utility-keyed salience score as their
+	// base (res.Scores), not a flat 1.0, so the working set orders by "did
+	// this help" before the cascade hop-decay + recency multiplier apply. ---
 	if p.hasEmbedder && strings.TrimSpace(queryText) != "" {
 		if res, err := p.cortex.Find(query.Query{
 			Near:         queryText,
@@ -435,8 +444,8 @@ func (p *Pager) Retrieve(ctx context.Context, queryText string) ([]Snippet, erro
 			BudgetTokens: p.cfg.RetrievalBudgetTokens,
 			Form:         query.FormMedium,
 		}); err == nil {
-			for _, s := range renderSnippets(res) {
-				addScored(s, 1.0)
+			for _, ss := range renderScoredSnippets(res) {
+				addScored(ss.snip, ss.score, ss.validUntil)
 			}
 		}
 	}
@@ -453,8 +462,8 @@ func (p *Pager) Retrieve(ctx context.Context, queryText string) ([]Snippet, erro
 		return nil, err
 	}
 	if err == nil {
-		for _, s := range renderSnippets(res) {
-			addScored(s, 1.0)
+		for _, ss := range renderScoredSnippets(res) {
+			addScored(ss.snip, ss.score, ss.validUntil)
 		}
 	}
 
@@ -470,16 +479,22 @@ func (p *Pager) Retrieve(ctx context.Context, queryText string) ([]Snippet, erro
 	}
 	for _, seedURI := range seeds {
 		for _, ns := range p.cascadeNeighbors(seedURI) {
-			addScored(ns.snip, ns.score)
+			addScored(ns.snip, ns.score, ns.validUntil)
 		}
 	}
 
-	// --- supersession filter: drop any candidate a newer memory supersedes
-	// (a live inbound EdgeSupersedes) so Neo sees the current version, not the
-	// stale one it corrects. ---
+	now := time.Now().UTC()
+
+	// --- supersession / expiry filter (v3 #2): drop any candidate whose
+	// valid-time has been closed. A superseded memory carries ValidUntil =
+	// successor.valid-from (stamped by relate -> cortex.CloseValidity), so an
+	// O(1) pointer check replaces the old O(edges) inbound-EdgeSupersedes
+	// walk. Seeds were already validity-filtered at the cortex query layer;
+	// this catches superseded memories the cascade pulled back in over the
+	// EdgeSupersedes edge that is deliberately retained for provenance. ---
 	kept := cands[:0]
 	for _, c := range cands {
-		if !c.id.IsZero() && p.isSuperseded(c.id) {
+		if c.validUntil != nil && !c.validUntil.After(now) {
 			continue
 		}
 		kept = append(kept, c)
@@ -506,7 +521,6 @@ func (p *Pager) Retrieve(ctx context.Context, queryText string) ([]Snippet, erro
 	// score by a recency multiplier keyed by its type before the final top-K
 	// cut. Cortex's stored Score, sc.Cached, and the journaled 90d half-life
 	// are untouched — this only re-orders Neo's working set. ---
-	now := time.Now().UTC()
 	for i := range cands {
 		cands[i].score *= recencyMultiplier(cands[i].snip.Type, p.lastUsedNano(cands[i].id), now)
 	}
@@ -555,10 +569,13 @@ func hopDecay(hop int) float32 {
 	return m
 }
 
-// scoredSnip pairs a rendered cascade neighbor with its hop-decayed score.
+// scoredSnip pairs a rendered memory with its score and the closed valid-time
+// (v3 #2) of its current version (nil = still valid) so the Retrieve filter can
+// drop superseded/expired memories with an O(1) pointer check.
 type scoredSnip struct {
-	snip  Snippet
-	score float32
+	snip       Snippet
+	score      float32
+	validUntil *time.Time
 }
 
 // cascadeNeighbors runs a depth-2, both-direction BFS from seedURI over the
@@ -599,25 +616,11 @@ func (p *Pager) cascadeNeighbors(seedURI string) []scoredSnip {
 				URI:  string(cortex.BuildURI(m.Head.Type, m.Head.ID, m.Head.CurrentVersion)),
 				Type: m.Head.Type.String(),
 			},
-			score: hopDecay(res.Hops[m.Head.ID]),
+			score:      hopDecay(res.Hops[m.Head.ID]),
+			validUntil: m.Version.ValidUntil,
 		})
 	}
 	return out
-}
-
-// isSuperseded reports whether a live EdgeSupersedes points AT id (i.e. a newer
-// memory supersedes it). Edges are written new -> old, so an inbound supersedes
-// edge marks id as the stale side. Best-effort: an iter error reads as "not
-// superseded" so a transient fault never hides a real memory.
-func (p *Pager) isSuperseded(id memory.ID) bool {
-	found := false
-	_ = p.cortex.IterEdgesIn(id, cortex.IterEdgesOptions{
-		Types: []memory.EdgeType{memory.EdgeSupersedes},
-	}, func(*memory.EdgeRecord) error {
-		found = true
-		return nil
-	})
-	return found
 }
 
 // contradictsAnyOf reports whether id is joined by a live contradiction edge to
@@ -723,11 +726,16 @@ func (p *Pager) Procedural(ctx context.Context, goal string) ([]Pattern, error) 
 	return out, nil
 }
 
-func renderSnippets(res *query.Result) []Snippet {
+// renderScoredSnippets renders res into snippets paired with each memory's
+// cortex salience score (res.Scores), so the seed lanes rank by utility
+// instead of a flat 1.0 (v3 #4). A memory missing from res.Scores defaults
+// to 0 — it sinks to the bottom of the working set, which is the correct
+// posture for a memory cortex assigned no utility.
+func renderScoredSnippets(res *query.Result) []scoredSnip {
 	if res == nil {
 		return nil
 	}
-	out := make([]Snippet, 0, len(res.Memories))
+	out := make([]scoredSnip, 0, len(res.Memories))
 	for i, m := range res.Memories {
 		text := ""
 		if i < len(res.Rendered) {
@@ -739,10 +747,14 @@ func renderSnippets(res *query.Result) []Snippet {
 		if strings.TrimSpace(text) == "" {
 			continue
 		}
-		out = append(out, Snippet{
-			Text: text,
-			URI:  string(cortex.BuildURI(m.Head.Type, m.Head.ID, m.Head.CurrentVersion)),
-			Type: m.Head.Type.String(),
+		out = append(out, scoredSnip{
+			snip: Snippet{
+				Text: text,
+				URI:  string(cortex.BuildURI(m.Head.Type, m.Head.ID, m.Head.CurrentVersion)),
+				Type: m.Head.Type.String(),
+			},
+			score:      res.Scores[m.Head.ID],
+			validUntil: m.Version.ValidUntil,
 		})
 	}
 	return out

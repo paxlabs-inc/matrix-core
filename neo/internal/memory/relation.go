@@ -6,6 +6,7 @@ package memory
 import (
 	"context"
 	"strings"
+	"time"
 
 	"matrix/cortex"
 	"matrix/cortex/forms"
@@ -162,10 +163,24 @@ func (p *Pager) relate(fromURI, toURI string, rel Relation, hint string) error {
 	if fromID == toID {
 		return nil // a memory cannot relate to itself
 	}
-	return p.cortex.AddEdge(fromID, et, toID, cortex.AddEdgeMeta{
+	if err := p.cortex.AddEdge(fromID, et, toID, cortex.AddEdgeMeta{
 		CreatedBy: p.cfg.CortexActor,
 		Data:      []byte(strings.TrimSpace(hint)),
-	})
+	}); err != nil {
+		return err
+	}
+	// v3 #2: a supersedes edge (new -> old) closes the OLD memory's
+	// valid-time so retrieval's O(1) validity check drops it instead of an
+	// inbound-edge walk; the edge itself stays for cascade provenance and
+	// "what changed" answers. CloseValidity defaults the close instant to the
+	// cortex clock (≈ the successor's valid-from, written this same step) and
+	// is idempotent, so a re-relate / edge revive doesn't churn versions.
+	if et == memory.EdgeSupersedes {
+		if _, err := p.cortex.CloseValidity(memory.URI(toURI), time.Time{}, p.cfg.CortexActor); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // writeWithRelations is the conflict-aware write core shared by every Remember*
