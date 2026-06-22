@@ -59,14 +59,14 @@ func TestValidateCompletionStructural(t *testing.T) {
 	a := New(Options{Config: config.Default()})
 
 	// Empty summary rejects.
-	if v := a.validateCompletion(context.Background(), completeCall(`{"summary":"  ","coverage":"full"}`), false, ""); v.ok {
+	if v := a.validateCompletion(context.Background(), completeCall(`{"summary":"  ","coverage":"full"}`), false, false, ""); v.ok {
 		t.Error("empty summary must reject")
 	}
 	// Missing / bad coverage rejects.
-	if v := a.validateCompletion(context.Background(), completeCall(`{"summary":"hi"}`), false, ""); v.ok {
+	if v := a.validateCompletion(context.Background(), completeCall(`{"summary":"hi"}`), false, false, ""); v.ok {
 		t.Error("missing coverage must reject")
 	}
-	if v := a.validateCompletion(context.Background(), completeCall(`{"summary":"hi","coverage":"mostly"}`), false, ""); v.ok {
+	if v := a.validateCompletion(context.Background(), completeCall(`{"summary":"hi","coverage":"mostly"}`), false, false, ""); v.ok {
 		t.Error("invalid coverage must reject")
 	}
 }
@@ -74,12 +74,12 @@ func TestValidateCompletionStructural(t *testing.T) {
 func TestValidateCompletionCoherenceGuardG1(t *testing.T) {
 	a := New(Options{Config: config.Default()})
 	// coverage=full with a non-empty open_gaps list is incoherent → reject.
-	v := a.validateCompletion(context.Background(), completeCall(`{"summary":"all done","coverage":"full","open_gaps":["the API key is still unset"]}`), false, "")
+	v := a.validateCompletion(context.Background(), completeCall(`{"summary":"all done","coverage":"full","open_gaps":["the API key is still unset"]}`), false, false, "")
 	if v.ok {
 		t.Error("coverage=full with open gaps must reject (g1)")
 	}
 	// Same content as partial is honest → accept.
-	if v := a.validateCompletion(context.Background(), completeCall(`{"summary":"got most of it","coverage":"partial","open_gaps":["the API key is still unset"]}`), false, ""); !v.ok {
+	if v := a.validateCompletion(context.Background(), completeCall(`{"summary":"got most of it","coverage":"partial","open_gaps":["the API key is still unset"]}`), false, false, ""); !v.ok {
 		t.Errorf("honest partial must accept, got reject: %s", v.feedback)
 	}
 }
@@ -88,7 +88,7 @@ func TestValidateCompletionLightPath(t *testing.T) {
 	a := New(Options{Config: config.Default()})
 	// Reversible turn (stateTouched=false): a well-formed object accepts even
 	// with no evidence — the light path carries no false-alarm tax.
-	v := a.validateCompletion(context.Background(), completeCall(`{"summary":"Hello! How can I help?","coverage":"full"}`), false, "")
+	v := a.validateCompletion(context.Background(), completeCall(`{"summary":"Hello! How can I help?","coverage":"full"}`), false, false, "")
 	if !v.ok || v.answer != "Hello! How can I help?" {
 		t.Errorf("light path must accept and carry the summary, got ok=%v answer=%q", v.ok, v.answer)
 	}
@@ -101,7 +101,7 @@ func TestValidateCompletionStrictRequiresEvidence(t *testing.T) {
 		llm.ToolResult("chain", "chain_info", `{"blockNumber":20531991,"chainId":125}`),
 	}
 	// State-touching turn with NO cited evidence → reject (positive proof).
-	if v := a.validateCompletion(context.Background(), completeCall(`{"summary":"The block height is 20531991.","coverage":"full"}`), true, ""); v.ok {
+	if v := a.validateCompletion(context.Background(), completeCall(`{"summary":"The block height is 20531991.","coverage":"full"}`), true, true, ""); v.ok {
 		t.Error("state-touching completion with no evidence must reject")
 	}
 }
@@ -114,7 +114,7 @@ func TestValidateCompletionStrictRejectsPhantomEvidence(t *testing.T) {
 	}
 	// The classic failure: claim a fact (123456) that NO tool result supports.
 	// The cited evidence is phantom → reject (g3-analog: no phantom evidence).
-	v := a.validateCompletion(context.Background(), completeCall(`{"summary":"The block height is 123456.","coverage":"full","evidence":["chain_info returned blockNumber 123456"]}`), true, "")
+	v := a.validateCompletion(context.Background(), completeCall(`{"summary":"The block height is 123456.","coverage":"full","evidence":["chain_info returned blockNumber 123456"]}`), true, true, "")
 	if v.ok {
 		t.Error("phantom evidence (123456 absent from transcript) must reject")
 	}
@@ -128,7 +128,7 @@ func TestValidateCompletionStrictAcceptsGroundedEvidence(t *testing.T) {
 	}
 	// Evidence whose salient token (the real block number) appears in the
 	// transcript is grounded → accept.
-	v := a.validateCompletion(context.Background(), completeCall(`{"summary":"The block height is 20531991.","coverage":"full","evidence":["chain_info returned blockNumber 20531991"]}`), true, "")
+	v := a.validateCompletion(context.Background(), completeCall(`{"summary":"The block height is 20531991.","coverage":"full","evidence":["chain_info returned blockNumber 20531991"]}`), true, true, "")
 	if !v.ok {
 		t.Errorf("grounded evidence must accept, got reject: %s", v.feedback)
 	}

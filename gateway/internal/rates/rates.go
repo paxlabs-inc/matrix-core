@@ -56,7 +56,13 @@ import (
 // slot: Neo's cortex pager now does real semantic page-faulting through the
 // gateway /v1/embeddings route. Embeddings are input-only (no completion
 // side), so the output rate is 0. USD target $0.008/Mtoken (Fireworks list).
-const RateTableVersion = 5
+//
+// v6 (2026-06-22, Andrew approved) adds deepseek-ai/DeepSeek-V4-Pro (Together)
+// as Neo's main conversational loop model, replacing Qwen/Qwen3.7-Max on the
+// `neo` slot whitelist. NOTE: the rate is a PLACEHOLDER mirrored from the
+// Fireworks v4-pro tier ($1/$2 per Mtoken) — replace with the real Together
+// provider price. The Qwen row stays on the card (still used by other slots).
+const RateTableVersion = 6
 
 // PaxUsdReference is the USD price of 1 PAX the v3 rate card was
 // denominated against. Exposed so ops/telemetry can re-derive or
@@ -110,7 +116,11 @@ const (
 	ModelDeepSeekV4Flash  = "accounts/fireworks/models/deepseek-v4-flash"
 	ModelDeepSeekV4Pro    = "accounts/fireworks/models/deepseek-v4-pro"
 	ModelKimiK26          = "Qwen/Qwen3.7-Max"
-	ModelGLM5p1Fast       = "accounts/fireworks/routers/glm-5p1-fast"
+	// ModelNeoMain is Neo's main conversational loop model: the Together-served
+	// DeepSeek-V4-Pro (NOT the Fireworks deepseek-v4-pro — different provider
+	// route + string). Pinned on the `neo` slot via neo config.MainModel.
+	ModelNeoMain    = "deepseek-ai/DeepSeek-V4-Pro"
+	ModelGLM5p1Fast = "accounts/fireworks/routers/glm-5p1-fast"
 	ModelGPTOSS120B       = "accounts/fireworks/models/gpt-oss-120b"
 	ModelGPTOSS20B        = "accounts/fireworks/models/gpt-oss-20b"
 	ModelQwenCoder        = "Qwen/Qwen3-Coder-480B-A35B-Instruct-FP8"
@@ -189,6 +199,13 @@ var rateTable = []Rate{
 		Notes:               "Fireworks kimi-k2.6 — v1 executor upgrade (general agentic + prose)",
 	},
 	{
+		Model:               ModelNeoMain,
+		Group:               GroupReason,
+		InputPaxPerMTokens:  0.087489064, // ≈ $1.00 / Mtoken  [PLACEHOLDER — mirror of Fireworks v4-pro; set real Together price]
+		OutputPaxPerMTokens: 0.174978128, // ≈ $2.00 / Mtoken  [PLACEHOLDER — mirror of Fireworks v4-pro; set real Together price]
+		Notes:               "Together deepseek-ai/DeepSeek-V4-Pro — Neo's main conversational loop model (v6). PLACEHOLDER rate mirrored from the Fireworks v4-pro tier pending the real Together provider price.",
+	},
+	{
 		Model:               ModelGLM5p1Fast,
 		Group:               GroupSummarize,
 		InputPaxPerMTokens:  0.026246719, // ≈ $0.30 / Mtoken  [PLACEHOLDER — Andrew to set real glm-5.1 rate]
@@ -260,12 +277,16 @@ func FreeTierWhitelist() map[string][]string {
 		"liaison": {ModelDeepSeekV4Flash, ModelKimiK26, ModelDeepSeekV4Pro},
 		// neo: the Neo default conversational AGENT (SlotNeo). NOT the
 		// Liaison — Neo drives the conversation + tools and delegates money
-		// to MCL. main = kimi-k2.6 (already priced; shared with executor/
-		// planner/liaison); cheap = glm-5p1-fast (background write-back/
-		// compaction/validation), added to the rate card in v4. v5 adds
-		// nomic-embed-text-v1.5 so Neo's cortex pager can page-fault
-		// semantically through the metered /v1/embeddings route.
-		"neo": {ModelKimiK26, ModelGLM5p1Fast, ModelNomicEmbed},
+		// to MCL. v6 (2026-06-22) swaps main = deepseek-ai/DeepSeek-V4-Pro
+		// (Together) for the prior Qwen/Qwen3.7-Max, added to the rate card
+		// in v6. cheap = glm-5p1-fast (background write-back/compaction/
+		// validation), added in v4. v5 added nomic-embed-text-v1.5 so Neo's
+		// cortex pager can page-fault semantically through /v1/embeddings.
+		// deepseek-v4-flash is Neo's memory-consolidation EXTRACTOR
+		// (cfg.ConsolidationModel) — a stronger-than-glm but still cheap
+		// learning-extraction model. Already on the rate card, so adding it
+		// here is a whitelist-only change (no RateTableVersion bump).
+		"neo": {ModelNeoMain, ModelGLM5p1Fast, ModelNomicEmbed, ModelDeepSeekV4Flash},
 		// cassandra: the epistemic-completeness faculty (SlotCassandra). The
 		// MCL completeness critic moved here off the planner slot. The critic's
 		// model is criticMod() = the -critic-model knob, else the planner/

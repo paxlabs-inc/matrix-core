@@ -134,11 +134,13 @@ func runInteractive() {
 	// --- background write-back consolidation (best-effort, needs memory) ---
 	var cons agent.Consolidator
 	if pager != nil {
-		cm := cheap
-		if cm == nil {
-			cm = main
+		// Memory write-back: a stronger extractor (its quality sets memory
+		// quality) + the cheap model for the rare relation-classify path.
+		extract, eerr := newClient(cfg.ConsolidationModel, 0.2, 2048, cfg)
+		if eerr != nil || extract == nil {
+			extract = main // fall back to the main model if the extractor won't start
 		}
-		wc := writeback.New(cm, pager, cfg)
+		wc := writeback.New(extract, cheap, pager, cfg)
 		wc.Start()
 		defer wc.Stop()
 		cons = wc

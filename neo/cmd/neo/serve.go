@@ -26,6 +26,7 @@ import (
 	"matrix/neo/internal/conversation"
 	"matrix/neo/internal/memory"
 	"matrix/neo/internal/server"
+	"matrix/neo/internal/task"
 	"matrix/neo/internal/tools"
 	"matrix/neo/internal/writeback"
 )
@@ -113,11 +114,13 @@ func runServe(args []string) {
 	var cons agent.Consolidator
 	var wc *writeback.Consolidator
 	if pager != nil {
-		cm := cheap
-		if cm == nil {
-			cm = main
+		// Memory write-back: a stronger extractor (its quality sets memory
+		// quality) + the cheap model for the rare relation-classify path.
+		extract, eerr := newClient(cfg.ConsolidationModel, 0.2, 2048, cfg)
+		if eerr != nil || extract == nil {
+			extract = main // fall back to the main model if the extractor won't start
 		}
-		wc = writeback.New(cm, pager, cfg)
+		wc = writeback.New(extract, cheap, pager, cfg)
 		wc.Start()
 		cons = wc
 	}
@@ -127,6 +130,10 @@ func runServe(args []string) {
 	// daemon uses (/data/conversations in prod), so Neo + daemon threads list
 	// as one unified history and survive reload / suspend / redeploy.
 	convDir := conversation.Dir(os.Getenv("NEO_CONVERSATIONS_DIR"), cfg.CortexRoot)
+	// Durable task ledger: lives beside history on the machine volume so an
+	// in-flight task survives a restart / Fly suspend and the boot reaper can
+	// resume it (the Task Durability Rule).
+	taskDir := task.Dir(os.Getenv("NEO_TASKS_DIR"), cfg.CortexRoot)
 
 	engine := server.NewEngine(server.EngineOptions{
 		Config:          cfg,
@@ -137,12 +144,16 @@ func runServe(args []string) {
 		Consolidator:    cons,
 		Adjudicator:     newCassandraAdjudicator(cfg),
 		ConversationDir: convDir,
+		TaskDir:         taskDir,
 		MediaDir:        mediaPath,
 		BackendURL:      backendURL,
 		BackendToken:    os.Getenv("NEO_DAEMON_TOKEN"),
 	})
 	if convDir != "" {
 		fmt.Printf("  history: %s\n", convDir)
+	}
+	if taskDir != "" {
+		fmt.Printf("  tasks: %s\n", taskDir)
 	}
 	if mediaPath != "" {
 		fmt.Printf("  media: %s (served at /media)\n", mediaPath)
@@ -172,6 +183,13 @@ func runServe(args []string) {
 			fatal("listen: %v", err)
 		}
 	}()
+
+	// Boot reaper (Task Durability Rule): pick up any task left unfinished by a
+	// previous process (crash / Fly suspend mid-work) and drive it to
+	// completion — at least one agent always finishes the job.
+	if n := engine.ResumeOrphanedTasks(); n > 0 {
+		fmt.Printf("  resuming %d unfinished task(s) from the durable ledger\n", n)
+	}
 
 	<-ctx.Done()
 	fmt.Fprintln(os.Stderr, "neo: shutting down…")

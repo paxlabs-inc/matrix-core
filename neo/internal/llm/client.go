@@ -27,6 +27,14 @@ import (
 // retry. Detect with errors.Is(err, llm.ErrRequestTooLarge).
 var ErrRequestTooLarge = errors.New("neo/llm: request body too large")
 
+// ErrProviderRejected marks a deterministic 4xx validation reject (e.g. a 400
+// "InvalidParameter" on the function/tool fields). It is NOT recoverable by
+// retrying the identical body — the request shape itself is bad — so callers
+// must stop the retry ladder when they see it instead of burning calls (and,
+// on a metered gateway, real spend) re-sending the same rejected request.
+// Detect with errors.Is(err, llm.ErrProviderRejected).
+var ErrProviderRejected = errors.New("neo/llm: provider rejected request (non-retryable)")
+
 // Client is an OpenAI-compatible chat-completions client that speaks native
 // function calling (tools + tool_calls + tool-role results).
 //
@@ -195,6 +203,19 @@ func (c *Client) Chat(ctx context.Context, req ChatRequest) (*ChatResult, error)
 				detail = truncate(string(respBody), 256)
 			}
 			return nil, fmt.Errorf("%w (%s http %d): %s", ErrRequestTooLarge, c.provider, resp.StatusCode, detail)
+		}
+		// Deterministic 4xx validation rejects (e.g. a 400 "InvalidParameter"
+		// on the function/tool fields) are non-retryable: the body itself is
+		// bad, so the retry ladder must stop rather than re-send it. 408
+		// (timeout) and 429 (rate limit) stay retryable; 413 was handled above.
+		if resp.StatusCode >= 400 && resp.StatusCode < 500 &&
+			resp.StatusCode != http.StatusRequestTimeout &&
+			resp.StatusCode != http.StatusTooManyRequests {
+			detail := errMsg
+			if detail == "" {
+				detail = truncate(string(respBody), 256)
+			}
+			return nil, fmt.Errorf("%w (%s http %d): %s", ErrProviderRejected, c.provider, resp.StatusCode, detail)
 		}
 		if errMsg != "" {
 			return nil, fmt.Errorf("neo/llm: %s http %d: %s (type=%s)", c.provider, resp.StatusCode, errMsg, errType)
@@ -526,10 +547,39 @@ func toWireMessages(msgs []Message) []wireMessage {
 		out[i] = wireMessage{
 			Role:       m.Role,
 			Content:    m.Content,
-			ToolCalls:  m.ToolCalls,
+			ToolCalls:  sanitizeToolCalls(m.ToolCalls),
 			ToolCallID: m.ToolCallID,
 			Name:       m.Name,
 		}
+	}
+	return out
+}
+
+// sanitizeToolCalls guarantees every REPLAYED assistant tool_call carries a
+// well-formed function before it goes back on the wire. A truncated or
+// malformed generation can leave function.arguments empty or non-JSON; the
+// transcript is re-sent verbatim every turn, so replaying such a call makes a
+// strict provider (e.g. Together's DeepSeek-V4-Pro) reject the WHOLE request
+// with a 400 on the function field — which permanently wedges the conversation
+// (every later turn carries the same poison). Coercing empty/invalid arguments
+// to "{}" keeps the call structurally valid AND preserves the assistant↔
+// tool_call_id pairing (so the matching tool-result is never orphaned). The
+// agent already recorded the real parse error as that tool's result, so the
+// model still gets the feedback it needs to re-issue the call correctly.
+func sanitizeToolCalls(calls []ToolCall) []ToolCall {
+	if len(calls) == 0 {
+		return calls
+	}
+	out := make([]ToolCall, len(calls))
+	for i, tc := range calls {
+		if tc.Type == "" {
+			tc.Type = "function"
+		}
+		args := strings.TrimSpace(tc.Function.Arguments)
+		if args == "" || !json.Valid([]byte(args)) {
+			tc.Function.Arguments = "{}"
+		}
+		out[i] = tc
 	}
 	return out
 }

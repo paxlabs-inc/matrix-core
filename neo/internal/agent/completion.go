@@ -82,7 +82,7 @@ func batchTouchesState(calls []llm.ToolCall) bool {
 // open unknowns) instead of the Phase-1 deterministic grounding check, which
 // remains the fail-open fallback. userRequest is the contract this turn must
 // satisfy.
-func (a *Agent) validateCompletion(ctx context.Context, call *llm.ToolCall, stateTouched bool, userRequest string) completionVerdict {
+func (a *Agent) validateCompletion(ctx context.Context, call *llm.ToolCall, strict, highStakes bool, userRequest string) completionVerdict {
 	args, err := call.ParseArgs()
 	if err != nil {
 		return completionVerdict{feedback: fmt.Sprintf("could not parse your task_complete arguments (%v). Re-issue it with valid JSON: summary, coverage (\"full\"|\"partial\"), evidence[], open_gaps[], assumptions[].", err)}
@@ -109,19 +109,21 @@ func (a *Agent) validateCompletion(ctx context.Context, call *llm.ToolCall, stat
 		return completionVerdict{feedback: "you set coverage=\"full\" but listed open gaps: " + joinGaps(openGaps) + ". Either finish those items and re-call task_complete, or set coverage=\"partial\" and tell the user plainly what remains unresolved."}
 	}
 
-	// Light path: a pure reversible turn carries no false-alarm tax — defer to
-	// the agent once the object is structurally coherent ([coupling].reversible,
-	// placement-by-reversibility, i_cass_5).
-	if !stateTouched {
+	// Light path: a pure conversational turn (no substantive tool work) carries
+	// no false-alarm tax — defer to the agent once the object is structurally
+	// coherent ([coupling].reversible, placement-by-reversibility, i_cass_5).
+	if !strict {
 		return completionVerdict{ok: true, answer: summary}
 	}
 
-	// Strict path: the turn hit the irreversible seam (core_execute) and must
-	// back its claims with real executed evidence ([coupling].high_stakes,
-	// i_cass_2). Prefer the full Cassandra adjudicator; fall back to the
-	// deterministic grounding check when none is wired.
+	// Strict path: a state-touching (money/chain) turn, OR — under GateAllWork —
+	// any substantial deliverable, must back its claims with real executed
+	// evidence ([coupling].high_stakes, i_cass_2). Prefer the full Cassandra
+	// adjudicator; fall back to the deterministic grounding check when none is
+	// wired. highStakes (money/chain) drives the adjudicator's escalation; a
+	// reversible-but-substantial turn is still grounded-audited, not escalated.
 	if a.adjudicator != nil {
-		return a.adjudicateCompletion(ctx, userRequest, summary, coverage, evidence, openGaps, assumptions)
+		return a.adjudicateCompletion(ctx, userRequest, summary, coverage, evidence, openGaps, assumptions, highStakes)
 	}
 	if r := a.deterministicStrict(evidence); !r.ok {
 		return r
@@ -159,19 +161,19 @@ func (a *Agent) deterministicStrict(evidence []string) completionVerdict {
 // Honest partials are preserved (i_cass_1): a turn the agent itself declares
 // partial finishes as a partial, provided its claims are grounded — Cassandra
 // blocks false SUCCESS, not honest incompleteness.
-func (a *Agent) adjudicateCompletion(ctx context.Context, userRequest, summary, coverage string, evidence, openGaps, assumptions []string) completionVerdict {
+func (a *Agent) adjudicateCompletion(ctx context.Context, userRequest, summary, coverage string, evidence, openGaps, assumptions []string, highStakes bool) completionVerdict {
 	digest := a.buildEvidenceDigest()
 	priors := cassandra.ScanPriors(cassandra.PriorInput{Evidence: digest})
 	a.emitAudit(auditEventAudit, map[string]interface{}{
 		"stage":          "started",
-		"high_stakes":    true,
+		"high_stakes":    highStakes,
 		"priors_flagged": priors.FlagsCompletionRisk(),
 	})
 
 	v, err := a.adjudicator.Adjudicate(ctx, cassandra.AuditInput{
 		Request:    buildAuditContract(userRequest, summary, coverage, evidence, openGaps, assumptions),
 		Evidence:   digest,
-		HighStakes: true,
+		HighStakes: highStakes,
 		Priors:     priors,
 	})
 	if err != nil {
@@ -372,10 +374,19 @@ func (a *Agent) finishTurn(ctx context.Context, answer string, surfaced map[stri
 	a.out.Say(answer)
 	// [memory.writeback] step_5: consolidate before any compaction nils the
 	// working transcript.
-	if a.consolidator != nil {
-		a.consolidator.Consolidate(renderTranscript(a.working))
-	}
+	a.consolidateWorking()
 	// Attest surfaced memories so cortex salience + EMA learn from what helped
 	// vs. what merely crowded the budget. Cheap, best-effort.
 	a.attestTurn(ctx, surfaced, surfacedSnips, userInput, answer)
+}
+
+// consolidateWorking sweeps the current turn's transcript into cortex (write-
+// back option B). Called on EVERY terminal path — success, stall, step-budget
+// exhaustion, and model error — so Neo also learns from failed/abandoned turns
+// (a failure pattern is durable signal), not only from clean completions.
+// Best-effort + idempotent enough: the consolidator de-dupes on write.
+func (a *Agent) consolidateWorking() {
+	if a.consolidator != nil {
+		a.consolidator.Consolidate(renderTranscript(a.working))
+	}
 }

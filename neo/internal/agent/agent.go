@@ -32,6 +32,16 @@ import (
 	"matrix/neo/internal/tools"
 )
 
+// ErrIncomplete marks a turn that ended WITHOUT completing the task: the loop
+// stalled (no progress) or exhausted its step budget. It is distinct from a
+// model/transport error and from a genuine completion (nil). The task
+// supervisor (internal/server) treats it as "not done — keep going": it
+// respawns a fresh agent over durable state and continues, rather than
+// surfacing a fake "Done" to the user. The wrapped text carries a short,
+// honest where-I-got-stuck digest for the next attempt's catch-up.
+// Detect with errors.Is(err, agent.ErrIncomplete).
+var ErrIncomplete = errors.New("neo: turn incomplete (task not finished)")
+
 // Consolidator is the background write-back hook: it receives a completed
 // turn's transcript and promotes durable learnings to cortex out-of-band.
 // Implemented by internal/writeback; optional (nil disables write-back).
@@ -255,6 +265,13 @@ func (a *Agent) Chat(ctx context.Context, userInput string) error {
 	// completeness object) over the reversible light path — the placement rule
 	// of the Cassandra Phase 1 completion gate.
 	stateTouched := false
+	// workTouched latches once this turn runs ANY non-trivial tool (not just
+	// the money/chain seam). Under GateAllWork it promotes a substantial
+	// reversible deliverable (a researched paper, a built site, generated code)
+	// onto the grounded completion path too — so "done" is proven, not
+	// self-asserted — while a pure conversational turn (no tools) still ends on
+	// the frictionless light path. This is the "highest standard" gate.
+	workTouched := false
 
 	for step := 0; step < a.cfg.StepBudget; step++ {
 		// Mid-turn page-fault refresh: long tool loops drift away from the
@@ -351,8 +368,19 @@ func (a *Agent) Chat(ctx context.Context, userInput string) error {
 				}
 			}
 			if err != nil {
+				a.consolidateWorking()
 				return fmt.Errorf("neo: model call failed: %w", err)
 			}
+		}
+		// A truncated generation (finish_reason=length) that ALSO carries tool
+		// calls is a half-formed call: the model almost certainly inlined a
+		// large payload as an argument and got cut off mid-JSON. Persisting it
+		// would poison the transcript — it is re-sent verbatim every turn and a
+		// strict provider 400s the malformed function, wedging the whole
+		// conversation. Drop the cut-off turn and nudge for a compact retry.
+		if res.FinishReason == "length" && res.HasToolCalls() {
+			a.working = append(a.working, llm.UserMessage("(your last tool call was cut off by the output limit before its arguments finished — don't inline large content as a tool argument. Write large files in chunks/appends, or call the tool with compact arguments.)"))
+			continue
 		}
 		a.working = append(a.working, res.Message)
 		if batchTouchesState(res.Message.ToolCalls) {
@@ -392,12 +420,12 @@ func (a *Agent) Chat(ctx context.Context, userInput string) error {
 				a.working = append(a.working, llm.UserMessage("(continue: either call a tool to make progress, or give the final answer)"))
 				continue
 			}
-			// State-touching turns may not end with an unaudited bare message:
-			// nudge toward the completion gate so completion is proven, not
-			// assumed. Reversible chat rides the light path (i_cass_5,
-			// placement-by-reversibility) and ends frictionlessly.
-			if stateTouched {
-				a.working = append(a.working, llm.UserMessage("(you took an action this turn, so don't finish with a plain message — call task_complete with an honest completeness object: a summary for the user, coverage, the real evidence behind your claims, and anything still open.)"))
+			// A turn that did real work may not end with an unaudited bare
+			// message: nudge toward the completion gate so completion is proven,
+			// not assumed. A pure conversational turn (no tools) rides the light
+			// path (i_cass_5, placement-by-reversibility) and ends frictionlessly.
+			if a.gateStrict(stateTouched, workTouched) {
+				a.working = append(a.working, llm.UserMessage("(you did real work this turn, so don't finish with a plain message — call task_complete with an honest completeness object: a summary for the user, coverage, the real evidence behind your claims, and anything still open.)"))
 				continue
 			}
 			a.finishTurn(ctx, answer, surfaced, surfacedSnips, userInput)
@@ -416,13 +444,14 @@ func (a *Agent) Chat(ctx context.Context, userInput string) error {
 		if cc, rest := splitCompletion(res.Message.ToolCalls); cc != nil {
 			if len(rest) > 0 {
 				a.runToolCalls(ctx, rest)
+				workTouched = true
 				if batchTouchesState(rest) {
 					stateTouched = true
 				}
 				a.working = append(a.working, llm.ToolResult(cc.ID, tools.TaskCompleteTool, "You called task_complete alongside other tools. Review their results above, then call task_complete on its own once you are actually done."))
 				continue
 			}
-			verdict := a.validateCompletion(ctx, cc, stateTouched, userInput)
+			verdict := a.validateCompletion(ctx, cc, a.gateStrict(stateTouched, workTouched), stateTouched, userInput)
 			if verdict.ok {
 				a.working = append(a.working, llm.ToolResult(cc.ID, tools.TaskCompleteTool, "Completion accepted."))
 				a.finishTurn(ctx, verdict.answer, surfaced, surfacedSnips, userInput)
@@ -451,16 +480,42 @@ func (a *Agent) Chat(ctx context.Context, userInput string) error {
 			prevSig = sig
 		}
 		if repeats >= a.cfg.NoProgressStall {
-			a.out.Say("I'm repeating the same step without making progress, so I'm stopping rather than spinning. Here's where I got stuck:\n" + a.lastToolSummary())
-			return nil
+			// No-progress stall: do NOT fabricate a close. Return an incomplete
+			// signal so the supervisor can respawn a fresh agent and continue —
+			// the task is not done. (On the bare CLI path, with no supervisor, the
+			// wrapped reason is printed.)
+			a.consolidateWorking()
+			return fmt.Errorf("%w: repeating the same step without progress. Where it got stuck: %s", ErrIncomplete, oneLine(a.lastToolSummary()))
 		}
 
 		a.runToolCalls(ctx, res.Message.ToolCalls)
+		workTouched = true
 	}
 
-	// [loop_discipline] step budget exhausted → honest partial, never fabricate.
-	a.out.Say("I've reached my step budget for this turn without fully finishing, and I don't want to keep going blindly. Here's where I am:\n" + a.lastToolSummary() + "\n\nTell me how you'd like me to proceed.")
-	return nil
+	// [loop_discipline] step budget exhausted → NOT done. Never fabricate a
+	// close: return an incomplete signal so the supervisor keeps going with a
+	// fresh window rather than stopping with a partial.
+	a.consolidateWorking()
+	return fmt.Errorf("%w: reached the step budget without finishing. Progress so far: %s", ErrIncomplete, oneLine(a.lastToolSummary()))
+}
+
+// gateStrict reports whether THIS turn must finish through the grounded
+// completion gate rather than the light structural path: always for a
+// state-touching (money/chain) turn, and — under GateAllWork — for any turn
+// that did substantive tool work. A pure conversational turn (no tools) stays
+// on the light path.
+func (a *Agent) gateStrict(stateTouched, workTouched bool) bool {
+	return stateTouched || (a.cfg.GateAllWork && workTouched)
+}
+
+// oneLine collapses whitespace and clamps a digest to a single readable line
+// for an error/diagnostic string.
+func oneLine(s string) string {
+	s = strings.Join(strings.Fields(s), " ")
+	if len(s) > 400 {
+		s = s[:400] + "…"
+	}
+	return s
 }
 
 // Reset clears the live transcript + summary + goal (new conversation).
@@ -468,6 +523,21 @@ func (a *Agent) Reset() {
 	a.working = nil
 	a.summary = ""
 	a.activeGoal = ""
+}
+
+// BestEffort returns the most honest "where things stand" digest the agent can
+// produce WITHOUT having finished — the latest assistant narration, else the
+// consolidated summary, else the last tool summary. The task supervisor uses
+// it to deliver a truthful partial when a task hits its hard ceiling; it is
+// never a fabricated success. Empty when there is genuinely nothing to report.
+func (a *Agent) BestEffort() string {
+	if s := strings.TrimSpace(lastAssistantText(a.working, 1600)); s != "" {
+		return s
+	}
+	if s := strings.TrimSpace(a.summary); s != "" {
+		return s
+	}
+	return strings.TrimSpace(a.lastToolSummary())
 }
 
 // Seed primes a freshly-minted agent with a resumed conversation's durable
@@ -691,6 +761,12 @@ func (a *Agent) chatWithRetry(ctx context.Context, req llm.ChatRequest) (*llm.Ch
 		}
 		lastErr = err
 		if ctx.Err() != nil {
+			break
+		}
+		// A deterministic 4xx validation reject won't change on a retry of the
+		// identical body — stop the ladder rather than burn calls (and metered
+		// spend) re-sending it.
+		if errors.Is(err, llm.ErrProviderRejected) {
 			break
 		}
 	}

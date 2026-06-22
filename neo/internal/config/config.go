@@ -18,6 +18,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
 )
 
 // Config is Neo's fully-resolved runtime configuration.
@@ -32,7 +33,12 @@ type Config struct {
 
 	// --- models (provider-qualified ids; see matrix/mcl/llm DetectProvider) ---
 	MainModel  string // the conversational tool-calling loop
-	CheapModel string // background write-back, compaction + summary validation
+	CheapModel string // compaction + summary validation + cheap relation-classify
+	// ConsolidationModel extracts durable learnings from each turn's transcript
+	// into cortex (memory write-back). A stronger model than CheapModel because
+	// extraction quality directly sets memory quality; still cheap-tier (it runs
+	// once per turn in the background). Must be on the gateway neo-slot whitelist.
+	ConsolidationModel string
 	EmbedModel string // semantic page-fault embeddings (gateway /v1/embeddings or direct provider)
 	// CassandraModel is the cheap/fast Cassandra completeness auditor (the
 	// completion-gate adjudicator, metered on the dedicated "cassandra" slot);
@@ -70,6 +76,16 @@ type Config struct {
 	MaxConcurrentSubagents int // semaphore: how many sub-agents run at once (the rest queue)
 	SubagentStepBudget     int // per-sub-agent tool-call iteration budget (smaller than the parent's)
 
+	// --- task supervisor (durability: a dispatched task runs to completion
+	// across model errors, tool failures, early loop-ends, user disconnects,
+	// and even daemon restart/suspend — at least one agent stays on it until
+	// the objective is met to standard; see the Task Durability Rule) ---
+	SuperviseTasks     bool          // master switch: wrap each turn in the persistent supervisor
+	GateAllWork        bool          // route substantial reversible deliverables through the completion gate too (not just money/chain turns)
+	TaskMaxWall        time.Duration // hard wall-clock ceiling for one supervised task (generous; anti-runaway)
+	TaskAttemptTimeout time.Duration // ceiling for a single supervised attempt (one agent run)
+	TaskMaxRespawns    int           // max fresh-agent respawns before delivering an honest partial
+
 	// --- procedural memory guards ---
 	MinPatternSuccesses int // successes required before a candidate pattern is injected
 
@@ -93,8 +109,9 @@ func Default() Config {
 		ManifestPath: "agents/default.json",
 		SkillsRoot:   "skills",
 
-		MainModel:  "Qwen/Qwen3.7-Max",
-		CheapModel: "accounts/fireworks/routers/glm-5p1-fast",
+		MainModel:          "deepseek-ai/DeepSeek-V4-Pro",
+		CheapModel:          "accounts/fireworks/routers/glm-5p1-fast",
+		ConsolidationModel:  "accounts/fireworks/models/deepseek-v4-flash",
 		EmbedModel: "nomic-ai/nomic-embed-text-v1.5",
 		// Cassandra completeness auditor: a cheap/fast primary + a stronger
 		// escalation model, both on the gateway cassandra-slot whitelist
@@ -107,7 +124,7 @@ func Default() Config {
 		HardPct:               92,
 		RetrievalTopK:         8,
 		RetrievalBudgetTokens: 6000,
-		AmbientRetrievalTopK:  2,
+		AmbientRetrievalTopK:  5,
 		PinnedBudgetTokens:    2000,
 		RecallTopK:            6,
 		RecallBudgetTokens:    2500,
@@ -120,6 +137,17 @@ func Default() Config {
 		MaxSubagents:           8,
 		MaxConcurrentSubagents: 4,
 		SubagentStepBudget:     40,
+
+		// Task durability: ON by default. The ceilings are generous-but-finite
+		// (the user chose "max persistence" — effectively no practical limit —
+		// but a hard backstop must exist so a wedged task can't burn metered
+		// spend forever). GateAllWork makes every substantial deliverable prove
+		// completeness (not just money/chain turns) — "highest standard".
+		SuperviseTasks:     true,
+		GateAllWork:        true,
+		TaskMaxWall:        6 * time.Hour,
+		TaskAttemptTimeout: 20 * time.Minute,
+		TaskMaxRespawns:    50,
 
 		MinPatternSuccesses: 3,
 
@@ -169,6 +197,7 @@ func (c *Config) applyDoc(d *kvxDoc) {
 	if d.has("models") {
 		c.MainModel = d.strOr("models", "main", c.MainModel)
 		c.CheapModel = d.strOr("models", "cheap", c.CheapModel)
+		c.ConsolidationModel = d.strOr("models", "consolidation", c.ConsolidationModel)
 		c.EmbedModel = d.strOr("models", "embed", c.EmbedModel)
 		c.CassandraModel = d.strOr("models", "cassandra", c.CassandraModel)
 		c.CassandraEscalateModel = d.strOr("models", "cassandra_escalate", c.CassandraEscalateModel)
@@ -195,6 +224,17 @@ func (c *Config) applyDoc(d *kvxDoc) {
 		c.MaxConcurrentSubagents = d.intOr("swarm", "max_concurrent_subagents", c.MaxConcurrentSubagents)
 		c.SubagentStepBudget = d.intOr("swarm", "subagent_step_budget", c.SubagentStepBudget)
 	}
+	if d.has("supervisor") {
+		c.SuperviseTasks = d.boolOr("supervisor", "supervise_tasks", c.SuperviseTasks)
+		c.GateAllWork = d.boolOr("supervisor", "gate_all_work", c.GateAllWork)
+		if m := d.intOr("supervisor", "task_max_wall_minutes", 0); m > 0 {
+			c.TaskMaxWall = time.Duration(m) * time.Minute
+		}
+		if m := d.intOr("supervisor", "task_attempt_timeout_minutes", 0); m > 0 {
+			c.TaskAttemptTimeout = time.Duration(m) * time.Minute
+		}
+		c.TaskMaxRespawns = d.intOr("supervisor", "task_max_respawns", c.TaskMaxRespawns)
+	}
 	if d.has("procedural") {
 		c.MinPatternSuccesses = d.intOr("procedural", "min_pattern_successes", c.MinPatternSuccesses)
 	}
@@ -212,6 +252,7 @@ func (c *Config) applyDoc(d *kvxDoc) {
 func (c *Config) applyEnv() {
 	c.MainModel = envOr("NEO_MAIN_MODEL", c.MainModel)
 	c.CheapModel = envOr("NEO_CHEAP_MODEL", c.CheapModel)
+	c.ConsolidationModel = envOr("NEO_CONSOLIDATION_MODEL", c.ConsolidationModel)
 	c.EmbedModel = envOr("NEO_EMBED_MODEL", c.EmbedModel)
 	c.CassandraModel = envOr("NEO_CASSANDRA_MODEL", c.CassandraModel)
 	c.CassandraEscalateModel = envOr("NEO_CASSANDRA_ESCALATE_MODEL", c.CassandraEscalateModel)
@@ -232,6 +273,17 @@ func (c *Config) applyEnv() {
 	c.MaxSubagents = envInt("NEO_MAX_SUBAGENTS", c.MaxSubagents)
 	c.MaxConcurrentSubagents = envInt("NEO_MAX_CONCURRENT_SUBAGENTS", c.MaxConcurrentSubagents)
 	c.SubagentStepBudget = envInt("NEO_SUBAGENT_STEP_BUDGET", c.SubagentStepBudget)
+
+	// Task supervisor (durability).
+	c.SuperviseTasks = envBool("NEO_SUPERVISE_TASKS", c.SuperviseTasks)
+	c.GateAllWork = envBool("NEO_GATE_ALL_WORK", c.GateAllWork)
+	if m := envInt("NEO_TASK_MAX_WALL_MINUTES", 0); m > 0 {
+		c.TaskMaxWall = time.Duration(m) * time.Minute
+	}
+	if m := envInt("NEO_TASK_ATTEMPT_TIMEOUT_MINUTES", 0); m > 0 {
+		c.TaskAttemptTimeout = time.Duration(m) * time.Minute
+	}
+	c.TaskMaxRespawns = envInt("NEO_TASK_MAX_RESPAWNS", c.TaskMaxRespawns)
 	// AmbientRetrievalTopK accepts 0 (fully tool-driven), so it uses the
 	// non-negative variant rather than envInt (which rejects 0).
 	c.AmbientRetrievalTopK = envIntNonNeg("NEO_AMBIENT_RETRIEVAL_TOP_K", c.AmbientRetrievalTopK)
@@ -264,6 +316,19 @@ func envIntNonNeg(key string, fallback int) int {
 func envOr(key, fallback string) string {
 	if v := strings.TrimSpace(os.Getenv(key)); v != "" {
 		return v
+	}
+	return fallback
+}
+
+// envBool overlays a boolean from the environment, keeping the fallback when
+// the var is absent or unrecognized. Truthy: 1/true/yes/on; falsy:
+// 0/false/no/off (case-insensitive).
+func envBool(key string, fallback bool) bool {
+	switch strings.ToLower(strings.TrimSpace(os.Getenv(key))) {
+	case "1", "true", "yes", "on":
+		return true
+	case "0", "false", "no", "off":
+		return false
 	}
 	return fallback
 }

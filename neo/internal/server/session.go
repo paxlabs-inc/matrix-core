@@ -8,6 +8,8 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
+	"math/rand"
+	"os"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -18,6 +20,7 @@ import (
 	"matrix/neo/internal/conversation"
 	"matrix/neo/internal/llm"
 	"matrix/neo/internal/recall"
+	"matrix/neo/internal/task"
 )
 
 // A session is one conversation thread: its own agent loop (transcript +
@@ -112,6 +115,18 @@ func (e *Engine) newSession(convID string) *session {
 		gates:  map[string]chan gateAnswer{},
 		asks:   map[string]*askWaiter{},
 	}
+	s.rebuildAgent()
+	return s
+}
+
+// rebuildAgent mints a FRESH agent for this conversation over a clean context
+// window and seeds it from durable history. It runs when the session is first
+// minted AND on every task-supervisor respawn: a hard failure, a stall, or a
+// wedged transcript never carries into the next attempt, because the new agent
+// starts from durable TEXT history (no prior tool_calls to re-poison a strict
+// provider) plus the resume prime and the work already on the volume.
+func (s *session) rebuildAgent() {
+	e := s.engine
 	// Conversational recall lane: relevant PAST turns of this (now unbounded)
 	// thread, beyond the live transcript + resume seed. Reuses the pager's
 	// embedder so the whole agent shares one embedding model; a disabled store
@@ -119,7 +134,7 @@ func (e *Engine) newSession(convID string) *session {
 	var recaller agent.ConvRecaller
 	if e.conv.Enabled() && e.pager != nil {
 		if emb := e.pager.Embedder(); emb != nil {
-			recaller = recall.New(e.conv, convID, emb, e.cfg.RecallTopK, e.cfg.RecallBudgetTokens)
+			recaller = recall.New(e.conv, s.id, emb, e.cfg.RecallTopK, e.cfg.RecallBudgetTokens)
 		}
 	}
 	s.agent = agent.New(agent.Options{
@@ -137,17 +152,17 @@ func (e *Engine) newSession(convID string) *session {
 		// cassandra.* events onto the live run.
 		Adjudicator:   e.adjudicator,
 		AuditObserver: func(ev agent.AuditEvent) { e.publishAudit(s.cur, ev) },
-		ConvID:        convID,
+		ConvID:        s.id,
 	})
 	// Resume continuity: if this conversation already has durable turns (a
-	// reopened thread, or one that outlived a restart), seed the fresh agent's
-	// transcript so it remembers the thread instead of starting blank.
+	// reopened thread, one that outlived a restart, or a respawn mid-task),
+	// seed the fresh agent's transcript so it remembers the thread instead of
+	// starting blank.
 	if e.conv.Enabled() {
-		if turns := e.conv.Recent(convID, conversation.DefaultRecallTurns); len(turns) > 0 {
+		if turns := e.conv.Recent(s.id, conversation.DefaultRecallTurns); len(turns) > 0 {
 			s.agent.Seed(seedMessages(turns), firstUserText(turns))
 		}
 	}
-	return s
 }
 
 // seedMessages converts durable turns into transcript messages (oldest-first),
@@ -185,6 +200,17 @@ func firstUserText(turns []conversation.Turn) string {
 // conversation (the user "cutting in"), so the latest message always takes over
 // instead of queuing behind a long-running turn.
 func (s *session) start(message string) *run {
+	return s.dispatch(message, false)
+}
+
+// startResume re-dispatches an orphaned task (the boot reaper after a restart /
+// Fly suspend): it drives the original objective with the catch-up prime from
+// attempt one, since work may already exist on the volume.
+func (s *session) startResume(objective string) *run {
+	return s.dispatch(objective, true)
+}
+
+func (s *session) dispatch(message string, resume bool) *run {
 	s.interruptActive()
 	r := &run{id: synthRunID(message), convID: s.id, sess: s}
 	s.engine.registerRun(r)
@@ -195,18 +221,29 @@ func (s *session) start(message string) *run {
 	// daemon's empty stream. The replay buffer then backfills any events
 	// published between this point and the client's connect.
 	s.engine.broker.ensure(r.id)
-	go s.drive(r, message)
+	go s.drive(r, message, resume)
 	return r
 }
 
-func (s *session) drive(r *run, message string) {
+// drive owns one task's whole lifecycle. The task is DECOUPLED from the HTTP
+// request that dispatched it (it runs on context.Background, bounded only by a
+// generous wall-clock) — closing the app or dropping the SSE stream never ends
+// it. It is recorded in the durable task ledger so even a daemon restart / Fly
+// suspend can resume it. The supervisor inside keeps at least one agent on the
+// task, respawning across model errors / tool failures / stalls, until the
+// objective is met to standard or a hard ceiling is hit. (The Task Durability
+// Rule.)
+func (s *session) drive(r *run, message string, resume bool) {
 	defer s.engine.unregisterRun(r.id)
 
-	// Detached from any HTTP request; bounded so a stuck turn can't run forever.
+	wall := s.engine.cfg.TaskMaxWall
+	if wall <= 0 {
+		wall = 20 * time.Minute
+	}
 	// The cancel is registered as THIS run's barge-in/stop handle BEFORE the
 	// turn lock, so a newer message can cancel it even while it queues behind a
-	// still-running turn.
-	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Minute)
+	// still-running task.
+	ctx, cancel := context.WithTimeout(context.Background(), wall)
 	defer cancel()
 	r.cancel = cancel
 	s.setActive(r)
@@ -219,12 +256,19 @@ func (s *session) drive(r *run, message string) {
 		s.mu.Unlock()
 	}()
 
-	err := s.agent.Chat(withRun(ctx, r), message)
+	// Record the task durably so a restart/suspend can pick it back up. Begin
+	// is keyed by conversation and owned by this run id (a new dispatch
+	// supersedes it; a superseded run's later Finish is a CAS no-op).
+	s.engine.tasks.Begin(s.id, r.id, message)
 
-	// Barge-in / explicit stop: this turn was intentionally interrupted. Close
-	// it quietly as "interrupted" rather than emitting a failure message — the
-	// user moved on; the next turn is already taking over.
+	status := s.superviseTask(ctx, r, message, resume)
+
+	// Barge-in / explicit stop: close quietly as "interrupted" — the user moved
+	// on; the next turn is taking over. Mark the task interrupted so the reaper
+	// never resumes it. (CAS on run id: a no-op if a newer run already owns the
+	// conversation's task record.)
 	if r.stopped.Load() {
+		s.engine.tasks.Finish(s.id, r.id, task.StatusInterrupted)
 		if !r.closed {
 			s.engine.broker.publish(r.id, "message.complete", "neo", map[string]interface{}{"status": "interrupted"})
 			r.closed = true
@@ -233,20 +277,183 @@ func (s *session) drive(r *run, message string) {
 		return
 	}
 
-	// The agent emits its closing turn via Reporter.Say (always terminal). If
-	// it returned without one (a model-call error), synthesize an honest close
-	// so the client's stream terminates deterministically.
+	s.engine.tasks.Finish(s.id, r.id, status)
+	// Defensive backstop: the supervisor always emits a terminal (Say on a
+	// genuine completion, or deliverCeiling at the ceiling), so r.closed is
+	// normally true here. Synthesize one only if somehow it isn't, so the
+	// client's stream always terminates deterministically.
 	if !r.closed {
-		status, text := "completed", "Done."
-		if err != nil {
-			status, text = "failed", "I hit a problem and couldn't finish that — "+friendlyErr(err)
-		}
-		s.engine.broker.publish(r.id, "message.complete", "neo", map[string]interface{}{"status": status})
-		s.engine.broker.publish(r.id, "chat.assistant", "neo", s.chatFields(r, text, true))
-		s.engine.conv.AppendAssistant(s.id, r.id, text)
+		s.engine.broker.publish(r.id, "message.complete", "neo", map[string]interface{}{"status": "completed"})
+		s.engine.broker.publish(r.id, "chat.assistant", "neo", s.chatFields(r, "Done.", true))
+		s.engine.conv.AppendAssistant(s.id, r.id, "Done.")
 		r.closed = true
 	}
 	s.engine.broker.closeRun(r.id)
+}
+
+// superviseTask keeps at least one agent on the task until it is genuinely
+// complete (the agent's own completion gate accepts and it Says its answer), is
+// interrupted by the user, or hits a hard ceiling. Every non-clean exit — a
+// model/transport error, a no-progress stall, an exhausted step budget, a
+// stuck attempt that timed out — is treated as "not done": it checkpoints, tells
+// the user it is still working (never a fake "done"), backs off, respawns a
+// FRESH agent over durable state, and goes again.
+func (s *session) superviseTask(ctx context.Context, r *run, objective string, resume bool) task.Status {
+	cfg := s.engine.cfg
+	maxRespawns := cfg.TaskMaxRespawns
+	if maxRespawns < 0 || !cfg.SuperviseTasks {
+		// Supervisor off: a single attempt, then an honest partial — never a
+		// fabricated "done" and never a bare "failed".
+		maxRespawns = 0
+	}
+
+	for attempt := 1; ; attempt++ {
+		// A fresh first dispatch runs the user's message verbatim (the session
+		// is already seeded from durable history WITHOUT it). A reaper resume,
+		// or any respawn, uses the catch-up prime over the rebuilt agent.
+		prompt := objective
+		if resume || attempt > 1 {
+			prompt = resumePrime(objective, attempt)
+		}
+
+		actx, acancel := s.attemptContext(ctx)
+		err := s.agent.Chat(withRun(actx, r), prompt)
+		acancel()
+
+		switch superviseDecision(r.stopped.Load(), err, ctx.Err(), attempt, maxRespawns) {
+		case actInterrupted:
+			// User stop / barge-in: drive() emits the interrupted terminal.
+			return task.StatusInterrupted
+		case actDone:
+			// Genuine completion: the agent's Say already emitted the terminal.
+			return task.StatusDone
+		case actCeiling:
+			if ctx.Err() != nil {
+				return s.deliverCeiling(r, "reached the time limit I had for this task")
+			}
+			return s.deliverCeiling(r, "couldn't fully verify it was done after several attempts")
+		}
+
+		// actRespawn — not done, keep going. Checkpoint, reassure the user (no
+		// fake done), back off with jitter, then respawn a fresh agent over
+		// durable state.
+		s.engine.tasks.Checkpoint(s.id, r.id, attempt+1, friendlyErr(err))
+		s.emitProgress(r, attempt, err)
+		if !superviseBackoff(ctx, attempt) {
+			if r.stopped.Load() {
+				return task.StatusInterrupted
+			}
+			return s.deliverCeiling(r, "reached the time limit I had for this task")
+		}
+		s.rebuildAgent()
+	}
+}
+
+// superviseAction is the policy outcome for one finished supervised attempt.
+type superviseAction int
+
+const (
+	actRespawn     superviseAction = iota // not done; rebuild a fresh agent and try again
+	actDone                               // genuine completion (the agent finished + Said its answer)
+	actInterrupted                        // user stop / barge-in
+	actCeiling                            // hard ceiling reached — deliver an honest partial
+)
+
+// superviseDecision is the PURE policy for one finished attempt, given whether
+// the run was stopped, the attempt's error (nil = genuine completion), the
+// task context's error (non-nil = wall-clock blown), the attempt number, and
+// the respawn budget. Order matters: a user stop wins over everything; a clean
+// finish is done; a blown wall-clock or an exhausted respawn budget hits the
+// ceiling; otherwise respawn. Any non-clean exit (model/transport error, a
+// stall, an exhausted step budget, a timed-out attempt) flows to respawn until
+// the ceiling — there is no "give up to the user" path short of the ceiling.
+func superviseDecision(stopped bool, attemptErr, taskCtxErr error, attempt, maxRespawns int) superviseAction {
+	switch {
+	case stopped:
+		return actInterrupted
+	case attemptErr == nil:
+		return actDone
+	case taskCtxErr != nil:
+		return actCeiling
+	case attempt > maxRespawns:
+		return actCeiling
+	default:
+		return actRespawn
+	}
+}
+
+// attemptContext bounds a SINGLE supervised attempt so one stuck agent run
+// can't consume the whole task wall-clock; the parent (task) context still
+// governs the overall ceiling and barge-in cancellation.
+func (s *session) attemptContext(parent context.Context) (context.Context, context.CancelFunc) {
+	if t := s.engine.cfg.TaskAttemptTimeout; t > 0 {
+		return context.WithTimeout(parent, t)
+	}
+	return context.WithCancel(parent)
+}
+
+// resumePrime is the catch-up instruction for a respawned / resumed agent: the
+// objective is unchanged, prior work may already be on the volume, build on it,
+// and keep going until it is genuinely done. After a few stuck attempts it also
+// nudges decomposition / delegation.
+func resumePrime(objective string, attempt int) string {
+	var b strings.Builder
+	b.WriteString("[continue this task] A previous attempt was interrupted before the task was finished. Your objective is unchanged:\n\n")
+	b.WriteString(strings.TrimSpace(objective))
+	b.WriteString("\n\nWork from a previous attempt may already exist — check your workspace (list/read the relevant files, re-run a quick status check) and BUILD ON what is already done instead of restarting from scratch. Keep going until the objective is fully achieved to a high standard, then call task_complete with honest coverage and the real evidence behind it.")
+	if attempt >= 3 {
+		b.WriteString(" If you keep getting stuck on one piece, break it into smaller concrete steps, or delegate parallel parts with spawn_subagents.")
+	}
+	return b.String()
+}
+
+// emitProgress tells the user the task is STILL IN PROGRESS after a failed
+// attempt — honest and non-terminal, never a fake completion. The machine
+// detail (the real neo/llm error) goes to the logs for diagnosis.
+func (s *session) emitProgress(r *run, attempt int, err error) {
+	msg := "Still on it — that pass hit a snag, so I'm taking another run at it."
+	s.engine.broker.publish(r.id, "chat.assistant", "neo", s.chatFields(r, msg, false))
+	fmt.Fprintf(os.Stderr, "neo/supervisor: conv=%s run=%s attempt=%d not done yet: %v\n", s.id, r.id, attempt, err)
+}
+
+// deliverCeiling emits the ONE allowed terminal-without-completion: an honest
+// partial at the hard ceiling. It hands the user the best real work so far
+// (never fabricated) and invites them to continue. Idempotent if already closed.
+func (s *session) deliverCeiling(r *run, reason string) task.Status {
+	if r.closed {
+		return task.StatusCeiling
+	}
+	best := strings.TrimSpace(s.agent.BestEffort())
+	text := "I've been working hard on this and made real progress, but I " + reason +
+		", and I won't hand you something I can't stand behind."
+	if best != "" {
+		text += " Here's exactly where it stands:\n\n" + best
+	}
+	text += "\n\nTell me how you'd like me to continue and I'll pick it right back up."
+	s.engine.broker.publish(r.id, "message.complete", "neo", map[string]interface{}{"status": "completed"})
+	s.engine.broker.publish(r.id, "chat.assistant", "neo", s.chatFields(r, text, true))
+	s.engine.conv.AppendAssistant(s.id, r.id, text)
+	r.closed = true
+	return task.StatusCeiling
+}
+
+// superviseBackoff sleeps an attempt-scaled, jittered interval before a
+// respawn, honoring task cancellation. Jitter avoids a synchronized retry
+// stampede when many users' daemons hit the same upstream hiccup at once.
+func superviseBackoff(ctx context.Context, attempt int) bool {
+	base := time.Duration(attempt) * 750 * time.Millisecond
+	if base > 8*time.Second {
+		base = 8 * time.Second
+	}
+	d := base + time.Duration(rand.Int63n(int64(500*time.Millisecond)))
+	t := time.NewTimer(d)
+	defer t.Stop()
+	select {
+	case <-ctx.Done():
+		return false
+	case <-t.C:
+		return true
+	}
 }
 
 // setActive / clearActive / interruptActive coordinate barge-in. active is the
@@ -505,8 +712,22 @@ func friendlyErr(err error) string {
 		return ""
 	}
 	m := err.Error()
-	if len(m) > 200 {
-		m = m[:200] + "…"
+	// Never surface raw provider/transport detail (JSON error bodies, HTTP
+	// status lines, internal package paths) to the user. Map the known failure
+	// shapes to a plain, honest sentence; the machine detail stays in the logs.
+	switch {
+	case strings.Contains(m, "neo/llm:") || strings.Contains(m, "model call failed") || strings.Contains(m, "provider rejected"):
+		return "I had trouble reaching my model just now and couldn't finish that. Give it another go in a moment."
+	case strings.Contains(m, "context deadline") || strings.Contains(m, "timeout") || strings.Contains(m, "deadline exceeded"):
+		return "that ran longer than I could wait and timed out before I finished. Try again, or let's narrow the task."
+	}
+	// Unknown error: trim to the leading human-readable sentence and drop any
+	// structured noise (a '{' JSON body or a newline-delimited stack tail).
+	if i := strings.IndexAny(m, "{\n"); i > 0 {
+		m = strings.TrimSpace(m[:i])
+	}
+	if len(m) > 160 {
+		m = m[:160] + "…"
 	}
 	return m
 }

@@ -29,6 +29,7 @@ import (
 	"matrix/neo/internal/delegate"
 	"matrix/neo/internal/llm"
 	"matrix/neo/internal/memory"
+	"matrix/neo/internal/task"
 	"matrix/neo/internal/tools"
 )
 
@@ -44,6 +45,7 @@ type Engine struct {
 	consolidator agent.Consolidator
 	adjudicator  *cassandra.Adjudicator // shared Cassandra completeness faculty (Phase 3); nil = deterministic fallback
 	conv         *conversation.Store    // durable chat-thread history (per conversation_id)
+	tasks        *task.Store            // durable task-supervision ledger (survives restart/suspend)
 	mediaDir     string                 // machine-volume dir for generated + uploaded media ("" disables)
 
 	backendURL   string // co-located MCL daemon (core_execute + reverse proxy)
@@ -67,6 +69,7 @@ type EngineOptions struct {
 	Consolidator    agent.Consolidator
 	Adjudicator     *cassandra.Adjudicator // shared Cassandra completeness faculty (Phase 3)
 	ConversationDir string                 // durable conversation store dir ("" disables persistence)
+	TaskDir         string                 // durable task-ledger dir ("" disables; reaper needs it to resume after restart)
 	MediaDir        string                 // machine-volume media dir ("" disables image/video/audio I/O)
 	BackendURL      string
 	BackendToken    string
@@ -84,6 +87,7 @@ func NewEngine(o EngineOptions) *Engine {
 		consolidator: o.Consolidator,
 		adjudicator:  o.Adjudicator,
 		conv:         conversation.Open(o.ConversationDir),
+		tasks:        task.Open(o.TaskDir),
 		mediaDir:     strings.TrimRight(o.MediaDir, "/"),
 		backendURL:   strings.TrimRight(o.BackendURL, "/"),
 		backendToken: o.BackendToken,
@@ -105,6 +109,25 @@ func NewEngine(o EngineOptions) *Engine {
 		e.tools.SetAskResponder(e.respondAsk)
 	}
 	return e
+}
+
+// ResumeOrphanedTasks re-dispatches every task left "running" in the durable
+// ledger — tasks orphaned when the daemon was restarted or Fly-suspended
+// mid-work. Each resumes on its own conversation with the catch-up prime, so
+// the Task Durability Rule holds across a process death: a dropped task is
+// picked back up and driven to completion rather than silently lost. Called
+// once at boot (cmd/neo serve). Best-effort + idempotent — a task that actually
+// finished is no longer "running" and is skipped, and the ledger's CAS-on-run-id
+// keeps a stale record from clobbering a live one. Returns the count resumed.
+func (e *Engine) ResumeOrphanedTasks() int {
+	if e.tasks == nil || !e.tasks.Enabled() {
+		return 0
+	}
+	orphans := e.tasks.Running()
+	for _, t := range orphans {
+		e.sessions.get(t.ConvID).startResume(t.Objective)
+	}
+	return len(orphans)
 }
 
 // neoSurfaceSink adapts the engine's per-run event broker to the construct

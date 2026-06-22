@@ -25,21 +25,26 @@ import (
 // Consolidator runs consolidation jobs on a background goroutine.
 type Consolidator struct {
 	cfg   config.Config
-	model *llm.Client
+	extract  *llm.Client // durable-learning extraction (stronger; quality sets memory quality)
+	classify *llm.Client // cheap relation-classify on the rare similar-neighbor path
 	pager *memory.Pager
 
 	jobs chan string
 	done chan struct{}
 }
 
-// New builds a consolidator over a (cheap) model and a pager.
-func New(model *llm.Client, pager *memory.Pager, cfg config.Config) *Consolidator {
+// New builds a consolidator. extract drives the per-turn learning extraction
+// (its quality directly sets memory quality); classify is the cheap model used
+// only on the rare similar-neighbor relation check. A nil classify falls back
+// to extract.
+func New(extract, classify *llm.Client, pager *memory.Pager, cfg config.Config) *Consolidator {
 	return &Consolidator{
-		cfg:   cfg,
-		model: model,
-		pager: pager,
-		jobs:  make(chan string, 8),
-		done:  make(chan struct{}),
+		cfg:      cfg,
+		extract:  extract,
+		classify: classify,
+		pager:    pager,
+		jobs:     make(chan string, 8),
+		done:     make(chan struct{}),
 	}
 }
 
@@ -52,9 +57,10 @@ func (c *Consolidator) Start() {
 }
 
 // Consolidate enqueues a turn transcript for background consolidation. Never
-// blocks the agent: if the queue is full the job is dropped (cortex stays a
-// best-effort, eventually-current store; the live transcript is ground truth
-// for the turn anyway).
+// blocks the agent: if the queue is full the job is handed to a detached
+// goroutine instead of being dropped, so a burst of turns never silently
+// rots the durable store (cortex stays best-effort + eventually-current; the
+// live transcript is ground truth for the turn anyway).
 func (c *Consolidator) Consolidate(transcript string) {
 	if c == nil || strings.TrimSpace(transcript) == "" {
 		return
@@ -62,6 +68,12 @@ func (c *Consolidator) Consolidate(transcript string) {
 	select {
 	case c.jobs <- transcript:
 	default:
+		// Queue full (a burst of turns). Rather than silently DROP the learning
+		// — which is how a durable memory quietly rots — process this one on a
+		// detached goroutine. Bursts are rare (turns are serialized per
+		// conversation and the worker drains continuously), so this overflow
+		// path cannot fan out unboundedly in practice.
+		go c.process(transcript)
 	}
 }
 
@@ -125,13 +137,13 @@ type extract struct {
 }
 
 func (c *Consolidator) process(transcript string) {
-	if c.model == nil || c.pager == nil {
+	if c.extract == nil || c.pager == nil {
 		return
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
 
-	res, err := c.model.Chat(ctx, llm.ChatRequest{
+	res, err := c.extract.Chat(ctx, llm.ChatRequest{
 		Messages: []llm.Message{
 			llm.SystemMessage(consolidatePrompt),
 			llm.UserMessage("Transcript:\n\n" + transcript),
@@ -236,7 +248,14 @@ type relationJSON struct {
 // returns RelationNew (no edge), so a flaky classifier degrades to the plain
 // v1 write rather than mislinking memories.
 func (c *Consolidator) classifyRelation(ctx context.Context, newText string, candidates []memory.Neighbor) (memory.Relation, string, string) {
-	if c == nil || c.model == nil || len(candidates) == 0 {
+	if c == nil || len(candidates) == 0 {
+		return memory.RelationNew, "", ""
+	}
+	m := c.classify
+	if m == nil {
+		m = c.extract
+	}
+	if m == nil {
 		return memory.RelationNew, "", ""
 	}
 	var b strings.Builder
@@ -246,7 +265,7 @@ func (c *Consolidator) classifyRelation(ctx context.Context, newText string, can
 	for _, cand := range candidates {
 		fmt.Fprintf(&b, "- uri=%s\n  %s\n", cand.URI, strings.TrimSpace(cand.Text))
 	}
-	res, err := c.model.Chat(ctx, llm.ChatRequest{
+	res, err := m.Chat(ctx, llm.ChatRequest{
 		Messages: []llm.Message{
 			llm.SystemMessage(relationClassifyPrompt),
 			llm.UserMessage(b.String()),

@@ -171,6 +171,19 @@ func (d *kvxDoc) list(section, key string) []string {
 	return out
 }
 
+// boolOr parses section.key as a boolean, returning fallback when
+// absent/invalid. Truthy: 1/true/yes/on; falsy: 0/false/no/off (case-insensitive).
+func (d *kvxDoc) boolOr(section, key string, fallback bool) bool {
+	v := strings.ToLower(strings.TrimSpace(d.str(section, key)))
+	switch v {
+	case "1", "true", "yes", "on":
+		return true
+	case "0", "false", "no", "off":
+		return false
+	}
+	return fallback
+}
+
 // intOr parses section.key as int, returning fallback when absent/invalid.
 func (d *kvxDoc) intOr(section, key string, fallback int) int {
 	v := d.str(section, key)
