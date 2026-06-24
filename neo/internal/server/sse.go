@@ -32,6 +32,11 @@ const (
 type broker struct {
 	mu     sync.Mutex
 	topics map[string]*topicState
+	// tap, when set, receives every published event AFTER it is buffered and
+	// fanned out. It is the seam the engine uses to persist the durable
+	// workspace trace (F3). It MUST be non-blocking (a queue enqueue), so it is
+	// invoked outside the topic lock and never stalls the publish hot path.
+	tap func(id string, ev Event)
 }
 
 type topicState struct {
@@ -46,6 +51,11 @@ type topicState struct {
 func newBroker() *broker {
 	return &broker{topics: map[string]*topicState{}}
 }
+
+// setTap installs the post-publish event tap (F3 durable workspace trace). The
+// tap callback must be non-blocking; it is invoked once per published event,
+// outside the topic lock.
+func (b *broker) setTap(fn func(id string, ev Event)) { b.tap = fn }
 
 func (b *broker) topic(id string) *topicState {
 	b.mu.Lock()
@@ -99,6 +109,11 @@ func (b *broker) publish(id, typ, phase string, fields map[string]interface{}) E
 		}
 	}
 	ts.mu.Unlock()
+	// Persist workspace events to the durable trace (F3) off the topic lock so
+	// disk I/O never blocks the publish path. The tap is a non-blocking enqueue.
+	if b.tap != nil {
+		b.tap(id, ev)
+	}
 	return ev
 }
 

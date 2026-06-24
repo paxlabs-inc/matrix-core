@@ -28,6 +28,7 @@ import (
 	"matrix/neo/internal/server"
 	"matrix/neo/internal/task"
 	"matrix/neo/internal/tools"
+	"matrix/neo/internal/trace"
 	"matrix/neo/internal/writeback"
 )
 
@@ -150,6 +151,11 @@ func runServe(args []string) {
 	// in-flight task survives a restart / Fly suspend and the boot reaper can
 	// resume it (the Task Durability Rule).
 	taskDir := task.Dir(os.Getenv("NEO_TASKS_DIR"), cfg.CortexRoot)
+	// Durable workspace trace: "Neo's Computer" (tool steps / search cards /
+	// media / surfaces / swarm windows) persisted per run beside history on the
+	// machine volume, so reopening a thread rebuilds the workspace instead of
+	// showing an empty computer (F3). Derives /data/trace; NEO_TRACE_DIR wins.
+	traceDir := trace.Dir(os.Getenv("NEO_TRACE_DIR"), cfg.CortexRoot)
 
 	engine := server.NewEngine(server.EngineOptions{
 		Config:          cfg,
@@ -161,6 +167,7 @@ func runServe(args []string) {
 		Adjudicator:     newCassandraAdjudicator(cfg),
 		ConversationDir: convDir,
 		TaskDir:         taskDir,
+		TraceDir:        traceDir,
 		MediaDir:        mediaPath,
 		BackendURL:      backendURL,
 		BackendToken:    os.Getenv("NEO_DAEMON_TOKEN"),
@@ -170,6 +177,9 @@ func runServe(args []string) {
 	}
 	if taskDir != "" {
 		fmt.Printf("  tasks: %s\n", taskDir)
+	}
+	if traceDir != "" {
+		fmt.Printf("  trace: %s (workspace survives reload)\n", traceDir)
 	}
 	if mediaPath != "" {
 		fmt.Printf("  media: %s (served at /media)\n", mediaPath)
@@ -215,6 +225,9 @@ func runServe(args []string) {
 	shutCtx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
 	defer cancel()
 	_ = httpSrv.Shutdown(shutCtx)
+	// Flush the durable workspace trace writer before exit so a reopen after a
+	// graceful restart still sees the last events (F3).
+	engine.Close()
 	if wc != nil {
 		wc.Stop()
 	}

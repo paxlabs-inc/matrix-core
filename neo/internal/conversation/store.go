@@ -332,8 +332,15 @@ func buildJSONL(turns []Turn) []byte {
 }
 
 // AppendUser / AppendAssistant are thin helpers for the two turn kinds.
-func (s *Store) AppendUser(convID, text string) {
-	s.Append(convID, Turn{Role: "user", Text: text})
+//
+// intentID is the owning run id minted at dispatch time. Persisting it on the
+// user turn is the durable anchor a reload/relogin uses to reattach the live
+// stream — the client (and the GET /conversations/{id} live_run signal) reads
+// it back to decide whether the run is still in flight. An empty intent_id is
+// fine (omitempty preserves the pre-F1 wire shape exactly for direct replies
+// and tests that don't model a run).
+func (s *Store) AppendUser(convID, intentID, text string) {
+	s.Append(convID, Turn{Role: "user", Text: text, IntentID: intentID})
 }
 
 func (s *Store) AppendAssistant(convID, intentID, text string) {

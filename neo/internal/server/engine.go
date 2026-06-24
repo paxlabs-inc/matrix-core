@@ -31,6 +31,7 @@ import (
 	"matrix/neo/internal/memory"
 	"matrix/neo/internal/task"
 	"matrix/neo/internal/tools"
+	"matrix/neo/internal/trace"
 )
 
 // Engine holds the process-wide shared dependencies (models, the one MCP tool
@@ -46,6 +47,7 @@ type Engine struct {
 	adjudicator  *cassandra.Adjudicator // shared Cassandra completeness faculty (Phase 3); nil = deterministic fallback
 	conv         *conversation.Store    // durable chat-thread history (per conversation_id)
 	tasks        *task.Store            // durable task-supervision ledger (survives restart/suspend)
+	trace        *trace.Store           // durable per-run workspace timeline ("Neo's Computer"); sidecar, never cortex
 	mediaDir     string                 // machine-volume dir for generated + uploaded media ("" disables)
 
 	backendURL   string // co-located MCL daemon (core_execute + reverse proxy)
@@ -70,6 +72,7 @@ type EngineOptions struct {
 	Adjudicator     *cassandra.Adjudicator // shared Cassandra completeness faculty (Phase 3)
 	ConversationDir string                 // durable conversation store dir ("" disables persistence)
 	TaskDir         string                 // durable task-ledger dir ("" disables; reaper needs it to resume after restart)
+	TraceDir        string                 // durable workspace-trace dir ("" disables; the reopen-survives-reload store, F3)
 	MediaDir        string                 // machine-volume media dir ("" disables image/video/audio I/O)
 	BackendURL      string
 	BackendToken    string
@@ -88,6 +91,7 @@ func NewEngine(o EngineOptions) *Engine {
 		adjudicator:  o.Adjudicator,
 		conv:         conversation.Open(o.ConversationDir),
 		tasks:        task.Open(o.TaskDir),
+		trace:        trace.Open(o.TraceDir),
 		mediaDir:     strings.TrimRight(o.MediaDir, "/"),
 		backendURL:   strings.TrimRight(o.BackendURL, "/"),
 		backendToken: o.BackendToken,
@@ -95,6 +99,13 @@ func NewEngine(o EngineOptions) *Engine {
 		runs:         map[string]*run{},
 	}
 	e.sessions = newSessionRegistry(e)
+	// Persist the durable workspace timeline (F3): the broker tap routes every
+	// workspace event to the sidecar trace store so "Neo's Computer" survives a
+	// reload / reopen-from-history, not just the 2-minute in-memory replay
+	// window. The tap is a non-blocking enqueue, off the publish hot path.
+	if e.trace.Enabled() {
+		e.broker.setTap(e.recordTrace)
+	}
 	if e.tools != nil {
 		e.tools.SetDelegate(e.coreExecute)
 		// Task-scoped concurrent sub-agents (the Agent Swarm). Capped per call
@@ -128,6 +139,16 @@ func (e *Engine) ResumeOrphanedTasks() int {
 		e.sessions.get(t.ConvID).startResume(t.Objective)
 	}
 	return len(orphans)
+}
+
+// Close flushes and stops the engine's durable sidecar stores (today: the
+// workspace trace writer). Called on graceful shutdown so any queued workspace
+// events are persisted before exit. Idempotent + safe on a disabled store.
+func (e *Engine) Close() {
+	if e == nil {
+		return
+	}
+	e.trace.Close()
 }
 
 // neoSurfaceSink adapts the engine's per-run event broker to the construct
@@ -311,6 +332,27 @@ func (e *Engine) lookupRun(id string) *run {
 	return e.runs[id]
 }
 
+// activeRunForConv reports the in-flight run id for one conversation, or "" if
+// nothing is live. Unlike broker.has(id) (which stays true for 2 minutes after
+// settlement so late reconnects can replay), this consults the authoritative
+// runs registry: a run is here iff registerRun has fired and unregisterRun has
+// NOT — i.e. iff drive() is still executing. handleConversations uses it to
+// stamp `live_run` on the GET /conversations/{id} response so a fresh tab /
+// post-relogin client can subscribe(replay:true) without waiting for the poll.
+func (e *Engine) activeRunForConv(convID string) string {
+	if e == nil || convID == "" {
+		return ""
+	}
+	e.mu.Lock()
+	defer e.mu.Unlock()
+	for id, r := range e.runs {
+		if r != nil && r.convID == convID {
+			return id
+		}
+	}
+	return ""
+}
+
 func (e *Engine) unregisterRun(id string) {
 	e.mu.Lock()
 	delete(e.runs, id)
@@ -320,6 +362,79 @@ func (e *Engine) unregisterRun(id string) {
 		time.Sleep(2 * time.Minute)
 		e.broker.drop(id)
 	}()
+}
+
+// traceWorkspaceTypes is the set of event types that make up the durable "Neo's
+// Computer" workspace timeline (F3). Only these are persisted to the sidecar
+// trace store; transient channels (chat.delta, chat.thinking), gate/ask control
+// events, and terminals are NOT — they are either re-derived on reopen or
+// irrelevant to the rebuilt workspace. chat.assistant is handled specially in
+// recordTrace (only the non-final "thinking out loud" narration is persisted;
+// the final answer + bubbles come from the durable conversation store).
+var traceWorkspaceTypes = map[string]bool{
+	"tool.step":               true,
+	"tool.search":             true,
+	"tool.media":              true,
+	"construct.surface":       true,
+	"construct.surface.patch": true,
+	"swarm.started":           true,
+	"subagent.created":        true,
+	"subagent.step":           true,
+	"subagent.note":           true,
+	"subagent.status":         true,
+	"swarm.completed":         true,
+}
+
+// recordTrace is the broker tap (F3): it persists the workspace-relevant slice
+// of the live event stream to the durable sidecar trace store so "Neo's
+// Computer" can be rebuilt when a thread is reopened — after the run settles,
+// scrolls past the 512-event broker buffer, or the topic is reclaimed. It runs
+// on every publish, so it stays cheap: a map lookup, then a NON-BLOCKING
+// enqueue (trace.Record drops rather than blocks). It never signs, never writes
+// cortex, never touches plan/walk (pure sidecar — m9/i_trace).
+func (e *Engine) recordTrace(id string, ev Event) {
+	if e.trace == nil || !e.trace.Enabled() || id == "" {
+		return
+	}
+	keep := traceWorkspaceTypes[ev.Type]
+	if !keep && ev.Type == "chat.assistant" {
+		// Persist only the non-final narration ("thinking out loud") turns as
+		// workspace steps; the final answer is the conversation store's job.
+		keep = ev.Fields == nil || ev.Fields["final"] != true
+	}
+	if !keep {
+		return
+	}
+	e.trace.Record(id, trace.Event{
+		Seq:    ev.Seq,
+		Ts:     ev.Ts,
+		Phase:  ev.Phase,
+		Type:   ev.Type,
+		Fields: ev.Fields,
+	})
+}
+
+// latestRunForConv resolves the run id whose workspace trace a reopened thread
+// should rebuild: the in-flight run if one is live, else the most recent run on
+// the conversation (the last persisted turn carrying an intent_id). Returns ""
+// when the conversation has no run-bearing turn.
+func (e *Engine) latestRunForConv(convID string) string {
+	if live := e.activeRunForConv(convID); live != "" {
+		return live
+	}
+	if e.conv == nil {
+		return ""
+	}
+	rec := e.conv.Get(convID)
+	if rec == nil {
+		return ""
+	}
+	for i := len(rec.Turns) - 1; i >= 0; i-- {
+		if rec.Turns[i].IntentID != "" {
+			return rec.Turns[i].IntentID
+		}
+	}
+	return ""
 }
 
 // surfaceTool turns a tool call into the live "Neo Workspace" — a single

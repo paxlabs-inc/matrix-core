@@ -19,7 +19,7 @@ func TestAppendGetListRecent(t *testing.T) {
 	if !s.Enabled() {
 		t.Fatal("a non-empty dir should enable the store")
 	}
-	s.AppendUser("conv_a", "what is the PAX price")
+	s.AppendUser("conv_a", "", "what is the PAX price")
 	s.AppendAssistant("conv_a", "neo_1", "PAX is trading around $X")
 
 	rec := s.Get("conv_a")
@@ -91,7 +91,7 @@ func TestDisabledStoreNoop(t *testing.T) {
 	if s.Enabled() {
 		t.Fatal("a blank dir should disable the store")
 	}
-	s.AppendUser("c", "x") // must not panic
+	s.AppendUser("c", "", "x") // must not panic
 	if s.Get("c") != nil {
 		t.Error("disabled Get should be nil")
 	}
@@ -107,7 +107,7 @@ func TestUnbounded(t *testing.T) {
 	s := Open(t.TempDir())
 	const n = 200
 	for i := 0; i < n; i++ {
-		s.AppendUser("c", "turn")
+		s.AppendUser("c", "", "turn")
 	}
 	rec := s.Get("c")
 	if rec == nil || len(rec.Turns) != n {
@@ -133,7 +133,7 @@ func TestStore_AppendIsNotFullRewrite(t *testing.T) {
 	convID := "rewrite"
 
 	// Seed one turn and snapshot the file size.
-	s.AppendUser(convID, "seed")
+	s.AppendUser(convID, "", "seed")
 	seedSize := fileSize(t, s.dir, convID)
 
 	// Append a second, tiny turn. Under the OLD full-rewrite scheme the file
@@ -167,7 +167,7 @@ func TestStore_RetainedCapEnforced(t *testing.T) {
 	// Append 8 turns with a cap of 5: the hot set should hold the last 5, the
 	// oldest 3 should have rolled to the archive and STILL be retrievable.
 	for i := 0; i < 8; i++ {
-		s.AppendUser(convID, fmt.Sprintf("turn-%d", i))
+		s.AppendUser(convID, "", fmt.Sprintf("turn-%d", i))
 	}
 
 	hot := s.Get(convID)
@@ -219,7 +219,7 @@ func TestStore_CrashSafetyAtomic(t *testing.T) {
 	s := Open(dir)
 	convID := "crash"
 
-	s.AppendUser(convID, "committed-1")
+	s.AppendUser(convID, "", "committed-1")
 	s.AppendAssistant(convID, "i1", "committed-2")
 
 	// Simulate a crash that wrote a partial (truncated) third line to the JSONL.
@@ -265,7 +265,7 @@ func TestStore_ConcurrentAppendReadSafe(t *testing.T) {
 		go func(off int) {
 			defer wg.Done()
 			for i := 0; i < turnsEach; i++ {
-				s.AppendUser(convID, fmt.Sprintf("w%d-t%d", off, i))
+				s.AppendUser(convID, "", fmt.Sprintf("w%d-t%d", off, i))
 			}
 		}(w)
 	}
@@ -324,6 +324,47 @@ func jsonlLineCount(t *testing.T, dir, convID string) int {
 	return count
 }
 
+
+// TestAppendUser_PersistsIntentId pins the F1 contract: the owning intent_id
+// passed at user-turn-append time is durably persisted on the user turn (not
+// only on the assistant turn). The persisted shape is forward-compatible —
+// IntentID has json `omitempty`, so empty values stay invisible.
+func TestAppendUser_PersistsIntentId(t *testing.T) {
+	s := Open(t.TempDir())
+	s.AppendUser("conv_live", "neo_run_abc", "kick off a long task")
+
+	rec := s.Get("conv_live")
+	if rec == nil || len(rec.Turns) != 1 {
+		t.Fatalf("expected 1 persisted user turn, got %+v", rec)
+	}
+	if rec.Turns[0].Role != "user" {
+		t.Fatalf("role mismatch: %+v", rec.Turns[0])
+	}
+	if rec.Turns[0].IntentID != "neo_run_abc" {
+		t.Errorf("user turn intent_id NOT persisted: got %q, want %q", rec.Turns[0].IntentID, "neo_run_abc")
+	}
+	if rec.Turns[0].Text != "kick off a long task" {
+		t.Errorf("text mismatch: %q", rec.Turns[0].Text)
+	}
+
+	// History (the durable-replay path) must also surface the intent_id so a
+	// resume cannot be defeated by an archive rollup.
+	hist := s.History("conv_live")
+	if len(hist) != 1 || hist[0].IntentID != "neo_run_abc" {
+		t.Errorf("History must carry intent_id, got %+v", hist)
+	}
+
+	// Empty intent_id keeps backward compatibility (omitempty preserves the
+	// pre-F1 on-disk shape exactly for direct-reply turns).
+	s.AppendUser("conv_blank", "", "no run")
+	rec2 := s.Get("conv_blank")
+	if rec2 == nil || len(rec2.Turns) != 1 {
+		t.Fatalf("expected 1 turn, got %+v", rec2)
+	}
+	if rec2.Turns[0].IntentID != "" {
+		t.Errorf("blank intent_id must round-trip as empty, got %q", rec2.Turns[0].IntentID)
+	}
+}
 
 func TestDir(t *testing.T) {
 	if got := Dir("/explicit", "/data/cortex"); got != "/explicit" {

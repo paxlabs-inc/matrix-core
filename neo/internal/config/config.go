@@ -135,15 +135,15 @@ func Default() Config {
 		ManifestPath: "agents/default.json",
 		SkillsRoot:   "skills",
 
-		MainModel:          "deepseek-ai/DeepSeek-V4-Pro",
-		CheapModel:          "accounts/fireworks/routers/glm-5p1-fast",
-		ConsolidationModel:  "accounts/fireworks/models/deepseek-v4-flash",
+		MainModel:          "accounts/fireworks/models/glm-5p2",
+		CheapModel:          "accounts/fireworks/models/glm-5p2",
+		ConsolidationModel:  "accounts/fireworks/models/glm-5p2",
 		EmbedModel: "nomic-ai/nomic-embed-text-v1.5",
 		// Cassandra completeness auditor: a cheap/fast primary + a stronger
 		// escalation model, both on the gateway cassandra-slot whitelist
 		// (gateway rates.FreeTierWhitelist "cassandra").
-		CassandraModel:         "accounts/fireworks/models/deepseek-v4-flash",
-		CassandraEscalateModel: "accounts/fireworks/models/deepseek-v4-pro",
+		CassandraModel:         "accounts/fireworks/models/glm-5p2",
+		CassandraEscalateModel: "accounts/fireworks/models/glm-5p2",
 
 		ContextWindowTokens:   256000,
 		SoftPct:               80,

@@ -17,9 +17,9 @@ import (
 
 func TestRelevantRanksExactMatchFirst(t *testing.T) {
 	conv := conversation.Open(t.TempDir())
-	conv.AppendUser("c", "how do I deploy an ERC-20 on Paxeer")
+	conv.AppendUser("c", "", "how do I deploy an ERC-20 on Paxeer")
 	conv.AppendAssistant("c", "", "call paxeer-net deploy_token with the supply and symbol")
-	conv.AppendUser("c", "what is the current gas price")
+	conv.AppendUser("c", "", "what is the current gas price")
 	conv.AppendAssistant("c", "", "gas is around 1 gwei right now")
 
 	r := New(conv, "c", embed.NewHashEmbedder(), 2, 2500)
@@ -37,14 +37,14 @@ func TestRelevantRanksExactMatchFirst(t *testing.T) {
 
 func TestRelevantIncremental(t *testing.T) {
 	conv := conversation.Open(t.TempDir())
-	conv.AppendUser("c", "first turn")
+	conv.AppendUser("c", "", "first turn")
 	r := New(conv, "c", embed.NewHashEmbedder(), 5, 2500)
 
 	if got := r.Relevant(context.Background(), "first turn"); len(got) != 1 {
 		t.Fatalf("expected 1 cached turn, got %d", len(got))
 	}
 	// A turn appended after the first recall must be picked up on the next call.
-	conv.AppendUser("c", "second turn arrives later")
+	conv.AppendUser("c", "", "second turn arrives later")
 	hits := r.Relevant(context.Background(), "second turn arrives later")
 	if len(hits) == 0 || hits[0].Text != "second turn arrives later" {
 		t.Fatalf("incremental refresh should surface the new turn, got %+v", hits)
@@ -53,7 +53,7 @@ func TestRelevantIncremental(t *testing.T) {
 
 func TestDisabledRecallers(t *testing.T) {
 	conv := conversation.Open(t.TempDir())
-	conv.AppendUser("c", "anything")
+	conv.AppendUser("c", "", "anything")
 
 	// Nil embedder → no-op.
 	if hits := New(conv, "c", nil, 5, 2500).Relevant(context.Background(), "anything"); hits != nil {
@@ -75,9 +75,9 @@ func TestBudgetBound(t *testing.T) {
 	for i := 0; i < 400; i++ {
 		long += "word "
 	}
-	conv.AppendUser("c", long+"alpha")
-	conv.AppendUser("c", long+"beta")
-	conv.AppendUser("c", long+"gamma")
+	conv.AppendUser("c", "", long+"alpha")
+	conv.AppendUser("c", "", long+"beta")
+	conv.AppendUser("c", "", long+"gamma")
 
 	// A tiny budget admits the single best hit and stops (always returns >=1).
 	r := New(conv, "c", embed.NewHashEmbedder(), 5, 50)

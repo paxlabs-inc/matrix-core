@@ -16,6 +16,7 @@ import (
 	"matrix/construct/backchannel"
 	"matrix/construct/schema/primitives"
 	"matrix/neo/internal/conversation"
+	"matrix/neo/internal/trace"
 )
 
 // Server is Neo's HTTP front. It owns the conversational surface (POST /chat +
@@ -93,11 +94,15 @@ func (s *Server) handleChat(w http.ResponseWriter, r *http.Request) {
 		convID = synthConvID(msg)
 	}
 	// Mint/resume the session FIRST (it seeds from durable history that does
-	// NOT yet include this message), THEN persist the user turn so a reload or
-	// restart can list and reopen the thread.
+	// NOT yet include this message), then START the run so its id exists,
+	// then persist the user turn STAMPED WITH that id (F1): a reload/relogin
+	// during a still-live run can read the trailing user turn's intent_id (and
+	// the authoritative `live_run` field on GET /conversations/{id}) to decide
+	// whether to subscribe(replay:true) and reattach the live stream — no more
+	// "thread looks done while agent is still working".
 	sess := s.engine.sessions.get(convID)
-	s.engine.conv.AppendUser(convID, msg)
 	run := sess.start(msg)
+	s.engine.conv.AppendUser(convID, run.id, msg)
 	writeJSON(w, http.StatusAccepted, map[string]interface{}{
 		"conversation_id": convID,
 		"kind":            "dispatch",
@@ -112,7 +117,26 @@ func (s *Server) handleChat(w http.ResponseWriter, r *http.Request) {
 // mirrors the daemon's routes (and the web client's expectations) exactly:
 // list → {"items":[summary...]}, detail → the record. When persistence is
 // disabled it proxies to the daemon so the legacy store still answers.
+//
+// F1 wire shape (additive, byte-compatible): the detail response carries a
+// sibling `live_run` field — the in-flight intent_id for this conversation, or
+// "" once the run has settled. The existing record fields
+// (conversation_id, title, turns, updated) are emitted unchanged so older
+// clients keep deserialising. New clients use `live_run` to subscribe to the
+// SSE stream with replay on reopen/relogin without waiting for the
+// /messages/async/<id> poll — the durable resume signal that closes the
+// "thread looks done while agent is still working" defect.
 func (s *Server) handleConversations(w http.ResponseWriter, r *http.Request) {
+	// F3: GET /conversations/{id}/trace serves the durable workspace timeline
+	// ("Neo's Computer") so a reopened thread rebuilds its tool steps / search
+	// cards / media / surfaces / swarm windows — not just the text turns. This
+	// is a Neo-owned route the daemon never had, so it is intercepted before
+	// the conv.Enabled proxy fallback (a trace-disabled store returns an empty
+	// timeline rather than a daemon 404).
+	if id, ok := parseTracePath(r.URL.Path); ok {
+		s.handleTrace(w, r, id)
+		return
+	}
 	if !s.engine.conv.Enabled() {
 		s.proxy.ServeHTTP(w, r)
 		return
@@ -140,7 +164,60 @@ func (s *Server) handleConversations(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusNotFound, map[string]string{"error": "conversation not found"})
 		return
 	}
-	writeJSON(w, http.StatusOK, rec)
+	writeJSON(w, http.StatusOK, conversationDetailEnvelope(rec, s.engine.activeRunForConv(id)))
+}
+
+// conversationDetail is the GET /conversations/<id> wire envelope. The
+// embedded *conversation.Record promotes the existing record fields
+// (conversation_id, title, turns, updated) verbatim so older clients
+// deserialise identically; LiveRun is a sibling addition older clients ignore
+// safely. LiveRun is the in-flight intent_id for the conversation, or "" once
+// the run has settled (the durable resume signal).
+type conversationDetail struct {
+	*conversation.Record
+	LiveRun string `json:"live_run"`
+}
+
+func conversationDetailEnvelope(rec *conversation.Record, liveRun string) conversationDetail {
+	return conversationDetail{Record: rec, LiveRun: liveRun}
+}
+
+// conversationTrace is the GET /conversations/{id}/trace wire envelope (F3).
+// IntentID is the run whose workspace this is (the in-flight run, else the
+// conversation's most recent run); LiveRun mirrors the detail envelope's signal
+// so the client can decide whether to also subscribe(replay) for live updates;
+// Events are the persisted workspace SSE frames, oldest-first, replayed through
+// the client's existing reducer to rebuild "Neo's Computer".
+type conversationTrace struct {
+	IntentID string        `json:"intent_id"`
+	LiveRun  string        `json:"live_run"`
+	Events   []trace.Event `json:"events"`
+}
+
+// handleTrace serves the durable workspace timeline for a conversation's most
+// recent run. A trace-disabled store, an unknown conversation, or a run with no
+// persisted workspace all return 200 with an empty events list so the client
+// degrades to a text-only thread rather than erroring.
+func (s *Server) handleTrace(w http.ResponseWriter, r *http.Request, id string) {
+	if r.Method != http.MethodGet {
+		w.Header().Set("Allow", "GET")
+		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "method not allowed"})
+		return
+	}
+	if id == "" || strings.ContainsAny(id, "/\\") {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "conversation id required"})
+		return
+	}
+	runID := s.engine.latestRunForConv(id)
+	events := s.engine.trace.Load(runID)
+	if events == nil {
+		events = []trace.Event{}
+	}
+	writeJSON(w, http.StatusOK, conversationTrace{
+		IntentID: runID,
+		LiveRun:  s.engine.activeRunForConv(id),
+		Events:   events,
+	})
 }
 
 // handleEvents serves the live SSE stream for a Neo run, or proxies to the
@@ -359,6 +436,15 @@ func parseAskAnswerPath(p string) (id, askID string, ok bool) {
 func parseStopPath(p string) (id string, ok bool) {
 	parts := strings.Split(strings.Trim(p, "/"), "/")
 	if len(parts) != 3 || parts[0] != "intents" || parts[2] != "stop" {
+		return "", false
+	}
+	return parts[1], true
+}
+
+// parseTracePath matches /conversations/{id}/trace (F3 durable workspace).
+func parseTracePath(p string) (id string, ok bool) {
+	parts := strings.Split(strings.Trim(p, "/"), "/")
+	if len(parts) != 3 || parts[0] != "conversations" || parts[2] != "trace" {
 		return "", false
 	}
 	return parts[1], true
