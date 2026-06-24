@@ -1,0 +1,244 @@
+\documentclass[10pt,conference]{IEEEtran}
+\IEEEoverridecommandlockouts
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{url}
+\usepackage{cite}
+\usepackage{balance}
+\usepackage{microtype}
+\usepackage{flushend}
+
+\title{The Invisible Gap: Absence Blindness in Large\\
+Language Models\\
+and the Case for Externalized Presence}
+
+\author{\IEEEauthorblockN{Andres R Garcell}
+\IEEEauthorblockA{\textit{Paxeer Research Foundation}\\
+801 Brickell Ave, Miami FL\\
+paxeer@hyperpaxeer.com}}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Large language models (LLMs) are trained primarily to predict the next token from an observable context. This objective is extraordinarily effective, but it creates a practical asymmetry for agentic systems: represented content can influence generation directly, while an unrepresented gap - a missing deliverable, an unverified claim, an unconfirmed tool effect, or a task item that has fallen out of active state - has no direct token-level handle through which it can reliably condition the next step. We call this failure mode \emph{absence blindness}. The term does not imply that models lack planning, instruction-following, or latent representations of future structure. Rather, it names a systems problem: obligations that are not made present in the active context, task state, retrieval state, or verifier output cannot be reliably acted upon. This paper formalizes the absence blindness hypothesis, synthesizes evidence from hallucination, omission, long-context failure, self-correction, and silent tool-error research, and proposes the \emph{Externalized Presence Principle}: any gap that must reliably influence an LLM's next action should first be reified as an explicit, inspectable object. We show that successful interventions such as retrieval-augmented generation, checklist scaffolds, verification agents, tool-result grounding, and typed task manifests can be understood as instances of this principle. We conclude with a taxonomy of gap types, a Gap-Hunter scaffold specification, and implications for typed Intent IR runtimes that seek deterministic, auditable agent execution.
+\end{abstract}
+
+\begin{IEEEkeywords}
+large language models, absence blindness, hallucination, omission, externalized presence, agentic scaffolding, next-token prediction, verification, Intent IR
+\end{IEEEkeywords}
+
+\section{Introduction}
+The dominant training paradigm for large language models is next-token prediction (NTP): given a preceding sequence, the model learns to assign probability mass to likely continuations. This objective has produced systems with remarkable linguistic, reasoning, and tool-use capabilities. Yet it also creates a subtle failure mode that becomes especially important in agentic settings. The model can attend to what is present, but it has no native object corresponding to what should have been present and is not.
+
+Consider a model asked to write a software specification with five required sections. If it generates four sections and moves on, the missing fifth section leaves no token behind. Unless the requirement remains represented in the prompt, a checklist, a task state object, a verifier output, or a memory item, the omission has no direct representation in the model's observable context. From the perspective of the next generation step, the absence may look identical to completion: there is simply no token marking the gap.
+
+This paper names that systems-level failure mode \emph{absence blindness}. The claim is not that LLMs are incapable of planning, nor that every omitted item has literally zero indirect influence. Instruction tuning, latent planning, and learned conventions can cause a model to produce expected structure even when some obligations are implicit. The narrower and more defensible claim is this: if a required gap is not represented in the active context or in an external state mechanism coupled to generation, it cannot reliably exert direct pressure on the next token or next action.
+
+The practical answer is \emph{Externalized Presence}. A gap that matters must be turned into a present object: a checklist item, a retrieval passage, a verification question, a typed task node, a failed status, a receipt, or an explicit error assertion. Once the gap is represented, the model can attend to it, reason over it, and act on it. Until then, the gap is operationally invisible.
+
+This reframing is useful because it unifies a wide set of otherwise separate LLM mitigation techniques. Retrieval-augmented generation externalizes missing evidence. Checklists externalize missing deliverables. Tool-result grounding externalizes execution state. Verification agents externalize unconfirmed claims. Typed Intent IR externalizes user obligations into inspectable, correctable structures. The common mechanism is not merely better prompting; it is presence accounting.
+
+The contributions of this paper are fourfold:
+\begin{enumerate}
+\item A definition of absence blindness as an observable systems failure rather than a vague model weakness.
+\item A distinction between several mechanisms that can make content effectively absent even when it is technically available.
+\item The Externalized Presence Principle as a design rule for LLM systems.
+\item A minimal Gap-Hunter scaffold and an explanation of why typed Intent IR runtimes are a natural implementation of this principle.
+\end{enumerate}
+
+\section{Background and Related Work}
+\subsection{The Next-Token Prediction Paradigm}
+NTP has been studied both as the source of LLM capability and as a source of limitation. McCoy et al. argue that LLM behavior should be understood through the problem models are trained to solve: predicting probable continuations in text \cite{mccoy2023embers}. Under this view, success depends partly on whether the task, target output, and output position resemble patterns that appear with sufficient frequency in training data. Rare or implicit requirements are therefore at risk of being suppressed.
+
+Bachmann and Nagarajan distinguish autoregressive inference from teacher-forced training and show that next-token prediction can fail to learn accurate multi-step reasoning models because the local training signal does not directly optimize downstream semantic completeness \cite{bachmann2024pitfalls}. This supports a central premise of absence blindness: the loss function rewards likely next tokens, not exhaustive coverage of every latent obligation in a task specification.
+
+Downes et al. caution against reducing LLMs to simple next-token machines and argue that modern models form internal representations that go beyond surface prediction \cite{downes2024notjust}. This paper accepts that point. Absence blindness is not a denial of emergent representation or planning. It is a claim about system observability: a model or agent runtime cannot reliably act on an obligation unless that obligation is represented in the state available to generation or decision-making.
+
+\subsection{Hallucination, Omission, and Fabricated Presence}
+Hallucination research has historically emphasized the production of false content. Banerjee et al. and Xu et al. argue, in different ways, that hallucination cannot be eliminated entirely from sufficiently general language models \cite{banerjee2024always,xu2025inevitable}. These results are compatible with absence blindness. When a factual gap is not externally represented as uncertainty, missing evidence, or a retrieval requirement, the model may fill the space with tokens that are plausible under its learned distribution.
+
+Omission is the silent dual of hallucination. Hallucination creates false presence; omission leaves required presence uncreated. Dejl et al. formalize comprehensiveness metrics for detecting missing information in generated text \cite{dejl2025comprehensiveness}. Their framing is important because many harmful failures are not wrong tokens but missing tokens: an excluded contraindication, a skipped requirement, an unmentioned risk, or a silently ignored constraint.
+
+\subsection{Long Context and Effective Absence}
+A gap can exist even when relevant information is technically inside the context window. Liu et al. document the lost-in-the-middle effect: models often use information less effectively when it appears in the middle of long contexts \cite{liu2024lost}. Hsieh et al. connect this to positional attention bias \cite{hsieh2024found}, and Lu et al. describe cases where models appear to encode the location of relevant information yet fail to surface it in generation \cite{lu2024insights}. These results show that presence is not binary. Content can be present in the prompt but absent from effective generative influence.
+
+For this reason, absence blindness should be treated as a runtime and architecture issue, not simply as a prompt-length issue. The relevant question is not only whether information exists somewhere in context, but whether the system has made it salient, inspectable, and coupled to the next action.
+
+\section{Formalizing Absence Blindness}
+\subsection{The Autoregressive Objective and Observable State}
+Let $V$ denote the vocabulary, $X = (x_1, \ldots, x_T)$ a token sequence, and $\theta$ the model parameters. The standard NTP objective minimizes
+\begin{equation}
+L_{\mathrm{NTP}}(\theta) = -\sum_{t=1}^{T}\log p_{\theta}(x_t \mid x_1, \ldots, x_{t-1}).
+\end{equation}
+Each term depends on the observable prefix. In an agentic system, the observable state $C_t$ may also include retrieved documents, memory items, tool outputs, structured task state, verifier messages, and other injected objects. The key point is not that the state is limited to raw tokens, but that the next step is conditioned on what the runtime makes observable.
+
+Let $T$ be a task specification and let $G(T)$ be the set of gaps whose resolution matters for successful task completion. A gap $g \in G(T)$ may be a missing deliverable, an unverified factual claim, a forgotten constraint, an unconfirmed execution effect, or a failed tool operation. Define $R(g,C_t)$ as a representation function that is true when $g$ is represented in $C_t$ by some explicit token sequence or structured object and false otherwise.
+
+\subsection{Absence Blindness Proposition}
+\textbf{Proposition.} For an autoregressive model or agent step whose next action is conditioned only on observable state $C_t$, a gap $g$ cannot directly condition the next-token distribution if $R(g,C_t)$ is false and no external mechanism coupled to decoding tracks $g$. The gap may still influence output indirectly through learned priors, instruction-following patterns, or correlations in training data, but it has no direct, inspectable handle through which the system can reliably force engagement with it.
+
+This proposition is intentionally weaker and more precise than the claim that absence exerts literally zero influence. A model may have learned that specifications often contain risk sections. It may infer that a missing item should be added. It may internally plan future structure. However, without a represented gap object, the system cannot inspect the omission, route it, assign it a status, require a receipt, or prove that it was resolved.
+
+\subsection{Three Forms of Absence}
+We distinguish three mechanisms that are often conflated:
+\begin{enumerate}
+\item \emph{Unrepresented absence}: the required object is not in the active context or external state at all.
+\item \emph{Unsalient presence}: the required object is technically present but is not effectively used, often because of context length, positional bias, or competing tokens.
+\item \emph{Unbound presence}: the required object is present but not linked to the deliverable, claim, tool effect, or decision it is supposed to constrain.
+\end{enumerate}
+All three can produce the same observable failure: the model moves forward as though the gap did not matter. Externalized Presence addresses all three by making the gap explicit, salient, and bound to an action or obligation.
+
+\section{Empirical Evidence for Absence Blindness}
+\subsection{Hallucination as Gap-Filling}
+Heyman and Zylberberg demonstrate that reasoning LLMs hallucinate graph edges not specified in prompts when solving graph-coloring problems \cite{heyman2025reasoning}. The model, encountering an absence of edge information, may fill the gap with probable structure rather than preserving the absence as a constraint. This is not cured by merely asking for more reasoning steps when the missing feature itself remains unrepresented as an explicit prohibition.
+
+Omar et al. report that LLMs can amplify fabricated clinical details when those details are made present in the prompt \cite{omar2025multimodel}. This illustrates the asymmetry at the center of the paper: present content can guide generation powerfully, while missing evidence does not automatically appear as an uncertainty signal. Li et al. further analyze hallucination from a causal attention perspective, connecting misdirected attention to over-reliance on parametric associations \cite{li2024look}. In such cases, grounding can become effectively absent even when evidence is nominally available.
+
+\subsection{Omission as the Silent Dual of Hallucination}
+While hallucination inserts false content, omission deletes required content. Mess et al. note that AI-generated clinical documentation can contain errors of omission, fabrication, or substitution \cite{mess2025scribe}. Omission is especially difficult because no token marks the site of the missing fact. Dejl et al. show that selective omission of key information can be evaluated as a systematic property of generated text rather than as a one-off drafting mistake \cite{dejl2025comprehensiveness}.
+
+Lee et al. introduce the NOAH benchmark, which studies narrative-prior-driven hallucination and omission in video language models \cite{lee2025noah}. The result is relevant beyond video: when a model's learned prior over plausible continuations conflicts with an obligation to report what is actually present, the obligation may be suppressed unless the runtime forces it into active state.
+
+\subsection{Self-Correction Collapse}
+If absence blindness were only a first-pass drafting problem, self-correction by prompting alone would be sufficient. The literature suggests that it is not. Kamoi et al. survey self-correction strategies and find that self-correction is unreliable without external feedback in many settings \cite{kamoi2024selfcorrection}. Pan et al. reach a compatible conclusion: self-correction works better when reliable external feedback is available \cite{pan2023automatically}.
+
+Chen et al. provide a particularly useful framing: models often correct others more readily than they correct themselves when the same content is presented under a different source role \cite{chen2026selfcorrection}. The point is not merely social role behavior; it is that an external challenge becomes present as an object of attention. Without that externalized challenge, the model can continue from its own output as though no gap exists.
+
+\section{The Externalized Presence Principle}
+\subsection{Definition}
+We define the \emph{Externalized Presence Principle} (EPP) as follows:
+\begin{quote}
+Any gap that must reliably influence an LLM's next action should first be reified as an explicit, inspectable object in the active context or in an external state mechanism coupled to generation.
+\end{quote}
+This principle does not claim that externalization guarantees correctness. A bad checklist, irrelevant retrieval result, incorrect verifier, or misleading tool output can still cause failure. The claim is architectural: without representation, a gap cannot be systematically inspected, corrected, routed, or audited. Externalized Presence is therefore a precondition for reliable gap handling, not a complete solution by itself.
+
+\subsection{RAG as Epistemic Presence}
+Retrieval-augmented generation is the most common example of EPP. The gap is epistemic: the model's parametric state may not contain the needed evidence, or the system may require source-grounded support. RAG converts the gap into present documents or passages that can condition generation \cite{lewis2020rag}. Reports of hallucination reduction in RAG systems should be interpreted through this lens: retrieval works when it makes relevant evidence present, salient, and binding on the output \cite{zhang2025rag,wood2025ragtruth}.
+
+\subsection{Checklists and Verification as Deliverable Presence}
+Checklist prompting, Questions-of-Thoughts, and chain-of-verification approaches externalize deliverables and claims \cite{liu2026qot,he2024cov}. The missing item becomes a pending question, requirement, or verification slot. The model is no longer asked to infer all obligations from a vague prompt; it is asked to satisfy visible objects. This is why structured self-questioning can reduce omission errors even when the underlying model is unchanged.
+
+The same logic applies to code generation, document production, policy review, and research synthesis. A requirement that remains implicit can be skipped. A requirement converted into a status-bearing object can be checked.
+
+\subsection{Tool Grounding as Execution Presence}
+Tool-use loops externalize action state. A model may propose an action, but only a tool result, receipt, log, or postcondition check can confirm whether the action occurred. Kim et al. show that recursive criticism and improvement helps agents solve computer tasks by explicitly surfacing failures for the next attempt \cite{kim2023computer}. Sun et al. study silent tool failures and show that agents can proceed as if an operation succeeded when failure is not explicitly signaled \cite{sun2024tools}. Reliable agent systems therefore need explicit representations of expected effects and observed effects. The difference between them is a gap object.
+
+\section{Taxonomy of Invisible Gaps}
+A practical taxonomy of absence blindness should classify gaps by the kind of presence they require. Table~\ref{tab:gaps} summarizes common gap classes and corresponding externalization strategies. The categories are not exhaustive, but they cover the most common failures in LLM and agentic systems.
+
+\begin{table}[!t]
+\caption{Taxonomy of Invisible Gaps and Externalization Strategies}
+\label{tab:gaps}
+\centering
+\small
+\begin{tabular}{p{0.24\columnwidth}p{0.30\columnwidth}p{0.33\columnwidth}}
+\toprule
+\textbf{Gap Type} & \textbf{Example} & \textbf{Externalization Strategy} \\
+\midrule
+Deliverable & Missing report section, test case, risk analysis & Manifest, checklist, schema, completion state \\
+Epistemic & Unverified factual claim & Retrieval, citation slot, evidence requirement \\
+Remainder & Prior constraint falls out of effective attention & Memory object, rolling ledger, state refresh \\
+Failure & Silent tool error or unconfirmed action & Receipt, postcondition check, failure assertion \\
+Binding & Constraint present but not linked to target & Typed reference between constraint, object, and action \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Deliverable gaps occur when a required output component is missing. Epistemic gaps occur when a model makes or needs a factual claim without grounded evidence. Remainder gaps occur when earlier instructions, constraints, or context fragments fall out of effective attention. Failure gaps occur when an intended action has not actually completed, even though the generation or tool call sequence appears to have moved forward. Binding gaps occur when a fact or instruction is present somewhere but not linked to the object it constrains.
+
+\section{Gap-Hunter Scaffold Specification}
+\subsection{Presence Manifest}
+Before generation or execution begins, the system instantiates a presence manifest. The manifest enumerates required deliverables, constraints, evidence requirements, tool effects, and halting conditions. Each item has an identifier, type, owner, source, and status. Minimal statuses include \texttt{PENDING}, \texttt{SATISFIED}, \texttt{FAILED}, \texttt{BLOCKED}, and \texttt{WAIVED}. The important property is that every obligation becomes an object rather than a latent expectation.
+
+\subsection{Gap Detection}
+After each generation or tool step, a detector compares the current output and execution state against the manifest. The detector may be rule-based, model-based, schema-based, or tool-based. For high-stakes systems, it should not rely solely on the same model that produced the output. The detector's job is not to be intelligent in the human sense; it is to produce explicit claims about what remains unsatisfied.
+
+\subsection{Gap Injection}
+Unsatisfied items are injected into the next active context as gap objects. A simple example is:
+\begin{quote}
+\texttt{[GAP: Section 'Risk Analysis' remains PENDING. Required by task specification. No corresponding section detected in current draft.]}
+\end{quote}
+The representation can be natural language, JSON, XML, KVX, an AST node, or an Intent IR object. The format matters less than the state property: the gap is now present, typed, and available for action.
+
+\subsection{Receipts and Halting}
+A scaffold must also prevent false closure. Completion should require receipts: evidence that a deliverable exists, a claim is grounded, a tool effect happened, or a constraint was checked. The system should halt only when all required manifest items are \texttt{SATISFIED} or explicitly \texttt{WAIVED}. This turns completion from a feeling into a state transition.
+
+\subsection{Relation to Existing Frameworks}
+AFlow, AgentSpec, QualityFlow, and TaskGen all implement pieces of this pattern \cite{zhang2025aflow,wang2025agentspec,hu2025qualityflow,tan2024taskgen}. They differ in mechanism, but each adds external structure around model generation. The Gap-Hunter formulation clarifies the shared principle: these systems improve reliability because they convert implicit gaps into explicit state that can be inspected, routed, and corrected.
+
+\section{Implications for Typed Intent IR Runtimes}
+Externalized Presence has direct implications for typed Intent IR systems. Natural language is expressive, but it often leaves obligations implicit. A user can say, ``prepare the launch plan,'' and expect dates, risks, dependencies, owners, budget assumptions, and next actions. Unless those obligations are made explicit, an LLM may produce a fluent plan that feels complete while silently omitting critical requirements.
+
+Typed Intent IR converts the user's request into present objects. Goals become nodes. Constraints become predicates. Deliverables become required outputs. Tool calls become typed effects with expected postconditions. Claims become evidence-bound assertions. Receipts become closure proofs. Memory becomes persistent presence across turns rather than a conversational residue that may or may not be attended to.
+
+This reframes the purpose of an intent-to-execution layer. It is not merely a nicer interface for agents. It is a presence enforcement system. It makes the human's intent inspectable before execution, correctable during planning, and auditable after completion. In this architecture, the model is not trusted to remember every invisible obligation. The runtime carries the obligation as state.
+
+The design consequence is significant. Reliable agents should not be built as free-form chat loops with occasional tool calls. They should be built as state machines over typed obligations, evidence, effects, and receipts, with language models used as powerful interpreters and generators inside a scaffold that tracks what must be present.
+
+\section{Discussion}
+\subsection{Boundary Conditions}
+Absence blindness is a structural pressure, not an absolute incapacity. Instruction-tuned models often learn implicit checklist behavior. Hidden representations may encode future response structure \cite{heo2025know,dong2025emergent}. Test-time compute can cause a model to verbalize intermediate steps that reveal gaps. These mechanisms can reduce failures, and any complete account of LLM behavior must acknowledge them.
+
+However, implicit mitigation is not equivalent to explicit state. The more consequential, long-running, or tool-dependent a task becomes, the less acceptable it is to rely on learned habits alone. Externalized Presence is most important when omission costs are high, when execution spans multiple steps, or when correctness depends on facts outside the model's parametric memory.
+
+\subsection{Limitations of Externalization}
+Externalization shifts part of the reliability problem from the model to the scaffold. The manifest may be incomplete. The detector may miss a gap. The retrieved evidence may be wrong. The verifier may be biased. The tool may return a misleading success signal. Externalized Presence therefore needs its own engineering discipline: schema design, source quality, verifier diversity, postcondition testing, and audit logs.
+
+There is also a context-budget tradeoff. Making every possible gap present can overload the model and introduce noise. A good runtime must decide which gaps need active presence, which can remain in compressed memory, and which can be checked by external validators without occupying the main prompt.
+
+\subsection{Safety and Governance}
+In high-stakes settings, absence blindness is a safety issue. A legal answer that omits a jurisdictional caveat, a medical note that omits a contraindication, or a financial plan that omits a risk assumption can be harmful even if every generated sentence is locally plausible. Presence manifests provide a concrete governance mechanism: define what must be checked, require evidence or waiver for each item, and audit the receipts.
+
+\subsection{Connection to Formal Methods}
+The Gap-Hunter scaffold resembles runtime verification in formal methods \cite{li2024formal}. A monitor observes execution against a specification and flags violations of required state. LLM agents without such monitors resemble programs running without assertions: they may appear to terminate successfully while silently violating invariants. Typed manifests and receipts are the agentic analogue of assertions, preconditions, postconditions, and trace logs.
+
+\section{Conclusion}
+LLMs are powerful generators, but they are not naturally reliable accountants of absence. A missing deliverable, unverified claim, unremembered constraint, or silent tool failure may leave no token behind. Unless represented in active context or external state, the gap has no direct handle through which it can reliably condition generation or action.
+
+The Externalized Presence Principle gives system builders a practical rule: if a gap matters, make it present. Retrieval makes evidence present. Checklists make deliverables present. Verification makes uncertainty present. Tool receipts make execution state present. Typed Intent IR makes user intent present as a structured, inspectable object.
+
+The future of reliable agent systems will not come from asking language models to remember every invisible obligation. It will come from runtimes that externalize obligations, detect gaps, inject unresolved state, and require receipts before closure. Absence is where agent reliability fails. Presence is how the next token is made accountable.
+
+\balance
+\begin{thebibliography}{34}
+\bibitem{chen2024survey} L. Chen et al., ``Next token prediction towards multimodal intelligence: A comprehensive survey,'' arXiv:2412.18619, Dec. 2024.
+\bibitem{mccoy2023embers} R. T. McCoy, S. Yao, D. Friedman, M. Hardy, and T. L. Griffiths, ``Embers of autoregression: Understanding large language models through the problem they are trained to solve,'' arXiv:2309.13638, Sep. 2023.
+\bibitem{bachmann2024pitfalls} G. Bachmann and V. Nagarajan, ``The pitfalls of next-token prediction,'' arXiv:2403.06963, Jul. 2024.
+\bibitem{downes2024notjust} S. M. Downes, P. Forber, and A. Grzankowski, ``LLMs are not just next token predictors,'' arXiv:2408.04666, Aug. 2024.
+\bibitem{banerjee2024always} S. Banerjee, A. Agarwal, and S. Singla, ``LLMs will always hallucinate, and we need to live with this,'' arXiv:2409.05746, Sep. 2024.
+\bibitem{xu2025inevitable} Z. Xu, S. Jain, and M. Kankanhalli, ``Hallucination is inevitable: An innate limitation of large language models,'' arXiv:2401.11817, Feb. 2025.
+\bibitem{dejl2025comprehensiveness} A. Dejl et al., ``Comprehensiveness metrics for automatic evaluation of factual recall in text generation,'' arXiv:2510.07926, Oct. 2025.
+\bibitem{liu2024lost} N. F. Liu et al., ``Lost in the middle: How language models use long contexts,'' \emph{Transactions of the Association for Computational Linguistics}, vol. 12, 2024.
+\bibitem{hsieh2024found} C.-Y. Hsieh et al., ``Found in the middle: Calibrating positional attention bias improves long context utilization,'' arXiv:2406.16008, Jul. 2024.
+\bibitem{lu2024insights} T. Lu, M. Gao, K. Yu, A. Byerly, and D. Khashabi, ``Insights into LLM long-context failures: When transformers know but don't tell,'' arXiv:2406.14673, Oct. 2024.
+\bibitem{heyman2025reasoning} A. Heyman and J. Zylberberg, ``Reasoning large language model errors arise from hallucinating critical problem features,'' arXiv:2505.12151, May 2025.
+\bibitem{omar2025multimodel} M. Omar et al., ``Multi-model assurance analysis showing large language models are highly vulnerable to adversarial hallucination attacks during clinical decision support,'' \emph{Communications Medicine}, 2025.
+\bibitem{li2024look} H. Li, H. Chi, M. Liu, and W. Yang, ``Look within, why LLMs hallucinate: A causal perspective,'' arXiv:2407.10153, Jul. 2024.
+\bibitem{mess2025scribe} S. A. Mess, A. Mackey, and D. E. Yarowsky, ``Artificial intelligence scribe and large language model technology in healthcare documentation: Advantages, limitations, and recommendations,'' \emph{Plastic and Reconstructive Surgery Global Open}, vol. 13, Jan. 2025.
+\bibitem{lee2025noah} K. Lee, E. Kim, J. Choi, and B. Chang, ``NOAH: Benchmarking narrative prior driven hallucination and omission in video large language models,'' arXiv:2511.06475, Nov. 2025.
+\bibitem{kamoi2024selfcorrection} R. Kamoi et al., ``When can LLMs actually correct their own mistakes? A critical survey of self-correction of LLMs,'' \emph{Transactions of the Association for Computational Linguistics}, Jun. 2024.
+\bibitem{chen2026selfcorrection} K. Chen, F.-Y. Su, and J.-H. Chiang, ``The self-correction illusion: LLMs correct others but not themselves,'' preprint, Jun. 2026.
+\bibitem{pan2023automatically} L. Pan et al., ``Automatically correcting large language models: Surveying the landscape of diverse self-correction strategies,'' arXiv:2308.03188, Aug. 2023.
+\bibitem{lewis2020rag} P. Lewis et al., ``Retrieval-augmented generation for knowledge-intensive NLP tasks,'' \emph{Advances in Neural Information Processing Systems}, vol. 33, 2020.
+\bibitem{zhang2025rag} Y. Zhang, ``A retrieval-augmented generation framework with retriever and generator modules for enhancing factual consistency,'' \emph{Applied and Computational Engineering}, Jul. 2025.
+\bibitem{wood2025ragtruth} M. C. Wood and A. A. Forbes, ``100\% elimination of hallucinations on RAGTruth for GPT-4 and GPT-3.5 Turbo,'' arXiv:2412.05223, Mar. 2025.
+\bibitem{liu2026qot} Y.-K. Liu and Y.-C. Tsai, ``Quality-driven agentic reasoning for LLM-assisted software design: Questions-of-Thoughts as a time-series self-QA chain,'' arXiv:2603.11082, Mar. 2026.
+\bibitem{he2024cov} B. He et al., ``Retrieving, rethinking and revising: The chain-of-verification can improve retrieval augmented generation,'' arXiv:2410.05801, Oct. 2024.
+\bibitem{kim2023computer} G. Kim, P. Baldi, and S. McAleer, ``Language models can solve computer tasks,'' arXiv:2303.17491, Nov. 2023.
+\bibitem{sun2024tools} J. Sun, S. Y. Min, Y. Chang, and Y. Bisk, ``Tools fail: Detecting silent errors in faulty tools,'' arXiv:2406.19228, Jun. 2024.
+\bibitem{qu2024recursive} Y. Qu, T. Zhang, N. Garg, and A. Kumar, ``Recursive introspection: Teaching language model agents how to self-improve,'' arXiv:2407.18219, Jul. 2024.
+\bibitem{renze2024selfreflection} M. Renze and E. Guven, ``Self-reflection in LLM agents: Effects on problem-solving performance,'' arXiv:2405.06682, Oct. 2024.
+\bibitem{zhang2025aflow} J. Zhang et al., ``AFlow: Automating agentic workflow generation,'' arXiv:2410.10762, Feb. 2025.
+\bibitem{wang2025agentspec} H. Wang, C. M. Poskitt, and J. Sun, ``AgentSpec: Customizable runtime enforcement for safe and reliable LLM agents,'' arXiv:2503.18666, Apr. 2025.
+\bibitem{hu2025qualityflow} Y. Hu et al., ``QualityFlow: An agentic workflow for program synthesis controlled by LLM quality checks,'' arXiv:2501.17167, Mar. 2025.
+\bibitem{tan2024taskgen} J. C. M. Tan et al., ``TaskGen: A task-based, memory-infused agentic framework using StrictJSON,'' arXiv:2407.15734, Jul. 2024.
+\bibitem{heo2025know} J. Heo et al., ``Do LLMs know internally when they follow instructions?'' arXiv:2410.14516, Mar. 2025.
+\bibitem{dong2025emergent} Z. Dong et al., ``Emergent response planning in LLM,'' arXiv:2502.06258, Feb. 2025.
+\bibitem{li2024formal} Z. Li et al., ``Formal-LLM: Integrating formal language and natural language for controllable LLM-based agents,'' arXiv:2402.00798, Aug. 2024.
+\end{thebibliography}
+
+\end{document}

@@ -361,7 +361,7 @@ func DefaultRegistry() *ModelRegistry {
 	// LongCtx: when cortex bundle exceeds ~100k tokens, DeepSeek-V4-Flash's
 	// 1M context is the safe escalation.
 	compilerLongCtx := Config{
-		Model:       "accounts/fireworks/models/deepseek-v4-flash",
+		Model:       "accounts/fireworks/models/glm-5p2",
 		Temperature: 0,
 		Seed:        42,
 		MaxTokens:   1024,
@@ -411,7 +411,7 @@ func DefaultRegistry() *ModelRegistry {
 
 	// --- SlotExecutor: KindSummarize (long-context specialist) ---------------
 	executorSummarize := Config{
-		Model:       "accounts/fireworks/models/deepseek-v4-flash",
+		Model:       "accounts/fireworks/models/glm-5p2",
 		Temperature: 0.2,
 		MaxTokens:   2048,
 		GrammarMode: GrammarNone,
@@ -446,7 +446,7 @@ func DefaultRegistry() *ModelRegistry {
 
 	// --- SlotExecutor: KindHardReason (opt-in frontier) ----------------------
 	executorHardReason := Config{
-		Model:       "accounts/fireworks/models/deepseek-v4-pro",
+		Model:       "accounts/fireworks/models/glm-5p2",
 		Temperature: 0.2,
 		MaxTokens:   4096,
 		GrammarMode: GrammarNone,
@@ -458,7 +458,7 @@ func DefaultRegistry() *ModelRegistry {
 	// without latency spikes. Free-form prose; no seed (natural variation is
 	// fine — the Liaison is a side-channel and is never replayed).
 	liaison := Config{
-		Model:       "accounts/fireworks/models/deepseek-v4-flash",
+		Model:       "accounts/fireworks/models/glm-5p2",
 		Temperature: 0.5,
 		MaxTokens:   1024,
 		GrammarMode: GrammarNone,

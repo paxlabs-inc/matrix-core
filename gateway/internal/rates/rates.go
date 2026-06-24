@@ -112,14 +112,14 @@ const DailyFreeTierLimitPax = "10"
 // re-declaring; ALSO exposed via FreeTierWhitelist() for tests.
 const (
 	ModelCompilerFreeTier = "accounts/fireworks/models/gpt-oss-120b"
-	ModelExecutorFreeTier = "accounts/fireworks/models/deepseek-v4-flash"
-	ModelDeepSeekV4Flash  = "accounts/fireworks/models/deepseek-v4-flash"
-	ModelDeepSeekV4Pro    = "accounts/fireworks/models/deepseek-v4-pro"
+	ModelExecutorFreeTier = "accounts/fireworks/models/glm-5p2"
+	ModelDeepSeekV4Flash  = "accounts/fireworks/models/glm-5p2"
+	ModelDeepSeekV4Pro    = "accounts/fireworks/models/glm-5p2"
 	ModelKimiK26          = "Qwen/Qwen3.7-Max"
 	// ModelNeoMain is Neo's main conversational loop model: the Together-served
 	// DeepSeek-V4-Pro (NOT the Fireworks deepseek-v4-pro — different provider
 	// route + string). Pinned on the `neo` slot via neo config.MainModel.
-	ModelNeoMain    = "deepseek-ai/DeepSeek-V4-Pro"
+	ModelNeoMain    = "accounts/fireworks/models/glm-5p2"
 	ModelGLM5p1Fast = "accounts/fireworks/routers/glm-5p1-fast"
 	ModelGPTOSS120B       = "accounts/fireworks/models/gpt-oss-120b"
 	ModelGPTOSS20B        = "accounts/fireworks/models/gpt-oss-20b"

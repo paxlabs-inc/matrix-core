@@ -57,7 +57,7 @@ func main() {
 		prose           = flag.String("prose", "Build a concise launch checklist for Matrix v1 covering compiler, cortex, executor, and bridge readiness.", "User prose")
 		verb            = flag.String("verb", "build", "Pre-classified verb (skip stage 2 classifier)")
 		seed            = flag.Int64("seed", 42, "LLM seed for determinism")
-		fireworksModel  = flag.String("fireworks-model", "accounts/fireworks/models/deepseek-v4-flash", "Fireworks model id")
+		fireworksModel  = flag.String("fireworks-model", "accounts/fireworks/models/glm-5p2", "Fireworks model id")
 		togetherModel   = flag.String("together-model", "openai/gpt-oss-120b", "Together model id")
 		skipTogether    = flag.Bool("skip-together", false, "Skip cross-model run C (saves ~10s + Together API budget)")
 		skipDeterminism = flag.Bool("skip-determinism", false, "Skip run B (cross-run determinism repeat)")

@@ -219,7 +219,7 @@ func TestStepHandler_cfgFor_DefaultsPerKind(t *testing.T) {
 		{llm.KindWrite, "Qwen3.7-Max"},
 		{llm.KindTransform, "gpt-oss-20b"},
 		{llm.KindClassify, "gpt-oss-20b"},
-		{llm.KindHardReason, "deepseek-v4-pro"},
+		{llm.KindHardReason, "glm-5p2"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.kind.String(), func(t *testing.T) {

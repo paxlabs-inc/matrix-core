@@ -138,10 +138,10 @@ func main() {
 			// Override any of these via /etc/matrix/router.env if the gateway
 			// whitelist changes.
 			"MATRIX_COMPILER_MODEL":          envOr("MATRIX_COMPILER_MODEL", "accounts/fireworks/models/gpt-oss-120b"),
-			"MATRIX_COMPILER_ESCALATE_MODEL": envOr("MATRIX_COMPILER_ESCALATE_MODEL", "accounts/fireworks/models/deepseek-v4-pro"),
+			"MATRIX_COMPILER_ESCALATE_MODEL": envOr("MATRIX_COMPILER_ESCALATE_MODEL", "accounts/fireworks/models/glm-5p2"),
 			"MATRIX_PLANNER_MODEL":           envOr("MATRIX_PLANNER_MODEL", "Qwen/Qwen3.7-Max"),
 			"MATRIX_EXECUTOR_MODEL":          envOr("MATRIX_EXECUTOR_MODEL", "Qwen/Qwen3.7-Max"),
-			"MATRIX_LIAISON_MODEL":           envOr("MATRIX_LIAISON_MODEL", "accounts/fireworks/models/deepseek-v4-pro"),
+			"MATRIX_LIAISON_MODEL":           envOr("MATRIX_LIAISON_MODEL", "accounts/fireworks/models/glm-5p2"),
 			"MATRIX_DEFAULT_SKILL":           envOr("MATRIX_DEFAULT_SKILL", "matrix://skill/paxeer-assistant@0.1.0"),
 			// Web search (tools/websearch/web-search.mjs MCP server in the
 			// daemon image). The stdio bridge inherits the Machine env (its
