@@ -149,3 +149,135 @@ func TestLoadMissingKVXIsNonFatal(t *testing.T) {
 		t.Errorf("defaults lost on missing kvx: StepBudget=%d", c.StepBudget)
 	}
 }
+
+// --- P2-4: Local sandbox preset ---
+
+func TestSandboxPreset_UsesStubEmbedder(t *testing.T) {
+	// A sandbox profile MUST select the Hash embedder stub. The existing
+	// pickEmbedder() (neo/internal/memory/embedder.go) selects HashEmbedder
+	// when GatewayURL is empty and no provider API key env is set — so the
+	// preset wires EmbedModel to the hash-stub sentinel and blanks the
+	// gateway/actor fields that would route to a metered API embedder.
+	c := Sandbox()
+	if c.EmbedModel != "hash-stub" {
+		t.Errorf("sandbox EmbedModel = %q, want \"hash-stub\" (forces the Hash embedder stub)", c.EmbedModel)
+	}
+	if c.GatewayURL != "" {
+		t.Errorf("sandbox GatewayURL = %q, want empty (no metered embedder route)", c.GatewayURL)
+	}
+	if c.ActorDID != "" {
+		t.Errorf("sandbox ActorDID = %q, want empty (no gateway attribution)", c.ActorDID)
+	}
+}
+
+func TestSandboxPreset_UsesTempCortex(t *testing.T) {
+	// A sandbox profile MUST use a throwaway cortex root so no production
+	// brain is touched. The path is under the OS temp dir and namespaced
+	// "matrix-sandbox" so it is identifiable and cleanable.
+	c := Sandbox()
+	if c.CortexRoot == "" {
+		t.Fatal("sandbox CortexRoot must not be empty")
+	}
+	if c.CortexRoot == Default().CortexRoot {
+		t.Errorf("sandbox CortexRoot = production default %q — must be a temp dir", c.CortexRoot)
+	}
+	if c.CortexActor != "sandbox" {
+		t.Errorf("sandbox CortexActor = %q, want \"sandbox\"", c.CortexActor)
+	}
+}
+
+func TestSandboxPreset_NoLiveChainCalls(t *testing.T) {
+	// A sandbox profile MUST make zero live chain (RPC) calls. DaemonURL
+	// is the chain-core_execute delegation endpoint in the neo config;
+	// empty disables it. GatewayURL is the metered-LLM gateway (also the
+	// chain-adjacent spend surface); empty disables it.
+	c := Sandbox()
+	if c.DaemonURL != "" {
+		t.Errorf("sandbox DaemonURL = %q, want empty (no live chain/core_execute delegation)", c.DaemonURL)
+	}
+	if c.GatewayURL != "" {
+		t.Errorf("sandbox GatewayURL = %q, want empty (no metered gateway / chain-adjacent spend)", c.GatewayURL)
+	}
+}
+
+func TestSandboxPreset_DefaultProfileUnaffected(t *testing.T) {
+	// Calling Sandbox() must NOT mutate the package-level Default() values.
+	// Default() is a constructor (returns a fresh Config by value), so this
+	// is a structural guarantee: Sandbox() composes Default() and then
+	// overrides fields on its own copy, leaving Default() byte-identical.
+	d := Default()
+	_ = Sandbox()
+	d2 := Default()
+	// Config contains slices ([]string), so a direct != comparison is not
+	// valid. Instead verify the key fields the preset overrides are still
+	// the production defaults.
+	if d.CortexRoot != d2.CortexRoot {
+		t.Errorf("Default CortexRoot mutated: %q vs %q", d.CortexRoot, d2.CortexRoot)
+	}
+	if d.DaemonURL != d2.DaemonURL {
+		t.Errorf("Default DaemonURL mutated: %q vs %q", d.DaemonURL, d2.DaemonURL)
+	}
+	if d.GatewayURL != d2.GatewayURL {
+		t.Errorf("Default GatewayURL mutated: %q vs %q", d.GatewayURL, d2.GatewayURL)
+	}
+	if d.EmbedModel != d2.EmbedModel {
+		t.Errorf("Default EmbedModel mutated: %q vs %q", d.EmbedModel, d2.EmbedModel)
+	}
+	// The sandbox profile must NOT share the production cortex root.
+	s := Sandbox()
+	if s.CortexRoot == d.CortexRoot {
+		t.Error("sandbox CortexRoot must differ from the production default")
+	}
+}
+
+// --- P2-7: Adaptive step budget config keys ---
+
+func TestStepBudgetAdaptiveDefaults(t *testing.T) {
+	// By default adaptation is disabled: min=0, max=50 (== StepBudget).
+	// This ensures today's fixed-budget behavior is the zero-config default.
+	c := Default()
+	if c.StepBudgetMin != 0 {
+		t.Errorf("StepBudgetMin default = %d, want 0 (adaptation disabled)", c.StepBudgetMin)
+	}
+	if c.StepBudgetMax != 50 {
+		t.Errorf("StepBudgetMax default = %d, want 50 (== StepBudget)", c.StepBudgetMax)
+	}
+}
+
+func TestStepBudgetAdaptiveEnvOverrides(t *testing.T) {
+	t.Setenv("NEO_STEP_BUDGET_MIN", "20")
+	t.Setenv("NEO_STEP_BUDGET_MAX", "80")
+	c, err := Load("")
+	if err != nil {
+		t.Fatalf("Load: %v", err)
+	}
+	if c.StepBudgetMin != 20 {
+		t.Errorf("StepBudgetMin = %d, want 20 (env override)", c.StepBudgetMin)
+	}
+	if c.StepBudgetMax != 80 {
+		t.Errorf("StepBudgetMax = %d, want 80 (env override)", c.StepBudgetMax)
+	}
+}
+
+func TestStepBudgetAdaptiveKVXOverlay(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "neo.kvx")
+	doc := `
+[loop]
+step_budget_min = 15
+step_budget_max = 65
+`
+	if err := os.WriteFile(path, []byte(doc), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	c, err := Load(path)
+	if err != nil {
+		t.Fatalf("Load: %v", err)
+	}
+	if c.StepBudgetMin != 15 {
+		t.Errorf("StepBudgetMin = %d, want 15 (kvx overlay)", c.StepBudgetMin)
+	}
+	if c.StepBudgetMax != 65 {
+		t.Errorf("StepBudgetMax = %d, want 65 (kvx overlay)", c.StepBudgetMax)
+	}
+}

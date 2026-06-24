@@ -22,7 +22,7 @@ frozen_at   = "2026-06-08"
 authors     = ["Andrew", "cursor-agent"]
 relation    = "coexists with MCL core pipeline; delegates rigorous/monetary tasks to it"
 supersedes  = "none"
-changelog   = "1.2.0 (2026-06-21, Andrew + cursor-agent): Memory Capabilities v3 #1 — reasoning-time retrieval. Demoted ambient page-fault from a forced blob to a thin seed (cfg.AmbientRetrievalTopK, default 2; 0 = fully tool-driven) and promoted memory_recall to the PRIMARY pull verb — see [memory.retrieval]. | 1.1.0 (2026-06-15): added task-scoped CONCURRENT sub-agents (the Agent Swarm) — see [swarm]"
+changelog   = "P2-2 (2026-06-23, hermes-subagent): skill-writing / synthesis loop — agent-authored skills from proven patterns. (1) write_skill tool persists a reusable recipe as a cortex Pattern (validated against PatternSpec); (2) consolidator auto-PROPOSES a candidate skill when a pattern's coverage crosses MinPatternSuccesses (anti-overfit guard enforced); (3) names-only skill INDEX injected into the stable system prefix (token-bounded, cacheable). See [procedural.skill_loop]. | P2-7 (2026-06-23, hermes-subagent): adaptive step budget — the effective per-turn step budget now scales within a configured [min,max] band derived from observable turn-complexity signals (tool-call breadth = distinct tools dispatched so far). Conservative: simple turns stay at the floor; complex turns scale up toward the ceiling; never above max. When adaptation is disabled (step_budget_min=0, the default), behavior is byte-identical to the fixed step_budget=50. No-progress stall + on_budget_exhausted (honest partial) behavior unchanged. Config: [loop_discipline.termination] step_budget_min / step_budget_max / env NEO_STEP_BUDGET_MIN / NEO_STEP_BUDGET_MAX. | P1-4 (2026-06-23, hermes-subagent): heartbeat with HEARTBEAT_OK suppression — a Chronos-driven proactive turn convention. A recurring alarm whose wake_message tells Neo to review active goals/constraints and reply with the HEARTBEAT_OK sentinel when nothing needs attention; Neo recognizes HEARTBEAT_OK on a heartbeat wake and SUPPRESSES the turn (no user-facing output). See [heartbeat]. | P1-2 (2026-06-23, hermes-subagent): prompt-cache stability — split the system prompt into a byte-stable prefix (charter + ground truth) injected as the first message and a trailing dynamic memory tail (pinned/triggered/summary/recalled/retrieved/procedural + context-budget stat) appended AFTER the transcript; [control.loop] step_2 window order updated to [stable system] + [transcript] + [dynamic tail] so the prefix stays byte-identical turn-over-turn. | 1.2.0 (2026-06-21, Andrew + cursor-agent): Memory Capabilities v3 #1 — reasoning-time retrieval. Demoted ambient page-fault from a forced blob to a thin seed (cfg.AmbientRetrievalTopK, default 2; 0 = fully tool-driven) and promoted memory_recall to the PRIMARY pull verb — see [memory.retrieval]. | 1.1.0 (2026-06-15): added task-scoped CONCURRENT sub-agents (the Agent Swarm) — see [swarm]"
 
 [mission]
 goal       = "make Matrix the future of machine interactions by shipping a familiar, trustworthy DEFAULT agent"
@@ -47,7 +47,7 @@ effector    = "the harness is the ONLY effector; the model emits text + tool-cal
 
 [control.loop]
 step_1 = "append user message to transcript"
-step_2 = "pack window = system + pinned_memory + retrieved(faulted) + working_transcript; inject context-budget stat"
+step_2 = "pack window = stable_system_prefix (charter + ground_truth, byte-identical across turns) + working_transcript + trailing_dynamic_tail (pinned_memory + retrieved_faulted + recalled + summary + proven_patterns + context-budget stat); stable prefix rides the provider longest-stable-prefix cache (P1-2)"
 step_3 = "if budget >= hard_pct: force compaction before calling the model"
 step_4 = "call LLM with window + tool schemas"
 step_5 = "background consolidation pass sweeps the new turn into cortex (write-back option B)"
@@ -245,6 +245,14 @@ anti_stale         = "patterns record the context/version they were learned in; 
 anti_confident_wrong = "gate application on preconditions (before) + verify success_criteria (after)"
 anti_bloat         = "top-K, tight budget, confidence-weighted — same discipline as fact retrieval"
 
+[procedural.skill_loop]
+# P2-2 (2026-06-23): the agent-authored skill synthesis loop.
+write_skill_tool  = "write_skill — persists a reusable recipe as a cortex Pattern (validated against PatternSpec)"
+auto_propose      = "consolidator auto-PROPOSES a candidate skill when a pattern's coverage crosses MinPatternSuccesses (cfg.MinPatternSuccesses); proposeIfReady dedupes by name + guards the threshold"
+skill_index       = "names-only skill INDEX injected into the STABLE system prefix (byte-stable, cacheable); full bodies pulled on demand via memory_recall"
+guards            = "anti-overfit (MinPatternSuccesses guard), anti-bloat (names-only index), dedup (by pattern name)"
+not_baked         = "skills are NOT baked into the image (that is P2-3, the dev hot-reload); the index is runtime-injected"
+
 # ===================== LOOP DISCIPLINE (final calls) ====================
 # Decided by cursor-agent at Andrew's delegation, grounded in existing patterns:
 # autonomy-first preference, no-false-success fix, browser anti-rabbit-hole rule.
@@ -260,6 +268,8 @@ ends_when       = "the model emits no tool calls AND a success-criteria self-che
 anti_premature  = "before yielding, re-read the active goal + success_criteria; if unmet and not blocked, continue"
 anti_infinite   = "per-turn step budget (max tool-call iterations) + no-progress detection (repeated same failing call / no state change)"
 step_budget     = 50
+step_budget_min = 0   # P2-7: adaptive floor. 0 = adaptation disabled (fixed step_budget). When >0, the effective budget scales within [min,max] from tool-call breadth. env NEO_STEP_BUDGET_MIN.
+step_budget_max = 50  # P2-7: adaptive ceiling. Defaults to step_budget so the band is [0,50] when disabled. env NEO_STEP_BUDGET_MAX.
 no_progress_stall = 4
 on_budget_exhausted = "summarize progress + what remains + hand back honestly; NEVER fabricate success"
 
@@ -272,6 +282,23 @@ max_retries_per_tool = 3
 max_adapt_attempts   = 2
 feedback          = "every failure is a write-back signal: the background pass records the failure mode -> updates pattern confidence/gotchas"
 never             = "never silently swallow an error; never loop forever; never fabricate success"
+
+# =========================== HEARTBEAT (P1-4) ==========================
+# Chronos-driven proactive turn convention. A recurring alarm whose
+# wake_message tells Neo to review active goals/constraints and reply with
+# the HEARTBEAT_OK sentinel when nothing needs attention. Neo recognizes
+# HEARTBEAT_OK on a heartbeat wake and SUPPRESSES the turn (no user-facing
+# output). Anything else is delivered normally. Disabled by default (0=off).
+
+[heartbeat]
+convention   = "a Chronos recurring alarm (kind=cron) whose wake_message carries the HEARTBEAT marker; the agent reviews active goals/constraints and replies with the HEARTBEAT_OK sentinel when nothing needs attention"
+suppression   = "when the agent's final answer on a heartbeat wake is exactly HEARTBEAT_OK, the turn is suppressed — a.out.Say is never called, so the sentinel never reaches the user; consolidation + attestation still run so cortex learns"
+sentinel      = "HEARTBEAT_OK — the exact token (whitespace-trimmed) that triggers suppression; a message that merely contains it does NOT suppress"
+wake_marker   = "HEARTBEAT — the token in the wake_message that distinguishes a proactive review turn from a normal user message"
+wake_message  = "HEARTBEAT: review your active goals and constraints. If nothing needs attention, reply with exactly HEARTBEAT_OK. If something needs attention, surface it."
+interval_default = 0
+interval_note = "0 = disabled (no wakeups). When >0 (minutes), a Chronos recurring alarm fires at this interval. Config: [heartbeat] interval_minutes / env NEO_HEARTBEAT_INTERVAL"
+checklist     = "optional: a heartbeat checklist may be injected into pinned context so the agent reviews a fixed set of concerns each wake"
 
 # ============================== INVARIANTS ==============================
 

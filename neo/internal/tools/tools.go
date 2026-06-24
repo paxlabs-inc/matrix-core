@@ -30,6 +30,7 @@ import (
 	"matrix/executor/mcp"
 	"matrix/executor/tool"
 	"matrix/neo/internal/llm"
+	"matrix/neo/internal/memory"
 )
 
 // CoreExecuteTool is the synthetic function Neo exposes for delegating
@@ -72,6 +73,18 @@ const ConstructRenderTool = projection.ConstructRenderTool
 // because the validator needs the live transcript the Manager cannot see.
 const TaskCompleteTool = "task_complete"
 
+// WriteSkillTool is the synthetic function Neo exposes for the agent to
+// CONSCIOUSLY persist a reusable recipe as a cortex Pattern (P2-2: the
+// skill-writing / synthesis loop). After a proven task, the agent authors a
+// structured PatternSpec (name, trigger, preconditions, steps, gotchas,
+// success_criteria) and this tool validates it and writes it to the durable
+// procedural store. The spec is validated against PatternSpec (non-empty
+// identity) before the write; coverage starts low and is reinforced on each
+// repeat success, so a single authoring does not overfit (procedural.guards).
+// Readable on demand via memory_recall. Like memory_recall it is NOT a real
+// MCP server, so it never enters the manifest tool-bijection check.
+const WriteSkillTool = "write_skill"
+
 // DelegateFunc runs a prose intent through the MCL pipeline and returns its
 // verifiable outcome. Injected by the agent wiring (see internal/delegate);
 // nil until wired, in which case core_execute reports it is unavailable.
@@ -113,6 +126,14 @@ type SurfaceFunc func(ctx context.Context, s *schema.Surface) error
 // to SHOW an ask but not block for an answer.
 type AskFunc func(ctx context.Context, s *schema.Surface) (*primitives.AskResponse, error)
 
+// WriteSkillFunc persists a reusable recipe as a cortex Pattern (P2-2). It
+// receives a validated PatternSpec (non-empty identity) and returns the cortex
+// URI of the written/reinforced pattern. Injected from the pager (which calls
+// ReinforcePattern); nil until wired, in which case write_skill is not
+// advertised at all. The coverage starts low and is reinforced on each repeat
+// success, so a single authoring does not overfit (procedural.guards).
+type WriteSkillFunc func(ctx context.Context, spec memory.PatternSpec) (string, error)
+
 // boundTool is a manifest tool bound to its canonical URI + advertised schema.
 type boundTool struct {
 	funcName   string
@@ -136,6 +157,7 @@ type Manager struct {
 	swarm      SwarmFunc
 	surface    SurfaceFunc
 	ask        AskFunc
+	writeSkill WriteSkillFunc
 	maxAgents  int
 
 	byFunc    map[string]*boundTool
@@ -290,6 +312,9 @@ func (m *Manager) Schemas() []llm.Tool {
 	if m.surface != nil {
 		out = append(out, constructRenderSchema())
 	}
+	if m.writeSkill != nil {
+		out = append(out, writeSkillSchema())
+	}
 	// The completion gate is ALWAYS advertised to the top-level agent: it is
 	// the only sanctioned way to end a state-touching turn (Cassandra Phase 1).
 	out = append(out, taskCompleteSchema())
@@ -329,6 +354,9 @@ func (m *Manager) Dispatch(ctx context.Context, funcName string, args map[string
 	}
 	if funcName == ConstructRenderTool {
 		return m.dispatchConstructRender(ctx, args)
+	}
+	if funcName == WriteSkillTool {
+		return m.dispatchWriteSkill(ctx, args)
 	}
 	bt, ok := m.byFunc[funcName]
 	if !ok {
@@ -442,6 +470,35 @@ func (m *Manager) dispatchMemoryRecall(ctx context.Context, args map[string]inte
 	return out, false, nil
 }
 
+// dispatchWriteSkill is the P2-2 skill-writing handler: it parses the model's
+// write_skill arguments into a validated PatternSpec and persists it as a
+// cortex Pattern via the injected WriteSkillFunc (which calls
+// ReinforcePattern). A spec with no usable identity (empty name, trigger, and
+// steps) is rejected in-band so the model reads the error and corrects rather
+// than the harness retrying. On success the cortex URI is returned so the
+// agent can cite the persisted skill.
+func (m *Manager) dispatchWriteSkill(ctx context.Context, args map[string]interface{}) (string, bool, error) {
+	if m.writeSkill == nil {
+		return "writing skills is not available in this session (no durable memory store connected).", true, nil
+	}
+	spec := memory.PatternSpec{
+		Name:            strings.TrimSpace(asString(args["name"])),
+		Trigger:         strings.TrimSpace(asString(args["trigger"])),
+		Preconditions:   asStringSlice(args["preconditions"]),
+		Steps:           asStringSlice(args["steps"]),
+		Gotchas:         asStringSlice(args["gotchas"]),
+		SuccessCriteria: asStringSlice(args["success_criteria"]),
+	}
+	if spec.IsEmpty() {
+		return "write_skill needs at least a 'name' (or 'trigger' or 'steps') to identify the recipe. Provide the proven tool sequence as 'steps' and a short 'name'.", true, nil
+	}
+	uri, err := m.writeSkill(ctx, spec)
+	if err != nil {
+		return fmt.Sprintf("write_skill failed: %v", err), true, nil
+	}
+	return fmt.Sprintf("Persisted skill %q as a cortex Pattern (%s). It starts as a low-coverage candidate and is reinforced on each repeat success; it becomes active after %d proven successes.", spec.Name, uri, 0), false, nil
+}
+
 // asStringSlice coerces a JSON array argument into a []string, dropping
 // non-string / blank entries. Returns nil for a missing or non-array value.
 func asStringSlice(v interface{}) []string {
@@ -502,6 +559,16 @@ func (m *Manager) SetSwarm(s SwarmFunc, maxAgents int) {
 // SetRecall wires the durable-memory lookup after construction (the pager
 // and tool manager are built independently).
 func (m *Manager) SetRecall(r RecallFunc) { m.recall = r }
+
+// SetWriteSkill wires the skill-writing function after construction (the
+// pager and tool manager are built independently). When nil, write_skill is
+// not advertised. The func persists a validated PatternSpec as a cortex
+// Pattern via ReinforcePattern.
+func (m *Manager) SetWriteSkill(f WriteSkillFunc) { m.writeSkill = f }
+
+// WriteSkillEnabled reports whether the write_skill tool is wired this session
+// (a durable cortex store is connected and skill authoring is available).
+func (m *Manager) WriteSkillEnabled() bool { return m != nil && m.writeSkill != nil }
 
 // SetSurfaceEmitter wires the Construct surface emitter after construction (the
 // emitter needs the engine + per-run event stream assembled first). nil leaves
@@ -630,6 +697,52 @@ func memoryRecallSchema() llm.Tool {
 					"description": "Optional point in time (RFC3339, e.g. \"2026-01-15T00:00:00Z\", or a date \"2026-01-15\") to ask what was true THEN — memories superseded or expired after that instant are excluded. Omit to read the current truth.",
 				},
 			},
+		},
+	)
+}
+
+// writeSkillSchema advertises the P2-2 skill-writing tool. The agent authors a
+// structured PatternSpec after a proven task; this tool validates it and
+// persists it as a cortex Pattern (the synthesis loop). The spec mirrors
+// PatternSpec exactly (name, trigger, preconditions, steps, gotchas,
+// success_criteria).
+func writeSkillSchema() llm.Tool {
+	return llm.NewFunctionTool(
+		WriteSkillTool,
+		"Persist a reusable recipe as a durable skill (a cortex Pattern) after a task you've proven works. This is the synthesis loop: you CONSCIOUSLY distill the proven tool sequence into a structured recipe so you can reapply it to similar future tasks. The recipe starts as a low-coverage candidate and is reinforced on each repeat success; it only becomes active (injected into future prompts) after it has been proven multiple times, so don't overfit a one-off flow. Provide the full structure: a short name, when to apply it (trigger), what must be true first (preconditions), the exact tool sequence (steps), learned failure modes (gotchas), and how to verify it worked (success_criteria). You can recall any persisted skill later via memory_recall with types=[\"pattern\"].",
+		map[string]interface{}{
+			"type": "object",
+			"properties": map[string]interface{}{
+				"name": map[string]interface{}{
+					"type":        "string",
+					"description": "A short human label for this recipe (e.g. \"deploy ERC-20 on Paxeer\"). This is the skill's identity.",
+				},
+				"trigger": map[string]interface{}{
+					"type":        "string",
+					"description": "When to apply this recipe — the task shape that should match it (e.g. \"user asks to launch a token\").",
+				},
+				"preconditions": map[string]interface{}{
+					"type":        "array",
+					"items":       map[string]interface{}{"type": "string"},
+					"description": "What must be true BEFORE applying the recipe — checked first (e.g. [\"API key set\", \"wallet funded\"]).",
+				},
+				"steps": map[string]interface{}{
+					"type":        "array",
+					"items":       map[string]interface{}{"type": "string"},
+					"description": "The proven tool sequence, in order (e.g. [\"compile\", \"test\", \"deploy\"]). This is the core of the recipe.",
+				},
+				"gotchas": map[string]interface{}{
+					"type":        "array",
+					"items":       map[string]interface{}{"type": "string"},
+					"description": "Learned failure modes to avoid (e.g. [\"pre-Cancun chain -> pin evm_version=shanghai\"]).",
+				},
+				"success_criteria": map[string]interface{}{
+					"type":        "array",
+					"items":       map[string]interface{}{"type": "string"},
+					"description": "How to verify the recipe worked — checked AFTER applying (e.g. [\"receipt status=1\", \"balanceOf>0\"]).",
+				},
+			},
+			"required": []string{"name", "steps"},
 		},
 	)
 }

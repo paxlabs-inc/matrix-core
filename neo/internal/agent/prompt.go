@@ -20,13 +20,55 @@ import (
 //go:embed knowledge.md
 var groundTruth string
 
-// buildSystem composes the single system block injected each turn:
-// behavior + pinned identity/rules/goal + consolidated summary + recalled past
-// turns + page-faulted memory + proven patterns. Re-derived every turn so
-// nothing here drifts (the budget stat is appended by the caller).
+// buildSystem composes the full combined system string used for budget/byte
+// accounting and legacy callers: the byte-stable behavioral charter + ground
+// truth (stableSystem) followed by the turn-varying memory block (dynamicTail).
+// It is exactly the concatenation of the two halves now assembled separately
+// for the prompt cache (P1-2): buildSystem() == stableSystem() + dynamicTail().
+// The actual model-facing window no longer sends this as one front system
+// message — see assembleWindow — but the combined size still drives the
+// budget/byte compaction thresholds, which is why it is retained.
 func (a *Agent) buildSystem(pinned string, retrieved []memory.Snippet, procedural []memory.Pattern, triggered []memory.Snippet, recalled []recall.Hit) string {
+	return a.stableSystem() + a.dynamicTail(pinned, retrieved, procedural, triggered, recalled)
+}
+
+// stableSystem returns the byte-stable system prefix: the behavioral charter
+// (systemPrompt) + the embedded ground truth. It is identical across every
+// turn of a session — nothing turn-varying (pinned memory, recalled turns,
+// retrieved seeds, the consolidated summary, the budget stat) lives here — so
+// it can ride the provider's longest-stable-prefix prompt cache. It is injected
+// as the FIRST message of every window (P1-2).
+func (a *Agent) stableSystem() string {
+	base := a.systemPrompt()
+
+	// P2-2: inject a names-only skill INDEX into the stable prefix. The index
+	// lists available skills by NAME only — never full bodies (steps/gotchas/
+	// criteria), which are pulled on demand via memory_recall. This keeps the
+	// prefix token-bounded and byte-stable across turns (P1-2 cache invariant).
+	// Empty index = no section emitted (clean for deployments without skills).
+	if len(a.skillIndex) == 0 {
+		return base
+	}
 	var b strings.Builder
-	b.WriteString(a.systemPrompt())
+	b.WriteString(base)
+	b.WriteString("\n\nSkills you have (call memory_recall for full steps):\n")
+	for _, name := range a.skillIndex {
+		b.WriteString("- ")
+		b.WriteString(name)
+		b.WriteString("\n")
+	}
+	return b.String()
+}
+
+// dynamicTail renders the turn-varying memory block that is appended AFTER the
+// append-only transcript as ONE trailing message (P1-2): pinned identity/rules
+// + trigger-matched guidance + consolidated summary + recalled past turns +
+// page-faulted memory seed + proven patterns. The exact rendered content and
+// section ordering are preserved from the former single system block — only the
+// POSITION moves (front concatenation → trailing message). The context-budget
+// stat is appended to this tail by the caller (assembleWindow site in agent.go).
+func (a *Agent) dynamicTail(pinned string, retrieved []memory.Snippet, procedural []memory.Pattern, triggered []memory.Snippet, recalled []recall.Hit) string {
+	var b strings.Builder
 
 	if strings.TrimSpace(pinned) != "" {
 		b.WriteString("\n")

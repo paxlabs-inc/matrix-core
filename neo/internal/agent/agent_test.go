@@ -163,3 +163,21 @@ func TestWindowBytes(t *testing.T) {
 		t.Errorf("windowBytes should count content + tool args: empty=%d full=%d", empty, full)
 	}
 }
+
+// TestAgentGenerationSetGet verifies the generation tag (P2-6 lane-based
+// concurrency): SetGeneration stores a value, Generation retrieves it, and the
+// default is zero (unset).
+func TestAgentGenerationSetGet(t *testing.T) {
+	a := New(Options{Config: config.Default()})
+	if a.Generation() != 0 {
+		t.Errorf("default generation = %d, want 0 (unset)", a.Generation())
+	}
+	a.SetGeneration(42)
+	if a.Generation() != 42 {
+		t.Errorf("after SetGeneration(42): got %d, want 42", a.Generation())
+	}
+	a.SetGeneration(7)
+	if a.Generation() != 7 {
+		t.Errorf("after SetGeneration(7): got %d, want 7", a.Generation())
+	}
+}

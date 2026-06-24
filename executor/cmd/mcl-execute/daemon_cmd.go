@@ -338,9 +338,39 @@ func runDaemon(args []string) {
 		paxeerAggEnv  = os.Getenv("PAXEER_AGG_CAP_WEI")
 		paxeerCapStr  = fs.String("paxeer-cap-wei", paxeerCapEnv, "per-call paxeer-net write spend cap in wei (decimal). Empty = default (1 PAX). '-1' disables the policy entirely. Env: PAXEER_SPEND_CAP_WEI.")
 		paxeerAggStr  = fs.String("paxeer-aggregate-cap-wei", paxeerAggEnv, "aggregate plan spend cap across paxeer-net writes in wei (decimal). Empty = default (5 PAX). '0' disables the aggregate gate while keeping per-call. Env: PAXEER_AGG_CAP_WEI.")
-		paxeerDisable = fs.Bool("paxeer-spend-policy-disable", os.Getenv("PAXEER_SPEND_POLICY_DISABLE") == "1", "fully disable PaxeerSpendPolicy plan-time gating (bridge-side + custody-side caps remain in force). Env: PAXEER_SPEND_POLICY_DISABLE=1.")
+		paxeerDisable = fs.Bool("paxeer-spend-policy-disable", os.Getenv("PAXEER_SPEND_POLICY_DISABLE") == "1", "fully disable PaxeerSpendPolicy plan-time gating (bridge-side + custody-side caps remain in force). Env: PAXEER_SPEND_POLICY_DISABLE==1.")
+		// P2-4: one-command hermetic local-dev preset. When set, the daemon
+		// boots with a temp cortex root, the hash embedder stub (in-process,
+		// no API key), no gateway/metering, no S3 snapshots, and the paxeer
+		// spend policy disabled — zero external deps. Explicit flags still
+		// win over the preset defaults (the preset only sets field defaults
+		// the operator did not override).
+		sandbox = fs.Bool("sandbox", false, "hermetic local-dev preset: temp cortex, hash embedder stub (in-process), no gateway/metering, no S3 snapshots, paxeer spend off — zero external deps. One-command dev run.")
 	)
 	fs.Parse(args)
+
+	// P2-4: apply the sandbox preset defaults BEFORE the required-field
+	// check so -cortex-root is no longer required (the preset names a temp
+	// dir). Explicit operator flags win because they were already parsed
+	// above; we only fill in fields the operator left at their zero value.
+	if *sandbox {
+		if *cortexRoot == "" {
+			*cortexRoot = os.TempDir() + "/matrix-sandbox-cortex"
+		}
+		if *cortexActor == "executor" {
+			*cortexActor = "sandbox"
+		}
+		// Hash embedder stub (in-process, no API key, no network).
+		*withEmbedder = true
+		*withFireworks = false
+		// No metered gateway / no chain-adjacent spend surface.
+		*gatewayURL = ""
+		// No S3 snapshots (local-dev posture).
+		*snapEndpoint = ""
+		// No paxeer chain-spend gating.
+		*paxeerDisable = true
+		fmt.Fprintf(os.Stderr, "daemon: sandbox preset active — temp cortex %s, hash embedder stub, no gateway/metering, no snapshots, paxeer spend off\n", *cortexRoot)
+	}
 
 	if *cortexRoot == "" {
 		fatalf("daemon: -cortex-root is required")

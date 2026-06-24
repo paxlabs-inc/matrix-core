@@ -7,13 +7,165 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
 	"sync"
 	"time"
 
 	"matrix/executor/mcp"
 )
+
+// resultCache is an OPT-IN TTL cache for idempotent read-only tool
+// results (P2-5). It is keyed by (toolURI, canonicalArgsJSON) and only
+// ever stores results for tools explicitly listed in cacheableTools
+// (start: web_search, web_news). Side-effecting, shell, chain, and
+// money tools are NEVER cached regardless of args.
+//
+// The cache lives in the Registry (the layer that owns MCPTool.Call and
+// knows each tool's declared side-effect class), NOT in mcp.Manager —
+// the server-pool lifecycle stays untouched (Q16 acceptance).
+//
+// Thread-safe. A zero CacheTTL disables caching entirely (the default
+// for tests and for any production path that hasn't opted in via
+// NEO_MCP_CACHE_TTL_SECONDS).
+type resultCache struct {
+	ttl  time.Duration
+	now  func() time.Time
+	mu   sync.Mutex
+	reqs map[string]cacheEntry
+}
+
+// cacheEntry stores one cached Call result with its expiry instant.
+type cacheEntry struct {
+	result *Result
+	expiry time.Time
+}
+
+// cacheableTools is the closed allow-list of tool NAMES (server-local,
+// i.e. the ToolEntry.Name, NOT the function name) whose results are
+// safe to cache: pure read-only idempotent lookups. web_search /
+// web_news return ranked results for a fixed query and never mutate
+// state. Anything that writes, shells out, touches the chain, or moves
+// funds is excluded by omission — "NEVER cache side-effecting or money
+// tools" (P2-5 mandate).
+var cacheableTools = map[string]bool{
+	"web_search": true,
+	"web_news":   true,
+}
+
+// isCacheable reports whether a tool's results may be cached, given its
+// server-local name and declared side-effect class. Both conditions must
+// hold: the name must be in the explicit allow-list AND the side-effect
+// class must be a read-class (SideEffectRead). The double gate means a
+// tool named web_search that someone later retags as "write" stops
+// being cached automatically — defence in depth against manifest drift.
+func isCacheable(name, sideEffect string) bool {
+	if sideEffect != SideEffectRead {
+		return false
+	}
+	return cacheableTools[name]
+}
+
+// cacheKey builds the canonical cache key for one (uri, args) pair. The
+// args map is JSON-encoded with sorted keys so two calls with the same
+// arguments in different map-iteration order produce the same key
+// (determinism, i6).
+func cacheKey(uri string, args map[string]interface{}) (string, bool) {
+	if len(args) == 0 {
+		return uri + "|{}", true
+	}
+	b, err := canonicalArgs(args)
+	if err != nil {
+		// Un-encodable args → don't cache (safe fallback).
+		return "", false
+	}
+	return uri + "|" + string(b), true
+}
+
+// canonicalArgs marshals args to JSON with sorted object keys so the
+// cache key is deterministic regardless of map iteration order.
+func canonicalArgs(args map[string]interface{}) ([]byte, error) {
+	if len(args) == 0 {
+		return []byte("{}"), nil
+	}
+	keys := make([]string, 0, len(args))
+	for k := range args {
+		keys = append(keys, k)
+	}
+	sortStrings(keys)
+	var sb strings.Builder
+	sb.WriteByte('{')
+	for i, k := range keys {
+		if i > 0 {
+			sb.WriteByte(',')
+		}
+		kb, err := json.Marshal(k)
+		if err != nil {
+			return nil, err
+		}
+		sb.Write(kb)
+		sb.WriteByte(':')
+		vb, err := json.Marshal(args[k])
+		if err != nil {
+			return nil, err
+		}
+		sb.Write(vb)
+	}
+	sb.WriteByte('}')
+	return []byte(sb.String()), nil
+}
+
+// get returns a cached result if present and not expired.
+func (c *resultCache) get(key string) (*Result, bool) {
+	if c == nil || c.ttl <= 0 {
+		return nil, false
+	}
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	e, ok := c.reqs[key]
+	if !ok {
+		return nil, false
+	}
+	if c.now().After(e.expiry) {
+		delete(c.reqs, key)
+		return nil, false
+	}
+	// Return a shallow copy so callers can't mutate the cached entry.
+	cp := *e.result
+	return &cp, true
+}
+
+// put stores a result with the configured TTL. No-op when caching is
+// disabled (ttl<=0) or the result is an in-band error (we don't cache
+// failures — a transient IsError shouldn't poison subsequent calls).
+func (c *resultCache) put(key string, res *Result) {
+	if c == nil || c.ttl <= 0 || res == nil || res.IsError {
+		return
+	}
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if c.reqs == nil {
+		c.reqs = make(map[string]cacheEntry)
+	}
+	// Store a shallow copy so the caller's later mutation of res can't
+	// corrupt the cached value.
+	cp := *res
+	c.reqs[key] = cacheEntry{result: &cp, expiry: c.now().Add(c.ttl)}
+}
+
+// newResultCache constructs a cache. ttl<=0 returns a disabled cache
+// (all get/put are no-ops), which is the default.
+func newResultCache(ttl time.Duration, now func() time.Time) *resultCache {
+	if ttl <= 0 {
+		return nil
+	}
+	if now == nil {
+		now = time.Now
+	}
+	return &resultCache{ttl: ttl, now: now, reqs: make(map[string]cacheEntry)}
+}
 
 // Registry resolves matrix://tool/... URIs to live Tool implementations.
 //
@@ -38,6 +190,11 @@ type Registry struct {
 	// (still useful for native-only tests).
 	mgr *mcp.Manager
 
+	// cache is the OPT-IN TTL result cache for idempotent read-only
+	// tools (P2-5). nil when CacheTTL<=0 (caching disabled). Only tools
+	// in the cacheableTools allow-list with SideEffectRead are cached.
+	cache *resultCache
+
 	// clock is overridable for tests.
 	clock func() time.Time
 }
@@ -53,6 +210,12 @@ type RegistryParams struct {
 
 	// Clock for tests; defaults to time.Now.
 	Clock func() time.Time
+
+	// CacheTTL enables the idempotent-read result cache (P2-5) when > 0.
+	// Results for tools in the cacheableTools allow-list (web_search,
+	// web_news) are served from cache within the TTL; side-effecting and
+	// money tools are never cached. Zero (the default) disables caching.
+	CacheTTL time.Duration
 }
 
 // NewRegistry builds a registry from a manifest. MCP servers are
@@ -86,6 +249,7 @@ func NewRegistry(p RegistryParams) (*Registry, error) {
 		mcps:     make(map[string]*MCPTool),
 		natives:  make(map[string]*NativeTool),
 		mgr:      p.MCP,
+		cache:    newResultCache(p.CacheTTL, clock),
 		clock:    clock,
 	}
 
@@ -108,6 +272,8 @@ func NewRegistry(p RegistryParams) (*Registry, error) {
 				timeout:    teTimeout(te.TimeoutMs),
 				mgr:        p.MCP,
 				clock:      clock,
+				cache:      r.cache,
+				cacheable:  isCacheable(te.Name, te.SideEffectClass),
 			}
 		}
 	}
@@ -207,6 +373,13 @@ type MCPTool struct {
 
 	mgr   *mcp.Manager
 	clock func() time.Time
+
+	// cache is the shared registry-level result cache (P2-5). nil when
+	// caching is disabled (CacheTTL<=0). Only consulted when cacheable.
+	cache *resultCache
+	// cacheable is precomputed at build time from isCacheable(name,
+	// sideEffect) so the hot path is a single bool check.
+	cacheable bool
 }
 
 // URI implements Tool.
@@ -229,10 +402,27 @@ func (t *MCPTool) Name() string { return t.name }
 //
 // Surfaces transport / RPC errors as Go errors; in-band tool failures
 // (the tool ran but reports IsError) are returned via Result.IsError.
+//
+// P2-5: for tools in the cacheableTools allow-list (web_search, web_news)
+// with SideEffectRead, a successful result is served from the TTL cache
+// on a hit and stored on a miss. Side-effecting / money tools never hit
+// the cache (cacheable is precomputed false for them). Cache misses and
+// errors always go to the wire.
 func (t *MCPTool) Call(ctx context.Context, args map[string]interface{}) (*Result, error) {
 	if t.mgr == nil {
 		return nil, errors.New("tool: MCP manager not configured")
 	}
+
+	// P2-5: cache lookup (only for idempotent read tools). A hit returns
+	// a copy of the cached result immediately — no MCP round-trip.
+	if t.cacheable && t.cache != nil {
+		if key, ok := cacheKey(t.uri, args); ok {
+			if cached, hit := t.cache.get(key); hit {
+				return cached, nil
+			}
+		}
+	}
+
 	c := t.mgr.Client(t.server)
 	if c == nil {
 		return nil, fmt.Errorf("tool: MCP server %q not running", t.server)
@@ -269,6 +459,16 @@ func (t *MCPTool) Call(ctx context.Context, args map[string]interface{}) (*Resul
 			URI:      embeddedURI(c.Resource),
 		})
 	}
+
+	// P2-5: store the successful result in the cache for idempotent
+	// read tools. In-band errors (IsError) are never cached so a
+	// transient failure can't poison subsequent calls.
+	if t.cacheable && t.cache != nil && !out.IsError {
+		if key, ok := cacheKey(t.uri, args); ok {
+			t.cache.put(key, out)
+		}
+	}
+
 	return out, nil
 }
 

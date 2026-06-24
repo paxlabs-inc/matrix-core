@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"sort"
 	"strings"
+	"sync"
 	"time"
 
 	"matrix/cassandra"
@@ -47,6 +48,10 @@ var ErrIncomplete = errors.New("neo: turn incomplete (task not finished)")
 // Implemented by internal/writeback; optional (nil disables write-back).
 type Consolidator interface {
 	Consolidate(transcript string)
+	// ConsolidateSync runs the same extraction synchronously on the caller's
+	// goroutine. Called from compact() before evicting older turns so durable
+	// facts/events/patterns reach cortex before the turns are lost.
+	ConsolidateSync(ctx context.Context, transcript string)
 }
 
 // ConvRecaller surfaces the most relevant PAST turns of this conversation
@@ -135,6 +140,20 @@ type Agent struct {
 	convID  string
 	turnSeq int
 
+	// generation is the per-session command-queue tag for the current turn
+	// (P2-6 lane-based concurrency). Set by the session before each Chat call
+	// so superseded (late) results can be detected and discarded — a result
+	// whose generation is no longer current is stale. Zero when unset (CLI
+	// path, tests). Not goroutine-safe: accessed only from the Chat goroutine.
+	generation uint64
+
+	// skillIndex is the names-only skill list injected into the STABLE system
+	// prefix (P2-2). Token-bounded: only names, never bodies. Set by the
+	// session/harness from the consolidator's ProposedSkills(). Lives in the
+	// cacheable prefix so it stays byte-identical across turns (consistent
+	// with P1-2). Empty = no skill section emitted.
+	skillIndex []string
+
 	// topic tracks the rolling topic centroid so a pivot to an unrelated
 	// subject can reset the per-turn retrieved working set (Phase 3). nil when
 	// no embedder is available (topic detection is inherently semantic).
@@ -209,6 +228,109 @@ func New(o Options) *Agent {
 	return a
 }
 
+// SetGeneration tags this agent's current turn with a generation number from
+// the session's command queue (P2-6). A result whose generation has been
+// superseded by a newer dispatch is discarded as stale. Call before Chat.
+func (a *Agent) SetGeneration(gen uint64) { a.generation = gen }
+
+// Generation returns the current generation tag (0 = unset, e.g. CLI path).
+func (a *Agent) Generation() uint64 { return a.generation }
+
+// SetSkillIndex injects a names-only skill index into the STABLE system prefix
+// (P2-2). The index lists available skills by NAME only — never full bodies
+// (steps/gotchas/criteria), which are pulled on demand via memory_recall. This
+// keeps the cacheable prefix token-bounded and byte-stable across turns
+// (consistent with P1-2). Call after the consolidator proposes skills.
+func (a *Agent) SetSkillIndex(names []string) {
+	a.skillIndex = names
+}
+
+// effectiveBudgetSignals carries the observable turn-complexity signals the
+// adaptive step-budget computation reads. It is populated by the Chat loop as
+// the turn progresses. The primary signal is distinctTools — the count of
+// DIFFERENT tool names dispatched so far — which proxies turn breadth: a turn
+// using one tool repeatedly is simple; a turn that fans across many tools is
+// complex and warrants more steps.
+type effectiveBudgetSignals struct {
+	// step is the current loop iteration index (0-based).
+	step int
+	// distinctTools is the number of distinct tool names dispatched so far
+	// this turn. 0 or 1 = simple turn; >1 signals multi-step breadth.
+	distinctTools int
+	// stallRepeats is the current no-progress repeat count (how many
+	// consecutive identical batches have been seen). Not used to scale the
+	// budget UP — a stalling turn should terminate, not get more room —
+	// but tracked so the signal bundle is self-contained for observability.
+	stallRepeats int
+}
+
+// effectiveStepBudget computes the adaptive per-turn step budget within the
+// configured [StepBudgetMin, StepBudgetMax] band, derived from observable
+// turn-complexity signals (tool-call breadth so far).
+//
+// When adaptation is disabled (StepBudgetMin == 0, the default), it returns
+// StepBudgetMax unchanged — today's fixed-budget behavior (no scope creep,
+// default behavior matches exactly).
+//
+// When enabled (StepBudgetMin > 0), the budget scales UP from the floor
+// toward the ceiling as the turn shows breadth (more distinct tools). The
+// scaling is conservative:
+//
+//   - 0-1 distinct tools → floor (simple turn, no breadth signal).
+//   - Each additional distinct tool adds a proportional slice of the
+//     [floor, ceiling] range, so 2 tools gets one step up, 3 gets more, etc.
+//   - The result is clamped to [floor, ceiling] — never below the floor
+//     for simple turns, never above the ceiling.
+//
+// The no-progress stall path is independent and unaffected: a stalling turn
+// terminates via NoProgressStall regardless of the effective budget (m9).
+func (a *Agent) effectiveStepBudget(sig effectiveBudgetSignals) int {
+	min := a.cfg.StepBudgetMin
+	max := a.cfg.StepBudgetMax
+
+	// Adaptation disabled (the default): return the fixed ceiling. This is
+	// today's behavior — StepBudgetMax defaults to StepBudget (50).
+	if min <= 0 {
+		if max <= 0 {
+			return a.cfg.StepBudget
+		}
+		return max
+	}
+
+	// Sanitize the band: max must be >= min. If misconfigured, fall back
+	// to the fixed StepBudget (safe, no surprise).
+	if max < min {
+		return a.cfg.StepBudget
+	}
+
+	// Conservative scaling: the floor is the starting point. Each distinct
+	// tool beyond the first adds a proportional slice of the available range.
+	// breadth = distinctTools - 1 (so 1 tool = 0 breadth = floor).
+	// slices = the number of steps to divide the range into; we use a
+	// generous divisor so it takes real breadth (not just 2 tools) to reach
+	// the ceiling.
+	const breadthDivisor = 6 // 6 distinct tools → full range
+	breadth := sig.distinctTools - 1
+	if breadth < 0 {
+		breadth = 0
+	}
+	if breadth > breadthDivisor {
+		breadth = breadthDivisor
+	}
+
+	range_ := max - min
+	scaled := min + (range_*breadth)/breadthDivisor
+
+	// Clamp to [min, max] (defensive — should already be in range).
+	if scaled < min {
+		scaled = min
+	}
+	if scaled > max {
+		scaled = max
+	}
+	return scaled
+}
+
 // Chat runs one user turn through the recursive loop until the model yields a
 // final answer (no tool calls), the loop stalls/exhausts its budget, or it is
 // blocked needing the human. Conversation state persists across calls.
@@ -273,7 +395,25 @@ func (a *Agent) Chat(ctx context.Context, userInput string) error {
 	// the frictionless light path. This is the "highest standard" gate.
 	workTouched := false
 
-	for step := 0; step < a.cfg.StepBudget; step++ {
+	// P2-7: adaptive step budget. Track distinct tool names dispatched so far
+	// (tool-call breadth) as the complexity signal. The effective budget is
+	// recomputed each iteration from [StepBudgetMin, StepBudgetMax] via
+	// effectiveStepBudget, so a turn that fans out to many tools earns more
+	// room, while a simple/stalling turn stays at the floor. When adaptation
+	// is disabled (StepBudgetMin==0, the default), effectiveStepBudget returns
+	// StepBudgetMax (== StepBudget == 50) and the loop is byte-identical to
+	// the pre-P2-7 fixed-budget loop.
+	distinctToolSet := map[string]struct{}{}
+
+	for step := 0; ; step++ {
+		budget := a.effectiveStepBudget(effectiveBudgetSignals{
+			step:          step,
+			distinctTools: len(distinctToolSet),
+			stallRepeats:  repeats,
+		})
+		if step >= budget {
+			break
+		}
 		// Mid-turn page-fault refresh: long tool loops drift away from the
 		// opening ask, so periodically re-fault against the latest assistant
 		// narration. Injection stays system-block-only — the transcript
@@ -324,9 +464,15 @@ func (a *Agent) Chat(ctx context.Context, userInput string) error {
 			}
 		}
 		pct := a.budgetPct(baseSystem)
-		system := baseSystem + fmt.Sprintf("\n\n[context: %d%% used]\n", pct)
+		// P1-2: the byte-stable system prefix (charter + ground truth) is the
+		// FIRST message; the turn-varying memory block + context-budget stat
+		// move into ONE trailing message AFTER the append-only transcript, so
+		// the prefix stays byte-identical turn-over-turn and rides the
+		// provider's longest-stable-prefix cache. baseSystem (stable + tail)
+		// still drives the budget stat above.
+		tail := a.dynamicTail(pinned, retrieved, procedural, triggered, recalled) + fmt.Sprintf("\n\n[context: %d%% used]\n", pct)
 
-		window := append([]llm.Message{llm.SystemMessage(system)}, a.working...)
+		window := assembleWindow(a.stableSystem(), a.working, tail)
 
 		// Live "typing" channel: stream the model's incremental fragments as
 		// they generate so the user sees Neo thinking + answering in real time
@@ -356,14 +502,16 @@ func (a *Agent) Chat(ctx context.Context, userInput string) error {
 				// lossy than discarding context. Only if that still 413s do we
 				// fall back to a full compaction and retry once more.
 				if a.stripOldImages() > 0 {
-					window = append([]llm.Message{llm.SystemMessage(system)}, a.working...)
+					// Image stripping only shrinks the transcript; the tail
+					// (turn-varying memory + budget stat) is unchanged.
+					window = assembleWindow(a.stableSystem(), a.working, tail)
 					res, err = a.chatWithRetry(ctx, llm.ChatRequest{Messages: window, Tools: a.schemas, OnDelta: onDelta})
 				}
 				if err != nil && errors.Is(err, llm.ErrRequestTooLarge) {
 					a.compact(ctx, "hard")
 					baseSystem = a.buildSystem(pinned, retrieved, procedural, triggered, recalled)
-					system = baseSystem + fmt.Sprintf("\n\n[context: %d%% used]\n", a.budgetPct(baseSystem))
-					window = append([]llm.Message{llm.SystemMessage(system)}, a.working...)
+					tail = a.dynamicTail(pinned, retrieved, procedural, triggered, recalled) + fmt.Sprintf("\n\n[context: %d%% used]\n", a.budgetPct(baseSystem))
+					window = assembleWindow(a.stableSystem(), a.working, tail)
 					res, err = a.chatWithRetry(ctx, llm.ChatRequest{Messages: window, Tools: a.schemas, OnDelta: onDelta})
 				}
 			}
@@ -486,6 +634,11 @@ func (a *Agent) Chat(ctx context.Context, userInput string) error {
 			// wrapped reason is printed.)
 			a.consolidateWorking()
 			return fmt.Errorf("%w: repeating the same step without progress. Where it got stuck: %s", ErrIncomplete, oneLine(a.lastToolSummary()))
+		}
+
+		// P2-7: record distinct tool names for the adaptive budget signal.
+		for _, c := range res.Message.ToolCalls {
+			distinctToolSet[c.Function.Name] = struct{}{}
 		}
 
 		a.runToolCalls(ctx, res.Message.ToolCalls)
@@ -774,6 +927,102 @@ func (a *Agent) chatWithRetry(ctx context.Context, req llm.ChatRequest) (*llm.Ch
 }
 
 func (a *Agent) runToolCalls(ctx context.Context, calls []llm.ToolCall) {
+	// P2-5: dispatch INDEPENDENT tool calls in a turn concurrently (bounded
+	// by cfg.ToolDispatchConcurrency), preserving result ordering + per-tool
+	// observer events. When concurrency <=0 or there's a single call, the
+	// path degenerates to the legacy serial loop (no goroutine overhead).
+	// Determinism + i6 are preserved: results are assembled in CALL order
+	// (index i) regardless of completion order, and the observer start/end
+	// events fire in order so the UI's per-call viewport correlation holds.
+	n := len(calls)
+	if n <= 1 || a.cfg.ToolDispatchConcurrency <= 0 {
+		a.runToolCallsSerial(ctx, calls)
+		return
+	}
+
+	conc := a.cfg.ToolDispatchConcurrency
+	if conc > n {
+		conc = n
+	}
+
+	type dispatchResult struct {
+		content string
+		isErr   bool
+	}
+
+	// Fire ALL ToolStart observer events up front, in call order, so the
+	// surface paints every live viewport the instant the batch is dispatched
+	// (matching the serial path's per-call start event). stepIDs are computed
+	// once here and reused for the end events.
+	stepIDs := make([]string, n)
+	parsedArgs := make([]map[string]interface{}, n)
+	for i, call := range calls {
+		name := call.Function.Name
+		args, perr := call.ParseArgs()
+		if perr != nil {
+			// Parse failure: surface immediately and mark so dispatch skips it.
+			a.working = append(a.working, llm.ToolResult(call.ID, name, fmt.Sprintf("could not parse arguments (%v). Re-issue the call with valid JSON arguments.", perr)))
+			parsedArgs[i] = nil // sentinel: already handled, do not dispatch
+			stepIDs[i] = ""
+			continue
+		}
+		parsedArgs[i] = args
+		stepID := call.ID
+		if stepID == "" {
+			stepID = fmt.Sprintf("call-%d", i)
+		}
+		stepIDs[i] = stepID
+		a.out.Status("• " + name)
+		if a.observer != nil {
+			a.observer(ToolEvent{ID: stepID, Name: name, Args: args, Phase: ToolStart})
+		}
+	}
+
+	// Dispatch the parseable calls concurrently through a bounded semaphore.
+	results := make([]dispatchResult, n)
+	sem := make(chan struct{}, conc)
+	var wg sync.WaitGroup
+	for i, call := range calls {
+		if parsedArgs[i] == nil {
+			// Parse-failed calls were already appended above; skip dispatch.
+			continue
+		}
+		wg.Add(1)
+		go func(i int, call llm.ToolCall, args map[string]interface{}) {
+			defer wg.Done()
+			sem <- struct{}{}
+			defer func() { <-sem }()
+			content, isErr := a.dispatchWithRetry(ctx, call.Function.Name, args)
+			results[i] = dispatchResult{content: content, isErr: isErr}
+		}(i, call, parsedArgs[i])
+	}
+	wg.Wait()
+
+	// Append results + fire ToolEnd events in CALL order so the transcript
+	// and the observer stream stay deterministic regardless of completion order.
+	for i, call := range calls {
+		if parsedArgs[i] == nil {
+			continue // parse-failed: already appended above
+		}
+		name := call.Function.Name
+		content := results[i].content
+		isErr := results[i].isErr
+		// Cap the transcript copy: a single oversized tool result can blow
+		// the provider's request-body byte cap on its own. The observer
+		// below still gets the full, untruncated content so the product
+		// shows real evidence.
+		a.working = append(a.working, llm.ToolResult(call.ID, name, capToolResult(content)))
+		if a.observer != nil {
+			a.observer(ToolEvent{ID: stepIDs[i], Name: name, Args: parsedArgs[i], Result: content, IsErr: isErr, Phase: ToolEnd})
+		}
+	}
+}
+
+// runToolCallsSerial is the legacy single-threaded dispatch path. It's
+// kept for the concurrency<=0 config and for single-call batches (where
+// goroutine spin-up would be pure overhead). Behaviour is byte-identical
+// to the pre-P2-5 loop.
+func (a *Agent) runToolCallsSerial(ctx context.Context, calls []llm.ToolCall) {
 	for i, call := range calls {
 		name := call.Function.Name
 		args, perr := call.ParseArgs()
@@ -931,6 +1180,22 @@ func (a *Agent) windowBytes(system string) int {
 		}
 	}
 	return total
+}
+
+// assembleWindow builds the prompt-cache-friendly window (P1-2): a byte-stable
+// system prefix, the append-only transcript, then ONE trailing dynamic tail
+// (turn-varying memory + context-budget stat). The stable prefix is identical
+// across every turn of a session so the provider's longest-stable-prefix cache
+// stays warm; only the trailing tail (and the growing transcript) change turn
+// to turn. Window order: [stable system] + [transcript] + [dynamic tail].
+//
+// The dynamic block keeps its system role and exact rendered content — only its
+// POSITION moves (formerly concatenated into the front system message, now a
+// trailing message after the transcript). The transcript slice is never mutated:
+// the inner append allocates a fresh backing array, so the outer append onto it
+// cannot alias a.working.
+func assembleWindow(stableSystem string, transcript []llm.Message, dynamicTail string) []llm.Message {
+	return append(append([]llm.Message{llm.SystemMessage(stableSystem)}, transcript...), llm.SystemMessage(dynamicTail))
 }
 
 // capToolResult bounds a single tool result to maxToolResultChars for the

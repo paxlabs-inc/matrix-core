@@ -11,6 +11,7 @@ require (
 
 require (
 	github.com/creack/pty v1.1.21
+	github.com/fsnotify/fsnotify v1.6.0
 	github.com/gorilla/websocket v1.5.3
 	matrix/bridge v0.0.0-00010101000000-000000000000
 	matrix/cortex v0.0.0

@@ -64,6 +64,17 @@ func (a *Agent) compact(ctx context.Context, reason string) {
 	stripImagesIn(older)
 
 	transcript := renderTranscript(older)
+
+	// P1-3: Synchronous pre-compaction consolidation. Before the older turns
+	// are evicted from a.working, run a SYNCHRONOUS consolidation pass so
+	// durable facts/events/patterns reach cortex FIRST. This closes the gap
+	// where the async consolidator could lag behind compaction and lose the
+	// last turns. The async path (steady-state) is unchanged. Nil consolidator
+	// is a no-op (same posture as consolidateWorking).
+	if a.consolidator != nil {
+		a.consolidator.ConsolidateSync(ctx, transcript)
+	}
+
 	prior := strings.TrimSpace(a.summary)
 	source := transcript
 	userMsg := "Transcript to consolidate:\n\n" + transcript

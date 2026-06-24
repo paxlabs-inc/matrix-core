@@ -66,7 +66,9 @@ type Config struct {
 	RecallBudgetTokens   int // token ceiling for the recalled past-turns block
 
 	// --- loop discipline ---
-	StepBudget        int // max tool-call iterations per turn (anti-infinite)
+	StepBudget        int // max tool-call iterations per turn (anti-infinite); the configured ceiling
+	StepBudgetMin     int // P2-7: adaptive floor. 0 = adaptation disabled (effective budget = StepBudgetMax, today's fixed behavior). When >0 the effective budget scales within [StepBudgetMin, StepBudgetMax] based on turn complexity.
+	StepBudgetMax     int // P2-7: adaptive ceiling. Defaults to StepBudget (50) so behavior is unchanged when adaptation is off.
 	NoProgressStall   int // identical-failing-call / no-state-change count that trips a stall
 	MaxRetriesPerTool int // recovery ladder rung 1: bounded retries for transient failures
 	MaxAdaptAttempts  int // recovery ladder rung 2: bounded approach revisions
@@ -88,6 +90,30 @@ type Config struct {
 
 	// --- procedural memory guards ---
 	MinPatternSuccesses int // successes required before a candidate pattern is injected
+
+	// --- heartbeat (P1-4: Chronos-driven proactive turn convention) ---
+	// HeartbeatInterval is the recurring-alarm interval (minutes) for Neo's
+	// proactive self-review of active goals/constraints. 0 = disabled (the
+	// default: no wakeups occur). When >0, a Chronos recurring alarm fires at
+	// this interval; its wake_message tells Neo to review active goals and
+	// reply with the HEARTBEAT_OK sentinel when nothing needs attention (the
+	// turn is then suppressed — no user-facing output). Config: [heartbeat]
+	// section in neo.frozen.kvx / env NEO_HEARTBEAT_INTERVAL.
+	HeartbeatInterval int
+
+	// --- MCP tool result cache + parallel dispatch (P2-5) ---
+	// MCPCacheTTL is the TTL for the idempotent-read result cache. Zero
+	// disables caching (the default). When >0, successful results for
+	// explicitly-idempotent read tools (web_search, web_news) are served
+	// from cache within the TTL; side-effecting and money tools are never
+	// cached. Config: env NEO_MCP_CACHE_TTL_SECONDS.
+	MCPCacheTTL time.Duration
+	// ToolDispatchConcurrency bounds how many INDEPENDENT tool calls in one
+	// turn dispatch concurrently. Zero disables parallel dispatch (calls run
+	// serially, the legacy behaviour). Results are always assembled in call
+	// order regardless of completion order (determinism, i6). Config: env
+	// NEO_TOOL_DISPATCH_CONCURRENCY.
+	ToolDispatchConcurrency int
 
 	// --- execution surface ---
 	NaturalAllow    []string // reversible actions Neo performs directly (no wallet signature)
@@ -130,6 +156,8 @@ func Default() Config {
 		RecallBudgetTokens:    2500,
 
 		StepBudget:        50,
+		StepBudgetMin:     0,  // P2-7: adaptation disabled by default (effective budget = 50, today's behavior)
+		StepBudgetMax:     50, // P2-7: ceiling equals StepBudget so the band is [0,50] when disabled
 		NoProgressStall:   4,
 		MaxRetriesPerTool: 3,
 		MaxAdaptAttempts:  2,
@@ -151,6 +179,11 @@ func Default() Config {
 
 		MinPatternSuccesses: 3,
 
+		// P2-5: parallel dispatch of independent tool calls in a turn.
+		// Bounded so a batch of N calls doesn't fork-bomb MCP servers.
+		// 0 would mean serial (legacy); 4 matches MaxConcurrentSubagents.
+		ToolDispatchConcurrency: 4,
+
 		NaturalAllow: []string{
 			"web_search", "git", "fetch_data", "write_code", "write_docs",
 			"image_video_generation", "non_monetary_workflows",
@@ -161,6 +194,53 @@ func Default() Config {
 			"fund_payment_stream", "fund_channel", "settle",
 		},
 	}
+}
+
+// Sandbox returns a hermetic local-dev preset that wires a throwaway temp
+// cortex, the existing Hash embedder stub, a no-op chain RPC (empty
+// DaemonURL), and metering disabled (empty GatewayURL) — by composing the
+// EXISTING override points (Config struct fields) only. No new runtime
+// paths are introduced; every field set here is one a kvx profile or env
+// var could already set.
+//
+// The preset composes Default() and overrides the hermetic-surface fields
+// on the returned copy. Default() itself is never mutated.
+//
+// Launch command (one command, zero external deps):
+//
+//	neo serve -sandbox
+//
+// or for the MCL executor daemon:
+//
+//	mcl-execute daemon -sandbox
+//
+// The Hash embedder stub is selected because pickEmbedder() (see
+// neo/internal/memory/embedder.go) falls through to embed.NewHashEmbedder()
+// when GatewayURL is empty and no provider API key env is set — both
+// guaranteed by this preset.
+func Sandbox() Config {
+	c := Default()
+	c.AgentName = "Neo (sandbox)"
+	// Throwaway cortex root under the OS temp dir so no production brain
+	// is touched. os.MkdirAll is deferred to the caller (memory.Open /
+	// newInfra) which already creates the path; here we only name it.
+	c.CortexRoot = os.TempDir() + "/matrix-sandbox-cortex"
+	c.CortexActor = "sandbox"
+	// No live chain / core_execute delegation: blank the daemon URL so
+	// delegate calls short-circuit rather than dialing 127.0.0.1:8080.
+	c.DaemonURL = ""
+	// Metering disabled: blank the gateway URL + actor DID. This also
+	// forces pickEmbedder() to select the Hash stub (gateway branch
+	// requires GatewayURL + token + ActorDID; Fireworks branch requires
+	// FIREWORKS_API_KEY env — both absent in a sandbox run).
+	c.GatewayURL = ""
+	c.ActorDID = ""
+	// Sentinel embed model so callers/tests can confirm the stub was
+	// selected. pickEmbedder() maps this to the Hash embedder because the
+	// gateway path is off (empty GatewayURL); the value is otherwise only
+	// a label (the Hash embedder ignores it).
+	c.EmbedModel = "hash-stub"
+	return c
 }
 
 // Load returns Default(), overlaid with an optional runtime .kvx file (path
@@ -215,6 +295,8 @@ func (c *Config) applyDoc(d *kvxDoc) {
 	}
 	if d.has("loop") {
 		c.StepBudget = d.intOr("loop", "step_budget", c.StepBudget)
+		c.StepBudgetMin = d.intOr("loop", "step_budget_min", c.StepBudgetMin)
+		c.StepBudgetMax = d.intOr("loop", "step_budget_max", c.StepBudgetMax)
 		c.NoProgressStall = d.intOr("loop", "no_progress_stall", c.NoProgressStall)
 		c.MaxRetriesPerTool = d.intOr("loop", "max_retries_per_tool", c.MaxRetriesPerTool)
 		c.MaxAdaptAttempts = d.intOr("loop", "max_adapt_attempts", c.MaxAdaptAttempts)
@@ -237,6 +319,9 @@ func (c *Config) applyDoc(d *kvxDoc) {
 	}
 	if d.has("procedural") {
 		c.MinPatternSuccesses = d.intOr("procedural", "min_pattern_successes", c.MinPatternSuccesses)
+	}
+	if d.has("heartbeat") {
+		c.HeartbeatInterval = d.intOr("heartbeat", "interval_minutes", c.HeartbeatInterval)
 	}
 	if d.has("execution") {
 		if v := d.list("execution", "natural_allow"); v != nil {
@@ -274,6 +359,12 @@ func (c *Config) applyEnv() {
 	c.MaxConcurrentSubagents = envInt("NEO_MAX_CONCURRENT_SUBAGENTS", c.MaxConcurrentSubagents)
 	c.SubagentStepBudget = envInt("NEO_SUBAGENT_STEP_BUDGET", c.SubagentStepBudget)
 
+	// P2-7: adaptive step budget. StepBudgetMin accepts 0 (adaptation
+	// disabled — the default); StepBudgetMax accepts 0 only to mean "use
+	// StepBudget as the ceiling" (so an unset env keeps today's behavior).
+	c.StepBudgetMin = envIntNonNeg("NEO_STEP_BUDGET_MIN", c.StepBudgetMin)
+	c.StepBudgetMax = envIntNonNeg("NEO_STEP_BUDGET_MAX", c.StepBudgetMax)
+
 	// Task supervisor (durability).
 	c.SuperviseTasks = envBool("NEO_SUPERVISE_TASKS", c.SuperviseTasks)
 	c.GateAllWork = envBool("NEO_GATE_ALL_WORK", c.GateAllWork)
@@ -287,6 +378,16 @@ func (c *Config) applyEnv() {
 	// AmbientRetrievalTopK accepts 0 (fully tool-driven), so it uses the
 	// non-negative variant rather than envInt (which rejects 0).
 	c.AmbientRetrievalTopK = envIntNonNeg("NEO_AMBIENT_RETRIEVAL_TOP_K", c.AmbientRetrievalTopK)
+	// HeartbeatInterval accepts 0 (disabled), so it uses the non-negative
+	// variant (P1-4). No wakeups occur when 0.
+	c.HeartbeatInterval = envIntNonNeg("NEO_HEARTBEAT_INTERVAL", c.HeartbeatInterval)
+
+	// P2-5: MCP result cache TTL (seconds). 0 = disabled.
+	if v := envIntNonNeg("NEO_MCP_CACHE_TTL_SECONDS", 0); v > 0 {
+		c.MCPCacheTTL = time.Duration(v) * time.Second
+	}
+	// P2-5: parallel dispatch of independent tool calls. 0 = serial.
+	c.ToolDispatchConcurrency = envIntNonNeg("NEO_TOOL_DISPATCH_CONCURRENCY", c.ToolDispatchConcurrency)
 }
 
 // envInt overlays a positive integer from the environment, keeping the

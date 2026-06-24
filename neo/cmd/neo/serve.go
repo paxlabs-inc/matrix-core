@@ -41,21 +41,37 @@ func runServe(args []string) {
 		addr       = fs.String("addr", envOrDefault("NEO_ADDR", ":8080"), "listen address")
 		backend    = fs.String("backend", "", "co-located MCL daemon base URL for core_execute + proxy (overrides NEO_DAEMON_URL/config)")
 		noTools    = fs.Bool("no-tools", false, "skip spawning MCP servers (chat-only)")
+		// P2-4: one-command hermetic local-dev preset. Composes Default()
+		// with a temp cortex, the Hash embedder stub, no-op chain RPC,
+		// and metering disabled. Zero external deps. When set, -config,
+		// -cortex-root, -actor, and -backend are ignored (the preset is
+		// fully hermetic). Explicit -manifest still wins so a sandbox
+		// run can point at a test manifest.
+		sandbox = fs.Bool("sandbox", false, "hermetic local-dev preset: temp cortex, hash embedder stub, mock/no-op chain RPC, metering off (zero external deps). See config.Sandbox().")
 	)
 	_ = fs.Parse(args)
 
-	cfg, err := config.Load(*configPath)
-	if err != nil {
-		fatal("load config: %v", err)
+	var cfg config.Config
+	var err error
+	if *sandbox {
+		cfg = config.Sandbox()
+		fmt.Fprintf(os.Stderr, "neo: sandbox preset active — temp cortex %s, hash embedder stub, no chain RPC, metering off\n", cfg.CortexRoot)
+	} else {
+		cfg, err = config.Load(*configPath)
+		if err != nil {
+			fatal("load config: %v", err)
+		}
 	}
 	if *manifest != "" {
 		cfg.ManifestPath = *manifest
 	}
-	if *cortexRoot != "" {
-		cfg.CortexRoot = *cortexRoot
-	}
-	if *actor != "" {
-		cfg.CortexActor = *actor
+	if !*sandbox {
+		if *cortexRoot != "" {
+			cfg.CortexRoot = *cortexRoot
+		}
+		if *actor != "" {
+			cfg.CortexActor = *actor
+		}
 	}
 	backendURL := strings.TrimSpace(*backend)
 	if backendURL == "" {

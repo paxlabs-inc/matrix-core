@@ -4,8 +4,11 @@
 package main
 
 import (
+	"encoding/json"
 	"math/big"
+	"reflect"
 	"testing"
+	"time"
 )
 
 // TestPaxeerPerCallCap exercises the per-call ceiling: every gated
@@ -201,6 +204,223 @@ func TestPaxeerNilPolicySafe(t *testing.T) {
 	})
 	if agg.Decision != SpendAllow {
 		t.Fatalf("nil policy aggregate got %s, want allow", agg.Decision)
+	}
+}
+
+// ---------------------------------------------------------------------------
+// P2-1: circuit breaker + per-recipient cap + rolling time-window budget.
+// These tests exercise the hardened PaxeerSpendPolicy. The state is runtime/
+// sidecar only and must never be journaled or serialized into OverallRoot.
+// ---------------------------------------------------------------------------
+
+// onePAX is a test helper: 1e18 wei.
+func onePAX() *big.Int {
+	return new(big.Int).Exp(big.NewInt(10), big.NewInt(18), nil)
+}
+
+// spendArgs builds a transfer args map for the given recipient + wei amount.
+func spendArgs(to, wei string) map[string]string {
+	return map[string]string{"to": to, "amount_wei": wei}
+}
+
+// TestSpend_PerRecipientCapEnforced — a single recipient may not receive
+// more than PerRecipientCapWei across multiple allowed calls. The second
+// call that would push the recipient over the per-recipient ceiling must
+// be gated (SpendGate), and the rule must be the per-recipient rule.
+func TestSpend_PerRecipientCapEnforced(t *testing.T) {
+	p := DefaultPaxeerSpendPolicy()
+	// Raise the per-call cap so the per-recipient gate is what's exercised.
+	p.PerCallCapWei = new(big.Int).Mul(onePAX(), big.NewInt(5)) // 5 PAX
+	// Tighten the per-recipient cap so the test is deterministic.
+	p.PerRecipientCapWei = new(big.Int).Mul(onePAX(), big.NewInt(2)) // 2 PAX
+	st := p.NewState()
+
+	const recipient = "0xRECIPIENT_A"
+	transfer := "matrix://tool/mcp/paxeer-net/transfer@0.1.0"
+
+	// 1.5 PAX to recipient A — allowed, recorded.
+	ev1 := p.EvaluateWithState(transfer, spendArgs(recipient, "1500000000000000000"), st, time.Now())
+	if ev1.Decision != SpendAllow {
+		t.Fatalf("first call got %s, want allow (rule=%s reason=%s)", ev1.Decision, ev1.Rule, ev1.Reason)
+	}
+
+	// Another 1 PAX to recipient A → total 2.5 PAX > 2 PAX cap → must gate.
+	ev2 := p.EvaluateWithState(transfer, spendArgs(recipient, "1000000000000000000"), st, time.Now())
+	if ev2.Decision != SpendGate {
+		t.Fatalf("second call got %s, want gate (rule=%s reason=%s)", ev2.Decision, ev2.Rule, ev2.Reason)
+	}
+	if ev2.Rule != PaxeerRulePerRecipientCap {
+		t.Fatalf("got rule %q, want %q", ev2.Rule, PaxeerRulePerRecipientCap)
+	}
+}
+
+// TestSpend_CircuitBreakerTripsAfterNViolations — after N cap-violations
+// (gate or deny verdicts) within the breaker window, the breaker trips and
+// ALL subsequent calls are rejected with the breaker rule until cooldown.
+func TestSpend_CircuitBreakerTripsAfterNViolations(t *testing.T) {
+	p := DefaultPaxeerSpendPolicy()
+	p.BreakerThreshold = 3
+	p.BreakerWindow = 5 * time.Minute
+	p.BreakerCooldown = 10 * time.Minute
+	st := p.NewState()
+
+	transfer := "matrix://tool/mcp/paxeer-net/transfer@0.1.0"
+	// Each call exceeds the per-call cap (1 PAX) → SpendGate = a violation.
+	over := spendArgs("0xA", "5000000000000000000") // 5 PAX
+
+	now := time.Now()
+	for i := 0; i < p.BreakerThreshold; i++ {
+		ev := p.EvaluateWithState(transfer, over, st, now)
+		// Each is a cap-violation (gate), recorded as a breaker violation.
+		if ev.Decision != SpendGate {
+			t.Fatalf("call %d got %s, want gate (rule=%s)", i, ev.Decision, ev.Rule)
+		}
+	}
+
+	// After N violations, the breaker should be tripped.
+	if !st.IsTripped(now) {
+		t.Fatal("breaker should be tripped after N violations")
+	}
+
+	// The very next call — even a tiny allowed amount — must be DENIED
+	// (fail CLOSED) because the breaker is tripped.
+	small := spendArgs("0xB", "1")
+	ev := p.EvaluateWithState(transfer, small, st, now)
+	if ev.Decision != SpendDeny {
+		t.Fatalf("post-trip call got %s, want deny (fail-closed)", ev.Decision)
+	}
+	if ev.Rule != PaxeerRuleBreakerTripped {
+		t.Fatalf("post-trip rule %q, want %q", ev.Rule, PaxeerRuleBreakerTripped)
+	}
+}
+
+// TestSpend_BreakerCooldownRecovers — once the breaker cooldown elapses,
+// the breaker resets and calls are evaluated normally again.
+func TestSpend_BreakerCooldownRecovers(t *testing.T) {
+	p := DefaultPaxeerSpendPolicy()
+	p.BreakerThreshold = 2
+	p.BreakerWindow = 5 * time.Minute
+	p.BreakerCooldown = 1 * time.Minute
+	st := p.NewState()
+
+	transfer := "matrix://tool/mcp/paxeer-net/transfer@0.1.0"
+	over := spendArgs("0xA", "5000000000000000000") // 5 PAX > 1 PAX cap
+
+	tripTime := time.Now()
+	for i := 0; i < p.BreakerThreshold; i++ {
+		p.EvaluateWithState(transfer, over, st, tripTime)
+	}
+	if !st.IsTripped(tripTime) {
+		t.Fatal("breaker should be tripped")
+	}
+
+	// While tripped (before cooldown) → deny.
+	ev := p.EvaluateWithState(transfer, over, st, tripTime.Add(30*time.Second))
+	if ev.Decision != SpendDeny {
+		t.Fatalf("pre-cooldown got %s, want deny", ev.Decision)
+	}
+
+	// After cooldown elapses → breaker resets, normal evaluation resumes.
+	after := tripTime.Add(p.BreakerCooldown + time.Second)
+	ev2 := p.EvaluateWithState(transfer, over, st, after)
+	// 5 PAX > 1 PAX per-call cap → gate (not breaker deny).
+	if ev2.Decision != SpendGate {
+		t.Fatalf("post-cooldown got %s, want gate (rule=%s reason=%s)", ev2.Decision, ev2.Rule, ev2.Reason)
+	}
+	if ev2.Rule == PaxeerRuleBreakerTripped {
+		t.Fatal("breaker rule should NOT fire after cooldown")
+	}
+}
+
+// TestSpend_RollingWindowBudgetRejectsOverspend — total spend within a
+// rolling time window must not exceed RollingWindowBudgetWei. Once the
+// window budget is consumed, further spend is gated.
+func TestSpend_RollingWindowBudgetRejectsOverspend(t *testing.T) {
+	p := DefaultPaxeerSpendPolicy()
+	// Raise the per-call cap so the rolling-window gate is what's exercised.
+	p.PerCallCapWei = new(big.Int).Mul(onePAX(), big.NewInt(5)) // 5 PAX
+	p.RollingWindowBudgetWei = new(big.Int).Mul(onePAX(), big.NewInt(3)) // 3 PAX
+	p.RollingWindowDuration = 10 * time.Minute
+	st := p.NewState()
+
+	transfer := "matrix://tool/mcp/paxeer-net/transfer@0.1.0"
+	base := time.Now()
+
+	// 2 PAX — allowed, recorded into the rolling window.
+	ev1 := p.EvaluateWithState(transfer, spendArgs("0xA", "2000000000000000000"), st, base)
+	if ev1.Decision != SpendAllow {
+		t.Fatalf("first got %s, want allow (rule=%s reason=%s)", ev1.Decision, ev1.Rule, ev1.Reason)
+	}
+
+	// 2 PAX more → total 4 PAX > 3 PAX window budget → must gate.
+	ev2 := p.EvaluateWithState(transfer, spendArgs("0xB", "2000000000000000000"), st, base.Add(1*time.Minute))
+	if ev2.Decision != SpendGate {
+		t.Fatalf("second got %s, want gate (rule=%s reason=%s)", ev2.Decision, ev2.Rule, ev2.Reason)
+	}
+	if ev2.Rule != PaxeerRuleRollingWindowBudget {
+		t.Fatalf("got rule %q, want %q", ev2.Rule, PaxeerRuleRollingWindowBudget)
+	}
+
+	// After the window rolls past, the old spend expires and 2 PAX is OK.
+	ev3 := p.EvaluateWithState(transfer, spendArgs("0xC", "2000000000000000000"),
+		st, base.Add(p.RollingWindowDuration+time.Second))
+	if ev3.Decision != SpendAllow {
+		t.Fatalf("post-window got %s, want allow (rule=%s reason=%s)", ev3.Decision, ev3.Rule, ev3.Reason)
+	}
+}
+
+// TestSpend_StateNotJournaled — the policy's runtime state must be purely
+// sidecar: it carries NO serialization hooks (no MarshalJSON / journal
+// integration). We assert the SpendPolicyState type does not implement
+// json.Marshaler and has no "Journal" or "Serialize" method. This is a
+// compile-time + reflection guarantee that the state is never journaled.
+func TestSpend_StateNotJournaled(t *testing.T) {
+	p := DefaultPaxeerSpendPolicy()
+	st := p.NewState()
+
+	// (a) Must NOT implement json.Marshaler.
+	var _ interface{} = st
+	if _, ok := interface{}(st).(json.Marshaler); ok {
+		t.Fatal("SpendPolicyState must NOT implement json.Marshaler — state must be sidecar-only")
+	}
+
+	// (b) Must NOT expose Serialize / Journal / Marshal / Snapshot methods
+	// (reflection scan of the concrete type).
+	stType := reflect.TypeOf(st)
+	if stType.Kind() == reflect.Ptr {
+		stType = stType.Elem()
+	}
+	forbidden := map[string]bool{
+		"Serialize": true, "Marshal": true, "Journal": true,
+		"Snapshot": true, "ToBytes": true, "Encode": true,
+	}
+	for i := 0; i < stType.NumMethod(); i++ {
+		name := stType.Method(i).Name
+		if forbidden[name] {
+			t.Fatalf("SpendPolicyState must not expose serialization method %q", name)
+		}
+	}
+
+	// (c) SpendPolicyState is NOT referenced from OverallRoot-typed state.
+	// The daemonState.paxeerSpend field is *PaxeerSpendPolicy (config-only);
+	// the mutable state lives in a separate *SpendPolicyState that the
+	// daemon holds alongside but never marshals. Assert the policy struct
+	// field for state is unexported + a pointer (sidecar, not embedded
+	// value that would get value-copied into snapshots).
+	polType := reflect.TypeOf(p)
+	if polType.Kind() != reflect.Ptr || polType.Elem().Kind() != reflect.Struct {
+		t.Fatal("policy must be *struct")
+	}
+	polElem := polType.Elem()
+	stateField, ok := polElem.FieldByName("state")
+	if !ok {
+		t.Fatal("PaxeerSpendPolicy must have a 'state' field for the sidecar state")
+	}
+	// An unexported field has a non-empty PkgPath; an exported field has
+	// PkgPath == "". We require the state field to be unexported so it
+	// can never be value-copied into a snapshot/journal by reflection.
+	if stateField.PkgPath == "" {
+		t.Fatal("PaxeerSpendPolicy.state must be unexported (sidecar, never journaled)")
 	}
 }
 

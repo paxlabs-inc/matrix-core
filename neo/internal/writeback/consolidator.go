@@ -15,6 +15,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
+	"sync"
 	"time"
 
 	"matrix/neo/internal/config"
@@ -31,6 +32,14 @@ type Consolidator struct {
 
 	jobs chan string
 	done chan struct{}
+
+	// P2-2: proposed skills awaiting activation. Populated by proposeIfReady
+	// when a pattern's coverage crosses cfg.MinPatternSuccesses. Deduped by
+	// the pattern's name (the dedup key). Guarded by proposeMu.
+	proposeMu     sync.Mutex
+	proposed      []string
+	proposedSet   map[string]struct{}
+	reinforceCount map[string]int // tracks how many times each pattern name was reinforced (for auto-propose)
 }
 
 // New builds a consolidator. extract drives the per-turn learning extraction
@@ -39,12 +48,14 @@ type Consolidator struct {
 // to extract.
 func New(extract, classify *llm.Client, pager *memory.Pager, cfg config.Config) *Consolidator {
 	return &Consolidator{
-		cfg:      cfg,
-		extract:  extract,
-		classify: classify,
-		pager:    pager,
-		jobs:     make(chan string, 8),
-		done:     make(chan struct{}),
+		cfg:            cfg,
+		extract:        extract,
+		classify:       classify,
+		pager:          pager,
+		jobs:           make(chan string, 8),
+		done:           make(chan struct{}),
+		proposedSet:    make(map[string]struct{}),
+		reinforceCount: make(map[string]int),
 	}
 }
 
@@ -73,8 +84,77 @@ func (c *Consolidator) Consolidate(transcript string) {
 		// detached goroutine. Bursts are rare (turns are serialized per
 		// conversation and the worker drains continuously), so this overflow
 		// path cannot fan out unboundedly in practice.
-		go c.process(transcript)
+		go c.process(context.Background(), transcript)
 	}
+}
+
+// ConsolidateSync runs the SAME extraction logic as Consolidate, but
+// SYNCHRONOUSLY on the caller's goroutine — not through the async jobs
+// channel. It is called from compact() before evicting older turns so that
+// durable facts/events/patterns in the about-to-be-evicted transcript reach
+// cortex BEFORE the turns are lost from the working window. This closes the
+// gap where an async sweep could lag behind compaction and lose the last
+// turns. The call respects the context deadline and never panics on a nil
+// receiver. It does NOT touch the async queue (steady-state is unchanged).
+func (c *Consolidator) ConsolidateSync(ctx context.Context, transcript string) {
+	if c == nil || strings.TrimSpace(transcript) == "" {
+		return
+	}
+	// Run the same extraction logic synchronously. We use a bounded sub-context
+	// so a slow model does not stall compaction beyond the existing compaction
+	// stall budget (the caller's context already bounds the total time).
+	subCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
+	defer cancel()
+	c.process(subCtx, transcript)
+}
+
+// proposeIfReady checks if a pattern has accumulated enough successes
+// (coverage >= cfg.MinPatternSuccesses) to be PROPOSED as a candidate skill.
+// This is the auto-propose extension (P2-2): when a successful tool-sequence
+// repeats past the existing confidence/N-success guard, the consolidator
+// records the pattern's name as a proposed skill. Deduped by name (the dedup
+// key). Below the guard, nothing happens (anti-overfit). Nil-safe.
+func (c *Consolidator) proposeIfReady(spec memory.PatternSpec, coverage int) {
+	if c == nil {
+		return
+	}
+	if spec.IsEmpty() {
+		return
+	}
+	if coverage < c.cfg.MinPatternSuccesses {
+		return
+	}
+	name := strings.TrimSpace(spec.Name)
+	if name == "" {
+		return
+	}
+	c.proposeMu.Lock()
+	defer c.proposeMu.Unlock()
+	if c.proposedSet == nil {
+		c.proposedSet = make(map[string]struct{})
+	}
+	if c.reinforceCount == nil {
+		c.reinforceCount = make(map[string]int)
+	}
+	if _, exists := c.proposedSet[name]; exists {
+		return // dedup: same name already proposed
+	}
+	c.proposedSet[name] = struct{}{}
+	c.proposed = append(c.proposed, name)
+}
+
+// ProposedSkills returns the list of skill names that have been auto-proposed
+// by the consolidator (patterns that crossed the MinPatternSuccesses guard).
+// Nil-safe: returns nil for a nil receiver.
+func (c *Consolidator) ProposedSkills() []string {
+	if c == nil {
+		return nil
+	}
+	c.proposeMu.Lock()
+	defer c.proposeMu.Unlock()
+	out := make([]string, len(c.proposed))
+	copy(out, c.proposed)
+	return out
 }
 
 // Stop drains and shuts down the worker.
@@ -89,7 +169,7 @@ func (c *Consolidator) Stop() {
 func (c *Consolidator) loop() {
 	defer close(c.done)
 	for t := range c.jobs {
-		c.process(t)
+		c.process(context.Background(), t)
 	}
 }
 
@@ -136,11 +216,13 @@ type extract struct {
 	} `json:"outcome"`
 }
 
-func (c *Consolidator) process(transcript string) {
+func (c *Consolidator) process(ctx context.Context, transcript string) {
 	if c.extract == nil || c.pager == nil {
 		return
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+	// The caller may have already bounded the context (ConsolidateSync).
+	// For the async path (loop), ctx is context.Background() with a 60s timeout.
+	ctx, cancel := context.WithTimeout(ctx, 60*time.Second)
 	defer cancel()
 
 	res, err := c.extract.Chat(ctx, llm.ChatRequest{
@@ -211,7 +293,16 @@ func (c *Consolidator) process(transcript string) {
 		if spec.IsEmpty() {
 			continue
 		}
+		c.proposeMu.Lock()
+		c.reinforceCount[spec.Name]++
+		coverage := c.reinforceCount[spec.Name]
+		c.proposeMu.Unlock()
 		_, _ = c.pager.ReinforcePattern(ctx, spec, nil)
+		// P2-2: auto-propose a candidate skill when the pattern crosses
+		// the MinPatternSuccesses guard. The coverage is tracked locally
+		// (ReinforcePattern returns a URI, not a count). proposeIfReady
+		// dedupes + guards the threshold.
+		c.proposeIfReady(spec, coverage)
 	}
 	if out.Outcome != nil && strings.TrimSpace(out.Outcome.Summary) != "" {
 		_, _ = c.pager.RecordOutcome(ctx, out.Outcome.Summary, mapOutcome(out.Outcome.Status), "")

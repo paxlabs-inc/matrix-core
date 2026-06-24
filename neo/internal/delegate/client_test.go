@@ -152,3 +152,340 @@ func TestTruncate(t *testing.T) {
 		t.Errorf("truncate should add an ellipsis: %q", got)
 	}
 }
+
+// sseData renders one daemon-shaped SSE event ({seq,ts,phase,type,fields}) in
+// the wire format the daemon emits: a single "data: <json>\n\n" frame.
+func sseData(t *testing.T, seq int, typ, phase string, fields map[string]any) []byte {
+	t.Helper()
+	ev := map[string]any{
+		"seq":    seq,
+		"ts":     time.Now().UTC().Format(time.RFC3339Nano),
+		"phase":  phase,
+		"type":   typ,
+		"fields": fields,
+	}
+	b, err := json.Marshal(ev)
+	if err != nil {
+		t.Fatalf("marshal sse event: %v", err)
+	}
+	return []byte("data: " + string(b) + "\n\n")
+}
+
+// startSSE writes the SSE response headers and returns the flusher. The caller
+// then writes "data: ..." frames and flushes after each.
+func startSSE(w http.ResponseWriter) (http.Flusher, bool) {
+	fl, ok := w.(http.Flusher)
+	if !ok {
+		http.Error(w, "streaming unsupported", http.StatusInternalServerError)
+		return nil, false
+	}
+	h := w.Header()
+	h.Set("Content-Type", "text/event-stream")
+	h.Set("Cache-Control", "no-cache")
+	h.Set("Connection", "keep-alive")
+	w.WriteHeader(http.StatusOK)
+	fl.Flush()
+	return fl, true
+}
+
+// TestDelegate_DrivenBySSEEvents verifies the SSE subscription — not the
+// poller — drives gate + terminal transitions, with sub-100ms gate-to-action
+// latency. The poller is stretched to 500ms so it cannot win the race; the
+// terminal status is only flipped once the SSE intent.attest frame is sent, so
+// a poll-only client (the pre-change behaviour) never sees "completed" and
+// times out.
+func TestDelegate_DrivenBySSEEvents(t *testing.T) {
+	var mu sync.Mutex
+	var gateSentAt, answerAt time.Time
+	var answered, completed bool
+	var eventsHit int
+	answerSig := make(chan struct{})
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case r.Method == http.MethodPost && r.URL.Path == "/messages/async":
+			_ = json.NewEncoder(w).Encode(map[string]string{"intent_id": "sse1"})
+		case r.Method == http.MethodGet && r.URL.Path == "/events":
+			mu.Lock()
+			eventsHit++
+			mu.Unlock()
+			fl, ok := startSSE(w)
+			if !ok {
+				return
+			}
+			// Gate becomes pending shortly after subscribe.
+			time.Sleep(20 * time.Millisecond)
+			mu.Lock()
+			gateSentAt = time.Now()
+			mu.Unlock()
+			_, _ = w.Write(sseData(t, 1, "gate.invoked", "walk", map[string]any{
+				"intent_id": "sse1", "node_id": "n1",
+				"question":  "Approve spend of 5 PAX?",
+				"options":   []string{"yes", "no"},
+			}))
+			fl.Flush()
+			// Hold the stream open until the gate is answered (or the client
+			// disconnects), then emit the terminal frame.
+			select {
+			case <-answerSig:
+			case <-r.Context().Done():
+				return
+			}
+			mu.Lock()
+			completed = true
+			mu.Unlock()
+			_, _ = w.Write(sseData(t, 2, "intent.attest", "lifecycle", map[string]any{"intent_id": "sse1"}))
+			fl.Flush()
+		case r.Method == http.MethodGet && strings.HasSuffix(r.URL.Path, "/gates"):
+			mu.Lock()
+			done := answered
+			mu.Unlock()
+			if done {
+				_ = json.NewEncoder(w).Encode(map[string]any{"pending": []any{}})
+				return
+			}
+			_ = json.NewEncoder(w).Encode(map[string]any{"pending": []map[string]any{
+				{"node_id": "n1", "question": "Approve spend of 5 PAX?", "options": []string{"yes", "no"}},
+			}})
+		case r.Method == http.MethodPost && strings.Contains(r.URL.Path, "/gates/") && strings.HasSuffix(r.URL.Path, "/answer"):
+			mu.Lock()
+			answered = true
+			answerAt = time.Now()
+			mu.Unlock()
+			select {
+			case <-answerSig:
+			default:
+				close(answerSig)
+			}
+			w.WriteHeader(http.StatusOK)
+		case r.Method == http.MethodGet && strings.HasPrefix(r.URL.Path, "/messages/async/"):
+			mu.Lock()
+			done := completed
+			mu.Unlock()
+			if done {
+				_ = json.NewEncoder(w).Encode(map[string]any{
+					"status": "completed",
+					"result": map[string]string{"answer": "sse-done"},
+				})
+				return
+			}
+			_ = json.NewEncoder(w).Encode(map[string]any{"status": "running"})
+		default:
+			w.WriteHeader(http.StatusNotFound)
+		}
+	}))
+	defer srv.Close()
+
+	var apMu sync.Mutex
+	var approveCalls int
+	approver := func(ctx context.Context, nodeID, q string, opts []string) (bool, string) {
+		apMu.Lock()
+		approveCalls++
+		apMu.Unlock()
+		return true, ""
+	}
+
+	// 500ms poller cannot beat the ~20ms SSE gate event; it only exists as the
+	// safety net.
+	c := New(Options{
+		BaseURL:      srv.URL,
+		Approver:     approver,
+		PollInterval: 500 * time.Millisecond,
+		MaxWait:      3 * time.Second,
+		Timeout:      2 * time.Second,
+	})
+	out, err := c.Run(context.Background(), "send 5 PAX")
+	if err != nil {
+		t.Fatalf("Run: %v", err)
+	}
+	if out != "sse-done" {
+		t.Errorf("answer = %q, want 'sse-done'", out)
+	}
+
+	apMu.Lock()
+	calls := approveCalls
+	apMu.Unlock()
+	if calls != 1 {
+		t.Errorf("approver called %d times, want 1", calls)
+	}
+	mu.Lock()
+	gSent, aRecv, hits := gateSentAt, answerAt, eventsHit
+	mu.Unlock()
+	if hits == 0 {
+		t.Error("expected the SSE /events stream to be subscribed")
+	}
+	if !gSent.IsZero() && !aRecv.IsZero() {
+		if d := aRecv.Sub(gSent); d >= 100*time.Millisecond {
+			t.Errorf("gate-to-action latency = %s, want <100ms (SSE-driven)", d)
+		}
+	} else {
+		t.Error("gate was never sent/answered via SSE")
+	}
+}
+
+// TestDelegate_FallsBackToPollOnStreamError verifies that when the SSE stream
+// is unavailable the bounded-reconnect exhausts and the retained poller still
+// drives the run to a terminal state. A pre-change (poll-only) client reaches
+// terminal too, but it never attempts /events — so asserting /events was hit
+// makes this red before the SSE change and green after.
+func TestDelegate_FallsBackToPollOnStreamError(t *testing.T) {
+	var mu sync.Mutex
+	var eventsHit int
+	start := time.Now()
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case r.Method == http.MethodPost && r.URL.Path == "/messages/async":
+			_ = json.NewEncoder(w).Encode(map[string]string{"intent_id": "fb1"})
+		case r.Method == http.MethodGet && r.URL.Path == "/events":
+			mu.Lock()
+			eventsHit++
+			mu.Unlock()
+			http.Error(w, "stream unavailable", http.StatusInternalServerError)
+		case r.Method == http.MethodGet && strings.HasSuffix(r.URL.Path, "/gates"):
+			_ = json.NewEncoder(w).Encode(map[string]any{"pending": []any{}})
+		case r.Method == http.MethodGet && strings.HasPrefix(r.URL.Path, "/messages/async/"):
+			// Stay "running" until the SSE goroutine has actually attempted
+			// /events (and a minimum dwell has elapsed), so the fallback
+			// terminal is only declared after SSE was observed unavailable.
+			mu.Lock()
+			hits := eventsHit
+			mu.Unlock()
+			if hits == 0 || time.Since(start) < 80*time.Millisecond {
+				_ = json.NewEncoder(w).Encode(map[string]any{"status": "running"})
+				return
+			}
+			_ = json.NewEncoder(w).Encode(map[string]any{
+				"status": "completed",
+				"result": map[string]string{"answer": "fb-done"},
+			})
+		default:
+			w.WriteHeader(http.StatusNotFound)
+		}
+	}))
+	defer srv.Close()
+
+	out, err := fastClient(srv.URL, nil).Run(context.Background(), "do x")
+	if err != nil {
+		t.Fatalf("Run: %v", err)
+	}
+	if out != "fb-done" {
+		t.Errorf("answer = %q, want 'fb-done' (fallback must reach terminal)", out)
+	}
+	mu.Lock()
+	hits := eventsHit
+	mu.Unlock()
+	if hits == 0 {
+		t.Error("expected SSE /events to be attempted before falling back to poll")
+	}
+}
+
+// TestDelegate_NoDuplicateApproval verifies that with both the SSE event path
+// and the safety-net poller active (the event+poll overlap), a single gate is
+// approved exactly once. The shared answered set serialised through the main
+// loop guarantees this; the test also asserts /events was active so it is red
+// before the SSE change.
+func TestDelegate_NoDuplicateApproval(t *testing.T) {
+	var mu sync.Mutex
+	var answered, completed bool
+	var eventsHit int
+	answerSig := make(chan struct{})
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case r.Method == http.MethodPost && r.URL.Path == "/messages/async":
+			_ = json.NewEncoder(w).Encode(map[string]string{"intent_id": "dup1"})
+		case r.Method == http.MethodGet && r.URL.Path == "/events":
+			mu.Lock()
+			eventsHit++
+			mu.Unlock()
+			fl, ok := startSSE(w)
+			if !ok {
+				return
+			}
+			time.Sleep(10 * time.Millisecond)
+			_, _ = w.Write(sseData(t, 1, "gate.invoked", "walk", map[string]any{
+				"intent_id": "dup1", "node_id": "n1",
+				"question":  "Approve spend of 5 PAX?",
+				"options":   []string{"yes", "no"},
+			}))
+			fl.Flush()
+			select {
+			case <-answerSig:
+			case <-r.Context().Done():
+				return
+			}
+			mu.Lock()
+			completed = true
+			mu.Unlock()
+			_, _ = w.Write(sseData(t, 2, "intent.attest", "lifecycle", map[string]any{"intent_id": "dup1"}))
+			fl.Flush()
+		case r.Method == http.MethodGet && strings.HasSuffix(r.URL.Path, "/gates"):
+			mu.Lock()
+			done := answered
+			mu.Unlock()
+			if done {
+				_ = json.NewEncoder(w).Encode(map[string]any{"pending": []any{}})
+				return
+			}
+			_ = json.NewEncoder(w).Encode(map[string]any{"pending": []map[string]any{
+				{"node_id": "n1", "question": "Approve spend of 5 PAX?", "options": []string{"yes", "no"}},
+			}})
+		case r.Method == http.MethodPost && strings.Contains(r.URL.Path, "/gates/") && strings.HasSuffix(r.URL.Path, "/answer"):
+			mu.Lock()
+			answered = true
+			mu.Unlock()
+			select {
+			case <-answerSig:
+			default:
+				close(answerSig)
+			}
+			w.WriteHeader(http.StatusOK)
+		case r.Method == http.MethodGet && strings.HasPrefix(r.URL.Path, "/messages/async/"):
+			mu.Lock()
+			done := completed
+			mu.Unlock()
+			if done {
+				_ = json.NewEncoder(w).Encode(map[string]any{
+					"status": "completed",
+					"result": map[string]string{"answer": "dup-done"},
+				})
+				return
+			}
+			_ = json.NewEncoder(w).Encode(map[string]any{"status": "running"})
+		default:
+			w.WriteHeader(http.StatusNotFound)
+		}
+	}))
+	defer srv.Close()
+
+	var apMu sync.Mutex
+	var approveCalls int
+	approver := func(ctx context.Context, nodeID, q string, opts []string) (bool, string) {
+		apMu.Lock()
+		approveCalls++
+		apMu.Unlock()
+		return true, ""
+	}
+
+	// fastClient: 1ms poller + SSE both active → event+poll overlap.
+	out, err := fastClient(srv.URL, approver).Run(context.Background(), "send 5 PAX")
+	if err != nil {
+		t.Fatalf("Run: %v", err)
+	}
+	if out != "dup-done" {
+		t.Errorf("answer = %q, want 'dup-done'", out)
+	}
+	apMu.Lock()
+	calls := approveCalls
+	apMu.Unlock()
+	if calls != 1 {
+		t.Errorf("approver called %d times, want exactly 1 (no duplicate approval under event+poll overlap)", calls)
+	}
+	mu.Lock()
+	hits := eventsHit
+	mu.Unlock()
+	if hits == 0 {
+		t.Error("expected SSE /events to be active alongside the poller")
+	}
+}

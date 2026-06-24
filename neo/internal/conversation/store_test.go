@@ -5,8 +5,11 @@ package conversation
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
+	"sync"
 	"testing"
 	"time"
 )
@@ -118,6 +121,209 @@ func lenTurns(rec *Record) int {
 	}
 	return len(rec.Turns)
 }
+
+// TestStore_AppendIsNotFullRewrite pins the O(1)-per-append invariant: after a
+// turn is appended, the on-disk file must not be rewritten in full — bytes
+// written by a later append must be bounded by the turn size, not the total
+// record size. Concretely: the file size after N+1 appends should be ~N+1 turn
+// rows, and a second append must only grow the file by one row's worth, not
+// re-emit the whole thing.
+func TestStore_AppendIsNotFullRewrite(t *testing.T) {
+	s := Open(t.TempDir())
+	convID := "rewrite"
+
+	// Seed one turn and snapshot the file size.
+	s.AppendUser(convID, "seed")
+	seedSize := fileSize(t, s.dir, convID)
+
+	// Append a second, tiny turn. Under the OLD full-rewrite scheme the file
+	// would be rewritten from scratch — but since both turns are small the
+	// distinguishing property is the GROWTH PATTERN, not the absolute size.
+	// Instead we use a strong proxy: the file must be a JSONL (newline-delimited)
+	// document whose line count equals the number of turns — the hallmark of
+	// append-only per-turn writes rather than a single JSON object rewrite.
+	s.AppendAssistant(convID, "i1", "ok")
+
+	lines := jsonlLineCount(t, s.dir, convID)
+	if lines != 2 {
+		t.Fatalf("append-only JSONL should have one line per turn: want 2 lines, file has %d", lines)
+	}
+	// A single-JSON-object rewrite (the old scheme) would have exactly 1 line
+	// (or 0 if pretty-printed) — 2 lines proves we appended, not rewrote.
+	if seedSize == 0 {
+		t.Fatal("seed file should be non-empty")
+	}
+}
+
+// TestStore_RetainedCapEnforced verifies the retained hot set is bounded: when
+// the retained-turn cap is exceeded, older turns roll to durable archive
+// storage (not dropped). Get() returns the bounded hot set; the archived turns
+// remain retrievable.
+func TestStore_RetainedCapEnforced(t *testing.T) {
+	dir := t.TempDir()
+	s := openWithCap(dir, 5)
+	convID := "capped"
+
+	// Append 8 turns with a cap of 5: the hot set should hold the last 5, the
+	// oldest 3 should have rolled to the archive and STILL be retrievable.
+	for i := 0; i < 8; i++ {
+		s.AppendUser(convID, fmt.Sprintf("turn-%d", i))
+	}
+
+	hot := s.Get(convID)
+	if hot == nil {
+		t.Fatal("hot record should be non-nil")
+	}
+	if len(hot.Turns) != 5 {
+		t.Fatalf("retained hot set should be capped at 5, got %d", len(hot.Turns))
+	}
+	// The hot set is the LAST 5 turns (indices 3..7).
+	if hot.Turns[0].Text != "turn-3" {
+		t.Errorf("hot set should start at turn-3 (oldest retained), got %q", hot.Turns[0].Text)
+	}
+	if hot.Turns[4].Text != "turn-7" {
+		t.Errorf("hot set should end at turn-7 (newest), got %q", hot.Turns[4].Text)
+	}
+
+	// Rolled turns are NOT dropped: the archive holds turn-0..turn-2 and they
+	// are still retrievable via the archive reader.
+	archived := s.Archived(convID)
+	if len(archived) != 3 {
+		t.Fatalf("rolled turns must be archived, want 3 got %d", len(archived))
+	}
+	if archived[0].Text != "turn-0" {
+		t.Errorf("first archived turn should be turn-0, got %q", archived[0].Text)
+	}
+	if archived[2].Text != "turn-2" {
+		t.Errorf("last archived turn should be turn-2, got %q", archived[2].Text)
+	}
+
+	// Full history (hot + archived) must contain ALL 8 turns in order.
+	full := s.History(convID)
+	if len(full) != 8 {
+		t.Fatalf("full history must be retrievable, want 8 got %d", len(full))
+	}
+	for i, want := range []string{"turn-0", "turn-1", "turn-2", "turn-3", "turn-4", "turn-5", "turn-6", "turn-7"} {
+		if full[i].Text != want {
+			t.Errorf("history[%d] = %q, want %q", i, full[i].Text, want)
+		}
+	}
+}
+
+// TestStore_CrashSafetyAtomic verifies that a crash mid-append cannot corrupt
+// the store: each turn is persisted as a single atomic JSONL line append, so a
+// partial write (truncated last line) is detected and skipped on load. No turn
+// already fully written is lost.
+func TestStore_CrashSafetyAtomic(t *testing.T) {
+	dir := t.TempDir()
+	s := Open(dir)
+	convID := "crash"
+
+	s.AppendUser(convID, "committed-1")
+	s.AppendAssistant(convID, "i1", "committed-2")
+
+	// Simulate a crash that wrote a partial (truncated) third line to the JSONL.
+	path := filepath.Join(dir, convID+".jsonl")
+	f, err := os.OpenFile(path, os.O_APPEND|os.O_WRONLY, 0o644)
+	if err != nil {
+		t.Fatalf("open for corruption: %v", err)
+	}
+	// A half-written JSON line (no trailing newline) — a crash mid-write.
+	if _, err := f.WriteString(`{"role":"user","text":"PARTIAL_NO_NEWLINE`); err != nil {
+		t.Fatalf("write partial: %v", err)
+	}
+	if err := f.Close(); err != nil {
+		t.Fatalf("close: %v", err)
+	}
+
+	// Reopen: the two committed turns must be intact; the partial line skipped.
+	s2 := Open(dir)
+	rec := s2.Get(convID)
+	if rec == nil {
+		t.Fatal("record should be non-nil after partial-write recovery")
+	}
+	if len(rec.Turns) != 2 {
+		t.Fatalf("partial write must not corrupt the store: want 2 turns got %d", len(rec.Turns))
+	}
+	if rec.Turns[0].Text != "committed-1" || rec.Turns[1].Text != "committed-2" {
+		t.Errorf("committed turns corrupted: %+v", rec.Turns)
+	}
+}
+
+// TestStore_ConcurrentAppendReadSafe exercises concurrent Append + Recent + Get
+// under the race detector. No panic, no data race, and every appended turn is
+// retrievable after the writers settle.
+func TestStore_ConcurrentAppendReadSafe(t *testing.T) {
+	s := Open(t.TempDir())
+	convID := "concurrent"
+
+	const writers = 4
+	const turnsEach = 25
+	var wg sync.WaitGroup
+	for w := 0; w < writers; w++ {
+		wg.Add(1)
+		go func(off int) {
+			defer wg.Done()
+			for i := 0; i < turnsEach; i++ {
+				s.AppendUser(convID, fmt.Sprintf("w%d-t%d", off, i))
+			}
+		}(w)
+	}
+	// Concurrent readers while writers are appending.
+	var rwg sync.WaitGroup
+	for r := 0; r < 4; r++ {
+		rwg.Add(1)
+		go func() {
+			defer rwg.Done()
+			for i := 0; i < 50; i++ {
+				_ = s.Recent(convID, 5)
+				_ = s.Get(convID)
+			}
+		}()
+	}
+	wg.Wait()
+	rwg.Wait()
+
+	// After all writers settle, no turn is lost.
+	rec := s.Get(convID)
+	if rec == nil {
+		t.Fatal("record should be non-nil")
+	}
+	want := writers * turnsEach
+	if len(rec.Turns) != want {
+		t.Fatalf("no turn should be lost: want %d got %d", want, len(rec.Turns))
+	}
+}
+
+// fileSize returns the on-disk size of the conversation's file.
+func fileSize(t *testing.T, dir, convID string) int64 {
+	t.Helper()
+	for _, suffix := range []string{".jsonl", ".json"} {
+		if fi, err := os.Stat(filepath.Join(dir, convID+suffix)); err == nil {
+			return fi.Size()
+		}
+	}
+	t.Fatalf("no conversation file for %s in %s", convID, dir)
+	return 0
+}
+
+// jsonlLineCount counts newline-delimited JSON lines in the conversation file.
+func jsonlLineCount(t *testing.T, dir, convID string) int {
+	t.Helper()
+	path := filepath.Join(dir, convID+".jsonl")
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("read jsonl %s: %v", path, err)
+	}
+	count := 0
+	for _, line := range strings.Split(string(data), "\n") {
+		if strings.TrimSpace(line) != "" {
+			count++
+		}
+	}
+	return count
+}
+
 
 func TestDir(t *testing.T) {
 	if got := Dir("/explicit", "/data/cortex"); got != "/explicit" {

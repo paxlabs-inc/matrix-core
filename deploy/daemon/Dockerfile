@@ -159,6 +159,12 @@ COPY --from=builder /out/neo         /opt/matrix/bin/neo
 # Bake the skill corpus + agent manifest + chain-bridge tools. These are
 # part of the image identity — same image SHA implies same skill hashes
 # and same paxeer-net bridge bytes.
+#
+# Skill hot-reload (P2-3) is DEV-ONLY and OPT-IN via the SKILL_RELOAD env
+# (executor/runtime/skill_reload.go). This image does NOT set that env, so
+# the production path stays baked + read-only with no fsnotify watcher —
+# byte-identical behavior to before P2-3. Devs set SKILL_RELOAD=1 locally
+# (or pass --skill-reload) to enable live re-parse of edited SKILL.mtx files.
 COPY skills/         /opt/matrix/skills/
 COPY agents/         /opt/matrix/agents/
 COPY tools/paxeer    /opt/matrix/tools/paxeer

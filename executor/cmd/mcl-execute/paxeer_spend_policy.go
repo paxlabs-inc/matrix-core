@@ -36,6 +36,8 @@ import (
 	"fmt"
 	"math/big"
 	"strings"
+	"sync"
+	"time"
 )
 
 // SpendDecision is the closed enum of PaxeerSpendPolicy verdicts.
@@ -71,6 +73,11 @@ const (
 	PaxeerRulePerCallCap   = "per_call_spend_cap"
 	PaxeerRuleAggregateCap = "aggregate_plan_spend_cap"
 	PaxeerRuleMalformed    = "malformed_value_arg"
+
+	// P2-1 hardened rules.
+	PaxeerRulePerRecipientCap      = "per_recipient_spend_cap"
+	PaxeerRuleBreakerTripped       = "circuit_breaker_tripped"
+	PaxeerRuleRollingWindowBudget  = "rolling_window_budget"
 )
 
 // SpendEvaluation is the full result of evaluating one tool call. The
@@ -86,9 +93,14 @@ type SpendEvaluation struct {
 	ValueWei *big.Int // parsed wei amount (nil for non-monetary writes)
 }
 
-// PaxeerSpendPolicy encodes the per-call + aggregate spend gates. Built
-// once (DefaultPaxeerSpendPolicy) and held on daemonState; immutable at
-// runtime so it is safe to share across goroutines.
+// PaxeerSpendPolicy encodes the per-call + aggregate spend gates plus the
+// P2-1 hardening: circuit breaker, per-recipient caps, and rolling
+// time-window budget. Built once (DefaultPaxeerSpendPolicy) and held on
+// daemonState; the threshold fields are immutable at runtime so they are
+// safe to share across goroutines. The mutable runtime state (breaker
+// violation log, per-recipient totals, rolling-window spend log) lives in
+// a separate *SpendPolicyState created via NewState — it is runtime/
+// sidecar only: NEVER journaled, NEVER serialized into OverallRoot.
 type PaxeerSpendPolicy struct {
 	// PerCallCapWei is the per-call hard ceiling. Any single tool call
 	// whose value-bearing arg exceeds this gates. nil or zero disables
@@ -112,6 +124,43 @@ type PaxeerSpendPolicy struct {
 	// from other aliases (fs/git/fetch) are ignored, so the policy is
 	// safe to enable unconditionally on the public-user daemon.
 	PaxeerAlias string
+
+	// --- P2-1 hardening thresholds (immutable config; set at boot) ---
+
+	// PerRecipientCapWei caps total spend to a single destination address
+	// across all calls. nil or zero disables the per-recipient gate.
+	PerRecipientCapWei *big.Int
+
+	// BreakerThreshold is the number of cap-violations (SpendGate or
+	// SpendDeny verdicts) within BreakerWindow that trips the circuit
+	// breaker. <= 0 disables the breaker.
+	BreakerThreshold int
+
+	// BreakerWindow is the sliding window over which cap-violations are
+	// counted toward the breaker threshold.
+	BreakerWindow time.Duration
+
+	// BreakerCooldown is how long the breaker stays tripped (rejecting
+	// all calls) before resetting to evaluate normally.
+	BreakerCooldown time.Duration
+
+	// RollingWindowBudgetWei caps total spend within RollingWindowDuration.
+	// nil or zero disables the rolling-window budget.
+	RollingWindowBudgetWei *big.Int
+
+	// RollingWindowDuration is the size of the sliding spend window.
+	RollingWindowDuration time.Duration
+
+	// RecipientArg is the arg key whose value identifies the
+	// destination address for per-recipient tracking. Defaults to "to".
+	RecipientArg string
+
+	// state holds the mutable runtime/sidecar state (breaker log,
+	// per-recipient totals, rolling-window spend log). It is NEVER
+	// serialized: there is no Marshal/Unmarshal, and the daemon never
+	// includes it in snapshots or OverallRoot. Created lazily via
+	// NewState. Unexported so it cannot be value-copied into a snapshot.
+	state *SpendPolicyState
 }
 
 // DefaultPaxeerSpendPolicy returns the production gate set.
@@ -138,6 +187,12 @@ type PaxeerSpendPolicy struct {
 func DefaultPaxeerSpendPolicy() *PaxeerSpendPolicy {
 	onePax := new(big.Int).Exp(big.NewInt(10), big.NewInt(18), nil) // 1e18
 	fivePax := new(big.Int).Mul(onePax, big.NewInt(5))
+	// Conservative P2-1 defaults: per-recipient = 2 PAX (tighter than
+	// aggregate so one address can't absorb the whole plan budget);
+	// breaker trips after 5 violations in 15 min, cooldown 30 min;
+	// rolling window = 10 PAX over 1 hour. All overridable via env/flag.
+	twoPax := new(big.Int).Mul(onePax, big.NewInt(2))
+	tenPax := new(big.Int).Mul(onePax, big.NewInt(10))
 	return &PaxeerSpendPolicy{
 		PerCallCapWei:   onePax,
 		AggregateCapWei: fivePax,
@@ -151,6 +206,13 @@ func DefaultPaxeerSpendPolicy() *PaxeerSpendPolicy {
 			"redelegate":     {"amount_wei", "amount"},
 			"contract_write": {"value_wei", "value"},
 		},
+		PerRecipientCapWei:     twoPax,
+		BreakerThreshold:       5,
+		BreakerWindow:          15 * time.Minute,
+		BreakerCooldown:        30 * time.Minute,
+		RollingWindowBudgetWei: tenPax,
+		RollingWindowDuration:  time.Hour,
+		RecipientArg:           "to",
 	}
 }
 
@@ -266,6 +328,265 @@ func (p *PaxeerSpendPolicy) EvaluateAggregate(evs []SpendEvaluation) SpendEvalua
 		}
 	}
 	return SpendEvaluation{Decision: SpendAllow}
+}
+
+// ---------------------------------------------------------------------------
+// P2-1: SpendPolicyState — runtime/sidecar state for the circuit breaker,
+// per-recipient caps, and rolling time-window budget.
+//
+// INVARIANT: This state is NEVER persisted. It is not journaled, not
+// snapshotted, not serialized into OverallRoot, and intentionally has no
+// Marshal/Unmarshal/Serialize methods. It lives only in process memory for
+// the lifetime of the daemon. If the daemon restarts, the state resets —
+// which is the conservative posture (no breaker trip carries over, but
+// neither does any accumulated spend credit; the on-chain custody layer
+// remains the final authority).
+// ---------------------------------------------------------------------------
+
+// SpendPolicyState is the mutable, mutex-guarded runtime state for a
+// PaxeerSpendPolicy. It tracks:
+//   - breaker violation timestamps (sliding window) + tripped flag + time
+//   - per-recipient spend totals (map[address]*big.Int)
+//   - rolling-window spend log (timestamped amounts)
+//
+// All access goes through the policy's EvaluateWithState / IsTripped
+// methods, which hold state.mu. Safe for concurrent use.
+type SpendPolicyState struct {
+	mu sync.Mutex
+
+	// Circuit breaker.
+	violations []time.Time // cap-violation timestamps within BreakerWindow
+	tripped    bool
+	trippedAt  time.Time
+	// cooldown is captured at trip time so IsTripped can self-heal
+	// without a back-reference to the policy (keeps state sidecar).
+	cooldown time.Duration
+
+	// Per-recipient spend totals.
+	recipientSpend map[string]*big.Int
+
+	// Rolling-window spend log.
+	windowSpend []spendEntry
+}
+
+// spendEntry is one timestamped spend record in the rolling window.
+type spendEntry struct {
+	at     time.Time
+	amount *big.Int
+}
+
+// NewState returns a fresh, empty SpendPolicyState bound to this policy.
+// The daemon calls this once at boot and holds the returned pointer for the
+// process lifetime. The state is sidecar: it is not referenced by any
+// snapshot/serialization path.
+func (p *PaxeerSpendPolicy) NewState() *SpendPolicyState {
+	return &SpendPolicyState{
+		recipientSpend: make(map[string]*big.Int),
+	}
+}
+
+// IsTripped reports whether the circuit breaker is currently tripped at
+// the given wall-clock time. A tripped breaker remains tripped until
+// BreakerCooldown elapses from trippedAt, after which it self-resets.
+func (s *SpendPolicyState) IsTripped(now time.Time) bool {
+	if s == nil {
+		return false
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if !s.tripped {
+		return false
+	}
+	// Self-heal: if the cooldown has elapsed, clear the trip.
+	if p := s.breakerCooldown(); p > 0 && now.Sub(s.trippedAt) >= p {
+		s.tripped = false
+		s.trippedAt = time.Time{}
+		s.violations = s.violations[:0]
+		return false
+	}
+	return true
+}
+
+// breakerCooldown returns the cooldown captured at trip time, so IsTripped
+// can self-heal without a back-reference to the policy (the state is sidecar
+// and intentionally does not hold a *PaxeerSpendPolicy pointer).
+func (s *SpendPolicyState) breakerCooldown() time.Duration {
+	return s.cooldown
+}
+
+// recordViolation appends a violation timestamp and trips the breaker if
+// the threshold is met within the window. Caller MUST hold s.mu.
+func (s *SpendPolicyState) recordViolation(now time.Time, threshold int, window, cooldown time.Duration) {
+	// Prune violations outside the window.
+	cutoff := now.Add(-window)
+	keep := s.violations[:0]
+	for _, t := range s.violations {
+		if t.After(cutoff) || t.Equal(cutoff) {
+			keep = append(keep, t)
+		}
+	}
+	s.violations = append(keep, now)
+	if threshold > 0 && len(s.violations) >= threshold {
+		s.tripped = true
+		s.trippedAt = now
+		s.cooldown = cooldown
+	}
+}
+
+// EvaluateWithState is the hardened evaluation entry point. It runs the
+// pure per-call Evaluate first, then layers on the stateful checks:
+//   - circuit breaker: if tripped and cooldown not elapsed → SpendDeny
+//     (fail CLOSED);
+//   - per-recipient cap: if this call's recipient would exceed
+//     PerRecipientCapWei → SpendGate + record violation;
+//   - rolling-window budget: if the window total + this call would exceed
+//     RollingWindowBudgetWei → SpendGate + record violation.
+//
+// Allowed calls record their spend into the per-recipient + rolling-window
+// logs. Cap-violations (gate/deny) are recorded as breaker violations.
+//
+// `now` is injected so tests can drive time deterministically; production
+// callers pass time.Now().
+func (p *PaxeerSpendPolicy) EvaluateWithState(toolRef string, args map[string]string, st *SpendPolicyState, now time.Time) SpendEvaluation {
+	if p == nil {
+		return SpendEvaluation{Decision: SpendAllow}
+	}
+	// Pure per-call evaluation (alias gate, value-arg resolution, per-call
+	// cap, malformed-value deny). This also populates Tool/RuleArg/ValueWei.
+	base := p.Evaluate(toolRef, args)
+
+	// Non-paxeer-net / non-monetary calls pass through without touching
+	// state. A malformed value (SpendDeny) is a hard violation: record it
+	// for the breaker but still return the deny verdict.
+	if base.Decision == SpendDeny {
+		if st != nil {
+			st.mu.Lock()
+			st.recordViolation(now, p.BreakerThreshold, p.BreakerWindow, p.BreakerCooldown)
+			st.mu.Unlock()
+		}
+		return base
+	}
+
+	// No monetary value (non-monetary write or empty value-arg) → allow,
+	// no state mutation.
+	if base.ValueWei == nil || base.ValueWei.Sign() <= 0 {
+		return base
+	}
+
+	if st == nil {
+		// No state wired → fall back to the pure verdict.
+		return base
+	}
+
+	st.mu.Lock()
+	defer st.mu.Unlock()
+
+	// (1) Circuit breaker — fail CLOSED. If tripped and cooldown not yet
+	// elapsed, reject outright.
+	if st.tripped {
+		if p.BreakerCooldown > 0 && now.Sub(st.trippedAt) >= p.BreakerCooldown {
+			// Cooldown elapsed → self-heal.
+			st.tripped = false
+			st.trippedAt = time.Time{}
+			st.violations = st.violations[:0]
+		} else {
+			return SpendEvaluation{
+				Decision: SpendDeny,
+				Rule:     PaxeerRuleBreakerTripped,
+				Tool:     base.Tool,
+				RuleArg:  base.RuleArg,
+				ValueWei: base.ValueWei,
+				Reason: fmt.Sprintf(
+					"circuit breaker tripped at %s; rejecting spend of %s wei to %q (fail-closed); "+
+						"cooldown %s remains",
+					st.trippedAt.Format(time.RFC3339), base.ValueWei.String(), base.Tool, p.BreakerCooldown),
+			}
+		}
+	}
+
+	// If the per-call cap already gated, this is a cap-violation → record
+	// for the breaker. Do NOT record spend (the call is gated, not
+	// executed). Return the gate verdict.
+	if base.Decision == SpendGate {
+		st.recordViolation(now, p.BreakerThreshold, p.BreakerWindow, p.BreakerCooldown)
+		return base
+	}
+
+	// base is SpendAllow with a monetary ValueWei. Run stateful caps.
+
+	// (2) Per-recipient cap.
+	recipient := ""
+	if ra := p.RecipientArg; ra != "" {
+		recipient = strings.TrimSpace(args[ra])
+	}
+	if recipient != "" && p.PerRecipientCapWei != nil && p.PerRecipientCapWei.Sign() > 0 {
+		current := st.recipientSpend[recipient]
+		if current == nil {
+			current = new(big.Int)
+		}
+		projected := new(big.Int).Add(current, base.ValueWei)
+		if projected.Cmp(p.PerRecipientCapWei) > 0 {
+			st.recordViolation(now, p.BreakerThreshold, p.BreakerWindow, p.BreakerCooldown)
+			return SpendEvaluation{
+				Decision: SpendGate,
+				Rule:     PaxeerRulePerRecipientCap,
+				Tool:     base.Tool,
+				RuleArg:  base.RuleArg,
+				ValueWei: base.ValueWei,
+				Reason: fmt.Sprintf(
+					"tool %q would send %s wei to recipient %q; projected recipient total %s wei exceeds "+
+						"per-recipient cap %s wei; requires explicit human approval",
+					base.Tool, base.ValueWei.String(), recipient, projected.String(), p.PerRecipientCapWei.String()),
+			}
+		}
+	}
+
+	// (3) Rolling time-window budget.
+	if p.RollingWindowBudgetWei != nil && p.RollingWindowBudgetWei.Sign() > 0 && p.RollingWindowDuration > 0 {
+		// Prune expired entries.
+		cutoff := now.Add(-p.RollingWindowDuration)
+		keep := st.windowSpend[:0]
+		windowTotal := new(big.Int)
+		for _, e := range st.windowSpend {
+			if e.at.After(cutoff) {
+				keep = append(keep, e)
+				if e.amount != nil {
+					windowTotal.Add(windowTotal, e.amount)
+				}
+			}
+		}
+		st.windowSpend = keep
+		projected := new(big.Int).Add(windowTotal, base.ValueWei)
+		if projected.Cmp(p.RollingWindowBudgetWei) > 0 {
+			st.recordViolation(now, p.BreakerThreshold, p.BreakerWindow, p.BreakerCooldown)
+			return SpendEvaluation{
+				Decision: SpendGate,
+				Rule:     PaxeerRuleRollingWindowBudget,
+				Tool:     base.Tool,
+				RuleArg:  base.RuleArg,
+				ValueWei: base.ValueWei,
+				Reason: fmt.Sprintf(
+					"tool %q would send %s wei; rolling-window projected total %s wei exceeds window budget %s wei "+
+						"(window %s); requires explicit human approval",
+					base.Tool, base.ValueWei.String(), projected.String(), p.RollingWindowBudgetWei.String(),
+					p.RollingWindowDuration),
+			}
+		}
+	}
+
+	// All checks passed → record the spend for per-recipient + window.
+	if recipient != "" {
+		cur := st.recipientSpend[recipient]
+		if cur == nil {
+			cur = new(big.Int)
+		}
+		cur.Add(cur, base.ValueWei)
+		st.recipientSpend[recipient] = cur
+	}
+	amt := new(big.Int).Set(base.ValueWei)
+	st.windowSpend = append(st.windowSpend, spendEntry{at: now, amount: amt})
+
+	return base
 }
 
 // parseWei accepts a decimal or 0x-hex wei string and returns the

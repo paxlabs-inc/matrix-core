@@ -371,6 +371,19 @@ func joinGaps(gaps []string) string {
 // background consolidation, and attest the surfaced memories. The caller still
 // owns the post-finish soft-compaction check (it needs the live build inputs).
 func (a *Agent) finishTurn(ctx context.Context, answer string, surfaced map[string]struct{}, surfacedSnips map[string]memory.Snippet, userInput string) {
+	// P1-4: Heartbeat suppression. When this turn is a Chronos heartbeat wake
+	// (the wake_message carries the HEARTBEAT marker) AND the agent's answer is
+	// the HEARTBEAT_OK sentinel, the turn is SUPPRESSED — a.out.Say is never
+	// called, so the sentinel never reaches the user. The agent reviewed active
+	// goals/constraints and found nothing needing attention. Anything else
+	// (non-sentinel answer, or a non-heartbeat turn) is delivered normally.
+	if isHeartbeatWake(userInput) && shouldSuppressHeartbeat(answer) {
+		// Still consolidate + attest the (heartbeat) turn so cortex learns, but
+		// produce NO user-facing output.
+		a.consolidateWorking()
+		a.attestTurn(ctx, surfaced, surfacedSnips, userInput, answer)
+		return
+	}
 	a.out.Say(answer)
 	// [memory.writeback] step_5: consolidate before any compaction nils the
 	// working transcript.
