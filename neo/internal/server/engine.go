@@ -375,6 +375,7 @@ var traceWorkspaceTypes = map[string]bool{
 	"tool.step":               true,
 	"tool.search":             true,
 	"tool.media":              true,
+	"tool.artifact":           true,
 	"construct.surface":       true,
 	"construct.surface.patch": true,
 	"swarm.started":           true,
@@ -485,6 +486,27 @@ func (e *Engine) surfaceTool(r *run, ev agent.ToolEvent) {
 			"prompt":          m.Prompt,
 		})
 	}
+	// F6: a deliverable artifact (a downloadable file/archive, or a deployed
+	// site URL) → a first-class `tool.artifact` event the client renders as an
+	// in-app download card / open-and-preview card, instead of a raw bucket URL
+	// pasted into the answer text. ADDITIVE + ignore-safe: older clients that
+	// don't know the event simply skip it. A tool opts in by returning the
+	// documented artifact shape (see parseArtifact); the blob itself stays in
+	// object storage as a content-addressed ref (boundaries: never bytes in the
+	// conversation store or cortex).
+	if a, ok := parseArtifact(ev.Result); ok {
+		e.broker.publish(r.id, "tool.artifact", "neo", map[string]interface{}{
+			"intent_id":       r.id,
+			"conversation_id": r.convID,
+			"tool":            ev.Name,
+			"kind":            a.Kind,
+			"url":             a.URL,
+			"mime":            a.MIME,
+			"name":            a.Name,
+			"size":            a.Size,
+			"preview":         a.Preview,
+		})
+	}
 }
 
 func isSearchTool(name string) bool {
@@ -547,6 +569,63 @@ func parseMedia(raw string) (mediaPayload, bool) {
 		return mediaPayload{}, false
 	}
 	return m, true
+}
+
+// artifactPayload is a deliverable hand-off (F6): a downloadable file/archive
+// or a deployed-site URL the client renders as an in-app card. Kind is one of
+// "file" | "archive" | "site" (image/video stay on the media plane). URL is a
+// content-addressed / public ref into object storage — never inline bytes.
+type artifactPayload struct {
+	OK      bool   `json:"ok"`
+	Kind    string `json:"kind"`
+	URL     string `json:"url"`
+	MIME    string `json:"mime"`
+	Name    string `json:"name"`
+	Size    int64  `json:"size"`
+	Preview string `json:"preview"`
+}
+
+// artifactEnvelope lets a tool advertise its artifact either at the top level
+// ({ok,kind,url,...}) or nested under an "artifact" key ({ok:true,artifact:{…}}),
+// matching the two shapes tools actually emit.
+type artifactEnvelope struct {
+	OK       bool             `json:"ok"`
+	Artifact *artifactPayload `json:"artifact"`
+}
+
+// validArtifactKind gates the deliverable kinds so an artifact result never
+// collides with the media plane (image/video) or a search payload.
+func validArtifactKind(k string) bool {
+	return k == "file" || k == "archive" || k == "site"
+}
+
+// parseArtifact recognises a successful artifact-tool result. It accepts both
+// the nested ({ok:true,artifact:{kind,url,…}}) and the flat ({ok,kind,url,…})
+// shapes, requires a deliverable kind + a URL ref, and never matches a media or
+// search result (kind gating). Returns (payload, false) on any other shape so
+// the additive event is emitted ONLY for genuine deliverables.
+func parseArtifact(raw string) (artifactPayload, bool) {
+	raw = strings.TrimSpace(raw)
+	if raw == "" || raw[0] != '{' {
+		return artifactPayload{}, false
+	}
+	// Nested shape first ({ok:true, artifact:{…}}).
+	var env artifactEnvelope
+	if err := json.Unmarshal([]byte(raw), &env); err == nil && env.Artifact != nil {
+		a := *env.Artifact
+		if validArtifactKind(a.Kind) && a.URL != "" {
+			return a, true
+		}
+	}
+	// Flat shape ({ok:true, kind, url, …}).
+	var a artifactPayload
+	if err := json.Unmarshal([]byte(raw), &a); err != nil {
+		return artifactPayload{}, false
+	}
+	if !a.OK || a.URL == "" || !validArtifactKind(a.Kind) {
+		return artifactPayload{}, false
+	}
+	return a, true
 }
 
 func (s searchPayload) cards() []map[string]interface{} {

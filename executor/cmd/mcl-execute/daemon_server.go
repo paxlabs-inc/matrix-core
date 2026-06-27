@@ -101,6 +101,12 @@ func newDaemonMux(d *daemonState, t *transcript) http.Handler {
 	mux.HandleFunc("/conversations", d.handleConversationsRouter)
 	mux.HandleFunc("/conversations/", d.handleConversationsRouter)
 
+	// Construct OS Shell: read-only rehydration of a conversation's durable
+	// surface timeline ("the computer as you left it"). Pure VIEW read of the
+	// surfacestore tee; no agent->client wire path added (it rides the existing
+	// chat transport for live frames, this only backfills on cold open).
+	mux.HandleFunc("/construct/state", d.handleConstructState)
+
 	// Messages: sync (legacy) + async.
 	mux.HandleFunc("/messages", d.handleMessages(t))
 	mux.HandleFunc("/messages/async", d.handleMessagesAsyncStart(t))

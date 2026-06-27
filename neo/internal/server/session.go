@@ -37,7 +37,15 @@ type session struct {
 	cur *run       // the in-flight turn (read by the reporter/observer)
 
 	actMu  sync.Mutex // guards active; held only briefly (never across a turn)
-	active *run       // latest dispatched run, for barge-in interruption
+	active *run       // the in-flight run for this conversation (one at a time)
+
+	// inbox holds user messages received WHILE a turn is in flight (F5):
+	// mid-task messages the user sent without interrupting. The live agent
+	// drains it at each tool-call boundary (agent.Options.Inbox -> drainInput),
+	// so a mid-task message is delivered on the agent's next step instead of
+	// cancelling the run. Guarded by inboxMu (a distinct, briefly-held lock).
+	inboxMu sync.Mutex
+	inbox   []string
 
 	gatesMu sync.Mutex
 	gates   map[string]chan gateAnswer // node_id -> waiter, for delegated MCL gates
@@ -153,6 +161,11 @@ func (s *session) rebuildAgent() {
 		Adjudicator:   e.adjudicator,
 		AuditObserver: func(ev agent.AuditEvent) { e.publishAudit(s.cur, ev) },
 		ConvID:        s.id,
+		// F5: non-interrupting mid-task messages. The loop drains this at each
+		// tool-call boundary and folds any queued user messages into the
+		// transcript, so a message sent mid-task is delivered on the agent's
+		// next step instead of cancelling the run.
+		Inbox: s.drainInput,
 	})
 	// Resume continuity: if this conversation already has durable turns (a
 	// reopened thread, one that outlived a restart, or a respawn mid-task),
@@ -192,15 +205,23 @@ func firstUserText(turns []conversation.Turn) string {
 	return ""
 }
 
-// start kicks off a turn: it returns the run (so the handler can reply with the
-// intent_id immediately) and drives agent.Chat on a background goroutine,
-// streaming every event to the run's topic.
-//
-// Barge-in: a new message INTERRUPTS any turn already in flight for this
-// conversation (the user "cutting in"), so the latest message always takes over
-// instead of queuing behind a long-running turn.
-func (s *session) start(message string) *run {
-	return s.dispatch(message, false)
+// submit routes a fresh user message (F5: non-interrupting). If a turn is
+// already in flight for this conversation, the message is QUEUED into the live
+// agent's inbox — delivered at the agent's NEXT tool-call boundary without
+// interrupting the run — and submit returns the active run's id with fresh
+// false (the client keeps watching the same live stream). Otherwise it
+// dispatches a fresh run and returns its id with fresh true. The active check
+// and the dispatch are atomic under actMu so two near-simultaneous messages
+// never both spawn a run (the second folds into the first).
+func (s *session) submit(message string) (runID string, fresh bool) {
+	s.actMu.Lock()
+	defer s.actMu.Unlock()
+	if r := s.active; r != nil && !r.stopped.Load() {
+		s.enqueueInput(message)
+		return r.id, false
+	}
+	r := s.dispatchLocked(message, false)
+	return r.id, true
 }
 
 // startResume re-dispatches an orphaned task (the boot reaper after a restart /
@@ -210,9 +231,22 @@ func (s *session) startResume(objective string) *run {
 	return s.dispatch(objective, true)
 }
 
+// dispatch mints a run and drives it on a background goroutine. It does NOT
+// interrupt any in-flight turn (F5 removed barge-in from the message path —
+// mid-task messages queue via submit instead; the only deliberate interrupt is
+// POST /intents/{id}/stop). Locks actMu so `active` is published synchronously.
 func (s *session) dispatch(message string, resume bool) *run {
-	s.interruptActive()
+	s.actMu.Lock()
+	defer s.actMu.Unlock()
+	return s.dispatchLocked(message, resume)
+}
+
+// dispatchLocked is dispatch's body; the caller MUST hold actMu. It records the
+// run as the conversation's active run synchronously (so submit's active check
+// is race-free), creates the SSE topic before returning, then drives the turn.
+func (s *session) dispatchLocked(message string, resume bool) *run {
 	r := &run{id: synthRunID(message), convID: s.id, sess: s}
+	s.active = r
 	s.engine.registerRun(r)
 	// Create the SSE topic NOW, before returning the dispatch (and before the
 	// background goroutine's first publish). This closes the dispatch→subscribe
@@ -223,6 +257,29 @@ func (s *session) dispatch(message string, resume bool) *run {
 	s.engine.broker.ensure(r.id)
 	go s.drive(r, message, resume)
 	return r
+}
+
+// enqueueInput appends a mid-run user message to the session inbox (F5). The
+// live agent drains it at its next tool-call boundary via drainInput.
+func (s *session) enqueueInput(message string) {
+	s.inboxMu.Lock()
+	s.inbox = append(s.inbox, message)
+	s.inboxMu.Unlock()
+}
+
+// drainInput returns and clears any queued mid-run messages (F5). It is the
+// agent's Inbox hook (drained each tool-call boundary) and is also swept at the
+// end of a turn to catch a message that landed in the finishing window. Returns
+// nil when the inbox is empty.
+func (s *session) drainInput() []string {
+	s.inboxMu.Lock()
+	defer s.inboxMu.Unlock()
+	if len(s.inbox) == 0 {
+		return nil
+	}
+	out := s.inbox
+	s.inbox = nil
+	return out
 }
 
 // drive owns one task's whole lifecycle. The task is DECOUPLED from the HTTP
@@ -240,13 +297,12 @@ func (s *session) drive(r *run, message string, resume bool) {
 	if wall <= 0 {
 		wall = 20 * time.Minute
 	}
-	// The cancel is registered as THIS run's barge-in/stop handle BEFORE the
-	// turn lock, so a newer message can cancel it even while it queues behind a
-	// still-running task.
+	// The cancel is registered as THIS run's stop handle BEFORE the turn lock,
+	// so an explicit POST /intents/{id}/stop can cancel it even while it holds
+	// the turn lock. `active` was already published synchronously in dispatch.
 	ctx, cancel := context.WithTimeout(context.Background(), wall)
 	defer cancel()
 	r.cancel = cancel
-	s.setActive(r)
 	defer s.clearActive(r)
 
 	s.mu.Lock()
@@ -268,6 +324,9 @@ func (s *session) drive(r *run, message string, resume bool) {
 	// never resumes it. (CAS on run id: a no-op if a newer run already owns the
 	// conversation's task record.)
 	if r.stopped.Load() {
+		// The user explicitly stopped; abandon any messages they had queued
+		// mid-task (F5) so they don't leak into a later, unrelated turn.
+		s.drainInput()
 		s.engine.tasks.Finish(s.id, r.id, task.StatusInterrupted)
 		if !r.closed {
 			s.engine.broker.publish(r.id, "message.complete", "neo", map[string]interface{}{"status": "interrupted"})
@@ -289,6 +348,16 @@ func (s *session) drive(r *run, message string, resume bool) {
 		r.closed = true
 	}
 	s.engine.broker.closeRun(r.id)
+
+	// F5: a mid-task message can land in the tiny window AFTER the agent's
+	// final inbox drain but BEFORE this run closed — the agent's loop has
+	// already ended, so it will never see it. Deliver it as a fresh
+	// continuation run rather than stranding it. The deferred clearActive(r)
+	// still points at r, so this dispatch atomically takes over as the new
+	// active run (clearActive then no-ops).
+	if leftover := s.drainInput(); len(leftover) > 0 {
+		s.dispatch(strings.Join(leftover, "\n\n"), false)
+	}
 }
 
 // superviseTask keeps at least one agent on the task until it is genuinely

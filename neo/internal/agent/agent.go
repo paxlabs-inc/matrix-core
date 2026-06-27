@@ -158,6 +158,13 @@ type Agent struct {
 	// subject can reset the per-turn retrieved working set (Phase 3). nil when
 	// no embedder is available (topic detection is inherently semantic).
 	topic *topicTracker
+
+	// inbox, when set, returns user messages queued (by the session) WHILE
+	// this turn is in flight — mid-task messages the user sent without
+	// interrupting (F5). The loop drains it at each tool-call boundary and
+	// appends them to the transcript, so the agent picks them up on its next
+	// step instead of the message cancelling the run. nil on the CLI path.
+	inbox func() []string
 }
 
 // Options configures New.
@@ -190,6 +197,11 @@ type Options struct {
 	// full one. Set for sub-agents so money stays with the parent and a
 	// sub-agent can't spawn its own sub-agents.
 	RestrictTools bool
+
+	// Inbox, when set, returns user messages queued while a turn is in flight
+	// (mid-task messages sent without interrupting). The loop folds them into
+	// the transcript at each tool-call boundary (F5). nil disables (CLI path).
+	Inbox func() []string
 }
 
 // New assembles an Agent.
@@ -212,6 +224,7 @@ func New(o Options) *Agent {
 		auditObserver: o.AuditObserver,
 		persona:       strings.TrimSpace(o.Persona),
 		convID:        strings.TrimSpace(o.ConvID),
+		inbox:         o.Inbox,
 	}
 	if a.tools != nil {
 		if o.RestrictTools {
@@ -235,6 +248,29 @@ func (a *Agent) SetGeneration(gen uint64) { a.generation = gen }
 
 // Generation returns the current generation tag (0 = unset, e.g. CLI path).
 func (a *Agent) Generation() uint64 { return a.generation }
+
+// drainInbox folds any user messages queued while this turn is in flight (F5:
+// non-interrupting mid-task messages) into the working transcript, so the agent
+// addresses them on its next step instead of the message cancelling the run.
+// Drained at each tool-call boundary; returns true if it injected at least one.
+// No-op when no inbox is wired (CLI path). Injection happens at a clean
+// boundary (loop top / pre-finish), where the transcript ends on a tool result
+// or assistant turn, so appending a user message keeps it well-formed.
+func (a *Agent) drainInbox() bool {
+	if a.inbox == nil {
+		return false
+	}
+	injected := false
+	for _, m := range a.inbox() {
+		m = strings.TrimSpace(m)
+		if m == "" {
+			continue
+		}
+		a.working = append(a.working, llm.UserMessage(m))
+		injected = true
+	}
+	return injected
+}
 
 // SetSkillIndex injects a names-only skill index into the STABLE system prefix
 // (P2-2). The index lists available skills by NAME only — never full bodies
@@ -414,6 +450,10 @@ func (a *Agent) Chat(ctx context.Context, userInput string) error {
 		if step >= budget {
 			break
 		}
+		// F5: fold in any messages the user queued mid-task (sent without
+		// interrupting) so the agent picks them up on THIS step — delivered at
+		// the tool-call boundary, never cancelling the in-flight run.
+		a.drainInbox()
 		// Mid-turn page-fault refresh: long tool loops drift away from the
 		// opening ask, so periodically re-fault against the latest assistant
 		// narration. Injection stays system-block-only — the transcript
@@ -554,6 +594,13 @@ func (a *Agent) Chat(ctx context.Context, userInput string) error {
 		// turn that reached the irreversible seam must finish through the
 		// validated task_complete gate handled below.
 		if !res.HasToolCalls() {
+			// F5: a message queued mid-turn may have arrived during this model
+			// call, just as the agent is about to finish. Address it instead of
+			// closing the turn, so a non-interrupting mid-task message is never
+			// dropped at the turn boundary.
+			if a.drainInbox() {
+				continue
+			}
 			answer := strings.TrimSpace(res.Message.Content)
 			// Truncated generation (finish_reason=length) is NEVER a final
 			// answer: the cut-off text is half-formed monologue/payload (the

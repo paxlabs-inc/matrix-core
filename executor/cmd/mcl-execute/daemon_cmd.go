@@ -28,6 +28,7 @@ import (
 	"syscall"
 	"time"
 
+	"matrix/construct/surfacestore"
 	"matrix/executor/internal/snapshot"
 )
 
@@ -192,6 +193,18 @@ type daemonState struct {
 	// side-channel — never touches cortex, envelopes, or the plan/walk, so it
 	// cannot perturb D11 replay.
 	construct *constructState
+
+	// surfaceStore is the Construct OS Shell's durable, per-conversation
+	// surface timeline (construct/surfacestore) — the "never vanishing"
+	// record. The per-run surface-store tee (daemon_surfacestore.go) is a
+	// sibling of the Construct projector: it subscribes the SAME broker
+	// stream and records every construct.surface[.patch] frame into this
+	// store, so a reopened conversation rehydrates exactly as the user left
+	// it. The same instance backs the GET /construct/state read path, so the
+	// tee and the read path share one store. An empty /data resolution yields
+	// a disabled no-op store (dev/CLI). Pure side-channel — never signs,
+	// writes cortex, or touches plan/walk, so it cannot perturb D11 replay.
+	surfaceStore *surfacestore.Store
 
 	// sess#34 / Forge Phase 1: filesystem allow/deny policy for the
 	// Forge HTTP surface (GET /fs/tree, GET /fs/read, POST /fs/write).
@@ -549,6 +562,13 @@ func runDaemon(args []string) {
 		skillCatalog:     newSkillCatalog(*skillsRoot),
 		snapMgr:          snapMgr,
 		metrics:          metrics,
+		// Durable Construct surface store (the "never vanishing" record).
+		// Rooted on the per-user /data volume alongside cortex/trace/task
+		// stores via surfacestore.Dir (override env wins, else derived from
+		// the cortex root's parent). An empty resolution => disabled no-op
+		// (dev/CLI). The per-run tee records into it; GET /construct/state
+		// reads from the SAME instance. Flushed + closed on graceful drain.
+		surfaceStore: surfacestore.Open(surfacestore.Dir(os.Getenv("CONSTRUCT_SURFACE_DIR"), *cortexRoot)),
 	}
 	if *forgeMode {
 		state.forgeFS = DefaultForgeFSPolicy()
@@ -701,6 +721,18 @@ func runDaemon(args []string) {
 	}
 	broker.CloseAll()
 	t.Event("daemon.drain.done", "shutdown", nil)
+
+	// Flush + close the durable Construct surface store after the server has
+	// drained: every in-flight run's surface-store tee has stopped recording
+	// (its deferred shutdown ran during srv.Shutdown), so a flush now persists
+	// every enqueued surface frame before the writer goroutine exits. A
+	// disabled (no-op) store returns immediately. Pure side-channel; never
+	// signs/writes cortex.
+	if state.surfaceStore.Enabled() {
+		state.surfaceStore.Flush()
+		state.surfaceStore.Close()
+		t.Event("construct.surfacestore.closed", "shutdown", nil)
+	}
 
 	// Snapshot final push: server has drained, cortex is quiescent.
 	// Run BEFORE the deferred in.Close() so Pebble is still flushable

@@ -202,12 +202,18 @@ func (a *Agent) adjudicateCompletion(ctx context.Context, userRequest, summary, 
 	})
 
 	if verdictAccepts(coverage, v, phantom) {
+		// F4: the delivered + persisted answer is the CLEAN deliverable only.
+		// Any Cassandra-flagged caveats ride the cassandra.* side-channel as a
+		// separate subtle affordance — never folded into the answer text
+		// (ux_truth). i6 honest-partials are intact: the agent's own summary
+		// already states what a partial left unresolved.
+		caveats := cappedUnknowns(v)
 		if coverage == "partial" {
-			a.emitAudit(auditEventPartial, map[string]interface{}{"rationale": v.Rationale})
+			a.emitAudit(auditEventPartial, map[string]interface{}{"rationale": v.Rationale, "open_unknowns": caveats})
 		} else {
-			a.emitAudit(auditEventGate, map[string]interface{}{"decision": "finish", "certainty": v.Certainty})
+			a.emitAudit(auditEventGate, map[string]interface{}{"decision": "finish", "certainty": v.Certainty, "open_unknowns": caveats})
 		}
-		return completionVerdict{ok: true, answer: surfaceVerified(summary, v)}
+		return completionVerdict{ok: true, answer: strings.TrimSpace(summary)}
 	}
 
 	a.emitAudit(auditEventContinue, map[string]interface{}{

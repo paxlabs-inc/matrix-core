@@ -93,6 +93,10 @@ func structs() []reflect.Type {
 		reflect.TypeOf(primitives.AskResponse{}),
 		reflect.TypeOf(primitives.Ask{}),
 		reflect.TypeOf(schema.Surface{}),
+		// Rehydration wire types (GET /construct/state). Frame is emitted
+		// before StateResponse, which references it (dependency-first).
+		reflect.TypeOf(schema.Frame{}),
+		reflect.TypeOf(schema.StateResponse{}),
 	}
 }
 
@@ -222,6 +226,13 @@ func tsType(t reflect.Type, enumNames map[string]bool) (string, error) {
 			return "", err
 		}
 		return "Record<string, " + elem + ">", nil
+	case reflect.Interface:
+		// An empty interface (interface{}/any) is an opaque payload (e.g. a
+		// Frame's Fields); the safe TS mirror is `unknown`.
+		if t.NumMethod() == 0 {
+			return "unknown", nil
+		}
+		return "", fmt.Errorf("unsupported non-empty interface %s", t.Name())
 	case reflect.Struct:
 		if t.Name() == "" {
 			return "", fmt.Errorf("anonymous struct unsupported")

@@ -1,0 +1,634 @@
+# spec.kvx — Construct OS Shell. SINGLE SOURCE for this feature's
+# requirements + design + tasks. Rendered to requirements.md / design.md /
+# tasks.md (and mirrored into .kiro/specs/) by spec/specgen. Do not edit the
+# generated markdown; edit this file and regenerate.
+#
+# Format: Matrix .kvx (see tachyon/internal/config/kvx.go). One key = value per
+# line; string values double-quoted; lists are ["a","b"]; # starts a comment.
+# Conventions for this schema (see spec/SCHEMA.md):
+#   [req.<n>]   title, story, ac_1..ac_n          (acceptance criteria, EARS)
+#   [design]    overview, include="design.body.md" (rich prose/diagrams inlined)
+#   [task.<id>] title, status, wave, reqs, requires (dotted ids: 1, 1.1, 1.2)
+
+[meta]
+feature      = "construct-os-shell"
+title        = "Construct OS Shell"
+status       = "in_progress"
+spec_version = "1.0.0"
+intro        = "Elevate Matrix's Construct surfaces from a flat chat-adjacent list into a durable, spatial OS-like environment. Mostly additive over the frozen 8-primitive renderers: a shared persistent surface-state model, a server-side surface store for never-vanishing rehydration, frame inversion, depth navigation, and an async environment-level Ask. These requirements trace to the approved design (rendered into design.md)."
+
+[design]
+overview = "See the full design below (overview, hard constraints, architecture with sequence/flow diagrams, the Surface-State Model, components and interfaces, data models, formal function specs, and pseudocode). The design content is authored as a rich markdown fragment (design.body.md) and inlined here verbatim, because mermaid diagrams and code blocks do not fit single-line kvx values."
+include  = "design.body.md"
+
+# ============================== REQUIREMENTS ==============================
+
+[req.1]
+title = "Persistent surface-state and rehydration fidelity (never vanishing)"
+story = "As a consumer, I want my computer to reappear exactly as I left it after a reload or returning later, so that my work and Neo's activity never vanish."
+ac_1 = "WHEN a construct.surface or construct.surface.patch frame is published on the broker for a conversation, THE Surface_Store SHALL durably append that frame to that conversation's persisted frame log in ascending published seq order, persisted across reload, suspend, redeploy, and device switch."
+ac_2 = "WHEN a client cold-opens a conversation, THE Surface_Feed SHALL rehydrate the Surface_State_Model by replaying the conversation's durable frames in ascending seq order through the same reducer (applySurfaceEvent) the live feed uses."
+ac_3 = "WHERE a conversation has a recorded frame sequence, THE Surface_State_Model produced by rehydration SHALL be observationally equal to the model produced by applying that same frame sequence live — identical surface id set, identical Surface envelope payload per id, identical Placement per id, and identical lastSeq."
+ac_4 = "WHEN the same frame is applied to the Surface_State_Model more than once, THE Surface_Feed SHALL dedup by seq so the resulting model equals applying that frame exactly once."
+ac_5 = "WHEN frames are applied during rehydration, THE Surface_State_Model SHALL set lastSeq to the highest applied frame seq and SHALL keep lastSeq monotonically non-decreasing."
+ac_6 = "WHEN a construct.surface.patch frame targets a surface id not yet present in the Surface_State_Model, THE Surface_Feed SHALL buffer the patch and apply buffered patches in seq order when the base surface arrives, rather than dropping them."
+ac_7 = "IF a buffered patch's base surface never arrives during rehydration, THEN THE Surface_Feed SHALL retain the buffered patch for a later live frame and SHALL NOT misapply or silently discard it."
+
+[req.2]
+title = "Shared surface-state model with two shell adapters"
+story = "As a consumer, I want the same computer on my phone and my desktop, so that the environment behaves consistently while fitting each device."
+ac_1 = "THE Surface_State_Model SHALL be the single shared source of client-side shell state that both the Mobile Shell_Adapter and the Desktop Shell_Adapter read, and neither adapter SHALL maintain a separate copy of surface state."
+ac_2 = "WHEN the Mobile and Desktop adapters lay out the same Surface_State_Model at the same lastSeq, THE Shell SHALL render an identical set of surface ids in both adapters, each through the one per-primitive renderer matching that surface's kind."
+ac_3 = "WHERE the adapters differ in presentation, THE Shell SHALL limit the difference to placement geometry and chrome (zOrder, gridSlot, chrome) only; the set of surface ids shown and each shown surface's envelope (attributes and payload) SHALL be identical across both adapters."
+ac_4 = "WHEN a surface is added, THE Placement_Policy SHALL assign a region that is a pure function of the surface kind and attributes, and that region SHALL be exactly one of home, window, drawer, activity, tray, inbox, or narration."
+ac_5 = "WHEN the Placement_Policy is applied to the same kind, attributes, and prior placement, THE Placement_Policy SHALL return a Placement equal in every field (region, pinned, lifecycle, zOrder, gridSlot)."
+ac_6 = "WHERE a prior placement marked a surface as pinned, THE Placement_Policy SHALL preserve pinned as true on the re-projected Placement."
+ac_7 = "IF the Placement_Policy is applied to a surface whose kind is not one of the 8 frozen primitives, THEN it SHALL assign a deterministic default region and SHALL NOT throw or leave the surface without a Placement."
+
+[req.3]
+title = "Frame inversion (environment primary, chat a panel)"
+story = "As a consumer, I want the environment to be the page with chat as one panel within it, so that Neo's work is the centerpiece rather than a guest beside a chat thread."
+ac_1 = "WHEN the top-level client route mounts, THE Shell SHALL render the environment as the root of the client route."
+ac_2 = "WHEN the top-level client route mounts, THE Shell SHALL render the Narration chat as exactly one panel occupying the narration region and SHALL NOT render the Narration chat as the page that contains the environment."
+ac_3 = "WHERE a surface has kind narration, THE Placement_Policy SHALL assign it the narration region regardless of attributes or prior placement."
+ac_4 = "THE Shell SHALL treat narration as exactly one of the seven placement regions and SHALL NOT render any region as a page that contains the other six."
+ac_5 = "WHILE no Narration surface is present, THE Shell SHALL continue to render the environment as the root and SHALL NOT fall back to rendering chat as the containing page."
+
+[req.4]
+title = "Depth navigation (glance to summary to raw)"
+story = "As a consumer, I want to descend from a glance into the detail and then the raw truth of any surface, so that I can see exactly what Neo did when I choose to look."
+ac_1 = "THE Shell SHALL represent surface depth as a shell-level focus stack with exactly three ordered levels: glance (base), summary, then raw."
+ac_2 = "WHEN a user descends from a focused surface not already at raw, THE Shell SHALL push exactly one focus frame advancing the level by one step in the order glance to summary to raw."
+ac_3 = "WHEN a user descends to the raw level of a surface that links to another surface, THE Shell SHALL resolve the link by ref first, else by parent, and push a raw focus frame targeting the linked surface."
+ac_4 = "IF a descend targets a linked surface not present in the model, THEN THE Shell SHALL rehydrate that surface by its address before pushing the raw focus frame."
+ac_5 = "IF rehydration of a descend target does not complete within 5 seconds or fails, THEN THE Shell SHALL leave the focus stack unchanged and indicate the failure in non-jargon language."
+ac_6 = "WHEN a user descends at the raw level of a surface that has no ref or parent link, THE Shell SHALL treat the action as a no-op and leave the focus stack unchanged."
+ac_7 = "WHEN a user ascends, THE Shell SHALL pop exactly the top focus frame."
+ac_8 = "WHEN a user ascends while at the base glance frame, THE Shell SHALL treat the action as a no-op."
+ac_9 = "WHEN the Shell renders any focus level, THE Shell SHALL use the existing per-primitive renderer for the surface without modifying it."
+
+[req.5]
+title = "Asynchronous, environment-level Ask with verified liveness"
+story = "As a consumer, I want to answer Neo's requests later or from another device, so that I am never forced to block on a prompt and never lose a pending request."
+ac_1 = "WHEN an Ask surface is emitted, THE Shell SHALL place it in the Ask_Inbox (region inbox) and raise an environment-level notification without blocking, suspending, or occupying any other region or column."
+ac_2 = "WHILE an Ask is pending and unexpired, THE Shell SHALL allow a user to answer it, including after returning later or from another device."
+ac_3 = "WHEN a user answers a pending Ask, THE Shell SHALL POST the typed response through the existing Ask back-channel endpoint for server-side validation."
+ac_4 = "WHEN an answer passes backchannel.ValidateResponse, THE Ask back-channel SHALL resume the parked run exactly once and deliver the answer to the agent as a recorded INPUT."
+ac_5 = "IF a posted ask_id is duplicate, expired, or malformed, THEN THE Ask back-channel SHALL reject the answer, leave the run parked, leave the Ask_Inbox entry unchanged, and return a rejection indication to the submitting client."
+ac_6 = "WHEN an Ask is answered, THE Shell SHALL patch the Ask surface to its answered/settled state and remove it from the Ask_Inbox."
+ac_7 = "WHEN the same Ask is answered from more than one device or session, THE Ask back-channel SHALL accept exactly one response per ask_id and THE Shell SHALL reconcile every session to the authoritative answered patch so all sessions settle identically."
+ac_8 = "IF an Ask is unanswered past the expiry carried by its surface, THEN THE Shell SHALL mark the Ask_Inbox entry expired with a non-jargon message and SHALL NOT leave it pending."
+ac_9 = "THE Shell SHALL verify the Ask back-channel round-trip end-to-end (client to daemon to parked agent resumes exactly once and receives the answer as a recorded INPUT) before the feature is considered complete."
+
+[req.6]
+title = "Reuse of frozen renderers and trusted-render safety"
+story = "As a system integrator, I want the shell to arrange surfaces without ever synthesizing UI, so that the agent's expressiveness stays paired with the safety of fixed renderers."
+ac_1 = "WHEN a surface is stored in the model, THE Shell SHALL wrap the Surface envelope without mutating the original, and the stored envelope SHALL remain deep-equal to the schema-validated input it was created from."
+ac_2 = "WHEN the Shell renders a surface whose kind is one of the 8 frozen primitives, THE Shell SHALL render it using the single existing frozen per-primitive renderer for that kind on both web and mobile, without modifying that renderer."
+ac_3 = "IF a surface has a kind that is not one of the 8 frozen primitives, or a payload that does not match its declared kind, THEN THE Shell SHALL render nothing for that surface, SHALL NOT execute or interpret any agent-provided content as markup, and SHALL continue rendering all other valid surfaces unaffected."
+ac_4 = "THE Shell SHALL arrange and place surfaces only, render all surface content exclusively through the 8 frozen renderers, and SHALL NOT generate, synthesize, template, or execute any UI derived from agent-provided content."
+ac_5 = "IF a frozen renderer fails while rendering a valid surface, THEN THE Shell SHALL contain the failure to that surface, render nothing for it, and continue rendering all other surfaces."
+
+[req.7]
+title = "Surface addressing and re-enterability"
+story = "As a consumer, I want to tap a surface I saw earlier and re-enter it, so that nothing I have seen becomes unreachable."
+ac_1 = "WHEN a surface is added, THE Shell SHALL assign it a stable address of the form construct://{conversationId}/{surfaceId} that remains identical across reload, rehydration, and device switch."
+ac_2 = "WHEN a user opens the address of a surface present in the hot set, THE Shell SHALL resolve and present it without reading the Surface_Store."
+ac_3 = "WHEN a user opens the address of a surface not in the hot set, THE Shell SHALL rehydrate that surface and its ref-linked children from the Surface_Store for the address's conversationId and present it."
+ac_4 = "THE Shell SHALL ensure that for every surface the agent ever emitted in a conversation, the surface's address resolves."
+ac_5 = "THE Shell SHALL resolve every surface address only against the surfaces of the conversation named in the address."
+ac_6 = "IF an opened address names a surfaceId that was never emitted, THEN THE Shell SHALL present a non-jargon unavailable indication and leave the model unchanged."
+ac_7 = "IF an opened address names a conversationId the current user does not own, THEN THE Shell SHALL refuse resolution and SHALL NOT return any surface."
+
+[req.8]
+title = "Long-running task visibility while disconnected"
+story = "As a consumer, I want to see what Neo did while I was away, so that long-running work stays visible when I reconnect."
+ac_1 = "WHILE no client is connected to a conversation, THE Surface_Store SHALL durably append every construct.surface and construct.surface.patch frame emitted by ongoing tasks for that conversation, regardless of how long the disconnection lasts."
+ac_2 = "WHEN a user reconnects, THE Surface_Feed SHALL subscribe to the live frame stream resuming from the model's current lastSeq."
+ac_3 = "WHEN the feed resumes after a reconnect, THE Surface_Feed SHALL apply each catch-up frame whose seq is greater than lastSeq oldest-first, and SHALL NOT alter the model for any frame whose seq is less than or equal to the current lastSeq."
+ac_4 = "IF one or more frames emitted while disconnected are no longer on the live stream, THEN THE Surface_Feed SHALL rehydrate the missing frames from the Surface_Store oldest-first before applying further live frames, so no frame emitted while disconnected is dropped."
+ac_5 = "WHEN reconnect catch-up completes, THE Surface_State_Model SHALL equal the model produced by applying that conversation's full durable frame sequence through the same reducer, including every surface from tasks that ran while disconnected."
+
+[req.9]
+title = "Projection coverage (the environment is never hollow)"
+story = "As a system integrator, I want every agent action to project into a surface, so that no activity is invisible and the environment never reads as broken."
+ac_1 = "THE Projection layer SHALL map each agent action class in the frozen coverage map onto a composition of one or more of the 8 primitives, such that every projected action yields at least one Surface."
+ac_2 = "THE Projection layer SHALL apply the frozen coverage map exactly: a tool result onto Entity, Structure, or Metric; a chain transaction onto an irreversible Entity plus a sign Ask; a browser action onto Canvas, Stream, and Timeline; a memory action onto Structure and Entity; a plan or swarm action onto Timeline and Structure; an async action onto Timeline and Metric; and a cost action onto Metric."
+ac_3 = "IF an agent action has no mapped projector, THEN THE Projection layer SHALL emit at least one Narration surface representing that action and SHALL NOT drop the action without emitting any surface."
+ac_4 = "WHEN the Projection layer emits a surface, THE Shell SHALL place it through the Placement_Policy into exactly one region and render it through the existing per-primitive renderer for its kind without renderer changes."
+
+[req.10]
+title = "Calibrated transparency / progressive disclosure"
+story = "As a consumer, I want just enough visibility to feel aware and in control without being overwhelmed, so that I trust the system and can intervene when I choose."
+ac_1 = "WHEN the Shell first presents a surface, THE Shell SHALL present it at the glance level in its placement-region chrome, and SHALL NOT show its summary or raw level by default."
+ac_2 = "WHEN a user requests more detail on a surface, THE Shell SHALL disclose exactly one deeper level per request in the order glance to summary to raw."
+ac_3 = "WHILE a surface is present in the model, THE Shell SHALL keep the capability to descend to its detail available."
+ac_4 = "IF a user requests more detail on a surface already at raw, THEN THE Shell SHALL treat the request as a no-op and SHALL NOT advance past raw."
+
+[req.11]
+title = "Side-channel non-perturbation (D11)"
+story = "As a system integrator, I want persistence and the shell to never change the agent's execution, so that the D11 replay byte-identity invariant is preserved."
+ac_1 = "WHEN the Surface_Store persists or rehydrates surfaces, THE Surface_Store SHALL leave cortex, plan state, and walk state byte-identical, and SHALL NOT sign anything."
+ac_2 = "WHEN a run executes with the Surface_Store and Shell active, THE system SHALL produce a recorded replayable-input sequence byte-identical to the same run executed with them inactive."
+ac_3 = "WHEN an Ask is answered, THE system SHALL deliver the answer through the same recorded-input path as a user message, with no extra replay-altering metadata, and SHALL NOT introduce any other agent feedback path."
+ac_4 = "IF persistence or rehydration fails, THEN THE system SHALL leave the run's recorded input sequence and execution unperturbed."
+ac_5 = "WHEN a run is replayed with the Surface_Store and Shell active, THE system SHALL preserve the D11 replay byte-identity invariant."
+
+[req.12]
+title = "Consumer product shows the result, not the tech"
+story = "As a consumer, I want a computer rather than a debugger, so that I am never shown protocol internals."
+ac_1 = "THE Shell SHALL NOT display, in any user-visible text, label, control, status, or error, any term from the protocol-jargon set {MCL, cortex, Merkle, replay, SSE, D11, broker, frame, patch, projection, envelope, rehydration, back-channel}."
+ac_2 = "WHEN the Shell shows a status, THE Shell SHALL phrase it in terms of the user's deliverable or outcome and include no term from the protocol-jargon set."
+ac_3 = "IF the Shell shows an error, THEN THE Shell SHALL present a message that states what failed in outcome terms, includes no protocol-jargon, and SHALL NOT display internal error codes or stack traces."
+
+[req.13]
+title = "UI house rules"
+story = "As a consumer, I want a minimal, dark, high-signal interface, so that the environment feels calm and focused."
+ac_1 = "THE Shell SHALL separate adjacent surface layers using background-color contrast only."
+ac_2 = "THE Shell SHALL NOT use border strokes to indicate depth or separation between surface layers."
+ac_3 = "THE Shell SHALL NOT render emojis in any UI chrome it controls."
+ac_4 = "THE Shell SHALL NOT use purple gradients in any UI chrome it controls."
+ac_5 = "THE Shell SHALL NOT use glow effects in any UI chrome it controls."
+ac_6 = "THE Shell SHALL use Paxeer Blue #004CED as its single accent color and SHALL NOT introduce any other accent color."
+ac_7 = "THE Shell SHALL use the Inter typeface for UI text."
+ac_8 = "THE Shell SHALL use the JetBrains Mono typeface for monospace text."
+
+[req.14]
+title = "Transport invariant (rides existing chat transport)"
+story = "As a system integrator, I want surfaces to ride the existing chat transport, so that no new agent-to-client wire path is introduced."
+ac_1 = "THE Shell SHALL consume surfaces over the existing chat SSE/WS transport."
+ac_2 = "THE Shell SHALL NOT add any agent-to-client wire path beyond the existing chat SSE/WS transport."
+ac_3 = "WHERE persistence and rehydration are added, THE system SHALL add exactly three components: a client-side state model, a server-side persistence sidecar, and a read-only rehydration read path."
+ac_4 = "WHERE persistence and rehydration are added, THE system SHALL NOT add any agent-to-client wire path beyond the existing chat transport."
+
+[req.15]
+title = "Codegen'd types and per-user isolation"
+story = "As a system integrator, I want types generated from the Go schema and per-user data isolation, so that the wire contract stays authoritative and users are isolated."
+ac_1 = "WHERE a Go-side type reaches the client, THE system SHALL generate that type from the Go schema via codegen."
+ac_2 = "THE system SHALL NOT hand-edit any codegen-generated type."
+ac_3 = "THE Surface_Store SHALL root all persisted surface data in the per-user machine's /data volume."
+ac_4 = "WHEN a surface address or stored frame is resolved, THE system SHALL scope the resolution to its owning conversation."
+ac_5 = "IF a resolution would access a surface or frame owned by a different user, THEN THE system SHALL refuse the access and SHALL NOT return the surface or frame."
+
+[req.16]
+title = "Performance — persistence off the hot path, bounded rehydration"
+story = "As a consumer, I want the environment to stay responsive, so that persistence never slows Neo down and reopening is fast."
+ac_1 = "WHEN Store.Record is called on the broker publish hot path, THE Surface_Store SHALL return without performing disk I/O on the caller goroutine."
+ac_2 = "WHEN Store.Record is called, THE Surface_Store SHALL perform the durable write on a separate asynchronous writer."
+ac_3 = "IF the asynchronous writer queue is saturated, THEN THE Surface_Store SHALL drop the incoming frame rather than block the broker publish path."
+ac_4 = "WHEN a client cold-opens a conversation, THE Rehydration_Endpoint SHALL return at most the configured retained-frame cap of newest frames so cold-open cost is bounded by that cap."
+ac_5 = "WHEN a construct.surface.patch is applied, THE Shell SHALL update only the targeted surface in place and SHALL NOT re-lay-out the whole environment."
+
+[req.17]
+title = "MVP first-slice scope"
+story = "As a consumer, I want an early version that proves the feeling of a persistent computer, so that the core value is validated before the full environment is built."
+ac_1 = "THE Surface_Store SHALL persist one conversation's surfaces and the Rehydration_Endpoint SHALL serve them."
+ac_2 = "WHEN a client cold-opens the MVP conversation, THE Shell SHALL rehydrate the workspace so that the home surface survives reload."
+ac_3 = "THE Shell SHALL place a live Timeline of Neo's activity in the activity region using the existing Timeline renderer."
+ac_4 = "WHEN a user taps a Timeline step in the MVP, THE Shell SHALL descend one level to that step's linked Stream at the raw level."
+ac_5 = "THE Shell SHALL host chat as a NarrationPanel region mounted within the root shell and SHALL NOT host chat as the page that contains the environment."
+ac_6 = "THE MVP SHALL read shell state from the shared Surface_State_Model and SHALL deliver on exactly one Shell_Adapter first."
+ac_7 = "THE MVP SHALL verify that the Ask back-channel is live end-to-end before the MVP is considered complete."
+
+# ================================ TASKS ================================
+# Each [task.<id>] carries the FULL implementation detail (do_* bullets) so the
+# generated tasks.md contains exactly what each task must do. status: pending |
+# in_progress | done. wave = dependency wave (parallelizable within a wave).
+# A task uses EITHER property+validates (a property test) OR reqs (the
+# _Requirements:_ line). do_* bullets render in file order. section (top-level
+# only) emits a "## ..." heading before that task. note = a plain detail bullet.
+# Prose preamble + notes live in tasks.overview.md / tasks.notes.md (inlined).
+
+[tasks]
+heading          = "Implementation Plan: Construct OS Shell"
+overview_include = "tasks.overview.md"
+notes_include    = "tasks.notes.md"
+
+[task.1]
+section = "MVP First Slice (independently shippable — proves "one persistent home that breathes")"
+title   = "Server persistence foundation — `construct/surfacestore` (Go, GENERALIZES `neo/internal/trace`)"
+status  = "done"
+
+[task.1.1]
+title  = "Create the `construct/surfacestore` package generalizing the F3 trace store"
+status = "done"
+wave   = 0
+do_1   = "Port the `neo/internal/trace` design: async background writer, JSONL append, atomic rollup, `/data`-rooted `Dir(override, cortexRoot)` resolution, disabled (empty-dir) no-op"
+do_2   = "Define `Frame{Seq,Ts,Phase,Type,Fields}` mirroring the daemon SSE Event shape; key by `conversationID` (not run); reject `conversationID` containing path separators"
+do_3   = "Implement `Open`, `Record` (enqueue-only, non-blocking, drop-on-saturation), `Load` (oldest-first, capped to newest `retain`, skip crash-truncated final line), `Enabled`, `Flush`, `Close`"
+do_4   = "Side-channel: no cortex write, no signing, no plan/walk mutation"
+reqs   = ["1.1", "11.1", "15.2", "16.1", "16.2"]
+
+[task.1.2]
+title  = "Port the `neo/internal/trace` unit-test suite to `surfacestore`"
+status = "done"
+wave   = 1
+do_1   = "Async record/flush, atomic rollup at 2×retain, crash-truncated-line skip, disabled no-op, path-separator rejection — re-keyed by conversation, asserting `construct.surface[.patch]` round-trip"
+reqs   = ["1.1", "15.2", "16.1", "16.2"]
+
+[task.1.3]
+title     = "Write Go `testing/quick` property test for persistence durability/ordering"
+status    = "done"
+wave      = 1
+do_1      = "For any generated frame sequence, `Load(Record*…)` returns frames oldest-first, capped to `retain`, with no reordering — the server-side foundation of Property 1 durability"
+property  = "Property 1 (durability half): rehydration source fidelity"
+validates = "Requirements 1.1, 16.3"
+
+[task.2]
+title  = "Rehydration read path — `GET /construct/state` (Go, NEW thin route) + codegen"
+status = "done"
+
+[task.2.1]
+title  = "Define `Frame`/`StateResponse` as codegen'd wire types and regenerate client types"
+status = "done"
+wave   = 1
+do_1   = "Add the persisted `Frame` and `StateResponse{ConversationID,Frames,LastSeq}` to the Go schema codegen source (`construct/internal/codegen`) and regenerate `apps/client/lib/construct/types.gen.ts` (and the mobile mirror) — never hand-edit generated output"
+reqs   = ["14.2", "15.1"]
+
+[task.2.2]
+title  = "Implement the read-only `GET /construct/state?conversation_id=&since_seq=` daemon route"
+status = "done"
+wave   = 2
+do_1   = "Call `surfacestore.Load`, return ordered frames capped to the retained-frame count plus `last_seq`; honor `since_seq` for catch-up; scope strictly by `conversation_id` (no cross-user access)"
+do_2   = "Read-only: no writes, no signing, no plan/walk mutation"
+reqs   = ["1.1", "8.1", "14.2", "15.3", "16.3"]
+
+[task.2.3]
+title  = "Write unit tests for the rehydration route"
+status = "done"
+wave   = 3
+do_1   = "`since_seq` cursor returns only newer frames; cap bounds the response to `retain`; conversation scoping rejects/never leaks another conversation's frames"
+reqs   = ["8.1", "15.3", "16.3"]
+
+[task.3]
+title  = "Broker tee wiring (Go — sibling of the liaison narrator)"
+status = "done"
+
+[task.3.1]
+title  = "Subscribe `surfacestore` to the daemon SSE broker and tee construct frames"
+status = "done"
+wave   = 2
+do_1   = "In the daemon broker (`executor/cmd/mcl-execute`), add a subscription sibling to the liaison narrator that calls `store.Record(conversationID, Frame{…})` only for `phase == "construct"` frames (`construct.surface[.patch]`); add no new wire path"
+do_2   = "Tee is async and best-effort: it must never block the broker publish path"
+reqs   = ["1.1", "11.1", "14.1", "16.1", "16.2"]
+
+[task.3.2]
+title  = "Write integration test asserting the tee is non-blocking and drop-on-saturation"
+status = "done"
+wave   = 3
+do_1   = "Saturate the writer queue and assert broker publish latency is unaffected and frames are dropped (not blocked); assert no cortex/plan/walk side effects"
+reqs   = ["11.1", "16.1", "16.2"]
+
+[task.4]
+title  = "Shared Surface_State_Model core (TypeScript, NEW — consumed by BOTH apps)"
+status = "done"
+
+[task.4.1]
+title  = "Define the shared `SurfaceWorkspace` model + deterministic `placeSurface` policy"
+status = "done"
+wave   = 0
+do_1   = "In a shared module consumable by both `apps/client` and `apps/mobile`, define `PlacedSurface`, `Placement{region,pinned,lifecycle,zOrder?,gridSlot?}`, `FocusState`, `AskInboxEntry`, and `SurfaceWorkspace`"
+do_2   = "Implement `placeSurface(surface, prior?)`: `region` is a pure function of `kind` (+ `attributes` for inbox routing) over the 7 regions; preserve `prior.pinned`; unknown kind → deterministic default region (never throws, never leaves a surface unplaced)"
+reqs   = ["2.1", "2.4", "2.6", "2.7", "3.3"]
+
+[task.4.2]
+title     = "Write `fast-check` property test for placement determinism"
+status    = "done"
+wave      = 1
+do_1      = "Generate surfaces + priors; assert repeated `placeSurface` calls are field-for-field equal; assert `region` ∈ the 7 regions; assert pin preservation; assert `narration` → `narration`"
+property  = "Property 3: Placement determinism"
+validates = "Requirements 2.4, 2.5, 2.6, 2.7, 3.3"
+
+[task.4.3]
+title  = "Extend `applySurfaceEvent` reducer for hydration, buffering, and idempotence"
+status = "done"
+wave   = 1
+do_1   = "Reuse the existing `apps/client/lib/construct/store.ts` reducer semantics (Stream append+dedup-by-seq, Timeline upsert-by-step-id, others replace); add: clone-on-write (never mutate the envelope in place), orphan-patch buffering (buffer a patch whose base id is absent rather than dropping), monotonic `lastSeq`, and surface→`PlacedSurface` wrapping via `placeSurface`"
+reqs   = ["1.4", "1.5", "1.6", "6.1", "16.4"]
+
+[task.4.4]
+title     = "Write `fast-check` property test for reducer idempotence"
+status    = "done"
+wave      = 2
+do_1      = "Generate frame + workspace; assert `apply(apply(ws,f),f) ≡ apply(ws,f)` (dedup by seq)"
+property  = "Property 2: Reducer idempotence on replay"
+validates = "Requirements 1.4"
+
+[task.4.5]
+title     = "Write `fast-check` property test for envelope immutability"
+status    = "done"
+wave      = 2
+do_1      = "Assert the stored `Surface` envelope deep-equals the schema-validated input after any frame is applied (wrap, never mutate)"
+property  = "Property 4: Renderer reuse / envelope immutability"
+validates = "Requirements 6.1"
+
+[task.5]
+title  = "Surface_Feed hydrate path (TypeScript, EXTENDS existing feed)"
+status = "done"
+
+[task.5.1]
+title  = "Implement `SurfaceFeed.hydrate(conversationId)` — durable replay then live subscribe"
+status = "done"
+wave   = 3
+do_1   = "`hydrate` GETs `/construct/state`, replays frames oldest-first through the SAME `applySurfaceEvent` reducer the live feed uses, then subscribes SSE `since_seq = lastSeq`; `applyEvent` folds live frames; on endpoint failure, open empty + subscribe live (degraded)"
+reqs   = ["1.2", "1.3", "8.2", "8.3"]
+
+[task.5.2]
+title     = "Write `fast-check` property test for rehydration fidelity"
+status    = "done"
+wave      = 4
+do_1      = "Generate arbitrary valid frame sequences `F`; assert `hydrate(replay(F)) ≡ liveApply(F)`"
+property  = "Property 1: Rehydration fidelity ("never vanishing")"
+validates = "Requirements 1.3, 1.5"
+
+[task.5.3]
+title  = "Write unit test for disconnect catch-up"
+status = "done"
+wave   = 4
+do_1   = "Subscribe `since lastSeq`; assert frames emitted while disconnected (a job that kept running) are applied and present after rehydration"
+reqs   = ["8.2", "8.3"]
+
+[task.6]
+title  = "Frame inversion + one shell adapter + one level of descent (MVP)"
+status = "pending"
+
+[task.6.1]
+title  = "Mount the Shell at the client route root with a `NarrationPanel` region (frame inversion)"
+status = "done"
+wave   = 4
+do_1   = "Make the top-level route render the Shell (one adapter — desktop OR mobile, whichever proves the feel fastest) as the root; render chat as exactly one `narration` region panel within it, never as the containing page; environment stays root even with no Narration surface present"
+reqs   = ["3.1", "3.2", "3.4", "3.5", "17.4", "17.5"]
+
+[task.6.2]
+title  = "Render a live Timeline in the `activity` region via the reused renderer"
+status = "done"
+wave   = 5
+do_1   = "Place the live `Timeline` of Neo's activity in the `activity` region; render it through the existing `TimelineView` renderer untouched; a patch updates that surface in place (no full re-layout)"
+reqs   = ["6.2", "16.4", "17.2"]
+
+[task.6.3]
+title  = "Implement one level of descent: Timeline step → linked `Stream` (raw)"
+status = "done"
+wave   = 5
+do_1   = "Implement `descend` to push a raw focus frame that resolves the tapped Timeline step's `ref`/`parent` link to its `Stream`; if the linked surface is cold, rehydrate it by address first; ascend pops the focus frame; render at depth via the reused renderer"
+reqs   = ["4.2", "4.3", "4.4", "4.5", "4.6", "17.3"]
+
+[task.6.4]
+title  = "Write unit test for descend resolving `ref` to the raw Stream"
+status = "in_progress"
+wave   = 6
+do_1   = "Tap a Timeline step → assert a raw focus frame targets the linked Stream; cold link triggers rehydration before push; ascend pops"
+reqs   = ["4.3", "4.4", "4.5", "17.3"]
+
+[task.6.5]
+title  = "Apply UI house rules and non-jargon copy to the shell chrome"
+status = "done"
+wave   = 5
+do_1   = "Separation by background-color contrast only (no border strokes); no emojis/purple/glow; `#004CED` single accent; Inter + JetBrains Mono; all shell status/error copy is consumer-readable with no MCL/cortex/Merkle/replay/SSE jargon"
+reqs   = ["12.1", "12.2", "13.1", "13.2", "13.3", "13.4"]
+
+[task.7]
+title  = "Ask back-channel liveness (MVP — required end-to-end check)"
+status = "pending"
+
+[task.7.1]
+title  = "Wire/verify `onRespond` end-to-end: client → daemon POST → parked agent resume"
+status = "done"
+wave   = 5
+do_1   = "Confirm and complete the Phase-5 wiring so a posted Ask response reaches the parked agent; `respondToAsk` POSTs `{conversation_id,intent_id,ask_id,response}`; the answer is validated by `backchannel.ValidateResponse` and delivered as a recorded INPUT (replay-safe), never a plan/walk mutation; if wiring is incomplete in the target client, fixing it is part of this task"
+reqs   = ["5.3", "5.4", "5.8", "11.3", "17.6"]
+
+[task.7.2]
+title     = "Write integration test for the Ask round-trip"
+status    = "in_progress"
+wave      = 6
+do_1      = "Park on an Ask; answer once → assert the run resumes exactly once and the Ask surface is patched to settled; a duplicate/expired/malformed `ask_id` is rejected and leaves the run parked"
+property  = "Property 6: Ask liveness + safety"
+validates = "Requirements 5.4, 5.5, 5.6, 17.6"
+
+[task.8]
+title  = "MVP integration, wiring, and side-channel verification"
+status = "pending"
+
+[task.8.1]
+title  = "Wire feed → shared model → shell on the one adapter (cold open rehydrates)"
+status = "in_progress"
+wave   = 6
+do_1   = "Connect `SurfaceFeed.hydrate` → `SurfaceWorkspace` → the single shell adapter so a cold open rehydrates the workspace and the home/activity surfaces survive reload; assign each surface a `construct://{conversationId}/{surfaceId}` address on add; no orphaned/disconnected code"
+reqs   = ["1.2", "7.1", "7.5", "17.1", "17.4", "17.5"]
+
+[task.8.2]
+title     = "Write the side-channel non-perturbation integration test (D11)"
+status    = "pending"
+wave      = 7
+do_1      = "Run with the shell + `surfacestore` active (including answering an Ask) and assert the run's set of replayable inputs is byte-identical to the same run without the shell"
+property  = "Property 5: Side-channel non-perturbation (D11)"
+validates = "Requirements 11.1, 11.2, 11.3"
+
+[task.8.3]
+title     = "Write `fast-check` property test for MVP addressing re-enterability"
+status    = "pending"
+wave      = 7
+do_1      = "For a generated emitted-surface set, assert every `construct://C/{id}` address resolves after rehydration (hot set or by rehydration)"
+property  = "Property 7: Addressing re-enterability"
+validates = "Requirements 7.1, 7.4, 7.5"
+
+[task.9]
+title  = "Checkpoint — MVP first slice complete and verifiable"
+status = "pending"
+note   = "Ensure all tests pass, ask the user if questions arise."
+
+[task.10]
+section = "Expansion (post-MVP, in dependency order E1–E6)"
+title   = "E1 — Full placement model + spatial desktop adapter + mobile app-grid adapter"
+status  = "pending"
+
+[task.10.1]
+title  = "Implement the full placement model across all 7 regions in the shared core"
+status = "pending"
+wave   = 9
+do_1   = "Route window/home/drawer/tray/activity/inbox/narration per the policy; expose layout-relevant fields (`zOrder`, `gridSlot`) without adapter-specific logic in the core"
+reqs   = ["2.4", "2.7"]
+
+[task.10.2]
+title  = "Build the desktop windowed/spatial adapter"
+status = "pending"
+wave   = 8
+do_1   = "`layout` projects the shared model into windows by `zOrder`, a dock of pinned apps, and a tray; renders each surface through the existing per-primitive renderer untouched"
+reqs   = ["2.2", "2.3", "6.2"]
+
+[task.10.3]
+title  = "Build the mobile app-grid/home-screen adapter"
+status = "pending"
+wave   = 8
+do_1   = "`layout` projects the shared model into a home grid by `gridSlot` with full-screen focus and a bottom tray; renders through the existing mobile renderers untouched"
+reqs   = ["2.2", "2.3", "6.2"]
+
+[task.10.4]
+title     = "Write unit test asserting both adapters render an identical surface-id set"
+status    = "pending"
+wave      = 10
+do_1      = "From one workspace at one `lastSeq`, assert desktop and mobile produce the same set of surface ids and identical envelopes, differing only in geometry/chrome"
+property  = "Property 8: Shared-core / two-shell equivalence"
+validates = "Requirements 2.2, 2.3"
+
+[task.11]
+title  = "E2 — Pins, lifecycle, and addressing re-entry of older surfaces"
+status = "pending"
+
+[task.11.1]
+title  = "Persist placement: add `PlacementFrame` to the store/reducer (+ codegen)"
+status = "pending"
+wave   = 10
+do_1   = "Persist `PlacementFrame{SurfaceID,Region,Pinned,Lifecycle,ZOrder,GridSlot}` as a `construct.placement` frame in the same JSONL; reducer applies it after its target surface (buffer if target absent); regenerate codegen types; validate `region`/`lifecycle` enums"
+reqs   = ["2.6", "15.1"]
+
+[task.11.2]
+title  = "Implement lifecycle transitions (live → settled → archived)"
+status = "pending"
+wave   = 11
+do_1   = "Mark surfaces `live` while patching, `settled` when the run ends, `archived` when aged out of the hot set but still re-enterable"
+reqs   = ["7.4"]
+
+[task.11.3]
+title  = "Implement addressing resolution with rehydrate-on-open for cold surfaces"
+status = "pending"
+wave   = 11
+do_1   = "Opening an address in the hot set resolves directly; opening a cold address rehydrates that surface and its `ref`-linked children from the store; all addresses scoped by `conversationId`"
+reqs   = ["7.2", "7.3", "7.5"]
+
+[task.11.4]
+title     = "Write `fast-check` property test for addressing re-enterability across rehydration"
+status    = "pending"
+wave      = 12
+do_1      = "For every emitted surface (including archived), assert its address resolves after a cold open"
+property  = "Property 7: Addressing re-enterability"
+validates = "Requirements 7.3, 7.4"
+
+[task.11.5]
+title  = "Write unit test for pin preservation across re-projection"
+status = "pending"
+wave   = 12
+do_1   = "A pinned surface stays pinned and survives cleanup across re-projection and rehydration"
+reqs   = ["2.6"]
+
+[task.12]
+title  = "E3 — Async, environment-level Ask inbox + cross-device answer + expiry"
+status = "pending"
+
+[task.12.1]
+title  = "Implement the Ask_Inbox region and non-blocking environment notification"
+status = "pending"
+wave   = 12
+do_1   = "An emitted `Ask` enters `region: inbox` and raises a non-blocking tray badge/notification instead of blocking a column"
+reqs   = ["5.1"]
+
+[task.12.2]
+title  = "Implement cross-device answer and expiry surfacing"
+status = "pending"
+wave   = 13
+do_1   = "A returning user (or another device) sees the still-pending Ask and can answer; an unanswered Ask past expiry flips the inbox entry to expired with a non-jargon message (no silent hang)"
+reqs   = ["5.2", "5.7"]
+
+[task.12.3]
+title  = "Implement `respondToAsk` settle: validate, patch to answered, remove from inbox"
+status = "pending"
+wave   = 13
+do_1   = "On a validated answer, patch the Ask surface to answered/settled and remove it from the inbox; reconcile optimistic state from the authoritative answered patch"
+reqs   = ["5.3", "5.6"]
+
+[task.12.4]
+title     = "Write integration test for cross-device single-resume + device-switch race"
+status    = "pending"
+wave      = 15
+do_1      = "Park on client A, answer on client B → assert single resume and a settled patch on both; two shells answering the same `ask_id` → exactly one accepted, the other rejected"
+property  = "Property 6: Ask liveness + safety"
+validates = "Requirements 5.2, 5.4, 5.5"
+
+[task.13]
+title  = "E4 — Full depth navigation (all kinds) + Metric system-tray"
+status = "pending"
+
+[task.13.1]
+title  = "Implement full glance → summary → raw depth for all surface kinds"
+status = "pending"
+wave   = 14
+do_1   = "Generalize the focus stack so every kind descends glance → summary → raw via `ref`/`parent`; ascend pops; the capability to descend is available for every surface at all times"
+reqs   = ["4.1", "4.2", "10.1", "10.2", "10.3"]
+
+[task.13.2]
+title  = "Implement the Metric system-tray region"
+status = "pending"
+wave   = 14
+do_1   = "Place `Metric` surfaces (cost / PAX spend / progress) in the persistent `tray` status area via the reused Metric renderer"
+reqs   = ["2.4"]
+
+[task.13.3]
+title  = "Write unit test for focus push/pop ordering and always-available descent"
+status = "pending"
+wave   = 15
+do_1   = "Assert level order glance → summary → raw, correct pop on ascend, and descent available for every kind"
+reqs   = ["4.1", "4.2", "4.5", "10.3"]
+
+[task.14]
+title  = "E5 — Projection coverage audit + close gaps (Go, server-side)"
+status = "pending"
+
+[task.14.1]
+title  = "Audit `construct/projection` against the frozen `[coverage]` map"
+status = "pending"
+wave   = 8
+do_1   = "Compare every distinct agent action (tool result, chain tx, browser, memory, plan/swarm, async, cost, human-ask) against the frozen coverage map; record gaps where an action has no projector"
+reqs   = ["9.1", "9.2"]
+
+[task.14.2]
+title  = "Implement projectors to close identified coverage gaps"
+status = "pending"
+wave   = 9
+do_1   = "Add the missing projectors so every agent action maps to ≥1 surface; the shell consumes whatever is emitted without renderer changes"
+reqs   = ["9.1", "9.3"]
+
+[task.14.3]
+title  = "Write unit test asserting each coverage-map entry projects at least one surface"
+status = "pending"
+wave   = 10
+do_1   = "Table-driven over the frozen coverage map; assert no action yields an empty projection"
+reqs   = ["9.1", "9.2"]
+
+[task.15]
+title  = "E6 — Second shell adapter parity + device-switch reconciliation"
+status = "pending"
+
+[task.15.1]
+title  = "Bring the second adapter to full parity over the shared core"
+status = "pending"
+wave   = 15
+do_1   = "Whichever adapter the MVP deferred is completed against the shared model with no separate surface-state copy"
+reqs   = ["2.1", "2.2", "2.3"]
+
+[task.15.2]
+title  = "Implement device-switch reconciliation by authoritative patch"
+status = "pending"
+wave   = 16
+do_1   = "On two clients over one conversation, reconcile the losing client's optimistic state from the authoritative answered/settled patch so both settle identically"
+reqs   = ["8.2", "8.3"]
+
+[task.15.3]
+title     = "Write `fast-check` property test for shared-core / two-shell equivalence"
+status    = "pending"
+wave      = 17
+do_1      = "For any workspace, assert both adapters render the same surface set through the same renderers, differing only in geometry/chrome"
+property  = "Property 8: Shared-core / two-shell equivalence"
+validates = "Requirements 2.1, 2.2, 2.3"
+
+[task.15.4]
+title  = "Write integration test for device-switch reconciliation"
+status = "pending"
+wave   = 17
+do_1   = "Drive divergent optimistic state on two clients; assert both converge on the authoritative patch"
+reqs   = ["8.2", "8.3"]
+
+[task.16]
+title  = "Final checkpoint — full shell complete"
+status = "pending"
+note   = "Ensure all tests pass, ask the user if questions arise."

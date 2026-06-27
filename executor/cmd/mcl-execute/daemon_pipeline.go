@@ -249,6 +249,23 @@ func runMessage(
 		defer projector.shutdown()
 	}
 
+	// Construct surface-store tee (side-channel): when durable persistence is
+	// enabled, tee every construct.surface[.patch] frame for this conversation
+	// into the durable surface store so the environment "never vanishes" —
+	// a reopened conversation rehydrates exactly as the user left it across
+	// reload, suspend, redeploy, and device switch. Sibling of the Construct
+	// projector / Liaison narrator: it subscribes the SAME broker stream and
+	// records only construct-phase surface frames. Subscribed BEFORE
+	// message.start so it sees the whole stream; shutdown() drains + detaches
+	// before t.Close(). Async + best-effort (store.Record never blocks the
+	// publish path) and adds NO new agent→client wire path. Pure side-channel
+	// — never signs, writes cortex, or touches plan/walk, so it cannot perturb
+	// D11 replay (daemon_surfacestore.go).
+	if d.surfaceStoreEnabled() {
+		tee := d.startSurfaceStoreTee(ctx, intentID, req.ConversationID)
+		defer tee.shutdown()
+	}
+
 	t.Event("message.start", "boot", map[string]interface{}{
 		"intent_id": intentID,
 		"prose":     req.Prose,

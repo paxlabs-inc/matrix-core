@@ -153,20 +153,21 @@ func verdictAccepts(coverage string, v *cassandra.Verdict, phantom []string) boo
 	return grounded && fullOK
 }
 
-// surfaceVerified appends a short, human-readable transparency note when
-// Cassandra flagged unknowns the agent did not surface ([ux].honesty): the user
-// always learns what was NOT confirmed. Capped to keep the answer clean; never
-// theatrical, no mechanism leaked.
-func surfaceVerified(summary string, v *cassandra.Verdict) string {
-	summary = strings.TrimSpace(summary)
+// cappedUnknowns returns the (capped) list of Cassandra-flagged unknowns for an
+// accepted completion. F4: the verification signal is a SEPARATE subtle
+// affordance — these caveats ride the cassandra.* side-channel events the UI
+// renders small, and are NEVER folded into the delivered/persisted answer text
+// (ux_truth: the user sees the clean result, never the completeness proof).
+// Returns nil when there is nothing flagged.
+func cappedUnknowns(v *cassandra.Verdict) []string {
 	if v == nil || len(v.OpenUnknowns) == 0 {
-		return summary
+		return nil
 	}
 	flagged := v.OpenUnknowns
 	if len(flagged) > 2 {
 		flagged = flagged[:2]
 	}
-	return summary + "\n\nWorth flagging: I couldn't confirm " + strings.Join(flagged, "; ") + "."
+	return flagged
 }
 
 // continueFeedback turns a not-grounded / incomplete verdict into concrete,

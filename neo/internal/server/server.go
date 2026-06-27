@@ -94,21 +94,25 @@ func (s *Server) handleChat(w http.ResponseWriter, r *http.Request) {
 		convID = synthConvID(msg)
 	}
 	// Mint/resume the session FIRST (it seeds from durable history that does
-	// NOT yet include this message), then START the run so its id exists,
-	// then persist the user turn STAMPED WITH that id (F1): a reload/relogin
-	// during a still-live run can read the trailing user turn's intent_id (and
-	// the authoritative `live_run` field on GET /conversations/{id}) to decide
-	// whether to subscribe(replay:true) and reattach the live stream — no more
-	// "thread looks done while agent is still working".
+	// NOT yet include this message), then SUBMIT the message. F5: submit does
+	// not interrupt — if a turn is already in flight it QUEUES the message into
+	// the live agent's inbox (delivered at the agent's next tool-call boundary)
+	// and returns the SAME active run id, so the client keeps watching one live
+	// stream instead of cancelling the work. Otherwise it dispatches a fresh
+	// run. Either way we persist the user turn STAMPED WITH that run id (F1): a
+	// reload/relogin during a still-live run reads the trailing user turn's
+	// intent_id (and the `live_run` field on GET /conversations/{id}) to decide
+	// whether to subscribe(replay:true) and reattach — no more "thread looks
+	// done while agent is still working".
 	sess := s.engine.sessions.get(convID)
-	run := sess.start(msg)
-	s.engine.conv.AppendUser(convID, run.id, msg)
+	runID, _ := sess.submit(msg)
+	s.engine.conv.AppendUser(convID, runID, msg)
 	writeJSON(w, http.StatusAccepted, map[string]interface{}{
 		"conversation_id": convID,
 		"kind":            "dispatch",
-		"intent_id":       run.id,
-		"events_url":      "/events?intent_id=" + run.id,
-		"poll_url":        "/messages/async/" + run.id,
+		"intent_id":       runID,
+		"events_url":      "/events?intent_id=" + runID,
+		"poll_url":        "/messages/async/" + runID,
 	})
 }
 
