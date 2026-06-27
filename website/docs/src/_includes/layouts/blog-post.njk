@@ -1,0 +1,32 @@
+---
+layout: layouts/page.njk
+---
+
+<article class="container-narrow">
+  {# Article Header #}
+  <header class="mb-10">
+    <div class="flex items-center gap-3 mb-4">
+      {% if tags %}
+        {% for tag in tags %}
+          <span class="tag-matrix">{{ tag }}</span>
+        {% endfor %}
+      {% endif %}
+    </div>
+    
+    <h1 class="text-3xl md:text-4xl lg:text-5xl font-semibold tracking-tight mb-4">{{ title }}</h1>
+    
+    <div class="flex items-center gap-4 text-sm text-muted-foreground">
+      {% if author %}
+        <span>By {{ author }}</span>
+      {% endif %}
+      {% if date %}
+        <time datetime="{{ date | date('YYYY-MM-DD') }}">{{ date | date('MMMM D, YYYY') }}</time>
+      {% endif %}
+    </div>
+  </header>
+  
+  {# Article Content #}
+  <div class="prose prose-invert prose-lg max-w-none">
+    {{ content | safe }}
+  </div>
+</article>

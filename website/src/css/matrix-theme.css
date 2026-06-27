@@ -1,0 +1,164 @@
+/*
+ * Matrix Theme CSS
+ * Dark-mode-first branding for the Matrix Marketing Website.
+ * Overrides Basecoat's default CSS variables with Matrix brand colors.
+ *
+ * Color Palette (from spec):
+ *   Background: #0A0A0A (near-black)
+ *   Surface/Card: #111111 to #161616
+ *   Code blocks: #0D0D0D
+ *   Primary text: #FFFFFF / #F5F5F5
+ *   Secondary text: #A1A1AA / #888888
+ *   Tertiary/disabled: #555555
+ *   Borders: #2A2A2A or rgba(255,255,255,0.1)
+ *   Nav accent: bright orange/amber
+ *   Primary button: white bg, black text
+ */
+
+:root {
+  /* ===== Matrix Dark Theme (default) ===== */
+
+  /* Radius */
+  --radius: 0.5rem; /* 8px - cards, images, code blocks */
+
+  /* Backgrounds */
+  --background: oklch(0.07 0 0);           /* #0A0A0A - global body */
+  --foreground: oklch(0.97 0 0);           /* #F5F5F5 - primary text */
+
+  /* Surface / Card */
+  --card: oklch(0.12 0 0);                 /* ~#161616 - elevated surface */
+  --card-foreground: oklch(0.97 0 0);      /* #F5F5F5 */
+
+  /* Popover */
+  --popover: oklch(0.12 0 0);             /* Same as card */
+  --popover-foreground: oklch(0.97 0 0);
+
+  /* Primary (buttons: white bg, black text) */
+  --primary: oklch(1 0 0);                 /* #FFFFFF - primary button bg */
+  --primary-foreground: oklch(0.07 0 0);   /* #0A0A0A - primary button text */
+
+  /* Secondary (ghost buttons: translucent gray bg, white text) */
+  --secondary: oklch(0.18 0 0);            /* Dark gray bg */
+  --secondary-foreground: oklch(0.97 0 0); /* White text */
+
+  /* Muted (subtle backgrounds, secondary text) */
+  --muted: oklch(0.15 0 0);               /* #1A1A1A - subtle bg */
+  --muted-foreground: oklch(0.6 0 0);     /* #888888 - secondary/dimmed text */
+
+  /* Accent (nav active: bright orange/amber) */
+  --accent: oklch(0.75 0.18 55);           /* Bright orange/amber */
+  --accent-foreground: oklch(0.07 0 0);    /* Dark text on accent */
+
+  /* Destructive */
+  --destructive: oklch(0.65 0.2 25);
+
+  /* Borders */
+  --border: oklch(1 0 0 / 10%);           /* rgba(255,255,255,0.1) - hairline borders */
+  --input: oklch(0.15 0 0);               /* #1A1A1A - input bg */
+  --ring: oklch(0.75 0.18 55);            /* Orange/amber focus ring */
+
+  /* Chart colors (muted neon palette for syntax highlighting) */
+  --chart-1: oklch(0.75 0.15 195);         /* Cyan */
+  --chart-2: oklch(0.7 0.18 330);          /* Pink */
+  --chart-3: oklch(0.75 0.18 145);         /* Green */
+  --chart-4: oklch(0.8 0.15 85);           /* Yellow */
+  --chart-5: oklch(0.75 0.18 55);          /* Orange/amber */
+
+  /* Sidebar */
+  --sidebar: oklch(0.09 0 0);
+  --sidebar-foreground: oklch(0.97 0 0);
+  --sidebar-primary: oklch(0.75 0.18 55);
+  --sidebar-primary-foreground: oklch(0.07 0 0);
+  --sidebar-accent: oklch(0.15 0 0);
+  --sidebar-accent-foreground: oklch(0.97 0 0);
+  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-ring: oklch(0.75 0.18 55);
+
+  /* Scrollbar */
+  --scrollbar-track: transparent;
+  --scrollbar-thumb: rgba(255, 255, 255, 0.2);
+  --scrollbar-width: 6px;
+  --scrollbar-radius: 6px;
+
+  /* SVG Icons (using muted-foreground color) */
+  --chevron-down-icon: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="oklch(0.6 0 0)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>');
+  --chevron-down-icon-50: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="oklch(0.6 0 0 / 0.5)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>');
+  --check-icon: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="oklch(0.6 0 0)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>');
+
+  color-scheme: dark;
+}
+
+/* ===== Optional Light Mode ===== */
+.light {
+  --background: oklch(0.99 0 0);           /* Near white */
+  --foreground: oklch(0.1 0 0);            /* Near black */
+
+  --card: oklch(1 0 0);                    /* Pure white */
+  --card-foreground: oklch(0.1 0 0);
+
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.1 0 0);
+
+  --primary: oklch(0.15 0 0);              /* Dark button bg */
+  --primary-foreground: oklch(0.99 0 0);   /* White button text */
+
+  --secondary: oklch(0.96 0 0);
+  --secondary-foreground: oklch(0.15 0 0);
+
+  --muted: oklch(0.96 0 0);
+  --muted-foreground: oklch(0.45 0 0);
+
+  --accent: oklch(0.65 0.2 55);            /* Slightly darker orange for light mode */
+  --accent-foreground: oklch(0.99 0 0);
+
+  --destructive: oklch(0.55 0.25 25);
+
+  --border: oklch(0.9 0 0);
+  --input: oklch(0.95 0 0);
+  --ring: oklch(0.65 0.2 55);
+
+  --chart-1: oklch(0.55 0.2 195);
+  --chart-2: oklch(0.5 0.2 330);
+  --chart-3: oklch(0.55 0.2 145);
+  --chart-4: oklch(0.6 0.18 85);
+  --chart-5: oklch(0.55 0.2 55);
+
+  --sidebar: oklch(0.98 0 0);
+  --sidebar-foreground: oklch(0.1 0 0);
+  --sidebar-primary: oklch(0.65 0.2 55);
+  --sidebar-primary-foreground: oklch(0.99 0 0);
+  --sidebar-accent: oklch(0.96 0 0);
+  --sidebar-accent-foreground: oklch(0.1 0 0);
+  --sidebar-border: oklch(0.9 0 0);
+  --sidebar-ring: oklch(0.65 0.2 55);
+
+  --scrollbar-thumb: rgba(0, 0, 0, 0.3);
+
+  --chevron-down-icon: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="oklch(0.45 0 0)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>');
+  --chevron-down-icon-50: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="oklch(0.45 0 0 / 0.5)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>');
+  --check-icon: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="oklch(0.45 0 0)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>');
+
+  color-scheme: light;
+}
+
+/* ===== Matrix-Specific Utility Extensions ===== */
+
+/* Code block background */
+.code-block-bg {
+  background-color: oklch(0.06 0 0); /* #0D0D0D - deep charcoal */
+}
+
+/* Tertiary/disabled text color */
+.text-tertiary {
+  color: oklch(0.4 0 0); /* #555555 equivalent */
+}
+
+/* Nav accent color for active states */
+.nav-accent {
+  color: oklch(0.75 0.18 55); /* Bright orange/amber */
+}
+
+/* Border utility matching spec (#2A2A2A) */
+.border-subtle {
+  border-color: oklch(0.2 0 0);
+}

@@ -1,0 +1,81 @@
+/*
+ * Matrix Marketing Website - Main Stylesheet
+ * Tailwind CSS v4 entry point with CSS-first configuration.
+ *
+ * Import order:
+ * 1. Tailwind CSS (base, components, utilities)
+ * 2. Matrix theme (CSS custom properties - dark-mode-first)
+ * 3. Basecoat component library (uses the CSS variables above)
+ */
+
+/* Tailwind CSS v4 */
+@import "tailwindcss";
+
+/* Matrix brand theme overrides (must come before Basecoat so variables are set) */
+@import "./matrix-theme.css";
+
+/* Basecoat CSS component library */
+@import "./basecoat.css";
+
+/* Animation keyframes and utility classes */
+@import "./animations.css";
+
+/* Typography and component styling */
+@import "./components.css";
+
+/* Layout utilities and spacing system */
+@import "./layout.css";
+
+/* ===== Tailwind v4 @theme block ===== */
+/* Maps CSS custom properties to Tailwind utility classes */
+@theme {
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+}
+
+/* ===== Base layer overrides ===== */
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  html {
+    @apply scroll-smooth;
+  }
+  body {
+    @apply bg-background text-foreground overscroll-none antialiased;
+  }
+}

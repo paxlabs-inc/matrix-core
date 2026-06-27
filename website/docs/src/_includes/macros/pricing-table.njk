@@ -1,0 +1,40 @@
+{% macro pricingTable(plans) %}
+<section class="section">
+  <div class="container-site">
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
+      {% for plan in plans %}
+        <div class="card p-6 rounded-lg border {% if plan.highlighted %}border-accent shadow-[0_0_30px_-10px_rgba(245,158,11,0.3)]{% else %}border-border{% endif %} flex flex-col" data-animate="fade-up">
+          {# Plan header #}
+          <header class="p-0 mb-6">
+            {% if plan.highlighted %}
+              <span class="tag-matrix text-accent mb-3 inline-block">Most Popular</span>
+            {% endif %}
+            <h3 class="text-lg font-semibold text-foreground">{{ plan.name }}</h3>
+            <div class="mt-2">
+              <span class="text-3xl font-semibold text-foreground tracking-tight">{{ plan.price }}</span>
+            </div>
+            <p class="text-sm text-muted-foreground mt-2">{{ plan.description }}</p>
+          </header>
+          
+          {# Features list #}
+          <section class="p-0 flex-1">
+            <ul class="flex flex-col gap-3">
+              {% for feature in plan.features %}
+                <li class="flex items-start gap-2 text-sm text-muted-foreground">
+                  <svg class="w-4 h-4 text-accent shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                  {{ feature }}
+                </li>
+              {% endfor %}
+            </ul>
+          </section>
+          
+          {# CTA Button #}
+          <footer class="p-0 mt-6">
+            <a href="{{ plan.ctaUrl }}" class="{% if plan.highlighted %}btn-cta{% else %}btn-ghost-matrix{% endif %} w-full text-center py-3">{{ plan.cta }}</a>
+          </footer>
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+{% endmacro %}

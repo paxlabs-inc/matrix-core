@@ -1,0 +1,69 @@
+---
+layout: layouts/landing.njk
+title: "Matrix — The Agent Operating Framework"
+description: "Tell your agent what to do in plain English. Matrix compiles your intent into a typed, inspectable plan that executes deterministically. No more broken prompts."
+---
+
+{% from "macros/hero.njk" import hero %}
+{% from "macros/stats-bar.njk" import statsBar %}
+{% from "macros/feature-grid.njk" import featureGrid %}
+{% from "macros/code-example.njk" import codeExample %}
+{% from "macros/cta-banner.njk" import ctaBanner %}
+
+{#
+  Sample usage of the optimized `image` shortcode (Task 13.1/13.2).
+  Uncomment and point at a real source under docs/src/assets/images/ to emit
+  responsive AVIF/WebP <picture> markup with explicit width/height.
+
+  Above-the-fold hero image (eager-loaded, high fetch priority):
+    {% image "./docs/src/assets/images/hero.png", "Matrix dashboard", "100vw", "eager" %}
+
+  Below-the-fold image (lazy-loaded + decoding async by default):
+    {% image "./docs/src/assets/images/feature-screenshot.png", "Plan inspector UI", "(min-width: 1024px) 50vw, 100vw" %}
+#}
+
+{{ hero(
+  "Build the Rails for the Machine Economy",
+  "Tell your agent what you want. Matrix ensures it understands, remembers, and executes — without the usual breakdowns.",
+  { text: "Get Started", url: "/developers/" },
+  { text: "View on GitHub", url: "https://github.com/paxlabs-inc/matrix-core", external: true },
+  "typewriter"
+) }}
+
+{{ statsBar([
+  { value: "400", unit: "ms", label: "Block Finality" },
+  { value: "10", unit: "", label: "Closed Verbs" },
+  { value: "8", unit: "", label: "Object Kinds" },
+  { value: "100", unit: "%", label: "Replay Determinism" }
+]) }}
+
+{# Core Features Section #}
+<section class="section">
+  <div class="container-site text-center mb-12">
+    <h2 class="text-2xl md:text-3xl lg:text-4xl font-semibold tracking-tight mb-4" data-animate="fade-up">Why agents break — and how Matrix fixes it</h2>
+    <p class="text-lg text-muted-foreground max-w-2xl mx-auto" data-animate="fade-up">Every AI agent system fails in the same four ways. Matrix was designed from first principles to eliminate all of them.</p>
+  </div>
+</section>
+
+{% set coreFeatures = [] %}
+{% for feature in features %}
+  {% if feature.category == "core" %}
+    {% set coreFeatures = (coreFeatures.push(feature), coreFeatures) %}
+  {% endif %}
+{% endfor %}
+
+{{ featureGrid(coreFeatures, 3, "cards") }}
+
+{{ codeExample(
+  "Compile Your First Intent",
+  "./bin/mclc compile \\\n  -skill skills/writing-plans/SKILL.mtx \\\n  -prose \"Build a deployment pipeline for my Node.js app\" \\\n  -verb build",
+  "bash",
+  "Natural language becomes typed IR in one command. No ambiguity, no drift."
+) }}
+
+{{ ctaBanner(
+  "Ready to build?",
+  "Start with the open-source framework or talk to us about enterprise.",
+  "Get Started Free",
+  "/developers/"
+) }}
