@@ -36,9 +36,9 @@ export const CHAIN = {
 // All read-only. No key material, no auth (except portfolio webhooks).
 export const ENDPOINTS = {
   // EVM JSON-RPC (direct node access).
-  rpc: pick('PAXEER_RPC_URL', 'GIDEON_RPC_URL') ?? 'https://public-mainnet.rpcpaxeer.online/evm',
+  rpc: pick('PAXEER_RPC_URL', 'GIDEON_RPC_URL') ?? 'https://eu-east-1.public.node.hyperpaxeer.com/evm/',
   // Alternate documented EVM RPC.
-  rpcAlt: pick('PAXEER_RPC_ALT_URL') ?? 'https://public-rpc.paxeer.app/rpc',
+  rpcAlt: pick('PAXEER_RPC_ALT_URL') ?? 'https://api.hyperpax.xyz',
   // PaxScan = Paxeer's Blockscout v2 explorer. Client hits `${paxscan}/api/v2/...`.
   paxscan: (pick('PAXEER_PAXSCAN_URL') ?? 'https://api.paxscan.io').replace(/\/+$/, ''),
   // Portfolio / Argus user-stats indexer (pnl, rank, performance, charts, rewards).
@@ -81,18 +81,13 @@ export const AGENT_AUTH = {
 // Source: Paxport-Mobile-Wallet/src/lib/constants.ts + swap/sdk/addresses.ts.
 export const TOKENS = {
   PAX:   { symbol: 'PAX',   name: 'Paxeer',        decimals: 18, native: true,  address: null },
-  WPAX9: { symbol: 'WPAX9', name: 'Wrapped PAX',   decimals: 18, address: '0xe5ccf339d1c89c7e6c6768b28507f78b861fc1de' },
-  USDC:  { symbol: 'USDC',  name: 'USD Coin',      decimals: 6,  address: '0xf8850b62AE017c55be7f571BBad840b4f3DA7D49', stable: true },
-  USDT:  { symbol: 'USDT',  name: 'Tether USD',    decimals: 6,  address: '0x5dfE06Ae465a39c442c45ed273c523BaC2d1f6a8', stable: true },
-  USDL:  { symbol: 'USDL',  name: 'Liquidity USD', decimals: 6,  address: '0x7c69c84daAEe90B21eeCABDb8f0387897E9B7B37', stable: true },
-  USID:  { symbol: 'USID',  name: 'USD Sidiora',   decimals: 18, address: '0x6C32c255EeBD6A72B56ee82454d7140020919652', stable: true },
-  SID:   { symbol: 'SID',   name: 'Sidiora',       decimals: 6,  address: '0x86949e4CdB89496490890B67C9cfF63eD8efB4b1' },
-  WETH:  { symbol: 'WETH',  name: 'Wrapped ETH',   decimals: 18, address: '0x5ba2f89F60f5805512A265bdFbB8984C85b4c9B7' },
-  WBNB:  { symbol: 'WBNB',  name: 'Wrapped BNB',   decimals: 18, address: '0x2cE6495AF2F6cF20ea1b4d637dC2E882a0276F36' },
-  WUNI:  { symbol: 'WUNI',  name: 'Wrapped UNI',   decimals: 18, address: '0x2235fB5dFe619d67FcA1F9a70BD2B6725b13aE50' },
-  WSOL:  { symbol: 'WSOL',  name: 'Wrapped SOL',   decimals: 9,  address: '0x38416f047c53C6D295AfF15e2fD296B6C896E2d8' },
-  WDOGE: { symbol: 'WDOGE', name: 'Wrapped DOGE',  decimals: 8,  address: '0x7Bf5FFa044DC7789Bb3d71EA91d84a918a53a1F5' },
-  WBCH:  { symbol: 'WBCH',  name: 'Wrapped BCH',   decimals: 8,  address: '0x9CcD709EB3460Dfb3ba62Ed5f1987A707a7Fbd59' },
+  WPAX9: { symbol: 'WPAX9', name: 'Wrapped PAX',   decimals: 18, address: '0xD152891923C7D6fE84d3DCF58621aB2be0eFCbc2' },
+  USDC:  { symbol: 'USDC',  name: 'USD Coin',      decimals: 6,  address: '0x4b29871681c95DFB2c7824BC4b0326B80217bCe8', stable: true },
+  USDT:  { symbol: 'USDT',  name: 'Tether USD',    decimals: 6,  address: '0xe76f24bcF307290e4e09Ee45021CeC998c3749ce', stable: true },
+  USDL:  { symbol: 'USDL',  name: 'Ledger USD',    decimals: 6,  address: '0x85FcD13735F4309833A503EE804ea32395851479', stable: true },
+  SID:   { symbol: 'SID',   name: 'Sidiora',       decimals: 6,  address: '0x21f7b20a555199fa73A238B1a91FD0f549068fEe' },
+  WETH:  { symbol: 'MTX',   name: 'Matrix Token',  decimals: 6,  address: '0x471368EF4E11c6f8647e6743031Dfc346cB8A99c' },
+  WBNB:  { symbol: 'WBNB',  name: 'Paxie ',        decimals: 6,  address: '0x21AEd826Df2e4dd3dE3B29b7347a7aCF61F19b21' },
 }
 
 // Resolve a token by symbol (case-insensitive) or 0x address. Returns the
@@ -164,8 +159,8 @@ export const CONTRACTS = {
   },
   // HyperPax Perps (synthetic perpetuals, 19-facet Diamond; events from Diamond).
   perps: {
-    diamond:            '0xeA65FE02665852c615774A3041DFE6f00fb77537',
-    userVaultImpl:      '0x4195155D92451a47bF76987315DaEE499f1D7352',
+    diamond:            '0x7c902dA1ad5859D1862528Dd01840086517ac2d4',
+    userVaultImpl:      '0x6498dC90eea8e93d24A740b565349160C5374280',
   },
   // Sidiora.fun launchpad (docs; same router/quoter as wired sidiora*).
   sidioraFun: {

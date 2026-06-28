@@ -68,7 +68,7 @@ reuses          = "existing async pipeline + in-walk approval gates (gate.invoke
 runs            = "out-of-band; barely consumes Neo's context window (delegation is also a context-conservation strategy)"
 returns         = "verifiable envelope (tx hash / receipt / EIP-712 attestation)"
 neo_records     = "the OUTCOME only (episodic memory); core owns the rigor + replay journal"
-approval_ux     = "MCL approval gate fires IN-CONVERSATION; user Approves/Denies the spend inline"
+approval_ux     = "TWO models by authorization state. (1) ONE-OFF / non-pre-authorized money: the MCL approval gate fires IN-CONVERSATION; user Approves/Denies the spend inline. (2) PRE-AUTHORIZED LEASH (e.g. KindleLaunch autonomy): the user grants a one-time agent leash on the embedded wallet (mode read_only|trade_only|full + spend caps) which IS the approval; within the leash Neo dispatches launch/trade/fee/optical ops through MCL with NO per-action inline gate and the user absent, signing nothing. Enforcement is SERVER-SIDE on the wallet (a 403 frozen/wrong-mode/over-cap is a clean denial, surfaced plainly, never retried). backstop_1 holds in both: Neo still holds no key."
 
 # ============================ EXECUTION SURFACE =============================
 
@@ -82,10 +82,11 @@ allow = ["web_search", "git", "fetch_data", "write_code", "write_docs", "image_v
 note  = "fully permissive; no throttles/gates/allowlists (per Andrew's exec preference)"
 
 [execution.escalate]
-# Crosses the wall into MCL — requires a wallet signature.
+# Crosses the wall into MCL — signed server-side by the embedded wallet.
 actions = ["send_value", "swap", "token_approve", "contract_deploy_gas", "fund_payment_stream", "fund_channel", "settle"]
 approve_note  = "token approve ESCALATES too (it authorizes a future drain — arguably more dangerous than a send)"
 deferred_note = "time-deferred money escalates at FIRE time, not schedule time; any scheduler/cron Neo sets up must route its monetary payload through MCL when it fires"
+leash_note    = "escalation no longer implies a per-action USER signature: where a pre-authorized embedded-wallet leash (mode + spend caps) is in force, MCL signs server-side under that leash and the user is NOT prompted per action; the wallet enforces the limits (403 on deny). The in-conversation gate remains for one-off, non-pre-authorized spends. backstop_1 is unchanged: Neo holds no key — value always crosses into MCL."
 
 [execution.security]
 philosophy   = "two structural backstops, zero throttles"
@@ -200,7 +201,7 @@ principle    = "hide the mechanism, surface the intention in human cognitive-sta
 example_say  = "approaching my context window — give me a few seconds to summarize our trajectory so I stay sharp and focused"
 why          = "users read self-narrated diligence as reliability, not fragility (builds trust)"
 read_path    = "applies to memory reads too, e.g. 'I remember you commit yourself — I will not touch git'"
-money_path   = "announce escalation, e.g. 'this moves real funds, routing through the secure path — I will need your go-ahead'"
+money_path   = "announce escalation. For a one-off spend with no standing authorization: 'this moves real funds, routing through the secure path — I will need your go-ahead'. Where a pre-authorized leash is in force (mode + spend caps on your wallet): act within it without asking each time, e.g. 'done within the limits you set — tx <link>'; if the wallet declines (frozen / wrong mode / over cap) say so plainly and how to widen the leash, never retry."
 
 [transparency.spoken_promise]
 # Announcing compaction makes it a promise; these conditions or it backfires.

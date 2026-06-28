@@ -48,24 +48,24 @@
 
 ## P4 — Wiring + skill + approval-model evolution
 
-- [ ] 4. Make the capability live and planner-aware
-  - [ ] 4.1 Register the kindle server in agents/default.json (bijection + package_digest) + image bake + router env
+- [x] 4. Make the capability live and planner-aware
+  - [x] 4.1 Register the kindle server in agents/default.json (bijection + package_digest) + image bake + router env
     - Add alias kindle (node tools/kindle/kindle.mjs) with the exact advertised tool set; real package_digest; COPY tools/kindle into the daemon Dockerfile; inject any kindle env via router MachineEnv (no entrypoint change beyond env)
     - _Requirements: 3.5, 16.1, 16.2, 16.4_
-  - [ ] 4.2 Author the kindle-launchpad skill (SKILL.mtx + SKILL.md) + expose tools to the freeform path
+  - [x] 4.2 Author the kindle-launchpad skill (SKILL.mtx + SKILL.md) + expose tools to the freeform path
     - Declare the kindle write tools + procedures (launch/trade/collect/optical) with on-block hints; double-quote all string KV; subset/exact-match the kindle manifest tools; add the kindle tools to the default assistant skill so plain-English requests reach them
     - _Requirements: 15.1, 15.2, 15.3, 15.4_
-  - [ ] 4.3 Evolve the approval model in neo.frozen.kvx + core_execute/escalate copy
+  - [x] 4.3 Evolve the approval model in neo.frozen.kvx + core_execute/escalate copy
     - Document the pre-authorized leash model (mode + caps on the embedded wallet) as the approval model for KindleLaunch autonomy; keep the in-conversation gate for one-off non-pre-authorized money; update the core_execute schema description + [relation.delegation].approval_ux + [execution.escalate] wording accordingly; preserve backstop_1 (Neo holds no key)
     - _Requirements: 2.1, 2.2, 2.5_
 
 ## P5 — Watch loop (recurring autonomy)
 
-- [ ] 5. Recurring monitoring + triggered action
-  - [ ] 5.1 Implement the Watch procedure (chronos alarm_set + wake re-evaluation + triggered dispatch)
+- [x] 5. Recurring monitoring + triggered action
+  - [x] 5.1 Implement the Watch procedure (chronos alarm_set + wake re-evaluation + triggered dispatch)
     - On a watch request, set a chronos alarm (once/cron) with a contextful wake_message + payload; on wake, read state via kindle read tools, evaluate the trigger, and dispatch trade/collect via core_execute when met; leave/reschedule when not met; alarm_list/alarm_cancel for management
     - _Requirements: 8.1, 8.2, 8.3, 8.4, 8.5_
-  - [ ] 5.2 Honor task-durability + leash-denial handling in the watch loop
+  - [x] 5.2 Honor task-durability + leash-denial handling in the watch loop
     - Watch-triggered tasks decouple from the user connection and survive restart/suspend (continue on a fresh agent); on a 403 leash denial, stop the action, keep/cancel per instruction, surface plainly (no silent looping)
     - _Requirements: 8.6, 8.7, 2.3_
 

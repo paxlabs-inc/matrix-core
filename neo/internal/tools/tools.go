@@ -363,7 +363,7 @@ func (m *Manager) Dispatch(ctx context.Context, funcName string, args map[string
 		return fmt.Sprintf("unknown tool %q — it is not available in this session", funcName), true, nil
 	}
 	if bt.surface == Escalate {
-		return fmt.Sprintf("%q moves funds or needs a wallet signature and cannot be called directly; use %q with a clear description of the task so it runs through the secure path with your approval.", funcName, CoreExecuteTool), true, nil
+		return fmt.Sprintf("%q moves funds or needs a wallet signature and cannot be called directly; use %q with a clear description of the task so it runs through the secure path under the user's authorization (their inline approval, or a pre-authorized wallet leash).", funcName, CoreExecuteTool), true, nil
 	}
 	t, err := m.registry.Get(bt.uri)
 	if err != nil {
@@ -652,7 +652,7 @@ func (m *Manager) Close() error {
 func coreExecuteSchema() llm.Tool {
 	return llm.NewFunctionTool(
 		CoreExecuteTool,
-		"Delegate a rigorous or money-moving task to Matrix's secure execution pipeline. Use this for anything that spends or moves funds, signs a transaction, deploys a contract for gas, approves a token, or funds/settles a payment stream or channel — and for tasks that need verifiable, auditable, replayable execution. The user is asked to approve any spend inline before it happens. Provide a clear, complete natural-language description of exactly what to do.",
+		"Delegate a rigorous or money-moving task to Matrix's secure execution pipeline. Use this for anything that spends or moves funds, signs a transaction, deploys a contract for gas, approves a token, launches/trades/collects-fees on KindleLaunch, or funds/settles a payment stream or channel — and for tasks that need verifiable, auditable, replayable execution. Funds are signed server-side by the user's embedded wallet, never by you. If the user has granted a pre-authorized leash (a spending mode + caps on their wallet), actions within that leash run without a per-action approval prompt; the wallet enforces the limits and cleanly declines anything outside them. Otherwise, for a one-off spend the user is asked to approve it inline before it happens. Provide a clear, complete natural-language description of exactly what to do.",
 		map[string]interface{}{
 			"type": "object",
 			"properties": map[string]interface{}{
