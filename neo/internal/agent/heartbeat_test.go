@@ -16,7 +16,7 @@ type captureReporter struct {
 	said []string
 }
 
-func (c *captureReporter) Say(text string)                { c.said = append(c.said, text) }
+func (c *captureReporter) Say(text string, _ bool)       { c.said = append(c.said, text) }
 func (c *captureReporter) Status(string)                  {}
 func (c *captureReporter) Notice(string)                  {}
 func (c *captureReporter) Think(string)                   {}
@@ -31,7 +31,7 @@ func TestHeartbeat_OKSuppressesOutput(t *testing.T) {
 	rep := &captureReporter{}
 	a := New(Options{Config: config.Default(), Reporter: rep})
 
-	a.finishTurn(context.Background(), HeartbeatOK, nil, nil, HeartbeatWakeMessage)
+	a.finishTurn(context.Background(), HeartbeatOK, nil, nil, HeartbeatWakeMessage, false)
 
 	if len(rep.said) != 0 {
 		t.Fatalf("HEARTBEAT_OK must be suppressed (never surfaced); Say was called %d time(s): %v", len(rep.said), rep.said)
@@ -47,7 +47,7 @@ func TestHeartbeat_NonOKDelivers(t *testing.T) {
 	a := New(Options{Config: config.Default(), Reporter: rep})
 
 	answer := "The deployment is stuck — the CI pipeline failed at the test stage."
-	a.finishTurn(context.Background(), answer, nil, nil, HeartbeatWakeMessage)
+	a.finishTurn(context.Background(), answer, nil, nil, HeartbeatWakeMessage, false)
 
 	if len(rep.said) != 1 {
 		t.Fatalf("non-OK answer must be delivered exactly once; got %d Say calls", len(rep.said))
@@ -74,7 +74,7 @@ func TestHeartbeat_OKWithWhitespaceSuppresses(t *testing.T) {
 	rep := &captureReporter{}
 	a := New(Options{Config: config.Default(), Reporter: rep})
 
-	a.finishTurn(context.Background(), "  HEARTBEAT_OK\n", nil, nil, HeartbeatWakeMessage)
+	a.finishTurn(context.Background(), "  HEARTBEAT_OK\n", nil, nil, HeartbeatWakeMessage, false)
 
 	if len(rep.said) != 0 {
 		t.Fatalf("HEARTBEAT_OK with whitespace must still be suppressed; Say called %d time(s)", len(rep.said))
@@ -91,7 +91,7 @@ func TestHeartbeat_OKNotSuppressedOnNormalTurn(t *testing.T) {
 	// A normal user message (not a heartbeat wake) with a non-sentinel answer
 	// must be delivered.
 	answer := "I've set up a heartbeat monitor for your service."
-	a.finishTurn(context.Background(), answer, nil, nil, "set up monitoring")
+	a.finishTurn(context.Background(), answer, nil, nil, "set up monitoring", false)
 
 	if len(rep.said) != 1 || rep.said[0] != answer {
 		t.Errorf("non-sentinel answer on a normal turn must be delivered; got %v", rep.said)

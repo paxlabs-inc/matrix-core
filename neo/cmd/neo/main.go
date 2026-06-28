@@ -294,7 +294,7 @@ func printBanner(cfg config.Config, tm *tools.Manager, pager *memory.Pager) {
 // answer.
 type stdoutReporter struct{}
 
-func (stdoutReporter) Say(text string)    { fmt.Printf("\nneo> %s\n", strings.TrimSpace(text)) }
+func (stdoutReporter) Say(text string, _ bool) { fmt.Printf("\nneo> %s\n", strings.TrimSpace(text)) }
 func (stdoutReporter) Status(text string) { fmt.Fprintf(os.Stderr, "  · %s\n", oneLine(text)) }
 func (stdoutReporter) Notice(text string) { fmt.Fprintf(os.Stderr, "  » %s\n", oneLine(text)) }
 func (stdoutReporter) Think(text string)  { fmt.Fprintf(os.Stderr, "  ~ %s\n", oneLine(text)) }

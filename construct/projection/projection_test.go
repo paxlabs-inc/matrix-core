@@ -213,6 +213,51 @@ func TestParseRenderAutoIDStable(t *testing.T) {
 	}
 }
 
+// Models routinely DOUBLE-ENCODE the payload as a JSON string (the whole object
+// stringified) instead of a nested object. ParseRender must still parse it,
+// rather than failing with "cannot unmarshal string into Go value of type
+// primitives.Structure" (the regression that left the stage blank).
+func TestParseRenderDoubleEncodedPayload(t *testing.T) {
+	s, err := ParseRender(map[string]interface{}{
+		"kind":    "structure",
+		"id":      "tbl",
+		"payload": `{"shape":"table","columns":["token","price"],"records":[{"cells":{"token":"MTX","price":"1.20"}}]}`,
+	})
+	if err != nil {
+		t.Fatalf("double-encoded payload should parse: %v", err)
+	}
+	if s.Kind != schema.KindStructure || s.Structure == nil {
+		t.Fatalf("surface = %+v", s)
+	}
+	if len(s.Structure.Records) != 1 || s.Structure.Records[0].Cells["price"] != "1.20" {
+		t.Fatalf("records not parsed: %+v", s.Structure.Records)
+	}
+}
+
+// Table cells often arrive as raw numbers/booleans (a price, a count, a flag),
+// not strings. They must coerce to their textual form instead of failing the
+// whole render with "cannot unmarshal number into Go value of type string".
+func TestParseRenderTableNumericCells(t *testing.T) {
+	s, err := ParseRender(map[string]interface{}{
+		"kind": "structure",
+		"id":   "tbl2",
+		"payload": map[string]interface{}{
+			"shape":   "table",
+			"columns": []interface{}{"token", "price", "active"},
+			"records": []interface{}{
+				map[string]interface{}{"cells": map[string]interface{}{"token": "MTX", "price": 1.2, "active": true}},
+			},
+		},
+	})
+	if err != nil {
+		t.Fatalf("numeric cells should parse: %v", err)
+	}
+	cells := s.Structure.Records[0].Cells
+	if cells["price"] != "1.2" || cells["active"] != "true" || cells["token"] != "MTX" {
+		t.Fatalf("cell coercion wrong: %+v", cells)
+	}
+}
+
 func TestRenderToolsContract(t *testing.T) {
 	tools := RenderTools()
 	if len(tools) != 1 || tools[0].Name != ConstructRenderTool {

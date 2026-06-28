@@ -316,7 +316,7 @@ type captureReporter struct {
 	lastSay string
 }
 
-func (c *captureReporter) Say(text string) {
+func (c *captureReporter) Say(text string, _ bool) {
 	text = strings.TrimSpace(text)
 	if text == "" {
 		return

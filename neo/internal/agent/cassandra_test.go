@@ -83,20 +83,26 @@ func TestVerdictRejectsClaimedFullButIncomplete(t *testing.T) {
 	}
 }
 
-func TestSurfaceVerifiedAppendsOpenUnknowns(t *testing.T) {
+// cappedUnknowns is the current contract (F4): flagged unknowns ride the
+// cassandra.* side-channel and are NEVER folded into the delivered answer.
+func TestCappedUnknownsReturnsFlagged(t *testing.T) {
 	v := &cassandra.Verdict{OpenUnknowns: []string{"whether the index finished rebuilding"}}
-	got := surfaceVerified("Done — the migration ran.", v)
-	if !strings.Contains(got, "Done — the migration ran.") {
-		t.Error("must keep the agent's answer")
-	}
-	if !strings.Contains(got, "couldn't confirm") || !strings.Contains(got, "index finished rebuilding") {
-		t.Errorf("must surface the flagged unknown to the user, got %q", got)
+	got := cappedUnknowns(v)
+	if len(got) != 1 || !strings.Contains(got[0], "index finished rebuilding") {
+		t.Errorf("must surface the flagged unknown on the side-channel, got %v", got)
 	}
 }
 
-func TestSurfaceVerifiedPassesThroughWhenClean(t *testing.T) {
-	if got := surfaceVerified("All set.", &cassandra.Verdict{}); got != "All set." {
-		t.Errorf("no unknowns must pass the answer through unchanged, got %q", got)
+func TestCappedUnknownsCapsAtTwo(t *testing.T) {
+	v := &cassandra.Verdict{OpenUnknowns: []string{"a thing", "another thing", "a third thing"}}
+	if got := cappedUnknowns(v); len(got) != 2 {
+		t.Errorf("flagged unknowns must be capped at 2, got %d (%v)", len(got), got)
+	}
+}
+
+func TestCappedUnknownsNilWhenClean(t *testing.T) {
+	if got := cappedUnknowns(&cassandra.Verdict{}); got != nil {
+		t.Errorf("no unknowns must return nil, got %v", got)
 	}
 }
 

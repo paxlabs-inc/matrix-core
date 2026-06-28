@@ -109,9 +109,9 @@ func ParseRender(args map[string]interface{}) (*schema.Surface, error) {
 	if !schema.ValidKind(kind) {
 		return nil, fmt.Errorf("construct: render kind %q is not one of the 8 primitives", kind)
 	}
-	payload, err := json.Marshal(args["payload"])
+	payload, err := encodePayload(args["payload"])
 	if err != nil {
-		return nil, fmt.Errorf("construct: render payload not encodable: %w", err)
+		return nil, err
 	}
 	s, err := buildSurface(kind, asString(args["id"]), payload)
 	if err != nil {
@@ -187,6 +187,24 @@ func buildSurface(kind schema.Kind, id string, payload []byte) (*schema.Surface,
 		return schema.NewAsk(id, &p), nil
 	}
 	return nil, fmt.Errorf("construct: unsupported render kind %q", kind)
+}
+
+// encodePayload turns the render arguments' `payload` into the JSON bytes the
+// kind-matched primitive is decoded from. The payload is normally a nested JSON
+// object, but models frequently DOUBLE-ENCODE it as a JSON string (the whole
+// object stringified). In that case args["payload"] arrives as a Go string, and
+// re-marshaling it would quote it AGAIN — yielding "cannot unmarshal string into
+// Go value of type primitives.X" when buildSurface decodes it. Detect the string
+// case and use its bytes directly so a double-encoded payload still parses.
+func encodePayload(v interface{}) ([]byte, error) {
+	if s, ok := v.(string); ok {
+		return []byte(s), nil
+	}
+	b, err := json.Marshal(v)
+	if err != nil {
+		return nil, fmt.Errorf("construct: render payload not encodable: %w", err)
+	}
+	return b, nil
 }
 
 // unmarshalPayload decodes the payload into dst, tolerating an empty or null

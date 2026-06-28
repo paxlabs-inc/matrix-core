@@ -11,9 +11,13 @@ package agent
 // ephemeral progress, and Notice is a deliberate, visible promise (e.g. the
 // compaction announcement or a money-escalation heads-up).
 type Reporter interface {
-	// Say emits a user-facing assistant message (the answer / the narration
-	// the user is meant to read).
-	Say(text string)
+	// Say emits a user-facing assistant closing message. completion=true marks
+	// the validated task_complete summary — a redundant recap layered on top of
+	// the narration the user already read, so the surface keeps it out of the
+	// thread; it is still sent (and closes the run) so an accepted completion
+	// deterministically ends the task. completion=false is a conversational or
+	// ceiling answer that IS the content the user reads.
+	Say(text string, completion bool)
 	// Status emits ephemeral progress (a tool starting, an interim preamble).
 	Status(text string)
 	// Notice emits a deliberate, visible notice — surfaced prominently because
@@ -37,7 +41,7 @@ type Reporter interface {
 // nopReporter discards everything. Default when none is supplied.
 type nopReporter struct{}
 
-func (nopReporter) Say(string)                {}
+func (nopReporter) Say(string, bool)          {}
 func (nopReporter) Status(string)             {}
 func (nopReporter) Notice(string)             {}
 func (nopReporter) Think(string)              {}

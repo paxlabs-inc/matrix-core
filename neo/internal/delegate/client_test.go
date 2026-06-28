@@ -135,6 +135,231 @@ func TestRunPropagatesPipelineFailure(t *testing.T) {
 	}
 }
 
+// conflictBody is the daemon's real 409 body for a deterministic-id collision.
+func conflictBody(intentID string) string {
+	return `{"error":"intent \"` + intentID + `\" already exists in async registry"}`
+}
+
+// TestRunAttachesOnConflict drives the SPARK fix end-to-end against a real
+// (httptest) daemon: the FIRST submission 409s ("already exists"), and the
+// delegate must ATTACH to the in-flight intent — poll its status and service
+// its pending gate — rather than failing or re-submitting. It asserts the
+// existing gate surfaces (the approver is asked), the run reaches its terminal
+// answer, and NO second submission is made.
+func TestRunAttachesOnConflict(t *testing.T) {
+	var mu sync.Mutex
+	var submits int
+	answered := false
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		mu.Lock()
+		done := answered
+		mu.Unlock()
+		switch {
+		case r.Method == http.MethodPost && r.URL.Path == "/messages/async":
+			mu.Lock()
+			submits++
+			mu.Unlock()
+			// The intent is already in flight: 409 with the existing id.
+			w.WriteHeader(http.StatusConflict)
+			_, _ = w.Write([]byte(conflictBody("spark1")))
+		case r.Method == http.MethodGet && strings.HasSuffix(r.URL.Path, "/gates"):
+			if done {
+				_ = json.NewEncoder(w).Encode(map[string]any{"pending": []any{}})
+				return
+			}
+			_ = json.NewEncoder(w).Encode(map[string]any{"pending": []map[string]any{
+				{"node_id": "n1", "question": "Approve spend of 5 PAX?", "options": []string{"yes", "no"}},
+			}})
+		case r.Method == http.MethodPost && strings.Contains(r.URL.Path, "/gates/") && strings.HasSuffix(r.URL.Path, "/answer"):
+			mu.Lock()
+			answered = true
+			mu.Unlock()
+			w.WriteHeader(http.StatusOK)
+		case r.Method == http.MethodGet && strings.HasPrefix(r.URL.Path, "/messages/async/"):
+			if done {
+				_ = json.NewEncoder(w).Encode(map[string]any{"status": "completed", "result": map[string]string{"answer": "attached and settled"}})
+				return
+			}
+			_ = json.NewEncoder(w).Encode(map[string]any{"status": "working"})
+		default:
+			w.WriteHeader(http.StatusNotFound)
+		}
+	}))
+	defer srv.Close()
+
+	var asked bool
+	approver := func(ctx context.Context, nodeID, q string, opts []string) (bool, string) {
+		mu.Lock()
+		asked = true
+		mu.Unlock()
+		return true, ""
+	}
+
+	out, err := fastClient(srv.URL, approver).Run(context.Background(), "launch SPARK")
+	if err != nil {
+		t.Fatalf("Run: %v", err)
+	}
+	if out != "attached and settled" {
+		t.Errorf("answer = %q, want 'attached and settled'", out)
+	}
+	mu.Lock()
+	defer mu.Unlock()
+	if submits != 1 {
+		t.Errorf("submits = %d, want exactly 1 (the conflict; attach must NOT re-submit)", submits)
+	}
+	if !asked {
+		t.Error("attach must surface the existing pending gate to the approver")
+	}
+}
+
+// TestRunAttachToTerminalReturnsOutcome verifies that when the conflicting
+// intent is ALREADY terminal at attach time, the delegate returns its outcome
+// in plain language and never re-submits fresh prose.
+func TestRunAttachToTerminalReturnsOutcome(t *testing.T) {
+	var mu sync.Mutex
+	var submits int
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case r.Method == http.MethodPost && r.URL.Path == "/messages/async":
+			mu.Lock()
+			submits++
+			mu.Unlock()
+			w.WriteHeader(http.StatusConflict)
+			_, _ = w.Write([]byte(conflictBody("spark2")))
+		case r.Method == http.MethodGet && strings.HasPrefix(r.URL.Path, "/messages/async/"):
+			_ = json.NewEncoder(w).Encode(map[string]any{"status": "completed", "result": map[string]string{"answer": "already settled earlier"}})
+		default:
+			w.WriteHeader(http.StatusNotFound)
+		}
+	}))
+	defer srv.Close()
+
+	out, err := fastClient(srv.URL, nil).Run(context.Background(), "launch SPARK")
+	if err != nil {
+		t.Fatalf("Run: %v", err)
+	}
+	if out != "already settled earlier" {
+		t.Errorf("answer = %q, want the terminal outcome", out)
+	}
+	mu.Lock()
+	defer mu.Unlock()
+	if submits != 1 {
+		t.Errorf("submits = %d, want exactly 1 (no re-submit of a terminal intent)", submits)
+	}
+}
+
+// TestAttachGateClaimDedupsAcrossClients verifies the cross-attach guard
+// (req 2.4): two delegate clients sharing one GateClaim guard both attach to
+// the same in-flight intent, but the gate is answered exactly once.
+func TestAttachGateClaimDedupsAcrossClients(t *testing.T) {
+	var mu sync.Mutex
+	var answers int
+	answered := false
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		mu.Lock()
+		done := answered
+		mu.Unlock()
+		switch {
+		case r.Method == http.MethodPost && r.URL.Path == "/messages/async":
+			w.WriteHeader(http.StatusConflict)
+			_, _ = w.Write([]byte(conflictBody("spark3")))
+		case r.Method == http.MethodGet && strings.HasSuffix(r.URL.Path, "/gates"):
+			if done {
+				_ = json.NewEncoder(w).Encode(map[string]any{"pending": []any{}})
+				return
+			}
+			_ = json.NewEncoder(w).Encode(map[string]any{"pending": []map[string]any{
+				{"node_id": "n1", "question": "Approve spend of 5 PAX?", "options": []string{"yes", "no"}},
+			}})
+		case r.Method == http.MethodPost && strings.Contains(r.URL.Path, "/gates/") && strings.HasSuffix(r.URL.Path, "/answer"):
+			mu.Lock()
+			answers++
+			answered = true
+			mu.Unlock()
+			w.WriteHeader(http.StatusOK)
+		case r.Method == http.MethodGet && strings.HasPrefix(r.URL.Path, "/messages/async/"):
+			if done {
+				_ = json.NewEncoder(w).Encode(map[string]any{"status": "completed", "result": map[string]string{"answer": "settled once"}})
+				return
+			}
+			_ = json.NewEncoder(w).Encode(map[string]any{"status": "working"})
+		default:
+			w.WriteHeader(http.StatusNotFound)
+		}
+	}))
+	defer srv.Close()
+
+	// One shared guard handed to both clients (mirrors engine.claimGate).
+	var gmu sync.Mutex
+	claimed := map[string]bool{}
+	guard := func(intentID, nodeID string) bool {
+		gmu.Lock()
+		defer gmu.Unlock()
+		key := intentID + "\x00" + nodeID
+		if claimed[key] {
+			return false
+		}
+		claimed[key] = true
+		return true
+	}
+
+	var apMu sync.Mutex
+	var approveCalls int
+	approver := func(ctx context.Context, nodeID, q string, opts []string) (bool, string) {
+		apMu.Lock()
+		approveCalls++
+		apMu.Unlock()
+		return true, ""
+	}
+
+	mk := func() *Client {
+		return New(Options{
+			BaseURL:      srv.URL,
+			Approver:     approver,
+			GateClaim:    guard,
+			PollInterval: time.Millisecond,
+			MaxWait:      5 * time.Second,
+			Timeout:      2 * time.Second,
+		})
+	}
+
+	var wg sync.WaitGroup
+	outs := make([]string, 2)
+	errs := make([]error, 2)
+	for i := 0; i < 2; i++ {
+		wg.Add(1)
+		go func(i int) {
+			defer wg.Done()
+			outs[i], errs[i] = mk().Run(context.Background(), "launch SPARK")
+		}(i)
+	}
+	wg.Wait()
+
+	for i := 0; i < 2; i++ {
+		if errs[i] != nil {
+			t.Fatalf("client %d Run: %v", i, errs[i])
+		}
+		if outs[i] != "settled once" {
+			t.Errorf("client %d answer = %q, want 'settled once'", i, outs[i])
+		}
+	}
+	mu.Lock()
+	gateAnswers := answers
+	mu.Unlock()
+	if gateAnswers != 1 {
+		t.Errorf("gate answered %d times, want exactly 1 (cross-attach claim must dedup)", gateAnswers)
+	}
+	apMu.Lock()
+	calls := approveCalls
+	apMu.Unlock()
+	if calls != 1 {
+		t.Errorf("approver called %d times, want exactly 1 (loser attach must skip answering)", calls)
+	}
+}
+
 func TestClarifyText(t *testing.T) {
 	if got := clarifyText(json.RawMessage(`{"question":"which token?"}`)); got != "which token?" {
 		t.Errorf("clarifyText = %q", got)

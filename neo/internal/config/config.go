@@ -39,7 +39,7 @@ type Config struct {
 	// extraction quality directly sets memory quality; still cheap-tier (it runs
 	// once per turn in the background). Must be on the gateway neo-slot whitelist.
 	ConsolidationModel string
-	EmbedModel string // semantic page-fault embeddings (gateway /v1/embeddings or direct provider)
+	EmbedModel         string // semantic page-fault embeddings (gateway /v1/embeddings or direct provider)
 	// CassandraModel is the cheap/fast Cassandra completeness auditor (the
 	// completion-gate adjudicator, metered on the dedicated "cassandra" slot);
 	// CassandraEscalateModel is the stronger second-opinion model consulted on
@@ -66,12 +66,19 @@ type Config struct {
 	RecallBudgetTokens   int // token ceiling for the recalled past-turns block
 
 	// --- loop discipline ---
-	StepBudget        int // max tool-call iterations per turn (anti-infinite); the configured ceiling
-	StepBudgetMin     int // P2-7: adaptive floor. 0 = adaptation disabled (effective budget = StepBudgetMax, today's fixed behavior). When >0 the effective budget scales within [StepBudgetMin, StepBudgetMax] based on turn complexity.
-	StepBudgetMax     int // P2-7: adaptive ceiling. Defaults to StepBudget (50) so behavior is unchanged when adaptation is off.
-	NoProgressStall   int // identical-failing-call / no-state-change count that trips a stall
-	MaxRetriesPerTool int // recovery ladder rung 1: bounded retries for transient failures
-	MaxAdaptAttempts  int // recovery ladder rung 2: bounded approach revisions
+	StepBudget      int // max tool-call iterations per turn (anti-infinite); the configured ceiling
+	StepBudgetMin   int // P2-7: adaptive floor. 0 = adaptation disabled (effective budget = StepBudgetMax, today's fixed behavior). When >0 the effective budget scales within [StepBudgetMin, StepBudgetMax] based on turn complexity.
+	StepBudgetMax   int // P2-7: adaptive ceiling. Defaults to StepBudget (50) so behavior is unchanged when adaptation is off.
+	NoProgressStall int // identical-failing-call / no-state-change count that trips a stall
+	// SemanticStallSimilarityPct is the word-overlap threshold (0–100) at which
+	// two consecutive tool-call batches at the SAME operation (same tool shape +
+	// same target identifiers) are treated as a no-progress repeat even when
+	// their argument WORDING differs — so a cosmetic reword cannot defeat the
+	// stall guard. The repeat counter still trips at NoProgressStall. 0 disables
+	// semantic detection (exact batch-signature matching only — legacy behavior).
+	SemanticStallSimilarityPct int
+	MaxRetriesPerTool          int // recovery ladder rung 1: bounded retries for transient failures
+	MaxAdaptAttempts           int // recovery ladder rung 2: bounded approach revisions
 
 	// --- sub-agent swarm (task-scoped concurrent helpers; see [swarm]) ---
 	MaxSubagents           int // hard cap on sub-agents spawned in one spawn_subagents call
@@ -136,9 +143,9 @@ func Default() Config {
 		SkillsRoot:   "skills",
 
 		MainModel:          "accounts/fireworks/models/glm-5p2",
-		CheapModel:          "accounts/fireworks/models/glm-5p2",
-		ConsolidationModel:  "accounts/fireworks/models/glm-5p2",
-		EmbedModel: "nomic-ai/nomic-embed-text-v1.5",
+		CheapModel:         "accounts/fireworks/models/glm-5p2",
+		ConsolidationModel: "accounts/fireworks/models/glm-5p2",
+		EmbedModel:         "nomic-ai/nomic-embed-text-v1.5",
 		// Cassandra completeness auditor: a cheap/fast primary + a stronger
 		// escalation model, both on the gateway cassandra-slot whitelist
 		// (gateway rates.FreeTierWhitelist "cassandra").
@@ -155,12 +162,13 @@ func Default() Config {
 		RecallTopK:            6,
 		RecallBudgetTokens:    2500,
 
-		StepBudget:        50,
-		StepBudgetMin:     0,  // P2-7: adaptation disabled by default (effective budget = 50, today's behavior)
-		StepBudgetMax:     50, // P2-7: ceiling equals StepBudget so the band is [0,50] when disabled
-		NoProgressStall:   4,
-		MaxRetriesPerTool: 3,
-		MaxAdaptAttempts:  2,
+		StepBudget:                 50,
+		StepBudgetMin:              0,  // P2-7: adaptation disabled by default (effective budget = 50, today's behavior)
+		StepBudgetMax:              50, // P2-7: ceiling equals StepBudget so the band is [0,50] when disabled
+		NoProgressStall:            4,
+		SemanticStallSimilarityPct: 50, // catch reworded retries at the same operation
+		MaxRetriesPerTool:          3,
+		MaxAdaptAttempts:           2,
 
 		MaxSubagents:           8,
 		MaxConcurrentSubagents: 4,
@@ -298,6 +306,7 @@ func (c *Config) applyDoc(d *kvxDoc) {
 		c.StepBudgetMin = d.intOr("loop", "step_budget_min", c.StepBudgetMin)
 		c.StepBudgetMax = d.intOr("loop", "step_budget_max", c.StepBudgetMax)
 		c.NoProgressStall = d.intOr("loop", "no_progress_stall", c.NoProgressStall)
+		c.SemanticStallSimilarityPct = d.intOr("loop", "semantic_stall_similarity_pct", c.SemanticStallSimilarityPct)
 		c.MaxRetriesPerTool = d.intOr("loop", "max_retries_per_tool", c.MaxRetriesPerTool)
 		c.MaxAdaptAttempts = d.intOr("loop", "max_adapt_attempts", c.MaxAdaptAttempts)
 	}
@@ -364,6 +373,9 @@ func (c *Config) applyEnv() {
 	// StepBudget as the ceiling" (so an unset env keeps today's behavior).
 	c.StepBudgetMin = envIntNonNeg("NEO_STEP_BUDGET_MIN", c.StepBudgetMin)
 	c.StepBudgetMax = envIntNonNeg("NEO_STEP_BUDGET_MAX", c.StepBudgetMax)
+	// SemanticStallSimilarityPct accepts 0 (disabled), so it uses the
+	// non-negative variant rather than envInt (which rejects 0).
+	c.SemanticStallSimilarityPct = envIntNonNeg("NEO_SEMANTIC_STALL_SIMILARITY_PCT", c.SemanticStallSimilarityPct)
 
 	// Task supervisor (durability).
 	c.SuperviseTasks = envBool("NEO_SUPERVISE_TASKS", c.SuperviseTasks)

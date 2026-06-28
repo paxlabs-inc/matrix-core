@@ -51,6 +51,15 @@ type Options struct {
 	Timeout      time.Duration
 	PollInterval time.Duration
 	MaxWait      time.Duration
+	// GateClaim, when non-nil, is consulted before this client answers an
+	// approval gate. It returns true if THIS client may service
+	// (intentID, nodeID); false if another delegate client (a concurrent
+	// attach to the same in-flight intent) already claimed it. It must be
+	// safe for concurrent use and is shared across the per-call clients the
+	// engine constructs, so two attaches to the same intent cannot
+	// double-answer the same gate. nil falls back to the client's per-run
+	// answered set (single-run dedup only — the CLI / test path).
+	GateClaim func(intentID, nodeID string) bool
 }
 
 // Client delegates prose intents to the MCL daemon.
@@ -66,6 +75,9 @@ type Client struct {
 
 	pollEvery time.Duration
 	maxWait   time.Duration
+
+	// gateClaim is the shared cross-attach gate guard (see Options.GateClaim).
+	gateClaim func(intentID, nodeID string) bool
 
 	// streamHTTP is an http.Client with no overall Timeout for the long-lived
 	// SSE subscription (c.http.Timeout would kill the stream). It shares
@@ -105,6 +117,7 @@ func New(o Options) *Client {
 		skill:     o.Skill,
 		approve:   o.Approver,
 		notify:    notify,
+		gateClaim: o.GateClaim,
 		pollEvery: poll,
 		maxWait:   mw,
 
@@ -115,27 +128,65 @@ func New(o Options) *Client {
 }
 
 // Run submits the intent and blocks until it terminates, servicing approval
-// gates inline. It subscribes to the daemon's SSE event stream for the intent
-// and drives gate/terminal transitions from events (sub-ms latency). A poller
-// is retained as an explicit safety net + fallback: it covers the
-// dispatch→subscribe race and silent stream drops, and becomes the sole driver
-// once the SSE stream's bounded reconnect attempts exhaust. The shared
-// answered set (touched only from this goroutine) guarantees a gate is never
-// answered twice, even when an event and a poll tick both observe it.
-// Returns the deliverable answer, or an error describing the failure /
-// clarification needed / timeout (which the model relays).
+// gates inline (via track). On a deterministic-id conflict (a 409 "already
+// exists in async registry") it does NOT fail or re-submit: the work is
+// already in flight, so it ATTACHES to the existing intent and tracks it to
+// its terminal outcome (or returns that outcome directly if it is already
+// terminal). Returns the deliverable answer, or an error describing the
+// failure / clarification needed / timeout (which the model relays).
 func (c *Client) Run(ctx context.Context, prose string) (string, error) {
 	c.notify("routing this through the secure execution path — I'll ask before anything spends.")
 
 	id, err := c.submit(ctx, prose)
 	if err != nil {
+		// Attach-to-existing on a deterministic-id conflict (the SPARK fix): a
+		// 409 "already exists in async registry" is NOT a failure — the work is
+		// already in flight (an earlier submission of the same intent). Rather
+		// than re-submitting (which would loop on the conflict) we resolve the
+		// existing intent and JOIN it: poll its progress and service its gate
+		// through the SAME track path the create path uses, so the inline
+		// spend-approval gate appears exactly once.
+		if ClassOf(err) == ClassConflict {
+			if existing := existingIntentID(err); existing != "" {
+				return c.attach(ctx, existing)
+			}
+		}
 		return "", fmt.Errorf("could not reach the secure execution path: %w", err)
 	}
 
+	return c.track(ctx, id)
+}
+
+// attach joins a run that is already in flight (a deterministic-id conflict).
+// If the conflicting intent is ALREADY terminal by the time we look, its
+// outcome is returned in plain language — never re-submitted as fresh prose.
+// Otherwise it is tracked exactly as the create path would: gate servicing and
+// terminal detection ride the SAME track loop, so the existing approval gate
+// surfaces through the same approver/notify wiring.
+func (c *Client) attach(ctx context.Context, id string) (string, error) {
+	if ans, rerr, done := c.checkTerminal(ctx, id); done {
+		return ans, rerr
+	}
+	c.notify("this request is already underway — I'll follow the work already in progress.")
+	return c.track(ctx, id)
+}
+
+// track drives an intent (freshly created or attached-to) to its terminal
+// outcome, servicing approval gates inline. It subscribes to the daemon's SSE
+// event stream and drives gate/terminal transitions from events (sub-ms
+// latency). A poller is retained as an explicit safety net + fallback: it
+// covers the dispatch→subscribe race and silent stream drops, and becomes the
+// sole driver once the SSE stream's bounded reconnect attempts exhaust. The
+// per-run answered set (touched only from this goroutine) guarantees a gate is
+// never answered twice within this call even when an event and a poll tick both
+// observe it; the optional shared gateClaim guard (keyed on intent id + node
+// id) additionally prevents two concurrent attaches to the same intent from
+// double-answering the same gate.
+func (c *Client) track(ctx context.Context, id string) (string, error) {
 	answered := map[string]bool{}
 	deadline := time.Now().Add(c.maxWait)
 
-	// SSE subscription is the primary driver. It is cancelled when Run returns
+	// SSE subscription is the primary driver. It is cancelled when track returns
 	// so the stream goroutine never outlives the call.
 	sseCtx, sseCancel := context.WithCancel(ctx)
 	defer sseCancel()
@@ -382,6 +433,17 @@ func (c *Client) handleGates(ctx context.Context, intentID string, answered map[
 		if g.NodeID == "" || answered[g.NodeID] {
 			continue
 		}
+		// Cross-attach claim (keyed on intent id + node id): when a shared
+		// guard is wired, only ONE delegate client may service this gate, so
+		// two concurrent attaches to the same in-flight intent cannot
+		// double-answer it (req 2.4). The loser marks the gate answered
+		// locally and stops re-checking it; it still tracks the intent to its
+		// terminal outcome. With no guard wired (CLI / tests) this is a no-op
+		// and the per-run answered set is the sole dedup.
+		if c.gateClaim != nil && !c.gateClaim(intentID, g.NodeID) {
+			answered[g.NodeID] = true
+			continue
+		}
 		approved, answer := false, ""
 		if c.approve != nil {
 			approved, answer = c.approve(ctx, g.NodeID, g.Question, g.Options)
@@ -451,7 +513,12 @@ func (c *Client) do(ctx context.Context, method, path string, body, out interfac
 	defer resp.Body.Close()
 	data, _ := io.ReadAll(resp.Body)
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return fmt.Errorf("http %d: %s", resp.StatusCode, truncate(string(data), 300))
+		// Return a TYPED error carrying the status + body so the shared
+		// classifier (ClassOf) can map the outcome to a FailureClass even after
+		// it is wrapped (core_execute: %w) far up the dispatch chain. The
+		// Error() text is unchanged ("http <code>: <body>") so logs/diagnostics
+		// read identically.
+		return &httpError{status: resp.StatusCode, body: truncate(string(data), 300)}
 	}
 	if out != nil && len(data) > 0 {
 		return json.Unmarshal(data, out)

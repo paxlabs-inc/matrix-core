@@ -18,6 +18,7 @@ import (
 	"matrix/construct/schema/primitives"
 	"matrix/neo/internal/agent"
 	"matrix/neo/internal/conversation"
+	"matrix/neo/internal/delegate"
 	"matrix/neo/internal/llm"
 	"matrix/neo/internal/recall"
 	"matrix/neo/internal/task"
@@ -65,10 +66,11 @@ type askWaiter struct {
 // run is a single user turn. id doubles as the SSE topic + the intent_id the
 // client subscribes to.
 type run struct {
-	id     string
-	convID string
-	sess   *session
-	closed bool // a closing (final) turn has been emitted
+	id       string
+	convID   string
+	sess     *session
+	closed   bool // a closing (final) turn has been emitted
+	narrated bool // at least one Status narration turn was persisted this run
 
 	cancel  context.CancelFunc // cancels this turn's ctx (barge-in / explicit stop)
 	stopped atomic.Bool        // set when interrupted, so drive closes quietly
@@ -389,13 +391,23 @@ func (s *session) superviseTask(ctx context.Context, r *run, objective string, r
 		err := s.agent.Chat(withRun(actx, r), prompt)
 		acancel()
 
-		switch superviseDecision(r.stopped.Load(), err, ctx.Err(), attempt, maxRespawns) {
+		// The agent carries the shared failure class of this attempt's most
+		// recent classified tool failure, so the supervisor reads the SAME
+		// taxonomy the dispatch ladder used (NE-5) rather than re-guessing.
+		failClass := s.agent.LastFailureClass()
+
+		switch superviseDecision(r.stopped.Load(), err, failClass, ctx.Err(), attempt, maxRespawns) {
 		case actInterrupted:
 			// User stop / barge-in: drive() emits the interrupted terminal.
 			return task.StatusInterrupted
 		case actDone:
 			// Genuine completion: the agent's Say already emitted the terminal.
 			return task.StatusDone
+		case actStop:
+			// Deterministic blocker: a fresh agent would hit the same wall.
+			// Stop-and-ask honestly instead of burning the respawn budget on a
+			// loop the user already saw fail.
+			return s.deliverDeterministicStop(r)
 		case actCeiling:
 			if ctx.Err() != nil {
 				return s.deliverCeiling(r, "reached the time limit I had for this task")
@@ -426,22 +438,28 @@ const (
 	actDone                               // genuine completion (the agent finished + Said its answer)
 	actInterrupted                        // user stop / barge-in
 	actCeiling                            // hard ceiling reached — deliver an honest partial
+	actStop                               // deterministic blocker — stop-and-ask, no respawn
 )
 
 // superviseDecision is the PURE policy for one finished attempt, given whether
 // the run was stopped, the attempt's error (nil = genuine completion), the
-// task context's error (non-nil = wall-clock blown), the attempt number, and
-// the respawn budget. Order matters: a user stop wins over everything; a clean
-// finish is done; a blown wall-clock or an exhausted respawn budget hits the
-// ceiling; otherwise respawn. Any non-clean exit (model/transport error, a
-// stall, an exhausted step budget, a timed-out attempt) flows to respawn until
-// the ceiling — there is no "give up to the user" path short of the ceiling.
-func superviseDecision(stopped bool, attemptErr, taskCtxErr error, attempt, maxRespawns int) superviseAction {
+// shared failure class of the attempt's most recent classified tool failure,
+// the task context's error (non-nil = wall-clock blown), the attempt number,
+// and the respawn budget. Order matters: a user stop wins over everything; a
+// clean finish is done; a DETERMINISTIC blocker stops-and-asks (a fresh agent
+// would hit the same wall, so don't respawn or consume the budget); a blown
+// wall-clock or an exhausted respawn budget hits the ceiling; otherwise
+// respawn. Every other non-clean exit (model/transport error, a stall, an
+// exhausted step budget, a timed-out attempt, or a transient/conflict/pending
+// failure) flows to respawn until the ceiling.
+func superviseDecision(stopped bool, attemptErr error, failClass delegate.FailureClass, taskCtxErr error, attempt, maxRespawns int) superviseAction {
 	switch {
 	case stopped:
 		return actInterrupted
 	case attemptErr == nil:
 		return actDone
+	case failClass == delegate.ClassDeterministic:
+		return actStop
 	case taskCtxErr != nil:
 		return actCeiling
 	case attempt > maxRespawns:
@@ -499,6 +517,31 @@ func (s *session) deliverCeiling(r *run, reason string) task.Status {
 		text += " Here's exactly where it stands:\n\n" + best
 	}
 	text += "\n\nTell me how you'd like me to continue and I'll pick it right back up."
+	s.engine.broker.publish(r.id, "message.complete", "neo", map[string]interface{}{"status": "completed"})
+	s.engine.broker.publish(r.id, "chat.assistant", "neo", s.chatFields(r, text, true))
+	s.engine.conv.AppendAssistant(s.id, r.id, text)
+	r.closed = true
+	return task.StatusCeiling
+}
+
+// deliverDeterministicStop emits the terminal for a task blocked by a
+// DETERMINISTIC failure — one that recurs identically (a denied permission, a
+// limit, an invalid request, a detail only the user can change). A fresh agent
+// would hit the same wall, so the supervisor does NOT respawn and does NOT
+// consume the respawn budget. Unlike the generic "still on it, taking another
+// run at it" progress copy, this states plainly that the task is blocked and
+// hands the user the next step, with the best real work so far. Idempotent if
+// already closed.
+func (s *session) deliverDeterministicStop(r *run) task.Status {
+	if r.closed {
+		return task.StatusCeiling
+	}
+	best := strings.TrimSpace(s.agent.BestEffort())
+	text := "I couldn't complete this — I ran into something I can't get past on my own (a permission, a limit, or a detail that needs to change), and trying the same thing again wouldn't help, so I stopped rather than spin on it."
+	if best != "" {
+		text += " Here's where it got to:\n\n" + best
+	}
+	text += "\n\nTell me how you'd like to adjust it and I'll pick it right back up."
 	s.engine.broker.publish(r.id, "message.complete", "neo", map[string]interface{}{"status": "completed"})
 	s.engine.broker.publish(r.id, "chat.assistant", "neo", s.chatFields(r, text, true))
 	s.engine.conv.AppendAssistant(s.id, r.id, text)
@@ -679,16 +722,32 @@ type sseReporter struct {
 	sess *session
 }
 
-func (r *sseReporter) Say(text string) {
+func (r *sseReporter) Say(text string, completion bool) {
 	s := r.sess
 	run := s.cur
 	if run == nil {
 		return
 	}
+	fields := s.chatFields(run, text, true)
+	if completion {
+		// Mark the validated task_complete summary so the client keeps it out of
+		// the thread — it is a redundant recap on top of the narration the user
+		// already read. It is STILL sent here, and message.complete still fires,
+		// so Cassandra's accepted completion deterministically closes the task.
+		fields["completion"] = true
+	}
 	s.engine.broker.publish(run.id, "message.complete", "neo", map[string]interface{}{"status": "completed"})
-	s.engine.broker.publish(run.id, "chat.assistant", "neo", s.chatFields(run, text, true))
-	// Persist the closing answer so the thread is durable and reopenable.
-	s.engine.conv.AppendAssistant(s.id, run.id, text)
+	s.engine.broker.publish(run.id, "chat.assistant", "neo", fields)
+	// Persist conversational / ceiling answers (the durable thread content). The
+	// task_complete completion summary is normally NOT persisted: Neo's narration
+	// (Status) is the durable thread now, so persisting the summary too would
+	// re-surface it as a duplicate closing bubble on reopen. The exception is a
+	// run that committed NO narration at all (e.g. it went straight to
+	// task_complete) — persisting the summary there is what keeps the reopened
+	// thread from being empty, mirroring the client's live safety net.
+	if !completion || !run.narrated {
+		s.engine.conv.AppendAssistant(s.id, run.id, text)
+	}
 	run.closed = true
 }
 
@@ -710,6 +769,11 @@ func (r *sseReporter) Status(text string) {
 		return
 	}
 	s.engine.broker.publish(run.id, "chat.assistant", "neo", s.chatFields(run, text, false))
+	// Persist genuine model narration: it is the durable thread content now (the
+	// task_complete summary is no longer persisted), so Neo's running commentary
+	// survives a reopen instead of vanishing the moment the run settles.
+	s.engine.conv.AppendAssistant(s.id, run.id, text)
+	run.narrated = true
 }
 
 func (r *sseReporter) Notice(text string) {

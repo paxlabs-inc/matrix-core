@@ -11,12 +11,15 @@ import (
 	"time"
 
 	"matrix/neo/internal/agent"
+	"matrix/neo/internal/delegate"
 )
 
 // TestSuperviseDecision pins the persistent-supervisor policy: any non-clean
-// exit keeps going (respawn) until the ceiling — the only terminal-without-
-// completion is the ceiling — while a user stop and a genuine completion are
-// honored immediately. This is the heart of the Task Durability Rule.
+// exit keeps going (respawn) until the ceiling — EXCEPT a DETERMINISTIC blocker,
+// which stops-and-asks without respawning or consuming the budget (a fresh
+// agent would hit the same wall). A user stop and a genuine completion are
+// honored immediately. This is the heart of the Task Durability Rule plus the
+// NE-5 deterministic-stop fix.
 func TestSuperviseDecision(t *testing.T) {
 	hardErr := errors.New("neo: model call failed")
 	incomplete := agent.ErrIncomplete
@@ -26,22 +29,31 @@ func TestSuperviseDecision(t *testing.T) {
 		name             string
 		stopped          bool
 		attemptErr       error
+		failClass        delegate.FailureClass
 		taskCtxErr       error
 		attempt, maxResp int
 		want             superviseAction
 	}{
-		{"clean completion", false, nil, nil, 1, 50, actDone},
-		{"user stop wins over error", true, hardErr, nil, 1, 50, actInterrupted},
-		{"user stop wins over success", true, nil, nil, 3, 50, actInterrupted},
-		{"model error, budget left → respawn", false, hardErr, nil, 1, 50, actRespawn},
-		{"incomplete (stall/budget) → respawn", false, incomplete, nil, 2, 50, actRespawn},
-		{"wall-clock blown → ceiling", false, hardErr, wall, 5, 50, actCeiling},
-		{"respawn budget exhausted → ceiling", false, hardErr, nil, 1, 0, actCeiling},
-		{"last allowed attempt still respawns", false, hardErr, nil, 50, 50, actRespawn},
-		{"one past budget → ceiling", false, hardErr, nil, 51, 50, actCeiling},
+		{"clean completion", false, nil, delegate.ClassNone, nil, 1, 50, actDone},
+		{"clean completion ignores a mid-turn deterministic class", false, nil, delegate.ClassDeterministic, nil, 1, 50, actDone},
+		{"user stop wins over error", true, hardErr, delegate.ClassNone, nil, 1, 50, actInterrupted},
+		{"user stop wins over success", true, nil, delegate.ClassNone, nil, 3, 50, actInterrupted},
+		{"user stop wins over deterministic", true, hardErr, delegate.ClassDeterministic, nil, 1, 50, actInterrupted},
+		{"model error, budget left → respawn", false, hardErr, delegate.ClassNone, nil, 1, 50, actRespawn},
+		{"incomplete (stall/budget) → respawn", false, incomplete, delegate.ClassNone, nil, 2, 50, actRespawn},
+		{"deterministic blocker → stop, no respawn", false, incomplete, delegate.ClassDeterministic, nil, 1, 50, actStop},
+		{"deterministic stops even with full budget", false, hardErr, delegate.ClassDeterministic, nil, 1, 50, actStop},
+		{"deterministic stops before the ceiling", false, hardErr, delegate.ClassDeterministic, wall, 5, 50, actStop},
+		{"transient failure → respawn (existing path)", false, incomplete, delegate.ClassTransient, nil, 1, 50, actRespawn},
+		{"conflict → respawn in P1 (attach is P2)", false, incomplete, delegate.ClassConflict, nil, 1, 50, actRespawn},
+		{"pending → respawn in P1 (slot-fill is P4)", false, incomplete, delegate.ClassPending, nil, 1, 50, actRespawn},
+		{"wall-clock blown → ceiling", false, hardErr, delegate.ClassNone, wall, 5, 50, actCeiling},
+		{"respawn budget exhausted → ceiling", false, hardErr, delegate.ClassNone, nil, 1, 0, actCeiling},
+		{"last allowed attempt still respawns", false, hardErr, delegate.ClassNone, nil, 50, 50, actRespawn},
+		{"one past budget → ceiling", false, hardErr, delegate.ClassNone, nil, 51, 50, actCeiling},
 	}
 	for _, c := range cases {
-		got := superviseDecision(c.stopped, c.attemptErr, c.taskCtxErr, c.attempt, c.maxResp)
+		got := superviseDecision(c.stopped, c.attemptErr, c.failClass, c.taskCtxErr, c.attempt, c.maxResp)
 		if got != c.want {
 			t.Errorf("%s: superviseDecision = %v, want %v", c.name, got, c.want)
 		}

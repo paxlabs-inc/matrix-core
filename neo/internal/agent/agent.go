@@ -27,6 +27,7 @@ import (
 
 	"matrix/cassandra"
 	"matrix/neo/internal/config"
+	"matrix/neo/internal/delegate"
 	"matrix/neo/internal/llm"
 	"matrix/neo/internal/memory"
 	"matrix/neo/internal/recall"
@@ -165,6 +166,15 @@ type Agent struct {
 	// appends them to the transcript, so the agent picks them up on its next
 	// step instead of the message cancelling the run. nil on the CLI path.
 	inbox func() []string
+
+	// lastFailureClass records the shared FailureClass of the most recent
+	// classified tool FAILURE this turn (delegate.ClassNone when none). It lets
+	// the task supervisor read the SAME classification the dispatch ladder used
+	// (via LastFailureClass) so a deterministic blocker is not respawned over.
+	// Reset at the top of every Chat turn; written only from the single-
+	// threaded result-assembly path (never from the concurrent dispatch
+	// goroutines), so it is race-free.
+	lastFailureClass delegate.FailureClass
 }
 
 // Options configures New.
@@ -379,6 +389,7 @@ func (a *Agent) Chat(ctx context.Context, userInput string) error {
 		a.activeGoal = userInput
 	}
 	a.turnSeq++
+	a.lastFailureClass = delegate.ClassNone
 	a.working = append(a.working, llm.UserMessage(userInput))
 
 	// Topic-shift detection (Phase 3): if this turn pivots to an unrelated
@@ -418,6 +429,10 @@ func (a *Agent) Chat(ctx context.Context, userInput string) error {
 
 	repeats := 0
 	prevSig := ""
+	// prevCalls is the previous turn's tool-call batch, kept so the no-progress
+	// guard can detect a SEMANTIC repeat (same operation, reworded arguments),
+	// not just a byte-identical batch signature (NE-4).
+	var prevCalls []llm.ToolCall
 	// stateTouched latches once this turn reaches the irreversible seam
 	// (core_execute). It selects the strict completion path (a full grounded
 	// completeness object) over the reversible light path — the placement rule
@@ -623,12 +638,24 @@ func (a *Agent) Chat(ctx context.Context, userInput string) error {
 				a.working = append(a.working, llm.UserMessage("(you did real work this turn, so don't finish with a plain message — call task_complete with an honest completeness object: a summary for the user, coverage, the real evidence behind your claims, and anything still open.)"))
 				continue
 			}
-			a.finishTurn(ctx, answer, surfaced, surfacedSnips, userInput)
+			a.finishTurn(ctx, answer, surfaced, surfacedSnips, userInput, false)
 			// [control.loop] step_6: cooperative compaction at a clean boundary.
 			if a.budgetPct(a.buildSystem(pinned, retrieved, procedural, triggered, recalled)) >= a.cfg.SoftPct {
 				a.compact(ctx, "soft")
 			}
 			return nil
+		}
+
+		// Surface any preamble the model wrote alongside its tool calls as
+		// DURABLE narration — Neo "thinking out loud" before it acts. This must
+		// run for EVERY tool-calling turn, including the task_complete gate
+		// below: a turn that goes straight to task_complete (e.g. it already had
+		// the data) would otherwise commit nothing, and with the completion
+		// summary kept out of the thread the user would be left with an empty
+		// thread once the run settled. Committing the preamble here is what makes
+		// Neo's running commentary the durable thread content.
+		if c := strings.TrimSpace(res.Message.Content); c != "" {
+			a.out.Status(c)
 		}
 
 		// Completion gate (Cassandra Phase 1): the model called task_complete.
@@ -649,7 +676,7 @@ func (a *Agent) Chat(ctx context.Context, userInput string) error {
 			verdict := a.validateCompletion(ctx, cc, a.gateStrict(stateTouched, workTouched), stateTouched, userInput)
 			if verdict.ok {
 				a.working = append(a.working, llm.ToolResult(cc.ID, tools.TaskCompleteTool, "Completion accepted."))
-				a.finishTurn(ctx, verdict.answer, surfaced, surfacedSnips, userInput)
+				a.finishTurn(ctx, verdict.answer, surfaced, surfacedSnips, userInput, true)
 				if a.budgetPct(a.buildSystem(pinned, retrieved, procedural, triggered, recalled)) >= a.cfg.SoftPct {
 					a.compact(ctx, "soft")
 				}
@@ -661,19 +688,19 @@ func (a *Agent) Chat(ctx context.Context, userInput string) error {
 			continue
 		}
 
-		// Surface any preamble the model wrote alongside its tool calls.
-		if c := strings.TrimSpace(res.Message.Content); c != "" {
-			a.out.Status(c)
-		}
-
-		// No-progress detection: identical consecutive tool-call batches.
+		// No-progress detection: a repeat is either a byte-identical batch
+		// signature OR a SEMANTIC repeat — the same operation (same tool shape
+		// + same target) reworded — so a cosmetic reword can't reset the
+		// counter and loop forever (NE-4). Distinct operations (different
+		// target/tool) reset it.
 		sig := batchSignature(res.Message.ToolCalls)
-		if sig == prevSig {
+		if sig == prevSig || a.semanticRepeat(prevCalls, res.Message.ToolCalls) {
 			repeats++
 		} else {
 			repeats = 0
-			prevSig = sig
 		}
+		prevSig = sig
+		prevCalls = res.Message.ToolCalls
 		if repeats >= a.cfg.NoProgressStall {
 			// No-progress stall: do NOT fabricate a close. Return an incomplete
 			// signal so the supervisor can respawn a fresh agent and continue —
@@ -995,6 +1022,7 @@ func (a *Agent) runToolCalls(ctx context.Context, calls []llm.ToolCall) {
 	type dispatchResult struct {
 		content string
 		isErr   bool
+		class   delegate.FailureClass
 	}
 
 	// Fire ALL ToolStart observer events up front, in call order, so the
@@ -1025,13 +1053,23 @@ func (a *Agent) runToolCalls(ctx context.Context, calls []llm.ToolCall) {
 		}
 	}
 
-	// Dispatch the parseable calls concurrently through a bounded semaphore.
+	// Batch idempotency (NE-3, req 5.x): collapse equivalent non-idempotent
+	// state-touching calls (core_execute with the same resolved intent) so two
+	// of them in one batch don't both submit and deterministically 409 against
+	// each other. Only the canonical (first) occurrence is dispatched; each
+	// duplicate joins the canonical's result. Independent reversible calls are
+	// untouched and keep their concurrent dispatch.
+	joinTo := dedupStateTouching(calls)
+
+	// Dispatch the parseable, canonical calls concurrently through a bounded
+	// semaphore. Joined duplicates are skipped here and filled after the wait.
 	results := make([]dispatchResult, n)
 	sem := make(chan struct{}, conc)
 	var wg sync.WaitGroup
 	for i, call := range calls {
-		if parsedArgs[i] == nil {
-			// Parse-failed calls were already appended above; skip dispatch.
+		if parsedArgs[i] == nil || joinTo[i] >= 0 {
+			// Parse-failed calls were already appended above; joined duplicates
+			// take the canonical call's result after the wait. Skip dispatch.
 			continue
 		}
 		wg.Add(1)
@@ -1039,11 +1077,19 @@ func (a *Agent) runToolCalls(ctx context.Context, calls []llm.ToolCall) {
 			defer wg.Done()
 			sem <- struct{}{}
 			defer func() { <-sem }()
-			content, isErr := a.dispatchWithRetry(ctx, call.Function.Name, args)
-			results[i] = dispatchResult{content: content, isErr: isErr}
+			content, isErr, class := a.dispatchWithRetry(ctx, call.Function.Name, args)
+			results[i] = dispatchResult{content: content, isErr: isErr, class: class}
 		}(i, call, parsedArgs[i])
 	}
 	wg.Wait()
+
+	// Join each deduped duplicate to its canonical call's result (the canonical
+	// index is always earlier and was dispatched above, so it is ready now).
+	for i := range calls {
+		if parsedArgs[i] != nil && joinTo[i] >= 0 {
+			results[i] = results[joinTo[i]]
+		}
+	}
 
 	// Append results + fire ToolEnd events in CALL order so the transcript
 	// and the observer stream stay deterministic regardless of completion order.
@@ -1054,6 +1100,10 @@ func (a *Agent) runToolCalls(ctx context.Context, calls []llm.ToolCall) {
 		name := call.Function.Name
 		content := results[i].content
 		isErr := results[i].isErr
+		// Record the shared failure class (most recent classified failure wins)
+		// for the supervisor. Single-threaded here (the concurrent goroutines
+		// only wrote results[i]), so no race on a.lastFailureClass.
+		a.noteFailureClass(results[i].class)
 		// Cap the transcript copy: a single oversized tool result can blow
 		// the provider's request-body byte cap on its own. The observer
 		// below still gets the full, untruncated content so the product
@@ -1070,6 +1120,18 @@ func (a *Agent) runToolCalls(ctx context.Context, calls []llm.ToolCall) {
 // goroutine spin-up would be pure overhead). Behaviour is byte-identical
 // to the pre-P2-5 loop.
 func (a *Agent) runToolCallsSerial(ctx context.Context, calls []llm.ToolCall) {
+	// Batch idempotency (NE-3, req 5.x), serial path: an equivalent
+	// state-touching duplicate (core_execute with the same resolved intent)
+	// joins the canonical call's cached result instead of running again. The
+	// canonical index is always earlier, so its result is ready by the time a
+	// duplicate is reached.
+	joinTo := dedupStateTouching(calls)
+	type dispatchResult struct {
+		content string
+		isErr   bool
+		class   delegate.FailureClass
+	}
+	results := make([]dispatchResult, len(calls))
 	for i, call := range calls {
 		name := call.Function.Name
 		args, perr := call.ParseArgs()
@@ -1092,7 +1154,20 @@ func (a *Agent) runToolCallsSerial(ctx context.Context, calls []llm.ToolCall) {
 		if a.observer != nil {
 			a.observer(ToolEvent{ID: stepID, Name: name, Args: args, Phase: ToolStart})
 		}
-		content, isErr := a.dispatchWithRetry(ctx, name, args)
+		var content string
+		var isErr bool
+		var class delegate.FailureClass
+		if joinTo[i] >= 0 {
+			// Deduped duplicate: reuse the canonical call's result; do not
+			// submit the same state-touching work twice.
+			content, isErr, class = results[joinTo[i]].content, results[joinTo[i]].isErr, results[joinTo[i]].class
+		} else {
+			content, isErr, class = a.dispatchWithRetry(ctx, name, args)
+		}
+		results[i] = dispatchResult{content: content, isErr: isErr, class: class}
+		// Record the shared failure class (most recent classified failure wins)
+		// so the supervisor reads the SAME classification (NE-5).
+		a.noteFailureClass(class)
 		// Cap the transcript copy: a single oversized tool result (large
 		// fetch / file read / MCP payload) can blow the provider's request-
 		// body byte cap on its own. The observer below still gets the full,
@@ -1107,13 +1182,43 @@ func (a *Agent) runToolCallsSerial(ctx context.Context, calls []llm.ToolCall) {
 	}
 }
 
+// noteFailureClass records the most recent classified tool FAILURE this turn so
+// the task supervisor (LastFailureClass) reads the SAME taxonomy the dispatch
+// ladder used. A clean dispatch (ClassNone) does not clear a prior failure: a
+// deterministic blocker remains the reason the turn is stuck even if later
+// reversible calls succeed. Called only from the single-threaded result-
+// assembly paths, so it never races the concurrent dispatch goroutines.
+func (a *Agent) noteFailureClass(class delegate.FailureClass) {
+	if class != delegate.ClassNone {
+		a.lastFailureClass = class
+	}
+}
+
+// LastFailureClass reports the shared FailureClass of the most recent
+// classified tool failure in the current turn (delegate.ClassNone when none).
+// The task supervisor reads it after Chat returns to decide whether a
+// non-clean exit is a deterministic blocker (stop-and-ask, no respawn) or a
+// transient/model/stall failure (the existing respawn path).
+func (a *Agent) LastFailureClass() delegate.FailureClass { return a.lastFailureClass }
+
 // dispatchWithRetry runs one tool call with the recovery ladder: bounded
 // retries for transport/invocation errors (ladder 1); on exhaustion it
 // returns a descriptive failure as the tool result so the model can adapt
 // (ladder 2/4) rather than the harness crashing.
-func (a *Agent) dispatchWithRetry(ctx context.Context, name string, args map[string]interface{}) (string, bool) {
+//
+// It reads the shared failure taxonomy (delegate.ClassOf): a DETERMINISTIC
+// failure (a 4xx that recurs identically — a denied permission, an invalid or
+// unparseable request) is returned as a SINGLE terminal result with no further
+// attempts, mirroring chatWithRetry's ErrProviderRejected short-circuit. This
+// stops the blind-retry amplifier (NE-1). Conflict (already-in-flight 409) and
+// pending (structured clarify) are deliberately NOT short-circuited here: they
+// are left to their dedicated handlers (attach-to-existing / slot-fill); for
+// now they keep the bounded-retry behavior. The returned FailureClass is the
+// class of the failure that ended the dispatch (delegate.ClassNone on success),
+// surfaced so the supervisor reads the SAME classification.
+func (a *Agent) dispatchWithRetry(ctx context.Context, name string, args map[string]interface{}) (string, bool, delegate.FailureClass) {
 	if a.tools == nil {
-		return "no tools are available in this session.", true
+		return "no tools are available in this session.", true, delegate.ClassNone
 	}
 	var lastErr error
 	for attempt := 0; attempt <= a.cfg.MaxRetriesPerTool; attempt++ {
@@ -1124,14 +1229,22 @@ func (a *Agent) dispatchWithRetry(ctx context.Context, name string, args map[str
 		}
 		content, isErr, err := a.tools.Dispatch(ctx, name, args)
 		if err == nil {
-			return content, isErr
+			return content, isErr, delegate.ClassNone
 		}
 		lastErr = err
 		if ctx.Err() != nil {
 			break
 		}
+		// A deterministic failure will recur identically on a retry of the same
+		// request — stop the ladder now and return a single terminal result so
+		// the agent stops-and-asks instead of looping (and, on a metered
+		// gateway, re-spending). Mirrors chatWithRetry's ErrProviderRejected
+		// short-circuit.
+		if delegate.ClassOf(err) == delegate.ClassDeterministic {
+			return fmt.Sprintf("tool %q failed and this is a permanent error that will not change on a retry: %v. Don't repeat this call — adjust the approach or ask the user how they'd like to proceed.", name, lastErr), true, delegate.ClassDeterministic
+		}
 	}
-	return fmt.Sprintf("tool %q failed after %d attempts: %v. Consider a different approach.", name, a.cfg.MaxRetriesPerTool+1, lastErr), true
+	return fmt.Sprintf("tool %q failed after %d attempts: %v. Consider a different approach.", name, a.cfg.MaxRetriesPerTool+1, lastErr), true, delegate.ClassOf(lastErr)
 }
 
 func (a *Agent) lastToolSummary() string {
@@ -1161,6 +1274,54 @@ func (a *Agent) budgetPct(system string) int {
 		pct = 100
 	}
 	return pct
+}
+
+// stateTouchDedupKey returns a dedup key for a non-idempotent, state-touching
+// tool call (core_execute), keyed on its RESOLVED intent so two equivalent
+// calls in one assistant batch collapse to a single run (NE-3, req 5.1/5.3).
+// The daemon mints a deterministic intent id from the prose, so two
+// core_execute calls with identical intent text would otherwise either both
+// submit the same work or deterministically 409 against each other. Returns
+// ("", false) for reversible / independent calls, which always keep their
+// concurrent dispatch (req 5.2 — no latency regression for the common case).
+func stateTouchDedupKey(call llm.ToolCall) (string, bool) {
+	if call.Function.Name != tools.CoreExecuteTool {
+		return "", false
+	}
+	args, err := call.ParseArgs()
+	if err != nil {
+		return "", false // unparseable: let the call surface its own parse error
+	}
+	intent, _ := args["intent"].(string)
+	intent = strings.TrimSpace(intent)
+	if intent == "" {
+		return "", false
+	}
+	return tools.CoreExecuteTool + "\x00" + intent, true
+}
+
+// dedupStateTouching returns, for each call index, the index of an EARLIER call
+// in the same batch it is an equivalent duplicate of (-1 when it is canonical
+// or not a dedup candidate). Only non-idempotent state-touching calls are
+// deduped; independent reversible calls are always -1 so they keep dispatching
+// concurrently. The canonical (first) occurrence runs once and the duplicates
+// join its result.
+func dedupStateTouching(calls []llm.ToolCall) []int {
+	joinTo := make([]int, len(calls))
+	firstByKey := map[string]int{}
+	for i := range calls {
+		joinTo[i] = -1
+		key, ok := stateTouchDedupKey(calls[i])
+		if !ok {
+			continue
+		}
+		if j, seen := firstByKey[key]; seen {
+			joinTo[i] = j
+		} else {
+			firstByKey[key] = i
+		}
+	}
+	return joinTo
 }
 
 func batchSignature(calls []llm.ToolCall) string {

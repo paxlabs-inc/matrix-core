@@ -58,6 +58,17 @@ type Engine struct {
 
 	mu   sync.Mutex
 	runs map[string]*run // active runs by id, for gate-answer routing
+
+	// gateClaims serialises approval-gate answering across the per-call
+	// delegate clients (engine.coreExecute builds a fresh delegate.Client per
+	// call). Keyed on MCL intent id + gate node id, it lets only ONE delegate
+	// service a given gate, so two concurrent attaches to the same in-flight
+	// intent (a re-dispatch joining a parked launch) cannot double-answer it
+	// (req 2.4). This is the delegate-side reconcile chosen over a daemon-side
+	// idempotent-create: it lives entirely on the conversational seam and never
+	// touches the signed MCL path.
+	gateClaimsMu sync.Mutex
+	gateClaims   map[string]bool
 }
 
 // EngineOptions configures NewEngine. Main + Tools are required; the rest are
@@ -97,6 +108,7 @@ func NewEngine(o EngineOptions) *Engine {
 		backendToken: o.BackendToken,
 		broker:       newBroker(),
 		runs:         map[string]*run{},
+		gateClaims:   map[string]bool{},
 	}
 	e.sessions = newSessionRegistry(e)
 	// Persist the durable workspace timeline (F3): the broker tap routes every
@@ -254,8 +266,29 @@ func (e *Engine) coreExecute(ctx context.Context, intent string) (string, error)
 		CallerDID: e.cfg.ActorDID,
 		Approver:  e.approverFor(r),
 		Notify:    e.notifyFor(r),
+		GateClaim: e.claimGate,
 	})
 	return dele.Run(ctx, intent)
+}
+
+// claimGate is the shared cross-attach gate guard handed to every per-call
+// delegate client. The FIRST caller to claim (intentID, nodeID) wins and may
+// answer the gate; later callers (a concurrent attach to the same in-flight
+// intent) lose the claim and skip answering, so a single approval gate is
+// serviced exactly once even when two core_execute delegations join the same
+// run. Safe for concurrent use.
+func (e *Engine) claimGate(intentID, nodeID string) bool {
+	key := intentID + "\x00" + nodeID
+	e.gateClaimsMu.Lock()
+	defer e.gateClaimsMu.Unlock()
+	if e.gateClaims[key] {
+		return false
+	}
+	if e.gateClaims == nil {
+		e.gateClaims = map[string]bool{}
+	}
+	e.gateClaims[key] = true
+	return true
 }
 
 // approverFor surfaces a delegated MCL gate as a gate.invoked event on the
