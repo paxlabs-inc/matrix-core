@@ -280,6 +280,32 @@
         {"name": "layerx_withdraw", "description": "Burn USDX to release real USDL out of the vault to your mapped Paxeer payout address, optionally swapping out. Bounded by your escrow-backed balance; force-settled. args: amount_usdx, swap_out? (target asset ticker).", "side_effect_class": "write", "timeout_ms": 30000},
         {"name": "layerx_settle", "description": "Force-settle now: seal the current window and anchor its Merkle root (and queued withdrawal payouts) to Paxeer immediately instead of waiting for the window. Idempotent + crash-safe.", "side_effect_class": "write", "timeout_ms": 60000}
       ]
+    },
+    {
+      "alias": "kindle",
+      "transport": "stdio",
+      "command": "node",
+      "args": ["/root/matrix/tools/kindle/kindle.mjs"],
+      "env": [],
+      "package_digest": "sha256:01ffcdc0e548db531ab9126af68e876bd2144584f3ea65cb6613ca9b883ece2a",
+      "version": "0.1.0",
+      "tools": [
+        {"name": "kindle_pools", "description": "List KindleLaunch pools (paginated discovery) on Paxeer chain 125. Read-only. args: offset?, limit? (<=100).", "side_effect_class": "network", "timeout_ms": 20000},
+        {"name": "kindle_market", "description": "Token/market detail: price, market cap, reserves, fee, optical, creator. Read-only. args: pool (or token).", "side_effect_class": "network", "timeout_ms": 20000},
+        {"name": "kindle_quote", "description": "Quote a trade and the quote-bounded minimum out via the Quoter. Read-only. args: pool (or token), amount (human), side (buy|sell), slippageBps?.", "side_effect_class": "network", "timeout_ms": 20000},
+        {"name": "kindle_fees", "description": "Pending/accumulated fees for a pool in USDL (+ airdrop/LP/optical balances) from FeeAccumulator. Read-only. args: pool (or token).", "side_effect_class": "network", "timeout_ms": 20000},
+        {"name": "kindle_optical_info", "description": "Optical detail: name/description/risk + whether it is verified on the OpticalRegistry. Read-only. args: optical (preset name or 0x). Omit to list presets.", "side_effect_class": "network", "timeout_ms": 20000},
+        {"name": "kindle_position", "description": "A wallet's token balance for a pool/token. Read-only. args: token (or pool), address? (defaults to the agent wallet).", "side_effect_class": "network", "timeout_ms": 20000},
+        {"name": "kindle_launch", "description": "Launch a token + market via Router.createMarket. WRITE: signs+broadcasts via the embedded wallet under the agent leash. args: name, symbol, feeStrategy (CLAIM|BURN|AIRDROP|LP_REWARDS), optical? (preset name|0x|none), dry_run?.", "side_effect_class": "write", "timeout_ms": 60000},
+        {"name": "kindle_buy", "description": "Buy a token with USDL (quote-bounded slippage + deadline). WRITE: signs+broadcasts via the embedded wallet under the agent leash. args: pool (or token), amount (human USDL), slippageBps?, deadline?, dry_run?.", "side_effect_class": "write", "timeout_ms": 60000},
+        {"name": "kindle_sell", "description": "Sell a token for USDL (quote-bounded slippage + deadline). WRITE: signs+broadcasts via the embedded wallet under the agent leash. args: pool (or token), amount (human tokens), slippageBps?, deadline?, dry_run?.", "side_effect_class": "write", "timeout_ms": 60000},
+        {"name": "kindle_swap", "description": "Swap token A -> USDL -> token B in one tx (end-to-end slippage). WRITE: signs+broadcasts via the embedded wallet under the agent leash. args: tokenIn, tokenOut, amount (human), slippageBps?, deadline?, dry_run?.", "side_effect_class": "write", "timeout_ms": 60000},
+        {"name": "kindle_collect_fees", "description": "Collect a pool's fees per its current strategy (NFT-owner gated) via FeesRouter. WRITE: signs+broadcasts via the embedded wallet under the agent leash. args: nftId (or pool), dry_run?.", "side_effect_class": "write", "timeout_ms": 60000},
+        {"name": "kindle_set_fee_strategy", "description": "Change a pool's fee strategy (NFT-owner gated) via FeesRouter.setFeeStrategy. WRITE: signs+broadcasts via the embedded wallet under the agent leash. args: nftId (or pool), strategy (CLAIM|BURN|AIRDROP|LP_REWARDS), dry_run?.", "side_effect_class": "write", "timeout_ms": 60000},
+        {"name": "kindle_set_metadata", "description": "Publish/update a token's display metadata + logo/banner on the KindleLaunch media services so it renders on the frontend. WRITE: creator-gated EIP-191; signs a gasless message with the embedded wallet (must be the pool creator). args: token (or pool), description?, website?, twitter?, telegram?, discord?, tags?, logo? (URL or data: URI), banner?, dry_run?.", "side_effect_class": "write", "timeout_ms": 60000},
+        {"name": "kindle_create_optical_preset", "description": "Attach a deployed preset optical, or (if a factory is deployed) deploy a configured LaunchpadOptical. WRITE: signs+broadcasts via the embedded wallet when deploying. args: preset (antisnipe|maxwallet|tax|cooldown|buybackburn) OR launchpad config, dry_run?.", "side_effect_class": "write", "timeout_ms": 60000},
+        {"name": "kindle_create_optical_custom", "description": "Author a BaseOptical-derived custom optical (returns compilable Solidity + getFlags bitmap + the Tachyon deploy steps). Escalate-class; the deploy itself runs through the Tachyon tools + embedded wallet. args: name, hooks[] (beforeSwap|afterSwap|beforeFeeDistribution|afterFeeDistribution), bodies{hook:solidity}?, immutables[{type,name}]?, notes?.", "side_effect_class": "write", "timeout_ms": 60000}
+      ]
     }
   ],
   "native_tools": []

@@ -167,6 +167,23 @@
       ]
     },
     {
+      "alias": "kindle-reads",
+      "transport": "stdio",
+      "command": "node",
+      "args": ["/root/matrix/tools/kindle/kindle.mjs"],
+      "env": ["KINDLE_READS_ONLY=1"],
+      "package_digest": "sha256:01ffcdc0e548db531ab9126af68e876bd2144584f3ea65cb6613ca9b883ece2a",
+      "version": "0.1.0",
+      "tools": [
+        {"name": "kindle_pools", "description": "List KindleLaunch pools (paginated discovery) on Paxeer chain 125. Read-only. args: offset?, limit? (<=100).", "side_effect_class": "network", "timeout_ms": 20000},
+        {"name": "kindle_market", "description": "Token/market detail: price, market cap, reserves, fee, optical, creator. Read-only. args: pool (or token).", "side_effect_class": "network", "timeout_ms": 20000},
+        {"name": "kindle_quote", "description": "Quote a trade and the quote-bounded minimum out via the Quoter. Read-only. args: pool (or token), amount (human), side (buy|sell), slippageBps?.", "side_effect_class": "network", "timeout_ms": 20000},
+        {"name": "kindle_fees", "description": "Pending/accumulated fees for a pool in USDL (+ airdrop/LP/optical balances) from FeeAccumulator. Read-only. args: pool (or token).", "side_effect_class": "network", "timeout_ms": 20000},
+        {"name": "kindle_optical_info", "description": "Optical detail: name/description/risk + whether it is verified on the OpticalRegistry. Read-only. args: optical (preset name or 0x). Omit to list presets.", "side_effect_class": "network", "timeout_ms": 20000},
+        {"name": "kindle_position", "description": "A wallet's token balance for a pool/token. Read-only. args: token (or pool), address? (defaults to the agent wallet).", "side_effect_class": "network", "timeout_ms": 20000}
+      ]
+    },
+    {
       "alias": "media",
       "transport": "stdio",
       "command": "node",

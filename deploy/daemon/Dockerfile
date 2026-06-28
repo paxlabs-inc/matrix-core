@@ -172,6 +172,14 @@ COPY tools/websearch /opt/matrix/tools/websearch
 COPY tools/browser   /opt/matrix/tools/browser
 COPY tools/exec      /opt/matrix/tools/exec
 COPY tools/tachyon   /opt/matrix/tools/tachyon
+# kindle stdio MCP bridge (KindleLaunch / Sidiora launchpad on Paxeer chain 125):
+# reads (pools/market/quote/fees/optical) + escalate-class writes (launch/trade/
+# collect-fees/optical/set-metadata). Reuses tools/paxeer's embedded-wallet lane
+# (one signing path) and writes token metadata to the KindleLaunch media services
+# so launched tokens render on the frontend. Declared in BOTH agents/default.json
+# (full) and agents/neo.json (reads-only); the strict spawn check exits if the
+# file is missing, so it MUST be baked.
+COPY tools/kindle    /opt/matrix/tools/kindle
 # deus stdio MCP proxy -> Deus control plane via MATRIX_DEUS_URL. Declared in
 # agents/default.json; the daemon's strict spawn check exits if it's missing.
 COPY tools/deus      /opt/matrix/tools/deus

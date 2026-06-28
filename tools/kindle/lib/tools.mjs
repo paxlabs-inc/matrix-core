@@ -14,10 +14,11 @@ import {
 import {
   callMethod, decimalsFor, tokenAddress, allowance, erc20Balance, approveCalldata,
   encodeCall, decode, toBaseUnits, fromBaseUnits, sendTx, agentAddress, walletConfigured,
-  explorerTx, rpc, MAX_APPROVAL,
+  explorerTx, rpc, signMessage, MAX_APPROVAL,
 } from './chain.mjs'
 import { keccak256Utf8 } from '../../paxeer/lib/keccak.mjs'
 import { buildCustomOptical } from './optical_template.mjs'
+import { uploadMetadata } from './media.mjs'
 
 const ZERO = '0x0000000000000000000000000000000000000000'
 
@@ -31,7 +32,7 @@ function ok(obj) {
 const READS_ONLY = process.env.KINDLE_READS_ONLY === '1'
 const WRITE_TOOL_NAMES = new Set([
   'kindle_launch', 'kindle_buy', 'kindle_sell', 'kindle_swap',
-  'kindle_collect_fees', 'kindle_set_fee_strategy',
+  'kindle_collect_fees', 'kindle_set_fee_strategy', 'kindle_set_metadata',
   'kindle_create_optical_preset', 'kindle_create_optical_custom',
 ])
 
@@ -167,6 +168,55 @@ async function parseLaunchReceipt(txHash) {
     }
   }
   return null
+}
+
+// metadataFromArgs — pull the frontend-display metadata + image inputs out of a
+// tool's args into the shape uploadMetadata wants. Accepts logo/banner as an
+// http(s) URL, a data: URI, or {base64,contentType}. `tags` may be an array or
+// a comma-separated string. name/symbol fall back to the launch fields.
+function metadataFromArgs(args = {}, fallback = {}) {
+  const tags = Array.isArray(args.tags)
+    ? args.tags
+    : (typeof args.tags === 'string' && args.tags.trim() ? args.tags.split(',').map((t) => t.trim()).filter(Boolean) : undefined)
+  const metadata = {
+    name: args.name ?? fallback.name,
+    symbol: args.symbol ?? fallback.symbol,
+    description: args.description,
+    website: args.website,
+    twitter: args.twitter,
+    telegram: args.telegram,
+    discord: args.discord,
+    tags,
+    decimals: args.decimals,
+  }
+  const logo = args.logo ?? args.logoUrl ?? args.image ?? args.imageUrl
+    ?? (args.logoBase64 ? { base64: args.logoBase64, contentType: args.logoContentType } : undefined)
+  const banner = args.banner ?? args.bannerUrl
+    ?? (args.bannerBase64 ? { base64: args.bannerBase64, contentType: args.bannerContentType } : undefined)
+  return { metadata, logo, banner }
+}
+
+// hasMetadataInput — true when the args carry anything worth uploading.
+function hasMetadataInput({ metadata, logo, banner }) {
+  if (logo || banner) return true
+  return ['description', 'website', 'twitter', 'telegram', 'discord', 'tags'].some(
+    (k) => metadata[k] !== undefined && metadata[k] !== null && String(metadata[k]).trim() !== '',
+  )
+}
+
+// publishMetadata — write the token's display metadata + images so it renders on
+// the KindleLaunch frontend. Best-effort: returns a structured result and never
+// throws (callers surface it without failing the on-chain action).
+async function publishMetadata(tokenAddress, owner, parts) {
+  try {
+    return await uploadMetadata({
+      tokenAddress, wallet: owner,
+      metadata: parts.metadata, logo: parts.logo, banner: parts.banner,
+      signMessage,
+    })
+  } catch (e) {
+    return { ok: false, uploaded: false, reason: e?.message ?? String(e) }
+  }
 }
 
 // ── dispatch ────────────────────────────────────────────────────────────────
@@ -307,18 +357,32 @@ export async function dispatch(name, args = {}) {
       }
       const data = encodeCall('createMarket(string,string,uint8,address)', [args.name, args.symbol, strategy, optical])
       plan.push({ label: 'createMarket', to: CONTRACTS.router, data })
+      // Metadata (description/socials/logo/banner) is what makes the token SHOW
+      // UP on the frontend; createMarket alone only registers the pool. Gather
+      // any provided display metadata to publish right after the launch lands.
+      const metaParts = metadataFromArgs(args, { name: args.name, symbol: args.symbol })
+      const wantMetadata = hasMetadataInput(metaParts)
       const extra = {
         action: 'launch', name: args.name, symbol: args.symbol,
         feeStrategy: FEE_STRATEGY_NAME[strategy], optical,
         creationFeeUsdl: usdlHuman(creationFee.toString()),
       }
-      if (dryRun) return ok({ ok: true, dry_run: true, planned: plan, ...extra })
+      if (dryRun) {
+        return ok({ ok: true, dry_run: true, planned: plan, ...extra, metadata: wantMetadata ? metaParts.metadata : undefined })
+      }
       const res = await execPlan(plan, extra)
       const parsed = JSON.parse(res.content[0].text)
       if (parsed.ok && parsed.txs && parsed.txs.length) {
         const launchTx = parsed.txs[parsed.txs.length - 1].tx_hash
         const outcome = await parseLaunchReceipt(launchTx)
-        if (outcome) return ok({ ...parsed, ...outcome, explorer: explorerTx(launchTx) })
+        if (outcome) {
+          // Publish display metadata so the token renders on the frontend. The
+          // creator is the embedded wallet that just signed createMarket, which
+          // is exactly the wallet media/metadata requires (creator-gated).
+          let metadata
+          if (wantMetadata) metadata = await publishMetadata(outcome.token, outcome.creator, metaParts)
+          return ok({ ...parsed, ...outcome, explorer: explorerTx(launchTx), metadata })
+        }
       }
       return res
     }
@@ -422,6 +486,34 @@ export async function dispatch(name, args = {}) {
       const extra = { action: 'set_fee_strategy', nftId, strategy: FEE_STRATEGY_NAME[strategy] }
       const plan = [{ label: 'setFeeStrategy', to: CONTRACTS.feesRouter, data }]
       return dryRun ? ok({ ok: true, dry_run: true, planned: plan, ...extra }) : execPlan(plan, extra)
+    }
+
+    case 'kindle_set_metadata': {
+      // Publish/update the token's display metadata + images on the KindleLaunch
+      // backend so it renders on the frontend. Creator-gated (EIP-191): the
+      // embedded wallet signs and must be the pool creator. Used both standalone
+      // (edit later) and as the metadata leg paired with a launch.
+      let token = tokenAddress(args.token)
+      let pool = null
+      if (!token && args.pool) {
+        pool = await resolvePool(args.pool)
+        const meta = pool && await readPoolMetadata(pool)
+        token = meta && meta.token
+      }
+      if (!token) return decline('provide the token address (or its pool) whose metadata to set')
+      const parts = metadataFromArgs(args)
+      if (!hasMetadataInput(parts)) {
+        return decline('nothing to set — provide a description, socials (website/twitter/telegram/discord), tags, or a logo/banner image')
+      }
+      const owner = await ownerFor(args)
+      if (dryRun) {
+        return ok({ ok: true, dry_run: true, action: 'set_metadata', token, owner, metadata: parts.metadata, hasLogo: !!parts.logo, hasBanner: !!parts.banner })
+      }
+      if (!walletConfigured()) {
+        return ok({ ok: false, error: 'wallet not configured', hint: 'metadata upload signs with the embedded wallet, provisioned inside MCL', token, metadata: parts.metadata })
+      }
+      const result = await publishMetadata(token, owner, parts)
+      return ok({ action: 'set_metadata', token, ...result })
     }
 
     case 'kindle_create_optical_preset': {
@@ -556,7 +648,8 @@ const ALL_TOOLS = [
   { name: 'kindle_optical_info', description: 'Optical detail: name/description/risk + whether it is verified on the registry. args: optical (preset name or 0x). Omit to list presets.', inputSchema: A({ optical: S('preset name or 0x address') }) },
   { name: 'kindle_position', description: 'A wallet\'s token balance for a pool/token. args: token (or pool), address? (defaults to the agent wallet).', inputSchema: A({ token: S('token 0x/symbol'), pool: S('pool 0x'), address: S('holder 0x; optional') }) },
   // writes (escalate-class)
-  { name: 'kindle_launch', description: 'Launch a token + market. args: name, symbol, feeStrategy (CLAIM|BURN|AIRDROP|LP_REWARDS), optical? (preset name|0x|none), dry_run?.', inputSchema: A({ name: S('token name'), symbol: S('token symbol'), feeStrategy: S('CLAIM|BURN|AIRDROP|LP_REWARDS'), optical: S('preset name, 0x, or none'), dry_run: B('plan only, do not send') }, ['name', 'symbol']) },
+  { name: 'kindle_launch', description: 'Launch a token + market AND publish its display metadata so it shows on the frontend. args: name, symbol, feeStrategy (CLAIM|BURN|AIRDROP|LP_REWARDS), optical? (preset name|0x|none); optional display metadata published right after launch: description?, website?, twitter?, telegram?, discord?, tags? (array or comma string), logo? (http(s) URL or data: URI), banner? (URL or data: URI), logoBase64?/bannerBase64?; dry_run?.', inputSchema: A({ name: S('token name'), symbol: S('token symbol'), feeStrategy: S('CLAIM|BURN|AIRDROP|LP_REWARDS'), optical: S('preset name, 0x, or none'), description: S('short blurb shown on the frontend'), website: S('https URL'), twitter: S('handle or URL'), telegram: S('handle or URL'), discord: S('invite or URL'), tags: { type: 'array', description: 'search tags' }, logo: S('logo image: http(s) URL or data: URI'), banner: S('banner image: http(s) URL or data: URI'), logoBase64: S('logo bytes base64 (with logoContentType)'), bannerBase64: S('banner bytes base64'), dry_run: B('plan only, do not send') }, ['name', 'symbol']) },
+  { name: 'kindle_set_metadata', description: 'Publish/update a token\'s display metadata + images on the KindleLaunch backend so it renders on the frontend (creator-gated; signs with the embedded wallet). args: token (or pool), and any of description, website, twitter, telegram, discord, tags (array|comma), decimals, logo (URL or data: URI), banner (URL or data: URI), logoBase64/bannerBase64; dry_run?.', inputSchema: A({ token: S('token 0x or symbol'), pool: S('pool 0x'), name: S('token name'), symbol: S('token symbol'), description: S('short blurb'), website: S('https URL'), twitter: S('handle or URL'), telegram: S('handle or URL'), discord: S('invite or URL'), tags: { type: 'array', description: 'search tags' }, decimals: N('token decimals'), logo: S('logo: http(s) URL or data: URI'), banner: S('banner: http(s) URL or data: URI'), logoBase64: S('logo bytes base64'), bannerBase64: S('banner bytes base64'), dry_run: B('plan only') }) },
   { name: 'kindle_buy', description: 'Buy a token with USDL (quote-bounded slippage + deadline). args: pool (or token), amount (human USDL), slippageBps?, deadline?, dry_run?.', inputSchema: A({ pool: S('pool 0x'), token: S('token 0x/symbol'), amount: S('human USDL'), slippageBps: N('default 100'), deadline: N('secs from now or unix'), dry_run: B('plan only') }, ['amount']) },
   { name: 'kindle_sell', description: 'Sell a token for USDL (quote-bounded slippage + deadline). args: pool (or token), amount (human tokens), slippageBps?, deadline?, dry_run?.', inputSchema: A({ pool: S('pool 0x'), token: S('token 0x/symbol'), amount: S('human token amount'), slippageBps: N('default 100'), deadline: N('secs from now or unix'), dry_run: B('plan only') }, ['amount']) },
   { name: 'kindle_swap', description: 'Swap token A -> USDL -> token B in one tx (end-to-end slippage). args: tokenIn, tokenOut, amount (human), slippageBps?, deadline?, dry_run?.', inputSchema: A({ tokenIn: S('0x/symbol'), tokenOut: S('0x/symbol'), amount: S('human amount of tokenIn'), slippageBps: N('default 100'), deadline: N('secs from now or unix'), dry_run: B('plan only') }, ['tokenIn', 'tokenOut', 'amount']) },

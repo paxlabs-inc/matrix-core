@@ -43,6 +43,34 @@ export const ENDPOINTS = {
   bff: (pick('KINDLE_DATA_API', 'KINDLE_BFF_URL') ?? 'https://api.kindlelaunch.com').replace(/\/+$/, ''),
 }
 
+// ── Media services (token metadata + images that the frontend displays) ───────
+// A launched token only SHOWS UP on the KindleLaunch frontend once its metadata
+// (name/symbol/description/socials) and logo/banner are written to the media
+// services. Two write paths, both EIP-191 gated (the creator wallet signs):
+//   - gateway  : the public media edge (cdn.kindlelaunch.com) POST
+//                /upload/token/{addr} — scans images, then FORWARDS the multipart
+//                to media/metadata. Default write path (image scanning at edge).
+//   - metadata : media/metadata directly (metadata.kindlelaunch.com) POST
+//                /metadata/{addr} — the authoritative writer; also serves the
+//                public read GET /metadata/{addr} the frontend consumes.
+// Every value is env-overridable so the same bridge runs against staging/prod.
+export const MEDIA = {
+  // Public media gateway (write edge): POST {gateway}/upload/token/{addr}.
+  gateway: (pick('KINDLE_MEDIA_GATEWAY', 'KINDLE_GATEWAY_URL') ?? 'https://cdn.kindlelaunch.com').replace(/\/+$/, ''),
+  // media/metadata (authoritative writer + public read): /metadata/{addr}.
+  metadata: (pick('KINDLE_METADATA_URL') ?? 'https://metadata.kindlelaunch.com').replace(/\/+$/, ''),
+  // Which path metadata writes go through: 'gateway' (default, scans images) or
+  // 'metadata' (direct to the authoritative writer).
+  uploadVia: (pick('KINDLE_MEDIA_UPLOAD_VIA') ?? 'gateway').toLowerCase(),
+  // Caps mirrored from media/metadata (logo 2 MiB, banner 5 MiB) so the bridge
+  // rejects oversize images before the network round-trip.
+  maxLogoBytes: Number(pick('KINDLE_MAX_LOGO_BYTES') ?? 2 * 1024 * 1024),
+  maxBannerBytes: Number(pick('KINDLE_MAX_BANNER_BYTES') ?? 5 * 1024 * 1024),
+  // Public frontend base for the human-meaningful token link shown after a
+  // launch (consumer-transparency: the user clicks through to their token).
+  frontend: (pick('KINDLE_FRONTEND_URL') ?? 'https://kindlelaunch.com').replace(/\/+$/, ''),
+}
+
 // ── Protocol contracts (Paxeer mainnet, chain 125; 2026-06-20 manifest) ──────
 // Proxies are the call targets; impls are listed in the manifest but never
 // called directly. Every address is env-overridable (KINDLE_<NAME>).

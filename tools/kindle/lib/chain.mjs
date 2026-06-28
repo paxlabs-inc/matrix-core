@@ -117,4 +117,10 @@ export async function sendTx(tx) {
   return { ...r, explorer: r && r.tx_hash ? explorerTx(r.tx_hash) : undefined }
 }
 
+// signMessage — gasless EIP-191 personal_sign through the embedded wallet.
+// Returns {signature,address}. Used to authenticate creator-gated off-chain
+// writes (e.g. the media/metadata token-metadata upsert) with the SAME wallet
+// that signs on-chain — no second identity, no per-action user prompt.
+export const signMessage = (message) => wallet.signMessage(message)
+
 export { CHAIN, ENDPOINTS, TOKENS }

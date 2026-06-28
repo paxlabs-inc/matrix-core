@@ -190,6 +190,18 @@ func main() {
 			// MATRIX_TACHYON_TOKEN (optional) is the engine's own bearer.
 			"MATRIX_TACHYON_URL":   envOr("MATRIX_TACHYON_URL", "http://matrix-tachyon.internal:8645/rpc"),
 			"MATRIX_TACHYON_TOKEN": os.Getenv("MATRIX_TACHYON_TOKEN"),
+			// KindleLaunch bridge (tools/kindle in the daemon image). All contract
+			// addresses self-default to the 2026-06-20 chain-125 manifest in
+			// lib/config.mjs; signing reuses the paxeer embedded-wallet lane (the
+			// daemon executor key), so no new auth env is needed. These knobs let
+			// the operator repoint the chain RPC, the media write edge (token
+			// metadata + logo/banner upload so launches render on the frontend),
+			// and the public frontend link via /etc/matrix/router.env. Defaults
+			// equal the in-bridge defaults, so behavior is unchanged when unset.
+			"KINDLE_RPC_URL":       envOr("KINDLE_RPC_URL", "https://public-mainnet.rpcpaxeer.online/evm"),
+			"KINDLE_MEDIA_GATEWAY": envOr("KINDLE_MEDIA_GATEWAY", "https://cdn.kindlelaunch.com"),
+			"KINDLE_METADATA_URL":  envOr("KINDLE_METADATA_URL", "https://metadata.kindlelaunch.com"),
+			"KINDLE_FRONTEND_URL":  envOr("KINDLE_FRONTEND_URL", "https://kindlelaunch.com"),
 			// UWAC connector hub (tools/uwac/uwac.mjs stdio proxy in the daemon
 			// image -> the shared uwacd Fly app: OAuth connector vault + tool
 			// invoke). Like the browser/tachyon proxies it answers
