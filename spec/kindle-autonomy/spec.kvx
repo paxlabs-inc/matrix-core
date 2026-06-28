@@ -1,0 +1,363 @@
+# spec.kvx — Neo × KindleLaunch Autonomy. SINGLE SOURCE for this feature's
+# requirements + design + tasks. Rendered to requirements.md / design.md /
+# tasks.md by spec/specgen. Do not edit the generated markdown; edit this file
+# and regenerate.
+#
+# Format: Matrix .kvx (see tachyon/internal/config/kvx.go). One key = value per
+# line; string values double-quoted; lists are ["a","b"]; # starts a comment.
+# Schema (see the construct-os-shell spec for the worked example):
+#   [req.<n>]   title, story, ac_1..ac_n          (acceptance criteria, EARS)
+#   [design]    overview, include="design.body.md" (rich prose/diagrams inlined)
+#   [task.<id>] title, status, wave, reqs, requires (dotted ids: 1, 1.1, 1.2)
+
+[meta]
+feature      = "kindle-autonomy"
+title        = "Neo × KindleLaunch Autonomy"
+status       = "draft"
+spec_version = "0.1.0"
+intro        = "Give Neo — Matrix's default conversational agent — the ability to autonomously LAUNCH tokens/markets, TRADE, WATCH (recurring monitoring), COLLECT FEES, and CREATE OPTICALS (Uniswap-v4-hook-style pool plugins) for users on KindleLaunch (the Sidiora launchpad on Paxeer Network, chain id 125). 'Autonomous' means Neo executes value-moving operations through the existing MCL pipeline against the per-user agent-designated EMBEDDED WALLET (Paxport, /v1/agent/* lane), which signs and broadcasts server-side under a one-time user-granted leash (mode + spend caps). The user is NOT present and signs NOTHING per action. This preserves the frozen key-isolation invariant (Neo holds no signing key; all money crosses into MCL) while evolving the approval model from a per-spend in-conversation gate to a pre-authorized leash. The feature is overwhelmingly additive wiring over substrate that already exists: the embedded-wallet write lane (tools/paxeer/lib/wallet.mjs + agentauth.mjs), the MCL core_execute delegation, the Tachyon compile/deploy toolbox (tools/tachyon), and the chronos scheduled-wake daemon (tools/chronos). These requirements trace to the approved design (rendered into design.md)."
+
+[design]
+overview = "See the full design below (overview, hard constraints, the canonical address book, end-to-end architecture with sequence diagrams, the kindle MCP bridge tool surface, the pre-authorized leash approval model and the neo.frozen.kvx changes it requires, the five capability flows, the Watch loop, the two-tier Optical creation path, data/contract maps, and per-tool function specs). The design content is authored as a rich markdown fragment (design.body.md) and inlined here verbatim, because mermaid diagrams and code blocks do not fit single-line kvx values."
+include  = "design.body.md"
+
+# ============================== REQUIREMENTS ==============================
+
+[req.1]
+title = "Key-isolation preserved (Neo never signs; all value crosses into MCL)"
+story = "As the system owner, I want Neo to remain structurally incapable of moving funds on its own, so that the frozen key-isolation backstop is preserved even as Neo gains launchpad autonomy."
+ac_1 = "THE Neo agent SHALL hold no signing key and SHALL NOT itself sign or broadcast any KindleLaunch transaction."
+ac_2 = "WHEN a KindleLaunch operation moves value, requires a signature, or deploys a contract (launch, trade, fee collection except read-only views, and optical deployment), THE Neo agent SHALL reach it only by delegating a natural-language intent through the core_execute tool to the MCL pipeline, and SHALL NOT reach it through a directly-callable Neo tool."
+ac_3 = "WHEN the MCL pipeline executes a value-moving KindleLaunch operation, THE system SHALL sign and broadcast it exclusively through the per-user agent-designated embedded wallet's /v1/agent/* lane (server-side custody), and the embedded wallet's private key SHALL NOT be exposed to Neo, the kindle bridge, or MCL."
+ac_4 = "WHERE the kindle bridge is loaded into Neo's conversational surface, THE kindle bridge SHALL run with its read-only surface active (PAXEER_READS_ONLY semantics) so that its signing/spending tools are not advertised to and not callable by Neo."
+ac_5 = "IF a directly-callable escalate-class KindleLaunch tool is somehow invoked on Neo's surface, THEN the bridge SHALL refuse it and return a structured directive to route the action through core_execute, and SHALL NOT sign or broadcast."
+
+[req.2]
+title = "Pre-authorized leash approval model (one-time approval, no per-action signing, user-absent)"
+story = "As a user, I want to authorize Neo once with a clear leash and then let it act on my behalf without me being present or signing anything, so that automation is genuinely hands-off while I keep ultimate control."
+ac_1 = "THE system SHALL treat the user's authorization for autonomous KindleLaunch execution as a one-time agent leash on the embedded wallet expressed as a mode (read_only | trade_only | full) and spend caps, and SHALL NOT require a per-action wallet signature from the user."
+ac_2 = "WHILE a leash is in effect, THE system SHALL allow Neo to dispatch launch/trade/fee/optical operations through MCL without the user being present and without an in-conversation per-spend approval gate for operations that fall within the leash."
+ac_3 = "WHEN the embedded wallet rejects an operation because the wallet is frozen, the mode forbids it, or it exceeds a spend cap (an HTTP 403 with an error code on the /v1/agent/* lane), THE system SHALL treat the operation as denied, SHALL NOT retry it as if transient, and SHALL surface the denial to the user in plain language stating which limit blocked it."
+ac_4 = "THE enforcement of mode and spend caps SHALL be performed server-side by the embedded wallet, and Matrix SHALL NOT be the sole or authoritative gate for those limits."
+ac_5 = "WHERE neo.frozen.kvx currently specifies a per-spend in-conversation approval gate (approval_ux) for monetary actions, THE feature SHALL update neo.frozen.kvx so the leash model is the documented approval model for pre-authorized KindleLaunch autonomy, while leaving the in-conversation gate as the model for one-off, non-pre-authorized monetary requests."
+ac_6 = "WHEN no leash has been granted (or the mode is read_only), THE system SHALL still allow all read operations and SHALL decline value-moving operations with a plain-language explanation of how the user grants or widens the leash."
+
+[req.3]
+title = "kindle MCP bridge structure, drift guard, and canonical addresses"
+story = "As a system integrator, I want a dedicated, self-verifying kindle bridge bound to the correct on-chain deployment, so that the daemon boots cleanly and never transacts against the wrong contracts."
+ac_1 = "THE system SHALL provide a kindle MCP stdio bridge (mirroring the paxeer-net bridge wire protocol) that advertises a read tool set and a write tool set and dispatches tool calls to the KindleLaunch on-chain surface."
+ac_2 = "THE kindle bridge SHALL resolve all KindleLaunch contract and token addresses from the canonical 2026-06-20 Paxeer deployment manifest (protocol/addresses.go / contracts/deployments/paxeer-addresses.json: Router 0xCC7298801112682e10ee14b8a520309caD80336d, FeesRouter 0x02Df12a44F2658080E76fbcF7D6B34Baa97843b6, FeeAccumulator 0x50C69dF6637b3DCE6a7407C5A4b4F99E68514A76, Quoter 0xB768e183b6EfDeDf8b2AA7af732039D1C3c452d0, PoolRegistry 0x7684382c89f79104574D8EF9b31eFf2eD2C2BA0b, SidioraNFT 0xDF73b354ed9dcB473cc9D01541c46f507591e190, SidioraFactory 0x8a1A09CEe72c1D39dF33B8284E38baeF8371f465, OpticalRegistry 0x4CdA6e48632d51Ee4Fa735D81BF09F7543f644a1, USDL 0x85FcD13735F4309833A503EE804ea32395851479), and SHALL NOT use the paxeer-net config sidioraFun addresses (a different/older deployment)."
+ac_3 = "WHERE an address or endpoint must vary by environment, THE kindle bridge SHALL allow every contract/token/RPC value to be overridden by environment variable while defaulting to the canonical manifest values."
+ac_4 = "THE kindle bridge SHALL provide a --selftest mode that lists its tool registry and verifies it against every agent manifest declaring a kindle server, exiting non-zero on any tool-set drift, so that manifest drift fails at build/CI time rather than as a fatal daemon boot (Manager.verifyTools)."
+ac_5 = "THE set of tools the kindle bridge advertises SHALL exactly match the tools declared for the kindle server in agents/default.json (bijection), with no bridge-only or manifest-only tool."
+ac_6 = "WHEN the kindle bridge runs with its read-only surface active, THE advertised tool set SHALL exclude every write tool, so the surface is structurally incapable of moving value."
+
+[req.4]
+title = "Neo read surface for KindleLaunch (no escalation for reads)"
+story = "As a user, I want Neo to answer questions about pools, prices, my positions, and pending fees directly and instantly, so that monitoring and decisions do not require the heavier execution path."
+ac_1 = "THE kindle bridge SHALL expose read tools that require no signing — at minimum pool/market discovery, token/market detail, a swap quote, accumulated/pending fees for a pool, and an optical lookup — and Neo SHALL be able to call these directly without core_execute."
+ac_2 = "WHEN Neo answers a read query, THE kindle bridge SHALL return amounts decoded into human-readable units using each token's correct decimals (USDL = 6, launched tokens = 18 unless the token reports otherwise) alongside the raw base-unit value."
+ac_3 = "WHEN a read tool calls an on-chain view, THE kindle bridge SHALL read against the Paxeer chain-125 RPC and SHALL NOT mutate any state or require wallet auth."
+ac_4 = "IF a read target (pool, token, nftId) does not exist or a view reverts, THEN the kindle bridge SHALL return a structured non-error result describing the miss rather than crashing the tool call."
+
+[req.5]
+title = "Launch a token/market autonomously"
+story = "As a creator, I want Neo to launch my token and market for me, so that I get a live pool without touching contracts or signing transactions."
+ac_1 = "WHEN a user intent to launch is dispatched through MCL, THE system SHALL create the market by calling Router.createMarket(name, symbol, feeStrategy, optical) (or createMarketWithPermit) through the embedded wallet and SHALL return the resulting token address, pool address, and NFT id."
+ac_2 = "WHERE a launch requires the USDL creation fee, THE system SHALL ensure the embedded wallet has approved the Router to spend the USDL creation fee before createMarket (a prior approve, or createMarketWithPermit), and SHALL NOT leave the launch stuck on a missing allowance."
+ac_3 = "WHEN a fee strategy is requested, THE system SHALL map it to the correct enum (0=CLAIM, 1=BURN, 2=AIRDROP, 3=LP_REWARDS) and SHALL reject an unrecognized strategy with a plain-language error rather than guessing."
+ac_4 = "WHERE the launch attaches an optical, THE system SHALL pass a valid optical contract address as the optical parameter, and WHERE no optical is requested it SHALL pass the zero address."
+ac_5 = "WHEN a launch succeeds, THE system SHALL record the launched pool address and its NFT id as the user's launch outcome (so later fee collection can reference the NFT id) and SHALL return a verifiable transaction reference."
+ac_6 = "IF createMarket reverts or the embedded wallet denies the spend, THEN the system SHALL surface the failure to the user in plain language and SHALL NOT report the launch as successful."
+
+[req.6]
+title = "Trade autonomously (buy / sell / swap) with slippage protection"
+story = "As a trader, I want Neo to buy, sell, and swap on KindleLaunch within my leash, so that it can act on opportunities without me signing each trade."
+ac_1 = "WHEN a buy intent is dispatched, THE system SHALL call Router.buy(pool, usdlAmountIn, minTokensOut, deadline) through the embedded wallet, ensuring USDL is approved to the Router (or using buyWithPermit), and SHALL pass amounts in correct base units (USDL 6-dec)."
+ac_2 = "WHEN a sell intent is dispatched, THE system SHALL call Router.sell(pool, tokenAmountIn, minUsdlOut, deadline) through the embedded wallet, ensuring the token is approved to the Router (or using sellWithPermit)."
+ac_3 = "WHEN a token-to-token intent is dispatched, THE system SHALL call Router.swapTokenForToken(tokenIn, tokenOut, amountIn, minAmountOut, deadline) (or the permit variant) through the embedded wallet."
+ac_4 = "WHEN computing a trade, THE system SHALL derive minTokensOut/minUsdlOut/minAmountOut from a Quoter quote and an explicit slippage tolerance, and SHALL set a finite deadline, so that an unfavorable price or a stale transaction reverts rather than executing at any price."
+ac_5 = "WHERE a trade's spend or mode is outside the embedded wallet leash, THE system SHALL let the embedded wallet reject it (403) and SHALL surface the denial without retrying it as transient."
+ac_6 = "THE system SHALL compute all token amount and price math in integer base units (math/big or equivalent), and SHALL NOT use floating-point arithmetic for any on-chain amount."
+
+[req.7]
+title = "Collect fees autonomously (NFT-owner gated)"
+story = "As a pool creator, I want Neo to collect or route my pool's fees according to its strategy, so that accrued value is realized without me managing the NFT-gated calls."
+ac_1 = "WHEN a fee-collection intent is dispatched for a pool the user owns, THE system SHALL call the FeesRouter function matching the pool's current fee strategy through the embedded wallet — claimFees(nftId) for CLAIM, executeBurn(nftId) for BURN, executeAirdrop(nftId) for AIRDROP, executeLpRewards(nftId) for LP_REWARDS — and SHALL return the resulting amount and transaction reference."
+ac_2 = "BEFORE attempting a strategy-specific fee action, THE system SHALL verify that the embedded wallet address owns the pool's SidioraNFT (nftId), and IF it does not THEN it SHALL decline with a plain-language explanation rather than sending a tx that reverts with NotNftOwner."
+ac_3 = "WHEN the requested action does not match the pool's current strategy, THE system SHALL either set the strategy via FeesRouter.setFeeStrategy(nftId, newStrategy) first (when the user intends to change it) or decline with a plain-language explanation, and SHALL NOT send a call that reverts with WrongStrategy."
+ac_4 = "WHEN reporting pending fees, THE system SHALL read FeeAccumulator.getAccumulatedFees(pool) (and the airdrop/LP balances as relevant) and present them in human-readable USDL."
+ac_5 = "IF a fee call reverts (no fees accumulated, wrong strategy, not owner) or the embedded wallet denies it, THEN the system SHALL surface the reason in plain language and SHALL NOT report fees as collected."
+
+[req.8]
+title = "Watch — recurring autonomous monitoring with triggered action"
+story = "As a user, I want Neo to keep watching a pool or my positions while I am away and act when my conditions are met, so that automation continues without my presence."
+ac_1 = "WHEN a user asks Neo to watch a pool/position/fee balance on a schedule or until a condition, THE system SHALL register a chronos alarm (alarm_set, kind=once or cron) whose wake_message carries enough context for Neo to re-evaluate the condition without re-deriving state, and SHALL confirm the watch to the user."
+ac_2 = "WHEN a watch alarm fires, THE system SHALL wake Neo with the watch context, read the current on-chain/indexer state via the kindle read tools, and evaluate the user's trigger condition."
+ac_3 = "WHEN a fired watch's trigger condition is met, THE system SHALL dispatch the corresponding trade or fee-collection action through core_execute → MCL → the embedded wallet, subject to the leash, and SHALL record the outcome."
+ac_4 = "WHILE a watch is active and its condition is not met, THE system SHALL leave the schedule in place (recurring) or reschedule (once) as appropriate and SHALL NOT take a value-moving action."
+ac_5 = "THE system SHALL let the user list and cancel active watches (alarm_list / alarm_cancel) and SHALL describe each watch in plain language (what it monitors, the trigger, the action)."
+ac_6 = "WHILE a watch-triggered task is executing, THE system SHALL honor the task-durability rule: the task lifecycle SHALL be decoupled from the user's connection and SHALL survive daemon restart / Fly suspend, continuing to completion on a fresh agent if the current one fails."
+ac_7 = "WHEN a watch-triggered action is denied by the embedded wallet leash (403), THE system SHALL stop that action, keep or cancel the watch per the user's instruction, and surface the denial in plain language rather than silently looping."
+
+[req.9]
+title = "Create an Optical — preset tier (no compilation)"
+story = "As a creator with no Solidity skills, I want to add a common pool behavior (anti-snipe, max-wallet, tax, cooldown, buyback-burn, or a vesting/capital-raise launchpad optical) without deploying anything myself, so that I can enhance my pool in one step."
+ac_1 = "THE kindle bridge SHALL expose the set of canonical preset opticals from the deployment manifest (AntiSnipeOptical, MaxWalletOptical, TaxOptical, CooldownOptical, BuybackBurnOptical) with a human-readable description of each, so a user can choose one to attach at launch."
+ac_2 = "WHEN a user chooses a deployed preset optical to attach to a new market, THE system SHALL pass that preset's canonical address as the optical parameter of Router.createMarket, with no contract compilation or deployment step."
+ac_3 = "WHERE a preset requires a freshly-deployed, per-creator configured instance (e.g. a LaunchpadOptical with the creator's vesting/capital-raise parameters) AND a self-service factory for it is available on-chain, THE system SHALL deploy the instance by calling that factory through the embedded wallet (e.g. LaunchpadOpticalFactory.createLaunchpadOptical(...)) and SHALL return the new optical address."
+ac_4 = "IF a requested preset factory is not deployed on the canonical manifest, THEN the system SHALL say so plainly and offer the deployed-singleton presets or the custom-optical path rather than failing opaquely."
+ac_5 = "WHEN reporting an optical, THE system SHALL state whether it is registered/verified on the OpticalRegistry, while making clear that opticals function whether or not they are registered."
+
+[req.10]
+title = "Create an Optical — custom tier (author + compile + deploy via Tachyon)"
+story = "As a creator who wants a behavior no preset covers, I want to describe it in plain language and have Neo build, test, and deploy a real optical, so that I get bespoke pool logic without writing or deploying Solidity myself."
+ac_1 = "WHEN a user describes a custom optical behavior, THE system SHALL author a Solidity contract that extends BaseOptical, overrides only the needed hooks among beforeSwap / afterSwap / beforeFeeDistribution / afterFeeDistribution, and returns a getFlags() bitmap whose set bits exactly match the overridden hooks (bit 0 beforeSwap, bit 1 afterSwap, bit 2 beforeFeeDistribution, bit 3 afterFeeDistribution)."
+ac_2 = "BEFORE deploying a custom optical, THE system SHALL compile it and run a Forge test suite via Tachyon (tachyon_compile / tachyon_test) and SHALL NOT deploy if compilation fails or required tests fail."
+ac_3 = "WHEN deploying a custom optical, THE system SHALL deploy it via Tachyon (tachyon_deploy) on chain 125 through the embedded wallet with an idempotency_key, passing the BaseOptical constructor arguments (poolRegistry, owner) correctly, and SHALL return the deployed address."
+ac_4 = "WHERE the user wants the custom optical active on a market, THE system SHALL attach it by passing its deployed address as the optical parameter of Router.createMarket at launch."
+ac_5 = "THE system SHALL treat OpticalRegistry registration as an admin-only trust-signal that the user cannot self-grant, SHALL communicate that a freshly-deployed optical is functional but shows as unverified until an admin registers it, and SHALL NOT block deployment or attachment on registration."
+ac_6 = "WHEN authoring a custom optical, THE system SHALL preserve the BaseOptical safety properties it relies on (onlyPool / onlyOwner gating, immutability) and SHALL NOT generate a contract that bypasses the pool-registry caller check for hooks that move or gate value."
+
+[req.11]
+title = "Money-math integrity (integer base units, correct decimals, no float)"
+story = "As the system owner, I want every amount computed exactly in base units, so that rounding never silently misprices a launch, trade, or fee action."
+ac_1 = "THE system SHALL perform all token amount, price, slippage, and fee arithmetic in integer base units (big integers), and SHALL NOT use floating-point arithmetic anywhere an on-chain amount is computed."
+ac_2 = "WHEN converting a human amount to base units (or back), THE system SHALL use the exact decimals of the specific token (USDL 6, SID 6, native PAX 18, launched tokens 18 unless the token reports otherwise) and SHALL NOT assume a uniform 18 decimals."
+ac_3 = "WHEN deriving a minimum-output from a quote and a slippage tolerance, THE system SHALL compute the bound by integer math on the quoted base-unit amount."
+ac_4 = "IF a token's decimals cannot be resolved, THEN the system SHALL fetch them on-chain (ERC-20 decimals) or refuse the amount conversion rather than defaulting silently to 18."
+
+[req.12]
+title = "Real verification — no fakes"
+story = "As the system owner, I want this capability proven against real code paths and the real chain, so that a green result reflects genuine working behavior."
+ac_1 = "THE feature SHALL verify the kindle bridge tool registry against the agent manifest with a real --selftest drift check (no stubbed manifest)."
+ac_2 = "THE feature SHALL verify trade/launch/fee calldata encoding and quote-bounded minimums against real ABIs and, where possible, real read-only simulation (tachyon_simulate / eth_call) before any broadcast, and SHALL NOT substitute a canned/mocked result for a real code path."
+ac_3 = "THE feature SHALL verify a custom optical end-to-end through real Tachyon compile + Forge test (real solc + forge), not a faked compile result."
+ac_4 = "WHERE an end-to-end on-chain write test would move real funds, THE feature SHALL require explicit user approval (and a funded test wallet / leash) before broadcasting, and SHALL otherwise verify via read-only simulation."
+
+[req.13]
+title = "Side-channel / replay non-perturbation (D11)"
+story = "As a system integrator, I want the read surface and watch loop to never change MCL's signed execution, so that the D11 replay byte-identity invariant is preserved."
+ac_1 = "WHEN Neo uses the kindle read tools or the chronos watch loop, THE system SHALL treat them as pure observability/orchestration side-channels that do not sign envelopes, do not write cortex on the signed path, and do not alter MCL plan or walk state."
+ac_2 = "WHEN a value-moving KindleLaunch operation executes, THE system SHALL run it through MCL's normal signed-envelope execution path (the same path any other monetary action uses), so it participates in replay exactly as a first-class MCL action."
+ac_3 = "WHERE the kindle bridge widens or adds transcript/SSE detail, THE change SHALL affect only non-signed transcript events and SHALL NOT change journaled bytes or the recorded replayable-input sequence."
+ac_4 = "WHEN a run is replayed with the kindle bridge and watch loop active, THE system SHALL preserve the D11 replay byte-identity invariant."
+
+[req.14]
+title = "Consumer transparency — show the result, not the tech"
+story = "As a user, I want to see outcomes (a launched token, a filled trade, collected fees, a deployed optical) in plain language, so that I am never shown protocol internals."
+ac_1 = "THE user-visible surface SHALL describe KindleLaunch outcomes in deliverable/outcome terms (e.g. token launched, pool address, amount bought/sold, fees collected, optical deployed) and SHALL NOT display protocol-jargon terms from the set {MCL, cortex, Merkle, replay, SSE, D11, broker, envelope, calldata, ABI selector, nonce}."
+ac_2 = "WHEN an action is denied by the embedded wallet leash or reverts on-chain, THE system SHALL present a plain-language reason (frozen wallet, over your spend cap, mode does not allow trading, price moved past your slippage, not the pool owner, no fees yet) and SHALL NOT display raw error codes, revert selectors, or stack traces."
+ac_3 = "WHEN Neo confirms or completes a value-moving action, THE system SHALL present a verifiable, user-meaningful reference (an explorer link to the transaction) without exposing internal mechanism."
+
+[req.15]
+title = "kindle-launchpad skill (MCL planner knows the procedures)"
+story = "As a system integrator, I want a KindleLaunch skill that teaches the MCL pipeline the launch/trade/watch/collect/optical procedures, so that core_execute intents plan and run correctly."
+ac_1 = "THE feature SHALL provide a kindle-launchpad MatrixScript skill (SKILL.mtx + SKILL.md) that declares the kindle write tools it uses and describes the procedures for launch, trade, fee collection, and optical creation, so the MCL planner has the on-block hints to execute them."
+ac_2 = "THE skill SHALL declare every kindle tool it references such that the declared tool set is a subset of (and exactly matches names in) the kindle server's manifest tools, with no dangling tool reference that would fail daemon boot."
+ac_3 = "WHERE the skill authors string-typed KV values (description / display / reason / hint / prompt), THE skill SHALL double-quote them per the MatrixScript lexer invariant."
+ac_4 = "WHERE the freeform default assistant path should reach KindleLaunch actions, THE feature SHALL expose the kindle tools to that path (e.g. via the default assistant skill's tool set) so a plain-English request can launch/trade/collect/create-optical."
+
+[req.16]
+title = "Daemon wiring (manifest, bijection, environment)"
+story = "As a system integrator, I want the kindle bridge registered and configured in the daemon image so it boots and runs per-user, so that the capability is live on the fleet."
+ac_1 = "THE feature SHALL add a kindle server entry to agents/default.json (alias kindle, stdio, node /root/matrix/tools/kindle/kindle.mjs) declaring exactly the tools the bridge advertises, with a real package_digest, so Manager.verifyTools passes at boot."
+ac_2 = "THE daemon image SHALL bake the kindle bridge (COPY tools/kindle) and any address/RPC env defaults required for chain-125 operation."
+ac_3 = "WHERE the embedded-wallet agent lane needs configuration, THE feature SHALL reuse the existing agent-native DID auth (the daemon executor key) and the existing WALLET_API env, and SHALL NOT introduce a second signing path."
+ac_4 = "WHERE the router injects per-machine environment, THE feature SHALL inject any kindle-specific environment (addresses/RPC/leash defaults) the same way existing tool env is injected, and SHALL NOT require an entrypoint change beyond environment."
+
+# ================================ TASKS ==================================
+
+[tasks]
+heading = "Implementation Plan: Neo × KindleLaunch Autonomy"
+
+[task.1]
+section = "P1 — kindle MCP bridge (reads + write encodings)"
+title   = "kindle bridge scaffold + canonical config"
+status  = "done"
+
+[task.1.1]
+title  = "Create tools/kindle/lib/config.mjs with the canonical chain-125 address book + env overrides"
+status = "done"
+wave   = 1
+do_1   = "Encode Router/FeesRouter/FeeAccumulator/Quoter/PoolRegistry/SidioraNFT/SidioraFactory/OpticalRegistry + preset opticals + USDL/SID from the 2026-06-20 manifest (protocol/addresses.go / paxeer-addresses.json); every value env-overridable; USDL decimals=6"
+do_2   = "Explicitly NOT reuse paxeer-net config sidioraFun addresses (different/older deployment); document why in-file"
+reqs   = ["3.2", "3.3", "11.2"]
+
+[task.1.2]
+title  = "Create the kindle stdio bridge (kindle.mjs) mirroring paxeer-net wire protocol + dispatch + --selftest"
+status = "done"
+wave   = 2
+do_1   = "initialize / tools/list / tools/call over newline-delimited JSON-RPC; structured tool errors; READS_ONLY split that withholds write tools"
+do_2   = "--selftest lists the registry and verifies bijection against every agents/*.json declaring a kindle server, exiting non-zero on drift"
+reqs   = ["3.1", "3.4", "3.6", "1.4"]
+requires = ["1.1"]
+
+[task.1.3]
+title  = "Implement read tools (pools, token/market detail, quote, pending fees, optical lookup)"
+status = "done"
+wave   = 3
+do_1   = "kindle_pools (PoolRegistry/indexer discovery), kindle_market (BFF/token detail), kindle_quote (Quoter), kindle_fees (FeeAccumulator.getAccumulatedFees + airdrop/LP balances), kindle_optical_info (OpticalRegistry.getOpticalMetadata/isRegistered); decode amounts to human units with correct decimals"
+reqs   = ["4.1", "4.2", "4.3", "4.4", "7.4"]
+requires = ["1.2"]
+
+[task.1.4]
+title  = "Reuse the embedded-wallet write lane (lib/wallet.mjs + agentauth.mjs) for kindle writes"
+status = "done"
+wave   = 3
+do_1   = "Share the paxeer embedded-wallet client (agent-native DID auth, /v1/agent/send) so kindle write tools sign server-side; no second signing path; spend within wallet policy (403 surfaced)"
+reqs   = ["1.3", "2.3", "2.4", "16.3"]
+requires = ["1.2"]
+
+[task.2]
+section = "P2 — Launch / Trade / Collect-fees write tools"
+title   = "Encode the value-moving KindleLaunch tools"
+status  = "done"
+
+[task.2.1]
+title  = "Implement kindle_launch (createMarket / createMarketWithPermit + USDL creation-fee approve)"
+status = "done"
+wave   = 4
+do_1   = "Map feeStrategy name→enum (0..3, reject unknown); ensure USDL approve to Router or use permit; pass optical (zero addr when none); return token/pool/nftId + explorer link; surface revert/denial in plain language"
+reqs   = ["5.1", "5.2", "5.3", "5.4", "5.5", "5.6"]
+requires = ["1.4"]
+
+[task.2.2]
+title  = "Implement kindle_buy / kindle_sell / kindle_swap with quote-bounded slippage + deadline"
+status = "done"
+wave   = 4
+do_1   = "buy/sell/swapTokenForToken (+permit variants); derive minOut from a Quoter quote × slippage tolerance via integer math; finite deadline; approve token/USDL as needed; base-unit amounts with correct decimals"
+reqs   = ["6.1", "6.2", "6.3", "6.4", "6.5", "6.6", "11.1", "11.3"]
+requires = ["1.4", "1.3"]
+
+[task.2.3]
+title  = "Implement kindle_collect_fees / kindle_set_fee_strategy (NFT-owner gated, strategy-matched)"
+status = "done"
+wave   = 5
+do_1   = "Verify embedded-wallet owns SidioraNFT(nftId) before acting; route to claimFees/executeBurn/executeAirdrop/executeLpRewards by current strategy; setFeeStrategy when changing; decline (not revert) on not-owner / wrong-strategy / no-fees"
+reqs   = ["7.1", "7.2", "7.3", "7.5"]
+requires = ["1.4", "1.3"]
+
+[task.3]
+section = "P3 — Create Opticals (preset + custom-via-Tachyon)"
+title   = "Optical creation surface"
+status  = "done"
+
+[task.3.1]
+title  = "Implement preset-optical attach (+ factory-deploy where available)"
+status = "done"
+wave   = 5
+do_1   = "Expose the 5 deployed preset opticals (descriptions) for attach-at-launch; if a self-service factory (LaunchpadOpticalFactory) is on the manifest, deploy a configured instance via the embedded wallet; otherwise say so and offer singletons or custom path"
+reqs   = ["9.1", "9.2", "9.3", "9.4", "9.5"]
+requires = ["1.4", "1.3"]
+
+[task.3.2]
+title  = "Implement custom-optical authoring template + Tachyon compile/test/deploy orchestration"
+status = "done"
+wave   = 6
+do_1   = "BaseOptical-derived authoring template (override only needed hooks; getFlags bitmap must match overrides; preserve onlyPool/onlyOwner/immutability); drive tachyon_compile → tachyon_test → tachyon_deploy (chain 125, idempotency_key, constructor poolRegistry+owner); no deploy on failed compile/test"
+do_2   = "Communicate that a fresh optical is functional but unverified (OpticalRegistry registration is admin-only); never block on registration; attach via createMarket optical param"
+reqs   = ["10.1", "10.2", "10.3", "10.4", "10.5", "10.6"]
+requires = ["1.4"]
+
+[task.4]
+section = "P4 — Wiring + skill + approval-model evolution"
+title   = "Make the capability live and planner-aware"
+status  = "pending"
+
+[task.4.1]
+title  = "Register the kindle server in agents/default.json (bijection + package_digest) + image bake + router env"
+status = "pending"
+wave   = 7
+do_1   = "Add alias kindle (node tools/kindle/kindle.mjs) with the exact advertised tool set; real package_digest; COPY tools/kindle into the daemon Dockerfile; inject any kindle env via router MachineEnv (no entrypoint change beyond env)"
+reqs   = ["3.5", "16.1", "16.2", "16.4"]
+requires = ["1.3", "2.1", "2.2", "2.3", "3.1"]
+
+[task.4.2]
+title  = "Author the kindle-launchpad skill (SKILL.mtx + SKILL.md) + expose tools to the freeform path"
+status = "pending"
+wave   = 7
+do_1   = "Declare the kindle write tools + procedures (launch/trade/collect/optical) with on-block hints; double-quote all string KV; subset/exact-match the kindle manifest tools; add the kindle tools to the default assistant skill so plain-English requests reach them"
+reqs   = ["15.1", "15.2", "15.3", "15.4"]
+requires = ["4.1"]
+
+[task.4.3]
+title  = "Evolve the approval model in neo.frozen.kvx + core_execute/escalate copy"
+status = "pending"
+wave   = 8
+do_1   = "Document the pre-authorized leash model (mode + caps on the embedded wallet) as the approval model for KindleLaunch autonomy; keep the in-conversation gate for one-off non-pre-authorized money; update the core_execute schema description + [relation.delegation].approval_ux + [execution.escalate] wording accordingly; preserve backstop_1 (Neo holds no key)"
+reqs   = ["2.1", "2.2", "2.5"]
+requires = ["4.1"]
+
+[task.5]
+section = "P5 — Watch loop (recurring autonomy)"
+title   = "Recurring monitoring + triggered action"
+status  = "pending"
+
+[task.5.1]
+title  = "Implement the Watch procedure (chronos alarm_set + wake re-evaluation + triggered dispatch)"
+status = "pending"
+wave   = 8
+do_1   = "On a watch request, set a chronos alarm (once/cron) with a contextful wake_message + payload; on wake, read state via kindle read tools, evaluate the trigger, and dispatch trade/collect via core_execute when met; leave/reschedule when not met; alarm_list/alarm_cancel for management"
+reqs   = ["8.1", "8.2", "8.3", "8.4", "8.5"]
+requires = ["4.2"]
+
+[task.5.2]
+title  = "Honor task-durability + leash-denial handling in the watch loop"
+status = "pending"
+wave   = 9
+do_1   = "Watch-triggered tasks decouple from the user connection and survive restart/suspend (continue on a fresh agent); on a 403 leash denial, stop the action, keep/cancel per instruction, surface plainly (no silent looping)"
+reqs   = ["8.6", "8.7", "2.3"]
+requires = ["5.1"]
+
+[task.6]
+section = "P6 — Verification"
+title   = "Prove it (no fakes)"
+status  = "pending"
+
+[task.6.1]
+title  = "Bridge drift selftest + read-tool decode tests"
+status = "pending"
+wave   = 9
+do_1   = "node tools/kindle/kindle.mjs --selftest passes against the real agents/default.json kindle entry; unit tests for amount decode with correct per-token decimals"
+property  = "Property 1: bridge↔manifest bijection + decimal-correct decode"
+validates = "Requirements 3.4, 3.5, 4.2, 11.2"
+
+[task.6.2]
+title  = "Calldata + quote-bounded-minimum verification via real ABIs and read-only simulation"
+status = "pending"
+wave   = 10
+do_1   = "Assert createMarket/buy/sell/swap/claimFees calldata encodes against real ABIs; assert minOut bounds via integer math on a real Quoter read; tachyon_simulate / eth_call dry-runs where possible; no broadcast without explicit user approval + funded leash"
+property  = "Property 2: encodings + slippage bounds are real and correct"
+validates = "Requirements 5.1, 6.1, 6.4, 7.1, 11.1, 11.3, 12.2"
+requires = ["2.1", "2.2", "2.3"]
+
+[task.6.3]
+title  = "Custom-optical real compile/test via Tachyon"
+status = "pending"
+wave   = 10
+do_1   = "A BaseOptical-derived sample compiles with real solc and passes a real Forge test through tachyon_compile/tachyon_test; getFlags bitmap matches overrides; deploy gated on green"
+property  = "Property 3: custom optical is genuinely buildable (real toolchain)"
+validates = "Requirements 10.1, 10.2, 12.3"
+requires = ["3.2"]
+
+[task.6.4]
+title  = "D11 non-perturbation check for the read/watch side-channels"
+status = "pending"
+wave   = 10
+do_1   = "Assert that enabling the kindle read tools + watch loop leaves MCL's recorded replayable-input sequence byte-identical vs disabled; value-moving ops ride the normal signed MCL path"
+property  = "Property 4: side-channel non-perturbation (D11)"
+validates = "Requirements 13.1, 13.2, 13.3, 13.4"
+
+[task.6.5]
+title  = "End-to-end on-box rehearsal (gated on explicit user approval)"
+status = "pending"
+wave   = 11
+do_1   = "With Andrew's explicit YES + a funded test wallet/leash: provision a user daemon, leash trade_only, run a freeform launch → buy → set-watch → collect-fees → create-optical flow; verify outcomes + plain-language surfacing + 403 handling"
+reqs   = ["2.1", "2.2", "2.3", "5.1", "6.1", "7.1", "8.1", "9.2", "10.3", "12.4", "14.1", "14.2"]
+requires = ["4.1", "4.2", "4.3", "5.1", "5.2"]
+
+[task.7]
+title  = "Final checkpoint — Neo KindleLaunch autonomy complete"
+status = "pending"
+note   = "All capability tests green; approval-model docs updated; deploy is user-driven (Andrew drives prod redeploys). Ask the user if questions arise."

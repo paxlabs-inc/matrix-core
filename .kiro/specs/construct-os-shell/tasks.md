@@ -143,7 +143,7 @@ Go `testing/quick` (server), per the design Testing Strategy.
       are applied and present after rehydration
     - _Requirements: 8.2, 8.3_
 
-- [ ] 6. Frame inversion + one shell adapter + one level of descent (MVP)
+- [x] 6. Frame inversion + one shell adapter + one level of descent (MVP)
   - [x] 6.1 Mount the Shell at the client route root with a `NarrationPanel` region (frame inversion)
     - Make the top-level route render the Shell (one adapter — desktop OR mobile, whichever proves
       the feel fastest) as the root; render chat as exactly one `narration` region panel within it,
@@ -159,7 +159,7 @@ Go `testing/quick` (server), per the design Testing Strategy.
       `ref`/`parent` link to its `Stream`; if the linked surface is cold, rehydrate it by address
       first; ascend pops the focus frame; render at depth via the reused renderer
     - _Requirements: 4.2, 4.3, 4.4, 4.5, 4.6, 17.3_
-  - [-] 6.4 Write unit test for descend resolving `ref` to the raw Stream
+  - [x] 6.4 Write unit test for descend resolving `ref` to the raw Stream
     - Tap a Timeline step → assert a raw focus frame targets the linked Stream; cold link triggers
       rehydration before push; ascend pops
     - _Requirements: 4.3, 4.4, 4.5, 17.3_
@@ -169,37 +169,37 @@ Go `testing/quick` (server), per the design Testing Strategy.
       consumer-readable with no MCL/cortex/Merkle/replay/SSE jargon
     - _Requirements: 12.1, 12.2, 13.1, 13.2, 13.3, 13.4_
 
-- [ ] 7. Ask back-channel liveness (MVP — required end-to-end check)
+- [x] 7. Ask back-channel liveness (MVP — required end-to-end check)
   - [x] 7.1 Wire/verify `onRespond` end-to-end: client → daemon POST → parked agent resume
     - Confirm and complete the Phase-5 wiring so a posted Ask response reaches the parked agent;
       `respondToAsk` POSTs `{conversation_id,intent_id,ask_id,response}`; the answer is validated by
       `backchannel.ValidateResponse` and delivered as a recorded INPUT (replay-safe), never a
       plan/walk mutation; if wiring is incomplete in the target client, fixing it is part of this task
     - _Requirements: 5.3, 5.4, 5.8, 11.3, 17.6_
-  - [-] 7.2 Write integration test for the Ask round-trip
+  - [x] 7.2 Write integration test for the Ask round-trip
     - Park on an Ask; answer once → assert the run resumes exactly once and the Ask surface is
       patched to settled; a duplicate/expired/malformed `ask_id` is rejected and leaves the run parked
     - **Property 6: Ask liveness + safety**
     - **Validates: Requirements 5.4, 5.5, 5.6, 17.6**
 
-- [ ] 8. MVP integration, wiring, and side-channel verification
-  - [-] 8.1 Wire feed → shared model → shell on the one adapter (cold open rehydrates)
+- [x] 8. MVP integration, wiring, and side-channel verification
+  - [x] 8.1 Wire feed → shared model → shell on the one adapter (cold open rehydrates)
     - Connect `SurfaceFeed.hydrate` → `SurfaceWorkspace` → the single shell adapter so a cold open
       rehydrates the workspace and the home/activity surfaces survive reload; assign each surface a
       `construct://{conversationId}/{surfaceId}` address on add; no orphaned/disconnected code
     - _Requirements: 1.2, 7.1, 7.5, 17.1, 17.4, 17.5_
-  - [ ] 8.2 Write the side-channel non-perturbation integration test (D11)
+  - [x] 8.2 Write the side-channel non-perturbation integration test (D11)
     - Run with the shell + `surfacestore` active (including answering an Ask) and assert the run's
       set of replayable inputs is byte-identical to the same run without the shell
     - **Property 5: Side-channel non-perturbation (D11)**
     - **Validates: Requirements 11.1, 11.2, 11.3**
-  - [ ] 8.3 Write `fast-check` property test for MVP addressing re-enterability
+  - [x] 8.3 Write `fast-check` property test for MVP addressing re-enterability
     - For a generated emitted-surface set, assert every `construct://C/{id}` address resolves after
       rehydration (hot set or by rehydration)
     - **Property 7: Addressing re-enterability**
     - **Validates: Requirements 7.1, 7.4, 7.5**
 
-- [ ] 9. Checkpoint — MVP first slice complete and verifiable
+- [x] 9. Checkpoint — MVP first slice complete and verifiable
   - Ensure all tests pass, ask the user if questions arise.
 
 ## Expansion (post-MVP, in dependency order E1–E6)

@@ -1,0 +1,67 @@
+{
+  "name": "kvx-preview",
+  "displayName": "KVX Spec Preview",
+  "description": "Visual, interactive preview for Matrix .kvx spec files — task map, acceptance-criteria traceability, and workflow flow.",
+  "version": "0.1.0",
+  "publisher": "paxlabs",
+  "engines": {
+    "vscode": "^1.84.0"
+  },
+  "categories": ["Visualization", "Other"],
+  "main": "./dist/extension.js",
+  "activationEvents": ["onLanguage:kvx"],
+  "contributes": {
+    "languages": [
+      {
+        "id": "kvx",
+        "aliases": ["KVX", "kvx"],
+        "extensions": [".kvx"],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "commands": [
+      {
+        "command": "kvx.showPreview",
+        "title": "KVX: Open Preview to the Side",
+        "category": "KVX",
+        "icon": "$(preview)"
+      }
+    ],
+    "menus": {
+      "editor/title": [
+        {
+          "command": "kvx.showPreview",
+          "when": "resourceExtname == .kvx",
+          "group": "navigation"
+        }
+      ],
+      "commandPalette": [
+        {
+          "command": "kvx.showPreview",
+          "when": "resourceExtname == .kvx"
+        }
+      ]
+    },
+    "keybindings": [
+      {
+        "command": "kvx.showPreview",
+        "key": "ctrl+k v",
+        "mac": "cmd+k v",
+        "when": "resourceExtname == .kvx"
+      }
+    ]
+  },
+  "scripts": {
+    "build": "node esbuild.js",
+    "watch": "node esbuild.js --watch",
+    "typecheck": "tsc --noEmit",
+    "inspect": "esbuild tools/inspect.ts --bundle --platform=node --format=cjs --outfile=dist/inspect.cjs --log-level=warning && node dist/inspect.cjs",
+    "vscode:prepublish": "node esbuild.js --production"
+  },
+  "devDependencies": {
+    "@types/node": "^20.x",
+    "@types/vscode": "^1.84.0",
+    "esbuild": "^0.21.0",
+    "typescript": "^5.4.0"
+  }
+}
