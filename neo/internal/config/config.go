@@ -80,6 +80,13 @@ type Config struct {
 	MaxRetriesPerTool          int // recovery ladder rung 1: bounded retries for transient failures
 	MaxAdaptAttempts           int // recovery ladder rung 2: bounded approach revisions
 
+	// MaxGuidanceNudges caps consecutive guidance-channel injections
+	// (completion-gate rejections, retry/stall nudges) before the loop
+	// escalates to a stop-and-ask / honest partial rather than re-nudging
+	// unbounded. 0 disables the cap (legacy behavior). Config: env
+	// NEO_MAX_GUIDANCE_NUDGES.
+	MaxGuidanceNudges int
+
 	// --- sub-agent swarm (task-scoped concurrent helpers; see [swarm]) ---
 	MaxSubagents           int // hard cap on sub-agents spawned in one spawn_subagents call
 	MaxConcurrentSubagents int // semaphore: how many sub-agents run at once (the rest queue)
@@ -169,6 +176,7 @@ func Default() Config {
 		SemanticStallSimilarityPct: 50, // catch reworded retries at the same operation
 		MaxRetriesPerTool:          3,
 		MaxAdaptAttempts:           2,
+		MaxGuidanceNudges:          3, // escalate to stop-and-ask after 3 consecutive guidance nudges
 
 		MaxSubagents:           8,
 		MaxConcurrentSubagents: 4,
@@ -400,6 +408,10 @@ func (c *Config) applyEnv() {
 	}
 	// P2-5: parallel dispatch of independent tool calls. 0 = serial.
 	c.ToolDispatchConcurrency = envIntNonNeg("NEO_TOOL_DISPATCH_CONCURRENCY", c.ToolDispatchConcurrency)
+
+	// MaxGuidanceNudges: cap consecutive guidance nudges before escalating
+	// to stop-and-ask. Accepts 0 (disabled — legacy behavior).
+	c.MaxGuidanceNudges = envIntNonNeg("NEO_MAX_GUIDANCE_NUDGES", c.MaxGuidanceNudges)
 }
 
 // envInt overlays a positive integer from the environment, keeping the

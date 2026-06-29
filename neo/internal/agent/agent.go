@@ -175,6 +175,28 @@ type Agent struct {
 	// threaded result-assembly path (never from the concurrent dispatch
 	// goroutines), so it is race-free.
 	lastFailureClass delegate.FailureClass
+
+	// guidanceNudges counts consecutive guidance-channel injections this turn
+	// (completion-gate rejections, retry/stall nudges). When it exceeds
+	// cfg.MaxGuidanceNudges the loop escalates to a stop-and-ask / honest
+	// partial rather than re-nudging unbounded. Reset at the top of every
+	// Chat turn.
+	guidanceNudges int
+
+	// todoList is the live task-list (todo) state for this conversation.
+	// nil when no todo has been set. See task.3.1.
+	todoList *TodoList
+
+	// todoObserver, when set, is invoked with the full post-change item
+	// list every time the TodoList is updated (task.3.2). The harness
+	// (SSE server) uses it to publish a todo.update event so the client
+	// renders a live checklist. nil disables surfacing.
+	todoObserver func([]TodoItem)
+
+	// planMode is the current Plan-vs-Act mode (act = default). In plan mode
+	// the agent explores, asks, and proposes a plan, withholding value-moving
+	// or irreversible actions until the user approves. See task.5.1.
+	planMode string
 }
 
 // Options configures New.
@@ -188,6 +210,12 @@ type Options struct {
 	Consolidator Consolidator // optional: background write-back
 	Recaller     ConvRecaller // optional: relevant past-turn recall (additive read-lane)
 	Observer     ToolObserver // optional: per-tool-result surfacing (show the work)
+
+	// TodoObserver, when set, is invoked with the full post-change item
+	// list every time the TodoList changes (task.3.2). The harness uses it
+	// to publish a todo.update SSE event so the client renders a live
+	// checklist. nil disables surfacing.
+	TodoObserver func([]TodoItem)
 
 	// Adjudicator is the shared Cassandra completeness faculty consulted at the
 	// completion gate on state-touching turns (Phase 3). nil falls back to the
@@ -230,6 +258,7 @@ func New(o Options) *Agent {
 		consolidator:  o.Consolidator,
 		recaller:      o.Recaller,
 		observer:      o.Observer,
+		todoObserver:  o.TodoObserver,
 		adjudicator:   o.Adjudicator,
 		auditObserver: o.AuditObserver,
 		persona:       strings.TrimSpace(o.Persona),
@@ -289,6 +318,21 @@ func (a *Agent) drainInbox() bool {
 // (consistent with P1-2). Call after the consolidator proposes skills.
 func (a *Agent) SetSkillIndex(names []string) {
 	a.skillIndex = names
+}
+
+// RestoreTodo replaces the agent's todo list from a prior snapshot (durable
+// trace / respawn). It is called by the session when rebuilding an agent so the
+// live checklist survives a respawn over durable state (task.3.2). A nil/empty
+// slice is a no-op. The items' statuses are preserved verbatim (Restore, not
+// Set) because a snapshot already carries the authoritative per-item status.
+func (a *Agent) RestoreTodo(items []TodoItem) {
+	if len(items) == 0 {
+		return
+	}
+	if a.todoList == nil {
+		a.todoList = NewTodoList()
+	}
+	a.todoList.Restore(items)
 }
 
 // effectiveBudgetSignals carries the observable turn-complexity signals the
@@ -390,6 +434,7 @@ func (a *Agent) Chat(ctx context.Context, userInput string) error {
 	}
 	a.turnSeq++
 	a.lastFailureClass = delegate.ClassNone
+	a.guidanceNudges = 0
 	a.working = append(a.working, llm.UserMessage(userInput))
 
 	// Topic-shift detection (Phase 3): if this turn pivots to an unrelated
@@ -682,9 +727,14 @@ func (a *Agent) Chat(ctx context.Context, userInput string) error {
 				}
 				return nil
 			}
-			// Rejected: feed the actionable reason back as the tool result and
-			// keep working (advisor-not-effector — the agent enacts the fix).
-			a.working = append(a.working, llm.ToolResult(cc.ID, tools.TaskCompleteTool, verdict.feedback))
+			// Rejected: route the feedback through the guidance channel (not as
+			// a tool result whose text the model narrates into the user-visible
+			// reasoning stream). The tool result is a minimal acknowledgment
+			// that keeps the transcript well-formed; the actual feedback rides
+			// a guidance message the model is instructed not to acknowledge.
+			a.working = append(a.working, llm.ToolResult(cc.ID, tools.TaskCompleteTool, "Completion not yet accepted. Continue working."))
+			a.working = append(a.working, llm.GuidanceMessage(verdict.feedback))
+			a.guidanceNudges++
 			continue
 		}
 
@@ -715,7 +765,19 @@ func (a *Agent) Chat(ctx context.Context, userInput string) error {
 			distinctToolSet[c.Function.Name] = struct{}{}
 		}
 
-		a.runToolCalls(ctx, res.Message.ToolCalls)
+		// Intercept todo tool calls (neo-smoothness req.3): handle them
+		// directly in the agent loop (like task_complete) since they update
+		// the agent's TodoList state, not an MCP tool. Non-todo calls
+		// dispatch normally through runToolCalls.
+		calls := res.Message.ToolCalls
+		todoCalls, execCalls := splitTodo(calls)
+		for _, tc := range todoCalls {
+			result := a.handleTodoCall(tc)
+			a.working = append(a.working, llm.ToolResult(tc.ID, tools.TodoTool, result))
+		}
+		if len(execCalls) > 0 {
+			a.runToolCalls(ctx, execCalls)
+		}
 		workTouched = true
 	}
 
@@ -1047,7 +1109,11 @@ func (a *Agent) runToolCalls(ctx context.Context, calls []llm.ToolCall) {
 			stepID = fmt.Sprintf("call-%d", i)
 		}
 		stepIDs[i] = stepID
-		a.out.Status("• " + name)
+		// Narrate-before-act (neo-smoothness req.2): emit one concise,
+		// action-specific intent sentence before dispatching.
+		if narration := narrateToolCall(call); narration != "" {
+			a.out.Status(narration)
+		}
 		if a.observer != nil {
 			a.observer(ToolEvent{ID: stepID, Name: name, Args: args, Phase: ToolStart})
 		}
@@ -1108,7 +1174,17 @@ func (a *Agent) runToolCalls(ctx context.Context, calls []llm.ToolCall) {
 		// the provider's request-body byte cap on its own. The observer
 		// below still gets the full, untruncated content so the product
 		// shows real evidence.
-		a.working = append(a.working, llm.ToolResult(call.ID, name, capToolResult(content)))
+		// Overflow-file (neo-smoothness req.4): when a tool result exceeds
+		// the inline budget, persist the FULL output to a file and return
+		// an inline truncation notice with the path. The agent is told via
+		// guidance to read the file before reasoning over the result.
+		inline, overflowed := overflowToolResult(content, call.ID)
+		a.working = append(a.working, llm.ToolResult(call.ID, name, inline))
+		if overflowed {
+			a.working = append(a.working, llm.GuidanceMessage(
+				"A tool result was truncated and saved to a file. Read the overflow file mentioned in the tool result above before answering from that result."))
+			a.guidanceNudges++
+		}
 		if a.observer != nil {
 			a.observer(ToolEvent{ID: stepIDs[i], Name: name, Args: parsedArgs[i], Result: content, IsErr: isErr, Phase: ToolEnd})
 		}
@@ -1147,7 +1223,11 @@ func (a *Agent) runToolCallsSerial(ctx context.Context, calls []llm.ToolCall) {
 		if stepID == "" {
 			stepID = fmt.Sprintf("call-%d", i)
 		}
-		a.out.Status("• " + name)
+		// Narrate-before-act (neo-smoothness req.2): emit one concise,
+		// action-specific intent sentence before dispatching.
+		if narration := narrateToolCall(call); narration != "" {
+			a.out.Status(narration)
+		}
 		// Paint the live viewport the instant the call is dispatched (no result
 		// yet) so the surface shows Neo at work — a terminal opening, a browser
 		// navigating — before the tool returns.
@@ -1172,7 +1252,16 @@ func (a *Agent) runToolCallsSerial(ctx context.Context, calls []llm.ToolCall) {
 		// fetch / file read / MCP payload) can blow the provider's request-
 		// body byte cap on its own. The observer below still gets the full,
 		// untruncated content so the product shows real evidence.
-		a.working = append(a.working, llm.ToolResult(call.ID, name, capToolResult(content)))
+		// Overflow-file (neo-smoothness req.4): when a tool result exceeds
+		// the inline budget, persist the FULL output to a file and return
+		// an inline truncation notice with the path.
+		inline, overflowed := overflowToolResult(content, call.ID)
+		a.working = append(a.working, llm.ToolResult(call.ID, name, inline))
+		if overflowed {
+			a.working = append(a.working, llm.GuidanceMessage(
+				"A tool result was truncated and saved to a file. Read the overflow file mentioned in the tool result above before answering from that result."))
+			a.guidanceNudges++
+		}
 		// Surface the completed work (command output, fetched page, file
 		// contents, web-search snippets, …) so the product renders real
 		// evidence, not just a synthesized answer.

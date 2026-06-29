@@ -53,6 +53,13 @@ type session struct {
 
 	asksMu sync.Mutex
 	asks   map[string]*askWaiter // ask surface id -> waiter, for Construct Ask back-channel
+
+	// todoState is the last-observed todo list snapshot for this conversation
+	// (task.3.2). It is set by the TodoObserver callback every time the agent's
+	// TodoList changes, and restored into a rebuilt agent in rebuildAgent so the
+	// live checklist survives a respawn. Guarded by todoMu (briefly held).
+	todoMu    sync.Mutex
+	todoState []agent.TodoItem
 }
 
 // askWaiter parks a construct_render(kind=ask) tool call until the human posts
@@ -157,6 +164,15 @@ func (s *session) rebuildAgent() {
 		Consolidator: e.consolidator,
 		Recaller:     recaller,
 		Observer:     func(ev agent.ToolEvent) { e.surfaceTool(s.cur, ev) },
+		// Task 3.2: surface todo state changes as todo.update SSE events so
+		// the client renders a live checklist. The callback also caches the
+		// snapshot on the session so it survives a respawn (rebuildAgent).
+		TodoObserver: func(items []agent.TodoItem) {
+			s.todoMu.Lock()
+			s.todoState = items
+			s.todoMu.Unlock()
+			e.publishTodo(s.cur, items)
+		},
 		// Cassandra Phase 3: the shared completeness faculty audits the
 		// completion gate on state-touching turns; its verdicts stream as
 		// cassandra.* events onto the live run.
@@ -177,6 +193,19 @@ func (s *session) rebuildAgent() {
 		if turns := e.conv.Recent(s.id, conversation.DefaultRecallTurns); len(turns) > 0 {
 			s.agent.Seed(seedMessages(turns), firstUserText(turns))
 		}
+	}
+	// Restore the todo list so the live checklist survives a respawn over
+	// durable state (task.3.2). The in-memory todoState is set by the
+	// TodoObserver on every change; when it is empty (a fresh process /
+	// reopened thread), fall back to the durable trace's last todo.update.
+	s.todoMu.Lock()
+	todoItems := s.todoState
+	s.todoMu.Unlock()
+	if len(todoItems) == 0 {
+		todoItems = e.restoreTodoFromTrace(s.id)
+	}
+	if len(todoItems) > 0 {
+		s.agent.RestoreTodo(todoItems)
 	}
 }
 

@@ -337,6 +337,85 @@ func (e *Engine) publishAudit(r *run, ev agent.AuditEvent) {
 	e.broker.publish(r.id, ev.Type, "cassandra", f)
 }
 
+// publishTodo streams a todo list state change onto the run's event stream as a
+// todo.update SSE event (task.3.2). The client renders it as a live checklist.
+// Pure side-channel — it only publishes a transcript event, exactly like
+// surfaceTool / publishAudit; it never signs, writes cortex, or touches
+// plan/walk. Because it goes through broker.publish, it is also persisted to the
+// durable trace (todo.update is in traceWorkspaceTypes), so the checklist
+// survives a reload / reopen-from-history.
+func (e *Engine) publishTodo(r *run, items []agent.TodoItem) {
+	if r == nil {
+		return
+	}
+	fields := map[string]interface{}{
+		"intent_id": r.id,
+	}
+	if items != nil {
+		itemList := make([]map[string]interface{}, len(items))
+		for i, it := range items {
+			itemList[i] = map[string]interface{}{
+				"id":      it.ID,
+				"content": it.Content,
+				"status":  it.Status,
+			}
+		}
+		fields["items"] = itemList
+	}
+	e.broker.publish(r.id, "todo.update", "neo", fields)
+}
+
+// restoreTodoFromTrace loads the most recent todo.update event from the durable
+// trace and returns its items, so the live checklist survives a process restart
+// / reopened thread (task.3.2). Returns nil when the trace is disabled, the
+// conversation has no run, or no todo.update was ever persisted.
+func (e *Engine) restoreTodoFromTrace(convID string) []agent.TodoItem {
+	if e.trace == nil || !e.trace.Enabled() {
+		return nil
+	}
+	runID := e.latestRunForConv(convID)
+	if runID == "" {
+		return nil
+	}
+	var last []agent.TodoItem
+	for _, ev := range e.trace.Load(runID) {
+		if ev.Type != "todo.update" {
+			continue
+		}
+		raw, ok := ev.Fields["items"].([]interface{})
+		if !ok {
+			continue
+		}
+		items := make([]agent.TodoItem, 0, len(raw))
+		for _, ri := range raw {
+			m, ok := ri.(map[string]interface{})
+			if !ok {
+				continue
+			}
+			items = append(items, agent.TodoItem{
+				ID:      stringField(m, "id"),
+				Content: stringField(m, "content"),
+				Status:  stringField(m, "status"),
+			})
+		}
+		if len(items) > 0 {
+			last = items
+		}
+	}
+	return last
+}
+
+// stringField extracts a string value from a loose JSON map (the trace's
+// map[string]interface{}). Returns "" for missing/non-string values.
+func stringField(m map[string]interface{}, key string) string {
+	v, ok := m[key]
+	if !ok {
+		return ""
+	}
+	s, _ := v.(string)
+	return s
+}
+
 func (e *Engine) notifyFor(r *run) func(string) {
 	return func(msg string) {
 		if r == nil {
@@ -417,6 +496,7 @@ var traceWorkspaceTypes = map[string]bool{
 	"subagent.note":           true,
 	"subagent.status":         true,
 	"swarm.completed":         true,
+	"todo.update":             true,
 }
 
 // recordTrace is the broker tap (F3): it persists the workspace-relevant slice
