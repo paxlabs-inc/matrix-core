@@ -110,6 +110,8 @@ type IdentityData struct {
 	Wallets       []string    `cbor:"3,keyasint,omitempty"` // 0x... or pax... bech32 addrs
 	Roles         []string    `cbor:"4,keyasint,omitempty"`
 	PublicKeys    []PublicKey `cbor:"5,keyasint,omitempty"`
+	AgentName         string   `cbor:"6,keyasint,omitempty"` // onboarding profile: agent display name
+	ExpertiseDomains  []string `cbor:"7,keyasint,omitempty"` // onboarding profile: user's areas of expertise
 }
 
 // FactData (§4.2). Objective claim.

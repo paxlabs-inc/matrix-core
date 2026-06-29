@@ -57,8 +57,8 @@ func TestCostSmallTokensPrecision(t *testing.T) {
 		t.Fatalf("Cost: %v", err)
 	}
 	// Formatted at 12 decimals (NUMERIC(20,12)): 0.000006561680.
-	if cost != "0.000006561680" {
-		t.Fatalf("expected 0.000006561680, got %q", cost)
+	if cost != "0.000017497813" {
+		t.Fatalf("expected 0.000017497813, got %q", cost)
 	}
 }
 

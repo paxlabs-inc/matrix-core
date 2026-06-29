@@ -169,6 +169,14 @@ func (s *session) rebuildAgent() {
 		// next step instead of cancelling the run.
 		Inbox: s.drainInput,
 	})
+	// Inject the onboarding profile (agent_name, preferred_name,
+	// expertise_domains) into the stable system prompt prefix (req 2.4/2.5).
+	// Refresh first (TTL-bounded) so a Settings edit reflects on subsequent
+	// conversations/respawns without a process restart (req 8.2); the
+	// values are per-user-stable, preserving the prompt-cache invariant.
+	e.maybeRefreshProfile()
+	agentName, preferredName, expertiseDomains := e.profileSnapshot()
+	s.agent.SetUserProfile(agentName, preferredName, expertiseDomains)
 	// Resume continuity: if this conversation already has durable turns (a
 	// reopened thread, one that outlived a restart, or a respawn mid-task),
 	// seed the fresh agent's transcript so it remembers the thread instead of

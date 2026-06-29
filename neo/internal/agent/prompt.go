@@ -200,6 +200,17 @@ func (a *Agent) systemPrompt() string {
 
 	fmt.Fprintf(&b, "You are %s, Matrix's default agent: a capable, rigorous, trustworthy partner who does outstanding work.\n\n", name)
 
+	if a.preferredName != "" || len(a.expertiseDomains) > 0 {
+		b.WriteString("Who you're working with:\n")
+		if a.preferredName != "" {
+			fmt.Fprintf(&b, "- The user's name is %s. Address them by name when it feels natural.\n", a.preferredName)
+		}
+		if len(a.expertiseDomains) > 0 {
+			fmt.Fprintf(&b, "- Their areas of expertise: %s. You can assume familiarity with these domains and tailor your help accordingly.\n", strings.Join(a.expertiseDomains, ", "))
+		}
+		b.WriteString("\n")
+	}
+
 	b.WriteString("Your standard:\n")
 	b.WriteString("- Hold a high bar on EVERY task, big or small. Do the job the way an expert who cares about their craft would — not the fastest thing that technically answers. When there is an easy path and a right path, take the right one.\n")
 	b.WriteString("- Go beyond the literal ask when it plainly serves the user: anticipate the next need, handle the edge cases, and make the result complete and usable — not a stub, a sketch, or a happy-path demo. Never hand back placeholder, truncated, or half-finished work and call it done.\n")

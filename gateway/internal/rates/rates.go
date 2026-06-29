@@ -111,20 +111,20 @@ const DailyFreeTierLimitPax = "10"
 // Constants are exported so internal/routing imports them rather than
 // re-declaring; ALSO exposed via FreeTierWhitelist() for tests.
 const (
-	ModelCompilerFreeTier = "accounts/fireworks/models/gpt-oss-120b"
+	ModelCompilerFreeTier = "accounts/fireworks/models/glm-5p2"
 	ModelExecutorFreeTier = "accounts/fireworks/models/glm-5p2"
 	ModelDeepSeekV4Flash  = "accounts/fireworks/models/glm-5p2"
 	ModelDeepSeekV4Pro    = "accounts/fireworks/models/glm-5p2"
-	ModelKimiK26          = "Qwen/Qwen3.7-Max"
+	ModelKimiK26          = "accounts/fireworks/models/glm-5p2"
 	// ModelNeoMain is Neo's main conversational loop model: the Together-served
 	// DeepSeek-V4-Pro (NOT the Fireworks deepseek-v4-pro — different provider
 	// route + string). Pinned on the `neo` slot via neo config.MainModel.
 	ModelNeoMain    = "accounts/fireworks/models/glm-5p2"
-	ModelGLM5p1Fast = "accounts/fireworks/routers/glm-5p1-fast"
-	ModelGPTOSS120B       = "accounts/fireworks/models/gpt-oss-120b"
-	ModelGPTOSS20B        = "accounts/fireworks/models/gpt-oss-20b"
-	ModelQwenCoder        = "Qwen/Qwen3-Coder-480B-A35B-Instruct-FP8"
-	ModelLlama405B        = "meta-llama/Llama-3.1-405B-Instruct"
+	ModelGLM5p1Fast = "accounts/fireworks/models/glm-5p2"
+	ModelGPTOSS120B       = "accounts/fireworks/models/glm-5p2"
+	ModelGPTOSS20B        = "accounts/fireworks/models/glm-5p2"
+	ModelQwenCoder        = "accounts/fireworks/models/glm-5p2"
+	ModelLlama405B        = "accounts/fireworks/models/glm-5p2"
 	// ModelNomicEmbed is the Fireworks-hosted embedding model behind the
 	// gateway's /v1/embeddings route (768-dim; matches cortex DefaultDim).
 	ModelNomicEmbed = "nomic-ai/nomic-embed-text-v1.5"

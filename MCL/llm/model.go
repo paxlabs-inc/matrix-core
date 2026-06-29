@@ -351,7 +351,7 @@ func DefaultRegistry() *ModelRegistry {
 
 	// --- SlotCompiler --------------------------------------------------------
 	compiler := Config{
-		Model:       "accounts/fireworks/models/gpt-oss-20b",
+		Model:       "accounts/fireworks/models/glm-5p2",
 		Temperature: 0,
 		Seed:        42,
 		MaxTokens:   512,
@@ -376,7 +376,7 @@ func DefaultRegistry() *ModelRegistry {
 	// truncates the plan mid-object (the 'unexpected end of JSON input'
 	// synth.parse.error class). Plans rarely approach this ceiling.
 	planner := Config{
-		Model:       "accounts/fireworks/models/gpt-oss-120b",
+		Model:       "accounts/fireworks/models/glm-5p2",
 		Temperature: 0.2,
 		Seed:        42,
 		MaxTokens:   8192,
@@ -385,7 +385,7 @@ func DefaultRegistry() *ModelRegistry {
 	}
 	// LongCtx: GLM-5.1's 202k window for plans with extensive context.
 	plannerLongCtx := Config{
-		Model:       "accounts/fireworks/routers/glm-5p1-fast",
+		Model:       "accounts/fireworks/models/glm-5p2",
 		Temperature: 0.2,
 		Seed:        42,
 		MaxTokens:   3072,
@@ -395,7 +395,7 @@ func DefaultRegistry() *ModelRegistry {
 
 	// --- SlotExecutor: KindReason (default agentic) --------------------------
 	executorReason := Config{
-		Model:       "accounts/fireworks/routers/glm-5p1-fast",
+		Model:       "accounts/fireworks/models/glm-5p2",
 		Temperature: 0.4,
 		MaxTokens:   10000,
 		GrammarMode: GrammarNone,
@@ -403,7 +403,7 @@ func DefaultRegistry() *ModelRegistry {
 
 	// --- SlotExecutor: KindCode (code-gen specialist) ------------------------
 	executorCode := Config{
-		Model:       "Qwen/Qwen3-Coder-480B-A35B-Instruct-FP8",
+		Model:       "accounts/fireworks/models/glm-5p2",
 		Temperature: 0.2,
 		MaxTokens:   4096,
 		GrammarMode: GrammarNone,
@@ -419,7 +419,7 @@ func DefaultRegistry() *ModelRegistry {
 
 	// --- SlotExecutor: KindWrite (prose specialist) --------------------------
 	executorWrite := Config{
-		Model:       "Qwen/Qwen3.7-Max",
+		Model:       "accounts/fireworks/models/glm-5p2",
 		Temperature: 0.6,
 		MaxTokens:   2048,
 		GrammarMode: GrammarNone,
@@ -427,7 +427,7 @@ func DefaultRegistry() *ModelRegistry {
 
 	// --- SlotExecutor: KindTransform (structured shape, no creativity) -------
 	executorTransform := Config{
-		Model:       "accounts/fireworks/models/gpt-oss-20b",
+		Model:       "accounts/fireworks/models/glm-5p2",
 		Temperature: 0,
 		Seed:        42,
 		MaxTokens:   1024,
@@ -436,7 +436,7 @@ func DefaultRegistry() *ModelRegistry {
 
 	// --- SlotExecutor: KindClassify (pick-from-list with grammar) ------------
 	executorClassify := Config{
-		Model:       "accounts/fireworks/models/gpt-oss-20b",
+		Model:       "accounts/fireworks/models/glm-5p2",
 		Temperature: 0,
 		Seed:        42,
 		MaxTokens:   64,

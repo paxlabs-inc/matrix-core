@@ -89,6 +89,7 @@ func newDaemonMux(d *daemonState, t *transcript) http.Handler {
 
 	// Identity / settings / diag.
 	mux.HandleFunc("/me", d.handleMe)
+	mux.HandleFunc("/profile", d.handleProfile)
 	mux.HandleFunc("/settings", d.handleSettings)
 	mux.HandleFunc("/diag/embedder", d.handleDiagEmbedder)
 	mux.HandleFunc("/diag/mcp", d.handleDiagMCP)

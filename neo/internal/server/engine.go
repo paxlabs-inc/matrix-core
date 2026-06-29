@@ -14,6 +14,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"strings"
 	"sync"
 	"time"
@@ -52,6 +53,18 @@ type Engine struct {
 
 	backendURL   string // co-located MCL daemon (core_execute + reverse proxy)
 	backendToken string // optional bearer for the daemon
+
+	// userProfile holds the onboarding profile fetched from the daemon's
+	// /profile endpoint. Per-user-stable; injected into every agent via
+	// SetUserProfile so it lives in the stable prompt prefix. Refreshed on
+	// a TTL at session rebuild so a later edit (Settings, req 8.2) reflects
+	// on subsequent conversations/turns without a process restart. Guarded
+	// by profileMu because rebuilds run concurrently across sessions.
+	profileMu            sync.Mutex
+	userAgentName        string
+	userPreferredName    string
+	userExpertiseDomains []string
+	profileFetchedAt     time.Time
 
 	broker   *broker
 	sessions *sessionRegistry
@@ -111,6 +124,11 @@ func NewEngine(o EngineOptions) *Engine {
 		gateClaims:   map[string]bool{},
 	}
 	e.sessions = newSessionRegistry(e)
+	// Fetch the onboarding profile from the daemon so it can be injected
+	// into every agent's stable system prompt prefix (req 2.4/2.5).
+	// Best-effort: a missing daemon or absent profile falls back to the
+	// default "Neo" identity cleanly.
+	e.fetchUserProfile()
 	// Persist the durable workspace timeline (F3): the broker tap routes every
 	// workspace event to the sidecar trace store so "Neo's Computer" survives a
 	// reload / reopen-from-history, not just the 2-minute in-memory replay
@@ -707,4 +725,82 @@ func humanizeTool(name string) string {
 		name = name[i+2:]
 	}
 	return strings.ReplaceAll(name, "_", " ")
+}
+
+// profileRefreshTTL bounds how long a fetched profile is reused before a
+// session rebuild re-fetches it. Short enough that a Settings edit (req 8.2)
+// reflects on the next conversation/respawn; long enough that a burst of
+// respawns doesn't hammer the daemon. A failed fetch also stamps the clock,
+// so an unreachable daemon backs off instead of retrying every rebuild.
+const profileRefreshTTL = 30 * time.Second
+
+// fetchUserProfile fetches the onboarding profile from the daemon's
+// /profile endpoint and caches it on the engine for injection into every
+// agent's stable system prompt prefix (req 2.4/2.5). Best-effort: a
+// missing daemon, absent profile, or any error falls back to the default
+// "Neo" identity cleanly (empty preferredName + nil expertiseDomains).
+// Thread-safe: writes the cached fields under profileMu.
+func (e *Engine) fetchUserProfile() {
+	// Stamp the attempt time up front so both success and failure back off
+	// for the TTL (an unreachable daemon must not be polled every rebuild).
+	e.profileMu.Lock()
+	e.profileFetchedAt = time.Now()
+	e.profileMu.Unlock()
+
+	if e.backendURL == "" {
+		return
+	}
+	url := strings.TrimRight(e.backendURL, "/") + "/profile"
+	req, err := http.NewRequest(http.MethodGet, url, nil)
+	if err != nil {
+		return
+	}
+	if e.backendToken != "" {
+		req.Header.Set("Authorization", "Bearer "+e.backendToken)
+	}
+	client := &http.Client{Timeout: 5 * time.Second}
+	resp, err := client.Do(req)
+	if err != nil {
+		return
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return
+	}
+	var pr struct {
+		PreferredName    string   `json:"preferred_name"`
+		AgentName        string   `json:"agent_name"`
+		ExpertiseDomains []string `json:"expertise_domains"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&pr); err != nil {
+		return
+	}
+	e.profileMu.Lock()
+	e.userPreferredName = strings.TrimSpace(pr.PreferredName)
+	e.userExpertiseDomains = pr.ExpertiseDomains
+	if pr.AgentName != "" {
+		e.userAgentName = pr.AgentName
+	}
+	e.profileMu.Unlock()
+}
+
+// maybeRefreshProfile re-fetches the onboarding profile if the cached copy
+// is older than profileRefreshTTL. Called at session rebuild so a profile
+// edited in Settings (req 8.2) takes effect on subsequent conversations/
+// turns without a process restart.
+func (e *Engine) maybeRefreshProfile() {
+	e.profileMu.Lock()
+	stale := e.profileFetchedAt.IsZero() || time.Since(e.profileFetchedAt) > profileRefreshTTL
+	e.profileMu.Unlock()
+	if stale {
+		e.fetchUserProfile()
+	}
+}
+
+// profileSnapshot returns the current cached profile under lock, for safe
+// injection into a freshly rebuilt agent.
+func (e *Engine) profileSnapshot() (agentName, preferredName string, expertiseDomains []string) {
+	e.profileMu.Lock()
+	defer e.profileMu.Unlock()
+	return e.userAgentName, e.userPreferredName, e.userExpertiseDomains
 }

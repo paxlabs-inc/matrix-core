@@ -39,6 +39,7 @@ import (
 	"time"
 
 	"matrix/router/internal/admin"
+	"matrix/router/internal/beta"
 	"matrix/router/internal/config"
 	"matrix/router/internal/db"
 	"matrix/router/internal/fly"
@@ -279,6 +280,19 @@ func main() {
 		w.Header().Set("Content-Type", "application/json")
 		fmt.Fprintf(w, `{"version":%q}`, version)
 	})
+	// Beta-launch user endpoints (JWT-authed, router-local — not proxied).
+	betaH := &beta.Handler{DB: pool, Log: logf}
+	if adminH.DaemonImage != "" {
+		betaH.Provision = adminH
+	}
+	betaMux := http.NewServeMux()
+	betaH.Mount(betaMux)
+	publicMux.Handle("/invite/", mw.JWT(verifier, logf)(betaMux))
+	publicMux.Handle("/consent", mw.JWT(verifier, logf)(betaMux))
+	publicMux.Handle("/disclosure/", mw.JWT(verifier, logf)(betaMux))
+	publicMux.Handle("/reports", mw.JWT(verifier, logf)(betaMux))
+	publicMux.Handle("/provision/", mw.JWT(verifier, logf)(betaMux))
+
 	// JWT-protected proxy for everything else (/messages, /events, /intents/*).
 	publicMux.Handle("/", mw.JWT(verifier, logf)(proxyH))
 

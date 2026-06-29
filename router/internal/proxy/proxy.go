@@ -162,6 +162,19 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		switch {
 		case errors.Is(err, db.ErrUserNotFound):
 			if h.Provision != nil {
+				// Invite gate: refuse auto-provisioning for a user with
+				// no redeemed invite. The admin POST /admin/users path
+				// bypasses this (operator override).
+				redeemed, rErr := h.DB.HasRedeemedInvite(r.Context(), sub)
+				if rErr != nil {
+					h.Logf("invite check %s: %v", sub, rErr)
+					http.Error(w, "internal error", http.StatusInternalServerError)
+					return
+				}
+				if !redeemed {
+					http.Error(w, "invite required", http.StatusForbidden)
+					return
+				}
 				// First authenticated request from a new user: kick off
 				// provisioning out-of-band and ask the client to retry
 				// while the Machine comes up.

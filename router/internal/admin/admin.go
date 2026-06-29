@@ -61,6 +61,7 @@ type Handler struct {
 func (h *Handler) Mount(mux *http.ServeMux) {
 	mux.HandleFunc("/admin/users", h.handleUsersCollection)
 	mux.HandleFunc("/admin/users/", h.handleUserItem)
+	h.MountBeta(mux)
 }
 
 // CreateUserRequest is the POST /admin/users body.
@@ -193,6 +194,20 @@ func (h *Handler) StartProvision(userID, email string) {
 		defer h.inflight.Delete(userID)
 		ctx, cancel := context.WithTimeout(context.Background(), h.timeout())
 		defer cancel()
+		// Defense-in-depth invite gate (req 3.5/9.1): the out-of-band
+		// provisioning path refuses to create a Machine for a user with
+		// no redeemed invite, even if a caller forgot to pre-check. The
+		// operator override (admin POST /admin/users) calls EnsureMachine
+		// directly and is intentionally not gated here.
+		redeemed, err := h.DB.HasRedeemedInvite(ctx, userID)
+		if err != nil {
+			h.logf("auto-provision %s: invite check: %v", userID, err)
+			return
+		}
+		if !redeemed {
+			h.logf("auto-provision %s: no redeemed invite; refusing", userID)
+			return
+		}
 		if _, _, err := h.EnsureMachine(ctx, userID, email, "", h.DefaultRegion); err != nil {
 			h.logf("auto-provision %s: %v", userID, err)
 		}

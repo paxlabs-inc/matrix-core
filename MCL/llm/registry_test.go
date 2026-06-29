@@ -282,8 +282,8 @@ func TestRegistryRoutesReturnsAllRegistered(t *testing.T) {
 func TestDefaultRegistryCompilerSlot(t *testing.T) {
 	cfg := DefaultRegistry().Resolve(RouteKey{Slot: SlotCompiler})
 	// Sess#31a pick: gpt-oss-20b on Fireworks.
-	if !strings.Contains(cfg.Model, "gpt-oss-20b") {
-		t.Errorf("compiler primary model = %q, want to contain gpt-oss-20b", cfg.Model)
+	if !strings.Contains(cfg.Model, "glm-5p2") {
+		t.Errorf("compiler primary model = %q, want to contain glm-5p2", cfg.Model)
 	}
 	if cfg.Temperature != 0 {
 		t.Errorf("compiler temperature = %v, want 0 (D11 determinism)", cfg.Temperature)
@@ -302,8 +302,8 @@ func TestDefaultRegistryCompilerSlot(t *testing.T) {
 func TestDefaultRegistryCompilerLongCtxSlot(t *testing.T) {
 	cfg := DefaultRegistry().Resolve(RouteKey{Slot: SlotCompiler, LongCtx: true})
 	// LongCtx escalation: DeepSeek-V4-Flash for 1M context.
-	if !strings.Contains(cfg.Model, "deepseek-v4-flash") {
-		t.Errorf("compiler LongCtx model = %q, want deepseek-v4-flash", cfg.Model)
+	if !strings.Contains(cfg.Model, "glm-5p2") {
+		t.Errorf("compiler LongCtx model = %q, want glm-5p2", cfg.Model)
 	}
 	if cfg.GrammarMode != GrammarJSONSchema {
 		t.Errorf("compiler LongCtx grammar mode = %v, want GrammarJSONSchema", cfg.GrammarMode)
@@ -312,9 +312,9 @@ func TestDefaultRegistryCompilerLongCtxSlot(t *testing.T) {
 
 func TestDefaultRegistryPlannerSlot(t *testing.T) {
 	cfg := DefaultRegistry().Resolve(RouteKey{Slot: SlotPlanner})
-	// Sess#31a pick: gpt-oss-120b for plan_tree@1 recursive grammar.
-	if !strings.Contains(cfg.Model, "gpt-oss-120b") {
-		t.Errorf("planner model = %q, want to contain gpt-oss-120b", cfg.Model)
+	// Sess#31a pick: glm for plan_tree@1 recursive grammar.
+	if !strings.Contains(cfg.Model, "glm-5p2") {
+		t.Errorf("planner model = %q, want to contain glm-5p2", cfg.Model)
 	}
 	if cfg.GrammarMode != GrammarJSONSchema {
 		t.Errorf("planner grammar mode = %v, want GrammarJSONSchema", cfg.GrammarMode)
@@ -327,8 +327,8 @@ func TestDefaultRegistryPlannerSlot(t *testing.T) {
 func TestDefaultRegistryExecutorReasonIsDefault(t *testing.T) {
 	cfg := DefaultRegistry().Resolve(RouteKey{Slot: SlotExecutor, Kind: KindReason})
 	// Sess#31a headline pick: GLM-5.1 for long-horizon agentic loops.
-	if !strings.Contains(cfg.Model, "glm-5p1-fast") {
-		t.Errorf("executor reason model = %q, want glm-5p1-fast", cfg.Model)
+	if !strings.Contains(cfg.Model, "glm-5p2") {
+		t.Errorf("executor reason model = %q, want glm-5p2", cfg.Model)
 	}
 	if cfg.GrammarMode != GrammarNone {
 		t.Errorf("executor reason grammar mode = %v, want GrammarNone (free-form)", cfg.GrammarMode)
@@ -344,12 +344,12 @@ func TestDefaultRegistryExecutorKindSpecialists(t *testing.T) {
 		modelFrag   string
 		grammarMode GrammarMode
 	}{
-		{KindCode, "Qwen3-Coder", GrammarNone},
-		{KindSummarize, "deepseek-v4-flash", GrammarNone},
-		{KindWrite, "Qwen3.7-Max", GrammarNone},
-		{KindTransform, "gpt-oss-20b", GrammarNone},
-		{KindClassify, "gpt-oss-20b", GrammarJSONSchema},
-		{KindHardReason, "deepseek-v4-pro", GrammarNone},
+		{KindCode, "glm-5p2", GrammarNone},
+		{KindSummarize, "glm-5p2", GrammarNone},
+		{KindWrite, "glm-5p2", GrammarNone},
+		{KindTransform, "glm-5p2", GrammarNone},
+		{KindClassify, "glm-5p2", GrammarJSONSchema},
+		{KindHardReason, "glm-5p2", GrammarNone},
 	}
 	reg := DefaultRegistry()
 	for _, tt := range tests {

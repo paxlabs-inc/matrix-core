@@ -192,6 +192,15 @@ type Agent struct {
 	// unread. Created lazily on the first overflow and cleaned up at turn end.
 	// Goroutine-safe (the concurrent dispatch path may both cap and read).
 	overflow *overflowStore
+
+	// userProfile carries the onboarding profile (preferred_name,
+	// expertise_domains) fetched from the daemon's /profile endpoint. It is
+	// per-user-stable (set once at onboarding, rarely changed) so it lives
+	// in the STABLE system prefix (prompt-cache byte-stability invariant).
+	// agent_name flows through cfg.AgentName separately. Empty = no
+	// user-specific identity section (clean fallback to default "Neo").
+	preferredName    string
+	expertiseDomains []string
 }
 
 // Options configures New.
@@ -312,6 +321,21 @@ func (a *Agent) drainInbox() bool {
 // (consistent with P1-2). Call after the consolidator proposes skills.
 func (a *Agent) SetSkillIndex(names []string) {
 	a.skillIndex = names
+}
+
+// SetUserProfile injects the onboarding profile (agent_name, preferred_name,
+// expertise_domains) into the STABLE system prefix. Called after agent
+// construction (per session rebuild) so a later profile edit is reflected on
+// subsequent turns (req 8.2). The values are per-user-stable so they preserve
+// the prompt-cache byte-stability invariant (req 2.4): a non-empty agentName
+// overrides cfg.AgentName, and empty preferredName + nil expertiseDomains
+// produce no identity section (clean fallback to default "Neo").
+func (a *Agent) SetUserProfile(agentName, preferredName string, expertiseDomains []string) {
+	if n := strings.TrimSpace(agentName); n != "" {
+		a.cfg.AgentName = n
+	}
+	a.preferredName = strings.TrimSpace(preferredName)
+	a.expertiseDomains = expertiseDomains
 }
 
 // effectiveBudgetSignals carries the observable turn-complexity signals the
