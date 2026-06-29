@@ -85,6 +85,16 @@ const TaskCompleteTool = "task_complete"
 // MCP server, so it never enters the manifest tool-bijection check.
 const WriteSkillTool = "write_skill"
 
+// TodoTool is the synthetic function Neo exposes for managing its live
+// task-list (todo) surface — a first-class checklist that gives the user
+// step-by-step progress visibility. The model calls it to set an ordered
+// plan with per-item status; the agent loop intercepts the call (like
+// task_complete) and updates its internal TodoList, enforcing one
+// in_progress at a time and immediate done. Like task_complete it is
+// synthetic (no MCP server, no manifest bijection) and is ALWAYS advertised
+// to the top-level agent.
+const TodoTool = "todo"
+
 // DelegateFunc runs a prose intent through the MCL pipeline and returns its
 // verifiable outcome. Injected by the agent wiring (see internal/delegate);
 // nil until wired, in which case core_execute reports it is unavailable.
@@ -315,6 +325,10 @@ func (m *Manager) Schemas() []llm.Tool {
 	if m.writeSkill != nil {
 		out = append(out, writeSkillSchema())
 	}
+	// The todo tool is ALWAYS advertised: it is a core agent capability for
+	// multi-step progress visibility (neo-smoothness req.3). Intercepted in
+	// the agent loop, not routed through Manager.Dispatch.
+	out = append(out, todoSchema())
 	// The completion gate is ALWAYS advertised to the top-level agent: it is
 	// the only sanctioned way to end a state-touching turn (Cassandra Phase 1).
 	out = append(out, taskCompleteSchema())
@@ -826,6 +840,48 @@ func taskCompleteSchema() llm.Tool {
 				},
 			},
 			"required": []string{"summary", "coverage"},
+		},
+	)
+}
+
+// todoSchema advertises the live task-list (todo) tool. The model calls it to
+// set or update an ordered plan with per-item status; the agent loop
+// intercepts the call and updates its internal TodoList, enforcing one
+// in_progress at a time and immediate done. The full list is sent each call
+// (a replace-all semantics matching Cascade's todo_write), so the model
+// always expresses the complete current state.
+func todoSchema() llm.Tool {
+	return llm.NewFunctionTool(
+		TodoTool,
+		"Set or update your live task list — a checklist the user sees ticking off in real time as you work. Send the FULL list each call (it replaces the previous state). Each item has an id (stable across calls), a short content line, and a status: \"pending\", \"in_progress\", or \"done\". Keep at most ONE item in_progress at a time and mark items done as soon as they complete — do not batch. Use this on any multi-step task so the user can follow along; skip it on a single trivial step.",
+		map[string]interface{}{
+			"type": "object",
+			"properties": map[string]interface{}{
+				"items": map[string]interface{}{
+					"type":        "array",
+					"description": "The complete task list. Send every item each call; the list replaces the prior state.",
+					"items": map[string]interface{}{
+						"type": "object",
+						"properties": map[string]interface{}{
+							"id": map[string]interface{}{
+								"type":        "string",
+								"description": "A stable identifier for this item (e.g. \"1\", \"2\"). Reuse the same id across calls to update its status.",
+							},
+							"content": map[string]interface{}{
+								"type":        "string",
+								"description": "A short description of this step.",
+							},
+							"status": map[string]interface{}{
+								"type":        "string",
+								"enum":        []string{"pending", "in_progress", "done"},
+								"description": "The current status of this item.",
+							},
+						},
+						"required": []string{"id", "content", "status"},
+					},
+				},
+			},
+			"required": []string{"items"},
 		},
 	)
 }

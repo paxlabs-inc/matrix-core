@@ -26,6 +26,14 @@ const (
 	RoleTool      = "tool"
 )
 
+// RoleGuidance is the role for a guidance-channel message — system steering
+// the model acts on but is instructed NOT to acknowledge, echo, or respond to
+// directly (the Cascade <system_guidance> contract). It is serialized as a
+// system-role message to the provider (the wire format is identical), but the
+// Guidance flag lets the agent loop and emit path identify and scrub it from
+// every user-facing surface (chat.delta, chat.thinking, the transcript).
+const RoleGuidance = "system"
+
 // Message is one turn in the conversation. It is both the on-wire shape and
 // the in-transcript shape (Neo's state). An assistant turn may carry
 // ToolCalls; a tool-result turn sets Role=tool + ToolCallID.
@@ -41,6 +49,14 @@ type Message struct {
 	// wire and never treated as the answer; surfaced as a distinct channel
 	// only (mirrors MCL's DecodeWithReasoning posture).
 	Reasoning string `json:"-"`
+
+	// Guidance marks this message as a guidance-channel injection — system
+	// steering the model acts on but is instructed NOT to acknowledge. It is
+	// serialized to the provider as a system-role message (Role == RoleGuidance)
+	// so the wire format is unchanged; the flag is internal-only and lets the
+	// agent loop and emit path scrub it from every user-facing surface. Never
+	// persisted to the durable thread; never surfaced as chat/thinking/delta.
+	Guidance bool `json:"-"`
 }
 
 // ToolCall is a single function invocation requested by the model.
@@ -121,6 +137,15 @@ func AssistantMessage(content string) Message {
 // ToolResult builds a tool-role message answering a specific tool call.
 func ToolResult(callID, name, content string) Message {
 	return Message{Role: RoleTool, ToolCallID: callID, Name: name, Content: content}
+}
+
+// GuidanceMessage builds a guidance-channel message: system steering the model
+// acts on but is instructed NOT to acknowledge, echo, or respond to directly
+// (the Cascade <system_guidance> contract). On the wire it is a system-role
+// message; the Guidance flag lets the agent loop and emit path scrub it from
+// every user-facing surface.
+func GuidanceMessage(content string) Message {
+	return Message{Role: RoleGuidance, Content: content, Guidance: true}
 }
 
 // ChatRequest is one round-trip to the model.

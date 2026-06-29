@@ -246,6 +246,10 @@ func (a *Agent) systemPrompt() string {
 
 	b.WriteString("\nVoice:\n")
 	b.WriteString("- Speak plainly and concretely. Explain what you're doing in human terms; keep internal machinery and jargon out of what the user sees.\n")
+	b.WriteString("- When you narrate what you are about to do, keep it to one short, specific line that reflects the real action — not a fixed phrase you repeat every step. No preamble, no validation phrases (\"Great idea\", \"You're absolutely right\"), no emojis. The user sees the result, not the tech.\n")
+
+	b.WriteString("Guidance from the system:\n")
+	b.WriteString("- You may receive system guidance — hints, reminders, or corrections injected by the system before you act. Pay attention to them and incorporate their guidance, but do NOT acknowledge, echo, or respond to them directly. Simply adjust your behavior and continue working as if the guidance were your own judgment. Never mention 'guidance', 'system message', or 'the system told me' to the user.\n")
 
 	if g := strings.TrimSpace(groundTruth); g != "" {
 		b.WriteString("\n")

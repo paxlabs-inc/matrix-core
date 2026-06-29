@@ -54,6 +54,101 @@ func splitCompletion(calls []llm.ToolCall) (*llm.ToolCall, []llm.ToolCall) {
 	return cc, rest
 }
 
+// splitTodo separates todo tool calls from the rest, so the agent loop can
+// intercept them directly (updating its internal TodoList) rather than routing
+// them through Manager.Dispatch (which has no access to the agent's state).
+// Returns (todoCalls, execCalls) in original order.
+func splitTodo(calls []llm.ToolCall) (todoCalls, execCalls []llm.ToolCall) {
+	for _, c := range calls {
+		if c.Function.Name == tools.TodoTool {
+			todoCalls = append(todoCalls, c)
+		} else {
+			execCalls = append(execCalls, c)
+		}
+	}
+	return todoCalls, execCalls
+}
+
+// handleTodoCall processes a todo tool call by parsing its items and updating
+// the agent's TodoList. It enforces the one-in_progress invariant and
+// immediate-done rule (via TodoList.Set / TodoList.Update). Returns a
+// human-readable result string for the tool-result message.
+func (a *Agent) handleTodoCall(call llm.ToolCall) string {
+	args, err := call.ParseArgs()
+	if err != nil {
+		return "could not parse todo arguments. Send an 'items' array with id, content, and status for each step."
+	}
+	rawItems, ok := args["items"].([]interface{})
+	if !ok || len(rawItems) == 0 {
+		return "todo needs an 'items' array with at least one step (id, content, status)."
+	}
+	items := make([]TodoItem, 0, len(rawItems))
+	for _, ri := range rawItems {
+		m, ok := ri.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		id := strings.TrimSpace(stringArg(m["id"]))
+		content := strings.TrimSpace(stringArg(m["content"]))
+		status := strings.TrimSpace(stringArg(m["status"]))
+		if id == "" || content == "" {
+			continue
+		}
+		items = append(items, TodoItem{ID: id, Content: content, Status: status})
+	}
+	if len(items) == 0 {
+		return "no valid todo items found. Each item needs an id, content, and status."
+	}
+	// Lazily create the todo list on first use.
+	if a.todoList == nil {
+		a.todoList = NewTodoList()
+	}
+	// Full-replace semantics (matching Cascade's todo_write): Set
+	// normalizes statuses (first = in_progress, rest = pending), then
+	// apply the model's explicit statuses on top via Update (which
+	// enforces the one-in_progress invariant).
+	if a.todoList.Empty() {
+		a.todoList.Set(items)
+	} else {
+		// Check if all items are known (an update) or if new items exist
+		// (a full replace). When new items are present, Set replaces the
+		// list; otherwise Update applies per-item status changes.
+		existingIDs := map[string]bool{}
+		for _, ei := range a.todoList.Snapshot() {
+			existingIDs[ei.ID] = true
+		}
+		allKnown := true
+		for _, it := range items {
+			if !existingIDs[it.ID] {
+				allKnown = false
+				break
+			}
+		}
+		if !allKnown {
+			a.todoList.Set(items)
+		}
+	}
+	for _, it := range items {
+		if it.Status == TodoDone || it.Status == TodoInProgress || it.Status == TodoPending {
+			a.todoList.Update(it.ID, it.Status)
+		}
+	}
+	snap := a.todoList.Snapshot()
+	// Surface the post-change item list to the harness so it can publish a
+	// todo.update SSE event (task.3.2). The snapshot is a copy, safe for the
+	// observer to retain.
+	if a.todoObserver != nil {
+		a.todoObserver(snap)
+	}
+	done := 0
+	for _, it := range snap {
+		if it.Status == TodoDone {
+			done++
+		}
+	}
+	return fmt.Sprintf("Task list updated (%d steps, %d done).", len(snap), done)
+}
+
 // batchTouchesState reports whether a tool-call batch reaches the irreversible
 // seam — core_execute (the MCL pipeline: spend / sign / deploy / settle). The
 // reversible Natural toolset (shell, files, browser, web, git) is NOT treated
