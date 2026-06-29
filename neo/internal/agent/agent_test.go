@@ -132,21 +132,60 @@ func TestTruncate(t *testing.T) {
 }
 
 func TestCapToolResult(t *testing.T) {
+	a := New(Options{Config: config.Default()})
+	defer func() {
+		if a.overflow != nil {
+			a.overflow.cleanup()
+		}
+	}()
+
 	small := strings.Repeat("x", 100)
-	if capToolResult(small) != small {
+	if a.capToolResult(small) != small {
 		t.Error("under-limit tool result must be unchanged")
 	}
+
+	// An oversized result is NOT silently cut (neo-smoothness req.4.1): the FULL
+	// output is spilled to a run-scoped overflow file and the transcript keeps a
+	// bounded head+tail plus a truncation notice carrying the overflow token.
 	big := strings.Repeat("y", maxToolResultChars*3)
-	got := capToolResult(big)
-	// Bounded well under the original size, marker present, head+tail kept.
+	got := a.capToolResult(big)
 	if len(got) >= len(big) {
 		t.Errorf("oversized result not bounded: got %d of %d", len(got), len(big))
 	}
-	if !strings.Contains(got, "tool result truncated") {
-		t.Error("truncation marker missing")
+	if !strings.Contains(got, "truncation_notice") || !strings.Contains(got, "read_overflow") {
+		t.Errorf("overflow notice missing from inline result: %q", got)
 	}
 	if !strings.HasPrefix(got, "y") || !strings.HasSuffix(got, "y") {
 		t.Error("head and tail of the result must be preserved")
+	}
+	// The notice must register an unread overflow (the read-full gate).
+	if !a.overflowUnread() {
+		t.Fatal("oversized result must register an unread overflow")
+	}
+	// And the FULL original must be retrievable from the overflow store.
+	tokens := a.overflow.unread()
+	if len(tokens) != 1 {
+		t.Fatalf("want exactly one overflow token, got %v", tokens)
+	}
+	chunk, total, _, ok := a.overflow.read(tokens[0], 0, len(big))
+	if !ok || total != len(big) || chunk != big {
+		t.Errorf("overflow file must hold the FULL output verbatim (ok=%v total=%d want=%d)", ok, total, len(big))
+	}
+	// Reading it satisfies the read-full latch.
+	if a.overflowUnread() {
+		t.Error("overflow must be marked read after read_overflow")
+	}
+}
+
+func TestCapToolResultPlainFallback(t *testing.T) {
+	small := strings.Repeat("x", 100)
+	if capToolResultPlain(small) != small {
+		t.Error("under-limit tool result must be unchanged")
+	}
+	big := strings.Repeat("y", maxToolResultChars*3)
+	got := capToolResultPlain(big)
+	if len(got) >= len(big) || !strings.Contains(got, "tool result truncated") {
+		t.Errorf("plain fallback must bound + mark: %d of %d", len(got), len(big))
 	}
 }
 

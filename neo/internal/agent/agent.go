@@ -44,6 +44,15 @@ import (
 // Detect with errors.Is(err, agent.ErrIncomplete).
 var ErrIncomplete = errors.New("neo: turn incomplete (task not finished)")
 
+// gateNotAcceptedToolResult is the neutral, non-narratable token used to answer
+// a rejected (or prematurely-batched) task_complete call. Every tool_call must
+// receive a tool result or a strict provider 400s, but the ACTIONABLE rejection
+// reason no longer rides this in-band result (where the model would narrate it
+// into the user-visible reasoning stream, req.1.2) — it travels the guidance
+// channel instead (llm.GuidanceMessage). The model still learns the turn is not
+// done; the steering detail stays off every user surface.
+const gateNotAcceptedToolResult = "Not accepted yet — keep working."
+
 // Consolidator is the background write-back hook: it receives a completed
 // turn's transcript and promotes durable learnings to cortex out-of-band.
 // Implemented by internal/writeback; optional (nil disables write-back).
@@ -175,6 +184,14 @@ type Agent struct {
 	// threaded result-assembly path (never from the concurrent dispatch
 	// goroutines), so it is race-free.
 	lastFailureClass delegate.FailureClass
+
+	// overflow holds this turn's oversized tool results that were spilled to
+	// run-scoped files (neo-smoothness req.4): the transcript keeps a bounded
+	// head+tail + a truncation notice, and the model pages the rest back in via
+	// read_overflow. The loop will not let the turn finish while any overflow is
+	// unread. Created lazily on the first overflow and cleaned up at turn end.
+	// Goroutine-safe (the concurrent dispatch path may both cap and read).
+	overflow *overflowStore
 }
 
 // Options configures New.
@@ -243,6 +260,12 @@ func New(o Options) *Agent {
 			a.schemas = a.tools.Schemas()
 		}
 	}
+	// read_overflow is always advertised (top-level and sub-agent): any tool
+	// result can overflow the inline budget, and the read-full discipline
+	// (neo-smoothness req.4) needs the model able to page the remainder back in.
+	// It is synthetic (intercepted in the loop, not routed through the Manager),
+	// so it never enters the manifest tool-bijection check.
+	a.schemas = append(a.schemas, readOverflowSchema())
 	if o.Pager != nil {
 		a.topic = newTopicTracker(o.Pager.Embedder())
 	}
@@ -390,6 +413,13 @@ func (a *Agent) Chat(ctx context.Context, userInput string) error {
 	}
 	a.turnSeq++
 	a.lastFailureClass = delegate.ClassNone
+	// Run-scoped overflow files (neo-smoothness req.4.3) are ephemeral to this
+	// turn: clean them up on every exit (completion, stall, budget, error).
+	defer func() {
+		if a.overflow != nil {
+			a.overflow.cleanup()
+		}
+	}()
 	a.working = append(a.working, llm.UserMessage(userInput))
 
 	// Topic-shift detection (Phase 3): if this turn pivots to an unrelated
@@ -428,6 +458,11 @@ func (a *Agent) Chat(ctx context.Context, userInput string) error {
 	collectSurfacedSnips(surfacedSnips, retrieved)
 
 	repeats := 0
+	// guidanceNudges counts CONSECUTIVE system-guidance nudges (completion-gate
+	// rejections, read-full steers) so the loop can escalate to a stop-and-ask
+	// rather than re-nudging unbounded (req.1.5). Reset to 0 on genuine progress
+	// (a tool dispatch / accepted completion).
+	guidanceNudges := 0
 	prevSig := ""
 	// prevCalls is the previous turn's tool-call batch, kept so the no-progress
 	// guard can detect a SEMANTIC repeat (same operation, reworded arguments),
@@ -630,6 +665,17 @@ func (a *Agent) Chat(ctx context.Context, userInput string) error {
 				a.working = append(a.working, llm.UserMessage("(continue: either call a tool to make progress, or give the final answer)"))
 				continue
 			}
+			// Read-full discipline (req.4.2): a tool result too large to show
+			// inline was spilled to an overflow file. Don't let the turn end on
+			// a bare answer while that output is still unread — steer (via the
+			// guidance channel) to read it first, so the answer can't be drawn
+			// from a truncated result.
+			if a.overflowUnread() {
+				if a.pushGuidanceNudge(a.overflowUnreadNudge(), &guidanceNudges) {
+					return a.escalateGuidance(guidanceNudges)
+				}
+				continue
+			}
 			// A turn that did real work may not end with an unaudited bare
 			// message: nudge toward the completion gate so completion is proven,
 			// not assumed. A pure conversational turn (no tools) rides the light
@@ -667,10 +713,21 @@ func (a *Agent) Chat(ctx context.Context, userInput string) error {
 			if len(rest) > 0 {
 				a.runToolCalls(ctx, rest)
 				workTouched = true
+				guidanceNudges = 0 // sibling tool work is genuine progress (req.1.5)
 				if batchTouchesState(rest) {
 					stateTouched = true
 				}
 				a.working = append(a.working, llm.ToolResult(cc.ID, tools.TaskCompleteTool, "You called task_complete alongside other tools. Review their results above, then call task_complete on its own once you are actually done."))
+				continue
+			}
+			// Read-full discipline (req.4.2): block completion while a spilled
+			// overflow result is unread, steering through the guidance channel —
+			// completion can't be proven from a truncated result.
+			if a.overflowUnread() {
+				a.working = append(a.working, llm.ToolResult(cc.ID, tools.TaskCompleteTool, gateNotAcceptedToolResult))
+				if a.pushGuidanceNudge(a.overflowUnreadNudge(), &guidanceNudges) {
+					return a.escalateGuidance(guidanceNudges)
+				}
 				continue
 			}
 			verdict := a.validateCompletion(ctx, cc, a.gateStrict(stateTouched, workTouched), stateTouched, userInput)
@@ -682,9 +739,19 @@ func (a *Agent) Chat(ctx context.Context, userInput string) error {
 				}
 				return nil
 			}
-			// Rejected: feed the actionable reason back as the tool result and
-			// keep working (advisor-not-effector — the agent enacts the fix).
-			a.working = append(a.working, llm.ToolResult(cc.ID, tools.TaskCompleteTool, verdict.feedback))
+			// Rejected: answer the task_complete call with a neutral token (so
+			// the transcript stays well-formed — every tool_call needs a result)
+			// and ride the actionable reason on the guidance channel rather than
+			// as an in-band tool result whose text the model narrates into the
+			// user-visible reasoning stream (req.1.2). The agent still learns it
+			// must keep working and how to close the gap — in clean terms it does
+			// not echo (advisor-not-effector — the agent enacts the fix). If the
+			// gate keeps rejecting without progress, escalate to a stop-and-ask
+			// rather than re-nudging unbounded (req.1.5).
+			a.working = append(a.working, llm.ToolResult(cc.ID, tools.TaskCompleteTool, gateNotAcceptedToolResult))
+			if a.pushGuidanceNudge(verdict.feedback, &guidanceNudges) {
+				return a.escalateGuidance(guidanceNudges)
+			}
 			continue
 		}
 
@@ -715,8 +782,25 @@ func (a *Agent) Chat(ctx context.Context, userInput string) error {
 			distinctToolSet[c.Function.Name] = struct{}{}
 		}
 
+		// Narrate-before-act (req.2): if the model went straight to tools
+		// without writing its own preamble this step (that preamble was already
+		// surfaced above), synthesize ONE concise, action-specific intent line
+		// from the real operation so the user can always follow along — at most
+		// one per action, never a fixed boilerplate. Distinct per-action content
+		// (do_2) lets neo-execution-reliability's coalescing collapse only
+		// genuine consecutive repeats.
+		if strings.TrimSpace(res.Message.Content) == "" {
+			if line := narrateBatch(res.Message.ToolCalls); line != "" {
+				a.out.Status(line)
+			}
+		}
+
 		a.runToolCalls(ctx, res.Message.ToolCalls)
 		workTouched = true
+		// Genuine progress: a tool dispatch resets the consecutive-guidance
+		// counter so the bounded-escalation budget only trips on a true nudge
+		// loop, never on steps separated by real work (req.1.5).
+		guidanceNudges = 0
 	}
 
 	// [loop_discipline] step budget exhausted → NOT done. Never fabricate a
@@ -733,6 +817,30 @@ func (a *Agent) Chat(ctx context.Context, userInput string) error {
 // on the light path.
 func (a *Agent) gateStrict(stateTouched, workTouched bool) bool {
 	return stateTouched || (a.cfg.GateAllWork && workTouched)
+}
+
+// pushGuidanceNudge routes a system-steering nudge through the guidance channel
+// (req.1.1) and enforces the bounded-escalation budget (req.1.5): it increments
+// the CONSECUTIVE-nudge counter and reports whether the cap is now exceeded. The
+// caller resets the counter on genuine progress (a tool dispatch / accepted
+// completion). A cap of 0 disables the bound (unbounded nudging).
+func (a *Agent) pushGuidanceNudge(text string, counter *int) (capExceeded bool) {
+	if g := llm.GuidanceMessage(text); g.Content != "" {
+		a.working = append(a.working, g)
+	}
+	*counter++
+	return a.cfg.MaxGuidanceNudges > 0 && *counter > a.cfg.MaxGuidanceNudges
+}
+
+// escalateGuidance ends the turn with an honest stop-and-ask once the guidance
+// nudge cap is exceeded (req.1.5): re-nudging the model indefinitely is not the
+// answer, so it marks a DETERMINISTIC blocker (the task supervisor then
+// stops-and-asks the user rather than respawning into the same loop) and returns
+// ErrIncomplete with an honest where-it-stands digest.
+func (a *Agent) escalateGuidance(nudges int) error {
+	a.lastFailureClass = delegate.ClassDeterministic
+	a.consolidateWorking()
+	return fmt.Errorf("%w: I kept being steered to fix the same thing without closing it (%d consecutive nudges). Where it stands: %s", ErrIncomplete, nudges, oneLine(a.lastToolSummary()))
 }
 
 // oneLine collapses whitespace and clamps a digest to a single readable line
@@ -1108,7 +1216,7 @@ func (a *Agent) runToolCalls(ctx context.Context, calls []llm.ToolCall) {
 		// the provider's request-body byte cap on its own. The observer
 		// below still gets the full, untruncated content so the product
 		// shows real evidence.
-		a.working = append(a.working, llm.ToolResult(call.ID, name, capToolResult(content)))
+		a.working = append(a.working, llm.ToolResult(call.ID, name, a.capToolResult(content)))
 		if a.observer != nil {
 			a.observer(ToolEvent{ID: stepIDs[i], Name: name, Args: parsedArgs[i], Result: content, IsErr: isErr, Phase: ToolEnd})
 		}
@@ -1172,7 +1280,7 @@ func (a *Agent) runToolCallsSerial(ctx context.Context, calls []llm.ToolCall) {
 		// fetch / file read / MCP payload) can blow the provider's request-
 		// body byte cap on its own. The observer below still gets the full,
 		// untruncated content so the product shows real evidence.
-		a.working = append(a.working, llm.ToolResult(call.ID, name, capToolResult(content)))
+		a.working = append(a.working, llm.ToolResult(call.ID, name, a.capToolResult(content)))
 		// Surface the completed work (command output, fetched page, file
 		// contents, web-search snippets, …) so the product renders real
 		// evidence, not just a synthesized answer.
@@ -1217,6 +1325,13 @@ func (a *Agent) LastFailureClass() delegate.FailureClass { return a.lastFailureC
 // class of the failure that ended the dispatch (delegate.ClassNone on success),
 // surfaced so the supervisor reads the SAME classification.
 func (a *Agent) dispatchWithRetry(ctx context.Context, name string, args map[string]interface{}) (string, bool, delegate.FailureClass) {
+	// read_overflow is synthetic and agent-owned (the overflow store lives on
+	// the agent, not the Manager): page a truncated result back in and mark it
+	// read (the read-full latch). It never retries or routes to the Manager.
+	if name == readOverflowTool {
+		content, isErr := a.readOverflow(args)
+		return content, isErr, delegate.ClassNone
+	}
 	if a.tools == nil {
 		return "no tools are available in this session.", true, delegate.ClassNone
 	}
@@ -1404,22 +1519,6 @@ func (a *Agent) windowBytes(system string) int {
 // cannot alias a.working.
 func assembleWindow(stableSystem string, transcript []llm.Message, dynamicTail string) []llm.Message {
 	return append(append([]llm.Message{llm.SystemMessage(stableSystem)}, transcript...), llm.SystemMessage(dynamicTail))
-}
-
-// capToolResult bounds a single tool result to maxToolResultChars for the
-// transcript, keeping a head + tail so both the leading structure and any
-// trailing digest/summary survive (some tools place the salient result at the
-// end). Cuts are byte-wise; a split multibyte rune is harmless (JSON marshal
-// replaces it) and the marker makes the truncation explicit.
-func capToolResult(s string) string {
-	if len(s) <= maxToolResultChars {
-		return s
-	}
-	head := maxToolResultChars * 3 / 4
-	tail := maxToolResultChars - head
-	return s[:head] +
-		fmt.Sprintf("\n…(tool result truncated for working memory: %d of %d bytes shown)…\n", maxToolResultChars, len(s)) +
-		s[len(s)-tail:]
 }
 
 func estimateMessagesTokens(msgs []llm.Message) int {

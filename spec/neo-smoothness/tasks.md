@@ -7,11 +7,11 @@
 ## P1 — Invisible guidance channel (highest smoothness impact)
 
 - [ ] 1. Route system steering off the user-visible reasoning stream
-  - [ ] 1.1 Add a guidance message kind + deliver completion-gate feedback through it
+  - [x] 1.1 Add a guidance message kind + deliver completion-gate feedback through it
     - Add a guidance-channel message kind in neo/internal/llm + the agent loop that injects system steering as input the model acts on but is told not to acknowledge (mirror Cascade's <system_guidance>); add the do-not-acknowledge instruction to neo/internal/agent/prompt.go
     - Replace the in-band completion feedback append (agent.go ~line 687: a.working = append(..., llm.ToolResult(cc.ID, TaskCompleteTool, verdict.feedback))) so the rejection feedback rides the guidance channel instead of a tool result the model narrates
     - _Requirements: 1.1, 1.2, 1.4_
-  - [ ] 1.2 Scrub guidance from user surfaces + bounded escalate-to-stop-and-ask
+  - [x] 1.2 Scrub guidance from user surfaces + bounded escalate-to-stop-and-ask
     - Exclude guidance-channel content from chat.delta channel=reasoning / chat.thinking and the assistant transcript on the server emit path, so internal steering never streams to the user
     - Cap consecutive guidance nudges (configurable); on exceeding it, escalate to a stop-and-ask / honest-partial rather than re-nudging unbounded
     - _Requirements: 1.3, 1.5_
@@ -19,7 +19,7 @@
 ## P2 — Narrate-before-act discipline
 
 - [ ] 2. Terse, action-specific running commentary
-  - [ ] 2.1 Emit one action-specific intent line before each tool/core_execute call
+  - [x] 2.1 Emit one action-specific intent line before each tool/core_execute call
     - In the agent loop, before dispatching a tool call, emit at most one concise intent sentence derived from the actual operation (what + why); update prompt.go tone guidance: direct, no preamble/validation phrases, no emojis, no jargon
     - Ensure narration is generated per-action (distinct content) so neo-execution-reliability's coalescing collapses only genuine consecutive duplicates
     - _Requirements: 2.1, 2.2, 2.3, 2.4_
@@ -27,17 +27,17 @@
 ## P3 — Live task-list (todo) surface
 
 - [ ] 3. Step-by-step progress visibility
-  - [ ] 3.1 Synthetic todo tool + manager wiring
+  - [x] 3.1 Synthetic todo tool + manager wiring
     - Add a synthetic todo tool in neo/internal/tools (alongside core_execute/spawn_subagents) that records an ordered plan with per-item status; enforce one in_progress at a time and immediate done; no-op gracefully on trivial single-step turns
     - _Requirements: 3.1, 3.2, 3.4_
-  - [ ] 3.2 Client live-checklist surface + durable-trace integration
+  - [x] 3.2 Client live-checklist surface + durable-trace integration
     - Render the task list as a live checklist in the client honoring UI house rules (tone-contrast separation, no borders/emojis/glow); persist task-list state through the durable trace so it survives reopen + respawn
     - _Requirements: 3.3, 3.5_
 
 ## P4 — Overflow-file for truncated output
 
 - [ ] 4. Never reason over a half-result
-  - [ ] 4.1 Persist oversized tool/core_execute output to a file + inline truncation notice
+  - [x] 4.1 Persist oversized tool/core_execute output to a file + inline truncation notice
     - At the tool/delegate result boundary, when output exceeds the inline budget, write the FULL output to a run-scoped file and return an inline notice with the path + how to read the remainder (mirror Cascade's <truncation_notice>); never silently cut
     - Enforce in code that the agent retrieves the overflow file before reasoning over a flagged-incomplete result; clean up run-scoped files; keep secrets/internals off the user surface
     - _Requirements: 4.1, 4.2, 4.3_
@@ -45,7 +45,7 @@
 ## P5 — Plan-vs-Act mode (optional)
 
 - [ ] 5. Reduce surprise on large/ambiguous requests
-  - [ ] 5.1 Mode signal + plan-vs-act gating
+  - [x] 5.1 Mode signal + plan-vs-act gating
     - Add an act|plan mode signal; in plan mode explore + ask + propose a plan and withhold value-moving/irreversible actions until approval; in act mode allow proposing a plan first for large/ambiguous requests
     - Keep key-isolation + the embedded-wallet leash/approval governance authoritative for value-moving KindleLaunch actions regardless of mode
     - _Requirements: 5.1, 5.2, 5.3_

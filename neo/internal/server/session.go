@@ -728,6 +728,9 @@ func (r *sseReporter) Say(text string, completion bool) {
 	if run == nil {
 		return
 	}
+	// Defense-in-depth (req.1.3): never let guidance-channel steering reach the
+	// user, even if the model echoed it into its answer.
+	text = llm.StripGuidance(text)
 	fields := s.chatFields(run, text, true)
 	if completion {
 		// Mark the validated task_complete summary so the client keeps it out of
@@ -757,7 +760,7 @@ func (r *sseReporter) Status(text string) {
 	if run == nil {
 		return
 	}
-	text = strings.TrimSpace(text)
+	text = strings.TrimSpace(llm.StripGuidance(text))
 	if text == "" {
 		return
 	}
@@ -795,7 +798,7 @@ func (r *sseReporter) Think(text string) {
 	if run == nil {
 		return
 	}
-	text = strings.TrimSpace(text)
+	text = strings.TrimSpace(llm.StripGuidance(text))
 	if text == "" {
 		return
 	}
@@ -813,6 +816,9 @@ func (r *sseReporter) Think(text string) {
 // NEVER persisted (the durable thread is written from Say); the authoritative
 // final text always follows as a chat.assistant turn that the client commits.
 func (r *sseReporter) Delta(turn int, channel, text string) {
+	// Defense-in-depth (req.1.3): strip any guidance-channel envelope the model
+	// echoed before it streams to the live reasoning/content channel.
+	text = llm.StripGuidance(text)
 	if text == "" {
 		return
 	}

@@ -85,10 +85,43 @@ const TaskCompleteTool = "task_complete"
 // MCP server, so it never enters the manifest tool-bijection check.
 const WriteSkillTool = "write_skill"
 
+// TodoTool is the synthetic function Neo exposes to maintain a short, ordered
+// task plan with per-item status, surfaced to the user as a live checklist that
+// ticks off in real time (neo-smoothness req.3). Like core_execute it is NOT a
+// real MCP server, so it never enters the manifest tool-bijection check; it is
+// advertised only to the top-level agent (a sub-agent reports through its
+// digest, not the user's checklist) and only when a todo emitter is wired.
+const TodoTool = "todo"
+
 // DelegateFunc runs a prose intent through the MCL pipeline and returns its
 // verifiable outcome. Injected by the agent wiring (see internal/delegate);
 // nil until wired, in which case core_execute reports it is unavailable.
 type DelegateFunc func(ctx context.Context, proseIntent string) (string, error)
+
+// TodoStatus is the lifecycle status of one task-list item. Exactly one item
+// may be TodoInProgress at a time (enforced by dispatchTodo); an item is moved
+// to TodoDone the moment it is finished (not batched at the end).
+type TodoStatus string
+
+const (
+	TodoPending    TodoStatus = "pending"
+	TodoInProgress TodoStatus = "in_progress"
+	TodoDone       TodoStatus = "done"
+)
+
+// TodoItem is one entry in the live task list: a short human description and
+// its current status. Order is significant (the plan reads top-to-bottom).
+type TodoItem struct {
+	Text   string     `json:"text"`
+	Status TodoStatus `json:"status"`
+}
+
+// TodoFunc records the current task list and surfaces it to the user as a live
+// checklist (and persists it through the durable trace). Injected by the engine
+// wiring (see internal/server); nil until wired, in which case the todo tool is
+// not advertised at all. The items have already been validated by dispatchTodo
+// (non-empty, at most one in_progress).
+type TodoFunc func(ctx context.Context, items []TodoItem) error
 
 // RecallFunc searches the durable memory store and returns a rendered,
 // user-presentable digest. It is the PRIMARY reasoning-time retrieval verb
@@ -158,6 +191,7 @@ type Manager struct {
 	surface    SurfaceFunc
 	ask        AskFunc
 	writeSkill WriteSkillFunc
+	todo       TodoFunc
 	maxAgents  int
 
 	byFunc    map[string]*boundTool
@@ -315,6 +349,9 @@ func (m *Manager) Schemas() []llm.Tool {
 	if m.writeSkill != nil {
 		out = append(out, writeSkillSchema())
 	}
+	if m.todo != nil {
+		out = append(out, todoSchema())
+	}
 	// The completion gate is ALWAYS advertised to the top-level agent: it is
 	// the only sanctioned way to end a state-touching turn (Cassandra Phase 1).
 	out = append(out, taskCompleteSchema())
@@ -357,6 +394,9 @@ func (m *Manager) Dispatch(ctx context.Context, funcName string, args map[string
 	}
 	if funcName == WriteSkillTool {
 		return m.dispatchWriteSkill(ctx, args)
+	}
+	if funcName == TodoTool {
+		return m.dispatchTodo(ctx, args)
 	}
 	bt, ok := m.byFunc[funcName]
 	if !ok {
@@ -498,6 +538,114 @@ func (m *Manager) dispatchWriteSkill(ctx context.Context, args map[string]interf
 	}
 	return fmt.Sprintf("Persisted skill %q as a cortex Pattern (%s). It starts as a low-coverage candidate and is reinforced on each repeat success; it becomes active after %d proven successes.", spec.Name, uri, 0), false, nil
 }
+
+// dispatchTodo is the live task-list handler (neo-smoothness req.3). It parses
+// the model's ordered plan, ENFORCES the lifecycle invariants — at most one
+// item in_progress at a time (req.3.2) — and surfaces the list through the
+// injected emitter. It no-ops gracefully on a trivial single-step turn (req.3.4)
+// so the feature adds visibility on real multi-step work without ceremony.
+// Validation failures are returned in-band (isError=true, err=nil) so the model
+// reads the steer and corrects rather than the harness retrying.
+func (m *Manager) dispatchTodo(ctx context.Context, args map[string]interface{}) (string, bool, error) {
+	if m.todo == nil {
+		return "the task list isn't available in this session.", true, nil
+	}
+	items := parseTodoItems(args)
+	// No ceremony on trivial work: a zero/one-step plan doesn't get a checklist.
+	// Graceful (not an error) so the model simply proceeds and reports the result.
+	if len(items) < 2 {
+		return "A single step doesn't need a task list — just do it and report the result. Use the task list only for genuinely multi-step work.", false, nil
+	}
+	// Enforce exactly one in_progress at a time.
+	inProgress := 0
+	for _, it := range items {
+		if it.Status == TodoInProgress {
+			inProgress++
+		}
+	}
+	if inProgress > 1 {
+		return fmt.Sprintf("Keep exactly ONE item in_progress at a time (you marked %d). Set only the step you're working on now to in_progress; mark finished steps done and the rest pending.", inProgress), true, nil
+	}
+	if err := m.todo(ctx, items); err != nil {
+		return "", true, fmt.Errorf("todo: %w", err)
+	}
+	return summarizeTodo(items), false, nil
+}
+
+// parseTodoItems reads the model's todo arguments into an ordered item list,
+// tolerating the loose JSON shapes models emit (text under text/title/content/
+// step, status synonyms). An entry with no text is dropped. Order is preserved.
+func parseTodoItems(args map[string]interface{}) []TodoItem {
+	raw, ok := args["items"].([]interface{})
+	if !ok {
+		return nil
+	}
+	out := make([]TodoItem, 0, len(raw))
+	for _, e := range raw {
+		switch v := e.(type) {
+		case string:
+			// A bare string is a pending item.
+			if s := strings.TrimSpace(v); s != "" {
+				out = append(out, TodoItem{Text: s, Status: TodoPending})
+			}
+		case map[string]interface{}:
+			text := strings.TrimSpace(asString(v["text"]))
+			if text == "" {
+				text = strings.TrimSpace(asString(v["title"]))
+			}
+			if text == "" {
+				text = strings.TrimSpace(asString(v["content"]))
+			}
+			if text == "" {
+				text = strings.TrimSpace(asString(v["step"]))
+			}
+			if text == "" {
+				continue
+			}
+			out = append(out, TodoItem{Text: text, Status: normalizeTodoStatus(asString(v["status"]))})
+		}
+	}
+	return out
+}
+
+// normalizeTodoStatus maps the loose status strings models emit onto the three
+// canonical statuses, defaulting to pending for anything unrecognized.
+func normalizeTodoStatus(s string) TodoStatus {
+	switch strings.ToLower(strings.TrimSpace(s)) {
+	case "in_progress", "in-progress", "inprogress", "doing", "active", "current", "started":
+		return TodoInProgress
+	case "done", "complete", "completed", "finished", "closed":
+		return TodoDone
+	default:
+		return TodoPending
+	}
+}
+
+// summarizeTodo renders a short, plain-language acknowledgment of the recorded
+// list for the model's tool result (the user sees the rich live checklist; this
+// is the in-transcript echo).
+func summarizeTodo(items []TodoItem) string {
+	done, inProgress, pending := 0, 0, 0
+	for _, it := range items {
+		switch it.Status {
+		case TodoDone:
+			done++
+		case TodoInProgress:
+			inProgress++
+		default:
+			pending++
+		}
+	}
+	return fmt.Sprintf("Task list updated (%d steps: %d done, %d in progress, %d to do).", len(items), done, inProgress, pending)
+}
+
+// SetTodo wires the live task-list emitter after construction (the emitter
+// needs the engine + per-run event stream assembled first). nil leaves the todo
+// tool unadvertised.
+func (m *Manager) SetTodo(f TodoFunc) { m.todo = f }
+
+// TodoEnabled reports whether the live task-list tool is wired this session.
+func (m *Manager) TodoEnabled() bool { return m != nil && m.todo != nil }
 
 // asStringSlice coerces a JSON array argument into a []string, dropping
 // non-string / blank entries. Returns nil for a missing or non-array value.
@@ -743,6 +891,41 @@ func writeSkillSchema() llm.Tool {
 				},
 			},
 			"required": []string{"name", "steps"},
+		},
+	)
+}
+
+// todoSchema advertises the live task-list tool (neo-smoothness req.3). The
+// model lays out an ordered, multi-step plan and keeps it updated as it works;
+// the user sees it as a checklist that ticks off in real time.
+func todoSchema() llm.Tool {
+	return llm.NewFunctionTool(
+		TodoTool,
+		"Maintain a short, ordered checklist of the steps for a multi-step task — shown to the user as a live to-do list that ticks off in real time. Call it when you begin a task with several distinct steps to lay out the plan, then call it again to update statuses as you work. Keep EXACTLY ONE item in_progress at a time, and mark an item done the MOMENT it is finished — don't batch the updates to the end. Don't use it for a single trivial step; it's for giving the user visibility on genuinely multi-step work. Pass the full current list each time (it replaces the previous one).",
+		map[string]interface{}{
+			"type": "object",
+			"properties": map[string]interface{}{
+				"items": map[string]interface{}{
+					"type":        "array",
+					"description": "The ordered task list, top to bottom. Provide the complete current list on every call.",
+					"items": map[string]interface{}{
+						"type": "object",
+						"properties": map[string]interface{}{
+							"text": map[string]interface{}{
+								"type":        "string",
+								"description": "A short, plain description of the step (e.g. \"Fetch the latest block height\").",
+							},
+							"status": map[string]interface{}{
+								"type":        "string",
+								"enum":        []string{"pending", "in_progress", "done"},
+								"description": "The step's status. At most one item may be in_progress at a time.",
+							},
+						},
+						"required": []interface{}{"text", "status"},
+					},
+				},
+			},
+			"required": []interface{}{"items"},
 		},
 	)
 }

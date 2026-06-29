@@ -130,6 +130,10 @@ func NewEngine(o EngineOptions) *Engine {
 		// typed human answer (invariant i5), delivered over Neo's gate-style
 		// answer endpoint and returned to the tool call as its result.
 		e.tools.SetAskResponder(e.respondAsk)
+		// Live task-list (neo-smoothness req.3): the todo tool streams the
+		// ordered checklist onto the run's event stream as a tool.todo event
+		// (pure side-channel) and the trace persists it so it survives reopen.
+		e.tools.SetTodo(e.emitTodo)
 	}
 	return e
 }
@@ -187,6 +191,29 @@ func (e *Engine) emitConstructSurface(ctx context.Context, s *schema.Surface) er
 		return fmt.Errorf("construct: no active run on context")
 	}
 	return transport.EmitSurface(neoSurfaceSink{e: e, runID: r.id}, r.id, r.convID, s)
+}
+
+// emitTodo is the live task-list emitter wired into the tool manager
+// (neo-smoothness req.3): it streams the agent's ordered checklist onto the
+// active run's event stream as a tool.todo event. Pure side-channel — it only
+// publishes a transcript event (like emitConstructSurface / surfaceTool); it
+// never signs, writes cortex, or touches the plan/walk. The trace tap persists
+// tool.todo (traceWorkspaceTypes) so the checklist survives reopen + respawn.
+func (e *Engine) emitTodo(ctx context.Context, items []tools.TodoItem) error {
+	r := runFromContext(ctx)
+	if r == nil {
+		return fmt.Errorf("todo: no active run on context")
+	}
+	list := make([]map[string]interface{}, len(items))
+	for i, it := range items {
+		list[i] = map[string]interface{}{"text": it.Text, "status": string(it.Status)}
+	}
+	e.broker.publish(r.id, "tool.todo", "neo", map[string]interface{}{
+		"intent_id":       r.id,
+		"conversation_id": r.convID,
+		"items":           list,
+	})
+	return nil
 }
 
 // askWaitTimeout bounds how long a parked Ask waits for a human answer before
@@ -409,6 +436,7 @@ var traceWorkspaceTypes = map[string]bool{
 	"tool.search":             true,
 	"tool.media":              true,
 	"tool.artifact":           true,
+	"tool.todo":               true,
 	"construct.surface":       true,
 	"construct.surface.patch": true,
 	"swarm.started":           true,

@@ -16,7 +16,10 @@
 // metering and provider routing come for free (see client.go).
 package llm
 
-import "encoding/json"
+import (
+	"encoding/json"
+	"strings"
+)
 
 // Role values for a conversation message.
 const (
@@ -24,6 +27,15 @@ const (
 	RoleUser      = "user"
 	RoleAssistant = "assistant"
 	RoleTool      = "tool"
+)
+
+// Guidance-channel envelope tags. System steering injected through the guidance
+// channel is wrapped in these so the model can recognize it as a non-answerable
+// hint (the Cascade <system_guidance> contract), and so the harness can detect
+// and strip guidance turns from every user-facing surface.
+const (
+	GuidanceOpen  = "<system_guidance>"
+	GuidanceClose = "</system_guidance>"
 )
 
 // Message is one turn in the conversation. It is both the on-wire shape and
@@ -41,6 +53,14 @@ type Message struct {
 	// wire and never treated as the answer; surfaced as a distinct channel
 	// only (mirrors MCL's DecodeWithReasoning posture).
 	Reasoning string `json:"-"`
+
+	// Guidance marks this as a guidance-channel turn: system steering the
+	// model is instructed to act on but never acknowledge or echo (the Cascade
+	// <system_guidance> contract). It rides on the wire as an ordinary
+	// role+content turn (the flag is process-only, never serialized), so the
+	// provider accepts it; the flag lets the harness keep guidance out of every
+	// user-facing surface and out of the durable transcript.
+	Guidance bool `json:"-"`
 }
 
 // ToolCall is a single function invocation requested by the model.
@@ -121,6 +141,61 @@ func AssistantMessage(content string) Message {
 // ToolResult builds a tool-role message answering a specific tool call.
 func ToolResult(callID, name, content string) Message {
 	return Message{Role: RoleTool, ToolCallID: callID, Name: name, Content: content}
+}
+
+// GuidanceMessage builds a guidance-channel turn: system steering the model is
+// instructed to act on but never acknowledge or echo (the Cascade
+// <system_guidance> contract). It rides as a user-role turn — every provider
+// accepts a user message mid-conversation — with the content wrapped in the
+// guidance envelope and the Guidance flag set so the harness keeps it off every
+// user-facing surface (reasoning/thinking deltas and the durable transcript).
+// Blank content yields a zero Message (no empty guidance turn is emitted).
+func GuidanceMessage(content string) Message {
+	content = strings.TrimSpace(content)
+	if content == "" {
+		return Message{}
+	}
+	return Message{
+		Role:     RoleUser,
+		Content:  GuidanceOpen + "\n" + content + "\n" + GuidanceClose,
+		Guidance: true,
+	}
+}
+
+// IsGuidance reports whether m is a guidance-channel turn (set by
+// GuidanceMessage). The harness uses it to exclude internal steering from every
+// user-facing surface and from the persisted transcript.
+func (m Message) IsGuidance() bool { return m.Guidance }
+
+// StripGuidance removes any guidance-channel envelope (and stray lone tags) from
+// a string before it reaches a user-facing surface (reasoning/thinking deltas,
+// the assistant transcript). It is a defense-in-depth backstop for req.1.3: the
+// model is instructed never to echo <system_guidance>, but if it does, internal
+// steering must not stream to the user. Complete <system_guidance>…</system_guidance>
+// blocks are dropped; an unterminated open tag drops everything from the tag
+// onward; bare tags are removed. The surrounding (legitimate) text is otherwise
+// preserved verbatim — no trimming — so streamed fragments keep their spacing.
+func StripGuidance(s string) string {
+	if !strings.Contains(s, GuidanceOpen) && !strings.Contains(s, GuidanceClose) {
+		return s
+	}
+	for {
+		i := strings.Index(s, GuidanceOpen)
+		if i < 0 {
+			break
+		}
+		rest := s[i+len(GuidanceOpen):]
+		j := strings.Index(rest, GuidanceClose)
+		if j < 0 {
+			// Open tag with no close: drop from the tag to the end.
+			s = s[:i]
+			break
+		}
+		s = s[:i] + rest[j+len(GuidanceClose):]
+	}
+	s = strings.ReplaceAll(s, GuidanceOpen, "")
+	s = strings.ReplaceAll(s, GuidanceClose, "")
+	return s
 }
 
 // ChatRequest is one round-trip to the model.

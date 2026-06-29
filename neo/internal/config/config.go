@@ -79,6 +79,12 @@ type Config struct {
 	SemanticStallSimilarityPct int
 	MaxRetriesPerTool          int // recovery ladder rung 1: bounded retries for transient failures
 	MaxAdaptAttempts           int // recovery ladder rung 2: bounded approach revisions
+	// MaxGuidanceNudges caps how many CONSECUTIVE system-guidance nudges the
+	// loop may inject (completion-gate rejections, read-full steers) before it
+	// escalates to an honest stop-and-ask instead of re-nudging indefinitely
+	// (neo-smoothness req.1.5). The counter resets on genuine progress (a tool
+	// dispatch / accepted completion). 0 disables the cap (unbounded nudging).
+	MaxGuidanceNudges int
 
 	// --- sub-agent swarm (task-scoped concurrent helpers; see [swarm]) ---
 	MaxSubagents           int // hard cap on sub-agents spawned in one spawn_subagents call
@@ -169,6 +175,7 @@ func Default() Config {
 		SemanticStallSimilarityPct: 50, // catch reworded retries at the same operation
 		MaxRetriesPerTool:          3,
 		MaxAdaptAttempts:           2,
+		MaxGuidanceNudges:          3, // consecutive guidance nudges before stop-and-ask (neo-smoothness req.1.5)
 
 		MaxSubagents:           8,
 		MaxConcurrentSubagents: 4,
@@ -309,6 +316,7 @@ func (c *Config) applyDoc(d *kvxDoc) {
 		c.SemanticStallSimilarityPct = d.intOr("loop", "semantic_stall_similarity_pct", c.SemanticStallSimilarityPct)
 		c.MaxRetriesPerTool = d.intOr("loop", "max_retries_per_tool", c.MaxRetriesPerTool)
 		c.MaxAdaptAttempts = d.intOr("loop", "max_adapt_attempts", c.MaxAdaptAttempts)
+		c.MaxGuidanceNudges = d.intOr("loop", "max_guidance_nudges", c.MaxGuidanceNudges)
 	}
 	if d.has("swarm") {
 		c.MaxSubagents = d.intOr("swarm", "max_subagents", c.MaxSubagents)
@@ -376,6 +384,9 @@ func (c *Config) applyEnv() {
 	// SemanticStallSimilarityPct accepts 0 (disabled), so it uses the
 	// non-negative variant rather than envInt (which rejects 0).
 	c.SemanticStallSimilarityPct = envIntNonNeg("NEO_SEMANTIC_STALL_SIMILARITY_PCT", c.SemanticStallSimilarityPct)
+	// MaxGuidanceNudges accepts 0 (cap disabled — unbounded nudging), so it
+	// uses the non-negative variant.
+	c.MaxGuidanceNudges = envIntNonNeg("NEO_MAX_GUIDANCE_NUDGES", c.MaxGuidanceNudges)
 
 	// Task supervisor (durability).
 	c.SuperviseTasks = envBool("NEO_SUPERVISE_TASKS", c.SuperviseTasks)
