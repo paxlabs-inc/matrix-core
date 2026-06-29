@@ -6,40 +6,40 @@
 
 ## P1 — Shared error taxonomy (Cluster A foundation)
 
-- [ ] 1. A single shared failure classifier across the seam
-  - [ ] 1.1 Define the failure classification (transient | deterministic | conflict | pending) over delegate/daemon outcomes
+- [x] 1. A single shared failure classifier across the seam
+  - [x] 1.1 Define the failure classification (transient | deterministic | conflict | pending) over delegate/daemon outcomes
     - Add a classifier in neo/internal/delegate that maps an HTTP status + structured body to a typed class; 409 already-exists -> conflict, 403 leash/mode/cap -> deterministic, 422 clarify -> pending, 5xx/timeout/conn-refused -> transient, validation/unparseable -> deterministic
     - Carry the class on the error returned to neo/internal/agent so dispatchWithRetry and the supervisor read the SAME classification (no per-layer re-guessing)
     - _Requirements: 1.1, 1.4_
-  - [ ] 1.2 Short-circuit deterministic tool failures in the dispatch ladder
+  - [x] 1.2 Short-circuit deterministic tool failures in the dispatch ladder
     - In dispatchWithRetry/dispatchCoreExecute, when the class is deterministic, return a single terminal result with NO further attempts (mirror chatWithRetry's ErrProviderRejected short-circuit)
     - Keep bounded backoff for transient; leave conflict/pending to their dedicated handlers (tasks 2.x / 4.x)
     - _Requirements: 1.2, 1.3, 1.5, 3.1_
-  - [ ] 1.3 Teach the supervisor to not respawn deterministic failures
+  - [x] 1.3 Teach the supervisor to not respawn deterministic failures
     - In session.go superviseDecision, branch on the failure class: deterministic -> stop-and-ask / honest-partial surface (no respawn, do not consume the respawn budget); transient/model/stall -> existing respawn path
     - Replace the generic 'still on it, taking another run at it' copy for the deterministic-stop case with a plain statement of what blocked the task + the user's next step
     - _Requirements: 3.2, 3.3, 3.4_
 
 ## P2 — Idempotent core_execute (Cluster A core, the SPARK fix)
 
-- [ ] 2. Attach-to-existing on conflict
-  - [ ] 2.1 Delegate attach-to-existing on a 409 conflict
+- [x] 2. Attach-to-existing on conflict
+  - [x] 2.1 Delegate attach-to-existing on a 409 conflict
     - On conflict, GET the existing intent's async status + /intents/{id}/gates instead of failing; if in-flight, attach: poll progress and service its gate through the SAME approver/notify wiring the create path uses
     - If the conflicting intent is already terminal, return its outcome in plain language; never re-submit fresh prose
     - _Requirements: 2.1, 2.2, 2.3, 2.5_
-  - [ ] 2.2 Make attach idempotent + concurrency-safe
+  - [x] 2.2 Make attach idempotent + concurrency-safe
     - Guard gate answering and result counting so two attaches to the same intent cannot double-answer a gate or double-count an outcome (keyed on intent id + node id)
     - Decide + document the daemon-side option (idempotent 200+existing-id create) vs delegate-side reconcile; implement the delegate-side reconcile first as it does not touch the signed path
     - _Requirements: 2.4_
 
 ## P3 — Loop + batch safety (Clusters A + C)
 
-- [ ] 3. Stop the self-inflicted loops
-  - [ ] 3.1 Semantic no-progress detection
+- [x] 3. Stop the self-inflicted loops
+  - [x] 3.1 Semantic no-progress detection
     - Augment the no-progress guard to key on (tool + normalized target/operation) so reworded args at the same operation count as a repeat; trip a stall after N deterministic repeats (configurable)
     - Guard against false-trips on genuinely distinct operations sharing a tool (different targets do not count as repeats)
     - _Requirements: 4.1, 4.2, 4.3_
-  - [ ] 3.2 Batch idempotency for non-idempotent tool calls
+  - [x] 3.2 Batch idempotency for non-idempotent tool calls
     - In runToolCalls, dedup/serialize state-touching calls (core_execute) within a batch: collapse equivalent calls (same resolved intent id) to one run + join the other to its result; keep concurrent dispatch for independent reversible calls
     - _Requirements: 5.1, 5.2, 5.3_
 
