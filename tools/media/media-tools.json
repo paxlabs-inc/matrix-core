@@ -1,12 +1,13 @@
 [
   {
     "name": "generate_image",
-    "description": "Generate a NEW image from a text description (text-to-image). Use this when the user wants a picture/illustration/art created from scratch. Craft a single, vivid, detailed prompt: subject, style, composition, lighting, colors, mood. The result is shown to the user automatically — in your reply just describe what you made, do NOT paste the URL. Returns JSON {ok, kind:\"image\", url, prompt}. args: prompt (required), aspect_ratio? (one of 1:1, 16:9, 9:16, 4:3, 3:2; default 1:1), seed? (integer for reproducibility).",
+    "description": "Generate a NEW image from a text description (text-to-image). Use this when the user wants a picture/illustration/art created from scratch. Craft a single, vivid, detailed prompt: subject, style, composition, lighting, colors, mood. The result is shown to the user automatically — in your reply just describe what you made, do NOT paste the URL. Returns JSON {ok, kind:\"image\", url}. args: prompt (required), aspect_ratio? (one of 1:1, 16:9, 9:16, 4:3, 3:2; default 1:1), negative_prompt? (things to avoid), seed? (integer for reproducibility).",
     "inputSchema": {
       "type": "object",
       "properties": {
         "prompt": { "type": "string", "description": "A vivid, detailed description of the image to create (subject, style, composition, lighting, colors, mood)." },
         "aspect_ratio": { "type": "string", "description": "Output aspect ratio: 1:1, 16:9, 9:16, 4:3, or 3:2. Default 1:1.", "enum": ["1:1", "16:9", "9:16", "4:3", "3:2"] },
+        "negative_prompt": { "type": "string", "description": "Optional description of what to avoid (e.g. 'blurry, extra fingers, watermark')." },
         "seed": { "type": "integer", "description": "Optional random seed for reproducible results." }
       },
       "required": ["prompt"]
@@ -14,42 +15,136 @@
   },
   {
     "name": "edit_image",
-    "description": "Transform or edit an EXISTING image with a text instruction (image+text-to-image): style transfer, change colors, add/remove elements, change the scene, restyle a portrait. Use this when the user attached an image (referenced like /media/<id>.png) or asks to change a picture you already made. Describe the change clearly in the prompt. The result is shown automatically; describe it in your reply, do not paste the URL. Returns JSON {ok, kind:\"image\", url, prompt}. args: prompt (required, the change to apply), image (required, the /media reference or public image URL to edit), aspect_ratio?, seed?.",
+    "description": "Transform or restyle an EXISTING image guided by a text instruction (image-to-image): style transfer, change colors/mood, reimagine the scene. Use this when the user attached an image (referenced like /media/<id>.png) or asks to change a picture you already made, and the change affects the whole image. For removing/replacing specific things prefer the specialized tools (remove_background, replace_background, remove_text, cleanup_image). The result is shown automatically; describe it in your reply, do not paste the URL. Returns JSON {ok, kind:\"image\", url}. args: prompt (required, the change to apply), image (required, /media reference or public URL), strength? (0-1, how far to deviate from the source; default 0.7), aspect_ratio?, negative_prompt?, seed?.",
     "inputSchema": {
       "type": "object",
       "properties": {
-        "prompt": { "type": "string", "description": "The transformation to apply, e.g. 'make his shirt yellow', 'turn this into a watercolor painting'." },
-        "image": { "type": "string", "description": "The source image to edit: a /media/<id> reference (an attachment or a previously generated image) or a public https image URL." },
+        "prompt": { "type": "string", "description": "The transformation to apply, e.g. 'turn this into a watercolor painting', 'make it a snowy night scene'." },
+        "image": { "type": "string", "description": "The source image to edit: a /media/<id> reference (an attachment or a previously generated/processed image) or a public https image URL." },
+        "strength": { "type": "number", "description": "How far to deviate from the source image, 0-1 (lower = closer to the original). Default 0.7." },
         "aspect_ratio": { "type": "string", "description": "Output aspect ratio: 1:1, 16:9, 9:16, 4:3, or 3:2.", "enum": ["1:1", "16:9", "9:16", "4:3", "3:2"] },
+        "negative_prompt": { "type": "string", "description": "Optional description of what to avoid." },
         "seed": { "type": "integer", "description": "Optional random seed for reproducible results." }
       },
       "required": ["prompt", "image"]
     }
   },
   {
+    "name": "inpaint_image",
+    "description": "Repaint a masked region of an image from a text prompt (inpainting): replace or add an object inside a specific area while leaving the rest untouched. Requires a mask image where WHITE marks the area to repaint and BLACK is kept. Use this when the user wants to change just part of an image and you have (or can generate) a mask. Returns JSON {ok, kind:\"image\", url}. args: prompt (required, what to paint into the masked area), image (required), mask (required, /media reference or URL), negative_prompt?, strength? (0-1, default 1), seed?.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "prompt": { "type": "string", "description": "What to paint into the masked (white) area." },
+        "image": { "type": "string", "description": "The source image: a /media/<id> reference or a public https image URL." },
+        "mask": { "type": "string", "description": "The mask image (same size as the source): white = area to repaint, black = keep. A /media/<id> reference or a public https URL." },
+        "negative_prompt": { "type": "string", "description": "Optional description of what to avoid." },
+        "strength": { "type": "number", "description": "Denoising strength for the masked area, 0-1. Default 1." },
+        "seed": { "type": "integer", "description": "Optional random seed for reproducible results." }
+      },
+      "required": ["prompt", "image", "mask"]
+    }
+  },
+  {
+    "name": "remove_background",
+    "description": "Remove the background from an image, leaving the foreground subject on transparency (cutout). Use this when the user wants the background gone or wants a subject isolated. Output can be chained into other tools (e.g. then replace_background, or composite). Returns JSON {ok, kind:\"image\", url}. args: image (required, /media reference or public URL).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "image": { "type": "string", "description": "The image to process: a /media/<id> reference or a public https image URL." }
+      },
+      "required": ["image"]
+    }
+  },
+  {
+    "name": "replace_background",
+    "description": "Replace the background of an image with a new scene described in text, keeping the foreground subject. Use this when the user wants the subject placed on a different background. Returns JSON {ok, kind:\"image\", url}. args: image (required), prompt (required, the new background to generate, e.g. 'a sunny beach at golden hour').",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "image": { "type": "string", "description": "The image whose background to replace: a /media/<id> reference or a public https image URL." },
+        "prompt": { "type": "string", "description": "The new background to place behind the subject, e.g. 'a modern office', 'a sunny beach at golden hour'." }
+      },
+      "required": ["image", "prompt"]
+    }
+  },
+  {
+    "name": "remove_text",
+    "description": "Erase rendered text/captions/watermarks from an image, reconstructing what was behind them. Use this when the user wants text or a watermark removed from a picture. Returns JSON {ok, kind:\"image\", url}. args: image (required, /media reference or public URL).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "image": { "type": "string", "description": "The image to clean of text: a /media/<id> reference or a public https image URL." }
+      },
+      "required": ["image"]
+    }
+  },
+  {
+    "name": "cleanup_image",
+    "description": "Erase a specific object or blemish from an image and fill in the background plausibly (object removal). Requires a mask where WHITE marks the object to erase. Use this when the user wants a particular thing removed from a photo and you have (or can generate) a mask. Returns JSON {ok, kind:\"image\", url}. args: image (required), mask (required, /media reference or URL; white = erase).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "image": { "type": "string", "description": "The source image: a /media/<id> reference or a public https image URL." },
+        "mask": { "type": "string", "description": "The mask image: white = object to erase, black = keep. A /media/<id> reference or a public https URL." }
+      },
+      "required": ["image", "mask"]
+    }
+  },
+  {
+    "name": "merge_faces",
+    "description": "Swap the face in a base photo with a face from another image (face merge/swap). Use this when the user wants someone's face placed onto a target photo. Returns JSON {ok, kind:\"image\", url}. args: image (required, the base photo), face (required, the image whose face to swap in).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "image": { "type": "string", "description": "The base photo to receive the new face: a /media/<id> reference or a public https image URL." },
+        "face": { "type": "string", "description": "The image supplying the face to swap in: a /media/<id> reference or a public https image URL." }
+      },
+      "required": ["image", "face"]
+    }
+  },
+  {
     "name": "generate_video",
-    "description": "Generate a short video from a text description (text-to-video) or animate an existing image (image-to-video). Use this when the user wants a clip/animation. This runs asynchronously and can take a few minutes — it blocks until the video is ready, so only call it once and wait. The result is shown to the user automatically; describe it in your reply, do not paste the URL. Returns JSON {ok, kind:\"video\", url, prompt}. args: prompt (required), image? (a /media reference or public image URL to animate), seconds? (clip length in seconds, default 5), aspect_ratio?.",
+    "description": "Generate a short video from a text description (text-to-video). Use this when the user wants a clip/animation created from scratch. Runs asynchronously and can take a few minutes — it blocks until the video is ready, so only call it once and wait. The result is shown to the user automatically; describe it in your reply, do not paste the URL. Returns JSON {ok, kind:\"video\", url}. args: prompt (required), aspect_ratio?, frames? (total frames, default 64), negative_prompt?, seed?.",
     "inputSchema": {
       "type": "object",
       "properties": {
         "prompt": { "type": "string", "description": "A vivid description of the video: subject, action, camera movement, style, mood." },
-        "image": { "type": "string", "description": "Optional source image to animate (image-to-video): a /media/<id> reference or a public https image URL." },
-        "seconds": { "type": "integer", "description": "Clip length in seconds (default 5)." },
-        "aspect_ratio": { "type": "string", "description": "Output aspect ratio: 1:1, 16:9, 9:16, 4:3, or 3:2.", "enum": ["1:1", "16:9", "9:16", "4:3", "3:2"] }
+        "aspect_ratio": { "type": "string", "description": "Output aspect ratio: 16:9, 9:16, or 1:1. Default 16:9.", "enum": ["16:9", "9:16", "1:1"] },
+        "frames": { "type": "integer", "description": "Total number of frames to render (16-128). Default 64." },
+        "negative_prompt": { "type": "string", "description": "Optional description of what to avoid." },
+        "seed": { "type": "integer", "description": "Optional random seed for reproducible results." }
       },
       "required": ["prompt"]
     }
   },
   {
-    "name": "transcribe_audio",
-    "description": "Transcribe spoken audio into text (speech-to-text). Use this when the user attaches an audio file (referenced like /media/<id>.mp3) or links a public audio URL and wants it transcribed, summarized, or acted on. Returns JSON {ok, kind:\"transcript\", text}. args: audio (required, the /media reference or public audio URL), language? (ISO 639-1 code like 'en'; omit to auto-detect).",
+    "name": "animate_image",
+    "description": "Animate an existing still image into a short video (image-to-video), adding subtle motion. Use this when the user wants a photo or generated image brought to life. Runs asynchronously (minutes); blocks until ready. The result is shown automatically; describe it, do not paste the URL. Returns JSON {ok, kind:\"video\", url}. args: image (required, /media reference or public URL), frames? (14-50, default 25), fps? (1-30, default 6), seed?.",
     "inputSchema": {
       "type": "object",
       "properties": {
-        "audio": { "type": "string", "description": "The audio to transcribe: a /media/<id> reference (an attachment) or a public https audio URL. Formats: wav, mp3, m4a, webm, flac, ogg, opus, aac." },
-        "language": { "type": "string", "description": "Optional ISO 639-1 language code (e.g. 'en', 'es'). Omit to auto-detect." }
+        "image": { "type": "string", "description": "The still image to animate: a /media/<id> reference or a public https image URL." },
+        "frames": { "type": "integer", "description": "Number of frames to render (14-50). Default 25." },
+        "fps": { "type": "integer", "description": "Frames per second of the output clip (1-30). Default 6." },
+        "seed": { "type": "integer", "description": "Optional random seed for reproducible results." }
       },
-      "required": ["audio"]
+      "required": ["image"]
+    }
+  },
+  {
+    "name": "generate_speech",
+    "description": "Convert text into natural-sounding spoken audio (text-to-speech). Use this when the user wants something read aloud or an audio voiceover. The audio is shown to the user automatically; describe it in your reply, do not paste the URL. Returns JSON {ok, kind:\"audio\", url}. args: text (required, max 512 characters), voice? (Emily, James, Olivia, Michael, Sarah, John; default Emily), language? (en-US, zh-CN, ja-JP; default en-US), speed? (0.8-3.0, default 1.0), volume? (1.0-2.0, default 1.0).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "text": { "type": "string", "description": "The text to speak. UTF-8, maximum 512 characters." },
+        "voice": { "type": "string", "description": "Voice to use. Default Emily.", "enum": ["Emily", "James", "Olivia", "Michael", "Sarah", "John"] },
+        "language": { "type": "string", "description": "Spoken language. Default en-US.", "enum": ["en-US", "zh-CN", "ja-JP"] },
+        "speed": { "type": "number", "description": "Speaking speed, 0.8-3.0. Default 1.0." },
+        "volume": { "type": "number", "description": "Output volume, 1.0-2.0. Default 1.0." }
+      },
+      "required": ["text"]
     }
   }
 ]

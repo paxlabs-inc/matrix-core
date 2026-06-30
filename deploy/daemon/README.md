@@ -74,7 +74,7 @@ fly machines run \
   --secret MATRIX_S3_KEY=<scoped> \
   --secret MATRIX_S3_SECRET=<scoped> \
   --secret FIREWORKS_API_KEY=<shared> \
-  --secret TOGETHER_API_KEY=<shared> \
+  --secret NOVITA_API_KEY=<shared> \
   --auto-stop suspend \
   --vm-size shared-cpu-1x \
   --vm-memory 1024

@@ -145,8 +145,12 @@ func (d *daemonState) putProfile(w http.ResponseWriter, r *http.Request) {
 
 	if existing != nil {
 		uri := cortex.BuildURI(memory.TypeIdentity, existing.Head.ID, existing.Head.CurrentVersion)
-		meta := cortex.WriteMeta{CreatedBy: createdBy, Confidence: 1.0}
-		newURI, err := d.infra.cortex.Update(uri, &data, meta)
+		meta := cortex.WriteMeta{
+			CreatedBy:  createdBy,
+			Confidence: 1.0,
+			Provenance: memory.Provenance{Source: memory.SourceUserInput},
+		}
+		newURI, err := d.infra.cortex.Update(uri, data, meta)
 		if err != nil {
 			writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "profile update: " + err.Error()})
 			return
@@ -163,11 +167,15 @@ func (d *daemonState) putProfile(w http.ResponseWriter, r *http.Request) {
 	head := memory.Head{
 		ActorScope:         actorScope,
 		Visibility:         memory.VisPrivate,
-		DeclaredImportance: 255,
+		DeclaredImportance: 10, // max valid (cortex caps at 10); Identity is pinned by type regardless
 		Tags:               []memory.Tag{profileTag},
 	}
-	meta := cortex.WriteMeta{CreatedBy: createdBy, Confidence: 1.0}
-	uri, err := d.infra.cortex.Write(head, &data, meta)
+	meta := cortex.WriteMeta{
+		CreatedBy:  createdBy,
+		Confidence: 1.0,
+		Provenance: memory.Provenance{Source: memory.SourceUserInput},
+	}
+	uri, err := d.infra.cortex.Write(head, data, meta)
 	if err != nil {
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "profile write: " + err.Error()})
 		return
