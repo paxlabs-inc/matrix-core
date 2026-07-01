@@ -34,6 +34,24 @@ type session struct {
 	engine *Engine
 	agent  *agent.Agent
 
+	// automatrix marks this as an ephemeral session driving an autonomous
+	// Automatrix opportunity (task 4.1). It changes exactly two things: the
+	// agent is built on the RESTRICTED (no-money) tool surface via
+	// agent.NewAutomatrix (so a proactive run physically cannot reach the
+	// signing path, req 3.2), and the run is driven by the quiet
+	// superviseAutomatrixTask loop (no SSE/broker surfacing — req 5.5 surfaces
+	// NOTHING; the surprise result is delivered out of band by task 5.3). A
+	// normal session leaves this false and is byte-identical to before.
+	automatrix bool
+
+	// automatrixOut is the quiet capture reporter for an Automatrix run (set
+	// only when automatrix is true). It surfaces NOTHING to the user (req 5.5)
+	// but retains the agent's final user-facing answer so the completion path
+	// (task 5.3) can use it as the result-not-protocol summary of what Neo
+	// produced. Reused across supervisor respawns so the last attempt's answer
+	// is the captured result.
+	automatrixOut *automatrixReporter
+
 	mu  sync.Mutex // serializes turns in this conversation
 	cur *run       // the in-flight turn (read by the reporter/observer)
 
@@ -147,7 +165,7 @@ func (s *session) rebuildAgent() {
 			recaller = recall.New(e.conv, s.id, emb, e.cfg.RecallTopK, e.cfg.RecallBudgetTokens)
 		}
 	}
-	s.agent = agent.New(agent.Options{
+	opts := agent.Options{
 		Config:       e.cfg,
 		Main:         e.main,
 		Cheap:        e.cheap,
@@ -168,7 +186,24 @@ func (s *session) rebuildAgent() {
 		// transcript, so a message sent mid-task is delivered on the agent's
 		// next step instead of cancelling the run.
 		Inbox: s.drainInput,
-	})
+	}
+	// An Automatrix session runs on the RESTRICTED (no-money) tool surface so a
+	// proactive run physically cannot reach the signing path (req 3.2). The
+	// restriction is a property of the constructor — NewAutomatrix forces it —
+	// and it holds across every supervisor respawn because rebuildAgent is the
+	// single place an agent is minted for this session.
+	if s.automatrix {
+		// Quiet capture reporter: surfaces nothing (req 5.5) but retains the
+		// final answer for the completion ping (task 5.3). Reused across
+		// respawns so the captured result is the last (successful) attempt's.
+		if s.automatrixOut == nil {
+			s.automatrixOut = &automatrixReporter{}
+		}
+		opts.Reporter = s.automatrixOut
+		s.agent = agent.NewAutomatrix(opts)
+	} else {
+		s.agent = agent.New(opts)
+	}
 	// Inject the onboarding profile (agent_name, preferred_name,
 	// expertise_domains) into the stable system prompt prefix (req 2.4/2.5).
 	// Refresh first (TTL-bounded) so a Settings edit reflects on subsequent
@@ -576,6 +611,56 @@ func superviseBackoff(ctx context.Context, attempt int) bool {
 	}
 }
 
+// superviseAutomatrixTask is the QUIET sibling of superviseTask for an
+// autonomous Automatrix run (task 4.1, req 5.1/5.3/5.4/5.5). It mirrors the
+// real supervisor's policy EXACTLY — the same pure superviseDecision over the
+// agent's clean finish / failure class / wall-clock, the same jittered backoff,
+// the same FRESH-agent respawn over durable state across a non-clean exit — so
+// a proactive run is held to the SAME completion gate (inside agent.Chat:
+// GateAllWork + the Cassandra adjudicator) as any state-touching turn. The two
+// differences from superviseTask are deliberate: (1) the agent is the
+// RESTRICTED no-money surface (the session was minted with automatrix=true), and
+// (2) it surfaces NOTHING — no SSE/broker terminals, no honest-partial bubble in
+// the thread (req 5.5: a partial/failed proactive attempt is silent, never
+// failed-surprise spam). It returns the terminal task.Status so the runner can
+// settle the opportunity (done vs pending+attempts). A user stop cannot happen
+// here (no live run / no barge-in), so actInterrupted is unreachable.
+func (s *session) superviseAutomatrixTask(ctx context.Context, objective string) task.Status {
+	cfg := s.engine.cfg
+	maxRespawns := cfg.TaskMaxRespawns
+	if maxRespawns < 0 || !cfg.SuperviseTasks {
+		maxRespawns = 0
+	}
+	for attempt := 1; ; attempt++ {
+		prompt := objective
+		if attempt > 1 {
+			prompt = resumePrime(objective, attempt)
+		}
+		actx, acancel := s.attemptContext(ctx)
+		err := s.agent.Chat(actx, prompt)
+		acancel()
+
+		failClass := s.agent.LastFailureClass()
+		switch superviseDecision(false, err, failClass, ctx.Err(), attempt, maxRespawns) {
+		case actDone:
+			// Genuine completion: the agent's own gate accepted.
+			return task.StatusDone
+		case actStop:
+			// Deterministic blocker — a fresh agent would hit the same wall.
+			return task.StatusCeiling
+		case actCeiling:
+			return task.StatusCeiling
+		}
+		// actRespawn — not done. Back off (honoring cancellation), then respawn
+		// a FRESH restricted agent over durable state and try again. No progress
+		// is surfaced to the user (req 5.5).
+		if !superviseBackoff(ctx, attempt) {
+			return task.StatusCeiling
+		}
+		s.rebuildAgent()
+	}
+}
+
 // setActive / clearActive / interruptActive coordinate barge-in. active is the
 // latest dispatched run; interruptActive cancels it (LIFO), so each new message
 // supersedes the one before whether it is running or still queued. clearActive
@@ -728,6 +813,53 @@ func (s *session) clearAsk(askID string) {
 // promise (compaction / escalation).
 type sseReporter struct {
 	sess *session
+}
+
+// automatrixReporter is the QUIET reporter for an autonomous Automatrix run. It
+// surfaces NOTHING to the user (req 5.5: a proactive run has no live SSE/thread
+// presence — the surprise result is delivered out of band by the completion
+// path, task 5.3) but CAPTURES the agent's final user-facing answer so that
+// path can use it as the result-not-protocol summary of what Neo produced. Only
+// the latest Say text is retained; on a genuine gate-passed completion that is
+// the finished result, and on a partial/ceiling terminal the captured text is
+// never used (settle announces nothing). Guarded by a mutex because the
+// supervisor may rebuild the agent (and thus Say from a fresh attempt) while
+// the runner goroutine reads the captured result after the run returns.
+type automatrixReporter struct {
+	mu     sync.Mutex
+	result string
+}
+
+func (r *automatrixReporter) Say(text string, _ bool) {
+	text = strings.TrimSpace(llm.StripGuidance(text))
+	if text == "" {
+		return
+	}
+	r.mu.Lock()
+	r.result = text
+	r.mu.Unlock()
+}
+
+func (r *automatrixReporter) Status(string)             {}
+func (r *automatrixReporter) Notice(string)             {}
+func (r *automatrixReporter) Think(string)              {}
+func (r *automatrixReporter) Delta(int, string, string) {}
+
+// lastResult returns the most recent captured final answer ("" if none).
+func (r *automatrixReporter) lastResult() string {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	return r.result
+}
+
+// automatrixResult returns the final user-facing answer captured by the quiet
+// Automatrix reporter for this session ("" for a non-Automatrix session or a
+// run that produced no answer).
+func (s *session) automatrixResult() string {
+	if s.automatrixOut == nil {
+		return ""
+	}
+	return s.automatrixOut.lastResult()
 }
 
 func (r *sseReporter) Say(text string, completion bool) {

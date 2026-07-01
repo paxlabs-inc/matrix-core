@@ -197,6 +197,19 @@ func (d *kvxDoc) intOr(section, key string, fallback int) int {
 	return n
 }
 
+// floatOr parses section.key as float64, returning fallback when absent/invalid.
+func (d *kvxDoc) floatOr(section, key string, fallback float64) float64 {
+	v := d.str(section, key)
+	if v == "" {
+		return fallback
+	}
+	f, err := strconv.ParseFloat(v, 64)
+	if err != nil {
+		return fallback
+	}
+	return f
+}
+
 func splitList(s string) []string {
 	var parts []string
 	inQuote := false

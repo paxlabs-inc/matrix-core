@@ -22,6 +22,15 @@ import (
 	"matrix/mcl/mtx/parser"
 )
 
+// plannerDecodeTimeout is the per-round HTTP ceiling for the planner LLM
+// call. Plan synthesis is the hardest tier and runs on a high-capability
+// frontier model; emitting a full plan_tree@1 (often after a long internal
+// reasoning pass) routinely needs more than the llm library's 90s default,
+// especially under gateway load. A too-tight ceiling is what surfaced as the
+// repeating "context deadline exceeded" synthesis failure. This budget bounds
+// a SINGLE decode round (synthesize retries MaxRetry+1 rounds).
+const plannerDecodeTimeout = 240 * time.Second
+
 // synthesizeOpts configures plan synthesis.
 type synthesizeOpts struct {
 	Skill    *runtime.LoadedSkill

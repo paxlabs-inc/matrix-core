@@ -22,6 +22,8 @@ import (
 	"time"
 
 	"matrix/neo/internal/agent"
+	"matrix/neo/internal/automatrixlog"
+	"matrix/neo/internal/automatrixsettings"
 	"matrix/neo/internal/config"
 	"matrix/neo/internal/conversation"
 	"matrix/neo/internal/memory"
@@ -156,21 +158,28 @@ func runServe(args []string) {
 	// machine volume, so reopening a thread rebuilds the workspace instead of
 	// showing an empty computer (F3). Derives /data/trace; NEO_TRACE_DIR wins.
 	traceDir := trace.Dir(os.Getenv("NEO_TRACE_DIR"), cfg.CortexRoot)
+	// Durable Automatrix completion inbox: the in-app "Neo finished something
+	// for you" surprise results, persisted beside history on the machine volume
+	// so they survive reload / suspend / redeploy and are discoverable on next
+	// open. Derives /data/automatrix; NEO_AUTOMATRIX_DIR wins.
+	automatrixDir := automatrixlog.Dir(os.Getenv("NEO_AUTOMATRIX_DIR"), cfg.CortexRoot)
 
 	engine := server.NewEngine(server.EngineOptions{
-		Config:          cfg,
-		Main:            main,
-		Cheap:           cheap,
-		Tools:           tm,
-		Pager:           pager,
-		Consolidator:    cons,
-		Adjudicator:     newCassandraAdjudicator(cfg),
-		ConversationDir: convDir,
-		TaskDir:         taskDir,
-		TraceDir:        traceDir,
-		MediaDir:        mediaPath,
-		BackendURL:      backendURL,
-		BackendToken:    os.Getenv("NEO_DAEMON_TOKEN"),
+		Config:                cfg,
+		Main:                  main,
+		Cheap:                 cheap,
+		Tools:                 tm,
+		Pager:                 pager,
+		Consolidator:          cons,
+		Adjudicator:           newCassandraAdjudicator(cfg),
+		ConversationDir:       convDir,
+		TaskDir:               taskDir,
+		TraceDir:              traceDir,
+		AutomatrixDir:         automatrixDir,
+		AutomatrixSettingsDir: automatrixsettings.Dir(os.Getenv("NEO_AUTOMATRIX_DIR"), cfg.CortexRoot),
+		MediaDir:              mediaPath,
+		BackendURL:            backendURL,
+		BackendToken:          os.Getenv("NEO_DAEMON_TOKEN"),
 	})
 	if convDir != "" {
 		fmt.Printf("  history: %s\n", convDir)
@@ -181,9 +190,20 @@ func runServe(args []string) {
 	if traceDir != "" {
 		fmt.Printf("  trace: %s (workspace survives reload)\n", traceDir)
 	}
+	if automatrixDir != "" {
+		fmt.Printf("  automatrix: %s (completion inbox survives reload)\n", automatrixDir)
+	}
 	if mediaPath != "" {
 		fmt.Printf("  media: %s (served at /media)\n", mediaPath)
 	}
+
+	// Autonomous Automatrix execution (task 4.1): the wake handler hands a
+	// picked non-financial opportunity to this runner, which marks it
+	// in_progress and drives a supervised run on the RESTRICTED (no-money) tool
+	// surface, resuming into the origin conversation and held to the same
+	// completion gate as any state-touching turn. (The per-user opt-in + Chronos
+	// alarm lifecycle — the governor — is wired by task 6.1.)
+	engine.SetAutomatrixRunner(engine.RunAutomatrixOpportunity)
 
 	srv, err := server.New(engine, backendURL)
 	if err != nil {
@@ -215,6 +235,12 @@ func runServe(args []string) {
 	// completion — at least one agent always finishes the job.
 	if n := engine.ResumeOrphanedTasks(); n > 0 {
 		fmt.Printf("  resuming %d unfinished task(s) from the durable ledger\n", n)
+	}
+	// Task Durability Rule for proactive work: pick up any Automatrix
+	// opportunity left in_progress by a previous process (crash / suspend
+	// mid-run) and drive it to completion on the restricted surface (task 4.1).
+	if n := engine.ResumeInProgressAutomatrix(); n > 0 {
+		fmt.Printf("  resuming %d in-progress automatrix opportunity(ies)\n", n)
 	}
 
 	<-ctx.Done()

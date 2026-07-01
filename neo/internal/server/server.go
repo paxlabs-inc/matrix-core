@@ -63,6 +63,11 @@ func (s *Server) Handler() http.Handler {
 	// them), registered before the catch-all proxy.
 	mux.HandleFunc("/media/", s.handleMedia)
 	mux.HandleFunc("/upload", s.handleUpload)
+	// Automatrix control surface (task 6.1): the per-user opt-in toggle (which
+	// creates/cancels the AUTOMATRIX alarm), the opportunity management queue,
+	// and the completion inbox. Neo-owned routes registered before the catch-all
+	// proxy (the daemon has never heard of them).
+	mux.HandleFunc("/automatrix/", s.handleAutomatrix)
 	mux.HandleFunc("/", s.proxy.ServeHTTP) // healthz, /messages, /memory, /tools, … → daemon
 	return mux
 }
@@ -92,6 +97,19 @@ func (s *Server) handleChat(w http.ResponseWriter, r *http.Request) {
 	convID := req.ConversationID
 	if convID == "" {
 		convID = synthConvID(msg)
+	}
+	// Chronos AUTOMATRIX idle-wake: NOT a normal user turn. The engine wake
+	// handler re-reads the per-user opt-in, defers on a busy session, enforces
+	// the per-day cap, picks one eligible opportunity (handed to the supervised
+	// restricted-surface run), and reschedules the next jittered wake. It
+	// produces no live conversational run of its own, so respond with an
+	// accepted, run-less envelope rather than dispatching a turn.
+	if s.engine.MaybeHandleAutomatrixWake(r.Context(), convID, msg) {
+		writeJSON(w, http.StatusAccepted, map[string]interface{}{
+			"conversation_id": convID,
+			"kind":            "automatrix_wake",
+		})
+		return
 	}
 	// Mint/resume the session FIRST (it seeds from durable history that does
 	// NOT yet include this message), then SUBMIT the message. F5: submit does

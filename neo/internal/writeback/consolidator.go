@@ -25,10 +25,10 @@ import (
 
 // Consolidator runs consolidation jobs on a background goroutine.
 type Consolidator struct {
-	cfg   config.Config
+	cfg      config.Config
 	extract  *llm.Client // durable-learning extraction (stronger; quality sets memory quality)
 	classify *llm.Client // cheap relation-classify on the rare similar-neighbor path
-	pager *memory.Pager
+	pager    *memory.Pager
 
 	jobs chan string
 	done chan struct{}
@@ -36,9 +36,9 @@ type Consolidator struct {
 	// P2-2: proposed skills awaiting activation. Populated by proposeIfReady
 	// when a pattern's coverage crosses cfg.MinPatternSuccesses. Deduped by
 	// the pattern's name (the dedup key). Guarded by proposeMu.
-	proposeMu     sync.Mutex
-	proposed      []string
-	proposedSet   map[string]struct{}
+	proposeMu      sync.Mutex
+	proposed       []string
+	proposedSet    map[string]struct{}
 	reinforceCount map[string]int // tracks how many times each pattern name was reinforced (for auto-propose)
 }
 
@@ -176,7 +176,7 @@ func (c *Consolidator) loop() {
 const consolidatePrompt = `You are a memory consolidator for an AI agent. Read the interaction transcript and extract ONLY durable learnings worth keeping beyond this session. Be very selective — most interactions yield nothing, and that is the correct, common answer.
 
 Return STRICT JSON, nothing else, in exactly this shape:
-{"facts": ["..."], "user_facts": ["..."], "preferences": [{"topic": "...", "polarity": "prefer|avoid|do|dont", "strength": 0.8, "rationale": "..."}], "corrections": ["..."], "patterns": [{"name": "...", "trigger": "...", "preconditions": ["..."], "steps": ["..."], "gotchas": ["..."], "success_criteria": ["..."]}], "outcome": {"summary": "...", "status": "success|failure|partial"}}
+{"facts": ["..."], "user_facts": ["..."], "preferences": [{"topic": "...", "polarity": "prefer|avoid|do|dont", "strength": 0.8, "rationale": "..."}], "corrections": ["..."], "patterns": [{"name": "...", "trigger": "...", "preconditions": ["..."], "steps": ["..."], "gotchas": ["..."], "success_criteria": ["..."]}], "opportunities": [{"summary": "...", "rationale": "...", "financial": false, "confidence": 0.0}], "outcome": {"summary": "...", "status": "success|failure|partial"}}
 
 Rules:
 - facts: objective, durable truths about the user's repo, environment, or domain (NOT transient chit-chat, NOT the question itself). Usually [].
@@ -184,9 +184,10 @@ Rules:
 - preferences: durable WORKING preferences about HOW the user wants you to behave — tone, format, which tools/surfaces to use, how to present results (e.g. topic "render a Construct surface while working on a task", polarity "do", strength 0.85). polarity is one of prefer|avoid|do|dont; strength is 0..1. Include ONLY a genuine standing preference, not a one-off request. Usually [].
 - corrections: standing behavioral rules you learned because the USER CORRECTED YOU this turn (you did X, they told you to do Y instead). Each is ONE short imperative rule worded for your future self (e.g. "Always render a Construct surface when performing a task, not just describe it"). These get pinned to every future turn, so include ONLY genuine corrections the user actually made. Usually [].
 - patterns: reusable how-to recipes worth reapplying to similar future tasks. Each is an object — name (short label), trigger (when to apply it), preconditions (what must be true first), steps (the proven tool sequence), gotchas (learned failure modes), success_criteria (how to know it worked). Omit a field if unknown. Usually [].
+- opportunities: specific, actionable things the user IMPLIED wanting or would clearly BENEFIT from but did NOT explicitly ask you to do this turn — proactive work to surface later. A direct request the user made this turn is NOT an opportunity (it is already being handled); never capture it here. Each is an object — summary (a short imperative of the helpful task, self-sufficient), rationale (REQUIRED: quote or cite what the user actually said/did that grounds it; an opportunity with no grounding is dropped), financial (true for anything involving spending money, sending value, trading, or on-chain writes), confidence (0..1; vague or low-signal items are dropped). Be selective — most turns yield none, and that is the correct, common answer. Usually [].
 - outcome: include ONLY if a concrete task was actually completed or failed in this transcript; otherwise set it to null.
 - Copy identifiers (addresses, tx hashes, IDs, file paths, numbers) VERBATIM.
-- If nothing is durable, return {"facts": [], "user_facts": [], "preferences": [], "corrections": [], "patterns": [], "outcome": null}.`
+- If nothing is durable, return {"facts": [], "user_facts": [], "preferences": [], "corrections": [], "patterns": [], "opportunities": [], "outcome": null}.`
 
 type patternJSON struct {
 	Name            string   `json:"name"`
@@ -204,13 +205,26 @@ type prefJSON struct {
 	Rationale string  `json:"rationale"`
 }
 
+// opportunityJSON is one captured Automatrix opportunity as emitted by the
+// extraction model: a specific, actionable thing the user implied wanting (or
+// would benefit from) but did NOT explicitly ask for this turn. financial is
+// the model's first-pass classification; the deterministic fail-closed
+// re-check that hardens it into eligible_autonomous lives on the gating path.
+type opportunityJSON struct {
+	Summary    string  `json:"summary"`
+	Rationale  string  `json:"rationale"`
+	Financial  bool    `json:"financial"`
+	Confidence float32 `json:"confidence"`
+}
+
 type extract struct {
-	Facts       []string      `json:"facts"`
-	UserFacts   []string      `json:"user_facts"`
-	Preferences []prefJSON    `json:"preferences"`
-	Corrections []string      `json:"corrections"`
-	Patterns    []patternJSON `json:"patterns"`
-	Outcome     *struct {
+	Facts         []string          `json:"facts"`
+	UserFacts     []string          `json:"user_facts"`
+	Preferences   []prefJSON        `json:"preferences"`
+	Corrections   []string          `json:"corrections"`
+	Patterns      []patternJSON     `json:"patterns"`
+	Opportunities []opportunityJSON `json:"opportunities"`
+	Outcome       *struct {
 		Summary string `json:"summary"`
 		Status  string `json:"status"`
 	} `json:"outcome"`
@@ -306,6 +320,34 @@ func (c *Consolidator) process(ctx context.Context, transcript string) {
 	}
 	if out.Outcome != nil && strings.TrimSpace(out.Outcome.Summary) != "" {
 		_, _ = c.pager.RecordOutcome(ctx, out.Outcome.Summary, mapOutcome(out.Outcome.Status), "")
+	}
+	// Automatrix capture: fan accepted opportunities into the proactive queue.
+	// Capped per turn like the other rich-object class (patterns), and run
+	// here UNCONDITIONALLY — capture is independent of the per-user opt-in so
+	// the queue is already warm if/when the user enables proactive execution
+	// (req.1.5). An opportunity must be grounded (rationale required, req.1.2)
+	// and clear the configured confidence floor; below it the item is dropped.
+	// EligibleAutonomous is set from !financial as a first pass — the
+	// deterministic fail-closed re-check that hardens this is the gating
+	// path's job, not capture's.
+	for i, oj := range out.Opportunities {
+		if i >= 3 {
+			break
+		}
+		summary := strings.TrimSpace(oj.Summary)
+		rationale := strings.TrimSpace(oj.Rationale)
+		if summary == "" || rationale == "" {
+			continue
+		}
+		if oj.Confidence < c.cfg.AutomatrixMinConfidence {
+			continue
+		}
+		_, _ = c.pager.RememberOpportunity(ctx, memory.OpportunitySpec{
+			Summary:            summary,
+			Rationale:          rationale,
+			Confidence:         oj.Confidence,
+			EligibleAutonomous: !oj.Financial,
+		})
 	}
 }
 

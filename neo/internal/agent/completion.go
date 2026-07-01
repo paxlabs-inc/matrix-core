@@ -390,6 +390,18 @@ func (a *Agent) finishTurn(ctx context.Context, answer string, surfaced map[stri
 		a.attestTurn(ctx, surfaced, surfacedSnips, userInput, answer)
 		return
 	}
+	// Automatrix suppression (sibling of the heartbeat case above). When this
+	// turn is a Chronos Automatrix wake (the wake_message carries the AUTOMATRIX
+	// marker) AND the agent's answer is the AUTOMATRIX_IDLE sentinel, the turn
+	// is SUPPRESSED — Neo had idle time but found nothing worth doing right now,
+	// so the sentinel never reaches the user. Anything else is delivered.
+	if isAutomatrixWake(userInput) && shouldSuppressAutomatrix(answer) {
+		// Still consolidate + attest the (Automatrix) turn so cortex learns, but
+		// produce NO user-facing output.
+		a.consolidateWorking()
+		a.attestTurn(ctx, surfaced, surfacedSnips, userInput, answer)
+		return
+	}
 	a.out.Say(answer, completion)
 	// [memory.writeback] step_5: consolidate before any compaction nils the
 	// working transcript.

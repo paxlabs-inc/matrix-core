@@ -14,9 +14,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"math/rand"
 	"net/http"
+	"os"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"matrix/cassandra"
@@ -25,11 +28,14 @@ import (
 	"matrix/construct/schema/primitives"
 	"matrix/construct/transport"
 	"matrix/neo/internal/agent"
+	"matrix/neo/internal/automatrixlog"
+	"matrix/neo/internal/automatrixsettings"
 	"matrix/neo/internal/config"
 	"matrix/neo/internal/conversation"
 	"matrix/neo/internal/delegate"
 	"matrix/neo/internal/llm"
 	"matrix/neo/internal/memory"
+	"matrix/neo/internal/notify"
 	"matrix/neo/internal/task"
 	"matrix/neo/internal/tools"
 	"matrix/neo/internal/trace"
@@ -49,6 +55,7 @@ type Engine struct {
 	conv         *conversation.Store    // durable chat-thread history (per conversation_id)
 	tasks        *task.Store            // durable task-supervision ledger (survives restart/suspend)
 	trace        *trace.Store           // durable per-run workspace timeline ("Neo's Computer"); sidecar, never cortex
+	automatrix   *automatrixlog.Store   // durable Automatrix completion inbox (in-app surprise results); sidecar, never cortex
 	mediaDir     string                 // machine-volume dir for generated + uploaded media ("" disables)
 
 	backendURL   string // co-located MCL daemon (core_execute + reverse proxy)
@@ -82,24 +89,60 @@ type Engine struct {
 	// touches the signed MCL path.
 	gateClaimsMu sync.Mutex
 	gateClaims   map[string]bool
+
+	// Automatrix idle-wake handler seams (task 3.3). automatrixGov is the
+	// per-user opt-in + Chronos-alarm bookkeeping seam (satisfied by task 6.1);
+	// automatrixRunner dispatches the supervised restricted-surface run for a
+	// picked opportunity (the task 4.1 hand-off). Both are nil until their wave
+	// wires them: a wake with no governor does nothing (fail closed — proactive
+	// work never runs without an authoritative opt-in), and a pick with no
+	// runner reschedules without running. automatrixRand is the injectable,
+	// seedable RNG behind the jitter + probabilistic-skip reschedule (guarded by
+	// automatrixRandMu because rand.Rand is not safe for concurrent use);
+	// automatrixSkipProb is the per-fire skip probability (config-like; tests
+	// pin it to 0/1 for determinism).
+	automatrixGov      AutomatrixGovernor
+	automatrixRunner   AutomatrixRunner
+	automatrixRandMu   sync.Mutex
+	automatrixRand     *rand.Rand
+	automatrixSkipProb float64
+
+	// automatrixInflight counts autonomous Automatrix runs currently executing
+	// (task 4.1). It is the busy signal that makes a fresh wake DEFER while a
+	// proactive run is already underway (req 4.5): Automatrix never runs two
+	// proactive tasks at once for a user, and never competes with the run it
+	// already started. Bumped around the supervised dispatch goroutine.
+	automatrixInflight atomic.Int32
+
+	// automatrixNotifier is the out-of-app completion ping (task 5.3). It is
+	// built from config in NewEngine (ntfy default + optional Apprise fan-out;
+	// a noop when neither is configured) and fired BEST-EFFORT + non-blocking on
+	// a GENUINE, gate-passed autonomous completion — AFTER the durable in-app
+	// record is written, so a failed external send neither blocks the run nor
+	// disturbs the canonical record (req 6.4, honest failure). Tests/wiring may
+	// override it via SetAutomatrixNotifier with a real Notifier pointed at an
+	// httptest server. Never nil for a built engine.
+	automatrixNotifier notify.Notifier
 }
 
 // EngineOptions configures NewEngine. Main + Tools are required; the rest are
 // optional (a nil pager/consolidator degrades gracefully).
 type EngineOptions struct {
-	Config          config.Config
-	Main            *llm.Client
-	Cheap           *llm.Client
-	Tools           *tools.Manager
-	Pager           *memory.Pager
-	Consolidator    agent.Consolidator
-	Adjudicator     *cassandra.Adjudicator // shared Cassandra completeness faculty (Phase 3)
-	ConversationDir string                 // durable conversation store dir ("" disables persistence)
-	TaskDir         string                 // durable task-ledger dir ("" disables; reaper needs it to resume after restart)
-	TraceDir        string                 // durable workspace-trace dir ("" disables; the reopen-survives-reload store, F3)
-	MediaDir        string                 // machine-volume media dir ("" disables image/video/audio I/O)
-	BackendURL      string
-	BackendToken    string
+	Config                config.Config
+	Main                  *llm.Client
+	Cheap                 *llm.Client
+	Tools                 *tools.Manager
+	Pager                 *memory.Pager
+	Consolidator          agent.Consolidator
+	Adjudicator           *cassandra.Adjudicator // shared Cassandra completeness faculty (Phase 3)
+	ConversationDir       string                 // durable conversation store dir ("" disables persistence)
+	TaskDir               string                 // durable task-ledger dir ("" disables; reaper needs it to resume after restart)
+	TraceDir              string                 // durable workspace-trace dir ("" disables; the reopen-survives-reload store, F3)
+	AutomatrixDir         string                 // durable Automatrix completion-inbox dir ("" disables; the in-app surprise-results store)
+	AutomatrixSettingsDir string                 // durable Automatrix opt-in settings dir ("" = in-memory only; wiring the production governor)
+	MediaDir              string                 // machine-volume media dir ("" disables image/video/audio I/O)
+	BackendURL            string
+	BackendToken          string
 }
 
 // NewEngine assembles the engine and wires core_execute delegation through the
@@ -116,12 +159,29 @@ func NewEngine(o EngineOptions) *Engine {
 		conv:         conversation.Open(o.ConversationDir),
 		tasks:        task.Open(o.TaskDir),
 		trace:        trace.Open(o.TraceDir),
+		automatrix:   automatrixlog.Open(o.AutomatrixDir),
 		mediaDir:     strings.TrimRight(o.MediaDir, "/"),
 		backendURL:   strings.TrimRight(o.BackendURL, "/"),
 		backendToken: o.BackendToken,
 		broker:       newBroker(),
 		runs:         map[string]*run{},
 		gateClaims:   map[string]bool{},
+		// Automatrix jitter/skip RNG (task 3.3): seeded from wall-clock so each
+		// process reschedules on its own unpredictable cadence; tests reseed it
+		// (and pin automatrixSkipProb) for determinism.
+		automatrixRand:     rand.New(rand.NewSource(time.Now().UnixNano())),
+		automatrixSkipProb: automatrixSkipProbability,
+		// Out-of-app completion ping (task 5.3). Built from config: ntfy is the
+		// default (topic from NtfyTopic, else derived from the agent DID), with
+		// an optional Apprise fan-out; when neither is configured this is a noop
+		// and only the durable in-app record is written. Best-effort + honest:
+		// see announceAutomatrixCompletion.
+		automatrixNotifier: notify.New(notify.Config{
+			NtfyServer: o.Config.NtfyServer,
+			NtfyTopic:  o.Config.NtfyTopic,
+			AppriseURL: o.Config.AppriseURL,
+			AgentDID:   o.Config.ActorDID,
+		}),
 	}
 	e.sessions = newSessionRegistry(e)
 	// Fetch the onboarding profile from the daemon so it can be injected
@@ -152,6 +212,17 @@ func NewEngine(o EngineOptions) *Engine {
 		// ordered checklist onto the run's event stream as a tool.todo event
 		// (pure side-channel) and the trace persists it so it survives reopen.
 		e.tools.SetTodo(e.emitTodo)
+	}
+	// Production AUTOMATRIX governor (task 6.1): when a settings dir is provided
+	// (serve.go derives it), wire the durable opt-in store + the Chronos
+	// alarm_set/alarm_cancel lifecycle (issued through the MCP tool surface) as
+	// the engine's authoritative AutomatrixGovernor. The wake handler re-reads
+	// the opt-in here on every wake, and the control endpoints toggle it. Tests
+	// that leave AutomatrixSettingsDir empty keep a nil governor (fail closed)
+	// and may install their own seam via SetAutomatrixGovernor.
+	if o.AutomatrixSettingsDir != "" {
+		st := automatrixsettings.Open(o.AutomatrixSettingsDir)
+		e.automatrixGov = newAutomatrixGovernor(st, newMCPAlarmController(e.tools), o.Config.AutomatrixBaseIntervalMinutes)
 	}
 	return e
 }
@@ -493,6 +564,47 @@ func (e *Engine) recordTrace(id string, ev Event) {
 		Fields: ev.Fields,
 	})
 }
+
+// automatrixCompleteEvent is the broker event type announcing that Neo finished
+// an unprompted opportunity (req 6.1). It carries the RESULT, not the protocol
+// (no Chronos/alarm/marker/cortex jargon — the consumer rule, req 6.5): the
+// opportunity summary, a result summary, the conversation it belongs to, the
+// created_at, the unread flag, and the durable record id. The client renders it
+// as an Automatrix inbox item / unread badge.
+const automatrixCompleteEvent = "automatrix.complete"
+
+// emitAutomatrixComplete writes the durable in-app completion record and
+// publishes the automatrix.complete broker event so a live client surfaces the
+// surprise result immediately. The durable record is the canonical, replayable
+// surface: it is written FIRST so the result is never lost even if no client is
+// connected (and regardless of any out-of-app ntfy/Apprise ping). This is the
+// clean writer seam the completion path (5.3) calls on a genuinely-gated pass;
+// it never signs, writes cortex, or touches the plan/walk. No secrets are
+// recorded — only the result-not-protocol fields.
+func (e *Engine) emitAutomatrixComplete(convID, opportunitySummary, resultSummary string) automatrixlog.Record {
+	rec, err := e.automatrix.Append(automatrixlog.Record{
+		OpportunitySummary: opportunitySummary,
+		ResultSummary:      resultSummary,
+		ConversationID:     convID,
+	})
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "neo/automatrix: record completion for %s: %v\n", convID, err)
+	}
+	e.broker.publish(convID, automatrixCompleteEvent, "neo", map[string]interface{}{
+		"id":                  rec.ID,
+		"conversation_id":     rec.ConversationID,
+		"opportunity_summary": rec.OpportunitySummary,
+		"result_summary":      rec.ResultSummary,
+		"created_at":          rec.CreatedAt,
+		"read":                rec.Read,
+	})
+	return rec
+}
+
+// AutomatrixInbox exposes the durable Automatrix completion store so the daemon
+// routes can render the in-app inbox / unread badge and mark items read (req
+// 7.4). Returns the (possibly disabled) store; never nil for a built engine.
+func (e *Engine) AutomatrixInbox() *automatrixlog.Store { return e.automatrix }
 
 // latestRunForConv resolves the run id whose workspace trace a reopened thread
 // should rebuild: the in-flight run if one is live, else the most recent run on

@@ -128,6 +128,24 @@ type Config struct {
 	// NEO_TOOL_DISPATCH_CONCURRENCY.
 	ToolDispatchConcurrency int
 
+	// --- automatrix (proactive surprise tasks; see [automatrix] / NEO_AUTOMATRIX_*) ---
+	// AutomatrixEnabled is the build-level master switch; a per-user opt-in
+	// (stored in the daemon settings) is STILL required before Neo wakes to
+	// work. AutomatrixBaseIntervalMinutes is the base wake cadence (0 =
+	// disabled); AutomatrixJitterMinutes is the ± randomization window that
+	// gives wakes their "random" feel; AutomatrixMaxTasksPerDay caps proactive
+	// tasks per day (anti-spam); AutomatrixMinConfidence is the capture floor an
+	// opportunity must clear. NtfyServer/NtfyTopic and AppriseURL configure the
+	// completion-ping Notifier (a blank NtfyTopic is derived from ActorDID).
+	AutomatrixEnabled             bool
+	AutomatrixBaseIntervalMinutes int
+	AutomatrixJitterMinutes       int
+	AutomatrixMaxTasksPerDay      int
+	AutomatrixMinConfidence       float32
+	NtfyServer                    string
+	NtfyTopic                     string
+	AppriseURL                    string
+
 	// --- execution surface ---
 	NaturalAllow    []string // reversible actions Neo performs directly (no wallet signature)
 	EscalateActions []string // actions that cross into MCL (require a user wallet signature)
@@ -193,6 +211,21 @@ func Default() Config {
 		TaskMaxRespawns:    50,
 
 		MinPatternSuccesses: 3,
+
+		// Automatrix (proactive surprise tasks). Default OFF; capture still runs
+		// regardless of this switch so the opportunity queue is warm, but Neo
+		// never wakes to work until both this and the per-user opt-in are on.
+		// Cadence/jitter/cap/floor and the ntfy server default per the design
+		// table; NtfyTopic stays blank (derived from ActorDID at notify time)
+		// and AppriseURL is unset (optional fan-out).
+		AutomatrixEnabled:             false,
+		AutomatrixBaseIntervalMinutes: 45,
+		AutomatrixJitterMinutes:       30,
+		AutomatrixMaxTasksPerDay:      3,
+		AutomatrixMinConfidence:       0.6,
+		NtfyServer:                    "https://ntfy.sh",
+		NtfyTopic:                     "",
+		AppriseURL:                    "",
 
 		// P2-5: parallel dispatch of independent tool calls in a turn.
 		// Bounded so a batch of N calls doesn't fork-bomb MCP servers.
@@ -340,6 +373,16 @@ func (c *Config) applyDoc(d *kvxDoc) {
 	if d.has("heartbeat") {
 		c.HeartbeatInterval = d.intOr("heartbeat", "interval_minutes", c.HeartbeatInterval)
 	}
+	if d.has("automatrix") {
+		c.AutomatrixEnabled = d.boolOr("automatrix", "enabled", c.AutomatrixEnabled)
+		c.AutomatrixBaseIntervalMinutes = d.intOr("automatrix", "base_interval_minutes", c.AutomatrixBaseIntervalMinutes)
+		c.AutomatrixJitterMinutes = d.intOr("automatrix", "jitter_minutes", c.AutomatrixJitterMinutes)
+		c.AutomatrixMaxTasksPerDay = d.intOr("automatrix", "max_tasks_per_day", c.AutomatrixMaxTasksPerDay)
+		c.AutomatrixMinConfidence = float32(d.floatOr("automatrix", "min_confidence", float64(c.AutomatrixMinConfidence)))
+		c.NtfyServer = d.strOr("automatrix", "ntfy_server", c.NtfyServer)
+		c.NtfyTopic = d.strOr("automatrix", "ntfy_topic", c.NtfyTopic)
+		c.AppriseURL = d.strOr("automatrix", "apprise_url", c.AppriseURL)
+	}
 	if d.has("execution") {
 		if v := d.list("execution", "natural_allow"); v != nil {
 			c.NaturalAllow = v
@@ -405,6 +448,19 @@ func (c *Config) applyEnv() {
 	// variant (P1-4). No wakeups occur when 0.
 	c.HeartbeatInterval = envIntNonNeg("NEO_HEARTBEAT_INTERVAL", c.HeartbeatInterval)
 
+	// Automatrix (proactive surprise tasks). Interval/jitter/cap accept 0
+	// (interval 0 = disabled, jitter 0 = no randomization) so they use the
+	// non-negative variant. NTFY_SERVER/NTFY_TOPIC/APPRISE_URL match the design
+	// table's env keys (no NEO_ prefix — they are conventional ntfy/Apprise vars).
+	c.AutomatrixEnabled = envBool("NEO_AUTOMATRIX_ENABLED", c.AutomatrixEnabled)
+	c.AutomatrixBaseIntervalMinutes = envIntNonNeg("NEO_AUTOMATRIX_INTERVAL", c.AutomatrixBaseIntervalMinutes)
+	c.AutomatrixJitterMinutes = envIntNonNeg("NEO_AUTOMATRIX_JITTER", c.AutomatrixJitterMinutes)
+	c.AutomatrixMaxTasksPerDay = envIntNonNeg("NEO_AUTOMATRIX_MAX_PER_DAY", c.AutomatrixMaxTasksPerDay)
+	c.AutomatrixMinConfidence = envFloat32("NEO_AUTOMATRIX_MIN_CONFIDENCE", c.AutomatrixMinConfidence)
+	c.NtfyServer = envOr("NTFY_SERVER", c.NtfyServer)
+	c.NtfyTopic = envOr("NTFY_TOPIC", c.NtfyTopic)
+	c.AppriseURL = envOr("APPRISE_URL", c.AppriseURL)
+
 	// P2-5: MCP result cache TTL (seconds). 0 = disabled.
 	if v := envIntNonNeg("NEO_MCP_CACHE_TTL_SECONDS", 0); v > 0 {
 		c.MCPCacheTTL = time.Duration(v) * time.Second
@@ -440,6 +496,17 @@ func envIntNonNeg(key string, fallback int) int {
 func envOr(key, fallback string) string {
 	if v := strings.TrimSpace(os.Getenv(key)); v != "" {
 		return v
+	}
+	return fallback
+}
+
+// envFloat32 overlays a float32 from the environment, keeping the fallback when
+// the var is absent or not a valid float.
+func envFloat32(key string, fallback float32) float32 {
+	if v := strings.TrimSpace(os.Getenv(key)); v != "" {
+		if f, err := strconv.ParseFloat(v, 32); err == nil {
+			return float32(f)
+		}
 	}
 	return fallback
 }

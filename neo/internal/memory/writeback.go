@@ -5,9 +5,13 @@ package memory
 
 import (
 	"context"
+	"fmt"
+	"sort"
 	"strings"
+	"time"
 
 	"matrix/cortex"
+	"matrix/cortex/embed"
 	"matrix/cortex/memory"
 	"matrix/cortex/query"
 )
@@ -227,6 +231,442 @@ func (p *Pager) ReinforcePattern(ctx context.Context, spec PatternSpec, derivedF
 		}
 	}
 	return p.WritePattern(ctx, spec, 0.5, 1, derivedFrom)
+}
+
+// opportunityImportance is the declared importance for a captured opportunity
+// — moderate (same as a Fact): the proactive queue is durable working state,
+// not an inviolable rule.
+const opportunityImportance uint8 = 5
+
+// opportunityScanCap bounds how many opportunity records the reader scans
+// before ranking. The proactive queue is small by design (per-day cap +
+// dedup), so a generous fixed cap surfaces the whole pending set.
+const opportunityScanCap = 256
+
+// opportunityDupCosine is the cosine-similarity ceiling above which a new
+// opportunity summary is treated as a semantic duplicate of an existing
+// pending one. It is the exact mirror of RememberFact's duplicate discipline:
+// dupDistanceThreshold is 1-cosine, so the cosine gate is 1 minus it.
+const opportunityDupCosine = 1 - dupDistanceThreshold
+
+// RememberOpportunity stores a durable Automatrix opportunity (the proactive
+// work queue), deduplicated against existing PENDING opportunities with the
+// same discipline as RememberFact: a normalized-statement match (also catches
+// case/spacing drift, embedder-independent) OR a semantic-similarity match
+// within the duplicate threshold short-circuits the write so a repeatedly
+// mentioned need does not accumulate duplicates. Status defaults to pending
+// and timestamps are stamped here. Returns the (possibly pre-existing,
+// deduped) record URI; an empty summary is a no-op.
+func (p *Pager) RememberOpportunity(ctx context.Context, spec OpportunitySpec) (string, error) {
+	_ = ctx
+	summary := strings.TrimSpace(spec.Summary)
+	if summary == "" {
+		return "", nil
+	}
+	spec.Summary = summary
+	if !spec.Status.Valid() {
+		spec.Status = OpportunityPending
+	}
+	// Authoritative, fail-closed non-financial re-check (layer 1 of the
+	// gating). The extraction model's verdict arrives as eligible_autonomous =
+	// !financial; treat its inverse as the model's financial flag and let the
+	// deterministic classifier have the final word. This can only tighten the
+	// verdict — a model-said-non-financial item that trips a financial keyword,
+	// phrase, or symbol is flipped to ineligible — so capture never marks
+	// money-touching work eligible for unprompted autonomous execution.
+	spec.EligibleAutonomous = EligibleForAutonomy(spec.Summary, !spec.EligibleAutonomous)
+	now := time.Now().UTC()
+	if spec.CreatedAt.IsZero() {
+		spec.CreatedAt = now
+	}
+	spec.UpdatedAt = now
+
+	if dupURI := p.duplicatePendingOpportunity(summary); dupURI != "" {
+		return dupURI, nil
+	}
+
+	uri, err := p.cortex.Write(p.opportunityHead(opportunityImportance), encodeOpportunityGoal(spec), p.writeMeta())
+	return string(uri), err
+}
+
+// PendingOpportunities returns ONLY eligible-autonomous, pending opportunities
+// — the set the autonomous picker may act on — ranked by confidence x salience
+// x recency (highest first) and capped at limit (<=0 = all). Financial
+// opportunities (eligible_autonomous=false) and any non-pending item are never
+// returned, so the picker structurally cannot select work that must not run
+// unprompted.
+func (p *Pager) PendingOpportunities(ctx context.Context, limit int) ([]OpportunitySpec, error) {
+	_ = ctx
+	res, err := p.cortex.Find(query.Query{
+		Where: query.HasTag{Tag: string(opportunityTag)},
+		Limit: opportunityScanCap,
+		Form:  query.FormMedium,
+	})
+	if err != nil {
+		return nil, err
+	}
+	if res == nil {
+		return nil, nil
+	}
+	now := time.Now().UTC()
+	type ranked struct {
+		spec  OpportunitySpec
+		score float32
+	}
+	var cands []ranked
+	for _, m := range res.Memories {
+		if m.Head.Type != memory.TypeGoal || !headHasOpportunityTag(m.Head) {
+			continue
+		}
+		data, derr := memory.DecodeData(m.Version.Type, m.Version.Data)
+		if derr != nil {
+			continue
+		}
+		gd, ok := asGoalData(data)
+		if !ok {
+			continue
+		}
+		uri := string(cortex.BuildURI(m.Head.Type, m.Head.ID, m.Head.CurrentVersion))
+		spec := decodeOpportunityGoal(gd, uri)
+		if spec.Status != OpportunityPending || !spec.EligibleAutonomous {
+			continue
+		}
+		recency := recencyMultiplier(memory.TypeGoal.String(), unixNanoOrZero(spec.UpdatedAt), now)
+		score := spec.Confidence * res.Scores[m.Head.ID] * recency
+		cands = append(cands, ranked{spec: spec, score: score})
+	}
+	sort.SliceStable(cands, func(i, j int) bool {
+		if cands[i].score != cands[j].score {
+			return cands[i].score > cands[j].score
+		}
+		// Deterministic tie-break: most-recently-updated first.
+		return cands[i].spec.UpdatedAt.After(cands[j].spec.UpdatedAt)
+	})
+	out := make([]OpportunitySpec, 0, len(cands))
+	for _, c := range cands {
+		if limit > 0 && len(out) >= limit {
+			break
+		}
+		out = append(out, c.spec)
+	}
+	return out, nil
+}
+
+// QueuedOpportunities returns ALL pending opportunities — eligible-autonomous
+// AND financial alike — ranked by confidence x salience x recency (highest
+// first) and capped at limit (<=0 = all). It is the management-UI reader (req
+// 7.3): unlike PendingOpportunities (the autonomous picker's set, which filters
+// to eligible_autonomous only and must stay that way so a financial item can
+// never be auto-run), this surfaces the financial items too so the user can
+// dismiss them or approve one for a normal, gated, user-initiated run. Each
+// returned spec carries its EligibleAutonomous flag, so the caller knows which
+// items are financial (eligible_autonomous=false). Done/dismissed/in-flight
+// items are excluded — only the actionable pending queue is shown.
+func (p *Pager) QueuedOpportunities(ctx context.Context, limit int) ([]OpportunitySpec, error) {
+	_ = ctx
+	res, err := p.cortex.Find(query.Query{
+		Where: query.HasTag{Tag: string(opportunityTag)},
+		Limit: opportunityScanCap,
+		Form:  query.FormMedium,
+	})
+	if err != nil {
+		return nil, err
+	}
+	if res == nil {
+		return nil, nil
+	}
+	now := time.Now().UTC()
+	type ranked struct {
+		spec  OpportunitySpec
+		score float32
+	}
+	var cands []ranked
+	for _, m := range res.Memories {
+		if m.Head.Type != memory.TypeGoal || !headHasOpportunityTag(m.Head) {
+			continue
+		}
+		data, derr := memory.DecodeData(m.Version.Type, m.Version.Data)
+		if derr != nil {
+			continue
+		}
+		gd, ok := asGoalData(data)
+		if !ok {
+			continue
+		}
+		uri := string(cortex.BuildURI(m.Head.Type, m.Head.ID, m.Head.CurrentVersion))
+		spec := decodeOpportunityGoal(gd, uri)
+		// All pending items, regardless of eligibility — the financial ones are
+		// surfaced for explicit approval rather than hidden.
+		if spec.Status != OpportunityPending {
+			continue
+		}
+		recency := recencyMultiplier(memory.TypeGoal.String(), unixNanoOrZero(spec.UpdatedAt), now)
+		score := spec.Confidence * res.Scores[m.Head.ID] * recency
+		cands = append(cands, ranked{spec: spec, score: score})
+	}
+	sort.SliceStable(cands, func(i, j int) bool {
+		if cands[i].score != cands[j].score {
+			return cands[i].score > cands[j].score
+		}
+		return cands[i].spec.UpdatedAt.After(cands[j].spec.UpdatedAt)
+	})
+	out := make([]OpportunitySpec, 0, len(cands))
+	for _, c := range cands {
+		if limit > 0 && len(out) >= limit {
+			break
+		}
+		out = append(out, c.spec)
+	}
+	return out, nil
+}
+
+// SetOpportunityStatus transitions an opportunity to a new lifecycle status,
+// persisted atomically as a single cortex Update (one Pebble batch commit) so
+// a restart never loses or double-runs an item. The opportunity tag and all
+// other fields are preserved; updated_at is refreshed.
+func (p *Pager) SetOpportunityStatus(ctx context.Context, uri string, status OpportunityStatus) error {
+	_ = ctx
+	uri = strings.TrimSpace(uri)
+	if uri == "" {
+		return fmt.Errorf("neo/memory: SetOpportunityStatus: empty uri")
+	}
+	if !status.Valid() {
+		return fmt.Errorf("neo/memory: SetOpportunityStatus: invalid status %q", status)
+	}
+	t, id, _, err := cortex.ParseURI(memory.URI(uri))
+	if err != nil {
+		return fmt.Errorf("neo/memory: SetOpportunityStatus: parse uri: %w", err)
+	}
+	if t != memory.TypeGoal {
+		return fmt.Errorf("neo/memory: SetOpportunityStatus: %s is not an opportunity", uri)
+	}
+	mem, err := p.cortex.ResolveLatest(id)
+	if err != nil {
+		return fmt.Errorf("neo/memory: SetOpportunityStatus: resolve: %w", err)
+	}
+	if !headHasOpportunityTag(mem.Head) {
+		return fmt.Errorf("neo/memory: SetOpportunityStatus: %s is not an opportunity", uri)
+	}
+	data, err := memory.DecodeData(mem.Version.Type, mem.Version.Data)
+	if err != nil {
+		return fmt.Errorf("neo/memory: SetOpportunityStatus: decode: %w", err)
+	}
+	gd, ok := asGoalData(data)
+	if !ok {
+		return fmt.Errorf("neo/memory: SetOpportunityStatus: %s is not an opportunity", uri)
+	}
+	spec := decodeOpportunityGoal(gd, uri)
+	spec.Status = status
+	spec.UpdatedAt = time.Now().UTC()
+	if _, err := p.cortex.Update(memory.URI(uri), encodeOpportunityGoal(spec), p.writeMeta()); err != nil {
+		return fmt.Errorf("neo/memory: SetOpportunityStatus: update: %w", err)
+	}
+	return nil
+}
+
+// FailOpportunityAttempt records a failed/partial autonomous run attempt on an
+// opportunity: it increments the bounded attempts counter and re-sets the
+// lifecycle status, persisted atomically as a single cortex Update (one Pebble
+// batch commit). While attempts remain under maxAttempts the opportunity is
+// returned to PENDING so a later wake can retry it; once the attempts reach the
+// ceiling it is DISMISSED (eventually give up rather than retry forever, req
+// 5.5). maxAttempts <= 0 disables the ceiling (always re-pend). Returns the new
+// status. No user-facing surface is touched — a failed proactive attempt is
+// silent (req 5.5: no failed-surprise spam).
+func (p *Pager) FailOpportunityAttempt(ctx context.Context, uri string, maxAttempts int) (OpportunityStatus, error) {
+	_ = ctx
+	uri = strings.TrimSpace(uri)
+	if uri == "" {
+		return "", fmt.Errorf("neo/memory: FailOpportunityAttempt: empty uri")
+	}
+	t, id, _, err := cortex.ParseURI(memory.URI(uri))
+	if err != nil {
+		return "", fmt.Errorf("neo/memory: FailOpportunityAttempt: parse uri: %w", err)
+	}
+	if t != memory.TypeGoal {
+		return "", fmt.Errorf("neo/memory: FailOpportunityAttempt: %s is not an opportunity", uri)
+	}
+	mem, err := p.cortex.ResolveLatest(id)
+	if err != nil {
+		return "", fmt.Errorf("neo/memory: FailOpportunityAttempt: resolve: %w", err)
+	}
+	if !headHasOpportunityTag(mem.Head) {
+		return "", fmt.Errorf("neo/memory: FailOpportunityAttempt: %s is not an opportunity", uri)
+	}
+	data, err := memory.DecodeData(mem.Version.Type, mem.Version.Data)
+	if err != nil {
+		return "", fmt.Errorf("neo/memory: FailOpportunityAttempt: decode: %w", err)
+	}
+	gd, ok := asGoalData(data)
+	if !ok {
+		return "", fmt.Errorf("neo/memory: FailOpportunityAttempt: %s is not an opportunity", uri)
+	}
+	spec := decodeOpportunityGoal(gd, uri)
+	spec.Attempts++
+	if maxAttempts > 0 && spec.Attempts >= maxAttempts {
+		spec.Status = OpportunityDismissed
+	} else {
+		spec.Status = OpportunityPending
+	}
+	spec.UpdatedAt = time.Now().UTC()
+	if _, err := p.cortex.Update(memory.URI(uri), encodeOpportunityGoal(spec), p.writeMeta()); err != nil {
+		return "", fmt.Errorf("neo/memory: FailOpportunityAttempt: update: %w", err)
+	}
+	return spec.Status, nil
+}
+
+// InProgressOpportunities returns the eligible-autonomous opportunities left in
+// the IN_PROGRESS state — the set a process restart must pick back up so a
+// proactive task in flight when the daemon died is driven to completion (the
+// Task Durability Rule, req 5.1). Only eligible_autonomous items are returned,
+// so a restart can never resume work on anything but the restricted (non-
+// financial) surface. Unranked (order is irrelevant for resume); capped at
+// limit (<=0 = all).
+func (p *Pager) InProgressOpportunities(ctx context.Context, limit int) ([]OpportunitySpec, error) {
+	_ = ctx
+	res, err := p.cortex.Find(query.Query{
+		Where: query.HasTag{Tag: string(opportunityTag)},
+		Limit: opportunityScanCap,
+		Form:  query.FormMedium,
+	})
+	if err != nil {
+		return nil, err
+	}
+	if res == nil {
+		return nil, nil
+	}
+	out := make([]OpportunitySpec, 0)
+	for _, m := range res.Memories {
+		if m.Head.Type != memory.TypeGoal || !headHasOpportunityTag(m.Head) {
+			continue
+		}
+		data, derr := memory.DecodeData(m.Version.Type, m.Version.Data)
+		if derr != nil {
+			continue
+		}
+		gd, ok := asGoalData(data)
+		if !ok {
+			continue
+		}
+		uri := string(cortex.BuildURI(m.Head.Type, m.Head.ID, m.Head.CurrentVersion))
+		spec := decodeOpportunityGoal(gd, uri)
+		if spec.Status != OpportunityInProgress || !spec.EligibleAutonomous {
+			continue
+		}
+		out = append(out, spec)
+		if limit > 0 && len(out) >= limit {
+			break
+		}
+	}
+	return out, nil
+}
+
+// OpportunityByURI resolves a single opportunity record by its cortex URI. ok
+// is false (with a nil error) when the URI does not resolve to an opportunity
+// record. It is the point lookup the management/queue surfaces and the
+// autonomous run's lifecycle bookkeeping read through.
+func (p *Pager) OpportunityByURI(ctx context.Context, uri string) (OpportunitySpec, bool, error) {
+	_ = ctx
+	uri = strings.TrimSpace(uri)
+	if uri == "" {
+		return OpportunitySpec{}, false, nil
+	}
+	t, id, _, err := cortex.ParseURI(memory.URI(uri))
+	if err != nil || t != memory.TypeGoal {
+		return OpportunitySpec{}, false, nil
+	}
+	mem, err := p.cortex.ResolveLatest(id)
+	if err != nil {
+		return OpportunitySpec{}, false, nil
+	}
+	if !headHasOpportunityTag(mem.Head) {
+		return OpportunitySpec{}, false, nil
+	}
+	data, err := memory.DecodeData(mem.Version.Type, mem.Version.Data)
+	if err != nil {
+		return OpportunitySpec{}, false, fmt.Errorf("neo/memory: OpportunityByURI: decode: %w", err)
+	}
+	gd, ok := asGoalData(data)
+	if !ok {
+		return OpportunitySpec{}, false, nil
+	}
+	return decodeOpportunityGoal(gd, uri), true, nil
+}
+
+// opportunityHead is p.head with the opportunity tag attached, so the record
+// is discoverable by the tag query and excludable from the ambient window.
+func (p *Pager) opportunityHead(importance uint8) memory.Head {
+	h := p.head(importance)
+	h.Tags = []memory.Tag{opportunityTag}
+	return h
+}
+
+// pendingOpportunities returns the decoded pending (status=pending)
+// opportunity records regardless of eligibility — the dedup target set.
+func (p *Pager) pendingOpportunities() []OpportunitySpec {
+	res, err := p.cortex.Find(query.Query{
+		Where: query.HasTag{Tag: string(opportunityTag)},
+		Limit: opportunityScanCap,
+		Form:  query.FormMedium,
+	})
+	if err != nil || res == nil {
+		return nil
+	}
+	out := make([]OpportunitySpec, 0, len(res.Memories))
+	for _, m := range res.Memories {
+		if m.Head.Type != memory.TypeGoal || !headHasOpportunityTag(m.Head) {
+			continue
+		}
+		data, derr := memory.DecodeData(m.Version.Type, m.Version.Data)
+		if derr != nil {
+			continue
+		}
+		gd, ok := asGoalData(data)
+		if !ok {
+			continue
+		}
+		uri := string(cortex.BuildURI(m.Head.Type, m.Head.ID, m.Head.CurrentVersion))
+		spec := decodeOpportunityGoal(gd, uri)
+		if spec.Status == OpportunityPending {
+			out = append(out, spec)
+		}
+	}
+	return out
+}
+
+// duplicatePendingOpportunity returns the URI of an existing PENDING
+// opportunity that duplicates summary — by normalized-statement equality, or
+// (when an embedder is available) by semantic similarity within the duplicate
+// threshold. Empty string means no duplicate (write a fresh record). Mirrors
+// the normalize + cosine dedup discipline of RememberFact.
+func (p *Pager) duplicatePendingOpportunity(summary string) string {
+	pending := p.pendingOpportunities()
+	if len(pending) == 0 {
+		return ""
+	}
+	norm := normalizeStatement(summary)
+	for _, op := range pending {
+		if normalizeStatement(op.Summary) == norm {
+			return op.URI
+		}
+	}
+	if !p.hasEmbedder || p.embedder == nil {
+		return ""
+	}
+	nv, err := p.embedder.Embed(summary)
+	if err != nil {
+		return ""
+	}
+	for _, op := range pending {
+		ev, eerr := p.embedder.Embed(op.Summary)
+		if eerr != nil {
+			continue
+		}
+		if embed.Cosine(nv, ev) >= opportunityDupCosine {
+			return op.URI
+		}
+	}
+	return ""
 }
 
 func normalizeStatement(s string) string {

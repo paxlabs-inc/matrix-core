@@ -63,14 +63,16 @@ full force-exit lifecycle (initiate/challenge/finalize, stale-epoch replay,
 wrong-signer, expiry), pause, two-step governance, SafeERC20 (USDT non-bool +
 approve-race), and reentrancy.
 
-## Mainnet wiring (chain 125)
+## Mainnet wiring (chain 125 — Sei fork, redeployed 2026-06-30)
+
+Paxeer migrated chain 125 from an Evmos fork to a Sei fork; state was reset and
+every contract was redeployed at NEW addresses. RPC: `https://api.hyperpax.xyz`.
 
 | Param | Value |
 | ----- | ----- |
-| USDL (reserve, 6 dp) | `0x7c69c84daAEe90B21eeCABDb8f0387897E9B7B37` |
-| PECOR V4 router      | `0x1D5f3ac9dE43Dd0665C3F527913dD825f67b3Daa` |
-| WPAX9 (wrapped PAX)  | `0xe5ccf339d1c89c7e6c6768b28507f78b861fc1de` |
-| USDC / USDT inputs   | `0xf8850b62AE017c55be7f571BBad840b4f3DA7D49` / `0x5dfE06Ae465a39c442c45ed273c523BaC2d1f6a8` |
+| USDL (reserve, 6 dp) | `0x85FcD13735F4309833A503EE804ea32395851479` |
+| PECOR V4 router      | `0x63380c384296EeD6AB39379269622156F05D1111` |
+| WPAX9 (wrapped PAX)  | `0xD152891923C7D6fE84d3DCF58621aB2be0eFCbc2` |
 
 USDX precision = **1e6 (micro-USDX)**, matching USDL's 6 decimals 1:1.
 

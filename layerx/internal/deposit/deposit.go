@@ -23,8 +23,10 @@ import (
 const cursorName = "deposit_watcher"
 
 // maxBlockRange bounds a single FilterLogs span so a large backlog is scanned in
-// chunks (RPC providers cap log-range queries).
-const maxBlockRange = uint64(5000)
+// chunks (RPC providers cap log-range queries). The Paxeer chain-125 RPC
+// (https://api.hyperpax.xyz) caps eth_getLogs at 2000 blocks per query, so a
+// chunk spans exactly that many blocks ([start, start+2000-1] inclusive = 2000).
+const maxBlockRange = uint64(2000)
 
 // Source is the chain-side reader the worker needs. *chain.Watcher satisfies it;
 // a fake satisfies it in tests (no live RPC).

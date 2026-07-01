@@ -600,6 +600,9 @@ func (p *Pager) cascadeNeighbors(seedURI string) []scoredSnip {
 	}
 	out := make([]scoredSnip, 0, len(res.Memories))
 	for i, m := range res.Memories {
+		if headHasOpportunityTag(m.Head) {
+			continue // proactive queue, not ambient context
+		}
 		text := ""
 		if i < len(res.Rendered) {
 			text = res.Rendered[i]
@@ -738,6 +741,9 @@ func (p *Pager) RecallHits(_ context.Context, queryText string, types []string, 
 	}
 	hits := make([]RecallHit, 0, len(res.Memories))
 	for i, m := range res.Memories {
+		if headHasOpportunityTag(m.Head) {
+			continue // proactive queue, not recallable memory
+		}
 		text := ""
 		if i < len(res.Rendered) {
 			text = res.Rendered[i]
@@ -869,6 +875,11 @@ func renderScoredSnippets(res *query.Result) []scoredSnip {
 	}
 	out := make([]scoredSnip, 0, len(res.Memories))
 	for i, m := range res.Memories {
+		// Automatrix opportunities are a separate proactive-work queue, not
+		// ambient memory — never surface them in the prompt window.
+		if headHasOpportunityTag(m.Head) {
+			continue
+		}
 		text := ""
 		if i < len(res.Rendered) {
 			text = res.Rendered[i]
