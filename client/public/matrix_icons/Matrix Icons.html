@@ -1,0 +1,806 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Matrix · Icon Set</title>
+    <link rel="stylesheet" href="colors_and_type.css" />
+    <style>
+      :root {
+        --sw: 1.75; /* live stroke weight  */
+        --isz: 30px; /* icon glyph size in grid cells */
+        --canvas: dark;
+      }
+      html,
+      body {
+        height: 100%;
+      }
+      body {
+        margin: 0;
+        background:
+          radial-gradient(1200px 700px at 80% -10%, rgba(40, 65, 184, 0.1), transparent 60%),
+          var(--bg);
+        color: var(--fg);
+        min-height: 100%;
+      }
+      ::selection {
+        background: rgba(142, 154, 224, 0.28);
+      }
+
+      /* ——— Top bar ——————————————————————————————— */
+      .topbar {
+        position: sticky;
+        top: 0;
+        z-index: 30;
+        padding: var(--space-4) var(--space-6);
+        display: flex;
+        align-items: center;
+        gap: var(--space-5);
+        background: rgba(10, 12, 16, 0.72);
+        backdrop-filter: var(--backdrop-blur);
+        -webkit-backdrop-filter: var(--backdrop-blur);
+        border-bottom: 1px solid var(--border);
+      }
+      .brand {
+        display: flex;
+        align-items: baseline;
+        gap: 12px;
+        flex: 0 0 auto;
+      }
+      .brand .mark {
+        font-family: var(--font-display);
+        font-weight: var(--fw-semi);
+        font-size: 22px;
+        letter-spacing: -0.02em;
+        color: var(--fg);
+      }
+      .brand .mark b {
+        color: var(--accent-fore);
+        font-weight: var(--fw-semi);
+      }
+      .brand .sub {
+        font-family: var(--font-mono);
+        font-size: 10px;
+        letter-spacing: var(--track-meta);
+        text-transform: uppercase;
+        color: var(--fg-subtle);
+      }
+
+      .search {
+        flex: 1 1 auto;
+        max-width: 440px;
+        position: relative;
+        margin-inline: auto;
+      }
+      .search svg {
+        position: absolute;
+        left: 14px;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 17px;
+        height: 17px;
+        color: var(--fg-subtle);
+        pointer-events: none;
+      }
+      .search input {
+        width: 100%;
+        box-sizing: border-box;
+        padding: 11px 14px 11px 40px;
+        background: var(--bg-subtle);
+        color: var(--fg);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-pill);
+        font-family: var(--font-body);
+        font-size: 14px;
+        letter-spacing: -0.008em;
+        outline: none;
+        transition:
+          border-color var(--duration-snappy) var(--ease-standard),
+          box-shadow var(--duration-snappy) var(--ease-standard);
+      }
+      .search input::placeholder {
+        color: var(--fg-subtle);
+      }
+      .search input:focus {
+        border-color: rgba(142, 154, 224, 0.5);
+        box-shadow: var(--shadow-focus);
+      }
+
+      .count {
+        flex: 0 0 auto;
+        font-family: var(--font-mono);
+        font-size: 11px;
+        letter-spacing: 0.04em;
+        color: var(--fg-muted);
+        white-space: nowrap;
+      }
+      .count b {
+        color: var(--fg);
+        font-weight: var(--fw-medium);
+      }
+
+      /* ——— Controls row ————————————————————————————— */
+      .controls {
+        position: sticky;
+        top: 65px;
+        z-index: 20;
+        display: flex;
+        align-items: center;
+        gap: var(--space-4);
+        padding: var(--space-3) var(--space-6);
+        background: rgba(10, 12, 16, 0.55);
+        backdrop-filter: var(--backdrop-blur);
+        -webkit-backdrop-filter: var(--backdrop-blur);
+        border-bottom: 1px solid var(--border);
+        flex-wrap: wrap;
+      }
+      .pills {
+        display: flex;
+        gap: 6px;
+        flex-wrap: wrap;
+        flex: 1 1 auto;
+      }
+      .pill {
+        appearance: none;
+        border: 1px solid var(--border);
+        background: transparent;
+        color: var(--fg-muted);
+        font-family: var(--font-mono);
+        font-size: 11px;
+        letter-spacing: 0.02em;
+        padding: 6px 12px;
+        border-radius: var(--radius-pill);
+        cursor: pointer;
+        white-space: nowrap;
+        transition: all var(--duration-snappy) var(--ease-standard);
+      }
+      .pill:hover {
+        color: var(--fg);
+        border-color: var(--border-strong);
+      }
+      .pill[aria-pressed='true'] {
+        background: var(--accent-tint);
+        color: var(--accent-fore);
+        border-color: rgba(142, 154, 224, 0.4);
+      }
+
+      .knobs {
+        display: flex;
+        align-items: center;
+        gap: var(--space-5);
+        flex: 0 0 auto;
+      }
+      .knob {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .knob label {
+        font-family: var(--font-mono);
+        font-size: 10px;
+        letter-spacing: var(--track-meta);
+        text-transform: uppercase;
+        color: var(--fg-subtle);
+      }
+      .knob input[type='range'] {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 88px;
+        height: 3px;
+        border-radius: 999px;
+        background: var(--border-strong);
+        outline: none;
+        cursor: pointer;
+      }
+      .knob input[type='range']::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 14px;
+        height: 14px;
+        border-radius: 50%;
+        background: var(--accent-fore);
+        border: 2px solid var(--bg);
+        box-shadow: var(--shadow-02);
+        cursor: pointer;
+      }
+      .knob input[type='range']::-moz-range-thumb {
+        width: 14px;
+        height: 14px;
+        border-radius: 50%;
+        background: var(--accent-fore);
+        border: 2px solid var(--bg);
+        cursor: pointer;
+      }
+      .seg {
+        display: flex;
+        padding: 3px;
+        gap: 2px;
+        background: var(--bg-subtle);
+        border: 1px solid var(--border);
+        border-radius: var(--radius-pill);
+      }
+      .seg button {
+        appearance: none;
+        border: none;
+        background: transparent;
+        cursor: pointer;
+        width: 26px;
+        height: 22px;
+        border-radius: var(--radius-pill);
+        display: grid;
+        place-items: center;
+        color: var(--fg-subtle);
+        transition: all var(--duration-snappy) var(--ease-standard);
+      }
+      .seg button svg {
+        width: 14px;
+        height: 14px;
+      }
+      .seg button[aria-pressed='true'] {
+        background: var(--border-strong);
+        color: var(--fg);
+      }
+
+      /* ——— Grid ——————————————————————————————————— */
+      main {
+        padding: var(--space-6) var(--space-6) var(--space-9);
+        max-width: 1320px;
+        margin: 0 auto;
+      }
+      .group-head {
+        display: flex;
+        align-items: baseline;
+        gap: 12px;
+        margin: var(--space-6) 0 var(--space-4);
+      }
+      .group-head:first-child {
+        margin-top: 0;
+      }
+      .group-head h2 {
+        font-family: var(--font-body);
+        font-weight: var(--fw-medium);
+        font-size: 15px;
+        letter-spacing: -0.01em;
+        color: var(--fg);
+        margin: 0;
+      }
+      .group-head .line {
+        flex: 1 1 auto;
+        height: 1px;
+        background: var(--border);
+      }
+      .group-head .gc {
+        font-family: var(--font-mono);
+        font-size: 10px;
+        color: var(--fg-subtle);
+        letter-spacing: 0.06em;
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(104px, 1fr));
+        gap: 10px;
+      }
+      .cell {
+        position: relative;
+        cursor: pointer;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 12px;
+        padding: 20px 8px 14px;
+        border-radius: var(--radius-lg);
+        border: 1px solid var(--border);
+        background: var(--bg-elevated);
+        transition:
+          transform var(--duration-snappy) var(--ease-standard),
+          border-color var(--duration-snappy) var(--ease-standard),
+          background var(--duration-snappy) var(--ease-standard);
+      }
+      .cell:hover {
+        transform: translateY(-2px);
+        border-color: var(--border-strong);
+        background: #141821;
+      }
+      .cell:hover .ico {
+        color: var(--accent-fore);
+      }
+      .cell .ico {
+        width: var(--isz);
+        height: var(--isz);
+        color: var(--fg);
+        display: grid;
+        place-items: center;
+        transition: color var(--duration-snappy) var(--ease-standard);
+      }
+      .cell .ico svg {
+        width: 100%;
+        height: 100%;
+        display: block;
+      }
+      .cell .nm {
+        font-family: var(--font-mono);
+        font-size: 10px;
+        letter-spacing: 0.02em;
+        color: var(--fg-muted);
+        text-align: center;
+        line-height: 1.3;
+        max-width: 100%;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .cell .quick {
+        position: absolute;
+        top: 7px;
+        right: 7px;
+        width: 24px;
+        height: 24px;
+        display: grid;
+        place-items: center;
+        border-radius: var(--radius-sm);
+        background: var(--bg-subtle);
+        border: 1px solid var(--border);
+        color: var(--fg-subtle);
+        opacity: 0;
+        transform: scale(0.85);
+        transition: all var(--duration-snappy) var(--ease-standard);
+      }
+      .cell .quick svg {
+        width: 13px;
+        height: 13px;
+      }
+      .cell:hover .quick {
+        opacity: 1;
+        transform: scale(1);
+      }
+      .cell .quick:hover {
+        color: var(--fg);
+        border-color: var(--border-strong);
+        background: #1c212c;
+      }
+
+      /* light canvas variant */
+      body[data-canvas='light'] .cell {
+        background: var(--color-neutral-200);
+        border-color: var(--color-neutral-300);
+      }
+      body[data-canvas='light'] .cell:hover {
+        background: #fff;
+      }
+      body[data-canvas='light'] .cell .ico {
+        color: #14171f;
+      }
+      body[data-canvas='light'] .cell:hover .ico {
+        color: var(--accent);
+      }
+      body[data-canvas='light'] .cell .nm {
+        color: var(--color-neutral-600);
+      }
+      body[data-canvas='light'] .cell .quick {
+        background: #fff;
+        border-color: var(--color-neutral-300);
+        color: var(--color-neutral-500);
+      }
+
+      .empty {
+        padding: 80px 0;
+        text-align: center;
+        color: var(--fg-subtle);
+        font-size: 15px;
+      }
+      .empty code {
+        font-family: var(--font-mono);
+        color: var(--fg-muted);
+      }
+
+      /* ——— Detail drawer ——————————————————————————— */
+      .scrim {
+        position: fixed;
+        inset: 0;
+        z-index: 40;
+        background: var(--bg-overlay);
+        backdrop-filter: blur(3px);
+        -webkit-backdrop-filter: blur(3px);
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity var(--duration-standard) var(--ease-standard);
+      }
+      .scrim.show {
+        opacity: 1;
+        pointer-events: auto;
+      }
+      .drawer {
+        position: fixed;
+        top: 0;
+        right: 0;
+        z-index: 41;
+        height: 100%;
+        width: 408px;
+        max-width: 92vw;
+        background: var(--bg-elevated);
+        border-left: 1px solid var(--border-strong);
+        box-shadow: var(--shadow-06);
+        transform: translateX(100%);
+        transition: transform var(--duration-deliberate) var(--ease-emphasis);
+        display: flex;
+        flex-direction: column;
+      }
+      .drawer.show {
+        transform: translateX(0);
+      }
+      .drawer-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: var(--space-5) var(--space-5) var(--space-4);
+      }
+      .drawer-head .dh-cat {
+        font-family: var(--font-mono);
+        font-size: 10px;
+        letter-spacing: var(--track-meta);
+        text-transform: uppercase;
+        color: var(--accent-fore);
+      }
+      .x-btn {
+        appearance: none;
+        border: 1px solid var(--border);
+        background: var(--bg-subtle);
+        cursor: pointer;
+        width: 32px;
+        height: 32px;
+        border-radius: var(--radius-md);
+        display: grid;
+        place-items: center;
+        color: var(--fg-muted);
+        transition: all var(--duration-snappy) var(--ease-standard);
+      }
+      .x-btn:hover {
+        color: var(--fg);
+        border-color: var(--border-strong);
+      }
+      .x-btn svg {
+        width: 16px;
+        height: 16px;
+      }
+
+      .preview {
+        margin: 0 var(--space-5);
+        border-radius: var(--radius-xl);
+        background: linear-gradient(140deg, #161a23 0%, #0b0d12 100%);
+        border: 1px solid var(--border);
+        display: grid;
+        place-items: center;
+        aspect-ratio: 16/10;
+        position: relative;
+        overflow: hidden;
+      }
+      .preview::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background-image:
+          linear-gradient(var(--border) 1px, transparent 1px),
+          linear-gradient(90deg, var(--border) 1px, transparent 1px);
+        background-size: 24px 24px;
+        opacity: 0.5;
+      }
+      .preview .pv {
+        position: relative;
+        width: 96px;
+        height: 96px;
+        color: var(--fg);
+      }
+      .preview .pv svg {
+        width: 100%;
+        height: 100%;
+      }
+
+      .dmeta {
+        padding: var(--space-5);
+      }
+      .dname {
+        font-family: var(--font-mono);
+        font-size: 18px;
+        color: var(--fg);
+        letter-spacing: -0.01em;
+        margin: 0 0 6px;
+      }
+      .dkeys {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        margin-top: 14px;
+      }
+      .dkey {
+        font-family: var(--font-mono);
+        font-size: 10px;
+        color: var(--fg-muted);
+        background: var(--bg-subtle);
+        border: 1px solid var(--border);
+        padding: 4px 9px;
+        border-radius: var(--radius-pill);
+        letter-spacing: 0.02em;
+      }
+
+      .copyrow {
+        margin-top: auto;
+        padding: var(--space-5);
+        display: grid;
+        gap: 10px;
+        border-top: 1px solid var(--border);
+      }
+      .cbtn {
+        appearance: none;
+        cursor: pointer;
+        text-align: left;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 13px 16px;
+        border-radius: var(--radius-md);
+        font-family: var(--font-body);
+        font-size: 14px;
+        letter-spacing: -0.008em;
+        border: 1px solid var(--border);
+        background: var(--bg-subtle);
+        color: var(--fg);
+        transition: all var(--duration-snappy) var(--ease-standard);
+      }
+      .cbtn:hover {
+        border-color: var(--border-strong);
+        background: #1c212c;
+      }
+      .cbtn.primary {
+        background: var(--accent);
+        border-color: transparent;
+        color: #fff;
+      }
+      .cbtn.primary:hover {
+        background: var(--accent-hover);
+      }
+      .cbtn .lbl {
+        display: flex;
+        align-items: center;
+        gap: 11px;
+      }
+      .cbtn .lbl svg {
+        width: 16px;
+        height: 16px;
+        opacity: 0.85;
+      }
+      .cbtn .hint {
+        font-family: var(--font-mono);
+        font-size: 10px;
+        opacity: 0.6;
+        letter-spacing: 0.04em;
+      }
+
+      /* ——— Toast ——————————————————————————————————— */
+      .toast {
+        position: fixed;
+        bottom: 28px;
+        left: 50%;
+        z-index: 60;
+        transform: translate(-50%, 18px);
+        opacity: 0;
+        pointer-events: none;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 12px 18px;
+        border-radius: var(--radius-pill);
+        background: rgba(20, 23, 31, 0.92);
+        border: 1px solid var(--border-strong);
+        box-shadow: var(--shadow-05);
+        backdrop-filter: var(--backdrop-blur);
+        font-family: var(--font-body);
+        font-size: 14px;
+        color: var(--fg);
+        letter-spacing: -0.008em;
+        transition:
+          opacity var(--duration-standard) var(--ease-standard),
+          transform var(--duration-standard) var(--ease-emphasis);
+      }
+      .toast.show {
+        opacity: 1;
+        transform: translate(-50%, 0);
+      }
+      .toast svg {
+        width: 17px;
+        height: 17px;
+        color: var(--success);
+      }
+      .toast b {
+        font-family: var(--font-mono);
+        font-weight: var(--fw-medium);
+        color: var(--accent-fore);
+      }
+
+      @media (max-width: 640px) {
+        .topbar {
+          flex-wrap: wrap;
+          gap: 12px;
+        }
+        .search {
+          order: 3;
+          max-width: none;
+          flex-basis: 100%;
+        }
+        .knobs {
+          width: 100%;
+          justify-content: space-between;
+        }
+        .controls {
+          top: 0;
+        }
+      }
+    </style>
+  </head>
+  <body data-canvas="dark">
+    <header class="topbar">
+      <div class="brand">
+        <span class="mark">Matrix<b>·</b>Icons</span>
+        <span class="sub">Paxeer Design System</span>
+      </div>
+      <div class="search">
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.75"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <circle cx="11" cy="11" r="6.5" />
+          <path d="M16 16l4.5 4.5" />
+        </svg>
+        <input
+          id="q"
+          type="text"
+          placeholder="Search icons — name or concept…"
+          autocomplete="off"
+          spellcheck="false"
+        />
+      </div>
+      <div class="count"><b id="shown">0</b> / <span id="total">0</span> icons</div>
+    </header>
+
+    <div class="controls">
+      <div class="pills" id="pills"></div>
+      <div class="knobs">
+        <div class="knob">
+          <label>Weight</label>
+          <input id="sw" type="range" min="1" max="2.5" step="0.05" value="1.75" />
+        </div>
+        <div class="knob">
+          <label>Size</label>
+          <input id="sz" type="range" min="20" max="44" step="2" value="30" />
+        </div>
+        <div class="seg" role="group" aria-label="Preview canvas">
+          <button id="cv-dark" aria-pressed="true" title="Dark canvas">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.75"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="M20 14.5A8 8 0 0 1 9.5 4 7 7 0 1 0 20 14.5z" />
+            </svg>
+          </button>
+          <button id="cv-light" aria-pressed="false" title="Light canvas">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.75"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <circle cx="12" cy="12" r="4.5" />
+              <path
+                d="M12 2.5v2.5M12 19v2.5M4.2 4.2l1.8 1.8M18 18l1.8 1.8M2.5 12H5M19 12h2.5M4.2 19.8 6 18M18 6l1.8-1.8"
+              />
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <main id="main"></main>
+
+    <div class="scrim" id="scrim"></div>
+    <aside class="drawer" id="drawer" aria-hidden="true">
+      <div class="drawer-head">
+        <span class="dh-cat" id="d-cat">—</span>
+        <button class="x-btn" id="d-close" aria-label="Close">
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.75"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="M6 6l12 12M18 6 6 18" />
+          </svg>
+        </button>
+      </div>
+      <div class="preview"><div class="pv" id="d-pv"></div></div>
+      <div class="dmeta">
+        <p class="dname" id="d-name">—</p>
+        <div class="dkeys" id="d-keys"></div>
+      </div>
+      <div class="copyrow">
+        <button class="cbtn primary" id="cp-svg">
+          <span class="lbl"
+            ><svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.75"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <rect x="8.5" y="8.5" width="11" height="11" rx="2" />
+              <path d="M15.5 8.5V6.5a2 2 0 0 0-2-2h-7a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h2" /></svg
+            >Copy SVG</span
+          >
+          <span class="hint">currentColor</span>
+        </button>
+        <button class="cbtn" id="cp-jsx">
+          <span class="lbl"
+            ><svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.75"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="M9 8l-4 4 4 4M15 8l4 4-4 4M13.5 6l-3 12" /></svg
+            >Copy React (JSX)</span
+          >
+          <span class="hint">component</span>
+        </button>
+        <button class="cbtn" id="cp-name">
+          <span class="lbl"
+            ><svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.75"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="M3.5 12.5V6a2 2 0 0 1 2-2h6.5L20 12.5 12.5 20 3.5 12.5z" />
+              <circle cx="8" cy="8" r="1.3" /></svg
+            >Copy name</span
+          >
+          <span class="hint" id="cp-name-hint">icon-name</span>
+        </button>
+      </div>
+    </aside>
+
+    <div class="toast" id="toast">
+      <svg
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.75"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      >
+        <circle cx="12" cy="12" r="8.5" />
+        <path d="M8.5 12.2l2.4 2.4 4.6-4.8" />
+      </svg>
+      <span id="toast-msg">Copied</span>
+    </div>
+
+    <script src="matrix-icons.js"></script>
+    <script src="matrix-gallery.js"></script>
+  </body>
+</html>

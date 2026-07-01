@@ -1,0 +1,28 @@
+{
+  "extends": ["next/core-web-vitals", "next/typescript"],
+  "rules": {
+    // Prevent accidental full-library imports (lodash, date-fns, etc.)
+    "no-restricted-imports": [
+      "error",
+      {
+        "patterns": [
+          {
+            "group": ["lodash", "lodash/*"],
+            "message": "Import specific lodash methods from 'lodash/<method>' or use native alternatives."
+          }
+        ]
+      }
+    ],
+    // Enforce no console.log in production code (use structured logging)
+    "no-console": ["warn", { "allow": ["error", "warn"] }],
+    // Prefer const assertions
+    "prefer-const": "error",
+    // No unused variables (TypeScript handles most, but keep ESLint guard)
+    "@typescript-eslint/no-unused-vars": [
+      "error",
+      { "argsIgnorePattern": "^_", "varsIgnorePattern": "^_" }
+    ],
+    // Disallow 'any' in typed code paths
+    "@typescript-eslint/no-explicit-any": "warn"
+  }
+}
