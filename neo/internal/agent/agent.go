@@ -445,6 +445,15 @@ func (a *Agent) Chat(ctx context.Context, userInput string) error {
 		}
 	}()
 	a.working = append(a.working, llm.UserMessage(userInput))
+	// Continuous-memory (task 6.1): record the user message to the durable
+	// cortex transcript so cortex — not the in-memory working slice — owns the
+	// turn-by-turn record. No-op when the feature flag is off.
+	a.cmRecordUser(userInput)
+
+	// cm selects the continuous-memory collapse path (tasks 6.1–6.3): the
+	// per-turn working set comes from cortex.Activate (rendered as a trailing
+	// USER-role message) instead of the agent-side pager selection/ranking.
+	cm := a.continuousMemory()
 
 	// Topic-shift detection (Phase 3): if this turn pivots to an unrelated
 	// subject, the previous topic's recalled past-turns must not bleed into it.
@@ -459,15 +468,30 @@ func (a *Agent) Chat(ctx context.Context, userInput string) error {
 	// needs mid-thought with memory_recall instead of being force-fed a blob.
 	// Proven patterns and trigger-matched guidance are targeted (not the bulk
 	// blob) and stay on the push path.
-	retrieved := a.ambientMemory(ctx, userInput)
-	procedural := a.faultPatterns(ctx, userInput)
-	triggered := a.faultTriggers(ctx, userInput)
-	// Conversational recall: relevant PAST turns beyond the live transcript —
-	// the additive read-lane that keeps an unbounded thread coherent. Reset on a
-	// topic pivot so a fresh subject starts clean.
-	recalled := a.recallTurns(ctx, userInput)
-	if pivoted {
-		recalled = nil
+	//
+	// Under the continuous-memory collapse (cm) these agent-side lanes are
+	// retired: cortex.Activate is the single source and cmTail holds its
+	// rendered bundle, computed ONCE per turn (Pinned computed once — NE-7).
+	var (
+		retrieved  []memory.Snippet
+		procedural []memory.Pattern
+		triggered  []memory.Snippet
+		recalled   []recall.Hit
+		cmTail     string
+	)
+	if cm {
+		cmTail = a.renderActivationBundle(a.cmActivate(userInput))
+	} else {
+		retrieved = a.ambientMemory(ctx, userInput)
+		procedural = a.faultPatterns(ctx, userInput)
+		triggered = a.faultTriggers(ctx, userInput)
+		// Conversational recall: relevant PAST turns beyond the live transcript
+		// — the additive read-lane that keeps an unbounded thread coherent.
+		// Reset on a topic pivot so a fresh subject starts clean.
+		recalled = a.recallTurns(ctx, userInput)
+		if pivoted {
+			recalled = nil
+		}
 	}
 	// Track every cortex memory surfaced this turn so a successful completion
 	// can attest them as USED — the usage-salience + EMA learning signal that
@@ -534,7 +558,7 @@ func (a *Agent) Chat(ctx context.Context, userInput string) error {
 		// never pays for it. v3 #1: this ambient refresh is opt-in — it runs
 		// only when AmbientRetrievalTopK > 0. Fully tool-driven (0), the model
 		// re-pulls mid-thought with memory_recall instead.
-		if a.cfg.AmbientRetrievalTopK > 0 && step > 0 && step%refaultEvery == 0 {
+		if !cm && a.cfg.AmbientRetrievalTopK > 0 && step > 0 && step%refaultEvery == 0 {
 			q := userInput
 			if c := lastAssistantText(a.working, 400); c != "" {
 				q = q + "\n" + c
@@ -551,42 +575,70 @@ func (a *Agent) Chat(ctx context.Context, userInput string) error {
 			collectSurfacedSnips(surfacedSnips, retrieved)
 		}
 
-		pinned := ""
-		if a.pager != nil {
-			pinned = a.pager.Pinned(ctx, a.activeGoal)
-		}
-		baseSystem := a.buildSystem(pinned, retrieved, procedural, triggered, recalled)
-
-		// [control.loop] step_3: forced compaction if over the hard threshold.
-		if a.budgetPct(baseSystem) >= a.cfg.HardPct {
-			a.compact(ctx, "hard")
-			baseSystem = a.buildSystem(pinned, retrieved, procedural, triggered, recalled)
-		}
-		// Byte-budget backstop: the provider enforces a hard request-BODY
-		// byte cap (Fireworks: 1 MiB) that is independent of the token budget
-		// above. The token estimate undercounts the serialized JSON (message
-		// envelope + tool schemas + escaping), so a window within token budget
-		// can still exceed the byte cap and 413. Force a compaction when the
-		// approximate body size crosses the ceiling.
-		if a.windowBytes(baseSystem) >= maxRequestBodyBytes {
-			// Drop dead-weight inline image payloads from older turns first — a
-			// cheaper, less lossy step than a full compaction (Phase 4.2).
-			a.stripOldImages()
+		var (
+			pinned     string
+			baseSystem string
+			pct        int
+			tail       string
+			window     []llm.Message
+		)
+		if cm {
+			// Continuous-memory window (task 6.2): the byte-stable charter
+			// prefix + the live transcript + the rendered Activate bundle as a
+			// trailing USER-role message (req.9.4 — Qwen-template portability).
+			// a.compact is retired (req.9.3): over-budget trimming is
+			// NON-summarizing (cmTrimWorking), because the older turns are
+			// durable in cortex and the coarse history rides the durable
+			// story-so-far already surfaced in cmTail.
+			baseSystem = a.stableSystem() + cmTail
+			if a.budgetPct(baseSystem) >= a.cfg.HardPct {
+				a.cmTrimWorking()
+			}
 			if a.windowBytes(baseSystem) >= maxRequestBodyBytes {
+				a.stripOldImages()
+				if a.windowBytes(baseSystem) >= maxRequestBodyBytes {
+					a.cmTrimWorking()
+				}
+			}
+			pct = a.budgetPct(baseSystem)
+			tail = cmTail + fmt.Sprintf("\n\n[context: %d%% used]\n", pct)
+			window = assembleWindowUserTail(a.stableSystem(), a.working, tail)
+		} else {
+			if a.pager != nil {
+				pinned = a.pager.Pinned(ctx, a.activeGoal)
+			}
+			baseSystem = a.buildSystem(pinned, retrieved, procedural, triggered, recalled)
+
+			// [control.loop] step_3: forced compaction if over the hard threshold.
+			if a.budgetPct(baseSystem) >= a.cfg.HardPct {
 				a.compact(ctx, "hard")
 				baseSystem = a.buildSystem(pinned, retrieved, procedural, triggered, recalled)
 			}
+			// Byte-budget backstop: the provider enforces a hard request-BODY
+			// byte cap (Fireworks: 1 MiB) that is independent of the token budget
+			// above. The token estimate undercounts the serialized JSON (message
+			// envelope + tool schemas + escaping), so a window within token budget
+			// can still exceed the byte cap and 413. Force a compaction when the
+			// approximate body size crosses the ceiling.
+			if a.windowBytes(baseSystem) >= maxRequestBodyBytes {
+				// Drop dead-weight inline image payloads from older turns first — a
+				// cheaper, less lossy step than a full compaction (Phase 4.2).
+				a.stripOldImages()
+				if a.windowBytes(baseSystem) >= maxRequestBodyBytes {
+					a.compact(ctx, "hard")
+					baseSystem = a.buildSystem(pinned, retrieved, procedural, triggered, recalled)
+				}
+			}
+			pct = a.budgetPct(baseSystem)
+			// P1-2: the byte-stable system prefix (charter + ground truth) is the
+			// FIRST message; the turn-varying memory block + context-budget stat
+			// move into ONE trailing message AFTER the append-only transcript, so
+			// the prefix stays byte-identical turn-over-turn and rides the
+			// provider's longest-stable-prefix cache. baseSystem (stable + tail)
+			// still drives the budget stat above.
+			tail = a.dynamicTail(pinned, retrieved, procedural, triggered, recalled) + fmt.Sprintf("\n\n[context: %d%% used]\n", pct)
+			window = assembleWindow(a.stableSystem(), a.working, tail)
 		}
-		pct := a.budgetPct(baseSystem)
-		// P1-2: the byte-stable system prefix (charter + ground truth) is the
-		// FIRST message; the turn-varying memory block + context-budget stat
-		// move into ONE trailing message AFTER the append-only transcript, so
-		// the prefix stays byte-identical turn-over-turn and rides the
-		// provider's longest-stable-prefix cache. baseSystem (stable + tail)
-		// still drives the budget stat above.
-		tail := a.dynamicTail(pinned, retrieved, procedural, triggered, recalled) + fmt.Sprintf("\n\n[context: %d%% used]\n", pct)
-
-		window := assembleWindow(a.stableSystem(), a.working, tail)
 
 		// Live "typing" channel: stream the model's incremental fragments as
 		// they generate so the user sees Neo thinking + answering in real time
@@ -618,14 +670,26 @@ func (a *Agent) Chat(ctx context.Context, userInput string) error {
 				if a.stripOldImages() > 0 {
 					// Image stripping only shrinks the transcript; the tail
 					// (turn-varying memory + budget stat) is unchanged.
-					window = assembleWindow(a.stableSystem(), a.working, tail)
+					if cm {
+						window = assembleWindowUserTail(a.stableSystem(), a.working, tail)
+					} else {
+						window = assembleWindow(a.stableSystem(), a.working, tail)
+					}
 					res, err = a.chatWithRetry(ctx, llm.ChatRequest{Messages: window, Tools: a.schemas, OnDelta: onDelta})
 				}
 				if err != nil && errors.Is(err, llm.ErrRequestTooLarge) {
-					a.compact(ctx, "hard")
-					baseSystem = a.buildSystem(pinned, retrieved, procedural, triggered, recalled)
-					tail = a.dynamicTail(pinned, retrieved, procedural, triggered, recalled) + fmt.Sprintf("\n\n[context: %d%% used]\n", a.budgetPct(baseSystem))
-					window = assembleWindow(a.stableSystem(), a.working, tail)
+					if cm {
+						// a.compact retired (req.9.3): non-summarizing trim.
+						a.cmTrimWorking()
+						baseSystem = a.stableSystem() + cmTail
+						tail = cmTail + fmt.Sprintf("\n\n[context: %d%% used]\n", a.budgetPct(baseSystem))
+						window = assembleWindowUserTail(a.stableSystem(), a.working, tail)
+					} else {
+						a.compact(ctx, "hard")
+						baseSystem = a.buildSystem(pinned, retrieved, procedural, triggered, recalled)
+						tail = a.dynamicTail(pinned, retrieved, procedural, triggered, recalled) + fmt.Sprintf("\n\n[context: %d%% used]\n", a.budgetPct(baseSystem))
+						window = assembleWindow(a.stableSystem(), a.working, tail)
+					}
 					res, err = a.chatWithRetry(ctx, llm.ChatRequest{Messages: window, Tools: a.schemas, OnDelta: onDelta})
 				}
 			}
@@ -645,6 +709,9 @@ func (a *Agent) Chat(ctx context.Context, userInput string) error {
 			continue
 		}
 		a.working = append(a.working, res.Message)
+		// Continuous-memory (task 6.1): record the assistant turn (content +
+		// tool calls) to the durable cortex transcript. No-op when off.
+		a.cmRecordAssistant(res.Message)
 		if batchTouchesState(res.Message.ToolCalls) {
 			stateTouched = true
 		}
@@ -710,7 +777,9 @@ func (a *Agent) Chat(ctx context.Context, userInput string) error {
 			}
 			a.finishTurn(ctx, answer, surfaced, surfacedSnips, userInput, false)
 			// [control.loop] step_6: cooperative compaction at a clean boundary.
-			if a.budgetPct(a.buildSystem(pinned, retrieved, procedural, triggered, recalled)) >= a.cfg.SoftPct {
+			// Retired on the continuous-memory path (req.9.3): story-so-far is
+			// durable in cortex, so no agent-side summarization runs.
+			if !cm && a.budgetPct(a.buildSystem(pinned, retrieved, procedural, triggered, recalled)) >= a.cfg.SoftPct {
 				a.compact(ctx, "soft")
 			}
 			return nil
@@ -758,7 +827,9 @@ func (a *Agent) Chat(ctx context.Context, userInput string) error {
 			if verdict.ok {
 				a.working = append(a.working, llm.ToolResult(cc.ID, tools.TaskCompleteTool, "Completion accepted."))
 				a.finishTurn(ctx, verdict.answer, surfaced, surfacedSnips, userInput, true)
-				if a.budgetPct(a.buildSystem(pinned, retrieved, procedural, triggered, recalled)) >= a.cfg.SoftPct {
+				// Cooperative compaction is retired on the continuous-memory
+				// path (req.9.3): story-so-far is durable in cortex.
+				if !cm && a.budgetPct(a.buildSystem(pinned, retrieved, procedural, triggered, recalled)) >= a.cfg.SoftPct {
 					a.compact(ctx, "soft")
 				}
 				return nil
@@ -1241,6 +1312,9 @@ func (a *Agent) runToolCalls(ctx context.Context, calls []llm.ToolCall) {
 		// below still gets the full, untruncated content so the product
 		// shows real evidence.
 		a.working = append(a.working, llm.ToolResult(call.ID, name, a.capToolResult(content)))
+		// Continuous-memory (task 6.1): record the FULL tool result to the
+		// durable cortex transcript (cortex spills oversized payloads itself).
+		a.cmRecordToolResult(name, content)
 		if a.observer != nil {
 			a.observer(ToolEvent{ID: stepIDs[i], Name: name, Args: parsedArgs[i], Result: content, IsErr: isErr, Phase: ToolEnd})
 		}
@@ -1305,6 +1379,9 @@ func (a *Agent) runToolCallsSerial(ctx context.Context, calls []llm.ToolCall) {
 		// body byte cap on its own. The observer below still gets the full,
 		// untruncated content so the product shows real evidence.
 		a.working = append(a.working, llm.ToolResult(call.ID, name, a.capToolResult(content)))
+		// Continuous-memory (task 6.1): record the FULL tool result to the
+		// durable cortex transcript (cortex spills oversized payloads itself).
+		a.cmRecordToolResult(name, content)
 		// Surface the completed work (command output, fetched page, file
 		// contents, web-search snippets, …) so the product renders real
 		// evidence, not just a synthesized answer.

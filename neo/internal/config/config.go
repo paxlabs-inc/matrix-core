@@ -104,6 +104,18 @@ type Config struct {
 	// --- procedural memory guards ---
 	MinPatternSuccesses int // successes required before a candidate pattern is injected
 
+	// --- continuous memory (cortex as the self-managing memory brain) ---
+	// ContinuousMemory is the feature flag for the continuous-memory collapse
+	// (spec/continuous-memory): when true, Neo's turn loop appends each
+	// user/assistant/tool message to cortex (cortex.AppendMessage) and sources
+	// its per-turn working set from cortex.Activate (Pinned computed once per
+	// turn, T0/T1 tiers + durable story-so-far), rendered as a USER-role
+	// trailing message — retiring the agent-side pager selection/ranking,
+	// a.summary, a.compact, and the dynamicTail memory sections. Off by default
+	// so the legacy pager path is byte-identical when disabled. Config:
+	// [continuous_memory] enabled / env NEO_CONTINUOUS_MEMORY.
+	ContinuousMemory bool
+
 	// --- heartbeat (P1-4: Chronos-driven proactive turn convention) ---
 	// HeartbeatInterval is the recurring-alarm interval (minutes) for Neo's
 	// proactive self-review of active goals/constraints. 0 = disabled (the
@@ -211,6 +223,10 @@ func Default() Config {
 		TaskMaxRespawns:    50,
 
 		MinPatternSuccesses: 3,
+
+		// Continuous-memory collapse: OFF by default while it lands (the
+		// legacy pager path stays byte-identical when disabled).
+		ContinuousMemory: false,
 
 		// Automatrix (proactive surprise tasks). Default OFF; capture still runs
 		// regardless of this switch so the opportunity queue is warm, but Neo
@@ -370,6 +386,9 @@ func (c *Config) applyDoc(d *kvxDoc) {
 	if d.has("procedural") {
 		c.MinPatternSuccesses = d.intOr("procedural", "min_pattern_successes", c.MinPatternSuccesses)
 	}
+	if d.has("continuous_memory") {
+		c.ContinuousMemory = d.boolOr("continuous_memory", "enabled", c.ContinuousMemory)
+	}
 	if d.has("heartbeat") {
 		c.HeartbeatInterval = d.intOr("heartbeat", "interval_minutes", c.HeartbeatInterval)
 	}
@@ -467,6 +486,9 @@ func (c *Config) applyEnv() {
 	}
 	// P2-5: parallel dispatch of independent tool calls. 0 = serial.
 	c.ToolDispatchConcurrency = envIntNonNeg("NEO_TOOL_DISPATCH_CONCURRENCY", c.ToolDispatchConcurrency)
+
+	// Continuous-memory collapse feature flag.
+	c.ContinuousMemory = envBool("NEO_CONTINUOUS_MEMORY", c.ContinuousMemory)
 }
 
 // envInt overlays a positive integer from the environment, keeping the

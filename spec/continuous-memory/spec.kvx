@@ -239,7 +239,7 @@ status  = "pending"
 
 [task.6.1]
 title  = "Wire the Neo turn loop to cortex.AppendMessage"
-status = "pending"
+status = "done"
 wave   = 6
 do_1   = "In neo/internal/agent/agent.go, append each user / assistant / tool message to cortex via AppendMessage as the turn progresses, making cortex the owner of the transcript instead of the in-memory working slice being the source of truth"
 reqs   = ["9.1"]
@@ -247,7 +247,7 @@ requires = ["1.1"]
 
 [task.6.2]
 title  = "Collapse the pager + retire a.summary/a.compact + dynamicTail -> Activate bundle"
-status = "pending"
+status = "done"
 wave   = 7
 do_1   = "Collapse neo/internal/memory/pager.go selection/ranking/recency into a thin client of cortex.Activate (no independent brain logic agent-side); retire a.summary + a.compact (agent.go:562); replace the dynamicTail memory sections (prompt.go:70) with the rendered Activate bundle delivered as a USER-role trailing message (Qwen-template portability fix), keeping the byte-stable system prefix at index 0; compute pinned once per turn"
 reqs   = ["9.2", "9.3", "9.4"]
@@ -255,7 +255,7 @@ requires = ["4.1", "4.2", "6.1"]
 
 [task.6.3]
 title  = "Wire the recursive memory_recall tool to cortex recursive recall"
-status = "pending"
+status = "done"
 wave   = 7
 do_1   = "Point neo/internal/tools memory_recall (RecallFunc, tools.go:132) at the cortex recursive-recall surface (req.8), preserving the AmbientRetrievalTopK pull-over-push philosophy and the as_of parameter"
 reqs   = ["9.5", "8.1"]
@@ -317,7 +317,7 @@ requires = ["5.1"]
 
 [task.8.5]
 title  = "Neo collapse: consumes Activate, appends, story-so-far survives restart"
-status = "pending"
+status = "done"
 wave   = 8
 do_1   = "Real turn-loop tests: Neo consumes Activate (not the pager), appends messages to cortex, renders the bundle; a.summary/a.compact are gone; story-so-far survives a simulated process restart (durability)"
 property  = "Property 5: the agent is a thin client of the cortex brain, with durable memory"
@@ -326,7 +326,7 @@ requires = ["6.2"]
 
 [task.8.6]
 title  = "Replay byte-identity proof (continuous-memory active vs inactive)"
-status = "pending"
+status = "done"
 wave   = 8
 do_1   = "Run the replay harness (from 1.2, now covering session + ladder + activation + story-so-far writes) and assert a byte-identical OverallRoot / cortex_snapshot_hash with the continuous-memory lane active vs inactive; confirm no MCL-walk / Liaison-capability change"
 property  = "Property 6: the active brain never perturbs the anchored world (D11)"

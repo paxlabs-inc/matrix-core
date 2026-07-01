@@ -125,6 +125,33 @@ func (p *Pager) Embedder() embed.Embedder {
 	return p.embedder
 }
 
+// AppendMessage records one conversation message durably in the cortex
+// session/transcript store (continuous-memory task 6.1). It is a thin delegate
+// to cortex.AppendMessage — under the continuous-memory collapse the pager is
+// the agent-side shim over the cortex brain, holding no independent state. The
+// derived-lane discipline (journal entry + sess/ record, NO SMT write) lives
+// entirely inside cortex.
+func (p *Pager) AppendMessage(m cortex.Message) (memory.URI, error) {
+	return p.cortex.AppendMessage(m)
+}
+
+// Activate composes the whole per-turn working set for a conversation via
+// cortex.Activate (continuous-memory task 6.2): {Pinned, Timeline(T0),
+// Recent(T1), Transcript(T2 slice), StorySoFar, ReachableURIs(T3 handles)},
+// budget-trimmed. Pinned is computed once per turn by cortex's per-turn cache
+// (fixes NE-7). A thin delegate — no agent-side selection/ranking remains.
+func (p *Pager) Activate(conv, query string, budget cortex.Budget) (*cortex.ActivationBundle, error) {
+	return p.cortex.Activate(conv, query, budget)
+}
+
+// RecallDescend runs the cortex recursive-recall descent (RLM applied to time)
+// behind the memory_recall tool's recursive path (continuous-memory task 6.3).
+// A thin delegate to cortex.RecallDescend; it is a pure read (no journal
+// append, no SMT write) and stays off the per-turn hot path.
+func (p *Pager) RecallDescend(query string, opts cortex.RecallOpts) (*cortex.RecallResult, error) {
+	return p.cortex.RecallDescend(query, opts)
+}
+
 // Pinned composes the always-injected pinned block: identity, the inviolable
 // operating rules (Neo's invariants + any hard constraints in cortex), and
 // the active goal. Bounded by cfg.PinnedBudgetTokens.
@@ -778,7 +805,97 @@ func (p *Pager) RecallHits(_ context.Context, queryText string, types []string, 
 // force-fed an ambient blob. Each rendered line carries the memory's type, a
 // contradiction advisory when present, its valid-until when closed (the as-of
 // time-travel signal), and its cortex URI for citation/provenance.
+//
+// Under the continuous-memory collapse (cfg.ContinuousMemory, task 6.3) the
+// tool is pointed at the cortex RECURSIVE-RECALL surface (RecallDescend, req.8)
+// — the model descends the temporal ladder to page in exact specifics — while
+// preserving the AmbientRetrievalTopK pull-over-push philosophy (this is the
+// pull verb) and the as_of parameter. It falls back to the flat lookup when the
+// timeline yields nothing (pre-cascade / a memory not yet rolled up), so the
+// tool never regresses. With the flag off the flat lookup is byte-identical to
+// the legacy behavior.
 func (p *Pager) Recall(ctx context.Context, queryText string, types []string, k int, asOf *time.Time) (string, error) {
+	if p.cfg.ContinuousMemory {
+		return p.recallRecursive(ctx, queryText, types, k, asOf)
+	}
+	return p.recallFlat(ctx, queryText, types, k, asOf)
+}
+
+// recallRecursive renders the recursive-recall descent (RLM applied to time)
+// behind memory_recall under the continuous-memory collapse (task 6.3). It
+// descends the T0 timeline into the finer tiers to reach the exact memories
+// paged in on demand, preserving the type filter and the bi-temporal as_of at
+// every level (req.8.3). Each hit is rendered with its type, text, valid-until,
+// and cortex URI — the same shape recallFlat renders — so the model's parsing
+// is unchanged. When the descent reaches no leaf (empty/pre-cascade timeline,
+// or a memory not yet a rollup member) it falls back to the flat index lookup
+// so the tool is never worse than before.
+func (p *Pager) recallRecursive(ctx context.Context, queryText string, types []string, k int, asOf *time.Time) (string, error) {
+	opts := cortex.RecallOpts{
+		Types: parseRecallTypes(types),
+		K:     k, // 0 → cortex RecallDefaultK
+		AsOf:  asOf,
+	}
+	res, err := p.RecallDescend(queryText, opts)
+	if err != nil {
+		// A descent failure degrades to the flat lookup rather than erroring
+		// the tool — the model still gets its memory.
+		return p.recallFlat(ctx, queryText, types, k, asOf)
+	}
+	if res == nil || len(res.Hits) == 0 {
+		// The timeline reached nothing (pre-cascade, or the target memory is
+		// not yet a rollup member): the flat index lookup still finds it.
+		return p.recallFlat(ctx, queryText, types, k, asOf)
+	}
+
+	var b strings.Builder
+	if profile := p.UserProfile(ctx); len(profile) > 0 {
+		b.WriteString("User profile (durable):\n")
+		for _, line := range profile {
+			b.WriteString("- ")
+			b.WriteString(line)
+			b.WriteString("\n")
+		}
+	}
+	fmt.Fprintf(&b, "Relevant memories (paged in from your timeline; descended %d window(s)):\n", len(res.Windows))
+	for _, h := range res.Hits {
+		if h.Memory == nil {
+			continue
+		}
+		text := strings.TrimSpace(h.Memory.Version.Forms.Medium)
+		if text == "" {
+			text = strings.TrimSpace(h.Memory.Version.Forms.Short)
+		}
+		if text == "" {
+			continue
+		}
+		b.WriteString("- [")
+		b.WriteString(h.Memory.Head.Type.String())
+		b.WriteString("] ")
+		b.WriteString(text)
+		if vu := h.Memory.Version.ValidUntil; vu != nil {
+			b.WriteString(" (valid until ")
+			b.WriteString(vu.UTC().Format(time.RFC3339))
+			b.WriteString(")")
+		}
+		b.WriteString(" <")
+		b.WriteString(string(h.URI))
+		b.WriteString(">\n")
+	}
+	if res.Truncated {
+		b.WriteString("More available on demand — narrow the query or raise k to descend further.\n")
+	}
+	if b.Len() == 0 {
+		return p.recallFlat(ctx, queryText, types, k, asOf)
+	}
+	return b.String(), nil
+}
+
+// recallFlat is the flat (single-index) memory lookup: the pinned user profile
+// plus a structured cortex.Find retrieval for the query. It is the legacy
+// memory_recall path (continuous-memory off) and the graceful fallback for the
+// recursive path when the timeline reaches nothing.
+func (p *Pager) recallFlat(ctx context.Context, queryText string, types []string, k int, asOf *time.Time) (string, error) {
 	var b strings.Builder
 	if profile := p.UserProfile(ctx); len(profile) > 0 {
 		b.WriteString("User profile (durable):\n")
