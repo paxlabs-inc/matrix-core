@@ -35,6 +35,14 @@ var ErrRequestTooLarge = errors.New("neo/llm: request body too large")
 // Detect with errors.Is(err, llm.ErrProviderRejected).
 var ErrProviderRejected = errors.New("neo/llm: provider rejected request (non-retryable)")
 
+// ErrRateLimited marks an upstream 429 (the provider/gateway is rate-limiting
+// or overloaded). It IS retryable, but callers should back off HARD rather than
+// respawn immediately: a persistent 429 that is retried aggressively across many
+// daemons becomes a self-amplifying request storm (the exact failure mode that
+// turned "Baseten is slow" into "20 runaway Neos"). The task supervisor reads
+// this to lengthen its respawn backoff. Detect with errors.Is(err, llm.ErrRateLimited).
+var ErrRateLimited = errors.New("neo/llm: provider rate limited (429)")
+
 // Client is an OpenAI-compatible chat-completions client that speaks native
 // function calling (tools + tool_calls + tool-role results).
 //
@@ -223,6 +231,16 @@ func (c *Client) Chat(ctx context.Context, req ChatRequest) (*ChatResult, error)
 				detail = truncate(string(respBody), 256)
 			}
 			return nil, fmt.Errorf("%w (%s http %d): %s", ErrProviderRejected, c.provider, resp.StatusCode, detail)
+		}
+		// Upstream 429: retryable, but marked with a sentinel so the retry
+		// ladder + task supervisor back off HARD instead of amplifying an
+		// overloaded provider into a request storm.
+		if resp.StatusCode == http.StatusTooManyRequests {
+			detail := errMsg
+			if detail == "" {
+				detail = truncate(string(respBody), 256)
+			}
+			return nil, fmt.Errorf("%w (%s): %s", ErrRateLimited, c.provider, detail)
 		}
 		if errMsg != "" {
 			return nil, fmt.Errorf("neo/llm: %s http %d: %s (type=%s)", c.provider, resp.StatusCode, errMsg, errType)

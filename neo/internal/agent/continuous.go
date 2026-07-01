@@ -127,6 +127,40 @@ func (a *Agent) cmActivate(query string) *cortex.ActivationBundle {
 	return b
 }
 
+// MemoryEvent is the legible, protocol-free view of the memory Neo carries into
+// a turn (continuous-memory task 7.1, req.10): the durable story-so-far and a
+// coarse timeline of past activity. It deliberately carries NO journal / MMR /
+// rollup / snapshot jargon and no raw URIs — only the RESULT a user should see.
+type MemoryEvent struct {
+	StorySoFar string   // durable rolling summary of this conversation
+	Timeline   []string // coarse timeline short-forms, oldest first
+}
+
+// MemoryObserver receives the per-turn MemoryEvent. nil disables surfacing; the
+// agent loop stays oblivious to the presentation layer (mirrors AuditObserver).
+type MemoryObserver func(MemoryEvent)
+
+// emitMemory hands the harness a legible summary of this turn's activation
+// bundle so the client can show the memory Neo carries (task 7.1). Pure
+// side-channel: it reads the already-computed read-only bundle, mutates nothing,
+// and is a no-op when no observer is wired or there is nothing to show.
+func (a *Agent) emitMemory(b *cortex.ActivationBundle) {
+	if a.memObserver == nil || b == nil {
+		return
+	}
+	timeline := make([]string, 0, len(b.Timeline))
+	for _, r := range b.Timeline {
+		if sf := strings.TrimSpace(r.ShortForm); sf != "" {
+			timeline = append(timeline, sf)
+		}
+	}
+	ev := MemoryEvent{StorySoFar: strings.TrimSpace(b.StorySoFar), Timeline: timeline}
+	if ev.StorySoFar == "" && len(ev.Timeline) == 0 {
+		return
+	}
+	a.memObserver(ev)
+}
+
 // renderActivationBundle renders the cortex.Activate bundle into the trailing
 // working-memory block that REPLACES the dynamicTail memory sections (req.9.4).
 // It surfaces the current goal, the Pinned tier (identity, hard constraints,

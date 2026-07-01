@@ -121,6 +121,13 @@ type Agent struct {
 	adjudicator   *cassandra.Adjudicator
 	auditObserver AuditObserver
 
+	// memObserver receives this turn's continuous-memory activation summary
+	// (durable story-so-far + coarse timeline) so the harness can surface the
+	// memory Neo carries to the user (continuous-memory task 7.1). nil disables
+	// surfacing; the agent loop stays oblivious to the presentation layer
+	// (mirrors auditObserver). Only fires under the continuous-memory collapse.
+	memObserver MemoryObserver
+
 	schemas      []llm.Tool
 	schemaTokens int
 	schemaBytes  int
@@ -222,6 +229,11 @@ type Options struct {
 	Adjudicator   *cassandra.Adjudicator
 	AuditObserver AuditObserver
 
+	// MemoryObserver receives this turn's continuous-memory activation summary
+	// (durable story-so-far + coarse timeline) so the harness can surface the
+	// memory Neo carries to the user (continuous-memory task 7.1). nil discards.
+	MemoryObserver MemoryObserver
+
 	// Persona frames this as a task-scoped sub-agent with a specific role
 	// (empty = the top-level conversational agent).
 	Persona string
@@ -258,6 +270,7 @@ func New(o Options) *Agent {
 		observer:      o.Observer,
 		adjudicator:   o.Adjudicator,
 		auditObserver: o.AuditObserver,
+		memObserver:   o.MemoryObserver,
 		persona:       strings.TrimSpace(o.Persona),
 		convID:        strings.TrimSpace(o.ConvID),
 		inbox:         o.Inbox,
@@ -480,7 +493,12 @@ func (a *Agent) Chat(ctx context.Context, userInput string) error {
 		cmTail     string
 	)
 	if cm {
-		cmTail = a.renderActivationBundle(a.cmActivate(userInput))
+		bundle := a.cmActivate(userInput)
+		// Surface the memory Neo carries to the harness (task 7.1) from the
+		// same single bundle before rendering it — no extra Activate call, so
+		// the pinned-once-per-turn discipline (NE-7) holds.
+		a.emitMemory(bundle)
+		cmTail = a.renderActivationBundle(bundle)
 	} else {
 		retrieved = a.ambientMemory(ctx, userInput)
 		procedural = a.faultPatterns(ctx, userInput)

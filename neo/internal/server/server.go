@@ -52,6 +52,10 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("/events/replay/", s.handleReplay)
 	mux.HandleFunc("/messages/async/", s.handleAsyncPoll)
 	mux.HandleFunc("/intents/", s.handleIntents)
+	// Global kill switch: POST /halt interrupts EVERY live Neo run on this
+	// (single-tenant) daemon — the "Stop all" control. Neo-owned; registered
+	// before the catch-all proxy (the daemon has never heard of it).
+	mux.HandleFunc("/halt", s.handleHalt)
 	// Neo owns conversation history now (it persists every Neo turn); serve the
 	// list/detail from Neo's own durable store instead of proxying to the
 	// daemon, which never saw a Neo conversation. Falls through to the proxy
@@ -291,6 +295,21 @@ func (s *Server) handleAsyncPoll(w http.ResponseWriter, r *http.Request) {
 		"request":    map[string]string{"prose": ""},
 		"created_at": time.Now().UTC().Format(time.RFC3339Nano),
 	})
+}
+
+// handleHalt is the global kill switch (POST /halt): it interrupts EVERY live
+// Neo run this daemon is driving and reports how many were signalled. Each
+// daemon is single-tenant, so this stops exactly the calling user's own runaway
+// / parallel Neos — the deliberate "Stop all" escape hatch when the model is
+// slow or a storm of respawns is underway. Idempotent: halting with nothing
+// live returns halted:0.
+func (s *Server) handleHalt(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "POST only"})
+		return
+	}
+	n := s.engine.haltAll()
+	writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "halted": n})
 }
 
 // handleIntents intercepts the gate-answer and the Construct Ask-answer for a

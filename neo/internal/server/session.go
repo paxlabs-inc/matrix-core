@@ -7,6 +7,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"math/rand"
 	"os"
@@ -180,7 +181,11 @@ func (s *session) rebuildAgent() {
 		// cassandra.* events onto the live run.
 		Adjudicator:   e.adjudicator,
 		AuditObserver: func(ev agent.AuditEvent) { e.publishAudit(s.cur, ev) },
-		ConvID:        s.id,
+		// Continuous-memory task 7.1: surface the memory Neo carries (durable
+		// story-so-far + coarse timeline) onto the live run as a memory.activation
+		// event, so the client can show the RESULT (not the protocol).
+		MemoryObserver: func(ev agent.MemoryEvent) { e.publishMemory(s.cur, ev) },
+		ConvID:         s.id,
 		// F5: non-interrupting mid-task messages. The loop drains this at each
 		// tool-call boundary and folds any queued user messages into the
 		// transcript, so a message sent mid-task is delivered on the agent's
@@ -463,7 +468,7 @@ func (s *session) superviseTask(ctx context.Context, r *run, objective string, r
 		// durable state.
 		s.engine.tasks.Checkpoint(s.id, r.id, attempt+1, friendlyErr(err))
 		s.emitProgress(r, attempt, err)
-		if !superviseBackoff(ctx, attempt) {
+		if !superviseBackoff(ctx, attempt, errors.Is(err, llm.ErrRateLimited)) {
 			if r.stopped.Load() {
 				return task.StatusInterrupted
 			}
@@ -595,12 +600,23 @@ func (s *session) deliverDeterministicStop(r *run) task.Status {
 // superviseBackoff sleeps an attempt-scaled, jittered interval before a
 // respawn, honoring task cancellation. Jitter avoids a synchronized retry
 // stampede when many users' daemons hit the same upstream hiccup at once.
-func superviseBackoff(ctx context.Context, attempt int) bool {
-	base := time.Duration(attempt) * 750 * time.Millisecond
-	if base > 8*time.Second {
-		base = 8 * time.Second
+//
+// rateLimited stretches the interval hard: an upstream 429 means the provider
+// is overloaded, so respawning quickly across many daemons is a self-amplifying
+// request storm. On a 429 the base grows to ~15s/attempt (cap 90s) with a full
+// 15s of jitter, draining pressure off the upstream instead of adding to it,
+// while still eventually retrying (the Task Durability Rule is preserved — we
+// keep going, just far more slowly).
+func superviseBackoff(ctx context.Context, attempt int, rateLimited bool) bool {
+	step, ceil, jitter := 750*time.Millisecond, 8*time.Second, 500*time.Millisecond
+	if rateLimited {
+		step, ceil, jitter = 15*time.Second, 90*time.Second, 15*time.Second
 	}
-	d := base + time.Duration(rand.Int63n(int64(500*time.Millisecond)))
+	base := time.Duration(attempt) * step
+	if base > ceil {
+		base = ceil
+	}
+	d := base + time.Duration(rand.Int63n(int64(jitter)))
 	t := time.NewTimer(d)
 	defer t.Stop()
 	select {
@@ -654,7 +670,7 @@ func (s *session) superviseAutomatrixTask(ctx context.Context, objective string)
 		// actRespawn — not done. Back off (honoring cancellation), then respawn
 		// a FRESH restricted agent over durable state and try again. No progress
 		// is surfaced to the user (req 5.5).
-		if !superviseBackoff(ctx, attempt) {
+		if !superviseBackoff(ctx, attempt, errors.Is(err, llm.ErrRateLimited)) {
 			return task.StatusCeiling
 		}
 		s.rebuildAgent()

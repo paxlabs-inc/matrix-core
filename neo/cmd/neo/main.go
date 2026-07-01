@@ -202,8 +202,9 @@ func newClient(model string, temp float64, maxTok int, enableThinking bool, cfg 
 // slot label, so spend is attributed correctly (Neo's own "neo" slot, or
 // Cassandra's dedicated "cassandra" slot for completeness audits). enableThinking
 // opts the client into extended reasoning on models where it is off by default
-// (Baseten GLM/Kimi) — set only for the conversational loop and the Cassandra
-// adjudicator, never for the token-tight cheap/consolidation roles.
+// (Baseten GLM/Kimi) — set ONLY for the user-facing conversational loop (Neo).
+// Cassandra, background sub-agents, and the token-tight cheap/consolidation
+// roles all run with thinking OFF; the core MCL pipeline manages its own.
 func newSlotClient(model string, temp float64, maxTok int, slot string, enableThinking bool, cfg config.Config) (*neollm.Client, error) {
 	return neollm.New(mcllm.Config{
 		Model:          model,
@@ -226,13 +227,13 @@ func newCassandraAdjudicator(cfg config.Config) *cassandra.Adjudicator {
 	if strings.TrimSpace(cfg.CassandraModel) == "" {
 		return nil
 	}
-	primary, err := newSlotClient(cfg.CassandraModel, 0.0, 1024, "cassandra", true, cfg)
+	primary, err := newSlotClient(cfg.CassandraModel, 0.0, 1024, "cassandra", false, cfg)
 	if err != nil {
 		return nil
 	}
 	adj := &cassandra.Adjudicator{Primary: agent.NewLLMDecoder(primary)}
 	if strings.TrimSpace(cfg.CassandraEscalateModel) != "" {
-		if esc, eerr := newSlotClient(cfg.CassandraEscalateModel, 0.0, 1024, "cassandra", true, cfg); eerr == nil {
+		if esc, eerr := newSlotClient(cfg.CassandraEscalateModel, 0.0, 1024, "cassandra", false, cfg); eerr == nil {
 			adj.Escalate = agent.NewLLMDecoder(esc)
 		}
 	}

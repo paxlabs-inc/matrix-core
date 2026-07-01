@@ -106,6 +106,13 @@ func runServe(args []string) {
 	if err != nil {
 		cheap = nil
 	}
+	// Background sub-agents (spawn_subagents) run on the main-capability model
+	// but with EXTENDED REASONING OFF: only the user-facing Neo loop and the
+	// core MCL pipeline think. nil falls back to the main client in the swarm.
+	subMain, err := newClient(cfg.MainModel, 0.4, 4096, false, cfg)
+	if err != nil {
+		subMain = nil
+	}
 
 	// --- memory (own cortex actor; separate Pebble DB under the shared root) ---
 	pager, err := memory.Open(cfg)
@@ -168,6 +175,7 @@ func runServe(args []string) {
 		Config:                cfg,
 		Main:                  main,
 		Cheap:                 cheap,
+		SubMain:               subMain,
 		Tools:                 tm,
 		Pager:                 pager,
 		Consolidator:          cons,

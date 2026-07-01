@@ -48,6 +48,11 @@ type Engine struct {
 	cfg          config.Config
 	main         *llm.Client
 	cheap        *llm.Client
+	// subMain is the main-capability model with EXTENDED REASONING OFF, used
+	// for background sub-agents (spawn_subagents). Only the user-facing Neo loop
+	// (e.main) and the core MCL pipeline think; background/headless agents run
+	// without thinking to cut latency + token burn. nil falls back to e.main.
+	subMain      *llm.Client
 	tools        *tools.Manager
 	pager        *memory.Pager
 	consolidator agent.Consolidator
@@ -131,6 +136,7 @@ type EngineOptions struct {
 	Config                config.Config
 	Main                  *llm.Client
 	Cheap                 *llm.Client
+	SubMain               *llm.Client // main-capability model, thinking OFF, for background sub-agents (nil falls back to Main)
 	Tools                 *tools.Manager
 	Pager                 *memory.Pager
 	Consolidator          agent.Consolidator
@@ -152,6 +158,7 @@ func NewEngine(o EngineOptions) *Engine {
 		cfg:          o.Config,
 		main:         o.Main,
 		cheap:        o.Cheap,
+		subMain:      o.SubMain,
 		tools:        o.Tools,
 		pager:        o.Pager,
 		consolidator: o.Consolidator,
@@ -453,6 +460,29 @@ func (e *Engine) publishAudit(r *run, ev agent.AuditEvent) {
 	e.broker.publish(r.id, ev.Type, "cassandra", f)
 }
 
+// publishMemory streams the turn's continuous-memory activation summary onto
+// the run's event stream as a memory.activation event (continuous-memory task
+// 7.1). Pure observability side-channel — like publishAudit / surfaceTool it
+// only publishes a transcript event; cortex composed the bundle read-only and
+// nothing here signs, writes cortex, or touches the plan/walk. It surfaces the
+// RESULT (the durable story-so-far + a coarse memory timeline), never the
+// protocol (no journal / MMR / rollup / snapshot jargon). Empty payloads are
+// dropped so a turn with nothing to remember emits nothing.
+func (e *Engine) publishMemory(r *run, ev agent.MemoryEvent) {
+	if r == nil {
+		return
+	}
+	if strings.TrimSpace(ev.StorySoFar) == "" && len(ev.Timeline) == 0 {
+		return
+	}
+	e.broker.publish(r.id, "memory.activation", "neo", map[string]interface{}{
+		"intent_id":       r.id,
+		"conversation_id": r.convID,
+		"story_so_far":    ev.StorySoFar,
+		"timeline":        ev.Timeline,
+	})
+}
+
 func (e *Engine) notifyFor(r *run) func(string) {
 	return func(msg string) {
 		if r == nil {
@@ -513,6 +543,30 @@ func (e *Engine) unregisterRun(id string) {
 	}()
 }
 
+// haltAll interrupts EVERY live run this daemon is driving — the global kill
+// switch behind the client's "Stop all" control. Each daemon is single-tenant,
+// so this halts exactly the calling user's own in-flight Neos (their runaway
+// respawns / parallel conversations) and nothing else. It mirrors the per-run
+// POST /intents/{id}/stop path: interrupt() marks each run stopped + cancels its
+// context, so drive() closes it quietly as StatusInterrupted and the reaper
+// never resumes it. Returns the number of runs signalled. The run snapshot is
+// taken under e.mu and released BEFORE interrupt() (which takes the session's
+// actMu) to avoid any lock-ordering coupling with the dispatch path.
+func (e *Engine) haltAll() int {
+	e.mu.Lock()
+	live := make([]*run, 0, len(e.runs))
+	for _, r := range e.runs {
+		if r != nil {
+			live = append(live, r)
+		}
+	}
+	e.mu.Unlock()
+	for _, r := range live {
+		r.sess.interrupt(r)
+	}
+	return len(live)
+}
+
 // traceWorkspaceTypes is the set of event types that make up the durable "Neo's
 // Computer" workspace timeline (F3). Only these are persisted to the sidecar
 // trace store; transient channels (chat.delta, chat.thinking), gate/ask control
@@ -526,6 +580,7 @@ var traceWorkspaceTypes = map[string]bool{
 	"tool.media":              true,
 	"tool.artifact":           true,
 	"tool.todo":               true,
+	"memory.activation":       true,
 	"construct.surface":       true,
 	"construct.surface.patch": true,
 	"swarm.started":           true,

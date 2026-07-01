@@ -82,16 +82,19 @@ func TestResumePrime(t *testing.T) {
 }
 
 // TestSuperviseBackoffCancelled: backoff returns false immediately when the
-// task context is already cancelled (so a stopped task never sleeps).
+// task context is already cancelled (so a stopped task never sleeps) — for both
+// the normal and the (much longer) rate-limited path.
 func TestSuperviseBackoffCancelled(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
-	cancel()
-	start := time.Now()
-	if superviseBackoff(ctx, 3) {
-		t.Error("backoff on a cancelled context must return false")
-	}
-	if time.Since(start) > 200*time.Millisecond {
-		t.Error("backoff on a cancelled context must return promptly, not sleep")
+	for _, rateLimited := range []bool{false, true} {
+		ctx, cancel := context.WithCancel(context.Background())
+		cancel()
+		start := time.Now()
+		if superviseBackoff(ctx, 3, rateLimited) {
+			t.Errorf("rateLimited=%v: backoff on a cancelled context must return false", rateLimited)
+		}
+		if time.Since(start) > 200*time.Millisecond {
+			t.Errorf("rateLimited=%v: backoff on a cancelled context must return promptly, not sleep", rateLimited)
+		}
 	}
 }
 
@@ -99,10 +102,29 @@ func TestSuperviseBackoffCancelled(t *testing.T) {
 // returns true.
 func TestSuperviseBackoffWaits(t *testing.T) {
 	start := time.Now()
-	if !superviseBackoff(context.Background(), 1) {
+	if !superviseBackoff(context.Background(), 1, false) {
 		t.Error("backoff on a live context must return true")
 	}
 	if time.Since(start) < 500*time.Millisecond {
 		t.Error("attempt-1 backoff should wait at least the base interval")
+	}
+}
+
+// TestSuperviseBackoffRateLimitedIsLonger: a 429 backoff waits far longer than
+// the normal path at the same attempt, so an overloaded upstream is not
+// amplified into a request storm. Cancellation still short-circuits it (proven
+// above), so this asserts the floor without sleeping the full interval.
+func TestSuperviseBackoffRateLimitedIsLonger(t *testing.T) {
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+	start := time.Now()
+	// attempt 1, rate-limited: base is 15s (>> the 8s normal cap), so the
+	// 2s ctx deadline fires first and returns false — the point is that it did
+	// NOT return within the normal-path window.
+	if superviseBackoff(ctx, 1, true) {
+		t.Error("a 15s rate-limited backoff must not complete within the 2s test deadline")
+	}
+	if elapsed := time.Since(start); elapsed < 1500*time.Millisecond {
+		t.Errorf("rate-limited backoff returned after %v; expected it to wait past the normal-path interval", elapsed)
 	}
 }

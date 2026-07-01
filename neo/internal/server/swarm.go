@@ -158,9 +158,16 @@ func (e *Engine) runOneSubagent(ctx context.Context, r *run, swarmID string, ind
 		// Each attempt is a brand-new headless agent over a clean window, so a
 		// retry never inherits the corrupted state that failed the last one.
 		rep := &captureReporter{engine: e, run: r, swarmID: swarmID, index: index, name: spec.Name}
+		// Background sub-agents run WITHOUT extended reasoning (subMain): only
+		// the user-facing Neo loop and the core MCL pipeline think. Fall back to
+		// the main client if no dedicated sub-agent client was wired.
+		subMain := e.subMain
+		if subMain == nil {
+			subMain = e.main
+		}
 		sub := agent.New(agent.Options{
 			Config:        cfg,
-			Main:          e.main,
+			Main:          subMain,
 			Cheap:         e.cheap,
 			Tools:         e.tools,
 			Pager:         e.pager, // shared cortex READ lane; no consolidator (no write-back noise)
