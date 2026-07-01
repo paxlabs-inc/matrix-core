@@ -62,7 +62,15 @@ import (
 // `neo` slot whitelist. NOTE: the rate is a PLACEHOLDER mirrored from the
 // Fireworks v4-pro tier ($1/$2 per Mtoken) — replace with the real Together
 // provider price. The Qwen row stays on the card (still used by other slots).
-const RateTableVersion = 6
+//
+// v7 (2026-07-01) ADDS the Baseten-served zai-org/GLM-5.2 (ModelGLM52) as the
+// primary chat model for every slot (Neo config + MCL DefaultRegistry now pin
+// it; bare "<vendor>/<model>" now routes to Baseten in internal/routing). This
+// is a purely ADDITIVE change: one new rateTable row + whitelisting GLM-5.2 on
+// every slot. All historical Fireworks/Together rows stay on the card so pre-v7
+// ledger rows remain replayable. GLM-5.2's PAX rate is a PLACEHOLDER pending the
+// real Baseten Model APIs price.
+const RateTableVersion = 7
 
 // PaxUsdReference is the USD price of 1 PAX the v3 rate card was
 // denominated against. Exposed so ops/telemetry can re-derive or
@@ -111,20 +119,26 @@ const DailyFreeTierLimitPax = "10"
 // Constants are exported so internal/routing imports them rather than
 // re-declaring; ALSO exposed via FreeTierWhitelist() for tests.
 const (
-	ModelCompilerFreeTier = "accounts/fireworks/models/glm-5p2"
-	ModelExecutorFreeTier = "accounts/fireworks/models/glm-5p2"
-	ModelDeepSeekV4Flash  = "accounts/fireworks/models/glm-5p2"
-	ModelDeepSeekV4Pro    = "accounts/fireworks/models/glm-5p2"
-	ModelKimiK26          = "accounts/fireworks/models/glm-5p2"
+	ModelCompilerFreeTier = "accounts/fireworks/models/gpt-oss-120b"
+	ModelExecutorFreeTier = "accounts/fireworks/models/deepseek-v4-flash"
+	ModelDeepSeekV4Flash  = "accounts/fireworks/models/deepseek-v4-flash"
+	ModelDeepSeekV4Pro    = "accounts/fireworks/models/deepseek-v4-pro"
+	ModelKimiK26          = "Qwen/Qwen3.7-Max"
 	// ModelNeoMain is Neo's main conversational loop model: the Together-served
 	// DeepSeek-V4-Pro (NOT the Fireworks deepseek-v4-pro — different provider
 	// route + string). Pinned on the `neo` slot via neo config.MainModel.
-	ModelNeoMain    = "accounts/fireworks/models/glm-5p2"
-	ModelGLM5p1Fast = "accounts/fireworks/models/glm-5p2"
-	ModelGPTOSS120B       = "accounts/fireworks/models/glm-5p2"
-	ModelGPTOSS20B        = "accounts/fireworks/models/glm-5p2"
-	ModelQwenCoder        = "accounts/fireworks/models/glm-5p2"
-	ModelLlama405B        = "accounts/fireworks/models/glm-5p2"
+	ModelNeoMain    = "deepseek-ai/DeepSeek-V4-Pro"
+	ModelGLM5p1Fast = "accounts/fireworks/routers/glm-5p1-fast"
+	ModelGPTOSS120B       = "accounts/fireworks/models/gpt-oss-120b"
+	ModelGPTOSS20B        = "accounts/fireworks/models/gpt-oss-20b"
+	ModelQwenCoder        = "Qwen/Qwen3-Coder-480B-A35B-Instruct-FP8"
+	ModelLlama405B        = "meta-llama/Llama-3.1-405B-Instruct"
+	// ModelGLM52 is the Baseten-served zai-org/GLM-5.2 — the v7 primary chat
+	// model for EVERY slot (Neo config + MCL DefaultRegistry now pin it; the
+	// bare "<vendor>/<model>" shape routes to Baseten in internal/routing).
+	// The historical Fireworks/Together rows above stay on the card so
+	// pre-v7 ledger rows remain replayable.
+	ModelGLM52 = "zai-org/GLM-5.2"
 	// ModelNomicEmbed is the Fireworks-hosted embedding model behind the
 	// gateway's /v1/embeddings route (768-dim; matches cortex DefaultDim).
 	ModelNomicEmbed = "nomic-ai/nomic-embed-text-v1.5"
@@ -213,6 +227,13 @@ var rateTable = []Rate{
 		Notes:               "Fireworks glm-5p1-fast — Neo's cheap background model (write-back/compaction/validation). PLACEHOLDER rate (deepseek-v4-flash tier) pending real provider price.",
 	},
 	{
+		Model:               ModelGLM52,
+		Group:               GroupReason,
+		InputPaxPerMTokens:  0.052493438, // ≈ $0.60 / Mtoken  [PLACEHOLDER — set real Baseten GLM-5.2 price]
+		OutputPaxPerMTokens: 0.174978128, // ≈ $2.00 / Mtoken  [PLACEHOLDER — set real Baseten GLM-5.2 price]
+		Notes:               "Baseten zai-org/GLM-5.2 — v7 primary chat model for every slot. PLACEHOLDER rate pending the real Baseten Model APIs price.",
+	},
+	{
 		Model:               ModelNomicEmbed,
 		Group:               GroupOther,
 		InputPaxPerMTokens:  0.000699912, // ≈ $0.008 / Mtoken (Fireworks list)
@@ -250,16 +271,20 @@ func Lookup(model string) (Rate, bool) {
 // FreeTierWhitelist returns the slot -> model whitelist enforced by
 // internal/routing. Exported for tests + introspection.
 func FreeTierWhitelist() map[string][]string {
+	// ModelGLM52 (Baseten zai-org/GLM-5.2) is the v7 primary model pinned on
+	// EVERY slot by Neo config + MCL DefaultRegistry, so it is whitelisted in
+	// every lane below. The historical Fireworks/Together entries stay allowed
+	// for deployments that still pin them and for pre-v7 ledger replay.
 	return map[string][]string{
 		// compiler: gpt-oss-120b is the primary; deepseek-v4-pro is the
 		// low-confidence escalation target (compile.go re-invokes the
 		// compiler slot with the stronger model when the frame call
 		// self-reports confidence below threshold or emits an invalid verb).
-		"compiler": {ModelCompilerFreeTier, ModelDeepSeekV4Pro},
+		"compiler": {ModelGLM52, ModelCompilerFreeTier, ModelDeepSeekV4Pro},
 		// executor: deepseek-v4-flash stays allowed (summarize / long-ctx +
 		// back-compat); kimi-k2.6 is the v1 launch executor default pinned
 		// by the router via MATRIX_EXECUTOR_MODEL.
-		"executor": {ModelExecutorFreeTier, ModelKimiK26},
+		"executor": {ModelGLM52, ModelExecutorFreeTier, ModelKimiK26},
 		// planner: the daemon now has a dedicated -planner-model knob
 		// (MATRIX_PLANNER_MODEL), decoupled from the executor knob. The
 		// launch pins planner = kimi-k2.6 (strong tool/JSON fidelity + low
@@ -268,13 +293,13 @@ func FreeTierWhitelist() map[string][]string {
 		// different planner. All are on the rate card. Adding kimi-k2.6 here
 		// is a whitelist-only change (it is already priced as the executor
 		// model) — no rateTable row, no RateTableVersion bump.
-		"planner": {ModelKimiK26, ModelCompilerFreeTier, ModelExecutorFreeTier, ModelDeepSeekV4Pro},
+		"planner": {ModelGLM52, ModelKimiK26, ModelCompilerFreeTier, ModelExecutorFreeTier, ModelDeepSeekV4Pro},
 		// liaison: the user-facing conversational narrator (SlotLiaison).
 		// Reuses already-priced models so adding it needs NO rateTable row
 		// and NO RateTableVersion bump. deepseek-v4-flash is the fast/cheap
 		// default (1M context for folding large event batches); kimi-k2.6 is
 		// the warmer-prose upgrade, pinned via MATRIX_LIAISON_MODEL.
-		"liaison": {ModelDeepSeekV4Flash, ModelKimiK26, ModelDeepSeekV4Pro},
+		"liaison": {ModelGLM52, ModelDeepSeekV4Flash, ModelKimiK26, ModelDeepSeekV4Pro},
 		// neo: the Neo default conversational AGENT (SlotNeo). NOT the
 		// Liaison — Neo drives the conversation + tools and delegates money
 		// to MCL. v6 (2026-06-22) swaps main = deepseek-ai/DeepSeek-V4-Pro
@@ -286,7 +311,7 @@ func FreeTierWhitelist() map[string][]string {
 		// (cfg.ConsolidationModel) — a stronger-than-glm but still cheap
 		// learning-extraction model. Already on the rate card, so adding it
 		// here is a whitelist-only change (no RateTableVersion bump).
-		"neo": {ModelNeoMain, ModelGLM5p1Fast, ModelNomicEmbed, ModelDeepSeekV4Flash},
+		"neo": {ModelGLM52, ModelNeoMain, ModelGLM5p1Fast, ModelNomicEmbed, ModelDeepSeekV4Flash},
 		// cassandra: the epistemic-completeness faculty (SlotCassandra). The
 		// MCL completeness critic moved here off the planner slot. The critic's
 		// model is criticMod() = the -critic-model knob, else the planner/
@@ -296,7 +321,7 @@ func FreeTierWhitelist() map[string][]string {
 		// prior+scan model and deepseek-v4-pro as the strong escalation
 		// adjudicator. Every model here is ALREADY on the rate card, so adding
 		// this lane needs NO rateTable row and NO RateTableVersion bump.
-		"cassandra": {ModelDeepSeekV4Flash, ModelDeepSeekV4Pro, ModelKimiK26, ModelCompilerFreeTier},
+		"cassandra": {ModelGLM52, ModelDeepSeekV4Flash, ModelDeepSeekV4Pro, ModelKimiK26, ModelCompilerFreeTier},
 	}
 }
 

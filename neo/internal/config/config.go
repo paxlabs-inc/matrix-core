@@ -166,15 +166,15 @@ func Default() Config {
 		ManifestPath: "agents/default.json",
 		SkillsRoot:   "skills",
 
-		MainModel:          "accounts/fireworks/models/glm-5p2",
-		CheapModel:         "accounts/fireworks/models/glm-5p2",
-		ConsolidationModel: "accounts/fireworks/models/glm-5p2",
+		MainModel:          "zai-org/GLM-5.2",
+		CheapModel:         "zai-org/GLM-5.2",
+		ConsolidationModel: "zai-org/GLM-5.2",
 		EmbedModel:         "nomic-ai/nomic-embed-text-v1.5",
 		// Cassandra completeness auditor: a cheap/fast primary + a stronger
 		// escalation model, both on the gateway cassandra-slot whitelist
 		// (gateway rates.FreeTierWhitelist "cassandra").
-		CassandraModel:         "accounts/fireworks/models/glm-5p2",
-		CassandraEscalateModel: "accounts/fireworks/models/glm-5p2",
+		CassandraModel:         "zai-org/GLM-5.2",
+		CassandraEscalateModel: "zai-org/GLM-5.2",
 
 		ContextWindowTokens:   256000,
 		SoftPct:               80,
@@ -279,8 +279,8 @@ func Sandbox() Config {
 	c.DaemonURL = ""
 	// Metering disabled: blank the gateway URL + actor DID. This also
 	// forces pickEmbedder() to select the Hash stub (gateway branch
-	// requires GatewayURL + token + ActorDID; Fireworks branch requires
-	// FIREWORKS_API_KEY env — both absent in a sandbox run).
+	// requires GatewayURL + token + ActorDID; the direct provider branch
+	// requires BASETEN_API_KEY env — both absent in a sandbox run).
 	c.GatewayURL = ""
 	c.ActorDID = ""
 	// Sentinel embed model so callers/tests can confirm the stub was

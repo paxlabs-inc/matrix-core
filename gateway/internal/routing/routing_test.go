@@ -78,8 +78,10 @@ func TestDecideBYOBypassesWhitelist(t *testing.T) {
 	if dec.UserAPIKey != "fw_user_secret" {
 		t.Fatalf("UserAPIKey echo failed: %q", dec.UserAPIKey)
 	}
-	if dec.Provider != ProviderTogether {
-		t.Fatalf("expected together for Qwen/, got %s", dec.Provider)
+	// The bare "<vendor>/<model>" shape now routes to Baseten (the primary
+	// chat provider); Together is only reachable via explicit config.
+	if dec.Provider != ProviderBaseten {
+		t.Fatalf("expected baseten for Qwen/, got %s", dec.Provider)
 	}
 }
 

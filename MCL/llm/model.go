@@ -337,21 +337,22 @@ func normalizeKind(slot ModelSlot, kind StepKind) StepKind {
 // ----------------------------------------------------------------------------
 
 // DefaultRegistry returns the v1 router populated per the matrix.kvx
-// Session 31a model router design. Models pinned to Fireworks for the
-// primary path (matches existing infra + MCL/llm provider detection);
-// Together is the alt path that the gateway selects when Fireworks 5xxes
-// or exceeds per-tier latency budget.
+// Session 31a model router design. Models pinned to Baseten for the
+// primary path (zai-org/GLM-5.2 via inference.baseten.co; matches MCL/llm
+// provider detection, which resolves the bare "<vendor>/<model>" shape to
+// Baseten). Together/Fireworks remain reachable as explicit alt paths the
+// gateway may select on 5xx or latency-budget breach.
 //
 // Provider-specific model ID conventions:
 //
+//	Baseten:   "<vendor>/<name>"  (e.g. "zai-org/GLM-5.2")
 //	Fireworks: "accounts/fireworks/models/<name>"
-//	Together:  "<vendor>/<name>"
 func DefaultRegistry() *ModelRegistry {
 	grammars := DefaultGrammars()
 
 	// --- SlotCompiler --------------------------------------------------------
 	compiler := Config{
-		Model:       "accounts/fireworks/models/glm-5p2",
+		Model:       "zai-org/GLM-5.2",
 		Temperature: 0,
 		Seed:        42,
 		MaxTokens:   512,
@@ -361,7 +362,7 @@ func DefaultRegistry() *ModelRegistry {
 	// LongCtx: when cortex bundle exceeds ~100k tokens, DeepSeek-V4-Flash's
 	// 1M context is the safe escalation.
 	compilerLongCtx := Config{
-		Model:       "accounts/fireworks/models/glm-5p2",
+		Model:       "zai-org/GLM-5.2",
 		Temperature: 0,
 		Seed:        42,
 		MaxTokens:   1024,
@@ -376,7 +377,7 @@ func DefaultRegistry() *ModelRegistry {
 	// truncates the plan mid-object (the 'unexpected end of JSON input'
 	// synth.parse.error class). Plans rarely approach this ceiling.
 	planner := Config{
-		Model:       "accounts/fireworks/models/glm-5p2",
+		Model:       "zai-org/GLM-5.2",
 		Temperature: 0.2,
 		Seed:        42,
 		MaxTokens:   8192,
@@ -385,7 +386,7 @@ func DefaultRegistry() *ModelRegistry {
 	}
 	// LongCtx: GLM-5.1's 202k window for plans with extensive context.
 	plannerLongCtx := Config{
-		Model:       "accounts/fireworks/models/glm-5p2",
+		Model:       "zai-org/GLM-5.2",
 		Temperature: 0.2,
 		Seed:        42,
 		MaxTokens:   3072,
@@ -395,7 +396,7 @@ func DefaultRegistry() *ModelRegistry {
 
 	// --- SlotExecutor: KindReason (default agentic) --------------------------
 	executorReason := Config{
-		Model:       "accounts/fireworks/models/glm-5p2",
+		Model:       "zai-org/GLM-5.2",
 		Temperature: 0.4,
 		MaxTokens:   10000,
 		GrammarMode: GrammarNone,
@@ -403,7 +404,7 @@ func DefaultRegistry() *ModelRegistry {
 
 	// --- SlotExecutor: KindCode (code-gen specialist) ------------------------
 	executorCode := Config{
-		Model:       "accounts/fireworks/models/glm-5p2",
+		Model:       "zai-org/GLM-5.2",
 		Temperature: 0.2,
 		MaxTokens:   4096,
 		GrammarMode: GrammarNone,
@@ -411,7 +412,7 @@ func DefaultRegistry() *ModelRegistry {
 
 	// --- SlotExecutor: KindSummarize (long-context specialist) ---------------
 	executorSummarize := Config{
-		Model:       "accounts/fireworks/models/glm-5p2",
+		Model:       "zai-org/GLM-5.2",
 		Temperature: 0.2,
 		MaxTokens:   2048,
 		GrammarMode: GrammarNone,
@@ -419,7 +420,7 @@ func DefaultRegistry() *ModelRegistry {
 
 	// --- SlotExecutor: KindWrite (prose specialist) --------------------------
 	executorWrite := Config{
-		Model:       "accounts/fireworks/models/glm-5p2",
+		Model:       "zai-org/GLM-5.2",
 		Temperature: 0.6,
 		MaxTokens:   2048,
 		GrammarMode: GrammarNone,
@@ -427,7 +428,7 @@ func DefaultRegistry() *ModelRegistry {
 
 	// --- SlotExecutor: KindTransform (structured shape, no creativity) -------
 	executorTransform := Config{
-		Model:       "accounts/fireworks/models/glm-5p2",
+		Model:       "zai-org/GLM-5.2",
 		Temperature: 0,
 		Seed:        42,
 		MaxTokens:   1024,
@@ -436,7 +437,7 @@ func DefaultRegistry() *ModelRegistry {
 
 	// --- SlotExecutor: KindClassify (pick-from-list with grammar) ------------
 	executorClassify := Config{
-		Model:       "accounts/fireworks/models/glm-5p2",
+		Model:       "zai-org/GLM-5.2",
 		Temperature: 0,
 		Seed:        42,
 		MaxTokens:   64,
@@ -446,7 +447,7 @@ func DefaultRegistry() *ModelRegistry {
 
 	// --- SlotExecutor: KindHardReason (opt-in frontier) ----------------------
 	executorHardReason := Config{
-		Model:       "accounts/fireworks/models/glm-5p2",
+		Model:       "zai-org/GLM-5.2",
 		Temperature: 0.2,
 		MaxTokens:   4096,
 		GrammarMode: GrammarNone,
@@ -458,7 +459,7 @@ func DefaultRegistry() *ModelRegistry {
 	// without latency spikes. Free-form prose; no seed (natural variation is
 	// fine — the Liaison is a side-channel and is never replayed).
 	liaison := Config{
-		Model:       "accounts/fireworks/models/glm-5p2",
+		Model:       "zai-org/GLM-5.2",
 		Temperature: 0.5,
 		MaxTokens:   1024,
 		GrammarMode: GrammarNone,

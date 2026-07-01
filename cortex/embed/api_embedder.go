@@ -94,6 +94,12 @@ const FireworksEmbedEndpoint = "https://api.fireworks.ai/inference/v1/embeddings
 // TogetherEmbedEndpoint is the Together AI embeddings URL.
 const TogetherEmbedEndpoint = "https://api.together.xyz/v1/embeddings"
 
+// BasetenEmbedEndpoint is the Baseten OpenAI-compatible embeddings URL
+// (Model APIs / BEI). Requires a Baseten-served embedding model; when the
+// configured model is not available the embedder chain probe fails and the
+// caller falls back to the gateway or the deterministic hash embedder.
+const BasetenEmbedEndpoint = "https://inference.baseten.co/v1/embeddings"
+
 // DefaultModelFireworks is the recommended Fireworks embedding model:
 // nomic-embed-text-v1.5 at 768-dim (Matryoshka-capable, multilingual).
 const DefaultModelFireworks = "nomic-ai/nomic-embed-text-v1.5"
@@ -300,6 +306,8 @@ func (e *APIEmbedder) embedOnce(ctx context.Context, payload []byte) ([]float32,
 // envVarForEndpoint picks the canonical API-key env var based on endpoint URL.
 func envVarForEndpoint(endpoint string) string {
 	switch {
+	case strings.Contains(endpoint, "baseten"):
+		return "BASETEN_API_KEY"
 	case strings.Contains(endpoint, "fireworks"):
 		return "FIREWORKS_API_KEY"
 	case strings.Contains(endpoint, "together"):
@@ -313,6 +321,8 @@ func envVarForEndpoint(endpoint string) string {
 // Model() string to keep audit logs unambiguous.
 func inferProviderTag(endpoint string) string {
 	switch {
+	case strings.Contains(endpoint, "baseten"):
+		return "baseten"
 	case strings.Contains(endpoint, "fireworks"):
 		return "fireworks"
 	case strings.Contains(endpoint, "together"):

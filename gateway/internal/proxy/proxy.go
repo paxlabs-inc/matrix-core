@@ -72,6 +72,7 @@ type Server struct {
 type ProviderKeys struct {
 	FireworksKey string
 	TogetherKey  string
+	BasetenKey   string
 }
 
 // Options drives Server construction.
@@ -577,6 +578,8 @@ func (s *Server) buildUpstreamRequest(ctx context.Context, r *http.Request, dec 
 			apiKey = s.provider.FireworksKey
 		case routing.ProviderTogether:
 			apiKey = s.provider.TogetherKey
+		case routing.ProviderBaseten:
+			apiKey = s.provider.BasetenKey
 		}
 	}
 	if apiKey != "" {

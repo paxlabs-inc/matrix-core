@@ -36,7 +36,8 @@
 // Required environment:
 //
 //	MATRIX_GATEWAY_TOKEN  shared bearer token; clients send Authorization: Bearer ...
-//	FIREWORKS_API_KEY     gateway's own upstream key for Fireworks
+//	BASETEN_API_KEY       gateway's own upstream key for Baseten (primary chat)
+//	FIREWORKS_API_KEY     gateway's own upstream key for Fireworks (nomic embeddings; optional)
 //	TOGETHER_API_KEY      gateway's own upstream key for Together (optional)
 //
 // Optional environment:
@@ -109,13 +110,14 @@ func run(args []string) error {
 
 	logf := newLogger(*logFormat)
 
-	// Fail-fast: free-tier-only routes every whitelisted model to a
-	// Fireworks upstream, so the gateway's FIREWORKS_API_KEY is mandatory.
+	// Fail-fast: free-tier-only routes every whitelisted chat model to a
+	// Baseten upstream, so the gateway's BASETEN_API_KEY is mandatory.
 	// Without it the gateway boots fine but 401s every upstream call — a
 	// silent fleet-wide outage. (MATRIX_GATEWAY_TOKEN is enforced by
-	// auth.New below.)
-	if *freeTierOnly && os.Getenv("FIREWORKS_API_KEY") == "" {
-		return fmt.Errorf("matrix-gateway: -free-tier-only=true requires FIREWORKS_API_KEY (gateway upstream key)")
+	// auth.New below.) FIREWORKS_API_KEY stays optional — only the
+	// nomic-ai/* embedding route still forwards to Fireworks.
+	if *freeTierOnly && os.Getenv("BASETEN_API_KEY") == "" {
+		return fmt.Errorf("matrix-gateway: -free-tier-only=true requires BASETEN_API_KEY (gateway upstream key)")
 	}
 
 	authn, err := auth.New(auth.Options{
@@ -164,6 +166,7 @@ func run(args []string) error {
 		Ledger:      lg,
 		RateLimiter: rl,
 		Provider: proxy.ProviderKeys{
+			BasetenKey:   os.Getenv("BASETEN_API_KEY"),
 			FireworksKey: os.Getenv("FIREWORKS_API_KEY"),
 			TogetherKey:  os.Getenv("TOGETHER_API_KEY"),
 		},

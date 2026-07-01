@@ -24,7 +24,7 @@ import (
 //  1. the metered Matrix gateway /v1/embeddings route, when the gateway is
 //     wired (MATRIX_GATEWAY_URL + MATRIX_GATEWAY_TOKEN + actor DID) — spend
 //     is attributed to the actor under slot "neo" exactly like chat calls;
-//  2. the provider directly, when FIREWORKS_API_KEY is set;
+//  2. the provider directly (Baseten), when BASETEN_API_KEY is set;
 //  3. the deterministic hash embedder — retrieval quality degrades to
 //     pseudo-lexical, but nothing breaks (the pre-v5 behavior).
 //
@@ -64,8 +64,16 @@ func pickEmbedder(cfg config.Config) embed.Embedder {
 		}
 	}
 
-	if os.Getenv("FIREWORKS_API_KEY") != "" {
-		if e, err := embed.NewAPIEmbedder(embed.APIEmbedderConfig{Model: model}); err == nil && probeEmbedder(e) {
+	// Direct provider (Baseten, the primary chat provider). The Baseten
+	// embeddings endpoint requires a Baseten-served embedding model; the
+	// probe below omits a provider that can't serve cfg.EmbedModel, so a
+	// missing model degrades cleanly to the gateway/hash fallback rather
+	// than poisoning the chain with a guaranteed-fail call.
+	if os.Getenv("BASETEN_API_KEY") != "" {
+		if e, err := embed.NewAPIEmbedder(embed.APIEmbedderConfig{
+			Model:    model,
+			Endpoint: embed.BasetenEmbedEndpoint,
+		}); err == nil && probeEmbedder(e) {
 			providers = append(providers, e)
 		}
 	}

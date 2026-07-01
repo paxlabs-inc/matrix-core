@@ -42,6 +42,7 @@ const (
 	ProviderTogether  Provider = iota // api.together.xyz
 	ProviderFireworks                 // api.fireworks.ai
 	ProviderOpencode                  // opencode.ai/zen (Session 34 / Forge)
+	ProviderBaseten                   // inference.baseten.co (primary chat provider)
 )
 
 func (p Provider) String() string {
@@ -52,6 +53,8 @@ func (p Provider) String() string {
 		return "fireworks"
 	case ProviderOpencode:
 		return "opencode"
+	case ProviderBaseten:
+		return "baseten"
 	}
 	return "unknown"
 }
@@ -752,7 +755,12 @@ func (c *Client) applyGrammar(req *chatRequest, grammarID string) error {
 //
 //	"accounts/fireworks/models/<X>"                 → Fireworks
 //	"claude-*" / "gpt-5*" / opencode bare-model id  → Opencode (sess#34)
-//	"<vendor>/<model>"                              → Together
+//	"<vendor>/<model>"                              → Baseten (primary chat provider)
+//
+// The generic "<vendor>/<model>" shape resolves to Baseten, the primary chat
+// provider (e.g. "zai-org/GLM-5.2"). Together remains reachable but only when
+// selected explicitly via Config.Provider + ProviderSet (it is the gateway
+// alt-path, never auto-detected from a bare model id anymore).
 func DetectProvider(model string) (Provider, error) {
 	switch {
 	case strings.HasPrefix(model, "accounts/fireworks/"):
@@ -760,7 +768,7 @@ func DetectProvider(model string) (Provider, error) {
 	case isOpencodeModelID(model):
 		return ProviderOpencode, nil
 	case strings.Contains(model, "/"):
-		return ProviderTogether, nil
+		return ProviderBaseten, nil
 	}
 	return 0, fmt.Errorf("llm: cannot detect provider for model %q (expected '<vendor>/<model>', 'accounts/fireworks/models/<X>', or an opencode bare model id like 'claude-opus-4-7' / 'gpt-5.5')", model)
 }
@@ -814,6 +822,8 @@ func defaultEndpoint(p Provider) string {
 		// Bare opencode default; ForgeRegistry overrides per-route to
 		// the actual /v1/messages or /v1/responses URL.
 		return "https://opencode.ai/zen/v1/chat/completions"
+	case ProviderBaseten:
+		return "https://inference.baseten.co/v1/chat/completions"
 	}
 	return ""
 }
@@ -827,6 +837,8 @@ func envKey(p Provider) (string, error) {
 		name = "FIREWORKS_API_KEY"
 	case ProviderOpencode:
 		name = "OPENCODE_API_KEY"
+	case ProviderBaseten:
+		name = "BASETEN_API_KEY"
 	default:
 		return "", fmt.Errorf("llm: unknown provider %d", p)
 	}

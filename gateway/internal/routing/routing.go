@@ -37,6 +37,7 @@ const (
 	ProviderUnknown Provider = iota
 	ProviderFireworks
 	ProviderTogether
+	ProviderBaseten
 )
 
 func (p Provider) String() string {
@@ -45,6 +46,8 @@ func (p Provider) String() string {
 		return "fireworks"
 	case ProviderTogether:
 		return "together"
+	case ProviderBaseten:
+		return "baseten"
 	}
 	return "unknown"
 }
@@ -55,6 +58,8 @@ const (
 	DefaultFireworksEmbeddings = "https://api.fireworks.ai/inference/v1/embeddings"
 	DefaultTogetherChat        = "https://api.together.xyz/v1/chat/completions"
 	DefaultTogetherEmbeddings  = "https://api.together.xyz/v1/embeddings"
+	DefaultBasetenChat         = "https://inference.baseten.co/v1/chat/completions"
+	DefaultBasetenEmbeddings   = "https://inference.baseten.co/v1/embeddings"
 )
 
 // Endpoint identifies which upstream URL to forward to.
@@ -129,6 +134,8 @@ type Options struct {
 	FireworksEmbeddingsURL string
 	TogetherChatURL        string
 	TogetherEmbeddingsURL  string
+	BasetenChatURL         string
+	BasetenEmbeddingsURL   string
 }
 
 // New constructs a Decider with the supplied options.
@@ -144,10 +151,12 @@ func New(opts Options) *Decider {
 		chatURL: map[Provider]string{
 			ProviderFireworks: pick(opts.FireworksChatURL, DefaultFireworksChat),
 			ProviderTogether:  pick(opts.TogetherChatURL, DefaultTogetherChat),
+			ProviderBaseten:   pick(opts.BasetenChatURL, DefaultBasetenChat),
 		},
 		embeddingURL: map[Provider]string{
 			ProviderFireworks: pick(opts.FireworksEmbeddingsURL, DefaultFireworksEmbeddings),
 			ProviderTogether:  pick(opts.TogetherEmbeddingsURL, DefaultTogetherEmbeddings),
+			ProviderBaseten:   pick(opts.BasetenEmbeddingsURL, DefaultBasetenEmbeddings),
 		},
 	}
 }
@@ -243,19 +252,20 @@ func validSlot(s string) bool {
 }
 
 // detectProvider mirrors MCL/llm.DetectProvider. Fireworks gets the
-// "accounts/fireworks/" prefix; everything else with a "/" goes to
-// Together. Bare model ids (no slash) are an error.
+// "accounts/fireworks/" prefix; the generic "<vendor>/<model>" shape
+// (e.g. "zai-org/GLM-5.2") routes to Baseten, the primary chat provider.
+// Bare model ids (no slash) are an error.
 func detectProvider(model string) (Provider, error) {
 	switch {
 	case strings.HasPrefix(model, "accounts/fireworks/"):
 		return ProviderFireworks, nil
 	// nomic-ai/* embedding models are Fireworks-hosted but use the bare
 	// vendor/model id on the embeddings API — they must not fall into the
-	// generic '<vendor>/<model>' → Together branch below.
+	// generic '<vendor>/<model>' → Baseten branch below.
 	case strings.HasPrefix(model, "nomic-ai/"):
 		return ProviderFireworks, nil
 	case strings.Contains(model, "/"):
-		return ProviderTogether, nil
+		return ProviderBaseten, nil
 	}
 	return ProviderUnknown, fmt.Errorf("%w: %q (expected '<vendor>/<model>' or 'accounts/fireworks/...')",
 		ErrUnknownProvider, model)

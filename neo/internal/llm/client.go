@@ -63,10 +63,10 @@ type Client struct {
 
 // New builds a function-calling client from an mcl/llm.Config.
 //
-// v1 supports the chat-completions API shape only (Together / Fireworks /
-// opencode-chat). Models that route to the Anthropic Messages or OpenAI
-// Responses shapes use different tool schemas and are rejected with a clear
-// error; the default model registry pins Fireworks chat-completions.
+// v1 supports the chat-completions API shape only (Baseten / Together /
+// Fireworks / opencode-chat). Models that route to the Anthropic Messages or
+// OpenAI Responses shapes use different tool schemas and are rejected with a
+// clear error; the default model registry pins Baseten chat-completions.
 func New(cfg mcllm.Config) (*Client, error) {
 	if strings.TrimSpace(cfg.Model) == "" {
 		return nil, fmt.Errorf("neo/llm: empty model")
@@ -480,6 +480,8 @@ func defaultChatEndpoint(p mcllm.Provider) string {
 		return "https://api.fireworks.ai/inference/v1/chat/completions"
 	case mcllm.ProviderOpencode:
 		return mcllm.OpencodeChatEndpoint
+	case mcllm.ProviderBaseten:
+		return "https://inference.baseten.co/v1/chat/completions"
 	}
 	return ""
 }
@@ -493,6 +495,8 @@ func envKey(p mcllm.Provider) (string, error) {
 		name = "FIREWORKS_API_KEY"
 	case mcllm.ProviderOpencode:
 		name = "OPENCODE_API_KEY"
+	case mcllm.ProviderBaseten:
+		name = "BASETEN_API_KEY"
 	default:
 		return "", fmt.Errorf("neo/llm: unknown provider %d", p)
 	}

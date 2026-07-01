@@ -21,9 +21,13 @@ func TestDetectProvider(t *testing.T) {
 	}{
 		{"accounts/fireworks/models/deepseek-v4-flash", ProviderFireworks, false},
 		{"accounts/fireworks/models/deepseek-v4-pro", ProviderFireworks, false},
-		{"deepseek-ai/DeepSeek-V4-Flash", ProviderTogether, false},
-		{"openai/gpt-oss-120b", ProviderTogether, false},
-		{"Qwen/Qwen3.5-9B-FP8", ProviderTogether, false},
+		// The bare "<vendor>/<model>" shape now resolves to Baseten, the
+		// primary chat provider (e.g. "zai-org/GLM-5.2"). Together is only
+		// reachable via explicit Config.Provider + ProviderSet.
+		{"zai-org/GLM-5.2", ProviderBaseten, false},
+		{"deepseek-ai/DeepSeek-V4-Flash", ProviderBaseten, false},
+		{"openai/gpt-oss-120b", ProviderBaseten, false},
+		{"Qwen/Qwen3.5-9B-FP8", ProviderBaseten, false},
 		{"no-slash-model", 0, true},
 	}
 
