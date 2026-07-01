@@ -152,7 +152,7 @@ status  = "pending"
 
 [task.2.1]
 title  = "Rollup record shape (roll/-family, derived) + deterministic extractive builder"
-status = "in_progress"
+status = "done"
 wave   = 2
 do_1   = "Add the Rollup record (window{tier,start,end}, member Refs, deterministic ShortForm, salience, optional EnrichRef) as a derived roll/-family chk-style record keyed by time window, NOT a 10th memory type, NO SMT write"
 do_2   = "Implement BuildRollup(window): deterministic extractive summary purely from journal facts in the window (top-salience Refs via salience.go recency, verb/outcome tallies, counts); idempotent (same window -> byte-identical record); skip windows below the event-count floor"
@@ -161,7 +161,7 @@ requires = ["1.2"]
 
 [task.2.2]
 title  = "Cascade hour -> day -> week/epoch (idempotent)"
-status = "pending"
+status = "done"
 wave   = 3
 do_1   = "Implement Cascade(upTo, now): roll finer windows into coarser ones (hour->day->week/epoch), each level built with the same deterministic discipline, idempotent and rebuildable from the journal"
 reqs   = ["4.4"]
@@ -169,7 +169,7 @@ requires = ["2.1"]
 
 [task.2.3]
 title  = "Optional LLM enrichment lane (separate derived record, rebuildable)"
-status = "pending"
+status = "done"
 wave   = 3
 do_1   = "Add an optional enrichment record referenced by Rollup.EnrichRef, produced by an LLM, written as a SEPARATE derived record rebuildable from the deterministic ShortForm; absent/stale enrichment leaves the deterministic short-form standing; enrichment never feeds determinism or replay; gated by a config knob"
 reqs   = ["3.4", "4.3"]
@@ -191,7 +191,7 @@ requires = ["2.2"]
 
 [task.3.2]
 title  = "T1 recent-episodes reader (last N across types, materialized)"
-status = "pending"
+status = "done"
 wave   = 3
 do_1   = "Add a T1 reader returning the last N episodes across memory types (not verb/object-keyed like tierOutcomes), ranked by the salience recency substrate (salience.go:209-216), served from materialized rollup/recent records (no per-call scan)"
 reqs   = ["6.1", "6.2"]

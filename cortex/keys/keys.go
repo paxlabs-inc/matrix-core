@@ -45,6 +45,7 @@ var (
 	PrefixSession       = []byte("sess/")     // sess/<lpstr conv><seq:8> — continuous-memory session/transcript records (derived lane)
 	PrefixSessionBlob   = []byte("sessblob/") // sessblob/<lpstr conv><seq:8> — spilled large tool_result payloads (overflow discipline)
 	PrefixRollup        = []byte("roll/")     // roll/<tier:1><start:8 BE> — continuous-memory temporal-ladder rollup records (derived lane)
+	PrefixEnrich        = []byte("enr/")      // enr/<tier:1><start:8 BE> — continuous-memory OPTIONAL LLM enrichment records (derived lane, parallel to roll/)
 )
 
 // MetaJournalHead is the meta-namespace key holding the next-to-allocate
@@ -963,6 +964,50 @@ func ParseRollupKey(k []byte) (tier uint8, start uint64, err error) {
 		return 0, 0, ErrBadPrefix
 	}
 	tail := k[len(PrefixRollup):]
+	tier = tail[0]
+	start = binary.BigEndian.Uint64(tail[1:])
+	return tier, start, nil
+}
+
+// EnrichKey returns enr/<tier:1><start:8 BE>.
+//
+// Continuous-memory task 2.3: the OPTIONAL LLM-enrichment record for one
+// rollup window, stored in a lane PARALLEL to roll/ under the SAME (tier,
+// window-start) identity. Same layout/posture as RollupKey (1-byte tier +
+// 8-byte big-endian window start, byte-sort == (tier, start) sort). The
+// enrichment is a SEPARATE derived record — the stored RollupRecord is never
+// mutated to reference it — so the deterministic rollup floor stays
+// byte-stable; the enrichment is resolved by the same window key and treated
+// as stale/absent whenever its SourceRecordHash no longer matches the current
+// rollup. Never an anchored SMT write.
+func EnrichKey(tier uint8, start uint64) []byte {
+	out := make([]byte, 0, len(PrefixEnrich)+1+8)
+	out = append(out, PrefixEnrich...)
+	out = append(out, tier)
+	out = PutUint64BE(out, start)
+	return out
+}
+
+// EnrichTierPrefix returns enr/<tier:1>, the prefix for scanning every
+// enrichment of one tier in ascending window-start order.
+func EnrichTierPrefix(tier uint8) []byte {
+	out := make([]byte, 0, len(PrefixEnrich)+1)
+	out = append(out, PrefixEnrich...)
+	out = append(out, tier)
+	return out
+}
+
+// ParseEnrichKey extracts (tier, start) from an enr/ key. Returns
+// ErrBadPrefix when k does not start with enr/, ErrShortKey on truncation.
+func ParseEnrichKey(k []byte) (tier uint8, start uint64, err error) {
+	wantLen := len(PrefixEnrich) + 1 + 8
+	if len(k) != wantLen {
+		return 0, 0, ErrShortKey
+	}
+	if !hasPrefix(k, PrefixEnrich) {
+		return 0, 0, ErrBadPrefix
+	}
+	tail := k[len(PrefixEnrich):]
 	tier = tail[0]
 	start = binary.BigEndian.Uint64(tail[1:])
 	return tier, start, nil

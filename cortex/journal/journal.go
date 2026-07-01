@@ -153,6 +153,29 @@ const (
 	// record is a PURE function of the journal facts in the window (so it is
 	// deterministic and rebuildable regardless of when BuildRollup runs).
 	KindRollup Kind = "rollup"
+	// KindRollupEnrich is appended by cortex.EnrichRollup (continuous-memory
+	// task 2.3) when it persists an OPTIONAL LLM-enrichment record for a
+	// rollup window. Rides the SAME derived, journaled-but-NOT-anchored lane
+	// as KindRollup / KindCompact / KindSession: a journal entry + a derived
+	// enr/<tier><start> store record, with NO memories/edges SMT write, so the
+	// enrichment lane perturbs neither OverallRoot's anchored namespaces nor
+	// the D11 replay byte-identity of the canonical world-state.
+	//
+	// The enrichment is a SEPARATE derived record parallel to the rollup — the
+	// stored RollupRecord is NEVER mutated to reference it, so the
+	// deterministic rollup floor stays byte-stable and the enrichment can
+	// NEVER be load-bearing for determinism or replay (req.4.3). The record is
+	// REBUILDABLE from the deterministic ShortForm and is treated as
+	// stale/absent whenever its SourceRecordHash diverges from the rollup's
+	// current RecordHash.
+	//
+	// The payload is a canonical CBOR EnrichPayload (see below); the full
+	// EnrichRecord (window, source-record hash, prose, model) lives at
+	// enr/<tier><start> and is integrity-bound to this entry via RecordHash.
+	// Same shape rationale as KindRollup: the payload stays small (window
+	// identity + the source pin + the enrichment's own pin + model), the heavy
+	// prose lives at its own key.
+	KindRollupEnrich Kind = "rollup_enrich"
 )
 
 // WritePayload is the canonical shape carried by KindWrite and KindUpdate
@@ -348,6 +371,41 @@ func EncodeRollupPayload(p *RollupPayload) ([]byte, error) {
 
 // DecodeRollupPayload parses canonical CBOR into out.
 func DecodeRollupPayload(b []byte, out *RollupPayload) error {
+	return canonicalDec.Unmarshal(b, out)
+}
+
+// EnrichPayload is the canonical shape carried by KindRollupEnrich entries
+// (continuous-memory task 2.3). Mirrors RollupPayload discipline: the payload
+// carries only the window identity, the source + self cryptographic pins, and
+// the model tag — never the heavy prose.
+//
+// Tier + Start together form the record identity (Pebble key enr/<tier><start>,
+// parallel to roll/<tier><start>). SourceRecordHash is the RecordHash of the
+// RollupRecord the enrichment was derived from, so staleness is detectable: a
+// reader that recomputes the current rollup's RecordHash can tell the
+// enrichment is stale (and MUST fall back to the deterministic short-form)
+// when the hashes diverge. RecordHash is sha256 over the canonical CBOR
+// encoding of the EnrichRecord stored at enr/ — the same integrity discipline
+// as RollupPayload.RecordHash. Model records which LLM produced the prose.
+type EnrichPayload struct {
+	SchemaVersion    uint8    `cbor:"0,keyasint"`
+	Tier             uint8    `cbor:"1,keyasint"`
+	Start            int64    `cbor:"2,keyasint"`
+	SourceRecordHash [32]byte `cbor:"3,keyasint"`
+	RecordHash       [32]byte `cbor:"4,keyasint"`
+	Model            string   `cbor:"5,keyasint"`
+}
+
+// EncodeEnrichPayload returns canonical deterministic CBOR for p.
+func EncodeEnrichPayload(p *EnrichPayload) ([]byte, error) {
+	if p == nil {
+		return nil, fmt.Errorf("journal: nil EnrichPayload")
+	}
+	return canonicalEnc.Marshal(p)
+}
+
+// DecodeEnrichPayload parses canonical CBOR into out.
+func DecodeEnrichPayload(b []byte, out *EnrichPayload) error {
 	return canonicalDec.Unmarshal(b, out)
 }
 
