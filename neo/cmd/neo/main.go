@@ -75,13 +75,13 @@ func runInteractive() {
 	in := bufio.NewReader(os.Stdin)
 
 	// --- main + cheap models ---
-	main, err := newClient(cfg.MainModel, 0.4, 4096, cfg)
+	main, err := newClient(cfg.MainModel, 0.4, 4096, true, cfg)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "neo: cannot start the model %q: %v\n", cfg.MainModel, err)
 		fmt.Fprintf(os.Stderr, "      set FIREWORKS_API_KEY (or MATRIX_GATEWAY_URL + MATRIX_GATEWAY_TOKEN) and retry.\n")
 		os.Exit(1)
 	}
-	cheap, err := newClient(cfg.CheapModel, 0.2, 1024, cfg)
+	cheap, err := newClient(cfg.CheapModel, 0.2, 1024, false, cfg)
 	if err != nil {
 		cheap = nil // compaction falls back to the main model
 	}
@@ -136,7 +136,7 @@ func runInteractive() {
 	if pager != nil {
 		// Memory write-back: a stronger extractor (its quality sets memory
 		// quality) + the cheap model for the rare relation-classify path.
-		extract, eerr := newClient(cfg.ConsolidationModel, 0.2, 2048, cfg)
+		extract, eerr := newClient(cfg.ConsolidationModel, 0.2, 2048, false, cfg)
 		if eerr != nil || extract == nil {
 			extract = main // fall back to the main model if the extractor won't start
 		}
@@ -194,21 +194,25 @@ func runInteractive() {
 	}
 }
 
-func newClient(model string, temp float64, maxTok int, cfg config.Config) (*neollm.Client, error) {
-	return newSlotClient(model, temp, maxTok, "neo", cfg)
+func newClient(model string, temp float64, maxTok int, enableThinking bool, cfg config.Config) (*neollm.Client, error) {
+	return newSlotClient(model, temp, maxTok, "neo", enableThinking, cfg)
 }
 
 // newSlotClient builds a gateway-metered chat client tagged with the given
 // slot label, so spend is attributed correctly (Neo's own "neo" slot, or
-// Cassandra's dedicated "cassandra" slot for completeness audits).
-func newSlotClient(model string, temp float64, maxTok int, slot string, cfg config.Config) (*neollm.Client, error) {
+// Cassandra's dedicated "cassandra" slot for completeness audits). enableThinking
+// opts the client into extended reasoning on models where it is off by default
+// (Baseten GLM/Kimi) — set only for the conversational loop and the Cassandra
+// adjudicator, never for the token-tight cheap/consolidation roles.
+func newSlotClient(model string, temp float64, maxTok int, slot string, enableThinking bool, cfg config.Config) (*neollm.Client, error) {
 	return neollm.New(mcllm.Config{
-		Model:       model,
-		Temperature: temp,
-		MaxTokens:   maxTok,
-		GatewayURL:  cfg.GatewayURL,
-		ActorDID:    cfg.ActorDID,
-		SlotLabel:   slot,
+		Model:          model,
+		Temperature:    temp,
+		MaxTokens:      maxTok,
+		GatewayURL:     cfg.GatewayURL,
+		ActorDID:       cfg.ActorDID,
+		SlotLabel:      slot,
+		EnableThinking: enableThinking,
 	})
 }
 
@@ -222,13 +226,13 @@ func newCassandraAdjudicator(cfg config.Config) *cassandra.Adjudicator {
 	if strings.TrimSpace(cfg.CassandraModel) == "" {
 		return nil
 	}
-	primary, err := newSlotClient(cfg.CassandraModel, 0.0, 1024, "cassandra", cfg)
+	primary, err := newSlotClient(cfg.CassandraModel, 0.0, 1024, "cassandra", true, cfg)
 	if err != nil {
 		return nil
 	}
 	adj := &cassandra.Adjudicator{Primary: agent.NewLLMDecoder(primary)}
 	if strings.TrimSpace(cfg.CassandraEscalateModel) != "" {
-		if esc, eerr := newSlotClient(cfg.CassandraEscalateModel, 0.0, 1024, "cassandra", cfg); eerr == nil {
+		if esc, eerr := newSlotClient(cfg.CassandraEscalateModel, 0.0, 1024, "cassandra", true, cfg); eerr == nil {
 			adj.Escalate = agent.NewLLMDecoder(esc)
 		}
 	}

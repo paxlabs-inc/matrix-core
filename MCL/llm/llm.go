@@ -140,6 +140,16 @@ type Config struct {
 	// MaxTokens caps output length. Default 4096.
 	MaxTokens int
 
+	// EnableThinking opts this client into extended reasoning for models
+	// where it is off by default (Baseten serves GLM/Kimi with thinking
+	// OPT-IN). When true and the model supports the toggle, the client sends
+	// chat_template_args.enable_thinking so the server splits chain-of-thought
+	// into the separate reasoning_content channel instead of leaking it into
+	// visible content. Off by default; set only for roles that benefit from
+	// reasoning (the conversational loop, the Cassandra adjudicator) and never
+	// for token-tight mechanical roles (compaction/consolidation).
+	EnableThinking bool
+
 	// Timeout for HTTP requests. Default 90s.
 	Timeout time.Duration
 

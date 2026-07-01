@@ -118,6 +118,41 @@ const (
 	// from KindLearnWeights, in seq order. Phase 7 anchors the journal
 	// MMR so both entries' leaves participate in OverallRoot.
 	KindLearnWeights Kind = "learn_weights"
+	// KindSession is appended by cortex.AppendMessage (continuous-memory
+	// task 1.1) when it persists one durable conversation-transcript
+	// message. Rides the SAME derived, journaled-but-NOT-anchored lane as
+	// KindCompact (compact.go:429-431): a journal entry + a derived
+	// sess/<conv>/<seq> store record, with NO memories/edges SMT write, so
+	// cortex can own the live transcript without perturbing OverallRoot /
+	// the D11 replay byte-identity of the anchored world-state.
+	//
+	// The payload is a canonical CBOR SessionPayload (see below); the full
+	// SessionRecord (role, content, tool call/result, media refs, ts)
+	// lives at sess/<conv>/<seq> and is integrity-bound to this entry via
+	// RecordHash. Same shape rationale as KindEmbed / KindCompact: the
+	// payload stays small (no message content — deliberately, so message
+	// bodies are never duplicated into the journal), the heavy record
+	// lives at its own key, and replay re-derives it from the entry +
+	// cortex state at this seq.
+	KindSession Kind = "session"
+	// KindRollup is appended by cortex.BuildRollup (continuous-memory task
+	// 2.1) when it persists a temporal-ladder rollup record. Rides the SAME
+	// derived, journaled-but-NOT-anchored lane as KindCompact
+	// (compact.go:429-431) and KindSession: a journal entry + a derived
+	// roll/<tier><start> store record, with NO memories/edges SMT write, so
+	// the multi-resolution temporal index (hour → day → epoch) is built over
+	// the journal WITHOUT perturbing OverallRoot / the D11 replay
+	// byte-identity of the anchored world-state.
+	//
+	// The payload is a canonical CBOR RollupPayload (see below); the full
+	// RollupRecord (time window, member refs, deterministic short-form,
+	// salience) lives at roll/<tier><start> and is integrity-bound to this
+	// entry via RecordHash. Same shape rationale as KindEmbed / KindCompact /
+	// KindSession: the payload stays small (only the window identity + a
+	// cryptographic pin), the heavy record lives at its own key, and the
+	// record is a PURE function of the journal facts in the window (so it is
+	// deterministic and rebuildable regardless of when BuildRollup runs).
+	KindRollup Kind = "rollup"
 )
 
 // WritePayload is the canonical shape carried by KindWrite and KindUpdate
@@ -246,6 +281,73 @@ func EncodeCompactPayload(p *CompactPayload) ([]byte, error) {
 
 // DecodeCompactPayload parses canonical CBOR into out.
 func DecodeCompactPayload(b []byte, out *CompactPayload) error {
+	return canonicalDec.Unmarshal(b, out)
+}
+
+// SessionPayload is the canonical shape carried by KindSession entries
+// (continuous-memory task 1.1). Mirrors CompactPayload's discipline: the
+// payload carries only the identity + a cryptographic pin, never the
+// message body.
+//
+// ConversationID + Seq form the record identity (Pebble key
+// sess/<conv>/<seq>). Role is the small enumerated cortex/session.Role
+// (user|assistant|tool_call|tool_result|system) denormalized so a journal
+// scan can classify a message without a Pebble Get on sess/. RecordHash is
+// sha256 over the canonical CBOR encoding of the SessionRecord stored at
+// sess/<conv>/<seq> — the same integrity discipline as
+// EmbedPayload.VectorHash and CompactPayload.CheckpointHash.
+type SessionPayload struct {
+	SchemaVersion  uint8    `cbor:"0,keyasint"`
+	ConversationID string   `cbor:"1,keyasint"`
+	Seq            uint64   `cbor:"2,keyasint"`
+	Role           uint8    `cbor:"3,keyasint"`
+	RecordHash     [32]byte `cbor:"4,keyasint"`
+}
+
+// EncodeSessionPayload returns canonical deterministic CBOR for p.
+func EncodeSessionPayload(p *SessionPayload) ([]byte, error) {
+	if p == nil {
+		return nil, fmt.Errorf("journal: nil SessionPayload")
+	}
+	return canonicalEnc.Marshal(p)
+}
+
+// DecodeSessionPayload parses canonical CBOR into out.
+func DecodeSessionPayload(b []byte, out *SessionPayload) error {
+	return canonicalDec.Unmarshal(b, out)
+}
+
+// RollupPayload is the canonical shape carried by KindRollup entries
+// (continuous-memory task 2.1). Mirrors CompactPayload / SessionPayload
+// discipline: the payload carries only the window identity + a cryptographic
+// pin, never the heavy record.
+//
+// Tier + Start together form the record identity (Pebble key
+// roll/<tier><start>). Start/End are the [Start, End) window bounds in Unix
+// nanoseconds. EntryCount is an audit denormalization so a journal scan can
+// summarize a rollup without a Pebble Get on roll/. RecordHash is sha256 over
+// the canonical CBOR encoding of the RollupRecord stored at roll/ — the same
+// integrity discipline as EmbedPayload.VectorHash and
+// CompactPayload.CheckpointHash.
+type RollupPayload struct {
+	SchemaVersion uint8    `cbor:"0,keyasint"`
+	Tier          uint8    `cbor:"1,keyasint"`
+	Start         int64    `cbor:"2,keyasint"`
+	End           int64    `cbor:"3,keyasint"`
+	EntryCount    uint32   `cbor:"4,keyasint"`
+	RecordHash    [32]byte `cbor:"5,keyasint"`
+}
+
+// EncodeRollupPayload returns canonical deterministic CBOR for p.
+func EncodeRollupPayload(p *RollupPayload) ([]byte, error) {
+	if p == nil {
+		return nil, fmt.Errorf("journal: nil RollupPayload")
+	}
+	return canonicalEnc.Marshal(p)
+}
+
+// DecodeRollupPayload parses canonical CBOR into out.
+func DecodeRollupPayload(b []byte, out *RollupPayload) error {
 	return canonicalDec.Unmarshal(b, out)
 }
 

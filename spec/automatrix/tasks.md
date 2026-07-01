@@ -6,98 +6,98 @@
 
 ## P1 — Capture + cortex opportunity queue
 
-- [ ] 1. Opportunity memory model, pager surface, and per-turn extraction
-  - [ ] 1.1 Opportunity cortex record + pager surface (Remember/Pending/SetStatus)
+- [x] 1. Opportunity memory model, pager surface, and per-turn extraction
+  - [x] 1.1 Opportunity cortex record + pager surface (Remember/Pending/SetStatus)
     - Add an Opportunity record shape to neo/internal/memory (reusing the typed-record/Goal machinery): summary, rationale, status(pending|scheduled|in_progress|done|dismissed), eligible_autonomous, confidence, origin_conversation_id, attempts, created_at/updated_at; scoped to the owning user/agent; no secrets
     - Add pager methods in neo/internal/memory/writeback.go (+ a reader): RememberOpportunity (dedup-or-write against pending opportunities via normalize + semantic similarity), PendingOpportunities(limit) returning ONLY eligible_autonomous+pending ranked by confidence x salience x recency, and SetOpportunityStatus(uri,status) persisted atomically
     - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5_
-  - [ ] 1.2 Extend the consolidator with the `opportunities` extraction class
+  - [x] 1.2 Extend the consolidator with the `opportunities` extraction class
     - Add an `opportunities` array (summary, rationale, financial, confidence) to consolidatePrompt + the extract struct in neo/internal/writeback/consolidator.go, with selective 'usually []' rules: grounded in something the user said (rationale required), specific+actionable, NOT a direct request, financial flag set, drop below the confidence floor
     - Fan accepted opportunities (capped per turn like the other classes) into pager.RememberOpportunity; capture runs regardless of opt-in so the queue stays warm
     - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5_
 
 ## P2 — Non-financial gating (structural)
 
-- [ ] 2. Financial classification + the restricted (no-money) tool surface
-  - [ ] 2.1 Financial classification + deterministic fail-closed re-check
+- [x] 2. Financial classification + the restricted (no-money) tool surface
+  - [x] 2.1 Financial classification + deterministic fail-closed re-check
     - Map the extraction `financial` flag to eligible_autonomous=false; add a deterministic re-check on the opportunity summary (keyword + flag) that fails CLOSED (treat as financial / not eligible) when uncertain; financial opportunities are still captured (surfaced for approval, never auto-run)
     - _Requirements: 3.1, 3.3, 3.4, 3.5_
-  - [ ] 2.2 Restricted autonomous tool surface excluding the money core_execute path
+  - [x] 2.2 Restricted autonomous tool surface excluding the money core_execute path
     - Build the Automatrix run's tool surface via the existing sub-agent RestrictTools mechanism so it OMITS the money/chain core_execute delegate entirely; add a guard/test asserting the actual advertised tool schema set contains no value-moving/signing tool
     - _Requirements: 3.1, 3.2_
 
 ## P3 — Chronos AUTOMATRIX wake
 
-- [ ] 3. The AUTOMATRIX alarm convention, marker detection, and scheduling
-  - [ ] 3.1 Chronos automatrix convention package (sibling of internal/heartbeat)
+- [x] 3. The AUTOMATRIX alarm convention, marker detection, and scheduling
+  - [x] 3.1 Chronos automatrix convention package (sibling of internal/heartbeat)
     - Add chronos/internal/automatrix mirroring chronos/internal/heartbeat: the canonical AUTOMATRIX WakeMessage/marker + a BuildAlarm helper (recurring cron alarm carrying the AUTOMATRIX wake_message), kept in sync with the Neo-side constants
     - _Requirements: 4.2_
-  - [ ] 3.2 Neo-side AUTOMATRIX marker + idle sentinel (sibling of agent/heartbeat.go)
+  - [x] 3.2 Neo-side AUTOMATRIX marker + idle sentinel (sibling of agent/heartbeat.go)
     - Add neo/internal/agent/automatrix.go: AutomatrixWakeMarker, AutomatrixWakeMessage, AutomatrixIdle sentinel, isAutomatrixWake(input), and shouldSuppressAutomatrix(answer) — mirroring the heartbeat HEARTBEAT/HEARTBEAT_OK convention so AUTOMATRIX_IDLE suppresses the turn
     - Wire suppression into the agent finish path alongside the existing heartbeat suppression
     - _Requirements: 4.2, 4.6_
-  - [ ] 3.3 Engine wake handler: opt-in re-check, busy-defer, pick-one, jittered reschedule, daily cap
+  - [x] 3.3 Engine wake handler: opt-in re-check, busy-defer, pick-one, jittered reschedule, daily cap
     - In the Neo engine/server, recognize an AUTOMATRIX wake and: re-read the opt-in setting (cancel alarm + return if off); defer+reschedule if the session is busy (a run in flight); enforce the per-day cap; select the top eligible opportunity (none -> AUTOMATRIX_IDLE) and reschedule the next wake with randomized jitter (and probabilistic skip)
     - Persist the per-day counter + next-jittered-fire reschedule via the Chronos alarm (DB is source of truth); jitter/skip logic lives in Neo
     - _Requirements: 4.3, 4.4, 4.5, 4.6, 4.7_
 
 ## P4 — Autonomous execution
 
-- [ ] 4. Run one opportunity end-to-end on the restricted surface, gated
-  - [ ] 4.1 Dispatch a supervised restricted-surface run resuming into the origin conversation
+- [x] 4. Run one opportunity end-to-end on the restricted surface, gated
+  - [x] 4.1 Dispatch a supervised restricted-surface run resuming into the origin conversation
     - From the wake handler, mark the picked opportunity scheduled->in_progress and dispatch session.drive/superviseTask resuming into origin_conversation_id, building the objective from summary+rationale, on the restricted (no-money) tool surface, bounded by the normal wall-clock/step budget
     - Hold the turn to the SAME completion gate as any state-touching turn; on genuine pass mark done, on partial/fail leave pending (attempts++ bounded) and surface nothing
     - _Requirements: 5.1, 5.2, 5.3, 5.4, 5.5_
 
 ## P5 — Notify (ntfy/Apprise + durable record)
 
-- [ ] 5. Pluggable Notifier and the durable in-app completion record
-  - [ ] 5.1 neo/internal/notify: Notifier interface + ntfy + Apprise + noop backends
+- [x] 5. Pluggable Notifier and the durable in-app completion record
+  - [x] 5.1 neo/internal/notify: Notifier interface + ntfy + Apprise + noop backends
     - Create neo/internal/notify with Notification{Title,Body,URL} + Notifier interface; ntfy backend (POST /, DID-derived topic, Title/Click headers); Apprise backend (APPRISE_URL or apprise CLI); noop fallback; best-effort + non-blocking + honest-failure logging
     - Add config knobs ([automatrix] + NEO_* env): enabled, base_interval_minutes, jitter_minutes, max_tasks_per_day, min_confidence, NTFY_SERVER/NTFY_TOPIC, APPRISE_URL
     - _Requirements: 6.2, 6.3, 6.4, 8.5_
-  - [ ] 5.2 Durable automatrix.complete record + broker event
+  - [x] 5.2 Durable automatrix.complete record + broker event
     - Add an automatrix.complete broker event + a durable sidecar (mirroring neo/internal/trace) recording {opportunity_summary, result_summary, conversation_id, created_at, read}; expose a reader for the in-app inbox/badge; no secrets stored
     - _Requirements: 6.1, 6.5, 8.5_
-  - [ ] 5.3 Wire completion -> durable record + notify
+  - [x] 5.3 Wire completion -> durable record + notify
     - On genuine autonomous completion, write the durable record and fire the Notifier (best-effort); show result-not-protocol copy; never announce a non-completed task
     - _Requirements: 6.1, 6.4, 6.5, 8.3_
 
 ## P6 — Control surface (opt-in + management)
 
-- [ ] 6. Daemon opt-in setting, alarm lifecycle, and client UI
-  - [ ] 6.1 Daemon opt-in setting + alarm create/cancel lifecycle + queue/manage endpoints
+- [x] 6. Daemon opt-in setting, alarm lifecycle, and client UI
+  - [x] 6.1 Daemon opt-in setting + alarm create/cancel lifecycle + queue/manage endpoints
     - Add automatrix_enabled (default false) to the per-user daemon settings; on enable create the AUTOMATRIX alarm (chronos alarm_set), on disable cancel it; expose authenticated endpoints to read the opportunity queue, dismiss an item, approve a financial item for a normal gated run, and read the completion inbox
     - _Requirements: 7.1, 7.5, 8.1_
-  - [ ] 6.2 Client Settings -> Automatrix: toggle, explanation, queue view, completion inbox
+  - [x] 6.2 Client Settings -> Automatrix: toggle, explanation, queue view, completion inbox
     - Add a Settings -> Automatrix section (apps/client, mirror apps/mobile): master toggle + plain-language explanation; queue view with dismiss + approve-financial; completion inbox / unread badge; UI house rules (background-contrast separation, no borders for depth, no emojis/gradients/glow); show result-not-protocol
     - _Requirements: 7.2, 7.3, 7.4, 6.5_
 
 ## P7 — Verification (no fakes)
 
-- [ ] 7. Prove capture, gating, wake, execution, notify, opt-in
-  - [ ] 7.1 Capture extraction test (real consolidator)
+- [x] 7. Prove capture, gating, wake, execution, notify, opt-in
+  - [x] 7.1 Capture extraction test (real consolidator)
     - Against the real consolidator extraction: an implied-need transcript yields a real cortex Opportunity record; a no-opportunity transcript yields none; a direct request is not captured; dedup suppresses a repeat
     - **Property 1: capture is grounded, selective, deduped, opt-in-independent**
     - **Validates: Requirements 1.1, 1.2, 1.3, 1.5, 2.3**
-  - [ ] 7.2 Non-financial gating test (real reader + real tool surface)
+  - [x] 7.2 Non-financial gating test (real reader + real tool surface)
     - Real tests: a financial opportunity is never returned by PendingOpportunities; uncertain classification fails closed; the restricted tool surface's actual advertised schema set contains no money/signing core_execute tool
     - **Property 2: money can never be reached by an autonomous run (structural)**
     - **Validates: Requirements 3.1, 3.2, 3.3, 3.4**
-  - [ ] 7.3 Wake-path test (marker, idle suppression, busy-defer, opt-out)
+  - [x] 7.3 Wake-path test (marker, idle suppression, busy-defer, opt-out)
     - Real tests: isAutomatrixWake detects the marker; AUTOMATRIX_IDLE suppresses the turn; a busy session defers (reschedules, no run); an opted-out user is refused and the alarm cancelled; per-day cap enforced
     - **Property 3: wakes are idle-only, non-competing, opt-in-gated, bounded**
     - **Validates: Requirements 4.4, 4.5, 4.6, 4.7**
-  - [ ] 7.4 Notify + durable record test (real ntfy httptest)
+  - [x] 7.4 Notify + durable record test (real ntfy httptest)
     - Real ntfy backend round-trip against an httptest server; the durable automatrix.complete record is written + marked unread; a failed external send still leaves the record (honest failure); no protocol jargon in the payload
     - **Property 4: the result is always durably recorded; pings are honest**
     - **Validates: Requirements 6.1, 6.2, 6.4, 8.3**
-  - [ ] 7.5 Opt-in lifecycle test (alarm create/cancel + engine refusal)
+  - [x] 7.5 Opt-in lifecycle test (alarm create/cancel + engine refusal)
     - Real tests: enabling creates exactly one AUTOMATRIX alarm and disabling cancels it; the engine refuses proactive work when the setting is off; toggle takes effect without a restart
     - **Property 5: opt-in is authoritative and reversible**
     - **Validates: Requirements 4.1, 7.1, 7.5**
 
-- [ ] 8. Final checkpoint — Automatrix complete
+- [x] 8. Final checkpoint — Automatrix complete
   - All five properties green. With Automatrix enabled, Neo silently captures unrequested, grounded opportunities into a deduped cortex queue during normal chat; while the user is idle a jittered Chronos AUTOMATRIX wake (deferring on a busy session, bounded per day, refused when opted out) picks the top non-financial opportunity and completes it end-to-end on a restricted tool surface that structurally cannot reach money; on a genuinely gate-passed completion the user is pinged via ntfy/Apprise and the result is durably recorded in an in-app inbox — a real surprise, never a fabricated one, never anything that spends. Financial opportunities are only ever surfaced for explicit approval. Default OFF; user-controlled in Settings. No change to the signed MCL walk or Chronos's no-sign/no-cortex boundary. Deploy is user-driven.
 
 ## Task Dependency Graph

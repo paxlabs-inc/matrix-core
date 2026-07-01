@@ -54,9 +54,10 @@ type Client struct {
 	intentID        string
 	slotLabel       string
 
-	temperature float64
-	maxTokens   int
-	seed        int64
+	temperature    float64
+	maxTokens      int
+	seed           int64
+	enableThinking bool
 
 	httpClient *http.Client
 }
@@ -126,6 +127,7 @@ func New(cfg mcllm.Config) (*Client, error) {
 		temperature:     cfg.Temperature,
 		maxTokens:       maxTok,
 		seed:            cfg.Seed,
+		enableThinking:  cfg.EnableThinking,
 		httpClient:      &http.Client{Timeout: timeout},
 	}, nil
 }
@@ -155,6 +157,11 @@ func (c *Client) Chat(ctx context.Context, req ChatRequest) (*ChatResult, error)
 	// rewrite the body), so leave it untouched to avoid a double-insert.
 	if c.gatewayURL == "" {
 		wire.StreamOptions = &streamOptions{IncludeUsage: true}
+	}
+	if c.enableThinking {
+		if args := enableThinkingArgs(c.model); args != nil {
+			wire.ChatTemplateArgs = args
+		}
 	}
 	if c.seed != 0 {
 		s := c.seed
@@ -514,18 +521,36 @@ func truncate(s string, n int) string {
 	return s[:n] + "..."
 }
 
+// enableThinkingArgs returns the chat_template_args that turn reasoning ON for
+// providers/models where it is OPT-IN. Baseten serves GLM (zai-org/*) and Kimi
+// (moonshotai/*) with thinking OFF by default, while DeepSeek-V4-Pro and
+// gpt-oss default it on. With thinking off a reasoning model emits its
+// chain-of-thought as visible `content` instead of the separate
+// `reasoning_content` channel — leaking internal monologue into the chat.
+// enable_thinking makes the server (glm45 reasoning parser) split reasoning
+// into reasoning_content, which aggregateStreamReader routes to the thinking
+// channel. Returns nil for models that reason by default (never sent).
+func enableThinkingArgs(model string) map[string]any {
+	m := strings.ToLower(model)
+	if strings.HasPrefix(m, "zai-org/") || strings.HasPrefix(m, "moonshotai/") {
+		return map[string]any{"enable_thinking": true}
+	}
+	return nil
+}
+
 // --- wire types (OpenAI chat-completions with tools) ---
 
 type chatRequestWire struct {
-	Model         string         `json:"model"`
-	Messages      []wireMessage  `json:"messages"`
-	Temperature   float64        `json:"temperature"`
-	MaxTokens     int            `json:"max_tokens,omitempty"`
-	Seed          *int64         `json:"seed,omitempty"`
-	Tools         []Tool         `json:"tools,omitempty"`
-	ToolChoice    interface{}    `json:"tool_choice,omitempty"`
-	Stream        bool           `json:"stream,omitempty"`
-	StreamOptions *streamOptions `json:"stream_options,omitempty"`
+	Model            string         `json:"model"`
+	Messages         []wireMessage  `json:"messages"`
+	Temperature      float64        `json:"temperature"`
+	MaxTokens        int            `json:"max_tokens,omitempty"`
+	Seed             *int64         `json:"seed,omitempty"`
+	Tools            []Tool         `json:"tools,omitempty"`
+	ToolChoice       interface{}    `json:"tool_choice,omitempty"`
+	Stream           bool           `json:"stream,omitempty"`
+	StreamOptions    *streamOptions `json:"stream_options,omitempty"`
+	ChatTemplateArgs map[string]any `json:"chat_template_args,omitempty"`
 }
 
 // streamOptions asks the provider to emit a final usage chunk on the SSE

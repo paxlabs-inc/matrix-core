@@ -98,11 +98,11 @@ func runServe(args []string) {
 	defer stop()
 
 	// --- models ---
-	main, err := newClient(cfg.MainModel, 0.4, 4096, cfg)
+	main, err := newClient(cfg.MainModel, 0.4, 4096, true, cfg)
 	if err != nil {
 		fatal("cannot start main model %q: %v\n      set BASETEN_API_KEY (or MATRIX_GATEWAY_URL + MATRIX_GATEWAY_TOKEN) and retry.", cfg.MainModel, err)
 	}
-	cheap, err := newClient(cfg.CheapModel, 0.2, 1024, cfg)
+	cheap, err := newClient(cfg.CheapModel, 0.2, 1024, false, cfg)
 	if err != nil {
 		cheap = nil
 	}
@@ -135,7 +135,7 @@ func runServe(args []string) {
 	if pager != nil {
 		// Memory write-back: a stronger extractor (its quality sets memory
 		// quality) + the cheap model for the rare relation-classify path.
-		extract, eerr := newClient(cfg.ConsolidationModel, 0.2, 2048, cfg)
+		extract, eerr := newClient(cfg.ConsolidationModel, 0.2, 2048, false, cfg)
 		if eerr != nil || extract == nil {
 			extract = main // fall back to the main model if the extractor won't start
 		}

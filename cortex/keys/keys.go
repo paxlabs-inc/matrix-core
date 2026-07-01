@@ -42,6 +42,9 @@ var (
 	PrefixAccum         = []byte("accum/")    // accum/<...> — Phase 7 journal Merkle accumulator (§7.1)
 	PrefixIdxSMT        = []byte("idx/smt/")  // idx/smt/<ns>/n/<depth:2>/<path:32> — Phase 7 sparse Merkle tree node cache (§7.2)
 	PrefixCheckpoint    = []byte("chk/")      // chk/<lpstr intent>/<lpstr step> — Phase 9 compaction checkpoint records
+	PrefixSession       = []byte("sess/")     // sess/<lpstr conv><seq:8> — continuous-memory session/transcript records (derived lane)
+	PrefixSessionBlob   = []byte("sessblob/") // sessblob/<lpstr conv><seq:8> — spilled large tool_result payloads (overflow discipline)
+	PrefixRollup        = []byte("roll/")     // roll/<tier:1><start:8 BE> — continuous-memory temporal-ladder rollup records (derived lane)
 )
 
 // MetaJournalHead is the meta-namespace key holding the next-to-allocate
@@ -106,6 +109,56 @@ func MetaCompileCacheKey(hex string) []byte {
 // tick — an expensive footgun for an audit-grade ledger. The plan
 // (S32Q4) explicitly pins this posture.
 var PrefixMetaGoalState = append(append([]byte{}, PrefixMeta...), []byte("goal_state/")...)
+
+// PrefixMetaSessionHead is the meta/ sub-namespace for the per-conversation
+// session sequence allocator (continuous-memory task 1.1).
+//
+// One Pebble key per conversation at meta/session_head/<lpstr conv> holding
+// the next-to-allocate uint64 (8 bytes BE) session seq for that
+// conversation. AppendMessage reads it (default 0 when absent) under the
+// held write batch, uses it as this message's seq, and writes seq+1 back —
+// so per-conversation seqs are monotonic and gap-free.
+//
+// CANONICAL, not derived. Unlike meta/salience_weights or meta/goal_state
+// (sidecar runtime state cleared on replay drop+rebuild), this counter is
+// the source of truth for the gap-free session seq and MUST be preserved
+// across replay exactly like meta/journal_head. It is deliberately NOT
+// added to replay/drop.go derivedSingleMetaKeys.
+var PrefixMetaSessionHead = append(append([]byte{}, PrefixMeta...), []byte("session_head/")...)
+
+// MetaSessionHead returns meta/session_head/<lpstr conv>. conv must not
+// contain '/' and must be <=255 bytes (validated).
+func MetaSessionHead(conv string) ([]byte, error) {
+	if err := ValidateNoSeparator(conv); err != nil {
+		return nil, fmt.Errorf("keys.MetaSessionHead: %w", err)
+	}
+	out := make([]byte, 0, len(PrefixMetaSessionHead)+1+len(conv))
+	out = append(out, PrefixMetaSessionHead...)
+	var err error
+	out, err = PutLPString(out, conv)
+	if err != nil {
+		return nil, fmt.Errorf("keys.MetaSessionHead: %w", err)
+	}
+	return out, nil
+}
+
+// ParseMetaSessionHead extracts the conversation id from a
+// meta/session_head/ key. Returns ErrBadPrefix when k is not a
+// session-head key, or wraps the lpstring decode error.
+func ParseMetaSessionHead(k []byte) (conv string, err error) {
+	if !hasPrefix(k, PrefixMetaSessionHead) {
+		return "", ErrBadPrefix
+	}
+	tail := k[len(PrefixMetaSessionHead):]
+	conv, tail, err = ReadLPString(tail)
+	if err != nil {
+		return "", err
+	}
+	if len(tail) != 0 {
+		return "", fmt.Errorf("keys.ParseMetaSessionHead: trailing %d bytes", len(tail))
+	}
+	return conv, nil
+}
 
 // MetaGoalStateKey returns meta/goal_state/<goal_id:16>.
 func MetaGoalStateKey(goalID ULID) []byte {
@@ -787,6 +840,132 @@ func ParseCheckpointKey(k []byte) (intentID, stepID string, err error) {
 		return "", "", fmt.Errorf("keys.ParseCheckpointKey: trailing %d bytes", len(tail))
 	}
 	return intentID, stepID, nil
+}
+
+// SessionKey returns sess/<lpstr conv><seq:8 BE>.
+//
+// Continuous-memory task 1.1: the durable session/transcript record for
+// one message. The 1-byte length-prefixed conversation id followed by an
+// 8-byte big-endian seq guarantees byte-sort == (conv, seq) sort, so a
+// prefix scan on one conversation (SessionConvPrefix) yields records in
+// ascending seq order. The length prefix disambiguates conversations whose
+// ids are prefixes of one another (e.g. "a" vs "ab").
+//
+// conv must not contain '/' and must be <=255 bytes (validated).
+func SessionKey(conv string, seq uint64) ([]byte, error) {
+	if err := ValidateNoSeparator(conv); err != nil {
+		return nil, fmt.Errorf("keys.SessionKey: %w", err)
+	}
+	out := make([]byte, 0, len(PrefixSession)+1+len(conv)+8)
+	out = append(out, PrefixSession...)
+	var err error
+	out, err = PutLPString(out, conv)
+	if err != nil {
+		return nil, fmt.Errorf("keys.SessionKey: %w", err)
+	}
+	out = PutUint64BE(out, seq)
+	return out, nil
+}
+
+// SessionConvPrefix returns sess/<lpstr conv>, the prefix for scanning
+// every message record of one conversation in ascending seq order. Same
+// constraints as SessionKey.
+func SessionConvPrefix(conv string) ([]byte, error) {
+	if err := ValidateNoSeparator(conv); err != nil {
+		return nil, fmt.Errorf("keys.SessionConvPrefix: %w", err)
+	}
+	out := make([]byte, 0, len(PrefixSession)+1+len(conv))
+	out = append(out, PrefixSession...)
+	var err error
+	out, err = PutLPString(out, conv)
+	if err != nil {
+		return nil, fmt.Errorf("keys.SessionConvPrefix: %w", err)
+	}
+	return out, nil
+}
+
+// ParseSessionKey extracts (conv, seq) from a sess/ key. Returns
+// ErrBadPrefix if k doesn't start with sess/, ErrShortKey on truncation,
+// or wraps the lpstring decode error.
+func ParseSessionKey(k []byte) (conv string, seq uint64, err error) {
+	if !hasPrefix(k, PrefixSession) {
+		return "", 0, ErrBadPrefix
+	}
+	tail := k[len(PrefixSession):]
+	conv, tail, err = ReadLPString(tail)
+	if err != nil {
+		return "", 0, err
+	}
+	seq, tail, err = ReadUint64BE(tail)
+	if err != nil {
+		return "", 0, err
+	}
+	if len(tail) != 0 {
+		return "", 0, fmt.Errorf("keys.ParseSessionKey: trailing %d bytes", len(tail))
+	}
+	return conv, seq, nil
+}
+
+// SessionBlobKey returns sessblob/<lpstr conv><seq:8 BE>. Holds a large
+// tool_result payload that was spilled out of the session record proper
+// (overflow discipline — keeps sess/ a page-in target rather than resident
+// bloat). Same layout/constraints as SessionKey.
+func SessionBlobKey(conv string, seq uint64) ([]byte, error) {
+	if err := ValidateNoSeparator(conv); err != nil {
+		return nil, fmt.Errorf("keys.SessionBlobKey: %w", err)
+	}
+	out := make([]byte, 0, len(PrefixSessionBlob)+1+len(conv)+8)
+	out = append(out, PrefixSessionBlob...)
+	var err error
+	out, err = PutLPString(out, conv)
+	if err != nil {
+		return nil, fmt.Errorf("keys.SessionBlobKey: %w", err)
+	}
+	out = PutUint64BE(out, seq)
+	return out, nil
+}
+
+// RollupKey returns roll/<tier:1><start:8 BE>.
+//
+// Continuous-memory task 2.1: the derived temporal-ladder rollup record for
+// one time window. The 1-byte tier followed by an 8-byte big-endian window
+// start (Unix nanoseconds, cast from int64) guarantees byte-sort == (tier,
+// start) sort, so a tier prefix scan (RollupTierPrefix) yields records in
+// ascending window-start order. Same key-family posture as chk/ (compaction
+// checkpoints) and sess/ (session transcript): a derived record keyed by its
+// own identity — here the (tier, window-start) time window — NOT a 10th
+// memory type and never an anchored SMT write.
+func RollupKey(tier uint8, start uint64) []byte {
+	out := make([]byte, 0, len(PrefixRollup)+1+8)
+	out = append(out, PrefixRollup...)
+	out = append(out, tier)
+	out = PutUint64BE(out, start)
+	return out
+}
+
+// RollupTierPrefix returns roll/<tier:1>, the prefix for scanning every
+// rollup of one tier in ascending window-start order.
+func RollupTierPrefix(tier uint8) []byte {
+	out := make([]byte, 0, len(PrefixRollup)+1)
+	out = append(out, PrefixRollup...)
+	out = append(out, tier)
+	return out
+}
+
+// ParseRollupKey extracts (tier, start) from a roll/ key. Returns
+// ErrBadPrefix when k does not start with roll/, ErrShortKey on truncation.
+func ParseRollupKey(k []byte) (tier uint8, start uint64, err error) {
+	wantLen := len(PrefixRollup) + 1 + 8
+	if len(k) != wantLen {
+		return 0, 0, ErrShortKey
+	}
+	if !hasPrefix(k, PrefixRollup) {
+		return 0, 0, ErrBadPrefix
+	}
+	tail := k[len(PrefixRollup):]
+	tier = tail[0]
+	start = binary.BigEndian.Uint64(tail[1:])
+	return tier, start, nil
 }
 
 // hasPrefix reports whether b begins with p, allocation-free.
