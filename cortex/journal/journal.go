@@ -176,6 +176,23 @@ const (
 	// identity + the source pin + the enrichment's own pin + model), the heavy
 	// prose lives at its own key.
 	KindRollupEnrich Kind = "rollup_enrich"
+	// KindStorySoFar is appended by cortex.BuildStorySoFar (continuous-memory
+	// task 4.2) when it persists the durable per-conversation "story so far"
+	// record. Rides the SAME derived, journaled-but-NOT-anchored lane as
+	// KindSession/KindRollup: NO snap.StageMemoryUpdate / StageEdgeUpdate, so
+	// this entry contributes only a journal-MMR leaf and never perturbs the
+	// anchored "memories"/"edges" SMT roots or the D11 replay byte-identity
+	// of the anchored world-state.
+	//
+	// The payload is a canonical CBOR StorySoFarPayload (see below); the
+	// full StorySoFarRecord (role tallies, message count, deterministic
+	// extractive short-form) lives at story/<conv> and is integrity-bound to
+	// this entry via RecordHash. Same shape rationale as KindSession/
+	// KindRollup: the payload stays small, the heavy record lives at its
+	// own key, and the record is a PURE function of the conversation's own
+	// sess/<conv>/* transcript up to UpToSeq (deterministic and rebuildable
+	// regardless of when BuildStorySoFar runs).
+	KindStorySoFar Kind = "story"
 )
 
 // WritePayload is the canonical shape carried by KindWrite and KindUpdate
@@ -406,6 +423,39 @@ func EncodeEnrichPayload(p *EnrichPayload) ([]byte, error) {
 
 // DecodeEnrichPayload parses canonical CBOR into out.
 func DecodeEnrichPayload(b []byte, out *EnrichPayload) error {
+	return canonicalDec.Unmarshal(b, out)
+}
+
+// StorySoFarPayload is the canonical shape carried by KindStorySoFar entries
+// (continuous-memory task 4.2). Mirrors SessionPayload / RollupPayload
+// discipline: the payload carries only the conversation identity + the
+// window it covers + a cryptographic pin, never the heavy record.
+//
+// ConversationID identifies the single story/<conv> record (there is one
+// per conversation, overwritten as the transcript grows — unlike sess/ or
+// roll/ which are keyed by seq/window). UpToSeq is the highest session seq
+// (inclusive) folded into this build, so a reader can tell whether a
+// persisted record is stale relative to the current transcript head.
+// RecordHash is sha256 over the canonical CBOR encoding of the
+// StorySoFarRecord stored at story/<conv> — the same integrity discipline
+// as RollupPayload.RecordHash / SessionPayload.RecordHash.
+type StorySoFarPayload struct {
+	SchemaVersion  uint8    `cbor:"0,keyasint"`
+	ConversationID string   `cbor:"1,keyasint"`
+	UpToSeq        uint64   `cbor:"2,keyasint"`
+	RecordHash     [32]byte `cbor:"3,keyasint"`
+}
+
+// EncodeStorySoFarPayload returns canonical deterministic CBOR for p.
+func EncodeStorySoFarPayload(p *StorySoFarPayload) ([]byte, error) {
+	if p == nil {
+		return nil, fmt.Errorf("journal: nil StorySoFarPayload")
+	}
+	return canonicalEnc.Marshal(p)
+}
+
+// DecodeStorySoFarPayload parses canonical CBOR into out.
+func DecodeStorySoFarPayload(b []byte, out *StorySoFarPayload) error {
 	return canonicalDec.Unmarshal(b, out)
 }
 

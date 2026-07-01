@@ -7,36 +7,36 @@
 ## P1 — Foundations: session store + replay-safety harness
 
 - [ ] 1. The provider-agnostic transcript store and the D11 safety baseline
-  - [ ] 1.1 Provider-agnostic Message record + session/transcript store (AppendMessage / Transcript)
+  - [x] 1.1 Provider-agnostic Message record + session/transcript store (AppendMessage / Transcript)
     - Add a cortex/session package: the neutral Message record {role: user|assistant|tool_call|tool_result|system, content, tool_name?, tool_args?(canonical JSON), tool_result_ref?, media_refs[], ts, seq} with NO provider coupling
     - Implement AppendMessage (derived lane: journal entry of a new derived Kind + a sess/<conv>/<seq> record, per-conversation monotonic gap-free seq, actor+conversation scoped, NO SMT write, mirroring compact.go:429-431) and Transcript(conv, sinceSeq, limit); spill large tool_result payloads to a resolvable ref (overflow discipline); store no secrets
     - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 2.1, 2.2, 2.3_
-  - [ ] 1.2 Replay-safety harness (baseline: derived lane does not touch the anchored root)
+  - [x] 1.2 Replay-safety harness (baseline: derived lane does not touch the anchored root)
     - Build a replay harness against real cortex that drives a real journal and asserts a byte-identical OverallRoot / cortex_snapshot_hash with the continuous-memory derived lane active vs inactive; establish it on the session-store writes from 1.1 as the baseline the ladder + activation must also satisfy
     - _Requirements: 11.1, 11.2, 11.3_
 
 ## P2 — Temporal ladder
 
 - [ ] 2. Multi-resolution rollup records + deterministic builder + cascade
-  - [ ] 2.1 Rollup record shape (roll/-family, derived) + deterministic extractive builder
+  - [x] 2.1 Rollup record shape (roll/-family, derived) + deterministic extractive builder
     - Add the Rollup record (window{tier,start,end}, member Refs, deterministic ShortForm, salience, optional EnrichRef) as a derived roll/-family chk-style record keyed by time window, NOT a 10th memory type, NO SMT write
     - Implement BuildRollup(window): deterministic extractive summary purely from journal facts in the window (top-salience Refs via salience.go recency, verb/outcome tallies, counts); idempotent (same window -> byte-identical record); skip windows below the event-count floor
     - _Requirements: 3.1, 3.2, 3.3, 3.4, 4.1, 4.2_
-  - [ ] 2.2 Cascade hour -> day -> week/epoch (idempotent)
+  - [x] 2.2 Cascade hour -> day -> week/epoch (idempotent)
     - Implement Cascade(upTo, now): roll finer windows into coarser ones (hour->day->week/epoch), each level built with the same deterministic discipline, idempotent and rebuildable from the journal
     - _Requirements: 4.4_
-  - [ ] 2.3 Optional LLM enrichment lane (separate derived record, rebuildable)
+  - [x] 2.3 Optional LLM enrichment lane (separate derived record, rebuildable)
     - Add an optional enrichment record referenced by Rollup.EnrichRef, produced by an LLM, written as a SEPARATE derived record rebuildable from the deterministic ShortForm; absent/stale enrichment leaves the deterministic short-form standing; enrichment never feeds determinism or replay; gated by a config knob
     - _Requirements: 3.4, 4.3_
 
 ## P3 — Scheduler + tiers
 
 - [ ] 3. Chronos window-close sweep, lazy read-repair, and the T1 reader
-  - [ ] 3.1 Chronos window-close cascade sweep + lazy read-repair
+  - [x] 3.1 Chronos window-close cascade sweep + lazy read-repair
     - Schedule the cascade eagerly on window-close via a Chronos alarm (bounded work per sweep; Chronos gains NO signing/cortex-write/plan-walk capability — the rollup write happens inside cortex on the derived lane)
     - Add lazy read-repair: a read that finds a missing/stale coarser-tier rollup triggers an idempotent rebuild yielding a record identical to the eager path
     - _Requirements: 5.1, 5.2, 5.3_
-  - [ ] 3.2 T1 recent-episodes reader (last N across types, materialized)
+  - [x] 3.2 T1 recent-episodes reader (last N across types, materialized)
     - Add a T1 reader returning the last N episodes across memory types (not verb/object-keyed like tierOutcomes), ranked by the salience recency substrate (salience.go:209-216), served from materialized rollup/recent records (no per-call scan)
     - _Requirements: 6.1, 6.2_
 
@@ -81,7 +81,7 @@
 ## P8 — Verification (no fakes)
 
 - [ ] 8. Prove storage, ladder, recall, activation, collapse, and replay-safety
-  - [ ] 8.1 Session round-trip + deterministic rollup reproducibility (real cortex + real journal)
+  - [x] 8.1 Session round-trip + deterministic rollup reproducibility (real cortex + real journal)
     - Real tests: AppendMessage round-trips through Transcript in order with correct sequencing; a real journal window builds a rollup whose ShortForm is byte-identical on rebuild
     - **Property 1: the transcript store and the deterministic ladder floor are durable and reproducible**
     - **Validates: Requirements 1.1, 1.3, 2.1, 4.1, 4.2, 12.1, 12.2**

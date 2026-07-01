@@ -46,6 +46,7 @@ var (
 	PrefixSessionBlob   = []byte("sessblob/") // sessblob/<lpstr conv><seq:8> — spilled large tool_result payloads (overflow discipline)
 	PrefixRollup        = []byte("roll/")     // roll/<tier:1><start:8 BE> — continuous-memory temporal-ladder rollup records (derived lane)
 	PrefixEnrich        = []byte("enr/")      // enr/<tier:1><start:8 BE> — continuous-memory OPTIONAL LLM enrichment records (derived lane, parallel to roll/)
+	PrefixStory         = []byte("story/")    // story/<lpstr conv> — continuous-memory per-conversation story-so-far record (derived lane)
 )
 
 // MetaJournalHead is the meta-namespace key holding the next-to-allocate
@@ -1011,6 +1012,31 @@ func ParseEnrichKey(k []byte) (tier uint8, start uint64, err error) {
 	tier = tail[0]
 	start = binary.BigEndian.Uint64(tail[1:])
 	return tier, start, nil
+}
+
+// StoryKey returns story/<lpstr conv>.
+//
+// Continuous-memory task 4.2: the durable per-conversation "story so far"
+// record — a single record per conversation (NOT keyed by seq/window like
+// sess/ or roll/) that is overwritten as the conversation's transcript
+// grows. The 1-byte length-prefixed conversation id disambiguates
+// conversations whose ids are prefixes of one another, matching the
+// SessionKey/RollupKey discipline. Same derived-lane posture: rebuildable
+// from the conversation's own sess/ transcript, no anchored SMT write.
+//
+// conv must not contain '/' and must be <=255 bytes (validated).
+func StoryKey(conv string) ([]byte, error) {
+	if err := ValidateNoSeparator(conv); err != nil {
+		return nil, fmt.Errorf("keys.StoryKey: %w", err)
+	}
+	out := make([]byte, 0, len(PrefixStory)+1+len(conv))
+	out = append(out, PrefixStory...)
+	var err error
+	out, err = PutLPString(out, conv)
+	if err != nil {
+		return nil, fmt.Errorf("keys.StoryKey: %w", err)
+	}
+	return out, nil
 }
 
 // hasPrefix reports whether b begins with p, allocation-free.

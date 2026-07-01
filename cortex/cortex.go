@@ -26,6 +26,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"sync"
 	"time"
 
 	"matrix/cortex/forms"
@@ -69,6 +70,21 @@ type Cortex struct {
 	// Always non-nil after New; never persisted (runtime policy state,
 	// not memory data — see ratelimit.go Q4 lock).
 	rl *rateLimiter
+
+	// pinnedMu/pinnedCache* back the continuous-memory task 4.1 per-turn
+	// Pinned-tier cache consulted by Activate (activate.go), fixing audit
+	// finding NE-7 (the per-step idx/type pinned rescan). PURELY IN-MEMORY
+	// runtime state — like rl above and embed above, it is NEVER persisted
+	// or journaled, so (stronger than "lives in the derived lane") it
+	// cannot perturb ANY lane, anchored or derived. Valid for exactly as
+	// long as c.s.NextSeq() (the journal head) hasn't advanced since it was
+	// computed — any mutating call bumps that seq, so the cache spans
+	// precisely "since the last cortex write", the same window as one turn
+	// in a turn loop that doesn't write to cortex mid-turn.
+	pinnedMu       sync.Mutex
+	pinnedCacheSeq uint64
+	pinnedCacheIDs []memory.ID
+	pinnedCacheOK  bool
 }
 
 // Option configures a Cortex on construction. Reserved for clock and ID
