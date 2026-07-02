@@ -11,22 +11,24 @@ import (
 	"matrix/neo/internal/llm"
 )
 
-// cassandra.go — Cassandra Phase 3 wiring for the Neo completion gate.
+// cassandra.go — Cassandra wiring for the Neo completion gate.
 //
-// Phase 1 shipped a deterministic local validator. Phase 3 swaps in the full
-// shared Cassandra adjudicator (matrix/cassandra) on state-touching turns: a
-// grounded verdict over the executed transcript (ground truth) that broadens
-// the audit from deliverable coverage to grounding, unverified claims,
-// assumptions, and open unknowns. The deterministic priors remain the cheap
-// pre-pass, and the deterministic grounding check remains the fail-open
-// fallback so a Cassandra hiccup never breaks the turn (cassandra.frozen.kvx
-// [seams.neo], [adjudicator], [coupling], [ux], [audit], i_cass_1/4/5).
+// The shared Cassandra adjudicator (matrix/cassandra) judges state-touching (or,
+// under GateAllWork, substantial) turns: it checks whether the OUTCOME Neo is
+// about to return to the user satisfies the task GOAL, over the executed
+// transcript (ground truth), covering deliverable coverage, grounding,
+// unverified claims, assumptions, and open unknowns. Neo cites no evidence and
+// nothing is decided by matching the words it typed. The deterministic priors
+// remain the cheap pre-pass; a Cassandra hiccup FAILS OPEN so it never breaks
+// the turn (cassandra.frozen.kvx [seams.neo], [adjudicator], [coupling], [ux],
+// [audit], i_cass_1/4/5).
 
 // Cassandra audit event types streamed onto the run's event stream
 // (cassandra.frozen.kvx [audit].events). Pure observability side-channel: the
 // adjudicator signs nothing and writes no cortex on the happy path (i_cass_4,
 // i_cass_6).
 const (
+	auditEventGoal     = "cassandra.goal"     // the task goal, logged quietly at dispatch
 	auditEventAudit    = "cassandra.audit"    // an audit began / errored
 	auditEventVerdict  = "cassandra.verdict"  // the rendered verdict object
 	auditEventContinue = "cassandra.continue" // ungrounded/incomplete → loop with feedback
@@ -109,21 +111,21 @@ func (a *Agent) buildEvidenceDigest() string {
 	return s
 }
 
-// buildAuditContract folds the user's request together with the agent's claimed
-// completion object so the auditor can check the CLAIM against the executed
-// transcript ([verdict.fields].unverified_claims — the hallucination surface).
-func buildAuditContract(userRequest, summary, coverage string, evidence, openGaps, assumptions []string) string {
+// buildAuditContract folds the task GOAL together with the OUTCOME Neo is about
+// to return to the user, so the auditor can check whether that outcome actually
+// satisfies the goal over the executed transcript ([verdict.fields] — coverage +
+// the unverified-claims hallucination surface). Neo cites no evidence; the
+// transcript (AuditInput.Evidence) is the ground truth, so completion is proven
+// by what actually ran, never by matching the words the agent typed.
+func buildAuditContract(goal, summary, coverage string, openGaps, assumptions []string) string {
 	var b strings.Builder
-	b.WriteString(strings.TrimSpace(userRequest))
-	b.WriteString("\n\n--- THE AGENT NOW CLAIMS THIS TURN IS DONE ---\n")
+	b.WriteString("== THE GOAL (the task Neo was given) ==\n")
+	b.WriteString(strings.TrimSpace(goal))
+	b.WriteString("\n\n--- THE OUTCOME NEO IS ABOUT TO RETURN TO THE USER ---\n")
 	b.WriteString("Claimed coverage: ")
 	b.WriteString(coverage)
-	b.WriteString("\nThe answer the agent is about to give the user:\n")
+	b.WriteString("\n")
 	b.WriteString(strings.TrimSpace(summary))
-	if len(evidence) > 0 {
-		b.WriteString("\nThe agent cites this evidence: ")
-		b.WriteString(strings.Join(evidence, "; "))
-	}
 	if len(openGaps) > 0 {
 		b.WriteString("\nThe agent admits these open items: ")
 		b.WriteString(strings.Join(openGaps, "; "))
@@ -132,23 +134,23 @@ func buildAuditContract(userRequest, summary, coverage string, evidence, openGap
 		b.WriteString("\nThe agent made these assumptions: ")
 		b.WriteString(strings.Join(assumptions, "; "))
 	}
-	b.WriteString("\n\nVerify the agent's claimed answer against the executed transcript. Any load-bearing factual claim with no supporting tool result is an unverified_claim.")
+	b.WriteString("\n\nDecide whether this outcome satisfies the goal, judged ONLY against the executed transcript below. Any load-bearing factual claim in the outcome with no supporting tool result is an unverified_claim.")
 	return b.String()
 }
 
-// verdictAccepts is the pure verdict→accept decision the high-stakes gate
-// applies ([coupling].high_stakes, i_cass_1). A completion claim passes only
-// when it is GROUNDED — every load-bearing claim backed by real evidence (no
-// unverified claims, no phantom citations) — AND its coverage is honest: a
-// claimed-full turn needs Cassandra to agree coverage is complete, while a
-// claimed partial is honest incompleteness that only needs grounding. This
-// preserves honest partials (Cassandra blocks false SUCCESS, not honest
-// "I didn't finish").
-func verdictAccepts(coverage string, v *cassandra.Verdict, phantom []string) bool {
+// verdictAccepts is the pure verdict→accept decision the strict gate applies
+// ([coupling].high_stakes, i_cass_1). A completion passes only when the OUTCOME
+// is GROUNDED in the executed transcript — every load-bearing claim backed by a
+// real result (no unverified claims) — AND its coverage is honest: a claimed-
+// full turn needs Cassandra to agree coverage is complete, while a claimed
+// partial is honest incompleteness that only needs grounding. This preserves
+// honest partials (Cassandra blocks false SUCCESS, not honest "I didn't
+// finish").
+func verdictAccepts(coverage string, v *cassandra.Verdict) bool {
 	if v == nil {
 		return false
 	}
-	grounded := v.Grounded && len(v.UnverifiedClaims) == 0 && len(phantom) == 0
+	grounded := v.Grounded && len(v.UnverifiedClaims) == 0
 	fullOK := coverage == "partial" || v.CoverageComplete()
 	return grounded && fullOK
 }
@@ -172,25 +174,22 @@ func cappedUnknowns(v *cassandra.Verdict) []string {
 
 // continueFeedback turns a not-grounded / incomplete verdict into concrete,
 // actionable feedback fed back as the task_complete tool result so the loop
-// continues productively (advisor-not-effector, i_cass_4). It enumerates the
-// present-object negative space ([thesis].mechanism): missing deliverables,
-// unverified claims, phantom citations, and open unknowns.
-func continueFeedback(v *cassandra.Verdict, phantom []string) string {
+// continues productively (advisor-not-effector, i_cass_4). It tells Neo what is
+// wrong and what needs fixing — the present-object negative space
+// ([thesis].mechanism): missing deliverables, unverified claims, open unknowns.
+func continueFeedback(v *cassandra.Verdict) string {
 	var b strings.Builder
-	b.WriteString("Not done yet — your completion claim doesn't hold up against what you actually did this turn. ")
+	b.WriteString("Not done yet — the outcome you're about to return doesn't fully satisfy the goal. ")
 	if len(v.Missing) > 0 {
 		b.WriteString("Still missing: " + strings.Join(v.Missing, "; ") + ". ")
 	}
 	if len(v.UnverifiedClaims) > 0 {
-		b.WriteString("These claims have no supporting tool result — verify them with a tool or drop them: " + strings.Join(v.UnverifiedClaims, "; ") + ". ")
-	}
-	if len(phantom) > 0 {
-		b.WriteString("This cited evidence does not appear in your transcript: " + strings.Join(phantom, "; ") + ". ")
+		b.WriteString("These claims aren't backed by anything you actually did — verify them with a tool or drop them: " + strings.Join(v.UnverifiedClaims, "; ") + ". ")
 	}
 	if len(v.OpenUnknowns) > 0 {
 		b.WriteString("Resolve or honestly surface these open unknowns: " + strings.Join(v.OpenUnknowns, "; ") + ". ")
 	}
-	b.WriteString("Keep working and address these, or set coverage=\"partial\" and tell the user plainly what remains unresolved.")
+	b.WriteString("Fix these and re-call task_complete, or set coverage=\"partial\" and tell the user plainly what remains unresolved.")
 	return b.String()
 }
 

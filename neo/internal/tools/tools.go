@@ -979,23 +979,18 @@ func constructRenderSchema() llm.Tool {
 func taskCompleteSchema() llm.Tool {
 	return llm.NewFunctionTool(
 		TaskCompleteTool,
-		"Declare this turn complete. Call this ONLY when you are actually done — it is the single way to finish a turn in which you took an action, ran a tool, changed state, or made a claim about real-world facts. Provide an honest completeness object: what you accomplished, whether every requested deliverable was produced, the concrete evidence behind your load-bearing claims, anything still unfinished or unconfirmed, and any assumptions you made. Be truthful — claims you cannot back with real tool results, and gaps you leave open, are checked against what you actually did. If you are not done, keep working instead of calling this.",
+		"Declare this turn complete. Call this ONLY when you are actually done — it is the single way to finish a turn in which you took an action, ran a tool, changed state, or made a claim about real-world facts. Just tell the user the outcome; you do NOT need to cite or prove evidence. Your outcome is checked automatically against the task's goal and what actually ran, so simply give the honest result: what you accomplished (summary), whether every requested deliverable was produced (coverage), anything still unfinished or unconfirmed (open_gaps), and any assumptions you made. Be truthful about gaps — do not claim a task is fully done when it is not. If you are not done, keep working instead of calling this.",
 		map[string]interface{}{
 			"type": "object",
 			"properties": map[string]interface{}{
 				"summary": map[string]interface{}{
 					"type":        "string",
-					"description": "Your final answer / narration to the user, in plain human terms — the substance they are meant to read.",
+					"description": "Your final answer / narration to the user, in plain human terms — the outcome they are meant to read. This is what gets checked against the goal.",
 				},
 				"coverage": map[string]interface{}{
 					"type":        "string",
 					"enum":        []string{"full", "partial"},
 					"description": "\"full\" only if EVERY explicitly requested deliverable was produced; otherwise \"partial\".",
-				},
-				"evidence": map[string]interface{}{
-					"type":        "array",
-					"items":       map[string]interface{}{"type": "string"},
-					"description": "Concrete evidence backing your load-bearing claims: the tool results, command output, file paths, URLs, or transaction hashes you actually obtained this turn. Each item must correspond to something you really did — do not invent evidence.",
 				},
 				"open_gaps": map[string]interface{}{
 					"type":        "array",

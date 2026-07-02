@@ -71,9 +71,9 @@ type Verdict struct {
 //	g1 — Coverage=full with a non-empty Missing list -> force Coverage=partial.
 //	g2 — Grounded=true with non-empty UnverifiedClaims -> force Grounded=false.
 //
-// g3 (a cited evidence ref absent from the transcript -> Grounded=false) needs
-// the evidence digest and is applied separately via CheckCitations, because the
-// set of cited refs is supplied by the caller's gate, not the verdict schema.
+// There is no citation-matching guard: completion is judged by whether the
+// OUTCOME satisfies the GOAL over the executed transcript (grounded +
+// unverified_claims), never by substring-matching refs the agent typed.
 func (v *Verdict) Normalize() {
 	if v == nil {
 		return
@@ -105,31 +105,6 @@ func (v *Verdict) Normalize() {
 	} else if v.Certainty > 1 {
 		v.Certainty = 1
 	}
-}
-
-// CheckCitations applies coherence guard g3: any cited evidence ref that does
-// not appear in the evidence digest is phantom evidence, so the verdict cannot
-// be grounded. It returns the refs that were absent (empty => all citations
-// check out). Matching is a case-insensitive substring test against the digest.
-func (v *Verdict) CheckCitations(refs []string, evidence string) []string {
-	if v == nil {
-		return nil
-	}
-	hay := strings.ToLower(evidence)
-	var phantom []string
-	for _, r := range refs {
-		r = strings.TrimSpace(r)
-		if r == "" {
-			continue
-		}
-		if !strings.Contains(hay, strings.ToLower(r)) {
-			phantom = append(phantom, r)
-		}
-	}
-	if len(phantom) > 0 {
-		v.Grounded = false
-	}
-	return phantom
 }
 
 // CoverageComplete reports the legacy completeness-critic decision: every

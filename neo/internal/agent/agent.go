@@ -223,9 +223,10 @@ type Options struct {
 	Observer     ToolObserver // optional: per-tool-result surfacing (show the work)
 
 	// Adjudicator is the shared Cassandra completeness faculty consulted at the
-	// completion gate on state-touching turns (Phase 3). nil falls back to the
-	// deterministic local grounding check. AuditObserver streams cassandra.*
-	// audit events to the harness; nil discards them.
+	// completion gate on state-touching turns: it checks the OUTCOME against the
+	// task GOAL over the executed transcript. nil fails open on the strict path
+	// (i_cass_5) — there is no local word-matching stand-in. AuditObserver
+	// streams cassandra.* audit events to the harness; nil discards them.
 	Adjudicator   *cassandra.Adjudicator
 	AuditObserver AuditObserver
 
@@ -447,6 +448,10 @@ func (a *Agent) Chat(ctx context.Context, userInput string) error {
 	}
 	if a.activeGoal == "" {
 		a.activeGoal = userInput
+		// Cassandra logs the task GOAL quietly at dispatch (side-channel only).
+		// The completion gate later checks the OUTCOME Neo returns against this
+		// goal over the executed transcript — Neo never has to cite evidence.
+		a.emitAudit(auditEventGoal, map[string]interface{}{"goal": a.activeGoal})
 	}
 	a.turnSeq++
 	a.lastFailureClass = delegate.ClassNone
@@ -790,7 +795,7 @@ func (a *Agent) Chat(ctx context.Context, userInput string) error {
 			// not assumed. A pure conversational turn (no tools) rides the light
 			// path (i_cass_5, placement-by-reversibility) and ends frictionlessly.
 			if a.gateStrict(stateTouched, workTouched) {
-				a.working = append(a.working, llm.UserMessage("(you did real work this turn, so don't finish with a plain message — call task_complete with an honest completeness object: a summary for the user, coverage, the real evidence behind your claims, and anything still open.)"))
+				a.working = append(a.working, llm.UserMessage("(you did real work this turn, so don't finish with a plain message — call task_complete with the outcome for the user: a summary, coverage, and anything still open. You don't need to cite evidence; just give the honest result.)"))
 				continue
 			}
 			a.finishTurn(ctx, answer, surfaced, surfacedSnips, userInput, false)

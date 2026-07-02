@@ -43,31 +43,31 @@
 ## P4 — Activation composer
 
 - [ ] 4. Activate() extending Context + durable story-so-far
-  - [ ] 4.1 Activate(conv, query, budget) -> bundle, additive over Context, per-turn pinned cache
+  - [x] 4.1 Activate(conv, query, budget) -> bundle, additive over Context, per-turn pinned cache
     - Implement cortex.Activate returning {Pinned, Timeline(T0), Recent(T1), Transcript(T2 slice), StorySoFar, ReachableURIs(T3 handles)}, single global salience-asc budget trim like Context; serve Timeline/Recent from materialized rollups + Transcript from the session store; compute Pinned ONCE per turn via a cache (fixes NE-7)
     - Keep cortex.Context a pure read composer (unchanged for existing consumers); Activate is additive; degrade gracefully to Context tiers when a conversation has no transcript; emit nothing that mutates the anchored world-state (any cache lives in the derived lane); hold p50<80ms / <250ms ceiling
     - _Requirements: 7.1, 7.2, 7.3, 7.4, 7.5, 7.6_
-  - [ ] 4.2 Durable story-so-far via the ladder over the conversation transcript
+  - [x] 4.2 Durable story-so-far via the ladder over the conversation transcript
     - Produce the per-conversation StorySoFar as a durable derived record maintained by the ladder over the conversation's own transcript (the durable replacement for Neo's a.summary), surfaced through Activate
     - _Requirements: 7.1_
 
 ## P5 — Recursive recall
 
 - [ ] 5. Decomposable descent over the timeline (RLM applied to time)
-  - [ ] 5.1 Recursive recall surface: list -> pick -> resolve -> sub-query, bounded
+  - [x] 5.1 Recursive recall surface: list -> pick -> resolve -> sub-query, bounded
     - Upgrade the flat recall into a decomposable recursive descent (list T0 windows -> pick window -> resolve member Refs -> sub-query) over the session store + rollups + journal; depth cap 4, per-descent token budget, hard ceiling reusing MaxHopsCap=6; preserve bi-temporal as_of at every level; keep it OFF the per-turn hot path
     - _Requirements: 8.1, 8.2, 8.3, 8.4_
 
 ## P6 — Neo collapse
 
 - [ ] 6. Reduce Neo to append + activate + render + transport
-  - [ ] 6.1 Wire the Neo turn loop to cortex.AppendMessage
+  - [x] 6.1 Wire the Neo turn loop to cortex.AppendMessage
     - In neo/internal/agent/agent.go, append each user / assistant / tool message to cortex via AppendMessage as the turn progresses, making cortex the owner of the transcript instead of the in-memory working slice being the source of truth
     - _Requirements: 9.1_
-  - [ ] 6.2 Collapse the pager + retire a.summary/a.compact + dynamicTail -> Activate bundle
+  - [x] 6.2 Collapse the pager + retire a.summary/a.compact + dynamicTail -> Activate bundle
     - Collapse neo/internal/memory/pager.go selection/ranking/recency into a thin client of cortex.Activate (no independent brain logic agent-side); retire a.summary + a.compact (agent.go:562); replace the dynamicTail memory sections (prompt.go:70) with the rendered Activate bundle delivered as a USER-role trailing message (Qwen-template portability fix), keeping the byte-stable system prefix at index 0; compute pinned once per turn
     - _Requirements: 9.2, 9.3, 9.4_
-  - [ ] 6.3 Wire the recursive memory_recall tool to cortex recursive recall
+  - [x] 6.3 Wire the recursive memory_recall tool to cortex recursive recall
     - Point neo/internal/tools memory_recall (RecallFunc, tools.go:132) at the cortex recursive-recall surface (req.8), preserving the AmbientRetrievalTopK pull-over-push philosophy and the as_of parameter
     - _Requirements: 9.5, 8.1_
 
@@ -85,23 +85,23 @@
     - Real tests: AppendMessage round-trips through Transcript in order with correct sequencing; a real journal window builds a rollup whose ShortForm is byte-identical on rebuild
     - **Property 1: the transcript store and the deterministic ladder floor are durable and reproducible**
     - **Validates: Requirements 1.1, 1.3, 2.1, 4.1, 4.2, 12.1, 12.2**
-  - [ ] 8.2 Cascade idempotence + event-count floor + lazy read-repair
+  - [x] 8.2 Cascade idempotence + event-count floor + lazy read-repair
     - Real tests over a seeded real journal: hour->day->epoch cascade; idempotent re-run is a no-op; an empty window under the floor produces no rollup; deleting a coarser record and reading rebuilds it identically (lazy repair)
     - **Property 2: the ladder is idempotent, bounded, and self-healing**
     - **Validates: Requirements 4.4, 5.1, 5.2, 12.2**
-  - [ ] 8.3 Activate bundle + latency + pinned-once (real code)
+  - [x] 8.3 Activate bundle + latency + pinned-once (real code)
     - Real tests: Activate returns Pinned + T0 + T1 + transcript slice + story-so-far under budget; the latency discipline holds; Pinned is computed once per turn; degrades gracefully with no transcript; emits no anchored-world mutation
     - **Property 3: activation is complete, budgeted, fast, and non-perturbing**
     - **Validates: Requirements 7.1, 7.2, 7.3, 7.5, 7.6, 12.4**
-  - [ ] 8.4 Recursive recall reach + depth/budget + as_of (real descent)
+  - [x] 8.4 Recursive recall reach + depth/budget + as_of (real descent)
     - Real tests: a decomposable descent reaches an exact event NOT resident in the activation bundle; the depth cap (4) and per-descent budget are enforced; as_of returns the then-true view
     - **Property 4: recursive recall pages in exact specifics within bounds, with time-travel**
     - **Validates: Requirements 8.1, 8.2, 8.3, 12.3**
-  - [ ] 8.5 Neo collapse: consumes Activate, appends, story-so-far survives restart
+  - [x] 8.5 Neo collapse: consumes Activate, appends, story-so-far survives restart
     - Real turn-loop tests: Neo consumes Activate (not the pager), appends messages to cortex, renders the bundle; a.summary/a.compact are gone; story-so-far survives a simulated process restart (durability)
     - **Property 5: the agent is a thin client of the cortex brain, with durable memory**
     - **Validates: Requirements 9.1, 9.2, 9.3, 9.4, 12.5**
-  - [ ] 8.6 Replay byte-identity proof (continuous-memory active vs inactive)
+  - [x] 8.6 Replay byte-identity proof (continuous-memory active vs inactive)
     - Run the replay harness (from 1.2, now covering session + ladder + activation + story-so-far writes) and assert a byte-identical OverallRoot / cortex_snapshot_hash with the continuous-memory lane active vs inactive; confirm no MCL-walk / Liaison-capability change
     - **Property 6: the active brain never perturbs the anchored world (D11)**
     - **Validates: Requirements 11.1, 11.2, 11.3, 12.6**

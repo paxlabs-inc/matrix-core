@@ -14,17 +14,17 @@ import (
 	"matrix/neo/internal/tools"
 )
 
-// Cassandra Phase 1 — the Neo completion gate.
+// Cassandra — the Neo completion gate.
 //
 // Neo no longer terminates on the mere ABSENCE of further tool calls. A turn
-// that took an action / changed state may end only through a validated
-// completeness object carried by the synthetic task_complete tool: positive
-// proof of completion, never the silence of "no more tools". This file owns the
-// deterministic, local stand-in for the Cassandra adjudicator (Phase 3 swaps in
-// the full grounded verdict); it checks structure, self-contradiction, the
-// coherence guards, and cross-references cited evidence against the working
-// transcript (the ground truth — real tool results), never the model grading
-// itself. See cassandra.frozen.kvx [thesis], [seams.neo], [verdict],
+// that took an action / changed state may end only through the synthetic
+// task_complete tool: positive proof of completion, never the silence of "no
+// more tools". Neo proves completion by COMPLETING, not by citing evidence — it
+// declares the OUTCOME it is returning to the user (summary + honest coverage),
+// and Cassandra independently checks that outcome against the task GOAL over the
+// real executed transcript (the ground truth — real tool results), never the
+// model grading itself and never by matching the words the model happened to
+// type. See cassandra.frozen.kvx [thesis], [seams.neo], [verdict],
 // [verdict.coherence_guards], invariants i_cass_1/2/3/5/7.
 
 // completionVerdict is the result of adjudicating a task_complete call. On
@@ -70,22 +70,22 @@ func batchTouchesState(calls []llm.ToolCall) bool {
 }
 
 // validateCompletion adjudicates a task_complete call. It returns an accept
-// verdict (with the answer) or a reject verdict (with feedback). The
-// stateTouched flag selects the strict path (a full grounded verdict over the
-// executed transcript) vs. the light structural path for reversible chat. It
-// NEVER blocks the turn on its own error — an unparseable call is a soft reject
-// (ask the model to re-issue), and a Cassandra hiccup fails open to the
-// deterministic check (i_cass_5).
+// verdict (with the answer) or a reject verdict (with feedback). The strict
+// flag selects the goal-vs-outcome adjudication path (a state-touching turn, or
+// any substantial deliverable under GateAllWork) vs. the light structural path
+// for reversible chat. It NEVER blocks the turn on its own error — an
+// unparseable call is a soft reject (ask the model to re-issue), and a Cassandra
+// hiccup fails open (i_cass_5).
 //
-// Phase 3: when a Cassandra adjudicator is wired (a.adjudicator != nil), the
-// strict path consults the full shared faculty (grounding + unverified claims +
-// open unknowns) instead of the Phase-1 deterministic grounding check, which
-// remains the fail-open fallback. userRequest is the contract this turn must
-// satisfy.
-func (a *Agent) validateCompletion(ctx context.Context, call *llm.ToolCall, strict, highStakes bool, userRequest string) completionVerdict {
+// Neo proves completion by COMPLETING, not by citing evidence: it declares the
+// outcome (summary + honest coverage) and Cassandra checks that outcome against
+// the task GOAL over the real executed transcript. When no adjudicator is wired
+// (CLI / tests) the strict path fails open once the object is coherent — there
+// is no local word-matching stand-in (that mechanism was meaningless).
+func (a *Agent) validateCompletion(ctx context.Context, call *llm.ToolCall, strict, highStakes bool, goal string) completionVerdict {
 	args, err := call.ParseArgs()
 	if err != nil {
-		return completionVerdict{feedback: fmt.Sprintf("could not parse your task_complete arguments (%v). Re-issue it with valid JSON: summary, coverage (\"full\"|\"partial\"), evidence[], open_gaps[], assumptions[].", err)}
+		return completionVerdict{feedback: fmt.Sprintf("could not parse your task_complete arguments (%v). Re-issue it with valid JSON: summary, coverage (\"full\"|\"partial\"), open_gaps[], assumptions[].", err)}
 	}
 
 	summary := strings.TrimSpace(stringArg(args["summary"]))
@@ -99,7 +99,6 @@ func (a *Agent) validateCompletion(ctx context.Context, call *llm.ToolCall, stri
 	}
 
 	openGaps := stringSlice(args["open_gaps"])
-	evidence := stringSlice(args["evidence"])
 	assumptions := stringSlice(args["assumptions"])
 
 	// Coherence guard g1 ([verdict.coherence_guards]): "full" coverage with a
@@ -117,51 +116,38 @@ func (a *Agent) validateCompletion(ctx context.Context, call *llm.ToolCall, stri
 	}
 
 	// Strict path: a state-touching (money/chain) turn, OR — under GateAllWork —
-	// any substantial deliverable, must back its claims with real executed
-	// evidence ([coupling].high_stakes, i_cass_2). Prefer the full Cassandra
-	// adjudicator; fall back to the deterministic grounding check when none is
-	// wired. highStakes (money/chain) drives the adjudicator's escalation; a
-	// reversible-but-substantial turn is still grounded-audited, not escalated.
+	// any substantial deliverable, has its OUTCOME checked against the GOAL by
+	// the Cassandra adjudicator over the executed transcript ([coupling].high_stakes,
+	// i_cass_2). highStakes (money/chain) drives the adjudicator's escalation. With
+	// no adjudicator wired the strict path FAILS OPEN (i_cass_5): we defer to the
+	// agent's honest outcome rather than fall back to meaningless word-matching.
 	if a.adjudicator != nil {
-		return a.adjudicateCompletion(ctx, userRequest, summary, coverage, evidence, openGaps, assumptions, highStakes)
-	}
-	if r := a.deterministicStrict(evidence); !r.ok {
-		return r
+		return a.adjudicateCompletion(ctx, goal, summary, coverage, openGaps, assumptions, highStakes)
 	}
 	return completionVerdict{ok: true, answer: summary}
 }
 
-// deterministicStrict is the Phase-1 deterministic grounding check, retained as
-// the cheap pre-Cassandra path AND the fail-open fallback when the adjudicator
-// is unavailable or errors: a state-touching turn may not finish on no evidence
-// or on phantom evidence absent from the executed transcript (g3-analog). On
-// pass it returns ok with no answer (the caller carries the summary).
-func (a *Agent) deterministicStrict(evidence []string) completionVerdict {
-	corpus := a.transcriptToolCorpus()
-	if len(evidence) == 0 {
-		return completionVerdict{feedback: "you took an action this turn but cited no evidence. List the concrete results that back what you did (tool output, file paths, URLs, transaction hashes) in 'evidence' — or keep working until you actually have them. Do not claim success you cannot show."}
-	}
-	if phantom := firstUngrounded(evidence, corpus); phantom != "" {
-		return completionVerdict{feedback: fmt.Sprintf("the evidence %q doesn't match anything in what you actually did this turn. Cite only real tool results from this turn (no invented evidence), or go obtain it before declaring done.", truncate(phantom, 160))}
-	}
-	return completionVerdict{ok: true}
-}
-
-// adjudicateCompletion runs the full Cassandra adjudicator over the executed
-// transcript and maps the verdict to the agent's next action (cassandra.frozen.kvx
-// [seams.neo], [coupling]). The deterministic priors run first as the cheap
-// pre-pass ([adjudicator].priors); the auditor renders the grounded verdict.
+// adjudicateCompletion runs the Cassandra adjudicator: it checks whether the
+// OUTCOME Neo is about to return to the user actually satisfies the task's GOAL,
+// judged against the real executed transcript (the ground truth — real tool
+// results), and maps the verdict to the agent's next action (cassandra.frozen.kvx
+// [seams.neo], [coupling]). Neo cites no evidence and proves nothing by hand:
+// completion is demonstrated by the transcript, not by matching the words it
+// typed. The deterministic priors run first as the cheap pre-pass
+// ([adjudicator].priors); the auditor renders the grounded verdict.
 //
 // Mapping (advisor-not-effector — the agent enacts it):
-//   - grounded AND (claimed partial OR Cassandra-coverage full) → finish (Say),
-//     surfacing any flagged unknowns to the user ([ux]).
-//   - otherwise → tool-result feedback enumerating missing / unverified_claims /
-//     open_unknowns → the loop continues.
+//   - the outcome satisfies the goal (grounded AND (claimed partial OR
+//     Cassandra-coverage full)) → finish (Say), surfacing any flagged unknowns
+//     to the user ([ux]).
+//   - otherwise → feedback naming what is missing / unverified / still open so
+//     Neo can fix it → the loop continues.
 //
 // Honest partials are preserved (i_cass_1): a turn the agent itself declares
-// partial finishes as a partial, provided its claims are grounded — Cassandra
-// blocks false SUCCESS, not honest incompleteness.
-func (a *Agent) adjudicateCompletion(ctx context.Context, userRequest, summary, coverage string, evidence, openGaps, assumptions []string, highStakes bool) completionVerdict {
+// partial finishes as a partial, provided its outcome matches the transcript —
+// Cassandra blocks false SUCCESS, not honest incompleteness. On any adjudicator
+// error the turn FAILS OPEN (i_cass_5): a Cassandra hiccup never wedges a turn.
+func (a *Agent) adjudicateCompletion(ctx context.Context, goal, summary, coverage string, openGaps, assumptions []string, highStakes bool) completionVerdict {
 	digest := a.buildEvidenceDigest()
 	priors := cassandra.ScanPriors(cassandra.PriorInput{Evidence: digest})
 	a.emitAudit(auditEventAudit, map[string]interface{}{
@@ -171,25 +157,20 @@ func (a *Agent) adjudicateCompletion(ctx context.Context, userRequest, summary, 
 	})
 
 	v, err := a.adjudicator.Adjudicate(ctx, cassandra.AuditInput{
-		Request:    buildAuditContract(userRequest, summary, coverage, evidence, openGaps, assumptions),
+		Request:    buildAuditContract(goal, summary, coverage, openGaps, assumptions),
 		Evidence:   digest,
 		HighStakes: highStakes,
 		Priors:     priors,
 	})
 	if err != nil {
 		// Fail-open (i_cass_5): a Cassandra hiccup must never break the turn.
-		// Fall back to the deterministic grounding check so a state-touching
-		// turn still cannot finish on fabricated evidence.
-		a.emitAudit(auditEventAudit, map[string]interface{}{"stage": "error", "error": err.Error(), "fallback": "deterministic"})
-		if r := a.deterministicStrict(evidence); !r.ok {
-			return r
-		}
-		return completionVerdict{ok: true, answer: summary}
+		// Completion is verified by the adjudicator against the transcript, not
+		// by any local word-matching, so with the adjudicator down we defer to
+		// the agent's own honest outcome rather than block it.
+		a.emitAudit(auditEventAudit, map[string]interface{}{"stage": "error", "error": err.Error(), "fallback": "fail_open"})
+		return completionVerdict{ok: true, answer: strings.TrimSpace(summary)}
 	}
 
-	// g3 backstop ([verdict.coherence_guards]): a cited ref absent from the
-	// digest is phantom evidence — forces grounded=false.
-	phantom := v.CheckCitations(evidence, digest)
 	a.emitAudit(auditEventVerdict, map[string]interface{}{
 		"grounded":          v.Grounded,
 		"coverage":          string(v.Coverage),
@@ -201,9 +182,9 @@ func (a *Agent) adjudicateCompletion(ctx context.Context, userRequest, summary, 
 		"rationale":         v.Rationale,
 	})
 
-	if verdictAccepts(coverage, v, phantom) {
-		// F4: the delivered + persisted answer is the CLEAN deliverable only.
-		// Any Cassandra-flagged caveats ride the cassandra.* side-channel as a
+	if verdictAccepts(coverage, v) {
+		// F4: the delivered + persisted answer is the CLEAN outcome only. Any
+		// Cassandra-flagged caveats ride the cassandra.* side-channel as a
 		// separate subtle affordance — never folded into the answer text
 		// (ux_truth). i6 honest-partials are intact: the agent's own summary
 		// already states what a partial left unresolved.
@@ -220,106 +201,8 @@ func (a *Agent) adjudicateCompletion(ctx context.Context, userRequest, summary, 
 		"missing":           v.Missing,
 		"unverified_claims": v.UnverifiedClaims,
 		"open_unknowns":     v.OpenUnknowns,
-		"phantom":           phantom,
 	})
-	return completionVerdict{feedback: continueFeedback(v, phantom)}
-}
-
-// transcriptToolCorpus concatenates this turn's real tool results — the ground
-// truth against which cited evidence is checked. Lower-cased for case-tolerant
-// matching.
-func (a *Agent) transcriptToolCorpus() string {
-	var b strings.Builder
-	for _, m := range a.working {
-		if m.Role == llm.RoleTool {
-			b.WriteString(m.Content)
-			b.WriteString("\n")
-		}
-	}
-	return strings.ToLower(b.String())
-}
-
-// firstUngrounded returns the first evidence item that has no support in the
-// tool corpus, or "" when every item is grounded. Grounding centers on
-// FACT-BEARING tokens — digit-bearing identifiers (block numbers, amounts, tx
-// hashes, ids) are the hallucination surface that matters (e.g. a fabricated
-// "block height 123456"). The rule: if an item cites any fact-bearing token,
-// at least ONE of them must appear in the executed transcript, else the item
-// is phantom evidence (coherence guard g3-analog). Items with no fact-bearing
-// token fall back to a forgiving any-salient-token match (fail-open bias,
-// i_cass_5) so prose-only evidence isn't falsely rejected.
-func firstUngrounded(evidence []string, corpus string) string {
-	for _, e := range evidence {
-		item := strings.ToLower(strings.TrimSpace(e))
-		if item == "" {
-			continue
-		}
-		if strings.Contains(corpus, item) {
-			continue
-		}
-		tokens := salientTokens(item)
-		if len(tokens) == 0 {
-			continue // ungroundable shape — don't penalize
-		}
-		strong := factBearing(tokens)
-		if len(strong) > 0 {
-			if !anyContained(corpus, strong) {
-				return e // cited a concrete fact absent from the transcript
-			}
-			continue
-		}
-		// No concrete fact cited: forgiving match on any salient token.
-		if !anyContained(corpus, tokens) {
-			return e
-		}
-	}
-	return ""
-}
-
-// salientTokens extracts lower-cased alphanumeric tokens of length >=4 from s —
-// the high-signal substrings (identifiers, hashes, paths, numbers) worth
-// matching against the transcript.
-func salientTokens(s string) []string {
-	var out []string
-	var cur strings.Builder
-	flush := func() {
-		if cur.Len() >= 4 {
-			out = append(out, cur.String())
-		}
-		cur.Reset()
-	}
-	for _, r := range strings.ToLower(s) {
-		if (r >= 'a' && r <= 'z') || (r >= '0' && r <= '9') {
-			cur.WriteRune(r)
-			continue
-		}
-		flush()
-	}
-	flush()
-	return out
-}
-
-// factBearing keeps the tokens that carry a concrete fact: those containing a
-// digit (block numbers, amounts, ids, 0x-prefixed hashes). These are the
-// claims most prone to fabrication and are checked strictly.
-func factBearing(tokens []string) []string {
-	var out []string
-	for _, tk := range tokens {
-		if strings.ContainsAny(tk, "0123456789") {
-			out = append(out, tk)
-		}
-	}
-	return out
-}
-
-// anyContained reports whether the corpus contains any of the tokens.
-func anyContained(corpus string, tokens []string) bool {
-	for _, tk := range tokens {
-		if strings.Contains(corpus, tk) {
-			return true
-		}
-	}
-	return false
+	return completionVerdict{feedback: continueFeedback(v)}
 }
 
 // stringArg coerces a loose JSON value to a trimmed string.

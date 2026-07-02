@@ -30,14 +30,24 @@
 #
 # STATUS: FROZEN. Design locked with Andrew on 2026-06-20. Persisted to cortex
 # (actor=cursor-agent) as decision + fact records. Changes require a new version.
+#
+# REVISION 1.1.0 (2026-07-01, Andrew): retired the evidence-CITATION mechanism.
+# Neo no longer submits an evidence[] array and nothing is judged by substring-
+# matching the words the agent typed (that was meaningless and wedged genuinely-
+# complete turns). Cassandra logs the task GOAL quietly at dispatch and, at the
+# declare-done seam, checks whether the OUTCOME Neo returned to the user
+# satisfies that goal over the executed transcript. Coherence guard g3 (phantom
+# citation) is retired; g1/g2 stand.
 
 [meta]
 name        = "Cassandra"
 codename    = "cassandra"
 kind        = "epistemic-completeness-faculty-module"
-version     = "1.0.0"
+version     = "1.1.0"
 status      = "frozen"
 frozen_at   = "2026-06-20"
+revised_at  = "2026-07-01"
+revision    = "1.1.0 — retire the evidence-citation mechanism; Neo declares the OUTCOME (no evidence[]), Cassandra holds the GOAL (logged at dispatch) and checks outcome-satisfies-goal over the transcript; no substring/word matching; coherence guard g3 removed"
 authors     = ["Andrew", "cursor-agent"]
 relation    = "shared top-level module (like cortex/atlas); consumed by Neo + the MCL pipeline; absorbs + generalizes the MCL completeness critic"
 supersedes  = "the inline MCL completeness critic (executor/cmd/mcl-execute/critique.go) — Cassandra subsumes it; MCL Phase 11.5 becomes a Cassandra consumer"
@@ -109,7 +119,9 @@ certainty         = "Cassandra's confidence in her own verdict; low certainty on
 [verdict.coherence_guards]
 g1 = "coverage=full with non-empty missing -> force coverage=partial (toward more work)"
 g2 = "grounded=true with non-empty unverified_claims -> force grounded=false"
-g3 = "a cited evidence ref absent from the transcript/digest -> grounded=false (no phantom evidence)"
+# g3 (phantom-citation) RETIRED in 1.1.0: Neo cites no evidence, so there is no
+# ref-to-digest substring match; grounding is judged by the auditor against the
+# executed transcript, never by word-matching.
 
 # ============================== COUPLING MODEL =============================
 # Mirrors Atlas's proven detect/prevent split, re-polarized for completeness.
@@ -126,11 +138,12 @@ no_false_succ = "still-incomplete after the bounded continue budget -> honest te
 # a third parallel mode at maturity.
 
 [seams.neo]
-id       = "N"
-where    = "neo/internal/agent/agent.go Chat() termination branch (currently line ~322: '!res.HasToolCalls() -> done')"
-mechanism= "replace absence-based termination with a task_complete completion gate: the only legal way to end a turn is a validated completeness object; consider ToolChoice=required so a bare final answer is structurally impossible"
-verdict  = "Cassandra adjudicates the proposed completion against the working transcript (tool results = ground truth); reject -> tool-result feedback -> loop continues"
-placement= "full grounded verdict required when the turn invoked core_execute / changed state / asserts external facts; light path for pure reversible chat"
+id          = "N"
+where       = "neo/internal/agent/agent.go Chat() termination branch (currently line ~322: '!res.HasToolCalls() -> done')"
+mechanism   = "replace absence-based termination with a task_complete completion gate: the only legal way to end a turn is the OUTCOME object (summary + honest coverage + open_gaps/assumptions). Neo does NOT cite evidence and proves nothing by hand — it just states the outcome it is returning to the user; consider ToolChoice=required so a bare final answer is structurally impossible"
+goal_capture= "the task GOAL is captured + logged quietly at dispatch (side-channel cassandra.goal event, agent.go activeGoal) so Cassandra holds the success criteria independently of the agent — the agent cannot self-define 'done' or cite its own proof"
+verdict     = "Cassandra adjudicates whether the OUTCOME satisfies the GOAL over the working transcript (tool results = ground truth), NOT by matching the words the agent typed; reject -> feedback naming what is missing/unverified/open -> loop continues"
+placement   = "full grounded verdict required when the turn invoked core_execute / changed state / asserts external facts; light path for pure reversible chat"
 
 [seams.mcl]
 id       = "M"

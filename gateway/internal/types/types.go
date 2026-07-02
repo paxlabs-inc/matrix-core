@@ -93,6 +93,13 @@ const (
 	// declares her OWN slot so audit spend is metered under her identity.
 	// Reuses already-priced models — no rateTable row, no version bump.
 	SlotCassandra = "cassandra"
+	// SlotCody is the Cody coding AGENT (matrix/cody): the orchestrator/
+	// worker coding engine served by codyd beside Neo. Cody never borrows
+	// another agent's slot — both roles (orchestrator planning/adjudication
+	// and worker implementation) meter here under Cody's own identity. It is
+	// NOT value-moving: codyd holds no signing key and never routes through
+	// MCL. Reuses already-priced models — no rateTable row, no version bump.
+	SlotCody = "cody"
 )
 
 // BudgetExhaustedResponse is the JSON body returned with 429 when

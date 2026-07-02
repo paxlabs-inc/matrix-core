@@ -245,7 +245,7 @@ func enforceFreeTier(slot, model string) error {
 // the metering audit has provenance.
 func validSlot(s string) bool {
 	switch s {
-	case types.SlotCompiler, types.SlotPlanner, types.SlotExecutor, types.SlotLiaison, types.SlotNeo, types.SlotCassandra:
+	case types.SlotCompiler, types.SlotPlanner, types.SlotExecutor, types.SlotLiaison, types.SlotNeo, types.SlotCassandra, types.SlotCody:
 		return true
 	}
 	return false
@@ -253,7 +253,7 @@ func validSlot(s string) bool {
 
 // detectProvider mirrors MCL/llm.DetectProvider. Fireworks gets the
 // "accounts/fireworks/" prefix; the generic "<vendor>/<model>" shape
-// (e.g. "zai-org/GLM-5.2") routes to Baseten, the primary chat provider.
+// (e.g. "nvidia/NVIDIA-Nemotron-3-Ultra-550B-A55B") routes to Baseten, the primary chat provider.
 // Bare model ids (no slash) are an error.
 func detectProvider(model string) (Provider, error) {
 	switch {
