@@ -768,7 +768,7 @@ func (c *Client) applyGrammar(req *chatRequest, grammarID string) error {
 //	"<vendor>/<model>"                              → Baseten (primary chat provider)
 //
 // The generic "<vendor>/<model>" shape resolves to Baseten, the primary chat
-// provider (e.g. "nvidia/NVIDIA-Nemotron-3-Ultra-550B-A55B"). Together remains reachable but only when
+// provider (e.g. "zai-org/GLM-5.2"). Together remains reachable but only when
 // selected explicitly via Config.Provider + ProviderSet (it is the gateway
 // alt-path, never auto-detected from a bare model id anymore).
 func DetectProvider(model string) (Provider, error) {

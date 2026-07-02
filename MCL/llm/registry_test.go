@@ -282,8 +282,8 @@ func TestRegistryRoutesReturnsAllRegistered(t *testing.T) {
 func TestDefaultRegistryCompilerSlot(t *testing.T) {
 	cfg := DefaultRegistry().Resolve(RouteKey{Slot: SlotCompiler})
 	// Sess#31a pick: gpt-oss-20b on Fireworks.
-	if !strings.Contains(cfg.Model, "Nemotron-3-Ultra") {
-		t.Errorf("compiler primary model = %q, want to contain Nemotron-3-Ultra", cfg.Model)
+	if !strings.Contains(cfg.Model, "GLM-5.2") {
+		t.Errorf("compiler primary model = %q, want to contain GLM-5.2", cfg.Model)
 	}
 	if cfg.Temperature != 0 {
 		t.Errorf("compiler temperature = %v, want 0 (D11 determinism)", cfg.Temperature)
@@ -302,8 +302,8 @@ func TestDefaultRegistryCompilerSlot(t *testing.T) {
 func TestDefaultRegistryCompilerLongCtxSlot(t *testing.T) {
 	cfg := DefaultRegistry().Resolve(RouteKey{Slot: SlotCompiler, LongCtx: true})
 	// LongCtx escalation: DeepSeek-V4-Flash for 1M context.
-	if !strings.Contains(cfg.Model, "Nemotron-3-Ultra") {
-		t.Errorf("compiler LongCtx model = %q, want Nemotron-3-Ultra", cfg.Model)
+	if !strings.Contains(cfg.Model, "GLM-5.2") {
+		t.Errorf("compiler LongCtx model = %q, want GLM-5.2", cfg.Model)
 	}
 	if cfg.GrammarMode != GrammarJSONSchema {
 		t.Errorf("compiler LongCtx grammar mode = %v, want GrammarJSONSchema", cfg.GrammarMode)
@@ -313,8 +313,8 @@ func TestDefaultRegistryCompilerLongCtxSlot(t *testing.T) {
 func TestDefaultRegistryPlannerSlot(t *testing.T) {
 	cfg := DefaultRegistry().Resolve(RouteKey{Slot: SlotPlanner})
 	// Sess#31a pick: glm for plan_tree@1 recursive grammar.
-	if !strings.Contains(cfg.Model, "Nemotron-3-Ultra") {
-		t.Errorf("planner model = %q, want to contain Nemotron-3-Ultra", cfg.Model)
+	if !strings.Contains(cfg.Model, "GLM-5.2") {
+		t.Errorf("planner model = %q, want to contain GLM-5.2", cfg.Model)
 	}
 	if cfg.GrammarMode != GrammarJSONSchema {
 		t.Errorf("planner grammar mode = %v, want GrammarJSONSchema", cfg.GrammarMode)
@@ -327,8 +327,8 @@ func TestDefaultRegistryPlannerSlot(t *testing.T) {
 func TestDefaultRegistryExecutorReasonIsDefault(t *testing.T) {
 	cfg := DefaultRegistry().Resolve(RouteKey{Slot: SlotExecutor, Kind: KindReason})
 	// Sess#31a headline pick: GLM-5.1 for long-horizon agentic loops.
-	if !strings.Contains(cfg.Model, "Nemotron-3-Ultra") {
-		t.Errorf("executor reason model = %q, want Nemotron-3-Ultra", cfg.Model)
+	if !strings.Contains(cfg.Model, "GLM-5.2") {
+		t.Errorf("executor reason model = %q, want GLM-5.2", cfg.Model)
 	}
 	if cfg.GrammarMode != GrammarNone {
 		t.Errorf("executor reason grammar mode = %v, want GrammarNone (free-form)", cfg.GrammarMode)
@@ -344,12 +344,12 @@ func TestDefaultRegistryExecutorKindSpecialists(t *testing.T) {
 		modelFrag   string
 		grammarMode GrammarMode
 	}{
-		{KindCode, "Nemotron-3-Ultra", GrammarNone},
-		{KindSummarize, "Nemotron-3-Ultra", GrammarNone},
-		{KindWrite, "Nemotron-3-Ultra", GrammarNone},
-		{KindTransform, "Nemotron-3-Ultra", GrammarNone},
-		{KindClassify, "Nemotron-3-Ultra", GrammarJSONSchema},
-		{KindHardReason, "Nemotron-3-Ultra", GrammarNone},
+		{KindCode, "GLM-5.2", GrammarNone},
+		{KindSummarize, "GLM-5.2", GrammarNone},
+		{KindWrite, "GLM-5.2", GrammarNone},
+		{KindTransform, "GLM-5.2", GrammarNone},
+		{KindClassify, "GLM-5.2", GrammarJSONSchema},
+		{KindHardReason, "GLM-5.2", GrammarNone},
 	}
 	reg := DefaultRegistry()
 	for _, tt := range tests {

@@ -178,15 +178,15 @@ func Default() Config {
 		ManifestPath: "agents/default.json",
 		SkillsRoot:   "skills",
 
-		MainModel:          "nvidia/NVIDIA-Nemotron-3-Ultra-550B-A55B",
-		CheapModel:         "nvidia/NVIDIA-Nemotron-3-Ultra-550B-A55B",
-		ConsolidationModel: "nvidia/NVIDIA-Nemotron-3-Ultra-550B-A55B",
+		MainModel:          "zai-org/GLM-5.2",
+		CheapModel:         "zai-org/GLM-5.2",
+		ConsolidationModel: "zai-org/GLM-5.2",
 		EmbedModel:         "nomic-ai/nomic-embed-text-v1.5",
 		// Cassandra completeness auditor: a cheap/fast primary + a stronger
 		// escalation model, both on the gateway cassandra-slot whitelist
 		// (gateway rates.FreeTierWhitelist "cassandra").
-		CassandraModel:         "nvidia/NVIDIA-Nemotron-3-Ultra-550B-A55B",
-		CassandraEscalateModel: "nvidia/NVIDIA-Nemotron-3-Ultra-550B-A55B",
+		CassandraModel:         "zai-org/GLM-5.2",
+		CassandraEscalateModel: "zai-org/GLM-5.2",
 
 		ContextWindowTokens:   256000,
 		SoftPct:               80,

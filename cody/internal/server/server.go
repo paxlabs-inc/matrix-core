@@ -32,6 +32,7 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("/messages/async/", s.handlePoll)
 	mux.HandleFunc("/intents/", s.handleIntents)
 	mux.HandleFunc("/conversations/", s.handleConversations)
+	mux.HandleFunc("/workspace/", s.handleWorkspace)
 	return mux
 }
 

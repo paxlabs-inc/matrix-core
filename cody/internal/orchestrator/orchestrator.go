@@ -265,6 +265,8 @@ func (o *Orchestrator) runTask(ctx context.Context, task *Task, grounding string
 		o.emit("task.turnin", map[string]interface{}{
 			"task_id": report.TaskID, "attempt": attempt,
 			"status": string(report.Status), "summary": report.Summary,
+			"changes": changeRecords(report), "verification": evidenceRecords(report),
+			"gaps": append([]string{}, report.Gaps...),
 		})
 
 		// --- verify: independent re-run; never take the worker's word ----
@@ -454,6 +456,24 @@ var defaultConstitution = []string{
 	"COMPLETE ARTIFACTS: deliver runnable code, never fragments.",
 	"USER DRIVES GIT: never git commit or push.",
 	"RESPECT THE PROJECT: follow existing repo style; no out-of-scope changes; never weaken or delete tests to pass.",
+}
+
+// changeRecords renders the report's factual change record as event fields.
+func changeRecords(r *contract.TurnInReport) []map[string]interface{} {
+	out := make([]map[string]interface{}, 0, len(r.Changes))
+	for _, c := range r.Changes {
+		out = append(out, map[string]interface{}{"path": c.Path, "kind": c.Kind, "why": c.Why})
+	}
+	return out
+}
+
+// evidenceRecords renders the report's verification evidence as event fields.
+func evidenceRecords(r *contract.TurnInReport) []map[string]interface{} {
+	out := make([]map[string]interface{}, 0, len(r.Verification))
+	for _, ev := range r.Verification {
+		out = append(out, map[string]interface{}{"command": ev.Command, "exit": ev.Exit})
+	}
+	return out
 }
 
 func (o *Orchestrator) append(m llm.Message) { o.window = append(o.window, m) }

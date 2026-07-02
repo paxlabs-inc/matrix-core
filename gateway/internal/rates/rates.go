@@ -72,7 +72,7 @@ import (
 // real Baseten Model APIs price.
 //
 // v8 (2026-07-02, Andrew directed) REPLACES zai-org/GLM-5.2 with the
-// Baseten-served nvidia/NVIDIA-Nemotron-3-Ultra-550B-A55B (ModelNemotron3Ultra)
+// Baseten-served zai-org/GLM-5.2 (ModelNemotron3Ultra)
 // as the primary chat model on every slot (Neo config, Cody mode policy, MCL
 // DefaultRegistry, deploy pins). One new rateTable row + the whitelist swap on
 // every lane. The GLM-5.2 row stays on the card so pre-v8 ledger rows remain
@@ -148,12 +148,12 @@ const (
 	// pre-v7 ledger rows remain replayable.
 	ModelGLM52 = "zai-org/GLM-5.2"
 	// ModelNemotron3Ultra is the Baseten-served
-	// nvidia/NVIDIA-Nemotron-3-Ultra-550B-A55B — the v8 primary chat model for
+	// zai-org/GLM-5.2 — the v8 primary chat model for
 	// EVERY slot, replacing zai-org/GLM-5.2 (Neo config + Cody mode policy +
 	// MCL DefaultRegistry now pin it; the bare "<vendor>/<model>" shape routes
 	// to Baseten in internal/routing). The GLM-5.2 row above stays on the card
 	// so pre-v8 ledger rows remain replayable.
-	ModelNemotron3Ultra = "nvidia/NVIDIA-Nemotron-3-Ultra-550B-A55B"
+	ModelNemotron3Ultra = "zai-org/GLM-5.2"
 	// ModelNomicEmbed is the Fireworks-hosted embedding model behind the
 	// gateway's /v1/embeddings route (768-dim; matches cortex DefaultDim).
 	ModelNomicEmbed = "nomic-ai/nomic-embed-text-v1.5"
@@ -251,9 +251,9 @@ var rateTable = []Rate{
 	{
 		Model:               ModelNemotron3Ultra,
 		Group:               GroupReason,
-		InputPaxPerMTokens:  0.052493438, // ≈ $0.60 / Mtoken  [PLACEHOLDER — set real Baseten Nemotron-3-Ultra price]
-		OutputPaxPerMTokens: 0.174978128, // ≈ $2.00 / Mtoken  [PLACEHOLDER — set real Baseten Nemotron-3-Ultra price]
-		Notes:               "Baseten nvidia/NVIDIA-Nemotron-3-Ultra-550B-A55B — v8 primary chat model for every slot, replacing GLM-5.2. PLACEHOLDER rate pending the real Baseten Model APIs price.",
+		InputPaxPerMTokens:  0.052493438, // ≈ $0.60 / Mtoken  [PLACEHOLDER — set real Baseten GLM-5.2 price]
+		OutputPaxPerMTokens: 0.174978128, // ≈ $2.00 / Mtoken  [PLACEHOLDER — set real Baseten GLM-5.2 price]
+		Notes:               "Baseten zai-org/GLM-5.2 — v8 primary chat model for every slot, replacing GLM-5.2. PLACEHOLDER rate pending the real Baseten Model APIs price.",
 	},
 	{
 		Model:               ModelNomicEmbed,
@@ -293,7 +293,7 @@ func Lookup(model string) (Rate, bool) {
 // FreeTierWhitelist returns the slot -> model whitelist enforced by
 // internal/routing. Exported for tests + introspection.
 func FreeTierWhitelist() map[string][]string {
-	// ModelNemotron3Ultra (Baseten nvidia/NVIDIA-Nemotron-3-Ultra-550B-A55B)
+	// ModelNemotron3Ultra (Baseten zai-org/GLM-5.2)
 	// is the v8 primary model pinned on EVERY slot by Neo config + Cody mode
 	// policy + MCL DefaultRegistry (replacing zai-org/GLM-5.2), so it is
 	// whitelisted in every lane below. The historical Fireworks/Together

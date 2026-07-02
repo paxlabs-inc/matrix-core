@@ -80,7 +80,7 @@ const GatewaySlot = "cody"
 // the stronger model in every mode; Prototype workers run the fast router.
 const (
 	defaultOrchestratorModel = "deepseek-ai/DeepSeek-V4-Pro"
-	defaultWorkerModel       = "nvidia/NVIDIA-Nemotron-3-Ultra-550B-A55B"
+	defaultWorkerModel       = "zai-org/GLM-5.2"
 	defaultFastWorkerModel   = "accounts/fireworks/routers/glm-5p1-fast"
 )
 
