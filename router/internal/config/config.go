@@ -93,6 +93,7 @@ type Config struct {
 	S3Bucket   string
 
 	DaemonPort         string
+	CodyPort           string
 	WakeTimeout        time.Duration
 	ProxyTimeout       time.Duration
 	ProbeInterval      time.Duration
@@ -151,6 +152,7 @@ func Load() (*Config, error) {
 		S3Endpoint:              os.Getenv("S3_ENDPOINT"),
 		S3Bucket:                os.Getenv("S3_BUCKET"),
 		DaemonPort:              getOrDefault("ROUTER_DAEMON_PORT", DefaultDaemonPort),
+		CodyPort:                getOrDefault("ROUTER_CODY_PORT", "8090"),
 		WakeToken:               os.Getenv("ROUTER_WAKE_TOKEN"),
 		PreviewToken:            os.Getenv("ROUTER_PREVIEW_TOKEN"),
 		CORSOrigins:             parseCSV(os.Getenv("ROUTER_CORS_ORIGINS")),

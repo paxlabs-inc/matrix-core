@@ -56,6 +56,7 @@ type Handler struct {
 	DB            *db.DB
 	Prov          provision.Provisioner
 	DaemonPort    string        // backend listen port (e.g. "8080")
+	CodyPort      string        // codyd listen port (e.g. "8090"); "" disables /cody routing
 	WakeTimeout   time.Duration // environment wake deadline
 	ProbeInterval time.Duration // poll cadence inside Wake + readiness probe
 	ReadyTimeout  time.Duration // deadline for the daemon HTTP server to accept connections post-wake
@@ -257,8 +258,22 @@ func (h *Handler) forward(w http.ResponseWriter, r *http.Request, sub string, re
 		return
 	}
 
+	// Cody engine (codyd) is a co-located sibling on its own port (:8090),
+	// reached over the private network — NOT proxied through the Neo front.
+	// Route the /cody/* prefix to codyd and strip it so codyd sees its own
+	// routes (/projects, /chat, /events, /workspace/*, /conversations/*,
+	// /intents/*), which otherwise collide with Neo's identical paths on :8080.
+	targetPort := h.DaemonPort
+	if p := r.URL.Path; h.CodyPort != "" && (p == "/cody" || strings.HasPrefix(p, "/cody/")) {
+		targetPort = h.CodyPort
+		r.URL.Path = strings.TrimPrefix(p, "/cody")
+		if r.URL.Path == "" {
+			r.URL.Path = "/"
+		}
+	}
+
 	// Build the upstream URL from the provider-neutral endpoint.
-	upstream, err := buildUpstreamURL(env.Endpoint, h.DaemonPort, r)
+	upstream, err := buildUpstreamURL(env.Endpoint, targetPort, r)
 	if err != nil {
 		h.Logf("upstream url: %v", err)
 		http.Error(w, "router config error", http.StatusInternalServerError)

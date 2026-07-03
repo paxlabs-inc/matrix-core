@@ -121,6 +121,9 @@ func main() {
 	// before binding its port. Without this wait the first post-wake
 	// request 502s. Defaults to 30s (ROUTER_DAEMON_READY_TIMEOUT).
 	proxyH.ReadyTimeout = cfg.DaemonReadyTimeout
+	// Route the /cody/* path prefix to the co-located codyd engine on its own
+	// port (default :8090); everything else goes to the Neo front on :8080.
+	proxyH.CodyPort = cfg.CodyPort
 
 	// 5. Admin handler (admin-token-protected). Daemon image must be
 	//    provider-registry-pushable; passing via env keeps it operator-set.
