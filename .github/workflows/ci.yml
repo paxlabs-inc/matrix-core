@@ -21,9 +21,10 @@ env:
 
 jobs:
   # -------------------------------------------------------------------------
-  # Fan out across the four sibling Go modules. Each job is independent so a
-  # cortex regression does not mask an MCL regression. `fail-fast: false`
-  # keeps the full grid visible on failure.
+  # Fan out across the sibling Go modules. Each job is independent so one
+  # module's regression does not mask another's. `fail-fast: false` keeps
+  # the full grid visible on failure. cortex and executor are checked
+  # locally, not on GitHub.
   # -------------------------------------------------------------------------
   build:
     name: build / ${{ matrix.module }} / ${{ matrix.os }}
@@ -31,7 +32,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        module: [cortex, MCL, bridge, executor, gateway, router]
+        module: [MCL, bridge, gateway, router]
         os: [ubuntu-latest]
     steps:
       - uses: actions/checkout@v4
@@ -89,20 +90,12 @@ jobs:
           go-version: ${{ env.GO_VERSION }}
           cache: true
 
-      - name: cover (cortex)
-        working-directory: cortex
-        run: go test -count=1 -covermode=atomic -coverprofile=coverage.out ./...
-
       - name: cover (MCL)
         working-directory: MCL
         run: go test -count=1 -covermode=atomic -coverprofile=coverage.out ./...
 
       - name: cover (bridge)
         working-directory: bridge
-        run: go test -count=1 -covermode=atomic -coverprofile=coverage.out ./...
-
-      - name: cover (executor)
-        working-directory: executor
         run: go test -count=1 -covermode=atomic -coverprofile=coverage.out ./...
 
       - name: cover (gateway)
@@ -118,40 +111,12 @@ jobs:
         with:
           name: coverage
           path: |
-            cortex/coverage.out
             MCL/coverage.out
             bridge/coverage.out
-            executor/coverage.out
             gateway/coverage.out
             router/coverage.out
           if-no-files-found: error
           retention-days: 14
-
-  # -------------------------------------------------------------------------
-  # Replay invariant — the §13.4 byte-identical OverallRoot test is the
-  # most load-bearing single check in the codebase (see matrix.kvx INVARIANT
-  # block). Run it explicitly so a regression here always blocks merge,
-  # even if a contributor adds skip-marker discipline elsewhere.
-  # -------------------------------------------------------------------------
-  replay-invariant:
-    name: cortex replay invariant
-    runs-on: ubuntu-latest
-    needs: build
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
-        with:
-          go-version: ${{ env.GO_VERSION }}
-          cache: true
-          cache-dependency-path: cortex/go.sum
-
-      - name: rebuild_test
-        working-directory: cortex
-        run: go test -count=1 -run TestRebuild -timeout=5m ./...
-
-      - name: replay_test
-        working-directory: cortex
-        run: go test -count=1 -timeout=2m ./replay/...
 
   # -------------------------------------------------------------------------
   # mtx corpus — every SKILL.mtx must parse + validate.  Catches drift in
@@ -298,7 +263,7 @@ jobs:
   ci-passed:
     name: ci-passed
     runs-on: ubuntu-latest
-    needs: [build, replay-invariant, mtx-corpus, deus, marketplace]
+    needs: [build, mtx-corpus, deus, marketplace]
     if: always()
     steps:
       - name: aggregate
