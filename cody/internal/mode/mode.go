@@ -79,9 +79,9 @@ const GatewaySlot = "cody"
 // on the cody slot whitelist. The orchestrator (planning + adjudication) pins
 // the stronger model in every mode; Prototype workers run the fast router.
 const (
-	defaultOrchestratorModel = "deepseek-ai/DeepSeek-V4-Pro"
+	defaultOrchestratorModel = "zai-org/GLM-5.2"
 	defaultWorkerModel       = "zai-org/GLM-5.2"
-	defaultFastWorkerModel   = "accounts/fireworks/routers/glm-5p1-fast"
+	defaultFastWorkerModel   = "zai-org/GLM-5.2"
 )
 
 // Policy is one mode rendered as an explicit tuple. It parameterizes the one
