@@ -52,6 +52,8 @@ func gatewayScript(t *testing.T, blockT2 chan struct{}) func(step int, req llmte
 		switch {
 		case strings.Contains(system, "planner"):
 			return llmtest.Say(planJSON)
+		case strings.Contains(system, "decision adjudicator"):
+			return llmtest.Say(`{"pick": 0, "rationale": "first valid candidate"}`)
 		case strings.Contains(system, "Cassandra"):
 			return llmtest.Say(groundedVerdict)
 		}
@@ -84,6 +86,17 @@ func gatewayScript(t *testing.T, blockT2 chan struct{}) func(step int, req llmte
 				"changes": []map[string]interface{}{{"path": file, "kind": "create", "why": "the deliverable"}},
 			})
 		}
+	}
+}
+
+// seedExistingProject drops a go.mod so the workspace is NOT greenfield — the
+// pre-projects tests exercise the plan/worker/gate loop directly and must not
+// trip the greenfield Stack Decision Record gate (req 8), which only fires on a
+// truly empty workspace. Its own SDR round-trip is proven in decision_test.go.
+func seedExistingProject(t *testing.T, root string) {
+	t.Helper()
+	if err := os.WriteFile(filepath.Join(root, "go.mod"), []byte("module seed\n\ngo 1.23\n"), 0o644); err != nil {
+		t.Fatal(err)
 	}
 }
 
@@ -197,6 +210,7 @@ func eventTypes(events []Event) []string {
 // honest — all over real HTTP against the real engine.
 func TestCodydEndToEnd(t *testing.T) {
 	workspaceRoot := t.TempDir()
+	seedExistingProject(t, workspaceRoot)
 	dataDir := t.TempDir()
 	gw := llmtest.NewServer(t, gatewayScript(t, nil))
 	t.Cleanup(gw.Close)
@@ -306,6 +320,7 @@ func TestCodydEndToEnd(t *testing.T) {
 // terminal is an honest "stopped", never a fake completion.
 func TestCodydStop(t *testing.T) {
 	workspaceRoot := t.TempDir()
+	seedExistingProject(t, workspaceRoot)
 	dataDir := t.TempDir()
 	blockT2 := make(chan struct{})
 	gw := llmtest.NewServer(t, gatewayScript(t, blockT2))

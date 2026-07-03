@@ -45,6 +45,7 @@ import (
 	"matrix/router/internal/fly"
 	"matrix/router/internal/jwt"
 	"matrix/router/internal/mw"
+	"matrix/router/internal/preview"
 	"matrix/router/internal/provision"
 	"matrix/router/internal/proxy"
 	"matrix/router/internal/railway"
@@ -331,6 +332,13 @@ func main() {
 	publicMux.Handle("/reports", mw.JWT(verifier, logf)(betaMux))
 	publicMux.Handle("/provision/", mw.JWT(verifier, logf)(betaMux))
 
+	// Per-user application previews, served over the private network. The
+	// {userID} path segment MUST match the JWT subject (enforced inside the
+	// preview.Handler), so previews are never world-readable. codyd registers
+	// its private preview target via the internal listener (see below).
+	previewReg := preview.NewRegistry()
+	publicMux.Handle("/preview/", mw.JWT(verifier, logf)(&preview.Handler{Reg: previewReg, Logf: logf}))
+
 	// JWT-protected proxy for everything else (/messages, /events, /intents/*).
 	publicMux.Handle("/", mw.JWT(verifier, logf)(proxyH))
 
@@ -365,6 +373,18 @@ func main() {
 		logf("wake: enabled at %s/internal/wake", cfg.InternalAddr)
 	} else {
 		logf("wake: DISABLED (ROUTER_WAKE_TOKEN unset)")
+	}
+
+	// Preview registration door: codyd (inside a user's VM) registers /
+	// deregisters the private host:port of its preview server here; the
+	// public /preview/{userID}/ mount then reverse-proxies to it. Admin-token
+	// auth (constant-time bearer). Empty token leaves it unmounted, and the
+	// public mount serves 404 (no targets ever registered).
+	if cfg.PreviewToken != "" {
+		internalMux.Handle("/internal/preview/", mw.Admin(cfg.PreviewToken, logf)(preview.RegisterHandler(previewReg)))
+		logf("preview: registration enabled at %s/internal/preview/", cfg.InternalAddr)
+	} else {
+		logf("preview: registration DISABLED (ROUTER_PREVIEW_TOKEN unset)")
 	}
 
 	internalSrv := &http.Server{

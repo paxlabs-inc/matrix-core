@@ -23,6 +23,7 @@ import (
 
 	"matrix/cassandra"
 	"matrix/cody/internal/contract"
+	"matrix/cody/internal/decide"
 	"matrix/cody/internal/llm"
 )
 
@@ -188,6 +189,62 @@ func Screen(root string, baseline TestBaseline, sheet *contract.TaskSheet, repor
 		return ""
 	}
 	return "constitution violation: " + strings.Join(violations, "; ")
+}
+
+// uiDriftExts are the changed-file extensions the design-drift screen inspects.
+var uiDriftExts = map[string]bool{
+	".css": true, ".scss": true, ".tsx": true, ".jsx": true,
+	".vue": true, ".svelte": true, ".html": true,
+}
+
+// ScreenDesign is the deterministic design-drift screen (req 9.3): when a UI
+// sheet carries a Design Language Record, the changed UI files are scanned for
+// the banned AI-tells the record forbids (purple/indigo gradient heroes,
+// gradient/glass blobs, default framework blue, stock component themes, emoji
+// chrome). A hit is a hard rejection — the same banned-defaults doctrine that
+// screened the DLR at authoring time screens its downstream implementation.
+// Returns "" when the turn-in passes or the sheet is not a DLR-bound UI task.
+func ScreenDesign(root string, sheet *contract.TaskSheet, report *contract.TurnInReport) string {
+	if !sheet.UITask || strings.TrimSpace(sheet.Constraints.DesignLanguage) == "" {
+		return ""
+	}
+	var violations []string
+	for _, ch := range report.Changes {
+		if ch.Kind == "delete" {
+			continue
+		}
+		if !uiDriftExts[strings.ToLower(filepath.Ext(ch.Path))] {
+			continue
+		}
+		data, err := os.ReadFile(filepath.Join(root, filepath.FromSlash(ch.Path)))
+		if err != nil {
+			continue
+		}
+		if tells := decide.BannedTellsInText(string(data)); len(tells) > 0 {
+			violations = append(violations, fmt.Sprintf("%s reintroduces banned defaults: %s", ch.Path, strings.Join(tells, ", ")))
+		}
+	}
+	if len(violations) == 0 {
+		return ""
+	}
+	return "design-language drift: " + strings.Join(violations, "; ")
+}
+
+// ScreenScreenshot enforces the screenshot-evidence requirement on UI turn-ins
+// (req 13.2): a UI task's turn-in must carry a screenshot artifact in its
+// verification evidence, and the gate rejects a UI turn-in without one — design
+// quality is verified against what was built, not asserted. Returns "" when the
+// sheet is not a UI task or a screenshot is present.
+func ScreenScreenshot(sheet *contract.TaskSheet, report *contract.TurnInReport) string {
+	if !sheet.UITask {
+		return ""
+	}
+	for _, ev := range report.Verification {
+		if ev.Screenshot != "" {
+			return ""
+		}
+	}
+	return "UI turn-in carries no screenshot artifact: a UI task must capture a screenshot of the rendered result as evidence (req 13.2)"
 }
 
 // BuildRequest renders the sheet as the contract the adjudicator judges

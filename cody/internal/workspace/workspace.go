@@ -55,6 +55,51 @@ type Model struct {
 	EntryPoints []string `json:"entry_points,omitempty"`
 }
 
+// Greenfield reports whether the workspace holds no existing codebase to build
+// on: no source-language files and no invocable build targets. A fresh /workspace
+// (or one seeded with only plain-text scaffolding) is greenfield — the signal
+// that gates the Stack Decision Record before planning (req 8.1).
+func (m *Model) Greenfield() bool {
+	return len(m.Languages) == 0 && len(m.BuildTargets) == 0
+}
+
+// uiFrameworks are the detected frameworks that imply a user-facing surface.
+var uiFrameworks = map[string]bool{
+	"next": true, "react": true, "vue": true, "svelte": true,
+	"astro": true, "remix": true,
+}
+
+// uiLangs are the languages that imply UI markup/styling files.
+var uiLangs = map[string]bool{
+	"css": true, "html": true, "vue": true, "svelte": true,
+}
+
+// UIBearing reports whether an existing workspace already carries a user-facing
+// UI: a detected frontend framework, or CSS/HTML/component files. It is the
+// signal (alongside the plan's own UI tasks) that gates the Design Language
+// Record before the first UI task (req 9.1). A greenfield workspace has nothing
+// to detect yet, so UI intent there is read from the authored plan instead.
+func (m *Model) UIBearing() bool {
+	for _, fw := range m.Frameworks {
+		if uiFrameworks[fw] {
+			return true
+		}
+	}
+	for lang := range m.Languages {
+		if uiLangs[lang] {
+			return true
+		}
+	}
+	// A .tsx/.jsx file is a React component even before a framework is detected.
+	for _, f := range m.Files {
+		switch strings.ToLower(filepath.Ext(f.Path)) {
+		case ".tsx", ".jsx":
+			return true
+		}
+	}
+	return false
+}
+
 var ignoredDirs = map[string]bool{
 	".git": true, "node_modules": true, "vendor": true, "dist": true,
 	"build": true, "target": true, ".next": true, "__pycache__": true,

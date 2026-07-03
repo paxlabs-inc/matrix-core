@@ -72,6 +72,17 @@ type Options struct {
 	// authored, turn-in, accepted, rejected, failed) for surfacing. It is a
 	// pure side-channel: it never influences the loop.
 	Observer func(event string, fields map[string]interface{})
+	// Steers, when set, returns all human direction folded into the run so far
+	// (stop-and-ask answers + live steers), oldest-first. The orchestrator
+	// drains it at task boundaries — never mid-worker — and carries every
+	// direction on subsequent sheets (req 12.2). It is additive only: direction
+	// can add guidance, never weaken the acceptance gate.
+	Steers func() []string
+	// DesignLanguage, when set, is the resolved Design Language Record rendered
+	// as a constraint. Every UI-bearing task sheet carries it verbatim (req 9.3)
+	// and the acceptance gate screens UI turn-ins for drift from the banned
+	// defaults it forbids.
+	DesignLanguage string
 }
 
 // Result is the loop outcome — always honest: done, failed, and why it
@@ -95,6 +106,9 @@ type Orchestrator struct {
 	window []llm.Message
 	// inFlight guards the one-worker-at-a-time invariant.
 	inFlight int32
+	// steers is the human direction folded so far, in order — refreshed at each
+	// boundary from opts.Steers and carried on every subsequent sheet.
+	steers []string
 }
 
 // New builds an orchestrator.
@@ -171,6 +185,9 @@ func (o *Orchestrator) Run(ctx context.Context) (*Result, error) {
 		if err := ctx.Err(); err != nil {
 			return nil, err // killed mid-plan; durable state carries the resume
 		}
+		// Boundary: fold any new human direction BEFORE authoring the next
+		// task's sheet — never while a worker is in flight.
+		o.foldSteers()
 		task := o.opts.Plan.NextEligible()
 		if task == nil {
 			break
@@ -352,6 +369,24 @@ func (o *Orchestrator) reconstructWindow() error {
 	return nil
 }
 
+// foldSteers refreshes the folded human direction from the provider and emits
+// one steer.folded event per newly-arrived direction. Idempotent: only
+// direction beyond what was already folded is emitted, so a respawned
+// orchestrator re-reading the full list never double-emits within one run.
+func (o *Orchestrator) foldSteers() {
+	if o.opts.Steers == nil {
+		return
+	}
+	latest := o.opts.Steers()
+	if len(latest) <= len(o.steers) {
+		return
+	}
+	for _, s := range latest[len(o.steers):] {
+		o.emit("steer.folded", map[string]interface{}{"text": s})
+	}
+	o.steers = append([]string{}, latest...)
+}
+
 // dispatch runs the worker func under the one-at-a-time invariant.
 func (o *Orchestrator) dispatch(ctx context.Context, sheet *contract.TaskSheet, grounding string) (*contract.TurnInReport, error) {
 	if !atomic.CompareAndSwapInt32(&o.inFlight, 0, 1) {
@@ -395,6 +430,15 @@ func (o *Orchestrator) adjudicate(ctx context.Context, sheet *contract.TaskSheet
 	if v := gate.Screen(o.opts.Root, baseline, sheet, report); v != "" {
 		return v, "", nil
 	}
+	// Layer 2b: UI turn-ins carry a higher deterministic bar — a screenshot
+	// artifact (req 13.2) and, under a Design Language Record, no drift back to
+	// the banned defaults (req 9.3).
+	if v := gate.ScreenScreenshot(sheet, report); v != "" {
+		return v, "", nil
+	}
+	if v := gate.ScreenDesign(o.opts.Root, sheet, report); v != "" {
+		return v, "", nil
+	}
 	// Layer 3: goal-vs-outcome adjudication (never string-matching the
 	// report). Judged against the orchestrator's own green record as evidence.
 	if v := gate.Adjudicate(ctx, o.opts.Adjudicator, sheet, report, renderRerun(results)); v != "" {
@@ -428,22 +472,102 @@ func (o *Orchestrator) specSheet(task *Task, attempt int, feedback string) *cont
 	if o.opts.Rules != nil {
 		rulesRefs = o.opts.Rules.Refs()
 	}
+	ui := IsUITask(task)
+	constraints := contract.Constraints{
+		Constitution: constitution,
+		ModePolicy:   o.opts.ModePolicy,
+		RulesRefs:    rulesRefs,
+	}
+	// A UI task inherits the resolved Design Language Record verbatim so a
+	// fresh-context worker builds to the same visual language (req 9.3).
+	if ui && o.opts.DesignLanguage != "" {
+		constraints.DesignLanguage = o.opts.DesignLanguage
+	}
 	return &contract.TaskSheet{
-		TaskID:     task.ID,
-		Title:      task.Title,
-		Goal:       task.Goal,
-		Acceptance: task.Acceptance,
-		Grounding:  task.Grounding,
-		Constraints: contract.Constraints{
-			Constitution: constitution,
-			ModePolicy:   o.opts.ModePolicy,
-			RulesRefs:    rulesRefs,
-		},
+		TaskID:      task.ID,
+		Title:       task.Title,
+		Goal:        task.Goal,
+		Acceptance:  task.Acceptance,
+		Grounding:   task.Grounding,
+		Constraints: constraints,
 		Verify:      contract.Verify{Commands: task.Verify, MustBeGreen: true},
 		Deliverable: task.Deliverable,
 		Attempt:     attempt,
 		Feedback:    feedback,
+		Steers:      append([]string{}, o.steers...),
+		UITask:      ui,
 	}
+}
+
+// uiSignals are the keywords in a task's title/goal/deliverable that mark it as
+// producing user-facing UI — the signal that binds the Design Language Record
+// and the screenshot-evidence requirement to the sheet.
+var uiSignals = []string{
+	"ui", "frontend", "front-end", "component", "page", "css", "style",
+	"design", "layout", "screen", "view", "button", "form", "dashboard",
+	"landing", "navbar", "sidebar", "modal", "theme", "responsive", "tailwind",
+}
+
+// uiExts are the file extensions whose presence in a deliverable marks UI work.
+var uiExts = []string{".tsx", ".jsx", ".vue", ".svelte", ".css", ".scss", ".html"}
+
+// IsUITask reports whether a plan task produces user-facing UI, by keyword over
+// its title/goal/deliverable shape/grounding notes and by UI file extensions in
+// its deliverable. Deliberately inclusive: a false positive only adds a design
+// constraint and a screenshot requirement to a sheet, never weakens the gate.
+func IsUITask(t *Task) bool {
+	hay := strings.ToLower(strings.Join([]string{
+		t.Title, t.Goal, t.Deliverable.Shape, t.Grounding.Notes,
+		strings.Join(t.Acceptance, " "),
+	}, " "))
+	for _, kw := range uiSignals {
+		// Word-ish boundary check: avoid "view" matching "review", "form"
+		// matching "information", etc. by requiring a non-letter neighbor.
+		if containsWord(hay, kw) {
+			return true
+		}
+	}
+	for _, ext := range uiExts {
+		if strings.Contains(hay, ext) {
+			return true
+		}
+	}
+	return false
+}
+
+// containsWord reports whether word occurs in s bounded by non-letters, so a
+// short signal keyword does not match inside a larger unrelated word.
+func containsWord(s, word string) bool {
+	from := 0
+	for {
+		i := strings.Index(s[from:], word)
+		if i < 0 {
+			return false
+		}
+		i += from
+		leftOK := i == 0 || !isLetter(s[i-1])
+		end := i + len(word)
+		rightOK := end >= len(s) || !isLetter(s[end])
+		if leftOK && rightOK {
+			return true
+		}
+		from = i + 1
+	}
+}
+
+func isLetter(b byte) bool {
+	return (b >= 'a' && b <= 'z') || (b >= 'A' && b <= 'Z')
+}
+
+// PlanHasUITask reports whether any task in the plan produces UI — the plan-side
+// signal (alongside the workspace model) that gates the Design Language Record.
+func PlanHasUITask(p *Plan) bool {
+	for _, t := range p.Tasks {
+		if IsUITask(t) {
+			return true
+		}
+	}
+	return false
 }
 
 // defaultConstitution is the sheet-carried rendering of the engine-enforced

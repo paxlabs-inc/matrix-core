@@ -5,6 +5,7 @@ package server
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -33,6 +34,8 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("/intents/", s.handleIntents)
 	mux.HandleFunc("/conversations/", s.handleConversations)
 	mux.HandleFunc("/workspace/", s.handleWorkspace)
+	mux.HandleFunc("/projects", s.handleProjects)
+	mux.HandleFunc("/projects/", s.handleProject)
 	return mux
 }
 
@@ -51,6 +54,11 @@ func (s *Server) handleChat(w http.ResponseWriter, r *http.Request) {
 		Message        string `json:"message"`
 		ConversationID string `json:"conversation_id"`
 		Mode           string `json:"mode"`
+		ProjectID      string `json:"project_id"`
+		// Spec ingestion (req 11.1): a pasted spec document, or SpecPath, a
+		// workspace-relative path to one. Either adopts the document as the plan.
+		Spec     string `json:"spec"`
+		SpecPath string `json:"spec_path"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		writeJSON(w, http.StatusBadRequest, map[string]interface{}{"error": "invalid body: " + err.Error()})
@@ -64,7 +72,20 @@ func (s *Server) handleChat(w http.ResponseWriter, r *http.Request) {
 	if convID == "" {
 		convID = "conv-" + newRunID()
 	}
-	runID, fresh, err := s.engine.Submit(convID, req.Message, req.Mode)
+	// Resolve the spec reference: a pasted document wins; else read the named
+	// workspace file (project-scoped, traversal-guarded).
+	spec, specSource := strings.TrimSpace(req.Spec), ""
+	if spec != "" {
+		specSource = "pasted"
+	} else if p := strings.TrimSpace(req.SpecPath); p != "" {
+		doc, src, err := s.engine.readSpecFile(req.ProjectID, p)
+		if err != nil {
+			writeJSON(w, http.StatusBadRequest, map[string]interface{}{"error": "spec_path: " + err.Error()})
+			return
+		}
+		spec, specSource = doc, src
+	}
+	runID, fresh, err := s.engine.Submit(convID, req.Message, req.Mode, req.ProjectID, spec, specSource)
 	if err != nil {
 		writeJSON(w, http.StatusBadRequest, map[string]interface{}{"error": err.Error()})
 		return
@@ -114,19 +135,89 @@ func (s *Server) handlePoll(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// handleIntents routes POST /intents/{id}/stop.
+// handleIntents routes POST /intents/{id}/{stop,answer,steer}.
 func (s *Server) handleIntents(w http.ResponseWriter, r *http.Request) {
 	rest := strings.TrimPrefix(r.URL.Path, "/intents/")
 	parts := strings.Split(rest, "/")
-	if len(parts) == 2 && parts[1] == "stop" && r.Method == http.MethodPost {
-		if !s.engine.Stop(parts[0]) {
+	if len(parts) != 2 || r.Method != http.MethodPost {
+		http.Error(w, "not found", http.StatusNotFound)
+		return
+	}
+	id, action := parts[0], parts[1]
+	switch action {
+	case "stop":
+		if !s.engine.Stop(id) {
 			http.Error(w, "unknown intent", http.StatusNotFound)
 			return
 		}
 		writeJSON(w, http.StatusOK, map[string]interface{}{"stopped": true})
+	case "answer":
+		s.handleAnswer(w, r, id)
+	case "steer":
+		s.handleSteer(w, r, id)
+	default:
+		http.Error(w, "not found", http.StatusNotFound)
+	}
+}
+
+// handleAnswer resolves a needs_input stall: free text and/or a decision verdict
+// (approve / override with a payload). Both stop-and-ask and (wave 2) SDR/DLR
+// approval ride this one channel.
+func (s *Server) handleAnswer(w http.ResponseWriter, r *http.Request, id string) {
+	var req struct {
+		Text    string `json:"text"`
+		Verdict *struct {
+			Decision string          `json:"decision"`
+			Payload  json.RawMessage `json:"payload"`
+		} `json:"verdict"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]interface{}{"error": "invalid body: " + err.Error()})
 		return
 	}
-	http.Error(w, "not found", http.StatusNotFound)
+	d := directive{Text: strings.TrimSpace(req.Text)}
+	if req.Verdict != nil {
+		dec := strings.TrimSpace(req.Verdict.Decision)
+		if dec != "approve" && dec != "override" {
+			writeJSON(w, http.StatusBadRequest, map[string]interface{}{"error": "verdict.decision must be approve or override"})
+			return
+		}
+		d.Verdict = &verdict{Decision: dec, Payload: req.Verdict.Payload}
+	}
+	if d.Text == "" && d.Verdict == nil {
+		writeJSON(w, http.StatusBadRequest, map[string]interface{}{"error": "answer requires text or a verdict"})
+		return
+	}
+	if err := s.engine.Answer(id, d); err != nil {
+		if errors.Is(err, errRunNotFound) {
+			http.Error(w, "unknown intent", http.StatusNotFound)
+			return
+		}
+		writeJSON(w, http.StatusConflict, map[string]interface{}{"error": err.Error()})
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]interface{}{"answered": true})
+}
+
+// handleSteer folds a mid-run correction into the live run at the next
+// orchestrator boundary (never interrupting a mid-flight worker).
+func (s *Server) handleSteer(w http.ResponseWriter, r *http.Request, id string) {
+	var req struct {
+		Text string `json:"text"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]interface{}{"error": "invalid body: " + err.Error()})
+		return
+	}
+	if err := s.engine.Steer(id, req.Text); err != nil {
+		if errors.Is(err, errRunNotFound) {
+			http.Error(w, "unknown intent", http.StatusNotFound)
+			return
+		}
+		writeJSON(w, http.StatusBadRequest, map[string]interface{}{"error": err.Error()})
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]interface{}{"steered": true})
 }
 
 // handleConversations serves GET /conversations/{id}/trace — the durable

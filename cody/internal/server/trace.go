@@ -24,6 +24,24 @@ var traceWorkspaceTypes = map[string]bool{
 	"task.rejected":  true,
 	"task.failed":    true,
 	"plan.completed": true,
+	// Answer/steer channel (req 12.3): the needs_input stall, its resolution,
+	// and folded steers are durable so the client rebuilds them on reopen.
+	"run.needs_input": true,
+	"run.answered":    true,
+	"steer.folded":    true,
+	// Decision gates (req 3.4, 8, 9): the authored Stack and Design Language
+	// Records and their resolution are durable so the client rebuilds the
+	// decision cards on reopen.
+	"decision.stack":    true,
+	"decision.design":   true,
+	"decision.resolved": true,
+	// Spec ingestion (req 11): the plan was adopted from a spec document; the
+	// provenance is durable so the client rebuilds the adoption banner on reopen.
+	"plan.adopted": true,
+	// Undo (req 14): named snapshots and restores are durable trace events so the
+	// client rebuilds the checkpoint history on reopen.
+	"snapshot.created":  true,
+	"snapshot.restored": true,
 }
 
 // defaultTraceRetain caps retained events per run.

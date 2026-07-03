@@ -16,6 +16,8 @@ import (
 	"sort"
 	"strings"
 	"time"
+
+	"matrix/cody/internal/checkpoint"
 )
 
 // The client coding workspace's environment surface: a read-only view of
@@ -52,10 +54,10 @@ type treeEntry struct {
 	Size int64  `json:"size,omitempty"`
 }
 
-// resolveWorkspacePath joins a workspace-relative path against the root and
-// refuses traversal outside it.
-func (e *Engine) resolveWorkspacePath(rel string) (string, error) {
-	root, err := filepath.Abs(e.opts.WorkspaceRoot)
+// resolveWorkspacePath joins a workspace-relative path against a project root
+// and refuses traversal outside it.
+func resolveWorkspacePath(projectRoot, rel string) (string, error) {
+	root, err := filepath.Abs(projectRoot)
 	if err != nil {
 		return "", err
 	}
@@ -66,7 +68,8 @@ func (e *Engine) resolveWorkspacePath(rel string) (string, error) {
 	return abs, nil
 }
 
-// handleWorkspace routes GET /workspace/tree|file|diff + POST /workspace/exec.
+// handleWorkspace routes the read-only environment surface plus the terminal
+// and the snapshot/undo actions.
 func (s *Server) handleWorkspace(w http.ResponseWriter, r *http.Request) {
 	switch strings.TrimPrefix(r.URL.Path, "/workspace/") {
 	case "tree":
@@ -77,9 +80,119 @@ func (s *Server) handleWorkspace(w http.ResponseWriter, r *http.Request) {
 		s.handleWorkspaceDiff(w, r)
 	case "exec":
 		s.handleWorkspaceExec(w, r)
+	case "snapshot":
+		s.handleWorkspaceSnapshot(w, r)
+	case "snapshots":
+		s.handleWorkspaceSnapshots(w, r)
+	case "restore":
+		s.handleWorkspaceRestore(w, r)
 	default:
 		http.Error(w, "not found", http.StatusNotFound)
 	}
+}
+
+// handleWorkspaceSnapshot takes a named workspace snapshot (POST). One-button
+// undo in Prototype and named checkpoints in Engineer/Architect both land here
+// (req 14.1). The snapshot.created event is best-effort emitted on the addressed
+// conversation's run so it appears in the durable timeline.
+func (s *Server) handleWorkspaceSnapshot(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	var req struct {
+		Label          string `json:"label"`
+		ConversationID string `json:"conversation_id"`
+	}
+	_ = json.NewDecoder(r.Body).Decode(&req)
+	root, err := s.engine.reqProjectRoot(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	snap, err := checkpoint.NewSnapshotter(root)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	id, err := snap.Snapshot(strings.TrimSpace(req.Label))
+	if err != nil {
+		http.Error(w, "snapshot: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+	s.engine.publishToConversation(req.ConversationID, "snapshot.created",
+		map[string]interface{}{"id": id, "label": strings.TrimSpace(req.Label)})
+	writeJSON(w, http.StatusCreated, map[string]interface{}{"id": id, "label": strings.TrimSpace(req.Label)})
+}
+
+// handleWorkspaceSnapshots lists the project's snapshots, oldest first (GET).
+func (s *Server) handleWorkspaceSnapshots(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	root, err := s.engine.reqProjectRoot(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	snap, err := checkpoint.NewSnapshotter(root)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	list, err := snap.List()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if list == nil {
+		list = []checkpoint.Info{}
+	}
+	writeJSON(w, http.StatusOK, map[string]interface{}{"snapshots": list})
+}
+
+// handleWorkspaceRestore rolls the workspace back to a snapshot (POST). It
+// REFUSES while a worker is alive on the project (req 14.1): a restore mid-run
+// would pull the ground out from under a live worker. The snapshot.restored
+// event is best-effort emitted on the addressed conversation's run.
+func (s *Server) handleWorkspaceRestore(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	var req struct {
+		ID             string `json:"id"`
+		ConversationID string `json:"conversation_id"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "invalid body: "+err.Error(), http.StatusBadRequest)
+		return
+	}
+	if strings.TrimSpace(req.ID) == "" {
+		http.Error(w, "id is required", http.StatusBadRequest)
+		return
+	}
+	root, err := s.engine.reqProjectRoot(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	if s.engine.projectHasLiveRun(root) {
+		writeJSON(w, http.StatusConflict, map[string]interface{}{"error": "a run is live in this project; stop it before restoring"})
+		return
+	}
+	snap, err := checkpoint.NewSnapshotter(root)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if err := snap.Restore(strings.TrimSpace(req.ID)); err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]interface{}{"error": "restore: " + err.Error()})
+		return
+	}
+	s.engine.publishToConversation(req.ConversationID, "snapshot.restored", map[string]interface{}{"id": strings.TrimSpace(req.ID)})
+	writeJSON(w, http.StatusOK, map[string]interface{}{"restored": true, "id": strings.TrimSpace(req.ID)})
 }
 
 // handleWorkspaceTree serves the depth-first workspace listing.
@@ -88,7 +201,12 @@ func (s *Server) handleWorkspaceTree(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
-	root, err := filepath.Abs(s.engine.opts.WorkspaceRoot)
+	projectRoot, err := s.engine.reqProjectRoot(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	root, err := filepath.Abs(projectRoot)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -143,7 +261,12 @@ func (s *Server) handleWorkspaceFile(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "path is required", http.StatusBadRequest)
 		return
 	}
-	abs, err := s.engine.resolveWorkspacePath(rel)
+	projectRoot, err := s.engine.reqProjectRoot(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	abs, err := resolveWorkspacePath(projectRoot, rel)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -177,7 +300,11 @@ func (s *Server) handleWorkspaceDiff(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
-	root := s.engine.opts.WorkspaceRoot
+	root, err := s.engine.reqProjectRoot(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
 	if _, err := os.Stat(filepath.Join(root, ".git")); err != nil {
 		writeJSON(w, http.StatusOK, map[string]interface{}{"git": false, "diff": "", "untracked": []string{}})
 		return
@@ -229,6 +356,11 @@ func (s *Server) handleWorkspaceExec(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "cmd is required", http.StatusBadRequest)
 		return
 	}
+	root, err := s.engine.reqProjectRoot(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
 	timeout := termDefaultTimeout
 	if req.TimeoutSecs > 0 && req.TimeoutSecs <= 600 {
 		timeout = time.Duration(req.TimeoutSecs) * time.Second
@@ -236,7 +368,7 @@ func (s *Server) handleWorkspaceExec(w http.ResponseWriter, r *http.Request) {
 	ctx, cancel := context.WithTimeout(r.Context(), timeout)
 	defer cancel()
 	cmd := exec.CommandContext(ctx, "sh", "-c", req.Cmd)
-	cmd.Dir = s.engine.opts.WorkspaceRoot
+	cmd.Dir = root
 	out, err := cmd.CombinedOutput()
 	exit := 0
 	if err != nil {

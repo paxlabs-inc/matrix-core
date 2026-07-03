@@ -4,10 +4,19 @@
 #
 # The Railway sibling of deploy/daemon/Dockerfile: the SAME daemon stack
 # (mcl-execute + neo, baked skills/agents/tools, pre-cached MCP servers, mc)
-# on an Ubuntu 24.04 base that additionally bakes the full dev toolchain the
-# per-user environment shells into via the exec MCP server:
+# PLUS codyd — the Cody coding engine — supervised beside neo by the
+# entrypoint, on an Ubuntu 24.04 base that additionally bakes the full dev
+# toolchain the per-user environment shells into via the exec MCP server:
 #
 #   git, build-essential, Node 22 + pnpm, Go, Python 3.12 + uv, Rust, Foundry
+#
+# For codyd this image also bakes:
+#   - Local data services as native server binaries (NOT docker-in-docker):
+#     PostgreSQL, Redis, SQLite — started on demand by the exec bridge.
+#   - The quality toolchain codyd verifies with: golangci-lint, ruff, eslint,
+#     prettier, tsc, vitest, cargo-clippy. Playwright browsers are EXCLUDED
+#     (browser e2e runs in sandboxes, never on the per-user VM).
+#   - agents/cody.json (via the wholesale agents/ COPY).
 #
 # Railway specifics (vs the Fly image):
 #   - ONE volume: Railway allows exactly one volume mount per service. It
@@ -43,6 +52,10 @@ COPY construct/go.mod              construct/
 COPY executor/go.mod executor/go.sum executor/
 COPY neo/go.mod     neo/go.sum     neo/
 COPY cassandra/go.mod              cassandra/
+# cody (matrix/cody) — the Cody coding engine. Its go.mod `replace`s point at
+# ../cortex, ../MCL and ../cassandra (copied above), so those trees MUST be
+# present for `go build ./cmd/codyd` to resolve.
+COPY cody/go.mod    cody/go.sum    cody/
 
 # Now the source.
 COPY cortex/    cortex/
@@ -52,6 +65,7 @@ COPY construct/ construct/
 COPY executor/  executor/
 COPY neo/       neo/
 COPY cassandra/ cassandra/
+COPY cody/      cody/
 
 WORKDIR /src/executor
 RUN go build -ldflags="-s -w" -o /out/mcl-execute ./cmd/mcl-execute
@@ -60,6 +74,15 @@ RUN go build -ldflags="-s -w" -o /out/mcl-execute ./cmd/mcl-execute
 # the sibling replace directives in neo/go.mod (those trees are copied above).
 WORKDIR /src/neo
 RUN go build -ldflags="-s -w" -o /out/neo ./cmd/neo
+
+# Cody — the coding engine (matrix/cody). Boots `codyd` beside Neo in the
+# per-user runtime. Reuses cortex/MCL/cassandra via the sibling replace
+# directives in cody/go.mod (those trees are copied above). The Go-native
+# sandbox client (matrix/cody/internal/sandbox) compiles straight INTO this
+# binary — there is no separate sandbox-client binary to copy; it ships in the
+# image by virtue of being linked into codyd.
+WORKDIR /src/cody
+RUN go build -ldflags="-s -w" -o /out/codyd ./cmd/codyd
 
 # -------- 2. Runtime --------
 FROM ubuntu:24.04 AS runtime
@@ -128,6 +151,65 @@ RUN set -eux; \
     cast --version; \
     anvil --version
 
+# Local data services for codyd: PostgreSQL, Redis and SQLite baked as native
+# server binaries — NOT docker-in-docker. Cody's exec bridge (the agent's shell
+# tool) starts them ON DEMAND from inside the workspace shell, e.g.
+#   pg_ctlcluster 16 main start   # or: pg_ctl -D <datadir> start
+#   redis-server --daemonize yes
+#   sqlite3 <file>                # serverless; no daemon to start
+# They are deliberately NOT auto-started at boot (no systemd in the container);
+# the entrypoint only supervises codyd/neo/daemon. `postgresql` pulls the
+# versioned server (Ubuntu 24.04 → PostgreSQL 16) plus pg_ctlcluster; the
+# default cluster it auto-creates is left stopped.
+RUN set -eux; \
+    apt-get update; \
+    apt-get install -y --no-install-recommends \
+        postgresql postgresql-contrib \
+        redis-server \
+        sqlite3 libsqlite3-dev; \
+    rm -rf /var/lib/apt/lists/*; \
+    # Stop the cluster/daemon the postinst may have started — services are
+    # exec-bridge-startable, not boot services.
+    (pg_ctlcluster "$(ls /etc/postgresql 2>/dev/null | head -1)" main stop || true) 2>/dev/null; \
+    (service redis-server stop || true) 2>/dev/null; \
+    psql --version; \
+    redis-server --version; \
+    sqlite3 --version
+
+# Quality toolchain codyd shells into for its verify/gate stages. Browser e2e
+# (playwright) is deliberately EXCLUDED: it runs in disposable sandboxes, never
+# on the per-user VM — so NO `playwright install` and NO browser binaries here.
+# Pins chosen to match real published releases; bump via a rebuild.
+ARG GOLANGCI_LINT_VERSION=v1.61.0
+ARG RUFF_VERSION=0.6.9
+ARG ESLINT_VERSION=9.13.0
+ARG PRETTIER_VERSION=3.3.3
+ARG TYPESCRIPT_VERSION=5.6.3
+ARG VITEST_VERSION=2.1.3
+RUN set -eux; \
+    # Go: golangci-lint via its pinned official installer (script tag == binary
+    # tag) into /usr/local/bin so the exec shell finds it on PATH.
+    curl -sSfL "https://raw.githubusercontent.com/golangci/golangci-lint/${GOLANGCI_LINT_VERSION}/install.sh" \
+        | sh -s -- -b /usr/local/bin "${GOLANGCI_LINT_VERSION}"; \
+    golangci-lint --version; \
+    # Python: ruff as a standalone uv-managed tool (same mechanism as the MCP
+    # servers above; shim lands in /root/.local/bin, already on PATH).
+    uv tool install "ruff==${RUFF_VERSION}"; \
+    ruff --version; \
+    # JS/TS: eslint + prettier + typescript(tsc) + vitest as global npm bins.
+    npm install -g \
+        "eslint@${ESLINT_VERSION}" \
+        "prettier@${PRETTIER_VERSION}" \
+        "typescript@${TYPESCRIPT_VERSION}" \
+        "vitest@${VITEST_VERSION}"; \
+    eslint --version; \
+    prettier --version; \
+    tsc --version; \
+    vitest --version; \
+    # Rust: clippy as a rustup component on the stable toolchain installed above.
+    rustup component add clippy; \
+    cargo clippy --version
+
 # Pre-install MCP servers so first cold-start does not hit registries.
 # Versions PINNED to releases whose tools/list exactly matches default.json.
 RUN set -eux; \
@@ -171,13 +253,22 @@ WORKDIR /opt/matrix
 # neo = the Neo conversational front (matrix/neo serve).
 COPY --from=builder /out/mcl-execute /opt/matrix/bin/mcl-execute
 COPY --from=builder /out/neo         /opt/matrix/bin/neo
+# codyd = the Cody coding engine, supervised beside neo by the entrypoint.
+COPY --from=builder /out/codyd       /opt/matrix/bin/codyd
 
 # Bake the skill corpus + agent manifests + tool bridges — the same set as
 # deploy/daemon/Dockerfile (see its per-tool comments); the daemon's strict
 # spawn check exits if any manifest-declared bridge file is missing, so ALL
 # of them MUST be baked.
 COPY skills/         /opt/matrix/skills/
+# agents/ carries every agent manifest, INCLUDING agents/cody.json — it lands
+# at /opt/matrix/agents/cody.json (the same dir every other manifest uses; the
+# runtime symlink /root/matrix → /opt/matrix also exposes it as
+# /root/matrix/agents/cody.json).
 COPY agents/         /opt/matrix/agents/
+# rules/ is Cody's language/standards library; the entrypoint points
+# CODY_RULES_DIR at /opt/matrix/rules and CODY_SKILLS_DIR at /opt/matrix/skills.
+COPY rules/          /opt/matrix/rules/
 COPY tools/paxeer    /opt/matrix/tools/paxeer
 COPY tools/websearch /opt/matrix/tools/websearch
 COPY tools/browser   /opt/matrix/tools/browser

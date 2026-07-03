@@ -36,6 +36,16 @@ type TaskSheet struct {
 	// Feedback carries the orchestrator's concrete rejection feedback on a
 	// re-dispatch; empty on the first attempt.
 	Feedback string `json:"feedback,omitempty"`
+	// Steers carries mid-run human direction the orchestrator folded in at a
+	// boundary — a stop-and-ask answer or a live steer. Every sheet authored
+	// after the direction lands carries it so a fresh-context worker honors it
+	// (req 12.2). Ordered oldest-first; empty when the run has no direction.
+	Steers []string `json:"steers,omitempty"`
+	// UITask marks a sheet whose deliverable is user-facing UI. The gate holds
+	// UI turn-ins to a higher bar: they must carry a screenshot artifact
+	// (req 13.2) and, when a Design Language Record is in force, must not drift
+	// from it (req 9.3).
+	UITask bool `json:"ui_task,omitempty"`
 }
 
 // Grounding pins the sheet to exact seams in the workspace: the files the
@@ -52,6 +62,10 @@ type Constraints struct {
 	Constitution []string `json:"constitution,omitempty"`
 	ModePolicy   string   `json:"mode_policy,omitempty"`
 	RulesRefs    []string `json:"rules_refs,omitempty"`
+	// DesignLanguage, when set (UI tasks under a resolved Design Language
+	// Record), is the binding visual-language constraint the worker must build
+	// to and the gate screens the turn-in against (req 9.3).
+	DesignLanguage string `json:"design_language,omitempty"`
 }
 
 // Verify lists the verification commands that must be green for the task to
@@ -144,6 +158,10 @@ type Evidence struct {
 	// OverflowPath points at the full output on disk when the excerpt was
 	// truncated (read-full discipline: the remainder is always retrievable).
 	OverflowPath string `json:"overflow_path,omitempty"`
+	// Screenshot is the workspace-relative path to a screenshot artifact
+	// captured for a UI task — the design-quality evidence the gate requires on
+	// UI turn-ins (req 13.2). Empty on non-UI evidence.
+	Screenshot string `json:"screenshot,omitempty"`
 }
 
 // Green reports whether the evidence records a passing run.

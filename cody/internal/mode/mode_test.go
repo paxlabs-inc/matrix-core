@@ -37,8 +37,17 @@ func TestPolicyTuplesDiffer(t *testing.T) {
 	if proto.VerifyCadence != VerifyMilestones || eng.VerifyCadence != VerifyPerTask || arch.VerifyCadence != VerifyPerTaskProperty {
 		t.Fatalf("verify cadences: %s %s %s", proto.VerifyCadence, eng.VerifyCadence, arch.VerifyCadence)
 	}
-	if !(proto.Creativity > eng.Creativity && eng.Creativity > arch.Creativity) {
-		t.Fatalf("creativity ordering: %v %v %v", proto.Creativity, eng.Creativity, arch.Creativity)
+	// Implementation runs cold and ordered by mode ceremony; decisions run hot.
+	if !(proto.ImplementationCreativity > eng.ImplementationCreativity && eng.ImplementationCreativity > arch.ImplementationCreativity) {
+		t.Fatalf("implementation creativity ordering: %v %v %v", proto.ImplementationCreativity, eng.ImplementationCreativity, arch.ImplementationCreativity)
+	}
+	for _, p := range []Policy{proto, eng, arch} {
+		if p.DecisionCreativity < p.ImplementationCreativity {
+			t.Fatalf("%s: decision creativity %v must be hotter than implementation %v", p.Mode, p.DecisionCreativity, p.ImplementationCreativity)
+		}
+		if p.DecisionCandidates < 2 || p.DecisionCandidates > 3 {
+			t.Fatalf("%s: decision candidates %d out of the 2-3 band", p.Mode, p.DecisionCandidates)
+		}
 	}
 	if proto.Register != RegisterOutcome || eng.Register != RegisterTechnical {
 		t.Fatalf("registers: %s %s", proto.Register, eng.Register)
@@ -49,15 +58,24 @@ func TestModelPolicyPerRole(t *testing.T) {
 	for _, m := range []Mode{Prototype, Engineer, Architect} {
 		p := For(m)
 		orch := p.OrchestratorLLM("http://gw", "did:matrix:u")
+		dec := p.DecisionLLM("http://gw", "did:matrix:u")
 		work := p.WorkerLLM("http://gw", "did:matrix:u")
-		if orch.SlotLabel != GatewaySlot || work.SlotLabel != GatewaySlot {
-			t.Fatalf("%s: slots %q/%q, want cody for both roles", m, orch.SlotLabel, work.SlotLabel)
+		if orch.SlotLabel != GatewaySlot || dec.SlotLabel != GatewaySlot || work.SlotLabel != GatewaySlot {
+			t.Fatalf("%s: slots %q/%q/%q, want cody for every role", m, orch.SlotLabel, dec.SlotLabel, work.SlotLabel)
 		}
-		if orch.Model != p.OrchestratorModel || work.Model != p.WorkerModel {
-			t.Fatalf("%s: models %q/%q", m, orch.Model, work.Model)
+		if orch.Model != p.OrchestratorModel || dec.Model != p.OrchestratorModel || work.Model != p.WorkerModel {
+			t.Fatalf("%s: models %q/%q/%q", m, orch.Model, dec.Model, work.Model)
 		}
-		if work.Temperature != p.Creativity {
-			t.Fatalf("%s: worker temperature %v, want the mode's creativity %v", m, work.Temperature, p.Creativity)
+		// Workers run cold at the mode's implementation creativity; decision
+		// authoring runs hot at the mode's decision creativity.
+		if work.Temperature != p.ImplementationCreativity {
+			t.Fatalf("%s: worker temperature %v, want implementation creativity %v", m, work.Temperature, p.ImplementationCreativity)
+		}
+		if dec.Temperature != p.DecisionCreativity {
+			t.Fatalf("%s: decision temperature %v, want decision creativity %v", m, dec.Temperature, p.DecisionCreativity)
+		}
+		if !(dec.Temperature > work.Temperature || (m == Prototype && dec.Temperature >= work.Temperature)) {
+			t.Fatalf("%s: decisions (%v) must run hotter than implementation (%v)", m, dec.Temperature, work.Temperature)
 		}
 	}
 	// Prototype workers run a faster model than the orchestrator's pin.

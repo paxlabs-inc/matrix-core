@@ -214,6 +214,7 @@ func (w *Worker) tryTurnIn(tc llm.ToolCall) (*contract.TurnInReport, string) {
 		Changes     []contract.Change `json:"changes"`
 		Gaps        []string          `json:"gaps"`
 		Assumptions []string          `json:"assumptions"`
+		Screenshots []string          `json:"screenshots"`
 	}
 	if err := json.Unmarshal([]byte(tc.Function.Arguments), &args); err != nil {
 		return nil, "turn_in arguments are not valid JSON: " + err.Error()
@@ -250,7 +251,7 @@ func (w *Worker) tryTurnIn(tc llm.ToolCall) (*contract.TurnInReport, string) {
 		Status:       status,
 		Summary:      args.Summary,
 		Changes:      w.trackedChanges(),
-		Verification: w.evidence(),
+		Verification: append(w.evidence(), w.screenshotEvidence(args.Screenshots)...),
 		Gaps:         args.Gaps,
 		Assumptions:  args.Assumptions,
 		Attempt:      w.opts.Sheet.Attempt,
@@ -259,6 +260,33 @@ func (w *Worker) tryTurnIn(tc llm.ToolCall) (*contract.TurnInReport, string) {
 		return nil, "turn_in refused: " + err.Error()
 	}
 	return report, ""
+}
+
+// screenshotEvidence turns claimed screenshot paths into evidence — but only
+// for artifacts that REALLY exist under the workspace root (no fakes: an
+// asserted screenshot that isn't on disk is not evidence). A green exit is
+// recorded so the artifact reads as passing evidence in the turn-in.
+func (w *Worker) screenshotEvidence(paths []string) []contract.Evidence {
+	var out []contract.Evidence
+	for _, p := range paths {
+		rel := strings.TrimSpace(p)
+		if rel == "" {
+			continue
+		}
+		abs := rel
+		if !filepath.IsAbs(abs) {
+			abs = filepath.Join(w.opts.Root, filepath.FromSlash(rel))
+		}
+		if info, err := os.Stat(abs); err != nil || info.IsDir() || info.Size() == 0 {
+			continue // a screenshot that is not a real, non-empty file is not evidence
+		}
+		out = append(out, contract.Evidence{
+			Command:    "screenshot",
+			Exit:       0,
+			Screenshot: filepath.ToSlash(rel),
+		})
+	}
+	return out
 }
 
 // trackedChanges renders the engine's mutation record.
@@ -668,6 +696,13 @@ func (w *Worker) systemPrompt() string {
 	if s.Constraints.ModePolicy != "" {
 		b.WriteString("\nMode policy: " + s.Constraints.ModePolicy + "\n")
 	}
+	if s.Constraints.DesignLanguage != "" {
+		b.WriteString("\nDESIGN LANGUAGE (binding — build EXACTLY to this; the gate rejects drift back to AI-default patterns):\n")
+		b.WriteString(s.Constraints.DesignLanguage + "\n")
+		b.WriteString("After building UI, capture a screenshot of the rendered result and record it as turn-in evidence (the gate rejects a UI turn-in without one).\n")
+	} else if s.UITask {
+		b.WriteString("\nThis is a UI task: after building, capture a screenshot of the rendered result and record it as turn-in evidence (the gate rejects a UI turn-in without one).\n")
+	}
 	if len(s.Constraints.RulesRefs) > 0 {
 		b.WriteString("\nApplicable standards (read them with fs_read if you need the details):\n")
 		for _, r := range s.Constraints.RulesRefs {
@@ -709,6 +744,12 @@ func (w *Worker) userPrompt() string {
 	if len(s.Deliverable.DoNotTouch) > 0 {
 		b.WriteString("\nDO NOT TOUCH (enforced):\n")
 		for _, d := range s.Deliverable.DoNotTouch {
+			b.WriteString("- " + d + "\n")
+		}
+	}
+	if len(s.Steers) > 0 {
+		b.WriteString("\nUSER DIRECTION (mid-run guidance you MUST honor — it overrides earlier assumptions):\n")
+		for _, d := range s.Steers {
 			b.WriteString("- " + d + "\n")
 		}
 	}
@@ -782,6 +823,7 @@ func (w *Worker) toolSchemas() []llm.Tool {
 				},
 				"gaps":        map[string]interface{}{"type": "array", "items": map[string]interface{}{"type": "string"}, "description": "honest gaps (required for partial/blocked)"},
 				"assumptions": map[string]interface{}{"type": "array", "items": map[string]interface{}{"type": "string"}},
+				"screenshots": map[string]interface{}{"type": "array", "items": map[string]interface{}{"type": "string"}, "description": "workspace-relative paths to screenshot artifacts of the rendered UI (REQUIRED for a UI task; each must be a real file you captured)"},
 			}, "status", "summary")),
 	}
 	return append(tools, w.opts.ExtraTools...)

@@ -33,6 +33,7 @@ import (
 	"matrix/cody/internal/mode"
 	"matrix/cody/internal/orchestrator"
 	"matrix/cody/internal/policy"
+	"matrix/cody/internal/tools"
 	"matrix/cody/internal/worker"
 	"matrix/cody/internal/workspace"
 	cortex "matrix/cortex"
@@ -57,6 +58,12 @@ type EngineOptions struct {
 	// RulesDir / SkillsDir surface the standards library; empty disables.
 	RulesDir  string
 	SkillsDir string
+	// Worker ExtraTools bridges (req 13.1): the shared browser (for screenshot
+	// evidence), fetch, and web search. Each is boot-safe when unset.
+	BrowserURL   string
+	BrowserToken string
+	SearxngURL   string
+	SearxngToken string
 	// MaxAttempts bounds per-task re-dispatch (default 3).
 	MaxAttempts int
 	// MaxRespawns bounds orchestrator respawns per run (default 2).
@@ -72,28 +79,79 @@ type EngineOptions struct {
 
 // Engine owns the sessions, the broker, and the durable trace.
 type Engine struct {
-	opts   EngineOptions
-	broker *broker
-	trace  *traceStore
+	opts     EngineOptions
+	broker   *broker
+	trace    *traceStore
+	projects *projectRegistry
 
 	mu       sync.Mutex
 	sessions map[string]*session
 	runs     map[string]*run
+
+	// inboxMu serializes read-modify-write of every conversation's durable
+	// answer/steer inbox (inbox.go).
+	inboxMu sync.Mutex
 }
 
 // run is one live plan execution.
 type run struct {
-	id     string
-	convID string
-	cancel context.CancelFunc
-	done   chan struct{}
+	id        string
+	convID    string
+	projectID string
+	root      string // the project's workspace subtree
+	cancel    context.CancelFunc
+	done      chan struct{}
 
 	mu     sync.Mutex
 	status string // running | completed | failed | stopped | needs_input
+	// awaiting + answers implement the needs_input pause: while parked, awaiting
+	// is true and an /answer is delivered on the buffered channel. Guarded by mu.
+	awaiting bool
+	answers  chan directive
 }
 
 func (r *run) setStatus(s string) { r.mu.Lock(); r.status = s; r.mu.Unlock() }
 func (r *run) getStatus() string  { r.mu.Lock(); defer r.mu.Unlock(); return r.status }
+
+// beginAwait arms the run to receive an answer and returns the delivery channel.
+func (r *run) beginAwait() chan directive {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	r.awaiting = true
+	r.answers = make(chan directive, 1)
+	return r.answers
+}
+
+// isAwaiting reports whether the run is currently parked on the answer channel.
+func (r *run) isAwaiting() bool {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	return r.awaiting
+}
+
+// endAwait disarms the run's answer wait (deferred after the select unblocks).
+func (r *run) endAwait() {
+	r.mu.Lock()
+	r.awaiting = false
+	r.mu.Unlock()
+}
+
+// deliverAnswer hands an answer to a parked run. It reports whether the run was
+// actually awaiting (so the caller can fall back to the cold path otherwise).
+func (r *run) deliverAnswer(d directive) bool {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	if !r.awaiting || r.answers == nil {
+		return false
+	}
+	select {
+	case r.answers <- d:
+		r.awaiting = false
+		return true
+	default:
+		return false
+	}
+}
 
 // session serializes runs per conversation: one live plan at a time.
 type session struct {
@@ -130,6 +188,7 @@ func NewEngine(opts EngineOptions) (*Engine, error) {
 		opts:     opts,
 		broker:   newBroker(),
 		trace:    trace,
+		projects: newProjectRegistry(filepath.Join(opts.DataDir, "projects.json")),
 		sessions: map[string]*session{},
 		runs:     map[string]*run{},
 	}
@@ -171,15 +230,26 @@ func (e *Engine) registerRun(r *run) {
 	e.runs[r.id] = r
 }
 
-// Submit dispatches (or attaches to) the conversation's plan run. Returns the
-// run id and whether it was freshly dispatched.
-func (e *Engine) Submit(convID, message, modeName string) (string, bool, error) {
-	m, err := mode.Parse(modeName)
+// Submit dispatches (or attaches to) the conversation's plan run in the named
+// project (empty = the default /workspace project). Mode is the project's mode;
+// for the default project a per-message mode override is honored for
+// retro-compat. When spec is non-empty the planner adopts it as the plan
+// (req 11); specSource records its origin for the plan.adopted event. Returns
+// the run id and whether it was freshly dispatched.
+func (e *Engine) Submit(convID, message, modeName, projectID, spec, specSource string) (string, bool, error) {
+	proj, err := e.resolveProject(projectID)
 	if err != nil {
 		return "", false, err
 	}
-	if modeName == "" {
-		m = e.opts.DefaultMode
+	m := proj.modeOr(e.opts.DefaultMode)
+	// Mode is a project-level setting (req 2.3); the default project honors a
+	// per-message mode for retro-compat with the pre-projects /chat contract.
+	if proj.ID == defaultProjectID && strings.TrimSpace(modeName) != "" {
+		pm, perr := mode.Parse(modeName)
+		if perr != nil {
+			return "", false, perr
+		}
+		m = pm
 	}
 	s := e.session(convID)
 	s.mu.Lock()
@@ -188,17 +258,26 @@ func (e *Engine) Submit(convID, message, modeName string) (string, bool, error) 
 		// One live plan per conversation: attach to the work already underway.
 		return s.active.id, false, nil
 	}
-	r := &run{id: newRunID(), convID: convID, done: make(chan struct{}), status: "running"}
+	r := &run{id: newRunID(), convID: convID, projectID: proj.ID, root: proj.Root, done: make(chan struct{}), status: "running"}
 	e.registerRun(r)
 	e.broker.ensure(r.id) // before Submit returns: no dispatch->subscribe race
 	s.active = r
-	if err := e.writeLedger(convID, ledger{RunID: r.id, Message: message, Mode: string(m), Status: "running", UpdatedAt: time.Now().UTC()}); err != nil {
+	if err := e.writeLedger(convID, ledger{RunID: r.id, Message: message, Mode: string(m), ProjectID: proj.ID, Root: proj.Root, Spec: spec, SpecSource: specSource, Status: "running", UpdatedAt: time.Now().UTC()}); err != nil {
 		return "", false, err
 	}
 	ctx, cancel := context.WithCancel(context.Background())
 	r.cancel = cancel
-	go e.drive(ctx, r, message, m, false)
+	go e.drive(ctx, r, message, m, false, spec, specSource)
 	return r.id, true, nil
+}
+
+// parseModeOrDefault parses a ledger's mode string, falling back to def.
+func parseModeOrDefault(name string, def mode.Mode) mode.Mode {
+	m, err := mode.Parse(name)
+	if err != nil {
+		return def
+	}
+	return m
 }
 
 // Stop interrupts a live run.
@@ -248,24 +327,14 @@ func (e *Engine) ResumeOrphanedPlans() int {
 		if err != nil || led.Status != "running" {
 			continue
 		}
-		m, err := mode.Parse(led.Mode)
-		if err != nil {
-			m = e.opts.DefaultMode
-		}
 		s := e.session(convID)
 		s.mu.Lock()
-		if s.active != nil && s.active.getStatus() == "running" {
-			s.mu.Unlock()
+		already := s.active != nil && s.active.getStatus() == "running"
+		s.mu.Unlock()
+		if already {
 			continue
 		}
-		r := &run{id: led.RunID, convID: convID, done: make(chan struct{}), status: "running"}
-		e.registerRun(r)
-		e.broker.ensure(r.id)
-		s.active = r
-		ctx, cancel := context.WithCancel(context.Background())
-		r.cancel = cancel
-		go e.drive(ctx, r, led.Message, m, true)
-		s.mu.Unlock()
+		e.launch(convID, led, true)
 		n++
 	}
 	return n
@@ -281,8 +350,17 @@ type ledger struct {
 	RunID     string    `json:"run_id"`
 	Message   string    `json:"message"`
 	Mode      string    `json:"mode"`
+	ProjectID string    `json:"project_id,omitempty"`
+	Root      string    `json:"root,omitempty"`
 	Status    string    `json:"status"`
 	UpdatedAt time.Time `json:"updated_at"`
+	// Spec is the adopted specification document (req 11): when set, the planner
+	// adopts it as the plan instead of decomposing the prose message. It is
+	// durable so a resumed run re-adopts the same spec (req 11.2). SpecSource
+	// records its origin (a workspace path, or "pasted") for the plan.adopted
+	// event.
+	Spec       string `json:"spec,omitempty"`
+	SpecSource string `json:"spec_source,omitempty"`
 }
 
 func (e *Engine) writeLedger(convID string, led ledger) error {
@@ -315,7 +393,7 @@ func (e *Engine) readLedger(convID string) (ledger, error) {
 // orchestrator is respawned over the same durable state on transient
 // failures, deterministic failures stop-and-ask, and every terminal is
 // honest. The client connection is never load-bearing.
-func (e *Engine) drive(ctx context.Context, r *run, message string, m mode.Mode, resume bool) {
+func (e *Engine) drive(ctx context.Context, r *run, message string, m mode.Mode, resume bool, spec, specSource string) {
 	defer close(r.done)
 	defer func() {
 		e.broker.closeRun(r.id)
@@ -340,33 +418,104 @@ func (e *Engine) drive(ctx context.Context, r *run, message string, m mode.Mode,
 		e.finish(r, "failed", "I could not open the plan store: "+err.Error())
 		return
 	}
-	model, err := workspace.LoadOrScan(e.opts.WorkspaceRoot)
+	model, err := workspace.LoadOrScan(r.root)
 	if err != nil {
 		e.finish(r, "failed", "I could not read the workspace: "+err.Error())
 		return
 	}
 
+	// Decision-phase clients (hot generation + cold adjudication), lazily built
+	// once and reused by the SDR, plan-shape authoring, and the DLR.
+	var hotClient, coldClient *llm.Client
+	ensureDecisionClients := func() error {
+		if hotClient != nil && coldClient != nil {
+			return nil
+		}
+		var herr, cerr error
+		hotClient, herr = llm.New(pol.DecisionLLM(e.opts.GatewayURL, e.opts.ActorDID))
+		coldClient, cerr = llm.New(pol.OrchestratorLLM(e.opts.GatewayURL, e.opts.ActorDID))
+		return firstErr(herr, cerr)
+	}
+
 	// The plan: resumed from the durable store, or authored by the planner.
 	plan, err := orchestrator.LoadPlan(st.Root())
+	adopted := false
 	if err != nil || plan == nil {
-		if resume {
-			e.finish(r, "failed", "I could not resume: the durable plan is missing.")
-			return
-		}
-		orchClient, cerr := llm.New(pol.OrchestratorLLM(e.opts.GatewayURL, e.opts.ActorDID))
-		if cerr != nil {
+		if cerr := ensureDecisionClients(); cerr != nil {
 			e.finish(r, "failed", "I could not reach the model: "+cerr.Error())
 			return
 		}
-		plan, err = orchestrator.PlanFromModel(ctx, orchClient, message, model.Summary(), pol.Render())
-		if err != nil {
-			e.finish(r, "failed", "I could not plan that request: "+err.Error())
-			return
+		switch {
+		case strings.TrimSpace(spec) != "":
+			// Spec ingestion (req 11): adopt the handed spec document as the plan
+			// rather than decomposing the prose message. The spec is the source of
+			// truth — including its own stack choices — so the SDR does not gate an
+			// adopted plan.
+			plan, err = orchestrator.AdoptSpecDivergent(ctx, hotClient, coldClient, spec, model.Summary(), pol.Render(), pol.DecisionCandidates)
+			if err != nil {
+				e.finish(r, "failed", "I could not adopt that spec: "+err.Error())
+				return
+			}
+			adopted = true
+		default:
+			planMessage := message
+			// Greenfield Engineer/Architect: the Stack Decision Record gates
+			// planning (req 8.1-8.4). Wave 1 is structurally unreachable until the
+			// human resolves it — because no plan (hence no wave) exists until this
+			// returns. Prototype skips it and defaults to the classic stack.
+			if pol.Mode != mode.Prototype && model.Greenfield() {
+				addendum, ok := e.resolveStackDecision(ctx, r, pol, model, message, hotClient, coldClient)
+				if !ok {
+					e.say(r, "Stopped. Progress so far is saved — say continue when you want me to pick it back up.")
+					e.finish(r, "stopped", "")
+					return
+				}
+				planMessage += addendum
+			} else if resume {
+				e.finish(r, "failed", "I could not resume: the durable plan is missing.")
+				return
+			}
+			// Plan-shape authoring is a decision phase: N divergent candidates
+			// generated hot, judged cold (req 10.2). Workers implement cold.
+			plan, err = orchestrator.PlanFromModelDivergent(ctx, hotClient, coldClient, planMessage, model.Summary(), pol.Render(), pol.DecisionCandidates)
+			if err != nil {
+				e.finish(r, "failed", "I could not plan that request: "+err.Error())
+				return
+			}
 		}
 	}
 	e.publish(r, "plan.created", map[string]interface{}{
 		"goal": plan.Goal, "tasks": planTasks(plan), "mode": string(m),
 	})
+	if adopted {
+		// The ledger records the source (req 11.1): the plan was adopted from a
+		// spec document, not authored from the prose request.
+		src := specSource
+		if src == "" {
+			src = "pasted"
+		}
+		e.publish(r, "plan.adopted", map[string]interface{}{"source": src, "goal": plan.Goal, "tasks": len(plan.Tasks)})
+	}
+
+	// UI-bearing runs author a Design Language Record before the first UI task
+	// (req 9). Engineer/Architect block on approve/override; Prototype surfaces
+	// an informational card and proceeds. The resolved record binds every UI
+	// sheet and the gate screens turn-ins for drift. Durable, so a resume never
+	// re-asks.
+	var designLanguage string
+	if uiBearing(plan, model) {
+		if cerr := ensureDecisionClients(); cerr != nil {
+			e.finish(r, "failed", "I could not reach the model: "+cerr.Error())
+			return
+		}
+		dc, ok := e.resolveDesignDecision(ctx, r, pol, model, plan, message, hotClient, coldClient)
+		if !ok {
+			e.say(r, "Stopped. Progress so far is saved — say continue when you want me to pick it back up.")
+			e.finish(r, "stopped", "")
+			return
+		}
+		designLanguage = dc
+	}
 
 	var rules *policy.Rules
 	if e.opts.RulesDir != "" {
@@ -378,12 +527,35 @@ func (e *Engine) drive(ctx context.Context, r *run, message string, m mode.Mode,
 	// The supervised loop: fresh orchestrator over the same durable state per
 	// attempt; classification decides retry vs stop (never blind respawn).
 	for attempt := 1; ; attempt++ {
-		res, err := e.runOrchestrator(ctx, r, st, plan, pol, rules)
+		res, err := e.runOrchestrator(ctx, r, st, plan, pol, rules, designLanguage)
 		switch {
 		case err == nil && res.StopAsk != "":
-			e.say(r, "I need your input before continuing: "+res.StopAsk)
-			e.finish(r, "needs_input", "")
-			return
+			// Pause on the answer channel rather than ending: the run stays
+			// alive awaiting the user's answer (req 12.1). ctx cancel while
+			// parked is an honest stop.
+			d, ok := e.pauseForInput(ctx, r, res.StopAsk)
+			if !ok {
+				e.say(r, "Stopped. Progress so far is saved — say continue when you want me to pick it back up.")
+				e.finish(r, "stopped", "")
+				return
+			}
+			if aerr := e.applyAnswer(r.convID, st, plan, d); aerr != nil {
+				e.finish(r, "failed", "I could not apply your answer: "+aerr.Error())
+				return
+			}
+			if reloaded, lerr := orchestrator.LoadPlan(st.Root()); lerr == nil {
+				plan = reloaded
+			}
+			r.setStatus("running")
+			if led, lerr := e.readLedger(r.convID); lerr == nil {
+				led.Status = "running"
+				led.UpdatedAt = time.Now().UTC()
+				_ = e.writeLedger(r.convID, led)
+			}
+			// A human answer is new information, not a failure: restart the
+			// attempt budget for the answered retry.
+			attempt = 0
+			continue
 		case err == nil:
 			e.publish(r, "plan.completed", map[string]interface{}{
 				"done": res.Done, "failed": res.Failed,
@@ -425,7 +597,7 @@ func (e *Engine) drive(ctx context.Context, r *run, message string, m mode.Mode,
 }
 
 // runOrchestrator wires one orchestrator instance over the durable state.
-func (e *Engine) runOrchestrator(ctx context.Context, r *run, st *contract.Store, plan *orchestrator.Plan, pol mode.Policy, rules *policy.Rules) (*orchestrator.Result, error) {
+func (e *Engine) runOrchestrator(ctx context.Context, r *run, st *contract.Store, plan *orchestrator.Plan, pol mode.Policy, rules *policy.Rules, designLanguage string) (*orchestrator.Result, error) {
 	var adjudicator *cassandra.Adjudicator
 	if !e.opts.DisableAdjudication {
 		cfg := pol.OrchestratorLLM(e.opts.GatewayURL, e.opts.ActorDID)
@@ -440,20 +612,22 @@ func (e *Engine) runOrchestrator(ctx context.Context, r *run, st *contract.Store
 		progress = checkpoint.NewProgress(e.opts.Cortex, r.convID)
 	}
 	o, err := orchestrator.New(orchestrator.Options{
-		Root:          e.opts.WorkspaceRoot,
+		Root:          r.root,
 		Plan:          plan,
 		Store:         st,
 		Progress:      progress,
-		Worker:        e.workerFunc(pol),
+		Worker:        e.workerFunc(pol, r.root),
 		Rules:         rules,
 		ModePolicy:    pol.Render(),
-		Adjudicator:   adjudicator,
-		SpecFiles:     pol.PlanningDepth == mode.PlanSpecFiles,
-		MaxAttempts:   e.opts.MaxAttempts,
-		VerifyTimeout: e.opts.VerifyTimeout,
+		Adjudicator:    adjudicator,
+		SpecFiles:      pol.PlanningDepth == mode.PlanSpecFiles,
+		DesignLanguage: designLanguage,
+		MaxAttempts:    e.opts.MaxAttempts,
+		VerifyTimeout:  e.opts.VerifyTimeout,
 		Observer: func(event string, fields map[string]interface{}) {
 			e.publish(r, event, fields)
 		},
+		Steers: func() []string { return e.directiveTexts(r.convID) },
 	})
 	if err != nil {
 		return nil, delegate.Mark(delegate.ClassDeterministic, err)
@@ -461,19 +635,31 @@ func (e *Engine) runOrchestrator(ctx context.Context, r *run, st *contract.Store
 	return o.Run(ctx)
 }
 
-// workerFunc dispatches one REAL fresh-context worker per sheet.
-func (e *Engine) workerFunc(pol mode.Policy) orchestrator.WorkerFunc {
+// workerFunc dispatches one REAL fresh-context worker per sheet. Each worker is
+// handed the ExtraTools bridge (browser/fetch/web-search) so a UI task can
+// capture a real screenshot as gate evidence (req 13.1); the bridge is
+// boot-safe, so an unconfigured service simply omits or degrades a tool.
+func (e *Engine) workerFunc(pol mode.Policy, root string) orchestrator.WorkerFunc {
 	return func(ctx context.Context, sheet *contract.TaskSheet, grounding string) (*contract.TurnInReport, error) {
 		client, err := llm.New(pol.WorkerLLM(e.opts.GatewayURL, e.opts.ActorDID))
 		if err != nil {
 			return nil, delegate.Mark(delegate.ClassDeterministic, err)
 		}
+		bridge := tools.New(tools.Config{
+			Root:         root,
+			BrowserURL:   e.opts.BrowserURL,
+			BrowserToken: e.opts.BrowserToken,
+			SearxngURL:   e.opts.SearxngURL,
+			SearxngToken: e.opts.SearxngToken,
+		})
 		w, err := worker.New(worker.Options{
 			Sheet:         sheet,
 			Grounding:     grounding,
-			Root:          e.opts.WorkspaceRoot,
+			Root:          root,
 			Client:        client,
 			VerifyTimeout: e.opts.VerifyTimeout,
+			ExtraTools:    bridge.Tools(),
+			ExtraDispatch: bridge.Dispatch,
 		})
 		if err != nil {
 			return nil, delegate.Mark(delegate.ClassDeterministic, err)
@@ -485,6 +671,34 @@ func (e *Engine) workerFunc(pol mode.Policy) orchestrator.WorkerFunc {
 // publish emits one event on the run topic (phase "cody").
 func (e *Engine) publish(r *run, typ string, fields map[string]interface{}) {
 	e.broker.publish(r.id, typ, "cody", fields)
+}
+
+// projectHasLiveRun reports whether any run rooted at root is currently running
+// — the "a worker is alive" guard that refuses a destructive restore (req 14.1).
+func (e *Engine) projectHasLiveRun(root string) bool {
+	e.mu.Lock()
+	defer e.mu.Unlock()
+	for _, r := range e.runs {
+		if r.root == root && r.getStatus() == "running" {
+			return true
+		}
+	}
+	return false
+}
+
+// publishToConversation best-effort emits an event on a conversation's run topic
+// so a workspace-level action (snapshot/restore) lands in the live timeline and
+// the durable trace. It is a no-op when the conversation has no live topic — the
+// action still succeeds; only the trace annotation is skipped.
+func (e *Engine) publishToConversation(convID, typ string, fields map[string]interface{}) {
+	if strings.TrimSpace(convID) == "" {
+		return
+	}
+	led, err := e.readLedger(convID)
+	if err != nil || !e.broker.has(led.RunID) {
+		return
+	}
+	e.broker.publish(led.RunID, typ, "cody", fields)
 }
 
 // say publishes a user-facing assistant message.
@@ -555,6 +769,16 @@ func planTasks(p *orchestrator.Plan) []map[string]interface{} {
 		})
 	}
 	return out
+}
+
+// firstErr returns the first non-nil error, or nil.
+func firstErr(errs ...error) error {
+	for _, err := range errs {
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func newRunID() string {

@@ -47,6 +47,8 @@ func modeScript(t *testing.T, probe *modeProbe) func(step int, req llmtest.Reque
 		switch {
 		case strings.Contains(system, "planner"):
 			return llmtest.Say(oneTaskPlanJSON)
+		case strings.Contains(system, "decision adjudicator"):
+			return llmtest.Say(`{"pick": 0, "rationale": "first valid candidate"}`)
 		case strings.Contains(system, "Cassandra"):
 			return llmtest.Say(groundedVerdict)
 		}
@@ -92,6 +94,10 @@ func modeScript(t *testing.T, probe *modeProbe) func(step int, req llmtest.Reque
 func runSeededTaskInMode(t *testing.T, modeName string) (*modeProbe, string) {
 	t.Helper()
 	workspaceRoot := t.TempDir()
+	// Architect is greenfield-non-prototype and would otherwise trip the Stack
+	// Decision Record gate; seed a project marker so this test stays focused on
+	// mode differentiation (the SDR round-trip is proven in decision_test.go).
+	seedExistingProject(t, workspaceRoot)
 	probe := &modeProbe{}
 	gw := llmtest.NewServer(t, modeScript(t, probe))
 	t.Cleanup(gw.Close)
@@ -100,7 +106,7 @@ func runSeededTaskInMode(t *testing.T, modeName string) (*modeProbe, string) {
 	t.Cleanup(engine.Close)
 
 	convID := "conv-mode-" + modeName
-	runID, fresh, err := engine.Submit(convID, "add the greeting file", modeName)
+	runID, fresh, err := engine.Submit(convID, "add the greeting file", modeName, "", "", "")
 	if err != nil || !fresh {
 		t.Fatalf("submit(%s): %v fresh=%v", modeName, err, fresh)
 	}

@@ -102,6 +102,12 @@ type Config struct {
 	// by chronosd (the centralized scheduler) to wake a user's Machine and
 	// deliver a timer-triggered chat turn. Empty disables /internal/wake.
 	WakeToken string
+
+	// PreviewToken authenticates the internal /internal/preview/* endpoints
+	// used by codyd (inside a user's VM) to register/deregister the private
+	// host:port of its preview server. Empty disables preview registration
+	// (the public /preview/ mount then serves 404 for every user).
+	PreviewToken string
 }
 
 // Provider values for Config.Provider (ROUTER_PROVIDER).
@@ -140,6 +146,7 @@ func Load() (*Config, error) {
 		S3Bucket:                os.Getenv("S3_BUCKET"),
 		DaemonPort:              getOrDefault("ROUTER_DAEMON_PORT", DefaultDaemonPort),
 		WakeToken:               os.Getenv("ROUTER_WAKE_TOKEN"),
+		PreviewToken:            os.Getenv("ROUTER_PREVIEW_TOKEN"),
 	}
 
 	var err error

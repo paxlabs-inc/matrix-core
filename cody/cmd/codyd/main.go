@@ -68,7 +68,14 @@ func main() {
 		WorkerModel:       os.Getenv("CODY_WORKER_MODEL"),
 		RulesDir:          *rulesDir,
 		SkillsDir:         *skillsDir,
-		Logf:              log.Printf,
+		// Shared tool services (req 13.1): the browser (screenshot evidence),
+		// fetch, and web search. Boot-safe when unset — same env as the Neo
+		// daemon's tool proxies so one environment configures both.
+		BrowserURL:   os.Getenv("MATRIX_BROWSER_URL"),
+		BrowserToken: os.Getenv("MATRIX_BROWSER_TOKEN"),
+		SearxngURL:   os.Getenv("MATRIX_SEARXNG_URL"),
+		SearxngToken: os.Getenv("MATRIX_SEARXNG_TOKEN"),
+		Logf:         log.Printf,
 	})
 	if err != nil {
 		log.Fatalf("codyd: %v", err)

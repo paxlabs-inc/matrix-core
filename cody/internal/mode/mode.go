@@ -87,12 +87,23 @@ const (
 // Policy is one mode rendered as an explicit tuple. It parameterizes the one
 // engine — it can dial ceremony, never the standard.
 type Policy struct {
-	Mode          Mode    `json:"mode"`
-	PlanningDepth string  `json:"planning_depth"`
-	VerifyCadence string  `json:"verify_cadence"`
-	Creativity    float64 `json:"creativity"` // worker sampling temperature
-	Autonomy      string  `json:"autonomy"`   // high | balanced | deliberate
-	Register      string  `json:"register"`
+	Mode          Mode   `json:"mode"`
+	PlanningDepth string `json:"planning_depth"`
+	VerifyCadence string `json:"verify_cadence"`
+	// DecisionCreativity is the HOT temperature for decision phases — Stack and
+	// Design Language Record authoring and plan-shape authoring — where N
+	// divergent candidates are generated and then judged. Divergence happens by
+	// construction (temperature + candidate count), not by asking one lukewarm
+	// sample to be bold.
+	DecisionCreativity float64 `json:"decision_creativity"`
+	// ImplementationCreativity is the COLD worker sampling temperature: precise,
+	// low-variance code once the decisions are made.
+	ImplementationCreativity float64 `json:"implementation_creativity"`
+	// DecisionCandidates is how many divergent candidates a decision phase
+	// generates before judging (2-3).
+	DecisionCandidates int    `json:"decision_candidates"`
+	Autonomy           string `json:"autonomy"` // high | balanced | deliberate
+	Register           string `json:"register"`
 	// Per-role models, mode-aware. Both route through GatewaySlot.
 	OrchestratorModel string `json:"orchestrator_model"`
 	WorkerModel       string `json:"worker_model"`
@@ -103,42 +114,50 @@ func For(m Mode) Policy {
 	switch m {
 	case Prototype:
 		return Policy{
-			Mode:              Prototype,
-			PlanningDepth:     PlanInline,
-			VerifyCadence:     VerifyMilestones,
-			Creativity:        0.7,
-			Autonomy:          "high",
-			Register:          RegisterOutcome,
-			OrchestratorModel: defaultOrchestratorModel,
-			WorkerModel:       defaultFastWorkerModel,
+			Mode:                     Prototype,
+			PlanningDepth:            PlanInline,
+			VerifyCadence:            VerifyMilestones,
+			DecisionCreativity:       0.9,
+			ImplementationCreativity: 0.7,
+			DecisionCandidates:       2,
+			Autonomy:                 "high",
+			Register:                 RegisterOutcome,
+			OrchestratorModel:        defaultOrchestratorModel,
+			WorkerModel:              defaultFastWorkerModel,
 		}
 	case Architect:
 		return Policy{
-			Mode:              Architect,
-			PlanningDepth:     PlanSpecFiles,
-			VerifyCadence:     VerifyPerTaskProperty,
-			Creativity:        0.2,
-			Autonomy:          "deliberate",
-			Register:          RegisterTechnical,
-			OrchestratorModel: defaultOrchestratorModel,
-			WorkerModel:       defaultWorkerModel,
+			Mode:                     Architect,
+			PlanningDepth:            PlanSpecFiles,
+			VerifyCadence:            VerifyPerTaskProperty,
+			DecisionCreativity:       0.8,
+			ImplementationCreativity: 0.2,
+			DecisionCandidates:       3,
+			Autonomy:                 "deliberate",
+			Register:                 RegisterTechnical,
+			OrchestratorModel:        defaultOrchestratorModel,
+			WorkerModel:              defaultWorkerModel,
 		}
 	default: // Engineer
 		return Policy{
-			Mode:              Engineer,
-			PlanningDepth:     PlanWaved,
-			VerifyCadence:     VerifyPerTask,
-			Creativity:        0.3,
-			Autonomy:          "balanced",
-			Register:          RegisterTechnical,
-			OrchestratorModel: defaultOrchestratorModel,
-			WorkerModel:       defaultWorkerModel,
+			Mode:                     Engineer,
+			PlanningDepth:            PlanWaved,
+			VerifyCadence:            VerifyPerTask,
+			DecisionCreativity:       0.8,
+			ImplementationCreativity: 0.3,
+			DecisionCandidates:       3,
+			Autonomy:                 "balanced",
+			Register:                 RegisterTechnical,
+			OrchestratorModel:        defaultOrchestratorModel,
+			WorkerModel:              defaultWorkerModel,
 		}
 	}
 }
 
 // OrchestratorLLM builds the orchestrator-role client config: the stronger
-// model, cold temperature (planning + adjudication), the cody slot.
+// model, cold temperature (planning adjudication + the Cassandra gate), the
+// cody slot. This is the COLD judge for decision phases — divergent candidates
+// are generated hot (DecisionLLM) and picked cold here.
 func (p Policy) OrchestratorLLM(gatewayURL, actorDID string) mcllm.Config {
 	return mcllm.Config{
 		Model:       p.OrchestratorModel,
@@ -150,12 +169,28 @@ func (p Policy) OrchestratorLLM(gatewayURL, actorDID string) mcllm.Config {
 	}
 }
 
+// DecisionLLM builds the decision-phase client config: the stronger
+// orchestrator model at the HOT DecisionCreativity temperature, the cody slot.
+// SDR/DLR/plan-shape authoring generate DecisionCandidates divergent options
+// through this client; the judge runs cold via OrchestratorLLM.
+func (p Policy) DecisionLLM(gatewayURL, actorDID string) mcllm.Config {
+	return mcllm.Config{
+		Model:       p.OrchestratorModel,
+		Temperature: p.DecisionCreativity,
+		MaxTokens:   8192,
+		GatewayURL:  gatewayURL,
+		ActorDID:    actorDID,
+		SlotLabel:   GatewaySlot,
+	}
+}
+
 // WorkerLLM builds the worker-role client config: the mode's worker model at
-// the mode's creativity temperature, the cody slot.
+// the COLD ImplementationCreativity temperature, the cody slot. Implementation
+// runs cold — precise, low-variance code once the decisions are made.
 func (p Policy) WorkerLLM(gatewayURL, actorDID string) mcllm.Config {
 	return mcllm.Config{
 		Model:       p.WorkerModel,
-		Temperature: p.Creativity,
+		Temperature: p.ImplementationCreativity,
 		MaxTokens:   8192,
 		GatewayURL:  gatewayURL,
 		ActorDID:    actorDID,
@@ -191,7 +226,8 @@ func (p Policy) Render() string {
 	default:
 		b.WriteString("Explanation register: technical — precise engineering detail, file and seam names welcome.\n")
 	}
-	fmt.Fprintf(&b, "Autonomy: %s. Creativity: %.1f.\n", p.Autonomy, p.Creativity)
+	fmt.Fprintf(&b, "Autonomy: %s. Decisions run hot (creativity %.1f, %d divergent candidates judged); implementation runs cold (creativity %.1f).\n",
+		p.Autonomy, p.DecisionCreativity, p.DecisionCandidates, p.ImplementationCreativity)
 	b.WriteString("The constitution binds identically in every mode: modes dial ceremony, never the standard.")
 	return b.String()
 }

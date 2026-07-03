@@ -20,11 +20,12 @@
 #
 #   neo     The per-user runtime (DEFAULT). Boots the MCL daemon in the
 #           BACKGROUND on :8081 (the rigorous, replayable backend that Neo
-#           reaches via core_execute) and runs `neo serve` in the FOREGROUND
-#           on :8080 as the conversational FRONT — which reverse-proxies every
+#           reaches via core_execute), `neo serve` on :8080 as the
+#           conversational FRONT — which reverse-proxies every
 #           non-conversational route (/healthz, /messages, /memory, /tools, …)
-#           to :8081. If EITHER process exits, the script exits so the
-#           platform's on-failure restart reboots the pair.
+#           to :8081 — AND codyd, the Cody coding engine, on :8090. If ANY of
+#           the three exits, the script exits so the platform's on-failure
+#           restart reboots the trio.
 #
 #   daemon  The MCL daemon ALONE on :8080 (legacy / compat).
 #
@@ -43,6 +44,11 @@ MATRIX_HOME="${MATRIX_HOME:-/opt/matrix}"
 # Backend (MCL daemon) port when fronted by Neo. The front is always :8080.
 NEO_BACKEND_PORT="${NEO_BACKEND_PORT:-8081}"
 
+# Cody coding engine port. codyd defaults to :8090 (CODY_ADDR); it is a
+# co-located sibling of neo/daemon, reached by the router over the private
+# network, not proxied through the Neo front.
+CODY_PORT="${CODY_PORT:-8090}"
+
 # 1. Ensure volume layout. /data/neo/services keeps Neo's exec service
 #    registry isolated from the daemon's (/data/services) so the two
 #    co-located exec MCP servers never share a registry.json.
@@ -54,6 +60,7 @@ mkdir -p \
     "${DATA_DIR}/media" \
     "${DATA_DIR}/services" \
     "${DATA_DIR}/neo/services" \
+    "${DATA_DIR}/cody" \
     "${DATA_DIR}/.matrix"
 
 # 1b. Media plane. Generated + uploaded images/video/audio live on the volume
@@ -186,15 +193,45 @@ case "${1:-neo}" in
             "$@" &
         NEO_PID=$!
 
-        # If EITHER process exits, tear the other down and exit non-zero so
-        # the platform's on-failure restart reboots the pair. (tini -g also
+        # Cody: the coding engine (codyd) on :${CODY_PORT}, a third co-located
+        # long-lived process supervised exactly like the daemon/neo pair.
+        #  - CODY_ADDR binds the listener (Go net.Listen dual-stack, so the
+        #    IPv6-only Railway private net reaches it without flag changes).
+        #  - CODY_WORKSPACE shares the persisted /data/workspace tree with the
+        #    daemon so edits land on the same filesystem the fs/git MCP see.
+        #  - CODY_DATA_DIR keeps codyd's durable plan/trace state on the volume.
+        #  - CODY_CORTEX_ROOT reuses the shared /data/cortex root; codyd opens
+        #    it under actor `cody`, a separate Pebble store (no lock conflict
+        #    with the daemon's user actor or neo's `neo` actor).
+        #  - CODY_ACTOR_DID attributes codyd's metered LLM spend to the user on
+        #    the cody slot; the gateway requires a DID-shaped actor
+        #    (did:<method>:<id>), so a bare user id is rejected.
+        #  - MATRIX_GATEWAY_URL / MATRIX_GATEWAY_TOKEN are inherited from the
+        #    machine env (same as neo/daemon); codyd's llm client reads them.
+        #  - CODY_RULES_DIR / CODY_SKILLS_DIR surface the baked standards +
+        #    skills corpus. CODY_DEFAULT_MODE / CODY_ORCHESTRATOR_MODEL /
+        #    CODY_WORKER_MODEL fall through to codyd defaults unless the machine
+        #    env overrides them.
+        export CODY_ADDR=":${CODY_PORT}"
+        export CODY_WORKSPACE="${MATRIX_WORKSPACE_ROOT:-${DATA_DIR}/workspace}"
+        export CODY_DATA_DIR="${DATA_DIR}/cody"
+        export CODY_CORTEX_ROOT="${DATA_DIR}/cortex"
+        export CODY_ACTOR_DID="${CODY_ACTOR_DID:-did:matrix:${MATRIX_USER_ID:-cody}:cody}"
+        export CODY_RULES_DIR="${CODY_RULES_DIR:-${MATRIX_HOME}/rules}"
+        export CODY_SKILLS_DIR="${CODY_SKILLS_DIR:-${MATRIX_HOME}/skills}"
+
+        "${MATRIX_HOME}/bin/codyd" &
+        CODY_PID=$!
+
+        # If ANY of the three exits, tear the others down and exit non-zero so
+        # the platform's on-failure restart reboots the trio. (tini -g also
         # forwards a platform stop/restart signal to the whole group.)
         set +e
         wait -n
         EXIT=$?
         set -e
-        echo "entrypoint: a co-located process exited (status ${EXIT}); stopping the pair" >&2
-        kill "${DAEMON_PID}" "${NEO_PID}" 2>/dev/null || true
+        echo "entrypoint: a co-located process exited (status ${EXIT}); stopping the trio" >&2
+        kill "${DAEMON_PID}" "${NEO_PID}" "${CODY_PID}" 2>/dev/null || true
         wait 2>/dev/null || true
         exit "${EXIT}"
         ;;

@@ -23,6 +23,7 @@ import (
 // and the planner is never re-invoked (the durable plan carries the resume).
 func TestCodydKillMidPlanResumesAtNextTask(t *testing.T) {
 	workspaceRoot := t.TempDir()
+	seedExistingProject(t, workspaceRoot)
 	dataDir := t.TempDir()
 	ctx := openCortex(t, t.TempDir())
 
@@ -37,7 +38,7 @@ func TestCodydKillMidPlanResumesAtNextTask(t *testing.T) {
 	t.Cleanup(engine1.Close)
 	t.Cleanup(func() { close(blockT2) })
 
-	runID1, fresh, err := engine1.Submit("conv-kill", "seed the demo workspace", "")
+	runID1, fresh, err := engine1.Submit("conv-kill", "seed the demo workspace", "", "", "", "")
 	if err != nil || !fresh {
 		t.Fatalf("submit: %v fresh=%v", err, fresh)
 	}
@@ -78,6 +79,9 @@ func TestCodydKillMidPlanResumesAtNextTask(t *testing.T) {
 		if strings.Contains(system, "planner") {
 			atomic.AddInt32(&plannerCalls, 1)
 			return llmtest.Say(planJSON)
+		}
+		if strings.Contains(system, "decision adjudicator") {
+			return llmtest.Say(`{"pick": 0, "rationale": "first valid candidate"}`)
 		}
 		if strings.Contains(system, "Cassandra") {
 			return llmtest.Say(groundedVerdict)
