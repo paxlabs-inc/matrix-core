@@ -30,7 +30,7 @@ var ErrTypeMismatch = errors.New("query: predicate value type mismatch with fiel
 // data, plus a kind indicating how to compare it. (nil, false, nil) means
 // the field is unknown for this type — the caller decides whether that's
 // fatal (Matches/Gt) or false-y (Eq).
-func resolveField(ref FieldRef, m *memory.Memory, data memory.TypedData) (any, bool, error) {
+func resolveField(ref FieldRef, m *memory.Memory, data memory.TypedData) (val any, known bool, err error) {
 	parts := strings.SplitN(string(ref), ".", 2)
 	if len(parts) != 2 {
 		return nil, false, fmt.Errorf("query: malformed field ref %q", ref)

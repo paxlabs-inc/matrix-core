@@ -41,7 +41,7 @@ type synthesizeOpts struct {
 	// Manager.Tools(alias). When set, the system prompt embeds the
 	// JSON Schema for every allowlisted tool so the LLM emits valid
 	// args. nil falls back to URI+description only (legacy walk_cmd
-	// behaviour).
+	// behavior).
 	Manager  *mcp.Manager
 	Agent    string // matrix://agent/<did>
 	Model    string // override DefaultPlannerModel.Model (sess#31a)
@@ -132,7 +132,7 @@ func synthesize(ctx context.Context, opts synthesizeOpts, t *transcript) (*synth
 	// GrammarJSONSchema + DefaultGrammars (plan_tree@1 with recursive $defs);
 	// we re-set them defensively so any opts.Model override that targets a
 	// non-grammar model still gets the grammar attempted (provider falls
-	// back to free-form when it can't honour the schema).
+	// back to free-form when it can't honor the schema).
 	//
 	// sess#36: ForgeMode swaps to llm.ForgePlannerModel (opencode.ai/zen +
 	// claude-opus-4-7) for self-maintenance plan synthesis.
@@ -671,7 +671,7 @@ func writeToolSection(sb *strings.Builder, skill *runtime.LoadedSkill, manifest 
 	if len(allow) == 0 && !skill.ToolsNone {
 		// Skill section absent (non-skill caller); fall back to the
 		// full agent-manifest enumeration. Keeps walk_cmd's
-		// historical behaviour intact for ad-hoc CLI plans.
+		// historical behavior intact for ad-hoc CLI plans.
 		writeToolListing(sb, manifest, mgr, nil)
 		return
 	}
@@ -697,10 +697,10 @@ func writeToolListing(sb *strings.Builder, manifest *tool.AgentManifest, mgr *mc
 				}
 			}
 			count++
-			sb.WriteString(fmt.Sprintf("  - %s\n", uri))
-			sb.WriteString(fmt.Sprintf("      side_effect_class: %s\n", te.SideEffectClass))
+			fmt.Fprintf(sb, "  - %s\n", uri)
+			fmt.Fprintf(sb, "      side_effect_class: %s\n", te.SideEffectClass)
 			if te.Description != "" {
-				sb.WriteString(fmt.Sprintf("      description: %s\n", te.Description))
+				fmt.Fprintf(sb, "      description: %s\n", te.Description)
 			}
 			if schemaJSON, ok := schemas[te.Name]; ok {
 				sb.WriteString("      input_schema: ")
@@ -913,7 +913,7 @@ func extractOutputCardinalityHints(mtxBytes []byte) map[string]int {
 }
 
 // extractOnBlockHints walks the SKILL.mtx AST once and harvests both
-// flavours of on-block hint metadata in a single pass. Cheaper than
+// flavors of on-block hint metadata in a single pass. Cheaper than
 // two separate walks; the synthesizer always wants both (and any
 // future hint kinds will fold in here).
 func extractOnBlockHints(mtxBytes []byte) (map[string]string, map[string]int) {
@@ -991,7 +991,7 @@ func writeStepKindHintSection(sb *strings.Builder, skill *runtime.LoadedSkill) {
 		}
 		sort.Strings(verbs)
 		for _, v := range verbs {
-			sb.WriteString(fmt.Sprintf("  - verb=%s -> step.kind=%q\n", v, kinds[v]))
+			fmt.Fprintf(sb, "  - verb=%s -> step.kind=%q\n", v, kinds[v])
 		}
 	}
 
@@ -1007,7 +1007,7 @@ func writeStepKindHintSection(sb *strings.Builder, skill *runtime.LoadedSkill) {
 		}
 		sort.Strings(verbs)
 		for _, v := range verbs {
-			sb.WriteString(fmt.Sprintf("  - verb=%s -> output_cardinality=%d\n", v, cards[v]))
+			fmt.Fprintf(sb, "  - verb=%s -> output_cardinality=%d\n", v, cards[v])
 		}
 	}
 }

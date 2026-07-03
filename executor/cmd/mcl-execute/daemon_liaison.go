@@ -156,7 +156,7 @@ func splitReasoning(content string) (answer, reasoning string) {
 // SSE broker). role is "user" | "assistant". conversationID + intentID
 // are stamped so the client can thread + filter. reasoning, when present,
 // is the model's chain-of-thought carried in a SEPARATE field so the UI
-// renders it as a labelled "reasoning" disclosure, never as the answer.
+// renders it as a labeled "reasoning" disclosure, never as the answer.
 // This is the ONLY thing the Liaison persists.
 func emitChat(t *transcript, role, conversationID, intentID, text, reasoning string) {
 	fields := map[string]interface{}{
@@ -432,7 +432,7 @@ func (d *daemonState) emitFinalTurn(t *transcript, n *liaisonNarrator, req messa
 	// finalize emits the one closing turn AND records it as a durable
 	// assistant turn in the conversation, so the next message recalls
 	// the real answer the user was given (full multi-turn memory). The
-	// reasoning rides a SEPARATE event field (shown labelled, never as the
+	// reasoning rides a SEPARATE event field (shown labeled, never as the
 	// answer); only the clean answer is recalled into conversation memory.
 	finalize := func(text, reasoning string) {
 		emitChatFinal(t, "assistant", conversationID, intentID, text, reasoning)

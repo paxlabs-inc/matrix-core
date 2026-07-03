@@ -81,11 +81,11 @@ func TestResolveOutputRefs_NamedFieldExtraction(t *testing.T) {
 		"n04": `{"ok":true,"address":"0xWALLET","chainId":125}`,
 	}
 	cases := map[string]string{
-		"{{n08.outputs.project_id}}":          "abc123",
-		"{{n11.outputs.address}}":             "0xDEAD",
-		"{{n11.outputs.tx_hash}}":             "0xBEEF",
-		`["{{n04.outputs.address}}"]`:         `["0xWALLET"]`,
-		"{{n08.outputs.bytecode}}":            "0xfeed", // nested under contracts.MRT
+		"{{n08.outputs.project_id}}":  "abc123",
+		"{{n11.outputs.address}}":     "0xDEAD",
+		"{{n11.outputs.tx_hash}}":     "0xBEEF",
+		`["{{n04.outputs.address}}"]`: `["0xWALLET"]`,
+		"{{n08.outputs.bytecode}}":    "0xfeed", // nested under contracts.MRT
 	}
 	for in, want := range cases {
 		if got := resolveOutputRefs(in, outputs); got != want {

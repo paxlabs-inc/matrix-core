@@ -131,7 +131,7 @@ func (t *StdioTransport) Send(ctx context.Context, frame []byte) error {
 	}
 
 	// Write under a lock so concurrent senders interleave whole frames,
-	// not bytes within a frame. (Client serialises sends itself, but
+	// not bytes within a frame. (Client serializes sends itself, but
 	// belt-and-suspenders.)
 	t.mu.Lock()
 	defer t.mu.Unlock()
@@ -175,7 +175,7 @@ func (t *StdioTransport) Recv(ctx context.Context) ([]byte, error) {
 	return line, nil
 }
 
-// Close shuts the subprocess down: closes stdin (signalling graceful
+// Close shuts the subprocess down: closes stdin (signaling graceful
 // shutdown to MCP servers that respect it), waits up to a small grace
 // for the process to exit, then kills + reaps.
 //

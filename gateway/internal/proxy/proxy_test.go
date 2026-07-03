@@ -278,7 +278,7 @@ func TestProxyHealthz(t *testing.T) {
 	defer upstream.Close()
 	srv := newTestServer(t, upstream.URL, false)
 	mux := srv.Mux()
-	r := httptest.NewRequest("GET", "/healthz", nil)
+	r := httptest.NewRequest("GET", "/healthz", http.NoBody)
 	w := httptest.NewRecorder()
 	mux.ServeHTTP(w, r)
 	if w.Code != http.StatusOK {
@@ -310,7 +310,7 @@ func TestProxyKillSwitch503(t *testing.T) {
 		t.Fatalf("kill switch: status=%d", w.Code)
 	}
 	// healthz also should report disabled.
-	rh := httptest.NewRequest("GET", "/healthz", nil)
+	rh := httptest.NewRequest("GET", "/healthz", http.NoBody)
 	wh := httptest.NewRecorder()
 	mux.ServeHTTP(wh, rh)
 	if wh.Code != http.StatusServiceUnavailable {
@@ -596,7 +596,7 @@ func TestProxyStreamingForcesUsageAndDebits(t *testing.T) {
 	}
 }
 
-// ctxAwareLedger wraps the in-memory ledger but, unlike it, honours
+// ctxAwareLedger wraps the in-memory ledger but, unlike it, honors
 // context cancellation on Record — letting the test prove maybeDebit
 // detaches the debit from a cancelled request context.
 type ctxAwareLedger struct {
@@ -612,7 +612,7 @@ func (l *ctxAwareLedger) Record(ctx context.Context, e ledger.Entry) error {
 
 // TestMaybeDebitSurvivesCanceledRequestCtx is the regression for the
 // streamed-debit race: the daemon closes the connection the instant it
-// reads `data: [DONE]`, cancelling r.Context() before the post-response
+// reads `data: [DONE]`, canceling r.Context() before the post-response
 // ledger insert lands (seen in prod as record_err "insert: context
 // canceled"). The debit must persist the row regardless.
 func TestMaybeDebitSurvivesCanceledRequestCtx(t *testing.T) {

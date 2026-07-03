@@ -18,7 +18,7 @@ import (
 // NodeToolCall's args (resolved in execToolCall).
 //
 // We are deliberately LIBERAL in what we accept (Postel's law): synth LLMs
-// emit the reference in several interchangeable spellings, and an unrecognised
+// emit the reference in several interchangeable spellings, and an unrecognized
 // one is catastrophic — the literal placeholder reaches a strict tool parser
 // and fails to unmarshal (observed in prod as tachyon_compile getting the raw
 // string "{{n06.outputs.sources}}" → "cannot unmarshal string into map"). All

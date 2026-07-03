@@ -174,7 +174,7 @@ func (c *criticDecoder) Decode(ctx context.Context, system, user string) (string
 // This is the MCL seam of the shared Cassandra faculty (cassandra.frozen.kvx
 // [seams.mcl]): the verdict-shaped logic now lives in matrix/cassandra; the
 // MCL gate consults verdict.CoverageComplete(), preserving the legacy
-// criticVerdict.Complete behaviour byte-for-byte.
+// criticVerdict.Complete behavior byte-for-byte.
 func (d *daemonState) critiquePlan(ctx context.Context, prose, executedDigest, intentID, goalID string, t *transcript, acc *intentCostAccumulator) (*cassandra.Verdict, error) {
 	cfg := llm.DefaultPlannerModel()
 	if m := d.criticMod(); m != "" {
@@ -208,7 +208,7 @@ func (d *daemonState) critiquePlan(ctx context.Context, prose, executedDigest, i
 	// Single Primary decoder, no Escalate: reproduces the legacy single-model
 	// critic exactly. The deterministic priors run as a cheap advisory pre-pass
 	// ([adjudicator].priors); they inform the auditor prompt but never decide
-	// the gate, so the MCL re-plan behaviour is unchanged.
+	// the gate, so the MCL re-plan behavior is unchanged.
 	adj := &cassandra.Adjudicator{Primary: &criticDecoder{client: client, model: cfg.Model, t: t}}
 	return adj.Adjudicate(ctx, cassandra.AuditInput{
 		Request:  prose,

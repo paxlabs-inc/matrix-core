@@ -60,7 +60,7 @@ func runFakeServer() {
 				resp, herr := srv.handle(line)
 				if herr == nil && len(resp) > 0 {
 					_, _ = w.Write(resp)
-					_, _ = w.Write([]byte("\n"))
+					_, _ = w.WriteString("\n")
 				}
 			}
 		}

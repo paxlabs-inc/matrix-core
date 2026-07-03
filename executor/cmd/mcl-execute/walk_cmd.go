@@ -73,7 +73,7 @@ func runWalk(args []string) {
 		allowSubDisp   = fs.Bool("allow-sub-dispatch", false, "enable in-process sub-dispatch (Q6 v1 carve-out)")
 		timeout        = fs.Duration("timeout", 10*time.Minute, "overall walk timeout")
 	)
-	fs.Parse(args)
+	_ = fs.Parse(args)
 
 	if *skillURI == "" {
 		fatalf("walk: -skill is required")
@@ -469,7 +469,7 @@ func eventsIn(wr *runtime.WalkResult) int {
 
 // withSignalCancel cancels ctx on SIGINT/SIGTERM so a Ctrl-C cleanly
 // aborts the walk + tears down infra. Mirrors the cortex-shell + e2e
-// harness behaviour.
+// harness behavior.
 func withSignalCancel(ctx context.Context) context.Context {
 	derived, cancel := context.WithCancel(ctx)
 	sigCh := make(chan os.Signal, 1)

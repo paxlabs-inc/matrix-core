@@ -182,7 +182,8 @@ func (c *Cortex) cascadeCoarse(finer, coarse RollupTier, now int64, bucketOf fun
 	// Group finer rollups by their parent coarse window start.
 	groups := map[int64][]RollupRecord{}
 	order := make([]int64, 0)
-	for _, child := range children {
+	for i := range children {
+		child := &children[i]
 		parent := bucketOf(child.Window.Start)
 		if parent.Tier != coarse {
 			// Defensive: bucketOf must return the coarse tier's window.
@@ -194,7 +195,7 @@ func (c *Cortex) cascadeCoarse(finer, coarse RollupTier, now int64, bucketOf fun
 		if _, seen := groups[parent.Start]; !seen {
 			order = append(order, parent.Start)
 		}
-		groups[parent.Start] = append(groups[parent.Start], child)
+		groups[parent.Start] = append(groups[parent.Start], *child)
 	}
 	sort.Slice(order, func(i, j int) bool { return order[i] < order[j] })
 

@@ -69,7 +69,7 @@ func main() {
 		// replay invariant is preserved regardless of router
 		// posture by running through the cortex's pre/post
 		// OverallRoot machinery (which sess#31a-d never touched).
-		legacyRouter = flag.Bool("legacy-router", false, "A/B mode (sess#31d P4): disable router-side features (compile cache, per-route metrics) so the run reflects pre-31 behaviour. Replay invariant must still hold.")
+		legacyRouter = flag.Bool("legacy-router", false, "A/B mode (sess#31d P4): disable router-side features (compile cache, per-route metrics) so the run reflects pre-31 behavior. Replay invariant must still hold.")
 	)
 	flag.Parse()
 
@@ -106,6 +106,7 @@ func main() {
 
 	if os.Getenv("FIREWORKS_API_KEY") == "" {
 		fmt.Fprintln(os.Stderr, "FIREWORKS_API_KEY not set; aborting.")
+		topT.Close()
 		os.Exit(2)
 	}
 	if !*skipTogether && os.Getenv("TOGETHER_API_KEY") == "" {

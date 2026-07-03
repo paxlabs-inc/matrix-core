@@ -16,7 +16,7 @@ import (
 	"time"
 )
 
-// newGitTestDaemon initialises a real git repo under t.TempDir and
+// newGitTestDaemon initializes a real git repo under t.TempDir and
 // returns a daemonState wired to it. Used by every git route test.
 func newGitTestDaemon(t *testing.T) (*daemonState, string) {
 	t.Helper()
@@ -53,7 +53,7 @@ func mustGit(t *testing.T, dir string, args ...string) string {
 // TestGitRouter_Disabled404 verifies 404 when gitOps is nil.
 func TestGitRouter_Disabled404(t *testing.T) {
 	d := &daemonState{gitOps: nil}
-	req := httptest.NewRequest(http.MethodGet, "/git/status", nil)
+	req := httptest.NewRequest(http.MethodGet, "/git/status", http.NoBody)
 	rec := httptest.NewRecorder()
 	d.handleForgeGitRouter(rec, req)
 	if rec.Code != http.StatusNotFound {
@@ -64,7 +64,7 @@ func TestGitRouter_Disabled404(t *testing.T) {
 // TestGitStatus_Empty returns no entries on a clean repo.
 func TestGitStatus_Empty(t *testing.T) {
 	d, _ := newGitTestDaemon(t)
-	req := httptest.NewRequest(http.MethodGet, "/git/status", nil)
+	req := httptest.NewRequest(http.MethodGet, "/git/status", http.NoBody)
 	rec := httptest.NewRecorder()
 	d.handleForgeGitRouter(rec, req)
 	if rec.Code != http.StatusOK {
@@ -101,7 +101,7 @@ func TestGitStatus_TrackedAndUntracked(t *testing.T) {
 	// 3) untracked file
 	mustWriteFile(t, filepath.Join(repo, "untracked.go"), "package u\n")
 
-	req := httptest.NewRequest(http.MethodGet, "/git/status", nil)
+	req := httptest.NewRequest(http.MethodGet, "/git/status", http.NoBody)
 	rec := httptest.NewRecorder()
 	d.handleForgeGitRouter(rec, req)
 	if rec.Code != http.StatusOK {
@@ -141,7 +141,7 @@ func TestGitDiff_StagedAndUnstaged(t *testing.T) {
 
 	mustWriteFile(t, target, "package d\nfunc y() {}\n")
 	// unstaged diff
-	req := httptest.NewRequest(http.MethodGet, "/git/diff?path=diff.go&staged=false", nil)
+	req := httptest.NewRequest(http.MethodGet, "/git/diff?path=diff.go&staged=false", http.NoBody)
 	rec := httptest.NewRecorder()
 	d.handleForgeGitRouter(rec, req)
 	if rec.Code != http.StatusOK {
@@ -157,7 +157,7 @@ func TestGitDiff_StagedAndUnstaged(t *testing.T) {
 	}
 
 	// staged: there's nothing in the index yet — should be empty.
-	req2 := httptest.NewRequest(http.MethodGet, "/git/diff?path=diff.go&staged=true", nil)
+	req2 := httptest.NewRequest(http.MethodGet, "/git/diff?path=diff.go&staged=true", http.NoBody)
 	rec2 := httptest.NewRecorder()
 	d.handleForgeGitRouter(rec2, req2)
 	if rec2.Code != http.StatusOK {
@@ -174,7 +174,7 @@ func TestGitDiff_StagedAndUnstaged(t *testing.T) {
 // style argument injection.
 func TestGitDiff_RejectsLeadingDashPath(t *testing.T) {
 	d, _ := newGitTestDaemon(t)
-	req := httptest.NewRequest(http.MethodGet, "/git/diff?path=-evil", nil)
+	req := httptest.NewRequest(http.MethodGet, "/git/diff?path=-evil", http.NoBody)
 	rec := httptest.NewRecorder()
 	d.handleForgeGitRouter(rec, req)
 	if rec.Code != http.StatusBadRequest {
@@ -194,7 +194,7 @@ func TestGitBranch_CreateAndList(t *testing.T) {
 		t.Fatalf("create status = %d, body = %s", rec.Code, rec.Body.String())
 	}
 
-	listReq := httptest.NewRequest(http.MethodGet, "/git/branch", nil)
+	listReq := httptest.NewRequest(http.MethodGet, "/git/branch", http.NoBody)
 	listRec := httptest.NewRecorder()
 	d.handleForgeGitRouter(listRec, listReq)
 	if listRec.Code != http.StatusOK {
@@ -227,7 +227,7 @@ func TestGitBranch_CreateAndList(t *testing.T) {
 // TestGitBranch_DeleteRefusesProtected protects main / master / HEAD.
 func TestGitBranch_DeleteRefusesProtected(t *testing.T) {
 	d, _ := newGitTestDaemon(t)
-	req := httptest.NewRequest(http.MethodDelete, "/git/branch?name=main", nil)
+	req := httptest.NewRequest(http.MethodDelete, "/git/branch?name=main", http.NoBody)
 	rec := httptest.NewRecorder()
 	d.handleForgeGitRouter(rec, req)
 	if rec.Code != http.StatusForbidden {
@@ -246,7 +246,7 @@ func TestGitBranch_DeleteHappyPath(t *testing.T) {
 		t.Fatalf("create: %d", createRec.Code)
 	}
 
-	delReq := httptest.NewRequest(http.MethodDelete, "/git/branch?name=scratch", nil)
+	delReq := httptest.NewRequest(http.MethodDelete, "/git/branch?name=scratch", http.NoBody)
 	delRec := httptest.NewRecorder()
 	d.handleForgeGitRouter(delRec, delReq)
 	if delRec.Code != http.StatusOK {

@@ -37,7 +37,7 @@ type Authenticator struct {
 	allowEmptyToken bool
 }
 
-// Options controls Authenticator behaviour.
+// Options controls Authenticator behavior.
 type Options struct {
 	// Token is the shared secret expected in Authorization: Bearer ...
 	// Empty + AllowEmptyToken=true → auth disabled (local-dev only).
@@ -69,7 +69,7 @@ var ErrMissingActor = errors.New("gateway.auth: missing X-Matrix-Actor-DID heade
 var ErrUnauthorized = errors.New("gateway.auth: unauthorized")
 
 // ErrMalformedActor is returned when the actor header is present but
-// not a recognisable DID-shape ("did:" prefix, single colon-separated
+// not a recognizable DID-shape ("did:" prefix, single colon-separated
 // triple). The check is deliberately permissive — any string starting
 // with "did:" passes; deeper validation is the wallet's job.
 var ErrMalformedActor = errors.New("gateway.auth: malformed X-Matrix-Actor-DID")

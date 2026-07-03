@@ -151,7 +151,7 @@ type daemonState struct {
 	skillCatalog *skillCatalog
 	snapMgr      *snapshot.Manager
 
-	// sess#29: rate limiter for POST /memory. Lazy-initialised on first
+	// sess#29: rate limiter for POST /memory. Lazy-initialized on first
 	// access via memoryWriteLimiter() so legacy code paths and tests
 	// don't have to thread an init step.
 	memWriteLimMu sync.Mutex
@@ -248,7 +248,7 @@ type daemonState struct {
 	paxeerSpend *PaxeerSpendPolicy
 }
 
-// memoryWriteLimiter returns the lazy-initialised limiter for POST /memory.
+// memoryWriteLimiter returns the lazy-initialized limiter for POST /memory.
 func (d *daemonState) memoryWriteLimiter() *memoryWriteLimiter {
 	d.memWriteLimMu.Lock()
 	defer d.memWriteLimMu.Unlock()
@@ -360,7 +360,7 @@ func runDaemon(args []string) {
 		// the operator did not override).
 		sandbox = fs.Bool("sandbox", false, "hermetic local-dev preset: temp cortex, hash embedder stub (in-process), no gateway/metering, no S3 snapshots, paxeer spend off — zero external deps. One-command dev run.")
 	)
-	fs.Parse(args)
+	_ = fs.Parse(args)
 
 	// P2-4: apply the sandbox preset defaults BEFORE the required-field
 	// check so -cortex-root is no longer required (the preset names a temp
@@ -655,7 +655,7 @@ func runDaemon(args []string) {
 
 	// Snapshot ticker: launch AFTER server is configured but BEFORE
 	// signal-multiplex so the first tick rides the same parent context
-	// (cancelling on shutdown). When snapMgr is nil, this is a no-op.
+	// (canceling on shutdown). When snapMgr is nil, this is a no-op.
 	tickerCtx, cancelTicker := context.WithCancel(context.Background())
 	defer cancelTicker()
 	if snapMgr != nil {
@@ -686,7 +686,7 @@ func runDaemon(args []string) {
 	// last stop — queued jobs are (re)dispatched so an accepted message
 	// is never dropped, and jobs interrupted mid-flight surface a
 	// deterministic outcome. Runs in the background so boot isn't blocked
-	// while resumed jobs serialise on d.busy.
+	// while resumed jobs serialize on d.busy.
 	go state.resumeAsyncJobs(t)
 
 	sigCh := make(chan os.Signal, 1)

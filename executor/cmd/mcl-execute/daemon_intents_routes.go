@@ -847,7 +847,7 @@ func (d *daemonState) runAsyncMessage(intentID string, req messageRequest, t *tr
 	defer cancel()
 
 	// Wait for the cortex single-writer mutex (queueing other async
-	// jobs behind us). Concurrent /messages/async POSTs serialise
+	// jobs behind us). Concurrent /messages/async POSTs serialize
 	// here so cortex doesn't see two writers.
 	d.busy.Lock()
 	defer d.busy.Unlock()

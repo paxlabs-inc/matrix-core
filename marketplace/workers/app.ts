@@ -170,6 +170,9 @@ export default {
     const requestId = crypto.randomUUID();
     const startedAt = Date.now();
     const url = new URL(request.url);
+    // wrangler.jsonc only declares staging/production, so the generated
+    // ENVIRONMENT union excludes "development" — widen for the local-dev check.
+    const isDevEnvironment = (env.ENVIRONMENT as string) === "development";
 
     const logRequest = (status: number, edgeCache?: string) => {
       // One structured JSON line per request — Workers Logs indexes fields.
@@ -197,7 +200,7 @@ export default {
           })
         );
         const out = new Response(response.body, response);
-        applySecurityHeaders(out.headers, cspNonce, env.ENVIRONMENT !== "development");
+        applySecurityHeaders(out.headers, cspNonce, !isDevEnvironment);
         out.headers.set("X-Request-ID", requestId);
         return out;
       } catch (err) {
@@ -208,7 +211,7 @@ export default {
 
     const cacheEligible =
       request.method === "GET" &&
-      env.ENVIRONMENT !== "development" &&
+      !isDevEnvironment &&
       cacheablePath(url.pathname) &&
       !hasSessionCookie(request);
 

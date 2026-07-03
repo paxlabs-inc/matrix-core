@@ -123,7 +123,7 @@ RUN set -eux; \
 # FOUNDRY_DIR; /usr/local/foundry/bin is already on PATH.
 RUN set -eux; \
     curl -fsSL https://foundry.paradigm.xyz | FOUNDRY_DIR=/usr/local/foundry bash; \
-    /usr/local/foundry/bin/foundryup; \
+    FOUNDRY_DIR=/usr/local/foundry /usr/local/foundry/bin/foundryup; \
     forge --version; \
     cast --version; \
     anvil --version

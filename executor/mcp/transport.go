@@ -13,7 +13,7 @@ import (
 // HTTP (Q15 lock).
 //
 // Concurrency contract:
-//   - Send may be called from any goroutine; implementations serialise
+//   - Send may be called from any goroutine; implementations serialize
 //     internally.
 //   - Recv is called by exactly one reader goroutine inside Client; it
 //     blocks until a frame arrives or the transport is closed.

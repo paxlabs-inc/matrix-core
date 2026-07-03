@@ -28,7 +28,7 @@
 //
 // Three subcommands:
 //
-//	walk      Full pipeline: compile → synthesise plan → walk → attest.
+//	walk      Full pipeline: compile → synthesize plan → walk → attest.
 //	classify  Run §18.1 materiality classifier on two plans + intents.
 //	loader    Smoke-check the SkillLoader against the 159-skill corpus.
 
@@ -66,7 +66,7 @@ func usage() {
 	fmt.Fprintf(os.Stderr, `mcl-execute — Matrix executor end-to-end driver (sess#23)
 
 Subcommands:
-  walk      Compile prose → synthesise plan via executor LLM → walk → attest.
+  walk      Compile prose → synthesize plan via executor LLM → walk → attest.
   classify  Run §18.1 materiality classifier on two plans + intents.
   loader    Load a skill via matrix://skill/<slug>@<v> and dump metadata.
   daemon    Long-running HTTP+SSE server, single-user; reuses one infra

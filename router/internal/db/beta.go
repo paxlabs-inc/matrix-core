@@ -119,7 +119,7 @@ func (d *DB) RedeemInviteCode(ctx context.Context, code, userID string) error {
 	if err != nil {
 		return fmt.Errorf("db: redeem begin: %w", err)
 	}
-	defer tx.Rollback(ctx)
+	defer func() { _ = tx.Rollback(ctx) }()
 
 	var (
 		used    int

@@ -201,7 +201,7 @@ func TestRunNearRanksSalienceOverDistance(t *testing.T) {
 
 // TestWithinValidity exercises the v3 #2 bi-temporal valid-time predicate on
 // real memory.Version values: ValidFrom defaults to CreatedAt, ValidUntil is
-// a half-open upper bound, and the previously-dead ExpiresAt is honoured. No
+// a half-open upper bound, and the previously-dead ExpiresAt is honored. No
 // fakes — these are the exact struct shapes query.Run decodes from the store.
 func TestWithinValidity(t *testing.T) {
 	base := time.Unix(1700000000, 0).UTC()

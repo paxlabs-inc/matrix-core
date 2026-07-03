@@ -28,7 +28,7 @@ import (
 // like tachyon_compile (whose `sources` is a map[path]->content) only
 // ever receives its value as a JSON-encoded string. Parsing it back
 // here hands the MCP server the real object instead of a string it
-// cannot unmarshal (the prior behaviour broke compile/test/deploy/call
+// cannot unmarshal (the prior behavior broke compile/test/deploy/call
 // with a "cannot unmarshal string" error). Same for constructor_args /
 // args arrays and inline abi.
 //

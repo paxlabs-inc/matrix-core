@@ -49,7 +49,7 @@ func TestStringLiteral(t *testing.T) {
 	l := New([]byte(`system="Hello \"world\"\n"` + "\n"))
 	toks := l.AllTokens()
 
-	expectToken(t, toks[0], token.KW_SYSTEM, "system")
+	expectToken(t, toks[0], token.KwSystem, "system")
 	expectToken(t, toks[1], token.EQUALS, "=")
 	expectToken(t, toks[2], token.STRING, "Hello \"world\"\n")
 	expectToken(t, toks[3], token.NEWLINE, "\n")
@@ -61,7 +61,7 @@ func TestStringInterpolation(t *testing.T) {
 	l := New([]byte(`user="Goal: {prose} verb: {verb}"` + "\n"))
 	toks := l.AllTokens()
 
-	expectToken(t, toks[0], token.KW_USER, "user")
+	expectToken(t, toks[0], token.KwUser, "user")
 	expectToken(t, toks[1], token.EQUALS, "=")
 	expectToken(t, toks[2], token.STRING, "Goal: {prose} verb: {verb}")
 }
@@ -79,9 +79,9 @@ func TestNumberLiterals(t *testing.T) {
 func TestBooleans(t *testing.T) {
 	l := New([]byte("required=true\n"))
 	toks := l.AllTokens()
-	expectToken(t, toks[0], token.KW_REQUIRED, "required")
+	expectToken(t, toks[0], token.KwRequired, "required")
 	expectToken(t, toks[1], token.EQUALS, "=")
-	expectToken(t, toks[2], token.BOOL_TRUE, "true")
+	expectToken(t, toks[2], token.BoolTrue, "true")
 }
 
 func TestURILiteral(t *testing.T) {
@@ -102,7 +102,7 @@ func TestIndent(t *testing.T) {
 	l := New([]byte("  required\n"))
 	toks := l.AllTokens()
 	expectToken(t, toks[0], token.INDENT, "  ")
-	expectToken(t, toks[1], token.KW_REQUIRED, "required")
+	expectToken(t, toks[1], token.KwRequired, "required")
 	expectToken(t, toks[2], token.NEWLINE, "\n")
 }
 
@@ -121,12 +121,12 @@ func TestOnBlock(t *testing.T) {
 	l := New([]byte(src))
 	toks := l.AllTokens()
 
-	expectToken(t, toks[0], token.KW_ON, "on")
-	expectToken(t, toks[1], token.KW_VERB, "verb")
+	expectToken(t, toks[0], token.KwOn, "on")
+	expectToken(t, toks[1], token.KwVerb, "verb")
 	expectToken(t, toks[2], token.EQUALS, "=")
-	expectToken(t, toks[3], token.KW_BUILD, "build")
+	expectToken(t, toks[3], token.KwBuild, "build")
 	expectToken(t, toks[4], token.NEWLINE, "\n")
-	expectToken(t, toks[5], token.KW_END, "end")
+	expectToken(t, toks[5], token.KwEnd, "end")
 	expectToken(t, toks[6], token.NEWLINE, "\n")
 }
 
@@ -135,8 +135,8 @@ func TestConfidenceCondition(t *testing.T) {
 	l := New([]byte(src))
 	toks := l.AllTokens()
 
-	expectToken(t, toks[0], token.KW_ON, "on")
-	expectToken(t, toks[1], token.KW_CONFIDENCE, "confidence")
+	expectToken(t, toks[0], token.KwOn, "on")
+	expectToken(t, toks[1], token.KwConfidence, "confidence")
 	expectToken(t, toks[2], token.LT, "<")
 	expectToken(t, toks[3], token.FLOAT, "0.75")
 }
@@ -167,12 +167,12 @@ func TestResolveStatement(t *testing.T) {
 	l := New([]byte(src))
 	toks := l.AllTokens()
 
-	expectToken(t, toks[0], token.KW_RESOLVE, "resolve")
-	expectToken(t, toks[1], token.KW_SLOT, "slot")
+	expectToken(t, toks[0], token.KwResolve, "resolve")
+	expectToken(t, toks[1], token.KwSlot, "slot")
 	expectToken(t, toks[2], token.DOT, ".")
 	expectToken(t, toks[3], token.IDENT, "target")
 	expectToken(t, toks[4], token.ARROW, "<-")
-	expectToken(t, toks[5], token.KW_CORTEX_FIND, "cortex.find")
+	expectToken(t, toks[5], token.KwCortexFind, "cortex.find")
 	expectToken(t, toks[6], token.LPAREN, "(")
 	expectToken(t, toks[7], token.IDENT, "type")
 	expectToken(t, toks[8], token.EQUALS, "=")
@@ -184,9 +184,9 @@ func TestCortexFunctions(t *testing.T) {
 		in   string
 		want token.Type
 	}{
-		{"cortex.find()", token.KW_CORTEX_FIND},
-		{"cortex.resolve()", token.KW_CORTEX_RESOLVE},
-		{"cortex.context()", token.KW_CORTEX_CONTEXT},
+		{"cortex.find()", token.KwCortexFind},
+		{"cortex.resolve()", token.KwCortexResolve},
+		{"cortex.context()", token.KwCortexContext},
 	} {
 		l := New([]byte(fn.in + "\n"))
 		tok := l.NextToken()
@@ -210,7 +210,7 @@ func TestSlotDeclaration(t *testing.T) {
 	l := New([]byte(src))
 	toks := l.AllTokens()
 
-	expectToken(t, toks[0], token.KW_SLOT, "slot")
+	expectToken(t, toks[0], token.KwSlot, "slot")
 	expectToken(t, toks[1], token.IDENT, "target")
 	expectToken(t, toks[2], token.COLON, ":")
 	expectToken(t, toks[3], token.IDENT, "ArtifactRef")
@@ -221,10 +221,10 @@ func TestEnumType(t *testing.T) {
 	l := New([]byte(src))
 	toks := l.AllTokens()
 
-	expectToken(t, toks[0], token.KW_SLOT, "slot")
+	expectToken(t, toks[0], token.KwSlot, "slot")
 	expectToken(t, toks[1], token.IDENT, "style")
 	expectToken(t, toks[2], token.COLON, ":")
-	expectToken(t, toks[3], token.KW_ENUM, "enum")
+	expectToken(t, toks[3], token.KwEnum, "enum")
 	expectToken(t, toks[4], token.LT, "<")
 	expectToken(t, toks[5], token.IDENT, "formal")
 	expectToken(t, toks[6], token.PIPE, "|")
@@ -239,7 +239,7 @@ func TestListType(t *testing.T) {
 	l := New([]byte(src))
 	toks := l.AllTokens()
 
-	expectToken(t, toks[0], token.KW_SLOT, "slot")
+	expectToken(t, toks[0], token.KwSlot, "slot")
 	expectToken(t, toks[1], token.IDENT, "constraints")
 	expectToken(t, toks[2], token.COLON, ":")
 	expectToken(t, toks[3], token.IDENT, "Constraint")
@@ -252,19 +252,19 @@ func TestPromptBlock(t *testing.T) {
 	l := New([]byte(src))
 	toks := l.AllTokens()
 
-	expectToken(t, toks[0], token.KW_PROMPT, "prompt")
+	expectToken(t, toks[0], token.KwPrompt, "prompt")
 	expectToken(t, toks[1], token.NEWLINE, "\n")
 	expectToken(t, toks[2], token.INDENT, "  ")
-	expectToken(t, toks[3], token.KW_SYSTEM, "system")
+	expectToken(t, toks[3], token.KwSystem, "system")
 	expectToken(t, toks[4], token.EQUALS, "=")
 	expectToken(t, toks[5], token.STRING, "Hello")
 	expectToken(t, toks[6], token.NEWLINE, "\n")
 	expectToken(t, toks[7], token.INDENT, "  ")
-	expectToken(t, toks[8], token.KW_USER, "user")
+	expectToken(t, toks[8], token.KwUser, "user")
 	expectToken(t, toks[9], token.EQUALS, "=")
 	expectToken(t, toks[10], token.STRING, "World")
 	expectToken(t, toks[11], token.NEWLINE, "\n")
-	expectToken(t, toks[12], token.KW_END, "end")
+	expectToken(t, toks[12], token.KwEnd, "end")
 }
 
 func TestSpaceList(t *testing.T) {
@@ -277,9 +277,9 @@ func TestSpaceList(t *testing.T) {
 	expectToken(t, toks[1], token.DOT, ".")
 	expectToken(t, toks[2], token.IDENT, "verbs")
 	expectToken(t, toks[3], token.EQUALS, "=")
-	expectToken(t, toks[4], token.KW_BUILD, "build")
-	expectToken(t, toks[5], token.KW_MODIFY, "modify")
-	expectToken(t, toks[6], token.KW_DELEGATE, "delegate")
+	expectToken(t, toks[4], token.KwBuild, "build")
+	expectToken(t, toks[5], token.KwModify, "modify")
+	expectToken(t, toks[6], token.KwDelegate, "delegate")
 }
 
 func TestFailureEntry(t *testing.T) {
@@ -290,15 +290,15 @@ func TestFailureEntry(t *testing.T) {
 	expectToken(t, toks[0], token.IDENT, "budget_exceeded")
 	expectToken(t, toks[1], token.NEWLINE, "\n")
 	expectToken(t, toks[2], token.INDENT, "  ")
-	expectToken(t, toks[3], token.KW_SUGGEST, "suggest")
+	expectToken(t, toks[3], token.KwSuggest, "suggest")
 	expectToken(t, toks[4], token.EQUALS, "=")
-	expectToken(t, toks[5], token.KW_RAISE_BUDGET, "raise_budget")
+	expectToken(t, toks[5], token.KwRaiseBudget, "raise_budget")
 }
 
 func TestNoneKeyword(t *testing.T) {
 	l := New([]byte("none\n"))
 	tok := l.NextToken()
-	expectToken(t, tok, token.KW_NONE, "none")
+	expectToken(t, tok, token.KwNone, "none")
 }
 
 func TestCRLFNormalisation(t *testing.T) {
@@ -306,7 +306,7 @@ func TestCRLFNormalisation(t *testing.T) {
 	toks := l.AllTokens()
 
 	// Should tokenise identically to LF version
-	var types []token.Type
+	types := make([]token.Type, 0, len(toks))
 	for _, tok := range toks {
 		types = append(types, tok.Type)
 	}
@@ -344,15 +344,15 @@ func TestUnknownBlock(t *testing.T) {
 	l := New([]byte(src))
 	toks := l.AllTokens()
 
-	expectToken(t, toks[0], token.KW_UNKNOWN, "unknown")
-	expectToken(t, toks[1], token.KW_SLOT, "slot")
+	expectToken(t, toks[0], token.KwUnknown, "unknown")
+	expectToken(t, toks[1], token.KwSlot, "slot")
 	expectToken(t, toks[2], token.DOT, ".")
 	expectToken(t, toks[3], token.IDENT, "target")
 	expectToken(t, toks[4], token.NEWLINE, "\n")
 	expectToken(t, toks[5], token.INDENT, "  ")
 	expectToken(t, toks[6], token.IDENT, "severity")
 	expectToken(t, toks[7], token.EQUALS, "=")
-	expectToken(t, toks[8], token.KW_BLOCKING, "blocking")
+	expectToken(t, toks[8], token.KwBlocking, "blocking")
 }
 
 func TestClarifyBlock(t *testing.T) {
@@ -360,13 +360,13 @@ func TestClarifyBlock(t *testing.T) {
 	l := New([]byte(src))
 	toks := l.AllTokens()
 
-	expectToken(t, toks[0], token.KW_CLARIFY, "clarify")
-	expectToken(t, toks[1], token.KW_SLOT, "slot")
+	expectToken(t, toks[0], token.KwClarify, "clarify")
+	expectToken(t, toks[1], token.KwSlot, "slot")
 	expectToken(t, toks[2], token.DOT, ".")
 	expectToken(t, toks[3], token.IDENT, "target")
 	expectToken(t, toks[4], token.NEWLINE, "\n")
 	expectToken(t, toks[5], token.INDENT, "  ")
-	expectToken(t, toks[6], token.KW_PROMPT, "prompt")
+	expectToken(t, toks[6], token.KwPrompt, "prompt")
 	expectToken(t, toks[7], token.EQUALS, "=")
 	expectToken(t, toks[8], token.STRING, "Which one?")
 }
@@ -425,8 +425,8 @@ func TestLexVerbMtx(t *testing.T) {
 
 	assertNoIllegal(t, toks, "verb.mtx")
 	assertHasSection(t, toks, "§VERB")
-	assertContainsKeyword(t, toks, token.KW_FIND)
-	assertContainsKeyword(t, toks, token.KW_BUILD)
+	assertContainsKeyword(t, toks, token.KwFind)
+	assertContainsKeyword(t, toks, token.KwBuild)
 	assertContainsLiteral(t, toks, token.STRING, "") // at least one string
 	assertEndsWithEOF(t, toks)
 }
@@ -438,8 +438,8 @@ func TestLexFrameMtx(t *testing.T) {
 
 	assertNoIllegal(t, toks, "frame.mtx")
 	assertHasSection(t, toks, "§FRAME")
-	assertContainsKeyword(t, toks, token.KW_SLOT)
-	assertContainsKeyword(t, toks, token.KW_ENUM)
+	assertContainsKeyword(t, toks, token.KwSlot)
+	assertContainsKeyword(t, toks, token.KwEnum)
 	assertEndsWithEOF(t, toks)
 }
 
@@ -450,7 +450,7 @@ func TestLexPipelineMtx(t *testing.T) {
 
 	assertNoIllegal(t, toks, "pipeline.mtx")
 	assertHasSection(t, toks, "§PIPELINE")
-	assertContainsKeyword(t, toks, token.KW_CORTEX_CONTEXT)
+	assertContainsKeyword(t, toks, token.KwCortexContext)
 	assertEndsWithEOF(t, toks)
 }
 
@@ -479,15 +479,15 @@ func TestLexWritingPlansSKILLMtx(t *testing.T) {
 	assertHasSection(t, toks, "§OUTPUTS")
 	assertHasSection(t, toks, "§FAILURE_MODES")
 	assertHasSection(t, toks, "§HASH")
-	assertContainsKeyword(t, toks, token.KW_ON)
-	assertContainsKeyword(t, toks, token.KW_END)
-	assertContainsKeyword(t, toks, token.KW_PROMPT)
-	assertContainsKeyword(t, toks, token.KW_RESOLVE)
-	assertContainsKeyword(t, toks, token.KW_UNKNOWN)
-	assertContainsKeyword(t, toks, token.KW_CLARIFY)
-	assertContainsKeyword(t, toks, token.KW_CORTEX_FIND)
-	assertContainsKeyword(t, toks, token.KW_CORTEX_RESOLVE)
-	assertContainsKeyword(t, toks, token.KW_NONE)
+	assertContainsKeyword(t, toks, token.KwOn)
+	assertContainsKeyword(t, toks, token.KwEnd)
+	assertContainsKeyword(t, toks, token.KwPrompt)
+	assertContainsKeyword(t, toks, token.KwResolve)
+	assertContainsKeyword(t, toks, token.KwUnknown)
+	assertContainsKeyword(t, toks, token.KwClarify)
+	assertContainsKeyword(t, toks, token.KwCortexFind)
+	assertContainsKeyword(t, toks, token.KwCortexResolve)
+	assertContainsKeyword(t, toks, token.KwNone)
 	assertEndsWithEOF(t, toks)
 }
 

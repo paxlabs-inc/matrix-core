@@ -137,10 +137,10 @@ const (
 	// route + string). Pinned on the `neo` slot via neo config.MainModel.
 	ModelNeoMain    = "deepseek-ai/DeepSeek-V4-Pro"
 	ModelGLM5p1Fast = "accounts/fireworks/routers/glm-5p1-fast"
-	ModelGPTOSS120B       = "accounts/fireworks/models/gpt-oss-120b"
-	ModelGPTOSS20B        = "accounts/fireworks/models/gpt-oss-20b"
-	ModelQwenCoder        = "Qwen/Qwen3-Coder-480B-A35B-Instruct-FP8"
-	ModelLlama405B        = "meta-llama/Llama-3.1-405B-Instruct"
+	ModelGPTOSS120B = "accounts/fireworks/models/gpt-oss-120b"
+	ModelGPTOSS20B  = "accounts/fireworks/models/gpt-oss-20b"
+	ModelQwenCoder  = "Qwen/Qwen3-Coder-480B-A35B-Instruct-FP8"
+	ModelLlama405B  = "meta-llama/Llama-3.1-405B-Instruct"
 	// ModelGLM52 is the Baseten-served zai-org/GLM-5.2 — the v7 primary chat
 	// model for EVERY slot (Neo config + MCL DefaultRegistry now pin it; the
 	// bare "<vendor>/<model>" shape routes to Baseten in internal/routing).
@@ -264,7 +264,7 @@ var rateTable = []Rate{
 	},
 }
 
-// rateIndex maps model id -> Rate. Initialised once at package load.
+// rateIndex maps model id -> Rate. Initialized once at package load.
 var rateIndex = func() map[string]Rate {
 	m := make(map[string]Rate, len(rateTable))
 	for _, r := range rateTable {

@@ -338,7 +338,7 @@ func TestSpend_BreakerCooldownRecovers(t *testing.T) {
 func TestSpend_RollingWindowBudgetRejectsOverspend(t *testing.T) {
 	p := DefaultPaxeerSpendPolicy()
 	// Raise the per-call cap so the rolling-window gate is what's exercised.
-	p.PerCallCapWei = new(big.Int).Mul(onePAX(), big.NewInt(5)) // 5 PAX
+	p.PerCallCapWei = new(big.Int).Mul(onePAX(), big.NewInt(5))          // 5 PAX
 	p.RollingWindowBudgetWei = new(big.Int).Mul(onePAX(), big.NewInt(3)) // 3 PAX
 	p.RollingWindowDuration = 10 * time.Minute
 	st := p.NewState()

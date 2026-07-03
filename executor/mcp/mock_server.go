@@ -15,7 +15,7 @@ import (
 // with a matching mockTransport so a Client can drive it without
 // spawning a subprocess or opening a socket.
 //
-// Behaviour: implements initialize, tools/list, tools/call, ping with
+// Behavior: implements initialize, tools/list, tools/call, ping with
 // configurable handlers + a captured request log so tests can assert
 // on the wire shape after the fact.
 type MockServer struct {
@@ -27,7 +27,7 @@ type MockServer struct {
 	// an "unhandled" CallToolResult so tests notice missing wiring.
 	callHandler func(name string, args map[string]interface{}) (*CallToolResult, error)
 
-	// pingHandler optionally overrides the default ping behaviour for
+	// pingHandler optionally overrides the default ping behavior for
 	// tests of failure paths.
 	pingHandler func() error
 

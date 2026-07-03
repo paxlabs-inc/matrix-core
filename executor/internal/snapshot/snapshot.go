@@ -113,11 +113,11 @@ var ErrNoSnapshot = errors.New("snapshot: no prior snapshot for user")
 // Use New to construct, BootPull at boot, Start to launch the periodic
 // ticker, Push for ad-hoc pushes, and Stop to halt the ticker and run
 // a final push. Manager methods are safe to call concurrently; the
-// underlying mc subprocess is serialised via pushMu.
+// underlying mc subprocess is serialized via pushMu.
 type Manager struct {
 	cfg Config
 
-	// pushMu serialises Push calls so we never run two `mc cp` invocations
+	// pushMu serializes Push calls so we never run two `mc cp` invocations
 	// against the same destination at once. Pull does not contend.
 	pushMu sync.Mutex
 
@@ -259,7 +259,7 @@ func (m *Manager) markSeeded() error {
 // only if the sentinel file is missing. It is the caller's
 // responsibility to invoke BootPull before opening the cortex Pebble DB.
 //
-// Behaviour matrix:
+// Behavior matrix:
 //
 //   - sentinel present                 → no-op, returns (false, nil)
 //   - no remote snapshot for the user  → tarball mkdir + sentinel write,
@@ -334,7 +334,7 @@ func (m *Manager) BootPull(ctx context.Context) (bool, error) {
 // users/<uid>/latest.tar.zst via a server-side copy.
 //
 // Returns the timestamp-suffixed object key on success. Concurrent Push
-// calls serialise on pushMu (cortex-quiescence isn't promised; this
+// calls serialize on pushMu (cortex-quiescence isn't promised; this
 // only prevents two concurrent mc cp uploads racing the alias write).
 func (m *Manager) Push(ctx context.Context) (string, error) {
 	m.pushMu.Lock()

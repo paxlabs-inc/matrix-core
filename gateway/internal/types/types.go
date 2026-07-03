@@ -12,7 +12,7 @@
 package types
 
 // HTTP header names — gateway wire contract. All headers are
-// case-insensitive per RFC 7230, but we standardise on canonical
+// case-insensitive per RFC 7230, but we standardize on canonical
 // casing here to keep grep-ability + Prometheus labels stable.
 const (
 	// HeaderAuthorization carries the Bearer ${MATRIX_GATEWAY_TOKEN}

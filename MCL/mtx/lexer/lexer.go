@@ -341,11 +341,11 @@ func (l *Lexer) scanIdentOrKeyword(pos token.Pos) token.Token {
 		compound := "cortex." + fnName
 		switch compound {
 		case "cortex.find":
-			return token.Token{Type: token.KW_CORTEX_FIND, Literal: compound, Pos: pos}
+			return token.Token{Type: token.KwCortexFind, Literal: compound, Pos: pos}
 		case "cortex.resolve":
-			return token.Token{Type: token.KW_CORTEX_RESOLVE, Literal: compound, Pos: pos}
+			return token.Token{Type: token.KwCortexResolve, Literal: compound, Pos: pos}
 		case "cortex.context":
-			return token.Token{Type: token.KW_CORTEX_CONTEXT, Literal: compound, Pos: pos}
+			return token.Token{Type: token.KwCortexContext, Literal: compound, Pos: pos}
 		default:
 			// Not a known cortex function — backtrack.
 			// Emit "cortex" as IDENT, then let the DOT + next ident be scanned separately.

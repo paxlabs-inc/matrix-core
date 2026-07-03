@@ -15,7 +15,7 @@ package main
 //	POST   /git/merge   {branch, no_ff?}      merge into current; ff-only by default
 //
 // Auth: existing requireAuth (MATRIX_DAEMON_TOKEN bearer).
-// Single-flight: gitOpsLock serialises every mutating verb so the working
+// Single-flight: gitOpsLock serializes every mutating verb so the working
 // tree stays consistent across concurrent SPA + agent reach paths.
 //
 // Audit: every call emits a `git.op.<verb>` transcript event with the
@@ -111,7 +111,7 @@ type gitMergeResponse struct {
 	Output      string `json:"output"`
 }
 
-// gitOpsLock serialises every mutating /git/* call.
+// gitOpsLock serializes every mutating /git/* call.
 // Intentionally shared across requests because the working tree is
 // the contended resource. Reads (status, diff, branch list) take a
 // read lock; mutations take write.
@@ -604,7 +604,7 @@ func runGit(ctx context.Context, cwd string, args ...string) (string, error) {
 	return string(out), err
 }
 
-// safePATH minimises the env exposed to subprocess git so an attacker
+// safePATH minimizes the env exposed to subprocess git so an attacker
 // can't sneak a malicious binary onto PATH and have us shell into it.
 // /usr/bin + /usr/local/bin are the standard system git locations; we
 // don't trust anything in user-controlled paths.

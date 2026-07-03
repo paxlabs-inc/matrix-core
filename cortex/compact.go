@@ -340,7 +340,7 @@ func (c *Cortex) Compact(opts CompactOpts) (*CompactResult, error) {
 	}
 
 	// --- Step 4: build Kept[] and Compacted[] ----------------------
-	var (
+	var ( //nolint:prealloc // compacted must stay nil when empty: it is CBOR-encoded in CheckpointRecord, and a preallocated empty slice would change the encoded bytes
 		kept       []*memory.Memory
 		keptURIs   []memory.URI
 		compacted  []CompactedItem

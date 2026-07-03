@@ -128,7 +128,7 @@ const (
 	// memory help" outranks "is this similar". HNSW still supplies the
 	// candidate recall set; salience supplies the ranking.
 	RankSalience RankMode = ""
-	// RankDistance is the one-flag rollback to pre-v3 behaviour: score Near
+	// RankDistance is the one-flag rollback to pre-v3 behavior: score Near
 	// candidates with the pure-utility salience.ColdScoreWith and order by
 	// ascending HNSW distance (closest first).
 	RankDistance RankMode = "rank_distance"
@@ -263,9 +263,6 @@ type Result struct {
 	// LateBinding mirrors Query.LateBinding for audit-side reporting.
 	LateBinding bool
 }
-
-// Hasher is a tiny helper holding a sha256 instance. Cheap to construct.
-type tagHasher struct{}
 
 // HashTag returns the 8-byte tag-hash prefix used in idx/tag keys.
 func HashTag(tag string) [keys.TagHashSize]byte {
@@ -678,7 +675,7 @@ func validatePredicate(p Predicate) error {
 // ValidUntil nil means "still valid"; ExpiresAt nil means "never expires".
 // The valid interval is half-open [ValidFrom, ValidUntil) so a supersession
 // that stamps ValidUntil = successor.ValidFrom leaves no overlap at the
-// boundary instant. ExpiresAt — dead since Phase 2 — is finally honoured
+// boundary instant. ExpiresAt — dead since Phase 2 — is finally honored
 // here with the same at/after-close semantics.
 func withinValidity(v *memory.Version, asOf time.Time) bool {
 	from := v.CreatedAt

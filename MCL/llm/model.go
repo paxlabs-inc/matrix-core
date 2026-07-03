@@ -248,7 +248,7 @@ func NewModelRegistry(fallback Config) *ModelRegistry {
 //	    Register(RouteKey{Slot: SlotPlanner},  plannerCfg)
 func (r *ModelRegistry) Register(k RouteKey, cfg Config) *ModelRegistry {
 	if r == nil {
-		return r
+		return nil
 	}
 	bare := RouteKey{Slot: k.Slot, Kind: normalizeKind(k.Slot, k.Kind)}
 	if k.LongCtx {
@@ -300,13 +300,13 @@ func (r *ModelRegistry) Routes() map[RouteKey]Config {
 		return nil
 	}
 	out := make(map[RouteKey]Config, len(r.routes)+len(r.longCtxRoutes))
-	for k, v := range r.routes {
-		out[k] = v
+	for k := range r.routes {
+		out[k] = r.routes[k]
 	}
-	for k, v := range r.longCtxRoutes {
+	for k := range r.longCtxRoutes {
 		long := k
 		long.LongCtx = true
-		out[long] = v
+		out[long] = r.longCtxRoutes[k]
 	}
 	return out
 }

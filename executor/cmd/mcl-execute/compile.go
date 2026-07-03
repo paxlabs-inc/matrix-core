@@ -450,7 +450,7 @@ func compile(ctx context.Context, c *cortex.Cortex, opts compileOpts, t *transcr
 			if ierr != nil {
 				return nil, ierr
 			}
-			canon, herr := ir.CanonicalJSON(intent)
+			_, herr := ir.CanonicalJSON(intent)
 			if herr != nil {
 				return nil, fmt.Errorf("compile: canonical json: %w", herr)
 			}
@@ -459,7 +459,7 @@ func compile(ctx context.Context, c *cortex.Cortex, opts compileOpts, t *transcr
 				return nil, fmt.Errorf("compile: hash intent: %w", herr)
 			}
 			intent.Hash = hash
-			canon, herr = ir.CanonicalJSON(intent)
+			canon, herr := ir.CanonicalJSON(intent)
 			if herr != nil {
 				return nil, fmt.Errorf("compile: canonical json (final): %w", herr)
 			}

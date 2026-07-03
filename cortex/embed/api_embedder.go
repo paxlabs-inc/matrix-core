@@ -233,7 +233,7 @@ func (e *APIEmbedder) embedCtx(ctx context.Context, text string) ([]float32, err
 }
 
 // embedOnce issues a single HTTP request. Returns (vec, retryable, err).
-func (e *APIEmbedder) embedOnce(ctx context.Context, payload []byte) ([]float32, bool, error) {
+func (e *APIEmbedder) embedOnce(ctx context.Context, payload []byte) (vec []float32, retryable bool, err error) {
 	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, e.endpoint, bytes.NewReader(payload))
 	if err != nil {
 		return nil, false, fmt.Errorf("embed: build request: %w", err)

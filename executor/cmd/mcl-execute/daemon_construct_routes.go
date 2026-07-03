@@ -56,7 +56,7 @@ func (d *daemonState) handleConstructState(w http.ResponseWriter, r *http.Reques
 // path, taking the surface store explicitly so it is unit-testable without a
 // full daemonState (task 2.3). It is strictly read-only.
 //
-// Behaviour:
+// Behavior:
 //   - conversation_id is required and must contain no path separator; a blank
 //     or unsafe id is a 400 (and would never resolve in the store anyway).
 //   - since_seq (optional, default 0; negatives clamped to 0) is a catch-up

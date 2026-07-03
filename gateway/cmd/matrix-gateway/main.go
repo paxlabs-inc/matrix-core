@@ -181,7 +181,7 @@ func run(args []string) error {
 			TogetherKey:  os.Getenv("TOGETHER_API_KEY"),
 		},
 		Logf:           logf,
-		Disabled:       func() bool { return disabled.Load() },
+		Disabled:       disabled.Load,
 		PreEstimatePax: *preEstimate,
 	})
 	if err != nil {

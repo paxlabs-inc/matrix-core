@@ -405,7 +405,7 @@ func NewChatClient(cfg *Config) (*Client, error) {
 // with an optional grammar constraint and returns the raw text output.
 //
 // When cfg.InjectIdentity is true (Session 34 / Forge Phase 1), IdentityPreamble
-// is prepended as the FIRST system message before serialisation. Legacy paths
+// is prepended as the FIRST system message before serialization. Legacy paths
 // (cfg.InjectIdentity == false) preserve their pre-sess#34 wire bytes byte-
 // identically.
 func (c *Client) Decode(ctx context.Context, messages []interpreter.Message, grammar string) (string, error) {
@@ -419,7 +419,7 @@ func (c *Client) Decode(ctx context.Context, messages []interpreter.Message, gra
 // DecodeWithReasoning behaves exactly like Decode but additionally returns
 // the model's reasoning_content (chain-of-thought) when the provider
 // surfaces it as a separate field. Used by side-channel callers (the
-// Liaison) that render reasoning as a DISTINCT, labelled channel — never
+// Liaison) that render reasoning as a DISTINCT, labeled channel — never
 // as the answer. The replay-critical pipeline keeps using Decode, which
 // is byte-for-byte unchanged.
 func (c *Client) DecodeWithReasoning(ctx context.Context, messages []interpreter.Message, grammar string) (content, reasoning string, err error) {
@@ -432,7 +432,7 @@ func (c *Client) DecodeWithReasoning(ctx context.Context, messages []interpreter
 
 // decodeMessage performs the one-shot chat request and returns the first
 // choice's full message (content + reasoning_content). Decode and
-// DecodeWithReasoning are thin wrappers so the wire bytes and behaviour
+// DecodeWithReasoning are thin wrappers so the wire bytes and behavior
 // of the existing Decode path are preserved exactly.
 func (c *Client) decodeMessage(ctx context.Context, messages []interpreter.Message, grammar string) (chatMessage, error) {
 	messages = maybeInjectIdentity(c.cfg, messages)
@@ -514,7 +514,7 @@ func (c *Client) decodeMessage(ctx context.Context, messages []interpreter.Messa
 // onDelta MUST NOT be invoked after Stream returns.
 //
 // When cfg.InjectIdentity is true (Session 34 / Forge Phase 1), IdentityPreamble
-// is prepended as the FIRST system message before serialisation. Legacy paths
+// is prepended as the FIRST system message before serialization. Legacy paths
 // preserve their pre-sess#34 wire bytes byte-identically.
 func (c *Client) Stream(ctx context.Context, messages []interpreter.Message,
 	grammar string, onDelta func(delta string)) (string, error) {

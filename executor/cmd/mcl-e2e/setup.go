@@ -63,7 +63,7 @@ func (r *staticKeyResolver) ResolveKey(principal string) (ed25519.PublicKey, err
 	return nil, fmt.Errorf("e2e: unknown principal %q", principal)
 }
 
-// Workspace is the per-run directory layout. Every artefact lives under
+// Workspace is the per-run directory layout. Every artifact lives under
 // Root so a single rm -rf wipes the run.
 type Workspace struct {
 	Root        string // runs/<ts>/<run>/
@@ -98,7 +98,7 @@ func NewWorkspace(rootBase, run string) (*Workspace, error) {
 	return w, nil
 }
 
-// SeedGitRepo initialises the git-mcp jail with one commit so git_log/git_status
+// SeedGitRepo initializes the git-mcp jail with one commit so git_log/git_status
 // have something real to report.
 func SeedGitRepo(dir string) error {
 	cmds := [][]string{
@@ -126,11 +126,11 @@ func SeedGitRepo(dir string) error {
 	return nil
 }
 
-// BuildAgentManifest synthesises a Q22-compliant tool.AgentManifest pinned
+// BuildAgentManifest synthesizes a Q22-compliant tool.AgentManifest pinned
 // at the e2e-installed packages with deterministic synthetic digests.
 //
 // Real production deployments compute PackageDigest as sha256(installed
-// tarball); for the harness we synthesise a stable digest from a canonical
+// tarball); for the harness we synthesize a stable digest from a canonical
 // "<provider>:<package>@<version>" string so manifest validation passes
 // while still being audit-stable across runs.
 func BuildAgentManifest(agentDID, fsJail, gitRepoDir string) *tool.AgentManifest {

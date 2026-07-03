@@ -117,10 +117,10 @@ var (
 
 	// ErrUnknownMessage fires when an inbound JSON object cannot be
 	// classified as Request, Response, or Notification.
-	ErrUnknownMessage = errors.New("mcp: unrecognised jsonrpc message shape")
+	ErrUnknownMessage = errors.New("mcp: unrecognized jsonrpc message shape")
 )
 
-// EncodeRequest serialises a request to JSON-RPC 2.0 wire bytes.
+// EncodeRequest serializes a request to JSON-RPC 2.0 wire bytes.
 // Always emits jsonrpc: "2.0" regardless of caller-supplied value
 // so callers can construct Request{} without filling in the version
 // field every time.
@@ -139,7 +139,7 @@ func EncodeRequest(r *Request) ([]byte, error) {
 	return json.Marshal(out)
 }
 
-// EncodeNotification serialises a notification to wire bytes.
+// EncodeNotification serializes a notification to wire bytes.
 func EncodeNotification(n *Notification) ([]byte, error) {
 	if n == nil {
 		return nil, errors.New("mcp: nil notification")
@@ -152,7 +152,7 @@ func EncodeNotification(n *Notification) ([]byte, error) {
 	return json.Marshal(out)
 }
 
-// EncodeResponse serialises a response to wire bytes. Used by the
+// EncodeResponse serializes a response to wire bytes. Used by the
 // in-process mock server in tests; production clients only decode.
 func EncodeResponse(r *Response) ([]byte, error) {
 	if r == nil {

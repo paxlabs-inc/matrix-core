@@ -183,7 +183,7 @@ func TestEncodeDecodeRoundTrip(t *testing.T) {
 	if got.GrantedBy != s.GrantedBy {
 		t.Errorf("GrantedBy mismatch")
 	}
-	if string(got.Signature) != string(s.Signature) {
+	if !bytes.Equal(got.Signature, s.Signature) {
 		t.Errorf("Signature mismatch")
 	}
 }
@@ -202,7 +202,7 @@ func TestUnsignedBytesIgnoresSignatureField(t *testing.T) {
 	if err != nil {
 		t.Fatalf("UnsignedBytes(b): %v", err)
 	}
-	if string(a) != string(b) {
+	if !bytes.Equal(a, b) {
 		t.Errorf("UnsignedBytes changed when only Signature mutated")
 	}
 }

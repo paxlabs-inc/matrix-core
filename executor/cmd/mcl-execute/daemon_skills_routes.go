@@ -402,7 +402,7 @@ func (d *daemonState) handleSkillsDetail(w http.ResponseWriter, r *http.Request,
 //
 // v1 stub: ranks by simple substring match against the prose; the
 // embedding-based ranker lands when the daemon's embedder is
-// authorised for ad-hoc query embedding (Phase 4 deferral). The route
+// authorized for ad-hoc query embedding (Phase 4 deferral). The route
 // is in place so the frontend can build against it.
 func (d *daemonState) handleSkillsSuggest(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {

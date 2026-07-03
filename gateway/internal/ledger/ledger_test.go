@@ -65,21 +65,21 @@ func TestMemoryDailySpendIsolatesActorAndDay(t *testing.T) {
 
 func TestMemoryDailyCapDefault(t *testing.T) {
 	m := NewMemory("")
-	cap, err := m.DailyCap(context.Background(), "did:pax:x")
+	capPax, err := m.DailyCap(context.Background(), "did:pax:x")
 	if err != nil {
 		t.Fatalf("DailyCap: %v", err)
 	}
-	if cap != DefaultDailyPaxCap {
-		t.Fatalf("got %q want %q", cap, DefaultDailyPaxCap)
+	if capPax != DefaultDailyPaxCap {
+		t.Fatalf("got %q want %q", capPax, DefaultDailyPaxCap)
 	}
 }
 
 func TestMemoryDailyCapOverride(t *testing.T) {
 	m := NewMemory("10")
 	m.SetCap("did:pax:x", "1.5")
-	cap, _ := m.DailyCap(context.Background(), "did:pax:x")
-	if cap != "1.5" {
-		t.Fatalf("override: got %q", cap)
+	capPax, _ := m.DailyCap(context.Background(), "did:pax:x")
+	if capPax != "1.5" {
+		t.Fatalf("override: got %q", capPax)
 	}
 }
 

@@ -47,7 +47,7 @@ func (f *fakeEmbedder) Embed(text string) ([]float32, error) {
 	return out, nil
 }
 
-func (f *fakeEmbedder) Dim() int    { return f.dim }
+func (f *fakeEmbedder) Dim() int      { return f.dim }
 func (f *fakeEmbedder) Model() string { return f.model }
 
 func (f *fakeEmbedder) setFail(err error) {

@@ -31,7 +31,7 @@ import "encoding/json"
 // Pinned to "2024-11-05" — the snapshot at which streamable HTTP became
 // canonical and SSE-only legacy was deprecated. Servers reporting an
 // older version are accepted (servers MUST be backward-compatible per
-// spec) but downgrade behaviour is logged so manifest authors can
+// spec) but downgrade behavior is logged so manifest authors can
 // upgrade their server pins.
 const ProtocolVersion = "2024-11-05"
 
@@ -78,7 +78,7 @@ type ClientCapabilities struct {
 	// callbacks. Not in v1 (Q-locked: executor owns its own llm slot).
 	Sampling *SamplingCapability `json:"sampling,omitempty"`
 
-	// Experimental holds any non-standardised capability extensions.
+	// Experimental holds any non-standardized capability extensions.
 	// Always omitted in v1.
 	Experimental map[string]json.RawMessage `json:"experimental,omitempty"`
 }

@@ -35,7 +35,7 @@ func runLoader(args []string) {
 		dumpMd     = fs.Bool("dump-md", false, "also dump SKILL.md body when present")
 		listCorpus = fs.Bool("list-corpus", false, "list every <slug>/SKILL.mtx in -skills-root")
 	)
-	fs.Parse(args)
+	_ = fs.Parse(args)
 
 	if *listCorpus {
 		listCorpusDirs(*skillsRoot)

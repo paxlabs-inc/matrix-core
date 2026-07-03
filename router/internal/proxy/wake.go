@@ -142,7 +142,7 @@ func (h *Handler) WakeHandler() http.HandlerFunc {
 // deliverChat POSTs the wake turn to the daemon's /chat endpoint over the
 // private network, mirroring the public proxy's forwarding hygiene
 // (X-Matrix-User, no inbound Authorization). Returns the daemon's status + body.
-func (h *Handler) deliverChat(ctx context.Context, env *provision.Env, req WakeRequest) (int, []byte, error) {
+func (h *Handler) deliverChat(ctx context.Context, env *provision.Env, req WakeRequest) (status int, body []byte, err error) {
 	chatURL, err := chatURL(env, h.DaemonPort)
 	if err != nil {
 		return 0, nil, err
@@ -176,7 +176,7 @@ func (h *Handler) deliverChat(ctx context.Context, env *provision.Env, req WakeR
 		return 0, nil, err
 	}
 	defer resp.Body.Close()
-	body, _ := io.ReadAll(io.LimitReader(resp.Body, 64<<10))
+	body, _ = io.ReadAll(io.LimitReader(resp.Body, 64<<10))
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		return resp.StatusCode, body, fmt.Errorf("daemon /chat returned %d", resp.StatusCode)
 	}

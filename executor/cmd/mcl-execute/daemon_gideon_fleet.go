@@ -67,7 +67,7 @@ func (d *daemonState) handleGideonFleet(w http.ResponseWriter, r *http.Request) 
 	ctx, cancel := context.WithTimeout(r.Context(), 15*time.Second)
 	defer cancel()
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, http.NoBody)
 	if err != nil {
 		writeJSON(w, http.StatusBadGateway, map[string]string{
 			"error": "gideon fleet: build upstream request: " + err.Error(),

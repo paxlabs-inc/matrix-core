@@ -61,7 +61,7 @@ func spawnCacheRegistry(t *testing.T, ttl time.Duration) (*Registry, *int64) {
 	t.Helper()
 	handler, calls := countingHandler()
 	mock := mcp.NewMockServer(mcp.MockServerParams{
-		Tools: []mcp.Tool{{Name: "web_search"}, {Name: "write_file"}, {Name: "send_value"}},
+		Tools:       []mcp.Tool{{Name: "web_search"}, {Name: "write_file"}, {Name: "send_value"}},
 		CallHandler: handler,
 	})
 	mgr := mcp.NewManager(mcp.ManagerParams{
@@ -124,13 +124,13 @@ func TestMCPCache_HitWithinTTL(t *testing.T) {
 }
 
 // TestMCPCache_MissAfterExpiry: once the TTL elapses, the next identical
-// call MUST go back to the wire (cache miss), proving the TTL is honoured.
+// call MUST go back to the wire (cache miss), proving the TTL is honored.
 // Uses a fake clock + a counting handler so expiry is deterministic and
 // the second server hit is observable without sleeping.
 func TestMCPCache_MissAfterExpiry(t *testing.T) {
 	handler, calls := countingHandler()
 	mock := mcp.NewMockServer(mcp.MockServerParams{
-		Tools:      []mcp.Tool{{Name: "web_search"}},
+		Tools:       []mcp.Tool{{Name: "web_search"}},
 		CallHandler: handler,
 	})
 	mgr := mcp.NewManager(mcp.ManagerParams{

@@ -293,7 +293,7 @@ func (interp *Interpreter) initSlots(result *RunResult, input *RunInput) {
 
 // evalCondition evaluates an on-block condition against the current state.
 // Returns (matched, description).
-func (interp *Interpreter) evalCondition(cond ast.Condition, input *RunInput, result *RunResult) (bool, string) {
+func (interp *Interpreter) evalCondition(cond ast.Condition, input *RunInput, result *RunResult) (matched bool, desc string) {
 	switch c := cond.(type) {
 	case *ast.VerbCondition:
 		matched := c.Verb == input.Verb
@@ -440,7 +440,7 @@ func ExtractPositiveIntValue(v ast.Value) (int, bool) {
 
 // execPrompt interpolates a prompt block and calls the LLM.
 func (interp *Interpreter) execPrompt(ctx context.Context, pb *ast.PromptBlock, input *RunInput, result *RunResult) error {
-	var messages []Message
+	messages := make([]Message, 0, len(pb.Roles))
 	for _, role := range pb.Roles {
 		content := interp.interpolate(role.Text, input, result)
 		messages = append(messages, Message{
@@ -681,7 +681,7 @@ func (interp *Interpreter) formatSlots(result *RunResult) string {
 	if len(result.Slots) == 0 {
 		return "(none)"
 	}
-	var parts []string
+	parts := make([]string, 0, len(result.Slots))
 	for _, slot := range result.Slots {
 		var status string
 		switch slot.Status {
@@ -704,7 +704,7 @@ func (interp *Interpreter) formatUnknowns(result *RunResult) string {
 	if len(result.Unknowns) == 0 {
 		return "(none)"
 	}
-	var parts []string
+	parts := make([]string, 0, len(result.Unknowns))
 	for _, u := range result.Unknowns {
 		parts = append(parts, fmt.Sprintf("slot.%s [%s]: %s", u.SlotName, u.Severity, u.Reason))
 	}

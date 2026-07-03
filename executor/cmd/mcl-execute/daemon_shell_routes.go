@@ -27,7 +27,7 @@ package main
 //     PTY master. Text frames may carry control JSON like
 //     {"type":"resize","cols":N,"rows":N} or {"type":"signal","name":
 //     "INT"}; the daemon parses and acts. Anything that doesn't parse
-//     as a recognised control message is treated as raw stdin (so a
+//     as a recognized control message is treated as raw stdin (so a
 //     legacy client sending JSON-as-stdin still works).
 //   • Stdout/stderr are emitted as binary frames (xterm.js writes raw
 //     bytes via term.write()). PTY runs in cooked mode by default;
@@ -355,7 +355,7 @@ func (d *daemonState) handleForgeShellExec(w http.ResponseWriter, r *http.Reques
 				switch ctl.Type {
 				case "stdin":
 					if ctl.Data != "" {
-						_, _ = ptmx.Write([]byte(ctl.Data))
+						_, _ = ptmx.WriteString(ctl.Data)
 					}
 				case "resize":
 					_ = pty.Setsize(ptmx, &pty.Winsize{Cols: ctl.Cols, Rows: ctl.Rows})
@@ -385,7 +385,7 @@ func (d *daemonState) handleForgeShellExec(w http.ResponseWriter, r *http.Reques
 
 // authorizeShellRequest validates either Authorization: Bearer or the
 // Sec-WebSocket-Protocol "auth.bearer.<token>" entry. Returns true iff
-// the client is authorised; otherwise writes a 401 + returns false.
+// the client is authorized; otherwise writes a 401 + returns false.
 //
 // The subprotocol path is the LOAD-BEARING one for the browser SPA
 // because `new WebSocket()` doesn't accept custom headers. Browsers
@@ -413,7 +413,7 @@ func (d *daemonState) authorizeShellRequest(w http.ResponseWriter, r *http.Reque
 		}
 	}
 	writeJSON(w, http.StatusUnauthorized, map[string]string{
-		"error": "unauthorised: bearer token required (Authorization header or auth.bearer.<token> subprotocol)",
+		"error": "unauthorized: bearer token required (Authorization header or auth.bearer.<token> subprotocol)",
 	})
 	return false
 }
@@ -545,7 +545,7 @@ func writeShellControl(conn *websocket.Conn, msg shellExitMessage) error {
 }
 
 // forwardSignal maps a string signal name to syscall.Signal and sends
-// it to the child's process group. Recognised: INT, TERM, QUIT, HUP.
+// it to the child's process group. Recognized: INT, TERM, QUIT, HUP.
 // Unknown names are silently ignored — no panic, no error frame —
 // because the SPA might send vendor-specific names that future versions
 // add support for.

@@ -152,7 +152,8 @@ func (m *Memory) DailySpend(_ context.Context, actor string, now time.Time) (str
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	total := "0"
-	for _, e := range m.rows {
+	for i := range m.rows {
+		e := &m.rows[i]
 		if e.ActorDID != actor {
 			continue
 		}
@@ -180,10 +181,10 @@ func (m *Memory) DailyCap(_ context.Context, actor string) (string, error) {
 }
 
 // SetCap updates the cap for an actor. Test/admin-only.
-func (m *Memory) SetCap(actor, cap string) {
+func (m *Memory) SetCap(actor, capPax string) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	m.caps[actor] = cap
+	m.caps[actor] = capPax
 }
 
 // Snapshot returns a copy of all recorded rows. Test-only.
@@ -207,21 +208,21 @@ func startOfUTCDay(t time.Time) time.Time {
 // CheckBudget reports whether an actor has remaining headroom for a
 // projected cost. spend + projection must be <= cap. Wraps the typed
 // budget-exhausted error so callers can use errors.Is.
-func CheckBudget(spent, projection, cap string) (remaining string, exhausted bool, err error) {
+func CheckBudget(spent, projection, capPax string) (remaining string, exhausted bool, err error) {
 	projTotal, err := rates.AddPax(spent, projection)
 	if err != nil {
 		return "", false, err
 	}
-	cmp, err := rates.CmpPax(projTotal, cap)
+	cmp, err := rates.CmpPax(projTotal, capPax)
 	if err != nil {
 		return "", false, err
 	}
 	if cmp > 0 {
 		// Actor over the cap once this projection lands.
-		rem, _ := rates.SubPax(cap, spent)
+		rem, _ := rates.SubPax(capPax, spent)
 		return rem, true, nil
 	}
-	rem, err := rates.SubPax(cap, spent)
+	rem, err := rates.SubPax(capPax, spent)
 	if err != nil {
 		return "", false, err
 	}

@@ -12,11 +12,11 @@ package main
 // (see daemon_pipeline.go Phase 7.5), so a runaway plan is caught
 // before a single byte of value moves on-chain.
 //
-// Three layers of defence in the public stack, this is the second:
+// Three layers of defense in the public stack, this is the second:
 //
 //	(1) Bridge-side ceiling — tools/paxeer/lib/tools.mjs reads
 //	    PAXEER_MAX_SPEND_WEI on every write call and refuses values that
-//	    exceed it. Last line of defence inside the agent process.
+//	    exceed it. Last line of defense inside the agent process.
 //
 //	(2) PaxeerSpendPolicy (this file) — gates the FULL plan plan-time,
 //	    so the user/operator sees one approval prompt covering every
@@ -75,9 +75,9 @@ const (
 	PaxeerRuleMalformed    = "malformed_value_arg"
 
 	// P2-1 hardened rules.
-	PaxeerRulePerRecipientCap      = "per_recipient_spend_cap"
-	PaxeerRuleBreakerTripped       = "circuit_breaker_tripped"
-	PaxeerRuleRollingWindowBudget  = "rolling_window_budget"
+	PaxeerRulePerRecipientCap     = "per_recipient_spend_cap"
+	PaxeerRuleBreakerTripped      = "circuit_breaker_tripped"
+	PaxeerRuleRollingWindowBudget = "rolling_window_budget"
 )
 
 // SpendEvaluation is the full result of evaluating one tool call. The

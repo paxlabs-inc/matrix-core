@@ -308,7 +308,7 @@ func (v *validator) rule10ToolURIs() {
 //   - Wrong kind silently routes to KindReason (the registry's executor
 //     fallback), which makes the bug invisible at run time. Loud failure
 //     here means CI catches the typo before the skill ships.
-//   - The enum is closed (ir.StepKindNames), so a misspelled "writting"
+//   - The enum is closed (ir.StepKindNames), so a misspelled "writing"
 //     is unambiguously wrong; no judgment call needed.
 //   - Value types other than string/identifier (int, bool, list, URI)
 //     are unambiguously wrong too — the interpreter would silently

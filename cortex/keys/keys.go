@@ -209,7 +209,7 @@ func PutUint64BE(dst []byte, v uint64) []byte {
 
 // ReadUint64BE reads an 8-byte big-endian uint64 from src; returns the value
 // and the remainder of src after the 8 bytes.
-func ReadUint64BE(src []byte) (uint64, []byte, error) {
+func ReadUint64BE(src []byte) (v uint64, rest []byte, err error) {
 	if len(src) < 8 {
 		return 0, nil, ErrShortKey
 	}
@@ -228,7 +228,7 @@ func PutLPString(dst []byte, s string) ([]byte, error) {
 }
 
 // ReadLPString reads a 1-byte length-prefixed string.
-func ReadLPString(src []byte) (string, []byte, error) {
+func ReadLPString(src []byte) (s string, rest []byte, err error) {
 	if len(src) < 1 {
 		return "", nil, ErrShortKey
 	}
@@ -546,8 +546,7 @@ const ObjHashSize = 16
 func IdxFrameKey(verb, objKind byte, objHash [ObjHashSize]byte, id ULID) []byte {
 	out := make([]byte, 0, len(PrefixIdxFrame)+1+1+ObjHashSize+ULIDSize)
 	out = append(out, PrefixIdxFrame...)
-	out = append(out, verb)
-	out = append(out, objKind)
+	out = append(out, verb, objKind)
 	out = append(out, objHash[:]...)
 	out = append(out, id[:]...)
 	return out
@@ -569,8 +568,7 @@ func IdxFramePrefixVerb(verb byte) []byte {
 func IdxFramePrefixVerbKind(verb, objKind byte) []byte {
 	out := make([]byte, 0, len(PrefixIdxFrame)+1+1)
 	out = append(out, PrefixIdxFrame...)
-	out = append(out, verb)
-	out = append(out, objKind)
+	out = append(out, verb, objKind)
 	return out
 }
 
@@ -581,8 +579,7 @@ func IdxFramePrefixVerbKind(verb, objKind byte) []byte {
 func IdxFramePrefixVerbKindObj(verb, objKind byte, objHash [ObjHashSize]byte) []byte {
 	out := make([]byte, 0, len(PrefixIdxFrame)+1+1+ObjHashSize)
 	out = append(out, PrefixIdxFrame...)
-	out = append(out, verb)
-	out = append(out, objKind)
+	out = append(out, verb, objKind)
 	out = append(out, objHash[:]...)
 	return out
 }
@@ -680,7 +677,7 @@ func ParseIdxActorObjKey(k []byte) (verb byte, objHash [ObjHashSize]byte, create
 
 // ParseIdxTypeKey extracts (memType, createdUnixNano, id) from an idx/type
 // key. Mirrors ParseIdxTagKey for symmetry.
-func ParseIdxTypeKey(k []byte) (byte, uint64, ULID, error) {
+func ParseIdxTypeKey(k []byte) (memType byte, created uint64, id ULID, err error) {
 	wantLen := len(PrefixIdxType) + 1 + 8 + ULIDSize
 	if len(k) != wantLen {
 		return 0, 0, ULID{}, ErrShortKey
@@ -693,7 +690,6 @@ func ParseIdxTypeKey(k []byte) (byte, uint64, ULID, error) {
 	if err != nil {
 		return 0, 0, ULID{}, err
 	}
-	var id ULID
 	copy(id[:], rest)
 	return t, created, id, nil
 }

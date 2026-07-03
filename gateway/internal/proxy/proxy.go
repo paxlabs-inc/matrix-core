@@ -119,9 +119,9 @@ func New(opts Options) (*Server, error) {
 	if hc == nil {
 		hc = &http.Client{Timeout: 5 * time.Minute}
 	}
-	max := opts.MaxBodyBytes
-	if max <= 0 {
-		max = 1 << 20
+	maxBody := opts.MaxBodyBytes
+	if maxBody <= 0 {
+		maxBody = 1 << 20
 	}
 	pre := opts.PreEstimatePax
 	if pre == "" {
@@ -148,7 +148,7 @@ func New(opts Options) (*Server, error) {
 		httpClient:   hc,
 		logf:         logf,
 		disabled:     disabled,
-		maxBodyBytes: max,
+		maxBodyBytes: maxBody,
 		now:          now,
 		preEstimate:  pre,
 	}, nil
@@ -256,23 +256,23 @@ func (s *Server) handleProxy(w http.ResponseWriter, r *http.Request, ep routing.
 			writeJSONErr(w, http.StatusInternalServerError, "ledger_read", capErr.Error())
 			return
 		}
-		cap, capErr := s.ledger.DailyCap(ctx, actor)
+		capPax, capErr := s.ledger.DailyCap(ctx, actor)
 		if capErr != nil {
 			writeJSONErr(w, http.StatusInternalServerError, "ledger_read", capErr.Error())
 			return
 		}
 		preSpent = spent
-		preCap = cap
-		_, exhausted, bErr := ledger.CheckBudget(spent, s.preEstimate, cap)
+		preCap = capPax
+		_, exhausted, bErr := ledger.CheckBudget(spent, s.preEstimate, capPax)
 		if bErr != nil {
 			writeJSONErr(w, http.StatusInternalServerError, "budget_calc", bErr.Error())
 			return
 		}
 		if exhausted {
 			s.logf("gateway.budget.exhausted", map[string]any{
-				"actor": actor, "spent": spent, "cap": cap,
+				"actor": actor, "spent": spent, "cap": capPax,
 			})
-			writeBudgetExhausted(w, spent, cap)
+			writeBudgetExhausted(w, spent, capPax)
 			return
 		}
 	}
@@ -580,7 +580,7 @@ func (s *Server) maybeDebit(dec *routing.Decision, usage *types.UpstreamUsage, l
 	}
 	// The debit is a post-response side-effect. On streamed calls the
 	// client (daemon) closes the connection the instant it reads
-	// `data: [DONE]`, cancelling lc.ctx (= r.Context()) before this
+	// `data: [DONE]`, canceling lc.ctx (= r.Context()) before this
 	// Postgres insert lands — losing the executor row and silently
 	// under-counting daily spend (observed in prod as record_err
 	// "insert: context canceled"). Detach from the request's
@@ -678,11 +678,11 @@ func writeJSONErr(w http.ResponseWriter, status int, kind, msg string) {
 	_, _ = w.Write(body)
 }
 
-func writeBudgetExhausted(w http.ResponseWriter, spent, cap string) {
+func writeBudgetExhausted(w http.ResponseWriter, spent, capPax string) {
 	body, _ := json.Marshal(types.BudgetExhaustedResponse{
 		Error:    "budget_exhausted",
 		SpentPax: spent,
-		LimitPax: cap,
+		LimitPax: capPax,
 	})
 	w.Header().Set("Content-Type", "application/json")
 	w.Header().Set(types.HeaderDailySpentPax, spent)

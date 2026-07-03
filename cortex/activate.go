@@ -255,7 +255,8 @@ func (c *Cortex) Activate(conv, query string, budget Budget) (*ActivationBundle,
 	if err != nil {
 		return nil, fmt.Errorf("cortex.Activate: timeline tier: %w", err)
 	}
-	for i, rec := range timeline {
+	for i := range timeline {
+		rec := &timeline[i]
 		items = append(items, activationItem{
 			tier: "timeline", idx: i, uri: BuildRollupURI(rec.Window.Tier, rec.Window.Start),
 			score: rec.Salience, tokens: memory.CountTokens(rec.ShortForm),
@@ -285,7 +286,8 @@ func (c *Cortex) Activate(conv, query string, budget Budget) (*ActivationBundle,
 		tailStart = len(allMsgs) - DefaultTranscriptTailLimit
 		transcript = allMsgs[tailStart:]
 	}
-	for i, m := range transcript {
+	for i := range transcript {
+		m := &transcript[i]
 		seed := salience.Score{LastUsed: m.TS}
 		score := salience.ColdScoreWith(&seed, weights, now)
 		items = append(items, activationItem{

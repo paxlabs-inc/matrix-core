@@ -84,7 +84,7 @@ type OpsEvaluation struct {
 	Pattern  string // matched chain-state-loss pattern name (OpsGate only)
 }
 
-// namedPattern is a labelled regex so the matched rule is reportable.
+// namedPattern is a labeled regex so the matched rule is reportable.
 type namedPattern struct {
 	Name string
 	Re   *regexp.Regexp
@@ -252,12 +252,12 @@ func (p *GideonOpsPolicy) isValidatorHost(host string) bool {
 		return false
 	}
 	for _, id := range p.ValidatorHostIDs {
-		if h == strings.ToLower(id) {
+		if strings.EqualFold(h, id) {
 			return true
 		}
 	}
 	for _, addr := range p.ValidatorAddrs {
-		if h == strings.ToLower(addr) {
+		if strings.EqualFold(h, addr) {
 			return true
 		}
 	}

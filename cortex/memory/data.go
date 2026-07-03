@@ -104,14 +104,14 @@ type PublicKey []byte
 
 // IdentityData (§4.2). Actor's self-knowledge.
 type IdentityData struct {
-	SchemaVersion int         `cbor:"0,keyasint"`
-	Name          string      `cbor:"1,keyasint"`
-	DID           string      `cbor:"2,keyasint,omitempty"`
-	Wallets       []string    `cbor:"3,keyasint,omitempty"` // 0x... or pax... bech32 addrs
-	Roles         []string    `cbor:"4,keyasint,omitempty"`
-	PublicKeys    []PublicKey `cbor:"5,keyasint,omitempty"`
-	AgentName         string   `cbor:"6,keyasint,omitempty"` // onboarding profile: agent display name
-	ExpertiseDomains  []string `cbor:"7,keyasint,omitempty"` // onboarding profile: user's areas of expertise
+	SchemaVersion    int         `cbor:"0,keyasint"`
+	Name             string      `cbor:"1,keyasint"`
+	DID              string      `cbor:"2,keyasint,omitempty"`
+	Wallets          []string    `cbor:"3,keyasint,omitempty"` // 0x... or pax... bech32 addrs
+	Roles            []string    `cbor:"4,keyasint,omitempty"`
+	PublicKeys       []PublicKey `cbor:"5,keyasint,omitempty"`
+	AgentName        string      `cbor:"6,keyasint,omitempty"` // onboarding profile: agent display name
+	ExpertiseDomains []string    `cbor:"7,keyasint,omitempty"` // onboarding profile: user's areas of expertise
 }
 
 // FactData (§4.2). Objective claim.

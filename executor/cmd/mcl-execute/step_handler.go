@@ -608,7 +608,7 @@ func (s *inProcessSubDispatch) HandleSubDispatch(ctx context.Context, parent *ir
 //	Intent==nil with "synthesize: missing required input (skill/intent/
 //	manifest/registry)". The pre-sess#37c synthesizer closure passed
 //	Intent: nil with the comment "v1: sub-plan derived from sub-skill
-//	manifest only" — but that contract was never honoured on the
+//	manifest only" — but that contract was never honored on the
 //	consumer side, so every sub_dispatch hit the guard immediately
 //	after sub.skill.loaded and the walker bubbled subagent_failed.
 //
@@ -672,7 +672,7 @@ func buildSubIntent(sk *runtime.LoadedSkill, parent *ir.PlanTree, node *ir.PlanN
 		"In-process sub-dispatch from parent intent %s, plan node %s, "+
 			"invoking skill %s with verb=%s. Synthesize a plan_tree@1 "+
 			"that consumes this sub-skill's declared §TOOLS and §SUB_SKILLS "+
-			"to fulfil the sub-skill's §PROCEDURE for this verb.",
+			"to fulfill the sub-skill's §PROCEDURE for this verb.",
 		parentID, nodeID, skURI, frame.Verb)
 
 	return &ir.Intent{
@@ -692,7 +692,7 @@ func buildSubIntent(sk *runtime.LoadedSkill, parent *ir.PlanTree, node *ir.PlanN
 // stdinGateHandler — runtime.GateHandler
 // ---------------------------------------------------------------------
 
-// gatePolicy controls stdinGateHandler.HandleGate behaviour.
+// gatePolicy controls stdinGateHandler.HandleGate behavior.
 type gatePolicy string
 
 const (

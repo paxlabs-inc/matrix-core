@@ -107,7 +107,7 @@ func (m *Machine) History() []Event {
 	return out
 }
 
-// ApplyOpts configures Apply behaviour for kinds that need extra context
+// ApplyOpts configures Apply behavior for kinds that need extra context
 // (specifically intent.correct, which needs the materiality flag).
 type ApplyOpts struct {
 	// Now overrides the wall-clock used for the Event.At field. Zero

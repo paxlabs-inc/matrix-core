@@ -41,7 +41,7 @@ func runClassify(args []string) {
 		newAnchor  = fs.Bool("new-anchor", false, "anchor flag on candidate intent.accept")
 		emitPretty = fs.Bool("pretty", true, "indent classification JSON output")
 	)
-	fs.Parse(args)
+	_ = fs.Parse(args)
 
 	in := materiality.Inputs{
 		OriginalIntent: loadIntent(*origIntent),

@@ -19,13 +19,13 @@ const (
 	NEWLINE // \n (significant — line-oriented grammar)
 
 	// Literals
-	IDENT      // [a-zA-Z][a-zA-Z0-9_-]*
-	INT        // 123
-	FLOAT      // 1.23
-	STRING     // "..." (includes interpolation chars as raw content)
-	URI        // matrix://...
-	BOOL_TRUE  // true
-	BOOL_FALSE // false
+	IDENT     // [a-zA-Z][a-zA-Z0-9_-]*
+	INT       // 123
+	FLOAT     // 1.23
+	STRING    // "..." (includes interpolation chars as raw content)
+	URI       // matrix://...
+	BoolTrue  // true
+	BoolFalse // false
 
 	// Section header
 	SECTION // §NAME (the § + uppercase ident as one token)
@@ -57,162 +57,162 @@ const (
 	INDENT // exactly 2 leading spaces on a line (N1/N2 in grammar notes)
 
 	// Keywords — blocks
-	KW_ON      // on
-	KW_END     // end
-	KW_PROMPT  // prompt
-	KW_RESOLVE // resolve
-	KW_UNKNOWN // unknown
-	KW_CLARIFY // clarify
-	KW_SLOT    // slot
-	KW_NONE    // none
-	KW_ENUM    // enum (in enum<...>)
+	KwOn      // on
+	KwEnd     // end
+	KwPrompt  // prompt
+	KwResolve // resolve
+	KwUnknown // unknown
+	KwClarify // clarify
+	KwSlot    // slot
+	KwNone    // none
+	KwEnum    // enum (in enum<...>)
 
 	// Keywords — modifiers
-	KW_REQUIRED // required
-	KW_OPTIONAL // optional
+	KwRequired // required
+	KwOptional // optional
 
 	// Keywords — condition prefixes
-	KW_VERB       // verb (in on verb=...)
-	KW_CONFIDENCE // confidence (in on confidence<...)
+	KwVerb       // verb (in on verb=...)
+	KwConfidence // confidence (in on confidence<...)
 
 	// Keywords — roles (prompt block)
-	KW_SYSTEM    // system
-	KW_USER      // user
-	KW_ASSISTANT // assistant
+	KwSystem    // system
+	KwUser      // user
+	KwAssistant // assistant
 
 	// Keywords — severity
-	KW_BLOCKING  // blocking
-	KW_PREFERRED // preferred
+	KwBlocking  // blocking
+	KwPreferred // preferred
 
 	// Keywords — failure actions
-	KW_FAIL  // fail
-	KW_RETRY // retry
-	KW_GATE  // gate
+	KwFail  // fail
+	KwRetry // retry
+	KwGate  // gate
 
 	// Keywords — suggest actions
-	KW_RAISE_BUDGET     // raise_budget
-	KW_EXTEND_DEADLINE  // extend_deadline
-	KW_AMEND_CONSTRAINT // amend_constraint
-	KW_DELEGATE         // delegate
-	KW_ABANDON          // abandon
+	KwRaiseBudget     // raise_budget
+	KwExtendDeadline  // extend_deadline
+	KwAmendConstraint // amend_constraint
+	KwDelegate        // delegate
+	KwAbandon         // abandon
 
 	// Keywords — failure reasons
-	KW_UNKNOWN_INFORMATION // unknown_information
-	KW_POLICY_VIOLATION    // policy_violation
-	KW_OUT_OF_BUDGET       // out_of_budget
-	KW_OUT_OF_SCOPE        // out_of_scope
-	KW_AMBIGUOUS_REQUEST   // ambiguous_request
-	KW_TOOL_FAILURE        // tool_failure
-	KW_EXTERNAL_FAILURE    // external_failure
-	KW_TIMEOUT             // timeout
-	KW_CANCELLED_BY_USER   // cancelled_by_user
-	KW_CORRECTION_INVALID  // correction_invalid
+	KwUnknownInformation // unknown_information
+	KwPolicyViolation    // policy_violation
+	KwOutOfBudget        // out_of_budget
+	KwOutOfScope         // out_of_scope
+	KwAmbiguousRequest   // ambiguous_request
+	KwToolFailure        // tool_failure
+	KwExternalFailure    // external_failure
+	KwTimeout            // timeout
+	KwCancelledByUser    // cancelled_by_user
+	KwCorrectionInvalid  // correction_invalid
 
 	// Keywords — cortex functions
-	KW_CORTEX_FIND    // cortex.find
-	KW_CORTEX_RESOLVE // cortex.resolve
-	KW_CORTEX_CONTEXT // cortex.context
+	KwCortexFind    // cortex.find
+	KwCortexResolve // cortex.resolve
+	KwCortexContext // cortex.context
 
 	// Keywords — D7 closed verbs (used in verb= conditions and space_list values)
-	KW_FIND      // find
-	KW_ACQUIRE   // acquire
-	KW_BUILD     // build
-	KW_MODIFY    // modify
-	KW_DELIVER   // deliver
-	KW_ANALYZE   // analyze
-	KW_NEGOTIATE // negotiate
-	KW_SCHEDULE  // schedule
-	KW_MONITOR   // monitor
+	KwFind      // find
+	KwAcquire   // acquire
+	KwBuild     // build
+	KwModify    // modify
+	KwDeliver   // deliver
+	KwAnalyze   // analyze
+	KwNegotiate // negotiate
+	KwSchedule  // schedule
+	KwMonitor   // monitor
 
 	// Keywords — other
-	KW_ACTION  // action
-	KW_SUGGEST // suggest
-	KW_REASON  // reason
+	KwAction  // action
+	KwSuggest // suggest
+	KwReason  // reason
 
 	// Keywords — determinism / seed_policy
-	KW_SEEDABLE    // seedable
-	KW_BEST_EFFORT // best_effort
-	KW_PER_INTENT  // per_intent
-	KW_PER_SESSION // per_session
-	KW_PER_ACTOR   // per_actor
+	KwSeedable   // seedable
+	KwBestEffort // best_effort
+	KwPerIntent  // per_intent
+	KwPerSession // per_session
+	KwPerActor   // per_actor
 )
 
 // keywords maps keyword strings to their token type.
 // The lexer checks this map after scanning an IDENT to see if it's a keyword.
 var keywords = map[string]Type{
-	"on":       KW_ON,
-	"end":      KW_END,
-	"prompt":   KW_PROMPT,
-	"resolve":  KW_RESOLVE,
-	"unknown":  KW_UNKNOWN,
-	"clarify":  KW_CLARIFY,
-	"slot":     KW_SLOT,
-	"none":     KW_NONE,
-	"enum":     KW_ENUM,
-	"required": KW_REQUIRED,
-	"optional": KW_OPTIONAL,
-	"true":     BOOL_TRUE,
-	"false":    BOOL_FALSE,
+	"on":       KwOn,
+	"end":      KwEnd,
+	"prompt":   KwPrompt,
+	"resolve":  KwResolve,
+	"unknown":  KwUnknown,
+	"clarify":  KwClarify,
+	"slot":     KwSlot,
+	"none":     KwNone,
+	"enum":     KwEnum,
+	"required": KwRequired,
+	"optional": KwOptional,
+	"true":     BoolTrue,
+	"false":    BoolFalse,
 
 	// Condition prefixes
-	"verb":       KW_VERB,
-	"confidence": KW_CONFIDENCE,
+	"verb":       KwVerb,
+	"confidence": KwConfidence,
 
 	// Prompt roles
-	"system":    KW_SYSTEM,
-	"user":      KW_USER,
-	"assistant": KW_ASSISTANT,
+	"system":    KwSystem,
+	"user":      KwUser,
+	"assistant": KwAssistant,
 
 	// Severity
-	"blocking":  KW_BLOCKING,
-	"preferred": KW_PREFERRED,
+	"blocking":  KwBlocking,
+	"preferred": KwPreferred,
 
 	// Failure actions
-	"fail":  KW_FAIL,
-	"retry": KW_RETRY,
-	"gate":  KW_GATE,
+	"fail":  KwFail,
+	"retry": KwRetry,
+	"gate":  KwGate,
 
 	// Suggest actions
-	"raise_budget":     KW_RAISE_BUDGET,
-	"extend_deadline":  KW_EXTEND_DEADLINE,
-	"amend_constraint": KW_AMEND_CONSTRAINT,
-	"delegate":         KW_DELEGATE,
-	"abandon":          KW_ABANDON,
+	"raise_budget":     KwRaiseBudget,
+	"extend_deadline":  KwExtendDeadline,
+	"amend_constraint": KwAmendConstraint,
+	"delegate":         KwDelegate,
+	"abandon":          KwAbandon,
 
 	// Failure reasons
-	"unknown_information": KW_UNKNOWN_INFORMATION,
-	"policy_violation":    KW_POLICY_VIOLATION,
-	"out_of_budget":       KW_OUT_OF_BUDGET,
-	"out_of_scope":        KW_OUT_OF_SCOPE,
-	"ambiguous_request":   KW_AMBIGUOUS_REQUEST,
-	"tool_failure":        KW_TOOL_FAILURE,
-	"external_failure":    KW_EXTERNAL_FAILURE,
-	"timeout":             KW_TIMEOUT,
-	"cancelled_by_user":   KW_CANCELLED_BY_USER,
-	"correction_invalid":  KW_CORRECTION_INVALID,
+	"unknown_information": KwUnknownInformation,
+	"policy_violation":    KwPolicyViolation,
+	"out_of_budget":       KwOutOfBudget,
+	"out_of_scope":        KwOutOfScope,
+	"ambiguous_request":   KwAmbiguousRequest,
+	"tool_failure":        KwToolFailure,
+	"external_failure":    KwExternalFailure,
+	"timeout":             KwTimeout,
+	"cancelled_by_user":   KwCancelledByUser,
+	"correction_invalid":  KwCorrectionInvalid,
 
 	// Other
-	"action":  KW_ACTION,
-	"suggest": KW_SUGGEST,
-	"reason":  KW_REASON,
+	"action":  KwAction,
+	"suggest": KwSuggest,
+	"reason":  KwReason,
 
 	// Determinism / seed_policy
-	"seedable":    KW_SEEDABLE,
-	"best_effort": KW_BEST_EFFORT,
-	"per_intent":  KW_PER_INTENT,
-	"per_session": KW_PER_SESSION,
-	"per_actor":   KW_PER_ACTOR,
+	"seedable":    KwSeedable,
+	"best_effort": KwBestEffort,
+	"per_intent":  KwPerIntent,
+	"per_session": KwPerSession,
+	"per_actor":   KwPerActor,
 
 	// D7 closed verbs
-	"find":      KW_FIND,
-	"acquire":   KW_ACQUIRE,
-	"build":     KW_BUILD,
-	"modify":    KW_MODIFY,
-	"deliver":   KW_DELIVER,
-	"analyze":   KW_ANALYZE,
-	"negotiate": KW_NEGOTIATE,
-	"schedule":  KW_SCHEDULE,
-	"monitor":   KW_MONITOR,
+	"find":      KwFind,
+	"acquire":   KwAcquire,
+	"build":     KwBuild,
+	"modify":    KwModify,
+	"deliver":   KwDeliver,
+	"analyze":   KwAnalyze,
+	"negotiate": KwNegotiate,
+	"schedule":  KwSchedule,
+	"monitor":   KwMonitor,
 }
 
 // LookupIdent returns the keyword token type for ident if it is a keyword,
@@ -226,7 +226,7 @@ func LookupIdent(ident string) Type {
 
 // IsKeyword reports whether t is a keyword token type.
 func (t Type) IsKeyword() bool {
-	return t >= KW_ON && t <= KW_PER_ACTOR
+	return t >= KwOn && t <= KwPerActor
 }
 
 // Pos records a source position: byte offset, line, and column (all 1-based).
@@ -270,9 +270,9 @@ func (t Type) String() string {
 		return "STRING"
 	case URI:
 		return "URI"
-	case BOOL_TRUE:
+	case BoolTrue:
 		return "TRUE"
-	case BOOL_FALSE:
+	case BoolFalse:
 		return "FALSE"
 	case SECTION:
 		return "SECTION"

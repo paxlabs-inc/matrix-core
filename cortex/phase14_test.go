@@ -47,7 +47,7 @@ func TestPhase14ScopeViolationBurstHonoursBurstCap(t *testing.T) {
 		t.Fatalf("Write: %v", err)
 	}
 
-	s := buildTestScope(t, c, priv, nil) // Include=[Preference] only
+	s := buildTestScope(t, c, priv, nil) // scope whose include list is Preference only
 
 	preCount := countKindEntries(t, c, journal.KindScopeViolation)
 	violationsReturned := 0

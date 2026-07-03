@@ -157,7 +157,7 @@ func (ig *ingester) ingestRunbook(path string) error {
 	var recoveryID memory.ID
 	if body, ok := byTitle["Standard Recovery Procedure"]; ok {
 		params := []byte(truncate(body, 8000))
-		cap := memory.CapabilityData{
+		capData := memory.CapabilityData{
 			SchemaVersion: 1,
 			Subject:       "matrix://hyperpax/network",
 			Capability:    "standard-recovery-procedure: stop containers, back up, copy validator2->validator1 data, reset priv_validator_state.json, restart, verify heights",
@@ -165,7 +165,7 @@ func (ig *ingester) ingestRunbook(path string) error {
 			Verified:      true,
 			LastObserved:  stableObservedAt,
 		}
-		recoveryID, err = ig.upsertNode("gideon:runbook:recovery:standard", cap, 10, 1.0,
+		recoveryID, err = ig.upsertNode("gideon:runbook:recovery:standard", capData, 10, 1.0,
 			"runbook", "hyperpax", "recovery", "fix-procedure")
 		if err != nil {
 			return err
@@ -254,9 +254,10 @@ func (ig *ingester) ingestRunbook(path string) error {
 // body, dropping the header and the separator row. Each row is a slice of
 // trimmed cell strings.
 func parseTableRows(body string) [][]string {
-	var rows [][]string
+	lines := strings.Split(body, "\n")
+	rows := make([][]string, 0, len(lines))
 	header := false
-	for _, ln := range strings.Split(body, "\n") {
+	for _, ln := range lines {
 		t := strings.TrimSpace(ln)
 		if !strings.HasPrefix(t, "|") {
 			if len(rows) > 0 || header {

@@ -22,7 +22,7 @@ import (
 
 // llmGatewayBundle is the small sub-struct each per-call helper
 // (compile / synth / step_handler) consumes. Empty fields preserve
-// legacy direct-provider behaviour (the per-call helper checks
+// legacy direct-provider behavior (the per-call helper checks
 // GatewayURL == "" and skips the gateway branch).
 type llmGatewayBundle struct {
 	GatewayURL string

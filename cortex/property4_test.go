@@ -59,8 +59,8 @@ func bundleContainsMemory(b *cortex.ActivationBundle, id memory.ID, uri memory.U
 			return true
 		}
 	}
-	for _, rec := range b.Timeline {
-		for _, ref := range rec.Members {
+	for i := range b.Timeline {
+		for _, ref := range b.Timeline[i].Members {
 			if ref.URI == uri {
 				return true
 			}

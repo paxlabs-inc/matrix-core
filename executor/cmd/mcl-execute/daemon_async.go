@@ -29,7 +29,7 @@ package main
 // gates one /messages run at a time (cortex single-writer invariant).
 // Async mode does NOT bypass that mutex; it just allows the HTTP
 // caller to walk away while the goroutine queues + runs. Multiple
-// async POSTs serialise on busy in goroutines — clients see "queued"
+// async POSTs serialize on busy in goroutines — clients see "queued"
 // state until their turn comes up.
 
 import (
@@ -92,13 +92,13 @@ const defaultMaxAsyncJobs = 1024
 // newAsyncRegistry builds the registry. When dir is non-empty it is
 // created if missing and any previously-persisted jobs are loaded back
 // into memory (so /messages/async/:id keeps answering across restarts).
-func newAsyncRegistry(max int, dir string) *asyncRegistry {
-	if max <= 0 {
-		max = defaultMaxAsyncJobs
+func newAsyncRegistry(maxJobs int, dir string) *asyncRegistry {
+	if maxJobs <= 0 {
+		maxJobs = defaultMaxAsyncJobs
 	}
 	r := &asyncRegistry{
 		jobs:  make(map[string]*asyncJob, 64),
-		max:   max,
+		max:   maxJobs,
 		dir:   dir,
 		clock: func() time.Time { return time.Now().UTC() },
 	}
@@ -447,9 +447,5 @@ func (g *httpGateHandler) HandleGate(ctx context.Context, node *ir.PlanNode) (*r
 		return nil, ctx.Err()
 	}
 }
-
-// errGateAlreadyAnswered is returned by gateBroker.Answer when the
-// gate channel is non-empty (duplicate answer).
-var errGateAlreadyAnswered = errors.New("gate already answered")
 
 // Copyright © 2026 Paxlabs Inc. All rights reserved.

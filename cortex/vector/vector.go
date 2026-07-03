@@ -142,7 +142,7 @@ func (p Params) withDefaults() Params {
 		// reproducible. Real callers (embedder.go) override with a seed
 		// derived from the actor name.
 		h := fnv.New64a()
-		_, _ = h.Write([]byte(fmt.Sprintf("matrix.vector.v1:dim=%d", p.Dim)))
+		_, _ = fmt.Fprintf(h, "matrix.vector.v1:dim=%d", p.Dim)
 		p.Seed = h.Sum64()
 	}
 	return p

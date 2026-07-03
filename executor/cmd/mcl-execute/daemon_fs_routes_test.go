@@ -48,7 +48,7 @@ func mustWriteFile(t *testing.T, path, body string) {
 // TestForgeFS_Disabled404 verifies the routes 404 when forge-mode is off.
 func TestForgeFS_Disabled404(t *testing.T) {
 	d := &daemonState{forgeFS: nil}
-	req := httptest.NewRequest(http.MethodGet, "/fs/tree?path=/tmp", nil)
+	req := httptest.NewRequest(http.MethodGet, "/fs/tree?path=/tmp", http.NoBody)
 	rec := httptest.NewRecorder()
 	d.handleForgeFSRouter(rec, req)
 	if rec.Code != http.StatusNotFound {
@@ -62,7 +62,7 @@ func TestForgeFS_ReadHappyPath(t *testing.T) {
 	target := filepath.Join(tmp, "hello.txt")
 	mustWriteFile(t, target, "hello matrix")
 
-	req := httptest.NewRequest(http.MethodGet, "/fs/read?path="+target, nil)
+	req := httptest.NewRequest(http.MethodGet, "/fs/read?path="+target, http.NoBody)
 	rec := httptest.NewRecorder()
 	d.handleForgeFSRouter(rec, req)
 	if rec.Code != http.StatusOK {
@@ -86,7 +86,7 @@ func TestForgeFS_ReadHappyPath(t *testing.T) {
 // TestForgeFS_Read_OutsideAllowlist returns 403.
 func TestForgeFS_Read_OutsideAllowlist(t *testing.T) {
 	d, _ := newForgeTestDaemon(t)
-	req := httptest.NewRequest(http.MethodGet, "/fs/read?path=/etc/passwd", nil)
+	req := httptest.NewRequest(http.MethodGet, "/fs/read?path=/etc/passwd", http.NoBody)
 	rec := httptest.NewRecorder()
 	d.handleForgeFSRouter(rec, req)
 	if rec.Code != http.StatusForbidden {
@@ -100,7 +100,7 @@ func TestForgeFS_Read_DenyPrefix(t *testing.T) {
 	d, tmp := newForgeTestDaemon(t)
 	target := filepath.Join(tmp, "denied", "secret.txt")
 	mustWriteFile(t, target, "shh")
-	req := httptest.NewRequest(http.MethodGet, "/fs/read?path="+target, nil)
+	req := httptest.NewRequest(http.MethodGet, "/fs/read?path="+target, http.NoBody)
 	rec := httptest.NewRecorder()
 	d.handleForgeFSRouter(rec, req)
 	if rec.Code != http.StatusForbidden {
@@ -114,7 +114,7 @@ func TestForgeFS_Read_TooLarge(t *testing.T) {
 	d.forgeFS.MaxReadBytes = 8
 	target := filepath.Join(tmp, "big.txt")
 	mustWriteFile(t, target, strings.Repeat("X", 16))
-	req := httptest.NewRequest(http.MethodGet, "/fs/read?path="+target, nil)
+	req := httptest.NewRequest(http.MethodGet, "/fs/read?path="+target, http.NoBody)
 	rec := httptest.NewRecorder()
 	d.handleForgeFSRouter(rec, req)
 	if rec.Code != http.StatusRequestEntityTooLarge {
@@ -125,7 +125,7 @@ func TestForgeFS_Read_TooLarge(t *testing.T) {
 // TestForgeFS_Read_NonExistent returns 404.
 func TestForgeFS_Read_NonExistent(t *testing.T) {
 	d, tmp := newForgeTestDaemon(t)
-	req := httptest.NewRequest(http.MethodGet, "/fs/read?path="+filepath.Join(tmp, "missing.txt"), nil)
+	req := httptest.NewRequest(http.MethodGet, "/fs/read?path="+filepath.Join(tmp, "missing.txt"), http.NoBody)
 	rec := httptest.NewRecorder()
 	d.handleForgeFSRouter(rec, req)
 	if rec.Code != http.StatusNotFound {
@@ -284,7 +284,7 @@ func TestForgeFS_TreeHappyPath(t *testing.T) {
 	mustWriteFile(t, filepath.Join(tmp, "denied", "x.txt"), "shh")
 	mustWriteFile(t, filepath.Join(tmp, "sub", "c.txt"), "c")
 
-	req := httptest.NewRequest(http.MethodGet, "/fs/tree?path="+tmp+"&depth=2", nil)
+	req := httptest.NewRequest(http.MethodGet, "/fs/tree?path="+tmp+"&depth=2", http.NoBody)
 	rec := httptest.NewRecorder()
 	d.handleForgeFSRouter(rec, req)
 	if rec.Code != http.StatusOK {
@@ -343,7 +343,7 @@ func TestForgeFS_Tree_DefaultsToFirstAllowRoot(t *testing.T) {
 	d, tmp := newForgeTestDaemon(t)
 	mustWriteFile(t, filepath.Join(tmp, "rootfile.txt"), "x")
 
-	req := httptest.NewRequest(http.MethodGet, "/fs/tree", nil)
+	req := httptest.NewRequest(http.MethodGet, "/fs/tree", http.NoBody)
 	rec := httptest.NewRecorder()
 	d.handleForgeFSRouter(rec, req)
 	if rec.Code != http.StatusOK {
@@ -368,7 +368,7 @@ func TestForgeFS_Tree_DepthCap(t *testing.T) {
 	mustWriteFile(t, filepath.Join(deep, "leaf.txt"), "x")
 
 	// Ask for depth=999; expect cap=3.
-	req := httptest.NewRequest(http.MethodGet, "/fs/tree?path="+tmp+"&depth=999", nil)
+	req := httptest.NewRequest(http.MethodGet, "/fs/tree?path="+tmp+"&depth=999", http.NoBody)
 	rec := httptest.NewRecorder()
 	d.handleForgeFSRouter(rec, req)
 	if rec.Code != http.StatusOK {

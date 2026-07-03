@@ -51,7 +51,7 @@ const IdentityPreamble = "You are Matrix — a cognition+UX layer running on the
 // Pure: the input slice is not mutated; the returned slice is freshly
 // allocated with len(messages)+1 elements.
 //
-// Callers MUST honour Config.InjectIdentity — passing this helper through
+// Callers MUST honor Config.InjectIdentity — passing this helper through
 // unconditionally would break legacy paths (e.g. mcl-e2e harness assertions
 // on exact wire bytes pre-sess#34).
 func InjectIdentity(messages []interpreter.Message) []interpreter.Message {

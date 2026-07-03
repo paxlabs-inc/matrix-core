@@ -5,6 +5,7 @@ package auth
 
 import (
 	"errors"
+	"net/http"
 	"net/http/httptest"
 	"testing"
 
@@ -22,7 +23,7 @@ func newAuth(t *testing.T) *Authenticator {
 
 func TestVerifyAcceptsValidBearer(t *testing.T) {
 	a := newAuth(t)
-	r := httptest.NewRequest("POST", "/v1/chat/completions", nil)
+	r := httptest.NewRequest("POST", "/v1/chat/completions", http.NoBody)
 	r.Header.Set(types.HeaderAuthorization, "Bearer shh")
 	r.Header.Set(types.HeaderActorDID, "did:pax:abcdef")
 	actor, err := a.Verify(r)
@@ -36,7 +37,7 @@ func TestVerifyAcceptsValidBearer(t *testing.T) {
 
 func TestVerifyRejectsBadToken(t *testing.T) {
 	a := newAuth(t)
-	r := httptest.NewRequest("POST", "/v1/chat/completions", nil)
+	r := httptest.NewRequest("POST", "/v1/chat/completions", http.NoBody)
 	r.Header.Set(types.HeaderAuthorization, "Bearer wrong")
 	r.Header.Set(types.HeaderActorDID, "did:pax:abc")
 	_, err := a.Verify(r)
@@ -47,7 +48,7 @@ func TestVerifyRejectsBadToken(t *testing.T) {
 
 func TestVerifyRejectsMissingActor(t *testing.T) {
 	a := newAuth(t)
-	r := httptest.NewRequest("POST", "/v1/chat/completions", nil)
+	r := httptest.NewRequest("POST", "/v1/chat/completions", http.NoBody)
 	r.Header.Set(types.HeaderAuthorization, "Bearer shh")
 	_, err := a.Verify(r)
 	if !errors.Is(err, ErrMissingActor) {
@@ -57,7 +58,7 @@ func TestVerifyRejectsMissingActor(t *testing.T) {
 
 func TestVerifyRejectsMalformedActor(t *testing.T) {
 	a := newAuth(t)
-	r := httptest.NewRequest("POST", "/v1/chat/completions", nil)
+	r := httptest.NewRequest("POST", "/v1/chat/completions", http.NoBody)
 	r.Header.Set(types.HeaderAuthorization, "Bearer shh")
 	r.Header.Set(types.HeaderActorDID, "not-a-did")
 	_, err := a.Verify(r)
@@ -77,7 +78,7 @@ func TestEmptyTokenWithAllowAcceptsEverything(t *testing.T) {
 	if err != nil {
 		t.Fatalf("New: %v", err)
 	}
-	r := httptest.NewRequest("POST", "/", nil)
+	r := httptest.NewRequest("POST", "/", http.NoBody)
 	r.Header.Set(types.HeaderActorDID, "did:pax:1")
 	actor, err := a.Verify(r)
 	if err != nil {
@@ -90,7 +91,7 @@ func TestEmptyTokenWithAllowAcceptsEverything(t *testing.T) {
 
 func TestVerifySignatureStubReturnsNil(t *testing.T) {
 	a := newAuth(t)
-	r := httptest.NewRequest("POST", "/", nil)
+	r := httptest.NewRequest("POST", "/", http.NoBody)
 	if err := a.VerifySignature(r, "did:pax:1"); err != nil {
 		t.Fatalf("stub should return nil; got %v", err)
 	}

@@ -50,7 +50,7 @@ func recordSurface(st *surfacestore.Store, conversationID string, seq int, marke
 // serveConstructState with the supplied store, and decodes the response body.
 func serveState(t *testing.T, store *surfacestore.Store, rawQuery string) (*httptest.ResponseRecorder, schema.StateResponse) {
 	t.Helper()
-	req := httptest.NewRequest(http.MethodGet, "/construct/state?"+rawQuery, nil)
+	req := httptest.NewRequest(http.MethodGet, "/construct/state?"+rawQuery, http.NoBody)
 	rec := httptest.NewRecorder()
 	serveConstructState(rec, req, store)
 

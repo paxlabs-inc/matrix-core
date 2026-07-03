@@ -290,7 +290,7 @@ func (s *statusRecorder) Hijack() (net.Conn, *bufio.ReadWriter, error) {
 }
 
 // requireAuth enforces the bearer token when configured. Returns true
-// iff the request is authorised (or auth is disabled). On 401 the
+// iff the request is authorized (or auth is disabled). On 401 the
 // response is fully written and the caller must return.
 func (d *daemonState) requireAuth(w http.ResponseWriter, r *http.Request) bool {
 	if d.authToken == "" {
@@ -300,7 +300,7 @@ func (d *daemonState) requireAuth(w http.ResponseWriter, r *http.Request) bool {
 	got = strings.TrimSpace(got)
 	if got == "" || got != d.authToken {
 		writeJSON(w, http.StatusUnauthorized, map[string]string{
-			"error": "unauthorised: bearer token required",
+			"error": "unauthorized: bearer token required",
 		})
 		return false
 	}
@@ -347,7 +347,7 @@ func (d *daemonState) handleHealthz(w http.ResponseWriter, r *http.Request) {
 // handleEvents is preserved for callers that import it directly
 // (tests / harnesses); the production /events route uses
 // handleEventsFiltered which adds query-param filtering. They share
-// the same auth path so behaviour is identical when no filter is set.
+// the same auth path so behavior is identical when no filter is set.
 func (d *daemonState) handleEvents(w http.ResponseWriter, r *http.Request) {
 	d.handleEventsFiltered(w, r)
 }

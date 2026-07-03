@@ -496,7 +496,7 @@ func TestBuildSystemPrompt_SurfacesCardinalityHints(t *testing.T) {
 	if !strings.Contains(prompt, "verb=build -> output_cardinality=8") {
 		t.Errorf("prompt missing build->8 cardinality hint:\n%s", prompt)
 	}
-	// Both hint flavours surface together under the same header.
+	// Both hint flavors surface together under the same header.
 	if !strings.Contains(prompt, "verb=build -> step.kind=\"write\"") {
 		t.Errorf("prompt missing kind hint when both hints present:\n%s", prompt)
 	}

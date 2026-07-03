@@ -78,14 +78,14 @@ func (ig *ingester) ingestModules(root string) error {
 		}
 
 		if mi.hasKeeper {
-			cap := memory.CapabilityData{
+			capData := memory.CapabilityData{
 				SchemaVersion: 1,
 				Subject:       "matrix://hyperpax/" + mi.relpath,
 				Capability:    "keeper: owns and mutates the " + mi.base + " module state",
 				Verified:      true,
 				LastObserved:  stableObservedAt,
 			}
-			kid, err := ig.upsertNode("gideon:keeper:"+mi.relpath, cap, 5, 0.8,
+			kid, err := ig.upsertNode("gideon:keeper:"+mi.relpath, capData, 5, 0.8,
 				"hyperpax-os", "keeper", "module:"+mi.relpath)
 			if err != nil {
 				return err
@@ -192,7 +192,7 @@ func gatherModule(root, rel string, known map[string]struct{}) (*moduleInfo, err
 		}
 	}
 
-	mi.summary = ig_deriveSummary(abs, topFiles, order, mi)
+	mi.summary = igDeriveSummary(abs, topFiles, order, mi)
 
 	// depends-on: walk the whole subtree's imports.
 	_ = filepath.WalkDir(abs, func(p string, d fs.DirEntry, err error) error {
@@ -218,8 +218,8 @@ func gatherModule(root, rel string, known map[string]struct{}) (*moduleInfo, err
 	return mi, nil
 }
 
-// ig_deriveSummary applies the deterministic heuristic cascade.
-func ig_deriveSummary(abs string, topFiles map[string]string, order []string, mi *moduleInfo) string {
+// igDeriveSummary applies the deterministic heuristic cascade.
+func igDeriveSummary(abs string, topFiles map[string]string, order []string, mi *moduleInfo) string {
 	// 1. package doc comment.
 	for _, n := range order {
 		if doc := docAbovePackage(topFiles[n]); doc != "" {
@@ -430,36 +430,38 @@ func docAboveType(content string, names []string) string {
 	for i, ln := range lines {
 		t := strings.TrimSpace(ln)
 		for _, name := range names {
-			if strings.HasPrefix(t, "type "+name+" ") {
-				var rev []string
-				for j := i - 1; j >= 0; j-- {
-					ct := strings.TrimSpace(lines[j])
-					if ct == "" || !strings.HasPrefix(ct, "//") {
-						break
-					}
-					rev = append(rev, strings.TrimSpace(strings.TrimPrefix(ct, "//")))
-				}
-				if len(rev) == 0 {
-					continue
-				}
-				for l, r := 0, len(rev)-1; l < r; l, r = l+1, r-1 {
-					rev[l], rev[r] = rev[r], rev[l]
-				}
-				doc := condense(strings.Join(rev, " "))
-				if looksLikeLicense(doc) || doc == "" {
-					continue
-				}
-				return truncate(firstSentence(doc), 400)
+			if !strings.HasPrefix(t, "type "+name+" ") {
+				continue
 			}
+			var rev []string
+			for j := i - 1; j >= 0; j-- {
+				ct := strings.TrimSpace(lines[j])
+				if ct == "" || !strings.HasPrefix(ct, "//") {
+					break
+				}
+				rev = append(rev, strings.TrimSpace(strings.TrimPrefix(ct, "//")))
+			}
+			if len(rev) == 0 {
+				continue
+			}
+			for l, r := 0, len(rev)-1; l < r; l, r = l+1, r-1 {
+				rev[l], rev[r] = rev[r], rev[l]
+			}
+			doc := condense(strings.Join(rev, " "))
+			if looksLikeLicense(doc) || doc == "" {
+				continue
+			}
+			return truncate(firstSentence(doc), 400)
 		}
 	}
 	return ""
 }
 
 func firstParagraph(md string) string {
-	var buf []string
+	lines := strings.Split(md, "\n")
+	buf := make([]string, 0, len(lines))
 	started := false
-	for _, ln := range strings.Split(md, "\n") {
+	for _, ln := range lines {
 		t := strings.TrimSpace(ln)
 		if strings.HasPrefix(t, "#") || strings.HasPrefix(t, "![") || strings.HasPrefix(t, "[!") {
 			if started {

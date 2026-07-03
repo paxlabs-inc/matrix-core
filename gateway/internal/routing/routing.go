@@ -126,7 +126,7 @@ type Decider struct {
 	embeddingURL map[Provider]string
 }
 
-// Options controls Decider behaviour.
+// Options controls Decider behavior.
 type Options struct {
 	// FreeTierOnly, when true, rejects every BYO request (forcing
 	// every call to use the metered free tier). Useful for the
@@ -226,7 +226,7 @@ func (d *Decider) Decide(r *http.Request, model string, ep Endpoint) (*Decision,
 }
 
 // readBYO returns (byoFlag, userKey). Both empty/absent → metered.
-func readBYO(r *http.Request) (bool, string) {
+func readBYO(r *http.Request) (byoFlag bool, userKey string) {
 	flag := strings.TrimSpace(r.Header.Get(types.HeaderBYOAPIKey))
 	if !strings.EqualFold(flag, "true") && flag != "1" && !strings.EqualFold(flag, "yes") {
 		return false, ""

@@ -23,7 +23,7 @@ import (
 //   - Authorization is the gateway token, not the provider key
 //   - X-Matrix-* headers carry through verbatim
 //   - OnResponseHeaders fires with the upstream response headers
-//   - direct-provider behaviour preserved when GatewayURL == ""
+//   - direct-provider behavior preserved when GatewayURL == ""
 func TestGatewayRouting(t *testing.T) {
 	var seenURL string
 	var seenHeaders http.Header

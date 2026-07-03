@@ -13,11 +13,6 @@ import (
 	"matrix/gateway/internal/types"
 )
 
-func newReq(slot, kind string, byo bool, byoKey string) *httptest.ResponseRecorder {
-	// Helper unused; keep signature fixed so tests stay terse.
-	return nil
-}
-
 func TestDecideFreeTierWhitelistedCompiler(t *testing.T) {
 	d := New(Options{})
 	r := httptest.NewRequest("POST", "/v1/chat/completions", strings.NewReader("{}"))

@@ -82,7 +82,7 @@ type StepResult struct {
 }
 
 // SubDispatchHandler is invoked for NodeSubDispatch nodes. Default
-// behaviour returns ErrSubDispatchNotImplemented because Q6 explicitly
+// behavior returns ErrSubDispatchNotImplemented because Q6 explicitly
 // defers cross-agent sub-dispatch to v1.1 (matrix.kvx executor_locked_design Q6).
 // In-process recursion under the same agent is a hook point — callers
 // can wire a sub-walker by implementing this interface.
@@ -101,7 +101,7 @@ type SubDispatchResult struct {
 }
 
 // GateHandler is invoked for NodeGate nodes. v1 ships AllowAllGate as
-// the default (matches cmd/mcl-e2e/walk.go:94-100 behaviour: log + skip).
+// the default (matches cmd/mcl-e2e/walk.go:94-100 behavior: log + skip).
 // Production callers wire a synchronous-wait handler that emits
 // envelope.PolicyGateBody and blocks on PolicyGateResolveBody per Q10.
 type GateHandler interface {
@@ -146,7 +146,7 @@ type Walker struct {
 }
 
 // WalkerParams configures a Walker. Registry is required; everything else
-// has a working default that matches the cmd/mcl-e2e/walk.go behaviour.
+// has a working default that matches the cmd/mcl-e2e/walk.go behavior.
 type WalkerParams struct {
 	Registry *tool.Registry
 
@@ -786,7 +786,7 @@ func (NotImplementedSubDispatch) HandleSubDispatch(ctx context.Context, parent *
 
 // AllowAllGate auto-approves every gate. v1 default for headless CLI
 // runs that don't have a human-in-loop responder wired (matches
-// cmd/mcl-e2e/walk.go:94-100 behaviour).
+// cmd/mcl-e2e/walk.go:94-100 behavior).
 type AllowAllGate struct{}
 
 // HandleGate implements GateHandler.
@@ -796,7 +796,7 @@ func (AllowAllGate) HandleGate(ctx context.Context, node *ir.PlanNode) (*GateDec
 
 // ---- sentinel errors ----
 
-// ErrSubDispatchNotImplemented signals the v1 placeholder behaviour for
+// ErrSubDispatchNotImplemented signals the v1 placeholder behavior for
 // cross-agent sub-dispatch. Callers may errors.Is to route accordingly.
 var ErrSubDispatchNotImplemented = errors.New("runtime: sub-dispatch not implemented in v1")
 

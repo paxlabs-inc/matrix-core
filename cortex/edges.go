@@ -26,7 +26,6 @@
 package cortex
 
 import (
-	"bytes"
 	"errors"
 	"fmt"
 
@@ -334,10 +333,5 @@ func edgeTypeSet(types []memory.EdgeType) map[memory.EdgeType]struct{} {
 	}
 	return out
 }
-
-// edgesEqualBytes compares two encoded edge records by raw bytes. Used in
-// tests to assert forward/reverse parity. Defined here so test files can
-// remain in the cortex_test package without re-exporting helpers.
-func edgesEqualBytes(a, b []byte) bool { return bytes.Equal(a, b) }
 
 // Copyright © 2026 Paxlabs Inc. All rights reserved.

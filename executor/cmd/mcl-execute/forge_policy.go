@@ -11,7 +11,7 @@ package main
 // The Vue SPA at forge/ (Phase 2) reaches the daemon's GET /fs/tree, GET
 // /fs/read, and POST /fs/write routes to render its file tree, hydrate
 // Monaco, and persist Monaco edits. The agent's MCP fs server (agents/
-// forge.json) is the parallel reach path; both MUST honour the same
+// forge.json) is the parallel reach path; both MUST honor the same
 // allowlist + denylist so a human-mode write and an agent-mode write are
 // indistinguishable from a safety posture.
 //

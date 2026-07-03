@@ -60,7 +60,7 @@ func (f *fakeLLM) Decode(ctx context.Context, msgs []interpreter.Message, gramma
 // this to exercise the streaming hot path of llmStepHandler.HandleStep
 // without touching the network.
 //
-// Default behaviour when Chunks is nil: the streaming impl falls back
+// Default behavior when Chunks is nil: the streaming impl falls back
 // to single-shot delivery of Response (for tests that want streaming
 // capability detection but don't care about the delta cadence).
 type streamingFakeLLM struct {

@@ -19,7 +19,7 @@ import (
 // Concurrency: Initialize must be called exactly once before any other
 // method, but is itself goroutine-safe through the read loop. After
 // Initialize, ToolsList / ToolsCall / Ping may be called from any
-// goroutine; the Client serialises through its outbound mutex.
+// goroutine; the Client serializes through its outbound mutex.
 type Client struct {
 	t Transport
 
@@ -32,7 +32,7 @@ type Client struct {
 	mu      sync.Mutex
 	pending map[uint64]chan *Response
 
-	// sendMu serialises Transport.Send calls to keep frames whole. The
+	// sendMu serializes Transport.Send calls to keep frames whole. The
 	// Transport itself locks too, but client-side framing (encode +
 	// pending-map insert + send) must be atomic w.r.t. read loop.
 	sendMu sync.Mutex

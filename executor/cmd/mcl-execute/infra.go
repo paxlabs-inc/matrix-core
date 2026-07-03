@@ -251,7 +251,7 @@ func derefIfNotEmpty(s string) interface{} {
 	return s
 }
 
-// nowRFC3339 returns time.Now() in RFC3339Nano UTC. Centralised so
+// nowRFC3339 returns time.Now() in RFC3339Nano UTC. Centralized so
 // transcripts agree across stages.
 func nowRFC3339() string {
 	return time.Now().UTC().Format(time.RFC3339Nano)

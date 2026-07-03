@@ -54,15 +54,15 @@ type ChainConfig struct {
 // through on error/timeout, with a Hash stub terminal fallback.
 type EmbedderChain struct {
 	providers []Embedder
-	timeout    time.Duration
-	logf       func(string, ...any)
+	timeout   time.Duration
+	logf      func(string, ...any)
 
 	// lastModel/lastDim record the Model()/Dim() of the provider that most
 	// recently succeeded. They are updated on each successful Embed so that
 	// Model()/Dim() reflect the resolved provider. Reads are rare (once per
 	// embed-cycle in the worker; Model() is checked against Head.EmbeddingRef)
 	// so a mutex is cheaper than an atomic of a string.
-	mu       chanMutex
+	mu        chanMutex
 	lastModel string
 	lastDim   int
 }

@@ -79,7 +79,7 @@ func (p *Parser) parseSection() *ast.Section {
 
 	// §NAME — strip the § prefix
 	name := p.tok.Literal
-	if len(name) > 0 && name[0] == 0xC2 { // UTF-8 first byte of §
+	if name != "" && name[0] == 0xC2 { // UTF-8 first byte of §
 		name = name[2:] // skip 2-byte § encoding
 	}
 	sec.Name = name
@@ -106,25 +106,25 @@ func (p *Parser) parseSectionEntry() ast.Entry {
 	case token.SECTION, token.EOF:
 		return nil
 
-	case token.KW_SLOT:
+	case token.KwSlot:
 		return p.parseSlotOrKVPair()
 
-	case token.KW_ON:
+	case token.KwOn:
 		return p.parseOnBlock()
 
-	case token.KW_PROMPT:
+	case token.KwPrompt:
 		return p.parsePromptBlock()
 
-	case token.KW_RESOLVE:
+	case token.KwResolve:
 		return p.parseResolveStmt()
 
-	case token.KW_UNKNOWN:
+	case token.KwUnknown:
 		return p.parseUnknownBlock()
 
-	case token.KW_CLARIFY:
+	case token.KwClarify:
 		return p.parseClarifyBlock()
 
-	case token.KW_NONE:
+	case token.KwNone:
 		return p.parseNoneEntry()
 
 	case token.URI:
@@ -156,12 +156,6 @@ func (p *Parser) parseSlotOrKVPair() ast.Entry {
 	}
 
 	// Otherwise: slot declaration
-	return p.parseSlotDeclBody(pos)
-}
-
-func (p *Parser) parseSlotDecl() *ast.SlotDecl {
-	pos := p.tok.Pos
-	p.advance() // consume "slot"
 	return p.parseSlotDeclBody(pos)
 }
 
@@ -201,10 +195,10 @@ func (p *Parser) parseSlotModifier() *ast.SlotModifier {
 	mod := &ast.SlotModifier{ModPos: pos}
 
 	switch p.tok.Type {
-	case token.KW_REQUIRED:
+	case token.KwRequired:
 		mod.Kind = ast.ModRequired
 		p.advance()
-	case token.KW_OPTIONAL:
+	case token.KwOptional:
 		mod.Kind = ast.ModOptional
 		p.advance()
 	default:
@@ -235,7 +229,7 @@ func (p *Parser) parseSlotModifier() *ast.SlotModifier {
 func (p *Parser) parseTypeRef() ast.TypeRef {
 	tr := ast.TypeRef{TypePos: p.tok.Pos}
 
-	if p.tok.Type == token.KW_ENUM {
+	if p.tok.Type == token.KwEnum {
 		// enum<a|b|c>
 		tr.Name = "enum"
 		p.advance() // consume "enum"
@@ -278,7 +272,7 @@ func (p *Parser) parseOnBlock() *ast.OnBlock {
 
 	// Parse on-block body entries until "end"
 	p.skipNewlines()
-	for p.tok.Type != token.KW_END && p.tok.Type != token.EOF && p.tok.Type != token.SECTION {
+	for p.tok.Type != token.KwEnd && p.tok.Type != token.EOF && p.tok.Type != token.SECTION {
 		entry := p.parseOnEntry()
 		if entry != nil {
 			ob.Entries = append(ob.Entries, entry)
@@ -286,7 +280,7 @@ func (p *Parser) parseOnBlock() *ast.OnBlock {
 		p.skipNewlines()
 	}
 
-	if p.tok.Type == token.KW_END {
+	if p.tok.Type == token.KwEnd {
 		p.advance()
 		p.expectNewline()
 	} else {
@@ -298,7 +292,7 @@ func (p *Parser) parseOnBlock() *ast.OnBlock {
 
 func (p *Parser) parseCondition() ast.Condition {
 	switch p.tok.Type {
-	case token.KW_VERB:
+	case token.KwVerb:
 		pos := p.tok.Pos
 		p.advance() // consume "verb"
 		p.expect(token.EQUALS)
@@ -306,7 +300,7 @@ func (p *Parser) parseCondition() ast.Condition {
 		p.advance()
 		return &ast.VerbCondition{Verb: verb, VerbPos: pos}
 
-	case token.KW_CONFIDENCE:
+	case token.KwConfidence:
 		pos := p.tok.Pos
 		p.advance() // consume "confidence"
 		op := p.tok.Literal
@@ -321,7 +315,7 @@ func (p *Parser) parseCondition() ast.Condition {
 		p.advance() // consume float
 		return &ast.ConfidenceCondition{Op: op, Threshold: threshold, CondPos: pos}
 
-	case token.KW_SLOT:
+	case token.KwSlot:
 		pos := p.tok.Pos
 		p.advance() // consume "slot"
 		p.expect(token.DOT)
@@ -331,7 +325,7 @@ func (p *Parser) parseCondition() ast.Condition {
 		val := p.parseValue()
 		return &ast.SlotValCondition{SlotName: slotName, Value: val, CondPos: pos}
 
-	case token.KW_UNKNOWN:
+	case token.KwUnknown:
 		pos := p.tok.Pos
 		p.advance()
 		return &ast.UnknownCondition{CondPos: pos}
@@ -352,17 +346,17 @@ func (p *Parser) parseOnEntry() ast.Entry {
 	}
 
 	switch p.tok.Type {
-	case token.KW_PROMPT:
+	case token.KwPrompt:
 		return p.parsePromptBlock()
-	case token.KW_RESOLVE:
+	case token.KwResolve:
 		return p.parseResolveStmt()
-	case token.KW_UNKNOWN:
+	case token.KwUnknown:
 		return p.parseUnknownBlock()
-	case token.KW_CLARIFY:
+	case token.KwClarify:
 		return p.parseClarifyBlock()
-	case token.KW_ON:
+	case token.KwOn:
 		return p.parseOnBlock()
-	case token.KW_END:
+	case token.KwEnd:
 		return nil
 	default:
 		// Try kv_pair
@@ -379,24 +373,24 @@ func (p *Parser) parsePromptBlock() *ast.PromptBlock {
 
 	// Parse role entries until "end"
 	p.skipNewlines()
-	for p.tok.Type != token.KW_END && p.tok.Type != token.EOF && p.tok.Type != token.SECTION {
+	for p.tok.Type != token.KwEnd && p.tok.Type != token.EOF && p.tok.Type != token.SECTION {
 		if p.tok.Type == token.INDENT {
 			p.advance() // consume indent
 		}
 
 		// After consuming indent, re-check for end
-		if p.tok.Type == token.KW_END {
+		if p.tok.Type == token.KwEnd {
 			break
 		}
 
 		pos := p.tok.Pos
 		var role string
 		switch p.tok.Type {
-		case token.KW_SYSTEM:
+		case token.KwSystem:
 			role = "system"
-		case token.KW_USER:
+		case token.KwUser:
 			role = "user"
-		case token.KW_ASSISTANT:
+		case token.KwAssistant:
 			role = "assistant"
 		default:
 			p.errorf("expected role name (system/user/assistant) in prompt block, got %v %q", p.tok.Type, p.tok.Literal)
@@ -425,7 +419,7 @@ func (p *Parser) parsePromptBlock() *ast.PromptBlock {
 		p.skipNewlines()
 	}
 
-	if p.tok.Type == token.KW_END {
+	if p.tok.Type == token.KwEnd {
 		p.advance()
 		p.expectNewline()
 	} else {
@@ -442,7 +436,7 @@ func (p *Parser) parseResolveStmt() *ast.ResolveStmt {
 	p.advance() // consume "resolve"
 
 	// slot.name
-	p.expect(token.KW_SLOT)
+	p.expect(token.KwSlot)
 	p.expect(token.DOT)
 	rs.SlotName = p.tok.Literal
 	p.advance()
@@ -450,13 +444,13 @@ func (p *Parser) parseResolveStmt() *ast.ResolveStmt {
 	// <-
 	p.expect(token.ARROW)
 
-	// cortex.fn(args...)
+	// cortex function name followed by its argument list
 	switch p.tok.Type {
-	case token.KW_CORTEX_FIND:
+	case token.KwCortexFind:
 		rs.CortexFn = "cortex.find"
-	case token.KW_CORTEX_RESOLVE:
+	case token.KwCortexResolve:
 		rs.CortexFn = "cortex.resolve"
-	case token.KW_CORTEX_CONTEXT:
+	case token.KwCortexContext:
 		rs.CortexFn = "cortex.context"
 	default:
 		p.errorf("expected cortex function, got %v %q", p.tok.Type, p.tok.Literal)
@@ -477,7 +471,7 @@ func (p *Parser) parseResolveStmt() *ast.ResolveStmt {
 		arg := &ast.CortexArg{ArgPos: p.tok.Pos}
 
 		// Positional arg: slot expression like slot.target.prose
-		if p.tok.Type == token.KW_SLOT {
+		if p.tok.Type == token.KwSlot {
 			arg.Name = ""
 			arg.Value = p.parseSlotExpr()
 			rs.Args = append(rs.Args, arg)
@@ -511,7 +505,7 @@ func (p *Parser) parseUnknownBlock() *ast.UnknownBlock {
 	p.advance() // consume "unknown"
 
 	// slot.name
-	p.expect(token.KW_SLOT)
+	p.expect(token.KwSlot)
 	p.expect(token.DOT)
 	ub.SlotName = p.tok.Literal
 	p.advance()
@@ -519,11 +513,11 @@ func (p *Parser) parseUnknownBlock() *ast.UnknownBlock {
 
 	// Parse modifiers until "end"
 	p.skipNewlines()
-	for p.tok.Type != token.KW_END && p.tok.Type != token.EOF && p.tok.Type != token.SECTION {
+	for p.tok.Type != token.KwEnd && p.tok.Type != token.EOF && p.tok.Type != token.SECTION {
 		if p.tok.Type == token.INDENT {
 			modPos := p.tok.Pos
 			p.advance()
-			if p.tok.Type == token.KW_END {
+			if p.tok.Type == token.KwEnd {
 				break
 			}
 			key := p.tok.Literal
@@ -542,7 +536,7 @@ func (p *Parser) parseUnknownBlock() *ast.UnknownBlock {
 		}
 	}
 
-	if p.tok.Type == token.KW_END {
+	if p.tok.Type == token.KwEnd {
 		p.advance()
 		p.expectNewline()
 	} else {
@@ -559,7 +553,7 @@ func (p *Parser) parseClarifyBlock() *ast.ClarifyBlock {
 	p.advance() // consume "clarify"
 
 	// slot.name
-	p.expect(token.KW_SLOT)
+	p.expect(token.KwSlot)
 	p.expect(token.DOT)
 	cb.SlotName = p.tok.Literal
 	p.advance()
@@ -567,11 +561,11 @@ func (p *Parser) parseClarifyBlock() *ast.ClarifyBlock {
 
 	// Parse modifiers until "end"
 	p.skipNewlines()
-	for p.tok.Type != token.KW_END && p.tok.Type != token.EOF && p.tok.Type != token.SECTION {
+	for p.tok.Type != token.KwEnd && p.tok.Type != token.EOF && p.tok.Type != token.SECTION {
 		if p.tok.Type == token.INDENT {
 			modPos := p.tok.Pos
 			p.advance()
-			if p.tok.Type == token.KW_END {
+			if p.tok.Type == token.KwEnd {
 				break
 			}
 			key := p.tok.Literal
@@ -590,7 +584,7 @@ func (p *Parser) parseClarifyBlock() *ast.ClarifyBlock {
 		}
 	}
 
-	if p.tok.Type == token.KW_END {
+	if p.tok.Type == token.KwEnd {
 		p.advance()
 		p.expectNewline()
 	} else {
@@ -713,11 +707,11 @@ func (p *Parser) parseValue() ast.Value {
 		}
 		return &ast.FloatValue{Raw: raw, FloatPos: pos}
 
-	case token.BOOL_TRUE:
+	case token.BoolTrue:
 		p.advance()
 		return &ast.BoolValue{Val: true, BoolPos: pos}
 
-	case token.BOOL_FALSE:
+	case token.BoolFalse:
 		p.advance()
 		return &ast.BoolValue{Val: false, BoolPos: pos}
 
@@ -726,7 +720,7 @@ func (p *Parser) parseValue() ast.Value {
 		p.advance()
 		return &ast.URIValue{URI: uri, URIPos: pos}
 
-	case token.KW_SLOT:
+	case token.KwSlot:
 		return p.parseSlotExpr()
 
 	case token.LBRACKET:
@@ -778,22 +772,22 @@ func (p *Parser) parsePromptBlockBody(pos token.Pos) *ast.PromptBlock {
 	p.advance() // consume NEWLINE
 
 	p.skipNewlines()
-	for p.tok.Type != token.KW_END && p.tok.Type != token.EOF && p.tok.Type != token.SECTION {
+	for p.tok.Type != token.KwEnd && p.tok.Type != token.EOF && p.tok.Type != token.SECTION {
 		if p.tok.Type == token.INDENT {
 			p.advance()
 		}
-		if p.tok.Type == token.KW_END {
+		if p.tok.Type == token.KwEnd {
 			break
 		}
 
 		rolePos := p.tok.Pos
 		var role string
 		switch p.tok.Type {
-		case token.KW_SYSTEM:
+		case token.KwSystem:
 			role = "system"
-		case token.KW_USER:
+		case token.KwUser:
 			role = "user"
-		case token.KW_ASSISTANT:
+		case token.KwAssistant:
 			role = "assistant"
 		default:
 			p.errorf("expected role name in prompt block, got %v %q", p.tok.Type, p.tok.Literal)
@@ -818,7 +812,7 @@ func (p *Parser) parsePromptBlockBody(pos token.Pos) *ast.PromptBlock {
 		p.skipNewlines()
 	}
 
-	if p.tok.Type == token.KW_END {
+	if p.tok.Type == token.KwEnd {
 		p.advance()
 		p.expectNewline()
 	} else {

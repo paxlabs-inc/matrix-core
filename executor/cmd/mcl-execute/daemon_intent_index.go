@@ -129,7 +129,7 @@ func (c *indexCache) put(intentID string, mtime time.Time, sum *intentSummary) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	if len(c.entries) >= c.max {
-		// Evict an arbitrary entry — Go map iter is randomised, so
+		// Evict an arbitrary entry — Go map iter is randomized, so
 		// this is effectively random eviction. Adequate for an index
 		// where the high-cardinality cost is minor (a single dir
 		// re-scan on a cache miss).

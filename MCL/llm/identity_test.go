@@ -29,13 +29,6 @@ func TestIdentityPreamble_Locked(t *testing.T) {
 	}
 }
 
-func max(a, b int) int {
-	if a > b {
-		return a
-	}
-	return b
-}
-
 // TestIdentityVersion_Format guards the matrix-identity-v<N> format.
 // Compile-cache (sess#31d) composes this into model_digest; a regex-
 // unfriendly value would break audit consumers downstream.

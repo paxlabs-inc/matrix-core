@@ -95,8 +95,8 @@ func (t RollupTier) String() string {
 // given tier.
 type Window struct {
 	Tier  RollupTier `cbor:"0,keyasint"`
-	Start int64 `cbor:"1,keyasint"`
-	End   int64 `cbor:"2,keyasint"`
+	Start int64      `cbor:"1,keyasint"`
+	End   int64      `cbor:"2,keyasint"`
 }
 
 // Ref is a resolvable reference to a rollup member: a memory URI (Kind ==

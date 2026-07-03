@@ -24,7 +24,7 @@ func containsID(res *query.Result, id memory.ID) bool {
 
 // TestCloseValidityFiltersByAsOf is the v3 #2 end-to-end check: closing a
 // memory's valid-time stamps ValidUntil on a NEW journaled version, and
-// query.Find honours Query.AsOf against the half-open [ValidFrom, ValidUntil)
+// query.Find honors Query.AsOf against the half-open [ValidFrom, ValidUntil)
 // interval — before the close the memory is live, at/after it is filtered,
 // default-now filters it, and IncludeTombstoned bypasses the filter for audit.
 func TestCloseValidityFiltersByAsOf(t *testing.T) {
@@ -65,7 +65,7 @@ func TestCloseValidityFiltersByAsOf(t *testing.T) {
 		t.Fatalf("ValidUntil = %v want %v", closed.Version.ValidUntil, closeAt)
 	}
 	// Data is preserved verbatim across the close.
-	if string(closed.Version.Data) != string(fresh.Version.Data) {
+	if !bytes.Equal(closed.Version.Data, fresh.Version.Data) {
 		t.Fatalf("CloseValidity must preserve Data bytes")
 	}
 

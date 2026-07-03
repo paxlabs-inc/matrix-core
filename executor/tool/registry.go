@@ -60,7 +60,7 @@ var cacheableTools = map[string]bool{
 // hold: the name must be in the explicit allow-list AND the side-effect
 // class must be a read-class (SideEffectRead). The double gate means a
 // tool named web_search that someone later retags as "write" stops
-// being cached automatically — defence in depth against manifest drift.
+// being cached automatically — defense in depth against manifest drift.
 func isCacheable(name, sideEffect string) bool {
 	if sideEffect != SideEffectRead {
 		return false
@@ -513,7 +513,7 @@ func (t *NativeTool) Call(ctx context.Context, args map[string]interface{}) (*Re
 	return nil, fmt.Errorf("%w: %s/%s@%s", ErrNativeToolNotImplemented, t.namespace, t.name, t.version)
 }
 
-// ErrNativeToolNotImplemented signals the v1 placeholder behaviour.
+// ErrNativeToolNotImplemented signals the v1 placeholder behavior.
 // Wraps cleanly with errors.Is for plan-walker error routing.
 var ErrNativeToolNotImplemented = errors.New("tool: native chain tool not implemented in v1")
 

@@ -64,8 +64,10 @@ done
 
 # ── load .env if present (FIREWORKS_API_KEY / TOGETHER_API_KEY) ──
 if [[ -f /root/matrix/.env ]]; then
-  # shellcheck disable=SC1091
-  set -a; source /root/matrix/.env; set +a
+  set -a
+  # shellcheck source=/dev/null
+  source /root/matrix/.env
+  set +a
 fi
 
 # ── preflight ──

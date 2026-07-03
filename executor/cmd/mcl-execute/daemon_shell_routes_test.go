@@ -22,7 +22,7 @@ import (
 // TestForgeShell_Disabled404 verifies the route 404s when shellCfg is nil.
 func TestForgeShell_Disabled404(t *testing.T) {
 	d := &daemonState{shellCfg: nil}
-	req := httptest.NewRequest(http.MethodGet, "/shell/exec", nil)
+	req := httptest.NewRequest(http.MethodGet, "/shell/exec", http.NoBody)
 	rec := httptest.NewRecorder()
 	d.handleForgeShellExec(rec, req)
 	if rec.Code != http.StatusNotFound {
@@ -37,7 +37,7 @@ func TestForgeShell_AuthRequired(t *testing.T) {
 		shellCfg:  DefaultForgeShellConfig(),
 		authToken: "secret",
 	}
-	req := httptest.NewRequest(http.MethodGet, "/shell/exec", nil)
+	req := httptest.NewRequest(http.MethodGet, "/shell/exec", http.NoBody)
 	rec := httptest.NewRecorder()
 	d.handleForgeShellExec(rec, req)
 	if rec.Code != http.StatusUnauthorized {
@@ -57,7 +57,7 @@ func TestForgeShell_SubprotocolAuth(t *testing.T) {
 		shellCfg:  DefaultForgeShellConfig(),
 		authToken: "abc123",
 	}
-	req := httptest.NewRequest(http.MethodGet, "/shell/exec", nil)
+	req := httptest.NewRequest(http.MethodGet, "/shell/exec", http.NoBody)
 	req.Header.Set("Sec-WebSocket-Protocol", "matrix-shell.v1, auth.bearer.abc123")
 	rec := httptest.NewRecorder()
 	if !d.authorizeShellRequest(rec, req) {
@@ -71,7 +71,7 @@ func TestForgeShell_HeaderAuth(t *testing.T) {
 		shellCfg:  DefaultForgeShellConfig(),
 		authToken: "abc123",
 	}
-	req := httptest.NewRequest(http.MethodGet, "/shell/exec", nil)
+	req := httptest.NewRequest(http.MethodGet, "/shell/exec", http.NoBody)
 	req.Header.Set("Authorization", "Bearer abc123")
 	rec := httptest.NewRecorder()
 	if !d.authorizeShellRequest(rec, req) {
@@ -83,7 +83,7 @@ func TestForgeShell_HeaderAuth(t *testing.T) {
 // (local-dev posture).
 func TestForgeShell_AuthDisabled(t *testing.T) {
 	d := &daemonState{shellCfg: DefaultForgeShellConfig()} // authToken == ""
-	req := httptest.NewRequest(http.MethodGet, "/shell/exec", nil)
+	req := httptest.NewRequest(http.MethodGet, "/shell/exec", http.NoBody)
 	rec := httptest.NewRecorder()
 	if !d.authorizeShellRequest(rec, req) {
 		t.Errorf("empty authToken must accept all requests")

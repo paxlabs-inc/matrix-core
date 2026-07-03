@@ -119,18 +119,18 @@ func (p *Postgres) DailySpend(ctx context.Context, actor string, now time.Time) 
 // DailyCap reads daily_budget_caps; returns the default when empty.
 func (p *Postgres) DailyCap(ctx context.Context, actor string) (string, error) {
 	const q = `SELECT daily_pax_max::text FROM daily_budget_caps WHERE actor_did = $1`
-	var cap sql.NullString
-	err := p.db.QueryRowContext(ctx, q, actor).Scan(&cap)
+	var capPax sql.NullString
+	err := p.db.QueryRowContext(ctx, q, actor).Scan(&capPax)
 	switch {
 	case errors.Is(err, sql.ErrNoRows):
 		return p.defCap, nil
 	case err != nil:
 		return "", fmt.Errorf("gateway.ledger.postgres: daily cap: %w", err)
 	}
-	if !cap.Valid || cap.String == "" {
+	if !capPax.Valid || capPax.String == "" {
 		return p.defCap, nil
 	}
-	return cap.String, nil
+	return capPax.String, nil
 }
 
 // Close is a no-op; the *sql.DB is owned by the caller. Returning nil

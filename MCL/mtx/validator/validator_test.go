@@ -9,7 +9,6 @@ import (
 
 	"matrix/mcl/mtx/ast"
 	"matrix/mcl/mtx/parser"
-	"matrix/mcl/mtx/token"
 )
 
 // ---- rule tests ----
@@ -407,8 +406,8 @@ func TestRule11_KindUnknownRejected(t *testing.T) {
 	}{
 		{
 			"typo",
-			"on verb=build\n  kind = \"writting\"\nend",
-			"writting",
+			"on verb=build\n  kind = \"writing\"\nend",
+			"writing",
 		},
 		{
 			"uppercase",
@@ -651,7 +650,5 @@ func minOutputs() *ast.Section {
 func minFailureModes() *ast.Section {
 	return &ast.Section{Name: "FAILURE_MODES"}
 }
-
-func pos() token.Pos { return token.Pos{} }
 
 // Copyright © 2026 Paxlabs Inc. All rights reserved.

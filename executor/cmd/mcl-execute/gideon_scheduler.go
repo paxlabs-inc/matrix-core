@@ -18,7 +18,7 @@ package main
 //
 // Single-flight is respected via d.busy: a tick that cannot acquire the
 // cortex single-writer mutex (a human/async intent is in flight) is
-// skipped, never queued. Graceful shutdown is honoured by stopping on
+// skipped, never queued. Graceful shutdown is honored by stopping on
 // the supplied context (cancelled when the daemon begins draining).
 
 import (

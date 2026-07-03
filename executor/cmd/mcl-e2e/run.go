@@ -117,7 +117,8 @@ func RunOnce(ctx context.Context, cfg RunConfig, assert *AssertCtx) (*RunReport,
 	})
 	defer mgr.Close()
 
-	for _, s := range manifest.Servers {
+	for i := range manifest.Servers {
+		s := &manifest.Servers[i]
 		// Inherit parent process env when manifest declares no overrides.
 		// Empty slice in stdio.go is treated as "blank env" (no PATH, no
 		// HOME) which kills npx/uvx; nil tells exec.Cmd to inherit.
