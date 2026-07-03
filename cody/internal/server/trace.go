@@ -42,6 +42,12 @@ var traceWorkspaceTypes = map[string]bool{
 	// client rebuilds the checkpoint history on reopen.
 	"snapshot.created":  true,
 	"snapshot.restored": true,
+	// Preview (req 7): the on-demand sandbox preview lifecycle. Durable so the
+	// client rebuilds the preview pane's last-known state on reopen.
+	"preview.pending": true,
+	"preview.ready":   true,
+	"preview.failed":  true,
+	"preview.expired": true,
 }
 
 // defaultTraceRetain caps retained events per run.

@@ -18,6 +18,7 @@ import (
 	"time"
 
 	"matrix/cody/internal/checkpoint"
+	"matrix/cody/internal/preview"
 )
 
 // The client coding workspace's environment surface: a read-only view of
@@ -86,9 +87,47 @@ func (s *Server) handleWorkspace(w http.ResponseWriter, r *http.Request) {
 		s.handleWorkspaceSnapshots(w, r)
 	case "restore":
 		s.handleWorkspaceRestore(w, r)
+	case "preview":
+		s.handleWorkspacePreview(w, r)
 	default:
 		http.Error(w, "not found", http.StatusNotFound)
 	}
+}
+
+// handleWorkspacePreview is the single-action re-preview (req 7.3): POST it to
+// (re)provision the project's on-demand sandbox preview. It returns 202 and the
+// lifecycle unfolds on preview.pending/ready/failed events; the client renders
+// those. A run need not be active — the user can ask for a preview of the
+// current project state at any time.
+func (s *Server) handleWorkspacePreview(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	if !s.engine.preview.Enabled() {
+		writeJSON(w, http.StatusServiceUnavailable, map[string]interface{}{
+			"error": "preview is not configured in this environment",
+		})
+		return
+	}
+	var req struct {
+		ConversationID string `json:"conversation_id"`
+	}
+	_ = json.NewDecoder(r.Body).Decode(&req)
+	convID := strings.TrimSpace(req.ConversationID)
+	if convID == "" {
+		writeJSON(w, http.StatusBadRequest, map[string]interface{}{"error": "conversation_id is required"})
+		return
+	}
+	root, err := s.engine.reqProjectRoot(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	// Provision in the background so the POST returns immediately; the client
+	// follows preview.* on the conversation's live topic.
+	go s.engine.preview.Provision(context.Background(), preview.Request{ConvID: convID, Root: root})
+	writeJSON(w, http.StatusAccepted, map[string]interface{}{"preview": "provisioning"})
 }
 
 // handleWorkspaceSnapshot takes a named workspace snapshot (POST). One-button

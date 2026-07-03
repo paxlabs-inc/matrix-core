@@ -21,6 +21,7 @@ import (
 	"time"
 
 	"matrix/cody/internal/mode"
+	"matrix/cody/internal/sandbox"
 	"matrix/cody/internal/server"
 	cortex "matrix/cortex"
 	"matrix/cortex/store"
@@ -57,6 +58,27 @@ func main() {
 	}
 	defer st.Close()
 
+	// Preview (req 7): a Railway sandbox client turns a completed plan into an
+	// on-demand preview reverse-proxied by the router. Enabled only when the
+	// Railway credentials AND the router coordinates + this user's id are all
+	// present; otherwise codyd runs preview-less (the client shows "no preview
+	// yet"). CODY_USER_ID is the supabase user id the router /preview proxy keys
+	// on — it MUST equal the JWT subject the router authenticates.
+	var sb sandbox.Client
+	if tok := os.Getenv("RAILWAY_API_TOKEN"); tok != "" {
+		sb = sandbox.New(sandbox.Config{
+			Token:         tok,
+			ProjectID:     os.Getenv("RAILWAY_PROJECT_ID"),
+			EnvironmentID: os.Getenv("RAILWAY_ENVIRONMENT_ID"),
+		})
+	}
+	previewTTL := time.Duration(0)
+	if v := os.Getenv("CODY_PREVIEW_TTL"); v != "" {
+		if d, perr := time.ParseDuration(v); perr == nil {
+			previewTTL = d
+		}
+	}
+
 	engine, err := server.NewEngine(server.EngineOptions{
 		WorkspaceRoot:     *workspaceRoot,
 		DataDir:           *dataDir,
@@ -75,7 +97,15 @@ func main() {
 		BrowserToken: os.Getenv("MATRIX_BROWSER_TOKEN"),
 		SearxngURL:   os.Getenv("MATRIX_SEARXNG_URL"),
 		SearxngToken: os.Getenv("MATRIX_SEARXNG_TOKEN"),
-		Logf:         log.Printf,
+		// Preview wiring (req 7).
+		Sandbox:            sb,
+		PreviewUserID:      os.Getenv("CODY_USER_ID"),
+		RouterInternalURL:  os.Getenv("ROUTER_INTERNAL_URL"),
+		RouterPreviewToken: os.Getenv("ROUTER_PREVIEW_TOKEN"),
+		PreviewPublicBase:  os.Getenv("CODY_PREVIEW_PUBLIC_BASE"),
+		PreviewTTL:         previewTTL,
+		PreviewImage:       os.Getenv("CODY_PREVIEW_IMAGE"),
+		Logf:               log.Printf,
 	})
 	if err != nil {
 		log.Fatalf("codyd: %v", err)

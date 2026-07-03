@@ -33,6 +33,8 @@ import (
 	"matrix/cody/internal/mode"
 	"matrix/cody/internal/orchestrator"
 	"matrix/cody/internal/policy"
+	"matrix/cody/internal/preview"
+	"matrix/cody/internal/sandbox"
 	"matrix/cody/internal/tools"
 	"matrix/cody/internal/worker"
 	"matrix/cody/internal/workspace"
@@ -73,6 +75,19 @@ type EngineOptions struct {
 	// DisableAdjudication turns the goal-vs-outcome LLM verdict off (the
 	// structural gate still holds). For constrained deployments.
 	DisableAdjudication bool
+	// Preview wiring (req 7): a configured Railway sandbox client plus the
+	// router-facing coordinates turn "plan completed" into an on-demand preview.
+	// When Sandbox is nil (or the coordinates are empty) previews are disabled
+	// and the client shows "no preview yet". PreviewUserID is the supabase user
+	// id the router /preview proxy keys on; it MUST match the JWT subject.
+	Sandbox            sandbox.Client
+	PreviewUserID      string
+	RouterInternalURL  string
+	RouterPreviewToken string
+	PreviewPublicBase  string
+	PreviewTTL         time.Duration
+	// PreviewImage overrides the sandbox base image (default: a Node runtime).
+	PreviewImage string
 	// Logf receives diagnostics; nil discards.
 	Logf func(format string, args ...interface{})
 }
@@ -83,6 +98,10 @@ type Engine struct {
 	broker   *broker
 	trace    *traceStore
 	projects *projectRegistry
+	// preview is the on-demand sandbox preview manager (req 7); nil when
+	// previews are not configured. previewCancel stops its TTL reaper on Close.
+	preview       *preview.Manager
+	previewCancel context.CancelFunc
 
 	mu       sync.Mutex
 	sessions map[string]*session
@@ -193,6 +212,23 @@ func NewEngine(opts EngineOptions) (*Engine, error) {
 		runs:     map[string]*run{},
 	}
 	e.broker.setTap(e.recordTrace)
+
+	// Preview manager (req 7): built only when a sandbox client and the router
+	// coordinates are present. Its TTL reaper runs for the engine's lifetime.
+	if opts.Sandbox != nil && opts.PreviewUserID != "" && opts.RouterInternalURL != "" {
+		e.preview = preview.New(opts.Sandbox, e.publishToConversation, preview.Config{
+			UserID:            opts.PreviewUserID,
+			RouterInternalURL: opts.RouterInternalURL,
+			RouterToken:       opts.RouterPreviewToken,
+			PublicBase:        opts.PreviewPublicBase,
+			TTL:               opts.PreviewTTL,
+			Image:             opts.PreviewImage,
+			Logf:              opts.Logf,
+		})
+		ctx, cancel := context.WithCancel(context.Background())
+		e.previewCancel = cancel
+		go e.preview.StartReaper(ctx)
+	}
 	return e, nil
 }
 
@@ -307,6 +343,14 @@ func (e *Engine) Close() {
 		case <-r.done:
 		case <-time.After(5 * time.Second):
 		}
+	}
+	// Stop the preview reaper and tear down every live preview sandbox so a
+	// graceful shutdown never leaks Railway services.
+	if e.previewCancel != nil {
+		e.previewCancel()
+	}
+	if e.preview != nil {
+		e.preview.Close()
 	}
 }
 
@@ -560,6 +604,12 @@ func (e *Engine) drive(ctx context.Context, r *run, message string, m mode.Mode,
 			e.publish(r, "plan.completed", map[string]interface{}{
 				"done": res.Done, "failed": res.Failed,
 			})
+			// Preview is a deliverable (req 7.1): a completed plan provisions an
+			// on-demand sandbox preview in the background so the client shows a
+			// working app the moment it's ready. A failed plan is not previewed.
+			if len(res.Failed) == 0 && e.preview.Enabled() {
+				go e.preview.Provision(context.Background(), preview.Request{ConvID: r.convID, Root: r.root})
+			}
 			e.say(r, completionMessage(pol, plan, res))
 			status := "completed"
 			if len(res.Failed) > 0 {
