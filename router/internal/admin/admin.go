@@ -3,18 +3,18 @@
 
 // Package admin implements the matrix-router /admin/* endpoints used
 // by operators (and eventually the signup webhook) to provision,
-// suspend, restore, and destroy user Machines.
+// suspend, restore, and destroy user environments.
 //
 // Endpoints (all bearer-token auth via mw.Admin upstream):
 //
-//	POST   /admin/users              create-or-touch user + ensure Machine + volume
+//	POST   /admin/users              create-or-touch user + ensure environment + volume
 //	POST   /admin/users/{id}/suspend set state=suspended
 //	POST   /admin/users/{id}/restore set state=active
-//	DELETE /admin/users/{id}         destroy Machine + state=deleted
+//	DELETE /admin/users/{id}         destroy environment + state=deleted
 //	GET    /admin/users/{id}         lookup row (debug aid)
 //
-// Provisioning is synchronous in v1 (the request blocks while we POST
-// to api.machines.dev). v1 wakes < 1 user concurrently per box; if
+// Provisioning is synchronous in v1 (the request blocks while we call
+// the provider API). v1 wakes < 1 user concurrently per box; if
 // that becomes a bottleneck the provision_jobs row is already queued
 // so a background worker can take over.
 package admin
@@ -30,7 +30,7 @@ import (
 	"time"
 
 	"matrix/router/internal/db"
-	"matrix/router/internal/fly"
+	"matrix/router/internal/provision"
 )
 
 // Logf is the optional log sink used by handlers. Cmd/main.go wires
@@ -40,16 +40,15 @@ type Logf func(format string, args ...interface{})
 // Handler bundles dependencies the admin routes share.
 type Handler struct {
 	DB               *db.DB
-	Fly              *fly.Client
+	Prov             provision.Provisioner
+	Provider         string // 'fly' | 'railway' — recorded on attached rows; empty defaults to 'fly'
 	DefaultRegion    string
-	DaemonImage      string            // e.g. "registry.fly.io/matrix-daemon:dev"
-	VolumeSizeGB     int               // e.g. 5
-	MachineEnv       map[string]string // baseline env for every Machine
+	MachineEnv       map[string]string // baseline env for every environment
 	ProvisionTimeout time.Duration     // budget per provision call
 	Log              Logf
 
 	// inflight dedupes concurrent StartProvision calls per user id so a
-	// burst of first requests provisions exactly one Machine.
+	// burst of first requests provisions exactly one environment.
 	inflight sync.Map
 }
 
@@ -73,7 +72,9 @@ type CreateUserRequest struct {
 }
 
 // CreateUserResponse mirrors enough of the user row for the operator
-// to confirm provisioning landed.
+// to confirm provisioning landed. The fly_-prefixed JSON keys are kept
+// for operator-tooling compatibility; they carry the active provider's
+// environment/volume ids.
 type CreateUserResponse struct {
 	UserID       string `json:"user_id"`
 	State        string `json:"state"`
@@ -114,17 +115,18 @@ func (h *Handler) handleUsersCollection(w http.ResponseWriter, r *http.Request) 
 	writeJSON(w, status, &CreateUserResponse{
 		UserID:       user.ID,
 		State:        user.State,
-		FlyMachineID: user.FlyMachineID,
-		FlyVolumeID:  user.FlyVolumeID,
-		Region:       user.FlyRegion,
+		FlyMachineID: user.EnvID,
+		FlyVolumeID:  user.VolumeID,
+		Region:       user.Region,
 	})
 }
 
 // EnsureMachine idempotently makes sure userID has a row plus an
-// attached Fly Machine, provisioning a Volume + Machine when absent.
-// Returns the resulting user row and whether a Machine was provisioned
-// in this call. Shared by the admin POST /admin/users handler and the
-// proxy's first-request auto-provisioning path.
+// attached environment, provisioning a volume + instance via the
+// active provider when absent. Returns the resulting user row and
+// whether an environment was provisioned in this call. Shared by the
+// admin POST /admin/users handler and the proxy's first-request
+// auto-provisioning path.
 func (h *Handler) EnsureMachine(ctx context.Context, userID, email, handle, region string) (*db.User, bool, error) {
 	userID = strings.TrimSpace(userID)
 	if userID == "" {
@@ -139,12 +141,12 @@ func (h *Handler) EnsureMachine(ctx context.Context, userID, email, handle, regi
 		return nil, false, fmt.Errorf("db upsert: %w", err)
 	}
 
-	// 2. Idempotent: a Machine already attached -> return it.
+	// 2. Idempotent: an environment already attached -> return it.
 	user, err := h.DB.LookupForRoute(ctx, userID)
 	if err != nil {
 		return nil, false, fmt.Errorf("db lookup: %w", err)
 	}
-	if user.FlyMachineID != "" {
+	if user.EnvID != "" {
 		return user, false, nil
 	}
 
@@ -154,23 +156,30 @@ func (h *Handler) EnsureMachine(ctx context.Context, userID, email, handle, regi
 		return nil, false, fmt.Errorf("db queue: %w", err)
 	}
 
-	// 4. Provision Volume + Machine via the Fly Machines API.
-	vol, mach, provErr := h.provisionMachine(ctx, userID, region)
+	// 4. Provision volume + instance via the provider API. The env block
+	//    bakes in MATRIX_USER_ID + MATRIX_S3_* so the daemon's BootPull
+	//    (executor/internal/snapshot) hits the right snapshot prefix on
+	//    first boot.
+	env, provErr := h.Prov.Ensure(ctx, provision.CreateRequest{
+		UserID: userID,
+		Region: region,
+		Env:    h.instanceEnv(userID),
+	})
 	if provErr != nil {
 		_ = h.DB.FinishProvisionJob(ctx, jobID, "failed", provErr.Error(), nil)
 		_ = h.DB.SetUserState(ctx, userID, db.StateFailed)
 		return nil, false, fmt.Errorf("provision: %w", provErr)
 	}
 
-	// 5. Bind Machine + Volume to the row and flip to active.
-	if err := h.DB.AttachMachine(ctx, userID, mach.ID, vol.ID, region); err != nil {
+	// 5. Bind environment + volume to the row and flip to active.
+	if err := h.DB.AttachMachine(ctx, userID, h.Provider, env.ID, env.VolumeID, region); err != nil {
 		_ = h.DB.FinishProvisionJob(ctx, jobID, "failed", "attach: "+err.Error(), nil)
 		return nil, false, fmt.Errorf("attach: %w", err)
 	}
 
-	// 6. Mark the job done with the Fly response captured for forensics.
-	machJSON, _ := json.Marshal(map[string]any{"machine": mach, "volume": vol})
-	if err := h.DB.FinishProvisionJob(ctx, jobID, "done", "", machJSON); err != nil {
+	// 6. Mark the job done with the provider response captured for forensics.
+	envJSON, _ := json.Marshal(map[string]any{"env": env})
+	if err := h.DB.FinishProvisionJob(ctx, jobID, "done", "", envJSON); err != nil {
 		h.logf("finish job %d: %v (non-fatal)", jobID, err)
 	}
 
@@ -181,11 +190,24 @@ func (h *Handler) EnsureMachine(ctx context.Context, userID, email, handle, regi
 	return user, true, nil
 }
 
+// instanceEnv builds the per-instance environment-variable set: the
+// user identity plus the operator baseline (MachineEnv).
+func (h *Handler) instanceEnv(userID string) map[string]string {
+	env := map[string]string{
+		"MATRIX_USER_ID":  userID,
+		"MATRIX_DATA_DIR": "/data",
+	}
+	for k, v := range h.MachineEnv {
+		env[k] = v
+	}
+	return env
+}
+
 // StartProvision triggers EnsureMachine for userID out-of-band and
 // returns immediately, so the proxy can auto-provision on a first
 // authenticated request without blocking the response. Concurrent calls
 // for the same user are deduplicated via inflight, so a burst of first
-// requests provisions exactly one Machine.
+// requests provisions exactly one environment.
 func (h *Handler) StartProvision(userID, email string) {
 	if _, busy := h.inflight.LoadOrStore(userID, struct{}{}); busy {
 		return
@@ -195,10 +217,10 @@ func (h *Handler) StartProvision(userID, email string) {
 		ctx, cancel := context.WithTimeout(context.Background(), h.timeout())
 		defer cancel()
 		// Defense-in-depth invite gate (req 3.5/9.1): the out-of-band
-		// provisioning path refuses to create a Machine for a user with
-		// no redeemed invite, even if a caller forgot to pre-check. The
-		// operator override (admin POST /admin/users) calls EnsureMachine
-		// directly and is intentionally not gated here.
+		// provisioning path refuses to create an environment for a user
+		// with no redeemed invite, even if a caller forgot to pre-check.
+		// The operator override (admin POST /admin/users) calls
+		// EnsureMachine directly and is intentionally not gated here.
 		redeemed, err := h.DB.HasRedeemedInvite(ctx, userID)
 		if err != nil {
 			h.logf("auto-provision %s: invite check: %v", userID, err)
@@ -212,67 +234,6 @@ func (h *Handler) StartProvision(userID, email string) {
 			h.logf("auto-provision %s: %v", userID, err)
 		}
 	}()
-}
-
-// provisionMachine creates a new Volume + Machine in region. The
-// Machine config bakes in MATRIX_USER_ID + MATRIX_S3_* env so the
-// daemon's BootPull (executor/internal/snapshot) hits the right
-// snapshot prefix on first boot.
-func (h *Handler) provisionMachine(ctx context.Context, userID, region string) (*fly.Volume, *fly.Machine, error) {
-	if h.DaemonImage == "" {
-		return nil, nil, errors.New("admin: DaemonImage not configured (set ROUTER_DAEMON_IMAGE env)")
-	}
-	volSize := h.VolumeSizeGB
-	if volSize <= 0 {
-		volSize = 5
-	}
-
-	// Volume name must be [a-z0-9_] only and ≤30 chars per Fly API.
-	// "matrix_" prefix (7) leaves 23 chars for the user id; we map
-	// hyphens to underscores so UUIDs round-trip cleanly.
-	volName := "matrix_" + volumeSafeName(userID, 23)
-	vol, err := h.Fly.CreateVolume(ctx, &fly.CreateVolumeRequest{
-		Name:   volName,
-		Region: region,
-		SizeGB: volSize,
-	})
-	if err != nil {
-		return nil, nil, fmt.Errorf("create volume: %w", err)
-	}
-
-	env := map[string]string{
-		"MATRIX_USER_ID":  userID,
-		"MATRIX_DATA_DIR": "/data",
-	}
-	for k, v := range h.MachineEnv {
-		env[k] = v
-	}
-
-	mreq := &fly.CreateMachineRequest{
-		Name:   "matrix-" + safeName(userID, 26),
-		Region: region,
-		Config: fly.CreateMachineConfig{
-			Image: h.DaemonImage,
-			Env:   env,
-			Mounts: []fly.CreateMachineMount{
-				{Volume: vol.ID, Path: "/data"},
-			},
-			Guest: &fly.CreateMachineGuest{
-				CPUs:     1,
-				MemoryMB: 1024,
-				CPUKind:  "shared",
-			},
-			Restart: &fly.CreateMachineRestart{Policy: "on-failure"},
-		},
-	}
-	mach, err := h.Fly.CreateMachine(ctx, mreq)
-	if err != nil {
-		// Best-effort cleanup: leave the volume — it's billed but
-		// reattachable, and an operator can manually reap it via
-		// `flyctl volumes destroy`.
-		return vol, nil, fmt.Errorf("create machine: %w", err)
-	}
-	return vol, mach, nil
 }
 
 // handleUserItem dispatches /admin/users/{id}[/{action}].
@@ -343,9 +304,10 @@ func (h *Handler) deleteUser(ctx context.Context, w http.ResponseWriter, userID 
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	if u.FlyMachineID != "" {
-		if err := h.Fly.DestroyMachine(ctx, u.FlyMachineID, true); err != nil && !errors.Is(err, fly.ErrMachineNotFound) {
-			h.logf("destroy machine %s: %v (continuing)", u.FlyMachineID, err)
+	if u.EnvID != "" {
+		ref := provision.Ref{UserID: u.ID, EnvID: u.EnvID, VolumeID: u.VolumeID}
+		if err := h.Prov.Destroy(ctx, ref); err != nil && !errors.Is(err, provision.ErrNotFound) {
+			h.logf("destroy environment %s: %v (continuing)", u.EnvID, err)
 		}
 	}
 	if err := h.DB.SetUserState(ctx, userID, db.StateDeleted); err != nil {
@@ -369,54 +331,6 @@ func (h *Handler) logf(format string, args ...interface{}) {
 	if h.Log != nil {
 		h.Log(format, args...)
 	}
-}
-
-// safeName returns a DNS-safe lowercase prefix of s, max length n.
-// Used so machine names don't blow up Fly's validation. Hyphens are
-// preserved; Fly machine names accept them.
-func safeName(s string, n int) string {
-	out := make([]byte, 0, n)
-	for i := 0; i < len(s) && len(out) < n; i++ {
-		c := s[i]
-		switch {
-		case c >= 'a' && c <= 'z',
-			c >= '0' && c <= '9',
-			c == '-', c == '_':
-			out = append(out, c)
-		case c >= 'A' && c <= 'Z':
-			out = append(out, c+('a'-'A'))
-		}
-	}
-	if len(out) == 0 {
-		return "user"
-	}
-	return string(out)
-}
-
-// volumeSafeName returns a [a-z0-9_]-only prefix of s, max length n.
-// Stricter than safeName because Fly volume names reject hyphens
-// ("name only allows lowercase alphanumeric characters and underscores
-// with at most 30 characters" — observed 400 from POST /v1/apps/<app>/volumes).
-// Hyphens are mapped to underscores so UUIDs round-trip cleanly.
-func volumeSafeName(s string, n int) string {
-	out := make([]byte, 0, n)
-	for i := 0; i < len(s) && len(out) < n; i++ {
-		c := s[i]
-		switch {
-		case c >= 'a' && c <= 'z',
-			c >= '0' && c <= '9',
-			c == '_':
-			out = append(out, c)
-		case c >= 'A' && c <= 'Z':
-			out = append(out, c+('a'-'A'))
-		case c == '-':
-			out = append(out, '_')
-		}
-	}
-	if len(out) == 0 {
-		return "user"
-	}
-	return string(out)
 }
 
 // writeJSON marshals v + writes as application/json with the given status.

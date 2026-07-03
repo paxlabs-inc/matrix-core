@@ -30,10 +30,12 @@ func TestDefaultsMatchFrozenSpec(t *testing.T) {
 			t.Errorf("%s = %d, want %d", ch.name, ch.got, ch.want)
 		}
 	}
-	if c.MainModel != "accounts/fireworks/models/glm-5p2" {
+	// v8 (2026-07-02, Andrew directed): every lane pins the Z.ai-served
+	// zai-org/GLM-5.2.
+	if c.MainModel != "zai-org/GLM-5.2" {
 		t.Errorf("MainModel = %q", c.MainModel)
 	}
-	if c.CheapModel != "accounts/fireworks/models/glm-5p2" {
+	if c.CheapModel != "zai-org/GLM-5.2" {
 		t.Errorf("CheapModel = %q", c.CheapModel)
 	}
 	if len(c.NaturalAllow) == 0 || len(c.EscalateActions) == 0 {

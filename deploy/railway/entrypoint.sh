@@ -1,5 +1,20 @@
 #!/usr/bin/env bash
-# entrypoint.sh — prep the per-Machine /data layout, then start Matrix.
+# entrypoint.sh — prep the per-service /data layout, then start Matrix.
+# Railway variant of deploy/daemon/entrypoint.sh: same two run modes, same
+# volume layout, same daemon flag set. Railway-specific notes:
+#
+#   - ONE volume: Railway allows exactly one volume mount per service. It
+#     mounts at /data; /workspace stays a symlink to /data/workspace so the
+#     MCP fs/git root convention is unchanged.
+#   - Dual-stack listeners: the Railway private network is IPv6-only. Go's
+#     net.Listen on ":port" (what mcl-execute -addr and neo serve -addr do)
+#     binds dual-stack, so :: traffic is accepted without any flag changes.
+#   - Wake-on-request: Railway Serverless sleeps the service when it is
+#     network-quiet and wakes it on the first inbound packet. The router sets
+#     MATRIX_SNAPSHOT_INTERVAL=-1s so the periodic snapshot push ticker stays
+#     off (boot+shutdown snapshots only) and outbound traffic never keeps the
+#     service awake. BootPull from MinIO is retained — it is the volume-seed /
+#     Fly→Railway migration vehicle.
 #
 # Two run modes (selected by $1; the image CMD defaults to `neo`):
 #
@@ -8,18 +23,15 @@
 #           reaches via core_execute) and runs `neo serve` in the FOREGROUND
 #           on :8080 as the conversational FRONT — which reverse-proxies every
 #           non-conversational route (/healthz, /messages, /memory, /tools, …)
-#           to :8081. If EITHER process exits, the script exits so Fly's
-#           on-failure restart reboots the pair.
+#           to :8081. If EITHER process exits, the script exits so the
+#           platform's on-failure restart reboots the pair.
 #
-#   daemon  The MCL daemon ALONE on :8080 (legacy / compat). Used by the
-#           matrix-telegram sidecar (FROM this image with CMD `daemon`) and any
-#           direct daemon use. Byte-for-byte the same command as the pre-Neo
-#           image.
+#   daemon  The MCL daemon ALONE on :8080 (legacy / compat).
 #
-# Idempotent: every boot ensures the directory tree exists; on a fresh Volume
-# this creates everything; on a wake from suspend the dirs are already there.
+# Idempotent: every boot ensures the directory tree exists; on a fresh volume
+# this creates everything; on a wake from sleep the dirs are already there.
 #
-# tini (PID 1, -g) forwards signals to the whole process group, so a Fly
+# tini (PID 1, -g) forwards signals to the whole process group, so a platform
 # stop/restart cleanly terminates every child.
 
 set -euo pipefail
@@ -76,10 +88,10 @@ fi
 # 3 / 3b. Snapshot (MinIO) + paxeer-net wallet env are inherited by the MCL
 #         daemon's MCP spawns; the daemon decides pull-vs-fresh from the
 #         /data/.matrix/seeded sentinel. Required env is documented in the
-#         daemon flags below — unchanged from the pre-Neo image.
+#         daemon flags below — unchanged from the Fly image.
 
 # build_daemon_argv ADDR -> fills DAEMON_ARGV with the full daemon command.
-# Identical flag set to the pre-Neo image; only -addr is parameterised so the
+# Identical flag set to the Fly image; only -addr is parameterised so the
 # `neo` mode can place the daemon on :8081 behind the Neo front.
 build_daemon_argv() {
     local addr="$1"
@@ -175,8 +187,8 @@ case "${1:-neo}" in
         NEO_PID=$!
 
         # If EITHER process exits, tear the other down and exit non-zero so
-        # Fly's on-failure restart reboots the pair. (tini -g also forwards a
-        # Fly stop/restart signal to the whole group.)
+        # the platform's on-failure restart reboots the pair. (tini -g also
+        # forwards a platform stop/restart signal to the whole group.)
         set +e
         wait -n
         EXIT=$?

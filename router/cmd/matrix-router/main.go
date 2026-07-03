@@ -45,7 +45,9 @@ import (
 	"matrix/router/internal/fly"
 	"matrix/router/internal/jwt"
 	"matrix/router/internal/mw"
+	"matrix/router/internal/provision"
 	"matrix/router/internal/proxy"
+	"matrix/router/internal/railway"
 )
 
 // version is the build identity; overridden via -ldflags="-X main.version=...".
@@ -61,8 +63,8 @@ func main() {
 		logf("config: %v", err)
 		os.Exit(2)
 	}
-	logf("matrix-router version=%s public=%s internal=%s app=%s region=%s",
-		version, cfg.PublicAddr, cfg.InternalAddr, cfg.FlyApp, cfg.FlyRegion)
+	logf("matrix-router version=%s public=%s internal=%s provider=%s app=%s region=%s",
+		version, cfg.PublicAddr, cfg.InternalAddr, cfg.Provider, cfg.FlyApp, cfg.FlyRegion)
 
 	// 1. JWT verifier (HS256 legacy + JWKS asymmetric).
 	verifier, err := jwt.New(jwt.Options{
@@ -90,11 +92,29 @@ func main() {
 	}
 	logf("db: connected")
 
-	// 3. Fly Machines API client.
-	flycli := fly.New(cfg.FlyAPIToken, cfg.FlyApp)
+	// 3. Environment provisioner (provider-neutral seam, selected by
+	//    ROUTER_PROVIDER). Fly Machines is the default and stays fully
+	//    intact; railway targets the consolidated one-project Railway
+	//    deployment (wake-on-request, private networking).
+	daemonImage := os.Getenv("ROUTER_DAEMON_IMAGE")
+	var prov provision.Provisioner
+	switch cfg.Provider {
+	case config.ProviderRailway:
+		prov = &railway.Provisioner{
+			Client: railway.New(cfg.RailwayAPIToken, cfg.RailwayProjectID, cfg.RailwayEnvironmentID),
+			Image:  daemonImage,
+		}
+	default:
+		prov = &fly.Provisioner{
+			Client:        fly.New(cfg.FlyAPIToken, cfg.FlyApp),
+			Image:         daemonImage,
+			VolumeSizeGB:  5,
+			ProbeInterval: cfg.ProbeInterval,
+		}
+	}
 
 	// 4. Reverse-proxy handler (JWT-protected via mw.JWT).
-	proxyH := proxy.New(pool, flycli, cfg.DaemonPort, cfg.WakeTimeout, cfg.ProbeInterval, logf)
+	proxyH := proxy.New(pool, prov, cfg.DaemonPort, cfg.WakeTimeout, cfg.ProbeInterval, logf)
 	// Post-wake daemon HTTP-readiness deadline: Fly state=started only
 	// means the VM is up; the daemon still pulls its snapshot + inits git
 	// before binding its port. Without this wait the first post-wake
@@ -102,13 +122,12 @@ func main() {
 	proxyH.ReadyTimeout = cfg.DaemonReadyTimeout
 
 	// 5. Admin handler (admin-token-protected). Daemon image must be
-	//    Fly-registry-pushable; passing via env keeps it operator-set.
+	//    provider-registry-pushable; passing via env keeps it operator-set.
 	adminH := &admin.Handler{
 		DB:               pool,
-		Fly:              flycli,
+		Prov:             prov,
+		Provider:         cfg.Provider,
 		DefaultRegion:    cfg.FlyRegion,
-		DaemonImage:      os.Getenv("ROUTER_DAEMON_IMAGE"),
-		VolumeSizeGB:     5,
 		ProvisionTimeout: 90 * time.Second,
 		MachineEnv: map[string]string{
 			"MATRIX_S3_ENDPOINT": cfg.S3Endpoint,
@@ -254,15 +273,32 @@ func main() {
 			// token paxc errors at call time (boot-safe — it is not a server).
 			"PAXC_API":   envOr("PAXC_API", "https://cloud.hyperpaxeer.com"),
 			"PAXC_TOKEN": os.Getenv("PAXC_TOKEN"),
+			// SearXNG metasearch (tools/searxng/searxng.mjs stdio bridge ->
+			// the shared searxng service). Boot-safe when unset: the bridge
+			// starts and searx_* calls return a structured "not configured"
+			// result. MATRIX_SEARXNG_TOKEN is an optional bearer.
+			"MATRIX_SEARXNG_URL":   os.Getenv("MATRIX_SEARXNG_URL"),
+			"MATRIX_SEARXNG_TOKEN": os.Getenv("MATRIX_SEARXNG_TOKEN"),
 		},
 		Log: logf,
+	}
+	// Wake-on-request providers sleep on OUTBOUND inactivity: the
+	// daemon's periodic snapshot push (executor/internal/snapshot, 5m
+	// default) is outbound traffic and would hold every user service
+	// awake forever. Disable the ticker on Railway (BootPull + shutdown
+	// push remain — the volume is the durable state, the snapshot is the
+	// migration/seed vehicle). Fly keeps the periodic push: its billing
+	// stops on suspend regardless, and the 5m cadence is the recovery
+	// story for volume loss there.
+	if cfg.Provider == config.ProviderRailway {
+		adminH.MachineEnv["MATRIX_SNAPSHOT_INTERVAL"] = envOr("MATRIX_SNAPSHOT_INTERVAL", "-1s")
 	}
 
 	// Wire router-side auto-provisioning: the proxy hands an
 	// authenticated-but-unprovisioned user to the admin provisioner on
-	// first request. Gated on DaemonImage so a router without
+	// first request. Gated on the daemon image so a router without
 	// provisioning configured keeps returning 404.
-	if adminH.DaemonImage != "" {
+	if daemonImage != "" {
 		proxyH.Provision = adminH
 	}
 
@@ -284,7 +320,7 @@ func main() {
 	})
 	// Beta-launch user endpoints (JWT-authed, router-local — not proxied).
 	betaH := &beta.Handler{DB: pool, Log: logf}
-	if adminH.DaemonImage != "" {
+	if daemonImage != "" {
 		betaH.Provision = adminH
 	}
 	betaMux := http.NewServeMux()

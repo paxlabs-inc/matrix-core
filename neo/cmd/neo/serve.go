@@ -100,7 +100,7 @@ func runServe(args []string) {
 	// --- models ---
 	main, err := newClient(cfg.MainModel, 0.4, 4096, true, cfg)
 	if err != nil {
-		fatal("cannot start main model %q: %v\n      set BASETEN_API_KEY (or MATRIX_GATEWAY_URL + MATRIX_GATEWAY_TOKEN) and retry.", cfg.MainModel, err)
+		fatal("cannot start main model %q: %v\n      set ZAI_API_KEY (or MATRIX_GATEWAY_URL + MATRIX_GATEWAY_TOKEN) and retry.", cfg.MainModel, err)
 	}
 	cheap, err := newClient(cfg.CheapModel, 0.2, 1024, false, cfg)
 	if err != nil {

@@ -29,17 +29,18 @@ import (
 // reads at request time. State is one of the closed enum values
 // {provisioning, active, suspended, deleted, failed}.
 type User struct {
-	ID           string
-	Email        string
-	State        string
-	FlyMachineID string
-	FlyVolumeID  string
-	FlyRegion    string
-	S3AccessKey  string
-	DailyBudget  int64
-	CreatedAt    time.Time
-	UpdatedAt    time.Time
-	LastSeenAt   *time.Time
+	ID          string
+	Email       string
+	State       string
+	Provider    string // 'fly' | 'railway' — which provisioner owns the environment
+	EnvID       string // provider environment id (fly machine id / railway service id)
+	VolumeID    string
+	Region      string
+	S3AccessKey string
+	DailyBudget int64
+	CreatedAt   time.Time
+	UpdatedAt   time.Time
+	LastSeenAt  *time.Time
 }
 
 // User states. Keep aligned with the closed enum in schema.sql line 18.
@@ -108,14 +109,15 @@ func (d *DB) LookupForRoute(ctx context.Context, supabaseUserID string) (*User, 
 		   SET last_seen_at = now()
 		 WHERE id = $1
 		   AND state IN ('active','provisioning')
-		RETURNING id, email, state, COALESCE(fly_machine_id,''), COALESCE(fly_volume_id,''),
+		RETURNING id, email, state, COALESCE(provider,'fly'),
+		          COALESCE(env_id, fly_machine_id, ''), COALESCE(env_volume_id, fly_volume_id, ''),
 		          COALESCE(fly_region,''), COALESCE(s3_access_key,''), daily_token_budget,
 		          created_at, updated_at, last_seen_at
 	`
 	var u User
 	err := d.pool.QueryRow(ctx, q, supabaseUserID).Scan(
-		&u.ID, &u.Email, &u.State,
-		&u.FlyMachineID, &u.FlyVolumeID, &u.FlyRegion, &u.S3AccessKey,
+		&u.ID, &u.Email, &u.State, &u.Provider,
+		&u.EnvID, &u.VolumeID, &u.Region, &u.S3AccessKey,
 		&u.DailyBudget, &u.CreatedAt, &u.UpdatedAt, &u.LastSeenAt,
 	)
 	if err != nil {
@@ -146,20 +148,29 @@ func (d *DB) CreateOrTouchUser(ctx context.Context, supabaseUserID, email, handl
 	return created, nil
 }
 
-// AttachMachine binds a fly machine + volume + region to a user and
-// transitions the user state to active. Returns ErrUserNotFound if
-// the user row vanished between provision-create and attach.
-func (d *DB) AttachMachine(ctx context.Context, supabaseUserID, machineID, volumeID, region string) error {
+// AttachMachine binds an environment + volume + region to a user and
+// transitions the user state to active. The environment id is stored
+// provider-neutrally (env_id / env_volume_id); the legacy fly_ columns
+// are kept in sync for fly rows so pre-migration tooling keeps
+// working. Returns ErrUserNotFound if the user row vanished between
+// provision-create and attach.
+func (d *DB) AttachMachine(ctx context.Context, supabaseUserID, provider, envID, volumeID, region string) error {
+	if provider == "" {
+		provider = "fly"
+	}
 	const q = `
 		UPDATE users
-		   SET fly_machine_id = $2,
-		       fly_volume_id  = $3,
-		       fly_region     = $4,
+		   SET provider       = $2,
+		       env_id         = $3,
+		       env_volume_id  = $4,
+		       fly_machine_id = CASE WHEN $2 = 'fly' THEN $3 ELSE fly_machine_id END,
+		       fly_volume_id  = CASE WHEN $2 = 'fly' THEN $4 ELSE fly_volume_id END,
+		       fly_region     = $5,
 		       state          = 'active',
 		       updated_at     = now()
 		 WHERE id = $1
 	`
-	tag, err := d.pool.Exec(ctx, q, supabaseUserID, machineID, volumeID, region)
+	tag, err := d.pool.Exec(ctx, q, supabaseUserID, provider, envID, volumeID, region)
 	if err != nil {
 		return fmt.Errorf("db: attach machine %s: %w", supabaseUserID, err)
 	}

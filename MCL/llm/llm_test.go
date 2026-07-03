@@ -21,10 +21,11 @@ func TestDetectProvider(t *testing.T) {
 	}{
 		{"accounts/fireworks/models/deepseek-v4-flash", ProviderFireworks, false},
 		{"accounts/fireworks/models/deepseek-v4-pro", ProviderFireworks, false},
-		// The bare "<vendor>/<model>" shape now resolves to Baseten, the
-		// primary chat provider (e.g. "zai-org/GLM-5.2"). Together is only
+		// zai-org/* (GLM) resolves to Z.ai's own API; the remaining bare
+		// "<vendor>/<model>" shape resolves to Baseten. Together is only
 		// reachable via explicit Config.Provider + ProviderSet.
-		{"zai-org/GLM-5.2", ProviderBaseten, false},
+		{"zai-org/GLM-5.2", ProviderZai, false},
+		{"zai-org/GLM-5", ProviderZai, false},
 		{"deepseek-ai/DeepSeek-V4-Flash", ProviderBaseten, false},
 		{"openai/gpt-oss-120b", ProviderBaseten, false},
 		{"Qwen/Qwen3.5-9B-FP8", ProviderBaseten, false},
@@ -45,6 +46,22 @@ func TestDetectProvider(t *testing.T) {
 		}
 		if got != tt.want {
 			t.Errorf("DetectProvider(%q) = %v, want %v", tt.model, got, tt.want)
+		}
+	}
+}
+
+func TestZaiNativeModel(t *testing.T) {
+	tests := []struct {
+		in, want string
+	}{
+		{"zai-org/GLM-5.2", "glm-5.2"},
+		{"zai-org/GLM-5-Turbo", "glm-5-turbo"},
+		{"deepseek-ai/DeepSeek-V4-Flash", "deepseek-ai/DeepSeek-V4-Flash"},
+		{"accounts/fireworks/models/gpt-oss-120b", "accounts/fireworks/models/gpt-oss-120b"},
+	}
+	for _, tt := range tests {
+		if got := ZaiNativeModel(tt.in); got != tt.want {
+			t.Errorf("ZaiNativeModel(%q) = %q, want %q", tt.in, got, tt.want)
 		}
 	}
 }

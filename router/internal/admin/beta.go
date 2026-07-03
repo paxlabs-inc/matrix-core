@@ -84,10 +84,10 @@ func (h *Handler) createInvite(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeJSON(w, http.StatusCreated, map[string]any{
-		"code":             code,
-		"max_redemptions":  req.MaxRedemptions,
-		"expires_at":       req.ExpiresAt,
-		"created_by":       createdBy,
+		"code":            code,
+		"max_redemptions": req.MaxRedemptions,
+		"expires_at":      req.ExpiresAt,
+		"created_by":      createdBy,
 	})
 }
 

@@ -46,6 +46,7 @@ story = "As the operator, I want slept environments to wake on inbound traffic, 
 ac_1 = "WHEN a request arrives for a slept environment, THE router proxy SHALL forward it as the wake signal and absorb cold-start latency via the existing daemon-readiness probing, within the configured wake budget."
 ac_2 = "THE chronos /internal/wake path SHALL wake the environment and deliver the timer-triggered turn on Railway semantics."
 ac_3 = "WHILE the environment is waking, THE router SHALL respond with the same retry semantics the client already handles (the provisioning/loading path), not a hard failure."
+ac_4 = "THE environment SHALL be outbound-quiet when idle so Railway's outbound-inactivity sleep detection engages: the periodic snapshot push ticker SHALL be disabled on Railway (boot pull retained as the volume-seed/migration vehicle; the persistent volume is the durable state), and no daemon component SHALL emit periodic outbound traffic while idle."
 
 [req.4]
 title = "Cody orchestrator — Plans, Specs, Delegates; never writes code"
@@ -137,6 +138,14 @@ ac_2 = "THE surface SHALL follow the durable-trace + live-SSE reducer pattern so
 ac_3 = "THE surface SHALL show the RESULT, not the protocol (no orchestrator/worker/sheet jargon in consumer-facing copy), with the explanation register following the active mode."
 ac_4 = "UI house rules SHALL hold: separation by background-color contrast only (never border strokes for depth); no emojis, purple gradients, or glow effects."
 
+[req.16]
+title = "Control-plane co-location — one Railway project/environment"
+story = "As the operator, I want the control plane and shared tool services in the same Railway project/environment as the per-user services, so that the router reaches user environments over the private network and the prod box + Fly footprint retire completely."
+ac_1 = "THE router, gateway, chronos, Postgres, and MinIO SHALL run as services in the SAME Railway project/environment as the per-user services (Railway private networking is scoped to one project+environment)."
+ac_2 = "ONLY the router SHALL carry a public domain; gateway, chronos, Postgres, and MinIO SHALL be private-only (reachable solely via <service>.railway.internal), and the router's internal listener (/admin, /internal/wake) SHALL never be publicly exposed."
+ac_3 = "THE shared tool services (browser, tachyon, uwac, deus) SHALL move into the same environment, joining the already-deployed searxng/gotenberg/stalwart; daemon-visible URLs SHALL flip from Fly .internal to .railway.internal via the existing MachineEnv env overrides."
+ac_4 = "AUTH SHALL be the boundary on the shared private network: constant-time bearers on admin/wake/gateway, strong Postgres auth, and per-user scoped MinIO keys — since user daemons share the private network with the control plane."
+
 [req.15]
 title = "Real verification — no fakes"
 story = "As the owner, I want every pillar proven against real code paths, so that Cody ships genuinely working."
@@ -162,7 +171,7 @@ status  = "pending"
 
 [task.1.1]
 title  = "Extract the Provisioner interface; Fly conforms unchanged"
-status = "pending"
+status = "done"
 wave   = 9
 do_1   = "Define the provider-neutral Provisioner interface in the router (ensure/create, status, wake, destroy; environment + volume) and re-point admin.StartProvision, proxy.EnsureStarted/wake.go, and the chronos wake path at the interface"
 do_2   = "Make router/internal/fly the first conforming implementation with behavior unchanged and its existing tests green"
@@ -170,7 +179,7 @@ reqs   = ["1.1", "1.2", "1.4"]
 
 [task.1.2]
 title  = "Railway provider implementation"
-status = "pending"
+status = "done"
 wave   = 10
 do_1   = "Implement router/internal/railway against Railway's public API: per-user service + volume + deployment lifecycle conforming to Provisioner; config-selected provider (fly | railway) with Railway credentials in router config"
 do_2   = "Plumb provision status (provision_jobs, GET /provision/status) from Railway deployment readiness so onboarding gating works unchanged"
@@ -179,18 +188,29 @@ requires = ["1.1"]
 
 [task.1.3]
 title  = "Ubuntu 24.04 dev-environment image"
-status = "pending"
+status = "done"
 wave   = 10
 do_1   = "Author the Railway environment image: Ubuntu 24.04 carrying the full daemon stack (MCL daemon, Neo, MCP bridges, later codyd) plus baked toolchains (git, build-essential, Node+pnpm, Go, Python+uv, Rust); volume mounts /data + /workspace with /workspace remaining the fs/git/exec MCP root"
+do_2   = "Volume seeding: BootPull from MinIO stays as the Fly->Railway migration vehicle (new volume seeds from the user's latest.tar.zst on first boot); the persistent volume is the durable state thereafter"
 reqs   = ["2.1", "2.2", "2.3", "2.4"]
 requires = ["1.1"]
 
 [task.1.4]
-title  = "Wake-on-request semantics"
-status = "pending"
+title  = "Wake-on-request semantics + outbound-quiet idle"
+status = "done"
+wave   = 12
+do_1   = "Invert the proxy wake flow for Railway: forward-as-wake with the existing daemon-readiness probing absorbing cold start (and the possible first-request 502) within the wake budget; retry semantics the client already handles while waking; chronos /internal/wake delivers timer turns on Railway semantics; Railway Provisioner wake is a no-op (Serverless wakes on private-network traffic)"
+do_2   = "Outbound-quiet idle so Serverless sleep engages: disable the periodic snapshot push ticker on Railway (snapshot PushInterval < 0, already supported); audit the daemon stack for other idle outbound emitters (bridges lazy-dial, chronos wakes are inbound, Neo is event-driven) and eliminate any found"
+reqs   = ["3.1", "3.2", "3.3", "3.4"]
+requires = ["1.2", "1.3", "1.5"]
+
+[task.1.5]
+title  = "Control-plane + shared-services migration into the one Railway environment"
+status = "in_progress"
 wave   = 11
-do_1   = "Invert the proxy wake flow for Railway: forward-as-wake with the existing daemon-readiness probing absorbing cold start within the wake budget; retry semantics the client already handles while waking; chronos /internal/wake delivers timer turns on Railway semantics"
-reqs   = ["3.1", "3.2", "3.3"]
+do_1   = "Move the prod-box control plane into the same Railway project/environment as the per-user services: router (public custom domain + private :8088 internal listener), gateway/chronos private-only, Postgres (managed) and MinIO (service + volume) private-only; retire the nginx front door (Railway edge terminates TLS)"
+do_2   = "Move the shared tool services (browser, tachyon, uwac, deus) into the same environment beside searxng/gotenberg/stalwart; flip daemon-visible URLs from Fly .internal to .railway.internal via the existing MachineEnv env overrides (config, not code); harden auth as the sole private-network boundary (constant-time bearers, strong Postgres auth, per-user scoped MinIO keys)"
+reqs   = ["16.1", "16.2", "16.3", "16.4"]
 requires = ["1.2", "1.3"]
 
 [task.2]
@@ -346,8 +366,8 @@ status  = "pending"
 
 [task.8.1]
 title  = "Provisioner conformance + wake-on-request (real fixtures)"
-status = "pending"
-wave   = 12
+status = "done"
+wave   = 13
 do_1   = "Railway provider conformance against recorded API fixtures via httptest (mirroring fly_test.go) with Fly's existing tests green; proxy integration test proving the first forwarded request to a slept-service simulation succeeds within the wake budget"
 property  = "Property 1: provisioning is provider-neutral and wake is request-driven"
 validates = "Requirements 1.2, 1.3, 3.1, 15.1, 15.2"

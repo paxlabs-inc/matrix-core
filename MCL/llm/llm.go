@@ -42,7 +42,8 @@ const (
 	ProviderTogether  Provider = iota // api.together.xyz
 	ProviderFireworks                 // api.fireworks.ai
 	ProviderOpencode                  // opencode.ai/zen (Session 34 / Forge)
-	ProviderBaseten                   // inference.baseten.co (primary chat provider)
+	ProviderBaseten                   // inference.baseten.co (fallback chat provider)
+	ProviderZai                       // api.z.ai (GLM vendor API — primary chat provider)
 )
 
 func (p Provider) String() string {
@@ -55,6 +56,8 @@ func (p Provider) String() string {
 		return "opencode"
 	case ProviderBaseten:
 		return "baseten"
+	case ProviderZai:
+		return "zai"
 	}
 	return "unknown"
 }
@@ -141,13 +144,16 @@ type Config struct {
 	MaxTokens int
 
 	// EnableThinking opts this client into extended reasoning for models
-	// where it is off by default (Baseten serves GLM/Kimi with thinking
-	// OPT-IN). When true and the model supports the toggle, the client sends
-	// chat_template_args.enable_thinking so the server splits chain-of-thought
-	// into the separate reasoning_content channel instead of leaking it into
-	// visible content. Off by default; set only for roles that benefit from
-	// reasoning (the conversational loop, the Cassandra adjudicator) and never
-	// for token-tight mechanical roles (compaction/consolidation).
+	// where the toggle matters. For Z.ai-served GLM (zai-org/*) the client
+	// pins the `thinking` request block to enabled/disabled from this flag
+	// (Z.ai defaults thinking ON, so false is explicitly sent as disabled);
+	// Baseten-served Kimi (moonshotai/*) keeps the legacy opt-in via
+	// chat_template_args.enable_thinking. Either way the server splits
+	// chain-of-thought into the separate reasoning_content channel instead
+	// of leaking it into visible content. Off by default; set only for roles
+	// that benefit from reasoning (the conversational loop, the Cassandra
+	// adjudicator) and never for token-tight mechanical roles
+	// (compaction/consolidation).
 	EnableThinking bool
 
 	// Timeout for HTTP requests. Default 90s.
@@ -632,6 +638,21 @@ func (c *Client) buildRequest(messages []interpreter.Message, grammar string) (*
 		Temperature: c.cfg.Temperature,
 		MaxTokens:   c.cfg.MaxTokens,
 	}
+	if IsZaiModel(c.cfg.Model) {
+		// Direct hop to api.z.ai must carry Z.ai's native model code; via
+		// the gateway the fleet id stays (whitelist + metering key on it)
+		// and the gateway rewrites the last hop.
+		if c.cfg.GatewayURL == "" {
+			req.Model = ZaiNativeModel(c.cfg.Model)
+		}
+		// Z.ai defaults thinking ON ("auto"); Baseten served GLM with
+		// thinking OFF unless chat_template_args opted in. Pin the toggle
+		// explicitly so the provider switch preserves each role's posture:
+		// reasoning only where EnableThinking was set, and token-tight
+		// mechanical slots (compiler/classify) keep their full MaxTokens
+		// for the payload.
+		req.Thinking = &chatThinking{Type: thinkingType(c.cfg.EnableThinking)}
+	}
 
 	if c.cfg.Seed != 0 {
 		seed := c.cfg.Seed
@@ -765,22 +786,48 @@ func (c *Client) applyGrammar(req *chatRequest, grammarID string) error {
 //
 //	"accounts/fireworks/models/<X>"                 → Fireworks
 //	"claude-*" / "gpt-5*" / opencode bare-model id  → Opencode (sess#34)
-//	"<vendor>/<model>"                              → Baseten (primary chat provider)
+//	"zai-org/<model>"                               → Z.ai (GLM vendor API — primary chat provider)
+//	"<vendor>/<model>"                              → Baseten (fallback chat provider)
 //
-// The generic "<vendor>/<model>" shape resolves to Baseten, the primary chat
-// provider (e.g. "zai-org/GLM-5.2"). Together remains reachable but only when
-// selected explicitly via Config.Provider + ProviderSet (it is the gateway
-// alt-path, never auto-detected from a bare model id anymore).
+// GLM models ("zai-org/*", e.g. "zai-org/GLM-5.2") route to Z.ai's own API
+// (api.z.ai), replacing the Baseten-served path; the fleet keeps the
+// "zai-org/<model>" id (rate card, whitelists, env pins) and the wire layer
+// maps it to Z.ai's native id ("glm-5.2") at send time — the bare "glm-*"
+// shape would collide with the opencode bare-model detection above. The
+// remaining generic "<vendor>/<model>" shape resolves to Baseten. Together
+// remains reachable but only when selected explicitly via Config.Provider +
+// ProviderSet (it is the gateway alt-path, never auto-detected from a bare
+// model id anymore).
 func DetectProvider(model string) (Provider, error) {
 	switch {
 	case strings.HasPrefix(model, "accounts/fireworks/"):
 		return ProviderFireworks, nil
 	case isOpencodeModelID(model):
 		return ProviderOpencode, nil
+	case IsZaiModel(model):
+		return ProviderZai, nil
 	case strings.Contains(model, "/"):
 		return ProviderBaseten, nil
 	}
 	return 0, fmt.Errorf("llm: cannot detect provider for model %q (expected '<vendor>/<model>', 'accounts/fireworks/models/<X>', or an opencode bare model id like 'claude-opus-4-7' / 'gpt-5.5')", model)
+}
+
+// IsZaiModel reports whether the fleet model id is a Z.ai-served GLM model
+// ("zai-org/<model>").
+func IsZaiModel(model string) bool {
+	return strings.HasPrefix(strings.ToLower(model), "zai-org/")
+}
+
+// ZaiNativeModel maps the fleet's "zai-org/<Model>" id to Z.ai's native
+// model code (lowercased, vendor prefix stripped): "zai-org/GLM-5.2" →
+// "glm-5.2". Non-Z.ai ids pass through unchanged. The fleet id stays on the
+// gateway wire (whitelist + metering + ledger replay key on it); only the
+// hop that actually hits api.z.ai carries the native code.
+func ZaiNativeModel(model string) string {
+	if !IsZaiModel(model) {
+		return model
+	}
+	return strings.ToLower(model[len("zai-org/"):])
 }
 
 // isOpencodeModelID returns true for the bare model ids served by
@@ -834,9 +881,15 @@ func defaultEndpoint(p Provider) string {
 		return "https://opencode.ai/zen/v1/chat/completions"
 	case ProviderBaseten:
 		return "https://inference.baseten.co/v1/chat/completions"
+	case ProviderZai:
+		return ZaiChatEndpoint
 	}
 	return ""
 }
+
+// ZaiChatEndpoint is Z.ai's OpenAI-compatible chat-completions endpoint
+// (note the /paas/v4 path — not /v1).
+const ZaiChatEndpoint = "https://api.z.ai/api/paas/v4/chat/completions"
 
 func envKey(p Provider) (string, error) {
 	var name string
@@ -849,6 +902,8 @@ func envKey(p Provider) (string, error) {
 		name = "OPENCODE_API_KEY"
 	case ProviderBaseten:
 		name = "BASETEN_API_KEY"
+	case ProviderZai:
+		name = "ZAI_API_KEY"
 	default:
 		return "", fmt.Errorf("llm: unknown provider %d", p)
 	}
@@ -890,6 +945,24 @@ type chatRequest struct {
 	// (*Client).Stream; unset by Decode (omitempty preserves wire
 	// shape parity with pre-P3 Decode requests for replay tests).
 	Stream bool `json:"stream,omitempty"`
+	// Thinking is Z.ai's chain-of-thought toggle; set ONLY for zai-org/*
+	// models (omitempty keeps every other provider's wire shape
+	// byte-identical to pre-Z.ai requests).
+	Thinking *chatThinking `json:"thinking,omitempty"`
+}
+
+// chatThinking is Z.ai's `thinking` request block ({"type":
+// "enabled"|"disabled"}).
+type chatThinking struct {
+	Type string `json:"type"`
+}
+
+// thinkingType maps the EnableThinking flag to Z.ai's enum.
+func thinkingType(enabled bool) string {
+	if enabled {
+		return "enabled"
+	}
+	return "disabled"
 }
 
 type responseFormat struct {

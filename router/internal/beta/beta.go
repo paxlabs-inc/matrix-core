@@ -28,8 +28,8 @@ import (
 
 // Handler bundles dependencies for the beta user routes.
 type Handler struct {
-	DB       *db.DB
-	Log      func(string, ...interface{})
+	DB        *db.DB
+	Log       func(string, ...interface{})
 	Provision proxy.Provisioner // optional: triggers early Fly provisioning on invite redeem
 }
 
@@ -135,11 +135,11 @@ func (h *Handler) getConsent(w http.ResponseWriter, r *http.Request, sub string)
 	}
 	if c == nil {
 		writeJSON(w, http.StatusOK, map[string]any{
-			"user_id":          sub,
-			"training_opt_in":  false,
-			"policy_version":   "",
-			"decided_at":       nil,
-			"has_consented":    false,
+			"user_id":         sub,
+			"training_opt_in": false,
+			"policy_version":  "",
+			"decided_at":      nil,
+			"has_consented":   false,
 		})
 		return
 	}
@@ -298,8 +298,8 @@ func (h *Handler) handleProvisionStatus(w http.ResponseWriter, r *http.Request) 
 	}
 
 	writeJSON(w, http.StatusOK, map[string]any{
-		"state":    state,
-		"user_id":  sub,
+		"state":   state,
+		"user_id": sub,
 	})
 }
 

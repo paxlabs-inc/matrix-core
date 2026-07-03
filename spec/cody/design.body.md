@@ -64,9 +64,38 @@ Two load-bearing ideas:
 
 ## Environment migration (Fly → Railway) — final phase
 
-Built LAST (waves 9-12): the Cody engine is developed and verified first on the
+Built LAST (waves 9-13): the Cody engine is developed and verified first on the
 existing Fly environment (codyd deploys wherever the daemon runs), then the
 environment moves to Railway once the agent is proven.
+
+### Topology (locked 2026-07-03): one project, one environment, everything inside
+
+Railway private networking is scoped to a single project + environment, so the
+router can only reach per-user daemons privately if it lives beside them. That
+forces (and we embrace) full consolidation — the prod box and the Fly footprint
+both retire:
+
+- **router** — the only service with a public domain (Railway edge terminates
+  TLS; nginx front door retires). Its `:8088` internal listener (`/admin`,
+  `/internal/wake`) is private-by-construction: Railway exposes one public
+  port; the private network reaches any port.
+- **gateway, chronos** — private-only services. `MATRIX_GATEWAY_URL` and
+  `MATRIX_CHRONOS_URL` flip from public nginx routes to
+  `http://<service>.railway.internal:<port>` — a strict security improvement.
+- **Postgres** (managed) and **MinIO** (service + volume) — private-only,
+  shared by router + gateway as today.
+- **Shared tool services** — browser, tachyon, uwac, deus move in beside the
+  already-deployed searxng/gotenberg/stalwart; their Fly `.internal` URLs
+  become `.railway.internal`. All of these are `envOr`-overridable in the
+  router's `MachineEnv`, so the flip is deployment config, not code.
+- **Per-user services** — Serverless enabled, persistent volume each.
+
+Accepted tradeoff: Railway has no intra-environment network policies, so user
+daemons (which run arbitrary user code) share the private network with the
+control plane. Auth is the boundary: constant-time bearers on admin/wake/
+gateway, strong Postgres auth, per-user scoped MinIO keys. (Gateway token +
+S3 creds already live inside every user env today; the genuinely new
+reachability is Postgres and the router admin port.)
 
 ### Provisioner abstraction
 
@@ -87,15 +116,30 @@ project/environment/service/volume/deployment). Config selects the provider
 per deployment (`ROUTER_PROVIDER=fly|railway`); Fly stays intact as the
 fallback until cutover is proven.
 
-### Wake semantics (wake-on-request)
+### Wake semantics (wake-on-request, platform-managed)
 
-Fly has an explicit start API; Railway wakes a slept service on inbound
-traffic. The router's flow inverts: instead of "start, poll, then forward",
-the proxy forwards (the request itself is the wake) and the existing
-`waitDaemonReady` probe absorbs cold-start latency. Chronos `/internal/wake`
-becomes an HTTP poke at the service. The provision-status flow
-(`provision_jobs`, `GET /provision/status`) plumbs into Railway deployment
-status so the onboarding readiness gate keeps working.
+Railway Serverless (née App-Sleeping) manages the whole lifecycle: a service
+sleeps after 10 minutes without *outbound* packets and wakes on the first
+inbound traffic — public **or private-network** (confirmed in Railway's docs).
+So where Fly needed `EnsureStarted` (explicit start API + state polling), the
+Railway provider's `Wake` is a no-op: the proxy just dials the private address
+and the request itself is the wake. The existing `waitDaemonReady` probe
+absorbs cold boot, including the documented possible first-request 502 and the
+rare re-deploy tail ("slept services … may require a rebuild to re-live").
+Chronos `/internal/wake` becomes the same private dial. The provision-status
+flow (`provision_jobs`, `GET /provision/status`) plumbs into Railway
+deployment status so the onboarding readiness gate keeps working.
+
+**Outbound-quiet idle** is the one new engine requirement: sleep detection is
+outbound-based, so any periodic outbound traffic keeps the service awake
+forever and kills scale-to-zero. The daemon's 5-minute snapshot push ticker
+(`executor/internal/snapshot`, `DefaultPushInterval`) is exactly that — on
+Railway it is disabled (`PushInterval < 0`, already supported). `BootPull`
+stays as the Fly→Railway migration vehicle: a fresh Railway volume seeds
+itself from the user's `latest.tar.zst` in MinIO on first boot; thereafter the
+persistent volume is the durable state. The rest of the stack is already
+idle-quiet by design: MCP bridges dial lazily, chronos wakes arrive inbound
+via the router, Neo is event-driven.
 
 ### The environment image
 

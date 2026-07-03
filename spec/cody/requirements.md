@@ -36,6 +36,7 @@ Cody is a specialized coding agent serving both engineers and vibe coders, produ
 1. WHEN a request arrives for a slept environment, THE router proxy SHALL forward it as the wake signal and absorb cold-start latency via the existing daemon-readiness probing, within the configured wake budget.
 2. THE chronos /internal/wake path SHALL wake the environment and deliver the timer-triggered turn on Railway semantics.
 3. WHILE the environment is waking, THE router SHALL respond with the same retry semantics the client already handles (the provisioning/loading path), not a hard failure.
+4. THE environment SHALL be outbound-quiet when idle so Railway's outbound-inactivity sleep detection engages: the periodic snapshot push ticker SHALL be disabled on Railway (boot pull retained as the volume-seed/migration vehicle; the persistent volume is the durable state), and no daemon component SHALL emit periodic outbound traffic while idle.
 
 ## Requirement 4: Cody orchestrator — Plans, Specs, Delegates; never writes code
 
@@ -175,4 +176,15 @@ Cody is a specialized coding agent serving both engineers and vibe coders, produ
 7. DURABILITY SHALL be proven: killing codyd mid-plan and restarting resumes from cortex checkpoints at the correct next task.
 8. MODES SHALL be proven: the same seeded task under Prototype vs Architect exhibits the policy differences while both hold the constitution.
 9. NO test in this feature SHALL substitute a stub/mock/fake for a real code path or type to manufacture a pass.
+
+## Requirement 16: Control-plane co-location — one Railway project/environment
+
+**User Story:** As the operator, I want the control plane and shared tool services in the same Railway project/environment as the per-user services, so that the router reaches user environments over the private network and the prod box + Fly footprint retire completely.
+
+### Acceptance Criteria
+
+1. THE router, gateway, chronos, Postgres, and MinIO SHALL run as services in the SAME Railway project/environment as the per-user services (Railway private networking is scoped to one project+environment).
+2. ONLY the router SHALL carry a public domain; gateway, chronos, Postgres, and MinIO SHALL be private-only (reachable solely via <service>.railway.internal), and the router's internal listener (/admin, /internal/wake) SHALL never be publicly exposed.
+3. THE shared tool services (browser, tachyon, uwac, deus) SHALL move into the same environment, joining the already-deployed searxng/gotenberg/stalwart; daemon-visible URLs SHALL flip from Fly .internal to .railway.internal via the existing MachineEnv env overrides.
+4. AUTH SHALL be the boundary on the shared private network: constant-time bearers on admin/wake/gateway, strong Postgres auth, and per-user scoped MinIO keys — since user daemons share the private network with the control plane.
 

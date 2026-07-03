@@ -13,10 +13,18 @@
 //	ROUTER_ADDR             public listen addr (e.g. :443)
 //	ROUTER_INTERNAL_ADDR    private listen addr for admin (e.g. :8088)
 //	SUPABASE_URL            project URL; JWKS at /auth/v1/.well-known/jwks.json
-//	FLY_API_TOKEN           bearer token for api.machines.dev
-//	FLY_APP_NAME            e.g. matrix-daemon
-//	FLY_REGION              default region for new Machines (e.g. fra)
 //	DATABASE_URL            postgres://matrix:...@127.0.0.1:5432/matrix
+//
+// Provider selection (ROUTER_PROVIDER, default fly):
+//
+//	fly (default) requires:
+//	  FLY_API_TOKEN         bearer token for api.machines.dev
+//	  FLY_APP_NAME          e.g. matrix-daemon
+//	  FLY_REGION            default region for new Machines (e.g. fra)
+//	railway requires:
+//	  RAILWAY_API_TOKEN     bearer token for backboard.railway.com/graphql/v2
+//	  RAILWAY_PROJECT_ID    the ONE project hosting the whole deployment
+//	  RAILWAY_ENVIRONMENT_ID the ONE environment (private networking scope)
 //
 // Optional but recommended during the Supabase JWT migration:
 //
@@ -66,9 +74,18 @@ type Config struct {
 	// non-empty during the overlap window.
 	SupabaseLegacyJWTSecret string
 
+	// Provider selects the environment provisioner: ProviderFly
+	// (default) or ProviderRailway. Fly stays intact as the fallback;
+	// cutover is per-deployment config, never code.
+	Provider string
+
 	FlyAPIToken string
 	FlyApp      string
 	FlyRegion   string
+
+	RailwayAPIToken      string
+	RailwayProjectID     string
+	RailwayEnvironmentID string
 
 	DatabaseURL string
 
@@ -86,6 +103,12 @@ type Config struct {
 	// deliver a timer-triggered chat turn. Empty disables /internal/wake.
 	WakeToken string
 }
+
+// Provider values for Config.Provider (ROUTER_PROVIDER).
+const (
+	ProviderFly     = "fly"
+	ProviderRailway = "railway"
+)
 
 // Defaults — applied when an env value is unset or empty.
 const (
@@ -105,9 +128,13 @@ func Load() (*Config, error) {
 		AdminToken:              os.Getenv("ROUTER_ADMIN_TOKEN"),
 		SupabaseURL:             os.Getenv("SUPABASE_URL"),
 		SupabaseLegacyJWTSecret: os.Getenv("SUPABASE_JWT_SECRET"),
+		Provider:                getOrDefault("ROUTER_PROVIDER", ProviderFly),
 		FlyAPIToken:             os.Getenv("FLY_API_TOKEN"),
 		FlyApp:                  os.Getenv("FLY_APP_NAME"),
 		FlyRegion:               os.Getenv("FLY_REGION"),
+		RailwayAPIToken:         os.Getenv("RAILWAY_API_TOKEN"),
+		RailwayProjectID:        os.Getenv("RAILWAY_PROJECT_ID"),
+		RailwayEnvironmentID:    os.Getenv("RAILWAY_ENVIRONMENT_ID"),
 		DatabaseURL:             os.Getenv("DATABASE_URL"),
 		S3Endpoint:              os.Getenv("S3_ENDPOINT"),
 		S3Bucket:                os.Getenv("S3_BUCKET"),
@@ -139,11 +166,26 @@ func Load() (*Config, error) {
 	if c.SupabaseURL == "" {
 		missing = append(missing, "SUPABASE_URL")
 	}
-	if c.FlyAPIToken == "" {
-		missing = append(missing, "FLY_API_TOKEN")
-	}
-	if c.FlyApp == "" {
-		missing = append(missing, "FLY_APP_NAME")
+	switch c.Provider {
+	case ProviderFly:
+		if c.FlyAPIToken == "" {
+			missing = append(missing, "FLY_API_TOKEN")
+		}
+		if c.FlyApp == "" {
+			missing = append(missing, "FLY_APP_NAME")
+		}
+	case ProviderRailway:
+		if c.RailwayAPIToken == "" {
+			missing = append(missing, "RAILWAY_API_TOKEN")
+		}
+		if c.RailwayProjectID == "" {
+			missing = append(missing, "RAILWAY_PROJECT_ID")
+		}
+		if c.RailwayEnvironmentID == "" {
+			missing = append(missing, "RAILWAY_ENVIRONMENT_ID")
+		}
+	default:
+		return nil, fmt.Errorf("config: ROUTER_PROVIDER must be %q or %q, got %q", ProviderFly, ProviderRailway, c.Provider)
 	}
 	if c.DatabaseURL == "" {
 		missing = append(missing, "DATABASE_URL")

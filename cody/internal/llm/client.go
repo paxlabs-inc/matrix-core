@@ -147,8 +147,16 @@ func (c *Client) Model() string { return c.model }
 // schemas) and returns the model's single assistant turn, which may contain
 // tool_calls the caller must execute and feed back as tool-role messages.
 func (c *Client) Chat(ctx context.Context, req ChatRequest) (*ChatResult, error) {
+	wireModel := c.model
+	if c.gatewayURL == "" && c.provider == mcllm.ProviderZai {
+		// Direct hop to api.z.ai must carry Z.ai's native model code
+		// ("zai-org/GLM-5.2" → "glm-5.2"); on the gateway path the fleet id
+		// stays (whitelist + metering key on it) and the gateway rewrites
+		// the upstream hop.
+		wireModel = mcllm.ZaiNativeModel(c.model)
+	}
 	wire := chatRequestWire{
-		Model:       c.model,
+		Model:       wireModel,
 		Messages:    toWireMessages(req.Messages),
 		Temperature: c.temperature,
 		MaxTokens:   c.maxTokens,
@@ -166,7 +174,13 @@ func (c *Client) Chat(ctx context.Context, req ChatRequest) (*ChatResult, error)
 	if c.gatewayURL == "" {
 		wire.StreamOptions = &streamOptions{IncludeUsage: true}
 	}
-	if c.enableThinking {
+	// GLM (zai-org/*, served by Z.ai) takes the native `thinking` block and
+	// defaults it ON — pin it explicitly from the per-client flag so
+	// token-tight roles keep reasoning off. Kimi (moonshotai/*, Baseten)
+	// keeps the legacy opt-in chat_template_args.
+	if zt := zaiThinking(c.model, c.enableThinking); zt != nil {
+		wire.Thinking = zt
+	} else if c.enableThinking {
 		if args := enableThinkingArgs(c.model); args != nil {
 			wire.ChatTemplateArgs = args
 		}
@@ -507,6 +521,8 @@ func defaultChatEndpoint(p mcllm.Provider) string {
 		return mcllm.OpencodeChatEndpoint
 	case mcllm.ProviderBaseten:
 		return "https://inference.baseten.co/v1/chat/completions"
+	case mcllm.ProviderZai:
+		return mcllm.ZaiChatEndpoint
 	}
 	return ""
 }
@@ -522,6 +538,8 @@ func envKey(p mcllm.Provider) (string, error) {
 		name = "OPENCODE_API_KEY"
 	case mcllm.ProviderBaseten:
 		name = "BASETEN_API_KEY"
+	case mcllm.ProviderZai:
+		name = "ZAI_API_KEY"
 	default:
 		return "", fmt.Errorf("neo/llm: unknown provider %d", p)
 	}
@@ -539,18 +557,32 @@ func truncate(s string, n int) string {
 	return s[:n] + "..."
 }
 
+// zaiThinking returns the Z.ai `thinking` block for GLM (zai-org/*) models,
+// nil for everything else. Z.ai defaults thinking ON ("the model will
+// automatically determine whether to think"), the inverse of the old
+// Baseten-served posture — so the toggle is pinned EXPLICITLY both ways:
+// enabled splits chain-of-thought into the separate reasoning_content
+// channel (which aggregateStreamReader routes to the thinking channel),
+// disabled keeps token-tight mechanical roles from spending their small
+// max_tokens on reasoning.
+func zaiThinking(model string, enabled bool) *thinkingWire {
+	if !strings.HasPrefix(strings.ToLower(model), "zai-org/") {
+		return nil
+	}
+	if enabled {
+		return &thinkingWire{Type: "enabled"}
+	}
+	return &thinkingWire{Type: "disabled"}
+}
+
 // enableThinkingArgs returns the chat_template_args that turn reasoning ON for
-// providers/models where it is OPT-IN. Baseten serves GLM (zai-org/*) and Kimi
-// (moonshotai/*) with thinking OFF by default, while DeepSeek-V4-Pro and
-// gpt-oss default it on. With thinking off a reasoning model emits its
-// chain-of-thought as visible `content` instead of the separate
-// `reasoning_content` channel — leaking internal monologue into the chat.
-// enable_thinking makes the server (glm45 reasoning parser) split reasoning
-// into reasoning_content, which aggregateStreamReader routes to the thinking
-// channel. Returns nil for models that reason by default (never sent).
+// Baseten-served models where it is OPT-IN: Kimi (moonshotai/*) emits its
+// chain-of-thought as visible `content` unless enable_thinking makes the
+// server split it into the separate reasoning_content channel. GLM moved to
+// Z.ai's native `thinking` block (see zaiThinking). Returns nil for models
+// that reason by default (never sent).
 func enableThinkingArgs(model string) map[string]any {
-	m := strings.ToLower(model)
-	if strings.HasPrefix(m, "zai-org/") || strings.HasPrefix(m, "moonshotai/") {
+	if strings.HasPrefix(strings.ToLower(model), "moonshotai/") {
 		return map[string]any{"enable_thinking": true}
 	}
 	return nil
@@ -569,6 +601,13 @@ type chatRequestWire struct {
 	Stream           bool           `json:"stream,omitempty"`
 	StreamOptions    *streamOptions `json:"stream_options,omitempty"`
 	ChatTemplateArgs map[string]any `json:"chat_template_args,omitempty"`
+	Thinking         *thinkingWire  `json:"thinking,omitempty"`
+}
+
+// thinkingWire is Z.ai's `thinking` request block
+// ({"type":"enabled"|"disabled"}); sent only for zai-org/* models.
+type thinkingWire struct {
+	Type string `json:"type"`
 }
 
 // streamOptions asks the provider to emit a final usage chunk on the SSE

@@ -1,5 +1,34 @@
 name: docker
 
+# Build + push the fleet images to GHCR on every push to main, then tell
+# Railway to redeploy the control-plane services that got a new image.
+#
+# Images (all tagged <short-sha> + latest on main):
+#   matrix-daemon          deploy/daemon/Dockerfile   per-user daemon (Fly)
+#   matrix-daemon-railway  deploy/railway/Dockerfile  per-user daemon (Railway,
+#                                                     Ubuntu 24.04 + dev toolchains)
+#   matrix-gateway         deploy/gateway/Dockerfile  metered LLM proxy
+#   matrix-router          deploy/router/Dockerfile   front door / provisioner
+#   matrix-chronos         deploy/chronos/Dockerfile  scheduler / wake plane
+#
+# Only images whose inputs changed are rebuilt (the `changes` job computes a
+# dynamic matrix); workflow_dispatch force-builds everything. Docker layer
+# caching is per-image via the GitHub Actions cache backend.
+#
+# Railway auto-update: the control-plane services (router/gateway/chronos)
+# run from the :latest GHCR tag; after a successful push the `redeploy` job
+# calls Railway's serviceInstanceRedeploy per rebuilt service so they pull
+# the new image immediately. Per-user daemon services are deliberately NOT
+# mass-redeployed here — new provisions pick the image up via
+# ROUTER_DAEMON_IMAGE, and existing user environments are rolled by the
+# operator (staged), never by CI.
+#
+# Required repo config for the redeploy job (skipped gracefully when absent):
+#   secret RAILWAY_API_TOKEN          project-scoped API token
+#   vars   RAILWAY_ENVIRONMENT_ID     the one Railway environment
+#   vars   RAILWAY_ROUTER_SERVICE_ID / RAILWAY_GATEWAY_SERVICE_ID /
+#          RAILWAY_CHRONOS_SERVICE_ID
+
 on:
   push:
     branches: [main]
@@ -7,22 +36,30 @@ on:
       - "cortex/**"
       - "MCL/**"
       - "bridge/**"
+      - "construct/**"
       - "executor/**"
+      - "neo/**"
+      - "cassandra/**"
       - "gateway/**"
       - "router/**"
+      - "chronos/**"
       - "skills/**"
       - "agents/**"
-      - "tools/paxeer/**"
+      - "tools/**"
       - "deploy/daemon/**"
+      - "deploy/railway/**"
       - "deploy/gateway/**"
       - "deploy/router/**"
+      - "deploy/chronos/**"
       - ".github/workflows/docker.yml"
   pull_request:
     branches: [main]
     paths:
       - "deploy/daemon/**"
+      - "deploy/railway/**"
       - "deploy/gateway/**"
       - "deploy/router/**"
+      - "deploy/chronos/**"
       - ".github/workflows/docker.yml"
   workflow_dispatch:
     inputs:
@@ -45,23 +82,108 @@ env:
   REGISTRY: ghcr.io
 
 jobs:
+  changes:
+    name: detect changed images
+    runs-on: ubuntu-latest
+    outputs:
+      include: ${{ steps.matrix.outputs.include }}
+      daemon: ${{ steps.decide.outputs.daemon }}
+      railway: ${{ steps.decide.outputs.railway }}
+      gateway: ${{ steps.decide.outputs.gateway }}
+      router: ${{ steps.decide.outputs.router }}
+      chronos: ${{ steps.decide.outputs.chronos }}
+    steps:
+      - uses: actions/checkout@v4
+
+      # daemon-core = every tree the per-user daemon image COPYs (both
+      # variants build the same binaries + bake the same skills/agents/tools).
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            daemon-core: &daemon-core
+              - "cortex/**"
+              - "MCL/**"
+              - "bridge/**"
+              - "construct/**"
+              - "executor/**"
+              - "neo/**"
+              - "cassandra/**"
+              - "skills/**"
+              - "agents/**"
+              - "tools/**"
+              - ".github/workflows/docker.yml"
+            daemon:
+              - *daemon-core
+              - "deploy/daemon/**"
+            railway:
+              - *daemon-core
+              - "deploy/railway/**"
+            gateway:
+              - "gateway/**"
+              - "deploy/gateway/**"
+              - ".github/workflows/docker.yml"
+            router:
+              - "router/**"
+              - "deploy/router/**"
+              - ".github/workflows/docker.yml"
+            chronos:
+              - "chronos/**"
+              - "deploy/chronos/**"
+              - ".github/workflows/docker.yml"
+
+      # workflow_dispatch builds everything; push/PR builds what changed.
+      - name: decide images
+        id: decide
+        env:
+          FORCE: ${{ github.event_name == 'workflow_dispatch' }}
+          DAEMON: ${{ steps.filter.outputs.daemon }}
+          RAILWAY: ${{ steps.filter.outputs.railway }}
+          GATEWAY: ${{ steps.filter.outputs.gateway }}
+          ROUTER: ${{ steps.filter.outputs.router }}
+          CHRONOS: ${{ steps.filter.outputs.chronos }}
+        run: |
+          for key in daemon railway gateway router chronos; do
+            var="$(echo "$key" | tr '[:lower:]' '[:upper:]')"
+            val="${!var}"
+            if [[ "$FORCE" == "true" || "$val" == "true" ]]; then
+              echo "$key=true" >> "$GITHUB_OUTPUT"
+            else
+              echo "$key=false" >> "$GITHUB_OUTPUT"
+            fi
+          done
+
+      - name: build matrix
+        id: matrix
+        env:
+          DAEMON: ${{ steps.decide.outputs.daemon }}
+          RAILWAY: ${{ steps.decide.outputs.railway }}
+          GATEWAY: ${{ steps.decide.outputs.gateway }}
+          ROUTER: ${{ steps.decide.outputs.router }}
+          CHRONOS: ${{ steps.decide.outputs.chronos }}
+        run: |
+          include='[]'
+          add() { include="$(jq -c --arg i "$1" --arg d "$2" '. + [{image:$i, dockerfile:$d}]' <<<"$include")"; }
+          [[ "$DAEMON"  == "true" ]] && add matrix-daemon         deploy/daemon/Dockerfile
+          [[ "$RAILWAY" == "true" ]] && add matrix-daemon-railway deploy/railway/Dockerfile
+          [[ "$GATEWAY" == "true" ]] && add matrix-gateway        deploy/gateway/Dockerfile
+          [[ "$ROUTER"  == "true" ]] && add matrix-router         deploy/router/Dockerfile
+          [[ "$CHRONOS" == "true" ]] && add matrix-chronos        deploy/chronos/Dockerfile
+          echo "include=$include" >> "$GITHUB_OUTPUT"
+          echo "building: $include"
+
   build:
     name: build ${{ matrix.image }}
+    needs: changes
+    if: needs.changes.outputs.include != '[]'
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - image: matrix-daemon
-            dockerfile: deploy/daemon/Dockerfile
-          - image: matrix-gateway
-            dockerfile: deploy/gateway/Dockerfile
-          - image: matrix-router
-            dockerfile: deploy/router/Dockerfile
+        include: ${{ fromJSON(needs.changes.outputs.include) }}
     steps:
       - uses: actions/checkout@v4
 
-      - uses: docker/setup-qemu-action@v3
       - uses: docker/setup-buildx-action@v3
 
       - name: registry login
@@ -107,4 +229,55 @@ jobs:
             echo "${{ steps.meta.outputs.tags }}"
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
-           
+
+  redeploy:
+    name: railway redeploy
+    needs: [changes, build]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.build.result == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - name: redeploy updated control-plane services
+        env:
+          RAILWAY_API_TOKEN: ${{ secrets.RAILWAY_API_TOKEN }}
+          RAILWAY_ENVIRONMENT_ID: ${{ vars.RAILWAY_ENVIRONMENT_ID }}
+          ROUTER_CHANGED: ${{ needs.changes.outputs.router }}
+          GATEWAY_CHANGED: ${{ needs.changes.outputs.gateway }}
+          CHRONOS_CHANGED: ${{ needs.changes.outputs.chronos }}
+          RAILWAY_ROUTER_SERVICE_ID: ${{ vars.RAILWAY_ROUTER_SERVICE_ID }}
+          RAILWAY_GATEWAY_SERVICE_ID: ${{ vars.RAILWAY_GATEWAY_SERVICE_ID }}
+          RAILWAY_CHRONOS_SERVICE_ID: ${{ vars.RAILWAY_CHRONOS_SERVICE_ID }}
+        run: |
+          if [[ -z "$RAILWAY_API_TOKEN" || -z "$RAILWAY_ENVIRONMENT_ID" ]]; then
+            echo "::notice::Railway credentials not configured; skipping redeploy"
+            exit 0
+          fi
+          fail=0
+          redeploy() {
+            local name="$1" changed="$2" service_id="$3"
+            if [[ "$changed" != "true" ]]; then
+              echo "$name: image unchanged, skipping"
+              return 0
+            fi
+            if [[ -z "$service_id" ]]; then
+              echo "::warning::$name changed but its RAILWAY_*_SERVICE_ID var is unset; skipping"
+              return 0
+            fi
+            local body resp
+            body="$(jq -cn --arg env "$RAILWAY_ENVIRONMENT_ID" --arg svc "$service_id" \
+              '{query: "mutation Redeploy($environmentId: String!, $serviceId: String!) { serviceInstanceRedeploy(environmentId: $environmentId, serviceId: $serviceId) }",
+                variables: {environmentId: $env, serviceId: $svc}}')"
+            resp="$(curl -fsS https://backboard.railway.com/graphql/v2 \
+              -H "Authorization: Bearer $RAILWAY_API_TOKEN" \
+              -H "Content-Type: application/json" \
+              -d "$body")" || { echo "::error::$name: redeploy request failed"; fail=1; return 0; }
+            if jq -e '.errors | length > 0' <<<"$resp" >/dev/null 2>&1; then
+              echo "::error::$name: $(jq -r '.errors[0].message' <<<"$resp")"
+              fail=1
+            else
+              echo "$name: redeploy triggered"
+            fi
+          }
+          redeploy matrix-router  "$ROUTER_CHANGED"  "$RAILWAY_ROUTER_SERVICE_ID"
+          redeploy matrix-gateway "$GATEWAY_CHANGED" "$RAILWAY_GATEWAY_SERVICE_ID"
+          redeploy matrix-chronos "$CHRONOS_CHANGED" "$RAILWAY_CHRONOS_SERVICE_ID"
+          exit "$fail"

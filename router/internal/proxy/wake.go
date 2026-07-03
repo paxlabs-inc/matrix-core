@@ -4,12 +4,12 @@
 // wake.go — POST /internal/wake: the scheduler's wake door.
 //
 // chronosd (the centralized agent scheduler) calls this when a durable alarm
-// fires. The router is the ONLY component that knows how to reach a user's Fly
-// Machine, so Chronos delegates the hard part here and reuses the exact wake
-// path the public proxy already trusts:
+// fires. The router is the ONLY component that knows how to reach a user's
+// environment, so Chronos delegates the hard part here and reuses the exact
+// wake path the public proxy already trusts:
 //
-//	resolve user_id → DB lookup (state-checked) → fly.EnsureStarted →
-//	waitDaemonReady → POST the daemon's /chat over Fly 6PN
+//	resolve user_id → DB lookup (state-checked) → Provisioner.Wake →
+//	waitDaemonReady → POST the daemon's /chat over the private network
 //
 // Auth is a shared wake token (constant-time bearer), enforced by the caller
 // (main wraps this handler). The endpoint lives on the router's INTERNAL
@@ -29,7 +29,7 @@ import (
 	"time"
 
 	"matrix/router/internal/db"
-	"matrix/router/internal/fly"
+	"matrix/router/internal/provision"
 )
 
 // WakeRequest is the POST /internal/wake body sent by chronosd.
@@ -43,9 +43,9 @@ type WakeRequest struct {
 }
 
 // WakeHandler returns the HTTP handler for POST /internal/wake. It resolves the
-// target user's Machine, wakes it, waits for the daemon to bind, and forwards a
-// chat turn to the daemon's /chat endpoint. The caller is responsible for
-// authenticating the request (wake token).
+// target user's environment, wakes it, waits for the daemon to bind, and
+// forwards a chat turn to the daemon's /chat endpoint. The caller is
+// responsible for authenticating the request (wake token).
 func (h *Handler) WakeHandler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
@@ -95,39 +95,40 @@ func (h *Handler) WakeHandler() http.HandlerFunc {
 			http.Error(w, "user in unexpected state: "+user.State, http.StatusInternalServerError)
 			return
 		}
-		if user.FlyMachineID == "" {
+		if user.EnvID == "" {
 			http.Error(w, "user has no machine attached", http.StatusServiceUnavailable)
 			return
 		}
 
-		// Wake the Machine (idempotent if already started).
+		// Wake the environment (idempotent if already running; a no-op on
+		// wake-on-request providers where the /chat POST below is the wake).
 		wakeCtx, cancel := context.WithTimeout(r.Context(), h.WakeTimeout)
-		machine, err := h.Fly.EnsureStarted(wakeCtx, user.FlyMachineID, h.ProbeInterval)
+		env, err := h.Prov.Wake(wakeCtx, provision.Ref{UserID: user.ID, EnvID: user.EnvID, VolumeID: user.VolumeID})
 		cancel()
 		if err != nil {
 			switch {
-			case errors.Is(err, fly.ErrMachineNotFound):
-				http.Error(w, "machine vanished from fly", http.StatusGone)
+			case errors.Is(err, provision.ErrNotFound):
+				http.Error(w, "machine vanished", http.StatusGone)
 			case errors.Is(err, context.DeadlineExceeded):
 				http.Error(w, "machine wake timed out", http.StatusGatewayTimeout)
 			default:
-				h.Logf("wake: ensure started %s: %v", user.FlyMachineID, err)
+				h.Logf("wake: ensure started %s: %v", user.EnvID, err)
 				http.Error(w, "machine not ready", http.StatusBadGateway)
 			}
 			return
 		}
 
 		// Wait for the daemon HTTP server to accept connections post-wake.
-		if err := h.waitDaemonReady(r.Context(), machine); err != nil {
-			h.Logf("wake: daemon readiness %s: %v", user.FlyMachineID, err)
+		if err := h.waitDaemonReady(r.Context(), env); err != nil {
+			h.Logf("wake: daemon readiness %s: %v", user.EnvID, err)
 			w.Header().Set("Retry-After", "3")
 			http.Error(w, "daemon waking; retry shortly", http.StatusServiceUnavailable)
 			return
 		}
 
-		status, body, err := h.deliverChat(r.Context(), machine, req)
+		status, body, err := h.deliverChat(r.Context(), env, req)
 		if err != nil {
-			h.Logf("wake: deliver chat %s: %v", user.FlyMachineID, err)
+			h.Logf("wake: deliver chat %s: %v", user.EnvID, err)
 			http.Error(w, "wake delivery failed: "+err.Error(), http.StatusBadGateway)
 			return
 		}
@@ -138,11 +139,11 @@ func (h *Handler) WakeHandler() http.HandlerFunc {
 	}
 }
 
-// deliverChat POSTs the wake turn to the daemon's /chat endpoint over 6PN,
-// mirroring the public proxy's forwarding hygiene (X-Matrix-User, no inbound
-// Authorization). Returns the daemon's status + body.
-func (h *Handler) deliverChat(ctx context.Context, machine *fly.Machine, req WakeRequest) (int, []byte, error) {
-	chatURL, err := chatURL(machine, h.DaemonPort)
+// deliverChat POSTs the wake turn to the daemon's /chat endpoint over the
+// private network, mirroring the public proxy's forwarding hygiene
+// (X-Matrix-User, no inbound Authorization). Returns the daemon's status + body.
+func (h *Handler) deliverChat(ctx context.Context, env *provision.Env, req WakeRequest) (int, []byte, error) {
+	chatURL, err := chatURL(env, h.DaemonPort)
 	if err != nil {
 		return 0, nil, err
 	}
@@ -196,10 +197,10 @@ func originOr(o string) string {
 }
 
 // chatURL composes the daemon's /chat URL using the same host-resolution rules
-// (bracketed private IPv6 or fly internal DNS fallback) as buildUpstreamURL.
-func chatURL(m *fly.Machine, port string) (string, error) {
+// (bracketed IPv6, provider port override) as buildUpstreamURL.
+func chatURL(env *provision.Env, port string) (string, error) {
 	probe := &http.Request{URL: &url.URL{Path: "/chat"}}
-	u, err := buildUpstreamURL(m, port, probe)
+	u, err := buildUpstreamURL(env.Endpoint, port, probe)
 	if err != nil {
 		return "", err
 	}

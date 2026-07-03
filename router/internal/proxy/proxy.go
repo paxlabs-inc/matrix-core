@@ -5,17 +5,19 @@
 //
 // Per request:
 //
-//  1. Resolve the user → DB lookup (fly_machine_id, fly_region, state)
+//  1. Resolve the user → DB lookup (machine/service id, region, state)
 //  2. If state != active: 503 (provisioning) / 451 (suspended) / 410 (deleted)
-//  3. Wake the Machine (fly EnsureStarted) inside a wake-deadline context
-//  4. Reverse-proxy to http://[<6PN>]:8080 (or fly internal DNS)
+//  3. Wake the environment (provision.Provisioner.Wake) inside a
+//     wake-deadline context — an explicit start+poll on Fly, a no-op on
+//     wake-on-request providers (Railway), where the forwarded request
+//     itself is the wake signal
+//  4. Reverse-proxy to http://<endpoint host>:<port> (IPv6 hosts bracketed)
 //  5. For SSE responses, set FlushInterval so each "data: " chunk hits
 //     the client without server-side buffering
 //
 // The proxy is one of two pieces of cortex-adjacent code that talks
-// across the WG mesh — the other is the snapshot package on the
-// daemon side. Both rely on Fly's 6PN routing through wg0 + DNS
-// resolver at fdaa:75:8960::3.
+// across the private network — the other is the snapshot package on
+// the daemon side.
 package proxy
 
 import (
@@ -30,19 +32,20 @@ import (
 	"time"
 
 	"matrix/router/internal/db"
-	"matrix/router/internal/fly"
+	"matrix/router/internal/provision"
 )
 
-// Provisioner triggers out-of-band provisioning of a user's Fly Machine
+// Provisioner triggers out-of-band provisioning of a user's environment
 // on their first authenticated request. Implemented by *admin.Handler
 // and wired in main; the proxy stays decoupled from the admin package
-// via this interface.
+// via this interface. (Environment lifecycle — wake/status/destroy — is
+// the separate provision.Provisioner seam.)
 type Provisioner interface {
 	StartProvision(userID, email string)
 }
 
 // Handler builds an http.Handler that routes authenticated requests
-// to the backing Fly Machine for the JWT subject.
+// to the backing environment for the JWT subject.
 //
 // The JWT verification + extraction of the supabase user id is handled
 // upstream by middleware (mw package); this handler reads the user id
@@ -51,14 +54,14 @@ type Provisioner interface {
 // misordered).
 type Handler struct {
 	DB            *db.DB
-	Fly           *fly.Client
+	Prov          provision.Provisioner
 	DaemonPort    string        // backend listen port (e.g. "8080")
-	WakeTimeout   time.Duration // Fly wake deadline
-	ProbeInterval time.Duration // poll cadence inside EnsureStarted + readiness probe
+	WakeTimeout   time.Duration // environment wake deadline
+	ProbeInterval time.Duration // poll cadence inside Wake + readiness probe
 	ReadyTimeout  time.Duration // deadline for the daemon HTTP server to accept connections post-wake
 	Logf          func(format string, args ...interface{})
 
-	// Provision, when non-nil, auto-provisions a Machine for an
+	// Provision, when non-nil, auto-provisions an environment for an
 	// authenticated user with no row yet (first-request onboarding).
 	// Nil preserves the legacy 404 "not provisioned" response.
 	Provision Provisioner
@@ -107,13 +110,13 @@ func Email(ctx context.Context) string {
 }
 
 // New returns a Handler with all required deps wired. Logf is optional.
-func New(d *db.DB, f *fly.Client, daemonPort string, wakeTimeout, probeInterval time.Duration, logf func(string, ...interface{})) *Handler {
+func New(d *db.DB, p provision.Provisioner, daemonPort string, wakeTimeout, probeInterval time.Duration, logf func(string, ...interface{})) *Handler {
 	if logf == nil {
 		logf = func(string, ...interface{}) {}
 	}
 	h := &Handler{
 		DB:            d,
-		Fly:           f,
+		Prov:          p,
 		DaemonPort:    daemonPort,
 		WakeTimeout:   wakeTimeout,
 		ProbeInterval: probeInterval,
@@ -177,7 +180,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				}
 				// First authenticated request from a new user: kick off
 				// provisioning out-of-band and ask the client to retry
-				// while the Machine comes up.
+				// while the environment comes up.
 				h.Provision.StartProvision(sub, Email(r.Context()))
 				http.Error(w, "user provisioning; retry shortly", http.StatusServiceUnavailable)
 			} else {
@@ -205,50 +208,57 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "user in unexpected state: "+user.State, http.StatusInternalServerError)
 		return
 	}
-	if user.FlyMachineID == "" {
+	if user.EnvID == "" {
 		http.Error(w, "user has no machine attached", http.StatusServiceUnavailable)
 		return
 	}
 
-	// Wake the Machine (idempotent if already started). We give the
-	// wake step its own deadline so a stuck Fly API call doesn't
-	// pollute the proxy timeout for the body.
+	h.forward(w, r, sub, provision.Ref{UserID: user.ID, EnvID: user.EnvID, VolumeID: user.VolumeID})
+}
+
+// forward is the wake-then-proxy core: wake the environment, wait for
+// the in-machine daemon to accept connections, then reverse-proxy the
+// request to it. Split from ServeHTTP so the wake path is exercisable
+// end-to-end without a Postgres row behind it.
+func (h *Handler) forward(w http.ResponseWriter, r *http.Request, sub string, ref provision.Ref) {
+	// Wake the environment (idempotent if already running). We give the
+	// wake step its own deadline so a stuck provider API call doesn't
+	// pollute the proxy timeout for the body. On wake-on-request
+	// providers Wake returns immediately and the readiness probe below
+	// absorbs the whole cold boot.
 	wakeCtx, cancel := context.WithTimeout(r.Context(), h.WakeTimeout)
-	machine, err := h.Fly.EnsureStarted(wakeCtx, user.FlyMachineID, h.ProbeInterval)
+	env, err := h.Prov.Wake(wakeCtx, ref)
 	cancel()
 	if err != nil {
 		switch {
-		case errors.Is(err, fly.ErrMachineNotFound):
-			http.Error(w, "machine vanished from fly; admin re-provision required", http.StatusGone)
-		case errors.Is(err, fly.ErrUnauthorized):
-			h.Logf("fly token rejected (refresh FLY_API_TOKEN)")
-			http.Error(w, "router misconfigured (fly token)", http.StatusInternalServerError)
+		case errors.Is(err, provision.ErrNotFound):
+			http.Error(w, "machine vanished; admin re-provision required", http.StatusGone)
+		case errors.Is(err, provision.ErrUnauthorized):
+			h.Logf("provider token rejected (refresh provider API token)")
+			http.Error(w, "router misconfigured (provider token)", http.StatusInternalServerError)
 		case errors.Is(err, context.DeadlineExceeded):
 			http.Error(w, "machine wake timed out", http.StatusGatewayTimeout)
 		default:
-			h.Logf("ensure started %s: %v", user.FlyMachineID, err)
+			h.Logf("wake %s: %v", ref.EnvID, err)
 			http.Error(w, "machine not ready", http.StatusBadGateway)
 		}
 		return
 	}
 
-	// Fly state=started only means the Firecracker VM is up — the daemon
+	// A running instance only means the VM/container is up — the daemon
 	// still runs its entrypoint (snapshot pull from MinIO, git init)
 	// before it binds the daemon port. Reverse-proxying into that gap
 	// connection-refuses and 502s the first request after every cold
 	// wake. Wait for the in-machine HTTP server to accept a connection.
-	if err := h.waitDaemonReady(r.Context(), machine); err != nil {
-		h.Logf("daemon readiness %s: %v", user.FlyMachineID, err)
+	if err := h.waitDaemonReady(r.Context(), env); err != nil {
+		h.Logf("daemon readiness %s: %v", ref.EnvID, err)
 		w.Header().Set("Retry-After", "3")
 		http.Error(w, "daemon waking; retry shortly", http.StatusServiceUnavailable)
 		return
 	}
 
-	// Build the upstream URL. Prefer the explicit private IPv6 from
-	// Fly so we don't depend on DNS resolution within the request
-	// path. Fly's internal DNS resolves <machine_id>.vm.<app>.internal,
-	// but private_ip is canonical and avoids the resolver hop.
-	upstream, err := buildUpstreamURL(machine, h.DaemonPort, r)
+	// Build the upstream URL from the provider-neutral endpoint.
+	upstream, err := buildUpstreamURL(env.Endpoint, h.DaemonPort, r)
 	if err != nil {
 		h.Logf("upstream url: %v", err)
 		http.Error(w, "router config error", http.StatusInternalServerError)
@@ -290,21 +300,22 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	h.once.ServeHTTP(w, rew)
 }
 
-// buildUpstreamURL composes http://[<6pn>]:<port><path>?<query>.
-// IPv6 hosts are bracketed per RFC 3986 §3.2.2 so the URL parser sees
-// them as authority not path.
-func buildUpstreamURL(m *fly.Machine, port string, r *http.Request) (*url.URL, error) {
-	if m == nil || m.PrivateIP == "" {
-		// Fall back to internal DNS form. This requires the box to
-		// have wg0 up + 6PN DNS resolver reachable (verified live in
-		// matrix.kvx sess#26 step 3). Format documented at
-		// https://fly.io/docs/networking/private-networking/.
-		host := fmt.Sprintf("%s.vm.%s.internal", m.ID, "matrix-daemon")
-		return urlFromHostPort(host, port, r)
+// buildUpstreamURL composes http://<host>:<port><path>?<query> from the
+// provider-neutral endpoint. IPv6 hosts are bracketed per RFC 3986
+// §3.2.2 so the URL parser sees them as authority not path; hostname
+// endpoints (<service>.railway.internal) pass through untouched. An
+// endpoint port, when set by the provider, overrides the router's
+// daemon port.
+func buildUpstreamURL(ep provision.Endpoint, port string, r *http.Request) (*url.URL, error) {
+	if ep.Host == "" {
+		return nil, errors.New("proxy: endpoint has no host")
 	}
-	host := m.PrivateIP
+	host := ep.Host
 	if strings.Contains(host, ":") {
 		host = "[" + host + "]"
+	}
+	if ep.Port != "" {
+		port = ep.Port
 	}
 	return urlFromHostPort(host, port, r)
 }
@@ -314,7 +325,7 @@ func buildUpstreamURL(m *fly.Machine, port string, r *http.Request) (*url.URL, e
 // giving up with a retryable 503. Used when Handler.ReadyTimeout is 0.
 const defaultReadyTimeout = 30 * time.Second
 
-// waitDaemonReady polls the daemon's /healthz on the woken machine
+// waitDaemonReady polls the daemon's /healthz on the woken environment
 // until its in-machine HTTP server accepts a connection, or the
 // readiness deadline elapses. ANY HTTP response (200/401/404/503)
 // proves the server is listening, so the probe is auth- and
@@ -322,7 +333,15 @@ const defaultReadyTimeout = 30 * time.Second
 // dial timeout) count as "not ready yet". An already-warm daemon
 // answers the first probe in a single round-trip, so the warm path
 // adds negligible latency.
-func (h *Handler) waitDaemonReady(ctx context.Context, machine *fly.Machine) error {
+//
+// Wake-on-request nuance: while such a platform (Railway Serverless)
+// revives a slept service, its edge can answer 502 Bad Gateway before
+// anything of ours is listening. That 502 is the platform talking,
+// not the daemon, so on wake-on-request providers it counts as "not
+// ready yet" and the probe keeps polling within the budget.
+// Explicit-start providers (Fly) keep the any-response semantics
+// unchanged.
+func (h *Handler) waitDaemonReady(ctx context.Context, env *provision.Env) error {
 	ready := h.ReadyTimeout
 	if ready <= 0 {
 		ready = defaultReadyTimeout
@@ -331,7 +350,7 @@ func (h *Handler) waitDaemonReady(ctx context.Context, machine *fly.Machine) err
 	if interval <= 0 {
 		interval = 250 * time.Millisecond
 	}
-	probeURL, err := healthzURL(machine, h.DaemonPort)
+	probeURL, err := healthzURL(env, h.DaemonPort)
 	if err != nil {
 		return err
 	}
@@ -342,6 +361,8 @@ func (h *Handler) waitDaemonReady(ctx context.Context, machine *fly.Machine) err
 	// readyCtx bounds the total wait.
 	client := &http.Client{Timeout: 3 * time.Second}
 
+	wakeOnRequest := h.Prov != nil && h.Prov.WakeOnRequest()
+
 	var lastErr error
 	for {
 		req, err := http.NewRequestWithContext(readyCtx, http.MethodGet, probeURL, http.NoBody)
@@ -351,23 +372,27 @@ func (h *Handler) waitDaemonReady(ctx context.Context, machine *fly.Machine) err
 		resp, err := client.Do(req)
 		if err == nil {
 			_ = resp.Body.Close()
-			return nil
+			if !wakeOnRequest || resp.StatusCode != http.StatusBadGateway {
+				return nil
+			}
+			lastErr = fmt.Errorf("edge answered 502 while the service revives")
+		} else {
+			lastErr = err
 		}
-		lastErr = err
 		select {
 		case <-readyCtx.Done():
-			return fmt.Errorf("daemon %s not ready within %s: %w", machine.ID, ready, lastErr)
+			return fmt.Errorf("daemon %s not ready within %s: %w", env.ID, ready, lastErr)
 		case <-time.After(interval):
 		}
 	}
 }
 
 // healthzURL composes the daemon's /healthz probe URL, reusing the
-// same host-resolution rules (bracketed private IPv6 or fly internal
-// DNS fallback) as buildUpstreamURL.
-func healthzURL(m *fly.Machine, port string) (string, error) {
+// same host-resolution rules (bracketed IPv6, provider port override)
+// as buildUpstreamURL.
+func healthzURL(env *provision.Env, port string) (string, error) {
 	probe := &http.Request{URL: &url.URL{Path: "/healthz"}}
-	u, err := buildUpstreamURL(m, port, probe)
+	u, err := buildUpstreamURL(env.Endpoint, port, probe)
 	if err != nil {
 		return "", err
 	}

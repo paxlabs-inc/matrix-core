@@ -201,8 +201,9 @@ func newClient(model string, temp float64, maxTok int, enableThinking bool, cfg 
 // newSlotClient builds a gateway-metered chat client tagged with the given
 // slot label, so spend is attributed correctly (Neo's own "neo" slot, or
 // Cassandra's dedicated "cassandra" slot for completeness audits). enableThinking
-// opts the client into extended reasoning on models where it is off by default
-// (Baseten GLM/Kimi) — set ONLY for the user-facing conversational loop (Neo).
+// opts the client into extended reasoning where the toggle matters (Z.ai GLM's
+// native thinking block; Baseten Kimi's chat_template_args opt-in) — set ONLY
+// for the user-facing conversational loop (Neo).
 // Cassandra, background sub-agents, and the token-tight cheap/consolidation
 // roles all run with thinking OFF; the core MCL pipeline manages its own.
 func newSlotClient(model string, temp float64, maxTok int, slot string, enableThinking bool, cfg config.Config) (*neollm.Client, error) {
