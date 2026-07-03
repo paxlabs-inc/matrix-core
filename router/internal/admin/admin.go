@@ -196,6 +196,10 @@ func (h *Handler) instanceEnv(userID string) map[string]string {
 	env := map[string]string{
 		"MATRIX_USER_ID":  userID,
 		"MATRIX_DATA_DIR": "/data",
+		// codyd's preview manager registers its sandbox target under this id;
+		// it MUST equal the JWT subject (== MATRIX_USER_ID) the router's
+		// /preview/{user} proxy authorizes against, or previews 403.
+		"CODY_USER_ID": userID,
 	}
 	for k, v := range h.MachineEnv {
 		env[k] = v

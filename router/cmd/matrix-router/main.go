@@ -280,6 +280,21 @@ func main() {
 			// result. MATRIX_SEARXNG_TOKEN is an optional bearer.
 			"MATRIX_SEARXNG_URL":   os.Getenv("MATRIX_SEARXNG_URL"),
 			"MATRIX_SEARXNG_TOKEN": os.Getenv("MATRIX_SEARXNG_TOKEN"),
+			// Cody preview-as-deliverable (spec/cody-client req 7). codyd in the
+			// user VM provisions a Railway sandbox on the PRIVATE network, deploys
+			// the project, and registers the sandbox's private host:port at the
+			// router's internal /internal/preview door; the public
+			// /preview/{user} proxy then reverse-proxies to it under the user's
+			// JWT. These pass the same Railway creds the router uses plus the
+			// internal door URL + token down to every codyd. Boot-safe when
+			// unset: codyd runs preview-less and the client shows "no preview yet".
+			"RAILWAY_API_TOKEN":      os.Getenv("RAILWAY_API_TOKEN"),
+			"RAILWAY_PROJECT_ID":     os.Getenv("RAILWAY_PROJECT_ID"),
+			"RAILWAY_ENVIRONMENT_ID": os.Getenv("RAILWAY_ENVIRONMENT_ID"),
+			"ROUTER_INTERNAL_URL":    envOr("ROUTER_INTERNAL_URL", "http://matrix-router.railway.internal:8088"),
+			"ROUTER_PREVIEW_TOKEN":   os.Getenv("ROUTER_PREVIEW_TOKEN"),
+			// Optional: a Node-plus base image override for preview sandboxes.
+			"CODY_PREVIEW_IMAGE": os.Getenv("CODY_PREVIEW_IMAGE"),
 		},
 		Log: logf,
 	}
