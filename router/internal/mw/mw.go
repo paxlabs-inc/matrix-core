@@ -146,7 +146,18 @@ func CORS(allowed []string, log Logf) func(http.Handler) http.Handler {
 				w.Header().Set("Access-Control-Allow-Origin", origin)
 				w.Header().Add("Vary", "Origin")
 				w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS")
-				w.Header().Set("Access-Control-Allow-Headers", "Authorization, Content-Type, X-Request-Id, Accept")
+				// Reflect exactly the headers the browser says it will send
+				// (Access-Control-Request-Headers) so we never blocklist a
+				// legitimate one — the SSE client sends Cache-Control /
+				// Last-Event-ID on top of Authorization/Content-Type/X-Request-Id.
+				// Fall back to the known static set for non-preflight requests.
+				reqHeaders := r.Header.Get("Access-Control-Request-Headers")
+				if reqHeaders != "" {
+					w.Header().Set("Access-Control-Allow-Headers", reqHeaders)
+					w.Header().Add("Vary", "Access-Control-Request-Headers")
+				} else {
+					w.Header().Set("Access-Control-Allow-Headers", "Authorization, Content-Type, X-Request-Id, Accept, Cache-Control, Last-Event-ID")
+				}
 				w.Header().Set("Access-Control-Expose-Headers", "X-Request-Id")
 				w.Header().Set("Access-Control-Max-Age", "600")
 			}
