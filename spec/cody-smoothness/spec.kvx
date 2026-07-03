@@ -1,0 +1,240 @@
+# spec.kvx — Cody Smoothness (live, conversational, persistent). SINGLE SOURCE
+# for this feature's requirements + design + tasks. Rendered to requirements.md
+# / design.md / tasks.md by spec/specgen. Do not edit the generated markdown;
+# edit this file and regenerate.
+#
+# Format: Matrix .kvx (see tachyon/internal/config/kvx.go). One key = value per
+# line; string values double-quoted; lists are ["a","b"]; # starts a comment.
+# Schema:
+#   [req.<n>]   title, story, ac_1..ac_n          (acceptance criteria, EARS)
+#   [design]    overview, include="design.body.md" (rich prose/diagrams inlined)
+#   [task.<id>] title, status, wave, reqs, requires (dotted ids: 1, 1.1, 1.2)
+
+[meta]
+feature      = "cody-smoothness"
+title        = "Cody Smoothness — live, conversational, persistent (Codex/Claude-Code/Cursor-grade, Matrix-fied)"
+status       = "in_progress"
+spec_version = "0.1.0"
+intro        = "Make Cody's workspace feel as smooth as Codex / Claude Code / Cursor — but Matrix-fied — by closing three concrete gaps found in the live surface + engine during a real testing session (2026-07-03). (1) DEAD-SILENT WORK: codyd emits NOTHING between the /chat dispatch and the first milestone while it scans the workspace, authors the Stack Decision Record (N divergent candidates hot + cold adjudication), authors the plan, and authors the Design Language Record — each several LLM calls, minutes long (cody/internal/server/engine.go drive(): the first publish is plan.created ~L531) — and the Engineer/Architect viewport renders BLANK the whole time (apps/client/components/matrix/cody/cody-workspace.tsx RunView: the 'Cody is working' fallback only shows for non-board tiers), so for ~10 minutes the user cannot tell any work is happening and never gets an acknowledgment that their prompt even landed. (2) NO COMMUNICATION FLOW: the only user->Cody inputs are steer (running only) and answer (on a gate); the chat rail textarea is disabled-dead when not running and a stopped run is a UI dead-end despite the 'say continue' copy (cody-workspace.tsx ChatRail canSteer gate), and Cody narrates nothing between milestones. (3) NOTHING PERSISTS: chat.assistant and message.complete are excluded from the durable-trace whitelist (cody/internal/server/trace.go traceWorkspaceTypes) so the conversation is LOST on reopen, and History is per-browser localStorage (apps/client/lib/cody/recent-runs.ts) with no server list endpoint, so work history is neither durable nor cross-device. The fix is three coordinated pillars: an ALWAYS-LIVE progress spine fed by new engine phase/activity + heartbeat events (never a blank viewport, including the approve->next-phase gap that today shows nothing); SMOOTH two-way communication via ONE context-aware composer (start when idle, steer while running, answer on a gate, continue a stopped/finished run) plus Cody narrating as it goes; and TOTAL PERSISTENCE of the transcript (both sides) + server-side cross-device history. All under Matrix house rules: separation by background tone only (never border strokes), no emojis/purple gradients/glow, a single Paxeer Blue accent, result-over-protocol copy. This feature COMPLEMENTS spec/cody + spec/cody-client (it never re-opens their done tasks); Cody stays signing-keyless, MCL-free, and its durable-plan determinism is untouched because every new event is a pure publish/Observer side-channel."
+
+[design]
+overview = "See the full design below: the north star (Codex/Claude-Code/Cursor smoothness, Matrix-fied), the three evidenced gaps with file+line refs, and the three pillars. Pillar 1 (always-live progress) adds run.started + run.activity engine events at every orchestration boundary plus a bounded heartbeat during long LLM phases, and a client Activity Spine that is never blank while running/awaiting (fixing the approve->blank gap via run.answered/decision.resolved -> continuing). Pillar 2 (smooth communication) is one context-aware composer state machine (idle->start, running->steer, needs_input/decision->answer, stopped/completed->continue) with Cody's questions surfaced inline in a persistent transcript. Pillar 3 (total persistence) widens the durable-trace whitelist to the full transcript (chat.assistant + a new chat.user user-turn event + milestone activity), adds a server-side GET /conversations history sourced from the durable ledgers, and points the client History at it. Plus the event-family + reducer additions, the house-rules/identity contract, the non-goals (no free-form conversational responder yet; no worker token streaming; no re-opening cody/cody-client done work; no MCL/signing path), and the no-fakes verification strategy. Authored as a rich markdown fragment (design.body.md) and inlined verbatim."
+include  = "design.body.md"
+
+# ============================== REQUIREMENTS ==============================
+
+[req.1]
+title = "Always-live progress — the run is never a blank viewport"
+story = "As a user, I want to see that Cody heard me and is working from the very first second, so that I never sit for minutes wondering whether anything is happening."
+ac_1 = "WHEN a run is dispatched, THE surface SHALL immediately acknowledge it and render a persistent activity region that is NEVER blank while the run is running or awaiting input — including the silent understand -> stack-decision -> plan -> design-decision phases that today show nothing in Engineer/Architect."
+ac_2 = "THE activity region SHALL show the current phase in plain language, a liveness indicator, and elapsed time, and SHALL advance as the engine moves between phases."
+ac_3 = "THE activity region SHALL render in EVERY mode tier with register-appropriate copy (outcome language in Prototype, technical in Engineer/Architect) and SHALL honor the UI house rules (separation by background tone only, no borders/emojis/gradients/glow, single Paxeer Blue accent)."
+ac_4 = "WHEN a decision (SDR/DLR) or a needs-input stall is resolved (approve / override / answer), THE surface SHALL immediately show a 'continuing' activity state until the next milestone and SHALL NOT revert to a blank viewport (the observed approve-then-nothing bug)."
+
+[req.2]
+title = "Engine phase/activity narration (so the spine has real data)"
+story = "As the client, I want the engine to tell me what phase it is in and that it is still alive, so that the surface reflects genuine progress instead of guessing."
+ac_1 = "codyd SHALL emit a lightweight activity event at each orchestration boundary in the run's lifecycle: run accepted/started, understanding the workspace, weighing stack options (SDR), authoring the plan, designing the interface (DLR), working on a task, verifying a task, and preparing a preview."
+ac_2 = "DURING long-running phases (SDR/plan/DLR generation and worker execution) codyd SHALL emit a periodic liveness heartbeat carrying the current phase and elapsed time, bounded and cancel-safe, so the client shows continuous progress rather than a frozen state."
+ac_3 = "ACTIVITY copy SHALL be result-oriented with no orchestrator/worker/sheet jargon on the user surface, and the register SHALL follow the run's mode."
+ac_4 = "ACTIVITY emission SHALL be a pure side-channel (broker publish / orchestrator Observer) that never alters the loop, the acceptance gate, or the determinism of the durable plan; Cody remains signing-keyless and MCL-free."
+
+[req.3]
+title = "Smooth two-way communication — one context-aware composer"
+story = "As a user, I want to talk to Cody naturally at any point — kick off, redirect, answer its question, or tell it to continue — so that working with it feels like a conversation, not a set of disabled boxes."
+ac_1 = "THE surface SHALL present ONE always-available composer whose action is context-aware: start a run when idle, steer while running, answer when the run awaits input (free text or a decision verdict), and continue a stopped/completed run — and SHALL NEVER present a dead disabled 'Run is idle' box."
+ac_2 = "CONTINUE SHALL resume the same conversation and its durable plan (reusing the conversation id) at the correct next task, honestly reflecting that a re-dispatch resumes existing work rather than starting over."
+ac_3 = "CODY'S questions (needs-input, SDR, DLR, stop-and-ask) SHALL surface inline in the conversation transcript as first-class prompts the user answers in place — not only as a separate card."
+ac_4 = "THE composer and transcript SHALL follow the UI house rules and the active mode's register."
+
+[req.4]
+title = "Total persistence — chats, transcript, and history survive everything"
+story = "As a user, I want everything Cody and I said and did to still be there when I come back — on any device — so that no context is ever lost to a closed tab or a new browser."
+ac_1 = "THE full conversation SHALL be durable: the user's turns (the initiating message, steers, answers) AND Cody's messages (chat.assistant) AND the milestone activity SHALL persist to the durable trace, closing the current gap where chat.assistant/message.complete are excluded (cody/internal/server/trace.go)."
+ac_2 = "buildRunFromTrace SHALL rebuild the transcript and the last-known activity on reopen IDENTICALLY to the live fold (durable == live) across the new event types."
+ac_3 = "HISTORY SHALL be server-side and cross-device: codyd SHALL expose GET /conversations listing the user's runs (id, title, status, mode, project, updated_at) sourced from the durable ledgers, and the client History page SHALL read it; localStorage MAY remain a fast-path cache but SHALL NOT be the source of truth."
+ac_4 = "WORKSPACES (files) and the project registry remain durable on the volume as they are today; this requirement adds conversational + history durability on top without regressing them."
+
+[req.5]
+title = "The smooth agent feel — Codex/Claude-Code/Cursor, Matrix-fied"
+story = "As a user, I want the Cody workspace to feel like a best-in-class coding agent, so that it is a joy to use and unmistakably Matrix."
+ac_1 = "THE workspace SHALL read like a modern coding-agent session: a running transcript of what Cody is doing (narrated steps), a clear working/liveness state, inline questions and answers, and a persistent history you can reopen — comparable in smoothness to Codex / Claude Code / Cursor."
+ac_2 = "THE experience SHALL be distinctly Matrix: a single Paxeer Blue accent, Inter + JetBrains Mono, separation by background-tone contrast only (no border strokes), no emojis/gradients/glow, and result-over-protocol copy."
+ac_3 = "TIERS SHALL differ ONLY in disclosure and register, never in the underlying run/transcript/activity data, consistent with spec/cody-client req 4.5."
+
+[req.6]
+title = "Real verification — no fakes"
+story = "As the owner, I want every smoothness pillar proven against real code paths, so that a green result reflects a genuinely smoother, durable Cody."
+ac_1 = "REDUCER: buildRunFromTrace SHALL equal the live fold across the new event family (run.started/run.activity, persisted chat.assistant, chat.user user-turns) including the approve -> continuing activity state — against the real reducer, no faked events."
+ac_2 = "ACTIVITY SPINE: it SHALL render a non-blank live state across every phase (understand/stack/plan/design/working/verify) and in every tier, and SHALL show 'continuing' immediately after a decision/needs-input is answered."
+ac_3 = "PERSISTENCE: a run's transcript + last activity SHALL survive a simulated reopen against the REAL trace store, and GET /conversations SHALL list the run with correct metadata from the REAL ledgers."
+ac_4 = "COMPOSER: the context-aware transitions (idle->start, running->steer, needs_input->answer, stopped/completed->continue) SHALL be asserted against the real state, and continue SHALL resume the same durable plan against the real engine resume path."
+ac_5 = "ENGINE: phase/activity + heartbeat emission SHALL be proven against the REAL drive() path (real orchestrator Observer + broker), including a heartbeat during a long simulated phase."
+ac_6 = "NO test in this feature SHALL substitute a stub/mock/fake for a real code path or type to manufacture a pass."
+
+# ================================ TASKS ==================================
+
+[tasks]
+heading = "Implementation Plan: Cody Smoothness — live, conversational, persistent"
+
+[task.1]
+section = "P1 — Engine: live phase/activity narration"
+title   = "Emit run.started + run.activity at every boundary, with heartbeats"
+status  = "pending"
+
+[task.1.1]
+title  = "Phase/activity events at each orchestration boundary"
+status = "done"
+wave   = 1
+do_1   = "Add a run.started acknowledgment and a run.activity event (fields: phase, label, detail, elapsed_ms) emitted from cody/internal/server/engine.go drive() at every boundary — accepted/understanding/stack/planning/design/working/verifying/previewing — and from the orchestrator Observer (orchestrator.go) for per-task working/verifying; result-oriented copy in the run's mode register; pure broker.publish side-channel, no loop or gate change"
+reqs   = ["2.1", "2.3", "2.4", "1.1"]
+
+[task.1.2]
+title  = "Bounded liveness heartbeat during long LLM phases"
+status = "done"
+wave   = 1
+do_1   = "Emit a periodic run.activity heartbeat (current phase + elapsed) around the long-running SDR/plan/DLR generation and worker execution, driven by a cancel-safe ticker that stops at the next boundary or on ctx cancel, so the client shows continuous progress within the phase"
+reqs   = ["2.2"]
+requires = ["1.1"]
+
+[task.2]
+section = "P2 — Engine: total persistence + server history"
+title   = "Persist the transcript + activity; add cross-device history"
+status  = "pending"
+
+[task.2.1]
+title  = "Persist the full transcript + milestone activity to the durable trace"
+status = "done"
+wave   = 1
+do_1   = "Widen cody/internal/server/trace.go traceWorkspaceTypes to persist chat.assistant, run.started, and milestone run.activity so the conversation + last activity rebuild on reopen; persist milestone activities only (heartbeats stay live-only) to keep the trace bounded under the retain cap"
+do_2   = "Emit + persist a new chat.user user-turn event for the initiating message, each steer, and each answer, so the durable transcript shows BOTH sides on reopen (steer.folded/run.answered already persist; chat.user closes the user-message gap)"
+reqs   = ["4.1", "4.2"]
+
+[task.2.2]
+title  = "Server-side conversation history endpoint"
+status = "done"
+wave   = 2
+do_1   = "Add GET /conversations to cody/internal/server returning the user's runs from the durable ledgers (id, title, status, mode, project, updated_at), newest first; add a durable Title to the ledger (first message, trimmed) so the list reads well; route + JSON shape mirror the existing codyd handlers"
+reqs   = ["4.3"]
+requires = ["2.1"]
+
+[task.2.3]
+title  = "Continue a stopped/completed run over the same conversation"
+status = "pending"
+wave   = 2
+do_1   = "Ensure /chat with an existing conversation_id resumes the durable plan (LoadPlan already does) and that a stopped/completed conversation can be re-driven ('continue'); confirm the dispatch envelope carries what the client needs to re-attach and that the resumed run re-emits current activity"
+reqs   = ["3.2"]
+requires = ["2.1"]
+
+[task.3]
+section = "P3 — Client: transport + reducer"
+title   = "Fold the new events into useCody; conversations transport"
+status  = "pending"
+
+[task.3.1]
+title  = "Fold run.started/run.activity + transcript into useCody"
+status = "pending"
+wave   = 3
+do_1   = "Extend CodyRun (hooks/api/useCody.ts) with activity {phase,label,detail,since} and an ordered transcript (user + assistant + inline question turns); fold run.started/run.activity, the now-persisted chat.assistant, and chat.user; run.answered/decision.resolved set a 'continuing' activity; keep durable == live (buildRunFromTrace == live fold)"
+reqs   = ["1.4", "4.2", "5.3"]
+requires = ["1.1", "2.1"]
+
+[task.3.2]
+title  = "Conversations history transport"
+status = "pending"
+wave   = 3
+do_1   = "Add getConversations() + types to lib/api/cody.ts over the shared apiFetch, mirroring the existing route wrappers"
+reqs   = ["4.3"]
+requires = ["2.2", "3.1"]
+
+[task.4]
+section = "P4 — Client: the smooth surface"
+title   = "Activity spine, context-aware composer, transcript, approve-flow, history"
+status  = "pending"
+
+[task.4.1]
+title  = "Always-live activity spine"
+status = "pending"
+wave   = 4
+do_1   = "A prominent activity region rendered from run.activity: plain-language phase label + liveness (existing loaders) + elapsed + the latest Cody line; NEVER blank while running/awaiting; rendered in all tiers with register copy; replaces the blank RunView states in cody-workspace.tsx; house rules hold"
+reqs   = ["1.1", "1.2", "1.3", "5.1", "5.2"]
+requires = ["3.1"]
+
+[task.4.2]
+title  = "Context-aware composer + persistent transcript"
+status = "pending"
+wave   = 4
+do_1   = "Replace the disabled-when-idle ChatRail with ONE composer whose action follows run state: idle->start (keep the spec-adoption options), running->steer, needs_input/decision->answer (approve/override/free text), stopped/completed->continue; render a persistent transcript (both sides + inline questions) that rebuilds from the durable trace"
+reqs   = ["3.1", "3.3", "3.4", "5.1"]
+requires = ["3.1"]
+
+[task.4.3]
+title  = "Approve-then-flow + inline decision answering"
+status = "pending"
+wave   = 4
+do_1   = "On answering a decision/needs-input, immediately show the 'continuing' activity (no blank gap); keep the decision cards but also allow answering inline in the transcript; wire to run.answered/decision.resolved"
+reqs   = ["1.4", "3.3"]
+requires = ["4.1", "4.2"]
+
+[task.4.4]
+title  = "Server-backed History page"
+status = "pending"
+wave   = 4
+do_1   = "Point CodyHistory at GET /conversations (cross-device), merging/falling back to the localStorage cache; opening one rebuilds the workspace from its durable trace"
+reqs   = ["4.3"]
+requires = ["3.2"]
+
+[task.5]
+section = "P5 — Verification (no fakes)"
+title   = "Prove the spine, composer, persistence, and engine emission"
+status  = "pending"
+
+[task.5.1]
+title  = "Reducer durable==live incl new events + approve->continuing"
+status = "pending"
+wave   = 5
+do_1   = "vitest: buildRunFromTrace equals the live fold across run.started/run.activity + persisted chat.assistant/chat.user, and a decision answer yields the continuing activity — real reducer, no faked emitter"
+property  = "Property 1: the run model is durable, live, and continuous across the new events"
+validates = "Requirements 1.4, 4.2, 6.1"
+requires = ["3.1"]
+
+[task.5.2]
+title  = "Activity spine non-blank across phases + tiers"
+status = "pending"
+wave   = 5
+do_1   = "vitest/RTL: the activity spine renders a non-blank live state for each phase (understand/stack/plan/design/working/verify) and in each tier, and shows 'continuing' immediately after an answer"
+property  = "Property 2: the surface is never blank while Cody is working"
+validates = "Requirements 1.1, 1.2, 1.3, 6.2"
+requires = ["4.1"]
+
+[task.5.3]
+title  = "Persistence round-trip + history list (real trace + ledgers)"
+status = "pending"
+wave   = 5
+do_1   = "Go test: a run's transcript + last activity survive a reopen against the real trace store, and GET /conversations lists the run with correct metadata from the real ledgers"
+property  = "Property 3: nothing is lost — transcript + history are durable and cross-device"
+validates = "Requirements 4.1, 4.3, 6.3"
+requires = ["2.1", "2.2"]
+
+[task.5.4]
+title  = "Composer transitions + continue resumes the plan"
+status = "pending"
+wave   = 5
+do_1   = "Assert the context-aware composer transitions (idle->start, running->steer, needs_input->answer, stopped/completed->continue) against the real state, and that continue resumes the same durable plan against the real engine resume path"
+property  = "Property 4: communication is smooth, context-aware, and resumes real work"
+validates = "Requirements 3.1, 3.2, 6.4"
+requires = ["4.2", "2.3"]
+
+[task.5.5]
+title  = "Engine phase/activity + heartbeat on the real drive path"
+status = "pending"
+wave   = 5
+do_1   = "Go test: run.started + run.activity are emitted at each boundary and a heartbeat ticks during a long simulated phase, against the real drive()/orchestrator Observer + broker — no faked publisher"
+property  = "Property 5: the engine narrates genuine progress"
+validates = "Requirements 2.1, 2.2, 6.5"
+requires = ["1.1", "1.2"]
+
+[task.6]
+title  = "Final checkpoint — Cody smoothness complete"
+status = "pending"
+note   = "All five properties green. From the first second, the /cody workspace acknowledges the prompt and shows an always-live progress spine that never goes blank — through the understand/stack/plan/design phases, per-task work, and the approve->continue gap. One context-aware composer makes talking to Cody smooth (start/steer/answer/continue) with its questions inline, and the full transcript + a server-side cross-device history persist everything so nothing is lost on reopen. The experience reads like Codex/Claude Code/Cursor but is unmistakably Matrix (single Paxeer Blue accent, background-tone separation, no borders/emojis/gradients/glow, result-over-protocol copy). Cody stays signing-keyless and MCL-free and its durable-plan determinism is untouched; spec/cody + spec/cody-client done work is not re-opened; deploy is user-driven."

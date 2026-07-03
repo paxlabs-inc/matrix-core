@@ -230,6 +230,7 @@ func (e *Engine) Answer(runID string, d directive) error {
 			return fmt.Errorf("run is not awaiting input (status %s)", r.getStatus())
 		}
 		if r.deliverAnswer(d) {
+			e.publishUserTurn(runID, "answer", d.Text, directiveDecision(d))
 			return nil
 		}
 		// needs_input but not yet parked on the channel: fall to the cold path.
@@ -244,6 +245,7 @@ func (e *Engine) Answer(runID string, d directive) error {
 	if err := e.appendDirective(convID, d); err != nil {
 		return err
 	}
+	e.publishUserTurn(runID, "answer", d.Text, directiveDecision(d))
 	_ = e.setPending(convID, nil)
 	if st, err := contract.OpenStore(e.planDir(convID)); err == nil {
 		if plan, err := orchestrator.LoadPlan(st.Root()); err == nil && plan != nil {
@@ -275,7 +277,19 @@ func (e *Engine) Steer(runID, text string) error {
 	if !ok {
 		return errRunNotFound
 	}
-	return e.appendDirective(convID, directive{Kind: "steer", Text: text, At: time.Now().UTC()})
+	if err := e.appendDirective(convID, directive{Kind: "steer", Text: text, At: time.Now().UTC()}); err != nil {
+		return err
+	}
+	e.publishUserTurn(runID, "steer", text, "")
+	return nil
+}
+
+// directiveDecision extracts a verdict decision for the chat.user event.
+func directiveDecision(d directive) string {
+	if d.Verdict != nil {
+		return d.Verdict.Decision
+	}
+	return ""
 }
 
 // convForRun resolves a run id to its conversation: the live run when present,
@@ -323,7 +337,7 @@ func (e *Engine) launch(convID string, led ledger, resume bool) *run {
 	if s.active != nil && s.active.getStatus() == "running" {
 		return s.active
 	}
-	r := &run{id: led.RunID, convID: convID, projectID: led.ProjectID, root: root, done: make(chan struct{}), status: "running"}
+	r := &run{id: led.RunID, convID: convID, projectID: led.ProjectID, root: root, done: make(chan struct{}), status: "running", started: time.Now()}
 	e.registerRun(r)
 	e.broker.ensure(r.id)
 	s.active = r

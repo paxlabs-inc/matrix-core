@@ -32,6 +32,7 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("/events/replay/", s.handleReplay)
 	mux.HandleFunc("/messages/async/", s.handlePoll)
 	mux.HandleFunc("/intents/", s.handleIntents)
+	mux.HandleFunc("/conversations", s.handleConversationList)
 	mux.HandleFunc("/conversations/", s.handleConversations)
 	mux.HandleFunc("/workspace/", s.handleWorkspace)
 	mux.HandleFunc("/projects", s.handleProjects)
@@ -218,6 +219,21 @@ func (s *Server) handleSteer(w http.ResponseWriter, r *http.Request, id string) 
 		return
 	}
 	writeJSON(w, http.StatusOK, map[string]interface{}{"steered": true})
+}
+
+// handleConversationList serves GET /conversations — the user's run history
+// from the durable ledgers, newest first (req 4.3). Server-side and
+// cross-device: the client History page reads this, not localStorage.
+func (s *Server) handleConversationList(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	list := s.engine.ListConversations()
+	if list == nil {
+		list = []conversationSummary{}
+	}
+	writeJSON(w, http.StatusOK, map[string]interface{}{"conversations": list})
 }
 
 // handleConversations serves GET /conversations/{id}/trace — the durable

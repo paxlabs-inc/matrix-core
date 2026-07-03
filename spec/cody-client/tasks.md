@@ -7,104 +7,104 @@
 ## P1 — Engine addons: decisions, steering, ingestion
 
 - [ ] 1. SDR/DLR gates, creativity split, answer/steer channels, spec adoption
-  - [ ] 1.1 Creativity split in the mode tuples
+  - [x] 1.1 Creativity split in the mode tuples
     - Split the mode tuple Creativity into DecisionCreativity (hot) + ImplementationCreativity (cold, current values) + DecisionCandidates (2-3); route SDR/DLR/plan-shape authoring through decision temperature with N divergent candidates judged, workers stay cold
     - _Requirements: 10.1, 10.2_
-  - [ ] 1.2 Answer channel + steering routes
+  - [x] 1.2 Answer channel + steering routes
     - POST /intents/{id}/answer resolving needs_input (free text or decision verdict approve/override) and POST /intents/{id}/steer folding a correction in at the next orchestrator boundary (never interrupting a live worker; re-plan remaining waves when invalidated); run.needs_input + resolution become durable trace events
     - _Requirements: 12.1, 12.2, 12.3_
-  - [ ] 1.3 SDR — gated stack decision phase
+  - [x] 1.3 SDR — gated stack decision phase
     - Greenfield detection triggers SDR authoring (requirements profile, 2-3 divergent candidates at decision temperature, rationale citing rules/stack-selection, pick) before planning in Engineer/Architect; layered gate gains the anti-default lens; wave 1 structurally unreachable until gate-accepted AND user-resolved via the answer channel; Prototype skips to the classic stack; decision.stack/decision.resolved trace events
     - _Requirements: 8.1, 8.2, 8.3, 8.4, 8.5_
-  - [ ] 1.4 DLR — gated design language phase
+  - [x] 1.4 DLR — gated design language phase
     - UI-bearing project detection triggers DLR authoring before the first UI task; deterministic banned-defaults screen (rules/web/design-quality.md + AI-tells list) + adjudication lens; every UI sheet carries the DLR constraint and the gate rejects drift; blocking approve/override in Engineer/Architect, informational non-blocking card in Prototype; decision.design/decision.resolved trace events
     - _Requirements: 9.1, 9.2, 9.3, 9.4_
-  - [ ] 1.5 Spec ingestion — adopt a document as the plan
+  - [x] 1.5 Spec ingestion — adopt a document as the plan
     - /chat accepts a spec reference (workspace path or pasted document); planner adopts it (requirements -> acceptance grounding, tasks/waves from document structure); plan.adopted ledger/trace event; resumable like any plan
     - _Requirements: 11.1, 11.2_
 
 ## P2 — Engine addons: projects, tools, undo
 
 - [ ] 2. Project registry, worker ExtraTools + evidence, snapshot routes
-  - [ ] 2.1 Project registry + project-scoped routes
+  - [x] 2.1 Project registry + project-scoped routes
     - Project registry (/data/cody/projects.json: id -> name, root /workspace/<dir>, mode, created_at); /chat, /workspace/*, ledger, spec files, snapshots scope to the project root; bare /workspace stays the default project; mode becomes a project-level setting
     - _Requirements: 2.1, 2.2, 2.3_
-  - [ ] 2.2 Worker ExtraTools + screenshot evidence
+  - [x] 2.2 Worker ExtraTools + screenshot evidence
     - Populate worker ExtraTools with browser (shared service via MATRIX_BROWSER_URL), fetch, web-search through the existing seam; UI-task sheets require a screenshot artifact in turn-in evidence and the gate rejects UI turn-ins without one
     - _Requirements: 13.1, 13.2_
-  - [ ] 2.3 Snapshot/undo over HTTP
+  - [x] 2.3 Snapshot/undo over HTTP
     - POST /workspace/snapshot (named) + GET /workspace/snapshots + POST /workspace/restore over the existing Snapshotter, project-scoped, refusing restore while a worker is alive; snapshot.created/restored trace events
     - _Requirements: 14.1_
 
 ## P3 — Preview infrastructure
 
 - [ ] 3. Sandbox client, router /preview proxy, preview lifecycle
-  - [ ] 3.1 Sandbox client (Go-native, sidecar fallback)
+  - [x] 3.1 Sandbox client (Go-native, sidecar fallback)
     - Verify the sandbox API surface against the live Railway API; extend the router's Railway GraphQL transport (or cody/internal/sandbox sibling) with sandbox create/exec/files/destroy if reachable from Go, else ship a minimal Node sidecar (localhost create/start/destroy) — identical codyd-facing seam either way
     - _Requirements: 7.4_
-  - [ ] 3.2 Router /preview/{user} authenticated proxy
+  - [x] 3.2 Router /preview/{user} authenticated proxy
     - Add /preview/{userID}/... to the router: JWT-authenticated (path user == token user), reverse-proxied to the user's registered preview target over the private network; codyd registers/deregisters targets via the internal listener; no public sandbox domains
     - _Requirements: 7.2_
-  - [ ] 3.3 Preview lifecycle in codyd
+  - [x] 3.3 Preview lifecycle in codyd
     - On plan completion or user request: provision sandbox (PRIVATE), deploy current project state, run the detected start command, health-probe, emit preview.pending/ready/failed with the proxied URL; TTL reaper (default 30m) destroys idle sandboxes + emits preview.expired; one-click re-preview; workers can request ephemeral e2e sandboxes
     - _Requirements: 7.1, 7.3, 7.5_
 
 ## P4 — Image, rules, skills
 
 - [ ] 4. codyd in the image, local data stores, toolchain, doctrine, playbooks
-  - [ ] 4.1 Image: codyd + local DBs + quality toolchain
+  - [x] 4.1 Image: codyd + local DBs + quality toolchain
     - deploy/railway builds + supervises codyd (entrypoint process, CODY_* envs, agents/cody.json); bake PostgreSQL/Redis/SQLite as exec-startable local services; bake golangci-lint, ruff, eslint, prettier, tsc, vitest, cargo-clippy; NO playwright browsers; include the sandbox client
     - _Requirements: 15.1, 15.2, 15.3, 15.4_
-  - [ ] 4.2 rules/stack-selection + skills additions
+  - [x] 4.2 rules/stack-selection + skills additions
     - Author rules/stack-selection decision tables (app class -> stack + deviation-demands-rationale) injected via the existing rules seam; add skills: Angular, React Router v7/Remix, Astro, SvelteKit playbooks, Railway-deploy, database-schema-design (if absent), toolchain-bootstrap
     - _Requirements: 16.1, 16.2_
 
 ## P5 — Client: shell + state
 
 - [ ] 5. /cody app shell, projects UI, useCody reducer
-  - [ ] 5.1 /cody route + app shell
+  - [x] 5.1 /cody route + app shell
     - apps/client /[locale]/cody route mounting CodyApp: sidebar (projects, new project, recent runs, settings, back to Matrix), top bar (project, mode chip, run status, stop), Workspace/History/Settings pages; house rules (background-contrast separation, no emojis/gradients/glow, Paxeer Blue accent); restyled Shiki code rendering
     - _Requirements: 1.1, 1.2, 1.4_
-  - [ ] 5.2 Projects UI
+  - [x] 5.2 Projects UI
     - Project creation/selection in the sidebar, mode set at creation and changeable in Settings, wired to the codyd project registry
     - _Requirements: 2.4_
-  - [ ] 5.3 useCody reducer + trace rebuild
+  - [x] 5.3 useCody reducer + trace rebuild
     - hooks/api/useCody.ts: CodyRun model + buildRunFromTrace folding the full Cody event family (plan/task/sheet/turnin + decision.*/run.needs_input/preview.*/snapshot.*/plan.adopted) identically for live SSE and trace hydration, riding the existing SSE hub/auth/retry transport
     - _Requirements: 3.1, 3.2, 3.4_
 
 ## P6 — Client: the workspace surface
 
 - [ ] 6. Run surface, decision cards, panes, tiering
-  - [ ] 6.1 Run surface: board, turn-in cards, chat rail
+  - [x] 6.1 Run surface: board, turn-in cards, chat rail
     - Workspace hero: chat/steering rail, waved task board with live status transitions, turn-in cards (changes/verification evidence/gaps/screenshots), needs-input prompt, stop; register-driven copy (outcome language in Prototype, technical in Engineer/Architect)
     - _Requirements: 3.3, 12.3, 1.5_
-  - [ ] 6.2 SDR/DLR decision cards
+  - [x] 6.2 SDR/DLR decision cards
     - Decision cards rendering decision.stack/decision.design: blocking approve/override flow in Engineer/Architect via the answer channel; plain-language design-direction card with change-the-look affordance in Prototype
     - _Requirements: 8.3, 9.4, 12.1_
-  - [ ] 6.3 Code panes: file tree, viewer, diff review
+  - [x] 6.3 Code panes: file tree, viewer, diff review
     - File tree over /workspace/tree (truncation honest), read-only Shiki viewer over /workspace/file (no-borders restyle), hunk-level diff audit pane over /workspace/diff
     - _Requirements: 5.1, 5.2, 5.3_
-  - [ ] 6.4 Terminal + spec viewer (Architect)
+  - [x] 6.4 Terminal + spec viewer (Architect)
     - Architect-only terminal pane over POST /workspace/exec (bounded command-run, exit codes + duration) and the live spec viewer rendering .cody/spec/requirements.md + tasks.md with checkbox state
     - _Requirements: 6.1, 6.2, 4.3_
-  - [ ] 6.5 Preview pane + undo
+  - [x] 6.5 Preview pane + undo
     - Preview pane rendering the proxied URL (hero viewport in Prototype), preview.pending/ready/failed/expired states + one-click re-preview; one-button undo (Prototype) and named checkpoint/restore (Engineer/Architect) over the snapshot routes
     - _Requirements: 7.6, 14.2_
-  - [ ] 6.6 Mode tiering — disclosure wiring
+  - [x] 6.6 Mode tiering — disclosure wiring
     - Tier composition per project mode: Prototype (preview hero, outcome cards, design-direction card, undo, show-me-the-code escape hatch, NO terminal/tree/diff), Engineer (+ board, diff, evidence, tree, decision cards, checkpoints), Architect (+ terminal, spec viewer, property results, full turn-in detail, git surface with user-driven commit); tiers change disclosure only, never data
     - _Requirements: 4.1, 4.2, 4.3, 4.4, 4.5_
-  - [ ] 6.7 Spec adoption in the new-run flow
+  - [x] 6.7 Spec adoption in the new-run flow
     - New-run flow offers spec adoption: pick a workspace file or paste a document; renders plan.adopted provenance on the board
     - _Requirements: 11.3_
 
 ## P7 — Verification (no fakes)
 
 - [ ] 7. Prove the gates, channels, preview, undo, reducer, tiers
-  - [ ] 7.1 SDR/DLR structural + decision round-trip
+  - [x] 7.1 SDR/DLR structural + decision round-trip
     - Real orchestrator + seeded repos: greenfield Engineer blocked from wave 1 without resolved SDR; anti-default lens rejects a requirements-independent pick; banned-defaults screen rejects deterministically; DLR drift rejected at the gate; Prototype skips; /answer override round-trip with byte-identical trace replay
     - **Property 1: defaults cannot pass the gate and decisions resolve only through the user channel**
     - **Validates: Requirements 8.1-8.5, 9.1-9.4, 12.1, 17.1, 17.2**
-  - [ ] 7.2 Steering + spec ingestion + undo proofs
+  - [x] 7.2 Steering + spec ingestion + undo proofs
     - Steer mid-plan lands in the next sheet without killing the live worker; seeded SPEC.md adopts, killing codyd mid-plan resumes against the adopted spec; snapshot -> mutate -> restore round-trips bytes and refuses while a worker is alive
     - **Property 2: the run is steerable, spec-grounded, and reversible**
     - **Validates: Requirements 11.1, 11.2, 12.2, 14.1, 17.3, 17.4, 17.6**

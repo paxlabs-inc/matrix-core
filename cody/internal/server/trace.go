@@ -13,9 +13,17 @@ import (
 
 // traceWorkspaceTypes whitelists the event families persisted to the durable
 // trace — the workspace timeline the client rebuilds on reopen. Transients
-// (deltas) and terminals are excluded; final assistant messages live in the
-// conversation record, not the trace.
+// (deltas) are excluded.
 var traceWorkspaceTypes = map[string]bool{
+	// Total persistence (req 4.1): BOTH sides of the conversation and the
+	// milestone activity spine are durable, so the full transcript and the
+	// last-known phase rebuild on reopen. run.activity heartbeat ticks are
+	// live-only and filtered at the tap (recordTrace) to keep the trace
+	// bounded under the retain cap.
+	"chat.user":      true,
+	"chat.assistant": true,
+	"run.started":    true,
+	"run.activity":   true,
 	"plan.created":   true,
 	"task.started":   true,
 	"sheet.authored": true,

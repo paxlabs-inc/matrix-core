@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -120,6 +121,8 @@ type run struct {
 	root      string // the project's workspace subtree
 	cancel    context.CancelFunc
 	done      chan struct{}
+	// started is when this run began — the baseline for run.activity elapsed_ms.
+	started time.Time
 
 	mu     sync.Mutex
 	status string // running | completed | failed | stopped | needs_input
@@ -127,6 +130,24 @@ type run struct {
 	// is true and an /answer is delivered on the buffered channel. Guarded by mu.
 	awaiting bool
 	answers  chan directive
+	// phase + detail track the run's current activity (set by Engine.activity)
+	// so the liveness heartbeat re-emits genuine current state. Guarded by mu.
+	phase  string
+	detail string
+}
+
+// setActivity records the run's current phase + detail for the heartbeat.
+func (r *run) setActivity(phase, detail string) {
+	r.mu.Lock()
+	r.phase, r.detail = phase, detail
+	r.mu.Unlock()
+}
+
+// currentActivity returns the run's current phase + detail.
+func (r *run) currentActivity() (string, string) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	return r.phase, r.detail
 }
 
 func (r *run) setStatus(s string) { r.mu.Lock(); r.status = s; r.mu.Unlock() }
@@ -233,9 +254,13 @@ func NewEngine(opts EngineOptions) (*Engine, error) {
 }
 
 // recordTrace is the broker tap: whitelisted workspace events persist so the
-// client rebuilds the timeline on reopen.
+// client rebuilds the timeline on reopen. Heartbeat run.activity ticks are
+// live-only liveness signals — milestone activities persist, ticks never do.
 func (e *Engine) recordTrace(id string, ev Event) {
 	if !traceWorkspaceTypes[ev.Type] {
+		return
+	}
+	if hb, _ := ev.Fields["heartbeat"].(bool); hb {
 		return
 	}
 	if err := e.trace.record(id, ev); err != nil {
@@ -294,17 +319,40 @@ func (e *Engine) Submit(convID, message, modeName, projectID, spec, specSource s
 		// One live plan per conversation: attach to the work already underway.
 		return s.active.id, false, nil
 	}
-	r := &run{id: newRunID(), convID: convID, projectID: proj.ID, root: proj.Root, done: make(chan struct{}), status: "running"}
+	r := &run{id: newRunID(), convID: convID, projectID: proj.ID, root: proj.Root, done: make(chan struct{}), status: "running", started: time.Now()}
 	e.registerRun(r)
 	e.broker.ensure(r.id) // before Submit returns: no dispatch->subscribe race
 	s.active = r
-	if err := e.writeLedger(convID, ledger{RunID: r.id, Message: message, Mode: string(m), ProjectID: proj.ID, Root: proj.Root, Spec: spec, SpecSource: specSource, Status: "running", UpdatedAt: time.Now().UTC()}); err != nil {
+	led := ledger{RunID: r.id, Message: message, Title: conversationTitle(message), Mode: string(m), ProjectID: proj.ID, Root: proj.Root, Spec: spec, SpecSource: specSource, Status: "running", UpdatedAt: time.Now().UTC()}
+	if prior, err := e.readLedger(convID); err == nil && prior.Title != "" {
+		// A continued conversation keeps its original title.
+		led.Title = prior.Title
+	}
+	if err := e.writeLedger(convID, led); err != nil {
 		return "", false, err
 	}
+	// The initiating message is a durable user turn (req 4.1): the transcript
+	// shows BOTH sides on reopen. Emitted before drive so it precedes
+	// run.started in the timeline.
+	e.publishUserTurn(r.id, "message", message, "")
 	ctx, cancel := context.WithCancel(context.Background())
 	r.cancel = cancel
 	go e.drive(ctx, r, message, m, false, spec, specSource)
 	return r.id, true, nil
+}
+
+// publishUserTurn emits the durable chat.user event — the user's side of the
+// transcript (the initiating message, a steer, or an answer) so reopen
+// rebuilds the full conversation, not just Cody's half.
+func (e *Engine) publishUserTurn(runID, kind, text, decision string) {
+	fields := map[string]interface{}{"kind": kind}
+	if strings.TrimSpace(text) != "" {
+		fields["text"] = text
+	}
+	if decision != "" {
+		fields["decision"] = decision
+	}
+	e.broker.publish(runID, "chat.user", "cody", fields)
 }
 
 // parseModeOrDefault parses a ledger's mode string, falling back to def.
@@ -391,8 +439,11 @@ func (e *Engine) planDir(convID string) string {
 
 // ledger is the per-conversation run record that survives restarts.
 type ledger struct {
-	RunID     string    `json:"run_id"`
-	Message   string    `json:"message"`
+	RunID   string `json:"run_id"`
+	Message string `json:"message"`
+	// Title is the conversation's durable display title (the first message,
+	// trimmed to one readable line) so the history list reads well (req 4.3).
+	Title     string    `json:"title,omitempty"`
 	Mode      string    `json:"mode"`
 	ProjectID string    `json:"project_id,omitempty"`
 	Root      string    `json:"root,omitempty"`
@@ -433,6 +484,68 @@ func (e *Engine) readLedger(convID string) (ledger, error) {
 	return led, json.Unmarshal(data, &led)
 }
 
+// conversationTitle derives the durable display title from the initiating
+// message: its first non-empty line, trimmed to one readable length.
+func conversationTitle(message string) string {
+	for _, line := range strings.Split(message, "\n") {
+		line = strings.TrimSpace(line)
+		if line == "" {
+			continue
+		}
+		runes := []rune(line)
+		if len(runes) > 80 {
+			return strings.TrimSpace(string(runes[:80]))
+		}
+		return line
+	}
+	return ""
+}
+
+// conversationSummary is one row of the server-side history list (req 4.3).
+type conversationSummary struct {
+	ID        string    `json:"id"`
+	Title     string    `json:"title"`
+	Status    string    `json:"status"`
+	Mode      string    `json:"mode"`
+	Project   string    `json:"project,omitempty"`
+	UpdatedAt time.Time `json:"updated_at"`
+}
+
+// ListConversations returns the user's conversations from the durable ledgers,
+// newest first — the cross-device history source of truth. A pre-title ledger
+// falls back to deriving the title from its stored message.
+func (e *Engine) ListConversations() []conversationSummary {
+	entries, err := os.ReadDir(filepath.Join(e.opts.DataDir, "plans"))
+	if err != nil {
+		return nil
+	}
+	out := make([]conversationSummary, 0, len(entries))
+	for _, entry := range entries {
+		if !entry.IsDir() {
+			continue
+		}
+		convID := entry.Name()
+		led, err := e.readLedger(convID)
+		if err != nil {
+			continue
+		}
+		title := led.Title
+		if title == "" {
+			title = conversationTitle(led.Message)
+		}
+		out = append(out, conversationSummary{
+			ID:        convID,
+			Title:     title,
+			Status:    led.Status,
+			Mode:      led.Mode,
+			Project:   led.ProjectID,
+			UpdatedAt: led.UpdatedAt,
+		})
+	}
+	sort.Slice(out, func(i, j int) bool { return out[i].UpdatedAt.After(out[j].UpdatedAt) })
+	return out
+}
+
 // drive executes one plan run on a background context, supervised: the
 // orchestrator is respawned over the same durable state on transient
 // failures, deterministic failures stop-and-ask, and every terminal is
@@ -449,6 +562,18 @@ func (e *Engine) drive(ctx context.Context, r *run, message string, m mode.Mode,
 		})
 	}()
 
+	if r.started.IsZero() {
+		r.started = time.Now()
+	}
+	e.publish(r, "run.started", map[string]interface{}{"mode": string(m)})
+
+	// The liveness heartbeat spans the whole run: between milestone boundaries
+	// it re-emits the current phase so long LLM stretches (SDR/plan/DLR
+	// authoring, worker execution) never look frozen. It is cancel-safe (ctx)
+	// and stops before the topic closes.
+	stopHeartbeat := e.heartbeat(ctx, r)
+	defer stopHeartbeat()
+
 	pol := mode.For(m)
 	if e.opts.OrchestratorModel != "" {
 		pol.OrchestratorModel = e.opts.OrchestratorModel
@@ -457,6 +582,7 @@ func (e *Engine) drive(ctx context.Context, r *run, message string, m mode.Mode,
 		pol.WorkerModel = e.opts.WorkerModel
 	}
 
+	e.activity(r, phaseUnderstanding, "")
 	st, err := contract.OpenStore(e.planDir(r.convID))
 	if err != nil {
 		e.finish(r, "failed", "I could not open the plan store: "+err.Error())
@@ -495,6 +621,7 @@ func (e *Engine) drive(ctx context.Context, r *run, message string, m mode.Mode,
 			// rather than decomposing the prose message. The spec is the source of
 			// truth — including its own stack choices — so the SDR does not gate an
 			// adopted plan.
+			e.activity(r, phasePlanning, "Adopting your spec")
 			plan, err = orchestrator.AdoptSpecDivergent(ctx, hotClient, coldClient, spec, model.Summary(), pol.Render(), pol.DecisionCandidates)
 			if err != nil {
 				e.finish(r, "failed", "I could not adopt that spec: "+err.Error())
@@ -508,6 +635,7 @@ func (e *Engine) drive(ctx context.Context, r *run, message string, m mode.Mode,
 			// human resolves it — because no plan (hence no wave) exists until this
 			// returns. Prototype skips it and defaults to the classic stack.
 			if pol.Mode != mode.Prototype && model.Greenfield() {
+				e.activity(r, phaseStack, "")
 				addendum, ok := e.resolveStackDecision(ctx, r, pol, model, message, hotClient, coldClient)
 				if !ok {
 					e.say(r, "Stopped. Progress so far is saved — say continue when you want me to pick it back up.")
@@ -521,6 +649,7 @@ func (e *Engine) drive(ctx context.Context, r *run, message string, m mode.Mode,
 			}
 			// Plan-shape authoring is a decision phase: N divergent candidates
 			// generated hot, judged cold (req 10.2). Workers implement cold.
+			e.activity(r, phasePlanning, "")
 			plan, err = orchestrator.PlanFromModelDivergent(ctx, hotClient, coldClient, planMessage, model.Summary(), pol.Render(), pol.DecisionCandidates)
 			if err != nil {
 				e.finish(r, "failed", "I could not plan that request: "+err.Error())
@@ -552,6 +681,7 @@ func (e *Engine) drive(ctx context.Context, r *run, message string, m mode.Mode,
 			e.finish(r, "failed", "I could not reach the model: "+cerr.Error())
 			return
 		}
+		e.activity(r, phaseDesign, "")
 		dc, ok := e.resolveDesignDecision(ctx, r, pol, model, plan, message, hotClient, coldClient)
 		if !ok {
 			e.say(r, "Stopped. Progress so far is saved — say continue when you want me to pick it back up.")
@@ -591,6 +721,7 @@ func (e *Engine) drive(ctx context.Context, r *run, message string, m mode.Mode,
 				plan = reloaded
 			}
 			r.setStatus("running")
+			e.activity(r, phaseContinuing, "")
 			if led, lerr := e.readLedger(r.convID); lerr == nil {
 				led.Status = "running"
 				led.UpdatedAt = time.Now().UTC()
@@ -608,6 +739,7 @@ func (e *Engine) drive(ctx context.Context, r *run, message string, m mode.Mode,
 			// on-demand sandbox preview in the background so the client shows a
 			// working app the moment it's ready. A failed plan is not previewed.
 			if len(res.Failed) == 0 && e.preview.Enabled() {
+				e.activity(r, phasePreviewing, "")
 				go e.preview.Provision(context.Background(), preview.Request{ConvID: r.convID, Root: r.root})
 			}
 			e.say(r, completionMessage(pol, plan, res))
@@ -676,6 +808,16 @@ func (e *Engine) runOrchestrator(ctx context.Context, r *run, st *contract.Store
 		VerifyTimeout:  e.opts.VerifyTimeout,
 		Observer: func(event string, fields map[string]interface{}) {
 			e.publish(r, event, fields)
+			// Mirror the loop's milestones onto the live activity spine so the
+			// client shows "Building <task>" / "Checking the work" without any
+			// orchestrator/worker/sheet jargon.
+			switch event {
+			case "task.started":
+				title, _ := fields["title"].(string)
+				e.activity(r, phaseWorking, title)
+			case "task.turnin":
+				e.activity(r, phaseVerifying, "")
+			}
 		},
 		Steers: func() []string { return e.directiveTexts(r.convID) },
 	})
@@ -721,6 +863,90 @@ func (e *Engine) workerFunc(pol mode.Policy, root string) orchestrator.WorkerFun
 // publish emits one event on the run topic (phase "cody").
 func (e *Engine) publish(r *run, typ string, fields map[string]interface{}) {
 	e.broker.publish(r.id, typ, "cody", fields)
+}
+
+// Run activity phases — the plain-language lifecycle the client's live spine
+// renders so the surface is never blank while Cody works. Copy is
+// result-oriented: no orchestrator/worker/sheet jargon ever reaches the user.
+const (
+	phaseUnderstanding = "understanding"
+	phaseStack         = "stack"
+	phasePlanning      = "planning"
+	phaseDesign        = "design"
+	phaseWorking       = "working"
+	phaseVerifying     = "verifying"
+	phasePreviewing    = "previewing"
+	phaseContinuing    = "continuing"
+)
+
+var phaseLabels = map[string]string{
+	phaseUnderstanding: "Reading your workspace",
+	phaseStack:         "Choosing the best stack",
+	phasePlanning:      "Planning the work",
+	phaseDesign:        "Designing the interface",
+	phaseWorking:       "Building",
+	phaseVerifying:     "Checking the work",
+	phasePreviewing:    "Preparing a preview",
+	phaseContinuing:    "Continuing",
+}
+
+// activity publishes a milestone run.activity event: the current phase, a
+// plain-language label, an optional detail (e.g. the task being built), and
+// elapsed time since the run began. It is a pure side-channel — no loop, gate,
+// or plan-determinism effect — and (once whitelisted in trace.go) persists so
+// the client rebuilds the last-known phase on reopen.
+func (e *Engine) activity(r *run, phase, detail string) {
+	r.setActivity(phase, detail)
+	e.publish(r, "run.activity", map[string]interface{}{
+		"phase":      phase,
+		"label":      phaseLabels[phase],
+		"detail":     detail,
+		"elapsed_ms": time.Since(r.started).Milliseconds(),
+	})
+}
+
+// heartbeatInterval paces the liveness heartbeat during long LLM phases. A
+// package var so tests can compress time.
+var heartbeatInterval = 10 * time.Second
+
+// heartbeat starts the run's cancel-safe liveness ticker: while a long phase
+// (SDR / plan / DLR authoring, worker execution) runs between milestone
+// boundaries, it periodically re-emits the run's CURRENT phase as a
+// run.activity event carrying heartbeat=true, so the client shows continuous
+// progress instead of a frozen state. Heartbeats are live-only liveness
+// signals — the heartbeat flag keeps them out of the durable trace (milestone
+// activities persist; ticks do not). Ticks are suppressed while the run is
+// parked awaiting human input (needs_input is its own honest surface) and
+// before the first boundary sets a phase. The ticker stops on ctx cancel or
+// when the returned stop func runs at the run's terminal; stop is idempotent
+// and returns after the goroutine has fully unwound.
+func (e *Engine) heartbeat(ctx context.Context, r *run) (stop func()) {
+	hctx, cancel := context.WithCancel(ctx)
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		t := time.NewTicker(heartbeatInterval)
+		defer t.Stop()
+		for {
+			select {
+			case <-hctx.Done():
+				return
+			case <-t.C:
+				phase, detail := r.currentActivity()
+				if phase == "" || r.isAwaiting() || r.getStatus() != "running" {
+					continue
+				}
+				e.publish(r, "run.activity", map[string]interface{}{
+					"phase":      phase,
+					"label":      phaseLabels[phase],
+					"detail":     detail,
+					"elapsed_ms": time.Since(r.started).Milliseconds(),
+					"heartbeat":  true,
+				})
+			}
+		}
+	}()
+	return func() { cancel(); <-done }
 }
 
 // projectHasLiveRun reports whether any run rooted at root is currently running
