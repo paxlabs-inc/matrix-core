@@ -27,11 +27,11 @@ import (
 // decision (req 8.3). Prototype skips the SDR entirely (req 8.4). The resolution
 // is durable so a resumed run never re-asks.
 
-// stackDoctrine is the compact rules/stack-selection doctrine the SDR cites and
-// deviates from only with stated rationale (req 8.5, 16.1). Task 4.2 authors the
-// full decision tables under rules/stack-selection/; this keeps the gate
-// self-contained and citable before that lands.
-const stackDoctrine = `App class -> default stack (deviation demands rationale):
+// defaultStackDoctrine is the compact fallback the SDR cites when the full
+// rules/stack-selection decision tables are not mounted (req 8.5, 16.1). When
+// RulesDir is configured, Engine.stackDoctrine() reads the authored tables under
+// rules/stack-selection/ and this const is the fail-open floor.
+const defaultStackDoctrine = `App class -> default stack (deviation demands rationale):
 - chat / realtime / collaborative -> React Router framework mode (Remix) on Node/TS
 - content / marketing / mostly-static -> Astro (or Next) on Node/TS
 - internal enterprise / forms-heavy admin -> Angular on Node/TS
@@ -40,6 +40,42 @@ const stackDoctrine = `App class -> default stack (deviation demands rationale):
 - ML-adjacent / data / scientific -> Python with uv
 - classic web app with no strong signal -> Node/TS + Vite or Next + npm
 The stack must fit the requirements profile; the same pick for every profile is the default this gate exists to reject.`
+
+// stackDoctrine returns the stack-selection doctrine the SDR cites: the authored
+// decision tables under {RulesDir}/stack-selection/ when mounted (req 16.1),
+// else the compact defaultStackDoctrine floor.
+func (e *Engine) stackDoctrine() string {
+	if e.opts.RulesDir != "" {
+		if doc := concatMarkdown(filepath.Join(e.opts.RulesDir, "stack-selection")); doc != "" {
+			return doc
+		}
+	}
+	return defaultStackDoctrine
+}
+
+// concatMarkdown reads every *.md under dir in filename order and concatenates
+// them, returning "" if the directory is unreadable or holds no markdown.
+func concatMarkdown(dir string) string {
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return ""
+	}
+	var b strings.Builder
+	for _, ent := range entries {
+		if ent.IsDir() || !strings.HasSuffix(ent.Name(), ".md") {
+			continue
+		}
+		data, err := os.ReadFile(filepath.Join(dir, ent.Name()))
+		if err != nil {
+			continue
+		}
+		if b.Len() > 0 {
+			b.WriteString("\n\n")
+		}
+		b.Write(data)
+	}
+	return strings.TrimSpace(b.String())
+}
 
 // storedStackDecision is the durable SDR resolution, written once the human
 // resolves it so a resumed run adopts the same decision without re-asking.
@@ -95,7 +131,8 @@ func (e *Engine) resolveStackDecision(ctx context.Context, r *run, pol mode.Poli
 	}
 
 	brief := stackBrief(message, model)
-	rec, err := decide.AuthorStack(ctx, hot, cold, brief, stackDoctrine, pol.DecisionCandidates)
+	doctrine := e.stackDoctrine()
+	rec, err := decide.AuthorStack(ctx, hot, cold, brief, doctrine, pol.DecisionCandidates)
 	if err != nil {
 		// Authoring failed outright: surface honestly on the answer channel so the
 		// human can steer rather than silently defaulting the stack.
@@ -110,7 +147,7 @@ func (e *Engine) resolveStackDecision(ctx context.Context, r *run, pol mode.Poli
 	// The anti-default lens can reject; a rejected record is re-authored once
 	// with the rejection as pressure before the human sees it.
 	if verdict := decide.ScreenStackAntiDefault(ctx, cold, rec); verdict != "" {
-		if retry, rerr := decide.AuthorStack(ctx, hot, cold, brief+"\n\nA prior attempt was rejected: "+verdict+"\nAuthor a record whose pick genuinely turns on the requirements profile.", stackDoctrine, pol.DecisionCandidates); rerr == nil {
+		if retry, rerr := decide.AuthorStack(ctx, hot, cold, brief+"\n\nA prior attempt was rejected: "+verdict+"\nAuthor a record whose pick genuinely turns on the requirements profile.", doctrine, pol.DecisionCandidates); rerr == nil {
 			rec = retry
 		}
 	}

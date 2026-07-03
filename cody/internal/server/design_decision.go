@@ -29,10 +29,25 @@ import (
 // sheet, and the gate rejects turn-ins that drift back to the banned defaults.
 // The resolution is durable so a resumed run never re-asks.
 
-// designDoctrine is the compact rules/web/design-quality.md doctrine the DLR
-// cites. Task 4.2 keeps the full rules file authoritative; this keeps the gate
-// self-contained and citable.
-const designDoctrine = `Anti-template policy — frontend must look intentional and specific, never a generic template. Banned: default card grids with no hierarchy; stock centered-headline + gradient-blob heroes; unmodified library defaults; flat no-depth layouts; uniform radius/spacing/shadow everywhere; safe gray-on-white with one decorative accent; dashboard-by-numbers with no point of view; default font stacks used without reason. Every surface should show clear hierarchy through scale contrast, intentional spacing rhythm, real depth/layering, deliberate typography pairing, semantic (not decorative) color, and designed hover/focus/active states. Pick a specific style direction (editorial, neo-brutalist, swiss, dark/light luxury, bento, retro-futurist, ...) — never "clean minimal" as a default. Do not auto-default to dark mode.`
+// defaultDesignDoctrine is the compact fallback the DLR cites when
+// rules/web/design-quality.md is not mounted. When RulesDir is configured,
+// Engine.designDoctrine() reads the authored file and this const is the
+// fail-open floor.
+const defaultDesignDoctrine = `Anti-template policy — frontend must look intentional and specific, never a generic template. Banned: default card grids with no hierarchy; stock centered-headline + gradient-blob heroes; unmodified library defaults; flat no-depth layouts; uniform radius/spacing/shadow everywhere; safe gray-on-white with one decorative accent; dashboard-by-numbers with no point of view; default font stacks used without reason. Every surface should show clear hierarchy through scale contrast, intentional spacing rhythm, real depth/layering, deliberate typography pairing, semantic (not decorative) color, and designed hover/focus/active states. Pick a specific style direction (editorial, neo-brutalist, swiss, dark/light luxury, bento, retro-futurist, ...) — never "clean minimal" as a default. Do not auto-default to dark mode.`
+
+// designDoctrine returns the design-quality doctrine the DLR cites: the authored
+// rules/web/design-quality.md when RulesDir is mounted, else the compact
+// defaultDesignDoctrine floor.
+func (e *Engine) designDoctrine() string {
+	if e.opts.RulesDir != "" {
+		if data, err := os.ReadFile(filepath.Join(e.opts.RulesDir, "web", "design-quality.md")); err == nil {
+			if s := strings.TrimSpace(string(data)); s != "" {
+				return s
+			}
+		}
+	}
+	return defaultDesignDoctrine
+}
 
 // storedDesignDecision is the durable DLR resolution.
 type storedDesignDecision struct {
@@ -93,7 +108,8 @@ func (e *Engine) resolveDesignDecision(ctx context.Context, r *run, pol mode.Pol
 	}
 
 	brief := designBrief(message, model, plan)
-	rec, err := decide.AuthorDesign(ctx, hot, cold, brief, designDoctrine, pol.DecisionCandidates)
+	doctrine := e.designDoctrine()
+	rec, err := decide.AuthorDesign(ctx, hot, cold, brief, doctrine, pol.DecisionCandidates)
 	if err != nil {
 		// Prototype never blocks the run on a design hiccup — it proceeds
 		// without a DLR constraint (the UI sheets still carry the screenshot
@@ -117,7 +133,7 @@ func (e *Engine) resolveDesignDecision(ctx context.Context, r *run, pol mode.Pol
 		reject = decide.ScreenDesignAntiDefault(ctx, cold, rec)
 	}
 	if reject != "" {
-		if retry, rerr := decide.AuthorDesign(ctx, hot, cold, brief+"\n\nA prior attempt was rejected: "+reject+"\nAuthor a design that is specific to THIS product and free of the banned AI-default tells.", designDoctrine, pol.DecisionCandidates); rerr == nil {
+		if retry, rerr := decide.AuthorDesign(ctx, hot, cold, brief+"\n\nA prior attempt was rejected: "+reject+"\nAuthor a design that is specific to THIS product and free of the banned AI-default tells.", doctrine, pol.DecisionCandidates); rerr == nil {
 			rec = retry
 		}
 	}
