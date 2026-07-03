@@ -108,6 +108,12 @@ type Config struct {
 	// host:port of its preview server. Empty disables preview registration
 	// (the public /preview/ mount then serves 404 for every user).
 	PreviewToken string
+
+	// CORSOrigins is the browser cross-origin allow-list for the public API
+	// (ROUTER_CORS_ORIGINS, comma-separated). The Next.js client is served from
+	// a different origin than this API and needs CORS to connect. Empty or "*"
+	// allows any origin (safe here: auth is a Bearer token, no cookies).
+	CORSOrigins []string
 }
 
 // Provider values for Config.Provider (ROUTER_PROVIDER).
@@ -147,6 +153,7 @@ func Load() (*Config, error) {
 		DaemonPort:              getOrDefault("ROUTER_DAEMON_PORT", DefaultDaemonPort),
 		WakeToken:               os.Getenv("ROUTER_WAKE_TOKEN"),
 		PreviewToken:            os.Getenv("ROUTER_PREVIEW_TOKEN"),
+		CORSOrigins:             parseCSV(os.Getenv("ROUTER_CORS_ORIGINS")),
 	}
 
 	var err error
@@ -208,6 +215,22 @@ func getOrDefault(env, def string) string {
 		return v
 	}
 	return def
+}
+
+// parseCSV splits a comma-separated env value into trimmed, non-empty entries.
+// An empty input yields nil (the CORS middleware treats nil as allow-any).
+func parseCSV(v string) []string {
+	if strings.TrimSpace(v) == "" {
+		return nil
+	}
+	parts := strings.Split(v, ",")
+	out := make([]string, 0, len(parts))
+	for _, p := range parts {
+		if p = strings.TrimSpace(p); p != "" {
+			out = append(out, p)
+		}
+	}
+	return out
 }
 
 func parseDurationOr(env string, def time.Duration) (time.Duration, error) {

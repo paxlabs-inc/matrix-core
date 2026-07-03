@@ -21,6 +21,11 @@ import (
 // os.Stderr; callers can swap to a structured logger if desired.
 type Logf func(format string, args ...interface{})
 
+// PreviewCookie is the path-scoped cookie the preview handler sets so an
+// iframed preview app's same-origin subresource requests authenticate without
+// a token on every URL. mw.JWT reads it as the lowest-precedence token source.
+const PreviewCookie = "mx_pv"
+
 // JWT returns middleware that validates an Authorization: Bearer <jwt>
 // header against the provided Verifier. On success, the verified
 // Subject is stashed in request context via proxy.WithSubject.
@@ -44,6 +49,21 @@ func JWT(v *jwt.Verifier, log Logf) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			tok := bearerOf(r.Header.Get("Authorization"))
+			if tok == "" {
+				// Browser contexts that cannot set an Authorization header —
+				// the Cody preview <iframe> and EventSource — pass the JWT as a
+				// query param instead. Same verification path; header wins.
+				tok = strings.TrimSpace(r.URL.Query().Get("access_token"))
+			}
+			if tok == "" {
+				// The preview handler sets a path-scoped cookie after the first
+				// query-authenticated load so the iframed app's own subresource
+				// requests (its JS/CSS/HMR) authenticate without a token on
+				// every URL. Lowest precedence: header and query still win.
+				if c, err := r.Cookie(PreviewCookie); err == nil {
+					tok = strings.TrimSpace(c.Value)
+				}
+			}
 			if tok == "" {
 				w.Header().Set("WWW-Authenticate", `Bearer realm="matrix", error="missing_token"`)
 				http.Error(w, "missing bearer token", http.StatusUnauthorized)
@@ -90,6 +110,50 @@ func Admin(token string, log Logf) func(http.Handler) http.Handler {
 			if subtle.ConstantTimeCompare([]byte(supplied), []byte(token)) != 1 {
 				log("admin reject: token mismatch")
 				http.Error(w, "forbidden", http.StatusForbidden)
+				return
+			}
+			next.ServeHTTP(w, r)
+		})
+	}
+}
+
+// CORS returns middleware that answers browser cross-origin requests from the
+// Next.js client (served from a different origin than this API). It reflects an
+// allowed Origin, advertises the methods + headers the client sends
+// (Authorization, Content-Type, X-Request-Id), and short-circuits the preflight
+// OPTIONS with 204 BEFORE any auth middleware runs — a preflight carries no
+// token, so it must never reach mw.JWT.
+//
+// allowed is the operator allow-list (ROUTER_CORS_ORIGINS). An entry of "*" (or
+// an empty list) allows any origin; because the client authenticates with a
+// Bearer token and never sends cookies (credentials: 'omit'), reflecting the
+// origin without Allow-Credentials is safe.
+func CORS(allowed []string, log Logf) func(http.Handler) http.Handler {
+	allowAll := len(allowed) == 0
+	set := make(map[string]bool, len(allowed))
+	for _, o := range allowed {
+		o = strings.ToLower(strings.TrimRight(strings.TrimSpace(o), "/"))
+		if o == "*" {
+			allowAll = true
+		} else if o != "" {
+			set[o] = true
+		}
+	}
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			origin := r.Header.Get("Origin")
+			if origin != "" && (allowAll || set[strings.ToLower(strings.TrimRight(origin, "/"))]) {
+				w.Header().Set("Access-Control-Allow-Origin", origin)
+				w.Header().Add("Vary", "Origin")
+				w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS")
+				w.Header().Set("Access-Control-Allow-Headers", "Authorization, Content-Type, X-Request-Id, Accept")
+				w.Header().Set("Access-Control-Expose-Headers", "X-Request-Id")
+				w.Header().Set("Access-Control-Max-Age", "600")
+			}
+			if r.Method == http.MethodOptions {
+				// Preflight — respond before auth; the browser only needs the
+				// CORS headers set above.
+				w.WriteHeader(http.StatusNoContent)
 				return
 			}
 			next.ServeHTTP(w, r)

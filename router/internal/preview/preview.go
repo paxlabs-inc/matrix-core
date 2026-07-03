@@ -31,6 +31,10 @@ import (
 	"matrix/router/internal/proxy"
 )
 
+// previewCookie MUST match mw.PreviewCookie. It is duplicated (not imported)
+// because mw imports this package, so importing mw here would cycle.
+const previewCookie = "mx_pv"
+
 // Target is a registered preview backend: the private host:port a user's
 // preview server binds to, plus when it was registered.
 type Target struct {
@@ -121,6 +125,23 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if !found {
 		http.Error(w, "no preview registered", http.StatusNotFound)
 		return
+	}
+
+	// The iframe loads the app root with ?access_token=<jwt> (an iframe cannot
+	// set an Authorization header). Persist that token as a path-scoped cookie
+	// so the app's own same-origin subresource requests (JS/CSS/HMR) — which
+	// carry no token — still authenticate. SameSite=None+Secure is required
+	// because the initial navigation is cross-site (client origin → API origin).
+	if qt := strings.TrimSpace(r.URL.Query().Get("access_token")); qt != "" {
+		http.SetCookie(w, &http.Cookie{
+			Name:     previewCookie,
+			Value:    qt,
+			Path:     "/preview/" + userID,
+			HttpOnly: true,
+			Secure:   true,
+			SameSite: http.SameSiteNoneMode,
+			MaxAge:   3600,
+		})
 	}
 
 	target := &url.URL{Scheme: "http", Host: hostPort(t.Host, t.Port)}
