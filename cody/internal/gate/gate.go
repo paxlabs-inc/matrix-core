@@ -232,11 +232,29 @@ func ScreenDesign(root string, sheet *contract.TaskSheet, report *contract.TurnI
 
 // ScreenScreenshot enforces the screenshot-evidence requirement on UI turn-ins
 // (req 13.2): a UI task's turn-in must carry a screenshot artifact in its
-// verification evidence, and the gate rejects a UI turn-in without one — design
-// quality is verified against what was built, not asserted. Returns "" when the
-// sheet is not a UI task or a screenshot is present.
+// verification evidence — design quality is verified against what was built,
+// not asserted. The requirement is EVIDENCE-BASED: it applies only when the
+// turn-in actually changed a renderable UI file. UITask is set by an
+// inclusive keyword heuristic (orchestrator.IsUITask), so a pure-logic task
+// (e.g. a Go library) can be flagged UI by a false positive; requiring a
+// screenshot of a surface that does not exist would wedge such a task
+// permanently with no satisfiable action. Returns "" when the sheet is not a
+// UI task, changed no rendered surface, or a screenshot is present.
 func ScreenScreenshot(sheet *contract.TaskSheet, report *contract.TurnInReport) string {
 	if !sheet.UITask {
+		return ""
+	}
+	changedUI := false
+	for _, ch := range report.Changes {
+		if ch.Kind == "delete" {
+			continue
+		}
+		if uiDriftExts[strings.ToLower(filepath.Ext(ch.Path))] {
+			changedUI = true
+			break
+		}
+	}
+	if !changedUI {
 		return ""
 	}
 	for _, ev := range report.Verification {
@@ -244,7 +262,7 @@ func ScreenScreenshot(sheet *contract.TaskSheet, report *contract.TurnInReport) 
 			return ""
 		}
 	}
-	return "UI turn-in carries no screenshot artifact: a UI task must capture a screenshot of the rendered result as evidence (req 13.2)"
+	return "UI turn-in changed a rendered surface but carries no screenshot artifact: capture a screenshot of the rendered result as evidence (req 13.2)"
 }
 
 // BuildRequest renders the sheet as the contract the adjudicator judges
