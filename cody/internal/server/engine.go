@@ -953,13 +953,13 @@ func (e *Engine) runOrchestrator(ctx context.Context, r *run, st *contract.Store
 	}
 	pm := e.projectMemory(r.projectID)
 	o, err := orchestrator.New(orchestrator.Options{
-		Root:          r.root,
-		Plan:          plan,
-		Store:         st,
-		Progress:      progress,
-		Worker:        e.workerFunc(pol, r),
-		Rules:         rules,
-		ModePolicy:    pol.Render(),
+		Root:           r.root,
+		Plan:           plan,
+		Store:          st,
+		Progress:       progress,
+		Worker:         e.workerFunc(pol, r),
+		Rules:          rules,
+		ModePolicy:     pol.Render(),
 		Adjudicator:    adjudicator,
 		SpecFiles:      pol.PlanningDepth == mode.PlanSpecFiles,
 		DesignLanguage: designLanguage,

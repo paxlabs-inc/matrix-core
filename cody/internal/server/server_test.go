@@ -56,6 +56,8 @@ func gatewayScript(t *testing.T, blockT2 chan struct{}) func(step int, req llmte
 			return llmtest.Say(`{"pick": 0, "rationale": "first valid candidate"}`)
 		case strings.Contains(system, "Cassandra"):
 			return llmtest.Say(groundedVerdict)
+		case strings.Contains(system, "title coding conversations"):
+			return llmtest.Say("Seed The Demo Workspace")
 		}
 		// The worker loop.
 		sheetPrompt := ""

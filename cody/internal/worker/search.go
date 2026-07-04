@@ -17,10 +17,10 @@ import (
 // and matched lines are truncated so a minified bundle cannot blow the cap by
 // itself.
 const (
-	grepMaxMatches  = 100
-	grepMaxLineLen  = 500
-	globMaxResults  = 100
-	searchMaxSize   = 2 * 1024 * 1024 // per-file read ceiling for grep
+	grepMaxMatches = 100
+	grepMaxLineLen = 500
+	globMaxResults = 100
+	searchMaxSize  = 2 * 1024 * 1024 // per-file read ceiling for grep
 )
 
 // searchIgnoredDirs are never walked by grep/glob — the same exclusions the

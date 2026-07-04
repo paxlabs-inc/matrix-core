@@ -56,7 +56,7 @@ type toolCallResult struct {
 	Content []struct {
 		Type     string `json:"type"`
 		Text     string `json:"text,omitempty"`
-		Data     string `json:"data,omitempty"`      // base64 image (type == "image")
+		Data     string `json:"data,omitempty"` // base64 image (type == "image")
 		MimeType string `json:"mimeType,omitempty"`
 	} `json:"content"`
 	IsError bool `json:"isError,omitempty"`
