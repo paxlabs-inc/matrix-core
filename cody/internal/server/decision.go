@@ -125,12 +125,12 @@ func (e *Engine) saveStackDecision(convID string, sd *storedStackDecision) error
 // folded into the planner's request) and whether the run may proceed. It returns
 // ("", false) only when the run was cancelled while paused. An already-resolved
 // decision (durable) is adopted without re-asking.
-func (e *Engine) resolveStackDecision(ctx context.Context, r *run, pol mode.Policy, model *workspace.Model, message string, hot, cold *llm.Client) (string, bool) {
+func (e *Engine) resolveStackDecision(ctx context.Context, r *run, pol mode.Policy, model *workspace.Model, message, projectMemory string, hot, cold *llm.Client) (string, bool) {
 	if sd, ok := e.loadStackDecision(r.convID); ok {
 		return sd.Addendum, true
 	}
 
-	brief := stackBrief(message, model)
+	brief := stackBrief(message, model, projectMemory)
 	doctrine := e.stackDoctrine()
 	rec, err := decide.AuthorStack(ctx, hot, cold, brief, doctrine, pol.DecisionCandidates)
 	if err != nil {
@@ -172,24 +172,32 @@ func (e *Engine) finalizeStackDecision(r *run, rec *decide.StackRecord, d direct
 	addendum := stackAddendum(rec, d)
 	_ = e.saveStackDecision(r.convID, &storedStackDecision{Record: rec, Decision: decisionKind, Addendum: addendum, At: time.Now().UTC()})
 
+	// The resolved stack is project memory: later conversations in this
+	// project recall it as grounding instead of re-deriving (or re-asking).
+	if pm := e.projectMemory(r.projectID); pm != nil {
+		if s := strings.TrimSpace(addendum); s != "" {
+			_ = pm.Record("sdr", s)
+		}
+	}
+
 	e.publish(r, "decision.resolved", map[string]interface{}{"decision_kind": "stack", "resolution": decisionKind})
 
 	r.setStatus("running")
-	if led, err := e.readLedger(r.convID); err == nil {
-		led.Status = "running"
-		led.UpdatedAt = time.Now().UTC()
-		_ = e.writeLedger(r.convID, led)
-	}
+	_ = e.mutateLedger(r.convID, func(led *ledger) { led.Status = "running" })
 	return addendum
 }
 
-// stackBrief renders the SDR authoring brief: the request plus what the empty
-// workspace already tells us.
-func stackBrief(message string, model *workspace.Model) string {
+// stackBrief renders the SDR authoring brief: the request, what the empty
+// workspace already tells us, and the project's durable memory (prior
+// decisions/deliveries recalled from cortex).
+func stackBrief(message string, model *workspace.Model, projectMemory string) string {
 	var b strings.Builder
 	fmt.Fprintf(&b, "GREENFIELD BUILD REQUEST:\n%s\n", strings.TrimSpace(message))
 	if s := strings.TrimSpace(model.Summary()); s != "" {
 		fmt.Fprintf(&b, "\nWORKSPACE (currently greenfield):\n%s\n", s)
+	}
+	if pmem := strings.TrimSpace(projectMemory); pmem != "" {
+		fmt.Fprintf(&b, "\nPROJECT MEMORY (prior decisions and deliveries on this project):\n%s\n", pmem)
 	}
 	return b.String()
 }

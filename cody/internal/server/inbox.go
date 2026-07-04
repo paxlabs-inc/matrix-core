@@ -163,11 +163,7 @@ func (e *Engine) pauseForInput(ctx context.Context, r *run, prompt string) (dire
 func (e *Engine) awaitDirective(ctx context.Context, r *run, q *question, say string) (directive, bool) {
 	_ = e.setPending(r.convID, q)
 	r.setStatus("needs_input")
-	if led, err := e.readLedger(r.convID); err == nil {
-		led.Status = "needs_input"
-		led.UpdatedAt = time.Now().UTC()
-		_ = e.writeLedger(r.convID, led)
-	}
+	_ = e.mutateLedger(r.convID, func(led *ledger) { led.Status = "needs_input" })
 	if say != "" {
 		e.say(r, say)
 	}
@@ -340,11 +336,10 @@ func (e *Engine) launch(convID string, led ledger, resume bool) *run {
 	r := &run{id: led.RunID, convID: convID, projectID: led.ProjectID, root: root, done: make(chan struct{}), status: "running", started: time.Now()}
 	e.registerRun(r)
 	e.broker.ensure(r.id)
+	e.broker.reopen(r.id)
 	s.active = r
 	if led.Status != "running" {
-		led.Status = "running"
-		led.UpdatedAt = time.Now().UTC()
-		_ = e.writeLedger(convID, led)
+		_ = e.mutateLedger(convID, func(l *ledger) { l.Status = "running" })
 	}
 	ctx, cancel := context.WithCancel(context.Background())
 	r.cancel = cancel

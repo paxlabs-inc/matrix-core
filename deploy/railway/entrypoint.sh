@@ -219,6 +219,7 @@ case "${1:-neo}" in
         export CODY_ACTOR_DID="${CODY_ACTOR_DID:-did:matrix:${MATRIX_USER_ID:-cody}:cody}"
         export CODY_RULES_DIR="${CODY_RULES_DIR:-${MATRIX_HOME}/rules}"
         export CODY_SKILLS_DIR="${CODY_SKILLS_DIR:-${MATRIX_HOME}/skills}"
+        export CODY_SCAFFOLD_DIR="${CODY_SCAFFOLD_DIR:-${MATRIX_HOME}/tools/scaffold}"
 
         "${MATRIX_HOME}/bin/codyd" &
         CODY_PID=$!

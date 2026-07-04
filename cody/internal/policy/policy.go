@@ -147,12 +147,20 @@ func (r *Rules) Render() string {
 	return b.String()
 }
 
-// Skills surfaces the skills/ library: a names-only index for prompts and an
-// on-demand body loader (the existing skill mechanism's shape).
+// Skills surfaces the skills/ library: an index of names + one-line
+// descriptions for prompts (metadata resident) and an on-demand body loader
+// (bodies pulled only when a task matches — never resident).
 type Skills struct {
 	Root  string
 	Names []string
+	// Descriptions maps skill name -> its one-line description (from the
+	// SKILL.md frontmatter), capped for prompt economy. Missing when the
+	// playbook carries none.
+	Descriptions map[string]string
 }
+
+// skillDescCap bounds one description line in the prompt index.
+const skillDescCap = 100
 
 // LoadSkills indexes the skills library (one directory per skill carrying a
 // SKILL.md playbook).
@@ -165,17 +173,52 @@ func LoadSkills(skillsRoot string) (*Skills, error) {
 	if err != nil {
 		return nil, err
 	}
-	s := &Skills{Root: abs}
+	s := &Skills{Root: abs, Descriptions: map[string]string{}}
 	for _, e := range entries {
 		if !e.IsDir() {
 			continue
 		}
-		if _, err := os.Stat(filepath.Join(abs, e.Name(), "SKILL.md")); err == nil {
-			s.Names = append(s.Names, e.Name())
+		path := filepath.Join(abs, e.Name(), "SKILL.md")
+		if _, err := os.Stat(path); err != nil {
+			continue
+		}
+		s.Names = append(s.Names, e.Name())
+		if desc := skillDescription(path); desc != "" {
+			s.Descriptions[e.Name()] = desc
 		}
 	}
 	sort.Strings(s.Names)
 	return s, nil
+}
+
+// skillDescription extracts the one-line description from a SKILL.md
+// frontmatter block ("description: ..."), capped for the prompt index.
+func skillDescription(path string) string {
+	f, err := os.Open(path)
+	if err != nil {
+		return ""
+	}
+	defer f.Close()
+	head := make([]byte, 4096)
+	n, _ := f.Read(head)
+	lines := strings.Split(string(head[:n]), "\n")
+	if len(lines) == 0 || strings.TrimSpace(lines[0]) != "---" {
+		return ""
+	}
+	for _, line := range lines[1:] {
+		trimmed := strings.TrimSpace(line)
+		if trimmed == "---" {
+			break
+		}
+		if rest, ok := strings.CutPrefix(trimmed, "description:"); ok {
+			desc := strings.Trim(strings.TrimSpace(rest), `"'`)
+			if len(desc) > skillDescCap {
+				desc = strings.TrimSpace(desc[:skillDescCap]) + "..."
+			}
+			return desc
+		}
+	}
+	return ""
 }
 
 // Load returns the full SKILL.md playbook body for a named skill.
@@ -200,12 +243,21 @@ func (s *Skills) Has(name string) bool {
 	return i < len(s.Names) && s.Names[i] == name
 }
 
-// RenderIndex produces the names-only prompt section (Neo's pattern: the
-// index is cheap and resident; bodies are pulled on demand).
+// RenderIndex produces the metadata prompt section: one line per skill (name +
+// one-line description when the playbook carries one). Metadata is cheap and
+// resident; bodies are pulled on demand.
 func (s *Skills) RenderIndex() string {
 	if len(s.Names) == 0 {
 		return ""
 	}
-	return "Skill playbooks available on demand (load one when the task matches):\n" +
-		strings.Join(s.Names, ", ") + "\n"
+	var b strings.Builder
+	b.WriteString("Skill playbooks available on demand (load one when the task matches):\n")
+	for _, name := range s.Names {
+		if desc := s.Descriptions[name]; desc != "" {
+			b.WriteString("- " + name + " — " + desc + "\n")
+		} else {
+			b.WriteString("- " + name + "\n")
+		}
+	}
+	return b.String()
 }

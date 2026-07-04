@@ -322,3 +322,110 @@ func (p *Progress) Done() (map[string]bool, error) {
 	}
 	return done, nil
 }
+
+// projectMemoryPrefix tags project-memory records in the cortex transcript.
+const projectMemoryPrefix = "cody.project.v1:"
+
+// ProjectRecord is one durable piece of project memory: a resolved Stack
+// Decision Record, a resolved Design Language Record, or an accepted task's
+// turn-in summary. Together they are what the project IS — recalled as
+// grounding for every later conversation in the same project, so Cody plans
+// from accumulated memory instead of re-deriving from a file scan.
+type ProjectRecord struct {
+	Kind    string    `json:"kind"` // sdr | dlr | task
+	Summary string    `json:"summary"`
+	At      time.Time `json:"at"`
+}
+
+// ProjectMemory reads and writes project-scoped memory through the cortex
+// continuous-memory session surface, keyed by project id (NOT by
+// conversation) so records accumulate across conversations.
+type ProjectMemory struct {
+	c    *cortex.Cortex
+	conv string
+}
+
+// NewProjectMemory binds project memory to a cortex instance and a project id.
+func NewProjectMemory(c *cortex.Cortex, projectID string) *ProjectMemory {
+	if strings.TrimSpace(projectID) == "" {
+		projectID = "default"
+	}
+	return &ProjectMemory{c: c, conv: "cody-project-" + projectID}
+}
+
+// projectSummaryCap bounds one stored record so a verbose design language can
+// never bloat the recall bundle.
+const projectSummaryCap = 1500
+
+// Record durably appends one project-memory record.
+func (p *ProjectMemory) Record(kind, summary string) error {
+	summary = strings.TrimSpace(summary)
+	if kind == "" || summary == "" {
+		return fmt.Errorf("project memory: empty kind or summary")
+	}
+	if len(summary) > projectSummaryCap {
+		summary = summary[:projectSummaryCap] + "..."
+	}
+	data, err := json.Marshal(ProjectRecord{Kind: kind, Summary: summary, At: time.Now().UTC()})
+	if err != nil {
+		return err
+	}
+	_, err = p.c.AppendMessage(cortex.Message{
+		ConversationID: p.conv,
+		Role:           cortex.RoleSystem,
+		Content:        projectMemoryPrefix + string(data),
+	})
+	return err
+}
+
+// Recent returns the newest n project records, oldest first.
+func (p *ProjectMemory) Recent(n int) ([]ProjectRecord, error) {
+	msgs, err := p.c.Transcript(p.conv, 0, 0)
+	if err != nil {
+		return nil, err
+	}
+	var out []ProjectRecord
+	for _, m := range msgs {
+		if m.Role != cortex.RoleSystem || !strings.HasPrefix(m.Content, projectMemoryPrefix) {
+			continue
+		}
+		var rec ProjectRecord
+		if json.Unmarshal([]byte(strings.TrimPrefix(m.Content, projectMemoryPrefix)), &rec) == nil {
+			out = append(out, rec)
+		}
+	}
+	if n > 0 && len(out) > n {
+		out = out[len(out)-n:]
+	}
+	return out, nil
+}
+
+// RenderProjectMemory renders records as the grounding section planners and
+// task sheets carry. Decisions (SDR/DLR) render before task summaries because
+// they bind everything after them.
+func RenderProjectMemory(records []ProjectRecord) string {
+	if len(records) == 0 {
+		return ""
+	}
+	var decisions, tasks []ProjectRecord
+	for _, r := range records {
+		switch r.Kind {
+		case "sdr", "dlr":
+			decisions = append(decisions, r)
+		default:
+			tasks = append(tasks, r)
+		}
+	}
+	var b strings.Builder
+	for _, r := range decisions {
+		label := "Stack decision"
+		if r.Kind == "dlr" {
+			label = "Design language"
+		}
+		fmt.Fprintf(&b, "- %s: %s\n", label, r.Summary)
+	}
+	for _, r := range tasks {
+		fmt.Fprintf(&b, "- Delivered: %s\n", r.Summary)
+	}
+	return strings.TrimRight(b.String(), "\n")
+}

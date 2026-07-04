@@ -102,12 +102,12 @@ func uiBearing(plan *orchestrator.Plan, model *workspace.Model) bool {
 // whether the run may proceed. It returns ("", false) only when the run was
 // cancelled while paused (Engineer/Architect blocking card). Prototype never
 // blocks. An already-resolved decision (durable) is adopted without re-asking.
-func (e *Engine) resolveDesignDecision(ctx context.Context, r *run, pol mode.Policy, model *workspace.Model, plan *orchestrator.Plan, message string, hot, cold *llm.Client) (string, bool) {
+func (e *Engine) resolveDesignDecision(ctx context.Context, r *run, pol mode.Policy, model *workspace.Model, plan *orchestrator.Plan, message, projectMemory string, hot, cold *llm.Client) (string, bool) {
 	if sd, ok := e.loadDesignDecision(r.convID); ok {
 		return sd.Constraint, true
 	}
 
-	brief := designBrief(message, model, plan)
+	brief := designBrief(message, model, plan, projectMemory)
 	doctrine := e.designDoctrine()
 	rec, err := decide.AuthorDesign(ctx, hot, cold, brief, doctrine, pol.DecisionCandidates)
 	if err != nil {
@@ -144,6 +144,7 @@ func (e *Engine) resolveDesignDecision(ctx context.Context, r *run, pol mode.Pol
 	if pol.Mode == mode.Prototype {
 		constraint := rec.Summary()
 		_ = e.saveDesignDecision(r.convID, &storedDesignDecision{Record: rec, Decision: "informational", Constraint: constraint, At: time.Now().UTC()})
+		e.recordDesignMemory(r, constraint)
 		e.publish(r, "decision.resolved", map[string]interface{}{"decision_kind": "design", "resolution": "informational"})
 		return constraint, true
 	}
@@ -166,24 +167,35 @@ func (e *Engine) resolveDesignDecision(ctx context.Context, r *run, pol mode.Pol
 func (e *Engine) finalizeDesignDecision(r *run, rec *decide.DesignRecord, d directive, decisionKind string) string {
 	constraint := designConstraint(rec, d)
 	_ = e.saveDesignDecision(r.convID, &storedDesignDecision{Record: rec, Decision: decisionKind, Constraint: constraint, At: time.Now().UTC()})
+	e.recordDesignMemory(r, constraint)
 	e.publish(r, "decision.resolved", map[string]interface{}{"decision_kind": "design", "resolution": decisionKind})
 
 	r.setStatus("running")
-	if led, err := e.readLedger(r.convID); err == nil {
-		led.Status = "running"
-		led.UpdatedAt = time.Now().UTC()
-		_ = e.writeLedger(r.convID, led)
-	}
+	_ = e.mutateLedger(r.convID, func(led *ledger) { led.Status = "running" })
 	return constraint
 }
 
+// recordDesignMemory persists the resolved design language as project memory
+// so later conversations in this project build to the SAME visual language.
+func (e *Engine) recordDesignMemory(r *run, constraint string) {
+	if pm := e.projectMemory(r.projectID); pm != nil {
+		if s := strings.TrimSpace(constraint); s != "" {
+			_ = pm.Record("dlr", s)
+		}
+	}
+}
+
 // designBrief renders the DLR authoring brief: the request, what the workspace
-// tells us, and the UI surfaces the plan will build.
-func designBrief(message string, model *workspace.Model, plan *orchestrator.Plan) string {
+// tells us, the project's durable memory, and the UI surfaces the plan will
+// build.
+func designBrief(message string, model *workspace.Model, plan *orchestrator.Plan, projectMemory string) string {
 	var b strings.Builder
 	fmt.Fprintf(&b, "UI-BEARING BUILD REQUEST:\n%s\n", strings.TrimSpace(message))
 	if s := strings.TrimSpace(model.Summary()); s != "" {
 		fmt.Fprintf(&b, "\nWORKSPACE:\n%s\n", s)
+	}
+	if pmem := strings.TrimSpace(projectMemory); pmem != "" {
+		fmt.Fprintf(&b, "\nPROJECT MEMORY (prior decisions and deliveries on this project):\n%s\n", pmem)
 	}
 	if plan != nil {
 		var uiTitles []string

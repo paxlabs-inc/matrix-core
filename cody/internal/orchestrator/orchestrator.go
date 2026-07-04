@@ -83,6 +83,13 @@ type Options struct {
 	// and the acceptance gate screens UI turn-ins for drift from the banned
 	// defaults it forbids.
 	DesignLanguage string
+	// ExtraGrounding, when set, is appended to the workspace-model grounding on
+	// every sheet: project memory recalled from cortex (prior stack/design
+	// decisions and accepted turn-ins for this project).
+	ExtraGrounding string
+	// OnAccepted, when set, receives every accepted task (id + turn-in summary)
+	// — the engine's project-memory write seam. Pure side-channel.
+	OnAccepted func(taskID, summary string)
 }
 
 // Result is the loop outcome — always honest: done, failed, and why it
@@ -149,6 +156,9 @@ func (o *Orchestrator) Run(ctx context.Context) (*Result, error) {
 		return nil, fmt.Errorf("orchestrator: workspace model: %w", err)
 	}
 	grounding := model.Summary()
+	if extra := strings.TrimSpace(o.opts.ExtraGrounding); extra != "" {
+		grounding += "\n\nPROJECT MEMORY (durable context from prior work on this project):\n" + extra
+	}
 
 	// A task caught in_progress by a crash is re-dispatched from its durable
 	// sheet: reset it to pending so NextEligible picks it back up.
@@ -284,6 +294,11 @@ func (o *Orchestrator) runTask(ctx context.Context, task *Task, grounding string
 			"status": string(report.Status), "summary": report.Summary,
 			"changes": changeRecords(report), "verification": evidenceRecords(report),
 			"gaps": append([]string{}, report.Gaps...),
+			"usage": map[string]interface{}{
+				"prompt_tokens":     report.Usage.PromptTokens,
+				"completion_tokens": report.Usage.CompletionTokens,
+				"total_tokens":      report.Usage.TotalTokens,
+			},
 		})
 
 		// --- verify: independent re-run; never take the worker's word ----
@@ -303,6 +318,9 @@ func (o *Orchestrator) runTask(ctx context.Context, task *Task, grounding string
 				}); err != nil {
 					return false, "", fmt.Errorf("orchestrator: checkpoint: %w", err)
 				}
+			}
+			if o.opts.OnAccepted != nil {
+				o.opts.OnAccepted(task.ID, report.Summary)
 			}
 			return true, "", nil
 		}

@@ -156,8 +156,33 @@ func TestSkillsIndexAndLoad(t *testing.T) {
 		t.Fatal("Load accepted a missing skill")
 	}
 	idx := s.RenderIndex()
-	if !strings.Contains(idx, "sql-tuning, web-perf") {
+	if !strings.Contains(idx, "- sql-tuning") || !strings.Contains(idx, "- web-perf") {
 		t.Fatalf("RenderIndex() = %q", idx)
+	}
+}
+
+func TestSkillsDescriptions(t *testing.T) {
+	root := t.TempDir()
+	seed(t, root, "api-design/SKILL.md",
+		"---\nname: api-design\ndescription: REST API design patterns for production APIs.\n---\n# API Design\n")
+	seed(t, root, "no-desc/SKILL.md", "# No frontmatter here\nJust a body.\n")
+
+	s, err := LoadSkills(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := s.Descriptions["api-design"]; got != "REST API design patterns for production APIs." {
+		t.Fatalf("description = %q", got)
+	}
+	if _, ok := s.Descriptions["no-desc"]; ok {
+		t.Fatal("no-desc should carry no description")
+	}
+	idx := s.RenderIndex()
+	if !strings.Contains(idx, "- api-design — REST API design patterns for production APIs.") {
+		t.Fatalf("RenderIndex() = %q", idx)
+	}
+	if !strings.Contains(idx, "- no-desc\n") {
+		t.Fatalf("RenderIndex() missing bare entry: %q", idx)
 	}
 }
 

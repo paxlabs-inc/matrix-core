@@ -15,8 +15,6 @@ package worker
 
 import (
 	"context"
-	"crypto/sha256"
-	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -31,6 +29,7 @@ import (
 	"matrix/cody/internal/contract"
 	"matrix/cody/internal/edit"
 	"matrix/cody/internal/llm"
+	"matrix/cody/internal/policy"
 	"matrix/cody/internal/verify"
 )
 
@@ -55,6 +54,14 @@ type Options struct {
 	ExtraTools []llm.Tool
 	// ExtraDispatch executes an ExtraTools call by function name.
 	ExtraDispatch func(ctx context.Context, name string, args map[string]interface{}) (string, error)
+	// Skills, when set, surfaces the skills library to the worker: the index
+	// (names + one-line descriptions) rides the system prompt, bodies are
+	// pulled on demand with the skill_load tool.
+	Skills *policy.Skills
+	// ScaffoldDir, when set, points at the scaffolder suite
+	// (scaffold-<stack>.sh). Greenfield structure comes from a scaffolder run
+	// via exec, never hand-written boilerplate.
+	ScaffoldDir string
 }
 
 // execOutputCap is the inline byte cap for exec output before it spills to an
@@ -89,6 +96,14 @@ type Worker struct {
 	overflows map[string]*overflowState
 	// services are supervised background processes, killed at run end.
 	services map[string]*exec.Cmd
+	// jobs are auto-promoted background commands (long execs), killed at run end.
+	jobs map[string]*job
+	// loops is the stuck-worker guard: hashed (tool, input, output) signatures
+	// over a sliding window; a repeated identical call stops the run honestly
+	// instead of burning the step budget.
+	loops loopDetector
+	// usage accumulates the worker's LLM token spend across the run.
+	usage contract.Usage
 }
 
 type overflowState struct {
@@ -132,6 +147,7 @@ func New(opts Options) (*Worker, error) {
 		changeWhy: map[string]string{},
 		overflows: map[string]*overflowState{},
 		services:  map[string]*exec.Cmd{},
+		jobs:      map[string]*job{},
 	}, nil
 }
 
@@ -140,6 +156,7 @@ func New(opts Options) (*Worker, error) {
 // cooperating the report is an honest blocked/partial.
 func (w *Worker) Run(ctx context.Context) (*contract.TurnInReport, error) {
 	defer w.stopAllServices()
+	defer w.stopAllJobs()
 
 	w.messages = []llm.Message{
 		llm.SystemMessage(w.systemPrompt()),
@@ -149,10 +166,14 @@ func (w *Worker) Run(ctx context.Context) (*contract.TurnInReport, error) {
 	nudges := 0
 
 	for step := 0; step < w.opts.MaxSteps; step++ {
+		w.foldFinishedJobs()
 		res, err := w.opts.Client.Chat(ctx, llm.ChatRequest{Messages: w.messages, Tools: tools})
 		if err != nil {
 			return nil, fmt.Errorf("worker: llm turn failed: %w", err)
 		}
+		w.usage.PromptTokens += res.Usage.PromptTokens
+		w.usage.CompletionTokens += res.Usage.CompletionTokens
+		w.usage.TotalTokens += res.Usage.TotalTokens
 		w.messages = append(w.messages, res.Message)
 
 		if !res.HasToolCalls() {
@@ -175,10 +196,16 @@ func (w *Worker) Run(ctx context.Context) (*contract.TurnInReport, error) {
 					return report, nil
 				}
 				w.messages = append(w.messages, llm.ToolResult(tc.ID, tc.Function.Name, refusal))
+				if w.loops.observe(tc.Function.Name, tc.Function.Arguments, refusal) {
+					return w.synthesizeReport(loopGap), nil
+				}
 				continue
 			}
 			out := w.dispatch(ctx, tc)
 			w.messages = append(w.messages, llm.ToolResult(tc.ID, tc.Function.Name, out))
+			if w.loops.observe(tc.Function.Name, tc.Function.Arguments, out) {
+				return w.synthesizeReport(loopGap), nil
+			}
 		}
 	}
 
@@ -201,6 +228,7 @@ func (w *Worker) synthesizeReport(gap string) *contract.TurnInReport {
 		Verification: w.evidence(),
 		Gaps:         []string{gap},
 		Attempt:      w.opts.Sheet.Attempt,
+		Usage:        w.usage,
 	}
 	return r
 }
@@ -225,6 +253,16 @@ func (w *Worker) tryTurnIn(tc llm.ToolCall) (*contract.TurnInReport, string) {
 	if pending := w.pendingOverflows(); len(pending) > 0 {
 		return nil, "turn_in refused: truncated tool output has not been read in full. " +
 			"Read these overflow files to the end with fs_read first: " + strings.Join(pending, ", ")
+	}
+
+	// Background jobs must be resolved before a done claim: a still-running
+	// command's outcome is unknown, so 'done' over it would be a false success.
+	w.foldFinishedJobs()
+	if status == contract.StatusDone {
+		if running := w.runningJobs(); len(running) > 0 {
+			return nil, "turn_in refused: background jobs are still running: " + strings.Join(running, ", ") +
+				". Wait for them with job_output (or stop them with job_kill) and check their results first."
+		}
 	}
 
 	if status == contract.StatusDone {
@@ -255,6 +293,7 @@ func (w *Worker) tryTurnIn(tc llm.ToolCall) (*contract.TurnInReport, string) {
 		Gaps:         args.Gaps,
 		Assumptions:  args.Assumptions,
 		Attempt:      w.opts.Sheet.Attempt,
+		Usage:        w.usage,
 	}
 	if err := report.Validate(); err != nil {
 		return nil, "turn_in refused: " + err.Error()
@@ -347,6 +386,10 @@ func (w *Worker) dispatch(ctx context.Context, tc llm.ToolCall) string {
 		return w.toolRead(args)
 	case "fs_list":
 		return w.toolList(args)
+	case "grep":
+		return w.toolGrep(args)
+	case "glob":
+		return w.toolGlob(args)
 	case "fs_write":
 		return w.toolWrite(args)
 	case "fs_edit":
@@ -355,10 +398,16 @@ func (w *Worker) dispatch(ctx context.Context, tc llm.ToolCall) string {
 		return w.toolDelete(args)
 	case "exec":
 		return w.toolExec(ctx, args)
+	case "job_output":
+		return w.toolJobOutput(args)
+	case "job_kill":
+		return w.toolJobKill(args)
 	case "service_start":
 		return w.toolServiceStart(args)
 	case "service_stop":
 		return w.toolServiceStop(args)
+	case "skill_load":
+		return w.toolSkillLoad(args)
 	case "verify_run":
 		return w.toolVerifyRun(ctx)
 	default:
@@ -449,10 +498,29 @@ func (w *Worker) toolRead(args map[string]interface{}) string {
 			st.cursor = end
 		}
 	}
+	body := numberLines(chunk, 1+strings.Count(data[:offset], "\n"))
 	if end < total {
-		return fmt.Sprintf("%s\n[fs_read: bytes %d-%d of %d; continue with offset=%d]", chunk, offset, end, total, end)
+		return fmt.Sprintf("%s\n[fs_read: bytes %d-%d of %d; continue with offset=%d]", body, offset, end, total, end)
 	}
-	return chunk
+	return body
+}
+
+// numberLines prefixes each line of a chunk with its 1-based line number in
+// the file. The "N| " prefix is display metadata only — it is never part of
+// the file content and must never appear in fs_edit anchors.
+func numberLines(chunk string, startLine int) string {
+	if chunk == "" {
+		return chunk
+	}
+	lines := strings.Split(chunk, "\n")
+	var b strings.Builder
+	for i, line := range lines {
+		if i == len(lines)-1 && line == "" {
+			break // the chunk's trailing newline is not an extra line
+		}
+		fmt.Fprintf(&b, "%6d| %s\n", startLine+i, line)
+	}
+	return strings.TrimSuffix(b.String(), "\n")
 }
 
 func (w *Worker) toolList(args map[string]interface{}) string {
@@ -491,13 +559,13 @@ func (w *Worker) toolWrite(args map[string]interface{}) string {
 			return "error: " + err.Error()
 		}
 		w.recordChange(rel, "create")
-		return "created " + rel
+		return "created " + rel + w.diagnose(rel)
 	}
 	if err := w.edits.Overwrite(rel, content); err != nil {
 		return "error: " + err.Error()
 	}
 	w.recordChange(rel, "edit")
-	return "overwrote " + rel
+	return "overwrote " + rel + w.diagnose(rel)
 }
 
 func (w *Worker) toolEdit(args map[string]interface{}) string {
@@ -515,7 +583,7 @@ func (w *Worker) toolEdit(args map[string]interface{}) string {
 		return "error: " + err.Error()
 	}
 	w.recordChange(rel, "edit")
-	return "edited " + rel
+	return "edited " + rel + w.diagnose(rel)
 }
 
 func (w *Worker) toolDelete(args map[string]interface{}) string {
@@ -533,64 +601,80 @@ func (w *Worker) toolDelete(args map[string]interface{}) string {
 	return "deleted " + rel
 }
 
+// toolExec runs a shell command. A command that finishes within
+// autoBackgroundAfter returns inline (overflow-spilled when oversized); a
+// longer one is auto-promoted to a background job so the step returns
+// immediately and the worker keeps moving (poll with job_output, stop with
+// job_kill). An explicit timeout_secs at or under the promotion threshold is
+// honored as a hard kill (the legacy bounded-exec contract).
 func (w *Worker) toolExec(ctx context.Context, args map[string]interface{}) string {
 	cmdStr := str(args, "cmd")
 	if cmdStr == "" {
 		return "error: cmd is required"
 	}
 	timeout := w.opts.ExecTimeout
+	explicit := false
 	if t := num(args, "timeout_secs"); t > 0 {
 		timeout = time.Duration(t) * time.Second
+		explicit = true
 	}
-	cctx, cancel := context.WithTimeout(ctx, timeout)
-	defer cancel()
-	cmd := exec.CommandContext(cctx, "sh", "-c", cmdStr)
-	cmd.Dir = w.opts.Root
-	out, err := cmd.CombinedOutput()
+	j, err := w.startJob(cmdStr)
+	if err != nil {
+		return "error: " + err.Error()
+	}
 	// Any exec may mutate the workspace; verification after it is stale.
 	w.mutSeq++
-	exitNote := "exit 0"
-	if err != nil {
-		if ee, ok := err.(*exec.ExitError); ok {
-			exitNote = fmt.Sprintf("exit %d", ee.ExitCode())
-		} else {
-			exitNote = "error: " + err.Error()
+
+	hardKill := explicit && timeout <= autoBackgroundAfter
+	wait := autoBackgroundAfter
+	if hardKill {
+		wait = timeout
+	}
+	start := time.Now()
+	timer := time.NewTimer(wait)
+	defer timer.Stop()
+	select {
+	case <-j.done:
+		return w.finishInlineExec(j, "")
+	case <-timer.C:
+		if hardKill {
+			_ = j.cmd.Process.Kill()
+			<-j.done
+			return w.finishInlineExec(j, " (timed out)")
 		}
+		return promotionNotice(j, time.Since(start))
+	case <-ctx.Done():
+		_ = j.cmd.Process.Kill()
+		<-j.done
+		w.reapJob(j)
+		return "error: " + ctx.Err().Error()
 	}
-	if cctx.Err() == context.DeadlineExceeded {
-		exitNote += " (timed out)"
-	}
+}
+
+// finishInlineExec renders a completed (non-promoted) exec's result exactly
+// like the classic bounded exec: inline output with the overflow-spill +
+// read-full obligation for oversized output. The job's log file on disk IS
+// the overflow file.
+func (w *Worker) finishInlineExec(j *job, timeoutNote string) string {
+	w.reapJob(j)
+	out, _ := os.ReadFile(j.outPath)
 	body := string(out)
 	if len(out) > execOutputCap {
-		overflow := w.spillOverflow("exec", out)
-		if overflow != "" {
-			w.overflows[filepath.ToSlash(overflow)] = &overflowState{size: int64(len(out))}
-			body = string(out[:execOutputCap]) + fmt.Sprintf(
-				"\n[output truncated: %d of %d bytes shown; the FULL output is at %s — you MUST read it in full with fs_read before turning in]",
-				execOutputCap, len(out), overflow)
-		}
+		w.overflows[filepath.ToSlash(j.outPath)] = &overflowState{size: int64(len(out))}
+		body = string(out[:execOutputCap]) + fmt.Sprintf(
+			"\n[output truncated: %d of %d bytes shown; the FULL output is at %s — you MUST read it in full with fs_read before turning in]",
+			execOutputCap, len(out), j.outPath)
 	}
-	return fmt.Sprintf("[%s]\n%s", exitNote, body)
+	return fmt.Sprintf("[%s%s]\n%s", j.exit(), timeoutNote, body)
 }
 
-func (w *Worker) spillOverflow(kind string, out []byte) string {
-	dir := filepath.Join(w.opts.Root, ".cody", "overflow")
-	if err := os.MkdirAll(dir, 0o755); err != nil {
-		return ""
-	}
-	sum := sha256.Sum256(append([]byte(time.Now().String()+kind), out[:min(len(out), 1024)]...))
-	p := filepath.Join(dir, kind+"-"+hex.EncodeToString(sum[:8])+".log")
-	if err := os.WriteFile(p, out, 0o644); err != nil {
-		return ""
-	}
-	return p
-}
-
-func min(a, b int) int {
-	if a < b {
-		return a
-	}
-	return b
+// reapJob removes a finished job from tracking, marking its completion as
+// already folded into the mutation sequence (toolExec bumped it at start).
+func (w *Worker) reapJob(j *job) {
+	j.mu.Lock()
+	j.folded = true
+	j.mu.Unlock()
+	delete(w.jobs, j.id)
 }
 
 func (w *Worker) toolServiceStart(args map[string]interface{}) string {
@@ -640,6 +724,26 @@ func (w *Worker) stopAllServices() {
 		_, _ = cmd.Process.Wait()
 		delete(w.services, name)
 	}
+}
+
+// toolSkillLoad returns a skill playbook's full body on demand (the index of
+// names + descriptions rides the system prompt; bodies are never resident).
+func (w *Worker) toolSkillLoad(args map[string]interface{}) string {
+	if w.opts.Skills == nil || len(w.opts.Skills.Names) == 0 {
+		return "error: no skills library is configured"
+	}
+	name := str(args, "name")
+	if name == "" {
+		return "error: name is required"
+	}
+	body, err := w.opts.Skills.Load(name)
+	if err != nil {
+		return "error: " + err.Error()
+	}
+	if len(body) > fsReadCap {
+		body = body[:fsReadCap] + "\n[skill body truncated]"
+	}
+	return body
 }
 
 func (w *Worker) toolVerifyRun(ctx context.Context) string {
@@ -709,7 +813,20 @@ func (w *Worker) systemPrompt() string {
 			b.WriteString("- " + r + "\n")
 		}
 	}
-	b.WriteString("\nWork loop: read before you write; make anchored edits; run verify_run after changes; ")
+	if w.opts.Skills != nil && len(w.opts.Skills.Names) > 0 {
+		b.WriteString("\n" + w.opts.Skills.RenderIndex())
+		b.WriteString("When the task matches a skill, load its full playbook with skill_load and follow it.\n")
+	}
+	if stacks := ScaffoldStacks(w.opts.ScaffoldDir); len(stacks) > 0 {
+		b.WriteString("\nScaffolder suite (greenfield projects): when the task creates a NEW project/app, ")
+		b.WriteString("run the matching scaffolder via exec instead of hand-writing boilerplate:\n")
+		fmt.Fprintf(&b, "  bash %s/scaffold-<stack>.sh <project-name> <parent-dir> --no-git [--pm pnpm] [--force]\n", w.opts.ScaffoldDir)
+		b.WriteString("  stacks: " + strings.Join(stacks, ", ") + "\n")
+		b.WriteString("Always pass --no-git (the workspace already tracks changes). The scaffolder creates <parent-dir>/<slug> with production structure (CI, Dockerfile, docs, lint/test config).\n")
+	}
+	b.WriteString("\nWork loop: orient with grep/glob; read before you write (fs_read shows 'N| ' line-number ")
+	b.WriteString("prefixes — they are display metadata, NEVER part of the file: never include them in fs_edit ")
+	b.WriteString("anchors or fs_write content); make anchored edits; run verify_run after changes; ")
 	b.WriteString("finish with the turn_in tool carrying your honest status. A done claim is refused unless ")
 	b.WriteString("verification ran green after your last mutation.")
 	return b.String()
@@ -774,13 +891,23 @@ func (w *Worker) toolSchemas() []llm.Tool {
 		return map[string]interface{}{"type": "string", "description": desc}
 	}
 	tools := []llm.Tool{
-		llm.NewFunctionTool("fs_read", "Read a workspace file (records the freshness anchor for later edits). Large files return a chunk plus the offset to continue from.",
+		llm.NewFunctionTool("fs_read", "Read a workspace file (records the freshness anchor for later edits). Output is line-numbered ('N| ' prefixes are display metadata — never include them in fs_edit anchors). Large files return a chunk plus the offset to continue from.",
 			obj(map[string]interface{}{
 				"path":   strProp("workspace-relative path"),
 				"offset": map[string]interface{}{"type": "integer", "description": "byte offset to continue a long read"},
 			}, "path")),
 		llm.NewFunctionTool("fs_list", "List a workspace directory.",
 			obj(map[string]interface{}{"path": strProp("workspace-relative directory (default .)")})),
+		llm.NewFunctionTool("grep", "Search file contents across the workspace with a regular expression. Returns path:line: text matches (capped at 100). Far cheaper than exec grep or reading files whole.",
+			obj(map[string]interface{}{
+				"pattern": strProp("Go regular expression to search for"),
+				"path":    strProp("workspace-relative directory to search under (default the whole workspace)"),
+				"include": strProp("glob filter on file paths, e.g. *.go or src/**/*.ts"),
+			}, "pattern")),
+		llm.NewFunctionTool("glob", "Find files by path pattern (supports ** for directories), newest first, capped at 100. Use to orient before reading.",
+			obj(map[string]interface{}{
+				"pattern": strProp("glob over workspace-relative paths, e.g. **/*.tsx or cmd/**/main.go"),
+			}, "pattern")),
 		llm.NewFunctionTool("fs_write", "Create a new file, or fully overwrite a file you have READ this session. Overwrites of unread or drifted files are refused.",
 			obj(map[string]interface{}{
 				"path":    strProp("workspace-relative path"),
@@ -795,11 +922,15 @@ func (w *Worker) toolSchemas() []llm.Tool {
 			}, "path", "old_text", "new_text")),
 		llm.NewFunctionTool("fs_delete", "Delete a file you have READ (fresh).",
 			obj(map[string]interface{}{"path": strProp("workspace-relative path")}, "path")),
-		llm.NewFunctionTool("exec", "Run a shell command in the workspace root. Oversized output spills to an overflow file you MUST read in full before turning in.",
+		llm.NewFunctionTool("exec", "Run a shell command in the workspace root. Oversized output spills to an overflow file you MUST read in full before turning in. A command still running after 60s is promoted to a background job (poll with job_output, stop with job_kill) so you keep working meanwhile.",
 			obj(map[string]interface{}{
 				"cmd":          strProp("shell command"),
-				"timeout_secs": map[string]interface{}{"type": "integer", "description": "timeout in seconds"},
+				"timeout_secs": map[string]interface{}{"type": "integer", "description": "hard timeout in seconds (only enforced as a kill when 60 or less; longer commands background instead)"},
 			}, "cmd")),
+		llm.NewFunctionTool("job_output", "Check a background job: running/finished state plus the tail of its output. A done claim is refused while jobs are still running.",
+			obj(map[string]interface{}{"id": strProp("job id from the promotion notice")}, "id")),
+		llm.NewFunctionTool("job_kill", "Stop a background job.",
+			obj(map[string]interface{}{"id": strProp("job id from the promotion notice")}, "id")),
 		llm.NewFunctionTool("service_start", "Start a supervised background service (e.g. a dev server). It keeps running until service_stop or the end of the task.",
 			obj(map[string]interface{}{
 				"name": strProp("service name"),
@@ -825,6 +956,11 @@ func (w *Worker) toolSchemas() []llm.Tool {
 				"assumptions": map[string]interface{}{"type": "array", "items": map[string]interface{}{"type": "string"}},
 				"screenshots": map[string]interface{}{"type": "array", "items": map[string]interface{}{"type": "string"}, "description": "workspace-relative paths to screenshot artifacts of the rendered UI (REQUIRED for a UI task; each must be a real file you captured)"},
 			}, "status", "summary")),
+	}
+	if w.opts.Skills != nil && len(w.opts.Skills.Names) > 0 {
+		tools = append(tools, llm.NewFunctionTool("skill_load",
+			"Load a skill playbook's full body by name (the index of available skills is in your system prompt).",
+			obj(map[string]interface{}{"name": strProp("skill name from the index")}, "name")))
 	}
 	return append(tools, w.opts.ExtraTools...)
 }

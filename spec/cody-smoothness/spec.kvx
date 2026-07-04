@@ -120,7 +120,7 @@ requires = ["2.1"]
 
 [task.2.3]
 title  = "Continue a stopped/completed run over the same conversation"
-status = "pending"
+status = "done"
 wave   = 2
 do_1   = "Ensure /chat with an existing conversation_id resumes the durable plan (LoadPlan already does) and that a stopped/completed conversation can be re-driven ('continue'); confirm the dispatch envelope carries what the client needs to re-attach and that the resumed run re-emits current activity"
 reqs   = ["3.2"]
@@ -133,7 +133,7 @@ status  = "pending"
 
 [task.3.1]
 title  = "Fold run.started/run.activity + transcript into useCody"
-status = "pending"
+status = "done"
 wave   = 3
 do_1   = "Extend CodyRun (hooks/api/useCody.ts) with activity {phase,label,detail,since} and an ordered transcript (user + assistant + inline question turns); fold run.started/run.activity, the now-persisted chat.assistant, and chat.user; run.answered/decision.resolved set a 'continuing' activity; keep durable == live (buildRunFromTrace == live fold)"
 reqs   = ["1.4", "4.2", "5.3"]
@@ -141,7 +141,7 @@ requires = ["1.1", "2.1"]
 
 [task.3.2]
 title  = "Conversations history transport"
-status = "pending"
+status = "done"
 wave   = 3
 do_1   = "Add getConversations() + types to lib/api/cody.ts over the shared apiFetch, mirroring the existing route wrappers"
 reqs   = ["4.3"]
@@ -154,7 +154,7 @@ status  = "pending"
 
 [task.4.1]
 title  = "Always-live activity spine"
-status = "pending"
+status = "done"
 wave   = 4
 do_1   = "A prominent activity region rendered from run.activity: plain-language phase label + liveness (existing loaders) + elapsed + the latest Cody line; NEVER blank while running/awaiting; rendered in all tiers with register copy; replaces the blank RunView states in cody-workspace.tsx; house rules hold"
 reqs   = ["1.1", "1.2", "1.3", "5.1", "5.2"]
@@ -162,7 +162,7 @@ requires = ["3.1"]
 
 [task.4.2]
 title  = "Context-aware composer + persistent transcript"
-status = "pending"
+status = "done"
 wave   = 4
 do_1   = "Replace the disabled-when-idle ChatRail with ONE composer whose action follows run state: idle->start (keep the spec-adoption options), running->steer, needs_input/decision->answer (approve/override/free text), stopped/completed->continue; render a persistent transcript (both sides + inline questions) that rebuilds from the durable trace"
 reqs   = ["3.1", "3.3", "3.4", "5.1"]
@@ -170,7 +170,7 @@ requires = ["3.1"]
 
 [task.4.3]
 title  = "Approve-then-flow + inline decision answering"
-status = "pending"
+status = "done"
 wave   = 4
 do_1   = "On answering a decision/needs-input, immediately show the 'continuing' activity (no blank gap); keep the decision cards but also allow answering inline in the transcript; wire to run.answered/decision.resolved"
 reqs   = ["1.4", "3.3"]
@@ -178,7 +178,7 @@ requires = ["4.1", "4.2"]
 
 [task.4.4]
 title  = "Server-backed History page"
-status = "pending"
+status = "done"
 wave   = 4
 do_1   = "Point CodyHistory at GET /conversations (cross-device), merging/falling back to the localStorage cache; opening one rebuilds the workspace from its durable trace"
 reqs   = ["4.3"]

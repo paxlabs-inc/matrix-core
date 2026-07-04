@@ -140,6 +140,22 @@ func (s Status) valid() bool {
 	return false
 }
 
+// Usage is a worker's LLM token accounting for one task attempt — the run
+// ledger accumulates it per run so the metered spend is visible on the
+// deliverable, not just in the gateway's books.
+type Usage struct {
+	PromptTokens     int `json:"prompt_tokens,omitempty"`
+	CompletionTokens int `json:"completion_tokens,omitempty"`
+	TotalTokens      int `json:"total_tokens,omitempty"`
+}
+
+// Add folds another accounting into this one.
+func (u *Usage) Add(o Usage) {
+	u.PromptTokens += o.PromptTokens
+	u.CompletionTokens += o.CompletionTokens
+	u.TotalTokens += o.TotalTokens
+}
+
 // Change records one workspace mutation the worker made.
 type Change struct {
 	Path string `json:"path"`
@@ -181,6 +197,8 @@ type TurnInReport struct {
 	Assumptions  []string   `json:"assumptions,omitempty"`
 	// Attempt echoes the sheet attempt this report answers.
 	Attempt int `json:"attempt,omitempty"`
+	// Usage is the worker's LLM token spend for this attempt (engine-recorded).
+	Usage Usage `json:"usage,omitempty"`
 }
 
 // Validate enforces the report contract: a known status, a matching task id,

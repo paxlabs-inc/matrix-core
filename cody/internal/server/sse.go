@@ -24,7 +24,27 @@ const (
 	subBuffer = 256
 	// maxReplayBuf caps the per-topic replay ring.
 	maxReplayBuf = 512
+	// mustDeliverWait bounds how long a must-deliver publish blocks on ONE full
+	// subscriber before giving up (the replay ring still carries the event).
+	mustDeliverWait = 50 * time.Millisecond
 )
+
+// mustDeliverTypes are the terminal / decision events a live subscriber must
+// not lose to a full buffer: publish blocks briefly (bounded) instead of
+// dropping instantly. Streaming-grade events (activity ticks, chat deltas,
+// loop milestones) keep the lossy fast path.
+var mustDeliverTypes = map[string]bool{
+	"plan.completed":    true,
+	"message.complete":  true,
+	"chat.assistant":    true,
+	"run.needs_input":   true,
+	"run.answered":      true,
+	"decision.stack":    true,
+	"decision.design":   true,
+	"decision.resolved": true,
+	"preview.ready":     true,
+	"preview.failed":    true,
+}
 
 // broker fans events out per run topic with seq-stamped replay, mirroring the
 // proven Neo shape: ensure-at-dispatch, non-blocking publish, replay + live
@@ -70,8 +90,10 @@ func (b *broker) topic(id string) *topicState {
 // has reports whether the broker owns a live-or-replayable topic for id.
 func (b *broker) has(id string) bool { return b.topic(id) != nil }
 
-// publish stamps and fans an event out to subscribers (non-blocking; a slow
-// subscriber drops), appends it to the replay ring, then feeds the tap.
+// publish stamps and fans an event out to subscribers, appends it to the
+// replay ring, then feeds the tap. Streaming-grade events are non-blocking (a
+// slow subscriber drops); must-deliver types block briefly per subscriber so
+// a terminal is never lost to a momentarily-full buffer.
 func (b *broker) publish(id, typ, phase string, fields map[string]interface{}) Event {
 	b.ensure(id)
 	t := b.topic(id)
@@ -82,11 +104,22 @@ func (b *broker) publish(id, typ, phase string, fields map[string]interface{}) E
 	if len(t.buf) > maxReplayBuf {
 		t.buf = t.buf[len(t.buf)-maxReplayBuf:]
 	}
+	mustDeliver := mustDeliverTypes[typ]
 	for _, ch := range t.subs {
 		select {
 		case ch <- ev:
+			continue
 		default:
 		}
+		if !mustDeliver {
+			continue
+		}
+		timer := time.NewTimer(mustDeliverWait)
+		select {
+		case ch <- ev:
+		case <-timer.C:
+		}
+		timer.Stop()
 	}
 	t.mu.Unlock()
 	if b.tap != nil {
@@ -145,6 +178,19 @@ func (b *broker) closeRun(id string) {
 		delete(t.subs, subID)
 		close(ch)
 	}
+}
+
+// reopen clears a topic's terminal mark so a continued run streams live again
+// on the same topic; the replay ring and seq numbering carry on where the
+// previous run left off.
+func (b *broker) reopen(id string) {
+	t := b.topic(id)
+	if t == nil {
+		return
+	}
+	t.mu.Lock()
+	t.closed = false
+	t.mu.Unlock()
 }
 
 // drop forgets a topic entirely.

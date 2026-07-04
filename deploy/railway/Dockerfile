@@ -280,6 +280,10 @@ COPY tools/media     /opt/matrix/tools/media
 COPY tools/uwac      /opt/matrix/tools/uwac
 COPY tools/chronos   /opt/matrix/tools/chronos
 COPY tools/layerx    /opt/matrix/tools/layerx
+# Cody scaffolder suite (scaffold-<stack>.sh): workers run these via exec for
+# greenfield project structure instead of hand-writing boilerplate.
+COPY tools/scaffold  /opt/matrix/tools/scaffold
+RUN chmod +x /opt/matrix/tools/scaffold/*.sh
 # Paxeer Cloud CLI (static Go binary; driven through the exec shell tool, not
 # MCP). Symlink onto PATH so `paxc` resolves from any shell cwd.
 COPY tools/paxeer-cloud /opt/matrix/tools/paxeer-cloud

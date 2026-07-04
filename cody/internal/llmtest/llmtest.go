@@ -115,8 +115,14 @@ func NewServer(t *testing.T, script func(step int, req Request) Turn) *httptest.
 			Delta        delta  `json:"delta"`
 			FinishReason string `json:"finish_reason,omitempty"`
 		}
+		type usage struct {
+			PromptTokens     int `json:"prompt_tokens"`
+			CompletionTokens int `json:"completion_tokens"`
+			TotalTokens      int `json:"total_tokens"`
+		}
 		type chunk struct {
 			Choices []choice `json:"choices"`
+			Usage   *usage   `json:"usage,omitempty"`
 		}
 
 		writeChunk(chunk{Choices: []choice{{Delta: delta{Role: "assistant"}}}})
@@ -137,7 +143,10 @@ func NewServer(t *testing.T, script func(step int, req Request) Turn) *httptest.
 		} else {
 			writeChunk(chunk{Choices: []choice{{Delta: delta{Content: turn.Content}}}})
 		}
-		writeChunk(chunk{Choices: []choice{{Delta: delta{}, FinishReason: finish}}})
+		// The terminal usage chunk mirrors real providers (the gateway injects
+		// stream_options.include_usage), so token accounting is exercised
+		// through the real SSE parse path.
+		writeChunk(chunk{Choices: []choice{{Delta: delta{}, FinishReason: finish}}, Usage: &usage{PromptTokens: 7, CompletionTokens: 3, TotalTokens: 10}})
 		fmt.Fprint(rw, "data: [DONE]\n\n")
 	}))
 }

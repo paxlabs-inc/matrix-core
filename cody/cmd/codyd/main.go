@@ -41,6 +41,7 @@ func main() {
 	defaultMode := flag.String("mode", envOrDefault("CODY_DEFAULT_MODE", "engineer"), "default mode (prototype|engineer|architect)")
 	rulesDir := flag.String("rules", os.Getenv("CODY_RULES_DIR"), "rules/ standards dir (optional)")
 	skillsDir := flag.String("skills", os.Getenv("CODY_SKILLS_DIR"), "skills/ library dir (optional)")
+	scaffoldDir := flag.String("scaffold", os.Getenv("CODY_SCAFFOLD_DIR"), "scaffolder suite dir (optional)")
 	flag.Parse()
 
 	m, err := mode.Parse(*defaultMode)
@@ -88,8 +89,13 @@ func main() {
 		DefaultMode:       m,
 		OrchestratorModel: os.Getenv("CODY_ORCHESTRATOR_MODEL"),
 		WorkerModel:       os.Getenv("CODY_WORKER_MODEL"),
-		RulesDir:          *rulesDir,
-		SkillsDir:         *skillsDir,
+		// Conversation titles come from a small bounded LLM call (async;
+		// fallback = the first message line). CODY_TITLE_MODEL overrides the
+		// model; the call is best-effort and never blocks a dispatch.
+		TitleModel:  envOrDefault("CODY_TITLE_MODEL", mode.FastModel),
+		RulesDir:    *rulesDir,
+		SkillsDir:   *skillsDir,
+		ScaffoldDir: *scaffoldDir,
 		// Shared tool services (req 13.1): the browser (screenshot evidence),
 		// fetch, and web search. Boot-safe when unset — same env as the Neo
 		// daemon's tool proxies so one environment configures both.

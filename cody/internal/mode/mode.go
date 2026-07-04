@@ -81,8 +81,14 @@ const GatewaySlot = "cody"
 const (
 	defaultOrchestratorModel = "zai-org/GLM-5.2"
 	defaultWorkerModel       = "zai-org/GLM-5.2"
-	defaultFastWorkerModel   = "zai-org/GLM-5.2"
+	// The fast tier (Prototype workers, conversation titles): the Fireworks
+	// GLM router on the cody slot whitelist.
+	defaultFastWorkerModel = "accounts/fireworks/routers/glm-5p1-fast"
 )
+
+// FastModel is the small/fast whitelisted model for cheap auxiliary calls
+// (conversation titles).
+const FastModel = defaultFastWorkerModel
 
 // Policy is one mode rendered as an explicit tuple. It parameterizes the one
 // engine — it can dial ceremony, never the standard.

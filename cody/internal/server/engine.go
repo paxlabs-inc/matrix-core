@@ -61,6 +61,12 @@ type EngineOptions struct {
 	// RulesDir / SkillsDir surface the standards library; empty disables.
 	RulesDir  string
 	SkillsDir string
+	// ScaffoldDir points at the scaffolder suite (scaffold-<stack>.sh) workers
+	// run for greenfield project structure; empty disables the prompt section.
+	ScaffoldDir string
+	// TitleModel, when set, generates the conversation title with a small
+	// bounded LLM call (async, fallback = first message line). Empty disables.
+	TitleModel string
 	// Worker ExtraTools bridges (req 13.1): the shared browser (for screenshot
 	// evidence), fetch, and web search. Each is boot-safe when unset.
 	BrowserURL   string
@@ -99,6 +105,9 @@ type Engine struct {
 	broker   *broker
 	trace    *traceStore
 	projects *projectRegistry
+	// skills is the loaded skills library (index + on-demand loader); nil when
+	// SkillsDir is unset or unreadable.
+	skills *policy.Skills
 	// preview is the on-demand sandbox preview manager (req 7); nil when
 	// previews are not configured. previewCancel stops its TTL reaper on Close.
 	preview       *preview.Manager
@@ -111,6 +120,10 @@ type Engine struct {
 	// inboxMu serializes read-modify-write of every conversation's durable
 	// answer/steer inbox (inbox.go).
 	inboxMu sync.Mutex
+	// ledgerMu serializes read-modify-write of the per-conversation run
+	// ledgers (the async title generator writes concurrently with the drive
+	// goroutine's status updates).
+	ledgerMu sync.Mutex
 }
 
 // run is one live plan execution.
@@ -134,6 +147,22 @@ type run struct {
 	// so the liveness heartbeat re-emits genuine current state. Guarded by mu.
 	phase  string
 	detail string
+	// usage accumulates the run's worker LLM token spend. Guarded by mu.
+	usage contract.Usage
+}
+
+// addUsage folds one turn-in's token accounting into the run total.
+func (r *run) addUsage(u contract.Usage) {
+	r.mu.Lock()
+	r.usage.Add(u)
+	r.mu.Unlock()
+}
+
+// getUsage returns the run's accumulated token accounting.
+func (r *run) getUsage() contract.Usage {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	return r.usage
 }
 
 // setActivity records the run's current phase + detail for the heartbeat.
@@ -234,6 +263,16 @@ func NewEngine(opts EngineOptions) (*Engine, error) {
 	}
 	e.broker.setTap(e.recordTrace)
 
+	// The skills library loads once at boot: the index (names + descriptions)
+	// rides every worker's prompt; bodies are pulled on demand via skill_load.
+	if opts.SkillsDir != "" {
+		if skills, err := policy.LoadSkills(opts.SkillsDir); err == nil && len(skills.Names) > 0 {
+			e.skills = skills
+		} else if err != nil {
+			opts.Logf("codyd: skills dir %s: %v", opts.SkillsDir, err)
+		}
+	}
+
 	// Preview manager (req 7): built only when a sandbox client and the router
 	// coordinates are present. Its TTL reaper runs for the engine's lifetime.
 	if opts.Sandbox != nil && opts.PreviewUserID != "" && opts.RouterInternalURL != "" {
@@ -315,21 +354,49 @@ func (e *Engine) Submit(convID, message, modeName, projectID, spec, specSource s
 	s := e.session(convID)
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	if s.active != nil && s.active.getStatus() == "running" {
-		// One live plan per conversation: attach to the work already underway.
-		return s.active.id, false, nil
+	if s.active != nil {
+		switch s.active.getStatus() {
+		case "running", "needs_input":
+			// One live plan per conversation: attach to the work already
+			// underway (a parked run resolves via /answer, not a re-dispatch).
+			return s.active.id, false, nil
+		}
 	}
-	r := &run{id: newRunID(), convID: convID, projectID: proj.ID, root: proj.Root, done: make(chan struct{}), status: "running", started: time.Now()}
+	e.ledgerMu.Lock()
+	runID := newRunID()
+	fresh := true
+	prior, perr := e.readLedger(convID)
+	if perr == nil && prior.RunID != "" {
+		// Continue (req 3.2): a re-dispatch on an existing conversation resumes
+		// the same durable plan under the SAME run id, so the durable trace and
+		// the client's attach point (events/trace URLs) stay continuous instead
+		// of starting over.
+		runID = prior.RunID
+		fresh = false
+	}
+	r := &run{id: runID, convID: convID, projectID: proj.ID, root: proj.Root, done: make(chan struct{}), status: "running", started: time.Now()}
 	e.registerRun(r)
 	e.broker.ensure(r.id) // before Submit returns: no dispatch->subscribe race
+	e.broker.reopen(r.id) // a continued run streams live on the same topic
 	s.active = r
 	led := ledger{RunID: r.id, Message: message, Title: conversationTitle(message), Mode: string(m), ProjectID: proj.ID, Root: proj.Root, Spec: spec, SpecSource: specSource, Status: "running", UpdatedAt: time.Now().UTC()}
-	if prior, err := e.readLedger(convID); err == nil && prior.Title != "" {
-		// A continued conversation keeps its original title.
-		led.Title = prior.Title
+	if perr == nil {
+		// A continued conversation keeps its original title and its
+		// accumulated token accounting.
+		if prior.Title != "" {
+			led.Title = prior.Title
+		}
+		led.Usage = prior.Usage
 	}
 	if err := e.writeLedger(convID, led); err != nil {
+		e.ledgerMu.Unlock()
 		return "", false, err
+	}
+	e.ledgerMu.Unlock()
+	if fresh && e.opts.TitleModel != "" {
+		// The durable title upgrades asynchronously from first-line-of-message
+		// to a small-model one-liner; failure keeps the fallback silently.
+		go e.generateTitle(convID, message)
 	}
 	// The initiating message is a durable user turn (req 4.1): the transcript
 	// shows BOTH sides on reopen. Emitted before drive so it precedes
@@ -456,6 +523,24 @@ type ledger struct {
 	// event.
 	Spec       string `json:"spec,omitempty"`
 	SpecSource string `json:"spec_source,omitempty"`
+	// Usage accumulates the conversation's worker LLM token spend across runs
+	// (each run's total is folded in once at its terminal).
+	Usage contract.Usage `json:"usage,omitempty"`
+}
+
+// mutateLedger atomically read-modify-writes a conversation's ledger — the
+// serialization point between the drive goroutine's status updates and the
+// async title generator.
+func (e *Engine) mutateLedger(convID string, fn func(*ledger)) error {
+	e.ledgerMu.Lock()
+	defer e.ledgerMu.Unlock()
+	led, err := e.readLedger(convID)
+	if err != nil {
+		return err
+	}
+	fn(&led)
+	led.UpdatedAt = time.Now().UTC()
+	return e.writeLedger(convID, led)
 }
 
 func (e *Engine) writeLedger(convID string, led ledger) error {
@@ -482,6 +567,61 @@ func (e *Engine) readLedger(convID string) (ledger, error) {
 		return led, err
 	}
 	return led, json.Unmarshal(data, &led)
+}
+
+// titleMessageCap bounds how much of the initiating message the title
+// generator sees.
+const titleMessageCap = 600
+
+// generateTitle asks a small bounded LLM call for a short conversation title
+// and upgrades the ledger's fallback title. Best-effort: any failure keeps
+// the first-line fallback; the ledger mutation is serialized against the
+// drive goroutine's status updates.
+func (e *Engine) generateTitle(convID, message string) {
+	cfg := mode.For(e.opts.DefaultMode).WorkerLLM(e.opts.GatewayURL, e.opts.ActorDID)
+	cfg.Model = e.opts.TitleModel
+	cfg.Temperature = 0.2
+	cfg.MaxTokens = 60
+	client, err := llm.New(cfg)
+	if err != nil {
+		return
+	}
+	msg := strings.TrimSpace(message)
+	if len(msg) > titleMessageCap {
+		msg = msg[:titleMessageCap]
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+	defer cancel()
+	res, err := client.Chat(ctx, llm.ChatRequest{Messages: []llm.Message{
+		llm.SystemMessage("You title coding conversations. Reply with ONLY a title for the request: max 8 words, no quotes, no trailing punctuation."),
+		llm.UserMessage(msg),
+	}})
+	if err != nil {
+		return
+	}
+	title := sanitizeTitle(res.Message.Content)
+	if title == "" {
+		return
+	}
+	if err := e.mutateLedger(convID, func(led *ledger) { led.Title = title }); err != nil {
+		e.opts.Logf("codyd: title %s: %v", convID, err)
+	}
+}
+
+// sanitizeTitle normalizes a generated title to one clean line, empty when
+// the generation is unusable.
+func sanitizeTitle(s string) string {
+	line := strings.TrimSpace(s)
+	if i := strings.IndexByte(line, '\n'); i >= 0 {
+		line = strings.TrimSpace(line[:i])
+	}
+	line = strings.Trim(line, `"'`+" \t")
+	line = strings.TrimRight(line, ".!")
+	runes := []rune(line)
+	if len(runes) > 80 {
+		line = strings.TrimSpace(string(runes[:80]))
+	}
+	return line
 }
 
 // conversationTitle derives the durable display title from the initiating
@@ -555,10 +695,17 @@ func (e *Engine) drive(ctx context.Context, r *run, message string, m mode.Mode,
 	defer func() {
 		e.broker.closeRun(r.id)
 		time.AfterFunc(2*time.Minute, func() {
-			e.broker.drop(r.id)
+			// A continued run reuses this run id (Submit/launch): when a newer
+			// run instance owns the id, skip the cleanup so the drop never
+			// yanks a live topic or deregisters the live run.
 			e.mu.Lock()
+			if e.runs[r.id] != r {
+				e.mu.Unlock()
+				return
+			}
 			delete(e.runs, r.id)
 			e.mu.Unlock()
+			e.broker.drop(r.id)
 		})
 	}()
 
@@ -594,6 +741,15 @@ func (e *Engine) drive(ctx context.Context, r *run, message string, m mode.Mode,
 		return
 	}
 
+	// Project memory (cortex): the project's prior stack/design decisions and
+	// accepted turn-ins, recalled as grounding so a later conversation plans
+	// from what the project IS instead of re-deriving it from a file scan.
+	projectMemory := e.recallProjectMemory(r.projectID)
+	summary := model.Summary()
+	if projectMemory != "" {
+		summary += "\n\nPROJECT MEMORY (durable context from prior work on this project):\n" + projectMemory
+	}
+
 	// Decision-phase clients (hot generation + cold adjudication), lazily built
 	// once and reused by the SDR, plan-shape authoring, and the DLR.
 	var hotClient, coldClient *llm.Client
@@ -622,7 +778,7 @@ func (e *Engine) drive(ctx context.Context, r *run, message string, m mode.Mode,
 			// truth — including its own stack choices — so the SDR does not gate an
 			// adopted plan.
 			e.activity(r, phasePlanning, "Adopting your spec")
-			plan, err = orchestrator.AdoptSpecDivergent(ctx, hotClient, coldClient, spec, model.Summary(), pol.Render(), pol.DecisionCandidates)
+			plan, err = orchestrator.AdoptSpecDivergent(ctx, hotClient, coldClient, spec, summary, pol.Render(), pol.DecisionCandidates)
 			if err != nil {
 				e.finish(r, "failed", "I could not adopt that spec: "+err.Error())
 				return
@@ -636,7 +792,7 @@ func (e *Engine) drive(ctx context.Context, r *run, message string, m mode.Mode,
 			// returns. Prototype skips it and defaults to the classic stack.
 			if pol.Mode != mode.Prototype && model.Greenfield() {
 				e.activity(r, phaseStack, "")
-				addendum, ok := e.resolveStackDecision(ctx, r, pol, model, message, hotClient, coldClient)
+				addendum, ok := e.resolveStackDecision(ctx, r, pol, model, message, projectMemory, hotClient, coldClient)
 				if !ok {
 					e.say(r, "Stopped. Progress so far is saved — say continue when you want me to pick it back up.")
 					e.finish(r, "stopped", "")
@@ -650,7 +806,7 @@ func (e *Engine) drive(ctx context.Context, r *run, message string, m mode.Mode,
 			// Plan-shape authoring is a decision phase: N divergent candidates
 			// generated hot, judged cold (req 10.2). Workers implement cold.
 			e.activity(r, phasePlanning, "")
-			plan, err = orchestrator.PlanFromModelDivergent(ctx, hotClient, coldClient, planMessage, model.Summary(), pol.Render(), pol.DecisionCandidates)
+			plan, err = orchestrator.PlanFromModelDivergent(ctx, hotClient, coldClient, planMessage, summary, pol.Render(), pol.DecisionCandidates)
 			if err != nil {
 				e.finish(r, "failed", "I could not plan that request: "+err.Error())
 				return
@@ -682,7 +838,7 @@ func (e *Engine) drive(ctx context.Context, r *run, message string, m mode.Mode,
 			return
 		}
 		e.activity(r, phaseDesign, "")
-		dc, ok := e.resolveDesignDecision(ctx, r, pol, model, plan, message, hotClient, coldClient)
+		dc, ok := e.resolveDesignDecision(ctx, r, pol, model, plan, message, projectMemory, hotClient, coldClient)
 		if !ok {
 			e.say(r, "Stopped. Progress so far is saved — say continue when you want me to pick it back up.")
 			e.finish(r, "stopped", "")
@@ -701,7 +857,7 @@ func (e *Engine) drive(ctx context.Context, r *run, message string, m mode.Mode,
 	// The supervised loop: fresh orchestrator over the same durable state per
 	// attempt; classification decides retry vs stop (never blind respawn).
 	for attempt := 1; ; attempt++ {
-		res, err := e.runOrchestrator(ctx, r, st, plan, pol, rules, designLanguage)
+		res, err := e.runOrchestrator(ctx, r, st, plan, pol, rules, designLanguage, projectMemory)
 		switch {
 		case err == nil && res.StopAsk != "":
 			// Pause on the answer channel rather than ending: the run stays
@@ -722,18 +878,20 @@ func (e *Engine) drive(ctx context.Context, r *run, message string, m mode.Mode,
 			}
 			r.setStatus("running")
 			e.activity(r, phaseContinuing, "")
-			if led, lerr := e.readLedger(r.convID); lerr == nil {
-				led.Status = "running"
-				led.UpdatedAt = time.Now().UTC()
-				_ = e.writeLedger(r.convID, led)
-			}
+			_ = e.mutateLedger(r.convID, func(led *ledger) { led.Status = "running" })
 			// A human answer is new information, not a failure: restart the
 			// attempt budget for the answered retry.
 			attempt = 0
 			continue
 		case err == nil:
+			usage := r.getUsage()
 			e.publish(r, "plan.completed", map[string]interface{}{
 				"done": res.Done, "failed": res.Failed,
+				"usage": map[string]interface{}{
+					"prompt_tokens":     usage.PromptTokens,
+					"completion_tokens": usage.CompletionTokens,
+					"total_tokens":      usage.TotalTokens,
+				},
 			})
 			// Preview is a deliverable (req 7.1): a completed plan provisions an
 			// on-demand sandbox preview in the background so the client shows a
@@ -779,7 +937,7 @@ func (e *Engine) drive(ctx context.Context, r *run, message string, m mode.Mode,
 }
 
 // runOrchestrator wires one orchestrator instance over the durable state.
-func (e *Engine) runOrchestrator(ctx context.Context, r *run, st *contract.Store, plan *orchestrator.Plan, pol mode.Policy, rules *policy.Rules, designLanguage string) (*orchestrator.Result, error) {
+func (e *Engine) runOrchestrator(ctx context.Context, r *run, st *contract.Store, plan *orchestrator.Plan, pol mode.Policy, rules *policy.Rules, designLanguage, projectMemory string) (*orchestrator.Result, error) {
 	var adjudicator *cassandra.Adjudicator
 	if !e.opts.DisableAdjudication {
 		cfg := pol.OrchestratorLLM(e.opts.GatewayURL, e.opts.ActorDID)
@@ -793,19 +951,29 @@ func (e *Engine) runOrchestrator(ctx context.Context, r *run, st *contract.Store
 	if e.opts.Cortex != nil {
 		progress = checkpoint.NewProgress(e.opts.Cortex, r.convID)
 	}
+	pm := e.projectMemory(r.projectID)
 	o, err := orchestrator.New(orchestrator.Options{
 		Root:          r.root,
 		Plan:          plan,
 		Store:         st,
 		Progress:      progress,
-		Worker:        e.workerFunc(pol, r.root),
+		Worker:        e.workerFunc(pol, r),
 		Rules:         rules,
 		ModePolicy:    pol.Render(),
 		Adjudicator:    adjudicator,
 		SpecFiles:      pol.PlanningDepth == mode.PlanSpecFiles,
 		DesignLanguage: designLanguage,
-		MaxAttempts:    e.opts.MaxAttempts,
-		VerifyTimeout:  e.opts.VerifyTimeout,
+		ExtraGrounding: projectMemory,
+		OnAccepted: func(taskID, summary string) {
+			if pm == nil {
+				return
+			}
+			if err := pm.Record("task", taskID+": "+summary); err != nil {
+				e.opts.Logf("codyd: project memory %s: %v", r.projectID, err)
+			}
+		},
+		MaxAttempts:   e.opts.MaxAttempts,
+		VerifyTimeout: e.opts.VerifyTimeout,
 		Observer: func(event string, fields map[string]interface{}) {
 			e.publish(r, event, fields)
 			// Mirror the loop's milestones onto the live activity spine so the
@@ -831,14 +999,14 @@ func (e *Engine) runOrchestrator(ctx context.Context, r *run, st *contract.Store
 // handed the ExtraTools bridge (browser/fetch/web-search) so a UI task can
 // capture a real screenshot as gate evidence (req 13.1); the bridge is
 // boot-safe, so an unconfigured service simply omits or degrades a tool.
-func (e *Engine) workerFunc(pol mode.Policy, root string) orchestrator.WorkerFunc {
+func (e *Engine) workerFunc(pol mode.Policy, r *run) orchestrator.WorkerFunc {
 	return func(ctx context.Context, sheet *contract.TaskSheet, grounding string) (*contract.TurnInReport, error) {
 		client, err := llm.New(pol.WorkerLLM(e.opts.GatewayURL, e.opts.ActorDID))
 		if err != nil {
 			return nil, delegate.Mark(delegate.ClassDeterministic, err)
 		}
 		bridge := tools.New(tools.Config{
-			Root:         root,
+			Root:         r.root,
 			BrowserURL:   e.opts.BrowserURL,
 			BrowserToken: e.opts.BrowserToken,
 			SearxngURL:   e.opts.SearxngURL,
@@ -847,16 +1015,24 @@ func (e *Engine) workerFunc(pol mode.Policy, root string) orchestrator.WorkerFun
 		w, err := worker.New(worker.Options{
 			Sheet:         sheet,
 			Grounding:     grounding,
-			Root:          root,
+			Root:          r.root,
 			Client:        client,
 			VerifyTimeout: e.opts.VerifyTimeout,
 			ExtraTools:    bridge.Tools(),
 			ExtraDispatch: bridge.Dispatch,
+			Skills:        e.skills,
+			ScaffoldDir:   e.opts.ScaffoldDir,
 		})
 		if err != nil {
 			return nil, delegate.Mark(delegate.ClassDeterministic, err)
 		}
-		return w.Run(ctx)
+		report, err := w.Run(ctx)
+		if report != nil {
+			// The run ledger accumulates worker token spend across every
+			// attempt — accepted or not, real spend is real.
+			r.addUsage(report.Usage)
+		}
+		return report, err
 	}
 }
 
@@ -949,6 +1125,34 @@ func (e *Engine) heartbeat(ctx context.Context, r *run) (stop func()) {
 	return func() { cancel(); <-done }
 }
 
+// projectMemory returns the project's cortex-backed memory surface, nil when
+// cortex is not wired.
+func (e *Engine) projectMemory(projectID string) *checkpoint.ProjectMemory {
+	if e.opts.Cortex == nil {
+		return nil
+	}
+	return checkpoint.NewProjectMemory(e.opts.Cortex, projectID)
+}
+
+// projectMemoryRecall is how many recent project records ground a run.
+const projectMemoryRecall = 12
+
+// recallProjectMemory renders the project's recent memory (stack/design
+// decisions + accepted turn-ins) as the grounding section, "" when there is
+// none.
+func (e *Engine) recallProjectMemory(projectID string) string {
+	pm := e.projectMemory(projectID)
+	if pm == nil {
+		return ""
+	}
+	recs, err := pm.Recent(projectMemoryRecall)
+	if err != nil {
+		e.opts.Logf("codyd: project memory recall %s: %v", projectID, err)
+		return ""
+	}
+	return checkpoint.RenderProjectMemory(recs)
+}
+
 // projectHasLiveRun reports whether any run rooted at root is currently running
 // — the "a worker is alive" guard that refuses a destructive restore (req 14.1).
 func (e *Engine) projectHasLiveRun(root string) bool {
@@ -982,7 +1186,8 @@ func (e *Engine) say(r *run, text string) {
 	e.publish(r, "chat.assistant", map[string]interface{}{"text": text, "final": true})
 }
 
-// finish records the terminal, updates the ledger, and closes the topic.
+// finish records the terminal, updates the ledger (status + this run's token
+// spend folded into the conversation total), and closes the topic.
 func (e *Engine) finish(r *run, status, note string) {
 	if note != "" {
 		e.say(r, note)
@@ -990,12 +1195,12 @@ func (e *Engine) finish(r *run, status, note string) {
 	if r.getStatus() != "stopped" || status == "stopped" {
 		r.setStatus(status)
 	}
-	if led, err := e.readLedger(r.convID); err == nil {
+	usage := r.getUsage()
+	if err := e.mutateLedger(r.convID, func(led *ledger) {
 		led.Status = status
-		led.UpdatedAt = time.Now().UTC()
-		if err := e.writeLedger(r.convID, led); err != nil {
-			e.opts.Logf("codyd: ledger %s: %v", r.convID, err)
-		}
+		led.Usage.Add(usage)
+	}); err != nil {
+		e.opts.Logf("codyd: ledger %s: %v", r.convID, err)
 	}
 	e.publish(r, "message.complete", map[string]interface{}{"status": status})
 }

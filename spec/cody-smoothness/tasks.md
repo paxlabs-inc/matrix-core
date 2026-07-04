@@ -7,50 +7,50 @@
 ## P1 — Engine: live phase/activity narration
 
 - [ ] 1. Emit run.started + run.activity at every boundary, with heartbeats
-  - [ ] 1.1 Phase/activity events at each orchestration boundary
+  - [x] 1.1 Phase/activity events at each orchestration boundary
     - Add a run.started acknowledgment and a run.activity event (fields: phase, label, detail, elapsed_ms) emitted from cody/internal/server/engine.go drive() at every boundary — accepted/understanding/stack/planning/design/working/verifying/previewing — and from the orchestrator Observer (orchestrator.go) for per-task working/verifying; result-oriented copy in the run's mode register; pure broker.publish side-channel, no loop or gate change
     - _Requirements: 2.1, 2.3, 2.4, 1.1_
-  - [ ] 1.2 Bounded liveness heartbeat during long LLM phases
+  - [x] 1.2 Bounded liveness heartbeat during long LLM phases
     - Emit a periodic run.activity heartbeat (current phase + elapsed) around the long-running SDR/plan/DLR generation and worker execution, driven by a cancel-safe ticker that stops at the next boundary or on ctx cancel, so the client shows continuous progress within the phase
     - _Requirements: 2.2_
 
 ## P2 — Engine: total persistence + server history
 
 - [ ] 2. Persist the transcript + activity; add cross-device history
-  - [ ] 2.1 Persist the full transcript + milestone activity to the durable trace
+  - [x] 2.1 Persist the full transcript + milestone activity to the durable trace
     - Widen cody/internal/server/trace.go traceWorkspaceTypes to persist chat.assistant, run.started, and milestone run.activity so the conversation + last activity rebuild on reopen; persist milestone activities only (heartbeats stay live-only) to keep the trace bounded under the retain cap
     - Emit + persist a new chat.user user-turn event for the initiating message, each steer, and each answer, so the durable transcript shows BOTH sides on reopen (steer.folded/run.answered already persist; chat.user closes the user-message gap)
     - _Requirements: 4.1, 4.2_
-  - [ ] 2.2 Server-side conversation history endpoint
+  - [x] 2.2 Server-side conversation history endpoint
     - Add GET /conversations to cody/internal/server returning the user's runs from the durable ledgers (id, title, status, mode, project, updated_at), newest first; add a durable Title to the ledger (first message, trimmed) so the list reads well; route + JSON shape mirror the existing codyd handlers
     - _Requirements: 4.3_
-  - [ ] 2.3 Continue a stopped/completed run over the same conversation
+  - [x] 2.3 Continue a stopped/completed run over the same conversation
     - Ensure /chat with an existing conversation_id resumes the durable plan (LoadPlan already does) and that a stopped/completed conversation can be re-driven ('continue'); confirm the dispatch envelope carries what the client needs to re-attach and that the resumed run re-emits current activity
     - _Requirements: 3.2_
 
 ## P3 — Client: transport + reducer
 
 - [ ] 3. Fold the new events into useCody; conversations transport
-  - [ ] 3.1 Fold run.started/run.activity + transcript into useCody
+  - [x] 3.1 Fold run.started/run.activity + transcript into useCody
     - Extend CodyRun (hooks/api/useCody.ts) with activity {phase,label,detail,since} and an ordered transcript (user + assistant + inline question turns); fold run.started/run.activity, the now-persisted chat.assistant, and chat.user; run.answered/decision.resolved set a 'continuing' activity; keep durable == live (buildRunFromTrace == live fold)
     - _Requirements: 1.4, 4.2, 5.3_
-  - [ ] 3.2 Conversations history transport
+  - [x] 3.2 Conversations history transport
     - Add getConversations() + types to lib/api/cody.ts over the shared apiFetch, mirroring the existing route wrappers
     - _Requirements: 4.3_
 
 ## P4 — Client: the smooth surface
 
 - [ ] 4. Activity spine, context-aware composer, transcript, approve-flow, history
-  - [ ] 4.1 Always-live activity spine
+  - [x] 4.1 Always-live activity spine
     - A prominent activity region rendered from run.activity: plain-language phase label + liveness (existing loaders) + elapsed + the latest Cody line; NEVER blank while running/awaiting; rendered in all tiers with register copy; replaces the blank RunView states in cody-workspace.tsx; house rules hold
     - _Requirements: 1.1, 1.2, 1.3, 5.1, 5.2_
-  - [ ] 4.2 Context-aware composer + persistent transcript
+  - [x] 4.2 Context-aware composer + persistent transcript
     - Replace the disabled-when-idle ChatRail with ONE composer whose action follows run state: idle->start (keep the spec-adoption options), running->steer, needs_input/decision->answer (approve/override/free text), stopped/completed->continue; render a persistent transcript (both sides + inline questions) that rebuilds from the durable trace
     - _Requirements: 3.1, 3.3, 3.4, 5.1_
-  - [ ] 4.3 Approve-then-flow + inline decision answering
+  - [x] 4.3 Approve-then-flow + inline decision answering
     - On answering a decision/needs-input, immediately show the 'continuing' activity (no blank gap); keep the decision cards but also allow answering inline in the transcript; wire to run.answered/decision.resolved
     - _Requirements: 1.4, 3.3_
-  - [ ] 4.4 Server-backed History page
+  - [x] 4.4 Server-backed History page
     - Point CodyHistory at GET /conversations (cross-device), merging/falling back to the localStorage cache; opening one rebuilds the workspace from its durable trace
     - _Requirements: 4.3_
 
