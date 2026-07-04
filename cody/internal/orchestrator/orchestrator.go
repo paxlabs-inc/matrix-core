@@ -459,7 +459,7 @@ func (o *Orchestrator) adjudicate(ctx context.Context, sheet *contract.TaskSheet
 	}
 	// Layer 3: goal-vs-outcome adjudication (never string-matching the
 	// report). Judged against the orchestrator's own green record as evidence.
-	if v := gate.Adjudicate(ctx, o.opts.Adjudicator, sheet, report, renderRerun(results)); v != "" {
+	if v := gate.Adjudicate(ctx, o.opts.Adjudicator, o.opts.Root, sheet, report, renderRerun(results)); v != "" {
 		return v, "", nil
 	}
 	return "", "", nil

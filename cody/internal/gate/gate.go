@@ -266,10 +266,71 @@ func BuildRequest(sheet *contract.TaskSheet) string {
 	return b.String()
 }
 
+// Source-evidence bounds: structural acceptance criteria ("the struct has a
+// mutex field", "Allow locks for the whole critical section") can ONLY be
+// judged against the actual code, so the changed files are read into the
+// evidence — but bounded so a large diff cannot blow the adjudicator's window.
+const (
+	sourceMaxFileBytes = 24 * 1024  // per changed file
+	sourceMaxTotal     = 128 * 1024 // across all changed files
+	sourceMaxFiles     = 40
+)
+
+// renderSource reads the created/edited files named in the turn-in from the
+// real workspace and renders them as adjudication evidence. This is the ground
+// truth for structural acceptance criteria: the outcome is judged against the
+// code that was actually written, not against the worker's narration or a
+// green build that never prints the source. Deletes carry no content; missing
+// or oversized files are noted rather than silently dropped.
+func renderSource(root string, report *contract.TurnInReport) string {
+	if strings.TrimSpace(root) == "" {
+		return ""
+	}
+	var b strings.Builder
+	total, files := 0, 0
+	for _, ch := range report.Changes {
+		if ch.Kind == "delete" {
+			continue
+		}
+		if files >= sourceMaxFiles {
+			b.WriteString(fmt.Sprintf("(%d more changed files omitted from evidence)\n", len(report.Changes)-files))
+			break
+		}
+		rel := filepath.Clean(ch.Path)
+		if rel == "." || strings.HasPrefix(rel, "..") || filepath.IsAbs(rel) {
+			continue
+		}
+		data, err := os.ReadFile(filepath.Join(root, filepath.FromSlash(rel)))
+		if err != nil {
+			fmt.Fprintf(&b, "=== %s (claimed %s, but unreadable now: %v) ===\n", ch.Path, ch.Kind, err)
+			files++
+			continue
+		}
+		content := string(data)
+		note := ""
+		if len(content) > sourceMaxFileBytes {
+			content = content[:sourceMaxFileBytes]
+			note = " (truncated)"
+		}
+		if total+len(content) > sourceMaxTotal {
+			b.WriteString("(remaining changed files omitted: evidence budget reached)\n")
+			break
+		}
+		total += len(content)
+		files++
+		fmt.Fprintf(&b, "=== %s [%s]%s ===\n%s", ch.Path, ch.Kind, note, content)
+		if !strings.HasSuffix(content, "\n") {
+			b.WriteString("\n")
+		}
+	}
+	return b.String()
+}
+
 // BuildEvidence renders the ground truth for the verdict: the worker's factual
-// change record plus the ORCHESTRATOR'S OWN independent verification re-run —
-// the worker's narration is the claim, never the evidence.
-func BuildEvidence(report *contract.TurnInReport, rerun string) string {
+// change record, the ACTUAL SOURCE of the changed files read from the
+// workspace, and the ORCHESTRATOR'S OWN independent verification re-run — the
+// worker's narration is the claim, never the evidence.
+func BuildEvidence(root string, report *contract.TurnInReport, rerun string) string {
 	var b strings.Builder
 	fmt.Fprintf(&b, "--- THE WORKER'S TURN-IN (the claim) ---\nstatus: %s\nsummary: %s\n", report.Status, report.Summary)
 	for _, ch := range report.Changes {
@@ -280,6 +341,10 @@ func BuildEvidence(report *contract.TurnInReport, rerun string) string {
 	}
 	for _, a := range report.Assumptions {
 		b.WriteString("assumption: " + a + "\n")
+	}
+	if src := renderSource(root, report); src != "" {
+		b.WriteString("\n--- CHANGED FILES (actual source in the workspace, ground truth) ---\n")
+		b.WriteString(src)
 	}
 	b.WriteString("\n--- INDEPENDENT VERIFICATION (re-run by the orchestrator, ground truth) ---\n")
 	if strings.TrimSpace(rerun) == "" {
@@ -294,13 +359,13 @@ func BuildEvidence(report *contract.TurnInReport, rerun string) string {
 // verdict = accept. An adjudicator error fails OPEN (returns accept): the
 // independent green verification record is the structural floor, and a
 // Cassandra hiccup never wedges a plan (the proven Neo posture).
-func Adjudicate(ctx context.Context, adj *cassandra.Adjudicator, sheet *contract.TaskSheet, report *contract.TurnInReport, rerun string) string {
+func Adjudicate(ctx context.Context, adj *cassandra.Adjudicator, root string, sheet *contract.TaskSheet, report *contract.TurnInReport, rerun string) string {
 	if adj == nil {
 		return ""
 	}
 	v, err := adj.Adjudicate(ctx, cassandra.AuditInput{
 		Request:  BuildRequest(sheet),
-		Evidence: BuildEvidence(report, rerun),
+		Evidence: BuildEvidence(root, report, rerun),
 	})
 	if err != nil {
 		return "" // fail open: verification is green and the screens passed
