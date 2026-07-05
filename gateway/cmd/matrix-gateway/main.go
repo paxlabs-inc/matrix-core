@@ -36,7 +36,7 @@
 // Required environment:
 //
 //	MATRIX_GATEWAY_TOKEN  shared bearer token; clients send Authorization: Bearer ...
-//	ZAI_API_KEY           gateway's own upstream key for Z.ai (primary chat: zai-org/* GLM)
+//	XAI_API_KEY           gateway's own upstream key for xAI (primary chat: grok-* Grok)
 //	BASETEN_API_KEY       gateway's own upstream key for Baseten (fallback chat lanes; optional)
 //	FIREWORKS_API_KEY     gateway's own upstream key for Fireworks (nomic embeddings; optional)
 //	TOGETHER_API_KEY      gateway's own upstream key for Together (optional)
@@ -111,17 +111,17 @@ func run(args []string) error {
 
 	logf := newLogger(*logFormat)
 
-	// Fail-fast: free-tier-only pins the primary chat model (zai-org/GLM-5.2)
-	// on every slot, and zai-org/* routes to the Z.ai upstream — so the
-	// gateway's ZAI_API_KEY is mandatory. Without it the gateway boots fine
-	// but 401s every chat call — a silent fleet-wide outage.
+	// Fail-fast: free-tier-only pins the primary chat model (grok-4.3) on the
+	// agentic slots, and grok-* routes to the xAI upstream — so the gateway's
+	// XAI_API_KEY is mandatory. Without it the gateway boots fine but 401s every
+	// chat call — a silent fleet-wide outage.
 	// (MATRIX_GATEWAY_TOKEN is enforced by auth.New below.) BASETEN_API_KEY
-	// becomes optional — it only serves the non-GLM "<vendor>/<model>"
+	// becomes optional — it only serves the non-Grok "<vendor>/<model>"
 	// fallback lanes (Kimi/Qwen/DeepSeek) still on the whitelist.
 	// FIREWORKS_API_KEY stays optional — only the nomic-ai/* embedding route
 	// still forwards to Fireworks.
-	if *freeTierOnly && os.Getenv("ZAI_API_KEY") == "" {
-		return fmt.Errorf("matrix-gateway: -free-tier-only=true requires ZAI_API_KEY (gateway upstream key for the primary zai-org/* chat lane)")
+	if *freeTierOnly && os.Getenv("XAI_API_KEY") == "" {
+		return fmt.Errorf("matrix-gateway: -free-tier-only=true requires XAI_API_KEY (gateway upstream key for the primary grok-* chat lane)")
 	}
 	if *freeTierOnly && os.Getenv("BASETEN_API_KEY") == "" {
 		logf("gateway.warn.baseten_key_missing", map[string]any{
@@ -175,7 +175,7 @@ func run(args []string) error {
 		Ledger:      lg,
 		RateLimiter: rl,
 		Provider: proxy.ProviderKeys{
-			ZaiKey:       os.Getenv("ZAI_API_KEY"),
+			XaiKey:       os.Getenv("XAI_API_KEY"),
 			BasetenKey:   os.Getenv("BASETEN_API_KEY"),
 			FireworksKey: os.Getenv("FIREWORKS_API_KEY"),
 			TogetherKey:  os.Getenv("TOGETHER_API_KEY"),

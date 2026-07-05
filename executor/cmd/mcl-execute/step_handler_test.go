@@ -209,19 +209,18 @@ func stepNode(id, kind string) *ir.PlanNode {
 func TestStepHandler_cfgFor_DefaultsPerKind(t *testing.T) {
 	h := &llmStepHandler{registry: llm.DefaultRegistry()}
 
-	// v8 (2026-07-02): every executor kind pins the Z.ai-served
-	// zai-org/GLM-5.2 in DefaultRegistry.
+	// Every executor kind pins the xAI-served grok-4.3 in DefaultRegistry.
 	tests := []struct {
 		kind      llm.StepKind
 		modelFrag string
 	}{
-		{llm.KindReason, "zai-org/glm-5.2"},
-		{llm.KindCode, "zai-org/glm-5.2"},
-		{llm.KindSummarize, "zai-org/glm-5.2"},
-		{llm.KindWrite, "zai-org/glm-5.2"},
-		{llm.KindTransform, "zai-org/glm-5.2"},
-		{llm.KindClassify, "zai-org/glm-5.2"},
-		{llm.KindHardReason, "zai-org/glm-5.2"},
+		{llm.KindReason, "grok-4.3"},
+		{llm.KindCode, "grok-4.3"},
+		{llm.KindSummarize, "grok-4.3"},
+		{llm.KindWrite, "grok-4.3"},
+		{llm.KindTransform, "grok-4.3"},
+		{llm.KindClassify, "grok-4.3"},
+		{llm.KindHardReason, "grok-4.3"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.kind.String(), func(t *testing.T) {
@@ -412,8 +411,8 @@ func TestStepHandler_HandleStep_EmptyKindRoutesToReason(t *testing.T) {
 		}
 		if k, ok := e.Fields["kind"].(string); ok && k == "reason" {
 			saw = true
-			if m, ok := e.Fields["model"].(string); !ok || !strings.Contains(strings.ToLower(m), "zai-org/glm-5.2") {
-				t.Errorf("event model = %v, want zai-org/GLM-5.2 from DefaultRegistry", e.Fields["model"])
+			if m, ok := e.Fields["model"].(string); !ok || !strings.Contains(strings.ToLower(m), "grok-4.3") {
+				t.Errorf("event model = %v, want grok-4.3 from DefaultRegistry", e.Fields["model"])
 			}
 		}
 	}

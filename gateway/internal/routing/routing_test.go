@@ -116,25 +116,25 @@ func TestDecideInvalidSlot(t *testing.T) {
 	}
 }
 
-func TestDecideGLMRoutesToZai(t *testing.T) {
+func TestDecideGrokRoutesToXai(t *testing.T) {
 	d := New(Options{})
 	r := httptest.NewRequest("POST", "/v1/chat/completions", strings.NewReader("{}"))
 	r.Header.Set(types.HeaderSlot, "neo")
 
-	dec, err := d.Decide(r, rates.ModelNemotron3Ultra, EndpointChat)
+	dec, err := d.Decide(r, rates.ModelGrok43, EndpointChat)
 	if err != nil {
 		t.Fatalf("Decide: %v", err)
 	}
-	if dec.Provider != ProviderZai {
-		t.Fatalf("expected zai for zai-org/*, got %s", dec.Provider)
+	if dec.Provider != ProviderXai {
+		t.Fatalf("expected xai for grok-*, got %s", dec.Provider)
 	}
-	if !strings.Contains(dec.UpstreamURL, "api.z.ai") {
-		t.Fatalf("expected api.z.ai upstream, got %q", dec.UpstreamURL)
+	if !strings.Contains(dec.UpstreamURL, "api.x.ai") {
+		t.Fatalf("expected api.x.ai upstream, got %q", dec.UpstreamURL)
 	}
-	// The Decision keeps the fleet id; only the proxy's upstream hop
-	// carries Z.ai's native model code.
-	if dec.Model != rates.ModelNemotron3Ultra {
-		t.Fatalf("Decision.Model must keep the fleet id, got %q", dec.Model)
+	// The bare "grok-*" fleet id IS xAI's native model code — it passes
+	// through unchanged (no native-id rewrite on the upstream hop).
+	if dec.Model != rates.ModelGrok43 {
+		t.Fatalf("Decision.Model must keep the fleet id unchanged, got %q", dec.Model)
 	}
 }
 

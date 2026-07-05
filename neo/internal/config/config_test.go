@@ -30,13 +30,22 @@ func TestDefaultsMatchFrozenSpec(t *testing.T) {
 			t.Errorf("%s = %d, want %d", ch.name, ch.got, ch.want)
 		}
 	}
-	// v8 (2026-07-02, Andrew directed): every lane pins the Z.ai-served
-	// zai-org/GLM-5.2.
-	if c.MainModel != "zai-org/GLM-5.2" {
+	// xAI Grok migration: the main lane pins grok-4.3 (reasoning), the cheap
+	// lanes pin grok-4.20-0309-non-reasoning.
+	if c.MainModel != "grok-4.3" {
 		t.Errorf("MainModel = %q", c.MainModel)
 	}
-	if c.CheapModel != "zai-org/GLM-5.2" {
+	if c.CheapModel != "grok-4.20-0309-non-reasoning" {
 		t.Errorf("CheapModel = %q", c.CheapModel)
+	}
+	if c.ConsolidationModel != "grok-4.20-0309-non-reasoning" {
+		t.Errorf("ConsolidationModel = %q", c.ConsolidationModel)
+	}
+	if c.CassandraModel != "grok-4.20-0309-non-reasoning" {
+		t.Errorf("CassandraModel = %q", c.CassandraModel)
+	}
+	if c.CassandraEscalateModel != "grok-4.3" {
+		t.Errorf("CassandraEscalateModel = %q", c.CassandraEscalateModel)
 	}
 	if len(c.NaturalAllow) == 0 || len(c.EscalateActions) == 0 {
 		t.Fatalf("execution surface lists must be non-empty")

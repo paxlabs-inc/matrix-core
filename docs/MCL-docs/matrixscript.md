@@ -335,7 +335,7 @@ Valid values (closed — validated by V11):
 
 | Kind | Model tier | When to use |
 |---|---|---|
-| `reason` | Default GLM-5.1 | General agentic step (default if absent) |
+| `reason` | Default grok-4.3 | General agentic step (default if absent) |
 | `code` | Code specialist | Code generation |
 | `summarize` | Long-context specialist | Summarization of long inputs |
 | `write` | Prose specialist | Free-form writing |

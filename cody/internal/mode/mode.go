@@ -7,8 +7,8 @@
 // no mode-specific loops; a mode only parameterizes the one orchestrator/
 // worker engine. The constitution binds identically in every mode — nothing
 // in a Policy can weaken the acceptance gate, which is why none of these
-// fields reach it. Model policy is per role and mode-aware (the orchestrator
-// pins a stronger model; Prototype workers run faster ones), all metered
+// fields reach it. Model policy is per role and mode-aware (every role
+// defaults to grok-build-0.1, overridable per role by operators), all metered
 // through the 'cody' gateway slot.
 package mode
 
@@ -76,14 +76,14 @@ const (
 const GatewaySlot = "cody"
 
 // Default per-role models. Operators override via config; the defaults stay
-// on the cody slot whitelist. The orchestrator (planning + adjudication) pins
-// the stronger model in every mode; Prototype workers run the fast router.
+// on the cody slot whitelist. Every role pins grok-build-0.1 (xAI Grok) in
+// every mode; operators can still override per role via config.
 const (
-	defaultOrchestratorModel = "zai-org/GLM-5.2"
-	defaultWorkerModel       = "zai-org/GLM-5.2"
-	// The fast tier (Prototype workers, conversation titles): the Fireworks
-	// GLM router on the cody slot whitelist.
-	defaultFastWorkerModel = "accounts/fireworks/routers/glm-5p1-fast"
+	defaultOrchestratorModel = "grok-build-0.1"
+	defaultWorkerModel       = "grok-build-0.1"
+	// The fast tier (Prototype workers, conversation titles): grok-build-0.1
+	// on the cody slot whitelist.
+	defaultFastWorkerModel = "grok-build-0.1"
 )
 
 // FastModel is the small/fast whitelisted model for cheap auxiliary calls

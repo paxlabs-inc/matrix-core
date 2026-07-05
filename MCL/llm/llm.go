@@ -43,7 +43,7 @@ const (
 	ProviderFireworks                 // api.fireworks.ai
 	ProviderOpencode                  // opencode.ai/zen (Session 34 / Forge)
 	ProviderBaseten                   // inference.baseten.co (fallback chat provider)
-	ProviderZai                       // api.z.ai (GLM vendor API — primary chat provider)
+	ProviderXai                       // api.x.ai (xAI Grok — primary chat provider)
 )
 
 func (p Provider) String() string {
@@ -56,8 +56,8 @@ func (p Provider) String() string {
 		return "opencode"
 	case ProviderBaseten:
 		return "baseten"
-	case ProviderZai:
-		return "zai"
+	case ProviderXai:
+		return "xai"
 	}
 	return "unknown"
 }
@@ -144,11 +144,10 @@ type Config struct {
 	MaxTokens int
 
 	// EnableThinking opts this client into extended reasoning for models
-	// where the toggle matters. For Z.ai-served GLM (zai-org/*) the client
-	// pins the `thinking` request block to enabled/disabled from this flag
-	// (Z.ai defaults thinking ON, so false is explicitly sent as disabled);
-	// Baseten-served Kimi (moonshotai/*) keeps the legacy opt-in via
-	// chat_template_args.enable_thinking. Either way the server splits
+	// where the toggle matters. For xAI Grok (grok-4.3) the client maps this
+	// flag onto the `reasoning_effort` request field ("high" when set, "none"
+	// when clear); Baseten-served Kimi (moonshotai/*) keeps the legacy opt-in
+	// via chat_template_args.enable_thinking. Either way the server splits
 	// chain-of-thought into the separate reasoning_content channel instead
 	// of leaking it into visible content. Off by default; set only for roles
 	// that benefit from reasoning (the conversational loop, the Cassandra
@@ -638,20 +637,14 @@ func (c *Client) buildRequest(messages []interpreter.Message, grammar string) (*
 		Temperature: c.cfg.Temperature,
 		MaxTokens:   c.cfg.MaxTokens,
 	}
-	if IsZaiModel(c.cfg.Model) {
-		// Direct hop to api.z.ai must carry Z.ai's native model code; via
-		// the gateway the fleet id stays (whitelist + metering key on it)
-		// and the gateway rewrites the last hop.
-		if c.cfg.GatewayURL == "" {
-			req.Model = ZaiNativeModel(c.cfg.Model)
-		}
-		// Z.ai defaults thinking ON ("auto"); Baseten served GLM with
-		// thinking OFF unless chat_template_args opted in. Pin the toggle
-		// explicitly so the provider switch preserves each role's posture:
-		// reasoning only where EnableThinking was set, and token-tight
-		// mechanical slots (compiler/classify) keep their full MaxTokens
-		// for the payload.
-		req.Thinking = &chatThinking{Type: thinkingType(c.cfg.EnableThinking)}
+	if IsXaiModel(c.cfg.Model) && supportsReasoningEffort(c.cfg.Model) {
+		// xAI's grok-4.3 accepts reasoning_effort; pin it per-role so the
+		// provider switch preserves each role's posture — reasoning ("high")
+		// only where EnableThinking was set, and "none" for token-tight
+		// mechanical slots (compiler/classify) that must not burn reasoning
+		// tokens. The fleet id is xAI's native model code, so no rewrite of
+		// req.Model is needed on the direct hop.
+		req.ReasoningEffort = reasoningEffort(c.cfg.EnableThinking)
 	}
 
 	if c.cfg.Seed != 0 {
@@ -785,49 +778,54 @@ func (c *Client) applyGrammar(req *chatRequest, grammarID string) error {
 // DetectProvider maps a model string to its provider.
 //
 //	"accounts/fireworks/models/<X>"                 → Fireworks
+//	"grok-*"                                         → xAI (Grok — primary chat provider)
 //	"claude-*" / "gpt-5*" / opencode bare-model id  → Opencode (sess#34)
-//	"zai-org/<model>"                               → Z.ai (GLM vendor API — primary chat provider)
 //	"<vendor>/<model>"                              → Baseten (fallback chat provider)
 //
-// GLM models ("zai-org/*", e.g. "zai-org/GLM-5.2") route to Z.ai's own API
-// (api.z.ai), replacing the Baseten-served path; the fleet keeps the
-// "zai-org/<model>" id (rate card, whitelists, env pins) and the wire layer
-// maps it to Z.ai's native id ("glm-5.2") at send time — the bare "glm-*"
-// shape would collide with the opencode bare-model detection above. The
-// remaining generic "<vendor>/<model>" shape resolves to Baseten. Together
-// remains reachable but only when selected explicitly via Config.Provider +
-// ProviderSet (it is the gateway alt-path, never auto-detected from a bare
-// model id anymore).
+// Grok models ("grok-*", e.g. "grok-4.3") route to xAI's OpenAI-compatible API
+// (api.x.ai). The bare "grok-*" id is both the fleet id (rate card, whitelists,
+// env pins) and xAI's native model code — no send-time rewrite is needed
+// (unlike the retired Z.ai path). The xAI check precedes the opencode bare-id
+// check so grok-build-* resolves to xAI rather than opencode. The remaining
+// generic "<vendor>/<model>" shape resolves to Baseten. Together remains
+// reachable but only when selected explicitly via Config.Provider + ProviderSet
+// (it is the gateway alt-path, never auto-detected from a bare model id).
 func DetectProvider(model string) (Provider, error) {
 	switch {
 	case strings.HasPrefix(model, "accounts/fireworks/"):
 		return ProviderFireworks, nil
+	case IsXaiModel(model):
+		return ProviderXai, nil
 	case isOpencodeModelID(model):
 		return ProviderOpencode, nil
-	case IsZaiModel(model):
-		return ProviderZai, nil
 	case strings.Contains(model, "/"):
 		return ProviderBaseten, nil
 	}
-	return 0, fmt.Errorf("llm: cannot detect provider for model %q (expected '<vendor>/<model>', 'accounts/fireworks/models/<X>', or an opencode bare model id like 'claude-opus-4-7' / 'gpt-5.5')", model)
+	return 0, fmt.Errorf("llm: cannot detect provider for model %q (expected '<vendor>/<model>', 'accounts/fireworks/models/<X>', a 'grok-*' xAI id, or an opencode bare model id like 'claude-opus-4-7' / 'gpt-5.5')", model)
 }
 
-// IsZaiModel reports whether the fleet model id is a Z.ai-served GLM model
-// ("zai-org/<model>").
-func IsZaiModel(model string) bool {
-	return strings.HasPrefix(strings.ToLower(model), "zai-org/")
+// IsXaiModel reports whether the fleet model id is an xAI-served Grok model
+// ("grok-*", e.g. "grok-4.3", "grok-build-0.1", "grok-4.20-0309-non-reasoning").
+func IsXaiModel(model string) bool {
+	return strings.HasPrefix(strings.ToLower(model), "grok-")
 }
 
-// ZaiNativeModel maps the fleet's "zai-org/<Model>" id to Z.ai's native
-// model code (lowercased, vendor prefix stripped): "zai-org/GLM-5.2" →
-// "glm-5.2". Non-Z.ai ids pass through unchanged. The fleet id stays on the
-// gateway wire (whitelist + metering + ledger replay key on it); only the
-// hop that actually hits api.z.ai carries the native code.
-func ZaiNativeModel(model string) string {
-	if !IsZaiModel(model) {
-		return model
+// supportsReasoningEffort reports whether an xAI model accepts the
+// `reasoning_effort` request field. Per xAI docs it is currently only honored
+// by grok-4.3; other Grok models (grok-build-*, grok-4.20-*-non-reasoning)
+// ignore or reject it, so the field is omitted for them.
+func supportsReasoningEffort(model string) bool {
+	return strings.HasPrefix(strings.ToLower(model), "grok-4.3")
+}
+
+// reasoningEffort maps the per-role EnableThinking flag onto xAI's
+// reasoning_effort enum: reasoning ON → "high", OFF → "none" (disables
+// reasoning entirely for token-tight mechanical roles).
+func reasoningEffort(enabled bool) string {
+	if enabled {
+		return "high"
 	}
-	return strings.ToLower(model[len("zai-org/"):])
+	return "none"
 }
 
 // isOpencodeModelID returns true for the bare model ids served by
@@ -855,8 +853,6 @@ func isOpencodeModelID(model string) bool {
 		return true
 	case strings.HasPrefix(m, "minimax-m"):
 		return true
-	case strings.HasPrefix(m, "grok-build"):
-		return true
 	case m == "big-pickle":
 		return true
 	case strings.HasPrefix(m, "deepseek-v4-flash-free"):
@@ -881,15 +877,14 @@ func defaultEndpoint(p Provider) string {
 		return "https://opencode.ai/zen/v1/chat/completions"
 	case ProviderBaseten:
 		return "https://inference.baseten.co/v1/chat/completions"
-	case ProviderZai:
-		return ZaiChatEndpoint
+	case ProviderXai:
+		return XaiChatEndpoint
 	}
 	return ""
 }
 
-// ZaiChatEndpoint is Z.ai's OpenAI-compatible chat-completions endpoint
-// (note the /paas/v4 path — not /v1).
-const ZaiChatEndpoint = "https://api.z.ai/api/paas/v4/chat/completions"
+// XaiChatEndpoint is xAI's OpenAI-compatible chat-completions endpoint.
+const XaiChatEndpoint = "https://api.x.ai/v1/chat/completions"
 
 func envKey(p Provider) (string, error) {
 	var name string
@@ -902,8 +897,8 @@ func envKey(p Provider) (string, error) {
 		name = "OPENCODE_API_KEY"
 	case ProviderBaseten:
 		name = "BASETEN_API_KEY"
-	case ProviderZai:
-		name = "ZAI_API_KEY"
+	case ProviderXai:
+		name = "XAI_API_KEY"
 	default:
 		return "", fmt.Errorf("llm: unknown provider %d", p)
 	}
@@ -945,24 +940,10 @@ type chatRequest struct {
 	// (*Client).Stream; unset by Decode (omitempty preserves wire
 	// shape parity with pre-P3 Decode requests for replay tests).
 	Stream bool `json:"stream,omitempty"`
-	// Thinking is Z.ai's chain-of-thought toggle; set ONLY for zai-org/*
-	// models (omitempty keeps every other provider's wire shape
-	// byte-identical to pre-Z.ai requests).
-	Thinking *chatThinking `json:"thinking,omitempty"`
-}
-
-// chatThinking is Z.ai's `thinking` request block ({"type":
-// "enabled"|"disabled"}).
-type chatThinking struct {
-	Type string `json:"type"`
-}
-
-// thinkingType maps the EnableThinking flag to Z.ai's enum.
-func thinkingType(enabled bool) string {
-	if enabled {
-		return "enabled"
-	}
-	return "disabled"
+	// ReasoningEffort is xAI's reasoning-depth control ("none"|"low"|
+	// "medium"|"high"); set ONLY for grok-4.3 (omitempty keeps every other
+	// provider's/model's wire shape unchanged).
+	ReasoningEffort string `json:"reasoning_effort,omitempty"`
 }
 
 type responseFormat struct {

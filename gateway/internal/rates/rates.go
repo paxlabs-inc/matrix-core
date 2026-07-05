@@ -78,7 +78,16 @@ import (
 // every lane. The GLM-5.2 row stays on the card so pre-v8 ledger rows remain
 // replayable. Nemotron's PAX rate is a PLACEHOLDER pending the real Baseten
 // Model APIs price.
-const RateTableVersion = 8
+//
+// v9 (2026-07-05, Andrew directed) MIGRATES the fleet off Z.ai GLM onto xAI
+// Grok, REMOVING the zai-org/GLM-5.2 rows and ADDING three grok rows:
+// grok-4.3 (ModelGrok43 — Neo main + MCL triage/registry), grok-build-0.1
+// (ModelGrokBuild — Cody), grok-4.20-0309-non-reasoning (ModelGrok420NR —
+// Cassandra + Neo cheap/consolidation + liaison). The Z.ai provider + upstream
+// path are removed entirely; pre-v9 ledger rows that reference zai-org/GLM-5.2
+// are NOT replayable against this card (accepted at migration). All three grok
+// PAX rates are PLACEHOLDERS pending the real xAI prices.
+const RateTableVersion = 9
 
 // PaxUsdReference is the USD price of 1 PAX the v3 rate card was
 // denominated against. Exposed so ops/telemetry can re-derive or
@@ -141,19 +150,18 @@ const (
 	ModelGPTOSS20B  = "accounts/fireworks/models/gpt-oss-20b"
 	ModelQwenCoder  = "Qwen/Qwen3-Coder-480B-A35B-Instruct-FP8"
 	ModelLlama405B  = "meta-llama/Llama-3.1-405B-Instruct"
-	// ModelGLM52 is the Baseten-served zai-org/GLM-5.2 — the v7 primary chat
-	// model for EVERY slot (Neo config + MCL DefaultRegistry now pin it; the
-	// bare "<vendor>/<model>" shape routes to Baseten in internal/routing).
-	// The historical Fireworks/Together rows above stay on the card so
-	// pre-v7 ledger rows remain replayable.
-	ModelGLM52 = "zai-org/GLM-5.2"
-	// ModelNemotron3Ultra is the Baseten-served
-	// zai-org/GLM-5.2 — the v8 primary chat model for
-	// EVERY slot, replacing zai-org/GLM-5.2 (Neo config + Cody mode policy +
-	// MCL DefaultRegistry now pin it; the bare "<vendor>/<model>" shape routes
-	// to Baseten in internal/routing). The GLM-5.2 row above stays on the card
-	// so pre-v8 ledger rows remain replayable.
-	ModelNemotron3Ultra = "zai-org/GLM-5.2"
+	// xAI Grok fleet ids — the v9 migration off Z.ai GLM. All are bare ids that
+	// route to xAI (api.x.ai) via the "grok-*" prefix in internal/routing.
+	// ModelGrok43 is grok-4.3, the primary reasoning model pinned on Neo's main
+	// loop and the MCL triage/registry slots.
+	ModelGrok43 = "grok-4.3"
+	// ModelGrokBuild is grok-build-0.1, the Cody coding-agent model (all Cody
+	// roles).
+	ModelGrokBuild = "grok-build-0.1"
+	// ModelGrok420NR is grok-4.20-0309-non-reasoning, the cheap non-reasoning
+	// model for Cassandra, Neo's cheap/consolidation background agents, and the
+	// liaison narrator.
+	ModelGrok420NR = "grok-4.20-0309-non-reasoning"
 	// ModelNomicEmbed is the Fireworks-hosted embedding model behind the
 	// gateway's /v1/embeddings route (768-dim; matches cortex DefaultDim).
 	ModelNomicEmbed = "nomic-ai/nomic-embed-text-v1.5"
@@ -242,18 +250,25 @@ var rateTable = []Rate{
 		Notes:               "Fireworks glm-5p1-fast — Neo's cheap background model (write-back/compaction/validation). PLACEHOLDER rate (deepseek-v4-flash tier) pending real provider price.",
 	},
 	{
-		Model:               ModelGLM52,
+		Model:               ModelGrok43,
 		Group:               GroupReason,
-		InputPaxPerMTokens:  0.052493438, // ≈ $0.60 / Mtoken  [PLACEHOLDER — set real Baseten GLM-5.2 price]
-		OutputPaxPerMTokens: 0.174978128, // ≈ $2.00 / Mtoken  [PLACEHOLDER — set real Baseten GLM-5.2 price]
-		Notes:               "Baseten zai-org/GLM-5.2 — v7 primary chat model for every slot. PLACEHOLDER rate pending the real Baseten Model APIs price.",
+		InputPaxPerMTokens:  0.174978128, // ≈ $2.00 / Mtoken  [PLACEHOLDER — Andrew to set real xAI grok-4.3 price]
+		OutputPaxPerMTokens: 0.699912510, // ≈ $8.00 / Mtoken  [PLACEHOLDER — Andrew to set real xAI grok-4.3 price]
+		Notes:               "xAI grok-4.3 — v9 primary reasoning model: Neo main loop + MCL triage/registry. PLACEHOLDER rate pending the real xAI price.",
 	},
 	{
-		Model:               ModelNemotron3Ultra,
+		Model:               ModelGrokBuild,
+		Group:               GroupCode,
+		InputPaxPerMTokens:  0.087489064, // ≈ $1.00 / Mtoken  [PLACEHOLDER — Andrew to set real xAI grok-build-0.1 price]
+		OutputPaxPerMTokens: 0.349956255, // ≈ $4.00 / Mtoken  [PLACEHOLDER — Andrew to set real xAI grok-build-0.1 price]
+		Notes:               "xAI grok-build-0.1 — v9 Cody coding-agent model (all Cody roles). PLACEHOLDER rate pending the real xAI price.",
+	},
+	{
+		Model:               ModelGrok420NR,
 		Group:               GroupReason,
-		InputPaxPerMTokens:  0.052493438, // ≈ $0.60 / Mtoken  [PLACEHOLDER — set real Baseten GLM-5.2 price]
-		OutputPaxPerMTokens: 0.174978128, // ≈ $2.00 / Mtoken  [PLACEHOLDER — set real Baseten GLM-5.2 price]
-		Notes:               "Baseten zai-org/GLM-5.2 — v8 primary chat model for every slot, replacing GLM-5.2. PLACEHOLDER rate pending the real Baseten Model APIs price.",
+		InputPaxPerMTokens:  0.043744532, // ≈ $0.50 / Mtoken  [PLACEHOLDER — Andrew to set real xAI grok-4.20 price]
+		OutputPaxPerMTokens: 0.174978128, // ≈ $2.00 / Mtoken  [PLACEHOLDER — Andrew to set real xAI grok-4.20 price]
+		Notes:               "xAI grok-4.20-0309-non-reasoning — v9 cheap non-reasoning model: Cassandra + Neo cheap/consolidation + liaison. PLACEHOLDER rate pending the real xAI price.",
 	},
 	{
 		Model:               ModelNomicEmbed,
@@ -293,67 +308,51 @@ func Lookup(model string) (Rate, bool) {
 // FreeTierWhitelist returns the slot -> model whitelist enforced by
 // internal/routing. Exported for tests + introspection.
 func FreeTierWhitelist() map[string][]string {
-	// ModelNemotron3Ultra (Baseten zai-org/GLM-5.2)
-	// is the v8 primary model pinned on EVERY slot by Neo config + Cody mode
-	// policy + MCL DefaultRegistry (replacing zai-org/GLM-5.2), so it is
-	// whitelisted in every lane below. The historical Fireworks/Together
-	// entries stay allowed for deployments that still pin them and for pre-v8
-	// ledger replay.
+	// v9 migration (Z.ai GLM → xAI Grok): ModelGrok43 (grok-4.3) is the primary
+	// reasoning model on the agentic slots; ModelGrok420NR
+	// (grok-4.20-0309-non-reasoning) is the cheap non-reasoning model for
+	// cassandra/liaison/Neo-background; ModelGrokBuild (grok-build-0.1) is the
+	// Cody model. The surviving Fireworks/Together entries stay allowed for
+	// deployments that still pin them.
 	return map[string][]string{
-		// compiler: gpt-oss-120b is the primary; deepseek-v4-pro is the
-		// low-confidence escalation target (compile.go re-invokes the
-		// compiler slot with the stronger model when the frame call
-		// self-reports confidence below threshold or emits an invalid verb).
-		"compiler": {ModelNemotron3Ultra, ModelCompilerFreeTier, ModelDeepSeekV4Pro},
-		// executor: deepseek-v4-flash stays allowed (summarize / long-ctx +
-		// back-compat); kimi-k2.6 is the v1 launch executor default pinned
-		// by the router via MATRIX_EXECUTOR_MODEL.
-		"executor": {ModelNemotron3Ultra, ModelExecutorFreeTier, ModelKimiK26},
-		// planner: the daemon now has a dedicated -planner-model knob
-		// (MATRIX_PLANNER_MODEL), decoupled from the executor knob. The
-		// launch pins planner = kimi-k2.6 (strong tool/JSON fidelity + low
-		// hallucination for plan_tree@1 synthesis); deepseek-v4-pro,
+		// compiler: grok-4.3 is the primary MCL triage/compiler model;
+		// gpt-oss-120b stays as the free-tier fallback and deepseek-v4-pro as
+		// the low-confidence escalation target (compile.go re-invokes the
+		// compiler slot with a stronger model when the frame call self-reports
+		// low confidence or emits an invalid verb).
+		"compiler": {ModelGrok43, ModelCompilerFreeTier, ModelDeepSeekV4Pro},
+		// executor: grok-4.3 is the primary; deepseek-v4-flash stays allowed
+		// (summarize / long-ctx + back-compat); kimi-k2.6 stays as an
+		// alternative executor pinnable via MATRIX_EXECUTOR_MODEL.
+		"executor": {ModelGrok43, ModelExecutorFreeTier, ModelKimiK26},
+		// planner: grok-4.3 is the primary; kimi-k2.6, deepseek-v4-pro,
 		// gpt-oss-120b + v4-flash stay allowed for deployments that pin a
-		// different planner. All are on the rate card. Adding kimi-k2.6 here
-		// is a whitelist-only change (it is already priced as the executor
-		// model) — no rateTable row, no RateTableVersion bump.
-		"planner": {ModelNemotron3Ultra, ModelKimiK26, ModelCompilerFreeTier, ModelExecutorFreeTier, ModelDeepSeekV4Pro},
+		// different planner. All are on the rate card.
+		"planner": {ModelGrok43, ModelKimiK26, ModelCompilerFreeTier, ModelExecutorFreeTier, ModelDeepSeekV4Pro},
 		// liaison: the user-facing conversational narrator (SlotLiaison).
-		// Reuses already-priced models so adding it needs NO rateTable row
-		// and NO RateTableVersion bump. deepseek-v4-flash is the fast/cheap
-		// default (1M context for folding large event batches); kimi-k2.6 is
-		// the warmer-prose upgrade, pinned via MATRIX_LIAISON_MODEL.
-		"liaison": {ModelNemotron3Ultra, ModelDeepSeekV4Flash, ModelKimiK26, ModelDeepSeekV4Pro},
+		// grok-4.20-0309-non-reasoning is the cheap non-reasoning default for
+		// folding large event batches; grok-4.3 + deepseek-v4-flash/kimi-k2.6
+		// stay allowed as prose upgrades pinnable via MATRIX_LIAISON_MODEL.
+		"liaison": {ModelGrok420NR, ModelGrok43, ModelDeepSeekV4Flash, ModelKimiK26},
 		// neo: the Neo default conversational AGENT (SlotNeo). NOT the
-		// Liaison — Neo drives the conversation + tools and delegates money
-		// to MCL. v6 (2026-06-22) swaps main = deepseek-ai/DeepSeek-V4-Pro
-		// (Together) for the prior Qwen/Qwen3.7-Max, added to the rate card
-		// in v6. cheap = glm-5p1-fast (background write-back/compaction/
-		// validation), added in v4. v5 added nomic-embed-text-v1.5 so Neo's
-		// cortex pager can page-fault semantically through /v1/embeddings.
-		// deepseek-v4-flash is Neo's memory-consolidation EXTRACTOR
-		// (cfg.ConsolidationModel) — a stronger-than-glm but still cheap
-		// learning-extraction model. Already on the rate card, so adding it
-		// here is a whitelist-only change (no RateTableVersion bump).
-		"neo": {ModelNemotron3Ultra, ModelNeoMain, ModelGLM5p1Fast, ModelNomicEmbed, ModelDeepSeekV4Flash},
+		// Liaison — Neo drives the conversation + tools and delegates money to
+		// MCL. main = grok-4.3 (conversational loop); cheap + consolidation =
+		// grok-4.20-0309-non-reasoning (background write-back/compaction/
+		// memory-logging); nomic-embed-text-v1.5 is the cortex pager's
+		// embedding model via /v1/embeddings.
+		"neo": {ModelGrok43, ModelGrok420NR, ModelNomicEmbed},
 		// cassandra: the epistemic-completeness faculty (SlotCassandra). The
-		// MCL completeness critic moved here off the planner slot. The critic's
-		// model is criticMod() = the -critic-model knob, else the planner/
-		// executor model, else the gpt-oss-120b planner default — so this lane
-		// mirrors the planner whitelist's breadth to guarantee NO 403
-		// regression on the slot move, plus deepseek-v4-flash as the cheap/fast
-		// prior+scan model and deepseek-v4-pro as the strong escalation
-		// adjudicator. Every model here is ALREADY on the rate card, so adding
-		// this lane needs NO rateTable row and NO RateTableVersion bump.
-		"cassandra": {ModelNemotron3Ultra, ModelDeepSeekV4Flash, ModelDeepSeekV4Pro, ModelKimiK26, ModelCompilerFreeTier},
-		// cody: the Cody coding AGENT (SlotCody, matrix/cody — codyd). Two
-		// roles meter on this one slot: the orchestrator (planning + Cassandra-
-		// style adjudication) pins deepseek-v4-pro; workers run zai-org/GLM-5.2
-		// (Engineer/Architect) or glm-5p1-fast (Prototype). Every model here is
-		// ALREADY on the rate card, so this lane is a whitelist-only change —
-		// NO rateTable row, NO RateTableVersion bump; the rate card stays
-		// operator-owned.
-		"cody": {ModelNemotron3Ultra, ModelNeoMain, ModelGLM5p1Fast},
+		// completeness critic pins grok-4.20-0309-non-reasoning as the
+		// prior+scan adjudicator; grok-4.3 is the strong escalation adjudicator;
+		// deepseek-v4-flash/v4-pro stay allowed for deployments that pin them
+		// via -critic-model. Every model here is on the rate card.
+		"cassandra": {ModelGrok420NR, ModelGrok43, ModelDeepSeekV4Flash, ModelDeepSeekV4Pro},
+		// cody: the Cody coding AGENT (SlotCody, matrix/cody — codyd). All Cody
+		// roles (orchestrator + Engineer/Architect/Prototype workers) meter on
+		// this slot with grok-build-0.1; grok-4.3 stays allowed for the
+		// orchestrator's Cassandra-style adjudication. codegraph enrichment's
+		// summarizer also meters here on grok-build-0.1.
+		"cody": {ModelGrokBuild, ModelGrok43},
 	}
 }
 

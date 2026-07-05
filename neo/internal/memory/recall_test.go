@@ -104,8 +104,8 @@ func TestRecallHitsExcludesSuperseded(t *testing.T) {
 	defer p.Close()
 	ctx := context.Background()
 
-	const stale = "the executor model is glm-5.1"
-	const fresh = "the executor model is kimi-k2p6"
+	const stale = "the executor model is grok-4.2"
+	const fresh = "the executor model is grok-4.3"
 	oldURI, err := p.RememberFact(ctx, stale)
 	if err != nil || oldURI == "" {
 		t.Fatalf("RememberFact stale: uri=%q err=%v", oldURI, err)
@@ -124,10 +124,10 @@ func TestRecallHitsExcludesSuperseded(t *testing.T) {
 	if err != nil {
 		t.Fatalf("RecallHits: %v", err)
 	}
-	if _, ok := hitWith(hits, "kimi-k2p6"); !ok {
+	if _, ok := hitWith(hits, "grok-4.3"); !ok {
 		t.Errorf("superseding fact should be recalled; got %+v", hits)
 	}
-	if _, ok := hitWith(hits, "glm-5.1"); ok {
+	if _, ok := hitWith(hits, "grok-4.2"); ok {
 		t.Errorf("superseded fact must be excluded at now; got %+v", hits)
 	}
 }

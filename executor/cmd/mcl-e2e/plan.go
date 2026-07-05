@@ -33,7 +33,7 @@ func BuildPlan(intentID, agentURI, skillRef, fsJail, gitRepoDir string) (*ir.Pla
 		CreatedAt:   time.Now().UTC().Format(time.RFC3339Nano),
 		CreatedBy:   agentURI,
 		SkillRef:    skillRef,
-		ModelDigest: sha256Hex("accounts/fireworks/models/glm-5p2"),
+		ModelDigest: sha256Hex("grok-4.3"),
 		Root: ir.PlanNode{
 			ID:          "n0",
 			Kind:        ir.NodeSequential,

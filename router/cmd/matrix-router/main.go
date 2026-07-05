@@ -149,23 +149,21 @@ func main() {
 			"MATRIX_GATEWAY_URL":   os.Getenv("MATRIX_GATEWAY_URL"),
 			"MATRIX_GATEWAY_TOKEN": os.Getenv("MATRIX_GATEWAY_TOKEN"),
 			// Pin the fleet to the gateway free-tier whitelist + rate card
-			// (gateway/internal/rates, RateTableVersion 2). v1 launch
-			// (2026-06-01) model decisions:
-			//   compiler = gpt-oss-120b, escalating to deepseek-v4-pro on a
+			// (gateway/internal/rates, RateTableVersion 2). xAI/Grok pins:
+			//   compiler = grok-4.3, escalating to grok-4.3 on a
 			//              low-confidence frame (MATRIX_COMPILER_ESCALATE_MODEL);
-			//   planner  = kimi-k2.6 (dedicated MATRIX_PLANNER_MODEL knob,
-			//              decoupled from the executor knob; strong tool/JSON
-			//              fidelity + low hallucination for plan_tree@1 synthesis);
-			//   executor = kimi-k2.6;
-			//   liaison  = deepseek-v4-flash (user-facing conversational
-			//              narrator; dedicated MATRIX_LIAISON_MODEL knob).
+			//   planner  = grok-4.3 (dedicated MATRIX_PLANNER_MODEL knob,
+			//              decoupled from the executor knob);
+			//   executor = grok-4.3;
+			//   liaison  = grok-4.20-0309-non-reasoning (user-facing
+			//              conversational narrator; MATRIX_LIAISON_MODEL knob).
 			// Override any of these via /etc/matrix/router.env if the gateway
 			// whitelist changes.
-			"MATRIX_COMPILER_MODEL":          envOr("MATRIX_COMPILER_MODEL", "accounts/fireworks/models/gpt-oss-120b"),
-			"MATRIX_COMPILER_ESCALATE_MODEL": envOr("MATRIX_COMPILER_ESCALATE_MODEL", "accounts/fireworks/models/glm-5p2"),
-			"MATRIX_PLANNER_MODEL":           envOr("MATRIX_PLANNER_MODEL", "accounts/fireworks/models/glm-5p2"),
-			"MATRIX_EXECUTOR_MODEL":          envOr("MATRIX_EXECUTOR_MODEL", "accounts/fireworks/models/glm-5p2"),
-			"MATRIX_LIAISON_MODEL":           envOr("MATRIX_LIAISON_MODEL", "accounts/fireworks/models/glm-5p2"),
+			"MATRIX_COMPILER_MODEL":          envOr("MATRIX_COMPILER_MODEL", "grok-4.3"),
+			"MATRIX_COMPILER_ESCALATE_MODEL": envOr("MATRIX_COMPILER_ESCALATE_MODEL", "grok-4.3"),
+			"MATRIX_PLANNER_MODEL":           envOr("MATRIX_PLANNER_MODEL", "grok-4.3"),
+			"MATRIX_EXECUTOR_MODEL":          envOr("MATRIX_EXECUTOR_MODEL", "grok-4.3"),
+			"MATRIX_LIAISON_MODEL":           envOr("MATRIX_LIAISON_MODEL", "grok-4.20-0309-non-reasoning"),
 			"MATRIX_DEFAULT_SKILL":           envOr("MATRIX_DEFAULT_SKILL", "matrix://skill/paxeer-assistant@0.1.0"),
 			// Web search (tools/websearch/web-search.mjs MCP server in the
 			// daemon image). The stdio bridge inherits the Machine env (its

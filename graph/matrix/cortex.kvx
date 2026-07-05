@@ -1,0 +1,44 @@
+# GENERATED gen=codegraph do-not-edit merkle=b3:00aa11bb22cc33dd
+
+NODE id=matrix/cortex kind=package
+  digest=b3:0a1b2c file=cortex range=0:0 lang=go exported=true
+EDGES
+  contains=matrix/cortex/snapshot.go
+
+NODE id=matrix/cortex.NewStore kind=func
+  digest=b3:11c2d3 file=cortex/snapshot.go range=30:34 lang=go exported=true
+  sig=func NewStore() *Store
+EDGES
+  calls=matrix/cortex.Snapshot.Root
+  references=matrix/cortex.Snapshot
+  ^defines=matrix/cortex/snapshot.go
+
+NODE id=matrix/cortex.Persistable kind=interface
+  digest=b3:22d3e4 file=cortex/snapshot.go range=12:16 lang=go exported=true
+  sig=type Persistable interface{ Load() error; Save() error }
+EDGES
+  ^implements=matrix/cortex.Snapshot
+  ^defines=matrix/cortex/snapshot.go
+
+NODE id=matrix/cortex.Snapshot kind=type
+  digest=b3:9f2a4c file=cortex/snapshot.go range=142:210 lang=go exported=true
+  sig=type Snapshot struct{ Root MerkleHash; Ts int64 }
+  summary=Merkle-rooted point-in-time cortex state.
+  salience=0.7100
+EDGES
+  implements=matrix/cortex.Persistable
+  ^references=matrix/cortex.NewStore
+  ^defines=matrix/cortex/snapshot.go
+
+NODE id=matrix/cortex.Snapshot.Root kind=method
+  digest=b3:33e4f5 file=cortex/snapshot.go range=150:152 lang=go exported=true
+  sig=func (s *Snapshot) Root() MerkleHash
+EDGES
+  ^calls=matrix/cortex.NewStore
+  ^defines=matrix/cortex/snapshot.go
+
+NODE id=matrix/cortex/snapshot.go kind=file
+  digest=b3:44f506 file=cortex/snapshot.go range=1:210 lang=go exported=true
+EDGES
+  defines=matrix/cortex.NewStore,matrix/cortex.Persistable,matrix/cortex.Snapshot,matrix/cortex.Snapshot.Root
+  ^contains=matrix/cortex

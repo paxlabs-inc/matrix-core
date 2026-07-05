@@ -178,15 +178,15 @@ func Default() Config {
 		ManifestPath: "agents/default.json",
 		SkillsRoot:   "skills",
 
-		MainModel:          "zai-org/GLM-5.2",
-		CheapModel:         "zai-org/GLM-5.2",
-		ConsolidationModel: "zai-org/GLM-5.2",
+		MainModel:          "grok-4.3",
+		CheapModel:         "grok-4.20-0309-non-reasoning",
+		ConsolidationModel: "grok-4.20-0309-non-reasoning",
 		EmbedModel:         "nomic-ai/nomic-embed-text-v1.5",
 		// Cassandra completeness auditor: a cheap/fast primary + a stronger
 		// escalation model, both on the gateway cassandra-slot whitelist
 		// (gateway rates.FreeTierWhitelist "cassandra").
-		CassandraModel:         "zai-org/GLM-5.2",
-		CassandraEscalateModel: "zai-org/GLM-5.2",
+		CassandraModel:         "grok-4.20-0309-non-reasoning",
+		CassandraEscalateModel: "grok-4.3",
 
 		ContextWindowTokens:   256000,
 		SoftPct:               80,

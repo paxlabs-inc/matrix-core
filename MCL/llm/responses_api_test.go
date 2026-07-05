@@ -421,7 +421,6 @@ func TestIsOpencodeModelID(t *testing.T) {
 		"Qwen3.7-Max", "kimi-k2.5",
 		"glm-5.1", "glm-5",
 		"minimax-m2.7",
-		"grok-build-0.1",
 		"big-pickle",
 		"deepseek-v4-flash-free",
 		"mimo-v2.5-free",
@@ -431,8 +430,12 @@ func TestIsOpencodeModelID(t *testing.T) {
 		"accounts/fireworks/models/deepseek-v4-flash", // provider-scoped, not bare
 		"openai/gpt-oss-120b",                         // together-shaped, not bare
 		"deepseek-ai/DeepSeek-V4-Flash",               // together-shaped
-		"",                                            // empty
-		"some-random-model",                           // unmatched bare id
+		// v9: "grok-*" ids (incl. grok-build-*) are xAI, NOT opencode — the
+		// grok prefix is detected before the opencode bare-id check.
+		"grok-build-0.1",
+		"grok-4.3",
+		"",                 // empty
+		"some-random-model", // unmatched bare id
 	}
 
 	for _, m := range yes {

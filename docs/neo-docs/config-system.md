@@ -30,7 +30,7 @@ type Config struct {
 
     // Models (provider-qualified ids)
     MainModel  string // "Qwen/Qwen3.7-Max"
-    CheapModel string // "accounts/fireworks/routers/glm-5p1-fast"
+    CheapModel string // "grok-4.20-0309-non-reasoning"
     EmbedModel string // "nomic-ai/nomic-embed-text-v1.5"
 
     // Memory budget

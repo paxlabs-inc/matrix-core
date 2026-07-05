@@ -5,12 +5,15 @@
 # matrix-gateway is a leaf Go module (only github.com/lib/pq); it talks to the
 # per-user daemons over HTTP, never via Go imports, so this image builds from
 # the gateway/ module alone. The binary is a pure-static CGO_ENABLED=0 build,
-# so the runtime layer needs only ca-certificates (HTTPS to the Fireworks /
-# Together upstreams) + tini for PID-1 signal forwarding.
+# so the runtime layer needs only ca-certificates (HTTPS to the xAI /
+# Fireworks / Together upstreams) + tini for PID-1 signal forwarding.
 #
 # Config is env-driven via entrypoint.sh, which maps env -> the same flags the
 # box systemd unit passes (gateway/deploy/matrix-gateway.service):
 #   MATRIX_GATEWAY_TOKEN          required — shared bearer token (auth.New)
+#   XAI_API_KEY                   required — xAI upstream key for the primary
+#                                 grok-* chat lane (grok-4.3 / grok-build-0.1 /
+#                                 grok-4.20-0309-non-reasoning)
 #   FIREWORKS_API_KEY             required when GATEWAY_FREE_TIER_ONLY=true
 #   TOGETHER_API_KEY              optional — Together upstream key
 #   MATRIX_GATEWAY_POSTGRES_URI   optional — empty selects the in-memory ledger

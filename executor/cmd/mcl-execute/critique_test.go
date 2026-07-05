@@ -98,13 +98,15 @@ func TestCriticMod_Precedence(t *testing.T) {
 	if got := d.criticMod(); got != "critic/x" {
 		t.Errorf("criticModel should win: got %q", got)
 	}
+	// Unset critic knob falls back to Cassandra's non-reasoning grok pin,
+	// NOT the planner/executor model.
 	d = &daemonState{plannerModel: "planner/y", executorModel: "exec/z"}
-	if got := d.criticMod(); got != "planner/y" {
-		t.Errorf("should fall back to synthMod (planner): got %q", got)
+	if got := d.criticMod(); got != defaultCriticModel {
+		t.Errorf("should fall back to defaultCriticModel: got %q", got)
 	}
 	d = &daemonState{}
-	if got := d.criticMod(); got != "" {
-		t.Errorf("empty knobs -> empty: got %q", got)
+	if got := d.criticMod(); got != defaultCriticModel {
+		t.Errorf("empty knobs -> defaultCriticModel: got %q", got)
 	}
 }
 

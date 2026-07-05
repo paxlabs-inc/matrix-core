@@ -21,11 +21,16 @@ func TestDetectProvider(t *testing.T) {
 	}{
 		{"accounts/fireworks/models/deepseek-v4-flash", ProviderFireworks, false},
 		{"accounts/fireworks/models/deepseek-v4-pro", ProviderFireworks, false},
-		// zai-org/* (GLM) resolves to Z.ai's own API; the remaining bare
-		// "<vendor>/<model>" shape resolves to Baseten. Together is only
+		// "grok-*" ids (the v9 xAI migration off Z.ai GLM) resolve to xAI's
+		// OpenAI-compatible API — the primary chat provider. The check precedes
+		// the opencode bare-id detection so grok-build-* lands on xAI (NOT
+		// opencode). The remaining bare "<vendor>/<model>" shape (including the
+		// retired zai-org/GLM ids) resolves to Baseten; Together is only
 		// reachable via explicit Config.Provider + ProviderSet.
-		{"zai-org/GLM-5.2", ProviderZai, false},
-		{"zai-org/GLM-5", ProviderZai, false},
+		{"grok-4.3", ProviderXai, false},
+		{"grok-build-0.1", ProviderXai, false},
+		{"grok-4.20-0309-non-reasoning", ProviderXai, false},
+		{"zai-org/GLM-5.2", ProviderBaseten, false},
 		{"deepseek-ai/DeepSeek-V4-Flash", ProviderBaseten, false},
 		{"openai/gpt-oss-120b", ProviderBaseten, false},
 		{"Qwen/Qwen3.5-9B-FP8", ProviderBaseten, false},
@@ -50,19 +55,124 @@ func TestDetectProvider(t *testing.T) {
 	}
 }
 
-func TestZaiNativeModel(t *testing.T) {
+func TestIsXaiModel(t *testing.T) {
 	tests := []struct {
-		in, want string
+		in   string
+		want bool
 	}{
-		{"zai-org/GLM-5.2", "glm-5.2"},
-		{"zai-org/GLM-5-Turbo", "glm-5-turbo"},
-		{"deepseek-ai/DeepSeek-V4-Flash", "deepseek-ai/DeepSeek-V4-Flash"},
-		{"accounts/fireworks/models/gpt-oss-120b", "accounts/fireworks/models/gpt-oss-120b"},
+		{"grok-4.3", true},
+		{"grok-build-0.1", true},
+		{"grok-4.20-0309-non-reasoning", true},
+		{"GROK-4.3", true}, // case-insensitive prefix
+		{"zai-org/GLM-5.2", false},
+		{"deepseek-ai/DeepSeek-V4-Flash", false},
+		{"accounts/fireworks/models/gpt-oss-120b", false},
+		{"", false},
 	}
 	for _, tt := range tests {
-		if got := ZaiNativeModel(tt.in); got != tt.want {
-			t.Errorf("ZaiNativeModel(%q) = %q, want %q", tt.in, got, tt.want)
+		if got := IsXaiModel(tt.in); got != tt.want {
+			t.Errorf("IsXaiModel(%q) = %v, want %v", tt.in, got, tt.want)
 		}
+	}
+}
+
+// TestXaiModelPassesThroughUnchanged is the successor to the retired
+// TestZaiNativeModel: the v9 migration off Z.ai GLM means there is NO
+// send-time model rewrite — the bare "grok-*" fleet id IS xAI's native
+// model code, so it must reach the wire verbatim (no native-id translation,
+// no thinking-block rewrite).
+func TestXaiModelPassesThroughUnchanged(t *testing.T) {
+	var gotModel string
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var req chatRequest
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			t.Fatalf("decode request: %v", err)
+		}
+		gotModel = req.Model
+		json.NewEncoder(w).Encode(chatResponse{
+			Choices: []chatChoice{{Message: chatMessage{Role: "assistant", Content: "ok"}}},
+		})
+	}))
+	defer server.Close()
+
+	client, err := New(&Config{
+		Model:    "grok-4.3",
+		APIKey:   "test-key",
+		Endpoint: server.URL,
+	})
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	if _, err := client.Decode(context.Background(), []interpreter.Message{
+		{Role: "user", Content: "hi"},
+	}, ""); err != nil {
+		t.Fatalf("Decode: %v", err)
+	}
+	if gotModel != "grok-4.3" {
+		t.Errorf("upstream model = %q, want %q (grok id must pass through unchanged)", gotModel, "grok-4.3")
+	}
+}
+
+// TestReasoningEffortWire pins the xAI reasoning_effort request contract that
+// replaced the retired Z.ai `thinking` block. Only grok-4.3 carries the field:
+// EnableThinking=true maps to "high", EnableThinking=false maps to "none", and
+// models that do not support reasoning_effort (grok-build-*, the non-reasoning
+// grok, and non-grok models) omit the field entirely (omitempty).
+func TestReasoningEffortWire(t *testing.T) {
+	tests := []struct {
+		name           string
+		model          string
+		enableThinking bool
+		wantEffort     string // "" means the field must be omitted from the wire
+	}{
+		{"grok43 thinking on -> high", "grok-4.3", true, "high"},
+		{"grok43 thinking off -> none", "grok-4.3", false, "none"},
+		{"grok-build omits", "grok-build-0.1", true, ""},
+		{"grok non-reasoning omits", "grok-4.20-0309-non-reasoning", true, ""},
+		{"non-grok omits", "deepseek-ai/DeepSeek-V4-Flash", true, ""},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var raw map[string]json.RawMessage
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if err := json.NewDecoder(r.Body).Decode(&raw); err != nil {
+					t.Fatalf("decode request: %v", err)
+				}
+				json.NewEncoder(w).Encode(chatResponse{
+					Choices: []chatChoice{{Message: chatMessage{Role: "assistant", Content: "ok"}}},
+				})
+			}))
+			defer server.Close()
+
+			client, err := New(&Config{
+				Model:          tt.model,
+				APIKey:         "test-key",
+				Endpoint:       server.URL,
+				EnableThinking: tt.enableThinking,
+			})
+			if err != nil {
+				t.Fatalf("New: %v", err)
+			}
+			if _, err := client.Decode(context.Background(), []interpreter.Message{
+				{Role: "user", Content: "hi"},
+			}, ""); err != nil {
+				t.Fatalf("Decode: %v", err)
+			}
+
+			effort, present := raw["reasoning_effort"]
+			if tt.wantEffort == "" {
+				if present {
+					t.Errorf("reasoning_effort present (%s), want omitted", effort)
+				}
+				return
+			}
+			if !present {
+				t.Fatalf("reasoning_effort missing, want %q", tt.wantEffort)
+			}
+			if string(effort) != `"`+tt.wantEffort+`"` {
+				t.Errorf("reasoning_effort = %s, want %q", effort, tt.wantEffort)
+			}
+		})
 	}
 }
 

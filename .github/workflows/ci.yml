@@ -257,13 +257,70 @@ jobs:
         run: pnpm build
 
   # -------------------------------------------------------------------------
+  # CodeGraph — separate job because it pins its own Go toolchain (go.mod
+  # 1.25, golang.org/x/tools). Runs the module's own test suite plus the graph
+  # staleness gate: the committed graph store must match source, the same way
+  # the spec checks require generated spec output to match spec/*.kvx. The gate
+  # only walks source files (no full rebuild), so it is cheap and toolchain-
+  # independent, and is a no-op until a graph store is committed.
+  # -------------------------------------------------------------------------
+  codegraph:
+    name: build / codegraph
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: codegraph/go.mod
+          cache: true
+          cache-dependency-path: codegraph/go.sum
+
+      - name: go mod download
+        working-directory: codegraph
+        run: go mod download
+
+      - name: gofmt
+        working-directory: codegraph
+        run: |
+          unformatted=$(gofmt -l .)
+          if [ -n "$unformatted" ]; then
+            echo "::error::gofmt needs to be run on:"
+            echo "$unformatted"
+            exit 1
+          fi
+
+      - name: go vet
+        working-directory: codegraph
+        run: go vet ./...
+
+      - name: go build
+        working-directory: codegraph
+        run: go build ./...
+
+      - name: go test
+        working-directory: codegraph
+        run: go test -count=1 -race -timeout=10m ./...
+
+      - name: codegraph staleness gate
+        working-directory: codegraph
+        run: |
+          if [ -f ../graph/merkle.kvx ]; then
+            go run ./cmd/codegraph check -root .. -out ../graph
+          else
+            echo "no committed graph store (../graph/merkle.kvx); skipping staleness gate"
+          fi
+
+  # -------------------------------------------------------------------------
   # Aggregator job — branch protection should require `ci-passed` only.
   # Any added/removed leaf job stays decoupled from the protection rule.
   # -------------------------------------------------------------------------
   ci-passed:
     name: ci-passed
     runs-on: ubuntu-latest
-    needs: [build, mtx-corpus, deus, marketplace]
+    needs: [build, mtx-corpus, deus, marketplace, codegraph]
     if: always()
     steps:
       - name: aggregate

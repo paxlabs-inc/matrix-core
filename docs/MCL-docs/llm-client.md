@@ -8,17 +8,21 @@ Source files: `MCL/llm/llm.go`, `MCL/llm/model.go`, `MCL/llm/identity.go`, `MCL/
 
 ## Providers
 
-Three providers are supported:
+Four providers are supported:
 
 | Provider | Constant | Default endpoint |
 |---|---|---|
+| xAI | `ProviderXAI` | `https://api.x.ai/v1/chat/completions` |
 | Together AI | `ProviderTogether` | `https://api.together.xyz/v1/chat/completions` |
 | Fireworks AI | `ProviderFireworks` | `https://api.fireworks.ai/inference/v1/chat/completions` |
 | Opencode | `ProviderOpencode` | `https://opencode.ai/zen/v1/...` (route depends on model) |
 
+xAI serves the primary `grok-*` chat lane (`grok-4.3` for reasoning, `grok-build-0.1` for Cody, `grok-4.20-0309-non-reasoning` for the cheap narrator). Grok models gate their reasoning depth via the `reasoning_effort` request parameter rather than distinct model ids.
+
 Provider is auto-detected from the model string via `llm.DetectProvider()`. You can override it explicitly via `Config.Provider`.
 
 Environment variables used for API keys:
+- xAI: `XAI_API_KEY`
 - Together: `TOGETHER_API_KEY`
 - Fireworks: `FIREWORKS_API_KEY`
 - Opencode: `OPENCODE_API_KEY`
@@ -150,7 +154,7 @@ The step kind → model routing:
 
 | Step kind | Model tier | Notes |
 |---|---|---|
-| `reason` | Default (GLM-5.1 fast) | General agentic reasoning |
+| `reason` | Default (`grok-4.3`) | General agentic reasoning |
 | `code` | Code specialist | Code generation / analysis |
 | `summarize` | Long-context specialist | Summarization over long context windows |
 | `write` | Prose specialist | Free-form writing |

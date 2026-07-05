@@ -78,13 +78,17 @@ func TestModelPolicyPerRole(t *testing.T) {
 			t.Fatalf("%s: decisions (%v) must run hotter than implementation (%v)", m, dec.Temperature, work.Temperature)
 		}
 	}
-	// Prototype workers run a faster model than the orchestrator's pin.
-	proto := For(Prototype)
-	if proto.WorkerModel == proto.OrchestratorModel {
-		t.Fatal("prototype worker should not pin the orchestrator's stronger model")
+	// Every role in every mode pins grok-build-0.1 (xAI Grok) — the fast tier
+	// and the strong tier are the same Grok model under the cody slot.
+	const want = "grok-build-0.1"
+	if FastModel != want {
+		t.Fatalf("FastModel = %q, want %q", FastModel, want)
 	}
-	if proto.WorkerModel == For(Engineer).WorkerModel {
-		t.Fatal("prototype worker model should be the fast tier, not the default")
+	for _, m := range []Mode{Prototype, Engineer, Architect} {
+		p := For(m)
+		if p.OrchestratorModel != want || p.WorkerModel != want {
+			t.Fatalf("%s: models orch=%q worker=%q, want both %q", m, p.OrchestratorModel, p.WorkerModel, want)
+		}
 	}
 }
 

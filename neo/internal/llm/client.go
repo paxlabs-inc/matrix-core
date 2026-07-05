@@ -147,16 +147,8 @@ func (c *Client) Model() string { return c.model }
 // schemas) and returns the model's single assistant turn, which may contain
 // tool_calls the caller must execute and feed back as tool-role messages.
 func (c *Client) Chat(ctx context.Context, req ChatRequest) (*ChatResult, error) {
-	wireModel := c.model
-	if c.gatewayURL == "" && c.provider == mcllm.ProviderZai {
-		// Direct hop to api.z.ai must carry Z.ai's native model code
-		// ("zai-org/GLM-5.2" → "glm-5.2"); on the gateway path the fleet id
-		// stays (whitelist + metering key on it) and the gateway rewrites
-		// the upstream hop.
-		wireModel = mcllm.ZaiNativeModel(c.model)
-	}
 	wire := chatRequestWire{
-		Model:       wireModel,
+		Model:       c.model,
 		Messages:    toWireMessages(req.Messages),
 		Temperature: c.temperature,
 		MaxTokens:   c.maxTokens,
@@ -174,12 +166,12 @@ func (c *Client) Chat(ctx context.Context, req ChatRequest) (*ChatResult, error)
 	if c.gatewayURL == "" {
 		wire.StreamOptions = &streamOptions{IncludeUsage: true}
 	}
-	// GLM (zai-org/*, served by Z.ai) takes the native `thinking` block and
-	// defaults it ON — pin it explicitly from the per-client flag so
-	// token-tight roles keep reasoning off. Kimi (moonshotai/*, Baseten)
-	// keeps the legacy opt-in chat_template_args.
-	if zt := zaiThinking(c.model, c.enableThinking); zt != nil {
-		wire.Thinking = zt
+	// xAI's grok-4.3 takes the OpenAI-style `reasoning_effort` control — pin it
+	// explicitly from the per-client flag ("high" when set, "none" when clear)
+	// so token-tight roles keep reasoning off. Kimi (moonshotai/*, Baseten)
+	// keeps the legacy opt-in chat_template_args.enable_thinking.
+	if mcllm.IsXaiModel(c.model) && supportsReasoningEffort(c.model) {
+		wire.ReasoningEffort = reasoningEffort(c.enableThinking)
 	} else if c.enableThinking {
 		if args := enableThinkingArgs(c.model); args != nil {
 			wire.ChatTemplateArgs = args
@@ -521,8 +513,8 @@ func defaultChatEndpoint(p mcllm.Provider) string {
 		return mcllm.OpencodeChatEndpoint
 	case mcllm.ProviderBaseten:
 		return "https://inference.baseten.co/v1/chat/completions"
-	case mcllm.ProviderZai:
-		return mcllm.ZaiChatEndpoint
+	case mcllm.ProviderXai:
+		return mcllm.XaiChatEndpoint
 	}
 	return ""
 }
@@ -538,8 +530,8 @@ func envKey(p mcllm.Provider) (string, error) {
 		name = "OPENCODE_API_KEY"
 	case mcllm.ProviderBaseten:
 		name = "BASETEN_API_KEY"
-	case mcllm.ProviderZai:
-		name = "ZAI_API_KEY"
+	case mcllm.ProviderXai:
+		name = "XAI_API_KEY"
 	default:
 		return "", fmt.Errorf("neo/llm: unknown provider %d", p)
 	}
@@ -557,30 +549,29 @@ func truncate(s string, n int) string {
 	return s[:n] + "..."
 }
 
-// zaiThinking returns the Z.ai `thinking` block for GLM (zai-org/*) models,
-// nil for everything else. Z.ai defaults thinking ON ("the model will
-// automatically determine whether to think"), the inverse of the old
-// Baseten-served posture — so the toggle is pinned EXPLICITLY both ways:
-// enabled splits chain-of-thought into the separate reasoning_content
-// channel (which aggregateStreamReader routes to the thinking channel),
-// disabled keeps token-tight mechanical roles (compaction/consolidation)
-// from spending their small max_tokens on reasoning.
-func zaiThinking(model string, enabled bool) *thinkingWire {
-	if !strings.HasPrefix(strings.ToLower(model), "zai-org/") {
-		return nil
-	}
+// supportsReasoningEffort reports whether an xAI model accepts the
+// `reasoning_effort` request field. Per xAI docs it is currently only honored
+// by grok-4.3; other Grok models (grok-build-*, grok-4.20-*-non-reasoning)
+// ignore or reject it, so the field is omitted for them.
+func supportsReasoningEffort(model string) bool {
+	return strings.HasPrefix(strings.ToLower(model), "grok-4.3")
+}
+
+// reasoningEffort maps the per-role EnableThinking flag onto xAI's
+// reasoning_effort enum: reasoning ON → "high", OFF → "none" (disables
+// reasoning entirely for token-tight mechanical roles).
+func reasoningEffort(enabled bool) string {
 	if enabled {
-		return &thinkingWire{Type: "enabled"}
+		return "high"
 	}
-	return &thinkingWire{Type: "disabled"}
+	return "none"
 }
 
 // enableThinkingArgs returns the chat_template_args that turn reasoning ON for
 // Baseten-served models where it is OPT-IN: Kimi (moonshotai/*) emits its
 // chain-of-thought as visible `content` unless enable_thinking makes the
-// server split it into the separate reasoning_content channel. GLM moved to
-// Z.ai's native `thinking` block (see zaiThinking). Returns nil for models
-// that reason by default (never sent).
+// server split it into the separate reasoning_content channel. Returns nil for
+// models that reason by default or use a different provider param (never sent).
 func enableThinkingArgs(model string) map[string]any {
 	if strings.HasPrefix(strings.ToLower(model), "moonshotai/") {
 		return map[string]any{"enable_thinking": true}
@@ -601,13 +592,10 @@ type chatRequestWire struct {
 	Stream           bool           `json:"stream,omitempty"`
 	StreamOptions    *streamOptions `json:"stream_options,omitempty"`
 	ChatTemplateArgs map[string]any `json:"chat_template_args,omitempty"`
-	Thinking         *thinkingWire  `json:"thinking,omitempty"`
-}
-
-// thinkingWire is Z.ai's `thinking` request block
-// ({"type":"enabled"|"disabled"}); sent only for zai-org/* models.
-type thinkingWire struct {
-	Type string `json:"type"`
+	// ReasoningEffort is xAI's reasoning-depth control ("none"|"low"|"medium"|
+	// "high"); set ONLY for grok-4.3 (omitempty keeps every other model's wire
+	// shape unchanged).
+	ReasoningEffort string `json:"reasoning_effort,omitempty"`
 }
 
 // streamOptions asks the provider to emit a final usage chunk on the SSE

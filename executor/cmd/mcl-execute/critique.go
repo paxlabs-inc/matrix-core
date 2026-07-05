@@ -43,6 +43,12 @@ import (
 // (gateway rates.FreeTierWhitelist).
 const criticSlot = "cassandra"
 
+// defaultCriticModel is Cassandra's non-reasoning grok pin used when neither
+// -critic-model nor MATRIX_CRITIC_MODEL is set. It is deliberately NOT the
+// grok-4.3 registry default the executor/planner slots resolve to: the
+// completeness audit runs on Cassandra's own non-reasoning model.
+const defaultCriticModel = "grok-4.20-0309-non-reasoning"
+
 const (
 	// criticNodeResultCap bounds each node's result text in the digest so a
 	// single huge tool output cannot blow the critic prompt budget.
@@ -52,13 +58,14 @@ const (
 )
 
 // criticMod returns the model the completeness critic should use: the
-// dedicated criticModel knob when set, else the planner/executor model
-// (synthMod). Empty lets critiquePlan fall through to the planner default.
+// dedicated criticModel knob when set, else Cassandra's non-reasoning grok
+// pin (defaultCriticModel). Never empty, so critiquePlan always audits on
+// Cassandra's model rather than the planner/executor default.
 func (d *daemonState) criticMod() string {
 	if d.criticModel != "" {
 		return d.criticModel
 	}
-	return d.synthMod()
+	return defaultCriticModel
 }
 
 // buildExecutionDigest renders the executed plan tree into a compact,

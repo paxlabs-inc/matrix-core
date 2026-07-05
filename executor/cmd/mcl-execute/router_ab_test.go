@@ -276,7 +276,7 @@ func TestABMetrics_ObserveAndFlush(t *testing.T) {
 		m.Observe(routeMetricKey{
 			Slot:  "executor",
 			Kind:  "reason",
-			Model: "glm-5.1",
+			Model: "grok-4.3",
 		}, ms, nil)
 	}
 	// One error case on the planner route.
@@ -323,13 +323,13 @@ func TestABMetrics_PrometheusExposition(t *testing.T) {
 	m.Observe(routeMetricKey{
 		Slot:     "executor",
 		Kind:     "reason",
-		Model:    "glm-5.1",
+		Model:    "grok-4.3",
 		Streamed: true,
 	}, 250, nil)
 	m.Observe(routeMetricKey{
 		Slot:     "executor",
 		Kind:     "reason",
-		Model:    "glm-5.1",
+		Model:    "grok-4.3",
 		Streamed: true,
 	}, 1500, nil)
 	m.IncCacheHit()
@@ -345,10 +345,10 @@ func TestABMetrics_PrometheusExposition(t *testing.T) {
 		"matrix_daemon_uptime_seconds 60",
 		"matrix_compile_cache_hits_total 1",
 		"matrix_compile_cache_misses_total 2",
-		`matrix_router_request_duration_ms_bucket{slot="executor",kind="reason",model="glm-5.1",streamed="true",le="250"} 1`,
-		`matrix_router_request_duration_ms_bucket{slot="executor",kind="reason",model="glm-5.1",streamed="true",le="+Inf"} 2`,
-		`matrix_router_request_duration_ms_count{slot="executor",kind="reason",model="glm-5.1",streamed="true"} 2`,
-		`matrix_router_request_duration_ms_sum{slot="executor",kind="reason",model="glm-5.1",streamed="true"} 1750`,
+		`matrix_router_request_duration_ms_bucket{slot="executor",kind="reason",model="grok-4.3",streamed="true",le="250"} 1`,
+		`matrix_router_request_duration_ms_bucket{slot="executor",kind="reason",model="grok-4.3",streamed="true",le="+Inf"} 2`,
+		`matrix_router_request_duration_ms_count{slot="executor",kind="reason",model="grok-4.3",streamed="true"} 2`,
+		`matrix_router_request_duration_ms_sum{slot="executor",kind="reason",model="grok-4.3",streamed="true"} 1750`,
 	} {
 		if !strings.Contains(out, want) {
 			t.Errorf("Prometheus output missing %q\nfull output:\n%s", want, out)

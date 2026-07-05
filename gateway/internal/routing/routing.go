@@ -38,7 +38,7 @@ const (
 	ProviderFireworks
 	ProviderTogether
 	ProviderBaseten
-	ProviderZai
+	ProviderXai
 )
 
 func (p Provider) String() string {
@@ -49,8 +49,8 @@ func (p Provider) String() string {
 		return "together"
 	case ProviderBaseten:
 		return "baseten"
-	case ProviderZai:
-		return "zai"
+	case ProviderXai:
+		return "xai"
 	}
 	return "unknown"
 }
@@ -63,10 +63,9 @@ const (
 	DefaultTogetherEmbeddings  = "https://api.together.xyz/v1/embeddings"
 	DefaultBasetenChat         = "https://inference.baseten.co/v1/chat/completions"
 	DefaultBasetenEmbeddings   = "https://inference.baseten.co/v1/embeddings"
-	// Z.ai (the GLM vendor's own API) serves zai-org/* directly — note the
-	// /paas/v4 path, not /v1.
-	DefaultZaiChat       = "https://api.z.ai/api/paas/v4/chat/completions"
-	DefaultZaiEmbeddings = "https://api.z.ai/api/paas/v4/embeddings"
+	// xAI (Grok) serves grok-* directly on an OpenAI-compatible /v1 surface.
+	DefaultXaiChat       = "https://api.x.ai/v1/chat/completions"
+	DefaultXaiEmbeddings = "https://api.x.ai/v1/embeddings"
 )
 
 // Endpoint identifies which upstream URL to forward to.
@@ -143,8 +142,8 @@ type Options struct {
 	TogetherEmbeddingsURL  string
 	BasetenChatURL         string
 	BasetenEmbeddingsURL   string
-	ZaiChatURL             string
-	ZaiEmbeddingsURL       string
+	XaiChatURL             string
+	XaiEmbeddingsURL       string
 }
 
 // New constructs a Decider with the supplied options.
@@ -161,13 +160,13 @@ func New(opts Options) *Decider {
 			ProviderFireworks: pick(opts.FireworksChatURL, DefaultFireworksChat),
 			ProviderTogether:  pick(opts.TogetherChatURL, DefaultTogetherChat),
 			ProviderBaseten:   pick(opts.BasetenChatURL, DefaultBasetenChat),
-			ProviderZai:       pick(opts.ZaiChatURL, DefaultZaiChat),
+			ProviderXai:       pick(opts.XaiChatURL, DefaultXaiChat),
 		},
 		embeddingURL: map[Provider]string{
 			ProviderFireworks: pick(opts.FireworksEmbeddingsURL, DefaultFireworksEmbeddings),
 			ProviderTogether:  pick(opts.TogetherEmbeddingsURL, DefaultTogetherEmbeddings),
 			ProviderBaseten:   pick(opts.BasetenEmbeddingsURL, DefaultBasetenEmbeddings),
-			ProviderZai:       pick(opts.ZaiEmbeddingsURL, DefaultZaiEmbeddings),
+			ProviderXai:       pick(opts.XaiEmbeddingsURL, DefaultXaiEmbeddings),
 		},
 	}
 }
@@ -263,11 +262,11 @@ func validSlot(s string) bool {
 }
 
 // detectProvider mirrors MCL/llm.DetectProvider. Fireworks gets the
-// "accounts/fireworks/" prefix; GLM ("zai-org/*", e.g. "zai-org/GLM-5.2")
-// routes to Z.ai — the GLM vendor's own API and the primary chat provider —
-// with the proxy rewriting the fleet id to Z.ai's native model code on the
-// upstream hop; the remaining generic "<vendor>/<model>" shape routes to
-// Baseten. Bare model ids (no slash) are an error.
+// "accounts/fireworks/" prefix; Grok ("grok-*", e.g. "grok-4.3") routes to xAI
+// — the primary chat provider — on its OpenAI-compatible /v1 surface, with the
+// bare fleet id passed through unchanged (no native-id rewrite); the remaining
+// generic "<vendor>/<model>" shape routes to Baseten. Bare non-grok model ids
+// (no slash) are an error.
 func detectProvider(model string) (Provider, error) {
 	switch {
 	case strings.HasPrefix(model, "accounts/fireworks/"):
@@ -277,12 +276,12 @@ func detectProvider(model string) (Provider, error) {
 	// generic '<vendor>/<model>' → Baseten branch below.
 	case strings.HasPrefix(model, "nomic-ai/"):
 		return ProviderFireworks, nil
-	case strings.HasPrefix(strings.ToLower(model), "zai-org/"):
-		return ProviderZai, nil
+	case strings.HasPrefix(strings.ToLower(model), "grok-"):
+		return ProviderXai, nil
 	case strings.Contains(model, "/"):
 		return ProviderBaseten, nil
 	}
-	return ProviderUnknown, fmt.Errorf("%w: %q (expected '<vendor>/<model>' or 'accounts/fireworks/...')",
+	return ProviderUnknown, fmt.Errorf("%w: %q (expected '<vendor>/<model>', 'accounts/fireworks/...', or a 'grok-*' xAI id)",
 		ErrUnknownProvider, model)
 }
 

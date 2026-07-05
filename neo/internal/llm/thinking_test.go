@@ -5,35 +5,37 @@ package llm
 
 import "testing"
 
-// GLM (zai-org/*) is served by Z.ai, whose native `thinking` block defaults
-// ON — so the client pins it explicitly BOTH ways from the per-client flag.
-// Kimi (moonshotai/*) stays Baseten-served with reasoning OPT-IN via
-// chat_template_args.enable_thinking. DeepSeek-V4-Pro and gpt-oss reason by
-// default, so nothing is sent for them.
-func TestZaiThinking(t *testing.T) {
+// xAI's grok-4.3 takes the OpenAI-style `reasoning_effort` control, pinned
+// explicitly from the per-client flag ("high" when set, "none" when clear).
+// Only grok-4.3 supports the field; other Grok models (grok-build-*,
+// grok-4.20-*-non-reasoning) omit it. Kimi (moonshotai/*) stays Baseten-served
+// with reasoning OPT-IN via chat_template_args.enable_thinking.
+func TestSupportsReasoningEffort(t *testing.T) {
 	cases := []struct {
-		model   string
-		enabled bool
-		want    string // "" = nil expected
+		model string
+		want  bool
 	}{
-		{"zai-org/GLM-5.2", true, "enabled"},
-		{"zai-org/GLM-5.2", false, "disabled"},
-		{"zai-org/GLM-5", true, "enabled"},
-		{"moonshotai/Kimi-K2.6", true, ""},
-		{"deepseek-ai/DeepSeek-V4-Pro", true, ""},
-		{"accounts/fireworks/models/gpt-oss-120b", false, ""},
+		{"grok-4.3", true},
+		{"Grok-4.3", true},
+		{"grok-4.20-0309-non-reasoning", false},
+		{"grok-build-0.1", false},
+		{"moonshotai/Kimi-K2.6", false},
+		{"deepseek-ai/DeepSeek-V4-Pro", false},
+		{"accounts/fireworks/models/gpt-oss-120b", false},
 	}
 	for _, c := range cases {
-		got := zaiThinking(c.model, c.enabled)
-		if c.want == "" {
-			if got != nil {
-				t.Errorf("%s enabled=%v: want nil, got %+v", c.model, c.enabled, got)
-			}
-			continue
+		if got := supportsReasoningEffort(c.model); got != c.want {
+			t.Errorf("supportsReasoningEffort(%q) = %v, want %v", c.model, got, c.want)
 		}
-		if got == nil || got.Type != c.want {
-			t.Errorf("%s enabled=%v: want thinking type %q, got %+v", c.model, c.enabled, c.want, got)
-		}
+	}
+}
+
+func TestReasoningEffort(t *testing.T) {
+	if got := reasoningEffort(true); got != "high" {
+		t.Errorf("reasoningEffort(true) = %q, want \"high\"", got)
+	}
+	if got := reasoningEffort(false); got != "none" {
+		t.Errorf("reasoningEffort(false) = %q, want \"none\"", got)
 	}
 }
 
@@ -43,10 +45,9 @@ func TestEnableThinkingArgs(t *testing.T) {
 		want  bool
 	}{
 		{"moonshotai/Kimi-K2.6", true},
-		// GLM moved off Baseten to Z.ai's native thinking block — no
-		// chat_template_args for it anymore.
-		{"zai-org/GLM-5.2", false},
-		{"zai-org/GLM-5", false},
+		// Grok uses xAI's reasoning_effort control, not chat_template_args.
+		{"grok-4.3", false},
+		{"grok-4.20-0309-non-reasoning", false},
 		{"deepseek-ai/DeepSeek-V4-Pro", false},
 		{"openai/gpt-oss-120b", false},
 		{"accounts/fireworks/models/gpt-oss-120b", false},

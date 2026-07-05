@@ -55,7 +55,7 @@ func newTestServer(t *testing.T, fakeURL string, freeTierOnly bool) *Server {
 	}
 	// Pin EVERY provider lane to the fake upstream: routing has moved
 	// models between providers over the versions (v7 bare "<vendor>/<model>"
-	// → Baseten; zai-org/* → Z.ai) and a lane left on its real default URL
+	// → Baseten; v9 "grok-*" → xAI) and a lane left on its real default URL
 	// makes a test silently dial the live provider.
 	router := routing.New(routing.Options{
 		FreeTierOnly:           freeTierOnly,
@@ -65,8 +65,8 @@ func newTestServer(t *testing.T, fakeURL string, freeTierOnly bool) *Server {
 		TogetherEmbeddingsURL:  fakeURL,
 		BasetenChatURL:         fakeURL,
 		BasetenEmbeddingsURL:   fakeURL,
-		ZaiChatURL:             fakeURL,
-		ZaiEmbeddingsURL:       fakeURL,
+		XaiChatURL:             fakeURL,
+		XaiEmbeddingsURL:       fakeURL,
 	})
 	lg := ledger.NewMemory("10")
 	// Pin the ledger's clock to the SAME fixed instant the server uses.
@@ -383,61 +383,14 @@ func TestEnsureStreamUsage(t *testing.T) {
 	}
 }
 
-// TestTranslateZaiBody covers the Z.ai upstream-hop rewrite: the fleet
-// "zai-org/<Model>" id becomes Z.ai's native code, the legacy Baseten-era
-// chat_template_args.enable_thinking opt-in is translated to Z.ai's native
-// thinking block, sibling fields survive verbatim, a caller-set thinking
-// field wins, and a non-JSON body fails open.
-func TestTranslateZaiBody(t *testing.T) {
-	// 1. Model rewrite + legacy thinking translation; siblings survive.
-	out := translateZaiBody([]byte(`{"model":"zai-org/GLM-5.2","messages":[{"role":"user","content":"hi"}],"chat_template_args":{"enable_thinking":true},"stream":true}`))
-	var top map[string]json.RawMessage
-	if err := json.Unmarshal(out, &top); err != nil {
-		t.Fatalf("result not JSON: %v (%s)", err, out)
-	}
-	if string(top["model"]) != `"glm-5.2"` {
-		t.Fatalf("model not rewritten to native id: %s", top["model"])
-	}
-	if _, ok := top["chat_template_args"]; ok {
-		t.Fatalf("chat_template_args must be dropped for Z.ai: %s", out)
-	}
-	var thinking struct {
-		Type string `json:"type"`
-	}
-	if err := json.Unmarshal(top["thinking"], &thinking); err != nil || thinking.Type != "enabled" {
-		t.Fatalf("thinking not translated: %s (err=%v)", top["thinking"], err)
-	}
-	if string(top["stream"]) != "true" {
-		t.Fatalf("sibling field dropped: %s", out)
-	}
-
-	// 2. A caller-set thinking field wins over the legacy args.
-	out2 := translateZaiBody([]byte(`{"model":"zai-org/GLM-5.2","thinking":{"type":"disabled"},"chat_template_args":{"enable_thinking":true}}`))
-	var top2 map[string]json.RawMessage
-	if err := json.Unmarshal(out2, &top2); err != nil {
-		t.Fatalf("result not JSON: %v", err)
-	}
-	if !bytes.Contains(top2["thinking"], []byte("disabled")) {
-		t.Fatalf("caller thinking clobbered: %s", top2["thinking"])
-	}
-
-	// 3. Non-zai model ids pass through unchanged.
-	out3 := translateZaiBody([]byte(`{"model":"moonshotai/Kimi-K2.6"}`))
-	if !bytes.Contains(out3, []byte(`"moonshotai/Kimi-K2.6"`)) {
-		t.Fatalf("non-zai model must pass through: %s", out3)
-	}
-
-	// 4. Fail-open: non-JSON body returned byte-identical.
-	junk := []byte("not json at all")
-	if got := translateZaiBody(junk); !bytes.Equal(got, junk) {
-		t.Fatalf("non-JSON body must be returned untouched; got %q", got)
-	}
-}
-
-// TestProxyZaiUpstreamHop proves a metered zai-org/* chat call reaches the
-// Z.ai upstream with the native model id, the translated thinking block,
-// and the gateway's ZAI_API_KEY bearer — while the ledger keeps metering.
-func TestProxyZaiUpstreamHop(t *testing.T) {
+// TestProxyXaiUpstreamHop is the successor to the retired Z.ai upstream-hop
+// tests (TestTranslateZaiBody + TestProxyZaiUpstreamHop). The v9 migration off
+// Z.ai GLM removed the last-hop body rewrite: xAI (Grok) is OpenAI-compatible
+// and accepts the bare "grok-*" fleet id verbatim, so a metered grok-* chat
+// call must reach the xAI upstream with (a) the request body BYTE-IDENTICAL
+// (no native-id rewrite, no thinking-block translation), and (b) the gateway's
+// XAI_API_KEY bearer — while the ledger keeps metering.
+func TestProxyXaiUpstreamHop(t *testing.T) {
 	var gotBody []byte
 	var gotAuth string
 	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -445,7 +398,7 @@ func TestProxyZaiUpstreamHop(t *testing.T) {
 		gotAuth = r.Header.Get("Authorization")
 		w.Header().Set("Content-Type", "application/json")
 		body, _ := json.Marshal(map[string]any{
-			"id": "chatcmpl-zai",
+			"id": "chatcmpl-xai",
 			"choices": []map[string]any{{
 				"index":         0,
 				"message":       map[string]any{"role": "assistant", "content": "ok"},
@@ -463,7 +416,7 @@ func TestProxyZaiUpstreamHop(t *testing.T) {
 	if err != nil {
 		t.Fatalf("auth.New: %v", err)
 	}
-	router := routing.New(routing.Options{ZaiChatURL: upstream.URL})
+	router := routing.New(routing.Options{XaiChatURL: upstream.URL})
 	lg := ledger.NewMemory("10")
 	fixedNow := func() time.Time { return time.Date(2026, 5, 27, 0, 0, 0, 0, time.UTC) }
 	lg.SetClock(fixedNow)
@@ -471,7 +424,7 @@ func TestProxyZaiUpstreamHop(t *testing.T) {
 		Auth:           a,
 		Router:         router,
 		Ledger:         lg,
-		Provider:       ProviderKeys{ZaiKey: "test_zai_key"},
+		Provider:       ProviderKeys{XaiKey: "test_xai_key"},
 		PreEstimatePax: "0.0001",
 		Now:            fixedNow,
 	})
@@ -479,12 +432,9 @@ func TestProxyZaiUpstreamHop(t *testing.T) {
 		t.Fatalf("proxy.New: %v", err)
 	}
 
-	body, _ := json.Marshal(map[string]any{
-		"model":              rates.ModelNemotron3Ultra,
-		"messages":           []map[string]any{{"role": "user", "content": "hi"}},
-		"chat_template_args": map[string]any{"enable_thinking": true},
-	})
-	r := newGatewayRequest("POST", "/v1/chat/completions", body, map[string]string{
+	// A non-streaming grok call: the gateway forwards the body verbatim.
+	reqBody := []byte(`{"model":"grok-4.3","messages":[{"role":"user","content":"hi"}],"reasoning_effort":"high"}`)
+	r := newGatewayRequest("POST", "/v1/chat/completions", reqBody, map[string]string{
 		types.HeaderSlot: "neo",
 	})
 	w := httptest.NewRecorder()
@@ -492,21 +442,26 @@ func TestProxyZaiUpstreamHop(t *testing.T) {
 	if w.Code != http.StatusOK {
 		t.Fatalf("status: %d body=%s", w.Code, w.Body.String())
 	}
-	if gotAuth != "Bearer test_zai_key" {
+	if gotAuth != "Bearer test_xai_key" {
 		t.Fatalf("upstream auth: %q", gotAuth)
+	}
+	// The whole body must reach xAI byte-identical (no rewrite on the hop).
+	if !bytes.Equal(gotBody, reqBody) {
+		t.Fatalf("upstream body was rewritten:\n want %s\n got  %s", reqBody, gotBody)
 	}
 	var sent map[string]json.RawMessage
 	if err := json.Unmarshal(gotBody, &sent); err != nil {
 		t.Fatalf("upstream body not JSON: %v (%s)", err, gotBody)
 	}
-	if string(sent["model"]) != `"glm-5.2"` {
-		t.Fatalf("upstream model: %s (want native glm-5.2)", sent["model"])
+	if string(sent["model"]) != `"grok-4.3"` {
+		t.Fatalf("upstream model: %s (grok id must pass through unchanged)", sent["model"])
 	}
-	if _, ok := sent["chat_template_args"]; ok {
-		t.Fatalf("chat_template_args leaked to Z.ai: %s", gotBody)
+	// No Z.ai-style `thinking` block is ever synthesized on the hop.
+	if _, ok := sent["thinking"]; ok {
+		t.Fatalf("thinking block must not be synthesized for xAI: %s", gotBody)
 	}
-	if !bytes.Contains(sent["thinking"], []byte("enabled")) {
-		t.Fatalf("thinking not translated on upstream hop: %s", gotBody)
+	if string(sent["reasoning_effort"]) != `"high"` {
+		t.Fatalf("reasoning_effort must survive verbatim: %s", sent["reasoning_effort"])
 	}
 }
 

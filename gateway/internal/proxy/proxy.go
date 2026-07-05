@@ -73,7 +73,7 @@ type ProviderKeys struct {
 	FireworksKey string
 	TogetherKey  string
 	BasetenKey   string
-	ZaiKey       string
+	XaiKey       string
 }
 
 // Options drives Server construction.
@@ -292,12 +292,9 @@ func (s *Server) handleProxy(w http.ResponseWriter, r *http.Request, ep routing.
 	if head.Stream {
 		upstreamBody = ensureStreamUsage(body)
 	}
-	// Z.ai upstream hop: the fleet keeps the "zai-org/<Model>" id on the
-	// gateway wire (whitelist + metering + ledger replay key on it), but
-	// api.z.ai only accepts its native model codes — rewrite the last hop.
-	if decision.Provider == routing.ProviderZai {
-		upstreamBody = translateZaiBody(upstreamBody)
-	}
+	// xAI (Grok) is OpenAI-compatible and accepts the bare "grok-*" fleet id
+	// verbatim, so no last-hop body rewrite is needed (unlike the retired Z.ai
+	// path, which required native-id + thinking-block translation).
 	upstream, err := s.buildUpstreamRequest(ctx, r, decision, upstreamBody)
 	if err != nil {
 		writeJSONErr(w, http.StatusBadGateway, "upstream_build", err.Error())
@@ -485,64 +482,6 @@ func ensureStreamUsage(body []byte) []byte {
 	return out
 }
 
-// translateZaiBody rewrites a chat-completions body for the Z.ai upstream
-// hop:
-//
-//   - model: the fleet's "zai-org/<Model>" id becomes Z.ai's native code
-//     ("zai-org/GLM-5.2" → "glm-5.2"); the fleet id never reaches api.z.ai.
-//   - chat_template_args: the legacy Baseten-era thinking opt-in
-//     ({"enable_thinking":true}) is dropped (Z.ai rejects/ignores it) and
-//     translated to Z.ai's native `thinking:{"type":"enabled"}` — so
-//     daemons still emitting the old shape keep their reasoning split into
-//     reasoning_content instead of leaking chain-of-thought into content.
-//     A caller-set `thinking` field wins (new clients emit it natively).
-//
-// All other request fields are preserved verbatim. Fail-open: a body that
-// isn't a JSON object is returned untouched.
-func translateZaiBody(body []byte) []byte {
-	var m map[string]json.RawMessage
-	if err := json.Unmarshal(body, &m); err != nil {
-		return body
-	}
-	var model string
-	if raw, ok := m["model"]; ok && json.Unmarshal(raw, &model) == nil {
-		if native := zaiNativeModel(model); native != model {
-			nb, err := json.Marshal(native)
-			if err != nil {
-				return body
-			}
-			m["model"] = json.RawMessage(nb)
-		}
-	}
-	if raw, ok := m["chat_template_args"]; ok {
-		args := map[string]any{}
-		_ = json.Unmarshal(raw, &args)
-		delete(m, "chat_template_args")
-		if v, ok := args["enable_thinking"].(bool); ok && v {
-			if _, has := m["thinking"]; !has {
-				m["thinking"] = json.RawMessage(`{"type":"enabled"}`)
-			}
-		}
-	}
-	out, err := json.Marshal(m)
-	if err != nil {
-		return body
-	}
-	return out
-}
-
-// zaiNativeModel maps the fleet's "zai-org/<Model>" id to Z.ai's native
-// model code ("zai-org/GLM-5.2" → "glm-5.2"); other ids pass through.
-// Mirrors MCL/llm.ZaiNativeModel — duplicated because the gateway is a
-// deliberately leaf module (no MCL import).
-func zaiNativeModel(model string) string {
-	const prefix = "zai-org/"
-	if !strings.HasPrefix(strings.ToLower(model), prefix) {
-		return model
-	}
-	return strings.ToLower(model[len(prefix):])
-}
-
 // maybeDebit prices the call + writes a ledger row, returning the
 // cost-pax string for response-header stamping. BYO calls return ""
 // (no debit; caller pays direct). Errors are logged but not returned
@@ -645,8 +584,8 @@ func (s *Server) buildUpstreamRequest(ctx context.Context, r *http.Request, dec 
 			apiKey = s.provider.TogetherKey
 		case routing.ProviderBaseten:
 			apiKey = s.provider.BasetenKey
-		case routing.ProviderZai:
-			apiKey = s.provider.ZaiKey
+		case routing.ProviderXai:
+			apiKey = s.provider.XaiKey
 		}
 	}
 	if apiKey != "" {

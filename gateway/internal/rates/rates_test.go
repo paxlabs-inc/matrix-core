@@ -112,6 +112,47 @@ func TestRateTableVersionStable(t *testing.T) {
 	}
 }
 
+// TestV9XaiMigration locks the v9 rate card: the fleet moved off Z.ai GLM
+// onto xAI Grok. RateTableVersion is 9, all three grok fleet ids are on the
+// rate card, and the per-slot free-tier whitelist reflects the new lanes.
+func TestV9XaiMigration(t *testing.T) {
+	if RateTableVersion != 9 {
+		t.Fatalf("RateTableVersion = %d, want 9 (xAI migration)", RateTableVersion)
+	}
+	for _, m := range []string{ModelGrok43, ModelGrokBuild, ModelGrok420NR} {
+		if _, ok := Lookup(m); !ok {
+			t.Fatalf("v9 grok model %q missing from rate card", m)
+		}
+	}
+	wl := FreeTierWhitelist()
+	mustContain := func(slot, model string) {
+		t.Helper()
+		for _, m := range wl[slot] {
+			if m == model {
+				return
+			}
+		}
+		t.Fatalf("slot %q whitelist missing %q (have %v)", slot, model, wl[slot])
+	}
+	// grok-4.3 is the primary reasoning model across the agentic slots.
+	mustContain("compiler", ModelGrok43)
+	mustContain("planner", ModelGrok43)
+	mustContain("executor", ModelGrok43)
+	// neo: grok-4.3 (main) + grok-4.20-0309-non-reasoning (cheap) + nomic-embed.
+	mustContain("neo", ModelGrok43)
+	mustContain("neo", ModelGrok420NR)
+	mustContain("neo", ModelNomicEmbed)
+	// cassandra pins the cheap non-reasoning grok as adjudicator, grok-4.3 as
+	// the strong escalation.
+	mustContain("cassandra", ModelGrok420NR)
+	mustContain("cassandra", ModelGrok43)
+	// cody meters on grok-build-0.1 with grok-4.3 for orchestrator adjudication.
+	mustContain("cody", ModelGrokBuild)
+	mustContain("cody", ModelGrok43)
+	// liaison narrator defaults to the cheap non-reasoning grok.
+	mustContain("liaison", ModelGrok420NR)
+}
+
 func TestFreeTierWhitelistMembersOnTable(t *testing.T) {
 	// Every model on the free-tier whitelist MUST resolve in the
 	// rate table, otherwise the gateway would route a metered call
