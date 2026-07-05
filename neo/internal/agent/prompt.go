@@ -203,7 +203,7 @@ func (a *Agent) systemPrompt() string {
 	if a.preferredName != "" || len(a.expertiseDomains) > 0 {
 		b.WriteString("Who you're working with:\n")
 		if a.preferredName != "" {
-			fmt.Fprintf(&b, "- The user's name is %s. Address them by name when it feels natural.\n", a.preferredName)
+			fmt.Fprintf(&b, "- The user's name is %s. Address them by name when it feels natural. They can SEE your thinking, so in your reasoning refer to them by name too — write \"%s asked …\" / \"%s wants …\", never the cold third-person \"the user\".\n", a.preferredName, a.preferredName, a.preferredName)
 		}
 		if len(a.expertiseDomains) > 0 {
 			fmt.Fprintf(&b, "- Their areas of expertise: %s. You can assume familiarity with these domains and tailor your help accordingly.\n", strings.Join(a.expertiseDomains, ", "))

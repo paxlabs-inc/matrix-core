@@ -20,6 +20,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"regexp"
 	"sort"
 	"strings"
 	"sync"
@@ -694,7 +695,7 @@ func (a *Agent) Chat(ctx context.Context, userInput string) error {
 		onDelta := func(d llm.Delta) {
 			if d.Reasoning != "" {
 				streamedReasoning = true
-				a.out.Delta(step, "reasoning", d.Reasoning)
+				a.out.Delta(step, "reasoning", a.nameReasoning(d.Reasoning))
 			}
 			if d.Content != "" {
 				a.out.Delta(step, "content", d.Content)
@@ -769,7 +770,7 @@ func (a *Agent) Chat(ctx context.Context, userInput string) error {
 		// fallback covers models that return reasoning at fold time (inline
 		// <think>) rather than as a separate streamed channel.
 		if !streamedReasoning {
-			if think := glimpseReasoning(res.Message.Reasoning); think != "" {
+			if think := a.nameReasoning(glimpseReasoning(res.Message.Reasoning)); think != "" {
 				a.out.Think(think)
 			}
 		}
@@ -1108,6 +1109,34 @@ func glimpseReasoning(reasoning string) string {
 		s = strings.TrimSpace(s[:maxThinkChars]) + "…"
 	}
 	return s
+}
+
+// theUserRe matches the generic third-person reference "the user" (and its
+// possessive "the user's"), case-insensitive on the leading "the", with word
+// boundaries so "users" (plural) and mid-word matches are left alone.
+var theUserRe = regexp.MustCompile(`\b[Tt]he user('s)?\b`)
+
+// nameReasoning personalises the model's VISIBLE reasoning (Q1): the user can
+// read Neo's chain-of-thought, so a generic "the user asked …" reads coldly
+// where "Andrew asked …" reads like Neo actually knows them. It rewrites the
+// "the user" / "the user's" reference to the user's preferred name. This is a
+// DISPLAY-only transform on the thinking channel — the model's underlying
+// reasoning tokens are untouched and reasoning is never persisted, so there is
+// no determinism/replay concern. It only fires when a preferred name is known;
+// otherwise the text is returned verbatim. The prompt already steers the model
+// to name the user in its thinking (systemPrompt), so this is the deterministic
+// backstop for the complete-text (fold-time) reasoning path.
+func (a *Agent) nameReasoning(text string) string {
+	name := strings.TrimSpace(a.preferredName)
+	if name == "" || text == "" {
+		return text
+	}
+	return theUserRe.ReplaceAllStringFunc(text, func(m string) string {
+		if strings.HasSuffix(m, "'s") {
+			return name + "'s"
+		}
+		return name
+	})
 }
 
 // collectSurfaced records the cortex URIs injected into this turn so the loop
