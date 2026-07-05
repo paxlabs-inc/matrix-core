@@ -16,11 +16,12 @@ type captureReporter struct {
 	said []string
 }
 
-func (c *captureReporter) Say(text string, _ bool)       { c.said = append(c.said, text) }
-func (c *captureReporter) Status(string)                  {}
-func (c *captureReporter) Notice(string)                  {}
-func (c *captureReporter) Think(string)                   {}
-func (c *captureReporter) Delta(int, string, string)      {}
+func (c *captureReporter) Say(text string, _ bool)   { c.said = append(c.said, text) }
+func (c *captureReporter) Status(string)             {}
+func (c *captureReporter) Progress(string)           {}
+func (c *captureReporter) Notice(string)             {}
+func (c *captureReporter) Think(string)              {}
+func (c *captureReporter) Delta(int, string, string) {}
 
 // TestHeartbeat_OKSuppressesOutput verifies the core P1-4 invariant: when the
 // agent's final answer is the HEARTBEAT_OK sentinel, the turn is SUPPRESSED —

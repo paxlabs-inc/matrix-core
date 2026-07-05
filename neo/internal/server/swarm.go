@@ -348,6 +348,11 @@ func (c *captureReporter) Status(text string) {
 	c.note(text, "status")
 }
 
+// Progress is a no-op for sub-agents: the synthetic narrate-before-act intent
+// stub is ephemeral, not a durable distilled note (only genuine narration via
+// Status becomes a captured note).
+func (c *captureReporter) Progress(string) {}
+
 func (c *captureReporter) Notice(text string) { c.note(text, "notice") }
 func (c *captureReporter) Think(text string)  { c.note(text, "thinking") }
 

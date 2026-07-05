@@ -1046,10 +1046,15 @@ func (a *Agent) Chat(ctx context.Context, userInput string) error {
 		// from the real operation so the user can always follow along — at most
 		// one per action, never a fixed boilerplate. Distinct per-action content
 		// (do_2) lets neo-execution-reliability's coalescing collapse only
-		// genuine consecutive repeats.
+		// genuine consecutive repeats. This is a SYNTHETIC stub (Neo generated
+		// it from the tool name, e.g. "Layerx deposit."), so it rides the
+		// EPHEMERAL Progress channel — never persisted, never counted as the
+		// delivered answer. Routing it through durable Status was the bug where a
+		// straight-to-task_complete turn marked itself "already narrated" and the
+		// real task_complete summary was hidden, so the user saw only the stub.
 		if strings.TrimSpace(res.Message.Content) == "" {
 			if line := narrateBatch(res.Message.ToolCalls); line != "" {
-				a.out.Status(line)
+				a.out.Progress(line)
 			}
 		}
 

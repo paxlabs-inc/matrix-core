@@ -1046,11 +1046,21 @@ export function useChat(): UseChatResult {
             // conversational / ceiling final answer (final without the
             // completion flag) — those ARE the content the user reads.
             const isCompletionSummary = isFinal && ev.fields?.completion === true
+            // The synthetic narrate-before-act intent stub (e.g. "Layerx
+            // deposit.") is flagged `ephemeral:true`: it is shown live so the
+            // user can follow along, but it is NOT durable thread content and
+            // must NEVER count toward durableProduced. Letting it count was the
+            // bug where a straight-to-task_complete turn looked "already
+            // narrated" and the real summary got hidden — the user saw only the
+            // stub. The server never persists it either, so it drops away on
+            // reopen while the real answer remains.
+            const isEphemeral = ev.fields?.ephemeral === true
             if (text && !isCompletionSummary) {
               pushAssistant(text, intentId, ev.seq, reasoning || undefined)
-              // A non-final narration turn is durable thread content; once one
-              // lands, the closing summary is a safe-to-hide redundant recap.
-              if (!isFinal) durableProduced = true
+              // A non-final GENUINE narration turn is durable thread content;
+              // once one lands, the closing summary is a safe-to-hide redundant
+              // recap. An ephemeral stub is not narration and does not qualify.
+              if (!isFinal && !isEphemeral) durableProduced = true
             } else if (text && isCompletionSummary && !durableProduced) {
               // Safety net: the run produced no durable narration or surface, so
               // hiding the summary would empty the thread. Show it — it is the

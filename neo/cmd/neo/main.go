@@ -301,9 +301,14 @@ func printBanner(cfg config.Config, tm *tools.Manager, pager *memory.Pager) {
 type stdoutReporter struct{}
 
 func (stdoutReporter) Say(text string, _ bool) { fmt.Printf("\nneo> %s\n", strings.TrimSpace(text)) }
-func (stdoutReporter) Status(text string) { fmt.Fprintf(os.Stderr, "  · %s\n", oneLine(text)) }
-func (stdoutReporter) Notice(text string) { fmt.Fprintf(os.Stderr, "  » %s\n", oneLine(text)) }
-func (stdoutReporter) Think(text string)  { fmt.Fprintf(os.Stderr, "  ~ %s\n", oneLine(text)) }
+func (stdoutReporter) Status(text string)      { fmt.Fprintf(os.Stderr, "  · %s\n", oneLine(text)) }
+
+// Progress prints the ephemeral narrate-before-act intent stub to stderr (like
+// Status): the terminal has no durable-thread notion, so ephemeral vs durable
+// only matters for the SSE/UI surface.
+func (stdoutReporter) Progress(text string) { fmt.Fprintf(os.Stderr, "  · %s\n", oneLine(text)) }
+func (stdoutReporter) Notice(text string)   { fmt.Fprintf(os.Stderr, "  » %s\n", oneLine(text)) }
+func (stdoutReporter) Think(text string)    { fmt.Fprintf(os.Stderr, "  ~ %s\n", oneLine(text)) }
 
 // Delta is a no-op for the CLI: the terminal prints the complete answer at the
 // end (Say); live token streaming is an SSE/UI affordance.

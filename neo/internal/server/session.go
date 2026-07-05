@@ -857,6 +857,7 @@ func (r *automatrixReporter) Say(text string, _ bool) {
 }
 
 func (r *automatrixReporter) Status(string)             {}
+func (r *automatrixReporter) Progress(string)           {}
 func (r *automatrixReporter) Notice(string)             {}
 func (r *automatrixReporter) Think(string)              {}
 func (r *automatrixReporter) Delta(int, string, string) {}
@@ -933,6 +934,29 @@ func (r *sseReporter) Status(text string) {
 	// survives a reopen instead of vanishing the moment the run settles.
 	s.engine.conv.AppendAssistant(s.id, run.id, text)
 	run.narrated = true
+}
+
+// Progress surfaces the SYNTHETIC narrate-before-act intent stub (e.g. "Layerx
+// deposit.") — Neo generated it from the tool name, so it is EPHEMERAL: shown
+// live (flagged ephemeral:true so the client renders it transiently and never
+// counts it as durable thread content) but NEVER persisted and NEVER marking
+// run.narrated. That distinction is load-bearing: run.narrated gates whether the
+// accepted task_complete summary is hidden as a redundant recap, so letting a
+// synthetic stub set it was exactly the bug where a straight-to-task_complete
+// turn dropped the real answer (the user saw only "Layerx deposit.").
+func (r *sseReporter) Progress(text string) {
+	s := r.sess
+	run := s.cur
+	if run == nil {
+		return
+	}
+	text = strings.TrimSpace(llm.StripGuidance(text))
+	if text == "" || strings.HasPrefix(text, "• ") {
+		return
+	}
+	fields := s.chatFields(run, text, false)
+	fields["ephemeral"] = true
+	s.engine.broker.publish(run.id, "chat.assistant", "neo", fields)
 }
 
 func (r *sseReporter) Notice(text string) {
