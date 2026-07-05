@@ -155,7 +155,6 @@ func (c *Client) Chat(ctx context.Context, req ChatRequest) (*ChatResult, error)
 		Model:       c.model,
 		Messages:    toWireMessages(req.Messages),
 		Temperature: c.temperature,
-		MaxTokens:   c.maxTokens,
 		Tools:       req.Tools,
 		// Stream unconditionally: some providers (e.g. Together's Qwen3.7-Max)
 		// ONLY accept stream=true and 400 otherwise, and the gateway prefers
@@ -163,6 +162,15 @@ func (c *Client) Chat(ctx context.Context, req ChatRequest) (*ChatResult, error)
 		// Both Fireworks + Together emit the same OpenAI SSE shape, which
 		// aggregateStream below folds back into a single assistant turn.
 		Stream: true,
+	}
+	// xAI/grok deprecates max_tokens in favor of max_completion_tokens, which
+	// bounds ONLY the visible output (reasoning + tool-call tokens are excluded),
+	// so a reasoning turn cannot starve the answer down to a stub. Every other
+	// provider keeps the legacy max_tokens field.
+	if mcllm.IsXaiModel(c.model) {
+		wire.MaxCompletionTokens = c.maxTokens
+	} else {
+		wire.MaxTokens = c.maxTokens
 	}
 	// On the direct path we ask for a usage chunk ourselves; on the gateway
 	// path the gateway injects stream_options.include_usage for us (and may
@@ -563,13 +571,15 @@ func supportsReasoningEffort(model string) bool {
 }
 
 // reasoningEffort maps the per-role enableThinking flag onto xAI's
-// reasoning_effort enum: reasoning ON → "high", OFF → "none" (disables
-// reasoning entirely for token-tight mechanical roles). When enabled the
-// server splits chain-of-thought into the separate reasoning_content channel
+// reasoning_effort enum: reasoning ON → "medium" (balanced reasoning that keeps
+// grok-4.3 answering in the visible content channel instead of spending the
+// whole turn on chain-of-thought and emitting only a stub), OFF → "none"
+// (disables reasoning entirely for token-tight mechanical roles). When enabled
+// the server splits chain-of-thought into the separate reasoning_content channel
 // (which aggregateStreamReader routes to the thinking channel).
 func reasoningEffort(enabled bool) string {
 	if enabled {
-		return "high"
+		return "medium"
 	}
 	return "none"
 }
@@ -594,7 +604,10 @@ type chatRequestWire struct {
 	Messages         []wireMessage  `json:"messages"`
 	Temperature      float64        `json:"temperature"`
 	MaxTokens        int            `json:"max_tokens,omitempty"`
-	Seed             *int64         `json:"seed,omitempty"`
+	// MaxCompletionTokens is xAI/grok's replacement for the deprecated
+	// max_tokens; it bounds only visible output (not reasoning/tool tokens).
+	MaxCompletionTokens int    `json:"max_completion_tokens,omitempty"`
+	Seed                *int64 `json:"seed,omitempty"`
 	Tools            []Tool         `json:"tools,omitempty"`
 	ToolChoice       interface{}    `json:"tool_choice,omitempty"`
 	Stream           bool           `json:"stream,omitempty"`
@@ -735,6 +748,17 @@ func fromWireRespMessage(m wireRespMessage) Message {
 			toolCalls = extracted
 		}
 	}
+	// grok/xAI reasoning models sometimes emit tool calls as inline XML-ish text
+	// (`<function_call name="NAME">{args}</function_call>`) inside content instead
+	// of the structured tool_calls array; extract those too so they execute
+	// rather than leaking into the chat. Gated on no structured/token calls
+	// already found, so a well-behaved response is never disturbed.
+	if len(toolCalls) == 0 {
+		if stripped, extracted := extractXMLToolCalls(content); len(extracted) > 0 {
+			content = stripped
+			toolCalls = extracted
+		}
+	}
 	content, inlineReasoning := splitInlineThink(content)
 	reasoning := m.ReasoningContent
 	if reasoning == "" {
@@ -860,6 +884,118 @@ func tokenFuncName(header string) string {
 // the separate `reasoning_content` field; leaving it in place leaks internal
 // monologue into the chat. An unterminated opening tag (truncated generation)
 // means the WHOLE remainder is reasoning.
+// xmlToolCallOpen / xmlToolCallClose bound the inline XML-ish tool-call form
+// that grok/xAI reasoning models improvise inside `content` instead of the
+// structured tool_calls array.
+const (
+	xmlToolCallOpen  = "<function_call"
+	xmlToolCallClose = "</function_call>"
+)
+
+// extractXMLToolCalls pulls any `<function_call name="NAME">ARGS</function_call>`
+// spans out of content and returns the content with those spans removed plus the
+// structured calls. ARGS is normalized to a JSON object (the first {...} span, or
+// "{}" when absent/unparseable) so downstream dispatch always receives valid
+// arguments. It tolerates a missing/truncated close tag (everything from the
+// open tag onward is consumed so nothing leaks). Returns (content, nil) when
+// there is nothing to extract.
+func extractXMLToolCalls(content string) (string, []ToolCall) {
+	if !strings.Contains(content, xmlToolCallOpen) {
+		return content, nil
+	}
+	var b strings.Builder
+	var calls []ToolCall
+	rest := content
+	for {
+		i := strings.Index(rest, xmlToolCallOpen)
+		if i < 0 {
+			b.WriteString(rest)
+			break
+		}
+		b.WriteString(rest[:i])
+		after := rest[i+len(xmlToolCallOpen):]
+		gt := strings.Index(after, ">")
+		if gt < 0 {
+			// Truncated open tag: drop everything from the tag onward.
+			break
+		}
+		name := xmlAttr(after[:gt], "name")
+		body := after[gt+1:]
+		truncated := false
+		var args string
+		if end := strings.Index(body, xmlToolCallClose); end >= 0 {
+			args = body[:end]
+			rest = body[end+len(xmlToolCallClose):]
+		} else {
+			// Unterminated call (truncated generation): consume the remainder.
+			args = body
+			truncated = true
+		}
+		if name != "" {
+			calls = append(calls, ToolCall{
+				ID:       "call_" + strconv.Itoa(len(calls)),
+				Type:     "function",
+				Function: FunctionCall{Name: name, Arguments: jsonArgs(args)},
+			})
+		}
+		if truncated {
+			break
+		}
+	}
+	if len(calls) == 0 {
+		return content, nil
+	}
+	return strings.TrimSpace(b.String()), calls
+}
+
+// xmlAttr extracts a double- or single-quoted attribute value from an XML-ish
+// attribute string (e.g. ` name="foo"` → "foo").
+func xmlAttr(attrs, key string) string {
+	i := strings.Index(attrs, key+"=")
+	if i < 0 {
+		return ""
+	}
+	v := strings.TrimLeft(attrs[i+len(key)+1:], " ")
+	if v == "" {
+		return ""
+	}
+	q := v[0]
+	if q != '"' && q != '\'' {
+		return ""
+	}
+	if j := strings.IndexByte(v[1:], q); j >= 0 {
+		return v[1 : 1+j]
+	}
+	return ""
+}
+
+// jsonArgs normalizes an improvised tool-call argument blob to a JSON object
+// string: it returns the first balanced {...} span if present, else "{}". This
+// keeps dispatch robust when a model emits prose or partial JSON around the args.
+func jsonArgs(s string) string {
+	start := strings.IndexByte(s, '{')
+	if start < 0 {
+		return "{}"
+	}
+	depth := 0
+	for i := start; i < len(s); i++ {
+		switch s[i] {
+		case '{':
+			depth++
+		case '}':
+			depth--
+			if depth == 0 {
+				candidate := s[start : i+1]
+				if json.Valid([]byte(candidate)) {
+					return candidate
+				}
+				return "{}"
+			}
+		}
+	}
+	return "{}"
+}
+
 func splitInlineThink(content string) (visible, reasoning string) {
 	trimmed := strings.TrimLeft(content, " \t\r\n")
 	for _, tag := range [2]string{"think", "thinking"} {

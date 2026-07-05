@@ -635,11 +635,19 @@ func (c *Client) buildRequest(messages []interpreter.Message, grammar string) (*
 		Model:       c.cfg.Model,
 		Messages:    chatMsgs,
 		Temperature: c.cfg.Temperature,
-		MaxTokens:   c.cfg.MaxTokens,
+	}
+	// xAI/grok deprecates max_tokens in favor of max_completion_tokens, which
+	// bounds ONLY the visible output (reasoning + tool-call tokens are excluded),
+	// so a reasoning turn cannot starve the answer down to a stub. Every other
+	// provider keeps the legacy max_tokens field.
+	if IsXaiModel(c.cfg.Model) {
+		req.MaxCompletionTokens = c.cfg.MaxTokens
+	} else {
+		req.MaxTokens = c.cfg.MaxTokens
 	}
 	if IsXaiModel(c.cfg.Model) && supportsReasoningEffort(c.cfg.Model) {
 		// xAI's grok-4.3 accepts reasoning_effort; pin it per-role so the
-		// provider switch preserves each role's posture — reasoning ("high")
+		// provider switch preserves each role's posture — reasoning ("medium")
 		// only where EnableThinking was set, and "none" for token-tight
 		// mechanical slots (compiler/classify) that must not burn reasoning
 		// tokens. The fleet id is xAI's native model code, so no rewrite of
@@ -819,11 +827,13 @@ func supportsReasoningEffort(model string) bool {
 }
 
 // reasoningEffort maps the per-role EnableThinking flag onto xAI's
-// reasoning_effort enum: reasoning ON → "high", OFF → "none" (disables
-// reasoning entirely for token-tight mechanical roles).
+// reasoning_effort enum: reasoning ON → "medium" (balanced reasoning that keeps
+// grok-4.3 answering in the visible content channel rather than exhausting the
+// turn on chain-of-thought), OFF → "none" (disables reasoning entirely for
+// token-tight mechanical roles).
 func reasoningEffort(enabled bool) string {
 	if enabled {
-		return "high"
+		return "medium"
 	}
 	return "none"
 }
@@ -934,6 +944,9 @@ type chatRequest struct {
 	Messages       []chatMessage   `json:"messages"`
 	Temperature    float64         `json:"temperature"`
 	MaxTokens      int             `json:"max_tokens,omitempty"`
+	// MaxCompletionTokens is xAI/grok's replacement for the deprecated
+	// max_tokens; it bounds only visible output (not reasoning/tool tokens).
+	MaxCompletionTokens int `json:"max_completion_tokens,omitempty"`
 	Seed           *int64          `json:"seed,omitempty"`
 	ResponseFormat *responseFormat `json:"response_format,omitempty"`
 	// Stream toggles SSE delivery on /v1/chat/completions. Set by
