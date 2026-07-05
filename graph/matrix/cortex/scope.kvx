@@ -1,0 +1,405 @@
+# GENERATED gen=codegraph do-not-edit merkle=b3:2dc69ec8dbbe0231373534486cf12ff6fdb0eaad7b2dfdcbc4d73453c8542ee8
+
+NODE id=matrix/cortex/scope kind=package
+  digest=b3:3365ff16de86c1b6454e5a4879831e2925a003d75cead83a0ecb10cae0b7459f file=cortex/scope range=0:0 lang=go exported=true
+EDGES
+  contains=matrix/cortex/scope/errors.go,matrix/cortex/scope/match.go,matrix/cortex/scope/scope.go,matrix/cortex/scope/verify.go
+  ^contains=mod:matrix/cortex
+
+NODE id=matrix/cortex/scope.DecodeScope kind=func
+  digest=b3:37e8a42b557f78ed40a9a84766d2839a145fb27d3f6b0500168dc36580d38115 file=cortex/scope/scope.go range=193:197 lang=go exported=true byte_range=7941:8121
+  sig=func DecodeScope(b []byte, out *Scope) error
+  doc=DecodeScope parses canonical CBOR into out. Out should be zero-valued\nbefore the call.
+EDGES
+  ^defines=matrix/cortex/scope/scope.go
+
+NODE id=matrix/cortex/scope.EncodeScope kind=func
+  digest=b3:ef690bb09d324c90f8a2c6b6d97c24ab4b01dac91ecf9e020bd1cc1ae45861e7 file=cortex/scope/scope.go range=184:191 lang=go exported=true byte_range=7661:7939
+  sig=func EncodeScope(s *Scope) ([]byte, error)
+  doc=EncodeScope returns canonical CBOR for s INCLUDING the Signature\nfield. Used for wire transmission once the scope has been signed.
+EDGES
+  ^defines=matrix/cortex/scope/scope.go
+
+NODE id=matrix/cortex/scope.ErrActorMismatch kind=var
+  digest=b3:8a3b47afb48f084e64b298472bddcc765ab28578b610de29fa521d69741c7b4e file=cortex/scope/errors.go range=36:38 lang=go exported=true byte_range=1480:1645
+  sig=error
+  doc=ErrActorMismatch is returned when scope.Actor does not match the\nstore actor of the cortex being read.
+EDGES
+  ^defines=matrix/cortex/scope/errors.go
+
+NODE id=matrix/cortex/scope.ErrBudgetExceeded kind=var
+  digest=b3:dbd01e31fdfe4d77d756080563bc5a32c59c99cad61f64da30c560ee88122462 file=cortex/scope/errors.go range=59:61 lang=go exported=true byte_range=2606:2797
+  sig=error
+  doc=ErrBudgetExceeded is returned by Context-path enforcement when\nthe requested BudgetTokens exceeds scope.BudgetTokens.
+EDGES
+  ^defines=matrix/cortex/scope/errors.go
+
+NODE id=matrix/cortex/scope.ErrEmptyInclude kind=var
+  digest=b3:760896f83b476064f289cf6640ef32b7637f263c2f71ce2d5391de6a530f692e file=cortex/scope/errors.go range=40:44 lang=go exported=true byte_range=1648:1976
+  sig=error
+  doc=ErrEmptyInclude is returned when the scope's Include selector\nhas no populated criteria. Empty Include = nothing matches; we\nreject at the API boundary so a misconfigured grant doesn't\nsilently behave like default-deny without the caller noticing.
+EDGES
+  ^defines=matrix/cortex/scope/errors.go
+
+NODE id=matrix/cortex/scope.ErrNotWritable kind=var
+  digest=b3:634c974db5af44aec2560df40f64f652ed63e053c0b94ea66ec0e3cd5784c5e5 file=cortex/scope/errors.go range=51:53 lang=go exported=true byte_range=2249:2418
+  sig=error
+  doc=ErrNotWritable is returned by write-path enforcement (UpdateHead\netc.) when the scope's Writable bit is false.
+EDGES
+  ^defines=matrix/cortex/scope/errors.go
+
+NODE id=matrix/cortex/scope.ErrProofMismatch kind=var
+  digest=b3:8e54cff4ca4ec993850a7ced2369afa12ca98154510f24eeacc7c4d0e9150a77 file=cortex/scope/errors.go range=31:34 lang=go exported=true byte_range=1238:1477
+  sig=error
+  doc=ErrProofMismatch is returned when the multi-proof's per-proof\nKeyHash does not match the corresponding Include.IDs entry, or\nwhen proof count != include id count.
+EDGES
+  ^defines=matrix/cortex/scope/errors.go
+
+NODE id=matrix/cortex/scope.ErrSchemaVersion kind=var
+  digest=b3:5018e4478e657f682f83d3120a2c430b79a3fd53a336391e3a8b9145f7378dc0 file=cortex/scope/errors.go range=14:17 lang=go exported=true byte_range=472:705
+  sig=error
+  doc=ErrSchemaVersion is returned when the scope's SchemaVersion is\nnot the current one (forwards or backwards). Bumping the schema\ninvalidates outstanding scopes.
+EDGES
+  ^defines=matrix/cortex/scope/errors.go
+
+NODE id=matrix/cortex/scope.ErrScopeExpired kind=var
+  digest=b3:5bfdd65ad603a166737e79490eb263b4a036efab62b3b0767457733bc2082132 file=cortex/scope/errors.go range=23:24 lang=go exported=true byte_range=882:988
+  sig=error
+  doc=ErrScopeExpired is returned when now > scope.ExpiresAt.
+EDGES
+  ^defines=matrix/cortex/scope/errors.go
+
+NODE id=matrix/cortex/scope.ErrSignatureInvalid kind=var
+  digest=b3:f06f3dd833770fa195eb1b5854b8331ea2632e8f19b62ea09915a8e78c5b2fab file=cortex/scope/errors.go range=19:21 lang=go exported=true byte_range=708:879
+  sig=error
+  doc=ErrSignatureInvalid covers any signature failure: bad pubkey,\nbad sig length, ed25519 verify mismatch.
+EDGES
+  ^defines=matrix/cortex/scope/errors.go
+
+NODE id=matrix/cortex/scope.ErrSnapshotUnresolved kind=var
+  digest=b3:3086175fc0e182d9b8e1e9bce4e68de9b488171cb89e911ed2d8adb4a986a98b file=cortex/scope/errors.go range=26:29 lang=go exported=true byte_range=991:1235
+  sig=error
+  doc=ErrSnapshotUnresolved is returned when scope.SnapshotHash does\nnot match any persisted snap/<seq> manifest's OverallRoot\n(research/06-agents.md §7.2 step 2).
+EDGES
+  ^defines=matrix/cortex/scope/errors.go
+
+NODE id=matrix/cortex/scope.ErrUnknownAgent kind=var
+  digest=b3:882d671c3393167ec1edab437275142f873ece0cab373161b431095634c0357e file=cortex/scope/errors.go range=55:57 lang=go exported=true byte_range=2421:2603
+  sig=error
+  doc=ErrUnknownAgent is returned by KeyResolver implementations when\nthe GrantedBy ref cannot be resolved to a public key.
+EDGES
+  ^defines=matrix/cortex/scope/errors.go
+
+NODE id=matrix/cortex/scope.ErrViolation kind=var
+  digest=b3:435c66dbfe523af921c870bd3ede124258746931b2179aef1c1ed81fb756565a file=cortex/scope/errors.go range=46:49 lang=go exported=true byte_range=1979:2246
+  sig=error
+  doc=ErrViolation is returned when an otherwise-valid scope is\napplied to a memory the scope does not allow (Include miss, or\nExclude hit). The violation log records this with severity:high.
+EDGES
+  ^defines=matrix/cortex/scope/errors.go
+
+NODE id=matrix/cortex/scope.FrameFilter kind=type
+  digest=b3:62b52fde62557d4b7ab86061dd65b3b3b4e7acda5237f813d22b216a17c33a37 file=cortex/scope/scope.go range=151:165 lang=go exported=true byte_range=6495:7234
+  sig=type FrameFilter struct {\n	Verb		memory.Verb			`cbor:"1,keyasint"`\n	ObjHashes	[][memory.ObjHashSize]byte	`cbor:"2,keyasint"`\n}
+  doc=FrameFilter restricts the scope to memories whose Head.Frames\nincludes a (Verb, ObjKind, ObjRef) tuple matching at least one of\nthe (Verb, Objects[]) pairs encoded here. ObjKind is implied by the\nmatching FrameRef on the memory side; the filter only pins Verb +\nObjRef-derived ObjHash.\n\nAt v1 we ship the simpler Verb + ObjHashes shape: the matcher walks\nh.Frames and matches when (frame.Verb == filter.Verb && frame.Hash()\n∈ filter.ObjHashes). ObjKind is enforced upstream by the writer's\nFrameRef.Validate() so the caller can rely on the verb+ref tuple\nalone.
+EDGES
+  contains=matrix/cortex/scope.FrameFilter#ObjHashes,matrix/cortex/scope.FrameFilter#Verb
+  ^defines=matrix/cortex/scope/scope.go
+
+NODE id=matrix/cortex/scope.FrameFilter#ObjHashes kind=field
+  digest=b3:8ee9cbb886a63a9b4b3687b0c98a790217c180e867caec761cd7ae2dff8493ca file=cortex/scope/scope.go range=164:164 lang=go exported=true byte_range=7176:7232
+  sig=[][16]byte
+EDGES
+  ^contains=matrix/cortex/scope.FrameFilter
+
+NODE id=matrix/cortex/scope.FrameFilter#Verb kind=field
+  digest=b3:6a043b028bc16fdb905b0d70b22c2c19482956c683a521fe8542799b041c470e file=cortex/scope/scope.go range=163:163 lang=go exported=true byte_range=7118:7174
+  sig=memory.Verb
+EDGES
+  ^contains=matrix/cortex/scope.FrameFilter
+
+NODE id=matrix/cortex/scope.KeyResolver kind=interface
+  digest=b3:6ad621a2785911f86ef2c39a5fb17e233bf1eedab6f411260148e25e2d6137cc file=cortex/scope/verify.go range=16:24 lang=go exported=true byte_range=290:761
+  sig=type KeyResolver interface {\n	// ResolveAgentKey returns the public key for ref. Returns\n	// ErrUnknownAgent if the ref is not known to the resolver.\n	ResolveAgentKey(ref string) (ed25519.PublicKey, error)\n}
+  doc=KeyResolver resolves a GrantedBy agent ref to its ed25519 public\nkey. Implementations live in the agent runtime / tools/registry\nlayer; cortex uses the interface so it has no dependency on DID\nresolution mechanics (D4: chain coupling lives in tools/).
+EDGES
+  ^implements=matrix/cortex/scope.StaticKeyResolver
+  ^defines=matrix/cortex/scope/verify.go
+
+NODE id=matrix/cortex/scope.SchemaVersion kind=const
+  digest=b3:da677c68b852b460833fb2237d51bc32a69fbbdc3905eff6fdceb005dd713afd file=cortex/scope/scope.go range=61:65 lang=go exported=true byte_range=2460:2712
+  sig=uint8
+  doc=SchemaVersion is the wire-format schema for Scope. Bumped on any\nshape change that would alter encode bytes. Mixed into the canonical\nsigned bytes so signatures from one schema cannot be replayed under\nanother.
+EDGES
+  ^defines=matrix/cortex/scope/scope.go
+
+NODE id=matrix/cortex/scope.Scope kind=type
+  digest=b3:ccdfd0b5f9d945c8c62eeee6cef75fdacfe5b8bcd5a6ecf4506b280c0b919eb9 file=cortex/scope/scope.go range=67:133 lang=go exported=true byte_range=2714:5754
+  sig=type Scope struct {\n	// SchemaVersion is mixed into the signed bytes so a schema bump\n	// invalidates outstanding scopes.\n	SchemaVersion	uint8	`cbor:"0,keyasint"`\n\n	// Actor names whose cortex this scope grants access into. Must\n	// match the receiving cortex's store actor at enforcement time.\n	Actor	string	`cbor:"1,keyasint"`\n\n	// SnapshotHash pins the cortex_snapshot_hash (OverallRoot) at\n	// scope creation. The verifier requires this snapshot to still be\n	// resolvable on the receiving end (i.e. there exists a snap/<seq>\n	// manifest with that OverallRoot).\n	SnapshotHash	[32]byte	`cbor:"2,keyasint"`\n\n	// Include selects what's allowed. Empty Include = nothing matches\n	// = scope is empty (no reads allowed). Caller MUST populate at\n	// least one criterion to grant access.\n	Include	Selector	`cbor:"3,keyasint"`\n\n	// Exclude is the belt-and-suspenders deny-list applied AFTER\n	// Include matches. Empty Exclude = nothing extra denied.\n	Exclude	Selector	`cbor:"4,keyasint,omitempty"`\n\n	// Proofs is the multi-proof shipping the canonical Head bytes for\n	// every memory id in Include.IDs against SnapshotHash's memories\n	// SMT. The proof bundle MUST include exactly one proof per\n	// Include.IDs entry, in matching order; the verifier cross-checks\n	// each KeyHash against memory.ID-derived hashes. May be nil when\n	// Include uses no IDs (Type/Tag/Frame-only scopes).\n	Proofs	*snapshot.MultiProof	`cbor:"5,keyasint,omitempty"`\n\n	// ExpiresAt is wall-clock per spec. Zero = never expires (rare;\n	// production scopes always expire).\n	ExpiresAt	time.Time	`cbor:"6,keyasint"`\n\n	// BudgetTokens caps cortex.context budget for this scope. Zero =\n	// no cap. Enforced at Context-call time.\n	BudgetTokens	int	`cbor:"7,keyasint,omitempty"`\n\n	// GrantedBy is the parent agent ref. Used by KeyResolver to look\n	// up the public key for signature verification. Format mirrors\n	// research/06-agents.md §7.1 (typically a DID like\n	// "did:pax:0xabc..."). At v1 cortex treats it as opaque text.\n	GrantedBy	string	`cbor:"8,keyasint"`\n\n	// GrantedTo is the child agent ref. Carried for audit purposes;\n	// cortex does not currently match the calling agent against this\n	// field (no agent-identity authentication at the cortex layer).\n	GrantedTo	string	`cbor:"9,keyasint"`\n\n	// Writable gates non-read operations. Default false. Required for\n	// UpdateHead/Write/Tombstone/AddEdge/RemoveEdge from a sub-agent.\n	Writable	bool	`cbor:"10,keyasint,omitempty"`\n\n	// Signature is the ed25519 sig by GrantedBy's pubkey over the\n	// canonical CBOR encoding of the Scope with Signature=nil.\n	// Ed25519 signatures are 64 bytes.\n	Signature	[]byte	`cbor:"11,keyasint"`\n}
+  doc=Scope is the canonical CBOR value granted by a parent agent to a\nsub-agent. Field set follows research/06-agents.md §7.1 with the\nconcrete additions documented in matrix.ctx phase10_locked_design.\n\nCBOR keys are integer keyasint (matches snapshot.Manifest +\nmemory.Head). New fields land at unused integers; deletions are\nforbidden without a SchemaVersion bump.
+EDGES
+  contains=matrix/cortex/scope.Scope#Actor,matrix/cortex/scope.Scope#BudgetTokens,matrix/cortex/scope.Scope#Exclude,matrix/cortex/scope.Scope#ExpiresAt,matrix/cortex/scope.Scope#GrantedBy,matrix/cortex/scope.Scope#GrantedTo,matrix/cortex/scope.Scope#Include,matrix/cortex/scope.Scope#Proofs,matrix/cortex/scope.Scope#SchemaVersion,matrix/cortex/scope.Scope#Signature,matrix/cortex/scope.Scope#SnapshotHash,matrix/cortex/scope.Scope#Writable,matrix/cortex/scope.Scope.Allows
+  ^defines=matrix/cortex/scope/scope.go
+
+NODE id=matrix/cortex/scope.Scope#Actor kind=field
+  digest=b3:73c567ff035421b0df2bbe6844baaa1e79abf9cdad7c48d69cbc45fcc5e6e26b file=cortex/scope/scope.go range=79:81 lang=go exported=true byte_range=3262:3425
+  sig=string
+  doc=Actor names whose cortex this scope grants access into. Must\nmatch the receiving cortex's store actor at enforcement time.
+EDGES
+  ^contains=matrix/cortex/scope.Scope
+
+NODE id=matrix/cortex/scope.Scope#BudgetTokens kind=field
+  digest=b3:a885860c415781948a1174eddbdca85ebc3be954d0f9ee0286b8e97e911f9af2 file=cortex/scope/scope.go range=110:112 lang=go exported=true byte_range=4684:4840
+  sig=int
+  doc=BudgetTokens caps cortex.context budget for this scope. Zero =\nno cap. Enforced at Context-call time.
+EDGES
+  ^contains=matrix/cortex/scope.Scope
+
+NODE id=matrix/cortex/scope.Scope#Exclude kind=field
+  digest=b3:6b7b2158eacd8eb07c6ce27368586f6d3b0f22dd219f4b48c6da7db61c879a71 file=cortex/scope/scope.go range=94:96 lang=go exported=true byte_range=3922:4090
+  sig=scope.Selector
+  doc=Exclude is the belt-and-suspenders deny-list applied AFTER\nInclude matches. Empty Exclude = nothing extra denied.
+EDGES
+  ^contains=matrix/cortex/scope.Scope
+
+NODE id=matrix/cortex/scope.Scope#ExpiresAt kind=field
+  digest=b3:80e1d95f29d3cf00a5d55f663b3e426e8707eebe7d910a8fd170b770b9d01cab file=cortex/scope/scope.go range=106:108 lang=go exported=true byte_range=4538:4681
+  sig=time.Time
+  doc=ExpiresAt is wall-clock per spec. Zero = never expires (rare;\nproduction scopes always expire).
+EDGES
+  ^contains=matrix/cortex/scope.Scope
+
+NODE id=matrix/cortex/scope.Scope#GrantedBy kind=field
+  digest=b3:9637a7a2d3e9ec34248812c6a79e1022d457013f0c80724013fce91e22850f33 file=cortex/scope/scope.go range=114:118 lang=go exported=true byte_range=4843:5129
+  sig=string
+  doc=GrantedBy is the parent agent ref. Used by KeyResolver to look\nup the public key for signature verification. Format mirrors\nresearch/06-agents.md §7.1 (typically a DID like\n"did:pax:0xabc..."). At v1 cortex treats it as opaque text.
+EDGES
+  ^contains=matrix/cortex/scope.Scope
+
+NODE id=matrix/cortex/scope.Scope#GrantedTo kind=field
+  digest=b3:d0bf21fd45e235bef00977b1b51b3f9679875391b464935eebf602a5088c2616 file=cortex/scope/scope.go range=120:123 lang=go exported=true byte_range=5132:5367
+  sig=string
+  doc=GrantedTo is the child agent ref. Carried for audit purposes;\ncortex does not currently match the calling agent against this\nfield (no agent-identity authentication at the cortex layer).
+EDGES
+  ^contains=matrix/cortex/scope.Scope
+
+NODE id=matrix/cortex/scope.Scope#Include kind=field
+  digest=b3:aeefa83b85343bbb39c21aa3082e37bfb929009961652dc317a8925da0e31795 file=cortex/scope/scope.go range=89:92 lang=go exported=true byte_range=3709:3919
+  sig=scope.Selector
+  doc=Include selects what's allowed. Empty Include = nothing matches\n= scope is empty (no reads allowed). Caller MUST populate at\nleast one criterion to grant access.
+EDGES
+  ^contains=matrix/cortex/scope.Scope
+
+NODE id=matrix/cortex/scope.Scope#Proofs kind=field
+  digest=b3:0294a3c1087c3b2e4ad8151148da80dc13506cebbefb3ba4a85c3325c881cadf file=cortex/scope/scope.go range=98:104 lang=go exported=true byte_range=4093:4535
+  sig=*snapshot.MultiProof
+  doc=Proofs is the multi-proof shipping the canonical Head bytes for\nevery memory id in Include.IDs against SnapshotHash's memories\nSMT. The proof bundle MUST include exactly one proof per\nInclude.IDs entry, in matching order; the verifier cross-checks\neach KeyHash against memory.ID-derived hashes. May be nil when\nInclude uses no IDs (Type/Tag/Frame-only scopes).
+EDGES
+  ^contains=matrix/cortex/scope.Scope
+
+NODE id=matrix/cortex/scope.Scope#SchemaVersion kind=field
+  digest=b3:e9a4dc27dec4fcfc55d76c06ba716fc8d558aded67f09fea8ea4eec8dd97e8dd file=cortex/scope/scope.go range=75:77 lang=go exported=true byte_range=3118:3259
+  sig=uint8
+  doc=SchemaVersion is mixed into the signed bytes so a schema bump\ninvalidates outstanding scopes.
+EDGES
+  ^contains=matrix/cortex/scope.Scope
+
+NODE id=matrix/cortex/scope.Scope#Signature kind=field
+  digest=b3:ad449423949c22597122a5472dc2a73dd69779104c9c8598c40f616ead678080 file=cortex/scope/scope.go range=129:132 lang=go exported=true byte_range=5553:5752
+  sig=[]byte
+  doc=Signature is the ed25519 sig by GrantedBy's pubkey over the\ncanonical CBOR encoding of the Scope with Signature=nil.\nEd25519 signatures are 64 bytes.
+EDGES
+  ^contains=matrix/cortex/scope.Scope
+
+NODE id=matrix/cortex/scope.Scope#SnapshotHash kind=field
+  digest=b3:8b818680e44c30e2519b2b7a4be411933f1b2abc6ebc8f9bd4981aa37cdaff92 file=cortex/scope/scope.go range=83:87 lang=go exported=true byte_range=3428:3706
+  sig=[32]byte
+  doc=SnapshotHash pins the cortex_snapshot_hash (OverallRoot) at\nscope creation. The verifier requires this snapshot to still be\nresolvable on the receiving end (i.e. there exists a snap/<seq>\nmanifest with that OverallRoot).
+EDGES
+  ^contains=matrix/cortex/scope.Scope
+
+NODE id=matrix/cortex/scope.Scope#Writable kind=field
+  digest=b3:616d23d821a09479857cd0089cc746e1327a973453a230d5b3efcb1e1824c6b5 file=cortex/scope/scope.go range=125:127 lang=go exported=true byte_range=5370:5550
+  sig=bool
+  doc=Writable gates non-read operations. Default false. Required for\nUpdateHead/Write/Tombstone/AddEdge/RemoveEdge from a sub-agent.
+EDGES
+  ^contains=matrix/cortex/scope.Scope
+
+NODE id=matrix/cortex/scope.Scope.Allows kind=method
+  digest=b3:d509c9a19a3946717f215aa097ebd23869f56adb0f42b6d670622ca9313dc34e file=cortex/scope/match.go range=80:100 lang=go exported=true byte_range=1907:2665
+  sig=func (s *Scope) Allows(h *memory.Head) bool
+  doc=Allows returns true if h is permitted under s — included by Include\nAND not excluded by Exclude. Pure function; the caller is\nresponsible for having already verified the scope's signature,\nexpiry, snapshot resolvability, and multi-proof.\n\nTombstoned memories are NOT special-cased here; the cortex read path\nfilters them out before consulting Allows (default IncludeTombstoned\nfalse). If a future caller wants tombstoned memories it must opt in\nat the query layer; scope semantics are orthogonal to lifecycle.
+EDGES
+  ^contains=matrix/cortex/scope.Scope
+  ^defines=matrix/cortex/scope/match.go
+
+NODE id=matrix/cortex/scope.Selector kind=type
+  digest=b3:1e7fff02a0bce10778c9030d62785f7038ce82d12cfe3763eeaf5b0212f77d24 file=cortex/scope/scope.go range=135:149 lang=go exported=true byte_range=5756:6493
+  sig=type Selector struct {\n	Types	[]memory.Type	`cbor:"1,keyasint,omitempty"`\n	Tags	[]memory.Tag	`cbor:"2,keyasint,omitempty"`\n	IDs	[]memory.ID	`cbor:"3,keyasint,omitempty"`\n	Frame	*FrameFilter	`cbor:"4,keyasint,omitempty"`\n}
+  doc=Selector enumerates allow / deny criteria. A memory matches the\nselector if it satisfies ANY of the populated criteria (set union),\nEXCEPT empty selectors which match NOTHING.\n\nEmpty-selector semantics is default-deny (the more secure default\nper research/06-agents.md §12 "deny by default, grant by signed\nscope"): to express "all types", caller passes the full type list\nrather than leaving Types empty. The primary-full template in §7.4\nis a literal enumeration of all 9 types.
+EDGES
+  contains=matrix/cortex/scope.Selector#Frame,matrix/cortex/scope.Selector#IDs,matrix/cortex/scope.Selector#Tags,matrix/cortex/scope.Selector#Types,matrix/cortex/scope.Selector.IsEmpty,matrix/cortex/scope.Selector.Matches
+  ^defines=matrix/cortex/scope/scope.go
+
+NODE id=matrix/cortex/scope.Selector#Frame kind=field
+  digest=b3:e9760a05c344dbdd1c4183174128dde460908c8a6f0bfdb9792e4c20fa1be09a file=cortex/scope/scope.go range=148:148 lang=go exported=true byte_range=6442:6491
+  sig=*scope.FrameFilter
+EDGES
+  ^contains=matrix/cortex/scope.Selector
+
+NODE id=matrix/cortex/scope.Selector#IDs kind=field
+  digest=b3:865ce39f4d97d561e686c59401632f140b8836ef7c224c199bcd1fb6cae9473b file=cortex/scope/scope.go range=147:147 lang=go exported=true byte_range=6391:6440
+  sig=[]memory.ID
+EDGES
+  ^contains=matrix/cortex/scope.Selector
+
+NODE id=matrix/cortex/scope.Selector#Tags kind=field
+  digest=b3:b8bec595cbde52544c2a828c95c2dead470bb8b8e0519a831bc70c3860665c50 file=cortex/scope/scope.go range=146:146 lang=go exported=true byte_range=6340:6389
+  sig=[]memory.Tag
+EDGES
+  ^contains=matrix/cortex/scope.Selector
+
+NODE id=matrix/cortex/scope.Selector#Types kind=field
+  digest=b3:dd019ae11d22eb499b1f654e3ad9eb5e4d3265d761c86b91a7bf9e83b8651e1b file=cortex/scope/scope.go range=145:145 lang=go exported=true byte_range=6289:6338
+  sig=[]memory.Type
+EDGES
+  ^contains=matrix/cortex/scope.Selector
+
+NODE id=matrix/cortex/scope.Selector.IsEmpty kind=method
+  digest=b3:af97a66b44b9e4f5cac890fc70fed7be22a1bc39a4001bc737bb27085a0d6b4b file=cortex/scope/match.go range=66:78 lang=go exported=true byte_range=1569:1905
+  sig=func (sel *Selector) IsEmpty() bool
+  doc=IsEmpty reports whether the selector has no populated criterion.
+EDGES
+  ^contains=matrix/cortex/scope.Selector
+  ^defines=matrix/cortex/scope/match.go
+
+NODE id=matrix/cortex/scope.Selector.Matches kind=method
+  digest=b3:06b32ccb88f61bc136e2c75c8196c131cc2dc38d1f11610f301cafc16202ccfd file=cortex/scope/match.go range=10:64 lang=go exported=true byte_range=220:1567
+  sig=func (sel *Selector) Matches(h *memory.Head) bool
+  doc=Matches returns true if the candidate Head satisfies AT LEAST ONE\ncriterion populated on sel. Empty selectors NEVER match anything —\ncallers must populate at least one of {Types, Tags, IDs, Frame} for\na Selector to be useful.\n\nSet-union semantics across populated criteria; per-criterion\nsemantics:\n\n  - Types: head.Type ∈ sel.Types\n  - Tags:  any tag in head.Tags appears in sel.Tags (case-sensitive)\n  - IDs:   head.ID ∈ sel.IDs\n  - Frame: any FrameRef on head.Frames matches sel.Frame.Verb AND\n    its 16-byte ObjHash is in sel.Frame.ObjHashes\n\nEmpty-selector returns false. For include semantics this manifests\nas "no access"; for exclude semantics as "no extra deny".
+EDGES
+  ^contains=matrix/cortex/scope.Selector
+  ^defines=matrix/cortex/scope/match.go
+
+NODE id=matrix/cortex/scope.Sign kind=func
+  digest=b3:b565d314f915c3864095990b75f53ffec81c6ba09a59e46f0bc63792c942b431 file=cortex/scope/scope.go range=214:228 lang=go exported=true byte_range=8623:9189
+  sig=func Sign(s *Scope, priv ed25519.PrivateKey) error
+  doc=Sign sets s.Signature to the ed25519 signature of UnsignedBytes(s)\nunder priv. Returns an error if the unsigned bytes cannot be\nproduced. Used by tests + the agent runtime / CLI; cortex itself\nnever calls this (no key material at the cortex layer per D4).
+EDGES
+  ^defines=matrix/cortex/scope/scope.go
+
+NODE id=matrix/cortex/scope.StaticKeyResolver kind=type
+  digest=b3:d2b2682a2eb89e08aecc671e8719552f1e935adb9837da11b5ff4f9fb17e1a1d file=cortex/scope/verify.go range=26:29 lang=go exported=true byte_range=763:1005
+  sig=type StaticKeyResolver map[string]ed25519.PublicKey
+  doc=StaticKeyResolver maps known refs to known public keys. Used by\ntests and the CLI; production swaps in a registry-backed resolver.\nMap values must be ed25519 public keys (32 bytes).
+EDGES
+  contains=matrix/cortex/scope.StaticKeyResolver.ResolveAgentKey
+  implements=matrix/cortex/scope.KeyResolver
+  ^defines=matrix/cortex/scope/verify.go
+
+NODE id=matrix/cortex/scope.StaticKeyResolver.ResolveAgentKey kind=method
+  digest=b3:3ef94dfa89ea6dbbbc2d6317a45c9ae36c7b8b0f2bfa7fb89333949e9958f12d file=cortex/scope/verify.go range=31:41 lang=go exported=true byte_range=1007:1369
+  sig=func (s StaticKeyResolver) ResolveAgentKey(ref string) (ed25519.PublicKey, error)
+  doc=ResolveAgentKey implements KeyResolver.
+EDGES
+  ^contains=matrix/cortex/scope.StaticKeyResolver
+  ^defines=matrix/cortex/scope/verify.go
+
+NODE id=matrix/cortex/scope.UnsignedBytes kind=func
+  digest=b3:2e07d9edeb579171601448ccccf2393dc2443230949f53f4b806364ac9f7cac3 file=cortex/scope/scope.go range=199:212 lang=go exported=true byte_range=8123:8621
+  sig=func UnsignedBytes(s *Scope) ([]byte, error)
+  doc=UnsignedBytes returns the canonical CBOR encoding of s with\nSignature explicitly cleared. This is the message that GrantedBy's\ned25519 key signs (and that VerifySignature checks against).\n\nThe returned bytes deliberately retain the SchemaVersion field so\nsignature replays across schema versions are blocked.
+EDGES
+  ^defines=matrix/cortex/scope/scope.go
+
+NODE id=matrix/cortex/scope.Verify kind=func
+  digest=b3:684ce953346be1263215aba27970d8c5e394202b731dc035e2da811ae96f70bf file=cortex/scope/verify.go range=58:123 lang=go exported=true byte_range=1969:4080
+  sig=func Verify(s *Scope, snapState *snapshot.State, resolver KeyResolver, opts VerifyOpts) error
+  doc=Verify runs the full scope verification chain (research/06-agents.md\n§7.2). Returns nil iff:\n\n 1. SchemaVersion matches the package constant.\n 2. Include is non-empty (at least one criterion populated).\n 3. Now ≤ ExpiresAt (or ExpiresAt is zero).\n 4. Signature is a valid ed25519 sig from GrantedBy's pubkey over\n    UnsignedBytes(s).\n 5. SnapshotHash is resolvable: there exists a snap/<seq> manifest\n    with OverallRoot == SnapshotHash. Skipped if\n    opts.SkipSnapshotResolution.\n 6. If Proofs is non-nil:\n    - len(Proofs.Proofs) == len(Include.IDs)\n    - each proof's KeyHash matches snapshot.HashMemoryKey(IDs[i])\n    - Proofs.VerifyAgainstManifest(found-manifest) passes\n\nVerify does NOT enforce against any specific memory — that is the\nper-read enforcement done by Scope.Allows / cortex.enforceScope.
+EDGES
+  ^defines=matrix/cortex/scope/verify.go
+
+NODE id=matrix/cortex/scope.VerifyOpts kind=type
+  digest=b3:e0030a4bc7635b7f9b78e1c5972a9b240af28eb0de718fb41bc0910ce8adaeb6 file=cortex/scope/verify.go range=43:56 lang=go exported=true byte_range=1371:1967
+  sig=type VerifyOpts struct {\n	// Now is the wall-clock used for expiry comparison. Zero defers\n	// to time.Now(). Tests always populate this for determinism.\n	Now	time.Time\n\n	// SkipSnapshotResolution skips the FindSnapshotByRoot check.\n	// Reserved for replay tooling that walks the journal forward and\n	// already knows the snapshot existed; never used on the hot read\n	// path. Default false.\n	SkipSnapshotResolution	bool\n}
+  doc=VerifyOpts holds the optional inputs to Verify. Required inputs (the\nScope, the snapshot.State, the resolver) are positional on Verify\nfor clarity at the call site.
+EDGES
+  contains=matrix/cortex/scope.VerifyOpts#Now,matrix/cortex/scope.VerifyOpts#SkipSnapshotResolution
+  ^defines=matrix/cortex/scope/verify.go
+
+NODE id=matrix/cortex/scope.VerifyOpts#Now kind=field
+  digest=b3:9e5ee19c33e7dc133fb751a60d58c99f6a44ce3545e59f64f4c38ee85b12aa97 file=cortex/scope/verify.go range=47:49 lang=go exported=true byte_range=1571:1713
+  sig=time.Time
+  doc=Now is the wall-clock used for expiry comparison. Zero defers\nto time.Now(). Tests always populate this for determinism.
+EDGES
+  ^contains=matrix/cortex/scope.VerifyOpts
+
+NODE id=matrix/cortex/scope.VerifyOpts#SkipSnapshotResolution kind=field
+  digest=b3:58bc7c14330d6736d8200c48b8fc2ecd5002e5f20d70469995a224478f4310f8 file=cortex/scope/verify.go range=51:55 lang=go exported=true byte_range=1716:1965
+  sig=bool
+  doc=SkipSnapshotResolution skips the FindSnapshotByRoot check.\nReserved for replay tooling that walks the journal forward and\nalready knows the snapshot existed; never used on the hot read\npath. Default false.
+EDGES
+  ^contains=matrix/cortex/scope.VerifyOpts
+
+NODE id=matrix/cortex/scope.VerifySignature kind=func
+  digest=b3:6c7be3f9dfb443f0dfc99da0b8fed6097d481df02b1b2c58ff7572ea28abf72c file=cortex/scope/scope.go range=230:251 lang=go exported=true byte_range=9191:9927
+  sig=func VerifySignature(s *Scope, pub ed25519.PublicKey) error
+  doc=VerifySignature checks that s.Signature is a valid ed25519 signature\nfrom pub over UnsignedBytes(s). Returns ErrSignatureInvalid on any\nmismatch (length, key, message).
+EDGES
+  ^defines=matrix/cortex/scope/scope.go
+
+NODE id=matrix/cortex/scope.canonicalDec kind=var
+  digest=b3:3f2738f9bc26544c887f88c0c9155dd21da56a2147932f5bdfd8fb8fcbdd1e31 file=cortex/scope/scope.go range=169:169 lang=go exported=false byte_range=7346:7371
+  sig=cbor.DecMode
+EDGES
+  ^defines=matrix/cortex/scope/scope.go
+
+NODE id=matrix/cortex/scope.canonicalEnc kind=var
+  digest=b3:1d62715a929a986a7c8788580eefaae32a3349abdad73d0346b3a9e6764c6632 file=cortex/scope/scope.go range=167:168 lang=go exported=false byte_range=7236:7341
+  sig=cbor.EncMode
+  doc=canonicalEnc + canonicalDec — same posture as snapshot/journal/memory.
+EDGES
+  ^defines=matrix/cortex/scope/scope.go
+
+NODE id=matrix/cortex/scope.init kind=func
+  digest=b3:7a8d6519172aec85723706e7f4818e7cba1e55d1b68f168a169e4d02199dc440 file=cortex/scope/scope.go range=171:182 lang=go exported=false byte_range=7373:7659
+  sig=func init()
+EDGES
+  ^defines=matrix/cortex/scope/scope.go
+
+NODE id=matrix/cortex/scope.memoryIDToBytes kind=func
+  digest=b3:3b5d45dca64f4c96701b8dd316768bfd38fd55336116869c5d85d2d95b8ff342 file=cortex/scope/verify.go range=159:166 lang=go exported=false byte_range=5370:5667
+  sig=func memoryIDToBytes(id memory.ID) [16]byte
+  doc=memoryIDToBytes copies a memory.ID (which is [16]byte) into the\n[16]byte alias the snapshot package expects. Both are 16-byte\narrays; the alias is just a different named type so we re-cast.
+EDGES
+  ^defines=matrix/cortex/scope/verify.go
+
+NODE id=matrix/cortex/scope.verifyProofsAgainstInclude kind=func
+  digest=b3:e6cf80e6a4c3afa90885d0e8eb35130f475e06f08f04e258dfa601b31d142f9b file=cortex/scope/verify.go range=125:157 lang=go exported=false byte_range=4082:5368
+  sig=func verifyProofsAgainstInclude(s *Scope, manifest *snapshot.Manifest) error
+  doc=verifyProofsAgainstInclude checks that scope.Proofs is consistent\nwith scope.Include.IDs and verifies the multi-proof against the\nresolved manifest's memories root.\n\nIf Include.IDs is empty, Proofs MUST be nil (a Type/Tag/Frame-only\nscope ships no proofs because there are no specific keys to prove).\nIf Include.IDs is non-empty, Proofs MUST have exactly that many\nproofs in matching order, each KeyHash matching the corresponding\nid's HashMemoryKey.
+EDGES
+  ^defines=matrix/cortex/scope/verify.go
+
+NODE id=matrix/cortex/scope/errors.go kind=file
+  digest=b3:00fce85ac141cea30e728eb762461e6f9836f5e7568353092ebd1036fb711160 file=cortex/scope/errors.go range=1:64 lang=go exported=true
+EDGES
+  defines=matrix/cortex/scope.ErrActorMismatch,matrix/cortex/scope.ErrBudgetExceeded,matrix/cortex/scope.ErrEmptyInclude,matrix/cortex/scope.ErrNotWritable,matrix/cortex/scope.ErrProofMismatch,matrix/cortex/scope.ErrSchemaVersion,matrix/cortex/scope.ErrScopeExpired,matrix/cortex/scope.ErrSignatureInvalid,matrix/cortex/scope.ErrSnapshotUnresolved,matrix/cortex/scope.ErrUnknownAgent,matrix/cortex/scope.ErrViolation
+  ^contains=matrix/cortex/scope
+
+NODE id=matrix/cortex/scope/match.go kind=file
+  digest=b3:420d723ee06275fb33cf4706d23997aee4dea32cc870220716ab87808dca8cd7 file=cortex/scope/match.go range=1:102 lang=go exported=true
+EDGES
+  defines=matrix/cortex/scope.Scope.Allows,matrix/cortex/scope.Selector.IsEmpty,matrix/cortex/scope.Selector.Matches
+  ^contains=matrix/cortex/scope
+
+NODE id=matrix/cortex/scope/scope.go kind=file
+  digest=b3:725d9c90486940ab357d13e0caf3a401153f99806a9094b0b4af90bb9472649c file=cortex/scope/scope.go range=1:253 lang=go exported=true
+EDGES
+  defines=matrix/cortex/scope.DecodeScope,matrix/cortex/scope.EncodeScope,matrix/cortex/scope.FrameFilter,matrix/cortex/scope.SchemaVersion,matrix/cortex/scope.Scope,matrix/cortex/scope.Selector,matrix/cortex/scope.Sign,matrix/cortex/scope.UnsignedBytes,matrix/cortex/scope.VerifySignature,matrix/cortex/scope.canonicalDec,matrix/cortex/scope.canonicalEnc,matrix/cortex/scope.init
+  ^contains=matrix/cortex/scope
+
+NODE id=matrix/cortex/scope/verify.go kind=file
+  digest=b3:5b3d66243d1d826f7016549d837b975ad5767592b988fb48868a0313bd27a0a2 file=cortex/scope/verify.go range=1:168 lang=go exported=true
+EDGES
+  defines=matrix/cortex/scope.KeyResolver,matrix/cortex/scope.StaticKeyResolver,matrix/cortex/scope.StaticKeyResolver.ResolveAgentKey,matrix/cortex/scope.Verify,matrix/cortex/scope.VerifyOpts,matrix/cortex/scope.memoryIDToBytes,matrix/cortex/scope.verifyProofsAgainstInclude
+  ^contains=matrix/cortex/scope

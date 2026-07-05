@@ -1,0 +1,1263 @@
+# GENERATED gen=codegraph do-not-edit merkle=b3:2dc69ec8dbbe0231373534486cf12ff6fdb0eaad7b2dfdcbc4d73453c8542ee8
+
+NODE id=matrix/executor/runtime kind=package
+  digest=b3:6e27877e0f715680121e34b8f2fc5ba7a59e4f64a39c748da60e8876d6d4d09c file=executor/runtime range=0:0 lang=go exported=true
+EDGES
+  contains=matrix/executor/runtime/argref.go,matrix/executor/runtime/coerce.go,matrix/executor/runtime/marshal.go,matrix/executor/runtime/skill_loader.go,matrix/executor/runtime/skill_reload.go,matrix/executor/runtime/walker.go
+  ^contains=mod:matrix/executor
+
+NODE id=matrix/executor/runtime.AllowAllGate kind=type
+  digest=b3:d589a7c190934fb2fed86b52c416ee0cca33ce0304e52cec41690030d32ca14e file=executor/runtime/walker.go range=787:790 lang=go exported=true byte_range=27336:27538
+  sig=type AllowAllGate struct{}
+  doc=AllowAllGate auto-approves every gate. v1 default for headless CLI\nruns that don't have a human-in-loop responder wired (matches\ncmd/mcl-e2e/walk.go:94-100 behavior).
+EDGES
+  contains=matrix/executor/runtime.AllowAllGate.HandleGate
+  implements=matrix/executor/runtime.GateHandler
+  ^defines=matrix/executor/runtime/walker.go
+
+NODE id=matrix/executor/runtime.AllowAllGate.HandleGate kind=method
+  digest=b3:1fa2dc41952dc6cf749255177bb4e97e980f9007dad899a67310cfebb2256a4b file=executor/runtime/walker.go range=792:795 lang=go exported=true byte_range=27540:27758
+  sig=func (AllowAllGate) HandleGate(ctx context.Context, node *ir.PlanNode) (*GateDecision, error)
+  doc=HandleGate implements GateHandler.
+EDGES
+  ^contains=matrix/executor/runtime.AllowAllGate
+  ^defines=matrix/executor/runtime/walker.go
+
+NODE id=matrix/executor/runtime.Correction kind=type
+  digest=b3:d9b41cbf39b800042bf53759e35c2e31daba46e74351e92091267e1387a852d0 file=executor/runtime/walker.go range=195:213 lang=go exported=true byte_range=7436:8073
+  sig=type Correction struct {\n	// EnvelopeID is the matrix-ULID of the intent.correct envelope.\n	EnvelopeID	string\n\n	// Target is "intent" or "plan" — mirrors envelope.IntentCorrectBody.Target.\n	Target	string\n\n	// Patches is the RFC 6902 JSON Patch bytes from the body.\n	Patches	[]byte\n\n	// Reason is the structured reason code from the body.\n	Reason	string\n\n	// RetryFrom names the PlanNode.ID to resume from after a non-material\n	// correction. Empty = no resume hint.\n	RetryFrom	string\n}
+  doc=Correction is a mid-walk intent.correct envelope plus its decoded body.\nDelivered through Walker.CorrectionInbox to be classified live per Q11.
+EDGES
+  contains=matrix/executor/runtime.Correction#EnvelopeID,matrix/executor/runtime.Correction#Patches,matrix/executor/runtime.Correction#Reason,matrix/executor/runtime.Correction#RetryFrom,matrix/executor/runtime.Correction#Target
+  ^defines=matrix/executor/runtime/walker.go
+
+NODE id=matrix/executor/runtime.Correction#EnvelopeID kind=field
+  digest=b3:e399b8ef401703fa823cf698565f00de5defbd56a7ae64c3ef23723b1cb93e45 file=executor/runtime/walker.go range=198:199 lang=go exported=true byte_range=7612:7695
+  sig=string
+  doc=EnvelopeID is the matrix-ULID of the intent.correct envelope.
+EDGES
+  ^contains=matrix/executor/runtime.Correction
+
+NODE id=matrix/executor/runtime.Correction#Patches kind=field
+  digest=b3:73b61ccd5f60ecba817a09193a3b033371f94de7b1692f2771ef0467584ef561 file=executor/runtime/walker.go range=204:205 lang=go exported=true byte_range=7794:7868
+  sig=[]byte
+  doc=Patches is the RFC 6902 JSON Patch bytes from the body.
+EDGES
+  ^contains=matrix/executor/runtime.Correction
+
+NODE id=matrix/executor/runtime.Correction#Reason kind=field
+  digest=b3:6a16a50d1ee7c3cdfad4a2eadeda22a27a0bce4746ff9d3c02270472ae77567d file=executor/runtime/walker.go range=207:208 lang=go exported=true byte_range=7871:7940
+  sig=string
+  doc=Reason is the structured reason code from the body.
+EDGES
+  ^contains=matrix/executor/runtime.Correction
+
+NODE id=matrix/executor/runtime.Correction#RetryFrom kind=field
+  digest=b3:434382c1a0c300e0027bc729e1b666fcdb1ce646d14485fd5581c22c4e120a2d file=executor/runtime/walker.go range=210:212 lang=go exported=true byte_range=7943:8071
+  sig=string
+  doc=RetryFrom names the PlanNode.ID to resume from after a non-material\ncorrection. Empty = no resume hint.
+EDGES
+  ^contains=matrix/executor/runtime.Correction
+
+NODE id=matrix/executor/runtime.Correction#Target kind=field
+  digest=b3:4d16995ae0cd09c75b353bba62c30afe5fa63df9410554d0825b748fbfcd584f file=executor/runtime/walker.go range=201:202 lang=go exported=true byte_range=7698:7791
+  sig=string
+  doc=Target is "intent" or "plan" — mirrors envelope.IntentCorrectBody.Target.
+EDGES
+  ^contains=matrix/executor/runtime.Correction
+
+NODE id=matrix/executor/runtime.CorrectionHandler kind=type
+  digest=b3:3fea690fab4e299d72a694bc2c42bec1d214af6e9ca1a63ddfc57b9089208aea file=executor/runtime/walker.go range=215:220 lang=go exported=true byte_range=8075:8449
+  sig=type CorrectionHandler func(ctx context.Context, c Correction) (material bool, reasons []string, err error)
+  doc=CorrectionHandler classifies an in-flight correction. Returning\n(material=true, ...) halts the walk with ErrMaterialCorrection.\n\nThe handler typically wraps materiality.Classify against the\npre/post plan-trees the caller maintains alongside the walker.
+EDGES
+  ^defines=matrix/executor/runtime/walker.go
+
+NODE id=matrix/executor/runtime.CorrectionOutcome kind=type
+  digest=b3:c151d94167abf14697a41c1842524e19f430fd482fa21e13eb393e09a6342c8d file=executor/runtime/walker.go range=304:313 lang=go exported=true byte_range=11113:11465
+  sig=type CorrectionOutcome struct {\n	EnvelopeID	string\n	Material	bool\n	Reasons		[]string\n	// Err is the stringified error from OnCorrection if any; empty on\n	// success. Material corrections also halt Run() with\n	// ErrMaterialCorrection, in addition to being recorded here.\n	Err	string\n}
+  doc=CorrectionOutcome records one Q11 correction classification.
+EDGES
+  contains=matrix/executor/runtime.CorrectionOutcome#EnvelopeID,matrix/executor/runtime.CorrectionOutcome#Err,matrix/executor/runtime.CorrectionOutcome#Material,matrix/executor/runtime.CorrectionOutcome#Reasons
+  ^defines=matrix/executor/runtime/walker.go
+
+NODE id=matrix/executor/runtime.CorrectionOutcome#EnvelopeID kind=field
+  digest=b3:526f1497f812928e235a4f10fb5f32f507554df506880b8bce1719a7a2c55109 file=executor/runtime/walker.go range=306:306 lang=go exported=true byte_range=11210:11227
+  sig=string
+EDGES
+  ^contains=matrix/executor/runtime.CorrectionOutcome
+
+NODE id=matrix/executor/runtime.CorrectionOutcome#Err kind=field
+  digest=b3:7a02379c363c4bef6ec76abb9bf6dd152e3cc0c85f1b7dd0c2115ef3e849b1c2 file=executor/runtime/walker.go range=309:312 lang=go exported=true byte_range=11267:11463
+  sig=string
+  doc=Err is the stringified error from OnCorrection if any; empty on\nsuccess. Material corrections also halt Run() with\nErrMaterialCorrection, in addition to being recorded here.
+EDGES
+  ^contains=matrix/executor/runtime.CorrectionOutcome
+
+NODE id=matrix/executor/runtime.CorrectionOutcome#Material kind=field
+  digest=b3:9d20d00ee95b298894b06e25fb87debd0f5c968e39411fce1eb57d363ede6822 file=executor/runtime/walker.go range=307:307 lang=go exported=true byte_range=11229:11244
+  sig=bool
+EDGES
+  ^contains=matrix/executor/runtime.CorrectionOutcome
+
+NODE id=matrix/executor/runtime.CorrectionOutcome#Reasons kind=field
+  digest=b3:1cf66f293f9afeb8e59c0f81348c3f5d75e7665985bdc18e61b03325165ca634 file=executor/runtime/walker.go range=308:308 lang=go exported=true byte_range=11246:11265
+  sig=[]string
+EDGES
+  ^contains=matrix/executor/runtime.CorrectionOutcome
+
+NODE id=matrix/executor/runtime.DefaultSkillRepoRoot kind=const
+  digest=b3:67972d0159c1f61c1f90652ca7a73611faf4ad0f6610e4b73ef1f78ed6bc072d file=executor/runtime/skill_loader.go range=42:45 lang=go exported=true byte_range=1666:1882
+  sig=untyped string
+  doc=DefaultSkillRepoRoot is the canonical filesystem home of the skill\ncorpus (matrix.kvx FOLDERS line 60 — skills/). Tests override via\nSkillLoader.RepoRoot.
+EDGES
+  ^defines=matrix/executor/runtime/skill_loader.go
+
+NODE id=matrix/executor/runtime.DevReloadEnabled kind=func
+  digest=b3:94f7490686b20baceb98be67496da40ebe34eaf4baec6a2f89beb1203d4887c4 file=executor/runtime/skill_reload.go range=68:87 lang=go exported=true byte_range=2677:3359
+  sig=func DevReloadEnabled(devFlag string) bool
+  doc=DevReloadEnabled reports whether dev hot-reload should be active given the\nenv (SKILL_RELOAD) and an optional explicit devFlag. The explicit flag, when\nnon-empty, overrides the env (so a CLI --skill-reload=true can force on\neven when the env is unset, and --skill-reload=false can force off).
+EDGES
+  ^defines=matrix/executor/runtime/skill_reload.go
+
+NODE id=matrix/executor/runtime.EnvelopeSink kind=interface
+  digest=b3:60f7c5acf14063c305284189d9e8765ac1c9bfa6ed1193de86015e11506168a2 file=executor/runtime/walker.go range=52:62 lang=go exported=true byte_range=1852:2445
+  sig=type EnvelopeSink interface {\n	SignAndPersist(kind string, body interface{}, correlation, causation string) (*envelope.Envelope, error)\n	LastID() string\n}
+  doc=EnvelopeSink signs and persists an envelope. The walker calls this\nonce per ToolCall node to journal a plan.step envelope. Production\nimplementations wrap the executor's per-intent EnvelopeStream\n(cmd/mcl-e2e/envelopes.go:53 is the reference). nil disables signing.\n\n`correlation` is the envelope being correlated to (usually plan.proposed);\n`causation` is the prior envelope in chronological chain. Both may be empty.
+EDGES
+  ^implements=matrix/executor/cmd/mcl-e2e.EnvelopeStream,matrix/executor/cmd/mcl-execute.envelopeStream
+  ^defines=matrix/executor/runtime/walker.go
+
+NODE id=matrix/executor/runtime.ErrInvalidSkillURI kind=var
+  digest=b3:415a08dc79d4089600f3e6c99c6e6af3b17a0e484b2265571a28b963bbb6eba1 file=executor/runtime/skill_loader.go range=306:308 lang=go exported=true byte_range=10207:10383
+  sig=error
+  doc=ErrInvalidSkillURI fires when the URI doesn't conform to the\nmatrix://skill/<slug>@<version> grammar.
+EDGES
+  ^defines=matrix/executor/runtime/skill_loader.go
+
+NODE id=matrix/executor/runtime.ErrMaterialCorrection kind=var
+  digest=b3:3f01c380c4a9103cb0b332d8aa5183e11ad4c1ea6dd26ccd9eb0d0c490e74d38 file=executor/runtime/walker.go range=803:806 lang=go exported=true byte_range=28029:28313
+  sig=error
+  doc=ErrMaterialCorrection signals the walker received a material\nintent.correct mid-walk (S23Q9). Caller should transition lifecycle\nmachine executing→accepted and re-derive a plan.
+EDGES
+  ^defines=matrix/executor/runtime/walker.go
+
+NODE id=matrix/executor/runtime.ErrSubDispatchNotImplemented kind=var
+  digest=b3:2ba05f0cc6e004ef37933fb9bd8bb0e8abac4105c028e493f1766e5d972a5480 file=executor/runtime/walker.go range=799:801 lang=go exported=true byte_range=27790:28027
+  sig=error
+  doc=ErrSubDispatchNotImplemented signals the v1 placeholder behavior for\ncross-agent sub-dispatch. Callers may errors.Is to route accordingly.
+EDGES
+  ^defines=matrix/executor/runtime/walker.go
+
+NODE id=matrix/executor/runtime.ErrUnpinnedSkillURI kind=var
+  digest=b3:bc160b9367fd2edb08c1c3887ad0060c7806d24d7f7913295cd5a7d4ba11d2b4 file=executor/runtime/skill_loader.go range=310:311 lang=go exported=true byte_range=10386:10539
+  sig=error
+  doc=ErrUnpinnedSkillURI fires when the URI omits @version. S4 hard rule.
+EDGES
+  ^defines=matrix/executor/runtime/skill_loader.go
+
+NODE id=matrix/executor/runtime.EventSink kind=interface
+  digest=b3:0c3c12ab7544e3124d4ffa1c9e06d10daee45aec1322a8bf3e2c882ec495001f file=executor/runtime/walker.go range=42:50 lang=go exported=true byte_range=1441:1850
+  sig=type EventSink interface {\n	Event(eventType, phase string, fields map[string]interface{})\n}
+  doc=EventSink is the structured-event surface the walker emits to.\n\nSignature mirrors executor/cmd/mcl-e2e/transcript.go:46 so the harness\nTranscript satisfies it directly. Production callers (cmd/mcl-execute)\ncan wire their own JSONL writer. Calls are best-effort; failure to log\nMUST NOT fail the walk.
+EDGES
+  ^implements=matrix/executor/cmd/mcl-e2e.Transcript,matrix/executor/cmd/mcl-execute.transcript,matrix/executor/runtime.noopSink
+  ^defines=matrix/executor/runtime/walker.go
+
+NODE id=matrix/executor/runtime.GateDecision kind=type
+  digest=b3:fc39a6ad4eb3d7bf40ee01aead0a5ab149390a4c41bde08bb8e3dce764f54582 file=executor/runtime/walker.go range=111:117 lang=go exported=true byte_range=4515:4736
+  sig=type GateDecision struct {\n	// Approved=true allows the walk to continue past the gate.\n	Approved	bool\n	// Answer is the user-supplied (or auto-) answer text.\n	Answer	string\n}
+  doc=GateDecision is the resolved gate outcome.
+EDGES
+  contains=matrix/executor/runtime.GateDecision#Answer,matrix/executor/runtime.GateDecision#Approved
+  ^defines=matrix/executor/runtime/walker.go
+
+NODE id=matrix/executor/runtime.GateDecision#Answer kind=field
+  digest=b3:3a690772dedda3d3e9a3bb4ea500b89e9815dc196d4bd3edae58189e07908c52 file=executor/runtime/walker.go range=115:116 lang=go exported=true byte_range=4665:4734
+  sig=string
+  doc=Answer is the user-supplied (or auto-) answer text.
+EDGES
+  ^contains=matrix/executor/runtime.GateDecision
+
+NODE id=matrix/executor/runtime.GateDecision#Approved kind=field
+  digest=b3:eaf0c6b6c6aa1cac239b921106cb9edce9b1aac8f4e6248c151be17eeb5a5cab file=executor/runtime/walker.go range=113:114 lang=go exported=true byte_range=4589:4663
+  sig=bool
+  doc=Approved=true allows the walk to continue past the gate.
+EDGES
+  ^contains=matrix/executor/runtime.GateDecision
+
+NODE id=matrix/executor/runtime.GateHandler kind=interface
+  digest=b3:d67300a0c47bf46477fae99cee49580a645559326dfc5a56fa1bf5ec5f1b4642 file=executor/runtime/walker.go range=103:109 lang=go exported=true byte_range=4126:4513
+  sig=type GateHandler interface {\n	HandleGate(ctx context.Context, node *ir.PlanNode) (*GateDecision, error)\n}
+  doc=GateHandler is invoked for NodeGate nodes. v1 ships AllowAllGate as\nthe default (matches cmd/mcl-e2e/walk.go:94-100 behavior: log + skip).\nProduction callers wire a synchronous-wait handler that emits\nenvelope.PolicyGateBody and blocks on PolicyGateResolveBody per Q10.
+EDGES
+  ^implements=matrix/executor/cmd/mcl-execute.httpGateHandler,matrix/executor/cmd/mcl-execute.stdinGateHandler,matrix/executor/runtime.AllowAllGate
+  ^defines=matrix/executor/runtime/walker.go
+
+NODE id=matrix/executor/runtime.LoadedSkill kind=type
+  digest=b3:ff91433a3c03d2b521953f81a31992ed2bcbd3def8e6ca4ef37c5efd687bb544 file=executor/runtime/skill_loader.go range=47:122 lang=go exported=true byte_range=1884:4638
+  sig=type LoadedSkill struct {\n	// URI is the canonical matrix://skill/<slug>@<version> form. Matches\n	// the input URI byte-for-byte modulo normalization (e.g. lowercasing).\n	URI	string\n\n	// Slug is the path component (skills/<slug>/).\n	Slug	string\n\n	// Version is the §SKILL.version value from the SKILL.mtx file. Verified\n	// against the URI's @version pin at load time.\n	Version	string\n\n	// ID is the §SKILL.id value. Verified against URI's <slug> at load.\n	ID	string\n\n	// MtxPath is the absolute filesystem path of the SKILL.mtx file.\n	MtxPath	string\n\n	// MdPath is the absolute filesystem path of the SKILL.md body. Empty\n	// if no SKILL.md is present (skills published only via the compiler\n	// manifest — research/05 §6 leaves prose body optional).\n	MdPath	string\n\n	// File is the parsed + validated SKILL.mtx AST.\n	File	*ast.File\n\n	// MtxBytes is the raw bytes of SKILL.mtx (canonical hashing input).\n	MtxBytes	[]byte\n\n	// MdBytes is the raw bytes of SKILL.md (executor-LLM prompt input).\n	// nil when MdPath is empty.\n	MdBytes	[]byte\n\n	// CanonicalHash is the sha256 AST hash (canonical.Hash). Equals what\n	// mclc hash would emit for this file. Used by D11 mtx_digest seed.\n	CanonicalHash	string\n\n	// MclVerbs is the list of D7 verbs the skill declares it handles\n	// (from §SKILL.mcl.verbs). Empty when not declared.\n	MclVerbs	[]string\n\n	// Description is §SKILL.description (used in skill-selection UIs).\n	Description	string\n\n	// Display is §SKILL.display (human-friendly name).\n	Display	string\n\n	// Author is §SKILL.author (DID).\n	Author	string\n\n	// DeclaredTools is the §TOOLS allow-list as bare matrix://tool URIs\n	// (each version-pinned per validator rule 10). The synthesizer uses\n	// this to filter the agent's manifest tools so the executor LLM\n	// only sees what the skill author sanctioned. Nil when §TOOLS is\n	// `none` or the section is absent. An empty (non-nil) slice is\n	// reserved for future "explicitly empty" semantics; v1 treats nil\n	// and len==0 identically (no tool_call nodes allowed).\n	DeclaredTools	[]string\n\n	// DeclaredSubSkills is the §SUB_SKILLS allow-list as version-pinned\n	// matrix://skill URIs. Same semantics as DeclaredTools: nil when\n	// `none`/absent. Synthesizer rejects sub_dispatch nodes whose\n	// skill_ref is not in this list.\n	DeclaredSubSkills	[]string\n\n	// ToolsNone is true when §TOOLS = `none`. Distinguishes\n	// "explicitly forbidden" from "section parse error" so the\n	// synthesizer can emit a stronger negative ("DO NOT EMIT TOOL\n	// CALLS") instead of a soft empty list.\n	ToolsNone	bool\n\n	// SubSkillsNone is true when §SUB_SKILLS = `none`. Mirrors\n	// ToolsNone for the sub_dispatch path.\n	SubSkillsNone	bool\n}
+  doc=LoadedSkill is the resolved skill returned by SkillLoader.Load.
+EDGES
+  contains=matrix/executor/runtime.LoadedSkill#Author,matrix/executor/runtime.LoadedSkill#CanonicalHash,matrix/executor/runtime.LoadedSkill#DeclaredSubSkills,matrix/executor/runtime.LoadedSkill#DeclaredTools,matrix/executor/runtime.LoadedSkill#Description,matrix/executor/runtime.LoadedSkill#Display,matrix/executor/runtime.LoadedSkill#File,matrix/executor/runtime.LoadedSkill#ID,matrix/executor/runtime.LoadedSkill#MclVerbs,matrix/executor/runtime.LoadedSkill#MdBytes,matrix/executor/runtime.LoadedSkill#MdPath,matrix/executor/runtime.LoadedSkill#MtxBytes,matrix/executor/runtime.LoadedSkill#MtxPath,matrix/executor/runtime.LoadedSkill#Slug,matrix/executor/runtime.LoadedSkill#SubSkillsNone,matrix/executor/runtime.LoadedSkill#ToolsNone,matrix/executor/runtime.LoadedSkill#URI,matrix/executor/runtime.LoadedSkill#Version
+  ^defines=matrix/executor/runtime/skill_loader.go
+
+NODE id=matrix/executor/runtime.LoadedSkill#Author kind=field
+  digest=b3:ebd693bceda837c0c430a027d92d435257561dc2e0701c47df1472847433d00e file=executor/runtime/skill_loader.go range=95:96 lang=go exported=true byte_range=3464:3513
+  sig=string
+  doc=Author is §SKILL.author (DID).
+EDGES
+  ^contains=matrix/executor/runtime.LoadedSkill
+
+NODE id=matrix/executor/runtime.LoadedSkill#CanonicalHash kind=field
+  digest=b3:f66ead14de555767becf4067644d4a53f4ab0bbf7337f2544f5859c56037a2f1 file=executor/runtime/skill_loader.go range=81:83 lang=go exported=true byte_range=2997:3157
+  sig=string
+  doc=CanonicalHash is the sha256 AST hash (canonical.Hash). Equals what\nmclc hash would emit for this file. Used by D11 mtx_digest seed.
+EDGES
+  ^contains=matrix/executor/runtime.LoadedSkill
+
+NODE id=matrix/executor/runtime.LoadedSkill#DeclaredSubSkills kind=field
+  digest=b3:802e1230e38278e923dd3d7a2e1b9cf18db33f1f0b4d3aff79c25ba01c371a14 file=executor/runtime/skill_loader.go range=107:111 lang=go exported=true byte_range=4006:4269
+  sig=[]string
+  doc=DeclaredSubSkills is the §SUB_SKILLS allow-list as version-pinned\nmatrix://skill URIs. Same semantics as DeclaredTools: nil when\n`none`/absent. Synthesizer rejects sub_dispatch nodes whose\nskill_ref is not in this list.
+EDGES
+  ^contains=matrix/executor/runtime.LoadedSkill
+
+NODE id=matrix/executor/runtime.LoadedSkill#DeclaredTools kind=field
+  digest=b3:217da371d66cd431d3c92ca92cfcb6f28a391eba447ea86627d7c57de7885c72 file=executor/runtime/skill_loader.go range=98:105 lang=go exported=true byte_range=3516:4003
+  sig=[]string
+  doc=DeclaredTools is the §TOOLS allow-list as bare matrix://tool URIs\n(each version-pinned per validator rule 10). The synthesizer uses\nthis to filter the agent's manifest tools so the executor LLM\nonly sees what the skill author sanctioned. Nil when §TOOLS is\n`none` or the section is absent. An empty (non-nil) slice is\nreserved for future "explicitly empty" semantics; v1 treats nil\nand len==0 identically (no tool_call nodes allowed).
+EDGES
+  ^contains=matrix/executor/runtime.LoadedSkill
+
+NODE id=matrix/executor/runtime.LoadedSkill#Description kind=field
+  digest=b3:02bb316ed435d48a13b408d1668a725d51a859a17efcfa2cd2beeb926e440c15 file=executor/runtime/skill_loader.go range=89:90 lang=go exported=true byte_range=3302:3390
+  sig=string
+  doc=Description is §SKILL.description (used in skill-selection UIs).
+EDGES
+  ^contains=matrix/executor/runtime.LoadedSkill
+
+NODE id=matrix/executor/runtime.LoadedSkill#Display kind=field
+  digest=b3:4cfe1e1f1c1206beb8e24cbe942c812bb763c9586bceb6193ff35c674b81787d file=executor/runtime/skill_loader.go range=92:93 lang=go exported=true byte_range=3393:3461
+  sig=string
+  doc=Display is §SKILL.display (human-friendly name).
+EDGES
+  ^contains=matrix/executor/runtime.LoadedSkill
+
+NODE id=matrix/executor/runtime.LoadedSkill#File kind=field
+  digest=b3:05e72766867d52d538968480f4262bd310e0518d3efdd3557edf8e7fa0abf78d file=executor/runtime/skill_loader.go range=71:72 lang=go exported=true byte_range=2725:2789
+  sig=*ast.File
+  doc=File is the parsed + validated SKILL.mtx AST.
+EDGES
+  ^contains=matrix/executor/runtime.LoadedSkill
+
+NODE id=matrix/executor/runtime.LoadedSkill#ID kind=field
+  digest=b3:142af785b3d45f0b0c1072f9b63a60777216a51113c61b4f8dcf389fcef86b55 file=executor/runtime/skill_loader.go range=60:61 lang=go exported=true byte_range=2339:2419
+  sig=string
+  doc=ID is the §SKILL.id value. Verified against URI's <slug> at load.
+EDGES
+  ^contains=matrix/executor/runtime.LoadedSkill
+
+NODE id=matrix/executor/runtime.LoadedSkill#MclVerbs kind=field
+  digest=b3:58af7bd985aa98f4015053ec38e0017d4f2b930054721893be14ac5fc0d11648 file=executor/runtime/skill_loader.go range=85:87 lang=go exported=true byte_range=3160:3299
+  sig=[]string
+  doc=MclVerbs is the list of D7 verbs the skill declares it handles\n(from §SKILL.mcl.verbs). Empty when not declared.
+EDGES
+  ^contains=matrix/executor/runtime.LoadedSkill
+
+NODE id=matrix/executor/runtime.LoadedSkill#MdBytes kind=field
+  digest=b3:9781356ee96c1d6e854c78c44d8c6dab77852251319203b3c5181742877378d1 file=executor/runtime/skill_loader.go range=77:79 lang=go exported=true byte_range=2880:2994
+  sig=[]byte
+  doc=MdBytes is the raw bytes of SKILL.md (executor-LLM prompt input).\nnil when MdPath is empty.
+EDGES
+  ^contains=matrix/executor/runtime.LoadedSkill
+
+NODE id=matrix/executor/runtime.LoadedSkill#MdPath kind=field
+  digest=b3:4117f05fc2d366a533d4471225972da57bbd744003f066f4c63cac5c33b8cca8 file=executor/runtime/skill_loader.go range=66:69 lang=go exported=true byte_range=2506:2722
+  sig=string
+  doc=MdPath is the absolute filesystem path of the SKILL.md body. Empty\nif no SKILL.md is present (skills published only via the compiler\nmanifest — research/05 §6 leaves prose body optional).
+EDGES
+  ^contains=matrix/executor/runtime.LoadedSkill
+
+NODE id=matrix/executor/runtime.LoadedSkill#MtxBytes kind=field
+  digest=b3:916064cade2e5d04a433afe77acd5ac702be9dbebf1d27378b0eea25626f3d0b file=executor/runtime/skill_loader.go range=74:75 lang=go exported=true byte_range=2792:2877
+  sig=[]byte
+  doc=MtxBytes is the raw bytes of SKILL.mtx (canonical hashing input).
+EDGES
+  ^contains=matrix/executor/runtime.LoadedSkill
+
+NODE id=matrix/executor/runtime.LoadedSkill#MtxPath kind=field
+  digest=b3:52eb6447c27aa889e061d614145460c9d368e1776c211e03ddb21fc0dca5f57a file=executor/runtime/skill_loader.go range=63:64 lang=go exported=true byte_range=2422:2503
+  sig=string
+  doc=MtxPath is the absolute filesystem path of the SKILL.mtx file.
+EDGES
+  ^contains=matrix/executor/runtime.LoadedSkill
+
+NODE id=matrix/executor/runtime.LoadedSkill#Slug kind=field
+  digest=b3:6f5c9fa3b10d4feabbd4a34bdc81217ae2f5c72c9c954985097c876e96320550 file=executor/runtime/skill_loader.go range=53:54 lang=go exported=true byte_range=2135:2195
+  sig=string
+  doc=Slug is the path component (skills/<slug>/).
+EDGES
+  ^contains=matrix/executor/runtime.LoadedSkill
+
+NODE id=matrix/executor/runtime.LoadedSkill#SubSkillsNone kind=field
+  digest=b3:c52e63fd4664d1fe97f4f2d63637e9407d95583719669df3a20c3441079eea67 file=executor/runtime/skill_loader.go range=119:121 lang=go exported=true byte_range=4515:4636
+  sig=bool
+  doc=SubSkillsNone is true when §SUB_SKILLS = `none`. Mirrors\nToolsNone for the sub_dispatch path.
+EDGES
+  ^contains=matrix/executor/runtime.LoadedSkill
+
+NODE id=matrix/executor/runtime.LoadedSkill#ToolsNone kind=field
+  digest=b3:92a873b88bbfbd092d94b1aa6927ecbbde99d086d76484856e98c6f112caa896 file=executor/runtime/skill_loader.go range=113:117 lang=go exported=true byte_range=4272:4512
+  sig=bool
+  doc=ToolsNone is true when §TOOLS = `none`. Distinguishes\n"explicitly forbidden" from "section parse error" so the\nsynthesizer can emit a stronger negative ("DO NOT EMIT TOOL\nCALLS") instead of a soft empty list.
+EDGES
+  ^contains=matrix/executor/runtime.LoadedSkill
+
+NODE id=matrix/executor/runtime.LoadedSkill#URI kind=field
+  digest=b3:cf9677b66104e7eba13f6235686d9c2908947dabc6299ea4ea5e41877d404a2a file=executor/runtime/skill_loader.go range=49:51 lang=go exported=true byte_range=1978:2132
+  sig=string
+  doc=URI is the canonical matrix://skill/<slug>@<version> form. Matches\nthe input URI byte-for-byte modulo normalization (e.g. lowercasing).
+EDGES
+  ^contains=matrix/executor/runtime.LoadedSkill
+
+NODE id=matrix/executor/runtime.LoadedSkill#Version kind=field
+  digest=b3:2c1b80ad4e884664cf5c31270710d69c21b1d1e5e51680acab86efe869b83a62 file=executor/runtime/skill_loader.go range=56:58 lang=go exported=true byte_range=2198:2336
+  sig=string
+  doc=Version is the §SKILL.version value from the SKILL.mtx file. Verified\nagainst the URI's @version pin at load time.
+EDGES
+  ^contains=matrix/executor/runtime.LoadedSkill
+
+NODE id=matrix/executor/runtime.NewSkillLoader kind=func
+  digest=b3:1b260abf0672775ea9c8d6828a8ceab98503a3ae8dfaab2a13ce51442bc2570f file=executor/runtime/skill_loader.go range=134:140 lang=go exported=true byte_range=4993:5212
+  sig=func NewSkillLoader(repoRoot string) *SkillLoader
+  doc=NewSkillLoader constructs a loader. repoRoot empty → default.
+EDGES
+  ^defines=matrix/executor/runtime/skill_loader.go
+
+NODE id=matrix/executor/runtime.NewSkillReloader kind=func
+  digest=b3:46a4300e5882e3aadc947a61d65422a7b2a1549cf7e9e32ded6b386924a189de file=executor/runtime/skill_reload.go range=89:108 lang=go exported=true byte_range=3361:4007
+  sig=func NewSkillReloader(repoRoot, devFlag string) *SkillReloader
+  doc=NewSkillReloader constructs a reloader for the given skills root. If dev\nhot-reload is NOT enabled (env unset, flag empty/false) it returns a\ndisabled no-op reloader — the production path. The disabled instance never\nconstructs an fsnotify.Watcher.\n\nrepoRoot empty → DefaultSkillRepoRoot (same rule as NewSkillLoader).
+EDGES
+  ^defines=matrix/executor/runtime/skill_reload.go
+
+NODE id=matrix/executor/runtime.NewWalker kind=func
+  digest=b3:8daf76d850c4c5ad70b490f623687cd07d89d20167c03db511b47ed3a67fb4a8 file=executor/runtime/walker.go range=222:263 lang=go exported=true byte_range=8451:9629
+  sig=func NewWalker(p WalkerParams) (*Walker, error)
+  doc=NewWalker constructs a Walker. Returns an error only if a required\ndependency is missing (Registry, or ActorURI when Cortex != nil).
+EDGES
+  ^defines=matrix/executor/runtime/walker.go
+
+NODE id=matrix/executor/runtime.NoopStepHandler kind=type
+  digest=b3:a5c18e425d69c78ae6ba14bc03b609947fbab7d55e020a8980cf548b18e37600 file=executor/runtime/walker.go range=767:769 lang=go exported=true byte_range=26400:26569
+  sig=type NoopStepHandler struct{}
+  doc=NoopStepHandler emits a transcript event and returns success. v1\ndefault per S23Q2 — production callers wire an LLM-backed handler.
+EDGES
+  contains=matrix/executor/runtime.NoopStepHandler.HandleStep
+  implements=matrix/executor/runtime.StepHandler
+  ^defines=matrix/executor/runtime/walker.go
+
+NODE id=matrix/executor/runtime.NoopStepHandler.HandleStep kind=method
+  digest=b3:a91e9a162f51fb1b585da2332867c99b697689fa4eb95ad0c463a46eb07adc58 file=executor/runtime/walker.go range=771:776 lang=go exported=true byte_range=26571:26917
+  sig=func (NoopStepHandler) HandleStep(ctx context.Context, plan *ir.PlanTree, node *ir.PlanNode) (*StepResult, error)
+  doc=HandleStep implements StepHandler.
+EDGES
+  ^contains=matrix/executor/runtime.NoopStepHandler
+  ^defines=matrix/executor/runtime/walker.go
+
+NODE id=matrix/executor/runtime.NotImplementedSubDispatch kind=type
+  digest=b3:acfd26b318d111abe64100497f1cf5738641018cb3d8a20e668840dcc196b454 file=executor/runtime/walker.go range=778:780 lang=go exported=true byte_range=26919:27095
+  sig=type NotImplementedSubDispatch struct{}
+  doc=NotImplementedSubDispatch returns ErrSubDispatchNotImplemented. v1\ndefault per Q6 lock — cross-agent sub-dispatch lands in v1.1.
+EDGES
+  contains=matrix/executor/runtime.NotImplementedSubDispatch.HandleSubDispatch
+  implements=matrix/executor/runtime.SubDispatchHandler
+  ^defines=matrix/executor/runtime/walker.go
+
+NODE id=matrix/executor/runtime.NotImplementedSubDispatch.HandleSubDispatch kind=method
+  digest=b3:42f5df12d08d53f70cd98a9cd3b0e5dfb9c7f2ce4520d3137d5a2d6a821c79b7 file=executor/runtime/walker.go range=782:785 lang=go exported=true byte_range=27097:27334
+  sig=func (NotImplementedSubDispatch) HandleSubDispatch(ctx context.Context, parent *ir.PlanTree, node *ir.PlanNode) (*SubDispatchResult, error)
+  doc=HandleSubDispatch implements SubDispatchHandler.
+EDGES
+  ^contains=matrix/executor/runtime.NotImplementedSubDispatch
+  ^defines=matrix/executor/runtime/walker.go
+
+NODE id=matrix/executor/runtime.ParseSkillURI kind=func
+  digest=b3:8c715fda3a40e36f829532d552e8f062bc2bc38b74316817720b710ed4244f54 file=executor/runtime/skill_loader.go range=269:302 lang=go exported=true byte_range=8904:10156
+  sig=func ParseSkillURI(uri string) (*SkillURI, error)
+  doc=ParseSkillURI validates a matrix://skill/<slug>@<version> URI.\n\nRejects:\n  - missing scheme\n  - any non-skill path\n  - missing @version (S4 hard rule)\n  - empty slug or version\n\nSpec: matrix.kvx URI_SCHEME (line 103) declares matrix://skill/{name};\nthe @version suffix is the S4 pin and is not strictly part of URI_SCHEME\nbut is mandatory at every consumer per research/05 S4 + Q22.
+EDGES
+  ^defines=matrix/executor/runtime/skill_loader.go
+
+NODE id=matrix/executor/runtime.SkillLoader kind=type
+  digest=b3:eba022d1f59a2a99653ce76a556e24f04e884037e595ecf83b5e35b6065aba73 file=executor/runtime/skill_loader.go range=124:132 lang=go exported=true byte_range=4640:4991
+  sig=type SkillLoader struct {\n	// RepoRoot is the absolute filesystem root containing per-skill\n	// directories. Empty → DefaultSkillRepoRoot.\n	RepoRoot string\n}
+  doc=SkillLoader resolves matrix://skill/... URIs against a filesystem repo.\n\nConstruction is cheap; Load is pure (no caching). Embed inside a\ncaching layer if your workload demands it.
+EDGES
+  contains=matrix/executor/runtime.SkillLoader#RepoRoot,matrix/executor/runtime.SkillLoader.Load
+  ^defines=matrix/executor/runtime/skill_loader.go
+
+NODE id=matrix/executor/runtime.SkillLoader#RepoRoot kind=field
+  digest=b3:756a5f241293aec78f9ccd8b7f05c1a7b638afcc778eecb35395f4bd41614808 file=executor/runtime/skill_loader.go range=129:131 lang=go exported=true byte_range=4859:4989
+  sig=string
+  doc=RepoRoot is the absolute filesystem root containing per-skill\ndirectories. Empty → DefaultSkillRepoRoot.
+EDGES
+  ^contains=matrix/executor/runtime.SkillLoader
+
+NODE id=matrix/executor/runtime.SkillLoader.Load kind=method
+  digest=b3:ef8d5e77cb96d73af6fec93ff241e0a9f36826c448030555039b27c6dcb8696c file=executor/runtime/skill_loader.go range=142:227 lang=go exported=true byte_range=5214:7939
+  sig=func (l *SkillLoader) Load(uri string) (*LoadedSkill, error)
+  doc=Load resolves a matrix://skill/<slug>@<version> URI to a LoadedSkill.\n\nSteps:\n\n 1. Parse the URI (S23Q5 + Q22: version pin REQUIRED).\n 2. Read <RepoRoot>/<slug>/SKILL.mtx + (optional) SKILL.md.\n 3. Lex + parse the SKILL.mtx (MCL/mtx/parser.Parse).\n 4. Run ValidateSkill against all 10 rules (MCL/mtx/validator.ValidateSkill).\n 5. Extract §SKILL.id and §SKILL.version; verify they match the URI.\n 6. Compute the canonical AST hash (canonical.Hash).\n\nEach step that fails returns a wrapped error naming the URI + step.
+EDGES
+  ^contains=matrix/executor/runtime.SkillLoader
+  ^defines=matrix/executor/runtime/skill_loader.go
+
+NODE id=matrix/executor/runtime.SkillReloader kind=type
+  digest=b3:9eb0341f9c03a93fe166741b07bc2a025dce34f221beed19536c007bacd4ceb1 file=executor/runtime/skill_reload.go range=42:66 lang=go exported=true byte_range=1725:2675
+  sig=type SkillReloader struct {\n	loader	*SkillLoader\n	root	string\n\n	enabled	bool\n\n	mu	sync.RWMutex\n	live	map[string]*LoadedSkill	// uri -> parsed skill\n	done	chan struct{}		// closed when the watcher loop should stop\n	started	bool\n	closed	bool\n\n	// errs captures the most recent re-parse error so tests / ops can\n	// inspect why an edit was rejected rather than silently dropped. It is\n	// only ever set inside the watcher loop; reads are racy by design (a\n	// best-effort signal, not a contract).\n	errs	[]string\n}
+  doc=SkillReloader is the dev hot-reload surface. It wraps a SkillLoader with a\nlive, mutex-guarded registry of parsed skills that is refreshed by an\nfsnotify watcher when a SKILL.mtx changes on disk.\n\nA DISABLED reloader (the production default) has enabled=false, no watcher,\nand inert Start/Close/Lookup. This structurally enforces the "off by\ndefault" + "prod stays read-only" acceptance criteria.
+EDGES
+  contains=matrix/executor/runtime.SkillReloader#closed,matrix/executor/runtime.SkillReloader#done,matrix/executor/runtime.SkillReloader#enabled,matrix/executor/runtime.SkillReloader#errs,matrix/executor/runtime.SkillReloader#live,matrix/executor/runtime.SkillReloader#loader,matrix/executor/runtime.SkillReloader#mu,matrix/executor/runtime.SkillReloader#root,matrix/executor/runtime.SkillReloader#started,matrix/executor/runtime.SkillReloader.Close,matrix/executor/runtime.SkillReloader.Enabled,matrix/executor/runtime.SkillReloader.LatestErrors,matrix/executor/runtime.SkillReloader.Lookup,matrix/executor/runtime.SkillReloader.Start,matrix/executor/runtime.SkillReloader.appendErr,matrix/executor/runtime.SkillReloader.dropSlug,matrix/executor/runtime.SkillReloader.initialScan,matrix/executor/runtime.SkillReloader.isSkillMtx,matrix/executor/runtime.SkillReloader.loop,matrix/executor/runtime.SkillReloader.parseAndLoad,matrix/executor/runtime.SkillReloader.reparseSlug
+  ^defines=matrix/executor/runtime/skill_reload.go
+
+NODE id=matrix/executor/runtime.SkillReloader#closed kind=field
+  digest=b3:ce0f3ad8fa30ff6f370e60a65db53c79522cfeae7af1211d5e4bd01553818b44 file=executor/runtime/skill_reload.go range=59:59 lang=go exported=false byte_range=2392:2404
+  sig=bool
+EDGES
+  ^contains=matrix/executor/runtime.SkillReloader
+
+NODE id=matrix/executor/runtime.SkillReloader#done kind=field
+  digest=b3:9bc2868729b4dd64169c1c7f20d31a4cbbbec1296cbb3af57c10fe29d914d986 file=executor/runtime/skill_reload.go range=57:57 lang=go exported=false byte_range=2301:2322
+  sig=chan struct{}
+EDGES
+  ^contains=matrix/executor/runtime.SkillReloader
+
+NODE id=matrix/executor/runtime.SkillReloader#enabled kind=field
+  digest=b3:8273481e6768bdb1408842797a0eb6e67e61e50b214630547320c75cbaacb838 file=executor/runtime/skill_reload.go range=53:53 lang=go exported=false byte_range=2208:2220
+  sig=bool
+EDGES
+  ^contains=matrix/executor/runtime.SkillReloader
+
+NODE id=matrix/executor/runtime.SkillReloader#errs kind=field
+  digest=b3:fb48ae82617b87b59a9fb5a80ec89aee6603ae2eaa28a1330c2582274467a8e8 file=executor/runtime/skill_reload.go range=61:65 lang=go exported=false byte_range=2407:2673
+  sig=[]string
+  doc=errs captures the most recent re-parse error so tests / ops can\ninspect why an edit was rejected rather than silently dropped. It is\nonly ever set inside the watcher loop; reads are racy by design (a\nbest-effort signal, not a contract).
+EDGES
+  ^contains=matrix/executor/runtime.SkillReloader
+
+NODE id=matrix/executor/runtime.SkillReloader#live kind=field
+  digest=b3:b893fc8b2aeb9355eb0289f01eca85a4dd30e9e6fa1b99f54eccd7751f5c63e2 file=executor/runtime/skill_reload.go range=56:56 lang=go exported=false byte_range=2245:2276
+  sig=map[string]*runtime.LoadedSkill
+EDGES
+  ^contains=matrix/executor/runtime.SkillReloader
+
+NODE id=matrix/executor/runtime.SkillReloader#loader kind=field
+  digest=b3:482d6bf2f5f600e09de7b0f726cecb04570387610e6eef24e159fb10fe2ebd59 file=executor/runtime/skill_reload.go range=50:50 lang=go exported=false byte_range=2171:2190
+  sig=*runtime.SkillLoader
+EDGES
+  ^contains=matrix/executor/runtime.SkillReloader
+
+NODE id=matrix/executor/runtime.SkillReloader#mu kind=field
+  digest=b3:2b3aca656be86b1364299bc663a42eca650fb3e1973f2cc43d61a600dafbe706 file=executor/runtime/skill_reload.go range=55:55 lang=go exported=false byte_range=2223:2243
+  sig=sync.RWMutex
+EDGES
+  ^contains=matrix/executor/runtime.SkillReloader
+
+NODE id=matrix/executor/runtime.SkillReloader#root kind=field
+  digest=b3:4b0d7841a5edaf93f66befd999b53fac9651063709ea8894dac30144e015c9aa file=executor/runtime/skill_reload.go range=51:51 lang=go exported=false byte_range=2192:2205
+  sig=string
+EDGES
+  ^contains=matrix/executor/runtime.SkillReloader
+
+NODE id=matrix/executor/runtime.SkillReloader#started kind=field
+  digest=b3:568e886e00190b2e975eb3ed9a44bc819f35c474ca5403b1760c5d9fa88117d1 file=executor/runtime/skill_reload.go range=58:58 lang=go exported=false byte_range=2378:2390
+  sig=bool
+EDGES
+  ^contains=matrix/executor/runtime.SkillReloader
+
+NODE id=matrix/executor/runtime.SkillReloader.Close kind=method
+  digest=b3:a2f83367ac154f054f30e7f2c686edfcbb542917cc68610f6b688ecfb21e6492 file=executor/runtime/skill_reload.go range=169:184 lang=go exported=true byte_range=6147:6485
+  sig=func (r *SkillReloader) Close() error
+  doc=Close stops the watcher goroutine. Safe to call multiple times; a no-op on a\ndisabled or never-started reloader.
+EDGES
+  ^contains=matrix/executor/runtime.SkillReloader
+  ^defines=matrix/executor/runtime/skill_reload.go
+
+NODE id=matrix/executor/runtime.SkillReloader.Enabled kind=method
+  digest=b3:950e89a8db0aba62ed9b5f3b64aa8de45a733c975f01c65b2d468e74b7959ca6 file=executor/runtime/skill_reload.go range=110:112 lang=go exported=true byte_range=4009:4197
+  sig=func (r *SkillReloader) Enabled() bool
+  doc=Enabled reports whether this reloader is on the dev hot-reload path. False\non the production path (env unset).
+EDGES
+  ^contains=matrix/executor/runtime.SkillReloader
+  ^defines=matrix/executor/runtime/skill_reload.go
+
+NODE id=matrix/executor/runtime.SkillReloader.LatestErrors kind=method
+  digest=b3:5517531fe57f82651662c4eba79944566cf7b6e1313160aeda2015cd2e82ab0c file=executor/runtime/skill_reload.go range=199:210 lang=go exported=true byte_range=6875:7203
+  sig=func (r *SkillReloader) LatestErrors() []string
+  doc=LatestErrors returns a snapshot of the most recent re-parse errors (invalid\nedits). Best-effort; primarily for tests and ops dashboards.
+EDGES
+  ^contains=matrix/executor/runtime.SkillReloader
+  ^defines=matrix/executor/runtime/skill_reload.go
+
+NODE id=matrix/executor/runtime.SkillReloader.Lookup kind=method
+  digest=b3:baee5f569358d05080971e339825b9bb77d8f0405771bb145583798faadeb47c file=executor/runtime/skill_reload.go range=186:197 lang=go exported=true byte_range=6487:6873
+  sig=func (r *SkillReloader) Lookup(uri string) (*LoadedSkill, bool)
+  doc=Lookup returns the live-parsed skill for a matrix://skill/<slug>@<version>\nURI, or (nil,false) if it is not in the live registry. On a disabled\nreloader it always returns (nil,false).
+EDGES
+  ^contains=matrix/executor/runtime.SkillReloader
+  ^defines=matrix/executor/runtime/skill_reload.go
+
+NODE id=matrix/executor/runtime.SkillReloader.Start kind=method
+  digest=b3:cb5ef17880242e3cdfbd6c6845d132b2cf97a9aa9f64bc423b7aa2f535805c29 file=executor/runtime/skill_reload.go range=114:167 lang=go exported=true byte_range=4199:6145
+  sig=func (r *SkillReloader) Start() error
+  doc=Start begins watching the skills root for SKILL.mtx changes. On a disabled\nreloader it is a safe no-op (returns nil) — the production path.\n\nOn an enabled reloader it performs an initial full scan of the corpus\n(so the live registry is populated immediately, not only on the first\nedit), then starts an fsnotify watcher goroutine that re-parses changed\nSKILL.mtx files. Invalid edits are logged into r.errs and dropped; they\nnever crash the goroutine.
+EDGES
+  ^contains=matrix/executor/runtime.SkillReloader
+  ^defines=matrix/executor/runtime/skill_reload.go
+
+NODE id=matrix/executor/runtime.SkillReloader.appendErr kind=method
+  digest=b3:7fbc5af95169ad912ce016a6bde70f19460924be0dd27417036fe08f664a6703 file=executor/runtime/skill_reload.go range=326:335 lang=go exported=false byte_range=10631:10917
+  sig=func (r *SkillReloader) appendErr(msg string)
+  doc=appendErr records a re-parse/watcher error. Capped to avoid unbounded growth\non a pathological edit loop.
+EDGES
+  ^contains=matrix/executor/runtime.SkillReloader
+  ^defines=matrix/executor/runtime/skill_reload.go
+
+NODE id=matrix/executor/runtime.SkillReloader.dropSlug kind=method
+  digest=b3:15f4443b2541fceaebd1677191bfabbd9608b40ad6412a0b5f7c71428686937f file=executor/runtime/skill_reload.go range=315:324 lang=go exported=false byte_range=10353:10629
+  sig=func (r *SkillReloader) dropSlug(slug string)
+  doc=dropSlug removes any live entry whose URI slug matches the given slug.
+EDGES
+  ^contains=matrix/executor/runtime.SkillReloader
+  ^defines=matrix/executor/runtime/skill_reload.go
+
+NODE id=matrix/executor/runtime.SkillReloader.initialScan kind=method
+  digest=b3:6dcf309687e0f9188960f6bb772a3f17ce1b822c3c9d562149d1c2143928e9c1 file=executor/runtime/skill_reload.go range=214:232 lang=go exported=false byte_range=7228:7802
+  sig=func (r *SkillReloader) initialScan()
+  doc=initialScan parses every SKILL.mtx currently under the root into the live\nregistry. Invalid skills are skipped (with an error recorded). This makes\nthe live registry warm right after Start, mirroring what the daemon's\nskillCatalog.ensureLoaded does on first hit.
+EDGES
+  ^contains=matrix/executor/runtime.SkillReloader
+  ^defines=matrix/executor/runtime/skill_reload.go
+
+NODE id=matrix/executor/runtime.SkillReloader.isSkillMtx kind=method
+  digest=b3:3ebfab9b8029ae9a5dccbb21ca2120b77c615df129165b6cf6641f97359bb410 file=executor/runtime/skill_reload.go range=337:340 lang=go exported=false byte_range=10919:11091
+  sig=func (r *SkillReloader) isSkillMtx(p string) bool
+  doc=isSkillMtx reports whether a watched event path points at a SKILL.mtx file.
+EDGES
+  ^contains=matrix/executor/runtime.SkillReloader
+  ^defines=matrix/executor/runtime/skill_reload.go
+
+NODE id=matrix/executor/runtime.SkillReloader.loop kind=method
+  digest=b3:866b461ebc9bb31bc2f37ae1d7f978928866dd06c76b165caedf092075720feb file=executor/runtime/skill_reload.go range=234:262 lang=go exported=false byte_range=7804:8609
+  sig=func (r *SkillReloader) loop(w *fsnotify.Watcher)
+  doc=loop is the watcher goroutine. It drains fsnotify events + errors until\nClose is called. Invalid re-parses are recorded and dropped; the loop\nnever exits due to a parse failure (acceptance: invalid edits never crash).
+EDGES
+  ^contains=matrix/executor/runtime.SkillReloader
+  ^defines=matrix/executor/runtime/skill_reload.go
+
+NODE id=matrix/executor/runtime.SkillReloader.parseAndLoad kind=method
+  digest=b3:2a901f6413a37b024c7ba0370858ca56219faf16a5339b248ba0eea94e4052f9 file=executor/runtime/skill_reload.go range=294:313 lang=go exported=false byte_range=9647:10351
+  sig=func (r *SkillReloader) parseAndLoad(slug, mtxPath string) (*LoadedSkill, error)
+  doc=parseAndLoad discovers the §SKILL.version from the file bytes and then uses\nthe stateless SkillLoader to produce a fully-validated LoadedSkill. This\nkeeps the dev hot-reload path reusing the EXACT same parse+validate pipeline\nas the production read path (no parallel validator that could drift).
+EDGES
+  ^contains=matrix/executor/runtime.SkillReloader
+  ^defines=matrix/executor/runtime/skill_reload.go
+
+NODE id=matrix/executor/runtime.SkillReloader.reparseSlug kind=method
+  digest=b3:4289d54f88727d8070b5962d53c160813813dc8cfefff48418ef6da7a239f356 file=executor/runtime/skill_reload.go range=264:292 lang=go exported=false byte_range=8611:9645
+  sig=func (r *SkillReloader) reparseSlug(slug string)
+  doc=reparseSlug re-parses <root>/<slug>/SKILL.mtx into the live registry. If the\nfile is missing, the live entry for that slug is dropped. If parsing or\nvalidation fails, the entry is dropped (NOT cached-broken) and the error is\nrecorded — the watcher goroutine keeps running.
+EDGES
+  ^contains=matrix/executor/runtime.SkillReloader
+  ^defines=matrix/executor/runtime/skill_reload.go
+
+NODE id=matrix/executor/runtime.SkillURI kind=type
+  digest=b3:3e1cfe2109c95d62b00b23865812625b4a70b1dc4cda88ba86f3095f9d34c1e6 file=executor/runtime/skill_loader.go range=263:267 lang=go exported=true byte_range=8775:8902
+  sig=type SkillURI struct {\n	Slug	string\n	Version	string\n}
+  doc=SkillURI carries the parsed components of a matrix://skill/... URI.
+EDGES
+  contains=matrix/executor/runtime.SkillURI#Slug,matrix/executor/runtime.SkillURI#Version
+  ^defines=matrix/executor/runtime/skill_loader.go
+
+NODE id=matrix/executor/runtime.SkillURI#Slug kind=field
+  digest=b3:84281cf85ea0c976913870bd87efdbe28b9cc6e8a5aec40b69f9ecc59a66c345 file=executor/runtime/skill_loader.go range=265:265 lang=go exported=true byte_range=8870:8884
+  sig=string
+EDGES
+  ^contains=matrix/executor/runtime.SkillURI
+
+NODE id=matrix/executor/runtime.SkillURI#Version kind=field
+  digest=b3:291e4ed38d5ae49fadf812c8619b8b735636320e4047d9b8596bf6221d43fb4e file=executor/runtime/skill_loader.go range=266:266 lang=go exported=true byte_range=8886:8900
+  sig=string
+EDGES
+  ^contains=matrix/executor/runtime.SkillURI
+
+NODE id=matrix/executor/runtime.StepHandler kind=interface
+  digest=b3:88863b55740f03ad251f9a4f596228637b64ae0eee0bae78e3b0b01928e28d64 file=executor/runtime/walker.go range=64:72 lang=go exported=true byte_range=2447:2929
+  sig=type StepHandler interface {\n	HandleStep(ctx context.Context, plan *ir.PlanTree, node *ir.PlanNode) (*StepResult, error)\n}
+  doc=StepHandler is invoked for NodeStep nodes. Production callers wire\nthis to the executor LLM (DefaultExecutorModel per Q13). The v1\ndefault is NoopStepHandler which logs the kind-coverage and returns\nsuccess without invoking any model. Spec: research/06-agents.md §5.2\n(plan tree generation lives inside skills which run under the\nexecutor).
+EDGES
+  ^implements=matrix/executor/cmd/mcl-execute.llmStepHandler,matrix/executor/runtime.NoopStepHandler
+  ^defines=matrix/executor/runtime/walker.go
+
+NODE id=matrix/executor/runtime.StepResult kind=type
+  digest=b3:42d1e98e94c4790bf7c2fb13c50e5e2a778ce19505f0eac2bc5295fefcf2210d file=executor/runtime/walker.go range=74:82 lang=go exported=true byte_range=2931:3258
+  sig=type StepResult struct {\n	// Outputs maps expected-output slot name to produced value.\n	Outputs	map[string]string\n	// Text is the raw LLM output text for journaling.\n	Text	string\n	// LatencyMs is the wall-clock of the underlying model call.\n	LatencyMs	int64\n}
+  doc=StepResult carries the LLM response that a StepHandler produced.
+EDGES
+  contains=matrix/executor/runtime.StepResult#LatencyMs,matrix/executor/runtime.StepResult#Outputs,matrix/executor/runtime.StepResult#Text
+  ^defines=matrix/executor/runtime/walker.go
+
+NODE id=matrix/executor/runtime.StepResult#LatencyMs kind=field
+  digest=b3:1c5a9cf8f56ccb8b9b09ccadaa172eedf211e533663d5ab948dcdb7bcca0f00b file=executor/runtime/walker.go range=80:81 lang=go exported=true byte_range=3179:3256
+  sig=int64
+  doc=LatencyMs is the wall-clock of the underlying model call.
+EDGES
+  ^contains=matrix/executor/runtime.StepResult
+
+NODE id=matrix/executor/runtime.StepResult#Outputs kind=field
+  digest=b3:cb5a87e3ef97f32242da4d7be40f15a4bacd8c36d959495312792e1cc543b420 file=executor/runtime/walker.go range=76:77 lang=go exported=true byte_range=3025:3112
+  sig=map[string]string
+  doc=Outputs maps expected-output slot name to produced value.
+EDGES
+  ^contains=matrix/executor/runtime.StepResult
+
+NODE id=matrix/executor/runtime.StepResult#Text kind=field
+  digest=b3:5cbbd5f35c8e545b9580238e25f318bd44fae836865ae2fc4948d62401639609 file=executor/runtime/walker.go range=78:79 lang=go exported=true byte_range=3114:3177
+  sig=string
+  doc=Text is the raw LLM output text for journaling.
+EDGES
+  ^contains=matrix/executor/runtime.StepResult
+
+NODE id=matrix/executor/runtime.SubDispatchHandler kind=interface
+  digest=b3:3996525a6c4536782d23f93327672c729746febada4695ce139542a4e33344b2 file=executor/runtime/walker.go range=84:91 lang=go exported=true byte_range=3260:3757
+  sig=type SubDispatchHandler interface {\n	HandleSubDispatch(ctx context.Context, parent *ir.PlanTree, node *ir.PlanNode) (*SubDispatchResult, error)\n}
+  doc=SubDispatchHandler is invoked for NodeSubDispatch nodes. Default\nbehavior returns ErrSubDispatchNotImplemented because Q6 explicitly\ndefers cross-agent sub-dispatch to v1.1 (matrix.kvx executor_locked_design Q6).\nIn-process recursion under the same agent is a hook point — callers\ncan wire a sub-walker by implementing this interface.
+EDGES
+  ^implements=matrix/executor/cmd/mcl-execute.inProcessSubDispatch,matrix/executor/runtime.NotImplementedSubDispatch
+  ^defines=matrix/executor/runtime/walker.go
+
+NODE id=matrix/executor/runtime.SubDispatchResult kind=type
+  digest=b3:f3ff1f01f35a5ed9f206515b59f62d1c118bba60e738f3825ca32cca66f519a0 file=executor/runtime/walker.go range=93:101 lang=go exported=true byte_range=3759:4124
+  sig=type SubDispatchResult struct {\n	// SubIntentID is the ULID of the dispatched child intent.\n	SubIntentID	string\n	// Outcome mirrors envelope.IntentAttestBody.Outcome (success|failure|partial).\n	Outcome	string\n	// CitedURIs are matrix://cortex/... URIs the sub-intent depended on.\n	CitedURIs	[]string\n}
+  doc=SubDispatchResult carries the sub-intent's terminal outcome.
+EDGES
+  contains=matrix/executor/runtime.SubDispatchResult#CitedURIs,matrix/executor/runtime.SubDispatchResult#Outcome,matrix/executor/runtime.SubDispatchResult#SubIntentID
+  ^defines=matrix/executor/runtime/walker.go
+
+NODE id=matrix/executor/runtime.SubDispatchResult#CitedURIs kind=field
+  digest=b3:36ee0c479fc76e18c5d4057aa3efc6b949250301f9fdbc6df85511038b55c57c file=executor/runtime/walker.go range=99:100 lang=go exported=true byte_range=4033:4122
+  sig=[]string
+  doc=CitedURIs are matrix://cortex/... URIs the sub-intent depended on.
+EDGES
+  ^contains=matrix/executor/runtime.SubDispatchResult
+
+NODE id=matrix/executor/runtime.SubDispatchResult#Outcome kind=field
+  digest=b3:78e0b834f7032da5878de80bb9669f8117dddfe16b1fd705f643923f2172a523 file=executor/runtime/walker.go range=97:98 lang=go exported=true byte_range=3936:4031
+  sig=string
+  doc=Outcome mirrors envelope.IntentAttestBody.Outcome (success|failure|partial).
+EDGES
+  ^contains=matrix/executor/runtime.SubDispatchResult
+
+NODE id=matrix/executor/runtime.SubDispatchResult#SubIntentID kind=field
+  digest=b3:7303c37871505edaeae3f56b1359ee9db7b1938c97fb8a574f24b7bbdae89c47 file=executor/runtime/walker.go range=95:96 lang=go exported=true byte_range=3856:3934
+  sig=string
+  doc=SubIntentID is the ULID of the dispatched child intent.
+EDGES
+  ^contains=matrix/executor/runtime.SubDispatchResult
+
+NODE id=matrix/executor/runtime.WalkResult kind=type
+  digest=b3:bd7b82f8cbc8d507a0d2335742061968e60866d0af00906300fb1b73c9bfa215 file=executor/runtime/walker.go range=265:302 lang=go exported=true byte_range=9631:11111
+  sig=type WalkResult struct {\n	// NodeIDs is the ordered list of ToolCall node IDs dispatched\n	// (includes both successes and failures).\n	NodeIDs	[]string\n\n	// EventURIs is the parallel list of cortex Event memory URIs written\n	// per ToolCall. Empty when Cortex is nil.\n	EventURIs	[]memory.URI\n\n	// ToolDurations maps node ID → tool call latency in milliseconds.\n	ToolDurations	map[string]int64\n\n	// Errors maps node ID → transport/registry error message (when the\n	// Go-level err was non-nil). Distinct from IsErrors.\n	Errors	map[string]string\n\n	// IsErrors maps node ID → whether the tool reported IsError=true\n	// in-band. Q14 lock: in-band failures are NOT Go errors.\n	IsErrors	map[string]bool\n\n	// StepResults maps node ID → StepResult for NodeStep dispatches.\n	StepResults	map[string]*StepResult\n\n	// GateDecisions maps node ID → GateDecision for NodeGate dispatches.\n	GateDecisions	map[string]*GateDecision\n\n	// SubResults maps node ID → SubDispatchResult for NodeSubDispatch.\n	SubResults	map[string]*SubDispatchResult\n\n	// Corrections records every intent.correct envelope handled during\n	// the walk (Q11 live materiality). Append-only in arrival order.\n	Corrections	[]CorrectionOutcome\n}
+  doc=WalkResult collects per-node outcomes of a plan walk so the caller's\nattest stage can cite the resulting Event memories.\n\nField semantics mirror cmd/mcl-e2e/walk.go:20 so harness code can\nmigrate to the production walker without touching its assertion layer.
+EDGES
+  contains=matrix/executor/runtime.WalkResult#Corrections,matrix/executor/runtime.WalkResult#Errors,matrix/executor/runtime.WalkResult#EventURIs,matrix/executor/runtime.WalkResult#GateDecisions,matrix/executor/runtime.WalkResult#IsErrors,matrix/executor/runtime.WalkResult#NodeIDs,matrix/executor/runtime.WalkResult#StepResults,matrix/executor/runtime.WalkResult#SubResults,matrix/executor/runtime.WalkResult#ToolDurations
+  ^defines=matrix/executor/runtime/walker.go
+
+NODE id=matrix/executor/runtime.WalkResult#Corrections kind=field
+  digest=b3:9fbfe4a4872f95056d85dfa34503ab2b1cca56e57035aff41c293037675d29eb file=executor/runtime/walker.go range=299:301 lang=go exported=true byte_range=10942:11109
+  sig=[]runtime.CorrectionOutcome
+  doc=Corrections records every intent.correct envelope handled during\nthe walk (Q11 live materiality). Append-only in arrival order.
+EDGES
+  ^contains=matrix/executor/runtime.WalkResult
+
+NODE id=matrix/executor/runtime.WalkResult#Errors kind=field
+  digest=b3:1437db90e73c7f395002d2682478b99bcbbf4b2f804aad111f113f32b9fde584 file=executor/runtime/walker.go range=282:284 lang=go exported=true byte_range=10300:10450
+  sig=map[string]string
+  doc=Errors maps node ID → transport/registry error message (when the\nGo-level err was non-nil). Distinct from IsErrors.
+EDGES
+  ^contains=matrix/executor/runtime.WalkResult
+
+NODE id=matrix/executor/runtime.WalkResult#EventURIs kind=field
+  digest=b3:eaf7c6a86cf1f12164e2a20abd2bf9e8e237eadbc918709e48d34ad61b08927f file=executor/runtime/walker.go range=275:277 lang=go exported=true byte_range=10057:10194
+  sig=[]memory.URI
+  doc=EventURIs is the parallel list of cortex Event memory URIs written\nper ToolCall. Empty when Cortex is nil.
+EDGES
+  ^contains=matrix/executor/runtime.WalkResult
+
+NODE id=matrix/executor/runtime.WalkResult#GateDecisions kind=field
+  digest=b3:2cc27a59be3fc4fd9ab2c65cb90fa6c397ba069f3cb23b3e8cf623c576af841a file=executor/runtime/walker.go range=293:294 lang=go exported=true byte_range=10714:10825
+  sig=map[string]*runtime.GateDecision
+  doc=GateDecisions maps node ID → GateDecision for NodeGate dispatches.
+EDGES
+  ^contains=matrix/executor/runtime.WalkResult
+
+NODE id=matrix/executor/runtime.WalkResult#IsErrors kind=field
+  digest=b3:fde1f078e4718faade216c5c2104fef9c89d225b16fc50f74d2e0951259f1898 file=executor/runtime/walker.go range=286:288 lang=go exported=true byte_range=10453:10605
+  sig=map[string]bool
+  doc=IsErrors maps node ID → whether the tool reported IsError=true\nin-band. Q14 lock: in-band failures are NOT Go errors.
+EDGES
+  ^contains=matrix/executor/runtime.WalkResult
+
+NODE id=matrix/executor/runtime.WalkResult#NodeIDs kind=field
+  digest=b3:16f8e3cc1a655c1c8986c8cdfeeb678c3de6afeb82cbe5a03dd72eb8cb55a62b file=executor/runtime/walker.go range=271:273 lang=go exported=true byte_range=9930:10054
+  sig=[]string
+  doc=NodeIDs is the ordered list of ToolCall node IDs dispatched\n(includes both successes and failures).
+EDGES
+  ^contains=matrix/executor/runtime.WalkResult
+
+NODE id=matrix/executor/runtime.WalkResult#StepResults kind=field
+  digest=b3:aeecddbd7c7caf46bf555985dedc1ce6c450f15ac2c7f1f2471846c3ad21c8de file=executor/runtime/walker.go range=290:291 lang=go exported=true byte_range=10608:10711
+  sig=map[string]*runtime.StepResult
+  doc=StepResults maps node ID → StepResult for NodeStep dispatches.
+EDGES
+  ^contains=matrix/executor/runtime.WalkResult
+
+NODE id=matrix/executor/runtime.WalkResult#SubResults kind=field
+  digest=b3:d2fe3ccd81b8bec83fc9891b3105568de4b66ef37ef53b437e5d92ebe40fa07f file=executor/runtime/walker.go range=296:297 lang=go exported=true byte_range=10828:10939
+  sig=map[string]*runtime.SubDispatchResult
+  doc=SubResults maps node ID → SubDispatchResult for NodeSubDispatch.
+EDGES
+  ^contains=matrix/executor/runtime.WalkResult
+
+NODE id=matrix/executor/runtime.WalkResult#ToolDurations kind=field
+  digest=b3:2b652ca6c5620f603ee90ce6c72c9d4e23d328f4b3f8bffd98d5183131ae98ae file=executor/runtime/walker.go range=279:280 lang=go exported=true byte_range=10197:10297
+  sig=map[string]int64
+  doc=ToolDurations maps node ID → tool call latency in milliseconds.
+EDGES
+  ^contains=matrix/executor/runtime.WalkResult
+
+NODE id=matrix/executor/runtime.Walker kind=type
+  digest=b3:315e2543f37bf4af673e905205599c35216f0f9878cd1515b53e2c84deac1c80 file=executor/runtime/walker.go range=119:146 lang=go exported=true byte_range=4738:5673
+  sig=type Walker struct {\n	registry	*tool.Registry\n	cortex		*cortex.Cortex\n	envelope	EnvelopeSink\n	events		EventSink\n\n	step	StepHandler\n	sub	SubDispatchHandler\n	gate	GateHandler\n\n	// correctionInbox + onCorrection drive Q11 live materiality.\n	correctionInbox	<-chan Correction\n	onCorrection	CorrectionHandler\n\n	// actorURI is stamped onto every Event memory written by the walker.\n	// Cortex requires CreatedBy on every Write meta (cortex/cortex.go:138).\n	actorURI	string\n\n	// clock is overridable for tests.\n	clock	func() time.Time\n}
+  doc=Walker walks a PlanTree depth-first, dispatching ToolCall nodes through\na tool.Registry and threading the lifecycle plus cortex journaling\nthrough the supplied sinks.\n\nThread-safety: a single Walker may be Run() concurrently for multiple\nplans only if every dependency it holds is itself thread-safe. The\nstdlib path (cortex.Cortex, tool.Registry, EnvelopeStream) IS thread-safe.
+EDGES
+  contains=matrix/executor/runtime.Walker#actorURI,matrix/executor/runtime.Walker#clock,matrix/executor/runtime.Walker#correctionInbox,matrix/executor/runtime.Walker#cortex,matrix/executor/runtime.Walker#envelope,matrix/executor/runtime.Walker#events,matrix/executor/runtime.Walker#gate,matrix/executor/runtime.Walker#onCorrection,matrix/executor/runtime.Walker#registry,matrix/executor/runtime.Walker#step,matrix/executor/runtime.Walker#sub,matrix/executor/runtime.Walker.Run,matrix/executor/runtime.Walker.execGate,matrix/executor/runtime.Walker.execStep,matrix/executor/runtime.Walker.execSubDispatch,matrix/executor/runtime.Walker.execToolCall,matrix/executor/runtime.Walker.pollCorrections,matrix/executor/runtime.Walker.signStep,matrix/executor/runtime.Walker.walkNode,matrix/executor/runtime.Walker.walkNodeWithLock,matrix/executor/runtime.Walker.writeEventMemory
+  ^defines=matrix/executor/runtime/walker.go
+
+NODE id=matrix/executor/runtime.Walker#actorURI kind=field
+  digest=b3:5c2989287c8758c18bbe34ffae1db6ad8c6517d86beeb109880c6571702e8fa3 file=executor/runtime/walker.go range=140:142 lang=go exported=false byte_range=5450:5610
+  sig=string
+  doc=actorURI is stamped onto every Event memory written by the walker.\nCortex requires CreatedBy on every Write meta (cortex/cortex.go:138).
+EDGES
+  ^contains=matrix/executor/runtime.Walker
+
+NODE id=matrix/executor/runtime.Walker#clock kind=field
+  digest=b3:1cd501c4a34f276d6120be3535d0700e39ed37342dae4b52455bccfa37981ff9 file=executor/runtime/walker.go range=144:145 lang=go exported=false byte_range=5613:5671
+  sig=func() time.Time
+  doc=clock is overridable for tests.
+EDGES
+  ^contains=matrix/executor/runtime.Walker
+
+NODE id=matrix/executor/runtime.Walker#correctionInbox kind=field
+  digest=b3:7f3cafaedcc9ad4301cd87d274acca6cc7eefe5107b1ebceb086a70abd407ebc file=executor/runtime/walker.go range=136:137 lang=go exported=false byte_range=5316:5412
+  sig=<-chan runtime.Correction
+  doc=correctionInbox + onCorrection drive Q11 live materiality.
+EDGES
+  ^contains=matrix/executor/runtime.Walker
+
+NODE id=matrix/executor/runtime.Walker#cortex kind=field
+  digest=b3:72b73dd4977259c69d7d1d0ea44a860c4cad3469db1af2e3d331c5674dc22675 file=executor/runtime/walker.go range=128:128 lang=go exported=false byte_range=5185:5208
+  sig=*cortex.Cortex
+EDGES
+  ^contains=matrix/executor/runtime.Walker
+
+NODE id=matrix/executor/runtime.Walker#envelope kind=field
+  digest=b3:1347dc8a87d5a3eca89dd4b2965720db16bbba5bb2556267bd3d6eb7a2ad37be file=executor/runtime/walker.go range=129:129 lang=go exported=false byte_range=5210:5231
+  sig=runtime.EnvelopeSink
+EDGES
+  ^contains=matrix/executor/runtime.Walker
+
+NODE id=matrix/executor/runtime.Walker#events kind=field
+  digest=b3:63feebee7eb030d664a0c8f1d4d93867a394fbebc029214e046b6559d537a42d file=executor/runtime/walker.go range=130:130 lang=go exported=false byte_range=5233:5251
+  sig=runtime.EventSink
+EDGES
+  ^contains=matrix/executor/runtime.Walker
+
+NODE id=matrix/executor/runtime.Walker#gate kind=field
+  digest=b3:d77f3f5c0a84960308723f558ee05a29a372548edfc4c7aadcfb4198f4a18c7e file=executor/runtime/walker.go range=134:134 lang=go exported=false byte_range=5297:5313
+  sig=runtime.GateHandler
+EDGES
+  ^contains=matrix/executor/runtime.Walker
+
+NODE id=matrix/executor/runtime.Walker#onCorrection kind=field
+  digest=b3:2fc8b540c420ecd7149b33f79c0398a726149b91d49338f4527ba4ed4884a831 file=executor/runtime/walker.go range=138:138 lang=go exported=false byte_range=5414:5447
+  sig=runtime.CorrectionHandler
+EDGES
+  ^contains=matrix/executor/runtime.Walker
+
+NODE id=matrix/executor/runtime.Walker#registry kind=field
+  digest=b3:a071ffdf03638a92b7fd82b1050e20b46f15c70df2191c541c433c0f6dc35352 file=executor/runtime/walker.go range=127:127 lang=go exported=false byte_range=5160:5183
+  sig=*tool.Registry
+EDGES
+  ^contains=matrix/executor/runtime.Walker
+
+NODE id=matrix/executor/runtime.Walker#step kind=field
+  digest=b3:2272945c118c38b360564c1418330e55589e6069c7af60ac811fe6bbc5ce345b file=executor/runtime/walker.go range=132:132 lang=go exported=false byte_range=5254:5270
+  sig=runtime.StepHandler
+EDGES
+  ^contains=matrix/executor/runtime.Walker
+
+NODE id=matrix/executor/runtime.Walker#sub kind=field
+  digest=b3:d57725d2ed309dd4fb49725902e9621f591d6880b45a87d22b4c207fad12a809 file=executor/runtime/walker.go range=133:133 lang=go exported=false byte_range=5272:5295
+  sig=runtime.SubDispatchHandler
+EDGES
+  ^contains=matrix/executor/runtime.Walker
+
+NODE id=matrix/executor/runtime.Walker.Run kind=method
+  digest=b3:36ceaad14191e545443b580c696a336e918b99fbfd5be0409ad408ce985e2e2f file=executor/runtime/walker.go range=315:337 lang=go exported=true byte_range=11467:12348
+  sig=func (w *Walker) Run(ctx context.Context, plan *ir.PlanTree) (*WalkResult, error)
+  doc=Run walks plan depth-first and returns the aggregated result.\n\nReturns an error only when a NodeSequential child fails or the walker\ndetects an unrecoverable structural problem (unknown node kind). All\ntool-call transport / in-band failures are captured in WalkResult and\ndo NOT halt the walk (matches cmd/mcl-e2e/walk.go:153 contract).
+EDGES
+  ^contains=matrix/executor/runtime.Walker
+  ^defines=matrix/executor/runtime/walker.go
+
+NODE id=matrix/executor/runtime.Walker.execGate kind=method
+  digest=b3:0fe9b21fe5fdbf24f6cfb0b67cd552912dc0f99eebfafae46d5ceb01121f4939 file=executor/runtime/walker.go range=667:700 lang=go exported=false byte_range=23092:24234
+  sig=func (w *Walker) execGate(ctx context.Context, plan *ir.PlanTree, n *ir.PlanNode, wr *WalkResult, mu *sync.Mutex) error
+  doc=execGate dispatches a NodeGate.
+EDGES
+  ^contains=matrix/executor/runtime.Walker
+  ^defines=matrix/executor/runtime/walker.go
+
+NODE id=matrix/executor/runtime.Walker.execStep kind=method
+  digest=b3:9dc80c61aa33dfb4a42c6ee03f53ab8fdf2d1e874172dd1f56644cbcc5b7170a file=executor/runtime/walker.go range=616:641 lang=go exported=false byte_range=21237:22156
+  sig=func (w *Walker) execStep(ctx context.Context, plan *ir.PlanTree, n *ir.PlanNode, wr *WalkResult, mu *sync.Mutex) error
+  doc=execStep dispatches a NodeStep to the configured StepHandler.
+EDGES
+  ^contains=matrix/executor/runtime.Walker
+  ^defines=matrix/executor/runtime/walker.go
+
+NODE id=matrix/executor/runtime.Walker.execSubDispatch kind=method
+  digest=b3:fc3321d1ec3449821a2491913d88d2be5f82f941d3694a613d7459dc4e18a6ef file=executor/runtime/walker.go range=643:665 lang=go exported=false byte_range=22158:23090
+  sig=func (w *Walker) execSubDispatch(ctx context.Context, plan *ir.PlanTree, n *ir.PlanNode, wr *WalkResult, mu *sync.Mutex) error
+  doc=execSubDispatch dispatches a NodeSubDispatch.
+EDGES
+  ^contains=matrix/executor/runtime.Walker
+  ^defines=matrix/executor/runtime/walker.go
+
+NODE id=matrix/executor/runtime.Walker.execToolCall kind=method
+  digest=b3:fa0ca97a6723dc3f06d0ffabad1e27ac30be1592de820244ef04ee2d1896f940 file=executor/runtime/walker.go range=494:614 lang=go exported=false byte_range=16720:21235
+  sig=func (w *Walker) execToolCall(ctx context.Context, plan *ir.PlanTree, n *ir.PlanNode, wr *WalkResult, mu *sync.Mutex) error
+  doc=execToolCall dispatches one NodeToolCall: Registry.Get → Tool.Call\n→ write Event memory → emit plan.step envelope.
+EDGES
+  ^contains=matrix/executor/runtime.Walker
+  ^defines=matrix/executor/runtime/walker.go
+
+NODE id=matrix/executor/runtime.Walker.pollCorrections kind=method
+  digest=b3:d767e3986add893ee9419e94e030c21f354ed43b56460558240f1bac829741b2 file=executor/runtime/walker.go range=339:386 lang=go exported=false byte_range=12350:13866
+  sig=func (w *Walker) pollCorrections(ctx context.Context, wr *WalkResult) error
+  doc=pollCorrections drains the CorrectionInbox non-blockingly between\nnodes and routes each delivered correction through OnCorrection.\nReturns ErrMaterialCorrection if any handler classified material;\nreturns the handler's error if it returned one; nil otherwise.\n\nSpec citation: matrix.kvx executor_locked_design Q11 (live during\nplan walk) — implementation as a between-node hook rather than\nmid-node preemption, which would risk leaving partial-journal state.
+EDGES
+  ^contains=matrix/executor/runtime.Walker
+  ^defines=matrix/executor/runtime/walker.go
+
+NODE id=matrix/executor/runtime.Walker.signStep kind=method
+  digest=b3:709d7bec0d3f464ba922907c7e5ecd2508993d0aab42ecf162365b9de5bb9999 file=executor/runtime/walker.go range=702:725 lang=go exported=false byte_range=24236:25027
+  sig=func (w *Walker) signStep(planID, nodeID, status string, result []byte, errMsg string, latencyMs int64)
+  doc=signStep emits a plan.step envelope through the configured EnvelopeSink.\nBest-effort: failure is logged but does NOT fail the walk because the\ncortex Event memory IS the authoritative audit trail per Phase 7\nmemories_root anchoring.
+EDGES
+  ^contains=matrix/executor/runtime.Walker
+  ^defines=matrix/executor/runtime/walker.go
+
+NODE id=matrix/executor/runtime.Walker.walkNode kind=method
+  digest=b3:27b10e48694b64112ab2283de70db5177fcd6ed59bd2ce08d1163a5a5335fe6b file=executor/runtime/walker.go range=388:445 lang=go exported=false byte_range=13868:15348
+  sig=func (w *Walker) walkNode(ctx context.Context, plan *ir.PlanTree, n *ir.PlanNode, wr *WalkResult) error
+EDGES
+  ^contains=matrix/executor/runtime.Walker
+  ^defines=matrix/executor/runtime/walker.go
+
+NODE id=matrix/executor/runtime.Walker.walkNodeWithLock kind=method
+  digest=b3:1a0963c63acdcb10c9cd0d2179afbce79c47390b29fbbe81349a158cd44b6591 file=executor/runtime/walker.go range=447:492 lang=go exported=false byte_range=15350:16718
+  sig=func (w *Walker) walkNodeWithLock(ctx context.Context, plan *ir.PlanTree, n *ir.PlanNode, wr *WalkResult, mu *sync.Mutex) error
+  doc=walkNodeWithLock is the parallel-branch entry point. It threads a\nshared mutex through every recursive call so concurrent ToolCall /\nStep / Gate / SubDispatch goroutines never race on the result maps.
+EDGES
+  ^contains=matrix/executor/runtime.Walker
+  ^defines=matrix/executor/runtime/walker.go
+
+NODE id=matrix/executor/runtime.Walker.writeEventMemory kind=method
+  digest=b3:f1769786fa2aa5643f507853124b8ea3b6529d157970214d1edb03a30cf84468 file=executor/runtime/walker.go range=727:763 lang=go exported=false byte_range=25029:26352
+  sig=func (w *Walker) writeEventMemory(n *ir.PlanNode, toolRef, summary string, callErr error, isError bool) (memory.URI, error)
+  doc=writeEventMemory persists a cortex Event capturing the tool outcome\nso subsequent attest can cite it (research/04 §4.2 EventKind=interaction).\nReturns ("", nil) when Cortex is not configured.
+EDGES
+  ^contains=matrix/executor/runtime.Walker
+  ^defines=matrix/executor/runtime/walker.go
+
+NODE id=matrix/executor/runtime.WalkerParams kind=type
+  digest=b3:c732ea3e648a60c54685e1ff4ffcf945ac62256b4465d4d003a7f4250381d652 file=executor/runtime/walker.go range=148:193 lang=go exported=true byte_range=5675:7434
+  sig=type WalkerParams struct {\n	Registry	*tool.Registry\n\n	// Cortex is the actor's typed memory store. nil disables Event-memory\n	// journaling (the walker still emits transcript Events and plan.step\n	// envelopes, but no cortex Write).\n	Cortex	*cortex.Cortex\n\n	// Envelope sinks plan.step envelopes. nil disables envelope signing.\n	Envelope	EnvelopeSink\n\n	// Events sinks structured walk events. nil → noOpSink (no-op writer).\n	Events	EventSink\n\n	// Step / Sub / Gate handlers override defaults.\n	Step	StepHandler\n	Sub	SubDispatchHandler\n	Gate	GateHandler\n\n	// CorrectionInbox is polled between every node dispatch. Receiving a\n	// correction triggers the OnCorrection callback. Caller is responsible\n	// for closing the channel on shutdown. nil disables mid-walk\n	// correction handling.\n	//\n	// Spec citation: matrix.kvx executor_locked_design Q11 ("Materiality\n	// classification enforced live during plan walk — material\n	// modifications halt execution until re-accept"). Without an inbox,\n	// the walker is synchronous-only and corrections must be applied\n	// between full walk invocations.\n	CorrectionInbox	<-chan Correction\n\n	// OnCorrection is invoked when CorrectionInbox delivers a correction.\n	// Returning Material=true causes Walker.Run to halt with\n	// ErrMaterialCorrection. Returning Material=false logs the correction\n	// and continues. Required when CorrectionInbox is non-nil.\n	OnCorrection	CorrectionHandler\n\n	// ActorURI is stamped onto every Event memory's CreatedBy. Required\n	// when Cortex != nil.\n	ActorURI	string\n\n	// Clock for tests; defaults to time.Now.\n	Clock	func() time.Time\n}
+  doc=WalkerParams configures a Walker. Registry is required; everything else\nhas a working default that matches the cmd/mcl-e2e/walk.go behavior.
+EDGES
+  contains=matrix/executor/runtime.WalkerParams#ActorURI,matrix/executor/runtime.WalkerParams#Clock,matrix/executor/runtime.WalkerParams#CorrectionInbox,matrix/executor/runtime.WalkerParams#Cortex,matrix/executor/runtime.WalkerParams#Envelope,matrix/executor/runtime.WalkerParams#Events,matrix/executor/runtime.WalkerParams#Gate,matrix/executor/runtime.WalkerParams#OnCorrection,matrix/executor/runtime.WalkerParams#Registry,matrix/executor/runtime.WalkerParams#Step,matrix/executor/runtime.WalkerParams#Sub
+  ^defines=matrix/executor/runtime/walker.go
+
+NODE id=matrix/executor/runtime.WalkerParams#ActorURI kind=field
+  digest=b3:5fd6abfadbbb034ee2e260fe8a9d44ef2db4e3faaee86e30f1cf966ec50cb642 file=executor/runtime/walker.go range=187:189 lang=go exported=true byte_range=7255:7364
+  sig=string
+  doc=ActorURI is stamped onto every Event memory's CreatedBy. Required\nwhen Cortex != nil.
+EDGES
+  ^contains=matrix/executor/runtime.WalkerParams
+
+NODE id=matrix/executor/runtime.WalkerParams#Clock kind=field
+  digest=b3:1f07f952d2af1c3092fb1b4c2ec8ab6e7e20b6de653fd0dfefd4500a5b51bc85 file=executor/runtime/walker.go range=191:192 lang=go exported=true byte_range=7367:7432
+  sig=func() time.Time
+  doc=Clock for tests; defaults to time.Now.
+EDGES
+  ^contains=matrix/executor/runtime.WalkerParams
+
+NODE id=matrix/executor/runtime.WalkerParams#CorrectionInbox kind=field
+  digest=b3:2bf0aea9f45c7bff121dc736b9b13f953c9ffc41318d7defdd859aa5ad93e197 file=executor/runtime/walker.go range=169:179 lang=go exported=true byte_range=6380:6955
+  sig=<-chan runtime.Correction
+  doc=CorrectionInbox is polled between every node dispatch. Receiving a\ncorrection triggers the OnCorrection callback. Caller is responsible\nfor closing the channel on shutdown. nil disables mid-walk\ncorrection handling.\n\nSpec citation: matrix.kvx executor_locked_design Q11 ("Materiality\nclassification enforced live during plan walk — material\nmodifications halt execution until re-accept"). Without an inbox,\nthe walker is synchronous-only and corrections must be applied\nbetween full walk invocations.
+EDGES
+  ^contains=matrix/executor/runtime.WalkerParams
+
+NODE id=matrix/executor/runtime.WalkerParams#Cortex kind=field
+  digest=b3:4cbd6e45686ab3274a408df5c9cd550af5034307eeb7eeb1b87adccc7ffe27c5 file=executor/runtime/walker.go range=153:156 lang=go exported=true byte_range=5876:6077
+  sig=*cortex.Cortex
+  doc=Cortex is the actor's typed memory store. nil disables Event-memory\njournaling (the walker still emits transcript Events and plan.step\nenvelopes, but no cortex Write).
+EDGES
+  ^contains=matrix/executor/runtime.WalkerParams
+
+NODE id=matrix/executor/runtime.WalkerParams#Envelope kind=field
+  digest=b3:c37ad3a6a923d295dc097ab097852d4e8703fb3c9401ae58431f5d401a154f99 file=executor/runtime/walker.go range=158:159 lang=go exported=true byte_range=6080:6172
+  sig=runtime.EnvelopeSink
+  doc=Envelope sinks plan.step envelopes. nil disables envelope signing.
+EDGES
+  ^contains=matrix/executor/runtime.WalkerParams
+
+NODE id=matrix/executor/runtime.WalkerParams#Events kind=field
+  digest=b3:531fc6cb71f37460129069dd7a59a5390f9e4c4c0b3e77b96cc50cf1a34d574e file=executor/runtime/walker.go range=161:162 lang=go exported=true byte_range=6175:6265
+  sig=runtime.EventSink
+  doc=Events sinks structured walk events. nil → noOpSink (no-op writer).
+EDGES
+  ^contains=matrix/executor/runtime.WalkerParams
+
+NODE id=matrix/executor/runtime.WalkerParams#Gate kind=field
+  digest=b3:bf0464c8efd2b56fde44ee9acbefc39a6aee0671b476b56f50f2d51523619a79 file=executor/runtime/walker.go range=167:167 lang=go exported=true byte_range=6361:6377
+  sig=runtime.GateHandler
+EDGES
+  ^contains=matrix/executor/runtime.WalkerParams
+
+NODE id=matrix/executor/runtime.WalkerParams#OnCorrection kind=field
+  digest=b3:56ef81ae742f7adb5bcc30925b7c8e575a7b51485821ce7879199f1091526d8b file=executor/runtime/walker.go range=181:185 lang=go exported=true byte_range=6958:7252
+  sig=runtime.CorrectionHandler
+  doc=OnCorrection is invoked when CorrectionInbox delivers a correction.\nReturning Material=true causes Walker.Run to halt with\nErrMaterialCorrection. Returning Material=false logs the correction\nand continues. Required when CorrectionInbox is non-nil.
+EDGES
+  ^contains=matrix/executor/runtime.WalkerParams
+
+NODE id=matrix/executor/runtime.WalkerParams#Registry kind=field
+  digest=b3:00f3f042a475ef86a215d8f3d17469d110645a6048ba7affc4b9d3166ecd4f77 file=executor/runtime/walker.go range=151:151 lang=go exported=true byte_range=5850:5873
+  sig=*tool.Registry
+EDGES
+  ^contains=matrix/executor/runtime.WalkerParams
+
+NODE id=matrix/executor/runtime.WalkerParams#Step kind=field
+  digest=b3:bad8f4e4001334e2b13fc3c7cba59b1e8ee6d0d4519131c658f7607988b8958f file=executor/runtime/walker.go range=164:165 lang=go exported=true byte_range=6268:6334
+  sig=runtime.StepHandler
+  doc=Step / Sub / Gate handlers override defaults.
+EDGES
+  ^contains=matrix/executor/runtime.WalkerParams
+
+NODE id=matrix/executor/runtime.WalkerParams#Sub kind=field
+  digest=b3:5517a8a147328efc557a6eaa62fd3bb1f46883a1ae5badc7aca77c6eb2d89bef file=executor/runtime/walker.go range=166:166 lang=go exported=true byte_range=6336:6359
+  sig=runtime.SubDispatchHandler
+EDGES
+  ^contains=matrix/executor/runtime.WalkerParams
+
+NODE id=matrix/executor/runtime.coerceArg kind=func
+  digest=b3:5b951d85a7da89c3cb5cad945d596e50aaba012360062d28dd8e662682da752e file=executor/runtime/coerce.go range=12:78 lang=go exported=false byte_range=233:2629
+  sig=func coerceArg(v string) interface{}
+  doc=coerceArg converts a string-typed PlanTree arg into its likely\nJSON-friendly type. ir.ToolCallPayload.Args is map[string]string for\ncanonical hashing simplicity (MCL/ir/plan.go:141), but MCP servers\nexpect ints/bools/objects/arrays per their JSON-Schema inputs.\nBest-effort coercion:\n\n	"true"/"false"        → bool\n	integer string        → int64\n	float string          → float64\n	JSON object "{...}"   → map[string]interface{}\n	JSON array  "[...]"   → []interface{}\n	everything else       → string (verbatim)\n\nThe JSON object/array case is load-bearing for tools whose schema\ndeclares a nested type the plan IR cannot carry directly: the\nplan_tree@1 grammar forces every arg VALUE to a string, so a tool\nlike tachyon_compile (whose `sources` is a map[path]->content) only\never receives its value as a JSON-encoded string. Parsing it back\nhere hands the MCP server the real object instead of a string it\ncannot unmarshal (the prior behavior broke compile/test/deploy/call\nwith a "cannot unmarshal string" error). Same for constructor_args /\nargs arrays and inline abi.\n\nOriginally a verbatim port of cmd/mcl-e2e/walk.go:249-313. The harness\nvalidated this surface against real Fireworks-produced plans + npx/uvx\nMCP servers in sess#22b (75/75 assertions green).
+EDGES
+  ^defines=matrix/executor/runtime/coerce.go
+
+NODE id=matrix/executor/runtime.collectNodeOutputs kind=func
+  digest=b3:307c9532dcb7bddd51a2b6360f02e14aa6e1cc4c7e3d58f3ac65a536fb8995b1 file=executor/runtime/argref.go range=42:67 lang=go exported=false byte_range=1945:2767
+  sig=func collectNodeOutputs(plan *ir.PlanTree) map[string]string
+  doc=collectNodeOutputs walks the plan tree and returns nodeID → recorded runtime\noutput text (PlanNode.ResultText). The walker populates ResultText as steps\nand tool calls complete, so a later node can resolve ${...} references\nagainst the real upstream output. Mirrors the cmd/mcl-execute helper of the\nsame name (which feeds NodeStep inputs); kept here so the runtime walker can\nresolve NodeToolCall args without importing package main.
+EDGES
+  ^defines=matrix/executor/runtime/argref.go
+
+NODE id=matrix/executor/runtime.containsCodeFence kind=func
+  digest=b3:0ae11f366369351274b56a786bfc20df3fc51c47caa6c8d106a797fe0c94ac31 file=executor/runtime/coerce.go range=160:163 lang=go exported=false byte_range=5743:5889
+  sig=func containsCodeFence(s string) bool
+  doc=containsCodeFence reports whether s carries a Markdown code fence.
+EDGES
+  ^defines=matrix/executor/runtime/coerce.go
+
+NODE id=matrix/executor/runtime.decodeEmbeddedJSON kind=func
+  digest=b3:04b3c12df5e74028232135535370859ad9ed1283e1e90ed87fc67e9712b436db file=executor/runtime/coerce.go range=136:158 lang=go exported=false byte_range=4917:5741
+  sig=func decodeEmbeddedJSON(s string) (interface{}, bool)
+  doc=decodeEmbeddedJSON returns the first complete JSON object/array embedded in s,\nignoring any surrounding prose or Markdown fence. It walks each '{'/'[' and\nlets encoding/json decode one value from that offset (the decoder respects\nstring quoting, so braces inside Solidity source strings never confuse it)\nand stops at the first position that yields a container. Trailing prose after\nthe value is ignored by the streaming decoder.
+EDGES
+  ^defines=matrix/executor/runtime/coerce.go
+
+NODE id=matrix/executor/runtime.devReloadEnv kind=const
+  digest=b3:5d2c94be910bca4199ae4cb9627e6d84894f783b483fc4d9baefae413cc221d4 file=executor/runtime/skill_reload.go range=36:40 lang=go exported=false byte_range=1396:1723
+  sig=untyped string
+  doc=devReloadEnv is the env var that opts INTO dev hot-reload. Any non-empty\nvalue enables it; empty (the default in production images) keeps the path\nread-only. A non-env dev flag can also be passed directly to\nNewSkillReloader via the devFlag argument (higher precedence than env).
+EDGES
+  ^defines=matrix/executor/runtime/skill_reload.go
+
+NODE id=matrix/executor/runtime.errString kind=func
+  digest=b3:42171a0d4d6e55ce624e07244de16e9fe363f411e921198195a06612424772aa file=executor/runtime/walker.go range=815:821 lang=go exported=false byte_range=28513:28666
+  sig=func errString(err error) string
+  doc=errString stringifies a nil-able error for transcript fields.
+EDGES
+  ^defines=matrix/executor/runtime/walker.go
+
+NODE id=matrix/executor/runtime.extractField kind=func
+  digest=b3:9e46e94ce790d52ba548760082b12acc9f96fe9a9ef389fd769ad94be62a57d3 file=executor/runtime/argref.go range=118:148 lang=go exported=false byte_range=4741:5621
+  sig=func extractField(nodeOutput, field string) (string, bool)
+  doc=extractField parses a node's recorded output (tolerant of Markdown fences /\nsurrounding prose / result envelopes like {"ok":true,"data":{...}}) and\nreturns the named field's value as a string, recursively searching nested\nobjects/arrays for the first matching key. Scalars stringify directly;\ncontainers (e.g. an abi array) are re-encoded as JSON.
+EDGES
+  ^defines=matrix/executor/runtime/argref.go
+
+NODE id=matrix/executor/runtime.extractRefList kind=func
+  digest=b3:697ae08130850288007639c030260a1f38e66133b0675435130d66ad8d17da15 file=executor/runtime/skill_loader.go range=229:261 lang=go exported=false byte_range=7941:8773
+  sig=func extractRefList(file *ast.File, section string) ([]string, bool)
+  doc=extractRefList walks a §TOOLS or §SUB_SKILLS section and returns\nthe URI list along with a `none` flag. Both `none` and an absent\nsection yield (nil, true|false): `none` is explicit forbidden,\nabsent is the same v1 semantics (validator rule 1 normally requires\nthe section, so absent only happens in non-skill files).
+EDGES
+  ^defines=matrix/executor/runtime/skill_loader.go
+
+NODE id=matrix/executor/runtime.extractSkillMeta kind=func
+  digest=b3:99ea083de283e842ffedd90ddcc8bd29cb2d6a0ca426ccda507ec3cd48a94ff7 file=executor/runtime/skill_loader.go range=325:369 lang=go exported=false byte_range=10760:11844
+  sig=func extractSkillMeta(file *ast.File) (*skillMeta, error)
+EDGES
+  ^defines=matrix/executor/runtime/skill_loader.go
+
+NODE id=matrix/executor/runtime.findKey kind=func
+  digest=b3:d431537973e170cc305dd52627a881e5cf17f6698d15803ad25b470f32df1b9d file=executor/runtime/argref.go range=150:172 lang=go exported=false byte_range=5623:6204
+  sig=func findKey(v interface{}, key string) (interface{}, bool)
+  doc=findKey returns the first value stored under key anywhere in the JSON value\nv (depth-first), unwrapping result envelopes so {"ok":true,"data":{"x":1}}\nresolves "x".
+EDGES
+  ^defines=matrix/executor/runtime/argref.go
+
+NODE id=matrix/executor/runtime.hasFloatShape kind=func
+  digest=b3:91d0f8f1ee57ff8087c5a9ffae956f51dae530683a4cd7e7c03b00085f3d8df5 file=executor/runtime/coerce.go range=220:236 lang=go exported=false byte_range=7521:7811
+  sig=func hasFloatShape(s string) bool
+EDGES
+  ^defines=matrix/executor/runtime/coerce.go
+
+NODE id=matrix/executor/runtime.isAllDigitsOptSign kind=func
+  digest=b3:78d96be1f6d15bb4127cc69e3b5d7fa8f74f4b5f06d26a090fd764e3487d683d file=executor/runtime/coerce.go range=201:218 lang=go exported=false byte_range=7261:7519
+  sig=func isAllDigitsOptSign(s string) bool
+EDGES
+  ^defines=matrix/executor/runtime/coerce.go
+
+NODE id=matrix/executor/runtime.jsonCandidates kind=func
+  digest=b3:5cb7645b28c728056af6e4603079275ee95eb361d9e558b922a2aee10b594942 file=executor/runtime/coerce.go range=165:177 lang=go exported=false byte_range=5891:6483
+  sig=func jsonCandidates(v string) []string
+  doc=jsonCandidates returns the substrings of v worth attempting a JSON parse on,\nin priority order: the trimmed value first, then a fence-stripped body when v\nis wrapped in a Markdown code fence. coerceArg only ever returns a parse that\nSUCCEEDS, so offering the fence-stripped candidate can never mangle a plain\nstring (a failed parse falls through to the verbatim original).
+EDGES
+  ^defines=matrix/executor/runtime/coerce.go
+
+NODE id=matrix/executor/runtime.kvIdentList kind=func
+  digest=b3:23cdbf694ea8351348677b70c1d2efb67aef060223954b28fe99178e8d6f55e2 file=executor/runtime/skill_loader.go range=387:404 lang=go exported=false byte_range=12343:12867
+  sig=func kvIdentList(v ast.Value) []string
+  doc=kvIdentList returns the list of bare identifiers from a value\nposition. Handles both single-ident and space-separated-list shapes\nemitted by the MCL parser (parser.go parseValueList → SpaceListValue).
+EDGES
+  ^defines=matrix/executor/runtime/skill_loader.go
+
+NODE id=matrix/executor/runtime.kvString kind=func
+  digest=b3:34731d922ca281ed5b44cd9afe551de097726d29486cf7be7e9754559e43c866 file=executor/runtime/skill_loader.go range=371:385 lang=go exported=false byte_range=11846:12341
+  sig=func kvString(v ast.Value) string
+  doc=kvString returns the string content of a KV value (StringValue or\nIdentValue). For SpaceListValue (the parser shape produced by an\nunquoted multi-word value like `display=Writing Plans`) it joins the\nitems with single spaces. Returns "" for any other shape.
+EDGES
+  ^defines=matrix/executor/runtime/skill_loader.go
+
+NODE id=matrix/executor/runtime.marshalToolResult kind=func
+  digest=b3:c8b8138ae594fd9e43667b0bbd165ea28592ec9b603cfcea3ac53d55ca67cf66 file=executor/runtime/marshal.go range=12:27 lang=go exported=false byte_range=240:757
+  sig=func marshalToolResult(res *tool.Result, resultText string) []byte
+  doc=marshalToolResult produces the deterministic JSON byte slice that the\nwalker stores on PlanStepBody.Result. Shape mirrors\ncmd/mcl-e2e/walk.go:175-180 so harness consumers and production\nconsumers see identical bytes.
+EDGES
+  ^defines=matrix/executor/runtime/marshal.go
+
+NODE id=matrix/executor/runtime.noopSink kind=type
+  digest=b3:f7fde3cc7d861cc20a4ea897508839bd79e1cc14d8a1035a54e88b7c7578a369 file=executor/runtime/walker.go range=810:811 lang=go exported=false byte_range=28346:28429
+  sig=type noopSink struct{}
+  doc=noopSink discards all events. Used when EventSink is nil.
+EDGES
+  contains=matrix/executor/runtime.noopSink.Event
+  implements=matrix/executor/runtime.EventSink
+  ^defines=matrix/executor/runtime/walker.go
+
+NODE id=matrix/executor/runtime.noopSink.Event kind=method
+  digest=b3:ba93642f5c81a27f7b5ec5af241b13a5ab750d300251a3c3e941689e8f0a2ac8 file=executor/runtime/walker.go range=813:813 lang=go exported=true byte_range=28431:28511
+  sig=func (noopSink) Event(eventType, phase string, fields map[string]interface{})
+EDGES
+  ^contains=matrix/executor/runtime.noopSink
+  ^defines=matrix/executor/runtime/walker.go
+
+NODE id=matrix/executor/runtime.normalizeToolArg kind=func
+  digest=b3:e65bd850f58baf8452375550a75a2d18745326d1a0cbe9a99832b526e3635877 file=executor/runtime/coerce.go range=80:118 lang=go exported=false byte_range=2631:4376
+  sig=func normalizeToolArg(key, raw string) interface{}
+  doc=normalizeToolArg coerces a (already ref-resolved) tool-call arg VALUE, with\nthe arg KEY available so it can repair the two realistic ways an upstream\ncodegen/reason step mis-shapes a structured arg before a strict MCP tool\n(e.g. tachyon_compile's `sources` map) consumes it:\n\n 1. Wrapper nesting — the step emits {"sources": {<path>:<content>}} (echoing\n    the tool-call arg name) instead of the bare {<path>:<content>} map. When\n    the parsed value is a single-key object whose key equals the arg name and\n    whose inner value is itself a container, unwrap it.\n 2. Prose/fence wrapping — the step narrates ("I'll write the contract…") and\n    then emits the JSON inside a ```json fence. coerceArg only parses when the\n    trimmed value (or a LEADING fence body) is a container, so leading prose\n    defeats it and the raw string reaches the engine ("cannot unmarshal string\n    into map"). When the raw value carries a Markdown code fence — the\n    unambiguous "an LLM wrapped my structured output" signal — scan for the\n    first embedded JSON container and use it. Gating on the fence keeps a\n    legitimate string arg that merely embeds braces (e.g. a file's content)\n    from being mangled.\n\nFalls back to coerceArg's result unchanged for every other arg.
+EDGES
+  ^defines=matrix/executor/runtime/coerce.go
+
+NODE id=matrix/executor/runtime.outputRefPattern kind=var
+  digest=b3:6f6c7cf45674844ba302ae5c517e804e5235e493fd26de285aa92b6308dc9cb5 file=executor/runtime/argref.go range=15:36 lang=go exported=false byte_range=265:1696
+  sig=*regexp.Regexp
+  doc=outputRefPattern matches plan-node output references the planner emits to\nwire a prior node's produced output into a later node — both into a\nNodeStep's Step.Inputs (resolved in cmd/mcl-execute) AND into a\nNodeToolCall's args (resolved in execToolCall).\n\nWe are deliberately LIBERAL in what we accept (Postel's law): synth LLMs\nemit the reference in several interchangeable spellings, and an unrecognized\none is catastrophic — the literal placeholder reaches a strict tool parser\nand fails to unmarshal (observed in prod as tachyon_compile getting the raw\nstring "{{n06.outputs.sources}}" → "cannot unmarshal string into map"). All\nof the following resolve to the upstream node's recorded output:\n\n	${n06}                 ${n06.output}      ${n06.text}\n	{{n06}}                {{n06.output}}     {{n06.outputs.sources}}\n\nGroup 1 is the nodeID (alphanumerics, _, -). Group 2 is the optional dotted\nsuffix (e.g. ".output", ".text", ".outputs", ".outputs.project_id"). A bare\nor whole-output suffix substitutes the entire node output; a NAMED field\nsuffix (.outputs.<field> / .<field>) extracts that field from the upstream\nnode's JSON output so a scalar like project_id / address / tx_hash threads\nthrough cleanly instead of dumping the whole result envelope.
+EDGES
+  ^defines=matrix/executor/runtime/argref.go
+
+NODE id=matrix/executor/runtime.peekSkillVersion kind=func
+  digest=b3:c6ca1efed83a2760acd7c1351862b5475d888cec8aedd0a5ebe1ad0537ce79ac file=executor/runtime/skill_reload.go range=352:383 lang=go exported=false byte_range=11369:12467
+  sig=func peekSkillVersion(raw []byte) (string, error)
+  doc=peekSkillVersion extracts the §SKILL.version value from raw SKILL.mtx bytes\nWITHOUT running the full parser — a cheap pre-pass so we can build the\ncanonical matrix://skill/<slug>@<version> URI before handing off to the\nstateless loader (which re-parses + re-validates authoritatively). Returns\nan error if the version line is absent (the file is malformed).
+EDGES
+  ^defines=matrix/executor/runtime/skill_reload.go
+
+NODE id=matrix/executor/runtime.refField kind=func
+  digest=b3:9412e384349e36a5c719f64b7ca97cd4e3f93e5ce0076d15d5cc25a16fa13768 file=executor/runtime/argref.go range=106:116 lang=go exported=false byte_range=4338:4739
+  sig=func refField(suffix string) string
+  doc=refField reduces a dotted ref suffix to the named field it requests, or ""\nfor a whole-output reference. ".outputs.project_id" → "project_id";\n".address" → "address"; ".output"/".outputs"/".text"/"" → "".
+EDGES
+  ^defines=matrix/executor/runtime/argref.go
+
+NODE id=matrix/executor/runtime.resolveOutputRefs kind=func
+  digest=b3:66655f9675e9265658a4bebacb6e1ac5069cb1017a7d16be5bb6774a23dd3cc0 file=executor/runtime/argref.go range=69:104 lang=go exported=false byte_range=2769:4336
+  sig=func resolveOutputRefs(val string, outputs map[string]string) string
+  doc=resolveOutputRefs replaces every ${<nodeID>.output} reference in val with the\nupstream node's actual recorded output. Unlike the NodeStep-input resolver\n(whose unresolved-marker prose is tuned for an LLM consumer), this is for\nTOOL-CALL args feeding strict parsers: an unresolved reference is left as the\nverbatim ${...} literal rather than substituting prose that a tool could not\nparse. The common, load-bearing case is a codegen step that emits a Solidity\n`sources` map which a following tachyon_compile consumes via ${node.output};\nwithout this, the literal placeholder reached the engine and failed to\nunmarshal ("cannot unmarshal string into map").
+EDGES
+  ^defines=matrix/executor/runtime/argref.go
+
+NODE id=matrix/executor/runtime.skillMeta kind=type
+  digest=b3:50d6b261723be090dba18677f75473040ee428cac658cf0c6e170b7b76c2f8b5 file=executor/runtime/skill_loader.go range=316:323 lang=go exported=false byte_range=10611:10758
+  sig=type skillMeta struct {\n	ID		string\n	Version		string\n	Display		string\n	Description	string\n	Author		string\n	MclVerbs	[]string\n}
+EDGES
+  contains=matrix/executor/runtime.skillMeta#Author,matrix/executor/runtime.skillMeta#Description,matrix/executor/runtime.skillMeta#Display,matrix/executor/runtime.skillMeta#ID,matrix/executor/runtime.skillMeta#MclVerbs,matrix/executor/runtime.skillMeta#Version
+  ^defines=matrix/executor/runtime/skill_loader.go
+
+NODE id=matrix/executor/runtime.skillMeta#Author kind=field
+  digest=b3:4b348fb614f547dfb2de64564bb9d06ed8bf4141cc2ef886c039dbe8dcefc934 file=executor/runtime/skill_loader.go range=321:321 lang=go exported=true byte_range=10716:10734
+  sig=string
+EDGES
+  ^contains=matrix/executor/runtime.skillMeta
+
+NODE id=matrix/executor/runtime.skillMeta#Description kind=field
+  digest=b3:07fd2ec40e0d67803d6a8ce06d303c45c95b6689708e6c20311d26116b5f6dd3 file=executor/runtime/skill_loader.go range=320:320 lang=go exported=true byte_range=10696:10714
+  sig=string
+EDGES
+  ^contains=matrix/executor/runtime.skillMeta
+
+NODE id=matrix/executor/runtime.skillMeta#Display kind=field
+  digest=b3:f005e258f5a7abaaabad5f1a51cf6c3b114a0a733fc638985b06303765843e84 file=executor/runtime/skill_loader.go range=319:319 lang=go exported=true byte_range=10676:10694
+  sig=string
+EDGES
+  ^contains=matrix/executor/runtime.skillMeta
+
+NODE id=matrix/executor/runtime.skillMeta#ID kind=field
+  digest=b3:69bb0e189e430d5fadc8ebcfb82c1f1830f188a27e66b1e37bab6fb82214432a file=executor/runtime/skill_loader.go range=317:317 lang=go exported=true byte_range=10636:10654
+  sig=string
+EDGES
+  ^contains=matrix/executor/runtime.skillMeta
+
+NODE id=matrix/executor/runtime.skillMeta#MclVerbs kind=field
+  digest=b3:5e011b3ad21cc3bc1826a6b755b23887820da2fbc4ed5d93ff156def10235f2d file=executor/runtime/skill_loader.go range=322:322 lang=go exported=true byte_range=10736:10756
+  sig=[]string
+EDGES
+  ^contains=matrix/executor/runtime.skillMeta
+
+NODE id=matrix/executor/runtime.skillMeta#Version kind=field
+  digest=b3:84e73174a7273351d39019667024663387303f747a25ba907f6d960ee15e4a74 file=executor/runtime/skill_loader.go range=318:318 lang=go exported=true byte_range=10656:10674
+  sig=string
+EDGES
+  ^contains=matrix/executor/runtime.skillMeta
+
+NODE id=matrix/executor/runtime.slugOfPath kind=func
+  digest=b3:88710ab69f7176afc40a06a2dde5d218538cfc9d1e8a1c7031b7288f2b041823 file=executor/runtime/skill_reload.go range=342:350 lang=go exported=false byte_range=11093:11367
+  sig=func slugOfPath(root, p string) string
+  doc=slugOfPath returns the slug (directory name) of a watched SKILL.mtx path\nrelative to root. Returns "" if the path is not under root.
+EDGES
+  ^defines=matrix/executor/runtime/skill_reload.go
+
+NODE id=matrix/executor/runtime.splitOnSpace kind=func
+  digest=b3:b2b1c3d4dc20fabb59550018bd8e39b2c4e509544ff4694abb09db9d9d44e79a file=executor/runtime/skill_loader.go range=406:411 lang=go exported=false byte_range=12869:12965
+  sig=func splitOnSpace(s string) []string
+EDGES
+  ^defines=matrix/executor/runtime/skill_loader.go
+
+NODE id=matrix/executor/runtime.stripCodeFence kind=func
+  digest=b3:7661afd960cda01f7d3e20c6908aa5c226473279dfb33ca9d2632d14ee5c3af0 file=executor/runtime/coerce.go range=179:199 lang=go exported=false byte_range=6485:7259
+  sig=func stripCodeFence(s string) string
+  doc=stripCodeFence removes a leading Markdown code fence (``` or ```lang) and a\nmatching trailing fence from s, returning the inner body. An upstream codegen\nstep's text output (threaded into a tool arg via ${node.output}) commonly\narrives fenced; the strict tool parser needs the bare JSON. Returns the\ntrimmed input unchanged when there is no leading fence.
+EDGES
+  ^defines=matrix/executor/runtime/coerce.go
+
+NODE id=matrix/executor/runtime.truncate kind=func
+  digest=b3:e60637d9743e4a67c69ee12334dedd000066fc2913fcd17f193efe86bc3e75b6 file=executor/runtime/walker.go range=836:843 lang=go exported=false byte_range=28974:29217
+  sig=func truncate(s string, n int) string
+  doc=truncate clips s to at most n runes (rough; treats bytes as runes for\nthe ASCII-heavy paths the walker produces). Mirrors transcript.go:93.
+EDGES
+  ^defines=matrix/executor/runtime/walker.go
+
+NODE id=matrix/executor/runtime.unwrapWrapper kind=func
+  digest=b3:938638ee6d0ec5119113dd2641a3eee7b4d35c7009e9aef30db490a3e7b100b8 file=executor/runtime/coerce.go range=120:134 lang=go exported=false byte_range=4378:4915
+  sig=func unwrapWrapper(key string, m map[string]interface{}) interface{}
+  doc=unwrapWrapper returns m's single inner container when m is exactly\n{<key>: <container>} (the arg name echoed as a wrapper), else m verbatim. The\nexact key match + container-only inner keeps a real single-file `sources` map\n(whose key is a path like "src/A.sol", never the arg name) untouched.
+EDGES
+  ^defines=matrix/executor/runtime/coerce.go
+
+NODE id=matrix/executor/runtime.wholeOutputSuffixes kind=var
+  digest=b3:946f5e6d45404af284f1cc01b95ed3c34965ce19dac56da1422ba9a773da1ef2 file=executor/runtime/argref.go range=38:40 lang=go exported=false byte_range=1698:1943
+  sig=map[string]bool
+  doc=wholeOutputSuffixes are the dotted suffixes that mean "substitute the entire\nnode output" rather than extract a named field.
+EDGES
+  ^defines=matrix/executor/runtime/argref.go
+
+NODE id=matrix/executor/runtime.withLock kind=func
+  digest=b3:881b053663edf27f7fec75755d5e3e37eadcb458788399fbc9b936e74d28b9ca file=executor/runtime/walker.go range=823:834 lang=go exported=false byte_range=28668:28972
+  sig=func withLock(mu *sync.Mutex, fn func())
+  doc=withLock invokes fn under mu if mu is non-nil; otherwise inline.\nUsed by execToolCall/execStep/etc to share one map-mutation helper\nbetween the sequential and parallel code paths.
+EDGES
+  ^defines=matrix/executor/runtime/walker.go
+
+NODE id=matrix/executor/runtime/argref.go kind=file
+  digest=b3:eb8adcf8c2b5dfb56be7a071525dd4428f3c9f58ca0329170652c6d2dd7bd88c file=executor/runtime/argref.go range=1:174 lang=go exported=true
+EDGES
+  defines=matrix/executor/runtime.collectNodeOutputs,matrix/executor/runtime.extractField,matrix/executor/runtime.findKey,matrix/executor/runtime.outputRefPattern,matrix/executor/runtime.refField,matrix/executor/runtime.resolveOutputRefs,matrix/executor/runtime.wholeOutputSuffixes
+  ^contains=matrix/executor/runtime
+
+NODE id=matrix/executor/runtime/coerce.go kind=file
+  digest=b3:72f891a001e09ed886ee4aeac62985daaa6742cebc48c109587dd13674fe9c0b file=executor/runtime/coerce.go range=1:238 lang=go exported=true
+EDGES
+  defines=matrix/executor/runtime.coerceArg,matrix/executor/runtime.containsCodeFence,matrix/executor/runtime.decodeEmbeddedJSON,matrix/executor/runtime.hasFloatShape,matrix/executor/runtime.isAllDigitsOptSign,matrix/executor/runtime.jsonCandidates,matrix/executor/runtime.normalizeToolArg,matrix/executor/runtime.stripCodeFence,matrix/executor/runtime.unwrapWrapper
+  ^contains=matrix/executor/runtime
+
+NODE id=matrix/executor/runtime/marshal.go kind=file
+  digest=b3:29d05a87a6576d7526f39b9fbe2a9ae8e500183da41f7b33324709037ec61ba3 file=executor/runtime/marshal.go range=1:29 lang=go exported=true
+EDGES
+  defines=matrix/executor/runtime.marshalToolResult
+  ^contains=matrix/executor/runtime
+
+NODE id=matrix/executor/runtime/skill_loader.go kind=file
+  digest=b3:aa1f95ce97a6babe10310ac3cfc1e44dad5bf72f27b2f694bf87404296ea34d6 file=executor/runtime/skill_loader.go range=1:413 lang=go exported=true
+EDGES
+  defines=matrix/executor/runtime.DefaultSkillRepoRoot,matrix/executor/runtime.ErrInvalidSkillURI,matrix/executor/runtime.ErrUnpinnedSkillURI,matrix/executor/runtime.LoadedSkill,matrix/executor/runtime.NewSkillLoader,matrix/executor/runtime.ParseSkillURI,matrix/executor/runtime.SkillLoader,matrix/executor/runtime.SkillLoader.Load,matrix/executor/runtime.SkillURI,matrix/executor/runtime.extractRefList,matrix/executor/runtime.extractSkillMeta,matrix/executor/runtime.kvIdentList,matrix/executor/runtime.kvString,matrix/executor/runtime.skillMeta,matrix/executor/runtime.splitOnSpace
+  ^contains=matrix/executor/runtime
+
+NODE id=matrix/executor/runtime/skill_reload.go kind=file
+  digest=b3:e9fde765dc3d9641914b3d3391f9c57654199e380cb6f7c50cb2744380753550 file=executor/runtime/skill_reload.go range=1:383 lang=go exported=true
+EDGES
+  defines=matrix/executor/runtime.DevReloadEnabled,matrix/executor/runtime.NewSkillReloader,matrix/executor/runtime.SkillReloader,matrix/executor/runtime.SkillReloader.Close,matrix/executor/runtime.SkillReloader.Enabled,matrix/executor/runtime.SkillReloader.LatestErrors,matrix/executor/runtime.SkillReloader.Lookup,matrix/executor/runtime.SkillReloader.Start,matrix/executor/runtime.SkillReloader.appendErr,matrix/executor/runtime.SkillReloader.dropSlug,matrix/executor/runtime.SkillReloader.initialScan,matrix/executor/runtime.SkillReloader.isSkillMtx,matrix/executor/runtime.SkillReloader.loop,matrix/executor/runtime.SkillReloader.parseAndLoad,matrix/executor/runtime.SkillReloader.reparseSlug,matrix/executor/runtime.devReloadEnv,matrix/executor/runtime.peekSkillVersion,matrix/executor/runtime.slugOfPath
+  ^contains=matrix/executor/runtime
+
+NODE id=matrix/executor/runtime/walker.go kind=file
+  digest=b3:880aed1930cbe7b79286449b843a257bf998711bf4f28a74dfd1b2d995a75ad0 file=executor/runtime/walker.go range=1:845 lang=go exported=true
+EDGES
+  defines=matrix/executor/runtime.AllowAllGate,matrix/executor/runtime.AllowAllGate.HandleGate,matrix/executor/runtime.Correction,matrix/executor/runtime.CorrectionHandler,matrix/executor/runtime.CorrectionOutcome,matrix/executor/runtime.EnvelopeSink,matrix/executor/runtime.ErrMaterialCorrection,matrix/executor/runtime.ErrSubDispatchNotImplemented,matrix/executor/runtime.EventSink,matrix/executor/runtime.GateDecision,matrix/executor/runtime.GateHandler,matrix/executor/runtime.NewWalker,matrix/executor/runtime.NoopStepHandler,matrix/executor/runtime.NoopStepHandler.HandleStep,matrix/executor/runtime.NotImplementedSubDispatch,matrix/executor/runtime.NotImplementedSubDispatch.HandleSubDispatch,matrix/executor/runtime.StepHandler,matrix/executor/runtime.StepResult,matrix/executor/runtime.SubDispatchHandler,matrix/executor/runtime.SubDispatchResult,matrix/executor/runtime.WalkResult,matrix/executor/runtime.Walker,matrix/executor/runtime.Walker.Run,matrix/executor/runtime.Walker.execGate,matrix/executor/runtime.Walker.execStep,matrix/executor/runtime.Walker.execSubDispatch,matrix/executor/runtime.Walker.execToolCall,matrix/executor/runtime.Walker.pollCorrections,matrix/executor/runtime.Walker.signStep,matrix/executor/runtime.Walker.walkNode,matrix/executor/runtime.Walker.walkNodeWithLock,matrix/executor/runtime.Walker.writeEventMemory,matrix/executor/runtime.WalkerParams,matrix/executor/runtime.errString,matrix/executor/runtime.noopSink,matrix/executor/runtime.noopSink.Event,matrix/executor/runtime.truncate,matrix/executor/runtime.withLock
+  ^contains=matrix/executor/runtime

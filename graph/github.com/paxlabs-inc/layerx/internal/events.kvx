@@ -1,0 +1,140 @@
+# GENERATED gen=codegraph do-not-edit merkle=b3:2dc69ec8dbbe0231373534486cf12ff6fdb0eaad7b2dfdcbc4d73453c8542ee8
+
+NODE id=github.com/paxlabs-inc/layerx/internal/events kind=package
+  digest=b3:a4f4b20d7b905f88d6b386530e30577eec816a0a56765f5be5ade7fab361124c file=layerx/internal/events range=0:0 lang=go exported=true
+EDGES
+  contains=github.com/paxlabs-inc/layerx/internal/events/broker.go
+  ^contains=mod:github.com/paxlabs-inc/layerx
+
+NODE id=github.com/paxlabs-inc/layerx/internal/events.Broker kind=type
+  digest=b3:1d6c9e8e7b25469685ceda98ff8838b103691e26a89728a97694a6e3f5066c12 file=layerx/internal/events/broker.go range=38:48 lang=go exported=true byte_range=1432:1887
+  sig=type Broker struct {\n	mu	sync.Mutex\n	subs	map[int]chan Event\n	nextID	int\n	bufSize	int\n}
+  doc=Broker fans Events out to all current subscribers. A slow subscriber whose\nbuffer fills is dropped (its channel closed) rather than blocking the\npublisher or silently losing events: the SSE handler detects the close, tells\nthe client to resync, and the client reconnects + replays from its\nLast-Event-ID. Correctness over best-effort delivery.
+EDGES
+  contains=github.com/paxlabs-inc/layerx/internal/events.Broker#bufSize,github.com/paxlabs-inc/layerx/internal/events.Broker#mu,github.com/paxlabs-inc/layerx/internal/events.Broker#nextID,github.com/paxlabs-inc/layerx/internal/events.Broker#subs,github.com/paxlabs-inc/layerx/internal/events.Broker.Publish,github.com/paxlabs-inc/layerx/internal/events.Broker.Subscribe,github.com/paxlabs-inc/layerx/internal/events.Broker.Subscribers,github.com/paxlabs-inc/layerx/internal/events.Broker.remove
+  implements=github.com/paxlabs-inc/layerx/internal/events.Publisher
+  ^defines=github.com/paxlabs-inc/layerx/internal/events/broker.go
+
+NODE id=github.com/paxlabs-inc/layerx/internal/events.Broker#bufSize kind=field
+  digest=b3:b0596317f2dfb7ffe55916995bf4bebe0be7bc79bc842789da7701af5a156725 file=layerx/internal/events/broker.go range=47:47 lang=go exported=false byte_range=1874:1885
+  sig=int
+EDGES
+  ^contains=github.com/paxlabs-inc/layerx/internal/events.Broker
+
+NODE id=github.com/paxlabs-inc/layerx/internal/events.Broker#mu kind=field
+  digest=b3:8fb472e3c101ddbe82de3f6e4339791010616cf667662d8f80f5b138ddbd790f file=layerx/internal/events/broker.go range=44:44 lang=go exported=false byte_range=1813:1831
+  sig=sync.Mutex
+EDGES
+  ^contains=github.com/paxlabs-inc/layerx/internal/events.Broker
+
+NODE id=github.com/paxlabs-inc/layerx/internal/events.Broker#nextID kind=field
+  digest=b3:d1146284a37beaea03a09b785ec4bb14e518178171214248809a318515ef5c71 file=layerx/internal/events/broker.go range=46:46 lang=go exported=false byte_range=1861:1872
+  sig=int
+EDGES
+  ^contains=github.com/paxlabs-inc/layerx/internal/events.Broker
+
+NODE id=github.com/paxlabs-inc/layerx/internal/events.Broker#subs kind=field
+  digest=b3:c1aa82654a3b42273185d85c9ba1b929b8500641bad6e843895c3bbfe9211a44 file=layerx/internal/events/broker.go range=45:45 lang=go exported=false byte_range=1833:1859
+  sig=map[int]chan events.Event
+EDGES
+  ^contains=github.com/paxlabs-inc/layerx/internal/events.Broker
+
+NODE id=github.com/paxlabs-inc/layerx/internal/events.Broker.Publish kind=method
+  digest=b3:67bfd0482c41991bdd999e1e940a9193857fee1e439310f6f09b2fcbd9b34b5a file=layerx/internal/events/broker.go range=83:96 lang=go exported=true byte_range=2903:3243
+  sig=func (b *Broker) Publish(ev Event)
+  doc=Publish fans an event out to every subscriber, non-blocking. A subscriber\nwhose buffer is full is dropped (channel closed) so it reconnects + replays.
+EDGES
+  ^contains=github.com/paxlabs-inc/layerx/internal/events.Broker
+  ^defines=github.com/paxlabs-inc/layerx/internal/events/broker.go
+
+NODE id=github.com/paxlabs-inc/layerx/internal/events.Broker.Subscribe kind=method
+  digest=b3:eb1d3289e9e64305f5d5aedefce64e35525cd33f320bd57142df862d04c6e986 file=layerx/internal/events/broker.go range=59:70 lang=go exported=true byte_range=2177:2605
+  sig=func (b *Broker) Subscribe() (<-chan Event, func())
+  doc=Subscribe registers a new subscriber and returns its event channel plus a\ncancel func the caller MUST invoke (defer) when done. The channel is closed\neither by cancel or when the subscriber is dropped for lagging.
+EDGES
+  ^contains=github.com/paxlabs-inc/layerx/internal/events.Broker
+  ^defines=github.com/paxlabs-inc/layerx/internal/events/broker.go
+
+NODE id=github.com/paxlabs-inc/layerx/internal/events.Broker.Subscribers kind=method
+  digest=b3:a7d9c6f692bd8394f2be82f9da9dd067aaf6028e05a72977ddfdde9dcb07801d file=layerx/internal/events/broker.go range=98:103 lang=go exported=true byte_range=3245:3412
+  sig=func (b *Broker) Subscribers() int
+  doc=Subscribers reports the current subscriber count (observability/tests).
+EDGES
+  ^contains=github.com/paxlabs-inc/layerx/internal/events.Broker
+  ^defines=github.com/paxlabs-inc/layerx/internal/events/broker.go
+
+NODE id=github.com/paxlabs-inc/layerx/internal/events.Broker.remove kind=method
+  digest=b3:0da97b5a8b4bdb2d83405048de6695b487ec5ed32ac52b93dbadf38bd62aac77 file=layerx/internal/events/broker.go range=72:81 lang=go exported=false byte_range=2607:2901
+  sig=func (b *Broker) remove(id int)
+  doc=remove unregisters + closes a subscriber exactly once (guarded by the lock,\nso it is safe whether triggered by cancel or by a lagging drop in Publish).
+EDGES
+  ^contains=github.com/paxlabs-inc/layerx/internal/events.Broker
+  ^defines=github.com/paxlabs-inc/layerx/internal/events/broker.go
+
+NODE id=github.com/paxlabs-inc/layerx/internal/events.Event kind=type
+  digest=b3:70890ff264af1319186763180d981b00551caedaaf7f78a2746c7be7f4d7575f file=layerx/internal/events/broker.go range=22:30 lang=go exported=true byte_range=869:1229
+  sig=type Event struct {\n	Type	string\n	Seq	int64\n	Data	json.RawMessage\n}
+  doc=Event is one server-sent event. Seq is the transfer's monotonic sequence for\ntransfer events — it doubles as the SSE `id:` and the Last-Event-ID replay\ncursor. It is 0 for non-transfer events (anchor/batch), which are live-only;\na reconnecting client refetches those over REST.
+EDGES
+  contains=github.com/paxlabs-inc/layerx/internal/events.Event#Data,github.com/paxlabs-inc/layerx/internal/events.Event#Seq,github.com/paxlabs-inc/layerx/internal/events.Event#Type
+  ^defines=github.com/paxlabs-inc/layerx/internal/events/broker.go
+
+NODE id=github.com/paxlabs-inc/layerx/internal/events.Event#Data kind=field
+  digest=b3:99baa18fce9055f552af847786716d7c19f0bfc79feabc816e27f7063cdf6741 file=layerx/internal/events/broker.go range=29:29 lang=go exported=true byte_range=1207:1227
+  sig=json.RawMessage
+EDGES
+  ^contains=github.com/paxlabs-inc/layerx/internal/events.Event
+
+NODE id=github.com/paxlabs-inc/layerx/internal/events.Event#Seq kind=field
+  digest=b3:1863db5ac14d5213735461529cb48744ef9b7b73d7fdf878eb31fd861c5c691b file=layerx/internal/events/broker.go range=28:28 lang=go exported=true byte_range=1195:1205
+  sig=int64
+EDGES
+  ^contains=github.com/paxlabs-inc/layerx/internal/events.Event
+
+NODE id=github.com/paxlabs-inc/layerx/internal/events.Event#Type kind=field
+  digest=b3:18584b4d36c9c67dd1d92cd78ec834742cf1f0c51ec43edc0f71a553fdac6e96 file=layerx/internal/events/broker.go range=27:27 lang=go exported=true byte_range=1182:1193
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/layerx/internal/events.Event
+
+NODE id=github.com/paxlabs-inc/layerx/internal/events.NewBroker kind=func
+  digest=b3:29342aa7a8008f7f5619e8999975d370b013b415a01ed47657bf8eaeec03368d file=layerx/internal/events/broker.go range=50:57 lang=go exported=true byte_range=1889:2175
+  sig=func NewBroker(bufSize int) *Broker
+  doc=NewBroker constructs a broker. bufSize is the per-subscriber buffer; a\nsubscriber that falls more than bufSize events behind is dropped.
+EDGES
+  ^defines=github.com/paxlabs-inc/layerx/internal/events/broker.go
+
+NODE id=github.com/paxlabs-inc/layerx/internal/events.Publisher kind=interface
+  digest=b3:33ad827079f432b22768238b102e74560cd8c68dedd20f9baa07a5d3f7dabf4c file=layerx/internal/events/broker.go range=32:36 lang=go exported=true byte_range=1231:1430
+  sig=type Publisher interface {\n	Publish(Event)\n}
+  doc=Publisher is the narrow write side, so producers (e.g. the settlement worker)\ndepend only on Publish and stay decoupled from the broker's lifecycle.
+EDGES
+  ^implements=github.com/paxlabs-inc/layerx/internal/events.Broker
+  ^defines=github.com/paxlabs-inc/layerx/internal/events/broker.go
+
+NODE id=github.com/paxlabs-inc/layerx/internal/events.TypeAnchor kind=const
+  digest=b3:cc38295a5e2c9bb56cdbb27d762a962c0d58d18938355bd25b32d5bf4181f09b file=layerx/internal/events/broker.go range=15:18 lang=go exported=true byte_range=595:738
+  sig=untyped string
+  doc=Event kinds the explorer subscribes to.
+EDGES
+  ^defines=github.com/paxlabs-inc/layerx/internal/events/broker.go
+
+NODE id=github.com/paxlabs-inc/layerx/internal/events.TypeBatch kind=const
+  digest=b3:ef3522b89f83c8fb4da597be15bda04704adf2e2d017f619a3982f2d5af5a7e8 file=layerx/internal/events/broker.go range=15:19 lang=go exported=true byte_range=595:805
+  sig=untyped string
+  doc=Event kinds the explorer subscribes to.
+EDGES
+  ^defines=github.com/paxlabs-inc/layerx/internal/events/broker.go
+
+NODE id=github.com/paxlabs-inc/layerx/internal/events.TypeTransfer kind=const
+  digest=b3:db05a1ea12a90c488e801b2db8527ee73a8b8d8b4de8cc1626e34992fbcdedfa file=layerx/internal/events/broker.go range=15:17 lang=go exported=true byte_range=595:672
+  sig=untyped string
+  doc=Event kinds the explorer subscribes to.
+EDGES
+  ^defines=github.com/paxlabs-inc/layerx/internal/events/broker.go
+
+NODE id=github.com/paxlabs-inc/layerx/internal/events/broker.go kind=file
+  digest=b3:236d7bd80de073b5a812c7e851a03d07a9ce0e64bce06c35eaf58c1e079e5da9 file=layerx/internal/events/broker.go range=1:103 lang=go exported=true
+EDGES
+  defines=github.com/paxlabs-inc/layerx/internal/events.Broker,github.com/paxlabs-inc/layerx/internal/events.Broker.Publish,github.com/paxlabs-inc/layerx/internal/events.Broker.Subscribe,github.com/paxlabs-inc/layerx/internal/events.Broker.Subscribers,github.com/paxlabs-inc/layerx/internal/events.Broker.remove,github.com/paxlabs-inc/layerx/internal/events.Event,github.com/paxlabs-inc/layerx/internal/events.NewBroker,github.com/paxlabs-inc/layerx/internal/events.Publisher,github.com/paxlabs-inc/layerx/internal/events.TypeAnchor,github.com/paxlabs-inc/layerx/internal/events.TypeBatch,github.com/paxlabs-inc/layerx/internal/events.TypeTransfer
+  ^contains=github.com/paxlabs-inc/layerx/internal/events

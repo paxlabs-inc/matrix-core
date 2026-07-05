@@ -1,0 +1,799 @@
+# GENERATED gen=codegraph do-not-edit merkle=b3:2dc69ec8dbbe0231373534486cf12ff6fdb0eaad7b2dfdcbc4d73453c8542ee8
+
+NODE id=matrix/cody/internal/worker kind=package
+  digest=b3:b44d6dcfde5384b0846d5f00edbf23624eac7c1fe7d60630ca63600f29c0c8d0 file=cody/internal/worker range=0:0 lang=go exported=true
+EDGES
+  contains=matrix/cody/internal/worker/diagnostics.go,matrix/cody/internal/worker/jobs.go,matrix/cody/internal/worker/loop.go,matrix/cody/internal/worker/scaffold.go,matrix/cody/internal/worker/search.go,matrix/cody/internal/worker/worker.go
+  ^contains=mod:matrix/cody
+
+NODE id=matrix/cody/internal/worker.New kind=func
+  digest=b3:a5b503f8da95146b826da008cfd78a8814613c8d67e25881066e6a9de1e2a356 file=cody/internal/worker/worker.go range=114:152 lang=go exported=true byte_range=4150:5053
+  sig=func New(opts Options) (*Worker, error)
+  doc=New builds a worker for one sheet.
+EDGES
+  ^defines=matrix/cody/internal/worker/worker.go
+
+NODE id=matrix/cody/internal/worker.Options kind=type
+  digest=b3:3fc28b3aff0fc3d642a8bfed45605edc1d8a5fe3e6f1b22a99825041dd2ab218 file=cody/internal/worker/worker.go range=36:65 lang=go exported=true byte_range=1157:2510
+  sig=type Options struct {\n	Sheet	*contract.TaskSheet\n	// Grounding is the minimal grounding bundle (workspace summary, seam\n	// notes) — the ONLY context beyond the sheet itself.\n	Grounding	string\n	// Root is the workspace root the worker operates in.\n	Root	string\n	// Client is the LLM client (cody gateway slot).\n	Client	*llm.Client\n	// MaxSteps bounds the tool loop; default 48.\n	MaxSteps	int\n	// ExecTimeout bounds one exec tool call; default 5m.\n	ExecTimeout	time.Duration\n	// VerifyTimeout bounds one verification command; default verify.DefaultTimeout.\n	VerifyTimeout	time.Duration\n	// ExtraTools extends the tool surface (e.g. the MCP-backed browser,\n	// fetch, and web-search bridges wired in by codyd).\n	ExtraTools	[]llm.Tool\n	// ExtraDispatch executes an ExtraTools call by function name.\n	ExtraDispatch	func(ctx context.Context, name string, args map[string]interface{}) (string, error)\n	// Skills, when set, surfaces the skills library to the worker: the index\n	// (names + one-line descriptions) rides the system prompt, bodies are\n	// pulled on demand with the skill_load tool.\n	Skills	*policy.Skills\n	// ScaffoldDir, when set, points at the scaffolder suite\n	// (scaffold-<stack>.sh). Greenfield structure comes from a scaffolder run\n	// via exec, never hand-written boilerplate.\n	ScaffoldDir	string\n}
+  doc=Options configures one worker run.
+EDGES
+  contains=matrix/cody/internal/worker.Options#Client,matrix/cody/internal/worker.Options#ExecTimeout,matrix/cody/internal/worker.Options#ExtraDispatch,matrix/cody/internal/worker.Options#ExtraTools,matrix/cody/internal/worker.Options#Grounding,matrix/cody/internal/worker.Options#MaxSteps,matrix/cody/internal/worker.Options#Root,matrix/cody/internal/worker.Options#ScaffoldDir,matrix/cody/internal/worker.Options#Sheet,matrix/cody/internal/worker.Options#Skills,matrix/cody/internal/worker.Options#VerifyTimeout
+  ^defines=matrix/cody/internal/worker/worker.go
+
+NODE id=matrix/cody/internal/worker.Options#Client kind=field
+  digest=b3:e975b90689da77ed2e3cf8f64b4b652d918c4ab1d475cd1bc7bcc57b9467432b file=cody/internal/worker/worker.go range=44:45 lang=go exported=true byte_range=1459:1527
+  sig=*llm.Client
+  doc=Client is the LLM client (cody gateway slot).
+EDGES
+  ^contains=matrix/cody/internal/worker.Options
+
+NODE id=matrix/cody/internal/worker.Options#ExecTimeout kind=field
+  digest=b3:7b0e77c8adee33594f23a20e9407f9905aba2f663f1b70f3ddbafcc0e0f12a44 file=cody/internal/worker/worker.go range=48:49 lang=go exported=true byte_range=1590:1670
+  sig=time.Duration
+  doc=ExecTimeout bounds one exec tool call; default 5m.
+EDGES
+  ^contains=matrix/cody/internal/worker.Options
+
+NODE id=matrix/cody/internal/worker.Options#ExtraDispatch kind=field
+  digest=b3:5536747f7813f7ddd5c7343df54a4653d5f10fa54769d21c477eb401c61ed476 file=cody/internal/worker/worker.go range=55:56 lang=go exported=true byte_range=1930:2091
+  sig=func(ctx context.Context, name string, args map[string]interface{}) (string, error)
+  doc=ExtraDispatch executes an ExtraTools call by function name.
+EDGES
+  ^contains=matrix/cody/internal/worker.Options
+
+NODE id=matrix/cody/internal/worker.Options#ExtraTools kind=field
+  digest=b3:8f6fee5322a5874d0ba20f749b260e848ee1f7ba5472f9534e138d919d32d81c file=cody/internal/worker/worker.go range=52:54 lang=go exported=true byte_range=1783:1928
+  sig=[]llm.Tool
+  doc=ExtraTools extends the tool surface (e.g. the MCP-backed browser,\nfetch, and web-search bridges wired in by codyd).
+EDGES
+  ^contains=matrix/cody/internal/worker.Options
+
+NODE id=matrix/cody/internal/worker.Options#Grounding kind=field
+  digest=b3:56f3666ce025291384463c34dfc63fa7a3ad2014d55001ebc6fc191dc019cc1e file=cody/internal/worker/worker.go range=39:41 lang=go exported=true byte_range=1245:1389
+  sig=string
+  doc=Grounding is the minimal grounding bundle (workspace summary, seam\nnotes) — the ONLY context beyond the sheet itself.
+EDGES
+  ^contains=matrix/cody/internal/worker.Options
+
+NODE id=matrix/cody/internal/worker.Options#MaxSteps kind=field
+  digest=b3:0344ef1d4c66bda2b7b8e0246733cbe3eee315ce98d8c33219d72ca2568a3813 file=cody/internal/worker/worker.go range=46:47 lang=go exported=true byte_range=1529:1588
+  sig=int
+  doc=MaxSteps bounds the tool loop; default 48.
+EDGES
+  ^contains=matrix/cody/internal/worker.Options
+
+NODE id=matrix/cody/internal/worker.Options#Root kind=field
+  digest=b3:db843c121f5510ed11f9a5e5fea004f2d7cd245f88f3e0f9c4f9c513837ab148 file=cody/internal/worker/worker.go range=42:43 lang=go exported=true byte_range=1391:1457
+  sig=string
+  doc=Root is the workspace root the worker operates in.
+EDGES
+  ^contains=matrix/cody/internal/worker.Options
+
+NODE id=matrix/cody/internal/worker.Options#ScaffoldDir kind=field
+  digest=b3:4e2f9e95cb6554a471ddeb8c1a05a0fffbc77a7a95a3a9e6816f142c31daca90 file=cody/internal/worker/worker.go range=61:64 lang=go exported=true byte_range=2310:2508
+  sig=string
+  doc=ScaffoldDir, when set, points at the scaffolder suite\n(scaffold-<stack>.sh). Greenfield structure comes from a scaffolder run\nvia exec, never hand-written boilerplate.
+EDGES
+  ^contains=matrix/cody/internal/worker.Options
+
+NODE id=matrix/cody/internal/worker.Options#Sheet kind=field
+  digest=b3:a536b8bc2038c5ee12afeced8909beb2fd5dd6d58824c2adc1adabbc61b9f469 file=cody/internal/worker/worker.go range=38:38 lang=go exported=true byte_range=1218:1243
+  sig=*contract.TaskSheet
+EDGES
+  ^contains=matrix/cody/internal/worker.Options
+
+NODE id=matrix/cody/internal/worker.Options#Skills kind=field
+  digest=b3:dcaa4e185015c3361857eb56ffd9237de7a867994e2de46e1b56ccca3ef39285 file=cody/internal/worker/worker.go range=57:60 lang=go exported=true byte_range=2093:2308
+  sig=*policy.Skills
+  doc=Skills, when set, surfaces the skills library to the worker: the index\n(names + one-line descriptions) rides the system prompt, bodies are\npulled on demand with the skill_load tool.
+EDGES
+  ^contains=matrix/cody/internal/worker.Options
+
+NODE id=matrix/cody/internal/worker.Options#VerifyTimeout kind=field
+  digest=b3:ec1309fb59153e1cd241c85d9e2bcaf6296dc79871b9efd97b243c0cfe6589ee file=cody/internal/worker/worker.go range=50:51 lang=go exported=true byte_range=1672:1781
+  sig=time.Duration
+  doc=VerifyTimeout bounds one verification command; default verify.DefaultTimeout.
+EDGES
+  ^contains=matrix/cody/internal/worker.Options
+
+NODE id=matrix/cody/internal/worker.ScaffoldStacks kind=func
+  digest=b3:c17a64f62eabd3185a42c3ed1b4d017878063f72edcbffdef688361246462035 file=cody/internal/worker/scaffold.go range=12:33 lang=go exported=true byte_range=222:894
+  sig=func ScaffoldStacks(dir string) []string
+  doc=ScaffoldStacks lists the stacks the scaffolder suite at dir supports, from\nits scaffold-<stack>.sh files. Empty when the dir is unset or unreadable —\nthe prompt section is simply omitted then (boot-safe).
+EDGES
+  ^defines=matrix/cody/internal/worker/scaffold.go
+
+NODE id=matrix/cody/internal/worker.Worker kind=type
+  digest=b3:f9bac15f51394e07af4dd9c4a6633749bfda7c3a8d2807932371d0a88b58c0ea file=cody/internal/worker/worker.go range=78:107 lang=go exported=true byte_range=2917:4089
+  sig=type Worker struct {\n	opts	Options\n	edits	*edit.Engine\n	runner	*verify.Runner\n\n	messages	[]llm.Message\n	// changes is the ENGINE's record of workspace mutations (path -> kind);\n	// the model's turn_in supplies the why, never the facts.\n	changes		map[string]string\n	changeWhy	map[string]string\n	// lastVerify holds the most recent verify_run results; verifySeq/mutSeq\n	// order verification against mutations so stale green can never carry a\n	// done claim.\n	lastVerify	[]verify.Result\n	verifySeq	int\n	mutSeq		int\n	// overflows tracks read-full obligations: overflow file -> read cursor.\n	overflows	map[string]*overflowState\n	// services are supervised background processes, killed at run end.\n	services	map[string]*exec.Cmd\n	// jobs are auto-promoted background commands (long execs), killed at run end.\n	jobs	map[string]*job\n	// loops is the stuck-worker guard: hashed (tool, input, output) signatures\n	// over a sliding window; a repeated identical call stops the run honestly\n	// instead of burning the step budget.\n	loops	loopDetector\n	// usage accumulates the worker's LLM token spend across the run.\n	usage	contract.Usage\n}
+  doc=Worker executes one task sheet.
+EDGES
+  contains=matrix/cody/internal/worker.Worker#changeWhy,matrix/cody/internal/worker.Worker#changes,matrix/cody/internal/worker.Worker#edits,matrix/cody/internal/worker.Worker#jobs,matrix/cody/internal/worker.Worker#lastVerify,matrix/cody/internal/worker.Worker#loops,matrix/cody/internal/worker.Worker#messages,matrix/cody/internal/worker.Worker#mutSeq,matrix/cody/internal/worker.Worker#opts,matrix/cody/internal/worker.Worker#overflows,matrix/cody/internal/worker.Worker#runner,matrix/cody/internal/worker.Worker#services,matrix/cody/internal/worker.Worker#usage,matrix/cody/internal/worker.Worker#verifySeq,matrix/cody/internal/worker.Worker.Run,matrix/cody/internal/worker.Worker.diagnose,matrix/cody/internal/worker.Worker.dispatch,matrix/cody/internal/worker.Worker.evidence,matrix/cody/internal/worker.Worker.finishInlineExec,matrix/cody/internal/worker.Worker.foldFinishedJobs,matrix/cody/internal/worker.Worker.guardTouch,matrix/cody/internal/worker.Worker.pendingOverflows,matrix/cody/internal/worker.Worker.reapJob,matrix/cody/internal/worker.Worker.recordChange,matrix/cody/internal/worker.Worker.runningJobs,matrix/cody/internal/worker.Worker.screenshotEvidence,matrix/cody/internal/worker.Worker.startJob,matrix/cody/internal/worker.Worker.stopAllJobs,matrix/cody/internal/worker.Worker.stopAllServices,matrix/cody/internal/worker.Worker.synthesizeReport,matrix/cody/internal/worker.Worker.systemPrompt,matrix/cody/internal/worker.Worker.toolDelete,matrix/cody/internal/worker.Worker.toolEdit,matrix/cody/internal/worker.Worker.toolExec,matrix/cody/internal/worker.Worker.toolGlob,matrix/cody/internal/worker.Worker.toolGrep,matrix/cody/internal/worker.Worker.toolJobKill,matrix/cody/internal/worker.Worker.toolJobOutput,matrix/cody/internal/worker.Worker.toolList,matrix/cody/internal/worker.Worker.toolRead,matrix/cody/internal/worker.Worker.toolSchemas,matrix/cody/internal/worker.Worker.toolServiceStart,matrix/cody/internal/worker.Worker.toolServiceStop,matrix/cody/internal/worker.Worker.toolSkillLoad,matrix/cody/internal/worker.Worker.toolVerifyRun,matrix/cody/internal/worker.Worker.toolWrite,matrix/cody/internal/worker.Worker.trackedChanges,matrix/cody/internal/worker.Worker.tryTurnIn,matrix/cody/internal/worker.Worker.userPrompt
+  ^defines=matrix/cody/internal/worker/worker.go
+
+NODE id=matrix/cody/internal/worker.Worker#changeWhy kind=field
+  digest=b3:92692b5e9656ce1e4e05dbf216260b009b917783f45226d1058c6c7380f1aac4 file=cody/internal/worker/worker.go range=88:88 lang=go exported=false byte_range=3221:3248
+  sig=map[string]string
+EDGES
+  ^contains=matrix/cody/internal/worker.Worker
+
+NODE id=matrix/cody/internal/worker.Worker#changes kind=field
+  digest=b3:4b4237f2bf56a16984e49888817994c76bd36b6b8a2dbf8968446c8d5dc8f0d6 file=cody/internal/worker/worker.go range=85:87 lang=go exported=false byte_range=3059:3219
+  sig=map[string]string
+  doc=changes is the ENGINE's record of workspace mutations (path -> kind);\nthe model's turn_in supplies the why, never the facts.
+EDGES
+  ^contains=matrix/cody/internal/worker.Worker
+
+NODE id=matrix/cody/internal/worker.Worker#edits kind=field
+  digest=b3:ee268f57e7be28dd7d24e27f64f2e15783457b442caecd6d60c1c86aed1dcb68 file=cody/internal/worker/worker.go range=81:81 lang=go exported=false byte_range=2990:3009
+  sig=*edit.Engine
+EDGES
+  ^contains=matrix/cody/internal/worker.Worker
+
+NODE id=matrix/cody/internal/worker.Worker#jobs kind=field
+  digest=b3:41190d4e3e037d5864cc7da7a47f9117a0f215e7d8f74ed704e333ffd1ea89fb file=cody/internal/worker/worker.go range=99:100 lang=go exported=false byte_range=3685:3785
+  sig=map[string]*worker.job
+  doc=jobs are auto-promoted background commands (long execs), killed at run end.
+EDGES
+  ^contains=matrix/cody/internal/worker.Worker
+
+NODE id=matrix/cody/internal/worker.Worker#lastVerify kind=field
+  digest=b3:c2c9e0e564ceb57042543cdc7bc0dab5363b4c15af6136122f185271f2b5dfe7 file=cody/internal/worker/worker.go range=89:92 lang=go exported=false byte_range=3250:3440
+  sig=[]verify.Result
+  doc=lastVerify holds the most recent verify_run results; verifySeq/mutSeq\norder verification against mutations so stale green can never carry a\ndone claim.
+EDGES
+  ^contains=matrix/cody/internal/worker.Worker
+
+NODE id=matrix/cody/internal/worker.Worker#loops kind=field
+  digest=b3:cb44fa4a84d10bf477c08c0c98db67d403c6deb4a7b8fee55d4407d547f9e9c8 file=cody/internal/worker/worker.go range=101:104 lang=go exported=false byte_range=3787:3998
+  sig=worker.loopDetector
+  doc=loops is the stuck-worker guard: hashed (tool, input, output) signatures\nover a sliding window; a repeated identical call stops the run honestly\ninstead of burning the step budget.
+EDGES
+  ^contains=matrix/cody/internal/worker.Worker
+
+NODE id=matrix/cody/internal/worker.Worker#messages kind=field
+  digest=b3:230cf15a98d0bd909e0bd4741e35063f3e4b21cc2a7d1c7dc7a844c07c226317 file=cody/internal/worker/worker.go range=84:84 lang=go exported=false byte_range=3035:3057
+  sig=[]llm.Message
+EDGES
+  ^contains=matrix/cody/internal/worker.Worker
+
+NODE id=matrix/cody/internal/worker.Worker#mutSeq kind=field
+  digest=b3:9fe5c949cc3c029a4cf509b1eca23e1a54dccbd7680777ca290b3c722684097c file=cody/internal/worker/worker.go range=94:94 lang=go exported=false byte_range=3458:3472
+  sig=int
+EDGES
+  ^contains=matrix/cody/internal/worker.Worker
+
+NODE id=matrix/cody/internal/worker.Worker#opts kind=field
+  digest=b3:f26816862a1d0e633e1dbd70650da610fe11ee4d7ce86618ad10dffac99d1037 file=cody/internal/worker/worker.go range=80:80 lang=go exported=false byte_range=2974:2988
+  sig=worker.Options
+EDGES
+  ^contains=matrix/cody/internal/worker.Worker
+
+NODE id=matrix/cody/internal/worker.Worker#overflows kind=field
+  digest=b3:1ad682a36f2bb2a4151b37e017470a0d97e1fee87884fbf64a29bdc64c19efb4 file=cody/internal/worker/worker.go range=95:96 lang=go exported=false byte_range=3474:3583
+  sig=map[string]*worker.overflowState
+  doc=overflows tracks read-full obligations: overflow file -> read cursor.
+EDGES
+  ^contains=matrix/cody/internal/worker.Worker
+
+NODE id=matrix/cody/internal/worker.Worker#runner kind=field
+  digest=b3:d232656ce94186df0ede298fa6a620476fb9a08941ab7ae8465b607b727c078a file=cody/internal/worker/worker.go range=82:82 lang=go exported=false byte_range=3011:3032
+  sig=*verify.Runner
+EDGES
+  ^contains=matrix/cody/internal/worker.Worker
+
+NODE id=matrix/cody/internal/worker.Worker#services kind=field
+  digest=b3:d7d888a9ff04b3cb2a91e9116f4cf66b7b418ce2bf785fbfaad65ed8f86915d7 file=cody/internal/worker/worker.go range=97:98 lang=go exported=false byte_range=3585:3683
+  sig=map[string]*exec.Cmd
+  doc=services are supervised background processes, killed at run end.
+EDGES
+  ^contains=matrix/cody/internal/worker.Worker
+
+NODE id=matrix/cody/internal/worker.Worker#usage kind=field
+  digest=b3:57ed65f785d1dbb375aa4a2c470c21c7d8f027cee46f655637f766c0d46ac357 file=cody/internal/worker/worker.go range=105:106 lang=go exported=false byte_range=4000:4087
+  sig=contract.Usage
+  doc=usage accumulates the worker's LLM token spend across the run.
+EDGES
+  ^contains=matrix/cody/internal/worker.Worker
+
+NODE id=matrix/cody/internal/worker.Worker#verifySeq kind=field
+  digest=b3:709a945dedfd0afc979cf11fae29ab413c5100db9eb768f3389d13d5dad335cf file=cody/internal/worker/worker.go range=93:93 lang=go exported=false byte_range=3442:3456
+  sig=int
+EDGES
+  ^contains=matrix/cody/internal/worker.Worker
+
+NODE id=matrix/cody/internal/worker.Worker.Run kind=method
+  digest=b3:edea61a4c3ff6b3b5bd73ac499a12926b2ff7f191f53de53ebc8188d11c50a0c file=cody/internal/worker/worker.go range=154:214 lang=go exported=true byte_range=5055:7221
+  sig=func (w *Worker) Run(ctx context.Context) (*contract.TurnInReport, error)
+  doc=Run executes the sheet to a structured turn-in report. The context bounds\nthe whole run. Run never returns a fabricated success: if the model stops\ncooperating the report is an honest blocked/partial.
+EDGES
+  ^contains=matrix/cody/internal/worker.Worker
+  ^defines=matrix/cody/internal/worker/worker.go
+
+NODE id=matrix/cody/internal/worker.Worker.diagnose kind=method
+  digest=b3:4d35e8fca85b0355614f1948aa0742f1408d44ce44557045e670a4d104f99900 file=cody/internal/worker/diagnostics.go range=24:57 lang=go exported=false byte_range=527:1686
+  sig=func (w *Worker) diagnose(rel string) string
+  doc=diagnose runs a cheap per-language syntax check on a just-written file and\nreturns a diagnostics note to append to the fs_write/fs_edit tool result —\nso the model learns "you broke the file" in the same step, without waiting\nfor a full verify_run. Best-effort: a missing checker or an unknown\nextension returns "". It never replaces verification.
+EDGES
+  ^contains=matrix/cody/internal/worker.Worker
+  ^defines=matrix/cody/internal/worker/diagnostics.go
+
+NODE id=matrix/cody/internal/worker.Worker.dispatch kind=method
+  digest=b3:63d9b69d0e0d28b980977e355b8c107a10d7ab9b82b35225533ad9502eead704 file=cody/internal/worker/worker.go range=377:427 lang=go exported=false byte_range=12632:13967
+  sig=func (w *Worker) dispatch(ctx context.Context, tc llm.ToolCall) string
+EDGES
+  ^contains=matrix/cody/internal/worker.Worker
+  ^defines=matrix/cody/internal/worker/worker.go
+
+NODE id=matrix/cody/internal/worker.Worker.evidence kind=method
+  digest=b3:29ca753c402c71a0cfc1d5c046a8028f046f54e67f3652f186c595a302c03527 file=cody/internal/worker/worker.go range=345:361 lang=go exported=false byte_range=11850:12347
+  sig=func (w *Worker) evidence() []contract.Evidence
+  doc=evidence converts the engine's own last verification into report evidence.
+EDGES
+  ^contains=matrix/cody/internal/worker.Worker
+  ^defines=matrix/cody/internal/worker/worker.go
+
+NODE id=matrix/cody/internal/worker.Worker.finishInlineExec kind=method
+  digest=b3:6aa6a6573eac816365a081812c64d3e61e2b2f09853876a74cc56fff1a82b0df file=cody/internal/worker/worker.go range=654:669 lang=go exported=false byte_range=20116:20912
+  sig=func (w *Worker) finishInlineExec(j *job, timeoutNote string) string
+  doc=finishInlineExec renders a completed (non-promoted) exec's result exactly\nlike the classic bounded exec: inline output with the overflow-spill +\nread-full obligation for oversized output. The job's log file on disk IS\nthe overflow file.
+EDGES
+  ^contains=matrix/cody/internal/worker.Worker
+  ^defines=matrix/cody/internal/worker/worker.go
+
+NODE id=matrix/cody/internal/worker.Worker.foldFinishedJobs kind=method
+  digest=b3:27bead64d3e675d8b4a68d0df7a795f49a529d881e2655ac26a6c4db9db4fc2a file=cody/internal/worker/jobs.go range=65:81 lang=go exported=false byte_range=1475:1951
+  sig=func (w *Worker) foldFinishedJobs()
+  doc=foldFinishedJobs advances the mutation sequence once per completed job — a\nbackground command may have mutated the workspace right up to its exit, so\nverification that predates the completion is stale. Called at the\nsingle-threaded touch points (dispatch loop, turn-in).
+EDGES
+  ^contains=matrix/cody/internal/worker.Worker
+  ^defines=matrix/cody/internal/worker/jobs.go
+
+NODE id=matrix/cody/internal/worker.Worker.guardTouch kind=method
+  digest=b3:a88a2b3e633700677c3947dc89dc4ff37338d03c60a48225b176aaa7743bc5bf file=cody/internal/worker/worker.go range=443:459 lang=go exported=false byte_range=14225:14844
+  sig=func (w *Worker) guardTouch(rel string) error
+  doc=guardTouch enforces the sheet's do-not-touch set at mutation time.
+EDGES
+  ^contains=matrix/cody/internal/worker.Worker
+  ^defines=matrix/cody/internal/worker/worker.go
+
+NODE id=matrix/cody/internal/worker.Worker.pendingOverflows kind=method
+  digest=b3:a38caf8d8e5a7704c4edf957c80aa732cbe2ce9a164236023e23c8d2af7a27c9 file=cody/internal/worker/worker.go range=363:373 lang=go exported=false byte_range=12349:12604
+  sig=func (w *Worker) pendingOverflows() []string
+  doc=pendingOverflows lists overflow files not yet read to the end.
+EDGES
+  ^contains=matrix/cody/internal/worker.Worker
+  ^defines=matrix/cody/internal/worker/worker.go
+
+NODE id=matrix/cody/internal/worker.Worker.reapJob kind=method
+  digest=b3:c8d2eae187c0d8e068b073016c4b0f085188e56b1957c5c3f9bf1df4dc5ce691 file=cody/internal/worker/worker.go range=671:678 lang=go exported=false byte_range=20914:21168
+  sig=func (w *Worker) reapJob(j *job)
+  doc=reapJob removes a finished job from tracking, marking its completion as\nalready folded into the mutation sequence (toolExec bumped it at start).
+EDGES
+  ^contains=matrix/cody/internal/worker.Worker
+  ^defines=matrix/cody/internal/worker/worker.go
+
+NODE id=matrix/cody/internal/worker.Worker.recordChange kind=method
+  digest=b3:839df289346401ca0df75ba0a85721d73c283332d98be8c09f717ef996bc8ff2 file=cody/internal/worker/worker.go range=461:469 lang=go exported=false byte_range=14846:15146
+  sig=func (w *Worker) recordChange(rel, kind string)
+EDGES
+  ^contains=matrix/cody/internal/worker.Worker
+  ^defines=matrix/cody/internal/worker/worker.go
+
+NODE id=matrix/cody/internal/worker.Worker.runningJobs kind=method
+  digest=b3:81b970e4de413dd264c46626326e9dba40baa0b59d99700f58059275675b5e43 file=cody/internal/worker/jobs.go range=83:93 lang=go exported=false byte_range=1953:2179
+  sig=func (w *Worker) runningJobs() []string
+  doc=runningJobs lists the ids of jobs still running.
+EDGES
+  ^contains=matrix/cody/internal/worker.Worker
+  ^defines=matrix/cody/internal/worker/jobs.go
+
+NODE id=matrix/cody/internal/worker.Worker.screenshotEvidence kind=method
+  digest=b3:87ea864bad5b01318b89963ec5d33674475816e718d54cd8cc6db42b0ff99eaf file=cody/internal/worker/worker.go range=304:329 lang=go exported=false byte_range=10528:11436
+  sig=func (w *Worker) screenshotEvidence(paths []string) []contract.Evidence
+  doc=screenshotEvidence turns claimed screenshot paths into evidence — but only\nfor artifacts that REALLY exist under the workspace root (no fakes: an\nasserted screenshot that isn't on disk is not evidence). A green exit is\nrecorded so the artifact reads as passing evidence in the turn-in.
+EDGES
+  ^contains=matrix/cody/internal/worker.Worker
+  ^defines=matrix/cody/internal/worker/worker.go
+
+NODE id=matrix/cody/internal/worker.Worker.startJob kind=method
+  digest=b3:571b3a9b69386a6133a04bd5c0f9376d7d989c89eb3dc9745fbcb2b1413030b5 file=cody/internal/worker/jobs.go range=95:136 lang=go exported=false byte_range=2181:3350
+  sig=func (w *Worker) startJob(cmdStr string) (*job, error)
+  doc=startJob launches cmdStr with its combined output streaming to a log file\nand returns the tracked job. The process is killed when the worker ends.
+EDGES
+  ^contains=matrix/cody/internal/worker.Worker
+  ^defines=matrix/cody/internal/worker/jobs.go
+
+NODE id=matrix/cody/internal/worker.Worker.stopAllJobs kind=method
+  digest=b3:8a5c9630fd73e4f6a4b59905b0a05523f8c6d0cee8ca7e88fa1c22a8cf27d7e5 file=cody/internal/worker/jobs.go range=185:196 lang=go exported=false byte_range=4621:4884
+  sig=func (w *Worker) stopAllJobs()
+  doc=stopAllJobs kills every still-running background job at worker end.
+EDGES
+  ^contains=matrix/cody/internal/worker.Worker
+  ^defines=matrix/cody/internal/worker/jobs.go
+
+NODE id=matrix/cody/internal/worker.Worker.stopAllServices kind=method
+  digest=b3:49f477943f79981a24f41a8861acb9dd39d33879ee1401e75a0937a58df90f04 file=cody/internal/worker/worker.go range=721:727 lang=go exported=false byte_range=22375:22533
+  sig=func (w *Worker) stopAllServices()
+EDGES
+  ^contains=matrix/cody/internal/worker.Worker
+  ^defines=matrix/cody/internal/worker/worker.go
+
+NODE id=matrix/cody/internal/worker.Worker.synthesizeReport kind=method
+  digest=b3:763e4a94b04fc95158e0c125cb40a62e66515d2db2999d3785703e9854b1fa79 file=cody/internal/worker/worker.go range=216:234 lang=go exported=false byte_range=7223:7836
+  sig=func (w *Worker) synthesizeReport(gap string) *contract.TurnInReport
+  doc=synthesizeReport builds an honest non-done report from engine state when\nthe model failed to turn in.
+EDGES
+  ^contains=matrix/cody/internal/worker.Worker
+  ^defines=matrix/cody/internal/worker/worker.go
+
+NODE id=matrix/cody/internal/worker.Worker.systemPrompt kind=method
+  digest=b3:020fbcb9869c0bd3c2b40ad3ff562f1678b7c279e6914649d82667b5fe0c43f6 file=cody/internal/worker/worker.go range=787:833 lang=go exported=false byte_range=24830:27689
+  sig=func (w *Worker) systemPrompt() string
+EDGES
+  ^contains=matrix/cody/internal/worker.Worker
+  ^defines=matrix/cody/internal/worker/worker.go
+
+NODE id=matrix/cody/internal/worker.Worker.toolDelete kind=method
+  digest=b3:2be6b7bc4ebabc69e9e3b31e6470b07feb207889a1784712b9a93f96b61c3f99 file=cody/internal/worker/worker.go range=589:602 lang=go exported=false byte_range=18288:18651
+  sig=func (w *Worker) toolDelete(args map[string]interface{}) string
+EDGES
+  ^contains=matrix/cody/internal/worker.Worker
+  ^defines=matrix/cody/internal/worker/worker.go
+
+NODE id=matrix/cody/internal/worker.Worker.toolEdit kind=method
+  digest=b3:37208a95290be85422530b2d3f02ae97302e372d97d3388f7ab1b6a87c41c8ef file=cody/internal/worker/worker.go range=571:587 lang=go exported=false byte_range=17768:18286
+  sig=func (w *Worker) toolEdit(args map[string]interface{}) string
+EDGES
+  ^contains=matrix/cody/internal/worker.Worker
+  ^defines=matrix/cody/internal/worker/worker.go
+
+NODE id=matrix/cody/internal/worker.Worker.toolExec kind=method
+  digest=b3:f527489712c405217239ddb34fc27b33064af805202a0ca4506ed5e035d08cfd file=cody/internal/worker/worker.go range=604:652 lang=go exported=false byte_range=18653:20114
+  sig=func (w *Worker) toolExec(ctx context.Context, args map[string]interface{}) string
+  doc=toolExec runs a shell command. A command that finishes within\nautoBackgroundAfter returns inline (overflow-spilled when oversized); a\nlonger one is auto-promoted to a background job so the step returns\nimmediately and the worker keeps moving (poll with job_output, stop with\njob_kill). An explicit timeout_secs at or under the promotion threshold is\nhonored as a hard kill (the legacy bounded-exec contract).
+EDGES
+  ^contains=matrix/cody/internal/worker.Worker
+  ^defines=matrix/cody/internal/worker/worker.go
+
+NODE id=matrix/cody/internal/worker.Worker.toolGlob kind=method
+  digest=b3:18f9ccc8da2e342e6b50db2c3142cd3355c0a55385e0f05b4d4ee91a4dc8337d file=cody/internal/worker/search.go range=122:190 lang=go exported=false byte_range=3160:4863
+  sig=func (w *Worker) toolGlob(args map[string]interface{}) string
+  doc=toolGlob finds files by path pattern (with ** support), newest first — the\norientation primitive fs_list one-directory-at-a-time cannot provide.
+EDGES
+  ^contains=matrix/cody/internal/worker.Worker
+  ^defines=matrix/cody/internal/worker/search.go
+
+NODE id=matrix/cody/internal/worker.Worker.toolGrep kind=method
+  digest=b3:82fcf43d3c9ce48197eeec302dd28806ca52e74ec47785a989f3ab8c01af00bb file=cody/internal/worker/search.go range=35:120 lang=go exported=false byte_range=972:3158
+  sig=func (w *Worker) toolGrep(args map[string]interface{}) string
+  doc=toolGrep is the worker's bounded content search: a regexp over the workspace\ntree without burning exec steps or spilling overflow files.
+EDGES
+  ^contains=matrix/cody/internal/worker.Worker
+  ^defines=matrix/cody/internal/worker/search.go
+
+NODE id=matrix/cody/internal/worker.Worker.toolJobKill kind=method
+  digest=b3:7ccaafd757966d48dc9d30ceb77212fd7551404d9c4b9e4f0069aa4f835c64c6 file=cody/internal/worker/jobs.go range=167:183 lang=go exported=false byte_range=4187:4619
+  sig=func (w *Worker) toolJobKill(args map[string]interface{}) string
+  doc=toolJobKill terminates a background job.
+EDGES
+  ^contains=matrix/cody/internal/worker.Worker
+  ^defines=matrix/cody/internal/worker/jobs.go
+
+NODE id=matrix/cody/internal/worker.Worker.toolJobOutput kind=method
+  digest=b3:e955a0a4ebbefae7775864e471dc7206c5708f42f5f681e44885129630eb17bb file=cody/internal/worker/jobs.go range=150:165 lang=go exported=false byte_range=3627:4185
+  sig=func (w *Worker) toolJobOutput(args map[string]interface{}) string
+  doc=toolJobOutput reports a background job's status and current output tail.\nThe FULL output stays on disk at the job's log path, readable with fs_read.
+EDGES
+  ^contains=matrix/cody/internal/worker.Worker
+  ^defines=matrix/cody/internal/worker/jobs.go
+
+NODE id=matrix/cody/internal/worker.Worker.toolList kind=method
+  digest=b3:d876b9a3e6ab0dea139fa7ac866978b4b4b6cfc7474792d575d38670b7099fb6 file=cody/internal/worker/worker.go range=526:545 lang=go exported=false byte_range=16672:17078
+  sig=func (w *Worker) toolList(args map[string]interface{}) string
+EDGES
+  ^contains=matrix/cody/internal/worker.Worker
+  ^defines=matrix/cody/internal/worker/worker.go
+
+NODE id=matrix/cody/internal/worker.Worker.toolRead kind=method
+  digest=b3:aef78c9e09c87f13d1dd143ebaffe76a551df72b1b8d35291604dc6dc3b1cf1e file=cody/internal/worker/worker.go range=471:506 lang=go exported=false byte_range=15148:16065
+  sig=func (w *Worker) toolRead(args map[string]interface{}) string
+EDGES
+  ^contains=matrix/cody/internal/worker.Worker
+  ^defines=matrix/cody/internal/worker/worker.go
+
+NODE id=matrix/cody/internal/worker.Worker.toolSchemas kind=method
+  digest=b3:a09b9c63b62d8dd701b914ff31e29f69f3caf1dca7641d34cb5ef6706c1f0a56 file=cody/internal/worker/worker.go range=882:966 lang=go exported=false byte_range=29297:35290
+  sig=func (w *Worker) toolSchemas() []llm.Tool
+EDGES
+  ^contains=matrix/cody/internal/worker.Worker
+  ^defines=matrix/cody/internal/worker/worker.go
+
+NODE id=matrix/cody/internal/worker.Worker.toolServiceStart kind=method
+  digest=b3:0afa49673ae81e2bcbcab491613112b6c9abba90ca5fe01d4f37d523bc35fab4 file=cody/internal/worker/worker.go range=680:707 lang=go exported=false byte_range=21170:22063
+  sig=func (w *Worker) toolServiceStart(args map[string]interface{}) string
+EDGES
+  ^contains=matrix/cody/internal/worker.Worker
+  ^defines=matrix/cody/internal/worker/worker.go
+
+NODE id=matrix/cody/internal/worker.Worker.toolServiceStop kind=method
+  digest=b3:c2ef175c417f472d6f57524c4466efe724d5c12c40bb1b8bb68064e78fac4331 file=cody/internal/worker/worker.go range=709:719 lang=go exported=false byte_range=22065:22373
+  sig=func (w *Worker) toolServiceStop(args map[string]interface{}) string
+EDGES
+  ^contains=matrix/cody/internal/worker.Worker
+  ^defines=matrix/cody/internal/worker/worker.go
+
+NODE id=matrix/cody/internal/worker.Worker.toolSkillLoad kind=method
+  digest=b3:0ddf404651c695e109b5faf778c485721efec6dc5a77f546a034f4e710ad0009 file=cody/internal/worker/worker.go range=729:747 lang=go exported=false byte_range=22535:23146
+  sig=func (w *Worker) toolSkillLoad(args map[string]interface{}) string
+  doc=toolSkillLoad returns a skill playbook's full body on demand (the index of\nnames + descriptions rides the system prompt; bodies are never resident).
+EDGES
+  ^contains=matrix/cody/internal/worker.Worker
+  ^defines=matrix/cody/internal/worker/worker.go
+
+NODE id=matrix/cody/internal/worker.Worker.toolVerifyRun kind=method
+  digest=b3:e1f527574e8853c6ce8f6675f170af67a80582aeb377b10854f6bc9e604f2907 file=cody/internal/worker/worker.go range=749:771 lang=go exported=false byte_range=23148:23812
+  sig=func (w *Worker) toolVerifyRun(ctx context.Context) string
+EDGES
+  ^contains=matrix/cody/internal/worker.Worker
+  ^defines=matrix/cody/internal/worker/worker.go
+
+NODE id=matrix/cody/internal/worker.Worker.toolWrite kind=method
+  digest=b3:ed7ada0ecc9123642d54b8e819d1142f2d45cfffeca50d7d536861aef21a89d1 file=cody/internal/worker/worker.go range=547:569 lang=go exported=false byte_range=17080:17766
+  sig=func (w *Worker) toolWrite(args map[string]interface{}) string
+EDGES
+  ^contains=matrix/cody/internal/worker.Worker
+  ^defines=matrix/cody/internal/worker/worker.go
+
+NODE id=matrix/cody/internal/worker.Worker.trackedChanges kind=method
+  digest=b3:b2b57a3aae0b9b7557b4b078002c1f14869f7c0cfbdf3f7f3b189d4be0d81352 file=cody/internal/worker/worker.go range=331:343 lang=go exported=false byte_range=11438:11848
+  sig=func (w *Worker) trackedChanges() []contract.Change
+  doc=trackedChanges renders the engine's mutation record.
+EDGES
+  ^contains=matrix/cody/internal/worker.Worker
+  ^defines=matrix/cody/internal/worker/worker.go
+
+NODE id=matrix/cody/internal/worker.Worker.tryTurnIn kind=method
+  digest=b3:1b40909e6a31c16e82a90fda2d251160ad03c7276215fb9c2d9676c2c9e0d552 file=cody/internal/worker/worker.go range=236:302 lang=go exported=false byte_range=7838:10526
+  sig=func (w *Worker) tryTurnIn(tc llm.ToolCall) (*contract.TurnInReport, string)
+  doc=tryTurnIn adjudicates a turn_in call against the engine's own state. It\nreturns either a valid report or a refusal string fed back to the model.
+EDGES
+  ^contains=matrix/cody/internal/worker.Worker
+  ^defines=matrix/cody/internal/worker/worker.go
+
+NODE id=matrix/cody/internal/worker.Worker.userPrompt kind=method
+  digest=b3:0ebd22793290f6efc5d2f50a5596057ea8afdcbc5f9b3202aba6cdfeed7cc81c file=cody/internal/worker/worker.go range=835:880 lang=go exported=false byte_range=27691:29295
+  sig=func (w *Worker) userPrompt() string
+EDGES
+  ^contains=matrix/cody/internal/worker.Worker
+  ^defines=matrix/cody/internal/worker/worker.go
+
+NODE id=matrix/cody/internal/worker.autoBackgroundAfter kind=var
+  digest=b3:c8e4b9d3152dcfe542d23c4a25dc572f4bb377666945b1244f1781fc0a741eb8 file=cody/internal/worker/jobs.go range=17:22 lang=go exported=false byte_range=273:666
+  sig=time.Duration
+  doc=autoBackgroundAfter is how long an exec command may block a step before it\nis promoted to a background job: the step returns immediately with the job\nid and the output so far, and the command keeps running (npm install,\nbuilds, test suites) instead of eating the step against the exec timeout.\nA package var so tests can compress time.
+EDGES
+  ^defines=matrix/cody/internal/worker/jobs.go
+
+NODE id=matrix/cody/internal/worker.defaultConstitution kind=var
+  digest=b3:f4480be27311d40c38da41b5e3545b71bf190c9c0ea5439931c50ee1513f226b file=cody/internal/worker/worker.go range=775:785 lang=go exported=false byte_range=23844:24828
+  sig=[]string
+  doc=defaultConstitution is the worker-side rendering of the engine-enforced\ninvariants. The prompt states them; the ENGINE enforces them.
+EDGES
+  ^defines=matrix/cody/internal/worker/worker.go
+
+NODE id=matrix/cody/internal/worker.diagMaxBytes kind=const
+  digest=b3:75cea4ae94984afe75efd726e8a84931cff3c0f0c88dad6d80fa82ea778548a9 file=cody/internal/worker/diagnostics.go range=21:22 lang=go exported=false byte_range=432:525
+  sig=untyped int
+  doc=diagMaxBytes caps the diagnostics appended to a tool result.
+EDGES
+  ^defines=matrix/cody/internal/worker/diagnostics.go
+
+NODE id=matrix/cody/internal/worker.diagTimeout kind=const
+  digest=b3:6e64250842ee530c5e1f146708a5259c3da1943deebc450b343d43c02dcd3d6f file=cody/internal/worker/diagnostics.go range=17:19 lang=go exported=false byte_range=285:430
+  sig=time.Duration
+  doc=diagTimeout bounds one post-edit diagnostic check — these are fast syntax\nprobes, never full builds.
+EDGES
+  ^defines=matrix/cody/internal/worker/diagnostics.go
+
+NODE id=matrix/cody/internal/worker.execOutputCap kind=const
+  digest=b3:56829d38c5155f182a178048fcb1e86c52dd287bcb2d971b75e2292bd30ded99 file=cody/internal/worker/worker.go range=67:69 lang=go exported=false byte_range=2512:2681
+  sig=untyped int
+  doc=execOutputCap is the inline byte cap for exec output before it spills to an\noverflow file and a read-full obligation is registered.
+EDGES
+  ^defines=matrix/cody/internal/worker/worker.go
+
+NODE id=matrix/cody/internal/worker.fsReadCap kind=const
+  digest=b3:fd7cb747d41153c321f87880230c29df618188f58c71689bcc22969c154ca7ce file=cody/internal/worker/worker.go range=71:72 lang=go exported=false byte_range=2683:2766
+  sig=untyped int
+  doc=fsReadCap is the max bytes one fs_read call returns.
+EDGES
+  ^defines=matrix/cody/internal/worker/worker.go
+
+NODE id=matrix/cody/internal/worker.globMaxResults kind=const
+  digest=b3:1d8958bcd87acca08695039bd77d67ddd12f10de446bb179839a389fc40ee351 file=cody/internal/worker/search.go range=16:22 lang=go exported=false byte_range=265:507
+  sig=untyped int
+  doc=Search tool bounds: results are capped so one call never floods the window,\nand matched lines are truncated so a minified bundle cannot blow the cap by\nitself.
+EDGES
+  ^defines=matrix/cody/internal/worker/search.go
+
+NODE id=matrix/cody/internal/worker.globRegexp kind=func
+  digest=b3:578bacf2c30d2cf857ff57101b5b5721d293665dabdfca7b23f9717855c838d5 file=cody/internal/worker/search.go range=192:226 lang=go exported=false byte_range=4865:5790
+  sig=func globRegexp(pattern string) (*regexp.Regexp, error)
+  doc=globRegexp compiles a glob pattern (supporting **) into an anchored regexp\nover slash-separated relative paths.
+EDGES
+  ^defines=matrix/cody/internal/worker/search.go
+
+NODE id=matrix/cody/internal/worker.grepMaxLineLen kind=const
+  digest=b3:301a504fa85895e5ff126804c9f47f0adc0140d10601b31bab7b0eddeec229e0 file=cody/internal/worker/search.go range=16:21 lang=go exported=false byte_range=265:485
+  sig=untyped int
+  doc=Search tool bounds: results are capped so one call never floods the window,\nand matched lines are truncated so a minified bundle cannot blow the cap by\nitself.
+EDGES
+  ^defines=matrix/cody/internal/worker/search.go
+
+NODE id=matrix/cody/internal/worker.grepMaxMatches kind=const
+  digest=b3:44f62a9699cae928a16c9c05f2508c4993c683c595c2d0c93f5281f1329ddde7 file=cody/internal/worker/search.go range=16:20 lang=go exported=false byte_range=265:463
+  sig=untyped int
+  doc=Search tool bounds: results are capped so one call never floods the window,\nand matched lines are truncated so a minified bundle cannot blow the cap by\nitself.
+EDGES
+  ^defines=matrix/cody/internal/worker/search.go
+
+NODE id=matrix/cody/internal/worker.job kind=type
+  digest=b3:e47fbdf89f60f12a30e82e079296cbb2d6cfa061a117b2fd0201185d87957aa6 file=cody/internal/worker/jobs.go range=31:41 lang=go exported=false byte_range=884:1139
+  sig=type job struct {\n	id	string\n	cmd	*exec.Cmd\n	outPath	string\n	done	chan struct{}\n\n	mu		sync.Mutex\n	exitNote	string\n	folded		bool	// completion already folded into the worker's mutation seq\n}
+  doc=job is one auto-promoted background command.
+EDGES
+  contains=matrix/cody/internal/worker.job#cmd,matrix/cody/internal/worker.job#done,matrix/cody/internal/worker.job#exitNote,matrix/cody/internal/worker.job#folded,matrix/cody/internal/worker.job#id,matrix/cody/internal/worker.job#mu,matrix/cody/internal/worker.job#outPath,matrix/cody/internal/worker.job.exit,matrix/cody/internal/worker.job.finished,matrix/cody/internal/worker.job.setExit
+  ^defines=matrix/cody/internal/worker/jobs.go
+
+NODE id=matrix/cody/internal/worker.job#cmd kind=field
+  digest=b3:d966808bf3c5531594e3675407b3cdac45c551898d82f6891e08073b5c3db22c file=cody/internal/worker/jobs.go range=34:34 lang=go exported=false byte_range=967:984
+  sig=*exec.Cmd
+EDGES
+  ^contains=matrix/cody/internal/worker.job
+
+NODE id=matrix/cody/internal/worker.job#done kind=field
+  digest=b3:9bc2868729b4dd64169c1c7f20d31a4cbbbec1296cbb3af57c10fe29d914d986 file=cody/internal/worker/jobs.go range=36:36 lang=go exported=false byte_range=1002:1023
+  sig=chan struct{}
+EDGES
+  ^contains=matrix/cody/internal/worker.job
+
+NODE id=matrix/cody/internal/worker.job#exitNote kind=field
+  digest=b3:1968f39f18f8b6e4fbe6ddffe715578ce4894d972583637668c2b91033f40d1d file=cody/internal/worker/jobs.go range=39:39 lang=go exported=false byte_range=1047:1062
+  sig=string
+EDGES
+  ^contains=matrix/cody/internal/worker.job
+
+NODE id=matrix/cody/internal/worker.job#folded kind=field
+  digest=b3:2e43cd6fdad2ecdef7d8bc895d0cd9bdaac5623bba689e2f0a6af1a05c90a9c7 file=cody/internal/worker/jobs.go range=40:40 lang=go exported=false byte_range=1064:1077
+  sig=bool
+EDGES
+  ^contains=matrix/cody/internal/worker.job
+
+NODE id=matrix/cody/internal/worker.job#id kind=field
+  digest=b3:67f64639bbbcbc1398dcbced560607b0ace7a544335cad5ff16ced7e7b7cfcd3 file=cody/internal/worker/jobs.go range=33:33 lang=go exported=false byte_range=951:965
+  sig=string
+EDGES
+  ^contains=matrix/cody/internal/worker.job
+
+NODE id=matrix/cody/internal/worker.job#mu kind=field
+  digest=b3:5aedaaf462c3fae4f7947c3a76aea8d11d8fd86e187f728847e2ba5590be0e2d file=cody/internal/worker/jobs.go range=38:38 lang=go exported=false byte_range=1026:1045
+  sig=sync.Mutex
+EDGES
+  ^contains=matrix/cody/internal/worker.job
+
+NODE id=matrix/cody/internal/worker.job#outPath kind=field
+  digest=b3:5d41b93451ff412b6dd4d73367283fffd696d10a202467eb6707f1ee8320331b file=cody/internal/worker/jobs.go range=35:35 lang=go exported=false byte_range=986:1000
+  sig=string
+EDGES
+  ^contains=matrix/cody/internal/worker.job
+
+NODE id=matrix/cody/internal/worker.job.exit kind=method
+  digest=b3:9b414ea735e3362de27d976d6554aa44a8b03b839b1f74f1fd8d044c1ead07a4 file=cody/internal/worker/jobs.go range=59:63 lang=go exported=false byte_range=1389:1473
+  sig=func (j *job) exit() string
+EDGES
+  ^contains=matrix/cody/internal/worker.job
+  ^defines=matrix/cody/internal/worker/jobs.go
+
+NODE id=matrix/cody/internal/worker.job.finished kind=method
+  digest=b3:9fadd0238a700b013d195b72520e0bd0e3c0d8f84d30f926e14b87724b87059d file=cody/internal/worker/jobs.go range=43:51 lang=go exported=false byte_range=1141:1300
+  sig=func (j *job) finished() bool
+  doc=finished reports whether the job's process has exited.
+EDGES
+  ^contains=matrix/cody/internal/worker.job
+  ^defines=matrix/cody/internal/worker/jobs.go
+
+NODE id=matrix/cody/internal/worker.job.setExit kind=method
+  digest=b3:b11a86d84e7f33de94d49023cdc485aa74f0025408b95918139b4dcbc45c1dca file=cody/internal/worker/jobs.go range=53:57 lang=go exported=false byte_range=1302:1387
+  sig=func (j *job) setExit(note string)
+EDGES
+  ^contains=matrix/cody/internal/worker.job
+  ^defines=matrix/cody/internal/worker/jobs.go
+
+NODE id=matrix/cody/internal/worker.jobTail kind=func
+  digest=b3:0332a1562d2f0ebe4b26c427dc469287ca7d7d383069b3a00d6beecec2a46c24 file=cody/internal/worker/jobs.go range=138:148 lang=go exported=false byte_range=3352:3625
+  sig=func jobTail(path string) string
+  doc=jobTail reads the last jobTailBytes of a job's output file.
+EDGES
+  ^defines=matrix/cody/internal/worker/jobs.go
+
+NODE id=matrix/cody/internal/worker.jobTailBytes kind=const
+  digest=b3:abc071c2daf98ffee0e832696d8ca50990f5a20e851d43011a82770e87ea876b file=cody/internal/worker/jobs.go range=27:29 lang=go exported=false byte_range=744:882
+  sig=untyped int
+  doc=jobTailBytes is how much of the current output a promotion notice and a\njob_output poll return inline.
+EDGES
+  ^defines=matrix/cody/internal/worker/jobs.go
+
+NODE id=matrix/cody/internal/worker.jsonSyntaxDetail kind=func
+  digest=b3:243f67094ef71aa26faf50c6e183f136bf1aff96ec98f881e080b14ad000b602 file=cody/internal/worker/diagnostics.go range=83:95 lang=go exported=false byte_range=2423:2843
+  sig=func jsonSyntaxDetail(data []byte) string
+  doc=jsonSyntaxDetail locates the first JSON syntax error for the note.
+EDGES
+  ^defines=matrix/cody/internal/worker/diagnostics.go
+
+NODE id=matrix/cody/internal/worker.looksBinary kind=func
+  digest=b3:a0ad7d25a118cb4c889dc9b13858301f490382b28dfcb1b581133832054a1042 file=cody/internal/worker/search.go range=228:241 lang=go exported=false byte_range=5792:6104
+  sig=func looksBinary(data []byte) bool
+  doc=looksBinary reports whether a file's head contains a NUL byte — the cheap\nbinary sniff grep uses to skip images/archives/compiled artifacts.
+EDGES
+  ^defines=matrix/cody/internal/worker/search.go
+
+NODE id=matrix/cody/internal/worker.loopDetector kind=type
+  digest=b3:b3e728fc8a5e0cf87a54e3f77ef08a7a11eb9e3a84c6af89fed69bf1cd0b0086 file=cody/internal/worker/loop.go range=22:28 lang=go exported=false byte_range=623:949
+  sig=type loopDetector struct {\n	sigs []string\n}
+  doc=loopDetector is the stuck-worker guard: it hashes every (tool, input,\noutput) triple and stops the run when the identical call keeps producing\nthe identical result. A repeated call whose OUTPUT changes (e.g. polling a\nbackground job as it makes progress) never trips it.
+EDGES
+  contains=matrix/cody/internal/worker.loopDetector#sigs,matrix/cody/internal/worker.loopDetector.observe
+  ^defines=matrix/cody/internal/worker/loop.go
+
+NODE id=matrix/cody/internal/worker.loopDetector#sigs kind=field
+  digest=b3:5ead8a680a38723fd174c8a896ef8b967f05f9dfaa4f52145e5b5692c3950b70 file=cody/internal/worker/loop.go range=27:27 lang=go exported=false byte_range=934:947
+  sig=[]string
+EDGES
+  ^contains=matrix/cody/internal/worker.loopDetector
+
+NODE id=matrix/cody/internal/worker.loopDetector.observe kind=method
+  digest=b3:705582d4c7db7a261074d9ba89b851f39ff40f9d0765cdbf6a3613cb6a773045 file=cody/internal/worker/loop.go range=30:46 lang=go exported=false byte_range=951:1418
+  sig=func (l *loopDetector) observe(tool, input, output string) bool
+  doc=observe folds one tool call into the window and reports whether the worker\nis looping.
+EDGES
+  ^contains=matrix/cody/internal/worker.loopDetector
+  ^defines=matrix/cody/internal/worker/loop.go
+
+NODE id=matrix/cody/internal/worker.loopGap kind=const
+  digest=b3:d2ce822418bb61df9a450a5d489a13ccb92e4769d5823284cb872a586774db88 file=cody/internal/worker/loop.go range=18:20 lang=go exported=false byte_range=411:621
+  sig=untyped string
+  doc=loopGap is the honest gap recorded when the guard fires.
+EDGES
+  ^defines=matrix/cody/internal/worker/loop.go
+
+NODE id=matrix/cody/internal/worker.loopMaxRepeats kind=const
+  digest=b3:6962394d90c50f3d604343586c920397ed3120c59cb6fc71cce0a3bee94b53cf file=cody/internal/worker/loop.go range=11:15 lang=go exported=false byte_range=230:407
+  sig=untyped int
+  doc=Loop-detection bounds: a signature repeating loopMaxRepeats times inside the\nlast loopWindow calls marks the worker stuck.
+EDGES
+  ^defines=matrix/cody/internal/worker/loop.go
+
+NODE id=matrix/cody/internal/worker.loopWindow kind=const
+  digest=b3:2c0a7870845a5c092ea7474435ad8a9b3dd569e1e914aa0c6218e6f4700c53a1 file=cody/internal/worker/loop.go range=11:14 lang=go exported=false byte_range=230:387
+  sig=untyped int
+  doc=Loop-detection bounds: a signature repeating loopMaxRepeats times inside the\nlast loopWindow calls marks the worker stuck.
+EDGES
+  ^defines=matrix/cody/internal/worker/loop.go
+
+NODE id=matrix/cody/internal/worker.maxJobs kind=const
+  digest=b3:2074590ce3a8da010be17342f7266b35742f6a30b2eada8975ddec83a0dc2a4f file=cody/internal/worker/jobs.go range=24:25 lang=go exported=false byte_range=668:742
+  sig=untyped int
+  doc=maxJobs bounds concurrently tracked background jobs.
+EDGES
+  ^defines=matrix/cody/internal/worker/jobs.go
+
+NODE id=matrix/cody/internal/worker.maxNudges kind=const
+  digest=b3:aed9481d610d9dcf0e8051e688f7b4de0186760462a87b8af8675500f9b8cd2a file=cody/internal/worker/worker.go range=74:76 lang=go exported=false byte_range=2768:2915
+  sig=untyped int
+  doc=maxNudges bounds how many times the worker is reminded to turn in before\nthe engine synthesizes an honest blocked report.
+EDGES
+  ^defines=matrix/cody/internal/worker/worker.go
+
+NODE id=matrix/cody/internal/worker.num kind=func
+  digest=b3:c2beff6a809382fa63526c1ecd557cabcca24510a4715904f0ccfd60320c921b file=cody/internal/worker/worker.go range=436:441 lang=go exported=false byte_range=14094:14223
+  sig=func num(args map[string]interface{}, key string) int64
+EDGES
+  ^defines=matrix/cody/internal/worker/worker.go
+
+NODE id=matrix/cody/internal/worker.numberLines kind=func
+  digest=b3:ec68dd4ab0dfc47cea0267c5467502f780f55ea079a84932fff78f72319ad0b8 file=cody/internal/worker/worker.go range=508:524 lang=go exported=false byte_range=16067:16670
+  sig=func numberLines(chunk string, startLine int) string
+  doc=numberLines prefixes each line of a chunk with its 1-based line number in\nthe file. The "N| " prefix is display metadata only — it is never part of\nthe file content and must never appear in fs_edit anchors.
+EDGES
+  ^defines=matrix/cody/internal/worker/worker.go
+
+NODE id=matrix/cody/internal/worker.overflowState kind=type
+  digest=b3:c6bb42e322ecd6318b16d1fc9b15a696d2f62cbbf714ec07b118de8b71bad0df file=cody/internal/worker/worker.go range=109:112 lang=go exported=false byte_range=4091:4148
+  sig=type overflowState struct {\n	size	int64\n	cursor	int64\n}
+EDGES
+  contains=matrix/cody/internal/worker.overflowState#cursor,matrix/cody/internal/worker.overflowState#size
+  ^defines=matrix/cody/internal/worker/worker.go
+
+NODE id=matrix/cody/internal/worker.overflowState#cursor kind=field
+  digest=b3:ed3261e88b3c45e5b51fa33b7e2027fff721f9b589035ac5f639fcafd8fd9de8 file=cody/internal/worker/worker.go range=111:111 lang=go exported=false byte_range=4134:4146
+  sig=int64
+EDGES
+  ^contains=matrix/cody/internal/worker.overflowState
+
+NODE id=matrix/cody/internal/worker.overflowState#size kind=field
+  digest=b3:c29d598bbb4d366d01acc6edcc9eba9731a9ff6420d2e7dcc3aeb2b6da3bb179 file=cody/internal/worker/worker.go range=110:110 lang=go exported=false byte_range=4120:4132
+  sig=int64
+EDGES
+  ^contains=matrix/cody/internal/worker.overflowState
+
+NODE id=matrix/cody/internal/worker.promotionNotice kind=func
+  digest=b3:6f26afd25ac6b82ff88ee68317f8cba93b7a0168fffd8bcc8e9e3746dacc7b26 file=cody/internal/worker/jobs.go range=198:209 lang=go exported=false byte_range=4886:5502
+  sig=func promotionNotice(j *job, elapsed time.Duration) string
+  doc=promotionNotice renders the step result for an exec that was auto-promoted.
+EDGES
+  ^defines=matrix/cody/internal/worker/jobs.go
+
+NODE id=matrix/cody/internal/worker.runDiag kind=func
+  digest=b3:28bc495876c48043469d9b6067fed19a4d34861a2a30bef118782dacb8fb8183 file=cody/internal/worker/diagnostics.go range=59:81 lang=go exported=false byte_range=1688:2421
+  sig=func runDiag(dir, bin string, args ...string) string
+  doc=runDiag executes one checker and returns its combined output ONLY when it\nfailed (non-zero exit). A missing binary or a clean pass returns "".\ngofmt -e -l is special-cased: it exits 0 even on syntax errors, reporting\nthem on stderr, so any stderr output counts as a failure there.
+EDGES
+  ^defines=matrix/cody/internal/worker/diagnostics.go
+
+NODE id=matrix/cody/internal/worker.searchIgnoredDirs kind=var
+  digest=b3:11a3b8fb8a6e11a60f2f588d6ddf204468c3a4f3db8e7c7e947cddee234564cc file=cody/internal/worker/search.go range=26:33 lang=go exported=false byte_range=579:970
+  sig=map[string]bool
+  doc=searchIgnoredDirs are never walked by grep/glob — the same exclusions the\nworkspace indexer applies, plus Cody's own state dir.
+EDGES
+  ^defines=matrix/cody/internal/worker/search.go
+
+NODE id=matrix/cody/internal/worker.searchMaxSize kind=const
+  digest=b3:9fb9f2dbff34321aca696aa2b5cbb5bd3b5b66f639d631e6867a1cf445d4ff48 file=cody/internal/worker/search.go range=16:23 lang=go exported=false byte_range=265:541
+  sig=untyped int
+  doc=Search tool bounds: results are capped so one call never floods the window,\nand matched lines are truncated so a minified bundle cannot blow the cap by\nitself.
+EDGES
+  ^defines=matrix/cody/internal/worker/search.go
+
+NODE id=matrix/cody/internal/worker.str kind=func
+  digest=b3:fb5e8021c38d47be21529abcb059416dfb23229f20cb03a2e55e356f0ed2f168 file=cody/internal/worker/worker.go range=429:434 lang=go exported=false byte_range=13969:14092
+  sig=func str(args map[string]interface{}, key string) string
+EDGES
+  ^defines=matrix/cody/internal/worker/worker.go
+
+NODE id=matrix/cody/internal/worker/diagnostics.go kind=file
+  digest=b3:fbfa089cdf2bc07c6368272930f196afb64333b60de0a115dfcc3cb3b7c0636e file=cody/internal/worker/diagnostics.go range=1:95 lang=go exported=true
+EDGES
+  defines=matrix/cody/internal/worker.Worker.diagnose,matrix/cody/internal/worker.diagMaxBytes,matrix/cody/internal/worker.diagTimeout,matrix/cody/internal/worker.jsonSyntaxDetail,matrix/cody/internal/worker.runDiag
+  ^contains=matrix/cody/internal/worker
+
+NODE id=matrix/cody/internal/worker/jobs.go kind=file
+  digest=b3:70885f992222e5ee18af3f144195c7a4dcdd49f00f591a37f54d1069d7a2787b file=cody/internal/worker/jobs.go range=1:209 lang=go exported=true
+EDGES
+  defines=matrix/cody/internal/worker.Worker.foldFinishedJobs,matrix/cody/internal/worker.Worker.runningJobs,matrix/cody/internal/worker.Worker.startJob,matrix/cody/internal/worker.Worker.stopAllJobs,matrix/cody/internal/worker.Worker.toolJobKill,matrix/cody/internal/worker.Worker.toolJobOutput,matrix/cody/internal/worker.autoBackgroundAfter,matrix/cody/internal/worker.job,matrix/cody/internal/worker.job.exit,matrix/cody/internal/worker.job.finished,matrix/cody/internal/worker.job.setExit,matrix/cody/internal/worker.jobTail,matrix/cody/internal/worker.jobTailBytes,matrix/cody/internal/worker.maxJobs,matrix/cody/internal/worker.promotionNotice
+  ^contains=matrix/cody/internal/worker
+
+NODE id=matrix/cody/internal/worker/loop.go kind=file
+  digest=b3:6feeff9a66cb27ba66a3a842453ec92c0af44828d9316ce5056d3473c16ff5f8 file=cody/internal/worker/loop.go range=1:46 lang=go exported=true
+EDGES
+  defines=matrix/cody/internal/worker.loopDetector,matrix/cody/internal/worker.loopDetector.observe,matrix/cody/internal/worker.loopGap,matrix/cody/internal/worker.loopMaxRepeats,matrix/cody/internal/worker.loopWindow
+  ^contains=matrix/cody/internal/worker
+
+NODE id=matrix/cody/internal/worker/scaffold.go kind=file
+  digest=b3:750e0946b4c5c1a2a3554d2ac86ac1a5692bcaa93fe455d5fb96f60347ab88d7 file=cody/internal/worker/scaffold.go range=1:33 lang=go exported=true
+EDGES
+  defines=matrix/cody/internal/worker.ScaffoldStacks
+  ^contains=matrix/cody/internal/worker
+
+NODE id=matrix/cody/internal/worker/search.go kind=file
+  digest=b3:685478de6b5c4d03388576f2b342ea87addee1ba66d073de629fd255fbd7b050 file=cody/internal/worker/search.go range=1:241 lang=go exported=true
+EDGES
+  defines=matrix/cody/internal/worker.Worker.toolGlob,matrix/cody/internal/worker.Worker.toolGrep,matrix/cody/internal/worker.globMaxResults,matrix/cody/internal/worker.globRegexp,matrix/cody/internal/worker.grepMaxLineLen,matrix/cody/internal/worker.grepMaxMatches,matrix/cody/internal/worker.looksBinary,matrix/cody/internal/worker.searchIgnoredDirs,matrix/cody/internal/worker.searchMaxSize
+  ^contains=matrix/cody/internal/worker
+
+NODE id=matrix/cody/internal/worker/worker.go kind=file
+  digest=b3:75b8fa3a596ca99a01c24173643975179bb0db13e2162e0a1a0734d28c6010fb file=cody/internal/worker/worker.go range=1:966 lang=go exported=true
+EDGES
+  defines=matrix/cody/internal/worker.New,matrix/cody/internal/worker.Options,matrix/cody/internal/worker.Worker,matrix/cody/internal/worker.Worker.Run,matrix/cody/internal/worker.Worker.dispatch,matrix/cody/internal/worker.Worker.evidence,matrix/cody/internal/worker.Worker.finishInlineExec,matrix/cody/internal/worker.Worker.guardTouch,matrix/cody/internal/worker.Worker.pendingOverflows,matrix/cody/internal/worker.Worker.reapJob,matrix/cody/internal/worker.Worker.recordChange,matrix/cody/internal/worker.Worker.screenshotEvidence,matrix/cody/internal/worker.Worker.stopAllServices,matrix/cody/internal/worker.Worker.synthesizeReport,matrix/cody/internal/worker.Worker.systemPrompt,matrix/cody/internal/worker.Worker.toolDelete,matrix/cody/internal/worker.Worker.toolEdit,matrix/cody/internal/worker.Worker.toolExec,matrix/cody/internal/worker.Worker.toolList,matrix/cody/internal/worker.Worker.toolRead,matrix/cody/internal/worker.Worker.toolSchemas,matrix/cody/internal/worker.Worker.toolServiceStart,matrix/cody/internal/worker.Worker.toolServiceStop,matrix/cody/internal/worker.Worker.toolSkillLoad,matrix/cody/internal/worker.Worker.toolVerifyRun,matrix/cody/internal/worker.Worker.toolWrite,matrix/cody/internal/worker.Worker.trackedChanges,matrix/cody/internal/worker.Worker.tryTurnIn,matrix/cody/internal/worker.Worker.userPrompt,matrix/cody/internal/worker.defaultConstitution,matrix/cody/internal/worker.execOutputCap,matrix/cody/internal/worker.fsReadCap,matrix/cody/internal/worker.maxNudges,matrix/cody/internal/worker.num,matrix/cody/internal/worker.numberLines,matrix/cody/internal/worker.overflowState,matrix/cody/internal/worker.str
+  ^contains=matrix/cody/internal/worker

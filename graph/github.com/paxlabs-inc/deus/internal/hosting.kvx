@@ -1,0 +1,731 @@
+# GENERATED gen=codegraph do-not-edit merkle=b3:2dc69ec8dbbe0231373534486cf12ff6fdb0eaad7b2dfdcbc4d73453c8542ee8
+
+NODE id=github.com/paxlabs-inc/deus/internal/hosting kind=package
+  digest=b3:1d89ad33581a0248ebd2f3002a2c147fe0d8d9a1ddbd2eb0e38a20e585853f39 file=deus/internal/hosting range=0:0 lang=go exported=true
+EDGES
+  contains=github.com/paxlabs-inc/deus/internal/hosting/appwrite.go,github.com/paxlabs-inc/deus/internal/hosting/backend.go,github.com/paxlabs-inc/deus/internal/hosting/budget.go,github.com/paxlabs-inc/deus/internal/hosting/dev.go,github.com/paxlabs-inc/deus/internal/hosting/limits.go,github.com/paxlabs-inc/deus/internal/hosting/orchestrator.go
+  ^contains=mod:github.com/paxlabs-inc/deus
+
+NODE id=github.com/paxlabs-inc/deus/internal/hosting.AppwriteBackend kind=type
+  digest=b3:799552728339c08886b7cdbc543a79ce23709e938d3a25d179e82151651508ba file=deus/internal/hosting/appwrite.go range=30:36 lang=go exported=true byte_range=496:676
+  sig=type AppwriteBackend struct {\n	cfg	AppwriteConfig\n	client	*http.Client\n	blobs	BlobReader\n	limits	Limits\n}
+  doc=AppwriteBackend drives function deploy via the Appwrite Server API.
+EDGES
+  contains=github.com/paxlabs-inc/deus/internal/hosting.AppwriteBackend#blobs,github.com/paxlabs-inc/deus/internal/hosting.AppwriteBackend#cfg,github.com/paxlabs-inc/deus/internal/hosting.AppwriteBackend#client,github.com/paxlabs-inc/deus/internal/hosting.AppwriteBackend#limits,github.com/paxlabs-inc/deus/internal/hosting.AppwriteBackend.Delete,github.com/paxlabs-inc/deus/internal/hosting.AppwriteBackend.Deploy,github.com/paxlabs-inc/deus/internal/hosting.AppwriteBackend.createDeployment,github.com/paxlabs-inc/deus/internal/hosting.AppwriteBackend.do,github.com/paxlabs-inc/deus/internal/hosting.AppwriteBackend.ensureFunction,github.com/paxlabs-inc/deus/internal/hosting.AppwriteBackend.executionsURL,github.com/paxlabs-inc/deus/internal/hosting.AppwriteBackend.fetchArtifact,github.com/paxlabs-inc/deus/internal/hosting.AppwriteBackend.maxResponseBytes,github.com/paxlabs-inc/deus/internal/hosting.AppwriteBackend.post,github.com/paxlabs-inc/deus/internal/hosting.AppwriteBackend.postMultipart,github.com/paxlabs-inc/deus/internal/hosting.AppwriteBackend.pushVariables,github.com/paxlabs-inc/deus/internal/hosting.AppwriteBackend.setHeaders,github.com/paxlabs-inc/deus/internal/hosting.AppwriteBackend.timeoutSeconds
+  implements=github.com/paxlabs-inc/deus/internal/hosting.Backend
+  ^defines=github.com/paxlabs-inc/deus/internal/hosting/appwrite.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/hosting.AppwriteBackend#blobs kind=field
+  digest=b3:38226b16c956246b58974c0de789df66a3efb00d758c92d960419521143c351e file=deus/internal/hosting/appwrite.go range=34:34 lang=go exported=false byte_range=642:659
+  sig=hosting.BlobReader
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/hosting.AppwriteBackend
+
+NODE id=github.com/paxlabs-inc/deus/internal/hosting.AppwriteBackend#cfg kind=field
+  digest=b3:4cb4b4e76a3ee0eb2424f985f90d94bf41ce4987b3dff02594e0264b2a93c189 file=deus/internal/hosting/appwrite.go range=32:32 lang=go exported=false byte_range=598:619
+  sig=hosting.AppwriteConfig
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/hosting.AppwriteBackend
+
+NODE id=github.com/paxlabs-inc/deus/internal/hosting.AppwriteBackend#client kind=field
+  digest=b3:7c0cb504d41523547241354fab9d688332215bc4ca84cd570ca943751af4029f file=deus/internal/hosting/appwrite.go range=33:33 lang=go exported=false byte_range=621:640
+  sig=*http.Client
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/hosting.AppwriteBackend
+
+NODE id=github.com/paxlabs-inc/deus/internal/hosting.AppwriteBackend#limits kind=field
+  digest=b3:3bed85d36eae78b9c700624d67b87cb761453c3dfb810ccdbe4ab9e8d71681a1 file=deus/internal/hosting/appwrite.go range=35:35 lang=go exported=false byte_range=661:674
+  sig=hosting.Limits
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/hosting.AppwriteBackend
+
+NODE id=github.com/paxlabs-inc/deus/internal/hosting.AppwriteBackend.Delete kind=method
+  digest=b3:83abc2b6d92fd44705b44295c1ab7d6bc9f716384996c6821902a18dcfa5015f file=deus/internal/hosting/appwrite.go range=251:269 lang=go exported=true byte_range=7699:8273
+  sig=func (a *AppwriteBackend) Delete(ctx context.Context, functionID string) error
+  doc=Delete removes a function from Appwrite.
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/hosting.AppwriteBackend
+  ^defines=github.com/paxlabs-inc/deus/internal/hosting/appwrite.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/hosting.AppwriteBackend.Deploy kind=method
+  digest=b3:6d29cc653c1f058fca19805f4ceaf2cf371e60b76ad3e8f6cd7daf16dc6ade24 file=deus/internal/hosting/appwrite.go range=55:99 lang=go exported=true byte_range=1282:2841
+  sig=func (a *AppwriteBackend) Deploy(ctx context.Context, in DeployInput) (DeployResult, error)
+  doc=Deploy creates a node20 function, pushes its config, uploads the developer\ncode bundle as a real deployment, and returns its executions endpoint.\n\nExpected artifact format: a gzipped tar (code.tar.gz) of the developer's\nproject that includes the runner harness as the Appwrite entrypoint\n(src/main.js), the developer handler (src/handler.js exporting\nhandle(operation, args, ctx)), and package.json. The artifact bytes are\nfetched from object storage by ArtifactKey.
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/hosting.AppwriteBackend
+  ^defines=github.com/paxlabs-inc/deus/internal/hosting/appwrite.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/hosting.AppwriteBackend.createDeployment kind=method
+  digest=b3:5c8889a896fd1f26ce012adbd780eebe74a393826310038688257ec62ca21baa file=deus/internal/hosting/appwrite.go range=182:203 lang=go exported=false byte_range=5342:6229
+  sig=func (a *AppwriteBackend) createDeployment(ctx context.Context, functionID string, artifact []byte) (depID string, execURL string, err error)
+  doc=createDeployment uploads the code bundle via multipart/form-data and activates\nit. This is the deployment that actually ships the developer's code; an empty\nJSON deployment would never run.
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/hosting.AppwriteBackend
+  ^defines=github.com/paxlabs-inc/deus/internal/hosting/appwrite.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/hosting.AppwriteBackend.do kind=method
+  digest=b3:057f923e25409adde38885561a155d84f2f006ed1256b04f1432248bd94fb4bc file=deus/internal/hosting/appwrite.go range=320:337 lang=go exported=false byte_range=9884:10438
+  sig=func (a *AppwriteBackend) do(req *http.Request, path string, out any) error
+  doc=do executes a prepared request and decodes a non-error JSON response.
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/hosting.AppwriteBackend
+  ^defines=github.com/paxlabs-inc/deus/internal/hosting/appwrite.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/hosting.AppwriteBackend.ensureFunction kind=method
+  digest=b3:4876d22abf64bae28e47f30384e64f53abbaf6552ef1176ddca6d18f9ebd0923 file=deus/internal/hosting/appwrite.go range=121:151 lang=go exported=false byte_range=3438:4348
+  sig=func (a *AppwriteBackend) ensureFunction(ctx context.Context, name string, alwaysWarm bool) (string, error)
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/hosting.AppwriteBackend
+  ^defines=github.com/paxlabs-inc/deus/internal/hosting/appwrite.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/hosting.AppwriteBackend.executionsURL kind=method
+  digest=b3:7649b3f8cf79b678eed980637de0c403fb0014d9ea25dc66478d3453115297b7 file=deus/internal/hosting/appwrite.go range=205:209 lang=go exported=false byte_range=6231:6546
+  sig=func (a *AppwriteBackend) executionsURL(functionID string) string
+  doc=executionsURL is the synchronous execution endpoint the gateway invokes.\nEndpoint already contains the API version, so we must NOT add another /v1.
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/hosting.AppwriteBackend
+  ^defines=github.com/paxlabs-inc/deus/internal/hosting/appwrite.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/hosting.AppwriteBackend.fetchArtifact kind=method
+  digest=b3:80931b112a109dea8f162d1397419d2bff1d7ca7b4eb449c953e42b256cb6fbf file=deus/internal/hosting/appwrite.go range=101:119 lang=go exported=false byte_range=2843:3436
+  sig=func (a *AppwriteBackend) fetchArtifact(ctx context.Context, key string) ([]byte, error)
+  doc=fetchArtifact loads the uploaded code bundle from object storage.
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/hosting.AppwriteBackend
+  ^defines=github.com/paxlabs-inc/deus/internal/hosting/appwrite.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/hosting.AppwriteBackend.maxResponseBytes kind=method
+  digest=b3:8d7d07982dfe58d1b40152002ba9e422aedd33447d29d8c7b3cdae1a3eb3c0ff file=deus/internal/hosting/appwrite.go range=223:228 lang=go exported=false byte_range=6712:6867
+  sig=func (a *AppwriteBackend) maxResponseBytes() int
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/hosting.AppwriteBackend
+  ^defines=github.com/paxlabs-inc/deus/internal/hosting/appwrite.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/hosting.AppwriteBackend.post kind=method
+  digest=b3:c7eea4d1ea37c433df27a270f32b9cb8db944a687993636bb58ad2d56611b3bb file=deus/internal/hosting/appwrite.go range=271:284 lang=go exported=false byte_range=8275:8705
+  sig=func (a *AppwriteBackend) post(ctx context.Context, path string, body any, out any) error
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/hosting.AppwriteBackend
+  ^defines=github.com/paxlabs-inc/deus/internal/hosting/appwrite.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/hosting.AppwriteBackend.postMultipart kind=method
+  digest=b3:cc05f8f83998cfa71653cf99b90e5f8fec73201a58371edcf4fa2277d38bda9d file=deus/internal/hosting/appwrite.go range=286:318 lang=go exported=false byte_range=8707:9882
+  sig=func (a *AppwriteBackend) postMultipart(ctx context.Context, path string, fields map[string]string, fileField, fileName string, fileBytes []byte, out any) error
+  doc=postMultipart uploads a file part plus form fields as multipart/form-data,\nused for the code bundle on createDeployment (the JSON post() cannot carry a\nfile). It does not replace post(); JSON endpoints keep using post().
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/hosting.AppwriteBackend
+  ^defines=github.com/paxlabs-inc/deus/internal/hosting/appwrite.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/hosting.AppwriteBackend.pushVariables kind=method
+  digest=b3:c6b56855555b065f00a3a576545fcaa6252de76f8b20dff29635946784afc285 file=deus/internal/hosting/appwrite.go range=153:180 lang=go exported=false byte_range=4350:5340
+  sig=func (a *AppwriteBackend) pushVariables(ctx context.Context, functionID string, env map[string]string) error
+  doc=pushVariables registers per-service config/secrets plus the runner-facing\nresponse cap as Appwrite function variables. ensureFunction always creates a\nfresh function, so a plain POST per variable is sufficient (no update path).
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/hosting.AppwriteBackend
+  ^defines=github.com/paxlabs-inc/deus/internal/hosting/appwrite.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/hosting.AppwriteBackend.setHeaders kind=method
+  digest=b3:7bb2c2f02e23137f418800709cd4d215958f6707c411d4114cba641f2136ca92 file=deus/internal/hosting/appwrite.go range=339:342 lang=go exported=false byte_range=10440:10602
+  sig=func (a *AppwriteBackend) setHeaders(req *http.Request)
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/hosting.AppwriteBackend
+  ^defines=github.com/paxlabs-inc/deus/internal/hosting/appwrite.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/hosting.AppwriteBackend.timeoutSeconds kind=method
+  digest=b3:821a073591428efeddc202c1e7796c44a326cef1f63353e92b3d7d7fbda95eda file=deus/internal/hosting/appwrite.go range=211:221 lang=go exported=false byte_range=6548:6710
+  sig=func (a *AppwriteBackend) timeoutSeconds() int
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/hosting.AppwriteBackend
+  ^defines=github.com/paxlabs-inc/deus/internal/hosting/appwrite.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/hosting.AppwriteConfig kind=type
+  digest=b3:463efb1b36098b01a1ae5d84a49832f59e1e9f59b3ba3e61a324451759a6cc52 file=deus/internal/hosting/appwrite.go range=19:28 lang=go exported=true byte_range=181:494
+  sig=type AppwriteConfig struct {\n	Endpoint	string\n	ProjectID	string\n	APIKey		string\n	Region		string\n}
+  doc=AppwriteConfig holds Paxeer Cloud / Appwrite Server API settings.\n\nEndpoint MUST already include the API version segment (e.g.\n"https://cloud.paxeer.app/v1"); all request paths are appended verbatim.
+EDGES
+  contains=github.com/paxlabs-inc/deus/internal/hosting.AppwriteConfig#APIKey,github.com/paxlabs-inc/deus/internal/hosting.AppwriteConfig#Endpoint,github.com/paxlabs-inc/deus/internal/hosting.AppwriteConfig#ProjectID,github.com/paxlabs-inc/deus/internal/hosting.AppwriteConfig#Region
+  ^defines=github.com/paxlabs-inc/deus/internal/hosting/appwrite.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/hosting.AppwriteConfig#APIKey kind=field
+  digest=b3:77b2fdc787e9bc3c735152e3ff493fc7b1e4ca193c47214f442ac6088675bb58 file=deus/internal/hosting/appwrite.go range=26:26 lang=go exported=true byte_range=458:474
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/hosting.AppwriteConfig
+
+NODE id=github.com/paxlabs-inc/deus/internal/hosting.AppwriteConfig#Endpoint kind=field
+  digest=b3:1a14c3429243fea338ba5c3e42953aa78deab975df50f7a845504d3f40932ae6 file=deus/internal/hosting/appwrite.go range=24:24 lang=go exported=true byte_range=422:438
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/hosting.AppwriteConfig
+
+NODE id=github.com/paxlabs-inc/deus/internal/hosting.AppwriteConfig#ProjectID kind=field
+  digest=b3:36874e8b6876dd53ed61486f5b236c8793d3c2d4100f3c3a277e8a25a683cea3 file=deus/internal/hosting/appwrite.go range=25:25 lang=go exported=true byte_range=440:456
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/hosting.AppwriteConfig
+
+NODE id=github.com/paxlabs-inc/deus/internal/hosting.AppwriteConfig#Region kind=field
+  digest=b3:fc7c0c17dfc740edcae1fb26f2f02840488a395c8f340632e6d64af055a7385d file=deus/internal/hosting/appwrite.go range=27:27 lang=go exported=true byte_range=476:492
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/hosting.AppwriteConfig
+
+NODE id=github.com/paxlabs-inc/deus/internal/hosting.Backend kind=interface
+  digest=b3:787d9a6920e81ff617536ae3fa52eba3651dd1b6e12e34c4b4552904aa86d62b file=deus/internal/hosting/backend.go range=26:30 lang=go exported=true byte_range=635:845
+  sig=type Backend interface {\n	Deploy(ctx context.Context, in DeployInput) (DeployResult, error)\n	Delete(ctx context.Context, functionID string) error\n}
+  doc=Backend provisions hosted execution (Appwrite or dev stub).
+EDGES
+  ^implements=github.com/paxlabs-inc/deus/internal/hosting.AppwriteBackend,github.com/paxlabs-inc/deus/internal/hosting.DevBackend
+  ^defines=github.com/paxlabs-inc/deus/internal/hosting/backend.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/hosting.BlobReader kind=interface
+  digest=b3:69f1e0d14334ae148bb0fdced0a29675e2233da1db4b1dce1fa5b03a97a16b68 file=deus/internal/hosting/appwrite.go range=38:41 lang=go exported=true byte_range=678:831
+  sig=type BlobReader interface {\n	Get(ctx context.Context, key string) (io.ReadCloser, error)\n}
+  doc=BlobReader fetches uploaded artifacts for deploy packaging.
+EDGES
+  ^implements=github.com/paxlabs-inc/deus/internal/objstore.MemStore,github.com/paxlabs-inc/deus/internal/objstore.Store
+  ^defines=github.com/paxlabs-inc/deus/internal/hosting/appwrite.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/hosting.BlobStore kind=interface
+  digest=b3:b9044faffa6e9263a7be895650cd0fd9304c25aaa3a23d1212280c88f9932fdd file=deus/internal/hosting/orchestrator.go range=14:19 lang=go exported=true byte_range=219:473
+  sig=type BlobStore interface {\n	Put(ctx context.Context, key string, r io.Reader, size int64, contentType string) error\n	Get(ctx context.Context, key string) (io.ReadCloser, error)\n	URL(key string) string\n}
+  doc=BlobStore uploads and fetches service artifacts.
+EDGES
+  ^implements=github.com/paxlabs-inc/deus/internal/objstore.MemStore,github.com/paxlabs-inc/deus/internal/objstore.Store
+  ^defines=github.com/paxlabs-inc/deus/internal/hosting/orchestrator.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/hosting.Budget kind=type
+  digest=b3:eb9fdc7518d4e6f194e4c25b5a1a441620f91c45d3e59a52cdfd4c80db58a1d6 file=deus/internal/hosting/budget.go range=11:15 lang=go exported=true byte_range=106:216
+  sig=type Budget struct {\n	limits	Limits\n	store	*store.Store\n}
+  doc=Budget enforces aggregate free-hosting ceilings.
+EDGES
+  contains=github.com/paxlabs-inc/deus/internal/hosting.Budget#limits,github.com/paxlabs-inc/deus/internal/hosting.Budget#store,github.com/paxlabs-inc/deus/internal/hosting.Budget.AllowAlwaysWarm,github.com/paxlabs-inc/deus/internal/hosting.Budget.AllowNewDeployment,github.com/paxlabs-inc/deus/internal/hosting.Budget.BudgetWei
+  ^defines=github.com/paxlabs-inc/deus/internal/hosting/budget.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/hosting.Budget#limits kind=field
+  digest=b3:3bed85d36eae78b9c700624d67b87cb761453c3dfb810ccdbe4ab9e8d71681a1 file=deus/internal/hosting/budget.go range=13:13 lang=go exported=false byte_range=180:193
+  sig=hosting.Limits
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/hosting.Budget
+
+NODE id=github.com/paxlabs-inc/deus/internal/hosting.Budget#store kind=field
+  digest=b3:b09a8bdd432eafda525ed4c2083670ebdb70cf0c8138f04d942ee8ca7b62a386 file=deus/internal/hosting/budget.go range=14:14 lang=go exported=false byte_range=195:214
+  sig=*store.Store
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/hosting.Budget
+
+NODE id=github.com/paxlabs-inc/deus/internal/hosting.Budget.AllowAlwaysWarm kind=method
+  digest=b3:bd4107cf922f298147979e7917b4f34d168db374bc9a9b1959f7f416d8f12bc0 file=deus/internal/hosting/budget.go range=22:35 lang=go exported=true byte_range=355:859
+  sig=func (b *Budget) AllowAlwaysWarm(ctx context.Context) error
+  doc=AllowAlwaysWarm returns an error when always-warm capacity is exhausted or kill-switch tripped.
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/hosting.Budget
+  ^defines=github.com/paxlabs-inc/deus/internal/hosting/budget.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/hosting.Budget.AllowNewDeployment kind=method
+  digest=b3:6231b0c483d2c0d930e91385dd1abe87d06a7ebb580be9498389da937c977a5b file=deus/internal/hosting/budget.go range=37:46 lang=go exported=true byte_range=861:1156
+  sig=func (b *Budget) AllowNewDeployment(ctx context.Context, alwaysWarm bool) error
+  doc=AllowNewDeployment checks kill-switch for scale-to-zero deploys.
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/hosting.Budget
+  ^defines=github.com/paxlabs-inc/deus/internal/hosting/budget.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/hosting.Budget.BudgetWei kind=method
+  digest=b3:72ac8cbd05ce4e614b3a6982587ee535f10fb0efc25bb7a7be71176f1e2e1b5c file=deus/internal/hosting/budget.go range=48:55 lang=go exported=true byte_range=1158:1366
+  sig=func (b *Budget) BudgetWei() *big.Int
+  doc=BudgetWei returns configured aggregate budget as big.Int.
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/hosting.Budget
+  ^defines=github.com/paxlabs-inc/deus/internal/hosting/budget.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/hosting.DeployInput kind=type
+  digest=b3:82ba41b22c796766f28c4897305553f5e49ecc026b18709976995532bd71f3f1 file=deus/internal/hosting/backend.go range=5:17 lang=go exported=true byte_range=35:477
+  sig=type DeployInput struct {\n	ServiceID	string\n	ArtifactKey	string\n	Runtime		string\n	AlwaysWarm	bool\n	Region		string\n	FunctionName	string\n	// Env carries per-service config/secrets pushed to the function as\n	// Appwrite variables. The orchestrator threads it from DeployRequest.Env;\n	// the HTTP layer leaves it empty today (clean extension point).\n	Env	map[string]string\n}
+  doc=DeployInput is passed to a hosting backend on deploy.
+EDGES
+  contains=github.com/paxlabs-inc/deus/internal/hosting.DeployInput#AlwaysWarm,github.com/paxlabs-inc/deus/internal/hosting.DeployInput#ArtifactKey,github.com/paxlabs-inc/deus/internal/hosting.DeployInput#Env,github.com/paxlabs-inc/deus/internal/hosting.DeployInput#FunctionName,github.com/paxlabs-inc/deus/internal/hosting.DeployInput#Region,github.com/paxlabs-inc/deus/internal/hosting.DeployInput#Runtime,github.com/paxlabs-inc/deus/internal/hosting.DeployInput#ServiceID
+  ^defines=github.com/paxlabs-inc/deus/internal/hosting/backend.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/hosting.DeployInput#AlwaysWarm kind=field
+  digest=b3:4a1324d9acff0a61fca76be4f1b3e7c2553bdda3b22ce0ec8707a0a27d66d0d4 file=deus/internal/hosting/backend.go range=10:10 lang=go exported=true byte_range=182:199
+  sig=bool
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/hosting.DeployInput
+
+NODE id=github.com/paxlabs-inc/deus/internal/hosting.DeployInput#ArtifactKey kind=field
+  digest=b3:42b567c57d318b3419f9dc24d72b9af0d0b15b0de6f9ff3a846823890c905dc0 file=deus/internal/hosting/backend.go range=8:8 lang=go exported=true byte_range=140:159
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/hosting.DeployInput
+
+NODE id=github.com/paxlabs-inc/deus/internal/hosting.DeployInput#Env kind=field
+  digest=b3:1eaac7a961bccc7bab43385706dabe2c8ca96759b04d2f9c0d4118492f90411a file=deus/internal/hosting/backend.go range=13:16 lang=go exported=true byte_range=243:475
+  sig=map[string]string
+  doc=Env carries per-service config/secrets pushed to the function as\nAppwrite variables. The orchestrator threads it from DeployRequest.Env;\nthe HTTP layer leaves it empty today (clean extension point).
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/hosting.DeployInput
+
+NODE id=github.com/paxlabs-inc/deus/internal/hosting.DeployInput#FunctionName kind=field
+  digest=b3:02a80ecbf7e9b668f14e27a21742c59065606b18db9919bfe332b2bc90d519fc file=deus/internal/hosting/backend.go range=12:12 lang=go exported=true byte_range=222:241
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/hosting.DeployInput
+
+NODE id=github.com/paxlabs-inc/deus/internal/hosting.DeployInput#Region kind=field
+  digest=b3:30b87a1c96df8719489b67e4627272c8114991f3f9a434d118c66ac12d9bbaff file=deus/internal/hosting/backend.go range=11:11 lang=go exported=true byte_range=201:220
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/hosting.DeployInput
+
+NODE id=github.com/paxlabs-inc/deus/internal/hosting.DeployInput#Runtime kind=field
+  digest=b3:ee4312357940929752e8933c4bcbaa3171b07f6fb55c670c08967591ea78be27 file=deus/internal/hosting/backend.go range=9:9 lang=go exported=true byte_range=161:180
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/hosting.DeployInput
+
+NODE id=github.com/paxlabs-inc/deus/internal/hosting.DeployInput#ServiceID kind=field
+  digest=b3:a20a4d85b9bd8661114bd05b7468d35d6c64fb27d29934b5f86e9596d5e96726 file=deus/internal/hosting/backend.go range=7:7 lang=go exported=true byte_range=119:138
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/hosting.DeployInput
+
+NODE id=github.com/paxlabs-inc/deus/internal/hosting.DeployOutput kind=type
+  digest=b3:ac9f1797e485c440287d9aa4001c2f5e460f518a20572388210b106b5a28f433 file=deus/internal/hosting/orchestrator.go range=73:79 lang=go exported=true byte_range=2064:2309
+  sig=type DeployOutput struct {\n	DeploymentID	string	`json:"deployment_id"`\n	Status		string	`json:"status"`\n	ExecEndpoint	string	`json:"exec_endpoint,omitempty"`\n	Runtime		string	`json:"runtime"`\n}
+  doc=DeployOutput is returned to API callers.
+EDGES
+  contains=github.com/paxlabs-inc/deus/internal/hosting.DeployOutput#DeploymentID,github.com/paxlabs-inc/deus/internal/hosting.DeployOutput#ExecEndpoint,github.com/paxlabs-inc/deus/internal/hosting.DeployOutput#Runtime,github.com/paxlabs-inc/deus/internal/hosting.DeployOutput#Status
+  ^defines=github.com/paxlabs-inc/deus/internal/hosting/orchestrator.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/hosting.DeployOutput#DeploymentID kind=field
+  digest=b3:351b45bd9f2a25ce889b06741d366c2faf60df9dffb6bf0d02d04b56b2912780 file=deus/internal/hosting/orchestrator.go range=75:75 lang=go exported=true byte_range=2136:2178
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/hosting.DeployOutput
+
+NODE id=github.com/paxlabs-inc/deus/internal/hosting.DeployOutput#ExecEndpoint kind=field
+  digest=b3:7de0a70f721b6a82f5cc09048abdaa492ea399b006948ad8d81e2cd1f47ce0c3 file=deus/internal/hosting/orchestrator.go range=77:77 lang=go exported=true byte_range=2217:2269
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/hosting.DeployOutput
+
+NODE id=github.com/paxlabs-inc/deus/internal/hosting.DeployOutput#Runtime kind=field
+  digest=b3:9cdc466ee48451bbbc0e9935e450fd3c898ec33a241371dfe3346d45f7e0bee9 file=deus/internal/hosting/orchestrator.go range=78:78 lang=go exported=true byte_range=2271:2307
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/hosting.DeployOutput
+
+NODE id=github.com/paxlabs-inc/deus/internal/hosting.DeployOutput#Status kind=field
+  digest=b3:9173a2717fa529c51157c92ce3cfd4938fc6cf0dfc140c86f9f483803915091e file=deus/internal/hosting/orchestrator.go range=76:76 lang=go exported=true byte_range=2180:2215
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/hosting.DeployOutput
+
+NODE id=github.com/paxlabs-inc/deus/internal/hosting.DeployRequest kind=type
+  digest=b3:c8f97f49dd3530db69a96f299518e02a4c88cbbf691bf98da6a63ff48bd7c5e3 file=deus/internal/hosting/orchestrator.go range=60:71 lang=go exported=true byte_range=1661:2062
+  sig=type DeployRequest struct {\n	ServiceID	string\n	ArtifactKey	string\n	Runtime		string\n	AlwaysWarm	bool\n	Region		string\n	// Env is optional per-service config/secrets forwarded to the backend as\n	// function variables. The HTTP handler does not populate it yet; it is a\n	// clean seam for a future "service config" API.\n	Env	map[string]string\n}
+  doc=DeployInput is the orchestrator deploy request.
+EDGES
+  contains=github.com/paxlabs-inc/deus/internal/hosting.DeployRequest#AlwaysWarm,github.com/paxlabs-inc/deus/internal/hosting.DeployRequest#ArtifactKey,github.com/paxlabs-inc/deus/internal/hosting.DeployRequest#Env,github.com/paxlabs-inc/deus/internal/hosting.DeployRequest#Region,github.com/paxlabs-inc/deus/internal/hosting.DeployRequest#Runtime,github.com/paxlabs-inc/deus/internal/hosting.DeployRequest#ServiceID
+  ^defines=github.com/paxlabs-inc/deus/internal/hosting/orchestrator.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/hosting.DeployRequest#AlwaysWarm kind=field
+  digest=b3:39fede213dcfc75e8b9a27fe6b86fa55e4423c838a9f5123fc4933f6bfca18da file=deus/internal/hosting/orchestrator.go range=65:65 lang=go exported=true byte_range=1801:1817
+  sig=bool
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/hosting.DeployRequest
+
+NODE id=github.com/paxlabs-inc/deus/internal/hosting.DeployRequest#ArtifactKey kind=field
+  digest=b3:dd1eaed437587007a4d0964d6829fd2a32f8273dc97ce2cdcb3a6a004c042ae5 file=deus/internal/hosting/orchestrator.go range=63:63 lang=go exported=true byte_range=1761:1779
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/hosting.DeployRequest
+
+NODE id=github.com/paxlabs-inc/deus/internal/hosting.DeployRequest#Env kind=field
+  digest=b3:5ca9b77cc219c74e76485e2d6c54ae4df3da3ed67bb8437293ace01668cb9558 file=deus/internal/hosting/orchestrator.go range=67:70 lang=go exported=true byte_range=1839:2060
+  sig=map[string]string
+  doc=Env is optional per-service config/secrets forwarded to the backend as\nfunction variables. The HTTP handler does not populate it yet; it is a\nclean seam for a future "service config" API.
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/hosting.DeployRequest
+
+NODE id=github.com/paxlabs-inc/deus/internal/hosting.DeployRequest#Region kind=field
+  digest=b3:8184966a6c154172b829f89a1d1e04dd09f5d545d5e7d9406c0a1ede3611f461 file=deus/internal/hosting/orchestrator.go range=66:66 lang=go exported=true byte_range=1819:1837
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/hosting.DeployRequest
+
+NODE id=github.com/paxlabs-inc/deus/internal/hosting.DeployRequest#Runtime kind=field
+  digest=b3:77b3f9c464a1de554984f55647506da73205a921f09a4d99ec141e2efe199212 file=deus/internal/hosting/orchestrator.go range=64:64 lang=go exported=true byte_range=1781:1799
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/hosting.DeployRequest
+
+NODE id=github.com/paxlabs-inc/deus/internal/hosting.DeployRequest#ServiceID kind=field
+  digest=b3:f9437e4f95dfcf35b1ff4e58c30309fc18b5877ec56ed57cc062077e51884013 file=deus/internal/hosting/orchestrator.go range=62:62 lang=go exported=true byte_range=1741:1759
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/hosting.DeployRequest
+
+NODE id=github.com/paxlabs-inc/deus/internal/hosting.DeployResult kind=type
+  digest=b3:c418c4acd986d5e46c63839f82ce858249dc60f2f780699979ada4ff92a4826d file=deus/internal/hosting/backend.go range=19:24 lang=go exported=true byte_range=479:633
+  sig=type DeployResult struct {\n	FunctionID	string\n	DeploymentID	string\n	ExecEndpoint	string\n}
+  doc=DeployResult is returned after a successful backend deploy.
+EDGES
+  contains=github.com/paxlabs-inc/deus/internal/hosting.DeployResult#DeploymentID,github.com/paxlabs-inc/deus/internal/hosting.DeployResult#ExecEndpoint,github.com/paxlabs-inc/deus/internal/hosting.DeployResult#FunctionID
+  ^defines=github.com/paxlabs-inc/deus/internal/hosting/backend.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/hosting.DeployResult#DeploymentID kind=field
+  digest=b3:c3f14e22ea0727ede69a5199d71590d36dc789478ed461d02cde5c7f4d51f558 file=deus/internal/hosting/backend.go range=22:22 lang=go exported=true byte_range=591:610
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/hosting.DeployResult
+
+NODE id=github.com/paxlabs-inc/deus/internal/hosting.DeployResult#ExecEndpoint kind=field
+  digest=b3:19e008b74b2932f62b5cb7876799aae8d10969a1f497ce15f597587bf264b064 file=deus/internal/hosting/backend.go range=23:23 lang=go exported=true byte_range=612:631
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/hosting.DeployResult
+
+NODE id=github.com/paxlabs-inc/deus/internal/hosting.DeployResult#FunctionID kind=field
+  digest=b3:a134b84f3932475369afbc19e7a5fde3becd111fc463acb47526f004a47b1ff4 file=deus/internal/hosting/backend.go range=21:21 lang=go exported=true byte_range=570:589
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/hosting.DeployResult
+
+NODE id=github.com/paxlabs-inc/deus/internal/hosting.DevBackend kind=type
+  digest=b3:42e2d5baf8935b5611935b708aa18bf849dac5b40e30143c732ad8472a6bf26b file=deus/internal/hosting/dev.go range=11:14 lang=go exported=true byte_range=85:222
+  sig=type DevBackend struct {\n	ExecURL string\n}
+  doc=DevBackend simulates Paxeer Cloud deploy in local dev (docs/06-execution-hosting.md §6.3).
+EDGES
+  contains=github.com/paxlabs-inc/deus/internal/hosting.DevBackend#ExecURL,github.com/paxlabs-inc/deus/internal/hosting.DevBackend.Delete,github.com/paxlabs-inc/deus/internal/hosting.DevBackend.Deploy
+  implements=github.com/paxlabs-inc/deus/internal/hosting.Backend
+  ^defines=github.com/paxlabs-inc/deus/internal/hosting/dev.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/hosting.DevBackend#ExecURL kind=field
+  digest=b3:fe3c53aaf8ab966322ac5832048b78ffa1e18728ef338cdda8203d32b15be63c file=deus/internal/hosting/dev.go range=13:13 lang=go exported=true byte_range=206:220
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/hosting.DevBackend
+
+NODE id=github.com/paxlabs-inc/deus/internal/hosting.DevBackend.Delete kind=method
+  digest=b3:8c60a6582335415bdf9be553bacbceca1e8391f1a717a0cf749c52f82f513824 file=deus/internal/hosting/dev.go range=34:39 lang=go exported=true byte_range=840:983
+  sig=func (d *DevBackend) Delete(ctx context.Context, functionID string) error
+  doc=Delete is a no-op in dev.
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/hosting.DevBackend
+  ^defines=github.com/paxlabs-inc/deus/internal/hosting/dev.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/hosting.DevBackend.Deploy kind=method
+  digest=b3:3c2e020bb039d7744e1a9042b43b6d4ef3acdda98bfce605354c37830ac3bc29 file=deus/internal/hosting/dev.go range=16:32 lang=go exported=true byte_range=224:838
+  sig=func (d *DevBackend) Deploy(ctx context.Context, in DeployInput) (DeployResult, error)
+  doc=Deploy records a dev function id and routes invoke to ExecURL.
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/hosting.DevBackend
+  ^defines=github.com/paxlabs-inc/deus/internal/hosting/dev.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/hosting.Limits kind=type
+  digest=b3:05f986399dc999d8423977822f4f73ae23567f630b7376fffae23f0f1cddee40 file=deus/internal/hosting/limits.go range=11:19 lang=go exported=true byte_range=78:377
+  sig=type Limits struct {\n	BudgetPAXWei		string\n	MaxAlwaysWarm		int\n	KillSwitch		bool\n	MaxArtifactBytes	int64\n	DefaultTimeoutMS	int\n	DefaultMaxResponseBytes	int\n}
+  doc=Limits configures free-hosting budget and resource caps (docs/06-execution-hosting.md §6.7).
+EDGES
+  contains=github.com/paxlabs-inc/deus/internal/hosting.Limits#BudgetPAXWei,github.com/paxlabs-inc/deus/internal/hosting.Limits#DefaultMaxResponseBytes,github.com/paxlabs-inc/deus/internal/hosting.Limits#DefaultTimeoutMS,github.com/paxlabs-inc/deus/internal/hosting.Limits#KillSwitch,github.com/paxlabs-inc/deus/internal/hosting.Limits#MaxAlwaysWarm,github.com/paxlabs-inc/deus/internal/hosting.Limits#MaxArtifactBytes,github.com/paxlabs-inc/deus/internal/hosting.Limits.overlayEnv,github.com/paxlabs-inc/deus/internal/hosting.Limits.overlayYAML
+  ^defines=github.com/paxlabs-inc/deus/internal/hosting/limits.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/hosting.Limits#BudgetPAXWei kind=field
+  digest=b3:d46eb958c8411dd986be3bbba694ec57ffc41365094d97ad82265fea447f147e file=deus/internal/hosting/limits.go range=13:13 lang=go exported=true byte_range=197:227
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/hosting.Limits
+
+NODE id=github.com/paxlabs-inc/deus/internal/hosting.Limits#DefaultMaxResponseBytes kind=field
+  digest=b3:44a069e28e4918779302a367760474dacff5530b9530a72ba53c7b3168331f09 file=deus/internal/hosting/limits.go range=18:18 lang=go exported=true byte_range=348:375
+  sig=int
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/hosting.Limits
+
+NODE id=github.com/paxlabs-inc/deus/internal/hosting.Limits#DefaultTimeoutMS kind=field
+  digest=b3:546023d9ea635b6833936ff94d672ff92209e768e0fd9c8261e4d192cbf3381c file=deus/internal/hosting/limits.go range=17:17 lang=go exported=true byte_range=319:346
+  sig=int
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/hosting.Limits
+
+NODE id=github.com/paxlabs-inc/deus/internal/hosting.Limits#KillSwitch kind=field
+  digest=b3:055b2bf5d9857f006d94312c7abcacfd4e6f087e2c32cb28401dfa9bfb3a2bd8 file=deus/internal/hosting/limits.go range=15:15 lang=go exported=true byte_range=258:286
+  sig=bool
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/hosting.Limits
+
+NODE id=github.com/paxlabs-inc/deus/internal/hosting.Limits#MaxAlwaysWarm kind=field
+  digest=b3:963dc3ec0aac87d1c35ec7a294fc82f13baf38fd68f7e22f00d8af1afc70ea97 file=deus/internal/hosting/limits.go range=14:14 lang=go exported=true byte_range=229:256
+  sig=int
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/hosting.Limits
+
+NODE id=github.com/paxlabs-inc/deus/internal/hosting.Limits#MaxArtifactBytes kind=field
+  digest=b3:bcde18459d5224af8f30e57c3d60863b265d77e855e3d939fff8376a787766ef file=deus/internal/hosting/limits.go range=16:16 lang=go exported=true byte_range=288:317
+  sig=int64
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/hosting.Limits
+
+NODE id=github.com/paxlabs-inc/deus/internal/hosting.Limits.overlayEnv kind=method
+  digest=b3:176251937a8b25adf25be055a7744364bb9378ed7f5e8cace79334a16470334f file=deus/internal/hosting/limits.go range=108:128 lang=go exported=false byte_range=3088:3682
+  sig=func (l Limits) overlayEnv() Limits
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/hosting.Limits
+  ^defines=github.com/paxlabs-inc/deus/internal/hosting/limits.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/hosting.Limits.overlayYAML kind=method
+  digest=b3:42d2e568af2a45287d13fc16c512dca7dc36e670f83e84765c16c21aefa360a7 file=deus/internal/hosting/limits.go range=86:106 lang=go exported=false byte_range=2544:3086
+  sig=func (l Limits) overlayYAML(y limitsYAML) Limits
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/hosting.Limits
+  ^defines=github.com/paxlabs-inc/deus/internal/hosting/limits.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/hosting.LimitsFromEnv kind=func
+  digest=b3:2513dfbf4570ebdb9e9371a607bf622caabeaa440d5e279f5b2997edde27ceeb file=deus/internal/hosting/limits.go range=34:38 lang=go exported=true byte_range=788:1000
+  sig=func LimitsFromEnv() Limits
+  doc=LimitsFromEnv loads hosting limits from defaults overlaid with environment\nvariables. Kept for callers/tests that only want the env view.
+EDGES
+  ^defines=github.com/paxlabs-inc/deus/internal/hosting/limits.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/hosting.LimitsFromYAML kind=func
+  digest=b3:921ccf3d11b37e2bc2e0ed3a0d867f3e3232ce10c96f361b5e6e6693288c89c1 file=deus/internal/hosting/limits.go range=54:61 lang=go exported=true byte_range=1547:1795
+  sig=func LimitsFromYAML(path string) (Limits, error)
+  doc=LimitsFromYAML parses a configs/limits.<env>.yaml file over the defaults.
+EDGES
+  ^defines=github.com/paxlabs-inc/deus/internal/hosting/limits.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/hosting.LoadLimits kind=func
+  digest=b3:4aeab0c4bd67fbd7040874edc0e5a156ee764e118bfd50b92c4db9b5b38355c9 file=deus/internal/hosting/limits.go range=40:52 lang=go exported=true byte_range=1002:1545
+  sig=func LoadLimits() Limits
+  doc=LoadLimits resolves limits with precedence: defaults < YAML file < env vars.\nThe YAML file is loaded only when DEUS_HOSTING_LIMITS_FILE points at a\nreadable configs/limits.<env>.yaml; env vars always win when set so an\noperator can override a deployed config without editing files.
+EDGES
+  ^defines=github.com/paxlabs-inc/deus/internal/hosting/limits.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/hosting.NewAppwriteBackend kind=func
+  digest=b3:e45babd9ddd73ac39f38bdc605f57fe3cec58ab887a67c85f772a69d4fd60ea5 file=deus/internal/hosting/appwrite.go range=43:53 lang=go exported=true byte_range=833:1280
+  sig=func NewAppwriteBackend(cfg AppwriteConfig, blobs BlobReader, limits Limits) *AppwriteBackend
+  doc=NewAppwriteBackend constructs a production hosting backend. limits supplies\nthe per-function resource caps (timeout, always-warm specification) and the\nrunner-facing response cap pushed as a function variable.
+EDGES
+  ^defines=github.com/paxlabs-inc/deus/internal/hosting/appwrite.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/hosting.NewBudget kind=func
+  digest=b3:6b6337aa42c1a85571d9259d2f38bfe27d7a9e843d965a7204c96a7add08957a file=deus/internal/hosting/budget.go range=17:20 lang=go exported=true byte_range=218:353
+  sig=func NewBudget(st *store.Store, limits Limits) *Budget
+  doc=NewBudget wires budget checks.
+EDGES
+  ^defines=github.com/paxlabs-inc/deus/internal/hosting/budget.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/hosting.NewOrchestrator kind=func
+  digest=b3:1cf15820a3720afe428ba353adccfff6a131b6eb08b770e0eb74dac32bda7793 file=deus/internal/hosting/orchestrator.go range=30:39 lang=go exported=true byte_range=677:960
+  sig=func NewOrchestrator(st *store.Store, blobs BlobStore, backend Backend, limits Limits) *Orchestrator
+  doc=NewOrchestrator wires hosting dependencies.
+EDGES
+  ^defines=github.com/paxlabs-inc/deus/internal/hosting/orchestrator.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/hosting.Orchestrator kind=type
+  digest=b3:8cbf5f3f9e5f55c44f157a1cd96580d914b7f94ca3257d9219b380f65f2a79c9 file=deus/internal/hosting/orchestrator.go range=21:28 lang=go exported=true byte_range=475:675
+  sig=type Orchestrator struct {\n	store	*store.Store\n	blobs	BlobStore\n	backend	Backend\n	limits	Limits\n	budget	*Budget\n}
+  doc=Orchestrator coordinates artifact storage, budget checks, and backend deploy.
+EDGES
+  contains=github.com/paxlabs-inc/deus/internal/hosting.Orchestrator#backend,github.com/paxlabs-inc/deus/internal/hosting.Orchestrator#blobs,github.com/paxlabs-inc/deus/internal/hosting.Orchestrator#budget,github.com/paxlabs-inc/deus/internal/hosting.Orchestrator#limits,github.com/paxlabs-inc/deus/internal/hosting.Orchestrator#store,github.com/paxlabs-inc/deus/internal/hosting.Orchestrator.ActiveEndpoint,github.com/paxlabs-inc/deus/internal/hosting.Orchestrator.Deploy,github.com/paxlabs-inc/deus/internal/hosting.Orchestrator.UploadArtifact
+  implements=github.com/paxlabs-inc/deus/internal/gateway.HostingRouter
+  ^defines=github.com/paxlabs-inc/deus/internal/hosting/orchestrator.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/hosting.Orchestrator#backend kind=field
+  digest=b3:38e6a65b15411fb9cc7e0506b293356423df66852d074f04b40206a13fba0c9b file=deus/internal/hosting/orchestrator.go range=25:25 lang=go exported=false byte_range=625:640
+  sig=hosting.Backend
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/hosting.Orchestrator
+
+NODE id=github.com/paxlabs-inc/deus/internal/hosting.Orchestrator#blobs kind=field
+  digest=b3:fab3f7ea26328de82e53eced700a828665d70b5d5416ad1609904a96f84b9f02 file=deus/internal/hosting/orchestrator.go range=24:24 lang=go exported=false byte_range=606:623
+  sig=hosting.BlobStore
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/hosting.Orchestrator
+
+NODE id=github.com/paxlabs-inc/deus/internal/hosting.Orchestrator#budget kind=field
+  digest=b3:1fd5122d0173a9ee142dbb6db482a0fb5d2c37863dd30e82fdca9a2cfa2ff5f8 file=deus/internal/hosting/orchestrator.go range=27:27 lang=go exported=false byte_range=658:673
+  sig=*hosting.Budget
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/hosting.Orchestrator
+
+NODE id=github.com/paxlabs-inc/deus/internal/hosting.Orchestrator#limits kind=field
+  digest=b3:93c40337f694bee7fd2c19466882c865b7d2b57440e902c52103433ea66f0ae4 file=deus/internal/hosting/orchestrator.go range=26:26 lang=go exported=false byte_range=642:656
+  sig=hosting.Limits
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/hosting.Orchestrator
+
+NODE id=github.com/paxlabs-inc/deus/internal/hosting.Orchestrator#store kind=field
+  digest=b3:57fb37a250b684ea8d22745ad2b277db14c910425c9331d6bf56edd2f25ce659 file=deus/internal/hosting/orchestrator.go range=23:23 lang=go exported=false byte_range=584:604
+  sig=*store.Store
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/hosting.Orchestrator
+
+NODE id=github.com/paxlabs-inc/deus/internal/hosting.Orchestrator.ActiveEndpoint kind=method
+  digest=b3:4fa26ded4a37bf50c937f5749caff260e34e6333516824d5ae495ee8c06da5c8 file=deus/internal/hosting/orchestrator.go range=144:154 lang=go exported=true byte_range=4087:4507
+  sig=func (o *Orchestrator) ActiveEndpoint(ctx context.Context, serviceID string) (string, error)
+  doc=ActiveEndpoint returns the invoke URL for a hosted service.
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/hosting.Orchestrator
+  ^defines=github.com/paxlabs-inc/deus/internal/hosting/orchestrator.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/hosting.Orchestrator.Deploy kind=method
+  digest=b3:ed1b4fc5cfa0bd426d888bf4b2dd918a37f51e1c7147f06243de833f1f866e51 file=deus/internal/hosting/orchestrator.go range=81:142 lang=go exported=true byte_range=2311:4085
+  sig=func (o *Orchestrator) Deploy(ctx context.Context, req DeployRequest) (DeployOutput, error)
+  doc=Deploy provisions hosted execution for a service.
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/hosting.Orchestrator
+  ^defines=github.com/paxlabs-inc/deus/internal/hosting/orchestrator.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/hosting.Orchestrator.UploadArtifact kind=method
+  digest=b3:717d7b34f004e25ee1913885a1a60f7e1da60d971029266ef267e4c011a9d1ca file=deus/internal/hosting/orchestrator.go range=41:58 lang=go exported=true byte_range=962:1659
+  sig=func (o *Orchestrator) UploadArtifact(ctx context.Context, serviceID, filename string, r io.Reader, size int64) (string, error)
+  doc=UploadArtifact stores a source bundle for a hosted service.
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/hosting.Orchestrator
+  ^defines=github.com/paxlabs-inc/deus/internal/hosting/orchestrator.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/hosting.defaultLimits kind=func
+  digest=b3:62b39b8f8d7e26a4f5a57feba1ea8a2b1a8b733ae19e3eb61c03948ec541f67a file=deus/internal/hosting/limits.go range=21:32 lang=go exported=false byte_range=379:786
+  sig=func defaultLimits() Limits
+  doc=defaultLimits returns the built-in fallback caps used when neither a YAML\nfile nor environment variables provide a value.
+EDGES
+  ^defines=github.com/paxlabs-inc/deus/internal/hosting/limits.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/hosting.limitsYAML kind=type
+  digest=b3:cda64f4a47d2abeefa7109e68140600337630e5d4933e1cd509e303fb6528bbf file=deus/internal/hosting/limits.go range=63:72 lang=go exported=false byte_range=1797:2294
+  sig=type limitsYAML struct {\n	BudgetPAXWei		*string	`yaml:"budget_pax_wei"`\n	MaxAlwaysWarm		*int	`yaml:"max_always_warm"`\n	KillSwitch		*bool	`yaml:"kill_switch"`\n	MaxArtifactBytes	*int64	`yaml:"max_artifact_bytes"`\n	DefaultTimeoutMS	*int	`yaml:"default_timeout_ms"`\n	MaxResponseBytes	*int	`yaml:"max_response_bytes"`\n}
+  doc=limitsYAML mirrors configs/limits.<env>.yaml. Pointer fields distinguish an\nabsent key from an explicit zero so partial files only override what they set.
+EDGES
+  contains=github.com/paxlabs-inc/deus/internal/hosting.limitsYAML#BudgetPAXWei,github.com/paxlabs-inc/deus/internal/hosting.limitsYAML#DefaultTimeoutMS,github.com/paxlabs-inc/deus/internal/hosting.limitsYAML#KillSwitch,github.com/paxlabs-inc/deus/internal/hosting.limitsYAML#MaxAlwaysWarm,github.com/paxlabs-inc/deus/internal/hosting.limitsYAML#MaxArtifactBytes,github.com/paxlabs-inc/deus/internal/hosting.limitsYAML#MaxResponseBytes
+  ^defines=github.com/paxlabs-inc/deus/internal/hosting/limits.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/hosting.limitsYAML#BudgetPAXWei kind=field
+  digest=b3:aa7ce91e2f7c9e07b29faa8965df59ba65b46c61651bc6d8d8f99f0ac4867f00 file=deus/internal/hosting/limits.go range=66:66 lang=go exported=true byte_range=1984:2032
+  sig=*string
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/hosting.limitsYAML
+
+NODE id=github.com/paxlabs-inc/deus/internal/hosting.limitsYAML#DefaultTimeoutMS kind=field
+  digest=b3:de39793935a9dbbbcbb6d6c8a238dabf5df980a5a43a88acefd8920302749735 file=deus/internal/hosting/limits.go range=70:70 lang=go exported=true byte_range=2186:2238
+  sig=*int
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/hosting.limitsYAML
+
+NODE id=github.com/paxlabs-inc/deus/internal/hosting.limitsYAML#KillSwitch kind=field
+  digest=b3:24f34ea68eae9979504042a7c33a0669853f808602ed3cd62dd3029c060e8927 file=deus/internal/hosting/limits.go range=68:68 lang=go exported=true byte_range=2085:2130
+  sig=*bool
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/hosting.limitsYAML
+
+NODE id=github.com/paxlabs-inc/deus/internal/hosting.limitsYAML#MaxAlwaysWarm kind=field
+  digest=b3:23ecf340776f9ba6f283451155b3295ec0baecff396d895022be8ea53bf68670 file=deus/internal/hosting/limits.go range=67:67 lang=go exported=true byte_range=2034:2083
+  sig=*int
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/hosting.limitsYAML
+
+NODE id=github.com/paxlabs-inc/deus/internal/hosting.limitsYAML#MaxArtifactBytes kind=field
+  digest=b3:56ed0a599e9346887f1a72de8dd2bf62bd2f76193cdec4a95a4b36dfd6bdb4ba file=deus/internal/hosting/limits.go range=69:69 lang=go exported=true byte_range=2132:2184
+  sig=*int64
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/hosting.limitsYAML
+
+NODE id=github.com/paxlabs-inc/deus/internal/hosting.limitsYAML#MaxResponseBytes kind=field
+  digest=b3:fc7c11a46b195285fa2be2d900ac56355d1b47a5bea072cd7cc0f7a436be3ef0 file=deus/internal/hosting/limits.go range=71:71 lang=go exported=true byte_range=2240:2292
+  sig=*int
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/hosting.limitsYAML
+
+NODE id=github.com/paxlabs-inc/deus/internal/hosting.lookupBool kind=func
+  digest=b3:4256524bc92640d8a5fccfd12e08e68901c562045709b7fd053a1253fe195581 file=deus/internal/hosting/limits.go range=154:167 lang=go exported=false byte_range=4060:4339
+  sig=func lookupBool(key string) (bool, bool)
+EDGES
+  ^defines=github.com/paxlabs-inc/deus/internal/hosting/limits.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/hosting.lookupInt kind=func
+  digest=b3:3a5262e3a2ac2cb4e7d449ef392a0b56024a736bda13b97c73a405e28483db7f file=deus/internal/hosting/limits.go range=142:152 lang=go exported=false byte_range=3874:4058
+  sig=func lookupInt(key string) (int, bool)
+EDGES
+  ^defines=github.com/paxlabs-inc/deus/internal/hosting/limits.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/hosting.lookupNonEmpty kind=func
+  digest=b3:b76d7e4c827d2e94b27977ff8cb32b59cce291a993af64f4840fba7d65f9584e file=deus/internal/hosting/limits.go range=130:140 lang=go exported=false byte_range=3684:3872
+  sig=func lookupNonEmpty(key string) (string, bool)
+EDGES
+  ^defines=github.com/paxlabs-inc/deus/internal/hosting/limits.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/hosting.packageArtifact kind=func
+  digest=b3:339ac830047a477dd09bb0bab1581e0c7699ce5ca446d6274a25630e785dc4ce file=deus/internal/hosting/appwrite.go range=233:249 lang=go exported=false byte_range=6992:7697
+  sig=func packageArtifact(raw []byte) (data []byte, fileName string)
+  doc=packageArtifact normalizes the uploaded bundle into a code.tar.gz the Appwrite\ndeployments API can extract.\n\nThe expected artifact is already a gzipped tar of the project, so when we\ndetect the gzip magic bytes (0x1f 0x8b) we pass the bytes through unchanged.\nAs a robustness fallback (e.g. a developer uploaded a plain, uncompressed\ntar) we gzip-wrap the raw bytes so Appwrite still receives a gzip stream.
+EDGES
+  ^defines=github.com/paxlabs-inc/deus/internal/hosting/appwrite.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/hosting.readLimitsYAML kind=func
+  digest=b3:f5f5272a687be8e72d5cc30ed7b619ef3aebf926efea52b7fdb3aca722698693 file=deus/internal/hosting/limits.go range=74:84 lang=go exported=false byte_range=2296:2542
+  sig=func readLimitsYAML(path string) (limitsYAML, error)
+EDGES
+  ^defines=github.com/paxlabs-inc/deus/internal/hosting/limits.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/hosting.sanitizeName kind=func
+  digest=b3:ce5be80d0af7d75aa711ddb89694a4fde0b33ec7214b421f13de647221493a77 file=deus/internal/hosting/orchestrator.go range=156:163 lang=go exported=false byte_range=4509:4694
+  sig=func sanitizeName(name string) string
+EDGES
+  ^defines=github.com/paxlabs-inc/deus/internal/hosting/orchestrator.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/hosting.shortID kind=func
+  digest=b3:b753e53482925a141d104fbe878d11061cbc5419e7a113afcf458ca8da461cea file=deus/internal/hosting/appwrite.go range=344:350 lang=go exported=false byte_range=10604:10768
+  sig=func shortID(id string) string
+  doc=shortID returns up to the first 8 chars of a service id for the function name.
+EDGES
+  ^defines=github.com/paxlabs-inc/deus/internal/hosting/appwrite.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/hosting.strPtr kind=func
+  digest=b3:cb2079b944b24d87a891598db6bbc7ed4663f8fca2189f2da57d1fb76b927390 file=deus/internal/hosting/orchestrator.go range=165:170 lang=go exported=false byte_range=4696:4770
+  sig=func strPtr(s string) *string
+EDGES
+  ^defines=github.com/paxlabs-inc/deus/internal/hosting/orchestrator.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/hosting.warmSpecification kind=const
+  digest=b3:318d88e3843eb3caaff8dacb8229ea54708cb98518e8c633e74cac16cd2daef9 file=deus/internal/hosting/appwrite.go range=230:231 lang=go exported=false byte_range=6869:6990
+  sig=untyped string
+  doc=warmSpecification is the Appwrite CPU/memory spec for always-warm functions.
+EDGES
+  ^defines=github.com/paxlabs-inc/deus/internal/hosting/appwrite.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/hosting/appwrite.go kind=file
+  digest=b3:ea74bda81103a333daa891db346e26ddad23fc0cc2c8b500bd2c6848ce9c0fd0 file=deus/internal/hosting/appwrite.go range=1:350 lang=go exported=true
+EDGES
+  defines=github.com/paxlabs-inc/deus/internal/hosting.AppwriteBackend,github.com/paxlabs-inc/deus/internal/hosting.AppwriteBackend.Delete,github.com/paxlabs-inc/deus/internal/hosting.AppwriteBackend.Deploy,github.com/paxlabs-inc/deus/internal/hosting.AppwriteBackend.createDeployment,github.com/paxlabs-inc/deus/internal/hosting.AppwriteBackend.do,github.com/paxlabs-inc/deus/internal/hosting.AppwriteBackend.ensureFunction,github.com/paxlabs-inc/deus/internal/hosting.AppwriteBackend.executionsURL,github.com/paxlabs-inc/deus/internal/hosting.AppwriteBackend.fetchArtifact,github.com/paxlabs-inc/deus/internal/hosting.AppwriteBackend.maxResponseBytes,github.com/paxlabs-inc/deus/internal/hosting.AppwriteBackend.post,github.com/paxlabs-inc/deus/internal/hosting.AppwriteBackend.postMultipart,github.com/paxlabs-inc/deus/internal/hosting.AppwriteBackend.pushVariables,github.com/paxlabs-inc/deus/internal/hosting.AppwriteBackend.setHeaders,github.com/paxlabs-inc/deus/internal/hosting.AppwriteBackend.timeoutSeconds,github.com/paxlabs-inc/deus/internal/hosting.AppwriteConfig,github.com/paxlabs-inc/deus/internal/hosting.BlobReader,github.com/paxlabs-inc/deus/internal/hosting.NewAppwriteBackend,github.com/paxlabs-inc/deus/internal/hosting.packageArtifact,github.com/paxlabs-inc/deus/internal/hosting.shortID,github.com/paxlabs-inc/deus/internal/hosting.warmSpecification
+  ^contains=github.com/paxlabs-inc/deus/internal/hosting
+
+NODE id=github.com/paxlabs-inc/deus/internal/hosting/backend.go kind=file
+  digest=b3:7cc4bc4310ffd0abcc3c362af6e8742782fefdad9854c891a3fd77fe575ec579 file=deus/internal/hosting/backend.go range=1:30 lang=go exported=true
+EDGES
+  defines=github.com/paxlabs-inc/deus/internal/hosting.Backend,github.com/paxlabs-inc/deus/internal/hosting.DeployInput,github.com/paxlabs-inc/deus/internal/hosting.DeployResult
+  ^contains=github.com/paxlabs-inc/deus/internal/hosting
+
+NODE id=github.com/paxlabs-inc/deus/internal/hosting/budget.go kind=file
+  digest=b3:6156390efd971edcc2c6daffec2b39a9fedeca76f5e71e76e8b4d34ccea391b7 file=deus/internal/hosting/budget.go range=1:55 lang=go exported=true
+EDGES
+  defines=github.com/paxlabs-inc/deus/internal/hosting.Budget,github.com/paxlabs-inc/deus/internal/hosting.Budget.AllowAlwaysWarm,github.com/paxlabs-inc/deus/internal/hosting.Budget.AllowNewDeployment,github.com/paxlabs-inc/deus/internal/hosting.Budget.BudgetWei,github.com/paxlabs-inc/deus/internal/hosting.NewBudget
+  ^contains=github.com/paxlabs-inc/deus/internal/hosting
+
+NODE id=github.com/paxlabs-inc/deus/internal/hosting/dev.go kind=file
+  digest=b3:58969c704c5ccfdef4fe1e5c2f5c8c29d951f25ea38f4dbe8b64cb8b189e683a file=deus/internal/hosting/dev.go range=1:39 lang=go exported=true
+EDGES
+  defines=github.com/paxlabs-inc/deus/internal/hosting.DevBackend,github.com/paxlabs-inc/deus/internal/hosting.DevBackend.Delete,github.com/paxlabs-inc/deus/internal/hosting.DevBackend.Deploy
+  ^contains=github.com/paxlabs-inc/deus/internal/hosting
+
+NODE id=github.com/paxlabs-inc/deus/internal/hosting/limits.go kind=file
+  digest=b3:51c8609242b6575cb55e067089449c9e03fb227de4b61f5c0dbb356349525d52 file=deus/internal/hosting/limits.go range=1:167 lang=go exported=true
+EDGES
+  defines=github.com/paxlabs-inc/deus/internal/hosting.Limits,github.com/paxlabs-inc/deus/internal/hosting.Limits.overlayEnv,github.com/paxlabs-inc/deus/internal/hosting.Limits.overlayYAML,github.com/paxlabs-inc/deus/internal/hosting.LimitsFromEnv,github.com/paxlabs-inc/deus/internal/hosting.LimitsFromYAML,github.com/paxlabs-inc/deus/internal/hosting.LoadLimits,github.com/paxlabs-inc/deus/internal/hosting.defaultLimits,github.com/paxlabs-inc/deus/internal/hosting.limitsYAML,github.com/paxlabs-inc/deus/internal/hosting.lookupBool,github.com/paxlabs-inc/deus/internal/hosting.lookupInt,github.com/paxlabs-inc/deus/internal/hosting.lookupNonEmpty,github.com/paxlabs-inc/deus/internal/hosting.readLimitsYAML
+  ^contains=github.com/paxlabs-inc/deus/internal/hosting
+
+NODE id=github.com/paxlabs-inc/deus/internal/hosting/orchestrator.go kind=file
+  digest=b3:2fb45ed2009e5cdeb5e16a4d78a8b2823a0f1a6a4f06ef0b612b6df74c0384fd file=deus/internal/hosting/orchestrator.go range=1:170 lang=go exported=true
+EDGES
+  defines=github.com/paxlabs-inc/deus/internal/hosting.BlobStore,github.com/paxlabs-inc/deus/internal/hosting.DeployOutput,github.com/paxlabs-inc/deus/internal/hosting.DeployRequest,github.com/paxlabs-inc/deus/internal/hosting.NewOrchestrator,github.com/paxlabs-inc/deus/internal/hosting.Orchestrator,github.com/paxlabs-inc/deus/internal/hosting.Orchestrator.ActiveEndpoint,github.com/paxlabs-inc/deus/internal/hosting.Orchestrator.Deploy,github.com/paxlabs-inc/deus/internal/hosting.Orchestrator.UploadArtifact,github.com/paxlabs-inc/deus/internal/hosting.sanitizeName,github.com/paxlabs-inc/deus/internal/hosting.strPtr
+  ^contains=github.com/paxlabs-inc/deus/internal/hosting

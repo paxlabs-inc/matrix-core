@@ -1,0 +1,33 @@
+# GENERATED gen=codegraph do-not-edit merkle=b3:2dc69ec8dbbe0231373534486cf12ff6fdb0eaad7b2dfdcbc4d73453c8542ee8
+
+NODE id=github.com/paxlabs-inc/uwac/internal/cryptox kind=package
+  digest=b3:ca1d032779f1e4b951701b42db7ef895b07498adc4e8f8500fcc8e0d9455636f file=uwac/internal/cryptox range=0:0 lang=go exported=true
+EDGES
+  contains=github.com/paxlabs-inc/uwac/internal/cryptox/cryptox.go
+  ^contains=mod:github.com/paxlabs-inc/uwac
+
+NODE id=github.com/paxlabs-inc/uwac/internal/cryptox.Open kind=func
+  digest=b3:d98f649925606802067222286ae16e70d31bffb88717dd6b1a3272be99353cfe file=uwac/internal/cryptox/cryptox.go range=29:45 lang=go exported=true byte_range=733:1241
+  sig=func Open(key []byte, b64 string) ([]byte, error)
+  doc=Open reverses Seal. It fails if the key is wrong or the ciphertext was\ntampered with (GCM authentication).
+EDGES
+  ^defines=github.com/paxlabs-inc/uwac/internal/cryptox/cryptox.go
+
+NODE id=github.com/paxlabs-inc/uwac/internal/cryptox.Seal kind=func
+  digest=b3:9696cc3beda6ba7a2e38c7b242bb86f3fb9579bf5bf249ba9a65bb20d296adf0 file=uwac/internal/cryptox/cryptox.go range=14:27 lang=go exported=true byte_range=260:731
+  sig=func Seal(key, plaintext []byte) (string, error)
+  doc=Seal encrypts plaintext with key (AES-256-GCM) and returns\nbase64(nonce || ciphertext || tag). A fresh random nonce is used per call.
+EDGES
+  ^defines=github.com/paxlabs-inc/uwac/internal/cryptox/cryptox.go
+
+NODE id=github.com/paxlabs-inc/uwac/internal/cryptox.newGCM kind=func
+  digest=b3:6fda3655b761453d66ab0b84bc85979e7147f8069cc5be1ff41235c5b9ba7469 file=uwac/internal/cryptox/cryptox.go range=47:56 lang=go exported=false byte_range=1243:1484
+  sig=func newGCM(key []byte) (cipher.AEAD, error)
+EDGES
+  ^defines=github.com/paxlabs-inc/uwac/internal/cryptox/cryptox.go
+
+NODE id=github.com/paxlabs-inc/uwac/internal/cryptox/cryptox.go kind=file
+  digest=b3:cd870caa2dcaf546d3f9dff3824b3b4479d8f64dfacd4c12c6821f0cb57fa342 file=uwac/internal/cryptox/cryptox.go range=1:56 lang=go exported=true
+EDGES
+  defines=github.com/paxlabs-inc/uwac/internal/cryptox.Open,github.com/paxlabs-inc/uwac/internal/cryptox.Seal,github.com/paxlabs-inc/uwac/internal/cryptox.newGCM
+  ^contains=github.com/paxlabs-inc/uwac/internal/cryptox

@@ -1,0 +1,257 @@
+# GENERATED gen=codegraph do-not-edit merkle=b3:2dc69ec8dbbe0231373534486cf12ff6fdb0eaad7b2dfdcbc4d73453c8542ee8
+
+NODE id=matrix/cody/internal/verify kind=package
+  digest=b3:6b54eb14e2dcdafd56b721312b473773314a991902ddd8fc24e7528dbb9b43d4 file=cody/internal/verify range=0:0 lang=go exported=true
+EDGES
+  contains=matrix/cody/internal/verify/verify.go
+  ^contains=mod:matrix/cody
+
+NODE id=matrix/cody/internal/verify.AllGreen kind=func
+  digest=b3:0787005902acf9461bbcd6bcc06d64e64a234e756c4035d612c6c8c9ec8938e6 file=cody/internal/verify/verify.go range=176:187 lang=go exported=true byte_range=4983:5226
+  sig=func AllGreen(results []Result) bool
+  doc=AllGreen reports whether every result passed. An empty set is NOT green.
+EDGES
+  ^defines=matrix/cody/internal/verify/verify.go
+
+NODE id=matrix/cody/internal/verify.Command kind=type
+  digest=b3:afb6800f342dae1ce80759764e7340e498349515243658d282d1b3345136735f file=cody/internal/verify/verify.go range=39:43 lang=go exported=true byte_range=1035:1201
+  sig=type Command struct {\n	Kind	Kind	`json:"kind"`\n	Cmd	string	`json:"cmd"`	// executed via sh -c in the workspace root\n}
+  doc=Command is one runnable verification step.
+EDGES
+  contains=matrix/cody/internal/verify.Command#Cmd,matrix/cody/internal/verify.Command#Kind
+  ^defines=matrix/cody/internal/verify/verify.go
+
+NODE id=matrix/cody/internal/verify.Command#Cmd kind=field
+  digest=b3:68eb817460fbad6c9b21ffd8ff7ea0a2e41775aa9b62a226487dbb86b922d9f2 file=cody/internal/verify/verify.go range=42:42 lang=go exported=true byte_range=1131:1155
+  sig=string
+EDGES
+  ^contains=matrix/cody/internal/verify.Command
+
+NODE id=matrix/cody/internal/verify.Command#Kind kind=field
+  digest=b3:9fb5f1434f7fdda26f34a1d4f59a15c123bcbcdb1ed2bb0ae295a56c4b59a710 file=cody/internal/verify/verify.go range=41:41 lang=go exported=true byte_range=1104:1129
+  sig=verify.Kind
+EDGES
+  ^contains=matrix/cody/internal/verify.Command
+
+NODE id=matrix/cody/internal/verify.DefaultTimeout kind=const
+  digest=b3:91ab6adc523a224a27b7bd56f1909144df8d8f6232015de42426d5cb3a66d70e file=cody/internal/verify/verify.go range=57:58 lang=go exported=true byte_range=1713:1808
+  sig=time.Duration
+  doc=DefaultTimeout bounds a single verification command.
+EDGES
+  ^defines=matrix/cody/internal/verify/verify.go
+
+NODE id=matrix/cody/internal/verify.Describe kind=func
+  digest=b3:546baff0c55ea7f0f29edc9c800ec42ad5507baaa0538cb0c0e6a277124d3ce4 file=cody/internal/verify/verify.go range=293:301 lang=go exported=true byte_range=7795:8014
+  sig=func Describe(cmds []Command) []string
+  doc=Describe renders commands for prompts and sheets.
+EDGES
+  ^defines=matrix/cody/internal/verify/verify.go
+
+NODE id=matrix/cody/internal/verify.Detect kind=func
+  digest=b3:0ddd388b229a2b8f0619f335b2acfeedb2aa62b1641f203cd2c0b549315b470d file=cody/internal/verify/verify.go range=88:147 lang=go exported=true byte_range=2653:4326
+  sig=func Detect(root string) ([]Command, error)
+  doc=Detect discovers the project's own verification commands under root, in\ndeterministic order (typecheck, lint, build, test per ecosystem).
+EDGES
+  ^defines=matrix/cody/internal/verify/verify.go
+
+NODE id=matrix/cody/internal/verify.FromStrings kind=func
+  digest=b3:8138a8709dbf2058ed194c388a3d754cae0167f13307457fe478709877ccb083 file=cody/internal/verify/verify.go range=303:315 lang=go exported=true byte_range=8016:8365
+  sig=func FromStrings(cmds []string) []Command
+  doc=FromStrings wraps raw command strings (e.g. a sheet's verify.commands) as\ncustom commands for the runner.
+EDGES
+  ^defines=matrix/cody/internal/verify/verify.go
+
+NODE id=matrix/cody/internal/verify.Kind kind=type
+  digest=b3:37607fe0fac65218693fa8c511fb8e7d4a5357d3948b1d271802b3f503d38cdd file=cody/internal/verify/verify.go range=28:29 lang=go exported=true byte_range=798:869
+  sig=type Kind string
+  doc=Kind classifies what a verification command proves.
+EDGES
+  ^defines=matrix/cody/internal/verify/verify.go
+
+NODE id=matrix/cody/internal/verify.KindBuild kind=const
+  digest=b3:671a48acff6baa89af2f0720c180daf72f0896134b2c1103abb3b9d028ca4074 file=cody/internal/verify/verify.go range=32:32 lang=go exported=true byte_range=880:908
+  sig=verify.Kind
+EDGES
+  ^defines=matrix/cody/internal/verify/verify.go
+
+NODE id=matrix/cody/internal/verify.KindCustom kind=const
+  digest=b3:d0da776d7fb48906d7a920a1c5850a844578e2aa46262852090cd6bc138c2752 file=cody/internal/verify/verify.go range=36:36 lang=go exported=true byte_range=1002:1031
+  sig=verify.Kind
+EDGES
+  ^defines=matrix/cody/internal/verify/verify.go
+
+NODE id=matrix/cody/internal/verify.KindLint kind=const
+  digest=b3:78bafc30d4d26d0d8611ccdf006ab9e86def7f734564174e1695de19f97d6778 file=cody/internal/verify/verify.go range=34:34 lang=go exported=true byte_range=939:966
+  sig=verify.Kind
+EDGES
+  ^defines=matrix/cody/internal/verify/verify.go
+
+NODE id=matrix/cody/internal/verify.KindTest kind=const
+  digest=b3:e3eae97bc75db82de82c48c12936fcf646b9eeee3118936a3965b7d9a195ea3f file=cody/internal/verify/verify.go range=33:33 lang=go exported=true byte_range=910:937
+  sig=verify.Kind
+EDGES
+  ^defines=matrix/cody/internal/verify/verify.go
+
+NODE id=matrix/cody/internal/verify.KindTypecheck kind=const
+  digest=b3:5dc8085d31106c204f370d086fc3ae2bf625c759c7ee224e2fb1f080e5420aaf file=cody/internal/verify/verify.go range=35:35 lang=go exported=true byte_range=968:1000
+  sig=verify.Kind
+EDGES
+  ^defines=matrix/cody/internal/verify/verify.go
+
+NODE id=matrix/cody/internal/verify.NewRunner kind=func
+  digest=b3:180cfe0850c74cec4381a3cd872504874ccf02c5fbaff3f4edbc922a7416f3cc file=cody/internal/verify/verify.go range=75:86 lang=go exported=true byte_range=2314:2651
+  sig=func NewRunner(root string) (*Runner, error)
+  doc=NewRunner creates a runner for a workspace root.
+EDGES
+  ^defines=matrix/cody/internal/verify/verify.go
+
+NODE id=matrix/cody/internal/verify.Result kind=type
+  digest=b3:69571fb5111848054571150c04c6d15e4f1a004043f89c964d029ff6a858efb2 file=cody/internal/verify/verify.go range=45:55 lang=go exported=true byte_range=1203:1711
+  sig=type Result struct {\n	Command		Command		`json:"command"`\n	Exit		int		`json:"exit"`\n	Green		bool		`json:"green"`\n	Output		string		`json:"output"`\n	OverflowPath	string		`json:"overflow_path,omitempty"`\n	Duration	time.Duration	`json:"duration"`\n	TimedOut	bool		`json:"timed_out,omitempty"`\n}
+  doc=Result is the structured outcome of one verification run: real exit code,\nreal output (excerpted, with the full copy on disk when oversized).
+EDGES
+  contains=matrix/cody/internal/verify.Result#Command,matrix/cody/internal/verify.Result#Duration,matrix/cody/internal/verify.Result#Exit,matrix/cody/internal/verify.Result#Green,matrix/cody/internal/verify.Result#Output,matrix/cody/internal/verify.Result#OverflowPath,matrix/cody/internal/verify.Result#TimedOut
+  ^defines=matrix/cody/internal/verify/verify.go
+
+NODE id=matrix/cody/internal/verify.Result#Command kind=field
+  digest=b3:acda76fc591fe91e9e218f20b38c73411be1c1b257cbf9685086597eb617ebd1 file=cody/internal/verify/verify.go range=48:48 lang=go exported=true byte_range=1373:1416
+  sig=verify.Command
+EDGES
+  ^contains=matrix/cody/internal/verify.Result
+
+NODE id=matrix/cody/internal/verify.Result#Duration kind=field
+  digest=b3:8d76cb2f984c7b0cfc35bbba5cbe85dd099f1ae273991142a1f136a2cfe217b6 file=cody/internal/verify/verify.go range=53:53 lang=go exported=true byte_range=1608:1652
+  sig=time.Duration
+EDGES
+  ^contains=matrix/cody/internal/verify.Result
+
+NODE id=matrix/cody/internal/verify.Result#Exit kind=field
+  digest=b3:4db9a4b3286e337608f3882a6623a4dc4bf31f740c732cf11032bc51b7349dba file=cody/internal/verify/verify.go range=49:49 lang=go exported=true byte_range=1418:1458
+  sig=int
+EDGES
+  ^contains=matrix/cody/internal/verify.Result
+
+NODE id=matrix/cody/internal/verify.Result#Green kind=field
+  digest=b3:58eccdca1f7ac3c17ef1cb100a71ac231af85caaf1aeeec90becd580ddd87443 file=cody/internal/verify/verify.go range=50:50 lang=go exported=true byte_range=1460:1501
+  sig=bool
+EDGES
+  ^contains=matrix/cody/internal/verify.Result
+
+NODE id=matrix/cody/internal/verify.Result#Output kind=field
+  digest=b3:7b4c5d70cb58f92bf03e9ee397dd6fcf9a0b8b171e76a348a0ba4f5ad5fd830a file=cody/internal/verify/verify.go range=51:51 lang=go exported=true byte_range=1503:1545
+  sig=string
+EDGES
+  ^contains=matrix/cody/internal/verify.Result
+
+NODE id=matrix/cody/internal/verify.Result#OverflowPath kind=field
+  digest=b3:adf1bd5b62e44a7915d4e34e0569776698ff0bc0321e6d139cad136749217956 file=cody/internal/verify/verify.go range=52:52 lang=go exported=true byte_range=1547:1606
+  sig=string
+EDGES
+  ^contains=matrix/cody/internal/verify.Result
+
+NODE id=matrix/cody/internal/verify.Result#TimedOut kind=field
+  digest=b3:118e42bda792950b9034a39fdb3aabb98897d8fae46e7f105d12df549f49cc87 file=cody/internal/verify/verify.go range=54:54 lang=go exported=true byte_range=1654:1709
+  sig=bool
+EDGES
+  ^contains=matrix/cody/internal/verify.Result
+
+NODE id=matrix/cody/internal/verify.Runner kind=type
+  digest=b3:8986fec3a929fb406fe078184a62b7b03faefe465678e9ef83d150e26426a628 file=cody/internal/verify/verify.go range=63:73 lang=go exported=true byte_range=1926:2312
+  sig=type Runner struct {\n	Root	string\n	// Timeout per command; DefaultTimeout when zero.\n	Timeout	time.Duration\n	// ExcerptLimit caps inline output bytes; defaultExcerptLimit when zero.\n	ExcerptLimit	int\n	// OverflowDir receives full outputs that exceed the excerpt limit.\n	// Defaults to <Root>/.cody/overflow.\n	OverflowDir	string\n}
+  doc=Runner executes verification commands in a workspace.
+EDGES
+  contains=matrix/cody/internal/verify.Runner#ExcerptLimit,matrix/cody/internal/verify.Runner#OverflowDir,matrix/cody/internal/verify.Runner#Root,matrix/cody/internal/verify.Runner#Timeout,matrix/cody/internal/verify.Runner.Run,matrix/cody/internal/verify.Runner.excerpt,matrix/cody/internal/verify.Runner.runOne
+  ^defines=matrix/cody/internal/verify/verify.go
+
+NODE id=matrix/cody/internal/verify.Runner#ExcerptLimit kind=field
+  digest=b3:c1326b3498fd46fc1e5c22c3c15e0fa1e677d2c64b67bed55c63ad284f6f764a file=cody/internal/verify/verify.go range=68:69 lang=go exported=true byte_range=2092:2182
+  sig=int
+  doc=ExcerptLimit caps inline output bytes; defaultExcerptLimit when zero.
+EDGES
+  ^contains=matrix/cody/internal/verify.Runner
+
+NODE id=matrix/cody/internal/verify.Runner#OverflowDir kind=field
+  digest=b3:0645e4f2bafd6943251d30a5672a92caa23949897d43c86368743ed63cc854a4 file=cody/internal/verify/verify.go range=70:72 lang=go exported=true byte_range=2184:2310
+  sig=string
+  doc=OverflowDir receives full outputs that exceed the excerpt limit.\nDefaults to <Root>/.cody/overflow.
+EDGES
+  ^contains=matrix/cody/internal/verify.Runner
+
+NODE id=matrix/cody/internal/verify.Runner#Root kind=field
+  digest=b3:af98c31c5651170a3c07f8873e85815d56e2cbe456a45da73c6589f3764996ba file=cody/internal/verify/verify.go range=65:65 lang=go exported=true byte_range=2005:2016
+  sig=string
+EDGES
+  ^contains=matrix/cody/internal/verify.Runner
+
+NODE id=matrix/cody/internal/verify.Runner#Timeout kind=field
+  digest=b3:f8d43f9d9d4b75098a4b123f6ccf01abec5d97b2dd5045195dc911f36bcb991e file=cody/internal/verify/verify.go range=66:67 lang=go exported=true byte_range=2018:2090
+  sig=time.Duration
+  doc=Timeout per command; DefaultTimeout when zero.
+EDGES
+  ^contains=matrix/cody/internal/verify.Runner
+
+NODE id=matrix/cody/internal/verify.Runner.Run kind=method
+  digest=b3:2bf323f6974334a88bc4b6a14ca37d0eb42a47641eb7f996952de524586b085d file=cody/internal/verify/verify.go range=161:174 lang=go exported=true byte_range=4513:4981
+  sig=func (r *Runner) Run(ctx context.Context, cmds []Command) ([]Result, error)
+  doc=Run executes the commands sequentially in the workspace root, stopping at\nnothing: every command runs so the caller sees the full verification\npicture, not just the first failure.
+EDGES
+  ^contains=matrix/cody/internal/verify.Runner
+  ^defines=matrix/cody/internal/verify/verify.go
+
+NODE id=matrix/cody/internal/verify.Runner.excerpt kind=method
+  digest=b3:f8ec6f803164156f8e457ce20ab63afa9e9a43111ce420ecdc11f8023d697ec5 file=cody/internal/verify/verify.go range=227:254 lang=go exported=false byte_range=6089:7026
+  sig=func (r *Runner) excerpt(c Command, out []byte) (string, string)
+  doc=excerpt truncates oversized output head+tail and spills the full bytes to\nan overflow file, so nothing is ever lost to truncation.
+EDGES
+  ^contains=matrix/cody/internal/verify.Runner
+  ^defines=matrix/cody/internal/verify/verify.go
+
+NODE id=matrix/cody/internal/verify.Runner.runOne kind=method
+  digest=b3:b5df654ef489c991cb86d802eaa75325714997fbdb11e9110c8401dc74348a03 file=cody/internal/verify/verify.go range=189:225 lang=go exported=false byte_range=5228:6087
+  sig=func (r *Runner) runOne(ctx context.Context, c Command) (Result, error)
+EDGES
+  ^contains=matrix/cody/internal/verify.Runner
+  ^defines=matrix/cody/internal/verify/verify.go
+
+NODE id=matrix/cody/internal/verify.defaultExcerptLimit kind=const
+  digest=b3:435499a4541473a4c93b79ab0cef4a0814a613fc33f9d9a50b89c7ae05603ca8 file=cody/internal/verify/verify.go range=60:61 lang=go exported=false byte_range=1810:1924
+  sig=untyped int
+  doc=defaultExcerptLimit is the inline output cap before spilling to overflow.
+EDGES
+  ^defines=matrix/cody/internal/verify/verify.go
+
+NODE id=matrix/cody/internal/verify.exists kind=func
+  digest=b3:33f9fa0f669e32387b2e763c27cd2750a0ce035be0f125b60182096b063f32a2 file=cody/internal/verify/verify.go range=256:259 lang=go exported=false byte_range=7028:7105
+  sig=func exists(path string) bool
+EDGES
+  ^defines=matrix/cody/internal/verify/verify.go
+
+NODE id=matrix/cody/internal/verify.kindOfTarget kind=func
+  digest=b3:c49839516ec78fa3f70aa04ffd5b2983677d6f534aba52dacb9aeac63ce8e9ab file=cody/internal/verify/verify.go range=149:159 lang=go exported=false byte_range=4328:4511
+  sig=func kindOfTarget(name string) Kind
+EDGES
+  ^defines=matrix/cody/internal/verify/verify.go
+
+NODE id=matrix/cody/internal/verify.makefileTargetRe kind=var
+  digest=b3:474ca4ccf953a40f1f8af4fd59dc06edb9963be2e55fd7f7b77d20602047ec06 file=cody/internal/verify/verify.go range=275:275 lang=go exported=false byte_range=7371:7453
+  sig=*regexp.Regexp
+EDGES
+  ^defines=matrix/cody/internal/verify/verify.go
+
+NODE id=matrix/cody/internal/verify.makefileTargets kind=func
+  digest=b3:2cd6a8f11a894a192c3e663ce2fc6f1b9b7c73c69a26ba2be9de059c55c6a684 file=cody/internal/verify/verify.go range=277:291 lang=go exported=false byte_range=7455:7793
+  sig=func makefileTargets(path string) map[string]bool
+EDGES
+  ^defines=matrix/cody/internal/verify/verify.go
+
+NODE id=matrix/cody/internal/verify.readScripts kind=func
+  digest=b3:c47c206dde64690010502b6ecc79bc0a3f8a15672ac6d7a4c542676de6453ca1 file=cody/internal/verify/verify.go range=261:273 lang=go exported=false byte_range=7107:7365
+  sig=func readScripts(path string) map[string]string
+EDGES
+  ^defines=matrix/cody/internal/verify/verify.go
+
+NODE id=matrix/cody/internal/verify/verify.go kind=file
+  digest=b3:30354faae59ed683a47b0e15d347884995a6ff94446978ec6f0ee845542d8faf file=cody/internal/verify/verify.go range=1:315 lang=go exported=true
+EDGES
+  defines=matrix/cody/internal/verify.AllGreen,matrix/cody/internal/verify.Command,matrix/cody/internal/verify.DefaultTimeout,matrix/cody/internal/verify.Describe,matrix/cody/internal/verify.Detect,matrix/cody/internal/verify.FromStrings,matrix/cody/internal/verify.Kind,matrix/cody/internal/verify.KindBuild,matrix/cody/internal/verify.KindCustom,matrix/cody/internal/verify.KindLint,matrix/cody/internal/verify.KindTest,matrix/cody/internal/verify.KindTypecheck,matrix/cody/internal/verify.NewRunner,matrix/cody/internal/verify.Result,matrix/cody/internal/verify.Runner,matrix/cody/internal/verify.Runner.Run,matrix/cody/internal/verify.Runner.excerpt,matrix/cody/internal/verify.Runner.runOne,matrix/cody/internal/verify.defaultExcerptLimit,matrix/cody/internal/verify.exists,matrix/cody/internal/verify.kindOfTarget,matrix/cody/internal/verify.makefileTargetRe,matrix/cody/internal/verify.makefileTargets,matrix/cody/internal/verify.readScripts
+  ^contains=matrix/cody/internal/verify

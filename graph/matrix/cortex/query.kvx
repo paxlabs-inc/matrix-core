@@ -1,0 +1,1167 @@
+# GENERATED gen=codegraph do-not-edit merkle=b3:2dc69ec8dbbe0231373534486cf12ff6fdb0eaad7b2dfdcbc4d73453c8542ee8
+
+NODE id=matrix/cortex/query kind=package
+  digest=b3:e64d2cf3c46307afdb7c78bc4bb37270ac0d9fb6d1f98d4910cd5654beb1ea3b file=cortex/query range=0:0 lang=go exported=true
+EDGES
+  contains=matrix/cortex/query/eval.go,matrix/cortex/query/find.go,matrix/cortex/query/graph.go,matrix/cortex/query/predicate.go
+  ^contains=mod:matrix/cortex
+
+NODE id=matrix/cortex/query.And kind=type
+  digest=b3:f77a6c13c2d42d9cedf9ebb779ac1c9dbf0204ea8abeb3fda3580782faf400bf file=cortex/query/predicate.go range=98:102 lang=go exported=true byte_range=2982:3118
+  sig=type And struct {\n	Children []Predicate\n}
+  doc=And evaluates to true iff every child evaluates to true. An empty And is\nvacuously true.
+EDGES
+  contains=matrix/cortex/query.And#Children,matrix/cortex/query.And.String,matrix/cortex/query.And.predicate
+  implements=matrix/cortex/query.Predicate
+  ^defines=matrix/cortex/query/predicate.go
+
+NODE id=matrix/cortex/query.And#Children kind=field
+  digest=b3:5b9579fe3efa50a954daa793a12e53c7dc767a020743752f03b70601a489eb78 file=cortex/query/predicate.go range=101:101 lang=go exported=true byte_range=3096:3116
+  sig=[]query.Predicate
+EDGES
+  ^contains=matrix/cortex/query.And
+
+NODE id=matrix/cortex/query.And.String kind=method
+  digest=b3:f7e1c6980abe58f078763a55f9891f687b88a37a4e66828d791f8fa1124192d3 file=cortex/query/predicate.go range=160:169 lang=go exported=true byte_range=5286:5515
+  sig=func (e And) String() string
+EDGES
+  ^contains=matrix/cortex/query.And
+  ^defines=matrix/cortex/query/predicate.go
+
+NODE id=matrix/cortex/query.And.predicate kind=method
+  digest=b3:8b8c18117af5645ff9a1b1b5993679044753b230e3090f54f584838114faccd8 file=cortex/query/predicate.go range=124:124 lang=go exported=false byte_range=3590:3619
+  sig=func (And) predicate()
+EDGES
+  ^contains=matrix/cortex/query.And
+  ^defines=matrix/cortex/query/predicate.go
+
+NODE id=matrix/cortex/query.DirBoth kind=const
+  digest=b3:70e29bad05a6c52bf593f6955bbcf24565c9013f52f2f5498b2bcceeb8bf50c8 file=cortex/query/find.go range=79:79 lang=go exported=true byte_range=2814:2840
+  sig=query.Direction
+EDGES
+  ^defines=matrix/cortex/query/find.go
+
+NODE id=matrix/cortex/query.DirIn kind=const
+  digest=b3:39c9bc58f8a26ad247b30e37e1cfa32d7f896afe2e07d2631586ef77243fa8aa file=cortex/query/find.go range=78:78 lang=go exported=true byte_range=2764:2788
+  sig=query.Direction
+EDGES
+  ^defines=matrix/cortex/query/find.go
+
+NODE id=matrix/cortex/query.DirOut kind=const
+  digest=b3:41345a828e959212d4a28b4d5c981cfe952c8d79e5f5e94deab83581ed460744 file=cortex/query/find.go range=77:77 lang=go exported=true byte_range=2702:2727
+  sig=query.Direction
+EDGES
+  ^defines=matrix/cortex/query/find.go
+
+NODE id=matrix/cortex/query.Direction kind=type
+  digest=b3:e4c33cc1ea9eef0a6d0f33c3c7534f4675d0d80fa2fd746248af994efe8f46c0 file=cortex/query/find.go range=73:74 lang=go exported=true byte_range=2613:2691
+  sig=type Direction string
+  doc=Direction selects the traversal axis for an EdgeExpr.
+EDGES
+  ^defines=matrix/cortex/query/find.go
+
+NODE id=matrix/cortex/query.EdgeExpr kind=type
+  digest=b3:e557565a7a1e3c24e4d0bd6fbbae29c0a35390345b37ebcf91dc61d07491f5d0 file=cortex/query/find.go range=89:103 lang=go exported=true byte_range=3219:3808
+  sig=type EdgeExpr struct {\n	Types			[]memory.EdgeType\n	MinHops			int\n	MaxHops			int\n	Direction		Direction\n	IncludeTombstoned	bool\n}
+  doc=EdgeExpr describes a graph-traversal step. Spec: research/04-cortex.md\n§12.2 (Query.Follow).\n\n	Types      restricts the edges traversed (empty = any of the 14)\n	MinHops    smallest hop distance to include in results (default 1)\n	MaxHops    largest hop distance to traverse (default 1; cap MaxHopsCap)\n	Direction  out|in|both (default out)\n	IncludeTombstoned  surfaces edges with Tombstoned=true; default false
+EDGES
+  contains=matrix/cortex/query.EdgeExpr#Direction,matrix/cortex/query.EdgeExpr#IncludeTombstoned,matrix/cortex/query.EdgeExpr#MaxHops,matrix/cortex/query.EdgeExpr#MinHops,matrix/cortex/query.EdgeExpr#Types
+  ^defines=matrix/cortex/query/find.go
+
+NODE id=matrix/cortex/query.EdgeExpr#Direction kind=field
+  digest=b3:4b154f68c2fb616b9814750802dcf5f03e183490e69ae971c7130b19bb4683c4 file=cortex/query/find.go range=101:101 lang=go exported=true byte_range=3755:3782
+  sig=query.Direction
+EDGES
+  ^contains=matrix/cortex/query.EdgeExpr
+
+NODE id=matrix/cortex/query.EdgeExpr#IncludeTombstoned kind=field
+  digest=b3:eaa4cd5b79f855afe891ddd4678d7d6951b2e5769ce6f7cfeaa72952e6c4466c file=cortex/query/find.go range=102:102 lang=go exported=true byte_range=3784:3806
+  sig=bool
+EDGES
+  ^contains=matrix/cortex/query.EdgeExpr
+
+NODE id=matrix/cortex/query.EdgeExpr#MaxHops kind=field
+  digest=b3:fa8c65e49ceea9eb2b0a47aff2da2d10b2109abe851fe00b25d1fcf537a82935 file=cortex/query/find.go range=100:100 lang=go exported=true byte_range=3732:3753
+  sig=int
+EDGES
+  ^contains=matrix/cortex/query.EdgeExpr
+
+NODE id=matrix/cortex/query.EdgeExpr#MinHops kind=field
+  digest=b3:54fa87b6765b0d4b4343e490829e6122ea5a4e5bc1c68f64826d3c5a49814551 file=cortex/query/find.go range=99:99 lang=go exported=true byte_range=3709:3730
+  sig=int
+EDGES
+  ^contains=matrix/cortex/query.EdgeExpr
+
+NODE id=matrix/cortex/query.EdgeExpr#Types kind=field
+  digest=b3:fb125785725a1d7201698613f4aa00cd10da0bd03e67e31e61a8bb38bb8f91cd file=cortex/query/find.go range=98:98 lang=go exported=true byte_range=3672:3707
+  sig=[]memory.EdgeType
+EDGES
+  ^contains=matrix/cortex/query.EdgeExpr
+
+NODE id=matrix/cortex/query.Eq kind=type
+  digest=b3:208d25a27905e19c6e3c13ef1ce4f10eef282ec6987a74f343bc3f8dddc9a29e file=cortex/query/predicate.go range=44:51 lang=go exported=true byte_range=1771:2094
+  sig=type Eq struct {\n	Field	FieldRef\n	Value	any\n}
+  doc=Eq compares Field for equality with Value. Numeric, bool, string,\ntime.Time, and memory enum types (Type, Visibility, Polarity, Stance,\nEventKind, Outcome, ConstraintSource, Strength, GoalStatus, SourceKind)\nare supported. Slices and maps are rejected at eval time.
+EDGES
+  contains=matrix/cortex/query.Eq#Field,matrix/cortex/query.Eq#Value,matrix/cortex/query.Eq.String,matrix/cortex/query.Eq.predicate
+  implements=matrix/cortex/query.Predicate
+  ^defines=matrix/cortex/query/predicate.go
+
+NODE id=matrix/cortex/query.Eq#Field kind=field
+  digest=b3:a00a62bb6e51509f940ab90be9356e25f2881f4d28cf9e7e920f10b10fb397ae file=cortex/query/predicate.go range=49:49 lang=go exported=true byte_range=2067:2081
+  sig=query.FieldRef
+EDGES
+  ^contains=matrix/cortex/query.Eq
+
+NODE id=matrix/cortex/query.Eq#Value kind=field
+  digest=b3:3a355b39a90655a7bf0d1d6dd1f2c7f383d0492fcd3e59c8fa172a289baba555 file=cortex/query/predicate.go range=50:50 lang=go exported=true byte_range=2083:2092
+  sig=any
+EDGES
+  ^contains=matrix/cortex/query.Eq
+
+NODE id=matrix/cortex/query.Eq.String kind=method
+  digest=b3:08661c29677651efdc6c4cc9504626b303c57363467b6a85aff25e508baab849 file=cortex/query/predicate.go range=148:149 lang=go exported=true byte_range=4471:4612
+  sig=func (e Eq) String() string
+  doc=String renderings (canonical, used by audit and debug).
+EDGES
+  ^contains=matrix/cortex/query.Eq
+  ^defines=matrix/cortex/query/predicate.go
+
+NODE id=matrix/cortex/query.Eq.predicate kind=method
+  digest=b3:96afbc37c46b285037f0cfa26b7a3ff5881b3fe7b17ed0b952e30a45269a5b9e file=cortex/query/predicate.go range=115:115 lang=go exported=false byte_range=3320:3349
+  sig=func (Eq) predicate()
+EDGES
+  ^contains=matrix/cortex/query.Eq
+  ^defines=matrix/cortex/query/predicate.go
+
+NODE id=matrix/cortex/query.ErrFieldNotComparable kind=var
+  digest=b3:00066db75a360be6854490c451afc521c1a3868cd1efc06b2b17b509099f8d82 file=cortex/query/eval.go range=21:23 lang=go exported=true byte_range=555:764
+  sig=error
+  doc=ErrFieldNotComparable is returned when an ordered comparison is attempted\nagainst a non-ordered field (e.g. Gt on a slice or bool).
+EDGES
+  ^defines=matrix/cortex/query/eval.go
+
+NODE id=matrix/cortex/query.ErrFieldUnknown kind=var
+  digest=b3:0fc47ed0ae4c4258a0406423b861e69c91e010fe38e6a65b4481faf47fbbdf42 file=cortex/query/eval.go range=16:19 lang=go exported=true byte_range=267:553
+  sig=error
+  doc=ErrFieldUnknown is returned when a FieldRef does not resolve for the\nmemory's type. It is non-fatal at the predicate level (Eq against an\nunknown field returns false), but Matches/Gt/etc. surface it.
+EDGES
+  ^defines=matrix/cortex/query/eval.go
+
+NODE id=matrix/cortex/query.ErrTooBroad kind=var
+  digest=b3:cf0459a1b7e887b42151880304e71f673c0bc5ded907e8d97d347b260a4e28d4 file=cortex/query/find.go range=29:32 lang=go exported=true byte_range=680:947
+  sig=error
+  doc=ErrTooBroad is returned when the query has neither a Type filter nor\na HasTag predicate. We refuse to do a full-store scan because it\ninvalidates §15's latency targets.
+EDGES
+  ^defines=matrix/cortex/query/find.go
+
+NODE id=matrix/cortex/query.ErrTypeMismatch kind=var
+  digest=b3:82dc787160829be2ac13e9a1c2ebc7ebabd4f911e0059030c0287be64f7b5624 file=cortex/query/eval.go range=25:27 lang=go exported=true byte_range=766:966
+  sig=error
+  doc=ErrTypeMismatch is returned when a predicate's literal Value cannot be\ncompared with the resolved field value.
+EDGES
+  ^defines=matrix/cortex/query/eval.go
+
+NODE id=matrix/cortex/query.ErrUnbounded kind=var
+  digest=b3:aa096a3a929a96b62816fd3a609a084f04cd2718f1a5dfe0bfa97631ab9703f3 file=cortex/query/find.go range=25:27 lang=go exported=true byte_range=469:677
+  sig=error
+  doc=ErrUnbounded is returned when neither Limit nor BudgetTokens is set.\nThe §12 API forbids unbounded queries (load-bearing OOM guard).
+EDGES
+  ^defines=matrix/cortex/query/find.go
+
+NODE id=matrix/cortex/query.ErrUnsupported kind=var
+  digest=b3:74aa2d274b590e26a4a6f3237cef6fb8607a01447af57006e4f2c3bd939945ca file=cortex/query/find.go range=34:35 lang=go exported=true byte_range=950:1084
+  sig=error
+  doc=ErrUnsupported is returned when a Phase 4+ feature is requested.
+EDGES
+  ^defines=matrix/cortex/query/find.go
+
+NODE id=matrix/cortex/query.FieldRef kind=type
+  digest=b3:b914e27f6f30ab342469da622065d677ae46e1f496844d938206a845c0cff577 file=cortex/query/predicate.go range=128:132 lang=go exported=true byte_range=3681:3967
+  sig=type FieldRef string
+  doc=FieldRef is a dotted-path string with two valid prefixes: "head.<name>",\n"version.<name>", or "data.<name>". The data.<name> path resolves against\nthe type-specific Data struct's exported snake_case field names; see\nfields.go for the per-type whitelist.
+EDGES
+  contains=matrix/cortex/query.FieldRef.Validate
+  ^defines=matrix/cortex/query/predicate.go
+
+NODE id=matrix/cortex/query.FieldRef.Validate kind=method
+  digest=b3:b91485773f3a96f6a89feeed700f38a85c7d61bd651e7790f68d47d0d9d3cc27 file=cortex/query/predicate.go range=134:146 lang=go exported=true byte_range=3969:4469
+  sig=func (ref FieldRef) Validate() error
+  doc=Validate returns an error if ref is not parseable. Does not check that\nthe field exists for a given memory type — that's eval-time.
+EDGES
+  ^contains=matrix/cortex/query.FieldRef
+  ^defines=matrix/cortex/query/predicate.go
+
+NODE id=matrix/cortex/query.FormFull kind=const
+  digest=b3:f42be848db1ef76e182ac772cfa7ba3cf35cd4ed3feebf0ee53fce82f830ae94 file=cortex/query/find.go range=50:50 lang=go exported=true byte_range=1632:1660
+  sig=query.FormKind
+EDGES
+  ^defines=matrix/cortex/query/find.go
+
+NODE id=matrix/cortex/query.FormKind kind=type
+  digest=b3:1c1222348eb9574daae241e8386e0ac0f4bd585831795b0beb06333fa305f76b file=cortex/query/find.go range=38:45 lang=go exported=true byte_range=1088:1558
+  sig=type FormKind string
+  doc=FormKind selects which of {short, medium, full} the result should render.\n\nPhase 4: when Form is set, Run populates Result.Rendered with one entry\nper surviving memory (parallel-indexed with Result.Memories). Short and\nMedium are read from the persisted Forms on the Head/Version (no live\nrecompute, byte-stable since write-time render). Full is rendered live\nfrom typed Data because storing it would double mv/ size with no win.
+EDGES
+  ^defines=matrix/cortex/query/find.go
+
+NODE id=matrix/cortex/query.FormMedium kind=const
+  digest=b3:957ac9321f6ca51181c4d2b5c627398d3b1a34778c7c92a0243117fcd5963326 file=cortex/query/find.go range=49:49 lang=go exported=true byte_range=1600:1630
+  sig=query.FormKind
+EDGES
+  ^defines=matrix/cortex/query/find.go
+
+NODE id=matrix/cortex/query.FormShort kind=const
+  digest=b3:68bb683b1ae6f633d9f0c00d486e6b54e2d4e41a7e4649c7f2a9136ecb7404fa file=cortex/query/find.go range=48:48 lang=go exported=true byte_range=1569:1598
+  sig=query.FormKind
+EDGES
+  ^defines=matrix/cortex/query/find.go
+
+NODE id=matrix/cortex/query.Gt kind=type
+  digest=b3:c77e0b683a35c62703a550c99804d038b02de49c9c140b15789afe89392c5c4c file=cortex/query/predicate.go range=59:64 lang=go exported=true byte_range=2171:2356
+  sig=type Gt struct {\n	Field	FieldRef\n	Value	any\n}
+  doc=Gt / Gte / Lt / Lte support ordered scalars: numeric, time.Time, string\n(lexicographic). All other types yield ErrFieldNotComparable.
+EDGES
+  contains=matrix/cortex/query.Gt#Field,matrix/cortex/query.Gt#Value,matrix/cortex/query.Gt.String,matrix/cortex/query.Gt.predicate
+  implements=matrix/cortex/query.Predicate
+  ^defines=matrix/cortex/query/predicate.go
+
+NODE id=matrix/cortex/query.Gt#Field kind=field
+  digest=b3:a00a62bb6e51509f940ab90be9356e25f2881f4d28cf9e7e920f10b10fb397ae file=cortex/query/predicate.go range=62:62 lang=go exported=true byte_range=2329:2343
+  sig=query.FieldRef
+EDGES
+  ^contains=matrix/cortex/query.Gt
+
+NODE id=matrix/cortex/query.Gt#Value kind=field
+  digest=b3:3a355b39a90655a7bf0d1d6dd1f2c7f383d0492fcd3e59c8fa172a289baba555 file=cortex/query/predicate.go range=63:63 lang=go exported=true byte_range=2345:2354
+  sig=any
+EDGES
+  ^contains=matrix/cortex/query.Gt
+
+NODE id=matrix/cortex/query.Gt.String kind=method
+  digest=b3:f7e21f24e46a93c28cc9d23a555413b961e14d5bbe1bc882eb84532cc0b84a50 file=cortex/query/predicate.go range=151:151 lang=go exported=true byte_range=4697:4779
+  sig=func (e Gt) String() string
+EDGES
+  ^contains=matrix/cortex/query.Gt
+  ^defines=matrix/cortex/query/predicate.go
+
+NODE id=matrix/cortex/query.Gt.predicate kind=method
+  digest=b3:e159d8bf3811c949e4947f135a7cc6e0942461aa287d1bcaf8f94d699d1de154 file=cortex/query/predicate.go range=117:117 lang=go exported=false byte_range=3380:3409
+  sig=func (Gt) predicate()
+EDGES
+  ^contains=matrix/cortex/query.Gt
+  ^defines=matrix/cortex/query/predicate.go
+
+NODE id=matrix/cortex/query.Gte kind=type
+  digest=b3:a7d4e3e29920eab81210c62053f348680ea09063ffdf5455be6ac312e3cae9fc file=cortex/query/predicate.go range=65:68 lang=go exported=true byte_range=2357:2403
+  sig=type Gte struct {\n	Field	FieldRef\n	Value	any\n}
+EDGES
+  contains=matrix/cortex/query.Gte#Field,matrix/cortex/query.Gte#Value,matrix/cortex/query.Gte.String,matrix/cortex/query.Gte.predicate
+  implements=matrix/cortex/query.Predicate
+  ^defines=matrix/cortex/query/predicate.go
+
+NODE id=matrix/cortex/query.Gte#Field kind=field
+  digest=b3:a00a62bb6e51509f940ab90be9356e25f2881f4d28cf9e7e920f10b10fb397ae file=cortex/query/predicate.go range=66:66 lang=go exported=true byte_range=2376:2390
+  sig=query.FieldRef
+EDGES
+  ^contains=matrix/cortex/query.Gte
+
+NODE id=matrix/cortex/query.Gte#Value kind=field
+  digest=b3:3a355b39a90655a7bf0d1d6dd1f2c7f383d0492fcd3e59c8fa172a289baba555 file=cortex/query/predicate.go range=67:67 lang=go exported=true byte_range=2392:2401
+  sig=any
+EDGES
+  ^contains=matrix/cortex/query.Gte
+
+NODE id=matrix/cortex/query.Gte.String kind=method
+  digest=b3:df9f6840e6270e2e4b6bc2c20c47270fd4e721a80126ecaea7475c48269eb66d file=cortex/query/predicate.go range=152:152 lang=go exported=true byte_range=4780:4863
+  sig=func (e Gte) String() string
+EDGES
+  ^contains=matrix/cortex/query.Gte
+  ^defines=matrix/cortex/query/predicate.go
+
+NODE id=matrix/cortex/query.Gte.predicate kind=method
+  digest=b3:d88014a01bb9990c7643537074115f4f18da384ae6c8ed6107adcac3f7b5d241 file=cortex/query/predicate.go range=118:118 lang=go exported=false byte_range=3410:3439
+  sig=func (Gte) predicate()
+EDGES
+  ^contains=matrix/cortex/query.Gte
+  ^defines=matrix/cortex/query/predicate.go
+
+NODE id=matrix/cortex/query.HasTag kind=type
+  digest=b3:c7411b6013e6b6a036885f99ad95f61db13c74fa54f8aad5c21d6d7e1f21e533 file=cortex/query/predicate.go range=85:89 lang=go exported=true byte_range=2648:2812
+  sig=type HasTag struct {\n	Tag string\n}
+  doc=HasTag is short for Eq{tags, contains tag}. Special-cased so the planner\ncan short-circuit candidate selection via idx/tag.
+EDGES
+  contains=matrix/cortex/query.HasTag#Tag,matrix/cortex/query.HasTag.String,matrix/cortex/query.HasTag.predicate
+  implements=matrix/cortex/query.Predicate
+  ^defines=matrix/cortex/query/predicate.go
+
+NODE id=matrix/cortex/query.HasTag#Tag kind=field
+  digest=b3:115343fb3c77642624e7ef1e1494ed6ba4393299e0a4e74c34c4d48d923241a7 file=cortex/query/predicate.go range=88:88 lang=go exported=true byte_range=2800:2810
+  sig=string
+EDGES
+  ^contains=matrix/cortex/query.HasTag
+
+NODE id=matrix/cortex/query.HasTag.String kind=method
+  digest=b3:2a0d2d793b1084fe4107576a6aa315331d571e47b1a442bcfae8917d564863b4 file=cortex/query/predicate.go range=156:158 lang=go exported=true byte_range=5116:5194
+  sig=func (e HasTag) String() string
+EDGES
+  ^contains=matrix/cortex/query.HasTag
+  ^defines=matrix/cortex/query/predicate.go
+
+NODE id=matrix/cortex/query.HasTag.predicate kind=method
+  digest=b3:1c4312f60c223c357b95616099eb32895a6114c55d3203fb57d4600a09d94d12 file=cortex/query/predicate.go range=122:122 lang=go exported=false byte_range=3530:3559
+  sig=func (HasTag) predicate()
+EDGES
+  ^contains=matrix/cortex/query.HasTag
+  ^defines=matrix/cortex/query/predicate.go
+
+NODE id=matrix/cortex/query.HashTag kind=func
+  digest=b3:c08348e18d1f6ec3f0148805a735f6694328c6927b45199e616aee6c7d083bab file=cortex/query/find.go range=267:273 lang=go exported=true byte_range=11130:11366
+  sig=func HashTag(tag string) [keys.TagHashSize]byte
+  doc=HashTag returns the 8-byte tag-hash prefix used in idx/tag keys.
+EDGES
+  ^defines=matrix/cortex/query/find.go
+
+NODE id=matrix/cortex/query.In kind=type
+  digest=b3:9a711f6658c33ccd002ebec3ab52017e7a308722c3ea36b693a8c0540b6889bc file=cortex/query/predicate.go range=78:83 lang=go exported=true byte_range=2498:2646
+  sig=type In struct {\n	Field	FieldRef\n	Values	[]any\n}
+  doc=In returns true if Field equals any of Values. Values must all be of the\nsame kind as Field.
+EDGES
+  contains=matrix/cortex/query.In#Field,matrix/cortex/query.In#Values,matrix/cortex/query.In.String,matrix/cortex/query.In.predicate
+  implements=matrix/cortex/query.Predicate
+  ^defines=matrix/cortex/query/predicate.go
+
+NODE id=matrix/cortex/query.In#Field kind=field
+  digest=b3:0d6be81fc12aeb5ba2b4d49e525071bcdf3e39fa16a13a08bfcfe547ec97326c file=cortex/query/predicate.go range=81:81 lang=go exported=true byte_range=2615:2630
+  sig=query.FieldRef
+EDGES
+  ^contains=matrix/cortex/query.In
+
+NODE id=matrix/cortex/query.In#Values kind=field
+  digest=b3:706a8f8375b7427068c316b6ab919bc802039821a16e2372fd309b3987ec4c1e file=cortex/query/predicate.go range=82:82 lang=go exported=true byte_range=2632:2644
+  sig=[]any
+EDGES
+  ^contains=matrix/cortex/query.In
+
+NODE id=matrix/cortex/query.In.String kind=method
+  digest=b3:d6d39c448eba5529c6f25e6893a35eac95239eae3e0cf654f3a4b923269076a7 file=cortex/query/predicate.go range=155:155 lang=go exported=true byte_range=5031:5115
+  sig=func (e In) String() string
+EDGES
+  ^contains=matrix/cortex/query.In
+  ^defines=matrix/cortex/query/predicate.go
+
+NODE id=matrix/cortex/query.In.predicate kind=method
+  digest=b3:ada97c1eb115bedd39165d64ab9274540b0d2fb443653aeed41de092d769cf27 file=cortex/query/predicate.go range=121:121 lang=go exported=false byte_range=3500:3529
+  sig=func (In) predicate()
+EDGES
+  ^contains=matrix/cortex/query.In
+  ^defines=matrix/cortex/query/predicate.go
+
+NODE id=matrix/cortex/query.LateBindingPayload kind=type
+  digest=b3:6d47c6a21675ab3e1f7514eff548470fc29cb05621420e0ae38bb4aa3a121f58 file=cortex/query/find.go range=990:996 lang=go exported=true byte_range=32071:32476
+  sig=type LateBindingPayload journal.LateBindingPayload
+  doc=LateBindingPayload is the canonical shape of the audit record journaled\nfor late-binding Find calls. Type definition lives in\nmatrix/cortex/journal so the replay harness can decode without a\nreverse dependency on this package; we re-export the alias here so\nexisting call sites that referenced query.LateBindingPayload keep\ncompiling.
+EDGES
+  ^defines=matrix/cortex/query/find.go
+
+NODE id=matrix/cortex/query.Lt kind=type
+  digest=b3:3fa04cd4d9cedee70bd0197461712e7ed4b19fbeb87d98e37a9165a0c95eeab1 file=cortex/query/predicate.go range=69:72 lang=go exported=true byte_range=2404:2449
+  sig=type Lt struct {\n	Field	FieldRef\n	Value	any\n}
+EDGES
+  contains=matrix/cortex/query.Lt#Field,matrix/cortex/query.Lt#Value,matrix/cortex/query.Lt.String,matrix/cortex/query.Lt.predicate
+  implements=matrix/cortex/query.Predicate
+  ^defines=matrix/cortex/query/predicate.go
+
+NODE id=matrix/cortex/query.Lt#Field kind=field
+  digest=b3:a00a62bb6e51509f940ab90be9356e25f2881f4d28cf9e7e920f10b10fb397ae file=cortex/query/predicate.go range=70:70 lang=go exported=true byte_range=2422:2436
+  sig=query.FieldRef
+EDGES
+  ^contains=matrix/cortex/query.Lt
+
+NODE id=matrix/cortex/query.Lt#Value kind=field
+  digest=b3:3a355b39a90655a7bf0d1d6dd1f2c7f383d0492fcd3e59c8fa172a289baba555 file=cortex/query/predicate.go range=71:71 lang=go exported=true byte_range=2438:2447
+  sig=any
+EDGES
+  ^contains=matrix/cortex/query.Lt
+
+NODE id=matrix/cortex/query.Lt.String kind=method
+  digest=b3:5b399a5102f911789305d8ebb39b12edfe3561f82a8a2cc7a83694619517bffe file=cortex/query/predicate.go range=153:153 lang=go exported=true byte_range=4864:4946
+  sig=func (e Lt) String() string
+EDGES
+  ^contains=matrix/cortex/query.Lt
+  ^defines=matrix/cortex/query/predicate.go
+
+NODE id=matrix/cortex/query.Lt.predicate kind=method
+  digest=b3:19261eff1f0f7a40cb46b9eeb2a5bdc12da2f3810b4ee466928c2f904784ef00 file=cortex/query/predicate.go range=119:119 lang=go exported=false byte_range=3440:3469
+  sig=func (Lt) predicate()
+EDGES
+  ^contains=matrix/cortex/query.Lt
+  ^defines=matrix/cortex/query/predicate.go
+
+NODE id=matrix/cortex/query.Lte kind=type
+  digest=b3:32f55c478fd964160f289617bebb415890e090bf84623eac8c8af6fa2347a7eb file=cortex/query/predicate.go range=73:76 lang=go exported=true byte_range=2450:2496
+  sig=type Lte struct {\n	Field	FieldRef\n	Value	any\n}
+EDGES
+  contains=matrix/cortex/query.Lte#Field,matrix/cortex/query.Lte#Value,matrix/cortex/query.Lte.String,matrix/cortex/query.Lte.predicate
+  implements=matrix/cortex/query.Predicate
+  ^defines=matrix/cortex/query/predicate.go
+
+NODE id=matrix/cortex/query.Lte#Field kind=field
+  digest=b3:a00a62bb6e51509f940ab90be9356e25f2881f4d28cf9e7e920f10b10fb397ae file=cortex/query/predicate.go range=74:74 lang=go exported=true byte_range=2469:2483
+  sig=query.FieldRef
+EDGES
+  ^contains=matrix/cortex/query.Lte
+
+NODE id=matrix/cortex/query.Lte#Value kind=field
+  digest=b3:3a355b39a90655a7bf0d1d6dd1f2c7f383d0492fcd3e59c8fa172a289baba555 file=cortex/query/predicate.go range=75:75 lang=go exported=true byte_range=2485:2494
+  sig=any
+EDGES
+  ^contains=matrix/cortex/query.Lte
+
+NODE id=matrix/cortex/query.Lte.String kind=method
+  digest=b3:596452c193cf07068bf427c8dc1c0caa56f602e0d283af46bff9135dbafe4072 file=cortex/query/predicate.go range=154:154 lang=go exported=true byte_range=4947:5030
+  sig=func (e Lte) String() string
+EDGES
+  ^contains=matrix/cortex/query.Lte
+  ^defines=matrix/cortex/query/predicate.go
+
+NODE id=matrix/cortex/query.Lte.predicate kind=method
+  digest=b3:adcf8690c17a56991d4b64a8645a738e4c7b92fe95bbfea07eee260b99361c46 file=cortex/query/predicate.go range=120:120 lang=go exported=false byte_range=3470:3499
+  sig=func (Lte) predicate()
+EDGES
+  ^contains=matrix/cortex/query.Lte
+  ^defines=matrix/cortex/query/predicate.go
+
+NODE id=matrix/cortex/query.Matches kind=type
+  digest=b3:4bb2a90bc40054f77904d65b04a51ad8874e142b325a4b5cc9845a20cd8e7f50 file=cortex/query/predicate.go range=91:96 lang=go exported=true byte_range=2814:2980
+  sig=type Matches struct {\n	Field	FieldRef\n	Pattern	string\n}
+  doc=Matches applies a Go regexp to a string-typed field. Pre-compile cost is\npaid once per query (in Run).
+EDGES
+  contains=matrix/cortex/query.Matches#Field,matrix/cortex/query.Matches#Pattern,matrix/cortex/query.Matches.String,matrix/cortex/query.Matches.predicate
+  implements=matrix/cortex/query.Predicate
+  ^defines=matrix/cortex/query/predicate.go
+
+NODE id=matrix/cortex/query.Matches#Field kind=field
+  digest=b3:46603ab4134804ce248248fc7dbf0f9ab365e584ec142cd4a0fd5bc1aa5222aa file=cortex/query/predicate.go range=94:94 lang=go exported=true byte_range=2946:2962
+  sig=query.FieldRef
+EDGES
+  ^contains=matrix/cortex/query.Matches
+
+NODE id=matrix/cortex/query.Matches#Pattern kind=field
+  digest=b3:d4162679b120cf861b5a411eaca7e0f823ff93ac6380509634048ca58acc922a file=cortex/query/predicate.go range=95:95 lang=go exported=true byte_range=2964:2978
+  sig=string
+EDGES
+  ^contains=matrix/cortex/query.Matches
+
+NODE id=matrix/cortex/query.Matches.String kind=method
+  digest=b3:c6a172b9b7e1e59d28688562950d88bc6172b1462f4d879032f1be1b0f296423 file=cortex/query/predicate.go range=159:159 lang=go exported=true byte_range=5195:5285
+  sig=func (e Matches) String() string
+EDGES
+  ^contains=matrix/cortex/query.Matches
+  ^defines=matrix/cortex/query/predicate.go
+
+NODE id=matrix/cortex/query.Matches.predicate kind=method
+  digest=b3:c255d8675fde51c7fdc2bf600c6e434044a85f692e5760d66634935bba834e3f file=cortex/query/predicate.go range=123:123 lang=go exported=false byte_range=3560:3589
+  sig=func (Matches) predicate()
+EDGES
+  ^contains=matrix/cortex/query.Matches
+  ^defines=matrix/cortex/query/predicate.go
+
+NODE id=matrix/cortex/query.MaxHopsCap kind=const
+  digest=b3:9c1c3879869b958c1e7cd061413dc66e096604cbe46ab06731fe472adf452d57 file=cortex/query/find.go range=82:87 lang=go exported=true byte_range=2863:3217
+  sig=untyped int
+  doc=MaxHopsCap is the upper bound on EdgeExpr.MaxHops. Mirrors the skill-\ncomposition depth cap (research/05-skills-and-tools.md §S1) so a Find\ntraversal can't go deeper than the deepest legal skill chain. A future\nper-actor budget may tune this; for now it is a hard ceiling enforced\nby Run regardless of caller request.
+EDGES
+  ^defines=matrix/cortex/query/find.go
+
+NODE id=matrix/cortex/query.Ne kind=type
+  digest=b3:e12a92ca1ae968f531d77e7e2580783ba42334c00893638ef0162978c0573570 file=cortex/query/predicate.go range=53:57 lang=go exported=true byte_range=2096:2169
+  sig=type Ne struct {\n	Field	FieldRef\n	Value	any\n}
+  doc=Ne is the inverse of Eq.
+EDGES
+  contains=matrix/cortex/query.Ne#Field,matrix/cortex/query.Ne#Value,matrix/cortex/query.Ne.String,matrix/cortex/query.Ne.predicate
+  implements=matrix/cortex/query.Predicate
+  ^defines=matrix/cortex/query/predicate.go
+
+NODE id=matrix/cortex/query.Ne#Field kind=field
+  digest=b3:a00a62bb6e51509f940ab90be9356e25f2881f4d28cf9e7e920f10b10fb397ae file=cortex/query/predicate.go range=55:55 lang=go exported=true byte_range=2142:2156
+  sig=query.FieldRef
+EDGES
+  ^contains=matrix/cortex/query.Ne
+
+NODE id=matrix/cortex/query.Ne#Value kind=field
+  digest=b3:3a355b39a90655a7bf0d1d6dd1f2c7f383d0492fcd3e59c8fa172a289baba555 file=cortex/query/predicate.go range=56:56 lang=go exported=true byte_range=2158:2167
+  sig=any
+EDGES
+  ^contains=matrix/cortex/query.Ne
+
+NODE id=matrix/cortex/query.Ne.String kind=method
+  digest=b3:3c7d3e75b933fc464c914d7ef118c1ab71aba47330a763b057765f519616d8b5 file=cortex/query/predicate.go range=150:150 lang=go exported=true byte_range=4613:4696
+  sig=func (e Ne) String() string
+EDGES
+  ^contains=matrix/cortex/query.Ne
+  ^defines=matrix/cortex/query/predicate.go
+
+NODE id=matrix/cortex/query.Ne.predicate kind=method
+  digest=b3:d556a4f4ceb2d3531e9603360eab01e6cea864685b8af451cab28b66eaf592df file=cortex/query/predicate.go range=116:116 lang=go exported=false byte_range=3350:3379
+  sig=func (Ne) predicate()
+EDGES
+  ^contains=matrix/cortex/query.Ne
+  ^defines=matrix/cortex/query/predicate.go
+
+NODE id=matrix/cortex/query.Not kind=type
+  digest=b3:6e67b98a2351f6a930b5c1b05a985f536f515c2176f79e5e86f697b20e1e8c53 file=cortex/query/predicate.go range=110:113 lang=go exported=true byte_range=3254:3318
+  sig=type Not struct {\n	Inner Predicate\n}
+  doc=Not is logical negation.
+EDGES
+  contains=matrix/cortex/query.Not#Inner,matrix/cortex/query.Not.String,matrix/cortex/query.Not.predicate
+  implements=matrix/cortex/query.Predicate
+  ^defines=matrix/cortex/query/predicate.go
+
+NODE id=matrix/cortex/query.Not#Inner kind=field
+  digest=b3:065320071bce241f3f545193ff6e75c7e160877223e6b1d3c3dc04539f1bf572 file=cortex/query/predicate.go range=112:112 lang=go exported=true byte_range=3301:3316
+  sig=query.Predicate
+EDGES
+  ^contains=matrix/cortex/query.Not
+
+NODE id=matrix/cortex/query.Not.String kind=method
+  digest=b3:8c5fd66c645add2dc9b25275fb220fb20e326e057e33cad28ee273d6347fe95b file=cortex/query/predicate.go range=180:185 lang=go exported=true byte_range=5743:5861
+  sig=func (e Not) String() string
+EDGES
+  ^contains=matrix/cortex/query.Not
+  ^defines=matrix/cortex/query/predicate.go
+
+NODE id=matrix/cortex/query.Not.predicate kind=method
+  digest=b3:aed750116336d38d0dbae97ec382466bd300cd04748cf46f9c67c6c2a9eee7e6 file=cortex/query/predicate.go range=126:126 lang=go exported=false byte_range=3650:3679
+  sig=func (Not) predicate()
+EDGES
+  ^contains=matrix/cortex/query.Not
+  ^defines=matrix/cortex/query/predicate.go
+
+NODE id=matrix/cortex/query.Or kind=type
+  digest=b3:eb758bdf21d49195492b0f3ef7cea03a66e06e9fbd975d055ab19974ba13fa73 file=cortex/query/predicate.go range=104:108 lang=go exported=true byte_range=3120:3252
+  sig=type Or struct {\n	Children []Predicate\n}
+  doc=Or evaluates to true iff any child evaluates to true. An empty Or is\nvacuously false.
+EDGES
+  contains=matrix/cortex/query.Or#Children,matrix/cortex/query.Or.String,matrix/cortex/query.Or.predicate
+  implements=matrix/cortex/query.Predicate
+  ^defines=matrix/cortex/query/predicate.go
+
+NODE id=matrix/cortex/query.Or#Children kind=field
+  digest=b3:5b9579fe3efa50a954daa793a12e53c7dc767a020743752f03b70601a489eb78 file=cortex/query/predicate.go range=107:107 lang=go exported=true byte_range=3230:3250
+  sig=[]query.Predicate
+EDGES
+  ^contains=matrix/cortex/query.Or
+
+NODE id=matrix/cortex/query.Or.String kind=method
+  digest=b3:d68fda379406e2955c09855f161cb14aa227a95568b1ad35e7318c38433c8023 file=cortex/query/predicate.go range=170:179 lang=go exported=true byte_range=5516:5742
+  sig=func (e Or) String() string
+EDGES
+  ^contains=matrix/cortex/query.Or
+  ^defines=matrix/cortex/query/predicate.go
+
+NODE id=matrix/cortex/query.Or.predicate kind=method
+  digest=b3:158c39a38601abc63823ba928e33c6ffdf33f1f69f74ce8c176452b5216370e7 file=cortex/query/predicate.go range=125:125 lang=go exported=false byte_range=3620:3649
+  sig=func (Or) predicate()
+EDGES
+  ^contains=matrix/cortex/query.Or
+  ^defines=matrix/cortex/query/predicate.go
+
+NODE id=matrix/cortex/query.OrderAsc kind=const
+  digest=b3:a11ea42d413171059239ecdbed2ae10bb117a9bb0b2a278a176c818113027aef file=cortex/query/find.go range=109:109 lang=go exported=true byte_range=3898:3930
+  sig=query.OrderDirection
+EDGES
+  ^defines=matrix/cortex/query/find.go
+
+NODE id=matrix/cortex/query.OrderClause kind=type
+  digest=b3:47487670ca2b2f57fc18864b6407d6a29bc1a92bc0b7a73e5ee0ac1c41bcff8b file=cortex/query/find.go range=113:117 lang=go exported=true byte_range=3969:4090
+  sig=type OrderClause struct {\n	Field		OrderField\n	Direction	OrderDirection\n}
+  doc=OrderClause is one entry in Query.OrderBy.
+EDGES
+  contains=matrix/cortex/query.OrderClause#Direction,matrix/cortex/query.OrderClause#Field
+  ^defines=matrix/cortex/query/find.go
+
+NODE id=matrix/cortex/query.OrderClause#Direction kind=field
+  digest=b3:ef8333358fdb9d76c71588d8beb94508bd153bc68e882d36ceab410ccea737cd file=cortex/query/find.go range=116:116 lang=go exported=true byte_range=4064:4088
+  sig=query.OrderDirection
+EDGES
+  ^contains=matrix/cortex/query.OrderClause
+
+NODE id=matrix/cortex/query.OrderClause#Field kind=field
+  digest=b3:f3d6f092328f1157152af0de777f6471fbea4deeed6f3871199b2f737e49998c file=cortex/query/find.go range=115:115 lang=go exported=true byte_range=4042:4062
+  sig=query.OrderField
+EDGES
+  ^contains=matrix/cortex/query.OrderClause
+
+NODE id=matrix/cortex/query.OrderCreatedAt kind=const
+  digest=b3:dfe09a8cc4edc1e9ca65d994f88baf7f2762271d8a9cd64c0f47643f5d077c31 file=cortex/query/find.go range=60:60 lang=go exported=true byte_range=1969:2021
+  sig=query.OrderField
+EDGES
+  ^defines=matrix/cortex/query/find.go
+
+NODE id=matrix/cortex/query.OrderDesc kind=const
+  digest=b3:93dffe6898353110e5c57748a780490969e854c0fb607d9d35d319d6b3fa098d file=cortex/query/find.go range=110:110 lang=go exported=true byte_range=3932:3965
+  sig=query.OrderDirection
+EDGES
+  ^defines=matrix/cortex/query/find.go
+
+NODE id=matrix/cortex/query.OrderDirection kind=type
+  digest=b3:9ed01dc3afd324f02b8431cac637f71ca185ef347728f5e57137cd0cf81f0121 file=cortex/query/find.go range=105:106 lang=go exported=true byte_range=3810:3887
+  sig=type OrderDirection string
+  doc=OrderDirection toggles ascending vs descending.
+EDGES
+  ^defines=matrix/cortex/query/find.go
+
+NODE id=matrix/cortex/query.OrderDistance kind=const
+  digest=b3:512cb8ce09320c102c0899672cd71db8bfe826b239d4570177fb9fddbb86a952 file=cortex/query/find.go range=63:66 lang=go exported=true byte_range=2163:2386
+  sig=query.OrderField
+  doc=OrderDistance is the implicit default order when a Near / NearURI\nquery is run: ascending HNSW distance (closest first). Explicit\nOrderBy clauses override this default.
+EDGES
+  ^defines=matrix/cortex/query/find.go
+
+NODE id=matrix/cortex/query.OrderField kind=type
+  digest=b3:cbfb2ad7a8802d241f5eab5774916edb4de557ea437ff2b26265c3120845490f file=cortex/query/find.go range=53:56 lang=go exported=true byte_range=1664:1874
+  sig=type OrderField string
+  doc=OrderField names a sortable scalar in a result memory. Limited to fields\nthe engine can sort on without a full Data decode (it has Head, Version,\nand the salience score in hand).
+EDGES
+  ^defines=matrix/cortex/query/find.go
+
+NODE id=matrix/cortex/query.OrderHop kind=const
+  digest=b3:077062c00ecfff18b9ae30f2fd7625a007a6526046f54c5466538c38db368b9a file=cortex/query/find.go range=67:70 lang=go exported=true byte_range=2388:2609
+  sig=query.OrderField
+  doc=OrderHop is the implicit default order when a From + Follow graph\ntraversal is run: ascending hop count (closest in the graph first).\nExplicit OrderBy clauses override this default.
+EDGES
+  ^defines=matrix/cortex/query/find.go
+
+NODE id=matrix/cortex/query.OrderImportance kind=const
+  digest=b3:a3a96e635ab8c5d105b6278e346182b21bbd8aa8f16ab7182470a9af5ae91dee file=cortex/query/find.go range=62:62 lang=go exported=true byte_range=2103:2161
+  sig=query.OrderField
+EDGES
+  ^defines=matrix/cortex/query/find.go
+
+NODE id=matrix/cortex/query.OrderLastUpdatedAt kind=const
+  digest=b3:565dc656cc96a5e37f590b17673baa8ccd44a8eda20d599ca40f4e9dff159bb2 file=cortex/query/find.go range=61:61 lang=go exported=true byte_range=2047:2101
+  sig=query.OrderField
+EDGES
+  ^defines=matrix/cortex/query/find.go
+
+NODE id=matrix/cortex/query.OrderSalience kind=const
+  digest=b3:535bcb4e7dbaf5e40dd437dc73e6655543d84be86971952d6f3d155c00c9f906 file=cortex/query/find.go range=59:59 lang=go exported=true byte_range=1885:1927
+  sig=query.OrderField
+EDGES
+  ^defines=matrix/cortex/query/find.go
+
+NODE id=matrix/cortex/query.Predicate kind=interface
+  digest=b3:b0be9710338279b66604e8636625a3294361f366daaf2e529c11568b6c9b78ae file=cortex/query/predicate.go range=33:42 lang=go exported=true byte_range=1338:1769
+  sig=type Predicate interface {\n	predicate()\n	// String returns a stable canonical rendering for journaling and debug.\n	// Round-tripping the string back to a Predicate is NOT guaranteed; this\n	// is for audit only.\n	String() string\n}
+  doc=Predicate is the closed AST of typed where-clauses. The eval method is\npackage-private so callers cannot synthesize predicate types outside this\npackage; only the constructors below are valid.
+EDGES
+  ^implements=matrix/cortex/query.And,matrix/cortex/query.Eq,matrix/cortex/query.Gt,matrix/cortex/query.Gte,matrix/cortex/query.HasTag,matrix/cortex/query.In,matrix/cortex/query.Lt,matrix/cortex/query.Lte,matrix/cortex/query.Matches,matrix/cortex/query.Ne,matrix/cortex/query.Not,matrix/cortex/query.Or
+  ^defines=matrix/cortex/query/predicate.go
+
+NODE id=matrix/cortex/query.Query kind=type
+  digest=b3:4202f05798344ecb42cdcc4a5e95b2028bb63cb686315cf16e07faf465f58e6d file=cortex/query/find.go range=137:228 lang=go exported=true byte_range=4925:9368
+  sig=type Query struct {\n	Type			[]memory.Type\n	Where			Predicate\n	OrderBy			[]OrderClause\n	Limit			int\n	Offset			int\n	BudgetTokens		int	// reserved for Phase 4 form-rendering\n	Form			FormKind\n	IncludeTombstoned	bool\n	// LateBinding marks this Find as issued mid-execution rather than at\n	// compile time. When true, Run journals a KindFind audit entry. The D13\n	// pre-resolution discipline expects compile-time binding; this flag is\n	// the audit hook for cases that legitimately need late binding.\n	LateBinding	bool\n\n	// Near is a natural-language phrase that the caller wants embedded\n	// and used as the query vector. Setting Near requires NearIndex to\n	// be set too; cortex.Find runs the embedder and populates both.\n	Near	string\n\n	// NearURI selects a memory whose embedding is reused as the query\n	// vector (semantic neighbors of an existing memory). cortex.Find\n	// resolves the URI, loads vec/meta, and populates NearVector before\n	// dispatching here.\n	NearURI	*memory.URI\n\n	// NearVector is the query vector for HNSW search. Either supplied\n	// directly by an advanced caller or filled in by cortex.Find from\n	// Near / NearURI. When set together with NearIndex, the candidate\n	// plan switches from idx/tag→idx/type to "HNSW top-K → optional\n	// Where post-filter". Default ordering becomes distance ascending.\n	NearVector	[]float32\n\n	// NearIndex is the HNSW handle that Search will be run against.\n	// Required when NearVector is set; cortex.Find threads c.Index() in\n	// when an embedder is running.\n	NearIndex	*vector.Index\n\n	// NearK controls the HNSW overshoot factor. The planner asks the\n	// index for max(NearK, Limit, EfSearch) candidates so the Where\n	// post-filter has slack to discard non-matching neighbors without\n	// running out. Zero falls back to 4*Limit.\n	NearK	int\n\n	// From is the entry vertex for graph traversal (Phase 6). When set,\n	// Follow describes the walk; the candidate set becomes the BFS\n	// reachable IDs from the resolved memory. Where/Type filters apply\n	// post-traversal. From itself is excluded from results.\n	From	*memory.URI\n	// Follow describes the traversal. nil with From set means "one hop\n	// out, any edge type". Setting Follow without From returns\n	// ErrUnsupported (no anchor to start from).\n	Follow	*EdgeExpr\n\n	// Scope is the optional CortexScope (Phase 10). When non-nil the\n	// run loop applies Scope.Allows(&head) to every candidate after the\n	// tombstone + type filters and skips memories outside the scope.\n	// Scope verification (signature, snapshot resolvability, multi-\n	// proof) is the caller's responsibility — cortex.Find/Context call\n	// VerifyScope once before invoking query.Run; raw query.Run callers\n	// MUST do the same. query.Run treats q.Scope as already-verified.\n	Scope	*scope.Scope\n\n	// RankMode selects salience-primary (default) vs distance-primary\n	// ranking for Near/semantic queries (v3 #4). Read-time only — it\n	// changes neither the canonical store nor any anchored root, so it has\n	// zero replay impact. See RankMode.\n	RankMode	RankMode\n\n	// AsOf is the bi-temporal valid-time the query reads against (v3 #2).\n	// nil defaults to "now": a candidate is dropped when AsOf falls outside\n	// its half-open valid interval [ValidFrom, ValidUntil) or at/after its\n	// ExpiresAt, so the caller never acts on a superseded or expired truth.\n	// Setting AsOf to a past instant answers "what was true at T". The\n	// filter is read-time only (it inspects already-stored Version fields)\n	// → zero replay impact. Graph traversals (From set) and IncludeTombstoned\n	// audits bypass the filter so supersession provenance and "what changed"\n	// answers stay reachable.\n	AsOf	*time.Time\n}
+  doc=Query is the typed find spec. See research/04-cortex.md §12.2.\n\nPhase 4 honors: Type, Where, OrderBy, Limit, Offset, IncludeTombstoned,\nLateBinding, Form, BudgetTokens. Near, NearURI, From, Follow are reserved\nfields; setting Near/NearURI/From/Follow returns ErrUnsupported.\n\nBudgetTokens semantics: when > 0, the engine sums memory.CountTokens over\nevery rendered form and trims low-salience entries until the total fits.\nTrimming is by salience asc regardless of OrderBy (§12.1: "trimming\nlow-salience items first"); surviving entries keep the user's OrderBy.\nIf Form is unset but BudgetTokens > 0, FormMedium is used as the budgeted\ngranularity (§12.1 default).
+EDGES
+  contains=matrix/cortex/query.Query#AsOf,matrix/cortex/query.Query#BudgetTokens,matrix/cortex/query.Query#Follow,matrix/cortex/query.Query#Form,matrix/cortex/query.Query#From,matrix/cortex/query.Query#IncludeTombstoned,matrix/cortex/query.Query#LateBinding,matrix/cortex/query.Query#Limit,matrix/cortex/query.Query#Near,matrix/cortex/query.Query#NearIndex,matrix/cortex/query.Query#NearK,matrix/cortex/query.Query#NearURI,matrix/cortex/query.Query#NearVector,matrix/cortex/query.Query#Offset,matrix/cortex/query.Query#OrderBy,matrix/cortex/query.Query#RankMode,matrix/cortex/query.Query#Scope,matrix/cortex/query.Query#Type,matrix/cortex/query.Query#Where
+  ^defines=matrix/cortex/query/find.go
+
+NODE id=matrix/cortex/query.Query#AsOf kind=field
+  digest=b3:73aac982f5547616191deca2a1bf612be1d56ec9fa2ca188f54786aa6feaea2e file=cortex/query/find.go range=218:227 lang=go exported=true byte_range=8735:9366
+  sig=*time.Time
+  doc=AsOf is the bi-temporal valid-time the query reads against (v3 #2).\nnil defaults to "now": a candidate is dropped when AsOf falls outside\nits half-open valid interval [ValidFrom, ValidUntil) or at/after its\nExpiresAt, so the caller never acts on a superseded or expired truth.\nSetting AsOf to a past instant answers "what was true at T". The\nfilter is read-time only (it inspects already-stored Version fields)\n→ zero replay impact. Graph traversals (From set) and IncludeTombstoned\naudits bypass the filter so supersession provenance and "what changed"\nanswers stay reachable.
+EDGES
+  ^contains=matrix/cortex/query.Query
+
+NODE id=matrix/cortex/query.Query#BudgetTokens kind=field
+  digest=b3:73a338a84e8f5e0467d1859e3d2bf30dc994021497ce5a30f40e58b8b5b2626a file=cortex/query/find.go range=155:155 lang=go exported=true byte_range=5789:5810
+  sig=int
+EDGES
+  ^contains=matrix/cortex/query.Query
+
+NODE id=matrix/cortex/query.Query#Follow kind=field
+  digest=b3:44c941779fd04b39a5e407d5cb9651ed6859b17d36bcace10139cb2787c89112 file=cortex/query/find.go range=198:201 lang=go exported=true byte_range=7772:7964
+  sig=*query.EdgeExpr
+  doc=Follow describes the traversal. nil with From set means "one hop\nout, any edge type". Setting Follow without From returns\nErrUnsupported (no anchor to start from).
+EDGES
+  ^contains=matrix/cortex/query.Query
+
+NODE id=matrix/cortex/query.Query#Form kind=field
+  digest=b3:8a71b7078ff13e9ede0f468a8f8cb80a5c41548913487daf4daa03a2294e72ba file=cortex/query/find.go range=156:156 lang=go exported=true byte_range=5851:5877
+  sig=query.FormKind
+EDGES
+  ^contains=matrix/cortex/query.Query
+
+NODE id=matrix/cortex/query.Query#From kind=field
+  digest=b3:236d9738474914c4cd283b0da6540e1f4f51de336cc1bb03d7a7a397ce10f01a file=cortex/query/find.go range=193:197 lang=go exported=true byte_range=7492:7770
+  sig=*memory.URI
+  doc=From is the entry vertex for graph traversal (Phase 6). When set,\nFollow describes the walk; the candidate set becomes the BFS\nreachable IDs from the resolved memory. Where/Type filters apply\npost-traversal. From itself is excluded from results.
+EDGES
+  ^contains=matrix/cortex/query.Query
+
+NODE id=matrix/cortex/query.Query#IncludeTombstoned kind=field
+  digest=b3:eaa4cd5b79f855afe891ddd4678d7d6951b2e5769ce6f7cfeaa72952e6c4466c file=cortex/query/find.go range=157:157 lang=go exported=true byte_range=5879:5901
+  sig=bool
+EDGES
+  ^contains=matrix/cortex/query.Query
+
+NODE id=matrix/cortex/query.Query#LateBinding kind=field
+  digest=b3:25b2e3ebc5ef5aff78b3bb1f6d45cec00faba81bc5d9239a7a5ab1aa7de13f1f file=cortex/query/find.go range=158:162 lang=go exported=true byte_range=5903:6203
+  sig=bool
+  doc=LateBinding marks this Find as issued mid-execution rather than at\ncompile time. When true, Run journals a KindFind audit entry. The D13\npre-resolution discipline expects compile-time binding; this flag is\nthe audit hook for cases that legitimately need late binding.
+EDGES
+  ^contains=matrix/cortex/query.Query
+
+NODE id=matrix/cortex/query.Query#Limit kind=field
+  digest=b3:4c297bb6c76ec2ccce23c6d958e9c86291b4275eb7d09747ce43679394aa97be file=cortex/query/find.go range=153:153 lang=go exported=true byte_range=5743:5764
+  sig=int
+EDGES
+  ^contains=matrix/cortex/query.Query
+
+NODE id=matrix/cortex/query.Query#Near kind=field
+  digest=b3:7967cbd0e4ea428f5d3b30fb91e21815ec781599a7cfe57e542443b8ad8a30c7 file=cortex/query/find.go range=164:167 lang=go exported=true byte_range=6206:6421
+  sig=string
+  doc=Near is a natural-language phrase that the caller wants embedded\nand used as the query vector. Setting Near requires NearIndex to\nbe set too; cortex.Find runs the embedder and populates both.
+EDGES
+  ^contains=matrix/cortex/query.Query
+
+NODE id=matrix/cortex/query.Query#NearIndex kind=field
+  digest=b3:43a9518e948c2c80c4e9014caba54af602119e0b2e521ac2eca443746efb14e7 file=cortex/query/find.go range=182:185 lang=go exported=true byte_range=7039:7231
+  sig=*vector.Index
+  doc=NearIndex is the HNSW handle that Search will be run against.\nRequired when NearVector is set; cortex.Find threads c.Index() in\nwhen an embedder is running.
+EDGES
+  ^contains=matrix/cortex/query.Query
+
+NODE id=matrix/cortex/query.Query#NearK kind=field
+  digest=b3:d3a8c362026308def1f5ce19311c06ac20ac04d3f3e8f3908436ea2193d444bd file=cortex/query/find.go range=187:191 lang=go exported=true byte_range=7234:7489
+  sig=int
+  doc=NearK controls the HNSW overshoot factor. The planner asks the\nindex for max(NearK, Limit, EfSearch) candidates so the Where\npost-filter has slack to discard non-matching neighbors without\nrunning out. Zero falls back to 4*Limit.
+EDGES
+  ^contains=matrix/cortex/query.Query
+
+NODE id=matrix/cortex/query.Query#NearURI kind=field
+  digest=b3:ff7df7d4ad669052d02ec62ffff90e022828d8382fe19ff956e96db618def8d9 file=cortex/query/find.go range=169:173 lang=go exported=true byte_range=6424:6670
+  sig=*memory.URI
+  doc=NearURI selects a memory whose embedding is reused as the query\nvector (semantic neighbors of an existing memory). cortex.Find\nresolves the URI, loads vec/meta, and populates NearVector before\ndispatching here.
+EDGES
+  ^contains=matrix/cortex/query.Query
+
+NODE id=matrix/cortex/query.Query#NearVector kind=field
+  digest=b3:bf7503e716bdf084fdff7523e60e605ae850d2b2b44bc50870d539d6987ee408 file=cortex/query/find.go range=175:180 lang=go exported=true byte_range=6673:7036
+  sig=[]float32
+  doc=NearVector is the query vector for HNSW search. Either supplied\ndirectly by an advanced caller or filled in by cortex.Find from\nNear / NearURI. When set together with NearIndex, the candidate\nplan switches from idx/tag→idx/type to "HNSW top-K → optional\nWhere post-filter". Default ordering becomes distance ascending.
+EDGES
+  ^contains=matrix/cortex/query.Query
+
+NODE id=matrix/cortex/query.Query#Offset kind=field
+  digest=b3:6b50b24582e219b7b919fe3d60b84dcf358ec809f1f2e2bf0f3cbd27873fd659 file=cortex/query/find.go range=154:154 lang=go exported=true byte_range=5766:5787
+  sig=int
+EDGES
+  ^contains=matrix/cortex/query.Query
+
+NODE id=matrix/cortex/query.Query#OrderBy kind=field
+  digest=b3:32e53ee395af1d63e5c85d018649a7e89bdf84cee01d7ef0507c011f36574ac1 file=cortex/query/find.go range=152:152 lang=go exported=true byte_range=5710:5741
+  sig=[]query.OrderClause
+EDGES
+  ^contains=matrix/cortex/query.Query
+
+NODE id=matrix/cortex/query.Query#RankMode kind=field
+  digest=b3:5c41b2554d3289012956f0d3fb6e917fc946c2d9dcd54bd769ed8c1d26306e66 file=cortex/query/find.go range=212:216 lang=go exported=true byte_range=8467:8732
+  sig=query.RankMode
+  doc=RankMode selects salience-primary (default) vs distance-primary\nranking for Near/semantic queries (v3 #4). Read-time only — it\nchanges neither the canonical store nor any anchored root, so it has\nzero replay impact. See RankMode.
+EDGES
+  ^contains=matrix/cortex/query.Query
+
+NODE id=matrix/cortex/query.Query#Scope kind=field
+  digest=b3:7e927c3784398f6f794e3d7ce013852e9922ff9b7a2d6a9b32265ea59f8aecb4 file=cortex/query/find.go range=203:210 lang=go exported=true byte_range=7967:8464
+  sig=*scope.Scope
+  doc=Scope is the optional CortexScope (Phase 10). When non-nil the\nrun loop applies Scope.Allows(&head) to every candidate after the\ntombstone + type filters and skips memories outside the scope.\nScope verification (signature, snapshot resolvability, multi-\nproof) is the caller's responsibility — cortex.Find/Context call\nVerifyScope once before invoking query.Run; raw query.Run callers\nMUST do the same. query.Run treats q.Scope as already-verified.
+EDGES
+  ^contains=matrix/cortex/query.Query
+
+NODE id=matrix/cortex/query.Query#Type kind=field
+  digest=b3:e12eed684cd30a6a1d2539e3a236d70f4497fc1264747c6fde734dc4ced120b6 file=cortex/query/find.go range=150:150 lang=go exported=true byte_range=5648:5679
+  sig=[]memory.Type
+EDGES
+  ^contains=matrix/cortex/query.Query
+
+NODE id=matrix/cortex/query.Query#Where kind=field
+  digest=b3:8f1dd248677968578fdbccabc25977d3d2bf01ca66d79c4ca39af6d8e887a129 file=cortex/query/find.go range=151:151 lang=go exported=true byte_range=5681:5708
+  sig=query.Predicate
+EDGES
+  ^contains=matrix/cortex/query.Query
+
+NODE id=matrix/cortex/query.RankDistance kind=const
+  digest=b3:65e05710c539995a25c3076daf6a455b570c6069e0789ae5f7e07abbad2abcf1 file=cortex/query/find.go range=131:134 lang=go exported=true byte_range=4691:4921
+  sig=query.RankMode
+  doc=RankDistance is the one-flag rollback to pre-v3 behavior: score Near\ncandidates with the pure-utility salience.ColdScoreWith and order by\nascending HNSW distance (closest first).
+EDGES
+  ^defines=matrix/cortex/query/find.go
+
+NODE id=matrix/cortex/query.RankMode kind=type
+  digest=b3:886b685a1aa24cb7566bd0cbb27ddcc3ff387a4d7f5791825da199ab69f7019b file=cortex/query/find.go range=119:122 lang=go exported=true byte_range=4092:4314
+  sig=type RankMode string
+  doc=RankMode selects how Near/semantic queries are ranked (v3 #4). It has no\neffect on non-Near queries (those already default to OrderSalience desc),\nnor on calls that supply an explicit OrderBy.
+EDGES
+  ^defines=matrix/cortex/query/find.go
+
+NODE id=matrix/cortex/query.RankSalience kind=const
+  digest=b3:71fa0c5c54af84077977b71d83cb91ada4e16185d1fccda7c5098248be232e87 file=cortex/query/find.go range=125:130 lang=go exported=true byte_range=4325:4689
+  sig=query.RankMode
+  doc=RankSalience (the zero value, hence the default) ranks Near queries\nby utility-keyed salience including the recovered vector term\n(salience.ColdScoreWithV) and orders OrderSalience desc — "did this\nmemory help" outranks "is this similar". HNSW still supplies the\ncandidate recall set; salience supplies the ranking.
+EDGES
+  ^defines=matrix/cortex/query/find.go
+
+NODE id=matrix/cortex/query.Result kind=type
+  digest=b3:d4a60f456fee02d6490ccb1f8526079f347f59cf156b49612b927d89420f2c39 file=cortex/query/find.go range=230:265 lang=go exported=true byte_range=9370:11128
+  sig=type Result struct {\n	Memories	[]*memory.Memory\n	// Rendered is parallel-indexed with Memories. Empty unless Query.Form\n	// was set or BudgetTokens triggered the medium fallback. Each entry is\n	// the rendered form for the corresponding memory.\n	Rendered	[]string\n	// RenderedTokens is parallel-indexed with Rendered. memory.CountTokens\n	// of each Rendered entry, captured pre-trim so callers can audit the\n	// budget arithmetic.\n	RenderedTokens	[]int\n	// Scores maps memory ID → cold-salience value at query time. Useful for\n	// debugging ranking; callers usually ignore it.\n	Scores	map[memory.ID]float32\n	// Distances maps memory ID → HNSW distance from the query vector when\n	// the call set Near / NearURI / NearVector. Empty otherwise. Distance\n	// is in [0, 2] where 0 means "identical to query vector" (1 - cosine\n	// under unit norm; see vector package).\n	Distances	map[memory.ID]float32\n	// Hops maps memory ID → hop count from Query.From when the call ran a\n	// graph traversal. Empty when From was unset. The From vertex itself\n	// is NOT in the map (it is excluded from results by construction).\n	Hops	map[memory.ID]int\n	// CandidatesScanned is the count BEFORE Where evaluation. Useful for\n	// detecting too-broad type scans without a Where filter.\n	CandidatesScanned	int\n	// Total is the count after Where + tombstone filter, before Offset/Limit.\n	Total	int\n	// TrimmedByBudget is the count of memories dropped by BudgetTokens\n	// enforcement after Limit. Zero when BudgetTokens is unset or fits.\n	TrimmedByBudget	int\n	// Form is the FormKind used for Rendered; "" when no rendering ran.\n	Form	FormKind\n	// LateBinding mirrors Query.LateBinding for audit-side reporting.\n	LateBinding	bool\n}
+  doc=Result carries the output of one Find call.
+EDGES
+  contains=matrix/cortex/query.Result#CandidatesScanned,matrix/cortex/query.Result#Distances,matrix/cortex/query.Result#Form,matrix/cortex/query.Result#Hops,matrix/cortex/query.Result#LateBinding,matrix/cortex/query.Result#Memories,matrix/cortex/query.Result#Rendered,matrix/cortex/query.Result#RenderedTokens,matrix/cortex/query.Result#Scores,matrix/cortex/query.Result#Total,matrix/cortex/query.Result#TrimmedByBudget
+  ^defines=matrix/cortex/query/find.go
+
+NODE id=matrix/cortex/query.Result#CandidatesScanned kind=field
+  digest=b3:2c863a9061bfe942c406b1fcaba67b75210f558320bd198f7789c895030813e3 file=cortex/query/find.go range=253:255 lang=go exported=true byte_range=10557:10708
+  sig=int
+  doc=CandidatesScanned is the count BEFORE Where evaluation. Useful for\ndetecting too-broad type scans without a Where filter.
+EDGES
+  ^contains=matrix/cortex/query.Result
+
+NODE id=matrix/cortex/query.Result#Distances kind=field
+  digest=b3:6068b954dac1590281f0ac396d72dcf2cc32ac5526b80b85ed0d7521f598e431 file=cortex/query/find.go range=244:248 lang=go exported=true byte_range=10027:10317
+  sig=map[memory.ID]float32
+  doc=Distances maps memory ID → HNSW distance from the query vector when\nthe call set Near / NearURI / NearVector. Empty otherwise. Distance\nis in [0, 2] where 0 means "identical to query vector" (1 - cosine\nunder unit norm; see vector package).
+EDGES
+  ^contains=matrix/cortex/query.Result
+
+NODE id=matrix/cortex/query.Result#Form kind=field
+  digest=b3:457563bab3f5ee82a81e01f8692aff6487a149364d91e42875cded598b10299b file=cortex/query/find.go range=261:262 lang=go exported=true byte_range=10957:11040
+  sig=query.FormKind
+  doc=Form is the FormKind used for Rendered; "" when no rendering ran.
+EDGES
+  ^contains=matrix/cortex/query.Result
+
+NODE id=matrix/cortex/query.Result#Hops kind=field
+  digest=b3:744373ad6346ddc24cd065e3e4dbfdd15e2294e8a1c99d04046d4997ea1b1bf9 file=cortex/query/find.go range=249:252 lang=go exported=true byte_range=10319:10555
+  sig=map[memory.ID]int
+  doc=Hops maps memory ID → hop count from Query.From when the call ran a\ngraph traversal. Empty when From was unset. The From vertex itself\nis NOT in the map (it is excluded from results by construction).
+EDGES
+  ^contains=matrix/cortex/query.Result
+
+NODE id=matrix/cortex/query.Result#LateBinding kind=field
+  digest=b3:17656c95963c18896d4b747605c60976844490be60a127dafa5c3a6e2d2c22a4 file=cortex/query/find.go range=263:264 lang=go exported=true byte_range=11042:11126
+  sig=bool
+  doc=LateBinding mirrors Query.LateBinding for audit-side reporting.
+EDGES
+  ^contains=matrix/cortex/query.Result
+
+NODE id=matrix/cortex/query.Result#Memories kind=field
+  digest=b3:7a38e4bf18fa3a7f82d1612b069145e0e9470fe82663bcae1747cd6f26ecdcfe file=cortex/query/find.go range=232:232 lang=go exported=true byte_range=9439:9464
+  sig=[]*memory.Memory
+EDGES
+  ^contains=matrix/cortex/query.Result
+
+NODE id=matrix/cortex/query.Result#Rendered kind=field
+  digest=b3:35ac5cc155890f87c788bac50e58a4f4e12bde5fd5615ee8eae65d0c30c031bc file=cortex/query/find.go range=233:236 lang=go exported=true byte_range=9466:9680
+  sig=[]string
+  doc=Rendered is parallel-indexed with Memories. Empty unless Query.Form\nwas set or BudgetTokens triggered the medium fallback. Each entry is\nthe rendered form for the corresponding memory.
+EDGES
+  ^contains=matrix/cortex/query.Result
+
+NODE id=matrix/cortex/query.Result#RenderedTokens kind=field
+  digest=b3:dfad1b4675d4de218bf23ecfad41914633717f2462af989a04020350f32e8940 file=cortex/query/find.go range=237:240 lang=go exported=true byte_range=9682:9869
+  sig=[]int
+  doc=RenderedTokens is parallel-indexed with Rendered. memory.CountTokens\nof each Rendered entry, captured pre-trim so callers can audit the\nbudget arithmetic.
+EDGES
+  ^contains=matrix/cortex/query.Result
+
+NODE id=matrix/cortex/query.Result#Scores kind=field
+  digest=b3:bcedc98d9c1942b59fb2d435bf08097563dd6c83eb7635fa1aba5dfdf9af52f8 file=cortex/query/find.go range=241:243 lang=go exported=true byte_range=9871:10025
+  sig=map[memory.ID]float32
+  doc=Scores maps memory ID → cold-salience value at query time. Useful for\ndebugging ranking; callers usually ignore it.
+EDGES
+  ^contains=matrix/cortex/query.Result
+
+NODE id=matrix/cortex/query.Result#Total kind=field
+  digest=b3:123208c3e93865fc7bce9f6a6f38264fbaa317c423cda708bbdc7c35ce757e45 file=cortex/query/find.go range=256:257 lang=go exported=true byte_range=10710:10795
+  sig=int
+  doc=Total is the count after Where + tombstone filter, before Offset/Limit.
+EDGES
+  ^contains=matrix/cortex/query.Result
+
+NODE id=matrix/cortex/query.Result#TrimmedByBudget kind=field
+  digest=b3:7d2386b7b5c8303d705bc7310ccccc2e81f8ee86772493a5bc144b682498c540 file=cortex/query/find.go range=258:260 lang=go exported=true byte_range=10797:10955
+  sig=int
+  doc=TrimmedByBudget is the count of memories dropped by BudgetTokens\nenforcement after Limit. Zero when BudgetTokens is unset or fits.
+EDGES
+  ^contains=matrix/cortex/query.Result
+
+NODE id=matrix/cortex/query.Run kind=func
+  digest=b3:d3c4c1eab70c0f788d001929bfd20d7ee95d803b8bf3304bf858d44a2a4fd78c file=cortex/query/find.go range=275:522 lang=go exported=true byte_range=11368:19317
+  sig=func Run(s *store.Store, q Query) (*Result, error)
+  doc=Run executes q against s and returns matching memories.\n\nThe planner runs in five steps:\n 1. Validate q.\n 2. Plan candidate set (idx/tag if HasTag conjunction; else idx/type).\n 3. For each candidate: load head; tombstone-filter; load version, decode;\n    evaluate Where; collect.\n 4. Order (default: salience desc).\n 5. Offset / Limit / late-binding journal.\n\nPhase 3 keeps the implementation deliberately straightforward: a single\npass, no parallel readers, no batching beyond Pebble's own block cache.\nLatency at small N is dominated by Pebble point reads (~30 µs warm), so\nthe per-candidate overhead is small. Larger N awaits Phase 4 where\nstreaming + budgeting come online.
+EDGES
+  ^defines=matrix/cortex/query/find.go
+
+NODE id=matrix/cortex/query.collectHasTags kind=func
+  digest=b3:ea7d93a4ffb178a5bc9b0032b33352ffd52b7875414466296925daca5a902757 file=cortex/query/predicate.go range=187:209 lang=go exported=false byte_range=5863:6581
+  sig=func collectHasTags(p Predicate) []string
+  doc=collectHasTags walks the predicate looking for top-level HasTag predicates\nthat the planner can use to drive candidate selection through idx/tag.\n\nOnly HasTags reachable through pure And-conjunction (no Or, no Not) are\nreturned, because those are the only ones the planner can safely use as\na *narrowing* candidate filter. A HasTag inside Or or Not constrains the\nfinal result set without constraining the candidate set.
+EDGES
+  ^defines=matrix/cortex/query/predicate.go
+
+NODE id=matrix/cortex/query.compareForOrderFull kind=func
+  digest=b3:8947ffbe18100b1e44bc0c675973d1d8086c7a51da06cb85b63e5a938216e14f file=cortex/query/find.go range=915:988 lang=go exported=false byte_range=30293:32069
+  sig=func compareForOrderFull(field OrderField, scores, dists map[memory.ID]float32, hops map[memory.ID]int, a, b *memory.Memory) (int, error)
+EDGES
+  ^defines=matrix/cortex/query/find.go
+
+NODE id=matrix/cortex/query.dataField kind=func
+  digest=b3:0393bb64dde2b4ab36e7474fcd51e98c814dad3d4767be00313da085abfab2aa file=cortex/query/eval.go range=109:234 lang=go exported=false byte_range=3325:6335
+  sig=func dataField(name string, d memory.TypedData) (any, bool)
+  doc=dataField returns scalar Data-struct fields per the §4.2 schemas. New\nfields require a one-line addition here AND a matching test.
+EDGES
+  ^defines=matrix/cortex/query/eval.go
+
+NODE id=matrix/cortex/query.edgeTypeSet kind=func
+  digest=b3:3cc6e0e58a370485c37df9c1178c034f011f7e9bb552cb2776ec08f22bf65358 file=cortex/query/graph.go range=263:275 lang=go exported=false byte_range=7968:8417
+  sig=func edgeTypeSet(types []memory.EdgeType) map[memory.EdgeType]struct{}
+  doc=edgeTypeSet returns nil if types is empty (meaning "any"); otherwise a\nset keyed by edge type byte. Mirrors cortex.edgeTypeSet but lives in\nthis package so query/graph.go has zero dep on the cortex top-level.
+EDGES
+  ^defines=matrix/cortex/query/graph.go
+
+NODE id=matrix/cortex/query.evaluator kind=type
+  digest=b3:4009d2fbb2bbe3cecb8b3df72ffb74c80adfdd771616a40ee6c1aac88d41c380 file=cortex/query/eval.go range=236:240 lang=go exported=false byte_range=6337:6533
+  sig=type evaluator struct {\n	regex map[string]*regexp.Regexp\n}
+  doc=evaluator carries pre-compiled state for one Find call (regexp cache so\neach Matches predicate compiles once, not once per memory).
+EDGES
+  contains=matrix/cortex/query.evaluator#regex,matrix/cortex/query.evaluator.cmp,matrix/cortex/query.evaluator.eval,matrix/cortex/query.evaluator.matches
+  ^defines=matrix/cortex/query/eval.go
+
+NODE id=matrix/cortex/query.evaluator#regex kind=field
+  digest=b3:65360eb72f3e66ffcb8f6b06207a37f474c1532bcbed9b8796bde8d21fd9dc2b file=cortex/query/eval.go range=239:239 lang=go exported=false byte_range=6500:6531
+  sig=map[string]*regexp.Regexp
+EDGES
+  ^contains=matrix/cortex/query.evaluator
+
+NODE id=matrix/cortex/query.evaluator.cmp kind=method
+  digest=b3:6086dfbf77dec00587cbd020cbd9f02c4206afd7dfa250b081fe2a2f079560ef file=cortex/query/eval.go range=344:357 lang=go exported=false byte_range=8862:9237
+  sig=func (ev *evaluator) cmp(ref FieldRef, lit any, m *memory.Memory, data memory.TypedData, accept func(int) bool) (bool, error)
+EDGES
+  ^contains=matrix/cortex/query.evaluator
+  ^defines=matrix/cortex/query/eval.go
+
+NODE id=matrix/cortex/query.evaluator.eval kind=method
+  digest=b3:0a0d42f9767486405ffedbde27d04b676804bb2c8e251e092e7b9927efab0717 file=cortex/query/eval.go range=246:342 lang=go exported=false byte_range=6626:8860
+  sig=func (ev *evaluator) eval(p Predicate, m *memory.Memory, data memory.TypedData) (bool, error)
+  doc=eval recursively evaluates a Predicate against (m, data). Returns false\n(no error) for an unknown field on Eq/Ne/In/HasTag — those are "this\nmemory simply doesn't satisfy the predicate" signals. Gt/Gte/Lt/Lte/\nMatches return ErrFieldUnknown to surface schema typos.
+EDGES
+  ^contains=matrix/cortex/query.evaluator
+  ^defines=matrix/cortex/query/eval.go
+
+NODE id=matrix/cortex/query.evaluator.matches kind=method
+  digest=b3:7a3741924874641b81614cdee80a5287be3719ea28f37272be531080f9d02381 file=cortex/query/eval.go range=359:381 lang=go exported=false byte_range=9239:9875
+  sig=func (ev *evaluator) matches(x Matches, m *memory.Memory, data memory.TypedData) (bool, error)
+EDGES
+  ^contains=matrix/cortex/query.evaluator
+  ^defines=matrix/cortex/query/eval.go
+
+NODE id=matrix/cortex/query.headField kind=func
+  digest=b3:db060e6485d2d633a3334a4be02d3879b2dca6ec0a0cc80e5c4a079864e811ff file=cortex/query/eval.go range=52:82 lang=go exported=false byte_range=1813:2629
+  sig=func headField(name string, h *memory.Head) (any, bool)
+  doc=headField returns scalar fields of memory.Head by canonical lower_snake\nname. Unknown name → (nil, false).
+EDGES
+  ^defines=matrix/cortex/query/eval.go
+
+NODE id=matrix/cortex/query.journalLateBinding kind=func
+  digest=b3:14a69f125b108a3ceda3ccc3e9cb71e0951e6d477b323e882a1516202447c311 file=cortex/query/find.go range=998:1095 lang=go exported=false byte_range=32478:36015
+  sig=func journalLateBinding(s *store.Store, q Query, res *Result, now time.Time) error
+  doc=journalLateBinding writes the KindFind audit entry AND bumps the\nsalience.AccessCount of every returned candidate in a single atomic\nPebble batch (Phase 11.5).\n\nPhase 3 wrote the journal entry via the standalone Store.AppendJournal\npath with no salience mutation. Phase 11.5 moved both to a WriteBatch\nso the salience bumps and the audit entry commit-or-abort together —\nthe replay invariant (research/04-cortex.md §13.4) requires that every\nderived-state mutation be reproducible from journal+canonical, and the\nAccessCount bumps are now derived from the AccessedIDs field on the\njournal payload.\n\nAccessedIDs is the set of res.Memories[*].Head.ID after Offset/Limit/\nBudgetTokens trim; BudgetTokens trim happens before this call returns\nper Run's existing ordering, so the count matches what the caller\nactually receives. Tombstoned candidates are filtered upstream in\nRun, so we never bump a tombstone salience here.
+EDGES
+  ^defines=matrix/cortex/query/find.go
+
+NODE id=matrix/cortex/query.lessULID kind=func
+  digest=b3:15e750ae4541e67bb7824b495e2c633b56512601e493c1c7c68f0c490a74f417 file=cortex/query/graph.go range=254:261 lang=go exported=false byte_range=7834:7966
+  sig=func lessULID(a, b memory.ID) bool
+EDGES
+  ^defines=matrix/cortex/query/graph.go
+
+NODE id=matrix/cortex/query.newEvaluator kind=func
+  digest=b3:f2bcb9e58f7680cb873659b083defc3fc4cb5a0165f5e20d2621390f77206e8a file=cortex/query/eval.go range=242:244 lang=go exported=false byte_range=6535:6624
+  sig=func newEvaluator() *evaluator
+EDGES
+  ^defines=matrix/cortex/query/eval.go
+
+NODE id=matrix/cortex/query.numericTo64 kind=func
+  digest=b3:0897b4f2333667c2154a7292abfa889f344d291809a82d7a3f72c836e262f2c5 file=cortex/query/eval.go range=461:491 lang=go exported=false byte_range=12096:12773
+  sig=func numericTo64(v any) (float64, bool)
+  doc=numericTo64 coerces any signed/unsigned int or float to float64 for\ncomparison. Returns (0, false) for non-numeric types.
+EDGES
+  ^defines=matrix/cortex/query/eval.go
+
+NODE id=matrix/cortex/query.orderResults kind=func
+  digest=b3:27b32e8b1528560991e634911acf9d8a25307d4aab7a6411f6db0d6c0b5eaff7 file=cortex/query/find.go range=861:913 lang=go exported=false byte_range=28653:30291
+  sig=func orderResults(res *Result, clauses []OrderClause, rankMode RankMode) error
+  doc=orderResults sorts res.Memories in place. Default ordering:\n  - if res.Hops is populated (From query) → OrderHop ascending\n  - else if res.Distances is populated (Near query) → OrderSalience\n    descending (v3 #4 default, utility-primary), unless rankMode is\n    RankDistance, which restores OrderDistance ascending\n  - else → OrderSalience descending\n\nULID ascending is the deterministic tie-break in every case.
+EDGES
+  ^defines=matrix/cortex/query/find.go
+
+NODE id=matrix/cortex/query.parseFromURI kind=func
+  digest=b3:cdbb9945b0459d1710b96fc37dfa195942b1a54248da84fe2eb2fe24be4f497b file=cortex/query/graph.go range=82:110 lang=go exported=false byte_range=2487:3637
+  sig=func parseFromURI(uri memory.URI) (memory.ID, error)
+  doc=parseFromURI extracts the memory ID from Query.From. We accept the\ncanonical matrix://cortex/<Type>/<id>#<version> form because that's\nwhat the rest of cortex emits; the Type and Version are advisory in\nthis context (BFS only needs the ID). Reusing the cortex package's\nParseURI would create an import cycle (cortex imports query), so we\nre-implement a tolerant variant inline.
+EDGES
+  ^defines=matrix/cortex/query/graph.go
+
+NODE id=matrix/cortex/query.planCandidates kind=func
+  digest=b3:f9fb55323a2c9e012fd0c66f6f15639c47ad15423fd15a5dfe577a6896b64587 file=cortex/query/find.go range=706:731 lang=go exported=false byte_range=24340:25350
+  sig=func planCandidates(s *store.Store, q Query) ([]memory.ID, int, map[memory.ID]float32, error)
+  doc=planCandidates picks an index strategy and returns the deduped candidate\nID list plus a scan count and (when applicable) a per-ID distance map.\n\nStrategy:\n  - When NearVector is set, HNSW search gives the candidate set; ordered\n    ascending by distance. ErrTooBroad does NOT fire (HNSW is already\n    selective). Where filters apply as a post-filter.\n  - Else, HasTag predicates in the top-level And-conjunction are the\n    most selective signal — intersect across all such tags.\n  - Else, scan idx/type for each Type in q.Type, union.\n  - Else, ErrTooBroad.
+EDGES
+  ^defines=matrix/cortex/query/find.go
+
+NODE id=matrix/cortex/query.planCandidatesGraph kind=func
+  digest=b3:235e7033e420131a6b08f6fae74d39be7f0b8b3dcd0e48c283db5bbe7150db99 file=cortex/query/graph.go range=112:236 lang=go exported=false byte_range=3639:7269
+  sig=func planCandidatesGraph(s *store.Store, q Query) ([]memory.ID, int, map[memory.ID]int, error)
+  doc=planCandidatesGraph runs a hop-bounded BFS from Query.From and returns\nthe deduped reachable IDs (excluding the From vertex itself), the\nnumber of edge records scanned, and a per-ID hop map.\n\nThe visited set is keyed by memory ID; once an ID is popped at hop h,\nits hop count is fixed at h (BFS gives shortest hop in unweighted\ngraphs by construction). Edges with Tombstoned=true are skipped\nunless Follow.IncludeTombstoned=true. Edges of types not in\nFollow.Types are skipped (empty Types means "any of the 14").\n\nDirection:\n  - DirOut  → walk e/from/<src>/...\n  - DirIn   → walk e/to/<dst>/...\n  - DirBoth → both, deduplicating by neighbor ID before adding to the\n    queue (a neighbor reachable both directions is one neighbor).
+EDGES
+  ^defines=matrix/cortex/query/graph.go
+
+NODE id=matrix/cortex/query.renderMemory kind=func
+  digest=b3:e5d858903a5445e1ad9a70802f4cdb3e57af7d935ca8e347b96cba8714f28cb0 file=cortex/query/find.go range=542:556 lang=go exported=false byte_range=19904:20377
+  sig=func renderMemory(m *memory.Memory, form FormKind) (string, error)
+EDGES
+  ^defines=matrix/cortex/query/find.go
+
+NODE id=matrix/cortex/query.renderResults kind=func
+  digest=b3:2f5d3f0e07274d8cc20505f0c52464994572281c80f4ae41c20570a660b630a9 file=cortex/query/find.go range=524:540 lang=go exported=false byte_range=19319:19902
+  sig=func renderResults(res *Result, form FormKind) error
+  doc=renderResults populates res.Rendered/RenderedTokens for the form kind.\nShort/Medium come from the persisted Version.Forms (byte-stable since\nwrite-time render); Full is rendered live from typed Data.
+EDGES
+  ^defines=matrix/cortex/query/find.go
+
+NODE id=matrix/cortex/query.resolveField kind=func
+  digest=b3:f52654ff7297eac4ce3f170afb7e6dd40c3babe1bd8dc0a28e0e1178643b40ec file=cortex/query/eval.go range=29:50 lang=go exported=false byte_range=968:1811
+  sig=func resolveField(ref FieldRef, m *memory.Memory, data memory.TypedData) (val any, known bool, err error)
+  doc=resolveField returns the field's value for the given memory + decoded\ndata, plus a kind indicating how to compare it. (nil, false, nil) means\nthe field is unknown for this type — the caller decides whether that's\nfatal (Matches/Gt) or false-y (Eq).
+EDGES
+  ^defines=matrix/cortex/query/eval.go
+
+NODE id=matrix/cortex/query.resolvedEdgeExpr kind=func
+  digest=b3:a5507c9e4d0e654f9c79bdc03ee6f904f7d0237c071b4378a6c4070906085549 file=cortex/query/graph.go range=64:80 lang=go exported=false byte_range=2124:2485
+  sig=func resolvedEdgeExpr(e *EdgeExpr) EdgeExpr
+  doc=resolvedEdgeExpr returns the EdgeExpr with all defaults filled in.
+EDGES
+  ^defines=matrix/cortex/query/graph.go
+
+NODE id=matrix/cortex/query.scalarCmp kind=func
+  digest=b3:e6b7f636c2f9fefbcb67e9d8cf6f8991a13b838646c4181260b9ca947deaf478 file=cortex/query/eval.go range=422:459 lang=go exported=false byte_range=11146:12094
+  sig=func scalarCmp(field, lit any) (int, error)
+  doc=scalarCmp returns -1 / 0 / +1 for field<lit / == / >. Same coercion\nrules as scalarEq but additionally requires ordered types.
+EDGES
+  ^defines=matrix/cortex/query/eval.go
+
+NODE id=matrix/cortex/query.scalarEq kind=func
+  digest=b3:ac5e14181c2b9c2f1fc6dfcbdd15ce7d6b2b354e402440ef52039453dc15d399 file=cortex/query/eval.go range=383:420 lang=go exported=false byte_range=9877:11144
+  sig=func scalarEq(field, lit any) (bool, error)
+  doc=scalarEq compares two scalars. Numeric kinds are coerced through float64\nto allow Eq{declared_importance, 5} where 5 is an int literal but the\nresolved field is uint64. Time.Time uses Equal. Booleans, strings, and\nenum-strings (Polarity, Stance, ...) compare directly after converting\nthe typed enum to string in resolveField.
+EDGES
+  ^defines=matrix/cortex/query/eval.go
+
+NODE id=matrix/cortex/query.scanByNear kind=func
+  digest=b3:c004e519a73fbbc1d3ad258400c2debfacbf617cca696aecb3f4be18883103ce file=cortex/query/find.go range=733:762 lang=go exported=false byte_range=25352:26263
+  sig=func scanByNear(q Query) ([]memory.ID, int, map[memory.ID]float32, error)
+  doc=scanByNear runs HNSW search and returns the resulting memory IDs in\ndistance-ascending order along with a per-ID distance map for ranking\ndownstream.
+EDGES
+  ^defines=matrix/cortex/query/find.go
+
+NODE id=matrix/cortex/query.scanByTags kind=func
+  digest=b3:478b0ef5c0d345276363519043bc9a79e03d841fa2823a096cfd1f2e406f2934 file=cortex/query/find.go range=764:809 lang=go exported=false byte_range=26265:27390
+  sig=func scanByTags(s *store.Store, tags []string) ([]memory.ID, int, error)
+EDGES
+  ^defines=matrix/cortex/query/find.go
+
+NODE id=matrix/cortex/query.scanByTypes kind=func
+  digest=b3:c51fbea7407e5b8eafbd8d68dbba099d1e15aedeaf8b8d39426e9dcf36693a0f file=cortex/query/find.go range=830:859 lang=go exported=false byte_range=27910:28651
+  sig=func scanByTypes(s *store.Store, types []memory.Type) ([]memory.ID, int, error)
+EDGES
+  ^defines=matrix/cortex/query/find.go
+
+NODE id=matrix/cortex/query.scanIdxTag kind=func
+  digest=b3:73dcce48a37523b45d7dcbb8b66dad895325c5edec908d6f59308bd9dd21c4b3 file=cortex/query/find.go range=811:828 lang=go exported=false byte_range=27392:27908
+  sig=func scanIdxTag(s *store.Store, hash [keys.TagHashSize]byte) (map[memory.ID]struct{}, int, error)
+EDGES
+  ^defines=matrix/cortex/query/find.go
+
+NODE id=matrix/cortex/query.sortByULID kind=func
+  digest=b3:dde294ac86fa4839568b6ea047e78f32e6af2417d77b2a53a1cbd9adc572fe4d file=cortex/query/graph.go range=238:252 lang=go exported=false byte_range=7271:7832
+  sig=func sortByULID(ids []memory.ID)
+  doc=sortByULID puts ids in byte-ascending ULID order (= creation-time order\nsince ULID encodes ms timestamp in its high bytes).
+EDGES
+  ^defines=matrix/cortex/query/graph.go
+
+NODE id=matrix/cortex/query.trimByBudget kind=func
+  digest=b3:365a5c7969343ef4a04f2720f610c0bc19e218f71a5c40befcc3fd52cd6d6f0a file=cortex/query/find.go range=558:622 lang=go exported=false byte_range=20379:22273
+  sig=func trimByBudget(res *Result, budget int)
+  doc=trimByBudget drops low-salience entries until the rendered token sum is\n≤ budget. Trimming proceeds by salience asc regardless of OrderBy; the\nsurviving entries are returned in their original (OrderBy-sorted) order.\nAt least one memory is always retained when the input is non-empty so\nthe caller doesn't get an empty result on a too-tight budget; the result\nmay exceed budget by exactly that one item's tokens (the best we can do\nwithout rendering an even shorter form).
+EDGES
+  ^defines=matrix/cortex/query/find.go
+
+NODE id=matrix/cortex/query.typeMatches kind=func
+  digest=b3:673c86de816a7e9716648de35521e6d7b765a59e005ab8bb4a83940b49c478b5 file=cortex/query/find.go range=697:704 lang=go exported=false byte_range=24196:24338
+  sig=func typeMatches(t memory.Type, allowed []memory.Type) bool
+EDGES
+  ^defines=matrix/cortex/query/find.go
+
+NODE id=matrix/cortex/query.validateEdgeExpr kind=func
+  digest=b3:fab5aed66d34153173bcb6293ecc3da4ebc31455b30a06d6f066ca8c500bf278 file=cortex/query/graph.go range=31:62 lang=go exported=false byte_range=1096:2122
+  sig=func validateEdgeExpr(e *EdgeExpr) error
+  doc=validateEdgeExpr checks the expression's bounds and edge types. Called\nfrom Run after From is asserted non-nil; nil EdgeExpr means "default\nexpression: 1 hop out, any edge type" and is valid.
+EDGES
+  ^defines=matrix/cortex/query/graph.go
+
+NODE id=matrix/cortex/query.validatePredicate kind=func
+  digest=b3:71fedb988cd55eab0d607601dfd2dbc385c80efa6db0be03100d6419ced914e0 file=cortex/query/find.go range=624:671 lang=go exported=false byte_range=22275:23356
+  sig=func validatePredicate(p Predicate) error
+  doc=validatePredicate walks the AST checking field refs are well-formed and\nevery And/Or has at least zero children (vacuous OK). The eval-time\nresolver handles unknown-but-shaped fields per its rules.
+EDGES
+  ^defines=matrix/cortex/query/find.go
+
+NODE id=matrix/cortex/query.versionField kind=func
+  digest=b3:fbdd568e3947378182f6d5b26b55fd51b460999efb0901ae75a78856edc1bc45 file=cortex/query/eval.go range=84:107 lang=go exported=false byte_range=2631:3323
+  sig=func versionField(name string, v *memory.Version) (any, bool)
+  doc=versionField returns scalar fields of memory.Version. Data is exposed\nonly via the data.<X> namespace; this resolver ignores Data.
+EDGES
+  ^defines=matrix/cortex/query/eval.go
+
+NODE id=matrix/cortex/query.withinValidity kind=func
+  digest=b3:ac5feb4ce383a19b6f7225145d69296e2628c71a38fcf67c814da4e05387ab4b file=cortex/query/find.go range=673:695 lang=go exported=false byte_range=23358:24194
+  sig=func withinValidity(v *memory.Version, asOf time.Time) bool
+  doc=withinValidity reports whether v's bi-temporal valid-time interval and\nexpiry contain asOf (v3 #2). ValidFrom defaults to CreatedAt when nil;\nValidUntil nil means "still valid"; ExpiresAt nil means "never expires".\nThe valid interval is half-open [ValidFrom, ValidUntil) so a supersession\nthat stamps ValidUntil = successor.ValidFrom leaves no overlap at the\nboundary instant. ExpiresAt — dead since Phase 2 — is finally honored\nhere with the same at/after-close semantics.
+EDGES
+  ^defines=matrix/cortex/query/find.go
+
+NODE id=matrix/cortex/query/eval.go kind=file
+  digest=b3:9c28aabec1d89dc9aa6076ebf3e6968bdb516818dbc1ae09719a09e614eb67f0 file=cortex/query/eval.go range=1:493 lang=go exported=true
+EDGES
+  defines=matrix/cortex/query.ErrFieldNotComparable,matrix/cortex/query.ErrFieldUnknown,matrix/cortex/query.ErrTypeMismatch,matrix/cortex/query.dataField,matrix/cortex/query.evaluator,matrix/cortex/query.evaluator.cmp,matrix/cortex/query.evaluator.eval,matrix/cortex/query.evaluator.matches,matrix/cortex/query.headField,matrix/cortex/query.newEvaluator,matrix/cortex/query.numericTo64,matrix/cortex/query.resolveField,matrix/cortex/query.scalarCmp,matrix/cortex/query.scalarEq,matrix/cortex/query.versionField
+  ^contains=matrix/cortex/query
+
+NODE id=matrix/cortex/query/find.go kind=file
+  digest=b3:e50bed36f8348cfbe00cbdfd02d68d3fe86dd098e3f3d0b00d7900951af54a32 file=cortex/query/find.go range=1:1097 lang=go exported=true
+EDGES
+  defines=matrix/cortex/query.DirBoth,matrix/cortex/query.DirIn,matrix/cortex/query.DirOut,matrix/cortex/query.Direction,matrix/cortex/query.EdgeExpr,matrix/cortex/query.ErrTooBroad,matrix/cortex/query.ErrUnbounded,matrix/cortex/query.ErrUnsupported,matrix/cortex/query.FormFull,matrix/cortex/query.FormKind,matrix/cortex/query.FormMedium,matrix/cortex/query.FormShort,matrix/cortex/query.HashTag,matrix/cortex/query.LateBindingPayload,matrix/cortex/query.MaxHopsCap,matrix/cortex/query.OrderAsc,matrix/cortex/query.OrderClause,matrix/cortex/query.OrderCreatedAt,matrix/cortex/query.OrderDesc,matrix/cortex/query.OrderDirection,matrix/cortex/query.OrderDistance,matrix/cortex/query.OrderField,matrix/cortex/query.OrderHop,matrix/cortex/query.OrderImportance,matrix/cortex/query.OrderLastUpdatedAt,matrix/cortex/query.OrderSalience,matrix/cortex/query.Query,matrix/cortex/query.RankDistance,matrix/cortex/query.RankMode,matrix/cortex/query.RankSalience,matrix/cortex/query.Result,matrix/cortex/query.Run,matrix/cortex/query.compareForOrderFull,matrix/cortex/query.journalLateBinding,matrix/cortex/query.orderResults,matrix/cortex/query.planCandidates,matrix/cortex/query.renderMemory,matrix/cortex/query.renderResults,matrix/cortex/query.scanByNear,matrix/cortex/query.scanByTags,matrix/cortex/query.scanByTypes,matrix/cortex/query.scanIdxTag,matrix/cortex/query.trimByBudget,matrix/cortex/query.typeMatches,matrix/cortex/query.validatePredicate,matrix/cortex/query.withinValidity
+  ^contains=matrix/cortex/query
+
+NODE id=matrix/cortex/query/graph.go kind=file
+  digest=b3:9bde0538020d5110f6d773ee0381d420264bccd3060cc4434e4fa2c02113ce93 file=cortex/query/graph.go range=1:277 lang=go exported=true
+EDGES
+  defines=matrix/cortex/query.edgeTypeSet,matrix/cortex/query.lessULID,matrix/cortex/query.parseFromURI,matrix/cortex/query.planCandidatesGraph,matrix/cortex/query.resolvedEdgeExpr,matrix/cortex/query.sortByULID,matrix/cortex/query.validateEdgeExpr
+  ^contains=matrix/cortex/query
+
+NODE id=matrix/cortex/query/predicate.go kind=file
+  digest=b3:a78b4b5a6ccdf30b3c09acb72c689ee465ea34a7064bc134d0afd0a1831d59f6 file=cortex/query/predicate.go range=1:211 lang=go exported=true
+EDGES
+  defines=matrix/cortex/query.And,matrix/cortex/query.And.String,matrix/cortex/query.And.predicate,matrix/cortex/query.Eq,matrix/cortex/query.Eq.String,matrix/cortex/query.Eq.predicate,matrix/cortex/query.FieldRef,matrix/cortex/query.FieldRef.Validate,matrix/cortex/query.Gt,matrix/cortex/query.Gt.String,matrix/cortex/query.Gt.predicate,matrix/cortex/query.Gte,matrix/cortex/query.Gte.String,matrix/cortex/query.Gte.predicate,matrix/cortex/query.HasTag,matrix/cortex/query.HasTag.String,matrix/cortex/query.HasTag.predicate,matrix/cortex/query.In,matrix/cortex/query.In.String,matrix/cortex/query.In.predicate,matrix/cortex/query.Lt,matrix/cortex/query.Lt.String,matrix/cortex/query.Lt.predicate,matrix/cortex/query.Lte,matrix/cortex/query.Lte.String,matrix/cortex/query.Lte.predicate,matrix/cortex/query.Matches,matrix/cortex/query.Matches.String,matrix/cortex/query.Matches.predicate,matrix/cortex/query.Ne,matrix/cortex/query.Ne.String,matrix/cortex/query.Ne.predicate,matrix/cortex/query.Not,matrix/cortex/query.Not.String,matrix/cortex/query.Not.predicate,matrix/cortex/query.Or,matrix/cortex/query.Or.String,matrix/cortex/query.Or.predicate,matrix/cortex/query.Predicate,matrix/cortex/query.collectHasTags
+  ^contains=matrix/cortex/query

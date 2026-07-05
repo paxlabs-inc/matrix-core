@@ -1,0 +1,859 @@
+# GENERATED gen=codegraph do-not-edit merkle=b3:2dc69ec8dbbe0231373534486cf12ff6fdb0eaad7b2dfdcbc4d73453c8542ee8
+
+NODE id=github.com/paxlabs-inc/deus/internal/server kind=package
+  digest=b3:579303378c0092e65b255c16b25d5e64be50d0ce73bd4ce6684f6ee2fe3f3327 file=deus/internal/server range=0:0 lang=go exported=true
+EDGES
+  contains=github.com/paxlabs-inc/deus/internal/server/devauth.go,github.com/paxlabs-inc/deus/internal/server/errors.go,github.com/paxlabs-inc/deus/internal/server/handlers_channels.go,github.com/paxlabs-inc/deus/internal/server/handlers_dashboard.go,github.com/paxlabs-inc/deus/internal/server/handlers_discovery.go,github.com/paxlabs-inc/deus/internal/server/handlers_hosting.go,github.com/paxlabs-inc/deus/internal/server/handlers_invoke.go,github.com/paxlabs-inc/deus/internal/server/handlers_registry.go,github.com/paxlabs-inc/deus/internal/server/handlers_streams.go,github.com/paxlabs-inc/deus/internal/server/middleware.go,github.com/paxlabs-inc/deus/internal/server/server.go
+  ^contains=mod:github.com/paxlabs-inc/deus
+
+NODE id=github.com/paxlabs-inc/deus/internal/server.APIError kind=type
+  digest=b3:b7ffac19cc638a5461a556514d174753e00b7f3e91980b9bc340cca2e62e8e16 file=deus/internal/server/errors.go range=8:13 lang=go exported=true byte_range=57:277
+  sig=type APIError struct {\n	Error	string		`json:"error"`\n	Message	string		`json:"message"`\n	Detail	map[string]any	`json:"detail,omitempty"`\n}
+  doc=APIError is the uniform error envelope (docs/05-api.md §5.2).
+EDGES
+  contains=github.com/paxlabs-inc/deus/internal/server.APIError#Detail,github.com/paxlabs-inc/deus/internal/server.APIError#Error,github.com/paxlabs-inc/deus/internal/server.APIError#Message
+  ^defines=github.com/paxlabs-inc/deus/internal/server/errors.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/server.APIError#Detail kind=field
+  digest=b3:8d202f02ac29d4f0d9141f3f85374fdcef5aa0c2d0e9925cf783ef71ab9a997e file=deus/internal/server/errors.go range=12:12 lang=go exported=true byte_range=227:275
+  sig=map[string]any
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/server.APIError
+
+NODE id=github.com/paxlabs-inc/deus/internal/server.APIError#Error kind=field
+  digest=b3:4b3d5145271b7a551cb387326a68a5382c0201a7b8e8b317f1e42b95c7108f38 file=deus/internal/server/errors.go range=10:10 lang=go exported=true byte_range=147:184
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/server.APIError
+
+NODE id=github.com/paxlabs-inc/deus/internal/server.APIError#Message kind=field
+  digest=b3:ec059ab26ece7cdcbfbbeed9a00bb008066878096c2dc1335ff9cbf221209bf0 file=deus/internal/server/errors.go range=11:11 lang=go exported=true byte_range=186:225
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/server.APIError
+
+NODE id=github.com/paxlabs-inc/deus/internal/server.Deps kind=type
+  digest=b3:e7f51d26e410c55f3f57b839ffce134a7eed846f27ed94b30e25561126535da0 file=deus/internal/server/server.go range=27:48 lang=go exported=true byte_range=682:1487
+  sig=type Deps struct {\n	Log			zerolog.Logger\n	Store			*store.Store\n	Chain			*chain.Client\n	Registry		*registry.Service\n	Discovery		*discovery.Service\n	Gateway			*gateway.Gateway\n	Settler			*settlement.Settler\n	Streams			*streams.Service\n	Hosting			*hosting.Orchestrator\n	BlobURL			func(string) string\n	DevMode			bool\n	PublishPrivateKey	string\n\n	// DeveloperAuthSecret keys SIWE nonces + developer tokens (devauth.go).\n	// Empty disables the SIWE endpoints; owner routes then work only in dev.\n	DeveloperAuthSecret	string\n	// SIWEDomain, when set, pins the EIP-4361 message domain (the marketplace\n	// host). Empty skips the domain check.\n	SIWEDomain	string\n}
+  doc=Deps are long-lived services shared across handlers.
+EDGES
+  contains=github.com/paxlabs-inc/deus/internal/server.Deps#BlobURL,github.com/paxlabs-inc/deus/internal/server.Deps#Chain,github.com/paxlabs-inc/deus/internal/server.Deps#DevMode,github.com/paxlabs-inc/deus/internal/server.Deps#DeveloperAuthSecret,github.com/paxlabs-inc/deus/internal/server.Deps#Discovery,github.com/paxlabs-inc/deus/internal/server.Deps#Gateway,github.com/paxlabs-inc/deus/internal/server.Deps#Hosting,github.com/paxlabs-inc/deus/internal/server.Deps#Log,github.com/paxlabs-inc/deus/internal/server.Deps#PublishPrivateKey,github.com/paxlabs-inc/deus/internal/server.Deps#Registry,github.com/paxlabs-inc/deus/internal/server.Deps#SIWEDomain,github.com/paxlabs-inc/deus/internal/server.Deps#Settler,github.com/paxlabs-inc/deus/internal/server.Deps#Store,github.com/paxlabs-inc/deus/internal/server.Deps#Streams
+  ^defines=github.com/paxlabs-inc/deus/internal/server/server.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/server.Deps#BlobURL kind=field
+  digest=b3:03337b05d8113dc3a771edf877998966f4a9700a70795a41ba47bd7741797083 file=deus/internal/server/server.go range=38:38 lang=go exported=true byte_range=1084:1121
+  sig=func(string) string
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/server.Deps
+
+NODE id=github.com/paxlabs-inc/deus/internal/server.Deps#Chain kind=field
+  digest=b3:2030cccec78acf968493c6c13b66fb6908a744837464553bb4457a77f2ce85cd file=deus/internal/server/server.go range=31:31 lang=go exported=true byte_range=824:855
+  sig=*chain.Client
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/server.Deps
+
+NODE id=github.com/paxlabs-inc/deus/internal/server.Deps#DevMode kind=field
+  digest=b3:ff725778ee0ba9ab71a44a392c846b3305d55c3f3868b39a125a616d90fffe13 file=deus/internal/server/server.go range=39:39 lang=go exported=true byte_range=1123:1145
+  sig=bool
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/server.Deps
+
+NODE id=github.com/paxlabs-inc/deus/internal/server.Deps#DeveloperAuthSecret kind=field
+  digest=b3:89d95f6ec353d8095ef59ddaf319b8d6beebf51b34b3e5e710046832f3c22b21 file=deus/internal/server/server.go range=42:44 lang=go exported=true byte_range=1174:1349
+  sig=string
+  doc=DeveloperAuthSecret keys SIWE nonces + developer tokens (devauth.go).\nEmpty disables the SIWE endpoints; owner routes then work only in dev.
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/server.Deps
+
+NODE id=github.com/paxlabs-inc/deus/internal/server.Deps#Discovery kind=field
+  digest=b3:82a04edc1283f6c44d5d28fdb480e06054b162c1e89cb34cff9b3a5da5c1fff6 file=deus/internal/server/server.go range=33:33 lang=go exported=true byte_range=894:930
+  sig=*discovery.Service
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/server.Deps
+
+NODE id=github.com/paxlabs-inc/deus/internal/server.Deps#Gateway kind=field
+  digest=b3:0bf91a5319c9ded68929f52576a0be1724c030ab9bc61057a2350bf580d279f8 file=deus/internal/server/server.go range=34:34 lang=go exported=true byte_range=932:966
+  sig=*gateway.Gateway
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/server.Deps
+
+NODE id=github.com/paxlabs-inc/deus/internal/server.Deps#Hosting kind=field
+  digest=b3:cf5974db503a01646d3dfb02af755a22642edafb580444def76ebffa9e484461 file=deus/internal/server/server.go range=37:37 lang=go exported=true byte_range=1043:1082
+  sig=*hosting.Orchestrator
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/server.Deps
+
+NODE id=github.com/paxlabs-inc/deus/internal/server.Deps#Log kind=field
+  digest=b3:9b1f0db8e34e3520ab2de84521f346af672c646170c413aadc1f0a03cc2698ba file=deus/internal/server/server.go range=29:29 lang=go exported=true byte_range=758:790
+  sig=zerolog.Logger
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/server.Deps
+
+NODE id=github.com/paxlabs-inc/deus/internal/server.Deps#PublishPrivateKey kind=field
+  digest=b3:4d715e856da7b8c23f0a2b820b457c49352e71135ab208ee075bdd4baf3e019e file=deus/internal/server/server.go range=40:40 lang=go exported=true byte_range=1147:1171
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/server.Deps
+
+NODE id=github.com/paxlabs-inc/deus/internal/server.Deps#Registry kind=field
+  digest=b3:dc03c9e84a4524e0ceddbdb0d5cfebb513512fb81578737625c8267a8bd55003 file=deus/internal/server/server.go range=32:32 lang=go exported=true byte_range=857:892
+  sig=*registry.Service
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/server.Deps
+
+NODE id=github.com/paxlabs-inc/deus/internal/server.Deps#SIWEDomain kind=field
+  digest=b3:3bf3467e57b106cc5b459116206777a7caef6e397191839ffc1c387a10b9fcdf file=deus/internal/server/server.go range=45:47 lang=go exported=true byte_range=1351:1485
+  sig=string
+  doc=SIWEDomain, when set, pins the EIP-4361 message domain (the marketplace\nhost). Empty skips the domain check.
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/server.Deps
+
+NODE id=github.com/paxlabs-inc/deus/internal/server.Deps#Settler kind=field
+  digest=b3:14875401e148cc5a3b9303b1a049277f174689ea10413f600484c0e6f4cc9ca6 file=deus/internal/server/server.go range=35:35 lang=go exported=true byte_range=968:1005
+  sig=*settlement.Settler
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/server.Deps
+
+NODE id=github.com/paxlabs-inc/deus/internal/server.Deps#Store kind=field
+  digest=b3:68995420936a2790e995d126513ef1d6e73f41a05e207fb6c392f664c92769a1 file=deus/internal/server/server.go range=30:30 lang=go exported=true byte_range=792:822
+  sig=*store.Store
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/server.Deps
+
+NODE id=github.com/paxlabs-inc/deus/internal/server.Deps#Streams kind=field
+  digest=b3:34c269fab574946d717e215eb9959fa387f851197e032bee90c2baf722b1a4ec file=deus/internal/server/server.go range=36:36 lang=go exported=true byte_range=1007:1041
+  sig=*streams.Service
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/server.Deps
+
+NODE id=github.com/paxlabs-inc/deus/internal/server.DeveloperAuth kind=type
+  digest=b3:a965bbbfd534fc535c51e5a04a06ec32f5098c850fc8ecca5de371cde73cae2c file=deus/internal/server/devauth.go range=49:54 lang=go exported=true byte_range=1376:1549
+  sig=type DeveloperAuth struct {\n	secret		[]byte\n	siweDomain	string\n	now		func() time.Time\n}
+  doc=DeveloperAuth verifies SIWE sign-ins and mints/verifies developer tokens.
+EDGES
+  contains=github.com/paxlabs-inc/deus/internal/server.DeveloperAuth#now,github.com/paxlabs-inc/deus/internal/server.DeveloperAuth#secret,github.com/paxlabs-inc/deus/internal/server.DeveloperAuth#siweDomain,github.com/paxlabs-inc/deus/internal/server.DeveloperAuth.Authenticate,github.com/paxlabs-inc/deus/internal/server.DeveloperAuth.IssueNonce,github.com/paxlabs-inc/deus/internal/server.DeveloperAuth.MintToken,github.com/paxlabs-inc/deus/internal/server.DeveloperAuth.VerifyToken,github.com/paxlabs-inc/deus/internal/server.DeveloperAuth.sign,github.com/paxlabs-inc/deus/internal/server.DeveloperAuth.verifyNonce,github.com/paxlabs-inc/deus/internal/server.DeveloperAuth.verifySigned
+  ^defines=github.com/paxlabs-inc/deus/internal/server/devauth.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/server.DeveloperAuth#now kind=field
+  digest=b3:ab164b8c526402b25272859be473701fa2e89126053edc800a2cf5b79925b423 file=deus/internal/server/devauth.go range=53:53 lang=go exported=false byte_range=1520:1547
+  sig=func() time.Time
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/server.DeveloperAuth
+
+NODE id=github.com/paxlabs-inc/deus/internal/server.DeveloperAuth#secret kind=field
+  digest=b3:b388b529c913ce9148257adc710a4b8528e388f62f7b848a33d9df45346ed724 file=deus/internal/server/devauth.go range=51:51 lang=go exported=false byte_range=1482:1499
+  sig=[]byte
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/server.DeveloperAuth
+
+NODE id=github.com/paxlabs-inc/deus/internal/server.DeveloperAuth#siweDomain kind=field
+  digest=b3:1a4cacc43e1133ac9644a48ffce6210475f20054472988467b9087bbe81f52cd file=deus/internal/server/devauth.go range=52:52 lang=go exported=false byte_range=1501:1518
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/server.DeveloperAuth
+
+NODE id=github.com/paxlabs-inc/deus/internal/server.DeveloperAuth.Authenticate kind=method
+  digest=b3:7d92e9fe74e6cddb1d39c001d50bc0c28d4b73f19b719d39691016e29538c22e file=deus/internal/server/devauth.go range=208:251 lang=go exported=true byte_range=6389:7929
+  sig=func (a *DeveloperAuth) Authenticate(message, signature string) (string, error)
+  doc=Authenticate verifies a SIWE message + signature and returns the wallet.
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/server.DeveloperAuth
+  ^defines=github.com/paxlabs-inc/deus/internal/server/devauth.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/server.DeveloperAuth.IssueNonce kind=method
+  digest=b3:3d922d1461005cca1b121747f7a728460b168f65a69776a9df09920df7e47cb7 file=deus/internal/server/devauth.go range=81:91 lang=go exported=true byte_range=2292:2792
+  sig=func (a *DeveloperAuth) IssueNonce() (nonce string, expiresAt time.Time, err error)
+  doc=IssueNonce mints a stateless, HMAC-bound nonce for the SIWE message.
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/server.DeveloperAuth
+  ^defines=github.com/paxlabs-inc/deus/internal/server/devauth.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/server.DeveloperAuth.MintToken kind=method
+  digest=b3:aa653ef9ffb5b491420413931162627d17768a7ae3bb7495f7cea486e50017f4 file=deus/internal/server/devauth.go range=120:125 lang=go exported=true byte_range=3481:3875
+  sig=func (a *DeveloperAuth) MintToken(wallet string) (token string, expiresAt time.Time)
+  doc=MintToken issues a short-lived developer token bound to wallet.
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/server.DeveloperAuth
+  ^defines=github.com/paxlabs-inc/deus/internal/server/devauth.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/server.DeveloperAuth.VerifyToken kind=method
+  digest=b3:e9fa3c2bdfd3405db6a6060e6ec688c0c3fe0c5fca5f133995c4bb29e692105c file=deus/internal/server/devauth.go range=127:156 lang=go exported=true byte_range=3877:4793
+  sig=func (a *DeveloperAuth) VerifyToken(token string) (string, error)
+  doc=VerifyToken returns the wallet a valid, unexpired token is bound to.
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/server.DeveloperAuth
+  ^defines=github.com/paxlabs-inc/deus/internal/server/devauth.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/server.DeveloperAuth.sign kind=method
+  digest=b3:80bdaa269c428b92610928a1106d3e26a4c91b67b8cfad0f4a4264fcd9f4c40d file=deus/internal/server/devauth.go range=70:74 lang=go exported=false byte_range=1944:2132
+  sig=func (a *DeveloperAuth) sign(payload string) string
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/server.DeveloperAuth
+  ^defines=github.com/paxlabs-inc/deus/internal/server/devauth.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/server.DeveloperAuth.verifyNonce kind=method
+  digest=b3:9714e29f672e75b92b9147f462ff2b8addb11ebec5279e64ebb6523714cc86d0 file=deus/internal/server/devauth.go range=93:118 lang=go exported=false byte_range=2794:3479
+  sig=func (a *DeveloperAuth) verifyNonce(nonce string) error
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/server.DeveloperAuth
+  ^defines=github.com/paxlabs-inc/deus/internal/server/devauth.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/server.DeveloperAuth.verifySigned kind=method
+  digest=b3:c912d7becb31bfe01574514123c0bb936f09030af6feca7e22c092b44c485740 file=deus/internal/server/devauth.go range=76:79 lang=go exported=false byte_range=2134:2290
+  sig=func (a *DeveloperAuth) verifySigned(kind, raw, sig string) bool
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/server.DeveloperAuth
+  ^defines=github.com/paxlabs-inc/deus/internal/server/devauth.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/server.DeveloperWalletFromContext kind=func
+  digest=b3:f3922064a700550fbac706f69c964b51caa7c7dd84a05a6e34d78f2dd2e50b8b file=deus/internal/server/middleware.go range=14:18 lang=go exported=true byte_range=146:341
+  sig=func DeveloperWalletFromContext(ctx context.Context) string
+  doc=DeveloperWalletFromContext returns the authenticated developer wallet.
+EDGES
+  ^defines=github.com/paxlabs-inc/deus/internal/server/middleware.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/server.New kind=func
+  digest=b3:6ed2c5a760722a5a07d7d3db6507b1c8d874b3c88df01b8e8bb3de037388d974 file=deus/internal/server/server.go range=57:81 lang=go exported=true byte_range=1600:2215
+  sig=func New(deps Deps) *Server
+  doc=New constructs a Server with middleware and routes.
+EDGES
+  ^defines=github.com/paxlabs-inc/deus/internal/server/server.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/server.NewDeveloperAuth kind=func
+  digest=b3:56bf70417f0d6004b1622acd71eed1b1a4be0c25b97b8e9dd6ef0c0f26aeda14 file=deus/internal/server/devauth.go range=56:68 lang=go exported=true byte_range=1551:1942
+  sig=func NewDeveloperAuth(secret, siweDomain string) *DeveloperAuth
+  doc=NewDeveloperAuth returns nil when secret is empty (feature unavailable;\ndev-mode header fallback remains the only path).
+EDGES
+  ^defines=github.com/paxlabs-inc/deus/internal/server/devauth.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/server.Server kind=type
+  digest=b3:443000c9670e79774e545fff921a17b09c455f34a79adf32d76c6bb4ba366e18 file=deus/internal/server/server.go range=50:55 lang=go exported=true byte_range=1489:1598
+  sig=type Server struct {\n	deps	Deps\n	devAuth	*DeveloperAuth\n	mux	chi.Router\n}
+  doc=Server hosts HTTP routes.
+EDGES
+  contains=github.com/paxlabs-inc/deus/internal/server.Server#deps,github.com/paxlabs-inc/deus/internal/server.Server#devAuth,github.com/paxlabs-inc/deus/internal/server.Server#mux,github.com/paxlabs-inc/deus/internal/server.Server.Handler,github.com/paxlabs-inc/deus/internal/server.Server.Shutdown,github.com/paxlabs-inc/deus/internal/server.Server.handleCatalog,github.com/paxlabs-inc/deus/internal/server.Server.handleCloseStream,github.com/paxlabs-inc/deus/internal/server.Server.handleCreateService,github.com/paxlabs-inc/deus/internal/server.Server.handleDeployService,github.com/paxlabs-inc/deus/internal/server.Server.handleDeveloperAuth,github.com/paxlabs-inc/deus/internal/server.Server.handleDeveloperNonce,github.com/paxlabs-inc/deus/internal/server.Server.handleDiscoverGET,github.com/paxlabs-inc/deus/internal/server.Server.handleDiscoverPOST,github.com/paxlabs-inc/deus/internal/server.Server.handleGetDeployment,github.com/paxlabs-inc/deus/internal/server.Server.handleGetInvocation,github.com/paxlabs-inc/deus/internal/server.Server.handleGetReceipt,github.com/paxlabs-inc/deus/internal/server.Server.handleGetService,github.com/paxlabs-inc/deus/internal/server.Server.handleGetStream,github.com/paxlabs-inc/deus/internal/server.Server.handleHealthz,github.com/paxlabs-inc/deus/internal/server.Server.handleInvoke,github.com/paxlabs-inc/deus/internal/server.Server.handleListDeployments,github.com/paxlabs-inc/deus/internal/server.Server.handleMe,github.com/paxlabs-inc/deus/internal/server.Server.handleMyEarnings,github.com/paxlabs-inc/deus/internal/server.Server.handleMyServices,github.com/paxlabs-inc/deus/internal/server.Server.handleMySpend,github.com/paxlabs-inc/deus/internal/server.Server.handleOpenChannel,github.com/paxlabs-inc/deus/internal/server.Server.handleOpenStream,github.com/paxlabs-inc/deus/internal/server.Server.handlePublishService,github.com/paxlabs-inc/deus/internal/server.Server.handleQuote,github.com/paxlabs-inc/deus/internal/server.Server.handleServiceAnalytics,github.com/paxlabs-inc/deus/internal/server.Server.handleServiceLogs,github.com/paxlabs-inc/deus/internal/server.Server.handleServicePayout,github.com/paxlabs-inc/deus/internal/server.Server.handleSetServiceStatus,github.com/paxlabs-inc/deus/internal/server.Server.handleSettleRun,github.com/paxlabs-inc/deus/internal/server.Server.handleSettleStream,github.com/paxlabs-inc/deus/internal/server.Server.handleUploadArtifact,github.com/paxlabs-inc/deus/internal/server.Server.handleVoucherCosign,github.com/paxlabs-inc/deus/internal/server.Server.mountDashboardRoutes,github.com/paxlabs-inc/deus/internal/server.Server.mountDeveloperAuthRoutes,github.com/paxlabs-inc/deus/internal/server.Server.mountDiscoveryRoutes,github.com/paxlabs-inc/deus/internal/server.Server.mountInvokeRoutes,github.com/paxlabs-inc/deus/internal/server.Server.mountRegistryRoutes,github.com/paxlabs-inc/deus/internal/server.Server.mountStreamRoutes,github.com/paxlabs-inc/deus/internal/server.Server.requireDeveloperAuth,github.com/paxlabs-inc/deus/internal/server.Server.requireServiceOwner,github.com/paxlabs-inc/deus/internal/server.Server.resolveServiceID,github.com/paxlabs-inc/deus/internal/server.Server.writeGatewayErr,github.com/paxlabs-inc/deus/internal/server.Server.writeHostingErr,github.com/paxlabs-inc/deus/internal/server.Server.writeRegistryErr,github.com/paxlabs-inc/deus/internal/server.Server.writeStreamsErr
+  ^defines=github.com/paxlabs-inc/deus/internal/server/server.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/server.Server#deps kind=field
+  digest=b3:6ddac53620a761942c7d0e0ae0d41a49b4a74efbf241c8d1e7efb7ced450ec6b file=deus/internal/server/server.go range=52:52 lang=go exported=false byte_range=1540:1552
+  sig=server.Deps
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/server.Server
+
+NODE id=github.com/paxlabs-inc/deus/internal/server.Server#devAuth kind=field
+  digest=b3:5b4d5bfa778cdb75e5955664e9c1f1c62931ed93032138fea3b0ee26d3400c90 file=deus/internal/server/server.go range=53:53 lang=go exported=false byte_range=1554:1576
+  sig=*server.DeveloperAuth
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/server.Server
+
+NODE id=github.com/paxlabs-inc/deus/internal/server.Server#mux kind=field
+  digest=b3:c1642c6866c0d319642c9870f0f1c9bbdb2db17838374f8123c4a78793591e33 file=deus/internal/server/server.go range=54:54 lang=go exported=false byte_range=1578:1596
+  sig=chi.Router
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/server.Server
+
+NODE id=github.com/paxlabs-inc/deus/internal/server.Server.Handler kind=method
+  digest=b3:6e4a435889f1b4c4fb02bee998c8c817c4054087b0a37f0c15816671daf9caa8 file=deus/internal/server/server.go range=83:86 lang=go exported=true byte_range=2217:2316
+  sig=func (s *Server) Handler() http.Handler
+  doc=Handler returns the root http.Handler.
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/server.Server
+  ^defines=github.com/paxlabs-inc/deus/internal/server/server.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/server.Server.Shutdown kind=method
+  digest=b3:5ff7716c83c5c87546888ae048bb3ae4d3eb86ead77b081f844118a5c2fcea86 file=deus/internal/server/server.go range=121:125 lang=go exported=true byte_range=3185:3331
+  sig=func (s *Server) Shutdown(ctx context.Context) error
+  doc=Shutdown is a hook for graceful drain (expanded in later phases).
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/server.Server
+  ^defines=github.com/paxlabs-inc/deus/internal/server/server.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/server.Server.handleCatalog kind=method
+  digest=b3:5686aa0fc4ed8d9b492ea3cbf941ae3a20741a3145cf59a0a242fb82949792dd file=deus/internal/server/handlers_discovery.go range=20:59 lang=go exported=false byte_range=375:1588
+  sig=func (s *Server) handleCatalog(w http.ResponseWriter, r *http.Request)
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/server.Server
+  ^defines=github.com/paxlabs-inc/deus/internal/server/handlers_discovery.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/server.Server.handleCloseStream kind=method
+  digest=b3:1eff78aff7638fdbd59c501dd0d03d63624dfd65648cec6b8eb5d8ed567ffbff file=deus/internal/server/handlers_streams.go range=97:115 lang=go exported=false byte_range=2798:3400
+  sig=func (s *Server) handleCloseStream(w http.ResponseWriter, r *http.Request)
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/server.Server
+  ^defines=github.com/paxlabs-inc/deus/internal/server/handlers_streams.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/server.Server.handleCreateService kind=method
+  digest=b3:e534c1333169bb7588114a5df73293c0c59d0c5c5ba8a873f9c0a61a628b394a file=deus/internal/server/handlers_registry.go range=36:65 lang=go exported=false byte_range=1046:1976
+  sig=func (s *Server) handleCreateService(w http.ResponseWriter, r *http.Request)
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/server.Server
+  ^defines=github.com/paxlabs-inc/deus/internal/server/handlers_registry.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/server.Server.handleDeployService kind=method
+  digest=b3:2b49d2975a82b508cf0af370489612f1dfe378b7deaa0dd087f32bcae72d15fc file=deus/internal/server/handlers_hosting.go range=45:73 lang=go exported=false byte_range=1185:2124
+  sig=func (s *Server) handleDeployService(w http.ResponseWriter, r *http.Request)
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/server.Server
+  ^defines=github.com/paxlabs-inc/deus/internal/server/handlers_hosting.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/server.Server.handleDeveloperAuth kind=method
+  digest=b3:060eb6987f9fe73a6ab799c5456a35418583836b18b055aff3804caf825caaa9 file=deus/internal/server/devauth.go range=291:308 lang=go exported=false byte_range=9190:9955
+  sig=func (s *Server) handleDeveloperAuth(w http.ResponseWriter, r *http.Request)
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/server.Server
+  ^defines=github.com/paxlabs-inc/deus/internal/server/devauth.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/server.Server.handleDeveloperNonce kind=method
+  digest=b3:f86c0ec6d4c0f16918c16b8524b25d1032ca98b218113c5b57b6714801f53db0 file=deus/internal/server/devauth.go range=278:289 lang=go exported=false byte_range=8713:9188
+  sig=func (s *Server) handleDeveloperNonce(w http.ResponseWriter, _ *http.Request)
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/server.Server
+  ^defines=github.com/paxlabs-inc/deus/internal/server/devauth.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/server.Server.handleDiscoverGET kind=method
+  digest=b3:238f77712e83435dc3ef80bd2f1aedb37d4f6c886bc87e99351109bc6e2d6871 file=deus/internal/server/handlers_discovery.go range=95:110 lang=go exported=false byte_range=2337:2786
+  sig=func (s *Server) handleDiscoverGET(w http.ResponseWriter, r *http.Request)
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/server.Server
+  ^defines=github.com/paxlabs-inc/deus/internal/server/handlers_discovery.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/server.Server.handleDiscoverPOST kind=method
+  digest=b3:fdec76ff96a7e91bdf90fafbd8ece8354e64a099c073b3d8253fa925c0396e0a file=deus/internal/server/handlers_discovery.go range=112:132 lang=go exported=false byte_range=2788:3439
+  sig=func (s *Server) handleDiscoverPOST(w http.ResponseWriter, r *http.Request)
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/server.Server
+  ^defines=github.com/paxlabs-inc/deus/internal/server/handlers_discovery.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/server.Server.handleGetDeployment kind=method
+  digest=b3:969d950faa48161373f1a89cb19866aaa79c9af409eb3a52886d6424f71b8b72 file=deus/internal/server/handlers_hosting.go range=75:98 lang=go exported=false byte_range=2126:2857
+  sig=func (s *Server) handleGetDeployment(w http.ResponseWriter, r *http.Request)
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/server.Server
+  ^defines=github.com/paxlabs-inc/deus/internal/server/handlers_hosting.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/server.Server.handleGetInvocation kind=method
+  digest=b3:70d903bbf4ed02307e0a108ad5c8964181423f4104d73940efab7fb4ddbf525d file=deus/internal/server/handlers_invoke.go range=136:160 lang=go exported=false byte_range=4036:4805
+  sig=func (s *Server) handleGetInvocation(w http.ResponseWriter, r *http.Request)
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/server.Server
+  ^defines=github.com/paxlabs-inc/deus/internal/server/handlers_invoke.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/server.Server.handleGetReceipt kind=method
+  digest=b3:7f008dade3510d09cfc5fa43aaaf1dc1ca21aa238b3323c0ec7d021deeef3b10 file=deus/internal/server/handlers_invoke.go range=162:175 lang=go exported=false byte_range=4807:5254
+  sig=func (s *Server) handleGetReceipt(w http.ResponseWriter, r *http.Request)
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/server.Server
+  ^defines=github.com/paxlabs-inc/deus/internal/server/handlers_invoke.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/server.Server.handleGetService kind=method
+  digest=b3:84ff766e85284616fc49de7f5ecc9ea7edb64db24da5f6291db0750c6e26c88f file=deus/internal/server/handlers_registry.go range=67:92 lang=go exported=false byte_range=1978:2861
+  sig=func (s *Server) handleGetService(w http.ResponseWriter, r *http.Request)
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/server.Server
+  ^defines=github.com/paxlabs-inc/deus/internal/server/handlers_registry.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/server.Server.handleGetStream kind=method
+  digest=b3:dd29550d1d533fcbfca2c9ebce0b81d1f782eac7af1aee771bf8dac728f22fd2 file=deus/internal/server/handlers_streams.go range=61:77 lang=go exported=false byte_range=1686:2237
+  sig=func (s *Server) handleGetStream(w http.ResponseWriter, r *http.Request)
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/server.Server
+  ^defines=github.com/paxlabs-inc/deus/internal/server/handlers_streams.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/server.Server.handleHealthz kind=method
+  digest=b3:2b2d106eaccf88420ae8dad392e6939663d57676a320252f9b800462b9dd2511 file=deus/internal/server/server.go range=88:106 lang=go exported=false byte_range=2318:2783
+  sig=func (s *Server) handleHealthz(w http.ResponseWriter, r *http.Request)
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/server.Server
+  ^defines=github.com/paxlabs-inc/deus/internal/server/server.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/server.Server.handleInvoke kind=method
+  digest=b3:bc49e46aec0e039ea25c6ad74a30397c43ca99ea3e24a706db36404b4978cab2 file=deus/internal/server/handlers_invoke.go range=71:134 lang=go exported=false byte_range=2020:4034
+  sig=func (s *Server) handleInvoke(w http.ResponseWriter, r *http.Request)
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/server.Server
+  ^defines=github.com/paxlabs-inc/deus/internal/server/handlers_invoke.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/server.Server.handleListDeployments kind=method
+  digest=b3:b63281220c1ac781190bebd9f7ad6fa0383591b177c53413f582ae0ec94a1432 file=deus/internal/server/handlers_hosting.go range=100:130 lang=go exported=false byte_range=2859:3834
+  sig=func (s *Server) handleListDeployments(w http.ResponseWriter, r *http.Request)
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/server.Server
+  ^defines=github.com/paxlabs-inc/deus/internal/server/handlers_hosting.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/server.Server.handleMe kind=method
+  digest=b3:cca7abe84f6efbe5a5ed074486cd09bd398e11ada0b36cbd59f9639cec74a254 file=deus/internal/server/handlers_dashboard.go range=203:226 lang=go exported=false byte_range=6471:7217
+  sig=func (s *Server) handleMe(w http.ResponseWriter, r *http.Request)
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/server.Server
+  ^defines=github.com/paxlabs-inc/deus/internal/server/handlers_dashboard.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/server.Server.handleMyEarnings kind=method
+  digest=b3:5f5d5cb08ca566f2b744fb6857788e562acff8af25b4de388a9c221e3bf3481e file=deus/internal/server/handlers_dashboard.go range=289:336 lang=go exported=false byte_range=9202:10791
+  sig=func (s *Server) handleMyEarnings(w http.ResponseWriter, r *http.Request)
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/server.Server
+  ^defines=github.com/paxlabs-inc/deus/internal/server/handlers_dashboard.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/server.Server.handleMyServices kind=method
+  digest=b3:bcd1d333c6b2bb9d835cac989474212692925ecbe8536c53c17c05dbb41827ba file=deus/internal/server/handlers_dashboard.go range=255:287 lang=go exported=false byte_range=8148:9200
+  sig=func (s *Server) handleMyServices(w http.ResponseWriter, r *http.Request)
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/server.Server
+  ^defines=github.com/paxlabs-inc/deus/internal/server/handlers_dashboard.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/server.Server.handleMySpend kind=method
+  digest=b3:c7b73b1da2c5470a3cdeffef3797e990bbc65d59349e7424aba9dc1841880397 file=deus/internal/server/handlers_dashboard.go range=228:253 lang=go exported=false byte_range=7219:8146
+  sig=func (s *Server) handleMySpend(w http.ResponseWriter, r *http.Request)
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/server.Server
+  ^defines=github.com/paxlabs-inc/deus/internal/server/handlers_dashboard.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/server.Server.handleOpenChannel kind=method
+  digest=b3:39b9e0c77a70f93d3977a01c5799673a413e09e8cb464f4075a535c05530f792 file=deus/internal/server/handlers_channels.go range=12:41 lang=go exported=false byte_range=193:1188
+  sig=func (s *Server) handleOpenChannel(w http.ResponseWriter, r *http.Request)
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/server.Server
+  ^defines=github.com/paxlabs-inc/deus/internal/server/handlers_channels.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/server.Server.handleOpenStream kind=method
+  digest=b3:f33f947f1688df1ca4c11960e0b6c31d63ec210be7798c591d992f1eb1ca6ac9 file=deus/internal/server/handlers_streams.go range=25:59 lang=go exported=false byte_range=565:1684
+  sig=func (s *Server) handleOpenStream(w http.ResponseWriter, r *http.Request)
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/server.Server
+  ^defines=github.com/paxlabs-inc/deus/internal/server/handlers_streams.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/server.Server.handlePublishService kind=method
+  digest=b3:a515c2db7c0c7de5e17c9a2b0c85e2aae213802d6d7a35952fa0bb5a4163917d file=deus/internal/server/handlers_registry.go range=94:120 lang=go exported=false byte_range=2863:3687
+  sig=func (s *Server) handlePublishService(w http.ResponseWriter, r *http.Request)
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/server.Server
+  ^defines=github.com/paxlabs-inc/deus/internal/server/handlers_registry.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/server.Server.handleQuote kind=method
+  digest=b3:fe828991d30bc69d70fbb4ec532764486f5e64012c7f7a92b5cc742b7069c3ac file=deus/internal/server/handlers_invoke.go range=29:69 lang=go exported=false byte_range=702:2018
+  sig=func (s *Server) handleQuote(w http.ResponseWriter, r *http.Request)
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/server.Server
+  ^defines=github.com/paxlabs-inc/deus/internal/server/handlers_invoke.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/server.Server.handleServiceAnalytics kind=method
+  digest=b3:a098fc1cd7fd3543bfac61dfd7a7bb4df6b98a0c5dcdeb8843a7d252866f2c20 file=deus/internal/server/handlers_dashboard.go range=115:165 lang=go exported=false byte_range=3531:5153
+  sig=func (s *Server) handleServiceAnalytics(w http.ResponseWriter, r *http.Request)
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/server.Server
+  ^defines=github.com/paxlabs-inc/deus/internal/server/handlers_dashboard.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/server.Server.handleServiceLogs kind=method
+  digest=b3:af3da2a0c00e3bf572314aeee4d5e24d198aa72748059cef6e666ae88a1bb9b4 file=deus/internal/server/handlers_dashboard.go range=81:113 lang=go exported=false byte_range=2677:3529
+  sig=func (s *Server) handleServiceLogs(w http.ResponseWriter, r *http.Request)
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/server.Server
+  ^defines=github.com/paxlabs-inc/deus/internal/server/handlers_dashboard.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/server.Server.handleServicePayout kind=method
+  digest=b3:08155ba95bb56c3c9b5320bc8d20c0a6d8da3f6b1e9a7905c17fa3d4e6b73f70 file=deus/internal/server/handlers_dashboard.go range=167:201 lang=go exported=false byte_range=5155:6469
+  sig=func (s *Server) handleServicePayout(w http.ResponseWriter, r *http.Request)
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/server.Server
+  ^defines=github.com/paxlabs-inc/deus/internal/server/handlers_dashboard.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/server.Server.handleSetServiceStatus kind=method
+  digest=b3:a64f95ae50ecfaf9572bc415e643b309fa7a01f5c67d602b752a7a86db39a8ea file=deus/internal/server/handlers_dashboard.go range=67:79 lang=go exported=false byte_range=2199:2675
+  sig=func (s *Server) handleSetServiceStatus(status string) http.HandlerFunc
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/server.Server
+  ^defines=github.com/paxlabs-inc/deus/internal/server/handlers_dashboard.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/server.Server.handleSettleRun kind=method
+  digest=b3:e1e76fc1cc45e65d105b06437af933edfbc3dc12dd5ae3d9e62ccc86cdc0eff7 file=deus/internal/server/handlers_channels.go range=74:99 lang=go exported=false byte_range=2222:3121
+  sig=func (s *Server) handleSettleRun(w http.ResponseWriter, r *http.Request)
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/server.Server
+  ^defines=github.com/paxlabs-inc/deus/internal/server/handlers_channels.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/server.Server.handleSettleStream kind=method
+  digest=b3:5661e0e0078412d6f4c6813c309bbc9bd3aef7251a124cc40b9b470c93817880 file=deus/internal/server/handlers_streams.go range=79:95 lang=go exported=false byte_range=2239:2796
+  sig=func (s *Server) handleSettleStream(w http.ResponseWriter, r *http.Request)
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/server.Server
+  ^defines=github.com/paxlabs-inc/deus/internal/server/handlers_streams.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/server.Server.handleUploadArtifact kind=method
+  digest=b3:db7c2a36c9cfd110a3b307390ece53d6ffd986942f73e7c81f177f7dbea4b4ce file=deus/internal/server/handlers_hosting.go range=14:43 lang=go exported=false byte_range=187:1183
+  sig=func (s *Server) handleUploadArtifact(w http.ResponseWriter, r *http.Request)
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/server.Server
+  ^defines=github.com/paxlabs-inc/deus/internal/server/handlers_hosting.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/server.Server.handleVoucherCosign kind=method
+  digest=b3:e109e75565f67876d123e3cfb240e98cf572349e814c0294a100da8545d6a00f file=deus/internal/server/handlers_channels.go range=43:72 lang=go exported=false byte_range=1190:2220
+  sig=func (s *Server) handleVoucherCosign(w http.ResponseWriter, r *http.Request)
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/server.Server
+  ^defines=github.com/paxlabs-inc/deus/internal/server/handlers_channels.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/server.Server.mountDashboardRoutes kind=method
+  digest=b3:86f16fd251d9a14a2e64ed336265ffa8a9d83e3021e044ccd3ea3dda8861afc7 file=deus/internal/server/handlers_dashboard.go range=16:29 lang=go exported=false byte_range=237:779
+  sig=func (s *Server) mountDashboardRoutes(r chi.Router)
+  doc=mountDashboardRoutes serves the developer-dashboard read/control surface:\naccount identity, caller spend, owner-scoped listings, earnings, and the\nper-service lifecycle/observability endpoints the marketplace consumes.
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/server.Server
+  ^defines=github.com/paxlabs-inc/deus/internal/server/handlers_dashboard.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/server.Server.mountDeveloperAuthRoutes kind=method
+  digest=b3:9050835a5dc9689cb81ee190f3952a9dd3b97eda63be76c5e4f59b88bc60b70b file=deus/internal/server/devauth.go range=271:276 lang=go exported=false byte_range=8516:8711
+  sig=func (s *Server) mountDeveloperAuthRoutes(r chi.Router)
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/server.Server
+  ^defines=github.com/paxlabs-inc/deus/internal/server/devauth.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/server.Server.mountDiscoveryRoutes kind=method
+  digest=b3:7d32e52f48b3e5d269dac94fbe8f8f2fbd65b47156c717075ab535316fc682c4 file=deus/internal/server/handlers_discovery.go range=14:18 lang=go exported=false byte_range=189:373
+  sig=func (s *Server) mountDiscoveryRoutes(r chi.Router)
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/server.Server
+  ^defines=github.com/paxlabs-inc/deus/internal/server/handlers_discovery.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/server.Server.mountInvokeRoutes kind=method
+  digest=b3:8f79cad050cd1950aec3395db479e51df37490b8282ebe3d110cb4ffe780ae97 file=deus/internal/server/handlers_invoke.go range=16:27 lang=go exported=false byte_range=242:700
+  sig=func (s *Server) mountInvokeRoutes(r chi.Router)
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/server.Server
+  ^defines=github.com/paxlabs-inc/deus/internal/server/handlers_invoke.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/server.Server.mountRegistryRoutes kind=method
+  digest=b3:cdf5f5266ea328f572574061138adbbf66556c510365329dc3a30cf2bdb45071 file=deus/internal/server/handlers_registry.go range=15:34 lang=go exported=false byte_range=194:1044
+  sig=func (s *Server) mountRegistryRoutes(r chi.Router)
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/server.Server
+  ^defines=github.com/paxlabs-inc/deus/internal/server/handlers_registry.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/server.Server.mountStreamRoutes kind=method
+  digest=b3:9af10c6e4985e73a76921286f134688e12549462f5590b6380183207ae0cb6bb file=deus/internal/server/handlers_streams.go range=15:23 lang=go exported=false byte_range=231:563
+  sig=func (s *Server) mountStreamRoutes(r chi.Router)
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/server.Server
+  ^defines=github.com/paxlabs-inc/deus/internal/server/handlers_streams.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/server.Server.requireDeveloperAuth kind=method
+  digest=b3:de94020b4028a110c132738d6de0fcaad95571f8d2aaf40bc0b939da3ce551ed file=deus/internal/server/middleware.go range=48:61 lang=go exported=false byte_range=1408:1959
+  sig=func (s *Server) requireDeveloperAuth() func(http.Handler) http.Handler
+  doc=requireDeveloperAuth guards owner-scoped routes.
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/server.Server
+  ^defines=github.com/paxlabs-inc/deus/internal/server/middleware.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/server.Server.requireServiceOwner kind=method
+  digest=b3:b884184d03ea64158656aad7f98c31c6bbb2f1bebe5b8d82fe796544b65f5ddf file=deus/internal/server/handlers_dashboard.go range=45:65 lang=go exported=false byte_range=1268:2197
+  sig=func (s *Server) requireServiceOwner(w http.ResponseWriter, r *http.Request) (store.ServiceRow, bool)
+  doc=requireServiceOwner loads the service and enforces that the authenticated\ndeveloper wallet owns it.
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/server.Server
+  ^defines=github.com/paxlabs-inc/deus/internal/server/handlers_dashboard.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/server.Server.resolveServiceID kind=method
+  digest=b3:f258c56dfdd5bc0a4a8b026176d7c1bf420607835bb87cdbf4efdda7de7e26af file=deus/internal/server/handlers_dashboard.go range=31:43 lang=go exported=false byte_range=781:1266
+  sig=func (s *Server) resolveServiceID(r *http.Request, idOrSlug string) string
+  doc=resolveServiceID maps a slug to its service uuid so every /{id} route accepts\nboth forms (public pages link by slug). Unresolvable input passes through and\nfails downstream with the usual not-found.
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/server.Server
+  ^defines=github.com/paxlabs-inc/deus/internal/server/handlers_dashboard.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/server.Server.writeGatewayErr kind=method
+  digest=b3:d081de256b47f54cd2a4f902081aa4a15ca53496757f0a3da665c7e82e244d87 file=deus/internal/server/handlers_invoke.go range=177:196 lang=go exported=false byte_range=5256:5863
+  sig=func (s *Server) writeGatewayErr(w http.ResponseWriter, err error)
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/server.Server
+  ^defines=github.com/paxlabs-inc/deus/internal/server/handlers_invoke.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/server.Server.writeHostingErr kind=method
+  digest=b3:0b81042dd8667312c3961981a8625cd381679cfa04510f05a382cb710c830f7b file=deus/internal/server/handlers_hosting.go range=132:144 lang=go exported=false byte_range=3836:4401
+  sig=func (s *Server) writeHostingErr(w http.ResponseWriter, err error)
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/server.Server
+  ^defines=github.com/paxlabs-inc/deus/internal/server/handlers_hosting.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/server.Server.writeRegistryErr kind=method
+  digest=b3:3fd316a81f10bbc86fc4073ba023cff61cd4aa0af5b7bbb8d449e18c1dcc00a1 file=deus/internal/server/handlers_registry.go range=122:134 lang=go exported=false byte_range=3689:4245
+  sig=func (s *Server) writeRegistryErr(w http.ResponseWriter, err error)
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/server.Server
+  ^defines=github.com/paxlabs-inc/deus/internal/server/handlers_registry.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/server.Server.writeStreamsErr kind=method
+  digest=b3:22279d8c2bbc580ad78ec95bff3f2d3bf1a00f00e364f79355ccbb1f566883c4 file=deus/internal/server/handlers_streams.go range=134:145 lang=go exported=false byte_range=3926:4279
+  sig=func (s *Server) writeStreamsErr(w http.ResponseWriter, err error)
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/server.Server
+  ^defines=github.com/paxlabs-inc/deus/internal/server/handlers_streams.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/server.atoiDefault kind=func
+  digest=b3:eae6b0ed36df94a1ea59161a6f3f7fd6eade206c99540aaa697f3b8b9acc9b96 file=deus/internal/server/handlers_discovery.go range=84:93 lang=go exported=false byte_range=2192:2335
+  sig=func atoiDefault(s string, def int) int
+EDGES
+  ^defines=github.com/paxlabs-inc/deus/internal/server/handlers_discovery.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/server.ctxKey kind=type
+  digest=b3:13008080e86e15f1144605c1cbabf3337a18bd81c5113dbb455bd467bd0854d7 file=deus/internal/server/middleware.go range=10:10 lang=go exported=false byte_range=72:90
+  sig=type ctxKey string
+EDGES
+  ^defines=github.com/paxlabs-inc/deus/internal/server/middleware.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/server.devAuthNonceTTL kind=const
+  digest=b3:9330af9e1cbe8d927bb1d87ebf457ad1a6d65e9bc9a8271ef0c13f876a971224 file=deus/internal/server/devauth.go range=43:43 lang=go exported=false byte_range=1236:1273
+  sig=time.Duration
+EDGES
+  ^defines=github.com/paxlabs-inc/deus/internal/server/devauth.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/server.devAuthTokenTTL kind=const
+  digest=b3:167ea2157d93c52c3e926d98bcfbb15dc943a3926331ce74ec6a9179ec463da7 file=deus/internal/server/devauth.go range=44:44 lang=go exported=false byte_range=1275:1311
+  sig=time.Duration
+EDGES
+  ^defines=github.com/paxlabs-inc/deus/internal/server/devauth.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/server.developerAuthRequest kind=type
+  digest=b3:b4b44f0ac90442599407b0b90d3173ae9377392b5bbdba2b3e7b08f574985ada file=deus/internal/server/devauth.go range=260:263 lang=go exported=false byte_range=8253:8361
+  sig=type developerAuthRequest struct {\n	Message		string	`json:"message"`\n	Signature	string	`json:"signature"`\n}
+EDGES
+  contains=github.com/paxlabs-inc/deus/internal/server.developerAuthRequest#Message,github.com/paxlabs-inc/deus/internal/server.developerAuthRequest#Signature
+  ^defines=github.com/paxlabs-inc/deus/internal/server/devauth.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/server.developerAuthRequest#Message kind=field
+  digest=b3:8a0ab743184f67fe3cdf3be42e80663ce99ee4e3df223ffffe00829a134f86d9 file=deus/internal/server/devauth.go range=261:261 lang=go exported=true byte_range=8289:8322
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/server.developerAuthRequest
+
+NODE id=github.com/paxlabs-inc/deus/internal/server.developerAuthRequest#Signature kind=field
+  digest=b3:8964e601be6deb38fd8a6809e3d23a5ebdaf9a927f824f32ff4e4203bc99e40f file=deus/internal/server/devauth.go range=262:262 lang=go exported=true byte_range=8324:8359
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/server.developerAuthRequest
+
+NODE id=github.com/paxlabs-inc/deus/internal/server.developerAuthResponse kind=type
+  digest=b3:7ed244115cb068ced10548ef5423b12957d0a0d22c2d1d200a0f97edcaf64acd file=deus/internal/server/devauth.go range=265:269 lang=go exported=false byte_range=8363:8514
+  sig=type developerAuthResponse struct {\n	Wallet		string		`json:"wallet"`\n	Token		string		`json:"token"`\n	ExpiresAt	time.Time	`json:"expires_at"`\n}
+EDGES
+  contains=github.com/paxlabs-inc/deus/internal/server.developerAuthResponse#ExpiresAt,github.com/paxlabs-inc/deus/internal/server.developerAuthResponse#Token,github.com/paxlabs-inc/deus/internal/server.developerAuthResponse#Wallet
+  ^defines=github.com/paxlabs-inc/deus/internal/server/devauth.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/server.developerAuthResponse#ExpiresAt kind=field
+  digest=b3:fefcd913fec1d30038eb1dd5f258b7971f29bf39ee438b7505ea53071c420821 file=deus/internal/server/devauth.go range=268:268 lang=go exported=true byte_range=8473:8512
+  sig=time.Time
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/server.developerAuthResponse
+
+NODE id=github.com/paxlabs-inc/deus/internal/server.developerAuthResponse#Token kind=field
+  digest=b3:6c30781ef38f4f78e1cbd81633874d6fe139a9b20899ccb1bb0d553f5d1e7140 file=deus/internal/server/devauth.go range=267:267 lang=go exported=true byte_range=8437:8471
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/server.developerAuthResponse
+
+NODE id=github.com/paxlabs-inc/deus/internal/server.developerAuthResponse#Wallet kind=field
+  digest=b3:982c5453c9d03198050c3badee798892fe8fe2c3f155a55cbbffbb389e76fc49 file=deus/internal/server/devauth.go range=266:266 lang=go exported=true byte_range=8400:8435
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/server.developerAuthResponse
+
+NODE id=github.com/paxlabs-inc/deus/internal/server.developerNonceResponse kind=type
+  digest=b3:aed19b81f258046c4923652de0a5781afe4acf45ed3013d392b5b730c605eb4e file=deus/internal/server/devauth.go range=255:258 lang=go exported=false byte_range=8136:8251
+  sig=type developerNonceResponse struct {\n	Nonce		string		`json:"nonce"`\n	ExpiresAt	time.Time	`json:"expires_at"`\n}
+EDGES
+  contains=github.com/paxlabs-inc/deus/internal/server.developerNonceResponse#ExpiresAt,github.com/paxlabs-inc/deus/internal/server.developerNonceResponse#Nonce
+  ^defines=github.com/paxlabs-inc/deus/internal/server/devauth.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/server.developerNonceResponse#ExpiresAt kind=field
+  digest=b3:fefcd913fec1d30038eb1dd5f258b7971f29bf39ee438b7505ea53071c420821 file=deus/internal/server/devauth.go range=257:257 lang=go exported=true byte_range=8210:8249
+  sig=time.Time
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/server.developerNonceResponse
+
+NODE id=github.com/paxlabs-inc/deus/internal/server.developerNonceResponse#Nonce kind=field
+  digest=b3:8899adf55d0663749223413bc434f463d14f2b5e1db4c25895e2848ee35b4ec4 file=deus/internal/server/devauth.go range=256:256 lang=go exported=true byte_range=8174:8208
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/server.developerNonceResponse
+
+NODE id=github.com/paxlabs-inc/deus/internal/server.developerWalletKey kind=const
+  digest=b3:aa7337f03c8ba53a5a233a55a215eb6c08463b9a3a7bb4eab299a9735b866f3f file=deus/internal/server/middleware.go range=12:12 lang=go exported=false byte_range=98:144
+  sig=server.ctxKey
+EDGES
+  ^defines=github.com/paxlabs-inc/deus/internal/server/middleware.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/server.enrichCatalogItem kind=func
+  digest=b3:fd16308b2955aaa2aded2f3085e1cc7aa5de8e714446c30b93263cd57cd86736 file=deus/internal/server/handlers_discovery.go range=61:82 lang=go exported=false byte_range=1590:2190
+  sig=func enrichCatalogItem(item *types.CatalogItem, raw json.RawMessage)
+  doc=enrichCatalogItem surfaces headline pricing and tags from the stored\nmanifest so catalog cards can render price without a second discover call.
+EDGES
+  ^defines=github.com/paxlabs-inc/deus/internal/server/handlers_discovery.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/server.evmAddressRe kind=var
+  digest=b3:a4d1b56f7182ed40e6d118ca67fb8772671062c4ec41967ac7c388ce66cbf0c3 file=deus/internal/server/devauth.go range=162:162 lang=go exported=false byte_range=5098:5156
+  sig=*regexp.Regexp
+EDGES
+  ^defines=github.com/paxlabs-inc/deus/internal/server/devauth.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/server.maxDevAuthBodyBytes kind=const
+  digest=b3:ee8828e3042490595102c0f49ba50921810e2b4ec509d2377f9b67544f170901 file=deus/internal/server/devauth.go range=46:46 lang=go exported=false byte_range=1341:1372
+  sig=untyped int
+EDGES
+  ^defines=github.com/paxlabs-inc/deus/internal/server/devauth.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/server.maxSIWEMessageBytes kind=const
+  digest=b3:faeb337a126c7c76550e52155aa96ae92387099073784be5cb6cd813cf44accb file=deus/internal/server/devauth.go range=45:45 lang=go exported=false byte_range=1313:1339
+  sig=untyped int
+EDGES
+  ^defines=github.com/paxlabs-inc/deus/internal/server/devauth.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/server.parseSIWE kind=func
+  digest=b3:0b519a33773b815d89b25fd34cef614272d0f802f90bea5bd85f1f3b18e6f45d file=deus/internal/server/devauth.go range=172:200 lang=go exported=false byte_range=5280:6140
+  sig=func parseSIWE(message string) (siweFields, error)
+EDGES
+  ^defines=github.com/paxlabs-inc/deus/internal/server/devauth.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/server.personalSignDigest kind=func
+  digest=b3:9f1689c49b947ebe7085ad96a789e02b9999f60996b0ce909ef8aa3b98a67d68 file=deus/internal/server/devauth.go range=202:206 lang=go exported=false byte_range=6142:6387
+  sig=func personalSignDigest(message string) []byte
+  doc=personalSignDigest hashes message per EIP-191 (personal_sign).
+EDGES
+  ^defines=github.com/paxlabs-inc/deus/internal/server/devauth.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/server.promStub kind=func
+  digest=b3:ac3f0c66e94a0760254728530082f5e0267f0991e9565ab7e9943dcd9c5a71e7 file=deus/internal/server/server.go range=114:119 lang=go exported=false byte_range=2956:3183
+  sig=func promStub() http.Handler
+EDGES
+  ^defines=github.com/paxlabs-inc/deus/internal/server/server.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/server.resolveDeveloperWallet kind=func
+  digest=b3:ca1eb0edaac942ddf4327dc9dfed03c56ee32c68b32264b4f3ea095ddbf43d4a file=deus/internal/server/middleware.go range=20:46 lang=go exported=false byte_range=343:1406
+  sig=func resolveDeveloperWallet(r *http.Request, devMode bool, verifier *DeveloperAuth) (string, error)
+  doc=resolveDeveloperWallet authenticates the developer identity on a request.\nA verified X-Developer-Token (minted by the SIWE flow in devauth.go) always\nwins. The bare X-Developer-Wallet / X-Developer-Address headers are pure\ntrust-me assertions and are honored ONLY in dev mode (DEUS_DEV=1) — in\nproduction they previously let anyone act as any developer.
+EDGES
+  ^defines=github.com/paxlabs-inc/deus/internal/server/middleware.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/server.siweFields kind=type
+  digest=b3:af364bc70a7a82088680fd6e9c8bed8403730738c2e0e42b1197eaa1365c5896 file=deus/internal/server/devauth.go range=165:170 lang=go exported=false byte_range=5160:5278
+  sig=type siweFields struct {\n	domain		string\n	address		string\n	nonce		string\n	expirationTime	string\n}
+EDGES
+  contains=github.com/paxlabs-inc/deus/internal/server.siweFields#address,github.com/paxlabs-inc/deus/internal/server.siweFields#domain,github.com/paxlabs-inc/deus/internal/server.siweFields#expirationTime,github.com/paxlabs-inc/deus/internal/server.siweFields#nonce
+  ^defines=github.com/paxlabs-inc/deus/internal/server/devauth.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/server.siweFields#address kind=field
+  digest=b3:143731b58b3be3824f6ec287a31eba9b32b801e20ecb13b7a54c2f6b100d7bc8 file=deus/internal/server/devauth.go range=167:167 lang=go exported=false byte_range=5209:5230
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/server.siweFields
+
+NODE id=github.com/paxlabs-inc/deus/internal/server.siweFields#domain kind=field
+  digest=b3:3aff830f1f34eaa64c8ce7d0c2abd08503f17c3e7a4bf69b9dbead72c68690e3 file=deus/internal/server/devauth.go range=166:166 lang=go exported=false byte_range=5186:5207
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/server.siweFields
+
+NODE id=github.com/paxlabs-inc/deus/internal/server.siweFields#expirationTime kind=field
+  digest=b3:34bd392bf6abf55f2f5b3fea4b5ee9f35a7ca1afbca5156850e0008d8c7e90bb file=deus/internal/server/devauth.go range=169:169 lang=go exported=false byte_range=5255:5276
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/server.siweFields
+
+NODE id=github.com/paxlabs-inc/deus/internal/server.siweFields#nonce kind=field
+  digest=b3:a0c70966b67a706ab2251d71b3bec8adccb9293f7728b400aec2e4336d929038 file=deus/internal/server/devauth.go range=168:168 lang=go exported=false byte_range=5232:5253
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/server.siweFields
+
+NODE id=github.com/paxlabs-inc/deus/internal/server.siwePreambleRe kind=var
+  digest=b3:06bc614b18975faa284087e84ac81f5c78f637579d4470c415c93ee24ad0c653 file=deus/internal/server/devauth.go range=161:161 lang=go exported=false byte_range=5001:5096
+  sig=*regexp.Regexp
+EDGES
+  ^defines=github.com/paxlabs-inc/deus/internal/server/devauth.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/server.streamStateToTypes kind=func
+  digest=b3:e1f688cd7e5c3019a45c48d8953c64ba85cd1c534c7ac4a6b72ab9aff00819d4 file=deus/internal/server/handlers_streams.go range=117:132 lang=go exported=false byte_range=3402:3924
+  sig=func streamStateToTypes(st streams.State) types.StreamStateResponse
+EDGES
+  ^defines=github.com/paxlabs-inc/deus/internal/server/handlers_streams.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/server.version kind=const
+  digest=b3:b29f1ba249b88f6561f5199e0bdadaf32f26c8083876540ae5f65458543f37c4 file=deus/internal/server/server.go range=25:25 lang=go exported=false byte_range=656:680
+  sig=untyped string
+EDGES
+  ^defines=github.com/paxlabs-inc/deus/internal/server/server.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/server.writeAPIError kind=func
+  digest=b3:864a2ceaf3241e62770fe607704c0dac7661a1d81dc5d319609ae13489b6f0cb file=deus/internal/server/errors.go range=15:19 lang=go exported=false byte_range=279:544
+  sig=func writeAPIError(w http.ResponseWriter, status int, code, message string, detail map[string]any)
+EDGES
+  ^defines=github.com/paxlabs-inc/deus/internal/server/errors.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/server.writeJSON kind=func
+  digest=b3:d58167f7354d1e8d6720953913e80e2f6a0580f378c503cbd013fa824e8fd1da file=deus/internal/server/server.go range=108:112 lang=go exported=false byte_range=2785:2954
+  sig=func writeJSON(w http.ResponseWriter, status int, v any)
+EDGES
+  ^defines=github.com/paxlabs-inc/deus/internal/server/server.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/server/devauth.go kind=file
+  digest=b3:2334d4429d31bf5ecc51975820d21502cd5ead27d1eddc54d5b32d818a3d34b3 file=deus/internal/server/devauth.go range=1:308 lang=go exported=true
+EDGES
+  defines=github.com/paxlabs-inc/deus/internal/server.DeveloperAuth,github.com/paxlabs-inc/deus/internal/server.DeveloperAuth.Authenticate,github.com/paxlabs-inc/deus/internal/server.DeveloperAuth.IssueNonce,github.com/paxlabs-inc/deus/internal/server.DeveloperAuth.MintToken,github.com/paxlabs-inc/deus/internal/server.DeveloperAuth.VerifyToken,github.com/paxlabs-inc/deus/internal/server.DeveloperAuth.sign,github.com/paxlabs-inc/deus/internal/server.DeveloperAuth.verifyNonce,github.com/paxlabs-inc/deus/internal/server.DeveloperAuth.verifySigned,github.com/paxlabs-inc/deus/internal/server.NewDeveloperAuth,github.com/paxlabs-inc/deus/internal/server.Server.handleDeveloperAuth,github.com/paxlabs-inc/deus/internal/server.Server.handleDeveloperNonce,github.com/paxlabs-inc/deus/internal/server.Server.mountDeveloperAuthRoutes,github.com/paxlabs-inc/deus/internal/server.devAuthNonceTTL,github.com/paxlabs-inc/deus/internal/server.devAuthTokenTTL,github.com/paxlabs-inc/deus/internal/server.developerAuthRequest,github.com/paxlabs-inc/deus/internal/server.developerAuthResponse,github.com/paxlabs-inc/deus/internal/server.developerNonceResponse,github.com/paxlabs-inc/deus/internal/server.evmAddressRe,github.com/paxlabs-inc/deus/internal/server.maxDevAuthBodyBytes,github.com/paxlabs-inc/deus/internal/server.maxSIWEMessageBytes,github.com/paxlabs-inc/deus/internal/server.parseSIWE,github.com/paxlabs-inc/deus/internal/server.personalSignDigest,github.com/paxlabs-inc/deus/internal/server.siweFields,github.com/paxlabs-inc/deus/internal/server.siwePreambleRe
+  ^contains=github.com/paxlabs-inc/deus/internal/server
+
+NODE id=github.com/paxlabs-inc/deus/internal/server/errors.go kind=file
+  digest=b3:f433b8c8fb7f22dd7f403e1918196a2178933f60ab8e2642eac3ec436f9d70d7 file=deus/internal/server/errors.go range=1:19 lang=go exported=true
+EDGES
+  defines=github.com/paxlabs-inc/deus/internal/server.APIError,github.com/paxlabs-inc/deus/internal/server.writeAPIError
+  ^contains=github.com/paxlabs-inc/deus/internal/server
+
+NODE id=github.com/paxlabs-inc/deus/internal/server/handlers_channels.go kind=file
+  digest=b3:718f3fe7ac5b94b906e509c6dde3dd502697b9fbbdf06e011da41ce88d942f28 file=deus/internal/server/handlers_channels.go range=1:99 lang=go exported=true
+EDGES
+  defines=github.com/paxlabs-inc/deus/internal/server.Server.handleOpenChannel,github.com/paxlabs-inc/deus/internal/server.Server.handleSettleRun,github.com/paxlabs-inc/deus/internal/server.Server.handleVoucherCosign
+  ^contains=github.com/paxlabs-inc/deus/internal/server
+
+NODE id=github.com/paxlabs-inc/deus/internal/server/handlers_dashboard.go kind=file
+  digest=b3:4c4a94ad62e10dfc15cc97075854ee980cb9c335bbbdc1ecb87eb0a6d308a033 file=deus/internal/server/handlers_dashboard.go range=1:336 lang=go exported=true
+EDGES
+  defines=github.com/paxlabs-inc/deus/internal/server.Server.handleMe,github.com/paxlabs-inc/deus/internal/server.Server.handleMyEarnings,github.com/paxlabs-inc/deus/internal/server.Server.handleMyServices,github.com/paxlabs-inc/deus/internal/server.Server.handleMySpend,github.com/paxlabs-inc/deus/internal/server.Server.handleServiceAnalytics,github.com/paxlabs-inc/deus/internal/server.Server.handleServiceLogs,github.com/paxlabs-inc/deus/internal/server.Server.handleServicePayout,github.com/paxlabs-inc/deus/internal/server.Server.handleSetServiceStatus,github.com/paxlabs-inc/deus/internal/server.Server.mountDashboardRoutes,github.com/paxlabs-inc/deus/internal/server.Server.requireServiceOwner,github.com/paxlabs-inc/deus/internal/server.Server.resolveServiceID
+  ^contains=github.com/paxlabs-inc/deus/internal/server
+
+NODE id=github.com/paxlabs-inc/deus/internal/server/handlers_discovery.go kind=file
+  digest=b3:628047852b6c98dc6d42bae7fdc325934cd00c256423255d81244b2f5ae7b60b file=deus/internal/server/handlers_discovery.go range=1:132 lang=go exported=true
+EDGES
+  defines=github.com/paxlabs-inc/deus/internal/server.Server.handleCatalog,github.com/paxlabs-inc/deus/internal/server.Server.handleDiscoverGET,github.com/paxlabs-inc/deus/internal/server.Server.handleDiscoverPOST,github.com/paxlabs-inc/deus/internal/server.Server.mountDiscoveryRoutes,github.com/paxlabs-inc/deus/internal/server.atoiDefault,github.com/paxlabs-inc/deus/internal/server.enrichCatalogItem
+  ^contains=github.com/paxlabs-inc/deus/internal/server
+
+NODE id=github.com/paxlabs-inc/deus/internal/server/handlers_hosting.go kind=file
+  digest=b3:1f875c5df922e5909c5dd3067344f079bae07dc3199d94e251d8108a4279aae3 file=deus/internal/server/handlers_hosting.go range=1:144 lang=go exported=true
+EDGES
+  defines=github.com/paxlabs-inc/deus/internal/server.Server.handleDeployService,github.com/paxlabs-inc/deus/internal/server.Server.handleGetDeployment,github.com/paxlabs-inc/deus/internal/server.Server.handleListDeployments,github.com/paxlabs-inc/deus/internal/server.Server.handleUploadArtifact,github.com/paxlabs-inc/deus/internal/server.Server.writeHostingErr
+  ^contains=github.com/paxlabs-inc/deus/internal/server
+
+NODE id=github.com/paxlabs-inc/deus/internal/server/handlers_invoke.go kind=file
+  digest=b3:10418d640cfa5df69e273e0db4b92bd56af460ca57d9db4d3549a457480bd622 file=deus/internal/server/handlers_invoke.go range=1:196 lang=go exported=true
+EDGES
+  defines=github.com/paxlabs-inc/deus/internal/server.Server.handleGetInvocation,github.com/paxlabs-inc/deus/internal/server.Server.handleGetReceipt,github.com/paxlabs-inc/deus/internal/server.Server.handleInvoke,github.com/paxlabs-inc/deus/internal/server.Server.handleQuote,github.com/paxlabs-inc/deus/internal/server.Server.mountInvokeRoutes,github.com/paxlabs-inc/deus/internal/server.Server.writeGatewayErr
+  ^contains=github.com/paxlabs-inc/deus/internal/server
+
+NODE id=github.com/paxlabs-inc/deus/internal/server/handlers_registry.go kind=file
+  digest=b3:8baba2b044745ad1c20fa33ce1466e1cfeea65918dd87bb1429fcf068c57b8f3 file=deus/internal/server/handlers_registry.go range=1:134 lang=go exported=true
+EDGES
+  defines=github.com/paxlabs-inc/deus/internal/server.Server.handleCreateService,github.com/paxlabs-inc/deus/internal/server.Server.handleGetService,github.com/paxlabs-inc/deus/internal/server.Server.handlePublishService,github.com/paxlabs-inc/deus/internal/server.Server.mountRegistryRoutes,github.com/paxlabs-inc/deus/internal/server.Server.writeRegistryErr
+  ^contains=github.com/paxlabs-inc/deus/internal/server
+
+NODE id=github.com/paxlabs-inc/deus/internal/server/handlers_streams.go kind=file
+  digest=b3:10de655be7659420f9d6cdeb3ee073dc1779b0229596f1b4350fc3f3ce910a1d file=deus/internal/server/handlers_streams.go range=1:145 lang=go exported=true
+EDGES
+  defines=github.com/paxlabs-inc/deus/internal/server.Server.handleCloseStream,github.com/paxlabs-inc/deus/internal/server.Server.handleGetStream,github.com/paxlabs-inc/deus/internal/server.Server.handleOpenStream,github.com/paxlabs-inc/deus/internal/server.Server.handleSettleStream,github.com/paxlabs-inc/deus/internal/server.Server.mountStreamRoutes,github.com/paxlabs-inc/deus/internal/server.Server.writeStreamsErr,github.com/paxlabs-inc/deus/internal/server.streamStateToTypes
+  ^contains=github.com/paxlabs-inc/deus/internal/server
+
+NODE id=github.com/paxlabs-inc/deus/internal/server/middleware.go kind=file
+  digest=b3:dbc236ec14a7187297ac777d893740f330c81f55db54edfcc61bb9a5b8e34625 file=deus/internal/server/middleware.go range=1:61 lang=go exported=true
+EDGES
+  defines=github.com/paxlabs-inc/deus/internal/server.DeveloperWalletFromContext,github.com/paxlabs-inc/deus/internal/server.Server.requireDeveloperAuth,github.com/paxlabs-inc/deus/internal/server.ctxKey,github.com/paxlabs-inc/deus/internal/server.developerWalletKey,github.com/paxlabs-inc/deus/internal/server.resolveDeveloperWallet
+  ^contains=github.com/paxlabs-inc/deus/internal/server
+
+NODE id=github.com/paxlabs-inc/deus/internal/server/server.go kind=file
+  digest=b3:18b9c5f8fb5ea6fc9baa7055da45be62ed9271c0e3c5c5746bddb8f9e7654d36 file=deus/internal/server/server.go range=1:125 lang=go exported=true
+EDGES
+  defines=github.com/paxlabs-inc/deus/internal/server.Deps,github.com/paxlabs-inc/deus/internal/server.New,github.com/paxlabs-inc/deus/internal/server.Server,github.com/paxlabs-inc/deus/internal/server.Server.Handler,github.com/paxlabs-inc/deus/internal/server.Server.Shutdown,github.com/paxlabs-inc/deus/internal/server.Server.handleHealthz,github.com/paxlabs-inc/deus/internal/server.promStub,github.com/paxlabs-inc/deus/internal/server.version,github.com/paxlabs-inc/deus/internal/server.writeJSON
+  ^contains=github.com/paxlabs-inc/deus/internal/server

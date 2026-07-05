@@ -1,0 +1,1184 @@
+# GENERATED gen=codegraph do-not-edit merkle=b3:2dc69ec8dbbe0231373534486cf12ff6fdb0eaad7b2dfdcbc4d73453c8542ee8
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/types kind=package
+  digest=b3:95428a984c55e11349a747088a4e6c4b9e4c774697b16932547c4a5428e3d1e1 file=tachyon/pkg/types range=0:0 lang=go exported=true
+EDGES
+  contains=github.com/paxlabs-inc/tachyon-tools/pkg/types/artifact.go,github.com/paxlabs-inc/tachyon-tools/pkg/types/call.go,github.com/paxlabs-inc/tachyon-tools/pkg/types/chain.go,github.com/paxlabs-inc/tachyon-tools/pkg/types/compile.go,github.com/paxlabs-inc/tachyon-tools/pkg/types/deploy.go,github.com/paxlabs-inc/tachyon-tools/pkg/types/errors.go,github.com/paxlabs-inc/tachyon-tools/pkg/types/simulate.go,github.com/paxlabs-inc/tachyon-tools/pkg/types/test.go,github.com/paxlabs-inc/tachyon-tools/pkg/types/types.go
+  ^contains=mod:github.com/paxlabs-inc/tachyon-tools
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/types.Artifact kind=type
+  digest=b3:0d751d67e1ce3c685f4dfdcdcc82dc1f8d244f35aa5335827959e41ed3b440b7 file=tachyon/pkg/types/compile.go range=42:50 lang=go exported=true byte_range=1810:2245
+  sig=type Artifact struct {\n	Name			string			`json:"name"`\n	Path			string			`json:"path,omitempty"`\n	ABI			json.RawMessage		`json:"abi"`\n	Bytecode		string			`json:"bytecode"`\n	DeployedBytecode	string			`json:"deployedBytecode,omitempty"`\n	Compiler		*CompilerSettings	`json:"compiler,omitempty"`\n}
+  doc=Artifact is a normalized contract build output for agents.
+EDGES
+  contains=github.com/paxlabs-inc/tachyon-tools/pkg/types.Artifact#ABI,github.com/paxlabs-inc/tachyon-tools/pkg/types.Artifact#Bytecode,github.com/paxlabs-inc/tachyon-tools/pkg/types.Artifact#Compiler,github.com/paxlabs-inc/tachyon-tools/pkg/types.Artifact#DeployedBytecode,github.com/paxlabs-inc/tachyon-tools/pkg/types.Artifact#Name,github.com/paxlabs-inc/tachyon-tools/pkg/types.Artifact#Path
+  ^defines=github.com/paxlabs-inc/tachyon-tools/pkg/types/compile.go
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/types.Artifact#ABI kind=field
+  digest=b3:6ad8babdcb63edae7762a6186b9a90063439b0bd7168931a4eff19acb202d4bd file=tachyon/pkg/types/compile.go range=46:46 lang=go exported=true byte_range=2006:2053
+  sig=json.RawMessage
+EDGES
+  ^contains=github.com/paxlabs-inc/tachyon-tools/pkg/types.Artifact
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/types.Artifact#Bytecode kind=field
+  digest=b3:af2b0e1765fc443fce38699711259b57c3fafe901a420c77e828204c62c2665e file=tachyon/pkg/types/compile.go range=47:47 lang=go exported=true byte_range=2055:2107
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/tachyon-tools/pkg/types.Artifact
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/types.Artifact#Compiler kind=field
+  digest=b3:f80d6bb02e1c5ed14926eba943c61fa3de813de303f22a1506777549536c07dd file=tachyon/pkg/types/compile.go range=49:49 lang=go exported=true byte_range=2181:2243
+  sig=*types.CompilerSettings
+EDGES
+  ^contains=github.com/paxlabs-inc/tachyon-tools/pkg/types.Artifact
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/types.Artifact#DeployedBytecode kind=field
+  digest=b3:26f481a20ec4e64b3f8d8d286999289c66ae6ad7c5ea7f3eb456b877982ff8c4 file=tachyon/pkg/types/compile.go range=48:48 lang=go exported=true byte_range=2109:2179
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/tachyon-tools/pkg/types.Artifact
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/types.Artifact#Name kind=field
+  digest=b3:75239208268d9eaabc049cf8d638657be6e4cd19291625319eedc3dcf3897f45 file=tachyon/pkg/types/compile.go range=44:44 lang=go exported=true byte_range=1896:1944
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/tachyon-tools/pkg/types.Artifact
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/types.Artifact#Path kind=field
+  digest=b3:652e0cb8dc059b722408aa1a00172244b682f8a31b2fcb1a36992942f23c0ee0 file=tachyon/pkg/types/compile.go range=45:45 lang=go exported=true byte_range=1946:2004
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/tachyon-tools/pkg/types.Artifact
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/types.ArtifactGetRequest kind=type
+  digest=b3:e0a530510db623a41a4fcdaa82a8e03ff17854f2ce8bb667796c4db5d0ce8b2f file=tachyon/pkg/types/artifact.go range=3:7 lang=go exported=true byte_range=15:186
+  sig=type ArtifactGetRequest struct {\n	ProjectID	string	`json:"project_id,omitempty"`\n	Name		string	`json:"name"`\n}
+  doc=ArtifactGetRequest fetches a cached artifact by name.
+EDGES
+  contains=github.com/paxlabs-inc/tachyon-tools/pkg/types.ArtifactGetRequest#Name,github.com/paxlabs-inc/tachyon-tools/pkg/types.ArtifactGetRequest#ProjectID
+  ^defines=github.com/paxlabs-inc/tachyon-tools/pkg/types/artifact.go
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/types.ArtifactGetRequest#Name kind=field
+  digest=b3:ff785850bf10b4407f29821ea0637fcb231bd80fd28fe6a234a833527f468a96 file=tachyon/pkg/types/artifact.go range=6:6 lang=go exported=true byte_range=154:184
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/tachyon-tools/pkg/types.ArtifactGetRequest
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/types.ArtifactGetRequest#ProjectID kind=field
+  digest=b3:d402ab0dbe15b35a966acc636e1e363a06b56d5ea6d53d491053db3461f8264e file=tachyon/pkg/types/artifact.go range=5:5 lang=go exported=true byte_range=106:152
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/tachyon-tools/pkg/types.ArtifactGetRequest
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/types.ArtifactGetResponse kind=type
+  digest=b3:9b7ba033bb529885cff6333e8f7baf1727023780aa639d46bd904a5401ac3c35 file=tachyon/pkg/types/artifact.go range=9:12 lang=go exported=true byte_range=188:305
+  sig=type ArtifactGetResponse struct {\n	Artifact Artifact `json:"artifact"`\n}
+  doc=ArtifactGetResponse returns one artifact.
+EDGES
+  contains=github.com/paxlabs-inc/tachyon-tools/pkg/types.ArtifactGetResponse#Artifact
+  ^defines=github.com/paxlabs-inc/tachyon-tools/pkg/types/artifact.go
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/types.ArtifactGetResponse#Artifact kind=field
+  digest=b3:2d047021840e46ca28a87651775cc10eefe84f656dacb518ab5015cdfbac72aa file=tachyon/pkg/types/artifact.go range=11:11 lang=go exported=true byte_range=268:303
+  sig=types.Artifact
+EDGES
+  ^contains=github.com/paxlabs-inc/tachyon-tools/pkg/types.ArtifactGetResponse
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/types.CallRequest kind=type
+  digest=b3:8375145b2fe60e48d2d0361efce997544b8c6e0169d2ef4130f50ea93d167ed3 file=tachyon/pkg/types/call.go range=5:30 lang=go exported=true byte_range=39:1497
+  sig=type CallRequest struct {\n	ChainID		string		`json:"chain_id,omitempty"`\n	RPCURL		string		`json:"rpc_url,omitempty"`\n	From		string		`json:"from,omitempty"`\n	To		string		`json:"to"`\n	Data		string		`json:"data,omitempty"`\n	Method		string		`json:"method,omitempty"`\n	Args		any		`json:"args,omitempty"`\n	ABI		json.RawMessage	`json:"abi,omitempty"`\n	Contract	string		`json:"contract,omitempty"`\n	ProjectID	string		`json:"project_id,omitempty"`\n	Value		string		`json:"value,omitempty"`\n	SimulateOnly	bool		`json:"simulate_only,omitempty"`\n	CapabilityToken	string		`json:"capability_token,omitempty"`\n	SpendCapWei	string		`json:"spend_cap_wei,omitempty"`\n	// WalletToken is a forwarded embedded-wallet bearer (the agent's\n	// short-lived did:matrix token). When set, the shared engine signs +\n	// broadcasts as that agent server-side without holding any seed.\n	WalletToken	string	`json:"wallet_token,omitempty"`\n}
+  doc=CallRequest invokes a contract (simulate or broadcast).\n\nCalldata is resolved in one of two ways:\n  - Method + Args: ABI-encoded by the engine. The ABI is taken from the\n    inline ABI field, or resolved from the registry by Contract (+ ProjectID).\n  - Data: a pre-encoded hex calldata string (used when Method is empty).
+EDGES
+  contains=github.com/paxlabs-inc/tachyon-tools/pkg/types.CallRequest#ABI,github.com/paxlabs-inc/tachyon-tools/pkg/types.CallRequest#Args,github.com/paxlabs-inc/tachyon-tools/pkg/types.CallRequest#CapabilityToken,github.com/paxlabs-inc/tachyon-tools/pkg/types.CallRequest#ChainID,github.com/paxlabs-inc/tachyon-tools/pkg/types.CallRequest#Contract,github.com/paxlabs-inc/tachyon-tools/pkg/types.CallRequest#Data,github.com/paxlabs-inc/tachyon-tools/pkg/types.CallRequest#From,github.com/paxlabs-inc/tachyon-tools/pkg/types.CallRequest#Method,github.com/paxlabs-inc/tachyon-tools/pkg/types.CallRequest#ProjectID,github.com/paxlabs-inc/tachyon-tools/pkg/types.CallRequest#RPCURL,github.com/paxlabs-inc/tachyon-tools/pkg/types.CallRequest#SimulateOnly,github.com/paxlabs-inc/tachyon-tools/pkg/types.CallRequest#SpendCapWei,github.com/paxlabs-inc/tachyon-tools/pkg/types.CallRequest#To,github.com/paxlabs-inc/tachyon-tools/pkg/types.CallRequest#Value,github.com/paxlabs-inc/tachyon-tools/pkg/types.CallRequest#WalletToken
+  ^defines=github.com/paxlabs-inc/tachyon-tools/pkg/types/call.go
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/types.CallRequest#ABI kind=field
+  digest=b3:7148ecba1d50608573657aab002d2541d52fa63763126e10aa287183b09fb10e file=tachyon/pkg/types/call.go range=19:19 lang=go exported=true byte_range=801:855
+  sig=json.RawMessage
+EDGES
+  ^contains=github.com/paxlabs-inc/tachyon-tools/pkg/types.CallRequest
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/types.CallRequest#Args kind=field
+  digest=b3:88f505a03f230e5b51c2b4ac205d52d070ff64bf1ea576a4bfa75e134aa29b4d file=tachyon/pkg/types/call.go range=18:18 lang=go exported=true byte_range=744:799
+  sig=any
+EDGES
+  ^contains=github.com/paxlabs-inc/tachyon-tools/pkg/types.CallRequest
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/types.CallRequest#CapabilityToken kind=field
+  digest=b3:dbcaa0a89ffe26a314f3c733c8f72cbefb29f5387f823117e1eaa9e45c53ab6a file=tachyon/pkg/types/call.go range=24:24 lang=go exported=true byte_range=1105:1172
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/tachyon-tools/pkg/types.CallRequest
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/types.CallRequest#ChainID kind=field
+  digest=b3:e5f803c19910134beec3b80f8c534560fa3067beb5d7e0c70d0b2f696ea0ba4f file=tachyon/pkg/types/call.go range=12:12 lang=go exported=true byte_range=405:464
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/tachyon-tools/pkg/types.CallRequest
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/types.CallRequest#Contract kind=field
+  digest=b3:ecdce262b80490842f1e98085245ee744d7fa1abd38819e52a3e5aa62eb487c7 file=tachyon/pkg/types/call.go range=20:20 lang=go exported=true byte_range=857:916
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/tachyon-tools/pkg/types.CallRequest
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/types.CallRequest#Data kind=field
+  digest=b3:53ffe81ff298924287101f3e34c15a1b40b6e9711a94ac6b4ee518c3d4dab42e file=tachyon/pkg/types/call.go range=16:16 lang=go exported=true byte_range=628:683
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/tachyon-tools/pkg/types.CallRequest
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/types.CallRequest#From kind=field
+  digest=b3:9709e81d5b6c673ab8caa94c0b923f5eca4a2633bf703f9ae7be69e9d96f8129 file=tachyon/pkg/types/call.go range=14:14 lang=go exported=true byte_range=526:581
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/tachyon-tools/pkg/types.CallRequest
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/types.CallRequest#Method kind=field
+  digest=b3:833bdb99927c7e478c6c43deb37651595514b6f1ef68733ae887f9e7bff712a3 file=tachyon/pkg/types/call.go range=17:17 lang=go exported=true byte_range=685:742
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/tachyon-tools/pkg/types.CallRequest
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/types.CallRequest#ProjectID kind=field
+  digest=b3:1ebdf70e0dcb6cfe0414eefa77c162943eafca986078172aa8638d1468e75aa4 file=tachyon/pkg/types/call.go range=21:21 lang=go exported=true byte_range=918:979
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/tachyon-tools/pkg/types.CallRequest
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/types.CallRequest#RPCURL kind=field
+  digest=b3:e3a0fec7ab1834598c9fd0cad3215ba1fe23a3f7abfb08e21bfa1b8ad1d54a4c file=tachyon/pkg/types/call.go range=13:13 lang=go exported=true byte_range=466:524
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/tachyon-tools/pkg/types.CallRequest
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/types.CallRequest#SimulateOnly kind=field
+  digest=b3:ebd4e12f4aee15bf8fd71461faa0a7cd726f5a54418cb532ef68cd4c26a1930d file=tachyon/pkg/types/call.go range=23:23 lang=go exported=true byte_range=1039:1103
+  sig=bool
+EDGES
+  ^contains=github.com/paxlabs-inc/tachyon-tools/pkg/types.CallRequest
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/types.CallRequest#SpendCapWei kind=field
+  digest=b3:41b6dd84f4483c54abc9ed27439249a3f0b6be70160d3ed8cc8e713cf6ec70ed file=tachyon/pkg/types/call.go range=25:25 lang=go exported=true byte_range=1174:1238
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/tachyon-tools/pkg/types.CallRequest
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/types.CallRequest#To kind=field
+  digest=b3:19890f98abefeab6e5511565e8c52958d92c1bdfdf2b1597eb7ea7557460c06a file=tachyon/pkg/types/call.go range=15:15 lang=go exported=true byte_range=583:626
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/tachyon-tools/pkg/types.CallRequest
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/types.CallRequest#Value kind=field
+  digest=b3:a0fbfa81b333c60cfd1e9eb17fa9e6a38f23e05b532501bc9853bfcdac95dc02 file=tachyon/pkg/types/call.go range=22:22 lang=go exported=true byte_range=981:1037
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/tachyon-tools/pkg/types.CallRequest
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/types.CallRequest#WalletToken kind=field
+  digest=b3:b41f9a249dfe36e692ab1bc1db5e1889b3abc8fd15171a4c069dc99336f945c8 file=tachyon/pkg/types/call.go range=26:29 lang=go exported=true byte_range=1240:1495
+  sig=string
+  doc=WalletToken is a forwarded embedded-wallet bearer (the agent's\nshort-lived did:matrix token). When set, the shared engine signs +\nbroadcasts as that agent server-side without holding any seed.
+EDGES
+  ^contains=github.com/paxlabs-inc/tachyon-tools/pkg/types.CallRequest
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/types.CallResponse kind=type
+  digest=b3:1f57c203684dfc293be507f53400cef3a8219e00308cb34d443dec59febcbc26 file=tachyon/pkg/types/call.go range=32:37 lang=go exported=true byte_range=1499:1695
+  sig=type CallResponse struct {\n	Result	string	`json:"result,omitempty"`\n	TxHash	string	`json:"tx_hash,omitempty"`\n	Revert	string	`json:"revert,omitempty"`\n}
+  doc=CallResponse is the result of call verb.
+EDGES
+  contains=github.com/paxlabs-inc/tachyon-tools/pkg/types.CallResponse#Result,github.com/paxlabs-inc/tachyon-tools/pkg/types.CallResponse#Revert,github.com/paxlabs-inc/tachyon-tools/pkg/types.CallResponse#TxHash
+  ^defines=github.com/paxlabs-inc/tachyon-tools/pkg/types/call.go
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/types.CallResponse#Result kind=field
+  digest=b3:cbb0d84af01d18dd4d451d9fd92d74faa8b43c2df889e55648b933c4c505c68d file=tachyon/pkg/types/call.go range=34:34 lang=go exported=true byte_range=1571:1610
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/tachyon-tools/pkg/types.CallResponse
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/types.CallResponse#Revert kind=field
+  digest=b3:ca8debd76dd5c0266f132f86f0cfb08f876ae49a7923d0ce7f376dc3e87390b0 file=tachyon/pkg/types/call.go range=36:36 lang=go exported=true byte_range=1654:1693
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/tachyon-tools/pkg/types.CallResponse
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/types.CallResponse#TxHash kind=field
+  digest=b3:f6a969b0ffe04c053ef72c4a0a6ff481df2aee34f9f131c7b13cd860b335b7df file=tachyon/pkg/types/call.go range=35:35 lang=go exported=true byte_range=1612:1652
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/tachyon-tools/pkg/types.CallResponse
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/types.ChainListResponse kind=type
+  digest=b3:ae115a1a3ba8c54c6ba2d452d9383a0398dadaf4d4ecc4b0c77b592df3dc7f96 file=tachyon/pkg/types/chain.go range=16:20 lang=go exported=true byte_range=505:696
+  sig=type ChainListResponse struct {\n	Chains		[]ChainProfile	`json:"chains"`\n	ActiveChainID	string		`json:"active_chain_id,omitempty"`\n}
+  doc=ChainListResponse lists known chain profiles.
+EDGES
+  contains=github.com/paxlabs-inc/tachyon-tools/pkg/types.ChainListResponse#ActiveChainID,github.com/paxlabs-inc/tachyon-tools/pkg/types.ChainListResponse#Chains
+  ^defines=github.com/paxlabs-inc/tachyon-tools/pkg/types/chain.go
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/types.ChainListResponse#ActiveChainID kind=field
+  digest=b3:620301f56f0b0a0c8a3ce873364ad3d408f2dca9351c6637291f85a80c4f06b0 file=tachyon/pkg/types/chain.go range=19:19 lang=go exported=true byte_range=632:694
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/tachyon-tools/pkg/types.ChainListResponse
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/types.ChainListResponse#Chains kind=field
+  digest=b3:e6afa5a7877b1e6e06dcef3126310aa592ce394909b5964b4e6fc12e0d55dd5b file=tachyon/pkg/types/chain.go range=18:18 lang=go exported=true byte_range=587:630
+  sig=[]types.ChainProfile
+EDGES
+  ^contains=github.com/paxlabs-inc/tachyon-tools/pkg/types.ChainListResponse
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/types.ChainProfile kind=type
+  digest=b3:a92a895188f6e9651c0bdddd3079a81a2f0f38ff3f94a9ece9667ffcb234346c file=tachyon/pkg/types/chain.go range=3:14 lang=go exported=true byte_range=15:503
+  sig=type ChainProfile struct {\n	ID		string		`json:"id"`\n	Name		string		`json:"name"`\n	RPCURL		string		`json:"rpc_url,omitempty"`\n	RPCURLEnv	string		`json:"rpc_url_env,omitempty"`\n	ChainID		uint64		`json:"chain_id"`\n	Preset		string		`json:"preset,omitempty"`\n	Explorer	string		`json:"explorer,omitempty"`\n	Features	[]string	`json:"features,omitempty"`\n	Active		bool		`json:"active,omitempty"`\n}
+  doc=ChainProfile describes an RPC endpoint agents can target.
+EDGES
+  contains=github.com/paxlabs-inc/tachyon-tools/pkg/types.ChainProfile#Active,github.com/paxlabs-inc/tachyon-tools/pkg/types.ChainProfile#ChainID,github.com/paxlabs-inc/tachyon-tools/pkg/types.ChainProfile#Explorer,github.com/paxlabs-inc/tachyon-tools/pkg/types.ChainProfile#Features,github.com/paxlabs-inc/tachyon-tools/pkg/types.ChainProfile#ID,github.com/paxlabs-inc/tachyon-tools/pkg/types.ChainProfile#Name,github.com/paxlabs-inc/tachyon-tools/pkg/types.ChainProfile#Preset,github.com/paxlabs-inc/tachyon-tools/pkg/types.ChainProfile#RPCURL,github.com/paxlabs-inc/tachyon-tools/pkg/types.ChainProfile#RPCURLEnv
+  ^defines=github.com/paxlabs-inc/tachyon-tools/pkg/types/chain.go
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/types.ChainProfile#Active kind=field
+  digest=b3:a6e8297ecfb917215da59fdbeb08d675477d9c089856f1a3520d79a5c7026b80 file=tachyon/pkg/types/chain.go range=13:13 lang=go exported=true byte_range=456:501
+  sig=bool
+EDGES
+  ^contains=github.com/paxlabs-inc/tachyon-tools/pkg/types.ChainProfile
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/types.ChainProfile#ChainID kind=field
+  digest=b3:8ce39abef2248811fa390ba8d1e9e94be9b03419929b8227bbc5f639baf1aa5f file=tachyon/pkg/types/chain.go range=9:9 lang=go exported=true byte_range=272:309
+  sig=uint64
+EDGES
+  ^contains=github.com/paxlabs-inc/tachyon-tools/pkg/types.ChainProfile
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/types.ChainProfile#Explorer kind=field
+  digest=b3:55c1f0a1763e8c8dc7e182d8a6cc0bcf3d2355da391528432b6128ef34294830 file=tachyon/pkg/types/chain.go range=11:11 lang=go exported=true byte_range=358:405
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/tachyon-tools/pkg/types.ChainProfile
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/types.ChainProfile#Features kind=field
+  digest=b3:5b44793b0442c55be56f88ef0cb5575609fcd384ca3466cddbf400bea5080625 file=tachyon/pkg/types/chain.go range=12:12 lang=go exported=true byte_range=407:454
+  sig=[]string
+EDGES
+  ^contains=github.com/paxlabs-inc/tachyon-tools/pkg/types.ChainProfile
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/types.ChainProfile#ID kind=field
+  digest=b3:15186f43ba794d61b7c1f76ea7bccada570e0011eb1486761f957976b8318538 file=tachyon/pkg/types/chain.go range=5:5 lang=go exported=true byte_range=104:135
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/tachyon-tools/pkg/types.ChainProfile
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/types.ChainProfile#Name kind=field
+  digest=b3:04509ca182884c7cf81c42e0360bd8dfab9eb88d201ec4403b22e47703ad732b file=tachyon/pkg/types/chain.go range=6:6 lang=go exported=true byte_range=137:170
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/tachyon-tools/pkg/types.ChainProfile
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/types.ChainProfile#Preset kind=field
+  digest=b3:f21d591a77c7d3197d3e0c9d826b700e3b0d553c1102e9428ff99a7402e29308 file=tachyon/pkg/types/chain.go range=10:10 lang=go exported=true byte_range=311:356
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/tachyon-tools/pkg/types.ChainProfile
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/types.ChainProfile#RPCURL kind=field
+  digest=b3:954c0c736c83e36e7ed2963dd18f681d32dca17c6a808a13defe22eed9a1fa91 file=tachyon/pkg/types/chain.go range=7:7 lang=go exported=true byte_range=172:218
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/tachyon-tools/pkg/types.ChainProfile
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/types.ChainProfile#RPCURLEnv kind=field
+  digest=b3:3d445dda8acde432e5d9996b0b0893daf86cd294e38ad9ddbda5fb6172bbe6b0 file=tachyon/pkg/types/chain.go range=8:8 lang=go exported=true byte_range=220:270
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/tachyon-tools/pkg/types.ChainProfile
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/types.ChainRegisterRequest kind=type
+  digest=b3:a454d37086190b53ffc236f06cb455a7b384b36cc54cadd05810a4c35b085dc8 file=tachyon/pkg/types/chain.go range=22:30 lang=go exported=true byte_range=698:1015
+  sig=type ChainRegisterRequest struct {\n	ID		string	`json:"id"`\n	Name		string	`json:"name"`\n	RPCURL		string	`json:"rpc_url"`\n	ChainID		uint64	`json:"chain_id"`\n	Preset		string	`json:"preset,omitempty"`\n	Explorer	string	`json:"explorer,omitempty"`\n}
+  doc=ChainRegisterRequest adds or updates a custom chain profile.
+EDGES
+  contains=github.com/paxlabs-inc/tachyon-tools/pkg/types.ChainRegisterRequest#ChainID,github.com/paxlabs-inc/tachyon-tools/pkg/types.ChainRegisterRequest#Explorer,github.com/paxlabs-inc/tachyon-tools/pkg/types.ChainRegisterRequest#ID,github.com/paxlabs-inc/tachyon-tools/pkg/types.ChainRegisterRequest#Name,github.com/paxlabs-inc/tachyon-tools/pkg/types.ChainRegisterRequest#Preset,github.com/paxlabs-inc/tachyon-tools/pkg/types.ChainRegisterRequest#RPCURL
+  ^defines=github.com/paxlabs-inc/tachyon-tools/pkg/types/chain.go
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/types.ChainRegisterRequest#ChainID kind=field
+  digest=b3:e2b46bffade87767d8d742061cf2ac2d062bb254a17cbf9ff8ca9b6b93fb2a2b file=tachyon/pkg/types/chain.go range=27:27 lang=go exported=true byte_range=892:925
+  sig=uint64
+EDGES
+  ^contains=github.com/paxlabs-inc/tachyon-tools/pkg/types.ChainRegisterRequest
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/types.ChainRegisterRequest#Explorer kind=field
+  digest=b3:51250d67c184170df3dadf847a5db6b95ac29175362884317061e9bcb26292ca file=tachyon/pkg/types/chain.go range=29:29 lang=go exported=true byte_range=970:1013
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/tachyon-tools/pkg/types.ChainRegisterRequest
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/types.ChainRegisterRequest#ID kind=field
+  digest=b3:08097a0cfb41ec14fac3cc851309e5db544bb2ba48eb8fa0c63d64efa46d12be file=tachyon/pkg/types/chain.go range=24:24 lang=go exported=true byte_range=798:825
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/tachyon-tools/pkg/types.ChainRegisterRequest
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/types.ChainRegisterRequest#Name kind=field
+  digest=b3:dfb796801846ebd44222daa9114434d57b96bd39278e4f9b6c11b23d83180d64 file=tachyon/pkg/types/chain.go range=25:25 lang=go exported=true byte_range=827:856
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/tachyon-tools/pkg/types.ChainRegisterRequest
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/types.ChainRegisterRequest#Preset kind=field
+  digest=b3:5882b0705b5393d29fe8ae382aad0899fe46f1d19f31219d81b7acd34b6c9326 file=tachyon/pkg/types/chain.go range=28:28 lang=go exported=true byte_range=927:968
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/tachyon-tools/pkg/types.ChainRegisterRequest
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/types.ChainRegisterRequest#RPCURL kind=field
+  digest=b3:2ed6f6f15e2779616df276c28f68f36a5bc54ff75456c986f3361e6daff9cdd2 file=tachyon/pkg/types/chain.go range=26:26 lang=go exported=true byte_range=858:890
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/tachyon-tools/pkg/types.ChainRegisterRequest
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/types.ChainUseRequest kind=type
+  digest=b3:28dec06ac99c09201cfce47a9c997b865f1d7a0d0e98dd4726eff6e70d8aa01f file=tachyon/pkg/types/chain.go range=32:35 lang=go exported=true byte_range=1017:1146
+  sig=type ChainUseRequest struct {\n	ChainID string `json:"chain_id"`\n}
+  doc=ChainUseRequest selects the active chain for subsequent ops.
+EDGES
+  contains=github.com/paxlabs-inc/tachyon-tools/pkg/types.ChainUseRequest#ChainID
+  ^defines=github.com/paxlabs-inc/tachyon-tools/pkg/types/chain.go
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/types.ChainUseRequest#ChainID kind=field
+  digest=b3:4b80a7a4d48657302b5f7b3d1f16dc603572c95f50eda009275bd4149ecf5510 file=tachyon/pkg/types/chain.go range=34:34 lang=go exported=true byte_range=1112:1144
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/tachyon-tools/pkg/types.ChainUseRequest
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/types.CodeArtifactNotFound kind=const
+  digest=b3:54495e73a9f24d1cf97518d3a4c717f965fae88036d3a4d071226a507b3a7aae file=tachyon/pkg/types/errors.go range=3:15 lang=go exported=true byte_range=15:585
+  sig=untyped string
+  doc=Stable error codes for agent retry logic.
+EDGES
+  ^defines=github.com/paxlabs-inc/tachyon-tools/pkg/types/errors.go
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/types.CodeCallFailed kind=const
+  digest=b3:13834d0919982e3156be0a87028ded63452aedf3ec3942fe91b62113261bd341 file=tachyon/pkg/types/errors.go range=3:14 lang=go exported=true byte_range=15:537
+  sig=untyped string
+  doc=Stable error codes for agent retry logic.
+EDGES
+  ^defines=github.com/paxlabs-inc/tachyon-tools/pkg/types/errors.go
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/types.CodeChainNotFound kind=const
+  digest=b3:9b862a8838925bb79f58e785e604329b187c8d6bb00a5e87ec5366e1db4b8e81 file=tachyon/pkg/types/errors.go range=3:9 lang=go exported=true byte_range=15:311
+  sig=untyped string
+  doc=Stable error codes for agent retry logic.
+EDGES
+  ^defines=github.com/paxlabs-inc/tachyon-tools/pkg/types/errors.go
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/types.CodeChainRPCFailed kind=const
+  digest=b3:6758f39be4b1364eb2b33b9e186a85d01f6d1c05d6df90d3b477a3e1fce147e6 file=tachyon/pkg/types/errors.go range=3:10 lang=go exported=true byte_range=15:357
+  sig=untyped string
+  doc=Stable error codes for agent retry logic.
+EDGES
+  ^defines=github.com/paxlabs-inc/tachyon-tools/pkg/types/errors.go
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/types.CodeCompilerForgeFailed kind=const
+  digest=b3:98df2862a871051c52aba4fd18f6a4870970d19aa62d88a37ad0e1d3455eab78 file=tachyon/pkg/types/errors.go range=3:5 lang=go exported=true byte_range=15:118
+  sig=untyped string
+  doc=Stable error codes for agent retry logic.
+EDGES
+  ^defines=github.com/paxlabs-inc/tachyon-tools/pkg/types/errors.go
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/types.CodeCompilerSolcFailed kind=const
+  digest=b3:0fc8885bf4f1405ad34a9058bbdf85db533508ff5eb2f1c725214f0f0b57128d file=tachyon/pkg/types/errors.go range=3:6 lang=go exported=true byte_range=15:168
+  sig=untyped string
+  doc=Stable error codes for agent retry logic.
+EDGES
+  ^defines=github.com/paxlabs-inc/tachyon-tools/pkg/types/errors.go
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/types.CodeDeployFailed kind=const
+  digest=b3:0eee2988394d1468023d0c617442da0f6e7d3b109375c048028d98cfaa4f49bb file=tachyon/pkg/types/errors.go range=3:12 lang=go exported=true byte_range=15:445
+  sig=untyped string
+  doc=Stable error codes for agent retry logic.
+EDGES
+  ^defines=github.com/paxlabs-inc/tachyon-tools/pkg/types/errors.go
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/types.CodeDeployIdempotent kind=const
+  digest=b3:8136ea3dc8e4e93af170de97f502e85ed1d6f32f626f2c7419f5adab8f1bf85a file=tachyon/pkg/types/errors.go range=3:13 lang=go exported=true byte_range=15:496
+  sig=untyped string
+  doc=Stable error codes for agent retry logic.
+EDGES
+  ^defines=github.com/paxlabs-inc/tachyon-tools/pkg/types/errors.go
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/types.CodeInternal kind=const
+  digest=b3:a93ce8a342c4a2f263c1c5e37eb8c961ea69172e0d093f8b6eff1b0c0feb5671 file=tachyon/pkg/types/errors.go range=3:20 lang=go exported=true byte_range=15:823
+  sig=untyped string
+  doc=Stable error codes for agent retry logic.
+EDGES
+  ^defines=github.com/paxlabs-inc/tachyon-tools/pkg/types/errors.go
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/types.CodeInvalidRequest kind=const
+  digest=b3:b79d9119c2ae996ebafe93471613ca001adf90ef746b69ce3df2f8daf5fd9b0a file=tachyon/pkg/types/errors.go range=3:19 lang=go exported=true byte_range=15:779
+  sig=untyped string
+  doc=Stable error codes for agent retry logic.
+EDGES
+  ^defines=github.com/paxlabs-inc/tachyon-tools/pkg/types/errors.go
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/types.CodeRegistryNotFound kind=const
+  digest=b3:975fe526655f82fd620cdbfcb3543efea6b6b823a3d6a13d9177644b3c9a5c4b file=tachyon/pkg/types/errors.go range=3:16 lang=go exported=true byte_range=15:633
+  sig=untyped string
+  doc=Stable error codes for agent retry logic.
+EDGES
+  ^defines=github.com/paxlabs-inc/tachyon-tools/pkg/types/errors.go
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/types.CodeSimulateFailed kind=const
+  digest=b3:f9b7fe4cbe2b1ecbecef438f7926570f68859e0b22d74bee5ff90bf10bb2b126 file=tachyon/pkg/types/errors.go range=3:11 lang=go exported=true byte_range=15:402
+  sig=untyped string
+  doc=Stable error codes for agent retry logic.
+EDGES
+  ^defines=github.com/paxlabs-inc/tachyon-tools/pkg/types/errors.go
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/types.CodeTestAssertionFailed kind=const
+  digest=b3:c036cfb667b3d2b53bfed1867921b7c87080d5f912701c7d37667e48b949f58b file=tachyon/pkg/types/errors.go range=3:8 lang=go exported=true byte_range=15:266
+  sig=untyped string
+  doc=Stable error codes for agent retry logic.
+EDGES
+  ^defines=github.com/paxlabs-inc/tachyon-tools/pkg/types/errors.go
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/types.CodeTestForgeFailed kind=const
+  digest=b3:db7e22077e750c4eabc2bf11b6fd026cc3bbaa5c5f5bdde31134c0fef08ce528 file=tachyon/pkg/types/errors.go range=3:7 lang=go exported=true byte_range=15:215
+  sig=untyped string
+  doc=Stable error codes for agent retry logic.
+EDGES
+  ^defines=github.com/paxlabs-inc/tachyon-tools/pkg/types/errors.go
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/types.CodeWalletDenied kind=const
+  digest=b3:7cc0186a855971b51c4ae377483d475001974e6e4107d99ad0a21239669b15ab file=tachyon/pkg/types/errors.go range=3:17 lang=go exported=true byte_range=15:683
+  sig=untyped string
+  doc=Stable error codes for agent retry logic.
+EDGES
+  ^defines=github.com/paxlabs-inc/tachyon-tools/pkg/types/errors.go
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/types.CodeWalletNotConfigured kind=const
+  digest=b3:bc97868f5a99fe6b9103866b7616e96754d8a8d7f142b9bf6f543dfc06463f31 file=tachyon/pkg/types/errors.go range=3:18 lang=go exported=true byte_range=15:734
+  sig=untyped string
+  doc=Stable error codes for agent retry logic.
+EDGES
+  ^defines=github.com/paxlabs-inc/tachyon-tools/pkg/types/errors.go
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/types.CompileRequest kind=type
+  digest=b3:f93f0f28d6f5d09846cd2ead229194773cf3b89d5a3fddcf9882e37f87f1956e file=tachyon/pkg/types/compile.go range=5:28 lang=go exported=true byte_range=39:1460
+  sig=type CompileRequest struct {\n	ProjectRoot	string			`json:"project_root,omitempty"`\n	ProjectID	string			`json:"project_id,omitempty"`\n	Sources		map[string]string	`json:"sources,omitempty"`\n	Targets		[]string		`json:"targets,omitempty"`\n	Optimize	*bool			`json:"optimize,omitempty"`\n	ViaIR		*bool			`json:"via_ir,omitempty"`\n	// EVMVersion pins the solc/EVM target for an uploaded-source compile\n	// (e.g. "shanghai", "paris", "cancun"). Empty uses the engine's\n	// conservative default (shanghai) so artifacts don't emit Cancun-only\n	// opcodes (MCOPY) that pre-Cancun chains like Paxeer 125 reject. Ignored\n	// when the caller uploads their own foundry.toml.\n	EVMVersion	string	`json:"evm_version,omitempty"`\n}
+  doc=CompileRequest builds Solidity contracts via forge.\n\nSources, when non-empty, makes the request self-contained: the engine\nmaterializes the map (workdir-relative path -> file content) into an\nephemeral Foundry project, links the box's baked dependency tree\n(forge-std + the @openzeppelin/contracts/ corpus), runs forge there, and\nderives a deterministic ProjectID from the source set. This is how a SHARED\ntachyond compiles a caller's own contracts without those files ever living\non the box. Convention: contracts under src/, tests under test/; OZ\n(@openzeppelin/contracts/...) and forge-std/... resolve automatically.
+EDGES
+  contains=github.com/paxlabs-inc/tachyon-tools/pkg/types.CompileRequest#EVMVersion,github.com/paxlabs-inc/tachyon-tools/pkg/types.CompileRequest#Optimize,github.com/paxlabs-inc/tachyon-tools/pkg/types.CompileRequest#ProjectID,github.com/paxlabs-inc/tachyon-tools/pkg/types.CompileRequest#ProjectRoot,github.com/paxlabs-inc/tachyon-tools/pkg/types.CompileRequest#Sources,github.com/paxlabs-inc/tachyon-tools/pkg/types.CompileRequest#Targets,github.com/paxlabs-inc/tachyon-tools/pkg/types.CompileRequest#ViaIR
+  ^defines=github.com/paxlabs-inc/tachyon-tools/pkg/types/compile.go
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/types.CompileRequest#EVMVersion kind=field
+  digest=b3:a69790e1764fcd4eaecfc0553c5e4164822af1fe4e3fc90ffda04998f5ec0ca8 file=tachyon/pkg/types/compile.go range=22:27 lang=go exported=true byte_range=1074:1458
+  sig=string
+  doc=EVMVersion pins the solc/EVM target for an uploaded-source compile\n(e.g. "shanghai", "paris", "cancun"). Empty uses the engine's\nconservative default (shanghai) so artifacts don't emit Cancun-only\nopcodes (MCOPY) that pre-Cancun chains like Paxeer 125 reject. Ignored\nwhen the caller uploads their own foundry.toml.
+EDGES
+  ^contains=github.com/paxlabs-inc/tachyon-tools/pkg/types.CompileRequest
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/types.CompileRequest#Optimize kind=field
+  digest=b3:af2053d017e4c5a03be43c3dea49e668ad2274106faf2c0144531eb2e58c40a8 file=tachyon/pkg/types/compile.go range=20:20 lang=go exported=true byte_range=958:1015
+  sig=*bool
+EDGES
+  ^contains=github.com/paxlabs-inc/tachyon-tools/pkg/types.CompileRequest
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/types.CompileRequest#ProjectID kind=field
+  digest=b3:c4337136f2ec88a2da52d0f9c25a3291334bf7e5e945a2d8f83374d3c7174f70 file=tachyon/pkg/types/compile.go range=17:17 lang=go exported=true byte_range=781:840
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/tachyon-tools/pkg/types.CompileRequest
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/types.CompileRequest#ProjectRoot kind=field
+  digest=b3:82e7677ff76d5768abd2475e8f210898068e2a97723dde2e626186955963ef3f file=tachyon/pkg/types/compile.go range=16:16 lang=go exported=true byte_range=718:779
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/tachyon-tools/pkg/types.CompileRequest
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/types.CompileRequest#Sources kind=field
+  digest=b3:ca57093c8fed43c84d11f77a06019ee3d63adbc3a78a86359acae1178c3b15e7 file=tachyon/pkg/types/compile.go range=18:18 lang=go exported=true byte_range=842:898
+  sig=map[string]string
+EDGES
+  ^contains=github.com/paxlabs-inc/tachyon-tools/pkg/types.CompileRequest
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/types.CompileRequest#Targets kind=field
+  digest=b3:e895bf67a080c1e14eafba82167481e23868196186483193bf2e23a728bd66d9 file=tachyon/pkg/types/compile.go range=19:19 lang=go exported=true byte_range=900:956
+  sig=[]string
+EDGES
+  ^contains=github.com/paxlabs-inc/tachyon-tools/pkg/types.CompileRequest
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/types.CompileRequest#ViaIR kind=field
+  digest=b3:27a665ca3d65f77743bca4842a1ff1aa842988c0a686e541ae2d3c5f5c765acd file=tachyon/pkg/types/compile.go range=21:21 lang=go exported=true byte_range=1017:1072
+  sig=*bool
+EDGES
+  ^contains=github.com/paxlabs-inc/tachyon-tools/pkg/types.CompileRequest
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/types.CompileResponse kind=type
+  digest=b3:befc06f69bebbc1f1984a12f92d28a1d3ef02f2716d6e7547a0bf604c19d154e file=tachyon/pkg/types/compile.go range=52:57 lang=go exported=true byte_range=2247:2459
+  sig=type CompileResponse struct {\n	ProjectID	string		`json:"project_id"`\n	Artifacts	[]Artifact	`json:"artifacts"`\n	Warnings	[]string	`json:"warnings,omitempty"`\n}
+  doc=CompileResponse is returned by compile verb.
+EDGES
+  contains=github.com/paxlabs-inc/tachyon-tools/pkg/types.CompileResponse#Artifacts,github.com/paxlabs-inc/tachyon-tools/pkg/types.CompileResponse#ProjectID,github.com/paxlabs-inc/tachyon-tools/pkg/types.CompileResponse#Warnings
+  ^defines=github.com/paxlabs-inc/tachyon-tools/pkg/types/compile.go
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/types.CompileResponse#Artifacts kind=field
+  digest=b3:37074d56eabaac440e8ac7f2e707a4a52d2980380e3fcab474148338218e3812 file=tachyon/pkg/types/compile.go range=55:55 lang=go exported=true byte_range=2368:2407
+  sig=[]types.Artifact
+EDGES
+  ^contains=github.com/paxlabs-inc/tachyon-tools/pkg/types.CompileResponse
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/types.CompileResponse#ProjectID kind=field
+  digest=b3:36f857b26564f71c5bb496912d312070c2c1ddcb37ac962bf0af05aac5e06e5b file=tachyon/pkg/types/compile.go range=54:54 lang=go exported=true byte_range=2326:2366
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/tachyon-tools/pkg/types.CompileResponse
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/types.CompileResponse#Warnings kind=field
+  digest=b3:a2aecca3a5f85319e7d2f67a8eb7489bdf97ddd60de572741e7373c5fff3af71 file=tachyon/pkg/types/compile.go range=56:56 lang=go exported=true byte_range=2409:2457
+  sig=[]string
+EDGES
+  ^contains=github.com/paxlabs-inc/tachyon-tools/pkg/types.CompileResponse
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/types.CompilerSettings kind=type
+  digest=b3:2faee1d51500c89181175087a5cfca8cc7eac99e5e7e99de38d28badd2ea6c10 file=tachyon/pkg/types/compile.go range=30:34 lang=go exported=true byte_range=1462:1659
+  sig=type CompilerSettings struct {\n	Version		string			`json:"version,omitempty"`\n	Optimizer	*OptimizerConfig	`json:"optimizer,omitempty"`\n}
+  doc=CompilerSettings mirrors solc optimizer metadata.
+EDGES
+  contains=github.com/paxlabs-inc/tachyon-tools/pkg/types.CompilerSettings#Optimizer,github.com/paxlabs-inc/tachyon-tools/pkg/types.CompilerSettings#Version
+  ^defines=github.com/paxlabs-inc/tachyon-tools/pkg/types/compile.go
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/types.CompilerSettings#Optimizer kind=field
+  digest=b3:9f4dacefef0e392b582a8d1632b9a397cc34ff51bf4408ef17d31d22ddb95b9b file=tachyon/pkg/types/compile.go range=33:33 lang=go exported=true byte_range=1602:1657
+  sig=*types.OptimizerConfig
+EDGES
+  ^contains=github.com/paxlabs-inc/tachyon-tools/pkg/types.CompilerSettings
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/types.CompilerSettings#Version kind=field
+  digest=b3:f72ef8033eb2afc92ca824d1041184493a4ef45617855277bfc8379911a3957c file=tachyon/pkg/types/compile.go range=32:32 lang=go exported=true byte_range=1547:1600
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/tachyon-tools/pkg/types.CompilerSettings
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/types.Create2Config kind=type
+  digest=b3:cd85571fe0ba1e047959696ef2bf12f7aa695c2ce96c71a4d536d927bceed0b7 file=tachyon/pkg/types/deploy.go range=5:9 lang=go exported=true byte_range=39:191
+  sig=type Create2Config struct {\n	Salt		string	`json:"salt"`\n	Deployer	string	`json:"deployer"`\n}
+  doc=Create2Config optional CREATE2 deployment parameters.
+EDGES
+  contains=github.com/paxlabs-inc/tachyon-tools/pkg/types.Create2Config#Deployer,github.com/paxlabs-inc/tachyon-tools/pkg/types.Create2Config#Salt
+  ^defines=github.com/paxlabs-inc/tachyon-tools/pkg/types/deploy.go
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/types.Create2Config#Deployer kind=field
+  digest=b3:5c1ded1fd2fa53c6f938f5d3ad6e61d98fd48dbdf293a67702449eff6675d610 file=tachyon/pkg/types/deploy.go range=8:8 lang=go exported=true byte_range=156:189
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/tachyon-tools/pkg/types.Create2Config
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/types.Create2Config#Salt kind=field
+  digest=b3:e759ba5cbdee28e67f9431ab21ff08c3fbf13ef97bc3ab5e9816d437a455f3aa file=tachyon/pkg/types/deploy.go range=7:7 lang=go exported=true byte_range=125:154
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/tachyon-tools/pkg/types.Create2Config
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/types.DeployRequest kind=type
+  digest=b3:e8878b586d3edafef0199b6536f891e11690356dc71d9cb61108035aa9f1ba4c file=tachyon/pkg/types/deploy.go range=11:27 lang=go exported=true byte_range=193:1124
+  sig=type DeployRequest struct {\n	Intent		string		`json:"intent,omitempty"`\n	IdempotencyKey	string		`json:"idempotency_key"`\n	ChainID		string		`json:"chain_id"`\n	ProjectID	string		`json:"project_id,omitempty"`\n	Contract	string		`json:"contract"`\n	ConstructorArgs	json.RawMessage	`json:"constructor_args,omitempty"`\n	Create2		*Create2Config	`json:"create2,omitempty"`\n	From		string		`json:"from,omitempty"`\n	CapabilityToken	string		`json:"capability_token,omitempty"`\n	SpendCapWei	string		`json:"spend_cap_wei,omitempty"`\n	// WalletToken is a forwarded embedded-wallet bearer (the agent's\n	// short-lived did:matrix token). When set, the shared engine signs +\n	// broadcasts as that agent server-side without holding any seed.\n	WalletToken	string	`json:"wallet_token,omitempty"`\n}
+  doc=DeployRequest intent-based contract deployment.
+EDGES
+  contains=github.com/paxlabs-inc/tachyon-tools/pkg/types.DeployRequest#CapabilityToken,github.com/paxlabs-inc/tachyon-tools/pkg/types.DeployRequest#ChainID,github.com/paxlabs-inc/tachyon-tools/pkg/types.DeployRequest#ConstructorArgs,github.com/paxlabs-inc/tachyon-tools/pkg/types.DeployRequest#Contract,github.com/paxlabs-inc/tachyon-tools/pkg/types.DeployRequest#Create2,github.com/paxlabs-inc/tachyon-tools/pkg/types.DeployRequest#From,github.com/paxlabs-inc/tachyon-tools/pkg/types.DeployRequest#IdempotencyKey,github.com/paxlabs-inc/tachyon-tools/pkg/types.DeployRequest#Intent,github.com/paxlabs-inc/tachyon-tools/pkg/types.DeployRequest#ProjectID,github.com/paxlabs-inc/tachyon-tools/pkg/types.DeployRequest#SpendCapWei,github.com/paxlabs-inc/tachyon-tools/pkg/types.DeployRequest#WalletToken
+  ^defines=github.com/paxlabs-inc/tachyon-tools/pkg/types/deploy.go
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/types.DeployRequest#CapabilityToken kind=field
+  digest=b3:bb81076a929443d3718a975c676f16ab65f58c3b79316dcc5d388523ec5c2da7 file=tachyon/pkg/types/deploy.go range=21:21 lang=go exported=true byte_range=734:800
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/tachyon-tools/pkg/types.DeployRequest
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/types.DeployRequest#ChainID kind=field
+  digest=b3:859cd01e63a2293f63cba1c85ca55f95d9458b4ae2656dd99969607136b3278c file=tachyon/pkg/types/deploy.go range=15:15 lang=go exported=true byte_range=388:436
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/tachyon-tools/pkg/types.DeployRequest
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/types.DeployRequest#ConstructorArgs kind=field
+  digest=b3:5d73d0d748e304f11daee204f7da0f6dcffd933788db00532e51310120254464 file=tachyon/pkg/types/deploy.go range=18:18 lang=go exported=true byte_range=550:617
+  sig=json.RawMessage
+EDGES
+  ^contains=github.com/paxlabs-inc/tachyon-tools/pkg/types.DeployRequest
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/types.DeployRequest#Contract kind=field
+  digest=b3:56d6b937b9369bbaddb786f53f3ea1231eb6042080689eeb4b3e9a1c0e4cd910 file=tachyon/pkg/types/deploy.go range=17:17 lang=go exported=true byte_range=500:548
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/tachyon-tools/pkg/types.DeployRequest
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/types.DeployRequest#Create2 kind=field
+  digest=b3:c599e8951921b1ea38628423d6b6901f18e49976612601182d675912761542ce file=tachyon/pkg/types/deploy.go range=19:19 lang=go exported=true byte_range=619:676
+  sig=*types.Create2Config
+EDGES
+  ^contains=github.com/paxlabs-inc/tachyon-tools/pkg/types.DeployRequest
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/types.DeployRequest#From kind=field
+  digest=b3:2ad3a9396bc8ed6a8def9f6bee47bbcf7ed0175032c0220090a63bdfb6c9b562 file=tachyon/pkg/types/deploy.go range=20:20 lang=go exported=true byte_range=678:732
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/tachyon-tools/pkg/types.DeployRequest
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/types.DeployRequest#IdempotencyKey kind=field
+  digest=b3:ab24c8ac5380765c38b76dbcd0d35b9459cf833d7bba83222edadafbac4cfdd7 file=tachyon/pkg/types/deploy.go range=14:14 lang=go exported=true byte_range=331:386
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/tachyon-tools/pkg/types.DeployRequest
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/types.DeployRequest#Intent kind=field
+  digest=b3:887e9e91796c937c05aa4f370d12c16c6243635cbb869e94c600facda641acf2 file=tachyon/pkg/types/deploy.go range=13:13 lang=go exported=true byte_range=273:329
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/tachyon-tools/pkg/types.DeployRequest
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/types.DeployRequest#ProjectID kind=field
+  digest=b3:c60c76c25cececbc32ee82f169912ade646afc2e3787ddb3da3c9959e21cbcd4 file=tachyon/pkg/types/deploy.go range=16:16 lang=go exported=true byte_range=438:498
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/tachyon-tools/pkg/types.DeployRequest
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/types.DeployRequest#SpendCapWei kind=field
+  digest=b3:04ea94294088bc6089a3c28bb967eb8ccee3c1736eb1690bbd684f8c634f2fc9 file=tachyon/pkg/types/deploy.go range=22:22 lang=go exported=true byte_range=802:865
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/tachyon-tools/pkg/types.DeployRequest
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/types.DeployRequest#WalletToken kind=field
+  digest=b3:b41f9a249dfe36e692ab1bc1db5e1889b3abc8fd15171a4c069dc99336f945c8 file=tachyon/pkg/types/deploy.go range=23:26 lang=go exported=true byte_range=867:1122
+  sig=string
+  doc=WalletToken is a forwarded embedded-wallet bearer (the agent's\nshort-lived did:matrix token). When set, the shared engine signs +\nbroadcasts as that agent server-side without holding any seed.
+EDGES
+  ^contains=github.com/paxlabs-inc/tachyon-tools/pkg/types.DeployRequest
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/types.DeployResponse kind=type
+  digest=b3:012102e1e585b8fc735df5fc95fe124a9a24d0b5423ea4e1d8c0474a94770e52 file=tachyon/pkg/types/deploy.go range=29:37 lang=go exported=true byte_range=1126:1477
+  sig=type DeployResponse struct {\n	Address		string	`json:"address"`\n	TxHash		string	`json:"tx_hash,omitempty"`\n	IdempotencyKey	string	`json:"idempotency_key"`\n	ChainID		string	`json:"chain_id"`\n	Contract	string	`json:"contract"`\n	Existing	bool	`json:"existing,omitempty"`\n}
+  doc=DeployResponse records an on-chain deployment.
+EDGES
+  contains=github.com/paxlabs-inc/tachyon-tools/pkg/types.DeployResponse#Address,github.com/paxlabs-inc/tachyon-tools/pkg/types.DeployResponse#ChainID,github.com/paxlabs-inc/tachyon-tools/pkg/types.DeployResponse#Contract,github.com/paxlabs-inc/tachyon-tools/pkg/types.DeployResponse#Existing,github.com/paxlabs-inc/tachyon-tools/pkg/types.DeployResponse#IdempotencyKey,github.com/paxlabs-inc/tachyon-tools/pkg/types.DeployResponse#TxHash
+  ^defines=github.com/paxlabs-inc/tachyon-tools/pkg/types/deploy.go
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/types.DeployResponse#Address kind=field
+  digest=b3:5d64976b382e40c74c3a6e9c8ef61f1b7e426b8c58721a9cd6d1d8f92c3d3e10 file=tachyon/pkg/types/deploy.go range=31:31 lang=go exported=true byte_range=1206:1244
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/tachyon-tools/pkg/types.DeployResponse
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/types.DeployResponse#ChainID kind=field
+  digest=b3:a902e810f6aad1a2cb063a67bb00f328bb41e90cc907a90ec74a2aa77330fcdb file=tachyon/pkg/types/deploy.go range=34:34 lang=go exported=true byte_range=1344:1383
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/tachyon-tools/pkg/types.DeployResponse
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/types.DeployResponse#Contract kind=field
+  digest=b3:13634e4725ded9f467a9aa360bc6f7f6706bb6f040d8e07660647d0a570b9de4 file=tachyon/pkg/types/deploy.go range=35:35 lang=go exported=true byte_range=1385:1424
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/tachyon-tools/pkg/types.DeployResponse
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/types.DeployResponse#Existing kind=field
+  digest=b3:776b48472f074dcf1a014e0cf11d9178719557f92c1e7ed43ede4079d6344421 file=tachyon/pkg/types/deploy.go range=36:36 lang=go exported=true byte_range=1426:1475
+  sig=bool
+EDGES
+  ^contains=github.com/paxlabs-inc/tachyon-tools/pkg/types.DeployResponse
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/types.DeployResponse#IdempotencyKey kind=field
+  digest=b3:45d554f2213b2808dc795193c6778f5d52fefb86b3c3ae8fe1951938c8df25d6 file=tachyon/pkg/types/deploy.go range=33:33 lang=go exported=true byte_range=1296:1342
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/tachyon-tools/pkg/types.DeployResponse
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/types.DeployResponse#TxHash kind=field
+  digest=b3:3f40594b7d5608442591f026af3ba9d74bde7f953682629ad04687aab1890e50 file=tachyon/pkg/types/deploy.go range=32:32 lang=go exported=true byte_range=1246:1294
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/tachyon-tools/pkg/types.DeployResponse
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/types.Envelope kind=type
+  digest=b3:67ee87cf86c717520472ce2e4ed2508ec13f027cd9ba44117ce26d88de24d546 file=tachyon/pkg/types/types.go range=3:8 lang=go exported=true byte_range=15:226
+  sig=type Envelope struct {\n	Ok	bool	`json:"ok"`\n	Data	T	`json:"data,omitempty"`\n	Error	*Error	`json:"error,omitempty"`\n}
+  doc=Envelope is the versioned JSON wrapper shared by REST, JSON-RPC, and MCP.
+EDGES
+  contains=github.com/paxlabs-inc/tachyon-tools/pkg/types.Envelope#Data,github.com/paxlabs-inc/tachyon-tools/pkg/types.Envelope#Error,github.com/paxlabs-inc/tachyon-tools/pkg/types.Envelope#Ok
+  ^defines=github.com/paxlabs-inc/tachyon-tools/pkg/types/types.go
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/types.Envelope#Data kind=field
+  digest=b3:cca050e46b8cf18f40ab1aded9441b2d06fa8945c9045f463673b0c855e544c2 file=tachyon/pkg/types/types.go range=6:6 lang=go exported=true byte_range=149:185
+  sig=T
+EDGES
+  ^contains=github.com/paxlabs-inc/tachyon-tools/pkg/types.Envelope
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/types.Envelope#Error kind=field
+  digest=b3:51eb9534cf2bd0de3df1a2b2e9c2a3b260a9fc17993ca4460b56f5a90b37f7fd file=tachyon/pkg/types/types.go range=7:7 lang=go exported=true byte_range=187:224
+  sig=*types.Error
+EDGES
+  ^contains=github.com/paxlabs-inc/tachyon-tools/pkg/types.Envelope
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/types.Envelope#Ok kind=field
+  digest=b3:4ed08fa43a99fa70e83a83714b6d6253614fc18110dd22ce73a510b9cc99321f file=tachyon/pkg/types/types.go range=5:5 lang=go exported=true byte_range=123:147
+  sig=bool
+EDGES
+  ^contains=github.com/paxlabs-inc/tachyon-tools/pkg/types.Envelope
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/types.Error kind=type
+  digest=b3:0a2206730c2bb3447ab2541cc94dd4768b5989c26592fea434ab7ffecd966693 file=tachyon/pkg/types/types.go range=10:16 lang=go exported=true byte_range=228:447
+  sig=type Error struct {\n	Code	string	`json:"code"`\n	Message	string	`json:"message"`\n	Retry	bool	`json:"retry"`\n	Details	any	`json:"details,omitempty"`\n}
+  doc=Error carries machine-stable codes for agent retry logic.
+EDGES
+  contains=github.com/paxlabs-inc/tachyon-tools/pkg/types.Error#Code,github.com/paxlabs-inc/tachyon-tools/pkg/types.Error#Details,github.com/paxlabs-inc/tachyon-tools/pkg/types.Error#Message,github.com/paxlabs-inc/tachyon-tools/pkg/types.Error#Retry,github.com/paxlabs-inc/tachyon-tools/pkg/types.Error.Error
+  ^defines=github.com/paxlabs-inc/tachyon-tools/pkg/types/types.go
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/types.Error#Code kind=field
+  digest=b3:988ae0e9269d84021f6b4ead29b7474a294a15d3d1386ade8bb5725dc3a7e3cc file=tachyon/pkg/types/types.go range=12:12 lang=go exported=true byte_range=310:338
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/tachyon-tools/pkg/types.Error
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/types.Error#Details kind=field
+  digest=b3:73ed5d8675e91197319bec84e05ce2eac082b6f42c82261b6ddeb98155c0ca66 file=tachyon/pkg/types/types.go range=15:15 lang=go exported=true byte_range=404:445
+  sig=any
+EDGES
+  ^contains=github.com/paxlabs-inc/tachyon-tools/pkg/types.Error
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/types.Error#Message kind=field
+  digest=b3:d7a0704d4d1cdf051b9f61d5a005f6a0c1ada9b90dd901fab6b0e03fad711a42 file=tachyon/pkg/types/types.go range=13:13 lang=go exported=true byte_range=340:371
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/tachyon-tools/pkg/types.Error
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/types.Error#Retry kind=field
+  digest=b3:c40d7ec5b3d61dbe1089192286328134763683f27de6a34610e7ed6eea8f818a file=tachyon/pkg/types/types.go range=14:14 lang=go exported=true byte_range=373:402
+  sig=bool
+EDGES
+  ^contains=github.com/paxlabs-inc/tachyon-tools/pkg/types.Error
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/types.Error.Error kind=method
+  digest=b3:78ca9d6f40bdee8cdb5498a0c73835251e60d76303afbe9e15d8a98a977a1bf4 file=tachyon/pkg/types/errors.go range=28:34 lang=go exported=true byte_range=1015:1154
+  sig=func (e *Error) Error() string
+  doc=Error implements the error interface.
+EDGES
+  ^contains=github.com/paxlabs-inc/tachyon-tools/pkg/types.Error
+  ^defines=github.com/paxlabs-inc/tachyon-tools/pkg/types/errors.go
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/types.Fail kind=func
+  digest=b3:09b1d253f9d969c1593433242e681f442f613d1936955a67d8dbd0564606fd1a file=tachyon/pkg/types/errors.go range=41:44 lang=go exported=true byte_range=1279:1405
+  sig=func Fail[T any](err *Error) Envelope[T]
+  doc=Fail wraps an error in an envelope.
+EDGES
+  ^defines=github.com/paxlabs-inc/tachyon-tools/pkg/types/errors.go
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/types.HealthData kind=type
+  digest=b3:9af0dac18559e0e25d71f35993ac06902626a3518a118184d3cd9275dbe40dfb file=tachyon/pkg/types/types.go range=18:24 lang=go exported=true byte_range=449:670
+  sig=type HealthData struct {\n	Version	string		`json:"version"`\n	Forge	string		`json:"forge,omitempty"`\n	Chains	[]string	`json:"chains"`\n	Project	string		`json:"project_root"`\n}
+  doc=HealthData is returned by GET /healthz.
+EDGES
+  contains=github.com/paxlabs-inc/tachyon-tools/pkg/types.HealthData#Chains,github.com/paxlabs-inc/tachyon-tools/pkg/types.HealthData#Forge,github.com/paxlabs-inc/tachyon-tools/pkg/types.HealthData#Project,github.com/paxlabs-inc/tachyon-tools/pkg/types.HealthData#Version
+  ^defines=github.com/paxlabs-inc/tachyon-tools/pkg/types/types.go
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/types.HealthData#Chains kind=field
+  digest=b3:aad125ecd8dd75faf16af6517ae052183f56b3bc5ad736ff4b85c8f24d2fe49b file=tachyon/pkg/types/types.go range=22:22 lang=go exported=true byte_range=596:628
+  sig=[]string
+EDGES
+  ^contains=github.com/paxlabs-inc/tachyon-tools/pkg/types.HealthData
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/types.HealthData#Forge kind=field
+  digest=b3:ba74c6ffe5a91189a0a12491b5f3f8ad3013273134c1ab9bcc2cc9a443ae1978 file=tachyon/pkg/types/types.go range=21:21 lang=go exported=true byte_range=553:594
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/tachyon-tools/pkg/types.HealthData
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/types.HealthData#Project kind=field
+  digest=b3:e53bd6ea6f9cf1a6ed031f0d93f1106a8710e761625fc65770af9f7bfa0f7bfc file=tachyon/pkg/types/types.go range=23:23 lang=go exported=true byte_range=630:668
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/tachyon-tools/pkg/types.HealthData
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/types.HealthData#Version kind=field
+  digest=b3:e3eb749dca2601995be053e5d26f0b67a99071b8c0f3abf073dab1a6e244f027 file=tachyon/pkg/types/types.go range=20:20 lang=go exported=true byte_range=518:551
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/tachyon-tools/pkg/types.HealthData
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/types.NewError kind=func
+  digest=b3:7c7fe7683ab9af23e3d4fd5bb08bd50c86e820a1baf7cabc0a6be4ccaf64a22a file=tachyon/pkg/types/errors.go range=23:26 lang=go exported=true byte_range=827:1013
+  sig=func NewError(code, message string, retry bool, details any) *Error
+  doc=NewError builds a typed API error.
+EDGES
+  ^defines=github.com/paxlabs-inc/tachyon-tools/pkg/types/errors.go
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/types.OK kind=func
+  digest=b3:d582eb6c78b168d240f11c50824022ce1c02aba146d7a5097225874e0d320e3d file=tachyon/pkg/types/errors.go range=36:39 lang=go exported=true byte_range=1156:1277
+  sig=func OK[T any](data T) Envelope[T]
+  doc=OK wraps success data in an envelope.
+EDGES
+  ^defines=github.com/paxlabs-inc/tachyon-tools/pkg/types/errors.go
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/types.OptimizerConfig kind=type
+  digest=b3:c0a2c2bcc71f555f75cabe5a9c8ec4f694c9caa97df13fa029ea129e7330553d file=tachyon/pkg/types/compile.go range=36:40 lang=go exported=true byte_range=1661:1808
+  sig=type OptimizerConfig struct {\n	Enabled	bool	`json:"enabled"`\n	Runs	int	`json:"runs,omitempty"`\n}
+  doc=OptimizerConfig holds solc optimizer flags.
+EDGES
+  contains=github.com/paxlabs-inc/tachyon-tools/pkg/types.OptimizerConfig#Enabled,github.com/paxlabs-inc/tachyon-tools/pkg/types.OptimizerConfig#Runs
+  ^defines=github.com/paxlabs-inc/tachyon-tools/pkg/types/compile.go
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/types.OptimizerConfig#Enabled kind=field
+  digest=b3:5135d694a9ff067b0705e5dc5b73258859d843e61b37d92489fea7df1668cd9f file=tachyon/pkg/types/compile.go range=38:38 lang=go exported=true byte_range=1739:1768
+  sig=bool
+EDGES
+  ^contains=github.com/paxlabs-inc/tachyon-tools/pkg/types.OptimizerConfig
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/types.OptimizerConfig#Runs kind=field
+  digest=b3:933f31817aee2a7aff8ce8263402cf16ffa51bf5791393196fb3525fc1dd0020 file=tachyon/pkg/types/compile.go range=39:39 lang=go exported=true byte_range=1770:1806
+  sig=int
+EDGES
+  ^contains=github.com/paxlabs-inc/tachyon-tools/pkg/types.OptimizerConfig
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/types.RegistryLookupRequest kind=type
+  digest=b3:4dcfd5972bc5ff21f8b88246dcdb346c4ba22c2abb24a4733ca1fb4db4e38479 file=tachyon/pkg/types/artifact.go range=14:18 lang=go exported=true byte_range=307:487
+  sig=type RegistryLookupRequest struct {\n	IdempotencyKey	string	`json:"idempotency_key"`\n	ChainID		string	`json:"chain_id"`\n}
+  doc=RegistryLookupRequest resolves a prior deployment.
+EDGES
+  contains=github.com/paxlabs-inc/tachyon-tools/pkg/types.RegistryLookupRequest#ChainID,github.com/paxlabs-inc/tachyon-tools/pkg/types.RegistryLookupRequest#IdempotencyKey
+  ^defines=github.com/paxlabs-inc/tachyon-tools/pkg/types/artifact.go
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/types.RegistryLookupRequest#ChainID kind=field
+  digest=b3:a902e810f6aad1a2cb063a67bb00f328bb41e90cc907a90ec74a2aa77330fcdb file=tachyon/pkg/types/artifact.go range=17:17 lang=go exported=true byte_range=446:485
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/tachyon-tools/pkg/types.RegistryLookupRequest
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/types.RegistryLookupRequest#IdempotencyKey kind=field
+  digest=b3:45d554f2213b2808dc795193c6778f5d52fefb86b3c3ae8fe1951938c8df25d6 file=tachyon/pkg/types/artifact.go range=16:16 lang=go exported=true byte_range=398:444
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/tachyon-tools/pkg/types.RegistryLookupRequest
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/types.RegistryLookupResponse kind=type
+  digest=b3:5ac49d5d8d28f41f2994ea0b286a5e3c4170b6088a51a6a952ba2e144a546308 file=tachyon/pkg/types/artifact.go range=20:27 lang=go exported=true byte_range=489:801
+  sig=type RegistryLookupResponse struct {\n	Found		bool	`json:"found"`\n	Address		string	`json:"address,omitempty"`\n	TxHash		string	`json:"tx_hash,omitempty"`\n	Contract	string	`json:"contract,omitempty"`\n	Confirmed	bool	`json:"confirmed,omitempty"`\n}
+  doc=RegistryLookupResponse returns deployment record.
+EDGES
+  contains=github.com/paxlabs-inc/tachyon-tools/pkg/types.RegistryLookupResponse#Address,github.com/paxlabs-inc/tachyon-tools/pkg/types.RegistryLookupResponse#Confirmed,github.com/paxlabs-inc/tachyon-tools/pkg/types.RegistryLookupResponse#Contract,github.com/paxlabs-inc/tachyon-tools/pkg/types.RegistryLookupResponse#Found,github.com/paxlabs-inc/tachyon-tools/pkg/types.RegistryLookupResponse#TxHash
+  ^defines=github.com/paxlabs-inc/tachyon-tools/pkg/types/artifact.go
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/types.RegistryLookupResponse#Address kind=field
+  digest=b3:fec9c265798ca2ffb8d807bdcec6b03de5cfd600d48a2e79b2d91cd7cdb31dbd file=tachyon/pkg/types/artifact.go range=23:23 lang=go exported=true byte_range=614:658
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/tachyon-tools/pkg/types.RegistryLookupResponse
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/types.RegistryLookupResponse#Confirmed kind=field
+  digest=b3:6650fef58d44178d7d10017a7ff4e3df7d7eaf543d92038983055ee1add07270 file=tachyon/pkg/types/artifact.go range=26:26 lang=go exported=true byte_range=753:799
+  sig=bool
+EDGES
+  ^contains=github.com/paxlabs-inc/tachyon-tools/pkg/types.RegistryLookupResponse
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/types.RegistryLookupResponse#Contract kind=field
+  digest=b3:5c2edecf60dcb897b50989f2f49b037e2e0746dd5bc0dffb7af0d6158157f311 file=tachyon/pkg/types/artifact.go range=25:25 lang=go exported=true byte_range=706:751
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/tachyon-tools/pkg/types.RegistryLookupResponse
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/types.RegistryLookupResponse#Found kind=field
+  digest=b3:b7a5fbfa299b80b1be8917d5fe7179062ec896922ba7ce1cc7f9d734b51af821 file=tachyon/pkg/types/artifact.go range=22:22 lang=go exported=true byte_range=580:612
+  sig=bool
+EDGES
+  ^contains=github.com/paxlabs-inc/tachyon-tools/pkg/types.RegistryLookupResponse
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/types.RegistryLookupResponse#TxHash kind=field
+  digest=b3:c3ba7dcce2d1e25cb05ce320a098804bfc7de5f1407f0e698d167f6ea4dadf23 file=tachyon/pkg/types/artifact.go range=24:24 lang=go exported=true byte_range=660:704
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/tachyon-tools/pkg/types.RegistryLookupResponse
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/types.SimulateRequest kind=type
+  digest=b3:ce4c7984cf6f697a11346f8463f7b969a199398a40b5275fe898311277c3e325 file=tachyon/pkg/types/simulate.go range=3:13 lang=go exported=true byte_range=15:421
+  sig=type SimulateRequest struct {\n	ChainID	string	`json:"chain_id,omitempty"`\n	RPCURL	string	`json:"rpc_url,omitempty"`\n	From	string	`json:"from,omitempty"`\n	To	string	`json:"to"`\n	Data	string	`json:"data,omitempty"`\n	Value	string	`json:"value,omitempty"`\n	Block	string	`json:"block,omitempty"`\n	Trace	bool	`json:"trace,omitempty"`\n}
+  doc=SimulateRequest dry-runs a call without broadcasting.
+EDGES
+  contains=github.com/paxlabs-inc/tachyon-tools/pkg/types.SimulateRequest#Block,github.com/paxlabs-inc/tachyon-tools/pkg/types.SimulateRequest#ChainID,github.com/paxlabs-inc/tachyon-tools/pkg/types.SimulateRequest#Data,github.com/paxlabs-inc/tachyon-tools/pkg/types.SimulateRequest#From,github.com/paxlabs-inc/tachyon-tools/pkg/types.SimulateRequest#RPCURL,github.com/paxlabs-inc/tachyon-tools/pkg/types.SimulateRequest#To,github.com/paxlabs-inc/tachyon-tools/pkg/types.SimulateRequest#Trace,github.com/paxlabs-inc/tachyon-tools/pkg/types.SimulateRequest#Value
+  ^defines=github.com/paxlabs-inc/tachyon-tools/pkg/types/simulate.go
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/types.SimulateRequest#Block kind=field
+  digest=b3:fd00df2668a8ffe44bcb4f491c856aee1e4eacb0a1ed7bbb7d0ad653d1273fe4 file=tachyon/pkg/types/simulate.go range=11:11 lang=go exported=true byte_range=339:378
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/tachyon-tools/pkg/types.SimulateRequest
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/types.SimulateRequest#ChainID kind=field
+  digest=b3:bcb9e45cf117201c24bd19bc01b1ce8af1510f18ab49b46c62b753d4ba82953f file=tachyon/pkg/types/simulate.go range=5:5 lang=go exported=true byte_range=103:145
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/tachyon-tools/pkg/types.SimulateRequest
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/types.SimulateRequest#Data kind=field
+  digest=b3:a12c8b43f3c0021657e733d1658f37982cfa4b83407d8febdb6c3ee6c2c95abf file=tachyon/pkg/types/simulate.go range=9:9 lang=go exported=true byte_range=258:296
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/tachyon-tools/pkg/types.SimulateRequest
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/types.SimulateRequest#From kind=field
+  digest=b3:53bae83cd68c9d26a71b02bd6392a4c7ac17fd540b3d24006a4b23dd61820e0c file=tachyon/pkg/types/simulate.go range=7:7 lang=go exported=true byte_range=190:228
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/tachyon-tools/pkg/types.SimulateRequest
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/types.SimulateRequest#RPCURL kind=field
+  digest=b3:cb1e9a2978d9daef50f9190e9a7e500c2e6b17888f3620ba1ad27d0f73fb216c file=tachyon/pkg/types/simulate.go range=6:6 lang=go exported=true byte_range=147:188
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/tachyon-tools/pkg/types.SimulateRequest
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/types.SimulateRequest#To kind=field
+  digest=b3:0c83ecbbf2c43d1e8202ccac7af05db8a7dfb0e77542ac45938f655efbdbabfc file=tachyon/pkg/types/simulate.go range=8:8 lang=go exported=true byte_range=230:256
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/tachyon-tools/pkg/types.SimulateRequest
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/types.SimulateRequest#Trace kind=field
+  digest=b3:2353a0160580a34c0735536f56bff5586efb7c452424f4996a687d4de53084d8 file=tachyon/pkg/types/simulate.go range=12:12 lang=go exported=true byte_range=380:419
+  sig=bool
+EDGES
+  ^contains=github.com/paxlabs-inc/tachyon-tools/pkg/types.SimulateRequest
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/types.SimulateRequest#Value kind=field
+  digest=b3:35d0d633f34d3f2032287e6b5330edf57e57be7c5fb243091b68c415cd88721c file=tachyon/pkg/types/simulate.go range=10:10 lang=go exported=true byte_range=298:337
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/tachyon-tools/pkg/types.SimulateRequest
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/types.SimulateResponse kind=type
+  digest=b3:926079a1f7a687c906aee945c5ebbef3a9cec727b72836eee75472bfcf9ea3c8 file=tachyon/pkg/types/simulate.go range=15:21 lang=go exported=true byte_range=423:688
+  sig=type SimulateResponse struct {\n	Result		string	`json:"result,omitempty"`\n	GasEstimate	uint64	`json:"gas_estimate,omitempty"`\n	Revert		string	`json:"revert,omitempty"`\n	Trace		any	`json:"trace,omitempty"`\n}
+  doc=SimulateResponse holds eth_call results.
+EDGES
+  contains=github.com/paxlabs-inc/tachyon-tools/pkg/types.SimulateResponse#GasEstimate,github.com/paxlabs-inc/tachyon-tools/pkg/types.SimulateResponse#Result,github.com/paxlabs-inc/tachyon-tools/pkg/types.SimulateResponse#Revert,github.com/paxlabs-inc/tachyon-tools/pkg/types.SimulateResponse#Trace
+  ^defines=github.com/paxlabs-inc/tachyon-tools/pkg/types/simulate.go
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/types.SimulateResponse#GasEstimate kind=field
+  digest=b3:c791a3afcefc8ff95b6d1feba5f171eec9a86b5257a592bf4d2661d63e392b73 file=tachyon/pkg/types/simulate.go range=18:18 lang=go exported=true byte_range=545:595
+  sig=uint64
+EDGES
+  ^contains=github.com/paxlabs-inc/tachyon-tools/pkg/types.SimulateResponse
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/types.SimulateResponse#Result kind=field
+  digest=b3:b40fbab53eb7162204d9575c2e71cde010ce30f124fcbc56e70dfb81c8715492 file=tachyon/pkg/types/simulate.go range=17:17 lang=go exported=true byte_range=499:543
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/tachyon-tools/pkg/types.SimulateResponse
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/types.SimulateResponse#Revert kind=field
+  digest=b3:ad60c099ab801d54102b111ec71ad147ee6c5d8f0b2c0071b0260ca08424efa4 file=tachyon/pkg/types/simulate.go range=19:19 lang=go exported=true byte_range=597:641
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/tachyon-tools/pkg/types.SimulateResponse
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/types.SimulateResponse#Trace kind=field
+  digest=b3:d3c76d29e5619c05311b7ca2226249a9d71ca38cfda4704d7bb40ab21fe33276 file=tachyon/pkg/types/simulate.go range=20:20 lang=go exported=true byte_range=643:686
+  sig=any
+EDGES
+  ^contains=github.com/paxlabs-inc/tachyon-tools/pkg/types.SimulateResponse
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/types.TestCaseResult kind=type
+  digest=b3:631aff6e2465eb0deee40050075fedaafe58037d7628de4efc1568b1d489b826 file=tachyon/pkg/types/test.go range=22:29 lang=go exported=true byte_range=1035:1302
+  sig=type TestCaseResult struct {\n	Name		string	`json:"name"`\n	Status		string	`json:"status"`\n	Reason		string	`json:"reason,omitempty"`\n	Gas		uint64	`json:"gas,omitempty"`\n	Duration	string	`json:"duration,omitempty"`\n}
+  doc=TestCaseResult is one forge test outcome.
+EDGES
+  contains=github.com/paxlabs-inc/tachyon-tools/pkg/types.TestCaseResult#Duration,github.com/paxlabs-inc/tachyon-tools/pkg/types.TestCaseResult#Gas,github.com/paxlabs-inc/tachyon-tools/pkg/types.TestCaseResult#Name,github.com/paxlabs-inc/tachyon-tools/pkg/types.TestCaseResult#Reason,github.com/paxlabs-inc/tachyon-tools/pkg/types.TestCaseResult#Status
+  ^defines=github.com/paxlabs-inc/tachyon-tools/pkg/types/test.go
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/types.TestCaseResult#Duration kind=field
+  digest=b3:dd59bfd464ddae2690d9068690a201daf3f80cee6a4e1fb13aa2a0620dd59f3c file=tachyon/pkg/types/test.go range=28:28 lang=go exported=true byte_range=1257:1300
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/tachyon-tools/pkg/types.TestCaseResult
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/types.TestCaseResult#Gas kind=field
+  digest=b3:f4034f2da41fc46b09d6cb9087bffd58fa66bf933a5440c7075b8f1c0c4d4008 file=tachyon/pkg/types/test.go range=27:27 lang=go exported=true byte_range=1217:1255
+  sig=uint64
+EDGES
+  ^contains=github.com/paxlabs-inc/tachyon-tools/pkg/types.TestCaseResult
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/types.TestCaseResult#Name kind=field
+  digest=b3:dfb796801846ebd44222daa9114434d57b96bd39278e4f9b6c11b23d83180d64 file=tachyon/pkg/types/test.go range=24:24 lang=go exported=true byte_range=1110:1139
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/tachyon-tools/pkg/types.TestCaseResult
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/types.TestCaseResult#Reason kind=field
+  digest=b3:e60e00fec392e8101319fc05cc0118309626aa0c4728ed4a24931ce795983943 file=tachyon/pkg/types/test.go range=26:26 lang=go exported=true byte_range=1174:1215
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/tachyon-tools/pkg/types.TestCaseResult
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/types.TestCaseResult#Status kind=field
+  digest=b3:03cdf7f9041647177a52ea1d6fe6d1b29c0321b75522c81c47f41b0afdfba3b0 file=tachyon/pkg/types/test.go range=25:25 lang=go exported=true byte_range=1141:1172
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/tachyon-tools/pkg/types.TestCaseResult
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/types.TestRequest kind=type
+  digest=b3:04d42730e768fd8e369553cdc2fe3ea5646e58f5273a58051f0a6324d1e1e1a3 file=tachyon/pkg/types/test.go range=3:20 lang=go exported=true byte_range=15:1033
+  sig=type TestRequest struct {\n	ProjectRoot	string			`json:"project_root,omitempty"`\n	Sources		map[string]string	`json:"sources,omitempty"`\n	MatchPath	string			`json:"match_path,omitempty"`\n	MatchContract	string			`json:"match_contract,omitempty"`\n	Filter		string			`json:"filter,omitempty"`\n	// EVMVersion pins the solc/EVM target for an uploaded-source test build\n	// (e.g. "shanghai", "paris", "cancun"). Empty uses the engine's\n	// conservative default (shanghai), matching the compile/deploy target so\n	// the suite exercises the same opcode set that will run on-chain.\n	EVMVersion	string	`json:"evm_version,omitempty"`\n}
+  doc=TestRequest runs forge tests.\n\nSources mirrors CompileRequest.Sources: a non-empty map (workdir-relative\npath -> content) makes the request self-contained so a shared tachyond can\ntest a caller's uploaded contracts in an ephemeral Foundry project (tests\nunder test/, contracts under src/; forge-std + @openzeppelin available).
+EDGES
+  contains=github.com/paxlabs-inc/tachyon-tools/pkg/types.TestRequest#EVMVersion,github.com/paxlabs-inc/tachyon-tools/pkg/types.TestRequest#Filter,github.com/paxlabs-inc/tachyon-tools/pkg/types.TestRequest#MatchContract,github.com/paxlabs-inc/tachyon-tools/pkg/types.TestRequest#MatchPath,github.com/paxlabs-inc/tachyon-tools/pkg/types.TestRequest#ProjectRoot,github.com/paxlabs-inc/tachyon-tools/pkg/types.TestRequest#Sources
+  ^defines=github.com/paxlabs-inc/tachyon-tools/pkg/types/test.go
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/types.TestRequest#EVMVersion kind=field
+  digest=b3:665c922b17845f52ab7017044614504bef97c253fa9312f55af24c09c0694e4f file=tachyon/pkg/types/test.go range=15:19 lang=go exported=true byte_range=700:1031
+  sig=string
+  doc=EVMVersion pins the solc/EVM target for an uploaded-source test build\n(e.g. "shanghai", "paris", "cancun"). Empty uses the engine's\nconservative default (shanghai), matching the compile/deploy target so\nthe suite exercises the same opcode set that will run on-chain.
+EDGES
+  ^contains=github.com/paxlabs-inc/tachyon-tools/pkg/types.TestRequest
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/types.TestRequest#Filter kind=field
+  digest=b3:33e64ac64000e9399a3136a066803d135b102188b79ca8a82555027392f55e56 file=tachyon/pkg/types/test.go range=14:14 lang=go exported=true byte_range=641:698
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/tachyon-tools/pkg/types.TestRequest
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/types.TestRequest#MatchContract kind=field
+  digest=b3:2d1c98823dfd5fc50594c3b7fad9d893c12bdf84b7ad062c3fd8176f19709881 file=tachyon/pkg/types/test.go range=13:13 lang=go exported=true byte_range=574:639
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/tachyon-tools/pkg/types.TestRequest
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/types.TestRequest#MatchPath kind=field
+  digest=b3:855e820dd59bd26cacfe94e56c2cb583febb934ec9d475a3e4b14f1a2067a3b1 file=tachyon/pkg/types/test.go range=12:12 lang=go exported=true byte_range=511:572
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/tachyon-tools/pkg/types.TestRequest
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/types.TestRequest#ProjectRoot kind=field
+  digest=b3:901a978c8207c50b9048d537ff5153e1c20b4a47ef7f713754ad188fca166fde file=tachyon/pkg/types/test.go range=10:10 lang=go exported=true byte_range=386:449
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/tachyon-tools/pkg/types.TestRequest
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/types.TestRequest#Sources kind=field
+  digest=b3:06c9c7dc06feeca77757bb65296aa43e750283bfe54dcc285b9a6ee60a6fa6e9 file=tachyon/pkg/types/test.go range=11:11 lang=go exported=true byte_range=451:509
+  sig=map[string]string
+EDGES
+  ^contains=github.com/paxlabs-inc/tachyon-tools/pkg/types.TestRequest
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/types.TestResponse kind=type
+  digest=b3:a3ed1baabb94c67060e5e5d9a1b4e3f35967750f973e003db8c6a2bdcc2a748f file=tachyon/pkg/types/test.go range=40:45 lang=go exported=true byte_range=1599:1799
+  sig=type TestResponse struct {\n	Suites	[]TestSuiteResult	`json:"suites"`\n	Passed	int			`json:"passed"`\n	Failed	int			`json:"failed"`\n}
+  doc=TestResponse aggregates forge test output.
+EDGES
+  contains=github.com/paxlabs-inc/tachyon-tools/pkg/types.TestResponse#Failed,github.com/paxlabs-inc/tachyon-tools/pkg/types.TestResponse#Passed,github.com/paxlabs-inc/tachyon-tools/pkg/types.TestResponse#Suites
+  ^defines=github.com/paxlabs-inc/tachyon-tools/pkg/types/test.go
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/types.TestResponse#Failed kind=field
+  digest=b3:9c3abeb0f44aab8bc0e4d45c3bfc7e8de1d214a5be3d8410a1d6d89e3ecec41f file=tachyon/pkg/types/test.go range=44:44 lang=go exported=true byte_range=1757:1797
+  sig=int
+EDGES
+  ^contains=github.com/paxlabs-inc/tachyon-tools/pkg/types.TestResponse
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/types.TestResponse#Passed kind=field
+  digest=b3:a72d1884db08e1147a80700eb235cb4c48901f244555e3cb3986d73dff0e7870 file=tachyon/pkg/types/test.go range=43:43 lang=go exported=true byte_range=1715:1755
+  sig=int
+EDGES
+  ^contains=github.com/paxlabs-inc/tachyon-tools/pkg/types.TestResponse
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/types.TestResponse#Suites kind=field
+  digest=b3:981d53e4856e987507c45bad37a8f44bc12da4dafb1ef449c114f6c413802d93 file=tachyon/pkg/types/test.go range=42:42 lang=go exported=true byte_range=1673:1713
+  sig=[]types.TestSuiteResult
+EDGES
+  ^contains=github.com/paxlabs-inc/tachyon-tools/pkg/types.TestResponse
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/types.TestSuiteResult kind=type
+  digest=b3:05de836b194f62ea534c29ebac5a470f8bc68c961e9f5b5c568ceb092e76c1e7 file=tachyon/pkg/types/test.go range=31:38 lang=go exported=true byte_range=1304:1597
+  sig=type TestSuiteResult struct {\n	File	string			`json:"file"`\n	Passed	int			`json:"passed"`\n	Failed	int			`json:"failed"`\n	Skipped	int			`json:"skipped"`\n	Cases	[]TestCaseResult	`json:"cases"`\n}
+  doc=TestSuiteResult groups cases from one .t.sol file.
+EDGES
+  contains=github.com/paxlabs-inc/tachyon-tools/pkg/types.TestSuiteResult#Cases,github.com/paxlabs-inc/tachyon-tools/pkg/types.TestSuiteResult#Failed,github.com/paxlabs-inc/tachyon-tools/pkg/types.TestSuiteResult#File,github.com/paxlabs-inc/tachyon-tools/pkg/types.TestSuiteResult#Passed,github.com/paxlabs-inc/tachyon-tools/pkg/types.TestSuiteResult#Skipped
+  ^defines=github.com/paxlabs-inc/tachyon-tools/pkg/types/test.go
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/types.TestSuiteResult#Cases kind=field
+  digest=b3:b8c062142d6b0fb9a9f3f805a4bf325724955b32986f006ec0e004191e1ff00e file=tachyon/pkg/types/test.go range=37:37 lang=go exported=true byte_range=1556:1595
+  sig=[]types.TestCaseResult
+EDGES
+  ^contains=github.com/paxlabs-inc/tachyon-tools/pkg/types.TestSuiteResult
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/types.TestSuiteResult#Failed kind=field
+  digest=b3:7a918fce7362619eb2a86d7fcc8fd7dce77c50edd17bb4272f8f79745816dee0 file=tachyon/pkg/types/test.go range=35:35 lang=go exported=true byte_range=1471:1511
+  sig=int
+EDGES
+  ^contains=github.com/paxlabs-inc/tachyon-tools/pkg/types.TestSuiteResult
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/types.TestSuiteResult#File kind=field
+  digest=b3:2a7dcbf2faacd90b46e36f0ac70916a939e44a59744a4fbb5a4f2bc00cc122db file=tachyon/pkg/types/test.go range=33:33 lang=go exported=true byte_range=1389:1427
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/tachyon-tools/pkg/types.TestSuiteResult
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/types.TestSuiteResult#Passed kind=field
+  digest=b3:f454bea3b216875e1fcdfc9ed18e743a671641e69d5a7f16f302cca4d239f97a file=tachyon/pkg/types/test.go range=34:34 lang=go exported=true byte_range=1429:1469
+  sig=int
+EDGES
+  ^contains=github.com/paxlabs-inc/tachyon-tools/pkg/types.TestSuiteResult
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/types.TestSuiteResult#Skipped kind=field
+  digest=b3:383f6ca556b7c416de9a3f272175ee82c6a81981cd4c0776e47e7d655790c4bf file=tachyon/pkg/types/test.go range=36:36 lang=go exported=true byte_range=1513:1554
+  sig=int
+EDGES
+  ^contains=github.com/paxlabs-inc/tachyon-tools/pkg/types.TestSuiteResult
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/types/artifact.go kind=file
+  digest=b3:20d3e7f05805c31697cf0f63b916ad8591a14637812e33cdf7d9954fa7067563 file=tachyon/pkg/types/artifact.go range=1:27 lang=go exported=true
+EDGES
+  defines=github.com/paxlabs-inc/tachyon-tools/pkg/types.ArtifactGetRequest,github.com/paxlabs-inc/tachyon-tools/pkg/types.ArtifactGetResponse,github.com/paxlabs-inc/tachyon-tools/pkg/types.RegistryLookupRequest,github.com/paxlabs-inc/tachyon-tools/pkg/types.RegistryLookupResponse
+  ^contains=github.com/paxlabs-inc/tachyon-tools/pkg/types
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/types/call.go kind=file
+  digest=b3:5f0ec3f20176eb92b0c5404d04c4ff61a51bdc54a8bf0da0c25b8ef1525237fa file=tachyon/pkg/types/call.go range=1:37 lang=go exported=true
+EDGES
+  defines=github.com/paxlabs-inc/tachyon-tools/pkg/types.CallRequest,github.com/paxlabs-inc/tachyon-tools/pkg/types.CallResponse
+  ^contains=github.com/paxlabs-inc/tachyon-tools/pkg/types
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/types/chain.go kind=file
+  digest=b3:0a71664eca2e89bcb63d32a3d4e8d8360ea50d9eda03b77d52d6d39ff176cf2c file=tachyon/pkg/types/chain.go range=1:35 lang=go exported=true
+EDGES
+  defines=github.com/paxlabs-inc/tachyon-tools/pkg/types.ChainListResponse,github.com/paxlabs-inc/tachyon-tools/pkg/types.ChainProfile,github.com/paxlabs-inc/tachyon-tools/pkg/types.ChainRegisterRequest,github.com/paxlabs-inc/tachyon-tools/pkg/types.ChainUseRequest
+  ^contains=github.com/paxlabs-inc/tachyon-tools/pkg/types
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/types/compile.go kind=file
+  digest=b3:bd2e993840064c5ab2c04255c494be9f433f5d44f2abb3ec503818d5efb51c2b file=tachyon/pkg/types/compile.go range=1:57 lang=go exported=true
+EDGES
+  defines=github.com/paxlabs-inc/tachyon-tools/pkg/types.Artifact,github.com/paxlabs-inc/tachyon-tools/pkg/types.CompileRequest,github.com/paxlabs-inc/tachyon-tools/pkg/types.CompileResponse,github.com/paxlabs-inc/tachyon-tools/pkg/types.CompilerSettings,github.com/paxlabs-inc/tachyon-tools/pkg/types.OptimizerConfig
+  ^contains=github.com/paxlabs-inc/tachyon-tools/pkg/types
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/types/deploy.go kind=file
+  digest=b3:d34b1107fa6362f15de357e7f5ceb1cb6fb2cb36a7c5e7c61bfda08d02cfa0ee file=tachyon/pkg/types/deploy.go range=1:37 lang=go exported=true
+EDGES
+  defines=github.com/paxlabs-inc/tachyon-tools/pkg/types.Create2Config,github.com/paxlabs-inc/tachyon-tools/pkg/types.DeployRequest,github.com/paxlabs-inc/tachyon-tools/pkg/types.DeployResponse
+  ^contains=github.com/paxlabs-inc/tachyon-tools/pkg/types
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/types/errors.go kind=file
+  digest=b3:d9e347c3278f1d6bf732ae9113bc994e50a20eb5d83f5e09e500d1b3e66177a5 file=tachyon/pkg/types/errors.go range=1:44 lang=go exported=true
+EDGES
+  defines=github.com/paxlabs-inc/tachyon-tools/pkg/types.CodeArtifactNotFound,github.com/paxlabs-inc/tachyon-tools/pkg/types.CodeCallFailed,github.com/paxlabs-inc/tachyon-tools/pkg/types.CodeChainNotFound,github.com/paxlabs-inc/tachyon-tools/pkg/types.CodeChainRPCFailed,github.com/paxlabs-inc/tachyon-tools/pkg/types.CodeCompilerForgeFailed,github.com/paxlabs-inc/tachyon-tools/pkg/types.CodeCompilerSolcFailed,github.com/paxlabs-inc/tachyon-tools/pkg/types.CodeDeployFailed,github.com/paxlabs-inc/tachyon-tools/pkg/types.CodeDeployIdempotent,github.com/paxlabs-inc/tachyon-tools/pkg/types.CodeInternal,github.com/paxlabs-inc/tachyon-tools/pkg/types.CodeInvalidRequest,github.com/paxlabs-inc/tachyon-tools/pkg/types.CodeRegistryNotFound,github.com/paxlabs-inc/tachyon-tools/pkg/types.CodeSimulateFailed,github.com/paxlabs-inc/tachyon-tools/pkg/types.CodeTestAssertionFailed,github.com/paxlabs-inc/tachyon-tools/pkg/types.CodeTestForgeFailed,github.com/paxlabs-inc/tachyon-tools/pkg/types.CodeWalletDenied,github.com/paxlabs-inc/tachyon-tools/pkg/types.CodeWalletNotConfigured,github.com/paxlabs-inc/tachyon-tools/pkg/types.Error.Error,github.com/paxlabs-inc/tachyon-tools/pkg/types.Fail,github.com/paxlabs-inc/tachyon-tools/pkg/types.NewError,github.com/paxlabs-inc/tachyon-tools/pkg/types.OK
+  ^contains=github.com/paxlabs-inc/tachyon-tools/pkg/types
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/types/simulate.go kind=file
+  digest=b3:dce5cf7e5d0b766145ac955af5db8caeba4dd2c9e3706d1a5b136d3c7a3a0879 file=tachyon/pkg/types/simulate.go range=1:21 lang=go exported=true
+EDGES
+  defines=github.com/paxlabs-inc/tachyon-tools/pkg/types.SimulateRequest,github.com/paxlabs-inc/tachyon-tools/pkg/types.SimulateResponse
+  ^contains=github.com/paxlabs-inc/tachyon-tools/pkg/types
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/types/test.go kind=file
+  digest=b3:d871358ce66221e1dc5320c2c76b137c13f5df4288fd3029ba1c6c74a714751f file=tachyon/pkg/types/test.go range=1:45 lang=go exported=true
+EDGES
+  defines=github.com/paxlabs-inc/tachyon-tools/pkg/types.TestCaseResult,github.com/paxlabs-inc/tachyon-tools/pkg/types.TestRequest,github.com/paxlabs-inc/tachyon-tools/pkg/types.TestResponse,github.com/paxlabs-inc/tachyon-tools/pkg/types.TestSuiteResult
+  ^contains=github.com/paxlabs-inc/tachyon-tools/pkg/types
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/types/types.go kind=file
+  digest=b3:22b2f1aa16d3243f36d771491c9d5efbe4ab62500328e66c26961b677ef878df file=tachyon/pkg/types/types.go range=1:24 lang=go exported=true
+EDGES
+  defines=github.com/paxlabs-inc/tachyon-tools/pkg/types.Envelope,github.com/paxlabs-inc/tachyon-tools/pkg/types.Error,github.com/paxlabs-inc/tachyon-tools/pkg/types.HealthData
+  ^contains=github.com/paxlabs-inc/tachyon-tools/pkg/types

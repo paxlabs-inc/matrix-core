@@ -1,0 +1,134 @@
+# GENERATED gen=codegraph do-not-edit merkle=b3:2dc69ec8dbbe0231373534486cf12ff6fdb0eaad7b2dfdcbc4d73453c8542ee8
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/rpc kind=package
+  digest=b3:961536ef9b3a2400901049906e706893c5dee55ab0acf14e7cbde6b21688b64f file=tachyon/pkg/rpc range=0:0 lang=go exported=true
+EDGES
+  contains=github.com/paxlabs-inc/tachyon-tools/pkg/rpc/mcp.go,github.com/paxlabs-inc/tachyon-tools/pkg/rpc/server.go
+  ^contains=mod:github.com/paxlabs-inc/tachyon-tools
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/rpc.DecodeParams kind=func
+  digest=b3:2d500c8048e09418d96e804dc02c7e5c078288166b077e560e92eae869458cf7 file=tachyon/pkg/rpc/server.go range=118:124 lang=go exported=true byte_range=3603:3771
+  sig=func DecodeParams(params json.RawMessage, v any) error
+  doc=DecodeParams helper for tests.
+EDGES
+  ^defines=github.com/paxlabs-inc/tachyon-tools/pkg/rpc/server.go
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/rpc.Dispatch kind=func
+  digest=b3:e0edd58c877fb456cf3ca88249c845226cbb7483259f20beac8926bc2b0d37cc file=tachyon/pkg/rpc/server.go range=47:111 lang=go exported=true byte_range=1180:3458
+  sig=func Dispatch(ctx context.Context, eng *engine.Engine, method string, params json.RawMessage) (any, *rpcError)
+  doc=Dispatch routes tachyon_* JSON-RPC methods to the engine.
+EDGES
+  ^defines=github.com/paxlabs-inc/tachyon-tools/pkg/rpc/server.go
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/rpc.DispatchForMCP kind=func
+  digest=b3:380a25141534600aed8b519b761c9ec87f1b7acf7dc7a1fdcc6c8d4afcfa28a7 file=tachyon/pkg/rpc/mcp.go range=10:13 lang=go exported=true byte_range=110:340
+  sig=func DispatchForMCP(ctx context.Context, eng *engine.Engine, method string, params json.RawMessage) (any, *rpcError)
+  doc=DispatchForMCP routes MCP tool names through JSON-RPC dispatch.
+EDGES
+  ^defines=github.com/paxlabs-inc/tachyon-tools/pkg/rpc/mcp.go
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/rpc.ServeHTTP kind=func
+  digest=b3:2f8abf38df9851da948fde88444414aa395246d3bde829453856c234e432a61e file=tachyon/pkg/rpc/server.go range=32:45 lang=go exported=true byte_range=635:1178
+  sig=func ServeHTTP(w http.ResponseWriter, r *http.Request, eng *engine.Engine)
+  doc=ServeHTTP handles JSON-RPC 2.0 tachyon_* methods.
+EDGES
+  ^defines=github.com/paxlabs-inc/tachyon-tools/pkg/rpc/server.go
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/rpc.request kind=type
+  digest=b3:75d5be98ef04fb5f1e8caae072206521190bde5498a4e022f23d16df3a0c672f file=tachyon/pkg/rpc/server.go range=13:18 lang=go exported=false byte_range=178:362
+  sig=type request struct {\n	JSONRPC	string		`json:"jsonrpc"`\n	ID	any		`json:"id"`\n	Method	string		`json:"method"`\n	Params	json.RawMessage	`json:"params"`\n}
+EDGES
+  contains=github.com/paxlabs-inc/tachyon-tools/pkg/rpc.request#ID,github.com/paxlabs-inc/tachyon-tools/pkg/rpc.request#JSONRPC,github.com/paxlabs-inc/tachyon-tools/pkg/rpc.request#Method,github.com/paxlabs-inc/tachyon-tools/pkg/rpc.request#Params
+  ^defines=github.com/paxlabs-inc/tachyon-tools/pkg/rpc/server.go
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/rpc.request#ID kind=field
+  digest=b3:a8b135a7bd506b89f3d9d898502094421239e1a643fc057d0961e32ff00d6f14 file=tachyon/pkg/rpc/server.go range=15:15 lang=go exported=true byte_range=243:278
+  sig=any
+EDGES
+  ^contains=github.com/paxlabs-inc/tachyon-tools/pkg/rpc.request
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/rpc.request#JSONRPC kind=field
+  digest=b3:e922b6deddabec44b26208ae989c23f029415d4258b8fa54aeb4a41c3dd567f3 file=tachyon/pkg/rpc/server.go range=14:14 lang=go exported=true byte_range=201:241
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/tachyon-tools/pkg/rpc.request
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/rpc.request#Method kind=field
+  digest=b3:1645cedaaf7f1d03700c8acfad2ffa5b60299f417245b9bc3aaa87f673aaa6c0 file=tachyon/pkg/rpc/server.go range=16:16 lang=go exported=true byte_range=280:319
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/tachyon-tools/pkg/rpc.request
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/rpc.request#Params kind=field
+  digest=b3:03de739000dcaad207650952adae58390419d7738a13a645ed67747211670f15 file=tachyon/pkg/rpc/server.go range=17:17 lang=go exported=true byte_range=321:360
+  sig=json.RawMessage
+EDGES
+  ^contains=github.com/paxlabs-inc/tachyon-tools/pkg/rpc.request
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/rpc.response kind=type
+  digest=b3:0892fec1beef52f9df4e227bc4033c68b749ea243f3fa9e0f82aea4bd11ad909 file=tachyon/pkg/rpc/server.go range=20:25 lang=go exported=false byte_range=364:544
+  sig=type response struct {\n	JSONRPC	string		`json:"jsonrpc"`\n	ID	any		`json:"id"`\n	Result	any		`json:"result,omitempty"`\n	Error	*rpcError	`json:"error,omitempty"`\n}
+EDGES
+  contains=github.com/paxlabs-inc/tachyon-tools/pkg/rpc.response#Error,github.com/paxlabs-inc/tachyon-tools/pkg/rpc.response#ID,github.com/paxlabs-inc/tachyon-tools/pkg/rpc.response#JSONRPC,github.com/paxlabs-inc/tachyon-tools/pkg/rpc.response#Result
+  ^defines=github.com/paxlabs-inc/tachyon-tools/pkg/rpc/server.go
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/rpc.response#Error kind=field
+  digest=b3:ae43ec1a2f3d066c2d8bd41cb34f78019fe00d9956b8d2b297fb44eb7fbff5bc file=tachyon/pkg/rpc/server.go range=24:24 lang=go exported=true byte_range=500:542
+  sig=*rpc.rpcError
+EDGES
+  ^contains=github.com/paxlabs-inc/tachyon-tools/pkg/rpc.response
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/rpc.response#ID kind=field
+  digest=b3:646f0ec60ca0a69be68e75a82588e4359a0ed4b2c8990ab14d5ee21ae4c8ff4c file=tachyon/pkg/rpc/server.go range=22:22 lang=go exported=true byte_range=424:453
+  sig=any
+EDGES
+  ^contains=github.com/paxlabs-inc/tachyon-tools/pkg/rpc.response
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/rpc.response#JSONRPC kind=field
+  digest=b3:116b79c243538790f13db9bc162b9b351afc8fe8fb1da78a1e10c1de6185f737 file=tachyon/pkg/rpc/server.go range=21:21 lang=go exported=true byte_range=388:422
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/tachyon-tools/pkg/rpc.response
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/rpc.response#Result kind=field
+  digest=b3:45cbe3aa1e96b867a929b32762944a84498381afe35474ff739ecaf605ec2eb0 file=tachyon/pkg/rpc/server.go range=23:23 lang=go exported=true byte_range=455:498
+  sig=any
+EDGES
+  ^contains=github.com/paxlabs-inc/tachyon-tools/pkg/rpc.response
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/rpc.rpcError kind=type
+  digest=b3:e4eb481de167fe328d33ad717cf8e0251425363770197705280c24288d63e3cf file=tachyon/pkg/rpc/server.go range=27:30 lang=go exported=false byte_range=546:633
+  sig=type rpcError struct {\n	Code	int	`json:"code"`\n	Message	string	`json:"message"`\n}
+EDGES
+  contains=github.com/paxlabs-inc/tachyon-tools/pkg/rpc.rpcError#Code,github.com/paxlabs-inc/tachyon-tools/pkg/rpc.rpcError#Message
+  ^defines=github.com/paxlabs-inc/tachyon-tools/pkg/rpc/server.go
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/rpc.rpcError#Code kind=field
+  digest=b3:dde9d5cab8f9649709a8d979ffc01d5de00e36427983df7beb8f943272d01635 file=tachyon/pkg/rpc/server.go range=28:28 lang=go exported=true byte_range=570:598
+  sig=int
+EDGES
+  ^contains=github.com/paxlabs-inc/tachyon-tools/pkg/rpc.rpcError
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/rpc.rpcError#Message kind=field
+  digest=b3:d7a0704d4d1cdf051b9f61d5a005f6a0c1ada9b90dd901fab6b0e03fad711a42 file=tachyon/pkg/rpc/server.go range=29:29 lang=go exported=true byte_range=600:631
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/tachyon-tools/pkg/rpc.rpcError
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/rpc.write kind=func
+  digest=b3:4647e1c6273424c83a08aeb8249d35d7c9bc09f78e34bfab8bd4a9e06ad85452 file=tachyon/pkg/rpc/server.go range=113:116 lang=go exported=false byte_range=3460:3601
+  sig=func write(w http.ResponseWriter, resp response)
+EDGES
+  ^defines=github.com/paxlabs-inc/tachyon-tools/pkg/rpc/server.go
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/rpc/mcp.go kind=file
+  digest=b3:8c7b229fe5aa11c3719c7e03ebdaef36af411a66338d42524c0b88abe5ef4038 file=tachyon/pkg/rpc/mcp.go range=1:13 lang=go exported=true
+EDGES
+  defines=github.com/paxlabs-inc/tachyon-tools/pkg/rpc.DispatchForMCP
+  ^contains=github.com/paxlabs-inc/tachyon-tools/pkg/rpc
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/rpc/server.go kind=file
+  digest=b3:8324ec3ed8e1633897b085e7a10c41219bd4ad91b64a84af570e60941c1931a1 file=tachyon/pkg/rpc/server.go range=1:124 lang=go exported=true
+EDGES
+  defines=github.com/paxlabs-inc/tachyon-tools/pkg/rpc.DecodeParams,github.com/paxlabs-inc/tachyon-tools/pkg/rpc.Dispatch,github.com/paxlabs-inc/tachyon-tools/pkg/rpc.ServeHTTP,github.com/paxlabs-inc/tachyon-tools/pkg/rpc.request,github.com/paxlabs-inc/tachyon-tools/pkg/rpc.response,github.com/paxlabs-inc/tachyon-tools/pkg/rpc.rpcError,github.com/paxlabs-inc/tachyon-tools/pkg/rpc.write
+  ^contains=github.com/paxlabs-inc/tachyon-tools/pkg/rpc

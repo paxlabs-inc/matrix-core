@@ -1,0 +1,98 @@
+# GENERATED gen=codegraph do-not-edit merkle=b3:2dc69ec8dbbe0231373534486cf12ff6fdb0eaad7b2dfdcbc4d73453c8542ee8
+
+NODE id=github.com/paxlabs-inc/uwac/internal/httpx kind=package
+  digest=b3:932cee0e9fc6790ef2b37d24e803aa751e39ed0344fac195e764bba539688724 file=uwac/internal/httpx range=0:0 lang=go exported=true
+EDGES
+  contains=github.com/paxlabs-inc/uwac/internal/httpx/httpx.go
+  ^contains=mod:github.com/paxlabs-inc/uwac
+
+NODE id=github.com/paxlabs-inc/uwac/internal/httpx.Client kind=type
+  digest=b3:65e487fcdcf21e26eb1da95981f9bac9dd3bc58f0c7174d4c1cd7444dc59dbc6 file=uwac/internal/httpx/httpx.go range=28:32 lang=go exported=true byte_range=562:685
+  sig=type Client struct {\n	HTTP	*http.Client\n	Timeout	time.Duration\n}
+  doc=Client wraps an *http.Client with a default timeout.
+EDGES
+  contains=github.com/paxlabs-inc/uwac/internal/httpx.Client#HTTP,github.com/paxlabs-inc/uwac/internal/httpx.Client#Timeout,github.com/paxlabs-inc/uwac/internal/httpx.Client.Form,github.com/paxlabs-inc/uwac/internal/httpx.Client.JSON,github.com/paxlabs-inc/uwac/internal/httpx.Client.JSONWithHeaders,github.com/paxlabs-inc/uwac/internal/httpx.Client.do
+  ^defines=github.com/paxlabs-inc/uwac/internal/httpx/httpx.go
+
+NODE id=github.com/paxlabs-inc/uwac/internal/httpx.Client#HTTP kind=field
+  digest=b3:e87644a2c9e05d20baf215fa92b35af82b78017754e26fc95bf3086f317e1e97 file=uwac/internal/httpx/httpx.go range=30:30 lang=go exported=true byte_range=640:660
+  sig=*http.Client
+EDGES
+  ^contains=github.com/paxlabs-inc/uwac/internal/httpx.Client
+
+NODE id=github.com/paxlabs-inc/uwac/internal/httpx.Client#Timeout kind=field
+  digest=b3:10d60da55b86987afb74bb649e3b6d1c0090c567b51aafc521643dd678be6de0 file=uwac/internal/httpx/httpx.go range=31:31 lang=go exported=true byte_range=662:683
+  sig=time.Duration
+EDGES
+  ^contains=github.com/paxlabs-inc/uwac/internal/httpx.Client
+
+NODE id=github.com/paxlabs-inc/uwac/internal/httpx.Client.Form kind=method
+  digest=b3:ab513b40f9f2d0483acb174728edad7f08f9176fba6d4717caca49f0ef8704c6 file=uwac/internal/httpx/httpx.go range=76:89 lang=go exported=true byte_range=1999:2580
+  sig=func (c *Client) Form(ctx context.Context, rawURL string, form url.Values, headers map[string]string, out any) error
+  doc=Form performs an application/x-www-form-urlencoded POST (used for OAuth token\nendpoints), decoding a JSON response into out.
+EDGES
+  ^contains=github.com/paxlabs-inc/uwac/internal/httpx.Client
+  ^defines=github.com/paxlabs-inc/uwac/internal/httpx/httpx.go
+
+NODE id=github.com/paxlabs-inc/uwac/internal/httpx.Client.JSON kind=method
+  digest=b3:a54e3bd92d4c792217dfff7b9409a4f513209c9b8981c91f64a3f3c8fdef5fdd file=uwac/internal/httpx/httpx.go range=42:50 lang=go exported=true byte_range=917:1354
+  sig=func (c *Client) JSON(ctx context.Context, method, rawURL, bearer string, body, out any) error
+  doc=JSON performs an HTTP request with an optional bearer token and JSON body,\ndecoding a JSON response into out (out may be nil). Non-2xx -> *Error.
+EDGES
+  ^contains=github.com/paxlabs-inc/uwac/internal/httpx.Client
+  ^defines=github.com/paxlabs-inc/uwac/internal/httpx/httpx.go
+
+NODE id=github.com/paxlabs-inc/uwac/internal/httpx.Client.JSONWithHeaders kind=method
+  digest=b3:2f31db5fdfc7c510578254e1b21261af28fc586b72eb53757924083e3a0ec0fe file=uwac/internal/httpx/httpx.go range=52:74 lang=go exported=true byte_range=1356:1997
+  sig=func (c *Client) JSONWithHeaders(ctx context.Context, method, rawURL string, headers map[string]string, body, out any) error
+  doc=JSONWithHeaders is JSON with arbitrary request headers (e.g. GoTrue's apikey).
+EDGES
+  ^contains=github.com/paxlabs-inc/uwac/internal/httpx.Client
+  ^defines=github.com/paxlabs-inc/uwac/internal/httpx/httpx.go
+
+NODE id=github.com/paxlabs-inc/uwac/internal/httpx.Client.do kind=method
+  digest=b3:3277c3d71d1b12524076a1d63fd895aee50c21fae6f97a18d182fe7e6bf130fa file=uwac/internal/httpx/httpx.go range=91:109 lang=go exported=false byte_range=2582:3039
+  sig=func (c *Client) do(req *http.Request, out any) error
+EDGES
+  ^contains=github.com/paxlabs-inc/uwac/internal/httpx.Client
+  ^defines=github.com/paxlabs-inc/uwac/internal/httpx/httpx.go
+
+NODE id=github.com/paxlabs-inc/uwac/internal/httpx.Error kind=type
+  digest=b3:fc01dd978681f9254625671ff5b08ad39e7d36424ddf9417f5778eaf31b143e6 file=uwac/internal/httpx/httpx.go range=18:22 lang=go exported=true byte_range=352:462
+  sig=type Error struct {\n	Status	int\n	Body	string\n}
+  doc=Error carries the upstream HTTP status + (truncated) body.
+EDGES
+  contains=github.com/paxlabs-inc/uwac/internal/httpx.Error#Body,github.com/paxlabs-inc/uwac/internal/httpx.Error#Status,github.com/paxlabs-inc/uwac/internal/httpx.Error.Error
+  ^defines=github.com/paxlabs-inc/uwac/internal/httpx/httpx.go
+
+NODE id=github.com/paxlabs-inc/uwac/internal/httpx.Error#Body kind=field
+  digest=b3:333d035275687b723c53aade9ba1bf2cee32d536bfc56ab376e7746dfe1fcf44 file=uwac/internal/httpx/httpx.go range=21:21 lang=go exported=true byte_range=447:460
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/uwac/internal/httpx.Error
+
+NODE id=github.com/paxlabs-inc/uwac/internal/httpx.Error#Status kind=field
+  digest=b3:57ae3a0f8620181684da846f20d960f7948615b1dab176f27210fed42b573363 file=uwac/internal/httpx/httpx.go range=20:20 lang=go exported=true byte_range=435:445
+  sig=int
+EDGES
+  ^contains=github.com/paxlabs-inc/uwac/internal/httpx.Error
+
+NODE id=github.com/paxlabs-inc/uwac/internal/httpx.Error.Error kind=method
+  digest=b3:9c8dd63618eaef22aada9542ae8fd1438e01db310c42d95c135aaa0cdd57c350 file=uwac/internal/httpx/httpx.go range=24:26 lang=go exported=true byte_range=464:560
+  sig=func (e *Error) Error() string
+EDGES
+  ^contains=github.com/paxlabs-inc/uwac/internal/httpx.Error
+  ^defines=github.com/paxlabs-inc/uwac/internal/httpx/httpx.go
+
+NODE id=github.com/paxlabs-inc/uwac/internal/httpx.New kind=func
+  digest=b3:eacc466e97d746828ade688cc2e85e99b6a48e9165f4da70ba9269b39ac3e97f file=uwac/internal/httpx/httpx.go range=34:40 lang=go exported=true byte_range=687:915
+  sig=func New(timeout time.Duration) *Client
+  doc=New returns a Client with the given timeout (default 30s).
+EDGES
+  ^defines=github.com/paxlabs-inc/uwac/internal/httpx/httpx.go
+
+NODE id=github.com/paxlabs-inc/uwac/internal/httpx/httpx.go kind=file
+  digest=b3:cf5eff9de9b95d78ed5e47f7e7420bd6cc817b8ac6c92418b43d4149b7870e35 file=uwac/internal/httpx/httpx.go range=1:109 lang=go exported=true
+EDGES
+  defines=github.com/paxlabs-inc/uwac/internal/httpx.Client,github.com/paxlabs-inc/uwac/internal/httpx.Client.Form,github.com/paxlabs-inc/uwac/internal/httpx.Client.JSON,github.com/paxlabs-inc/uwac/internal/httpx.Client.JSONWithHeaders,github.com/paxlabs-inc/uwac/internal/httpx.Client.do,github.com/paxlabs-inc/uwac/internal/httpx.Error,github.com/paxlabs-inc/uwac/internal/httpx.Error.Error,github.com/paxlabs-inc/uwac/internal/httpx.New
+  ^contains=github.com/paxlabs-inc/uwac/internal/httpx

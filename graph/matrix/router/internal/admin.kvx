@@ -1,0 +1,377 @@
+# GENERATED gen=codegraph do-not-edit merkle=b3:2dc69ec8dbbe0231373534486cf12ff6fdb0eaad7b2dfdcbc4d73453c8542ee8
+
+NODE id=matrix/router/internal/admin kind=package
+  digest=b3:6e945b5b7af8e00d17446b14ecbad40b7a32448f0bf3d04f991169de160bcb8c file=router/internal/admin range=0:0 lang=go exported=true
+EDGES
+  contains=matrix/router/internal/admin/admin.go,matrix/router/internal/admin/beta.go
+  ^contains=mod:matrix/router
+
+NODE id=matrix/router/internal/admin.CreateInviteRequest kind=type
+  digest=b3:8990c6089eb1713bcae0bc11ea91863be59931647fe44d0dc7f77593c296c137 file=router/internal/admin/beta.go range=27:31 lang=go exported=true byte_range=746:985
+  sig=type CreateInviteRequest struct {\n	MaxRedemptions	int		`json:"max_redemptions,omitempty"`	// default 1\n	ExpiresAt	*time.Time	`json:"expires_at,omitempty"`		// RFC3339\n}
+  doc=CreateInviteRequest is the POST /admin/invites body.
+EDGES
+  contains=matrix/router/internal/admin.CreateInviteRequest#ExpiresAt,matrix/router/internal/admin.CreateInviteRequest#MaxRedemptions
+  ^defines=matrix/router/internal/admin/beta.go
+
+NODE id=matrix/router/internal/admin.CreateInviteRequest#ExpiresAt kind=field
+  digest=b3:7244d1b3be8a4f8150305c892d1349285c91d59877735c91f3ea3d3728167fd3 file=router/internal/admin/beta.go range=30:30 lang=go exported=true byte_range=912:967
+  sig=*time.Time
+EDGES
+  ^contains=matrix/router/internal/admin.CreateInviteRequest
+
+NODE id=matrix/router/internal/admin.CreateInviteRequest#MaxRedemptions kind=field
+  digest=b3:a8072f7cc818ddf2cc2e709d71ab45a07bc6b561ff6a9003eb7d2cc41778b66c file=router/internal/admin/beta.go range=29:29 lang=go exported=true byte_range=837:897
+  sig=int
+EDGES
+  ^contains=matrix/router/internal/admin.CreateInviteRequest
+
+NODE id=matrix/router/internal/admin.CreateUserRequest kind=type
+  digest=b3:730d19c66801704f718ce1d36a048237b2391d6aadeda638a0110c949609a607 file=router/internal/admin/admin.go range=66:72 lang=go exported=true byte_range=2315:2621
+  sig=type CreateUserRequest struct {\n	SupabaseUserID	string	`json:"supabase_user_id"`\n	Email		string	`json:"email,omitempty"`\n	Handle		string	`json:"handle,omitempty"`\n	Region		string	`json:"region,omitempty"`	// override DefaultRegion\n}
+  doc=CreateUserRequest is the POST /admin/users body.
+EDGES
+  contains=matrix/router/internal/admin.CreateUserRequest#Email,matrix/router/internal/admin.CreateUserRequest#Handle,matrix/router/internal/admin.CreateUserRequest#Region,matrix/router/internal/admin.CreateUserRequest#SupabaseUserID
+  ^defines=matrix/router/internal/admin/admin.go
+
+NODE id=matrix/router/internal/admin.CreateUserRequest#Email kind=field
+  digest=b3:5ea349d209bb5b9d471821edb7eed0a28c6d655eaf3945d9e178eb7e849aebef file=router/internal/admin/admin.go range=69:69 lang=go exported=true byte_range=2449:2495
+  sig=string
+EDGES
+  ^contains=matrix/router/internal/admin.CreateUserRequest
+
+NODE id=matrix/router/internal/admin.CreateUserRequest#Handle kind=field
+  digest=b3:06a590590d1342583952d448718e9679266dad7b26b049bab921c70fe125b17a file=router/internal/admin/admin.go range=70:70 lang=go exported=true byte_range=2497:2544
+  sig=string
+EDGES
+  ^contains=matrix/router/internal/admin.CreateUserRequest
+
+NODE id=matrix/router/internal/admin.CreateUserRequest#Region kind=field
+  digest=b3:9330447ebb136da22234e703cd0c2e44f84ab9c89bde35c71c2499b43b512055 file=router/internal/admin/admin.go range=71:71 lang=go exported=true byte_range=2546:2593
+  sig=string
+EDGES
+  ^contains=matrix/router/internal/admin.CreateUserRequest
+
+NODE id=matrix/router/internal/admin.CreateUserRequest#SupabaseUserID kind=field
+  digest=b3:baf6f2d0d51fc995f27a8ad4b50b603fe07cad6b30d6f5d27ec18c47b5c83e52 file=router/internal/admin/admin.go range=68:68 lang=go exported=true byte_range=2400:2447
+  sig=string
+EDGES
+  ^contains=matrix/router/internal/admin.CreateUserRequest
+
+NODE id=matrix/router/internal/admin.CreateUserResponse kind=type
+  digest=b3:9e8c61e5093fc5cffa2f44c28dc7ced5d2d91d6b3c5303ba828ba05549e6142a file=router/internal/admin/admin.go range=74:85 lang=go exported=true byte_range=2623:3175
+  sig=type CreateUserResponse struct {\n	UserID		string	`json:"user_id"`\n	State		string	`json:"state"`\n	FlyMachineID	string	`json:"fly_machine_id,omitempty"`\n	FlyVolumeID	string	`json:"fly_volume_id,omitempty"`\n	Region		string	`json:"region,omitempty"`\n	JobID		int64	`json:"job_id,omitempty"`\n}
+  doc=CreateUserResponse mirrors enough of the user row for the operator\nto confirm provisioning landed. The fly_-prefixed JSON keys are kept\nfor operator-tooling compatibility; they carry the active provider's\nenvironment/volume ids.
+EDGES
+  contains=matrix/router/internal/admin.CreateUserResponse#FlyMachineID,matrix/router/internal/admin.CreateUserResponse#FlyVolumeID,matrix/router/internal/admin.CreateUserResponse#JobID,matrix/router/internal/admin.CreateUserResponse#Region,matrix/router/internal/admin.CreateUserResponse#State,matrix/router/internal/admin.CreateUserResponse#UserID
+  ^defines=matrix/router/internal/admin/admin.go
+
+NODE id=matrix/router/internal/admin.CreateUserResponse#FlyMachineID kind=field
+  digest=b3:2082bb1d44267154a9eb752fe6117556864314441fb03a3d5f86ef7d940a7016 file=router/internal/admin/admin.go range=81:81 lang=go exported=true byte_range=2972:3025
+  sig=string
+EDGES
+  ^contains=matrix/router/internal/admin.CreateUserResponse
+
+NODE id=matrix/router/internal/admin.CreateUserResponse#FlyVolumeID kind=field
+  digest=b3:25d2b63f477ac563a9ce1c9c440c3b6aa5e867a5764bd313f70dbc88580b0fab file=router/internal/admin/admin.go range=82:82 lang=go exported=true byte_range=3027:3079
+  sig=string
+EDGES
+  ^contains=matrix/router/internal/admin.CreateUserResponse
+
+NODE id=matrix/router/internal/admin.CreateUserResponse#JobID kind=field
+  digest=b3:fc9f376ccd6f97c9e57217fca552d9eae0ee69e04bfde963efc5a50a5d784d04 file=router/internal/admin/admin.go range=84:84 lang=go exported=true byte_range=3128:3173
+  sig=int64
+EDGES
+  ^contains=matrix/router/internal/admin.CreateUserResponse
+
+NODE id=matrix/router/internal/admin.CreateUserResponse#Region kind=field
+  digest=b3:54cf45e70309c3d73109a3d74d58c3f0087e2c8856ee2ec37c300733dbbdf7c0 file=router/internal/admin/admin.go range=83:83 lang=go exported=true byte_range=3081:3126
+  sig=string
+EDGES
+  ^contains=matrix/router/internal/admin.CreateUserResponse
+
+NODE id=matrix/router/internal/admin.CreateUserResponse#State kind=field
+  digest=b3:5a4b48bf5137d8e5d9d6d87431e3869b983555f88e4647b49a3b5463afbe3d04 file=router/internal/admin/admin.go range=80:80 lang=go exported=true byte_range=2936:2970
+  sig=string
+EDGES
+  ^contains=matrix/router/internal/admin.CreateUserResponse
+
+NODE id=matrix/router/internal/admin.CreateUserResponse#UserID kind=field
+  digest=b3:e72c8bdc840a7adc2361274f369350c049924b5f5933ce7a5cd09f6a4f49fcc4 file=router/internal/admin/admin.go range=79:79 lang=go exported=true byte_range=2898:2934
+  sig=string
+EDGES
+  ^contains=matrix/router/internal/admin.CreateUserResponse
+
+NODE id=matrix/router/internal/admin.Handler kind=type
+  digest=b3:c8c908396bcf9dc36ddaf41c39873e970f6b5a1732ff056598e3113afd72c95e file=router/internal/admin/admin.go range=40:53 lang=go exported=true byte_range=1315:1901
+  sig=type Handler struct {\n	DB			*db.DB\n	Prov			provision.Provisioner\n	Provider		string	// 'fly' | 'railway' — recorded on attached rows; empty defaults to 'fly'\n	DefaultRegion		string\n	MachineEnv		map[string]string	// baseline env for every environment\n	ProvisionTimeout	time.Duration		// budget per provision call\n	Log			Logf\n\n	// inflight dedupes concurrent StartProvision calls per user id so a\n	// burst of first requests provisions exactly one environment.\n	inflight	sync.Map\n}
+  doc=Handler bundles dependencies the admin routes share.
+EDGES
+  contains=matrix/router/internal/admin.Handler#DB,matrix/router/internal/admin.Handler#DefaultRegion,matrix/router/internal/admin.Handler#Log,matrix/router/internal/admin.Handler#MachineEnv,matrix/router/internal/admin.Handler#Prov,matrix/router/internal/admin.Handler#Provider,matrix/router/internal/admin.Handler#ProvisionTimeout,matrix/router/internal/admin.Handler#inflight,matrix/router/internal/admin.Handler.EnsureMachine,matrix/router/internal/admin.Handler.Mount,matrix/router/internal/admin.Handler.MountBeta,matrix/router/internal/admin.Handler.StartProvision,matrix/router/internal/admin.Handler.createInvite,matrix/router/internal/admin.Handler.deleteUser,matrix/router/internal/admin.Handler.getUser,matrix/router/internal/admin.Handler.handleInviteItem,matrix/router/internal/admin.Handler.handleInvitesCollection,matrix/router/internal/admin.Handler.handleReportItem,matrix/router/internal/admin.Handler.handleReportsCollection,matrix/router/internal/admin.Handler.handleUserItem,matrix/router/internal/admin.Handler.handleUsersCollection,matrix/router/internal/admin.Handler.instanceEnv,matrix/router/internal/admin.Handler.listInvites,matrix/router/internal/admin.Handler.logf,matrix/router/internal/admin.Handler.setState,matrix/router/internal/admin.Handler.timeout
+  implements=matrix/router/internal/proxy.Provisioner
+  ^defines=matrix/router/internal/admin/admin.go
+
+NODE id=matrix/router/internal/admin.Handler#DB kind=field
+  digest=b3:2a1ec00bc9729a198fa096aa3f88e2c895ddb5579366cb445fe11cb1fd8b73c9 file=router/internal/admin/admin.go range=42:42 lang=go exported=true byte_range=1394:1417
+  sig=*db.DB
+EDGES
+  ^contains=matrix/router/internal/admin.Handler
+
+NODE id=matrix/router/internal/admin.Handler#DefaultRegion kind=field
+  digest=b3:9a6f1aa0f296edd2a8c328c55648a01a441adaaff90a9bc2f4a0b6b6225858d2 file=router/internal/admin/admin.go range=45:45 lang=go exported=true byte_range=1560:1583
+  sig=string
+EDGES
+  ^contains=matrix/router/internal/admin.Handler
+
+NODE id=matrix/router/internal/admin.Handler#Log kind=field
+  digest=b3:e629e1a695141258bc55884fba67a4bac76b9453cc447ede18fcaaef6c10b74c file=router/internal/admin/admin.go range=48:48 lang=go exported=true byte_range=1724:1745
+  sig=admin.Logf
+EDGES
+  ^contains=matrix/router/internal/admin.Handler
+
+NODE id=matrix/router/internal/admin.Handler#MachineEnv kind=field
+  digest=b3:c22b64c005a0fbf55fc18dd864dfda7c4c276c70eb291c289cfc4d7e36faa605 file=router/internal/admin/admin.go range=46:46 lang=go exported=true byte_range=1585:1619
+  sig=map[string]string
+EDGES
+  ^contains=matrix/router/internal/admin.Handler
+
+NODE id=matrix/router/internal/admin.Handler#Prov kind=field
+  digest=b3:6b74eac70720b90ad18744b80b023bfe075b43fc2b1ea90b5aee89285b44dca2 file=router/internal/admin/admin.go range=43:43 lang=go exported=true byte_range=1419:1457
+  sig=provision.Provisioner
+EDGES
+  ^contains=matrix/router/internal/admin.Handler
+
+NODE id=matrix/router/internal/admin.Handler#Provider kind=field
+  digest=b3:67ba59615797d28c773031d9a9aeee56b83c5062082451c26f4b0c3a26a37f1f file=router/internal/admin/admin.go range=44:44 lang=go exported=true byte_range=1459:1482
+  sig=string
+EDGES
+  ^contains=matrix/router/internal/admin.Handler
+
+NODE id=matrix/router/internal/admin.Handler#ProvisionTimeout kind=field
+  digest=b3:413c58bb79a8bf6880d75c18e4f6609c404a1008bdee4e6d94eb97c752126a0a file=router/internal/admin/admin.go range=47:47 lang=go exported=true byte_range=1659:1689
+  sig=time.Duration
+EDGES
+  ^contains=matrix/router/internal/admin.Handler
+
+NODE id=matrix/router/internal/admin.Handler#inflight kind=field
+  digest=b3:a03be653cbe1926b720a983e5fc1a1a77b434d141c8d87297ce3d0f9619c8d50 file=router/internal/admin/admin.go range=50:52 lang=go exported=false byte_range=1748:1899
+  sig=sync.Map
+  doc=inflight dedupes concurrent StartProvision calls per user id so a\nburst of first requests provisions exactly one environment.
+EDGES
+  ^contains=matrix/router/internal/admin.Handler
+
+NODE id=matrix/router/internal/admin.Handler.EnsureMachine kind=method
+  digest=b3:7448a2d9e9fa12225bac260a3f6856b029cabb518e1d2883a857ce324cbe1569 file=router/internal/admin/admin.go range=124:191 lang=go exported=true byte_range=4296:6872
+  sig=func (h *Handler) EnsureMachine(ctx context.Context, userID, email, handle, region string) (*db.User, bool, error)
+  doc=EnsureMachine idempotently makes sure userID has a row plus an\nattached environment, provisioning a volume + instance via the\nactive provider when absent. Returns the resulting user row and\nwhether an environment was provisioned in this call. Shared by the\nadmin POST /admin/users handler and the proxy's first-request\nauto-provisioning path.
+EDGES
+  ^contains=matrix/router/internal/admin.Handler
+  ^defines=matrix/router/internal/admin/admin.go
+
+NODE id=matrix/router/internal/admin.Handler.Mount kind=method
+  digest=b3:aaac0e52fced664192debeae7b121617883b4c14d30cf80a6c9d3ccad2856608 file=router/internal/admin/admin.go range=55:64 lang=go exported=true byte_range=1903:2313
+  sig=func (h *Handler) Mount(mux *http.ServeMux)
+  doc=Mount registers the admin routes onto mux under "/admin/".\n\nHandler bodies are JSON; on success they return 200 + a JSON\nsnapshot of the user row. On error they return text (operator\ndebugging) with the appropriate status.
+EDGES
+  ^contains=matrix/router/internal/admin.Handler
+  ^defines=matrix/router/internal/admin/admin.go
+
+NODE id=matrix/router/internal/admin.Handler.MountBeta kind=method
+  digest=b3:b747037dbe33b111b5e034ca27ff41597edbcd663bdd2c6f1bf48a6f6bdfaf8b file=router/internal/admin/beta.go range=16:23 lang=go exported=true byte_range=244:667
+  sig=func (h *Handler) MountBeta(mux *http.ServeMux)
+  doc=MountBeta registers the beta-launch admin routes onto mux under "/admin/".\nCalled by Mount after the core user routes are registered.
+EDGES
+  ^contains=matrix/router/internal/admin.Handler
+  ^defines=matrix/router/internal/admin/beta.go
+
+NODE id=matrix/router/internal/admin.Handler.StartProvision kind=method
+  digest=b3:4de9dc1e2122511d9691638f82ddc5a09c05d8444fee97dd23e5c0d1df760ad3 file=router/internal/admin/admin.go range=210:241 lang=go exported=true byte_range=7451:8770
+  sig=func (h *Handler) StartProvision(userID, email string)
+  doc=StartProvision triggers EnsureMachine for userID out-of-band and\nreturns immediately, so the proxy can auto-provision on a first\nauthenticated request without blocking the response. Concurrent calls\nfor the same user are deduplicated via inflight, so a burst of first\nrequests provisions exactly one environment.
+EDGES
+  ^contains=matrix/router/internal/admin.Handler
+  ^defines=matrix/router/internal/admin/admin.go
+
+NODE id=matrix/router/internal/admin.Handler.createInvite kind=method
+  digest=b3:70ad63c5f1095a7ebb44edb4839a23121f73538403adaa2f76a5b641ef041122 file=router/internal/admin/beta.go range=56:92 lang=go exported=false byte_range=1756:2873
+  sig=func (h *Handler) createInvite(w http.ResponseWriter, r *http.Request)
+EDGES
+  ^contains=matrix/router/internal/admin.Handler
+  ^defines=matrix/router/internal/admin/beta.go
+
+NODE id=matrix/router/internal/admin.Handler.deleteUser kind=method
+  digest=b3:b28ff68e28909135eb81c982cc03cb113f50def5807852ea7d654340076e530c file=router/internal/admin/admin.go range=301:324 lang=go exported=false byte_range=10549:11388
+  sig=func (h *Handler) deleteUser(ctx context.Context, w http.ResponseWriter, userID string)
+EDGES
+  ^contains=matrix/router/internal/admin.Handler
+  ^defines=matrix/router/internal/admin/admin.go
+
+NODE id=matrix/router/internal/admin.Handler.getUser kind=method
+  digest=b3:57b796600e933fdc0eea091ca593d7d03217fd3fddacdb24bce0a07154cfff41 file=router/internal/admin/admin.go range=274:285 lang=go exported=false byte_range=9756:10117
+  sig=func (h *Handler) getUser(ctx context.Context, w http.ResponseWriter, userID string)
+EDGES
+  ^contains=matrix/router/internal/admin.Handler
+  ^defines=matrix/router/internal/admin/admin.go
+
+NODE id=matrix/router/internal/admin.Handler.handleInviteItem kind=method
+  digest=b3:3b3358f9cdd6bba9ae0622c46ca35cdaec9c37d85f87dc0a336e51c2eb9dc6e7 file=router/internal/admin/beta.go range=120:156 lang=go exported=false byte_range=3655:4744
+  sig=func (h *Handler) handleInviteItem(w http.ResponseWriter, r *http.Request)
+EDGES
+  ^contains=matrix/router/internal/admin.Handler
+  ^defines=matrix/router/internal/admin/beta.go
+
+NODE id=matrix/router/internal/admin.Handler.handleInvitesCollection kind=method
+  digest=b3:01aed39659632a5665fdeda72a0f4d80d7d7343c281d3c5f617df6790b03bd9e file=router/internal/admin/beta.go range=44:54 lang=go exported=false byte_range=1441:1754
+  sig=func (h *Handler) handleInvitesCollection(w http.ResponseWriter, r *http.Request)
+EDGES
+  ^contains=matrix/router/internal/admin.Handler
+  ^defines=matrix/router/internal/admin/beta.go
+
+NODE id=matrix/router/internal/admin.Handler.handleReportItem kind=method
+  digest=b3:5e5775c62b255a79bfe770e22d4795f95b349bc9e603d941f6a6f58e17da5993 file=router/internal/admin/beta.go range=192:226 lang=go exported=false byte_range=5754:6751
+  sig=func (h *Handler) handleReportItem(w http.ResponseWriter, r *http.Request)
+EDGES
+  ^contains=matrix/router/internal/admin.Handler
+  ^defines=matrix/router/internal/admin/beta.go
+
+NODE id=matrix/router/internal/admin.Handler.handleReportsCollection kind=method
+  digest=b3:567755507a8c80e9ee52e4478618e38d06fc6dd6d3895c3211042f77db1d0738 file=router/internal/admin/beta.go range=160:190 lang=go exported=false byte_range=4823:5752
+  sig=func (h *Handler) handleReportsCollection(w http.ResponseWriter, r *http.Request)
+EDGES
+  ^contains=matrix/router/internal/admin.Handler
+  ^defines=matrix/router/internal/admin/beta.go
+
+NODE id=matrix/router/internal/admin.Handler.handleUserItem kind=method
+  digest=b3:5ae7a3daab6eb41cd380d694c275e8634cff939a84499983b8808ba04a9398d0 file=router/internal/admin/admin.go range=243:272 lang=go exported=false byte_range=8772:9754
+  sig=func (h *Handler) handleUserItem(w http.ResponseWriter, r *http.Request)
+  doc=handleUserItem dispatches /admin/users/{id}[/{action}].
+EDGES
+  ^contains=matrix/router/internal/admin.Handler
+  ^defines=matrix/router/internal/admin/admin.go
+
+NODE id=matrix/router/internal/admin.Handler.handleUsersCollection kind=method
+  digest=b3:720046103c02b6e4f530e367c86bfc5972f4bf4c9c3014fdb42a103c9bd77997 file=router/internal/admin/admin.go range=87:122 lang=go exported=false byte_range=3177:4294
+  sig=func (h *Handler) handleUsersCollection(w http.ResponseWriter, r *http.Request)
+EDGES
+  ^contains=matrix/router/internal/admin.Handler
+  ^defines=matrix/router/internal/admin/admin.go
+
+NODE id=matrix/router/internal/admin.Handler.instanceEnv kind=method
+  digest=b3:cc2a19a2101b23e0056ec0ad56221b37f7795a5f69b0a153646c6abc9c0daa66 file=router/internal/admin/admin.go range=193:208 lang=go exported=false byte_range=6874:7449
+  sig=func (h *Handler) instanceEnv(userID string) map[string]string
+  doc=instanceEnv builds the per-instance environment-variable set: the\nuser identity plus the operator baseline (MachineEnv).
+EDGES
+  ^contains=matrix/router/internal/admin.Handler
+  ^defines=matrix/router/internal/admin/admin.go
+
+NODE id=matrix/router/internal/admin.Handler.listInvites kind=method
+  digest=b3:29ddc7c9762c1357facb300e917dec11847d9520282491be5c7d19c576c7ce89 file=router/internal/admin/beta.go range=94:118 lang=go exported=false byte_range=2875:3653
+  sig=func (h *Handler) listInvites(w http.ResponseWriter, r *http.Request)
+EDGES
+  ^contains=matrix/router/internal/admin.Handler
+  ^defines=matrix/router/internal/admin/beta.go
+
+NODE id=matrix/router/internal/admin.Handler.logf kind=method
+  digest=b3:0226664825b2fbf3b1cc0a77858948171afb3826f38176513b09b4eccd4feaeb file=router/internal/admin/admin.go range=334:338 lang=go exported=false byte_range=11576:11685
+  sig=func (h *Handler) logf(format string, args ...interface{})
+EDGES
+  ^contains=matrix/router/internal/admin.Handler
+  ^defines=matrix/router/internal/admin/admin.go
+
+NODE id=matrix/router/internal/admin.Handler.setState kind=method
+  digest=b3:7684dd0b79910afa424836d91a67d0fe2ff5c037c628ed1c7a952dd4f5e91081 file=router/internal/admin/admin.go range=287:299 lang=go exported=false byte_range=10119:10547
+  sig=func (h *Handler) setState(ctx context.Context, w http.ResponseWriter, userID, state string)
+EDGES
+  ^contains=matrix/router/internal/admin.Handler
+  ^defines=matrix/router/internal/admin/admin.go
+
+NODE id=matrix/router/internal/admin.Handler.timeout kind=method
+  digest=b3:be5760322dbc515faaee7706f672d00fd5f47def8369471ee52838afde5518e1 file=router/internal/admin/admin.go range=326:332 lang=go exported=false byte_range=11390:11574
+  sig=func (h *Handler) timeout() time.Duration
+  doc=timeout returns ProvisionTimeout or a 60s default.
+EDGES
+  ^contains=matrix/router/internal/admin.Handler
+  ^defines=matrix/router/internal/admin/admin.go
+
+NODE id=matrix/router/internal/admin.InviteResponse kind=type
+  digest=b3:7a47b661f887d7af329808cc3fe0984c4035f1ae685a1174994d55bccbfb6cda file=router/internal/admin/beta.go range=33:42 lang=go exported=true byte_range=987:1439
+  sig=type InviteResponse struct {\n	Code		string		`json:"code"`\n	MaxRedemptions	int		`json:"max_redemptions"`\n	RedemptionsUsed	int		`json:"redemptions_used"`\n	Remaining	int		`json:"remaining"`\n	ExpiresAt	*time.Time	`json:"expires_at,omitempty"`\n	CreatedBy	string		`json:"created_by,omitempty"`\n	CreatedAt	time.Time	`json:"created_at"`\n}
+  doc=InviteResponse is the JSON shape for a single invite code.
+EDGES
+  contains=matrix/router/internal/admin.InviteResponse#Code,matrix/router/internal/admin.InviteResponse#CreatedAt,matrix/router/internal/admin.InviteResponse#CreatedBy,matrix/router/internal/admin.InviteResponse#ExpiresAt,matrix/router/internal/admin.InviteResponse#MaxRedemptions,matrix/router/internal/admin.InviteResponse#RedemptionsUsed,matrix/router/internal/admin.InviteResponse#Remaining
+  ^defines=matrix/router/internal/admin/beta.go
+
+NODE id=matrix/router/internal/admin.InviteResponse#Code kind=field
+  digest=b3:26b7643c7464a278bead2ab59bc9ab39b1c2ec596b30171cc5ea71d4b5a20fe6 file=router/internal/admin/beta.go range=35:35 lang=go exported=true byte_range=1079:1119
+  sig=string
+EDGES
+  ^contains=matrix/router/internal/admin.InviteResponse
+
+NODE id=matrix/router/internal/admin.InviteResponse#CreatedAt kind=field
+  digest=b3:cf90a7ae251c240ebbae08f17d732ad6012d941f050519234818051b8f3ce6fe file=router/internal/admin/beta.go range=41:41 lang=go exported=true byte_range=1391:1437
+  sig=time.Time
+EDGES
+  ^contains=matrix/router/internal/admin.InviteResponse
+
+NODE id=matrix/router/internal/admin.InviteResponse#CreatedBy kind=field
+  digest=b3:0f09186ecb8abdb67670d9588410a075042b5c9d105bd7c53eba7f79709c8e7f file=router/internal/admin/beta.go range=40:40 lang=go exported=true byte_range=1333:1389
+  sig=string
+EDGES
+  ^contains=matrix/router/internal/admin.InviteResponse
+
+NODE id=matrix/router/internal/admin.InviteResponse#ExpiresAt kind=field
+  digest=b3:a64b6719c0d80b4429612ab381326c7665c0abbaacfd62854e89f9401a16deb0 file=router/internal/admin/beta.go range=39:39 lang=go exported=true byte_range=1275:1331
+  sig=*time.Time
+EDGES
+  ^contains=matrix/router/internal/admin.InviteResponse
+
+NODE id=matrix/router/internal/admin.InviteResponse#MaxRedemptions kind=field
+  digest=b3:b63479cf19f3e07b69e18b2cb79f70a663631b1abe75509179cb99da3e77edef file=router/internal/admin/beta.go range=36:36 lang=go exported=true byte_range=1121:1172
+  sig=int
+EDGES
+  ^contains=matrix/router/internal/admin.InviteResponse
+
+NODE id=matrix/router/internal/admin.InviteResponse#RedemptionsUsed kind=field
+  digest=b3:4b2e932cf013945af75767f90d71adce374f61cdbe23ed3db1d11933ca140f10 file=router/internal/admin/beta.go range=37:37 lang=go exported=true byte_range=1174:1226
+  sig=int
+EDGES
+  ^contains=matrix/router/internal/admin.InviteResponse
+
+NODE id=matrix/router/internal/admin.InviteResponse#Remaining kind=field
+  digest=b3:c1f3b65a386431f946a78ae03809f324079f55c3a03767a6c4c3233e34e24f87 file=router/internal/admin/beta.go range=38:38 lang=go exported=true byte_range=1228:1273
+  sig=int
+EDGES
+  ^contains=matrix/router/internal/admin.InviteResponse
+
+NODE id=matrix/router/internal/admin.Logf kind=type
+  digest=b3:4b246a2a9d6fd7f603c089274c6e92a669051b2474da5e032b8833aaaa07c8ed file=router/internal/admin/admin.go range=36:38 lang=go exported=true byte_range=1177:1313
+  sig=type Logf func(format string, args ...interface{})
+  doc=Logf is the optional log sink used by handlers. Cmd/main.go wires\nto os.Stderr.
+EDGES
+  ^defines=matrix/router/internal/admin/admin.go
+
+NODE id=matrix/router/internal/admin.generateInviteCode kind=func
+  digest=b3:20395012acc7b09986b31d0e93d998bdfcf6c619b368acb553814b812ebd0cb2 file=router/internal/admin/beta.go range=228:238 lang=go exported=false byte_range=6753:7165
+  sig=func generateInviteCode() (string, error)
+  doc=generateInviteCode produces a 24-character hex string (12 bytes of\ncrypto-strong entropy). 2^96 possibilities — unguessable. Returns an\nerror if the system CSPRNG fails, so a degraded-entropy (e.g. all-zero)\ncode can never be issued.
+EDGES
+  ^defines=matrix/router/internal/admin/beta.go
+
+NODE id=matrix/router/internal/admin.writeJSON kind=func
+  digest=b3:3a1337f55d0a3f7c7718c483327424bf73b6a1dbf17638e0e04ec001025df809 file=router/internal/admin/admin.go range=340:345 lang=go exported=false byte_range=11687:11947
+  sig=func writeJSON(w http.ResponseWriter, status int, v any)
+  doc=writeJSON marshals v + writes as application/json with the given status.
+EDGES
+  ^defines=matrix/router/internal/admin/admin.go
+
+NODE id=matrix/router/internal/admin/admin.go kind=file
+  digest=b3:934d4ddfb8c3b11a1c59a52b719211ca0bb2f87f906b172e35af3efff477b4fb file=router/internal/admin/admin.go range=1:347 lang=go exported=true
+EDGES
+  defines=matrix/router/internal/admin.CreateUserRequest,matrix/router/internal/admin.CreateUserResponse,matrix/router/internal/admin.Handler,matrix/router/internal/admin.Handler.EnsureMachine,matrix/router/internal/admin.Handler.Mount,matrix/router/internal/admin.Handler.StartProvision,matrix/router/internal/admin.Handler.deleteUser,matrix/router/internal/admin.Handler.getUser,matrix/router/internal/admin.Handler.handleUserItem,matrix/router/internal/admin.Handler.handleUsersCollection,matrix/router/internal/admin.Handler.instanceEnv,matrix/router/internal/admin.Handler.logf,matrix/router/internal/admin.Handler.setState,matrix/router/internal/admin.Handler.timeout,matrix/router/internal/admin.Logf,matrix/router/internal/admin.writeJSON
+  ^contains=matrix/router/internal/admin
+
+NODE id=matrix/router/internal/admin/beta.go kind=file
+  digest=b3:8d49169b3bc360e62308ad4f74363c65529e1abd7483487da08e8e951b9003e6 file=router/internal/admin/beta.go range=1:238 lang=go exported=true
+EDGES
+  defines=matrix/router/internal/admin.CreateInviteRequest,matrix/router/internal/admin.Handler.MountBeta,matrix/router/internal/admin.Handler.createInvite,matrix/router/internal/admin.Handler.handleInviteItem,matrix/router/internal/admin.Handler.handleInvitesCollection,matrix/router/internal/admin.Handler.handleReportItem,matrix/router/internal/admin.Handler.handleReportsCollection,matrix/router/internal/admin.Handler.listInvites,matrix/router/internal/admin.InviteResponse,matrix/router/internal/admin.generateInviteCode
+  ^contains=matrix/router/internal/admin

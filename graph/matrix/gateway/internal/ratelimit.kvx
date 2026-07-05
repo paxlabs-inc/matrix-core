@@ -1,0 +1,136 @@
+# GENERATED gen=codegraph do-not-edit merkle=b3:2dc69ec8dbbe0231373534486cf12ff6fdb0eaad7b2dfdcbc4d73453c8542ee8
+
+NODE id=matrix/gateway/internal/ratelimit kind=package
+  digest=b3:ea4411d209c69221390b413f486ee26a3e2ce7e84cdf4de233b74a034026ab8a file=gateway/internal/ratelimit range=0:0 lang=go exported=true
+EDGES
+  contains=matrix/gateway/internal/ratelimit/ratelimit.go
+  ^contains=mod:matrix/gateway
+
+NODE id=matrix/gateway/internal/ratelimit.Limiter kind=type
+  digest=b3:5604a3a57055f45503f23fad749e45a7b7e1430b7074a4bfff036ffbd3d493ca file=gateway/internal/ratelimit/ratelimit.go range=24:38 lang=go exported=true byte_range=957:1306
+  sig=type Limiter struct {\n	mu	sync.Mutex\n\n	// rate is the bucket refill rate (tokens per second).\n	rate	float64\n\n	// burst is the bucket size (max tokens carried at any moment).\n	burst	float64\n\n	// now overrides time.Now for tests; nil → real wall clock.\n	now	func() time.Time\n\n	buckets	map[string]*bucket\n}
+  doc=Limiter is a per-key token bucket store.
+EDGES
+  contains=matrix/gateway/internal/ratelimit.Limiter#buckets,matrix/gateway/internal/ratelimit.Limiter#burst,matrix/gateway/internal/ratelimit.Limiter#mu,matrix/gateway/internal/ratelimit.Limiter#now,matrix/gateway/internal/ratelimit.Limiter#rate,matrix/gateway/internal/ratelimit.Limiter.Allow,matrix/gateway/internal/ratelimit.Limiter.AllowN,matrix/gateway/internal/ratelimit.Limiter.Reset,matrix/gateway/internal/ratelimit.Limiter.SetClock,matrix/gateway/internal/ratelimit.Limiter.Snapshot,matrix/gateway/internal/ratelimit.Limiter.String,matrix/gateway/internal/ratelimit.Limiter.nowFn
+  ^defines=matrix/gateway/internal/ratelimit/ratelimit.go
+
+NODE id=matrix/gateway/internal/ratelimit.Limiter#buckets kind=field
+  digest=b3:76d571f93fa3e22c29ba1b5bb244da027ccf8ce51c296112dbfabb770157b990 file=gateway/internal/ratelimit/ratelimit.go range=37:37 lang=go exported=false byte_range=1278:1304
+  sig=map[string]*ratelimit.bucket
+EDGES
+  ^contains=matrix/gateway/internal/ratelimit.Limiter
+
+NODE id=matrix/gateway/internal/ratelimit.Limiter#burst kind=field
+  digest=b3:92470f3746615a961a7f4cf4a664d3853a66c59ad42f5dbe331c4096f0fa59ea file=gateway/internal/ratelimit/ratelimit.go range=31:32 lang=go exported=false byte_range=1111:1189
+  sig=float64
+  doc=burst is the bucket size (max tokens carried at any moment).
+EDGES
+  ^contains=matrix/gateway/internal/ratelimit.Limiter
+
+NODE id=matrix/gateway/internal/ratelimit.Limiter#mu kind=field
+  digest=b3:39900127b880b54480d22cb732bafa4d327158a75dfaf9a471d531a79898660c file=gateway/internal/ratelimit/ratelimit.go range=26:26 lang=go exported=false byte_range=1024:1037
+  sig=sync.Mutex
+EDGES
+  ^contains=matrix/gateway/internal/ratelimit.Limiter
+
+NODE id=matrix/gateway/internal/ratelimit.Limiter#now kind=field
+  digest=b3:b2cfd2e699dce89304923e1b49cd6c87ac202c397c80c98c7a149e61eb408f32 file=gateway/internal/ratelimit/ratelimit.go range=34:35 lang=go exported=false byte_range=1192:1275
+  sig=func() time.Time
+  doc=now overrides time.Now for tests; nil → real wall clock.
+EDGES
+  ^contains=matrix/gateway/internal/ratelimit.Limiter
+
+NODE id=matrix/gateway/internal/ratelimit.Limiter#rate kind=field
+  digest=b3:8a935de8646d536e4dbfd2b42d5210ff1123c814b40abeff684cc8ceee766621 file=gateway/internal/ratelimit/ratelimit.go range=28:29 lang=go exported=false byte_range=1040:1108
+  sig=float64
+  doc=rate is the bucket refill rate (tokens per second).
+EDGES
+  ^contains=matrix/gateway/internal/ratelimit.Limiter
+
+NODE id=matrix/gateway/internal/ratelimit.Limiter.Allow kind=method
+  digest=b3:72ab6152dfec728e79728c9239eda7e2219ec8eeaf6ebbe9ecb4252ea18c429d file=gateway/internal/ratelimit/ratelimit.go range=79:85 lang=go exported=true byte_range=2208:2503
+  sig=func (l *Limiter) Allow(key string) bool
+  doc=Allow consumes one token from the bucket identified by key. Returns\ntrue when the request is allowed; false when the bucket is empty.\nWhen ratePerSec was 0 at construction, every call returns true\n(no-op limiter).
+EDGES
+  ^contains=matrix/gateway/internal/ratelimit.Limiter
+  ^defines=matrix/gateway/internal/ratelimit/ratelimit.go
+
+NODE id=matrix/gateway/internal/ratelimit.Limiter.AllowN kind=method
+  digest=b3:ea077bb343860aa67d505f93f5a96d1891572b17743770a0596fdbde459e25e0 file=gateway/internal/ratelimit/ratelimit.go range=87:120 lang=go exported=true byte_range=2505:3276
+  sig=func (l *Limiter) AllowN(key string, n float64) bool
+  doc=AllowN consumes n tokens from the bucket identified by key.\nConvenience for batched/embedding-window calls. Returns false when\nthe bucket can't satisfy the full demand (no partial consumption).
+EDGES
+  ^contains=matrix/gateway/internal/ratelimit.Limiter
+  ^defines=matrix/gateway/internal/ratelimit/ratelimit.go
+
+NODE id=matrix/gateway/internal/ratelimit.Limiter.Reset kind=method
+  digest=b3:ec89bb0c20a3cb4728d7365c27a96cc555ba642fed7f3a8e10deb16ed9679960 file=gateway/internal/ratelimit/ratelimit.go range=135:140 lang=go exported=true byte_range=3623:3764
+  sig=func (l *Limiter) Reset()
+  doc=Reset clears all buckets. Test-only.
+EDGES
+  ^contains=matrix/gateway/internal/ratelimit.Limiter
+  ^defines=matrix/gateway/internal/ratelimit/ratelimit.go
+
+NODE id=matrix/gateway/internal/ratelimit.Limiter.SetClock kind=method
+  digest=b3:68f81c3681ea90ac102695ef98b007eddd06f6b5c891215a18cb9c52c81dcb68 file=gateway/internal/ratelimit/ratelimit.go range=63:69 lang=go exported=true byte_range=1834:2048
+  sig=func (l *Limiter) SetClock(now func() time.Time)
+  doc=SetClock injects a clock function for tests so refill arithmetic is\ndeterministic. nil resets to wall clock.
+EDGES
+  ^contains=matrix/gateway/internal/ratelimit.Limiter
+  ^defines=matrix/gateway/internal/ratelimit/ratelimit.go
+
+NODE id=matrix/gateway/internal/ratelimit.Limiter.Snapshot kind=method
+  digest=b3:672054d7f5fc50a23e8d9179e4661100efa5ea5cf843a7dc9650cde05114fef8 file=gateway/internal/ratelimit/ratelimit.go range=122:133 lang=go exported=true byte_range=3278:3621
+  sig=func (l *Limiter) Snapshot(key string) float64
+  doc=Snapshot returns the current token count for key, useful for\n/metrics endpoints or assertions in tests. Missing keys return\nburst (the bucket is virtually full until first use).
+EDGES
+  ^contains=matrix/gateway/internal/ratelimit.Limiter
+  ^defines=matrix/gateway/internal/ratelimit/ratelimit.go
+
+NODE id=matrix/gateway/internal/ratelimit.Limiter.String kind=method
+  digest=b3:53a11dc4981de56152b00ff6620051e0d89122be58a9e0eb673fd2b0969d833a file=gateway/internal/ratelimit/ratelimit.go range=142:145 lang=go exported=true byte_range=3766:3939
+  sig=func (l *Limiter) String() string
+  doc=String returns a single-line descriptor for log lines.
+EDGES
+  ^contains=matrix/gateway/internal/ratelimit.Limiter
+  ^defines=matrix/gateway/internal/ratelimit/ratelimit.go
+
+NODE id=matrix/gateway/internal/ratelimit.Limiter.nowFn kind=method
+  digest=b3:5b9bf9d8725290c464a70d952445747ed9fc06f02e4f26de27db61d9a0427c0a file=gateway/internal/ratelimit/ratelimit.go range=71:77 lang=go exported=false byte_range=2050:2206
+  sig=func (l *Limiter) nowFn() time.Time
+  doc=nowFn returns the active clock, defaulting to time.Now.
+EDGES
+  ^contains=matrix/gateway/internal/ratelimit.Limiter
+  ^defines=matrix/gateway/internal/ratelimit/ratelimit.go
+
+NODE id=matrix/gateway/internal/ratelimit.New kind=func
+  digest=b3:7744d6a2526e7bd47800630d5ea4310158ff4f9410e5e9177b8d25d7c5a3a4a0 file=gateway/internal/ratelimit/ratelimit.go range=45:61 lang=go exported=true byte_range=1370:1832
+  sig=func New(ratePerSec, burst float64) *Limiter
+  doc=New constructs a Limiter with the given refill rate (tokens/second)\nand burst capacity. ratePerSec=0 disables rate limiting (every\nAllow returns true). burst<=0 defaults to ratePerSec (i.e. one\nsecond of burst headroom).
+EDGES
+  ^defines=matrix/gateway/internal/ratelimit/ratelimit.go
+
+NODE id=matrix/gateway/internal/ratelimit.bucket kind=type
+  digest=b3:07d2d570608a2339a51b844e8d739f9d38d2a41c7ff3809d41c526756327e68d file=gateway/internal/ratelimit/ratelimit.go range=40:43 lang=go exported=false byte_range=1308:1368
+  sig=type bucket struct {\n	tokens		float64\n	lastFill	time.Time\n}
+EDGES
+  contains=matrix/gateway/internal/ratelimit.bucket#lastFill,matrix/gateway/internal/ratelimit.bucket#tokens
+  ^defines=matrix/gateway/internal/ratelimit/ratelimit.go
+
+NODE id=matrix/gateway/internal/ratelimit.bucket#lastFill kind=field
+  digest=b3:ef53d48af6e88965e14ade8b3b6de4d8cced98c691efcc1bc06a5cfeb48dcd07 file=gateway/internal/ratelimit/ratelimit.go range=42:42 lang=go exported=false byte_range=1348:1366
+  sig=time.Time
+EDGES
+  ^contains=matrix/gateway/internal/ratelimit.bucket
+
+NODE id=matrix/gateway/internal/ratelimit.bucket#tokens kind=field
+  digest=b3:22c584e39e3041758a554bc1e75a2d43d4b9cd76b8830ce91f16fa6ac7926af8 file=gateway/internal/ratelimit/ratelimit.go range=41:41 lang=go exported=false byte_range=1330:1346
+  sig=float64
+EDGES
+  ^contains=matrix/gateway/internal/ratelimit.bucket
+
+NODE id=matrix/gateway/internal/ratelimit/ratelimit.go kind=file
+  digest=b3:13457297fa8139ab7cb7e2aa3bf35b05e404511ff693209dee40e3009eba2050 file=gateway/internal/ratelimit/ratelimit.go range=1:147 lang=go exported=true
+EDGES
+  defines=matrix/gateway/internal/ratelimit.Limiter,matrix/gateway/internal/ratelimit.Limiter.Allow,matrix/gateway/internal/ratelimit.Limiter.AllowN,matrix/gateway/internal/ratelimit.Limiter.Reset,matrix/gateway/internal/ratelimit.Limiter.SetClock,matrix/gateway/internal/ratelimit.Limiter.Snapshot,matrix/gateway/internal/ratelimit.Limiter.String,matrix/gateway/internal/ratelimit.Limiter.nowFn,matrix/gateway/internal/ratelimit.New,matrix/gateway/internal/ratelimit.bucket
+  ^contains=matrix/gateway/internal/ratelimit

@@ -1,0 +1,72 @@
+# GENERATED gen=codegraph do-not-edit merkle=b3:2dc69ec8dbbe0231373534486cf12ff6fdb0eaad7b2dfdcbc4d73453c8542ee8
+
+NODE id=github.com/paxlabs-inc/deus/internal/auth kind=package
+  digest=b3:61e08d837ac1381d87a6e4556e7629d64c6074bf0f2b15f0a4c64889fabc27eb file=deus/internal/auth range=0:0 lang=go exported=true
+EDGES
+  contains=github.com/paxlabs-inc/deus/internal/auth/auth.go
+  ^contains=mod:github.com/paxlabs-inc/deus
+
+NODE id=github.com/paxlabs-inc/deus/internal/auth.Caller kind=type
+  digest=b3:987cb4a5d3bcc0f5c749bd862e10716b48769c01486c8f46e8d66d56176d1c0b file=deus/internal/auth/auth.go range=11:16 lang=go exported=true byte_range=134:247
+  sig=type Caller struct {\n	DID	string\n	Wallet	string\n	Bearer	string\n}
+  doc=Caller is an authenticated agent identity.
+EDGES
+  contains=github.com/paxlabs-inc/deus/internal/auth.Caller#Bearer,github.com/paxlabs-inc/deus/internal/auth.Caller#DID,github.com/paxlabs-inc/deus/internal/auth.Caller#Wallet
+  ^defines=github.com/paxlabs-inc/deus/internal/auth/auth.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/auth.Caller#Bearer kind=field
+  digest=b3:746452c9b5b3bdb188e966c0448c5fa456807ebfa76a3ea4a6de888ac4dd37ee file=deus/internal/auth/auth.go range=15:15 lang=go exported=true byte_range=232:245
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/auth.Caller
+
+NODE id=github.com/paxlabs-inc/deus/internal/auth.Caller#DID kind=field
+  digest=b3:bb721149a8edb079feabd495e4c3efbfaf8be90807abc906c78299b25e796c25 file=deus/internal/auth/auth.go range=13:13 lang=go exported=true byte_range=202:215
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/auth.Caller
+
+NODE id=github.com/paxlabs-inc/deus/internal/auth.Caller#Wallet kind=field
+  digest=b3:e7792d7f0967361a7e2609beccf06c4566102ae003d586e5426d0bb8b9e74173 file=deus/internal/auth/auth.go range=14:14 lang=go exported=true byte_range=217:230
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/auth.Caller
+
+NODE id=github.com/paxlabs-inc/deus/internal/auth.FromContext kind=func
+  digest=b3:c15fe4c2134c62494b76e361b95c78e0b1d8994125d6f02b790a956d22757afc file=deus/internal/auth/auth.go range=22:26 lang=go exported=true byte_range=304:463
+  sig=func FromContext(ctx context.Context) (Caller, bool)
+  doc=FromContext returns the authenticated caller.
+EDGES
+  ^defines=github.com/paxlabs-inc/deus/internal/auth/auth.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/auth.Middleware kind=func
+  digest=b3:987a1afbf98b117c266313ff3ce4d1f830ca4ed4ac6d7ed2522125ac4434929e file=deus/internal/auth/auth.go range=28:43 lang=go exported=true byte_range=465:1082
+  sig=func Middleware(devMode bool) func(http.Handler) http.Handler
+  doc=Middleware authenticates agent callers (docs/05-api.md §5.1).
+EDGES
+  ^defines=github.com/paxlabs-inc/deus/internal/auth/auth.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/auth.ResolveRequest kind=func
+  digest=b3:790fb701c4477589a4555c9a136676c5fdadfd619095607b7374a031695bd9bf file=deus/internal/auth/auth.go range=45:74 lang=go exported=true byte_range=1084:2110
+  sig=func ResolveRequest(r *http.Request, devMode bool) (Caller, error)
+  doc=ResolveRequest extracts caller identity from headers.
+EDGES
+  ^defines=github.com/paxlabs-inc/deus/internal/auth/auth.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/auth.callerKey kind=const
+  digest=b3:cc26d1527a54ded6d9dcdd7ab5417b63cd728259ff6a566c560f154f3837715a file=deus/internal/auth/auth.go range=20:20 lang=go exported=false byte_range=275:302
+  sig=auth.ctxKey
+EDGES
+  ^defines=github.com/paxlabs-inc/deus/internal/auth/auth.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/auth.ctxKey kind=type
+  digest=b3:13008080e86e15f1144605c1cbabf3337a18bd81c5113dbb455bd467bd0854d7 file=deus/internal/auth/auth.go range=18:18 lang=go exported=false byte_range=249:267
+  sig=type ctxKey string
+EDGES
+  ^defines=github.com/paxlabs-inc/deus/internal/auth/auth.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/auth/auth.go kind=file
+  digest=b3:aa9dc828fd5b8d6af422c6b6c6f9081b50955c4dbda45103c4f8ac6a603cc661 file=deus/internal/auth/auth.go range=1:74 lang=go exported=true
+EDGES
+  defines=github.com/paxlabs-inc/deus/internal/auth.Caller,github.com/paxlabs-inc/deus/internal/auth.FromContext,github.com/paxlabs-inc/deus/internal/auth.Middleware,github.com/paxlabs-inc/deus/internal/auth.ResolveRequest,github.com/paxlabs-inc/deus/internal/auth.callerKey,github.com/paxlabs-inc/deus/internal/auth.ctxKey
+  ^contains=github.com/paxlabs-inc/deus/internal/auth

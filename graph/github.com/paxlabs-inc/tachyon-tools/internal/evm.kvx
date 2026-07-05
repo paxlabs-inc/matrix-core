@@ -1,0 +1,196 @@
+# GENERATED gen=codegraph do-not-edit merkle=b3:2dc69ec8dbbe0231373534486cf12ff6fdb0eaad7b2dfdcbc4d73453c8542ee8
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/internal/evm kind=package
+  digest=b3:003ea1ce88895c67934a179669dfd28657d6d250f38c188ff51e048700c979e6 file=tachyon/internal/evm range=0:0 lang=go exported=true
+EDGES
+  contains=github.com/paxlabs-inc/tachyon-tools/internal/evm/client.go,github.com/paxlabs-inc/tachyon-tools/internal/evm/evm.go
+  ^contains=mod:github.com/paxlabs-inc/tachyon-tools
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/internal/evm.Client kind=type
+  digest=b3:bbb57aad1d371f13f4e8a3cea8982edbb08e8812d85a89e963797f5e654c32b4 file=tachyon/internal/evm/client.go range=20:24 lang=go exported=true byte_range=356:456
+  sig=type Client struct {\n	rpcURL	string\n	chainID	*big.Int\n}
+  doc=Client wraps go-ethereum RPC operations.
+EDGES
+  contains=github.com/paxlabs-inc/tachyon-tools/internal/evm.Client#chainID,github.com/paxlabs-inc/tachyon-tools/internal/evm.Client#rpcURL,github.com/paxlabs-inc/tachyon-tools/internal/evm.Client.BuildTx,github.com/paxlabs-inc/tachyon-tools/internal/evm.Client.CallMessage,github.com/paxlabs-inc/tachyon-tools/internal/evm.Client.ChainID,github.com/paxlabs-inc/tachyon-tools/internal/evm.Client.CodeAt,github.com/paxlabs-inc/tachyon-tools/internal/evm.Client.EstimateGas,github.com/paxlabs-inc/tachyon-tools/internal/evm.Client.GetNonce,github.com/paxlabs-inc/tachyon-tools/internal/evm.Client.SendRawTransaction,github.com/paxlabs-inc/tachyon-tools/internal/evm.Client.TraceCall,github.com/paxlabs-inc/tachyon-tools/internal/evm.Client.WaitReceipt,github.com/paxlabs-inc/tachyon-tools/internal/evm.Client.ethClient
+  ^defines=github.com/paxlabs-inc/tachyon-tools/internal/evm/client.go
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/internal/evm.Client#chainID kind=field
+  digest=b3:1ac22ff2f7cc2aeecad4eed40171a0cb97efbf8dc6011cf97c94df57ae4f54dd file=tachyon/internal/evm/client.go range=23:23 lang=go exported=false byte_range=438:454
+  sig=*big.Int
+EDGES
+  ^contains=github.com/paxlabs-inc/tachyon-tools/internal/evm.Client
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/internal/evm.Client#rpcURL kind=field
+  digest=b3:967517d70e63ddeeb49ce5ba5a7d71f4bc81858436bec8aaf5e394ffaa9f4581 file=tachyon/internal/evm/client.go range=22:22 lang=go exported=false byte_range=422:436
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/tachyon-tools/internal/evm.Client
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/internal/evm.Client.BuildTx kind=method
+  digest=b3:cab08b9b237a17a9b71480324301f4ef738ce8545b06f1ab98dffb9de2794b2b file=tachyon/internal/evm/evm.go range=40:113 lang=go exported=true byte_range=909:2666
+  sig=func (c *Client) BuildTx(ctx context.Context, p TxParams) (*types.Transaction, error)
+  doc=BuildTx assembles an unsigned transaction with a live nonce, gas estimate,\nand EIP-1559 fees (falling back to a legacy gas price on pre-1559 chains).
+EDGES
+  ^contains=github.com/paxlabs-inc/tachyon-tools/internal/evm.Client
+  ^defines=github.com/paxlabs-inc/tachyon-tools/internal/evm/evm.go
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/internal/evm.Client.CallMessage kind=method
+  digest=b3:fe05e47ab2e0206e5147aeec1e2c6c07c6e2955413fd06d48414034b86b17e49 file=tachyon/internal/evm/client.go range=39:69 lang=go exported=true byte_range=795:1545
+  sig=func (c *Client) CallMessage(ctx context.Context, from, to, data, value, block string) ([]byte, error)
+  doc=CallMessage performs eth_call.
+EDGES
+  ^contains=github.com/paxlabs-inc/tachyon-tools/internal/evm.Client
+  ^defines=github.com/paxlabs-inc/tachyon-tools/internal/evm/client.go
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/internal/evm.Client.ChainID kind=method
+  digest=b3:4e2c6f30a7a5421819abc43eaa6a64a9c4222cca67ba10a8ebba205887ac7fc1 file=tachyon/internal/evm/evm.go range=22:38 lang=go exported=true byte_range=475:907
+  sig=func (c *Client) ChainID(ctx context.Context) (*big.Int, error)
+  doc=ChainID returns the configured chain id, falling back to the network id.
+EDGES
+  ^contains=github.com/paxlabs-inc/tachyon-tools/internal/evm.Client
+  ^defines=github.com/paxlabs-inc/tachyon-tools/internal/evm/evm.go
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/internal/evm.Client.CodeAt kind=method
+  digest=b3:b8f5ae82a603860a8650b4aff0700dcc39d8da91863cc798f7b035aa51e45e10 file=tachyon/internal/evm/client.go range=92:100 lang=go exported=true byte_range=2030:2313
+  sig=func (c *Client) CodeAt(ctx context.Context, address string) ([]byte, error)
+  doc=CodeAt returns contract bytecode at address.
+EDGES
+  ^contains=github.com/paxlabs-inc/tachyon-tools/internal/evm.Client
+  ^defines=github.com/paxlabs-inc/tachyon-tools/internal/evm/client.go
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/internal/evm.Client.EstimateGas kind=method
+  digest=b3:ba8c1b3e238b280791d7ab7f289f8bf0a2910c8f355f5b8ae85da6dc22c0d70e file=tachyon/internal/evm/client.go range=71:90 lang=go exported=true byte_range=1547:2028
+  sig=func (c *Client) EstimateGas(ctx context.Context, from, to, data, value string) (uint64, error)
+  doc=EstimateGas estimates gas for a call.
+EDGES
+  ^contains=github.com/paxlabs-inc/tachyon-tools/internal/evm.Client
+  ^defines=github.com/paxlabs-inc/tachyon-tools/internal/evm/client.go
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/internal/evm.Client.GetNonce kind=method
+  digest=b3:e544fa81aec131a12108593a6ea83ca6a76f7dcc31caf2c3ad74c5331e159f2e file=tachyon/internal/evm/client.go range=164:172 lang=go exported=true byte_range=3816:4083
+  sig=func (c *Client) GetNonce(ctx context.Context, from string) (uint64, error)
+  doc=GetNonce returns account nonce.
+EDGES
+  ^contains=github.com/paxlabs-inc/tachyon-tools/internal/evm.Client
+  ^defines=github.com/paxlabs-inc/tachyon-tools/internal/evm/client.go
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/internal/evm.Client.SendRawTransaction kind=method
+  digest=b3:ebf1d3b186c2d7138a861061dd4388e70b1da9462098f06571b65ae22e018197 file=tachyon/internal/evm/client.go range=124:139 lang=go exported=true byte_range=2856:3291
+  sig=func (c *Client) SendRawTransaction(ctx context.Context, rawTx []byte) (string, error)
+  doc=SendRawTransaction broadcasts a signed tx.
+EDGES
+  ^contains=github.com/paxlabs-inc/tachyon-tools/internal/evm.Client
+  ^defines=github.com/paxlabs-inc/tachyon-tools/internal/evm/client.go
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/internal/evm.Client.TraceCall kind=method
+  digest=b3:d9df125f41f2b64a2aad629a7d0637145105d9c0a06690f4397452e5b6aae6b3 file=tachyon/internal/evm/client.go range=102:122 lang=go exported=true byte_range=2315:2854
+  sig=func (c *Client) TraceCall(ctx context.Context, from, to, data, value string) (any, error)
+  doc=TraceCall runs debug_traceCall when supported.
+EDGES
+  ^contains=github.com/paxlabs-inc/tachyon-tools/internal/evm.Client
+  ^defines=github.com/paxlabs-inc/tachyon-tools/internal/evm/client.go
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/internal/evm.Client.WaitReceipt kind=method
+  digest=b3:6b599700704b9af33dc03d1abcc2327a5475719975e871185dde3d6ab901471e file=tachyon/internal/evm/client.go range=141:162 lang=go exported=true byte_range=3293:3814
+  sig=func (c *Client) WaitReceipt(ctx context.Context, txHash string) (*types.Receipt, error)
+  doc=WaitReceipt polls for a transaction receipt.
+EDGES
+  ^contains=github.com/paxlabs-inc/tachyon-tools/internal/evm.Client
+  ^defines=github.com/paxlabs-inc/tachyon-tools/internal/evm/client.go
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/internal/evm.Client.ethClient kind=method
+  digest=b3:dcae3941b14005afe6f69eb93ddfcd18f52869c7d357ebb3b9dbf1e37ace6ec5 file=tachyon/internal/evm/client.go range=35:37 lang=go exported=false byte_range=670:793
+  sig=func (c *Client) ethClient(ctx context.Context) (*ethclient.Client, error)
+EDGES
+  ^contains=github.com/paxlabs-inc/tachyon-tools/internal/evm.Client
+  ^defines=github.com/paxlabs-inc/tachyon-tools/internal/evm/client.go
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/internal/evm.Dial kind=func
+  digest=b3:6db6e4d04c6f2b0cf7e25501c4e32b50928950c880bbb43750994c2173b87ecb file=tachyon/internal/evm/client.go range=26:33 lang=go exported=true byte_range=458:668
+  sig=func Dial(rpcURL string, chainID uint64) (*Client, error)
+  doc=Dial connects to an RPC endpoint.
+EDGES
+  ^defines=github.com/paxlabs-inc/tachyon-tools/internal/evm/client.go
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/internal/evm.EncodeRevertReason kind=func
+  digest=b3:ad8365582ae6235b84147c97719c033c4842485861a1e0d7732c6cf79d2e325d file=tachyon/internal/evm/client.go range=214:220 lang=go exported=true byte_range=5144:5338
+  sig=func EncodeRevertReason(data []byte) string
+  doc=EncodeRevertReason attempts to stringify revert data.
+EDGES
+  ^defines=github.com/paxlabs-inc/tachyon-tools/internal/evm/client.go
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/internal/evm.SignTx kind=func
+  digest=b3:b9f62ba1856381d1b213778c9d0ecea6e52acb533036449d4f79250a965b7a6e file=tachyon/internal/evm/client.go range=174:181 lang=go exported=true byte_range=4085:4399
+  sig=func SignTx(tx *types.Transaction, chainID *big.Int, privateKeyHex string) ([]byte, common.Address, error)
+  doc=SignTx signs with a private key hex.
+EDGES
+  ^defines=github.com/paxlabs-inc/tachyon-tools/internal/evm/client.go
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/internal/evm.SignTxKey kind=func
+  digest=b3:477105dc0960f76a167d96e0c8605448f8f6292e742ff8e368fcbcc47c5988c3 file=tachyon/internal/evm/client.go range=183:193 lang=go exported=true byte_range=4401:4851
+  sig=func SignTxKey(tx *types.Transaction, chainID *big.Int, key *ecdsa.PrivateKey) ([]byte, common.Address, error)
+  doc=SignTxKey signs with a parsed ECDSA key and returns the RLP-encoded raw tx.
+EDGES
+  ^defines=github.com/paxlabs-inc/tachyon-tools/internal/evm/client.go
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/internal/evm.TxParams kind=type
+  digest=b3:c73f12f77ad7f9882d601e4f4cb7d7245e9f343c0f522bffbe5ebc22e0c8c53c file=tachyon/internal/evm/evm.go range=13:20 lang=go exported=true byte_range=261:473
+  sig=type TxParams struct {\n	From	common.Address\n	To	*common.Address	// nil => contract creation\n	Data	[]byte\n	Value	*big.Int\n	Gas	uint64	// 0 => estimate\n}
+  doc=TxParams describes an unsigned transaction intent.
+EDGES
+  contains=github.com/paxlabs-inc/tachyon-tools/internal/evm.TxParams#Data,github.com/paxlabs-inc/tachyon-tools/internal/evm.TxParams#From,github.com/paxlabs-inc/tachyon-tools/internal/evm.TxParams#Gas,github.com/paxlabs-inc/tachyon-tools/internal/evm.TxParams#To,github.com/paxlabs-inc/tachyon-tools/internal/evm.TxParams#Value
+  ^defines=github.com/paxlabs-inc/tachyon-tools/internal/evm/evm.go
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/internal/evm.TxParams#Data kind=field
+  digest=b3:0f192663ac6b18109e9394dc93f09c5c99fa55e9dc02fa907ee7d5822b90b38a file=tachyon/internal/evm/evm.go range=17:17 lang=go exported=true byte_range=412:424
+  sig=[]byte
+EDGES
+  ^contains=github.com/paxlabs-inc/tachyon-tools/internal/evm.TxParams
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/internal/evm.TxParams#From kind=field
+  digest=b3:44212ec5115b6c73f02ceba6cde018df3bcfea339f7ad35c28c13f440d60bec1 file=tachyon/internal/evm/evm.go range=15:15 lang=go exported=true byte_range=339:359
+  sig=common.Address
+EDGES
+  ^contains=github.com/paxlabs-inc/tachyon-tools/internal/evm.TxParams
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/internal/evm.TxParams#Gas kind=field
+  digest=b3:8899dba30d94b178c4f69f5ae6e1c840b7f494fb31f8f99353ff09307070a582 file=tachyon/internal/evm/evm.go range=19:19 lang=go exported=true byte_range=442:454
+  sig=uint64
+EDGES
+  ^contains=github.com/paxlabs-inc/tachyon-tools/internal/evm.TxParams
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/internal/evm.TxParams#To kind=field
+  digest=b3:7a0927cb69845966540902b2e2c62962ccd509fe92f0c7dcfe0fdb4944514741 file=tachyon/internal/evm/evm.go range=16:16 lang=go exported=true byte_range=361:382
+  sig=*common.Address
+EDGES
+  ^contains=github.com/paxlabs-inc/tachyon-tools/internal/evm.TxParams
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/internal/evm.TxParams#Value kind=field
+  digest=b3:33cc504eb89c7caa59f9760d7842b35572b0b490fdfb70dedc1ab67ad7789b64 file=tachyon/internal/evm/evm.go range=18:18 lang=go exported=true byte_range=426:440
+  sig=*big.Int
+EDGES
+  ^contains=github.com/paxlabs-inc/tachyon-tools/internal/evm.TxParams
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/internal/evm.addrPtr kind=func
+  digest=b3:f5abdc95270477f3cd3fe18b6d6b15c7226c113d8e7fa881c3b873efdf8755cd file=tachyon/internal/evm/client.go range=195:201 lang=go exported=false byte_range=4853:4968
+  sig=func addrPtr(to string) *common.Address
+EDGES
+  ^defines=github.com/paxlabs-inc/tachyon-tools/internal/evm/client.go
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/internal/evm.hexData kind=func
+  digest=b3:2c1fc1f9d184cbd3fcaaf4830b1624564a9a32a7fb630105a09004eefbc97698 file=tachyon/internal/evm/client.go range=203:212 lang=go exported=false byte_range=4970:5142
+  sig=func hexData(data string) []byte
+EDGES
+  ^defines=github.com/paxlabs-inc/tachyon-tools/internal/evm/client.go
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/internal/evm/client.go kind=file
+  digest=b3:49c38dab198f0b6bec29b86851e4a5f511a066a5eea2e85a35e95842c4577f86 file=tachyon/internal/evm/client.go range=1:220 lang=go exported=true
+EDGES
+  defines=github.com/paxlabs-inc/tachyon-tools/internal/evm.Client,github.com/paxlabs-inc/tachyon-tools/internal/evm.Client.CallMessage,github.com/paxlabs-inc/tachyon-tools/internal/evm.Client.CodeAt,github.com/paxlabs-inc/tachyon-tools/internal/evm.Client.EstimateGas,github.com/paxlabs-inc/tachyon-tools/internal/evm.Client.GetNonce,github.com/paxlabs-inc/tachyon-tools/internal/evm.Client.SendRawTransaction,github.com/paxlabs-inc/tachyon-tools/internal/evm.Client.TraceCall,github.com/paxlabs-inc/tachyon-tools/internal/evm.Client.WaitReceipt,github.com/paxlabs-inc/tachyon-tools/internal/evm.Client.ethClient,github.com/paxlabs-inc/tachyon-tools/internal/evm.Dial,github.com/paxlabs-inc/tachyon-tools/internal/evm.EncodeRevertReason,github.com/paxlabs-inc/tachyon-tools/internal/evm.SignTx,github.com/paxlabs-inc/tachyon-tools/internal/evm.SignTxKey,github.com/paxlabs-inc/tachyon-tools/internal/evm.addrPtr,github.com/paxlabs-inc/tachyon-tools/internal/evm.hexData
+  ^contains=github.com/paxlabs-inc/tachyon-tools/internal/evm
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/internal/evm/evm.go kind=file
+  digest=b3:80ca8719e4702ac2daecc9f2e54806ed68f064e8e6ec103ce68fa0d31e2d790d file=tachyon/internal/evm/evm.go range=1:113 lang=go exported=true
+EDGES
+  defines=github.com/paxlabs-inc/tachyon-tools/internal/evm.Client.BuildTx,github.com/paxlabs-inc/tachyon-tools/internal/evm.Client.ChainID,github.com/paxlabs-inc/tachyon-tools/internal/evm.TxParams
+  ^contains=github.com/paxlabs-inc/tachyon-tools/internal/evm

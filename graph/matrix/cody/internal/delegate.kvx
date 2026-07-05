@@ -1,0 +1,181 @@
+# GENERATED gen=codegraph do-not-edit merkle=b3:2dc69ec8dbbe0231373534486cf12ff6fdb0eaad7b2dfdcbc4d73453c8542ee8
+
+NODE id=matrix/cody/internal/delegate kind=package
+  digest=b3:e4dfffe7a533ed6f4f7900a3deb76de6e497e2c0d502fcadc220ef7621b436d3 file=cody/internal/delegate range=0:0 lang=go exported=true
+EDGES
+  contains=matrix/cody/internal/delegate/classify.go,matrix/cody/internal/delegate/mark.go
+  ^contains=mod:matrix/cody
+
+NODE id=matrix/cody/internal/delegate.ClassConflict kind=const
+  digest=b3:b730b647a71bbc7e885ffaafcafa7b8318397503ed6c82aad9c783db92f55dec file=cody/internal/delegate/classify.go range=37:41 lang=go exported=true byte_range=1460:1721
+  sig=delegate.FailureClass
+  doc=ClassConflict is the deterministic-ID 409 "already exists in async\nregistry": the work is already in flight. It is NOT a failure — the\ndelegate resolves the existing intent and attaches to it (the\nattach-to-existing handler, P2).
+EDGES
+  ^defines=matrix/cody/internal/delegate/classify.go
+
+NODE id=matrix/cody/internal/delegate.ClassDeterministic kind=const
+  digest=b3:260271276f3ed39a798621d0e8767da677e80ad97af9b00db433a82a763384c4 file=cody/internal/delegate/classify.go range=31:36 lang=go exported=true byte_range=1081:1458
+  sig=delegate.FailureClass
+  doc=ClassDeterministic will recur identically on a re-submit of the same\nrequest: a validation reject, a leash/mode/cap denial (403), a\nwrong-strategy / not-owner rejection, or an unparseable intent. It is\nNEVER retried and NEVER respawned over — it is surfaced as a terminal\nresult so the agent stops-and-asks or reports an honest partial.
+EDGES
+  ^defines=matrix/cody/internal/delegate/classify.go
+
+NODE id=matrix/cody/internal/delegate.ClassNone kind=const
+  digest=b3:83f7e3219d6a339f30eaf6acd9f847c61f9aab42c000c97d1226be0cc9fd24ef file=cody/internal/delegate/classify.go range=23:25 lang=go exported=true byte_range=620:801
+  sig=delegate.FailureClass
+  doc=ClassNone means there is no failure to classify (a clean outcome, or an\nerror shape the seam does not recognize — left to the existing path).
+EDGES
+  ^defines=matrix/cody/internal/delegate/classify.go
+
+NODE id=matrix/cody/internal/delegate.ClassOf kind=func
+  digest=b3:48ac3b2380f41c5e3eb7356600a2ab8091411bc709147bb85d3bc76a6abee92e file=cody/internal/delegate/classify.go range=146:166 lang=go exported=true byte_range=5167:5897
+  sig=func ClassOf(err error) FailureClass
+  doc=ClassOf extracts the shared FailureClass carried by err. A daemon HTTP error\n(anywhere in the wrap chain) is mapped by status+body; a context\ncancellation / deadline is left unclassified (the loop handles ctx\nseparately); any other non-nil error is treated as transient (a transport\nfailure — connection refused, reset, timeout). A nil error is ClassNone.
+EDGES
+  ^defines=matrix/cody/internal/delegate/classify.go
+
+NODE id=matrix/cody/internal/delegate.ClassPending kind=const
+  digest=b3:1de8684fe1556eb1226c8ac0082858e5d65915a6d352a1991e055ca607b90a13 file=cody/internal/delegate/classify.go range=42:45 lang=go exported=true byte_range=1723:1910
+  sig=delegate.FailureClass
+  doc=ClassPending is a structured 422 needing slot values: a clarify. It is\ncarried back as an actionable slot-fill (the clarify pass-through, P4),\nnot reworded prose.
+EDGES
+  ^defines=matrix/cody/internal/delegate/classify.go
+
+NODE id=matrix/cody/internal/delegate.ClassTransient kind=const
+  digest=b3:96715ef3fe188ef17eca8bb7df701be49da34bec6d9185a92f5d89e247953350 file=cody/internal/delegate/classify.go range=26:30 lang=go exported=true byte_range=803:1079
+  sig=delegate.FailureClass
+  doc=ClassTransient is safe to retry with bounded backoff: a connection\nrefusal, a timeout, a 5xx, or a rate-limit (429). The single-flight 409\n("another intent is in flight; retry") is transient too — it clears once\nthe in-flight intent completes.
+EDGES
+  ^defines=matrix/cody/internal/delegate/classify.go
+
+NODE id=matrix/cody/internal/delegate.FailureClass kind=type
+  digest=b3:6a15f7e46f8c902d2bfba9a94ae723aaab99d408271ecf23c04440bbd396e5ab file=cody/internal/delegate/classify.go range=15:20 lang=go exported=true byte_range=267:609
+  sig=type FailureClass int
+  doc=FailureClass is the single shared taxonomy for an outcome crossing the\nNeo<->MCL seam. Both the tool-dispatch ladder (agent.dispatchWithRetry) and\nthe task supervisor (server.superviseDecision) read THIS classification, so\nthe retry / stop / attach / ask decision is made once, never re-guessed per\nlayer.
+EDGES
+  contains=matrix/cody/internal/delegate.FailureClass.String
+  ^defines=matrix/cody/internal/delegate/classify.go
+
+NODE id=matrix/cody/internal/delegate.FailureClass.String kind=method
+  digest=b3:172ea4a2f1ecc032886184f01990649b558ad57e6280cb5706837d9e205654b0 file=cody/internal/delegate/classify.go range=48:62 lang=go exported=true byte_range=1914:2215
+  sig=func (c FailureClass) String() string
+  doc=String renders the class for diagnostics.
+EDGES
+  ^contains=matrix/cody/internal/delegate.FailureClass
+  ^defines=matrix/cody/internal/delegate/classify.go
+
+NODE id=matrix/cody/internal/delegate.Mark kind=func
+  digest=b3:317760a9de488cc17720aae22fd78eaf43ba88ab05395e445d9aa76a5a53e4ea file=cody/internal/delegate/mark.go range=20:26 lang=go exported=true byte_range=679:881
+  sig=func Mark(class FailureClass, err error) error
+  doc=Mark wraps err with an explicit failure class recoverable via ClassOf.
+EDGES
+  ^defines=matrix/cody/internal/delegate/mark.go
+
+NODE id=matrix/cody/internal/delegate.classOfMarked kind=func
+  digest=b3:823b187702fe7daae3c02dc90c7ddb772e549e872dd94971d35d83c85bd7ce95 file=cody/internal/delegate/mark.go range=28:36 lang=go exported=false byte_range=883:1141
+  sig=func classOfMarked(err error) (FailureClass, bool)
+  doc=classOfMarked recovers an explicit mark from the wrap chain; ok is false\nwhen err carries no mark.
+EDGES
+  ^defines=matrix/cody/internal/delegate/mark.go
+
+NODE id=matrix/cody/internal/delegate.classifyHTTP kind=func
+  digest=b3:27cf91ab3053cb89cf0f4070c88ac3cb408ee56e25f52cb4116ac211df3abc31 file=cody/internal/delegate/classify.go range=81:109 lang=go exported=false byte_range=2857:4120
+  sig=func classifyHTTP(status int, body string) FailureClass
+  doc=classifyHTTP maps an HTTP status + response body to a FailureClass. The\nmapping is the design's taxonomy: 409 already-exists -> conflict, 403 ->\ndeterministic, 422 -> pending, 5xx / 429 -> transient, any other 4xx\n(validation / unparseable / not-owner) -> deterministic.
+EDGES
+  ^defines=matrix/cody/internal/delegate/classify.go
+
+NODE id=matrix/cody/internal/delegate.existingIntentID kind=func
+  digest=b3:692241d580a25055cb4d07fe8be0f6d68804858b76c381d6e78ade383dcaf84d file=cody/internal/delegate/classify.go range=111:121 lang=go exported=false byte_range=4122:4555
+  sig=func existingIntentID(err error) string
+  doc=existingIntentID recovers the in-flight intent id from a conflict error (a\n409 "already exists in async registry"), so the delegate can ATTACH to the\nwork already underway instead of re-submitting. Returns "" when err is not a\ndaemon HTTP error or no id is present in the body.
+EDGES
+  ^defines=matrix/cody/internal/delegate/classify.go
+
+NODE id=matrix/cody/internal/delegate.httpError kind=type
+  digest=b3:cb1265d1f71be1fada5af2060d50f31772e62c8ac4518fdd3754296471d00c7e file=cody/internal/delegate/classify.go range=64:72 lang=go exported=false byte_range=2217:2647
+  sig=type httpError struct {\n	status	int\n	body	string\n}
+  doc=httpError carries the daemon's HTTP status code and (truncated) response body\nso the classifier can map an outcome to a FailureClass. It is the typed error\nthe delegate's request helper returns on a non-2xx response; it survives\nfmt.Errorf("...: %w", err) wrapping, so callers far up the chain (the\ndispatch ladder, the supervisor) recover the class via ClassOf.
+EDGES
+  contains=matrix/cody/internal/delegate.httpError#body,matrix/cody/internal/delegate.httpError#status,matrix/cody/internal/delegate.httpError.Error,matrix/cody/internal/delegate.httpError.Status
+  ^defines=matrix/cody/internal/delegate/classify.go
+
+NODE id=matrix/cody/internal/delegate.httpError#body kind=field
+  digest=b3:82d4dfda325bd91f758d014a9d99760d59f968fe98ff9b689ba0f3b7f3da9911 file=cody/internal/delegate/classify.go range=71:71 lang=go exported=false byte_range=2632:2645
+  sig=string
+EDGES
+  ^contains=matrix/cody/internal/delegate.httpError
+
+NODE id=matrix/cody/internal/delegate.httpError#status kind=field
+  digest=b3:0cb92fb7a4e42b1f74a5a5b074ba26d802baaff1a577f9da9807a1d516a37990 file=cody/internal/delegate/classify.go range=70:70 lang=go exported=false byte_range=2620:2630
+  sig=int
+EDGES
+  ^contains=matrix/cody/internal/delegate.httpError
+
+NODE id=matrix/cody/internal/delegate.httpError.Error kind=method
+  digest=b3:d1c39a751c7110ad8b8cf247820a4fdb617a5c1eaffe0c136a701edd6f836b32 file=cody/internal/delegate/classify.go range=74:76 lang=go exported=true byte_range=2649:2740
+  sig=func (e *httpError) Error() string
+EDGES
+  ^contains=matrix/cody/internal/delegate.httpError
+  ^defines=matrix/cody/internal/delegate/classify.go
+
+NODE id=matrix/cody/internal/delegate.httpError.Status kind=method
+  digest=b3:15f9218ad274a227a2c69ec3fe22eda795d27f85fe2a5f4c327865268c3e35d2 file=cody/internal/delegate/classify.go range=78:79 lang=go exported=true byte_range=2742:2855
+  sig=func (e *httpError) Status() int
+  doc=Status reports the HTTP status code carried by the error.
+EDGES
+  ^contains=matrix/cody/internal/delegate.httpError
+  ^defines=matrix/cody/internal/delegate/classify.go
+
+NODE id=matrix/cody/internal/delegate.markedError kind=type
+  digest=b3:f6590e38a583667bd921ddbd62cc3ae2252c162fae008a45a8a15fa72d0ce9e8 file=cody/internal/delegate/mark.go range=8:15 lang=go exported=false byte_range=204:560
+  sig=type markedError struct {\n	class	FailureClass\n	err	error\n}
+  doc=markedError carries an explicit FailureClass through a wrap chain. Cody's\nworker seam is in-process (no daemon HTTP), so failures that are known to\nbe deterministic (a malformed sheet, a policy refusal) or conflicting are\nmarked at the source instead of inferred from an HTTP status.
+EDGES
+  contains=matrix/cody/internal/delegate.markedError#class,matrix/cody/internal/delegate.markedError#err,matrix/cody/internal/delegate.markedError.Error,matrix/cody/internal/delegate.markedError.Unwrap
+  ^defines=matrix/cody/internal/delegate/mark.go
+
+NODE id=matrix/cody/internal/delegate.markedError#class kind=field
+  digest=b3:86d93802aac4dcb798fa8ac0b0df2e5c633e866d8677371727e98058e349926d file=cody/internal/delegate/mark.go range=13:13 lang=go exported=false byte_range=527:545
+  sig=delegate.FailureClass
+EDGES
+  ^contains=matrix/cody/internal/delegate.markedError
+
+NODE id=matrix/cody/internal/delegate.markedError#err kind=field
+  digest=b3:be40d58e815c8afacf8af61418fdeb63b3c6fffa09e6d3b93512b1feffcbce60 file=cody/internal/delegate/mark.go range=14:14 lang=go exported=false byte_range=547:558
+  sig=error
+EDGES
+  ^contains=matrix/cody/internal/delegate.markedError
+
+NODE id=matrix/cody/internal/delegate.markedError.Error kind=method
+  digest=b3:671b1e51ba0c957165b747799b7eee36d108cf0b80a3a9c3152c9e917990e701 file=cody/internal/delegate/mark.go range=17:17 lang=go exported=true byte_range=562:623
+  sig=func (e *markedError) Error() string
+EDGES
+  ^contains=matrix/cody/internal/delegate.markedError
+  ^defines=matrix/cody/internal/delegate/mark.go
+
+NODE id=matrix/cody/internal/delegate.markedError.Unwrap kind=method
+  digest=b3:04e8f3884e6c6be2b90c00a02a20e08148883f2b6a4afcf16be599a0d995f3cf file=cody/internal/delegate/mark.go range=18:18 lang=go exported=true byte_range=624:677
+  sig=func (e *markedError) Unwrap() error
+EDGES
+  ^contains=matrix/cody/internal/delegate.markedError
+  ^defines=matrix/cody/internal/delegate/mark.go
+
+NODE id=matrix/cody/internal/delegate.parseExistingIntentID kind=func
+  digest=b3:519504eea823a97ee30b3da725ce9a1744a670f2bdb53ba6827828539403e1a2 file=cody/internal/delegate/classify.go range=123:144 lang=go exported=false byte_range=4557:5165
+  sig=func parseExistingIntentID(body string) string
+  doc=parseExistingIntentID extracts the quoted intent id from a daemon conflict\nbody. The daemon returns {"error":"intent \\"<ID>\\" already exists in async\nregistry"}; the id is the first double-quoted token of that message.
+EDGES
+  ^defines=matrix/cody/internal/delegate/classify.go
+
+NODE id=matrix/cody/internal/delegate/classify.go kind=file
+  digest=b3:f007983f56eaffd4e507e917515d77829eb6765e4f8203b10d13ec49d29713a0 file=cody/internal/delegate/classify.go range=1:166 lang=go exported=true
+EDGES
+  defines=matrix/cody/internal/delegate.ClassConflict,matrix/cody/internal/delegate.ClassDeterministic,matrix/cody/internal/delegate.ClassNone,matrix/cody/internal/delegate.ClassOf,matrix/cody/internal/delegate.ClassPending,matrix/cody/internal/delegate.ClassTransient,matrix/cody/internal/delegate.FailureClass,matrix/cody/internal/delegate.FailureClass.String,matrix/cody/internal/delegate.classifyHTTP,matrix/cody/internal/delegate.existingIntentID,matrix/cody/internal/delegate.httpError,matrix/cody/internal/delegate.httpError.Error,matrix/cody/internal/delegate.httpError.Status,matrix/cody/internal/delegate.parseExistingIntentID
+  ^contains=matrix/cody/internal/delegate
+
+NODE id=matrix/cody/internal/delegate/mark.go kind=file
+  digest=b3:a53c638c24fdf91a37c1f80e29169ff24cd437bd6c529c98f4b9a383bdba4f5a file=cody/internal/delegate/mark.go range=1:36 lang=go exported=true
+EDGES
+  defines=matrix/cody/internal/delegate.Mark,matrix/cody/internal/delegate.classOfMarked,matrix/cody/internal/delegate.markedError,matrix/cody/internal/delegate.markedError.Error,matrix/cody/internal/delegate.markedError.Unwrap
+  ^contains=matrix/cody/internal/delegate

@@ -1,0 +1,140 @@
+# GENERATED gen=codegraph do-not-edit merkle=b3:2dc69ec8dbbe0231373534486cf12ff6fdb0eaad7b2dfdcbc4d73453c8542ee8
+
+NODE id=matrix/neo/cmd/neo kind=package
+  digest=b3:5f7189e55c85b1eb921e599fb57186bdfd45ec8d06e577b4dad0e02f4126f25e file=neo/cmd/neo range=0:0 lang=go exported=true
+EDGES
+  contains=matrix/neo/cmd/neo/main.go,matrix/neo/cmd/neo/serve.go
+  ^contains=mod:matrix/neo
+
+NODE id=matrix/neo/cmd/neo.envOrDefault kind=func
+  digest=b3:7da6ad98a52b5d9100875fca3dbddfb78de9e96aaac59b705850bedd1d018e5e file=neo/cmd/neo/serve.go range=276:281 lang=go exported=false byte_range=10707:10832
+  sig=func envOrDefault(key, def string) string
+EDGES
+  ^defines=matrix/neo/cmd/neo/serve.go
+
+NODE id=matrix/neo/cmd/neo.fatal kind=func
+  digest=b3:d7f252cd5f653b41b48bc27b4a883ca1812de0a65edb24af05eaeb3509c52dde file=neo/cmd/neo/serve.go range=283:286 lang=go exported=false byte_range=10834:10944
+  sig=func fatal(format string, a ...interface{})
+EDGES
+  ^defines=matrix/neo/cmd/neo/serve.go
+
+NODE id=matrix/neo/cmd/neo.main kind=func
+  digest=b3:40a2b7c21b9b55e049206b36640bc630022312418e32a83cc3c715fd9d4d9a56 file=neo/cmd/neo/main.go range=36:42 lang=go exported=false byte_range=915:1032
+  sig=func main()
+EDGES
+  ^defines=matrix/neo/cmd/neo/main.go
+
+NODE id=matrix/neo/cmd/neo.newApprover kind=func
+  digest=b3:6044afc972a3e047e003553db085606f11ca2eb18240183412b5d3a992800eec file=neo/cmd/neo/main.go range=244:262 lang=go exported=false byte_range=7368:8144
+  sig=func newApprover(in *bufio.Reader, rep *stdoutReporter) delegate.Approver
+  doc=newApprover returns an Approver that prompts on the shared stdin reader.\nSafe because Chat (and thus any gate) runs synchronously while the REPL is\nblocked, so there is never a concurrent read of stdin.
+EDGES
+  ^defines=matrix/neo/cmd/neo/main.go
+
+NODE id=matrix/neo/cmd/neo.newCassandraAdjudicator kind=func
+  digest=b3:d9fb1de2b31360217995366b9f23c38a5c8040ed0b2971b90378f5d7c87f81ae file=neo/cmd/neo/main.go range=221:242 lang=go exported=false byte_range=6361:7366
+  sig=func newCassandraAdjudicator(cfg config.Config) *cassandra.Adjudicator
+  doc=newCassandraAdjudicator builds the Cassandra completion-gate adjudicator over\na dedicated cassandra-slot client: a cheap/fast primary auditor plus, when\nconfigured, a stronger escalation auditor for low-certainty high-stakes\nturns ([adjudicator].slot). Best-effort — it returns nil when no auditor\nclient can be built (no API key / gateway), so the gate falls back to the\ndeterministic grounding check (i_cass_5 fail-open).
+EDGES
+  ^defines=matrix/neo/cmd/neo/main.go
+
+NODE id=matrix/neo/cmd/neo.newClient kind=func
+  digest=b3:56c6759bb8d4bb847c6e16115d7cd9fb0baa9851dfc66e05e6d209ce4a223686 file=neo/cmd/neo/main.go range=197:199 lang=go exported=false byte_range=5190:5383
+  sig=func newClient(model string, temp float64, maxTok int, enableThinking bool, cfg config.Config) (*neollm.Client, error)
+EDGES
+  ^defines=matrix/neo/cmd/neo/main.go
+
+NODE id=matrix/neo/cmd/neo.newSlotClient kind=func
+  digest=b3:9a7e7f75dde067ff2a89217570de65626b4b12283c6181f1d94da084f7ac10a5 file=neo/cmd/neo/main.go range=201:219 lang=go exported=false byte_range=5385:6359
+  sig=func newSlotClient(model string, temp float64, maxTok int, slot string, enableThinking bool, cfg config.Config) (*neollm.Client, error)
+  doc=newSlotClient builds a gateway-metered chat client tagged with the given\nslot label, so spend is attributed correctly (Neo's own "neo" slot, or\nCassandra's dedicated "cassandra" slot for completeness audits). enableThinking\nopts the client into extended reasoning where the toggle matters (xAI Grok's\nreasoning_effort control; Baseten Kimi's chat_template_args opt-in) — set ONLY\nfor the user-facing conversational loop (Neo).\nCassandra, background sub-agents, and the token-tight cheap/consolidation\nroles all run with thinking OFF; the core MCL pipeline manages its own.
+EDGES
+  ^defines=matrix/neo/cmd/neo/main.go
+
+NODE id=matrix/neo/cmd/neo.oneLine kind=func
+  digest=b3:62c3dddfdfe14f9d1f9e6a426721398a3876f8fd741e2a0eeab3afc51f6a6d64 file=neo/cmd/neo/main.go range=312:321 lang=go exported=false byte_range=9853:10036
+  sig=func oneLine(s string) string
+EDGES
+  ^defines=matrix/neo/cmd/neo/main.go
+
+NODE id=matrix/neo/cmd/neo.printBanner kind=func
+  digest=b3:c4ed2afab95de83c01e375bc8be474517c82808af43647b88f5ba3842ad1b114 file=neo/cmd/neo/main.go range=272:296 lang=go exported=false byte_range=8321:9068
+  sig=func printBanner(cfg config.Config, tm *tools.Manager, pager *memory.Pager)
+EDGES
+  ^defines=matrix/neo/cmd/neo/main.go
+
+NODE id=matrix/neo/cmd/neo.readLine kind=func
+  digest=b3:33f7dc18924fd049e778068dca4947796b99c839f42289d8aca23a6b57e1f97e file=neo/cmd/neo/main.go range=264:270 lang=go exported=false byte_range=8146:8319
+  sig=func readLine(r *bufio.Reader) (string, bool)
+EDGES
+  ^defines=matrix/neo/cmd/neo/main.go
+
+NODE id=matrix/neo/cmd/neo.runInteractive kind=func
+  digest=b3:4292fb54fcfb852594716ad18b1956f629bc3f6942837e6ba6c9e93e1ff4be80 file=neo/cmd/neo/main.go range=44:195 lang=go exported=false byte_range=1034:5188
+  sig=func runInteractive()
+  doc=runInteractive is the local CLI: a REPL, or a single -prompt turn.
+EDGES
+  ^defines=matrix/neo/cmd/neo/main.go
+
+NODE id=matrix/neo/cmd/neo.runServe kind=func
+  digest=b3:45538d9846a007a44db3a9f3cb8acffe7feb6fe3c5dc73e00fde58dc85d3ff77 file=neo/cmd/neo/serve.go range=37:274 lang=go exported=false byte_range=1095:10705
+  sig=func runServe(args []string)
+EDGES
+  ^defines=matrix/neo/cmd/neo/serve.go
+
+NODE id=matrix/neo/cmd/neo.stdoutReporter kind=type
+  digest=b3:5535104914e31a512f1ec82ace447f5f9bbd7699227dbe7dcc5af80b494e7852 file=neo/cmd/neo/main.go range=298:301 lang=go exported=false byte_range=9070:9265
+  sig=type stdoutReporter struct{}
+  doc=stdoutReporter renders the agent's output to a terminal: answers on stdout,\nephemeral progress + notices on stderr so piping `-prompt` yields a clean\nanswer.
+EDGES
+  contains=matrix/neo/cmd/neo.stdoutReporter.Delta,matrix/neo/cmd/neo.stdoutReporter.Notice,matrix/neo/cmd/neo.stdoutReporter.Say,matrix/neo/cmd/neo.stdoutReporter.Status,matrix/neo/cmd/neo.stdoutReporter.Think
+  implements=matrix/neo/internal/agent.Reporter
+  ^defines=matrix/neo/cmd/neo/main.go
+
+NODE id=matrix/neo/cmd/neo.stdoutReporter.Delta kind=method
+  digest=b3:b85eb90de0a9c5f17752fb620005de4e75b85765057e1ab50fbbbf988e6c76bb file=neo/cmd/neo/main.go range=308:310 lang=go exported=true byte_range=9660:9851
+  sig=func (stdoutReporter) Delta(int, string, string)
+  doc=Delta is a no-op for the CLI: the terminal prints the complete answer at the\nend (Say); live token streaming is an SSE/UI affordance.
+EDGES
+  ^contains=matrix/neo/cmd/neo.stdoutReporter
+  ^defines=matrix/neo/cmd/neo/main.go
+
+NODE id=matrix/neo/cmd/neo.stdoutReporter.Notice kind=method
+  digest=b3:a36210598506beaef1e72d6b408bbfd7108c0cc00417b8c36f8b9db10d68fc36 file=neo/cmd/neo/main.go range=305:305 lang=go exported=true byte_range=9466:9562
+  sig=func (stdoutReporter) Notice(text string)
+EDGES
+  ^contains=matrix/neo/cmd/neo.stdoutReporter
+  ^defines=matrix/neo/cmd/neo/main.go
+
+NODE id=matrix/neo/cmd/neo.stdoutReporter.Say kind=method
+  digest=b3:011c2f7ff2cd687f06e4c809178138af14305fb1f918f02cf35ca8311fab4db2 file=neo/cmd/neo/main.go range=303:303 lang=go exported=true byte_range=9267:9368
+  sig=func (stdoutReporter) Say(text string, _ bool)
+EDGES
+  ^contains=matrix/neo/cmd/neo.stdoutReporter
+  ^defines=matrix/neo/cmd/neo/main.go
+
+NODE id=matrix/neo/cmd/neo.stdoutReporter.Status kind=method
+  digest=b3:1be54a41850e006649658c178fd20dc0d88315ab0646a75a1814efc2a64731c2 file=neo/cmd/neo/main.go range=304:304 lang=go exported=true byte_range=9369:9465
+  sig=func (stdoutReporter) Status(text string)
+EDGES
+  ^contains=matrix/neo/cmd/neo.stdoutReporter
+  ^defines=matrix/neo/cmd/neo/main.go
+
+NODE id=matrix/neo/cmd/neo.stdoutReporter.Think kind=method
+  digest=b3:a5e8a5442ca18b95d91289729fe01d97f5b2142c8a0a87d83b2ddddb697031df file=neo/cmd/neo/main.go range=306:306 lang=go exported=true byte_range=9563:9658
+  sig=func (stdoutReporter) Think(text string)
+EDGES
+  ^contains=matrix/neo/cmd/neo.stdoutReporter
+  ^defines=matrix/neo/cmd/neo/main.go
+
+NODE id=matrix/neo/cmd/neo/main.go kind=file
+  digest=b3:50d026a4d1a4f6bff1e32ab24ade7e77f9d4e9574754d399130912335862a23c file=neo/cmd/neo/main.go range=1:321 lang=go exported=true
+EDGES
+  defines=matrix/neo/cmd/neo.main,matrix/neo/cmd/neo.newApprover,matrix/neo/cmd/neo.newCassandraAdjudicator,matrix/neo/cmd/neo.newClient,matrix/neo/cmd/neo.newSlotClient,matrix/neo/cmd/neo.oneLine,matrix/neo/cmd/neo.printBanner,matrix/neo/cmd/neo.readLine,matrix/neo/cmd/neo.runInteractive,matrix/neo/cmd/neo.stdoutReporter,matrix/neo/cmd/neo.stdoutReporter.Delta,matrix/neo/cmd/neo.stdoutReporter.Notice,matrix/neo/cmd/neo.stdoutReporter.Say,matrix/neo/cmd/neo.stdoutReporter.Status,matrix/neo/cmd/neo.stdoutReporter.Think
+  ^contains=matrix/neo/cmd/neo
+
+NODE id=matrix/neo/cmd/neo/serve.go kind=file
+  digest=b3:d9f848d7df4dc2c792c9296295d1b78faab633f737b8f334fad059232ff804c6 file=neo/cmd/neo/serve.go range=1:286 lang=go exported=true
+EDGES
+  defines=matrix/neo/cmd/neo.envOrDefault,matrix/neo/cmd/neo.fatal,matrix/neo/cmd/neo.runServe
+  ^contains=matrix/neo/cmd/neo

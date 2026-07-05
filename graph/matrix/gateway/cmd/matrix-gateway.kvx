@@ -1,0 +1,37 @@
+# GENERATED gen=codegraph do-not-edit merkle=b3:2dc69ec8dbbe0231373534486cf12ff6fdb0eaad7b2dfdcbc4d73453c8542ee8
+
+NODE id=matrix/gateway/cmd/matrix-gateway kind=package
+  digest=b3:74f165b8e5b2b84d28d3c690e2f655447791ecac0b53447f344bd363604278e8 file=gateway/cmd/matrix-gateway range=0:0 lang=go exported=true
+EDGES
+  contains=matrix/gateway/cmd/matrix-gateway/driver.go,matrix/gateway/cmd/matrix-gateway/main.go
+  ^contains=mod:matrix/gateway
+
+NODE id=matrix/gateway/cmd/matrix-gateway.main kind=func
+  digest=b3:349082b203b753e2e2f891e4c67a42185c7ac6fa7521c040772a4efb172bb6c4 file=gateway/cmd/matrix-gateway/main.go range=86:91 lang=go exported=false byte_range=3126:3253
+  sig=func main()
+EDGES
+  ^defines=matrix/gateway/cmd/matrix-gateway/main.go
+
+NODE id=matrix/gateway/cmd/matrix-gateway.newLogger kind=func
+  digest=b3:4638fbeaea2b569e38f6100da74168d5d7c549cf2e1c763dbb822325150175fa file=gateway/cmd/matrix-gateway/main.go range=240:274 lang=go exported=false byte_range=8455:9529
+  sig=func newLogger(format string) func(string, map[string]any)
+  doc=newLogger returns a logging function. text emits one event per line\nin `key=value` shape; json emits a single-line JSON object per event.\nLogging is deliberately minimal — operators rely on Prometheus +\nthe box's nginx access log for the bulk of observability; this\ndaemon-side logger is for state transitions only.
+EDGES
+  ^defines=matrix/gateway/cmd/matrix-gateway/main.go
+
+NODE id=matrix/gateway/cmd/matrix-gateway.run kind=func
+  digest=b3:3b0f7172e0a8a1821fb40f19f66cef4ebcabeb7db132a769fc04154989911340 file=gateway/cmd/matrix-gateway/main.go range=93:238 lang=go exported=false byte_range=3255:8453
+  sig=func run(args []string) error
+EDGES
+  ^defines=matrix/gateway/cmd/matrix-gateway/main.go
+
+NODE id=matrix/gateway/cmd/matrix-gateway/driver.go kind=file
+  digest=b3:1d9bb0df9610ee361b8d5ed26cc6df2bd5cc77a336c53aa681b07440754502dc file=gateway/cmd/matrix-gateway/driver.go range=1:23 lang=go exported=true
+EDGES
+  ^contains=matrix/gateway/cmd/matrix-gateway
+
+NODE id=matrix/gateway/cmd/matrix-gateway/main.go kind=file
+  digest=b3:8cdf68db6c85ee800612522f00ba04a0be25d622ceb3bf394c63c09dd4b3d6fd file=gateway/cmd/matrix-gateway/main.go range=1:276 lang=go exported=true
+EDGES
+  defines=matrix/gateway/cmd/matrix-gateway.main,matrix/gateway/cmd/matrix-gateway.newLogger,matrix/gateway/cmd/matrix-gateway.run
+  ^contains=matrix/gateway/cmd/matrix-gateway

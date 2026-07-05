@@ -1,0 +1,272 @@
+# GENERATED gen=codegraph do-not-edit merkle=b3:2dc69ec8dbbe0231373534486cf12ff6fdb0eaad7b2dfdcbc4d73453c8542ee8
+
+NODE id=github.com/paxlabs-inc/deus/internal/registry kind=package
+  digest=b3:58cefbdf369e80cbe13f7e0162d01d917808d60247af28615cb39f2b8ea51e5b file=deus/internal/registry range=0:0 lang=go exported=true
+EDGES
+  contains=github.com/paxlabs-inc/deus/internal/registry/registry.go,github.com/paxlabs-inc/deus/internal/registry/validate.go
+  ^contains=mod:github.com/paxlabs-inc/deus
+
+NODE id=github.com/paxlabs-inc/deus/internal/registry.CreateInput kind=type
+  digest=b3:32d48b4232a26e6d1cafa014ecb24850b1c978fc1f059f1f4f94a251c3383ebf file=deus/internal/registry/registry.go range=42:46 lang=go exported=true byte_range=1085:1201
+  sig=type CreateInput struct {\n	Manifest	json.RawMessage\n	Owner		string\n}
+  doc=CreateInput is the POST /v1/services body.
+EDGES
+  contains=github.com/paxlabs-inc/deus/internal/registry.CreateInput#Manifest,github.com/paxlabs-inc/deus/internal/registry.CreateInput#Owner
+  ^defines=github.com/paxlabs-inc/deus/internal/registry/registry.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/registry.CreateInput#Manifest kind=field
+  digest=b3:9114f8b3cb060bed2c1f12313b03de9a1a00a558492d12b66bad0c00ac8aedc3 file=deus/internal/registry/registry.go range=44:44 lang=go exported=true byte_range=1158:1182
+  sig=json.RawMessage
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/registry.CreateInput
+
+NODE id=github.com/paxlabs-inc/deus/internal/registry.CreateInput#Owner kind=field
+  digest=b3:ec5838a8f5de9216b1dc856c29fb3f9ff553e1d256eb897828f68d5efb78f150 file=deus/internal/registry/registry.go range=45:45 lang=go exported=true byte_range=1184:1199
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/registry.CreateInput
+
+NODE id=github.com/paxlabs-inc/deus/internal/registry.CreateResult kind=type
+  digest=b3:a81fa4564fce959faa590dcc707e76f6f755dc56496c8df03062cb1b48d0a767 file=deus/internal/registry/registry.go range=48:55 lang=go exported=true byte_range=1203:1397
+  sig=type CreateResult struct {\n	ID		string\n	Slug		string\n	Status		string\n	ManifestHash	string\n	Validation	ValidationResult\n}
+  doc=CreateResult is the POST /v1/services response.
+EDGES
+  contains=github.com/paxlabs-inc/deus/internal/registry.CreateResult#ID,github.com/paxlabs-inc/deus/internal/registry.CreateResult#ManifestHash,github.com/paxlabs-inc/deus/internal/registry.CreateResult#Slug,github.com/paxlabs-inc/deus/internal/registry.CreateResult#Status,github.com/paxlabs-inc/deus/internal/registry.CreateResult#Validation
+  ^defines=github.com/paxlabs-inc/deus/internal/registry/registry.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/registry.CreateResult#ID kind=field
+  digest=b3:a74028411abba5ddf36d594b57611e275176ed5e0e26949d71c51f3fb531ff5d file=deus/internal/registry/registry.go range=50:50 lang=go exported=true byte_range=1282:1301
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/registry.CreateResult
+
+NODE id=github.com/paxlabs-inc/deus/internal/registry.CreateResult#ManifestHash kind=field
+  digest=b3:8c1150b8d10e97111ff5806b68202574cd5e225b1642c5fe6591334d87f79e35 file=deus/internal/registry/registry.go range=53:53 lang=go exported=true byte_range=1345:1364
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/registry.CreateResult
+
+NODE id=github.com/paxlabs-inc/deus/internal/registry.CreateResult#Slug kind=field
+  digest=b3:7def50ad4593daab35a4547c906e94074b8e1e7b7c5d478b15b2ff45cece3f3e file=deus/internal/registry/registry.go range=51:51 lang=go exported=true byte_range=1303:1322
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/registry.CreateResult
+
+NODE id=github.com/paxlabs-inc/deus/internal/registry.CreateResult#Status kind=field
+  digest=b3:c29e8b50f39d803fdbfa6346cc24452c324272d95c02a86d4b7f80754728b96b file=deus/internal/registry/registry.go range=52:52 lang=go exported=true byte_range=1324:1343
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/registry.CreateResult
+
+NODE id=github.com/paxlabs-inc/deus/internal/registry.CreateResult#Validation kind=field
+  digest=b3:562ca07253694498978da1972c65597a73708fadd7575a8855a613ee6cc76c9b file=deus/internal/registry/registry.go range=54:54 lang=go exported=true byte_range=1366:1395
+  sig=registry.ValidationResult
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/registry.CreateResult
+
+NODE id=github.com/paxlabs-inc/deus/internal/registry.ManifestIndexer kind=interface
+  digest=b3:139e57794da2dfa12449a17d057bdcbfb0fa5dd02e3275f56718acf80ba8d959 file=deus/internal/registry/registry.go range=19:22 lang=go exported=true byte_range=393:567
+  sig=type ManifestIndexer interface {\n	IndexService(ctx context.Context, serviceID string, raw json.RawMessage) error\n}
+  doc=ManifestIndexer embeds listings for discovery (Phase 4).
+EDGES
+  ^implements=github.com/paxlabs-inc/deus/internal/discovery.Service
+  ^defines=github.com/paxlabs-inc/deus/internal/registry/registry.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/registry.NewService kind=func
+  digest=b3:c389ad8d386f941b2660af9b86cdac2906464bbdf3c9e85a753a8e1e51791304 file=deus/internal/registry/registry.go range=32:35 lang=go exported=true byte_range=746:932
+  sig=func NewService(st *store.Store, reg *chain.Registry, ix *indexer.Indexer) *Service
+  doc=NewService wires registry dependencies.
+EDGES
+  ^defines=github.com/paxlabs-inc/deus/internal/registry/registry.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/registry.PublishInput kind=type
+  digest=b3:de88a216101a177d07d7017a02c259748ee934e84db2b6925b9a2b01a991d016 file=deus/internal/registry/registry.go range=117:122 lang=go exported=true byte_range=3025:3177
+  sig=type PublishInput struct {\n	ServiceID	string\n	Owner		string\n	PrivateKeyHex	string\n}
+  doc=PublishInput carries on-chain registration parameters.
+EDGES
+  contains=github.com/paxlabs-inc/deus/internal/registry.PublishInput#Owner,github.com/paxlabs-inc/deus/internal/registry.PublishInput#PrivateKeyHex,github.com/paxlabs-inc/deus/internal/registry.PublishInput#ServiceID
+  ^defines=github.com/paxlabs-inc/deus/internal/registry/registry.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/registry.PublishInput#Owner kind=field
+  digest=b3:4de2216b06a970791496d3ff0a1b975ef2306fe0b14affb76f97f24322b6d3ef file=deus/internal/registry/registry.go range=120:120 lang=go exported=true byte_range=3133:3153
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/registry.PublishInput
+
+NODE id=github.com/paxlabs-inc/deus/internal/registry.PublishInput#PrivateKeyHex kind=field
+  digest=b3:1e54cd40dad1c87c0e7b2083428452713d748ccc60d85d0011e5ba51154378d7 file=deus/internal/registry/registry.go range=121:121 lang=go exported=true byte_range=3155:3175
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/registry.PublishInput
+
+NODE id=github.com/paxlabs-inc/deus/internal/registry.PublishInput#ServiceID kind=field
+  digest=b3:17bf0a2613df5999a49f808dd05b16e725c873ce86e42ecfff10d75ade32fe72 file=deus/internal/registry/registry.go range=119:119 lang=go exported=true byte_range=3111:3131
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/registry.PublishInput
+
+NODE id=github.com/paxlabs-inc/deus/internal/registry.PublishResult kind=type
+  digest=b3:0fd8bde5d9713187c5aded49bdaaea6b667c11018ae1a75c46b7ec7bebaac96f file=deus/internal/registry/registry.go range=124:131 lang=go exported=true byte_range=3179:3376
+  sig=type PublishResult struct {\n	ID		string\n	ChainID		uint64\n	Status		string\n	ManifestHash	string\n	TxHash		string\n}
+  doc=PublishResult is returned after on-chain register + mirror.
+EDGES
+  contains=github.com/paxlabs-inc/deus/internal/registry.PublishResult#ChainID,github.com/paxlabs-inc/deus/internal/registry.PublishResult#ID,github.com/paxlabs-inc/deus/internal/registry.PublishResult#ManifestHash,github.com/paxlabs-inc/deus/internal/registry.PublishResult#Status,github.com/paxlabs-inc/deus/internal/registry.PublishResult#TxHash
+  ^defines=github.com/paxlabs-inc/deus/internal/registry/registry.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/registry.PublishResult#ChainID kind=field
+  digest=b3:c3c8f6ab258c72f9e69ed3feb1c47bec56c0c2ee6ec56577f2c04d60475a23d8 file=deus/internal/registry/registry.go range=127:127 lang=go exported=true byte_range=3292:3311
+  sig=uint64
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/registry.PublishResult
+
+NODE id=github.com/paxlabs-inc/deus/internal/registry.PublishResult#ID kind=field
+  digest=b3:a74028411abba5ddf36d594b57611e275176ed5e0e26949d71c51f3fb531ff5d file=deus/internal/registry/registry.go range=126:126 lang=go exported=true byte_range=3271:3290
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/registry.PublishResult
+
+NODE id=github.com/paxlabs-inc/deus/internal/registry.PublishResult#ManifestHash kind=field
+  digest=b3:8c1150b8d10e97111ff5806b68202574cd5e225b1642c5fe6591334d87f79e35 file=deus/internal/registry/registry.go range=129:129 lang=go exported=true byte_range=3334:3353
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/registry.PublishResult
+
+NODE id=github.com/paxlabs-inc/deus/internal/registry.PublishResult#Status kind=field
+  digest=b3:c29e8b50f39d803fdbfa6346cc24452c324272d95c02a86d4b7f80754728b96b file=deus/internal/registry/registry.go range=128:128 lang=go exported=true byte_range=3313:3332
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/registry.PublishResult
+
+NODE id=github.com/paxlabs-inc/deus/internal/registry.PublishResult#TxHash kind=field
+  digest=b3:14978938b4bf110bde519c88b7a191038ea61997dce05f6792ec566cb4a8ec89 file=deus/internal/registry/registry.go range=130:130 lang=go exported=true byte_range=3355:3374
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/registry.PublishResult
+
+NODE id=github.com/paxlabs-inc/deus/internal/registry.Service kind=type
+  digest=b3:72ebf266dbab385d209250dc5aa34221a308977dab491f087066af92f27f8c83 file=deus/internal/registry/registry.go range=24:30 lang=go exported=true byte_range=569:744
+  sig=type Service struct {\n	store		*store.Store\n	registry	*chain.Registry\n	indexer		*indexer.Indexer\n	embedIdx	ManifestIndexer\n}
+  doc=Service orchestrates listing CRUD and publish.
+EDGES
+  contains=github.com/paxlabs-inc/deus/internal/registry.Service#embedIdx,github.com/paxlabs-inc/deus/internal/registry.Service#indexer,github.com/paxlabs-inc/deus/internal/registry.Service#registry,github.com/paxlabs-inc/deus/internal/registry.Service#store,github.com/paxlabs-inc/deus/internal/registry.Service.Create,github.com/paxlabs-inc/deus/internal/registry.Service.Get,github.com/paxlabs-inc/deus/internal/registry.Service.Publish,github.com/paxlabs-inc/deus/internal/registry.Service.SetManifestIndexer,github.com/paxlabs-inc/deus/internal/registry.Service.syncChildren
+  ^defines=github.com/paxlabs-inc/deus/internal/registry/registry.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/registry.Service#embedIdx kind=field
+  digest=b3:c3c018a39c58fba15e577ec19649de015f3d7ef63bf404e14923e6120b8e53f8 file=deus/internal/registry/registry.go range=29:29 lang=go exported=false byte_range=718:742
+  sig=registry.ManifestIndexer
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/registry.Service
+
+NODE id=github.com/paxlabs-inc/deus/internal/registry.Service#indexer kind=field
+  digest=b3:d930393d7ebc54e7cd934dc0b663770caae30596edd271781eaa5fd6bbfe5f18 file=deus/internal/registry/registry.go range=28:28 lang=go exported=false byte_range=691:716
+  sig=*indexer.Indexer
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/registry.Service
+
+NODE id=github.com/paxlabs-inc/deus/internal/registry.Service#registry kind=field
+  digest=b3:2ebac2f68645a3fac260cc6d4aaaa2d7f2e17d19402e6f8a53e59293883d50ed file=deus/internal/registry/registry.go range=27:27 lang=go exported=false byte_range=665:689
+  sig=*chain.Registry
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/registry.Service
+
+NODE id=github.com/paxlabs-inc/deus/internal/registry.Service#store kind=field
+  digest=b3:4a14b880b2e0e1fb316b1d70a7274263c9cb71938ad376b0a4ed4480ff074528 file=deus/internal/registry/registry.go range=26:26 lang=go exported=false byte_range=642:663
+  sig=*store.Store
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/registry.Service
+
+NODE id=github.com/paxlabs-inc/deus/internal/registry.Service.Create kind=method
+  digest=b3:3d19a02c3270f2dc4633a695c02b08153a35f7f0834ab14c245f0b7f4a52265b file=deus/internal/registry/registry.go range=57:115 lang=go exported=true byte_range=1399:3023
+  sig=func (s *Service) Create(ctx context.Context, in CreateInput) (CreateResult, error)
+  doc=Create validates and inserts a draft listing.
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/registry.Service
+  ^defines=github.com/paxlabs-inc/deus/internal/registry/registry.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/registry.Service.Get kind=method
+  digest=b3:5d7858a5b60ee001809c22a06c775df64e15369597fa5d3d47f1bfae8eb25b51 file=deus/internal/registry/registry.go range=214:217 lang=go exported=true byte_range=5747:5902
+  sig=func (s *Service) Get(ctx context.Context, id string) (store.ServiceRow, error)
+  doc=Get returns a listing by id.
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/registry.Service
+  ^defines=github.com/paxlabs-inc/deus/internal/registry/registry.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/registry.Service.Publish kind=method
+  digest=b3:2cac708d0eb21f5e16addbc62d9826fdb3960a82c51f38c76cb435cecd05b6c1 file=deus/internal/registry/registry.go range=133:212 lang=go exported=true byte_range=3378:5745
+  sig=func (s *Service) Publish(ctx context.Context, in PublishInput) (PublishResult, error)
+  doc=Publish validates, registers on-chain, and activates the mirror.
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/registry.Service
+  ^defines=github.com/paxlabs-inc/deus/internal/registry/registry.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/registry.Service.SetManifestIndexer kind=method
+  digest=b3:59e8004164dc7d3cef712a2d997ff5fbd9072af190fe631582403599e5bcbd2a file=deus/internal/registry/registry.go range=37:40 lang=go exported=true byte_range=934:1083
+  sig=func (s *Service) SetManifestIndexer(ix ManifestIndexer)
+  doc=SetManifestIndexer hooks async discovery indexing on create/publish.
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/registry.Service
+  ^defines=github.com/paxlabs-inc/deus/internal/registry/registry.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/registry.Service.syncChildren kind=method
+  digest=b3:82e102469cb9038bca71ef7a308c44d243f1b2b1c483d87845ee472ebcd0b5c3 file=deus/internal/registry/registry.go range=219:251 lang=go exported=false byte_range=5904:6911
+  sig=func (s *Service) syncChildren(ctx context.Context, serviceID string, m *manifest.Manifest) error
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/registry.Service
+  ^defines=github.com/paxlabs-inc/deus/internal/registry/registry.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/registry.ValidateManifest kind=func
+  digest=b3:c22f0989983f07b6f1345a693129c6553d5fbcd5a627c8fe05f4d446d28ddc5b file=deus/internal/registry/validate.go range=18:30 lang=go exported=true byte_range=307:828
+  sig=func ValidateManifest(m *manifest.Manifest) ValidationResult
+  doc=ValidateManifest runs schema + business validation.
+EDGES
+  ^defines=github.com/paxlabs-inc/deus/internal/registry/validate.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/registry.ValidationResult kind=type
+  digest=b3:cc530e964a084b8b7c0b976be09908adb9d858cae21c49ce9d04687de25e9b6c file=deus/internal/registry/validate.go range=11:16 lang=go exported=true byte_range=102:305
+  sig=type ValidationResult struct {\n	OK		bool		`json:"ok"`\n	Warnings	[]string	`json:"warnings"`\n	Errors		[]string	`json:"errors,omitempty"`\n}
+  doc=ValidationResult is returned from manifest validation.
+EDGES
+  contains=github.com/paxlabs-inc/deus/internal/registry.ValidationResult#Errors,github.com/paxlabs-inc/deus/internal/registry.ValidationResult#OK,github.com/paxlabs-inc/deus/internal/registry.ValidationResult#Warnings
+  ^defines=github.com/paxlabs-inc/deus/internal/registry/validate.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/registry.ValidationResult#Errors kind=field
+  digest=b3:ef790d23ec7b16a21150f5876dd3bbcc4d83378478df469f22a653fe7f210e7d file=deus/internal/registry/validate.go range=15:15 lang=go exported=true byte_range=260:303
+  sig=[]string
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/registry.ValidationResult
+
+NODE id=github.com/paxlabs-inc/deus/internal/registry.ValidationResult#OK kind=field
+  digest=b3:18bf8c24c5bc839f944522c2f8fbab3a98d419c6268ba3c2d57b577d37ab9862 file=deus/internal/registry/validate.go range=13:13 lang=go exported=true byte_range=192:221
+  sig=bool
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/registry.ValidationResult
+
+NODE id=github.com/paxlabs-inc/deus/internal/registry.ValidationResult#Warnings kind=field
+  digest=b3:7121278131b8347a7838256aeac77129bbf40ecdddad96e682d19321150c9065 file=deus/internal/registry/validate.go range=14:14 lang=go exported=true byte_range=223:258
+  sig=[]string
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/registry.ValidationResult
+
+NODE id=github.com/paxlabs-inc/deus/internal/registry.hexToBytes32 kind=func
+  digest=b3:3de035897cf0311a4af5ee52c6b9ce665ee1216ba52bd94552992727022f704a file=deus/internal/registry/registry.go range=253:265 lang=go exported=false byte_range=6913:7239
+  sig=func hexToBytes32(hexStr string) ([32]byte, error)
+EDGES
+  ^defines=github.com/paxlabs-inc/deus/internal/registry/registry.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/registry.probeURL kind=func
+  digest=b3:95fb324297d8f2cd8401326e6c0a512422fe89eb1b5b3d3214200bf16c9abd7d file=deus/internal/registry/validate.go range=32:47 lang=go exported=false byte_range=830:1193
+  sig=func probeURL(raw string) error
+EDGES
+  ^defines=github.com/paxlabs-inc/deus/internal/registry/validate.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/registry/registry.go kind=file
+  digest=b3:d6350bc59be8ec43342139f1eff111e821cffdf0b2e8c2df2ad9f180fba37bea file=deus/internal/registry/registry.go range=1:265 lang=go exported=true
+EDGES
+  defines=github.com/paxlabs-inc/deus/internal/registry.CreateInput,github.com/paxlabs-inc/deus/internal/registry.CreateResult,github.com/paxlabs-inc/deus/internal/registry.ManifestIndexer,github.com/paxlabs-inc/deus/internal/registry.NewService,github.com/paxlabs-inc/deus/internal/registry.PublishInput,github.com/paxlabs-inc/deus/internal/registry.PublishResult,github.com/paxlabs-inc/deus/internal/registry.Service,github.com/paxlabs-inc/deus/internal/registry.Service.Create,github.com/paxlabs-inc/deus/internal/registry.Service.Get,github.com/paxlabs-inc/deus/internal/registry.Service.Publish,github.com/paxlabs-inc/deus/internal/registry.Service.SetManifestIndexer,github.com/paxlabs-inc/deus/internal/registry.Service.syncChildren,github.com/paxlabs-inc/deus/internal/registry.hexToBytes32
+  ^contains=github.com/paxlabs-inc/deus/internal/registry
+
+NODE id=github.com/paxlabs-inc/deus/internal/registry/validate.go kind=file
+  digest=b3:874cb14b2bcb45c86ec3afaa825258764dd8475798b0703c62360d6a8d31c691 file=deus/internal/registry/validate.go range=1:47 lang=go exported=true
+EDGES
+  defines=github.com/paxlabs-inc/deus/internal/registry.ValidateManifest,github.com/paxlabs-inc/deus/internal/registry.ValidationResult,github.com/paxlabs-inc/deus/internal/registry.probeURL
+  ^contains=github.com/paxlabs-inc/deus/internal/registry

@@ -1,0 +1,151 @@
+# GENERATED gen=codegraph do-not-edit merkle=b3:2dc69ec8dbbe0231373534486cf12ff6fdb0eaad7b2dfdcbc4d73453c8542ee8
+
+NODE id=matrix/router/internal/provision kind=package
+  digest=b3:920f91121d087734fc0d4da295d81be901b5a61f9d930e4aa13a788fa1f98e60 file=router/internal/provision range=0:0 lang=go exported=true
+EDGES
+  contains=matrix/router/internal/provision/provision.go
+  ^contains=mod:matrix/router
+
+NODE id=matrix/router/internal/provision.CreateRequest kind=type
+  digest=b3:48ad6e15f7ca06f234f197e3288d99c3e6645d8b95842d3ffa7b4506b677f3c2 file=router/internal/provision/provision.go range=61:70 lang=go exported=true byte_range=2304:2684
+  sig=type CreateRequest struct {\n	UserID	string\n	Region	string\n	Env	map[string]string\n}
+  doc=CreateRequest carries everything Ensure needs to provision a fresh\nenvironment + volume. Env is the complete environment-variable set\nfor the instance (identity + control-plane URLs), built by the\nadmin layer; provider-specific config (image, sizing) lives on the\nimplementation.
+EDGES
+  contains=matrix/router/internal/provision.CreateRequest#Env,matrix/router/internal/provision.CreateRequest#Region,matrix/router/internal/provision.CreateRequest#UserID
+  ^defines=matrix/router/internal/provision/provision.go
+
+NODE id=matrix/router/internal/provision.CreateRequest#Env kind=field
+  digest=b3:52911b75d042eabcb1341bd79ed70c1587597523c8c4b23b2edfc47bff09906b file=router/internal/provision/provision.go range=69:69 lang=go exported=true byte_range=2658:2682
+  sig=map[string]string
+EDGES
+  ^contains=matrix/router/internal/provision.CreateRequest
+
+NODE id=matrix/router/internal/provision.CreateRequest#Region kind=field
+  digest=b3:37655320a166db23d56e8e3e54a749a01dbdcb2cc746e7917d4e8ea925765303 file=router/internal/provision/provision.go range=68:68 lang=go exported=true byte_range=2643:2656
+  sig=string
+EDGES
+  ^contains=matrix/router/internal/provision.CreateRequest
+
+NODE id=matrix/router/internal/provision.CreateRequest#UserID kind=field
+  digest=b3:5d1740b300864d332d5edd4fe19f0d3edb58ca06ac8c99018437373c10e2a219 file=router/internal/provision/provision.go range=67:67 lang=go exported=true byte_range=2628:2641
+  sig=string
+EDGES
+  ^contains=matrix/router/internal/provision.CreateRequest
+
+NODE id=matrix/router/internal/provision.Endpoint kind=type
+  digest=b3:088fe69a6406ee7c16fdb5fa12ebbaf5fed0bd44ee6c11ab70f0c7a1cacbb439 file=router/internal/provision/provision.go range=31:39 lang=go exported=true byte_range=1256:1634
+  sig=type Endpoint struct {\n	Host	string\n	Port	string\n}
+  doc=Endpoint is where the environment's daemon HTTP server is reachable\non the private network. Host is unbracketed — a 6PN IPv6 address on\nFly, a <service>.railway.internal hostname on Railway; callers\nbracket IPv6 literals when composing URLs. Port, when empty, falls\nback to the router's configured daemon port.
+EDGES
+  contains=matrix/router/internal/provision.Endpoint#Host,matrix/router/internal/provision.Endpoint#Port
+  ^defines=matrix/router/internal/provision/provision.go
+
+NODE id=matrix/router/internal/provision.Endpoint#Host kind=field
+  digest=b3:a05fbee46f2108a9e2da37d561bbb91cc3735f674f4caadb6aa9be0ea9750950 file=router/internal/provision/provision.go range=37:37 lang=go exported=true byte_range=1608:1619
+  sig=string
+EDGES
+  ^contains=matrix/router/internal/provision.Endpoint
+
+NODE id=matrix/router/internal/provision.Endpoint#Port kind=field
+  digest=b3:484c2a3a2ab4d650710bdb63da5d4faffc9586e7c8cfe0a9a146717b387239e2 file=router/internal/provision/provision.go range=38:38 lang=go exported=true byte_range=1621:1632
+  sig=string
+EDGES
+  ^contains=matrix/router/internal/provision.Endpoint
+
+NODE id=matrix/router/internal/provision.Env kind=type
+  digest=b3:344b313271429eece6c88ac73a625414fb8a984f93072dd463ce6601e28f4fc2 file=router/internal/provision/provision.go range=41:49 lang=go exported=true byte_range=1636:1966
+  sig=type Env struct {\n	ID		string	// provider id: Fly machine id / Railway service id\n	VolumeID	string\n	State		string	// provider-native state string (informational)\n	Region		string\n	Endpoint	Endpoint\n	Ready		bool	// instance is running / deployment succeeded\n}
+  doc=Env is the provider-neutral view of a per-user environment.
+EDGES
+  contains=matrix/router/internal/provision.Env#Endpoint,matrix/router/internal/provision.Env#ID,matrix/router/internal/provision.Env#Ready,matrix/router/internal/provision.Env#Region,matrix/router/internal/provision.Env#State,matrix/router/internal/provision.Env#VolumeID
+  ^defines=matrix/router/internal/provision/provision.go
+
+NODE id=matrix/router/internal/provision.Env#Endpoint kind=field
+  digest=b3:7d6de6881d3efacf9b96141c684b46a025575db2f28af893e13293b67beed8e5 file=router/internal/provision/provision.go range=47:47 lang=go exported=true byte_range=1886:1903
+  sig=provision.Endpoint
+EDGES
+  ^contains=matrix/router/internal/provision.Env
+
+NODE id=matrix/router/internal/provision.Env#ID kind=field
+  digest=b3:fb093a37274605b18aa1de963a92a47a19be8a09e0d55353c53c8bf0cd0ed25c file=router/internal/provision/provision.go range=43:43 lang=go exported=true byte_range=1718:1733
+  sig=string
+EDGES
+  ^contains=matrix/router/internal/provision.Env
+
+NODE id=matrix/router/internal/provision.Env#Ready kind=field
+  digest=b3:d410490febe7633a66b294199723a1e78ad24142b34fd205465a0e0d2b0d0a05 file=router/internal/provision/provision.go range=48:48 lang=go exported=true byte_range=1905:1918
+  sig=bool
+EDGES
+  ^contains=matrix/router/internal/provision.Env
+
+NODE id=matrix/router/internal/provision.Env#Region kind=field
+  digest=b3:f47b7053125b4421bf17c966f99b140eb334d6e2b5c491f83474123765cdba24 file=router/internal/provision/provision.go range=46:46 lang=go exported=true byte_range=1869:1884
+  sig=string
+EDGES
+  ^contains=matrix/router/internal/provision.Env
+
+NODE id=matrix/router/internal/provision.Env#State kind=field
+  digest=b3:9a7ba7398bb58b7f97c2aff74664d749baf8ba908fb0c0dea4321b3a37bd47e5 file=router/internal/provision/provision.go range=45:45 lang=go exported=true byte_range=1804:1819
+  sig=string
+EDGES
+  ^contains=matrix/router/internal/provision.Env
+
+NODE id=matrix/router/internal/provision.Env#VolumeID kind=field
+  digest=b3:0f273546c07a826f8c1015a1e575279033f4b2eee361852a39c3bc4360b1eea0 file=router/internal/provision/provision.go range=44:44 lang=go exported=true byte_range=1787:1802
+  sig=string
+EDGES
+  ^contains=matrix/router/internal/provision.Env
+
+NODE id=matrix/router/internal/provision.ErrNotFound kind=var
+  digest=b3:11bbc08c7faeaa398f255b2c470c234e0a299d1a54b73340660b980a7fa378c9 file=router/internal/provision/provision.go range=24:26 lang=go exported=true byte_range=946:1104
+  sig=error
+  doc=ErrNotFound: the environment (or its app/project scope) no\nlonger exists at the provider.
+EDGES
+  ^defines=matrix/router/internal/provision/provision.go
+
+NODE id=matrix/router/internal/provision.ErrUnauthorized kind=var
+  digest=b3:ca062c8ce4ac720912e1b495164cf046d98581120943f3a82954f3ab3ceab288 file=router/internal/provision/provision.go range=27:28 lang=go exported=true byte_range=1106:1252
+  sig=error
+  doc=ErrUnauthorized: the provider rejected the router's credential.
+EDGES
+  ^defines=matrix/router/internal/provision/provision.go
+
+NODE id=matrix/router/internal/provision.Provisioner kind=interface
+  digest=b3:d563e8d3da25827d70fb0f3eb181d0e220c6e0a171e6b5ab3c7903dc4e3ce28a file=router/internal/provision/provision.go range=72:102 lang=go exported=true byte_range=2686:4181
+  sig=type Provisioner interface {\n	// Ensure provisions a fresh environment + volume for the user and\n	// returns it ready enough for the router to attach and route to.\n	// Idempotence at the user level is the caller's job (the admin\n	// layer checks the users row before calling).\n	Ensure(ctx context.Context, req CreateRequest) (*Env, error)\n\n	// Status reports the environment's current state. Ready mirrors\n	// the provider's own readiness signal (machine started / latest\n	// deployment succeeded) and feeds the provision-status gate.\n	Status(ctx context.Context, ref Ref) (*Env, error)\n\n	// Wake makes sure the environment can take traffic and returns\n	// its endpoint. Providers with an explicit start API block until\n	// the instance runs; wake-on-request providers return immediately\n	// (the forwarded request itself is the wake signal).\n	Wake(ctx context.Context, ref Ref) (*Env, error)\n\n	// Destroy tears the environment down (volume follows the\n	// provider's lifecycle rules). Destroying a vanished environment\n	// returns ErrNotFound.\n	Destroy(ctx context.Context, ref Ref) error\n\n	// WakeOnRequest reports whether waking is platform-managed by\n	// inbound traffic (Wake is a no-op and the readiness probe must\n	// absorb the whole cold boot, including gateway 502/503s emitted\n	// while the platform revives the instance).\n	WakeOnRequest() bool\n}
+  doc=Provisioner is the per-user environment lifecycle: ensure/create,\nstatus, wake, destroy — environment plus its persistent volume.
+EDGES
+  ^implements=matrix/router/internal/fly.Provisioner,matrix/router/internal/railway.Provisioner
+  ^defines=matrix/router/internal/provision/provision.go
+
+NODE id=matrix/router/internal/provision.Ref kind=type
+  digest=b3:cc8cb326661635f77268d9a7eec7d1efa3622499d77cae384afdc6adf627879d file=router/internal/provision/provision.go range=51:59 lang=go exported=true byte_range=1968:2302
+  sig=type Ref struct {\n	UserID		string\n	EnvID		string\n	VolumeID	string\n}
+  doc=Ref identifies an existing environment for status/wake/destroy. The\nids come from the router's users row; UserID rides along so\nproviders with deterministic per-user naming (Railway service\nhostnames) can derive the endpoint without an API round-trip.
+EDGES
+  contains=matrix/router/internal/provision.Ref#EnvID,matrix/router/internal/provision.Ref#UserID,matrix/router/internal/provision.Ref#VolumeID
+  ^defines=matrix/router/internal/provision/provision.go
+
+NODE id=matrix/router/internal/provision.Ref#EnvID kind=field
+  digest=b3:acc3d2ba973f2e1ee4f1bcee65cdd072d10442d25d497fa13d243006c0d4a028 file=router/internal/provision/provision.go range=57:57 lang=go exported=true byte_range=2268:2283
+  sig=string
+EDGES
+  ^contains=matrix/router/internal/provision.Ref
+
+NODE id=matrix/router/internal/provision.Ref#UserID kind=field
+  digest=b3:9000529a3415c935795188f47f54e75fa56a9daf347bed51a5fb02c38ae00206 file=router/internal/provision/provision.go range=56:56 lang=go exported=true byte_range=2251:2266
+  sig=string
+EDGES
+  ^contains=matrix/router/internal/provision.Ref
+
+NODE id=matrix/router/internal/provision.Ref#VolumeID kind=field
+  digest=b3:0f273546c07a826f8c1015a1e575279033f4b2eee361852a39c3bc4360b1eea0 file=router/internal/provision/provision.go range=58:58 lang=go exported=true byte_range=2285:2300
+  sig=string
+EDGES
+  ^contains=matrix/router/internal/provision.Ref
+
+NODE id=matrix/router/internal/provision/provision.go kind=file
+  digest=b3:155b6ecdec69166dbc2338cc37783c97c7982a265f5c987a55d80886808840c5 file=router/internal/provision/provision.go range=1:104 lang=go exported=true
+EDGES
+  defines=matrix/router/internal/provision.CreateRequest,matrix/router/internal/provision.Endpoint,matrix/router/internal/provision.Env,matrix/router/internal/provision.ErrNotFound,matrix/router/internal/provision.ErrUnauthorized,matrix/router/internal/provision.Provisioner,matrix/router/internal/provision.Ref
+  ^contains=matrix/router/internal/provision

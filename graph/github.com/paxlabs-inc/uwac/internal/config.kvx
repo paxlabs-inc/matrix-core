@@ -1,0 +1,215 @@
+# GENERATED gen=codegraph do-not-edit merkle=b3:2dc69ec8dbbe0231373534486cf12ff6fdb0eaad7b2dfdcbc4d73453c8542ee8
+
+NODE id=github.com/paxlabs-inc/uwac/internal/config kind=package
+  digest=b3:e20666202599d7a2163a3a264c03a0ae74ce22e0eee69040909d9e741e197a87 file=uwac/internal/config range=0:0 lang=go exported=true
+EDGES
+  contains=github.com/paxlabs-inc/uwac/internal/config/config.go,github.com/paxlabs-inc/uwac/internal/config/kvx.go
+  ^contains=mod:github.com/paxlabs-inc/uwac
+
+NODE id=github.com/paxlabs-inc/uwac/internal/config.Config kind=type
+  digest=b3:d2d5f367542bba723c5e42a3da2e95e4de04e8d9a28ef2604f3dfe5b9362b24c file=uwac/internal/config/config.go range=13:39 lang=go exported=true byte_range=275:1408
+  sig=type Config struct {\n	// APIAddr is the listen address (default :8646).\n	APIAddr	string\n	// AuthToken is the shared transport bearer (MATRIX_UWAC_TOKEN). Empty\n	// disables transport auth (loopback/dev only — logged as a warning).\n	AuthToken	string\n	// VaultKey is the 32-byte AES-256-GCM key used to encrypt provider tokens\n	// at rest. Derived (sha256) from UWAC_VAULT_KEY.\n	VaultKey	[]byte\n	// SupabaseURL / SupabaseAnonKey point at the self-hosted GoTrue we extend\n	// for the OAuth scope-elevation flow.\n	SupabaseURL	string\n	SupabaseAnonKey	string\n	// PublicBaseURL is uwacd's externally reachable base, used to build the\n	// OAuth redirect_to (e.g. https://uwac.matrix.paxeer.app).\n	PublicBaseURL	string\n	// DatabaseURI is the Postgres DSN for the token vault (empty = in-memory,\n	// dev only).\n	DatabaseURI	string\n	// ConnectorsDir is where connector specs are loaded from.\n	ConnectorsDir	string\n	// ChallengeTTL bounds how long an agent-auth nonce stays valid.\n	ChallengeTTL	time.Duration\n	// Dev relaxes prod fail-closed checks (UWAC_ENV=development).\n	Dev	bool\n}
+  doc=Config is the resolved uwacd runtime configuration.
+EDGES
+  contains=github.com/paxlabs-inc/uwac/internal/config.Config#APIAddr,github.com/paxlabs-inc/uwac/internal/config.Config#AuthToken,github.com/paxlabs-inc/uwac/internal/config.Config#ChallengeTTL,github.com/paxlabs-inc/uwac/internal/config.Config#ConnectorsDir,github.com/paxlabs-inc/uwac/internal/config.Config#DatabaseURI,github.com/paxlabs-inc/uwac/internal/config.Config#Dev,github.com/paxlabs-inc/uwac/internal/config.Config#PublicBaseURL,github.com/paxlabs-inc/uwac/internal/config.Config#SupabaseAnonKey,github.com/paxlabs-inc/uwac/internal/config.Config#SupabaseURL,github.com/paxlabs-inc/uwac/internal/config.Config#VaultKey
+  ^defines=github.com/paxlabs-inc/uwac/internal/config/config.go
+
+NODE id=github.com/paxlabs-inc/uwac/internal/config.Config#APIAddr kind=field
+  digest=b3:dd3d8b36ea1e5d9bbf75637bb6012c5555eccc0e567fef13d11996ea74c0ec38 file=uwac/internal/config/config.go range=15:16 lang=go exported=true byte_range=352:417
+  sig=string
+  doc=APIAddr is the listen address (default :8646).
+EDGES
+  ^contains=github.com/paxlabs-inc/uwac/internal/config.Config
+
+NODE id=github.com/paxlabs-inc/uwac/internal/config.Config#AuthToken kind=field
+  digest=b3:6e9f7b227cd26fb7f82b41189964acdcb71c3da82f6458c7b2c964016f593161 file=uwac/internal/config/config.go range=17:19 lang=go exported=true byte_range=419:580
+  sig=string
+  doc=AuthToken is the shared transport bearer (MATRIX_UWAC_TOKEN). Empty\ndisables transport auth (loopback/dev only — logged as a warning).
+EDGES
+  ^contains=github.com/paxlabs-inc/uwac/internal/config.Config
+
+NODE id=github.com/paxlabs-inc/uwac/internal/config.Config#ChallengeTTL kind=field
+  digest=b3:24bd3f2b4e360fa5e8fd14bf801f5c57956e6eaa9aa330eaf1da8496fe6f1e6a file=uwac/internal/config/config.go range=35:36 lang=go exported=true byte_range=1240:1332
+  sig=time.Duration
+  doc=ChallengeTTL bounds how long an agent-auth nonce stays valid.
+EDGES
+  ^contains=github.com/paxlabs-inc/uwac/internal/config.Config
+
+NODE id=github.com/paxlabs-inc/uwac/internal/config.Config#ConnectorsDir kind=field
+  digest=b3:495e6624c80307ad668121d0350a0f21e4018f82142c5007042216ac828c6b0f file=uwac/internal/config/config.go range=33:34 lang=go exported=true byte_range=1158:1238
+  sig=string
+  doc=ConnectorsDir is where connector specs are loaded from.
+EDGES
+  ^contains=github.com/paxlabs-inc/uwac/internal/config.Config
+
+NODE id=github.com/paxlabs-inc/uwac/internal/config.Config#DatabaseURI kind=field
+  digest=b3:e0f05ceac8c8167bc68f044ff43a63fcfcbf4db1deb1437814791d1c36878fe1 file=uwac/internal/config/config.go range=30:32 lang=go exported=true byte_range=1047:1156
+  sig=string
+  doc=DatabaseURI is the Postgres DSN for the token vault (empty = in-memory,\ndev only).
+EDGES
+  ^contains=github.com/paxlabs-inc/uwac/internal/config.Config
+
+NODE id=github.com/paxlabs-inc/uwac/internal/config.Config#Dev kind=field
+  digest=b3:e029e09491a7d4917e50a02808237d4937bf38eadf8ec5050605d0ac3adb4b07 file=uwac/internal/config/config.go range=37:38 lang=go exported=true byte_range=1334:1406
+  sig=bool
+  doc=Dev relaxes prod fail-closed checks (UWAC_ENV=development).
+EDGES
+  ^contains=github.com/paxlabs-inc/uwac/internal/config.Config
+
+NODE id=github.com/paxlabs-inc/uwac/internal/config.Config#PublicBaseURL kind=field
+  digest=b3:d21e34a405b265fccc887dfa190351ddd59788b0abbc6285638c04e077e8eca2 file=uwac/internal/config/config.go range=27:29 lang=go exported=true byte_range=890:1045
+  sig=string
+  doc=PublicBaseURL is uwacd's externally reachable base, used to build the\nOAuth redirect_to (e.g. https://uwac.matrix.paxeer.app).
+EDGES
+  ^contains=github.com/paxlabs-inc/uwac/internal/config.Config
+
+NODE id=github.com/paxlabs-inc/uwac/internal/config.Config#SupabaseAnonKey kind=field
+  digest=b3:a3a5cbbc121737fdfedcec99e85c3a60783efc8abfc824a76bf4a0579faf37ef file=uwac/internal/config/config.go range=26:26 lang=go exported=true byte_range=866:888
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/uwac/internal/config.Config
+
+NODE id=github.com/paxlabs-inc/uwac/internal/config.Config#SupabaseURL kind=field
+  digest=b3:4f32fc3a358afb6743c177c6719ec68fd6a9d892963c153910bde20da4280e58 file=uwac/internal/config/config.go range=23:25 lang=go exported=true byte_range=726:864
+  sig=string
+  doc=SupabaseURL / SupabaseAnonKey point at the self-hosted GoTrue we extend\nfor the OAuth scope-elevation flow.
+EDGES
+  ^contains=github.com/paxlabs-inc/uwac/internal/config.Config
+
+NODE id=github.com/paxlabs-inc/uwac/internal/config.Config#VaultKey kind=field
+  digest=b3:732a55edb87bb6a4d788e4854cf42b00bff455d46f22f5cdb17601a8225bf186 file=uwac/internal/config/config.go range=20:22 lang=go exported=true byte_range=582:724
+  sig=[]byte
+  doc=VaultKey is the 32-byte AES-256-GCM key used to encrypt provider tokens\nat rest. Derived (sha256) from UWAC_VAULT_KEY.
+EDGES
+  ^contains=github.com/paxlabs-inc/uwac/internal/config.Config
+
+NODE id=github.com/paxlabs-inc/uwac/internal/config.Load kind=func
+  digest=b3:8b2bc3ba150e35aa5fc9eed0291765ec6e273b421c438c5e682dd96cea4b36fc file=uwac/internal/config/config.go range=47:86 lang=go exported=true byte_range=1559:3132
+  sig=func Load() (*Config, error)
+  doc=Load resolves configuration: kvx overlay first, env overrides, then defaults.
+EDGES
+  ^defines=github.com/paxlabs-inc/uwac/internal/config/config.go
+
+NODE id=github.com/paxlabs-inc/uwac/internal/config.defaultAPIAddr kind=const
+  digest=b3:2372628a99fd79957daaf6bced6d267db22140cd10667955ebab667fb4c5409a file=uwac/internal/config/config.go range=42:42 lang=go exported=false byte_range=1419:1448
+  sig=untyped string
+EDGES
+  ^defines=github.com/paxlabs-inc/uwac/internal/config/config.go
+
+NODE id=github.com/paxlabs-inc/uwac/internal/config.defaultChallengeTTL kind=const
+  digest=b3:d09857572a508a77d069f96888499d46c65b85595e081c7bca4715f491109ddc file=uwac/internal/config/config.go range=43:43 lang=go exported=false byte_range=1450:1489
+  sig=time.Duration
+EDGES
+  ^defines=github.com/paxlabs-inc/uwac/internal/config/config.go
+
+NODE id=github.com/paxlabs-inc/uwac/internal/config.devVaultSecret kind=const
+  digest=b3:a53872aa3d957eeacf512b4155584953bf50d8ed52df33b8f321dd98e1f32058 file=uwac/internal/config/config.go range=44:44 lang=go exported=false byte_range=1491:1555
+  sig=untyped string
+EDGES
+  ^defines=github.com/paxlabs-inc/uwac/internal/config/config.go
+
+NODE id=github.com/paxlabs-inc/uwac/internal/config.envRef kind=var
+  digest=b3:3c00e8b443a15eb06179e655b4c16e71bc90bc0248327f875379342c61236a4d file=uwac/internal/config/kvx.go range=31:31 lang=go exported=false byte_range=751:812
+  sig=*regexp.Regexp
+EDGES
+  ^defines=github.com/paxlabs-inc/uwac/internal/config/kvx.go
+
+NODE id=github.com/paxlabs-inc/uwac/internal/config.interpolate kind=func
+  digest=b3:91aa0b521f625fcf0f48a61b53d7dee67eb05d6f601070a4b40de2dfb26b3941 file=uwac/internal/config/kvx.go range=145:154 lang=go exported=false byte_range=3550:3823
+  sig=func interpolate(s string) string
+  doc=interpolate replaces ${ENV_VAR} with the process environment value.
+EDGES
+  ^defines=github.com/paxlabs-inc/uwac/internal/config/kvx.go
+
+NODE id=github.com/paxlabs-inc/uwac/internal/config.kvxDoc kind=type
+  digest=b3:ab96fd4b2a1f1c77f2c5ff5c571999b6abdb4f198517736a982f2edfdf932aec file=uwac/internal/config/kvx.go range=12:29 lang=go exported=false byte_range=82:745
+  sig=type kvxDoc struct {\n	sections	map[string]map[string]string\n	order		[]string\n}
+  doc=kvxDoc is a parsed uwac.config.kvx file: a sectioned key/value document.\n\nFormat (zero-dep, deterministic), shared with tachyon's config loader:\n\n	# comment\n	[section]\n	key = "string"            # double-quoted strings (per Matrix .mtx convention)\n	num = 8646                # bare ints / bools\n	list = ["a", "b"]         # bracketed, comma-separated, quoted items\n	[section.sub]\n	ref = "${ENV_VAR}"        # ${ENV} interpolated from the process environment\n\nValues are stored as raw tokens; typed accessors parse on demand. Later\nduplicate keys win.
+EDGES
+  contains=github.com/paxlabs-inc/uwac/internal/config.kvxDoc#order,github.com/paxlabs-inc/uwac/internal/config.kvxDoc#sections,github.com/paxlabs-inc/uwac/internal/config.kvxDoc.str,github.com/paxlabs-inc/uwac/internal/config.kvxDoc.uint64Or
+  ^defines=github.com/paxlabs-inc/uwac/internal/config/kvx.go
+
+NODE id=github.com/paxlabs-inc/uwac/internal/config.kvxDoc#order kind=field
+  digest=b3:8337f3b4ab429ec8f2400ef923f7211776014dc9230ad8384d05aecebf8ab747 file=uwac/internal/config/kvx.go range=28:28 lang=go exported=false byte_range=726:743
+  sig=[]string
+EDGES
+  ^contains=github.com/paxlabs-inc/uwac/internal/config.kvxDoc
+
+NODE id=github.com/paxlabs-inc/uwac/internal/config.kvxDoc#sections kind=field
+  digest=b3:9e7442b28fe3b1dc5ad8dfa15ac2dccecf79cb80c5f0978a7ebb4c8a1d23bb25 file=uwac/internal/config/kvx.go range=27:27 lang=go exported=false byte_range=687:724
+  sig=map[string]map[string]string
+EDGES
+  ^contains=github.com/paxlabs-inc/uwac/internal/config.kvxDoc
+
+NODE id=github.com/paxlabs-inc/uwac/internal/config.kvxDoc.str kind=method
+  digest=b3:8f5ba288f6fd3cb333309595dee4c64721225ddb31cc01c157f6858fbf214f93 file=uwac/internal/config/kvx.go range=111:122 lang=go exported=false byte_range=2830:3087
+  sig=func (d *kvxDoc) str(section, key string) string
+  doc=str returns the interpolated string value of section.key, or "".
+EDGES
+  ^contains=github.com/paxlabs-inc/uwac/internal/config.kvxDoc
+  ^defines=github.com/paxlabs-inc/uwac/internal/config/kvx.go
+
+NODE id=github.com/paxlabs-inc/uwac/internal/config.kvxDoc.uint64Or kind=method
+  digest=b3:31013e85bd4921dc20142b9cbe1afedd5575443ef1e51473713dd87f72074f9d file=uwac/internal/config/kvx.go range=124:135 lang=go exported=false byte_range=3089:3394
+  sig=func (d *kvxDoc) uint64Or(section, key string, fallback uint64) uint64
+  doc=uint64Or parses section.key as uint64, returning fallback when absent/invalid.
+EDGES
+  ^contains=github.com/paxlabs-inc/uwac/internal/config.kvxDoc
+  ^defines=github.com/paxlabs-inc/uwac/internal/config/kvx.go
+
+NODE id=github.com/paxlabs-inc/uwac/internal/config.newKVXDoc kind=func
+  digest=b3:0b496429aa262ed217dfbe5a95531d3fcd6da3251090f063cbb590ea76ab01ea file=uwac/internal/config/kvx.go range=48:50 lang=go exported=false byte_range=1192:1278
+  sig=func newKVXDoc() *kvxDoc
+EDGES
+  ^defines=github.com/paxlabs-inc/uwac/internal/config/kvx.go
+
+NODE id=github.com/paxlabs-inc/uwac/internal/config.parseKVX kind=func
+  digest=b3:b4a5d8d3afbf155e4f5fe4d441c9e89be6cd1103999466ee95e15aa0f8f7c6c9 file=uwac/internal/config/kvx.go range=52:93 lang=go exported=false byte_range=1280:2506
+  sig=func parseKVX(r interface{ Read([]byte) (int, error) }) (*kvxDoc, error)
+EDGES
+  ^defines=github.com/paxlabs-inc/uwac/internal/config/kvx.go
+
+NODE id=github.com/paxlabs-inc/uwac/internal/config.parseKVXFile kind=func
+  digest=b3:4728b95c644d2db03d17cf6464bd762899895643163072fcc1efa1a880f2caee file=uwac/internal/config/kvx.go range=33:46 lang=go exported=false byte_range=814:1190
+  sig=func parseKVXFile(path string) (*kvxDoc, bool, error)
+  doc=parseKVXFile reads and parses a .kvx file. A missing file is not an error\n(returns an empty doc, ok=false).
+EDGES
+  ^defines=github.com/paxlabs-inc/uwac/internal/config/kvx.go
+
+NODE id=github.com/paxlabs-inc/uwac/internal/config.pick kind=func
+  digest=b3:954a97a368f77af2a859c7e4f09a81f312abe1d62e3851d92b5d0ebcb6ede5a5 file=uwac/internal/config/config.go range=88:97 lang=go exported=false byte_range=3134:3346
+  sig=func pick(envKey, kvxVal, def string) string
+  doc=pick returns the first non-empty of env[key], kvxVal, def.
+EDGES
+  ^defines=github.com/paxlabs-inc/uwac/internal/config/config.go
+
+NODE id=github.com/paxlabs-inc/uwac/internal/config.stripComment kind=func
+  digest=b3:cb72c25b47436fc15bf31da062bf277140901a0eacbb7b25ebf7cab647bb5d67 file=uwac/internal/config/kvx.go range=95:109 lang=go exported=false byte_range=2508:2828
+  sig=func stripComment(line string) string
+  doc=stripComment removes a trailing # comment that is not inside a quoted string.
+EDGES
+  ^defines=github.com/paxlabs-inc/uwac/internal/config/kvx.go
+
+NODE id=github.com/paxlabs-inc/uwac/internal/config.trimSlash kind=func
+  digest=b3:2ed75bebc84751b1aedc0fb4158c4723a4ec37bf85cf46a53d07dec200152414 file=uwac/internal/config/config.go range=99:104 lang=go exported=false byte_range=3348:3455
+  sig=func trimSlash(s string) string
+EDGES
+  ^defines=github.com/paxlabs-inc/uwac/internal/config/config.go
+
+NODE id=github.com/paxlabs-inc/uwac/internal/config.unquote kind=func
+  digest=b3:62067a66dc7f956b660b2b948fef953a2c9d77c404cfce3c1f4b433eda682a84 file=uwac/internal/config/kvx.go range=137:143 lang=go exported=false byte_range=3396:3548
+  sig=func unquote(s string) string
+EDGES
+  ^defines=github.com/paxlabs-inc/uwac/internal/config/kvx.go
+
+NODE id=github.com/paxlabs-inc/uwac/internal/config/config.go kind=file
+  digest=b3:fd794200a5f81ae0b5e1a3a97e929bea1135cb2d3620d872bb30bdda4617402f file=uwac/internal/config/config.go range=1:104 lang=go exported=true
+EDGES
+  defines=github.com/paxlabs-inc/uwac/internal/config.Config,github.com/paxlabs-inc/uwac/internal/config.Load,github.com/paxlabs-inc/uwac/internal/config.defaultAPIAddr,github.com/paxlabs-inc/uwac/internal/config.defaultChallengeTTL,github.com/paxlabs-inc/uwac/internal/config.devVaultSecret,github.com/paxlabs-inc/uwac/internal/config.pick,github.com/paxlabs-inc/uwac/internal/config.trimSlash
+  ^contains=github.com/paxlabs-inc/uwac/internal/config
+
+NODE id=github.com/paxlabs-inc/uwac/internal/config/kvx.go kind=file
+  digest=b3:629e3a055070a24d16810fec020f46471c27fd26b39b5a77d49d69e5d82acd3f file=uwac/internal/config/kvx.go range=1:154 lang=go exported=true
+EDGES
+  defines=github.com/paxlabs-inc/uwac/internal/config.envRef,github.com/paxlabs-inc/uwac/internal/config.interpolate,github.com/paxlabs-inc/uwac/internal/config.kvxDoc,github.com/paxlabs-inc/uwac/internal/config.kvxDoc.str,github.com/paxlabs-inc/uwac/internal/config.kvxDoc.uint64Or,github.com/paxlabs-inc/uwac/internal/config.newKVXDoc,github.com/paxlabs-inc/uwac/internal/config.parseKVX,github.com/paxlabs-inc/uwac/internal/config.parseKVXFile,github.com/paxlabs-inc/uwac/internal/config.stripComment,github.com/paxlabs-inc/uwac/internal/config.unquote
+  ^contains=github.com/paxlabs-inc/uwac/internal/config

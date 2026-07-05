@@ -1,0 +1,97 @@
+# GENERATED gen=codegraph do-not-edit merkle=b3:2dc69ec8dbbe0231373534486cf12ff6fdb0eaad7b2dfdcbc4d73453c8542ee8
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/internal/tester kind=package
+  digest=b3:ca1780f57d3a73b00d0cafcb97964fd8c64cf066ef6f6852d91a4c0eb78197c9 file=tachyon/internal/tester range=0:0 lang=go exported=true
+EDGES
+  contains=github.com/paxlabs-inc/tachyon-tools/internal/tester/tester.go
+  ^contains=mod:github.com/paxlabs-inc/tachyon-tools
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/internal/tester.Tester kind=type
+  digest=b3:d6c00842e4a5866665557b7e3bb374a4030f145f7d8600042d091ea410b904bb file=tachyon/internal/tester/tester.go range=13:16 lang=go exported=true byte_range=191:259
+  sig=type Tester struct {\n	ForgePath string\n}
+  doc=Tester wraps forge test.
+EDGES
+  contains=github.com/paxlabs-inc/tachyon-tools/internal/tester.Tester#ForgePath,github.com/paxlabs-inc/tachyon-tools/internal/tester.Tester.Test
+  ^defines=github.com/paxlabs-inc/tachyon-tools/internal/tester/tester.go
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/internal/tester.Tester#ForgePath kind=field
+  digest=b3:6a7fcf280bacd8846a9e6fa174a6f86394b42b481051b71df0b7d6a179c2df6b file=tachyon/internal/tester/tester.go range=15:15 lang=go exported=true byte_range=241:257
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/tachyon-tools/internal/tester.Tester
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/internal/tester.Tester.Test kind=method
+  digest=b3:ceae177cd0713444b3d05d126c0a2e57db12c85f8beda7a8420e20b98d50220b file=tachyon/internal/tester/tester.go range=18:55 lang=go exported=true byte_range=261:1777
+  sig=func (t *Tester) Test(req types.TestRequest) (types.TestResponse, *types.Error)
+  doc=Test runs forge test and parses JSON output.
+EDGES
+  ^contains=github.com/paxlabs-inc/tachyon-tools/internal/tester.Tester
+  ^defines=github.com/paxlabs-inc/tachyon-tools/internal/tester/tester.go
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/internal/tester.fmtAny kind=func
+  digest=b3:5d61c6c95fc32f1dfb7e81f514dc45eea94554825bdd32807d257d94083b3f26 file=tachyon/internal/tester/tester.go range=138:146 lang=go exported=false byte_range=3552:3688
+  sig=func fmtAny(v any) string
+EDGES
+  ^defines=github.com/paxlabs-inc/tachyon-tools/internal/tester/tester.go
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/internal/tester.forgeSuite kind=type
+  digest=b3:793842747814f6d745385cadc72d602f87ce6febab6608894875d97e7ab3a30b file=tachyon/internal/tester/tester.go range=57:60 lang=go exported=false byte_range=1779:1929
+  sig=type forgeSuite struct {\n	Duration	string				`json:"duration"`\n	TestResults	map[string]forgeTestResult	`json:"test_results"`\n}
+EDGES
+  contains=github.com/paxlabs-inc/tachyon-tools/internal/tester.forgeSuite#Duration,github.com/paxlabs-inc/tachyon-tools/internal/tester.forgeSuite#TestResults
+  ^defines=github.com/paxlabs-inc/tachyon-tools/internal/tester/tester.go
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/internal/tester.forgeSuite#Duration kind=field
+  digest=b3:ea65c1a9d525b712023e4552b177064b9beb430ade8c2f5ceb3005c3aab7d29a file=tachyon/internal/tester/tester.go range=58:58 lang=go exported=true byte_range=1805:1863
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/tachyon-tools/internal/tester.forgeSuite
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/internal/tester.forgeSuite#TestResults kind=field
+  digest=b3:744f4e6223e1c71cf9770288c6a9ffa6cbf27b533b12b113d275366d6d3cf7c6 file=tachyon/internal/tester/tester.go range=59:59 lang=go exported=true byte_range=1865:1927
+  sig=map[string]tester.forgeTestResult
+EDGES
+  ^contains=github.com/paxlabs-inc/tachyon-tools/internal/tester.forgeSuite
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/internal/tester.forgeTestResult kind=type
+  digest=b3:889af11f27e9c8689bc46aed87c8b2406f5e8273b09d23d3879fa0af13fac007 file=tachyon/internal/tester/tester.go range=62:74 lang=go exported=false byte_range=1931:2230
+  sig=type forgeTestResult struct {\n	Status		string	`json:"status"`\n	Reason		any	`json:"reason"`\n	Duration	string	`json:"duration"`\n	Kind		struct {\n		Fuzz	struct {\n			MeanGas uint64 `json:"mean_gas"`\n		}	`json:"Fuzz"`\n		Unit	struct {\n			Gas uint64 `json:"gas"`\n		}	`json:"Unit"`\n	}	`json:"kind"`\n}
+EDGES
+  contains=github.com/paxlabs-inc/tachyon-tools/internal/tester.forgeTestResult#Duration,github.com/paxlabs-inc/tachyon-tools/internal/tester.forgeTestResult#Kind,github.com/paxlabs-inc/tachyon-tools/internal/tester.forgeTestResult#Reason,github.com/paxlabs-inc/tachyon-tools/internal/tester.forgeTestResult#Status
+  ^defines=github.com/paxlabs-inc/tachyon-tools/internal/tester/tester.go
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/internal/tester.forgeTestResult#Duration kind=field
+  digest=b3:2df1277c9aebfd01a0320e6f563f67c89ce417c44e58ed72378eb25efe1e47d8 file=tachyon/internal/tester/tester.go range=65:65 lang=go exported=true byte_range=2028:2061
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/tachyon-tools/internal/tester.forgeTestResult
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/internal/tester.forgeTestResult#Kind kind=field
+  digest=b3:6dc7433c47fe695181df72beac0779a2228b7d9093e9cd4a4e49441d7df3331f file=tachyon/internal/tester/tester.go range=66:73 lang=go exported=true byte_range=2063:2228
+  sig=struct{Fuzz struct{MeanGas uint64 "json:\\"mean_gas\\""} "json:\\"Fuzz\\""; Unit struct{Gas uint64 "json:\\"gas\\""} "json:\\"Unit\\""}
+EDGES
+  ^contains=github.com/paxlabs-inc/tachyon-tools/internal/tester.forgeTestResult
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/internal/tester.forgeTestResult#Reason kind=field
+  digest=b3:e7bdc0d723b98736d2631c0253edf008311894b56e938d58fdb60a2fb52d0150 file=tachyon/internal/tester/tester.go range=64:64 lang=go exported=true byte_range=1995:2026
+  sig=any
+EDGES
+  ^contains=github.com/paxlabs-inc/tachyon-tools/internal/tester.forgeTestResult
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/internal/tester.forgeTestResult#Status kind=field
+  digest=b3:03cdf7f9041647177a52ea1d6fe6d1b29c0321b75522c81c47f41b0afdfba3b0 file=tachyon/internal/tester/tester.go range=63:63 lang=go exported=true byte_range=1962:1993
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/tachyon-tools/internal/tester.forgeTestResult
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/internal/tester.parseForgeTestJSON kind=func
+  digest=b3:8db253a77c86e5a35e318026d50378c1dccea01e1e6677352a014d50af8daace file=tachyon/internal/tester/tester.go range=76:136 lang=go exported=false byte_range=2232:3550
+  sig=func parseForgeTestJSON(stdout string) (types.TestResponse, error)
+EDGES
+  ^defines=github.com/paxlabs-inc/tachyon-tools/internal/tester/tester.go
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/internal/tester/tester.go kind=file
+  digest=b3:e2bf51e144101c2392b4d378a4e3b7560703efdc6f1e98093cf9723b7f918e4f file=tachyon/internal/tester/tester.go range=1:146 lang=go exported=true
+EDGES
+  defines=github.com/paxlabs-inc/tachyon-tools/internal/tester.Tester,github.com/paxlabs-inc/tachyon-tools/internal/tester.Tester.Test,github.com/paxlabs-inc/tachyon-tools/internal/tester.fmtAny,github.com/paxlabs-inc/tachyon-tools/internal/tester.forgeSuite,github.com/paxlabs-inc/tachyon-tools/internal/tester.forgeTestResult,github.com/paxlabs-inc/tachyon-tools/internal/tester.parseForgeTestJSON
+  ^contains=github.com/paxlabs-inc/tachyon-tools/internal/tester

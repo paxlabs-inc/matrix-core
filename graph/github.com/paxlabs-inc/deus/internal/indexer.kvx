@@ -1,0 +1,70 @@
+# GENERATED gen=codegraph do-not-edit merkle=b3:2dc69ec8dbbe0231373534486cf12ff6fdb0eaad7b2dfdcbc4d73453c8542ee8
+
+NODE id=github.com/paxlabs-inc/deus/internal/indexer kind=package
+  digest=b3:b76f30b6e56514ca5a1529ddcce46d5b69f6bf627c7e4ea48dee182048524d68 file=deus/internal/indexer range=0:0 lang=go exported=true
+EDGES
+  contains=github.com/paxlabs-inc/deus/internal/indexer/indexer.go
+  ^contains=mod:github.com/paxlabs-inc/deus
+
+NODE id=github.com/paxlabs-inc/deus/internal/indexer.Indexer kind=type
+  digest=b3:2ae76cdeb1e4506e156a5f729825fc87539afbaab68efc3422c7f5175d0162d7 file=deus/internal/indexer/indexer.go range=16:20 lang=go exported=true byte_range=310:444
+  sig=type Indexer struct {\n	registry	*chain.Registry\n	store		*store.Store\n}
+  doc=Indexer tails ServiceRegistry logs into the mirror tables.
+EDGES
+  contains=github.com/paxlabs-inc/deus/internal/indexer.Indexer#registry,github.com/paxlabs-inc/deus/internal/indexer.Indexer#store,github.com/paxlabs-inc/deus/internal/indexer.Indexer.ReplayFrom,github.com/paxlabs-inc/deus/internal/indexer.Indexer.Sync,github.com/paxlabs-inc/deus/internal/indexer.Indexer.applyRegistered
+  ^defines=github.com/paxlabs-inc/deus/internal/indexer/indexer.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/indexer.Indexer#registry kind=field
+  digest=b3:2ebac2f68645a3fac260cc6d4aaaa2d7f2e17d19402e6f8a53e59293883d50ed file=deus/internal/indexer/indexer.go range=18:18 lang=go exported=false byte_range=395:419
+  sig=*chain.Registry
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/indexer.Indexer
+
+NODE id=github.com/paxlabs-inc/deus/internal/indexer.Indexer#store kind=field
+  digest=b3:4a14b880b2e0e1fb316b1d70a7274263c9cb71938ad376b0a4ed4480ff074528 file=deus/internal/indexer/indexer.go range=19:19 lang=go exported=false byte_range=421:442
+  sig=*store.Store
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/indexer.Indexer
+
+NODE id=github.com/paxlabs-inc/deus/internal/indexer.Indexer.ReplayFrom kind=method
+  digest=b3:f824b3ce6b7390919a3126405afdba2354527e46ca8a1d293f91bc3dd2085c6d file=deus/internal/indexer/indexer.go range=50:53 lang=go exported=true byte_range=1196:1374
+  sig=func (ix *Indexer) ReplayFrom(ctx context.Context, fromBlock int64) error
+  doc=ReplayFrom replays from genesis block 0 for mirror-rebuild tests.
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/indexer.Indexer
+  ^defines=github.com/paxlabs-inc/deus/internal/indexer/indexer.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/indexer.Indexer.Sync kind=method
+  digest=b3:637ebb0939bcbe4817bf20713d1f50187f1c8a114d64b2bf2c59fac7c1c6db95 file=deus/internal/indexer/indexer.go range=27:48 lang=go exported=true byte_range=577:1194
+  sig=func (ix *Indexer) Sync(ctx context.Context, fromBlock int64) error
+  doc=Sync processes ServiceRegistered events from fromBlock (inclusive) and advances the cursor.
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/indexer.Indexer
+  ^defines=github.com/paxlabs-inc/deus/internal/indexer/indexer.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/indexer.Indexer.applyRegistered kind=method
+  digest=b3:15bcfc677096506c6191c648f452b4f0fa9a0e9db6f6748f1b10de590d1b2e72 file=deus/internal/indexer/indexer.go range=55:72 lang=go exported=false byte_range=1376:1904
+  sig=func (ix *Indexer) applyRegistered(ctx context.Context, ev bindings.ServiceRegistryServiceRegistered) error
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/indexer.Indexer
+  ^defines=github.com/paxlabs-inc/deus/internal/indexer/indexer.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/indexer.MirrorCount kind=func
+  digest=b3:d3d42dd6b173a7f384ca4c2be6a488bf52c37e3f1a1da067be74b7d780f820c8 file=deus/internal/indexer/indexer.go range=74:82 lang=go exported=true byte_range=1906:2258
+  sig=func MirrorCount(ctx context.Context, st *store.Store) (int, error)
+  doc=MirrorCount returns active services with non-null chain_id (test helper).
+EDGES
+  ^defines=github.com/paxlabs-inc/deus/internal/indexer/indexer.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/indexer.New kind=func
+  digest=b3:a3063d3fa2af28461133a712e748ef8feb50128277f9b10cba0e6c59c800cc19 file=deus/internal/indexer/indexer.go range=22:25 lang=go exported=true byte_range=446:575
+  sig=func New(reg *chain.Registry, st *store.Store) *Indexer
+  doc=New returns an Indexer.
+EDGES
+  ^defines=github.com/paxlabs-inc/deus/internal/indexer/indexer.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/indexer/indexer.go kind=file
+  digest=b3:747b02cbaa047e0cf282d6a9706e9c973df78fbf0bf4bd21fbef2f61d069d6e4 file=deus/internal/indexer/indexer.go range=1:82 lang=go exported=true
+EDGES
+  defines=github.com/paxlabs-inc/deus/internal/indexer.Indexer,github.com/paxlabs-inc/deus/internal/indexer.Indexer.ReplayFrom,github.com/paxlabs-inc/deus/internal/indexer.Indexer.Sync,github.com/paxlabs-inc/deus/internal/indexer.Indexer.applyRegistered,github.com/paxlabs-inc/deus/internal/indexer.MirrorCount,github.com/paxlabs-inc/deus/internal/indexer.New
+  ^contains=github.com/paxlabs-inc/deus/internal/indexer

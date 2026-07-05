@@ -1,0 +1,1155 @@
+# GENERATED gen=codegraph do-not-edit merkle=b3:2dc69ec8dbbe0231373534486cf12ff6fdb0eaad7b2dfdcbc4d73453c8542ee8
+
+NODE id=matrix/mcl/envelope kind=package
+  digest=b3:8ed49b7a85f9570647c32f9ceeca1d44abe6af6fd293a104531394641c6805cf file=MCL/envelope range=0:0 lang=go exported=true
+EDGES
+  contains=matrix/mcl/envelope/body.go,matrix/mcl/envelope/envelope.go,matrix/mcl/envelope/json.go,matrix/mcl/envelope/keyresolver.go,matrix/mcl/envelope/kinds.go
+  ^contains=mod:matrix/mcl
+
+NODE id=matrix/mcl/envelope.AllKinds kind=var
+  digest=b3:877ba5482cf24d827ada81162c3fe9f55fb94f763da7dd278e45aa9b32161a9d file=MCL/envelope/kinds.go range=60:78 lang=go exported=true byte_range=1942:2385
+  sig=[]string
+  doc=AllKinds is the canonical ordered list of 15 kinds.\nOrder matches research/02-protocol.md §5 table for documentation parity.
+EDGES
+  ^defines=matrix/mcl/envelope/kinds.go
+
+NODE id=matrix/mcl/envelope.BodyTypeOf kind=func
+  digest=b3:d3ae8ab3c9b99ddb730f5c207afa5c821652890305cd98b51cab165154de7909 file=MCL/envelope/body.go range=328:333 lang=go exported=true byte_range=13409:13675
+  sig=func BodyTypeOf(kind string) reflect.Type
+  doc=BodyTypeOf returns the reflect.Type expected for the given kind, or\nnil if kind is not a valid kind. Used by external decoders that need\nto allocate the right typed struct dynamically.
+EDGES
+  ^defines=matrix/mcl/envelope/body.go
+
+NODE id=matrix/mcl/envelope.ClarifyQuestion kind=type
+  digest=b3:b76b9982735a975bdd3fb8d734a464915ef5e7c6df304cf1b574e15372c958e9 file=MCL/envelope/body.go range=63:85 lang=go exported=true byte_range=2528:3382
+  sig=type ClarifyQuestion struct {\n	// UnknownID matches Intent.Unknowns[].ID ("u1", "u2"...).\n	UnknownID	string	`cbor:"0,keyasint" json:"unknown_id"`\n\n	// Field is the SlotPath the answer will patch.\n	Field	string	`cbor:"1,keyasint" json:"field"`\n\n	// Prompt is the user-facing question text.\n	Prompt	string	`cbor:"2,keyasint" json:"prompt"`\n\n	// Type is the expected answer type.\n	Type	string	`cbor:"3,keyasint,omitempty" json:"type,omitempty"`\n\n	// Required: if true, intent.answer MUST include this question.\n	Required	bool	`cbor:"4,keyasint,omitempty" json:"required,omitempty"`\n\n	// Options for enum-like questions.\n	Options	[]string	`cbor:"5,keyasint,omitempty" json:"options,omitempty"`\n\n	// Default suggested fill.\n	Default	string	`cbor:"6,keyasint,omitempty" json:"default,omitempty"`\n}
+  doc=ClarifyQuestion is a single question targeting one Unknown.
+EDGES
+  contains=matrix/mcl/envelope.ClarifyQuestion#Default,matrix/mcl/envelope.ClarifyQuestion#Field,matrix/mcl/envelope.ClarifyQuestion#Options,matrix/mcl/envelope.ClarifyQuestion#Prompt,matrix/mcl/envelope.ClarifyQuestion#Required,matrix/mcl/envelope.ClarifyQuestion#Type,matrix/mcl/envelope.ClarifyQuestion#UnknownID
+  ^defines=matrix/mcl/envelope/body.go
+
+NODE id=matrix/mcl/envelope.ClarifyQuestion#Default kind=field
+  digest=b3:afa986588689f3e5144a4d63b087e84986d8fe51a902a975e6f4487bedf90e0c file=MCL/envelope/body.go range=83:84 lang=go exported=true byte_range=3283:3380
+  sig=string
+  doc=Default suggested fill.
+EDGES
+  ^contains=matrix/mcl/envelope.ClarifyQuestion
+
+NODE id=matrix/mcl/envelope.ClarifyQuestion#Field kind=field
+  digest=b3:839598d223dae668e33b633b22fc819a4a7af2ce01dad108c843842c4bcca37a file=MCL/envelope/body.go range=68:69 lang=go exported=true byte_range=2739:2833
+  sig=string
+  doc=Field is the SlotPath the answer will patch.
+EDGES
+  ^contains=matrix/mcl/envelope.ClarifyQuestion
+
+NODE id=matrix/mcl/envelope.ClarifyQuestion#Options kind=field
+  digest=b3:2a5f80462e1ed14b05e54da6d09c64bed2f8ac21f86b67ef709f2024ddbc8b3e file=MCL/envelope/body.go range=80:81 lang=go exported=true byte_range=3172:3280
+  sig=[]string
+  doc=Options for enum-like questions.
+EDGES
+  ^contains=matrix/mcl/envelope.ClarifyQuestion
+
+NODE id=matrix/mcl/envelope.ClarifyQuestion#Prompt kind=field
+  digest=b3:424ff2761453a871e72032866a87952941760c1239fc4b06972b410d5c4cad79 file=MCL/envelope/body.go range=71:72 lang=go exported=true byte_range=2836:2928
+  sig=string
+  doc=Prompt is the user-facing question text.
+EDGES
+  ^contains=matrix/mcl/envelope.ClarifyQuestion
+
+NODE id=matrix/mcl/envelope.ClarifyQuestion#Required kind=field
+  digest=b3:2eed570c03fed634d646ea2631ba119f81712a341a5e9b78649c78b52ef2dccd file=MCL/envelope/body.go range=77:78 lang=go exported=true byte_range=3035:3169
+  sig=bool
+  doc=Required: if true, intent.answer MUST include this question.
+EDGES
+  ^contains=matrix/mcl/envelope.ClarifyQuestion
+
+NODE id=matrix/mcl/envelope.ClarifyQuestion#Type kind=field
+  digest=b3:ee2411ca87ca689702f251de058acf43af5e49ba015ab7817b06fdd18b3a71b8 file=MCL/envelope/body.go range=74:75 lang=go exported=true byte_range=2931:3032
+  sig=string
+  doc=Type is the expected answer type.
+EDGES
+  ^contains=matrix/mcl/envelope.ClarifyQuestion
+
+NODE id=matrix/mcl/envelope.ClarifyQuestion#UnknownID kind=field
+  digest=b3:253e6508d726c6f2e39038dff6f5e194be4e9bb6a232269063cbebffe894b6aa file=MCL/envelope/body.go range=65:66 lang=go exported=true byte_range=2622:2736
+  sig=string
+  doc=UnknownID matches Intent.Unknowns[].ID ("u1", "u2"...).
+EDGES
+  ^contains=matrix/mcl/envelope.ClarifyQuestion
+
+NODE id=matrix/mcl/envelope.Decode kind=func
+  digest=b3:263a74bb014cc78567a51452052fd0cb2a13c807a3b258404fe14f996b0a44dd file=MCL/envelope/envelope.go range=189:195 lang=go exported=true byte_range=7140:7359
+  sig=func Decode(b []byte, out *Envelope) error
+  doc=Decode parses canonical CBOR wire bytes into out. out should be zero.
+EDGES
+  ^defines=matrix/mcl/envelope/envelope.go
+
+NODE id=matrix/mcl/envelope.Encode kind=func
+  digest=b3:284a541bed1924a3d53a4d8dd49dce845f026137ca85893718d7f647a8f06bef file=MCL/envelope/envelope.go range=180:187 lang=go exported=true byte_range=6890:7138
+  sig=func Encode(env *Envelope) ([]byte, error)
+  doc=Encode returns canonical CBOR for the envelope INCLUDING Signature.\nThis is the wire form.
+EDGES
+  ^defines=matrix/mcl/envelope/envelope.go
+
+NODE id=matrix/mcl/envelope.Envelope kind=type
+  digest=b3:d52be611875734955a1fc7ca13ae117dd5a64b300b181071982d821cf8742c05 file=MCL/envelope/envelope.go range=53:103 lang=go exported=true byte_range=2158:4245
+  sig=type Envelope struct {\n	// SchemaVersion mixes into UnsignedBytes for replay protection.\n	SchemaVersion	uint8	`cbor:"0,keyasint"`\n\n	// ProtocolVersion is the MCL spec version ("mcl/0.1").\n	ProtocolVersion	string	`cbor:"1,keyasint"`\n\n	// Kind discriminates the body. One of the Kind* constants below.\n	Kind	string	`cbor:"2,keyasint"`\n\n	// ID is a ULID identifying this specific message (26 chars).\n	ID	string	`cbor:"3,keyasint"`\n\n	// At is the wall-clock timestamp at envelope creation (ISO-8601).\n	At	string	`cbor:"4,keyasint"`\n\n	// From is the sender principal: matrix://agent/<did> or\n	// matrix://user/<did>.\n	From	string	`cbor:"5,keyasint"`\n\n	// To is the recipient principal (optional; broadcast messages\n	// like intent.attest may omit it for the chain-anchored leg).\n	To	string	`cbor:"6,keyasint,omitempty"`\n\n	// Intent is the matrix://intent/<id> URI this message belongs to.\n	// Every message belongs to exactly one Intent (research/02 §2.2).\n	Intent	string	`cbor:"7,keyasint"`\n\n	// CorrelationID matches request → response pairs (e.g.\n	// intent.clarify → intent.answer). Optional.\n	CorrelationID	string	`cbor:"8,keyasint,omitempty"`\n\n	// CausationID points to the message that directly caused this one,\n	// for tracing across multi-hop flows. Optional.\n	CausationID	string	`cbor:"9,keyasint,omitempty"`\n\n	// Body holds the canonical CBOR encoding of the typed body for Kind.\n	// Use NewEnvelope to populate from a typed struct; DecodeBody to\n	// read back. Body MUST be canonical CBOR for signature stability.\n	Body	cbor.RawMessage	`cbor:"10,keyasint"`\n\n	// Signature is the ed25519 sig by From's pubkey over UnsignedBytes.\n	// 64 bytes when populated; nil/empty before signing.\n	Signature	[]byte	`cbor:"11,keyasint,omitempty"`\n}
+  doc=Envelope is the canonical message wrapper for all 15 MCL message kinds.\nBody is opaque CBOR bytes; the caller knows the kind (Kind field) and\ndecodes Body into the matching typed struct via DecodeBody.\n\nCBOR field tags are integer keyasint. New fields land at the next\nunused integer; deletions require a SchemaVersion bump.
+EDGES
+  contains=matrix/mcl/envelope.Envelope#At,matrix/mcl/envelope.Envelope#Body,matrix/mcl/envelope.Envelope#CausationID,matrix/mcl/envelope.Envelope#CorrelationID,matrix/mcl/envelope.Envelope#From,matrix/mcl/envelope.Envelope#ID,matrix/mcl/envelope.Envelope#Intent,matrix/mcl/envelope.Envelope#Kind,matrix/mcl/envelope.Envelope#ProtocolVersion,matrix/mcl/envelope.Envelope#SchemaVersion,matrix/mcl/envelope.Envelope#Signature,matrix/mcl/envelope.Envelope#To,matrix/mcl/envelope.Envelope.DecodeBody
+  ^defines=matrix/mcl/envelope/envelope.go
+
+NODE id=matrix/mcl/envelope.Envelope#At kind=field
+  digest=b3:c072980dadc4bec41294b3a81c32c97397c6788c6dfc865c7e2ca600ec215d22 file=MCL/envelope/envelope.go range=72:73 lang=go exported=true byte_range=2930:3027
+  sig=string
+  doc=At is the wall-clock timestamp at envelope creation (ISO-8601).
+EDGES
+  ^contains=matrix/mcl/envelope.Envelope
+
+NODE id=matrix/mcl/envelope.Envelope#Body kind=field
+  digest=b3:e76ba4adf3e53ab08fed5c940b72405ede9da5247ab43a007b6ba8c60ecbf770 file=MCL/envelope/envelope.go range=95:98 lang=go exported=true byte_range=3821:4068
+  sig=cbor.RawMessage
+  doc=Body holds the canonical CBOR encoding of the typed body for Kind.\nUse NewEnvelope to populate from a typed struct; DecodeBody to\nread back. Body MUST be canonical CBOR for signature stability.
+EDGES
+  ^contains=matrix/mcl/envelope.Envelope
+
+NODE id=matrix/mcl/envelope.Envelope#CausationID kind=field
+  digest=b3:1ba10a65e5e37b6fc73a59bbb162ffc165da4a54f995af11cce98fa5b3e6cd99 file=MCL/envelope/envelope.go range=91:93 lang=go exported=true byte_range=3651:3818
+  sig=string
+  doc=CausationID points to the message that directly caused this one,\nfor tracing across multi-hop flows. Optional.
+EDGES
+  ^contains=matrix/mcl/envelope.Envelope
+
+NODE id=matrix/mcl/envelope.Envelope#CorrelationID kind=field
+  digest=b3:fc46589cadeba8974c78b583082dcc18c1b45d0b55b2b37a93fb5bd7fedf0b68 file=MCL/envelope/envelope.go range=87:89 lang=go exported=true byte_range=3490:3648
+  sig=string
+  doc=CorrelationID matches request → response pairs (e.g.\nintent.clarify → intent.answer). Optional.
+EDGES
+  ^contains=matrix/mcl/envelope.Envelope
+
+NODE id=matrix/mcl/envelope.Envelope#From kind=field
+  digest=b3:e167b1e941c1f1ab35cb27b974a06b68247f2d27f54dea7def2afb99d8f9abd4 file=MCL/envelope/envelope.go range=75:77 lang=go exported=true byte_range=3030:3144
+  sig=string
+  doc=From is the sender principal: matrix://agent/<did> or\nmatrix://user/<did>.
+EDGES
+  ^contains=matrix/mcl/envelope.Envelope
+
+NODE id=matrix/mcl/envelope.Envelope#ID kind=field
+  digest=b3:f898de571fe4aec0171557a62cfb3f29b0366b8fb0c666ce61890f554edc2c6e file=MCL/envelope/envelope.go range=69:70 lang=go exported=true byte_range=2835:2927
+  sig=string
+  doc=ID is a ULID identifying this specific message (26 chars).
+EDGES
+  ^contains=matrix/mcl/envelope.Envelope
+
+NODE id=matrix/mcl/envelope.Envelope#Intent kind=field
+  digest=b3:066a515c99c393e0cab178d37e35de955e1e10773d410fdec18826913e0a0b0d file=MCL/envelope/envelope.go range=83:85 lang=go exported=true byte_range=3317:3487
+  sig=string
+  doc=Intent is the matrix://intent/<id> URI this message belongs to.\nEvery message belongs to exactly one Intent (research/02 §2.2).
+EDGES
+  ^contains=matrix/mcl/envelope.Envelope
+
+NODE id=matrix/mcl/envelope.Envelope#Kind kind=field
+  digest=b3:c3e14cf29e7bfc58f0d778c07ac9eb194d80d79f203d05e424838443fbcb1580 file=MCL/envelope/envelope.go range=66:67 lang=go exported=true byte_range=2734:2832
+  sig=string
+  doc=Kind discriminates the body. One of the Kind* constants below.
+EDGES
+  ^contains=matrix/mcl/envelope.Envelope
+
+NODE id=matrix/mcl/envelope.Envelope#ProtocolVersion kind=field
+  digest=b3:6def2cd55f7d1910af0ca4eb94a42729d4d3fba196f7954e16520acd9c8f0314 file=MCL/envelope/envelope.go range=63:64 lang=go exported=true byte_range=2632:2731
+  sig=string
+  doc=ProtocolVersion is the MCL spec version ("mcl/0.1").
+EDGES
+  ^contains=matrix/mcl/envelope.Envelope
+
+NODE id=matrix/mcl/envelope.Envelope#SchemaVersion kind=field
+  digest=b3:403eab8cc30a9580a155642a7c3757dfaf3ff440368a96bd7f50ede6c9147a7b file=MCL/envelope/envelope.go range=60:61 lang=go exported=true byte_range=2524:2629
+  sig=uint8
+  doc=SchemaVersion mixes into UnsignedBytes for replay protection.
+EDGES
+  ^contains=matrix/mcl/envelope.Envelope
+
+NODE id=matrix/mcl/envelope.Envelope#Signature kind=field
+  digest=b3:a4652774ed9c83763521d307c760248e719c6843f067cb154913dd60d707917e file=MCL/envelope/envelope.go range=100:102 lang=go exported=true byte_range=4071:4243
+  sig=[]byte
+  doc=Signature is the ed25519 sig by From's pubkey over UnsignedBytes.\n64 bytes when populated; nil/empty before signing.
+EDGES
+  ^contains=matrix/mcl/envelope.Envelope
+
+NODE id=matrix/mcl/envelope.Envelope#To kind=field
+  digest=b3:3d7f4e8b4ed8c977056cfb46890d05530538bd78adfbf6da04b86ecd1f9141d4 file=MCL/envelope/envelope.go range=79:81 lang=go exported=true byte_range=3147:3314
+  sig=string
+  doc=To is the recipient principal (optional; broadcast messages\nlike intent.attest may omit it for the chain-anchored leg).
+EDGES
+  ^contains=matrix/mcl/envelope.Envelope
+
+NODE id=matrix/mcl/envelope.Envelope.DecodeBody kind=method
+  digest=b3:3bb7bae67733bbd42cc944bf077a02a8bf0c98a920e5b2fb2805a70cd9115220 file=MCL/envelope/envelope.go range=165:178 lang=go exported=true byte_range=6352:6888
+  sig=func (env *Envelope) DecodeBody(out interface{}) error
+  doc=DecodeBody parses env.Body into out. out must be a pointer to the\ntyped struct matching env.Kind. Mismatched out types are still\ndecoded if the field tags align — DecodeBody does NOT enforce the\nexpected Go type, only that env.Kind is a valid kind. Use ValidateBody\nfor strict kind↔type matching.
+EDGES
+  ^contains=matrix/mcl/envelope.Envelope
+  ^defines=matrix/mcl/envelope/envelope.go
+
+NODE id=matrix/mcl/envelope.EnvelopeFromJSON kind=func
+  digest=b3:8ae6ad7716d2138d870eb4f0e5106684ef9ea0628f0e358664555fd32f3395b3 file=MCL/envelope/json.go range=103:175 lang=go exported=true byte_range=3517:5763
+  sig=func EnvelopeFromJSON(b []byte) (*Envelope, error)
+  doc=EnvelopeFromJSON parses an on-disk JSONEnvelope and re-encodes the\nbody into canonical CBOR so the resulting Envelope is signature-\nequivalent to the original. Bodies sourced via the BodyHex fallback\nare restored byte-for-byte; typed bodies are re-CBOR-encoded.\n\nThis is the round-trip path for journal recovery and human edits.\nSelfHash is recomputed and cross-checked against the on-disk value;\nmismatch returns ErrSelfHashMismatch.
+EDGES
+  ^defines=matrix/mcl/envelope/json.go
+
+NODE id=matrix/mcl/envelope.EnvelopeJSON kind=func
+  digest=b3:7ae382c65894ce2a184a93d36e6c561f0aeac961d318213ae964c770c2132d91 file=MCL/envelope/json.go range=45:101 lang=go exported=true byte_range=1823:3515
+  sig=func EnvelopeJSON(env *Envelope) ([]byte, error)
+  doc=EnvelopeJSON renders env into its on-disk JSON form. If the kind is\nknown the body is decoded into the typed struct + marshaled as JSON;\notherwise the raw CBOR bytes are hex-encoded into BodyHex.\n\nSelfHash is always populated (it's free + useful for journal indexes).
+EDGES
+  ^defines=matrix/mcl/envelope/json.go
+
+NODE id=matrix/mcl/envelope.ErrAtMissing kind=var
+  digest=b3:65bfba435aa960b6032a79e4770d2877f99312cfc9f99f0e9fa2a8f10fa8cea5 file=MCL/envelope/envelope.go range=122:131 lang=go exported=true byte_range=4667:5227
+  sig=error
+  doc=Common errors.
+EDGES
+  ^defines=matrix/mcl/envelope/envelope.go
+
+NODE id=matrix/mcl/envelope.ErrBodyEmpty kind=var
+  digest=b3:dba5a01761443f13df495385fbd23616309e83052cd62d2b386c05771b5f41d8 file=MCL/envelope/envelope.go range=122:134 lang=go exported=true byte_range=4667:5451
+  sig=error
+  doc=Common errors.
+EDGES
+  ^defines=matrix/mcl/envelope/envelope.go
+
+NODE id=matrix/mcl/envelope.ErrBodyTypeMismatch kind=var
+  digest=b3:0cdfd7ebabf537589c5b22c1217562387a3cdc0d32b3390ad9b64d4e7905c0a2 file=MCL/envelope/envelope.go range=122:133 lang=go exported=true byte_range=4667:5387
+  sig=error
+  doc=Common errors.
+EDGES
+  ^defines=matrix/mcl/envelope/envelope.go
+
+NODE id=matrix/mcl/envelope.ErrFromMissing kind=var
+  digest=b3:2050de0628e75cb4c748203ff427bc980e49b10847f3a279512af030010afaea file=MCL/envelope/envelope.go range=122:128 lang=go exported=true byte_range=4667:5032
+  sig=error
+  doc=Common errors.
+EDGES
+  ^defines=matrix/mcl/envelope/envelope.go
+
+NODE id=matrix/mcl/envelope.ErrIDMissing kind=var
+  digest=b3:30e688d827a5e7925a5bc760c973f88968ed6749b35cf9f276f9537c51e36580 file=MCL/envelope/envelope.go range=122:130 lang=go exported=true byte_range=4667:5158
+  sig=error
+  doc=Common errors.
+EDGES
+  ^defines=matrix/mcl/envelope/envelope.go
+
+NODE id=matrix/mcl/envelope.ErrIntentMissing kind=var
+  digest=b3:dd31db8c9e468d828b77a0037429dd13ced9583be4720b2ac88db0a7543eea30 file=MCL/envelope/envelope.go range=122:129 lang=go exported=true byte_range=4667:5099
+  sig=error
+  doc=Common errors.
+EDGES
+  ^defines=matrix/mcl/envelope/envelope.go
+
+NODE id=matrix/mcl/envelope.ErrSchemaVersion kind=var
+  digest=b3:ad62d9b66d46e8ed9606fde08585f76bcf43f2741445bd2d9a9bcf63ce9bfaac file=MCL/envelope/envelope.go range=122:125 lang=go exported=true byte_range=4667:4828
+  sig=error
+  doc=Common errors.
+EDGES
+  ^defines=matrix/mcl/envelope/envelope.go
+
+NODE id=matrix/mcl/envelope.ErrSelfHashMismatch kind=var
+  digest=b3:05939905709ed32f5c76e7a277fff025e8c4c9460c0fce762819f83dc7ff9de5 file=MCL/envelope/envelope.go range=122:135 lang=go exported=true byte_range=4667:5517
+  sig=error
+  doc=Common errors.
+EDGES
+  ^defines=matrix/mcl/envelope/envelope.go
+
+NODE id=matrix/mcl/envelope.ErrSignatureInvalid kind=var
+  digest=b3:b6fcc6077eed4a31018ab0d10cacc759bb71d8e593daeaae0cacaddd5ddca60d file=MCL/envelope/envelope.go range=122:126 lang=go exported=true byte_range=4667:4893
+  sig=error
+  doc=Common errors.
+EDGES
+  ^defines=matrix/mcl/envelope/envelope.go
+
+NODE id=matrix/mcl/envelope.ErrSignatureMissing kind=var
+  digest=b3:35651284ca0fbec2cdeec83db1972070e38b75bd2acd643724edb5c032039f36 file=MCL/envelope/envelope.go range=122:127 lang=go exported=true byte_range=4667:4961
+  sig=error
+  doc=Common errors.
+EDGES
+  ^defines=matrix/mcl/envelope/envelope.go
+
+NODE id=matrix/mcl/envelope.ErrUnknownKind kind=var
+  digest=b3:3643ffd131b165976d397230efee377373a8a0bd39145df6e24de7d7d6a2ef12 file=MCL/envelope/envelope.go range=122:124 lang=go exported=true byte_range=4667:4758
+  sig=error
+  doc=Common errors.
+EDGES
+  ^defines=matrix/mcl/envelope/envelope.go
+
+NODE id=matrix/mcl/envelope.ErrUnknownPrincipal kind=var
+  digest=b3:4848382d6f51d35c4e94f2396b8223ad4c1838d050a5e8d27dd41c58c7d9f859 file=MCL/envelope/envelope.go range=122:132 lang=go exported=true byte_range=4667:5310
+  sig=error
+  doc=Common errors.
+EDGES
+  ^defines=matrix/mcl/envelope/envelope.go
+
+NODE id=matrix/mcl/envelope.IntentAcceptBody kind=type
+  digest=b3:6f1ac91d54b1752b4c2aafabde65b7175e7b0cf76b21f4dfe4db6f652be7fe7e file=MCL/envelope/body.go range=99:112 lang=go exported=true byte_range=3911:4610
+  sig=type IntentAcceptBody struct {\n	// IntentHash is the sha256 of canonical-JSON Intent at acceptance time.\n	// Receivers verify this matches the local IR before acting.\n	IntentHash	string	`cbor:"0,keyasint" json:"intent_hash"`\n\n	// AcceptedAt is wall-clock ISO-8601 (mirrors header At; explicit for audit).\n	AcceptedAt	string	`cbor:"1,keyasint" json:"accepted_at"`\n\n	// AnchorRequested: did the user opt into chain-anchoring? D10 trigger.\n	AnchorRequested	bool	`cbor:"2,keyasint,omitempty" json:"anchor_requested,omitempty"`\n}
+  doc=IntentAcceptBody — user's signed sign-off on the IR.\nThe Envelope's outer Signature IS the acceptance signature; the body\njust pins the IR hash for replay-binding.
+EDGES
+  contains=matrix/mcl/envelope.IntentAcceptBody#AcceptedAt,matrix/mcl/envelope.IntentAcceptBody#AnchorRequested,matrix/mcl/envelope.IntentAcceptBody#IntentHash
+  ^defines=matrix/mcl/envelope/body.go
+
+NODE id=matrix/mcl/envelope.IntentAcceptBody#AcceptedAt kind=field
+  digest=b3:e208324c9dfd2f880a421160c18a14da2a8313d0545f99ba0bfc5648ceeeaf10 file=MCL/envelope/body.go range=107:108 lang=go exported=true byte_range=4313:4448
+  sig=string
+  doc=AcceptedAt is wall-clock ISO-8601 (mirrors header At; explicit for audit).
+EDGES
+  ^contains=matrix/mcl/envelope.IntentAcceptBody
+
+NODE id=matrix/mcl/envelope.IntentAcceptBody#AnchorRequested kind=field
+  digest=b3:2a6c9d1ab7f06eb3da3fd8ae6654a12a2c7b70fcaaef6e685d2e109aefca9020 file=MCL/envelope/body.go range=110:111 lang=go exported=true byte_range=4451:4608
+  sig=bool
+  doc=AnchorRequested: did the user opt into chain-anchoring? D10 trigger.
+EDGES
+  ^contains=matrix/mcl/envelope.IntentAcceptBody
+
+NODE id=matrix/mcl/envelope.IntentAcceptBody#IntentHash kind=field
+  digest=b3:13aba5f5dad3b87d1e948d4457cc96bacb17de390ebae5ca1cf9298e17b7125b file=MCL/envelope/body.go range=103:105 lang=go exported=true byte_range=4118:4310
+  sig=string
+  doc=IntentHash is the sha256 of canonical-JSON Intent at acceptance time.\nReceivers verify this matches the local IR before acting.
+EDGES
+  ^contains=matrix/mcl/envelope.IntentAcceptBody
+
+NODE id=matrix/mcl/envelope.IntentAnswerBody kind=type
+  digest=b3:65cbbc30c58bb1936d79af8e327b77aa678884334133b4379aab6cd705d7017f file=MCL/envelope/body.go range=87:97 lang=go exported=true byte_range=3384:3909
+  sig=type IntentAnswerBody struct {\n	// Patches is RFC 6902 JSON Patch bytes (array of {op,path,value} ops)\n	// applied against the Intent IR.\n	Patches	[]byte	`cbor:"0,keyasint" json:"patches"`\n\n	// AnswerOf is the correlation ID of the intent.clarify being answered.\n	AnswerOf	string	`cbor:"1,keyasint" json:"answer_of"`\n}
+  doc=IntentAnswerBody — slot patches answering clarify questions.\nWire form is RFC 6902 JSON Patch per D8; the typed authoring surface\n(SlotPatch) compiles to RFC 6902 in MCL/patch (separate package).
+EDGES
+  contains=matrix/mcl/envelope.IntentAnswerBody#AnswerOf,matrix/mcl/envelope.IntentAnswerBody#Patches
+  ^defines=matrix/mcl/envelope/body.go
+
+NODE id=matrix/mcl/envelope.IntentAnswerBody#AnswerOf kind=field
+  digest=b3:db40d0fd68835aa28e180bd8c4107ab2aebc1749e2cc48aeee1f4f3b9b290bcb file=MCL/envelope/body.go range=95:96 lang=go exported=true byte_range=3782:3907
+  sig=string
+  doc=AnswerOf is the correlation ID of the intent.clarify being answered.
+EDGES
+  ^contains=matrix/mcl/envelope.IntentAnswerBody
+
+NODE id=matrix/mcl/envelope.IntentAnswerBody#Patches kind=field
+  digest=b3:abd1058bbe11a44885d2d92f4461f96510ac7e69662f18ecd604b45343c6b0a7 file=MCL/envelope/body.go range=91:93 lang=go exported=true byte_range=3623:3779
+  sig=[]byte
+  doc=Patches is RFC 6902 JSON Patch bytes (array of {op,path,value} ops)\napplied against the Intent IR.
+EDGES
+  ^contains=matrix/mcl/envelope.IntentAnswerBody
+
+NODE id=matrix/mcl/envelope.IntentAttestBody kind=type
+  digest=b3:9b9dea8b26a06defaa90845bf43c10b05507f9aeffc55187ab2484420b722221 file=MCL/envelope/body.go range=199:218 lang=go exported=true byte_range=8126:9041
+  sig=type IntentAttestBody struct {\n	// Outcome is "success", "failure", or "partial".\n	Outcome	string	`cbor:"0,keyasint" json:"outcome"`\n\n	// CitedURIs are the matrix://cortex/... URIs that were load-bearing\n	// during execution. These feed cortex.Attest for salience EMA.\n	CitedURIs	[]string	`cbor:"1,keyasint,omitempty" json:"cited_uris,omitempty"`\n\n	// EvidenceJSON is opaque structured evidence (criteria checks,\n	// artifact hashes, tool outputs). Free-form per intent type.\n	EvidenceJSON	[]byte	`cbor:"2,keyasint,omitempty" json:"evidence_json,omitempty"`\n\n	// CompletedAt is wall-clock ISO-8601.\n	CompletedAt	string	`cbor:"3,keyasint" json:"completed_at"`\n\n	// AnchorTx is the chain transaction hash if anchored on Paxeer.\n	// Empty when not anchored (v1: always empty, chain dropped).\n	AnchorTx	string	`cbor:"4,keyasint,omitempty" json:"anchor_tx,omitempty"`\n}
+  doc=IntentAttestBody — signed completion receipt.
+EDGES
+  contains=matrix/mcl/envelope.IntentAttestBody#AnchorTx,matrix/mcl/envelope.IntentAttestBody#CitedURIs,matrix/mcl/envelope.IntentAttestBody#CompletedAt,matrix/mcl/envelope.IntentAttestBody#EvidenceJSON,matrix/mcl/envelope.IntentAttestBody#Outcome
+  ^defines=matrix/mcl/envelope/body.go
+
+NODE id=matrix/mcl/envelope.IntentAttestBody#AnchorTx kind=field
+  digest=b3:501b7df72b0e971c41f3d4411351990761136694b788f11b2f9010a217887c45 file=MCL/envelope/body.go range=215:217 lang=go exported=true byte_range=8838:9039
+  sig=string
+  doc=AnchorTx is the chain transaction hash if anchored on Paxeer.\nEmpty when not anchored (v1: always empty, chain dropped).
+EDGES
+  ^contains=matrix/mcl/envelope.IntentAttestBody
+
+NODE id=matrix/mcl/envelope.IntentAttestBody#CitedURIs kind=field
+  digest=b3:fab303122f504848bd202e2de9a5ec8d4bfc870bdb845148766551f2253ff5ee file=MCL/envelope/body.go range=204:206 lang=go exported=true byte_range=8312:8523
+  sig=[]string
+  doc=CitedURIs are the matrix://cortex/... URIs that were load-bearing\nduring execution. These feed cortex.Attest for salience EMA.
+EDGES
+  ^contains=matrix/mcl/envelope.IntentAttestBody
+
+NODE id=matrix/mcl/envelope.IntentAttestBody#CompletedAt kind=field
+  digest=b3:30dd4183ba9d644523186ee1d4a6fa9802e904781114199f7a9311ff5f892603 file=MCL/envelope/body.go range=212:213 lang=go exported=true byte_range=8737:8835
+  sig=string
+  doc=CompletedAt is wall-clock ISO-8601.
+EDGES
+  ^contains=matrix/mcl/envelope.IntentAttestBody
+
+NODE id=matrix/mcl/envelope.IntentAttestBody#EvidenceJSON kind=field
+  digest=b3:94050940b163969e0cb2f40f9eb822238d63535575f996d53703d4b3e2700743 file=MCL/envelope/body.go range=208:210 lang=go exported=true byte_range=8526:8734
+  sig=[]byte
+  doc=EvidenceJSON is opaque structured evidence (criteria checks,\nartifact hashes, tool outputs). Free-form per intent type.
+EDGES
+  ^contains=matrix/mcl/envelope.IntentAttestBody
+
+NODE id=matrix/mcl/envelope.IntentAttestBody#Outcome kind=field
+  digest=b3:c42dfab23584167cf239ef9407e6c51534930ae703a5308c16db2d1f1c482c18 file=MCL/envelope/body.go range=201:202 lang=go exported=true byte_range=8209:8309
+  sig=string
+  doc=Outcome is "success", "failure", or "partial".
+EDGES
+  ^contains=matrix/mcl/envelope.IntentAttestBody
+
+NODE id=matrix/mcl/envelope.IntentCancelBody kind=type
+  digest=b3:776cc778a2a2e40cefa9d5aa74c461f6e9a32d1681d990fce86b46756f6a3202 file=MCL/envelope/body.go range=243:250 lang=go exported=true byte_range=10015:10340
+  sig=type IntentCancelBody struct {\n	// Reason is human-readable; no closed enum (user-driven action).\n	Reason	string	`cbor:"0,keyasint,omitempty" json:"reason,omitempty"`\n\n	// CancelledAt is wall-clock ISO-8601.\n	CancelledAt	string	`cbor:"1,keyasint" json:"cancelled_at"`\n}
+  doc=IntentCancelBody — user revokes before completion.
+EDGES
+  contains=matrix/mcl/envelope.IntentCancelBody#CancelledAt,matrix/mcl/envelope.IntentCancelBody#Reason
+  ^defines=matrix/mcl/envelope/body.go
+
+NODE id=matrix/mcl/envelope.IntentCancelBody#CancelledAt kind=field
+  digest=b3:d04bea43369ccb1d7223d49ac280d29d60e8f36f96d04681006f4a8abcbff2d5 file=MCL/envelope/body.go range=248:249 lang=go exported=true byte_range=10240:10338
+  sig=string
+  doc=CancelledAt is wall-clock ISO-8601.
+EDGES
+  ^contains=matrix/mcl/envelope.IntentCancelBody
+
+NODE id=matrix/mcl/envelope.IntentCancelBody#Reason kind=field
+  digest=b3:55b250f40e9e1d6dbcf101c3187701bf7f090e69a386caf5f63bd7b64882a952 file=MCL/envelope/body.go range=245:246 lang=go exported=true byte_range=10103:10237
+  sig=string
+  doc=Reason is human-readable; no closed enum (user-driven action).
+EDGES
+  ^contains=matrix/mcl/envelope.IntentCancelBody
+
+NODE id=matrix/mcl/envelope.IntentClarifyBody kind=type
+  digest=b3:cf278163cd2e9e97f98740f936aa5b0e2be835ad0ca1c56216f837c7245bc7ee file=MCL/envelope/body.go range=57:61 lang=go exported=true byte_range=2330:2526
+  sig=type IntentClarifyBody struct {\n	// Questions one per unmet unknown.\n	Questions []ClarifyQuestion `cbor:"0,keyasint" json:"questions"`\n}
+  doc=IntentClarifyBody — structured questions for unknowns.
+EDGES
+  contains=matrix/mcl/envelope.IntentClarifyBody#Questions
+  ^defines=matrix/mcl/envelope/body.go
+
+NODE id=matrix/mcl/envelope.IntentClarifyBody#Questions kind=field
+  digest=b3:5a4880ba49c78d6dae50e411d79ec1829aedcb3d6a2d792f3aa58704982a0d86 file=MCL/envelope/body.go range=59:60 lang=go exported=true byte_range=2423:2524
+  sig=[]envelope.ClarifyQuestion
+  doc=Questions one per unmet unknown.
+EDGES
+  ^contains=matrix/mcl/envelope.IntentClarifyBody
+
+NODE id=matrix/mcl/envelope.IntentCompiledBody kind=type
+  digest=b3:a7d5086baeeba4122b3735ef923f09a07111db898865fb2e267e46189a8e420b file=MCL/envelope/body.go range=43:55 lang=go exported=true byte_range=1646:2328
+  sig=type IntentCompiledBody struct {\n	// IntentJSON is the canonical JSON encoding of the matrix/mcl/ir.Intent.\n	// Receivers decode via ir.CanonicalJSON-equivalent path.\n	IntentJSON	[]byte	`cbor:"0,keyasint" json:"intent_json"`\n\n	// CompileLatencyMs is the wall-clock cost of compilation.\n	CompileLatencyMs	int64	`cbor:"1,keyasint,omitempty" json:"compile_latency_ms,omitempty"`\n}
+  doc=IntentCompiledBody — agent's typed Intent IR for user review.\nThe Intent itself is carried as canonical JSON bytes (deterministic\nhash per D11) inside IntentJSON. We do NOT re-encode it in CBOR\nbecause the canonical JSON IS the IR's content address; re-encoding\nwould lose that property.
+EDGES
+  contains=matrix/mcl/envelope.IntentCompiledBody#CompileLatencyMs,matrix/mcl/envelope.IntentCompiledBody#IntentJSON
+  ^defines=matrix/mcl/envelope/body.go
+
+NODE id=matrix/mcl/envelope.IntentCompiledBody#CompileLatencyMs kind=field
+  digest=b3:c7e644357d37a5bd0fcfdcbe5f374511aa65552ae4888ed97b7e281ff34c71c0 file=MCL/envelope/body.go range=53:54 lang=go exported=true byte_range=2178:2326
+  sig=int64
+  doc=CompileLatencyMs is the wall-clock cost of compilation.
+EDGES
+  ^contains=matrix/mcl/envelope.IntentCompiledBody
+
+NODE id=matrix/mcl/envelope.IntentCompiledBody#IntentJSON kind=field
+  digest=b3:eb4af4253387528000ea7adecdc9baef843d7b07c0ea1b4f1ba5b5d176b1cea4 file=MCL/envelope/body.go range=49:51 lang=go exported=true byte_range=1985:2175
+  sig=[]byte
+  doc=IntentJSON is the canonical JSON encoding of the matrix/mcl/ir.Intent.\nReceivers decode via ir.CanonicalJSON-equivalent path.
+EDGES
+  ^contains=matrix/mcl/envelope.IntentCompiledBody
+
+NODE id=matrix/mcl/envelope.IntentCorrectBody kind=type
+  digest=b3:52abbd3b293b2bc0cf79b21eca20f45504b53716db68cb528717d9b859058a01 file=MCL/envelope/body.go range=168:182 lang=go exported=true byte_range=6803:7423
+  sig=type IntentCorrectBody struct {\n	// Target is "intent" or "plan" — what's being patched.\n	Target	string	`cbor:"0,keyasint" json:"target"`\n\n	// Patches is RFC 6902 JSON Patch bytes.\n	Patches	[]byte	`cbor:"1,keyasint" json:"patches"`\n\n	// Reason is a structured reason code for the correction (audit).\n	Reason	string	`cbor:"2,keyasint,omitempty" json:"reason,omitempty"`\n\n	// RetryFrom names the PlanNode.ID to resume from after applying.\n	// Empty = restart plan from root.\n	RetryFrom	string	`cbor:"3,keyasint,omitempty" json:"retry_from,omitempty"`\n}
+  doc=IntentCorrectBody — user patches an Intent or plan mid-flight.
+EDGES
+  contains=matrix/mcl/envelope.IntentCorrectBody#Patches,matrix/mcl/envelope.IntentCorrectBody#Reason,matrix/mcl/envelope.IntentCorrectBody#RetryFrom,matrix/mcl/envelope.IntentCorrectBody#Target
+  ^defines=matrix/mcl/envelope/body.go
+
+NODE id=matrix/mcl/envelope.IntentCorrectBody#Patches kind=field
+  digest=b3:76cdac0c3a8ffe5d28da7464864f8940bb875471e0769afcdbbd13f2552c1d7e file=MCL/envelope/body.go range=173:174 lang=go exported=true byte_range=7013:7104
+  sig=[]byte
+  doc=Patches is RFC 6902 JSON Patch bytes.
+EDGES
+  ^contains=matrix/mcl/envelope.IntentCorrectBody
+
+NODE id=matrix/mcl/envelope.IntentCorrectBody#Reason kind=field
+  digest=b3:2c12e46ce4d7c5742e46716e08d10edc7b0287c78c8b9afe23cdea8a47a3c448 file=MCL/envelope/body.go range=176:177 lang=go exported=true byte_range=7107:7241
+  sig=string
+  doc=Reason is a structured reason code for the correction (audit).
+EDGES
+  ^contains=matrix/mcl/envelope.IntentCorrectBody
+
+NODE id=matrix/mcl/envelope.IntentCorrectBody#RetryFrom kind=field
+  digest=b3:b53560c5c4a515c3bea8268030931a485be5166ae76ed159bee68a938e4b43f5 file=MCL/envelope/body.go range=179:181 lang=go exported=true byte_range=7244:7421
+  sig=string
+  doc=RetryFrom names the PlanNode.ID to resume from after applying.\nEmpty = restart plan from root.
+EDGES
+  ^contains=matrix/mcl/envelope.IntentCorrectBody
+
+NODE id=matrix/mcl/envelope.IntentCorrectBody#Target kind=field
+  digest=b3:58aee88355f5f180efc9df9a1fe381385fd79c68b61767b3d2fd377d851d6331 file=MCL/envelope/body.go range=170:171 lang=go exported=true byte_range=6904:7010
+  sig=string
+  doc=Target is "intent" or "plan" — what's being patched.
+EDGES
+  ^contains=matrix/mcl/envelope.IntentCorrectBody
+
+NODE id=matrix/mcl/envelope.IntentDispatchBody kind=type
+  digest=b3:ec2ae747a5eb1c3fd457ed848cabc80908ef2eb6c811d31e49fb4b2a3c7b412f file=MCL/envelope/body.go range=184:197 lang=go exported=true byte_range=7425:8124
+  sig=type IntentDispatchBody struct {\n	// SubIntentJSON is the canonical JSON encoding of the child Intent.\n	// Receivers decode via ir.CanonicalJSON-equivalent path.\n	SubIntentJSON	[]byte	`cbor:"0,keyasint" json:"sub_intent_json"`\n\n	// ScopeURI references the CortexScope granted for child reads.\n	// Empty for in-process dispatch under the same agent.\n	ScopeURI	string	`cbor:"1,keyasint,omitempty" json:"scope_uri,omitempty"`\n\n	// PaymentChannel references a tools/payments/stream if the dispatch\n	// is external (third-party agent). Empty for in-process.\n	PaymentChannel	string	`cbor:"2,keyasint,omitempty" json:"payment_channel,omitempty"`\n}
+  doc=IntentDispatchBody — sub-intent to a delegated agent.
+EDGES
+  contains=matrix/mcl/envelope.IntentDispatchBody#PaymentChannel,matrix/mcl/envelope.IntentDispatchBody#ScopeURI,matrix/mcl/envelope.IntentDispatchBody#SubIntentJSON
+  ^defines=matrix/mcl/envelope/body.go
+
+NODE id=matrix/mcl/envelope.IntentDispatchBody#PaymentChannel kind=field
+  digest=b3:846a9ece4aed1aebd8da8a8456f25e38178b7665fd0f64280b155f1ec4a6b2e0 file=MCL/envelope/body.go range=194:196 lang=go exported=true byte_range=7909:8122
+  sig=string
+  doc=PaymentChannel references a tools/payments/stream if the dispatch\nis external (third-party agent). Empty for in-process.
+EDGES
+  ^contains=matrix/mcl/envelope.IntentDispatchBody
+
+NODE id=matrix/mcl/envelope.IntentDispatchBody#ScopeURI kind=field
+  digest=b3:cd8701bff3a1c318776d4102d319671ab976861a00531a64e7d06a9b00b4c0f9 file=MCL/envelope/body.go range=190:192 lang=go exported=true byte_range=7713:7906
+  sig=string
+  doc=ScopeURI references the CortexScope granted for child reads.\nEmpty for in-process dispatch under the same agent.
+EDGES
+  ^contains=matrix/mcl/envelope.IntentDispatchBody
+
+NODE id=matrix/mcl/envelope.IntentDispatchBody#SubIntentJSON kind=field
+  digest=b3:7d9464a376c3b7618584be915d73163aaf8a5bc3acf87c704ea98587f667f82a file=MCL/envelope/body.go range=186:188 lang=go exported=true byte_range=7518:7710
+  sig=[]byte
+  doc=SubIntentJSON is the canonical JSON encoding of the child Intent.\nReceivers decode via ir.CanonicalJSON-equivalent path.
+EDGES
+  ^contains=matrix/mcl/envelope.IntentDispatchBody
+
+NODE id=matrix/mcl/envelope.IntentDraftBody kind=type
+  digest=b3:acea6e71f56c7a03edff69c6a9df6fedd15ecafef6bacde96612be1b73b3eef4 file=MCL/envelope/body.go range=29:41 lang=go exported=true byte_range=1028:1644
+  sig=type IntentDraftBody struct {\n	// Prose is the original natural-language goal.\n	Prose	string	`cbor:"0,keyasint" json:"prose"`\n\n	// SlotValues are pre-filled slot bindings (form-fill from the UI).\n	// Keyed by slot name from the matched skill's §INPUTS section.\n	SlotValues	map[string]string	`cbor:"1,keyasint,omitempty" json:"slot_values,omitempty"`\n\n	// PreferredSkill is an optional matrix://skill/... ref hint from\n	// the user (e.g. user explicitly invoked /writing-plans).\n	PreferredSkill	string	`cbor:"2,keyasint,omitempty" json:"preferred_skill,omitempty"`\n}
+  doc=IntentDraftBody — initial NL goal from user.
+EDGES
+  contains=matrix/mcl/envelope.IntentDraftBody#PreferredSkill,matrix/mcl/envelope.IntentDraftBody#Prose,matrix/mcl/envelope.IntentDraftBody#SlotValues
+  ^defines=matrix/mcl/envelope/body.go
+
+NODE id=matrix/mcl/envelope.IntentDraftBody#PreferredSkill kind=field
+  digest=b3:7c7ec14f1a655724d78e81ede5a1c8d7584aca3abc44a872cb2944a8ee8140e8 file=MCL/envelope/body.go range=38:40 lang=go exported=true byte_range=1431:1642
+  sig=string
+  doc=PreferredSkill is an optional matrix://skill/... ref hint from\nthe user (e.g. user explicitly invoked /writing-plans).
+EDGES
+  ^contains=matrix/mcl/envelope.IntentDraftBody
+
+NODE id=matrix/mcl/envelope.IntentDraftBody#Prose kind=field
+  digest=b3:0027a75fb4e69259e7daf1f869e259a0561a155ca0386d3fb8cff376a12a0ba8 file=MCL/envelope/body.go range=31:32 lang=go exported=true byte_range=1109:1203
+  sig=string
+  doc=Prose is the original natural-language goal.
+EDGES
+  ^contains=matrix/mcl/envelope.IntentDraftBody
+
+NODE id=matrix/mcl/envelope.IntentDraftBody#SlotValues kind=field
+  digest=b3:1817ffedc52b7c0d26152923fe1c8001325e12ab72e1067cf37de8e2cdc4d85f file=MCL/envelope/body.go range=34:36 lang=go exported=true byte_range=1206:1428
+  sig=map[string]string
+  doc=SlotValues are pre-filled slot bindings (form-fill from the UI).\nKeyed by slot name from the matched skill's §INPUTS section.
+EDGES
+  ^contains=matrix/mcl/envelope.IntentDraftBody
+
+NODE id=matrix/mcl/envelope.IntentFailBody kind=type
+  digest=b3:11c14bd5b9743a7d36228b856bae4d40dc7a28e17d0f590510bbfba6e8f62cdf file=MCL/envelope/body.go range=220:241 lang=go exported=true byte_range=9043:10013
+  sig=type IntentFailBody struct {\n	// Reason is one of the structured failure reasons from\n	// research/02-protocol.md §13: "blocked_by_constraint",\n	// "tool_error", "policy_denied", "deadline_exceeded",\n	// "budget_exceeded", "subagent_failed", "ambiguous_after_clarify",\n	// "correction_invalid", "x:custom".\n	Reason	string	`cbor:"0,keyasint" json:"reason"`\n\n	// Message is a human-readable elaboration.\n	Message	string	`cbor:"1,keyasint,omitempty" json:"message,omitempty"`\n\n	// EvidenceJSON is structured evidence (mirrors IntentAttestBody).\n	EvidenceJSON	[]byte	`cbor:"2,keyasint,omitempty" json:"evidence_json,omitempty"`\n\n	// FailedAt is wall-clock ISO-8601.\n	FailedAt	string	`cbor:"3,keyasint" json:"failed_at"`\n\n	// PartialURIs are matrix://cortex/... URIs for work products that\n	// did land before the failure (so the user can recover them).\n	PartialURIs	[]string	`cbor:"4,keyasint,omitempty" json:"partial_uris,omitempty"`\n}
+  doc=IntentFailBody — typed failure.
+EDGES
+  contains=matrix/mcl/envelope.IntentFailBody#EvidenceJSON,matrix/mcl/envelope.IntentFailBody#FailedAt,matrix/mcl/envelope.IntentFailBody#Message,matrix/mcl/envelope.IntentFailBody#PartialURIs,matrix/mcl/envelope.IntentFailBody#Reason
+  ^defines=matrix/mcl/envelope/body.go
+
+NODE id=matrix/mcl/envelope.IntentFailBody#EvidenceJSON kind=field
+  digest=b3:26bde82c4365dadc68e618c9a4b3944fe82cfe2c16fdb42f634825346d5845b9 file=MCL/envelope/body.go range=232:233 lang=go exported=true byte_range=9556:9704
+  sig=[]byte
+  doc=EvidenceJSON is structured evidence (mirrors IntentAttestBody).
+EDGES
+  ^contains=matrix/mcl/envelope.IntentFailBody
+
+NODE id=matrix/mcl/envelope.IntentFailBody#FailedAt kind=field
+  digest=b3:4c4948de1e4f39165cc341276b4c7c5fccbfb0444e855ecee84f532100bc3c16 file=MCL/envelope/body.go range=235:236 lang=go exported=true byte_range=9707:9796
+  sig=string
+  doc=FailedAt is wall-clock ISO-8601.
+EDGES
+  ^contains=matrix/mcl/envelope.IntentFailBody
+
+NODE id=matrix/mcl/envelope.IntentFailBody#Message kind=field
+  digest=b3:c94af51c6032c46a7d94523d9bd0cd30537e3588bda450ab92dd74474454c426 file=MCL/envelope/body.go range=229:230 lang=go exported=true byte_range=9439:9553
+  sig=string
+  doc=Message is a human-readable elaboration.
+EDGES
+  ^contains=matrix/mcl/envelope.IntentFailBody
+
+NODE id=matrix/mcl/envelope.IntentFailBody#PartialURIs kind=field
+  digest=b3:5892f000918859643a2930e1a993c57e805701a4bbb2fc9295392bf937eb347b file=MCL/envelope/body.go range=238:240 lang=go exported=true byte_range=9799:10011
+  sig=[]string
+  doc=PartialURIs are matrix://cortex/... URIs for work products that\ndid land before the failure (so the user can recover them).
+EDGES
+  ^contains=matrix/mcl/envelope.IntentFailBody
+
+NODE id=matrix/mcl/envelope.IntentFailBody#Reason kind=field
+  digest=b3:d021baf97461cf0a573e156493dd32404d6abc0b9b226a9bd5ab008081cb2a3b file=MCL/envelope/body.go range=222:227 lang=go exported=true byte_range=9110:9436
+  sig=string
+  doc=Reason is one of the structured failure reasons from\nresearch/02-protocol.md §13: "blocked_by_constraint",\n"tool_error", "policy_denied", "deadline_exceeded",\n"budget_exceeded", "subagent_failed", "ambiguous_after_clarify",\n"correction_invalid", "x:custom".
+EDGES
+  ^contains=matrix/mcl/envelope.IntentFailBody
+
+NODE id=matrix/mcl/envelope.JSONEnvelope kind=type
+  digest=b3:01448b7988d24e119820e14e9e98814ff78bcb8dcbbee1ac7d092c9889fa33cc file=MCL/envelope/json.go range=26:43 lang=go exported=true byte_range=860:1821
+  sig=type JSONEnvelope struct {\n	SchemaVersion	uint8		`json:"schema_version"`\n	ProtocolVersion	string		`json:"v"`\n	Kind		string		`json:"kind"`\n	ID		string		`json:"id"`\n	At		string		`json:"at"`\n	From		string		`json:"from"`\n	To		string		`json:"to,omitempty"`\n	Intent		string		`json:"intent"`\n	CorrelationID	string		`json:"correlation_id,omitempty"`\n	CausationID	string		`json:"causation_id,omitempty"`\n	Body		json.RawMessage	`json:"body"`\n	BodyHex		string		`json:"body_hex,omitempty"`	// raw CBOR hex fallback\n	Signature	string		`json:"signature,omitempty"`	// base64\n	SelfHash	string		`json:"self_hash,omitempty"`	// sha256(UnsignedBytes) hex\n}
+  doc=JSONEnvelope is the on-disk schema. Field names mirror the CBOR\nkeyasint mapping but in human-readable form.
+EDGES
+  contains=matrix/mcl/envelope.JSONEnvelope#At,matrix/mcl/envelope.JSONEnvelope#Body,matrix/mcl/envelope.JSONEnvelope#BodyHex,matrix/mcl/envelope.JSONEnvelope#CausationID,matrix/mcl/envelope.JSONEnvelope#CorrelationID,matrix/mcl/envelope.JSONEnvelope#From,matrix/mcl/envelope.JSONEnvelope#ID,matrix/mcl/envelope.JSONEnvelope#Intent,matrix/mcl/envelope.JSONEnvelope#Kind,matrix/mcl/envelope.JSONEnvelope#ProtocolVersion,matrix/mcl/envelope.JSONEnvelope#SchemaVersion,matrix/mcl/envelope.JSONEnvelope#SelfHash,matrix/mcl/envelope.JSONEnvelope#Signature,matrix/mcl/envelope.JSONEnvelope#To
+  ^defines=matrix/mcl/envelope/json.go
+
+NODE id=matrix/mcl/envelope.JSONEnvelope#At kind=field
+  digest=b3:aa0d5504fb5db8b863f3bf6377fdab8e96dc2a31d46fd5c155e490d512f79da4 file=MCL/envelope/json.go range=33:33 lang=go exported=true byte_range=1196:1239
+  sig=string
+EDGES
+  ^contains=matrix/mcl/envelope.JSONEnvelope
+
+NODE id=matrix/mcl/envelope.JSONEnvelope#Body kind=field
+  digest=b3:8a568f5635a7dc3b6a46b3addf2d7ea173b002715d203ec4fcfdffe961131011 file=MCL/envelope/json.go range=39:39 lang=go exported=true byte_range=1524:1569
+  sig=json.RawMessage
+EDGES
+  ^contains=matrix/mcl/envelope.JSONEnvelope
+
+NODE id=matrix/mcl/envelope.JSONEnvelope#BodyHex kind=field
+  digest=b3:7ad89247f792eb3cc8f98cf35cca2344a977563d6114f97e9d1e39765bf09073 file=MCL/envelope/json.go range=40:40 lang=go exported=true byte_range=1571:1630
+  sig=string
+EDGES
+  ^contains=matrix/mcl/envelope.JSONEnvelope
+
+NODE id=matrix/mcl/envelope.JSONEnvelope#CausationID kind=field
+  digest=b3:7445910c7725732c3a516c02fddbc1363e535303285a3e82ad9b275ac9313a1a file=MCL/envelope/json.go range=38:38 lang=go exported=true byte_range=1459:1522
+  sig=string
+EDGES
+  ^contains=matrix/mcl/envelope.JSONEnvelope
+
+NODE id=matrix/mcl/envelope.JSONEnvelope#CorrelationID kind=field
+  digest=b3:8b0dd1cec8665f463fc7e81807df8cf371eac4e86da8655279f82121e61e3394 file=MCL/envelope/json.go range=37:37 lang=go exported=true byte_range=1392:1457
+  sig=string
+EDGES
+  ^contains=matrix/mcl/envelope.JSONEnvelope
+
+NODE id=matrix/mcl/envelope.JSONEnvelope#From kind=field
+  digest=b3:fdfd8a71dfec471874820676856b2436eaf2c8a2641a635ee035499ee3ba7cba file=MCL/envelope/json.go range=34:34 lang=go exported=true byte_range=1241:1286
+  sig=string
+EDGES
+  ^contains=matrix/mcl/envelope.JSONEnvelope
+
+NODE id=matrix/mcl/envelope.JSONEnvelope#ID kind=field
+  digest=b3:b6ea70028b2b8bea2df879b175555c6e40cdbe0d6353e49161f031437b201cab file=MCL/envelope/json.go range=32:32 lang=go exported=true byte_range=1151:1194
+  sig=string
+EDGES
+  ^contains=matrix/mcl/envelope.JSONEnvelope
+
+NODE id=matrix/mcl/envelope.JSONEnvelope#Intent kind=field
+  digest=b3:56cba8524a4c0e6ab23886529272f239c077666571b9e5ac0826bf3d8a641041 file=MCL/envelope/json.go range=36:36 lang=go exported=true byte_range=1343:1390
+  sig=string
+EDGES
+  ^contains=matrix/mcl/envelope.JSONEnvelope
+
+NODE id=matrix/mcl/envelope.JSONEnvelope#Kind kind=field
+  digest=b3:dd428f10b7ff76876c64f15a12805495053e0028b63abbdfebb416859ae1e8af file=MCL/envelope/json.go range=31:31 lang=go exported=true byte_range=1104:1149
+  sig=string
+EDGES
+  ^contains=matrix/mcl/envelope.JSONEnvelope
+
+NODE id=matrix/mcl/envelope.JSONEnvelope#ProtocolVersion kind=field
+  digest=b3:2a413fec464f2f834eba6ae142615c219eb85c4f3e2ee311f9592c7ae7a8f5d4 file=MCL/envelope/json.go range=30:30 lang=go exported=true byte_range=1060:1102
+  sig=string
+EDGES
+  ^contains=matrix/mcl/envelope.JSONEnvelope
+
+NODE id=matrix/mcl/envelope.JSONEnvelope#SchemaVersion kind=field
+  digest=b3:07b3a18db6b1a323364f0fd834be33484bb2839ad147ada7726cf5579e17dc05 file=MCL/envelope/json.go range=29:29 lang=go exported=true byte_range=1003:1058
+  sig=uint8
+EDGES
+  ^contains=matrix/mcl/envelope.JSONEnvelope
+
+NODE id=matrix/mcl/envelope.JSONEnvelope#SelfHash kind=field
+  digest=b3:edbc84d3b3f6b8d3e23f0a891c61a1bb2e17179f0aa3a660cfea54b571f9d0c2 file=MCL/envelope/json.go range=42:42 lang=go exported=true byte_range=1730:1790
+  sig=string
+EDGES
+  ^contains=matrix/mcl/envelope.JSONEnvelope
+
+NODE id=matrix/mcl/envelope.JSONEnvelope#Signature kind=field
+  digest=b3:d43882e2770cac9edf02644b219e648e023d9f9c153f86e64887b86e7fd7e985 file=MCL/envelope/json.go range=41:41 lang=go exported=true byte_range=1658:1718
+  sig=string
+EDGES
+  ^contains=matrix/mcl/envelope.JSONEnvelope
+
+NODE id=matrix/mcl/envelope.JSONEnvelope#To kind=field
+  digest=b3:1ae5dab34f946fdccb26206a45d36d11f64638e2600d46097194421ada3e5db8 file=MCL/envelope/json.go range=35:35 lang=go exported=true byte_range=1288:1341
+  sig=string
+EDGES
+  ^contains=matrix/mcl/envelope.JSONEnvelope
+
+NODE id=matrix/mcl/envelope.KeyResolver kind=interface
+  digest=b3:4eb0a713c5c08dd53c66602f6d38620445e2924b63cf008222810805ce3f23d4 file=MCL/envelope/keyresolver.go range=11:26 lang=go exported=true byte_range=224:947
+  sig=type KeyResolver interface {\n	// ResolveKey returns the public key for principal. Returns\n	// a wrapped ErrUnknownPrincipal if the ref is not known.\n	//\n	// Principal format is matrix://agent/<did> or matrix://user/<did>.\n	// Bare DIDs (without the matrix:// prefix) are NOT auto-rewritten;\n	// callers normalise upstream.\n	ResolveKey(principal string) (ed25519.PublicKey, error)\n}
+  doc=KeyResolver resolves an envelope's From principal to its ed25519\npublic key. Implementations live in the agent runtime / executor /\ntools/registry layer; envelope uses the interface so it has no\ndependency on DID resolution mechanics (D4: chain coupling lives\nin tools/).\n\nMirrors cortex/scope/verify.KeyResolver pattern.
+EDGES
+  ^implements=matrix/mcl/envelope.StaticKeyResolver
+  ^defines=matrix/mcl/envelope/keyresolver.go
+
+NODE id=matrix/mcl/envelope.KindIntentAccept kind=const
+  digest=b3:b82d7c36a23cbb47c7a7f858b13790211decb26d8641d6a1c26e35a48daf074d file=MCL/envelope/kinds.go range=25:27 lang=go exported=true byte_range=882:1011
+  sig=untyped string
+  doc=User → agent: signed sign-off on the IR. Lifecycle transition\nproposed → accepted.
+EDGES
+  ^defines=matrix/mcl/envelope/kinds.go
+
+NODE id=matrix/mcl/envelope.KindIntentAnswer kind=const
+  digest=b3:8f952fd5fa1c42e4bc103921e50f16fbedfa51e8b567c3ac6ec5f5550b2ca831 file=MCL/envelope/kinds.go range=22:23 lang=go exported=true byte_range=780:879
+  sig=untyped string
+  doc=User → agent: answers to clarify questions (slot patches).
+EDGES
+  ^defines=matrix/mcl/envelope/kinds.go
+
+NODE id=matrix/mcl/envelope.KindIntentAttest kind=const
+  digest=b3:fdda366591a11c5a75ad07bdc7e898170ce10bb8352033467785cd351736cf12 file=MCL/envelope/kinds.go range=44:45 lang=go exported=true byte_range=1517:1604
+  sig=untyped string
+  doc=Agent → user/chain: signed completion receipt.
+EDGES
+  ^defines=matrix/mcl/envelope/kinds.go
+
+NODE id=matrix/mcl/envelope.KindIntentCancel kind=const
+  digest=b3:8014dd0d5b140277c99053f6cf2a0bd1014147756a5c161b2a4cc91ec491e702 file=MCL/envelope/kinds.go range=50:51 lang=go exported=true byte_range=1675:1755
+  sig=untyped string
+  doc=User → agent: revoke before completion.
+EDGES
+  ^defines=matrix/mcl/envelope/kinds.go
+
+NODE id=matrix/mcl/envelope.KindIntentClarify kind=const
+  digest=b3:9cd5e71180e2212d7d84fce5b9984b6935a775bd7a84c72b064cedcf1b114ace file=MCL/envelope/kinds.go range=19:20 lang=go exported=true byte_range=686:777
+  sig=untyped string
+  doc=Agent → user: structured questions for unknowns.
+EDGES
+  ^defines=matrix/mcl/envelope/kinds.go
+
+NODE id=matrix/mcl/envelope.KindIntentCompiled kind=const
+  digest=b3:3beb4be3109c95dc42a83487d7d01d1126367c1c693b278b06152cc46fa453ed file=MCL/envelope/kinds.go range=16:17 lang=go exported=true byte_range=597:683
+  sig=untyped string
+  doc=Agent → user: typed Intent IR for review.
+EDGES
+  ^defines=matrix/mcl/envelope/kinds.go
+
+NODE id=matrix/mcl/envelope.KindIntentCorrect kind=const
+  digest=b3:00ac802e4413591d5c9e0e7b240bdcd5c258b093d99875e36ed5d5f5fc61beee file=MCL/envelope/kinds.go range=38:39 lang=go exported=true byte_range=1327:1419
+  sig=untyped string
+  doc=User → agent: patch an Intent or plan mid-flight.
+EDGES
+  ^defines=matrix/mcl/envelope/kinds.go
+
+NODE id=matrix/mcl/envelope.KindIntentDispatch kind=const
+  digest=b3:4a431ca4156473a5376445357418d6614a44ff7bb17eed4c5044fe9534594bb8 file=MCL/envelope/kinds.go range=41:42 lang=go exported=true byte_range=1422:1514
+  sig=untyped string
+  doc=Agent → agent: sub-intent to a delegated agent.
+EDGES
+  ^defines=matrix/mcl/envelope/kinds.go
+
+NODE id=matrix/mcl/envelope.KindIntentDraft kind=const
+  digest=b3:f283d497c6d080c6b0471cc84e310bbd1b953b468bc561b05f285cd3cb2fbac1 file=MCL/envelope/kinds.go range=13:14 lang=go exported=true byte_range=502:594
+  sig=untyped string
+  doc=User → agent: initial NL goal + any pre-filled slots.
+EDGES
+  ^defines=matrix/mcl/envelope/kinds.go
+
+NODE id=matrix/mcl/envelope.KindIntentFail kind=const
+  digest=b3:fa9b7bc24d7c0aaa14e5be704889e414010becd1578ff194823877293f63cc35 file=MCL/envelope/kinds.go range=47:48 lang=go exported=true byte_range=1607:1672
+  sig=untyped string
+  doc=Agent → user: typed failure.
+EDGES
+  ^defines=matrix/mcl/envelope/kinds.go
+
+NODE id=matrix/mcl/envelope.KindPlanOutput kind=const
+  digest=b3:859c464635d17e9451e529d1e5db317c75a520b1f8f7c70a5163e6565dbda7dc file=MCL/envelope/kinds.go range=35:36 lang=go exported=true byte_range=1217:1324
+  sig=untyped string
+  doc=Agent → user: streaming intermediate output (the only streaming kind).
+EDGES
+  ^defines=matrix/mcl/envelope/kinds.go
+
+NODE id=matrix/mcl/envelope.KindPlanProposed kind=const
+  digest=b3:f91617377519f79d9d567be404207536fe1ee76f06bff39e4213e8754c2a3828 file=MCL/envelope/kinds.go range=29:30 lang=go exported=true byte_range=1014:1111
+  sig=untyped string
+  doc=Agent → user: decomposition into steps before execution.
+EDGES
+  ^defines=matrix/mcl/envelope/kinds.go
+
+NODE id=matrix/mcl/envelope.KindPlanStep kind=const
+  digest=b3:11e24d17c08b8fb6bc382224f9b52d4861ba4f6304ca13752e57eeaacf036004 file=MCL/envelope/kinds.go range=32:33 lang=go exported=true byte_range=1114:1214
+  sig=untyped string
+  doc=Agent → agent/tool: execution of a single step (executor-internal).
+EDGES
+  ^defines=matrix/mcl/envelope/kinds.go
+
+NODE id=matrix/mcl/envelope.KindPolicyGate kind=const
+  digest=b3:97708da7c61fe2354426673329c3f57fc7cef72d175de1bc553c6f8e46a66754 file=MCL/envelope/kinds.go range=53:54 lang=go exported=true byte_range=1758:1851
+  sig=untyped string
+  doc=Agent → user: human-in-loop checkpoint (rule-triggered).
+EDGES
+  ^defines=matrix/mcl/envelope/kinds.go
+
+NODE id=matrix/mcl/envelope.KindPolicyGateResolve kind=const
+  digest=b3:ecefb1f059f29dad794e395a77d2bdb3ad0020b1857cc8bae5feef244ddd70b9 file=MCL/envelope/kinds.go range=56:57 lang=go exported=true byte_range=1854:1938
+  sig=untyped string
+  doc=User → agent: approve/deny gate.
+EDGES
+  ^defines=matrix/mcl/envelope/kinds.go
+
+NODE id=matrix/mcl/envelope.NewEnvelope kind=func
+  digest=b3:6dc678b4fbe24389e28ff2194ae333fe1f1c4da152abd27c1e40adce3348084a file=MCL/envelope/envelope.go range=138:163 lang=go exported=true byte_range=5521:6350
+  sig=func NewEnvelope(kind string, body interface{}) (*Envelope, error)
+  doc=NewEnvelope constructs an unsigned Envelope from a typed body struct.\nThe kind argument MUST match the body's expected kind (validated against\nkindForBody). Body is canonical-CBOR-encoded into env.Body.\n\nThe caller is responsible for populating ID, At, From, To, Intent,\nCorrelationID, CausationID before calling Sign.
+EDGES
+  ^defines=matrix/mcl/envelope/envelope.go
+
+NODE id=matrix/mcl/envelope.NewTypedBody kind=func
+  digest=b3:55f21e21143f44025a393a91f07006966c52f52b32ba239528529988b7225caf file=MCL/envelope/body.go range=335:343 lang=go exported=true byte_range=13677:13949
+  sig=func NewTypedBody(kind string) interface{}
+  doc=NewTypedBody allocates a fresh zero-valued body for kind as a pointer\nusable with env.DecodeBody. Returns nil for unknown kinds.
+EDGES
+  ^defines=matrix/mcl/envelope/body.go
+
+NODE id=matrix/mcl/envelope.PlanOutputBody kind=type
+  digest=b3:7f4dd638e5d4b080a4162f3a642a871a0041a5111c31b7f5bb109264e857e6ff file=MCL/envelope/body.go range=146:166 lang=go exported=true byte_range=5942:6801
+  sig=type PlanOutputBody struct {\n	// PlanID identifies the parent PlanTree.\n	PlanID	string	`cbor:"0,keyasint" json:"plan_id"`\n\n	// NodeID identifies the emitting PlanNode.\n	NodeID	string	`cbor:"1,keyasint" json:"node_id"`\n\n	// Sequence is a monotonic counter within a (PlanID, NodeID) stream.\n	Sequence	uint64	`cbor:"2,keyasint" json:"sequence"`\n\n	// Chunk is opaque output bytes (stdout/stderr/tool result fragment).\n	Chunk	[]byte	`cbor:"3,keyasint" json:"chunk"`\n\n	// Channel labels the stream: "stdout", "stderr", "result", "progress".\n	Channel	string	`cbor:"4,keyasint,omitempty" json:"channel,omitempty"`\n\n	// Final marks the last chunk in the stream.\n	Final	bool	`cbor:"5,keyasint,omitempty" json:"final,omitempty"`\n}
+  doc=PlanOutputBody — streaming intermediate output. Multiple of these\nmay share an Intent + PlanID + NodeID, distinguished by Sequence.
+EDGES
+  contains=matrix/mcl/envelope.PlanOutputBody#Channel,matrix/mcl/envelope.PlanOutputBody#Chunk,matrix/mcl/envelope.PlanOutputBody#Final,matrix/mcl/envelope.PlanOutputBody#NodeID,matrix/mcl/envelope.PlanOutputBody#PlanID,matrix/mcl/envelope.PlanOutputBody#Sequence
+  ^defines=matrix/mcl/envelope/body.go
+
+NODE id=matrix/mcl/envelope.PlanOutputBody#Channel kind=field
+  digest=b3:55b42c8c41ba2b64b407352d507b786aa3fa6e30f049288aa6448660fb185641 file=MCL/envelope/body.go range=161:162 lang=go exported=true byte_range=6545:6687
+  sig=string
+  doc=Channel labels the stream: "stdout", "stderr", "result", "progress".
+EDGES
+  ^contains=matrix/mcl/envelope.PlanOutputBody
+
+NODE id=matrix/mcl/envelope.PlanOutputBody#Chunk kind=field
+  digest=b3:02405d8d3149479e639cc305c75c60abf97bac0a1b81360640706cfd22f13c7b file=MCL/envelope/body.go range=158:159 lang=go exported=true byte_range=6426:6542
+  sig=[]byte
+  doc=Chunk is opaque output bytes (stdout/stderr/tool result fragment).
+EDGES
+  ^contains=matrix/mcl/envelope.PlanOutputBody
+
+NODE id=matrix/mcl/envelope.PlanOutputBody#Final kind=field
+  digest=b3:c3dbc2c0798dec651dcdd0e70c609bb024062a0b886abf8f7c4549bdc38e25bf file=MCL/envelope/body.go range=164:165 lang=go exported=true byte_range=6690:6799
+  sig=bool
+  doc=Final marks the last chunk in the stream.
+EDGES
+  ^contains=matrix/mcl/envelope.PlanOutputBody
+
+NODE id=matrix/mcl/envelope.PlanOutputBody#NodeID kind=field
+  digest=b3:93a763d169b365b4426c124168daa9254a78b069844f872078d8e890d9a8c45f file=MCL/envelope/body.go range=152:153 lang=go exported=true byte_range=6206:6299
+  sig=string
+  doc=NodeID identifies the emitting PlanNode.
+EDGES
+  ^contains=matrix/mcl/envelope.PlanOutputBody
+
+NODE id=matrix/mcl/envelope.PlanOutputBody#PlanID kind=field
+  digest=b3:88e80eb37f8166e7f16b3cd0f53bd5f540ca8f2159dad1b6ae29ee128a557b27 file=MCL/envelope/body.go range=149:150 lang=go exported=true byte_range=6112:6203
+  sig=string
+  doc=PlanID identifies the parent PlanTree.
+EDGES
+  ^contains=matrix/mcl/envelope.PlanOutputBody
+
+NODE id=matrix/mcl/envelope.PlanOutputBody#Sequence kind=field
+  digest=b3:adcddc354f2ec842a6191d9161409456b28c440511d855a440a2863ef82d475e file=MCL/envelope/body.go range=155:156 lang=go exported=true byte_range=6302:6423
+  sig=uint64
+  doc=Sequence is a monotonic counter within a (PlanID, NodeID) stream.
+EDGES
+  ^contains=matrix/mcl/envelope.PlanOutputBody
+
+NODE id=matrix/mcl/envelope.PlanProposedBody kind=type
+  digest=b3:9c03b7eefdf31aabfe275889c04887b88f57ae396b61fec03624dfa9c7301ecd file=MCL/envelope/body.go range=114:120 lang=go exported=true byte_range=4612:4966
+  sig=type PlanProposedBody struct {\n	// PlanJSON is the canonical JSON encoding of ir.PlanTree.\n	PlanJSON []byte `cbor:"0,keyasint" json:"plan_json"`\n}
+  doc=PlanProposedBody — agent's decomposition into steps before execution.\nCarries a PlanTree as canonical JSON bytes (mirrors IntentCompiledBody\nposture — the canonical JSON IS the content address).
+EDGES
+  contains=matrix/mcl/envelope.PlanProposedBody#PlanJSON
+  ^defines=matrix/mcl/envelope/body.go
+
+NODE id=matrix/mcl/envelope.PlanProposedBody#PlanJSON kind=field
+  digest=b3:23e5c02d2eda8710caddf72714fe5f54db421d9d619d6d45e8044a82e3f77fb7 file=MCL/envelope/body.go range=118:119 lang=go exported=true byte_range=4852:4964
+  sig=[]byte
+  doc=PlanJSON is the canonical JSON encoding of ir.PlanTree.
+EDGES
+  ^contains=matrix/mcl/envelope.PlanProposedBody
+
+NODE id=matrix/mcl/envelope.PlanStepBody kind=type
+  digest=b3:ba43f6e9071c48e9e725c76b4b958a437b0c1026e121ddbec51f52b7add98f84 file=MCL/envelope/body.go range=122:144 lang=go exported=true byte_range=4968:5940
+  sig=type PlanStepBody struct {\n	// PlanID identifies the parent PlanTree.\n	PlanID	string	`cbor:"0,keyasint" json:"plan_id"`\n\n	// NodeID identifies the PlanNode being executed.\n	NodeID	string	`cbor:"1,keyasint" json:"node_id"`\n\n	// Status is the lifecycle of this step: "started", "completed",\n	// "failed", "cancelled". Closed enum.\n	Status	string	`cbor:"2,keyasint" json:"status"`\n\n	// Result is opaque step output (tool result, sub-intent ref, etc.)\n	// encoded as JSON bytes for human-readable journaling.\n	Result	[]byte	`cbor:"3,keyasint,omitempty" json:"result,omitempty"`\n\n	// Error is populated when Status == "failed".\n	Error	string	`cbor:"4,keyasint,omitempty" json:"error,omitempty"`\n\n	// LatencyMs is the wall-clock duration of the step.\n	LatencyMs	int64	`cbor:"5,keyasint,omitempty" json:"latency_ms,omitempty"`\n}
+  doc=PlanStepBody — single step execution envelope (executor-internal).\nUsed for inter-component messaging within an executor; rarely user-visible.
+EDGES
+  contains=matrix/mcl/envelope.PlanStepBody#Error,matrix/mcl/envelope.PlanStepBody#LatencyMs,matrix/mcl/envelope.PlanStepBody#NodeID,matrix/mcl/envelope.PlanStepBody#PlanID,matrix/mcl/envelope.PlanStepBody#Result,matrix/mcl/envelope.PlanStepBody#Status
+  ^defines=matrix/mcl/envelope/body.go
+
+NODE id=matrix/mcl/envelope.PlanStepBody#Error kind=field
+  digest=b3:f7dd437e1f60926efc8b73f2c5dc0db3fa1f8ecdcd2ba738b6ea9f5102674147 file=MCL/envelope/body.go range=139:140 lang=go exported=true byte_range=5695:5808
+  sig=string
+  doc=Error is populated when Status == "failed".
+EDGES
+  ^contains=matrix/mcl/envelope.PlanStepBody
+
+NODE id=matrix/mcl/envelope.PlanStepBody#LatencyMs kind=field
+  digest=b3:867091e19c7c1bff39d4e91569d0d4348f511908cc90a99cfc4f7a17b3a21d51 file=MCL/envelope/body.go range=142:143 lang=go exported=true byte_range=5811:5938
+  sig=int64
+  doc=LatencyMs is the wall-clock duration of the step.
+EDGES
+  ^contains=matrix/mcl/envelope.PlanStepBody
+
+NODE id=matrix/mcl/envelope.PlanStepBody#NodeID kind=field
+  digest=b3:a7705fef76ce234bf689e6c19ad7908c625fde75e099f526e3a4552290c5bb9a file=MCL/envelope/body.go range=128:129 lang=go exported=true byte_range=5241:5340
+  sig=string
+  doc=NodeID identifies the PlanNode being executed.
+EDGES
+  ^contains=matrix/mcl/envelope.PlanStepBody
+
+NODE id=matrix/mcl/envelope.PlanStepBody#PlanID kind=field
+  digest=b3:88e80eb37f8166e7f16b3cd0f53bd5f540ca8f2159dad1b6ae29ee128a557b27 file=MCL/envelope/body.go range=125:126 lang=go exported=true byte_range=5147:5238
+  sig=string
+  doc=PlanID identifies the parent PlanTree.
+EDGES
+  ^contains=matrix/mcl/envelope.PlanStepBody
+
+NODE id=matrix/mcl/envelope.PlanStepBody#Result kind=field
+  digest=b3:25fbc04a9b7d4408354d79a8a6dffc7dcc3f4de0a7867d652ef4ffe10d807c54 file=MCL/envelope/body.go range=135:137 lang=go exported=true byte_range=5499:5692
+  sig=[]byte
+  doc=Result is opaque step output (tool result, sub-intent ref, etc.)\nencoded as JSON bytes for human-readable journaling.
+EDGES
+  ^contains=matrix/mcl/envelope.PlanStepBody
+
+NODE id=matrix/mcl/envelope.PlanStepBody#Status kind=field
+  digest=b3:ba76a286f3a0ddae8246d00484dc40fd9ed070bce102943c85442c5a664faefa file=MCL/envelope/body.go range=131:133 lang=go exported=true byte_range=5343:5496
+  sig=string
+  doc=Status is the lifecycle of this step: "started", "completed",\n"failed", "cancelled". Closed enum.
+EDGES
+  ^contains=matrix/mcl/envelope.PlanStepBody
+
+NODE id=matrix/mcl/envelope.PolicyGateBody kind=type
+  digest=b3:2e357399b89661860b8f1a84349de14817b0093af491d7877d441ff482990a59 file=MCL/envelope/body.go range=252:270 lang=go exported=true byte_range=10342:11160
+  sig=type PolicyGateBody struct {\n	// RuleRef is the matrix://rule/<id> that triggered.\n	RuleRef	string	`cbor:"0,keyasint" json:"rule_ref"`\n\n	// PlanID + NodeID locate the gate within the executing plan.\n	PlanID	string	`cbor:"1,keyasint,omitempty" json:"plan_id,omitempty"`\n	NodeID	string	`cbor:"2,keyasint,omitempty" json:"node_id,omitempty"`\n\n	// Question is shown to the user.\n	Question	string	`cbor:"3,keyasint" json:"question"`\n\n	// Options for the answer; empty = open text.\n	Options	[]string	`cbor:"4,keyasint,omitempty" json:"options,omitempty"`\n\n	// ExpiresAt is wall-clock when the gate auto-denies (ISO-8601).\n	ExpiresAt	string	`cbor:"5,keyasint,omitempty" json:"expires_at,omitempty"`\n}
+  doc=PolicyGateBody — human-in-loop checkpoint emitted by the executor\nwhen a rule fires with `gate` rather than `block`.
+EDGES
+  contains=matrix/mcl/envelope.PolicyGateBody#ExpiresAt,matrix/mcl/envelope.PolicyGateBody#NodeID,matrix/mcl/envelope.PolicyGateBody#Options,matrix/mcl/envelope.PolicyGateBody#PlanID,matrix/mcl/envelope.PolicyGateBody#Question,matrix/mcl/envelope.PolicyGateBody#RuleRef
+  ^defines=matrix/mcl/envelope/body.go
+
+NODE id=matrix/mcl/envelope.PolicyGateBody#ExpiresAt kind=field
+  digest=b3:2273b9c84c46959b7b425993b8ae1fb7a3cdf5d15f54acf34c26e8f6a1861371 file=MCL/envelope/body.go range=268:269 lang=go exported=true byte_range=11018:11158
+  sig=string
+  doc=ExpiresAt is wall-clock when the gate auto-denies (ISO-8601).
+EDGES
+  ^contains=matrix/mcl/envelope.PolicyGateBody
+
+NODE id=matrix/mcl/envelope.PolicyGateBody#NodeID kind=field
+  digest=b3:91785d02dedc4c94643fd5103abfe954a81dad4d6ea2ea45edddb93cd3459c90 file=MCL/envelope/body.go range=260:260 lang=go exported=true byte_range=10737:10805
+  sig=string
+EDGES
+  ^contains=matrix/mcl/envelope.PolicyGateBody
+
+NODE id=matrix/mcl/envelope.PolicyGateBody#Options kind=field
+  digest=b3:57819586e36b5d72b8f155a0c1f271145e82dec028e03fbb031c905ad6a72b6b file=MCL/envelope/body.go range=265:266 lang=go exported=true byte_range=10897:11015
+  sig=[]string
+  doc=Options for the answer; empty = open text.
+EDGES
+  ^contains=matrix/mcl/envelope.PolicyGateBody
+
+NODE id=matrix/mcl/envelope.PolicyGateBody#PlanID kind=field
+  digest=b3:26ee5e3be5da24ace69bc80b7bfaa660596df9a3a9d9decbe67dbaf97fc57c41 file=MCL/envelope/body.go range=258:259 lang=go exported=true byte_range=10604:10735
+  sig=string
+  doc=PlanID + NodeID locate the gate within the executing plan.
+EDGES
+  ^contains=matrix/mcl/envelope.PolicyGateBody
+
+NODE id=matrix/mcl/envelope.PolicyGateBody#Question kind=field
+  digest=b3:6ea25aac28df5199a34a8dbd99c4d7aa4de445f6f117a24a1c43070adf232f20 file=MCL/envelope/body.go range=262:263 lang=go exported=true byte_range=10808:10894
+  sig=string
+  doc=Question is shown to the user.
+EDGES
+  ^contains=matrix/mcl/envelope.PolicyGateBody
+
+NODE id=matrix/mcl/envelope.PolicyGateBody#RuleRef kind=field
+  digest=b3:908f66cd16dfa2e74378c9c58e048e229c852eb9baeb09b42e8ee7de74cc7057 file=MCL/envelope/body.go range=255:256 lang=go exported=true byte_range=10497:10601
+  sig=string
+  doc=RuleRef is the matrix://rule/<id> that triggered.
+EDGES
+  ^contains=matrix/mcl/envelope.PolicyGateBody
+
+NODE id=matrix/mcl/envelope.PolicyGateResolveBody kind=type
+  digest=b3:713ec52dfb79378a758ed6d41e74ede9981373ba8e08a5ba1c2ae99604afdaa7 file=MCL/envelope/body.go range=272:286 lang=go exported=true byte_range=11162:11733
+  sig=type PolicyGateResolveBody struct {\n	// GateOf is the correlation_id of the policy.gate being resolved.\n	GateOf	string	`cbor:"0,keyasint" json:"gate_of"`\n\n	// Decision is "approve" or "deny".\n	Decision	string	`cbor:"1,keyasint" json:"decision"`\n\n	// Answer is the chosen option (when PolicyGateBody.Options was set)\n	// or the free-text answer.\n	Answer	string	`cbor:"2,keyasint,omitempty" json:"answer,omitempty"`\n\n	// ResolvedAt is wall-clock ISO-8601.\n	ResolvedAt	string	`cbor:"3,keyasint" json:"resolved_at"`\n}
+  doc=PolicyGateResolveBody — user approves/denies a gate.
+EDGES
+  contains=matrix/mcl/envelope.PolicyGateResolveBody#Answer,matrix/mcl/envelope.PolicyGateResolveBody#Decision,matrix/mcl/envelope.PolicyGateResolveBody#GateOf,matrix/mcl/envelope.PolicyGateResolveBody#ResolvedAt
+  ^defines=matrix/mcl/envelope/body.go
+
+NODE id=matrix/mcl/envelope.PolicyGateResolveBody#Answer kind=field
+  digest=b3:b6daa476a78bc64acc0cc621478505c445cfc61dd0cf788d4ab6013950e95988 file=MCL/envelope/body.go range=280:282 lang=go exported=true byte_range=11467:11633
+  sig=string
+  doc=Answer is the chosen option (when PolicyGateBody.Options was set)\nor the free-text answer.
+EDGES
+  ^contains=matrix/mcl/envelope.PolicyGateResolveBody
+
+NODE id=matrix/mcl/envelope.PolicyGateResolveBody#Decision kind=field
+  digest=b3:b7368ea377b74f27b1d3db726d5846fcfcf940d9a9342fe9d20abcee48af3685 file=MCL/envelope/body.go range=277:278 lang=go exported=true byte_range=11376:11464
+  sig=string
+  doc=Decision is "approve" or "deny".
+EDGES
+  ^contains=matrix/mcl/envelope.PolicyGateResolveBody
+
+NODE id=matrix/mcl/envelope.PolicyGateResolveBody#GateOf kind=field
+  digest=b3:202f843e1798be139b381344f798e3fc181d3b770287ef0285ad06469ac22ef8 file=MCL/envelope/body.go range=274:275 lang=go exported=true byte_range=11257:11373
+  sig=string
+  doc=GateOf is the correlation_id of the policy.gate being resolved.
+EDGES
+  ^contains=matrix/mcl/envelope.PolicyGateResolveBody
+
+NODE id=matrix/mcl/envelope.PolicyGateResolveBody#ResolvedAt kind=field
+  digest=b3:4203a14cf27032f1e71dbdb6004266e160b452c0341397e6ea08904409ea14e8 file=MCL/envelope/body.go range=284:285 lang=go exported=true byte_range=11636:11731
+  sig=string
+  doc=ResolvedAt is wall-clock ISO-8601.
+EDGES
+  ^contains=matrix/mcl/envelope.PolicyGateResolveBody
+
+NODE id=matrix/mcl/envelope.ProtocolVersion kind=const
+  digest=b3:37e0ef37dce63e056d5b1911083d98cf4bcdf420896cef4f11541265936ae5cb file=MCL/envelope/envelope.go range=49:51 lang=go exported=true byte_range=1981:2156
+  sig=untyped string
+  doc=ProtocolVersion is the MCL protocol version string carried in the\nenvelope header. Pinned to "mcl/0.1" per research/02-protocol.md §4.
+EDGES
+  ^defines=matrix/mcl/envelope/envelope.go
+
+NODE id=matrix/mcl/envelope.SchemaVersion kind=const
+  digest=b3:64a9d974bd92a2dfc37905c87c5c6861155d7f5a93be664116e8f0acbddf2b49 file=MCL/envelope/envelope.go range=43:47 lang=go exported=true byte_range=1724:1979
+  sig=uint8
+  doc=SchemaVersion is the wire-format schema for Envelope. Bumped on any\nshape change that would alter encode bytes. Mixed into the canonical\nsigned bytes so signatures from one schema cannot be replayed under\nanother.
+EDGES
+  ^defines=matrix/mcl/envelope/envelope.go
+
+NODE id=matrix/mcl/envelope.SelfHash kind=func
+  digest=b3:a84c831dd0c911118b9c70f24efbd584d480cad007c52f15b70188f0c2153cbd file=MCL/envelope/envelope.go range=291:302 lang=go exported=true byte_range=10404:10836
+  sig=func SelfHash(env *Envelope) (string, error)
+  doc=SelfHash returns the sha256 hex digest of UnsignedBytes(env). Used as\na content-address for journal storage and as the input to Merkle\nanchoring (when an agent posts an attest envelope on-chain). Does NOT\nrequire the envelope to be signed.
+EDGES
+  ^defines=matrix/mcl/envelope/envelope.go
+
+NODE id=matrix/mcl/envelope.Sign kind=func
+  digest=b3:c5c6bf432561c37b2c504dcde9e63cc7242f76aa404b4c5d921c4d22668da8b9 file=MCL/envelope/envelope.go range=212:229 lang=go exported=true byte_range=7839:8479
+  sig=func Sign(env *Envelope, priv ed25519.PrivateKey) error
+  doc=Sign sets env.Signature to ed25519.Sign(priv, UnsignedBytes(env)).\nCortex never calls this — signing lives in the agent runtime, the\nexecutor (for agent → user messages), and tooling that emits\nintent.draft / intent.accept from the user side.
+EDGES
+  ^defines=matrix/mcl/envelope/envelope.go
+
+NODE id=matrix/mcl/envelope.StaticKeyResolver kind=type
+  digest=b3:19ca6b6eaaed7f52ad8a4677d7a1d4009c8dbb151e09b3dfcff892a02ec56de4 file=MCL/envelope/keyresolver.go range=28:31 lang=go exported=true byte_range=949:1200
+  sig=type StaticKeyResolver map[string]ed25519.PublicKey
+  doc=StaticKeyResolver maps known principals to known public keys. Used\nby tests and the CLI; production swaps in a registry-backed resolver\nthat uses tools/registry to look up agent + user DIDs.
+EDGES
+  contains=matrix/mcl/envelope.StaticKeyResolver.ResolveKey
+  implements=matrix/mcl/envelope.KeyResolver
+  ^defines=matrix/mcl/envelope/keyresolver.go
+
+NODE id=matrix/mcl/envelope.StaticKeyResolver.ResolveKey kind=method
+  digest=b3:33fe8e835846de0504994704444834ed5f4b71746f1d46cc2f30ec2580bf9882 file=MCL/envelope/keyresolver.go range=33:43 lang=go exported=true byte_range=1202:1586
+  sig=func (s StaticKeyResolver) ResolveKey(principal string) (ed25519.PublicKey, error)
+  doc=ResolveKey implements KeyResolver.
+EDGES
+  ^contains=matrix/mcl/envelope.StaticKeyResolver
+  ^defines=matrix/mcl/envelope/keyresolver.go
+
+NODE id=matrix/mcl/envelope.UnsignedBytes kind=func
+  digest=b3:56e96c86de732f4435aef68f7e6decc9fe4492a9de76d32d7b96f9ae7fd6d056 file=MCL/envelope/envelope.go range=197:210 lang=go exported=true byte_range=7361:7837
+  sig=func UnsignedBytes(env *Envelope) ([]byte, error)
+  doc=UnsignedBytes returns the canonical CBOR encoding with Signature\nexplicitly cleared. This is what From's ed25519 key signs (and what\nVerifySignature checks against).\n\nSchemaVersion is retained in the unsigned bytes so signature replays\nacross schema versions are blocked.
+EDGES
+  ^defines=matrix/mcl/envelope/envelope.go
+
+NODE id=matrix/mcl/envelope.ValidKind kind=func
+  digest=b3:363eb7bddda960a501806f333f71aee98f92aef9d0eb78614649ab40cf2a7463 file=MCL/envelope/kinds.go range=89:92 lang=go exported=true byte_range=2587:2712
+  sig=func ValidKind(s string) bool
+  doc=ValidKind reports whether s is one of the 15 closed message kinds.
+EDGES
+  ^defines=matrix/mcl/envelope/kinds.go
+
+NODE id=matrix/mcl/envelope.ValidateBody kind=func
+  digest=b3:e2b1ddc7cd5759fcd76e2c0e5f29f2ae97404c28f9f052c2ca51e486d2c41b4e file=MCL/envelope/body.go range=345:361 lang=go exported=true byte_range=13951:14540
+  sig=func ValidateBody(env *Envelope) (interface{}, error)
+  doc=ValidateBody decodes env.Body into the kind-matched typed struct and\nreturns the typed value (as an interface{}). Use this when the caller\nwants strict kind↔type validation in one step. Returns ErrBodyTypeMismatch\n(via NewTypedBody) for unknown kinds.
+EDGES
+  ^defines=matrix/mcl/envelope/body.go
+
+NODE id=matrix/mcl/envelope.Verify kind=func
+  digest=b3:05f6e9c6a5927baba1b4a7186177037483f5486656392033eadd6246260f3295 file=MCL/envelope/envelope.go range=256:289 lang=go exported=true byte_range=9248:10402
+  sig=func Verify(env *Envelope, resolver KeyResolver) error
+  doc=Verify runs the full envelope verification chain:\n\n 1. SchemaVersion matches package constant.\n 2. Required header fields populated (Kind, ID, At, From, Intent).\n 3. Kind is in the closed set.\n 4. KeyResolver returns a pubkey for env.From.\n 5. Signature is valid ed25519 sig over UnsignedBytes.\n\nBody shape is NOT validated here (that is ValidateBody's job, called\nafter the receiver has decoded into a typed struct). Verify only\nchecks "this envelope was actually sent by env.From and hasn't been\ntampered with."
+EDGES
+  ^defines=matrix/mcl/envelope/envelope.go
+
+NODE id=matrix/mcl/envelope.VerifySignature kind=func
+  digest=b3:0c9fbc91e67a26260f770beb633e0f5cb4c56f0a13d60259b586b3dbb2d2f85b file=MCL/envelope/envelope.go range=231:254 lang=go exported=true byte_range=8481:9246
+  sig=func VerifySignature(env *Envelope, pub ed25519.PublicKey) error
+  doc=VerifySignature checks env.Signature against pub over UnsignedBytes(env).\nReturns ErrSignatureInvalid on any failure.
+EDGES
+  ^defines=matrix/mcl/envelope/envelope.go
+
+NODE id=matrix/mcl/envelope.canonicalDec kind=var
+  digest=b3:3f2738f9bc26544c887f88c0c9155dd21da56a2147932f5bdfd8fb8fcbdd1e31 file=MCL/envelope/envelope.go range=107:107 lang=go exported=false byte_range=4346:4371
+  sig=cbor.DecMode
+EDGES
+  ^defines=matrix/mcl/envelope/envelope.go
+
+NODE id=matrix/mcl/envelope.canonicalEnc kind=var
+  digest=b3:70fab7977b9068c5509e543da8fc1a41f98f25e5b18ef5c6f4ccfe5c9c9bf0f3 file=MCL/envelope/envelope.go range=105:106 lang=go exported=false byte_range=4247:4341
+  sig=cbor.EncMode
+  doc=canonicalEnc / canonicalDec — same posture as cortex/scope.
+EDGES
+  ^defines=matrix/mcl/envelope/envelope.go
+
+NODE id=matrix/mcl/envelope.checkBodyKind kind=func
+  digest=b3:82007f04405a33724dfa57fc9404b9219183f890a304035d5a89866500f5e2fc file=MCL/envelope/body.go range=308:326 lang=go exported=false byte_range=12816:13407
+  sig=func checkBodyKind(kind string, body interface{}) error
+  doc=checkBodyKind validates that body is of the expected Go type for kind.\nAccepts both value and pointer-to-value of the expected type.
+EDGES
+  ^defines=matrix/mcl/envelope/body.go
+
+NODE id=matrix/mcl/envelope.init kind=func
+  digest=b3:32d243f7c834e1ea60b8debfa0a66c6f93193217bef593721d5a21c5fe5649f9 file=MCL/envelope/envelope.go range=109:120 lang=go exported=false byte_range=4373:4665
+  sig=func init()
+EDGES
+  ^defines=matrix/mcl/envelope/envelope.go
+
+NODE id=matrix/mcl/envelope.kindBodyType kind=var
+  digest=b3:40b8a4a897eb65ec31107758a8a3e63cb0a43c5dfb004674ab7e26f5fa5ca468 file=MCL/envelope/body.go range=288:306 lang=go exported=false byte_range=11735:12814
+  sig=map[string]reflect.Type
+  doc=kindBodyType maps each kind to its expected Go body type.\nUsed by NewEnvelope and ValidateBody for strict kind↔type checking.
+EDGES
+  ^defines=matrix/mcl/envelope/body.go
+
+NODE id=matrix/mcl/envelope.requireRequiredHeaderFields kind=func
+  digest=b3:bbbd5f824939932693e9885619fdc08193b10f4c5a8e3b4be4855481c99fe4fd file=MCL/envelope/envelope.go range=304:318 lang=go exported=false byte_range=10838:11095
+  sig=func requireRequiredHeaderFields(env *Envelope) error
+EDGES
+  ^defines=matrix/mcl/envelope/envelope.go
+
+NODE id=matrix/mcl/envelope.validKinds kind=var
+  digest=b3:fe90f01764ba8093b9d9f8fbb2ae9eb049a204bbca947329e38843ab70d765ad file=MCL/envelope/kinds.go range=80:87 lang=go exported=false byte_range=2387:2585
+  sig=map[string]bool
+  doc=validKinds is the lookup set; built once at init.
+EDGES
+  ^defines=matrix/mcl/envelope/kinds.go
+
+NODE id=matrix/mcl/envelope/body.go kind=file
+  digest=b3:c8f852b66667ccb1e0668793d4b15c336d69ba132ca66bc8a61cc72239128ff1 file=MCL/envelope/body.go range=1:363 lang=go exported=true
+EDGES
+  defines=matrix/mcl/envelope.BodyTypeOf,matrix/mcl/envelope.ClarifyQuestion,matrix/mcl/envelope.IntentAcceptBody,matrix/mcl/envelope.IntentAnswerBody,matrix/mcl/envelope.IntentAttestBody,matrix/mcl/envelope.IntentCancelBody,matrix/mcl/envelope.IntentClarifyBody,matrix/mcl/envelope.IntentCompiledBody,matrix/mcl/envelope.IntentCorrectBody,matrix/mcl/envelope.IntentDispatchBody,matrix/mcl/envelope.IntentDraftBody,matrix/mcl/envelope.IntentFailBody,matrix/mcl/envelope.NewTypedBody,matrix/mcl/envelope.PlanOutputBody,matrix/mcl/envelope.PlanProposedBody,matrix/mcl/envelope.PlanStepBody,matrix/mcl/envelope.PolicyGateBody,matrix/mcl/envelope.PolicyGateResolveBody,matrix/mcl/envelope.ValidateBody,matrix/mcl/envelope.checkBodyKind,matrix/mcl/envelope.kindBodyType
+  ^contains=matrix/mcl/envelope
+
+NODE id=matrix/mcl/envelope/envelope.go kind=file
+  digest=b3:caeac00b610d4f96215529730896896f45741a3193abda3593656dac40de3211 file=MCL/envelope/envelope.go range=1:320 lang=go exported=true
+EDGES
+  defines=matrix/mcl/envelope.Decode,matrix/mcl/envelope.Encode,matrix/mcl/envelope.Envelope,matrix/mcl/envelope.Envelope.DecodeBody,matrix/mcl/envelope.ErrAtMissing,matrix/mcl/envelope.ErrBodyEmpty,matrix/mcl/envelope.ErrBodyTypeMismatch,matrix/mcl/envelope.ErrFromMissing,matrix/mcl/envelope.ErrIDMissing,matrix/mcl/envelope.ErrIntentMissing,matrix/mcl/envelope.ErrSchemaVersion,matrix/mcl/envelope.ErrSelfHashMismatch,matrix/mcl/envelope.ErrSignatureInvalid,matrix/mcl/envelope.ErrSignatureMissing,matrix/mcl/envelope.ErrUnknownKind,matrix/mcl/envelope.ErrUnknownPrincipal,matrix/mcl/envelope.NewEnvelope,matrix/mcl/envelope.ProtocolVersion,matrix/mcl/envelope.SchemaVersion,matrix/mcl/envelope.SelfHash,matrix/mcl/envelope.Sign,matrix/mcl/envelope.UnsignedBytes,matrix/mcl/envelope.Verify,matrix/mcl/envelope.VerifySignature,matrix/mcl/envelope.canonicalDec,matrix/mcl/envelope.canonicalEnc,matrix/mcl/envelope.init,matrix/mcl/envelope.requireRequiredHeaderFields
+  ^contains=matrix/mcl/envelope
+
+NODE id=matrix/mcl/envelope/json.go kind=file
+  digest=b3:62db1600bcc1858a909c68d9598963b1bde4ca9e9109430145024d9547a0025a file=MCL/envelope/json.go range=1:177 lang=go exported=true
+EDGES
+  defines=matrix/mcl/envelope.EnvelopeFromJSON,matrix/mcl/envelope.EnvelopeJSON,matrix/mcl/envelope.JSONEnvelope
+  ^contains=matrix/mcl/envelope
+
+NODE id=matrix/mcl/envelope/keyresolver.go kind=file
+  digest=b3:2011159c64469bf22792547562a68d5f7d11f188e1d6daadfe409c27851dff28 file=MCL/envelope/keyresolver.go range=1:45 lang=go exported=true
+EDGES
+  defines=matrix/mcl/envelope.KeyResolver,matrix/mcl/envelope.StaticKeyResolver,matrix/mcl/envelope.StaticKeyResolver.ResolveKey
+  ^contains=matrix/mcl/envelope
+
+NODE id=matrix/mcl/envelope/kinds.go kind=file
+  digest=b3:da917295fc4261d947d08bac86a909300980d56d0bae002ddb1b34acb42802f0 file=MCL/envelope/kinds.go range=1:94 lang=go exported=true
+EDGES
+  defines=matrix/mcl/envelope.AllKinds,matrix/mcl/envelope.KindIntentAccept,matrix/mcl/envelope.KindIntentAnswer,matrix/mcl/envelope.KindIntentAttest,matrix/mcl/envelope.KindIntentCancel,matrix/mcl/envelope.KindIntentClarify,matrix/mcl/envelope.KindIntentCompiled,matrix/mcl/envelope.KindIntentCorrect,matrix/mcl/envelope.KindIntentDispatch,matrix/mcl/envelope.KindIntentDraft,matrix/mcl/envelope.KindIntentFail,matrix/mcl/envelope.KindPlanOutput,matrix/mcl/envelope.KindPlanProposed,matrix/mcl/envelope.KindPlanStep,matrix/mcl/envelope.KindPolicyGate,matrix/mcl/envelope.KindPolicyGateResolve,matrix/mcl/envelope.ValidKind,matrix/mcl/envelope.validKinds
+  ^contains=matrix/mcl/envelope

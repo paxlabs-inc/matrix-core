@@ -1,0 +1,609 @@
+# GENERATED gen=codegraph do-not-edit merkle=b3:2dc69ec8dbbe0231373534486cf12ff6fdb0eaad7b2dfdcbc4d73453c8542ee8
+
+NODE id=matrix/codegraph/model kind=package
+  digest=b3:961d722787ff779153c0a4297c20f735dd724086bdeedb89148821ea732b3131 file=codegraph/model range=0:0 lang=go exported=true
+EDGES
+  contains=matrix/codegraph/model/digest.go,matrix/codegraph/model/id.go,matrix/codegraph/model/model.go
+  ^contains=mod:matrix/codegraph
+
+NODE id=matrix/codegraph/model.Both kind=const
+  digest=b3:d91bdc5cac3589fa3154638ccb816e4e9b5c7f45f6c8952fc7eabc08796f14e7 file=codegraph/model/model.go range=162:162 lang=go exported=true byte_range=4307:4311
+  sig=model.Direction
+EDGES
+  ^defines=matrix/codegraph/model/model.go
+
+NODE id=matrix/codegraph/model.ByteRange kind=type
+  digest=b3:bacbfbaf84fb37d186f53c0ebfccede5dfb18d3000da6ab10341d16057759359 file=codegraph/model/model.go range=51:56 lang=go exported=true byte_range=1312:1462
+  sig=type ByteRange struct {\n	StartByte	int\n	EndByte		int\n}
+  doc=ByteRange is an optional precise byte span within a file. The zero value\nmeans "absent".
+EDGES
+  contains=matrix/codegraph/model.ByteRange#EndByte,matrix/codegraph/model.ByteRange#StartByte,matrix/codegraph/model.ByteRange.IsZero
+  ^defines=matrix/codegraph/model/model.go
+
+NODE id=matrix/codegraph/model.ByteRange#EndByte kind=field
+  digest=b3:236228dc95282412f9cdf6f351ab69d711b1aff3d43915a70cea098226cb438b file=codegraph/model/model.go range=55:55 lang=go exported=true byte_range=1447:1460
+  sig=int
+EDGES
+  ^contains=matrix/codegraph/model.ByteRange
+
+NODE id=matrix/codegraph/model.ByteRange#StartByte kind=field
+  digest=b3:5606dbfe89fb36eb2707730196c9ea2c9dbbe0a50ae6bb4e2d5330be6c5ab042 file=codegraph/model/model.go range=54:54 lang=go exported=true byte_range=1432:1445
+  sig=int
+EDGES
+  ^contains=matrix/codegraph/model.ByteRange
+
+NODE id=matrix/codegraph/model.ByteRange.IsZero kind=method
+  digest=b3:e00b0e4a64a2d8dd1be6aa252ff2ae64c9c5de71613e4a9e67b5b852ef835486 file=codegraph/model/model.go range=58:58 lang=go exported=true byte_range=1464:1542
+  sig=func (b ByteRange) IsZero() bool
+EDGES
+  ^contains=matrix/codegraph/model.ByteRange
+  ^defines=matrix/codegraph/model/model.go
+
+NODE id=matrix/codegraph/model.Digest kind=func
+  digest=b3:2b84b7add77d5ac76c50a4961b88dfbcd761c180863c3086149c94335c0080a3 file=codegraph/model/digest.go range=9:17 lang=go exported=true byte_range=71:596
+  sig=func Digest(src []byte) string
+  doc=Digest computes a node's content digest from its raw source-range bytes (the\ndeclaration plus its leading doc comment). The input is LF-normalized and has\nper-line trailing whitespace stripped before hashing; no enrichment field ever\nparticipates. Rendered as "b3:<hex>". The digest is independent of the id: a\ndigest change never changes the id, and computing an id never reads a digest.
+EDGES
+  ^defines=matrix/codegraph/model/digest.go
+
+NODE id=matrix/codegraph/model.Direction kind=type
+  digest=b3:072260ac10951f1dc03091530cbdcb621b867b96bafe643e722178577cec4607 file=codegraph/model/model.go range=156:157 lang=go exported=true byte_range=4194:4270
+  sig=type Direction int
+  doc=Direction selects which adjacency Neighbors traverses.
+EDGES
+  ^defines=matrix/codegraph/model/model.go
+
+NODE id=matrix/codegraph/model.Disambiguate kind=func
+  digest=b3:65b3f8d697c44c4861339acb3eab1c80fe8a42c86480a3979ed46b0d36d95f61 file=codegraph/model/id.go range=55:58 lang=go exported=true byte_range=1803:1961
+  sig=func Disambiguate(id, file string, r Range) string
+  doc=Disambiguate appends "~<disambiguator>" to a colliding id.
+EDGES
+  ^defines=matrix/codegraph/model/id.go
+
+NODE id=matrix/codegraph/model.Disambiguator kind=func
+  digest=b3:4ff49bc90b24c7e8f954d9a6b23a7b2be3b98e21419b067b91de2e5d8e58ab0a file=codegraph/model/id.go range=48:53 lang=go exported=true byte_range=1509:1801
+  sig=func Disambiguator(file string, r Range) string
+  doc=Disambiguator is the deterministic suffix applied when two nodes would\notherwise share an id: the first 8 hex of blake3(file + "|" + range).
+EDGES
+  ^defines=matrix/codegraph/model/id.go
+
+NODE id=matrix/codegraph/model.Edge kind=type
+  digest=b3:53c8879b4155128a63207083d41d54ea936718c327d3a57fffea3abfd410cde6 file=codegraph/model/model.go range=93:101 lang=go exported=true byte_range=2408:2655
+  sig=type Edge struct {\n	Src	string\n	Dst	string\n	Type	EdgeType\n	Site	string\n}
+  doc=Edge is a directed, typed relationship. (Src, Type, Dst) is unique; Site is an\noptional occurrence location ("file:line") that duplicate occurrences collapse\nonto.
+EDGES
+  contains=matrix/codegraph/model.Edge#Dst,matrix/codegraph/model.Edge#Site,matrix/codegraph/model.Edge#Src,matrix/codegraph/model.Edge#Type
+  ^defines=matrix/codegraph/model/model.go
+
+NODE id=matrix/codegraph/model.Edge#Dst kind=field
+  digest=b3:7e48fb78245827f395b59f53186569fc6536a5be42b034339205bc3f5a103334 file=codegraph/model/model.go range=98:98 lang=go exported=true byte_range=2614:2625
+  sig=string
+EDGES
+  ^contains=matrix/codegraph/model.Edge
+
+NODE id=matrix/codegraph/model.Edge#Site kind=field
+  digest=b3:aa141d29a50e8580db0e70949c83b513cc720fbe8b0952503dd43d0e7eeaac31 file=codegraph/model/model.go range=100:100 lang=go exported=true byte_range=2642:2653
+  sig=string
+EDGES
+  ^contains=matrix/codegraph/model.Edge
+
+NODE id=matrix/codegraph/model.Edge#Src kind=field
+  digest=b3:db8f385ceab2532bca9e0f45003528bb86d999ec53945483e30cb6bec643b3cc file=codegraph/model/model.go range=97:97 lang=go exported=true byte_range=2601:2612
+  sig=string
+EDGES
+  ^contains=matrix/codegraph/model.Edge
+
+NODE id=matrix/codegraph/model.Edge#Type kind=field
+  digest=b3:89f61c52689307de3b28d9c9308643c664a5acf4d9425dbfc29e3da1d7cbd141 file=codegraph/model/model.go range=99:99 lang=go exported=true byte_range=2627:2640
+  sig=model.EdgeType
+EDGES
+  ^contains=matrix/codegraph/model.Edge
+
+NODE id=matrix/codegraph/model.EdgeCalls kind=const
+  digest=b3:bc7478514b775f6a556b06626219f5126ede5ce7ef609f1f3cac9e0e6db82cd0 file=codegraph/model/model.go range=30:30 lang=go exported=true byte_range=723:756
+  sig=model.EdgeType
+EDGES
+  ^defines=matrix/codegraph/model/model.go
+
+NODE id=matrix/codegraph/model.EdgeContains kind=const
+  digest=b3:d4e106e2a61b3c9fb4d8b6a68077647bddb0374e76a21e1987a17c65c21acfb7 file=codegraph/model/model.go range=28:28 lang=go exported=true byte_range=648:684
+  sig=model.EdgeType
+EDGES
+  ^defines=matrix/codegraph/model/model.go
+
+NODE id=matrix/codegraph/model.EdgeDefines kind=const
+  digest=b3:459ae919364d63294e89aa0779c58b2b1379b080c457f38a3a8ef3c8934536a2 file=codegraph/model/model.go range=34:34 lang=go exported=true byte_range=874:909
+  sig=model.EdgeType
+EDGES
+  ^defines=matrix/codegraph/model/model.go
+
+NODE id=matrix/codegraph/model.EdgeEmbeds kind=const
+  digest=b3:f7f040931d99b4adaf51f5a2f98c995213fbd65dac8b4ea97524170ad2e3f717 file=codegraph/model/model.go range=32:32 lang=go exported=true byte_range=798:832
+  sig=model.EdgeType
+EDGES
+  ^defines=matrix/codegraph/model/model.go
+
+NODE id=matrix/codegraph/model.EdgeImplements kind=const
+  digest=b3:e512d8ac7d396123d2a4b313c5201ffa2255c6bfbdd8c8e37c16c7b14731f921 file=codegraph/model/model.go range=31:31 lang=go exported=true byte_range=758:796
+  sig=model.EdgeType
+EDGES
+  ^defines=matrix/codegraph/model/model.go
+
+NODE id=matrix/codegraph/model.EdgeImports kind=const
+  digest=b3:1e16804f5d26b760cd66d75e908caf84c2fe77ca8fd33bafca4150438adfe36f file=codegraph/model/model.go range=29:29 lang=go exported=true byte_range=686:721
+  sig=model.EdgeType
+EDGES
+  ^defines=matrix/codegraph/model/model.go
+
+NODE id=matrix/codegraph/model.EdgeReferences kind=const
+  digest=b3:4b90a11a35227bc0cd094e3b7b3bdf6503d4911f18035fd642b05e90d4e96b77 file=codegraph/model/model.go range=33:33 lang=go exported=true byte_range=834:872
+  sig=model.EdgeType
+EDGES
+  ^defines=matrix/codegraph/model/model.go
+
+NODE id=matrix/codegraph/model.EdgeTests kind=const
+  digest=b3:84cd6420766517ebb22b6ae2db09dd1cc2bc11fe8ca5def2cff402c14a4367c3 file=codegraph/model/model.go range=35:35 lang=go exported=true byte_range=911:944
+  sig=model.EdgeType
+EDGES
+  ^defines=matrix/codegraph/model/model.go
+
+NODE id=matrix/codegraph/model.EdgeType kind=type
+  digest=b3:cd0578d11b053b2301b9b267efd70843903deafcc57d506cfa3c4f5130e72a69 file=codegraph/model/model.go range=23:25 lang=go exported=true byte_range=505:637
+  sig=type EdgeType string
+  doc=EdgeType enumerates the fixed relationship set. Reverse lookups are mandatory\nfor every type (see Index).
+EDGES
+  ^defines=matrix/codegraph/model/model.go
+
+NODE id=matrix/codegraph/model.EdgeTypes kind=var
+  digest=b3:63a5a106e5ecf8e4f57cd12b9383c9a761ce6b027211cf505cc7d0ab57b6e105 file=codegraph/model/model.go range=38:43 lang=go exported=true byte_range=948:1197
+  sig=[]model.EdgeType
+  doc=EdgeTypes lists every edge type in a stable order (used for deterministic\ngrouping during serialization).
+EDGES
+  ^defines=matrix/codegraph/model/model.go
+
+NODE id=matrix/codegraph/model.Enrichment kind=type
+  digest=b3:cf4abd1ebe7732997021ebe4203a842fe1cdf2d9f2c3fa9390db12e87525b2c8 file=codegraph/model/model.go range=60:68 lang=go exported=true byte_range=1544:1861
+  sig=type Enrichment struct {\n	Summary		string\n	SummaryDigest	string\n	Salience	float64\n	EmbedRef	string\n}
+  doc=Enrichment holds the quarantined, regenerable fields. It has a lifecycle\nentirely separate from a Node's structural fields: writes here never change a\nnode id, digest, or any structural field.
+EDGES
+  contains=matrix/codegraph/model.Enrichment#EmbedRef,matrix/codegraph/model.Enrichment#Salience,matrix/codegraph/model.Enrichment#Summary,matrix/codegraph/model.Enrichment#SummaryDigest,matrix/codegraph/model.Enrichment.IsZero
+  ^defines=matrix/codegraph/model/model.go
+
+NODE id=matrix/codegraph/model.Enrichment#EmbedRef kind=field
+  digest=b3:d82adf96dbe0f43e7b5e3a8f4727514f2772ab38d56b4005e93fbc10f33ae272 file=codegraph/model/model.go range=67:67 lang=go exported=true byte_range=1839:1859
+  sig=string
+EDGES
+  ^contains=matrix/codegraph/model.Enrichment
+
+NODE id=matrix/codegraph/model.Enrichment#Salience kind=field
+  digest=b3:ae2673735d0e928aa435fd9b64cb8f91124bf2396acd249c2174cc46fd1bd625 file=codegraph/model/model.go range=66:66 lang=go exported=true byte_range=1816:1837
+  sig=float64
+EDGES
+  ^contains=matrix/codegraph/model.Enrichment
+
+NODE id=matrix/codegraph/model.Enrichment#Summary kind=field
+  digest=b3:f928322c43ea6aa89209b1ec72ec6ee43369148305c648f828e1983e3ba36acd file=codegraph/model/model.go range=64:64 lang=go exported=true byte_range=1772:1792
+  sig=string
+EDGES
+  ^contains=matrix/codegraph/model.Enrichment
+
+NODE id=matrix/codegraph/model.Enrichment#SummaryDigest kind=field
+  digest=b3:869efd1257dfc873bf5445c9f01b2932a017ed2d42fc85c940c5ebbe6d22c161 file=codegraph/model/model.go range=65:65 lang=go exported=true byte_range=1794:1814
+  sig=string
+EDGES
+  ^contains=matrix/codegraph/model.Enrichment
+
+NODE id=matrix/codegraph/model.Enrichment.IsZero kind=method
+  digest=b3:e74a302fa1c74d000fe3d8f21d3b1aa7b9b3d771fa1b965c7730f3a8ec9e5c2a file=codegraph/model/model.go range=70:72 lang=go exported=true byte_range=1863:1988
+  sig=func (e Enrichment) IsZero() bool
+EDGES
+  ^contains=matrix/codegraph/model.Enrichment
+  ^defines=matrix/codegraph/model/model.go
+
+NODE id=matrix/codegraph/model.Id kind=func
+  digest=b3:7479fbeeb394fd588511ef2107d257dec520b4e34e892415c7d627b8e5ebe472 file=codegraph/model/id.go range=15:46 lang=go exported=true byte_range=249:1507
+  sig=func Id(kind Kind, module, pkg, recv, name, file string, r Range) string
+  doc=Id builds the stable logical id for a node. The id is a pure function of the\nsymbol's place in the naming hierarchy — never of its body — so it survives\nedits to the body (only the digest moves). The id also never reads enrichment.\n\n	repo                       -> repo:<name>\n	module                     -> <module>                 (the go module path)\n	package                    -> <pkg>                     (the import path)\n	file                       -> <pkg>/<name>             (name = base file name)\n	func                       -> <pkg>.<name>\n	method                     -> <pkg>.<recv>.<name>      (recv = receiver type name)\n	type/interface/const/var   -> <pkg>.<name>\n	field                      -> <recv>#<name>            (recv = owner type's id)
+EDGES
+  ^defines=matrix/codegraph/model/id.go
+
+NODE id=matrix/codegraph/model.In kind=const
+  digest=b3:2f0709de113203d9fcb676fb811d681509f28c376fad38d2a83ca8bdbd06e1e4 file=codegraph/model/model.go range=161:161 lang=go exported=true byte_range=4303:4305
+  sig=model.Direction
+EDGES
+  ^defines=matrix/codegraph/model/model.go
+
+NODE id=matrix/codegraph/model.Index kind=type
+  digest=b3:5e3a6eabbdeb2d5e3347cea23ff4b7ade4e7570c1968899a7affdbf3f7f98aad file=codegraph/model/model.go range=109:117 lang=go exported=true byte_range=2720:3126
+  sig=type Index struct {\n	nodes	map[string]*Node\n	fwd	map[string]map[EdgeType][]string	// src -> type -> sorted-unique dsts\n	rev	map[string]map[EdgeType][]string	// dst -> type -> sorted-unique srcs\n	sites	map[edgeKey]string\n}
+  doc=Index is the node store plus the mandatory bidirectional edge index. Every\nforward edge is queryable in reverse, so impact analysis and incremental\ninvalidation are cheap.
+EDGES
+  contains=matrix/codegraph/model.Index#fwd,matrix/codegraph/model.Index#nodes,matrix/codegraph/model.Index#rev,matrix/codegraph/model.Index#sites,matrix/codegraph/model.Index.AddEdge,matrix/codegraph/model.Index.AddNode,matrix/codegraph/model.Index.Edges,matrix/codegraph/model.Index.Forward,matrix/codegraph/model.Index.ForwardTypes,matrix/codegraph/model.Index.Len,matrix/codegraph/model.Index.Neighbors,matrix/codegraph/model.Index.Node,matrix/codegraph/model.Index.Nodes,matrix/codegraph/model.Index.Reverse,matrix/codegraph/model.Index.ReverseTypes,matrix/codegraph/model.Index.Site
+  ^defines=matrix/codegraph/model/model.go
+
+NODE id=matrix/codegraph/model.Index#fwd kind=field
+  digest=b3:57ab2ab15af1eebc267fe7c23e3b57de4e1bdbbd98b20c6daabb412af177cd9c file=codegraph/model/model.go range=114:114 lang=go exported=false byte_range=2946:2984
+  sig=map[string]map[model.EdgeType][]string
+EDGES
+  ^contains=matrix/codegraph/model.Index
+
+NODE id=matrix/codegraph/model.Index#nodes kind=field
+  digest=b3:f2c024f2027ee4752bdc919a78d167e5815cb00ac688a2d192d14e6226d13ebf file=codegraph/model/model.go range=113:113 lang=go exported=false byte_range=2922:2944
+  sig=map[string]*model.Node
+EDGES
+  ^contains=matrix/codegraph/model.Index
+
+NODE id=matrix/codegraph/model.Index#rev kind=field
+  digest=b3:4eeb93a534b67609b23b8b61e0c03cc86941f066b22df5c1c725f6f5c90567f8 file=codegraph/model/model.go range=115:115 lang=go exported=false byte_range=3023:3061
+  sig=map[string]map[model.EdgeType][]string
+EDGES
+  ^contains=matrix/codegraph/model.Index
+
+NODE id=matrix/codegraph/model.Index#sites kind=field
+  digest=b3:7589193e32e5736f00390300f85176c1942faaad88ee0335aeca7a56577487ec file=codegraph/model/model.go range=116:116 lang=go exported=false byte_range=3100:3124
+  sig=map[model.edgeKey]string
+EDGES
+  ^contains=matrix/codegraph/model.Index
+
+NODE id=matrix/codegraph/model.Index.AddEdge kind=method
+  digest=b3:2d736ed908050944bc59cc57165182ba17ec0cd4460c5bc24ee8a0229787eaa3 file=codegraph/model/model.go range=137:149 lang=go exported=true byte_range=3633:4013
+  sig=func (ix *Index) AddEdge(e Edge)
+  doc=AddEdge records a forward+reverse edge. Duplicate (Src,Type,Dst) triples\ncollapse; the first non-empty Site is retained.
+EDGES
+  ^contains=matrix/codegraph/model.Index
+  ^defines=matrix/codegraph/model/model.go
+
+NODE id=matrix/codegraph/model.Index.AddNode kind=method
+  digest=b3:28a6f16c66a138c8d5322e46064cea9b9631a91129380dcd4ab8dfce4474ad28 file=codegraph/model/model.go range=128:129 lang=go exported=true byte_range=3325:3426
+  sig=func (ix *Index) AddNode(n *Node)
+  doc=AddNode inserts or replaces a node by id.
+EDGES
+  ^contains=matrix/codegraph/model.Index
+  ^defines=matrix/codegraph/model/model.go
+
+NODE id=matrix/codegraph/model.Index.Edges kind=method
+  digest=b3:3581fef26e9e55db8c2d463329467519c635f8b1a00b44bb5147473be3a481c9 file=codegraph/model/model.go range=175:195 lang=go exported=true byte_range=4585:5151
+  sig=func (ix *Index) Edges() []Edge
+  doc=Edges returns every forward edge sorted by (Src, Type, Dst) bytewise.
+EDGES
+  ^contains=matrix/codegraph/model.Index
+  ^defines=matrix/codegraph/model/model.go
+
+NODE id=matrix/codegraph/model.Index.Forward kind=method
+  digest=b3:a6e7854feac5c0610fb0ba1689a56bb8867140bc69b7e210532f3f6c0950451e file=codegraph/model/model.go range=197:198 lang=go exported=true byte_range=5153:5322
+  sig=func (ix *Index) Forward(id string, typ EdgeType) []string
+  doc=Forward returns the sorted-unique destinations of id over edge type typ.
+EDGES
+  ^contains=matrix/codegraph/model.Index
+  ^defines=matrix/codegraph/model/model.go
+
+NODE id=matrix/codegraph/model.Index.ForwardTypes kind=method
+  digest=b3:09ed4081be2feca667f055c9f9d8ec15e12b158a5bc0ccaf29be66acc41f9b33 file=codegraph/model/model.go range=203:205 lang=go exported=true byte_range=5501:5690
+  sig=func (ix *Index) ForwardTypes(id string) []EdgeType
+  doc=ForwardTypes returns the edge types present on id's outgoing side, in the\ncanonical EdgeTypes order.
+EDGES
+  ^contains=matrix/codegraph/model.Index
+  ^defines=matrix/codegraph/model/model.go
+
+NODE id=matrix/codegraph/model.Index.Len kind=method
+  digest=b3:4244f177b5597321b35fc72554ff760131f3977970a415b848a63f74af7a30eb file=codegraph/model/model.go range=134:135 lang=go exported=true byte_range=3544:3631
+  sig=func (ix *Index) Len() int
+  doc=Len reports the number of nodes.
+EDGES
+  ^contains=matrix/codegraph/model.Index
+  ^defines=matrix/codegraph/model/model.go
+
+NODE id=matrix/codegraph/model.Index.Neighbors kind=method
+  digest=b3:dfa2c93293b4191702ce54ea8605f8b5f9bea6bc5bcfffeeec5d46b4b6345b01 file=codegraph/model/model.go range=211:238 lang=go exported=true byte_range=5883:6569
+  sig=func (ix *Index) Neighbors(id string, typ EdgeType, dir Direction) []string
+  doc=Neighbors returns the direct neighbors of id over edge type typ (or all types\nwhen typ == ""), in the given direction. Results are sorted-unique.
+EDGES
+  ^contains=matrix/codegraph/model.Index
+  ^defines=matrix/codegraph/model/model.go
+
+NODE id=matrix/codegraph/model.Index.Node kind=method
+  digest=b3:5a59ad76b7ef8577f022e29d9f6cd66ccceb61866bf900b23e5af3b83027839c file=codegraph/model/model.go range=131:132 lang=go exported=true byte_range=3428:3542
+  sig=func (ix *Index) Node(id string) *Node
+  doc=Node returns the node with the given id, or nil.
+EDGES
+  ^contains=matrix/codegraph/model.Index
+  ^defines=matrix/codegraph/model/model.go
+
+NODE id=matrix/codegraph/model.Index.Nodes kind=method
+  digest=b3:a52ddd8b3a66c935f538d3d6c3834b9e3d4dd8facaea471afae9499d716ba8e1 file=codegraph/model/model.go range=165:173 lang=go exported=true byte_range=4315:4583
+  sig=func (ix *Index) Nodes() []*Node
+  doc=Nodes returns every node sorted by id (bytewise).
+EDGES
+  ^contains=matrix/codegraph/model.Index
+  ^defines=matrix/codegraph/model/model.go
+
+NODE id=matrix/codegraph/model.Index.Reverse kind=method
+  digest=b3:7b3e2f9ffaa065c604b06b5677288b3e53324ca1fefb091a4f45382a144867dc file=codegraph/model/model.go range=200:201 lang=go exported=true byte_range=5324:5499
+  sig=func (ix *Index) Reverse(id string, typ EdgeType) []string
+  doc=Reverse returns the sorted-unique sources that point at id over edge type typ.
+EDGES
+  ^contains=matrix/codegraph/model.Index
+  ^defines=matrix/codegraph/model/model.go
+
+NODE id=matrix/codegraph/model.Index.ReverseTypes kind=method
+  digest=b3:62113215e7a7878aa8a7f7f95c5a7c4f68276c1dc908978a4c70cbdb30c9203a file=codegraph/model/model.go range=207:209 lang=go exported=true byte_range=5692:5881
+  sig=func (ix *Index) ReverseTypes(id string) []EdgeType
+  doc=ReverseTypes returns the edge types present on id's incoming side, in the\ncanonical EdgeTypes order.
+EDGES
+  ^contains=matrix/codegraph/model.Index
+  ^defines=matrix/codegraph/model/model.go
+
+NODE id=matrix/codegraph/model.Index.Site kind=method
+  digest=b3:3643419e053aec80e3cbc34cac7f2e7cf1939464bed791d82cbede44f4dd7daa file=codegraph/model/model.go range=151:154 lang=go exported=true byte_range=4015:4192
+  sig=func (ix *Index) Site(src string, typ EdgeType, dst string) string
+  doc=Site returns the retained occurrence site for an edge, if any.
+EDGES
+  ^contains=matrix/codegraph/model.Index
+  ^defines=matrix/codegraph/model/model.go
+
+NODE id=matrix/codegraph/model.Kind kind=type
+  digest=b3:4ffdcd84e531e0c0d0d6353754da57c39225ea40fbadb1a81f3cb647a0504b7c file=codegraph/model/model.go range=5:7 lang=go exported=true byte_range=30:160
+  sig=type Kind string
+  doc=Kind enumerates the node kinds CodeGraph models. Structural-first: every kind\nis a pure function of source.
+EDGES
+  ^defines=matrix/codegraph/model/model.go
+
+NODE id=matrix/codegraph/model.KindConst kind=const
+  digest=b3:c42e010b6a7010f18bc09fc0856e5184504bf0d77388e3184ec7b2c5059ed6e4 file=codegraph/model/model.go range=18:18 lang=go exported=true byte_range=415:443
+  sig=model.Kind
+EDGES
+  ^defines=matrix/codegraph/model/model.go
+
+NODE id=matrix/codegraph/model.KindField kind=const
+  digest=b3:9358285feb1e362a5b6d86cbac7396b3f35154654545e4aa1b42c6218f2718a7 file=codegraph/model/model.go range=20:20 lang=go exported=true byte_range=473:501
+  sig=model.Kind
+EDGES
+  ^defines=matrix/codegraph/model/model.go
+
+NODE id=matrix/codegraph/model.KindFile kind=const
+  digest=b3:008605520f6a3d9f6e93ec5d69f49854158b7cc89b9bca55db38754190ec658f file=codegraph/model/model.go range=13:13 lang=go exported=true byte_range=263:290
+  sig=model.Kind
+EDGES
+  ^defines=matrix/codegraph/model/model.go
+
+NODE id=matrix/codegraph/model.KindFunc kind=const
+  digest=b3:5d1a7ff5ddc89c8362b9c8166791bf05eebe44edcbafd20f6e7f5441941e4e58 file=codegraph/model/model.go range=14:14 lang=go exported=true byte_range=292:319
+  sig=model.Kind
+EDGES
+  ^defines=matrix/codegraph/model/model.go
+
+NODE id=matrix/codegraph/model.KindInterface kind=const
+  digest=b3:098aa651e2fea49b57dae8c8012ee18c0d2f156cd5c6ab150d31c6783dadd60f file=codegraph/model/model.go range=17:17 lang=go exported=true byte_range=381:413
+  sig=model.Kind
+EDGES
+  ^defines=matrix/codegraph/model/model.go
+
+NODE id=matrix/codegraph/model.KindMethod kind=const
+  digest=b3:f138fba793cab964b62e8867ede9c3c847680270ea9c524f5acb2cbabe83c947 file=codegraph/model/model.go range=15:15 lang=go exported=true byte_range=321:350
+  sig=model.Kind
+EDGES
+  ^defines=matrix/codegraph/model/model.go
+
+NODE id=matrix/codegraph/model.KindModule kind=const
+  digest=b3:2e44c73dffc61b954d638d2da2dd2c612338c089c3d508c72f2982f732a74346 file=codegraph/model/model.go range=11:11 lang=go exported=true byte_range=200:229
+  sig=model.Kind
+EDGES
+  ^defines=matrix/codegraph/model/model.go
+
+NODE id=matrix/codegraph/model.KindPackage kind=const
+  digest=b3:03e7551ddf6fd07122756754255ec31a5e1a297f685fbca594c7e6fb104e6695 file=codegraph/model/model.go range=12:12 lang=go exported=true byte_range=231:261
+  sig=model.Kind
+EDGES
+  ^defines=matrix/codegraph/model/model.go
+
+NODE id=matrix/codegraph/model.KindRepo kind=const
+  digest=b3:f0fad8b1552f3607b5296ded3c2f3685996065681052d2aef8c4913dac7a58fd file=codegraph/model/model.go range=10:10 lang=go exported=true byte_range=171:198
+  sig=model.Kind
+EDGES
+  ^defines=matrix/codegraph/model/model.go
+
+NODE id=matrix/codegraph/model.KindType kind=const
+  digest=b3:3f41c74c6fa35046fa216d26da3bc886ac69adff9a083eec10c43763b77c1ba0 file=codegraph/model/model.go range=16:16 lang=go exported=true byte_range=352:379
+  sig=model.Kind
+EDGES
+  ^defines=matrix/codegraph/model/model.go
+
+NODE id=matrix/codegraph/model.KindVar kind=const
+  digest=b3:2edb13cdabc631603b22b72ba4bcf04414097daa00ae85400040a4b6003f9613 file=codegraph/model/model.go range=19:19 lang=go exported=true byte_range=445:471
+  sig=model.Kind
+EDGES
+  ^defines=matrix/codegraph/model/model.go
+
+NODE id=matrix/codegraph/model.NewIndex kind=func
+  digest=b3:be5b4ea1ac248afb989447f345246e153ff70a5fc2b28073d9d4badaa754d9c8 file=codegraph/model/model.go range=119:126 lang=go exported=true byte_range=3128:3323
+  sig=func NewIndex() *Index
+EDGES
+  ^defines=matrix/codegraph/model/model.go
+
+NODE id=matrix/codegraph/model.Node kind=type
+  digest=b3:b70fba920dc8aa1f3bdf3ff9b23a2f3aa7896676fc96dbe3efdad6c7f30f250b file=codegraph/model/model.go range=74:91 lang=go exported=true byte_range=1990:2406
+  sig=type Node struct {\n	Id		string\n	Kind		Kind\n	Name		string\n	QName		string\n	Lang		string\n	File		string\n	Range		Range\n	ByteRange	ByteRange\n	Digest		string	// "b3:<hex>"\n	Sig		string\n	Exported	bool\n	Doc		string\n\n	Enrich	Enrichment\n}
+  doc=Node is one symbol in the graph. Structural fields are a pure function of\nsource; the embedded Enrichment is the separate, discardable layer.
+EDGES
+  contains=matrix/codegraph/model.Node#ByteRange,matrix/codegraph/model.Node#Digest,matrix/codegraph/model.Node#Doc,matrix/codegraph/model.Node#Enrich,matrix/codegraph/model.Node#Exported,matrix/codegraph/model.Node#File,matrix/codegraph/model.Node#Id,matrix/codegraph/model.Node#Kind,matrix/codegraph/model.Node#Lang,matrix/codegraph/model.Node#Name,matrix/codegraph/model.Node#QName,matrix/codegraph/model.Node#Range,matrix/codegraph/model.Node#Sig
+  ^defines=matrix/codegraph/model/model.go
+
+NODE id=matrix/codegraph/model.Node#ByteRange kind=field
+  digest=b3:d332ea55d13a491deccf22d6934a3d0de2d69f7f20187bcad22864bcf8b7228f file=codegraph/model/model.go range=84:84 lang=go exported=true byte_range=2281:2300
+  sig=model.ByteRange
+EDGES
+  ^contains=matrix/codegraph/model.Node
+
+NODE id=matrix/codegraph/model.Node#Digest kind=field
+  digest=b3:97724f2f003b7c0b37884772d84aa35db0b57c268f6fbf187756cfaf56642730 file=codegraph/model/model.go range=85:85 lang=go exported=true byte_range=2302:2318
+  sig=string
+EDGES
+  ^contains=matrix/codegraph/model.Node
+
+NODE id=matrix/codegraph/model.Node#Doc kind=field
+  digest=b3:72b2e4661c8b2f57d5ee4cb11da668b0cfbe8efc652d0b0e7ee7ddf2b0b318d5 file=codegraph/model/model.go range=88:88 lang=go exported=true byte_range=2368:2384
+  sig=string
+EDGES
+  ^contains=matrix/codegraph/model.Node
+
+NODE id=matrix/codegraph/model.Node#Enrich kind=field
+  digest=b3:a8c1da65caef37ab9c3d39e6686db46be573f57d92b46b50a7e4a13cf3cc8440 file=codegraph/model/model.go range=90:90 lang=go exported=true byte_range=2387:2404
+  sig=model.Enrichment
+EDGES
+  ^contains=matrix/codegraph/model.Node
+
+NODE id=matrix/codegraph/model.Node#Exported kind=field
+  digest=b3:054b023c24d344d9aced6932d5a96eabccdc113b37ea6a4808a6c855a813f3b0 file=codegraph/model/model.go range=87:87 lang=go exported=true byte_range=2352:2366
+  sig=bool
+EDGES
+  ^contains=matrix/codegraph/model.Node
+
+NODE id=matrix/codegraph/model.Node#File kind=field
+  digest=b3:070fa722c2da4bfbf2ae0f5c105d81358a1530964ae68eb62e3ae3cac4be2b08 file=codegraph/model/model.go range=82:82 lang=go exported=true byte_range=2246:2262
+  sig=string
+EDGES
+  ^contains=matrix/codegraph/model.Node
+
+NODE id=matrix/codegraph/model.Node#Id kind=field
+  digest=b3:028825bb8820c3aff55aed6ce4c5260f1e9586d34b47de03c887431ff3849677 file=codegraph/model/model.go range=77:77 lang=go exported=true byte_range=2158:2174
+  sig=string
+EDGES
+  ^contains=matrix/codegraph/model.Node
+
+NODE id=matrix/codegraph/model.Node#Kind kind=field
+  digest=b3:1b0b2c3266690fcf130e8d361937c183b53e70c230715d2d2a0b833b4fc0cde7 file=codegraph/model/model.go range=78:78 lang=go exported=true byte_range=2176:2190
+  sig=model.Kind
+EDGES
+  ^contains=matrix/codegraph/model.Node
+
+NODE id=matrix/codegraph/model.Node#Lang kind=field
+  digest=b3:a8d74aca58c642fd6aaed071d57dce59013c8b439c64bb7c3942a26955adb741 file=codegraph/model/model.go range=81:81 lang=go exported=true byte_range=2228:2244
+  sig=string
+EDGES
+  ^contains=matrix/codegraph/model.Node
+
+NODE id=matrix/codegraph/model.Node#Name kind=field
+  digest=b3:af52508caef28742d8655b3f7d26ef3076d4f6e79cfb640046913a1ee48527b2 file=codegraph/model/model.go range=79:79 lang=go exported=true byte_range=2192:2208
+  sig=string
+EDGES
+  ^contains=matrix/codegraph/model.Node
+
+NODE id=matrix/codegraph/model.Node#QName kind=field
+  digest=b3:293c11b7afdc6ef967a283c24af0093fc4b7159e96061f337059680fe9ac8676 file=codegraph/model/model.go range=80:80 lang=go exported=true byte_range=2210:2226
+  sig=string
+EDGES
+  ^contains=matrix/codegraph/model.Node
+
+NODE id=matrix/codegraph/model.Node#Range kind=field
+  digest=b3:61885b7579dac05ab5f72e4dc1521a1d54c4e0a538b7548a62de26cde0e1eed6 file=codegraph/model/model.go range=83:83 lang=go exported=true byte_range=2264:2279
+  sig=model.Range
+EDGES
+  ^contains=matrix/codegraph/model.Node
+
+NODE id=matrix/codegraph/model.Node#Sig kind=field
+  digest=b3:347316c138dd3b504726002a2e91463163a9cc3a8e9d7b54fd83c045dbedd2b8 file=codegraph/model/model.go range=86:86 lang=go exported=true byte_range=2334:2350
+  sig=string
+EDGES
+  ^contains=matrix/codegraph/model.Node
+
+NODE id=matrix/codegraph/model.NormalizeSource kind=func
+  digest=b3:38bcb656e49ff8f76f759f5bed801af7159daa040fbb1f0d4b76da7a2715a10d file=codegraph/model/digest.go range=19:50 lang=go exported=true byte_range=598:1366
+  sig=func NormalizeSource(src []byte) []byte
+  doc=NormalizeSource canonicalizes source bytes for hashing: CRLF/CR line endings\nbecome LF and each line is stripped of trailing spaces and tabs. The leading\ndoc comment (if present in src) is preserved.
+EDGES
+  ^defines=matrix/codegraph/model/digest.go
+
+NODE id=matrix/codegraph/model.Out kind=const
+  digest=b3:b9ecb57ce544b9684024c217f125ba863735dfc37d66995c3a79fc0d9f7ad230 file=codegraph/model/model.go range=160:160 lang=go exported=true byte_range=4281:4301
+  sig=model.Direction
+EDGES
+  ^defines=matrix/codegraph/model/model.go
+
+NODE id=matrix/codegraph/model.Range kind=type
+  digest=b3:653d817d058ec4ca7c711968446deaaa4fdc83d85c6d9a7e666ad58d548b974b file=codegraph/model/model.go range=45:49 lang=go exported=true byte_range=1199:1310
+  sig=type Range struct {\n	StartLine	int\n	EndLine		int\n}
+  doc=Range is a 1-indexed, inclusive line span within a file.
+EDGES
+  contains=matrix/codegraph/model.Range#EndLine,matrix/codegraph/model.Range#StartLine,matrix/codegraph/model.Range.String
+  ^defines=matrix/codegraph/model/model.go
+
+NODE id=matrix/codegraph/model.Range#EndLine kind=field
+  digest=b3:e93be7856e928c01f3ce77e02c93f1bfd8b6c56002515153446e9dec82b818d0 file=codegraph/model/model.go range=48:48 lang=go exported=true byte_range=1295:1308
+  sig=int
+EDGES
+  ^contains=matrix/codegraph/model.Range
+
+NODE id=matrix/codegraph/model.Range#StartLine kind=field
+  digest=b3:1515090327467f521a0d068807b0ad713c0770850ba836e91b947882b91cea0a file=codegraph/model/model.go range=47:47 lang=go exported=true byte_range=1280:1293
+  sig=int
+EDGES
+  ^contains=matrix/codegraph/model.Range
+
+NODE id=matrix/codegraph/model.Range.String kind=method
+  digest=b3:249fa349c8563f723792a7c5681de9a0d404f40f05bef38ae0f76fb4e7b9b1c1 file=codegraph/model/id.go range=10:13 lang=go exported=true byte_range=82:247
+  sig=func (r Range) String() string
+  doc=String renders a range as "start:end" (1-indexed, inclusive).
+EDGES
+  ^contains=matrix/codegraph/model.Range
+  ^defines=matrix/codegraph/model/id.go
+
+NODE id=matrix/codegraph/model.edgeKey kind=type
+  digest=b3:07f57904e183e5e4da511d503b2fd61545529ae2e04229da50e22fd03163208f file=codegraph/model/model.go range=103:107 lang=go exported=false byte_range=2657:2718
+  sig=type edgeKey struct {\n	src	string\n	typ	EdgeType\n	dst	string\n}
+EDGES
+  contains=matrix/codegraph/model.edgeKey#dst,matrix/codegraph/model.edgeKey#src,matrix/codegraph/model.edgeKey#typ
+  ^defines=matrix/codegraph/model/model.go
+
+NODE id=matrix/codegraph/model.edgeKey#dst kind=field
+  digest=b3:469b4efdd8298ecd02c62d429bc53784466551be3b0c3fe8d5540395411aac3b file=codegraph/model/model.go range=106:106 lang=go exported=false byte_range=2706:2716
+  sig=string
+EDGES
+  ^contains=matrix/codegraph/model.edgeKey
+
+NODE id=matrix/codegraph/model.edgeKey#src kind=field
+  digest=b3:6744583f8575fe1974c74f4837a91b63db682acee220c16a2c062337b0bd5aed file=codegraph/model/model.go range=104:104 lang=go exported=false byte_range=2680:2690
+  sig=string
+EDGES
+  ^contains=matrix/codegraph/model.edgeKey
+
+NODE id=matrix/codegraph/model.edgeKey#typ kind=field
+  digest=b3:8d50d8defb129103a20d522bc0344fb0a25d19bfbf995a5af80510dcd743acac file=codegraph/model/model.go range=105:105 lang=go exported=false byte_range=2692:2704
+  sig=model.EdgeType
+EDGES
+  ^contains=matrix/codegraph/model.edgeKey
+
+NODE id=matrix/codegraph/model.insertSorted kind=func
+  digest=b3:b001e33d0538cc85771c702308626304d2917833b302d965ea74c07f5c334bf4 file=codegraph/model/model.go range=240:256 lang=go exported=false byte_range=6571:6982
+  sig=func insertSorted(m map[string]map[EdgeType][]string, key string, typ EdgeType, val string) bool
+EDGES
+  ^defines=matrix/codegraph/model/model.go
+
+NODE id=matrix/codegraph/model.lookup kind=func
+  digest=b3:243a998d98a3ecaf0222a0002e42d01d73e49a8f8a7cd30f8a16b0904b817ba6 file=codegraph/model/model.go range=258:263 lang=go exported=false byte_range=6984:7144
+  sig=func lookup(m map[string]map[EdgeType][]string, key string, typ EdgeType) []string
+EDGES
+  ^defines=matrix/codegraph/model/model.go
+
+NODE id=matrix/codegraph/model.typesOf kind=func
+  digest=b3:14e90da2c7b2c347e7a62035d2d4ef2b494c12dcce9505766f48fe66da77ae9a file=codegraph/model/model.go range=265:277 lang=go exported=false byte_range=7146:7395
+  sig=func typesOf(m map[string]map[EdgeType][]string, key string) []EdgeType
+EDGES
+  ^defines=matrix/codegraph/model/model.go
+
+NODE id=matrix/codegraph/model/digest.go kind=file
+  digest=b3:67a9d73a3533b698f2bee9e0c1ccd4561a4d2a6e896218d4f8060065fa90e9fe file=codegraph/model/digest.go range=1:50 lang=go exported=true
+EDGES
+  defines=matrix/codegraph/model.Digest,matrix/codegraph/model.NormalizeSource
+  ^contains=matrix/codegraph/model
+
+NODE id=matrix/codegraph/model/id.go kind=file
+  digest=b3:1dabea271fd49836667f850d6c50c74ecef936611f1b307f4fb346a0ef91f5aa file=codegraph/model/id.go range=1:58 lang=go exported=true
+EDGES
+  defines=matrix/codegraph/model.Disambiguate,matrix/codegraph/model.Disambiguator,matrix/codegraph/model.Id,matrix/codegraph/model.Range.String
+  ^contains=matrix/codegraph/model
+
+NODE id=matrix/codegraph/model/model.go kind=file
+  digest=b3:2e55c89d2444212721c795f2c10bd9f67e51431a1c6bbe813240189d3b10fe9e file=codegraph/model/model.go range=1:277 lang=go exported=true
+EDGES
+  defines=matrix/codegraph/model.Both,matrix/codegraph/model.ByteRange,matrix/codegraph/model.ByteRange.IsZero,matrix/codegraph/model.Direction,matrix/codegraph/model.Edge,matrix/codegraph/model.EdgeCalls,matrix/codegraph/model.EdgeContains,matrix/codegraph/model.EdgeDefines,matrix/codegraph/model.EdgeEmbeds,matrix/codegraph/model.EdgeImplements,matrix/codegraph/model.EdgeImports,matrix/codegraph/model.EdgeReferences,matrix/codegraph/model.EdgeTests,matrix/codegraph/model.EdgeType,matrix/codegraph/model.EdgeTypes,matrix/codegraph/model.Enrichment,matrix/codegraph/model.Enrichment.IsZero,matrix/codegraph/model.In,matrix/codegraph/model.Index,matrix/codegraph/model.Index.AddEdge,matrix/codegraph/model.Index.AddNode,matrix/codegraph/model.Index.Edges,matrix/codegraph/model.Index.Forward,matrix/codegraph/model.Index.ForwardTypes,matrix/codegraph/model.Index.Len,matrix/codegraph/model.Index.Neighbors,matrix/codegraph/model.Index.Node,matrix/codegraph/model.Index.Nodes,matrix/codegraph/model.Index.Reverse,matrix/codegraph/model.Index.ReverseTypes,matrix/codegraph/model.Index.Site,matrix/codegraph/model.Kind,matrix/codegraph/model.KindConst,matrix/codegraph/model.KindField,matrix/codegraph/model.KindFile,matrix/codegraph/model.KindFunc,matrix/codegraph/model.KindInterface,matrix/codegraph/model.KindMethod,matrix/codegraph/model.KindModule,matrix/codegraph/model.KindPackage,matrix/codegraph/model.KindRepo,matrix/codegraph/model.KindType,matrix/codegraph/model.KindVar,matrix/codegraph/model.NewIndex,matrix/codegraph/model.Node,matrix/codegraph/model.Out,matrix/codegraph/model.Range,matrix/codegraph/model.edgeKey,matrix/codegraph/model.insertSorted,matrix/codegraph/model.lookup,matrix/codegraph/model.typesOf
+  ^contains=matrix/codegraph/model

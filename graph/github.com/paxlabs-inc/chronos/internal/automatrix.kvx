@@ -1,0 +1,84 @@
+# GENERATED gen=codegraph do-not-edit merkle=b3:2dc69ec8dbbe0231373534486cf12ff6fdb0eaad7b2dfdcbc4d73453c8542ee8
+
+NODE id=github.com/paxlabs-inc/chronos/internal/automatrix kind=package
+  digest=b3:81abd6dbc7753c1f2f70b8c1ffcda31f044d711168bdba941fdbf36aa1b32a91 file=chronos/internal/automatrix range=0:0 lang=go exported=true
+EDGES
+  contains=github.com/paxlabs-inc/chronos/internal/automatrix/automatrix.go
+  ^contains=mod:github.com/paxlabs-inc/chronos
+
+NODE id=github.com/paxlabs-inc/chronos/internal/automatrix.BuildAlarm kind=func
+  digest=b3:c628f3ae17313573f164eeacf4893ea2f744c8f0ebb8fdd122fb5b82f2c2640b file=chronos/internal/automatrix/automatrix.go range=58:90 lang=go exported=true byte_range=2767:3884
+  sig=func BuildAlarm(spec Spec, now time.Time) (types.Alarm, error)
+  doc=BuildAlarm assembles a Chronos AUTOMATRIX alarm (a cron recurring alarm with\nthe canonical AUTOMATRIX wake_message). The alarm is active and ready to be\nstored via store.CreateAlarm. The caller must set OwnerDID + UserID before\npersisting (the server does this from the authenticated principal).
+EDGES
+  ^defines=github.com/paxlabs-inc/chronos/internal/automatrix/automatrix.go
+
+NODE id=github.com/paxlabs-inc/chronos/internal/automatrix.DefaultCronExpr kind=const
+  digest=b3:ebac09ce1a64e2184cdba95cbbf1babf29145e17065184a1613f724bc1d2a168 file=chronos/internal/automatrix/automatrix.go range=34:38 lang=go exported=true byte_range=1739:2031
+  sig=untyped string
+  doc=DefaultCronExpr is the default recurring interval for an AUTOMATRIX alarm\nwhen none is specified. @every 45m is the base idle-wake cadence; Neo\nreschedules each subsequent fire with randomized jitter so wakes feel random\nrather than clockwork.
+EDGES
+  ^defines=github.com/paxlabs-inc/chronos/internal/automatrix/automatrix.go
+
+NODE id=github.com/paxlabs-inc/chronos/internal/automatrix.Spec kind=type
+  digest=b3:fb5284c90888807a639b8bec008a68bee62339b2e86a7b5b2ccc4324f897c67d file=chronos/internal/automatrix/automatrix.go range=40:56 lang=go exported=true byte_range=2033:2765
+  sig=type Spec struct {\n	// ConversationID is the conversation the wake resumes into (required — an\n	// AUTOMATRIX wake without a conversation to resume is meaningless).\n	ConversationID	string\n	// CronExpr is the recurring schedule. Defaults to DefaultCronExpr when empty.\n	CronExpr	string\n	// Timezone is the IANA timezone for the cron expression (default UTC).\n	Timezone	string\n	// Label is an optional human-readable label for the alarm.\n	Label	string\n	// IdempotencyKey deduplicates the alarm (recommended for AUTOMATRIX alarms —\n	// a user enables Automatrix exactly once).\n	IdempotencyKey	string\n	// MaxFailures is the wake-delivery retry ceiling (0 = server default).\n	MaxFailures	int\n}
+  doc=Spec configures an AUTOMATRIX alarm.
+EDGES
+  contains=github.com/paxlabs-inc/chronos/internal/automatrix.Spec#ConversationID,github.com/paxlabs-inc/chronos/internal/automatrix.Spec#CronExpr,github.com/paxlabs-inc/chronos/internal/automatrix.Spec#IdempotencyKey,github.com/paxlabs-inc/chronos/internal/automatrix.Spec#Label,github.com/paxlabs-inc/chronos/internal/automatrix.Spec#MaxFailures,github.com/paxlabs-inc/chronos/internal/automatrix.Spec#Timezone
+  ^defines=github.com/paxlabs-inc/chronos/internal/automatrix/automatrix.go
+
+NODE id=github.com/paxlabs-inc/chronos/internal/automatrix.Spec#ConversationID kind=field
+  digest=b3:006fa996adb5cbd92ec63f796ab30e317ab6fe33126bdbaf266c0c48d943477d file=chronos/internal/automatrix/automatrix.go range=42:44 lang=go exported=true byte_range=2093:2262
+  sig=string
+  doc=ConversationID is the conversation the wake resumes into (required — an\nAUTOMATRIX wake without a conversation to resume is meaningless).
+EDGES
+  ^contains=github.com/paxlabs-inc/chronos/internal/automatrix.Spec
+
+NODE id=github.com/paxlabs-inc/chronos/internal/automatrix.Spec#CronExpr kind=field
+  digest=b3:cf8bc10d4e14257505b83837d32ae7a9b269b50c2043f99ab6b0c0531625c781 file=chronos/internal/automatrix/automatrix.go range=45:46 lang=go exported=true byte_range=2264:2359
+  sig=string
+  doc=CronExpr is the recurring schedule. Defaults to DefaultCronExpr when empty.
+EDGES
+  ^contains=github.com/paxlabs-inc/chronos/internal/automatrix.Spec
+
+NODE id=github.com/paxlabs-inc/chronos/internal/automatrix.Spec#IdempotencyKey kind=field
+  digest=b3:725c7b9e61a85f83872217acdac01eb68c17b218e0d79334adbe006ff9b39ded file=chronos/internal/automatrix/automatrix.go range=51:53 lang=go exported=true byte_range=2526:2673
+  sig=string
+  doc=IdempotencyKey deduplicates the alarm (recommended for AUTOMATRIX alarms —\na user enables Automatrix exactly once).
+EDGES
+  ^contains=github.com/paxlabs-inc/chronos/internal/automatrix.Spec
+
+NODE id=github.com/paxlabs-inc/chronos/internal/automatrix.Spec#Label kind=field
+  digest=b3:fce7566067af6464fca03764bfa69fc4dd26eb7143b9dfe503330e8e8292bab2 file=chronos/internal/automatrix/automatrix.go range=49:50 lang=go exported=true byte_range=2451:2524
+  sig=string
+  doc=Label is an optional human-readable label for the alarm.
+EDGES
+  ^contains=github.com/paxlabs-inc/chronos/internal/automatrix.Spec
+
+NODE id=github.com/paxlabs-inc/chronos/internal/automatrix.Spec#MaxFailures kind=field
+  digest=b3:4835b162761bd5ce8cf69474f857d10828d3752df594bb06b2c546e445d0a3ee file=chronos/internal/automatrix/automatrix.go range=54:55 lang=go exported=true byte_range=2675:2763
+  sig=int
+  doc=MaxFailures is the wake-delivery retry ceiling (0 = server default).
+EDGES
+  ^contains=github.com/paxlabs-inc/chronos/internal/automatrix.Spec
+
+NODE id=github.com/paxlabs-inc/chronos/internal/automatrix.Spec#Timezone kind=field
+  digest=b3:95d25ca4ee9a4931173bbdae8769bca38e496fd6482d222512e73fd845ab4f48 file=chronos/internal/automatrix/automatrix.go range=47:48 lang=go exported=true byte_range=2361:2449
+  sig=string
+  doc=Timezone is the IANA timezone for the cron expression (default UTC).
+EDGES
+  ^contains=github.com/paxlabs-inc/chronos/internal/automatrix.Spec
+
+NODE id=github.com/paxlabs-inc/chronos/internal/automatrix.WakeMessage kind=const
+  digest=b3:43da8fa551f8180913738471761e06f9984e0d12b3b952e149192ce3a70ae34c file=chronos/internal/automatrix/automatrix.go range=24:32 lang=go exported=true byte_range=957:1737
+  sig=untyped string
+  doc=WakeMessage is the canonical wake_message a Chronos AUTOMATRIX alarm\ndelivers. It instructs the agent to review its pending non-financial\nopportunities, complete one if worthwhile, and notify the user — or reply\nwith the AUTOMATRIX_IDLE sentinel when nothing is worth doing right now.\n\nThis MUST stay in sync with the agent-side AutomatrixWakeMessage\n(neo/internal/agent/automatrix.go) — they share the AUTOMATRIX marker that\nthe agent uses to detect an AUTOMATRIX wake.
+EDGES
+  ^defines=github.com/paxlabs-inc/chronos/internal/automatrix/automatrix.go
+
+NODE id=github.com/paxlabs-inc/chronos/internal/automatrix/automatrix.go kind=file
+  digest=b3:8514e63bdfab45a691232a488b4f13ab187058167b1aa792d14dd94c267d03be file=chronos/internal/automatrix/automatrix.go range=1:90 lang=go exported=true
+EDGES
+  defines=github.com/paxlabs-inc/chronos/internal/automatrix.BuildAlarm,github.com/paxlabs-inc/chronos/internal/automatrix.DefaultCronExpr,github.com/paxlabs-inc/chronos/internal/automatrix.Spec,github.com/paxlabs-inc/chronos/internal/automatrix.WakeMessage
+  ^contains=github.com/paxlabs-inc/chronos/internal/automatrix

@@ -1,0 +1,88 @@
+# GENERATED gen=codegraph do-not-edit merkle=b3:2dc69ec8dbbe0231373534486cf12ff6fdb0eaad7b2dfdcbc4d73453c8542ee8
+
+NODE id=github.com/paxlabs-inc/deus/internal/pricing kind=package
+  digest=b3:c4512c33675ddd4a7b2443b6864739e13a6575316ca41459f515ebf4a5635d1c file=deus/internal/pricing range=0:0 lang=go exported=true
+EDGES
+  contains=github.com/paxlabs-inc/deus/internal/pricing/pricing.go
+  ^contains=mod:github.com/paxlabs-inc/deus
+
+NODE id=github.com/paxlabs-inc/deus/internal/pricing.New kind=func
+  digest=b3:8febdd074b63800598bdda9e540a5318483a4c8e52694dbe19de8474cd9e8580 file=deus/internal/pricing/pricing.go range=28:31 lang=go exported=true byte_range=556:656
+  sig=func New(st *store.Store) *Service
+  doc=New returns a pricing service.
+EDGES
+  ^defines=github.com/paxlabs-inc/deus/internal/pricing/pricing.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/pricing.Plan kind=type
+  digest=b3:28243c91c4b00e1596f812323485d70e10169870a2d3d48a8f20649966894252 file=deus/internal/pricing/pricing.go range=14:21 lang=go exported=true byte_range=272:448
+  sig=type Plan struct {\n	Model		string\n	Unit		string\n	UnitPriceWei	string\n	MinChargeWei	string\n	Version		int\n}
+  doc=Plan is a resolved pricing plan for one operation.
+EDGES
+  contains=github.com/paxlabs-inc/deus/internal/pricing.Plan#MinChargeWei,github.com/paxlabs-inc/deus/internal/pricing.Plan#Model,github.com/paxlabs-inc/deus/internal/pricing.Plan#Unit,github.com/paxlabs-inc/deus/internal/pricing.Plan#UnitPriceWei,github.com/paxlabs-inc/deus/internal/pricing.Plan#Version
+  ^defines=github.com/paxlabs-inc/deus/internal/pricing/pricing.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/pricing.Plan#MinChargeWei kind=field
+  digest=b3:4125ef9ab90d3551446b683fa4e233e494f9e7b4cd0118d73b4c1083eecd686e file=deus/internal/pricing/pricing.go range=19:19 lang=go exported=true byte_range=409:428
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/pricing.Plan
+
+NODE id=github.com/paxlabs-inc/deus/internal/pricing.Plan#Model kind=field
+  digest=b3:ed06756478455833de2cb8ff0e3b879a789f5c13a692064e8bf71f812e05f5b4 file=deus/internal/pricing/pricing.go range=16:16 lang=go exported=true byte_range=346:365
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/pricing.Plan
+
+NODE id=github.com/paxlabs-inc/deus/internal/pricing.Plan#Unit kind=field
+  digest=b3:4ec87f59d7e8f312094e5e9b81ba7b21a01db787241608d820e1dae0466b60de file=deus/internal/pricing/pricing.go range=17:17 lang=go exported=true byte_range=367:386
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/pricing.Plan
+
+NODE id=github.com/paxlabs-inc/deus/internal/pricing.Plan#UnitPriceWei kind=field
+  digest=b3:8951de862293be973b8996144be2ed4468f2a74e64541577cffae04e59ac224b file=deus/internal/pricing/pricing.go range=18:18 lang=go exported=true byte_range=388:407
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/pricing.Plan
+
+NODE id=github.com/paxlabs-inc/deus/internal/pricing.Plan#Version kind=field
+  digest=b3:65e79e0bd9419523a330ea7f05b7da1ec6866f48b26f623c141a0ea7eeded624 file=deus/internal/pricing/pricing.go range=20:20 lang=go exported=true byte_range=430:446
+  sig=int
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/pricing.Plan
+
+NODE id=github.com/paxlabs-inc/deus/internal/pricing.Service kind=type
+  digest=b3:c9e48172c03618895544a49a87e91a31696c90e8675f9a1739940631e4d9cace file=deus/internal/pricing/pricing.go range=23:26 lang=go exported=true byte_range=450:554
+  sig=type Service struct {\n	store *store.Store\n}
+  doc=Service loads pricing plans for a service from the store.
+EDGES
+  contains=github.com/paxlabs-inc/deus/internal/pricing.Service#store,github.com/paxlabs-inc/deus/internal/pricing.Service.PlanForOperation,github.com/paxlabs-inc/deus/internal/pricing.Service.Quote
+  ^defines=github.com/paxlabs-inc/deus/internal/pricing/pricing.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/pricing.Service#store kind=field
+  digest=b3:ddd5d136e7bec16ac8fb4d732ca23eb3490eeb76b1efaaa73a91c078ebb10a37 file=deus/internal/pricing/pricing.go range=25:25 lang=go exported=false byte_range=534:552
+  sig=*store.Store
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/pricing.Service
+
+NODE id=github.com/paxlabs-inc/deus/internal/pricing.Service.PlanForOperation kind=method
+  digest=b3:dd24bde368266e1f9bf25fde18cc8dc0cd6d52ceef1419c74c42bf866aec9230 file=deus/internal/pricing/pricing.go range=33:65 lang=go exported=true byte_range=658:1545
+  sig=func (s *Service) PlanForOperation(ctx context.Context, serviceID, operation string) (Plan, error)
+  doc=PlanForOperation returns the active plan for an operation name.
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/pricing.Service
+  ^defines=github.com/paxlabs-inc/deus/internal/pricing/pricing.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/pricing.Service.Quote kind=method
+  digest=b3:c8839910b8bbbb2fb94787d97bc3a4a51dcaff8d7a680428b5bb9775347c32d2 file=deus/internal/pricing/pricing.go range=67:90 lang=go exported=true byte_range=1547:2282
+  sig=func (s *Service) Quote(ctx context.Context, serviceID, operation, estimatedUnits string) (Plan, *big.Int, error)
+  doc=Quote computes max charge for estimated units.
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/pricing.Service
+  ^defines=github.com/paxlabs-inc/deus/internal/pricing/pricing.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/pricing/pricing.go kind=file
+  digest=b3:fe297478dfedf43ffbae20e056c7f0fb8599f4fbfc8a2f8fc7cbe71456e71946 file=deus/internal/pricing/pricing.go range=1:90 lang=go exported=true
+EDGES
+  defines=github.com/paxlabs-inc/deus/internal/pricing.New,github.com/paxlabs-inc/deus/internal/pricing.Plan,github.com/paxlabs-inc/deus/internal/pricing.Service,github.com/paxlabs-inc/deus/internal/pricing.Service.PlanForOperation,github.com/paxlabs-inc/deus/internal/pricing.Service.Quote
+  ^contains=github.com/paxlabs-inc/deus/internal/pricing

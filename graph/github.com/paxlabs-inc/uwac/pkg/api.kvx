@@ -1,0 +1,183 @@
+# GENERATED gen=codegraph do-not-edit merkle=b3:2dc69ec8dbbe0231373534486cf12ff6fdb0eaad7b2dfdcbc4d73453c8542ee8
+
+NODE id=github.com/paxlabs-inc/uwac/pkg/api kind=package
+  digest=b3:776ea2bb18c861d863b30516de088ea9afc5e4e8bf8ee9a1b968ea8b601eca94 file=uwac/pkg/api range=0:0 lang=go exported=true
+EDGES
+  contains=github.com/paxlabs-inc/uwac/pkg/api/server.go
+  ^contains=mod:github.com/paxlabs-inc/uwac
+
+NODE id=github.com/paxlabs-inc/uwac/pkg/api.New kind=func
+  digest=b3:d98fc129694006163484078707d4a156da9342dba7da9bbb367b7bbf5d625af6 file=uwac/pkg/api/server.go range=30:45 lang=go exported=true byte_range=668:1380
+  sig=func New(eng *engine.Engine, auth string, log *slog.Logger) *Server
+  doc=New constructs the API server. auth is the shared transport bearer.
+EDGES
+  ^defines=github.com/paxlabs-inc/uwac/pkg/api/server.go
+
+NODE id=github.com/paxlabs-inc/uwac/pkg/api.Server kind=type
+  digest=b3:08167caeb64c60e3f69406707206e944e72758ed423a64084b9266c2a64e78a2 file=uwac/pkg/api/server.go range=21:28 lang=go exported=true byte_range=496:666
+  sig=type Server struct {\n	eng	*engine.Engine\n	log	*slog.Logger\n	mux	*http.ServeMux\n	server	*http.Server\n	auth	string\n}
+  doc=Server wraps the engine with an HTTP mux.
+EDGES
+  contains=github.com/paxlabs-inc/uwac/pkg/api.Server#auth,github.com/paxlabs-inc/uwac/pkg/api.Server#eng,github.com/paxlabs-inc/uwac/pkg/api.Server#log,github.com/paxlabs-inc/uwac/pkg/api.Server#mux,github.com/paxlabs-inc/uwac/pkg/api.Server#server,github.com/paxlabs-inc/uwac/pkg/api.Server.ListenAndServe,github.com/paxlabs-inc/uwac/pkg/api.Server.Shutdown,github.com/paxlabs-inc/uwac/pkg/api.Server.authMiddleware,github.com/paxlabs-inc/uwac/pkg/api.Server.getCallback,github.com/paxlabs-inc/uwac/pkg/api.Server.handleHealthz,github.com/paxlabs-inc/uwac/pkg/api.Server.handleRoot,github.com/paxlabs-inc/uwac/pkg/api.Server.postChallenge,github.com/paxlabs-inc/uwac/pkg/api.Server.postConnect,github.com/paxlabs-inc/uwac/pkg/api.Server.postDisconnect,github.com/paxlabs-inc/uwac/pkg/api.Server.postInvoke,github.com/paxlabs-inc/uwac/pkg/api.Server.postVerify,github.com/paxlabs-inc/uwac/pkg/api.Server.principal
+  ^defines=github.com/paxlabs-inc/uwac/pkg/api/server.go
+
+NODE id=github.com/paxlabs-inc/uwac/pkg/api.Server#auth kind=field
+  digest=b3:9d748c18850f9ac3ed34fb1977f462ab1f53367b518d07eb083247a0c645f50a file=uwac/pkg/api/server.go range=27:27 lang=go exported=false byte_range=651:664
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/uwac/pkg/api.Server
+
+NODE id=github.com/paxlabs-inc/uwac/pkg/api.Server#eng kind=field
+  digest=b3:ff161db32783aae17d5743fff2d0827fbae489b14290ea22e8b9758b94ab571d file=uwac/pkg/api/server.go range=23:23 lang=go exported=false byte_range=563:584
+  sig=*engine.Engine
+EDGES
+  ^contains=github.com/paxlabs-inc/uwac/pkg/api.Server
+
+NODE id=github.com/paxlabs-inc/uwac/pkg/api.Server#log kind=field
+  digest=b3:fa5d11e16922a208b3c737eff159ff20fbefc726250258161355c9a8a11f6754 file=uwac/pkg/api/server.go range=24:24 lang=go exported=false byte_range=586:605
+  sig=*slog.Logger
+EDGES
+  ^contains=github.com/paxlabs-inc/uwac/pkg/api.Server
+
+NODE id=github.com/paxlabs-inc/uwac/pkg/api.Server#mux kind=field
+  digest=b3:4b928ed4146b063c8b76b3df3dd73dec597c07bef823bacebc1766a532ec4f10 file=uwac/pkg/api/server.go range=25:25 lang=go exported=false byte_range=607:628
+  sig=*http.ServeMux
+EDGES
+  ^contains=github.com/paxlabs-inc/uwac/pkg/api.Server
+
+NODE id=github.com/paxlabs-inc/uwac/pkg/api.Server#server kind=field
+  digest=b3:bb5662524b2b9b8fde9e16345bcfcc8ed70dd4a828aca589d32822ec5e458536 file=uwac/pkg/api/server.go range=26:26 lang=go exported=false byte_range=630:649
+  sig=*http.Server
+EDGES
+  ^contains=github.com/paxlabs-inc/uwac/pkg/api.Server
+
+NODE id=github.com/paxlabs-inc/uwac/pkg/api.Server.ListenAndServe kind=method
+  digest=b3:f9d3ff552d6f79d1666de5535a0bd99ccfe9d1a64483c8bf3dcb3022ad1d9bd4 file=uwac/pkg/api/server.go range=47:59 lang=go exported=true byte_range=1382:1812
+  sig=func (s *Server) ListenAndServe(addr string) error
+  doc=ListenAndServe starts HTTP.
+EDGES
+  ^contains=github.com/paxlabs-inc/uwac/pkg/api.Server
+  ^defines=github.com/paxlabs-inc/uwac/pkg/api/server.go
+
+NODE id=github.com/paxlabs-inc/uwac/pkg/api.Server.Shutdown kind=method
+  digest=b3:ce92b9d9c780eb394748fefab1b1e8f70dc8c925b50489df4281ef302ba5638f file=uwac/pkg/api/server.go range=61:67 lang=go exported=true byte_range=1814:1969
+  sig=func (s *Server) Shutdown(ctx context.Context) error
+  doc=Shutdown stops the server.
+EDGES
+  ^contains=github.com/paxlabs-inc/uwac/pkg/api.Server
+  ^defines=github.com/paxlabs-inc/uwac/pkg/api/server.go
+
+NODE id=github.com/paxlabs-inc/uwac/pkg/api.Server.authMiddleware kind=method
+  digest=b3:cf06651cec517b039ee86ffaf50283b0884bcfcf5ccd28d07b3122f8ab90e6ba file=uwac/pkg/api/server.go range=69:84 lang=go exported=false byte_range=1971:2645
+  sig=func (s *Server) authMiddleware(next http.Handler) http.Handler
+  doc=authMiddleware enforces the shared transport bearer on all paths except the\npublic ones (healthz, root, and the browser-facing OAuth callback, which is\nvalidated by its signed state token).
+EDGES
+  ^contains=github.com/paxlabs-inc/uwac/pkg/api.Server
+  ^defines=github.com/paxlabs-inc/uwac/pkg/api/server.go
+
+NODE id=github.com/paxlabs-inc/uwac/pkg/api.Server.getCallback kind=method
+  digest=b3:381338699297c2d46216631efdd7ce3f2628b9a6eb938db31745be30125c0af7 file=uwac/pkg/api/server.go range=173:186 lang=go exported=false byte_range=5008:5583
+  sig=func (s *Server) getCallback(w http.ResponseWriter, r *http.Request)
+EDGES
+  ^contains=github.com/paxlabs-inc/uwac/pkg/api.Server
+  ^defines=github.com/paxlabs-inc/uwac/pkg/api/server.go
+
+NODE id=github.com/paxlabs-inc/uwac/pkg/api.Server.handleHealthz kind=method
+  digest=b3:2e44df698774224f237a7ada3629f59274132889e99bd295e7a93ff96f5bdfe7 file=uwac/pkg/api/server.go range=107:109 lang=go exported=false byte_range=3261:3433
+  sig=func (s *Server) handleHealthz(w http.ResponseWriter, _ *http.Request)
+EDGES
+  ^contains=github.com/paxlabs-inc/uwac/pkg/api.Server
+  ^defines=github.com/paxlabs-inc/uwac/pkg/api/server.go
+
+NODE id=github.com/paxlabs-inc/uwac/pkg/api.Server.handleRoot kind=method
+  digest=b3:c7e1a501cb1abf732af597d24642180948566fc0a7e4fd89779bc7aa58349ddf file=uwac/pkg/api/server.go range=95:105 lang=go exported=false byte_range=2992:3259
+  sig=func (s *Server) handleRoot(w http.ResponseWriter, r *http.Request)
+EDGES
+  ^contains=github.com/paxlabs-inc/uwac/pkg/api.Server
+  ^defines=github.com/paxlabs-inc/uwac/pkg/api/server.go
+
+NODE id=github.com/paxlabs-inc/uwac/pkg/api.Server.postChallenge kind=method
+  digest=b3:032ba1e9a9cdae29b5884146b6169c2998a20982e4272b28828240ba3fc16c4f file=uwac/pkg/api/server.go range=111:122 lang=go exported=false byte_range=3435:3804
+  sig=func (s *Server) postChallenge(w http.ResponseWriter, r *http.Request)
+EDGES
+  ^contains=github.com/paxlabs-inc/uwac/pkg/api.Server
+  ^defines=github.com/paxlabs-inc/uwac/pkg/api/server.go
+
+NODE id=github.com/paxlabs-inc/uwac/pkg/api.Server.postConnect kind=method
+  digest=b3:86f198beb4eeaf4e54a8e9d7d02c359b13ffaa15146af3d841e3f5c40bef4c48 file=uwac/pkg/api/server.go range=154:171 lang=go exported=false byte_range=4505:5006
+  sig=func (s *Server) postConnect(w http.ResponseWriter, r *http.Request)
+EDGES
+  ^contains=github.com/paxlabs-inc/uwac/pkg/api.Server
+  ^defines=github.com/paxlabs-inc/uwac/pkg/api/server.go
+
+NODE id=github.com/paxlabs-inc/uwac/pkg/api.Server.postDisconnect kind=method
+  digest=b3:b5f8c66c0f39550294c5f43fceab39c82308c822de3a294f4badccf743aa82e6 file=uwac/pkg/api/server.go range=188:204 lang=go exported=false byte_range=5585:6122
+  sig=func (s *Server) postDisconnect(w http.ResponseWriter, r *http.Request)
+EDGES
+  ^contains=github.com/paxlabs-inc/uwac/pkg/api.Server
+  ^defines=github.com/paxlabs-inc/uwac/pkg/api/server.go
+
+NODE id=github.com/paxlabs-inc/uwac/pkg/api.Server.postInvoke kind=method
+  digest=b3:7fb61cecec6eaac56ba6dde3a15b94d56d4b887c959932b2b0630f2c3787ff66 file=uwac/pkg/api/server.go range=137:152 lang=go exported=false byte_range=4164:4503
+  sig=func (s *Server) postInvoke(w http.ResponseWriter, r *http.Request)
+EDGES
+  ^contains=github.com/paxlabs-inc/uwac/pkg/api.Server
+  ^defines=github.com/paxlabs-inc/uwac/pkg/api/server.go
+
+NODE id=github.com/paxlabs-inc/uwac/pkg/api.Server.postVerify kind=method
+  digest=b3:4b8685ab81bc14a6d5893935640c4cd91e1e63d65ac74953604b08772738a6e0 file=uwac/pkg/api/server.go range=124:135 lang=go exported=false byte_range=3806:4162
+  sig=func (s *Server) postVerify(w http.ResponseWriter, r *http.Request)
+EDGES
+  ^contains=github.com/paxlabs-inc/uwac/pkg/api.Server
+  ^defines=github.com/paxlabs-inc/uwac/pkg/api/server.go
+
+NODE id=github.com/paxlabs-inc/uwac/pkg/api.Server.principal kind=method
+  digest=b3:3219aac0a1065c55db3bd3a838c1cb467cf876a85160781efdd0c23748df5231 file=uwac/pkg/api/server.go range=206:219 lang=go exported=false byte_range=6124:6761
+  sig=func (s *Server) principal(w http.ResponseWriter, r *http.Request) (string, bool)
+  doc=principal resolves the owner user id from the X-UWAC-Agent principal token.
+EDGES
+  ^contains=github.com/paxlabs-inc/uwac/pkg/api.Server
+  ^defines=github.com/paxlabs-inc/uwac/pkg/api/server.go
+
+NODE id=github.com/paxlabs-inc/uwac/pkg/api.bearerToken kind=func
+  digest=b3:48c1d49db508ae2016285296cecd4ffdd7cc29080c870823f8c7ff41d674d2e8 file=uwac/pkg/api/server.go range=242:248 lang=go exported=false byte_range=7291:7475
+  sig=func bearerToken(r *http.Request) string
+EDGES
+  ^defines=github.com/paxlabs-inc/uwac/pkg/api/server.go
+
+NODE id=github.com/paxlabs-inc/uwac/pkg/api.decode kind=func
+  digest=b3:9072ba96fd81e6e29434a08c5bcd2236d395ab53ec624fde153f5891d70ef51a file=uwac/pkg/api/server.go range=250:257 lang=go exported=false byte_range=7477:7785
+  sig=func decode(w http.ResponseWriter, r *http.Request, v any) bool
+EDGES
+  ^defines=github.com/paxlabs-inc/uwac/pkg/api/server.go
+
+NODE id=github.com/paxlabs-inc/uwac/pkg/api.isPublicPath kind=func
+  digest=b3:19ac5df70f8aae884c10b2266d87f3c4fa764044a21b89fbfcf85e94f98fc3cd file=uwac/pkg/api/server.go range=86:93 lang=go exported=false byte_range=2647:2990
+  sig=func isPublicPath(r *http.Request) bool
+EDGES
+  ^defines=github.com/paxlabs-inc/uwac/pkg/api/server.go
+
+NODE id=github.com/paxlabs-inc/uwac/pkg/api.statusFor kind=func
+  digest=b3:8723923948aa676e2b5fb968b635907d7342508ae7c2fc9224c8285224640a50 file=uwac/pkg/api/server.go range=221:240 lang=go exported=false byte_range=6763:7289
+  sig=func statusFor(e *types.Error) int
+  doc=statusFor maps an error code to an HTTP status.
+EDGES
+  ^defines=github.com/paxlabs-inc/uwac/pkg/api/server.go
+
+NODE id=github.com/paxlabs-inc/uwac/pkg/api.writeHTML kind=func
+  digest=b3:479d0484a67a8513952679855ab2f013ae5aabb1957d08442d0135b41b7c61f3 file=uwac/pkg/api/server.go range=265:269 lang=go exported=false byte_range=7958:8333
+  sig=func writeHTML(w http.ResponseWriter, status int, msg string)
+EDGES
+  ^defines=github.com/paxlabs-inc/uwac/pkg/api/server.go
+
+NODE id=github.com/paxlabs-inc/uwac/pkg/api.writeJSON kind=func
+  digest=b3:d58167f7354d1e8d6720953913e80e2f6a0580f378c503cbd013fa824e8fd1da file=uwac/pkg/api/server.go range=259:263 lang=go exported=false byte_range=7787:7956
+  sig=func writeJSON(w http.ResponseWriter, status int, v any)
+EDGES
+  ^defines=github.com/paxlabs-inc/uwac/pkg/api/server.go
+
+NODE id=github.com/paxlabs-inc/uwac/pkg/api/server.go kind=file
+  digest=b3:9736862950f26cb526ab4ffc88f3fd95bec211d5da66e69d4a353f4373d7b86c file=uwac/pkg/api/server.go range=1:269 lang=go exported=true
+EDGES
+  defines=github.com/paxlabs-inc/uwac/pkg/api.New,github.com/paxlabs-inc/uwac/pkg/api.Server,github.com/paxlabs-inc/uwac/pkg/api.Server.ListenAndServe,github.com/paxlabs-inc/uwac/pkg/api.Server.Shutdown,github.com/paxlabs-inc/uwac/pkg/api.Server.authMiddleware,github.com/paxlabs-inc/uwac/pkg/api.Server.getCallback,github.com/paxlabs-inc/uwac/pkg/api.Server.handleHealthz,github.com/paxlabs-inc/uwac/pkg/api.Server.handleRoot,github.com/paxlabs-inc/uwac/pkg/api.Server.postChallenge,github.com/paxlabs-inc/uwac/pkg/api.Server.postConnect,github.com/paxlabs-inc/uwac/pkg/api.Server.postDisconnect,github.com/paxlabs-inc/uwac/pkg/api.Server.postInvoke,github.com/paxlabs-inc/uwac/pkg/api.Server.postVerify,github.com/paxlabs-inc/uwac/pkg/api.Server.principal,github.com/paxlabs-inc/uwac/pkg/api.bearerToken,github.com/paxlabs-inc/uwac/pkg/api.decode,github.com/paxlabs-inc/uwac/pkg/api.isPublicPath,github.com/paxlabs-inc/uwac/pkg/api.statusFor,github.com/paxlabs-inc/uwac/pkg/api.writeHTML,github.com/paxlabs-inc/uwac/pkg/api.writeJSON
+  ^contains=github.com/paxlabs-inc/uwac/pkg/api

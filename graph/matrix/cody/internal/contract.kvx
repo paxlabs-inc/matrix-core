@@ -1,0 +1,549 @@
+# GENERATED gen=codegraph do-not-edit merkle=b3:2dc69ec8dbbe0231373534486cf12ff6fdb0eaad7b2dfdcbc4d73453c8542ee8
+
+NODE id=matrix/cody/internal/contract kind=package
+  digest=b3:444a0327655f7b77a98a85be150f29a3038b784b416a9e59d5787b56ae7a48f4 file=cody/internal/contract range=0:0 lang=go exported=true
+EDGES
+  contains=matrix/cody/internal/contract/contract.go,matrix/cody/internal/contract/store.go
+  ^contains=mod:matrix/cody
+
+NODE id=matrix/cody/internal/contract.Change kind=type
+  digest=b3:afd3e0b4b78d274846a30350b1a1137b2f0066273ef2d6c8854d322e6c2dc3e2 file=cody/internal/contract/contract.go range=159:165 lang=go exported=true byte_range=6494:6700
+  sig=type Change struct {\n	Path	string	`json:"path"`\n	// Kind is one of create|edit|delete|rename.\n	Kind	string	`json:"kind"`\n	Why	string	`json:"why"`\n}
+  doc=Change records one workspace mutation the worker made.
+EDGES
+  contains=matrix/cody/internal/contract.Change#Kind,matrix/cody/internal/contract.Change#Path,matrix/cody/internal/contract.Change#Why
+  ^defines=matrix/cody/internal/contract/contract.go
+
+NODE id=matrix/cody/internal/contract.Change#Kind kind=field
+  digest=b3:cdd49757bf676aaccfd457c39ecd5899a64d1c92a56f4e2aff902238ef92aca8 file=cody/internal/contract/contract.go range=162:163 lang=go exported=true byte_range=6601:6672
+  sig=string
+  doc=Kind is one of create|edit|delete|rename.
+EDGES
+  ^contains=matrix/cody/internal/contract.Change
+
+NODE id=matrix/cody/internal/contract.Change#Path kind=field
+  digest=b3:5dbb695d2bfd17814db36cff0b4ff87a24889546e87d7070a46f4d0da13e0018 file=cody/internal/contract/contract.go range=161:161 lang=go exported=true byte_range=6574:6599
+  sig=string
+EDGES
+  ^contains=matrix/cody/internal/contract.Change
+
+NODE id=matrix/cody/internal/contract.Change#Why kind=field
+  digest=b3:61efd5bbd3d8f61dfafa65e2f7f9cfe6d88d410ddc03be0b1ad1bd3d587a763f file=cody/internal/contract/contract.go range=164:164 lang=go exported=true byte_range=6674:6698
+  sig=string
+EDGES
+  ^contains=matrix/cody/internal/contract.Change
+
+NODE id=matrix/cody/internal/contract.Constraints kind=type
+  digest=b3:35657fe574dba1a996f0f622ebe0967e0dbf6f06dc63615ead887ed1112e89dd file=cody/internal/contract/contract.go range=59:69 lang=go exported=true byte_range=2669:3280
+  sig=type Constraints struct {\n	Constitution	[]string	`json:"constitution,omitempty"`\n	ModePolicy	string		`json:"mode_policy,omitempty"`\n	RulesRefs	[]string	`json:"rules_refs,omitempty"`\n	// DesignLanguage, when set (UI tasks under a resolved Design Language\n	// Record), is the binding visual-language constraint the worker must build\n	// to and the gate screens the turn-in against (req 9.3).\n	DesignLanguage	string	`json:"design_language,omitempty"`\n}
+  doc=Constraints binds the worker: the constitution clauses (always), the active\nmode policy rendered as prose, and the applicable rules/<language> files.
+EDGES
+  contains=matrix/cody/internal/contract.Constraints#Constitution,matrix/cody/internal/contract.Constraints#DesignLanguage,matrix/cody/internal/contract.Constraints#ModePolicy,matrix/cody/internal/contract.Constraints#RulesRefs
+  ^defines=matrix/cody/internal/contract/contract.go
+
+NODE id=matrix/cody/internal/contract.Constraints#Constitution kind=field
+  digest=b3:308757cf8876f4bf00c9f95b5e901a020c61bba6c684d2995f4f41e40cd87bfe file=cody/internal/contract/contract.go range=62:62 lang=go exported=true byte_range=2852:2905
+  sig=[]string
+EDGES
+  ^contains=matrix/cody/internal/contract.Constraints
+
+NODE id=matrix/cody/internal/contract.Constraints#DesignLanguage kind=field
+  digest=b3:cf54a01a9544916e1adffa1f8d633f7515b2d3059fbf7bd1f009c57fbd5da476 file=cody/internal/contract/contract.go range=65:68 lang=go exported=true byte_range=3014:3278
+  sig=string
+  doc=DesignLanguage, when set (UI tasks under a resolved Design Language\nRecord), is the binding visual-language constraint the worker must build\nto and the gate screens the turn-in against (req 9.3).
+EDGES
+  ^contains=matrix/cody/internal/contract.Constraints
+
+NODE id=matrix/cody/internal/contract.Constraints#ModePolicy kind=field
+  digest=b3:9a80f554dee67b906acb407c83c1b8237ca70c56ada73152771894dcfe8b3b4c file=cody/internal/contract/contract.go range=63:63 lang=go exported=true byte_range=2907:2959
+  sig=string
+EDGES
+  ^contains=matrix/cody/internal/contract.Constraints
+
+NODE id=matrix/cody/internal/contract.Constraints#RulesRefs kind=field
+  digest=b3:5781b180cd940d253abb2c6c6e95b4186eeb22efe764550b1f8dfd240e3401ad file=cody/internal/contract/contract.go range=64:64 lang=go exported=true byte_range=2961:3012
+  sig=[]string
+EDGES
+  ^contains=matrix/cody/internal/contract.Constraints
+
+NODE id=matrix/cody/internal/contract.Deliverable kind=type
+  digest=b3:7042cfc48e611070aa9bda970f33ad5fa765a56cd85589e4037ea0d147929e92 file=cody/internal/contract/contract.go range=80:85 lang=go exported=true byte_range=3648:3909
+  sig=type Deliverable struct {\n	Shape		string		`json:"shape"`\n	DoNotTouch	[]string	`json:"do_not_touch,omitempty"`\n}
+  doc=Deliverable describes the expected shape of the work and the explicit\ndo-not-touch set (path prefixes/globs the worker must never modify).
+EDGES
+  contains=matrix/cody/internal/contract.Deliverable#DoNotTouch,matrix/cody/internal/contract.Deliverable#Shape
+  ^defines=matrix/cody/internal/contract/contract.go
+
+NODE id=matrix/cody/internal/contract.Deliverable#DoNotTouch kind=field
+  digest=b3:3f1d6aa2fb32aa34c4a57f617e5fede549f91de48f115a660d3fea4b0696ab1e file=cody/internal/contract/contract.go range=84:84 lang=go exported=true byte_range=3856:3907
+  sig=[]string
+EDGES
+  ^contains=matrix/cody/internal/contract.Deliverable
+
+NODE id=matrix/cody/internal/contract.Deliverable#Shape kind=field
+  digest=b3:145d8d2262bca566ac034e6c2752ec9bc4992e2b5f51077ee10146819fa7a7b8 file=cody/internal/contract/contract.go range=83:83 lang=go exported=true byte_range=3820:3854
+  sig=string
+EDGES
+  ^contains=matrix/cody/internal/contract.Deliverable
+
+NODE id=matrix/cody/internal/contract.Evidence kind=type
+  digest=b3:e9a6d7c7bb7b89ce9abd495b4e18de8cce64bd853ba12cd865154714a09c9224 file=cody/internal/contract/contract.go range=167:181 lang=go exported=true byte_range=6702:7527
+  sig=type Evidence struct {\n	Command		string	`json:"command"`\n	Exit		int	`json:"exit"`\n	OutputExcerpt	string	`json:"output_excerpt,omitempty"`\n	// OverflowPath points at the full output on disk when the excerpt was\n	// truncated (read-full discipline: the remainder is always retrievable).\n	OverflowPath	string	`json:"overflow_path,omitempty"`\n	// Screenshot is the workspace-relative path to a screenshot artifact\n	// captured for a UI task — the design-quality evidence the gate requires on\n	// UI turn-ins (req 13.2). Empty on non-UI evidence.\n	Screenshot	string	`json:"screenshot,omitempty"`\n}
+  doc=Evidence is one real verification command run: the command, its exit code,\nand an excerpt of its output. Fabricating evidence is pointless — the\norchestrator re-runs the commands itself before accepting.
+EDGES
+  contains=matrix/cody/internal/contract.Evidence#Command,matrix/cody/internal/contract.Evidence#Exit,matrix/cody/internal/contract.Evidence#OutputExcerpt,matrix/cody/internal/contract.Evidence#OverflowPath,matrix/cody/internal/contract.Evidence#Screenshot,matrix/cody/internal/contract.Evidence.Green
+  ^defines=matrix/cody/internal/contract/contract.go
+
+NODE id=matrix/cody/internal/contract.Evidence#Command kind=field
+  digest=b3:6ad6bf744a0c2eb23ab42bc486e6465948c1ab479d9a4d8495128aa601ca936e file=cody/internal/contract/contract.go range=171:171 lang=go exported=true byte_range=6941:6978
+  sig=string
+EDGES
+  ^contains=matrix/cody/internal/contract.Evidence
+
+NODE id=matrix/cody/internal/contract.Evidence#Exit kind=field
+  digest=b3:9c3b3b969e22b0ad25f6379dc8d022eef44c11a6ff62ef2774eab80699d4e278 file=cody/internal/contract/contract.go range=172:172 lang=go exported=true byte_range=6980:7014
+  sig=int
+EDGES
+  ^contains=matrix/cody/internal/contract.Evidence
+
+NODE id=matrix/cody/internal/contract.Evidence#OutputExcerpt kind=field
+  digest=b3:064938814731cbb172cf3e1443788d89bfa65c1f90045b65af45f03b6eb55899 file=cody/internal/contract/contract.go range=173:173 lang=go exported=true byte_range=7016:7070
+  sig=string
+EDGES
+  ^contains=matrix/cody/internal/contract.Evidence
+
+NODE id=matrix/cody/internal/contract.Evidence#OverflowPath kind=field
+  digest=b3:64d2008191911e9e8c1e697fe5f9953d26051198caff5f0710c3d7335bc35308 file=cody/internal/contract/contract.go range=174:176 lang=go exported=true byte_range=7072:7271
+  sig=string
+  doc=OverflowPath points at the full output on disk when the excerpt was\ntruncated (read-full discipline: the remainder is always retrievable).
+EDGES
+  ^contains=matrix/cody/internal/contract.Evidence
+
+NODE id=matrix/cody/internal/contract.Evidence#Screenshot kind=field
+  digest=b3:28933a6618a24eaaa7896f626025c3527422872ed87652d2e2c06dd9c6b4e3f2 file=cody/internal/contract/contract.go range=177:180 lang=go exported=true byte_range=7273:7525
+  sig=string
+  doc=Screenshot is the workspace-relative path to a screenshot artifact\ncaptured for a UI task — the design-quality evidence the gate requires on\nUI turn-ins (req 13.2). Empty on non-UI evidence.
+EDGES
+  ^contains=matrix/cody/internal/contract.Evidence
+
+NODE id=matrix/cody/internal/contract.Evidence.Green kind=method
+  digest=b3:3ca8ad3659e4fa2238d6f577e9f0dbb2dc8b617353032a23cae288920cf9146f file=cody/internal/contract/contract.go range=183:184 lang=go exported=true byte_range=7529:7643
+  sig=func (e Evidence) Green() bool
+  doc=Green reports whether the evidence records a passing run.
+EDGES
+  ^contains=matrix/cody/internal/contract.Evidence
+  ^defines=matrix/cody/internal/contract/contract.go
+
+NODE id=matrix/cody/internal/contract.Grounding kind=type
+  digest=b3:ee19d49e494ec89db7e327efeb58c06ff242305c99c5d2c6c55eebc8516c4c90 file=cody/internal/contract/contract.go range=51:57 lang=go exported=true byte_range=2351:2667
+  sig=type Grounding struct {\n	Files		[]string	`json:"files,omitempty"`\n	LineRefs	[]string	`json:"line_refs,omitempty"`\n	Notes		string		`json:"notes,omitempty"`\n}
+  doc=Grounding pins the sheet to exact seams in the workspace: the files the\nworker must read before writing, line-level references, and free-form notes.
+EDGES
+  contains=matrix/cody/internal/contract.Grounding#Files,matrix/cody/internal/contract.Grounding#LineRefs,matrix/cody/internal/contract.Grounding#Notes
+  ^defines=matrix/cody/internal/contract/contract.go
+
+NODE id=matrix/cody/internal/contract.Grounding#Files kind=field
+  digest=b3:552abd28d738fccb7421afd5a8f0b1d9232925f46b76918ac2e264a00c2558c7 file=cody/internal/contract/contract.go range=54:54 lang=go exported=true byte_range=2531:2573
+  sig=[]string
+EDGES
+  ^contains=matrix/cody/internal/contract.Grounding
+
+NODE id=matrix/cody/internal/contract.Grounding#LineRefs kind=field
+  digest=b3:916ba2ca1803576605c9be4e132992c9c2fac149768cff359ba22f8d1fd6ac24 file=cody/internal/contract/contract.go range=55:55 lang=go exported=true byte_range=2575:2621
+  sig=[]string
+EDGES
+  ^contains=matrix/cody/internal/contract.Grounding
+
+NODE id=matrix/cody/internal/contract.Grounding#Notes kind=field
+  digest=b3:cd08592c5dcd79c4ef69bfb8f3241a30ed565e43791f1eabb4c0fa70851f62d0 file=cody/internal/contract/contract.go range=56:56 lang=go exported=true byte_range=2623:2665
+  sig=string
+EDGES
+  ^contains=matrix/cody/internal/contract.Grounding
+
+NODE id=matrix/cody/internal/contract.OpenStore kind=func
+  digest=b3:7b0d97c3671fe58fb2d0942e0db3664266167522d318cf69d57c0056f7674fb1 file=cody/internal/contract/store.go range=23:35 lang=go exported=true byte_range=586:1029
+  sig=func OpenStore(dir string) (*Store, error)
+  doc=OpenStore creates (if needed) and opens a durable contract store rooted at\ndir.
+EDGES
+  ^defines=matrix/cody/internal/contract/store.go
+
+NODE id=matrix/cody/internal/contract.Status kind=type
+  digest=b3:82665d4cf18caa5d75096e652c797da378d993697a4a5d99cff7610496d8e949 file=cody/internal/contract/contract.go range=119:121 lang=go exported=true byte_range=5132:5284
+  sig=type Status string
+  doc=Status is the worker's honest self-assessment of the turn-in. It is an\ninput to the acceptance gate, never a substitute for it.
+EDGES
+  contains=matrix/cody/internal/contract.Status.valid
+  ^defines=matrix/cody/internal/contract/contract.go
+
+NODE id=matrix/cody/internal/contract.Status.valid kind=method
+  digest=b3:beac0d2b0f627eda2dbf9790c45c8759615c5e15d8eb95cdc93ddf32c10cf739 file=cody/internal/contract/contract.go range=135:141 lang=go exported=false byte_range=5791:5914
+  sig=func (s Status) valid() bool
+EDGES
+  ^contains=matrix/cody/internal/contract.Status
+  ^defines=matrix/cody/internal/contract/contract.go
+
+NODE id=matrix/cody/internal/contract.StatusBlocked kind=const
+  digest=b3:061f602396560bd63f8ee89b5cdbaabb60dd88ac8b8557f6382df240a58f6ae2 file=cody/internal/contract/contract.go range=130:132 lang=go exported=true byte_range=5615:5787
+  sig=contract.Status
+  doc=StatusBlocked means the worker could not proceed (missing precondition,\nambiguity, deterministic failure) and explains why in Gaps.
+EDGES
+  ^defines=matrix/cody/internal/contract/contract.go
+
+NODE id=matrix/cody/internal/contract.StatusDone kind=const
+  digest=b3:e72c478e8d9b14407dc98f52969d92b2eaafe6da9ca4dffa79338a87633b57ab file=cody/internal/contract/contract.go range=124:126 lang=go exported=true byte_range=5295:5463
+  sig=contract.Status
+  doc=StatusDone means the worker believes every acceptance criterion is met\nand verification is green. The orchestrator still re-verifies.
+EDGES
+  ^defines=matrix/cody/internal/contract/contract.go
+
+NODE id=matrix/cody/internal/contract.StatusPartial kind=const
+  digest=b3:ce820f758f8801e63b6eaf9cd13429d6bc3101c2a2baa54cf7e57e549b8b56b1 file=cody/internal/contract/contract.go range=127:129 lang=go exported=true byte_range=5465:5613
+  sig=contract.Status
+  doc=StatusPartial means real progress with honest gaps; partials surface as\npartials, never dressed up as done.
+EDGES
+  ^defines=matrix/cody/internal/contract/contract.go
+
+NODE id=matrix/cody/internal/contract.Store kind=type
+  digest=b3:48f1289f690aa72de549c0ce335f637945951cd40d03df12072391b37620802b file=cody/internal/contract/store.go range=15:21 lang=go exported=true byte_range=265:584
+  sig=type Store struct {\n	root string\n}
+  doc=Store persists sheets and turn-in reports as JSON files under a root\ndirectory (the plan directory on the volume). Writes are atomic\n(tmp + rename) so a crash never leaves a torn record; a crashed worker is\nreplaced by a fresh one dispatched from the same persisted sheet.
+EDGES
+  contains=matrix/cody/internal/contract.Store#root,matrix/cody/internal/contract.Store.ListSheets,matrix/cody/internal/contract.Store.LoadReports,matrix/cody/internal/contract.Store.LoadSheet,matrix/cody/internal/contract.Store.Root,matrix/cody/internal/contract.Store.SaveReport,matrix/cody/internal/contract.Store.SaveSheet
+  ^defines=matrix/cody/internal/contract/store.go
+
+NODE id=matrix/cody/internal/contract.Store#root kind=field
+  digest=b3:fdaa33f626d039ea03a12e8419d9d2308a03eff18b947f0ea04c88b0e58035d9 file=cody/internal/contract/store.go range=20:20 lang=go exported=false byte_range=571:582
+  sig=string
+EDGES
+  ^contains=matrix/cody/internal/contract.Store
+
+NODE id=matrix/cody/internal/contract.Store.ListSheets kind=method
+  digest=b3:92e879359c41a6334d616fb3d0e6be00e057ed02c170381e9d80f00f5caa95ad file=cody/internal/contract/store.go range=60:63 lang=go exported=true byte_range=1691:1860
+  sig=func (st *Store) ListSheets() ([]string, error)
+  doc=ListSheets returns the task ids of all persisted sheets, sorted.
+EDGES
+  ^contains=matrix/cody/internal/contract.Store
+  ^defines=matrix/cody/internal/contract/store.go
+
+NODE id=matrix/cody/internal/contract.Store.LoadReports kind=method
+  digest=b3:58ab1a4c3445b07975535e4503470fc4aeeb4a19139537568e632f7fb3479ccb file=cody/internal/contract/store.go range=76:98 lang=go exported=true byte_range=2274:2982
+  sig=func (st *Store) LoadReports(taskID string) ([]*TurnInReport, error)
+  doc=LoadReports returns every persisted report for a task id in attempt order.
+EDGES
+  ^contains=matrix/cody/internal/contract.Store
+  ^defines=matrix/cody/internal/contract/store.go
+
+NODE id=matrix/cody/internal/contract.Store.LoadSheet kind=method
+  digest=b3:5eeda4654300b143f88da3b48336393be38043773fb7f718aad85f1b56ec57bb file=cody/internal/contract/store.go range=48:58 lang=go exported=true byte_range=1363:1689
+  sig=func (st *Store) LoadSheet(taskID string) (*TaskSheet, error)
+  doc=LoadSheet reads the persisted sheet for a task id.
+EDGES
+  ^contains=matrix/cody/internal/contract.Store
+  ^defines=matrix/cody/internal/contract/store.go
+
+NODE id=matrix/cody/internal/contract.Store.Root kind=method
+  digest=b3:7edd85b600910a804b394f850dc495c65d15fd203674cc45ab1b63d50157727c file=cody/internal/contract/store.go range=37:38 lang=go exported=true byte_range=1031:1124
+  sig=func (st *Store) Root() string
+  doc=Root reports the store's root directory.
+EDGES
+  ^contains=matrix/cody/internal/contract.Store
+  ^defines=matrix/cody/internal/contract/store.go
+
+NODE id=matrix/cody/internal/contract.Store.SaveReport kind=method
+  digest=b3:5faa71ce3cb33d03d5eb95876e2cef26669c8635f6e7541422941d1f19904566 file=cody/internal/contract/store.go range=65:74 lang=go exported=true byte_range=1862:2272
+  sig=func (st *Store) SaveReport(r *TurnInReport) error
+  doc=SaveReport validates and durably persists a turn-in report. Reports are\nkeyed by task id + attempt so a re-dispatch never overwrites the history it\nwas rejected over.
+EDGES
+  ^contains=matrix/cody/internal/contract.Store
+  ^defines=matrix/cody/internal/contract/store.go
+
+NODE id=matrix/cody/internal/contract.Store.SaveSheet kind=method
+  digest=b3:21a9941c46625916a2e245acb570659d30979c85a76e17c1e73bb6fb2e6b4919 file=cody/internal/contract/store.go range=40:46 lang=go exported=true byte_range=1126:1361
+  sig=func (st *Store) SaveSheet(s *TaskSheet) error
+  doc=SaveSheet validates and durably persists a task sheet.
+EDGES
+  ^contains=matrix/cody/internal/contract.Store
+  ^defines=matrix/cody/internal/contract/store.go
+
+NODE id=matrix/cody/internal/contract.TaskSheet kind=type
+  digest=b3:a8ca9ef3331165617ccc231e89bb735b530d06713da692729e089795c3d002ff file=cody/internal/contract/contract.go range=19:49 lang=go exported=true byte_range=735:2349
+  sig=type TaskSheet struct {\n	TaskID	string	`json:"task_id"`\n	Title	string	`json:"title"`\n	// Goal states what done means in one or two sentences.\n	Goal	string	`json:"goal"`\n	// Acceptance lists the testable acceptance criteria the turn-in is\n	// adjudicated against.\n	Acceptance	[]string	`json:"acceptance"`\n	Grounding	Grounding	`json:"grounding"`\n	Constraints	Constraints	`json:"constraints"`\n	Verify		Verify		`json:"verify"`\n	Deliverable	Deliverable	`json:"deliverable"`\n	// Attempt is 1 for the first dispatch and increments on re-dispatch.\n	Attempt	int	`json:"attempt,omitempty"`\n	// Feedback carries the orchestrator's concrete rejection feedback on a\n	// re-dispatch; empty on the first attempt.\n	Feedback	string	`json:"feedback,omitempty"`\n	// Steers carries mid-run human direction the orchestrator folded in at a\n	// boundary — a stop-and-ask answer or a live steer. Every sheet authored\n	// after the direction lands carries it so a fresh-context worker honors it\n	// (req 12.2). Ordered oldest-first; empty when the run has no direction.\n	Steers	[]string	`json:"steers,omitempty"`\n	// UITask marks a sheet whose deliverable is user-facing UI. The gate holds\n	// UI turn-ins to a higher bar: they must carry a screenshot artifact\n	// (req 13.2) and, when a Design Language Record is in force, must not drift\n	// from it (req 9.3).\n	UITask	bool	`json:"ui_task,omitempty"`\n}
+  doc=TaskSheet is the self-contained delegation contract for exactly one task.\nIt carries everything a fresh-context worker needs: what done means, how\ndone is proven, where to look, and what must not be touched.
+EDGES
+  contains=matrix/cody/internal/contract.TaskSheet#Acceptance,matrix/cody/internal/contract.TaskSheet#Attempt,matrix/cody/internal/contract.TaskSheet#Constraints,matrix/cody/internal/contract.TaskSheet#Deliverable,matrix/cody/internal/contract.TaskSheet#Feedback,matrix/cody/internal/contract.TaskSheet#Goal,matrix/cody/internal/contract.TaskSheet#Grounding,matrix/cody/internal/contract.TaskSheet#Steers,matrix/cody/internal/contract.TaskSheet#TaskID,matrix/cody/internal/contract.TaskSheet#Title,matrix/cody/internal/contract.TaskSheet#UITask,matrix/cody/internal/contract.TaskSheet#Verify,matrix/cody/internal/contract.TaskSheet.Validate
+  ^defines=matrix/cody/internal/contract/contract.go
+
+NODE id=matrix/cody/internal/contract.TaskSheet#Acceptance kind=field
+  digest=b3:314dba3e67e94932b97ed73f75f1737b3e86376ca62c3d31e22d929321b4ce13 file=cody/internal/contract/contract.go range=27:29 lang=go exported=true byte_range=1123:1260
+  sig=[]string
+  doc=Acceptance lists the testable acceptance criteria the turn-in is\nadjudicated against.
+EDGES
+  ^contains=matrix/cody/internal/contract.TaskSheet
+
+NODE id=matrix/cody/internal/contract.TaskSheet#Attempt kind=field
+  digest=b3:697550f9ca1c5c329bc33c778ddd7eca49e64d1394224e52d6a5175d00aeba79 file=cody/internal/contract/contract.go range=34:35 lang=go exported=true byte_range=1439:1548
+  sig=int
+  doc=Attempt is 1 for the first dispatch and increments on re-dispatch.
+EDGES
+  ^contains=matrix/cody/internal/contract.TaskSheet
+
+NODE id=matrix/cody/internal/contract.TaskSheet#Constraints kind=field
+  digest=b3:beada3d3da95d18a13df3e2d583849723b0488114d68b7c643d4f2fc3405effa file=cody/internal/contract/contract.go range=31:31 lang=go exported=true byte_range=1306:1350
+  sig=contract.Constraints
+EDGES
+  ^contains=matrix/cody/internal/contract.TaskSheet
+
+NODE id=matrix/cody/internal/contract.TaskSheet#Deliverable kind=field
+  digest=b3:e69d6d7fa5c9fbe0ccb4603512e8909724c681f926e70539ca31a540fc407ef8 file=cody/internal/contract/contract.go range=33:33 lang=go exported=true byte_range=1393:1437
+  sig=contract.Deliverable
+EDGES
+  ^contains=matrix/cody/internal/contract.TaskSheet
+
+NODE id=matrix/cody/internal/contract.TaskSheet#Feedback kind=field
+  digest=b3:d80ce6f794c6712ce6180b5de6f4370d965a262b239ce7d257e56a8aea2d06da file=cody/internal/contract/contract.go range=36:38 lang=go exported=true byte_range=1550:1711
+  sig=string
+  doc=Feedback carries the orchestrator's concrete rejection feedback on a\nre-dispatch; empty on the first attempt.
+EDGES
+  ^contains=matrix/cody/internal/contract.TaskSheet
+
+NODE id=matrix/cody/internal/contract.TaskSheet#Goal kind=field
+  digest=b3:e79bb6cb23d053a10b8e7da7157740e5ecf619abc78ddb4f90f874af8d154f02 file=cody/internal/contract/contract.go range=25:26 lang=go exported=true byte_range=1039:1121
+  sig=string
+  doc=Goal states what done means in one or two sentences.
+EDGES
+  ^contains=matrix/cody/internal/contract.TaskSheet
+
+NODE id=matrix/cody/internal/contract.TaskSheet#Grounding kind=field
+  digest=b3:5532545e16f50ed23d5e72fe1d004e5065d2f46a1a20a168a39744cf47a1b360 file=cody/internal/contract/contract.go range=30:30 lang=go exported=true byte_range=1262:1304
+  sig=contract.Grounding
+EDGES
+  ^contains=matrix/cody/internal/contract.TaskSheet
+
+NODE id=matrix/cody/internal/contract.TaskSheet#Steers kind=field
+  digest=b3:247bb3884c544e33485ef4140e80858d04f8d709239ca06a6ee04928f5f3b112 file=cody/internal/contract/contract.go range=39:43 lang=go exported=true byte_range=1713:2058
+  sig=[]string
+  doc=Steers carries mid-run human direction the orchestrator folded in at a\nboundary — a stop-and-ask answer or a live steer. Every sheet authored\nafter the direction lands carries it so a fresh-context worker honors it\n(req 12.2). Ordered oldest-first; empty when the run has no direction.
+EDGES
+  ^contains=matrix/cody/internal/contract.TaskSheet
+
+NODE id=matrix/cody/internal/contract.TaskSheet#TaskID kind=field
+  digest=b3:eac27147573c9e9ee92573e1c3baf439bd8f3b85d172e8df05e497ca7bea5e4d file=cody/internal/contract/contract.go range=23:23 lang=go exported=true byte_range=977:1007
+  sig=string
+EDGES
+  ^contains=matrix/cody/internal/contract.TaskSheet
+
+NODE id=matrix/cody/internal/contract.TaskSheet#Title kind=field
+  digest=b3:170fc0817bd2c34cab05321068a6799fa0e6912251a18ed77889ae5757c9e474 file=cody/internal/contract/contract.go range=24:24 lang=go exported=true byte_range=1009:1037
+  sig=string
+EDGES
+  ^contains=matrix/cody/internal/contract.TaskSheet
+
+NODE id=matrix/cody/internal/contract.TaskSheet#UITask kind=field
+  digest=b3:9dc881cc16eda7f9da4dc51438fff248d1cf34d7c263dfbdfdf12717324aea5c file=cody/internal/contract/contract.go range=44:48 lang=go exported=true byte_range=2060:2347
+  sig=bool
+  doc=UITask marks a sheet whose deliverable is user-facing UI. The gate holds\nUI turn-ins to a higher bar: they must carry a screenshot artifact\n(req 13.2) and, when a Design Language Record is in force, must not drift\nfrom it (req 9.3).
+EDGES
+  ^contains=matrix/cody/internal/contract.TaskSheet
+
+NODE id=matrix/cody/internal/contract.TaskSheet#Verify kind=field
+  digest=b3:9d27d61b16df323595ccb3577698304c81f8b147dae217617818bbf2ce829c22 file=cody/internal/contract/contract.go range=32:32 lang=go exported=true byte_range=1352:1391
+  sig=contract.Verify
+EDGES
+  ^contains=matrix/cody/internal/contract.TaskSheet
+
+NODE id=matrix/cody/internal/contract.TaskSheet.Validate kind=method
+  digest=b3:5249441b5ba659c7ee1454ef7af1dc94e4fdea04aa677aba4cbc88beeb7f7cc6 file=cody/internal/contract/contract.go range=87:117 lang=go exported=true byte_range=3911:5130
+  sig=func (s *TaskSheet) Validate() error
+  doc=Validate enforces the self-containment bar: a sheet missing its goal,\nacceptance criteria, or verification commands cannot be executed by a\nfresh-context worker and is rejected before dispatch.
+EDGES
+  ^contains=matrix/cody/internal/contract.TaskSheet
+  ^defines=matrix/cody/internal/contract/contract.go
+
+NODE id=matrix/cody/internal/contract.TurnInReport kind=type
+  digest=b3:5c0da0279f77de8578252b2a3a598350f0c7ac0caef737c19fa67820c05d217d file=cody/internal/contract/contract.go range=186:202 lang=go exported=true byte_range=7645:8480
+  sig=type TurnInReport struct {\n	TaskID		string		`json:"task_id"`\n	Status		Status		`json:"status"`\n	Summary		string		`json:"summary,omitempty"`\n	Changes		[]Change	`json:"changes,omitempty"`\n	Verification	[]Evidence	`json:"verification,omitempty"`\n	Gaps		[]string	`json:"gaps,omitempty"`\n	Assumptions	[]string	`json:"assumptions,omitempty"`\n	// Attempt echoes the sheet attempt this report answers.\n	Attempt	int	`json:"attempt,omitempty"`\n	// Usage is the worker's LLM token spend for this attempt (engine-recorded).\n	Usage	Usage	`json:"usage,omitempty"`\n}
+  doc=TurnInReport is the worker's structured turn-in: status, what changed and\nwhy, real verification evidence, and honest gaps/assumptions. It is the ONLY\nartifact of the worker that survives acceptance — the transcript is\ndiscarded.
+EDGES
+  contains=matrix/cody/internal/contract.TurnInReport#Assumptions,matrix/cody/internal/contract.TurnInReport#Attempt,matrix/cody/internal/contract.TurnInReport#Changes,matrix/cody/internal/contract.TurnInReport#Gaps,matrix/cody/internal/contract.TurnInReport#Status,matrix/cody/internal/contract.TurnInReport#Summary,matrix/cody/internal/contract.TurnInReport#TaskID,matrix/cody/internal/contract.TurnInReport#Usage,matrix/cody/internal/contract.TurnInReport#Verification,matrix/cody/internal/contract.TurnInReport.AllGreen,matrix/cody/internal/contract.TurnInReport.Validate
+  ^defines=matrix/cody/internal/contract/contract.go
+
+NODE id=matrix/cody/internal/contract.TurnInReport#Assumptions kind=field
+  digest=b3:18f827dd8b22fb03dcccbf93a77acdeb6be642541f247fbc0a7eccf2b6c317f7 file=cody/internal/contract/contract.go range=197:197 lang=go exported=true byte_range=8210:8264
+  sig=[]string
+EDGES
+  ^contains=matrix/cody/internal/contract.TurnInReport
+
+NODE id=matrix/cody/internal/contract.TurnInReport#Attempt kind=field
+  digest=b3:8c0dc22d8d885c92e2c4e2dd3caa43f37df584b52d086372966ca566ebb06d4e file=cody/internal/contract/contract.go range=198:199 lang=go exported=true byte_range=8266:8362
+  sig=int
+  doc=Attempt echoes the sheet attempt this report answers.
+EDGES
+  ^contains=matrix/cody/internal/contract.TurnInReport
+
+NODE id=matrix/cody/internal/contract.TurnInReport#Changes kind=field
+  digest=b3:7559663cfdba70c1dc0c6e660cea21dc5ddebe3ee754ed93ba21d043902ebf49 file=cody/internal/contract/contract.go range=194:194 lang=go exported=true byte_range=8052:8102
+  sig=[]contract.Change
+EDGES
+  ^contains=matrix/cody/internal/contract.TurnInReport
+
+NODE id=matrix/cody/internal/contract.TurnInReport#Gaps kind=field
+  digest=b3:9ccdc147381ba3617e2b8573dec56300027ccf24c59113e12d0cf1ed87b3e583 file=cody/internal/contract/contract.go range=196:196 lang=go exported=true byte_range=8161:8208
+  sig=[]string
+EDGES
+  ^contains=matrix/cody/internal/contract.TurnInReport
+
+NODE id=matrix/cody/internal/contract.TurnInReport#Status kind=field
+  digest=b3:1a78bfed0ed5deb4caec4293ea801993f7b32966a3071635cb5e19f6ca8581cf file=cody/internal/contract/contract.go range=192:192 lang=go exported=true byte_range=7959:7998
+  sig=contract.Status
+EDGES
+  ^contains=matrix/cody/internal/contract.TurnInReport
+
+NODE id=matrix/cody/internal/contract.TurnInReport#Summary kind=field
+  digest=b3:afb126f40fb8bd256d7a32b1308156b5457788ac789efa6b294df9154624c600 file=cody/internal/contract/contract.go range=193:193 lang=go exported=true byte_range=8000:8050
+  sig=string
+EDGES
+  ^contains=matrix/cody/internal/contract.TurnInReport
+
+NODE id=matrix/cody/internal/contract.TurnInReport#TaskID kind=field
+  digest=b3:57db218930c5e5382c6665ad41461f9e5b70989a40e728c8a0debc6d5514a837 file=cody/internal/contract/contract.go range=191:191 lang=go exported=true byte_range=7917:7957
+  sig=string
+EDGES
+  ^contains=matrix/cody/internal/contract.TurnInReport
+
+NODE id=matrix/cody/internal/contract.TurnInReport#Usage kind=field
+  digest=b3:dd3fba32efe847cb06227695f00b9b62cfe27d4189c5fa22afb8a547b1a29782 file=cody/internal/contract/contract.go range=200:201 lang=go exported=true byte_range=8364:8478
+  sig=contract.Usage
+  doc=Usage is the worker's LLM token spend for this attempt (engine-recorded).
+EDGES
+  ^contains=matrix/cody/internal/contract.TurnInReport
+
+NODE id=matrix/cody/internal/contract.TurnInReport#Verification kind=field
+  digest=b3:da84c332315152a3f1857fe06129586153ad37cafd6b4f8e9806dc01df6f4681 file=cody/internal/contract/contract.go range=195:195 lang=go exported=true byte_range=8104:8159
+  sig=[]contract.Evidence
+EDGES
+  ^contains=matrix/cody/internal/contract.TurnInReport
+
+NODE id=matrix/cody/internal/contract.TurnInReport.AllGreen kind=method
+  digest=b3:75dbfa351a960db18a5f6bdde2da1bd676923aef0fd88833b507adbb850952cf file=cody/internal/contract/contract.go range=234:246 lang=go exported=true byte_range=9648:9978
+  sig=func (r *TurnInReport) AllGreen() bool
+  doc=AllGreen reports whether every verification evidence entry passed. An empty\nevidence set is NOT green — absence of failure is not success.
+EDGES
+  ^contains=matrix/cody/internal/contract.TurnInReport
+  ^defines=matrix/cody/internal/contract/contract.go
+
+NODE id=matrix/cody/internal/contract.TurnInReport.Validate kind=method
+  digest=b3:aa2e862002def9ef343834db0890e025b5cb7d08818d8e05518daf7a4cd4cd06 file=cody/internal/contract/contract.go range=204:232 lang=go exported=true byte_range=8482:9646
+  sig=func (r *TurnInReport) Validate() error
+  doc=Validate enforces the report contract: a known status, a matching task id,\nand — for a done claim — verification evidence to adjudicate. A done claim\nwith red evidence is rejected here before it ever reaches the gate.
+EDGES
+  ^contains=matrix/cody/internal/contract.TurnInReport
+  ^defines=matrix/cody/internal/contract/contract.go
+
+NODE id=matrix/cody/internal/contract.Usage kind=type
+  digest=b3:a29daf99a24301083709e5f27f505a444e9edd8a7f8ee6e21d6940021016b76d file=cody/internal/contract/contract.go range=143:150 lang=go exported=true byte_range=5916:6303
+  sig=type Usage struct {\n	PromptTokens		int	`json:"prompt_tokens,omitempty"`\n	CompletionTokens	int	`json:"completion_tokens,omitempty"`\n	TotalTokens		int	`json:"total_tokens,omitempty"`\n}
+  doc=Usage is a worker's LLM token accounting for one task attempt — the run\nledger accumulates it per run so the metered spend is visible on the\ndeliverable, not just in the gateway's books.
+EDGES
+  contains=matrix/cody/internal/contract.Usage#CompletionTokens,matrix/cody/internal/contract.Usage#PromptTokens,matrix/cody/internal/contract.Usage#TotalTokens,matrix/cody/internal/contract.Usage.Add
+  ^defines=matrix/cody/internal/contract/contract.go
+
+NODE id=matrix/cody/internal/contract.Usage#CompletionTokens kind=field
+  digest=b3:71bac44f43862e4d11d904833ff6073eea39ae0ec717f745d17043a790448a68 file=cody/internal/contract/contract.go range=148:148 lang=go exported=true byte_range=6190:6247
+  sig=int
+EDGES
+  ^contains=matrix/cody/internal/contract.Usage
+
+NODE id=matrix/cody/internal/contract.Usage#PromptTokens kind=field
+  digest=b3:9edc2766c7cbf7d687dd1b654b26c3fe697507c6f85e58424d64b6c02b3367d9 file=cody/internal/contract/contract.go range=147:147 lang=go exported=true byte_range=6135:6188
+  sig=int
+EDGES
+  ^contains=matrix/cody/internal/contract.Usage
+
+NODE id=matrix/cody/internal/contract.Usage#TotalTokens kind=field
+  digest=b3:0ab152675452099c0a94d55a948e210687ba76209a94f3b7c47af6405500fc7e file=cody/internal/contract/contract.go range=149:149 lang=go exported=true byte_range=6249:6301
+  sig=int
+EDGES
+  ^contains=matrix/cody/internal/contract.Usage
+
+NODE id=matrix/cody/internal/contract.Usage.Add kind=method
+  digest=b3:b05168fbf93131cd3eba40842e07a03c0db63f91e9abeddbee0f96fbce023808 file=cody/internal/contract/contract.go range=152:157 lang=go exported=true byte_range=6305:6492
+  sig=func (u *Usage) Add(o Usage)
+  doc=Add folds another accounting into this one.
+EDGES
+  ^contains=matrix/cody/internal/contract.Usage
+  ^defines=matrix/cody/internal/contract/contract.go
+
+NODE id=matrix/cody/internal/contract.Verify kind=type
+  digest=b3:0cb39a5767b81250da41d5c500e94ee5c0bbdb61053d51fbf12c4bcf70b53073 file=cody/internal/contract/contract.go range=71:78 lang=go exported=true byte_range=3282:3646
+  sig=type Verify struct {\n	Commands	[]string	`json:"commands"`\n	MustBeGreen	bool		`json:"must_be_green"`\n	TimeoutSecs	int		`json:"timeout_secs,omitempty"`\n	WorkingDir	string		`json:"working_dir,omitempty"`\n}
+  doc=Verify lists the verification commands that must be green for the task to\nbe accepted. The orchestrator independently re-runs these on turn-in.
+EDGES
+  contains=matrix/cody/internal/contract.Verify#Commands,matrix/cody/internal/contract.Verify#MustBeGreen,matrix/cody/internal/contract.Verify#TimeoutSecs,matrix/cody/internal/contract.Verify#WorkingDir
+  ^defines=matrix/cody/internal/contract/contract.go
+
+NODE id=matrix/cody/internal/contract.Verify#Commands kind=field
+  digest=b3:39b81425ce4fc12f481cb39e1343da31268d685616be249b2968ef82a4759691 file=cody/internal/contract/contract.go range=74:74 lang=go exported=true byte_range=3454:3492
+  sig=[]string
+EDGES
+  ^contains=matrix/cody/internal/contract.Verify
+
+NODE id=matrix/cody/internal/contract.Verify#MustBeGreen kind=field
+  digest=b3:34ce57a6c394298716d00abe240a284ceea397d6351b3697df49d4822e69a884 file=cody/internal/contract/contract.go range=75:75 lang=go exported=true byte_range=3494:3537
+  sig=bool
+EDGES
+  ^contains=matrix/cody/internal/contract.Verify
+
+NODE id=matrix/cody/internal/contract.Verify#TimeoutSecs kind=field
+  digest=b3:c1c62c77dad91aee3104c2a77bd1b5a634ef68b3937d4c4552a5dff554ce9267 file=cody/internal/contract/contract.go range=76:76 lang=go exported=true byte_range=3539:3591
+  sig=int
+EDGES
+  ^contains=matrix/cody/internal/contract.Verify
+
+NODE id=matrix/cody/internal/contract.Verify#WorkingDir kind=field
+  digest=b3:15d24ebd55b710a790bea3eafcbce3383e572e7e1b44049854e8a58a210093c4 file=cody/internal/contract/contract.go range=77:77 lang=go exported=true byte_range=3593:3644
+  sig=string
+EDGES
+  ^contains=matrix/cody/internal/contract.Verify
+
+NODE id=matrix/cody/internal/contract.errBadID kind=var
+  digest=b3:7cd5a97ebe7fd5df01f66664e0781fe57c1e2e33a416946977a8c03880fabc76 file=cody/internal/contract/contract.go range=248:248 lang=go exported=false byte_range=9984:10064
+  sig=error
+EDGES
+  ^defines=matrix/cody/internal/contract/contract.go
+
+NODE id=matrix/cody/internal/contract.listIDs kind=func
+  digest=b3:fd97fd9e58abecc9ba4a462750a74ea21d64ec92c7583d3cfce1efea949db23e file=cody/internal/contract/store.go range=100:114 lang=go exported=false byte_range=2984:3320
+  sig=func listIDs(dir string) ([]string, error)
+EDGES
+  ^defines=matrix/cody/internal/contract/store.go
+
+NODE id=matrix/cody/internal/contract.readJSON kind=func
+  digest=b3:7ed8618ab6d37546c38b9239321324319d9b3ea9d1d22d97531e52c2a5daf4de file=cody/internal/contract/store.go range=128:134 lang=go exported=false byte_range=3592:3740
+  sig=func readJSON(path string, v interface{}) error
+EDGES
+  ^defines=matrix/cody/internal/contract/store.go
+
+NODE id=matrix/cody/internal/contract.validateID kind=func
+  digest=b3:a5a854fb460169246b4ff5328daef7ee68cbeee74c26eb058d0961951ad21325 file=cody/internal/contract/contract.go range=250:260 lang=go exported=false byte_range=10066:10391
+  sig=func validateID(id string) error
+  doc=validateID keeps task ids safe as file names for the durable store.
+EDGES
+  ^defines=matrix/cody/internal/contract/contract.go
+
+NODE id=matrix/cody/internal/contract.writeJSON kind=func
+  digest=b3:728622bd433d35ce4afce009831a0045ac2c23cd3662e6ed080eb9bf31ca6457 file=cody/internal/contract/store.go range=116:126 lang=go exported=false byte_range=3322:3590
+  sig=func writeJSON(path string, v interface{}) error
+EDGES
+  ^defines=matrix/cody/internal/contract/store.go
+
+NODE id=matrix/cody/internal/contract/contract.go kind=file
+  digest=b3:31933d75300af0146fc18373ee4db2018c9588667ec513f2fa1330e97270d599 file=cody/internal/contract/contract.go range=1:260 lang=go exported=true
+EDGES
+  defines=matrix/cody/internal/contract.Change,matrix/cody/internal/contract.Constraints,matrix/cody/internal/contract.Deliverable,matrix/cody/internal/contract.Evidence,matrix/cody/internal/contract.Evidence.Green,matrix/cody/internal/contract.Grounding,matrix/cody/internal/contract.Status,matrix/cody/internal/contract.Status.valid,matrix/cody/internal/contract.StatusBlocked,matrix/cody/internal/contract.StatusDone,matrix/cody/internal/contract.StatusPartial,matrix/cody/internal/contract.TaskSheet,matrix/cody/internal/contract.TaskSheet.Validate,matrix/cody/internal/contract.TurnInReport,matrix/cody/internal/contract.TurnInReport.AllGreen,matrix/cody/internal/contract.TurnInReport.Validate,matrix/cody/internal/contract.Usage,matrix/cody/internal/contract.Usage.Add,matrix/cody/internal/contract.Verify,matrix/cody/internal/contract.errBadID,matrix/cody/internal/contract.validateID
+  ^contains=matrix/cody/internal/contract
+
+NODE id=matrix/cody/internal/contract/store.go kind=file
+  digest=b3:e1d56d976b439753e5937bd85d92b32a8f7343910cb7b577ead6e6831b63bd1b file=cody/internal/contract/store.go range=1:134 lang=go exported=true
+EDGES
+  defines=matrix/cody/internal/contract.OpenStore,matrix/cody/internal/contract.Store,matrix/cody/internal/contract.Store.ListSheets,matrix/cody/internal/contract.Store.LoadReports,matrix/cody/internal/contract.Store.LoadSheet,matrix/cody/internal/contract.Store.Root,matrix/cody/internal/contract.Store.SaveReport,matrix/cody/internal/contract.Store.SaveSheet,matrix/cody/internal/contract.listIDs,matrix/cody/internal/contract.readJSON,matrix/cody/internal/contract.writeJSON
+  ^contains=matrix/cody/internal/contract

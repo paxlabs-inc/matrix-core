@@ -1,0 +1,115 @@
+# GENERATED gen=codegraph do-not-edit merkle=b3:2dc69ec8dbbe0231373534486cf12ff6fdb0eaad7b2dfdcbc4d73453c8542ee8
+
+NODE id=matrix/gateway/internal/auth kind=package
+  digest=b3:2fb1c8dd1ea78d747cf0c58f652e0b510ef91e09cd03a5363d80b813a36e4de0 file=gateway/internal/auth range=0:0 lang=go exported=true
+EDGES
+  contains=matrix/gateway/internal/auth/auth.go
+  ^contains=mod:matrix/gateway
+
+NODE id=matrix/gateway/internal/auth.Authenticator kind=type
+  digest=b3:087759848286d44b6df44242ba3acbf0b8585fecb352bde7c670c44e90dd8c3d file=gateway/internal/auth/auth.go range=25:38 lang=go exported=true byte_range=799:1423
+  sig=type Authenticator struct {\n	// token is the expected MATRIX_GATEWAY_TOKEN value. Compared with\n	// constant-time equality to avoid leaking length-class via timing.\n	token	string\n\n	// allowEmptyToken keeps local-dev posture viable: when true AND\n	// token == "", every request is accepted. Production callers MUST\n	// construct with allowEmptyToken=false (the default) so a misconfig\n	// can never silently disable auth.\n	allowEmptyToken	bool\n}
+  doc=Authenticator validates the gateway shared bearer token and the\nX-Matrix-Actor-DID actor header. Construct once per process via\nNewAuthenticator; safe for concurrent use.
+EDGES
+  contains=matrix/gateway/internal/auth.Authenticator#allowEmptyToken,matrix/gateway/internal/auth.Authenticator#token,matrix/gateway/internal/auth.Authenticator.Verify,matrix/gateway/internal/auth.Authenticator.VerifySignature,matrix/gateway/internal/auth.Authenticator.checkBearer
+  ^defines=matrix/gateway/internal/auth/auth.go
+
+NODE id=matrix/gateway/internal/auth.Authenticator#allowEmptyToken kind=field
+  digest=b3:103136e488113c5c445bb4c26e94ff54a0462582afc24896c41c0cacb1334474 file=gateway/internal/auth/auth.go range=33:37 lang=go exported=false byte_range=1160:1421
+  sig=bool
+  doc=allowEmptyToken keeps local-dev posture viable: when true AND\ntoken == "", every request is accepted. Production callers MUST\nconstruct with allowEmptyToken=false (the default) so a misconfig\ncan never silently disable auth.
+EDGES
+  ^contains=matrix/gateway/internal/auth.Authenticator
+
+NODE id=matrix/gateway/internal/auth.Authenticator#token kind=field
+  digest=b3:e652820b469ae494ac0c31e8b4def1683b59970c6810c3affe47296bb66c28f2 file=gateway/internal/auth/auth.go range=29:31 lang=go exported=false byte_range=1008:1157
+  sig=string
+  doc=token is the expected MATRIX_GATEWAY_TOKEN value. Compared with\nconstant-time equality to avoid leaking length-class via timing.
+EDGES
+  ^contains=matrix/gateway/internal/auth.Authenticator
+
+NODE id=matrix/gateway/internal/auth.Authenticator.Verify kind=method
+  digest=b3:814a5fdb81cd5708944d1007307538ccc8b0780ddd4b419afb2ee6c752cc7d63 file=gateway/internal/auth/auth.go range=77:98 lang=go exported=true byte_range=2979:3739
+  sig=func (a *Authenticator) Verify(r *http.Request) (actor string, err error)
+  doc=Verify checks the Authorization header against the configured token\nand the actor header for presence. Returns the actor DID on success.\n\nReturns one of: ErrUnauthorized, ErrMissingActor, ErrMalformedActor,\nor nil. Callers map these to HTTP 401 / 400 themselves so the\npackage stays HTTP-framework agnostic.
+EDGES
+  ^contains=matrix/gateway/internal/auth.Authenticator
+  ^defines=matrix/gateway/internal/auth/auth.go
+
+NODE id=matrix/gateway/internal/auth.Authenticator.VerifySignature kind=method
+  digest=b3:7d850a719ced7b1a4fb0f8ca1b6095d31df2b007c2eb7039cc7116046347fda6 file=gateway/internal/auth/auth.go range=100:118 lang=go exported=true byte_range=3741:4671
+  sig=func (a *Authenticator) VerifySignature(_ *http.Request, _ string) error
+  doc=VerifySignature is a placeholder for future ed25519 wallet\nverification across the canonical request body. The plan §5.15\nreserves this surface; v1 returns nil unconditionally so wiring\ncan land without forcing daemon-side signing in the same change.\n\nWhen implemented, it will:\n 1. Read Authorization-Signature: ed25519=<base58> from the request\n 2. Resolve the wallet pubkey for the actor DID (from a cache\n    populated by /wallet/keys, or via a future on-chain lookup)\n 3. Recompute canonical body bytes and verify the signature\n\nUntil then, callers should still invoke it so the boundary check\nis wired in advance.
+EDGES
+  ^contains=matrix/gateway/internal/auth.Authenticator
+  ^defines=matrix/gateway/internal/auth/auth.go
+
+NODE id=matrix/gateway/internal/auth.Authenticator.checkBearer kind=method
+  digest=b3:c8a405a35e5eb2ee3367878600fe6f0976b8fb966147eb8de46c8dba66e5b04f file=gateway/internal/auth/auth.go range=120:134 lang=go exported=false byte_range=4673:5078
+  sig=func (a *Authenticator) checkBearer(header string) bool
+EDGES
+  ^contains=matrix/gateway/internal/auth.Authenticator
+  ^defines=matrix/gateway/internal/auth/auth.go
+
+NODE id=matrix/gateway/internal/auth.ErrMalformedActor kind=var
+  digest=b3:81413d343ba5411f8b0660fab03d2a9041b0c2853a1b72c4f2dffabcfbfa67db file=gateway/internal/auth/auth.go range=71:75 lang=go exported=true byte_range=2621:2977
+  sig=error
+  doc=ErrMalformedActor is returned when the actor header is present but\nnot a recognizable DID-shape ("did:" prefix, single colon-separated\ntriple). The check is deliberately permissive — any string starting\nwith "did:" passes; deeper validation is the wallet's job.
+EDGES
+  ^defines=matrix/gateway/internal/auth/auth.go
+
+NODE id=matrix/gateway/internal/auth.ErrMissingActor kind=var
+  digest=b3:d91ac56bc30514b036b196a3b7d68d6fb8c94b8ace88dd76f02c6201aa2bf8d4 file=gateway/internal/auth/auth.go range=64:65 lang=go exported=true byte_range=2278:2426
+  sig=error
+  doc=ErrMissingActor is returned when X-Matrix-Actor-DID is empty.
+EDGES
+  ^defines=matrix/gateway/internal/auth/auth.go
+
+NODE id=matrix/gateway/internal/auth.ErrUnauthorized kind=var
+  digest=b3:c8f1e999cd2ac25dd0f1dcd68011d18a48d5f5796e505c550aa28f4ec3e6653d file=gateway/internal/auth/auth.go range=67:69 lang=go exported=true byte_range=2428:2619
+  sig=error
+  doc=ErrUnauthorized is returned when the bearer token is missing or\nfails constant-time comparison against the expected token.
+EDGES
+  ^defines=matrix/gateway/internal/auth/auth.go
+
+NODE id=matrix/gateway/internal/auth.New kind=func
+  digest=b3:3338c06987bb81256e7620fa960345b7ace746c09dac944f49ffa7a1abffaacb file=gateway/internal/auth/auth.go range=53:62 lang=go exported=true byte_range=1926:2276
+  sig=func New(opts Options) (*Authenticator, error)
+  doc=New constructs a new Authenticator from the supplied options.
+EDGES
+  ^defines=matrix/gateway/internal/auth/auth.go
+
+NODE id=matrix/gateway/internal/auth.Options kind=type
+  digest=b3:c31514aafc25360458770d3609f6e06bb19e9b9349732556504f421e774df682 file=gateway/internal/auth/auth.go range=40:51 lang=go exported=true byte_range=1425:1924
+  sig=type Options struct {\n	// Token is the shared secret expected in Authorization: Bearer ...\n	// Empty + AllowEmptyToken=true → auth disabled (local-dev only).\n	Token	string\n\n	// AllowEmptyToken explicitly opts into "no auth" when Token == "".\n	// Defaults to false: an empty Token without this flag returns an\n	// error from NewAuthenticator so misconfigured production deploys\n	// fail fast instead of silently accepting traffic.\n	AllowEmptyToken	bool\n}
+  doc=Options controls Authenticator behavior.
+EDGES
+  contains=matrix/gateway/internal/auth.Options#AllowEmptyToken,matrix/gateway/internal/auth.Options#Token
+  ^defines=matrix/gateway/internal/auth/auth.go
+
+NODE id=matrix/gateway/internal/auth.Options#AllowEmptyToken kind=field
+  digest=b3:7f3b6f4f1bec4567351589a52fe295d8f4cc43b1af1a836be072d5fed78ff673 file=gateway/internal/auth/auth.go range=46:50 lang=go exported=true byte_range=1645:1922
+  sig=bool
+  doc=AllowEmptyToken explicitly opts into "no auth" when Token == "".\nDefaults to false: an empty Token without this flag returns an\nerror from NewAuthenticator so misconfigured production deploys\nfail fast instead of silently accepting traffic.
+EDGES
+  ^contains=matrix/gateway/internal/auth.Options
+
+NODE id=matrix/gateway/internal/auth.Options#Token kind=field
+  digest=b3:779a54032a67f21d470603c838e2e5e08a17a0cce2a10162de0d036cd3640e5b file=gateway/internal/auth/auth.go range=42:44 lang=go exported=true byte_range=1492:1642
+  sig=string
+  doc=Token is the shared secret expected in Authorization: Bearer ...\nEmpty + AllowEmptyToken=true → auth disabled (local-dev only).
+EDGES
+  ^contains=matrix/gateway/internal/auth.Options
+
+NODE id=matrix/gateway/internal/auth.looksLikeDID kind=func
+  digest=b3:0b5d3341c45c0d614d6de9a188136d51c06b069671fb5007c941fa80fedc58a0 file=gateway/internal/auth/auth.go range=136:152 lang=go exported=false byte_range=5080:5542
+  sig=func looksLikeDID(s string) bool
+  doc=looksLikeDID is a deliberately permissive shape check. The DID Core\nspec allows arbitrary methods + identifiers; we only enforce the\n"did:<method>:<id>" triple structure. Heavy validation is wallet\nresponsibility.
+EDGES
+  ^defines=matrix/gateway/internal/auth/auth.go
+
+NODE id=matrix/gateway/internal/auth/auth.go kind=file
+  digest=b3:47fafd24c793bbd1271ce33f2dbcf8c648d2785dd015a5f495b24d42059ed0cd file=gateway/internal/auth/auth.go range=1:154 lang=go exported=true
+EDGES
+  defines=matrix/gateway/internal/auth.Authenticator,matrix/gateway/internal/auth.Authenticator.Verify,matrix/gateway/internal/auth.Authenticator.VerifySignature,matrix/gateway/internal/auth.Authenticator.checkBearer,matrix/gateway/internal/auth.ErrMalformedActor,matrix/gateway/internal/auth.ErrMissingActor,matrix/gateway/internal/auth.ErrUnauthorized,matrix/gateway/internal/auth.New,matrix/gateway/internal/auth.Options,matrix/gateway/internal/auth.looksLikeDID
+  ^contains=matrix/gateway/internal/auth

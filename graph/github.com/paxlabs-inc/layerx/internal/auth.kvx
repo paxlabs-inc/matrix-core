@@ -1,0 +1,253 @@
+# GENERATED gen=codegraph do-not-edit merkle=b3:2dc69ec8dbbe0231373534486cf12ff6fdb0eaad7b2dfdcbc4d73453c8542ee8
+
+NODE id=github.com/paxlabs-inc/layerx/internal/auth kind=package
+  digest=b3:e7d7bbdf82b98f4b792832b5b0c2e6fa574cafc2bd19e844894c58cf34e41c1e file=layerx/internal/auth range=0:0 lang=go exported=true
+EDGES
+  contains=github.com/paxlabs-inc/layerx/internal/auth/identity.go,github.com/paxlabs-inc/layerx/internal/auth/token.go
+  ^contains=mod:github.com/paxlabs-inc/layerx
+
+NODE id=github.com/paxlabs-inc/layerx/internal/auth.ChallengeMessage kind=func
+  digest=b3:4f2e861cc1363d7cade067f10387c1694c0b82b982d267ffcfe51bfad9b3c012 file=layerx/internal/auth/identity.go range=44:48 lang=go exported=true byte_range=1248:1479
+  sig=func ChallengeMessage(did, nonce string) string
+  doc=ChallengeMessage is the exact UTF-8 string the agent must ed25519-sign.\nMUST stay in lockstep with tools/layerx/layerx.mjs.
+EDGES
+  ^defines=github.com/paxlabs-inc/layerx/internal/auth/identity.go
+
+NODE id=github.com/paxlabs-inc/layerx/internal/auth.Challenges kind=type
+  digest=b3:909e978656984c748bd784897eb56db1038049d340cfe7ec0759c634c3998355 file=layerx/internal/auth/identity.go range=98:103 lang=go exported=true byte_range=3617:3763
+  sig=type Challenges struct {\n	mu	sync.Mutex\n	ttl	time.Duration\n	m	map[string]entry\n}
+  doc=Challenges is an in-memory single-use nonce store with TTL.
+EDGES
+  contains=github.com/paxlabs-inc/layerx/internal/auth.Challenges#m,github.com/paxlabs-inc/layerx/internal/auth.Challenges#mu,github.com/paxlabs-inc/layerx/internal/auth.Challenges#ttl,github.com/paxlabs-inc/layerx/internal/auth.Challenges.Consume,github.com/paxlabs-inc/layerx/internal/auth.Challenges.Create,github.com/paxlabs-inc/layerx/internal/auth.Challenges.Purge,github.com/paxlabs-inc/layerx/internal/auth.Challenges.TTL
+  ^defines=github.com/paxlabs-inc/layerx/internal/auth/identity.go
+
+NODE id=github.com/paxlabs-inc/layerx/internal/auth.Challenges#m kind=field
+  digest=b3:c830ad9967037fdeb0d06b721a0a5d54fc2195eecf495e098d8ee9d5ab433bfc file=layerx/internal/auth/identity.go range=102:102 lang=go exported=false byte_range=3741:3761
+  sig=map[string]auth.entry
+EDGES
+  ^contains=github.com/paxlabs-inc/layerx/internal/auth.Challenges
+
+NODE id=github.com/paxlabs-inc/layerx/internal/auth.Challenges#mu kind=field
+  digest=b3:1a708959b007248f2220cf2e77d08f481b8daacea806d7eb1762f37792d66b44 file=layerx/internal/auth/identity.go range=100:100 lang=go exported=false byte_range=3706:3720
+  sig=sync.Mutex
+EDGES
+  ^contains=github.com/paxlabs-inc/layerx/internal/auth.Challenges
+
+NODE id=github.com/paxlabs-inc/layerx/internal/auth.Challenges#ttl kind=field
+  digest=b3:6b190a984db5b5dce15fa459f32176bceb434429bfe384a291f5c824e4e9a47d file=layerx/internal/auth/identity.go range=101:101 lang=go exported=false byte_range=3722:3739
+  sig=time.Duration
+EDGES
+  ^contains=github.com/paxlabs-inc/layerx/internal/auth.Challenges
+
+NODE id=github.com/paxlabs-inc/layerx/internal/auth.Challenges.Consume kind=method
+  digest=b3:49c0bad579ea2b0e7870fd357c8161cad5dff61102e0560e84e23d3858a0500e file=layerx/internal/auth/identity.go range=134:145 lang=go exported=true byte_range=4742:5096
+  sig=func (c *Challenges) Consume(nonce, did string) bool
+  doc=Consume atomically validates + deletes a nonce (single-use). It returns false\nfor unknown, expired, already-used, or DID-mismatched nonces.
+EDGES
+  ^contains=github.com/paxlabs-inc/layerx/internal/auth.Challenges
+  ^defines=github.com/paxlabs-inc/layerx/internal/auth/identity.go
+
+NODE id=github.com/paxlabs-inc/layerx/internal/auth.Challenges.Create kind=method
+  digest=b3:2398975925217710f7c673cd89f8e371cbdce8be3cd206ae865c208359b464a6 file=layerx/internal/auth/identity.go range=118:132 lang=go exported=true byte_range=4104:4740
+  sig=func (c *Challenges) Create(did string) (nonce, message string)
+  doc=Create issues a fresh nonce bound to did and returns the nonce + the exact\nmessage to sign.
+EDGES
+  ^contains=github.com/paxlabs-inc/layerx/internal/auth.Challenges
+  ^defines=github.com/paxlabs-inc/layerx/internal/auth/identity.go
+
+NODE id=github.com/paxlabs-inc/layerx/internal/auth.Challenges.Purge kind=method
+  digest=b3:db3152c71c3a36a36d4747f9f19bb6c68eabbf8145375f4a4bbc1da95a000933 file=layerx/internal/auth/identity.go range=147:157 lang=go exported=true byte_range=5098:5311
+  sig=func (c *Challenges) Purge()
+  doc=Purge drops expired challenges (opportunistic GC).
+EDGES
+  ^contains=github.com/paxlabs-inc/layerx/internal/auth.Challenges
+  ^defines=github.com/paxlabs-inc/layerx/internal/auth/identity.go
+
+NODE id=github.com/paxlabs-inc/layerx/internal/auth.Challenges.TTL kind=method
+  digest=b3:d785ff275494eb348cb579da47e3f51be8202e8e96fec148e8a1394c6df89506 file=layerx/internal/auth/identity.go range=115:116 lang=go exported=true byte_range=3995:4102
+  sig=func (c *Challenges) TTL() time.Duration
+  doc=TTL returns the configured nonce time-to-live.
+EDGES
+  ^contains=github.com/paxlabs-inc/layerx/internal/auth.Challenges
+  ^defines=github.com/paxlabs-inc/layerx/internal/auth/identity.go
+
+NODE id=github.com/paxlabs-inc/layerx/internal/auth.Claims kind=type
+  digest=b3:23d7c841ac10b0c2f5c95bf25b87e11580931c270e4abd6d96b56860504493ef file=layerx/internal/auth/token.go range=36:39 lang=go exported=true byte_range=915:1005
+  sig=type Claims struct {\n	DID string\n}
+  doc=Claims is the verified principal carried by a token.
+EDGES
+  contains=github.com/paxlabs-inc/layerx/internal/auth.Claims#DID
+  ^defines=github.com/paxlabs-inc/layerx/internal/auth/token.go
+
+NODE id=github.com/paxlabs-inc/layerx/internal/auth.Claims#DID kind=field
+  digest=b3:ebb9482bbfdf2998719bd34eff2b6b911ce16777dde26ab63fb2aa26fa2c83c0 file=layerx/internal/auth/token.go range=38:38 lang=go exported=true byte_range=993:1003
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/layerx/internal/auth.Claims
+
+NODE id=github.com/paxlabs-inc/layerx/internal/auth.DID kind=type
+  digest=b3:3ba6f7b59cf14bf6f6bcc659f0e5c80f5ab3192edcec2327e2f0892c4be91000 file=layerx/internal/auth/identity.go range=26:31 lang=go exported=true byte_range=733:854
+  sig=type DID struct {\n	Raw	string\n	Label	string\n	KeyFP	string	// hex(pubkey)[:16]\n}
+  doc=DID is a parsed did:matrix identity.
+EDGES
+  contains=github.com/paxlabs-inc/layerx/internal/auth.DID#KeyFP,github.com/paxlabs-inc/layerx/internal/auth.DID#Label,github.com/paxlabs-inc/layerx/internal/auth.DID#Raw
+  ^defines=github.com/paxlabs-inc/layerx/internal/auth/identity.go
+
+NODE id=github.com/paxlabs-inc/layerx/internal/auth.DID#KeyFP kind=field
+  digest=b3:e73babfeacf25c8db87517e8792fab8ed50c064401493c01407deef904139930 file=layerx/internal/auth/identity.go range=30:30 lang=go exported=true byte_range=820:832
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/layerx/internal/auth.DID
+
+NODE id=github.com/paxlabs-inc/layerx/internal/auth.DID#Label kind=field
+  digest=b3:5ef444eaacc89a7e358220899b2cb7fa1b7140d38a6015f863fd680d6c71ec7f file=layerx/internal/auth/identity.go range=29:29 lang=go exported=true byte_range=806:818
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/layerx/internal/auth.DID
+
+NODE id=github.com/paxlabs-inc/layerx/internal/auth.DID#Raw kind=field
+  digest=b3:97d9dcdb50d08855f1642bdc3fbc8b17cfeed16f79e870c2b4bcd800d49c5cd2 file=layerx/internal/auth/identity.go range=28:28 lang=go exported=true byte_range=792:804
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/layerx/internal/auth.DID
+
+NODE id=github.com/paxlabs-inc/layerx/internal/auth.IntentMessage kind=func
+  digest=b3:a301938346e5934c0da20b7cc94825c9c834713da7eba139a42e235b2ef9998a file=layerx/internal/auth/identity.go range=57:66 lang=go exported=true byte_range=1864:2514
+  sig=func IntentMessage(op, did, nonce string, fields ...string) string
+  doc=IntentMessage builds the canonical, domain-separated preimage an agent signs\nto authorize a value write directly — the "DID-signed intent ALONE" path\n(PHASE 4, invariant i6: the signature IS the authorization). op names the\noperation ("pay"/"withdraw"); fields are its ordered canonical arguments;\nnonce is a single-use server-issued challenge nonce binding the intent to one\nsubmission (replay protection). MUST stay in lockstep with\ntools/layerx/layerx.mjs.
+EDGES
+  ^defines=github.com/paxlabs-inc/layerx/internal/auth/identity.go
+
+NODE id=github.com/paxlabs-inc/layerx/internal/auth.NewChallenges kind=func
+  digest=b3:99b80c90f84c6cbbdb987bf2d39501e765d3eb6733fe634bffdb5c190662422f file=layerx/internal/auth/identity.go range=110:113 lang=go exported=true byte_range=3815:3993
+  sig=func NewChallenges(ttl time.Duration) *Challenges
+  doc=NewChallenges constructs a challenge store with the given nonce TTL.
+EDGES
+  ^defines=github.com/paxlabs-inc/layerx/internal/auth/identity.go
+
+NODE id=github.com/paxlabs-inc/layerx/internal/auth.NewTokens kind=func
+  digest=b3:dd35e6e013de3d92f809b1a43d416663ee439b33c5b57eba46858e59ed76a38a file=layerx/internal/auth/token.go range=30:34 lang=go exported=true byte_range=688:913
+  sig=func NewTokens(secret string, ttl time.Duration) *Tokens
+  doc=NewTokens derives an HMAC key from secret (sha256) and binds a token TTL.
+EDGES
+  ^defines=github.com/paxlabs-inc/layerx/internal/auth/token.go
+
+NODE id=github.com/paxlabs-inc/layerx/internal/auth.ParseDID kind=func
+  digest=b3:f7463aa37a1242f01326f43cf4a36dc30b3c8f572c3894a574e26ba1cecfa802 file=layerx/internal/auth/identity.go range=35:42 lang=go exported=true byte_range=930:1246
+  sig=func ParseDID(s string) (DID, error)
+  doc=ParseDID parses a did:matrix:<label>:<16-hex-fingerprint>.
+EDGES
+  ^defines=github.com/paxlabs-inc/layerx/internal/auth/identity.go
+
+NODE id=github.com/paxlabs-inc/layerx/internal/auth.Tokens kind=type
+  digest=b3:103f5b43bf820e88b154a2dc933ece23c219b3ae8b86daac6a2984ae47e99200 file=layerx/internal/auth/token.go range=13:28 lang=go exported=true byte_range=117:686
+  sig=type Tokens struct {\n	key	[]byte\n	ttl	time.Duration\n	now	func() time.Time\n}
+  doc=Principal tokens are short-lived, stateless HMAC tokens minted after a\nsuccessful agent-DID verify. They bind {did, expiry} and are presented on the\nvalue endpoints (header X-LayerX-Agent). Stateless = no session store; works\nacross layerxd instances.\n\nFormat: base64url(payload) "." base64url(mac), where\n\n	payload = "<did>|<expUnix>"\n\nThe DID IS the account, so the token carries it directly; balances + receipts\nscope on the verified DID, never a request field.
+EDGES
+  contains=github.com/paxlabs-inc/layerx/internal/auth.Tokens#key,github.com/paxlabs-inc/layerx/internal/auth.Tokens#now,github.com/paxlabs-inc/layerx/internal/auth.Tokens#ttl,github.com/paxlabs-inc/layerx/internal/auth.Tokens.Mint,github.com/paxlabs-inc/layerx/internal/auth.Tokens.Verify,github.com/paxlabs-inc/layerx/internal/auth.Tokens.sign
+  ^defines=github.com/paxlabs-inc/layerx/internal/auth/token.go
+
+NODE id=github.com/paxlabs-inc/layerx/internal/auth.Tokens#key kind=field
+  digest=b3:35229fcc5fabc8f56a4c8cef3b2488c17a5f98b5dd86f99d7b045055548efad1 file=layerx/internal/auth/token.go range=25:25 lang=go exported=false byte_range=633:643
+  sig=[]byte
+EDGES
+  ^contains=github.com/paxlabs-inc/layerx/internal/auth.Tokens
+
+NODE id=github.com/paxlabs-inc/layerx/internal/auth.Tokens#now kind=field
+  digest=b3:481748d11a35edcd6e0302930f6e75c9dbb0c732baf39f566fe24f4bbb657641 file=layerx/internal/auth/token.go range=27:27 lang=go exported=false byte_range=664:684
+  sig=func() time.Time
+EDGES
+  ^contains=github.com/paxlabs-inc/layerx/internal/auth.Tokens
+
+NODE id=github.com/paxlabs-inc/layerx/internal/auth.Tokens#ttl kind=field
+  digest=b3:6b190a984db5b5dce15fa459f32176bceb434429bfe384a291f5c824e4e9a47d file=layerx/internal/auth/token.go range=26:26 lang=go exported=false byte_range=645:662
+  sig=time.Duration
+EDGES
+  ^contains=github.com/paxlabs-inc/layerx/internal/auth.Tokens
+
+NODE id=github.com/paxlabs-inc/layerx/internal/auth.Tokens.Mint kind=method
+  digest=b3:2949660f647ab4b03f01aeab78a60a5e88f51de8b8081b706921a7de505c8546 file=layerx/internal/auth/token.go range=41:46 lang=go exported=true byte_range=1007:1272
+  sig=func (t *Tokens) Mint(did string) (token string, expiresIn int)
+  doc=Mint signs {did, expiry}.
+EDGES
+  ^contains=github.com/paxlabs-inc/layerx/internal/auth.Tokens
+  ^defines=github.com/paxlabs-inc/layerx/internal/auth/token.go
+
+NODE id=github.com/paxlabs-inc/layerx/internal/auth.Tokens.Verify kind=method
+  digest=b3:fa25499ff7e3f229749bee38b8c8e0c0198240f60709fca1de66a06c79d57838 file=layerx/internal/auth/token.go range=48:81 lang=go exported=true byte_range=1274:2410
+  sig=func (t *Tokens) Verify(tok string) (Claims, error)
+  doc=Verify checks a token's signature + expiry and returns its claims.
+EDGES
+  ^contains=github.com/paxlabs-inc/layerx/internal/auth.Tokens
+  ^defines=github.com/paxlabs-inc/layerx/internal/auth/token.go
+
+NODE id=github.com/paxlabs-inc/layerx/internal/auth.Tokens.sign kind=method
+  digest=b3:1be0919f8e0f209a12315f2b88d4b2bcf5efb85cfff51bd6ad7c1ee421dc9bc8 file=layerx/internal/auth/token.go range=83:87 lang=go exported=false byte_range=2412:2539
+  sig=func (t *Tokens) sign(payload string) []byte
+EDGES
+  ^contains=github.com/paxlabs-inc/layerx/internal/auth.Tokens
+  ^defines=github.com/paxlabs-inc/layerx/internal/auth/token.go
+
+NODE id=github.com/paxlabs-inc/layerx/internal/auth.VerifyIntentSignature kind=func
+  digest=b3:d0afe7facd07a64d5d042d40913d32b711ec45fa87d5d5987748d2ae667ec608 file=layerx/internal/auth/identity.go range=68:72 lang=go exported=true byte_range=2516:2795
+  sig=func VerifyIntentSignature(didStr, pubHex, sigHex, message string) error
+  doc=VerifyIntentSignature verifies an ed25519 signature over message (built by\nIntentMessage) and that pubHex matches the DID fingerprint.
+EDGES
+  ^defines=github.com/paxlabs-inc/layerx/internal/auth/identity.go
+
+NODE id=github.com/paxlabs-inc/layerx/internal/auth.VerifySignature kind=func
+  digest=b3:60259b8a06f8e6107329e545b5df8db58a5b3cb568646e6ca03d48d405904aaa file=layerx/internal/auth/identity.go range=50:55 lang=go exported=true byte_range=1481:1862
+  sig=func VerifySignature(didStr, pubHex, nonce, sigHex string) error
+  doc=VerifySignature checks the ed25519 signature over ChallengeMessage(did,nonce)\nAND that the supplied public key matches the fingerprint embedded in the DID\n(so a caller cannot present an unrelated key for a known DID).
+EDGES
+  ^defines=github.com/paxlabs-inc/layerx/internal/auth/identity.go
+
+NODE id=github.com/paxlabs-inc/layerx/internal/auth.b64 kind=func
+  digest=b3:800f8fde6bdb6629b0cfc8d1729d9badde94077c06b953cc772afcd58a829f84 file=layerx/internal/auth/token.go range=89:91 lang=go exported=false byte_range=2541:2618
+  sig=func b64(b []byte) string
+EDGES
+  ^defines=github.com/paxlabs-inc/layerx/internal/auth/token.go
+
+NODE id=github.com/paxlabs-inc/layerx/internal/auth.didRe kind=var
+  digest=b3:4dc353e8e64ef1fb09a1f5174102ba6edcc081a4c76db1beee5fc6e3eb4252b4 file=layerx/internal/auth/identity.go range=33:33 lang=go exported=false byte_range=860:928
+  sig=*regexp.Regexp
+EDGES
+  ^defines=github.com/paxlabs-inc/layerx/internal/auth/identity.go
+
+NODE id=github.com/paxlabs-inc/layerx/internal/auth.entry kind=type
+  digest=b3:21a529b9e21b3cd3a2c2ddd6d9a126d2c5d0ef91507349b726e2a8319728b10d file=layerx/internal/auth/identity.go range=105:108 lang=go exported=false byte_range=3765:3813
+  sig=type entry struct {\n	did	string\n	exp	time.Time\n}
+EDGES
+  contains=github.com/paxlabs-inc/layerx/internal/auth.entry#did,github.com/paxlabs-inc/layerx/internal/auth.entry#exp
+  ^defines=github.com/paxlabs-inc/layerx/internal/auth/identity.go
+
+NODE id=github.com/paxlabs-inc/layerx/internal/auth.entry#did kind=field
+  digest=b3:48613ce3c37f91f501ab3e787dc7635a47e46778df233ad50a30d19f8676c622 file=layerx/internal/auth/identity.go range=106:106 lang=go exported=false byte_range=3786:3796
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/layerx/internal/auth.entry
+
+NODE id=github.com/paxlabs-inc/layerx/internal/auth.entry#exp kind=field
+  digest=b3:6ba88dec21eb21e1c2661631db0547845eeb200cd2cdab77f05cbc40fbcf08cd file=layerx/internal/auth/identity.go range=107:107 lang=go exported=false byte_range=3798:3811
+  sig=time.Time
+EDGES
+  ^contains=github.com/paxlabs-inc/layerx/internal/auth.entry
+
+NODE id=github.com/paxlabs-inc/layerx/internal/auth.verifyDIDSig kind=func
+  digest=b3:d1124ec1706fea6b689a4112444ff6f54b1b8d0dfba1d67068f5a666b44b3300 file=layerx/internal/auth/identity.go range=74:96 lang=go exported=false byte_range=2797:3615
+  sig=func verifyDIDSig(didStr, pubHex, sigHex string, msg []byte) error
+  doc=verifyDIDSig is the shared ed25519 check: the public key must match the DID\nfingerprint and sign the exact message bytes.
+EDGES
+  ^defines=github.com/paxlabs-inc/layerx/internal/auth/identity.go
+
+NODE id=github.com/paxlabs-inc/layerx/internal/auth/identity.go kind=file
+  digest=b3:d8d0e1a070b0f378e70304e880a4094fb2ab0a3a1f33192524ab9bee6c471869 file=layerx/internal/auth/identity.go range=1:157 lang=go exported=true
+EDGES
+  defines=github.com/paxlabs-inc/layerx/internal/auth.ChallengeMessage,github.com/paxlabs-inc/layerx/internal/auth.Challenges,github.com/paxlabs-inc/layerx/internal/auth.Challenges.Consume,github.com/paxlabs-inc/layerx/internal/auth.Challenges.Create,github.com/paxlabs-inc/layerx/internal/auth.Challenges.Purge,github.com/paxlabs-inc/layerx/internal/auth.Challenges.TTL,github.com/paxlabs-inc/layerx/internal/auth.DID,github.com/paxlabs-inc/layerx/internal/auth.IntentMessage,github.com/paxlabs-inc/layerx/internal/auth.NewChallenges,github.com/paxlabs-inc/layerx/internal/auth.ParseDID,github.com/paxlabs-inc/layerx/internal/auth.VerifyIntentSignature,github.com/paxlabs-inc/layerx/internal/auth.VerifySignature,github.com/paxlabs-inc/layerx/internal/auth.didRe,github.com/paxlabs-inc/layerx/internal/auth.entry,github.com/paxlabs-inc/layerx/internal/auth.verifyDIDSig
+  ^contains=github.com/paxlabs-inc/layerx/internal/auth
+
+NODE id=github.com/paxlabs-inc/layerx/internal/auth/token.go kind=file
+  digest=b3:bd0fafb3b9de88ab90b6e72647037787e7341198c55a721044c66c81eaec22f0 file=layerx/internal/auth/token.go range=1:91 lang=go exported=true
+EDGES
+  defines=github.com/paxlabs-inc/layerx/internal/auth.Claims,github.com/paxlabs-inc/layerx/internal/auth.NewTokens,github.com/paxlabs-inc/layerx/internal/auth.Tokens,github.com/paxlabs-inc/layerx/internal/auth.Tokens.Mint,github.com/paxlabs-inc/layerx/internal/auth.Tokens.Verify,github.com/paxlabs-inc/layerx/internal/auth.Tokens.sign,github.com/paxlabs-inc/layerx/internal/auth.b64
+  ^contains=github.com/paxlabs-inc/layerx/internal/auth

@@ -1,0 +1,335 @@
+# GENERATED gen=codegraph do-not-edit merkle=b3:2dc69ec8dbbe0231373534486cf12ff6fdb0eaad7b2dfdcbc4d73453c8542ee8
+
+NODE id=github.com/paxlabs-inc/deus/pkg/manifest kind=package
+  digest=b3:6bb6146d73336b2897958547e222f084721e68ea9b10e015538c5a2989e2adab file=deus/pkg/manifest range=0:0 lang=go exported=true
+EDGES
+  contains=github.com/paxlabs-inc/deus/pkg/manifest/canonical.go,github.com/paxlabs-inc/deus/pkg/manifest/manifest.go,github.com/paxlabs-inc/deus/pkg/manifest/schema.go
+  ^contains=mod:github.com/paxlabs-inc/deus
+
+NODE id=github.com/paxlabs-inc/deus/pkg/manifest.CanonicalJSON kind=func
+  digest=b3:d9f199ed54fc2b1d3d0e8a7c7fb075bd8d693593c762a22017157d469e307f3d file=deus/pkg/manifest/canonical.go range=14:30 lang=go exported=true byte_range=144:674
+  sig=func CanonicalJSON(m *Manifest) ([]byte, error)
+  doc=CanonicalJSON returns stable UTF-8 JSON bytes for hashing (sorted object keys).
+EDGES
+  ^defines=github.com/paxlabs-inc/deus/pkg/manifest/canonical.go
+
+NODE id=github.com/paxlabs-inc/deus/pkg/manifest.CanonicalVersion kind=const
+  digest=b3:9d6c422a5248cd5df3a58f8c4d077ad51b964bd561e5cda8fe408c993889ed15 file=deus/pkg/manifest/canonical.go range=12:12 lang=go exported=true byte_range=120:142
+  sig=untyped string
+EDGES
+  ^defines=github.com/paxlabs-inc/deus/pkg/manifest/canonical.go
+
+NODE id=github.com/paxlabs-inc/deus/pkg/manifest.Endpoint kind=type
+  digest=b3:e2e38a5d43766752e62667f694768e5c1da032909759746ffcc2af03b9f1657f file=deus/pkg/manifest/manifest.go range=43:46 lang=go exported=true byte_range=1680:1799
+  sig=type Endpoint struct {\n	ProxyURL string `json:"proxy_url,omitempty"`\n}
+  doc=Endpoint holds proxy or hosted routing hints.
+EDGES
+  contains=github.com/paxlabs-inc/deus/pkg/manifest.Endpoint#ProxyURL
+  ^defines=github.com/paxlabs-inc/deus/pkg/manifest/manifest.go
+
+NODE id=github.com/paxlabs-inc/deus/pkg/manifest.Endpoint#ProxyURL kind=field
+  digest=b3:031bcf17bb00ff493d0d97c5e998120b39963495fd25788db21bfa362f0abe3e file=deus/pkg/manifest/manifest.go range=45:45 lang=go exported=true byte_range=1753:1797
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/pkg/manifest.Endpoint
+
+NODE id=github.com/paxlabs-inc/deus/pkg/manifest.Hash kind=func
+  digest=b3:35e77f6586fac57f21779446cf1df06134cf7544018ad8c525a49585acdb4392 file=deus/pkg/manifest/canonical.go range=32:40 lang=go exported=true byte_range=676:910
+  sig=func Hash(m *Manifest) (string, error)
+  doc=Hash returns keccak256(canonical_json(manifest)) as 0x-prefixed hex.
+EDGES
+  ^defines=github.com/paxlabs-inc/deus/pkg/manifest/canonical.go
+
+NODE id=github.com/paxlabs-inc/deus/pkg/manifest.Manifest kind=type
+  digest=b3:45a0a18bfc15649547237e1d43948d10bc5771c542bf6ede579c156b6c5b084a file=deus/pkg/manifest/manifest.go range=4:22 lang=go exported=true byte_range=105:998
+  sig=type Manifest struct {\n	SchemaVersion	string		`json:"schema_version"`\n	Slug		string		`json:"slug"`\n	Kind		string		`json:"kind"`\n	DisplayName	string		`json:"display_name"`\n	Summary		string		`json:"summary"`\n	Description	string		`json:"description,omitempty"`\n	Tags		[]string	`json:"tags,omitempty"`\n	Owner		string		`json:"owner"`\n	PayoutAddress	string		`json:"payout_address"`\n	Mode		string		`json:"mode"`\n	Confidential	bool		`json:"confidential,omitempty"`\n	Operations	[]Operation	`json:"operations"`\n	Pricing		[]Pricing	`json:"pricing"`\n	Endpoint	*Endpoint	`json:"endpoint,omitempty"`\n	SLA		*SLA		`json:"sla,omitempty"`\n	Attestation	any		`json:"attestation,omitempty"`\n}
+  doc=Manifest is the machine-readable service description (docs/03-data-model.md §3.5).
+EDGES
+  contains=github.com/paxlabs-inc/deus/pkg/manifest.Manifest#Attestation,github.com/paxlabs-inc/deus/pkg/manifest.Manifest#Confidential,github.com/paxlabs-inc/deus/pkg/manifest.Manifest#Description,github.com/paxlabs-inc/deus/pkg/manifest.Manifest#DisplayName,github.com/paxlabs-inc/deus/pkg/manifest.Manifest#Endpoint,github.com/paxlabs-inc/deus/pkg/manifest.Manifest#Kind,github.com/paxlabs-inc/deus/pkg/manifest.Manifest#Mode,github.com/paxlabs-inc/deus/pkg/manifest.Manifest#Operations,github.com/paxlabs-inc/deus/pkg/manifest.Manifest#Owner,github.com/paxlabs-inc/deus/pkg/manifest.Manifest#PayoutAddress,github.com/paxlabs-inc/deus/pkg/manifest.Manifest#Pricing,github.com/paxlabs-inc/deus/pkg/manifest.Manifest#SLA,github.com/paxlabs-inc/deus/pkg/manifest.Manifest#SchemaVersion,github.com/paxlabs-inc/deus/pkg/manifest.Manifest#Slug,github.com/paxlabs-inc/deus/pkg/manifest.Manifest#Summary,github.com/paxlabs-inc/deus/pkg/manifest.Manifest#Tags
+  ^defines=github.com/paxlabs-inc/deus/pkg/manifest/manifest.go
+
+NODE id=github.com/paxlabs-inc/deus/pkg/manifest.Manifest#Attestation kind=field
+  digest=b3:608c555f95f914e36f6c363378ebd3f4eceeec3ad3dae7cc76a14105ab72f0c0 file=deus/pkg/manifest/manifest.go range=21:21 lang=go exported=true byte_range=940:996
+  sig=any
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/pkg/manifest.Manifest
+
+NODE id=github.com/paxlabs-inc/deus/pkg/manifest.Manifest#Confidential kind=field
+  digest=b3:6cb64b9c43069250a24447a88eb88fbe046658835d8bfe5a64bbb2463aeb1b58 file=deus/pkg/manifest/manifest.go range=16:16 lang=go exported=true byte_range=685:742
+  sig=bool
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/pkg/manifest.Manifest
+
+NODE id=github.com/paxlabs-inc/deus/pkg/manifest.Manifest#Description kind=field
+  digest=b3:dcdbb938aaa7310a03bf5c14eb9bc968264ec60974d79c9bfd083f6b21318c42 file=deus/pkg/manifest/manifest.go range=11:11 lang=go exported=true byte_range=442:498
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/pkg/manifest.Manifest
+
+NODE id=github.com/paxlabs-inc/deus/pkg/manifest.Manifest#DisplayName kind=field
+  digest=b3:52807884ec2642adb1aaced6906f2e6e4d39529825b13963664f70fa5c941f36 file=deus/pkg/manifest/manifest.go range=9:9 lang=go exported=true byte_range=349:396
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/pkg/manifest.Manifest
+
+NODE id=github.com/paxlabs-inc/deus/pkg/manifest.Manifest#Endpoint kind=field
+  digest=b3:b21d6a1995df5be5d9c409c7518870ea8409ffd9aa2d841fb70958e45bfadcd5 file=deus/pkg/manifest/manifest.go range=19:19 lang=go exported=true byte_range=835:888
+  sig=*manifest.Endpoint
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/pkg/manifest.Manifest
+
+NODE id=github.com/paxlabs-inc/deus/pkg/manifest.Manifest#Kind kind=field
+  digest=b3:17dff051f5c1afb4b7e4ab073f3e351995b8e1a3c67a8b9c63abe751594df884 file=deus/pkg/manifest/manifest.go range=8:8 lang=go exported=true byte_range=308:347
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/pkg/manifest.Manifest
+
+NODE id=github.com/paxlabs-inc/deus/pkg/manifest.Manifest#Mode kind=field
+  digest=b3:c024e6d389b31e0311c533e287755a3675fd38512c0a1339fce79dc1480394bf file=deus/pkg/manifest/manifest.go range=15:15 lang=go exported=true byte_range=644:683
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/pkg/manifest.Manifest
+
+NODE id=github.com/paxlabs-inc/deus/pkg/manifest.Manifest#Operations kind=field
+  digest=b3:39e5bcbd16deea1429d2d5494daeae8c56c83ed577ee4d92c3b77dd81ca2fb06 file=deus/pkg/manifest/manifest.go range=17:17 lang=go exported=true byte_range=744:789
+  sig=[]manifest.Operation
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/pkg/manifest.Manifest
+
+NODE id=github.com/paxlabs-inc/deus/pkg/manifest.Manifest#Owner kind=field
+  digest=b3:b92507a6d82db8898b349b73782d28cffb4510f8ad0d3d905b55e5072a3c8974 file=deus/pkg/manifest/manifest.go range=13:13 lang=go exported=true byte_range=551:591
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/pkg/manifest.Manifest
+
+NODE id=github.com/paxlabs-inc/deus/pkg/manifest.Manifest#PayoutAddress kind=field
+  digest=b3:7f45dea5faa363ba9966cc556e8e51e28ee4d7bca19d88c2ec305295aa051d20 file=deus/pkg/manifest/manifest.go range=14:14 lang=go exported=true byte_range=593:642
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/pkg/manifest.Manifest
+
+NODE id=github.com/paxlabs-inc/deus/pkg/manifest.Manifest#Pricing kind=field
+  digest=b3:45c7f08fc2d6795b811e5db1ecbf87390b631185adc04449da6e0f9791a3614e file=deus/pkg/manifest/manifest.go range=18:18 lang=go exported=true byte_range=791:833
+  sig=[]manifest.Pricing
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/pkg/manifest.Manifest
+
+NODE id=github.com/paxlabs-inc/deus/pkg/manifest.Manifest#SLA kind=field
+  digest=b3:d3d644bcca2193e65d913d7b6e740c6b848171fab7a874e31cbebc8b71c3cb18 file=deus/pkg/manifest/manifest.go range=20:20 lang=go exported=true byte_range=890:938
+  sig=*manifest.SLA
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/pkg/manifest.Manifest
+
+NODE id=github.com/paxlabs-inc/deus/pkg/manifest.Manifest#SchemaVersion kind=field
+  digest=b3:d60c3563528e0139b44a37f7868705d5dbc8d26b72cd0df5b9b8995cc93f4234 file=deus/pkg/manifest/manifest.go range=6:6 lang=go exported=true byte_range=216:265
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/pkg/manifest.Manifest
+
+NODE id=github.com/paxlabs-inc/deus/pkg/manifest.Manifest#Slug kind=field
+  digest=b3:f231f04d97b11b2c6b5ab83581429545f07013c647766cbe3aa13c121d628396 file=deus/pkg/manifest/manifest.go range=7:7 lang=go exported=true byte_range=267:306
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/pkg/manifest.Manifest
+
+NODE id=github.com/paxlabs-inc/deus/pkg/manifest.Manifest#Summary kind=field
+  digest=b3:47b98d444ae7335f15d6101e8fd72a794366fc87884abce37742ad80e9e43a03 file=deus/pkg/manifest/manifest.go range=10:10 lang=go exported=true byte_range=398:440
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/pkg/manifest.Manifest
+
+NODE id=github.com/paxlabs-inc/deus/pkg/manifest.Manifest#Tags kind=field
+  digest=b3:5a1b1d95da330de91e64de1ad31b44688cd3585bc06bf33b3feaba0f59891a42 file=deus/pkg/manifest/manifest.go range=12:12 lang=go exported=true byte_range=500:549
+  sig=[]string
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/pkg/manifest.Manifest
+
+NODE id=github.com/paxlabs-inc/deus/pkg/manifest.Operation kind=type
+  digest=b3:f6ace1c5c40ee48a9ce7b8ed5421a22187700757324bfd019da7b91a783fc4c1 file=deus/pkg/manifest/manifest.go range=24:32 lang=go exported=true byte_range=1000:1413
+  sig=type Operation struct {\n	Name			string		`json:"name"`\n	Method			string		`json:"method"`\n	InputSchema		map[string]any	`json:"input_schema"`\n	OutputSchema		map[string]any	`json:"output_schema"`\n	TimeoutMS		int		`json:"timeout_ms,omitempty"`\n	MaxResponseBytes	int		`json:"max_response_bytes,omitempty"`\n}
+  doc=Operation describes one callable operation.
+EDGES
+  contains=github.com/paxlabs-inc/deus/pkg/manifest.Operation#InputSchema,github.com/paxlabs-inc/deus/pkg/manifest.Operation#MaxResponseBytes,github.com/paxlabs-inc/deus/pkg/manifest.Operation#Method,github.com/paxlabs-inc/deus/pkg/manifest.Operation#Name,github.com/paxlabs-inc/deus/pkg/manifest.Operation#OutputSchema,github.com/paxlabs-inc/deus/pkg/manifest.Operation#TimeoutMS
+  ^defines=github.com/paxlabs-inc/deus/pkg/manifest/manifest.go
+
+NODE id=github.com/paxlabs-inc/deus/pkg/manifest.Operation#InputSchema kind=field
+  digest=b3:b5a167c6c479df969cc0ab4830e4a3275ff2e6d5c87d63f63332882fe699598e file=deus/pkg/manifest/manifest.go range=28:28 lang=go exported=true byte_range=1168:1221
+  sig=map[string]any
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/pkg/manifest.Operation
+
+NODE id=github.com/paxlabs-inc/deus/pkg/manifest.Operation#MaxResponseBytes kind=field
+  digest=b3:f0f5ba107ef6d9d655c94fe783e88bb1993034f3a603144ab48c0a356114e3a2 file=deus/pkg/manifest/manifest.go range=31:31 lang=go exported=true byte_range=1342:1411
+  sig=int
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/pkg/manifest.Operation
+
+NODE id=github.com/paxlabs-inc/deus/pkg/manifest.Operation#Method kind=field
+  digest=b3:cee5c5627309faa40877be1807ae8a2720f72c6802f074929bafe7c56f3c4346 file=deus/pkg/manifest/manifest.go range=27:27 lang=go exported=true byte_range=1119:1166
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/pkg/manifest.Operation
+
+NODE id=github.com/paxlabs-inc/deus/pkg/manifest.Operation#Name kind=field
+  digest=b3:251c55ac53f0568c6ad64758ab6fbe0c239f256d2fab16c01aabc180bbe3f0f8 file=deus/pkg/manifest/manifest.go range=26:26 lang=go exported=true byte_range=1072:1117
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/pkg/manifest.Operation
+
+NODE id=github.com/paxlabs-inc/deus/pkg/manifest.Operation#OutputSchema kind=field
+  digest=b3:9a0d324dd21c8d02d3b8950de6247d14c63ba544427e318475f0be6d84e1f7f8 file=deus/pkg/manifest/manifest.go range=29:29 lang=go exported=true byte_range=1223:1277
+  sig=map[string]any
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/pkg/manifest.Operation
+
+NODE id=github.com/paxlabs-inc/deus/pkg/manifest.Operation#TimeoutMS kind=field
+  digest=b3:45504ba97bfb08e0ef5ed81d1c3470cba894a574658cc9d465d1e6e9034a1df9 file=deus/pkg/manifest/manifest.go range=30:30 lang=go exported=true byte_range=1279:1340
+  sig=int
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/pkg/manifest.Operation
+
+NODE id=github.com/paxlabs-inc/deus/pkg/manifest.Parse kind=func
+  digest=b3:8141b28e3bcb084f9efeadef64770c346105db5fa5ddbb6f8e18e3a4a3d65fbd file=deus/pkg/manifest/canonical.go range=91:100 lang=go exported=true byte_range=1999:2305
+  sig=func Parse(data []byte) (*Manifest, error)
+  doc=Parse decodes JSON into Manifest without validation.
+EDGES
+  ^defines=github.com/paxlabs-inc/deus/pkg/manifest/canonical.go
+
+NODE id=github.com/paxlabs-inc/deus/pkg/manifest.Pricing kind=type
+  digest=b3:4c35a43975be9714aa641285eab7950828cdacffc63412ead2c2d310a1e00ffa file=deus/pkg/manifest/manifest.go range=34:41 lang=go exported=true byte_range=1415:1678
+  sig=type Pricing struct {\n	Operation	string	`json:"operation"`\n	Model		string	`json:"model"`\n	Unit		string	`json:"unit"`\n	PriceWei	string	`json:"price_wei"`\n	MinChargeWei	string	`json:"min_charge_wei"`\n}
+  doc=Pricing describes per-operation pricing.
+EDGES
+  contains=github.com/paxlabs-inc/deus/pkg/manifest.Pricing#MinChargeWei,github.com/paxlabs-inc/deus/pkg/manifest.Pricing#Model,github.com/paxlabs-inc/deus/pkg/manifest.Pricing#Operation,github.com/paxlabs-inc/deus/pkg/manifest.Pricing#PriceWei,github.com/paxlabs-inc/deus/pkg/manifest.Pricing#Unit
+  ^defines=github.com/paxlabs-inc/deus/pkg/manifest/manifest.go
+
+NODE id=github.com/paxlabs-inc/deus/pkg/manifest.Pricing#MinChargeWei kind=field
+  digest=b3:eae73cb40941ebd8f8a744ed6875a42a0540a44fd22cbc65925b09d3c7b81c95 file=deus/pkg/manifest/manifest.go range=40:40 lang=go exported=true byte_range=1633:1676
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/pkg/manifest.Pricing
+
+NODE id=github.com/paxlabs-inc/deus/pkg/manifest.Pricing#Model kind=field
+  digest=b3:cf20c0fbfb0de675b088df7cd67bb77716fda3facc2cf3916c38b0a69a143044 file=deus/pkg/manifest/manifest.go range=37:37 lang=go exported=true byte_range=1522:1556
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/pkg/manifest.Pricing
+
+NODE id=github.com/paxlabs-inc/deus/pkg/manifest.Pricing#Operation kind=field
+  digest=b3:19243843f9db3e82b02d1b511a4b71fe99da4f5beeb4ecf6bf77c9fd4094435a file=deus/pkg/manifest/manifest.go range=36:36 lang=go exported=true byte_range=1482:1520
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/pkg/manifest.Pricing
+
+NODE id=github.com/paxlabs-inc/deus/pkg/manifest.Pricing#PriceWei kind=field
+  digest=b3:af8455515f40ce34a638581ba9e2519a5be0a6f25f92241c592eb84023af2d96 file=deus/pkg/manifest/manifest.go range=39:39 lang=go exported=true byte_range=1593:1631
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/pkg/manifest.Pricing
+
+NODE id=github.com/paxlabs-inc/deus/pkg/manifest.Pricing#Unit kind=field
+  digest=b3:5be939a76fd7073ddbe15c287e54300acaa2cb6eb0af700a72eea37505b71f86 file=deus/pkg/manifest/manifest.go range=38:38 lang=go exported=true byte_range=1558:1591
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/pkg/manifest.Pricing
+
+NODE id=github.com/paxlabs-inc/deus/pkg/manifest.PricingCommitmentHash kind=func
+  digest=b3:273b69b8f014a595a889887c624c183a037e6d6da095b810e0164840c2a9a0d8 file=deus/pkg/manifest/canonical.go range=42:65 lang=go exported=true byte_range=912:1561
+  sig=func PricingCommitmentHash(m *Manifest) (string, error)
+  doc=PricingCommitmentHash returns keccak256(canonical_json(pricing only)).
+EDGES
+  ^defines=github.com/paxlabs-inc/deus/pkg/manifest/canonical.go
+
+NODE id=github.com/paxlabs-inc/deus/pkg/manifest.SLA kind=type
+  digest=b3:252cec8126166ff41182144451e2cf2b6a2af0a87579dc13c22963c4e7d63536 file=deus/pkg/manifest/manifest.go range=48:52 lang=go exported=true byte_range=1801:1969
+  sig=type SLA struct {\n	TargetUptimeBPS	int	`json:"target_uptime_bps,omitempty"`\n	P99LatencyMS	int	`json:"p99_latency_ms,omitempty"`\n}
+  doc=SLA holds service-level targets.
+EDGES
+  contains=github.com/paxlabs-inc/deus/pkg/manifest.SLA#P99LatencyMS,github.com/paxlabs-inc/deus/pkg/manifest.SLA#TargetUptimeBPS
+  ^defines=github.com/paxlabs-inc/deus/pkg/manifest/manifest.go
+
+NODE id=github.com/paxlabs-inc/deus/pkg/manifest.SLA#P99LatencyMS kind=field
+  digest=b3:3bd7a10008f24b92d7a49768c8f5b9ed911bff1a804c6a254d4268916072a1b4 file=deus/pkg/manifest/manifest.go range=51:51 lang=go exported=true byte_range=1914:1967
+  sig=int
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/pkg/manifest.SLA
+
+NODE id=github.com/paxlabs-inc/deus/pkg/manifest.SLA#TargetUptimeBPS kind=field
+  digest=b3:beca57dbff193b4d4b6378315794e6ebc051d533ee612563da1125e70c182472 file=deus/pkg/manifest/manifest.go range=50:50 lang=go exported=true byte_range=1856:1912
+  sig=int
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/pkg/manifest.SLA
+
+NODE id=github.com/paxlabs-inc/deus/pkg/manifest.Validate kind=func
+  digest=b3:1d4a03a5d4394fbcfc34e4ccc0e2b7e8f07416650de8d6be1acb96b37134c340 file=deus/pkg/manifest/schema.go range=34:55 lang=go exported=true byte_range=638:1191
+  sig=func Validate(m *Manifest) error
+  doc=Validate checks m against the embedded JSON Schema.
+EDGES
+  ^defines=github.com/paxlabs-inc/deus/pkg/manifest/schema.go
+
+NODE id=github.com/paxlabs-inc/deus/pkg/manifest.ValidateBytes kind=func
+  digest=b3:e12d23e382646ad429e4df7eff74e87cebef844e8311defd49a16093f14d280b file=deus/pkg/manifest/schema.go range=57:67 lang=go exported=true byte_range=1193:1429
+  sig=func ValidateBytes(data []byte) (*Manifest, error)
+  doc=ValidateBytes parses and validates raw JSON.
+EDGES
+  ^defines=github.com/paxlabs-inc/deus/pkg/manifest/schema.go
+
+NODE id=github.com/paxlabs-inc/deus/pkg/manifest.compiledSchema kind=func
+  digest=b3:01cecc9098dd1b9ae424907927d46fa742e0d92332c51acb718c3901c317fab4 file=deus/pkg/manifest/schema.go range=22:32 lang=go exported=false byte_range=254:636
+  sig=func compiledSchema() (*jsonschema.Schema, error)
+EDGES
+  ^defines=github.com/paxlabs-inc/deus/pkg/manifest/schema.go
+
+NODE id=github.com/paxlabs-inc/deus/pkg/manifest.schemaBytes kind=var
+  digest=b3:0e448895d94f6ef780bfb7b46ccac28dbe10ec1a0f9476f032f7d38e55ca7fc3 file=deus/pkg/manifest/schema.go range=13:14 lang=go exported=false byte_range=127:172
+  sig=[]byte
+EDGES
+  ^defines=github.com/paxlabs-inc/deus/pkg/manifest/schema.go
+
+NODE id=github.com/paxlabs-inc/deus/pkg/manifest.schemaErr kind=var
+  digest=b3:c6327620b0ed0fb8f51f2353748ac39c80e9520fdea89292f318d5bf9797ac49 file=deus/pkg/manifest/schema.go range=19:19 lang=go exported=false byte_range=234:250
+  sig=error
+EDGES
+  ^defines=github.com/paxlabs-inc/deus/pkg/manifest/schema.go
+
+NODE id=github.com/paxlabs-inc/deus/pkg/manifest.schemaInst kind=var
+  digest=b3:91854c593aac5e0eeb5b27b02a9608bc58c08f31e58acced0f165efc6298faeb file=deus/pkg/manifest/schema.go range=18:18 lang=go exported=false byte_range=203:232
+  sig=*jsonschema.Schema
+EDGES
+  ^defines=github.com/paxlabs-inc/deus/pkg/manifest/schema.go
+
+NODE id=github.com/paxlabs-inc/deus/pkg/manifest.schemaOnce kind=var
+  digest=b3:a680213af1fb06c2f9c29f3945dbc40a76d2cd3aaff1e46a3742691347f5dc1a file=deus/pkg/manifest/schema.go range=17:17 lang=go exported=false byte_range=181:201
+  sig=sync.Once
+EDGES
+  ^defines=github.com/paxlabs-inc/deus/pkg/manifest/schema.go
+
+NODE id=github.com/paxlabs-inc/deus/pkg/manifest.sortValue kind=func
+  digest=b3:6847af3f4951b18df1d88987bdd0988c34d17362204de8ae0e44af4ec4cfdac6 file=deus/pkg/manifest/canonical.go range=67:89 lang=go exported=false byte_range=1563:1997
+  sig=func sortValue(v any) any
+EDGES
+  ^defines=github.com/paxlabs-inc/deus/pkg/manifest/canonical.go
+
+NODE id=github.com/paxlabs-inc/deus/pkg/manifest.validateBusinessRules kind=func
+  digest=b3:eb0a97aa949220b12edc06d6d8e25ae45724c241a78e503b5042940b81c6c4a7 file=deus/pkg/manifest/schema.go range=69:91 lang=go exported=false byte_range=1431:2198
+  sig=func validateBusinessRules(m *Manifest) error
+EDGES
+  ^defines=github.com/paxlabs-inc/deus/pkg/manifest/schema.go
+
+NODE id=github.com/paxlabs-inc/deus/pkg/manifest/canonical.go kind=file
+  digest=b3:17503b6dfeba36e5371d94d4ca8df4146161fd1a6a48c88a43d33e7b03e26021 file=deus/pkg/manifest/canonical.go range=1:100 lang=go exported=true
+EDGES
+  defines=github.com/paxlabs-inc/deus/pkg/manifest.CanonicalJSON,github.com/paxlabs-inc/deus/pkg/manifest.CanonicalVersion,github.com/paxlabs-inc/deus/pkg/manifest.Hash,github.com/paxlabs-inc/deus/pkg/manifest.Parse,github.com/paxlabs-inc/deus/pkg/manifest.PricingCommitmentHash,github.com/paxlabs-inc/deus/pkg/manifest.sortValue
+  ^contains=github.com/paxlabs-inc/deus/pkg/manifest
+
+NODE id=github.com/paxlabs-inc/deus/pkg/manifest/manifest.go kind=file
+  digest=b3:15c4dca4249dc86c3d56d3abcf4d58680b4251ace1ab9de8012e7c650efcf38f file=deus/pkg/manifest/manifest.go range=1:52 lang=go exported=true
+EDGES
+  defines=github.com/paxlabs-inc/deus/pkg/manifest.Endpoint,github.com/paxlabs-inc/deus/pkg/manifest.Manifest,github.com/paxlabs-inc/deus/pkg/manifest.Operation,github.com/paxlabs-inc/deus/pkg/manifest.Pricing,github.com/paxlabs-inc/deus/pkg/manifest.SLA
+  ^contains=github.com/paxlabs-inc/deus/pkg/manifest
+
+NODE id=github.com/paxlabs-inc/deus/pkg/manifest/schema.go kind=file
+  digest=b3:13fb7017f186ba6cd54ccd3efbcfbd304bfe22244efa8d556058a2ec0234a338 file=deus/pkg/manifest/schema.go range=1:91 lang=go exported=true
+EDGES
+  defines=github.com/paxlabs-inc/deus/pkg/manifest.Validate,github.com/paxlabs-inc/deus/pkg/manifest.ValidateBytes,github.com/paxlabs-inc/deus/pkg/manifest.compiledSchema,github.com/paxlabs-inc/deus/pkg/manifest.schemaBytes,github.com/paxlabs-inc/deus/pkg/manifest.schemaErr,github.com/paxlabs-inc/deus/pkg/manifest.schemaInst,github.com/paxlabs-inc/deus/pkg/manifest.schemaOnce,github.com/paxlabs-inc/deus/pkg/manifest.validateBusinessRules
+  ^contains=github.com/paxlabs-inc/deus/pkg/manifest

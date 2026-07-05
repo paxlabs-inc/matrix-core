@@ -1,0 +1,171 @@
+# GENERATED gen=codegraph do-not-edit merkle=b3:2dc69ec8dbbe0231373534486cf12ff6fdb0eaad7b2dfdcbc4d73453c8542ee8
+
+NODE id=github.com/paxlabs-inc/uwac/internal/vault kind=package
+  digest=b3:7a5dc58e18cfeb6ebce5d34dd02a37206ce910f2a891a9cec6af5c332455a1ce file=uwac/internal/vault range=0:0 lang=go exported=true
+EDGES
+  contains=github.com/paxlabs-inc/uwac/internal/vault/vault.go
+  ^contains=mod:github.com/paxlabs-inc/uwac
+
+NODE id=github.com/paxlabs-inc/uwac/internal/vault.ErrNotFound kind=var
+  digest=b3:acdc67ab8a2452ca9da0facf0b06d6ba12608e554a3ffeb3bef86419dd52c01f file=uwac/internal/vault/vault.go range=17:18 lang=go exported=true byte_range=516:651
+  sig=error
+  doc=ErrNotFound is returned when the owner has not connected the provider.
+EDGES
+  ^defines=github.com/paxlabs-inc/uwac/internal/vault/vault.go
+
+NODE id=github.com/paxlabs-inc/uwac/internal/vault.Memory kind=type
+  digest=b3:1174918a4f7476e6f80ad22085062b9b7b2e0106e7afa87a0e0c0f635bb8f157 file=uwac/internal/vault/vault.go range=51:55 lang=go exported=true byte_range=1723:1845
+  sig=type Memory struct {\n	mu	sync.RWMutex\n	m	map[string]Record\n}
+  doc=Memory is an in-process Store for dev/tests. Not durable.
+EDGES
+  contains=github.com/paxlabs-inc/uwac/internal/vault.Memory#m,github.com/paxlabs-inc/uwac/internal/vault.Memory#mu,github.com/paxlabs-inc/uwac/internal/vault.Memory.Delete,github.com/paxlabs-inc/uwac/internal/vault.Memory.Get,github.com/paxlabs-inc/uwac/internal/vault.Memory.List,github.com/paxlabs-inc/uwac/internal/vault.Memory.Put
+  implements=github.com/paxlabs-inc/uwac/internal/vault.Store
+  ^defines=github.com/paxlabs-inc/uwac/internal/vault/vault.go
+
+NODE id=github.com/paxlabs-inc/uwac/internal/vault.Memory#m kind=field
+  digest=b3:105fa066b8fa7796711f444311b3b42b4c26b5762c8d5edacc9ab723965588ec file=uwac/internal/vault/vault.go range=54:54 lang=go exported=false byte_range=1823:1843
+  sig=map[string]vault.Record
+EDGES
+  ^contains=github.com/paxlabs-inc/uwac/internal/vault.Memory
+
+NODE id=github.com/paxlabs-inc/uwac/internal/vault.Memory#mu kind=field
+  digest=b3:0802f99fb0a25257c2f117c218069f00fdd097841a5d5c15c722e8951bf64103 file=uwac/internal/vault/vault.go range=53:53 lang=go exported=false byte_range=1806:1821
+  sig=sync.RWMutex
+EDGES
+  ^contains=github.com/paxlabs-inc/uwac/internal/vault.Memory
+
+NODE id=github.com/paxlabs-inc/uwac/internal/vault.Memory.Delete kind=method
+  digest=b3:6422f72b56e45d41c285104c2d7ce3fc81a6fd261df4ae48fe59605ec5b7cfb7 file=uwac/internal/vault/vault.go range=92:98 lang=go exported=true byte_range=2847:3060
+  sig=func (s *Memory) Delete(_ context.Context, userID, provider string) error
+  doc=Delete removes a record (hard delete for the dev store).
+EDGES
+  ^contains=github.com/paxlabs-inc/uwac/internal/vault.Memory
+  ^defines=github.com/paxlabs-inc/uwac/internal/vault/vault.go
+
+NODE id=github.com/paxlabs-inc/uwac/internal/vault.Memory.Get kind=method
+  digest=b3:65cfd933bda165089c777e39d5ba3d6ab91638d7e2cead57cebb36fa2945817e file=uwac/internal/vault/vault.go range=62:73 lang=go exported=true byte_range=2046:2403
+  sig=func (s *Memory) Get(_ context.Context, userID, provider string) (*Record, error)
+  doc=Get returns a copy of the record, or ErrNotFound.
+EDGES
+  ^contains=github.com/paxlabs-inc/uwac/internal/vault.Memory
+  ^defines=github.com/paxlabs-inc/uwac/internal/vault/vault.go
+
+NODE id=github.com/paxlabs-inc/uwac/internal/vault.Memory.List kind=method
+  digest=b3:056787d41e81f657cc1217de46a0d63089d4fbf26ad9e1dcace91aae10b14050 file=uwac/internal/vault/vault.go range=100:113 lang=go exported=true byte_range=3062:3439
+  sig=func (s *Memory) List(_ context.Context, userID string) ([]*Record, error)
+  doc=List returns all active records for a user.
+EDGES
+  ^contains=github.com/paxlabs-inc/uwac/internal/vault.Memory
+  ^defines=github.com/paxlabs-inc/uwac/internal/vault/vault.go
+
+NODE id=github.com/paxlabs-inc/uwac/internal/vault.Memory.Put kind=method
+  digest=b3:80ced15811fcc61a97a09e67e2f07061f891b4167da3a2709cbe35bb7688a349 file=uwac/internal/vault/vault.go range=75:90 lang=go exported=true byte_range=2405:2845
+  sig=func (s *Memory) Put(_ context.Context, rec *Record) error
+  doc=Put upserts a record.
+EDGES
+  ^contains=github.com/paxlabs-inc/uwac/internal/vault.Memory
+  ^defines=github.com/paxlabs-inc/uwac/internal/vault/vault.go
+
+NODE id=github.com/paxlabs-inc/uwac/internal/vault.NewMemory kind=func
+  digest=b3:25235a9cbe749d326001fbee1843b82ffdf6ef24bf7a218bbb194fd5188c695e file=uwac/internal/vault/vault.go range=57:58 lang=go exported=true byte_range=1847:1964
+  sig=func NewMemory() *Memory
+  doc=NewMemory constructs an empty in-memory store.
+EDGES
+  ^defines=github.com/paxlabs-inc/uwac/internal/vault/vault.go
+
+NODE id=github.com/paxlabs-inc/uwac/internal/vault.Record kind=type
+  digest=b3:bc922d7b835f7f3f618672483354b91c7c91c7af995f1040462062ca47d00535 file=uwac/internal/vault/vault.go range=20:31 lang=go exported=true byte_range=653:1210
+  sig=type Record struct {\n	UserID		string		`json:"user_id"`\n	Provider	string		`json:"provider"`\n	ConnectorID	string		`json:"connector_id"`\n	AccessToken	string		`json:"access_token,omitempty"`		// short-lived cache\n	RefreshToken	string		`json:"refresh_token,omitempty"`	// durable credential\n	Scopes		[]string	`json:"scopes,omitempty"`\n	Expiry		time.Time	`json:"expiry,omitempty"`\n	Status		string		`json:"status"`	// "active" | "revoked"\n	UpdatedAt	time.Time	`json:"updated_at"`\n}
+  doc=Record is one vaulted provider grant.
+EDGES
+  contains=github.com/paxlabs-inc/uwac/internal/vault.Record#AccessToken,github.com/paxlabs-inc/uwac/internal/vault.Record#ConnectorID,github.com/paxlabs-inc/uwac/internal/vault.Record#Expiry,github.com/paxlabs-inc/uwac/internal/vault.Record#Provider,github.com/paxlabs-inc/uwac/internal/vault.Record#RefreshToken,github.com/paxlabs-inc/uwac/internal/vault.Record#Scopes,github.com/paxlabs-inc/uwac/internal/vault.Record#Status,github.com/paxlabs-inc/uwac/internal/vault.Record#UpdatedAt,github.com/paxlabs-inc/uwac/internal/vault.Record#UserID,github.com/paxlabs-inc/uwac/internal/vault.Record.HasScope
+  ^defines=github.com/paxlabs-inc/uwac/internal/vault/vault.go
+
+NODE id=github.com/paxlabs-inc/uwac/internal/vault.Record#AccessToken kind=field
+  digest=b3:cede8c380c9a8438db30efc9030c2e21ab7dcca61975dd36bb8f3ded631fccb0 file=uwac/internal/vault/vault.go range=25:25 lang=go exported=true byte_range=845:899
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/uwac/internal/vault.Record
+
+NODE id=github.com/paxlabs-inc/uwac/internal/vault.Record#ConnectorID kind=field
+  digest=b3:f4db21be8edad8e2ae7c3c8bf091c5af3ade23c637e528e4802c8a9c36d4e2c1 file=uwac/internal/vault/vault.go range=24:24 lang=go exported=true byte_range=799:843
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/uwac/internal/vault.Record
+
+NODE id=github.com/paxlabs-inc/uwac/internal/vault.Record#Expiry kind=field
+  digest=b3:88be8dddf0293892e046eed464497120b1f06e4d8a6380ac9423adecab3c9971 file=uwac/internal/vault/vault.go range=28:28 lang=go exported=true byte_range=1052:1100
+  sig=time.Time
+EDGES
+  ^contains=github.com/paxlabs-inc/uwac/internal/vault.Record
+
+NODE id=github.com/paxlabs-inc/uwac/internal/vault.Record#Provider kind=field
+  digest=b3:24fbdeb25126c18e1e3cccfc0232a8b578fa60be6bd1c5acd7dc8b07341d06fd file=uwac/internal/vault/vault.go range=23:23 lang=go exported=true byte_range=757:797
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/uwac/internal/vault.Record
+
+NODE id=github.com/paxlabs-inc/uwac/internal/vault.Record#RefreshToken kind=field
+  digest=b3:565bcf3b885efde6dfb8b66813243315af6f0bdd1e66a2d7bfbb467779c2934b file=uwac/internal/vault/vault.go range=26:26 lang=go exported=true byte_range=923:978
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/uwac/internal/vault.Record
+
+NODE id=github.com/paxlabs-inc/uwac/internal/vault.Record#Scopes kind=field
+  digest=b3:c3955bd1850a238b331e03f21532bce035cbb0d4c002484fd2c30c44e0ee7e10 file=uwac/internal/vault/vault.go range=27:27 lang=go exported=true byte_range=1002:1050
+  sig=[]string
+EDGES
+  ^contains=github.com/paxlabs-inc/uwac/internal/vault.Record
+
+NODE id=github.com/paxlabs-inc/uwac/internal/vault.Record#Status kind=field
+  digest=b3:b5bfe20cbc5f5ca3ae937ff9d276bf58cc3653ad17ea9a41ba92fed5021159e9 file=uwac/internal/vault/vault.go range=29:29 lang=go exported=true byte_range=1102:1140
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/uwac/internal/vault.Record
+
+NODE id=github.com/paxlabs-inc/uwac/internal/vault.Record#UpdatedAt kind=field
+  digest=b3:29be55eec590091d2b0cb8344217182d57ff550f8697e401feba4234edefd435 file=uwac/internal/vault/vault.go range=30:30 lang=go exported=true byte_range=1166:1208
+  sig=time.Time
+EDGES
+  ^contains=github.com/paxlabs-inc/uwac/internal/vault.Record
+
+NODE id=github.com/paxlabs-inc/uwac/internal/vault.Record#UserID kind=field
+  digest=b3:d9323af030bf5ca46b6775710d2480a67570f20bb06d152b604f462f04104291 file=uwac/internal/vault/vault.go range=22:22 lang=go exported=true byte_range=716:755
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/uwac/internal/vault.Record
+
+NODE id=github.com/paxlabs-inc/uwac/internal/vault.Record.HasScope kind=method
+  digest=b3:12a63d2e4c6730417a36ad345e13740cf0154c88d30d41208d817309e00a20f1 file=uwac/internal/vault/vault.go range=33:41 lang=go exported=true byte_range=1212:1393
+  sig=func (r *Record) HasScope(want string) bool
+  doc=HasScope reports whether the grant covers want.
+EDGES
+  ^contains=github.com/paxlabs-inc/uwac/internal/vault.Record
+  ^defines=github.com/paxlabs-inc/uwac/internal/vault/vault.go
+
+NODE id=github.com/paxlabs-inc/uwac/internal/vault.Store kind=interface
+  digest=b3:b8ab521e1451715c4b2dfe5b781b55ceb2bb65a286d93c76cc6dd2c69a80cdc8 file=uwac/internal/vault/vault.go range=43:49 lang=go exported=true byte_range=1395:1721
+  sig=type Store interface {\n	Get(ctx context.Context, userID, provider string) (*Record, error)\n	Put(ctx context.Context, rec *Record) error\n	Delete(ctx context.Context, userID, provider string) error\n	List(ctx context.Context, userID string) ([]*Record, error)\n}
+  doc=Store persists provider credentials keyed by (userID, provider).
+EDGES
+  ^implements=github.com/paxlabs-inc/uwac/internal/vault.Memory
+  ^defines=github.com/paxlabs-inc/uwac/internal/vault/vault.go
+
+NODE id=github.com/paxlabs-inc/uwac/internal/vault._ kind=var
+  digest=b3:d6fd2c86a01ce14692708e834713214f60955644bb953d63cd42b2273a5224aa file=uwac/internal/vault/vault.go range=115:116 lang=go exported=false byte_range=3441:3492
+  sig=vault.Store
+  doc=compile-time check.
+EDGES
+  ^defines=github.com/paxlabs-inc/uwac/internal/vault/vault.go
+
+NODE id=github.com/paxlabs-inc/uwac/internal/vault.key kind=func
+  digest=b3:cb498d173626e2dbab596509342e17d2c52756cd6fe3a92340eddccdc2e25a03 file=uwac/internal/vault/vault.go range=60:60 lang=go exported=false byte_range=1966:2044
+  sig=func key(userID, provider string) string
+EDGES
+  ^defines=github.com/paxlabs-inc/uwac/internal/vault/vault.go
+
+NODE id=github.com/paxlabs-inc/uwac/internal/vault/vault.go kind=file
+  digest=b3:ebddbaa9af2de4ac44e744ac6798c8dcbb89ac4c429f65ba3eb170cf05326013 file=uwac/internal/vault/vault.go range=1:116 lang=go exported=true
+EDGES
+  defines=github.com/paxlabs-inc/uwac/internal/vault.ErrNotFound,github.com/paxlabs-inc/uwac/internal/vault.Memory,github.com/paxlabs-inc/uwac/internal/vault.Memory.Delete,github.com/paxlabs-inc/uwac/internal/vault.Memory.Get,github.com/paxlabs-inc/uwac/internal/vault.Memory.List,github.com/paxlabs-inc/uwac/internal/vault.Memory.Put,github.com/paxlabs-inc/uwac/internal/vault.NewMemory,github.com/paxlabs-inc/uwac/internal/vault.Record,github.com/paxlabs-inc/uwac/internal/vault.Record.HasScope,github.com/paxlabs-inc/uwac/internal/vault.Store,github.com/paxlabs-inc/uwac/internal/vault._,github.com/paxlabs-inc/uwac/internal/vault.key
+  ^contains=github.com/paxlabs-inc/uwac/internal/vault

@@ -1,0 +1,110 @@
+# GENERATED gen=codegraph do-not-edit merkle=b3:2dc69ec8dbbe0231373534486cf12ff6fdb0eaad7b2dfdcbc4d73453c8542ee8
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/mcp kind=package
+  digest=b3:916fbf250b8788b75d33c3b19189a9816631e1acd87a1cd9070f1bf38e749fee file=tachyon/pkg/mcp range=0:0 lang=go exported=true
+EDGES
+  contains=github.com/paxlabs-inc/tachyon-tools/pkg/mcp/server.go,github.com/paxlabs-inc/tachyon-tools/pkg/mcp/tools.go
+  ^contains=mod:github.com/paxlabs-inc/tachyon-tools
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/mcp.FormatToolError kind=func
+  digest=b3:865887a4e3ebcd250180049296a98867b6c091692c1aae655e4581a20c108f51 file=tachyon/pkg/mcp/server.go range=125:129 lang=go exported=true byte_range=3413:3644
+  sig=func FormatToolError(name string, err *types.Error) string
+  doc=FormatToolError returns MCP isError content for structured failures.
+EDGES
+  ^defines=github.com/paxlabs-inc/tachyon-tools/pkg/mcp/server.go
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/mcp.RunStdio kind=func
+  digest=b3:55219e9405bb12c39172ed6be76a122b5ef4085bd7d094f4cca1643f01439f24 file=tachyon/pkg/mcp/server.go range=15:40 lang=go exported=true byte_range=230:944
+  sig=func RunStdio(eng *engine.Engine) error
+  doc=RunStdio serves MCP over newline-delimited JSON-RPC on stdin/stdout.
+EDGES
+  ^defines=github.com/paxlabs-inc/tachyon-tools/pkg/mcp/server.go
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/mcp.Selftest kind=func
+  digest=b3:743f965bf95a46300fc9df61bcb782319f504159dd4515d70ee8223b47f54f68 file=tachyon/pkg/mcp/server.go range=107:123 lang=go exported=true byte_range=2966:3411
+  sig=func Selftest() error
+  doc=Selftest verifies tool registry matches docs list.
+EDGES
+  ^defines=github.com/paxlabs-inc/tachyon-tools/pkg/mcp/server.go
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/mcp.Tool kind=type
+  digest=b3:725d4e5f9e3a75ac4ed6eacae23da04d14cb6129feb0cc70a06738d46891c786 file=tachyon/pkg/mcp/tools.go range=3:8 lang=go exported=true byte_range=13:233
+  sig=type Tool struct {\n	Name		string		`json:"name"`\n	Description	string		`json:"description"`\n	InputSchema	map[string]any	`json:"inputSchema"`\n}
+  doc=Tool describes one MCP tool (mirrors docs/mcp-tools.md).
+EDGES
+  contains=github.com/paxlabs-inc/tachyon-tools/pkg/mcp.Tool#Description,github.com/paxlabs-inc/tachyon-tools/pkg/mcp.Tool#InputSchema,github.com/paxlabs-inc/tachyon-tools/pkg/mcp.Tool#Name
+  ^defines=github.com/paxlabs-inc/tachyon-tools/pkg/mcp/tools.go
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/mcp.Tool#Description kind=field
+  digest=b3:46b13cb3d102d1829de7e6119ac57b79f5929a63a37c4e7eca83eead39fd132b file=tachyon/pkg/mcp/tools.go range=6:6 lang=go exported=true byte_range=135:182
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/tachyon-tools/pkg/mcp.Tool
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/mcp.Tool#InputSchema kind=field
+  digest=b3:ebbdb39a20484f83163e18c0190f16909614bf3da819218cead8c320102cc299 file=tachyon/pkg/mcp/tools.go range=7:7 lang=go exported=true byte_range=184:231
+  sig=map[string]any
+EDGES
+  ^contains=github.com/paxlabs-inc/tachyon-tools/pkg/mcp.Tool
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/mcp.Tool#Name kind=field
+  digest=b3:e5975c27ca398ec24e99cbc990bf326c8a2d5e213167886dea1fd68fb9432cbe file=tachyon/pkg/mcp/tools.go range=5:5 lang=go exported=true byte_range=93:133
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/tachyon-tools/pkg/mcp.Tool
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/mcp.ToolNames kind=var
+  digest=b3:25d08338f444dbb11d4da23306bc93918a3fc025d5c458c42fd20f5147c94549 file=tachyon/pkg/mcp/tools.go range=10:21 lang=go exported=true byte_range=235:516
+  sig=[]string
+  doc=ToolNames is the canonical v1 tool list for selftest.
+EDGES
+  ^defines=github.com/paxlabs-inc/tachyon-tools/pkg/mcp/tools.go
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/mcp.Tools kind=func
+  digest=b3:8b4c478ad91b7dc174320d12f48b52e68af19df1186eae6247a5e1816ebdd576 file=tachyon/pkg/mcp/tools.go range=23:37 lang=go exported=true byte_range=518:1671
+  sig=func Tools() []Tool
+  doc=Tools returns MCP tool descriptors.
+EDGES
+  ^defines=github.com/paxlabs-inc/tachyon-tools/pkg/mcp/tools.go
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/mcp.callTool kind=func
+  digest=b3:6ee90c3a8dfb04e25911553a4f53c14d2f272c821ebd10a9e00883010cfb9936 file=tachyon/pkg/mcp/server.go range=81:91 lang=go exported=false byte_range=2152:2500
+  sig=func callTool(ctx context.Context, eng *engine.Engine, name string, args json.RawMessage) (any, error)
+EDGES
+  ^defines=github.com/paxlabs-inc/tachyon-tools/pkg/mcp/server.go
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/mcp.handle kind=func
+  digest=b3:7937571c78f6f86ebff5ecec295dd3aa0d64443e5a35fcec07a748c98040e018 file=tachyon/pkg/mcp/server.go range=42:79 lang=go exported=false byte_range=946:2150
+  sig=func handle(eng *engine.Engine, method string, params json.RawMessage, id any) map[string]any
+EDGES
+  ^defines=github.com/paxlabs-inc/tachyon-tools/pkg/mcp/server.go
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/mcp.rpcErr kind=func
+  digest=b3:1007f7fa1feab2f645e833845384ab03653604094a9ef0758e4b7271b4615db8 file=tachyon/pkg/mcp/server.go range=103:105 lang=go exported=false byte_range=2790:2964
+  sig=func rpcErr(id any, code int, message string) map[string]any
+EDGES
+  ^defines=github.com/paxlabs-inc/tachyon-tools/pkg/mcp/server.go
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/mcp.rpcOk kind=func
+  digest=b3:9badce362acfe4f8d65714f29548e2981d19daebd283b6138d722a127d57abb3 file=tachyon/pkg/mcp/server.go range=99:101 lang=go exported=false byte_range=2674:2788
+  sig=func rpcOk(id, result any) map[string]any
+EDGES
+  ^defines=github.com/paxlabs-inc/tachyon-tools/pkg/mcp/server.go
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/mcp.send kind=func
+  digest=b3:1b8bb23b05b69ea3cebc9463a279df540595be953a4d0c5253edbc5289ea47b2 file=tachyon/pkg/mcp/server.go range=93:97 lang=go exported=false byte_range=2502:2672
+  sig=func send(v any)
+EDGES
+  ^defines=github.com/paxlabs-inc/tachyon-tools/pkg/mcp/server.go
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/mcp/server.go kind=file
+  digest=b3:80d9183d6badb4d14cd914cae5024851252fa816b7ce464b31481afd986ca016 file=tachyon/pkg/mcp/server.go range=1:129 lang=go exported=true
+EDGES
+  defines=github.com/paxlabs-inc/tachyon-tools/pkg/mcp.FormatToolError,github.com/paxlabs-inc/tachyon-tools/pkg/mcp.RunStdio,github.com/paxlabs-inc/tachyon-tools/pkg/mcp.Selftest,github.com/paxlabs-inc/tachyon-tools/pkg/mcp.callTool,github.com/paxlabs-inc/tachyon-tools/pkg/mcp.handle,github.com/paxlabs-inc/tachyon-tools/pkg/mcp.rpcErr,github.com/paxlabs-inc/tachyon-tools/pkg/mcp.rpcOk,github.com/paxlabs-inc/tachyon-tools/pkg/mcp.send
+  ^contains=github.com/paxlabs-inc/tachyon-tools/pkg/mcp
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/pkg/mcp/tools.go kind=file
+  digest=b3:3f80f0c60053a023235edf5e92c8a0ae3bff8799a21e27b218243eb5491c8395 file=tachyon/pkg/mcp/tools.go range=1:37 lang=go exported=true
+EDGES
+  defines=github.com/paxlabs-inc/tachyon-tools/pkg/mcp.Tool,github.com/paxlabs-inc/tachyon-tools/pkg/mcp.ToolNames,github.com/paxlabs-inc/tachyon-tools/pkg/mcp.Tools
+  ^contains=github.com/paxlabs-inc/tachyon-tools/pkg/mcp

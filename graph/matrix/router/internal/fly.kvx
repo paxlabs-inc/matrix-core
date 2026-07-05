@@ -1,0 +1,567 @@
+# GENERATED gen=codegraph do-not-edit merkle=b3:2dc69ec8dbbe0231373534486cf12ff6fdb0eaad7b2dfdcbc4d73453c8542ee8
+
+NODE id=matrix/router/internal/fly kind=package
+  digest=b3:a38bd704e5a2f2a9f78deec02152eee712b33034318a024bffcd9bd0317d1058 file=router/internal/fly range=0:0 lang=go exported=true
+EDGES
+  contains=matrix/router/internal/fly/fly.go,matrix/router/internal/fly/provisioner.go
+  ^contains=mod:matrix/router
+
+NODE id=matrix/router/internal/fly.Client kind=type
+  digest=b3:15cd63a9daa20e042279827cbaf38e889a2b19b17b0bbf11e9bc27f7c9974b88 file=router/internal/fly/fly.go range=44:50 lang=go exported=true byte_range=1395:1548
+  sig=type Client struct {\n	endpoint	string\n	token		string\n	app		string\n	hc		*http.Client\n}
+  doc=Client makes authenticated calls to the Machines API.
+EDGES
+  contains=matrix/router/internal/fly.Client#app,matrix/router/internal/fly.Client#endpoint,matrix/router/internal/fly.Client#hc,matrix/router/internal/fly.Client#token,matrix/router/internal/fly.Client.CreateMachine,matrix/router/internal/fly.Client.CreateVolume,matrix/router/internal/fly.Client.DestroyMachine,matrix/router/internal/fly.Client.EnsureStarted,matrix/router/internal/fly.Client.GetMachine,matrix/router/internal/fly.Client.StartMachine,matrix/router/internal/fly.Client.WithEndpoint,matrix/router/internal/fly.Client.do,matrix/router/internal/fly.Client.machinesPath,matrix/router/internal/fly.Client.volumesPath
+  ^defines=matrix/router/internal/fly/fly.go
+
+NODE id=matrix/router/internal/fly.Client#app kind=field
+  digest=b3:0cb9eeb83775d77b817ac99b0db7295fd9283329ae2611f8cb7f2e6b293b0c1a file=router/internal/fly/fly.go range=48:48 lang=go exported=false byte_range=1508:1523
+  sig=string
+EDGES
+  ^contains=matrix/router/internal/fly.Client
+
+NODE id=matrix/router/internal/fly.Client#endpoint kind=field
+  digest=b3:a18b42b3110977e7c5e961063f26f619be105163d889d17e24c714a6a0d72e34 file=router/internal/fly/fly.go range=46:46 lang=go exported=false byte_range=1474:1489
+  sig=string
+EDGES
+  ^contains=matrix/router/internal/fly.Client
+
+NODE id=matrix/router/internal/fly.Client#hc kind=field
+  digest=b3:92b604495d4daa0b5663ddf14d5200f6356281a1b1be09a8e3d6f2bd46ebdd3a file=router/internal/fly/fly.go range=49:49 lang=go exported=false byte_range=1525:1546
+  sig=*http.Client
+EDGES
+  ^contains=matrix/router/internal/fly.Client
+
+NODE id=matrix/router/internal/fly.Client#token kind=field
+  digest=b3:16926a1fd227dfffdf57efc5411460ff05921e70b3ccc4bfa0ec8f1900f1b5d8 file=router/internal/fly/fly.go range=47:47 lang=go exported=false byte_range=1491:1506
+  sig=string
+EDGES
+  ^contains=matrix/router/internal/fly.Client
+
+NODE id=matrix/router/internal/fly.Client.CreateMachine kind=method
+  digest=b3:c4f208111a8523cf6c86860dff8b58371ee684469935094209bc456abf5b236a file=router/internal/fly/fly.go range=159:166 lang=go exported=true byte_range=5223:5519
+  sig=func (c *Client) CreateMachine(ctx context.Context, req *CreateMachineRequest) (*Machine, error)
+  doc=CreateMachine provisions a new machine with the given config.
+EDGES
+  ^contains=matrix/router/internal/fly.Client
+  ^defines=matrix/router/internal/fly/fly.go
+
+NODE id=matrix/router/internal/fly.Client.CreateVolume kind=method
+  digest=b3:93243cddff7e2c153ceaf16cac713a4cae6a3045b83dd8060e7507aecedc65b5 file=router/internal/fly/fly.go range=178:185 lang=go exported=true byte_range=5824:6113
+  sig=func (c *Client) CreateVolume(ctx context.Context, req *CreateVolumeRequest) (*Volume, error)
+  doc=CreateVolume provisions a fresh volume in the given region.
+EDGES
+  ^contains=matrix/router/internal/fly.Client
+  ^defines=matrix/router/internal/fly/fly.go
+
+NODE id=matrix/router/internal/fly.Client.DestroyMachine kind=method
+  digest=b3:9d278d49b606968ac68725dc582c348788218d4c3635d607ea348013041ce4f9 file=router/internal/fly/fly.go range=168:176 lang=go exported=true byte_range=5521:5822
+  sig=func (c *Client) DestroyMachine(ctx context.Context, id string, force bool) error
+  doc=DestroyMachine deletes a machine. force=true unconditionally tears it\ndown even if started.
+EDGES
+  ^contains=matrix/router/internal/fly.Client
+  ^defines=matrix/router/internal/fly/fly.go
+
+NODE id=matrix/router/internal/fly.Client.EnsureStarted kind=method
+  digest=b3:148d99d548947fb7b4214ff842a25a8aad5e06abb983093f5766b25018b0eb0c file=router/internal/fly/fly.go range=187:227 lang=go exported=true byte_range=6115:7331
+  sig=func (c *Client) EnsureStarted(ctx context.Context, id string, probeInterval time.Duration) (*Machine, error)
+  doc=EnsureStarted wakes the machine if not already started, then polls\nat probeInterval (jittered up to 1.5x) until the machine reports\nstate=started or ctx times out. Returns the final Machine state.\n\nThis is the hot-path the proxy calls per request: when the user's\nmachine is suspended it incurs a wake-then-poll latency (~250ms-2s\nin our experience). The proxy adds ~one extra DB round-trip + the\nwake; an already-started machine returns near-instantly because the\nfirst GetMachine sees Started=true.
+EDGES
+  ^contains=matrix/router/internal/fly.Client
+  ^defines=matrix/router/internal/fly/fly.go
+
+NODE id=matrix/router/internal/fly.Client.GetMachine kind=method
+  digest=b3:a793f375b5e2555e1e4168201b6d28cf8ffc0ffa1af3ba79e87f11d2819269b8 file=router/internal/fly/fly.go range=144:151 lang=go exported=true byte_range=4697:4954
+  sig=func (c *Client) GetMachine(ctx context.Context, id string) (*Machine, error)
+  doc=GetMachine fetches a machine by id.
+EDGES
+  ^contains=matrix/router/internal/fly.Client
+  ^defines=matrix/router/internal/fly/fly.go
+
+NODE id=matrix/router/internal/fly.Client.StartMachine kind=method
+  digest=b3:e8f6637c6412c541ca2fc6bf5657620585664b58bb4d3f960112cdefecb844bb file=router/internal/fly/fly.go range=153:157 lang=go exported=true byte_range=4956:5221
+  sig=func (c *Client) StartMachine(ctx context.Context, id string) error
+  doc=StartMachine wakes a stopped/suspended machine. Idempotent: starting\nan already-started machine returns nil.
+EDGES
+  ^contains=matrix/router/internal/fly.Client
+  ^defines=matrix/router/internal/fly/fly.go
+
+NODE id=matrix/router/internal/fly.Client.WithEndpoint kind=method
+  digest=b3:9a8e77150402e31405abe3fa366c9331c9de25720428bb3024814fb504e9ab50 file=router/internal/fly/fly.go range=65:70 lang=go exported=true byte_range=1959:2151
+  sig=func (c *Client) WithEndpoint(ep string) *Client
+  doc=WithEndpoint overrides the API base URL — used by tests with mock\nservers. Returns *Client for chaining.
+EDGES
+  ^contains=matrix/router/internal/fly.Client
+  ^defines=matrix/router/internal/fly/fly.go
+
+NODE id=matrix/router/internal/fly.Client.do kind=method
+  digest=b3:1e56df040a1eab08026ad6a1b9e20f07fc1d8c165b249811ea07fb1b77607c24 file=router/internal/fly/fly.go range=239:284 lang=go exported=false byte_range=7603:9217
+  sig=func (c *Client) do(ctx context.Context, method, path string, body any, out any) error
+  doc=do executes a JSON request, decoding the response into out (nil to\ndiscard). Maps 401/403/404 to sentinel errors for clean callsite\nbranching.
+EDGES
+  ^contains=matrix/router/internal/fly.Client
+  ^defines=matrix/router/internal/fly/fly.go
+
+NODE id=matrix/router/internal/fly.Client.machinesPath kind=method
+  digest=b3:463415ab6f13511b5fa761dbbac886ffa83e03988a31dbe49d1582b5688e56ee file=router/internal/fly/fly.go range=229:232 lang=go exported=false byte_range=7333:7468
+  sig=func (c *Client) machinesPath() string
+  doc=machinesPath returns "/v1/apps/<app>/machines".
+EDGES
+  ^contains=matrix/router/internal/fly.Client
+  ^defines=matrix/router/internal/fly/fly.go
+
+NODE id=matrix/router/internal/fly.Client.volumesPath kind=method
+  digest=b3:fcb0e077517a0a73ff7073ca34fb53def2ab74dc458c087e8cc66d2e7026bea5 file=router/internal/fly/fly.go range=234:237 lang=go exported=false byte_range=7470:7601
+  sig=func (c *Client) volumesPath() string
+  doc=volumesPath returns "/v1/apps/<app>/volumes".
+EDGES
+  ^contains=matrix/router/internal/fly.Client
+  ^defines=matrix/router/internal/fly/fly.go
+
+NODE id=matrix/router/internal/fly.CreateMachineConfig kind=type
+  digest=b3:94f18b8ce57a9df67f6253d9182a75101d5398e3e4e892cd4d2a0dc9d66326d4 file=router/internal/fly/fly.go range=107:117 lang=go exported=true byte_range=3505:4085
+  sig=type CreateMachineConfig struct {\n	Image		string			`json:"image"`\n	Env		map[string]string	`json:"env,omitempty"`\n	Mounts		[]CreateMachineMount	`json:"mounts,omitempty"`\n	Services	[]map[string]any	`json:"services,omitempty"`\n	Guest		*CreateMachineGuest	`json:"guest,omitempty"`\n	Restart		*CreateMachineRestart	`json:"restart,omitempty"`\n	AutoDestroy	bool			`json:"auto_destroy,omitempty"`\n	Init		map[string]any		`json:"init,omitempty"`\n}
+  doc=CreateMachineConfig wraps the immutable Machine config block.
+EDGES
+  contains=matrix/router/internal/fly.CreateMachineConfig#AutoDestroy,matrix/router/internal/fly.CreateMachineConfig#Env,matrix/router/internal/fly.CreateMachineConfig#Guest,matrix/router/internal/fly.CreateMachineConfig#Image,matrix/router/internal/fly.CreateMachineConfig#Init,matrix/router/internal/fly.CreateMachineConfig#Mounts,matrix/router/internal/fly.CreateMachineConfig#Restart,matrix/router/internal/fly.CreateMachineConfig#Services
+  ^defines=matrix/router/internal/fly/fly.go
+
+NODE id=matrix/router/internal/fly.CreateMachineConfig#AutoDestroy kind=field
+  digest=b3:201238e36ad584ffc646bb7fbe24454d1ead8ee967ca3253d05a7b2425b321f5 file=router/internal/fly/fly.go range=115:115 lang=go exported=true byte_range=3959:4024
+  sig=bool
+EDGES
+  ^contains=matrix/router/internal/fly.CreateMachineConfig
+
+NODE id=matrix/router/internal/fly.CreateMachineConfig#Env kind=field
+  digest=b3:3c7fe273b60bf9ac94e129ab0da745b0d4d69bd3dab2cafbe9b9dc628143f78f file=router/internal/fly/fly.go range=110:110 lang=go exported=true byte_range=3655:3711
+  sig=map[string]string
+EDGES
+  ^contains=matrix/router/internal/fly.CreateMachineConfig
+
+NODE id=matrix/router/internal/fly.CreateMachineConfig#Guest kind=field
+  digest=b3:acc117f279b4df4bd72c167dda024f6835c120ff61a73c7bb7a6206bb248be7d file=router/internal/fly/fly.go range=113:113 lang=go exported=true byte_range=3837:3895
+  sig=*fly.CreateMachineGuest
+EDGES
+  ^contains=matrix/router/internal/fly.CreateMachineConfig
+
+NODE id=matrix/router/internal/fly.CreateMachineConfig#Image kind=field
+  digest=b3:df247a99b5c27970655edcc87fa61251c17d45b561e40d9d558452cf4dabce35 file=router/internal/fly/fly.go range=109:109 lang=go exported=true byte_range=3605:3653
+  sig=string
+EDGES
+  ^contains=matrix/router/internal/fly.CreateMachineConfig
+
+NODE id=matrix/router/internal/fly.CreateMachineConfig#Init kind=field
+  digest=b3:622aa5dd79a442a04a88a0b05119291b591144fc6e14d179feea481746e5fc8c file=router/internal/fly/fly.go range=116:116 lang=go exported=true byte_range=4026:4083
+  sig=map[string]any
+EDGES
+  ^contains=matrix/router/internal/fly.CreateMachineConfig
+
+NODE id=matrix/router/internal/fly.CreateMachineConfig#Mounts kind=field
+  digest=b3:d5c9f1919f6b0d517371394f2daa7211bd214e85d9f791cdd130b3e6df9c9f57 file=router/internal/fly/fly.go range=111:111 lang=go exported=true byte_range=3713:3772
+  sig=[]fly.CreateMachineMount
+EDGES
+  ^contains=matrix/router/internal/fly.CreateMachineConfig
+
+NODE id=matrix/router/internal/fly.CreateMachineConfig#Restart kind=field
+  digest=b3:473a7eb7cec3597a06d843389e2056071045296e633c48ff070b65ac45360b6f file=router/internal/fly/fly.go range=114:114 lang=go exported=true byte_range=3897:3957
+  sig=*fly.CreateMachineRestart
+EDGES
+  ^contains=matrix/router/internal/fly.CreateMachineConfig
+
+NODE id=matrix/router/internal/fly.CreateMachineConfig#Services kind=field
+  digest=b3:e9946c886c1394d07bc890daa3490905e5094c94a0b70e5e6570bd4e929c955f file=router/internal/fly/fly.go range=112:112 lang=go exported=true byte_range=3774:3835
+  sig=[]map[string]any
+EDGES
+  ^contains=matrix/router/internal/fly.CreateMachineConfig
+
+NODE id=matrix/router/internal/fly.CreateMachineGuest kind=type
+  digest=b3:b43f3ade376e9b113bfb8d2af7a856489b3668ffd39d5ea7d5c744ec66f6cab3 file=router/internal/fly/fly.go range=125:130 lang=go exported=true byte_range=4224:4396
+  sig=type CreateMachineGuest struct {\n	CPUs		int	`json:"cpus"`\n	MemoryMB	int	`json:"memory_mb"`\n	CPUKind		string	`json:"cpu_kind"`\n}
+  doc=CreateMachineGuest sizes the VM.
+EDGES
+  contains=matrix/router/internal/fly.CreateMachineGuest#CPUKind,matrix/router/internal/fly.CreateMachineGuest#CPUs,matrix/router/internal/fly.CreateMachineGuest#MemoryMB
+  ^defines=matrix/router/internal/fly/fly.go
+
+NODE id=matrix/router/internal/fly.CreateMachineGuest#CPUKind kind=field
+  digest=b3:85a5a2f252a5f7ed7260dfe2996577e7ec25b988bd8193fb2cc46913e6e6e392 file=router/internal/fly/fly.go range=129:129 lang=go exported=true byte_range=4361:4394
+  sig=string
+EDGES
+  ^contains=matrix/router/internal/fly.CreateMachineGuest
+
+NODE id=matrix/router/internal/fly.CreateMachineGuest#CPUs kind=field
+  digest=b3:cbb6c7853cf71d20330ffceccca38a258163142cc61e73d928e4f9cb0bc6473d file=router/internal/fly/fly.go range=127:127 lang=go exported=true byte_range=4294:4323
+  sig=int
+EDGES
+  ^contains=matrix/router/internal/fly.CreateMachineGuest
+
+NODE id=matrix/router/internal/fly.CreateMachineGuest#MemoryMB kind=field
+  digest=b3:4950dc1db2eeabbeb28c987db7263bdb926038086871b3002083ae6f867f22b0 file=router/internal/fly/fly.go range=128:128 lang=go exported=true byte_range=4325:4359
+  sig=int
+EDGES
+  ^contains=matrix/router/internal/fly.CreateMachineGuest
+
+NODE id=matrix/router/internal/fly.CreateMachineMount kind=type
+  digest=b3:8c152bca8207c0024b43b25985d6632a5866bb6df33c70b8da22a7f7b8aba887 file=router/internal/fly/fly.go range=119:123 lang=go exported=true byte_range=4087:4222
+  sig=type CreateMachineMount struct {\n	Volume	string	`json:"volume"`\n	Path	string	`json:"path"`\n}
+  doc=CreateMachineMount attaches a volume.
+EDGES
+  contains=matrix/router/internal/fly.CreateMachineMount#Path,matrix/router/internal/fly.CreateMachineMount#Volume
+  ^defines=matrix/router/internal/fly/fly.go
+
+NODE id=matrix/router/internal/fly.CreateMachineMount#Path kind=field
+  digest=b3:01170f9007f351ae3e0d04744fd8d222dcd5b631d280bd2e3977f84df05d657d file=router/internal/fly/fly.go range=122:122 lang=go exported=true byte_range=4193:4220
+  sig=string
+EDGES
+  ^contains=matrix/router/internal/fly.CreateMachineMount
+
+NODE id=matrix/router/internal/fly.CreateMachineMount#Volume kind=field
+  digest=b3:1e0bf36650fe81591e83ee218c862ae9d851d53c7815f36c45544d93af0adf90 file=router/internal/fly/fly.go range=121:121 lang=go exported=true byte_range=4162:4191
+  sig=string
+EDGES
+  ^contains=matrix/router/internal/fly.CreateMachineMount
+
+NODE id=matrix/router/internal/fly.CreateMachineRequest kind=type
+  digest=b3:6454499a19501a53dbafa04fc7566f6f05c7b7e13334e9e57b87aa7e371cd893 file=router/internal/fly/fly.go range=98:105 lang=go exported=true byte_range=3136:3503
+  sig=type CreateMachineRequest struct {\n	Name	string			`json:"name,omitempty"`\n	Region	string			`json:"region,omitempty"`\n	Config	CreateMachineConfig	`json:"config"`\n}
+  doc=CreateMachineRequest is the POST /machines body. We omit everything\noptional so callers can supply only what the matrix-daemon image\nneeds (image+env+region+volume mount).
+EDGES
+  contains=matrix/router/internal/fly.CreateMachineRequest#Config,matrix/router/internal/fly.CreateMachineRequest#Name,matrix/router/internal/fly.CreateMachineRequest#Region
+  ^defines=matrix/router/internal/fly/fly.go
+
+NODE id=matrix/router/internal/fly.CreateMachineRequest#Config kind=field
+  digest=b3:47dab8912581465fb65b9d5079abb0882f0eababada8a3640b56e52cd7c833b4 file=router/internal/fly/fly.go range=104:104 lang=go exported=true byte_range=3459:3501
+  sig=fly.CreateMachineConfig
+EDGES
+  ^contains=matrix/router/internal/fly.CreateMachineRequest
+
+NODE id=matrix/router/internal/fly.CreateMachineRequest#Name kind=field
+  digest=b3:78fdbf820ec3853a6b80a41b64592ec9b91658295ed19fec3bcecc21dfda5500 file=router/internal/fly/fly.go range=102:102 lang=go exported=true byte_range=3353:3403
+  sig=string
+EDGES
+  ^contains=matrix/router/internal/fly.CreateMachineRequest
+
+NODE id=matrix/router/internal/fly.CreateMachineRequest#Region kind=field
+  digest=b3:2b0835d98d68a94105098cc51186abe3d4f62e9b069a5d4d050b2a7d1b76cdf1 file=router/internal/fly/fly.go range=103:103 lang=go exported=true byte_range=3405:3457
+  sig=string
+EDGES
+  ^contains=matrix/router/internal/fly.CreateMachineRequest
+
+NODE id=matrix/router/internal/fly.CreateMachineRestart kind=type
+  digest=b3:876348e84ef799b62700a3d4934f5600735687a737ed91ddae7b3da9c9d8d763 file=router/internal/fly/fly.go range=132:135 lang=go exported=true byte_range=4398:4525
+  sig=type CreateMachineRestart struct {\n	Policy string `json:"policy"`\n}
+  doc=CreateMachineRestart matches Fly's restart policy block.
+EDGES
+  contains=matrix/router/internal/fly.CreateMachineRestart#Policy
+  ^defines=matrix/router/internal/fly/fly.go
+
+NODE id=matrix/router/internal/fly.CreateMachineRestart#Policy kind=field
+  digest=b3:5e776a0e6f88d87856315ee78e3d1b6aadcec7074be6ff6e64e3315fa57d96ba file=router/internal/fly/fly.go range=134:134 lang=go exported=true byte_range=4494:4523
+  sig=string
+EDGES
+  ^contains=matrix/router/internal/fly.CreateMachineRestart
+
+NODE id=matrix/router/internal/fly.CreateVolumeRequest kind=type
+  digest=b3:744d0f2c35a4808efbe1397d6fd863a9922274ce8f380b58ad3dbac71e8e1733 file=router/internal/fly/fly.go range=137:142 lang=go exported=true byte_range=4527:4695
+  sig=type CreateVolumeRequest struct {\n	Name	string	`json:"name"`\n	Region	string	`json:"region"`\n	SizeGB	int	`json:"size_gb"`\n}
+  doc=CreateVolumeRequest creates a volume.
+EDGES
+  contains=matrix/router/internal/fly.CreateVolumeRequest#Name,matrix/router/internal/fly.CreateVolumeRequest#Region,matrix/router/internal/fly.CreateVolumeRequest#SizeGB
+  ^defines=matrix/router/internal/fly/fly.go
+
+NODE id=matrix/router/internal/fly.CreateVolumeRequest#Name kind=field
+  digest=b3:5cfa37d655900c8e560d781b34f14a0ce1f8a9df41fa97291753ca1d88341f07 file=router/internal/fly/fly.go range=139:139 lang=go exported=true byte_range=4603:4630
+  sig=string
+EDGES
+  ^contains=matrix/router/internal/fly.CreateVolumeRequest
+
+NODE id=matrix/router/internal/fly.CreateVolumeRequest#Region kind=field
+  digest=b3:ccc5e537b2a6738ebf933fa748b530a14eca18d75b9342019ce7ef5ca397f39e file=router/internal/fly/fly.go range=140:140 lang=go exported=true byte_range=4632:4661
+  sig=string
+EDGES
+  ^contains=matrix/router/internal/fly.CreateVolumeRequest
+
+NODE id=matrix/router/internal/fly.CreateVolumeRequest#SizeGB kind=field
+  digest=b3:f35e7b4ee5f9e3a0405eca6508819c397f0aaa96d4b94939ad3d3004475d4ca4 file=router/internal/fly/fly.go range=141:141 lang=go exported=true byte_range=4663:4693
+  sig=int
+EDGES
+  ^contains=matrix/router/internal/fly.CreateVolumeRequest
+
+NODE id=matrix/router/internal/fly.DefaultEndpoint kind=const
+  digest=b3:0fdd71b5fbd59011b568938d7c7fa1c9dd4e81d74c9b44769068f82cd938d02d file=router/internal/fly/fly.go range=32:34 lang=go exported=true byte_range=923:1078
+  sig=untyped string
+  doc=DefaultEndpoint is the public Machines API base. Override via\nWithEndpoint for local mock servers.
+EDGES
+  ^defines=matrix/router/internal/fly/fly.go
+
+NODE id=matrix/router/internal/fly.ErrAppNotFound kind=var
+  digest=b3:36757ee57356e77023a97c5500b2f8c3dc5a5e9ce7a7591dbe04c503a332ad4c file=router/internal/fly/fly.go range=36:39 lang=go exported=true byte_range=1080:1259
+  sig=error
+  doc=Sentinel errors. Callers errors.Is to dispatch on these.
+EDGES
+  ^defines=matrix/router/internal/fly/fly.go
+
+NODE id=matrix/router/internal/fly.ErrMachineNotFound kind=var
+  digest=b3:30041e36f139e4e1f8b81c17627bf41678be8e17997cd249288dc8493c75a82f file=router/internal/fly/fly.go range=36:38 lang=go exported=true byte_range=1080:1204
+  sig=error
+  doc=Sentinel errors. Callers errors.Is to dispatch on these.
+EDGES
+  ^defines=matrix/router/internal/fly/fly.go
+
+NODE id=matrix/router/internal/fly.ErrUnauthorized kind=var
+  digest=b3:b7d0799ae5a2879e66e2c51ea3e3ddbe32c137308426014bf48ff9a3b7ada339 file=router/internal/fly/fly.go range=36:40 lang=go exported=true byte_range=1080:1335
+  sig=error
+  doc=Sentinel errors. Callers errors.Is to dispatch on these.
+EDGES
+  ^defines=matrix/router/internal/fly/fly.go
+
+NODE id=matrix/router/internal/fly.ErrUpstream kind=var
+  digest=b3:df46cc8abb52ef26b1f78889d8afcaf3feea9eb125af7306e43c071267d96267 file=router/internal/fly/fly.go range=36:41 lang=go exported=true byte_range=1080:1391
+  sig=error
+  doc=Sentinel errors. Callers errors.Is to dispatch on these.
+EDGES
+  ^defines=matrix/router/internal/fly/fly.go
+
+NODE id=matrix/router/internal/fly.Machine kind=type
+  digest=b3:f52d6419ca160df985edd2b359f11aaab67bc718268a0fabe750c1b610800ea9 file=router/internal/fly/fly.go range=72:83 lang=go exported=true byte_range=2153:2713
+  sig=type Machine struct {\n	ID		string		`json:"id"`\n	Name		string		`json:"name"`\n	State		string		`json:"state"`	// started, stopped, suspended, ...\n	Region		string		`json:"region"`\n	PrivateIP	string		`json:"private_ip"`\n	InstanceID	string		`json:"instance_id"`\n	CreatedAt	string		`json:"created_at"`\n	Config		map[string]any	`json:"config,omitempty"`\n}
+  doc=Machine is the subset of the Fly Machines API "machine" object that\nmatrix-router cares about. Other fields are intentionally dropped.
+EDGES
+  contains=matrix/router/internal/fly.Machine#Config,matrix/router/internal/fly.Machine#CreatedAt,matrix/router/internal/fly.Machine#ID,matrix/router/internal/fly.Machine#InstanceID,matrix/router/internal/fly.Machine#Name,matrix/router/internal/fly.Machine#PrivateIP,matrix/router/internal/fly.Machine#Region,matrix/router/internal/fly.Machine#State,matrix/router/internal/fly.Machine.Started
+  ^defines=matrix/router/internal/fly/fly.go
+
+NODE id=matrix/router/internal/fly.Machine#Config kind=field
+  digest=b3:e98e7d71ce03ada251417b98d36767796c94dc5fdf40aa06661084f0785b15e5 file=router/internal/fly/fly.go range=82:82 lang=go exported=true byte_range=2660:2711
+  sig=map[string]any
+EDGES
+  ^contains=matrix/router/internal/fly.Machine
+
+NODE id=matrix/router/internal/fly.Machine#CreatedAt kind=field
+  digest=b3:9698258a62db0a3560eff2461912c72fc4ff841aa04c716c070381605081608b file=router/internal/fly/fly.go range=81:81 lang=go exported=true byte_range=2613:2658
+  sig=string
+EDGES
+  ^contains=matrix/router/internal/fly.Machine
+
+NODE id=matrix/router/internal/fly.Machine#ID kind=field
+  digest=b3:cb33bb350ae98cab36e166dd26049d5f45e59069bee0b087ab038ca2b12eb0ce file=router/internal/fly/fly.go range=75:75 lang=go exported=true byte_range=2317:2354
+  sig=string
+EDGES
+  ^contains=matrix/router/internal/fly.Machine
+
+NODE id=matrix/router/internal/fly.Machine#InstanceID kind=field
+  digest=b3:4300c184413c7885b5c12e19fc9c6d47399a8741a68fea62f1cd499fc6074132 file=router/internal/fly/fly.go range=80:80 lang=go exported=true byte_range=2565:2611
+  sig=string
+EDGES
+  ^contains=matrix/router/internal/fly.Machine
+
+NODE id=matrix/router/internal/fly.Machine#Name kind=field
+  digest=b3:1b729ee64affa7b9cc4ec2af14297bf899ccd1995760703fc06a5399a0472761 file=router/internal/fly/fly.go range=76:76 lang=go exported=true byte_range=2356:2395
+  sig=string
+EDGES
+  ^contains=matrix/router/internal/fly.Machine
+
+NODE id=matrix/router/internal/fly.Machine#PrivateIP kind=field
+  digest=b3:4d8e29746406c9dc347148111c3f4b3fbe676199831620921b0a6b0540ea11be file=router/internal/fly/fly.go range=79:79 lang=go exported=true byte_range=2518:2563
+  sig=string
+EDGES
+  ^contains=matrix/router/internal/fly.Machine
+
+NODE id=matrix/router/internal/fly.Machine#Region kind=field
+  digest=b3:ab8f7cc5f6b1805d0d0be8a140df649955f8737a131c648780a927ca199c7702 file=router/internal/fly/fly.go range=78:78 lang=go exported=true byte_range=2475:2516
+  sig=string
+EDGES
+  ^contains=matrix/router/internal/fly.Machine
+
+NODE id=matrix/router/internal/fly.Machine#State kind=field
+  digest=b3:33660bbd28f5bc0d911443f1c9658a360c7b80e32ed9ac9fd2e07d598d0cf638 file=router/internal/fly/fly.go range=77:77 lang=go exported=true byte_range=2397:2437
+  sig=string
+EDGES
+  ^contains=matrix/router/internal/fly.Machine
+
+NODE id=matrix/router/internal/fly.Machine.Started kind=method
+  digest=b3:73b89752a2ff34b36973815f5802a55c880ea5e6a09ec8ae3f2c8a57c7c64d87 file=router/internal/fly/fly.go range=85:86 lang=go exported=true byte_range=2715:2858
+  sig=func (m *Machine) Started() bool
+  doc=Started reports whether the Machine state is the running state ("started").
+EDGES
+  ^contains=matrix/router/internal/fly.Machine
+  ^defines=matrix/router/internal/fly/fly.go
+
+NODE id=matrix/router/internal/fly.New kind=func
+  digest=b3:fb281d1c012da4bbb5ffbb4c72546df4e660c9ea7614f57b91ecde6dd569c90a file=router/internal/fly/fly.go range=52:63 lang=go exported=true byte_range=1550:1957
+  sig=func New(token, app string) *Client
+  doc=New constructs a Client. Token is the FLY_API_TOKEN. app is the Fly\napp slug (e.g. "matrix-daemon"). Uses an internal http.Client with\n30s default timeout for read endpoints; long polls (start) take\ntheir own context.
+EDGES
+  ^defines=matrix/router/internal/fly/fly.go
+
+NODE id=matrix/router/internal/fly.Provisioner kind=type
+  digest=b3:4c1b40bd86d42397661e074c21e19d8dfbc129ad15c6035b44394319fa5015bc file=router/internal/fly/provisioner.go range=22:35 lang=go exported=true byte_range=733:1301
+  sig=type Provisioner struct {\n	Client	*Client\n	// Image is the daemon OCI image every new Machine runs\n	// (ROUTER_DAEMON_IMAGE). Empty disables Ensure with a config error.\n	Image	string\n	// VolumeSizeGB sizes each user's persistent volume; <=0 defaults to 5.\n	VolumeSizeGB	int\n	// ProbeInterval is the EnsureStarted poll cadence; <=0 defaults to\n	// the client's 250ms.\n	ProbeInterval	time.Duration\n}
+  doc=Provisioner adapts *Client to provision.Provisioner. The fields that\nused to live on admin.Handler (image, volume sizing) are provider\nconfig, so they move here.
+EDGES
+  contains=matrix/router/internal/fly.Provisioner#Client,matrix/router/internal/fly.Provisioner#Image,matrix/router/internal/fly.Provisioner#ProbeInterval,matrix/router/internal/fly.Provisioner#VolumeSizeGB,matrix/router/internal/fly.Provisioner.Destroy,matrix/router/internal/fly.Provisioner.Ensure,matrix/router/internal/fly.Provisioner.Status,matrix/router/internal/fly.Provisioner.Wake,matrix/router/internal/fly.Provisioner.WakeOnRequest,matrix/router/internal/fly.Provisioner.env
+  implements=matrix/router/internal/provision.Provisioner
+  ^defines=matrix/router/internal/fly/provisioner.go
+
+NODE id=matrix/router/internal/fly.Provisioner#Client kind=field
+  digest=b3:d147dfd243f54b8bc7c4360d48f62be59023d2dc72dd432be9be5b213a1ad8df file=router/internal/fly/provisioner.go range=26:26 lang=go exported=true byte_range=931:945
+  sig=*fly.Client
+EDGES
+  ^contains=matrix/router/internal/fly.Provisioner
+
+NODE id=matrix/router/internal/fly.Provisioner#Image kind=field
+  digest=b3:6d42588633e64633c9cd3b7274d2d5aeafda27bd1bc9cc51ba5e9bebd9811028 file=router/internal/fly/provisioner.go range=27:29 lang=go exported=true byte_range=947:1086
+  sig=string
+  doc=Image is the daemon OCI image every new Machine runs\n(ROUTER_DAEMON_IMAGE). Empty disables Ensure with a config error.
+EDGES
+  ^contains=matrix/router/internal/fly.Provisioner
+
+NODE id=matrix/router/internal/fly.Provisioner#ProbeInterval kind=field
+  digest=b3:9c650d0ac366347e27209a59af883b71a9dcc598df0a766c90b00ecf8272cb17 file=router/internal/fly/provisioner.go range=32:34 lang=go exported=true byte_range=1179:1299
+  sig=time.Duration
+  doc=ProbeInterval is the EnsureStarted poll cadence; <=0 defaults to\nthe client's 250ms.
+EDGES
+  ^contains=matrix/router/internal/fly.Provisioner
+
+NODE id=matrix/router/internal/fly.Provisioner#VolumeSizeGB kind=field
+  digest=b3:f2a692ebcd0c520d097dc713661f898cacb4cb7debc31b55f06d3ce811b9dece file=router/internal/fly/provisioner.go range=30:31 lang=go exported=true byte_range=1088:1177
+  sig=int
+  doc=VolumeSizeGB sizes each user's persistent volume; <=0 defaults to 5.
+EDGES
+  ^contains=matrix/router/internal/fly.Provisioner
+
+NODE id=matrix/router/internal/fly.Provisioner.Destroy kind=method
+  digest=b3:bb5a6a1f937dbf2285fe773fb9bec11646e55881b2c745e2a64a3f7afab28147 file=router/internal/fly/provisioner.go range=116:123 lang=go exported=true byte_range=3746:4065
+  sig=func (p *Provisioner) Destroy(ctx context.Context, ref provision.Ref) error
+  doc=Destroy force-deletes the machine even if started. The volume is\nleft for the operator (same policy as the admin delete path).
+EDGES
+  ^contains=matrix/router/internal/fly.Provisioner
+  ^defines=matrix/router/internal/fly/provisioner.go
+
+NODE id=matrix/router/internal/fly.Provisioner.Ensure kind=method
+  digest=b3:04733205ea14b420868298af9c2b84eb7755165f46e0a35655f8c461b1b8790a file=router/internal/fly/provisioner.go range=39:91 lang=go exported=true byte_range=1354:3029
+  sig=func (p *Provisioner) Ensure(ctx context.Context, req provision.CreateRequest) (*provision.Env, error)
+  doc=Ensure provisions a fresh Volume + Machine for the user. The Machine\nconfig (guest sizing, restart policy, /data mount) is unchanged from\nthe pre-extraction admin.provisionMachine.
+EDGES
+  ^contains=matrix/router/internal/fly.Provisioner
+  ^defines=matrix/router/internal/fly/provisioner.go
+
+NODE id=matrix/router/internal/fly.Provisioner.Status kind=method
+  digest=b3:9d49e7ebed7e852d0c6e42c8d761151bd40c8b7a17f9466192fd3cc989d43413 file=router/internal/fly/provisioner.go range=93:102 lang=go exported=true byte_range=3031:3341
+  sig=func (p *Provisioner) Status(ctx context.Context, ref provision.Ref) (*provision.Env, error)
+  doc=Status fetches the machine and reports Started as readiness.
+EDGES
+  ^contains=matrix/router/internal/fly.Provisioner
+  ^defines=matrix/router/internal/fly/provisioner.go
+
+NODE id=matrix/router/internal/fly.Provisioner.Wake kind=method
+  digest=b3:7a7f937c5e41f791d430f8e71752f8e70d426476a7a28783c15a2a060381f9db file=router/internal/fly/provisioner.go range=104:114 lang=go exported=true byte_range=3343:3744
+  sig=func (p *Provisioner) Wake(ctx context.Context, ref provision.Ref) (*provision.Env, error)
+  doc=Wake is the pre-extraction proxy hot path: EnsureStarted wakes a\nsuspended machine and polls until state=started or ctx times out.
+EDGES
+  ^contains=matrix/router/internal/fly.Provisioner
+  ^defines=matrix/router/internal/fly/provisioner.go
+
+NODE id=matrix/router/internal/fly.Provisioner.WakeOnRequest kind=method
+  digest=b3:712334c61fd3bc55c6b2860c45f7a8667f4c90925f3f69a3163a13c8cb528870 file=router/internal/fly/provisioner.go range=125:126 lang=go exported=true byte_range=4067:4187
+  sig=func (p *Provisioner) WakeOnRequest() bool
+  doc=WakeOnRequest is false: Fly needs the explicit start API.
+EDGES
+  ^contains=matrix/router/internal/fly.Provisioner
+  ^defines=matrix/router/internal/fly/provisioner.go
+
+NODE id=matrix/router/internal/fly.Provisioner.env kind=method
+  digest=b3:ab568a3774197b084ff1577c6f3e107771c09a563c7419a84a11950195451996 file=router/internal/fly/provisioner.go range=128:145 lang=go exported=false byte_range=4189:4820
+  sig=func (p *Provisioner) env(m *Machine) *provision.Env
+  doc=env converts a Machine to the neutral view. Endpoint prefers the\nexplicit private IPv6 from Fly so requests don't depend on DNS\nresolution; when absent it falls back to Fly internal DNS\n(<machine_id>.vm.<app>.internal — requires wg0 + the 6PN resolver,\nverified live in matrix.kvx sess#26 step 3).
+EDGES
+  ^contains=matrix/router/internal/fly.Provisioner
+  ^defines=matrix/router/internal/fly/provisioner.go
+
+NODE id=matrix/router/internal/fly.Volume kind=type
+  digest=b3:634bf39d4dcbfac4a9501cc8c82534b80b2e7f25ba6c29ac3d2cf3ea6633af7f file=router/internal/fly/fly.go range=88:96 lang=go exported=true byte_range=2860:3134
+  sig=type Volume struct {\n	ID		string	`json:"id"`\n	Name		string	`json:"name"`\n	State		string	`json:"state"`\n	SizeGB		int	`json:"size_gb"`\n	Region		string	`json:"region"`\n	CreatedAt	string	`json:"created_at"`\n}
+  doc=Volume is the subset of the Fly volume object.
+EDGES
+  contains=matrix/router/internal/fly.Volume#CreatedAt,matrix/router/internal/fly.Volume#ID,matrix/router/internal/fly.Volume#Name,matrix/router/internal/fly.Volume#Region,matrix/router/internal/fly.Volume#SizeGB,matrix/router/internal/fly.Volume#State
+  ^defines=matrix/router/internal/fly/fly.go
+
+NODE id=matrix/router/internal/fly.Volume#CreatedAt kind=field
+  digest=b3:cb5672880ae0ecaded46de9cb93d2cd2d7440a038b19d868497bc6823ff130a8 file=router/internal/fly/fly.go range=95:95 lang=go exported=true byte_range=3096:3132
+  sig=string
+EDGES
+  ^contains=matrix/router/internal/fly.Volume
+
+NODE id=matrix/router/internal/fly.Volume#ID kind=field
+  digest=b3:824626733fff2dbf187c2c6f5f4f45a4f6c74c05f8588886ff57045db494790e file=router/internal/fly/fly.go range=90:90 lang=go exported=true byte_range=2932:2960
+  sig=string
+EDGES
+  ^contains=matrix/router/internal/fly.Volume
+
+NODE id=matrix/router/internal/fly.Volume#Name kind=field
+  digest=b3:ff785850bf10b4407f29821ea0637fcb231bd80fd28fe6a234a833527f468a96 file=router/internal/fly/fly.go range=91:91 lang=go exported=true byte_range=2962:2992
+  sig=string
+EDGES
+  ^contains=matrix/router/internal/fly.Volume
+
+NODE id=matrix/router/internal/fly.Volume#Region kind=field
+  digest=b3:4ef068cf269e6391166a7c62011b54b3985b780152c7e545cdaf304b323cd728 file=router/internal/fly/fly.go range=94:94 lang=go exported=true byte_range=3062:3094
+  sig=string
+EDGES
+  ^contains=matrix/router/internal/fly.Volume
+
+NODE id=matrix/router/internal/fly.Volume#SizeGB kind=field
+  digest=b3:8c86e7160821773d7b27e23a804b5333d81957031a7e898452c96bc4c198680d file=router/internal/fly/fly.go range=93:93 lang=go exported=true byte_range=3027:3060
+  sig=int
+EDGES
+  ^contains=matrix/router/internal/fly.Volume
+
+NODE id=matrix/router/internal/fly.Volume#State kind=field
+  digest=b3:f735da4d729bfd05ea619cf771149110d7318ac82d6578be42d844e72fff419e file=router/internal/fly/fly.go range=92:92 lang=go exported=true byte_range=2994:3025
+  sig=string
+EDGES
+  ^contains=matrix/router/internal/fly.Volume
+
+NODE id=matrix/router/internal/fly._ kind=var
+  digest=b3:a45902ed0d1abfdb7afde66643111bdb895451eb445078b34ccf45e7931e1214 file=router/internal/fly/provisioner.go range=37:37 lang=go exported=false byte_range=1307:1352
+  sig=provision.Provisioner
+EDGES
+  ^defines=matrix/router/internal/fly/provisioner.go
+
+NODE id=matrix/router/internal/fly.mapErr kind=func
+  digest=b3:691ec99abcfc22df3de9654a47ed54ba5ff5818b214170893e6a3a294f00d8a5 file=router/internal/fly/provisioner.go range=147:159 lang=go exported=false byte_range=4822:5335
+  sig=func mapErr(err error) error
+  doc=mapErr translates the client's sentinel errors onto the neutral ones\nso interface consumers dispatch without importing fly. Everything\nelse (including context.DeadlineExceeded) passes through unchanged.
+EDGES
+  ^defines=matrix/router/internal/fly/provisioner.go
+
+NODE id=matrix/router/internal/fly.safeName kind=func
+  digest=b3:415b3a55e05277e94ee3c15fda3df58d408a8322b40236eb27de31d6721cad6e file=router/internal/fly/provisioner.go range=161:181 lang=go exported=false byte_range=5337:5887
+  sig=func safeName(s string, n int) string
+  doc=safeName returns a DNS-safe lowercase prefix of s, max length n.\nUsed so machine names don't blow up Fly's validation. Hyphens are\npreserved; Fly machine names accept them.
+EDGES
+  ^defines=matrix/router/internal/fly/provisioner.go
+
+NODE id=matrix/router/internal/fly.truncate kind=func
+  digest=b3:d038c6baadf2855160d8075de00c6bd33e0a384c6564931f9316678c40ddb4d1 file=router/internal/fly/fly.go range=286:293 lang=go exported=false byte_range=9219:9453
+  sig=func truncate(b []byte, n int) string
+  doc=truncate trims b for error-message inclusion so we don't dump the\nupstream payload into application logs.
+EDGES
+  ^defines=matrix/router/internal/fly/fly.go
+
+NODE id=matrix/router/internal/fly.volumeSafeName kind=func
+  digest=b3:b590c9a151fb7ba12ba2c7d8c0d872e22ed95a0c629e1d48498d376d91fc9e2b file=router/internal/fly/provisioner.go range=183:207 lang=go exported=false byte_range=5889:6653
+  sig=func volumeSafeName(s string, n int) string
+  doc=volumeSafeName returns a [a-z0-9_]-only prefix of s, max length n.\nStricter than safeName because Fly volume names reject hyphens\n("name only allows lowercase alphanumeric characters and underscores\nwith at most 30 characters" — observed 400 from POST /v1/apps/<app>/volumes).\nHyphens are mapped to underscores so UUIDs round-trip cleanly.
+EDGES
+  ^defines=matrix/router/internal/fly/provisioner.go
+
+NODE id=matrix/router/internal/fly/fly.go kind=file
+  digest=b3:0cc3481cf81bfb3ce06748e4eda89350e3652aac694b95af40fe3adff8e441f2 file=router/internal/fly/fly.go range=1:295 lang=go exported=true
+EDGES
+  defines=matrix/router/internal/fly.Client,matrix/router/internal/fly.Client.CreateMachine,matrix/router/internal/fly.Client.CreateVolume,matrix/router/internal/fly.Client.DestroyMachine,matrix/router/internal/fly.Client.EnsureStarted,matrix/router/internal/fly.Client.GetMachine,matrix/router/internal/fly.Client.StartMachine,matrix/router/internal/fly.Client.WithEndpoint,matrix/router/internal/fly.Client.do,matrix/router/internal/fly.Client.machinesPath,matrix/router/internal/fly.Client.volumesPath,matrix/router/internal/fly.CreateMachineConfig,matrix/router/internal/fly.CreateMachineGuest,matrix/router/internal/fly.CreateMachineMount,matrix/router/internal/fly.CreateMachineRequest,matrix/router/internal/fly.CreateMachineRestart,matrix/router/internal/fly.CreateVolumeRequest,matrix/router/internal/fly.DefaultEndpoint,matrix/router/internal/fly.ErrAppNotFound,matrix/router/internal/fly.ErrMachineNotFound,matrix/router/internal/fly.ErrUnauthorized,matrix/router/internal/fly.ErrUpstream,matrix/router/internal/fly.Machine,matrix/router/internal/fly.Machine.Started,matrix/router/internal/fly.New,matrix/router/internal/fly.Volume,matrix/router/internal/fly.truncate
+  ^contains=matrix/router/internal/fly
+
+NODE id=matrix/router/internal/fly/provisioner.go kind=file
+  digest=b3:1b7fb67df9e265c05588f7ba21626b391d8156d262d73b371ff4d60dbee68865 file=router/internal/fly/provisioner.go range=1:209 lang=go exported=true
+EDGES
+  defines=matrix/router/internal/fly.Provisioner,matrix/router/internal/fly.Provisioner.Destroy,matrix/router/internal/fly.Provisioner.Ensure,matrix/router/internal/fly.Provisioner.Status,matrix/router/internal/fly.Provisioner.Wake,matrix/router/internal/fly.Provisioner.WakeOnRequest,matrix/router/internal/fly.Provisioner.env,matrix/router/internal/fly._,matrix/router/internal/fly.mapErr,matrix/router/internal/fly.safeName,matrix/router/internal/fly.volumeSafeName
+  ^contains=matrix/router/internal/fly

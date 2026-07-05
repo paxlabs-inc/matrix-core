@@ -1,0 +1,185 @@
+# GENERATED gen=codegraph do-not-edit merkle=b3:2dc69ec8dbbe0231373534486cf12ff6fdb0eaad7b2dfdcbc4d73453c8542ee8
+
+NODE id=matrix/router/internal/preview kind=package
+  digest=b3:0c438b163a082b61246b0233fce003db2356873c6a97ffeaac25dbe92922e947 file=router/internal/preview range=0:0 lang=go exported=true
+EDGES
+  contains=matrix/router/internal/preview/preview.go
+  ^contains=mod:matrix/router
+
+NODE id=matrix/router/internal/preview.Handler kind=type
+  digest=b3:063c40a47755d43738aa2e8e0262cf0bcd1a4cd4a3f3769ad8f13951ed58ab29 file=router/internal/preview/preview.go range=84:90 lang=go exported=true byte_range=2711:2980
+  sig=type Handler struct {\n	Reg	*Registry\n	Logf	func(string, ...any)\n}
+  doc=Handler is the PUBLIC /preview/ mount. It authorizes the request against\nthe JWT subject (stashed by mw.JWT via proxy.WithSubject), then\nreverse-proxies to the user's registered private target.
+EDGES
+  contains=matrix/router/internal/preview.Handler#Logf,matrix/router/internal/preview.Handler#Reg,matrix/router/internal/preview.Handler.ServeHTTP,matrix/router/internal/preview.Handler.logf
+  ^defines=matrix/router/internal/preview/preview.go
+
+NODE id=matrix/router/internal/preview.Handler#Logf kind=field
+  digest=b3:b16b99d825e9f182daf88cd2c1a49104fbfd87eeb70e7991484e1dcc6c97a63d file=router/internal/preview/preview.go range=89:89 lang=go exported=true byte_range=2953:2978
+  sig=func(string, ...any)
+EDGES
+  ^contains=matrix/router/internal/preview.Handler
+
+NODE id=matrix/router/internal/preview.Handler#Reg kind=field
+  digest=b3:a6f46a71aeeaacca7a498ddaac16849b7a706f724ce5a25c0784fe915de2dbe2 file=router/internal/preview/preview.go range=88:88 lang=go exported=true byte_range=2937:2951
+  sig=*preview.Registry
+EDGES
+  ^contains=matrix/router/internal/preview.Handler
+
+NODE id=matrix/router/internal/preview.Handler.ServeHTTP kind=method
+  digest=b3:afd12dc02678b0391f0070bcb89dadb82e2a76d0e33d8a19baead553d0160bb7 file=router/internal/preview/preview.go range=98:175 lang=go exported=true byte_range=3087:5926
+  sig=func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request)
+  doc=ServeHTTP implements http.Handler for the public /preview/ mount.\n\nPath shape: /preview/{userID}/<rest>. {userID} MUST equal the verified\ntoken subject (403 otherwise) — this is the whole point: previews are\nnever cross-user readable.
+EDGES
+  ^contains=matrix/router/internal/preview.Handler
+  ^defines=matrix/router/internal/preview/preview.go
+
+NODE id=matrix/router/internal/preview.Handler.logf kind=method
+  digest=b3:ef7d756db69d094f093e9c82dd4532ba22c30ef5828107e5fe9b29a499e09bf3 file=router/internal/preview/preview.go range=92:96 lang=go exported=false byte_range=2982:3085
+  sig=func (h *Handler) logf(format string, args ...any)
+EDGES
+  ^contains=matrix/router/internal/preview.Handler
+  ^defines=matrix/router/internal/preview/preview.go
+
+NODE id=matrix/router/internal/preview.NewRegistry kind=func
+  digest=b3:b63b72e0583f862a47108717c341a2491569d08c29ba606dbba92fafb7b51190 file=router/internal/preview/preview.go range=54:57 lang=go exported=true byte_range=1934:2074
+  sig=func NewRegistry() *Registry
+  doc=NewRegistry returns an empty, ready-to-use Registry.
+EDGES
+  ^defines=matrix/router/internal/preview/preview.go
+
+NODE id=matrix/router/internal/preview.RegisterHandler kind=func
+  digest=b3:133a6a9bffb7a3a935a1c6d0709a12457ff88b4da65a94108fd4fa739fadce49 file=router/internal/preview/preview.go range=222:269 lang=go exported=true byte_range=7121:8658
+  sig=func RegisterHandler(reg *Registry) http.Handler
+  doc=RegisterHandler returns the INTERNAL listener handler for preview target\nlifecycle. It is mounted behind the internal listener's token middleware\nin main.go, so it performs no auth of its own.\n\n	POST   /internal/preview/register  {"user_id","host","port"}  → register\n	DELETE /internal/preview/register  ?user_id=... | {"user_id"}  → deregister
+EDGES
+  ^defines=matrix/router/internal/preview/preview.go
+
+NODE id=matrix/router/internal/preview.Registry kind=type
+  digest=b3:b05e39f3259e262a306807828cd755ee7537dfbcd9a326f4f4d93e9df0a0bf36 file=router/internal/preview/preview.go range=46:52 lang=go exported=true byte_range=1667:1932
+  sig=type Registry struct {\n	mu	sync.RWMutex\n	targets	map[string]Target\n}
+  doc=Registry is a thread-safe map of supabase user id → preview Target.\ncodyd owns the lifecycle (register on start, deregister on teardown);\nthe router just holds the current binding.
+EDGES
+  contains=matrix/router/internal/preview.Registry#mu,matrix/router/internal/preview.Registry#targets,matrix/router/internal/preview.Registry.Deregister,matrix/router/internal/preview.Registry.Get,matrix/router/internal/preview.Registry.Register
+  ^defines=matrix/router/internal/preview/preview.go
+
+NODE id=matrix/router/internal/preview.Registry#mu kind=field
+  digest=b3:2b3aca656be86b1364299bc663a42eca650fb3e1973f2cc43d61a600dafbe706 file=router/internal/preview/preview.go range=50:50 lang=go exported=false byte_range=1883:1903
+  sig=sync.RWMutex
+EDGES
+  ^contains=matrix/router/internal/preview.Registry
+
+NODE id=matrix/router/internal/preview.Registry#targets kind=field
+  digest=b3:abe5a01e0efbb7a81524da6d164617dfe5d62bac61fd17cc03927307e985642d file=router/internal/preview/preview.go range=51:51 lang=go exported=false byte_range=1905:1930
+  sig=map[string]preview.Target
+EDGES
+  ^contains=matrix/router/internal/preview.Registry
+
+NODE id=matrix/router/internal/preview.Registry.Deregister kind=method
+  digest=b3:135845a554ef0dfdfe54fcd2574f7fa68b5958641cbea295b9aa8fe9189ef54c file=router/internal/preview/preview.go range=69:74 lang=go exported=true byte_range=2317:2497
+  sig=func (r *Registry) Deregister(userID string)
+  doc=Deregister removes any preview Target for userID (no-op if absent).
+EDGES
+  ^contains=matrix/router/internal/preview.Registry
+  ^defines=matrix/router/internal/preview/preview.go
+
+NODE id=matrix/router/internal/preview.Registry.Get kind=method
+  digest=b3:c72818bbacca39ca30f05c4d098f6f39bdd3da5ad799e778676f4d234e57ee10 file=router/internal/preview/preview.go range=76:82 lang=go exported=true byte_range=2499:2709
+  sig=func (r *Registry) Get(userID string) (Target, bool)
+  doc=Get returns the preview Target for userID and whether one is registered.
+EDGES
+  ^contains=matrix/router/internal/preview.Registry
+  ^defines=matrix/router/internal/preview/preview.go
+
+NODE id=matrix/router/internal/preview.Registry.Register kind=method
+  digest=b3:332ffb66e8914c4e1d872ecbae3171207c9823d7788861dab93d5c920aa925f2 file=router/internal/preview/preview.go range=59:67 lang=go exported=true byte_range=2076:2315
+  sig=func (r *Registry) Register(userID string, t Target)
+  doc=Register sets (or replaces) the preview Target for userID.
+EDGES
+  ^contains=matrix/router/internal/preview.Registry
+  ^defines=matrix/router/internal/preview/preview.go
+
+NODE id=matrix/router/internal/preview.Target kind=type
+  digest=b3:c2a546e30bd9a1df6035ccd6d3cdd1d6820fb0033611a7e94a8c8033dfc4bccc file=router/internal/preview/preview.go range=38:44 lang=go exported=true byte_range=1446:1665
+  sig=type Target struct {\n	Host		string\n	Port		string\n	RegisteredAt	time.Time\n}
+  doc=Target is a registered preview backend: the private host:port a user's\npreview server binds to, plus when it was registered.
+EDGES
+  contains=matrix/router/internal/preview.Target#Host,matrix/router/internal/preview.Target#Port,matrix/router/internal/preview.Target#RegisteredAt
+  ^defines=matrix/router/internal/preview/preview.go
+
+NODE id=matrix/router/internal/preview.Target#Host kind=field
+  digest=b3:6869709b4f6424f96923bb45e6e6cd0b4bd0d642e02da76bbaf14e9a3b6a648d file=router/internal/preview/preview.go range=41:41 lang=go exported=true byte_range=1599:1618
+  sig=string
+EDGES
+  ^contains=matrix/router/internal/preview.Target
+
+NODE id=matrix/router/internal/preview.Target#Port kind=field
+  digest=b3:3f45cde30c129c33ea07520e6643c42f80fe0d8b099ecd1752b4a052f463944d file=router/internal/preview/preview.go range=42:42 lang=go exported=true byte_range=1620:1639
+  sig=string
+EDGES
+  ^contains=matrix/router/internal/preview.Target
+
+NODE id=matrix/router/internal/preview.Target#RegisteredAt kind=field
+  digest=b3:711479ffe18e066c1921fd99787275b1e5dc47193249e5bf6673212a7e31db25 file=router/internal/preview/preview.go range=43:43 lang=go exported=true byte_range=1641:1663
+  sig=time.Time
+EDGES
+  ^contains=matrix/router/internal/preview.Target
+
+NODE id=matrix/router/internal/preview.hostPort kind=func
+  digest=b3:3cc77094b6aacf7cb09e61772af17314a8831793a403b1ec4694988a6bc3adc4 file=router/internal/preview/preview.go range=202:212 lang=go exported=false byte_range=6590:6910
+  sig=func hostPort(host, port string) string
+  doc=hostPort joins host and port, bracketing IPv6 literals per RFC 3986\n§3.2.2 so the URL authority parses correctly.
+EDGES
+  ^defines=matrix/router/internal/preview/preview.go
+
+NODE id=matrix/router/internal/preview.parsePreviewPath kind=func
+  digest=b3:0b05921b01f2a3e8df4cdbde8d14cd143033b3d6495b23dc13ae690685bf0959 file=router/internal/preview/preview.go range=177:200 lang=go exported=false byte_range=5928:6588
+  sig=func parsePreviewPath(p string) (userID, rest string, ok bool)
+  doc=parsePreviewPath splits "/preview/{userID}/<rest>" into the userID and\nthe leading-slash rest path ("/" when empty). Reports ok=false when the\npath isn't under /preview/ or carries no userID segment.
+EDGES
+  ^defines=matrix/router/internal/preview/preview.go
+
+NODE id=matrix/router/internal/preview.previewCookie kind=const
+  digest=b3:89fa222a59b7423540f781fc189b5618c95b9cd8f5873565b0a5a9b1ab72afaa file=router/internal/preview/preview.go range=34:36 lang=go exported=false byte_range=1267:1444
+  sig=untyped string
+  doc=previewCookie MUST match mw.PreviewCookie. It is duplicated (not imported)\nbecause mw imports this package, so importing mw here would cycle.
+EDGES
+  ^defines=matrix/router/internal/preview/preview.go
+
+NODE id=matrix/router/internal/preview.registerRequest kind=type
+  digest=b3:2784f2549c401fba14b3e95d6857cfe90176d5383d9c02be2c5f8cf7c4637055 file=router/internal/preview/preview.go range=214:220 lang=go exported=false byte_range=6912:7119
+  sig=type registerRequest struct {\n	UserID	string	`json:"user_id"`\n	Host	string	`json:"host"`\n	Port	string	`json:"port"`\n}
+  doc=registerRequest is the JSON body for the internal register/deregister\nendpoint.
+EDGES
+  contains=matrix/router/internal/preview.registerRequest#Host,matrix/router/internal/preview.registerRequest#Port,matrix/router/internal/preview.registerRequest#UserID
+  ^defines=matrix/router/internal/preview/preview.go
+
+NODE id=matrix/router/internal/preview.registerRequest#Host kind=field
+  digest=b3:9840bb86c93bcc41501c4977ee95a5e6964c003a0b6f02fbed2046d8e8f97de7 file=router/internal/preview/preview.go range=218:218 lang=go exported=true byte_range=7061:7088
+  sig=string
+EDGES
+  ^contains=matrix/router/internal/preview.registerRequest
+
+NODE id=matrix/router/internal/preview.registerRequest#Port kind=field
+  digest=b3:c39b105dacb37fa1023174f1a1a75188deeeb6d917fab782654f64750e9fcb44 file=router/internal/preview/preview.go range=219:219 lang=go exported=true byte_range=7090:7117
+  sig=string
+EDGES
+  ^contains=matrix/router/internal/preview.registerRequest
+
+NODE id=matrix/router/internal/preview.registerRequest#UserID kind=field
+  digest=b3:7e9b1be04529ac4dcee7522dbb2ef52c41878aedcb6f2de4bcf338f3c4633b62 file=router/internal/preview/preview.go range=217:217 lang=go exported=true byte_range=7029:7059
+  sig=string
+EDGES
+  ^contains=matrix/router/internal/preview.registerRequest
+
+NODE id=matrix/router/internal/preview.writeOK kind=func
+  digest=b3:cc3d42e96813eed52b35d6600d5728350e89a5d9707525e32718daad7b3002bf file=router/internal/preview/preview.go range=271:274 lang=go exported=false byte_range=8660:8790
+  sig=func writeOK(w http.ResponseWriter)
+EDGES
+  ^defines=matrix/router/internal/preview/preview.go
+
+NODE id=matrix/router/internal/preview/preview.go kind=file
+  digest=b3:67512141dbb2ab6f38e420ecc62a85c80218942f4225652a4284001d9e0d83ce file=router/internal/preview/preview.go range=1:276 lang=go exported=true
+EDGES
+  defines=matrix/router/internal/preview.Handler,matrix/router/internal/preview.Handler.ServeHTTP,matrix/router/internal/preview.Handler.logf,matrix/router/internal/preview.NewRegistry,matrix/router/internal/preview.RegisterHandler,matrix/router/internal/preview.Registry,matrix/router/internal/preview.Registry.Deregister,matrix/router/internal/preview.Registry.Get,matrix/router/internal/preview.Registry.Register,matrix/router/internal/preview.Target,matrix/router/internal/preview.hostPort,matrix/router/internal/preview.parsePreviewPath,matrix/router/internal/preview.previewCookie,matrix/router/internal/preview.registerRequest,matrix/router/internal/preview.writeOK
+  ^contains=matrix/router/internal/preview

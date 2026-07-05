@@ -1,0 +1,99 @@
+# GENERATED gen=codegraph do-not-edit merkle=b3:2dc69ec8dbbe0231373534486cf12ff6fdb0eaad7b2dfdcbc4d73453c8542ee8
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/internal/compiler kind=package
+  digest=b3:3160215e213b1535f8b5c00e2665d6bb111d5808c56bf76531346b49199e94ad file=tachyon/internal/compiler range=0:0 lang=go exported=true
+EDGES
+  contains=github.com/paxlabs-inc/tachyon-tools/internal/compiler/compiler.go
+  ^contains=mod:github.com/paxlabs-inc/tachyon-tools
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/internal/compiler.Compiler kind=type
+  digest=b3:346c32d81c4a80cf9ad71fe6d44cbc9f9e015aa02bf878f0b45bb5ab1321271e file=tachyon/internal/compiler/compiler.go range=18:22 lang=go exported=true byte_range=297:421
+  sig=type Compiler struct {\n	ForgePath	string\n	ArtifactsDir	string\n}
+  doc=Compiler wraps forge build and artifact normalization.
+EDGES
+  contains=github.com/paxlabs-inc/tachyon-tools/internal/compiler.Compiler#ArtifactsDir,github.com/paxlabs-inc/tachyon-tools/internal/compiler.Compiler#ForgePath,github.com/paxlabs-inc/tachyon-tools/internal/compiler.Compiler.Compile,github.com/paxlabs-inc/tachyon-tools/internal/compiler.Compiler.collectArtifacts,github.com/paxlabs-inc/tachyon-tools/internal/compiler.Compiler.mirrorArtifact
+  ^defines=github.com/paxlabs-inc/tachyon-tools/internal/compiler/compiler.go
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/internal/compiler.Compiler#ArtifactsDir kind=field
+  digest=b3:776bd8bf91b6c57a44fde1dbcf6406165d72ef07500ad801b86dc850c41c8490 file=tachyon/internal/compiler/compiler.go range=21:21 lang=go exported=true byte_range=400:419
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/tachyon-tools/internal/compiler.Compiler
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/internal/compiler.Compiler#ForgePath kind=field
+  digest=b3:7e60e010a519ad2c494f0aab360e2f566104d91671b85d0f266226cb7ef462ba file=tachyon/internal/compiler/compiler.go range=20:20 lang=go exported=true byte_range=379:398
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/tachyon-tools/internal/compiler.Compiler
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/internal/compiler.Compiler.Compile kind=method
+  digest=b3:dfa6d13551829c16286069bf98ad47552b89542934681d5d066dc7598405c757 file=tachyon/internal/compiler/compiler.go range=30:91 lang=go exported=true byte_range=587:2533
+  sig=func (c *Compiler) Compile(req types.CompileRequest, reg *registry.Registry) (types.CompileResponse, *types.Error)
+  doc=Compile runs forge build and indexes artifacts.
+EDGES
+  ^contains=github.com/paxlabs-inc/tachyon-tools/internal/compiler.Compiler
+  ^defines=github.com/paxlabs-inc/tachyon-tools/internal/compiler/compiler.go
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/internal/compiler.Compiler.collectArtifacts kind=method
+  digest=b3:ce403bc72e458d7ea6ad65b03f62cae35ec1abe706ad441ef20a667160feb76c file=tachyon/internal/compiler/compiler.go range=93:130 lang=go exported=false byte_range=2535:3560
+  sig=func (c *Compiler) collectArtifacts(root, projectID string, targets []string) ([]types.Artifact, []string, error)
+EDGES
+  ^contains=github.com/paxlabs-inc/tachyon-tools/internal/compiler.Compiler
+  ^defines=github.com/paxlabs-inc/tachyon-tools/internal/compiler/compiler.go
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/internal/compiler.Compiler.mirrorArtifact kind=method
+  digest=b3:8efe84a21fe12af3489fd6d8da4c1d119f0f510f29a761f0e3a2ef6623f39060 file=tachyon/internal/compiler/compiler.go range=189:199 lang=go exported=false byte_range=5205:5549
+  sig=func (c *Compiler) mirrorArtifact(root string, art types.Artifact) error
+EDGES
+  ^contains=github.com/paxlabs-inc/tachyon-tools/internal/compiler.Compiler
+  ^defines=github.com/paxlabs-inc/tachyon-tools/internal/compiler/compiler.go
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/internal/compiler.ProjectID kind=func
+  digest=b3:2557a6ee37739ec18a274e58cfc18fa005ed4029b1af708f7ebccc21db65eccd file=tachyon/internal/compiler/compiler.go range=24:28 lang=go exported=true byte_range=423:585
+  sig=func ProjectID(root string) string
+  doc=ProjectID derives a stable id from project root.
+EDGES
+  ^defines=github.com/paxlabs-inc/tachyon-tools/internal/compiler/compiler.go
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/internal/compiler.forgeArtifact kind=type
+  digest=b3:c36fd2619d90e4c12c13347f97869acea1a0868fa47869f94089cd081435b224 file=tachyon/internal/compiler/compiler.go range=132:141 lang=go exported=false byte_range=3562:3850
+  sig=type forgeArtifact struct {\n	ABI		json.RawMessage	`json:"abi"`\n	Bytecode	struct {\n		Object string `json:"object"`\n	}	`json:"bytecode"`\n	DeployedBytecode	struct {\n		Object string `json:"object"`\n	}	`json:"deployedBytecode"`\n	Metadata	json.RawMessage	`json:"metadata"`\n}
+EDGES
+  contains=github.com/paxlabs-inc/tachyon-tools/internal/compiler.forgeArtifact#ABI,github.com/paxlabs-inc/tachyon-tools/internal/compiler.forgeArtifact#Bytecode,github.com/paxlabs-inc/tachyon-tools/internal/compiler.forgeArtifact#DeployedBytecode,github.com/paxlabs-inc/tachyon-tools/internal/compiler.forgeArtifact#Metadata
+  ^defines=github.com/paxlabs-inc/tachyon-tools/internal/compiler/compiler.go
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/internal/compiler.forgeArtifact#ABI kind=field
+  digest=b3:f7e48bf041f0d3c79189fbf0e6ecf1c21c1ef9af147216cc92e754446767a8a7 file=tachyon/internal/compiler/compiler.go range=133:133 lang=go exported=true byte_range=3591:3636
+  sig=json.RawMessage
+EDGES
+  ^contains=github.com/paxlabs-inc/tachyon-tools/internal/compiler.forgeArtifact
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/internal/compiler.forgeArtifact#Bytecode kind=field
+  digest=b3:478b2315520c443f7188554e50489a7c02a3c3c2d545be2a48f5db5cbe208954 file=tachyon/internal/compiler/compiler.go range=134:136 lang=go exported=true byte_range=3638:3716
+  sig=struct{Object string "json:\\"object\\""}
+EDGES
+  ^contains=github.com/paxlabs-inc/tachyon-tools/internal/compiler.forgeArtifact
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/internal/compiler.forgeArtifact#DeployedBytecode kind=field
+  digest=b3:f909958b74f79d2e22e0f9fec8a47b440fe409f62376f5ffa638ac36d759da1b file=tachyon/internal/compiler/compiler.go range=137:139 lang=go exported=true byte_range=3718:3804
+  sig=struct{Object string "json:\\"object\\""}
+EDGES
+  ^contains=github.com/paxlabs-inc/tachyon-tools/internal/compiler.forgeArtifact
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/internal/compiler.forgeArtifact#Metadata kind=field
+  digest=b3:00c6523cc6806d2438b8e3c68803ef1bd79c839d85e0b9247062e0d03082c8b0 file=tachyon/internal/compiler/compiler.go range=140:140 lang=go exported=true byte_range=3806:3848
+  sig=json.RawMessage
+EDGES
+  ^contains=github.com/paxlabs-inc/tachyon-tools/internal/compiler.forgeArtifact
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/internal/compiler.parseForgeArtifact kind=func
+  digest=b3:c9b66e0aef4adb58989d994fb0e6e00f89288dc5806903d0f7792b12643eab37 file=tachyon/internal/compiler/compiler.go range=143:187 lang=go exported=false byte_range=3852:5203
+  sig=func parseForgeArtifact(path, sourceFile, name string) (types.Artifact, error)
+EDGES
+  ^defines=github.com/paxlabs-inc/tachyon-tools/internal/compiler/compiler.go
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/internal/compiler/compiler.go kind=file
+  digest=b3:68ccbf53cf3a213c06ca1a486718d85d75d56a77196de0381325d188d9fcd0cd file=tachyon/internal/compiler/compiler.go range=1:199 lang=go exported=true
+EDGES
+  defines=github.com/paxlabs-inc/tachyon-tools/internal/compiler.Compiler,github.com/paxlabs-inc/tachyon-tools/internal/compiler.Compiler.Compile,github.com/paxlabs-inc/tachyon-tools/internal/compiler.Compiler.collectArtifacts,github.com/paxlabs-inc/tachyon-tools/internal/compiler.Compiler.mirrorArtifact,github.com/paxlabs-inc/tachyon-tools/internal/compiler.ProjectID,github.com/paxlabs-inc/tachyon-tools/internal/compiler.forgeArtifact,github.com/paxlabs-inc/tachyon-tools/internal/compiler.parseForgeArtifact
+  ^contains=github.com/paxlabs-inc/tachyon-tools/internal/compiler

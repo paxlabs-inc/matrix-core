@@ -1,0 +1,79 @@
+# GENERATED gen=codegraph do-not-edit merkle=b3:2dc69ec8dbbe0231373534486cf12ff6fdb0eaad7b2dfdcbc4d73453c8542ee8
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/internal/deployer kind=package
+  digest=b3:2aad7a9603ce1e1ec370ddf0658d6af70da6e0c769b8983bc73e566454861e0e file=tachyon/internal/deployer range=0:0 lang=go exported=true
+EDGES
+  contains=github.com/paxlabs-inc/tachyon-tools/internal/deployer/deployer.go
+  ^contains=mod:github.com/paxlabs-inc/tachyon-tools
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/internal/deployer.Deployer kind=type
+  digest=b3:07097423f2bc47f528f0958c32909633329b376a8eabb43352fcba2af68db176 file=tachyon/internal/deployer/deployer.go range=22:28 lang=go exported=true byte_range=576:760
+  sig=type Deployer struct {\n	Chains		*chains.Manager\n	Reg		*registry.Registry\n	Wallet		*wallet.Gate\n	ProjectRoot	string\n}
+  doc=Deployer plans and executes contract deployments.
+EDGES
+  contains=github.com/paxlabs-inc/tachyon-tools/internal/deployer.Deployer#Chains,github.com/paxlabs-inc/tachyon-tools/internal/deployer.Deployer#ProjectRoot,github.com/paxlabs-inc/tachyon-tools/internal/deployer.Deployer#Reg,github.com/paxlabs-inc/tachyon-tools/internal/deployer.Deployer#Wallet,github.com/paxlabs-inc/tachyon-tools/internal/deployer.Deployer.Deploy,github.com/paxlabs-inc/tachyon-tools/internal/deployer.Deployer.confirmOnChain,github.com/paxlabs-inc/tachyon-tools/internal/deployer.Deployer.recordAndReturn
+  ^defines=github.com/paxlabs-inc/tachyon-tools/internal/deployer/deployer.go
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/internal/deployer.Deployer#Chains kind=field
+  digest=b3:fea584de6aaa0fa293eff529c139e3320e2b02adb5efe58b084596d9b3e606aa file=tachyon/internal/deployer/deployer.go range=24:24 lang=go exported=true byte_range=653:680
+  sig=*chains.Manager
+EDGES
+  ^contains=github.com/paxlabs-inc/tachyon-tools/internal/deployer.Deployer
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/internal/deployer.Deployer#ProjectRoot kind=field
+  digest=b3:55500c85415625972d16ffb1a8d2ed580134b80170808962e992e8bdaf83a58e file=tachyon/internal/deployer/deployer.go range=27:27 lang=go exported=true byte_range=740:758
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/tachyon-tools/internal/deployer.Deployer
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/internal/deployer.Deployer#Reg kind=field
+  digest=b3:30707f91ead950194809f541eadf5cfb54b1d8c30ac6e567775cf741c5a4c388 file=tachyon/internal/deployer/deployer.go range=25:25 lang=go exported=true byte_range=682:712
+  sig=*registry.Registry
+EDGES
+  ^contains=github.com/paxlabs-inc/tachyon-tools/internal/deployer.Deployer
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/internal/deployer.Deployer#Wallet kind=field
+  digest=b3:5922a8c1b2647f77283958ff82acb477438d09786cc85e0373f6a434ec9896f5 file=tachyon/internal/deployer/deployer.go range=26:26 lang=go exported=true byte_range=714:738
+  sig=*wallet.Gate
+EDGES
+  ^contains=github.com/paxlabs-inc/tachyon-tools/internal/deployer.Deployer
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/internal/deployer.Deployer.Deploy kind=method
+  digest=b3:a9a3b2741bad3b5bf8bc22d266db490817c8455a5cb0aeafe4bd6411b4a42342 file=tachyon/internal/deployer/deployer.go range=30:134 lang=go exported=true byte_range=762:4834
+  sig=func (d *Deployer) Deploy(ctx context.Context, req types.DeployRequest) (types.DeployResponse, *types.Error)
+  doc=Deploy executes an intent-based deployment with idempotency.
+EDGES
+  ^contains=github.com/paxlabs-inc/tachyon-tools/internal/deployer.Deployer
+  ^defines=github.com/paxlabs-inc/tachyon-tools/internal/deployer/deployer.go
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/internal/deployer.Deployer.confirmOnChain kind=method
+  digest=b3:97090d010d9b0715159d25cf18982149d1a72354c3b7bc662541c8914a0ca8bb file=tachyon/internal/deployer/deployer.go range=156:170 lang=go exported=false byte_range=5447:5907
+  sig=func (d *Deployer) confirmOnChain(ctx context.Context, chainID, address string) (bool, error)
+EDGES
+  ^contains=github.com/paxlabs-inc/tachyon-tools/internal/deployer.Deployer
+  ^defines=github.com/paxlabs-inc/tachyon-tools/internal/deployer/deployer.go
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/internal/deployer.Deployer.recordAndReturn kind=method
+  digest=b3:c00a1af0f35e393f21a2e82933ba559658282977e7068c59b54b9175fa59f714 file=tachyon/internal/deployer/deployer.go range=136:154 lang=go exported=false byte_range=4836:5445
+  sig=func (d *Deployer) recordAndReturn(key, chainKey, contract, projectID, address, txHash string, existing bool) (types.DeployResponse, *types.Error)
+EDGES
+  ^contains=github.com/paxlabs-inc/tachyon-tools/internal/deployer.Deployer
+  ^defines=github.com/paxlabs-inc/tachyon-tools/internal/deployer/deployer.go
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/internal/deployer.computeCreate2 kind=func
+  digest=b3:37fa410feec2c092457816881a00ce4b5e5a7730557cb3e7a7c8a8a3e2a924b3 file=tachyon/internal/deployer/deployer.go range=187:200 lang=go exported=false byte_range=6396:7045
+  sig=func computeCreate2(deployerHex, saltHex string, initCode []byte) (common.Address, error)
+EDGES
+  ^defines=github.com/paxlabs-inc/tachyon-tools/internal/deployer/deployer.go
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/internal/deployer.packConstructor kind=func
+  digest=b3:6466ab2c67635bf970308c876ef48ff01f29de7001d146c69f39136a4b1d616c file=tachyon/internal/deployer/deployer.go range=172:185 lang=go exported=false byte_range=5909:6394
+  sig=func packConstructor(art registry.ArtifactRecord, args json.RawMessage) ([]byte, error)
+EDGES
+  ^defines=github.com/paxlabs-inc/tachyon-tools/internal/deployer/deployer.go
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/internal/deployer/deployer.go kind=file
+  digest=b3:f00c5537e75360a57c16cc24182bbc05b86c16840555f7d2d68bf08738391606 file=tachyon/internal/deployer/deployer.go range=1:200 lang=go exported=true
+EDGES
+  defines=github.com/paxlabs-inc/tachyon-tools/internal/deployer.Deployer,github.com/paxlabs-inc/tachyon-tools/internal/deployer.Deployer.Deploy,github.com/paxlabs-inc/tachyon-tools/internal/deployer.Deployer.confirmOnChain,github.com/paxlabs-inc/tachyon-tools/internal/deployer.Deployer.recordAndReturn,github.com/paxlabs-inc/tachyon-tools/internal/deployer.computeCreate2,github.com/paxlabs-inc/tachyon-tools/internal/deployer.packConstructor
+  ^contains=github.com/paxlabs-inc/tachyon-tools/internal/deployer

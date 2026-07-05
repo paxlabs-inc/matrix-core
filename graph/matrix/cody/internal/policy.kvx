@@ -1,0 +1,157 @@
+# GENERATED gen=codegraph do-not-edit merkle=b3:2dc69ec8dbbe0231373534486cf12ff6fdb0eaad7b2dfdcbc4d73453c8542ee8
+
+NODE id=matrix/cody/internal/policy kind=package
+  digest=b3:92888b0490b608443accd73446e32eedd1b0768adca625cf4df6855f85bc280b file=cody/internal/policy range=0:0 lang=go exported=true
+EDGES
+  contains=matrix/cody/internal/policy/policy.go
+  ^contains=mod:matrix/cody
+
+NODE id=matrix/cody/internal/policy.LoadRules kind=func
+  digest=b3:cd0bf716b9ebc5c464d1a2db4a16c200b538f40b385c475a334fd1a72f0f4dfc file=cody/internal/policy/policy.go range=52:85 lang=go exported=true byte_range=1529:2401
+  sig=func LoadRules(rulesRoot string, m *workspace.Model) (*Rules, error)
+  doc=LoadRules resolves the applicable rule files for a workspace model.
+EDGES
+  ^defines=matrix/cody/internal/policy/policy.go
+
+NODE id=matrix/cody/internal/policy.LoadSkills kind=func
+  digest=b3:8a2491b88f69f162be32b484afb57f0ed964f920eec4909d070abe9940c893ab file=cody/internal/policy/policy.go range=165:192 lang=go exported=true byte_range=4704:5407
+  sig=func LoadSkills(skillsRoot string) (*Skills, error)
+  doc=LoadSkills indexes the skills library (one directory per skill carrying a\nSKILL.md playbook).
+EDGES
+  ^defines=matrix/cody/internal/policy/policy.go
+
+NODE id=matrix/cody/internal/policy.Rules kind=type
+  digest=b3:31a019a0b5f56180e3d46017846e22c713dfdd17d5a267f93eb6cfbe5fc7bd6f file=cody/internal/policy/policy.go range=42:50 lang=go exported=true byte_range=1170:1527
+  sig=type Rules struct {\n	Root	string\n	// Common lists rules/common/* files (paths relative to Root).\n	Common	[]string\n	// Language maps language dir -> its rule files (paths relative to Root).\n	Language	map[string][]string\n}
+  doc=Rules is the resolved standards set for a workspace: the common rule files\nplus the language-specific ones for the detected stack.
+EDGES
+  contains=matrix/cody/internal/policy.Rules#Common,matrix/cody/internal/policy.Rules#Language,matrix/cody/internal/policy.Rules#Root,matrix/cody/internal/policy.Rules.AbsRefs,matrix/cody/internal/policy.Rules.Refs,matrix/cody/internal/policy.Rules.Render
+  ^defines=matrix/cody/internal/policy/policy.go
+
+NODE id=matrix/cody/internal/policy.Rules#Common kind=field
+  digest=b3:99e746e888b6b9195fecb1ba0c6414975e05ed3de4e0f10de0c3630d93a33719 file=cody/internal/policy/policy.go range=46:47 lang=go exported=true byte_range=1341:1420
+  sig=[]string
+  doc=Common lists rules/common/* files (paths relative to Root).
+EDGES
+  ^contains=matrix/cody/internal/policy.Rules
+
+NODE id=matrix/cody/internal/policy.Rules#Language kind=field
+  digest=b3:b2a7005e1faa1046ed4fef2470c00514014d471b2a42f842992ea9d8ff14b7f3 file=cody/internal/policy/policy.go range=48:49 lang=go exported=true byte_range=1422:1525
+  sig=map[string][]string
+  doc=Language maps language dir -> its rule files (paths relative to Root).
+EDGES
+  ^contains=matrix/cody/internal/policy.Rules
+
+NODE id=matrix/cody/internal/policy.Rules#Root kind=field
+  digest=b3:af98c31c5651170a3c07f8873e85815d56e2cbe456a45da73c6589f3764996ba file=cody/internal/policy/policy.go range=45:45 lang=go exported=true byte_range=1328:1339
+  sig=string
+EDGES
+  ^contains=matrix/cody/internal/policy.Rules
+
+NODE id=matrix/cody/internal/policy.Rules.AbsRefs kind=method
+  digest=b3:094c07f1a80ae92c238fabd3f462a1b935bba8d081943cf48c1df1253b689284 file=cody/internal/policy/policy.go range=118:126 lang=go exported=true byte_range=3191:3469
+  sig=func (r *Rules) AbsRefs() []string
+  doc=AbsRefs returns the refs as absolute paths (for workers reading them).
+EDGES
+  ^contains=matrix/cody/internal/policy.Rules
+  ^defines=matrix/cody/internal/policy/policy.go
+
+NODE id=matrix/cody/internal/policy.Rules.Refs kind=method
+  digest=b3:9277a8d13e4cd601756c5c0a95f90234ace898e7a504c893d3f0734a2fb37774 file=cody/internal/policy/policy.go range=103:116 lang=go exported=true byte_range=2780:3189
+  sig=func (r *Rules) Refs() []string
+  doc=Refs returns every applicable rule file (relative to the rules root) —\nthe value task sheets carry as constraints.rules_refs.
+EDGES
+  ^contains=matrix/cody/internal/policy.Rules
+  ^defines=matrix/cody/internal/policy/policy.go
+
+NODE id=matrix/cody/internal/policy.Rules.Render kind=method
+  digest=b3:9ce0d49332953f936791b948cda88fe19c2ed688ddc6ed49014d86a54b5b7e62 file=cody/internal/policy/policy.go range=128:148 lang=go exported=true byte_range=3471:4146
+  sig=func (r *Rules) Render() string
+  doc=Render produces the working-policy section for prompts: the applicable\nstandards by stack, referenced (not inlined) so the window stays lean.
+EDGES
+  ^contains=matrix/cody/internal/policy.Rules
+  ^defines=matrix/cody/internal/policy/policy.go
+
+NODE id=matrix/cody/internal/policy.Skills kind=type
+  digest=b3:e2aa1fb8fffe54ad67801dff5df0a2de5e88f79646811e84b6ba95df28ada39a file=cody/internal/policy/policy.go range=150:160 lang=go exported=true byte_range=4148:4611
+  sig=type Skills struct {\n	Root	string\n	Names	[]string\n	// Descriptions maps skill name -> its one-line description (from the\n	// SKILL.md frontmatter), capped for prompt economy. Missing when the\n	// playbook carries none.\n	Descriptions	map[string]string\n}
+  doc=Skills surfaces the skills/ library: an index of names + one-line\ndescriptions for prompts (metadata resident) and an on-demand body loader\n(bodies pulled only when a task matches — never resident).
+EDGES
+  contains=matrix/cody/internal/policy.Skills#Descriptions,matrix/cody/internal/policy.Skills#Names,matrix/cody/internal/policy.Skills#Root,matrix/cody/internal/policy.Skills.Has,matrix/cody/internal/policy.Skills.Load,matrix/cody/internal/policy.Skills.RenderIndex
+  ^defines=matrix/cody/internal/policy/policy.go
+
+NODE id=matrix/cody/internal/policy.Skills#Descriptions kind=field
+  digest=b3:3d0b40bf0640de24a53c894199214297e5ebe4ffc16a06d5954996be5124df68 file=cody/internal/policy/policy.go range=156:159 lang=go exported=true byte_range=4410:4609
+  sig=map[string]string
+  doc=Descriptions maps skill name -> its one-line description (from the\nSKILL.md frontmatter), capped for prompt economy. Missing when the\nplaybook carries none.
+EDGES
+  ^contains=matrix/cody/internal/policy.Skills
+
+NODE id=matrix/cody/internal/policy.Skills#Names kind=field
+  digest=b3:47eecb7b30007adfcbc1479ff3c7c9a472e9408c0076b0b41d8ad55de46e8613 file=cody/internal/policy/policy.go range=155:155 lang=go exported=true byte_range=4394:4408
+  sig=[]string
+EDGES
+  ^contains=matrix/cody/internal/policy.Skills
+
+NODE id=matrix/cody/internal/policy.Skills#Root kind=field
+  digest=b3:aa52980a953009ebe96851f8cccbe16ce40a803dd40c19ed3f1d81e8b62b4e36 file=cody/internal/policy/policy.go range=154:154 lang=go exported=true byte_range=4380:4392
+  sig=string
+EDGES
+  ^contains=matrix/cody/internal/policy.Skills
+
+NODE id=matrix/cody/internal/policy.Skills.Has kind=method
+  digest=b3:c3adaed978d0366161e755f906e41c5f5b5a5e7bb2426866bed288ef13f4b860 file=cody/internal/policy/policy.go range=240:244 lang=go exported=true byte_range=6662:6843
+  sig=func (s *Skills) Has(name string) bool
+  doc=Has reports whether a skill exists in the index.
+EDGES
+  ^contains=matrix/cody/internal/policy.Skills
+  ^defines=matrix/cody/internal/policy/policy.go
+
+NODE id=matrix/cody/internal/policy.Skills.Load kind=method
+  digest=b3:acee5a6d84e894250ed24be0efb7953eff185826b2d3f4c15d7a8af40e3654d6 file=cody/internal/policy/policy.go range=224:238 lang=go exported=true byte_range=6205:6660
+  sig=func (s *Skills) Load(name string) (string, error)
+  doc=Load returns the full SKILL.md playbook body for a named skill.
+EDGES
+  ^contains=matrix/cody/internal/policy.Skills
+  ^defines=matrix/cody/internal/policy/policy.go
+
+NODE id=matrix/cody/internal/policy.Skills.RenderIndex kind=method
+  digest=b3:1f9afbc4b7bbe6a2645ae47682c59eab89eb3b62d2d023ee7f7d52c10c291d2c file=cody/internal/policy/policy.go range=246:263 lang=go exported=true byte_range=6845:7446
+  sig=func (s *Skills) RenderIndex() string
+  doc=RenderIndex produces the metadata prompt section: one line per skill (name +\none-line description when the playbook carries one). Metadata is cheap and\nresident; bodies are pulled on demand.
+EDGES
+  ^contains=matrix/cody/internal/policy.Skills
+  ^defines=matrix/cody/internal/policy/policy.go
+
+NODE id=matrix/cody/internal/policy.langRulesDir kind=var
+  digest=b3:fc7b0ae6caf92b0259b96685160769fd89d67ca3946cbca03d618152839bc01a file=cody/internal/policy/policy.go range=21:40 lang=go exported=false byte_range=653:1168
+  sig=map[string]string
+  doc=langRulesDir maps a detected workspace language to its rules/<dir>.
+EDGES
+  ^defines=matrix/cody/internal/policy/policy.go
+
+NODE id=matrix/cody/internal/policy.listMarkdown kind=func
+  digest=b3:3563d5895dc5fda4f67bd07f90f99dcbce132cf7fb03723d1c00ddf0ae04f532 file=cody/internal/policy/policy.go range=87:101 lang=go exported=false byte_range=2403:2778
+  sig=func listMarkdown(root, sub string) ([]string, error)
+EDGES
+  ^defines=matrix/cody/internal/policy/policy.go
+
+NODE id=matrix/cody/internal/policy.skillDescCap kind=const
+  digest=b3:e4891be2651e5b6c1e052e902ff1319ae3466078d3c5e40ceade6e278fcf8d3d file=cody/internal/policy/policy.go range=162:163 lang=go exported=false byte_range=4613:4702
+  sig=untyped int
+  doc=skillDescCap bounds one description line in the prompt index.
+EDGES
+  ^defines=matrix/cody/internal/policy/policy.go
+
+NODE id=matrix/cody/internal/policy.skillDescription kind=func
+  digest=b3:794e8fadd75e63bdcc9c7b83437c345c940d164c7fca8e87e7f135d4cc6a362e file=cody/internal/policy/policy.go range=194:222 lang=go exported=false byte_range=5409:6203
+  sig=func skillDescription(path string) string
+  doc=skillDescription extracts the one-line description from a SKILL.md\nfrontmatter block ("description: ..."), capped for the prompt index.
+EDGES
+  ^defines=matrix/cody/internal/policy/policy.go
+
+NODE id=matrix/cody/internal/policy/policy.go kind=file
+  digest=b3:95b44dc33eda0297942f0d026b519e482f255e7dcc850c3cae282d5c8d183d91 file=cody/internal/policy/policy.go range=1:263 lang=go exported=true
+EDGES
+  defines=matrix/cody/internal/policy.LoadRules,matrix/cody/internal/policy.LoadSkills,matrix/cody/internal/policy.Rules,matrix/cody/internal/policy.Rules.AbsRefs,matrix/cody/internal/policy.Rules.Refs,matrix/cody/internal/policy.Rules.Render,matrix/cody/internal/policy.Skills,matrix/cody/internal/policy.Skills.Has,matrix/cody/internal/policy.Skills.Load,matrix/cody/internal/policy.Skills.RenderIndex,matrix/cody/internal/policy.langRulesDir,matrix/cody/internal/policy.listMarkdown,matrix/cody/internal/policy.skillDescCap,matrix/cody/internal/policy.skillDescription
+  ^contains=matrix/cody/internal/policy

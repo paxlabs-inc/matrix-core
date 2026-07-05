@@ -1,0 +1,621 @@
+# GENERATED gen=codegraph do-not-edit merkle=b3:2dc69ec8dbbe0231373534486cf12ff6fdb0eaad7b2dfdcbc4d73453c8542ee8
+
+NODE id=github.com/paxlabs-inc/chronos/pkg/types kind=package
+  digest=b3:1189bbe17b3d3c7a1aa418a4fa894e7f4cac4dd4aa939c72bf542c4f984e08cc file=chronos/pkg/types range=0:0 lang=go exported=true
+EDGES
+  contains=github.com/paxlabs-inc/chronos/pkg/types/types.go
+  ^contains=mod:github.com/paxlabs-inc/chronos
+
+NODE id=github.com/paxlabs-inc/chronos/pkg/types.Alarm kind=type
+  digest=b3:09de00023fdc8fb1f6728540a1b8315d97db59fe84eee133dc5eaec6e4553822 file=chronos/pkg/types/types.go range=70:94 lang=go exported=true byte_range=2113:2896
+  sig=type Alarm struct {\n	ID		string\n	OwnerDID	string	// full agent DID: did:matrix:<user_id>:<keyfp>\n	UserID		string	// Supabase user UUID from the DID label — the wake target\n	Label		string\n	Kind		string	// once | cron\n	FireAt		*time.Time\n	CronExpr	string\n	Timezone	string\n	NextFireAt	time.Time\n	ConversationID	string\n	WakeMessage	string\n	Payload		json.RawMessage\n	Status		string\n	IdempotencyKey	string\n	MaxFailures	int\n	FailureCount	int\n	LastError	string\n	ClaimedAt	*time.Time\n	CreatedAt	time.Time\n	UpdatedAt	time.Time\n	LastFiredAt	*time.Time\n}
+  doc=Alarm is one scheduled wake — the durable timer. It maps 1:1 onto a row of\nthe alarms table (see migrations/001_init.sql).
+EDGES
+  contains=github.com/paxlabs-inc/chronos/pkg/types.Alarm#ClaimedAt,github.com/paxlabs-inc/chronos/pkg/types.Alarm#ConversationID,github.com/paxlabs-inc/chronos/pkg/types.Alarm#CreatedAt,github.com/paxlabs-inc/chronos/pkg/types.Alarm#CronExpr,github.com/paxlabs-inc/chronos/pkg/types.Alarm#FailureCount,github.com/paxlabs-inc/chronos/pkg/types.Alarm#FireAt,github.com/paxlabs-inc/chronos/pkg/types.Alarm#ID,github.com/paxlabs-inc/chronos/pkg/types.Alarm#IdempotencyKey,github.com/paxlabs-inc/chronos/pkg/types.Alarm#Kind,github.com/paxlabs-inc/chronos/pkg/types.Alarm#Label,github.com/paxlabs-inc/chronos/pkg/types.Alarm#LastError,github.com/paxlabs-inc/chronos/pkg/types.Alarm#LastFiredAt,github.com/paxlabs-inc/chronos/pkg/types.Alarm#MaxFailures,github.com/paxlabs-inc/chronos/pkg/types.Alarm#NextFireAt,github.com/paxlabs-inc/chronos/pkg/types.Alarm#OwnerDID,github.com/paxlabs-inc/chronos/pkg/types.Alarm#Payload,github.com/paxlabs-inc/chronos/pkg/types.Alarm#Status,github.com/paxlabs-inc/chronos/pkg/types.Alarm#Timezone,github.com/paxlabs-inc/chronos/pkg/types.Alarm#UpdatedAt,github.com/paxlabs-inc/chronos/pkg/types.Alarm#UserID,github.com/paxlabs-inc/chronos/pkg/types.Alarm#WakeMessage
+  ^defines=github.com/paxlabs-inc/chronos/pkg/types/types.go
+
+NODE id=github.com/paxlabs-inc/chronos/pkg/types.Alarm#ClaimedAt kind=field
+  digest=b3:564bdb9e06685d699e239e601a519d1f134dd5909eb732819b29487cb3669d43 file=chronos/pkg/types/types.go range=90:90 lang=go exported=true byte_range=2790:2815
+  sig=*time.Time
+EDGES
+  ^contains=github.com/paxlabs-inc/chronos/pkg/types.Alarm
+
+NODE id=github.com/paxlabs-inc/chronos/pkg/types.Alarm#ConversationID kind=field
+  digest=b3:8c9158400640a4f77298ffe850a81ec0bb1423de67eeed2c5d18f0eaeed56478 file=chronos/pkg/types/types.go range=82:82 lang=go exported=true byte_range=2603:2624
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/chronos/pkg/types.Alarm
+
+NODE id=github.com/paxlabs-inc/chronos/pkg/types.Alarm#CreatedAt kind=field
+  digest=b3:7ef074706d297d4b9a26aa65b7e8b3f4054a079c3ba93e15d662b2b32131c19a file=chronos/pkg/types/types.go range=91:91 lang=go exported=true byte_range=2817:2841
+  sig=time.Time
+EDGES
+  ^contains=github.com/paxlabs-inc/chronos/pkg/types.Alarm
+
+NODE id=github.com/paxlabs-inc/chronos/pkg/types.Alarm#CronExpr kind=field
+  digest=b3:03d082d55fc5d083bbcc88923c573dc6f9c9c3ee8ed00279bbb6754f9c52875d file=chronos/pkg/types/types.go range=79:79 lang=go exported=true byte_range=2531:2552
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/chronos/pkg/types.Alarm
+
+NODE id=github.com/paxlabs-inc/chronos/pkg/types.Alarm#FailureCount kind=field
+  digest=b3:bf664aaa459404e9a35b2777489674b18c98bb33d87f315768ca7c411e5a440f file=chronos/pkg/types/types.go range=88:88 lang=go exported=true byte_range=2747:2765
+  sig=int
+EDGES
+  ^contains=github.com/paxlabs-inc/chronos/pkg/types.Alarm
+
+NODE id=github.com/paxlabs-inc/chronos/pkg/types.Alarm#FireAt kind=field
+  digest=b3:dcfd67fbc82a0055d5ce735ac3a8e4192c1c099aa2fcd23b6a7de35c1d9606d9 file=chronos/pkg/types/types.go range=78:78 lang=go exported=true byte_range=2504:2529
+  sig=*time.Time
+EDGES
+  ^contains=github.com/paxlabs-inc/chronos/pkg/types.Alarm
+
+NODE id=github.com/paxlabs-inc/chronos/pkg/types.Alarm#ID kind=field
+  digest=b3:eca8fe1e39179982868308ef93a275a387fc0035537feaaeaaa5997cec11506c file=chronos/pkg/types/types.go range=73:73 lang=go exported=true byte_range=2265:2286
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/chronos/pkg/types.Alarm
+
+NODE id=github.com/paxlabs-inc/chronos/pkg/types.Alarm#IdempotencyKey kind=field
+  digest=b3:53197bc1c40c9fa72646f569770a472b67c8b009bda74681c2f0653f4babc1c5 file=chronos/pkg/types/types.go range=86:86 lang=go exported=true byte_range=2704:2725
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/chronos/pkg/types.Alarm
+
+NODE id=github.com/paxlabs-inc/chronos/pkg/types.Alarm#Kind kind=field
+  digest=b3:e2b4203bda08f1ddff9507fb96d868fec55b8903e94b3a536e6ca547a7f9677c file=chronos/pkg/types/types.go range=77:77 lang=go exported=true byte_range=2466:2487
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/chronos/pkg/types.Alarm
+
+NODE id=github.com/paxlabs-inc/chronos/pkg/types.Alarm#Label kind=field
+  digest=b3:ffc1b8de09ac8fc295c93fe7df8d326709547fcc14f0f73cd104d28176594981 file=chronos/pkg/types/types.go range=76:76 lang=go exported=true byte_range=2443:2464
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/chronos/pkg/types.Alarm
+
+NODE id=github.com/paxlabs-inc/chronos/pkg/types.Alarm#LastError kind=field
+  digest=b3:610e8b8bd6003a4ef7c34cd424f966561456825280938db8fea7371ef9125d1e file=chronos/pkg/types/types.go range=89:89 lang=go exported=true byte_range=2767:2788
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/chronos/pkg/types.Alarm
+
+NODE id=github.com/paxlabs-inc/chronos/pkg/types.Alarm#LastFiredAt kind=field
+  digest=b3:275db2d3820a10fb6c10de1488b14b9b40b15960d5420b2b28eae3e1178a0ef0 file=chronos/pkg/types/types.go range=93:93 lang=go exported=true byte_range=2869:2894
+  sig=*time.Time
+EDGES
+  ^contains=github.com/paxlabs-inc/chronos/pkg/types.Alarm
+
+NODE id=github.com/paxlabs-inc/chronos/pkg/types.Alarm#MaxFailures kind=field
+  digest=b3:dd1ce0360b5f085fb31e27077d7971057fb5ee5d9ce9bc18b8bdb8f0467c5867 file=chronos/pkg/types/types.go range=87:87 lang=go exported=true byte_range=2727:2745
+  sig=int
+EDGES
+  ^contains=github.com/paxlabs-inc/chronos/pkg/types.Alarm
+
+NODE id=github.com/paxlabs-inc/chronos/pkg/types.Alarm#NextFireAt kind=field
+  digest=b3:4cc894ae90598a091f075ba82c7b51722e919acfff891d4afdbc01065df44cb3 file=chronos/pkg/types/types.go range=81:81 lang=go exported=true byte_range=2577:2601
+  sig=time.Time
+EDGES
+  ^contains=github.com/paxlabs-inc/chronos/pkg/types.Alarm
+
+NODE id=github.com/paxlabs-inc/chronos/pkg/types.Alarm#OwnerDID kind=field
+  digest=b3:f76dd27e65ef245a8d7ee6327c853f205ff67d7ea0d54a8a9fac7f9a34e33c80 file=chronos/pkg/types/types.go range=74:74 lang=go exported=true byte_range=2288:2309
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/chronos/pkg/types.Alarm
+
+NODE id=github.com/paxlabs-inc/chronos/pkg/types.Alarm#Payload kind=field
+  digest=b3:e508c7533abfc54e4a1ce07a5da986f95ededa80cfc5ef231394876795c6faf8 file=chronos/pkg/types/types.go range=84:84 lang=go exported=true byte_range=2649:2679
+  sig=json.RawMessage
+EDGES
+  ^contains=github.com/paxlabs-inc/chronos/pkg/types.Alarm
+
+NODE id=github.com/paxlabs-inc/chronos/pkg/types.Alarm#Status kind=field
+  digest=b3:eb7a111a1b464862db4da16d928dcaa96e92421be61c9a7d1c5d188b1d293544 file=chronos/pkg/types/types.go range=85:85 lang=go exported=true byte_range=2681:2702
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/chronos/pkg/types.Alarm
+
+NODE id=github.com/paxlabs-inc/chronos/pkg/types.Alarm#Timezone kind=field
+  digest=b3:7445c64e7ec2fba94fb76b4ae6987259fe2b637c01f1e2f9c98087e455ed8148 file=chronos/pkg/types/types.go range=80:80 lang=go exported=true byte_range=2554:2575
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/chronos/pkg/types.Alarm
+
+NODE id=github.com/paxlabs-inc/chronos/pkg/types.Alarm#UpdatedAt kind=field
+  digest=b3:98ae910d42168f4d2824cba9932e6061cf5c2f8db0ddc5fc396f2dc584f017a2 file=chronos/pkg/types/types.go range=92:92 lang=go exported=true byte_range=2843:2867
+  sig=time.Time
+EDGES
+  ^contains=github.com/paxlabs-inc/chronos/pkg/types.Alarm
+
+NODE id=github.com/paxlabs-inc/chronos/pkg/types.Alarm#UserID kind=field
+  digest=b3:d8d83c71232a35dcbe4769147bee9340b6c422638f3c19a63e0755446b4afcb3 file=chronos/pkg/types/types.go range=75:75 lang=go exported=true byte_range=2359:2380
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/chronos/pkg/types.Alarm
+
+NODE id=github.com/paxlabs-inc/chronos/pkg/types.Alarm#WakeMessage kind=field
+  digest=b3:8f82d1453bc5e0eb6293068bc57b2a1cb33f490e812534be301296c9632dcb86 file=chronos/pkg/types/types.go range=83:83 lang=go exported=true byte_range=2626:2647
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/chronos/pkg/types.Alarm
+
+NODE id=github.com/paxlabs-inc/chronos/pkg/types.ChallengeRequest kind=type
+  digest=b3:2c3388cf909dc16ae0b9304f8d7125ac5ab61c25885bdf027e96f979eceb0dbd file=chronos/pkg/types/types.go range=168:171 lang=go exported=true byte_range=5704:5822
+  sig=type ChallengeRequest struct {\n	DID string `json:"did"`\n}
+  doc=ChallengeRequest opens the agent-DID principal-auth lane.
+EDGES
+  contains=github.com/paxlabs-inc/chronos/pkg/types.ChallengeRequest#DID
+  ^defines=github.com/paxlabs-inc/chronos/pkg/types/types.go
+
+NODE id=github.com/paxlabs-inc/chronos/pkg/types.ChallengeRequest#DID kind=field
+  digest=b3:9a8c866d6e48670dbbe22e624099bb1af7c3f9e394f6325b8e5909cc5e899676 file=chronos/pkg/types/types.go range=170:170 lang=go exported=true byte_range=5797:5820
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/chronos/pkg/types.ChallengeRequest
+
+NODE id=github.com/paxlabs-inc/chronos/pkg/types.ChallengeResponse kind=type
+  digest=b3:984be3e7bfe6f0d9d58e64184b23ec31e4895e747301b022fc253d8e76109a26 file=chronos/pkg/types/types.go range=173:179 lang=go exported=true byte_range=5824:6068
+  sig=type ChallengeResponse struct {\n	DID		string	`json:"did"`\n	Nonce		string	`json:"nonce"`\n	Message		string	`json:"message"`\n	ExpiresIn	int	`json:"expires_in"`\n}
+  doc=ChallengeResponse carries the exact bytes the agent must ed25519-sign.
+EDGES
+  contains=github.com/paxlabs-inc/chronos/pkg/types.ChallengeResponse#DID,github.com/paxlabs-inc/chronos/pkg/types.ChallengeResponse#ExpiresIn,github.com/paxlabs-inc/chronos/pkg/types.ChallengeResponse#Message,github.com/paxlabs-inc/chronos/pkg/types.ChallengeResponse#Nonce
+  ^defines=github.com/paxlabs-inc/chronos/pkg/types/types.go
+
+NODE id=github.com/paxlabs-inc/chronos/pkg/types.ChallengeResponse#DID kind=field
+  digest=b3:0db0799b6bc6f9d5ebada8ad8939b96ca193dd6be00fdb1d1bd3b774ea750523 file=chronos/pkg/types/types.go range=175:175 lang=go exported=true byte_range=5931:5960
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/chronos/pkg/types.ChallengeResponse
+
+NODE id=github.com/paxlabs-inc/chronos/pkg/types.ChallengeResponse#ExpiresIn kind=field
+  digest=b3:529e3316420e57703781e89c02b36b868c142fc7e15cc5d8f41e7f674f6d8ed4 file=chronos/pkg/types/types.go range=178:178 lang=go exported=true byte_range=6030:6066
+  sig=int
+EDGES
+  ^contains=github.com/paxlabs-inc/chronos/pkg/types.ChallengeResponse
+
+NODE id=github.com/paxlabs-inc/chronos/pkg/types.ChallengeResponse#Message kind=field
+  digest=b3:8a0ab743184f67fe3cdf3be42e80663ce99ee4e3df223ffffe00829a134f86d9 file=chronos/pkg/types/types.go range=177:177 lang=go exported=true byte_range=5995:6028
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/chronos/pkg/types.ChallengeResponse
+
+NODE id=github.com/paxlabs-inc/chronos/pkg/types.ChallengeResponse#Nonce kind=field
+  digest=b3:9df282b9ac8f4c0310b4ac3179c4db324c7b754dc0254bf25d3957dea4405cf0 file=chronos/pkg/types/types.go range=176:176 lang=go exported=true byte_range=5962:5993
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/chronos/pkg/types.ChallengeResponse
+
+NODE id=github.com/paxlabs-inc/chronos/pkg/types.CodeConflict kind=const
+  digest=b3:b526554af213b58bf687b06a7204d9982c17d0045562e331fa86c937417faa88 file=chronos/pkg/types/types.go range=35:40 lang=go exported=true byte_range=890:1175
+  sig=untyped string
+  doc=Error codes (stable; the planner/agent may branch on these).
+EDGES
+  ^defines=github.com/paxlabs-inc/chronos/pkg/types/types.go
+
+NODE id=github.com/paxlabs-inc/chronos/pkg/types.CodeInternal kind=const
+  digest=b3:e8833b0097ed451a9abe001ac602ed47e956805f352e568f9b17ae8267f06ea3 file=chronos/pkg/types/types.go range=35:41 lang=go exported=true byte_range=890:1260
+  sig=untyped string
+  doc=Error codes (stable; the planner/agent may branch on these).
+EDGES
+  ^defines=github.com/paxlabs-inc/chronos/pkg/types/types.go
+
+NODE id=github.com/paxlabs-inc/chronos/pkg/types.CodeInvalidRequest kind=const
+  digest=b3:eed38ff57231942cc7695a19024b13be96d2c6af4f33f13da81823877a969dcd file=chronos/pkg/types/types.go range=35:37 lang=go exported=true byte_range=890:1001
+  sig=untyped string
+  doc=Error codes (stable; the planner/agent may branch on these).
+EDGES
+  ^defines=github.com/paxlabs-inc/chronos/pkg/types/types.go
+
+NODE id=github.com/paxlabs-inc/chronos/pkg/types.CodeNotFound kind=const
+  digest=b3:1e38e487ec02b9b8a20a8c085518db3afc9d3e57f22f629e8a46ecfa2ce31038 file=chronos/pkg/types/types.go range=35:39 lang=go exported=true byte_range=890:1107
+  sig=untyped string
+  doc=Error codes (stable; the planner/agent may branch on these).
+EDGES
+  ^defines=github.com/paxlabs-inc/chronos/pkg/types/types.go
+
+NODE id=github.com/paxlabs-inc/chronos/pkg/types.CodeUnauthorized kind=const
+  digest=b3:e5139923c9d245d71993792e048082f33ed71ab0295d1d550fd5f16bfb4a2926 file=chronos/pkg/types/types.go range=35:38 lang=go exported=true byte_range=890:1038
+  sig=untyped string
+  doc=Error codes (stable; the planner/agent may branch on these).
+EDGES
+  ^defines=github.com/paxlabs-inc/chronos/pkg/types/types.go
+
+NODE id=github.com/paxlabs-inc/chronos/pkg/types.CreateAlarmRequest kind=type
+  digest=b3:4461050602a136ebb7ef884297341669e551ad97e229b5659fef5776a48b86e6 file=chronos/pkg/types/types.go range=143:159 lang=go exported=true byte_range=4634:5490
+  sig=type CreateAlarmRequest struct {\n	Label	string	`json:"label"`\n	Kind	string	`json:"kind"`	// once | cron\n	// once: exactly one of DelaySeconds / FireAt.\n	DelaySeconds	int64	`json:"delay_seconds,omitempty"`\n	FireAt		string	`json:"fire_at,omitempty"`	// RFC3339 absolute instant\n	// cron: a 5-field expression, @descriptor, or @every Nm.\n	CronExpr	string	`json:"cron_expr,omitempty"`\n	Timezone	string	`json:"timezone,omitempty"`	// IANA tz for cron (default UTC)\n\n	ConversationID	string		`json:"conversation_id,omitempty"`\n	WakeMessage	string		`json:"wake_message"`\n	Payload		json.RawMessage	`json:"payload,omitempty"`\n	IdempotencyKey	string		`json:"idempotency_key,omitempty"`\n	MaxFailures	int		`json:"max_failures,omitempty"`\n}
+  doc=CreateAlarmRequest is POST /v1/alarms (and the alarm_set MCP tool args).
+EDGES
+  contains=github.com/paxlabs-inc/chronos/pkg/types.CreateAlarmRequest#ConversationID,github.com/paxlabs-inc/chronos/pkg/types.CreateAlarmRequest#CronExpr,github.com/paxlabs-inc/chronos/pkg/types.CreateAlarmRequest#DelaySeconds,github.com/paxlabs-inc/chronos/pkg/types.CreateAlarmRequest#FireAt,github.com/paxlabs-inc/chronos/pkg/types.CreateAlarmRequest#IdempotencyKey,github.com/paxlabs-inc/chronos/pkg/types.CreateAlarmRequest#Kind,github.com/paxlabs-inc/chronos/pkg/types.CreateAlarmRequest#Label,github.com/paxlabs-inc/chronos/pkg/types.CreateAlarmRequest#MaxFailures,github.com/paxlabs-inc/chronos/pkg/types.CreateAlarmRequest#Payload,github.com/paxlabs-inc/chronos/pkg/types.CreateAlarmRequest#Timezone,github.com/paxlabs-inc/chronos/pkg/types.CreateAlarmRequest#WakeMessage
+  ^defines=github.com/paxlabs-inc/chronos/pkg/types/types.go
+
+NODE id=github.com/paxlabs-inc/chronos/pkg/types.CreateAlarmRequest#ConversationID kind=field
+  digest=b3:ca49349ddffe2112c6cc0541af06cc16af09559dd5b8e788c465d79e27ff3419 file=chronos/pkg/types/types.go range=154:154 lang=go exported=true byte_range=5179:5244
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/chronos/pkg/types.CreateAlarmRequest
+
+NODE id=github.com/paxlabs-inc/chronos/pkg/types.CreateAlarmRequest#CronExpr kind=field
+  digest=b3:cff4a00ef2705fd4d3f0e448f8ed78fe9a5abeaf0aa515bbd7c6634178aef024 file=chronos/pkg/types/types.go range=150:151 lang=go exported=true byte_range=4994:5097
+  sig=string
+  doc=cron: a 5-field expression, @descriptor, or @every Nm.
+EDGES
+  ^contains=github.com/paxlabs-inc/chronos/pkg/types.CreateAlarmRequest
+
+NODE id=github.com/paxlabs-inc/chronos/pkg/types.CreateAlarmRequest#DelaySeconds kind=field
+  digest=b3:b860ea0493a2389d08e8279a637d0d692f37839ba7984423deda842d4edd7b47 file=chronos/pkg/types/types.go range=147:148 lang=go exported=true byte_range=4816:4916
+  sig=int64
+  doc=once: exactly one of DelaySeconds / FireAt.
+EDGES
+  ^contains=github.com/paxlabs-inc/chronos/pkg/types.CreateAlarmRequest
+
+NODE id=github.com/paxlabs-inc/chronos/pkg/types.CreateAlarmRequest#FireAt kind=field
+  digest=b3:e04242065ae0e22be391dd20ab68ba62aece2960c485c8253f2c09507f5a58c3 file=chronos/pkg/types/types.go range=149:149 lang=go exported=true byte_range=4918:4964
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/chronos/pkg/types.CreateAlarmRequest
+
+NODE id=github.com/paxlabs-inc/chronos/pkg/types.CreateAlarmRequest#IdempotencyKey kind=field
+  digest=b3:fa72c6f63d8e6fad9382f5282e8b380209804bdbb155e6cb993559abb94f495d file=chronos/pkg/types/types.go range=157:157 lang=go exported=true byte_range=5359:5424
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/chronos/pkg/types.CreateAlarmRequest
+
+NODE id=github.com/paxlabs-inc/chronos/pkg/types.CreateAlarmRequest#Kind kind=field
+  digest=b3:dd8a12f772dacb37d0d2169c34264bc6078ff907ed77fe977ccfb26d3b1e89e8 file=chronos/pkg/types/types.go range=146:146 lang=go exported=true byte_range=4773:4799
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/chronos/pkg/types.CreateAlarmRequest
+
+NODE id=github.com/paxlabs-inc/chronos/pkg/types.CreateAlarmRequest#Label kind=field
+  digest=b3:7d739ae9b7afa2c8e5f91c6f9e8883eee2bfcd9c38a404a13d84eb0b305b9a8a file=chronos/pkg/types/types.go range=145:145 lang=go exported=true byte_range=4744:4771
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/chronos/pkg/types.CreateAlarmRequest
+
+NODE id=github.com/paxlabs-inc/chronos/pkg/types.CreateAlarmRequest#MaxFailures kind=field
+  digest=b3:7fe86ea57adbbe6b0d7b008b389652e1ea351e55a4b3d9a8542e9cb0fcf498a2 file=chronos/pkg/types/types.go range=158:158 lang=go exported=true byte_range=5426:5488
+  sig=int
+EDGES
+  ^contains=github.com/paxlabs-inc/chronos/pkg/types.CreateAlarmRequest
+
+NODE id=github.com/paxlabs-inc/chronos/pkg/types.CreateAlarmRequest#Payload kind=field
+  digest=b3:2306ee2eec701b0fe45b870046ca9ec25652c2ee085ac26f36a4c509f6ace0c3 file=chronos/pkg/types/types.go range=156:156 lang=go exported=true byte_range=5300:5357
+  sig=json.RawMessage
+EDGES
+  ^contains=github.com/paxlabs-inc/chronos/pkg/types.CreateAlarmRequest
+
+NODE id=github.com/paxlabs-inc/chronos/pkg/types.CreateAlarmRequest#Timezone kind=field
+  digest=b3:32a84a38ece918410a1e7d474540212d12c68a722c48ddae0128e7764822dae9 file=chronos/pkg/types/types.go range=152:152 lang=go exported=true byte_range=5099:5142
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/chronos/pkg/types.CreateAlarmRequest
+
+NODE id=github.com/paxlabs-inc/chronos/pkg/types.CreateAlarmRequest#WakeMessage kind=field
+  digest=b3:52fe5d71c62d0ade98ff4a47250dd48e5610d58ab2851bdd7ec811930db06eee file=chronos/pkg/types/types.go range=155:155 lang=go exported=true byte_range=5246:5298
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/chronos/pkg/types.CreateAlarmRequest
+
+NODE id=github.com/paxlabs-inc/chronos/pkg/types.CreateAlarmResponse kind=type
+  digest=b3:ebce8e489dbd3b94efbb8ad18fe5acee502b4b98da727b1ac4889ce0a50cf41b file=chronos/pkg/types/types.go range=161:166 lang=go exported=true byte_range=5492:5702
+  sig=type CreateAlarmResponse struct {\n	ID		string		`json:"id"`\n	NextFireAt	time.Time	`json:"next_fire_at"`\n	Status		string		`json:"status"`\n}
+  doc=CreateAlarmResponse is returned on a successful create.
+EDGES
+  contains=github.com/paxlabs-inc/chronos/pkg/types.CreateAlarmResponse#ID,github.com/paxlabs-inc/chronos/pkg/types.CreateAlarmResponse#NextFireAt,github.com/paxlabs-inc/chronos/pkg/types.CreateAlarmResponse#Status
+  ^defines=github.com/paxlabs-inc/chronos/pkg/types/types.go
+
+NODE id=github.com/paxlabs-inc/chronos/pkg/types.CreateAlarmResponse#ID kind=field
+  digest=b3:5b5fb96bab3a57223a2508680390609675a73e9307f807b0289981a57482aefb file=chronos/pkg/types/types.go range=163:163 lang=go exported=true byte_range=5586:5618
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/chronos/pkg/types.CreateAlarmResponse
+
+NODE id=github.com/paxlabs-inc/chronos/pkg/types.CreateAlarmResponse#NextFireAt kind=field
+  digest=b3:e3ca71296aa3f68d79d8c9f8791c2213a3318402aee694ca551e656a7209f3f3 file=chronos/pkg/types/types.go range=164:164 lang=go exported=true byte_range=5620:5662
+  sig=time.Time
+EDGES
+  ^contains=github.com/paxlabs-inc/chronos/pkg/types.CreateAlarmResponse
+
+NODE id=github.com/paxlabs-inc/chronos/pkg/types.CreateAlarmResponse#Status kind=field
+  digest=b3:412ee5dc0d27919a743a41482db9c896309a4247379ae9b9f13a4c7d008c4cfd file=chronos/pkg/types/types.go range=165:165 lang=go exported=true byte_range=5664:5700
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/chronos/pkg/types.CreateAlarmResponse
+
+NODE id=github.com/paxlabs-inc/chronos/pkg/types.Envelope kind=type
+  digest=b3:1b4c747797e55dd4226b7c2cc50334e11c8d703c31ef6b3e4a50b184745074f0 file=chronos/pkg/types/types.go range=14:19 lang=go exported=true byte_range=411:597
+  sig=type Envelope struct {\n	Ok	bool	`json:"ok"`\n	Data	any	`json:"data,omitempty"`\n	Error	*Error	`json:"error,omitempty"`\n}
+  doc=Envelope is the uniform {ok,data,error} response shape.
+EDGES
+  contains=github.com/paxlabs-inc/chronos/pkg/types.Envelope#Data,github.com/paxlabs-inc/chronos/pkg/types.Envelope#Error,github.com/paxlabs-inc/chronos/pkg/types.Envelope#Ok
+  ^defines=github.com/paxlabs-inc/chronos/pkg/types/types.go
+
+NODE id=github.com/paxlabs-inc/chronos/pkg/types.Envelope#Data kind=field
+  digest=b3:83dcd0cf1d7a371b6f8aff724174bbbea1a55221f47401a8795b30cd45fa7695 file=chronos/pkg/types/types.go range=17:17 lang=go exported=true byte_range=520:556
+  sig=any
+EDGES
+  ^contains=github.com/paxlabs-inc/chronos/pkg/types.Envelope
+
+NODE id=github.com/paxlabs-inc/chronos/pkg/types.Envelope#Error kind=field
+  digest=b3:51eb9534cf2bd0de3df1a2b2e9c2a3b260a9fc17993ca4460b56f5a90b37f7fd file=chronos/pkg/types/types.go range=18:18 lang=go exported=true byte_range=558:595
+  sig=*types.Error
+EDGES
+  ^contains=github.com/paxlabs-inc/chronos/pkg/types.Envelope
+
+NODE id=github.com/paxlabs-inc/chronos/pkg/types.Envelope#Ok kind=field
+  digest=b3:4ed08fa43a99fa70e83a83714b6d6253614fc18110dd22ce73a510b9cc99321f file=chronos/pkg/types/types.go range=16:16 lang=go exported=true byte_range=494:518
+  sig=bool
+EDGES
+  ^contains=github.com/paxlabs-inc/chronos/pkg/types.Envelope
+
+NODE id=github.com/paxlabs-inc/chronos/pkg/types.Error kind=type
+  digest=b3:68eebd8ca0d06c699c8cb88a05880df4fc05593c9a221e21b4f907e52db8f0a0 file=chronos/pkg/types/types.go range=21:26 lang=go exported=true byte_range=599:788
+  sig=type Error struct {\n	Code		string	`json:"code"`\n	Message		string	`json:"message"`\n	Retryable	bool	`json:"retryable,omitempty"`\n}
+  doc=Error is a structured, machine-branchable failure.
+EDGES
+  contains=github.com/paxlabs-inc/chronos/pkg/types.Error#Code,github.com/paxlabs-inc/chronos/pkg/types.Error#Message,github.com/paxlabs-inc/chronos/pkg/types.Error#Retryable,github.com/paxlabs-inc/chronos/pkg/types.Error.Error
+  ^defines=github.com/paxlabs-inc/chronos/pkg/types/types.go
+
+NODE id=github.com/paxlabs-inc/chronos/pkg/types.Error#Code kind=field
+  digest=b3:268f8ab4d0fb2019b3d5793bf1873ae3c9386068c1034f9177d56fba2664d8af file=chronos/pkg/types/types.go range=23:23 lang=go exported=true byte_range=674:704
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/chronos/pkg/types.Error
+
+NODE id=github.com/paxlabs-inc/chronos/pkg/types.Error#Message kind=field
+  digest=b3:8a0ab743184f67fe3cdf3be42e80663ce99ee4e3df223ffffe00829a134f86d9 file=chronos/pkg/types/types.go range=24:24 lang=go exported=true byte_range=706:739
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/chronos/pkg/types.Error
+
+NODE id=github.com/paxlabs-inc/chronos/pkg/types.Error#Retryable kind=field
+  digest=b3:0672edb45f89416378e10ad1fdd69212fc4e6174ee06f93ca6c1521d2f81710d file=chronos/pkg/types/types.go range=25:25 lang=go exported=true byte_range=741:786
+  sig=bool
+EDGES
+  ^contains=github.com/paxlabs-inc/chronos/pkg/types.Error
+
+NODE id=github.com/paxlabs-inc/chronos/pkg/types.Error.Error kind=method
+  digest=b3:f5cfef5bd5f418f0fe5302d1fe93102b4fd5524286d9ac487e5e00f82baa4740 file=chronos/pkg/types/types.go range=28:33 lang=go exported=true byte_range=790:888
+  sig=func (e *Error) Error() string
+EDGES
+  ^contains=github.com/paxlabs-inc/chronos/pkg/types.Error
+  ^defines=github.com/paxlabs-inc/chronos/pkg/types/types.go
+
+NODE id=github.com/paxlabs-inc/chronos/pkg/types.Fail kind=func
+  digest=b3:80dbb9064076d5ad2503cc937832984049ef910b6a88a55eaa7e2553785b6e46 file=chronos/pkg/types/types.go range=47:48 lang=go exported=true byte_range=1365:1462
+  sig=func Fail(err *Error) Envelope
+  doc=Fail wraps an error.
+EDGES
+  ^defines=github.com/paxlabs-inc/chronos/pkg/types/types.go
+
+NODE id=github.com/paxlabs-inc/chronos/pkg/types.KindCron kind=const
+  digest=b3:e2fdeafd0d2537d6f75b26391a9c95cd5109dfdd91f3a15c5878653ddc17b2b3 file=chronos/pkg/types/types.go range=55:59 lang=go exported=true byte_range=1629:1807
+  sig=untyped string
+  doc=Alarm kinds. The three user cases collapse onto two: "in 10 minutes" + "at a\nspecific time" = once; "every day/hour/N" = cron.
+EDGES
+  ^defines=github.com/paxlabs-inc/chronos/pkg/types/types.go
+
+NODE id=github.com/paxlabs-inc/chronos/pkg/types.KindOnce kind=const
+  digest=b3:289e755f2f15afacfbe5f2e49f144c69e8c6fcd586ea08c83595560917c9ded1 file=chronos/pkg/types/types.go range=55:58 lang=go exported=true byte_range=1629:1788
+  sig=untyped string
+  doc=Alarm kinds. The three user cases collapse onto two: "in 10 minutes" + "at a\nspecific time" = once; "every day/hour/N" = cron.
+EDGES
+  ^defines=github.com/paxlabs-inc/chronos/pkg/types/types.go
+
+NODE id=github.com/paxlabs-inc/chronos/pkg/types.NewError kind=func
+  digest=b3:84377bdb85020fe09dcc8aaf736bbf8fcf6215a85d6c04f8146e9305c64a5cc1 file=chronos/pkg/types/types.go range=50:53 lang=go exported=true byte_range=1464:1627
+  sig=func NewError(code, message string, retryable bool) *Error
+  doc=NewError constructs an *Error.
+EDGES
+  ^defines=github.com/paxlabs-inc/chronos/pkg/types/types.go
+
+NODE id=github.com/paxlabs-inc/chronos/pkg/types.OK kind=func
+  digest=b3:b6f8c7f5d3543b35238d1d1044c5b1eef630fa721b28654b30c755ca4c0ced8c file=chronos/pkg/types/types.go range=44:45 lang=go exported=true byte_range=1264:1363
+  sig=func OK(data any) Envelope
+  doc=OK wraps a success payload.
+EDGES
+  ^defines=github.com/paxlabs-inc/chronos/pkg/types/types.go
+
+NODE id=github.com/paxlabs-inc/chronos/pkg/types.StatusActive kind=const
+  digest=b3:05a0a124113c97e3e979da76ae42c7b26f9c9346dc2096a6350f8bd2e929f715 file=chronos/pkg/types/types.go range=62:64 lang=go exported=true byte_range=1811:1875
+  sig=untyped string
+  doc=Alarm lifecycle statuses.
+EDGES
+  ^defines=github.com/paxlabs-inc/chronos/pkg/types/types.go
+
+NODE id=github.com/paxlabs-inc/chronos/pkg/types.StatusCancelled kind=const
+  digest=b3:94143a7e813e684bd86639b28d9cf726b9e6c541d46eb3d85be2c6a58d658a6a file=chronos/pkg/types/types.go range=62:66 lang=go exported=true byte_range=1811:1989
+  sig=untyped string
+  doc=Alarm lifecycle statuses.
+EDGES
+  ^defines=github.com/paxlabs-inc/chronos/pkg/types/types.go
+
+NODE id=github.com/paxlabs-inc/chronos/pkg/types.StatusFailed kind=const
+  digest=b3:507e0b65daa2dd636f7f03400810be661b922804551ce756a4647ac19bad54da file=chronos/pkg/types/types.go range=62:67 lang=go exported=true byte_range=1811:2054
+  sig=untyped string
+  doc=Alarm lifecycle statuses.
+EDGES
+  ^defines=github.com/paxlabs-inc/chronos/pkg/types/types.go
+
+NODE id=github.com/paxlabs-inc/chronos/pkg/types.StatusFired kind=const
+  digest=b3:9add4a3d50ce15689c5c8b405e3232a74fa133c08bca92b7ef0fe30b39f9b11b file=chronos/pkg/types/types.go range=62:65 lang=go exported=true byte_range=1811:1902
+  sig=untyped string
+  doc=Alarm lifecycle statuses.
+EDGES
+  ^defines=github.com/paxlabs-inc/chronos/pkg/types/types.go
+
+NODE id=github.com/paxlabs-inc/chronos/pkg/types.VerifyRequest kind=type
+  digest=b3:a44dc503ab44efd27bfbf2e5407c20b94a26d811fe3f0caef469327f79572855 file=chronos/pkg/types/types.go range=181:187 lang=go exported=true byte_range=6070:6359
+  sig=type VerifyRequest struct {\n	DID		string	`json:"did"`\n	PublicKey	string	`json:"public_key"`	// hex(ed25519 pubkey)\n	Nonce		string	`json:"nonce"`\n	Signature	string	`json:"signature"`	// hex(ed25519 signature)\n}
+  doc=VerifyRequest proves possession of the DID's key over the challenge.
+EDGES
+  contains=github.com/paxlabs-inc/chronos/pkg/types.VerifyRequest#DID,github.com/paxlabs-inc/chronos/pkg/types.VerifyRequest#Nonce,github.com/paxlabs-inc/chronos/pkg/types.VerifyRequest#PublicKey,github.com/paxlabs-inc/chronos/pkg/types.VerifyRequest#Signature
+  ^defines=github.com/paxlabs-inc/chronos/pkg/types/types.go
+
+NODE id=github.com/paxlabs-inc/chronos/pkg/types.VerifyRequest#DID kind=field
+  digest=b3:0db0799b6bc6f9d5ebada8ad8939b96ca193dd6be00fdb1d1bd3b774ea750523 file=chronos/pkg/types/types.go range=183:183 lang=go exported=true byte_range=6171:6200
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/chronos/pkg/types.VerifyRequest
+
+NODE id=github.com/paxlabs-inc/chronos/pkg/types.VerifyRequest#Nonce kind=field
+  digest=b3:9df282b9ac8f4c0310b4ac3179c4db324c7b754dc0254bf25d3957dea4405cf0 file=chronos/pkg/types/types.go range=185:185 lang=go exported=true byte_range=6263:6294
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/chronos/pkg/types.VerifyRequest
+
+NODE id=github.com/paxlabs-inc/chronos/pkg/types.VerifyRequest#PublicKey kind=field
+  digest=b3:5d7fac6789f78d483a3774371c663b841e0c29f28635afb7bc15bd972461d36d file=chronos/pkg/types/types.go range=184:184 lang=go exported=true byte_range=6202:6238
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/chronos/pkg/types.VerifyRequest
+
+NODE id=github.com/paxlabs-inc/chronos/pkg/types.VerifyRequest#Signature kind=field
+  digest=b3:8964e601be6deb38fd8a6809e3d23a5ebdaf9a927f824f32ff4e4203bc99e40f file=chronos/pkg/types/types.go range=186:186 lang=go exported=true byte_range=6296:6331
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/chronos/pkg/types.VerifyRequest
+
+NODE id=github.com/paxlabs-inc/chronos/pkg/types.VerifyResponse kind=type
+  digest=b3:6c6101f6576d4057fa3d60bc5f3eb049a178f2126d69da6479cd5f7f9a500af7 file=chronos/pkg/types/types.go range=189:194 lang=go exported=true byte_range=6361:6585
+  sig=type VerifyResponse struct {\n	Token		string	`json:"token"`\n	OwnerUserID	string	`json:"owner_user_id"`\n	ExpiresIn	int	`json:"expires_in"`\n}
+  doc=VerifyResponse returns a short-lived principal token bound to the owner.
+EDGES
+  contains=github.com/paxlabs-inc/chronos/pkg/types.VerifyResponse#ExpiresIn,github.com/paxlabs-inc/chronos/pkg/types.VerifyResponse#OwnerUserID,github.com/paxlabs-inc/chronos/pkg/types.VerifyResponse#Token
+  ^defines=github.com/paxlabs-inc/chronos/pkg/types/types.go
+
+NODE id=github.com/paxlabs-inc/chronos/pkg/types.VerifyResponse#ExpiresIn kind=field
+  digest=b3:945654e826aeaae81be5fd3541ce72c3fe70072044cb3726b046af90a2354600 file=chronos/pkg/types/types.go range=193:193 lang=go exported=true byte_range=6545:6583
+  sig=int
+EDGES
+  ^contains=github.com/paxlabs-inc/chronos/pkg/types.VerifyResponse
+
+NODE id=github.com/paxlabs-inc/chronos/pkg/types.VerifyResponse#OwnerUserID kind=field
+  digest=b3:c3c4453a24eaf9195e49ee21b30ed68f097b26411f4b16c2fb57a11e49b1d086 file=chronos/pkg/types/types.go range=192:192 lang=go exported=true byte_range=6502:6543
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/chronos/pkg/types.VerifyResponse
+
+NODE id=github.com/paxlabs-inc/chronos/pkg/types.VerifyResponse#Token kind=field
+  digest=b3:29ea51457cb93be042fa26737d8e37f94e17bdd0ec0fad8315290a96cf6366a0 file=chronos/pkg/types/types.go range=191:191 lang=go exported=true byte_range=6467:6500
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/chronos/pkg/types.VerifyResponse
+
+NODE id=github.com/paxlabs-inc/chronos/pkg/types.View kind=type
+  digest=b3:b198ce2f51db3e7f67ff6429425bf75b6c1c79426321267e0674109032973046 file=chronos/pkg/types/types.go range=96:115 lang=go exported=true byte_range=2898:3985
+  sig=type View struct {\n	ID		string		`json:"id"`\n	Label		string		`json:"label"`\n	Kind		string		`json:"kind"`\n	CronExpr	string		`json:"cron_expr,omitempty"`\n	Timezone	string		`json:"timezone,omitempty"`\n	NextFireAt	*time.Time	`json:"next_fire_at,omitempty"`\n	ConversationID	string		`json:"conversation_id,omitempty"`\n	WakeMessage	string		`json:"wake_message"`\n	Payload		json.RawMessage	`json:"payload,omitempty"`\n	Status		string		`json:"status"`\n	IdempotencyKey	string		`json:"idempotency_key,omitempty"`\n	MaxFailures	int		`json:"max_failures"`\n	FailureCount	int		`json:"failure_count"`\n	LastError	string		`json:"last_error,omitempty"`\n	CreatedAt	time.Time	`json:"created_at"`\n	LastFiredAt	*time.Time	`json:"last_fired_at,omitempty"`\n}
+  doc=View is the JSON projection of an alarm returned to the agent. High-entropy\nfields (payload, wake_message, ids) are passed through verbatim (invariant i4).
+EDGES
+  contains=github.com/paxlabs-inc/chronos/pkg/types.View#ConversationID,github.com/paxlabs-inc/chronos/pkg/types.View#CreatedAt,github.com/paxlabs-inc/chronos/pkg/types.View#CronExpr,github.com/paxlabs-inc/chronos/pkg/types.View#FailureCount,github.com/paxlabs-inc/chronos/pkg/types.View#ID,github.com/paxlabs-inc/chronos/pkg/types.View#IdempotencyKey,github.com/paxlabs-inc/chronos/pkg/types.View#Kind,github.com/paxlabs-inc/chronos/pkg/types.View#Label,github.com/paxlabs-inc/chronos/pkg/types.View#LastError,github.com/paxlabs-inc/chronos/pkg/types.View#LastFiredAt,github.com/paxlabs-inc/chronos/pkg/types.View#MaxFailures,github.com/paxlabs-inc/chronos/pkg/types.View#NextFireAt,github.com/paxlabs-inc/chronos/pkg/types.View#Payload,github.com/paxlabs-inc/chronos/pkg/types.View#Status,github.com/paxlabs-inc/chronos/pkg/types.View#Timezone,github.com/paxlabs-inc/chronos/pkg/types.View#WakeMessage
+  ^defines=github.com/paxlabs-inc/chronos/pkg/types/types.go
+
+NODE id=github.com/paxlabs-inc/chronos/pkg/types.View#ConversationID kind=field
+  digest=b3:ca49349ddffe2112c6cc0541af06cc16af09559dd5b8e788c465d79e27ff3419 file=chronos/pkg/types/types.go range=105:105 lang=go exported=true byte_range=3402:3467
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/chronos/pkg/types.View
+
+NODE id=github.com/paxlabs-inc/chronos/pkg/types.View#CreatedAt kind=field
+  digest=b3:d18345565cd1d60a5b25994b53d349aaffd669fc5366c1ef9c67e2df30abe8a5 file=chronos/pkg/types/types.go range=113:113 lang=go exported=true byte_range=3868:3918
+  sig=time.Time
+EDGES
+  ^contains=github.com/paxlabs-inc/chronos/pkg/types.View
+
+NODE id=github.com/paxlabs-inc/chronos/pkg/types.View#CronExpr kind=field
+  digest=b3:ded67dafaf41b0e1917e22ed5bb34d4cc0a9ee57eca73e4ca2b45d047d10de5b file=chronos/pkg/types/types.go range=102:102 lang=go exported=true byte_range=3217:3276
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/chronos/pkg/types.View
+
+NODE id=github.com/paxlabs-inc/chronos/pkg/types.View#FailureCount kind=field
+  digest=b3:92215396f0aa96a3055e3df9e333ad0d8c6b274fdaf557fd65aa94a71c414fa1 file=chronos/pkg/types/types.go range=111:111 lang=go exported=true byte_range=3751:3804
+  sig=int
+EDGES
+  ^contains=github.com/paxlabs-inc/chronos/pkg/types.View
+
+NODE id=github.com/paxlabs-inc/chronos/pkg/types.View#ID kind=field
+  digest=b3:92819b9b2d40b9cde8da417b1c7d33c64eea2459ca17b1d39ef1c6914608df02 file=chronos/pkg/types/types.go range=99:99 lang=go exported=true byte_range=3080:3122
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/chronos/pkg/types.View
+
+NODE id=github.com/paxlabs-inc/chronos/pkg/types.View#IdempotencyKey kind=field
+  digest=b3:fa72c6f63d8e6fad9382f5282e8b380209804bdbb155e6cb993559abb94f495d file=chronos/pkg/types/types.go range=109:109 lang=go exported=true byte_range=3630:3695
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/chronos/pkg/types.View
+
+NODE id=github.com/paxlabs-inc/chronos/pkg/types.View#Kind kind=field
+  digest=b3:85f14c13bfb451e84dedda616dfec075413573d13ae049103c9c957d5b07ee7d file=chronos/pkg/types/types.go range=101:101 lang=go exported=true byte_range=3171:3215
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/chronos/pkg/types.View
+
+NODE id=github.com/paxlabs-inc/chronos/pkg/types.View#Label kind=field
+  digest=b3:8e9127993d4740385568ea67cd0801bf693d3b1a75e076ff1b6e80cb3b113a84 file=chronos/pkg/types/types.go range=100:100 lang=go exported=true byte_range=3124:3169
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/chronos/pkg/types.View
+
+NODE id=github.com/paxlabs-inc/chronos/pkg/types.View#LastError kind=field
+  digest=b3:a84c83287c1920970c8e5f1c681b5a2739a94eafb0a4e1fc6bb9013753c8aa89 file=chronos/pkg/types/types.go range=112:112 lang=go exported=true byte_range=3806:3866
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/chronos/pkg/types.View
+
+NODE id=github.com/paxlabs-inc/chronos/pkg/types.View#LastFiredAt kind=field
+  digest=b3:343c152a8d6c0588bdfdf5b5431b670a87fb911797eae7af5cc5fc25f0c7a5dd file=chronos/pkg/types/types.go range=114:114 lang=go exported=true byte_range=3920:3983
+  sig=*time.Time
+EDGES
+  ^contains=github.com/paxlabs-inc/chronos/pkg/types.View
+
+NODE id=github.com/paxlabs-inc/chronos/pkg/types.View#MaxFailures kind=field
+  digest=b3:ca9a598d7288608fbfea9b62be910141025520242d925bba7123b9c418ba8abb file=chronos/pkg/types/types.go range=110:110 lang=go exported=true byte_range=3697:3749
+  sig=int
+EDGES
+  ^contains=github.com/paxlabs-inc/chronos/pkg/types.View
+
+NODE id=github.com/paxlabs-inc/chronos/pkg/types.View#NextFireAt kind=field
+  digest=b3:5df2c9fd629e8d0db4c94a1c5f6d48246204c44d33867f38664b7e11894357c8 file=chronos/pkg/types/types.go range=104:104 lang=go exported=true byte_range=3338:3400
+  sig=*time.Time
+EDGES
+  ^contains=github.com/paxlabs-inc/chronos/pkg/types.View
+
+NODE id=github.com/paxlabs-inc/chronos/pkg/types.View#Payload kind=field
+  digest=b3:2306ee2eec701b0fe45b870046ca9ec25652c2ee085ac26f36a4c509f6ace0c3 file=chronos/pkg/types/types.go range=107:107 lang=go exported=true byte_range=3523:3580
+  sig=json.RawMessage
+EDGES
+  ^contains=github.com/paxlabs-inc/chronos/pkg/types.View
+
+NODE id=github.com/paxlabs-inc/chronos/pkg/types.View#Status kind=field
+  digest=b3:9cd0d62f46cdb4a48f593081717c252924a9ee27a8c768642131c2e5b3e9b95d file=chronos/pkg/types/types.go range=108:108 lang=go exported=true byte_range=3582:3628
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/chronos/pkg/types.View
+
+NODE id=github.com/paxlabs-inc/chronos/pkg/types.View#Timezone kind=field
+  digest=b3:4c092110c563bfdac7d06e91467ae6f1ddedc8c22bd75ae41a84be0daa7a025e file=chronos/pkg/types/types.go range=103:103 lang=go exported=true byte_range=3278:3336
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/chronos/pkg/types.View
+
+NODE id=github.com/paxlabs-inc/chronos/pkg/types.View#WakeMessage kind=field
+  digest=b3:52fe5d71c62d0ade98ff4a47250dd48e5610d58ab2851bdd7ec811930db06eee file=chronos/pkg/types/types.go range=106:106 lang=go exported=true byte_range=3469:3521
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/chronos/pkg/types.View
+
+NODE id=github.com/paxlabs-inc/chronos/pkg/types.ViewOf kind=func
+  digest=b3:7697fc5c8e5d9d3cac778a9c3494defe8aa9bf47e468e1ab9d055b30a2892055 file=chronos/pkg/types/types.go range=117:141 lang=go exported=true byte_range=3987:4632
+  sig=func ViewOf(a Alarm) View
+  doc=ViewOf projects an Alarm onto its JSON wire shape.
+EDGES
+  ^defines=github.com/paxlabs-inc/chronos/pkg/types/types.go
+
+NODE id=github.com/paxlabs-inc/chronos/pkg/types/types.go kind=file
+  digest=b3:8a7aef88f547b7c9b64318b6900c83a46cf07bfe51f907fd213ff3b46f7cc40c file=chronos/pkg/types/types.go range=1:194 lang=go exported=true
+EDGES
+  defines=github.com/paxlabs-inc/chronos/pkg/types.Alarm,github.com/paxlabs-inc/chronos/pkg/types.ChallengeRequest,github.com/paxlabs-inc/chronos/pkg/types.ChallengeResponse,github.com/paxlabs-inc/chronos/pkg/types.CodeConflict,github.com/paxlabs-inc/chronos/pkg/types.CodeInternal,github.com/paxlabs-inc/chronos/pkg/types.CodeInvalidRequest,github.com/paxlabs-inc/chronos/pkg/types.CodeNotFound,github.com/paxlabs-inc/chronos/pkg/types.CodeUnauthorized,github.com/paxlabs-inc/chronos/pkg/types.CreateAlarmRequest,github.com/paxlabs-inc/chronos/pkg/types.CreateAlarmResponse,github.com/paxlabs-inc/chronos/pkg/types.Envelope,github.com/paxlabs-inc/chronos/pkg/types.Error,github.com/paxlabs-inc/chronos/pkg/types.Error.Error,github.com/paxlabs-inc/chronos/pkg/types.Fail,github.com/paxlabs-inc/chronos/pkg/types.KindCron,github.com/paxlabs-inc/chronos/pkg/types.KindOnce,github.com/paxlabs-inc/chronos/pkg/types.NewError,github.com/paxlabs-inc/chronos/pkg/types.OK,github.com/paxlabs-inc/chronos/pkg/types.StatusActive,github.com/paxlabs-inc/chronos/pkg/types.StatusCancelled,github.com/paxlabs-inc/chronos/pkg/types.StatusFailed,github.com/paxlabs-inc/chronos/pkg/types.StatusFired,github.com/paxlabs-inc/chronos/pkg/types.VerifyRequest,github.com/paxlabs-inc/chronos/pkg/types.VerifyResponse,github.com/paxlabs-inc/chronos/pkg/types.View,github.com/paxlabs-inc/chronos/pkg/types.ViewOf
+  ^contains=github.com/paxlabs-inc/chronos/pkg/types

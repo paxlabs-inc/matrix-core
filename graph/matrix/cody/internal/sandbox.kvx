@@ -1,0 +1,385 @@
+# GENERATED gen=codegraph do-not-edit merkle=b3:2dc69ec8dbbe0231373534486cf12ff6fdb0eaad7b2dfdcbc4d73453c8542ee8
+
+NODE id=matrix/cody/internal/sandbox kind=package
+  digest=b3:ae05df6fa365e4d0d710809c29e3dae6c66fa085c19cc382ef9d2f70c4dd180a file=cody/internal/sandbox range=0:0 lang=go exported=true
+EDGES
+  contains=matrix/cody/internal/sandbox/sandbox.go
+  ^contains=mod:matrix/cody
+
+NODE id=matrix/cody/internal/sandbox.Client kind=interface
+  digest=b3:4cecd4b36308edf60c32f04e742d36d4ebfff8133c780aabbff1dc080e4100a5 file=cody/internal/sandbox/sandbox.go range=127:141 lang=go exported=true byte_range=5193:6102
+  sig=type Client interface {\n	// Create provisions a sandbox (PRIVATE network by default, from a template\n	// base image) in the client's project/environment.\n	Create(ctx context.Context, opts CreateOpts) (*Sandbox, error)\n	// Exec runs cmd (argv form) in the sandbox and returns the aggregated\n	// stdout/stderr, exit code, and duration.\n	Exec(ctx context.Context, sandboxID string, cmd []string) (ExecResult, error)\n	// WriteFiles deploys project state by writing files into the sandbox.\n	WriteFiles(ctx context.Context, sandboxID string, files []File) error\n	// Destroy tears the sandbox down (the TTL reaper and explicit re-preview\n	// both call it). Destroying an already-gone sandbox is not an error.\n	Destroy(ctx context.Context, sandboxID string) error\n}
+  doc=Client is the codyd-facing seam. Task 3.3 (preview lifecycle) consumes ONLY\nthis interface, so a Node-sidecar fallback (spec req 7.4) is drop-in.
+EDGES
+  ^implements=matrix/cody/internal/sandbox.client
+  ^defines=matrix/cody/internal/sandbox/sandbox.go
+
+NODE id=matrix/cody/internal/sandbox.Config kind=type
+  digest=b3:6be093e0c9034492af66e109730679af67009dcdf73ca5526fc8fccad9de06fe file=cody/internal/sandbox/sandbox.go range=143:154 lang=go exported=true byte_range=6104:6670
+  sig=type Config struct {\n	Token		string\n	ProjectID	string\n	EnvironmentID	string\n	Endpoint	string		// "" -> DefaultEndpoint\n	Timeout		time.Duration	// <=0 -> defaultTimeout (ignored if HTTPClient set)\n	HTTPClient	*http.Client	// nil -> internal client with Timeout\n}
+  doc=Config configures the GraphQL client. Token/ProjectID/EnvironmentID are read\nfrom RAILWAY_API_TOKEN / RAILWAY_PROJECT_ID / RAILWAY_ENVIRONMENT_ID by the\ncodyd caller (not by this package). Endpoint and HTTPClient are override\nseams for tests; both are optional.
+EDGES
+  contains=matrix/cody/internal/sandbox.Config#Endpoint,matrix/cody/internal/sandbox.Config#EnvironmentID,matrix/cody/internal/sandbox.Config#HTTPClient,matrix/cody/internal/sandbox.Config#ProjectID,matrix/cody/internal/sandbox.Config#Timeout,matrix/cody/internal/sandbox.Config#Token
+  ^defines=matrix/cody/internal/sandbox/sandbox.go
+
+NODE id=matrix/cody/internal/sandbox.Config#Endpoint kind=field
+  digest=b3:c45af36dc615bcbac00a8ede93488a4105fab823ee37b7d6760d22896631f82e file=cody/internal/sandbox/sandbox.go range=151:151 lang=go exported=true byte_range=6466:6486
+  sig=string
+EDGES
+  ^contains=matrix/cody/internal/sandbox.Config
+
+NODE id=matrix/cody/internal/sandbox.Config#EnvironmentID kind=field
+  digest=b3:31e37da1c16aa131533b8bdef2fbef77cd47466104be2ea417cbf8f643634117 file=cody/internal/sandbox/sandbox.go range=150:150 lang=go exported=true byte_range=6444:6464
+  sig=string
+EDGES
+  ^contains=matrix/cody/internal/sandbox.Config
+
+NODE id=matrix/cody/internal/sandbox.Config#HTTPClient kind=field
+  digest=b3:48ce3470b5a43be90ac944aff4d5f5ae481e37ee179f562170ecdcf709e3215a file=cody/internal/sandbox/sandbox.go range=153:153 lang=go exported=true byte_range=6602:6628
+  sig=*http.Client
+EDGES
+  ^contains=matrix/cody/internal/sandbox.Config
+
+NODE id=matrix/cody/internal/sandbox.Config#ProjectID kind=field
+  digest=b3:6cfb18e6a471fa41e70308a56d6aafdab660abb26954f334915eb4cef7aaa379 file=cody/internal/sandbox/sandbox.go range=149:149 lang=go exported=true byte_range=6422:6442
+  sig=string
+EDGES
+  ^contains=matrix/cody/internal/sandbox.Config
+
+NODE id=matrix/cody/internal/sandbox.Config#Timeout kind=field
+  digest=b3:80532a4583cb883e79da5f0b368605cbc62a1ad6466319e044ef562535eeea72 file=cody/internal/sandbox/sandbox.go range=152:152 lang=go exported=true byte_range=6520:6547
+  sig=time.Duration
+EDGES
+  ^contains=matrix/cody/internal/sandbox.Config
+
+NODE id=matrix/cody/internal/sandbox.Config#Token kind=field
+  digest=b3:160d84dc6212193c666c0011e42274e3d30f6095827b685f7dfa597feeeeddc1 file=cody/internal/sandbox/sandbox.go range=148:148 lang=go exported=true byte_range=6400:6420
+  sig=string
+EDGES
+  ^contains=matrix/cody/internal/sandbox.Config
+
+NODE id=matrix/cody/internal/sandbox.CreateOpts kind=type
+  digest=b3:749ce066908ba82b85bd687e4ef45483db0751d418b0acef7e815b2fa1878c5b file=cody/internal/sandbox/sandbox.go range=97:104 lang=go exported=true byte_range=4187:4462
+  sig=type CreateOpts struct {\n	Image	string\n	Env	map[string]string\n	Network	NetworkMode\n}
+  doc=CreateOpts parameterises Create. Image is the sandbox base template image;\nEnv is baked in at create time; Network defaults to NetworkPrivate (the\npreview posture) when empty.
+EDGES
+  contains=matrix/cody/internal/sandbox.CreateOpts#Env,matrix/cody/internal/sandbox.CreateOpts#Image,matrix/cody/internal/sandbox.CreateOpts#Network
+  ^defines=matrix/cody/internal/sandbox/sandbox.go
+
+NODE id=matrix/cody/internal/sandbox.CreateOpts#Env kind=field
+  digest=b3:661b13273c1e0b696e2d5a0b6fe2e6fbfad296e856bad7a825e40ed6d623d135 file=cody/internal/sandbox/sandbox.go range=102:102 lang=go exported=true byte_range=4414:4439
+  sig=map[string]string
+EDGES
+  ^contains=matrix/cody/internal/sandbox.CreateOpts
+
+NODE id=matrix/cody/internal/sandbox.CreateOpts#Image kind=field
+  digest=b3:e02348444d0c4525638c54ba9df9871835d74cbaa1b3ea3179bfa892ab4b3715 file=cody/internal/sandbox/sandbox.go range=101:101 lang=go exported=true byte_range=4398:4412
+  sig=string
+EDGES
+  ^contains=matrix/cody/internal/sandbox.CreateOpts
+
+NODE id=matrix/cody/internal/sandbox.CreateOpts#Network kind=field
+  digest=b3:e0cc9c72516fe65e707a36712c8c8a08b6c8469e93eca3d8b434b04a5fe20838 file=cody/internal/sandbox/sandbox.go range=103:103 lang=go exported=true byte_range=4441:4460
+  sig=sandbox.NetworkMode
+EDGES
+  ^contains=matrix/cody/internal/sandbox.CreateOpts
+
+NODE id=matrix/cody/internal/sandbox.DefaultEndpoint kind=const
+  digest=b3:a07d7f7f201d05b24870d77473429984f7e9008d8f25fe1cbf51b0f725cacfb2 file=cody/internal/sandbox/sandbox.go range=46:49 lang=go exported=true byte_range=2095:2344
+  sig=untyped string
+  doc=DefaultEndpoint is the Railway public GraphQL API base — identical to\nrouter/internal/railway.DefaultEndpoint. Override via Config.Endpoint for\ntests / local mock servers.
+EDGES
+  ^defines=matrix/cody/internal/sandbox/sandbox.go
+
+NODE id=matrix/cody/internal/sandbox.ErrNotFound kind=var
+  digest=b3:35043545092afd59ddd03b96975c22da38821e6bbd361e1646c6adbf6844d19c file=cody/internal/sandbox/sandbox.go range=80:83 lang=go exported=true byte_range=3477:3686
+  sig=error
+  doc=Sentinel errors. Callers use errors.Is to dispatch; codyd maps them onto its\nown preview error taxonomy. Mirrors the router railway client's set.
+EDGES
+  ^defines=matrix/cody/internal/sandbox/sandbox.go
+
+NODE id=matrix/cody/internal/sandbox.ErrUnauthorized kind=var
+  digest=b3:ea215529b481a56fd0821f43dd5482cf381ec3c6cf66de763155275d24046ed0 file=cody/internal/sandbox/sandbox.go range=80:84 lang=go exported=true byte_range=3477:3767
+  sig=error
+  doc=Sentinel errors. Callers use errors.Is to dispatch; codyd maps them onto its\nown preview error taxonomy. Mirrors the router railway client's set.
+EDGES
+  ^defines=matrix/cody/internal/sandbox/sandbox.go
+
+NODE id=matrix/cody/internal/sandbox.ErrUpstream kind=var
+  digest=b3:da7a4bd3499c34a9ed03ef3d4c688edb4340c355b8c81208d5bef439cb53fb5a file=cody/internal/sandbox/sandbox.go range=80:85 lang=go exported=true byte_range=3477:3824
+  sig=error
+  doc=Sentinel errors. Callers use errors.Is to dispatch; codyd maps them onto its\nown preview error taxonomy. Mirrors the router railway client's set.
+EDGES
+  ^defines=matrix/cody/internal/sandbox/sandbox.go
+
+NODE id=matrix/cody/internal/sandbox.ExecResult kind=type
+  digest=b3:abd173354fe76db3f39040417e2d210692b866c7863385fa90ccebe38eff4e8e file=cody/internal/sandbox/sandbox.go range=113:125 lang=go exported=true byte_range=4647:5191
+  sig=type ExecResult struct {\n	Stdout		string\n	Stderr		string\n	Exit		int\n	Duration	time.Duration\n}
+  doc=ExecResult is the outcome of one Exec: the aggregated streamed stdout/stderr,\nthe process exit code, and the wall-clock duration.\n\nStreaming caveat: Railway streams stdout during exec, but this seam returns\nthe aggregated result once the command completes — the value codyd needs for\nhealth-probing and evidence. A live-tail variant (GraphQL subscription /\nwebsocket) is a future addition behind the same interface, not v1.
+EDGES
+  contains=matrix/cody/internal/sandbox.ExecResult#Duration,matrix/cody/internal/sandbox.ExecResult#Exit,matrix/cody/internal/sandbox.ExecResult#Stderr,matrix/cody/internal/sandbox.ExecResult#Stdout
+  ^defines=matrix/cody/internal/sandbox/sandbox.go
+
+NODE id=matrix/cody/internal/sandbox.ExecResult#Duration kind=field
+  digest=b3:42e352d74beb41e73adcb3a16079f8fe2cc27a3d8ee58b146ad7397475d0b6b3 file=cody/internal/sandbox/sandbox.go range=124:124 lang=go exported=true byte_range=5167:5189
+  sig=time.Duration
+EDGES
+  ^contains=matrix/cody/internal/sandbox.ExecResult
+
+NODE id=matrix/cody/internal/sandbox.ExecResult#Exit kind=field
+  digest=b3:2768bc370dbd831b24f4888988cdecb382c602e3c9571a44eda8f5a83de4d7bd file=cody/internal/sandbox/sandbox.go range=123:123 lang=go exported=true byte_range=5153:5165
+  sig=int
+EDGES
+  ^contains=matrix/cody/internal/sandbox.ExecResult
+
+NODE id=matrix/cody/internal/sandbox.ExecResult#Stderr kind=field
+  digest=b3:dbe22cee0247f7f7963358b5d5bc0be635e3384b154c4d2149733a9f08ba5bb4 file=cody/internal/sandbox/sandbox.go range=122:122 lang=go exported=true byte_range=5136:5151
+  sig=string
+EDGES
+  ^contains=matrix/cody/internal/sandbox.ExecResult
+
+NODE id=matrix/cody/internal/sandbox.ExecResult#Stdout kind=field
+  digest=b3:8c3a7a74b5c3b03c6335f2ffe6dccb85cbf6c8bd902fd227ac988a7f282322a6 file=cody/internal/sandbox/sandbox.go range=121:121 lang=go exported=true byte_range=5119:5134
+  sig=string
+EDGES
+  ^contains=matrix/cody/internal/sandbox.ExecResult
+
+NODE id=matrix/cody/internal/sandbox.File kind=type
+  digest=b3:b68d9465f9d0c73aebcc03eb87e6a1a9a850f63ab23a762152b6afad9425f480 file=cody/internal/sandbox/sandbox.go range=106:111 lang=go exported=true byte_range=4464:4645
+  sig=type File struct {\n	Path	string\n	Content	string\n}
+  doc=File is one file written into a sandbox's filesystem (deploying project\nstate). Content is the raw file bytes as a string.
+EDGES
+  contains=matrix/cody/internal/sandbox.File#Content,matrix/cody/internal/sandbox.File#Path
+  ^defines=matrix/cody/internal/sandbox/sandbox.go
+
+NODE id=matrix/cody/internal/sandbox.File#Content kind=field
+  digest=b3:f797593f0ae4eae51a4b388c56d72dc510ceb03b76901951419ac62de402be16 file=cody/internal/sandbox/sandbox.go range=110:110 lang=go exported=true byte_range=4629:4643
+  sig=string
+EDGES
+  ^contains=matrix/cody/internal/sandbox.File
+
+NODE id=matrix/cody/internal/sandbox.File#Path kind=field
+  digest=b3:973926e954c11ba57690c272edb86113cfbb1147af36439db7c3c7b5481cbe0e file=cody/internal/sandbox/sandbox.go range=109:109 lang=go exported=true byte_range=4613:4627
+  sig=string
+EDGES
+  ^contains=matrix/cody/internal/sandbox.File
+
+NODE id=matrix/cody/internal/sandbox.NetworkIsolated kind=const
+  digest=b3:5c3b37cbed1f0dc27c4cbf90c5090c65a881302624bc8c55eb33bfbacb11d419 file=cody/internal/sandbox/sandbox.go range=68:68 lang=go exported=true byte_range=3159:3199
+  sig=sandbox.NetworkMode
+EDGES
+  ^defines=matrix/cody/internal/sandbox/sandbox.go
+
+NODE id=matrix/cody/internal/sandbox.NetworkMode kind=type
+  digest=b3:1db2d12e73b0b2560d3e3041939923442b6adeb2c6740811f61ff464d5d00603 file=cody/internal/sandbox/sandbox.go range=57:64 lang=go exported=true byte_range=2645:3107
+  sig=type NetworkMode string
+  doc=NetworkMode selects a sandbox's networking posture.\n\n  - NetworkPrivate reaches the project/environment's private services over\n    railway.internal and has no public NAT egress. This is what previews use.\n  - NetworkIsolated has public NAT egress but cannot reach environment\n    services — used for hermetic browser-driven e2e (playwright) where the\n    sandbox needs the open internet but not the user's services.
+EDGES
+  ^defines=matrix/cody/internal/sandbox/sandbox.go
+
+NODE id=matrix/cody/internal/sandbox.NetworkPrivate kind=const
+  digest=b3:0dd0bb5c6e83dee931e200f00f6487e19e0f94d5a0a5bd93e04cbc0c3f8a8dc3 file=cody/internal/sandbox/sandbox.go range=67:67 lang=go exported=true byte_range=3118:3157
+  sig=sandbox.NetworkMode
+EDGES
+  ^defines=matrix/cody/internal/sandbox/sandbox.go
+
+NODE id=matrix/cody/internal/sandbox.New kind=func
+  digest=b3:fb6f478253ca110544ecf263c7081d8fdb93e3a78722a674481ba07c2b78956d file=cody/internal/sandbox/sandbox.go range=168:189 lang=go exported=true byte_range=6952:7398
+  sig=func New(cfg Config) Client
+  doc=New constructs a GraphQL-backed sandbox Client from cfg.
+EDGES
+  ^defines=matrix/cody/internal/sandbox/sandbox.go
+
+NODE id=matrix/cody/internal/sandbox.Sandbox kind=type
+  digest=b3:6349486dd66171083ce848c1052a0a556bafac0d1d8463ae9191525a54e79636 file=cody/internal/sandbox/sandbox.go range=88:95 lang=go exported=true byte_range=3828:4185
+  sig=type Sandbox struct {\n	ID		string	`json:"id"`\n	PrivateHost	string	`json:"privateHost"`\n	Status		string	`json:"status"`\n}
+  doc=Sandbox is the subset of Railway's sandbox object codyd cares about.\nPrivateHost is the railway.internal hostname the router /preview proxy\nforwards to over the private network — sandboxes expose no public domain.
+EDGES
+  contains=matrix/cody/internal/sandbox.Sandbox#ID,matrix/cody/internal/sandbox.Sandbox#PrivateHost,matrix/cody/internal/sandbox.Sandbox#Status
+  ^defines=matrix/cody/internal/sandbox/sandbox.go
+
+NODE id=matrix/cody/internal/sandbox.Sandbox#ID kind=field
+  digest=b3:633ce1cdc4b256b74cdbe5d86719e1906287abea7e361f1e14df0eba40d213c4 file=cody/internal/sandbox/sandbox.go range=92:92 lang=go exported=true byte_range=4076:4106
+  sig=string
+EDGES
+  ^contains=matrix/cody/internal/sandbox.Sandbox
+
+NODE id=matrix/cody/internal/sandbox.Sandbox#PrivateHost kind=field
+  digest=b3:9c5efb54104b9accebaa25116661d1db15464f34714cdc5f04bc66d1ebdbaeed file=cody/internal/sandbox/sandbox.go range=93:93 lang=go exported=true byte_range=4108:4147
+  sig=string
+EDGES
+  ^contains=matrix/cody/internal/sandbox.Sandbox
+
+NODE id=matrix/cody/internal/sandbox.Sandbox#Status kind=field
+  digest=b3:b37ea04883e064cb1cea55ea7638fb632ad4bb2dc13529c7c1f7079d35c846e6 file=cody/internal/sandbox/sandbox.go range=94:94 lang=go exported=true byte_range=4149:4183
+  sig=string
+EDGES
+  ^contains=matrix/cody/internal/sandbox.Sandbox
+
+NODE id=matrix/cody/internal/sandbox.StatusCreating kind=const
+  digest=b3:b368b17b7d9263485600391e6ccfed4daf443fbcbad7990ecf739b44622b670d file=cody/internal/sandbox/sandbox.go range=71:74 lang=go exported=true byte_range=3203:3390
+  sig=untyped string
+  doc=Sandbox statuses Railway reports (subset codyd dispatches on). The exact\nstring set is FIXTURE-VERIFIED-ONLY — reconcile against the live API.
+EDGES
+  ^defines=matrix/cody/internal/sandbox/sandbox.go
+
+NODE id=matrix/cody/internal/sandbox.StatusFailed kind=const
+  digest=b3:3d36b5065b0690e8a98c98f473e94ea63282e83ad67f3247997131fad69b0d83 file=cody/internal/sandbox/sandbox.go range=71:77 lang=go exported=true byte_range=3203:3473
+  sig=untyped string
+  doc=Sandbox statuses Railway reports (subset codyd dispatches on). The exact\nstring set is FIXTURE-VERIFIED-ONLY — reconcile against the live API.
+EDGES
+  ^defines=matrix/cody/internal/sandbox/sandbox.go
+
+NODE id=matrix/cody/internal/sandbox.StatusRunning kind=const
+  digest=b3:6561e21f572ae311702239eb796cd767c802c86bbe653c058ffe3d6f6c9cbfdf file=cody/internal/sandbox/sandbox.go range=71:75 lang=go exported=true byte_range=3203:3418
+  sig=untyped string
+  doc=Sandbox statuses Railway reports (subset codyd dispatches on). The exact\nstring set is FIXTURE-VERIFIED-ONLY — reconcile against the live API.
+EDGES
+  ^defines=matrix/cody/internal/sandbox/sandbox.go
+
+NODE id=matrix/cody/internal/sandbox.StatusStopped kind=const
+  digest=b3:40cdb4e3583c56d5c38ef42e94f69cf9fae02dde8887667a09d59768cedbd092 file=cody/internal/sandbox/sandbox.go range=71:76 lang=go exported=true byte_range=3203:3446
+  sig=untyped string
+  doc=Sandbox statuses Railway reports (subset codyd dispatches on). The exact\nstring set is FIXTURE-VERIFIED-ONLY — reconcile against the live API.
+EDGES
+  ^defines=matrix/cody/internal/sandbox/sandbox.go
+
+NODE id=matrix/cody/internal/sandbox._ kind=var
+  digest=b3:5b461c382e36c30fa08a47c69bf0df7c76f80452c6143d73f4e6b5576b895667 file=cody/internal/sandbox/sandbox.go range=165:166 lang=go exported=false byte_range=6861:6950
+  sig=sandbox.Client
+  doc=compile-time proof the concrete type satisfies the seam.
+EDGES
+  ^defines=matrix/cody/internal/sandbox/sandbox.go
+
+NODE id=matrix/cody/internal/sandbox.client kind=type
+  digest=b3:81ba37cc4d6b4e4a18b9f337a76fb2be7a5427819cb02b905f2bfe728ce204de file=cody/internal/sandbox/sandbox.go range=156:163 lang=go exported=false byte_range=6672:6859
+  sig=type client struct {\n	endpoint	string\n	token		string\n	projectID	string\n	environmentID	string\n	hc		*http.Client\n}
+  doc=client is the concrete GraphQL-backed Client.
+EDGES
+  contains=matrix/cody/internal/sandbox.client#endpoint,matrix/cody/internal/sandbox.client#environmentID,matrix/cody/internal/sandbox.client#hc,matrix/cody/internal/sandbox.client#projectID,matrix/cody/internal/sandbox.client#token,matrix/cody/internal/sandbox.client.Create,matrix/cody/internal/sandbox.client.Destroy,matrix/cody/internal/sandbox.client.Exec,matrix/cody/internal/sandbox.client.WriteFiles,matrix/cody/internal/sandbox.client.do
+  implements=matrix/cody/internal/sandbox.Client
+  ^defines=matrix/cody/internal/sandbox/sandbox.go
+
+NODE id=matrix/cody/internal/sandbox.client#endpoint kind=field
+  digest=b3:011079a4fe96aea8d7768a0b3fc1d31441122fba404ae0c7a53a671478e97f81 file=cody/internal/sandbox/sandbox.go range=158:158 lang=go exported=false byte_range=6743:6763
+  sig=string
+EDGES
+  ^contains=matrix/cody/internal/sandbox.client
+
+NODE id=matrix/cody/internal/sandbox.client#environmentID kind=field
+  digest=b3:4a1310101a261aa23479e45954a617552704e95e895675ff6d858dfcc55a8711 file=cody/internal/sandbox/sandbox.go range=161:161 lang=go exported=false byte_range=6809:6829
+  sig=string
+EDGES
+  ^contains=matrix/cody/internal/sandbox.client
+
+NODE id=matrix/cody/internal/sandbox.client#hc kind=field
+  digest=b3:f3b262454b75f50e8e4bdd6fbb368d92e1b7730d0496e4b3a3845be0b5a9e140 file=cody/internal/sandbox/sandbox.go range=162:162 lang=go exported=false byte_range=6831:6857
+  sig=*http.Client
+EDGES
+  ^contains=matrix/cody/internal/sandbox.client
+
+NODE id=matrix/cody/internal/sandbox.client#projectID kind=field
+  digest=b3:96da3a375faa786dba87395212359fe3e9cd313a32a97bb507ef3ff2dda8df9e file=cody/internal/sandbox/sandbox.go range=160:160 lang=go exported=false byte_range=6787:6807
+  sig=string
+EDGES
+  ^contains=matrix/cody/internal/sandbox.client
+
+NODE id=matrix/cody/internal/sandbox.client#token kind=field
+  digest=b3:49f3d9b26bee68520e03f1879d790a89aaa09e0eaf1a9a04f3fc6298b799d786 file=cody/internal/sandbox/sandbox.go range=159:159 lang=go exported=false byte_range=6765:6785
+  sig=string
+EDGES
+  ^contains=matrix/cody/internal/sandbox.client
+
+NODE id=matrix/cody/internal/sandbox.client.Create kind=method
+  digest=b3:5e63fcace64a2133cdeb9ef79d20f5d153d5225cbb372079d16d70d01afe39f1 file=cody/internal/sandbox/sandbox.go range=191:216 lang=go exported=true byte_range=7400:8164
+  sig=func (c *client) Create(ctx context.Context, opts CreateOpts) (*Sandbox, error)
+  doc=Create — FIXTURE-VERIFIED-ONLY schema (sandboxCreate).
+EDGES
+  ^contains=matrix/cody/internal/sandbox.client
+  ^defines=matrix/cody/internal/sandbox/sandbox.go
+
+NODE id=matrix/cody/internal/sandbox.client.Destroy kind=method
+  digest=b3:dac39f8804b94bb508741c8ec86509c50cc15ac14159e135f291f01539acf5c9 file=cody/internal/sandbox/sandbox.go range=266:278 lang=go exported=true byte_range=9657:10171
+  sig=func (c *client) Destroy(ctx context.Context, sandboxID string) error
+  doc=Destroy — FIXTURE-VERIFIED-ONLY schema (sandboxDestroy). An already-gone\nsandbox (ErrNotFound) is treated as success — Destroy is idempotent so the\nTTL reaper and explicit re-preview never fight over a teardown.
+EDGES
+  ^contains=matrix/cody/internal/sandbox.client
+  ^defines=matrix/cody/internal/sandbox/sandbox.go
+
+NODE id=matrix/cody/internal/sandbox.client.Exec kind=method
+  digest=b3:fc1bc9337fdbdb111a5be2ce7dc5970d2f1f5081e5c2b5a3b574faea11960f89 file=cody/internal/sandbox/sandbox.go range=218:245 lang=go exported=true byte_range=8166:9034
+  sig=func (c *client) Exec(ctx context.Context, sandboxID string, cmd []string) (ExecResult, error)
+  doc=Exec — FIXTURE-VERIFIED-ONLY schema (sandboxExec).
+EDGES
+  ^contains=matrix/cody/internal/sandbox.client
+  ^defines=matrix/cody/internal/sandbox/sandbox.go
+
+NODE id=matrix/cody/internal/sandbox.client.WriteFiles kind=method
+  digest=b3:2c28803acf00f947a2da36c75b6c8b1d9b66b21f85820db5d3516d55bf2528d9 file=cody/internal/sandbox/sandbox.go range=247:264 lang=go exported=true byte_range=9036:9655
+  sig=func (c *client) WriteFiles(ctx context.Context, sandboxID string, files []File) error
+  doc=WriteFiles — FIXTURE-VERIFIED-ONLY schema (sandboxFilesWrite).
+EDGES
+  ^contains=matrix/cody/internal/sandbox.client
+  ^defines=matrix/cody/internal/sandbox/sandbox.go
+
+NODE id=matrix/cody/internal/sandbox.client.do kind=method
+  digest=b3:85bcd925074018711fe5e94fc1838180dfcaea86f8a1020f645dcafdb950c69c file=cody/internal/sandbox/sandbox.go range=291:347 lang=go exported=false byte_range=10465:12759
+  sig=func (c *client) do(ctx context.Context, query string, variables map[string]any, out any) error
+  doc=do executes a GraphQL request against the Railway endpoint, decoding\nresponse.data into out (nil to discard). It mirrors the router railway\nclient: HTTP 401/403 and "not authorized"/"not found" GraphQL errors map to\nsentinels; Railway returns most application errors as 200s with an errors\narray. The response body is limited to 1 MiB.
+EDGES
+  ^contains=matrix/cody/internal/sandbox.client
+  ^defines=matrix/cody/internal/sandbox/sandbox.go
+
+NODE id=matrix/cody/internal/sandbox.defaultTimeout kind=const
+  digest=b3:4c375816e2952f178018b5778357ca734fc0734e75588df9f6df0dafe156cf76 file=cody/internal/sandbox/sandbox.go range=51:55 lang=go exported=false byte_range=2346:2643
+  sig=time.Duration
+  doc=defaultTimeout bounds a single GraphQL round-trip when Config.Timeout is 0.\nLarger than the router's provisioner (30s) because sandbox create + exec can\nlegitimately run for a while; long operations should still pass their own\ncontext deadline.
+EDGES
+  ^defines=matrix/cody/internal/sandbox/sandbox.go
+
+NODE id=matrix/cody/internal/sandbox.gqlError kind=type
+  digest=b3:754addd96f3ff7afba5a40e659062c60820043d7880892384f0c3ec9d41a3c9c file=cody/internal/sandbox/sandbox.go range=286:289 lang=go exported=false byte_range=10350:10463
+  sig=type gqlError struct {\n	Message string `json:"message"`\n}
+  doc=gqlError is one entry of the GraphQL "errors" array.
+EDGES
+  contains=matrix/cody/internal/sandbox.gqlError#Message
+  ^defines=matrix/cody/internal/sandbox/sandbox.go
+
+NODE id=matrix/cody/internal/sandbox.gqlError#Message kind=field
+  digest=b3:d7a0704d4d1cdf051b9f61d5a005f6a0c1ada9b90dd901fab6b0e03fad711a42 file=cody/internal/sandbox/sandbox.go range=288:288 lang=go exported=true byte_range=10430:10461
+  sig=string
+EDGES
+  ^contains=matrix/cody/internal/sandbox.gqlError
+
+NODE id=matrix/cody/internal/sandbox.gqlRequest kind=type
+  digest=b3:713a29601f237347e5b09f63f0fa788f7ef2b4547c2c70adb59f4d7652d26592 file=cody/internal/sandbox/sandbox.go range=280:284 lang=go exported=false byte_range=10173:10348
+  sig=type gqlRequest struct {\n	Query		string		`json:"query"`\n	Variables	map[string]any	`json:"variables,omitempty"`\n}
+  doc=gqlRequest is the GraphQL-over-HTTP request body.
+EDGES
+  contains=matrix/cody/internal/sandbox.gqlRequest#Query,matrix/cody/internal/sandbox.gqlRequest#Variables
+  ^defines=matrix/cody/internal/sandbox/sandbox.go
+
+NODE id=matrix/cody/internal/sandbox.gqlRequest#Query kind=field
+  digest=b3:328b0094cd6fe40dfb66c1935ead4fb5608c4707a202c2ac3ae10c0764ea04b5 file=cody/internal/sandbox/sandbox.go range=282:282 lang=go exported=true byte_range=10252:10291
+  sig=string
+EDGES
+  ^contains=matrix/cody/internal/sandbox.gqlRequest
+
+NODE id=matrix/cody/internal/sandbox.gqlRequest#Variables kind=field
+  digest=b3:b2f642e3b82b8a5d2be4b6ad47dae9540b448f41aa4f071d48a965f2971f2b13 file=cody/internal/sandbox/sandbox.go range=283:283 lang=go exported=true byte_range=10293:10346
+  sig=map[string]any
+EDGES
+  ^contains=matrix/cody/internal/sandbox.gqlRequest
+
+NODE id=matrix/cody/internal/sandbox.truncate kind=func
+  digest=b3:4b26b4d6aa20713167c3e47899537c3689b494d9fdacc87dd0084a4fb2887f3a file=cody/internal/sandbox/sandbox.go range=349:356 lang=go exported=false byte_range=12761:13009
+  sig=func truncate(b []byte, n int) string
+  doc=truncate trims b for error-message inclusion so the upstream payload never\ngets dumped wholesale into application logs.
+EDGES
+  ^defines=matrix/cody/internal/sandbox/sandbox.go
+
+NODE id=matrix/cody/internal/sandbox/sandbox.go kind=file
+  digest=b3:b768d72058adc9f2756a5c6ee64b735c0893d6e374f4166762733f1922663a30 file=cody/internal/sandbox/sandbox.go range=1:358 lang=go exported=true
+EDGES
+  defines=matrix/cody/internal/sandbox.Client,matrix/cody/internal/sandbox.Config,matrix/cody/internal/sandbox.CreateOpts,matrix/cody/internal/sandbox.DefaultEndpoint,matrix/cody/internal/sandbox.ErrNotFound,matrix/cody/internal/sandbox.ErrUnauthorized,matrix/cody/internal/sandbox.ErrUpstream,matrix/cody/internal/sandbox.ExecResult,matrix/cody/internal/sandbox.File,matrix/cody/internal/sandbox.NetworkIsolated,matrix/cody/internal/sandbox.NetworkMode,matrix/cody/internal/sandbox.NetworkPrivate,matrix/cody/internal/sandbox.New,matrix/cody/internal/sandbox.Sandbox,matrix/cody/internal/sandbox.StatusCreating,matrix/cody/internal/sandbox.StatusFailed,matrix/cody/internal/sandbox.StatusRunning,matrix/cody/internal/sandbox.StatusStopped,matrix/cody/internal/sandbox._,matrix/cody/internal/sandbox.client,matrix/cody/internal/sandbox.client.Create,matrix/cody/internal/sandbox.client.Destroy,matrix/cody/internal/sandbox.client.Exec,matrix/cody/internal/sandbox.client.WriteFiles,matrix/cody/internal/sandbox.client.do,matrix/cody/internal/sandbox.defaultTimeout,matrix/cody/internal/sandbox.gqlError,matrix/cody/internal/sandbox.gqlRequest,matrix/cody/internal/sandbox.truncate
+  ^contains=matrix/cody/internal/sandbox

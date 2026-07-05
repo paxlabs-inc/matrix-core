@@ -877,18 +877,28 @@ func (a *Agent) Chat(ctx context.Context, userInput string) error {
 		// Completion gate (Cassandra Phase 1): the model called task_complete.
 		// Adjudicate the completeness object against the working transcript (the
 		// ground truth — real tool results) before the turn may end. Sibling
-		// tool calls in the same batch still run (they make progress); every
-		// tool_call receives a result so the transcript stays well-formed.
+		// tool calls in the same batch run FIRST so their results are in the
+		// transcript before the claim is judged; every tool_call receives a
+		// result so the transcript stays well-formed.
 		if cc, rest := splitCompletion(res.Message.ToolCalls); cc != nil {
+			// Run any sibling tool calls, then FALL THROUGH to adjudicate the
+			// completion against the transcript that now includes their results.
+			// This replaces the old "call task_complete on its own" bounce: grok
+			// naturally bundles a final bookkeeping call (e.g. todo) WITH
+			// task_complete, and bouncing it made grok answer with a bare
+			// greeting, which spiralled — bundled-complete and bare-message
+			// alternated forever, the bounce reset the nudge budget (so the cap
+			// never tripped), and both branches continue'd before the no-progress
+			// stall, so nothing bounded it. A premature claim is still caught: a
+			// spilled/unread sibling result trips the overflow gate below, and a
+			// claim contradicted by what actually ran is rejected by adjudication
+			// (which then rides the bounded guidance channel).
 			if len(rest) > 0 {
 				a.runToolCalls(ctx, rest)
 				workTouched = true
-				guidanceNudges = 0 // sibling tool work is genuine progress (req.1.5)
 				if batchTouchesState(rest) {
 					stateTouched = true
 				}
-				a.working = append(a.working, llm.ToolResult(cc.ID, tools.TaskCompleteTool, "You called task_complete alongside other tools. Review their results above, then call task_complete on its own once you are actually done."))
-				continue
 			}
 			// Read-full discipline (req.4.2): block completion while a spilled
 			// overflow result is unread, steering through the guidance channel —

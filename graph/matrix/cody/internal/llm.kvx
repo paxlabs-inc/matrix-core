@@ -1,0 +1,1023 @@
+# GENERATED gen=codegraph do-not-edit merkle=b3:2dc69ec8dbbe0231373534486cf12ff6fdb0eaad7b2dfdcbc4d73453c8542ee8
+
+NODE id=matrix/cody/internal/llm kind=package
+  digest=b3:e88154169ada529ebc3c05375a9fb97096533f3fa8e27f819622fc65b825f5bb file=cody/internal/llm range=0:0 lang=go exported=true
+EDGES
+  contains=matrix/cody/internal/llm/client.go,matrix/cody/internal/llm/message.go
+  ^contains=mod:matrix/cody
+
+NODE id=matrix/cody/internal/llm.AssistantMessage kind=func
+  digest=b3:4f579758241570e8c1c08ed3a84a84623e74b4a6ed4eebff78a512e35404ba17 file=cody/internal/llm/message.go range=135:139 lang=go exported=true byte_range=4988:5241
+  sig=func AssistantMessage(content string) Message
+  doc=AssistantMessage builds an assistant-role text message (no tool calls). Used\nto seed a resumed conversation's transcript from durable history.
+EDGES
+  ^defines=matrix/cody/internal/llm/message.go
+
+NODE id=matrix/cody/internal/llm.ChatRequest kind=type
+  digest=b3:59cb0f29f249edf6c3db199b4af5bb538dc45b41fd53439cb222cf50dc1c3010 file=cody/internal/llm/message.go range=201:216 lang=go exported=true byte_range=7702:8539
+  sig=type ChatRequest struct {\n	Messages	[]Message\n	Tools		[]Tool\n	// ToolChoice is "auto" (default when Tools present), "none", or "required".\n	ToolChoice	string\n	// OnDelta, when set, is invoked with incremental fragments of the model's\n	// CURRENT turn as they stream from the provider, BEFORE the folded turn is\n	// returned. It lets the caller surface a live "typing" channel (the visible\n	// answer being typed) and a live "thinking" channel (the reasoning). The\n	// visible-content fragments are already cleaned (leading <think> blocks and\n	// the Kimi tool-call token grammar are withheld), so they are safe to show\n	// verbatim. Fragments are best-effort coalesced and never delivered after\n	// Chat returns. Leave nil to disable streaming (buffered turn only).\n	OnDelta	func(Delta)\n}
+  doc=ChatRequest is one round-trip to the model.
+EDGES
+  contains=matrix/cody/internal/llm.ChatRequest#Messages,matrix/cody/internal/llm.ChatRequest#OnDelta,matrix/cody/internal/llm.ChatRequest#ToolChoice,matrix/cody/internal/llm.ChatRequest#Tools
+  ^defines=matrix/cody/internal/llm/message.go
+
+NODE id=matrix/cody/internal/llm.ChatRequest#Messages kind=field
+  digest=b3:ed78cabdcd00e0844d9e4409fd0a20cb5ce6818a61b4ca12579621a12e5929af file=cody/internal/llm/message.go range=203:203 lang=go exported=true byte_range=7776:7794
+  sig=[]llm.Message
+EDGES
+  ^contains=matrix/cody/internal/llm.ChatRequest
+
+NODE id=matrix/cody/internal/llm.ChatRequest#OnDelta kind=field
+  digest=b3:45560728d020b44c52db5018e96b945d6873a6a43a4491015b4d2c88945d1bcb file=cody/internal/llm/message.go range=207:215 lang=go exported=true byte_range=7910:8537
+  sig=func(llm.Delta)
+  doc=OnDelta, when set, is invoked with incremental fragments of the model's\nCURRENT turn as they stream from the provider, BEFORE the folded turn is\nreturned. It lets the caller surface a live "typing" channel (the visible\nanswer being typed) and a live "thinking" channel (the reasoning). The\nvisible-content fragments are already cleaned (leading <think> blocks and\nthe Kimi tool-call token grammar are withheld), so they are safe to show\nverbatim. Fragments are best-effort coalesced and never delivered after\nChat returns. Leave nil to disable streaming (buffered turn only).
+EDGES
+  ^contains=matrix/cody/internal/llm.ChatRequest
+
+NODE id=matrix/cody/internal/llm.ChatRequest#ToolChoice kind=field
+  digest=b3:4ef7bdcd7478cf4c6d97941d7be8a1a10ecb7dd35f280f5297cd8e5c5f96615f file=cody/internal/llm/message.go range=205:206 lang=go exported=true byte_range=7813:7908
+  sig=string
+  doc=ToolChoice is "auto" (default when Tools present), "none", or "required".
+EDGES
+  ^contains=matrix/cody/internal/llm.ChatRequest
+
+NODE id=matrix/cody/internal/llm.ChatRequest#Tools kind=field
+  digest=b3:c6dd63841d5be130faf69a9515ddd2dd8414b6ed5d4463a123fa4a43b668cb6a file=cody/internal/llm/message.go range=204:204 lang=go exported=true byte_range=7796:7811
+  sig=[]llm.Tool
+EDGES
+  ^contains=matrix/cody/internal/llm.ChatRequest
+
+NODE id=matrix/cody/internal/llm.ChatResult kind=type
+  digest=b3:d33c4cf4a272dde904f2d1ff06c70ad919fb4858e55bb6041fb98b674aa70ef8 file=cody/internal/llm/message.go range=228:233 lang=go exported=true byte_range=8914:9069
+  sig=type ChatResult struct {\n	Message		Message\n	FinishReason	string\n	Usage		Usage\n}
+  doc=ChatResult is the model's single assistant turn plus metadata.
+EDGES
+  contains=matrix/cody/internal/llm.ChatResult#FinishReason,matrix/cody/internal/llm.ChatResult#Message,matrix/cody/internal/llm.ChatResult#Usage,matrix/cody/internal/llm.ChatResult.HasToolCalls
+  ^defines=matrix/cody/internal/llm/message.go
+
+NODE id=matrix/cody/internal/llm.ChatResult#FinishReason kind=field
+  digest=b3:e1040ef5743af80451b7b3120e645850b6672c8f8081b74954e0b1e8b24e71e9 file=cody/internal/llm/message.go range=231:231 lang=go exported=true byte_range=9028:9047
+  sig=string
+EDGES
+  ^contains=matrix/cody/internal/llm.ChatResult
+
+NODE id=matrix/cody/internal/llm.ChatResult#Message kind=field
+  digest=b3:99ea27d55dc8555eeaadb8624a3889f6cc6e1d4892e0f564d5add2ec2652a348 file=cody/internal/llm/message.go range=230:230 lang=go exported=true byte_range=9006:9026
+  sig=llm.Message
+EDGES
+  ^contains=matrix/cody/internal/llm.ChatResult
+
+NODE id=matrix/cody/internal/llm.ChatResult#Usage kind=field
+  digest=b3:273f4a7c02dd518b4fb933f47b9553f19a1b01734fe7107fba954f48c0f01f27 file=cody/internal/llm/message.go range=232:232 lang=go exported=true byte_range=9049:9067
+  sig=llm.Usage
+EDGES
+  ^contains=matrix/cody/internal/llm.ChatResult
+
+NODE id=matrix/cody/internal/llm.ChatResult.HasToolCalls kind=method
+  digest=b3:cc2cf9344e009c0b11d19283ccf4c79e31a4b866fd6e36c0b2a41c19bfc59d5c file=cody/internal/llm/message.go range=235:236 lang=go exported=true byte_range=9071:9221
+  sig=func (r ChatResult) HasToolCalls() bool
+  doc=HasToolCalls reports whether the assistant asked to call any tools.
+EDGES
+  ^contains=matrix/cody/internal/llm.ChatResult
+  ^defines=matrix/cody/internal/llm/message.go
+
+NODE id=matrix/cody/internal/llm.Client kind=type
+  digest=b3:5a8f6c82be3448cd38d13718d4a554ae2c1a2e65bf0291a46e17af5c99b064ff file=cody/internal/llm/client.go range=46:71 lang=go exported=true byte_range=1811:2648
+  sig=type Client struct {\n	model		string\n	provider	mcllm.Provider\n	endpoint	string\n	apiKey		string\n	gatewayURL	string\n	gatewayTokenEnv	string\n	actorDID	string\n	intentID	string\n	slotLabel	string\n\n	temperature	float64\n	maxTokens	int\n	seed		int64\n	enableThinking	bool\n\n	httpClient	*http.Client\n}
+  doc=Client is an OpenAI-compatible chat-completions client that speaks native\nfunction calling (tools + tool_calls + tool-role results).\n\nIt is constructed from a matrix/mcl/llm.Config so it inherits provider\ndetection, the model registry, and — when Config.GatewayURL is set — the\nMatrixGateway metering path (X-Matrix-* headers, bearer from\nMATRIX_GATEWAY_TOKEN). When GatewayURL is empty it talks directly to the\nprovider with the provider's API key.
+EDGES
+  contains=matrix/cody/internal/llm.Client#actorDID,matrix/cody/internal/llm.Client#apiKey,matrix/cody/internal/llm.Client#enableThinking,matrix/cody/internal/llm.Client#endpoint,matrix/cody/internal/llm.Client#gatewayTokenEnv,matrix/cody/internal/llm.Client#gatewayURL,matrix/cody/internal/llm.Client#httpClient,matrix/cody/internal/llm.Client#intentID,matrix/cody/internal/llm.Client#maxTokens,matrix/cody/internal/llm.Client#model,matrix/cody/internal/llm.Client#provider,matrix/cody/internal/llm.Client#seed,matrix/cody/internal/llm.Client#slotLabel,matrix/cody/internal/llm.Client#temperature,matrix/cody/internal/llm.Client.Chat,matrix/cody/internal/llm.Client.Model,matrix/cody/internal/llm.Client.newHTTPRequest
+  ^defines=matrix/cody/internal/llm/client.go
+
+NODE id=matrix/cody/internal/llm.Client#actorDID kind=field
+  digest=b3:7cad42f7b0016b3e25835507216bdcb7573e508656dced6a47557cbb841cf015 file=cody/internal/llm/client.go range=61:61 lang=go exported=false byte_range=2462:2484
+  sig=string
+EDGES
+  ^contains=matrix/cody/internal/llm.Client
+
+NODE id=matrix/cody/internal/llm.Client#apiKey kind=field
+  digest=b3:a7f71b8303de3829aba0ba5ad620477e3b5def7c043b996e04f04808c7b39ded file=cody/internal/llm/client.go range=58:58 lang=go exported=false byte_range=2390:2412
+  sig=string
+EDGES
+  ^contains=matrix/cody/internal/llm.Client
+
+NODE id=matrix/cody/internal/llm.Client#enableThinking kind=field
+  digest=b3:350cacf7b73488e3d2f1442f8e440d85b717986720b762a649b2920e77ce9ec0 file=cody/internal/llm/client.go range=68:68 lang=go exported=false byte_range=2601:2620
+  sig=bool
+EDGES
+  ^contains=matrix/cody/internal/llm.Client
+
+NODE id=matrix/cody/internal/llm.Client#endpoint kind=field
+  digest=b3:43fb8b198540ac28790016443cfc03e2dc28b533195aea8e53124739c8a3ca11 file=cody/internal/llm/client.go range=57:57 lang=go exported=false byte_range=2366:2388
+  sig=string
+EDGES
+  ^contains=matrix/cody/internal/llm.Client
+
+NODE id=matrix/cody/internal/llm.Client#gatewayTokenEnv kind=field
+  digest=b3:260761bf98b3a856642d24208de2f03dc871a4dcdc68891282897a5d67151389 file=cody/internal/llm/client.go range=60:60 lang=go exported=false byte_range=2438:2460
+  sig=string
+EDGES
+  ^contains=matrix/cody/internal/llm.Client
+
+NODE id=matrix/cody/internal/llm.Client#gatewayURL kind=field
+  digest=b3:5ac363bd6e2d510c59f2ed582bffb0b34637163557c6b84a075a179e9dfd0d0d file=cody/internal/llm/client.go range=59:59 lang=go exported=false byte_range=2414:2436
+  sig=string
+EDGES
+  ^contains=matrix/cody/internal/llm.Client
+
+NODE id=matrix/cody/internal/llm.Client#httpClient kind=field
+  digest=b3:9a151ea2ba566bb0737165a91babdb187b11087990afe2e6ab2aa1911f90f2a8 file=cody/internal/llm/client.go range=70:70 lang=go exported=false byte_range=2623:2646
+  sig=*http.Client
+EDGES
+  ^contains=matrix/cody/internal/llm.Client
+
+NODE id=matrix/cody/internal/llm.Client#intentID kind=field
+  digest=b3:d2b65f650fc8b4a272ac7ccc7f87ef93ce8a847256fca75b2be1bdd331ffc111 file=cody/internal/llm/client.go range=62:62 lang=go exported=false byte_range=2486:2508
+  sig=string
+EDGES
+  ^contains=matrix/cody/internal/llm.Client
+
+NODE id=matrix/cody/internal/llm.Client#maxTokens kind=field
+  digest=b3:b16c9d059bd9d19b39e9182172dc45e75972e7ee320cf3016e2930ef35de8975 file=cody/internal/llm/client.go range=66:66 lang=go exported=false byte_range=2559:2577
+  sig=int
+EDGES
+  ^contains=matrix/cody/internal/llm.Client
+
+NODE id=matrix/cody/internal/llm.Client#model kind=field
+  digest=b3:3bbd22d5c9fc6f4fbdf0364e5820c29caba996db2a2edbe7ccc2e4b9410f5bea file=cody/internal/llm/client.go range=55:55 lang=go exported=false byte_range=2310:2332
+  sig=string
+EDGES
+  ^contains=matrix/cody/internal/llm.Client
+
+NODE id=matrix/cody/internal/llm.Client#provider kind=field
+  digest=b3:3b5cd0673f0ab96177dae469b24a40affa5321005adf2cc7f30dbb42b92493c9 file=cody/internal/llm/client.go range=56:56 lang=go exported=false byte_range=2334:2364
+  sig=llm.Provider
+EDGES
+  ^contains=matrix/cody/internal/llm.Client
+
+NODE id=matrix/cody/internal/llm.Client#seed kind=field
+  digest=b3:27eeb4879893662e7118ab7653e428f00bb342f3b28b1cfb3eeb732aa6cd5a94 file=cody/internal/llm/client.go range=67:67 lang=go exported=false byte_range=2579:2599
+  sig=int64
+EDGES
+  ^contains=matrix/cody/internal/llm.Client
+
+NODE id=matrix/cody/internal/llm.Client#slotLabel kind=field
+  digest=b3:c8c53911ec8214ba1729157953b37c1a576e5dcc4c6d8393a360dc84c09abbbd file=cody/internal/llm/client.go range=63:63 lang=go exported=false byte_range=2510:2532
+  sig=string
+EDGES
+  ^contains=matrix/cody/internal/llm.Client
+
+NODE id=matrix/cody/internal/llm.Client#temperature kind=field
+  digest=b3:eb3f1af32342d138c9299d44b6fcd5f235e042f883f9a2dbf79c55a78c8d8408 file=cody/internal/llm/client.go range=65:65 lang=go exported=false byte_range=2535:2557
+  sig=float64
+EDGES
+  ^contains=matrix/cody/internal/llm.Client
+
+NODE id=matrix/cody/internal/llm.Client.Chat kind=method
+  digest=b3:1baaca2e266f534976314688ea757b8ab6711bbb9f3b77f952e907f0bd240472 file=cody/internal/llm/client.go range=146:286 lang=go exported=true byte_range=4744:10369
+  sig=func (c *Client) Chat(ctx context.Context, req ChatRequest) (*ChatResult, error)
+  doc=Chat performs one round-trip: sends the message list (+ optional tool\nschemas) and returns the model's single assistant turn, which may contain\ntool_calls the caller must execute and feed back as tool-role messages.
+EDGES
+  ^contains=matrix/cody/internal/llm.Client
+  ^defines=matrix/cody/internal/llm/client.go
+
+NODE id=matrix/cody/internal/llm.Client.Model kind=method
+  digest=b3:8f54e675fb694e21091cf1993fc297474824f825c72042bf78f10935747414e3 file=cody/internal/llm/client.go range=143:144 lang=go exported=true byte_range=4650:4742
+  sig=func (c *Client) Model() string
+  doc=Model returns the configured model id.
+EDGES
+  ^contains=matrix/cody/internal/llm.Client
+  ^defines=matrix/cody/internal/llm/client.go
+
+NODE id=matrix/cody/internal/llm.Client.newHTTPRequest kind=method
+  digest=b3:a12ab83717ce6d18f232e93ffaf8b86759970a11c72af94d6681b13f0933489a file=cody/internal/llm/client.go range=479:517 lang=go exported=false byte_range=16719:18006
+  sig=func (c *Client) newHTTPRequest(ctx context.Context, body []byte) (*http.Request, error)
+  doc=newHTTPRequest builds the POST. Mirrors matrix/mcl/llm's gateway posture:\nwhen gatewayURL is set the call is rewritten to\n${gatewayURL}/v1/chat/completions with a gateway bearer + X-Matrix-*\nmetadata; otherwise it goes direct to the provider with Bearer <apiKey>.
+EDGES
+  ^contains=matrix/cody/internal/llm.Client
+  ^defines=matrix/cody/internal/llm/client.go
+
+NODE id=matrix/cody/internal/llm.Delta kind=type
+  digest=b3:a22f925a23ff3d60f5227630cd4043cb758a3173634f25ee7ec0184687e701cc file=cody/internal/llm/message.go range=218:226 lang=go exported=true byte_range=8541:8912
+  sig=type Delta struct {\n	// Content is a fragment of the visible answer text being generated.\n	Content	string\n	// Reasoning is a fragment of the model's chain-of-thought (reasoning\n	// channel). Never part of the answer.\n	Reasoning	string\n}
+  doc=Delta is one coalesced streaming fragment of an in-flight assistant turn.\nAt most one of the two channels is non-empty per call.
+EDGES
+  contains=matrix/cody/internal/llm.Delta#Content,matrix/cody/internal/llm.Delta#Reasoning
+  ^defines=matrix/cody/internal/llm/message.go
+
+NODE id=matrix/cody/internal/llm.Delta#Content kind=field
+  digest=b3:9c1ebfd7af3fd1c15d9164ab2c268d7ffe8d74a35b2ad6175ac345de05e2d3c9 file=cody/internal/llm/message.go range=221:222 lang=go exported=true byte_range=8697:8781
+  sig=string
+  doc=Content is a fragment of the visible answer text being generated.
+EDGES
+  ^contains=matrix/cody/internal/llm.Delta
+
+NODE id=matrix/cody/internal/llm.Delta#Reasoning kind=field
+  digest=b3:fb94c780cbec34b9de0ff0006792220968dab6369964cc2628adaff1f1875536 file=cody/internal/llm/message.go range=223:225 lang=go exported=true byte_range=8783:8910
+  sig=string
+  doc=Reasoning is a fragment of the model's chain-of-thought (reasoning\nchannel). Never part of the answer.
+EDGES
+  ^contains=matrix/cody/internal/llm.Delta
+
+NODE id=matrix/cody/internal/llm.ErrProviderRejected kind=var
+  digest=b3:2d7b828f00b400d9286a7c08f47caba0d25cb340a9a265a618338a896efc4cd6 file=cody/internal/llm/client.go range=30:36 lang=go exported=true byte_range=709:1246
+  sig=error
+  doc=ErrProviderRejected marks a deterministic 4xx validation reject (e.g. a 400\n"InvalidParameter" on the function/tool fields). It is NOT recoverable by\nretrying the identical body — the request shape itself is bad — so callers\nmust stop the retry ladder when they see it instead of burning calls (and,\non a metered gateway, real spend) re-sending the same rejected request.\nDetect with errors.Is(err, llm.ErrProviderRejected).
+EDGES
+  ^defines=matrix/cody/internal/llm/client.go
+
+NODE id=matrix/cody/internal/llm.ErrRateLimited kind=var
+  digest=b3:30e86c31c5b2c1ed9fd57af1ba27a3f77cea8a7457f32734843432c4549a5041 file=cody/internal/llm/client.go range=38:44 lang=go exported=true byte_range=1248:1809
+  sig=error
+  doc=ErrRateLimited marks an upstream 429 (the provider/gateway is rate-limiting\nor overloaded). It IS retryable, but callers should back off HARD rather than\nrespawn immediately: a persistent 429 that is retried aggressively across many\ndaemons becomes a self-amplifying request storm (the exact failure mode that\nturned "Baseten is slow" into "20 runaway Neos"). The task supervisor reads\nthis to lengthen its respawn backoff. Detect with errors.Is(err, llm.ErrRateLimited).
+EDGES
+  ^defines=matrix/cody/internal/llm/client.go
+
+NODE id=matrix/cody/internal/llm.ErrRequestTooLarge kind=var
+  digest=b3:903e68c8510742fbbf549e3161279d64486d175b8313620ff7c5c621fddcbcca file=cody/internal/llm/client.go range=24:28 lang=go exported=true byte_range=344:707
+  sig=error
+  doc=ErrRequestTooLarge marks a provider reject where the request body exceeded\nthe provider's hard byte cap (e.g. Fireworks HTTP 413 "body_too_large",\n1,048,576 bytes). It is recoverable: the caller can compact the window and\nretry. Detect with errors.Is(err, llm.ErrRequestTooLarge).
+EDGES
+  ^defines=matrix/cody/internal/llm/client.go
+
+NODE id=matrix/cody/internal/llm.FunctionCall kind=type
+  digest=b3:e44509fde444d68fe0f2b77a2b010c0a9c5ba1f5f2d12827f6e27489f45ddf2d file=cody/internal/llm/message.go range=73:79 lang=go exported=true byte_range=3033:3327
+  sig=type FunctionCall struct {\n	Name		string	`json:"name"`\n	Arguments	string	`json:"arguments"`\n}
+  doc=FunctionCall is the name + JSON-encoded arguments of a requested call.\nArguments is a STRING per the OpenAI contract (the model emits a JSON\ndocument as text); use ParseArgs to decode it.
+EDGES
+  contains=matrix/cody/internal/llm.FunctionCall#Arguments,matrix/cody/internal/llm.FunctionCall#Name
+  ^defines=matrix/cody/internal/llm/message.go
+
+NODE id=matrix/cody/internal/llm.FunctionCall#Arguments kind=field
+  digest=b3:598a59c646c2443cd2fe2d89b308abea10650aad0798ceb0305dd822c86362f1 file=cody/internal/llm/message.go range=78:78 lang=go exported=true byte_range=3290:3325
+  sig=string
+EDGES
+  ^contains=matrix/cody/internal/llm.FunctionCall
+
+NODE id=matrix/cody/internal/llm.FunctionCall#Name kind=field
+  digest=b3:ff785850bf10b4407f29821ea0637fcb231bd80fd28fe6a234a833527f468a96 file=cody/internal/llm/message.go range=77:77 lang=go exported=true byte_range=3258:3288
+  sig=string
+EDGES
+  ^contains=matrix/cody/internal/llm.FunctionCall
+
+NODE id=matrix/cody/internal/llm.FunctionDef kind=type
+  digest=b3:4aadcec8a0268562ceaffa463741a23868d7761a27fa55cff65ae24a5df9f0dd file=cody/internal/llm/message.go range=101:107 lang=go exported=true byte_range=3891:4232
+  sig=type FunctionDef struct {\n	Name		string			`json:"name"`\n	Description	string			`json:"description,omitempty"`\n	Parameters	map[string]interface{}	`json:"parameters"`\n}
+  doc=FunctionDef describes a callable function. Parameters is a JSON Schema\nobject (the same shape MCP tools publish as their inputSchema).
+EDGES
+  contains=matrix/cody/internal/llm.FunctionDef#Description,matrix/cody/internal/llm.FunctionDef#Name,matrix/cody/internal/llm.FunctionDef#Parameters
+  ^defines=matrix/cody/internal/llm/message.go
+
+NODE id=matrix/cody/internal/llm.FunctionDef#Description kind=field
+  digest=b3:732aaeaea16403f12d81b20f4820094af12600be76d5cb725d83fa4526674538 file=cody/internal/llm/message.go range=105:105 lang=go exported=true byte_range=4109:4174
+  sig=string
+EDGES
+  ^contains=matrix/cody/internal/llm.FunctionDef
+
+NODE id=matrix/cody/internal/llm.FunctionDef#Name kind=field
+  digest=b3:69442fc06d4950cfb90f434454a63c2e747c25f5c5e33849b2d55b8b0f4f7618 file=cody/internal/llm/message.go range=104:104 lang=go exported=true byte_range=4059:4107
+  sig=string
+EDGES
+  ^contains=matrix/cody/internal/llm.FunctionDef
+
+NODE id=matrix/cody/internal/llm.FunctionDef#Parameters kind=field
+  digest=b3:92c23cb3450fda5314fb78469a3eea0120840364824c56df786540b227694689 file=cody/internal/llm/message.go range=106:106 lang=go exported=true byte_range=4176:4230
+  sig=map[string]interface{}
+EDGES
+  ^contains=matrix/cody/internal/llm.FunctionDef
+
+NODE id=matrix/cody/internal/llm.GuidanceClose kind=const
+  digest=b3:0f0f30e5c10e716e3e8a75386f3b105a2e2f538e90a0aa37bb377c42293e6092 file=cody/internal/llm/message.go range=32:38 lang=go exported=true byte_range=1185:1569
+  sig=untyped string
+  doc=Guidance-channel envelope tags. System steering injected through the guidance\nchannel is wrapped in these so the model can recognize it as a non-answerable\nhint (the Cascade <system_guidance> contract), and so the harness can detect\nand strip guidance turns from every user-facing surface.
+EDGES
+  ^defines=matrix/cody/internal/llm/message.go
+
+NODE id=matrix/cody/internal/llm.GuidanceMessage kind=func
+  digest=b3:4c3d8b1cbc89fe96793c8aa9372035c3bbcfcc0b4f17fe1dc89e4cef3cec66c5 file=cody/internal/llm/message.go range=146:163 lang=go exported=true byte_range=5457:6253
+  sig=func GuidanceMessage(content string) Message
+  doc=GuidanceMessage builds a guidance-channel turn: system steering the model is\ninstructed to act on but never acknowledge or echo (the Cascade\n<system_guidance> contract). It rides as a user-role turn — every provider\naccepts a user message mid-conversation — with the content wrapped in the\nguidance envelope and the Guidance flag set so the harness keeps it off every\nuser-facing surface (reasoning/thinking deltas and the durable transcript).\nBlank content yields a zero Message (no empty guidance turn is emitted).
+EDGES
+  ^defines=matrix/cody/internal/llm/message.go
+
+NODE id=matrix/cody/internal/llm.GuidanceOpen kind=const
+  digest=b3:ec86f102ac14e845723a24cc228f232a5a93944dc45955469983707f13ed6e95 file=cody/internal/llm/message.go range=32:37 lang=go exported=true byte_range=1185:1531
+  sig=untyped string
+  doc=Guidance-channel envelope tags. System steering injected through the guidance\nchannel is wrapped in these so the model can recognize it as a non-answerable\nhint (the Cascade <system_guidance> contract), and so the harness can detect\nand strip guidance turns from every user-facing surface.
+EDGES
+  ^defines=matrix/cody/internal/llm/message.go
+
+NODE id=matrix/cody/internal/llm.Message kind=type
+  digest=b3:fb6de0f934d9c6642e29c386166308373d4481d5b9cd51a8ed666bae786a230b file=cody/internal/llm/message.go range=41:64 lang=go exported=true byte_range=1573:2803
+  sig=type Message struct {\n	Role		string		`json:"role"`\n	Content		string		`json:"content,omitempty"`\n	ToolCalls	[]ToolCall	`json:"tool_calls,omitempty"`\n	ToolCallID	string		`json:"tool_call_id,omitempty"`\n	Name		string		`json:"name,omitempty"`\n\n	// Reasoning carries a reasoning model's chain-of-thought when the\n	// provider surfaces it as a separate channel. Never serialized onto the\n	// wire and never treated as the answer; surfaced as a distinct channel\n	// only (mirrors MCL's DecodeWithReasoning posture).\n	Reasoning	string	`json:"-"`\n\n	// Guidance marks this as a guidance-channel turn: system steering the\n	// model is instructed to act on but never acknowledge or echo (the Cascade\n	// <system_guidance> contract). It rides on the wire as an ordinary\n	// role+content turn (the flag is process-only, never serialized), so the\n	// provider accepts it; the flag lets the harness keep guidance out of every\n	// user-facing surface and out of the durable transcript.\n	Guidance	bool	`json:"-"`\n}
+  doc=Message is one turn in the conversation. It is both the on-wire shape and\nthe in-transcript shape (Neo's state). An assistant turn may carry\nToolCalls; a tool-result turn sets Role=tool + ToolCallID.
+EDGES
+  contains=matrix/cody/internal/llm.Message#Content,matrix/cody/internal/llm.Message#Guidance,matrix/cody/internal/llm.Message#Name,matrix/cody/internal/llm.Message#Reasoning,matrix/cody/internal/llm.Message#Role,matrix/cody/internal/llm.Message#ToolCallID,matrix/cody/internal/llm.Message#ToolCalls,matrix/cody/internal/llm.Message.IsGuidance
+  ^defines=matrix/cody/internal/llm/message.go
+
+NODE id=matrix/cody/internal/llm.Message#Content kind=field
+  digest=b3:98faacd174a5e7cc1c64e05ac89e4e201f2eecf3884419cccf4759e4710d878d file=cody/internal/llm/message.go range=46:46 lang=go exported=true byte_range=1842:1890
+  sig=string
+EDGES
+  ^contains=matrix/cody/internal/llm.Message
+
+NODE id=matrix/cody/internal/llm.Message#Guidance kind=field
+  digest=b3:ebbdc3167c6c5d87b155aeaa57708f228c654cb4c9bea06a126eb1ed498d321f file=cody/internal/llm/message.go range=57:63 lang=go exported=true byte_range=2347:2801
+  sig=bool
+  doc=Guidance marks this as a guidance-channel turn: system steering the\nmodel is instructed to act on but never acknowledge or echo (the Cascade\n<system_guidance> contract). It rides on the wire as an ordinary\nrole+content turn (the flag is process-only, never serialized), so the\nprovider accepts it; the flag lets the harness keep guidance out of every\nuser-facing surface and out of the durable transcript.
+EDGES
+  ^contains=matrix/cody/internal/llm.Message
+
+NODE id=matrix/cody/internal/llm.Message#Name kind=field
+  digest=b3:3ae22ab7f03f8fd94b92e22deadeac48393e41083cdc5fe2b461d3ef7cdc62fb file=cody/internal/llm/message.go range=49:49 lang=go exported=true byte_range=2000:2045
+  sig=string
+EDGES
+  ^contains=matrix/cody/internal/llm.Message
+
+NODE id=matrix/cody/internal/llm.Message#Reasoning kind=field
+  digest=b3:221d982ce9bd3c42c2f3405180a7ec3d36f54764569d5919b8ddf2d2dbd4daea file=cody/internal/llm/message.go range=51:55 lang=go exported=true byte_range=2048:2344
+  sig=string
+  doc=Reasoning carries a reasoning model's chain-of-thought when the\nprovider surfaces it as a separate channel. Never serialized onto the\nwire and never treated as the answer; surfaced as a distinct channel\nonly (mirrors MCL's DecodeWithReasoning posture).
+EDGES
+  ^contains=matrix/cody/internal/llm.Message
+
+NODE id=matrix/cody/internal/llm.Message#Role kind=field
+  digest=b3:3ad01deeb34ff2d27f05044270a59681831a7eabebde8837b9616787e4026031 file=cody/internal/llm/message.go range=45:45 lang=go exported=true byte_range=1805:1840
+  sig=string
+EDGES
+  ^contains=matrix/cody/internal/llm.Message
+
+NODE id=matrix/cody/internal/llm.Message#ToolCallID kind=field
+  digest=b3:967ecc22426724d228d270554504d81b35831282f7fdcdfb21c0c2205a45e8cb file=cody/internal/llm/message.go range=48:48 lang=go exported=true byte_range=1945:1998
+  sig=string
+EDGES
+  ^contains=matrix/cody/internal/llm.Message
+
+NODE id=matrix/cody/internal/llm.Message#ToolCalls kind=field
+  digest=b3:913ce31b9424dcd26c64a21b8fa2f6ecce0195c57661e0c42c73924fb77baa42 file=cody/internal/llm/message.go range=47:47 lang=go exported=true byte_range=1892:1943
+  sig=[]llm.ToolCall
+EDGES
+  ^contains=matrix/cody/internal/llm.Message
+
+NODE id=matrix/cody/internal/llm.Message.IsGuidance kind=method
+  digest=b3:1ce5c8632f14ff1b2622aa6788ea0642d0d4ab742f47a004b277fc5f936b4546 file=cody/internal/llm/message.go range=165:168 lang=go exported=true byte_range=6255:6517
+  sig=func (m Message) IsGuidance() bool
+  doc=IsGuidance reports whether m is a guidance-channel turn (set by\nGuidanceMessage). The harness uses it to exclude internal steering from every\nuser-facing surface and from the persisted transcript.
+EDGES
+  ^contains=matrix/cody/internal/llm.Message
+  ^defines=matrix/cody/internal/llm/message.go
+
+NODE id=matrix/cody/internal/llm.New kind=func
+  digest=b3:80950ac01fb91a7d172bf3cfbcf7839c198aff0b430c298fa6dee8e2d448be6b file=cody/internal/llm/client.go range=73:141 lang=go exported=true byte_range=2650:4648
+  sig=func New(cfg mcllm.Config) (*Client, error)
+  doc=New builds a function-calling client from an mcl/llm.Config.\n\nv1 supports the chat-completions API shape only (Baseten / Together /\nFireworks / opencode-chat). Models that route to the Anthropic Messages or\nOpenAI Responses shapes use different tool schemas and are rejected with a\nclear error; the default model registry pins Baseten chat-completions.
+EDGES
+  ^defines=matrix/cody/internal/llm/client.go
+
+NODE id=matrix/cody/internal/llm.NewFunctionTool kind=func
+  digest=b3:9a707eafe9f4f24bae41d940633e5ae7db0b84224f4be09a082abd576c3090af file=cody/internal/llm/message.go range=109:123 lang=go exported=true byte_range=4234:4700
+  sig=func NewFunctionTool(name, description string, parameters map[string]interface{}) Tool
+  doc=NewFunctionTool builds a function Tool from a name, description and a JSON\nSchema parameters object.
+EDGES
+  ^defines=matrix/cody/internal/llm/message.go
+
+NODE id=matrix/cody/internal/llm.RoleAssistant kind=const
+  digest=b3:a4159af007c6569efdb175e49c9c57ea914385eb9fe5da6686ed92bbb7901ed4 file=cody/internal/llm/message.go range=24:28 lang=go exported=true byte_range=1028:1157
+  sig=untyped string
+  doc=Role values for a conversation message.
+EDGES
+  ^defines=matrix/cody/internal/llm/message.go
+
+NODE id=matrix/cody/internal/llm.RoleSystem kind=const
+  digest=b3:95bf00e47600ed6ad094f95232d562006d7d78ff3c3e59c6bb2df4ece099c086 file=cody/internal/llm/message.go range=24:26 lang=go exported=true byte_range=1028:1104
+  sig=untyped string
+  doc=Role values for a conversation message.
+EDGES
+  ^defines=matrix/cody/internal/llm/message.go
+
+NODE id=matrix/cody/internal/llm.RoleTool kind=const
+  digest=b3:cb1a70dacb049e8b2ff942b2d91607c8366dd2aba728c7d090ba69fb091cb601 file=cody/internal/llm/message.go range=24:29 lang=go exported=true byte_range=1028:1181
+  sig=untyped string
+  doc=Role values for a conversation message.
+EDGES
+  ^defines=matrix/cody/internal/llm/message.go
+
+NODE id=matrix/cody/internal/llm.RoleUser kind=const
+  digest=b3:451de4e988b5fb7497f906b0450d7f1fb8e58e141b627e0b81e5472a29b16daa file=cody/internal/llm/message.go range=24:27 lang=go exported=true byte_range=1028:1128
+  sig=untyped string
+  doc=Role values for a conversation message.
+EDGES
+  ^defines=matrix/cody/internal/llm/message.go
+
+NODE id=matrix/cody/internal/llm.StripGuidance kind=func
+  digest=b3:c080433d6503ccd1e9091cce73db9344f385a5830a11441fa91e0241c7dd4256 file=cody/internal/llm/message.go range=170:199 lang=go exported=true byte_range=6519:7700
+  sig=func StripGuidance(s string) string
+  doc=StripGuidance removes any guidance-channel envelope (and stray lone tags) from\na string before it reaches a user-facing surface (reasoning/thinking deltas,\nthe assistant transcript). It is a defense-in-depth backstop for req.1.3: the\nmodel is instructed never to echo <system_guidance>, but if it does, internal\nsteering must not stream to the user. Complete <system_guidance>…</system_guidance>\nblocks are dropped; an unterminated open tag drops everything from the tag\nonward; bare tags are removed. The surrounding (legitimate) text is otherwise\npreserved verbatim — no trimming — so streamed fragments keep their spacing.
+EDGES
+  ^defines=matrix/cody/internal/llm/message.go
+
+NODE id=matrix/cody/internal/llm.SystemMessage kind=func
+  digest=b3:61e66ae4365ca2fc98652a034bba112360fd7354718ffc615dc191aa4b12622a file=cody/internal/llm/message.go range=125:128 lang=go exported=true byte_range=4702:4847
+  sig=func SystemMessage(content string) Message
+  doc=SystemMessage builds a system-role message.
+EDGES
+  ^defines=matrix/cody/internal/llm/message.go
+
+NODE id=matrix/cody/internal/llm.Tool kind=type
+  digest=b3:4cc368b066a72b480cb7e400637d5f410a4f88508dd3a7cf195cac0a34435982 file=cody/internal/llm/message.go range=95:99 lang=go exported=true byte_range=3718:3889
+  sig=type Tool struct {\n	Type		string		`json:"type"`	// always "function"\n	Function	FunctionDef	`json:"function"`\n}
+  doc=Tool is a function schema advertised to the model.
+EDGES
+  contains=matrix/cody/internal/llm.Tool#Function,matrix/cody/internal/llm.Tool#Type
+  ^defines=matrix/cody/internal/llm/message.go
+
+NODE id=matrix/cody/internal/llm.Tool#Function kind=field
+  digest=b3:51c38fe87f40092737f2410d52813235cf5fc1085937769f2b3793c305114e1b file=cody/internal/llm/message.go range=98:98 lang=go exported=true byte_range=3849:3887
+  sig=llm.FunctionDef
+EDGES
+  ^contains=matrix/cody/internal/llm.Tool
+
+NODE id=matrix/cody/internal/llm.Tool#Type kind=field
+  digest=b3:9bd436cebe3dece213504c308afd815c95429d178ea2271b17302dca04df0588 file=cody/internal/llm/message.go range=97:97 lang=go exported=true byte_range=3792:3826
+  sig=string
+EDGES
+  ^contains=matrix/cody/internal/llm.Tool
+
+NODE id=matrix/cody/internal/llm.ToolCall kind=type
+  digest=b3:835edb463872ccfc3b199fe34d0a95f2dd9232358c075fca9ac4d2722bc94eff file=cody/internal/llm/message.go range=66:71 lang=go exported=true byte_range=2805:3031
+  sig=type ToolCall struct {\n	ID		string		`json:"id"`\n	Type		string		`json:"type"`	// always "function"\n	Function	FunctionCall	`json:"function"`\n}
+  doc=ToolCall is a single function invocation requested by the model.
+EDGES
+  contains=matrix/cody/internal/llm.ToolCall#Function,matrix/cody/internal/llm.ToolCall#ID,matrix/cody/internal/llm.ToolCall#Type,matrix/cody/internal/llm.ToolCall.ParseArgs
+  ^defines=matrix/cody/internal/llm/message.go
+
+NODE id=matrix/cody/internal/llm.ToolCall#Function kind=field
+  digest=b3:d8cf581e879b4a2665d50ff0f991f91e54e9b331dad44bd1fa2a3d2777b6ad49 file=cody/internal/llm/message.go range=70:70 lang=go exported=true byte_range=2990:3029
+  sig=llm.FunctionCall
+EDGES
+  ^contains=matrix/cody/internal/llm.ToolCall
+
+NODE id=matrix/cody/internal/llm.ToolCall#ID kind=field
+  digest=b3:39e45070a475ff2972df82cd66496f0efc6343dc37f663c3ad3a4be356c03c60 file=cody/internal/llm/message.go range=68:68 lang=go exported=true byte_range=2897:2930
+  sig=string
+EDGES
+  ^contains=matrix/cody/internal/llm.ToolCall
+
+NODE id=matrix/cody/internal/llm.ToolCall#Type kind=field
+  digest=b3:c60d4dd31895fe6f6954abbd5cdbcd0e6ed5b500dd46b0166a089f5fc448a098 file=cody/internal/llm/message.go range=69:69 lang=go exported=true byte_range=2932:2967
+  sig=string
+EDGES
+  ^contains=matrix/cody/internal/llm.ToolCall
+
+NODE id=matrix/cody/internal/llm.ToolCall.ParseArgs kind=method
+  digest=b3:6217c0ed0bd2fc3bab224fa82b572c05cfa2235eeca24c0d1dadd17abbe529bd file=cody/internal/llm/message.go range=81:93 lang=go exported=true byte_range=3329:3716
+  sig=func (tc ToolCall) ParseArgs() (map[string]interface{}, error)
+  doc=ParseArgs decodes the tool call's JSON-encoded arguments. Empty/blank\narguments decode to an empty map (a no-arg call).
+EDGES
+  ^contains=matrix/cody/internal/llm.ToolCall
+  ^defines=matrix/cody/internal/llm/message.go
+
+NODE id=matrix/cody/internal/llm.ToolResult kind=func
+  digest=b3:b74d499e3aa1031da055012871a1ff13728d17397ec0e5afb4f2af728e810ecf file=cody/internal/llm/message.go range=141:144 lang=go exported=true byte_range=5243:5455
+  sig=func ToolResult(callID, name, content string) Message
+  doc=ToolResult builds a tool-role message answering a specific tool call.
+EDGES
+  ^defines=matrix/cody/internal/llm/message.go
+
+NODE id=matrix/cody/internal/llm.Usage kind=type
+  digest=b3:0705db4303d927c8af692c83c0c8331eb6d0bbabc880a41dee6a6dd2521896e4 file=cody/internal/llm/message.go range=238:243 lang=go exported=true byte_range=9223:9438
+  sig=type Usage struct {\n	PromptTokens		int	`json:"prompt_tokens"`\n	CompletionTokens	int	`json:"completion_tokens"`\n	TotalTokens		int	`json:"total_tokens"`\n}
+  doc=Usage is the provider's token accounting for a call.
+EDGES
+  contains=matrix/cody/internal/llm.Usage#CompletionTokens,matrix/cody/internal/llm.Usage#PromptTokens,matrix/cody/internal/llm.Usage#TotalTokens
+  ^defines=matrix/cody/internal/llm/message.go
+
+NODE id=matrix/cody/internal/llm.Usage#CompletionTokens kind=field
+  digest=b3:385f157d9209d2545cebfd6b275db5accd3edf91f5acba8ac46482ed70353c44 file=cody/internal/llm/message.go range=241:241 lang=go exported=true byte_range=9345:9392
+  sig=int
+EDGES
+  ^contains=matrix/cody/internal/llm.Usage
+
+NODE id=matrix/cody/internal/llm.Usage#PromptTokens kind=field
+  digest=b3:9e4f9a486a583f8c75a0a633d958f277121387f72956bb23de3f409344ad3349 file=cody/internal/llm/message.go range=240:240 lang=go exported=true byte_range=9300:9343
+  sig=int
+EDGES
+  ^contains=matrix/cody/internal/llm.Usage
+
+NODE id=matrix/cody/internal/llm.Usage#TotalTokens kind=field
+  digest=b3:d3816eb4124cfec18f63d6f01937f9ae39d1ba09baf369d45b84f2d312083cdf file=cody/internal/llm/message.go range=242:242 lang=go exported=true byte_range=9394:9436
+  sig=int
+EDGES
+  ^contains=matrix/cody/internal/llm.Usage
+
+NODE id=matrix/cody/internal/llm.UserMessage kind=func
+  digest=b3:d289b8e50d4535e84d48d679c4db01e2fb69c4005850317120559607f9235780 file=cody/internal/llm/message.go range=130:133 lang=go exported=true byte_range=4849:4986
+  sig=func UserMessage(content string) Message
+  doc=UserMessage builds a user-role message.
+EDGES
+  ^defines=matrix/cody/internal/llm/message.go
+
+NODE id=matrix/cody/internal/llm.aggregateStream kind=func
+  digest=b3:209c783c50b1480468be628d0b0ec899d3f89bc949b91b19c534506a5224e174 file=cody/internal/llm/client.go range=288:294 lang=go exported=false byte_range=10371:10776
+  sig=func aggregateStream(body []byte) (wireRespMessage, string, *Usage, error)
+  doc=aggregateStream reconstructs a single assistant turn from a fully-buffered\nOpenAI-style SSE chat-completions stream. It is a thin wrapper over\naggregateStreamReader with no incremental delivery — kept for callers/tests\nthat hold the whole body in memory.
+EDGES
+  ^defines=matrix/cody/internal/llm/client.go
+
+NODE id=matrix/cody/internal/llm.aggregateStreamReader kind=func
+  digest=b3:1ff87827ad2473cf68f52151318f7d53cf32893774b8f0f212b7a1f04ed37b92 file=cody/internal/llm/client.go range=303:442 lang=go exported=false byte_range=11170:15429
+  sig=func aggregateStreamReader(r io.Reader, onDelta func(Delta)) (wireRespMessage, string, *Usage, error)
+  doc=aggregateStreamReader reconstructs a single assistant turn from an\nOpenAI-style SSE chat-completions stream read incrementally off r (the\nresponse shape Together requires for some models; Fireworks + the gateway\nemit the same shape). It concatenates content + reasoning_content deltas,\nmerges tool_call argument fragments by index, and captures the terminal\nfinish_reason + usage.\n\nWhen onDelta is non-nil it ALSO delivers coalesced, pre-cleaned incremental\nfragments as the bytes arrive — true token-by-token streaming. Visible\ncontent fragments are run through the same normalization the folded turn\ngets (leading <think> blocks and the Kimi tool-call token grammar are\nwithheld) plus a partial-marker holdback, so a consumer can render them\nverbatim without leaking internal monologue or control tokens. The folded\nmessage is still handed to fromWireRespMessage for the authoritative final\ncleaning.
+EDGES
+  ^defines=matrix/cody/internal/llm/client.go
+
+NODE id=matrix/cody/internal/llm.chatErrorBody kind=type
+  digest=b3:cdbb9021e2cd96f47067b1fe2afb670c0fff4f394fabf240a5f7e01a644bd280 file=cody/internal/llm/client.go range=1015:1019 lang=go exported=false byte_range=34943:35065
+  sig=type chatErrorBody struct {\n	Message	string	`json:"message"`\n	Type	string	`json:"type"`\n	Code	string	`json:"code"`\n}
+EDGES
+  contains=matrix/cody/internal/llm.chatErrorBody#Code,matrix/cody/internal/llm.chatErrorBody#Message,matrix/cody/internal/llm.chatErrorBody#Type
+  ^defines=matrix/cody/internal/llm/client.go
+
+NODE id=matrix/cody/internal/llm.chatErrorBody#Code kind=field
+  digest=b3:988ae0e9269d84021f6b4ead29b7474a294a15d3d1386ade8bb5725dc3a7e3cc file=cody/internal/llm/client.go range=1018:1018 lang=go exported=true byte_range=35035:35063
+  sig=string
+EDGES
+  ^contains=matrix/cody/internal/llm.chatErrorBody
+
+NODE id=matrix/cody/internal/llm.chatErrorBody#Message kind=field
+  digest=b3:d7a0704d4d1cdf051b9f61d5a005f6a0c1ada9b90dd901fab6b0e03fad711a42 file=cody/internal/llm/client.go range=1016:1016 lang=go exported=true byte_range=34972:35003
+  sig=string
+EDGES
+  ^contains=matrix/cody/internal/llm.chatErrorBody
+
+NODE id=matrix/cody/internal/llm.chatErrorBody#Type kind=field
+  digest=b3:b4acdad19614b4e3d6b78180ed5bc07c3fd14a3a1589be9294c8c1eff85d23aa file=cody/internal/llm/client.go range=1017:1017 lang=go exported=true byte_range=35005:35033
+  sig=string
+EDGES
+  ^contains=matrix/cody/internal/llm.chatErrorBody
+
+NODE id=matrix/cody/internal/llm.chatRequestWire kind=type
+  digest=b3:d052f840c7fb779854481c10c2aa3270c181cbf30568d78615a8774053c254fc file=cody/internal/llm/client.go range=602:620 lang=go exported=false byte_range=20838:21905
+  sig=type chatRequestWire struct {\n	Model		string		`json:"model"`\n	Messages	[]wireMessage	`json:"messages"`\n	Temperature	float64		`json:"temperature"`\n	MaxTokens	int		`json:"max_tokens,omitempty"`\n	// MaxCompletionTokens is xAI/grok's replacement for the deprecated\n	// max_tokens; it bounds only visible output (not reasoning/tool tokens).\n	MaxCompletionTokens	int		`json:"max_completion_tokens,omitempty"`\n	Seed			*int64		`json:"seed,omitempty"`\n	Tools			[]Tool		`json:"tools,omitempty"`\n	ToolChoice		interface{}	`json:"tool_choice,omitempty"`\n	Stream			bool		`json:"stream,omitempty"`\n	StreamOptions		*streamOptions	`json:"stream_options,omitempty"`\n	ChatTemplateArgs	map[string]any	`json:"chat_template_args,omitempty"`\n	// ReasoningEffort is xAI's reasoning-depth control ("none"|"low"|"medium"|\n	// "high"); set ONLY for grok-4.3 (omitempty keeps every other model's wire\n	// shape unchanged).\n	ReasoningEffort	string	`json:"reasoning_effort,omitempty"`\n}
+EDGES
+  contains=matrix/cody/internal/llm.chatRequestWire#ChatTemplateArgs,matrix/cody/internal/llm.chatRequestWire#MaxCompletionTokens,matrix/cody/internal/llm.chatRequestWire#MaxTokens,matrix/cody/internal/llm.chatRequestWire#Messages,matrix/cody/internal/llm.chatRequestWire#Model,matrix/cody/internal/llm.chatRequestWire#ReasoningEffort,matrix/cody/internal/llm.chatRequestWire#Seed,matrix/cody/internal/llm.chatRequestWire#Stream,matrix/cody/internal/llm.chatRequestWire#StreamOptions,matrix/cody/internal/llm.chatRequestWire#Temperature,matrix/cody/internal/llm.chatRequestWire#ToolChoice,matrix/cody/internal/llm.chatRequestWire#Tools
+  ^defines=matrix/cody/internal/llm/client.go
+
+NODE id=matrix/cody/internal/llm.chatRequestWire#ChatTemplateArgs kind=field
+  digest=b3:aa1d3525206d5f97567b5165a1667757c3f2f4fccdc34761f653df494b56e32b file=cody/internal/llm/client.go range=615:615 lang=go exported=true byte_range=21598:21667
+  sig=map[string]any
+EDGES
+  ^contains=matrix/cody/internal/llm.chatRequestWire
+
+NODE id=matrix/cody/internal/llm.chatRequestWire#MaxCompletionTokens kind=field
+  digest=b3:3160b179662b0bedfbaf43a955bffd877a9b8742c00e7b2b0e0947be91cf249f file=cody/internal/llm/client.go range=607:609 lang=go exported=true byte_range=21085:21296
+  sig=int
+  doc=MaxCompletionTokens is xAI/grok's replacement for the deprecated\nmax_tokens; it bounds only visible output (not reasoning/tool tokens).
+EDGES
+  ^contains=matrix/cody/internal/llm.chatRequestWire
+
+NODE id=matrix/cody/internal/llm.chatRequestWire#MaxTokens kind=field
+  digest=b3:3ab06174239551b63e8e2b07b3720d88ecfc3a6a56f787b8abd370abf95b3a8c file=cody/internal/llm/client.go range=606:606 lang=go exported=true byte_range=21022:21083
+  sig=int
+EDGES
+  ^contains=matrix/cody/internal/llm.chatRequestWire
+
+NODE id=matrix/cody/internal/llm.chatRequestWire#Messages kind=field
+  digest=b3:3d3262cc18704b964083dc9093008909dfb2add773c9fcc59e45fef9f4a51d1a file=cody/internal/llm/client.go range=604:604 lang=go exported=true byte_range=20917:20966
+  sig=[]llm.wireMessage
+EDGES
+  ^contains=matrix/cody/internal/llm.chatRequestWire
+
+NODE id=matrix/cody/internal/llm.chatRequestWire#Model kind=field
+  digest=b3:e19cd97711d4ae488e27de450d581c8bf4c48b88b7dd90a6658f54f5e84029cc file=cody/internal/llm/client.go range=603:603 lang=go exported=true byte_range=20869:20915
+  sig=string
+EDGES
+  ^contains=matrix/cody/internal/llm.chatRequestWire
+
+NODE id=matrix/cody/internal/llm.chatRequestWire#ReasoningEffort kind=field
+  digest=b3:830ef806c22b2ca3f2596577a36be75fff6fe0066ffe0f7e690fcbd97d9df153 file=cody/internal/llm/client.go range=616:619 lang=go exported=true byte_range=21669:21903
+  sig=string
+  doc=ReasoningEffort is xAI's reasoning-depth control ("none"|"low"|"medium"|\n"high"); set ONLY for grok-4.3 (omitempty keeps every other model's wire\nshape unchanged).
+EDGES
+  ^contains=matrix/cody/internal/llm.chatRequestWire
+
+NODE id=matrix/cody/internal/llm.chatRequestWire#Seed kind=field
+  digest=b3:6abebe646b918d005951e00b8e903e07456d195956ae016abbacc4724e815d39 file=cody/internal/llm/client.go range=610:610 lang=go exported=true byte_range=21298:21348
+  sig=*int64
+EDGES
+  ^contains=matrix/cody/internal/llm.chatRequestWire
+
+NODE id=matrix/cody/internal/llm.chatRequestWire#Stream kind=field
+  digest=b3:e90730bbca1e5b9dd7d78a7e2aee1bccc9f383d3480a66d428b5e8d39ee7c847 file=cody/internal/llm/client.go range=613:613 lang=go exported=true byte_range=21472:21529
+  sig=bool
+EDGES
+  ^contains=matrix/cody/internal/llm.chatRequestWire
+
+NODE id=matrix/cody/internal/llm.chatRequestWire#StreamOptions kind=field
+  digest=b3:e0913372cf7d583ebf88b8fd9dddd028775eaa0e9e8fc4bee36f9bdb740fbadc file=cody/internal/llm/client.go range=614:614 lang=go exported=true byte_range=21531:21596
+  sig=*llm.streamOptions
+EDGES
+  ^contains=matrix/cody/internal/llm.chatRequestWire
+
+NODE id=matrix/cody/internal/llm.chatRequestWire#Temperature kind=field
+  digest=b3:cfd5b40d5aa661738473767e972df08b5be1276d45d15291fa685f3aafa6592a file=cody/internal/llm/client.go range=605:605 lang=go exported=true byte_range=20968:21020
+  sig=float64
+EDGES
+  ^contains=matrix/cody/internal/llm.chatRequestWire
+
+NODE id=matrix/cody/internal/llm.chatRequestWire#ToolChoice kind=field
+  digest=b3:829011622d747bfd1283780abe68d411d284f86fa4a58eeb8c936791649d96de file=cody/internal/llm/client.go range=612:612 lang=go exported=true byte_range=21408:21470
+  sig=interface{}
+EDGES
+  ^contains=matrix/cody/internal/llm.chatRequestWire
+
+NODE id=matrix/cody/internal/llm.chatRequestWire#Tools kind=field
+  digest=b3:2ee1a7bb1620dc312fbe4d2e296e630a2513d796c2f93c9afdfc08c153d6514e file=cody/internal/llm/client.go range=611:611 lang=go exported=true byte_range=21350:21406
+  sig=[]llm.Tool
+EDGES
+  ^contains=matrix/cody/internal/llm.chatRequestWire
+
+NODE id=matrix/cody/internal/llm.chatResponseWire kind=type
+  digest=b3:ede00f82cb46f4982240f8e82e681e9de18a599c21507b82d068462fc1f27bf2 file=cody/internal/llm/client.go range=682:690 lang=go exported=false byte_range=24134:24448
+  sig=type chatResponseWire struct {\n	Choices	[]struct {\n		Index		int		`json:"index"`\n		Message		wireRespMessage	`json:"message"`\n		FinishReason	string		`json:"finish_reason"`\n	}	`json:"choices"`\n	Usage	*Usage		`json:"usage,omitempty"`\n	Error	*chatErrorBody	`json:"error,omitempty"`\n}
+EDGES
+  contains=matrix/cody/internal/llm.chatResponseWire#Choices,matrix/cody/internal/llm.chatResponseWire#Error,matrix/cody/internal/llm.chatResponseWire#Usage
+  ^defines=matrix/cody/internal/llm/client.go
+
+NODE id=matrix/cody/internal/llm.chatResponseWire#Choices kind=field
+  digest=b3:eb818cd9a518fd36754c525fa04ee427c835b5515ac895a01c1710874affb80d file=cody/internal/llm/client.go range=683:687 lang=go exported=true byte_range=24166:24352
+  sig=[]struct{Index int "json:\\"index\\""; Message llm.wireRespMessage "json:\\"message\\""; FinishReason string "json:\\"finish_reason\\""}
+EDGES
+  ^contains=matrix/cody/internal/llm.chatResponseWire
+
+NODE id=matrix/cody/internal/llm.chatResponseWire#Error kind=field
+  digest=b3:ed4abffb8545b9339e8ffe319dfbf75a99abdb15f9eb0d8e2e56f947cc70ba5c file=cody/internal/llm/client.go range=689:689 lang=go exported=true byte_range=24401:24446
+  sig=*llm.chatErrorBody
+EDGES
+  ^contains=matrix/cody/internal/llm.chatResponseWire
+
+NODE id=matrix/cody/internal/llm.chatResponseWire#Usage kind=field
+  digest=b3:ca203ab07919ca7873bac37bb61581c3b2c0c2bdd8dbe17bd6d4cd0a1e8b3086 file=cody/internal/llm/client.go range=688:688 lang=go exported=true byte_range=24354:24399
+  sig=*llm.Usage
+EDGES
+  ^contains=matrix/cody/internal/llm.chatResponseWire
+
+NODE id=matrix/cody/internal/llm.chatStreamChunk kind=type
+  digest=b3:0a0fdf7e0c5ffb1e67786b90b031027b291ee7a0014160ba3568aedb93129698 file=cody/internal/llm/client.go range=692:703 lang=go exported=false byte_range=24450:24975
+  sig=type chatStreamChunk struct {\n	Choices	[]struct {\n		Index		int		`json:"index"`\n		Delta		streamDelta	`json:"delta"`\n		FinishReason	string		`json:"finish_reason"`\n	}	`json:"choices"`\n	Usage	*Usage		`json:"usage,omitempty"`\n	Error	*chatErrorBody	`json:"error,omitempty"`\n}
+  doc=chatStreamChunk is one SSE `data:` frame of a streaming chat-completion. The\ndelta carries incremental content/reasoning and tool_call fragments (id +\nname arrive once, arguments stream across frames keyed by index).
+EDGES
+  contains=matrix/cody/internal/llm.chatStreamChunk#Choices,matrix/cody/internal/llm.chatStreamChunk#Error,matrix/cody/internal/llm.chatStreamChunk#Usage
+  ^defines=matrix/cody/internal/llm/client.go
+
+NODE id=matrix/cody/internal/llm.chatStreamChunk#Choices kind=field
+  digest=b3:68d70f6cd84403c9b25cba4b12571ea5a6317defb8756e62264d6327be9f8624 file=cody/internal/llm/client.go range=696:700 lang=go exported=true byte_range=24707:24879
+  sig=[]struct{Index int "json:\\"index\\""; Delta llm.streamDelta "json:\\"delta\\""; FinishReason string "json:\\"finish_reason\\""}
+EDGES
+  ^contains=matrix/cody/internal/llm.chatStreamChunk
+
+NODE id=matrix/cody/internal/llm.chatStreamChunk#Error kind=field
+  digest=b3:ed4abffb8545b9339e8ffe319dfbf75a99abdb15f9eb0d8e2e56f947cc70ba5c file=cody/internal/llm/client.go range=702:702 lang=go exported=true byte_range=24928:24973
+  sig=*llm.chatErrorBody
+EDGES
+  ^contains=matrix/cody/internal/llm.chatStreamChunk
+
+NODE id=matrix/cody/internal/llm.chatStreamChunk#Usage kind=field
+  digest=b3:ca203ab07919ca7873bac37bb61581c3b2c0c2bdd8dbe17bd6d4cd0a1e8b3086 file=cody/internal/llm/client.go range=701:701 lang=go exported=true byte_range=24881:24926
+  sig=*llm.Usage
+EDGES
+  ^contains=matrix/cody/internal/llm.chatStreamChunk
+
+NODE id=matrix/cody/internal/llm.defaultChatEndpoint kind=func
+  digest=b3:03f81422190c12c1d096804e37621ff0039c606744dc0e1dc59ce6b632407948 file=cody/internal/llm/client.go range=519:533 lang=go exported=false byte_range=18008:18481
+  sig=func defaultChatEndpoint(p mcllm.Provider) string
+EDGES
+  ^defines=matrix/cody/internal/llm/client.go
+
+NODE id=matrix/cody/internal/llm.deltaFlushChars kind=const
+  digest=b3:8649e64540b0001b2a7eeb781e6edaaef160f61c10dfe3688ac7027244743199 file=cody/internal/llm/client.go range=296:301 lang=go exported=false byte_range=10778:11168
+  sig=untyped int
+  doc=deltaFlushChars is the coalescing threshold for live streaming: incremental\nfragments are buffered until at least this many new visible/reasoning chars\nhave accumulated, then flushed via onDelta. Small enough for a smooth\n"typing" cadence, large enough to keep the SSE event volume sane (one event\nper ~handful of tokens rather than one per token).
+EDGES
+  ^defines=matrix/cody/internal/llm/client.go
+
+NODE id=matrix/cody/internal/llm.enableThinkingArgs kind=func
+  digest=b3:5d84c28a242a5015ab3559ea6e373782c62d97c29268f8c306738655190c9a0a file=cody/internal/llm/client.go range=587:598 lang=go exported=false byte_range=20146:20776
+  sig=func enableThinkingArgs(model string) map[string]any
+  doc=enableThinkingArgs returns the chat_template_args that turn reasoning ON for\nBaseten-served models where it is OPT-IN: Kimi (moonshotai/*) emits its\nchain-of-thought as visible `content` unless enable_thinking makes the\nserver split it into the separate reasoning_content channel. Grok (grok-*)\nuses xAI's native `reasoning_effort` field instead (see reasoningEffort).\nReturns nil for models that reason by default (never sent).
+EDGES
+  ^defines=matrix/cody/internal/llm/client.go
+
+NODE id=matrix/cody/internal/llm.envKey kind=func
+  digest=b3:1b92bed6f546b42823ff1c17cdae4cf80b3d3e337f2a96df294cfed5c25f839f file=cody/internal/llm/client.go range=535:556 lang=go exported=false byte_range=18483:19023
+  sig=func envKey(p mcllm.Provider) (string, error)
+EDGES
+  ^defines=matrix/cody/internal/llm/client.go
+
+NODE id=matrix/cody/internal/llm.extractTokenToolCalls kind=func
+  digest=b3:2af4cd98ee4abf55df255de812a958fb2f37ec3215b4192cc4d585e2607ae046 file=cody/internal/llm/client.go range=787:834 lang=go exported=false byte_range=27952:29588
+  sig=func extractTokenToolCalls(content string) (string, []ToolCall)
+  doc=extractTokenToolCalls pulls any token-grammar tool calls out of content and\nreturns the content with those spans removed plus the structured calls. It\ntolerates a missing section wrapper and an unterminated section (truncated\ngeneration): everything from the first marker onward is consumed so nothing\nleaks. Returns (content, nil) when there is nothing to extract.
+EDGES
+  ^defines=matrix/cody/internal/llm/client.go
+
+NODE id=matrix/cody/internal/llm.extractXMLToolCalls kind=func
+  digest=b3:7d3523b46b52489986cef55a78617ce958936fe344adec47766b5323116672fc file=cody/internal/llm/client.go range=895:949 lang=go exported=false byte_range=31697:33382
+  sig=func extractXMLToolCalls(content string) (string, []ToolCall)
+  doc=extractXMLToolCalls pulls any `<function_call name="NAME">ARGS</function_call>`\nspans out of content and returns the content with those spans removed plus the\nstructured calls. ARGS is normalized to a JSON object (the first {...} span, or\n"{}" when absent/unparseable) so downstream dispatch always receives valid\narguments. It tolerates a missing/truncated close tag (everything from the\nopen tag onward is consumed so nothing leaks). Returns (content, nil) when\nthere is nothing to extract.
+EDGES
+  ^defines=matrix/cody/internal/llm/client.go
+
+NODE id=matrix/cody/internal/llm.fromWireRespMessage kind=func
+  digest=b3:266a4a9b186999326c29130ebb2558d7e7a3cc7f0d949015657b2c0d2b6e89b0 file=cody/internal/llm/client.go range=731:773 lang=go exported=false byte_range=25841:27452
+  sig=func fromWireRespMessage(m wireRespMessage) Message
+EDGES
+  ^defines=matrix/cody/internal/llm/client.go
+
+NODE id=matrix/cody/internal/llm.holdbackPartial kind=func
+  digest=b3:a4a901b23d3665c90f4b5e5120ef9c4087a2bbfd4cad6dad3585ce700617e7a1 file=cody/internal/llm/client.go range=457:477 lang=go exported=false byte_range=16003:16717
+  sig=func holdbackPartial(s string) string
+  doc=holdbackPartial withholds a trailing fragment that could be the start of a\ncontrol marker (<think>, <thinking>, or the Kimi tool-call section/call\ntokens) so a half-arrived marker is never streamed as visible text. A normal\n'<' in prose (e.g. "a < b") is left intact — only a tail that is a genuine\nprefix of a known marker is held back, to be resolved once more bytes arrive.
+EDGES
+  ^defines=matrix/cody/internal/llm/client.go
+
+NODE id=matrix/cody/internal/llm.jsonArgs kind=func
+  digest=b3:f9f37fa574b414448b0ad5c13883ab873e1d1acab8333e369756d75a469534f4 file=cody/internal/llm/client.go range=972:997 lang=go exported=false byte_range=33836:34448
+  sig=func jsonArgs(s string) string
+  doc=jsonArgs normalizes an improvised tool-call argument blob to a JSON object\nstring: it returns the first balanced {...} span if present, else "{}". This\nkeeps dispatch robust when a model emits prose or partial JSON around the args.
+EDGES
+  ^defines=matrix/cody/internal/llm/client.go
+
+NODE id=matrix/cody/internal/llm.kimiArgBegin kind=const
+  digest=b3:da1a6e647c06a72ccdc510e97fbdba870180569f3038d8273858206c31e0c31e file=cody/internal/llm/client.go range=775:783 lang=go exported=false byte_range=27454:27908
+  sig=untyped string
+  doc=Special-token grammar Kimi/Moonshot K2 models use to emit tool calls inside\n`content`. A section wraps one or more calls; each call is a\n`functions.<name>:<index>` header, an argument-begin marker, the JSON\narguments, then a call-end marker.
+EDGES
+  ^defines=matrix/cody/internal/llm/client.go
+
+NODE id=matrix/cody/internal/llm.kimiCallBegin kind=const
+  digest=b3:b866dbd7480f4ffb1fc47ebf5a247de0cb7eac312985d4865e10d4dc1dc1bd0a file=cody/internal/llm/client.go range=775:782 lang=go exported=false byte_range=27454:27857
+  sig=untyped string
+  doc=Special-token grammar Kimi/Moonshot K2 models use to emit tool calls inside\n`content`. A section wraps one or more calls; each call is a\n`functions.<name>:<index>` header, an argument-begin marker, the JSON\narguments, then a call-end marker.
+EDGES
+  ^defines=matrix/cody/internal/llm/client.go
+
+NODE id=matrix/cody/internal/llm.kimiCallEnd kind=const
+  digest=b3:55ffccfa978c9e0b338c04c43b059c1274b286ae9aff698ddad2bd91b9b10cf5 file=cody/internal/llm/client.go range=775:784 lang=go exported=false byte_range=27454:27948
+  sig=untyped string
+  doc=Special-token grammar Kimi/Moonshot K2 models use to emit tool calls inside\n`content`. A section wraps one or more calls; each call is a\n`functions.<name>:<index>` header, an argument-begin marker, the JSON\narguments, then a call-end marker.
+EDGES
+  ^defines=matrix/cody/internal/llm/client.go
+
+NODE id=matrix/cody/internal/llm.kimiSectionBegin kind=const
+  digest=b3:995c086680f034219ee4463b8364180c1b0809f5c24e5d70f323c9b8099d4e77 file=cody/internal/llm/client.go range=775:780 lang=go exported=false byte_range=27454:27766
+  sig=untyped string
+  doc=Special-token grammar Kimi/Moonshot K2 models use to emit tool calls inside\n`content`. A section wraps one or more calls; each call is a\n`functions.<name>:<index>` header, an argument-begin marker, the JSON\narguments, then a call-end marker.
+EDGES
+  ^defines=matrix/cody/internal/llm/client.go
+
+NODE id=matrix/cody/internal/llm.kimiSectionEnd kind=const
+  digest=b3:31ec40c924254af135b52bb0bc04a07a7394667541a23cca4830b66b691739bf file=cody/internal/llm/client.go range=775:781 lang=go exported=false byte_range=27454:27815
+  sig=untyped string
+  doc=Special-token grammar Kimi/Moonshot K2 models use to emit tool calls inside\n`content`. A section wraps one or more calls; each call is a\n`functions.<name>:<index>` header, an argument-begin marker, the JSON\narguments, then a call-end marker.
+EDGES
+  ^defines=matrix/cody/internal/llm/client.go
+
+NODE id=matrix/cody/internal/llm.parseTokenSection kind=func
+  digest=b3:1f20ca1d7d9e563dfc6e6a48aae4676ca17ebfd3fd9c495cc6371aa57b94e142 file=cody/internal/llm/client.go range=836:865 lang=go exported=false byte_range=29590:30532
+  sig=func parseTokenSection(section string, base int) []ToolCall
+  doc=parseTokenSection decodes the calls inside one token-grammar section. base is\nthe running call count, used to synthesize stable call IDs.
+EDGES
+  ^defines=matrix/cody/internal/llm/client.go
+
+NODE id=matrix/cody/internal/llm.previewVisible kind=func
+  digest=b3:ed3247ae1a61c4811c88a8a834baddb06db0c859c1106e55fcdf61e94c658d25 file=cody/internal/llm/client.go range=444:455 lang=go exported=false byte_range=15431:16001
+  sig=func previewVisible(content string) string
+  doc=previewVisible returns the portion of an in-progress content buffer that is\nsafe to show as the visible answer so far: a leading <think>/<thinking>\nblock is moved out (held back until it closes) and any Kimi tool-call token\ngrammar is stripped. It reuses the exact helpers the final fold uses, so the\nstreamed prefix never diverges from the authoritative cleaned content.
+EDGES
+  ^defines=matrix/cody/internal/llm/client.go
+
+NODE id=matrix/cody/internal/llm.reasoningEffort kind=func
+  digest=b3:a1ab147b4e6ebb83e421671c344080db0eb93d9176d3f83f2f7051f349d29ea9 file=cody/internal/llm/client.go range=573:585 lang=go exported=false byte_range=19518:20144
+  sig=func reasoningEffort(enabled bool) string
+  doc=reasoningEffort maps the per-role enableThinking flag onto xAI's\nreasoning_effort enum: reasoning ON → "medium" (balanced reasoning that keeps\ngrok-4.3 answering in the visible content channel instead of spending the\nwhole turn on chain-of-thought and emitting only a stub), OFF → "none"\n(disables reasoning entirely for token-tight mechanical roles). When enabled\nthe server splits chain-of-thought into the separate reasoning_content channel\n(which aggregateStreamReader routes to the thinking channel).
+EDGES
+  ^defines=matrix/cody/internal/llm/client.go
+
+NODE id=matrix/cody/internal/llm.sanitizeToolCalls kind=func
+  digest=b3:04d0002f9188da778318d16df9213181d1faf9e62254849b872e1de06837d389 file=cody/internal/llm/client.go range=653:680 lang=go exported=false byte_range=22912:24132
+  sig=func sanitizeToolCalls(calls []ToolCall) []ToolCall
+  doc=sanitizeToolCalls guarantees every REPLAYED assistant tool_call carries a\nwell-formed function before it goes back on the wire. A truncated or\nmalformed generation can leave function.arguments empty or non-JSON; the\ntranscript is re-sent verbatim every turn, so replaying such a call makes a\nstrict provider (e.g. Together's DeepSeek-V4-Pro) reject the WHOLE request\nwith a 400 on the function field — which permanently wedges the conversation\n(every later turn carries the same poison). Coercing empty/invalid arguments\nto "{}" keeps the call structurally valid AND preserves the assistant↔\ntool_call_id pairing (so the matching tool-result is never orphaned). The\nagent already recorded the real parse error as that tool's result, so the\nmodel still gets the feedback it needs to re-issue the call correctly.
+EDGES
+  ^defines=matrix/cody/internal/llm/client.go
+
+NODE id=matrix/cody/internal/llm.splitInlineThink kind=func
+  digest=b3:58b3f4c27abc32640df462e8b1af6b4c0ff582a185ceee6d87ebd73cc61d8749 file=cody/internal/llm/client.go range=999:1013 lang=go exported=false byte_range=34450:34941
+  sig=func splitInlineThink(content string) (visible, reasoning string)
+EDGES
+  ^defines=matrix/cody/internal/llm/client.go
+
+NODE id=matrix/cody/internal/llm.streamDelta kind=type
+  digest=b3:6206cccb5bc06578540c637cc9c9aaf9e0ec9fea64642c0b0b9f400e352efe7d file=cody/internal/llm/client.go range=705:710 lang=go exported=false byte_range=24977:25226
+  sig=type streamDelta struct {\n	Role			string			`json:"role"`\n	Content			string			`json:"content"`\n	ReasoningContent	string			`json:"reasoning_content"`\n	ToolCalls		[]streamToolDelta	`json:"tool_calls"`\n}
+EDGES
+  contains=matrix/cody/internal/llm.streamDelta#Content,matrix/cody/internal/llm.streamDelta#ReasoningContent,matrix/cody/internal/llm.streamDelta#Role,matrix/cody/internal/llm.streamDelta#ToolCalls
+  ^defines=matrix/cody/internal/llm/client.go
+
+NODE id=matrix/cody/internal/llm.streamDelta#Content kind=field
+  digest=b3:f52384e7e5adb3def2ed9be36769b612e64a58cc71b6393dbd93ac3fe15a249c file=cody/internal/llm/client.go range=707:707 lang=go exported=true byte_range=25054:25105
+  sig=string
+EDGES
+  ^contains=matrix/cody/internal/llm.streamDelta
+
+NODE id=matrix/cody/internal/llm.streamDelta#ReasoningContent kind=field
+  digest=b3:200ab72edefc2c84606da3dd649127948f758707beae98cba7d946efba850fe6 file=cody/internal/llm/client.go range=708:708 lang=go exported=true byte_range=25107:25168
+  sig=string
+EDGES
+  ^contains=matrix/cody/internal/llm.streamDelta
+
+NODE id=matrix/cody/internal/llm.streamDelta#Role kind=field
+  digest=b3:1eb1502513282d87ac43ce974d8213b4e7e844edb1e21eb47df3559684e63198 file=cody/internal/llm/client.go range=706:706 lang=go exported=true byte_range=25004:25052
+  sig=string
+EDGES
+  ^contains=matrix/cody/internal/llm.streamDelta
+
+NODE id=matrix/cody/internal/llm.streamDelta#ToolCalls kind=field
+  digest=b3:d84cbc4dbe9e82460c7ccb39d9f5774a5af4257c904d8bb9090ecd82d3c7953e file=cody/internal/llm/client.go range=709:709 lang=go exported=true byte_range=25170:25224
+  sig=[]llm.streamToolDelta
+EDGES
+  ^contains=matrix/cody/internal/llm.streamDelta
+
+NODE id=matrix/cody/internal/llm.streamOptions kind=type
+  digest=b3:a0452a0ea21d0acaf2c0af22bf680aa8e62090144b6206f56c2ff1facfb0005a file=cody/internal/llm/client.go range=622:627 lang=go exported=false byte_range=21907:22180
+  sig=type streamOptions struct {\n	IncludeUsage bool `json:"include_usage"`\n}
+  doc=streamOptions asks the provider to emit a final usage chunk on the SSE\nstream (OpenAI `stream_options.include_usage`). Used on the direct path; the\ngateway injects its own on the metered path.
+EDGES
+  contains=matrix/cody/internal/llm.streamOptions#IncludeUsage
+  ^defines=matrix/cody/internal/llm/client.go
+
+NODE id=matrix/cody/internal/llm.streamOptions#IncludeUsage kind=field
+  digest=b3:97febea51afccbbd60b58aab5f530598449d2ed19e54d7faa31490fdfda137ef file=cody/internal/llm/client.go range=626:626 lang=go exported=true byte_range=22138:22178
+  sig=bool
+EDGES
+  ^contains=matrix/cody/internal/llm.streamOptions
+
+NODE id=matrix/cody/internal/llm.streamToolDelta kind=type
+  digest=b3:1516ca36f0d70f437e3fbc2cd70ff95b2e940f953b4cfa7b44c06b2429e5b3c9 file=cody/internal/llm/client.go range=712:720 lang=go exported=false byte_range=25228:25462
+  sig=type streamToolDelta struct {\n	Index		int	`json:"index"`\n	ID		string	`json:"id"`\n	Type		string	`json:"type"`\n	Function	struct {\n		Name		string	`json:"name"`\n		Arguments	string	`json:"arguments"`\n	}	`json:"function"`\n}
+EDGES
+  contains=matrix/cody/internal/llm.streamToolDelta#Function,matrix/cody/internal/llm.streamToolDelta#ID,matrix/cody/internal/llm.streamToolDelta#Index,matrix/cody/internal/llm.streamToolDelta#Type
+  ^defines=matrix/cody/internal/llm/client.go
+
+NODE id=matrix/cody/internal/llm.streamToolDelta#Function kind=field
+  digest=b3:cff0f731694944a04001bbfb64de2a3be9533b454c9a6fdc7412bf4d2656570c file=cody/internal/llm/client.go range=716:719 lang=go exported=true byte_range=25351:25460
+  sig=struct{Name string "json:\\"name\\""; Arguments string "json:\\"arguments\\""}
+EDGES
+  ^contains=matrix/cody/internal/llm.streamToolDelta
+
+NODE id=matrix/cody/internal/llm.streamToolDelta#ID kind=field
+  digest=b3:08097a0cfb41ec14fac3cc851309e5db544bb2ba48eb8fa0c63d64efa46d12be file=cody/internal/llm/client.go range=714:714 lang=go exported=true byte_range=25291:25318
+  sig=string
+EDGES
+  ^contains=matrix/cody/internal/llm.streamToolDelta
+
+NODE id=matrix/cody/internal/llm.streamToolDelta#Index kind=field
+  digest=b3:f53c9e4022f5b1c53f453c20ee898950c44bd2f1d7786a64bc9155d3f5d6658a file=cody/internal/llm/client.go range=713:713 lang=go exported=true byte_range=25259:25289
+  sig=int
+EDGES
+  ^contains=matrix/cody/internal/llm.streamToolDelta
+
+NODE id=matrix/cody/internal/llm.streamToolDelta#Type kind=field
+  digest=b3:b5abfd4f111285554e081f8186ca88582f8aff91b65dac74ca516cb4f2c9acd5 file=cody/internal/llm/client.go range=715:715 lang=go exported=true byte_range=25320:25349
+  sig=string
+EDGES
+  ^contains=matrix/cody/internal/llm.streamToolDelta
+
+NODE id=matrix/cody/internal/llm.supportsReasoningEffort kind=func
+  digest=b3:4291194511d0a3d04f3be28f9b178f8516a017576c2a41c07463db1a8c0075a3 file=cody/internal/llm/client.go range=565:571 lang=go exported=false byte_range=19122:19516
+  sig=func supportsReasoningEffort(model string) bool
+  doc=supportsReasoningEffort reports whether an xAI model accepts the\n`reasoning_effort` request field. Per xAI docs it is currently only honored\nby grok-4.3; other Grok models (grok-build-*, grok-4.20-*-non-reasoning)\nignore or reject it, so the field is omitted for them.
+EDGES
+  ^defines=matrix/cody/internal/llm/client.go
+
+NODE id=matrix/cody/internal/llm.toWireMessages kind=func
+  digest=b3:ce1a1678d3d848ea5f511a34546fc922c2e6aee1c8bd99dedad71203b80c10ff file=cody/internal/llm/client.go range=639:651 lang=go exported=false byte_range=22601:22910
+  sig=func toWireMessages(msgs []Message) []wireMessage
+EDGES
+  ^defines=matrix/cody/internal/llm/client.go
+
+NODE id=matrix/cody/internal/llm.tokenFuncName kind=func
+  digest=b3:1d0805b050b12816cdd15711941c613493d8a04cfa969f0823f803bc4d42a468 file=cody/internal/llm/client.go range=867:879 lang=go exported=false byte_range=30534:30981
+  sig=func tokenFuncName(header string) string
+  doc=tokenFuncName turns a `functions.<name>:<index>` header into the bare tool\nname. The `functions.` prefix and a trailing `:<int>` index are both\noptional in observed emissions.
+EDGES
+  ^defines=matrix/cody/internal/llm/client.go
+
+NODE id=matrix/cody/internal/llm.truncate kind=func
+  digest=b3:aef98bcecd1bec2c20323e380dc201ab827146b8fc985f7331fc6ba9717f76ae file=cody/internal/llm/client.go range=558:563 lang=go exported=false byte_range=19025:19120
+  sig=func truncate(s string, n int) string
+EDGES
+  ^defines=matrix/cody/internal/llm/client.go
+
+NODE id=matrix/cody/internal/llm.wireMessage kind=type
+  digest=b3:9c2c2e3aa438d36cb68dbd9ac47cb1eb5e59cf7accab5681f57e6f3dce23b886 file=cody/internal/llm/client.go range=629:637 lang=go exported=false byte_range=22182:22599
+  sig=type wireMessage struct {\n	Role		string		`json:"role"`\n	Content		string		`json:"content,omitempty"`\n	ToolCalls	[]ToolCall	`json:"tool_calls,omitempty"`\n	ToolCallID	string		`json:"tool_call_id,omitempty"`\n	Name		string		`json:"name,omitempty"`\n}
+  doc=wireMessage is the request-side message shape. It deliberately omits the\nreasoning channel so prior assistant reasoning is never echoed back.
+EDGES
+  contains=matrix/cody/internal/llm.wireMessage#Content,matrix/cody/internal/llm.wireMessage#Name,matrix/cody/internal/llm.wireMessage#Role,matrix/cody/internal/llm.wireMessage#ToolCallID,matrix/cody/internal/llm.wireMessage#ToolCalls
+  ^defines=matrix/cody/internal/llm/client.go
+
+NODE id=matrix/cody/internal/llm.wireMessage#Content kind=field
+  digest=b3:98faacd174a5e7cc1c64e05ac89e4e201f2eecf3884419cccf4759e4710d878d file=cody/internal/llm/client.go range=633:633 lang=go exported=true byte_range=22394:22442
+  sig=string
+EDGES
+  ^contains=matrix/cody/internal/llm.wireMessage
+
+NODE id=matrix/cody/internal/llm.wireMessage#Name kind=field
+  digest=b3:3ae22ab7f03f8fd94b92e22deadeac48393e41083cdc5fe2b461d3ef7cdc62fb file=cody/internal/llm/client.go range=636:636 lang=go exported=true byte_range=22552:22597
+  sig=string
+EDGES
+  ^contains=matrix/cody/internal/llm.wireMessage
+
+NODE id=matrix/cody/internal/llm.wireMessage#Role kind=field
+  digest=b3:3ad01deeb34ff2d27f05044270a59681831a7eabebde8837b9616787e4026031 file=cody/internal/llm/client.go range=632:632 lang=go exported=true byte_range=22357:22392
+  sig=string
+EDGES
+  ^contains=matrix/cody/internal/llm.wireMessage
+
+NODE id=matrix/cody/internal/llm.wireMessage#ToolCallID kind=field
+  digest=b3:967ecc22426724d228d270554504d81b35831282f7fdcdfb21c0c2205a45e8cb file=cody/internal/llm/client.go range=635:635 lang=go exported=true byte_range=22497:22550
+  sig=string
+EDGES
+  ^contains=matrix/cody/internal/llm.wireMessage
+
+NODE id=matrix/cody/internal/llm.wireMessage#ToolCalls kind=field
+  digest=b3:913ce31b9424dcd26c64a21b8fa2f6ecce0195c57661e0c42c73924fb77baa42 file=cody/internal/llm/client.go range=634:634 lang=go exported=true byte_range=22444:22495
+  sig=[]llm.ToolCall
+EDGES
+  ^contains=matrix/cody/internal/llm.wireMessage
+
+NODE id=matrix/cody/internal/llm.wireRespMessage kind=type
+  digest=b3:79d1fba222bca0ec5dda7e0b240df4ee8ecd184eb7ea1517b06a154c8610302e file=cody/internal/llm/client.go range=722:729 lang=go exported=false byte_range=25464:25839
+  sig=type wireRespMessage struct {\n	Role			string		`json:"role"`\n	Content			string		`json:"content"`\n	ReasoningContent	string		`json:"reasoning_content"`\n	ToolCalls		[]ToolCall	`json:"tool_calls"`\n}
+  doc=wireRespMessage is the response-side assistant message; content may be JSON\nnull when the model only emitted tool_calls (Go leaves Content "").
+EDGES
+  contains=matrix/cody/internal/llm.wireRespMessage#Content,matrix/cody/internal/llm.wireRespMessage#ReasoningContent,matrix/cody/internal/llm.wireRespMessage#Role,matrix/cody/internal/llm.wireRespMessage#ToolCalls
+  ^defines=matrix/cody/internal/llm/client.go
+
+NODE id=matrix/cody/internal/llm.wireRespMessage#Content kind=field
+  digest=b3:a84720e816a974e1c6d4a7b3c74e2bc43aa796311c6c5144bd6cac3f6162ae17 file=cody/internal/llm/client.go range=726:726 lang=go exported=true byte_range=25688:25732
+  sig=string
+EDGES
+  ^contains=matrix/cody/internal/llm.wireRespMessage
+
+NODE id=matrix/cody/internal/llm.wireRespMessage#ReasoningContent kind=field
+  digest=b3:f9cea1a8a5ecdf062f1fc24223b6613f4b252a2776c6560a55edff75d1fd0def file=cody/internal/llm/client.go range=727:727 lang=go exported=true byte_range=25734:25788
+  sig=string
+EDGES
+  ^contains=matrix/cody/internal/llm.wireRespMessage
+
+NODE id=matrix/cody/internal/llm.wireRespMessage#Role kind=field
+  digest=b3:0068ca49f4859c34b7713f08ecdca4786351e4f10920b8461f9e6ee3377e845f file=cody/internal/llm/client.go range=725:725 lang=go exported=true byte_range=25645:25686
+  sig=string
+EDGES
+  ^contains=matrix/cody/internal/llm.wireRespMessage
+
+NODE id=matrix/cody/internal/llm.wireRespMessage#ToolCalls kind=field
+  digest=b3:5fb5938bfebe706db1f1e581f2473ad8c8106b4de0591f4ab132aa8146bf190a file=cody/internal/llm/client.go range=728:728 lang=go exported=true byte_range=25790:25837
+  sig=[]llm.ToolCall
+EDGES
+  ^contains=matrix/cody/internal/llm.wireRespMessage
+
+NODE id=matrix/cody/internal/llm.xmlAttr kind=func
+  digest=b3:6f0af8df4d0dea0d4aa56ef2c0cc78eb167a8a639e39a53e9557c76751685b7c file=cody/internal/llm/client.go range=951:970 lang=go exported=false byte_range=33384:33834
+  sig=func xmlAttr(attrs, key string) string
+  doc=xmlAttr extracts a double- or single-quoted attribute value from an XML-ish\nattribute string (e.g. ` name="foo"` → "foo").
+EDGES
+  ^defines=matrix/cody/internal/llm/client.go
+
+NODE id=matrix/cody/internal/llm.xmlToolCallClose kind=const
+  digest=b3:ac5ece6e375c91905378abdc66657c1ee02cfcdebc2b30dfdf1718fd54dda8de file=cody/internal/llm/client.go range=881:892 lang=go exported=false byte_range=30983:31693
+  sig=untyped string
+  doc=splitInlineThink moves a provider-inlined chain-of-thought block out of the\nvisible content and into the reasoning channel. Some providers/models emit\n`<think>…</think>` (or `<thinking>…</thinking>`) inside `content` instead of\nthe separate `reasoning_content` field; leaving it in place leaks internal\nmonologue into the chat. An unterminated opening tag (truncated generation)\nmeans the WHOLE remainder is reasoning.\nxmlToolCallOpen / xmlToolCallClose bound the inline XML-ish tool-call form\nthat grok/xAI reasoning models improvise inside `content` instead of the\nstructured tool_calls array.
+EDGES
+  ^defines=matrix/cody/internal/llm/client.go
+
+NODE id=matrix/cody/internal/llm.xmlToolCallOpen kind=const
+  digest=b3:906e4831609dda6430fa3b1633ba3d1df94e7885b303a0c2dd855a806b83cb62 file=cody/internal/llm/client.go range=881:891 lang=go exported=false byte_range=30983:31654
+  sig=untyped string
+  doc=splitInlineThink moves a provider-inlined chain-of-thought block out of the\nvisible content and into the reasoning channel. Some providers/models emit\n`<think>…</think>` (or `<thinking>…</thinking>`) inside `content` instead of\nthe separate `reasoning_content` field; leaving it in place leaks internal\nmonologue into the chat. An unterminated opening tag (truncated generation)\nmeans the WHOLE remainder is reasoning.\nxmlToolCallOpen / xmlToolCallClose bound the inline XML-ish tool-call form\nthat grok/xAI reasoning models improvise inside `content` instead of the\nstructured tool_calls array.
+EDGES
+  ^defines=matrix/cody/internal/llm/client.go
+
+NODE id=matrix/cody/internal/llm/client.go kind=file
+  digest=b3:08e6998d4d1ef10cd9b868566132667620bab8f0df7c74deef1310c77507ee4d file=cody/internal/llm/client.go range=1:1019 lang=go exported=true
+EDGES
+  defines=matrix/cody/internal/llm.Client,matrix/cody/internal/llm.Client.Chat,matrix/cody/internal/llm.Client.Model,matrix/cody/internal/llm.Client.newHTTPRequest,matrix/cody/internal/llm.ErrProviderRejected,matrix/cody/internal/llm.ErrRateLimited,matrix/cody/internal/llm.ErrRequestTooLarge,matrix/cody/internal/llm.New,matrix/cody/internal/llm.aggregateStream,matrix/cody/internal/llm.aggregateStreamReader,matrix/cody/internal/llm.chatErrorBody,matrix/cody/internal/llm.chatRequestWire,matrix/cody/internal/llm.chatResponseWire,matrix/cody/internal/llm.chatStreamChunk,matrix/cody/internal/llm.defaultChatEndpoint,matrix/cody/internal/llm.deltaFlushChars,matrix/cody/internal/llm.enableThinkingArgs,matrix/cody/internal/llm.envKey,matrix/cody/internal/llm.extractTokenToolCalls,matrix/cody/internal/llm.extractXMLToolCalls,matrix/cody/internal/llm.fromWireRespMessage,matrix/cody/internal/llm.holdbackPartial,matrix/cody/internal/llm.jsonArgs,matrix/cody/internal/llm.kimiArgBegin,matrix/cody/internal/llm.kimiCallBegin,matrix/cody/internal/llm.kimiCallEnd,matrix/cody/internal/llm.kimiSectionBegin,matrix/cody/internal/llm.kimiSectionEnd,matrix/cody/internal/llm.parseTokenSection,matrix/cody/internal/llm.previewVisible,matrix/cody/internal/llm.reasoningEffort,matrix/cody/internal/llm.sanitizeToolCalls,matrix/cody/internal/llm.splitInlineThink,matrix/cody/internal/llm.streamDelta,matrix/cody/internal/llm.streamOptions,matrix/cody/internal/llm.streamToolDelta,matrix/cody/internal/llm.supportsReasoningEffort,matrix/cody/internal/llm.toWireMessages,matrix/cody/internal/llm.tokenFuncName,matrix/cody/internal/llm.truncate,matrix/cody/internal/llm.wireMessage,matrix/cody/internal/llm.wireRespMessage,matrix/cody/internal/llm.xmlAttr,matrix/cody/internal/llm.xmlToolCallClose,matrix/cody/internal/llm.xmlToolCallOpen
+  ^contains=matrix/cody/internal/llm
+
+NODE id=matrix/cody/internal/llm/message.go kind=file
+  digest=b3:15bb9f6eac283c1fecb3a3fc9a923a519d4eee9a7c7643d8c9e1fe85d9b94043 file=cody/internal/llm/message.go range=1:243 lang=go exported=true
+EDGES
+  defines=matrix/cody/internal/llm.AssistantMessage,matrix/cody/internal/llm.ChatRequest,matrix/cody/internal/llm.ChatResult,matrix/cody/internal/llm.ChatResult.HasToolCalls,matrix/cody/internal/llm.Delta,matrix/cody/internal/llm.FunctionCall,matrix/cody/internal/llm.FunctionDef,matrix/cody/internal/llm.GuidanceClose,matrix/cody/internal/llm.GuidanceMessage,matrix/cody/internal/llm.GuidanceOpen,matrix/cody/internal/llm.Message,matrix/cody/internal/llm.Message.IsGuidance,matrix/cody/internal/llm.NewFunctionTool,matrix/cody/internal/llm.RoleAssistant,matrix/cody/internal/llm.RoleSystem,matrix/cody/internal/llm.RoleTool,matrix/cody/internal/llm.RoleUser,matrix/cody/internal/llm.StripGuidance,matrix/cody/internal/llm.SystemMessage,matrix/cody/internal/llm.Tool,matrix/cody/internal/llm.ToolCall,matrix/cody/internal/llm.ToolCall.ParseArgs,matrix/cody/internal/llm.ToolResult,matrix/cody/internal/llm.Usage,matrix/cody/internal/llm.UserMessage
+  ^contains=matrix/cody/internal/llm

@@ -1,0 +1,338 @@
+# GENERATED gen=codegraph do-not-edit merkle=b3:2dc69ec8dbbe0231373534486cf12ff6fdb0eaad7b2dfdcbc4d73453c8542ee8
+
+NODE id=matrix/gateway/internal/ledger kind=package
+  digest=b3:85e686952625ce8be4e8534ab100ace1d4140234913a30a91b367ff40310ec77 file=gateway/internal/ledger range=0:0 lang=go exported=true
+EDGES
+  contains=matrix/gateway/internal/ledger/ledger.go,matrix/gateway/internal/ledger/postgres.go
+  ^contains=mod:matrix/gateway
+
+NODE id=matrix/gateway/internal/ledger.CheckBudget kind=func
+  digest=b3:9031cf10848bbdbd30059fcee318905c0991ab1e754aa4f3e889bfacc08ea8b9 file=gateway/internal/ledger/ledger.go range=208:230 lang=go exported=true byte_range=6342:7063
+  sig=func CheckBudget(spent, projection, capPax string) (remaining string, exhausted bool, err error)
+  doc=CheckBudget reports whether an actor has remaining headroom for a\nprojected cost. spend + projection must be <= cap. Wraps the typed\nbudget-exhausted error so callers can use errors.Is.
+EDGES
+  ^defines=matrix/gateway/internal/ledger/ledger.go
+
+NODE id=matrix/gateway/internal/ledger.DailyCap kind=type
+  digest=b3:e79bde22870a953bedb78847ee0095562d303a3022ade8427ee76d051241bb4b file=gateway/internal/ledger/ledger.go range=56:62 lang=go exported=true byte_range=2017:2254
+  sig=type DailyCap struct {\n	ActorDID	string\n	DailyPaxMax	string	// canonical decimal string\n	UpdatedAt	time.Time\n}
+  doc=DailyCap is the per-actor daily PAX limit. Read by the gateway via\nLedger.DailyCap to gate calls before forwarding.
+EDGES
+  contains=matrix/gateway/internal/ledger.DailyCap#ActorDID,matrix/gateway/internal/ledger.DailyCap#DailyPaxMax,matrix/gateway/internal/ledger.DailyCap#UpdatedAt
+  ^defines=matrix/gateway/internal/ledger/ledger.go
+
+NODE id=matrix/gateway/internal/ledger.DailyCap#ActorDID kind=field
+  digest=b3:7a222b537fa315dfb37d66d4d1daf85337b745b6a247aaae99c3b1f42a1039f3 file=gateway/internal/ledger/ledger.go range=59:59 lang=go exported=true byte_range=2163:2181
+  sig=string
+EDGES
+  ^contains=matrix/gateway/internal/ledger.DailyCap
+
+NODE id=matrix/gateway/internal/ledger.DailyCap#DailyPaxMax kind=field
+  digest=b3:ed1ae5cfcc4a7fa088df4b5ad81a54726c3f8226b5ed96c81fd0aa9e02e67075 file=gateway/internal/ledger/ledger.go range=60:60 lang=go exported=true byte_range=2183:2201
+  sig=string
+EDGES
+  ^contains=matrix/gateway/internal/ledger.DailyCap
+
+NODE id=matrix/gateway/internal/ledger.DailyCap#UpdatedAt kind=field
+  digest=b3:de0ed17e8f666fd9662e9d4540127e856e5f80d8af9d3aeeef1e42ff55e21f6e file=gateway/internal/ledger/ledger.go range=61:61 lang=go exported=true byte_range=2231:2252
+  sig=time.Time
+EDGES
+  ^contains=matrix/gateway/internal/ledger.DailyCap
+
+NODE id=matrix/gateway/internal/ledger.DefaultDailyPaxCap kind=const
+  digest=b3:b1bdc259d9d3125b90195508a99da7eaa42ba7e5ec1fb829fc1e88157eb506a0 file=gateway/internal/ledger/ledger.go range=64:66 lang=go exported=true byte_range=2256:2426
+  sig=untyped string
+  doc=DefaultDailyPaxCap is the seed value applied when an actor has no\nrow in daily_budget_caps. Plan §5.15 quotes "10 PAX/day default".
+EDGES
+  ^defines=matrix/gateway/internal/ledger/ledger.go
+
+NODE id=matrix/gateway/internal/ledger.Entry kind=type
+  digest=b3:efb67c5a99a7474522b3b81b46cc392c0490e11423fc1d8748ee0be6859caa28 file=gateway/internal/ledger/ledger.go range=41:54 lang=go exported=true byte_range=1644:2015
+  sig=type Entry struct {\n	ActorDID		string\n	IntentID		string\n	GoalID			string\n	Model			string\n	Slot			string\n	KindRoute		string\n	TokensInput		int\n	TokensOutput		int\n	CostPax			string	// canonical NUMERIC(20,12) decimal string\n	RateTableVersion	int\n	OccurredAt		time.Time\n}
+  doc=Entry is one row in credit_ledger.
+EDGES
+  contains=matrix/gateway/internal/ledger.Entry#ActorDID,matrix/gateway/internal/ledger.Entry#CostPax,matrix/gateway/internal/ledger.Entry#GoalID,matrix/gateway/internal/ledger.Entry#IntentID,matrix/gateway/internal/ledger.Entry#KindRoute,matrix/gateway/internal/ledger.Entry#Model,matrix/gateway/internal/ledger.Entry#OccurredAt,matrix/gateway/internal/ledger.Entry#RateTableVersion,matrix/gateway/internal/ledger.Entry#Slot,matrix/gateway/internal/ledger.Entry#TokensInput,matrix/gateway/internal/ledger.Entry#TokensOutput
+  ^defines=matrix/gateway/internal/ledger/ledger.go
+
+NODE id=matrix/gateway/internal/ledger.Entry#ActorDID kind=field
+  digest=b3:4745d891f7ed15101c3520386e892520a9f45b4ff4ff89eee3f2fd8177681588 file=gateway/internal/ledger/ledger.go range=43:43 lang=go exported=true byte_range=1703:1726
+  sig=string
+EDGES
+  ^contains=matrix/gateway/internal/ledger.Entry
+
+NODE id=matrix/gateway/internal/ledger.Entry#CostPax kind=field
+  digest=b3:a88704bbb1a1f107a1416879bfaabacd8c2d74d96fe464402da6eac68f333d0e file=gateway/internal/ledger/ledger.go range=51:51 lang=go exported=true byte_range=1897:1920
+  sig=string
+EDGES
+  ^contains=matrix/gateway/internal/ledger.Entry
+
+NODE id=matrix/gateway/internal/ledger.Entry#GoalID kind=field
+  digest=b3:9aea4a1b276d883b0b37cf66733ddba11ff23c78524c351d7f34814c96600d6d file=gateway/internal/ledger/ledger.go range=45:45 lang=go exported=true byte_range=1753:1776
+  sig=string
+EDGES
+  ^contains=matrix/gateway/internal/ledger.Entry
+
+NODE id=matrix/gateway/internal/ledger.Entry#IntentID kind=field
+  digest=b3:56ecdc6f24fbb8fe98895175f5eacceb4346cee022e0154bc26f5093dbdb631f file=gateway/internal/ledger/ledger.go range=44:44 lang=go exported=true byte_range=1728:1751
+  sig=string
+EDGES
+  ^contains=matrix/gateway/internal/ledger.Entry
+
+NODE id=matrix/gateway/internal/ledger.Entry#KindRoute kind=field
+  digest=b3:b63442336a61dacb0867e39194d23ab85393fe7fda2f970a0be5ca8b819fbb37 file=gateway/internal/ledger/ledger.go range=48:48 lang=go exported=true byte_range=1828:1851
+  sig=string
+EDGES
+  ^contains=matrix/gateway/internal/ledger.Entry
+
+NODE id=matrix/gateway/internal/ledger.Entry#Model kind=field
+  digest=b3:4d0bad39024b996c6f9620a49d5e31d2b809656ee7b5a78ce3d2d887ead875b1 file=gateway/internal/ledger/ledger.go range=46:46 lang=go exported=true byte_range=1778:1801
+  sig=string
+EDGES
+  ^contains=matrix/gateway/internal/ledger.Entry
+
+NODE id=matrix/gateway/internal/ledger.Entry#OccurredAt kind=field
+  digest=b3:8c2cd54d17a58fb5a024fd3ad807eb2f35b21040d02516782bcb86e2caf27f70 file=gateway/internal/ledger/ledger.go range=53:53 lang=go exported=true byte_range=1987:2013
+  sig=time.Time
+EDGES
+  ^contains=matrix/gateway/internal/ledger.Entry
+
+NODE id=matrix/gateway/internal/ledger.Entry#RateTableVersion kind=field
+  digest=b3:e009cec5386d94d8f286a81519ac7c08b8b728b03796e5ce18063a5fd9e549b1 file=gateway/internal/ledger/ledger.go range=52:52 lang=go exported=true byte_range=1965:1985
+  sig=int
+EDGES
+  ^contains=matrix/gateway/internal/ledger.Entry
+
+NODE id=matrix/gateway/internal/ledger.Entry#Slot kind=field
+  digest=b3:e51b47a674de57add64f0f1890d32a7fa986e98b6afcf9a6cc66c7a72e76a048 file=gateway/internal/ledger/ledger.go range=47:47 lang=go exported=true byte_range=1803:1826
+  sig=string
+EDGES
+  ^contains=matrix/gateway/internal/ledger.Entry
+
+NODE id=matrix/gateway/internal/ledger.Entry#TokensInput kind=field
+  digest=b3:12db2ac9828067f230189533c16d520cfd715243374cb3fdef95cedf5c521a9e file=gateway/internal/ledger/ledger.go range=49:49 lang=go exported=true byte_range=1853:1873
+  sig=int
+EDGES
+  ^contains=matrix/gateway/internal/ledger.Entry
+
+NODE id=matrix/gateway/internal/ledger.Entry#TokensOutput kind=field
+  digest=b3:0f47e5a0a9df0b156f2a6bebd7ac73c6ccb165d0ea92cb1101a78e6b69e571ac file=gateway/internal/ledger/ledger.go range=50:50 lang=go exported=true byte_range=1875:1895
+  sig=int
+EDGES
+  ^contains=matrix/gateway/internal/ledger.Entry
+
+NODE id=matrix/gateway/internal/ledger.ErrBudgetExhausted kind=var
+  digest=b3:12d4e44d45974de845c548acbdacc39815dbd9b8ffa0a76a69b7d2e370bb7782 file=gateway/internal/ledger/ledger.go range=232:235 lang=go exported=true byte_range=7065:7324
+  sig=error
+  doc=ErrBudgetExhausted is the typed error returned by the proxy when an\nactor crosses their daily cap. Wrap with fmt.Errorf using %w so\ncallers can errors.Is(... ErrBudgetExhausted).
+EDGES
+  ^defines=matrix/gateway/internal/ledger/ledger.go
+
+NODE id=matrix/gateway/internal/ledger.Ledger kind=interface
+  digest=b3:9fb85ae777cf042c9fa2ba05b52ebbf182947f814a3055649c3e17b6d7792d57 file=gateway/internal/ledger/ledger.go range=68:88 lang=go exported=true byte_range=2428:3364
+  sig=type Ledger interface {\n	// Record persists a single credit_ledger row. MUST be idempotent\n	// w.r.t. (actor, intent, occurred_at) — duplicate writes are\n	// allowed (Postgres rolls them up downstream); see plan §5.15.\n	Record(ctx context.Context, e Entry) error\n\n	// DailySpend returns the actor's PAX-denominated total spent\n	// during the UTC date containing `now`. Returned as a canonical\n	// decimal string so callers can pass it straight to rates.AddPax\n	// without re-parsing.\n	DailySpend(ctx context.Context, actor string, now time.Time) (string, error)\n\n	// DailyCap returns the actor's PAX-denominated daily cap. When the\n	// actor has no row in daily_budget_caps, the default is returned.\n	DailyCap(ctx context.Context, actor string) (string, error)\n\n	// Close releases any underlying resources (connection pool).\n	Close() error\n}
+  doc=Ledger is the abstract interface implemented by both in-memory and\nPostgres backends.
+EDGES
+  ^implements=matrix/gateway/internal/ledger.Memory,matrix/gateway/internal/ledger.Postgres
+  ^defines=matrix/gateway/internal/ledger/ledger.go
+
+NODE id=matrix/gateway/internal/ledger.Memory kind=type
+  digest=b3:7c5a7ae071ee7f625b93b754c7d4a3de63725c5942dff8b871c75a7b18f7341f file=gateway/internal/ledger/ledger.go range=90:98 lang=go exported=true byte_range=3366:3630
+  sig=type Memory struct {\n	mu	sync.Mutex\n	rows	[]Entry\n	caps	map[string]string\n	defCap	string\n	nowFunc	func() time.Time\n}
+  doc=Memory is an in-memory Ledger used by tests + the local-dev posture\nwhen a Postgres URI is not supplied. Safe for concurrent use.
+EDGES
+  contains=matrix/gateway/internal/ledger.Memory#caps,matrix/gateway/internal/ledger.Memory#defCap,matrix/gateway/internal/ledger.Memory#mu,matrix/gateway/internal/ledger.Memory#nowFunc,matrix/gateway/internal/ledger.Memory#rows,matrix/gateway/internal/ledger.Memory.Close,matrix/gateway/internal/ledger.Memory.DailyCap,matrix/gateway/internal/ledger.Memory.DailySpend,matrix/gateway/internal/ledger.Memory.Record,matrix/gateway/internal/ledger.Memory.SetCap,matrix/gateway/internal/ledger.Memory.SetClock,matrix/gateway/internal/ledger.Memory.Snapshot,matrix/gateway/internal/ledger.Memory.clock
+  implements=matrix/gateway/internal/ledger.Ledger
+  ^defines=matrix/gateway/internal/ledger/ledger.go
+
+NODE id=matrix/gateway/internal/ledger.Memory#caps kind=field
+  digest=b3:d2990abf2c3390ba2385031a558abe57c7150f611d289b587e3542ec12b96fd1 file=gateway/internal/ledger/ledger.go range=95:95 lang=go exported=false byte_range=3561:3586
+  sig=map[string]string
+EDGES
+  ^contains=matrix/gateway/internal/ledger.Memory
+
+NODE id=matrix/gateway/internal/ledger.Memory#defCap kind=field
+  digest=b3:e4415a2434662b8f27d9a98d2105c80ce987a8d81b9ae2a773addd567fb5c4bb file=gateway/internal/ledger/ledger.go range=96:96 lang=go exported=false byte_range=3588:3602
+  sig=string
+EDGES
+  ^contains=matrix/gateway/internal/ledger.Memory
+
+NODE id=matrix/gateway/internal/ledger.Memory#mu kind=field
+  digest=b3:8fb472e3c101ddbe82de3f6e4339791010616cf667662d8f80f5b138ddbd790f file=gateway/internal/ledger/ledger.go range=93:93 lang=go exported=false byte_range=3524:3542
+  sig=sync.Mutex
+EDGES
+  ^contains=matrix/gateway/internal/ledger.Memory
+
+NODE id=matrix/gateway/internal/ledger.Memory#nowFunc kind=field
+  digest=b3:cbc640ccf7eb6a812a8d8650088507808989ff45624c6ff06ad4a360ab0dab58 file=gateway/internal/ledger/ledger.go range=97:97 lang=go exported=false byte_range=3604:3628
+  sig=func() time.Time
+EDGES
+  ^contains=matrix/gateway/internal/ledger.Memory
+
+NODE id=matrix/gateway/internal/ledger.Memory#rows kind=field
+  digest=b3:4f2fcaa743c615e01d9108b3e3154692c016aa38e99d912aca3aa1fefa672edd file=gateway/internal/ledger/ledger.go range=94:94 lang=go exported=false byte_range=3544:3559
+  sig=[]ledger.Entry
+EDGES
+  ^contains=matrix/gateway/internal/ledger.Memory
+
+NODE id=matrix/gateway/internal/ledger.Memory.Close kind=method
+  digest=b3:31c8ba90add5a8ba35be1599645e55660bec5ba40534dbf82d9ce1cc54bb5b2b file=gateway/internal/ledger/ledger.go range=199:200 lang=go exported=true byte_range=6056:6149
+  sig=func (m *Memory) Close() error
+  doc=Close is a no-op; Memory holds no resources.
+EDGES
+  ^contains=matrix/gateway/internal/ledger.Memory
+  ^defines=matrix/gateway/internal/ledger/ledger.go
+
+NODE id=matrix/gateway/internal/ledger.Memory.DailyCap kind=method
+  digest=b3:dd4d3b3e42b039034efa0a9c23f7a98ece03ef051e9565e03a286dbb5529037b file=gateway/internal/ledger/ledger.go range=172:181 lang=go exported=true byte_range=5398:5687
+  sig=func (m *Memory) DailyCap(_ context.Context, actor string) (string, error)
+  doc=DailyCap returns the configured cap for the actor, defaulting when\nnone has been set.
+EDGES
+  ^contains=matrix/gateway/internal/ledger.Memory
+  ^defines=matrix/gateway/internal/ledger/ledger.go
+
+NODE id=matrix/gateway/internal/ledger.Memory.DailySpend kind=method
+  digest=b3:7b94d68423e63dae4163cdd31adca2a4e1ec783909c916e3b383cd03032446e6 file=gateway/internal/ledger/ledger.go range=145:170 lang=go exported=true byte_range=4722:5396
+  sig=func (m *Memory) DailySpend(_ context.Context, actor string, now time.Time) (string, error)
+  doc=DailySpend sums entries occurring on the same UTC calendar day as now.
+EDGES
+  ^contains=matrix/gateway/internal/ledger.Memory
+  ^defines=matrix/gateway/internal/ledger/ledger.go
+
+NODE id=matrix/gateway/internal/ledger.Memory.Record kind=method
+  digest=b3:7837223fd2a34e2867cd9470e5a542dc8e6ca02139eb4ae90ee445670e13cf84 file=gateway/internal/ledger/ledger.go range=127:143 lang=go exported=true byte_range=4238:4720
+  sig=func (m *Memory) Record(_ context.Context, e Entry) error
+  doc=Record appends an entry. The OccurredAt field is filled with the\nmemory clock when zero so tests don't need to populate it.
+EDGES
+  ^contains=matrix/gateway/internal/ledger.Memory
+  ^defines=matrix/gateway/internal/ledger/ledger.go
+
+NODE id=matrix/gateway/internal/ledger.Memory.SetCap kind=method
+  digest=b3:c64415aa3aff8a32904118dd2f222cb4a3983ec7aaec073a062f4cc297636888 file=gateway/internal/ledger/ledger.go range=183:188 lang=go exported=true byte_range=5689:5853
+  sig=func (m *Memory) SetCap(actor, capPax string)
+  doc=SetCap updates the cap for an actor. Test/admin-only.
+EDGES
+  ^contains=matrix/gateway/internal/ledger.Memory
+  ^defines=matrix/gateway/internal/ledger/ledger.go
+
+NODE id=matrix/gateway/internal/ledger.Memory.SetClock kind=method
+  digest=b3:94b5812f1a83efc82f06cd8598ffde73819fa51095c294b5faa8e1c55a986096 file=gateway/internal/ledger/ledger.go range=112:118 lang=go exported=true byte_range=3907:4124
+  sig=func (m *Memory) SetClock(now func() time.Time)
+  doc=SetClock injects a clock for tests so DailySpend boundary cases are\ndeterministic. nil resets to wall clock.
+EDGES
+  ^contains=matrix/gateway/internal/ledger.Memory
+  ^defines=matrix/gateway/internal/ledger/ledger.go
+
+NODE id=matrix/gateway/internal/ledger.Memory.Snapshot kind=method
+  digest=b3:019387bee6fac034e2d91c04f8f8cc609012a8042dc7c098449eeedc1203677a file=gateway/internal/ledger/ledger.go range=190:197 lang=go exported=true byte_range=5855:6054
+  sig=func (m *Memory) Snapshot() []Entry
+  doc=Snapshot returns a copy of all recorded rows. Test-only.
+EDGES
+  ^contains=matrix/gateway/internal/ledger.Memory
+  ^defines=matrix/gateway/internal/ledger/ledger.go
+
+NODE id=matrix/gateway/internal/ledger.Memory.clock kind=method
+  digest=b3:7a581b277cc9a2314c54418a2e843de58958a95fc6dbd19323c3f4a81d2263ac file=gateway/internal/ledger/ledger.go range=120:125 lang=go exported=false byte_range=4126:4236
+  sig=func (m *Memory) clock() time.Time
+EDGES
+  ^contains=matrix/gateway/internal/ledger.Memory
+  ^defines=matrix/gateway/internal/ledger/ledger.go
+
+NODE id=matrix/gateway/internal/ledger.NewMemory kind=func
+  digest=b3:d82f5a58f6cb2dcfd334d9b7b461c9c893a06a2bec42154d0767bfc3528110ef file=gateway/internal/ledger/ledger.go range=100:110 lang=go exported=true byte_range=3632:3905
+  sig=func NewMemory(defCap string) *Memory
+  doc=NewMemory constructs a Memory ledger with the supplied default cap.\nEmpty defCap → DefaultDailyPaxCap.
+EDGES
+  ^defines=matrix/gateway/internal/ledger/ledger.go
+
+NODE id=matrix/gateway/internal/ledger.NewPostgres kind=func
+  digest=b3:bd7b7d8a2b54dc63280bb3850f3d8e9dbf309058839b5f20e6910ddbc870b45d file=gateway/internal/ledger/postgres.go range=41:53 lang=go exported=true byte_range=1426:1973
+  sig=func NewPostgres(db *sql.DB, defCap string) *Postgres
+  doc=NewPostgres returns a Ledger that talks to the supplied *sql.DB.\ndefCap is the default daily cap applied when an actor has no row\nin daily_budget_caps; empty falls back to DefaultDailyPaxCap.\n\nThe caller retains ownership of db.Close(); Close() on the returned\nPostgres is a no-op so callers can safely share one *sql.DB across\nthe gateway lifetime + a future admin endpoint.
+EDGES
+  ^defines=matrix/gateway/internal/ledger/postgres.go
+
+NODE id=matrix/gateway/internal/ledger.Postgres kind=type
+  digest=b3:72d3f2ecd86b2dea584d6a4651f1800a9be0d22142c8f5768e33a9e0857af14b file=gateway/internal/ledger/postgres.go range=35:39 lang=go exported=true byte_range=1304:1424
+  sig=type Postgres struct {\n	db	*sql.DB\n	defCap	string\n}
+  doc=Postgres is the Ledger implementation backed by database/sql.
+EDGES
+  contains=matrix/gateway/internal/ledger.Postgres#db,matrix/gateway/internal/ledger.Postgres#defCap,matrix/gateway/internal/ledger.Postgres.Close,matrix/gateway/internal/ledger.Postgres.DailyCap,matrix/gateway/internal/ledger.Postgres.DailySpend,matrix/gateway/internal/ledger.Postgres.Record
+  implements=matrix/gateway/internal/ledger.Ledger
+  ^defines=matrix/gateway/internal/ledger/postgres.go
+
+NODE id=matrix/gateway/internal/ledger.Postgres#db kind=field
+  digest=b3:6186068144c3f41b6556e408eeb1f8abcae67eb5a25e275e389ebbb1e9d535f3 file=gateway/internal/ledger/postgres.go range=37:37 lang=go exported=false byte_range=1393:1407
+  sig=*sql.DB
+EDGES
+  ^contains=matrix/gateway/internal/ledger.Postgres
+
+NODE id=matrix/gateway/internal/ledger.Postgres#defCap kind=field
+  digest=b3:3d7edf701cbd24856e0b552780fb4d3dd9aaf18489f0e69036aae581342030e6 file=gateway/internal/ledger/postgres.go range=38:38 lang=go exported=false byte_range=1409:1422
+  sig=string
+EDGES
+  ^contains=matrix/gateway/internal/ledger.Postgres
+
+NODE id=matrix/gateway/internal/ledger.Postgres.Close kind=method
+  digest=b3:e12ad9a4ecd775f8b3ffb960b9d525b3d959d5c545690a46a7b3fd43d799f60b file=gateway/internal/ledger/postgres.go range=136:139 lang=go exported=true byte_range=4651:4859
+  sig=func (p *Postgres) Close() error
+  doc=Close is a no-op; the *sql.DB is owned by the caller. Returning nil\nkeeps the Ledger interface contract trivial for callers using\ndefer ledger.Close().
+EDGES
+  ^contains=matrix/gateway/internal/ledger.Postgres
+  ^defines=matrix/gateway/internal/ledger/postgres.go
+
+NODE id=matrix/gateway/internal/ledger.Postgres.DailyCap kind=method
+  digest=b3:8676e51d7b39c5bce1ee87af352dc98b7ed5afb30c2092a9d6d6e298e7a59ef6 file=gateway/internal/ledger/postgres.go range=119:134 lang=go exported=true byte_range=4071:4649
+  sig=func (p *Postgres) DailyCap(ctx context.Context, actor string) (string, error)
+  doc=DailyCap reads daily_budget_caps; returns the default when empty.
+EDGES
+  ^contains=matrix/gateway/internal/ledger.Postgres
+  ^defines=matrix/gateway/internal/ledger/postgres.go
+
+NODE id=matrix/gateway/internal/ledger.Postgres.DailySpend kind=method
+  digest=b3:48470096567566f314730705117b7fa7f94ab675bc907d6c4c8a763d4cb59d29 file=gateway/internal/ledger/postgres.go range=92:117 lang=go exported=true byte_range=3118:4069
+  sig=func (p *Postgres) DailySpend(ctx context.Context, actor string, now time.Time) (string, error)
+  doc=DailySpend returns the actor's PAX-denominated total spent on the\nUTC calendar day containing now. Uses NUMERIC arithmetic in Postgres\nso precision matches credit_ledger.cost_pax exactly.
+EDGES
+  ^contains=matrix/gateway/internal/ledger.Postgres
+  ^defines=matrix/gateway/internal/ledger/postgres.go
+
+NODE id=matrix/gateway/internal/ledger.Postgres.Record kind=method
+  digest=b3:7c830c2e01b1696f0c7c099771f7d4679cb07c7f23d2acd03803b094e13097ac file=gateway/internal/ledger/postgres.go range=55:90 lang=go exported=true byte_range=1975:3116
+  sig=func (p *Postgres) Record(ctx context.Context, e Entry) error
+  doc=Record inserts a row into credit_ledger. Idempotency notes:\nthe schema does NOT enforce a unique key on (actor, intent, ts) so\nduplicates are accepted; downstream rollups MUST sum without DISTINCT.\nThis is intentional — re-tries on transient network errors should\nbe safe, and reconciliation is a problem for a future audit job.
+EDGES
+  ^contains=matrix/gateway/internal/ledger.Postgres
+  ^defines=matrix/gateway/internal/ledger/postgres.go
+
+NODE id=matrix/gateway/internal/ledger._ kind=var
+  digest=b3:10d3cfe53842bb059241ca13d74468a65649c0192b9155649d002b4ac4e026b0 file=gateway/internal/ledger/postgres.go range=151:152 lang=go exported=false byte_range=5103:5161
+  sig=ledger.Ledger
+  doc=Compile-time assertion.
+EDGES
+  ^defines=matrix/gateway/internal/ledger/ledger.go,matrix/gateway/internal/ledger/postgres.go
+
+NODE id=matrix/gateway/internal/ledger.nullIfEmpty kind=func
+  digest=b3:a5881a44c7f383ed070750f00ff169809e51baa87194222f69cab7336f0f90bb file=gateway/internal/ledger/postgres.go range=141:149 lang=go exported=false byte_range=4861:5101
+  sig=func nullIfEmpty(s string) any
+  doc=nullIfEmpty wraps a string into a sql.NullString to keep optional\ncolumns (intent/goal/slot/kind_route) NULL when unset, mirroring\nthe schema's nullability.
+EDGES
+  ^defines=matrix/gateway/internal/ledger/postgres.go
+
+NODE id=matrix/gateway/internal/ledger.startOfUTCDay kind=func
+  digest=b3:d1b9a3cba42929deb957b43c2c18e4e7920b327c9f3673a6fc3f091e3aa0e57f file=gateway/internal/ledger/ledger.go range=202:206 lang=go exported=false byte_range=6151:6340
+  sig=func startOfUTCDay(t time.Time) time.Time
+  doc=startOfUTCDay zeroes the H/M/S/ns fields and forces UTC.
+EDGES
+  ^defines=matrix/gateway/internal/ledger/ledger.go
+
+NODE id=matrix/gateway/internal/ledger/ledger.go kind=file
+  digest=b3:aca2b60f080f3ba398b12e7b6d9afd189e5a49e6b7c6f8022edce4ee773fba70 file=gateway/internal/ledger/ledger.go range=1:240 lang=go exported=true
+EDGES
+  defines=matrix/gateway/internal/ledger.CheckBudget,matrix/gateway/internal/ledger.DailyCap,matrix/gateway/internal/ledger.DefaultDailyPaxCap,matrix/gateway/internal/ledger.Entry,matrix/gateway/internal/ledger.ErrBudgetExhausted,matrix/gateway/internal/ledger.Ledger,matrix/gateway/internal/ledger.Memory,matrix/gateway/internal/ledger.Memory.Close,matrix/gateway/internal/ledger.Memory.DailyCap,matrix/gateway/internal/ledger.Memory.DailySpend,matrix/gateway/internal/ledger.Memory.Record,matrix/gateway/internal/ledger.Memory.SetCap,matrix/gateway/internal/ledger.Memory.SetClock,matrix/gateway/internal/ledger.Memory.Snapshot,matrix/gateway/internal/ledger.Memory.clock,matrix/gateway/internal/ledger.NewMemory,matrix/gateway/internal/ledger._,matrix/gateway/internal/ledger.startOfUTCDay
+  ^contains=matrix/gateway/internal/ledger
+
+NODE id=matrix/gateway/internal/ledger/postgres.go kind=file
+  digest=b3:c759bea1e9f97726c7462d3ed51cca1a31d2f580dae40825342421ae5eff0ee6 file=gateway/internal/ledger/postgres.go range=1:154 lang=go exported=true
+EDGES
+  defines=matrix/gateway/internal/ledger.NewPostgres,matrix/gateway/internal/ledger.Postgres,matrix/gateway/internal/ledger.Postgres.Close,matrix/gateway/internal/ledger.Postgres.DailyCap,matrix/gateway/internal/ledger.Postgres.DailySpend,matrix/gateway/internal/ledger.Postgres.Record,matrix/gateway/internal/ledger._,matrix/gateway/internal/ledger.nullIfEmpty
+  ^contains=matrix/gateway/internal/ledger

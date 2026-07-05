@@ -1,0 +1,279 @@
+# GENERATED gen=codegraph do-not-edit merkle=b3:2dc69ec8dbbe0231373534486cf12ff6fdb0eaad7b2dfdcbc4d73453c8542ee8
+
+NODE id=github.com/paxlabs-inc/deus/internal/settlement kind=package
+  digest=b3:119d437e6804af79b25ba61eccad20dbf1fa57b1d2dca7856703d3226d2fda76 file=deus/internal/settlement range=0:0 lang=go exported=true
+EDGES
+  contains=github.com/paxlabs-inc/deus/internal/settlement/rails.go,github.com/paxlabs-inc/deus/internal/settlement/settler.go
+  ^contains=mod:github.com/paxlabs-inc/deus
+
+NODE id=github.com/paxlabs-inc/deus/internal/settlement.AnchorRecord kind=type
+  digest=b3:c0687a11480e0e744c429d86d65b2dcfcca4e342954f60bf367fe13329382a11 file=deus/internal/settlement/rails.go range=44:50 lang=go exported=true byte_range=1249:1389
+  sig=type AnchorRecord struct {\n	Developer	string\n	Merkle		string\n	TotalWei	string\n	Count		int\n}
+  doc=AnchorRecord is a dev-mode anchor call.
+EDGES
+  contains=github.com/paxlabs-inc/deus/internal/settlement.AnchorRecord#Count,github.com/paxlabs-inc/deus/internal/settlement.AnchorRecord#Developer,github.com/paxlabs-inc/deus/internal/settlement.AnchorRecord#Merkle,github.com/paxlabs-inc/deus/internal/settlement.AnchorRecord#TotalWei
+  ^defines=github.com/paxlabs-inc/deus/internal/settlement/rails.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/settlement.AnchorRecord#Count kind=field
+  digest=b3:73e5ef2abe1dc67dfbfd6d2b6b0fd42a677551a0652151c13111a1ae9543273c file=deus/internal/settlement/rails.go range=49:49 lang=go exported=true byte_range=1374:1387
+  sig=int
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/settlement.AnchorRecord
+
+NODE id=github.com/paxlabs-inc/deus/internal/settlement.AnchorRecord#Developer kind=field
+  digest=b3:aa06864e1b7b513d7cb8fd063adce2c24ffe7ce0bac2c88a70c9b0890f17e221 file=deus/internal/settlement/rails.go range=46:46 lang=go exported=true byte_range=1320:1336
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/settlement.AnchorRecord
+
+NODE id=github.com/paxlabs-inc/deus/internal/settlement.AnchorRecord#Merkle kind=field
+  digest=b3:e4e6386479e0223963acd82f2b2842a52b8c7a8f6f53469d37703cbc456f25c8 file=deus/internal/settlement/rails.go range=47:47 lang=go exported=true byte_range=1338:1354
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/settlement.AnchorRecord
+
+NODE id=github.com/paxlabs-inc/deus/internal/settlement.AnchorRecord#TotalWei kind=field
+  digest=b3:706e6eab5e8284e69dd93034d615222cc044b7be5355fdc5c5632c0a881592eb file=deus/internal/settlement/rails.go range=48:48 lang=go exported=true byte_range=1356:1372
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/settlement.AnchorRecord
+
+NODE id=github.com/paxlabs-inc/deus/internal/settlement.DevPayer kind=type
+  digest=b3:a1f8ec321cb806d95057ac42019e2b3bcaff86e6d48815f1059f40798127e9b8 file=deus/internal/settlement/rails.go range=31:35 lang=go exported=true byte_range=989:1115
+  sig=type DevPayer struct {\n	Payouts	[]PayoutRecord\n	Anchors	[]AnchorRecord\n}
+  doc=DevPayer records settlements without chain writes.
+EDGES
+  contains=github.com/paxlabs-inc/deus/internal/settlement.DevPayer#Anchors,github.com/paxlabs-inc/deus/internal/settlement.DevPayer#Payouts,github.com/paxlabs-inc/deus/internal/settlement.DevPayer.AnchorSettlement,github.com/paxlabs-inc/deus/internal/settlement.DevPayer.PayoutDeveloper
+  implements=github.com/paxlabs-inc/deus/internal/settlement.Payer
+  ^defines=github.com/paxlabs-inc/deus/internal/settlement/rails.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/settlement.DevPayer#Anchors kind=field
+  digest=b3:9ddc193812156d079d2e87c0744e079d0e69ecd516fabeb4f9bb39d81e0ca02d file=deus/internal/settlement/rails.go range=34:34 lang=go exported=true byte_range=1091:1113
+  sig=[]settlement.AnchorRecord
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/settlement.DevPayer
+
+NODE id=github.com/paxlabs-inc/deus/internal/settlement.DevPayer#Payouts kind=field
+  digest=b3:8ee81749aa3aba37df3442004e74cf2bfaf997b74ca3849b10e70f6ab39dbc24 file=deus/internal/settlement/rails.go range=33:33 lang=go exported=true byte_range=1067:1089
+  sig=[]settlement.PayoutRecord
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/settlement.DevPayer
+
+NODE id=github.com/paxlabs-inc/deus/internal/settlement.DevPayer.AnchorSettlement kind=method
+  digest=b3:e5808d96d9cf5676b005e3242e02f16cb61abe914d1e033b01fc9af59a56af26 file=deus/internal/settlement/rails.go range=59:69 lang=go exported=true byte_range=1720:2104
+  sig=func (d *DevPayer) AnchorSettlement(ctx context.Context, developerAddr, merkleRoot, totalWei string, count int) (string, error)
+  doc=AnchorSettlement records a dev anchor.
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/settlement.DevPayer
+  ^defines=github.com/paxlabs-inc/deus/internal/settlement/rails.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/settlement.DevPayer.PayoutDeveloper kind=method
+  digest=b3:61ac3634b69ceb86400ff5272cbcd4c76a79005f41ec40acb8e8daa6f271212d file=deus/internal/settlement/rails.go range=52:57 lang=go exported=true byte_range=1391:1718
+  sig=func (d *DevPayer) PayoutDeveloper(ctx context.Context, escrowAddr, payoutAddr, amountWei string) (string, error)
+  doc=PayoutDeveloper records a dev payout.
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/settlement.DevPayer
+  ^defines=github.com/paxlabs-inc/deus/internal/settlement/rails.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/settlement.NewSettler kind=func
+  digest=b3:712fd5750ba59bbf483b1c9a02d0756c60d84ddc1eb3c3d862b1f3c6ac8740f1 file=deus/internal/settlement/settler.go range=19:22 lang=go exported=true byte_range=278:409
+  sig=func NewSettler(st *store.Store, payer Payer) *Settler
+  doc=NewSettler wires a settler.
+EDGES
+  ^defines=github.com/paxlabs-inc/deus/internal/settlement/settler.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/settlement.Payer kind=interface
+  digest=b3:ad5d4b13e1ebf54f573a2eac81dd442bb2c7174dc0915a43ef9672ab77296b8c file=deus/internal/settlement/rails.go range=18:23 lang=go exported=true byte_range=307:715
+  sig=type Payer interface {\n	PayoutDeveloper(ctx context.Context, escrowAddr, payoutAddr, amountWei string) (txHash string, err error)\n	AnchorSettlement(ctx context.Context, developerAddr, merkleRoot, totalWei string, count int) (txHash string, err error)\n}
+  doc=Payer executes on-chain or wallet payouts. PayoutDeveloper releases amountWei\nfrom the funding caller's channel escrow (escrowAddr) to the developer.
+EDGES
+  ^implements=github.com/paxlabs-inc/deus/internal/chain.Payer,github.com/paxlabs-inc/deus/internal/settlement.DevPayer
+  ^defines=github.com/paxlabs-inc/deus/internal/settlement/rails.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/settlement.PayoutRecord kind=type
+  digest=b3:504e2689dac74f8985e871214a1e26db0f5c2436a12864a566f9b3a5cba0ad9c file=deus/internal/settlement/rails.go range=37:42 lang=go exported=true byte_range=1117:1247
+  sig=type PayoutRecord struct {\n	Escrow		string\n	To		string\n	AmountWei	string\n}
+  doc=PayoutRecord is a dev-mode developer payout.
+EDGES
+  contains=github.com/paxlabs-inc/deus/internal/settlement.PayoutRecord#AmountWei,github.com/paxlabs-inc/deus/internal/settlement.PayoutRecord#Escrow,github.com/paxlabs-inc/deus/internal/settlement.PayoutRecord#To
+  ^defines=github.com/paxlabs-inc/deus/internal/settlement/rails.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/settlement.PayoutRecord#AmountWei kind=field
+  digest=b3:02b27b958fac59e8c822088d1fbf6007c2ed845cd813644ac7978b3e619096c5 file=deus/internal/settlement/rails.go range=41:41 lang=go exported=true byte_range=1229:1245
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/settlement.PayoutRecord
+
+NODE id=github.com/paxlabs-inc/deus/internal/settlement.PayoutRecord#Escrow kind=field
+  digest=b3:e99769a8a9fb44acf53e5e9014824c3b6e235d7af285c392161f282861b4675a file=deus/internal/settlement/rails.go range=39:39 lang=go exported=true byte_range=1193:1209
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/settlement.PayoutRecord
+
+NODE id=github.com/paxlabs-inc/deus/internal/settlement.PayoutRecord#To kind=field
+  digest=b3:c289a70352414d632d3e34f6a71cc2ec2289f9fc5de615821e4edc2ac9d94e62 file=deus/internal/settlement/rails.go range=40:40 lang=go exported=true byte_range=1211:1227
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/settlement.PayoutRecord
+
+NODE id=github.com/paxlabs-inc/deus/internal/settlement.Rail kind=type
+  digest=b3:19b42d78454067974f77242ed643448c66752c6f27c91afe7fd962e4aae96dfd file=deus/internal/settlement/rails.go range=9:10 lang=go exported=true byte_range=159:213
+  sig=type Rail string
+  doc=Rail selects settlement mechanism.
+EDGES
+  ^defines=github.com/paxlabs-inc/deus/internal/settlement/rails.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/settlement.RailDirect kind=const
+  digest=b3:d2318a67505dff5d962b7848d5bd5a785e902347b221115da66663391c1f72a0 file=deus/internal/settlement/rails.go range=13:13 lang=go exported=true byte_range=224:250
+  sig=settlement.Rail
+EDGES
+  ^defines=github.com/paxlabs-inc/deus/internal/settlement/rails.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/settlement.RailNet kind=const
+  digest=b3:fe6a31021f6b3cd6404aff765e88f09045911e3258f30b820922055af1e39a2f file=deus/internal/settlement/rails.go range=14:14 lang=go exported=true byte_range=252:275
+  sig=settlement.Rail
+EDGES
+  ^defines=github.com/paxlabs-inc/deus/internal/settlement/rails.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/settlement.RailStream kind=const
+  digest=b3:d8f74aa8c39dc8d2d6b3b6357b4ecca4198d1b4c0ce40d10e3cba8a5d3392267 file=deus/internal/settlement/rails.go range=15:15 lang=go exported=true byte_range=277:303
+  sig=settlement.Rail
+EDGES
+  ^defines=github.com/paxlabs-inc/deus/internal/settlement/rails.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/settlement.Settler kind=type
+  digest=b3:2c3f26a0dbdce78e8653427e3ddd7f91566827e9321b65a4d3e9cf5afa2224c2 file=deus/internal/settlement/settler.go range=13:17 lang=go exported=true byte_range=166:276
+  sig=type Settler struct {\n	store	*store.Store\n	payer	Payer\n}
+  doc=Settler runs net-settlement windows per developer.
+EDGES
+  contains=github.com/paxlabs-inc/deus/internal/settlement.Settler#payer,github.com/paxlabs-inc/deus/internal/settlement.Settler#store,github.com/paxlabs-inc/deus/internal/settlement.Settler.RunWindow
+  ^defines=github.com/paxlabs-inc/deus/internal/settlement/settler.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/settlement.Settler#payer kind=field
+  digest=b3:1d758fd4828d2f87938b167384420daf90fb7eeda2f0f61d44a1a84aa5e7ce1a file=deus/internal/settlement/settler.go range=16:16 lang=go exported=false byte_range=263:274
+  sig=settlement.Payer
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/settlement.Settler
+
+NODE id=github.com/paxlabs-inc/deus/internal/settlement.Settler#store kind=field
+  digest=b3:ddd5d136e7bec16ac8fb4d732ca23eb3490eeb76b1efaaa73a91c078ebb10a37 file=deus/internal/settlement/settler.go range=15:15 lang=go exported=false byte_range=243:261
+  sig=*store.Store
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/settlement.Settler
+
+NODE id=github.com/paxlabs-inc/deus/internal/settlement.Settler.RunWindow kind=method
+  digest=b3:aaa27397ebd996ef250a350ce39c392a2dbbbaffd09acf67e56e01b0cb20d99c file=deus/internal/settlement/settler.go range=41:188 lang=go exported=true byte_range=764:5521
+  sig=func (s *Settler) RunWindow(ctx context.Context, developerID, payoutAddr string) (WindowResult, error)
+  doc=RunWindow settles a developer's net-rail invocations, bounded by each funding\nchannel's highest caller-co-signed voucher (docs/08 §8.3, audit F2). For every\nchannel it includes invocations oldest-first only while the running spend\nstays within the voucher cumulative minus what the escrow already redeemed;\nun-co-signed overflow stays unsettled until the caller signs a higher voucher.\nDeus therefore never pays out more than the caller cryptographically admitted.
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/settlement.Settler
+  ^defines=github.com/paxlabs-inc/deus/internal/settlement/settler.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/settlement.StreamClose kind=func
+  digest=b3:95748bc661da20cb2c6f338c78b97e3bfbeba905e40166703d30842f6714b3d5 file=deus/internal/settlement/rails.go range=83:93 lang=go exported=true byte_range=2572:3020
+  sig=func StreamClose(ctx context.Context, settler StreamSettler, chainStreamID string) (refundWei, txHash string, err error)
+  doc=StreamClose calls 0x0906 close and returns refund wei.
+EDGES
+  ^defines=github.com/paxlabs-inc/deus/internal/settlement/rails.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/settlement.StreamSettle kind=func
+  digest=b3:1e9fdd68fe228279249a1b33093e3bb2829996de8dbec6961cf462a775adedc0 file=deus/internal/settlement/rails.go range=71:81 lang=go exported=true byte_range=2106:2570
+  sig=func StreamSettle(ctx context.Context, settler StreamSettler, chainStreamID string) (settledWei, txHash string, err error)
+  doc=StreamSettle calls 0x0906 settle via the stream settler backend.
+EDGES
+  ^defines=github.com/paxlabs-inc/deus/internal/settlement/rails.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/settlement.StreamSettler kind=interface
+  digest=b3:d8ae649a5dba0d6b770bf06639bd2db5019c88d00c9aa0c06394bf15c1ddcc11 file=deus/internal/settlement/rails.go range=25:29 lang=go exported=true byte_range=717:987
+  sig=type StreamSettler interface {\n	StreamSettle(ctx context.Context, chainStreamID string) (settledWei string, err error)\n	StreamClose(ctx context.Context, chainStreamID string) (refundWei string, err error)\n}
+  doc=StreamSettler settles PaymentStreams 0x0906 accrued amounts.
+EDGES
+  ^defines=github.com/paxlabs-inc/deus/internal/settlement/rails.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/settlement.WindowResult kind=type
+  digest=b3:bdd4d95c0de8ccf212aa72a4bbdc830c64a9298d30b13e32d12eb98a304096f7 file=deus/internal/settlement/settler.go range=24:31 lang=go exported=true byte_range=411:586
+  sig=type WindowResult struct {\n	SettlementID	string\n	TotalWei	string\n	Count		int\n	MerkleRoot	string\n	TxHash		string\n}
+  doc=WindowResult is the outcome of RunWindow.
+EDGES
+  contains=github.com/paxlabs-inc/deus/internal/settlement.WindowResult#Count,github.com/paxlabs-inc/deus/internal/settlement.WindowResult#MerkleRoot,github.com/paxlabs-inc/deus/internal/settlement.WindowResult#SettlementID,github.com/paxlabs-inc/deus/internal/settlement.WindowResult#TotalWei,github.com/paxlabs-inc/deus/internal/settlement.WindowResult#TxHash
+  ^defines=github.com/paxlabs-inc/deus/internal/settlement/settler.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/settlement.WindowResult#Count kind=field
+  digest=b3:2fbc23532386a9f4f101dd075fdb7fdcb6ff99c25615b892cbae4623902fcb2b file=deus/internal/settlement/settler.go range=28:28 lang=go exported=true byte_range=526:542
+  sig=int
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/settlement.WindowResult
+
+NODE id=github.com/paxlabs-inc/deus/internal/settlement.WindowResult#MerkleRoot kind=field
+  digest=b3:87eef60393273ac8e9647a879b419f06c8ffef94ff7f681f15b2e8be3547ffeb file=deus/internal/settlement/settler.go range=29:29 lang=go exported=true byte_range=544:563
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/settlement.WindowResult
+
+NODE id=github.com/paxlabs-inc/deus/internal/settlement.WindowResult#SettlementID kind=field
+  digest=b3:4f60922f700b44b86391537490e0a42b299c9a6cf7fe60f6c0cf26cacc1fd652 file=deus/internal/settlement/settler.go range=26:26 lang=go exported=true byte_range=484:503
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/settlement.WindowResult
+
+NODE id=github.com/paxlabs-inc/deus/internal/settlement.WindowResult#TotalWei kind=field
+  digest=b3:563a4782bc1885d88e36b57e05275c3ad55114811395a39166b5854b6e9eaf5e file=deus/internal/settlement/settler.go range=27:27 lang=go exported=true byte_range=505:524
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/settlement.WindowResult
+
+NODE id=github.com/paxlabs-inc/deus/internal/settlement.WindowResult#TxHash kind=field
+  digest=b3:14978938b4bf110bde519c88b7a191038ea61997dce05f6792ec566cb4a8ec89 file=deus/internal/settlement/settler.go range=30:30 lang=go exported=true byte_range=565:584
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/settlement.WindowResult
+
+NODE id=github.com/paxlabs-inc/deus/internal/settlement.channelBatch kind=type
+  digest=b3:c3b8d21f00fbbb7947fe7d80a4811a9d8c631ad18415092f070f91e8268fcfd3 file=deus/internal/settlement/settler.go range=33:39 lang=go exported=false byte_range=588:762
+  sig=type channelBatch struct {\n	channelID	string\n	escrow		string\n	voucherID	string\n	amount		*big.Int\n}
+  doc=channelBatch accumulates one channel's voucher-bounded contribution.
+EDGES
+  contains=github.com/paxlabs-inc/deus/internal/settlement.channelBatch#amount,github.com/paxlabs-inc/deus/internal/settlement.channelBatch#channelID,github.com/paxlabs-inc/deus/internal/settlement.channelBatch#escrow,github.com/paxlabs-inc/deus/internal/settlement.channelBatch#voucherID
+  ^defines=github.com/paxlabs-inc/deus/internal/settlement/settler.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/settlement.channelBatch#amount kind=field
+  digest=b3:ba435ec54407a62222accf8623f58f5f79a11e0147b618c3a0a9df07f96c2501 file=deus/internal/settlement/settler.go range=38:38 lang=go exported=false byte_range=742:760
+  sig=*big.Int
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/settlement.channelBatch
+
+NODE id=github.com/paxlabs-inc/deus/internal/settlement.channelBatch#channelID kind=field
+  digest=b3:3ee6f00a485e32969afc4ff7b8dd4c62b9f4434086de820f90ca098678332130 file=deus/internal/settlement/settler.go range=35:35 lang=go exported=false byte_range=688:704
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/settlement.channelBatch
+
+NODE id=github.com/paxlabs-inc/deus/internal/settlement.channelBatch#escrow kind=field
+  digest=b3:eff7652d42cea5dbc90f2016e997ac4ccead732251fb5b5a1ec54ff6a883cc75 file=deus/internal/settlement/settler.go range=36:36 lang=go exported=false byte_range=706:722
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/settlement.channelBatch
+
+NODE id=github.com/paxlabs-inc/deus/internal/settlement.channelBatch#voucherID kind=field
+  digest=b3:a149a58e795a8163e5b489316470d06564e40c574ef6b275780a2a66228b564e file=deus/internal/settlement/settler.go range=37:37 lang=go exported=false byte_range=724:740
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/settlement.channelBatch
+
+NODE id=github.com/paxlabs-inc/deus/internal/settlement.emptyZero kind=func
+  digest=b3:3bc90b5525001dacfc8f266a570e47ea3a2366b46d281fdadb0ec56871fa8c0d file=deus/internal/settlement/settler.go range=190:195 lang=go exported=false byte_range=5523:5598
+  sig=func emptyZero(s string) string
+EDGES
+  ^defines=github.com/paxlabs-inc/deus/internal/settlement/settler.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/settlement/rails.go kind=file
+  digest=b3:f1d551ea5b6804b0bb799b3822ff93718bdecb19ead4b49420347dc9c41027c4 file=deus/internal/settlement/rails.go range=1:93 lang=go exported=true
+EDGES
+  defines=github.com/paxlabs-inc/deus/internal/settlement.AnchorRecord,github.com/paxlabs-inc/deus/internal/settlement.DevPayer,github.com/paxlabs-inc/deus/internal/settlement.DevPayer.AnchorSettlement,github.com/paxlabs-inc/deus/internal/settlement.DevPayer.PayoutDeveloper,github.com/paxlabs-inc/deus/internal/settlement.Payer,github.com/paxlabs-inc/deus/internal/settlement.PayoutRecord,github.com/paxlabs-inc/deus/internal/settlement.Rail,github.com/paxlabs-inc/deus/internal/settlement.RailDirect,github.com/paxlabs-inc/deus/internal/settlement.RailNet,github.com/paxlabs-inc/deus/internal/settlement.RailStream,github.com/paxlabs-inc/deus/internal/settlement.StreamClose,github.com/paxlabs-inc/deus/internal/settlement.StreamSettle,github.com/paxlabs-inc/deus/internal/settlement.StreamSettler
+  ^contains=github.com/paxlabs-inc/deus/internal/settlement
+
+NODE id=github.com/paxlabs-inc/deus/internal/settlement/settler.go kind=file
+  digest=b3:eeb2d41e99277b9728dbbb064246122bba47e85ea300813ef13731dd9604d1aa file=deus/internal/settlement/settler.go range=1:195 lang=go exported=true
+EDGES
+  defines=github.com/paxlabs-inc/deus/internal/settlement.NewSettler,github.com/paxlabs-inc/deus/internal/settlement.Settler,github.com/paxlabs-inc/deus/internal/settlement.Settler.RunWindow,github.com/paxlabs-inc/deus/internal/settlement.WindowResult,github.com/paxlabs-inc/deus/internal/settlement.channelBatch,github.com/paxlabs-inc/deus/internal/settlement.emptyZero
+  ^contains=github.com/paxlabs-inc/deus/internal/settlement

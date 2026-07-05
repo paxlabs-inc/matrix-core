@@ -1,0 +1,1319 @@
+# GENERATED gen=codegraph do-not-edit merkle=b3:2dc69ec8dbbe0231373534486cf12ff6fdb0eaad7b2dfdcbc4d73453c8542ee8
+
+NODE id=matrix/mcl/ir kind=package
+  digest=b3:bc427428e31cd4d4bda501888aef6dc42de2ad78a53b690d65281adb384db2fc file=MCL/ir range=0:0 lang=go exported=true
+EDGES
+  contains=matrix/mcl/ir/encode.go,matrix/mcl/ir/intent.go,matrix/mcl/ir/plan.go,matrix/mcl/ir/plan_validate.go
+  ^contains=mod:matrix/mcl
+
+NODE id=matrix/mcl/ir.AssetAmount kind=type
+  digest=b3:e8ab48fa5bf2d96b6b39e544ef39cbe06718dbaa1f44eaf20ebfe36081e52bdc file=MCL/ir/intent.go range=141:145 lang=go exported=true byte_range=6637:6795
+  sig=type AssetAmount struct {\n	Asset	string	`json:"asset"`	// "PAX", "USD", etc.\n	Amount	float64	`json:"amount"`\n}
+  doc=AssetAmount is a typed amount of an asset.
+EDGES
+  contains=matrix/mcl/ir.AssetAmount#Amount,matrix/mcl/ir.AssetAmount#Asset
+  ^defines=matrix/mcl/ir/intent.go
+
+NODE id=matrix/mcl/ir.AssetAmount#Amount kind=field
+  digest=b3:4ede7d52d49a4b6c44ba97703daefef15f085d4e0dafa5135755ccb0b8a68b06 file=MCL/ir/intent.go range=144:144 lang=go exported=true byte_range=6763:6793
+  sig=float64
+EDGES
+  ^contains=matrix/mcl/ir.AssetAmount
+
+NODE id=matrix/mcl/ir.AssetAmount#Asset kind=field
+  digest=b3:1357f97be1a5f785b9085b781bba8543e93d91889f06dee4505d9250302aa35e file=MCL/ir/intent.go range=143:143 lang=go exported=true byte_range=6710:6739
+  sig=string
+EDGES
+  ^contains=matrix/mcl/ir.AssetAmount
+
+NODE id=matrix/mcl/ir.Budget kind=type
+  digest=b3:665d7e167d7aaa434fec4dc21e37585d23f0204f3134c39705a997a16dae7330 file=MCL/ir/intent.go range=133:139 lang=go exported=true byte_range=6337:6635
+  sig=type Budget struct {\n	MaxCost		*AssetAmount	`json:"max_cost,omitempty"`\n	MaxTime		string		`json:"max_time,omitempty"`	// duration\n	MaxCalls	int		`json:"max_calls,omitempty"`\n	MaxAgents	int		`json:"max_agents,omitempty"`\n}
+  doc=Budget is an optional cap on execution resources.
+EDGES
+  contains=matrix/mcl/ir.Budget#MaxAgents,matrix/mcl/ir.Budget#MaxCalls,matrix/mcl/ir.Budget#MaxCost,matrix/mcl/ir.Budget#MaxTime
+  ^defines=matrix/mcl/ir/intent.go
+
+NODE id=matrix/mcl/ir.Budget#MaxAgents kind=field
+  digest=b3:4c22f42a4ddfb47af1fde3bc9c73a1d9689cbfc6e4b024ae7376ad3d9fb03f70 file=MCL/ir/intent.go range=138:138 lang=go exported=true byte_range=6581:6633
+  sig=int
+EDGES
+  ^contains=matrix/mcl/ir.Budget
+
+NODE id=matrix/mcl/ir.Budget#MaxCalls kind=field
+  digest=b3:4b987f34d22075a7247747192051764d540c91c8165d5103bfbbbffd5eb2c275 file=MCL/ir/intent.go range=137:137 lang=go exported=true byte_range=6528:6579
+  sig=int
+EDGES
+  ^contains=matrix/mcl/ir.Budget
+
+NODE id=matrix/mcl/ir.Budget#MaxCost kind=field
+  digest=b3:cddb9546aa2fc3943a5261b94a0b0593fa0f7da25e424a0f2d64e8138b60e762 file=MCL/ir/intent.go range=135:135 lang=go exported=true byte_range=6412:6462
+  sig=*ir.AssetAmount
+EDGES
+  ^contains=matrix/mcl/ir.Budget
+
+NODE id=matrix/mcl/ir.Budget#MaxTime kind=field
+  digest=b3:dc6e9178de8b9628b72445629df94390292566283585772f242d762aea1129c2 file=MCL/ir/intent.go range=136:136 lang=go exported=true byte_range=6464:6514
+  sig=string
+EDGES
+  ^contains=matrix/mcl/ir.Budget
+
+NODE id=matrix/mcl/ir.CanonicalJSON kind=func
+  digest=b3:491e405b37a3782f138d86010810f1e247e09467292ad3aafdb18488fef50919 file=MCL/ir/encode.go range=13:18 lang=go exported=true byte_range=242:529
+  sig=func CanonicalJSON(intent *Intent) ([]byte, error)
+  doc=CanonicalJSON encodes an Intent to canonical JSON with deterministic key ordering.\nThis is the byte representation used for D11 hashing.\nKeys are sorted lexicographically at every nesting level.
+EDGES
+  ^defines=matrix/mcl/ir/encode.go
+
+NODE id=matrix/mcl/ir.CanonicalJSONPlan kind=func
+  digest=b3:fbe6176d7350aaf40bb2ef2b2d2406887f6fec1c426c60496c6e3a9adf14763e file=MCL/ir/encode.go range=37:41 lang=go exported=true byte_range=971:1184
+  sig=func CanonicalJSONPlan(plan *PlanTree) ([]byte, error)
+  doc=CanonicalJSONPlan encodes a PlanTree to canonical JSON with deterministic\nkey ordering. Mirrors CanonicalJSON for Intent.
+EDGES
+  ^defines=matrix/mcl/ir/encode.go
+
+NODE id=matrix/mcl/ir.CompileMetadata kind=type
+  digest=b3:8453274884b632620054ef52546c642b405f07cf8070280a28582a4aa00c1590 file=MCL/ir/intent.go range=147:158 lang=go exported=true byte_range=6797:7654
+  sig=type CompileMetadata struct {\n	Seed			string	`json:"seed"`		// sha256 of (intent.id || actor || snapshot_hash || mtx_digest || model_digest)\n	MtxDigest		string	`json:"mtx_digest"`	// sha256 of canonical SKILL.mtx + core/*.mtx ASTs\n	ModelDigest		string	`json:"model_digest"`	// digest of the compiler model\n	ModelVersion		string	`json:"model_version"`	// model identifier\n	Temperature		float64	`json:"temperature"`\n	Grammar			string	`json:"grammar"`	// grammar constraint used (e.g. "intent_frame@1")\n	SkillID			string	`json:"skill_id"`	// which skill was selected\n	SkillVersion		string	`json:"skill_version"`\n	CortexSnapshotHash	string	`json:"cortex_snapshot_hash"`	// Merkle root at compile time\n}
+  doc=CompileMetadata records the compilation trace for D11 replay-verification.
+EDGES
+  contains=matrix/mcl/ir.CompileMetadata#CortexSnapshotHash,matrix/mcl/ir.CompileMetadata#Grammar,matrix/mcl/ir.CompileMetadata#ModelDigest,matrix/mcl/ir.CompileMetadata#ModelVersion,matrix/mcl/ir.CompileMetadata#MtxDigest,matrix/mcl/ir.CompileMetadata#Seed,matrix/mcl/ir.CompileMetadata#SkillID,matrix/mcl/ir.CompileMetadata#SkillVersion,matrix/mcl/ir.CompileMetadata#Temperature
+  ^defines=matrix/mcl/ir/intent.go
+
+NODE id=matrix/mcl/ir.CompileMetadata#CortexSnapshotHash kind=field
+  digest=b3:0e6aa9a32bd4c9cdedba82c55e5282383c1f8cb970710d7399a446af91e02c45 file=MCL/ir/intent.go range=157:157 lang=go exported=true byte_range=7565:7621
+  sig=string
+EDGES
+  ^contains=matrix/mcl/ir.CompileMetadata
+
+NODE id=matrix/mcl/ir.CompileMetadata#Grammar kind=field
+  digest=b3:823033779004f5add87a88cca4bd3082fa2ff825044b39e56dcb3939f3edc7f1 file=MCL/ir/intent.go range=154:154 lang=go exported=true byte_range=7343:7386
+  sig=string
+EDGES
+  ^contains=matrix/mcl/ir.CompileMetadata
+
+NODE id=matrix/mcl/ir.CompileMetadata#ModelDigest kind=field
+  digest=b3:f4e3c4ed15d8a52c8328da0f5c71f1debe4204097fb1fcb7ecb70dec319b5f66 file=MCL/ir/intent.go range=151:151 lang=go exported=true byte_range=7140:7188
+  sig=string
+EDGES
+  ^contains=matrix/mcl/ir.CompileMetadata
+
+NODE id=matrix/mcl/ir.CompileMetadata#ModelVersion kind=field
+  digest=b3:cea0c0d9bcfbad4963d0c9e93eebb20c9d028ef3fcb00f38ba4c185ddb310ec9 file=MCL/ir/intent.go range=152:152 lang=go exported=true byte_range=7223:7272
+  sig=string
+EDGES
+  ^contains=matrix/mcl/ir.CompileMetadata
+
+NODE id=matrix/mcl/ir.CompileMetadata#MtxDigest kind=field
+  digest=b3:45f97a26195d93f4852d59be6a900b5c32b222523645fd488db9e179ce3a2acf file=MCL/ir/intent.go range=150:150 lang=go exported=true byte_range=7038:7084
+  sig=string
+EDGES
+  ^contains=matrix/mcl/ir.CompileMetadata
+
+NODE id=matrix/mcl/ir.CompileMetadata#Seed kind=field
+  digest=b3:4f09d6fe78d4b77575e871fc06a45512ca0189f36ce3e1d29baa8da84e5732af file=MCL/ir/intent.go range=149:149 lang=go exported=true byte_range=6906:6946
+  sig=string
+EDGES
+  ^contains=matrix/mcl/ir.CompileMetadata
+
+NODE id=matrix/mcl/ir.CompileMetadata#SkillID kind=field
+  digest=b3:a5383ea22290b09ea39dfdd01b4060b42c60541c0c3b9ed4f174a06c66e32d95 file=MCL/ir/intent.go range=155:155 lang=go exported=true byte_range=7440:7484
+  sig=string
+EDGES
+  ^contains=matrix/mcl/ir.CompileMetadata
+
+NODE id=matrix/mcl/ir.CompileMetadata#SkillVersion kind=field
+  digest=b3:382b5e366233a621c4ce3ebe8f5a13cc2a73e57d5192aedb4f2aa2a4d31ef6cd file=MCL/ir/intent.go range=156:156 lang=go exported=true byte_range=7514:7563
+  sig=string
+EDGES
+  ^contains=matrix/mcl/ir.CompileMetadata
+
+NODE id=matrix/mcl/ir.CompileMetadata#Temperature kind=field
+  digest=b3:c383a358c40118eb1945577586dd6d141690c9337b18b42b52d5cf94a223746e file=MCL/ir/intent.go range=153:153 lang=go exported=true byte_range=7294:7341
+  sig=float64
+EDGES
+  ^contains=matrix/mcl/ir.CompileMetadata
+
+NODE id=matrix/mcl/ir.Constraint kind=type
+  digest=b3:1a601bf38a4af5af688c3898f2975f34e1a13caa0c9585981f522e0eb9688a8c file=MCL/ir/intent.go range=75:92 lang=go exported=true byte_range=3248:4294
+  sig=type Constraint struct {\n	Type	string	`json:"type"`	// "budget", "deadline", "jurisdiction", "quality", "rule", "policy", "x:*"\n	Hard	bool	`json:"hard"`	// hard constraints fail the intent if violated\n\n	// Type-specific fields (only the relevant ones are populated)\n	Max	*AssetAmount	`json:"max,omitempty"`		// budget\n	By	string		`json:"by,omitempty"`		// deadline (ISO8601)\n	Allow	[]string	`json:"allow,omitempty"`	// jurisdiction\n	Deny	[]string	`json:"deny,omitempty"`		// jurisdiction\n	Metric	string		`json:"metric,omitempty"`	// quality\n	Min	float64		`json:"min,omitempty"`		// quality\n	Rule	string		`json:"rule,omitempty"`		// rule (RuleRef)\n	Policy	string		`json:"policy,omitempty"`	// policy (Argus)\n	Schema	string		`json:"schema,omitempty"`	// x:custom\n	Data	string		`json:"data,omitempty"`		// x:custom (opaque JSON)\n}
+  doc=Constraint is a typed predicate that must hold throughout execution.\n§6.2: budget, deadline, jurisdiction, quality, rule, policy, x:custom.
+EDGES
+  contains=matrix/mcl/ir.Constraint#Allow,matrix/mcl/ir.Constraint#By,matrix/mcl/ir.Constraint#Data,matrix/mcl/ir.Constraint#Deny,matrix/mcl/ir.Constraint#Hard,matrix/mcl/ir.Constraint#Max,matrix/mcl/ir.Constraint#Metric,matrix/mcl/ir.Constraint#Min,matrix/mcl/ir.Constraint#Policy,matrix/mcl/ir.Constraint#Rule,matrix/mcl/ir.Constraint#Schema,matrix/mcl/ir.Constraint#Type
+  ^defines=matrix/mcl/ir/intent.go
+
+NODE id=matrix/mcl/ir.Constraint#Allow kind=field
+  digest=b3:fb8e5d25abd53709c257e20a4a57a9ea95df09248384249d4b5a967265ff1c1b file=MCL/ir/intent.go range=84:84 lang=go exported=true byte_range=3790:3834
+  sig=[]string
+EDGES
+  ^contains=matrix/mcl/ir.Constraint
+
+NODE id=matrix/mcl/ir.Constraint#By kind=field
+  digest=b3:010a8cea7c102c848252aa19b7a95b1e20a76eb195a3d3cd05f7f3d9129a7ebd file=MCL/ir/intent.go range=83:83 lang=go exported=true byte_range=3721:3762
+  sig=string
+EDGES
+  ^contains=matrix/mcl/ir.Constraint
+
+NODE id=matrix/mcl/ir.Constraint#Data kind=field
+  digest=b3:fc82af68507a0a845f08b0a5ec7c6b0ddb6408cc42449d81b2af58bfb74901a8 file=MCL/ir/intent.go range=91:91 lang=go exported=true byte_range=4221:4264
+  sig=string
+EDGES
+  ^contains=matrix/mcl/ir.Constraint
+
+NODE id=matrix/mcl/ir.Constraint#Deny kind=field
+  digest=b3:70a2bf880054ad7c44ee90fd0dcd4cee64876d0038fbbe921303b6ee04db30f1 file=MCL/ir/intent.go range=85:85 lang=go exported=true byte_range=3853:3896
+  sig=[]string
+EDGES
+  ^contains=matrix/mcl/ir.Constraint
+
+NODE id=matrix/mcl/ir.Constraint#Hard kind=field
+  digest=b3:dcf6f45b580697a17b007c76b33daee16574ba2388388728bc0de8c27ea305ba file=MCL/ir/intent.go range=79:79 lang=go exported=true byte_range=3524:3549
+  sig=bool
+EDGES
+  ^contains=matrix/mcl/ir.Constraint
+
+NODE id=matrix/mcl/ir.Constraint#Max kind=field
+  digest=b3:bc027cdf8dab8e593f721b054cb667ea3a652a0908ccee5b17939259c0881955 file=MCL/ir/intent.go range=81:82 lang=go exported=true byte_range=3600:3706
+  sig=*ir.AssetAmount
+  doc=Type-specific fields (only the relevant ones are populated)
+EDGES
+  ^contains=matrix/mcl/ir.Constraint
+
+NODE id=matrix/mcl/ir.Constraint#Metric kind=field
+  digest=b3:23aa5665ef032f9966801d18d2f4b8c48807de0c4cf75d37308f134f7e9db248 file=MCL/ir/intent.go range=86:86 lang=go exported=true byte_range=3916:3961
+  sig=string
+EDGES
+  ^contains=matrix/mcl/ir.Constraint
+
+NODE id=matrix/mcl/ir.Constraint#Min kind=field
+  digest=b3:3dcc4ace3aaa28db934e89c8c1bbb60c727a098abd2232f1cab3fff4b89857f1 file=MCL/ir/intent.go range=87:87 lang=go exported=true byte_range=3974:4016
+  sig=float64
+EDGES
+  ^contains=matrix/mcl/ir.Constraint
+
+NODE id=matrix/mcl/ir.Constraint#Policy kind=field
+  digest=b3:6efe8879f8b67879e4ba73f4cf5fe0f5c91e87025c536ff05bdd8eb9c3ace0d5 file=MCL/ir/intent.go range=89:89 lang=go exported=true byte_range=4097:4142
+  sig=string
+EDGES
+  ^contains=matrix/mcl/ir.Constraint
+
+NODE id=matrix/mcl/ir.Constraint#Rule kind=field
+  digest=b3:f6240af1ff5e73c02c007ed88f45b35eaa33cc4289c3892ed27c75e33ad85019 file=MCL/ir/intent.go range=88:88 lang=go exported=true byte_range=4032:4075
+  sig=string
+EDGES
+  ^contains=matrix/mcl/ir.Constraint
+
+NODE id=matrix/mcl/ir.Constraint#Schema kind=field
+  digest=b3:3d0435aeb13a789704ac838076aff5dda2f1bde44d6d6b8b3526f841d3f1700c file=MCL/ir/intent.go range=90:90 lang=go exported=true byte_range=4162:4207
+  sig=string
+EDGES
+  ^contains=matrix/mcl/ir.Constraint
+
+NODE id=matrix/mcl/ir.Constraint#Type kind=field
+  digest=b3:b534c428e65aa3fcac1331240852454e3f85c1d3244dee98a5b4d92aed30a5b0 file=MCL/ir/intent.go range=78:78 lang=go exported=true byte_range=3421:3446
+  sig=string
+EDGES
+  ^contains=matrix/mcl/ir.Constraint
+
+NODE id=matrix/mcl/ir.D7ClosedVerbs kind=var
+  digest=b3:42a32dc298a5cad0d38adc4ec3c29cbb268804cd3b81511c8e06ee49477fb1f5 file=MCL/ir/intent.go range=193:198 lang=go exported=true byte_range=8435:8715
+  sig=map[string]bool
+  doc=D7ClosedVerbs is the canonical set of 10 verbs.
+EDGES
+  ^defines=matrix/mcl/ir/intent.go
+
+NODE id=matrix/mcl/ir.ErrPlanBranchEmpty kind=var
+  digest=b3:16994e78b17144f2e78e4ec1c9b2009eb3d8a5253103a455092653502b3d0291 file=MCL/ir/plan_validate.go range=12:21 lang=go exported=true byte_range=221:824
+  sig=error
+  doc=Plan validation errors.
+EDGES
+  ^defines=matrix/mcl/ir/plan_validate.go
+
+NODE id=matrix/mcl/ir.ErrPlanGateNoQuestion kind=var
+  digest=b3:94ff7d71d1df378eec1f1319c478c13cdaaf35edd57356efbe9d0df839d8760a file=MCL/ir/plan_validate.go range=12:28 lang=go exported=true byte_range=221:1458
+  sig=error
+  doc=Plan validation errors.
+EDGES
+  ^defines=matrix/mcl/ir/plan_validate.go
+
+NODE id=matrix/mcl/ir.ErrPlanMissingID kind=var
+  digest=b3:1983ee3f5789ce2e52319427817a1326e8f95132015109518eeaa11b8e4a05cb file=MCL/ir/plan_validate.go range=12:14 lang=go exported=true byte_range=221:320
+  sig=error
+  doc=Plan validation errors.
+EDGES
+  ^defines=matrix/mcl/ir/plan_validate.go
+
+NODE id=matrix/mcl/ir.ErrPlanMissingIntentID kind=var
+  digest=b3:0a8f098942ed4b6a84dfe8fcbbb2615bb5080a9c66853f1d99755aa4e91e75a8 file=MCL/ir/plan_validate.go range=12:15 lang=go exported=true byte_range=221:393
+  sig=error
+  doc=Plan validation errors.
+EDGES
+  ^defines=matrix/mcl/ir/plan_validate.go
+
+NODE id=matrix/mcl/ir.ErrPlanMissingSkillRef kind=var
+  digest=b3:7df4d6e8499f64d2261c7da8cac3aee50f58af362c5914f86e93ee32cca97440 file=MCL/ir/plan_validate.go range=12:16 lang=go exported=true byte_range=221:466
+  sig=error
+  doc=Plan validation errors.
+EDGES
+  ^defines=matrix/mcl/ir/plan_validate.go
+
+NODE id=matrix/mcl/ir.ErrPlanNodeDuplicateID kind=var
+  digest=b3:d50ade0e5dd5a389faae3d21fc750c6016efb5f37a3ad1040d0709d5fd9853ba file=MCL/ir/plan_validate.go range=12:19 lang=go exported=true byte_range=221:669
+  sig=error
+  doc=Plan validation errors.
+EDGES
+  ^defines=matrix/mcl/ir/plan_validate.go
+
+NODE id=matrix/mcl/ir.ErrPlanNodeMissingID kind=var
+  digest=b3:505d7e5f9fa0ad34759e9c013c90fe1646fbadd3ead88903162a1953c922c2e5 file=MCL/ir/plan_validate.go range=12:18 lang=go exported=true byte_range=221:601
+  sig=error
+  doc=Plan validation errors.
+EDGES
+  ^defines=matrix/mcl/ir/plan_validate.go
+
+NODE id=matrix/mcl/ir.ErrPlanPayloadMismatch kind=var
+  digest=b3:23c6323926933d9076488477b1bc86da525a757cbfadbbb1b9f42a0faea3f256 file=MCL/ir/plan_validate.go range=12:22 lang=go exported=true byte_range=221:907
+  sig=error
+  doc=Plan validation errors.
+EDGES
+  ^defines=matrix/mcl/ir/plan_validate.go
+
+NODE id=matrix/mcl/ir.ErrPlanSideEffectUnknown kind=var
+  digest=b3:4b89391588a1eb4082e244cae16213ce171eae1a28c5a05dcdcaa5cdfc54ece6 file=MCL/ir/plan_validate.go range=12:25 lang=go exported=true byte_range=221:1200
+  sig=error
+  doc=Plan validation errors.
+EDGES
+  ^defines=matrix/mcl/ir/plan_validate.go
+
+NODE id=matrix/mcl/ir.ErrPlanStepKindUnknown kind=var
+  digest=b3:12dd93be92e9d110080cc1271b126c89d5f52577a337130a0894827935bc9b85 file=MCL/ir/plan_validate.go range=12:27 lang=go exported=true byte_range=221:1380
+  sig=error
+  doc=Plan validation errors.
+EDGES
+  ^defines=matrix/mcl/ir/plan_validate.go
+
+NODE id=matrix/mcl/ir.ErrPlanStepNoPrompt kind=var
+  digest=b3:522ebab670f60d9ecb2645cb7efdfabf23bfab8be0938aed9e8d59505b1fca4b file=MCL/ir/plan_validate.go range=12:26 lang=go exported=true byte_range=221:1293
+  sig=error
+  doc=Plan validation errors.
+EDGES
+  ^defines=matrix/mcl/ir/plan_validate.go
+
+NODE id=matrix/mcl/ir.ErrPlanSubSkillBareHead kind=var
+  digest=b3:c5ec4357f4a25d9c32fe621f7aa3b69dfc0149bdd3e81cd962246c87e32bbab5 file=MCL/ir/plan_validate.go range=12:24 lang=go exported=true byte_range=221:1101
+  sig=error
+  doc=Plan validation errors.
+EDGES
+  ^defines=matrix/mcl/ir/plan_validate.go
+
+NODE id=matrix/mcl/ir.ErrPlanTerminalHasChild kind=var
+  digest=b3:9d46e46506d41b05a610fa0b369d7ac55f371cb1ecd03bf6bbc48994948fb63d file=MCL/ir/plan_validate.go range=12:20 lang=go exported=true byte_range=221:746
+  sig=error
+  doc=Plan validation errors.
+EDGES
+  ^defines=matrix/mcl/ir/plan_validate.go
+
+NODE id=matrix/mcl/ir.ErrPlanToolRefBareHead kind=var
+  digest=b3:215e036ff9c3f652c2a0ec042b6b3ff0ead92891385d7c5591d53a958f003078 file=MCL/ir/plan_validate.go range=12:23 lang=go exported=true byte_range=221:1002
+  sig=error
+  doc=Plan validation errors.
+EDGES
+  ^defines=matrix/mcl/ir/plan_validate.go
+
+NODE id=matrix/mcl/ir.ErrPlanUnknownNodeKind kind=var
+  digest=b3:033c2be415191b878be9966315c3c49decd537c9cca6a440fc7ad71e5243bd89 file=MCL/ir/plan_validate.go range=12:17 lang=go exported=true byte_range=221:534
+  sig=error
+  doc=Plan validation errors.
+EDGES
+  ^defines=matrix/mcl/ir/plan_validate.go
+
+NODE id=matrix/mcl/ir.Frame kind=type
+  digest=b3:2ee35db799caa7ffef374b10ba66e6a5e4b4c8258b7b41bdc3d57fc9d794a5d4 file=MCL/ir/intent.go range=58:65 lang=go exported=true byte_range=2400:2901
+  sig=type Frame struct {\n	Verb		string		`json:"verb"`				// D7 closed vocab\n	Objects		[]SlotEntry	`json:"objects"`			// typed referents\n	Constraints	[]Constraint	`json:"constraints,omitempty"`		// §6.2\n	SuccessCriteria	[]Predicate	`json:"success_criteria,omitempty"`	// §6.3\n	Preferences	[]Preference	`json:"preferences,omitempty"`		// soft tie-breakers\n}
+  doc=Frame is the typed source of truth — what gets signed and executed.
+EDGES
+  contains=matrix/mcl/ir.Frame#Constraints,matrix/mcl/ir.Frame#Objects,matrix/mcl/ir.Frame#Preferences,matrix/mcl/ir.Frame#SuccessCriteria,matrix/mcl/ir.Frame#Verb
+  ^defines=matrix/mcl/ir/intent.go
+
+NODE id=matrix/mcl/ir.Frame#Constraints kind=field
+  digest=b3:b0749f0d5ba79c2caa76f2642a986bd6617f49654bff2f0fde79da4f34cfa5fd file=MCL/ir/intent.go range=62:62 lang=go exported=true byte_range=2664:2723
+  sig=[]ir.Constraint
+EDGES
+  ^contains=matrix/mcl/ir.Frame
+
+NODE id=matrix/mcl/ir.Frame#Objects kind=field
+  digest=b3:79e8c74e9f3354e49f865a649e8f52914f428ad9a97f92afc5916016e313ff38 file=MCL/ir/intent.go range=61:61 lang=go exported=true byte_range=2579:2624
+  sig=[]ir.SlotEntry
+EDGES
+  ^contains=matrix/mcl/ir.Frame
+
+NODE id=matrix/mcl/ir.Frame#Preferences kind=field
+  digest=b3:d70604ec6c5ddfbc227b9edca929509abae60a7d8012ac4678ddbf30563b03c6 file=MCL/ir/intent.go range=64:64 lang=go exported=true byte_range=2814:2873
+  sig=[]ir.Preference
+EDGES
+  ^contains=matrix/mcl/ir.Frame
+
+NODE id=matrix/mcl/ir.Frame#SuccessCriteria kind=field
+  digest=b3:afcddd9015e70ee86209dc0acd375e46de14bb1af05549358034b30052f58716 file=MCL/ir/intent.go range=63:63 lang=go exported=true byte_range=2739:2803
+  sig=[]ir.Predicate
+EDGES
+  ^contains=matrix/mcl/ir.Frame
+
+NODE id=matrix/mcl/ir.Frame#Verb kind=field
+  digest=b3:2500fa3fb86799282aa15f4cc62e3c8cbdcfdd2c3c2d81af56296415d9739d04 file=MCL/ir/intent.go range=60:60 lang=go exported=true byte_range=2494:2536
+  sig=string
+EDGES
+  ^contains=matrix/mcl/ir.Frame
+
+NODE id=matrix/mcl/ir.GatePayload kind=type
+  digest=b3:c9578e69625bfad3d4e77e14672d58bb8f599610e8f1011bc758302741617f56 file=MCL/ir/plan.go range=204:219 lang=go exported=true byte_range=9190:9841
+  sig=type GatePayload struct {\n	// RuleRef identifies the rule that triggered the gate\n	// (matrix://rule/<id>). Used for journal traceability.\n	RuleRef	string	`json:"rule_ref,omitempty"`\n\n	// Question is the human-readable prompt shown at the gate.\n	Question	string	`json:"question"`\n\n	// Options are the allowed answers. Empty = open text answer.\n	Options	[]string	`json:"options,omitempty"`\n\n	// TimeoutMs is how long the executor waits for policy.gate.resolve\n	// before treating the gate as denied. Zero = no timeout (block forever).\n	TimeoutMs	int	`json:"timeout_ms,omitempty"`\n}
+  doc=GatePayload carries the parameters for a human-in-loop policy gate.
+EDGES
+  contains=matrix/mcl/ir.GatePayload#Options,matrix/mcl/ir.GatePayload#Question,matrix/mcl/ir.GatePayload#RuleRef,matrix/mcl/ir.GatePayload#TimeoutMs
+  ^defines=matrix/mcl/ir/plan.go
+
+NODE id=matrix/mcl/ir.GatePayload#Options kind=field
+  digest=b3:d57d547ec321719de413571996ba7b5140a4c543b241ffaa694ee5a20dc652c8 file=MCL/ir/plan.go range=213:214 lang=go exported=true byte_range=9543:9649
+  sig=[]string
+  doc=Options are the allowed answers. Empty = open text answer.
+EDGES
+  ^contains=matrix/mcl/ir.GatePayload
+
+NODE id=matrix/mcl/ir.GatePayload#Question kind=field
+  digest=b3:7654cac458bbbbac05e91723c1a44acfebbce25cd9ff3eb7a80c107c77b55a9b file=MCL/ir/plan.go range=210:211 lang=go exported=true byte_range=9446:9540
+  sig=string
+  doc=Question is the human-readable prompt shown at the gate.
+EDGES
+  ^contains=matrix/mcl/ir.GatePayload
+
+NODE id=matrix/mcl/ir.GatePayload#RuleRef kind=field
+  digest=b3:1a8715c677a1e3c44e7f1f50cfd7e390b908e8c04e1c539b1f3910624bc6ad62 file=MCL/ir/plan.go range=206:208 lang=go exported=true byte_range=9288:9443
+  sig=string
+  doc=RuleRef identifies the rule that triggered the gate\n(matrix://rule/<id>). Used for journal traceability.
+EDGES
+  ^contains=matrix/mcl/ir.GatePayload
+
+NODE id=matrix/mcl/ir.GatePayload#TimeoutMs kind=field
+  digest=b3:50048ce759fd74cd8e574064df474d896f2193fa5b0abf3dbf76c8d3a36afe6d file=MCL/ir/plan.go range=216:218 lang=go exported=true byte_range=9652:9839
+  sig=int
+  doc=TimeoutMs is how long the executor waits for policy.gate.resolve\nbefore treating the gate as denied. Zero = no timeout (block forever).
+EDGES
+  ^contains=matrix/mcl/ir.GatePayload
+
+NODE id=matrix/mcl/ir.Hash kind=func
+  digest=b3:3d90539d27fffc8887e8ef415002df96794e8b8cd493bb57e8da772fc5cd57c4 file=MCL/ir/encode.go range=20:35 lang=go exported=true byte_range=531:969
+  sig=func Hash(intent *Intent) (string, error)
+  doc=Hash computes the sha256 hash of the canonical JSON encoding.\nThis is the Intent.Hash field value.
+EDGES
+  ^defines=matrix/mcl/ir/encode.go
+
+NODE id=matrix/mcl/ir.HashPlan kind=func
+  digest=b3:f40be944cf0f5659d98685d55e2fab93c7eb7f70f231088f45b1815f3af8c933 file=MCL/ir/encode.go range=43:57 lang=go exported=true byte_range=1186:1584
+  sig=func HashPlan(plan *PlanTree) (string, error)
+  doc=HashPlan computes the sha256 hash of the plan's canonical JSON encoding\nwith the self-referential Hash field cleared.
+EDGES
+  ^defines=matrix/mcl/ir/encode.go
+
+NODE id=matrix/mcl/ir.Intent kind=type
+  digest=b3:be98402d1509ebc0dbb58df1eca64d694f3ea760fb9c8123d16c61d637761925 file=MCL/ir/intent.go range=15:56 lang=go exported=true byte_range=695:2398
+  sig=type Intent struct {\n	ID	string	`json:"id"`			// ULID\n	Version	string	`json:"v"`			// schema version, "mcl/0.1"\n	Parent	string	`json:"parent,omitempty"`	// parent IntentRef for sub-intents\n	Actor	string	`json:"actor"`			// who wants this (UserRef or AgentRef)\n	Agent	string	`json:"agent"`			// who will execute (AgentRef)\n\n	// Human surface\n	Prose	string	`json:"prose"`	// original NL goal (display only)\n\n	// Typed surface — the source of truth\n	Frame	Frame	`json:"frame"`\n\n	// Gaps\n	Unknowns	[]Unknown	`json:"unknowns,omitempty"`\n\n	// Grounding\n	References	[]Reference	`json:"references,omitempty"`\n\n	// Lifecycle\n	State		string	`json:"state"`		// IntentState\n	Confidence	float64	`json:"confidence"`	// 0..1\n	Budget		*Budget	`json:"budget,omitempty"`\n	Deadline	string	`json:"deadline,omitempty"`	// ISO8601\n	CreatedAt	string	`json:"created_at"`\n	ExpiresAt	string	`json:"expires_at,omitempty"`\n\n	// sess#32 ambient — links a sub-intent to its parent standing Goal so\n	// per-goal cost telemetry, the scheduler escalation gate, and the\n	// Goals.vue per-goal child-intent feed can attribute work to the right\n	// Goal memory. Empty for chat-style one-shot intents (no parent Goal).\n	// Backward-compatible: omitempty keeps pre-sess#32 IR JSON byte-identical.\n	GoalID	string	`json:"goal_id,omitempty"`\n\n	// Provenance\n	SignedBy	string	`json:"signed_by"`	// actor's public key\n	Hash		string	`json:"hash"`		// sha256 self-hash for content addressing\n\n	// Compilation trace (D11)\n	CompileMetadata	*CompileMetadata	`json:"compile_metadata,omitempty"`\n}
+  doc=Intent is the central type in Matrix. Every interaction produces one.
+EDGES
+  contains=matrix/mcl/ir.Intent#Actor,matrix/mcl/ir.Intent#Agent,matrix/mcl/ir.Intent#Budget,matrix/mcl/ir.Intent#CompileMetadata,matrix/mcl/ir.Intent#Confidence,matrix/mcl/ir.Intent#CreatedAt,matrix/mcl/ir.Intent#Deadline,matrix/mcl/ir.Intent#ExpiresAt,matrix/mcl/ir.Intent#Frame,matrix/mcl/ir.Intent#GoalID,matrix/mcl/ir.Intent#Hash,matrix/mcl/ir.Intent#ID,matrix/mcl/ir.Intent#Parent,matrix/mcl/ir.Intent#Prose,matrix/mcl/ir.Intent#References,matrix/mcl/ir.Intent#SignedBy,matrix/mcl/ir.Intent#State,matrix/mcl/ir.Intent#Unknowns,matrix/mcl/ir.Intent#Version
+  ^defines=matrix/mcl/ir/intent.go
+
+NODE id=matrix/mcl/ir.Intent#Actor kind=field
+  digest=b3:b05bffe3d65b2342483851cbeb06287413864ff5d272ec5431d7dd7f441f025e file=MCL/ir/intent.go range=20:20 lang=go exported=true byte_range=989:1018
+  sig=string
+EDGES
+  ^contains=matrix/mcl/ir.Intent
+
+NODE id=matrix/mcl/ir.Intent#Agent kind=field
+  digest=b3:8f44e43807993de9afdef68c9a8df01169f36489cb7cdd0d2e0f701fb1a6f108 file=MCL/ir/intent.go range=21:21 lang=go exported=true byte_range=1071:1100
+  sig=string
+EDGES
+  ^contains=matrix/mcl/ir.Intent
+
+NODE id=matrix/mcl/ir.Intent#Budget kind=field
+  digest=b3:3e672ca77c168cfcb473050440a6c3a15b5b125fd5372f1abc98da3f58f077fd file=MCL/ir/intent.go range=38:38 lang=go exported=true byte_range=1543:1587
+  sig=*ir.Budget
+EDGES
+  ^contains=matrix/mcl/ir.Intent
+
+NODE id=matrix/mcl/ir.Intent#CompileMetadata kind=field
+  digest=b3:d6a6d58458e49b78b09f915bb005ebbaf12011eeaf46101c034484913d086448 file=MCL/ir/intent.go range=54:55 lang=go exported=true byte_range=2300:2396
+  sig=*ir.CompileMetadata
+  doc=Compilation trace (D11)
+EDGES
+  ^contains=matrix/mcl/ir.Intent
+
+NODE id=matrix/mcl/ir.Intent#Confidence kind=field
+  digest=b3:1228cbe4fde7a5102f86d0fc6015b331e19c5619029786d5d997cdd8018a537b file=MCL/ir/intent.go range=37:37 lang=go exported=true byte_range=1495:1533
+  sig=float64
+EDGES
+  ^contains=matrix/mcl/ir.Intent
+
+NODE id=matrix/mcl/ir.Intent#CreatedAt kind=field
+  digest=b3:a0a235fa2a9e002fbe10174114fba564758f589be6d6107e1eda6e2c530b316a file=MCL/ir/intent.go range=40:40 lang=go exported=true byte_range=1648:1686
+  sig=string
+EDGES
+  ^contains=matrix/mcl/ir.Intent
+
+NODE id=matrix/mcl/ir.Intent#Deadline kind=field
+  digest=b3:13b475173e5165aad1e20224a27d442d99fa8ad78440626f0a33add5c3899693 file=MCL/ir/intent.go range=39:39 lang=go exported=true byte_range=1589:1635
+  sig=string
+EDGES
+  ^contains=matrix/mcl/ir.Intent
+
+NODE id=matrix/mcl/ir.Intent#ExpiresAt kind=field
+  digest=b3:4a0d1acac506d77a33a708b70dc1680483df6f287794af755df1929ab641d339 file=MCL/ir/intent.go range=41:41 lang=go exported=true byte_range=1688:1736
+  sig=string
+EDGES
+  ^contains=matrix/mcl/ir.Intent
+
+NODE id=matrix/mcl/ir.Intent#Frame kind=field
+  digest=b3:253ef3b782a2c80f2cad4502bcc1e84d33bdf4954490ad76e301ac7fab0b21a9 file=MCL/ir/intent.go range=26:27 lang=go exported=true byte_range=1228:1296
+  sig=ir.Frame
+  doc=Typed surface — the source of truth
+EDGES
+  ^contains=matrix/mcl/ir.Intent
+
+NODE id=matrix/mcl/ir.Intent#GoalID kind=field
+  digest=b3:22674734d4145174797d708ef478a0975d0714af17f85ac1281cd7d949281da0 file=MCL/ir/intent.go range=43:48 lang=go exported=true byte_range=1739:2144
+  sig=string
+  doc=sess#32 ambient — links a sub-intent to its parent standing Goal so\nper-goal cost telemetry, the scheduler escalation gate, and the\nGoals.vue per-goal child-intent feed can attribute work to the right\nGoal memory. Empty for chat-style one-shot intents (no parent Goal).\nBackward-compatible: omitempty keeps pre-sess#32 IR JSON byte-identical.
+EDGES
+  ^contains=matrix/mcl/ir.Intent
+
+NODE id=matrix/mcl/ir.Intent#Hash kind=field
+  digest=b3:8a2c69b5a6ce678c2b9daedca59c842384ff9273a028c6797829b2386f3ab6fd file=MCL/ir/intent.go range=52:52 lang=go exported=true byte_range=2220:2249
+  sig=string
+EDGES
+  ^contains=matrix/mcl/ir.Intent
+
+NODE id=matrix/mcl/ir.Intent#ID kind=field
+  digest=b3:358eaa6a87bb8ee6f97dd0a50d959ba3a69dc2999d586253c767f7901a730186 file=MCL/ir/intent.go range=17:17 lang=go exported=true byte_range=790:816
+  sig=string
+EDGES
+  ^contains=matrix/mcl/ir.Intent
+
+NODE id=matrix/mcl/ir.Intent#Parent kind=field
+  digest=b3:8bf55394f48dd501cfe550417734d9420dea9dbc082e0f246bd084aa1a0e9e75 file=MCL/ir/intent.go range=19:19 lang=go exported=true byte_range=911:951
+  sig=string
+EDGES
+  ^contains=matrix/mcl/ir.Intent
+
+NODE id=matrix/mcl/ir.Intent#Prose kind=field
+  digest=b3:f9bd35e44dda76f9cf81b7c840a71aacc503a6d66e2cdbda4cdd0af881136079 file=MCL/ir/intent.go range=23:24 lang=go exported=true byte_range=1145:1190
+  sig=string
+  doc=Human surface
+EDGES
+  ^contains=matrix/mcl/ir.Intent
+
+NODE id=matrix/mcl/ir.Intent#References kind=field
+  digest=b3:cf6d6583559c23e61d9a0e0ea3c8d18e6f7e76cfbabbd8ea10168ae1d5817ab8 file=MCL/ir/intent.go range=32:33 lang=go exported=true byte_range=1357:1423
+  sig=[]ir.Reference
+  doc=Grounding
+EDGES
+  ^contains=matrix/mcl/ir.Intent
+
+NODE id=matrix/mcl/ir.Intent#SignedBy kind=field
+  digest=b3:d536b067a50d0afd103fb8d02024c2e7fa1ae4d90a971907a82e481ae8086c27 file=MCL/ir/intent.go range=50:51 lang=go exported=true byte_range=2147:2196
+  sig=string
+  doc=Provenance
+EDGES
+  ^contains=matrix/mcl/ir.Intent
+
+NODE id=matrix/mcl/ir.Intent#State kind=field
+  digest=b3:27b393c4522be2bbd54c2d70f220161bb50978e9cc7473a3b9be699094e56635 file=MCL/ir/intent.go range=35:36 lang=go exported=true byte_range=1426:1473
+  sig=string
+  doc=Lifecycle
+EDGES
+  ^contains=matrix/mcl/ir.Intent
+
+NODE id=matrix/mcl/ir.Intent#Unknowns kind=field
+  digest=b3:f11d71c7fd6724dd590d6f5cbebf3365fb2d4cc5e826cbeef93986665f1e508f file=MCL/ir/intent.go range=29:30 lang=go exported=true byte_range=1299:1354
+  sig=[]ir.Unknown
+  doc=Gaps
+EDGES
+  ^contains=matrix/mcl/ir.Intent
+
+NODE id=matrix/mcl/ir.Intent#Version kind=field
+  digest=b3:f511b7268624c701152f853710545f20209e10200bfc7bd145f590f5e54041c7 file=MCL/ir/intent.go range=18:18 lang=go exported=true byte_range=840:865
+  sig=string
+EDGES
+  ^contains=matrix/mcl/ir.Intent
+
+NODE id=matrix/mcl/ir.NodeGate kind=const
+  digest=b3:8178f4b37d2451e613e9e0f2d2b00f564f7fdf971f3475753b1f1035681976e0 file=MCL/ir/plan.go range=240:241 lang=go exported=true byte_range=10514:10592
+  sig=untyped string
+  doc=NodeGate is a human-in-loop policy gate. Populates Gate.
+EDGES
+  ^defines=matrix/mcl/ir/plan.go
+
+NODE id=matrix/mcl/ir.NodeParallel kind=const
+  digest=b3:f5dce00ed74d15f840f2352ec717fd016d80c3f62956bbad3d143ce59e36d2c2 file=MCL/ir/plan.go range=227:229 lang=go exported=true byte_range=10060:10219
+  sig=untyped string
+  doc=NodeParallel runs Children concurrently; all children must succeed\nfor the parent to succeed. First failure cancels siblings.
+EDGES
+  ^defines=matrix/mcl/ir/plan.go
+
+NODE id=matrix/mcl/ir.NodeSequential kind=const
+  digest=b3:b3b46eeba730de93cf489e26d21a077e7875957c4affb4e37ce86a86f3541552 file=MCL/ir/plan.go range=223:225 lang=go exported=true byte_range=9886:10057
+  sig=untyped string
+  doc=NodeSequential runs Children in order; any child failure halts the\nsequence and propagates failure to the parent (default semantics).
+EDGES
+  ^defines=matrix/mcl/ir/plan.go
+
+NODE id=matrix/mcl/ir.NodeStep kind=const
+  digest=b3:2f853473319ddf593f5cfc9b3301127a8c7cf83fc04649beda8b05964a53dc8a file=MCL/ir/plan.go range=231:232 lang=go exported=true byte_range=10222:10300
+  sig=untyped string
+  doc=NodeStep is an in-skill LLM prompt step. Populates Step.
+EDGES
+  ^defines=matrix/mcl/ir/plan.go
+
+NODE id=matrix/mcl/ir.NodeSubDispatch kind=const
+  digest=b3:c720eac0e1a0b5c52960b72540092a2d9fc50e385345da05cc1e19c624b90c70 file=MCL/ir/plan.go range=237:238 lang=go exported=true byte_range=10398:10511
+  sig=untyped string
+  doc=NodeSubDispatch is a sub-skill or sub-agent dispatch. Populates SubDispatch.
+EDGES
+  ^defines=matrix/mcl/ir/plan.go
+
+NODE id=matrix/mcl/ir.NodeToolCall kind=const
+  digest=b3:cb8f5af04e87b84fd030644a7bdde2060a531de820d4ebe16b2088193b2f0817 file=MCL/ir/plan.go range=234:235 lang=go exported=true byte_range=10303:10395
+  sig=untyped string
+  doc=NodeToolCall is a single tool invocation. Populates ToolCall.
+EDGES
+  ^defines=matrix/mcl/ir/plan.go
+
+NODE id=matrix/mcl/ir.PlanNode kind=type
+  digest=b3:66dedba9acbe0e038c8732f8c8bdb4c9ff095aae0cc0270c68280873772ebc51 file=MCL/ir/plan.go range=75:124 lang=go exported=true byte_range=3224:5471
+  sig=type PlanNode struct {\n	// ID is a stable identifier within the PlanTree (e.g. "n1", "n2").\n	// Referenced by intent.correct patches and intent.progress events.\n	ID	string	`json:"id"`\n\n	// Kind discriminates the node payload.\n	Kind	string	`json:"kind"`\n\n	// Description is a short human-readable label (for UI / journal).\n	// Not authoritative; the typed payload fields are the source of truth.\n	Description	string	`json:"description,omitempty"`\n\n	// Children is the ordered list of child nodes. For Kind=NodeSequential\n	// children run in order; for Kind=NodeParallel they run concurrently;\n	// for terminal kinds (NodeStep, NodeToolCall, NodeSubDispatch, NodeGate)\n	// Children is empty.\n	Children	[]PlanNode	`json:"children,omitempty"`\n\n	// Step is populated when Kind==NodeStep. An in-skill LLM prompt:\n	// the executor LLM is invoked with the skill's prompt template and\n	// the cortex bundle, then advances skill state.\n	Step	*StepPayload	`json:"step,omitempty"`\n\n	// ToolCall is populated when Kind==NodeToolCall.\n	ToolCall	*ToolCallPayload	`json:"tool_call,omitempty"`\n\n	// SubDispatch is populated when Kind==NodeSubDispatch.\n	SubDispatch	*SubDispatchPayload	`json:"sub_dispatch,omitempty"`\n\n	// Gate is populated when Kind==NodeGate (human-in-loop policy gate\n	// per research/02-protocol.md §14).\n	Gate	*GatePayload	`json:"gate,omitempty"`\n\n	// ResultText is a transient, runtime-only record of this node's\n	// produced output text — the tool result text for NodeToolCall, or\n	// the LLM step text for NodeStep. The walker populates it during\n	// execution so a later NodeStep can resolve ${<nodeID>.output}\n	// references in its Step.Inputs against the actual upstream output\n	// (e.g. a report step that consumes a prior fleet_summary tool call).\n	//\n	// Excluded from canonical JSON (json:"-") so it never enters the D11\n	// content hash, the signed plan envelope, or the byte-identical\n	// replay invariant — it is pure in-memory walk state.\n	ResultText	string	`json:"-"`\n}
+  doc=PlanNode is a single node in the plan tree. Kind discriminates which\nof the typed payload fields are populated. Unpopulated fields are\nomitted from canonical encoding.
+EDGES
+  contains=matrix/mcl/ir.PlanNode#Children,matrix/mcl/ir.PlanNode#Description,matrix/mcl/ir.PlanNode#Gate,matrix/mcl/ir.PlanNode#ID,matrix/mcl/ir.PlanNode#Kind,matrix/mcl/ir.PlanNode#ResultText,matrix/mcl/ir.PlanNode#Step,matrix/mcl/ir.PlanNode#SubDispatch,matrix/mcl/ir.PlanNode#ToolCall
+  ^defines=matrix/mcl/ir/plan.go
+
+NODE id=matrix/mcl/ir.PlanNode#Children kind=field
+  digest=b3:6a8b5211bf734a43d51805b9fc26ef53c490aaa1df19b92d8d4440f858fd9965 file=MCL/ir/plan.go range=90:94 lang=go exported=true byte_range=3849:4139
+  sig=[]ir.PlanNode
+  doc=Children is the ordered list of child nodes. For Kind=NodeSequential\nchildren run in order; for Kind=NodeParallel they run concurrently;\nfor terminal kinds (NodeStep, NodeToolCall, NodeSubDispatch, NodeGate)\nChildren is empty.
+EDGES
+  ^contains=matrix/mcl/ir.PlanNode
+
+NODE id=matrix/mcl/ir.PlanNode#Description kind=field
+  digest=b3:73d3d33fa3c3a5ada363ceb079a7da5f984bd42308738ba4dafddff6c392437a file=MCL/ir/plan.go range=86:88 lang=go exported=true byte_range=3656:3846
+  sig=string
+  doc=Description is a short human-readable label (for UI / journal).\nNot authoritative; the typed payload fields are the source of truth.
+EDGES
+  ^contains=matrix/mcl/ir.PlanNode
+
+NODE id=matrix/mcl/ir.PlanNode#Gate kind=field
+  digest=b3:fd107937bdb82a0cf55c2c741727e3a4a77c8c444288537dcbaa9f331a0b42ad file=MCL/ir/plan.go range=109:111 lang=go exported=true byte_range=4680:4829
+  sig=*ir.GatePayload
+  doc=Gate is populated when Kind==NodeGate (human-in-loop policy gate\nper research/02-protocol.md §14).
+EDGES
+  ^contains=matrix/mcl/ir.PlanNode
+
+NODE id=matrix/mcl/ir.PlanNode#ID kind=field
+  digest=b3:4555a67c155deedd91544affb943f7e5d51beb0438c085030d4baaf82ff03f63 file=MCL/ir/plan.go range=79:81 lang=go exported=true byte_range=3425:3584
+  sig=string
+  doc=ID is a stable identifier within the PlanTree (e.g. "n1", "n2").\nReferenced by intent.correct patches and intent.progress events.
+EDGES
+  ^contains=matrix/mcl/ir.PlanNode
+
+NODE id=matrix/mcl/ir.PlanNode#Kind kind=field
+  digest=b3:bd23fdb5b5221277148603f24f62d97fbd2b30ac84e50dcfabf703e0482b597e file=MCL/ir/plan.go range=83:84 lang=go exported=true byte_range=3587:3653
+  sig=string
+  doc=Kind discriminates the node payload.
+EDGES
+  ^contains=matrix/mcl/ir.PlanNode
+
+NODE id=matrix/mcl/ir.PlanNode#ResultText kind=field
+  digest=b3:b70c9a94ade37c3484c9f1f84ec4dbb624d9345f45a346655c1dc75037a54e82 file=MCL/ir/plan.go range=113:123 lang=go exported=true byte_range=4832:5469
+  sig=string
+  doc=ResultText is a transient, runtime-only record of this node's\nproduced output text — the tool result text for NodeToolCall, or\nthe LLM step text for NodeStep. The walker populates it during\nexecution so a later NodeStep can resolve ${<nodeID>.output}\nreferences in its Step.Inputs against the actual upstream output\n(e.g. a report step that consumes a prior fleet_summary tool call).\n\nExcluded from canonical JSON (json:"-") so it never enters the D11\ncontent hash, the signed plan envelope, or the byte-identical\nreplay invariant — it is pure in-memory walk state.
+EDGES
+  ^contains=matrix/mcl/ir.PlanNode
+
+NODE id=matrix/mcl/ir.PlanNode#Step kind=field
+  digest=b3:e8a870f40e8bfd24a9f4c54615b3ec03b2d3499d7de82052645b1667b6f709da file=MCL/ir/plan.go range=98:101 lang=go exported=true byte_range=4219:4446
+  sig=*ir.StepPayload
+  doc=Step is populated when Kind==NodeStep. An in-skill LLM prompt:\nthe executor LLM is invoked with the skill's prompt template and\nthe cortex bundle, then advances skill state.
+EDGES
+  ^contains=matrix/mcl/ir.PlanNode
+
+NODE id=matrix/mcl/ir.PlanNode#SubDispatch kind=field
+  digest=b3:94d6aba91c54155e2fde55753a6e8af097c0194161dbd94bf54d4109417a454b file=MCL/ir/plan.go range=106:107 lang=go exported=true byte_range=4557:4677
+  sig=*ir.SubDispatchPayload
+  doc=SubDispatch is populated when Kind==NodeSubDispatch.
+EDGES
+  ^contains=matrix/mcl/ir.PlanNode
+
+NODE id=matrix/mcl/ir.PlanNode#ToolCall kind=field
+  digest=b3:214049f7e7f4717200fed64e359f4643227950f4090dfdb3bb397b7a77bd4e40 file=MCL/ir/plan.go range=103:104 lang=go exported=true byte_range=4449:4554
+  sig=*ir.ToolCallPayload
+  doc=ToolCall is populated when Kind==NodeToolCall.
+EDGES
+  ^contains=matrix/mcl/ir.PlanNode
+
+NODE id=matrix/mcl/ir.PlanTree kind=type
+  digest=b3:c992b48faa01bb94a94128cf0abd2752ebca278aa8bc67c063a3423d8e0a85a2 file=MCL/ir/plan.go range=28:73 lang=go exported=true byte_range=1376:3222
+  sig=type PlanTree struct {\n	// ID is a ULID identifying this plan. Used by intent.correct to\n	// reference specific plan-tree revisions.\n	ID	string	`json:"id"`\n\n	// Version pins the PlanTree schema. v1 = "mcl/0.1".\n	Version	string	`json:"v"`\n\n	// IntentID back-references the Intent this plan executes.\n	IntentID	string	`json:"intent_id"`\n\n	// CreatedAt is the wall-clock at plan emission. ISO-8601.\n	CreatedAt	string	`json:"created_at"`\n\n	// CreatedBy is the agent that produced the plan (matrix://agent/<did>).\n	CreatedBy	string	`json:"created_by"`\n\n	// SkillRef is the version-pinned skill URI that authored this plan\n	// (matrix://skill/<name>@<version>). Required so the executor can\n	// validate the skill manifest matches at execution time.\n	SkillRef	string	`json:"skill_ref"`\n\n	// ModelDigest is the executor model's digest at plan-emission time.\n	// Recorded for audit (not for D11 — executor-side determinism is\n	// best-effort per A9).\n	ModelDigest	string	`json:"model_digest,omitempty"`\n\n	// Root is the entry point of the plan walk.\n	Root	PlanNode	`json:"root"`\n\n	// Budget caps execution resources (mirrors Intent.Budget but may\n	// narrow it; the executor enforces the tighter of the two).\n	Budget	*Budget	`json:"budget,omitempty"`\n\n	// Hash is the sha256 self-hash of canonical JSON encoding with\n	// this field cleared. Content-addresses the plan.\n	Hash	string	`json:"hash"`\n}
+  doc=PlanTree is the typed plan structure attached to a plan.proposed\nenvelope body, OR carried inline in Intent.frame.objects as a\nPlanDraft slot value when a skill emits one at compile-time refinement.\n\nA PlanTree is a directed acyclic graph (in practice a tree with\noccasional shared leaves for citations) rooted at a single Root node.\nWalks are depth-first by default; parallel branches are explicit\n(PlanNode.Kind == NodeParallel).
+EDGES
+  contains=matrix/mcl/ir.PlanTree#Budget,matrix/mcl/ir.PlanTree#CreatedAt,matrix/mcl/ir.PlanTree#CreatedBy,matrix/mcl/ir.PlanTree#Hash,matrix/mcl/ir.PlanTree#ID,matrix/mcl/ir.PlanTree#IntentID,matrix/mcl/ir.PlanTree#ModelDigest,matrix/mcl/ir.PlanTree#Root,matrix/mcl/ir.PlanTree#SkillRef,matrix/mcl/ir.PlanTree#Version
+  ^defines=matrix/mcl/ir/plan.go
+
+NODE id=matrix/mcl/ir.PlanTree#Budget kind=field
+  digest=b3:87d2ff659b202909ef834d8f170652f0a4ee6b01378b9118cee859f9a72d8e6c file=MCL/ir/plan.go range=66:68 lang=go exported=true byte_range=2906:3075
+  sig=*ir.Budget
+  doc=Budget caps execution resources (mirrors Intent.Budget but may\nnarrow it; the executor enforces the tighter of the two).
+EDGES
+  ^contains=matrix/mcl/ir.PlanTree
+
+NODE id=matrix/mcl/ir.PlanTree#CreatedAt kind=field
+  digest=b3:f59507751c22639b9773a0277892e2dd158ecd3b28a0c9e19f4e3f1d2635f160 file=MCL/ir/plan.go range=47:48 lang=go exported=true byte_range=2168:2264
+  sig=string
+  doc=CreatedAt is the wall-clock at plan emission. ISO-8601.
+EDGES
+  ^contains=matrix/mcl/ir.PlanTree
+
+NODE id=matrix/mcl/ir.PlanTree#CreatedBy kind=field
+  digest=b3:e15b808860484bdd2a04a05771471d95ec5144ebf949203f4bfe7ece71d8c30c file=MCL/ir/plan.go range=50:51 lang=go exported=true byte_range=2267:2377
+  sig=string
+  doc=CreatedBy is the agent that produced the plan (matrix://agent/<did>).
+EDGES
+  ^contains=matrix/mcl/ir.PlanTree
+
+NODE id=matrix/mcl/ir.PlanTree#Hash kind=field
+  digest=b3:2eb3243f9d27cc4577f01291fa4d90f051a4c0106b29744471d123c866e13acc file=MCL/ir/plan.go range=70:72 lang=go exported=true byte_range=3078:3220
+  sig=string
+  doc=Hash is the sha256 self-hash of canonical JSON encoding with\nthis field cleared. Content-addresses the plan.
+EDGES
+  ^contains=matrix/mcl/ir.PlanTree
+
+NODE id=matrix/mcl/ir.PlanTree#ID kind=field
+  digest=b3:9e42276d19dbaf3dcab4850e64b5dad3b4d6e27c23df7b9b15e948ef625d99da file=MCL/ir/plan.go range=37:39 lang=go exported=true byte_range=1855:1986
+  sig=string
+  doc=ID is a ULID identifying this plan. Used by intent.correct to\nreference specific plan-tree revisions.
+EDGES
+  ^contains=matrix/mcl/ir.PlanTree
+
+NODE id=matrix/mcl/ir.PlanTree#IntentID kind=field
+  digest=b3:b5913bedb0fbc288be416fac570b02ba298a1e79b81f871c9334433e4b043b18 file=MCL/ir/plan.go range=44:45 lang=go exported=true byte_range=2071:2165
+  sig=string
+  doc=IntentID back-references the Intent this plan executes.
+EDGES
+  ^contains=matrix/mcl/ir.PlanTree
+
+NODE id=matrix/mcl/ir.PlanTree#ModelDigest kind=field
+  digest=b3:7a67854232a13667a4073d28d465d2589e5df7444f0f89e9c6268d47569ada44 file=MCL/ir/plan.go range=58:61 lang=go exported=true byte_range=2613:2827
+  sig=string
+  doc=ModelDigest is the executor model's digest at plan-emission time.\nRecorded for audit (not for D11 — executor-side determinism is\nbest-effort per A9).
+EDGES
+  ^contains=matrix/mcl/ir.PlanTree
+
+NODE id=matrix/mcl/ir.PlanTree#Root kind=field
+  digest=b3:d77de24656927729158315489f542ff3e2fd6a359faf9ac2abc0abcabe5855a9 file=MCL/ir/plan.go range=63:64 lang=go exported=true byte_range=2830:2903
+  sig=ir.PlanNode
+  doc=Root is the entry point of the plan walk.
+EDGES
+  ^contains=matrix/mcl/ir.PlanTree
+
+NODE id=matrix/mcl/ir.PlanTree#SkillRef kind=field
+  digest=b3:130ec89a94149b96dd790a74a4bf5c338dfd1577189cacbd96b410535f38545f file=MCL/ir/plan.go range=53:56 lang=go exported=true byte_range=2380:2610
+  sig=string
+  doc=SkillRef is the version-pinned skill URI that authored this plan\n(matrix://skill/<name>@<version>). Required so the executor can\nvalidate the skill manifest matches at execution time.
+EDGES
+  ^contains=matrix/mcl/ir.PlanTree
+
+NODE id=matrix/mcl/ir.PlanTree#Version kind=field
+  digest=b3:1fff39653b2076fa4e4254c1c901269bdaba017489c110aa525f481cdab60e13 file=MCL/ir/plan.go range=41:42 lang=go exported=true byte_range=1989:2068
+  sig=string
+  doc=Version pins the PlanTree schema. v1 = "mcl/0.1".
+EDGES
+  ^contains=matrix/mcl/ir.PlanTree
+
+NODE id=matrix/mcl/ir.Predicate kind=type
+  digest=b3:cdd4557f801479394b58dbcdcc48748d6652ce0270011249d5a9645d110b2343 file=MCL/ir/intent.go range=94:105 lang=go exported=true byte_range=4296:4989
+  sig=type Predicate struct {\n	Type		string	`json:"type"`			// "delivered", "signed_off", "external", "attestation", "x:*"\n	Artifact	string	`json:"artifact,omitempty"`	// delivered\n	By		string	`json:"by,omitempty"`		// signed_off (UserRef)\n	URL		string	`json:"url,omitempty"`		// external\n	Check		string	`json:"check,omitempty"`	// external\n	Source		string	`json:"source,omitempty"`	// attestation (AgentRef)\n	Topic		string	`json:"topic,omitempty"`	// attestation\n	Schema		string	`json:"schema,omitempty"`	// x:custom\n	Data		string	`json:"data,omitempty"`		// x:custom\n}
+  doc=Predicate is a checkable criterion that determines completion (§6.3).
+EDGES
+  contains=matrix/mcl/ir.Predicate#Artifact,matrix/mcl/ir.Predicate#By,matrix/mcl/ir.Predicate#Check,matrix/mcl/ir.Predicate#Data,matrix/mcl/ir.Predicate#Schema,matrix/mcl/ir.Predicate#Source,matrix/mcl/ir.Predicate#Topic,matrix/mcl/ir.Predicate#Type,matrix/mcl/ir.Predicate#URL
+  ^defines=matrix/mcl/ir/intent.go
+
+NODE id=matrix/mcl/ir.Predicate#Artifact kind=field
+  digest=b3:9834cfe090c1c45279cf44c4c02c7c4b3b345bb68c38b652f2a83f9dad1afc82 file=MCL/ir/intent.go range=97:97 lang=go exported=true byte_range=4503:4546
+  sig=string
+EDGES
+  ^contains=matrix/mcl/ir.Predicate
+
+NODE id=matrix/mcl/ir.Predicate#By kind=field
+  digest=b3:8b76776d330c14e5d27f5251e257b07b3aaa83793c34ee7f17e08b431ca0ea5b file=MCL/ir/intent.go range=98:98 lang=go exported=true byte_range=4561:4598
+  sig=string
+EDGES
+  ^contains=matrix/mcl/ir.Predicate
+
+NODE id=matrix/mcl/ir.Predicate#Check kind=field
+  digest=b3:34647556e7cedfc9e05b7bec3d34818cce1cbd05c5520d1d3a825be45ed55e8d file=MCL/ir/intent.go range=100:100 lang=go exported=true byte_range=4687:4727
+  sig=string
+EDGES
+  ^contains=matrix/mcl/ir.Predicate
+
+NODE id=matrix/mcl/ir.Predicate#Data kind=field
+  digest=b3:8cd8046897f90cd54bea97fe7fb4acbe431778b2b82215837bb9b744353db976 file=MCL/ir/intent.go range=104:104 lang=go exported=true byte_range=4932:4971
+  sig=string
+EDGES
+  ^contains=matrix/mcl/ir.Predicate
+
+NODE id=matrix/mcl/ir.Predicate#Schema kind=field
+  digest=b3:60faca7b02598f156f186399c44ef73e92a2cf1ac56fd2e6918a94aef68ec4d5 file=MCL/ir/intent.go range=103:103 lang=go exported=true byte_range=4875:4916
+  sig=string
+EDGES
+  ^contains=matrix/mcl/ir.Predicate
+
+NODE id=matrix/mcl/ir.Predicate#Source kind=field
+  digest=b3:d82380e6a989d8ee6456da31518007fef66d485fed1242556dc67393b3f8f908 file=MCL/ir/intent.go range=101:101 lang=go exported=true byte_range=4744:4785
+  sig=string
+EDGES
+  ^contains=matrix/mcl/ir.Predicate
+
+NODE id=matrix/mcl/ir.Predicate#Topic kind=field
+  digest=b3:081c57f3a83ded6b7caee8a6da5955472aac8a5365ff37384469a6a4a5805fbd file=MCL/ir/intent.go range=102:102 lang=go exported=true byte_range=4815:4855
+  sig=string
+EDGES
+  ^contains=matrix/mcl/ir.Predicate
+
+NODE id=matrix/mcl/ir.Predicate#Type kind=field
+  digest=b3:b5abfd4f111285554e081f8186ca88582f8aff91b65dac74ca516cb4f2c9acd5 file=MCL/ir/intent.go range=96:96 lang=go exported=true byte_range=4395:4424
+  sig=string
+EDGES
+  ^contains=matrix/mcl/ir.Predicate
+
+NODE id=matrix/mcl/ir.Predicate#URL kind=field
+  digest=b3:7b91c4ad0c54f4479bb4d3a0bde54402632df91c289074ca9ec891a1311aa43a file=MCL/ir/intent.go range=99:99 lang=go exported=true byte_range=4630:4668
+  sig=string
+EDGES
+  ^contains=matrix/mcl/ir.Predicate
+
+NODE id=matrix/mcl/ir.Preference kind=type
+  digest=b3:cb17521a052501e2d4e11dad5e2fed697724081e38a54e7f037a73dc5737e676 file=MCL/ir/intent.go range=107:111 lang=go exported=true byte_range=4991:5229
+  sig=type Preference struct {\n	Rank	string		`json:"rank"`			// preference dimension\n	Prefer	[]string	`json:"prefer,omitempty"`	// ordered preferences\n}
+  doc=Preference is a soft tie-breaker that does not fail the intent if violated.
+EDGES
+  contains=matrix/mcl/ir.Preference#Prefer,matrix/mcl/ir.Preference#Rank
+  ^defines=matrix/mcl/ir/intent.go
+
+NODE id=matrix/mcl/ir.Preference#Prefer kind=field
+  digest=b3:0abc972cd9e43b50049de67f612cc5db06b3b53e8a207ce0ad62ea6a1b243136 file=MCL/ir/intent.go range=110:110 lang=go exported=true byte_range=5163:5204
+  sig=[]string
+EDGES
+  ^contains=matrix/mcl/ir.Preference
+
+NODE id=matrix/mcl/ir.Preference#Rank kind=field
+  digest=b3:4cf3169feac23548701d932ab91ce40f49bf17c1d79dcd58cd0498e8cd9f73d5 file=MCL/ir/intent.go range=109:109 lang=go exported=true byte_range=5096:5125
+  sig=string
+EDGES
+  ^contains=matrix/mcl/ir.Preference
+
+NODE id=matrix/mcl/ir.Reference kind=type
+  digest=b3:3de09f5848538f8a52fedb239d51653251c2bcae6830e7289fac281167b29721 file=MCL/ir/intent.go range=125:131 lang=go exported=true byte_range=5961:6335
+  sig=type Reference struct {\n	URI	string	`json:"uri"`			// matrix:// URI with version\n	Type	string	`json:"type,omitempty"`		// cortex memory type\n	Role	string	`json:"role,omitempty"`		// how this reference is used\n	Summary	string	`json:"summary,omitempty"`	// medium-form summary\n}
+  doc=Reference is a grounding matrix:// URI the agent must respect (D13).
+EDGES
+  contains=matrix/mcl/ir.Reference#Role,matrix/mcl/ir.Reference#Summary,matrix/mcl/ir.Reference#Type,matrix/mcl/ir.Reference#URI
+  ^defines=matrix/mcl/ir/intent.go
+
+NODE id=matrix/mcl/ir.Reference#Role kind=field
+  digest=b3:7f1ad4faecdcc7ff1441603734ba894a85d32f82256765673559903c3cb392b9 file=MCL/ir/intent.go range=129:129 lang=go exported=true byte_range=6196:6234
+  sig=string
+EDGES
+  ^contains=matrix/mcl/ir.Reference
+
+NODE id=matrix/mcl/ir.Reference#Summary kind=field
+  digest=b3:57a5f4ce3f25e25313c50ea007e22bd21672ebbaacf52adcaa79a6f1771471c4 file=MCL/ir/intent.go range=130:130 lang=go exported=true byte_range=6269:6310
+  sig=string
+EDGES
+  ^contains=matrix/mcl/ir.Reference
+
+NODE id=matrix/mcl/ir.Reference#Type kind=field
+  digest=b3:165542f3a7f3d1d25661c4e797df2b7f74cbd83fce8973fcefea4c5f03330c87 file=MCL/ir/intent.go range=128:128 lang=go exported=true byte_range=6131:6169
+  sig=string
+EDGES
+  ^contains=matrix/mcl/ir.Reference
+
+NODE id=matrix/mcl/ir.Reference#URI kind=field
+  digest=b3:85226aac5d6e7fb0e6fa25bb83e5434d58136dfeab72c2fe31f64f4b7565588b file=MCL/ir/intent.go range=127:127 lang=go exported=true byte_range=6058:6085
+  sig=string
+EDGES
+  ^contains=matrix/mcl/ir.Reference
+
+NODE id=matrix/mcl/ir.SeverityBlocking kind=const
+  digest=b3:3640baaf5438ac6c75516f5c44d4e9c1cfc04e9106f4a55fb3cd174dd178c33e file=MCL/ir/intent.go range=172:174 lang=go exported=true byte_range=7976:8050
+  sig=untyped string
+  doc=Severity constants for Unknown.
+EDGES
+  ^defines=matrix/mcl/ir/intent.go
+
+NODE id=matrix/mcl/ir.SeverityOptional kind=const
+  digest=b3:c81b80fc654f5f5a509504a5daaa6cb16dd09345024284f3004650fe65598928 file=MCL/ir/intent.go range=172:176 lang=go exported=true byte_range=7976:8115
+  sig=untyped string
+  doc=Severity constants for Unknown.
+EDGES
+  ^defines=matrix/mcl/ir/intent.go
+
+NODE id=matrix/mcl/ir.SeverityPreferred kind=const
+  digest=b3:4cede49feffeefde819fd0859c2daba776b319c14ee8784de793c30d738e1738 file=MCL/ir/intent.go range=172:175 lang=go exported=true byte_range=7976:8083
+  sig=untyped string
+  doc=Severity constants for Unknown.
+EDGES
+  ^defines=matrix/mcl/ir/intent.go
+
+NODE id=matrix/mcl/ir.SlotEntry kind=type
+  digest=b3:2425d03bcc1808907447955cdeea1578d65f1a44376c789bc8446eda373de075 file=MCL/ir/intent.go range=67:73 lang=go exported=true byte_range=2903:3246
+  sig=type SlotEntry struct {\n	Name	string	`json:"name"`		// slot name\n	Value	string	`json:"value"`		// resolved value or NL text\n	URI	string	`json:"uri,omitempty"`	// resolved matrix:// URI (post D13)\n	Type	string	`json:"type,omitempty"`	// type annotation\n}
+  doc=SlotEntry is a named typed referent in the Frame's objects list.
+EDGES
+  contains=matrix/mcl/ir.SlotEntry#Name,matrix/mcl/ir.SlotEntry#Type,matrix/mcl/ir.SlotEntry#URI,matrix/mcl/ir.SlotEntry#Value
+  ^defines=matrix/mcl/ir/intent.go
+
+NODE id=matrix/mcl/ir.SlotEntry#Name kind=field
+  digest=b3:37a06352de9376f508d759ca0f82133a734c23dfd4baf45ee02e0528da8f9f74 file=MCL/ir/intent.go range=69:69 lang=go exported=true byte_range=2996:3022
+  sig=string
+EDGES
+  ^contains=matrix/mcl/ir.SlotEntry
+
+NODE id=matrix/mcl/ir.SlotEntry#Type kind=field
+  digest=b3:86a0ed48f002b1ccf515b847a37bd5e373651c3a3040dc5cb1c72d84a6dbea4a file=MCL/ir/intent.go range=72:72 lang=go exported=true byte_range=3189:3225
+  sig=string
+EDGES
+  ^contains=matrix/mcl/ir.SlotEntry
+
+NODE id=matrix/mcl/ir.SlotEntry#URI kind=field
+  digest=b3:4caad2250c3fcb23c04253bf2d25c04d541a5d0256d7bc2ecf60ecb25d1a691a file=MCL/ir/intent.go range=71:71 lang=go exported=true byte_range=3114:3149
+  sig=string
+EDGES
+  ^contains=matrix/mcl/ir.SlotEntry
+
+NODE id=matrix/mcl/ir.SlotEntry#Value kind=field
+  digest=b3:302632eb9198dd74c71b17338fa8a7807672dde35f0d0d58d44833a864e649c5 file=MCL/ir/intent.go range=70:70 lang=go exported=true byte_range=3047:3074
+  sig=string
+EDGES
+  ^contains=matrix/mcl/ir.SlotEntry
+
+NODE id=matrix/mcl/ir.StateAccepted kind=const
+  digest=b3:497d333fc32ea49d993220d0b6b56e8412d6be8addbfc3787815b714657dc472 file=MCL/ir/intent.go range=160:165 lang=go exported=true byte_range=7656:7851
+  sig=untyped string
+  doc=IntentState constants matching the lifecycle state machine (§7).
+EDGES
+  ^defines=matrix/mcl/ir/intent.go
+
+NODE id=matrix/mcl/ir.StateCancelled kind=const
+  digest=b3:7a446ecdd93ee109c3dd5038267eb3d2e4cca3ccc9df159cf54d996c1581bb81 file=MCL/ir/intent.go range=160:169 lang=go exported=true byte_range=7656:7972
+  sig=untyped string
+  doc=IntentState constants matching the lifecycle state machine (§7).
+EDGES
+  ^defines=matrix/mcl/ir/intent.go
+
+NODE id=matrix/mcl/ir.StateClarifying kind=const
+  digest=b3:e9a6198c0ab401eea66972aa7116a2097003a7b5a248a1e309b25f8df344f48d file=MCL/ir/intent.go range=160:164 lang=go exported=true byte_range=7656:7821
+  sig=untyped string
+  doc=IntentState constants matching the lifecycle state machine (§7).
+EDGES
+  ^defines=matrix/mcl/ir/intent.go
+
+NODE id=matrix/mcl/ir.StateCompleted kind=const
+  digest=b3:ea9f7313ae9818c751d3790545b3d3aefcc9c4129060c0a4caf402509fe363dc file=MCL/ir/intent.go range=160:167 lang=go exported=true byte_range=7656:7913
+  sig=untyped string
+  doc=IntentState constants matching the lifecycle state machine (§7).
+EDGES
+  ^defines=matrix/mcl/ir/intent.go
+
+NODE id=matrix/mcl/ir.StateDraft kind=const
+  digest=b3:f3cc0905c0c7f55a9bcc939d533c3932fe315b5cfebe2acf22bffbde61927151 file=MCL/ir/intent.go range=160:162 lang=go exported=true byte_range=7656:7759
+  sig=untyped string
+  doc=IntentState constants matching the lifecycle state machine (§7).
+EDGES
+  ^defines=matrix/mcl/ir/intent.go
+
+NODE id=matrix/mcl/ir.StateExecuting kind=const
+  digest=b3:54c1c6f18aa9c4e4720828aee3b12521b618c4ced736fed682cadffb6d14e632 file=MCL/ir/intent.go range=160:166 lang=go exported=true byte_range=7656:7882
+  sig=untyped string
+  doc=IntentState constants matching the lifecycle state machine (§7).
+EDGES
+  ^defines=matrix/mcl/ir/intent.go
+
+NODE id=matrix/mcl/ir.StateFailed kind=const
+  digest=b3:949572b4c363d4a60d78e713d185a97357553cc30b0920bce7068d2335b694d5 file=MCL/ir/intent.go range=160:168 lang=go exported=true byte_range=7656:7941
+  sig=untyped string
+  doc=IntentState constants matching the lifecycle state machine (§7).
+EDGES
+  ^defines=matrix/mcl/ir/intent.go
+
+NODE id=matrix/mcl/ir.StateProposed kind=const
+  digest=b3:d549270050a5a1ab47ecead12cd9816357711265dc890938a774ce99e9208a73 file=MCL/ir/intent.go range=160:163 lang=go exported=true byte_range=7656:7789
+  sig=untyped string
+  doc=IntentState constants matching the lifecycle state machine (§7).
+EDGES
+  ^defines=matrix/mcl/ir/intent.go
+
+NODE id=matrix/mcl/ir.StepKindNames kind=var
+  digest=b3:26b86ec382a251c1c2882f6db98161900e822fecb7a5fa47c5158a07f0ed2d63 file=MCL/ir/plan.go range=264:277 lang=go exported=true byte_range=11336:12097
+  sig=[]string
+  doc=StepKindNames is the canonical ordered list of valid StepPayload.Kind\nvalues (Session 31b). Mirrors llm.AllStepKindNames; the executor's\nstep_handler_test guards against drift between the two definitions.\nIR owns the wire-form list because the kind ships in canonical JSON\n(replay invariant) before any llm-package code sees it.
+EDGES
+  ^defines=matrix/mcl/ir/plan.go
+
+NODE id=matrix/mcl/ir.StepPayload kind=type
+  digest=b3:98a74af9e3e8eec8813e2ee58fe553fc51609f50031e67df6f9ae2ce7a982fff file=MCL/ir/plan.go range=126:156 lang=go exported=true byte_range=5473:7065
+  sig=type StepPayload struct {\n	// PromptName names the prompt block inside the skill that this step\n	// invokes (skills with multiple prompt blocks disambiguate by name).\n	// Empty = the skill's default prompt for this verb branch.\n	PromptName	string	`json:"prompt_name,omitempty"`\n\n	// Inputs is a map of slot-name → slot-value bindings injected into\n	// the prompt's interpolation context. Values are matrix:// URIs\n	// (post D13) or literal scalars.\n	Inputs	map[string]string	`json:"inputs,omitempty"`\n\n	// ExpectedOutputs lists the slot names this step is expected to\n	// populate in the skill's §OUTPUTS section. Used by the executor\n	// to validate the LLM produced what was asked for.\n	ExpectedOutputs	[]string	`json:"expected_outputs,omitempty"`\n\n	// Kind is the cognitive-shape hint that drives executor-tier model\n	// routing (Session 31b · matrix.kvx sess#31a model router). Closed\n	// enum ValidStepKinds; empty defaults to "reason" at routing time\n	// (preserves backwards-compat for plans authored before P2). Skill\n	// authors annotate per-on-block via a `kind = "<value>"` KV inside\n	// the on-block body; the planner LLM is system-prompted to emit\n	// the same value here so the executor StepHandler can resolve the\n	// right model from the llm.ModelRegistry without a second lookup.\n	//\n	// Canonical JSON: omitempty preserves the byte-identical replay\n	// invariant for the 159 bulk-converted SKILL.mtx fixtures + every\n	// existing plan tree that never set Kind.\n	Kind	string	`json:"kind,omitempty"`\n}
+  doc=StepPayload carries the parameters for an in-skill LLM prompt step.
+EDGES
+  contains=matrix/mcl/ir.StepPayload#ExpectedOutputs,matrix/mcl/ir.StepPayload#Inputs,matrix/mcl/ir.StepPayload#Kind,matrix/mcl/ir.StepPayload#PromptName
+  ^defines=matrix/mcl/ir/plan.go
+
+NODE id=matrix/mcl/ir.StepPayload#ExpectedOutputs kind=field
+  digest=b3:023172fba93f6d24dfbb18afd2ed84b56ebf8c964d00f18e5427c297ca4b73a4 file=MCL/ir/plan.go range=138:141 lang=go exported=true byte_range=6049:6296
+  sig=[]string
+  doc=ExpectedOutputs lists the slot names this step is expected to\npopulate in the skill's §OUTPUTS section. Used by the executor\nto validate the LLM produced what was asked for.
+EDGES
+  ^contains=matrix/mcl/ir.StepPayload
+
+NODE id=matrix/mcl/ir.StepPayload#Inputs kind=field
+  digest=b3:8676d22cc08d8c5771630d2aead641600def7b3f91f4662036d587c77bf1f267 file=MCL/ir/plan.go range=133:136 lang=go exported=true byte_range=5824:6046
+  sig=map[string]string
+  doc=Inputs is a map of slot-name → slot-value bindings injected into\nthe prompt's interpolation context. Values are matrix:// URIs\n(post D13) or literal scalars.
+EDGES
+  ^contains=matrix/mcl/ir.StepPayload
+
+NODE id=matrix/mcl/ir.StepPayload#Kind kind=field
+  digest=b3:16afebee617296fe98f065e3bc9b2ac1909d92e649775583cb22368a726df37e file=MCL/ir/plan.go range=143:155 lang=go exported=true byte_range=6299:7063
+  sig=string
+  doc=Kind is the cognitive-shape hint that drives executor-tier model\nrouting (Session 31b · matrix.kvx sess#31a model router). Closed\nenum ValidStepKinds; empty defaults to "reason" at routing time\n(preserves backwards-compat for plans authored before P2). Skill\nauthors annotate per-on-block via a `kind = "<value>"` KV inside\nthe on-block body; the planner LLM is system-prompted to emit\nthe same value here so the executor StepHandler can resolve the\nright model from the llm.ModelRegistry without a second lookup.\n\nCanonical JSON: omitempty preserves the byte-identical replay\ninvariant for the 159 bulk-converted SKILL.mtx fixtures + every\nexisting plan tree that never set Kind.
+EDGES
+  ^contains=matrix/mcl/ir.StepPayload
+
+NODE id=matrix/mcl/ir.StepPayload#PromptName kind=field
+  digest=b3:8e8a8a21f4979a3b5679b9857bb742268cd39fc4f540ea27956c24f0f748b2d8 file=MCL/ir/plan.go range=128:131 lang=go exported=true byte_range=5571:5821
+  sig=string
+  doc=PromptName names the prompt block inside the skill that this step\ninvokes (skills with multiple prompt blocks disambiguate by name).\nEmpty = the skill's default prompt for this verb branch.
+EDGES
+  ^contains=matrix/mcl/ir.StepPayload
+
+NODE id=matrix/mcl/ir.SubDispatchPayload kind=type
+  digest=b3:302f9300aab74c71d0849d4e16969f9ad83ba5c51cb041174bbd417761c7d886 file=MCL/ir/plan.go range=183:202 lang=go exported=true byte_range=8230:9188
+  sig=type SubDispatchPayload struct {\n	// SkillRef is the version-pinned sub-skill URI. The parent skill\n	// must declare this in its §SUB_SKILLS section (S6 hard rule).\n	SkillRef	string	`json:"skill_ref"`\n\n	// AgentRef is the target agent for cross-agent dispatch. Empty =\n	// in-process dispatch under the same agent (v1 default per Q6 lock).\n	AgentRef	string	`json:"agent_ref,omitempty"`\n\n	// SubIntent is the Frame for the sub-intent. Typed surface only;\n	// the executor wraps this in a full Intent with derived metadata\n	// (id, parent, actor, snapshot_hash) at dispatch time.\n	SubIntent	*Frame	`json:"sub_intent,omitempty"`\n\n	// ScopeURI references the CortexScope grant for cross-agent reads\n	// (matrix://scope/<id>). Empty for in-process dispatch.\n	ScopeURI	string	`json:"scope_uri,omitempty"`\n}
+  doc=SubDispatchPayload carries the parameters for a sub-skill or sub-agent\ndispatch (research/02-protocol.md §11, research/05-skills-and-tools.md §5.1).
+EDGES
+  contains=matrix/mcl/ir.SubDispatchPayload#AgentRef,matrix/mcl/ir.SubDispatchPayload#ScopeURI,matrix/mcl/ir.SubDispatchPayload#SkillRef,matrix/mcl/ir.SubDispatchPayload#SubIntent
+  ^defines=matrix/mcl/ir/plan.go
+
+NODE id=matrix/mcl/ir.SubDispatchPayload#AgentRef kind=field
+  digest=b3:e0f2d1823734536d81d5460f823868fa93de0ad3a7148205b7121bf712285d6c file=MCL/ir/plan.go range=190:192 lang=go exported=true byte_range=8591:8773
+  sig=string
+  doc=AgentRef is the target agent for cross-agent dispatch. Empty =\nin-process dispatch under the same agent (v1 default per Q6 lock).
+EDGES
+  ^contains=matrix/mcl/ir.SubDispatchPayload
+
+NODE id=matrix/mcl/ir.SubDispatchPayload#ScopeURI kind=field
+  digest=b3:eb87b13322773e44a1c0622a57df1e5365431bb69d60871f1e16e12c2d369256 file=MCL/ir/plan.go range=199:201 lang=go exported=true byte_range=9016:9186
+  sig=string
+  doc=ScopeURI references the CortexScope grant for cross-agent reads\n(matrix://scope/<id>). Empty for in-process dispatch.
+EDGES
+  ^contains=matrix/mcl/ir.SubDispatchPayload
+
+NODE id=matrix/mcl/ir.SubDispatchPayload#SkillRef kind=field
+  digest=b3:300c16912455bb755f69f8b96b5abee59c42e72d8643e1c773df1c00bf267539 file=MCL/ir/plan.go range=186:188 lang=go exported=true byte_range=8421:8588
+  sig=string
+  doc=SkillRef is the version-pinned sub-skill URI. The parent skill\nmust declare this in its §SUB_SKILLS section (S6 hard rule).
+EDGES
+  ^contains=matrix/mcl/ir.SubDispatchPayload
+
+NODE id=matrix/mcl/ir.SubDispatchPayload#SubIntent kind=field
+  digest=b3:a19fd4e0553386bfc9f69c47467b9956b2ec4abc3687f0f3933fa74d20788901 file=MCL/ir/plan.go range=194:197 lang=go exported=true byte_range=8776:9013
+  sig=*ir.Frame
+  doc=SubIntent is the Frame for the sub-intent. Typed surface only;\nthe executor wraps this in a full Intent with derived metadata\n(id, parent, actor, snapshot_hash) at dispatch time.
+EDGES
+  ^contains=matrix/mcl/ir.SubDispatchPayload
+
+NODE id=matrix/mcl/ir.ToolCallPayload kind=type
+  digest=b3:8e38ce8d2942063f3b4de8987390915757d834852732d915e6c33833cfaab48f file=MCL/ir/plan.go range=158:181 lang=go exported=true byte_range=7067:8228
+  sig=type ToolCallPayload struct {\n	// ToolRef is the version-pinned tool URI\n	// (matrix://tool/mcp/<server>/<name>@<version> for MCP-backed,\n	// matrix://tool/<ns>/<name>@<version> for native chain tools).\n	// Bare-head refs are rejected at PlanTree validation (S4 hard rule).\n	ToolRef	string	`json:"tool_ref"`\n\n	// Args is the typed argument map for the tool. Schema-validated\n	// against the tool's manifest at invocation time. Sensitive values\n	// (credentials, tokens) MUST be passed via env-var refs rather than\n	// inline so they don't leak into the plan tree's content address.\n	Args	map[string]string	`json:"args,omitempty"`\n\n	// Timeout is the per-call timeout in milliseconds. Zero defers to\n	// the tool's manifest default.\n	TimeoutMs	int	`json:"timeout_ms,omitempty"`\n\n	// SideEffectClass declares what kind of side-effect this call has.\n	// Closed enum: "read", "write", "network", "shell", "chain".\n	// Cross-checked against the agent's allowed side-effect set at the\n	// executor's capability gate before dispatch.\n	SideEffectClass	string	`json:"side_effect_class,omitempty"`\n}
+  doc=ToolCallPayload carries the parameters for a single tool invocation.
+EDGES
+  contains=matrix/mcl/ir.ToolCallPayload#Args,matrix/mcl/ir.ToolCallPayload#SideEffectClass,matrix/mcl/ir.ToolCallPayload#TimeoutMs,matrix/mcl/ir.ToolCallPayload#ToolRef
+  ^defines=matrix/mcl/ir/plan.go
+
+NODE id=matrix/mcl/ir.ToolCallPayload#Args kind=field
+  digest=b3:17f211512a23b9c80b6d9c22eaff3e9cfdfffae8e7276105670230b663103410 file=MCL/ir/plan.go range=166:170 lang=go exported=true byte_range=7449:7768
+  sig=map[string]string
+  doc=Args is the typed argument map for the tool. Schema-validated\nagainst the tool's manifest at invocation time. Sensitive values\n(credentials, tokens) MUST be passed via env-var refs rather than\ninline so they don't leak into the plan tree's content address.
+EDGES
+  ^contains=matrix/mcl/ir.ToolCallPayload
+
+NODE id=matrix/mcl/ir.ToolCallPayload#SideEffectClass kind=field
+  digest=b3:576ab1c7cf5a6a995bea3eaf96ab158e8d86ea99b49f41265d87cc8c71e465ab file=MCL/ir/plan.go range=176:180 lang=go exported=true byte_range=7918:8226
+  sig=string
+  doc=SideEffectClass declares what kind of side-effect this call has.\nClosed enum: "read", "write", "network", "shell", "chain".\nCross-checked against the agent's allowed side-effect set at the\nexecutor's capability gate before dispatch.
+EDGES
+  ^contains=matrix/mcl/ir.ToolCallPayload
+
+NODE id=matrix/mcl/ir.ToolCallPayload#TimeoutMs kind=field
+  digest=b3:e9181a7a626f0b326d33c172ba1afb9b505f533218b79fb59b1d451f5526be69 file=MCL/ir/plan.go range=172:174 lang=go exported=true byte_range=7771:7915
+  sig=int
+  doc=Timeout is the per-call timeout in milliseconds. Zero defers to\nthe tool's manifest default.
+EDGES
+  ^contains=matrix/mcl/ir.ToolCallPayload
+
+NODE id=matrix/mcl/ir.ToolCallPayload#ToolRef kind=field
+  digest=b3:73e296d0de579aba16fb17d303ee0fbe1675a5604bf0209cec9478f1b4afd7bf file=MCL/ir/plan.go range=160:164 lang=go exported=true byte_range=7170:7446
+  sig=string
+  doc=ToolRef is the version-pinned tool URI\n(matrix://tool/mcp/<server>/<name>@<version> for MCP-backed,\nmatrix://tool/<ns>/<name>@<version> for native chain tools).\nBare-head refs are rejected at PlanTree validation (S4 hard rule).
+EDGES
+  ^contains=matrix/mcl/ir.ToolCallPayload
+
+NODE id=matrix/mcl/ir.Unknown kind=type
+  digest=b3:e6506fb44feb7049303bd094e34d448149b9f250efec5784d57d3787d0377b15 file=MCL/ir/intent.go range=113:123 lang=go exported=true byte_range=5231:5959
+  sig=type Unknown struct {\n	ID		string		`json:"id"`			// local id ("u1", "u2")\n	Field		string		`json:"field"`			// SlotPath ("frame.constraints[0].max")\n	Type		string		`json:"type"`			// expected type\n	Severity	string		`json:"severity"`		// "blocking", "preferred", "optional"\n	Rationale	string		`json:"rationale"`		// human-readable why\n	Default		string		`json:"default,omitempty"`	// suggested fill\n	Options		[]string	`json:"options,omitempty"`	// enum-like choices\n	SourceHint	string		`json:"source_hint,omitempty"`	// cortex location that might fill this\n}
+  doc=Unknown is a typed gap blocking or delaying execution (§6.4).
+EDGES
+  contains=matrix/mcl/ir.Unknown#Default,matrix/mcl/ir.Unknown#Field,matrix/mcl/ir.Unknown#ID,matrix/mcl/ir.Unknown#Options,matrix/mcl/ir.Unknown#Rationale,matrix/mcl/ir.Unknown#Severity,matrix/mcl/ir.Unknown#SourceHint,matrix/mcl/ir.Unknown#Type
+  ^defines=matrix/mcl/ir/intent.go
+
+NODE id=matrix/mcl/ir.Unknown#Default kind=field
+  digest=b3:dadd765a74a72b2b793c2ae0764451342537b317cf683cbca65537cf11ea1b14 file=MCL/ir/intent.go range=120:120 lang=go exported=true byte_range=5724:5770
+  sig=string
+EDGES
+  ^contains=matrix/mcl/ir.Unknown
+
+NODE id=matrix/mcl/ir.Unknown#Field kind=field
+  digest=b3:7f8f3b30310d0b36bc4cf69900ad4f03b8905a9e876a2b3e73380449f1f14e62 file=MCL/ir/intent.go range=116:116 lang=go exported=true byte_range=5397:5431
+  sig=string
+EDGES
+  ^contains=matrix/mcl/ir.Unknown
+
+NODE id=matrix/mcl/ir.Unknown#ID kind=field
+  digest=b3:15186f43ba794d61b7c1f76ea7bccada570e0011eb1486761f957976b8318538 file=MCL/ir/intent.go range=115:115 lang=go exported=true byte_range=5320:5351
+  sig=string
+EDGES
+  ^contains=matrix/mcl/ir.Unknown
+
+NODE id=matrix/mcl/ir.Unknown#Options kind=field
+  digest=b3:a13d889258240cd07b6e93ad39cbc86384cb27ce8de4f47dd75624c501b3ff61 file=MCL/ir/intent.go range=121:121 lang=go exported=true byte_range=5794:5840
+  sig=[]string
+EDGES
+  ^contains=matrix/mcl/ir.Unknown
+
+NODE id=matrix/mcl/ir.Unknown#Rationale kind=field
+  digest=b3:64d9b085beb81b001a16d361f73d6ca4eaf605cac220272674f1a91925818a8f file=MCL/ir/intent.go range=119:119 lang=go exported=true byte_range=5650:5688
+  sig=string
+EDGES
+  ^contains=matrix/mcl/ir.Unknown
+
+NODE id=matrix/mcl/ir.Unknown#Severity kind=field
+  digest=b3:0d6334a3054f7be11312edbfff2502fc65d205833bb5574315d76976dcafc336 file=MCL/ir/intent.go range=118:118 lang=go exported=true byte_range=5559:5596
+  sig=string
+EDGES
+  ^contains=matrix/mcl/ir.Unknown
+
+NODE id=matrix/mcl/ir.Unknown#SourceHint kind=field
+  digest=b3:89c5eb4b49f96bf7bd0cdbd4d8e4fb651dea10a3092ed0bf2074c1d7b6ee5653 file=MCL/ir/intent.go range=122:122 lang=go exported=true byte_range=5867:5917
+  sig=string
+EDGES
+  ^contains=matrix/mcl/ir.Unknown
+
+NODE id=matrix/mcl/ir.Unknown#Type kind=field
+  digest=b3:8ad21e3a952663613e5d3729151e1b253834314db7961fa9e28d0dcfe1e047e3 file=MCL/ir/intent.go range=117:117 lang=go exported=true byte_range=5490:5523
+  sig=string
+EDGES
+  ^contains=matrix/mcl/ir.Unknown
+
+NODE id=matrix/mcl/ir.ValidNodeKinds kind=var
+  digest=b3:161b090a3e0f43ba8d6bf7950af0575e67168d3e01713462de8b61ae1cfb3b58 file=MCL/ir/plan.go range=244:252 lang=go exported=true byte_range=10596:10840
+  sig=map[string]bool
+  doc=ValidNodeKinds is the canonical closed set of node kinds.
+EDGES
+  ^defines=matrix/mcl/ir/plan.go
+
+NODE id=matrix/mcl/ir.ValidSideEffectClasses kind=var
+  digest=b3:33d0d0dd0b41a9a9bcae9b81f021c894d74fa4d6dceda00d39ae8bf2226b4030 file=MCL/ir/plan.go range=254:262 lang=go exported=true byte_range=10842:11334
+  sig=map[string]bool
+  doc=ValidSideEffectClasses is the closed enum for ToolCallPayload.SideEffectClass.\nClosed set keeps the executor's capability gate exhaustive.
+EDGES
+  ^defines=matrix/mcl/ir/plan.go
+
+NODE id=matrix/mcl/ir.ValidStepKinds kind=var
+  digest=b3:e29909699f131881d1d3743b58efd100283a1e9274fd80561915bb55e9b822b8 file=MCL/ir/plan.go range=279:288 lang=go exported=true byte_range=12099:12451
+  sig=map[string]bool
+  doc=ValidStepKinds is the closed enum for StepPayload.Kind. Empty Kind\nis allowed (and treated as "reason" at routing time) — only an\nexplicit unknown value is rejected by ValidatePlan.
+EDGES
+  ^defines=matrix/mcl/ir/plan.go
+
+NODE id=matrix/mcl/ir.ValidVerb kind=func
+  digest=b3:5538ab515323a39cd2e64843781801d05961d941d0de8b87dce23d6e162aa259 file=MCL/ir/intent.go range=200:209 lang=go exported=true byte_range=8717:8922
+  sig=func ValidVerb(v string) bool
+  doc=ValidVerb returns true if v is a valid D7 verb or x: extension.
+EDGES
+  ^defines=matrix/mcl/ir/intent.go
+
+NODE id=matrix/mcl/ir.ValidatePlan kind=func
+  digest=b3:5c01058915e6cae8f2e265aff33308253c2c853201071d2ce237a0ac4abcd1ff file=MCL/ir/plan_validate.go range=31:64 lang=go exported=true byte_range=1462:2691
+  sig=func ValidatePlan(plan *PlanTree) error
+  doc=ValidatePlan checks structural invariants of a PlanTree per\nresearch/05-skills-and-tools.md §3.2 and the Session 21 locked design.\nReturns nil if the plan is well-formed.\n\nInvariants enforced:\n 1. PlanTree.ID, IntentID, SkillRef populated\n 2. Every PlanNode has a unique non-empty ID within the tree\n 3. Every PlanNode.Kind is in ValidNodeKinds\n 4. Branch kinds (Sequential, Parallel) have ≥1 child and no terminal payload\n 5. Terminal kinds (Step, ToolCall, SubDispatch, Gate) have no children\n    and exactly the matching typed payload populated\n 6. ToolCall.ToolRef + SubDispatch.SkillRef are version-pinned (S4 hard rule)\n 7. ToolCall.SideEffectClass (if set) is in ValidSideEffectClasses\n 8. Gate.Question is non-empty
+EDGES
+  ^defines=matrix/mcl/ir/plan_validate.go
+
+NODE id=matrix/mcl/ir.VerbAcquire kind=const
+  digest=b3:82f5cc9a8f71f839b9ae1114eb98a0e04a9f6835d3107805dfbaa31fd17f78b0 file=MCL/ir/intent.go range=179:182 lang=go exported=true byte_range=8119:8214
+  sig=untyped string
+  doc=Verb constants (D7 closed vocab).
+EDGES
+  ^defines=matrix/mcl/ir/intent.go
+
+NODE id=matrix/mcl/ir.VerbAnalyze kind=const
+  digest=b3:a37939106950390d2acd3a91be20c82fa01744e794e1d214624742b95c33a3e2 file=MCL/ir/intent.go range=179:186 lang=go exported=true byte_range=8119:8319
+  sig=untyped string
+  doc=Verb constants (D7 closed vocab).
+EDGES
+  ^defines=matrix/mcl/ir/intent.go
+
+NODE id=matrix/mcl/ir.VerbBuild kind=const
+  digest=b3:f8d6f72e1046ae1b78be7680dbd5384045694152f2969d30db8738d06e36dc0d file=MCL/ir/intent.go range=179:183 lang=go exported=true byte_range=8119:8239
+  sig=untyped string
+  doc=Verb constants (D7 closed vocab).
+EDGES
+  ^defines=matrix/mcl/ir/intent.go
+
+NODE id=matrix/mcl/ir.VerbDelegate kind=const
+  digest=b3:0f64791248f1d1cb7ad9c46eff6c612f22c16888e7db64e276443790f3c99afd file=MCL/ir/intent.go range=179:190 lang=go exported=true byte_range=8119:8431
+  sig=untyped string
+  doc=Verb constants (D7 closed vocab).
+EDGES
+  ^defines=matrix/mcl/ir/intent.go
+
+NODE id=matrix/mcl/ir.VerbDeliver kind=const
+  digest=b3:87f63e9a6b3b969d39f56205f29855046c8e58101549ce912b876d6a66b432c1 file=MCL/ir/intent.go range=179:185 lang=go exported=true byte_range=8119:8292
+  sig=untyped string
+  doc=Verb constants (D7 closed vocab).
+EDGES
+  ^defines=matrix/mcl/ir/intent.go
+
+NODE id=matrix/mcl/ir.VerbFind kind=const
+  digest=b3:7405913587524b7f6da5257f7d3f0c3e886adc53465e93a811e6cde62292cf28 file=MCL/ir/intent.go range=179:181 lang=go exported=true byte_range=8119:8187
+  sig=untyped string
+  doc=Verb constants (D7 closed vocab).
+EDGES
+  ^defines=matrix/mcl/ir/intent.go
+
+NODE id=matrix/mcl/ir.VerbModify kind=const
+  digest=b3:1ea6191adcc80f5cfa6d24224412ed5ed70e97c56827898a57e288eb79a53b30 file=MCL/ir/intent.go range=179:184 lang=go exported=true byte_range=8119:8265
+  sig=untyped string
+  doc=Verb constants (D7 closed vocab).
+EDGES
+  ^defines=matrix/mcl/ir/intent.go
+
+NODE id=matrix/mcl/ir.VerbMonitor kind=const
+  digest=b3:d20139468ebf1f4a31d4e1d3785a9660505a1f9f75470f5acf4a1eed882e17b3 file=MCL/ir/intent.go range=179:189 lang=go exported=true byte_range=8119:8403
+  sig=untyped string
+  doc=Verb constants (D7 closed vocab).
+EDGES
+  ^defines=matrix/mcl/ir/intent.go
+
+NODE id=matrix/mcl/ir.VerbNegotiate kind=const
+  digest=b3:cca9981e6557db90466d81eab7ce227d995ce258dd6a48508f4fede6b41cef03 file=MCL/ir/intent.go range=179:187 lang=go exported=true byte_range=8119:8348
+  sig=untyped string
+  doc=Verb constants (D7 closed vocab).
+EDGES
+  ^defines=matrix/mcl/ir/intent.go
+
+NODE id=matrix/mcl/ir.VerbSchedule kind=const
+  digest=b3:ac9b71330bb79b4b468ffb0bcd8dc68151a1583771f5b4c48eb21ab96c23f72d file=MCL/ir/intent.go range=179:188 lang=go exported=true byte_range=8119:8376
+  sig=untyped string
+  doc=Verb constants (D7 closed vocab).
+EDGES
+  ^defines=matrix/mcl/ir/intent.go
+
+NODE id=matrix/mcl/ir.canonicalAny kind=func
+  digest=b3:15e381afb440f7842b99d801cea3d2ca2cafabce2b55695a78d9f2bf5570f214 file=MCL/ir/encode.go range=59:74 lang=go exported=false byte_range=1586:2137
+  sig=func canonicalAny(v interface{}) ([]byte, error)
+  doc=canonicalAny is the shared entry point for any JSON-marshalable value.\nRoutes through encoding/json (to apply struct tags) then through the\ncanonicalMarshal walker (to sort keys + drop zero values).
+EDGES
+  ^defines=matrix/mcl/ir/encode.go
+
+NODE id=matrix/mcl/ir.canonicalMarshal kind=func
+  digest=b3:1f040ec7919a5a120b8f2311369f9462872893755c44b3864761df50727ce17c file=MCL/ir/encode.go range=76:88 lang=go exported=false byte_range=2139:2539
+  sig=func canonicalMarshal(v interface{}) ([]byte, error)
+  doc=canonicalMarshal recursively encodes a value to canonical JSON.\nMaps are emitted with keys in lexicographic order.
+EDGES
+  ^defines=matrix/mcl/ir/encode.go
+
+NODE id=matrix/mcl/ir.canonicalMarshalArray kind=func
+  digest=b3:94a518d9af987a1228883dcfc03e76403be9367e2ab2bfff2aefd202b858d291 file=MCL/ir/encode.go range=132:146 lang=go exported=false byte_range=3247:3551
+  sig=func canonicalMarshalArray(arr []interface{}) ([]byte, error)
+EDGES
+  ^defines=matrix/mcl/ir/encode.go
+
+NODE id=matrix/mcl/ir.canonicalMarshalMap kind=func
+  digest=b3:cf01a4c531635f39776e2e82ed267de4fbb40454b700057cf5673a4cd89fea7f file=MCL/ir/encode.go range=90:130 lang=go exported=false byte_range=2541:3245
+  sig=func canonicalMarshalMap(m map[string]interface{}) ([]byte, error)
+EDGES
+  ^defines=matrix/mcl/ir/encode.go
+
+NODE id=matrix/mcl/ir.isTerminalKind kind=func
+  digest=b3:586d46f170df91d58d5966e491deebfc198ba1e9c657102127998700a7df2456 file=MCL/ir/plan_validate.go range=186:193 lang=go exported=false byte_range=6516:6735
+  sig=func isTerminalKind(kind string) bool
+  doc=isTerminalKind reports whether a PlanNode of this kind has no children.
+EDGES
+  ^defines=matrix/mcl/ir/plan_validate.go
+
+NODE id=matrix/mcl/ir.isVersionPinned kind=func
+  digest=b3:c4b1d60cadce8d4e18c5cd9acabba350220aba28299831e313b0d64f57622cf7 file=MCL/ir/plan_validate.go range=195:208 lang=go exported=false byte_range=6737:7203
+  sig=func isVersionPinned(uri string) bool
+  doc=isVersionPinned reports whether a matrix:// URI carries an explicit\n@version or @sha256:... suffix. Bare heads (e.g. matrix://skill/foo)\nare rejected per S4 hard rule (research/05-skills-and-tools.md §S4).
+EDGES
+  ^defines=matrix/mcl/ir/plan_validate.go
+
+NODE id=matrix/mcl/ir.isZeroValue kind=func
+  digest=b3:caab6fc76599a7a478d0da7375f8a58b42cce12ca391f95ea5796bbb9129cd25 file=MCL/ir/encode.go range=148:167 lang=go exported=false byte_range=3553:4004
+  sig=func isZeroValue(v interface{}) bool
+  doc=isZeroValue returns true if the JSON value is a zero/empty that should be\nomitted from canonical encoding. This mirrors omitempty semantics.
+EDGES
+  ^defines=matrix/mcl/ir/encode.go
+
+NODE id=matrix/mcl/ir.validateNodePayload kind=func
+  digest=b3:afb20fe9b0b382a54dd114665ad90fcf886b142e13679d59555ef73719622dbc file=MCL/ir/plan_validate.go range=100:184 lang=go exported=false byte_range=3560:6514
+  sig=func validateNodePayload(n *PlanNode) error
+EDGES
+  ^defines=matrix/mcl/ir/plan_validate.go
+
+NODE id=matrix/mcl/ir.validatePlanNode kind=func
+  digest=b3:3a59b6d920217cb52b8a7c9f5468690651547b2aed2b6c75e7f76c2fe36f18b8 file=MCL/ir/plan_validate.go range=66:98 lang=go exported=false byte_range=2693:3558
+  sig=func validatePlanNode(n *PlanNode, seen map[string]bool) error
+EDGES
+  ^defines=matrix/mcl/ir/plan_validate.go
+
+NODE id=matrix/mcl/ir/encode.go kind=file
+  digest=b3:8bed35dd2e09fb42956c10c8b8b32da62845879241d03b62e7fcb9b2987ce6aa file=MCL/ir/encode.go range=1:169 lang=go exported=true
+EDGES
+  defines=matrix/mcl/ir.CanonicalJSON,matrix/mcl/ir.CanonicalJSONPlan,matrix/mcl/ir.Hash,matrix/mcl/ir.HashPlan,matrix/mcl/ir.canonicalAny,matrix/mcl/ir.canonicalMarshal,matrix/mcl/ir.canonicalMarshalArray,matrix/mcl/ir.canonicalMarshalMap,matrix/mcl/ir.isZeroValue
+  ^contains=matrix/mcl/ir
+
+NODE id=matrix/mcl/ir/intent.go kind=file
+  digest=b3:3e698895e54a82d9915d30fdf16fa34f059fb7be1c3f36fc7ce9a192ed7cd8b5 file=MCL/ir/intent.go range=1:211 lang=go exported=true
+EDGES
+  defines=matrix/mcl/ir.AssetAmount,matrix/mcl/ir.Budget,matrix/mcl/ir.CompileMetadata,matrix/mcl/ir.Constraint,matrix/mcl/ir.D7ClosedVerbs,matrix/mcl/ir.Frame,matrix/mcl/ir.Intent,matrix/mcl/ir.Predicate,matrix/mcl/ir.Preference,matrix/mcl/ir.Reference,matrix/mcl/ir.SeverityBlocking,matrix/mcl/ir.SeverityOptional,matrix/mcl/ir.SeverityPreferred,matrix/mcl/ir.SlotEntry,matrix/mcl/ir.StateAccepted,matrix/mcl/ir.StateCancelled,matrix/mcl/ir.StateClarifying,matrix/mcl/ir.StateCompleted,matrix/mcl/ir.StateDraft,matrix/mcl/ir.StateExecuting,matrix/mcl/ir.StateFailed,matrix/mcl/ir.StateProposed,matrix/mcl/ir.Unknown,matrix/mcl/ir.ValidVerb,matrix/mcl/ir.VerbAcquire,matrix/mcl/ir.VerbAnalyze,matrix/mcl/ir.VerbBuild,matrix/mcl/ir.VerbDelegate,matrix/mcl/ir.VerbDeliver,matrix/mcl/ir.VerbFind,matrix/mcl/ir.VerbModify,matrix/mcl/ir.VerbMonitor,matrix/mcl/ir.VerbNegotiate,matrix/mcl/ir.VerbSchedule
+  ^contains=matrix/mcl/ir
+
+NODE id=matrix/mcl/ir/plan.go kind=file
+  digest=b3:d0e05cba9fa7ca8d2694c38d998db32178bf484647937af873d27b74bf05420d file=MCL/ir/plan.go range=1:290 lang=go exported=true
+EDGES
+  defines=matrix/mcl/ir.GatePayload,matrix/mcl/ir.NodeGate,matrix/mcl/ir.NodeParallel,matrix/mcl/ir.NodeSequential,matrix/mcl/ir.NodeStep,matrix/mcl/ir.NodeSubDispatch,matrix/mcl/ir.NodeToolCall,matrix/mcl/ir.PlanNode,matrix/mcl/ir.PlanTree,matrix/mcl/ir.StepKindNames,matrix/mcl/ir.StepPayload,matrix/mcl/ir.SubDispatchPayload,matrix/mcl/ir.ToolCallPayload,matrix/mcl/ir.ValidNodeKinds,matrix/mcl/ir.ValidSideEffectClasses,matrix/mcl/ir.ValidStepKinds
+  ^contains=matrix/mcl/ir
+
+NODE id=matrix/mcl/ir/plan_validate.go kind=file
+  digest=b3:622409ec7393318f9b4fc6f103ec7fc51aaffe449cbbb60d43f96b050c3fd49b file=MCL/ir/plan_validate.go range=1:210 lang=go exported=true
+EDGES
+  defines=matrix/mcl/ir.ErrPlanBranchEmpty,matrix/mcl/ir.ErrPlanGateNoQuestion,matrix/mcl/ir.ErrPlanMissingID,matrix/mcl/ir.ErrPlanMissingIntentID,matrix/mcl/ir.ErrPlanMissingSkillRef,matrix/mcl/ir.ErrPlanNodeDuplicateID,matrix/mcl/ir.ErrPlanNodeMissingID,matrix/mcl/ir.ErrPlanPayloadMismatch,matrix/mcl/ir.ErrPlanSideEffectUnknown,matrix/mcl/ir.ErrPlanStepKindUnknown,matrix/mcl/ir.ErrPlanStepNoPrompt,matrix/mcl/ir.ErrPlanSubSkillBareHead,matrix/mcl/ir.ErrPlanTerminalHasChild,matrix/mcl/ir.ErrPlanToolRefBareHead,matrix/mcl/ir.ErrPlanUnknownNodeKind,matrix/mcl/ir.ValidatePlan,matrix/mcl/ir.isTerminalKind,matrix/mcl/ir.isVersionPinned,matrix/mcl/ir.validateNodePayload,matrix/mcl/ir.validatePlanNode
+  ^contains=matrix/mcl/ir

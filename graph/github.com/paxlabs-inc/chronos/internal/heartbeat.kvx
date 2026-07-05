@@ -1,0 +1,84 @@
+# GENERATED gen=codegraph do-not-edit merkle=b3:2dc69ec8dbbe0231373534486cf12ff6fdb0eaad7b2dfdcbc4d73453c8542ee8
+
+NODE id=github.com/paxlabs-inc/chronos/internal/heartbeat kind=package
+  digest=b3:87f940e507fe89ce3e19cec2efa9e83dac51ef3966802f14e597720bed249c5c file=chronos/internal/heartbeat range=0:0 lang=go exported=true
+EDGES
+  contains=github.com/paxlabs-inc/chronos/internal/heartbeat/heartbeat.go
+  ^contains=mod:github.com/paxlabs-inc/chronos
+
+NODE id=github.com/paxlabs-inc/chronos/internal/heartbeat.BuildAlarm kind=func
+  digest=b3:3a81ad69036a20afab0d80ecfe05583dad46871ba637336e008de4712d18af00 file=chronos/internal/heartbeat/heartbeat.go range=54:86 lang=go exported=true byte_range=2319:3432
+  sig=func BuildAlarm(spec Spec, now time.Time) (types.Alarm, error)
+  doc=BuildAlarm assembles a Chronos heartbeat alarm (a cron recurring alarm with\nthe canonical heartbeat wake_message). The alarm is active and ready to be\nstored via store.CreateAlarm. The caller must set OwnerDID + UserID before\npersisting (the server does this from the authenticated principal).
+EDGES
+  ^defines=github.com/paxlabs-inc/chronos/internal/heartbeat/heartbeat.go
+
+NODE id=github.com/paxlabs-inc/chronos/internal/heartbeat.DefaultCronExpr kind=const
+  digest=b3:158b84b1417367ed15f68aeb5f5d49a0625b29952863022998d39a79f597a1fb file=chronos/internal/heartbeat/heartbeat.go range=32:35 lang=go exported=true byte_range=1429:1640
+  sig=untyped string
+  doc=DefaultCronExpr is the default recurring interval for a heartbeat alarm\nwhen none is specified. @every 5m is frequent enough for proactive review\nwithout being noisy.
+EDGES
+  ^defines=github.com/paxlabs-inc/chronos/internal/heartbeat/heartbeat.go
+
+NODE id=github.com/paxlabs-inc/chronos/internal/heartbeat.Spec kind=type
+  digest=b3:324155de5a953c807dd2c6bc4a612f013e9ffcdda679c4f61f488d98db5b5349 file=chronos/internal/heartbeat/heartbeat.go range=37:52 lang=go exported=true byte_range=1642:2317
+  sig=type Spec struct {\n	// ConversationID is the conversation the heartbeat reviews (required — a\n	// heartbeat without a conversation to review is meaningless).\n	ConversationID	string\n	// CronExpr is the recurring schedule. Defaults to DefaultCronExpr when empty.\n	CronExpr	string\n	// Timezone is the IANA timezone for the cron expression (default UTC).\n	Timezone	string\n	// Label is an optional human-readable label for the alarm.\n	Label	string\n	// IdempotencyKey deduplicates the alarm (recommended for heartbeat alarms).\n	IdempotencyKey	string\n	// MaxFailures is the wake-delivery retry ceiling (0 = server default).\n	MaxFailures	int\n}
+  doc=Spec configures a heartbeat alarm.
+EDGES
+  contains=github.com/paxlabs-inc/chronos/internal/heartbeat.Spec#ConversationID,github.com/paxlabs-inc/chronos/internal/heartbeat.Spec#CronExpr,github.com/paxlabs-inc/chronos/internal/heartbeat.Spec#IdempotencyKey,github.com/paxlabs-inc/chronos/internal/heartbeat.Spec#Label,github.com/paxlabs-inc/chronos/internal/heartbeat.Spec#MaxFailures,github.com/paxlabs-inc/chronos/internal/heartbeat.Spec#Timezone
+  ^defines=github.com/paxlabs-inc/chronos/internal/heartbeat/heartbeat.go
+
+NODE id=github.com/paxlabs-inc/chronos/internal/heartbeat.Spec#ConversationID kind=field
+  digest=b3:2d613ddfab6fb6e7e911ad58209c197415a265b5de744e028a60ca39ec81362a file=chronos/internal/heartbeat/heartbeat.go range=39:41 lang=go exported=true byte_range=1700:1862
+  sig=string
+  doc=ConversationID is the conversation the heartbeat reviews (required — a\nheartbeat without a conversation to review is meaningless).
+EDGES
+  ^contains=github.com/paxlabs-inc/chronos/internal/heartbeat.Spec
+
+NODE id=github.com/paxlabs-inc/chronos/internal/heartbeat.Spec#CronExpr kind=field
+  digest=b3:cf8bc10d4e14257505b83837d32ae7a9b269b50c2043f99ab6b0c0531625c781 file=chronos/internal/heartbeat/heartbeat.go range=42:43 lang=go exported=true byte_range=1864:1959
+  sig=string
+  doc=CronExpr is the recurring schedule. Defaults to DefaultCronExpr when empty.
+EDGES
+  ^contains=github.com/paxlabs-inc/chronos/internal/heartbeat.Spec
+
+NODE id=github.com/paxlabs-inc/chronos/internal/heartbeat.Spec#IdempotencyKey kind=field
+  digest=b3:9ffdebc14e40eafb2e8918e54d8cd8541f8609cdf5b95ee5e2978c6bd73bd346 file=chronos/internal/heartbeat/heartbeat.go range=48:49 lang=go exported=true byte_range=2126:2225
+  sig=string
+  doc=IdempotencyKey deduplicates the alarm (recommended for heartbeat alarms).
+EDGES
+  ^contains=github.com/paxlabs-inc/chronos/internal/heartbeat.Spec
+
+NODE id=github.com/paxlabs-inc/chronos/internal/heartbeat.Spec#Label kind=field
+  digest=b3:fce7566067af6464fca03764bfa69fc4dd26eb7143b9dfe503330e8e8292bab2 file=chronos/internal/heartbeat/heartbeat.go range=46:47 lang=go exported=true byte_range=2051:2124
+  sig=string
+  doc=Label is an optional human-readable label for the alarm.
+EDGES
+  ^contains=github.com/paxlabs-inc/chronos/internal/heartbeat.Spec
+
+NODE id=github.com/paxlabs-inc/chronos/internal/heartbeat.Spec#MaxFailures kind=field
+  digest=b3:4835b162761bd5ce8cf69474f857d10828d3752df594bb06b2c546e445d0a3ee file=chronos/internal/heartbeat/heartbeat.go range=50:51 lang=go exported=true byte_range=2227:2315
+  sig=int
+  doc=MaxFailures is the wake-delivery retry ceiling (0 = server default).
+EDGES
+  ^contains=github.com/paxlabs-inc/chronos/internal/heartbeat.Spec
+
+NODE id=github.com/paxlabs-inc/chronos/internal/heartbeat.Spec#Timezone kind=field
+  digest=b3:95d25ca4ee9a4931173bbdae8769bca38e496fd6482d222512e73fd845ab4f48 file=chronos/internal/heartbeat/heartbeat.go range=44:45 lang=go exported=true byte_range=1961:2049
+  sig=string
+  doc=Timezone is the IANA timezone for the cron expression (default UTC).
+EDGES
+  ^contains=github.com/paxlabs-inc/chronos/internal/heartbeat.Spec
+
+NODE id=github.com/paxlabs-inc/chronos/internal/heartbeat.WakeMessage kind=const
+  digest=b3:ec7f2678503c255b6716c499a185cd9d476840e7bfeb52f341365318d1504e61 file=chronos/internal/heartbeat/heartbeat.go range=22:30 lang=go exported=true byte_range=792:1427
+  sig=untyped string
+  doc=WakeMessage is the canonical wake_message a Chronos heartbeat alarm\ndelivers. It instructs the agent to review active goals/constraints and\nreply with the HEARTBEAT_OK sentinel when nothing needs attention, or\nsurface real content when something does.\n\nThis MUST stay in sync with the agent-side HeartbeatWakeMessage\n(neo/internal/agent/heartbeat.go) — they share the HEARTBEAT marker that\nthe agent uses to detect a heartbeat wake.
+EDGES
+  ^defines=github.com/paxlabs-inc/chronos/internal/heartbeat/heartbeat.go
+
+NODE id=github.com/paxlabs-inc/chronos/internal/heartbeat/heartbeat.go kind=file
+  digest=b3:bcd51245b220df6f32e07681488f11af94b5d78192d9deeffe10b3ccbca4318f file=chronos/internal/heartbeat/heartbeat.go range=1:86 lang=go exported=true
+EDGES
+  defines=github.com/paxlabs-inc/chronos/internal/heartbeat.BuildAlarm,github.com/paxlabs-inc/chronos/internal/heartbeat.DefaultCronExpr,github.com/paxlabs-inc/chronos/internal/heartbeat.Spec,github.com/paxlabs-inc/chronos/internal/heartbeat.WakeMessage
+  ^contains=github.com/paxlabs-inc/chronos/internal/heartbeat

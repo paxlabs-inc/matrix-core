@@ -1,0 +1,456 @@
+# GENERATED gen=codegraph do-not-edit merkle=b3:2dc69ec8dbbe0231373534486cf12ff6fdb0eaad7b2dfdcbc4d73453c8542ee8
+
+NODE id=github.com/paxlabs-inc/deus/internal/discovery kind=package
+  digest=b3:7698437c9b4281a2d92cd4e41161d2930ba69344302e228f4ad5b94185bf515f file=deus/internal/discovery range=0:0 lang=go exported=true
+EDGES
+  contains=github.com/paxlabs-inc/deus/internal/discovery/discovery.go,github.com/paxlabs-inc/deus/internal/discovery/embed.go,github.com/paxlabs-inc/deus/internal/discovery/extract.go,github.com/paxlabs-inc/deus/internal/discovery/index.go,github.com/paxlabs-inc/deus/internal/discovery/rank.go
+  ^contains=mod:github.com/paxlabs-inc/deus
+
+NODE id=github.com/paxlabs-inc/deus/internal/discovery.BlendScoreWithPrice kind=func
+  digest=b3:6e6a77ac2c350cbfd200755bb1c9de95adf7ca77d4a98c45033dca25ad759b2e file=deus/internal/discovery/rank.go range=48:61 lang=go exported=true byte_range=1030:1549
+  sig=func BlendScoreWithPrice(w RankingWeights, c store.DiscoverCandidate, maxPriceWei, minPriceWei string) float64
+  doc=BlendScoreWithPrice includes resolved min price wei for the service.
+EDGES
+  ^defines=github.com/paxlabs-inc/deus/internal/discovery/rank.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/discovery.BuildSearchDocument kind=func
+  digest=b3:abf5226398a16fbd098407bc3d84d8cb9cae16d49260afb025eef8e9d50cc7e5 file=deus/internal/discovery/index.go range=12:29 lang=go exported=true byte_range=122:606
+  sig=func BuildSearchDocument(m *manifest.Manifest) string
+  doc=BuildSearchDocument concatenates manifest fields for embedding and lexical index.
+EDGES
+  ^defines=github.com/paxlabs-inc/deus/internal/discovery/index.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/discovery.DefaultRankingWeights kind=func
+  digest=b3:7ea6930be9b64a2bedcba2bb98896da7cb294de3143985ede058a0808bc8f630 file=deus/internal/discovery/rank.go range=24:29 lang=go exported=true byte_range=444:649
+  sig=func DefaultRankingWeights() RankingWeights
+  doc=DefaultRankingWeights returns documented defaults.
+EDGES
+  ^defines=github.com/paxlabs-inc/deus/internal/discovery/rank.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/discovery.Embedder kind=interface
+  digest=b3:78ae3cc75a425754cd4b6c760b85f0101a153a9122dce078ff76c96b5ea2cb86 file=deus/internal/discovery/embed.go range=19:26 lang=go exported=true byte_range=185:453
+  sig=type Embedder interface {\n	Embed(ctx context.Context, text string) ([]float32, error)\n	Dim() int\n	Model() string\n	// Semantic reports whether vectors encode text meaning (false for hash dev stub).\n	Semantic() bool\n}
+  doc=Embedder maps text to a fixed-dimensional vector.
+EDGES
+  ^implements=github.com/paxlabs-inc/deus/internal/discovery.HTTPEmbedder,github.com/paxlabs-inc/deus/internal/discovery.HashEmbedder
+  ^defines=github.com/paxlabs-inc/deus/internal/discovery/embed.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/discovery.ExtractConstraints kind=func
+  digest=b3:7eb8270705ced8fe7a145b545a6e6c54fcb06f3119ac226f62dd021c33ba2081 file=deus/internal/discovery/extract.go range=24:62 lang=go exported=true byte_range=589:1966
+  sig=func ExtractConstraints(query string, explicit map[string]any) ExtractedQuery
+  doc=ExtractConstraints pulls structured filters from plain-language query text.
+EDGES
+  ^defines=github.com/paxlabs-inc/deus/internal/discovery/extract.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/discovery.ExtractedQuery kind=type
+  digest=b3:76ef4c3cedeb956615ae2f0d7caaf453aa6573b35deaf97628eabaea54d9ec7b file=deus/internal/discovery/extract.go range=10:14 lang=go exported=true byte_range=75:236
+  sig=type ExtractedQuery struct {\n	SemanticQuery	string\n	Filters		map[string]any\n}
+  doc=ExtractedQuery is the parsed discovery request after constraint extraction.
+EDGES
+  contains=github.com/paxlabs-inc/deus/internal/discovery.ExtractedQuery#Filters,github.com/paxlabs-inc/deus/internal/discovery.ExtractedQuery#SemanticQuery
+  ^defines=github.com/paxlabs-inc/deus/internal/discovery/extract.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/discovery.ExtractedQuery#Filters kind=field
+  digest=b3:9e020e9bc7f0a89b8e89d1ca8f4af3785c005071b329cb1a6d25e7887ec492c5 file=deus/internal/discovery/extract.go range=13:13 lang=go exported=true byte_range=206:234
+  sig=map[string]any
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/discovery.ExtractedQuery
+
+NODE id=github.com/paxlabs-inc/deus/internal/discovery.ExtractedQuery#SemanticQuery kind=field
+  digest=b3:439903e89ab2c61901a9f8e743c83fda04e2f4f93370e3c75ed936294a14e486 file=deus/internal/discovery/extract.go range=12:12 lang=go exported=true byte_range=184:204
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/discovery.ExtractedQuery
+
+NODE id=github.com/paxlabs-inc/deus/internal/discovery.HTTPEmbedder kind=type
+  digest=b3:c2df58dab16593ec029988d76485cbad41d421ae02519b53c44fdc11f485af15 file=deus/internal/discovery/embed.go range=64:70 lang=go exported=true byte_range=1471:1637
+  sig=type HTTPEmbedder struct {\n	Endpoint	string\n	modelName	string\n	Dimension	int\n	client		*http.Client\n}
+  doc=HTTPEmbedder calls an OpenAI-compatible embedding HTTP API.
+EDGES
+  contains=github.com/paxlabs-inc/deus/internal/discovery.HTTPEmbedder#Dimension,github.com/paxlabs-inc/deus/internal/discovery.HTTPEmbedder#Endpoint,github.com/paxlabs-inc/deus/internal/discovery.HTTPEmbedder#client,github.com/paxlabs-inc/deus/internal/discovery.HTTPEmbedder#modelName,github.com/paxlabs-inc/deus/internal/discovery.HTTPEmbedder.Dim,github.com/paxlabs-inc/deus/internal/discovery.HTTPEmbedder.Embed,github.com/paxlabs-inc/deus/internal/discovery.HTTPEmbedder.Model,github.com/paxlabs-inc/deus/internal/discovery.HTTPEmbedder.Semantic
+  implements=github.com/paxlabs-inc/deus/internal/discovery.Embedder
+  ^defines=github.com/paxlabs-inc/deus/internal/discovery/embed.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/discovery.HTTPEmbedder#Dimension kind=field
+  digest=b3:1566cc8bc0c82858ca24ee0a8826aead887f22c4f31295b0328f51193b82c19e file=deus/internal/discovery/embed.go range=68:68 lang=go exported=true byte_range=1598:1611
+  sig=int
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/discovery.HTTPEmbedder
+
+NODE id=github.com/paxlabs-inc/deus/internal/discovery.HTTPEmbedder#Endpoint kind=field
+  digest=b3:1a14c3429243fea338ba5c3e42953aa78deab975df50f7a845504d3f40932ae6 file=deus/internal/discovery/embed.go range=66:66 lang=go exported=true byte_range=1562:1578
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/discovery.HTTPEmbedder
+
+NODE id=github.com/paxlabs-inc/deus/internal/discovery.HTTPEmbedder#client kind=field
+  digest=b3:3328795bdb354b5e2a7e7520053f74352151efbf9e2b4277963ee8e8458eb5e4 file=deus/internal/discovery/embed.go range=69:69 lang=go exported=false byte_range=1613:1635
+  sig=*http.Client
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/discovery.HTTPEmbedder
+
+NODE id=github.com/paxlabs-inc/deus/internal/discovery.HTTPEmbedder#modelName kind=field
+  digest=b3:66e1875a34b87cc923e0753212c82328da8e348a140ee8235868871ab578f59e file=deus/internal/discovery/embed.go range=67:67 lang=go exported=false byte_range=1580:1596
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/discovery.HTTPEmbedder
+
+NODE id=github.com/paxlabs-inc/deus/internal/discovery.HTTPEmbedder.Dim kind=method
+  digest=b3:7132162b8925f0b899ad12300ea4803ed8e95518cfcffb5a553245c309ffc229 file=deus/internal/discovery/embed.go range=85:85 lang=go exported=true byte_range=1991:2052
+  sig=func (h *HTTPEmbedder) Dim() int
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/discovery.HTTPEmbedder
+  ^defines=github.com/paxlabs-inc/deus/internal/discovery/embed.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/discovery.HTTPEmbedder.Embed kind=method
+  digest=b3:7e76ceacbd829e6eedc795661610bde31336734eb988a6af1f50a7b5b949aa2b file=deus/internal/discovery/embed.go range=89:120 lang=go exported=true byte_range=2171:3151
+  sig=func (h *HTTPEmbedder) Embed(ctx context.Context, text string) ([]float32, error)
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/discovery.HTTPEmbedder
+  ^defines=github.com/paxlabs-inc/deus/internal/discovery/embed.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/discovery.HTTPEmbedder.Model kind=method
+  digest=b3:4b661e4a41d3c60ec854bbe645090c81ff8ac1ffce04556a6f88ac90a052a303 file=deus/internal/discovery/embed.go range=86:86 lang=go exported=true byte_range=2053:2114
+  sig=func (h *HTTPEmbedder) Model() string
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/discovery.HTTPEmbedder
+  ^defines=github.com/paxlabs-inc/deus/internal/discovery/embed.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/discovery.HTTPEmbedder.Semantic kind=method
+  digest=b3:91b9c889d3e23dbf1fc1fa877fadf8c4134a9f86df5ecb50ba75b1e8d510091d file=deus/internal/discovery/embed.go range=87:87 lang=go exported=true byte_range=2115:2169
+  sig=func (h *HTTPEmbedder) Semantic() bool
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/discovery.HTTPEmbedder
+  ^defines=github.com/paxlabs-inc/deus/internal/discovery/embed.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/discovery.HashEmbedder kind=type
+  digest=b3:be2b4f16c55b0582caa6edc0c1fe4d57aefed8af4f58ed99f1d6696a9ac5c6d2 file=deus/internal/discovery/embed.go range=28:32 lang=go exported=true byte_range=455:590
+  sig=type HashEmbedder struct {\n	dim	int\n	model	string\n}
+  doc=HashEmbedder is a deterministic dev/test embedder (same text → same vector).
+EDGES
+  contains=github.com/paxlabs-inc/deus/internal/discovery.HashEmbedder#dim,github.com/paxlabs-inc/deus/internal/discovery.HashEmbedder#model,github.com/paxlabs-inc/deus/internal/discovery.HashEmbedder.Dim,github.com/paxlabs-inc/deus/internal/discovery.HashEmbedder.Embed,github.com/paxlabs-inc/deus/internal/discovery.HashEmbedder.Model,github.com/paxlabs-inc/deus/internal/discovery.HashEmbedder.Semantic
+  implements=github.com/paxlabs-inc/deus/internal/discovery.Embedder
+  ^defines=github.com/paxlabs-inc/deus/internal/discovery/embed.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/discovery.HashEmbedder#dim kind=field
+  digest=b3:f0915ac258765889b538b1e0e3db38f183e86455747090dc7ecfac3913a29f18 file=deus/internal/discovery/embed.go range=30:30 lang=go exported=false byte_range=565:574
+  sig=int
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/discovery.HashEmbedder
+
+NODE id=github.com/paxlabs-inc/deus/internal/discovery.HashEmbedder#model kind=field
+  digest=b3:2803fc37c0a6d4d01b74ef137872da00288232c762f82b15daf218331ad3b8ef file=deus/internal/discovery/embed.go range=31:31 lang=go exported=false byte_range=576:588
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/discovery.HashEmbedder
+
+NODE id=github.com/paxlabs-inc/deus/internal/discovery.HashEmbedder.Dim kind=method
+  digest=b3:f7be756ffd8a3e4cea67c691d4f3378ea44211a32a47678e764f96cef904f10b file=deus/internal/discovery/embed.go range=39:39 lang=go exported=true byte_range=762:817
+  sig=func (h *HashEmbedder) Dim() int
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/discovery.HashEmbedder
+  ^defines=github.com/paxlabs-inc/deus/internal/discovery/embed.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/discovery.HashEmbedder.Embed kind=method
+  digest=b3:752f28c1874bf796802db78fdc20db46c0452efb519545271e5ae5841698967c file=deus/internal/discovery/embed.go range=43:62 lang=go exported=true byte_range=933:1469
+  sig=func (h *HashEmbedder) Embed(_ context.Context, text string) ([]float32, error)
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/discovery.HashEmbedder
+  ^defines=github.com/paxlabs-inc/deus/internal/discovery/embed.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/discovery.HashEmbedder.Model kind=method
+  digest=b3:cee3869c7b4f5ab39ac1f9d1a877ebd900d13cbf69ca9bce924af2935bff1b85 file=deus/internal/discovery/embed.go range=40:40 lang=go exported=true byte_range=818:875
+  sig=func (h *HashEmbedder) Model() string
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/discovery.HashEmbedder
+  ^defines=github.com/paxlabs-inc/deus/internal/discovery/embed.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/discovery.HashEmbedder.Semantic kind=method
+  digest=b3:da95fb9735d09aa7de4d5d2f8cf6b5862d47ba3003091522113b07114fb5cd12 file=deus/internal/discovery/embed.go range=41:41 lang=go exported=true byte_range=876:931
+  sig=func (h *HashEmbedder) Semantic() bool
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/discovery.HashEmbedder
+  ^defines=github.com/paxlabs-inc/deus/internal/discovery/embed.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/discovery.LoadRankingWeights kind=func
+  digest=b3:606da7e773b432fbc003c8b3a2357d504a108bf31e185defdfb548e8197daa83 file=deus/internal/discovery/rank.go range=31:46 lang=go exported=true byte_range=651:1028
+  sig=func LoadRankingWeights(path string) RankingWeights
+  doc=LoadRankingWeights reads configs/ranking.yaml when present.
+EDGES
+  ^defines=github.com/paxlabs-inc/deus/internal/discovery/rank.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/discovery.New kind=func
+  digest=b3:a898ce18a4ea2fa13dfb55135cf968318f30eff17c29dc42658c4f3ba8e7b1a7 file=deus/internal/discovery/discovery.go range=34:45 lang=go exported=true byte_range=727:963
+  sig=func New(st *store.Store, opts ...Option) *Service
+  doc=New returns a discovery Service.
+EDGES
+  ^defines=github.com/paxlabs-inc/deus/internal/discovery/discovery.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/discovery.NewEmbedderFromConfig kind=func
+  digest=b3:b1f31022672dd779b62658c13abd62c989c0113969cd5fff3be4130a92a8c405 file=deus/internal/discovery/embed.go range=122:128 lang=go exported=true byte_range=3153:3398
+  sig=func NewEmbedderFromConfig(endpoint, model string) Embedder
+  doc=NewEmbedderFromConfig picks HTTP or hash embedder.
+EDGES
+  ^defines=github.com/paxlabs-inc/deus/internal/discovery/embed.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/discovery.NewHTTPEmbedder kind=func
+  digest=b3:0cbbd29c8ab253bcc6b00afd3e1c293f93abaf22430a92b4b856bd316281904e file=deus/internal/discovery/embed.go range=72:83 lang=go exported=true byte_range=1639:1989
+  sig=func NewHTTPEmbedder(endpoint, model string, dim int) *HTTPEmbedder
+  doc=NewHTTPEmbedder wires a remote embedder (Fireworks / gateway route).
+EDGES
+  ^defines=github.com/paxlabs-inc/deus/internal/discovery/embed.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/discovery.NewHashEmbedder kind=func
+  digest=b3:e00f85cfa4d5f15094c354d944b249d4ce6f8fd23c6bf02848b7d9219bcfdca0 file=deus/internal/discovery/embed.go range=34:37 lang=go exported=true byte_range=592:760
+  sig=func NewHashEmbedder() *HashEmbedder
+  doc=NewHashEmbedder returns a 768-dim deterministic embedder.
+EDGES
+  ^defines=github.com/paxlabs-inc/deus/internal/discovery/embed.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/discovery.Option kind=type
+  digest=b3:159cea15082a7522b23814fab9f4a561f29ad396ed2ed1dbf65d86ab430323e1 file=deus/internal/discovery/discovery.go range=21:22 lang=go exported=true byte_range=393:459
+  sig=type Option func(*Service)
+  doc=Option configures discovery Service.
+EDGES
+  ^defines=github.com/paxlabs-inc/deus/internal/discovery/discovery.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/discovery.RankingWeights kind=type
+  digest=b3:e433fd37dc2212d35238a70d7b929a679f1b9219ee8a19693283001da2a13abc file=deus/internal/discovery/rank.go range=15:22 lang=go exported=true byte_range=147:442
+  sig=type RankingWeights struct {\n	Semantic	float64	`yaml:"semantic"`\n	Quality		float64	`yaml:"quality"`\n	Uptime		float64	`yaml:"uptime"`\n	Price		float64	`yaml:"price"`\n	Freshness	float64	`yaml:"freshness"`\n}
+  doc=RankingWeights configures blended discovery scoring (docs/07-discovery.md §7.4).
+EDGES
+  contains=github.com/paxlabs-inc/deus/internal/discovery.RankingWeights#Freshness,github.com/paxlabs-inc/deus/internal/discovery.RankingWeights#Price,github.com/paxlabs-inc/deus/internal/discovery.RankingWeights#Quality,github.com/paxlabs-inc/deus/internal/discovery.RankingWeights#Semantic,github.com/paxlabs-inc/deus/internal/discovery.RankingWeights#Uptime
+  ^defines=github.com/paxlabs-inc/deus/internal/discovery/rank.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/discovery.RankingWeights#Freshness kind=field
+  digest=b3:4acaad68a1b3848206b46d1927609d09916713bd16a4b94105f0f97c3c97e5f7 file=deus/internal/discovery/rank.go range=21:21 lang=go exported=true byte_range=404:440
+  sig=float64
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/discovery.RankingWeights
+
+NODE id=github.com/paxlabs-inc/deus/internal/discovery.RankingWeights#Price kind=field
+  digest=b3:44eaa963641415f030fc27300c8e4bda91396632b4d957bd5325a04856ceb152 file=deus/internal/discovery/rank.go range=20:20 lang=go exported=true byte_range=370:402
+  sig=float64
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/discovery.RankingWeights
+
+NODE id=github.com/paxlabs-inc/deus/internal/discovery.RankingWeights#Quality kind=field
+  digest=b3:bb34f43b6d05508c1433b7a2c702ab99de8c5d2c701d682f61c444a67fd497de file=deus/internal/discovery/rank.go range=18:18 lang=go exported=true byte_range=299:333
+  sig=float64
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/discovery.RankingWeights
+
+NODE id=github.com/paxlabs-inc/deus/internal/discovery.RankingWeights#Semantic kind=field
+  digest=b3:64d23f85ad0d9398e329ae7a0eb7f03db8e21807a2b66ba0b5c00e2ad5663e1e file=deus/internal/discovery/rank.go range=17:17 lang=go exported=true byte_range=262:297
+  sig=float64
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/discovery.RankingWeights
+
+NODE id=github.com/paxlabs-inc/deus/internal/discovery.RankingWeights#Uptime kind=field
+  digest=b3:c7928abc56a809eea611dcfc139157c0bc8c55a73b17d2f4e6e0acda10564eed file=deus/internal/discovery/rank.go range=19:19 lang=go exported=true byte_range=335:368
+  sig=float64
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/discovery.RankingWeights
+
+NODE id=github.com/paxlabs-inc/deus/internal/discovery.SearchRequest kind=type
+  digest=b3:21e72e7aecaa501ccc43cfbfadd9d51c4eabcf76ebd66d3c1df7b592abc5e1c5 file=deus/internal/discovery/discovery.go range=47:52 lang=go exported=true byte_range=965:1180
+  sig=type SearchRequest struct {\n	Query	string		`json:"query"`\n	Filters	map[string]any	`json:"filters"`\n	Limit	int		`json:"limit"`\n}
+  doc=SearchRequest mirrors POST /v1/discover (docs/05-api.md §5.4).
+EDGES
+  contains=github.com/paxlabs-inc/deus/internal/discovery.SearchRequest#Filters,github.com/paxlabs-inc/deus/internal/discovery.SearchRequest#Limit,github.com/paxlabs-inc/deus/internal/discovery.SearchRequest#Query
+  ^defines=github.com/paxlabs-inc/deus/internal/discovery/discovery.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/discovery.SearchRequest#Filters kind=field
+  digest=b3:7ddeca9f2f304ae873c579395109d1e800c63e2b8578fccd09917ed8320c7036 file=deus/internal/discovery/discovery.go range=50:50 lang=go exported=true byte_range=1100:1139
+  sig=map[string]any
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/discovery.SearchRequest
+
+NODE id=github.com/paxlabs-inc/deus/internal/discovery.SearchRequest#Limit kind=field
+  digest=b3:40035cdae50817cc7ddb72f4f3977cb0f85d4c024b8d79652804fb36c60d3967 file=deus/internal/discovery/discovery.go range=51:51 lang=go exported=true byte_range=1141:1178
+  sig=int
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/discovery.SearchRequest
+
+NODE id=github.com/paxlabs-inc/deus/internal/discovery.SearchRequest#Query kind=field
+  digest=b3:2228ddf54d45cbe35be3a66d0d3a15d94ae4b95efc1f97fd7dfff9d9e6cc3ae6 file=deus/internal/discovery/discovery.go range=49:49 lang=go exported=true byte_range=1061:1098
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/discovery.SearchRequest
+
+NODE id=github.com/paxlabs-inc/deus/internal/discovery.Service kind=type
+  digest=b3:aaf058684e1d4faf84d106c15bf7056e4dad4f3fe4727886dea46a74b98f1083 file=deus/internal/discovery/discovery.go range=14:19 lang=go exported=true byte_range=265:391
+  sig=type Service struct {\n	store	*store.Store\n	embed	Embedder\n	weights	RankingWeights\n}
+  doc=Service provides discovery queries.
+EDGES
+  contains=github.com/paxlabs-inc/deus/internal/discovery.Service#embed,github.com/paxlabs-inc/deus/internal/discovery.Service#store,github.com/paxlabs-inc/deus/internal/discovery.Service#weights,github.com/paxlabs-inc/deus/internal/discovery.Service.IndexService,github.com/paxlabs-inc/deus/internal/discovery.Service.Search
+  implements=github.com/paxlabs-inc/deus/internal/registry.ManifestIndexer
+  ^defines=github.com/paxlabs-inc/deus/internal/discovery/discovery.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/discovery.Service#embed kind=field
+  digest=b3:489bb35c6f3264eab9f81b8f9bfbeba2f330b32c8dda0e82ff3ffd6c6ee9d541 file=deus/internal/discovery/discovery.go range=17:17 lang=go exported=false byte_range=349:365
+  sig=discovery.Embedder
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/discovery.Service
+
+NODE id=github.com/paxlabs-inc/deus/internal/discovery.Service#store kind=field
+  digest=b3:57fb37a250b684ea8d22745ad2b277db14c910425c9331d6bf56edd2f25ce659 file=deus/internal/discovery/discovery.go range=16:16 lang=go exported=false byte_range=327:347
+  sig=*store.Store
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/discovery.Service
+
+NODE id=github.com/paxlabs-inc/deus/internal/discovery.Service#weights kind=field
+  digest=b3:1ffd4cf38e3d533f102a64b1643c38c4ca38d804d7755c67646e580bd6a7e0e6 file=deus/internal/discovery/discovery.go range=18:18 lang=go exported=false byte_range=367:389
+  sig=discovery.RankingWeights
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/discovery.Service
+
+NODE id=github.com/paxlabs-inc/deus/internal/discovery.Service.IndexService kind=method
+  digest=b3:265d8e8ffafad67808e0ab9e64a952e23eec272750025617a8003cfafac17fa6 file=deus/internal/discovery/index.go range=31:49 lang=go exported=true byte_range=608:1217
+  sig=func (s *Service) IndexService(ctx context.Context, serviceID string, raw json.RawMessage) error
+  doc=IndexService embeds and indexes a listing for discovery.
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/discovery.Service
+  ^defines=github.com/paxlabs-inc/deus/internal/discovery/index.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/discovery.Service.Search kind=method
+  digest=b3:0254848a202d1be0f6aa74d9958ba465546dcbb490e9df35aadb3bc67d8b0f7f file=deus/internal/discovery/discovery.go range=54:163 lang=go exported=true byte_range=1182:4246
+  sig=func (s *Service) Search(ctx context.Context, req SearchRequest) (types.DiscoverResponse, error)
+  doc=Search runs constraint extraction → embed → vector + lexical union → blended rank.
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/discovery.Service
+  ^defines=github.com/paxlabs-inc/deus/internal/discovery/discovery.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/discovery.WithEmbedder kind=func
+  digest=b3:9ccb0b1e176c7edad996a81d04816bd1cbbb2df7bd0cc8ebc5eb34ecd085bf36 file=deus/internal/discovery/discovery.go range=24:27 lang=go exported=true byte_range=461:586
+  sig=func WithEmbedder(e Embedder) Option
+  doc=WithEmbedder sets the embedding backend.
+EDGES
+  ^defines=github.com/paxlabs-inc/deus/internal/discovery/discovery.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/discovery.WithRankingWeights kind=func
+  digest=b3:710f2d7224c7a882ffda3aee98c1dce55ab4b835c59969bbde8a137121cc619e file=deus/internal/discovery/discovery.go range=29:32 lang=go exported=true byte_range=588:725
+  sig=func WithRankingWeights(w RankingWeights) Option
+  doc=WithRankingWeights sets blend weights.
+EDGES
+  ^defines=github.com/paxlabs-inc/deus/internal/discovery/discovery.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/discovery.clamp01 kind=func
+  digest=b3:40feb14a730095f75e1bcfdddcd5f27471049f6a5d94a92eb18cf64ee0e664f5 file=deus/internal/discovery/rank.go range=103:111 lang=go exported=false byte_range=2388:2485
+  sig=func clamp01(v float64) float64
+EDGES
+  ^defines=github.com/paxlabs-inc/deus/internal/discovery/rank.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/discovery.defaultEmbedDim kind=const
+  digest=b3:9ed35fe8c3372d588eef243f3eaa31797c6db4fc7c8cc8d1fba3e2c3be1b4b58 file=deus/internal/discovery/embed.go range=17:17 lang=go exported=false byte_range=162:183
+  sig=untyped int
+EDGES
+  ^defines=github.com/paxlabs-inc/deus/internal/discovery/embed.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/discovery.filterString kind=func
+  digest=b3:4a8460093f8f55921fe7e40aa1124143df20a20e4a8ad42b45b935b828ffb1b8 file=deus/internal/discovery/rank.go range=113:124 lang=go exported=false byte_range=2487:2731
+  sig=func filterString(filters map[string]any, key string) string
+EDGES
+  ^defines=github.com/paxlabs-inc/deus/internal/discovery/rank.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/discovery.paxToWei kind=func
+  digest=b3:2e98d924b50cd1f23866ee5cb7e6d2c1e9898f0a379d1bdd8197fe52a0c30375 file=deus/internal/discovery/extract.go range=64:72 lang=go exported=false byte_range=1968:2180
+  sig=func paxToWei(pax string) string
+EDGES
+  ^defines=github.com/paxlabs-inc/deus/internal/discovery/extract.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/discovery.priceAbove kind=func
+  digest=b3:ee7ffa7f6dacce2fd5590c66f054b0a2020cf828dfe4405270ac7256c5064211 file=deus/internal/discovery/discovery.go range=186:193 lang=go exported=false byte_range=4773:5002
+  sig=func priceAbove(maxPriceWei, minPriceWei string) bool
+EDGES
+  ^defines=github.com/paxlabs-inc/deus/internal/discovery/discovery.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/discovery.priceAffinityWei kind=func
+  digest=b3:6f82014905cec403c570cf4b380d7aea8cd95b5c94478149959fb15911d7a635 file=deus/internal/discovery/rank.go range=85:101 lang=go exported=false byte_range=1884:2386
+  sig=func priceAffinityWei(maxPriceWei, minPriceWei string) float64
+EDGES
+  ^defines=github.com/paxlabs-inc/deus/internal/discovery/rank.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/discovery.pricingOps kind=func
+  digest=b3:1dff09448cbafaa21563a772d5537d5d291627fa6e4c94e1bc1b8b9675fac7e9 file=deus/internal/discovery/discovery.go range=165:184 lang=go exported=false byte_range=4248:4771
+  sig=func pricingOps(manifest json.RawMessage) []types.DiscoverOperation
+EDGES
+  ^defines=github.com/paxlabs-inc/deus/internal/discovery/discovery.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/discovery.qualityNorm kind=func
+  digest=b3:6270a8af011eafde5011311a474fdbaae37a3357e6d6f087d9bcd2ad741a8d18 file=deus/internal/discovery/rank.go range=63:76 lang=go exported=false byte_range=1551:1769
+  sig=func qualityNorm(qs *string) float64
+EDGES
+  ^defines=github.com/paxlabs-inc/deus/internal/discovery/rank.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/discovery.reKindAgent kind=var
+  digest=b3:f948f1e6442d5102266a8503db49e52c3446ac000b3dfa9bfd84e63b16ecae4b file=deus/internal/discovery/extract.go range=21:21 lang=go exported=false byte_range=526:585
+  sig=*regexp.Regexp
+EDGES
+  ^defines=github.com/paxlabs-inc/deus/internal/discovery/extract.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/discovery.reKindData kind=var
+  digest=b3:042528bf91d10c61ad242ff0db707cd50f9a7cd44e21253a10cf1cc93ce0abe7 file=deus/internal/discovery/extract.go range=20:20 lang=go exported=false byte_range=466:524
+  sig=*regexp.Regexp
+EDGES
+  ^defines=github.com/paxlabs-inc/deus/internal/discovery/extract.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/discovery.reMaxPAX kind=var
+  digest=b3:25232cb8d883398740adae241ba7314d39118ec0050b552126ed2a16ffa19b2c file=deus/internal/discovery/extract.go range=17:17 lang=go exported=false byte_range=245:314
+  sig=*regexp.Regexp
+EDGES
+  ^defines=github.com/paxlabs-inc/deus/internal/discovery/extract.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/discovery.reMaxWei kind=var
+  digest=b3:19105eeaefbed51943c1fad252981122c77096aae54a8196deb6d5a476a1f025 file=deus/internal/discovery/extract.go range=18:18 lang=go exported=false byte_range=316:375
+  sig=*regexp.Regexp
+EDGES
+  ^defines=github.com/paxlabs-inc/deus/internal/discovery/extract.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/discovery.reUptime kind=var
+  digest=b3:530280fda249d0df97571f02d84e68e7b254a7bddfd087518848e7263730328b file=deus/internal/discovery/extract.go range=19:19 lang=go exported=false byte_range=377:464
+  sig=*regexp.Regexp
+EDGES
+  ^defines=github.com/paxlabs-inc/deus/internal/discovery/extract.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/discovery.toIntAny kind=func
+  digest=b3:c3902f3155930d99ff21cb65a5f196327d653842ed673653062942c98d94c8d6 file=deus/internal/discovery/rank.go range=126:140 lang=go exported=false byte_range=2733:2942
+  sig=func toIntAny(v any) int
+EDGES
+  ^defines=github.com/paxlabs-inc/deus/internal/discovery/rank.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/discovery.uptimeNorm kind=func
+  digest=b3:ebb7ea169d502db5a3ceca38b9f6ef57d07c7dce2ddae8c9d213716ccdbc6e1a file=deus/internal/discovery/rank.go range=78:83 lang=go exported=false byte_range=1771:1882
+  sig=func uptimeNorm(bps *int) float64
+EDGES
+  ^defines=github.com/paxlabs-inc/deus/internal/discovery/rank.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/discovery/discovery.go kind=file
+  digest=b3:fe86bfbf6230b435c9e7a78fe9a2b36efb651bef6ff189b82ed998e0df6c1488 file=deus/internal/discovery/discovery.go range=1:193 lang=go exported=true
+EDGES
+  defines=github.com/paxlabs-inc/deus/internal/discovery.New,github.com/paxlabs-inc/deus/internal/discovery.Option,github.com/paxlabs-inc/deus/internal/discovery.SearchRequest,github.com/paxlabs-inc/deus/internal/discovery.Service,github.com/paxlabs-inc/deus/internal/discovery.Service.Search,github.com/paxlabs-inc/deus/internal/discovery.WithEmbedder,github.com/paxlabs-inc/deus/internal/discovery.WithRankingWeights,github.com/paxlabs-inc/deus/internal/discovery.priceAbove,github.com/paxlabs-inc/deus/internal/discovery.pricingOps
+  ^contains=github.com/paxlabs-inc/deus/internal/discovery
+
+NODE id=github.com/paxlabs-inc/deus/internal/discovery/embed.go kind=file
+  digest=b3:d02f74ec6edf5b2a63dbf94fbc3a61038b15a7d59e5aa05cb8ad9c84ffe97dca file=deus/internal/discovery/embed.go range=1:128 lang=go exported=true
+EDGES
+  defines=github.com/paxlabs-inc/deus/internal/discovery.Embedder,github.com/paxlabs-inc/deus/internal/discovery.HTTPEmbedder,github.com/paxlabs-inc/deus/internal/discovery.HTTPEmbedder.Dim,github.com/paxlabs-inc/deus/internal/discovery.HTTPEmbedder.Embed,github.com/paxlabs-inc/deus/internal/discovery.HTTPEmbedder.Model,github.com/paxlabs-inc/deus/internal/discovery.HTTPEmbedder.Semantic,github.com/paxlabs-inc/deus/internal/discovery.HashEmbedder,github.com/paxlabs-inc/deus/internal/discovery.HashEmbedder.Dim,github.com/paxlabs-inc/deus/internal/discovery.HashEmbedder.Embed,github.com/paxlabs-inc/deus/internal/discovery.HashEmbedder.Model,github.com/paxlabs-inc/deus/internal/discovery.HashEmbedder.Semantic,github.com/paxlabs-inc/deus/internal/discovery.NewEmbedderFromConfig,github.com/paxlabs-inc/deus/internal/discovery.NewHTTPEmbedder,github.com/paxlabs-inc/deus/internal/discovery.NewHashEmbedder,github.com/paxlabs-inc/deus/internal/discovery.defaultEmbedDim
+  ^contains=github.com/paxlabs-inc/deus/internal/discovery
+
+NODE id=github.com/paxlabs-inc/deus/internal/discovery/extract.go kind=file
+  digest=b3:a080a58473c4b89bd267e7b510f64cb99f7116b72201c655d9a8252c06a07022 file=deus/internal/discovery/extract.go range=1:72 lang=go exported=true
+EDGES
+  defines=github.com/paxlabs-inc/deus/internal/discovery.ExtractConstraints,github.com/paxlabs-inc/deus/internal/discovery.ExtractedQuery,github.com/paxlabs-inc/deus/internal/discovery.paxToWei,github.com/paxlabs-inc/deus/internal/discovery.reKindAgent,github.com/paxlabs-inc/deus/internal/discovery.reKindData,github.com/paxlabs-inc/deus/internal/discovery.reMaxPAX,github.com/paxlabs-inc/deus/internal/discovery.reMaxWei,github.com/paxlabs-inc/deus/internal/discovery.reUptime
+  ^contains=github.com/paxlabs-inc/deus/internal/discovery
+
+NODE id=github.com/paxlabs-inc/deus/internal/discovery/index.go kind=file
+  digest=b3:b798117091df57d626d8f061d1c89abbb956748383368020ddd6c6c43c40c4a6 file=deus/internal/discovery/index.go range=1:49 lang=go exported=true
+EDGES
+  defines=github.com/paxlabs-inc/deus/internal/discovery.BuildSearchDocument,github.com/paxlabs-inc/deus/internal/discovery.Service.IndexService
+  ^contains=github.com/paxlabs-inc/deus/internal/discovery
+
+NODE id=github.com/paxlabs-inc/deus/internal/discovery/rank.go kind=file
+  digest=b3:3d4a34923c105f7add9e2f58f32756078256f771a9503f1bacac97a8e48c035c file=deus/internal/discovery/rank.go range=1:140 lang=go exported=true
+EDGES
+  defines=github.com/paxlabs-inc/deus/internal/discovery.BlendScoreWithPrice,github.com/paxlabs-inc/deus/internal/discovery.DefaultRankingWeights,github.com/paxlabs-inc/deus/internal/discovery.LoadRankingWeights,github.com/paxlabs-inc/deus/internal/discovery.RankingWeights,github.com/paxlabs-inc/deus/internal/discovery.clamp01,github.com/paxlabs-inc/deus/internal/discovery.filterString,github.com/paxlabs-inc/deus/internal/discovery.priceAffinityWei,github.com/paxlabs-inc/deus/internal/discovery.qualityNorm,github.com/paxlabs-inc/deus/internal/discovery.toIntAny,github.com/paxlabs-inc/deus/internal/discovery.uptimeNorm
+  ^contains=github.com/paxlabs-inc/deus/internal/discovery

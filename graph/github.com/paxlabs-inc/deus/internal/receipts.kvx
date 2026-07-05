@@ -1,0 +1,310 @@
+# GENERATED gen=codegraph do-not-edit merkle=b3:2dc69ec8dbbe0231373534486cf12ff6fdb0eaad7b2dfdcbc4d73453c8542ee8
+
+NODE id=github.com/paxlabs-inc/deus/internal/receipts kind=package
+  digest=b3:ef1d712b9d18f09ebbd6656e3c949a58857475edff255003394b43cddbed435e file=deus/internal/receipts range=0:0 lang=go exported=true
+EDGES
+  contains=github.com/paxlabs-inc/deus/internal/receipts/eip712.go,github.com/paxlabs-inc/deus/internal/receipts/merkle.go,github.com/paxlabs-inc/deus/internal/receipts/voucher.go
+  ^contains=mod:github.com/paxlabs-inc/deus
+
+NODE id=github.com/paxlabs-inc/deus/internal/receipts.HashPayload kind=func
+  digest=b3:923618b631f25a2e3d28425df65bbc27e8c3f80ff4db81aae159c1848d75c1dc file=deus/internal/receipts/eip712.go range=212:220 lang=go exported=true byte_range=6089:6323
+  sig=func HashPayload(v any) (string, error)
+  doc=HashPayload returns keccak256(canonical_json(v)) as 0x-prefixed hex.
+EDGES
+  ^defines=github.com/paxlabs-inc/deus/internal/receipts/eip712.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/receipts.MerkleRoot kind=func
+  digest=b3:8a87c4a3b1e58bf3b65b8be7e56b495005d4aba3675d8160a1cc8f2ae39f5b51 file=deus/internal/receipts/merkle.go range=20:52 lang=go exported=true byte_range=342:1353
+  sig=func MerkleRoot(digests []string) (string, error)
+  doc=MerkleRoot builds a deterministic binary merkle root over receipt digests.\nLeaves are domain-separated (0x00) and internal nodes (0x01); on an odd layer\nthe trailing node is duplicated (hashed with itself) rather than promoted, so\nthe tree shape is unambiguous and not malleable.
+EDGES
+  ^defines=github.com/paxlabs-inc/deus/internal/receipts/merkle.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/receipts.NewSignerFromHex kind=func
+  digest=b3:b82b6752822c5be797d07775d24067053e061366220f848f4b68dab811230260 file=deus/internal/receipts/eip712.go range=26:38 lang=go exported=true byte_range=594:1076
+  sig=func NewSignerFromHex(chainID int64, registryAddr, keyHex string) (*Signer, error)
+  doc=NewSignerFromHex parses a gateway private key and registry address.
+EDGES
+  ^defines=github.com/paxlabs-inc/deus/internal/receipts/eip712.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/receipts.QuoteFields kind=type
+  digest=b3:61aae5294fbef0d933341c13fd82835112d5b21960fe01f8b127784a646babe0 file=deus/internal/receipts/eip712.go range=45:54 lang=go exported=true byte_range=1233:1477
+  sig=type QuoteFields struct {\n	ServiceID	string\n	EndpointID	string\n	PricingVersion	int\n	UnitPriceWei	string\n	MaxUnits	string\n	Caller		string\n	ExpiresAt	time.Time\n}
+  doc=QuoteFields are the EIP-712 DeusQuote struct fields.
+EDGES
+  contains=github.com/paxlabs-inc/deus/internal/receipts.QuoteFields#Caller,github.com/paxlabs-inc/deus/internal/receipts.QuoteFields#EndpointID,github.com/paxlabs-inc/deus/internal/receipts.QuoteFields#ExpiresAt,github.com/paxlabs-inc/deus/internal/receipts.QuoteFields#MaxUnits,github.com/paxlabs-inc/deus/internal/receipts.QuoteFields#PricingVersion,github.com/paxlabs-inc/deus/internal/receipts.QuoteFields#ServiceID,github.com/paxlabs-inc/deus/internal/receipts.QuoteFields#UnitPriceWei
+  ^defines=github.com/paxlabs-inc/deus/internal/receipts/eip712.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/receipts.QuoteFields#Caller kind=field
+  digest=b3:4e69c495b5bf3e505cd4805d8c0d3456dd9cb87829aa06d34b0370b526f07d39 file=deus/internal/receipts/eip712.go range=52:52 lang=go exported=true byte_range=1428:1449
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/receipts.QuoteFields
+
+NODE id=github.com/paxlabs-inc/deus/internal/receipts.QuoteFields#EndpointID kind=field
+  digest=b3:9110377d963d3887731f5100e64836f312d83c9576de996b45335cf6b3b6c48f file=deus/internal/receipts/eip712.go range=48:48 lang=go exported=true byte_range=1339:1360
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/receipts.QuoteFields
+
+NODE id=github.com/paxlabs-inc/deus/internal/receipts.QuoteFields#ExpiresAt kind=field
+  digest=b3:4fd22887e340a517989551315f3be19d5653b47b8e04c9b7817426e831d39a97 file=deus/internal/receipts/eip712.go range=53:53 lang=go exported=true byte_range=1451:1475
+  sig=time.Time
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/receipts.QuoteFields
+
+NODE id=github.com/paxlabs-inc/deus/internal/receipts.QuoteFields#MaxUnits kind=field
+  digest=b3:45dee0dd5c15a2b80ce56e8968c5e8030d3467a24870549392528563ad661045 file=deus/internal/receipts/eip712.go range=51:51 lang=go exported=true byte_range=1405:1426
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/receipts.QuoteFields
+
+NODE id=github.com/paxlabs-inc/deus/internal/receipts.QuoteFields#PricingVersion kind=field
+  digest=b3:24cf76648df8f917a3dc4e72705298ab086500265fdcd238b4a34a908942b773 file=deus/internal/receipts/eip712.go range=49:49 lang=go exported=true byte_range=1362:1380
+  sig=int
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/receipts.QuoteFields
+
+NODE id=github.com/paxlabs-inc/deus/internal/receipts.QuoteFields#ServiceID kind=field
+  digest=b3:9197eb37ee5b9cef2dd821801a26456813a49db221074c78cd2cc637dbc36396 file=deus/internal/receipts/eip712.go range=47:47 lang=go exported=true byte_range=1316:1337
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/receipts.QuoteFields
+
+NODE id=github.com/paxlabs-inc/deus/internal/receipts.QuoteFields#UnitPriceWei kind=field
+  digest=b3:8df8b1a19dfb1030018bbdf23a726e7c41cb224879927baebfdf0964cb9d48a5 file=deus/internal/receipts/eip712.go range=50:50 lang=go exported=true byte_range=1382:1403
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/receipts.QuoteFields
+
+NODE id=github.com/paxlabs-inc/deus/internal/receipts.ReceiptFields kind=type
+  digest=b3:703cdcf9ccee78a248ba4881640a51f17144616e6ebfb533f2cd83609001ac4c file=deus/internal/receipts/eip712.go range=119:130 lang=go exported=true byte_range=3424:3705
+  sig=type ReceiptFields struct {\n	InvocationID	string\n	ServiceID	string\n	Caller		string\n	ArgsHash	string\n	ResultHash	string\n	PriceWei	string\n	Units		string\n	Outcome		string\n	Timestamp	time.Time\n}
+  doc=ReceiptFields are the EIP-712 DeusReceipt struct fields.
+EDGES
+  contains=github.com/paxlabs-inc/deus/internal/receipts.ReceiptFields#ArgsHash,github.com/paxlabs-inc/deus/internal/receipts.ReceiptFields#Caller,github.com/paxlabs-inc/deus/internal/receipts.ReceiptFields#InvocationID,github.com/paxlabs-inc/deus/internal/receipts.ReceiptFields#Outcome,github.com/paxlabs-inc/deus/internal/receipts.ReceiptFields#PriceWei,github.com/paxlabs-inc/deus/internal/receipts.ReceiptFields#ResultHash,github.com/paxlabs-inc/deus/internal/receipts.ReceiptFields#ServiceID,github.com/paxlabs-inc/deus/internal/receipts.ReceiptFields#Timestamp,github.com/paxlabs-inc/deus/internal/receipts.ReceiptFields#Units
+  ^defines=github.com/paxlabs-inc/deus/internal/receipts/eip712.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/receipts.ReceiptFields#ArgsHash kind=field
+  digest=b3:1747ac1782c68848e0f62961ddd0fdc3a4336033ea9c4dd0fa33cea5161f4aa1 file=deus/internal/receipts/eip712.go range=124:124 lang=go exported=true byte_range=3576:3595
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/receipts.ReceiptFields
+
+NODE id=github.com/paxlabs-inc/deus/internal/receipts.ReceiptFields#Caller kind=field
+  digest=b3:4d3d77f40210ceef687ae0a7f40f44d9d68f522c6efb1a137b17bbc0b4d11a36 file=deus/internal/receipts/eip712.go range=123:123 lang=go exported=true byte_range=3555:3574
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/receipts.ReceiptFields
+
+NODE id=github.com/paxlabs-inc/deus/internal/receipts.ReceiptFields#InvocationID kind=field
+  digest=b3:c0edcbe662bab23db7600cfdbc3ea7b514136f07fd9430ce3a5d88ab9dbc3a26 file=deus/internal/receipts/eip712.go range=121:121 lang=go exported=true byte_range=3513:3532
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/receipts.ReceiptFields
+
+NODE id=github.com/paxlabs-inc/deus/internal/receipts.ReceiptFields#Outcome kind=field
+  digest=b3:153ecbd1e37972f21055caacdd21bbd5fcee912ab69c611973581cf9ad3ab312 file=deus/internal/receipts/eip712.go range=128:128 lang=go exported=true byte_range=3660:3679
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/receipts.ReceiptFields
+
+NODE id=github.com/paxlabs-inc/deus/internal/receipts.ReceiptFields#PriceWei kind=field
+  digest=b3:5b169af09632a33c29841b8dc8bb5645b00373d105ac88b8ccf9e789ea9d95fe file=deus/internal/receipts/eip712.go range=126:126 lang=go exported=true byte_range=3618:3637
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/receipts.ReceiptFields
+
+NODE id=github.com/paxlabs-inc/deus/internal/receipts.ReceiptFields#ResultHash kind=field
+  digest=b3:fd1c03f91a95795a1a6af1eaa8aa5b41298ba24c8fc457082f7dfa6ed6738d8a file=deus/internal/receipts/eip712.go range=125:125 lang=go exported=true byte_range=3597:3616
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/receipts.ReceiptFields
+
+NODE id=github.com/paxlabs-inc/deus/internal/receipts.ReceiptFields#ServiceID kind=field
+  digest=b3:a20a4d85b9bd8661114bd05b7468d35d6c64fb27d29934b5f86e9596d5e96726 file=deus/internal/receipts/eip712.go range=122:122 lang=go exported=true byte_range=3534:3553
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/receipts.ReceiptFields
+
+NODE id=github.com/paxlabs-inc/deus/internal/receipts.ReceiptFields#Timestamp kind=field
+  digest=b3:38ec76bda0c4124cb92d76ba637cd07f032a7763b40642f53e88a52dec8269a9 file=deus/internal/receipts/eip712.go range=129:129 lang=go exported=true byte_range=3681:3703
+  sig=time.Time
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/receipts.ReceiptFields
+
+NODE id=github.com/paxlabs-inc/deus/internal/receipts.ReceiptFields#Units kind=field
+  digest=b3:2d0265713e0530e9670fd6aac01e7376fba4819e15b2cb4d84cdb4b0fff9f229 file=deus/internal/receipts/eip712.go range=127:127 lang=go exported=true byte_range=3639:3658
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/receipts.ReceiptFields
+
+NODE id=github.com/paxlabs-inc/deus/internal/receipts.RecoverSigner kind=func
+  digest=b3:dfb9dd0fc5499bfdaf6a819b4a76d421a4cc6565d718e5dbc7376d26314d8f54 file=deus/internal/receipts/eip712.go range=187:210 lang=go exported=true byte_range=5399:6087
+  sig=func RecoverSigner(digestHex, sigHex string) (common.Address, error)
+  doc=RecoverSigner returns the address that signed digest with sig.
+EDGES
+  ^defines=github.com/paxlabs-inc/deus/internal/receipts/eip712.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/receipts.Signer kind=type
+  digest=b3:d38895424c13c64bc17b495b865749d67411c58f1a8ba0866b307537d85a300b file=deus/internal/receipts/eip712.go range=19:24 lang=go exported=true byte_range=408:592
+  sig=type Signer struct {\n	ChainID			int64\n	VerifyingContract	common.Address\n	PrivateKey		*ecdsa.PrivateKey\n}
+  doc=Signer holds gateway signing material for quotes and receipts.
+EDGES
+  contains=github.com/paxlabs-inc/deus/internal/receipts.Signer#ChainID,github.com/paxlabs-inc/deus/internal/receipts.Signer#PrivateKey,github.com/paxlabs-inc/deus/internal/receipts.Signer#VerifyingContract,github.com/paxlabs-inc/deus/internal/receipts.Signer.GatewayAddress,github.com/paxlabs-inc/deus/internal/receipts.Signer.SignQuote,github.com/paxlabs-inc/deus/internal/receipts.Signer.SignReceipt,github.com/paxlabs-inc/deus/internal/receipts.Signer.VerifyQuote,github.com/paxlabs-inc/deus/internal/receipts.Signer.VerifyVoucherCaller,github.com/paxlabs-inc/deus/internal/receipts.Signer.VoucherDigest
+  ^defines=github.com/paxlabs-inc/deus/internal/receipts/eip712.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/receipts.Signer#ChainID kind=field
+  digest=b3:1637acdf2a9ee0e5f65e8143d33571bb7548d561fed4a261a90959c0a41f5ae8 file=deus/internal/receipts/eip712.go range=21:21 lang=go exported=true byte_range=496:519
+  sig=int64
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/receipts.Signer
+
+NODE id=github.com/paxlabs-inc/deus/internal/receipts.Signer#PrivateKey kind=field
+  digest=b3:d43a082bb842e49575dfcff75413ab9877dd3e81932086b687630f66dcf0ee3b file=deus/internal/receipts/eip712.go range=23:23 lang=go exported=true byte_range=555:590
+  sig=*ecdsa.PrivateKey
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/receipts.Signer
+
+NODE id=github.com/paxlabs-inc/deus/internal/receipts.Signer#VerifyingContract kind=field
+  digest=b3:c2f08b8dbc2fa6478cbf5f588246559ebcf336093bfe1460275f0b2cb366bc35 file=deus/internal/receipts/eip712.go range=22:22 lang=go exported=true byte_range=521:553
+  sig=common.Address
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/receipts.Signer
+
+NODE id=github.com/paxlabs-inc/deus/internal/receipts.Signer.GatewayAddress kind=method
+  digest=b3:34727af82a3ac8c8d9712ba012cc718a44c832e45611198bafd4f5800af3fbd2 file=deus/internal/receipts/eip712.go range=40:43 lang=go exported=true byte_range=1078:1231
+  sig=func (s *Signer) GatewayAddress() common.Address
+  doc=GatewayAddress returns the signer address.
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/receipts.Signer
+  ^defines=github.com/paxlabs-inc/deus/internal/receipts/eip712.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/receipts.Signer.SignQuote kind=method
+  digest=b3:8a32a090f030c3dde17d33a2c8a1ad7f7ba01ae438d92664677f024edbff69c8 file=deus/internal/receipts/eip712.go range=56:105 lang=go exported=true byte_range=1479:3072
+  sig=func (s *Signer) SignQuote(f QuoteFields) (digest string, sig string, err error)
+  doc=SignQuote returns digest hex and signature hex.
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/receipts.Signer
+  ^defines=github.com/paxlabs-inc/deus/internal/receipts/eip712.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/receipts.Signer.SignReceipt kind=method
+  digest=b3:097c9af62c15664217e1963c20037d4c87af09fed5d4da054f43d3597003ba02 file=deus/internal/receipts/eip712.go range=132:185 lang=go exported=true byte_range=3707:5397
+  sig=func (s *Signer) SignReceipt(f ReceiptFields) (digest string, sig string, err error)
+  doc=SignReceipt returns digest hex and signature hex.
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/receipts.Signer
+  ^defines=github.com/paxlabs-inc/deus/internal/receipts/eip712.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/receipts.Signer.VerifyQuote kind=method
+  digest=b3:893e28efb9af32eb2faa69726f18180531c3844cb9f5b31f6e57960fecf6e0c3 file=deus/internal/receipts/eip712.go range=107:117 lang=go exported=true byte_range=3074:3422
+  sig=func (s *Signer) VerifyQuote(digestHex, sigHex string) error
+  doc=VerifyQuote checks a quote signature recovers to the gateway address.
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/receipts.Signer
+  ^defines=github.com/paxlabs-inc/deus/internal/receipts/eip712.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/receipts.Signer.VerifyVoucherCaller kind=method
+  digest=b3:d967e513190e019d57634289b85b98fe0bbadc036c5767e61d3866f63c78d2ec file=deus/internal/receipts/voucher.go range=58:68 lang=go exported=true byte_range=1526:1895
+  sig=func (s *Signer) VerifyVoucherCaller(digestHex, callerSigHex, callerWallet string) error
+  doc=VerifyVoucherCaller checks caller signature over voucher digest.
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/receipts.Signer
+  ^defines=github.com/paxlabs-inc/deus/internal/receipts/voucher.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/receipts.Signer.VoucherDigest kind=method
+  digest=b3:60bde56ed9aed6faf669c9dea0bf1cda7c2aebf0af345e6c1a2a668dcab1bca5 file=deus/internal/receipts/voucher.go range=20:56 lang=go exported=true byte_range=351:1524
+  sig=func (s *Signer) VoucherDigest(f VoucherFields) (string, error)
+  doc=VoucherDigest returns the EIP-712 digest for a voucher (unsigned).
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/receipts.Signer
+  ^defines=github.com/paxlabs-inc/deus/internal/receipts/voucher.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/receipts.VoucherFields kind=type
+  digest=b3:df03448ee2aa7e5991bc1f8ec37f2d43ffa60391545ae29c49602e8d8c8378c1 file=deus/internal/receipts/voucher.go range=12:18 lang=go exported=true byte_range=168:349
+  sig=type VoucherFields struct {\n	ChannelID	string\n	CumulativeWei	string\n	Nonce		uint64\n	LastReceiptHash	string\n}
+  doc=VoucherFields are EIP-712 DeusVoucher struct fields.
+EDGES
+  contains=github.com/paxlabs-inc/deus/internal/receipts.VoucherFields#ChannelID,github.com/paxlabs-inc/deus/internal/receipts.VoucherFields#CumulativeWei,github.com/paxlabs-inc/deus/internal/receipts.VoucherFields#LastReceiptHash,github.com/paxlabs-inc/deus/internal/receipts.VoucherFields#Nonce
+  ^defines=github.com/paxlabs-inc/deus/internal/receipts/voucher.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/receipts.VoucherFields#ChannelID kind=field
+  digest=b3:cab432723a4281d67e10e1b63953822d1b38e8a6fdeee1a5f14e4e1e7988be86 file=deus/internal/receipts/voucher.go range=14:14 lang=go exported=true byte_range=253:275
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/receipts.VoucherFields
+
+NODE id=github.com/paxlabs-inc/deus/internal/receipts.VoucherFields#CumulativeWei kind=field
+  digest=b3:d36e50bd89aee962e43e8daa83dc646af7156df09930d01b0d13a7cca02471e5 file=deus/internal/receipts/voucher.go range=15:15 lang=go exported=true byte_range=277:299
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/receipts.VoucherFields
+
+NODE id=github.com/paxlabs-inc/deus/internal/receipts.VoucherFields#LastReceiptHash kind=field
+  digest=b3:9c0d967f9d09374c37552f4f857a057867756fcc7276be10e30e3cc1e93c7a77 file=deus/internal/receipts/voucher.go range=17:17 lang=go exported=true byte_range=325:347
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/receipts.VoucherFields
+
+NODE id=github.com/paxlabs-inc/deus/internal/receipts.VoucherFields#Nonce kind=field
+  digest=b3:f994f0d1356c942676a30c359e7009eb9ee4ee58cb07db29852b4047d7d79c8b file=deus/internal/receipts/voucher.go range=16:16 lang=go exported=true byte_range=301:323
+  sig=uint64
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/receipts.VoucherFields
+
+NODE id=github.com/paxlabs-inc/deus/internal/receipts.WeiString kind=func
+  digest=b3:ba73e25edc1ab6508d705811d57d224efda9134f63a3f547c453e1b4d2ac2cf4 file=deus/internal/receipts/eip712.go range=222:228 lang=go exported=true byte_range=6325:6488
+  sig=func WeiString(v *big.Int) string
+  doc=WeiString formats *big.Int as decimal string for EIP-712 uint256 fields.
+EDGES
+  ^defines=github.com/paxlabs-inc/deus/internal/receipts/eip712.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/receipts.decodeHash kind=func
+  digest=b3:cc722a984e056071bdee417c65dfce649d5942fc0f913b03f7ee8de518cc3807 file=deus/internal/receipts/merkle.go range=69:79 lang=go exported=false byte_range=1735:2046
+  sig=func decodeHash(s string) ([]byte, error)
+EDGES
+  ^defines=github.com/paxlabs-inc/deus/internal/receipts/merkle.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/receipts.hashLeaf kind=func
+  digest=b3:7a7ba41468dd18f18953d6807ec2ea23c8f42726e4e4bc0c53a2a871456f5dc3 file=deus/internal/receipts/merkle.go range=54:59 lang=go exported=false byte_range=1355:1515
+  sig=func hashLeaf(b []byte) []byte
+EDGES
+  ^defines=github.com/paxlabs-inc/deus/internal/receipts/merkle.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/receipts.hashNode kind=func
+  digest=b3:27fe69642ea1dc0a7cb36c75035edf149b3181ff62b1ad8864333aa36ab7b928 file=deus/internal/receipts/merkle.go range=61:67 lang=go exported=false byte_range=1517:1733
+  sig=func hashNode(left, right []byte) []byte
+EDGES
+  ^defines=github.com/paxlabs-inc/deus/internal/receipts/merkle.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/receipts.merkleLeafPrefix kind=const
+  digest=b3:65d4636ab62a9fb5e58a10559b926284fa8362908295b0dfb95040179dc6b840 file=deus/internal/receipts/merkle.go range=13:16 lang=go exported=false byte_range=124:308
+  sig=byte
+  doc=Domain-separation prefixes guard against second-preimage attacks: a leaf hash\ncan never be reinterpreted as an internal node and vice versa.
+EDGES
+  ^defines=github.com/paxlabs-inc/deus/internal/receipts/merkle.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/receipts.merkleNodePrefix kind=const
+  digest=b3:5dcb99daf8ed95de7004abc5c72d8c2f971bf0887dcb8509f7adbd7e17919667 file=deus/internal/receipts/merkle.go range=13:17 lang=go exported=false byte_range=124:338
+  sig=byte
+  doc=Domain-separation prefixes guard against second-preimage attacks: a leaf hash\ncan never be reinterpreted as an internal node and vice versa.
+EDGES
+  ^defines=github.com/paxlabs-inc/deus/internal/receipts/merkle.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/receipts/eip712.go kind=file
+  digest=b3:5a6aacb840f2ba515e05e0af6d7567fc2106e8338ccb8b269a3605e4bfc7f75b file=deus/internal/receipts/eip712.go range=1:228 lang=go exported=true
+EDGES
+  defines=github.com/paxlabs-inc/deus/internal/receipts.HashPayload,github.com/paxlabs-inc/deus/internal/receipts.NewSignerFromHex,github.com/paxlabs-inc/deus/internal/receipts.QuoteFields,github.com/paxlabs-inc/deus/internal/receipts.ReceiptFields,github.com/paxlabs-inc/deus/internal/receipts.RecoverSigner,github.com/paxlabs-inc/deus/internal/receipts.Signer,github.com/paxlabs-inc/deus/internal/receipts.Signer.GatewayAddress,github.com/paxlabs-inc/deus/internal/receipts.Signer.SignQuote,github.com/paxlabs-inc/deus/internal/receipts.Signer.SignReceipt,github.com/paxlabs-inc/deus/internal/receipts.Signer.VerifyQuote,github.com/paxlabs-inc/deus/internal/receipts.WeiString
+  ^contains=github.com/paxlabs-inc/deus/internal/receipts
+
+NODE id=github.com/paxlabs-inc/deus/internal/receipts/merkle.go kind=file
+  digest=b3:1bebff308099b7b7b47f9e370f10010fbf7ca157a27e7ef86fb988a76cb2af27 file=deus/internal/receipts/merkle.go range=1:79 lang=go exported=true
+EDGES
+  defines=github.com/paxlabs-inc/deus/internal/receipts.MerkleRoot,github.com/paxlabs-inc/deus/internal/receipts.decodeHash,github.com/paxlabs-inc/deus/internal/receipts.hashLeaf,github.com/paxlabs-inc/deus/internal/receipts.hashNode,github.com/paxlabs-inc/deus/internal/receipts.merkleLeafPrefix,github.com/paxlabs-inc/deus/internal/receipts.merkleNodePrefix
+  ^contains=github.com/paxlabs-inc/deus/internal/receipts
+
+NODE id=github.com/paxlabs-inc/deus/internal/receipts/voucher.go kind=file
+  digest=b3:1732deda6bd9fbfce441d0b3062e18f681e7c3aec57168e607657bb4f8432727 file=deus/internal/receipts/voucher.go range=1:68 lang=go exported=true
+EDGES
+  defines=github.com/paxlabs-inc/deus/internal/receipts.Signer.VerifyVoucherCaller,github.com/paxlabs-inc/deus/internal/receipts.Signer.VoucherDigest,github.com/paxlabs-inc/deus/internal/receipts.VoucherFields
+  ^contains=github.com/paxlabs-inc/deus/internal/receipts

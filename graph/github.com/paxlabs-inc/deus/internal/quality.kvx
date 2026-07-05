@@ -1,0 +1,48 @@
+# GENERATED gen=codegraph do-not-edit merkle=b3:2dc69ec8dbbe0231373534486cf12ff6fdb0eaad7b2dfdcbc4d73453c8542ee8
+
+NODE id=github.com/paxlabs-inc/deus/internal/quality kind=package
+  digest=b3:fff83978c8255dc283ecca8f35c58a859fc7460fe9f32a458b332f3426e81058 file=deus/internal/quality range=0:0 lang=go exported=true
+EDGES
+  contains=github.com/paxlabs-inc/deus/internal/quality/quality.go
+  ^contains=mod:github.com/paxlabs-inc/deus
+
+NODE id=github.com/paxlabs-inc/deus/internal/quality.New kind=func
+  digest=b3:15b7303b0eddc2deefe3c6060241b060f4e0aebaf1197bab2ab8fe028fcae19e file=deus/internal/quality/quality.go range=16:19 lang=go exported=true byte_range=306:406
+  sig=func New(st *store.Store) *Service
+  doc=New returns a quality service.
+EDGES
+  ^defines=github.com/paxlabs-inc/deus/internal/quality/quality.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/quality.Service kind=type
+  digest=b3:a9fcad662971c77e760b76dfe4608eab29d2babe3121ed615d5052eae5b9dcb6 file=deus/internal/quality/quality.go range=11:14 lang=go exported=true byte_range=201:304
+  sig=type Service struct {\n	store *store.Store\n}
+  doc=Service updates quality scores from invocation outcomes.
+EDGES
+  contains=github.com/paxlabs-inc/deus/internal/quality.Service#store,github.com/paxlabs-inc/deus/internal/quality.Service.Sample
+  ^defines=github.com/paxlabs-inc/deus/internal/quality/quality.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/quality.Service#store kind=field
+  digest=b3:ddd5d136e7bec16ac8fb4d732ca23eb3490eeb76b1efaaa73a91c078ebb10a37 file=deus/internal/quality/quality.go range=13:13 lang=go exported=false byte_range=284:302
+  sig=*store.Store
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/quality.Service
+
+NODE id=github.com/paxlabs-inc/deus/internal/quality.Service.Sample kind=method
+  digest=b3:39a067eecda32e1d33c86e0a95f80fa7d1b3972cb7834745f50e52b9e3495a4b file=deus/internal/quality/quality.go range=21:39 lang=go exported=true byte_range=408:1172
+  sig=func (s *Service) Sample(ctx context.Context, serviceID, outcome string, latencyMS int) error
+  doc=Sample records one delivery sample and updates rolling quality_score.
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/quality.Service
+  ^defines=github.com/paxlabs-inc/deus/internal/quality/quality.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/quality.sampleScore kind=func
+  digest=b3:b96457228e05e3f77ca732832608819417d4351a6ff3ed960982b3a74b12b6fa file=deus/internal/quality/quality.go range=41:54 lang=go exported=false byte_range=1174:1541
+  sig=func sampleScore(outcome string, latencyMS int) *big.Int
+EDGES
+  ^defines=github.com/paxlabs-inc/deus/internal/quality/quality.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/quality/quality.go kind=file
+  digest=b3:09de481fb05ef858d92a7175fe4cc6bdb41f407ef32010fc0678dd66a8b0d6d4 file=deus/internal/quality/quality.go range=1:54 lang=go exported=true
+EDGES
+  defines=github.com/paxlabs-inc/deus/internal/quality.New,github.com/paxlabs-inc/deus/internal/quality.Service,github.com/paxlabs-inc/deus/internal/quality.Service.Sample,github.com/paxlabs-inc/deus/internal/quality.sampleScore
+  ^contains=github.com/paxlabs-inc/deus/internal/quality

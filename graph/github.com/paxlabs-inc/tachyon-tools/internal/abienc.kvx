@@ -1,0 +1,89 @@
+# GENERATED gen=codegraph do-not-edit merkle=b3:2dc69ec8dbbe0231373534486cf12ff6fdb0eaad7b2dfdcbc4d73453c8542ee8
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/internal/abienc kind=package
+  digest=b3:f500647f19d8027fba72104c2f8b33c76903fb572cb63f5e4cfa5ed054cc4acd file=tachyon/internal/abienc range=0:0 lang=go exported=true
+EDGES
+  contains=github.com/paxlabs-inc/tachyon-tools/internal/abienc/abienc.go
+  ^contains=mod:github.com/paxlabs-inc/tachyon-tools
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/internal/abienc.Pack kind=func
+  digest=b3:af87598f6f900a9fd4cec92962e22724eb761c1c7dd27e575fc082baf31d8fb4 file=tachyon/internal/abienc/abienc.go range=21:38 lang=go exported=true byte_range=617:1254
+  sig=func Pack(abiJSON []byte, method string, args any) ([]byte, error)
+  doc=Pack ABI-encodes a method invocation (4-byte selector + arguments) using the\ncontract ABI JSON. args may be nil, a []interface{}, a json.RawMessage array,\nor any value that marshals to a JSON array.
+EDGES
+  ^defines=github.com/paxlabs-inc/tachyon-tools/internal/abienc/abienc.go
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/internal/abienc.PackConstructorArgs kind=func
+  digest=b3:f3ee1aecd1b2bf0b01ada367d22dfc4a70a29e86ddb54d0478d6daa435771163 file=tachyon/internal/abienc/abienc.go range=40:52 lang=go exported=true byte_range=1256:1714
+  sig=func PackConstructorArgs(abiJSON []byte, args any) ([]byte, error)
+  doc=PackConstructorArgs ABI-encodes constructor arguments (no selector) for\nappending to creation bytecode.
+EDGES
+  ^defines=github.com/paxlabs-inc/tachyon-tools/internal/abienc/abienc.go
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/internal/abienc.coerce kind=func
+  digest=b3:f67213d13dd3fe0bee37ae53ef549a31e3072affe3b73a40f1270e0cdbef6606 file=tachyon/internal/abienc/abienc.go range=104:141 lang=go exported=false byte_range=3092:4104
+  sig=func coerce(t abi.Type, v interface{}) (interface{}, error)
+  doc=coerce converts a single JSON value into the Go type required by the ABI type.
+EDGES
+  ^defines=github.com/paxlabs-inc/tachyon-tools/internal/abienc/abienc.go
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/internal/abienc.coerceArgs kind=func
+  digest=b3:1f94a383de2e4f1736c756cc5915f2aef12c41fbf4701a55e600f5273eb5cc1c file=tachyon/internal/abienc/abienc.go range=54:73 lang=go exported=false byte_range=1716:2353
+  sig=func coerceArgs(arguments abi.Arguments, args any) ([]interface{}, error)
+  doc=coerceArgs converts a list of JSON-decoded values into the exact Go types\nrequired by the given ABI arguments.
+EDGES
+  ^defines=github.com/paxlabs-inc/tachyon-tools/internal/abienc/abienc.go
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/internal/abienc.coerceArrayLike kind=func
+  digest=b3:d8fe189681ada3db06e4b57265b41cd0cafa364f6f01005d7924c6ba4273ff4d file=tachyon/internal/abienc/abienc.go range=240:264 lang=go exported=false byte_range=6621:7421
+  sig=func coerceArrayLike(t abi.Type, v interface{}) (interface{}, error)
+  doc=coerceArrayLike builds a slice ([]T) or fixed array ([N]T) of coerced elements.
+EDGES
+  ^defines=github.com/paxlabs-inc/tachyon-tools/internal/abienc/abienc.go
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/internal/abienc.coerceFixedBytes kind=func
+  digest=b3:7f2691a6921464877db89cc7b86554af37687b0c7d5728fed809aea80e37f767 file=tachyon/internal/abienc/abienc.go range=225:238 lang=go exported=false byte_range=6160:6619
+  sig=func coerceFixedBytes(t abi.Type, v interface{}) (interface{}, error)
+  doc=coerceFixedBytes builds a fixed-size [N]byte (bytesN / bytes32 / hash).
+EDGES
+  ^defines=github.com/paxlabs-inc/tachyon-tools/internal/abienc/abienc.go
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/internal/abienc.coerceInteger kind=func
+  digest=b3:0267b047ab45f60095c365e397b34854d8fbc113306a411d52efa8fc4800037b file=tachyon/internal/abienc/abienc.go range=143:176 lang=go exported=false byte_range=4106:4883
+  sig=func coerceInteger(t abi.Type, v interface{}) (interface{}, error)
+  doc=coerceInteger returns the exact Go integer type go-ethereum expects for the\ngiven int/uint size: int8/16/32/64 (or unsigned) for those exact widths,\n*big.Int for everything else (including uint256).
+EDGES
+  ^defines=github.com/paxlabs-inc/tachyon-tools/internal/abienc/abienc.go
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/internal/abienc.coerceTuple kind=func
+  digest=b3:a513bb9cd60ef7b3b9ad5c4ca44e2f2d0e2b30f14307db2dbc5091da8c110759 file=tachyon/internal/abienc/abienc.go range=266:300 lang=go exported=false byte_range=7423:8510
+  sig=func coerceTuple(t abi.Type, v interface{}) (interface{}, error)
+  doc=coerceTuple builds a struct for an ABI tuple. JSON may be an ordered array or\nan object keyed by the solidity field names.
+EDGES
+  ^defines=github.com/paxlabs-inc/tachyon-tools/internal/abienc/abienc.go
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/internal/abienc.hexToBytes kind=func
+  digest=b3:7820de0fed4167161310a085585ff4f7e9dc09d15e468f344971d6e6831dd5df file=tachyon/internal/abienc/abienc.go range=213:223 lang=go exported=false byte_range=5832:6158
+  sig=func hexToBytes(v interface{}) ([]byte, error)
+EDGES
+  ^defines=github.com/paxlabs-inc/tachyon-tools/internal/abienc/abienc.go
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/internal/abienc.toBigInt kind=func
+  digest=b3:de246825dea7a2672e02b2f50e2f2cd416ccc36df265a52475936b6665b33cd9 file=tachyon/internal/abienc/abienc.go range=178:211 lang=go exported=false byte_range=4885:5830
+  sig=func toBigInt(v interface{}) (*big.Int, error)
+  doc=toBigInt parses a numeric value from a decimal/hex string, a JSON number, or\nan existing *big.Int. Strings are preferred for values beyond 2^53.
+EDGES
+  ^defines=github.com/paxlabs-inc/tachyon-tools/internal/abienc/abienc.go
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/internal/abienc.toList kind=func
+  digest=b3:27316adbeb869a501ea31c77beaa5efc414623c592422ca3496a9f3a918fec97 file=tachyon/internal/abienc/abienc.go range=75:102 lang=go exported=false byte_range=2355:3090
+  sig=func toList(args any) ([]interface{}, error)
+  doc=toList normalizes args into a []interface{} of JSON-decoded values.
+EDGES
+  ^defines=github.com/paxlabs-inc/tachyon-tools/internal/abienc/abienc.go
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/internal/abienc/abienc.go kind=file
+  digest=b3:1b55df426715c362a67c0ed90decd5afc1397f52aa2928faace020542bba4c44 file=tachyon/internal/abienc/abienc.go range=1:300 lang=go exported=true
+EDGES
+  defines=github.com/paxlabs-inc/tachyon-tools/internal/abienc.Pack,github.com/paxlabs-inc/tachyon-tools/internal/abienc.PackConstructorArgs,github.com/paxlabs-inc/tachyon-tools/internal/abienc.coerce,github.com/paxlabs-inc/tachyon-tools/internal/abienc.coerceArgs,github.com/paxlabs-inc/tachyon-tools/internal/abienc.coerceArrayLike,github.com/paxlabs-inc/tachyon-tools/internal/abienc.coerceFixedBytes,github.com/paxlabs-inc/tachyon-tools/internal/abienc.coerceInteger,github.com/paxlabs-inc/tachyon-tools/internal/abienc.coerceTuple,github.com/paxlabs-inc/tachyon-tools/internal/abienc.hexToBytes,github.com/paxlabs-inc/tachyon-tools/internal/abienc.toBigInt,github.com/paxlabs-inc/tachyon-tools/internal/abienc.toList
+  ^contains=github.com/paxlabs-inc/tachyon-tools/internal/abienc

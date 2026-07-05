@@ -1,0 +1,172 @@
+# GENERATED gen=codegraph do-not-edit merkle=b3:2dc69ec8dbbe0231373534486cf12ff6fdb0eaad7b2dfdcbc4d73453c8542ee8
+
+NODE id=github.com/paxlabs-inc/layerx/internal/settle kind=package
+  digest=b3:fbc6bfdcee601ab71d92c4d28ffee5bd151c5725246f12dc7ccb8f8b3665c4ee file=layerx/internal/settle range=0:0 lang=go exported=true
+EDGES
+  contains=github.com/paxlabs-inc/layerx/internal/settle/settle.go
+  ^contains=mod:github.com/paxlabs-inc/layerx
+
+NODE id=github.com/paxlabs-inc/layerx/internal/settle.Ledger kind=interface
+  digest=b3:b45daf91921d32fb77e84c1cbc6af499802ebb3caa854d6ce50da8c20d1c6d53 file=layerx/internal/settle/settle.go range=29:47 lang=go exported=true byte_range=785:1989
+  sig=type Ledger interface {\n	ListUnsettled(ctx context.Context, limit int) ([]store.UnsettledTransfer, error)\n	SealBatch(ctx context.Context, rootHex string, seqs []int64, windowStart, windowEnd time.Time) (string, error)\n	MarkAnchored(ctx context.Context, batchID, anchorTx string) error\n	MarkBatchFailed(ctx context.Context, batchID, errText string) error\n	GetAccount(ctx context.Context, did string) (types.Account, error)\n	ListUnanchoredBatches(ctx context.Context) ([]store.PendingBatch, error)\n\n	// Withdrawal payout (chain-out, PHASE 3).\n	ListQueuedWithdrawals(ctx context.Context, limit int) ([]store.QueuedWithdrawal, error)\n	ListSubmittedWithdrawals(ctx context.Context) ([]store.QueuedWithdrawal, error)\n	SealWithdrawals(ctx context.Context, payoutRoot string, items []store.SealedWithdrawal) error\n	MarkWithdrawalSettled(ctx context.Context, id, payoutTx string) error\n	RecordWithdrawalError(ctx context.Context, payoutRoot, errText string) error\n}
+  doc=Ledger is the subset of the store the settlement worker needs. Narrowing it\nto an interface keeps the worker's orchestration (seal -> anchor -> mark, and\ncrash recovery) unit-testable without a live Postgres. *store.Store\nsatisfies it.
+EDGES
+  ^implements=github.com/paxlabs-inc/layerx/internal/store.Store
+  ^defines=github.com/paxlabs-inc/layerx/internal/settle/settle.go
+
+NODE id=github.com/paxlabs-inc/layerx/internal/settle.New kind=func
+  digest=b3:d7aeffe916d09df5af809ed6e78d611f11d51f70da49969de2eda3d992bc15d3 file=layerx/internal/settle/settle.go range=80:89 lang=go exported=true byte_range=2979:3270
+  sig=func New(st Ledger, settler chain.Settler, log *slog.Logger, window time.Duration) *Worker
+  doc=New constructs a settlement Worker.
+EDGES
+  ^defines=github.com/paxlabs-inc/layerx/internal/settle/settle.go
+
+NODE id=github.com/paxlabs-inc/layerx/internal/settle.Worker kind=type
+  digest=b3:1f7f87c367b1f176e23c4678cd9df7ff6aa124027aa3876a4409d4a5440b1cd6 file=layerx/internal/settle/settle.go range=49:57 lang=go exported=true byte_range=1991:2304
+  sig=type Worker struct {\n	st	Ledger\n	settler	chain.Settler\n	log	*slog.Logger\n	window	time.Duration\n	pub	events.Publisher	// optional live SSE sink; nil = no streaming\n	mu	sync.Mutex		// serializes settlement passes (window ticker vs force-settle)\n}
+  doc=Worker nets + anchors settlement batches.
+EDGES
+  contains=github.com/paxlabs-inc/layerx/internal/settle.Worker#log,github.com/paxlabs-inc/layerx/internal/settle.Worker#mu,github.com/paxlabs-inc/layerx/internal/settle.Worker#pub,github.com/paxlabs-inc/layerx/internal/settle.Worker#settler,github.com/paxlabs-inc/layerx/internal/settle.Worker#st,github.com/paxlabs-inc/layerx/internal/settle.Worker#window,github.com/paxlabs-inc/layerx/internal/settle.Worker.RecoverPending,github.com/paxlabs-inc/layerx/internal/settle.Worker.RecoverPendingWithdrawals,github.com/paxlabs-inc/layerx/internal/settle.Worker.Run,github.com/paxlabs-inc/layerx/internal/settle.Worker.SetPublisher,github.com/paxlabs-inc/layerx/internal/settle.Worker.SettleNow,github.com/paxlabs-inc/layerx/internal/settle.Worker.SettleWithdrawals,github.com/paxlabs-inc/layerx/internal/settle.Worker.logNetDeltas,github.com/paxlabs-inc/layerx/internal/settle.Worker.publishAnchor,github.com/paxlabs-inc/layerx/internal/settle.Worker.resolveNetDeltas
+  ^defines=github.com/paxlabs-inc/layerx/internal/settle/settle.go
+
+NODE id=github.com/paxlabs-inc/layerx/internal/settle.Worker#log kind=field
+  digest=b3:2f23394fcff24d83f2ad7f759e5091c2a14eb851267650c1d226127a7953f094 file=layerx/internal/settle/settle.go range=53:53 lang=go exported=false byte_range=2097:2117
+  sig=*slog.Logger
+EDGES
+  ^contains=github.com/paxlabs-inc/layerx/internal/settle.Worker
+
+NODE id=github.com/paxlabs-inc/layerx/internal/settle.Worker#mu kind=field
+  digest=b3:8fb472e3c101ddbe82de3f6e4339791010616cf667662d8f80f5b138ddbd790f file=layerx/internal/settle/settle.go range=56:56 lang=go exported=false byte_range=2214:2232
+  sig=sync.Mutex
+EDGES
+  ^contains=github.com/paxlabs-inc/layerx/internal/settle.Worker
+
+NODE id=github.com/paxlabs-inc/layerx/internal/settle.Worker#pub kind=field
+  digest=b3:79b1daec1051e916e037c96716dac180cf98a3a62faca5d2adbbdaa5843ab2f2 file=layerx/internal/settle/settle.go range=55:55 lang=go exported=false byte_range=2142:2166
+  sig=events.Publisher
+EDGES
+  ^contains=github.com/paxlabs-inc/layerx/internal/settle.Worker
+
+NODE id=github.com/paxlabs-inc/layerx/internal/settle.Worker#settler kind=field
+  digest=b3:c131144d723d94734fb96fb7925e7b8aaa3df9bbd1ff2bd09e0d922b71685a9e file=layerx/internal/settle/settle.go range=52:52 lang=go exported=false byte_range=2074:2095
+  sig=chain.Settler
+EDGES
+  ^contains=github.com/paxlabs-inc/layerx/internal/settle.Worker
+
+NODE id=github.com/paxlabs-inc/layerx/internal/settle.Worker#st kind=field
+  digest=b3:cf7bbe8e3c2d804a78ebbb27112d4510efb6a0608a3957f9a11ea1e4ca58ad6c file=layerx/internal/settle/settle.go range=51:51 lang=go exported=false byte_range=2058:2072
+  sig=settle.Ledger
+EDGES
+  ^contains=github.com/paxlabs-inc/layerx/internal/settle.Worker
+
+NODE id=github.com/paxlabs-inc/layerx/internal/settle.Worker#window kind=field
+  digest=b3:d85b5d945a4ace7d4053b65729896ee632014ddf72e42d9fc7605fb0021cb275 file=layerx/internal/settle/settle.go range=54:54 lang=go exported=false byte_range=2119:2140
+  sig=time.Duration
+EDGES
+  ^contains=github.com/paxlabs-inc/layerx/internal/settle.Worker
+
+NODE id=github.com/paxlabs-inc/layerx/internal/settle.Worker.RecoverPending kind=method
+  digest=b3:4e95177cf51e0a789967737d8f4cfa6677f9a807ce8963bf1d080b5d0a5b7f30 file=layerx/internal/settle/settle.go range=230:264 lang=go exported=true byte_range=8078:9517
+  sig=func (w *Worker) RecoverPending(ctx context.Context) error
+  doc=RecoverPending re-submits batches that were sealed but never confirmed\nanchored (e.g. a crash between seal and confirm). AnchorBatch is idempotent on\nthe root, so a batch already settled on-chain is reconciled (its real anchor\ntx recovered) rather than double-anchored — honoring at-least-once. Safe to\ncall once at startup; serialized against live settlement passes.
+EDGES
+  ^contains=github.com/paxlabs-inc/layerx/internal/settle.Worker
+  ^defines=github.com/paxlabs-inc/layerx/internal/settle/settle.go
+
+NODE id=github.com/paxlabs-inc/layerx/internal/settle.Worker.RecoverPendingWithdrawals kind=method
+  digest=b3:127462bfe18f07f705173b0ec308abbe6156c141ba3dc74f18ae331896ffb314 file=layerx/internal/settle/settle.go range=374:427 lang=go exported=true byte_range=14057:16260
+  sig=func (w *Worker) RecoverPendingWithdrawals(ctx context.Context) error
+  doc=RecoverPendingWithdrawals re-submits withdrawal payouts that were sealed\n(queued -> submitted) but never confirmed settled (e.g. a crash between seal\nand confirm). It groups the submitted rows by their frozen payout root,\nre-derives the SAME root from the frozen recipients/amounts (a mismatch is a\ndata-integrity bug and is skipped rather than paid), and re-anchors —\nidempotent on the root, so an already-settled payout is reconciled (its real\ntx recovered) rather than double-paid. Safe to call once at startup.
+EDGES
+  ^contains=github.com/paxlabs-inc/layerx/internal/settle.Worker
+  ^defines=github.com/paxlabs-inc/layerx/internal/settle/settle.go
+
+NODE id=github.com/paxlabs-inc/layerx/internal/settle.Worker.Run kind=method
+  digest=b3:acb15bd7ebc55feaaeac9ebdca380447e325b61c0e0459d3c400abf0862847da file=layerx/internal/settle/settle.go range=91:113 lang=go exported=true byte_range=3272:3999
+  sig=func (w *Worker) Run(ctx context.Context)
+  doc=Run ticks every window and settles the accumulated micropayment flow.
+EDGES
+  ^contains=github.com/paxlabs-inc/layerx/internal/settle.Worker
+  ^defines=github.com/paxlabs-inc/layerx/internal/settle/settle.go
+
+NODE id=github.com/paxlabs-inc/layerx/internal/settle.Worker.SetPublisher kind=method
+  digest=b3:108f7275151e4b3b07daaefacc121e21ac84004a281bc635852013d8afcf051a file=layerx/internal/settle/settle.go range=59:60 lang=go exported=true byte_range=2306:2436
+  sig=func (w *Worker) SetPublisher(p events.Publisher)
+  doc=SetPublisher wires the live SSE event sink. Optional; nil-safe.
+EDGES
+  ^contains=github.com/paxlabs-inc/layerx/internal/settle.Worker
+  ^defines=github.com/paxlabs-inc/layerx/internal/settle/settle.go
+
+NODE id=github.com/paxlabs-inc/layerx/internal/settle.Worker.SettleNow kind=method
+  digest=b3:fc4f27b3a124753c55e4f632fb727f7410573e48fde35a80f3f3f10492ee09c1 file=layerx/internal/settle/settle.go range=115:174 lang=go exported=true byte_range=4001:6306
+  sig=func (w *Worker) SettleNow(ctx context.Context) (string, error)
+  doc=SettleNow performs one settlement pass over all currently-unsettled transfers:\nbuild root -> seal batch -> anchor on Paxeer -> mark anchored. Returns the\nbatch id (empty when there was nothing to settle). Safe to call concurrently;\npasses are serialized.
+EDGES
+  ^contains=github.com/paxlabs-inc/layerx/internal/settle.Worker
+  ^defines=github.com/paxlabs-inc/layerx/internal/settle/settle.go
+
+NODE id=github.com/paxlabs-inc/layerx/internal/settle.Worker.SettleWithdrawals kind=method
+  digest=b3:926380511d646192f4bca2f5b71c72ca1bb5935a02c64e3c80078b2cbdab1ff2 file=layerx/internal/settle/settle.go range=315:372 lang=go exported=true byte_range=11674:14055
+  sig=func (w *Worker) SettleWithdrawals(ctx context.Context) (string, error)
+  doc=SettleWithdrawals pays out queued withdrawals as real USDL on Paxeer: it\nseals the payable set under a deterministic payout root (freezing the\nrecipients), submits the operator-signed vault payout, and marks each\nwithdrawal settled with the on-chain tx — only after it confirms. Returns the\npayout root (empty when there was nothing payable). Idempotent + crash-safe:\nthe frozen root makes the on-chain batch id stable, so a retried submit never\ndouble-pays. Withdrawals whose DID has no mapped EVM address are skipped (left\nqueued) until a binding exists. Safe to call concurrently; serialized.
+EDGES
+  ^contains=github.com/paxlabs-inc/layerx/internal/settle.Worker
+  ^defines=github.com/paxlabs-inc/layerx/internal/settle/settle.go
+
+NODE id=github.com/paxlabs-inc/layerx/internal/settle.Worker.logNetDeltas kind=method
+  digest=b3:8716789677079bf5002578e11917b956966d76c75d4c503520511c06fdd78d6d file=layerx/internal/settle/settle.go range=214:228 lang=go exported=false byte_range=7590:8076
+  sig=func (w *Worker) logNetDeltas(ctx context.Context, transfers []store.UnsettledTransfer)
+  doc=logNetDeltas computes + records the window's per-DID net for observability.
+EDGES
+  ^contains=github.com/paxlabs-inc/layerx/internal/settle.Worker
+  ^defines=github.com/paxlabs-inc/layerx/internal/settle/settle.go
+
+NODE id=github.com/paxlabs-inc/layerx/internal/settle.Worker.publishAnchor kind=method
+  digest=b3:247185b1bac19059ebe758a90d57b7f4e5fd7f305f505f53ba2097a9872d4b20 file=layerx/internal/settle/settle.go range=62:78 lang=go exported=false byte_range=2438:2977
+  sig=func (w *Worker) publishAnchor(batchID, rootHex, anchorTx string, transferCount int)
+  doc=publishAnchor emits a live "anchor" event when a batch confirms on-chain, so\nstreaming explorer clients see settlement without polling. Best-effort.
+EDGES
+  ^contains=github.com/paxlabs-inc/layerx/internal/settle.Worker
+  ^defines=github.com/paxlabs-inc/layerx/internal/settle/settle.go
+
+NODE id=github.com/paxlabs-inc/layerx/internal/settle.Worker.resolveNetDeltas kind=method
+  digest=b3:262622656d8425eac13bdce0ab95b8023c2bdb673123b9840ca99c174340157c file=layerx/internal/settle/settle.go range=193:212 lang=go exported=false byte_range=6812:7588
+  sig=func (w *Worker) resolveNetDeltas(ctx context.Context, net map[string]int64) []chain.NetDelta
+  doc=resolveNetDeltas turns the netting map into EVM-addressed deltas, looking up\neach DID's mapped payout address. DIDs ordered for deterministic logging.
+EDGES
+  ^contains=github.com/paxlabs-inc/layerx/internal/settle.Worker
+  ^defines=github.com/paxlabs-inc/layerx/internal/settle/settle.go
+
+NODE id=github.com/paxlabs-inc/layerx/internal/settle.buildWithdrawalGroup kind=func
+  digest=b3:1121ded56239f39a6c99679449522c578df4ef755c25066f08d8f47c7b42fa81 file=layerx/internal/settle/settle.go range=290:313 lang=go exported=false byte_range=10471:11672
+  sig=func buildWithdrawalGroup(payable []store.QueuedWithdrawal) (rootHex string, items []store.SealedWithdrawal, deltas []chain.NetDelta)
+  doc=buildWithdrawalGroup turns a payable withdrawal set into the on-chain inputs:\nit sorts by id (deterministic leaf order), computes the payout root, and\nproduces the seal items + chain deltas. Pure (no I/O), so the commitment +\nidempotency are unit-testable. Returns ("", ...) when there is nothing\npayable.
+EDGES
+  ^defines=github.com/paxlabs-inc/layerx/internal/settle/settle.go
+
+NODE id=github.com/paxlabs-inc/layerx/internal/settle.computeNetDeltas kind=func
+  digest=b3:1c9782ca153b9917adeb01f8187d60e2079ad9706c9399a0ec076bcd35be48a7 file=layerx/internal/settle/settle.go range=176:191 lang=go exported=false byte_range=6308:6810
+  sig=func computeNetDeltas(transfers []store.UnsettledTransfer) map[string]int64
+  doc=computeNetDeltas nets a window's transfers per DID: each transfer debits the\npayer and credits the payee. Zero-net DIDs are dropped. Pure (no I/O) so the\nnetting math is unit-testable.
+EDGES
+  ^defines=github.com/paxlabs-inc/layerx/internal/settle/settle.go
+
+NODE id=github.com/paxlabs-inc/layerx/internal/settle.withdrawalLeaf kind=func
+  digest=b3:1284d9589705f3a08915dabf80f4ac71291c25c629913f5c8bcbf8ac3a02f788 file=layerx/internal/settle/settle.go range=272:288 lang=go exported=false byte_range=9892:10469
+  sig=func withdrawalLeaf(id, evm string, amountMicro int64) [32]byte
+  doc=withdrawalLeaf is the deterministic, byte-stable commitment over one\nwithdrawal's (id, recipient, amount). Domain-separated SHA-256 so the payout\nroot is independently re-derivable + tamper-evident.
+EDGES
+  ^defines=github.com/paxlabs-inc/layerx/internal/settle/settle.go
+
+NODE id=github.com/paxlabs-inc/layerx/internal/settle.withdrawalLeafDomain kind=const
+  digest=b3:d8ebaeeb740a6c9ef100d719d5738c181234a4aff728303b6386cc74649f6f7f file=layerx/internal/settle/settle.go range=268:270 lang=go exported=false byte_range=9675:9890
+  sig=untyped string
+  doc=withdrawalLeafDomain version-prefixes the withdrawal commitment leaf so a\nformat change forces a clean re-derivation (mirrors accumulator.LeafDomain).
+EDGES
+  ^defines=github.com/paxlabs-inc/layerx/internal/settle/settle.go
+
+NODE id=github.com/paxlabs-inc/layerx/internal/settle/settle.go kind=file
+  digest=b3:52cbcb5c24269dc3e954e2dd5beb21563182abd924eee3d2a6d10d9b7ad23579 file=layerx/internal/settle/settle.go range=1:427 lang=go exported=true
+EDGES
+  defines=github.com/paxlabs-inc/layerx/internal/settle.Ledger,github.com/paxlabs-inc/layerx/internal/settle.New,github.com/paxlabs-inc/layerx/internal/settle.Worker,github.com/paxlabs-inc/layerx/internal/settle.Worker.RecoverPending,github.com/paxlabs-inc/layerx/internal/settle.Worker.RecoverPendingWithdrawals,github.com/paxlabs-inc/layerx/internal/settle.Worker.Run,github.com/paxlabs-inc/layerx/internal/settle.Worker.SetPublisher,github.com/paxlabs-inc/layerx/internal/settle.Worker.SettleNow,github.com/paxlabs-inc/layerx/internal/settle.Worker.SettleWithdrawals,github.com/paxlabs-inc/layerx/internal/settle.Worker.logNetDeltas,github.com/paxlabs-inc/layerx/internal/settle.Worker.publishAnchor,github.com/paxlabs-inc/layerx/internal/settle.Worker.resolveNetDeltas,github.com/paxlabs-inc/layerx/internal/settle.buildWithdrawalGroup,github.com/paxlabs-inc/layerx/internal/settle.computeNetDeltas,github.com/paxlabs-inc/layerx/internal/settle.withdrawalLeaf,github.com/paxlabs-inc/layerx/internal/settle.withdrawalLeafDomain
+  ^contains=github.com/paxlabs-inc/layerx/internal/settle

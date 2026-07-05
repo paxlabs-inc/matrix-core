@@ -1,0 +1,465 @@
+# GENERATED gen=codegraph do-not-edit merkle=b3:2dc69ec8dbbe0231373534486cf12ff6fdb0eaad7b2dfdcbc4d73453c8542ee8
+
+NODE id=matrix/router/internal/jwt kind=package
+  digest=b3:88425fae749430f0439a9b6952b71e3305cc7aa24827138dda84ff711648b94d file=router/internal/jwt range=0:0 lang=go exported=true
+EDGES
+  contains=matrix/router/internal/jwt/jwks.go,matrix/router/internal/jwt/verifier.go
+  ^contains=mod:matrix/router
+
+NODE id=matrix/router/internal/jwt.Claims kind=type
+  digest=b3:91eda6d2279188937fc810cac51923736cb5263857c2b895e0c3b6506848bd81 file=router/internal/jwt/verifier.go range=60:72 lang=go exported=true byte_range=2128:2663
+  sig=type Claims struct {\n	Subject		string	`json:"sub"`\n	Email		string	`json:"email,omitempty"`\n	Audience	string	`json:"aud,omitempty"`\n	Issuer		string	`json:"iss,omitempty"`\n	Role		string	`json:"role,omitempty"`\n	IssuedAt	int64	`json:"iat,omitempty"`\n	NotBefore	int64	`json:"nbf,omitempty"`\n	Expiry		int64	`json:"exp,omitempty"`\n}
+  doc=Claims captures the subset of Supabase JWT claims matrix-router\nneeds. We accept extra fields (json.Unmarshal ignores them); rate\nlimits / role come from our own DB row, NOT the JWT.
+EDGES
+  contains=matrix/router/internal/jwt.Claims#Audience,matrix/router/internal/jwt.Claims#Email,matrix/router/internal/jwt.Claims#Expiry,matrix/router/internal/jwt.Claims#IssuedAt,matrix/router/internal/jwt.Claims#Issuer,matrix/router/internal/jwt.Claims#NotBefore,matrix/router/internal/jwt.Claims#Role,matrix/router/internal/jwt.Claims#Subject
+  ^defines=matrix/router/internal/jwt/verifier.go
+
+NODE id=matrix/router/internal/jwt.Claims#Audience kind=field
+  digest=b3:052977735cecde32b8bda1aad8e1a0a0b3e15552aa738e7365d8cef1ae65c06b file=router/internal/jwt/verifier.go range=66:66 lang=go exported=true byte_range=2416:2455
+  sig=string
+EDGES
+  ^contains=matrix/router/internal/jwt.Claims
+
+NODE id=matrix/router/internal/jwt.Claims#Email kind=field
+  digest=b3:e52a519e7e031d27caa495f685529966257105f456c077e611d0481020428b96 file=router/internal/jwt/verifier.go range=65:65 lang=go exported=true byte_range=2373:2414
+  sig=string
+EDGES
+  ^contains=matrix/router/internal/jwt.Claims
+
+NODE id=matrix/router/internal/jwt.Claims#Expiry kind=field
+  digest=b3:8892f0666a053edd74e3314f3972c1c3f2b2d7588bddc7cd6f106a59ab5b7b6b file=router/internal/jwt/verifier.go range=71:71 lang=go exported=true byte_range=2622:2661
+  sig=int64
+EDGES
+  ^contains=matrix/router/internal/jwt.Claims
+
+NODE id=matrix/router/internal/jwt.Claims#IssuedAt kind=field
+  digest=b3:581b6a5f9e357ed75b334207bd4aae28ad6a6a9c67c5cee302f7225dd6f76f89 file=router/internal/jwt/verifier.go range=69:69 lang=go exported=true byte_range=2540:2579
+  sig=int64
+EDGES
+  ^contains=matrix/router/internal/jwt.Claims
+
+NODE id=matrix/router/internal/jwt.Claims#Issuer kind=field
+  digest=b3:d0db8d638d1ff25c9dff69b59ad6fb5296be30f5144dbc6ba20438c74d9fa367 file=router/internal/jwt/verifier.go range=67:67 lang=go exported=true byte_range=2457:2496
+  sig=string
+EDGES
+  ^contains=matrix/router/internal/jwt.Claims
+
+NODE id=matrix/router/internal/jwt.Claims#NotBefore kind=field
+  digest=b3:2fa60c3c4ba96926a7365fe0be75e6f123d1fba38fd849d43d90b49abde80f3d file=router/internal/jwt/verifier.go range=70:70 lang=go exported=true byte_range=2581:2620
+  sig=int64
+EDGES
+  ^contains=matrix/router/internal/jwt.Claims
+
+NODE id=matrix/router/internal/jwt.Claims#Role kind=field
+  digest=b3:db0c497ae982f78c89856bf54af38d43927368f8d40296afb32ecaba4d71fd55 file=router/internal/jwt/verifier.go range=68:68 lang=go exported=true byte_range=2498:2538
+  sig=string
+EDGES
+  ^contains=matrix/router/internal/jwt.Claims
+
+NODE id=matrix/router/internal/jwt.Claims#Subject kind=field
+  digest=b3:a42aa9c3b51c588cf8742c22b3848fd907e174e6609c822be0abc110e35dbc69 file=router/internal/jwt/verifier.go range=64:64 lang=go exported=true byte_range=2342:2371
+  sig=string
+EDGES
+  ^contains=matrix/router/internal/jwt.Claims
+
+NODE id=matrix/router/internal/jwt.ErrAlgorithmRejected kind=var
+  digest=b3:b06c7655336b304f51a3e148ec15872fb6ad6254d253bd40e27eca61f80858f8 file=router/internal/jwt/verifier.go range=45:51 lang=go exported=true byte_range=1376:1737
+  sig=error
+  doc=Sentinel errors. Callers should errors.Is to distinguish "this token\nwas never going to verify" (Malformed/SignatureMismatch/AlgorithmRejected)\nfrom "this token was once valid but isn't now"\n(Expired/NotYetValid).
+EDGES
+  ^defines=matrix/router/internal/jwt/verifier.go
+
+NODE id=matrix/router/internal/jwt.ErrExpired kind=var
+  digest=b3:b76a7ae7dbfb27e6aec85b3b7322350be50dabde282b3a3954b2a8b722562ac4 file=router/internal/jwt/verifier.go range=45:53 lang=go exported=true byte_range=1376:1850
+  sig=error
+  doc=Sentinel errors. Callers should errors.Is to distinguish "this token\nwas never going to verify" (Malformed/SignatureMismatch/AlgorithmRejected)\nfrom "this token was once valid but isn't now"\n(Expired/NotYetValid).
+EDGES
+  ^defines=matrix/router/internal/jwt/verifier.go
+
+NODE id=matrix/router/internal/jwt.ErrMalformed kind=var
+  digest=b3:c1ed99f526d5347d7da36b5aecafab9c065e0563505c2d8b8f4161190976a24f file=router/internal/jwt/verifier.go range=45:50 lang=go exported=true byte_range=1376:1666
+  sig=error
+  doc=Sentinel errors. Callers should errors.Is to distinguish "this token\nwas never going to verify" (Malformed/SignatureMismatch/AlgorithmRejected)\nfrom "this token was once valid but isn't now"\n(Expired/NotYetValid).
+EDGES
+  ^defines=matrix/router/internal/jwt/verifier.go
+
+NODE id=matrix/router/internal/jwt.ErrMissingSubject kind=var
+  digest=b3:5bfef4b540494e84a135af115f63796d6c55d9cc54e69900c7d0440ff1953474 file=router/internal/jwt/verifier.go range=45:55 lang=go exported=true byte_range=1376:1984
+  sig=error
+  doc=Sentinel errors. Callers should errors.Is to distinguish "this token\nwas never going to verify" (Malformed/SignatureMismatch/AlgorithmRejected)\nfrom "this token was once valid but isn't now"\n(Expired/NotYetValid).
+EDGES
+  ^defines=matrix/router/internal/jwt/verifier.go
+
+NODE id=matrix/router/internal/jwt.ErrNoBackend kind=var
+  digest=b3:af921634499541ee9fd50011eb8408fa67cfaeb4ff08b87485be7d9d72fe341f file=router/internal/jwt/verifier.go range=45:57 lang=go exported=true byte_range=1376:2124
+  sig=error
+  doc=Sentinel errors. Callers should errors.Is to distinguish "this token\nwas never going to verify" (Malformed/SignatureMismatch/AlgorithmRejected)\nfrom "this token was once valid but isn't now"\n(Expired/NotYetValid).
+EDGES
+  ^defines=matrix/router/internal/jwt/verifier.go
+
+NODE id=matrix/router/internal/jwt.ErrNotYetValid kind=var
+  digest=b3:5fa114c61ad6f0195bd863d6b9d7d7554fdb008b92ecf052a3feaa1b4fd45f6a file=router/internal/jwt/verifier.go range=45:54 lang=go exported=true byte_range=1376:1923
+  sig=error
+  doc=Sentinel errors. Callers should errors.Is to distinguish "this token\nwas never going to verify" (Malformed/SignatureMismatch/AlgorithmRejected)\nfrom "this token was once valid but isn't now"\n(Expired/NotYetValid).
+EDGES
+  ^defines=matrix/router/internal/jwt/verifier.go
+
+NODE id=matrix/router/internal/jwt.ErrSignatureMismatch kind=var
+  digest=b3:8c80e094b11c7040d35a8521ea76182c0858b14f90e6f88320f339b6f48e48c3 file=router/internal/jwt/verifier.go range=45:52 lang=go exported=true byte_range=1376:1799
+  sig=error
+  doc=Sentinel errors. Callers should errors.Is to distinguish "this token\nwas never going to verify" (Malformed/SignatureMismatch/AlgorithmRejected)\nfrom "this token was once valid but isn't now"\n(Expired/NotYetValid).
+EDGES
+  ^defines=matrix/router/internal/jwt/verifier.go
+
+NODE id=matrix/router/internal/jwt.ErrUnknownKey kind=var
+  digest=b3:a3892b8ce87129d4b5a84e50226b990adbba911e0083529cb3ea4d826de7db00 file=router/internal/jwt/verifier.go range=45:56 lang=go exported=true byte_range=1376:2049
+  sig=error
+  doc=Sentinel errors. Callers should errors.Is to distinguish "this token\nwas never going to verify" (Malformed/SignatureMismatch/AlgorithmRejected)\nfrom "this token was once valid but isn't now"\n(Expired/NotYetValid).
+EDGES
+  ^defines=matrix/router/internal/jwt/verifier.go
+
+NODE id=matrix/router/internal/jwt.New kind=func
+  digest=b3:2eb46da62d9d6baf7c622841b74e4cce3f8efcd1616dc6087bc944c913076fc1 file=router/internal/jwt/verifier.go range=126:146 lang=go exported=true byte_range=4479:5202
+  sig=func New(opts Options) (*Verifier, error)
+  doc=New constructs a Verifier. At least one of opts.LegacySecret or\nopts.SupabaseURL must be set, else error.
+EDGES
+  ^defines=matrix/router/internal/jwt/verifier.go
+
+NODE id=matrix/router/internal/jwt.Options kind=type
+  digest=b3:8d169f6ff2e008dfeadc1c329de3086925152e5f2c6dc0c7ada5d5cebd0f702a file=router/internal/jwt/verifier.go range=103:124 lang=go exported=true byte_range=3647:4477
+  sig=type Options struct {\n	// LegacySecret is SUPABASE_JWT_SECRET (raw bytes). Optional once\n	// Supabase finishes the asymmetric migration; required during the\n	// overlap window because all HS256-issued tokens that haven't\n	// expired yet need this to verify.\n	LegacySecret	[]byte\n\n	// SupabaseURL is the project URL, e.g.\n	// "https://zezsqawedbikldiedlse.supabase.co". The JWKS endpoint\n	// and expected issuer are derived from it. Empty disables the\n	// asymmetric path.\n	SupabaseURL	string\n\n	// HTTPClient overrides the default for JWKS fetches; nil =\n	// http.DefaultClient with a 10s timeout.\n	HTTPClient	*http.Client\n\n	// RefreshThrottle bounds how often the verifier will re-fetch the\n	// JWKS in response to an unknown-kid hit. Zero = 30s default.\n	RefreshThrottle	time.Duration\n}
+  doc=Options controls Verifier construction.
+EDGES
+  contains=matrix/router/internal/jwt.Options#HTTPClient,matrix/router/internal/jwt.Options#LegacySecret,matrix/router/internal/jwt.Options#RefreshThrottle,matrix/router/internal/jwt.Options#SupabaseURL
+  ^defines=matrix/router/internal/jwt/verifier.go
+
+NODE id=matrix/router/internal/jwt.Options#HTTPClient kind=field
+  digest=b3:db13c15aee4b45647648289df1be2bce53a7142f7c4d9ec91edc79149b15f57a file=router/internal/jwt/verifier.go range=117:119 lang=go exported=true byte_range=4184:4311
+  sig=*http.Client
+  doc=HTTPClient overrides the default for JWKS fetches; nil =\nhttp.DefaultClient with a 10s timeout.
+EDGES
+  ^contains=matrix/router/internal/jwt.Options
+
+NODE id=matrix/router/internal/jwt.Options#LegacySecret kind=field
+  digest=b3:6d2f953347790420a1d067198fb4680038ac9503ae81e82b00861ce562f7bc76 file=router/internal/jwt/verifier.go range=105:109 lang=go exported=true byte_range=3713:3968
+  sig=[]byte
+  doc=LegacySecret is SUPABASE_JWT_SECRET (raw bytes). Optional once\nSupabase finishes the asymmetric migration; required during the\noverlap window because all HS256-issued tokens that haven't\nexpired yet need this to verify.
+EDGES
+  ^contains=matrix/router/internal/jwt.Options
+
+NODE id=matrix/router/internal/jwt.Options#RefreshThrottle kind=field
+  digest=b3:07a6ca2e1aa0e95a3a18253d05c0ee3d0e552437ef6a141023157a81ac9a23b0 file=router/internal/jwt/verifier.go range=121:123 lang=go exported=true byte_range=4314:4475
+  sig=time.Duration
+  doc=RefreshThrottle bounds how often the verifier will re-fetch the\nJWKS in response to an unknown-kid hit. Zero = 30s default.
+EDGES
+  ^contains=matrix/router/internal/jwt.Options
+
+NODE id=matrix/router/internal/jwt.Options#SupabaseURL kind=field
+  digest=b3:c5ed44e682df626807fe82666d4da7e46ff81e256728de17b4d0882ac1eb5c95 file=router/internal/jwt/verifier.go range=111:115 lang=go exported=true byte_range=3971:4181
+  sig=string
+  doc=SupabaseURL is the project URL, e.g.\n"https://zezsqawedbikldiedlse.supabase.co". The JWKS endpoint\nand expected issuer are derived from it. Empty disables the\nasymmetric path.
+EDGES
+  ^contains=matrix/router/internal/jwt.Options
+
+NODE id=matrix/router/internal/jwt.SignHS256 kind=func
+  digest=b3:43be3dda9fa42a0c3434bbf15f7cfb4c2f63ffa1e5ccd2cd8fdf8ca6ac05c774 file=router/internal/jwt/verifier.go range=289:298 lang=go exported=true byte_range=9953:10348
+  sig=func SignHS256(c *Claims, secret []byte) (string, error)
+  doc=SignHS256 produces a Supabase-shape HS256 JWT for testing. Only used\nin the test suite; never referenced by production code paths.
+EDGES
+  ^defines=matrix/router/internal/jwt/verifier.go
+
+NODE id=matrix/router/internal/jwt.Verifier kind=type
+  digest=b3:42e89db412a64bd4976b2272373b8c4dafdedeae5a422a50c3688a2962cee7cc file=router/internal/jwt/verifier.go range=81:101 lang=go exported=true byte_range=2839:3645
+  sig=type Verifier struct {\n	// LegacySecret is the Supabase project's "JWT secret" used for\n	// HS256 tokens. Empty disables HS256 verification.\n	legacySecret	[]byte\n\n	// expectedIssuer, when non-empty, is checked against the iss claim.\n	// For Supabase the canonical issuer is\n	// "<SUPABASE_URL>/auth/v1". Empty disables issuer enforcement.\n	expectedIssuer	string\n\n	// JWKS state lives in jwks.go; nil disables JWKS verification.\n	jwks	*jwksCache\n\n	// hc is the HTTP client used for JWKS fetches. Configurable for tests.\n	hc	*http.Client\n}
+  doc=Verifier holds the configured verification backends. At least one of\nLegacySecret / JWKSURL must be non-empty for any token to verify.\n\nConcurrency: Verify is safe to call from many goroutines. The JWKS\ncache uses a sync.RWMutex internally (see jwks.go).
+EDGES
+  contains=matrix/router/internal/jwt.Verifier#expectedIssuer,matrix/router/internal/jwt.Verifier#hc,matrix/router/internal/jwt.Verifier#jwks,matrix/router/internal/jwt.Verifier#legacySecret,matrix/router/internal/jwt.Verifier.PrimeJWKS,matrix/router/internal/jwt.Verifier.Verify
+  ^defines=matrix/router/internal/jwt/verifier.go
+
+NODE id=matrix/router/internal/jwt.Verifier#expectedIssuer kind=field
+  digest=b3:b8272912c9d3cfb70006c16c8e94f4a203f16cc2f524503af67d9b22b3efe624 file=router/internal/jwt/verifier.go range=91:94 lang=go exported=false byte_range=3272:3469
+  sig=string
+  doc=expectedIssuer, when non-empty, is checked against the iss claim.\nFor Supabase the canonical issuer is\n"<SUPABASE_URL>/auth/v1". Empty disables issuer enforcement.
+EDGES
+  ^contains=matrix/router/internal/jwt.Verifier
+
+NODE id=matrix/router/internal/jwt.Verifier#hc kind=field
+  digest=b3:5ad92e7a617ec367970a821c2edb5b00a28ed02c3d8369932f84f0e372d1b0f1 file=router/internal/jwt/verifier.go range=99:100 lang=go exported=false byte_range=3555:3643
+  sig=*http.Client
+  doc=hc is the HTTP client used for JWKS fetches. Configurable for tests.
+EDGES
+  ^contains=matrix/router/internal/jwt.Verifier
+
+NODE id=matrix/router/internal/jwt.Verifier#jwks kind=field
+  digest=b3:94c08ead4e74c33be4017400677a01fce16d677f7750121cf84f89ab88ffa0c7 file=router/internal/jwt/verifier.go range=96:97 lang=go exported=false byte_range=3472:3552
+  sig=*jwt.jwksCache
+  doc=JWKS state lives in jwks.go; nil disables JWKS verification.
+EDGES
+  ^contains=matrix/router/internal/jwt.Verifier
+
+NODE id=matrix/router/internal/jwt.Verifier#legacySecret kind=field
+  digest=b3:236711c1d5385cec2f4929990571f7489f675487b48656e0ced53bd8e4f369bc file=router/internal/jwt/verifier.go range=87:89 lang=go exported=false byte_range=3132:3269
+  sig=[]byte
+  doc=LegacySecret is the Supabase project's "JWT secret" used for\nHS256 tokens. Empty disables HS256 verification.
+EDGES
+  ^contains=matrix/router/internal/jwt.Verifier
+
+NODE id=matrix/router/internal/jwt.Verifier.PrimeJWKS kind=method
+  digest=b3:a0aa52db70fb414ccef1a5b831d469d82421932163a9ac39956eece996370822 file=router/internal/jwt/verifier.go range=148:157 lang=go exported=true byte_range=5204:5597
+  sig=func (v *Verifier) PrimeJWKS(ctx context.Context) error
+  doc=PrimeJWKS does an eager fetch so first-request latency doesn't pay\nthe network round-trip. Errors are returned but should be logged\nand ignored by callers — the Verifier will lazy-fetch on first\nasymmetric token hit if priming failed (e.g. transient DNS).
+EDGES
+  ^contains=matrix/router/internal/jwt.Verifier
+  ^defines=matrix/router/internal/jwt/verifier.go
+
+NODE id=matrix/router/internal/jwt.Verifier.Verify kind=method
+  digest=b3:95314aa8e74c2de63b27a8fcf437d39f9d70f971819781566a215a612c561176 file=router/internal/jwt/verifier.go range=159:242 lang=go exported=true byte_range=5599:8444
+  sig=func (v *Verifier) Verify(ctx context.Context, raw string, now time.Time) (*Claims, error)
+  doc=Verify parses raw, dispatches on the alg header, runs signature +\ntime checks, and returns the parsed Claims on success.\n\nIssuer enforcement: if the verifier was constructed with a non-empty\nSupabaseURL, the iss claim must match "<SupabaseURL>/auth/v1".\nTokens forwarded from a different Supabase project will be rejected\neven if the algorithm is supported.
+EDGES
+  ^contains=matrix/router/internal/jwt.Verifier
+  ^defines=matrix/router/internal/jwt/verifier.go
+
+NODE id=matrix/router/internal/jwt.decodeBigInt kind=func
+  digest=b3:0878a726fa1a13be08d77bea918fb651ae67a704adb654d66af6175eda194c9a file=router/internal/jwt/jwks.go range=254:266 lang=go exported=false byte_range=6878:7275
+  sig=func decodeBigInt(s string) (*big.Int, error)
+  doc=decodeBigInt unpacks a base64url-encoded big-endian integer per\nRFC 7518 §6. Empty / leading-zero values are rejected to match\nSupabase's well-formed JWK output.
+EDGES
+  ^defines=matrix/router/internal/jwt/jwks.go
+
+NODE id=matrix/router/internal/jwt.defaultRefreshThrottle kind=const
+  digest=b3:7c74fd3d991326ea1ad886e407a0c6794ebe671e61d8ca7a7b8d848856146e29 file=router/internal/jwt/jwks.go range=40:44 lang=go exported=false byte_range=1169:1490
+  sig=time.Duration
+  doc=defaultRefreshThrottle is the floor between forced JWKS fetches in\nresponse to unknown-kid hits. Supabase caches the JWKS at the edge\nfor tens of seconds, so this is generous enough to avoid hammering\nupstream while still picking up a rotation within ~1 minute.
+EDGES
+  ^defines=matrix/router/internal/jwt/jwks.go
+
+NODE id=matrix/router/internal/jwt.header kind=type
+  digest=b3:6b18fd5b8fc67eda3b5ea8d4f0eec1f7145d1418e6ab567bd28d23c6077f905b file=router/internal/jwt/verifier.go range=74:79 lang=go exported=false byte_range=2665:2837
+  sig=type header struct {\n	Alg	string	`json:"alg"`\n	Typ	string	`json:"typ"`\n	Kid	string	`json:"kid,omitempty"`\n}
+  doc=header is the parsed JOSE header. We inspect alg + kid + typ.
+EDGES
+  contains=matrix/router/internal/jwt.header#Alg,matrix/router/internal/jwt.header#Kid,matrix/router/internal/jwt.header#Typ
+  ^defines=matrix/router/internal/jwt/verifier.go
+
+NODE id=matrix/router/internal/jwt.header#Alg kind=field
+  digest=b3:e1b98dbe9ed2193c8065b3a308c203fe2edaf2dcc62eca6ae7c906fc5de2d945 file=router/internal/jwt/verifier.go range=76:76 lang=go exported=true byte_range=2752:2775
+  sig=string
+EDGES
+  ^contains=matrix/router/internal/jwt.header
+
+NODE id=matrix/router/internal/jwt.header#Kid kind=field
+  digest=b3:10a7778b7b7424cc7eb13570446a478c55cde7b559548c7ae0f96b3ca28006e0 file=router/internal/jwt/verifier.go range=78:78 lang=go exported=true byte_range=2802:2835
+  sig=string
+EDGES
+  ^contains=matrix/router/internal/jwt.header
+
+NODE id=matrix/router/internal/jwt.header#Typ kind=field
+  digest=b3:464ccda0cdfe3ff346f707839f4b6840c0ad53ec66bff867fadac3f58a3f9f57 file=router/internal/jwt/verifier.go range=77:77 lang=go exported=true byte_range=2777:2800
+  sig=string
+EDGES
+  ^contains=matrix/router/internal/jwt.header
+
+NODE id=matrix/router/internal/jwt.jwk kind=type
+  digest=b3:bbcf757aab7fcb462d61799a6497008296dd937dd4e895786e6cfe192187d627 file=router/internal/jwt/jwks.go range=46:62 lang=go exported=false byte_range=1492:1957
+  sig=type jwk struct {\n	Kty	string	`json:"kty"`\n	Use	string	`json:"use,omitempty"`\n	Kid	string	`json:"kid"`\n	Alg	string	`json:"alg,omitempty"`\n\n	// EC params (kty=EC).\n	Crv	string	`json:"crv,omitempty"`\n	X	string	`json:"x,omitempty"`\n	Y	string	`json:"y,omitempty"`\n\n	// RSA params (kty=RSA).\n	N	string	`json:"n,omitempty"`\n	E	string	`json:"e,omitempty"`\n}
+  doc=jwk is the JSON Web Key wire format we accept (RFC 7517 §4 +\nRFC 7518 §6 for the parameter encodings).
+EDGES
+  contains=matrix/router/internal/jwt.jwk#Alg,matrix/router/internal/jwt.jwk#Crv,matrix/router/internal/jwt.jwk#E,matrix/router/internal/jwt.jwk#Kid,matrix/router/internal/jwt.jwk#Kty,matrix/router/internal/jwt.jwk#N,matrix/router/internal/jwt.jwk#Use,matrix/router/internal/jwt.jwk#X,matrix/router/internal/jwt.jwk#Y
+  ^defines=matrix/router/internal/jwt/jwks.go
+
+NODE id=matrix/router/internal/jwt.jwk#Alg kind=field
+  digest=b3:0c680405da79cf77913f78455aa4c819eda0688d7809c6826a652a52a4741263 file=router/internal/jwt/jwks.go range=52:52 lang=go exported=true byte_range=1707:1740
+  sig=string
+EDGES
+  ^contains=matrix/router/internal/jwt.jwk
+
+NODE id=matrix/router/internal/jwt.jwk#Crv kind=field
+  digest=b3:744915b66571a53c6bf9cba45088c5101fb64d952461494b2663f28039afbfa4 file=router/internal/jwt/jwks.go range=54:55 lang=go exported=true byte_range=1743:1800
+  sig=string
+  doc=EC params (kty=EC).
+EDGES
+  ^contains=matrix/router/internal/jwt.jwk
+
+NODE id=matrix/router/internal/jwt.jwk#E kind=field
+  digest=b3:b7a9e29fcd4c1312496e9bcc145e50c542286ee585419760dacf6c5518c1eb17 file=router/internal/jwt/jwks.go range=61:61 lang=go exported=true byte_range=1926:1955
+  sig=string
+EDGES
+  ^contains=matrix/router/internal/jwt.jwk
+
+NODE id=matrix/router/internal/jwt.jwk#Kid kind=field
+  digest=b3:10ee764cdc9789a5e02ca276f797b76530841ad9f18c3be24d68659c7881de52 file=router/internal/jwt/jwks.go range=51:51 lang=go exported=true byte_range=1682:1705
+  sig=string
+EDGES
+  ^contains=matrix/router/internal/jwt.jwk
+
+NODE id=matrix/router/internal/jwt.jwk#Kty kind=field
+  digest=b3:076a9c0837ccdd172066f4ef61fbf395d84dcf5090e58f4222880bf5be82e289 file=router/internal/jwt/jwks.go range=49:49 lang=go exported=true byte_range=1622:1645
+  sig=string
+EDGES
+  ^contains=matrix/router/internal/jwt.jwk
+
+NODE id=matrix/router/internal/jwt.jwk#N kind=field
+  digest=b3:9cfe874eb20ffe2f97946de4b7662b72ab32175074a6265d70cc613bcb4dc53b file=router/internal/jwt/jwks.go range=59:60 lang=go exported=true byte_range=1869:1924
+  sig=string
+  doc=RSA params (kty=RSA).
+EDGES
+  ^contains=matrix/router/internal/jwt.jwk
+
+NODE id=matrix/router/internal/jwt.jwk#Use kind=field
+  digest=b3:7e4f9b06a6145a83d85e84620733186c55da7240c73a4451ec9fd95ce50534a1 file=router/internal/jwt/jwks.go range=50:50 lang=go exported=true byte_range=1647:1680
+  sig=string
+EDGES
+  ^contains=matrix/router/internal/jwt.jwk
+
+NODE id=matrix/router/internal/jwt.jwk#X kind=field
+  digest=b3:92f8cd3dec24f772984de591954b616601e52cee70b2bee36cd25b3d094b0697 file=router/internal/jwt/jwks.go range=56:56 lang=go exported=true byte_range=1802:1833
+  sig=string
+EDGES
+  ^contains=matrix/router/internal/jwt.jwk
+
+NODE id=matrix/router/internal/jwt.jwk#Y kind=field
+  digest=b3:da2c1cc08694b88a932641e29ffcb47fe4acfdfec5d60bfcb02e42fef173fe42 file=router/internal/jwt/jwks.go range=57:57 lang=go exported=true byte_range=1835:1866
+  sig=string
+EDGES
+  ^contains=matrix/router/internal/jwt.jwk
+
+NODE id=matrix/router/internal/jwt.jwkSet kind=type
+  digest=b3:8124044af3f3b14f8a264eb51d94e5588c4e48ae9d714f022dcf6a7e719a2f06 file=router/internal/jwt/jwks.go range=64:67 lang=go exported=false byte_range=1959:2039
+  sig=type jwkSet struct {\n	Keys []jwk `json:"keys"`\n}
+  doc=jwkSet is the JWKS document.
+EDGES
+  contains=matrix/router/internal/jwt.jwkSet#Keys
+  ^defines=matrix/router/internal/jwt/jwks.go
+
+NODE id=matrix/router/internal/jwt.jwkSet#Keys kind=field
+  digest=b3:e16c8a6e6303cc78972ead44667d0fb5364714168a9fbc3effe6a24c74a3b89f file=router/internal/jwt/jwks.go range=66:66 lang=go exported=true byte_range=2013:2037
+  sig=[]jwt.jwk
+EDGES
+  ^contains=matrix/router/internal/jwt.jwkSet
+
+NODE id=matrix/router/internal/jwt.jwksCache kind=type
+  digest=b3:3ff8c7c8bbd33f5581be6928499c9a17c758fee1982013f3258b0bfc2aa41375 file=router/internal/jwt/jwks.go range=69:78 lang=go exported=false byte_range=2041:2338
+  sig=type jwksCache struct {\n	url		string\n	hc		*http.Client\n	throttle	time.Duration\n\n	mu		sync.RWMutex\n	keys		map[string]any	// kid -> *ecdsa.PublicKey | *rsa.PublicKey | ed25519.PublicKey\n	lastFetch	time.Time\n}
+  doc=jwksCache is the in-memory map kid → public key. Concurrency-safe.
+EDGES
+  contains=matrix/router/internal/jwt.jwksCache#hc,matrix/router/internal/jwt.jwksCache#keys,matrix/router/internal/jwt.jwksCache#lastFetch,matrix/router/internal/jwt.jwksCache#mu,matrix/router/internal/jwt.jwksCache#throttle,matrix/router/internal/jwt.jwksCache#url,matrix/router/internal/jwt.jwksCache.lookup,matrix/router/internal/jwt.jwksCache.refresh,matrix/router/internal/jwt.jwksCache.refreshIfStale
+  ^defines=matrix/router/internal/jwt/jwks.go
+
+NODE id=matrix/router/internal/jwt.jwksCache#hc kind=field
+  digest=b3:92b604495d4daa0b5663ddf14d5200f6356281a1b1be09a8e3d6f2bd46ebdd3a file=router/internal/jwt/jwks.go range=72:72 lang=go exported=false byte_range=2155:2176
+  sig=*http.Client
+EDGES
+  ^contains=matrix/router/internal/jwt.jwksCache
+
+NODE id=matrix/router/internal/jwt.jwksCache#keys kind=field
+  digest=b3:f5ce547986382bada970c5d3b38d20c02cbfb8ae9bdb210f3d75ee42afe72cd8 file=router/internal/jwt/jwks.go range=76:76 lang=go exported=false byte_range=2227:2251
+  sig=map[string]any
+EDGES
+  ^contains=matrix/router/internal/jwt.jwksCache
+
+NODE id=matrix/router/internal/jwt.jwksCache#lastFetch kind=field
+  digest=b3:b34f53198eb974f3ff2720c96591fb8b9bbfc38d97fcbd167d3ebea4bf6a2078 file=router/internal/jwt/jwks.go range=77:77 lang=go exported=false byte_range=2317:2336
+  sig=time.Time
+EDGES
+  ^contains=matrix/router/internal/jwt.jwksCache
+
+NODE id=matrix/router/internal/jwt.jwksCache#mu kind=field
+  digest=b3:4347af7ab3459936fb51388b8ac433626bbd26cb80ed043288cc95fd9fca7ca0 file=router/internal/jwt/jwks.go range=75:75 lang=go exported=false byte_range=2203:2225
+  sig=sync.RWMutex
+EDGES
+  ^contains=matrix/router/internal/jwt.jwksCache
+
+NODE id=matrix/router/internal/jwt.jwksCache#throttle kind=field
+  digest=b3:8e4cb54e751f489e77245c935b74d9450c4f7500e41715bb520c72170cd43a58 file=router/internal/jwt/jwks.go range=73:73 lang=go exported=false byte_range=2178:2200
+  sig=time.Duration
+EDGES
+  ^contains=matrix/router/internal/jwt.jwksCache
+
+NODE id=matrix/router/internal/jwt.jwksCache#url kind=field
+  digest=b3:7ae9c21d837fa27832193c50e9337abc6b9e4fe153256541a43e41ef448acb50 file=router/internal/jwt/jwks.go range=71:71 lang=go exported=false byte_range=2138:2153
+  sig=string
+EDGES
+  ^contains=matrix/router/internal/jwt.jwksCache
+
+NODE id=matrix/router/internal/jwt.jwksCache.lookup kind=method
+  digest=b3:9e8056f06ff1de6a086a7fd6830c520ff20919ebb3c1d6b66ed1698f10415b76 file=router/internal/jwt/jwks.go range=94:116 lang=go exported=false byte_range=2687:3307
+  sig=func (c *jwksCache) lookup(ctx context.Context, kid string) (any, error)
+  doc=lookup returns the public key for kid. On miss, it triggers at most\none throttled refresh and retries once. Persistent misses return\nErrUnknownKey.
+EDGES
+  ^contains=matrix/router/internal/jwt.jwksCache
+  ^defines=matrix/router/internal/jwt/jwks.go
+
+NODE id=matrix/router/internal/jwt.jwksCache.refresh kind=method
+  digest=b3:95a36a08b2d834b9a9ba8a7566a34c8d9f7e48e341dd45c02db37122a225b6cd file=router/internal/jwt/jwks.go range=130:179 lang=go exported=false byte_range=3658:5072
+  sig=func (c *jwksCache) refresh(ctx context.Context) error
+  doc=refresh fetches the JWKS unconditionally and replaces the cache.\n\nOn error: cache is left unchanged so prior keys keep working. The\nlastFetch timestamp IS still updated to enforce the throttle even\nwhen fetches fail (avoids hammering upstream during outages).
+EDGES
+  ^contains=matrix/router/internal/jwt.jwksCache
+  ^defines=matrix/router/internal/jwt/jwks.go
+
+NODE id=matrix/router/internal/jwt.jwksCache.refreshIfStale kind=method
+  digest=b3:c2160b5d7345733b2aa3779e099fce5abf11362e55dfe644f1b531c59d8f759f file=router/internal/jwt/jwks.go range=118:128 lang=go exported=false byte_range=3309:3656
+  sig=func (c *jwksCache) refreshIfStale(ctx context.Context) error
+  doc=refreshIfStale only fires a fetch if the last fetch was longer ago\nthan the throttle. Empty cache is always considered stale.
+EDGES
+  ^contains=matrix/router/internal/jwt.jwksCache
+  ^defines=matrix/router/internal/jwt/jwks.go
+
+NODE id=matrix/router/internal/jwt.newJWKSCache kind=func
+  digest=b3:11fd7a038adf56f51ef60e10f8374729d32e6088e9468272f5c2e8413eee5f09 file=router/internal/jwt/jwks.go range=80:92 lang=go exported=false byte_range=2340:2685
+  sig=func newJWKSCache(url string, hc *http.Client, throttle time.Duration) *jwksCache
+  doc=newJWKSCache constructs a cache. The first lookup triggers a refresh\nif keys is empty.
+EDGES
+  ^defines=matrix/router/internal/jwt/jwks.go
+
+NODE id=matrix/router/internal/jwt.parseEC kind=func
+  digest=b3:a79ba4330dac3eb1103391f76f036892c57f70826ad1ac45214d78dd21378ac2 file=router/internal/jwt/jwks.go range=195:216 lang=go exported=false byte_range=5364:5907
+  sig=func parseEC(k *jwk) (*ecdsa.PublicKey, error)
+EDGES
+  ^defines=matrix/router/internal/jwt/jwks.go
+
+NODE id=matrix/router/internal/jwt.parseJWK kind=func
+  digest=b3:608d874dd21e7fae0a035b5e6067095ff5d61a2cc8958de38f826637ab3a9341 file=router/internal/jwt/jwks.go range=181:193 lang=go exported=false byte_range=5074:5362
+  sig=func parseJWK(k *jwk) (any, error)
+  doc=parseJWK converts a JWK dict to a Go crypto/* public key.
+EDGES
+  ^defines=matrix/router/internal/jwt/jwks.go
+
+NODE id=matrix/router/internal/jwt.parseOKP kind=func
+  digest=b3:af668eb02df048f41d4c61d942b1f8844c773c50b335fef7233e38653e388389 file=router/internal/jwt/jwks.go range=240:252 lang=go exported=false byte_range=6448:6876
+  sig=func parseOKP(k *jwk) (ed25519.PublicKey, error)
+EDGES
+  ^defines=matrix/router/internal/jwt/jwks.go
+
+NODE id=matrix/router/internal/jwt.parseRSA kind=func
+  digest=b3:1bfb1cbfd3d2a3cd7694e5e23bb812703051017969130a7253115bdb37854f70 file=router/internal/jwt/jwks.go range=218:238 lang=go exported=false byte_range=5909:6446
+  sig=func parseRSA(k *jwk) (*rsa.PublicKey, error)
+EDGES
+  ^defines=matrix/router/internal/jwt/jwks.go
+
+NODE id=matrix/router/internal/jwt.signWithHeader kind=func
+  digest=b3:54b09a9cb48d41b6403c46a951206fd6ae7eb11cd40d7e3dcf195d33e55b974c file=router/internal/jwt/verifier.go range=300:320 lang=go exported=false byte_range=10350:11022
+  sig=func signWithHeader(hdr *header, c *Claims, signFn func([]byte) ([]byte, error)) (string, error)
+  doc=signWithHeader is the shared marshaling routine for the test\nhelpers. signFn closes over whatever key material is needed.
+EDGES
+  ^defines=matrix/router/internal/jwt/verifier.go
+
+NODE id=matrix/router/internal/jwt.verifyAsymmetric kind=func
+  digest=b3:4cbfe5b3effa75cc4e8dd93381bd3932312010f3f3c7b3ba804bdb683796ee6f file=router/internal/jwt/verifier.go range=244:287 lang=go exported=false byte_range=8446:9951
+  sig=func verifyAsymmetric(alg string, key any, signingInput, sig []byte) error
+  doc=verifyAsymmetric runs the algorithm-specific verify step. key is the\ncrypto/* PublicKey loaded from JWKS (kty=RSA → *rsa.PublicKey;\nkty=EC → *ecdsa.PublicKey; kty=OKP+crv=Ed25519 → ed25519.PublicKey).
+EDGES
+  ^defines=matrix/router/internal/jwt/verifier.go
+
+NODE id=matrix/router/internal/jwt/jwks.go kind=file
+  digest=b3:d6e901fbc7546b6aa6910cca95f3b220c024878c74f1cb41256fa2fbbb304e10 file=router/internal/jwt/jwks.go range=1:268 lang=go exported=true
+EDGES
+  defines=matrix/router/internal/jwt.decodeBigInt,matrix/router/internal/jwt.defaultRefreshThrottle,matrix/router/internal/jwt.jwk,matrix/router/internal/jwt.jwkSet,matrix/router/internal/jwt.jwksCache,matrix/router/internal/jwt.jwksCache.lookup,matrix/router/internal/jwt.jwksCache.refresh,matrix/router/internal/jwt.jwksCache.refreshIfStale,matrix/router/internal/jwt.newJWKSCache,matrix/router/internal/jwt.parseEC,matrix/router/internal/jwt.parseJWK,matrix/router/internal/jwt.parseOKP,matrix/router/internal/jwt.parseRSA
+  ^contains=matrix/router/internal/jwt
+
+NODE id=matrix/router/internal/jwt/verifier.go kind=file
+  digest=b3:9da7503d65419560e6aa8be160cd5abe4d51fcd0c37be6404b338b656dff5d6d file=router/internal/jwt/verifier.go range=1:322 lang=go exported=true
+EDGES
+  defines=matrix/router/internal/jwt.Claims,matrix/router/internal/jwt.ErrAlgorithmRejected,matrix/router/internal/jwt.ErrExpired,matrix/router/internal/jwt.ErrMalformed,matrix/router/internal/jwt.ErrMissingSubject,matrix/router/internal/jwt.ErrNoBackend,matrix/router/internal/jwt.ErrNotYetValid,matrix/router/internal/jwt.ErrSignatureMismatch,matrix/router/internal/jwt.ErrUnknownKey,matrix/router/internal/jwt.New,matrix/router/internal/jwt.Options,matrix/router/internal/jwt.SignHS256,matrix/router/internal/jwt.Verifier,matrix/router/internal/jwt.Verifier.PrimeJWKS,matrix/router/internal/jwt.Verifier.Verify,matrix/router/internal/jwt.header,matrix/router/internal/jwt.signWithHeader,matrix/router/internal/jwt.verifyAsymmetric
+  ^contains=matrix/router/internal/jwt

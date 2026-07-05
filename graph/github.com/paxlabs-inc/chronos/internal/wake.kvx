@@ -1,0 +1,113 @@
+# GENERATED gen=codegraph do-not-edit merkle=b3:2dc69ec8dbbe0231373534486cf12ff6fdb0eaad7b2dfdcbc4d73453c8542ee8
+
+NODE id=github.com/paxlabs-inc/chronos/internal/wake kind=package
+  digest=b3:5add3c4d12f0ab4875881069d47936ffec3e8785956a802c48dd75647bf6c139 file=chronos/internal/wake range=0:0 lang=go exported=true
+EDGES
+  contains=github.com/paxlabs-inc/chronos/internal/wake/wake.go
+  ^contains=mod:github.com/paxlabs-inc/chronos
+
+NODE id=github.com/paxlabs-inc/chronos/internal/wake.HTTPWaker kind=type
+  digest=b3:c1b977c7cb8d93403896c0070799c454c9d5cf7408bb9d27ea6b6ca99d59f658 file=chronos/internal/wake/wake.go range=37:42 lang=go exported=true byte_range=1370:1526
+  sig=type HTTPWaker struct {\n	URL	string\n	Token	string\n	Client	*http.Client\n}
+  doc=HTTPWaker posts wakes to the router internal endpoint with the shared token.
+EDGES
+  contains=github.com/paxlabs-inc/chronos/internal/wake.HTTPWaker#Client,github.com/paxlabs-inc/chronos/internal/wake.HTTPWaker#Token,github.com/paxlabs-inc/chronos/internal/wake.HTTPWaker#URL,github.com/paxlabs-inc/chronos/internal/wake.HTTPWaker.Wake
+  implements=github.com/paxlabs-inc/chronos/internal/wake.Waker
+  ^defines=github.com/paxlabs-inc/chronos/internal/wake/wake.go
+
+NODE id=github.com/paxlabs-inc/chronos/internal/wake.HTTPWaker#Client kind=field
+  digest=b3:d010b92a6d95a6d4cdf411bad409eb69fd9ac501a3a6c4592e06bd14fd6639a6 file=chronos/internal/wake/wake.go range=41:41 lang=go exported=true byte_range=1505:1524
+  sig=*http.Client
+EDGES
+  ^contains=github.com/paxlabs-inc/chronos/internal/wake.HTTPWaker
+
+NODE id=github.com/paxlabs-inc/chronos/internal/wake.HTTPWaker#Token kind=field
+  digest=b3:8be4fbce0403405f8e330055d9349f1ceedd071b1d227e5804277cb228902d4e file=chronos/internal/wake/wake.go range=40:40 lang=go exported=true byte_range=1490:1503
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/chronos/internal/wake.HTTPWaker
+
+NODE id=github.com/paxlabs-inc/chronos/internal/wake.HTTPWaker#URL kind=field
+  digest=b3:feaa9097e77d750a092c89f5443abd5e0e0554de3c6acea6ddb2b22fd4988ad1 file=chronos/internal/wake/wake.go range=39:39 lang=go exported=true byte_range=1475:1488
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/chronos/internal/wake.HTTPWaker
+
+NODE id=github.com/paxlabs-inc/chronos/internal/wake.HTTPWaker.Wake kind=method
+  digest=b3:6e766ee2e15a86e42e36964f1c95be5efb5909f865c5298d2ac3090fc8cefd07 file=chronos/internal/wake/wake.go range=53:79 lang=go exported=true byte_range=1737:2735
+  sig=func (w *HTTPWaker) Wake(ctx context.Context, req Request) error
+  doc=Wake POSTs the request, returning an error for any transport failure or\nnon-2xx response (the body is surfaced for honest failure recording).
+EDGES
+  ^contains=github.com/paxlabs-inc/chronos/internal/wake.HTTPWaker
+  ^defines=github.com/paxlabs-inc/chronos/internal/wake/wake.go
+
+NODE id=github.com/paxlabs-inc/chronos/internal/wake.New kind=func
+  digest=b3:cd5038df4f1452b1cb1028fb60ab642f9784d178713027487fd85addb8ff62e7 file=chronos/internal/wake/wake.go range=44:51 lang=go exported=true byte_range=1528:1735
+  sig=func New(url, token string) *HTTPWaker
+  doc=New constructs an HTTPWaker with a sane default client.
+EDGES
+  ^defines=github.com/paxlabs-inc/chronos/internal/wake/wake.go
+
+NODE id=github.com/paxlabs-inc/chronos/internal/wake.Request kind=type
+  digest=b3:a882ebf951959e25d85ecce044b7b6951560ee61c57718841ccfd92c78ad5858 file=chronos/internal/wake/wake.go range=18:29 lang=go exported=true byte_range=461:1139
+  sig=type Request struct {\n	UserID		string		`json:"user_id"`\n	ConversationID	string		`json:"conversation_id,omitempty"`\n	Message		string		`json:"message"`\n	Payload		json.RawMessage	`json:"payload,omitempty"`\n	AlarmID		string		`json:"alarm_id"`\n	Origin		string		`json:"origin"`	// always "chronos"\n}
+  doc=Request is the body POSTed to the router /internal/wake endpoint. The router\nresolves user_id -> machine, wakes it, and POSTs {message, conversation_id}\nto the daemon /chat over Fly 6PN. payload + alarm_id ride along so the\ndelivery is dedup-able downstream (invariant i3) and tagged as a timer wake.
+EDGES
+  contains=github.com/paxlabs-inc/chronos/internal/wake.Request#AlarmID,github.com/paxlabs-inc/chronos/internal/wake.Request#ConversationID,github.com/paxlabs-inc/chronos/internal/wake.Request#Message,github.com/paxlabs-inc/chronos/internal/wake.Request#Origin,github.com/paxlabs-inc/chronos/internal/wake.Request#Payload,github.com/paxlabs-inc/chronos/internal/wake.Request#UserID
+  ^defines=github.com/paxlabs-inc/chronos/internal/wake/wake.go
+
+NODE id=github.com/paxlabs-inc/chronos/internal/wake.Request#AlarmID kind=field
+  digest=b3:6fc3a1e18bfdce8d22e1352e4133ca4ff0e7668dc593858482fbe7ba1cda87bd file=chronos/internal/wake/wake.go range=27:27 lang=go exported=true byte_range=1021:1069
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/chronos/internal/wake.Request
+
+NODE id=github.com/paxlabs-inc/chronos/internal/wake.Request#ConversationID kind=field
+  digest=b3:ca49349ddffe2112c6cc0541af06cc16af09559dd5b8e788c465d79e27ff3419 file=chronos/internal/wake/wake.go range=24:24 lang=go exported=true byte_range=846:911
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/chronos/internal/wake.Request
+
+NODE id=github.com/paxlabs-inc/chronos/internal/wake.Request#Message kind=field
+  digest=b3:1cb2d834246172448fba52f8fba627aaafdcd983c41a7fae1e567744f196c025 file=chronos/internal/wake/wake.go range=25:25 lang=go exported=true byte_range=913:960
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/chronos/internal/wake.Request
+
+NODE id=github.com/paxlabs-inc/chronos/internal/wake.Request#Origin kind=field
+  digest=b3:0a4f899c2fe6ddaee5599ff8e837afbf627c3aeab0b06608f910f5263c81f4fd file=chronos/internal/wake/wake.go range=28:28 lang=go exported=true byte_range=1071:1117
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/chronos/internal/wake.Request
+
+NODE id=github.com/paxlabs-inc/chronos/internal/wake.Request#Payload kind=field
+  digest=b3:2306ee2eec701b0fe45b870046ca9ec25652c2ee085ac26f36a4c509f6ace0c3 file=chronos/internal/wake/wake.go range=26:26 lang=go exported=true byte_range=962:1019
+  sig=json.RawMessage
+EDGES
+  ^contains=github.com/paxlabs-inc/chronos/internal/wake.Request
+
+NODE id=github.com/paxlabs-inc/chronos/internal/wake.Request#UserID kind=field
+  digest=b3:332a33f87b7a9d8ec39f01663e04af084509275e76a2bb69746b11caf95d0258 file=chronos/internal/wake/wake.go range=23:23 lang=go exported=true byte_range=797:844
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/chronos/internal/wake.Request
+
+NODE id=github.com/paxlabs-inc/chronos/internal/wake.Waker kind=interface
+  digest=b3:0fa3db57564126817539945a84503a704cf1a1f9c06d56fb8227ba2dd59cbed3 file=chronos/internal/wake/wake.go range=31:35 lang=go exported=true byte_range=1141:1368
+  sig=type Waker interface {\n	Wake(ctx context.Context, req Request) error\n}
+  doc=Waker delivers a wake. Implementations must return a non-nil error on any\nnon-2xx so the dispatch retry ladder can act (honest failure, invariant i6).
+EDGES
+  ^implements=github.com/paxlabs-inc/chronos/internal/wake.HTTPWaker
+  ^defines=github.com/paxlabs-inc/chronos/internal/wake/wake.go
+
+NODE id=github.com/paxlabs-inc/chronos/internal/wake.truncate kind=func
+  digest=b3:4b2a8a8b05627a2b575954e41619e2818c6f8bb1bdc659d05a879815611eece2 file=chronos/internal/wake/wake.go range=81:86 lang=go exported=false byte_range=2737:2839
+  sig=func truncate(b []byte, n int) string
+EDGES
+  ^defines=github.com/paxlabs-inc/chronos/internal/wake/wake.go
+
+NODE id=github.com/paxlabs-inc/chronos/internal/wake/wake.go kind=file
+  digest=b3:6d2e5f83a8c4c5a038f1fe5598bc716246b71a799cdaadca2631983d9f967fa9 file=chronos/internal/wake/wake.go range=1:86 lang=go exported=true
+EDGES
+  defines=github.com/paxlabs-inc/chronos/internal/wake.HTTPWaker,github.com/paxlabs-inc/chronos/internal/wake.HTTPWaker.Wake,github.com/paxlabs-inc/chronos/internal/wake.New,github.com/paxlabs-inc/chronos/internal/wake.Request,github.com/paxlabs-inc/chronos/internal/wake.Waker,github.com/paxlabs-inc/chronos/internal/wake.truncate
+  ^contains=github.com/paxlabs-inc/chronos/internal/wake

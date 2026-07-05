@@ -1,0 +1,437 @@
+# GENERATED gen=codegraph do-not-edit merkle=b3:2dc69ec8dbbe0231373534486cf12ff6fdb0eaad7b2dfdcbc4d73453c8542ee8
+
+NODE id=github.com/paxlabs-inc/layerx/internal/config kind=package
+  digest=b3:41a1da76aaab45c684123cf34bf216465fa70c299678521d9b8508fd0c3c9591 file=layerx/internal/config range=0:0 lang=go exported=true
+EDGES
+  contains=github.com/paxlabs-inc/layerx/internal/config/config.go,github.com/paxlabs-inc/layerx/internal/config/kvx.go
+  ^contains=mod:github.com/paxlabs-inc/layerx
+
+NODE id=github.com/paxlabs-inc/layerx/internal/config.Config kind=type
+  digest=b3:21cb9e6f13227b8be3f426e495f2885a2b5c1b9d6fbd5af5822b0262b0924a75 file=layerx/internal/config/config.go range=15:91 lang=go exported=true byte_range=333:4023
+  sig=type Config struct {\n	// Port is the box-local listen port (default 9098).\n	Port	int\n	// BindAddr is the interface layerxd listens on. Default 127.0.0.1 (loopback\n	// only): layerxd is designed to sit behind the box's nginx edge, so the raw\n	// HTTP port must NOT be publicly reachable (that would bypass TLS + the edge\n	// rate limits, method allowlist, and body cap). Set LAYERX_BIND_ADDR=0.0.0.0\n	// only for a deploy with no fronting proxy.\n	BindAddr	string\n	// PostgresURI is the layerx ledger DB DSN. Required.\n	PostgresURI	string\n	// MigrationsDir holds the forward-only SQL migrations (default "migrations").\n	MigrationsDir	string\n\n	// TransportToken is the shared bearer the MCP proxy may present\n	// (= MATRIX_LAYERX_TOKEN on the daemon side). Since PHASE 4 (full-transparency\n	// rollup) it is an OPTIONAL fleet gate, not the public gate: the public RPC /\n	// explorer read surface and DID-signed writes never require it. It is enforced\n	// on the principal/write endpoints only when RequireTransport is set.\n	TransportToken	string\n	// RequireTransport enforces the transport bearer on the non-public endpoints\n	// (legacy private-fleet mode). Default false: the public RPC route does not\n	// gate on it (the DID signature IS the authorization, invariant i6).\n	RequireTransport	bool\n	// AgentAuthSecret keys the agent-DID nonces + principal tokens (HMAC).\n	AgentAuthSecret	string\n	// ChallengeTTL bounds how long an agent-auth nonce stays valid.\n	ChallengeTTL	time.Duration\n	// TokenTTL bounds how long a minted principal token stays valid.\n	TokenTTL	time.Duration\n	// SequencerSeedHex is the 64-hex ed25519 seed the sequencer signs receipts\n	// with. Empty in dev -> an ephemeral key is generated at boot.\n	SequencerSeedHex	string\n\n	// Chain / contract knobs (used by the settlement worker + deposit watcher).\n	ChainRPC	string\n	VaultAddr	string\n	AnchorAddr	string\n	DEXRouter	string\n	USDLAddr	string\n	OperatorKeyEnv	string	// name only — the key value is read at use time, never stored in config logs\n	// OperatorKeyPresent records whether the operator key env was set at boot\n	// (presence only; the secret value is never read into config).\n	OperatorKeyPresent	bool\n\n	// DepositStartBlock is the block the deposit watcher begins its first scan\n	// from (the Vault deploy block); 0 scans from genesis. Ignored once a cursor\n	// has been persisted.\n	DepositStartBlock	uint64\n	// ChainConfirmations is the block lag before a head block is treated final.\n	// Paxeer has instant CometBFT finality (no reorgs), so 0 is correct; kept\n	// configurable for safety.\n	ChainConfirmations	uint64\n	// DepositPollInterval is how often the deposit watcher polls for new events.\n	DepositPollInterval	time.Duration\n\n	// Window is the micropayment net-settlement window (default 12h).\n	Window	time.Duration\n	// MicroThresholdUSDX is the micro-USDX value below which a transfer is a\n	// batched micropayment; at/above it auto-promotes to force-settle.\n	MicroThresholdUSDX	int64\n\n	// Application-level rate limiting (defense in depth behind the nginx edge).\n	// RateLimitDisabled turns off the in-process per-client limiter entirely.\n	RateLimitDisabled	bool\n	// RateLimitTrustProxy reads the client IP from X-Real-IP / X-Forwarded-For\n	// (set by nginx). Default true (layerxd sits behind the nginx edge).\n	RateLimitTrustProxy	bool\n	// Per-client (per-IP) request budgets: sustained rate (req/sec) + burst.\n	RateLimitReadRPS, RateLimitReadBurst	int\n	RateLimitWriteRPS, RateLimitWriteBurst	int\n	RateLimitAuthRPS, RateLimitAuthBurst	int\n\n	// Dev relaxes prod fail-closed secret checks (LAYERX_DEV=1).\n	Dev	bool\n}
+  doc=Config is the resolved layerxd runtime configuration.
+EDGES
+  contains=github.com/paxlabs-inc/layerx/internal/config.Config#AgentAuthSecret,github.com/paxlabs-inc/layerx/internal/config.Config#AnchorAddr,github.com/paxlabs-inc/layerx/internal/config.Config#BindAddr,github.com/paxlabs-inc/layerx/internal/config.Config#ChainConfirmations,github.com/paxlabs-inc/layerx/internal/config.Config#ChainRPC,github.com/paxlabs-inc/layerx/internal/config.Config#ChallengeTTL,github.com/paxlabs-inc/layerx/internal/config.Config#DEXRouter,github.com/paxlabs-inc/layerx/internal/config.Config#DepositPollInterval,github.com/paxlabs-inc/layerx/internal/config.Config#DepositStartBlock,github.com/paxlabs-inc/layerx/internal/config.Config#Dev,github.com/paxlabs-inc/layerx/internal/config.Config#MicroThresholdUSDX,github.com/paxlabs-inc/layerx/internal/config.Config#MigrationsDir,github.com/paxlabs-inc/layerx/internal/config.Config#OperatorKeyEnv,github.com/paxlabs-inc/layerx/internal/config.Config#OperatorKeyPresent,github.com/paxlabs-inc/layerx/internal/config.Config#Port,github.com/paxlabs-inc/layerx/internal/config.Config#PostgresURI,github.com/paxlabs-inc/layerx/internal/config.Config#RateLimitAuthBurst,github.com/paxlabs-inc/layerx/internal/config.Config#RateLimitAuthRPS,github.com/paxlabs-inc/layerx/internal/config.Config#RateLimitDisabled,github.com/paxlabs-inc/layerx/internal/config.Config#RateLimitReadBurst,github.com/paxlabs-inc/layerx/internal/config.Config#RateLimitReadRPS,github.com/paxlabs-inc/layerx/internal/config.Config#RateLimitTrustProxy,github.com/paxlabs-inc/layerx/internal/config.Config#RateLimitWriteBurst,github.com/paxlabs-inc/layerx/internal/config.Config#RateLimitWriteRPS,github.com/paxlabs-inc/layerx/internal/config.Config#RequireTransport,github.com/paxlabs-inc/layerx/internal/config.Config#SequencerSeedHex,github.com/paxlabs-inc/layerx/internal/config.Config#TokenTTL,github.com/paxlabs-inc/layerx/internal/config.Config#TransportToken,github.com/paxlabs-inc/layerx/internal/config.Config#USDLAddr,github.com/paxlabs-inc/layerx/internal/config.Config#VaultAddr,github.com/paxlabs-inc/layerx/internal/config.Config#Window,github.com/paxlabs-inc/layerx/internal/config.Config.ReserveAsset
+  ^defines=github.com/paxlabs-inc/layerx/internal/config/config.go
+
+NODE id=github.com/paxlabs-inc/layerx/internal/config.Config#AgentAuthSecret kind=field
+  digest=b3:37d4b1cc281f58c421994d88f58c7b5a33a838b6ae547d4eff4ed0c993f8bcaa file=layerx/internal/config/config.go range=40:41 lang=go exported=true byte_range=1685:1780
+  sig=string
+  doc=AgentAuthSecret keys the agent-DID nonces + principal tokens (HMAC).
+EDGES
+  ^contains=github.com/paxlabs-inc/layerx/internal/config.Config
+
+NODE id=github.com/paxlabs-inc/layerx/internal/config.Config#AnchorAddr kind=field
+  digest=b3:e02e87414ae1c4d8e0efc9aa142bc504b946578fbe349ad911875ca653bb8339 file=layerx/internal/config/config.go range=53:53 lang=go exported=true byte_range=2259:2280
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/layerx/internal/config.Config
+
+NODE id=github.com/paxlabs-inc/layerx/internal/config.Config#BindAddr kind=field
+  digest=b3:05a65009254892c58c181558c83951720049c74f9c695b8f8cfe6591a5bfcada file=layerx/internal/config/config.go range=19:24 lang=go exported=true byte_range=476:851
+  sig=string
+  doc=BindAddr is the interface layerxd listens on. Default 127.0.0.1 (loopback\nonly): layerxd is designed to sit behind the box's nginx edge, so the raw\nHTTP port must NOT be publicly reachable (that would bypass TLS + the edge\nrate limits, method allowlist, and body cap). Set LAYERX_BIND_ADDR=0.0.0.0\nonly for a deploy with no fronting proxy.
+EDGES
+  ^contains=github.com/paxlabs-inc/layerx/internal/config.Config
+
+NODE id=github.com/paxlabs-inc/layerx/internal/config.Config#ChainConfirmations kind=field
+  digest=b3:a66829dc971a9c803f15a144e0261c207698fc078b70f3cc2639d47c935d8ec7 file=layerx/internal/config/config.go range=65:68 lang=go exported=true byte_range=2804:3012
+  sig=uint64
+  doc=ChainConfirmations is the block lag before a head block is treated final.\nPaxeer has instant CometBFT finality (no reorgs), so 0 is correct; kept\nconfigurable for safety.
+EDGES
+  ^contains=github.com/paxlabs-inc/layerx/internal/config.Config
+
+NODE id=github.com/paxlabs-inc/layerx/internal/config.Config#ChainRPC kind=field
+  digest=b3:4038eb37272043a31938857689584533678a19cdfd76ca6e58158c82df4ff0bb file=layerx/internal/config/config.go range=50:51 lang=go exported=true byte_range=2135:2234
+  sig=string
+  doc=Chain / contract knobs (used by the settlement worker + deposit watcher).
+EDGES
+  ^contains=github.com/paxlabs-inc/layerx/internal/config.Config
+
+NODE id=github.com/paxlabs-inc/layerx/internal/config.Config#ChallengeTTL kind=field
+  digest=b3:24bd3f2b4e360fa5e8fd14bf801f5c57956e6eaa9aa330eaf1da8496fe6f1e6a file=layerx/internal/config/config.go range=42:43 lang=go exported=true byte_range=1782:1874
+  sig=time.Duration
+  doc=ChallengeTTL bounds how long an agent-auth nonce stays valid.
+EDGES
+  ^contains=github.com/paxlabs-inc/layerx/internal/config.Config
+
+NODE id=github.com/paxlabs-inc/layerx/internal/config.Config#DEXRouter kind=field
+  digest=b3:19639194aac6c5929f2df6fd57398e9861d379f2d517651ab6d03c0cb257488c file=layerx/internal/config/config.go range=54:54 lang=go exported=true byte_range=2282:2303
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/layerx/internal/config.Config
+
+NODE id=github.com/paxlabs-inc/layerx/internal/config.Config#DepositPollInterval kind=field
+  digest=b3:a57d4d9d0335299a20b91d3c3a706d16fbc3f9dabb8501a888b876aa3a95ffb0 file=layerx/internal/config/config.go range=69:70 lang=go exported=true byte_range=3014:3126
+  sig=time.Duration
+  doc=DepositPollInterval is how often the deposit watcher polls for new events.
+EDGES
+  ^contains=github.com/paxlabs-inc/layerx/internal/config.Config
+
+NODE id=github.com/paxlabs-inc/layerx/internal/config.Config#DepositStartBlock kind=field
+  digest=b3:1b31ac0f5d5795c2fdec4ce29862723d5385a714d4265fc55973dd07ce903268 file=layerx/internal/config/config.go range=61:64 lang=go exported=true byte_range=2598:2802
+  sig=uint64
+  doc=DepositStartBlock is the block the deposit watcher begins its first scan\nfrom (the Vault deploy block); 0 scans from genesis. Ignored once a cursor\nhas been persisted.
+EDGES
+  ^contains=github.com/paxlabs-inc/layerx/internal/config.Config
+
+NODE id=github.com/paxlabs-inc/layerx/internal/config.Config#Dev kind=field
+  digest=b3:64bfc9334255abc08083c4adce4f261d3b62d06a6dfce45ec7dff43f80a933f1 file=layerx/internal/config/config.go range=89:90 lang=go exported=true byte_range=3950:4021
+  sig=bool
+  doc=Dev relaxes prod fail-closed secret checks (LAYERX_DEV=1).
+EDGES
+  ^contains=github.com/paxlabs-inc/layerx/internal/config.Config
+
+NODE id=github.com/paxlabs-inc/layerx/internal/config.Config#MicroThresholdUSDX kind=field
+  digest=b3:b35ad0e3c292ff64083e84f2a816514f170228bd7f9d1fec2cacf4ce7356b05f file=layerx/internal/config/config.go range=74:76 lang=go exported=true byte_range=3219:3387
+  sig=int64
+  doc=MicroThresholdUSDX is the micro-USDX value below which a transfer is a\nbatched micropayment; at/above it auto-promotes to force-settle.
+EDGES
+  ^contains=github.com/paxlabs-inc/layerx/internal/config.Config
+
+NODE id=github.com/paxlabs-inc/layerx/internal/config.Config#MigrationsDir kind=field
+  digest=b3:4afb0bca7362be0abb2f72f78b56a710f6dd28a07e91cc300e6dd0fd4d86487d file=layerx/internal/config/config.go range=27:28 lang=go exported=true byte_range=928:1028
+  sig=string
+  doc=MigrationsDir holds the forward-only SQL migrations (default "migrations").
+EDGES
+  ^contains=github.com/paxlabs-inc/layerx/internal/config.Config
+
+NODE id=github.com/paxlabs-inc/layerx/internal/config.Config#OperatorKeyEnv kind=field
+  digest=b3:bfb2a6fe5452546d9d3e9d562e94c652b6f175bd20d28203b0cb5cafae7a4479 file=layerx/internal/config/config.go range=56:56 lang=go exported=true byte_range=2328:2349
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/layerx/internal/config.Config
+
+NODE id=github.com/paxlabs-inc/layerx/internal/config.Config#OperatorKeyPresent kind=field
+  digest=b3:31a19a17f6c011ceca53f6c22b21b686b275ad1c368ec3f4a02d334fc16f3016 file=layerx/internal/config/config.go range=57:59 lang=go exported=true byte_range=2431:2595
+  sig=bool
+  doc=OperatorKeyPresent records whether the operator key env was set at boot\n(presence only; the secret value is never read into config).
+EDGES
+  ^contains=github.com/paxlabs-inc/layerx/internal/config.Config
+
+NODE id=github.com/paxlabs-inc/layerx/internal/config.Config#Port kind=field
+  digest=b3:00e5d95c4b4a8280eb8b38bee1cb819713b9cd0d09608a5022d3580463234db5 file=layerx/internal/config/config.go range=17:18 lang=go exported=true byte_range=412:474
+  sig=int
+  doc=Port is the box-local listen port (default 9098).
+EDGES
+  ^contains=github.com/paxlabs-inc/layerx/internal/config.Config
+
+NODE id=github.com/paxlabs-inc/layerx/internal/config.Config#PostgresURI kind=field
+  digest=b3:a258015649ce965243e81eef03d7b195da679d8332e8775dce8594ffe04655dc file=layerx/internal/config/config.go range=25:26 lang=go exported=true byte_range=853:926
+  sig=string
+  doc=PostgresURI is the layerx ledger DB DSN. Required.
+EDGES
+  ^contains=github.com/paxlabs-inc/layerx/internal/config.Config
+
+NODE id=github.com/paxlabs-inc/layerx/internal/config.Config#RateLimitAuthBurst kind=field
+  digest=b3:0d31ac10423fbab1362cc94f112d839667f93f7d809881c8aee7350755679446 file=layerx/internal/config/config.go range=87:87 lang=go exported=true byte_range=3905:3947
+  sig=int
+EDGES
+  ^contains=github.com/paxlabs-inc/layerx/internal/config.Config
+
+NODE id=github.com/paxlabs-inc/layerx/internal/config.Config#RateLimitAuthRPS kind=field
+  digest=b3:0d31ac10423fbab1362cc94f112d839667f93f7d809881c8aee7350755679446 file=layerx/internal/config/config.go range=87:87 lang=go exported=true byte_range=3905:3947
+  sig=int
+EDGES
+  ^contains=github.com/paxlabs-inc/layerx/internal/config.Config
+
+NODE id=github.com/paxlabs-inc/layerx/internal/config.Config#RateLimitDisabled kind=field
+  digest=b3:a5ff6d29b8ba0f8bab31e9661c4254430f2b3eea0769d0734ee15f0e6d70803e file=layerx/internal/config/config.go range=78:80 lang=go exported=true byte_range=3390:3566
+  sig=bool
+  doc=Application-level rate limiting (defense in depth behind the nginx edge).\nRateLimitDisabled turns off the in-process per-client limiter entirely.
+EDGES
+  ^contains=github.com/paxlabs-inc/layerx/internal/config.Config
+
+NODE id=github.com/paxlabs-inc/layerx/internal/config.Config#RateLimitReadBurst kind=field
+  digest=b3:65010a190f3552969da0b4c54e8331aabea94a95c8d610cec06c91a61edaa792 file=layerx/internal/config/config.go range=84:85 lang=go exported=true byte_range=3742:3859
+  sig=int
+  doc=Per-client (per-IP) request budgets: sustained rate (req/sec) + burst.
+EDGES
+  ^contains=github.com/paxlabs-inc/layerx/internal/config.Config
+
+NODE id=github.com/paxlabs-inc/layerx/internal/config.Config#RateLimitReadRPS kind=field
+  digest=b3:65010a190f3552969da0b4c54e8331aabea94a95c8d610cec06c91a61edaa792 file=layerx/internal/config/config.go range=84:85 lang=go exported=true byte_range=3742:3859
+  sig=int
+  doc=Per-client (per-IP) request budgets: sustained rate (req/sec) + burst.
+EDGES
+  ^contains=github.com/paxlabs-inc/layerx/internal/config.Config
+
+NODE id=github.com/paxlabs-inc/layerx/internal/config.Config#RateLimitTrustProxy kind=field
+  digest=b3:827dbbdb0e3e3ecea88c8e5fb1d27300b6bee5d0ccef9d56a69cd952c2eb4a84 file=layerx/internal/config/config.go range=81:83 lang=go exported=true byte_range=3568:3740
+  sig=bool
+  doc=RateLimitTrustProxy reads the client IP from X-Real-IP / X-Forwarded-For\n(set by nginx). Default true (layerxd sits behind the nginx edge).
+EDGES
+  ^contains=github.com/paxlabs-inc/layerx/internal/config.Config
+
+NODE id=github.com/paxlabs-inc/layerx/internal/config.Config#RateLimitWriteBurst kind=field
+  digest=b3:f9e1145cfe5648f76167c760a0d14c0c2e2f337ef2ab1d85d06a7db592a37d91 file=layerx/internal/config/config.go range=86:86 lang=go exported=true byte_range=3861:3903
+  sig=int
+EDGES
+  ^contains=github.com/paxlabs-inc/layerx/internal/config.Config
+
+NODE id=github.com/paxlabs-inc/layerx/internal/config.Config#RateLimitWriteRPS kind=field
+  digest=b3:f9e1145cfe5648f76167c760a0d14c0c2e2f337ef2ab1d85d06a7db592a37d91 file=layerx/internal/config/config.go range=86:86 lang=go exported=true byte_range=3861:3903
+  sig=int
+EDGES
+  ^contains=github.com/paxlabs-inc/layerx/internal/config.Config
+
+NODE id=github.com/paxlabs-inc/layerx/internal/config.Config#RequireTransport kind=field
+  digest=b3:b27a2a32e93384807f9e57e0e200ce43387b86e5cbd1c91c30eb5458db0e1c56 file=layerx/internal/config/config.go range=36:39 lang=go exported=true byte_range=1434:1683
+  sig=bool
+  doc=RequireTransport enforces the transport bearer on the non-public endpoints\n(legacy private-fleet mode). Default false: the public RPC route does not\ngate on it (the DID signature IS the authorization, invariant i6).
+EDGES
+  ^contains=github.com/paxlabs-inc/layerx/internal/config.Config
+
+NODE id=github.com/paxlabs-inc/layerx/internal/config.Config#SequencerSeedHex kind=field
+  digest=b3:8628d831fa45a80845b6f6f49073771045a6b1df871f0aa3a40f2da794a45a2d file=layerx/internal/config/config.go range=46:48 lang=go exported=true byte_range=1967:2132
+  sig=string
+  doc=SequencerSeedHex is the 64-hex ed25519 seed the sequencer signs receipts\nwith. Empty in dev -> an ephemeral key is generated at boot.
+EDGES
+  ^contains=github.com/paxlabs-inc/layerx/internal/config.Config
+
+NODE id=github.com/paxlabs-inc/layerx/internal/config.Config#TokenTTL kind=field
+  digest=b3:07b2a5b080abc45f6db23bc1e6bbe7bdbc22e0c28d05051c612eed59935249b3 file=layerx/internal/config/config.go range=44:45 lang=go exported=true byte_range=1876:1965
+  sig=time.Duration
+  doc=TokenTTL bounds how long a minted principal token stays valid.
+EDGES
+  ^contains=github.com/paxlabs-inc/layerx/internal/config.Config
+
+NODE id=github.com/paxlabs-inc/layerx/internal/config.Config#TransportToken kind=field
+  digest=b3:2b500ad67e4648c814f830455ff065d637cc393423cd2551849170d0552d9459 file=layerx/internal/config/config.go range=30:35 lang=go exported=true byte_range=1031:1432
+  sig=string
+  doc=TransportToken is the shared bearer the MCP proxy may present\n(= MATRIX_LAYERX_TOKEN on the daemon side). Since PHASE 4 (full-transparency\nrollup) it is an OPTIONAL fleet gate, not the public gate: the public RPC /\nexplorer read surface and DID-signed writes never require it. It is enforced\non the principal/write endpoints only when RequireTransport is set.
+EDGES
+  ^contains=github.com/paxlabs-inc/layerx/internal/config.Config
+
+NODE id=github.com/paxlabs-inc/layerx/internal/config.Config#USDLAddr kind=field
+  digest=b3:baeb208820adc60ed9816f5c39ad5c95a79cc6ba0ad12e45dc0d500a828ecd5d file=layerx/internal/config/config.go range=55:55 lang=go exported=true byte_range=2305:2326
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/layerx/internal/config.Config
+
+NODE id=github.com/paxlabs-inc/layerx/internal/config.Config#VaultAddr kind=field
+  digest=b3:f99d4f4fcec2d87bce2f98923910c10243bd7253790ad471cd8a65dc6451b829 file=layerx/internal/config/config.go range=52:52 lang=go exported=true byte_range=2236:2257
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/layerx/internal/config.Config
+
+NODE id=github.com/paxlabs-inc/layerx/internal/config.Config#Window kind=field
+  digest=b3:625de19a23e8038fea33821469032cdf6cd6934dad759f440553efee3087721f file=layerx/internal/config/config.go range=72:73 lang=go exported=true byte_range=3129:3217
+  sig=time.Duration
+  doc=Window is the micropayment net-settlement window (default 12h).
+EDGES
+  ^contains=github.com/paxlabs-inc/layerx/internal/config.Config
+
+NODE id=github.com/paxlabs-inc/layerx/internal/config.Config.ReserveAsset kind=method
+  digest=b3:08b159c70cae9c07ac7073274d60baea95f9b5a4d298191a2bd9eeba25902706 file=layerx/internal/config/config.go range=200:201 lang=go exported=true byte_range=9929:10083
+  sig=func (c *Config) ReserveAsset() string
+  doc=ReserveAsset is the canonical reserve symbol (USDL) — fixed by the frozen spec.
+EDGES
+  ^contains=github.com/paxlabs-inc/layerx/internal/config.Config
+  ^defines=github.com/paxlabs-inc/layerx/internal/config/config.go
+
+NODE id=github.com/paxlabs-inc/layerx/internal/config.Load kind=func
+  digest=b3:deebe102dec60a3ef7fba25b71f4ade1556c32fcbb49c65824846cefe00b6948 file=layerx/internal/config/config.go range=114:198 lang=go exported=true byte_range=4686:9927
+  sig=func Load() (*Config, error)
+  doc=Load resolves configuration: kvx overlay first, env overrides, then defaults.
+EDGES
+  ^defines=github.com/paxlabs-inc/layerx/internal/config/config.go
+
+NODE id=github.com/paxlabs-inc/layerx/internal/config.defaultBindAddr kind=const
+  digest=b3:1845b28edcfa0a48ab8202b913e1ec04c7a6b723e7b3b175ecdfc7680c8d38ac file=layerx/internal/config/config.go range=95:95 lang=go exported=false byte_range=4064:4099
+  sig=untyped string
+EDGES
+  ^defines=github.com/paxlabs-inc/layerx/internal/config/config.go
+
+NODE id=github.com/paxlabs-inc/layerx/internal/config.defaultChallengeTTL kind=const
+  digest=b3:ffec8dceec0f410f2805b2bc161cf56aaeb42faf0c98f2b9cbaa8da3f24de747 file=layerx/internal/config/config.go range=96:96 lang=go exported=false byte_range=4101:4142
+  sig=time.Duration
+EDGES
+  ^defines=github.com/paxlabs-inc/layerx/internal/config/config.go
+
+NODE id=github.com/paxlabs-inc/layerx/internal/config.defaultDepositPoll kind=const
+  digest=b3:76bd220a52c9cf00e98231f73e30890d867071a4d1d8beee8e434b5876e6c97e file=layerx/internal/config/config.go range=101:101 lang=go exported=false byte_range=4315:4355
+  sig=time.Duration
+EDGES
+  ^defines=github.com/paxlabs-inc/layerx/internal/config/config.go
+
+NODE id=github.com/paxlabs-inc/layerx/internal/config.defaultMicroThreshold kind=const
+  digest=b3:4580a082bb8483acf8b81efb94d6dfa6283601e82d4bbacf2d3c51d0a9b80207 file=layerx/internal/config/config.go range=99:99 lang=go exported=false byte_range=4224:4257
+  sig=untyped int
+EDGES
+  ^defines=github.com/paxlabs-inc/layerx/internal/config/config.go
+
+NODE id=github.com/paxlabs-inc/layerx/internal/config.defaultPort kind=const
+  digest=b3:bc9cc074343089b5ef3d80156185b7bc4b5208f47f0e1dc2d6a12148ec95d723 file=layerx/internal/config/config.go range=94:94 lang=go exported=false byte_range=4034:4062
+  sig=untyped int
+EDGES
+  ^defines=github.com/paxlabs-inc/layerx/internal/config/config.go
+
+NODE id=github.com/paxlabs-inc/layerx/internal/config.defaultRLAuthBurst kind=const
+  digest=b3:d8cd37b77a5771512a921c6a667babb6e964f75f566ee1aa0d7744e3cebcc535 file=layerx/internal/config/config.go range=111:111 lang=go exported=false byte_range=4658:4682
+  sig=untyped int
+EDGES
+  ^defines=github.com/paxlabs-inc/layerx/internal/config/config.go
+
+NODE id=github.com/paxlabs-inc/layerx/internal/config.defaultRLAuthRPS kind=const
+  digest=b3:cef98337586ed318cd233296c0cfc1e6ef082166597a3804eda77ea3daec9a44 file=layerx/internal/config/config.go range=110:110 lang=go exported=false byte_range=4633:4656
+  sig=untyped int
+EDGES
+  ^defines=github.com/paxlabs-inc/layerx/internal/config/config.go
+
+NODE id=github.com/paxlabs-inc/layerx/internal/config.defaultRLReadBurst kind=const
+  digest=b3:931ee6681186e05bc9ce48dd7f2cb74a5f1026abf363c44cb07bbe463f5b9445 file=layerx/internal/config/config.go range=107:107 lang=go exported=false byte_range=4555:4580
+  sig=untyped int
+EDGES
+  ^defines=github.com/paxlabs-inc/layerx/internal/config/config.go
+
+NODE id=github.com/paxlabs-inc/layerx/internal/config.defaultRLReadRPS kind=const
+  digest=b3:b49d0ddbde512dc77ec089d8f52acb0ea1d5e5a80bfe67e8dd42ff89410ed080 file=layerx/internal/config/config.go range=103:106 lang=go exported=false byte_range=4358:4553
+  sig=untyped int
+  doc=Per-client rate-limit defaults (per source IP). Reads are generous (an\nexplorer client polls); writes + auth are tight (each is a ledger or\ncrypto operation).
+EDGES
+  ^defines=github.com/paxlabs-inc/layerx/internal/config/config.go
+
+NODE id=github.com/paxlabs-inc/layerx/internal/config.defaultRLWriteBurst kind=const
+  digest=b3:829737cc296424fd5d2607b57bb4695f1befa2cefd97af37bda144353f4c198b file=layerx/internal/config/config.go range=109:109 lang=go exported=false byte_range=4607:4631
+  sig=untyped int
+EDGES
+  ^defines=github.com/paxlabs-inc/layerx/internal/config/config.go
+
+NODE id=github.com/paxlabs-inc/layerx/internal/config.defaultRLWriteRPS kind=const
+  digest=b3:2ca02f04c035c10f5d19058283663b71a4efeec3369a891ba543bb81e2162016 file=layerx/internal/config/config.go range=108:108 lang=go exported=false byte_range=4582:4605
+  sig=untyped int
+EDGES
+  ^defines=github.com/paxlabs-inc/layerx/internal/config/config.go
+
+NODE id=github.com/paxlabs-inc/layerx/internal/config.defaultReserveAsset kind=const
+  digest=b3:b22a29d88a7638456ffea1b024cf964dd6cdb0b04516ccfdbc98b07b95edc169 file=layerx/internal/config/config.go range=100:100 lang=go exported=false byte_range=4283:4313
+  sig=untyped string
+EDGES
+  ^defines=github.com/paxlabs-inc/layerx/internal/config/config.go
+
+NODE id=github.com/paxlabs-inc/layerx/internal/config.defaultTokenTTL kind=const
+  digest=b3:8c92af5809685b2a530353b5379971997481fedb6bc1689882a28d2437b11ced file=layerx/internal/config/config.go range=97:97 lang=go exported=false byte_range=4144:4182
+  sig=time.Duration
+EDGES
+  ^defines=github.com/paxlabs-inc/layerx/internal/config/config.go
+
+NODE id=github.com/paxlabs-inc/layerx/internal/config.defaultWindow kind=const
+  digest=b3:59237959deee37d71ca2ebe3f45c8b62ed995c9f4ab854bb7bb2799e7a75d028 file=layerx/internal/config/config.go range=98:98 lang=go exported=false byte_range=4184:4222
+  sig=time.Duration
+EDGES
+  ^defines=github.com/paxlabs-inc/layerx/internal/config/config.go
+
+NODE id=github.com/paxlabs-inc/layerx/internal/config.envRef kind=var
+  digest=b3:3c00e8b443a15eb06179e655b4c16e71bc90bc0248327f875379342c61236a4d file=layerx/internal/config/kvx.go range=32:32 lang=go exported=false byte_range=770:831
+  sig=*regexp.Regexp
+EDGES
+  ^defines=github.com/paxlabs-inc/layerx/internal/config/kvx.go
+
+NODE id=github.com/paxlabs-inc/layerx/internal/config.interpolate kind=func
+  digest=b3:91aa0b521f625fcf0f48a61b53d7dee67eb05d6f601070a4b40de2dfb26b3941 file=layerx/internal/config/kvx.go range=146:155 lang=go exported=false byte_range=3569:3842
+  sig=func interpolate(s string) string
+  doc=interpolate replaces ${ENV_VAR} with the process environment value.
+EDGES
+  ^defines=github.com/paxlabs-inc/layerx/internal/config/kvx.go
+
+NODE id=github.com/paxlabs-inc/layerx/internal/config.isTruthy kind=func
+  digest=b3:11131f01315ef2dafc2598d35ec7a5b771122398cd376b49ed5d659b351613c1 file=layerx/internal/config/config.go range=203:210 lang=go exported=false byte_range=10085:10295
+  sig=func isTruthy(s string) bool
+  doc=isTruthy reports whether a string is an affirmative flag value.
+EDGES
+  ^defines=github.com/paxlabs-inc/layerx/internal/config/config.go
+
+NODE id=github.com/paxlabs-inc/layerx/internal/config.kvxDoc kind=type
+  digest=b3:ea8f0336bf421e22f9a44c5df7dba091db50266aa6c6370f7195df498a61b356 file=layerx/internal/config/kvx.go range=12:30 lang=go exported=false byte_range=82:764
+  sig=type kvxDoc struct {\n	sections	map[string]map[string]string\n	order		[]string\n}
+  doc=kvxDoc is a parsed layerx.config.kvx file: a sectioned key/value document.\n\nFormat (zero-dep, deterministic), shared with chronos/tachyon/uwac's config\nloaders:\n\n	# comment\n	[section]\n	key = "string"            # double-quoted strings (per Matrix .mtx convention)\n	num = 9098                # bare ints / bools\n	list = ["a", "b"]         # bracketed, comma-separated, quoted items\n	[section.sub]\n	ref = "${ENV_VAR}"        # ${ENV} interpolated from the process environment\n\nValues are stored as raw tokens; typed accessors parse on demand. Later\nduplicate keys win.
+EDGES
+  contains=github.com/paxlabs-inc/layerx/internal/config.kvxDoc#order,github.com/paxlabs-inc/layerx/internal/config.kvxDoc#sections,github.com/paxlabs-inc/layerx/internal/config.kvxDoc.str,github.com/paxlabs-inc/layerx/internal/config.kvxDoc.uint64Or
+  ^defines=github.com/paxlabs-inc/layerx/internal/config/kvx.go
+
+NODE id=github.com/paxlabs-inc/layerx/internal/config.kvxDoc#order kind=field
+  digest=b3:8337f3b4ab429ec8f2400ef923f7211776014dc9230ad8384d05aecebf8ab747 file=layerx/internal/config/kvx.go range=29:29 lang=go exported=false byte_range=745:762
+  sig=[]string
+EDGES
+  ^contains=github.com/paxlabs-inc/layerx/internal/config.kvxDoc
+
+NODE id=github.com/paxlabs-inc/layerx/internal/config.kvxDoc#sections kind=field
+  digest=b3:9e7442b28fe3b1dc5ad8dfa15ac2dccecf79cb80c5f0978a7ebb4c8a1d23bb25 file=layerx/internal/config/kvx.go range=28:28 lang=go exported=false byte_range=706:743
+  sig=map[string]map[string]string
+EDGES
+  ^contains=github.com/paxlabs-inc/layerx/internal/config.kvxDoc
+
+NODE id=github.com/paxlabs-inc/layerx/internal/config.kvxDoc.str kind=method
+  digest=b3:8f5ba288f6fd3cb333309595dee4c64721225ddb31cc01c157f6858fbf214f93 file=layerx/internal/config/kvx.go range=112:123 lang=go exported=false byte_range=2849:3106
+  sig=func (d *kvxDoc) str(section, key string) string
+  doc=str returns the interpolated string value of section.key, or "".
+EDGES
+  ^contains=github.com/paxlabs-inc/layerx/internal/config.kvxDoc
+  ^defines=github.com/paxlabs-inc/layerx/internal/config/kvx.go
+
+NODE id=github.com/paxlabs-inc/layerx/internal/config.kvxDoc.uint64Or kind=method
+  digest=b3:31013e85bd4921dc20142b9cbe1afedd5575443ef1e51473713dd87f72074f9d file=layerx/internal/config/kvx.go range=125:136 lang=go exported=false byte_range=3108:3413
+  sig=func (d *kvxDoc) uint64Or(section, key string, fallback uint64) uint64
+  doc=uint64Or parses section.key as uint64, returning fallback when absent/invalid.
+EDGES
+  ^contains=github.com/paxlabs-inc/layerx/internal/config.kvxDoc
+  ^defines=github.com/paxlabs-inc/layerx/internal/config/kvx.go
+
+NODE id=github.com/paxlabs-inc/layerx/internal/config.newKVXDoc kind=func
+  digest=b3:0b496429aa262ed217dfbe5a95531d3fcd6da3251090f063cbb590ea76ab01ea file=layerx/internal/config/kvx.go range=49:51 lang=go exported=false byte_range=1211:1297
+  sig=func newKVXDoc() *kvxDoc
+EDGES
+  ^defines=github.com/paxlabs-inc/layerx/internal/config/kvx.go
+
+NODE id=github.com/paxlabs-inc/layerx/internal/config.parseKVX kind=func
+  digest=b3:b4a5d8d3afbf155e4f5fe4d441c9e89be6cd1103999466ee95e15aa0f8f7c6c9 file=layerx/internal/config/kvx.go range=53:94 lang=go exported=false byte_range=1299:2525
+  sig=func parseKVX(r interface{ Read([]byte) (int, error) }) (*kvxDoc, error)
+EDGES
+  ^defines=github.com/paxlabs-inc/layerx/internal/config/kvx.go
+
+NODE id=github.com/paxlabs-inc/layerx/internal/config.parseKVXFile kind=func
+  digest=b3:4728b95c644d2db03d17cf6464bd762899895643163072fcc1efa1a880f2caee file=layerx/internal/config/kvx.go range=34:47 lang=go exported=false byte_range=833:1209
+  sig=func parseKVXFile(path string) (*kvxDoc, bool, error)
+  doc=parseKVXFile reads and parses a .kvx file. A missing file is not an error\n(returns an empty doc, ok=false).
+EDGES
+  ^defines=github.com/paxlabs-inc/layerx/internal/config/kvx.go
+
+NODE id=github.com/paxlabs-inc/layerx/internal/config.pick kind=func
+  digest=b3:954a97a368f77af2a859c7e4f09a81f312abe1d62e3851d92b5d0ebcb6ede5a5 file=layerx/internal/config/config.go range=212:221 lang=go exported=false byte_range=10297:10509
+  sig=func pick(envKey, kvxVal, def string) string
+  doc=pick returns the first non-empty of env[key], kvxVal, def.
+EDGES
+  ^defines=github.com/paxlabs-inc/layerx/internal/config/config.go
+
+NODE id=github.com/paxlabs-inc/layerx/internal/config.pickUint kind=func
+  digest=b3:a2e1992c1eb7a685b648c3767de710caff673ca3356b5bb954093f562d5533de file=layerx/internal/config/config.go range=223:235 lang=go exported=false byte_range=10511:10862
+  sig=func pickUint(envKey string, fallback, def uint64) uint64
+  doc=pickUint returns the env value (parsed as uint64) when set + valid, else the\nalready-resolved kvx/default fallback.
+EDGES
+  ^defines=github.com/paxlabs-inc/layerx/internal/config/config.go
+
+NODE id=github.com/paxlabs-inc/layerx/internal/config.stripComment kind=func
+  digest=b3:cb72c25b47436fc15bf31da062bf277140901a0eacbb7b25ebf7cab647bb5d67 file=layerx/internal/config/kvx.go range=96:110 lang=go exported=false byte_range=2527:2847
+  sig=func stripComment(line string) string
+  doc=stripComment removes a trailing # comment that is not inside a quoted string.
+EDGES
+  ^defines=github.com/paxlabs-inc/layerx/internal/config/kvx.go
+
+NODE id=github.com/paxlabs-inc/layerx/internal/config.unquote kind=func
+  digest=b3:62067a66dc7f956b660b2b948fef953a2c9d77c404cfce3c1f4b433eda682a84 file=layerx/internal/config/kvx.go range=138:144 lang=go exported=false byte_range=3415:3567
+  sig=func unquote(s string) string
+EDGES
+  ^defines=github.com/paxlabs-inc/layerx/internal/config/kvx.go
+
+NODE id=github.com/paxlabs-inc/layerx/internal/config/config.go kind=file
+  digest=b3:3bcf9dd90061e8d82fd6f04aedd31554d7020e81284d9da6b077aac88a61355b file=layerx/internal/config/config.go range=1:235 lang=go exported=true
+EDGES
+  defines=github.com/paxlabs-inc/layerx/internal/config.Config,github.com/paxlabs-inc/layerx/internal/config.Config.ReserveAsset,github.com/paxlabs-inc/layerx/internal/config.Load,github.com/paxlabs-inc/layerx/internal/config.defaultBindAddr,github.com/paxlabs-inc/layerx/internal/config.defaultChallengeTTL,github.com/paxlabs-inc/layerx/internal/config.defaultDepositPoll,github.com/paxlabs-inc/layerx/internal/config.defaultMicroThreshold,github.com/paxlabs-inc/layerx/internal/config.defaultPort,github.com/paxlabs-inc/layerx/internal/config.defaultRLAuthBurst,github.com/paxlabs-inc/layerx/internal/config.defaultRLAuthRPS,github.com/paxlabs-inc/layerx/internal/config.defaultRLReadBurst,github.com/paxlabs-inc/layerx/internal/config.defaultRLReadRPS,github.com/paxlabs-inc/layerx/internal/config.defaultRLWriteBurst,github.com/paxlabs-inc/layerx/internal/config.defaultRLWriteRPS,github.com/paxlabs-inc/layerx/internal/config.defaultReserveAsset,github.com/paxlabs-inc/layerx/internal/config.defaultTokenTTL,github.com/paxlabs-inc/layerx/internal/config.defaultWindow,github.com/paxlabs-inc/layerx/internal/config.isTruthy,github.com/paxlabs-inc/layerx/internal/config.pick,github.com/paxlabs-inc/layerx/internal/config.pickUint
+  ^contains=github.com/paxlabs-inc/layerx/internal/config
+
+NODE id=github.com/paxlabs-inc/layerx/internal/config/kvx.go kind=file
+  digest=b3:a6003114fd9294f8730327ea1421004e55fa66caa1d97f2c9eda6e7d219940ba file=layerx/internal/config/kvx.go range=1:155 lang=go exported=true
+EDGES
+  defines=github.com/paxlabs-inc/layerx/internal/config.envRef,github.com/paxlabs-inc/layerx/internal/config.interpolate,github.com/paxlabs-inc/layerx/internal/config.kvxDoc,github.com/paxlabs-inc/layerx/internal/config.kvxDoc.str,github.com/paxlabs-inc/layerx/internal/config.kvxDoc.uint64Or,github.com/paxlabs-inc/layerx/internal/config.newKVXDoc,github.com/paxlabs-inc/layerx/internal/config.parseKVX,github.com/paxlabs-inc/layerx/internal/config.parseKVXFile,github.com/paxlabs-inc/layerx/internal/config.stripComment,github.com/paxlabs-inc/layerx/internal/config.unquote
+  ^contains=github.com/paxlabs-inc/layerx/internal/config

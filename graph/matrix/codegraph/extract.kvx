@@ -1,0 +1,541 @@
+# GENERATED gen=codegraph do-not-edit merkle=b3:2dc69ec8dbbe0231373534486cf12ff6fdb0eaad7b2dfdcbc4d73453c8542ee8
+
+NODE id=matrix/codegraph/extract kind=package
+  digest=b3:deddd06abe8bfe042c1fcf22b2c7797caca0caf1085d2a3ca9a58b56e401b50f file=codegraph/extract range=0:0 lang=go exported=true
+EDGES
+  contains=matrix/codegraph/extract/build.go,matrix/codegraph/extract/calls.go,matrix/codegraph/extract/extract.go,matrix/codegraph/extract/files.go,matrix/codegraph/extract/gate.go,matrix/codegraph/extract/incremental.go,matrix/codegraph/extract/typeedges.go
+  ^contains=mod:matrix/codegraph
+
+NODE id=matrix/codegraph/extract.Build kind=func
+  digest=b3:69dd54e99f0edba6f7edce046081a53f8b44f4fd811413e95f11c305e874e42e file=codegraph/extract/build.go range=13:20 lang=go exported=true byte_range=140:375
+  sig=func Build(cfg Config) (*Extractor, string, error)
+  doc=Build runs a full extraction and returns the graph plus its repo Merkle root.
+EDGES
+  ^defines=matrix/codegraph/extract/build.go
+
+NODE id=matrix/codegraph/extract.CheckStale kind=func
+  digest=b3:6de72ec84cde8dabbe0c8331fe5147c55b9a73047460331ef7c6a15e1d7c0723 file=codegraph/extract/gate.go range=11:38 lang=go exported=true byte_range=87:1192
+  sig=func CheckStale(cfg Config, graphDir string) (stale bool, changes merkle.Changes, err error)
+  doc=CheckStale reports whether the graph store in graphDir is out of date relative\nto the current source. It is the cheap CI staleness gate: it reads the stored\nrepo file Merkle tree (graph/merkle.kvx) and compares it to a freshly computed\none — a single root comparison, no full graph rebuild. A missing or corrupt\nstore is treated as stale. When stale, the returned Changes name exactly which\nfiles drifted, for an actionable failure message. (Requirements 5.2, 11.1,\n11.2.)
+EDGES
+  ^defines=matrix/codegraph/extract/gate.go
+
+NODE id=matrix/codegraph/extract.Config kind=type
+  digest=b3:4c95cc3a222f896e0af312ab043498a1d5e89f46e892b9d2868a95502655c481 file=codegraph/extract/extract.go range=28:33 lang=go exported=true byte_range=735:984
+  sig=type Config struct {\n	RepoRoot	string		// absolute repo root; emitted file paths are relative to it\n	RepoName	string		// e.g. "matrix"\n	Modules		[]string	// absolute module directories (each holds a go.mod)\n}
+  doc=Config describes an extraction run.
+EDGES
+  contains=matrix/codegraph/extract.Config#Modules,matrix/codegraph/extract.Config#RepoName,matrix/codegraph/extract.Config#RepoRoot
+  ^defines=matrix/codegraph/extract/extract.go
+
+NODE id=matrix/codegraph/extract.Config#Modules kind=field
+  digest=b3:1d924c2d2692cb260c7f698de8b28d4b7862a3086b0ab20e3facc6d6c77f905d file=codegraph/extract/extract.go range=32:32 lang=go exported=true byte_range=912:929
+  sig=[]string
+EDGES
+  ^contains=matrix/codegraph/extract.Config
+
+NODE id=matrix/codegraph/extract.Config#RepoName kind=field
+  digest=b3:9e90d7811b010ac233a7774ceb5e78afa0740dd2df1a7ae1c37b57a037cd3aa1 file=codegraph/extract/extract.go range=31:31 lang=go exported=true byte_range=876:891
+  sig=string
+EDGES
+  ^contains=matrix/codegraph/extract.Config
+
+NODE id=matrix/codegraph/extract.Config#RepoRoot kind=field
+  digest=b3:52045924d8d657a3bdd8fe4d25faf650af8386ea157929e5f65a6e4cb0eab1a0 file=codegraph/extract/extract.go range=30:30 lang=go exported=true byte_range=796:811
+  sig=string
+EDGES
+  ^contains=matrix/codegraph/extract.Config
+
+NODE id=matrix/codegraph/extract.Extractor kind=type
+  digest=b3:cf0d4e1e672a1155a9edee6099a63f9bd46c4578c891e379274cf0697b11adcc file=codegraph/extract/extract.go range=35:42 lang=go exported=true byte_range=986:1334
+  sig=type Extractor struct {\n	cfg		Config\n	ix		*model.Index\n	fileText	map[string][]byte	// abs file path -> bytes (for digests)\n	modules		map[string]string	// module path -> repo-relative dir\n	pkgOf		map[string]string	// node id -> owning package path (shard routing)\n}
+  doc=Extractor accumulates a single graph across one or more module loads.
+EDGES
+  contains=matrix/codegraph/extract.Extractor#cfg,matrix/codegraph/extract.Extractor#fileText,matrix/codegraph/extract.Extractor#ix,matrix/codegraph/extract.Extractor#modules,matrix/codegraph/extract.Extractor#pkgOf,matrix/codegraph/extract.Extractor.FileMerkle,matrix/codegraph/extract.Extractor.Index,matrix/codegraph/extract.Extractor.Merkle,matrix/codegraph/extract.Extractor.Modules,matrix/codegraph/extract.Extractor.PackageOf,matrix/codegraph/extract.Extractor.Run,matrix/codegraph/extract.Extractor.WriteStore,matrix/codegraph/extract.Extractor.childDigest,matrix/codegraph/extract.Extractor.embeds,matrix/codegraph/extract.Extractor.extractCalls,matrix/codegraph/extract.Extractor.extractFile,matrix/codegraph/extract.Extractor.extractFunc,matrix/codegraph/extract.Extractor.extractGenDecl,matrix/codegraph/extract.Extractor.extractPackage,matrix/codegraph/extract.Extractor.extractType,matrix/codegraph/extract.Extractor.extractTypeEdges,matrix/codegraph/extract.Extractor.extractValue,matrix/codegraph/extract.Extractor.finalizeContainers,matrix/codegraph/extract.Extractor.isRepoPkg,matrix/codegraph/extract.Extractor.loadModule,matrix/codegraph/extract.Extractor.namedID,matrix/codegraph/extract.Extractor.readFile,matrix/codegraph/extract.Extractor.reextract,matrix/codegraph/extract.Extractor.references,matrix/codegraph/extract.Extractor.rel,matrix/codegraph/extract.Extractor.writeMerkle
+  ^defines=matrix/codegraph/extract/extract.go
+
+NODE id=matrix/codegraph/extract.Extractor#cfg kind=field
+  digest=b3:282bc802f79adc5bdeee8c171c4839b665ae35233ea04aea1b1965f9cc8404a6 file=codegraph/extract/extract.go range=37:37 lang=go exported=false byte_range=1084:1099
+  sig=extract.Config
+EDGES
+  ^contains=matrix/codegraph/extract.Extractor
+
+NODE id=matrix/codegraph/extract.Extractor#fileText kind=field
+  digest=b3:1ffe87c5a849e0b10c57f65da3fac3c5d8fe6bdf62302b145392f1633f539828 file=codegraph/extract/extract.go range=39:39 lang=go exported=false byte_range=1124:1150
+  sig=map[string][]byte
+EDGES
+  ^contains=matrix/codegraph/extract.Extractor
+
+NODE id=matrix/codegraph/extract.Extractor#ix kind=field
+  digest=b3:d5e89b94e64e6d7bcd5e4777c2bc103b861ee804c173ea49c460ff8b067d92e9 file=codegraph/extract/extract.go range=38:38 lang=go exported=false byte_range=1101:1122
+  sig=*model.Index
+EDGES
+  ^contains=matrix/codegraph/extract.Extractor
+
+NODE id=matrix/codegraph/extract.Extractor#modules kind=field
+  digest=b3:5ff7a1cc6c8ce051b547cc4d2be80e85d4aa01e0d6fe01cc3438420cba949674 file=codegraph/extract/extract.go range=40:40 lang=go exported=false byte_range=1192:1218
+  sig=map[string]string
+EDGES
+  ^contains=matrix/codegraph/extract.Extractor
+
+NODE id=matrix/codegraph/extract.Extractor#pkgOf kind=field
+  digest=b3:e8cff7d57f7ce0341552b9be66d038b919cb9860b602a1222704035cdd213964 file=codegraph/extract/extract.go range=41:41 lang=go exported=false byte_range=1256:1282
+  sig=map[string]string
+EDGES
+  ^contains=matrix/codegraph/extract.Extractor
+
+NODE id=matrix/codegraph/extract.Extractor.FileMerkle kind=method
+  digest=b3:b5c91ccea515a4fe8959d705071d052419736c03be7798277c5f8358c2a75d11 file=codegraph/extract/extract.go range=349:365 lang=go exported=true byte_range=10609:11202
+  sig=func (e *Extractor) FileMerkle() *merkle.Tree
+  doc=FileMerkle builds the repo file Merkle tree over the canonical source-file set\n(see RepoFiles), so the persisted tree is identical whether produced by a full\nbuild or recomputed by an incremental update. On walk error it falls back to\nexactly the files the extractor consumed.
+EDGES
+  ^contains=matrix/codegraph/extract.Extractor
+  ^defines=matrix/codegraph/extract/extract.go
+
+NODE id=matrix/codegraph/extract.Extractor.Index kind=method
+  digest=b3:695fa0e7401f1935ddfc90d696ae9e642abba612807fd2507e40bf40b05ed14f file=codegraph/extract/extract.go range=62:63 lang=go exported=true byte_range=1951:2047
+  sig=func (e *Extractor) Index() *model.Index
+  doc=Index returns the accumulated graph.
+EDGES
+  ^contains=matrix/codegraph/extract.Extractor
+  ^defines=matrix/codegraph/extract/extract.go
+
+NODE id=matrix/codegraph/extract.Extractor.Merkle kind=method
+  digest=b3:de9da396a3771e5260868583897f779dec8c6b5beae6a1441249c80b8915f47e file=codegraph/extract/extract.go range=367:378 lang=go exported=true byte_range=11204:11520
+  sig=func (e *Extractor) Merkle() string
+  doc=Merkle returns a deterministic repo root over all (id, digest) pairs.
+EDGES
+  ^contains=matrix/codegraph/extract.Extractor
+  ^defines=matrix/codegraph/extract/extract.go
+
+NODE id=matrix/codegraph/extract.Extractor.Modules kind=method
+  digest=b3:ad8d2b04cf1ee90402a53f582a73b612d6817e399ef77a2422930da78b85a3fa file=codegraph/extract/extract.go range=59:60 lang=go exported=true byte_range=1810:1949
+  sig=func (e *Extractor) Modules() map[string]string
+  doc=Modules returns the extracted module path -> repo-relative dir map.
+EDGES
+  ^contains=matrix/codegraph/extract.Extractor
+  ^defines=matrix/codegraph/extract/extract.go
+
+NODE id=matrix/codegraph/extract.Extractor.PackageOf kind=method
+  digest=b3:b4821290590c7b3165d35f83d0f2436e02ab5935aee4fdb31501bbdd0e2082f5 file=codegraph/extract/extract.go range=55:57 lang=go exported=true byte_range=1598:1808
+  sig=func (e *Extractor) PackageOf(id string) string
+  doc=PackageOf reports the owning package path of a node id, or "" for the repo and\nmodule container nodes (which belong in the manifest).
+EDGES
+  ^contains=matrix/codegraph/extract.Extractor
+  ^defines=matrix/codegraph/extract/extract.go
+
+NODE id=matrix/codegraph/extract.Extractor.Run kind=method
+  digest=b3:2817f021d92300ba26c5f0541a47a759c784df578cf824abe69a7abcc6bf1bd4 file=codegraph/extract/extract.go range=65:79 lang=go exported=true byte_range=2049:2539
+  sig=func (e *Extractor) Run() error
+  doc=Run loads every configured module and extracts nodes and all edge tiers into\nthe shared Index. Container digests and the repo node are finalized last.
+EDGES
+  ^contains=matrix/codegraph/extract.Extractor
+  ^defines=matrix/codegraph/extract/extract.go
+
+NODE id=matrix/codegraph/extract.Extractor.WriteStore kind=method
+  digest=b3:4a1fbbe24cace34395faecddbac129f0c7969600f8b6819432ce2f1994a64204 file=codegraph/extract/build.go range=22:58 lang=go exported=true byte_range=377:1634
+  sig=func (e *Extractor) WriteStore(outDir, merkle string) error
+  doc=WriteStore serializes the graph as sharded .kvx — graph/<pkgPath>.kvx per\npackage plus graph/manifest.kvx for the repo and module container nodes — each\ncarrying the GENERATED banner with merkle. outDir is the graph root; every\npath written inside is already repo-relative.
+EDGES
+  ^contains=matrix/codegraph/extract.Extractor
+  ^defines=matrix/codegraph/extract/build.go
+
+NODE id=matrix/codegraph/extract.Extractor.childDigest kind=method
+  digest=b3:504b3772bcbaa0802e4f3233f735a679b98e715f4248297653d10c5d431d9d30 file=codegraph/extract/extract.go range=337:347 lang=go exported=false byte_range=10277:10607
+  sig=func (e *Extractor) childDigest(id string) string
+EDGES
+  ^contains=matrix/codegraph/extract.Extractor
+  ^defines=matrix/codegraph/extract/extract.go
+
+NODE id=matrix/codegraph/extract.Extractor.embeds kind=method
+  digest=b3:810e354bd34454e065b15bffc90503db506da3b999e55cb0231e95c4a28abd32 file=codegraph/extract/typeedges.go range=67:86 lang=go exported=false byte_range=1555:2134
+  sig=func (e *Extractor) embeds(id string, named *types.Named)
+EDGES
+  ^contains=matrix/codegraph/extract.Extractor
+  ^defines=matrix/codegraph/extract/typeedges.go
+
+NODE id=matrix/codegraph/extract.Extractor.extractCalls kind=method
+  digest=b3:474de269cca9e044e301ea86a99870d0ba4c3a3a532c5635f903d47a727d52fd file=codegraph/extract/calls.go range=16:74 lang=go exported=false byte_range=254:1876
+  sig=func (e *Extractor) extractCalls(pkgs []*packages.Package)
+  doc=extractCalls derives resolved call edges. It builds SSA over the loaded\npackages and runs VTA (seeded by a CHA call graph) so each calls edge names\nthe actual resolved callee, not a name match. Both endpoints must be\nintra-repo; the retained site is the deterministically smallest call location.
+EDGES
+  ^contains=matrix/codegraph/extract.Extractor
+  ^defines=matrix/codegraph/extract/calls.go
+
+NODE id=matrix/codegraph/extract.Extractor.extractFile kind=method
+  digest=b3:6d68233364c7c555b534b453c425f17e92867f5b475d0b8aa3c1fb7ba6e31a23 file=codegraph/extract/extract.go range=153:179 lang=go exported=false byte_range=4507:5368
+  sig=func (e *Extractor) extractFile(p *packages.Package, f *ast.File)
+EDGES
+  ^contains=matrix/codegraph/extract.Extractor
+  ^defines=matrix/codegraph/extract/extract.go
+
+NODE id=matrix/codegraph/extract.Extractor.extractFunc kind=method
+  digest=b3:6746bc9b2294243767e41db618717560627425f3c996e8bbd2d8dd488ef4a4ac file=codegraph/extract/extract.go range=181:206 lang=go exported=false byte_range=5370:6199
+  sig=func (e *Extractor) extractFunc(p *packages.Package, relPath string, src []byte, fileID string, d *ast.FuncDecl)
+EDGES
+  ^contains=matrix/codegraph/extract.Extractor
+  ^defines=matrix/codegraph/extract/extract.go
+
+NODE id=matrix/codegraph/extract.Extractor.extractGenDecl kind=method
+  digest=b3:bcfe1659864a2e1f502b65a00fb9c1e13dca3beba47d36106a3f2c14a17a714e file=codegraph/extract/extract.go range=208:219 lang=go exported=false byte_range=6201:6574
+  sig=func (e *Extractor) extractGenDecl(p *packages.Package, relPath string, src []byte, fileID string, d *ast.GenDecl)
+EDGES
+  ^contains=matrix/codegraph/extract.Extractor
+  ^defines=matrix/codegraph/extract/extract.go
+
+NODE id=matrix/codegraph/extract.Extractor.extractPackage kind=method
+  digest=b3:c54a2942cb0b314c84406c0daf3d2d19b9b036fec8138ff7b888c9ffb3025eb3 file=codegraph/extract/extract.go range=119:151 lang=go exported=false byte_range=3659:4505
+  sig=func (e *Extractor) extractPackage(p *packages.Package, moduleID string)
+EDGES
+  ^contains=matrix/codegraph/extract.Extractor
+  ^defines=matrix/codegraph/extract/extract.go
+
+NODE id=matrix/codegraph/extract.Extractor.extractType kind=method
+  digest=b3:5024fc47ad6ef6b04c6c3ab7e1db9de806b1735e82406ef1b971b28ba90c6732 file=codegraph/extract/extract.go range=221:267 lang=go exported=false byte_range=6576:8117
+  sig=func (e *Extractor) extractType(p *packages.Package, relPath string, src []byte, fileID string, d *ast.GenDecl, s *ast.TypeSpec)
+EDGES
+  ^contains=matrix/codegraph/extract.Extractor
+  ^defines=matrix/codegraph/extract/extract.go
+
+NODE id=matrix/codegraph/extract.Extractor.extractTypeEdges kind=method
+  digest=b3:ec6be99e27dcbb69dd2e517a46a292cbbe3db1683079667c617c7581e7cde021 file=codegraph/extract/typeedges.go range=17:65 lang=go exported=false byte_range=172:1553
+  sig=func (e *Extractor) extractTypeEdges(pkgs []*packages.Package)
+  doc=extractTypeEdges emits implements edges from the type checker (not name\nmatching) and embeds edges for struct/interface embedding. Endpoints are\nrestricted to intra-repo named types.
+EDGES
+  ^contains=matrix/codegraph/extract.Extractor
+  ^defines=matrix/codegraph/extract/typeedges.go
+
+NODE id=matrix/codegraph/extract.Extractor.extractValue kind=method
+  digest=b3:7588790722816632fe9e2bee7d4b08f24c2441b9616719b00f32fc99a56bfd7a file=codegraph/extract/extract.go range=269:293 lang=go exported=false byte_range=8119:8887
+  sig=func (e *Extractor) extractValue(p *packages.Package, relPath string, src []byte, fileID string, d *ast.GenDecl, s *ast.ValueSpec, name *ast.Ident)
+EDGES
+  ^contains=matrix/codegraph/extract.Extractor
+  ^defines=matrix/codegraph/extract/extract.go
+
+NODE id=matrix/codegraph/extract.Extractor.finalizeContainers kind=method
+  digest=b3:76bf23378738dff3ba6c047de19954314facb10fca23dfc7ecb0d459b2dc1f60 file=codegraph/extract/extract.go range=322:335 lang=go exported=false byte_range=9654:10275
+  sig=func (e *Extractor) finalizeContainers()
+  doc=finalizeContainers assigns each container (package, module) a digest derived\nfrom its children's digests, so a container's digest moves iff a descendant\nchanged — deterministic and independent of any enrichment.
+EDGES
+  ^contains=matrix/codegraph/extract.Extractor
+  ^defines=matrix/codegraph/extract/extract.go
+
+NODE id=matrix/codegraph/extract.Extractor.isRepoPkg kind=method
+  digest=b3:2271d53a8f5f3d0d123f870c7a2511f6dc14409aa5ac7b9cda5214b08f5a92cf file=codegraph/extract/extract.go range=382:384 lang=go exported=false byte_range=11542:11671
+  sig=func (e *Extractor) isRepoPkg(path string) bool
+EDGES
+  ^contains=matrix/codegraph/extract.Extractor
+  ^defines=matrix/codegraph/extract/extract.go
+
+NODE id=matrix/codegraph/extract.Extractor.loadModule kind=method
+  digest=b3:215425ae29823a588c3df53137690af432330b49e1dd011c6044b866e8111763 file=codegraph/extract/extract.go range=81:117 lang=go exported=false byte_range=2541:3657
+  sig=func (e *Extractor) loadModule(dir string) error
+EDGES
+  ^contains=matrix/codegraph/extract.Extractor
+  ^defines=matrix/codegraph/extract/extract.go
+
+NODE id=matrix/codegraph/extract.Extractor.namedID kind=method
+  digest=b3:bb21f5894c4792a7cd8ad7f30904dbf039d9e8dc346fa4a645b4a6ac88cad8ef file=codegraph/extract/typeedges.go range=88:105 lang=go exported=false byte_range=2136:2460
+  sig=func (e *Extractor) namedID(t types.Type) string
+EDGES
+  ^contains=matrix/codegraph/extract.Extractor
+  ^defines=matrix/codegraph/extract/typeedges.go
+
+NODE id=matrix/codegraph/extract.Extractor.readFile kind=method
+  digest=b3:1a16f010d8363481fcd9c861b5b1937eb4cbb67af6d80acf995630a4eac92689 file=codegraph/extract/extract.go range=394:404 lang=go exported=false byte_range=11827:12016
+  sig=func (e *Extractor) readFile(abs string) []byte
+EDGES
+  ^contains=matrix/codegraph/extract.Extractor
+  ^defines=matrix/codegraph/extract/extract.go
+
+NODE id=matrix/codegraph/extract.Extractor.reextract kind=method
+  digest=b3:f51851ab50270d944a2aa99a144829e31b87b52baa3af815cc78d748ca7245ab file=codegraph/extract/incremental.go range=189:204 lang=go exported=false byte_range=6266:6820
+  sig=func (e *Extractor) reextract(pkgs []*packages.Package)
+  doc=reextract runs the full per-package extraction pipeline over an arbitrary set\nof packages (which may span modules), mirroring loadModule for the reloaded\nsubset.
+EDGES
+  ^contains=matrix/codegraph/extract.Extractor
+  ^defines=matrix/codegraph/extract/incremental.go
+
+NODE id=matrix/codegraph/extract.Extractor.references kind=method
+  digest=b3:f1bbb2435224ec8718b55eef69c388ec4c311226d649b777db741fa2106bde8c file=codegraph/extract/extract.go range=295:320 lang=go exported=false byte_range=8889:9652
+  sig=func (e *Extractor) references(p *packages.Package, srcID string, node ast.Node)
+  doc=references walks a declaration subtree and emits a references edge to every\nintra-repo named object it uses (type-resolved via TypesInfo.Uses), excluding\nself-references.
+EDGES
+  ^contains=matrix/codegraph/extract.Extractor
+  ^defines=matrix/codegraph/extract/extract.go
+
+NODE id=matrix/codegraph/extract.Extractor.rel kind=method
+  digest=b3:05a7b7ec2e719822e8e1638cfa352501bea7b8ba2bd15c3bdb8d9a38da9f50eb file=codegraph/extract/extract.go range=386:392 lang=go exported=false byte_range=11673:11825
+  sig=func (e *Extractor) rel(abs string) string
+EDGES
+  ^contains=matrix/codegraph/extract.Extractor
+  ^defines=matrix/codegraph/extract/extract.go
+
+NODE id=matrix/codegraph/extract.Extractor.writeMerkle kind=method
+  digest=b3:8bab203987e69157f0e032f88d49263105b69d91a47ecc462a3fb96478bf99ad file=codegraph/extract/build.go range=60:72 lang=go exported=false byte_range=1636:1988
+  sig=func (e *Extractor) writeMerkle(path string) error
+  doc=writeMerkle persists the repo file Merkle tree so a later incremental run can\ndiff against it to find exactly the changed files.
+EDGES
+  ^contains=matrix/codegraph/extract.Extractor
+  ^defines=matrix/codegraph/extract/build.go
+
+NODE id=matrix/codegraph/extract.FileTree kind=func
+  digest=b3:956052bb3ee8489e0ab83fa81204682d63dc68fc6c43885ba26f7aa4fcad269f file=codegraph/extract/files.go range=68:75 lang=go exported=true byte_range=1590:1832
+  sig=func FileTree(cfg Config) (*merkle.Tree, error)
+  doc=FileTree builds the repo file Merkle tree from the canonical source-file set.
+EDGES
+  ^defines=matrix/codegraph/extract/files.go
+
+NODE id=matrix/codegraph/extract.IncrementalResult kind=type
+  digest=b3:844328a51f4a21ee2d974c6953bc950beb047697934cde976ea8b6ba9e3b7799 file=codegraph/extract/incremental.go range=18:27 lang=go exported=true byte_range=458:1070
+  sig=type IncrementalResult struct {\n	Changes		merkle.Changes	// file-level delta that drove the update\n	AffectedPkgs	[]string	// package import paths re-extracted (sorted)\n	Dependents	[]string	// dependent node ids pulled in via reverse-edge invalidation (sorted)\n	Moved		[]string	// node ids whose digest changed or that were added (sorted)\n	Removed		[]string	// node ids that disappeared (sorted)\n	Extractor	*Extractor	// the updated graph\n	Tree		*merkle.Tree	// the current file Merkle tree\n}
+  doc=IncrementalResult reports what an incremental update touched.
+EDGES
+  contains=matrix/codegraph/extract.IncrementalResult#AffectedPkgs,matrix/codegraph/extract.IncrementalResult#Changes,matrix/codegraph/extract.IncrementalResult#Dependents,matrix/codegraph/extract.IncrementalResult#Extractor,matrix/codegraph/extract.IncrementalResult#Moved,matrix/codegraph/extract.IncrementalResult#Removed,matrix/codegraph/extract.IncrementalResult#Tree
+  ^defines=matrix/codegraph/extract/incremental.go
+
+NODE id=matrix/codegraph/extract.IncrementalResult#AffectedPkgs kind=field
+  digest=b3:c9bad28c5e67fdabc8f290ef0c86df833cc5409d6f0c1c4af8611815c4c54f50 file=codegraph/extract/incremental.go range=21:21 lang=go exported=true byte_range=627:648
+  sig=[]string
+EDGES
+  ^contains=matrix/codegraph/extract.IncrementalResult
+
+NODE id=matrix/codegraph/extract.IncrementalResult#Changes kind=field
+  digest=b3:8f12a2a5fcaee936083ebadae501129ec1f57239d0e52c4caae080af409ae748 file=codegraph/extract/incremental.go range=20:20 lang=go exported=true byte_range=556:583
+  sig=merkle.Changes
+EDGES
+  ^contains=matrix/codegraph/extract.IncrementalResult
+
+NODE id=matrix/codegraph/extract.IncrementalResult#Dependents kind=field
+  digest=b3:df6cccccd850e6a4f78da8f2a61deb6158eacac477ead1da2ed5d96fede57e12 file=codegraph/extract/incremental.go range=22:22 lang=go exported=true byte_range=702:723
+  sig=[]string
+EDGES
+  ^contains=matrix/codegraph/extract.IncrementalResult
+
+NODE id=matrix/codegraph/extract.IncrementalResult#Extractor kind=field
+  digest=b3:73a40dcce615741e83b988d7c9aca7c79b1a16722166911172ce118613a95d39 file=codegraph/extract/incremental.go range=25:25 lang=go exported=true byte_range=959:982
+  sig=*extract.Extractor
+EDGES
+  ^contains=matrix/codegraph/extract.IncrementalResult
+
+NODE id=matrix/codegraph/extract.IncrementalResult#Moved kind=field
+  digest=b3:ed9f80c1303e0d384848bc34da1ef4b1435bfadade2cd656e7c52fad60061a18 file=codegraph/extract/incremental.go range=23:23 lang=go exported=true byte_range=802:823
+  sig=[]string
+EDGES
+  ^contains=matrix/codegraph/extract.IncrementalResult
+
+NODE id=matrix/codegraph/extract.IncrementalResult#Removed kind=field
+  digest=b3:75deb469f9c79390871c54f4d20a6f9abdebd563e6856b9bb0b591a9f398ee62 file=codegraph/extract/incremental.go range=24:24 lang=go exported=true byte_range=892:913
+  sig=[]string
+EDGES
+  ^contains=matrix/codegraph/extract.IncrementalResult
+
+NODE id=matrix/codegraph/extract.IncrementalResult#Tree kind=field
+  digest=b3:411e17387eb5cad4981a675d656a0da23b28c18ecf6d359b2c828778f622c417 file=codegraph/extract/incremental.go range=26:26 lang=go exported=true byte_range=1009:1034
+  sig=*merkle.Tree
+EDGES
+  ^contains=matrix/codegraph/extract.IncrementalResult
+
+NODE id=matrix/codegraph/extract.IncrementalUpdate kind=func
+  digest=b3:d6f6ab3ed3208e62c3176d49bddf7962f7b15debe1b5c1a5dba84ad96f217c97 file=codegraph/extract/incremental.go range=29:187 lang=go exported=true byte_range=1072:6264
+  sig=func IncrementalUpdate(prior *Extractor, priorTree *merkle.Tree) (*IncrementalResult, error)
+  doc=IncrementalUpdate applies a source change to a prior in-memory extraction\nwithout a full rebuild. priorTree is the file Merkle tree captured at the\nprior build (before the change). It:\n\n 1. recomputes the current file tree and diffs it (Requirement 10.1);\n 2. finds the nodes owned by changed/removed files, and via the reverse-edge\n    index the true dependents whose edges must be revalidated (10.3);\n 3. reloads and re-extracts ONLY the affected packages, recomputing their\n    nodes and outgoing edges, and carries every untouched package's nodes and\n    edges over unchanged (10.2);\n 4. recomputes container digests and reports which node digests moved (10.4).\n\nRe-extraction is package-granular because Go type resolution is: a file's\nedges are computed from its type-checked package. Untouched packages are never\nreloaded. This is modular, not whole-program — a change that alters\ninterface-dispatch resolution in an unrelated package is out of scope here and\nis what the full-rebuild equivalence test (task 5.6) guards.
+EDGES
+  ^defines=matrix/codegraph/extract/incremental.go
+
+NODE id=matrix/codegraph/extract.New kind=func
+  digest=b3:304b215aa4f715f385528d111b116d1003e64a9621c1218d2e15fb84a1cf18d4 file=codegraph/extract/extract.go range=44:53 lang=go exported=true byte_range=1336:1596
+  sig=func New(cfg Config) *Extractor
+  doc=New returns an Extractor writing into a fresh Index.
+EDGES
+  ^defines=matrix/codegraph/extract/extract.go
+
+NODE id=matrix/codegraph/extract.RepoFiles kind=func
+  digest=b3:389146f46aa9f0dc88c0db2a47afab2714a6fc933371eb67dc59f247b0610a76 file=codegraph/extract/files.go range=11:56 lang=go exported=true byte_range=89:1389
+  sig=func RepoFiles(cfg Config) (map[string][]byte, error)
+  doc=RepoFiles returns the canonical source-file set the graph is built over:\nevery non-test .go file under the configured module dirs, keyed by repo-\nrelative slash path -> raw bytes. It skips _test.go files and the vendor,\ntestdata, node_modules, and .git trees — the same set go/packages loads for a\nnon-test build — so the file Merkle tree computed from it stays in lockstep\nwith the extracted graph across full and incremental builds.
+EDGES
+  ^defines=matrix/codegraph/extract/files.go
+
+NODE id=matrix/codegraph/extract.docPos kind=func
+  digest=b3:1df0c8a263de3561e1a234817bd3af037888685e677079e9a6698f194d53ae57 file=codegraph/extract/extract.go range=466:471 lang=go exported=false byte_range=13448:13552
+  sig=func docPos(cg *ast.CommentGroup) token.Pos
+EDGES
+  ^defines=matrix/codegraph/extract/extract.go
+
+NODE id=matrix/codegraph/extract.docText kind=func
+  digest=b3:d87aa49f5078777fe7903e0c46da9bd294c6b49723e00d37cad42ab11cc20cf5 file=codegraph/extract/extract.go range=473:478 lang=go exported=false byte_range=13554:13673
+  sig=func docText(cg *ast.CommentGroup) string
+EDGES
+  ^defines=matrix/codegraph/extract/extract.go
+
+NODE id=matrix/codegraph/extract.funcID kind=func
+  digest=b3:af097216d5977141ddbbd36756e8babc8e7b9e41384c5208e0f73d999933d4ee file=codegraph/extract/calls.go range=76:86 lang=go exported=false byte_range=1878:2066
+  sig=func funcID(fn *ssa.Function) (string, bool)
+EDGES
+  ^defines=matrix/codegraph/extract/calls.go
+
+NODE id=matrix/codegraph/extract.funcSig kind=func
+  digest=b3:e4abe54953e679ac93fd589a9067ee926a7a8894669c25f0e8b9889a1b6d15ce file=codegraph/extract/extract.go range=512:519 lang=go exported=false byte_range=14515:14771
+  sig=func funcSig(fset *token.FileSet, d *ast.FuncDecl) string
+EDGES
+  ^defines=matrix/codegraph/extract/extract.go
+
+NODE id=matrix/codegraph/extract.idForObj kind=func
+  digest=b3:4c2d6c7bb7b5e544f6e61c362bf6136fab9197e07c5fd32fac4cc61ef80254b9 file=codegraph/extract/extract.go range=406:435 lang=go exported=false byte_range=12018:12872
+  sig=func idForObj(obj types.Object) (string, model.Kind, bool)
+EDGES
+  ^defines=matrix/codegraph/extract/extract.go
+
+NODE id=matrix/codegraph/extract.invalidationEdges kind=var
+  digest=b3:aacac78e89c0f5954e3384b80e68613a068a735aedce0e41dde7b4e094ca94f8 file=codegraph/extract/incremental.go range=13:16 lang=go exported=false byte_range=143:456
+  sig=[]model.EdgeType
+  doc=invalidationEdges are the edge types over which a change propagates to\ndependents: if a node is changed or removed, whatever calls it, references it,\nor implements it may need its own edges revalidated.
+EDGES
+  ^defines=matrix/codegraph/extract/incremental.go
+
+NODE id=matrix/codegraph/extract.isGraphSource kind=func
+  digest=b3:c61e06b3b9c3e1bddc8395d5bbb835e26bba1aa32d139200efeb4ddc9f07fc7d file=codegraph/extract/files.go range=58:66 lang=go exported=false byte_range=1391:1588
+  sig=func isGraphSource(name string) bool
+EDGES
+  ^defines=matrix/codegraph/extract/files.go
+
+NODE id=matrix/codegraph/extract.loadMode kind=const
+  digest=b3:0d994342bb965d3f7815c14eb9c02376927d479c6c09355feda0f7efec73b9fa file=codegraph/extract/extract.go range=24:26 lang=go exported=false byte_range=518:733
+  sig=packages.LoadMode
+EDGES
+  ^defines=matrix/codegraph/extract/extract.go
+
+NODE id=matrix/codegraph/extract.loadPackages kind=func
+  digest=b3:2a138ac1bef9feef34f4e27eecad9cfe763b2a3c899c48db561f2df048b2d294 file=codegraph/extract/incremental.go range=206:228 lang=go exported=false byte_range=6822:7565
+  sig=func loadPackages(cfg Config, filePatterns, importPaths []string) ([]*packages.Package, error)
+  doc=loadPackages loads a bounded set of packages by file= query and/or import path\npattern, returning the deduplicated repo packages that type-checked.
+EDGES
+  ^defines=matrix/codegraph/extract/incremental.go
+
+NODE id=matrix/codegraph/extract.methodRecvID kind=func
+  digest=b3:ef0dd88a4fc69399dc3351364115644a83a996478a170c519426a894742ba91d file=codegraph/extract/extract.go range=437:454 lang=go exported=false byte_range=12874:13260
+  sig=func methodRecvID(obj types.Object) string
+EDGES
+  ^defines=matrix/codegraph/extract/extract.go
+
+NODE id=matrix/codegraph/extract.namedType kind=type
+  digest=b3:3c068495ac55540c5c1f84ecd712562ebbb2db895d15e2c441be169258e6ba65 file=codegraph/extract/typeedges.go range=12:15 lang=go exported=false byte_range=111:170
+  sig=type namedType struct {\n	id	string\n	named	*types.Named\n}
+EDGES
+  contains=matrix/codegraph/extract.namedType#id,matrix/codegraph/extract.namedType#named
+  ^defines=matrix/codegraph/extract/typeedges.go
+
+NODE id=matrix/codegraph/extract.namedType#id kind=field
+  digest=b3:db9ea64353cff3740682adbd10acd71979bd12381f1889aee7cb797d75abbaf8 file=codegraph/extract/typeedges.go range=13:13 lang=go exported=false byte_range=136:148
+  sig=string
+EDGES
+  ^contains=matrix/codegraph/extract.namedType
+
+NODE id=matrix/codegraph/extract.namedType#named kind=field
+  digest=b3:df7c1d3c74fd106e4d433672b093fa42c42a04df023e90da4b458f568402c568 file=codegraph/extract/typeedges.go range=14:14 lang=go exported=false byte_range=150:168
+  sig=*types.Named
+EDGES
+  ^contains=matrix/codegraph/extract.namedType
+
+NODE id=matrix/codegraph/extract.pathLeaf kind=func
+  digest=b3:3309b742a533e3898186ecb3c71c0433ace16ab79f634b4e940e542b3b986219 file=codegraph/extract/extract.go range=537:542 lang=go exported=false byte_range=15156:15265
+  sig=func pathLeaf(p string) string
+EDGES
+  ^defines=matrix/codegraph/extract/extract.go
+
+NODE id=matrix/codegraph/extract.pkgPathOf kind=func
+  digest=b3:6f4b3028b22ba9ef2e0319fe426efbe8097ed8bb9432bd05627326fc5533601e file=codegraph/extract/calls.go range=88:96 lang=go exported=false byte_range=2068:2239
+  sig=func pkgPathOf(fn *ssa.Function) string
+EDGES
+  ^defines=matrix/codegraph/extract/calls.go
+
+NODE id=matrix/codegraph/extract.recvTypeName kind=func
+  digest=b3:ff05b36eca42c28f98d635c34131d29eceba997c88076f1a6c0ba6af843b6c6e file=codegraph/extract/extract.go range=456:464 lang=go exported=false byte_range=13262:13446
+  sig=func recvTypeName(t types.Type) string
+EDGES
+  ^defines=matrix/codegraph/extract/extract.go
+
+NODE id=matrix/codegraph/extract.slice kind=func
+  digest=b3:7dd1c73380a1c42684f5c7a9bbf499878a97d30eadea3e9912469c0ae2109140 file=codegraph/extract/extract.go range=491:496 lang=go exported=false byte_range=14007:14204
+  sig=func slice(src []byte, br model.ByteRange) []byte
+EDGES
+  ^defines=matrix/codegraph/extract/extract.go
+
+NODE id=matrix/codegraph/extract.span kind=func
+  digest=b3:684f7d15a5bfe18be522d10a3f5868ba024d4def962d2342ed3f5be13b341e5c file=codegraph/extract/extract.go range=480:489 lang=go exported=false byte_range=13675:14005
+  sig=func span(fset *token.FileSet, docStart, start, end token.Pos) (model.Range, model.ByteRange)
+EDGES
+  ^defines=matrix/codegraph/extract/extract.go
+
+NODE id=matrix/codegraph/extract.specStart kind=func
+  digest=b3:7ca797387ce160e0bd476fd864f89d76f2159e5e7674bf0c35ff93da0c8cc279 file=codegraph/extract/extract.go range=498:503 lang=go exported=false byte_range=14206:14382
+  sig=func specStart(d *ast.GenDecl, s *ast.TypeSpec) token.Pos
+EDGES
+  ^defines=matrix/codegraph/extract/extract.go
+
+NODE id=matrix/codegraph/extract.specValueEnd kind=func
+  digest=b3:5e971582ae2f5b111891d979acbe910b1e8ea75858591729566b854d3f38dba6 file=codegraph/extract/extract.go range=505:510 lang=go exported=false byte_range=14384:14513
+  sig=func specValueEnd(s *ast.ValueSpec, name *ast.Ident) token.Pos
+EDGES
+  ^defines=matrix/codegraph/extract/extract.go
+
+NODE id=matrix/codegraph/extract.typeSig kind=func
+  digest=b3:c31081a73ed77a626a133c83409a779718204a1af69c9da42302ccadfa919dac file=codegraph/extract/extract.go range=521:528 lang=go exported=false byte_range=14773:15003
+  sig=func typeSig(fset *token.FileSet, s *ast.TypeSpec) string
+EDGES
+  ^defines=matrix/codegraph/extract/extract.go
+
+NODE id=matrix/codegraph/extract.typeString kind=func
+  digest=b3:065a4b131f7b8bb9eb992225bf1ef1b962efb8c1a46933babfeda5d53bba0d57 file=codegraph/extract/extract.go range=530:535 lang=go exported=false byte_range=15005:15154
+  sig=func typeString(t types.Type) string
+EDGES
+  ^defines=matrix/codegraph/extract/extract.go
+
+NODE id=matrix/codegraph/extract.writeFile kind=func
+  digest=b3:0352672f8d10f61dc9914cc829a49a0fbccbf1a688b7ea78edddc8e61877fbe3 file=codegraph/extract/build.go range=74:84 lang=go exported=false byte_range=1990:2250
+  sig=func writeFile(path string, ix *model.Index, nodes []*model.Node, merkle string) error
+EDGES
+  ^defines=matrix/codegraph/extract/build.go
+
+NODE id=matrix/codegraph/extract/build.go kind=file
+  digest=b3:7bf08fe249c378a89a5f4f364a2127d966136759c13370176cd2faa322f7b9e8 file=codegraph/extract/build.go range=1:84 lang=go exported=true
+EDGES
+  defines=matrix/codegraph/extract.Build,matrix/codegraph/extract.Extractor.WriteStore,matrix/codegraph/extract.Extractor.writeMerkle,matrix/codegraph/extract.writeFile
+  ^contains=matrix/codegraph/extract
+
+NODE id=matrix/codegraph/extract/calls.go kind=file
+  digest=b3:362f23f54c29dae3fe408ae7d864c859d9b1f6fb6dd0df267ff94bd19b283c7e file=codegraph/extract/calls.go range=1:96 lang=go exported=true
+EDGES
+  defines=matrix/codegraph/extract.Extractor.extractCalls,matrix/codegraph/extract.funcID,matrix/codegraph/extract.pkgPathOf
+  ^contains=matrix/codegraph/extract
+
+NODE id=matrix/codegraph/extract/extract.go kind=file
+  digest=b3:73ecd1744de345e4e77f7a06c05ceb1674926338df74ce352b588a5fc3dd8bde file=codegraph/extract/extract.go range=1:542 lang=go exported=true
+EDGES
+  defines=matrix/codegraph/extract.Config,matrix/codegraph/extract.Extractor,matrix/codegraph/extract.Extractor.FileMerkle,matrix/codegraph/extract.Extractor.Index,matrix/codegraph/extract.Extractor.Merkle,matrix/codegraph/extract.Extractor.Modules,matrix/codegraph/extract.Extractor.PackageOf,matrix/codegraph/extract.Extractor.Run,matrix/codegraph/extract.Extractor.childDigest,matrix/codegraph/extract.Extractor.extractFile,matrix/codegraph/extract.Extractor.extractFunc,matrix/codegraph/extract.Extractor.extractGenDecl,matrix/codegraph/extract.Extractor.extractPackage,matrix/codegraph/extract.Extractor.extractType,matrix/codegraph/extract.Extractor.extractValue,matrix/codegraph/extract.Extractor.finalizeContainers,matrix/codegraph/extract.Extractor.isRepoPkg,matrix/codegraph/extract.Extractor.loadModule,matrix/codegraph/extract.Extractor.readFile,matrix/codegraph/extract.Extractor.references,matrix/codegraph/extract.Extractor.rel,matrix/codegraph/extract.New,matrix/codegraph/extract.docPos,matrix/codegraph/extract.docText,matrix/codegraph/extract.funcSig,matrix/codegraph/extract.idForObj,matrix/codegraph/extract.loadMode,matrix/codegraph/extract.methodRecvID,matrix/codegraph/extract.pathLeaf,matrix/codegraph/extract.recvTypeName,matrix/codegraph/extract.slice,matrix/codegraph/extract.span,matrix/codegraph/extract.specStart,matrix/codegraph/extract.specValueEnd,matrix/codegraph/extract.typeSig,matrix/codegraph/extract.typeString
+  ^contains=matrix/codegraph/extract
+
+NODE id=matrix/codegraph/extract/files.go kind=file
+  digest=b3:18dc2a7b05c345488acefec5362ba2e6695dd62de5255a8409ceecccfee0122d file=codegraph/extract/files.go range=1:75 lang=go exported=true
+EDGES
+  defines=matrix/codegraph/extract.FileTree,matrix/codegraph/extract.RepoFiles,matrix/codegraph/extract.isGraphSource
+  ^contains=matrix/codegraph/extract
+
+NODE id=matrix/codegraph/extract/gate.go kind=file
+  digest=b3:2671bf2312296e38e9c1386390cbea444bbc4c231a194af34e00b588845ead84 file=codegraph/extract/gate.go range=1:38 lang=go exported=true
+EDGES
+  defines=matrix/codegraph/extract.CheckStale
+  ^contains=matrix/codegraph/extract
+
+NODE id=matrix/codegraph/extract/incremental.go kind=file
+  digest=b3:dd462e5533f0e954c874e1c3561b81883858ed8736a98d6d0c1a7a2ea03ce70f file=codegraph/extract/incremental.go range=1:228 lang=go exported=true
+EDGES
+  defines=matrix/codegraph/extract.Extractor.reextract,matrix/codegraph/extract.IncrementalResult,matrix/codegraph/extract.IncrementalUpdate,matrix/codegraph/extract.invalidationEdges,matrix/codegraph/extract.loadPackages
+  ^contains=matrix/codegraph/extract
+
+NODE id=matrix/codegraph/extract/typeedges.go kind=file
+  digest=b3:3e87b377daa22d33bdd2366950e4a3365d1caa11dfc85b4877967e8241d90740 file=codegraph/extract/typeedges.go range=1:105 lang=go exported=true
+EDGES
+  defines=matrix/codegraph/extract.Extractor.embeds,matrix/codegraph/extract.Extractor.extractTypeEdges,matrix/codegraph/extract.Extractor.namedID,matrix/codegraph/extract.namedType
+  ^contains=matrix/codegraph/extract

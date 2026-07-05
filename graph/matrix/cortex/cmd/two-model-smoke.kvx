@@ -1,0 +1,741 @@
+# GENERATED gen=codegraph do-not-edit merkle=b3:2dc69ec8dbbe0231373534486cf12ff6fdb0eaad7b2dfdcbc4d73453c8542ee8
+
+NODE id=matrix/cortex/cmd/two-model-smoke kind=package
+  digest=b3:fd195a9a16b825a5beb14289cb39d39fb36279fca8a0defb144d45c8b791f1eb file=cortex/cmd/two-model-smoke range=0:0 lang=go exported=true
+EDGES
+  contains=matrix/cortex/cmd/two-model-smoke/client.go,matrix/cortex/cmd/two-model-smoke/main.go,matrix/cortex/cmd/two-model-smoke/scenario.go,matrix/cortex/cmd/two-model-smoke/tools.go,matrix/cortex/cmd/two-model-smoke/typed.go
+  ^contains=mod:matrix/cortex
+
+NODE id=matrix/cortex/cmd/two-model-smoke.ChatChoice kind=type
+  digest=b3:49e075c8b593e20b88645d6c60451eeb8373ac4994bf3382f1462499c545ee03 file=cortex/cmd/two-model-smoke/client.go range=154:160 lang=go exported=true byte_range=4743:4983
+  sig=type ChatChoice struct {\n	Index		int		`json:"index"`\n	Message		ChatMessage	`json:"message"`\n	FinishReason	string		`json:"finish_reason"`\n}
+  doc=ChatChoice is one entry from the choices array. We always read\nchoices[0].
+EDGES
+  contains=matrix/cortex/cmd/two-model-smoke.ChatChoice#FinishReason,matrix/cortex/cmd/two-model-smoke.ChatChoice#Index,matrix/cortex/cmd/two-model-smoke.ChatChoice#Message
+  ^defines=matrix/cortex/cmd/two-model-smoke/client.go
+
+NODE id=matrix/cortex/cmd/two-model-smoke.ChatChoice#FinishReason kind=field
+  digest=b3:a1abb995b178502842d1a6c0086debfd6355f22e1c5b1ad11704ef654390cd3d file=cortex/cmd/two-model-smoke/client.go range=159:159 lang=go exported=true byte_range=4934:4981
+  sig=string
+EDGES
+  ^contains=matrix/cortex/cmd/two-model-smoke.ChatChoice
+
+NODE id=matrix/cortex/cmd/two-model-smoke.ChatChoice#Index kind=field
+  digest=b3:fe1a55ef1998175f71f49aefc5685745ca1bef700aa862c8914cd0da63de0913 file=cortex/cmd/two-model-smoke/client.go range=157:157 lang=go exported=true byte_range=4850:4889
+  sig=int
+EDGES
+  ^contains=matrix/cortex/cmd/two-model-smoke.ChatChoice
+
+NODE id=matrix/cortex/cmd/two-model-smoke.ChatChoice#Message kind=field
+  digest=b3:85099dd3c1d2767c83f82efe83c11904bfdedb35040b489c032a66b704195c3b file=cortex/cmd/two-model-smoke/client.go range=158:158 lang=go exported=true byte_range=4891:4932
+  sig=main.ChatMessage
+EDGES
+  ^contains=matrix/cortex/cmd/two-model-smoke.ChatChoice
+
+NODE id=matrix/cortex/cmd/two-model-smoke.ChatErrorBody kind=type
+  digest=b3:b146d75960de5e0923b7f721cc28f6e987dd64f56a2ad1b571a7d0ed12f40f49 file=cortex/cmd/two-model-smoke/client.go range=169:175 lang=go exported=true byte_range=5196:5406
+  sig=type ChatErrorBody struct {\n	Message	string	`json:"message"`\n	Type	string	`json:"type"`\n	Code	string	`json:"code"`\n}
+  doc=ChatErrorBody is the structured error body returned by both\nproviders on 4xx/5xx.
+EDGES
+  contains=matrix/cortex/cmd/two-model-smoke.ChatErrorBody#Code,matrix/cortex/cmd/two-model-smoke.ChatErrorBody#Message,matrix/cortex/cmd/two-model-smoke.ChatErrorBody#Type
+  ^defines=matrix/cortex/cmd/two-model-smoke/client.go
+
+NODE id=matrix/cortex/cmd/two-model-smoke.ChatErrorBody#Code kind=field
+  digest=b3:988ae0e9269d84021f6b4ead29b7474a294a15d3d1386ade8bb5725dc3a7e3cc file=cortex/cmd/two-model-smoke/client.go range=174:174 lang=go exported=true byte_range=5376:5404
+  sig=string
+EDGES
+  ^contains=matrix/cortex/cmd/two-model-smoke.ChatErrorBody
+
+NODE id=matrix/cortex/cmd/two-model-smoke.ChatErrorBody#Message kind=field
+  digest=b3:d7a0704d4d1cdf051b9f61d5a005f6a0c1ada9b90dd901fab6b0e03fad711a42 file=cortex/cmd/two-model-smoke/client.go range=172:172 lang=go exported=true byte_range=5313:5344
+  sig=string
+EDGES
+  ^contains=matrix/cortex/cmd/two-model-smoke.ChatErrorBody
+
+NODE id=matrix/cortex/cmd/two-model-smoke.ChatErrorBody#Type kind=field
+  digest=b3:b4acdad19614b4e3d6b78180ed5bc07c3fd14a3a1589be9294c8c1eff85d23aa file=cortex/cmd/two-model-smoke/client.go range=173:173 lang=go exported=true byte_range=5346:5374
+  sig=string
+EDGES
+  ^contains=matrix/cortex/cmd/two-model-smoke.ChatErrorBody
+
+NODE id=matrix/cortex/cmd/two-model-smoke.ChatMessage kind=type
+  digest=b3:527a0564a08eeab684805cfe229b7b67fcfad68b201efc1aee05029ddc7aae31 file=cortex/cmd/two-model-smoke/client.go range=95:107 lang=go exported=true byte_range=2633:3179
+  sig=type ChatMessage struct {\n	Role		string		`json:"role"`\n	Content		string		`json:"content,omitempty"`\n	Name		string		`json:"name,omitempty"`\n	ToolCalls	[]ToolCall	`json:"tool_calls,omitempty"`\n	ToolCallID	string		`json:"tool_call_id,omitempty"`\n}
+  doc=ChatMessage is the OpenAI-compatible message shape.\n\nRole is one of "system" | "user" | "assistant" | "tool".\nToolCalls is set on assistant messages that requested tools.\nToolCallID is set on role=="tool" messages identifying which call this\nresult satisfies.
+EDGES
+  contains=matrix/cortex/cmd/two-model-smoke.ChatMessage#Content,matrix/cortex/cmd/two-model-smoke.ChatMessage#Name,matrix/cortex/cmd/two-model-smoke.ChatMessage#Role,matrix/cortex/cmd/two-model-smoke.ChatMessage#ToolCallID,matrix/cortex/cmd/two-model-smoke.ChatMessage#ToolCalls
+  ^defines=matrix/cortex/cmd/two-model-smoke/client.go
+
+NODE id=matrix/cortex/cmd/two-model-smoke.ChatMessage#Content kind=field
+  digest=b3:98faacd174a5e7cc1c64e05ac89e4e201f2eecf3884419cccf4759e4710d878d file=cortex/cmd/two-model-smoke/client.go range=103:103 lang=go exported=true byte_range=2974:3022
+  sig=string
+EDGES
+  ^contains=matrix/cortex/cmd/two-model-smoke.ChatMessage
+
+NODE id=matrix/cortex/cmd/two-model-smoke.ChatMessage#Name kind=field
+  digest=b3:3ae22ab7f03f8fd94b92e22deadeac48393e41083cdc5fe2b461d3ef7cdc62fb file=cortex/cmd/two-model-smoke/client.go range=104:104 lang=go exported=true byte_range=3024:3069
+  sig=string
+EDGES
+  ^contains=matrix/cortex/cmd/two-model-smoke.ChatMessage
+
+NODE id=matrix/cortex/cmd/two-model-smoke.ChatMessage#Role kind=field
+  digest=b3:3ad01deeb34ff2d27f05044270a59681831a7eabebde8837b9616787e4026031 file=cortex/cmd/two-model-smoke/client.go range=102:102 lang=go exported=true byte_range=2937:2972
+  sig=string
+EDGES
+  ^contains=matrix/cortex/cmd/two-model-smoke.ChatMessage
+
+NODE id=matrix/cortex/cmd/two-model-smoke.ChatMessage#ToolCallID kind=field
+  digest=b3:967ecc22426724d228d270554504d81b35831282f7fdcdfb21c0c2205a45e8cb file=cortex/cmd/two-model-smoke/client.go range=106:106 lang=go exported=true byte_range=3124:3177
+  sig=string
+EDGES
+  ^contains=matrix/cortex/cmd/two-model-smoke.ChatMessage
+
+NODE id=matrix/cortex/cmd/two-model-smoke.ChatMessage#ToolCalls kind=field
+  digest=b3:913ce31b9424dcd26c64a21b8fa2f6ecce0195c57661e0c42c73924fb77baa42 file=cortex/cmd/two-model-smoke/client.go range=105:105 lang=go exported=true byte_range=3071:3122
+  sig=[]main.ToolCall
+EDGES
+  ^contains=matrix/cortex/cmd/two-model-smoke.ChatMessage
+
+NODE id=matrix/cortex/cmd/two-model-smoke.ChatRequest kind=type
+  digest=b3:6ee4b5b54c6938d287e7dedfb4125457ca3f9bd4581ccef9ad9360d005f798f7 file=cortex/cmd/two-model-smoke/client.go range=135:143 lang=go exported=true byte_range=3995:4436
+  sig=type ChatRequest struct {\n	Model		string		`json:"model"`\n	Messages	[]ChatMessage	`json:"messages"`\n	Tools		[]ToolDef	`json:"tools,omitempty"`\n	ToolChoice	string		`json:"tool_choice,omitempty"`	// "auto" | "none" | object\n	Temperature	float64		`json:"temperature,omitempty"`\n	MaxTokens	int		`json:"max_tokens,omitempty"`\n}
+  doc=ChatRequest is the request body sent to the chat-completions endpoint.
+EDGES
+  contains=matrix/cortex/cmd/two-model-smoke.ChatRequest#MaxTokens,matrix/cortex/cmd/two-model-smoke.ChatRequest#Messages,matrix/cortex/cmd/two-model-smoke.ChatRequest#Model,matrix/cortex/cmd/two-model-smoke.ChatRequest#Temperature,matrix/cortex/cmd/two-model-smoke.ChatRequest#ToolChoice,matrix/cortex/cmd/two-model-smoke.ChatRequest#Tools
+  ^defines=matrix/cortex/cmd/two-model-smoke/client.go
+
+NODE id=matrix/cortex/cmd/two-model-smoke.ChatRequest#MaxTokens kind=field
+  digest=b3:96d058eefc24986a6207d9a0f14dce041b6bbee6413c7fcfb4841f4c6c379ea9 file=cortex/cmd/two-model-smoke/client.go range=142:142 lang=go exported=true byte_range=4379:4434
+  sig=int
+EDGES
+  ^contains=matrix/cortex/cmd/two-model-smoke.ChatRequest
+
+NODE id=matrix/cortex/cmd/two-model-smoke.ChatRequest#Messages kind=field
+  digest=b3:88e5f7ac64106d0adf5734c357b3a62c1afeb65045f8f81d23f90e0ec44781b2 file=cortex/cmd/two-model-smoke/client.go range=138:138 lang=go exported=true byte_range=4138:4181
+  sig=[]main.ChatMessage
+EDGES
+  ^contains=matrix/cortex/cmd/two-model-smoke.ChatRequest
+
+NODE id=matrix/cortex/cmd/two-model-smoke.ChatRequest#Model kind=field
+  digest=b3:37e643767bd1e5bda7e68dbf7dc6acb4b9696e9927189b4161438b78780229a3 file=cortex/cmd/two-model-smoke/client.go range=137:137 lang=go exported=true byte_range=4096:4136
+  sig=string
+EDGES
+  ^contains=matrix/cortex/cmd/two-model-smoke.ChatRequest
+
+NODE id=matrix/cortex/cmd/two-model-smoke.ChatRequest#Temperature kind=field
+  digest=b3:42eca5384cc3b965deaf62a95f697041a1dddd24e093fb2072500e16dda94494 file=cortex/cmd/two-model-smoke/client.go range=141:141 lang=go exported=true byte_range=4321:4377
+  sig=float64
+EDGES
+  ^contains=matrix/cortex/cmd/two-model-smoke.ChatRequest
+
+NODE id=matrix/cortex/cmd/two-model-smoke.ChatRequest#ToolChoice kind=field
+  digest=b3:5646ef622b6c5bc4abba716f49f9cadb312b6b058579340817225c02eb39216e file=cortex/cmd/two-model-smoke/client.go range=140:140 lang=go exported=true byte_range=4235:4291
+  sig=string
+EDGES
+  ^contains=matrix/cortex/cmd/two-model-smoke.ChatRequest
+
+NODE id=matrix/cortex/cmd/two-model-smoke.ChatRequest#Tools kind=field
+  digest=b3:e0887666fe8e9ab4d17f5b29f96d0feab3d05ef9a3424488f592c57d42e1388c file=cortex/cmd/two-model-smoke/client.go range=139:139 lang=go exported=true byte_range=4183:4233
+  sig=[]main.ToolDef
+EDGES
+  ^contains=matrix/cortex/cmd/two-model-smoke.ChatRequest
+
+NODE id=matrix/cortex/cmd/two-model-smoke.ChatResponse kind=type
+  digest=b3:cbbcb94380d917ed0e9d5a14e3e2e150ced27f59aa6acef283f1f95304c90f89 file=cortex/cmd/two-model-smoke/client.go range=145:152 lang=go exported=true byte_range=4438:4741
+  sig=type ChatResponse struct {\n	ID	string		`json:"id"`\n	Choices	[]ChatChoice	`json:"choices"`\n	Usage	*ChatUsage	`json:"usage,omitempty"`\n	Error	*ChatErrorBody	`json:"error,omitempty"`\n}
+  doc=ChatResponse is the response shape (subset of OpenAI's response —\nonly the fields we read).
+EDGES
+  contains=matrix/cortex/cmd/two-model-smoke.ChatResponse#Choices,matrix/cortex/cmd/two-model-smoke.ChatResponse#Error,matrix/cortex/cmd/two-model-smoke.ChatResponse#ID,matrix/cortex/cmd/two-model-smoke.ChatResponse#Usage
+  ^defines=matrix/cortex/cmd/two-model-smoke/client.go
+
+NODE id=matrix/cortex/cmd/two-model-smoke.ChatResponse#Choices kind=field
+  digest=b3:14e46f659c28c66692713dacbfaa9337d890ebb05cb409bb215c8a291ef75d18 file=cortex/cmd/two-model-smoke/client.go range=149:149 lang=go exported=true byte_range=4602:4641
+  sig=[]main.ChatChoice
+EDGES
+  ^contains=matrix/cortex/cmd/two-model-smoke.ChatResponse
+
+NODE id=matrix/cortex/cmd/two-model-smoke.ChatResponse#Error kind=field
+  digest=b3:49081ac11ab46c48f463e50b3c53970c384602c21b03c27918f4e380928105d6 file=cortex/cmd/two-model-smoke/client.go range=151:151 lang=go exported=true byte_range=4692:4739
+  sig=*main.ChatErrorBody
+EDGES
+  ^contains=matrix/cortex/cmd/two-model-smoke.ChatResponse
+
+NODE id=matrix/cortex/cmd/two-model-smoke.ChatResponse#ID kind=field
+  digest=b3:e131fee99671ed7089956452dc73589a3a22e4b4e08b7efe45309be0c998d75f file=cortex/cmd/two-model-smoke/client.go range=148:148 lang=go exported=true byte_range=4566:4600
+  sig=string
+EDGES
+  ^contains=matrix/cortex/cmd/two-model-smoke.ChatResponse
+
+NODE id=matrix/cortex/cmd/two-model-smoke.ChatResponse#Usage kind=field
+  digest=b3:975b973d9989e8e387d7a8ccaa2fca21c6d8cfe0465bea8d7a1129c057326b6f file=cortex/cmd/two-model-smoke/client.go range=150:150 lang=go exported=true byte_range=4643:4690
+  sig=*main.ChatUsage
+EDGES
+  ^contains=matrix/cortex/cmd/two-model-smoke.ChatResponse
+
+NODE id=matrix/cortex/cmd/two-model-smoke.ChatUsage kind=type
+  digest=b3:71f11035654a01942f746417056f9e89899f75ab0139ad8cece8cbdc1a3d19e2 file=cortex/cmd/two-model-smoke/client.go range=162:167 lang=go exported=true byte_range=4985:5194
+  sig=type ChatUsage struct {\n	PromptTokens		int	`json:"prompt_tokens"`\n	CompletionTokens	int	`json:"completion_tokens"`\n	TotalTokens		int	`json:"total_tokens"`\n}
+  doc=ChatUsage carries token-count diagnostics.
+EDGES
+  contains=matrix/cortex/cmd/two-model-smoke.ChatUsage#CompletionTokens,matrix/cortex/cmd/two-model-smoke.ChatUsage#PromptTokens,matrix/cortex/cmd/two-model-smoke.ChatUsage#TotalTokens
+  ^defines=matrix/cortex/cmd/two-model-smoke/client.go
+
+NODE id=matrix/cortex/cmd/two-model-smoke.ChatUsage#CompletionTokens kind=field
+  digest=b3:385f157d9209d2545cebfd6b275db5accd3edf91f5acba8ac46482ed70353c44 file=cortex/cmd/two-model-smoke/client.go range=165:165 lang=go exported=true byte_range=5101:5148
+  sig=int
+EDGES
+  ^contains=matrix/cortex/cmd/two-model-smoke.ChatUsage
+
+NODE id=matrix/cortex/cmd/two-model-smoke.ChatUsage#PromptTokens kind=field
+  digest=b3:9e4f9a486a583f8c75a0a633d958f277121387f72956bb23de3f409344ad3349 file=cortex/cmd/two-model-smoke/client.go range=164:164 lang=go exported=true byte_range=5056:5099
+  sig=int
+EDGES
+  ^contains=matrix/cortex/cmd/two-model-smoke.ChatUsage
+
+NODE id=matrix/cortex/cmd/two-model-smoke.ChatUsage#TotalTokens kind=field
+  digest=b3:d3816eb4124cfec18f63d6f01937f9ae39d1ba09baf369d45b84f2d312083cdf file=cortex/cmd/two-model-smoke/client.go range=166:166 lang=go exported=true byte_range=5150:5192
+  sig=int
+EDGES
+  ^contains=matrix/cortex/cmd/two-model-smoke.ChatUsage
+
+NODE id=matrix/cortex/cmd/two-model-smoke.Client kind=type
+  digest=b3:c3c69637202f0e98187aabd2290fc32ea2f852fadcc349b02e4860e11685b539 file=cortex/cmd/two-model-smoke/client.go range=177:182 lang=go exported=true byte_range=5408:5601
+  sig=type Client struct {\n	httpClient	*http.Client\n	timeout		time.Duration\n}
+  doc=Client carries config + a reusable http.Client. Per-call fields\n(model, messages, tools) are passed at Call time.
+EDGES
+  contains=matrix/cortex/cmd/two-model-smoke.Client#httpClient,matrix/cortex/cmd/two-model-smoke.Client#timeout,matrix/cortex/cmd/two-model-smoke.Client.Call
+  ^defines=matrix/cortex/cmd/two-model-smoke/client.go
+
+NODE id=matrix/cortex/cmd/two-model-smoke.Client#httpClient kind=field
+  digest=b3:9a151ea2ba566bb0737165a91babdb187b11087990afe2e6ab2aa1911f90f2a8 file=cortex/cmd/two-model-smoke/client.go range=180:180 lang=go exported=false byte_range=5550:5573
+  sig=*http.Client
+EDGES
+  ^contains=matrix/cortex/cmd/two-model-smoke.Client
+
+NODE id=matrix/cortex/cmd/two-model-smoke.Client#timeout kind=field
+  digest=b3:6bbb2359d080c173fce18e12d6c152f09115267dae27104c7fdf4349abedec08 file=cortex/cmd/two-model-smoke/client.go range=181:181 lang=go exported=false byte_range=5575:5599
+  sig=time.Duration
+EDGES
+  ^contains=matrix/cortex/cmd/two-model-smoke.Client
+
+NODE id=matrix/cortex/cmd/two-model-smoke.Client.Call kind=method
+  digest=b3:de4de53f225057ba85837487e2c2a0ccb1ba6ef9e5e1cd4f6d94e7e180a3965e file=cortex/cmd/two-model-smoke/client.go range=194:269 lang=go exported=true byte_range=5894:8462
+  sig=func (c *Client) Call(model string, messages []ChatMessage, tools []ToolDef, temperature float64) (*ChatMessage, *ChatUsage, error)
+  doc=Call sends one chat-completions request to the provider determined\nby the model string. Returns the assistant's message (which may\ncontain tool_calls) plus token usage. Errors include the raw\nprovider response body for debuggability.
+EDGES
+  ^contains=matrix/cortex/cmd/two-model-smoke.Client
+  ^defines=matrix/cortex/cmd/two-model-smoke/client.go
+
+NODE id=matrix/cortex/cmd/two-model-smoke.Dispatcher kind=type
+  digest=b3:7b026463be55226dd07997d9f39260e50959ba44d855a14724450df2d51a5cfe file=cortex/cmd/two-model-smoke/tools.go range=268:274 lang=go exported=true byte_range=11316:11606
+  sig=type Dispatcher struct {\n	c	*cortex.Cortex\n	actor	string	// shared cortex actor; used as CreatedBy fallback if agent identity is unset\n}
+  doc=Dispatcher executes a tool call against the supplied cortex on\nbehalf of the calling agent (whose identity becomes CreatedBy on\nany writes).
+EDGES
+  contains=matrix/cortex/cmd/two-model-smoke.Dispatcher#actor,matrix/cortex/cmd/two-model-smoke.Dispatcher#c,matrix/cortex/cmd/two-model-smoke.Dispatcher.Dispatch,matrix/cortex/cmd/two-model-smoke.Dispatcher.cortexAddEdge,matrix/cortex/cmd/two-model-smoke.Dispatcher.cortexFind,matrix/cortex/cmd/two-model-smoke.Dispatcher.cortexList,matrix/cortex/cmd/two-model-smoke.Dispatcher.cortexListEdges,matrix/cortex/cmd/two-model-smoke.Dispatcher.cortexResolve,matrix/cortex/cmd/two-model-smoke.Dispatcher.cortexTombstone,matrix/cortex/cmd/two-model-smoke.Dispatcher.cortexUpdate,matrix/cortex/cmd/two-model-smoke.Dispatcher.cortexUpdateHead,matrix/cortex/cmd/two-model-smoke.Dispatcher.cortexWrite,matrix/cortex/cmd/two-model-smoke.Dispatcher.dispatch
+  ^defines=matrix/cortex/cmd/two-model-smoke/tools.go
+
+NODE id=matrix/cortex/cmd/two-model-smoke.Dispatcher#actor kind=field
+  digest=b3:b5b0099398857b5c7c70764e3ebb7d88b971d742799b5cf73f73c5af5f95cf01 file=cortex/cmd/two-model-smoke/tools.go range=273:273 lang=go exported=false byte_range=11514:11526
+  sig=string
+EDGES
+  ^contains=matrix/cortex/cmd/two-model-smoke.Dispatcher
+
+NODE id=matrix/cortex/cmd/two-model-smoke.Dispatcher#c kind=field
+  digest=b3:a87fef5daaee249b7e41bc435dd5ed88b591286f5b034b334f0cf27614a5523c file=cortex/cmd/two-model-smoke/tools.go range=272:272 lang=go exported=false byte_range=11492:11512
+  sig=*cortex.Cortex
+EDGES
+  ^contains=matrix/cortex/cmd/two-model-smoke.Dispatcher
+
+NODE id=matrix/cortex/cmd/two-model-smoke.Dispatcher.Dispatch kind=method
+  digest=b3:d0fbc1b19058086b7a82f498ecc81cf2937f0a091a8270901f3958fe8eabe62c file=cortex/cmd/two-model-smoke/tools.go range=276:289 lang=go exported=true byte_range=11608:12105
+  sig=func (d *Dispatcher) Dispatch(call ToolCall, agentName string) string
+  doc=Dispatch runs one tool call. Returns a JSON-encoded result string\nsuitable for the role="tool" reply message. Errors are wrapped in\n{"error":"..."} JSON so the model sees them as structured data.
+EDGES
+  ^contains=matrix/cortex/cmd/two-model-smoke.Dispatcher
+  ^defines=matrix/cortex/cmd/two-model-smoke/tools.go
+
+NODE id=matrix/cortex/cmd/two-model-smoke.Dispatcher.cortexAddEdge kind=method
+  digest=b3:f6f15728df9206c36381df37bc5ebf0ace7d666c74cef158d0000096b080943b file=cortex/cmd/two-model-smoke/tools.go range=505:529 lang=go exported=false byte_range=18414:19359
+  sig=func (d *Dispatcher) cortexAddEdge(args map[string]interface{}, createdBy string) (interface{}, error)
+EDGES
+  ^contains=matrix/cortex/cmd/two-model-smoke.Dispatcher
+  ^defines=matrix/cortex/cmd/two-model-smoke/tools.go
+
+NODE id=matrix/cortex/cmd/two-model-smoke.Dispatcher.cortexFind kind=method
+  digest=b3:b1f2f300ca8093a9d9c6598c2b34ae91ea7ca501e3796d4fff96ce3de49eeb82 file=cortex/cmd/two-model-smoke/tools.go range=384:416 lang=go exported=false byte_range=14823:15717
+  sig=func (d *Dispatcher) cortexFind(args map[string]interface{}) (interface{}, error)
+EDGES
+  ^contains=matrix/cortex/cmd/two-model-smoke.Dispatcher
+  ^defines=matrix/cortex/cmd/two-model-smoke/tools.go
+
+NODE id=matrix/cortex/cmd/two-model-smoke.Dispatcher.cortexList kind=method
+  digest=b3:c85e49e3c36e86b080a08f8798db3ef5802616422eb6abaae113b270b0911c85 file=cortex/cmd/two-model-smoke/tools.go range=418:434 lang=go exported=false byte_range=15719:16272
+  sig=func (d *Dispatcher) cortexList(args map[string]interface{}) (interface{}, error)
+EDGES
+  ^contains=matrix/cortex/cmd/two-model-smoke.Dispatcher
+  ^defines=matrix/cortex/cmd/two-model-smoke/tools.go
+
+NODE id=matrix/cortex/cmd/two-model-smoke.Dispatcher.cortexListEdges kind=method
+  digest=b3:8046eb962f729ade2f3eaefaafe100a53172b9f2d618727cf4b1aa4aed57ef21 file=cortex/cmd/two-model-smoke/tools.go range=531:577 lang=go exported=false byte_range=19361:20790
+  sig=func (d *Dispatcher) cortexListEdges(args map[string]interface{}) (interface{}, error)
+EDGES
+  ^contains=matrix/cortex/cmd/two-model-smoke.Dispatcher
+  ^defines=matrix/cortex/cmd/two-model-smoke/tools.go
+
+NODE id=matrix/cortex/cmd/two-model-smoke.Dispatcher.cortexResolve kind=method
+  digest=b3:4477ce13d85584361646c6d56223f18ae44de689d5c1b0028e1e62722ccbb314 file=cortex/cmd/two-model-smoke/tools.go range=372:382 lang=go exported=false byte_range=14532:14821
+  sig=func (d *Dispatcher) cortexResolve(args map[string]interface{}) (interface{}, error)
+EDGES
+  ^contains=matrix/cortex/cmd/two-model-smoke.Dispatcher
+  ^defines=matrix/cortex/cmd/two-model-smoke/tools.go
+
+NODE id=matrix/cortex/cmd/two-model-smoke.Dispatcher.cortexTombstone kind=method
+  digest=b3:062682032638458e92f26202fdbd848709c632c2b2c508c85f89c2d97c105163 file=cortex/cmd/two-model-smoke/tools.go range=493:503 lang=go exported=false byte_range=18003:18412
+  sig=func (d *Dispatcher) cortexTombstone(args map[string]interface{}, createdBy string) (interface{}, error)
+EDGES
+  ^contains=matrix/cortex/cmd/two-model-smoke.Dispatcher
+  ^defines=matrix/cortex/cmd/two-model-smoke/tools.go
+
+NODE id=matrix/cortex/cmd/two-model-smoke.Dispatcher.cortexUpdate kind=method
+  digest=b3:3aad9e0f247235cb95ec898afb4b41f15ef2e7994737b683714ce24ec19f6be5 file=cortex/cmd/two-model-smoke/tools.go range=436:466 lang=go exported=false byte_range=16274:17241
+  sig=func (d *Dispatcher) cortexUpdate(args map[string]interface{}, createdBy string) (interface{}, error)
+EDGES
+  ^contains=matrix/cortex/cmd/two-model-smoke.Dispatcher
+  ^defines=matrix/cortex/cmd/two-model-smoke/tools.go
+
+NODE id=matrix/cortex/cmd/two-model-smoke.Dispatcher.cortexUpdateHead kind=method
+  digest=b3:7769ac0b503a4d59cb526ee9523d0194b279bb714e9283bff34db429df6ea87a file=cortex/cmd/two-model-smoke/tools.go range=468:491 lang=go exported=false byte_range=17243:18001
+  sig=func (d *Dispatcher) cortexUpdateHead(args map[string]interface{}, createdBy string) (interface{}, error)
+EDGES
+  ^contains=matrix/cortex/cmd/two-model-smoke.Dispatcher
+  ^defines=matrix/cortex/cmd/two-model-smoke/tools.go
+
+NODE id=matrix/cortex/cmd/two-model-smoke.Dispatcher.cortexWrite kind=method
+  digest=b3:ae20c1453725f41a7de605c4f9dfad7b2ccd73b770d5e4d6d8ab09d5bdc89553 file=cortex/cmd/two-model-smoke/tools.go range=331:370 lang=go exported=false byte_range=13324:14530
+  sig=func (d *Dispatcher) cortexWrite(args map[string]interface{}, createdBy string) (interface{}, error)
+EDGES
+  ^contains=matrix/cortex/cmd/two-model-smoke.Dispatcher
+  ^defines=matrix/cortex/cmd/two-model-smoke/tools.go
+
+NODE id=matrix/cortex/cmd/two-model-smoke.Dispatcher.dispatch kind=method
+  digest=b3:d898db6c027a64242553e2e9bee0cd9cd97904e95f43022e058b7c2119da1637 file=cortex/cmd/two-model-smoke/tools.go range=291:327 lang=go exported=false byte_range=12107:13250
+  sig=func (d *Dispatcher) dispatch(call ToolCall, agentName string) (interface{}, error)
+EDGES
+  ^contains=matrix/cortex/cmd/two-model-smoke.Dispatcher
+  ^defines=matrix/cortex/cmd/two-model-smoke/tools.go
+
+NODE id=matrix/cortex/cmd/two-model-smoke.NewClient kind=func
+  digest=b3:205d8f86400e94bbc3efcafde207344ed4e8cc5150a18e11a06973c8359cd8e6 file=cortex/cmd/two-model-smoke/client.go range=184:192 lang=go exported=true byte_range=5603:5892
+  sig=func NewClient() *Client
+  doc=NewClient returns a Client with a sane default timeout (90s — small\nmodels like deepseek-v4-flash can take 30-60s on long tool-calling\nturns).
+EDGES
+  ^defines=matrix/cortex/cmd/two-model-smoke/client.go
+
+NODE id=matrix/cortex/cmd/two-model-smoke.Provider kind=type
+  digest=b3:c36139aa16f93cb37115d5a278833546403a9c4a47e0bde8901aeeece494138e file=cortex/cmd/two-model-smoke/client.go range=34:35 lang=go exported=true byte_range=999:1083
+  sig=type Provider int
+  doc=Provider identifies the API endpoint + env-var the client uses.
+EDGES
+  contains=matrix/cortex/cmd/two-model-smoke.Provider.String
+  ^defines=matrix/cortex/cmd/two-model-smoke/client.go
+
+NODE id=matrix/cortex/cmd/two-model-smoke.Provider.String kind=method
+  digest=b3:bee3bd52fdd35a924d94d8d2440b996d7eb8cf60f10ac7ac59893a0941c7bef5 file=cortex/cmd/two-model-smoke/client.go range=42:50 lang=go exported=true byte_range=1149:1303
+  sig=func (p Provider) String() string
+EDGES
+  ^contains=matrix/cortex/cmd/two-model-smoke.Provider
+  ^defines=matrix/cortex/cmd/two-model-smoke/client.go
+
+NODE id=matrix/cortex/cmd/two-model-smoke.ProviderFireworks kind=const
+  digest=b3:906d42b70b0109e12f9dabe4706424283267d48e9366a8ecfdf9690d9fa38e42 file=cortex/cmd/two-model-smoke/client.go range=39:39 lang=go exported=true byte_range=1128:1145
+  sig=main.Provider
+EDGES
+  ^defines=matrix/cortex/cmd/two-model-smoke/client.go
+
+NODE id=matrix/cortex/cmd/two-model-smoke.ProviderTogether kind=const
+  digest=b3:d6e8f88d2826b3922a0f4b6721ce5b47e40296822e554f3bee3a8134424f3c03 file=cortex/cmd/two-model-smoke/client.go range=38:38 lang=go exported=true byte_range=1094:1126
+  sig=main.Provider
+EDGES
+  ^defines=matrix/cortex/cmd/two-model-smoke/client.go
+
+NODE id=matrix/cortex/cmd/two-model-smoke.Scenario kind=type
+  digest=b3:8557f71f47d579d6b2abdeccf9005bdd9fb398f38394708743f291db46a658c8 file=cortex/cmd/two-model-smoke/scenario.go range=14:26 lang=go exported=true byte_range=419:869
+  sig=type Scenario struct {\n	Name		string\n	Description	string\n	// SystemA / SystemB are the system prompts for agents A and B\n	// respectively. They establish role + tool-use posture without\n	// repeating the tool catalog (the LLM already sees that via the\n	// `tools` request field).\n	SystemA	string\n	SystemB	string\n	// Opening is the first user-role message both agents share.\n	Opening	string\n}
+  doc=Scenario describes a two-agent conversation seed.
+EDGES
+  contains=matrix/cortex/cmd/two-model-smoke.Scenario#Description,matrix/cortex/cmd/two-model-smoke.Scenario#Name,matrix/cortex/cmd/two-model-smoke.Scenario#Opening,matrix/cortex/cmd/two-model-smoke.Scenario#SystemA,matrix/cortex/cmd/two-model-smoke.Scenario#SystemB
+  ^defines=matrix/cortex/cmd/two-model-smoke/scenario.go
+
+NODE id=matrix/cortex/cmd/two-model-smoke.Scenario#Description kind=field
+  digest=b3:07fd2ec40e0d67803d6a8ce06d303c45c95b6689708e6c20311d26116b5f6dd3 file=cortex/cmd/two-model-smoke/scenario.go range=17:17 lang=go exported=true byte_range=516:534
+  sig=string
+EDGES
+  ^contains=matrix/cortex/cmd/two-model-smoke.Scenario
+
+NODE id=matrix/cortex/cmd/two-model-smoke.Scenario#Name kind=field
+  digest=b3:cfdb72525efabf9eaa7efc64b31a4f94eba41ff8a679714fb4085b25fe81f288 file=cortex/cmd/two-model-smoke/scenario.go range=16:16 lang=go exported=true byte_range=496:514
+  sig=string
+EDGES
+  ^contains=matrix/cortex/cmd/two-model-smoke.Scenario
+
+NODE id=matrix/cortex/cmd/two-model-smoke.Scenario#Opening kind=field
+  digest=b3:7bec472aae3a6b12bafa88802f6adf12a67fc4ddcbd55f79eceddc9d55355545 file=cortex/cmd/two-model-smoke/scenario.go range=24:25 lang=go exported=true byte_range=791:867
+  sig=string
+  doc=Opening is the first user-role message both agents share.
+EDGES
+  ^contains=matrix/cortex/cmd/two-model-smoke.Scenario
+
+NODE id=matrix/cortex/cmd/two-model-smoke.Scenario#SystemA kind=field
+  digest=b3:6992b52dfce9fd4f05a76811f13a1583f417d6438cbd2ac4004fb40a6e4c6ae6 file=cortex/cmd/two-model-smoke/scenario.go range=18:22 lang=go exported=true byte_range=536:773
+  sig=string
+  doc=SystemA / SystemB are the system prompts for agents A and B\nrespectively. They establish role + tool-use posture without\nrepeating the tool catalog (the LLM already sees that via the\n`tools` request field).
+EDGES
+  ^contains=matrix/cortex/cmd/two-model-smoke.Scenario
+
+NODE id=matrix/cortex/cmd/two-model-smoke.Scenario#SystemB kind=field
+  digest=b3:cf19698c45f7d2411195eb292ea385e3ae661d11550ed506874b4dbf71054bbf file=cortex/cmd/two-model-smoke/scenario.go range=23:23 lang=go exported=true byte_range=775:789
+  sig=string
+EDGES
+  ^contains=matrix/cortex/cmd/two-model-smoke.Scenario
+
+NODE id=matrix/cortex/cmd/two-model-smoke.ToolCall kind=type
+  digest=b3:2c6bde7d6fcb8e19310c971e70c52b8c6949c7db4e285019177b92fc3227a2c2 file=cortex/cmd/two-model-smoke/client.go range=109:114 lang=go exported=true byte_range=3181:3396
+  sig=type ToolCall struct {\n	ID		string		`json:"id"`\n	Type		string		`json:"type"`	// always "function"\n	Function	ToolCallFunc	`json:"function"`\n}
+  doc=ToolCall mirrors OpenAI's `tool_calls[]` entry shape.
+EDGES
+  contains=matrix/cortex/cmd/two-model-smoke.ToolCall#Function,matrix/cortex/cmd/two-model-smoke.ToolCall#ID,matrix/cortex/cmd/two-model-smoke.ToolCall#Type
+  ^defines=matrix/cortex/cmd/two-model-smoke/client.go
+
+NODE id=matrix/cortex/cmd/two-model-smoke.ToolCall#Function kind=field
+  digest=b3:ca162f1a4a3e0832958e5b7082449fe25a24d3ffcbca0422022ac33578065026 file=cortex/cmd/two-model-smoke/client.go range=113:113 lang=go exported=true byte_range=3355:3394
+  sig=main.ToolCallFunc
+EDGES
+  ^contains=matrix/cortex/cmd/two-model-smoke.ToolCall
+
+NODE id=matrix/cortex/cmd/two-model-smoke.ToolCall#ID kind=field
+  digest=b3:39e45070a475ff2972df82cd66496f0efc6343dc37f663c3ad3a4be356c03c60 file=cortex/cmd/two-model-smoke/client.go range=111:111 lang=go exported=true byte_range=3262:3295
+  sig=string
+EDGES
+  ^contains=matrix/cortex/cmd/two-model-smoke.ToolCall
+
+NODE id=matrix/cortex/cmd/two-model-smoke.ToolCall#Type kind=field
+  digest=b3:c60d4dd31895fe6f6954abbd5cdbcd0e6ed5b500dd46b0166a089f5fc448a098 file=cortex/cmd/two-model-smoke/client.go range=112:112 lang=go exported=true byte_range=3297:3332
+  sig=string
+EDGES
+  ^contains=matrix/cortex/cmd/two-model-smoke.ToolCall
+
+NODE id=matrix/cortex/cmd/two-model-smoke.ToolCallFunc kind=type
+  digest=b3:65d480cf523d45972214fd909f4d7e530ace36ca18bab38b974f936bf6757b62 file=cortex/cmd/two-model-smoke/client.go range=116:120 lang=go exported=true byte_range=3398:3565
+  sig=type ToolCallFunc struct {\n	Name		string	`json:"name"`\n	Arguments	string	`json:"arguments"`\n}
+  doc=ToolCallFunc carries the function name + JSON-encoded args string.
+EDGES
+  contains=matrix/cortex/cmd/two-model-smoke.ToolCallFunc#Arguments,matrix/cortex/cmd/two-model-smoke.ToolCallFunc#Name
+  ^defines=matrix/cortex/cmd/two-model-smoke/client.go
+
+NODE id=matrix/cortex/cmd/two-model-smoke.ToolCallFunc#Arguments kind=field
+  digest=b3:598a59c646c2443cd2fe2d89b308abea10650aad0798ceb0305dd822c86362f1 file=cortex/cmd/two-model-smoke/client.go range=119:119 lang=go exported=true byte_range=3528:3563
+  sig=string
+EDGES
+  ^contains=matrix/cortex/cmd/two-model-smoke.ToolCallFunc
+
+NODE id=matrix/cortex/cmd/two-model-smoke.ToolCallFunc#Name kind=field
+  digest=b3:ff785850bf10b4407f29821ea0637fcb231bd80fd28fe6a234a833527f468a96 file=cortex/cmd/two-model-smoke/client.go range=118:118 lang=go exported=true byte_range=3496:3526
+  sig=string
+EDGES
+  ^contains=matrix/cortex/cmd/two-model-smoke.ToolCallFunc
+
+NODE id=matrix/cortex/cmd/two-model-smoke.ToolDef kind=type
+  digest=b3:d3fc97bfbaeac18972601db45baa77a924bd2218f8b1ee06944f7958546fc59d file=cortex/cmd/two-model-smoke/client.go range=122:126 lang=go exported=true byte_range=3567:3732
+  sig=type ToolDef struct {\n	Type		string		`json:"type"`	// "function"\n	Function	ToolDefFunction	`json:"function"`\n}
+  doc=ToolDef describes one tool to the model.
+EDGES
+  contains=matrix/cortex/cmd/two-model-smoke.ToolDef#Function,matrix/cortex/cmd/two-model-smoke.ToolDef#Type
+  ^defines=matrix/cortex/cmd/two-model-smoke/client.go
+
+NODE id=matrix/cortex/cmd/two-model-smoke.ToolDef#Function kind=field
+  digest=b3:bfe9685fd901c63a799975d3f8d19a34adaa310abb9908604f7e33f9d0f5a27b file=cortex/cmd/two-model-smoke/client.go range=125:125 lang=go exported=true byte_range=3688:3730
+  sig=main.ToolDefFunction
+EDGES
+  ^contains=matrix/cortex/cmd/two-model-smoke.ToolDef
+
+NODE id=matrix/cortex/cmd/two-model-smoke.ToolDef#Type kind=field
+  digest=b3:b97793eb800c688514db515b83ada54e8c6bde7db6ba91309d465b9327ef39c0 file=cortex/cmd/two-model-smoke/client.go range=124:124 lang=go exported=true byte_range=3634:3672
+  sig=string
+EDGES
+  ^contains=matrix/cortex/cmd/two-model-smoke.ToolDef
+
+NODE id=matrix/cortex/cmd/two-model-smoke.ToolDefFunction kind=type
+  digest=b3:18edd1dca17f8ce862c86c9c55b1210a2e89073ef6d411cb72c77e94a241652c file=cortex/cmd/two-model-smoke/client.go range=128:133 lang=go exported=true byte_range=3734:3993
+  sig=type ToolDefFunction struct {\n	Name		string			`json:"name"`\n	Description	string			`json:"description"`\n	Parameters	map[string]interface{}	`json:"parameters"`\n}
+  doc=ToolDefFunction carries the JSON-schema parameter definition.
+EDGES
+  contains=matrix/cortex/cmd/two-model-smoke.ToolDefFunction#Description,matrix/cortex/cmd/two-model-smoke.ToolDefFunction#Name,matrix/cortex/cmd/two-model-smoke.ToolDefFunction#Parameters
+  ^defines=matrix/cortex/cmd/two-model-smoke/client.go
+
+NODE id=matrix/cortex/cmd/two-model-smoke.ToolDefFunction#Description kind=field
+  digest=b3:3ccc588b649194685f19d3f3fc0abc78c256af5d25e11fbcb0b6ab459d97f16a file=cortex/cmd/two-model-smoke/client.go range=131:131 lang=go exported=true byte_range=3880:3935
+  sig=string
+EDGES
+  ^contains=matrix/cortex/cmd/two-model-smoke.ToolDefFunction
+
+NODE id=matrix/cortex/cmd/two-model-smoke.ToolDefFunction#Name kind=field
+  digest=b3:69442fc06d4950cfb90f434454a63c2e747c25f5c5e33849b2d55b8b0f4f7618 file=cortex/cmd/two-model-smoke/client.go range=130:130 lang=go exported=true byte_range=3830:3878
+  sig=string
+EDGES
+  ^contains=matrix/cortex/cmd/two-model-smoke.ToolDefFunction
+
+NODE id=matrix/cortex/cmd/two-model-smoke.ToolDefFunction#Parameters kind=field
+  digest=b3:92c23cb3450fda5314fb78469a3eea0120840364824c56df786540b227694689 file=cortex/cmd/two-model-smoke/client.go range=132:132 lang=go exported=true byte_range=3937:3991
+  sig=map[string]interface{}
+EDGES
+  ^contains=matrix/cortex/cmd/two-model-smoke.ToolDefFunction
+
+NODE id=matrix/cortex/cmd/two-model-smoke._ kind=var
+  digest=b3:3f5d8dcc5d4f50935c9f7cc720928d6e8a58f57008370cee1dccbb7d2bf24874 file=cortex/cmd/two-model-smoke/main.go range=329:332 lang=go exported=false byte_range=10926:11099
+  sig=func(elem ...string) string
+  doc=silence "imported and not used" for filepath when path operations\naren't directly used in this file but the dependency is required by\ncallers.
+EDGES
+  ^defines=matrix/cortex/cmd/two-model-smoke/main.go
+
+NODE id=matrix/cortex/cmd/two-model-smoke.agent kind=type
+  digest=b3:bb7bd4783e5d9c9a58a2e7548658a1292cc8d735eedca39076562a8f6a569f9d file=cortex/cmd/two-model-smoke/main.go range=272:281 lang=go exported=false byte_range=9222:9522
+  sig=type agent struct {\n	Name		string\n	Model		string\n	System		string\n	Temperature	float64\n	History		[]ChatMessage\n}
+  doc=agent holds per-conversation state. History accumulates across all\nturns this agent participates in; the system prompt is the first\nmessage and stays at index 0.
+EDGES
+  contains=matrix/cortex/cmd/two-model-smoke.agent#History,matrix/cortex/cmd/two-model-smoke.agent#Model,matrix/cortex/cmd/two-model-smoke.agent#Name,matrix/cortex/cmd/two-model-smoke.agent#System,matrix/cortex/cmd/two-model-smoke.agent#Temperature
+  ^defines=matrix/cortex/cmd/two-model-smoke/main.go
+
+NODE id=matrix/cortex/cmd/two-model-smoke.agent#History kind=field
+  digest=b3:83add67c241349e12cde0199d39d0bdecdce8dedddde54f255b0dcd851db0a3b file=cortex/cmd/two-model-smoke/main.go range=280:280 lang=go exported=true byte_range=9495:9520
+  sig=[]main.ChatMessage
+EDGES
+  ^contains=matrix/cortex/cmd/two-model-smoke.agent
+
+NODE id=matrix/cortex/cmd/two-model-smoke.agent#Model kind=field
+  digest=b3:2cdd82409ad8e919a495e06c9a863b03e7ee6b78d792dc7d8098d72480e2db2a file=cortex/cmd/two-model-smoke/main.go range=277:277 lang=go exported=true byte_range=9434:9452
+  sig=string
+EDGES
+  ^contains=matrix/cortex/cmd/two-model-smoke.agent
+
+NODE id=matrix/cortex/cmd/two-model-smoke.agent#Name kind=field
+  digest=b3:cfdb72525efabf9eaa7efc64b31a4f94eba41ff8a679714fb4085b25fe81f288 file=cortex/cmd/two-model-smoke/main.go range=276:276 lang=go exported=true byte_range=9414:9432
+  sig=string
+EDGES
+  ^contains=matrix/cortex/cmd/two-model-smoke.agent
+
+NODE id=matrix/cortex/cmd/two-model-smoke.agent#System kind=field
+  digest=b3:c2159fa12e963386f98169267869a3539d1dd5e7db1cc4c967ef275844c652d5 file=cortex/cmd/two-model-smoke/main.go range=278:278 lang=go exported=true byte_range=9454:9472
+  sig=string
+EDGES
+  ^contains=matrix/cortex/cmd/two-model-smoke.agent
+
+NODE id=matrix/cortex/cmd/two-model-smoke.agent#Temperature kind=field
+  digest=b3:d2e92a2880b983d77266571ea97888490646b64d5ce4c2e3b0192ad7a5ee6c96 file=cortex/cmd/two-model-smoke/main.go range=279:279 lang=go exported=true byte_range=9474:9493
+  sig=float64
+EDGES
+  ^contains=matrix/cortex/cmd/two-model-smoke.agent
+
+NODE id=matrix/cortex/cmd/two-model-smoke.clampInt kind=func
+  digest=b3:c9a294d1c001cc85de03810e6a1240ef488149c50533b99615d49b2874683fcc file=cortex/cmd/two-model-smoke/tools.go range=661:669 lang=go exported=false byte_range=22438:22540
+  sig=func clampInt(v, lo, hi int) int
+EDGES
+  ^defines=matrix/cortex/cmd/two-model-smoke/tools.go
+
+NODE id=matrix/cortex/cmd/two-model-smoke.defaultScenario kind=func
+  digest=b3:1f1cceab555e6b40e54c49f06b4fa2be2351391c869fea2482351c2b7ed5dcd3 file=cortex/cmd/two-model-smoke/scenario.go range=37:110 lang=go exported=false byte_range=1136:4677
+  sig=func defaultScenario() Scenario
+  doc=defaultScenario sets up collaborative knowledge construction. Agent\nA is the "Researcher": writes typed memories about a topic. Agent B\nis the "Reviewer": queries A's memories and asks for refinement /\nchallenges contradictions / proposes edges.\n\nBoth agents share one cortex actor; their identities (and the\nCreatedBy on each write) are "alice" (A, Researcher) and "bob" (B,\nReviewer). They see each other's writes via cortex_find /\ncortex_list and can build a connected memory graph.
+EDGES
+  ^defines=matrix/cortex/cmd/two-model-smoke/scenario.go
+
+NODE id=matrix/cortex/cmd/two-model-smoke.detectProvider kind=func
+  digest=b3:f190a6262e08c439107f03485b7283da87178e484a850ff41be23e31e4d1ab21 file=cortex/cmd/two-model-smoke/client.go range=52:64 lang=go exported=false byte_range=1305:1912
+  sig=func detectProvider(model string) (Provider, error)
+  doc=detectProvider maps a model string to its provider. Together's\ncatalog uses "openai/<model>" or "<vendor>/<model>" form; Fireworks\nuses "accounts/fireworks/models/<model>". Anything else returns an\nerror so misconfiguration fails loudly.
+EDGES
+  ^defines=matrix/cortex/cmd/two-model-smoke/client.go
+
+NODE id=matrix/cortex/cmd/two-model-smoke.die kind=func
+  digest=b3:3baed992359752f1d874fa4e69bf069b4b2370cccd2ebfb22684896fdcf39059 file=cortex/cmd/two-model-smoke/main.go range=323:327 lang=go exported=false byte_range=10743:10924
+  sig=func die(format string, args ...interface{})
+  doc=die prints a fatal message and exits with status 1.
+EDGES
+  ^defines=matrix/cortex/cmd/two-model-smoke/main.go
+
+NODE id=matrix/cortex/cmd/two-model-smoke.finalRun kind=func
+  digest=b3:e5b7c4334b0b0862f5ca7ed7f00707899c2f04b606c80016dc439b8632995028 file=cortex/cmd/two-model-smoke/main.go range=219:270 lang=go exported=false byte_range=7194:9220
+  sig=func finalRun(c *cortex.Cortex, tr *transcript, skip bool)
+  doc=finalRun captures pre/post OverallRoot via Cortex.Rebuild and asserts\nthey match. This is the strongest single-call cortex correctness\ncheck (research/04-cortex.md §13.4 "indexes are pure projection of\ncanonical state").
+EDGES
+  ^defines=matrix/cortex/cmd/two-model-smoke/main.go
+
+NODE id=matrix/cortex/cmd/two-model-smoke.floatOr kind=func
+  digest=b3:9dc16b9bab637d9da4f29e518bfbdef47fbf27af7e49e6b0fdb3de3ac5e7a827 file=cortex/cmd/two-model-smoke/tools.go range=639:652 lang=go exported=false byte_range=22091:22316
+  sig=func floatOr(v interface{}, def float64) float64
+EDGES
+  ^defines=matrix/cortex/cmd/two-model-smoke/tools.go
+
+NODE id=matrix/cortex/cmd/two-model-smoke.hexID kind=func
+  digest=b3:53acbe9873e5ccd169adf15ee7d0bc8c695e8933530a3247c4f6c4795700dc84 file=cortex/cmd/two-model-smoke/tools.go range=679:681 lang=go exported=false byte_range=22660:22728
+  sig=func hexID(id memory.ID) string
+EDGES
+  ^defines=matrix/cortex/cmd/two-model-smoke/tools.go
+
+NODE id=matrix/cortex/cmd/two-model-smoke.intOr kind=func
+  digest=b3:d44cd8da0ed41b924561510f2a0f232e8e18dedbc10db26d1a336aa855c32171 file=cortex/cmd/two-model-smoke/tools.go range=622:637 lang=go exported=false byte_range=21846:22089
+  sig=func intOr(v interface{}, def int) int
+EDGES
+  ^defines=matrix/cortex/cmd/two-model-smoke/tools.go
+
+NODE id=matrix/cortex/cmd/two-model-smoke.main kind=func
+  digest=b3:266b5e5ffd2c5e5075b922851d027841ee5f8aa4c287f676274d574709bdf7e6 file=cortex/cmd/two-model-smoke/main.go range=27:159 lang=go exported=false byte_range=590:5183
+  sig=func main()
+EDGES
+  ^defines=matrix/cortex/cmd/two-model-smoke/main.go
+
+NODE id=matrix/cortex/cmd/two-model-smoke.marshalErr kind=func
+  digest=b3:bb7f30aed4ae09a5a8ee9ed09734e76d2ccc1b80e49979453cd4aefe241eb46a file=cortex/cmd/two-model-smoke/tools.go range=600:603 lang=go exported=false byte_range=21447:21565
+  sig=func marshalErr(err error) string
+EDGES
+  ^defines=matrix/cortex/cmd/two-model-smoke/tools.go
+
+NODE id=matrix/cortex/cmd/two-model-smoke.memorySummary kind=func
+  digest=b3:514995acf56ca91198403de8aeffa5487364059db7fa160cd3efa6590062b994 file=cortex/cmd/two-model-smoke/tools.go range=581:598 lang=go exported=false byte_range=20864:21445
+  sig=func memorySummary(m *memory.Memory) map[string]interface{}
+EDGES
+  ^defines=matrix/cortex/cmd/two-model-smoke/tools.go
+
+NODE id=matrix/cortex/cmd/two-model-smoke.newTranscript kind=func
+  digest=b3:cb4b7a9c938a91f826bf1492b710fe0c1b9949869da55f0e2238dc0f66e39267 file=cortex/cmd/two-model-smoke/main.go range=290:290 lang=go exported=false byte_range=9723:9795
+  sig=func newTranscript(w io.Writer) *transcript
+EDGES
+  ^defines=matrix/cortex/cmd/two-model-smoke/main.go
+
+NODE id=matrix/cortex/cmd/two-model-smoke.oneLineSummary kind=func
+  digest=b3:fd5fb3fd65443a173285204e45303eea734f87861226fbe9aa8bc8ca311da151 file=cortex/cmd/two-model-smoke/main.go range=311:321 lang=go exported=false byte_range=10322:10741
+  sig=func oneLineSummary(p map[string]interface{}) string
+EDGES
+  ^defines=matrix/cortex/cmd/two-model-smoke/main.go
+
+NODE id=matrix/cortex/cmd/two-model-smoke.parseTypeName kind=func
+  digest=b3:d477ca432728f247e6b32534851df30fbbc74060bb09aee2b34bd9f8d189a013 file=cortex/cmd/two-model-smoke/typed.go range=110:132 lang=go exported=false byte_range=2701:3183
+  sig=func parseTypeName(name string) memory.Type
+EDGES
+  ^defines=matrix/cortex/cmd/two-model-smoke/typed.go
+
+NODE id=matrix/cortex/cmd/two-model-smoke.parseTypedJSON kind=func
+  digest=b3:78884fcdda9accfadc748d8c53fc926d69ccc3a20d7c8ed3a7e1689bff8635b0 file=cortex/cmd/two-model-smoke/typed.go range=23:108 lang=go exported=false byte_range=777:2699
+  sig=func parseTypedJSON(typeName, body string) (memory.TypedData, error)
+EDGES
+  ^defines=matrix/cortex/cmd/two-model-smoke/typed.go
+
+NODE id=matrix/cortex/cmd/two-model-smoke.providerEndpoint kind=func
+  digest=b3:fdd791d0d0b7f975a61b8fe9e3ad795fbd1f59462c6b863c3d63ae74e4f4420b file=cortex/cmd/two-model-smoke/client.go range=66:75 lang=go exported=false byte_range=1914:2209
+  sig=func providerEndpoint(p Provider) string
+  doc=providerEndpoint returns the chat-completions URL.
+EDGES
+  ^defines=matrix/cortex/cmd/two-model-smoke/client.go
+
+NODE id=matrix/cortex/cmd/two-model-smoke.providerKey kind=func
+  digest=b3:ceb3ba6c11a7ae676834c4a97e993389c18feefc1e553f75500d24f4937e5254 file=cortex/cmd/two-model-smoke/client.go range=77:93 lang=go exported=false byte_range=2211:2631
+  sig=func providerKey(p Provider) (string, error)
+  doc=providerKey reads the env var for the given provider.
+EDGES
+  ^defines=matrix/cortex/cmd/two-model-smoke/client.go
+
+NODE id=matrix/cortex/cmd/two-model-smoke.runOneTurn kind=func
+  digest=b3:1bd9efd694c8fd0e6fa046b96199008da03b6005a2802cb88ddd67b4f79ee321 file=cortex/cmd/two-model-smoke/main.go range=161:217 lang=go exported=false byte_range=5185:7192
+  sig=func runOneTurn(client *Client, ag *agent, tools []ToolDef, disp *Dispatcher, maxTools int, tr *transcript) (string, ChatUsage, error)
+  doc=runOneTurn drives a single agent through up to N tool calls, then\nreturns the final assistant text. Appends every message (assistant\n+ tool results) to the agent's History so cross-turn context is\npreserved.
+EDGES
+  ^defines=matrix/cortex/cmd/two-model-smoke/main.go
+
+NODE id=matrix/cortex/cmd/two-model-smoke.scenarioByName kind=func
+  digest=b3:3b9d22b94282d1c846016a8c839d303c751387e104a3c4ceaa954b9479f8ebb2 file=cortex/cmd/two-model-smoke/scenario.go range=28:35 lang=go exported=false byte_range=871:1134
+  sig=func scenarioByName(name string) (Scenario, error)
+  doc=scenarioByName returns the Scenario for the given name, or an error.
+EDGES
+  ^defines=matrix/cortex/cmd/two-model-smoke/scenario.go
+
+NODE id=matrix/cortex/cmd/two-model-smoke.stringOr kind=func
+  digest=b3:9cd5b94d9ba6711186a450a8ccab88ac5a2ec5c4c391867a0dd3fe13608df374 file=cortex/cmd/two-model-smoke/tools.go range=654:659 lang=go exported=false byte_range=22318:22436
+  sig=func stringOr(v interface{}, def string) string
+EDGES
+  ^defines=matrix/cortex/cmd/two-model-smoke/tools.go
+
+NODE id=matrix/cortex/cmd/two-model-smoke.stringSlice kind=func
+  digest=b3:626afb50dbd22672f7db01ca9ba80f3bcebc569c85bcc579d0c0386bedcea9c2 file=cortex/cmd/two-model-smoke/tools.go range=605:620 lang=go exported=false byte_range=21567:21844
+  sig=func stringSlice(v interface{}) []string
+EDGES
+  ^defines=matrix/cortex/cmd/two-model-smoke/tools.go
+
+NODE id=matrix/cortex/cmd/two-model-smoke.summarize kind=func
+  digest=b3:14228b25af4e958a4c91d1d7d97132a5381186366e73c13d1b6c66d341e866ce file=cortex/cmd/two-model-smoke/tools.go range=671:677 lang=go exported=false byte_range=22542:22658
+  sig=func summarize(s string) string
+EDGES
+  ^defines=matrix/cortex/cmd/two-model-smoke/tools.go
+
+NODE id=matrix/cortex/cmd/two-model-smoke.toolDefs kind=func
+  digest=b3:6a2d76490017e6cc7d960aab3e005d0285ccc3721342b4bcb19b674b2c166d4f file=cortex/cmd/two-model-smoke/tools.go range=23:266 lang=go exported=false byte_range=615:11314
+  sig=func toolDefs() []ToolDef
+  doc=toolDefs returns the static tool catalog advertised to the LLMs.\nSchemas are valid JSON Schema (subset OpenAI accepts).
+EDGES
+  ^defines=matrix/cortex/cmd/two-model-smoke/tools.go
+
+NODE id=matrix/cortex/cmd/two-model-smoke.transcript kind=type
+  digest=b3:458c952c7392632ef0f3d3586805195a53d0ddb1a7fd1521218d6c6d6d5ea762 file=cortex/cmd/two-model-smoke/main.go range=283:288 lang=go exported=false byte_range=9524:9721
+  sig=type transcript struct {\n	w io.Writer\n}
+  doc=transcript is a tiny JSONL writer plus a stderr mirror for live\nprogress visibility. Every line is one event with at least\n{"ts": ..., "kind": ...}.
+EDGES
+  contains=matrix/cortex/cmd/two-model-smoke.transcript#w,matrix/cortex/cmd/two-model-smoke.transcript.event
+  ^defines=matrix/cortex/cmd/two-model-smoke/main.go
+
+NODE id=matrix/cortex/cmd/two-model-smoke.transcript#w kind=field
+  digest=b3:a4bf749e5c77ac0335d1b9881be5117c35812571d1d6da20d8770c094ae91d57 file=cortex/cmd/two-model-smoke/main.go range=287:287 lang=go exported=false byte_range=9708:9719
+  sig=io.Writer
+EDGES
+  ^contains=matrix/cortex/cmd/two-model-smoke.transcript
+
+NODE id=matrix/cortex/cmd/two-model-smoke.transcript.event kind=method
+  digest=b3:51776232f22a2933a2ed98e101fc694dc516343bce11721708bc57962f35f3db file=cortex/cmd/two-model-smoke/main.go range=292:309 lang=go exported=false byte_range=9797:10320
+  sig=func (t *transcript) event(kind string, payload map[string]interface{})
+EDGES
+  ^contains=matrix/cortex/cmd/two-model-smoke.transcript
+  ^defines=matrix/cortex/cmd/two-model-smoke/main.go
+
+NODE id=matrix/cortex/cmd/two-model-smoke.truncate kind=func
+  digest=b3:f7b9ff1fb10bd8395f4a9a3acd883c19bb7a45c2954659533a198e672d555c68 file=cortex/cmd/two-model-smoke/client.go range=271:277 lang=go exported=false byte_range=8464:8618
+  sig=func truncate(s string, n int) string
+  doc=truncate is a tiny helper for log-line-friendly bodies.
+EDGES
+  ^defines=matrix/cortex/cmd/two-model-smoke/client.go
+
+NODE id=matrix/cortex/cmd/two-model-smoke/client.go kind=file
+  digest=b3:93b84b69b46639c857aa7f0c83e5965cf7f7e80e0ab40fdb79a88d706bfb9844 file=cortex/cmd/two-model-smoke/client.go range=1:279 lang=go exported=true
+EDGES
+  defines=matrix/cortex/cmd/two-model-smoke.ChatChoice,matrix/cortex/cmd/two-model-smoke.ChatErrorBody,matrix/cortex/cmd/two-model-smoke.ChatMessage,matrix/cortex/cmd/two-model-smoke.ChatRequest,matrix/cortex/cmd/two-model-smoke.ChatResponse,matrix/cortex/cmd/two-model-smoke.ChatUsage,matrix/cortex/cmd/two-model-smoke.Client,matrix/cortex/cmd/two-model-smoke.Client.Call,matrix/cortex/cmd/two-model-smoke.NewClient,matrix/cortex/cmd/two-model-smoke.Provider,matrix/cortex/cmd/two-model-smoke.Provider.String,matrix/cortex/cmd/two-model-smoke.ProviderFireworks,matrix/cortex/cmd/two-model-smoke.ProviderTogether,matrix/cortex/cmd/two-model-smoke.ToolCall,matrix/cortex/cmd/two-model-smoke.ToolCallFunc,matrix/cortex/cmd/two-model-smoke.ToolDef,matrix/cortex/cmd/two-model-smoke.ToolDefFunction,matrix/cortex/cmd/two-model-smoke.detectProvider,matrix/cortex/cmd/two-model-smoke.providerEndpoint,matrix/cortex/cmd/two-model-smoke.providerKey,matrix/cortex/cmd/two-model-smoke.truncate
+  ^contains=matrix/cortex/cmd/two-model-smoke
+
+NODE id=matrix/cortex/cmd/two-model-smoke/main.go kind=file
+  digest=b3:0b8e52ac131df75c6e7de2cf6b3625987b64699ea1fc36b7b19b2e8eab8a5ee5 file=cortex/cmd/two-model-smoke/main.go range=1:334 lang=go exported=true
+EDGES
+  defines=matrix/cortex/cmd/two-model-smoke._,matrix/cortex/cmd/two-model-smoke.agent,matrix/cortex/cmd/two-model-smoke.die,matrix/cortex/cmd/two-model-smoke.finalRun,matrix/cortex/cmd/two-model-smoke.main,matrix/cortex/cmd/two-model-smoke.newTranscript,matrix/cortex/cmd/two-model-smoke.oneLineSummary,matrix/cortex/cmd/two-model-smoke.runOneTurn,matrix/cortex/cmd/two-model-smoke.transcript,matrix/cortex/cmd/two-model-smoke.transcript.event
+  ^contains=matrix/cortex/cmd/two-model-smoke
+
+NODE id=matrix/cortex/cmd/two-model-smoke/scenario.go kind=file
+  digest=b3:d68c18454710ecbbb8f2b0a2fe7f92ebb263610b317cdae040c08d93c5d9bf2b file=cortex/cmd/two-model-smoke/scenario.go range=1:112 lang=go exported=true
+EDGES
+  defines=matrix/cortex/cmd/two-model-smoke.Scenario,matrix/cortex/cmd/two-model-smoke.defaultScenario,matrix/cortex/cmd/two-model-smoke.scenarioByName
+  ^contains=matrix/cortex/cmd/two-model-smoke
+
+NODE id=matrix/cortex/cmd/two-model-smoke/tools.go kind=file
+  digest=b3:af5cb90baad2d6399122d9e970649fb20f525ade3d69bb332c903017fe41a376 file=cortex/cmd/two-model-smoke/tools.go range=1:683 lang=go exported=true
+EDGES
+  defines=matrix/cortex/cmd/two-model-smoke.Dispatcher,matrix/cortex/cmd/two-model-smoke.Dispatcher.Dispatch,matrix/cortex/cmd/two-model-smoke.Dispatcher.cortexAddEdge,matrix/cortex/cmd/two-model-smoke.Dispatcher.cortexFind,matrix/cortex/cmd/two-model-smoke.Dispatcher.cortexList,matrix/cortex/cmd/two-model-smoke.Dispatcher.cortexListEdges,matrix/cortex/cmd/two-model-smoke.Dispatcher.cortexResolve,matrix/cortex/cmd/two-model-smoke.Dispatcher.cortexTombstone,matrix/cortex/cmd/two-model-smoke.Dispatcher.cortexUpdate,matrix/cortex/cmd/two-model-smoke.Dispatcher.cortexUpdateHead,matrix/cortex/cmd/two-model-smoke.Dispatcher.cortexWrite,matrix/cortex/cmd/two-model-smoke.Dispatcher.dispatch,matrix/cortex/cmd/two-model-smoke.clampInt,matrix/cortex/cmd/two-model-smoke.floatOr,matrix/cortex/cmd/two-model-smoke.hexID,matrix/cortex/cmd/two-model-smoke.intOr,matrix/cortex/cmd/two-model-smoke.marshalErr,matrix/cortex/cmd/two-model-smoke.memorySummary,matrix/cortex/cmd/two-model-smoke.stringOr,matrix/cortex/cmd/two-model-smoke.stringSlice,matrix/cortex/cmd/two-model-smoke.summarize,matrix/cortex/cmd/two-model-smoke.toolDefs
+  ^contains=matrix/cortex/cmd/two-model-smoke
+
+NODE id=matrix/cortex/cmd/two-model-smoke/typed.go kind=file
+  digest=b3:1707c485dd015cf949db66ace9197825a34a218115e4434bfa28712788e64ad5 file=cortex/cmd/two-model-smoke/typed.go range=1:134 lang=go exported=true
+EDGES
+  defines=matrix/cortex/cmd/two-model-smoke.parseTypeName,matrix/cortex/cmd/two-model-smoke.parseTypedJSON
+  ^contains=matrix/cortex/cmd/two-model-smoke

@@ -1,0 +1,503 @@
+# GENERATED gen=codegraph do-not-edit merkle=b3:2dc69ec8dbbe0231373534486cf12ff6fdb0eaad7b2dfdcbc4d73453c8542ee8
+
+NODE id=matrix/cassandra kind=package
+  digest=b3:81fd569e792b4ac194982a9bff572dbf1c00714cc65014e2272be7c1a7c446ca file=cassandra range=0:0 lang=go exported=true
+EDGES
+  contains=matrix/cassandra/adjudicator.go,matrix/cassandra/parse.go,matrix/cassandra/priors.go,matrix/cassandra/prompt.go,matrix/cassandra/verdict.go
+  ^contains=mod:matrix/cassandra
+
+NODE id=matrix/cassandra.Adjudicator kind=type
+  digest=b3:235432957a54e0592ea72281ceecd4109e41552fdabc7af56abbd379e23328c9 file=cassandra/adjudicator.go range=30:39 lang=go exported=true byte_range=1158:1549
+  sig=type Adjudicator struct {\n	// Primary is the cheap/fast auditor. Required.\n	Primary	Decoder\n	// Escalate is the stronger auditor consulted on low-certainty, high-stakes\n	// audits. Optional; nil disables escalation (single-call behaviour).\n	Escalate	Decoder\n	// LowCertainty overrides DefaultLowCertainty when > 0.\n	LowCertainty	float64\n}
+  doc=Adjudicator renders a Verdict from an AuditInput.
+EDGES
+  contains=matrix/cassandra.Adjudicator#Escalate,matrix/cassandra.Adjudicator#LowCertainty,matrix/cassandra.Adjudicator#Primary,matrix/cassandra.Adjudicator.Adjudicate,matrix/cassandra.Adjudicator.decode,matrix/cassandra.Adjudicator.lowCertainty
+  ^defines=matrix/cassandra/adjudicator.go
+
+NODE id=matrix/cassandra.Adjudicator#Escalate kind=field
+  digest=b3:ef9ff6966f32696a378f7c5156428c5398654d8240f23e6511a701dfe351ebfb file=cassandra/adjudicator.go range=34:36 lang=go exported=true byte_range=1304:1468
+  sig=cassandra.Decoder
+  doc=Escalate is the stronger auditor consulted on low-certainty, high-stakes\naudits. Optional; nil disables escalation (single-call behaviour).
+EDGES
+  ^contains=matrix/cassandra.Adjudicator
+
+NODE id=matrix/cassandra.Adjudicator#LowCertainty kind=field
+  digest=b3:4880ea39b5f4e761e9a7259953d5cb690e6d41755d7d27d1b1c5b0e669a2fdf2 file=cassandra/adjudicator.go range=37:38 lang=go exported=true byte_range=1470:1547
+  sig=float64
+  doc=LowCertainty overrides DefaultLowCertainty when > 0.
+EDGES
+  ^contains=matrix/cassandra.Adjudicator
+
+NODE id=matrix/cassandra.Adjudicator#Primary kind=field
+  digest=b3:502188e974e9f348989d5fba2d4bf8f6f7d27d268ba078301eccd7b8d5fdc049 file=cassandra/adjudicator.go range=32:33 lang=go exported=true byte_range=1238:1302
+  sig=cassandra.Decoder
+  doc=Primary is the cheap/fast auditor. Required.
+EDGES
+  ^contains=matrix/cassandra.Adjudicator
+
+NODE id=matrix/cassandra.Adjudicator.Adjudicate kind=method
+  digest=b3:6b527dd57bbe48d9a0916316edc2d20e66bcf78720c99a54597506de55980e59 file=cassandra/adjudicator.go range=59:79 lang=go exported=true byte_range=2350:3279
+  sig=func (a *Adjudicator) Adjudicate(ctx context.Context, in AuditInput) (*Verdict, error)
+  doc=Adjudicate renders the Verdict. On error (decode/parse failure) the caller is\nexpected to FAIL OPEN on reversible turns ([principles].fail_open_reversible,\ninvariant i_cass_5) — cassandra surfaces the error and never decides for them.
+EDGES
+  ^contains=matrix/cassandra.Adjudicator
+  ^defines=matrix/cassandra/adjudicator.go
+
+NODE id=matrix/cassandra.Adjudicator.decode kind=method
+  digest=b3:d669ce0bd50e9854634021580f84397f908277be1ad99a7b9d73dc84e14dc059 file=cassandra/adjudicator.go range=88:99 lang=go exported=false byte_range=3411:3831
+  sig=func (a *Adjudicator) decode(ctx context.Context, d Decoder, in AuditInput) (*Verdict, error)
+  doc=decode runs one decoder, parses, and normalizes the verdict.
+EDGES
+  ^contains=matrix/cassandra.Adjudicator
+  ^defines=matrix/cassandra/adjudicator.go
+
+NODE id=matrix/cassandra.Adjudicator.lowCertainty kind=method
+  digest=b3:47ca1ad6b8e620001b4e37dcccc71ca8e13ade68203faa78a68bc4dbbd498d0d file=cassandra/adjudicator.go range=81:86 lang=go exported=false byte_range=3281:3409
+  sig=func (a *Adjudicator) lowCertainty() float64
+EDGES
+  ^contains=matrix/cassandra.Adjudicator
+  ^defines=matrix/cassandra/adjudicator.go
+
+NODE id=matrix/cassandra.AuditInput kind=type
+  digest=b3:daaaee88e0ef012530f99083114c43799880fe0efce1c388b477304e7aad9953 file=cassandra/adjudicator.go range=41:57 lang=go exported=true byte_range=1551:2348
+  sig=type AuditInput struct {\n	// Request is the user's original request / contract to satisfy.\n	Request	string\n	// Evidence is the ground-truth execution digest (real tool calls + real\n	// results), built by the caller from its own rail (MCL plan tree / Neo\n	// working transcript).\n	Evidence	string\n	// HighStakes marks a turn that touched an irreversible seam (money / chain\n	// / file-overwrite / external-write) or makes claims-of-fact about\n	// external state. Such turns may escalate to the stronger auditor\n	// ([coupling].high_stakes).\n	HighStakes	bool\n	// Priors are the deterministic pre-pass signals; attached to the prompt as\n	// an advisory and used to gate escalation. Zero value = no priors.\n	Priors	PriorSignal\n}
+  doc=AuditInput is everything the adjudicator needs to render one verdict.
+EDGES
+  contains=matrix/cassandra.AuditInput#Evidence,matrix/cassandra.AuditInput#HighStakes,matrix/cassandra.AuditInput#Priors,matrix/cassandra.AuditInput#Request
+  ^defines=matrix/cassandra/adjudicator.go
+
+NODE id=matrix/cassandra.AuditInput#Evidence kind=field
+  digest=b3:75020b79f9d4e8f495b90988606e9a180b7ca791d55617adacda79e2392453c9 file=cassandra/adjudicator.go range=45:48 lang=go exported=true byte_range=1732:1919
+  sig=string
+  doc=Evidence is the ground-truth execution digest (real tool calls + real\nresults), built by the caller from its own rail (MCL plan tree / Neo\nworking transcript).
+EDGES
+  ^contains=matrix/cassandra.AuditInput
+
+NODE id=matrix/cassandra.AuditInput#HighStakes kind=field
+  digest=b3:ccbb759a0cbe066d4561874f1bfff4b0be1f50fa5b7614f9603f7a6ae79723fd file=cassandra/adjudicator.go range=49:53 lang=go exported=true byte_range=1921:2180
+  sig=bool
+  doc=HighStakes marks a turn that touched an irreversible seam (money / chain\n/ file-overwrite / external-write) or makes claims-of-fact about\nexternal state. Such turns may escalate to the stronger auditor\n([coupling].high_stakes).
+EDGES
+  ^contains=matrix/cassandra.AuditInput
+
+NODE id=matrix/cassandra.AuditInput#Priors kind=field
+  digest=b3:f0d07bd6294760b3b03fb9696a72600a6c69e850675eef3caa7f0e2032d0a70b file=cassandra/adjudicator.go range=54:56 lang=go exported=true byte_range=2182:2346
+  sig=cassandra.PriorSignal
+  doc=Priors are the deterministic pre-pass signals; attached to the prompt as\nan advisory and used to gate escalation. Zero value = no priors.
+EDGES
+  ^contains=matrix/cassandra.AuditInput
+
+NODE id=matrix/cassandra.AuditInput#Request kind=field
+  digest=b3:77d19aa23d4d43014b321a3e231d1ffc3ff77005542f79a5d7e63407c89ee3cd file=cassandra/adjudicator.go range=43:44 lang=go exported=true byte_range=1650:1730
+  sig=string
+  doc=Request is the user's original request / contract to satisfy.
+EDGES
+  ^contains=matrix/cassandra.AuditInput
+
+NODE id=matrix/cassandra.BuildAuditPrompt kind=func
+  digest=b3:12186a5207b8bff25a7c63bd1363d8ddba92bbad9153d87ca75d2adca1a68ba7 file=cassandra/prompt.go range=53:73 lang=go exported=true byte_range=5190:6107
+  sig=func BuildAuditPrompt(in AuditInput) string
+  doc=BuildAuditPrompt assembles the user-role prompt: the contract to satisfy, the\nexecuted ground truth, and (when any deterministic prior fired) a short hint\ndirecting the auditor's attention. The priors hint is advisory only — the\nauditor still renders the verdict.
+EDGES
+  ^defines=matrix/cassandra/prompt.go
+
+NODE id=matrix/cassandra.Coverage kind=type
+  digest=b3:c3c12823f1390f880c6ede9240506a0f0058c5857dfd0a1580eabd5137312c81 file=cassandra/verdict.go range=20:21 lang=go exported=true byte_range=1024:1120
+  sig=type Coverage string
+  doc=Coverage answers "was every explicitly requested deliverable produced?".
+EDGES
+  ^defines=matrix/cassandra/verdict.go
+
+NODE id=matrix/cassandra.CoverageFull kind=const
+  digest=b3:6f0bf361e40ae7c9bd8f792e8dff778ceb01d1091b453d826fcb8a1bac2275b8 file=cassandra/verdict.go range=24:26 lang=go exported=true byte_range=1131:1271
+  sig=cassandra.Coverage
+  doc=CoverageFull — every requested deliverable was produced by a real\nexecuted step with a real result.
+EDGES
+  ^defines=matrix/cassandra/verdict.go
+
+NODE id=matrix/cassandra.CoveragePartial kind=const
+  digest=b3:0b2f0a1a25d042f5454c72c58d2067177d1a5a30588fc1ccfeef746d2a9c4156 file=cassandra/verdict.go range=27:29 lang=go exported=true byte_range=1273:1429
+  sig=cassandra.Coverage
+  doc=CoveragePartial — at least one requested deliverable is still\nunsatisfied (the Missing list enumerates them).
+EDGES
+  ^defines=matrix/cassandra/verdict.go
+
+NODE id=matrix/cassandra.Decoder kind=interface
+  digest=b3:ff5eb6f6424c19efdaa670936889ab9c402b0a459f424b6752305912de3eccf1 file=cassandra/adjudicator.go range=19:24 lang=go exported=true byte_range=679:984
+  sig=type Decoder interface {\n	Decode(ctx context.Context, system, user string) (string, error)\n}
+  doc=Decoder runs one auditor LLM call: system + user prompt in, raw model text\nout. Implementations adapt whatever client the rail already uses (MCL/llm,\nNeo's llm package) so cassandra imports none of them.
+EDGES
+  ^defines=matrix/cassandra/adjudicator.go
+
+NODE id=matrix/cassandra.DefaultLowCertainty kind=const
+  digest=b3:4dc4e81207d8e22fc56fddb6d0cfe55af334f13031cf1698ec6894d07874c338 file=cassandra/adjudicator.go range=26:28 lang=go exported=true byte_range=986:1156
+  sig=untyped float
+  doc=DefaultLowCertainty is the certainty floor below which a high-stakes audit\nre-runs on the Escalate decoder (when one is configured).
+EDGES
+  ^defines=matrix/cassandra/adjudicator.go
+
+NODE id=matrix/cassandra.ParseVerdict kind=func
+  digest=b3:b700244eee08894431434b3d2414b5be95585f481cb782c4a326df309b49dde8 file=cassandra/parse.go range=96:127 lang=go exported=true byte_range=3295:4735
+  sig=func ParseVerdict(raw string) (*Verdict, error)
+  doc=ParseVerdict extracts the verdict object from raw auditor output. It scans\nevery balanced {...} object in order (an auditor occasionally wraps the\nverdict in reasoning prose or a trailing note that may itself contain\nbraces) and returns the first that BOTH parses as JSON AND carries at least\none recognized verdict field, so a stray brace group never shadows the real\nverdict. The returned Verdict is always Normalize()d.\n\nA content-free or unparseable output yields an error; the MCL/Neo gate is\nexpected to FAIL OPEN on that (a critic hiccup must never convert a clean\nrun into a failure — cassandra.frozen.kvx [principles].fail_open_reversible).
+EDGES
+  ^defines=matrix/cassandra/parse.go
+
+NODE id=matrix/cassandra.PriorInput kind=type
+  digest=b3:90740a9e86686d916efe92e8ad274274fb6fc19fd1f44e122df14a784e56b8ff file=cassandra/priors.go range=17:32 lang=go exported=true byte_range=711:1461
+  sig=type PriorInput struct {\n	// Evidence is the ground-truth execution digest (real tool calls + real\n	// results) the agent claims completion against.\n	Evidence	string\n	// FinishReason is the provider stop reason of the agent's final turn, when\n	// known (e.g. "length" means the answer was cut off mid-stream).\n	FinishReason	string\n	// RequestedDeliverables / ProducedResults let a caller that already counts\n	// these (the MCL plan tree, Neo's tool calls) surface an under-production\n	// signal. 0 = unknown.\n	RequestedDeliverables	int\n	ProducedResults		int\n}
+  doc=PriorInput is the raw material the deterministic priors scan. RequestedDeliverables\nand ProducedResults are optional caller hints; 0 means "unknown" and that\nsignal is skipped.
+EDGES
+  contains=matrix/cassandra.PriorInput#Evidence,matrix/cassandra.PriorInput#FinishReason,matrix/cassandra.PriorInput#ProducedResults,matrix/cassandra.PriorInput#RequestedDeliverables
+  ^defines=matrix/cassandra/priors.go
+
+NODE id=matrix/cassandra.PriorInput#Evidence kind=field
+  digest=b3:ba522e15ce5ca727f1083f5c9124b5cd4c55db267be0d5b368d89f8d86c3fd5a file=cassandra/priors.go range=21:23 lang=go exported=true byte_range=923:1062
+  sig=string
+  doc=Evidence is the ground-truth execution digest (real tool calls + real\nresults) the agent claims completion against.
+EDGES
+  ^contains=matrix/cassandra.PriorInput
+
+NODE id=matrix/cassandra.PriorInput#FinishReason kind=field
+  digest=b3:f25f9163f2d576cc91ffaa59631d8eaaff665cd453a663699e5a073f5565ba8b file=cassandra/priors.go range=24:26 lang=go exported=true byte_range=1064:1227
+  sig=string
+  doc=FinishReason is the provider stop reason of the agent's final turn, when\nknown (e.g. "length" means the answer was cut off mid-stream).
+EDGES
+  ^contains=matrix/cassandra.PriorInput
+
+NODE id=matrix/cassandra.PriorInput#ProducedResults kind=field
+  digest=b3:ed0a9b9dc7bc0e16bcf515f5ed34ad9dc7e76cc3d728384d55decad935e8a44f file=cassandra/priors.go range=31:31 lang=go exported=true byte_range=1434:1459
+  sig=int
+EDGES
+  ^contains=matrix/cassandra.PriorInput
+
+NODE id=matrix/cassandra.PriorInput#RequestedDeliverables kind=field
+  digest=b3:0e94415f732fd4c628e3d7a013efd7d22bfc7e768df363aa06793067474fa5d8 file=cassandra/priors.go range=27:30 lang=go exported=true byte_range=1229:1432
+  sig=int
+  doc=RequestedDeliverables / ProducedResults let a caller that already counts\nthese (the MCL plan tree, Neo's tool calls) surface an under-production\nsignal. 0 = unknown.
+EDGES
+  ^contains=matrix/cassandra.PriorInput
+
+NODE id=matrix/cassandra.PriorSignal kind=type
+  digest=b3:8ac79d5416647805a26ab869a74ffabc1d856c91e058c7fac4d563471d1aab0c file=cassandra/priors.go range=34:51 lang=go exported=true byte_range=1463:2384
+  sig=type PriorSignal struct {\n	// TruncationSuspect — the evidence contains truncation markers, so a\n	// result the agent treated as complete may have been cut off\n	// ([scope].in_scope "truncated_or_partial_reads_treated_as_complete").\n	TruncationSuspect	bool\n	// DegenerateEvidence — the evidence is empty or a "nothing ran" sentinel,\n	// so a completion claim has no ground truth behind it at all.\n	DegenerateEvidence	bool\n	// SelfReportedGaps — explicit "could not" / "unable" / TODO-style strings\n	// the agent itself emitted, which betray an unfinished task.\n	SelfReportedGaps	[]string\n	// FinishedByLength — the final turn stopped on a length cap (answer cut off).\n	FinishedByLength	bool\n	// UnderProduced — fewer results were produced than deliverables requested\n	// (only set when both counts are known/positive).\n	UnderProduced	bool\n}
+  doc=PriorSignal is the structured output of the deterministic pre-pass.
+EDGES
+  contains=matrix/cassandra.PriorSignal#DegenerateEvidence,matrix/cassandra.PriorSignal#FinishedByLength,matrix/cassandra.PriorSignal#SelfReportedGaps,matrix/cassandra.PriorSignal#TruncationSuspect,matrix/cassandra.PriorSignal#UnderProduced,matrix/cassandra.PriorSignal.FlagsCompletionRisk
+  ^defines=matrix/cassandra/priors.go
+
+NODE id=matrix/cassandra.PriorSignal#DegenerateEvidence kind=field
+  digest=b3:0b4bc27373167faf247a9995ced5e14594063a844610ea064e299df0f69431c0 file=cassandra/priors.go range=40:42 lang=go exported=true byte_range=1794:1959
+  sig=bool
+  doc=DegenerateEvidence — the evidence is empty or a "nothing ran" sentinel,\nso a completion claim has no ground truth behind it at all.
+EDGES
+  ^contains=matrix/cassandra.PriorSignal
+
+NODE id=matrix/cassandra.PriorSignal#FinishedByLength kind=field
+  digest=b3:1e4f41e7d2dae41abf7d8818ed9a30e1d9af264823ddcad484baf72f2c7b5cb6 file=cassandra/priors.go range=46:47 lang=go exported=true byte_range=2129:2232
+  sig=bool
+  doc=FinishedByLength — the final turn stopped on a length cap (answer cut off).
+EDGES
+  ^contains=matrix/cassandra.PriorSignal
+
+NODE id=matrix/cassandra.PriorSignal#SelfReportedGaps kind=field
+  digest=b3:8908dc4053e069b654e6d64a9600a6afff1ebef2544d1e235739e85c62aa632b file=cassandra/priors.go range=43:45 lang=go exported=true byte_range=1961:2127
+  sig=[]string
+  doc=SelfReportedGaps — explicit "could not" / "unable" / TODO-style strings\nthe agent itself emitted, which betray an unfinished task.
+EDGES
+  ^contains=matrix/cassandra.PriorSignal
+
+NODE id=matrix/cassandra.PriorSignal#TruncationSuspect kind=field
+  digest=b3:cbb8a2329c4cfb81c336cdeee74e6d6ba4a690af24ebc8394560be2379f7a599 file=cassandra/priors.go range=36:39 lang=go exported=true byte_range=1561:1792
+  sig=bool
+  doc=TruncationSuspect — the evidence contains truncation markers, so a\nresult the agent treated as complete may have been cut off\n([scope].in_scope "truncated_or_partial_reads_treated_as_complete").
+EDGES
+  ^contains=matrix/cassandra.PriorSignal
+
+NODE id=matrix/cassandra.PriorSignal#UnderProduced kind=field
+  digest=b3:a75585dbc5f9d6366ba3ebb33ab5513e83e08dec8bc238e83cfec6c36225d4a5 file=cassandra/priors.go range=48:50 lang=go exported=true byte_range=2234:2382
+  sig=bool
+  doc=UnderProduced — fewer results were produced than deliverables requested\n(only set when both counts are known/positive).
+EDGES
+  ^contains=matrix/cassandra.PriorSignal
+
+NODE id=matrix/cassandra.PriorSignal.FlagsCompletionRisk kind=method
+  digest=b3:17b0fed4ec30dfb674c67713039c8414218f8abff0f1aa065ad8fedb7aafa0f6 file=cassandra/priors.go range=53:62 lang=go exported=true byte_range=2386:2761
+  sig=func (p PriorSignal) FlagsCompletionRisk() bool
+  doc=FlagsCompletionRisk reports whether any prior fired. A true value means the\nauditor should look hard (and, on a high-stakes turn, may warrant escalation);\nit is NOT itself a verdict.
+EDGES
+  ^contains=matrix/cassandra.PriorSignal
+  ^defines=matrix/cassandra/priors.go
+
+NODE id=matrix/cassandra.ScanPriors kind=func
+  digest=b3:d40b8fe88e3892922eb0694390cdd97dec2dc0902df1f6cc472d2c99272a3590 file=cassandra/priors.go range=103:146 lang=go exported=true byte_range=3949:5090
+  sig=func ScanPriors(in PriorInput) PriorSignal
+  doc=ScanPriors runs the deterministic pre-pass over the evidence and returns the\nsignals that fired. It is pure and allocation-light.
+EDGES
+  ^defines=matrix/cassandra/priors.go
+
+NODE id=matrix/cassandra.SystemPrompt kind=const
+  digest=b3:c38a5b66ec810eb1a441c0e6b6f41adc7e5d6900460bfa7131510bc8ac3fef33 file=cassandra/prompt.go range=18:51 lang=go exported=true byte_range=738:5188
+  sig=untyped string
+  doc=SystemPrompt instructs the Cassandra auditor. Deliberately strict:\nintentions, plans, and partial work do NOT count — only deliverables backed\nby a real executed result.
+EDGES
+  ^defines=matrix/cassandra/prompt.go
+
+NODE id=matrix/cassandra.Verdict kind=type
+  digest=b3:fb8ee319e99b70ea6ad0d42fa64cf3462b3a0ed57e4475af2ad27191340268b5 file=cassandra/verdict.go range=32:64 lang=go exported=true byte_range=1433:3280
+  sig=type Verdict struct {\n	// Grounded is true only when every load-bearing claim in the answer is\n	// backed by a real executed step + real result in the evidence digest\n	// ([verdict.fields].grounded).\n	Grounded	bool	`json:"grounded"`\n	// Coverage is full only if every explicitly requested deliverable was\n	// produced; else partial ([verdict.fields].coverage).\n	Coverage	Coverage	`json:"coverage"`\n	// Missing enumerates still-unsatisfied requested deliverables, phrased as\n	// concrete actionable items a re-planner/continuation can turn into work.\n	Missing	[]string	`json:"missing"`\n	// UnverifiedClaims are assertions the agent made that NO executed evidence\n	// supports — the hallucination surface.\n	UnverifiedClaims	[]string	`json:"unverified_claims"`\n	// Assumptions are defaults the agent silently chose that materially shape\n	// the result.\n	Assumptions	[]string	`json:"assumptions"`\n	// OpenUnknowns is the absence-as-object field: things NOT confirmed that\n	// should have been. An empty list is an explicit, attributable claim of\n	// "no unknowns", never silence ([principles].make_absence_present).\n	OpenUnknowns	[]string	`json:"open_unknowns"`\n	// Certainty is Cassandra's confidence in her OWN verdict (0..1). Low\n	// certainty on a reversible turn defers to the agent (fail-open).\n	Certainty	float64	`json:"certainty"`\n	// Rationale is a one-line explanation (audit/transcript only).\n	Rationale	string	`json:"rationale"`\n}
+  doc=Verdict is the canonical structured judgement every Cassandra adjudication\nreturns ([verdict].schema). It generalizes the legacy\ncriticVerdict{Complete, Missing, Rationale}: Coverage+Missing carry the old\ndeliverable-coverage decision (CoverageComplete), while Grounded /\nUnverifiedClaims / Assumptions / OpenUnknowns add the evidence-grounding\ndimension that Neo's gate consumes (Sound).
+EDGES
+  contains=matrix/cassandra.Verdict#Assumptions,matrix/cassandra.Verdict#Certainty,matrix/cassandra.Verdict#Coverage,matrix/cassandra.Verdict#Grounded,matrix/cassandra.Verdict#Missing,matrix/cassandra.Verdict#OpenUnknowns,matrix/cassandra.Verdict#Rationale,matrix/cassandra.Verdict#UnverifiedClaims,matrix/cassandra.Verdict.CoverageComplete,matrix/cassandra.Verdict.Normalize,matrix/cassandra.Verdict.Sound
+  ^defines=matrix/cassandra/verdict.go
+
+NODE id=matrix/cassandra.Verdict#Assumptions kind=field
+  digest=b3:bcf5c48d07899f62a2c3ea46b050934b719985851aa8baae890ea369d20e3e74 file=cassandra/verdict.go range=52:54 lang=go exported=true byte_range=2601:2734
+  sig=[]string
+  doc=Assumptions are defaults the agent silently chose that materially shape\nthe result.
+EDGES
+  ^contains=matrix/cassandra.Verdict
+
+NODE id=matrix/cassandra.Verdict#Certainty kind=field
+  digest=b3:56633785345a72b0bbff4f772192e348c251e35e1b4053b9032363dc01234d09 file=cassandra/verdict.go range=59:61 lang=go exported=true byte_range=3001:3176
+  sig=float64
+  doc=Certainty is Cassandra's confidence in her OWN verdict (0..1). Low\ncertainty on a reversible turn defers to the agent (fail-open).
+EDGES
+  ^contains=matrix/cassandra.Verdict
+
+NODE id=matrix/cassandra.Verdict#Coverage kind=field
+  digest=b3:57dbcc3c5477e5e9af5fce5b59a1205e412b078dc218e39a1ad9b34f06c74453 file=cassandra/verdict.go range=43:45 lang=go exported=true byte_range=2074:2237
+  sig=cassandra.Coverage
+  doc=Coverage is full only if every explicitly requested deliverable was\nproduced; else partial ([verdict.fields].coverage).
+EDGES
+  ^contains=matrix/cassandra.Verdict
+
+NODE id=matrix/cassandra.Verdict#Grounded kind=field
+  digest=b3:73e3fd39068ee4ca18e7e616ad5dddd81535964499280518290c08b343472b09 file=cassandra/verdict.go range=39:42 lang=go exported=true byte_range=1863:2072
+  sig=bool
+  doc=Grounded is true only when every load-bearing claim in the answer is\nbacked by a real executed step + real result in the evidence digest\n([verdict.fields].grounded).
+EDGES
+  ^contains=matrix/cassandra.Verdict
+
+NODE id=matrix/cassandra.Verdict#Missing kind=field
+  digest=b3:cb0d0295c23d697c835aa11e23042e3a9c239783c85deac3c49e5ea22c3c9648 file=cassandra/verdict.go range=46:48 lang=go exported=true byte_range=2239:2424
+  sig=[]string
+  doc=Missing enumerates still-unsatisfied requested deliverables, phrased as\nconcrete actionable items a re-planner/continuation can turn into work.
+EDGES
+  ^contains=matrix/cassandra.Verdict
+
+NODE id=matrix/cassandra.Verdict#OpenUnknowns kind=field
+  digest=b3:797d84cf86496d30d844870da41f3fa8b8128bd890f525cbc69fb2d828908968 file=cassandra/verdict.go range=55:58 lang=go exported=true byte_range=2736:2999
+  sig=[]string
+  doc=OpenUnknowns is the absence-as-object field: things NOT confirmed that\nshould have been. An empty list is an explicit, attributable claim of\n"no unknowns", never silence ([principles].make_absence_present).
+EDGES
+  ^contains=matrix/cassandra.Verdict
+
+NODE id=matrix/cassandra.Verdict#Rationale kind=field
+  digest=b3:135c689c517f0fc9e45595bcb3577b14c58064bc19228fb4593bd6cfaaf7b959 file=cassandra/verdict.go range=62:63 lang=go exported=true byte_range=3178:3278
+  sig=string
+  doc=Rationale is a one-line explanation (audit/transcript only).
+EDGES
+  ^contains=matrix/cassandra.Verdict
+
+NODE id=matrix/cassandra.Verdict#UnverifiedClaims kind=field
+  digest=b3:e7f158e46458ecfa840c0065fe4a5fec02b3bf3b51e198a6c95c4d296c61f6d8 file=cassandra/verdict.go range=49:51 lang=go exported=true byte_range=2426:2599
+  sig=[]string
+  doc=UnverifiedClaims are assertions the agent made that NO executed evidence\nsupports — the hallucination surface.
+EDGES
+  ^contains=matrix/cassandra.Verdict
+
+NODE id=matrix/cassandra.Verdict.CoverageComplete kind=method
+  digest=b3:97b246778da953d2072a6dcb283e489340eec51a46385536347221ea7ffbaa7a file=cassandra/verdict.go range=110:117 lang=go exported=true byte_range=4817:5309
+  sig=func (v *Verdict) CoverageComplete() bool
+  doc=CoverageComplete reports the legacy completeness-critic decision: every\nrequested deliverable was produced ([seams.mcl]). This is the gate the MCL\nre-home consults, so its behaviour is byte-identical to the old\ncriticVerdict.Complete (Coverage==full AND no Missing items). Grounding does\nNOT enter this gate — that is reserved for Sound (Neo's gate, Phase 3).
+EDGES
+  ^contains=matrix/cassandra.Verdict
+  ^defines=matrix/cassandra/verdict.go
+
+NODE id=matrix/cassandra.Verdict.Normalize kind=method
+  digest=b3:3ec5eff5ba4b3ca94b5afdbd4bc04443d9a73580d2d17d43a4e85f03b1f7a563 file=cassandra/verdict.go range=66:108 lang=go exported=true byte_range=3282:4815
+  sig=func (v *Verdict) Normalize()
+  doc=Normalize trims blank list entries and applies the coherence guards\n([verdict.coherence_guards]) that bias every incoherent verdict toward MORE\nwork, never toward a false success ([principles].coherence_toward_more_work,\ninvariant i_cass_7):\n\n	g1 — Coverage=full with a non-empty Missing list -> force Coverage=partial.\n	g2 — Grounded=true with non-empty UnverifiedClaims -> force Grounded=false.\n\nThere is no citation-matching guard: completion is judged by whether the\nOUTCOME satisfies the GOAL over the executed transcript (grounded +\nunverified_claims), never by substring-matching refs the agent typed.
+EDGES
+  ^contains=matrix/cassandra.Verdict
+  ^defines=matrix/cassandra/verdict.go
+
+NODE id=matrix/cassandra.Verdict.Sound kind=method
+  digest=b3:c6aefd6353dff8eb1eb4864a6e4833027018577db7e222f06e2d124b35f41b0f file=cassandra/verdict.go range=119:124 lang=go exported=true byte_range=5311:5651
+  sig=func (v *Verdict) Sound() bool
+  doc=Sound reports the full grounded verdict Neo's completion gate consults\n(Phase 3): every deliverable produced AND every load-bearing claim grounded\nin real evidence ([coupling].high_stakes). Stricter than CoverageComplete.
+EDGES
+  ^contains=matrix/cassandra.Verdict
+  ^defines=matrix/cassandra/verdict.go
+
+NODE id=matrix/cassandra.balancedFrom kind=func
+  digest=b3:fb52349fea38a1a954c68fc3a2150c5e6d71083b74b02ba60a8b100ec9d80f5b file=cassandra/parse.go range=151:184 lang=go exported=false byte_range=5385:6069
+  sig=func balancedFrom(s string, start int) (string, int)
+  doc=balancedFrom returns the balanced object starting at s[start]=='{' and the\nindex just past its closing brace. On an unbalanced tail it returns\n("", start). Brace counting is string- and escape-aware.
+EDGES
+  ^defines=matrix/cassandra/parse.go
+
+NODE id=matrix/cassandra.candidateObjects kind=func
+  digest=b3:1f40b83da7aae8501927fc5429fb0c4224812512612c0261ca6dee01957ab260 file=cassandra/parse.go range=129:149 lang=go exported=false byte_range=4737:5383
+  sig=func candidateObjects(s string) []string
+  doc=candidateObjects returns the balanced top-level {...} objects in s, in order.\nBrace counting ignores braces inside JSON string literals and respects\nbackslash escapes; a nested object is part of its enclosing object, not a\nseparate candidate. Scanning stops at the first unbalanced tail (no complete\nobject can follow an unclosed one).
+EDGES
+  ^defines=matrix/cassandra/parse.go
+
+NODE id=matrix/cassandra.cleanList kind=func
+  digest=b3:a875bbd84af0fe55e1cc07ad771f0a2bf2ba8705a8d103071ff33ba803fb79aa file=cassandra/verdict.go range=126:138 lang=go exported=false byte_range=5653:5929
+  sig=func cleanList(in []string) []string
+  doc=cleanList trims whitespace and drops blank entries while preserving order.
+EDGES
+  ^defines=matrix/cassandra/verdict.go
+
+NODE id=matrix/cassandra.degenerateSentinels kind=var
+  digest=b3:8988b9dddc34d1b7b8a115bd759c750d72036e9526f06e07670284e947fcc09d file=cassandra/priors.go range=80:85 lang=go exported=false byte_range=3392:3632
+  sig=[]string
+  doc=degenerateSentinels are the exact "nothing of substance ran" digests the MCL\ndigest builder emits, plus the empty string.
+EDGES
+  ^defines=matrix/cassandra/priors.go
+
+NODE id=matrix/cassandra.priorsHint kind=func
+  digest=b3:d7e78a76b0cf6ae13f39ee90d1c2e74ab8bc060e353992ec77e00f0fe4a230ba file=cassandra/prompt.go range=75:95 lang=go exported=false byte_range=6109:7035
+  sig=func priorsHint(p PriorSignal) string
+  doc=priorsHint renders the fired deterministic priors as a short advisory list.\nReturns "" when nothing fired.
+EDGES
+  ^defines=matrix/cassandra/prompt.go
+
+NODE id=matrix/cassandra.selfReportGapPhrases kind=var
+  digest=b3:4285230816579479cbb9c509da184fd4456d315d76899d91c55f5f4d3bea9513 file=cassandra/priors.go range=87:101 lang=go exported=false byte_range=3634:3947
+  sig=[]string
+  doc=selfReportGapPhrases are agent-emitted admissions of an unfinished step.
+EDGES
+  ^defines=matrix/cassandra/priors.go
+
+NODE id=matrix/cassandra.stripFences kind=func
+  digest=b3:4be1941d874541b3ee8d73605f2488ec3953895e831af352bf5c2cb0e7818657 file=cassandra/parse.go range=186:205 lang=go exported=false byte_range=6071:6651
+  sig=func stripFences(raw string) string
+  doc=stripFences removes a leading ```json / ``` code fence wrapper if present,\nleaving the inner content. It is intentionally lenient: if no fence is found\nthe input is returned unchanged.
+EDGES
+  ^defines=matrix/cassandra/parse.go
+
+NODE id=matrix/cassandra.truncateForErr kind=func
+  digest=b3:083b64da0e47e17a4a06e1512edc74c2bfc184d5be45c979ff838c8d54104b20 file=cassandra/parse.go range=207:213 lang=go exported=false byte_range=6653:6823
+  sig=func truncateForErr(s string, n int) string
+  doc=truncateForErr bounds a string for inclusion in an error message.
+EDGES
+  ^defines=matrix/cassandra/parse.go
+
+NODE id=matrix/cassandra.truncationMarkers kind=var
+  digest=b3:d8e3679066dcfede7c02a6d3b8a3669d6bcc3a26ca4e0eb8e18c93bd1ad90e96 file=cassandra/priors.go range=64:78 lang=go exported=false byte_range=2763:3390
+  sig=[]string
+  doc=truncationMarkers are substrings that strongly suggest a tool result or read\nwas cut off before completion — i.e. the AGENT itself saw only part of the\ndata (a partial file/list read, a capped result). Kept conservative and\nkeyed on explicit truncation LANGUAGE to avoid false positives; we\ndeliberately do NOT key on the digest builder's own "…" compression marker,\nbecause that truncates the auditor's copy, not what the agent perceived.
+EDGES
+  ^defines=matrix/cassandra/priors.go
+
+NODE id=matrix/cassandra.verdictDTO kind=type
+  digest=b3:43b725c8c96fb2fc724b79774cfe8ca33dc6e2533a0bc985c691fe125f6c4264 file=cassandra/parse.go range=18:31 lang=go exported=false byte_range=605:1305
+  sig=type verdictDTO struct {\n	Grounded		*bool		`json:"grounded"`\n	Coverage		string		`json:"coverage"`\n	Complete		*bool		`json:"complete"`	// legacy criticVerdict field\n	Missing			[]string	`json:"missing"`\n	UnverifiedClaims	[]string	`json:"unverified_claims"`\n	Assumptions		[]string	`json:"assumptions"`\n	OpenUnknowns		[]string	`json:"open_unknowns"`\n	Certainty		*float64	`json:"certainty"`\n	Rationale		string		`json:"rationale"`\n}
+  doc=verdictDTO is the wire shape parsed from the auditor. Pointers distinguish\n"field omitted" from "field present and zero" so omitted fields can be\ninferred coherently rather than defaulting to a misleading value.
+EDGES
+  contains=matrix/cassandra.verdictDTO#Assumptions,matrix/cassandra.verdictDTO#Certainty,matrix/cassandra.verdictDTO#Complete,matrix/cassandra.verdictDTO#Coverage,matrix/cassandra.verdictDTO#Grounded,matrix/cassandra.verdictDTO#Missing,matrix/cassandra.verdictDTO#OpenUnknowns,matrix/cassandra.verdictDTO#Rationale,matrix/cassandra.verdictDTO#UnverifiedClaims,matrix/cassandra.verdictDTO.recognized,matrix/cassandra.verdictDTO.toVerdict
+  ^defines=matrix/cassandra/parse.go
+
+NODE id=matrix/cassandra.verdictDTO#Assumptions kind=field
+  digest=b3:6e53ea179ceaa5414681a2da5717329dd884871771d5a1a7b53435fdb66094d9 file=cassandra/parse.go range=27:27 lang=go exported=true byte_range=1115:1161
+  sig=[]string
+EDGES
+  ^contains=matrix/cassandra.verdictDTO
+
+NODE id=matrix/cassandra.verdictDTO#Certainty kind=field
+  digest=b3:d2150f2e0d17f10b39f395899b9f0b21705fd068c761451ad04faad8f5bff781 file=cassandra/parse.go range=29:29 lang=go exported=true byte_range=1213:1257
+  sig=*float64
+EDGES
+  ^contains=matrix/cassandra.verdictDTO
+
+NODE id=matrix/cassandra.verdictDTO#Complete kind=field
+  digest=b3:6bfbfb528fc8bfdd2e5015dafba2037d2b2a16f93cdeb9dab8dc8d6ac3cbd7d9 file=cassandra/parse.go range=24:24 lang=go exported=true byte_range=942:985
+  sig=*bool
+EDGES
+  ^contains=matrix/cassandra.verdictDTO
+
+NODE id=matrix/cassandra.verdictDTO#Coverage kind=field
+  digest=b3:d41aad3cd9f54c4dbbfd9a8b3ab55f56e86e8015ff0620fae991166f1f6ba3dd file=cassandra/parse.go range=23:23 lang=go exported=true byte_range=897:940
+  sig=string
+EDGES
+  ^contains=matrix/cassandra.verdictDTO
+
+NODE id=matrix/cassandra.verdictDTO#Grounded kind=field
+  digest=b3:b007a0b115b2d2f2ddd699fdb35f49a577283baee342b7f4f3837aae0169fb64 file=cassandra/parse.go range=22:22 lang=go exported=true byte_range=852:895
+  sig=*bool
+EDGES
+  ^contains=matrix/cassandra.verdictDTO
+
+NODE id=matrix/cassandra.verdictDTO#Missing kind=field
+  digest=b3:12682451803b05efc582cb5b68906f961cf7e4cc543bed1b04d4f75259571039 file=cassandra/parse.go range=25:25 lang=go exported=true byte_range=1017:1059
+  sig=[]string
+EDGES
+  ^contains=matrix/cassandra.verdictDTO
+
+NODE id=matrix/cassandra.verdictDTO#OpenUnknowns kind=field
+  digest=b3:98a5402f573c7bb3dcebfde5db12946f5a75737a17ab27eab19b1597af09cde0 file=cassandra/parse.go range=28:28 lang=go exported=true byte_range=1163:1211
+  sig=[]string
+EDGES
+  ^contains=matrix/cassandra.verdictDTO
+
+NODE id=matrix/cassandra.verdictDTO#Rationale kind=field
+  digest=b3:e3f494c873b4c396e376e1d36e9d0be7be4c3ef93f64a1ecea77ef0067836225 file=cassandra/parse.go range=30:30 lang=go exported=true byte_range=1259:1303
+  sig=string
+EDGES
+  ^contains=matrix/cassandra.verdictDTO
+
+NODE id=matrix/cassandra.verdictDTO#UnverifiedClaims kind=field
+  digest=b3:a9f41e1dbd809934157d7d76a9ff6c9fa34f5b4d826295b90b2291ec5c978e82 file=cassandra/parse.go range=26:26 lang=go exported=true byte_range=1061:1113
+  sig=[]string
+EDGES
+  ^contains=matrix/cassandra.verdictDTO
+
+NODE id=matrix/cassandra.verdictDTO.recognized kind=method
+  digest=b3:522483910ceaf1e29cc6c5d11b9f1b36eb89dd0287eae036baca93e71a9dea46 file=cassandra/parse.go range=33:46 lang=go exported=false byte_range=1307:1858
+  sig=func (dto verdictDTO) recognized() bool
+  doc=recognized reports whether the parsed object carries at least one verdict\nfield. It lets ParseVerdict skip a stray brace group (e.g. a JSON snippet a\nreasoning model embedded in prose) and find the real verdict object.
+EDGES
+  ^contains=matrix/cassandra.verdictDTO
+  ^defines=matrix/cassandra/parse.go
+
+NODE id=matrix/cassandra.verdictDTO.toVerdict kind=method
+  digest=b3:5d2400d3ed3351954b5c53845d30eff7869cee1b6884dd97a458337437e4e676 file=cassandra/parse.go range=48:94 lang=go exported=false byte_range=1860:3293
+  sig=func (dto verdictDTO) toVerdict() *Verdict
+  doc=toVerdict maps the DTO to a normalized Verdict. Omitted fields are inferred:\ncoverage falls back to the legacy "complete" flag or the Missing list;\ngrounded falls back to "no unverified claims". Coherence guards are applied\nvia Normalize.
+EDGES
+  ^contains=matrix/cassandra.verdictDTO
+  ^defines=matrix/cassandra/parse.go
+
+NODE id=matrix/cassandra/adjudicator.go kind=file
+  digest=b3:7e3278a11ffcd65ed789b44de1dc0b199ce27aaea4486a219c749cc84584ad39 file=cassandra/adjudicator.go range=1:101 lang=go exported=true
+EDGES
+  defines=matrix/cassandra.Adjudicator,matrix/cassandra.Adjudicator.Adjudicate,matrix/cassandra.Adjudicator.decode,matrix/cassandra.Adjudicator.lowCertainty,matrix/cassandra.AuditInput,matrix/cassandra.Decoder,matrix/cassandra.DefaultLowCertainty
+  ^contains=matrix/cassandra
+
+NODE id=matrix/cassandra/parse.go kind=file
+  digest=b3:61939d6c25efe01987c66937cf098ff9458c401db3ee3b4662958522d93ba9f7 file=cassandra/parse.go range=1:215 lang=go exported=true
+EDGES
+  defines=matrix/cassandra.ParseVerdict,matrix/cassandra.balancedFrom,matrix/cassandra.candidateObjects,matrix/cassandra.stripFences,matrix/cassandra.truncateForErr,matrix/cassandra.verdictDTO,matrix/cassandra.verdictDTO.recognized,matrix/cassandra.verdictDTO.toVerdict
+  ^contains=matrix/cassandra
+
+NODE id=matrix/cassandra/priors.go kind=file
+  digest=b3:d0e8a682bb2bc1847a7f60468f77b13f07075b11ad4056522d961b9a752fb180 file=cassandra/priors.go range=1:148 lang=go exported=true
+EDGES
+  defines=matrix/cassandra.PriorInput,matrix/cassandra.PriorSignal,matrix/cassandra.PriorSignal.FlagsCompletionRisk,matrix/cassandra.ScanPriors,matrix/cassandra.degenerateSentinels,matrix/cassandra.selfReportGapPhrases,matrix/cassandra.truncationMarkers
+  ^contains=matrix/cassandra
+
+NODE id=matrix/cassandra/prompt.go kind=file
+  digest=b3:32016c38568f656b46fccb883cd7a2194bdfadb82d249b787347f810d3dea1dc file=cassandra/prompt.go range=1:97 lang=go exported=true
+EDGES
+  defines=matrix/cassandra.BuildAuditPrompt,matrix/cassandra.SystemPrompt,matrix/cassandra.priorsHint
+  ^contains=matrix/cassandra
+
+NODE id=matrix/cassandra/verdict.go kind=file
+  digest=b3:0a0aa001f881c2533e4d9dbf2e1101dedb9113eb4aba09c4cb4ef9437b083cf5 file=cassandra/verdict.go range=1:140 lang=go exported=true
+EDGES
+  defines=matrix/cassandra.Coverage,matrix/cassandra.CoverageFull,matrix/cassandra.CoveragePartial,matrix/cassandra.Verdict,matrix/cassandra.Verdict.CoverageComplete,matrix/cassandra.Verdict.Normalize,matrix/cassandra.Verdict.Sound,matrix/cassandra.cleanList
+  ^contains=matrix/cassandra

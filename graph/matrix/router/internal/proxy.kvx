@@ -1,0 +1,295 @@
+# GENERATED gen=codegraph do-not-edit merkle=b3:2dc69ec8dbbe0231373534486cf12ff6fdb0eaad7b2dfdcbc4d73453c8542ee8
+
+NODE id=matrix/router/internal/proxy kind=package
+  digest=b3:148ec6c763d53b6808bffd70bd927aa767dc539c693966192394325183a80c3a file=router/internal/proxy range=0:0 lang=go exported=true
+EDGES
+  contains=matrix/router/internal/proxy/proxy.go,matrix/router/internal/proxy/wake.go
+  ^contains=mod:matrix/router
+
+NODE id=matrix/router/internal/proxy.Email kind=func
+  digest=b3:b9c7003196b89fff7e21cd0f55242a2a2615ae12281f0dffbd6f8a9d697d71c2 file=router/internal/proxy/proxy.go range=105:111 lang=go exported=true byte_range=3825:4009
+  sig=func Email(ctx context.Context) string
+  doc=Email extracts the verified Supabase email claim, "" when absent.
+EDGES
+  ^defines=matrix/router/internal/proxy/proxy.go
+
+NODE id=matrix/router/internal/proxy.Handler kind=type
+  digest=b3:7712ec4d06bd40fac866230210549e37091fb0c2a1d952264f9c2b7ce90bac2f file=router/internal/proxy/proxy.go range=47:73 lang=go exported=true byte_range=1624:2926
+  sig=type Handler struct {\n	DB		*db.DB\n	Prov		provision.Provisioner\n	DaemonPort	string		// backend listen port (e.g. "8080")\n	CodyPort	string		// codyd listen port (e.g. "8090"); "" disables /cody routing\n	WakeTimeout	time.Duration	// environment wake deadline\n	ProbeInterval	time.Duration	// poll cadence inside Wake + readiness probe\n	ReadyTimeout	time.Duration	// deadline for the daemon HTTP server to accept connections post-wake\n	Logf		func(format string, args ...interface{})\n\n	// Provision, when non-nil, auto-provisions an environment for an\n	// authenticated user with no row yet (first-request onboarding).\n	// Nil preserves the legacy 404 "not provisioned" response.\n	Provision	Provisioner\n\n	// once holds the assembled httputil.ReverseProxy so per-request work\n	// is just URL rewrite + Director.\n	once	*httputil.ReverseProxy\n}
+  doc=Handler builds an http.Handler that routes authenticated requests\nto the backing environment for the JWT subject.\n\nThe JWT verification + extraction of the supabase user id is handled\nupstream by middleware (mw package); this handler reads the user id\nfrom request context using the SubjectKey. If the context value is\nmissing, the handler returns 500 (programmer error: middleware\nmisordered).
+EDGES
+  contains=matrix/router/internal/proxy.Handler#CodyPort,matrix/router/internal/proxy.Handler#DB,matrix/router/internal/proxy.Handler#DaemonPort,matrix/router/internal/proxy.Handler#Logf,matrix/router/internal/proxy.Handler#ProbeInterval,matrix/router/internal/proxy.Handler#Prov,matrix/router/internal/proxy.Handler#Provision,matrix/router/internal/proxy.Handler#ReadyTimeout,matrix/router/internal/proxy.Handler#WakeTimeout,matrix/router/internal/proxy.Handler#once,matrix/router/internal/proxy.Handler.ServeHTTP,matrix/router/internal/proxy.Handler.WakeHandler,matrix/router/internal/proxy.Handler.deliverChat,matrix/router/internal/proxy.Handler.forward,matrix/router/internal/proxy.Handler.waitDaemonReady
+  ^defines=matrix/router/internal/proxy/proxy.go
+
+NODE id=matrix/router/internal/proxy.Handler#CodyPort kind=field
+  digest=b3:33fbd69ac3ffb53bc537ec8bf630d492d7b6c38c0d9d355ba366a04583a4bc42 file=router/internal/proxy/proxy.go range=59:59 lang=go exported=true byte_range=2190:2210
+  sig=string
+EDGES
+  ^contains=matrix/router/internal/proxy.Handler
+
+NODE id=matrix/router/internal/proxy.Handler#DB kind=field
+  digest=b3:c4ed14f53a93d1f8e1817817b1a72f432d3c9ec1963c7763c9bbc2f1529c0fe0 file=router/internal/proxy/proxy.go range=56:56 lang=go exported=true byte_range=2065:2085
+  sig=*db.DB
+EDGES
+  ^contains=matrix/router/internal/proxy.Handler
+
+NODE id=matrix/router/internal/proxy.Handler#DaemonPort kind=field
+  digest=b3:d9340a5e3b73065ea66252da90f1b5d43e8a8ffd23030d864d401137ea1adf89 file=router/internal/proxy/proxy.go range=58:58 lang=go exported=true byte_range=2124:2144
+  sig=string
+EDGES
+  ^contains=matrix/router/internal/proxy.Handler
+
+NODE id=matrix/router/internal/proxy.Handler#Logf kind=field
+  digest=b3:cbd0cf9197dd0379327135b5c0d1d78163a33714244847fbe33f4dd899ee8fb3 file=router/internal/proxy/proxy.go range=63:63 lang=go exported=true byte_range=2514:2568
+  sig=func(format string, args ...interface{})
+EDGES
+  ^contains=matrix/router/internal/proxy.Handler
+
+NODE id=matrix/router/internal/proxy.Handler#ProbeInterval kind=field
+  digest=b3:331715a50c73bd68909bc99758a780062132e81b0a69899166d943f4c2aa1e7a file=router/internal/proxy/proxy.go range=61:61 lang=go exported=true byte_range=2339:2366
+  sig=time.Duration
+EDGES
+  ^contains=matrix/router/internal/proxy.Handler
+
+NODE id=matrix/router/internal/proxy.Handler#Prov kind=field
+  digest=b3:3ea253304b8adcc8abf7d105c0df5f20065627c74cabc86927d858bbda181a59 file=router/internal/proxy/proxy.go range=57:57 lang=go exported=true byte_range=2087:2122
+  sig=provision.Provisioner
+EDGES
+  ^contains=matrix/router/internal/proxy.Handler
+
+NODE id=matrix/router/internal/proxy.Handler#Provision kind=field
+  digest=b3:9ad4b2828af02a03bdfed5606b6410cc92e0128cfd20d640a2d19621bd322b77 file=router/internal/proxy/proxy.go range=65:68 lang=go exported=true byte_range=2571:2787
+  sig=proxy.Provisioner
+  doc=Provision, when non-nil, auto-provisions an environment for an\nauthenticated user with no row yet (first-request onboarding).\nNil preserves the legacy 404 "not provisioned" response.
+EDGES
+  ^contains=matrix/router/internal/proxy.Handler
+
+NODE id=matrix/router/internal/proxy.Handler#ReadyTimeout kind=field
+  digest=b3:28748df9eeff2faf568f39f16f0116effbf7fbf31b02039a19ad2fa48c4bc594 file=router/internal/proxy/proxy.go range=62:62 lang=go exported=true byte_range=2414:2441
+  sig=time.Duration
+EDGES
+  ^contains=matrix/router/internal/proxy.Handler
+
+NODE id=matrix/router/internal/proxy.Handler#WakeTimeout kind=field
+  digest=b3:4e7c622dabdc43f704c5eab5389abe1877c3bcc858ad21d99ec5e798a4e60e1e file=router/internal/proxy/proxy.go range=60:60 lang=go exported=true byte_range=2281:2308
+  sig=time.Duration
+EDGES
+  ^contains=matrix/router/internal/proxy.Handler
+
+NODE id=matrix/router/internal/proxy.Handler#once kind=field
+  digest=b3:2d3b77e565e7943de30efbbaf74c6e5874ccce56588c22a50085a2acfc5bc366 file=router/internal/proxy/proxy.go range=70:72 lang=go exported=false byte_range=2790:2924
+  sig=*httputil.ReverseProxy
+  doc=once holds the assembled httputil.ReverseProxy so per-request work\nis just URL rewrite + Director.
+EDGES
+  ^contains=matrix/router/internal/proxy.Handler
+
+NODE id=matrix/router/internal/proxy.Handler.ServeHTTP kind=method
+  digest=b3:0409a48ac89fe5a46ddf5eb6f6ce6a0c78e25d8ee8b18792051347c1eea62a52 file=router/internal/proxy/proxy.go range=156:218 lang=go exported=true byte_range=5509:7607
+  sig=func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request)
+  doc=ServeHTTP implements http.Handler.
+EDGES
+  ^contains=matrix/router/internal/proxy.Handler
+  ^defines=matrix/router/internal/proxy/proxy.go
+
+NODE id=matrix/router/internal/proxy.Handler.WakeHandler kind=method
+  digest=b3:6933c0cb68dd2409c29bfe1c1c5eb370b76b56b6836ef6ba9b284e0afe2d710a file=router/internal/proxy/wake.go range=45:140 lang=go exported=true byte_range=1507:4951
+  sig=func (h *Handler) WakeHandler() http.HandlerFunc
+  doc=WakeHandler returns the HTTP handler for POST /internal/wake. It resolves the\ntarget user's environment, wakes it, waits for the daemon to bind, and\nforwards a chat turn to the daemon's /chat endpoint. The caller is\nresponsible for authenticating the request (wake token).
+EDGES
+  ^contains=matrix/router/internal/proxy.Handler
+  ^defines=matrix/router/internal/proxy/wake.go
+
+NODE id=matrix/router/internal/proxy.Handler.deliverChat kind=method
+  digest=b3:275595e498b90a471eb18f71619fd0faaacd0afce92aec2a84a429cc0555ef4a file=router/internal/proxy/wake.go range=142:184 lang=go exported=false byte_range=4953:6594
+  sig=func (h *Handler) deliverChat(ctx context.Context, env *provision.Env, req WakeRequest) (status int, body []byte, err error)
+  doc=deliverChat POSTs the wake turn to the daemon's /chat endpoint over the\nprivate network, mirroring the public proxy's forwarding hygiene\n(X-Matrix-User, no inbound Authorization). Returns the daemon's status + body.
+EDGES
+  ^contains=matrix/router/internal/proxy.Handler
+  ^defines=matrix/router/internal/proxy/wake.go
+
+NODE id=matrix/router/internal/proxy.Handler.forward kind=method
+  digest=b3:aabb3f661f961f69ceace901b64a57e4327453ee0b772130f0e694d0561d7a69 file=router/internal/proxy/proxy.go range=220:316 lang=go exported=false byte_range=7609:11680
+  sig=func (h *Handler) forward(w http.ResponseWriter, r *http.Request, sub string, ref provision.Ref)
+  doc=forward is the wake-then-proxy core: wake the environment, wait for\nthe in-machine daemon to accept connections, then reverse-proxy the\nrequest to it. Split from ServeHTTP so the wake path is exercisable\nend-to-end without a Postgres row behind it.
+EDGES
+  ^contains=matrix/router/internal/proxy.Handler
+  ^defines=matrix/router/internal/proxy/proxy.go
+
+NODE id=matrix/router/internal/proxy.Handler.waitDaemonReady kind=method
+  digest=b3:58d09fdaaa7118f6219d7cf90e1a4622c4eb6046dcf0dc7dcb241af0bafcb75b file=router/internal/proxy/proxy.go range=343:403 lang=go exported=false byte_range=12637:14738
+  sig=func (h *Handler) waitDaemonReady(ctx context.Context, env *provision.Env) error
+  doc=waitDaemonReady polls the daemon's /healthz on the woken environment\nuntil its in-machine HTTP server accepts a connection, or the\nreadiness deadline elapses. ANY HTTP response (200/401/404/503)\nproves the server is listening, so the probe is auth- and\nroute-agnostic; only transport errors (connection refused/reset,\ndial timeout) count as "not ready yet". An already-warm daemon\nanswers the first probe in a single round-trip, so the warm path\nadds negligible latency.\n\nWake-on-request nuance: while such a platform (Railway Serverless)\nrevives a slept service, its edge can answer 502 Bad Gateway before\nanything of ours is listening. That 502 is the platform talking,\nnot the daemon, so on wake-on-request providers it counts as "not\nready yet" and the probe keeps polling within the budget.\nExplicit-start providers (Fly) keep the any-response semantics\nunchanged.
+EDGES
+  ^contains=matrix/router/internal/proxy.Handler
+  ^defines=matrix/router/internal/proxy/proxy.go
+
+NODE id=matrix/router/internal/proxy.New kind=func
+  digest=b3:1eb732a838c7fbfca239e0de400f8bb10cdef1e61e9441ae02c51157b1523ecb file=router/internal/proxy/proxy.go range=113:154 lang=go exported=true byte_range=4011:5507
+  sig=func New(d *db.DB, p provision.Provisioner, daemonPort string, wakeTimeout, probeInterval time.Duration, logf func(string, ...interface{})) *Handler
+  doc=New returns a Handler with all required deps wired. Logf is optional.
+EDGES
+  ^defines=matrix/router/internal/proxy/proxy.go
+
+NODE id=matrix/router/internal/proxy.Provisioner kind=interface
+  digest=b3:32ef9fa9ca5c2f5deaaf815e190490c8d505ebb3d5807cd409dd870da2df892b file=router/internal/proxy/proxy.go range=38:45 lang=go exported=true byte_range=1217:1622
+  sig=type Provisioner interface {\n	StartProvision(userID, email string)\n}
+  doc=Provisioner triggers out-of-band provisioning of a user's environment\non their first authenticated request. Implemented by *admin.Handler\nand wired in main; the proxy stays decoupled from the admin package\nvia this interface. (Environment lifecycle — wake/status/destroy — is\nthe separate provision.Provisioner seam.)
+EDGES
+  ^implements=matrix/router/internal/admin.Handler
+  ^defines=matrix/router/internal/proxy/proxy.go
+
+NODE id=matrix/router/internal/proxy.Subject kind=func
+  digest=b3:cb39b11f63a384b7f353475bebee763a4b530bbc5dcca0bbe86a7d3d70d08949 file=router/internal/proxy/proxy.go range=90:97 lang=go exported=true byte_range=3359:3570
+  sig=func Subject(ctx context.Context) string
+  doc=Subject extracts the supabase user id stashed by middleware. Returns\n"" when not set.
+EDGES
+  ^defines=matrix/router/internal/proxy/proxy.go
+
+NODE id=matrix/router/internal/proxy.WakeRequest kind=type
+  digest=b3:7b0e551f92a425ecd4ce7b0362e4d7a190e9d42a9f5f44ab0e0f424a531de7af file=router/internal/proxy/wake.go range=35:43 lang=go exported=true byte_range=1071:1505
+  sig=type WakeRequest struct {\n	UserID		string		`json:"user_id"`\n	ConversationID	string		`json:"conversation_id,omitempty"`\n	Message		string		`json:"message"`\n	Payload		json.RawMessage	`json:"payload,omitempty"`\n	AlarmID		string		`json:"alarm_id,omitempty"`\n	Origin		string		`json:"origin,omitempty"`\n}
+  doc=WakeRequest is the POST /internal/wake body sent by chronosd.
+EDGES
+  contains=matrix/router/internal/proxy.WakeRequest#AlarmID,matrix/router/internal/proxy.WakeRequest#ConversationID,matrix/router/internal/proxy.WakeRequest#Message,matrix/router/internal/proxy.WakeRequest#Origin,matrix/router/internal/proxy.WakeRequest#Payload,matrix/router/internal/proxy.WakeRequest#UserID
+  ^defines=matrix/router/internal/proxy/wake.go
+
+NODE id=matrix/router/internal/proxy.WakeRequest#AlarmID kind=field
+  digest=b3:42b0e1e958153345d9327aa36abba26bc2f77c9adfb59282441aedb0eda88837 file=router/internal/proxy/wake.go range=41:41 lang=go exported=true byte_range=1387:1445
+  sig=string
+EDGES
+  ^contains=matrix/router/internal/proxy.WakeRequest
+
+NODE id=matrix/router/internal/proxy.WakeRequest#ConversationID kind=field
+  digest=b3:ca49349ddffe2112c6cc0541af06cc16af09559dd5b8e788c465d79e27ff3419 file=router/internal/proxy/wake.go range=38:38 lang=go exported=true byte_range=1212:1277
+  sig=string
+EDGES
+  ^contains=matrix/router/internal/proxy.WakeRequest
+
+NODE id=matrix/router/internal/proxy.WakeRequest#Message kind=field
+  digest=b3:1cb2d834246172448fba52f8fba627aaafdcd983c41a7fae1e567744f196c025 file=router/internal/proxy/wake.go range=39:39 lang=go exported=true byte_range=1279:1326
+  sig=string
+EDGES
+  ^contains=matrix/router/internal/proxy.WakeRequest
+
+NODE id=matrix/router/internal/proxy.WakeRequest#Origin kind=field
+  digest=b3:02fd9ec5fb9961a9118e2523f01c3ea197b5b8c0d0290c3f753cc5288d09d667 file=router/internal/proxy/wake.go range=42:42 lang=go exported=true byte_range=1447:1503
+  sig=string
+EDGES
+  ^contains=matrix/router/internal/proxy.WakeRequest
+
+NODE id=matrix/router/internal/proxy.WakeRequest#Payload kind=field
+  digest=b3:2306ee2eec701b0fe45b870046ca9ec25652c2ee085ac26f36a4c509f6ace0c3 file=router/internal/proxy/wake.go range=40:40 lang=go exported=true byte_range=1328:1385
+  sig=json.RawMessage
+EDGES
+  ^contains=matrix/router/internal/proxy.WakeRequest
+
+NODE id=matrix/router/internal/proxy.WakeRequest#UserID kind=field
+  digest=b3:332a33f87b7a9d8ec39f01663e04af084509275e76a2bb69746b11caf95d0258 file=router/internal/proxy/wake.go range=37:37 lang=go exported=true byte_range=1163:1210
+  sig=string
+EDGES
+  ^contains=matrix/router/internal/proxy.WakeRequest
+
+NODE id=matrix/router/internal/proxy.WithEmail kind=func
+  digest=b3:586aa74dca515820651288c18c470395dc8421f1989ee016367c63cc53111303 file=router/internal/proxy/proxy.go range=99:103 lang=go exported=true byte_range=3572:3823
+  sig=func WithEmail(ctx context.Context, email string) context.Context
+  doc=WithEmail returns a derived context carrying the verified Supabase\nemail claim. May be empty when the IdP doesn't populate one.
+EDGES
+  ^defines=matrix/router/internal/proxy/proxy.go
+
+NODE id=matrix/router/internal/proxy.WithSubject kind=func
+  digest=b3:08fc2b8cf1a4a13d1195ff831dfabc3953a2bac37947199254f09a7223e1aa60 file=router/internal/proxy/proxy.go range=85:88 lang=go exported=true byte_range=3168:3357
+  sig=func WithSubject(ctx context.Context, sub string) context.Context
+  doc=WithSubject returns a derived context carrying the supabase user id.
+EDGES
+  ^defines=matrix/router/internal/proxy/proxy.go
+
+NODE id=matrix/router/internal/proxy.buildUpstreamURL kind=func
+  digest=b3:9956b871e5c8768b379410ed2febc50ac32714ed59fef557d7537258ab8188e5 file=router/internal/proxy/proxy.go range=318:336 lang=go exported=false byte_range=11682:12380
+  sig=func buildUpstreamURL(ep provision.Endpoint, port string, r *http.Request) (*url.URL, error)
+  doc=buildUpstreamURL composes http://<host>:<port><path>?<query> from the\nprovider-neutral endpoint. IPv6 hosts are bracketed per RFC 3986\n§3.2.2 so the URL parser sees them as authority not path; hostname\nendpoints (<service>.railway.internal) pass through untouched. An\nendpoint port, when set by the provider, overrides the router's\ndaemon port.
+EDGES
+  ^defines=matrix/router/internal/proxy/proxy.go
+
+NODE id=matrix/router/internal/proxy.chatBody kind=type
+  digest=b3:13d5d45dbd75aca1ee7c828b70c9e211a7f847571773a27e75a641a95596ad8a file=router/internal/proxy/wake.go range=186:190 lang=go exported=false byte_range=6596:6800
+  sig=type chatBody struct {\n	Message		string	`json:"message"`\n	ConversationID	string	`json:"conversation_id,omitempty"`\n}
+  doc=chatBody is the subset of the daemon's POST /chat request the wake path sends.
+EDGES
+  contains=matrix/router/internal/proxy.chatBody#ConversationID,matrix/router/internal/proxy.chatBody#Message
+  ^defines=matrix/router/internal/proxy/wake.go
+
+NODE id=matrix/router/internal/proxy.chatBody#ConversationID kind=field
+  digest=b3:3db2d07e1b61e991f66ffe380a9c31d190cc74a0f6fd437576a328da51387699 file=router/internal/proxy/wake.go range=189:189 lang=go exported=true byte_range=6742:6798
+  sig=string
+EDGES
+  ^contains=matrix/router/internal/proxy.chatBody
+
+NODE id=matrix/router/internal/proxy.chatBody#Message kind=field
+  digest=b3:15cf7db4525ba5b2cfc47ce9b61bf6ecb92c90a524bb9b489a5d04ebce926381 file=router/internal/proxy/wake.go range=188:188 lang=go exported=true byte_range=6702:6740
+  sig=string
+EDGES
+  ^contains=matrix/router/internal/proxy.chatBody
+
+NODE id=matrix/router/internal/proxy.chatURL kind=func
+  digest=b3:3d99555a0b8309f7647b7ed1fd50e3676eed7357cb727965a15e174eb7db1eb1 file=router/internal/proxy/wake.go range=199:208 lang=go exported=false byte_range=6884:7264
+  sig=func chatURL(env *provision.Env, port string) (string, error)
+  doc=chatURL composes the daemon's /chat URL using the same host-resolution rules\n(bracketed IPv6, provider port override) as buildUpstreamURL.
+EDGES
+  ^defines=matrix/router/internal/proxy/wake.go
+
+NODE id=matrix/router/internal/proxy.ctxKey kind=type
+  digest=b3:1b5d40228f66814803a24e354609da34117dddb59fd928aaeda9ae04a2fe427f file=router/internal/proxy/proxy.go range=75:78 lang=go exported=false byte_range=2928:3119
+  sig=type ctxKey int
+  doc=SubjectKey is the type used to stash the verified Supabase subject\n(UUID string) in request context. The JWT middleware populates this\nbefore delegating to the proxy.
+EDGES
+  ^defines=matrix/router/internal/proxy/proxy.go
+
+NODE id=matrix/router/internal/proxy.defaultReadyTimeout kind=const
+  digest=b3:9b34f0985542980f10fda0b5d6df62d18caa4d0d6ccc4adcdf9a65b0b732ca55 file=router/internal/proxy/proxy.go range=338:341 lang=go exported=false byte_range=12382:12635
+  sig=time.Duration
+  doc=defaultReadyTimeout bounds how long the proxy waits for a freshly\nwoken daemon's HTTP server to start accepting connections before\ngiving up with a retryable 503. Used when Handler.ReadyTimeout is 0.
+EDGES
+  ^defines=matrix/router/internal/proxy/proxy.go
+
+NODE id=matrix/router/internal/proxy.emailKey kind=const
+  digest=b3:654c2af026df1cbce5e29763e054e302a8285936f234aa9084dd1d449840991e file=router/internal/proxy/proxy.go range=82:82 lang=go exported=false byte_range=3156:3164
+  sig=proxy.ctxKey
+EDGES
+  ^defines=matrix/router/internal/proxy/proxy.go
+
+NODE id=matrix/router/internal/proxy.healthzURL kind=func
+  digest=b3:5675deff9ca863582dbf9e170bc3fa288fe1fea902afa13939110e609d004897 file=router/internal/proxy/proxy.go range=405:415 lang=go exported=false byte_range=14740:15144
+  sig=func healthzURL(env *provision.Env, port string) (string, error)
+  doc=healthzURL composes the daemon's /healthz probe URL, reusing the\nsame host-resolution rules (bracketed IPv6, provider port override)\nas buildUpstreamURL.
+EDGES
+  ^defines=matrix/router/internal/proxy/proxy.go
+
+NODE id=matrix/router/internal/proxy.originOr kind=func
+  digest=b3:ba444a5deff828bd4262236c4c0187bfae9fa81906670e975423d472d8a51f57 file=router/internal/proxy/wake.go range=192:197 lang=go exported=false byte_range=6802:6882
+  sig=func originOr(o string) string
+EDGES
+  ^defines=matrix/router/internal/proxy/wake.go
+
+NODE id=matrix/router/internal/proxy.subjectKey kind=const
+  digest=b3:29a4178c06c90318623fed83476b68b332e779fc9f16401071a1aa98c4dc24f5 file=router/internal/proxy/proxy.go range=81:81 lang=go exported=false byte_range=3130:3154
+  sig=proxy.ctxKey
+EDGES
+  ^defines=matrix/router/internal/proxy/proxy.go
+
+NODE id=matrix/router/internal/proxy.urlFromHostPort kind=func
+  digest=b3:d80ea6a23886cf0b7442b5d5c7d1a5893abbf2687839e84938429868fac7ef38 file=router/internal/proxy/proxy.go range=417:433 lang=go exported=false byte_range=15146:15523
+  sig=func urlFromHostPort(host, port string, r *http.Request) (*url.URL, error)
+EDGES
+  ^defines=matrix/router/internal/proxy/proxy.go
+
+NODE id=matrix/router/internal/proxy/proxy.go kind=file
+  digest=b3:5b61441e22fcf3b2e070c4fbf7f6a3f8c7f2b99397de71c3636fe46a330943d1 file=router/internal/proxy/proxy.go range=1:435 lang=go exported=true
+EDGES
+  defines=matrix/router/internal/proxy.Email,matrix/router/internal/proxy.Handler,matrix/router/internal/proxy.Handler.ServeHTTP,matrix/router/internal/proxy.Handler.forward,matrix/router/internal/proxy.Handler.waitDaemonReady,matrix/router/internal/proxy.New,matrix/router/internal/proxy.Provisioner,matrix/router/internal/proxy.Subject,matrix/router/internal/proxy.WithEmail,matrix/router/internal/proxy.WithSubject,matrix/router/internal/proxy.buildUpstreamURL,matrix/router/internal/proxy.ctxKey,matrix/router/internal/proxy.defaultReadyTimeout,matrix/router/internal/proxy.emailKey,matrix/router/internal/proxy.healthzURL,matrix/router/internal/proxy.subjectKey,matrix/router/internal/proxy.urlFromHostPort
+  ^contains=matrix/router/internal/proxy
+
+NODE id=matrix/router/internal/proxy/wake.go kind=file
+  digest=b3:045668f83f8d3494febcb995180cf79d4e6351679c34b29cff1bc2fa1b7e4c98 file=router/internal/proxy/wake.go range=1:208 lang=go exported=true
+EDGES
+  defines=matrix/router/internal/proxy.Handler.WakeHandler,matrix/router/internal/proxy.Handler.deliverChat,matrix/router/internal/proxy.WakeRequest,matrix/router/internal/proxy.chatBody,matrix/router/internal/proxy.chatURL,matrix/router/internal/proxy.originOr
+  ^contains=matrix/router/internal/proxy

@@ -1,0 +1,191 @@
+# GENERATED gen=codegraph do-not-edit merkle=b3:2dc69ec8dbbe0231373534486cf12ff6fdb0eaad7b2dfdcbc4d73453c8542ee8
+
+NODE id=github.com/paxlabs-inc/chronos/internal/store kind=package
+  digest=b3:ec14023543276a6d8fe0e542790d2a50af0ec5248f1e2edb0965da8f1aac5794 file=chronos/internal/store range=0:0 lang=go exported=true
+EDGES
+  contains=github.com/paxlabs-inc/chronos/internal/store/alarms.go,github.com/paxlabs-inc/chronos/internal/store/store.go
+  ^contains=mod:github.com/paxlabs-inc/chronos
+
+NODE id=github.com/paxlabs-inc/chronos/internal/store.ErrNotFound kind=var
+  digest=b3:3a3cabdb91928ca1e593165e4fe08a6b252099710adcb908b51f4fac300d5289 file=chronos/internal/store/alarms.go range=14:15 lang=go exported=true byte_range=136:273
+  sig=error
+  doc=ErrNotFound is returned when an alarm id is unknown or not owned by the caller.
+EDGES
+  ^defines=github.com/paxlabs-inc/chronos/internal/store/alarms.go
+
+NODE id=github.com/paxlabs-inc/chronos/internal/store.New kind=func
+  digest=b3:728b56721ee96651c8b4ea5d8d12da3572ca68cc451d939842af5faf9c5eb64b file=chronos/internal/store/store.go range=23:38 lang=go exported=true byte_range=457:917
+  sig=func New(ctx context.Context, uri string) (*Store, error)
+  doc=New opens a Postgres pool.
+EDGES
+  ^defines=github.com/paxlabs-inc/chronos/internal/store/store.go
+
+NODE id=github.com/paxlabs-inc/chronos/internal/store.Store kind=type
+  digest=b3:64602e44d68284f7f34e3216365d949273d26d9ac86c978e65bf21110e39668e file=chronos/internal/store/store.go range=18:21 lang=go exported=true byte_range=376:455
+  sig=type Store struct {\n	pool *pgxpool.Pool\n}
+  doc=Store wraps a pgx connection pool.
+EDGES
+  contains=github.com/paxlabs-inc/chronos/internal/store.Store#pool,github.com/paxlabs-inc/chronos/internal/store.Store.CancelAlarm,github.com/paxlabs-inc/chronos/internal/store.Store.ClaimDue,github.com/paxlabs-inc/chronos/internal/store.Store.Close,github.com/paxlabs-inc/chronos/internal/store.Store.CreateAlarm,github.com/paxlabs-inc/chronos/internal/store.Store.GetAlarm,github.com/paxlabs-inc/chronos/internal/store.Store.ListAlarms,github.com/paxlabs-inc/chronos/internal/store.Store.MarkFailed,github.com/paxlabs-inc/chronos/internal/store.Store.MarkFired,github.com/paxlabs-inc/chronos/internal/store.Store.Migrate,github.com/paxlabs-inc/chronos/internal/store.Store.Ping,github.com/paxlabs-inc/chronos/internal/store.Store.RecordRetry,github.com/paxlabs-inc/chronos/internal/store.Store.Reschedule,github.com/paxlabs-inc/chronos/internal/store.Store.RescheduleAfterFailure,github.com/paxlabs-inc/chronos/internal/store.Store.ensureMigrationTable,github.com/paxlabs-inc/chronos/internal/store.Store.exec,github.com/paxlabs-inc/chronos/internal/store.Store.isApplied
+  ^defines=github.com/paxlabs-inc/chronos/internal/store/store.go
+
+NODE id=github.com/paxlabs-inc/chronos/internal/store.Store#pool kind=field
+  digest=b3:a7f924954e0298e2859e8545eaa8d674918b710a03fc20998c4e1a63a3fb0c04 file=chronos/internal/store/store.go range=20:20 lang=go exported=false byte_range=435:453
+  sig=*pgxpool.Pool
+EDGES
+  ^contains=github.com/paxlabs-inc/chronos/internal/store.Store
+
+NODE id=github.com/paxlabs-inc/chronos/internal/store.Store.CancelAlarm kind=method
+  digest=b3:ca1f9512211577d612efb37dcf95444b6905cce2cee630989605af4135c9de59 file=chronos/internal/store/alarms.go range=112:127 lang=go exported=true byte_range=3750:4476
+  sig=func (s *Store) CancelAlarm(ctx context.Context, id, ownerDID string) (types.Alarm, error)
+  doc=CancelAlarm marks an active alarm cancelled, owner-checked. Already-fired or\nalready-cancelled alarms are left untouched but still return success.
+EDGES
+  ^contains=github.com/paxlabs-inc/chronos/internal/store.Store
+  ^defines=github.com/paxlabs-inc/chronos/internal/store/alarms.go
+
+NODE id=github.com/paxlabs-inc/chronos/internal/store.Store.ClaimDue kind=method
+  digest=b3:4bb47e9c07f35927ed11e7ad1f74967017098563e17207773fe3a2cf7396ca2e file=chronos/internal/store/alarms.go range=129:164 lang=go exported=true byte_range=4478:5709
+  sig=func (s *Store) ClaimDue(ctx context.Context, batch int, lease time.Duration) ([]types.Alarm, error)
+  doc=ClaimDue atomically leases up to `batch` active alarms whose next_fire_at has\npassed and that are not currently leased (claimed_at older than `lease`).\nFOR UPDATE SKIP LOCKED so concurrent/future workers never double-claim\n(dispatch.claim). A crash mid-fire leaves the lease, which expires after\n`lease` and is reclaimed — at-least-once delivery (invariant i3).
+EDGES
+  ^contains=github.com/paxlabs-inc/chronos/internal/store.Store
+  ^defines=github.com/paxlabs-inc/chronos/internal/store/alarms.go
+
+NODE id=github.com/paxlabs-inc/chronos/internal/store.Store.Close kind=method
+  digest=b3:549fb4de7278a9f31a1b614d118a19c74dea42c763dc090b60c6e24cf352fecd file=chronos/internal/store/store.go range=40:45 lang=go exported=true byte_range=919:1014
+  sig=func (s *Store) Close()
+  doc=Close releases the pool.
+EDGES
+  ^contains=github.com/paxlabs-inc/chronos/internal/store.Store
+  ^defines=github.com/paxlabs-inc/chronos/internal/store/store.go
+
+NODE id=github.com/paxlabs-inc/chronos/internal/store.Store.CreateAlarm kind=method
+  digest=b3:f8562da72c1dafa019b896a0a4fbfd8bd3cbb268cf97776c5bd9eff8843b6932 file=chronos/internal/store/alarms.go range=38:74 lang=go exported=true byte_range=1128:2646
+  sig=func (s *Store) CreateAlarm(ctx context.Context, a types.Alarm) (types.Alarm, bool, error)
+  doc=CreateAlarm inserts a new alarm. When the alarm carries a non-empty\nidempotency key that already exists for the owner, the existing row is\nreturned with deduped=true (no duplicate is created).
+EDGES
+  ^contains=github.com/paxlabs-inc/chronos/internal/store.Store
+  ^defines=github.com/paxlabs-inc/chronos/internal/store/alarms.go
+
+NODE id=github.com/paxlabs-inc/chronos/internal/store.Store.GetAlarm kind=method
+  digest=b3:c9729e405e633a4593c8302e1abf0731873404725a1994ca667e278059735175 file=chronos/internal/store/alarms.go range=99:110 lang=go exported=true byte_range=3303:3748
+  sig=func (s *Store) GetAlarm(ctx context.Context, id, ownerDID string) (types.Alarm, error)
+  doc=GetAlarm returns one alarm, owner-checked.
+EDGES
+  ^contains=github.com/paxlabs-inc/chronos/internal/store.Store
+  ^defines=github.com/paxlabs-inc/chronos/internal/store/alarms.go
+
+NODE id=github.com/paxlabs-inc/chronos/internal/store.Store.ListAlarms kind=method
+  digest=b3:9456b8c6722bd3a29143019f5d5eed28289350e658fce34d5c4f8c1061b12d41 file=chronos/internal/store/alarms.go range=76:97 lang=go exported=true byte_range=2648:3301
+  sig=func (s *Store) ListAlarms(ctx context.Context, ownerDID string, limit int) ([]types.Alarm, error)
+  doc=ListAlarms returns the owner's alarms, most-recent first.
+EDGES
+  ^contains=github.com/paxlabs-inc/chronos/internal/store.Store
+  ^defines=github.com/paxlabs-inc/chronos/internal/store/alarms.go
+
+NODE id=github.com/paxlabs-inc/chronos/internal/store.Store.MarkFailed kind=method
+  digest=b3:58b3f6f72ee235c66b2a8115f091d5f1a526a5bfe1659926974bc5483dedc7fa file=chronos/internal/store/alarms.go range=191:198 lang=go exported=true byte_range=6820:7233
+  sig=func (s *Store) MarkFailed(ctx context.Context, id, errMsg string) error
+  doc=MarkFailed terminally fails a once alarm whose retries are exhausted\n(dispatch.retry ladder_2 — never silently dropped, invariant i6).
+EDGES
+  ^contains=github.com/paxlabs-inc/chronos/internal/store.Store
+  ^defines=github.com/paxlabs-inc/chronos/internal/store/alarms.go
+
+NODE id=github.com/paxlabs-inc/chronos/internal/store.Store.MarkFired kind=method
+  digest=b3:be2fb111acdc16197de069759fd1167c4e9e9ee91776d526aad41a3741f7e561 file=chronos/internal/store/alarms.go range=166:172 lang=go exported=true byte_range=5711:6032
+  sig=func (s *Store) MarkFired(ctx context.Context, id string) error
+  doc=MarkFired records a successful once-alarm fire (retained for audit).
+EDGES
+  ^contains=github.com/paxlabs-inc/chronos/internal/store.Store
+  ^defines=github.com/paxlabs-inc/chronos/internal/store/alarms.go
+
+NODE id=github.com/paxlabs-inc/chronos/internal/store.Store.Migrate kind=method
+  digest=b3:907f60b32a888c892168e3f46eb57ee726d5b7af280ba818450f9cd892ddfc05 file=chronos/internal/store/store.go range=52:106 lang=go exported=true byte_range=1132:2742
+  sig=func (s *Store) Migrate(ctx context.Context, dir string) error
+  doc=Migrate applies forward-only SQL files from dir in lexical order, using a\ndedicated chronos_schema_migrations ledger (Chronos shares the matrix DB with\nrouter + gateway, so it must NOT collide with their migration tables).
+EDGES
+  ^contains=github.com/paxlabs-inc/chronos/internal/store.Store
+  ^defines=github.com/paxlabs-inc/chronos/internal/store/store.go
+
+NODE id=github.com/paxlabs-inc/chronos/internal/store.Store.Ping kind=method
+  digest=b3:e46ec166dd20597c7d5c5415ce730be2b401054d0523c7ffb29ae9e4f2794d6b file=chronos/internal/store/store.go range=47:50 lang=go exported=true byte_range=1016:1130
+  sig=func (s *Store) Ping(ctx context.Context) error
+  doc=Ping checks database connectivity.
+EDGES
+  ^contains=github.com/paxlabs-inc/chronos/internal/store.Store
+  ^defines=github.com/paxlabs-inc/chronos/internal/store/store.go
+
+NODE id=github.com/paxlabs-inc/chronos/internal/store.Store.RecordRetry kind=method
+  digest=b3:c27408f24671921cbbc919a4d0321e7541c8415f29317cf34cf2a4fee8ef02f8 file=chronos/internal/store/alarms.go range=182:189 lang=go exported=true byte_range=6381:6818
+  sig=func (s *Store) RecordRetry(ctx context.Context, id string, nextRetry time.Time, errMsg string) error
+  doc=RecordRetry increments the failure count and re-arms next_fire_at for a\nbounded backoff retry (dispatch.retry ladder_1).
+EDGES
+  ^contains=github.com/paxlabs-inc/chronos/internal/store.Store
+  ^defines=github.com/paxlabs-inc/chronos/internal/store/alarms.go
+
+NODE id=github.com/paxlabs-inc/chronos/internal/store.Store.Reschedule kind=method
+  digest=b3:df9847a022e6d097aaf94e943cdacb032d21dca557a849fa686f73d5ceb22ca6 file=chronos/internal/store/alarms.go range=174:180 lang=go exported=true byte_range=6034:6379
+  sig=func (s *Store) Reschedule(ctx context.Context, id string, next time.Time) error
+  doc=Reschedule records a successful cron fire and advances next_fire_at.
+EDGES
+  ^contains=github.com/paxlabs-inc/chronos/internal/store.Store
+  ^defines=github.com/paxlabs-inc/chronos/internal/store/alarms.go
+
+NODE id=github.com/paxlabs-inc/chronos/internal/store.Store.RescheduleAfterFailure kind=method
+  digest=b3:3a729ba98ccf4998a13a60dd59cfdf43a0148d20d50be860d66f74e937e966d4 file=chronos/internal/store/alarms.go range=200:208 lang=go exported=true byte_range=7235:7749
+  sig=func (s *Store) RescheduleAfterFailure(ctx context.Context, id string, next time.Time, errMsg string) error
+  doc=RescheduleAfterFailure advances a cron alarm past a permanently-failed fire so\none bad fire does not wedge the whole series (dispatch.retry ladder_3,\nskip-and-advance). The error is retained for observability.
+EDGES
+  ^contains=github.com/paxlabs-inc/chronos/internal/store.Store
+  ^defines=github.com/paxlabs-inc/chronos/internal/store/alarms.go
+
+NODE id=github.com/paxlabs-inc/chronos/internal/store.Store.ensureMigrationTable kind=method
+  digest=b3:da919dae91fcc49e14eaa38847e96832d388f97db5721ac319c7ee52a6e12975 file=chronos/internal/store/store.go range=108:118 lang=go exported=false byte_range=2744:3086
+  sig=func (s *Store) ensureMigrationTable(ctx context.Context) error
+EDGES
+  ^contains=github.com/paxlabs-inc/chronos/internal/store.Store
+  ^defines=github.com/paxlabs-inc/chronos/internal/store/store.go
+
+NODE id=github.com/paxlabs-inc/chronos/internal/store.Store.exec kind=method
+  digest=b3:eb90a1d35d7511a4c60ce68bb4d384e1290a9eecd01de1abfd20bc69b41f0024 file=chronos/internal/store/alarms.go range=210:215 lang=go exported=false byte_range=7751:7945
+  sig=func (s *Store) exec(ctx context.Context, sql string, args ...any) error
+EDGES
+  ^contains=github.com/paxlabs-inc/chronos/internal/store.Store
+  ^defines=github.com/paxlabs-inc/chronos/internal/store/alarms.go
+
+NODE id=github.com/paxlabs-inc/chronos/internal/store.Store.isApplied kind=method
+  digest=b3:8a193e3a9159fbb2aab37318ed14d4868ba1a107e2551f9fa63c4b38ff84b3d3 file=chronos/internal/store/store.go range=120:130 lang=go exported=false byte_range=3088:3461
+  sig=func (s *Store) isApplied(ctx context.Context, version string) (bool, error)
+EDGES
+  ^contains=github.com/paxlabs-inc/chronos/internal/store.Store
+  ^defines=github.com/paxlabs-inc/chronos/internal/store/store.go
+
+NODE id=github.com/paxlabs-inc/chronos/internal/store.alarmColumns kind=const
+  digest=b3:d1112540085b4d58d0f744154744ff7194bd582d764a0cb21d900cbcfe200b60 file=chronos/internal/store/alarms.go range=17:21 lang=go exported=false byte_range=275:640
+  sig=untyped string
+  doc=alarmColumns is the canonical SELECT/RETURNING projection. scanAlarm depends\non this exact order.
+EDGES
+  ^defines=github.com/paxlabs-inc/chronos/internal/store/alarms.go
+
+NODE id=github.com/paxlabs-inc/chronos/internal/store.scanAlarm kind=func
+  digest=b3:82bfc7bc7ca84657fe7d2fce414b2ed39971c771e024ad816a0b62d4eb843496 file=chronos/internal/store/alarms.go range=23:36 lang=go exported=false byte_range=642:1126
+  sig=func scanAlarm(row pgx.Row) (types.Alarm, error)
+EDGES
+  ^defines=github.com/paxlabs-inc/chronos/internal/store/alarms.go
+
+NODE id=github.com/paxlabs-inc/chronos/internal/store.truncErr kind=func
+  digest=b3:e6ee3f8fcf6f9c46defc2d125c52677140fbc87623d17bb1d9d798c19f842031 file=chronos/internal/store/alarms.go range=217:223 lang=go exported=false byte_range=7947:8048
+  sig=func truncErr(s string) string
+EDGES
+  ^defines=github.com/paxlabs-inc/chronos/internal/store/alarms.go
+
+NODE id=github.com/paxlabs-inc/chronos/internal/store/alarms.go kind=file
+  digest=b3:9e6aa91ebfed7641d5f0ab558fd6edda0a1dc65aa930405e2c1ea82471860277 file=chronos/internal/store/alarms.go range=1:223 lang=go exported=true
+EDGES
+  defines=github.com/paxlabs-inc/chronos/internal/store.ErrNotFound,github.com/paxlabs-inc/chronos/internal/store.Store.CancelAlarm,github.com/paxlabs-inc/chronos/internal/store.Store.ClaimDue,github.com/paxlabs-inc/chronos/internal/store.Store.CreateAlarm,github.com/paxlabs-inc/chronos/internal/store.Store.GetAlarm,github.com/paxlabs-inc/chronos/internal/store.Store.ListAlarms,github.com/paxlabs-inc/chronos/internal/store.Store.MarkFailed,github.com/paxlabs-inc/chronos/internal/store.Store.MarkFired,github.com/paxlabs-inc/chronos/internal/store.Store.RecordRetry,github.com/paxlabs-inc/chronos/internal/store.Store.Reschedule,github.com/paxlabs-inc/chronos/internal/store.Store.RescheduleAfterFailure,github.com/paxlabs-inc/chronos/internal/store.Store.exec,github.com/paxlabs-inc/chronos/internal/store.alarmColumns,github.com/paxlabs-inc/chronos/internal/store.scanAlarm,github.com/paxlabs-inc/chronos/internal/store.truncErr
+  ^contains=github.com/paxlabs-inc/chronos/internal/store
+
+NODE id=github.com/paxlabs-inc/chronos/internal/store/store.go kind=file
+  digest=b3:3460a25d8affa184d88ff9068e31e05dd08cb800b57c8fc06b94fe9459157119 file=chronos/internal/store/store.go range=1:130 lang=go exported=true
+EDGES
+  defines=github.com/paxlabs-inc/chronos/internal/store.New,github.com/paxlabs-inc/chronos/internal/store.Store,github.com/paxlabs-inc/chronos/internal/store.Store.Close,github.com/paxlabs-inc/chronos/internal/store.Store.Migrate,github.com/paxlabs-inc/chronos/internal/store.Store.Ping,github.com/paxlabs-inc/chronos/internal/store.Store.ensureMigrationTable,github.com/paxlabs-inc/chronos/internal/store.Store.isApplied
+  ^contains=github.com/paxlabs-inc/chronos/internal/store

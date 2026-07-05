@@ -1,0 +1,41 @@
+# GENERATED gen=codegraph do-not-edit merkle=b3:2dc69ec8dbbe0231373534486cf12ff6fdb0eaad7b2dfdcbc4d73453c8542ee8
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/internal/forgeutil kind=package
+  digest=b3:e768e1b606206a15d889f2128e1d068af024a26fabfc5d4e23d30373f28e6066 file=tachyon/internal/forgeutil range=0:0 lang=go exported=true
+EDGES
+  contains=github.com/paxlabs-inc/tachyon-tools/internal/forgeutil/run.go
+  ^contains=mod:github.com/paxlabs-inc/tachyon-tools
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/internal/forgeutil.EnsureForge kind=func
+  digest=b3:f56bbf795ccc8647917c632171645ef968d25a3d803670afe4430757b6c9f9ef file=tachyon/internal/forgeutil/run.go range=46:53 lang=go exported=true byte_range=1214:1490
+  sig=func EnsureForge(forgePath string) error
+  doc=EnsureForge checks forge is callable.
+EDGES
+  ^defines=github.com/paxlabs-inc/tachyon-tools/internal/forgeutil/run.go
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/internal/forgeutil.FormatForgeError kind=func
+  digest=b3:b51484bf227af96e30d46985b6a92695f9e51c4038e4c28c8fe63dc7ad68bfda file=tachyon/internal/forgeutil/run.go range=34:44 lang=go exported=true byte_range=924:1212
+  sig=func FormatForgeError(stdout, stderr string, err error) string
+  doc=FormatForgeError combines stderr/stdout for agent-facing messages.
+EDGES
+  ^defines=github.com/paxlabs-inc/tachyon-tools/internal/forgeutil/run.go
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/internal/forgeutil.Run kind=func
+  digest=b3:7a7aa86229158a8500dbda5aeb382b04e8eb3e04a75c91288ca3dc9845929768 file=tachyon/internal/forgeutil/run.go range=12:25 lang=go exported=true byte_range=88:632
+  sig=func Run(ctx context.Context, forgePath, root string, args ...string) (stdout, stderr string, err error)
+  doc=Run executes forge with the given args under root.
+EDGES
+  ^defines=github.com/paxlabs-inc/tachyon-tools/internal/forgeutil/run.go
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/internal/forgeutil.RunWithTimeout kind=func
+  digest=b3:67192f2baee1b6b1bf9c2b2f03ad0a5b23a009f5b8aff73002e3939796cbb24e file=tachyon/internal/forgeutil/run.go range=27:32 lang=go exported=true byte_range=634:922
+  sig=func RunWithTimeout(forgePath, root string, timeout time.Duration, args ...string) (string, string, error)
+  doc=RunWithTimeout wraps Run with a default timeout.
+EDGES
+  ^defines=github.com/paxlabs-inc/tachyon-tools/internal/forgeutil/run.go
+
+NODE id=github.com/paxlabs-inc/tachyon-tools/internal/forgeutil/run.go kind=file
+  digest=b3:01e7c739554ff31fc4b1422b2b77a743fd50cf2fe6704dd099a921ac8542d39b file=tachyon/internal/forgeutil/run.go range=1:53 lang=go exported=true
+EDGES
+  defines=github.com/paxlabs-inc/tachyon-tools/internal/forgeutil.EnsureForge,github.com/paxlabs-inc/tachyon-tools/internal/forgeutil.FormatForgeError,github.com/paxlabs-inc/tachyon-tools/internal/forgeutil.Run,github.com/paxlabs-inc/tachyon-tools/internal/forgeutil.RunWithTimeout
+  ^contains=github.com/paxlabs-inc/tachyon-tools/internal/forgeutil

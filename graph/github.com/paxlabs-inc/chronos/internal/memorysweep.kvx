@@ -1,0 +1,84 @@
+# GENERATED gen=codegraph do-not-edit merkle=b3:2dc69ec8dbbe0231373534486cf12ff6fdb0eaad7b2dfdcbc4d73453c8542ee8
+
+NODE id=github.com/paxlabs-inc/chronos/internal/memorysweep kind=package
+  digest=b3:ecc4c35f3d12b1beaac33b11b70ad848bc6ba05cd1408344b6d5382024e3e017 file=chronos/internal/memorysweep range=0:0 lang=go exported=true
+EDGES
+  contains=github.com/paxlabs-inc/chronos/internal/memorysweep/memorysweep.go
+  ^contains=mod:github.com/paxlabs-inc/chronos
+
+NODE id=github.com/paxlabs-inc/chronos/internal/memorysweep.BuildAlarm kind=func
+  digest=b3:05ef519f14d7ee931ed327638ce0b4f4d9e6dee0fa5fd3a7d8248cdbc85ba55a file=chronos/internal/memorysweep/memorysweep.go range=69:102 lang=go exported=true byte_range=3477:4607
+  sig=func BuildAlarm(spec Spec, now time.Time) (types.Alarm, error)
+  doc=BuildAlarm assembles a Chronos continuous-memory-sweep alarm (a cron\nrecurring alarm with the canonical sweep wake_message). The alarm is\nactive and ready to be stored via store.CreateAlarm. The caller must set\nOwnerDID + UserID before persisting (the server does this from the\nauthenticated principal).
+EDGES
+  ^defines=github.com/paxlabs-inc/chronos/internal/memorysweep/memorysweep.go
+
+NODE id=github.com/paxlabs-inc/chronos/internal/memorysweep.DefaultCronExpr kind=const
+  digest=b3:0c5ead9324d2e49b691dfcced63a8d071334324b67dfecc20158ebb49ced2dae file=chronos/internal/memorysweep/memorysweep.go range=43:48 lang=go exported=true byte_range=2279:2675
+  sig=untyped string
+  doc=DefaultCronExpr is the default recurring interval for a continuous-memory\nsweep alarm when none is specified. @every 1h matches the finest ladder\nresolution (TierHour, matrix/cortex/rollup.go) so closed hour windows are\npicked up promptly; Cascade's own idempotence makes a tighter or looser\ncadence safe too (bounded work per sweep either way).
+EDGES
+  ^defines=github.com/paxlabs-inc/chronos/internal/memorysweep/memorysweep.go
+
+NODE id=github.com/paxlabs-inc/chronos/internal/memorysweep.Spec kind=type
+  digest=b3:209eddc61e527e8961c3a249d159634f51b27bc8570b40e7c8c5afa2bce13632 file=chronos/internal/memorysweep/memorysweep.go range=50:67 lang=go exported=true byte_range=2677:3475
+  sig=type Spec struct {\n	// ConversationID is the delivery target for the wake (required by the\n	// underlying alarm machinery); the sweep itself is NOT scoped to this\n	// conversation — cortex.SweepNow cascades the whole actor journal.\n	ConversationID	string\n	// CronExpr is the recurring schedule. Defaults to DefaultCronExpr when empty.\n	CronExpr	string\n	// Timezone is the IANA timezone for the cron expression (default UTC).\n	Timezone	string\n	// Label is an optional human-readable label for the alarm.\n	Label	string\n	// IdempotencyKey deduplicates the alarm (recommended — a sweep alarm is\n	// enabled at most once per actor).\n	IdempotencyKey	string\n	// MaxFailures is the wake-delivery retry ceiling (0 = server default).\n	MaxFailures	int\n}
+  doc=Spec configures a continuous-memory-sweep alarm.
+EDGES
+  contains=github.com/paxlabs-inc/chronos/internal/memorysweep.Spec#ConversationID,github.com/paxlabs-inc/chronos/internal/memorysweep.Spec#CronExpr,github.com/paxlabs-inc/chronos/internal/memorysweep.Spec#IdempotencyKey,github.com/paxlabs-inc/chronos/internal/memorysweep.Spec#Label,github.com/paxlabs-inc/chronos/internal/memorysweep.Spec#MaxFailures,github.com/paxlabs-inc/chronos/internal/memorysweep.Spec#Timezone
+  ^defines=github.com/paxlabs-inc/chronos/internal/memorysweep/memorysweep.go
+
+NODE id=github.com/paxlabs-inc/chronos/internal/memorysweep.Spec#ConversationID kind=field
+  digest=b3:791011f9148c596a6c4cd02658c1e73ddec904b89c20a05a942d957e0c1a9a8e file=chronos/internal/memorysweep/memorysweep.go range=52:55 lang=go exported=true byte_range=2749:2985
+  sig=string
+  doc=ConversationID is the delivery target for the wake (required by the\nunderlying alarm machinery); the sweep itself is NOT scoped to this\nconversation — cortex.SweepNow cascades the whole actor journal.
+EDGES
+  ^contains=github.com/paxlabs-inc/chronos/internal/memorysweep.Spec
+
+NODE id=github.com/paxlabs-inc/chronos/internal/memorysweep.Spec#CronExpr kind=field
+  digest=b3:cf8bc10d4e14257505b83837d32ae7a9b269b50c2043f99ab6b0c0531625c781 file=chronos/internal/memorysweep/memorysweep.go range=56:57 lang=go exported=true byte_range=2987:3082
+  sig=string
+  doc=CronExpr is the recurring schedule. Defaults to DefaultCronExpr when empty.
+EDGES
+  ^contains=github.com/paxlabs-inc/chronos/internal/memorysweep.Spec
+
+NODE id=github.com/paxlabs-inc/chronos/internal/memorysweep.Spec#IdempotencyKey kind=field
+  digest=b3:42f23ab17d3c4a32a595df9732e417edf89439fda32a8288ae65527121edbc35 file=chronos/internal/memorysweep/memorysweep.go range=62:64 lang=go exported=true byte_range=3249:3383
+  sig=string
+  doc=IdempotencyKey deduplicates the alarm (recommended — a sweep alarm is\nenabled at most once per actor).
+EDGES
+  ^contains=github.com/paxlabs-inc/chronos/internal/memorysweep.Spec
+
+NODE id=github.com/paxlabs-inc/chronos/internal/memorysweep.Spec#Label kind=field
+  digest=b3:fce7566067af6464fca03764bfa69fc4dd26eb7143b9dfe503330e8e8292bab2 file=chronos/internal/memorysweep/memorysweep.go range=60:61 lang=go exported=true byte_range=3174:3247
+  sig=string
+  doc=Label is an optional human-readable label for the alarm.
+EDGES
+  ^contains=github.com/paxlabs-inc/chronos/internal/memorysweep.Spec
+
+NODE id=github.com/paxlabs-inc/chronos/internal/memorysweep.Spec#MaxFailures kind=field
+  digest=b3:4835b162761bd5ce8cf69474f857d10828d3752df594bb06b2c546e445d0a3ee file=chronos/internal/memorysweep/memorysweep.go range=65:66 lang=go exported=true byte_range=3385:3473
+  sig=int
+  doc=MaxFailures is the wake-delivery retry ceiling (0 = server default).
+EDGES
+  ^contains=github.com/paxlabs-inc/chronos/internal/memorysweep.Spec
+
+NODE id=github.com/paxlabs-inc/chronos/internal/memorysweep.Spec#Timezone kind=field
+  digest=b3:95d25ca4ee9a4931173bbdae8769bca38e496fd6482d222512e73fd845ab4f48 file=chronos/internal/memorysweep/memorysweep.go range=58:59 lang=go exported=true byte_range=3084:3172
+  sig=string
+  doc=Timezone is the IANA timezone for the cron expression (default UTC).
+EDGES
+  ^contains=github.com/paxlabs-inc/chronos/internal/memorysweep.Spec
+
+NODE id=github.com/paxlabs-inc/chronos/internal/memorysweep.WakeMessage kind=const
+  digest=b3:5c46789186582696eebd98de8fbf6b2be727059e4c316de80db8f49cdc3ace0e file=chronos/internal/memorysweep/memorysweep.go range=36:41 lang=go exported=true byte_range=1735:2277
+  sig=untyped string
+  doc=WakeMessage is the canonical wake_message a Chronos continuous-memory-sweep\nalarm delivers. It carries the CONTINUOUS_MEMORY_SWEEP marker so the\nreceiver can distinguish it from a conversational wake (heartbeat /\nAUTOMATRIX) and from a normal user message, and route it directly to\ncortex.Cortex.SweepNow without invoking the model.
+EDGES
+  ^defines=github.com/paxlabs-inc/chronos/internal/memorysweep/memorysweep.go
+
+NODE id=github.com/paxlabs-inc/chronos/internal/memorysweep/memorysweep.go kind=file
+  digest=b3:e2141c9f348eaf9005d7f070fc3bb86ebc003462752b50d46ee01417c7b271ba file=chronos/internal/memorysweep/memorysweep.go range=1:102 lang=go exported=true
+EDGES
+  defines=github.com/paxlabs-inc/chronos/internal/memorysweep.BuildAlarm,github.com/paxlabs-inc/chronos/internal/memorysweep.DefaultCronExpr,github.com/paxlabs-inc/chronos/internal/memorysweep.Spec,github.com/paxlabs-inc/chronos/internal/memorysweep.WakeMessage
+  ^contains=github.com/paxlabs-inc/chronos/internal/memorysweep

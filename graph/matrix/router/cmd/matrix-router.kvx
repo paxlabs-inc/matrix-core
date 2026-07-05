@@ -1,0 +1,33 @@
+# GENERATED gen=codegraph do-not-edit merkle=b3:2dc69ec8dbbe0231373534486cf12ff6fdb0eaad7b2dfdcbc4d73453c8542ee8
+
+NODE id=matrix/router/cmd/matrix-router kind=package
+  digest=b3:e220aaf0fa421d1cd711cebeed77bbd7a1f9a8d44b1a1905ddb600595d84d857 file=router/cmd/matrix-router range=0:0 lang=go exported=true
+EDGES
+  contains=matrix/router/cmd/matrix-router/main.go
+  ^contains=mod:matrix/router
+
+NODE id=matrix/router/cmd/matrix-router.envOr kind=func
+  digest=b3:25912b10400375fcd85bb1fd24c7f422ffc722643799f5d37327012624058111 file=router/cmd/matrix-router/main.go range=464:473 lang=go exported=false byte_range=22115:22449
+  sig=func envOr(key, def string) string
+  doc=envOr returns the value of env key, or def when the key is unset or\nempty. Used to give the provisioned-machine model pins a sane,\ngateway-whitelisted default while letting the operator override via\n/etc/matrix/router.env.
+EDGES
+  ^defines=matrix/router/cmd/matrix-router/main.go
+
+NODE id=matrix/router/cmd/matrix-router.main kind=func
+  digest=b3:cda09ee693752d9123324d28504f6357af83ef2e1236dc7527927c56b72ac875 file=router/cmd/matrix-router/main.go range=57:462 lang=go exported=false byte_range=1622:22113
+  sig=func main()
+EDGES
+  ^defines=matrix/router/cmd/matrix-router/main.go
+
+NODE id=matrix/router/cmd/matrix-router.version kind=var
+  digest=b3:e5a41db64edd273492f3301477ee7fd36f5f3b744bb7a6d1967fd4abd72f4b93 file=router/cmd/matrix-router/main.go range=54:55 lang=go exported=false byte_range=1520:1620
+  sig=string
+  doc=version is the build identity; overridden via -ldflags="-X main.version=...".
+EDGES
+  ^defines=matrix/router/cmd/matrix-router/main.go
+
+NODE id=matrix/router/cmd/matrix-router/main.go kind=file
+  digest=b3:c4c18ee2eedf9d2ba3edf031525aee5fcfeffbf1e2bb28f06e6356deb9bd057b file=router/cmd/matrix-router/main.go range=1:475 lang=go exported=true
+EDGES
+  defines=matrix/router/cmd/matrix-router.envOr,matrix/router/cmd/matrix-router.main,matrix/router/cmd/matrix-router.version
+  ^contains=matrix/router/cmd/matrix-router

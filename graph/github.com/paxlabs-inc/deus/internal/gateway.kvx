@@ -1,0 +1,872 @@
+# GENERATED gen=codegraph do-not-edit merkle=b3:2dc69ec8dbbe0231373534486cf12ff6fdb0eaad7b2dfdcbc4d73453c8542ee8
+
+NODE id=github.com/paxlabs-inc/deus/internal/gateway kind=package
+  digest=b3:837f33fd17af83905ce2407d90192549cfe29738a9aad1bbc2fc4fa7303a94d9 file=deus/internal/gateway range=0:0 lang=go exported=true
+EDGES
+  contains=github.com/paxlabs-inc/deus/internal/gateway/gateway.go,github.com/paxlabs-inc/deus/internal/gateway/gateway_net.go,github.com/paxlabs-inc/deus/internal/gateway/gateway_stream.go,github.com/paxlabs-inc/deus/internal/gateway/hosted.go,github.com/paxlabs-inc/deus/internal/gateway/quote.go,github.com/paxlabs-inc/deus/internal/gateway/route.go
+  ^contains=mod:github.com/paxlabs-inc/deus
+
+NODE id=github.com/paxlabs-inc/deus/internal/gateway.CallAppwriteExecution kind=func
+  digest=b3:1a9384e13210d19d41ac211e232dd04bad28283f8d4512add507ffba24517fd0 file=deus/internal/gateway/hosted.go range=116:205 lang=go exported=true byte_range=3501:6958
+  sig=func CallAppwriteExecution(ctx context.Context, executionsURL, project, apiKey string, req HostedInvokeRequest, timeoutMS, maxBytes int) (HostedResult, error)
+  doc=CallAppwriteExecution invokes a hosted function through the Appwrite Server\nexecutions API. It wraps the runner input (HostedInvokeRequest) as the\nexecution body, POSTs it synchronously, then decodes the function's\nresponseBody (a JSON HostedInvokeResponse). maxBytes caps the function\nresponse payload.
+EDGES
+  ^defines=github.com/paxlabs-inc/deus/internal/gateway/hosted.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/gateway.CallHosted kind=func
+  digest=b3:894a2e83708c8a43f086da727f6de302b0ce312ef8ae53053ae95ccc982ccb82 file=deus/internal/gateway/hosted.go range=41:99 lang=go exported=true byte_range=982:2827
+  sig=func CallHosted(ctx context.Context, execURL string, req HostedInvokeRequest, timeoutMS, maxBytes int) (HostedResult, error)
+  doc=CallHosted invokes a Paxeer Cloud function execution endpoint.
+EDGES
+  ^defines=github.com/paxlabs-inc/deus/internal/gateway/hosted.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/gateway.CallProxy kind=func
+  digest=b3:c5deca53142fb8edf13c548a633f5fea5a2ee17e12d8512aba5a8c3766a0c4f3 file=deus/internal/gateway/route.go range=22:59 lang=go exported=true byte_range=272:1633
+  sig=func CallProxy(ctx context.Context, proxyURL string, args map[string]any, timeoutMS int) (ProxyResult, error)
+  doc=CallProxy POSTs args to proxy_url and returns the response body.
+EDGES
+  ^defines=github.com/paxlabs-inc/deus/internal/gateway/route.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/gateway.Config kind=type
+  digest=b3:984d62f957b83e1f49081b63d6d7dacc095264b709ea2456f685a6cf2dfcda76 file=deus/internal/gateway/gateway.go range=46:64 lang=go exported=true byte_range=1348:1944
+  sig=type Config struct {\n	Store		*store.Store\n	Pricing		*pricing.Service\n	Meter		*metering.Ledger\n	Wallet		wallet.Client\n	Signer		*receipts.Signer\n	Quality		*quality.Service\n	Channels	*channels.Service\n	Vouchers	*channels.VoucherService\n	Hosting		HostingRouter\n	Streams		*streams.Service\n	ChainID		int64\n	// AppwriteProject/AppwriteKey authenticate the Appwrite executions API when\n	// a hosted deployment routes through Paxeer Cloud (exec endpoint ends in\n	// /executions). Empty for dev/runner endpoints.\n	AppwriteProject	string\n	AppwriteKey	string\n}
+  doc=Config wires gateway dependencies.
+EDGES
+  contains=github.com/paxlabs-inc/deus/internal/gateway.Config#AppwriteKey,github.com/paxlabs-inc/deus/internal/gateway.Config#AppwriteProject,github.com/paxlabs-inc/deus/internal/gateway.Config#ChainID,github.com/paxlabs-inc/deus/internal/gateway.Config#Channels,github.com/paxlabs-inc/deus/internal/gateway.Config#Hosting,github.com/paxlabs-inc/deus/internal/gateway.Config#Meter,github.com/paxlabs-inc/deus/internal/gateway.Config#Pricing,github.com/paxlabs-inc/deus/internal/gateway.Config#Quality,github.com/paxlabs-inc/deus/internal/gateway.Config#Signer,github.com/paxlabs-inc/deus/internal/gateway.Config#Store,github.com/paxlabs-inc/deus/internal/gateway.Config#Streams,github.com/paxlabs-inc/deus/internal/gateway.Config#Vouchers,github.com/paxlabs-inc/deus/internal/gateway.Config#Wallet
+  ^defines=github.com/paxlabs-inc/deus/internal/gateway/gateway.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/gateway.Config#AppwriteKey kind=field
+  digest=b3:eb5787fae287b651031a47fa70f8a4e0673b018f3c0203974c3e5882fbbb994b file=deus/internal/gateway/gateway.go range=63:63 lang=go exported=true byte_range=1920:1942
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/gateway.Config
+
+NODE id=github.com/paxlabs-inc/deus/internal/gateway.Config#AppwriteProject kind=field
+  digest=b3:8d14f80d59c17604431e52069e02c7e656c29d6296315268290cbe5ada2d7b6d file=deus/internal/gateway/gateway.go range=59:62 lang=go exported=true byte_range=1693:1918
+  sig=string
+  doc=AppwriteProject/AppwriteKey authenticate the Appwrite executions API when\na hosted deployment routes through Paxeer Cloud (exec endpoint ends in\n/executions). Empty for dev/runner endpoints.
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/gateway.Config
+
+NODE id=github.com/paxlabs-inc/deus/internal/gateway.Config#ChainID kind=field
+  digest=b3:c8979af4521899e668f52dc3c170ccf12c5f1be386bf0dd5d78eef11a0aae24f file=deus/internal/gateway/gateway.go range=58:58 lang=go exported=true byte_range=1677:1691
+  sig=int64
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/gateway.Config
+
+NODE id=github.com/paxlabs-inc/deus/internal/gateway.Config#Channels kind=field
+  digest=b3:a1d3d42c64444d43e77fb22d73ff22e0c16f15c68b9aabefe9c4aefd9d2d0b45 file=deus/internal/gateway/gateway.go range=54:54 lang=go exported=true byte_range=1563:1589
+  sig=*channels.Service
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/gateway.Config
+
+NODE id=github.com/paxlabs-inc/deus/internal/gateway.Config#Hosting kind=field
+  digest=b3:4f884d45a34c5f985e7e6016805c730d3ee7f770cd5a704f9ed958791c7b8e22 file=deus/internal/gateway/gateway.go range=56:56 lang=go exported=true byte_range=1626:1648
+  sig=gateway.HostingRouter
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/gateway.Config
+
+NODE id=github.com/paxlabs-inc/deus/internal/gateway.Config#Meter kind=field
+  digest=b3:6f446dab02bb7ed6132527d46048e6ccb073e83ddf25b2a26137b40ee4647ec6 file=deus/internal/gateway/gateway.go range=50:50 lang=go exported=true byte_range=1458:1483
+  sig=*metering.Ledger
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/gateway.Config
+
+NODE id=github.com/paxlabs-inc/deus/internal/gateway.Config#Pricing kind=field
+  digest=b3:f8dc7c578bfd594bc830dce8e6e289775eedacd17194030cd677a8205232099d file=deus/internal/gateway/gateway.go range=49:49 lang=go exported=true byte_range=1431:1456
+  sig=*pricing.Service
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/gateway.Config
+
+NODE id=github.com/paxlabs-inc/deus/internal/gateway.Config#Quality kind=field
+  digest=b3:7c4d691732fc324d064e0ca2d13a304e3960b783ac8e74754d2397b129d68012 file=deus/internal/gateway/gateway.go range=53:53 lang=go exported=true byte_range=1536:1561
+  sig=*quality.Service
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/gateway.Config
+
+NODE id=github.com/paxlabs-inc/deus/internal/gateway.Config#Signer kind=field
+  digest=b3:0954608ae0bbfadcb18e2e3df14c1a82100834e4c5e0122dca2920f34bd626fc file=deus/internal/gateway/gateway.go range=52:52 lang=go exported=true byte_range=1509:1534
+  sig=*receipts.Signer
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/gateway.Config
+
+NODE id=github.com/paxlabs-inc/deus/internal/gateway.Config#Store kind=field
+  digest=b3:d584e792c4fce97ae8b5a58279838f99ffc473a39f4409c6da54a126137014c3 file=deus/internal/gateway/gateway.go range=48:48 lang=go exported=true byte_range=1408:1429
+  sig=*store.Store
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/gateway.Config
+
+NODE id=github.com/paxlabs-inc/deus/internal/gateway.Config#Streams kind=field
+  digest=b3:679ad1fc3db63939b77d745b4310f56cb6f96ccdff41a7c5b0c9de73a97ed441 file=deus/internal/gateway/gateway.go range=57:57 lang=go exported=true byte_range=1650:1675
+  sig=*streams.Service
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/gateway.Config
+
+NODE id=github.com/paxlabs-inc/deus/internal/gateway.Config#Vouchers kind=field
+  digest=b3:45b64677a75e71252e228b5568694268086ef95ea232709780e8efadf11e6039 file=deus/internal/gateway/gateway.go range=55:55 lang=go exported=true byte_range=1591:1624
+  sig=*channels.VoucherService
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/gateway.Config
+
+NODE id=github.com/paxlabs-inc/deus/internal/gateway.Config#Wallet kind=field
+  digest=b3:9f3912ccde6476cdef7e3cce3bd14ae97f1a8f507cc4a6d205818816bbe3d57d file=deus/internal/gateway/gateway.go range=51:51 lang=go exported=true byte_range=1485:1507
+  sig=wallet.Client
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/gateway.Config
+
+NODE id=github.com/paxlabs-inc/deus/internal/gateway.DecodeJSONResult kind=func
+  digest=b3:d8898bdf52f47db8028461b2d47062c3d9490805533f39569f4bcb888e57c80a file=deus/internal/gateway/route.go range=61:68 lang=go exported=true byte_range=1635:1919
+  sig=func DecodeJSONResult(body []byte) (map[string]any, error)
+  doc=DecodeJSONResult parses proxy JSON into a generic object.
+EDGES
+  ^defines=github.com/paxlabs-inc/deus/internal/gateway/route.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/gateway.EIP712Sig kind=type
+  digest=b3:a569627f2ad5ae307faca7c437772e1bee2376859e62ba27df5bc294c8202bf0 file=deus/internal/gateway/quote.go range=35:40 lang=go exported=true byte_range=716:892
+  sig=type EIP712Sig struct {\n	Domain		string	`json:"domain"`\n	Digest		string	`json:"digest"`\n	Signature	string	`json:"signature"`\n}
+  doc=EIP712Sig is the quote signature envelope.
+EDGES
+  contains=github.com/paxlabs-inc/deus/internal/gateway.EIP712Sig#Digest,github.com/paxlabs-inc/deus/internal/gateway.EIP712Sig#Domain,github.com/paxlabs-inc/deus/internal/gateway.EIP712Sig#Signature
+  ^defines=github.com/paxlabs-inc/deus/internal/gateway/quote.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/gateway.EIP712Sig#Digest kind=field
+  digest=b3:3273c15efbeebc8a7a044b856c866ac189098d83010c8efa7356c205b01f0a81 file=deus/internal/gateway/quote.go range=38:38 lang=go exported=true byte_range=821:853
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/gateway.EIP712Sig
+
+NODE id=github.com/paxlabs-inc/deus/internal/gateway.EIP712Sig#Domain kind=field
+  digest=b3:602c2989075af2847f1d83585851da13387c07ee4f074677d9bb99d0a311fb33 file=deus/internal/gateway/quote.go range=37:37 lang=go exported=true byte_range=787:819
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/gateway.EIP712Sig
+
+NODE id=github.com/paxlabs-inc/deus/internal/gateway.EIP712Sig#Signature kind=field
+  digest=b3:8964e601be6deb38fd8a6809e3d23a5ebdaf9a927f824f32ff4e4203bc99e40f file=deus/internal/gateway/quote.go range=39:39 lang=go exported=true byte_range=855:890
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/gateway.EIP712Sig
+
+NODE id=github.com/paxlabs-inc/deus/internal/gateway.Error kind=type
+  digest=b3:0d39c314191920d3806ad668a2da608aa7fe196bff96a0daaf21b6c9c1b47ada file=deus/internal/gateway/gateway.go range=580:586 lang=go exported=true byte_range=19989:20148
+  sig=type Error struct {\n	Code		string\n	Message		string\n	HTTPStatus	int\n	Detail		map[string]any\n}
+  doc=Error is a typed gateway failure mapped to API codes.
+EDGES
+  contains=github.com/paxlabs-inc/deus/internal/gateway.Error#Code,github.com/paxlabs-inc/deus/internal/gateway.Error#Detail,github.com/paxlabs-inc/deus/internal/gateway.Error#HTTPStatus,github.com/paxlabs-inc/deus/internal/gateway.Error#Message,github.com/paxlabs-inc/deus/internal/gateway.Error.Error
+  ^defines=github.com/paxlabs-inc/deus/internal/gateway/gateway.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/gateway.Error#Code kind=field
+  digest=b3:2fe39a3235832818a0135f1bd926e9f6a588896b64f3960267a3772e48c2c1df file=deus/internal/gateway/gateway.go range=582:582 lang=go exported=true byte_range=20067:20084
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/gateway.Error
+
+NODE id=github.com/paxlabs-inc/deus/internal/gateway.Error#Detail kind=field
+  digest=b3:9fd0d27e9b1b41c044d704c3e5dc8787c6859e14d9ead16b79d30c94f14317e8 file=deus/internal/gateway/gateway.go range=585:585 lang=go exported=true byte_range=20121:20146
+  sig=map[string]any
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/gateway.Error
+
+NODE id=github.com/paxlabs-inc/deus/internal/gateway.Error#HTTPStatus kind=field
+  digest=b3:3021b936fd3eaa8b7b65d647d6eb344931e7f587634c53a700a1d05bd3d20155 file=deus/internal/gateway/gateway.go range=584:584 lang=go exported=true byte_range=20105:20119
+  sig=int
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/gateway.Error
+
+NODE id=github.com/paxlabs-inc/deus/internal/gateway.Error#Message kind=field
+  digest=b3:1f9ab599486d27aeffbc1e3f2ed632fa963a41b60a6b593828d2a6a2c7515d21 file=deus/internal/gateway/gateway.go range=583:583 lang=go exported=true byte_range=20086:20103
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/gateway.Error
+
+NODE id=github.com/paxlabs-inc/deus/internal/gateway.Error.Error kind=method
+  digest=b3:d3e434d416697cf171ce9f67c46c9512a1591f96a285914c49a387c07c34ecfe file=deus/internal/gateway/gateway.go range=588:593 lang=go exported=true byte_range=20150:20243
+  sig=func (e *Error) Error() string
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/gateway.Error
+  ^defines=github.com/paxlabs-inc/deus/internal/gateway/gateway.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/gateway.Gateway kind=type
+  digest=b3:b9aea56c7bd415124072dc60f600cf8133f94ba4a3dcdbb16dcc39954e6b099c file=deus/internal/gateway/gateway.go range=29:44 lang=go exported=true byte_range=829:1346
+  sig=type Gateway struct {\n	store		*store.Store\n	pricing		*pricing.Service\n	meter		*metering.Ledger\n	wallet		wallet.Client\n	signer		*receipts.Signer\n	quality		*quality.Service\n	channels	*channels.Service\n	vouchers	*channels.VoucherService\n	hosting		HostingRouter\n	streams		*streams.Service\n	chainID		int64\n	appwriteProject	string\n	appwriteKey	string\n}
+  doc=Gateway orchestrates quote → policy → reserve → route → pay → receipt.
+EDGES
+  contains=github.com/paxlabs-inc/deus/internal/gateway.Gateway#appwriteKey,github.com/paxlabs-inc/deus/internal/gateway.Gateway#appwriteProject,github.com/paxlabs-inc/deus/internal/gateway.Gateway#chainID,github.com/paxlabs-inc/deus/internal/gateway.Gateway#channels,github.com/paxlabs-inc/deus/internal/gateway.Gateway#hosting,github.com/paxlabs-inc/deus/internal/gateway.Gateway#meter,github.com/paxlabs-inc/deus/internal/gateway.Gateway#pricing,github.com/paxlabs-inc/deus/internal/gateway.Gateway#quality,github.com/paxlabs-inc/deus/internal/gateway.Gateway#signer,github.com/paxlabs-inc/deus/internal/gateway.Gateway#store,github.com/paxlabs-inc/deus/internal/gateway.Gateway#streams,github.com/paxlabs-inc/deus/internal/gateway.Gateway#vouchers,github.com/paxlabs-inc/deus/internal/gateway.Gateway#wallet,github.com/paxlabs-inc/deus/internal/gateway.Gateway.BuildQuote,github.com/paxlabs-inc/deus/internal/gateway.Gateway.CosignVoucher,github.com/paxlabs-inc/deus/internal/gateway.Gateway.Invoke,github.com/paxlabs-inc/deus/internal/gateway.Gateway.OpenChannel,github.com/paxlabs-inc/deus/internal/gateway.Gateway.invokeHosted,github.com/paxlabs-inc/deus/internal/gateway.Gateway.invokeNet,github.com/paxlabs-inc/deus/internal/gateway.Gateway.invokeProxy,github.com/paxlabs-inc/deus/internal/gateway.Gateway.invokeStream,github.com/paxlabs-inc/deus/internal/gateway.Gateway.replaySuccess,github.com/paxlabs-inc/deus/internal/gateway.Gateway.validateQuote
+  ^defines=github.com/paxlabs-inc/deus/internal/gateway/gateway.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/gateway.Gateway#appwriteKey kind=field
+  digest=b3:cfd43d5cf454dda8a014207a7ac4214a031dd5926a85f12a5af2f378c39c16bf file=deus/internal/gateway/gateway.go range=43:43 lang=go exported=false byte_range=1322:1344
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/gateway.Gateway
+
+NODE id=github.com/paxlabs-inc/deus/internal/gateway.Gateway#appwriteProject kind=field
+  digest=b3:c096618b275173c66dc820f9d3e2af9eb8e7e56a343d259d2dbf8d098c5350e9 file=deus/internal/gateway/gateway.go range=42:42 lang=go exported=false byte_range=1298:1320
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/gateway.Gateway
+
+NODE id=github.com/paxlabs-inc/deus/internal/gateway.Gateway#chainID kind=field
+  digest=b3:a2dccde8a83584e9f06be64c2f5aa940b2da2a51e7cd3371db2f76e5376d6c64 file=deus/internal/gateway/gateway.go range=41:41 lang=go exported=false byte_range=1275:1296
+  sig=int64
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/gateway.Gateway
+
+NODE id=github.com/paxlabs-inc/deus/internal/gateway.Gateway#channels kind=field
+  digest=b3:c8f599ded1d0592d93b269d7ab96553708d7f626aa0583a1c4c17c784d5f8b7d file=deus/internal/gateway/gateway.go range=37:37 lang=go exported=false byte_range=1133:1166
+  sig=*channels.Service
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/gateway.Gateway
+
+NODE id=github.com/paxlabs-inc/deus/internal/gateway.Gateway#hosting kind=field
+  digest=b3:4d68a74194f0e94acc772435d356bd8f39b847967ff3a66a5d1034f13ae3c9e5 file=deus/internal/gateway/gateway.go range=39:39 lang=go exported=false byte_range=1210:1239
+  sig=gateway.HostingRouter
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/gateway.Gateway
+
+NODE id=github.com/paxlabs-inc/deus/internal/gateway.Gateway#meter kind=field
+  digest=b3:1ec3b263ad50871aef8c508f2d580fb37c7c240f010937935f348ebf08083261 file=deus/internal/gateway/gateway.go range=33:33 lang=go exported=false byte_range=1000:1032
+  sig=*metering.Ledger
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/gateway.Gateway
+
+NODE id=github.com/paxlabs-inc/deus/internal/gateway.Gateway#pricing kind=field
+  digest=b3:0a136fb449b8b7e8a1f998e495b2d64934dbb43ea3b535993f961abf5609869b file=deus/internal/gateway/gateway.go range=32:32 lang=go exported=false byte_range=966:998
+  sig=*pricing.Service
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/gateway.Gateway
+
+NODE id=github.com/paxlabs-inc/deus/internal/gateway.Gateway#quality kind=field
+  digest=b3:c1b19ab4e6a2b2bd7ca5d67472016b56d5b467bae56ccf8cf776fa479795e982 file=deus/internal/gateway/gateway.go range=36:36 lang=go exported=false byte_range=1099:1131
+  sig=*quality.Service
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/gateway.Gateway
+
+NODE id=github.com/paxlabs-inc/deus/internal/gateway.Gateway#signer kind=field
+  digest=b3:1d30c17833f9a00c8c3b4cb121f0dcdc2146c385bf85e5c07dea878fb0945994 file=deus/internal/gateway/gateway.go range=35:35 lang=go exported=false byte_range=1065:1097
+  sig=*receipts.Signer
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/gateway.Gateway
+
+NODE id=github.com/paxlabs-inc/deus/internal/gateway.Gateway#store kind=field
+  digest=b3:a6f9470464969087d2984cc72f68640f9333e1500547cfb422b845eb6ebe2bc4 file=deus/internal/gateway/gateway.go range=31:31 lang=go exported=false byte_range=936:964
+  sig=*store.Store
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/gateway.Gateway
+
+NODE id=github.com/paxlabs-inc/deus/internal/gateway.Gateway#streams kind=field
+  digest=b3:ef9b8fc0ea0ef206b91806c105a480e876d10441a1f7a8577181633448506331 file=deus/internal/gateway/gateway.go range=40:40 lang=go exported=false byte_range=1241:1273
+  sig=*streams.Service
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/gateway.Gateway
+
+NODE id=github.com/paxlabs-inc/deus/internal/gateway.Gateway#vouchers kind=field
+  digest=b3:2800c9b4a71eac7cb7249c50451125d21e58167b1da1827bb4230482cedbdc12 file=deus/internal/gateway/gateway.go range=38:38 lang=go exported=false byte_range=1168:1208
+  sig=*channels.VoucherService
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/gateway.Gateway
+
+NODE id=github.com/paxlabs-inc/deus/internal/gateway.Gateway#wallet kind=field
+  digest=b3:b05483b66c90891fcbffd71774fc6994e05e6c5b04ef5f1943cb38f6023bd16d file=deus/internal/gateway/gateway.go range=34:34 lang=go exported=false byte_range=1034:1063
+  sig=wallet.Client
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/gateway.Gateway
+
+NODE id=github.com/paxlabs-inc/deus/internal/gateway.Gateway.BuildQuote kind=method
+  digest=b3:5d6c17cbeea1c2e352b78a5f921fed4f48931ad1aa3c8afa5ad6b5490e034544 file=deus/internal/gateway/quote.go range=42:106 lang=go exported=true byte_range=894:2921
+  sig=func (g *Gateway) BuildQuote(ctx context.Context, caller auth.Caller, req QuoteRequest) (QuoteResponse, error)
+  doc=BuildQuote computes, signs, and persists a quote.
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/gateway.Gateway
+  ^defines=github.com/paxlabs-inc/deus/internal/gateway/quote.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/gateway.Gateway.CosignVoucher kind=method
+  digest=b3:02c47bfadecca739509f130cc9efe4eb084a9188b3f75a232fd3e4913e2fbd45 file=deus/internal/gateway/gateway_net.go range=35:42 lang=go exported=true byte_range=1044:1415
+  sig=func (g *Gateway) CosignVoucher(ctx context.Context, caller auth.Caller, in channels.CosignInput) (string, error)
+  doc=CosignVoucher persists a caller-signed cumulative voucher.
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/gateway.Gateway
+  ^defines=github.com/paxlabs-inc/deus/internal/gateway/gateway_net.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/gateway.Gateway.Invoke kind=method
+  digest=b3:ca8ea6d8e65b0c8ad3f068642a6577deb74dc686b0883adc75056e2e72496449 file=deus/internal/gateway/gateway.go range=126:160 lang=go exported=true byte_range=3612:4861
+  sig=func (g *Gateway) Invoke(ctx context.Context, caller auth.Caller, req InvokeRequest) (InvokeResponse, error)
+  doc=Invoke runs the full direct-rail pipeline.
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/gateway.Gateway
+  ^defines=github.com/paxlabs-inc/deus/internal/gateway/gateway.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/gateway.Gateway.OpenChannel kind=method
+  digest=b3:9ef99582d6dcae447c8a03d8471c245dab721d5e8cbc4ee48512364a1502aa8d file=deus/internal/gateway/gateway_net.go range=16:33 lang=go exported=true byte_range=345:1042
+  sig=func (g *Gateway) OpenChannel(ctx context.Context, caller auth.Caller, capWei, fundTx, escrowAddr string) (store.ChannelRow, error)
+  doc=OpenChannel opens a funded payment channel for the caller.
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/gateway.Gateway
+  ^defines=github.com/paxlabs-inc/deus/internal/gateway/gateway_net.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/gateway.Gateway.invokeHosted kind=method
+  digest=b3:c92874111b803a7a38ed4f757dc79ea01b7cc564d1fb180b8e5cc4b3aad2794d file=deus/internal/gateway/gateway.go range=305:462 lang=go exported=false byte_range=9927:15883
+  sig=func (g *Gateway) invokeHosted(ctx context.Context, caller auth.Caller, req InvokeRequest, svc store.ServiceRow) (InvokeResponse, error)
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/gateway.Gateway
+  ^defines=github.com/paxlabs-inc/deus/internal/gateway/gateway.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/gateway.Gateway.invokeNet kind=method
+  digest=b3:12f53107feb20d88271dab5e7075eac6bdd7c5f76ee1e2cb9335c8385fe490ba file=deus/internal/gateway/gateway_net.go range=44:194 lang=go exported=false byte_range=1417:6890
+  sig=func (g *Gateway) invokeNet(ctx context.Context, caller auth.Caller, req InvokeRequest) (InvokeResponse, error)
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/gateway.Gateway
+  ^defines=github.com/paxlabs-inc/deus/internal/gateway/gateway_net.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/gateway.Gateway.invokeProxy kind=method
+  digest=b3:495c988b7c4e518209aa227b9fbcbe6584790d9407014bceea1e3e0f35e6857c file=deus/internal/gateway/gateway.go range=162:303 lang=go exported=false byte_range=4863:9925
+  sig=func (g *Gateway) invokeProxy(ctx context.Context, caller auth.Caller, req InvokeRequest, svc store.ServiceRow) (InvokeResponse, error)
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/gateway.Gateway
+  ^defines=github.com/paxlabs-inc/deus/internal/gateway/gateway.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/gateway.Gateway.invokeStream kind=method
+  digest=b3:f798b8fb01dc9a9da39ba393efa7baedd91c1f58dad5d24aeeb7fdc117958bc7 file=deus/internal/gateway/gateway_stream.go range=18:186 lang=go exported=false byte_range=336:6437
+  sig=func (g *Gateway) invokeStream(ctx context.Context, caller auth.Caller, req InvokeRequest) (InvokeResponse, error)
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/gateway.Gateway
+  ^defines=github.com/paxlabs-inc/deus/internal/gateway/gateway_stream.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/gateway.Gateway.replaySuccess kind=method
+  digest=b3:5fcd85d0011ce5aa6b40887514029f5a2242d8185001fe40645099e217a0d3ad file=deus/internal/gateway/gateway.go range=557:578 lang=go exported=false byte_range=19329:19987
+  sig=func (g *Gateway) replaySuccess(ctx context.Context, row store.InvocationRow) (InvokeResponse, error)
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/gateway.Gateway
+  ^defines=github.com/paxlabs-inc/deus/internal/gateway/gateway.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/gateway.Gateway.validateQuote kind=method
+  digest=b3:bbc1a1be694487a1f139311303d62cd3070b5f1b0fb65073eda297e636cdb068 file=deus/internal/gateway/gateway.go range=506:555 lang=go exported=false byte_range=17085:19327
+  sig=func (g *Gateway) validateQuote(ctx context.Context, caller auth.Caller, req InvokeRequest) (store.QuoteRow, *big.Int, error)
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/gateway.Gateway
+  ^defines=github.com/paxlabs-inc/deus/internal/gateway/gateway.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/gateway.HostedInvokeRequest kind=type
+  digest=b3:bf1c5809e36944c8b30abe3b119a1eea804ebec04f6403bbc5eb64ba6d9a70bf file=deus/internal/gateway/hosted.go range=14:22 lang=go exported=true byte_range=110:528
+  sig=type HostedInvokeRequest struct {\n	InvocationID	string		`json:"invocation_id"`\n	Operation	string		`json:"operation"`\n	Args		map[string]any	`json:"args"`\n	CallerDID	string		`json:"caller_did"`\n	DeadlineMS	int		`json:"deadline_ms"`\n	ReceiptDigest	string		`json:"receipt_digest,omitempty"`\n}
+  doc=HostedInvokeRequest is POST {exec_endpoint}/invoke from the gateway.
+EDGES
+  contains=github.com/paxlabs-inc/deus/internal/gateway.HostedInvokeRequest#Args,github.com/paxlabs-inc/deus/internal/gateway.HostedInvokeRequest#CallerDID,github.com/paxlabs-inc/deus/internal/gateway.HostedInvokeRequest#DeadlineMS,github.com/paxlabs-inc/deus/internal/gateway.HostedInvokeRequest#InvocationID,github.com/paxlabs-inc/deus/internal/gateway.HostedInvokeRequest#Operation,github.com/paxlabs-inc/deus/internal/gateway.HostedInvokeRequest#ReceiptDigest
+  ^defines=github.com/paxlabs-inc/deus/internal/gateway/hosted.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/gateway.HostedInvokeRequest#Args kind=field
+  digest=b3:9ccb0f1f6e795f1510b2ccf63ffb2fbee9122c36c43a0c96f61ce514222c4141 file=deus/internal/gateway/hosted.go range=18:18 lang=go exported=true byte_range=319:361
+  sig=map[string]any
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/gateway.HostedInvokeRequest
+
+NODE id=github.com/paxlabs-inc/deus/internal/gateway.HostedInvokeRequest#CallerDID kind=field
+  digest=b3:9968a5fee8c048cb994ca3f5044d13c05ec5789aa69bf6dc82528e65bc540226 file=deus/internal/gateway/hosted.go range=19:19 lang=go exported=true byte_range=363:411
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/gateway.HostedInvokeRequest
+
+NODE id=github.com/paxlabs-inc/deus/internal/gateway.HostedInvokeRequest#DeadlineMS kind=field
+  digest=b3:048a692e426c50fad4b6937e4a299544f1388732e697b938400780b6a518f24f file=deus/internal/gateway/hosted.go range=20:20 lang=go exported=true byte_range=413:462
+  sig=int
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/gateway.HostedInvokeRequest
+
+NODE id=github.com/paxlabs-inc/deus/internal/gateway.HostedInvokeRequest#InvocationID kind=field
+  digest=b3:6e69168e82a61541f9bf7be404df663a7a02859b04bddad33a8878cbdaafe3f0 file=deus/internal/gateway/hosted.go range=16:16 lang=go exported=true byte_range=217:268
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/gateway.HostedInvokeRequest
+
+NODE id=github.com/paxlabs-inc/deus/internal/gateway.HostedInvokeRequest#Operation kind=field
+  digest=b3:2d6d9c5a912846f8576276c4190b85e9be3ee780bd5115f0b8ed3b52ae680ede file=deus/internal/gateway/hosted.go range=17:17 lang=go exported=true byte_range=270:317
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/gateway.HostedInvokeRequest
+
+NODE id=github.com/paxlabs-inc/deus/internal/gateway.HostedInvokeRequest#ReceiptDigest kind=field
+  digest=b3:310a796cde376b4795d4c19540b3f99ea5f2ca2addce5f356f50fc0c8c47a52b file=deus/internal/gateway/hosted.go range=21:21 lang=go exported=true byte_range=464:526
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/gateway.HostedInvokeRequest
+
+NODE id=github.com/paxlabs-inc/deus/internal/gateway.HostedInvokeResponse kind=type
+  digest=b3:8c7b43628dafba93b4d5892656ecde002517e05ecbcbbf7786f4cc0e1074673a file=deus/internal/gateway/hosted.go range=24:30 lang=go exported=true byte_range=530:803
+  sig=type HostedInvokeResponse struct {\n	Outcome		string		`json:"outcome"`\n	Result		map[string]any	`json:"result"`\n	Units		string		`json:"units"`\n	RunnerSig	*string		`json:"runner_sig"`\n}
+  doc=HostedInvokeResponse is the runner harness response envelope.
+EDGES
+  contains=github.com/paxlabs-inc/deus/internal/gateway.HostedInvokeResponse#Outcome,github.com/paxlabs-inc/deus/internal/gateway.HostedInvokeResponse#Result,github.com/paxlabs-inc/deus/internal/gateway.HostedInvokeResponse#RunnerSig,github.com/paxlabs-inc/deus/internal/gateway.HostedInvokeResponse#Units
+  ^defines=github.com/paxlabs-inc/deus/internal/gateway/hosted.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/gateway.HostedInvokeResponse#Outcome kind=field
+  digest=b3:f05a9fda9abb0af058afdcf234c4690b2c27e22041d207a13490e3b30f9af910 file=deus/internal/gateway/hosted.go range=26:26 lang=go exported=true byte_range=631:672
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/gateway.HostedInvokeResponse
+
+NODE id=github.com/paxlabs-inc/deus/internal/gateway.HostedInvokeResponse#Result kind=field
+  digest=b3:3d4143e91f9d5147a1184e577a2f57d831fe517e34ac9ef0dd7e004ddb040ce9 file=deus/internal/gateway/hosted.go range=27:27 lang=go exported=true byte_range=674:714
+  sig=map[string]any
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/gateway.HostedInvokeResponse
+
+NODE id=github.com/paxlabs-inc/deus/internal/gateway.HostedInvokeResponse#RunnerSig kind=field
+  digest=b3:62322c908ca5ceabcc7d9857e74004fcae5e9d50ed16ec2605dba86fd4c7c33b file=deus/internal/gateway/hosted.go range=29:29 lang=go exported=true byte_range=757:801
+  sig=*string
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/gateway.HostedInvokeResponse
+
+NODE id=github.com/paxlabs-inc/deus/internal/gateway.HostedInvokeResponse#Units kind=field
+  digest=b3:319f5114d9155334e1b165444bdbdd22ddf86ede54c1539245306f25d591a052 file=deus/internal/gateway/hosted.go range=28:28 lang=go exported=true byte_range=716:755
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/gateway.HostedInvokeResponse
+
+NODE id=github.com/paxlabs-inc/deus/internal/gateway.HostedResult kind=type
+  digest=b3:ed48bf2276b365257850303291da4fee3a4c3025200eca38539c139a4c3c0ff8 file=deus/internal/gateway/hosted.go range=32:39 lang=go exported=true byte_range=805:980
+  sig=type HostedResult struct {\n	Outcome		string\n	Result		map[string]any\n	Units		string\n	RunnerSig	*string\n	LatencyMS	int\n}
+  doc=HostedResult is the parsed runner call outcome.
+EDGES
+  contains=github.com/paxlabs-inc/deus/internal/gateway.HostedResult#LatencyMS,github.com/paxlabs-inc/deus/internal/gateway.HostedResult#Outcome,github.com/paxlabs-inc/deus/internal/gateway.HostedResult#Result,github.com/paxlabs-inc/deus/internal/gateway.HostedResult#RunnerSig,github.com/paxlabs-inc/deus/internal/gateway.HostedResult#Units
+  ^defines=github.com/paxlabs-inc/deus/internal/gateway/hosted.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/gateway.HostedResult#LatencyMS kind=field
+  digest=b3:e1ae475c1edd68ac9f8d6ef846bcb823a5a4d56d38a9c5bcfc80bee1dd4661b9 file=deus/internal/gateway/hosted.go range=38:38 lang=go exported=true byte_range=965:978
+  sig=int
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/gateway.HostedResult
+
+NODE id=github.com/paxlabs-inc/deus/internal/gateway.HostedResult#Outcome kind=field
+  digest=b3:14689f960881bcfac94e9001ef962a1005789601f79abee5383c608d4456de58 file=deus/internal/gateway/hosted.go range=34:34 lang=go exported=true byte_range=884:900
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/gateway.HostedResult
+
+NODE id=github.com/paxlabs-inc/deus/internal/gateway.HostedResult#Result kind=field
+  digest=b3:122280f60525c870aaf5313ea0bcefcfa9c8c22ef3f160300c0b4b927e572be3 file=deus/internal/gateway/hosted.go range=35:35 lang=go exported=true byte_range=902:926
+  sig=map[string]any
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/gateway.HostedResult
+
+NODE id=github.com/paxlabs-inc/deus/internal/gateway.HostedResult#RunnerSig kind=field
+  digest=b3:f8acbcf6329139b362ac90c17d012fa472e79ca865fc452efa3c2ed0e5c889b8 file=deus/internal/gateway/hosted.go range=37:37 lang=go exported=true byte_range=946:963
+  sig=*string
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/gateway.HostedResult
+
+NODE id=github.com/paxlabs-inc/deus/internal/gateway.HostedResult#Units kind=field
+  digest=b3:b427fff82f58def699801ac3b01e179a5db0b72964b0231c8d2fd9240ee9a54d file=deus/internal/gateway/hosted.go range=36:36 lang=go exported=true byte_range=928:944
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/gateway.HostedResult
+
+NODE id=github.com/paxlabs-inc/deus/internal/gateway.HostingRouter kind=interface
+  digest=b3:e4464af9b9a434dd5520e166c98ac6c1d12ee31e4d447e42f1f637732cf91550 file=deus/internal/gateway/gateway.go range=24:27 lang=go exported=true byte_range=663:827
+  sig=type HostingRouter interface {\n	ActiveEndpoint(ctx context.Context, serviceID string) (string, error)\n}
+  doc=HostingRouter resolves active hosted execution endpoints.
+EDGES
+  ^implements=github.com/paxlabs-inc/deus/internal/hosting.Orchestrator
+  ^defines=github.com/paxlabs-inc/deus/internal/gateway/gateway.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/gateway.InvokeRequest kind=type
+  digest=b3:51e7cffa796130c5b29216b1300cd004bf32f5aec73bb7e5feb97c9b7022fe93 file=deus/internal/gateway/gateway.go range=85:95 lang=go exported=true byte_range=2455:2742
+  sig=type InvokeRequest struct {\n	ServiceID		string\n	Operation		string\n	Args			map[string]any\n	QuoteID			string\n	PaymentRail		string\n	StreamID		string\n	IdempotencyKey		string\n	CallerVoucherSig	string\n}
+  doc=InvokeRequest is POST /v1/invoke/{service_id}.
+EDGES
+  contains=github.com/paxlabs-inc/deus/internal/gateway.InvokeRequest#Args,github.com/paxlabs-inc/deus/internal/gateway.InvokeRequest#CallerVoucherSig,github.com/paxlabs-inc/deus/internal/gateway.InvokeRequest#IdempotencyKey,github.com/paxlabs-inc/deus/internal/gateway.InvokeRequest#Operation,github.com/paxlabs-inc/deus/internal/gateway.InvokeRequest#PaymentRail,github.com/paxlabs-inc/deus/internal/gateway.InvokeRequest#QuoteID,github.com/paxlabs-inc/deus/internal/gateway.InvokeRequest#ServiceID,github.com/paxlabs-inc/deus/internal/gateway.InvokeRequest#StreamID
+  ^defines=github.com/paxlabs-inc/deus/internal/gateway/gateway.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/gateway.InvokeRequest#Args kind=field
+  digest=b3:5dde9f096574d4a46a2658b7ba97066c322842c6d9427d422913ecf64c428ddd file=deus/internal/gateway/gateway.go range=89:89 lang=go exported=true byte_range=2584:2615
+  sig=map[string]any
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/gateway.InvokeRequest
+
+NODE id=github.com/paxlabs-inc/deus/internal/gateway.InvokeRequest#CallerVoucherSig kind=field
+  digest=b3:189f82d83cd9582f304519c1ebecb7604ffa1d0315b6421981419e623447f9aa file=deus/internal/gateway/gateway.go range=94:94 lang=go exported=true byte_range=2717:2740
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/gateway.InvokeRequest
+
+NODE id=github.com/paxlabs-inc/deus/internal/gateway.InvokeRequest#IdempotencyKey kind=field
+  digest=b3:32977ad29513694eb4d5d299097fd52bb693d659f79d8abe146a8304dc2adf52 file=deus/internal/gateway/gateway.go range=93:93 lang=go exported=true byte_range=2692:2715
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/gateway.InvokeRequest
+
+NODE id=github.com/paxlabs-inc/deus/internal/gateway.InvokeRequest#Operation kind=field
+  digest=b3:b87b4bfffac6785be50b9b123facf4d100865058aef5438b3b9d126854c1a7d9 file=deus/internal/gateway/gateway.go range=88:88 lang=go exported=true byte_range=2559:2582
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/gateway.InvokeRequest
+
+NODE id=github.com/paxlabs-inc/deus/internal/gateway.InvokeRequest#PaymentRail kind=field
+  digest=b3:a430a114f3865779f13d04fa013e67a4f1561f2042bb60ddef6a6efda71d888c file=deus/internal/gateway/gateway.go range=91:91 lang=go exported=true byte_range=2642:2665
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/gateway.InvokeRequest
+
+NODE id=github.com/paxlabs-inc/deus/internal/gateway.InvokeRequest#QuoteID kind=field
+  digest=b3:906579a6ec1efb7f2507f43b671a64d404394c64de19fdb1b0a68b03c0ad7bea file=deus/internal/gateway/gateway.go range=90:90 lang=go exported=true byte_range=2617:2640
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/gateway.InvokeRequest
+
+NODE id=github.com/paxlabs-inc/deus/internal/gateway.InvokeRequest#ServiceID kind=field
+  digest=b3:2c1bc40be061d5c2eab53f2eca3f52381a13ae5ebf51f52879ffbad6ab5b5ee6 file=deus/internal/gateway/gateway.go range=87:87 lang=go exported=true byte_range=2534:2557
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/gateway.InvokeRequest
+
+NODE id=github.com/paxlabs-inc/deus/internal/gateway.InvokeRequest#StreamID kind=field
+  digest=b3:a7c7947fd7cfa6387f6474b2b5d9cdbc49108335deff4b9ac17574b740b2ec76 file=deus/internal/gateway/gateway.go range=92:92 lang=go exported=true byte_range=2667:2690
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/gateway.InvokeRequest
+
+NODE id=github.com/paxlabs-inc/deus/internal/gateway.InvokeResponse kind=type
+  digest=b3:1dcc5ad7282f773b59fdb369e73c8b97fae176ded6e8bd90058edf141b5df514 file=deus/internal/gateway/gateway.go range=97:106 lang=go exported=true byte_range=2744:2992
+  sig=type InvokeResponse struct {\n	InvocationID	string\n	Outcome		string\n	Result		map[string]any\n	ChargedWei	string\n	LatencyMS	int\n	Receipt		ReceiptSummary\n	Voucher		*VoucherSummary\n}
+  doc=InvokeResponse is a successful invoke result.
+EDGES
+  contains=github.com/paxlabs-inc/deus/internal/gateway.InvokeResponse#ChargedWei,github.com/paxlabs-inc/deus/internal/gateway.InvokeResponse#InvocationID,github.com/paxlabs-inc/deus/internal/gateway.InvokeResponse#LatencyMS,github.com/paxlabs-inc/deus/internal/gateway.InvokeResponse#Outcome,github.com/paxlabs-inc/deus/internal/gateway.InvokeResponse#Receipt,github.com/paxlabs-inc/deus/internal/gateway.InvokeResponse#Result,github.com/paxlabs-inc/deus/internal/gateway.InvokeResponse#Voucher
+  ^defines=github.com/paxlabs-inc/deus/internal/gateway/gateway.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/gateway.InvokeResponse#ChargedWei kind=field
+  digest=b3:0c2f59d1398b49ac69cf6a2a62f07bd2bbc9fa7bbdff406d3fb1f827bfb7ced0 file=deus/internal/gateway/gateway.go range=102:102 lang=go exported=true byte_range=2894:2913
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/gateway.InvokeResponse
+
+NODE id=github.com/paxlabs-inc/deus/internal/gateway.InvokeResponse#InvocationID kind=field
+  digest=b3:c0edcbe662bab23db7600cfdbc3ea7b514136f07fd9430ce3a5d88ab9dbc3a26 file=deus/internal/gateway/gateway.go range=99:99 lang=go exported=true byte_range=2823:2842
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/gateway.InvokeResponse
+
+NODE id=github.com/paxlabs-inc/deus/internal/gateway.InvokeResponse#LatencyMS kind=field
+  digest=b3:0409193d1f589faee2b48ce5370fdc550d80347fbd7cc2b2acc46c914b1a48ca file=deus/internal/gateway/gateway.go range=103:103 lang=go exported=true byte_range=2915:2931
+  sig=int
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/gateway.InvokeResponse
+
+NODE id=github.com/paxlabs-inc/deus/internal/gateway.InvokeResponse#Outcome kind=field
+  digest=b3:153ecbd1e37972f21055caacdd21bbd5fcee912ab69c611973581cf9ad3ab312 file=deus/internal/gateway/gateway.go range=100:100 lang=go exported=true byte_range=2844:2863
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/gateway.InvokeResponse
+
+NODE id=github.com/paxlabs-inc/deus/internal/gateway.InvokeResponse#Receipt kind=field
+  digest=b3:1965d721bb68b580ad6d751385d15f052d2793a6557c5163f83637f073d0ee6a file=deus/internal/gateway/gateway.go range=104:104 lang=go exported=true byte_range=2933:2960
+  sig=gateway.ReceiptSummary
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/gateway.InvokeResponse
+
+NODE id=github.com/paxlabs-inc/deus/internal/gateway.InvokeResponse#Result kind=field
+  digest=b3:f06cdba0729d518168e5198aea8b48fac02d113ad811ddf9e884584e61ffca0c file=deus/internal/gateway/gateway.go range=101:101 lang=go exported=true byte_range=2865:2892
+  sig=map[string]any
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/gateway.InvokeResponse
+
+NODE id=github.com/paxlabs-inc/deus/internal/gateway.InvokeResponse#Voucher kind=field
+  digest=b3:89dd657725109fd6384e124fb575f0634475c4d08802d4301b108e771ad6dc4f file=deus/internal/gateway/gateway.go range=105:105 lang=go exported=true byte_range=2962:2990
+  sig=*gateway.VoucherSummary
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/gateway.InvokeResponse
+
+NODE id=github.com/paxlabs-inc/deus/internal/gateway.New kind=func
+  digest=b3:fa91c46100da241b8ed08ebdf3214798611cf02c431f4e9e12817792b6e24330 file=deus/internal/gateway/gateway.go range=66:83 lang=go exported=true byte_range=1946:2453
+  sig=func New(cfg Config) *Gateway
+  doc=New constructs a Gateway.
+EDGES
+  ^defines=github.com/paxlabs-inc/deus/internal/gateway/gateway.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/gateway.ProxyResult kind=type
+  digest=b3:53102821a8f6c9ce8046f2fe121ee9a53fee1e23c0f6bfdf051d9545d4d8509d file=deus/internal/gateway/route.go range=15:20 lang=go exported=true byte_range=145:270
+  sig=type ProxyResult struct {\n	StatusCode	int\n	Body		[]byte\n	LatencyMS	int\n}
+  doc=ProxyResult is the outcome of proxy egress.
+EDGES
+  contains=github.com/paxlabs-inc/deus/internal/gateway.ProxyResult#Body,github.com/paxlabs-inc/deus/internal/gateway.ProxyResult#LatencyMS,github.com/paxlabs-inc/deus/internal/gateway.ProxyResult#StatusCode
+  ^defines=github.com/paxlabs-inc/deus/internal/gateway/route.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/gateway.ProxyResult#Body kind=field
+  digest=b3:af36e0fae3d1976c5b511a1a8f9373a97b9d8830d028a3521d20de60777f2c19 file=deus/internal/gateway/route.go range=18:18 lang=go exported=true byte_range=235:252
+  sig=[]byte
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/gateway.ProxyResult
+
+NODE id=github.com/paxlabs-inc/deus/internal/gateway.ProxyResult#LatencyMS kind=field
+  digest=b3:f4e3ae90434e2a0a16b5d91b41f4d354beffb5ddb9c1f873c0a461671272a673 file=deus/internal/gateway/route.go range=19:19 lang=go exported=true byte_range=254:268
+  sig=int
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/gateway.ProxyResult
+
+NODE id=github.com/paxlabs-inc/deus/internal/gateway.ProxyResult#StatusCode kind=field
+  digest=b3:50a5bb6c60a35a01799b0cc63d674a01ad4a5e4d6975743e19cf646ece8ced3c file=deus/internal/gateway/route.go range=17:17 lang=go exported=true byte_range=219:233
+  sig=int
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/gateway.ProxyResult
+
+NODE id=github.com/paxlabs-inc/deus/internal/gateway.QuoteRequest kind=type
+  digest=b3:ac64e40abe8d12866de391bdd66b7606af852916cb58dbbaa2c25e021b45f1b8 file=deus/internal/gateway/quote.go range=15:20 lang=go exported=true byte_range=271:416
+  sig=type QuoteRequest struct {\n	ServiceID	string\n	Operation	string\n	EstimatedUnits	string\n}
+  doc=QuoteRequest is POST /v1/quote/{service_id}.
+EDGES
+  contains=github.com/paxlabs-inc/deus/internal/gateway.QuoteRequest#EstimatedUnits,github.com/paxlabs-inc/deus/internal/gateway.QuoteRequest#Operation,github.com/paxlabs-inc/deus/internal/gateway.QuoteRequest#ServiceID
+  ^defines=github.com/paxlabs-inc/deus/internal/gateway/quote.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/gateway.QuoteRequest#EstimatedUnits kind=field
+  digest=b3:6cb7c34c81b6757138ffeaaa54848a2a6e1b6ac994b5d9903bda3eccebf226d5 file=deus/internal/gateway/quote.go range=19:19 lang=go exported=true byte_range=393:414
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/gateway.QuoteRequest
+
+NODE id=github.com/paxlabs-inc/deus/internal/gateway.QuoteRequest#Operation kind=field
+  digest=b3:1174b7a4326383ba7ab67cdcb265163bb490cfbce8fdf76a248afd6bd80d53db file=deus/internal/gateway/quote.go range=18:18 lang=go exported=true byte_range=370:391
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/gateway.QuoteRequest
+
+NODE id=github.com/paxlabs-inc/deus/internal/gateway.QuoteRequest#ServiceID kind=field
+  digest=b3:9197eb37ee5b9cef2dd821801a26456813a49db221074c78cd2cc637dbc36396 file=deus/internal/gateway/quote.go range=17:17 lang=go exported=true byte_range=347:368
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/gateway.QuoteRequest
+
+NODE id=github.com/paxlabs-inc/deus/internal/gateway.QuoteResponse kind=type
+  digest=b3:e526b64f00db50fcf0b9f3f225adafe15078f630472c055d67fae3accbe35838 file=deus/internal/gateway/quote.go range=22:33 lang=go exported=true byte_range=418:714
+  sig=type QuoteResponse struct {\n	QuoteID		string\n	ServiceID	string\n	Operation	string\n	UnitPriceWei	string\n	MaxUnits	string\n	MaxTotalWei	string\n	PricingVersion	int\n	ExpiresAt	time.Time\n	EIP712		EIP712Sig\n}
+  doc=QuoteResponse is the signed quote returned to agents.
+EDGES
+  contains=github.com/paxlabs-inc/deus/internal/gateway.QuoteResponse#EIP712,github.com/paxlabs-inc/deus/internal/gateway.QuoteResponse#ExpiresAt,github.com/paxlabs-inc/deus/internal/gateway.QuoteResponse#MaxTotalWei,github.com/paxlabs-inc/deus/internal/gateway.QuoteResponse#MaxUnits,github.com/paxlabs-inc/deus/internal/gateway.QuoteResponse#Operation,github.com/paxlabs-inc/deus/internal/gateway.QuoteResponse#PricingVersion,github.com/paxlabs-inc/deus/internal/gateway.QuoteResponse#QuoteID,github.com/paxlabs-inc/deus/internal/gateway.QuoteResponse#ServiceID,github.com/paxlabs-inc/deus/internal/gateway.QuoteResponse#UnitPriceWei
+  ^defines=github.com/paxlabs-inc/deus/internal/gateway/quote.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/gateway.QuoteResponse#EIP712 kind=field
+  digest=b3:58a0aa1f35196da636b7baed60177c44ef0c78c959beb8c34ca9a70a79fab07b file=deus/internal/gateway/quote.go range=32:32 lang=go exported=true byte_range=688:712
+  sig=gateway.EIP712Sig
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/gateway.QuoteResponse
+
+NODE id=github.com/paxlabs-inc/deus/internal/gateway.QuoteResponse#ExpiresAt kind=field
+  digest=b3:4fd22887e340a517989551315f3be19d5653b47b8e04c9b7817426e831d39a97 file=deus/internal/gateway/quote.go range=31:31 lang=go exported=true byte_range=662:686
+  sig=time.Time
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/gateway.QuoteResponse
+
+NODE id=github.com/paxlabs-inc/deus/internal/gateway.QuoteResponse#MaxTotalWei kind=field
+  digest=b3:c02940ff450277a53a8b2e975a71a66ddfacd3eef3dacdbdb407a8b46f76b3de file=deus/internal/gateway/quote.go range=29:29 lang=go exported=true byte_range=619:640
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/gateway.QuoteResponse
+
+NODE id=github.com/paxlabs-inc/deus/internal/gateway.QuoteResponse#MaxUnits kind=field
+  digest=b3:45dee0dd5c15a2b80ce56e8968c5e8030d3467a24870549392528563ad661045 file=deus/internal/gateway/quote.go range=28:28 lang=go exported=true byte_range=596:617
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/gateway.QuoteResponse
+
+NODE id=github.com/paxlabs-inc/deus/internal/gateway.QuoteResponse#Operation kind=field
+  digest=b3:1174b7a4326383ba7ab67cdcb265163bb490cfbce8fdf76a248afd6bd80d53db file=deus/internal/gateway/quote.go range=26:26 lang=go exported=true byte_range=550:571
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/gateway.QuoteResponse
+
+NODE id=github.com/paxlabs-inc/deus/internal/gateway.QuoteResponse#PricingVersion kind=field
+  digest=b3:24cf76648df8f917a3dc4e72705298ab086500265fdcd238b4a34a908942b773 file=deus/internal/gateway/quote.go range=30:30 lang=go exported=true byte_range=642:660
+  sig=int
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/gateway.QuoteResponse
+
+NODE id=github.com/paxlabs-inc/deus/internal/gateway.QuoteResponse#QuoteID kind=field
+  digest=b3:ba3d64490d8f16cf65a7956358a735899cf177f8d6a7b7501941e67103c9bb16 file=deus/internal/gateway/quote.go range=24:24 lang=go exported=true byte_range=504:525
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/gateway.QuoteResponse
+
+NODE id=github.com/paxlabs-inc/deus/internal/gateway.QuoteResponse#ServiceID kind=field
+  digest=b3:9197eb37ee5b9cef2dd821801a26456813a49db221074c78cd2cc637dbc36396 file=deus/internal/gateway/quote.go range=25:25 lang=go exported=true byte_range=527:548
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/gateway.QuoteResponse
+
+NODE id=github.com/paxlabs-inc/deus/internal/gateway.QuoteResponse#UnitPriceWei kind=field
+  digest=b3:8df8b1a19dfb1030018bbdf23a726e7c41cb224879927baebfdf0964cb9d48a5 file=deus/internal/gateway/quote.go range=27:27 lang=go exported=true byte_range=573:594
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/gateway.QuoteResponse
+
+NODE id=github.com/paxlabs-inc/deus/internal/gateway.ReceiptSummary kind=type
+  digest=b3:cf2d61b869122a3b0ded753d72738821b9d4a90be9b2556f81b04c86c0cd6feb file=deus/internal/gateway/gateway.go range=119:124 lang=go exported=true byte_range=3413:3610
+  sig=type ReceiptSummary struct {\n	Digest		string	`json:"digest"`\n	GatewaySig	string	`json:"gateway_sig"`\n	RunnerSig	*string	`json:"runner_sig"`\n}
+  doc=ReceiptSummary is the inline receipt envelope.
+EDGES
+  contains=github.com/paxlabs-inc/deus/internal/gateway.ReceiptSummary#Digest,github.com/paxlabs-inc/deus/internal/gateway.ReceiptSummary#GatewaySig,github.com/paxlabs-inc/deus/internal/gateway.ReceiptSummary#RunnerSig
+  ^defines=github.com/paxlabs-inc/deus/internal/gateway/gateway.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/gateway.ReceiptSummary#Digest kind=field
+  digest=b3:3b5a1209aaa72f942d208b7c840d2889faa521b566b691a13dbf6612ee0f5fed file=deus/internal/gateway/gateway.go range=121:121 lang=go exported=true byte_range=3493:3527
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/gateway.ReceiptSummary
+
+NODE id=github.com/paxlabs-inc/deus/internal/gateway.ReceiptSummary#GatewaySig kind=field
+  digest=b3:4e9e268f72d74f715c3baf43e51ab230ad56775bb3fc0c3e4ce9d20613186b88 file=deus/internal/gateway/gateway.go range=122:122 lang=go exported=true byte_range=3529:3568
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/gateway.ReceiptSummary
+
+NODE id=github.com/paxlabs-inc/deus/internal/gateway.ReceiptSummary#RunnerSig kind=field
+  digest=b3:619adfdd9491145afb4e7d6ad029b4cdc2c2b55117b310323589581c91d33e71 file=deus/internal/gateway/gateway.go range=123:123 lang=go exported=true byte_range=3570:3608
+  sig=*string
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/gateway.ReceiptSummary
+
+NODE id=github.com/paxlabs-inc/deus/internal/gateway.VoucherSummary kind=type
+  digest=b3:9d5e8c1adeb128b7c3124ac80b1be190e43e79b7afe07be4d6e1818e0b2524e5 file=deus/internal/gateway/gateway.go range=108:117 lang=go exported=true byte_range=2994:3411
+  sig=type VoucherSummary struct {\n	ChannelID	string	`json:"channel_id"`\n	CumulativeWei	string	`json:"cumulative_wei"`\n	Nonce		int64	`json:"nonce"`\n	LastReceiptHash	string	`json:"last_receipt_hash"`\n	Digest		string	`json:"digest"`\n	NeedsSignature	bool	`json:"needs_signature"`\n	VoucherID	string	`json:"voucher_id,omitempty"`\n}
+  doc=VoucherSummary is a cumulative channel voucher (net rail).
+EDGES
+  contains=github.com/paxlabs-inc/deus/internal/gateway.VoucherSummary#ChannelID,github.com/paxlabs-inc/deus/internal/gateway.VoucherSummary#CumulativeWei,github.com/paxlabs-inc/deus/internal/gateway.VoucherSummary#Digest,github.com/paxlabs-inc/deus/internal/gateway.VoucherSummary#LastReceiptHash,github.com/paxlabs-inc/deus/internal/gateway.VoucherSummary#NeedsSignature,github.com/paxlabs-inc/deus/internal/gateway.VoucherSummary#Nonce,github.com/paxlabs-inc/deus/internal/gateway.VoucherSummary#VoucherID
+  ^defines=github.com/paxlabs-inc/deus/internal/gateway/gateway.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/gateway.VoucherSummary#ChannelID kind=field
+  digest=b3:76ead86b2f29cc5bf502929c62a155e08d4ed7e59069749ffb9d511655be303a file=deus/internal/gateway/gateway.go range=110:110 lang=go exported=true byte_range=3086:3128
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/gateway.VoucherSummary
+
+NODE id=github.com/paxlabs-inc/deus/internal/gateway.VoucherSummary#CumulativeWei kind=field
+  digest=b3:676da2e9b09fd5f0e20df0bce469b35d6cf836fb570a2f6e3005b8de6377ee1d file=deus/internal/gateway/gateway.go range=111:111 lang=go exported=true byte_range=3130:3176
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/gateway.VoucherSummary
+
+NODE id=github.com/paxlabs-inc/deus/internal/gateway.VoucherSummary#Digest kind=field
+  digest=b3:0c0bd2052f006aa1299986648e04f4431045559415346aff625a0c4ff14ac8f0 file=deus/internal/gateway/gateway.go range=114:114 lang=go exported=true byte_range=3268:3306
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/gateway.VoucherSummary
+
+NODE id=github.com/paxlabs-inc/deus/internal/gateway.VoucherSummary#LastReceiptHash kind=field
+  digest=b3:14a3a146328673196ab3efd215d3cd50202e6acd2079326446867ddf80914005 file=deus/internal/gateway/gateway.go range=113:113 lang=go exported=true byte_range=3217:3266
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/gateway.VoucherSummary
+
+NODE id=github.com/paxlabs-inc/deus/internal/gateway.VoucherSummary#NeedsSignature kind=field
+  digest=b3:9c0b384822244633f2464cdb74d17f1c677417c5b17f609535473ca02041cd89 file=deus/internal/gateway/gateway.go range=115:115 lang=go exported=true byte_range=3308:3355
+  sig=bool
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/gateway.VoucherSummary
+
+NODE id=github.com/paxlabs-inc/deus/internal/gateway.VoucherSummary#Nonce kind=field
+  digest=b3:e499925c04aeb4607a735a68f6c6778f9f020657b89abf64d5666f4493b9e4b1 file=deus/internal/gateway/gateway.go range=112:112 lang=go exported=true byte_range=3178:3215
+  sig=int64
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/gateway.VoucherSummary
+
+NODE id=github.com/paxlabs-inc/deus/internal/gateway.VoucherSummary#VoucherID kind=field
+  digest=b3:6ac9bc831e7af7536309f417f647557dedd2d8f53ed3b7aa239ce08b0596ebb8 file=deus/internal/gateway/gateway.go range=116:116 lang=go exported=true byte_range=3357:3409
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/gateway.VoucherSummary
+
+NODE id=github.com/paxlabs-inc/deus/internal/gateway.appwriteExecution kind=type
+  digest=b3:b1a601c141b20f6cd4b48b061722908565d0f5d0a6ad069a4b46793f95c24949 file=deus/internal/gateway/hosted.go range=108:114 lang=go exported=false byte_range=3197:3499
+  sig=type appwriteExecution struct {\n	ResponseStatusCode	int	`json:"responseStatusCode"`\n	ResponseBody		string	`json:"responseBody"`\n	Status			string	`json:"status"`\n	Errors			string	`json:"errors"`\n}
+  doc=appwriteExecution is the subset of the Appwrite execution response we read.
+EDGES
+  contains=github.com/paxlabs-inc/deus/internal/gateway.appwriteExecution#Errors,github.com/paxlabs-inc/deus/internal/gateway.appwriteExecution#ResponseBody,github.com/paxlabs-inc/deus/internal/gateway.appwriteExecution#ResponseStatusCode,github.com/paxlabs-inc/deus/internal/gateway.appwriteExecution#Status
+  ^defines=github.com/paxlabs-inc/deus/internal/gateway/hosted.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/gateway.appwriteExecution#Errors kind=field
+  digest=b3:6b7c2f3271b0972fab4703a55216c71f057fe154ea89c78985edebc2608b4ead file=deus/internal/gateway/hosted.go range=113:113 lang=go exported=true byte_range=3456:3497
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/gateway.appwriteExecution
+
+NODE id=github.com/paxlabs-inc/deus/internal/gateway.appwriteExecution#ResponseBody kind=field
+  digest=b3:a8f9e6bcea5179596837bb8ae46e11b955fd833371ef7e06ba9546dada9fa388 file=deus/internal/gateway/hosted.go range=111:111 lang=go exported=true byte_range=3364:3411
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/gateway.appwriteExecution
+
+NODE id=github.com/paxlabs-inc/deus/internal/gateway.appwriteExecution#ResponseStatusCode kind=field
+  digest=b3:acc2d0faa7061bcb862253c4def0c3c802d4e2d0b63de577291c38c8eafdc878 file=deus/internal/gateway/hosted.go range=110:110 lang=go exported=true byte_range=3309:3362
+  sig=int
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/gateway.appwriteExecution
+
+NODE id=github.com/paxlabs-inc/deus/internal/gateway.appwriteExecution#Status kind=field
+  digest=b3:b5b53c1ec03c11cac015a7740493d6c1db229b44366e3fe2de94aaf3c173758c file=deus/internal/gateway/hosted.go range=112:112 lang=go exported=true byte_range=3413:3454
+  sig=string
+EDGES
+  ^contains=github.com/paxlabs-inc/deus/internal/gateway.appwriteExecution
+
+NODE id=github.com/paxlabs-inc/deus/internal/gateway.defaultProxyTimeout kind=const
+  digest=b3:361e0953265406580268b635e694642a6ca106e1663ed25d380636fc4b9ae7f9 file=deus/internal/gateway/route.go range=13:13 lang=go exported=false byte_range=105:143
+  sig=time.Duration
+EDGES
+  ^defines=github.com/paxlabs-inc/deus/internal/gateway/route.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/gateway.hostedRequestDigest kind=func
+  digest=b3:4b8f6d7a77b9924a3c19e9c0d723e082357229ac0e667bddd33db1aff9a9d6ee file=deus/internal/gateway/gateway.go range=464:479 lang=go exported=false byte_range=15885:16470
+  sig=func hostedRequestDigest(invocationID, serviceID, callerDID, argsHash string) string
+  doc=hostedRequestDigest binds the fields the gateway knows before execution into\na stable digest the runner can co-sign. It is keccak256 over canonical JSON\n(same hashing as receipt payloads) and does not include the result hash,\nwhich is unknown until the runner returns.
+EDGES
+  ^defines=github.com/paxlabs-inc/deus/internal/gateway/gateway.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/gateway.isAppwriteExecutionsURL kind=func
+  digest=b3:77cea9e24570c82cacf911ac4622b31a7564c3f01cea13217ab074879a7a6090 file=deus/internal/gateway/hosted.go range=101:106 lang=go exported=false byte_range=2829:3195
+  sig=func isAppwriteExecutionsURL(execURL string) bool
+  doc=isAppwriteExecutionsURL reports whether execURL is an Appwrite synchronous\nexecutions endpoint (".../functions/{id}/executions"). Dev/runner endpoints\nuse {url}/invoke instead and are routed through CallHosted.
+EDGES
+  ^defines=github.com/paxlabs-inc/deus/internal/gateway/hosted.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/gateway.operationCaps kind=func
+  digest=b3:3d160b3646b6a66fe2cdfa685ae2dd6d52ad7b6088f471d0c2e9285be06d6517 file=deus/internal/gateway/gateway.go range=481:504 lang=go exported=false byte_range=16472:17083
+  sig=func operationCaps(svc store.ServiceRow, operation string) (timeoutMS, maxBytes int)
+EDGES
+  ^defines=github.com/paxlabs-inc/deus/internal/gateway/gateway.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/gateway.quoteTTL kind=const
+  digest=b3:83c1503f4bd7c645672f5fe039d208b5e9129cb6a9ec88ed7a9bbb7096bb21cf file=deus/internal/gateway/quote.go range=13:13 lang=go exported=false byte_range=242:269
+  sig=time.Duration
+EDGES
+  ^defines=github.com/paxlabs-inc/deus/internal/gateway/quote.go
+
+NODE id=github.com/paxlabs-inc/deus/internal/gateway/gateway.go kind=file
+  digest=b3:2a940867f62ca399a21040dc4915cd0ec7473469df313fad0e6cc712a64065e4 file=deus/internal/gateway/gateway.go range=1:593 lang=go exported=true
+EDGES
+  defines=github.com/paxlabs-inc/deus/internal/gateway.Config,github.com/paxlabs-inc/deus/internal/gateway.Error,github.com/paxlabs-inc/deus/internal/gateway.Error.Error,github.com/paxlabs-inc/deus/internal/gateway.Gateway,github.com/paxlabs-inc/deus/internal/gateway.Gateway.Invoke,github.com/paxlabs-inc/deus/internal/gateway.Gateway.invokeHosted,github.com/paxlabs-inc/deus/internal/gateway.Gateway.invokeProxy,github.com/paxlabs-inc/deus/internal/gateway.Gateway.replaySuccess,github.com/paxlabs-inc/deus/internal/gateway.Gateway.validateQuote,github.com/paxlabs-inc/deus/internal/gateway.HostingRouter,github.com/paxlabs-inc/deus/internal/gateway.InvokeRequest,github.com/paxlabs-inc/deus/internal/gateway.InvokeResponse,github.com/paxlabs-inc/deus/internal/gateway.New,github.com/paxlabs-inc/deus/internal/gateway.ReceiptSummary,github.com/paxlabs-inc/deus/internal/gateway.VoucherSummary,github.com/paxlabs-inc/deus/internal/gateway.hostedRequestDigest,github.com/paxlabs-inc/deus/internal/gateway.operationCaps
+  ^contains=github.com/paxlabs-inc/deus/internal/gateway
+
+NODE id=github.com/paxlabs-inc/deus/internal/gateway/gateway_net.go kind=file
+  digest=b3:fc3f982ad44f01af1176450003c0a32627d556387fc864dd02070b5c39f4ea35 file=deus/internal/gateway/gateway_net.go range=1:194 lang=go exported=true
+EDGES
+  defines=github.com/paxlabs-inc/deus/internal/gateway.Gateway.CosignVoucher,github.com/paxlabs-inc/deus/internal/gateway.Gateway.OpenChannel,github.com/paxlabs-inc/deus/internal/gateway.Gateway.invokeNet
+  ^contains=github.com/paxlabs-inc/deus/internal/gateway
+
+NODE id=github.com/paxlabs-inc/deus/internal/gateway/gateway_stream.go kind=file
+  digest=b3:9e79e577e2658235d49d3ea6e33799949535ec2f3fc11a66c040f252b003cc7c file=deus/internal/gateway/gateway_stream.go range=1:186 lang=go exported=true
+EDGES
+  defines=github.com/paxlabs-inc/deus/internal/gateway.Gateway.invokeStream
+  ^contains=github.com/paxlabs-inc/deus/internal/gateway
+
+NODE id=github.com/paxlabs-inc/deus/internal/gateway/hosted.go kind=file
+  digest=b3:20f746065605e739ac6f1f04bb2155cd0f7e1d8ad02c7e1e0a1f0a645b95fd0d file=deus/internal/gateway/hosted.go range=1:205 lang=go exported=true
+EDGES
+  defines=github.com/paxlabs-inc/deus/internal/gateway.CallAppwriteExecution,github.com/paxlabs-inc/deus/internal/gateway.CallHosted,github.com/paxlabs-inc/deus/internal/gateway.HostedInvokeRequest,github.com/paxlabs-inc/deus/internal/gateway.HostedInvokeResponse,github.com/paxlabs-inc/deus/internal/gateway.HostedResult,github.com/paxlabs-inc/deus/internal/gateway.appwriteExecution,github.com/paxlabs-inc/deus/internal/gateway.isAppwriteExecutionsURL
+  ^contains=github.com/paxlabs-inc/deus/internal/gateway
+
+NODE id=github.com/paxlabs-inc/deus/internal/gateway/quote.go kind=file
+  digest=b3:82d3ae713fe1a44c04f161a1e820412ed6d2daeda70124771c41205ab268d1eb file=deus/internal/gateway/quote.go range=1:106 lang=go exported=true
+EDGES
+  defines=github.com/paxlabs-inc/deus/internal/gateway.EIP712Sig,github.com/paxlabs-inc/deus/internal/gateway.Gateway.BuildQuote,github.com/paxlabs-inc/deus/internal/gateway.QuoteRequest,github.com/paxlabs-inc/deus/internal/gateway.QuoteResponse,github.com/paxlabs-inc/deus/internal/gateway.quoteTTL
+  ^contains=github.com/paxlabs-inc/deus/internal/gateway
+
+NODE id=github.com/paxlabs-inc/deus/internal/gateway/route.go kind=file
+  digest=b3:4c43ef527311426d24b5be5ca44f550bc940e4f3f8b44eea942da4c7a4618ce2 file=deus/internal/gateway/route.go range=1:68 lang=go exported=true
+EDGES
+  defines=github.com/paxlabs-inc/deus/internal/gateway.CallProxy,github.com/paxlabs-inc/deus/internal/gateway.DecodeJSONResult,github.com/paxlabs-inc/deus/internal/gateway.ProxyResult,github.com/paxlabs-inc/deus/internal/gateway.defaultProxyTimeout
+  ^contains=github.com/paxlabs-inc/deus/internal/gateway
