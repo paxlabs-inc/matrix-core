@@ -539,6 +539,12 @@ func (a *Agent) Chat(ctx context.Context, userInput string) error {
 	// guard can detect a SEMANTIC repeat (same operation, reworded arguments),
 	// not just a byte-identical batch signature (NE-4).
 	var prevCalls []llm.ToolCall
+	// recentSigs is a small window of recent batch signatures, so a rotating set
+	// of already-seen operations (A → B → A → B) that introduces no NEW tool is
+	// caught as a spiral even though consecutive signatures differ. convergeNudged
+	// gates the one-time "stop re-doing completed work and finish" steer.
+	recentSigs := make([]string, 0, stallWindow)
+	convergeNudged := false
 	// stateTouched latches once this turn reaches the irreversible seam
 	// (core_execute). It selects the strict completion path (a full grounded
 	// completeness object) over the reversible light path — the placement rule
@@ -896,11 +902,25 @@ func (a *Agent) Chat(ctx context.Context, userInput string) error {
 		// counter and loop forever (NE-4). Distinct operations (different
 		// target/tool) reset it.
 		sig := batchSignature(res.Message.ToolCalls)
-		if sig == prevSig || a.semanticRepeat(prevCalls, res.Message.ToolCalls) {
+		// Cycle-aware no-progress: a rotating set of already-seen operations that
+		// introduces no NEW tool (e.g. price → render → price → render) is a spiral
+		// even though consecutive signatures differ — count it so an A-B-A-B loop
+		// trips the stall instead of running silently to the step budget. Any
+		// genuinely new tool this step resets the spiral read.
+		introducedNewTool := false
+		for _, c := range res.Message.ToolCalls {
+			if _, seen := distinctToolSet[c.Function.Name]; !seen {
+				introducedNewTool = true
+				break
+			}
+		}
+		cyclic := !introducedNewTool && sigInWindow(recentSigs, sig)
+		if sig == prevSig || a.semanticRepeat(prevCalls, res.Message.ToolCalls) || cyclic {
 			repeats++
 		} else {
 			repeats = 0
 		}
+		recentSigs = pushWindow(recentSigs, sig, stallWindow)
 		prevSig = sig
 		prevCalls = res.Message.ToolCalls
 		if repeats >= a.cfg.NoProgressStall {
@@ -911,6 +931,11 @@ func (a *Agent) Chat(ctx context.Context, userInput string) error {
 			a.consolidateWorking()
 			return fmt.Errorf("%w: repeating the same step without progress. Where it got stuck: %s", ErrIncomplete, oneLine(a.lastToolSummary()))
 		}
+		// One firm convergence steer just before the hard stall: grok in particular
+		// re-does work it already completed (re-fetching/re-rendering a value it
+		// already has) instead of closing out. Injected AFTER this step's tool
+		// results below so the transcript stays well-formed.
+		injectConvergeNudge := a.cfg.NoProgressStall >= 2 && repeats == a.cfg.NoProgressStall-1 && !convergeNudged
 
 		// P2-7: record distinct tool names for the adaptive budget signal.
 		for _, c := range res.Message.ToolCalls {
@@ -936,6 +961,10 @@ func (a *Agent) Chat(ctx context.Context, userInput string) error {
 		// counter so the bounded-escalation budget only trips on a true nudge
 		// loop, never on steps separated by real work (req.1.5).
 		guidanceNudges = 0
+		if injectConvergeNudge {
+			convergeNudged = true
+			a.working = append(a.working, llm.UserMessage("(you already obtained the result and showed it — do NOT fetch or render it again. Give the user the answer now and call task_complete with it.)"))
+		}
 	}
 
 	// [loop_discipline] step budget exhausted → NOT done. Never fabricate a
@@ -1587,6 +1616,29 @@ func batchSignature(calls []llm.ToolCall) string {
 	}
 	sort.Strings(parts)
 	return strings.Join(parts, "|")
+}
+
+// stallWindow bounds the recent-signature ring the cycle-aware no-progress guard
+// scans to catch a rotating (A → B → A → B) spiral.
+const stallWindow = 6
+
+// sigInWindow reports whether sig already appears in the recent-signature window.
+func sigInWindow(win []string, sig string) bool {
+	for _, s := range win {
+		if s == sig {
+			return true
+		}
+	}
+	return false
+}
+
+// pushWindow appends sig to the recent-signature ring, capping it at max entries.
+func pushWindow(win []string, sig string, max int) []string {
+	win = append(win, sig)
+	if len(win) > max {
+		win = win[len(win)-max:]
+	}
+	return win
 }
 
 func estimateToolTokens(schemas []llm.Tool) int {
