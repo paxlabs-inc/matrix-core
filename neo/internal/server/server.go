@@ -73,7 +73,20 @@ func (s *Server) Handler() http.Handler {
 	// proxy (the daemon has never heard of them).
 	mux.HandleFunc("/automatrix/", s.handleAutomatrix)
 	mux.HandleFunc("/", s.proxy.ServeHTTP) // healthz, /messages, /memory, /tools, … → daemon
-	return mux
+	// Q2 warm-on-open: the FIRST inbound request (whatever the app hits on
+	// open) triggers a one-shot, non-blocking warm of the embedder + HNSW
+	// substrate so the first message's relevance recall isn't on the cold path.
+	// Engine.Warm is idempotent + async, so this never adds latency to a request.
+	return s.warmOnFirstRequest(mux)
+}
+
+// warmOnFirstRequest wraps next so every inbound request first pokes
+// Engine.Warm (a no-op after the one-shot fires), then serves normally.
+func (s *Server) warmOnFirstRequest(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		s.engine.Warm()
+		next.ServeHTTP(w, r)
+	})
 }
 
 // chatRequest mirrors the daemon's POST /chat body (only the fields Neo needs).

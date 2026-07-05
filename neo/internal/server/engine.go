@@ -128,6 +128,16 @@ type Engine struct {
 	// override it via SetAutomatrixNotifier with a real Notifier pointed at an
 	// httptest server. Never nil for a built engine.
 	automatrixNotifier notify.Notifier
+
+	// Q2 warm-on-open: the FIRST inbound HTTP request fires a one-shot,
+	// non-blocking warm of the embedder + HNSW semantic substrate (the only real
+	// cold-start on the memory path — Activate/StorySoFar are cheap materialized
+	// reads), so the first message's relevance recall doesn't pay it. warmOnce
+	// makes it idempotent; warmed flips true once the background warm completes
+	// (observable for tests + readiness). A nil pager, a missing embedder, or a
+	// cleared WarmOnOpen flag makes Warm a no-op.
+	warmOnce sync.Once
+	warmed   atomic.Bool
 }
 
 // EngineOptions configures NewEngine. Main + Tools are required; the rest are
@@ -261,6 +271,59 @@ func (e *Engine) Close() {
 		return
 	}
 	e.trace.Close()
+}
+
+// warmScope is the sentinel conversation id used only for the warm-on-open
+// retrieval. It never becomes a real session (the actor-scoped semantic lanes
+// the warm exercises are conversation-independent).
+const warmScope = "neo-warm-on-open"
+
+// warmTimeout bounds the background warm so a slow/hung embedder or index load
+// can't leak a goroutine for the process lifetime.
+const warmTimeout = 30 * time.Second
+
+// Warm is the Q2 warm-on-open hook: the FIRST inbound HTTP request kicks a
+// one-shot, NON-BLOCKING warm of the embedder + HNSW semantic substrate so the
+// first message's relevance recall (agent.cmRelevancePush) isn't paying the
+// cold-start. It returns immediately; the actual warm runs on a background
+// goroutine bounded by warmTimeout. Idempotent via warmOnce, and a no-op when
+// WarmOnOpen is off, the pager is nil, or no embedder is running (the salience
+// lane needs no warming).
+func (e *Engine) Warm() {
+	if e == nil || !e.cfg.WarmOnOpen {
+		return
+	}
+	e.warmOnce.Do(func() {
+		if e.pager == nil || !e.pager.HasEmbedder() {
+			return
+		}
+		go func() {
+			ctx, cancel := context.WithTimeout(context.Background(), warmTimeout)
+			defer cancel()
+			e.warmBody(ctx)
+		}()
+	})
+}
+
+// warmBody performs the actual substrate warm synchronously: one relevance
+// retrieval that loads the embedding model + opens the HNSW index. The result
+// is discarded — the point is the side effect of spinning up the cold path.
+// Split out from Warm so tests can exercise it deterministically without the
+// once/goroutine wrapper. Best-effort: any error is swallowed (a failed warm
+// just means the first real recall pays what it would have anyway).
+func (e *Engine) warmBody(ctx context.Context) {
+	if e.pager == nil {
+		return
+	}
+	_, _ = e.pager.Retrieve(ctx, warmScope)
+	e.warmed.Store(true)
+}
+
+// Warmed reports whether the background warm has completed. Observability for
+// tests + readiness checks; false until the warm goroutine finishes (or forever
+// when warming is disabled / unavailable).
+func (e *Engine) Warmed() bool {
+	return e != nil && e.warmed.Load()
 }
 
 // neoSurfaceSink adapts the engine's per-run event broker to the construct

@@ -504,6 +504,16 @@ func (a *Agent) Chat(ctx context.Context, userInput string) error {
 		// the pinned-once-per-turn discipline (NE-7) holds.
 		a.emitMemory(bundle)
 		cmTail = a.renderActivationBundle(bundle)
+		// Q2 first-message relevance push: Activate's tiers are recency-based
+		// + query-independent, so on the OPENING turn also inject a bounded
+		// relevance retrieval keyed on the message — the agent gets
+		// relevance-matched memory without a reactive memory_recall call.
+		// retrieved is otherwise nil on the cm path; setting it here feeds the
+		// existing collectSurfaced/collectSurfacedSnips usage-salience loop.
+		if pushSnips, pushBlock := a.cmRelevancePush(ctx, userInput); pushBlock != "" {
+			cmTail += pushBlock
+			retrieved = pushSnips
+		}
 	} else {
 		retrieved = a.ambientMemory(ctx, userInput)
 		procedural = a.faultPatterns(ctx, userInput)

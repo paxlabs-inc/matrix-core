@@ -20,12 +20,14 @@
 package agent
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
 	"matrix/cortex"
 	cmem "matrix/cortex/memory"
 	"matrix/neo/internal/llm"
+	"matrix/neo/internal/memory"
 )
 
 // continuousMemory reports whether the continuous-memory collapse is active for
@@ -125,6 +127,46 @@ func (a *Agent) cmActivate(query string) *cortex.ActivationBundle {
 		return nil
 	}
 	return b
+}
+
+// cmRelevancePush is the Q2 first-message relevance push. cortex.Activate's
+// pushed tiers (Pinned/Timeline/Recent) are recency-based and query-INDEPENDENT
+// (activate.go: the query arg is unused), so on the OPENING message the agent
+// carries recency but nothing matched to what the user actually asked unless it
+// reactively calls memory_recall. This runs the pager's relevance retrieval
+// (semantic HNSW + the always-on salience lane + edge cascade) ONCE, on turn 1
+// only, and returns both the retrieved snippets (so the caller can fold them
+// into the turn's surfaced set for the usage-salience learning loop) and a
+// rendered block to append to the activation tail. After turn 1 the pull-not-
+// push philosophy resumes (the model pages in the rest via memory_recall).
+//
+// Returns (nil, "") when disabled, off the first turn, without a pager, or when
+// retrieval yields nothing — a pure read, no durable state is touched.
+func (a *Agent) cmRelevancePush(ctx context.Context, query string) ([]memory.Snippet, string) {
+	if !a.cfg.FirstTurnRelevancePush || a.turnSeq != 1 || a.pager == nil {
+		return nil, ""
+	}
+	snips, err := a.pager.Retrieve(ctx, query)
+	if err != nil || len(snips) == 0 {
+		return nil, ""
+	}
+	var b strings.Builder
+	b.WriteString("\nRelevant to your message (auto-recalled from memory; call memory_recall for more — may be stale, the live conversation wins):\n")
+	for _, s := range snips {
+		line := strings.TrimSpace(s.Text)
+		if line == "" {
+			continue
+		}
+		b.WriteString("- ")
+		b.WriteString(line)
+		if s.Note != "" {
+			b.WriteString(" [")
+			b.WriteString(s.Note)
+			b.WriteString("]")
+		}
+		b.WriteString("\n")
+	}
+	return snips, b.String()
 }
 
 // MemoryEvent is the legible, protocol-free view of the memory Neo carries into

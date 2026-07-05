@@ -65,6 +65,22 @@ type Config struct {
 	RecallTopK           int // conversational recall: top-K relevant past turns per turn
 	RecallBudgetTokens   int // token ceiling for the recalled past-turns block
 
+	// FirstTurnRelevancePush injects a bounded RELEVANCE retrieval into the
+	// activation window on the FIRST turn of a conversation only. cortex.Activate's
+	// pushed tiers (Pinned/Timeline/Recent) are recency-based and query-INDEPENDENT
+	// (activate.go: the query arg is unused), so on the opening message the agent
+	// carries recency but NOT relevance-to-the-ask unless it reactively calls
+	// memory_recall. With this on, Neo runs pager.Retrieve(query) once on turn 1
+	// and injects the hits, so the opening turn has relevance-matched memory with
+	// no reactive tool call. After turn 1 the pull-not-push philosophy resumes.
+	FirstTurnRelevancePush bool
+	// WarmOnOpen makes the FIRST inbound HTTP request spin up the embedder + HNSW
+	// semantic substrate in the background (one-shot). Activate + StorySoFar are
+	// already cheap (materialized scans, deterministic, no LLM); the only real
+	// cold-start is the embedder/HNSW that the relevance push depends on, so
+	// warming it on app-open keeps the first message's recall off the cold path.
+	WarmOnOpen bool
+
 	// --- loop discipline ---
 	StepBudget      int // max tool-call iterations per turn (anti-infinite); the configured ceiling
 	StepBudgetMin   int // P2-7: adaptive floor. 0 = adaptation disabled (effective budget = StepBudgetMax, today's fixed behavior). When >0 the effective budget scales within [StepBudgetMin, StepBudgetMax] based on turn complexity.
@@ -197,6 +213,12 @@ func Default() Config {
 		PinnedBudgetTokens:    2000,
 		RecallTopK:            6,
 		RecallBudgetTokens:    2500,
+
+		// Q2 (memory warm + relevance push). Both ON: the opening message
+		// carries relevance-matched memory (not just recency) with no reactive
+		// memory_recall, and the embedder/HNSW cold-start is paid on app-open.
+		FirstTurnRelevancePush: true,
+		WarmOnOpen:             true,
 
 		StepBudget:                 50,
 		StepBudgetMin:              0,  // P2-7: adaptation disabled by default (effective budget = 50, today's behavior)
@@ -356,6 +378,8 @@ func (c *Config) applyDoc(d *kvxDoc) {
 		c.PinnedBudgetTokens = d.intOr("memory", "pinned_budget_tokens", c.PinnedBudgetTokens)
 		c.RecallTopK = d.intOr("memory", "recall_top_k", c.RecallTopK)
 		c.RecallBudgetTokens = d.intOr("memory", "recall_budget_tokens", c.RecallBudgetTokens)
+		c.FirstTurnRelevancePush = d.boolOr("memory", "first_turn_relevance_push", c.FirstTurnRelevancePush)
+		c.WarmOnOpen = d.boolOr("memory", "warm_on_open", c.WarmOnOpen)
 	}
 	if d.has("loop") {
 		c.StepBudget = d.intOr("loop", "step_budget", c.StepBudget)
@@ -466,6 +490,9 @@ func (c *Config) applyEnv() {
 	// HeartbeatInterval accepts 0 (disabled), so it uses the non-negative
 	// variant (P1-4). No wakeups occur when 0.
 	c.HeartbeatInterval = envIntNonNeg("NEO_HEARTBEAT_INTERVAL", c.HeartbeatInterval)
+	// Q2 memory warm + relevance push (default on; set to false to disable).
+	c.FirstTurnRelevancePush = envBool("NEO_FIRST_TURN_RELEVANCE_PUSH", c.FirstTurnRelevancePush)
+	c.WarmOnOpen = envBool("NEO_WARM_ON_OPEN", c.WarmOnOpen)
 
 	// Automatrix (proactive surprise tasks). Interval/jitter/cap accept 0
 	// (interval 0 = disabled, jitter 0 = no randomization) so they use the
