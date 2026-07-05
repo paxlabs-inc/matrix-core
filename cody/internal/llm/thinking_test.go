@@ -7,7 +7,7 @@ import "testing"
 
 // Grok (grok-*) is served by xAI. Only grok-4.3 honors the native
 // `reasoning_effort` field, pinned EXPLICITLY both ways from the per-client
-// flag (ON → "high", OFF → "none"); other Grok models (grok-build-*) ignore it
+// flag (ON → "medium", OFF → "none"); other Grok models (grok-build-*) ignore it
 // so it is omitted. Kimi (moonshotai/*) stays Baseten-served with reasoning
 // OPT-IN via chat_template_args.enable_thinking. DeepSeek-V4-Pro and gpt-oss
 // reason by default, so nothing is sent for them.
@@ -33,8 +33,8 @@ func TestSupportsReasoningEffort(t *testing.T) {
 }
 
 func TestReasoningEffort(t *testing.T) {
-	if got := reasoningEffort(true); got != "high" {
-		t.Errorf("reasoningEffort(true) = %q, want %q", got, "high")
+	if got := reasoningEffort(true); got != "medium" {
+		t.Errorf("reasoningEffort(true) = %q, want %q", got, "medium")
 	}
 	if got := reasoningEffort(false); got != "none" {
 		t.Errorf("reasoningEffort(false) = %q, want %q", got, "none")

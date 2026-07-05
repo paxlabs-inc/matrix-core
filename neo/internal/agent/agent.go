@@ -552,6 +552,12 @@ func (a *Agent) Chat(ctx context.Context, userInput string) error {
 	// the frictionless light path. This is the "highest standard" gate.
 	workTouched := false
 
+	// gateSurfaced holds the last plain answer we committed as durable narration
+	// when the completion gate forced task_complete. It dedupes so a model that
+	// re-issues the same prose (before it finally calls task_complete) does not
+	// stack duplicate bubbles.
+	gateSurfaced := ""
+
 	// P2-7: adaptive step budget. Track distinct tool names dispatched so far
 	// (tool-call breadth) as the complexity signal. The effective budget is
 	// recomputed each iteration from [StepBudgetMin, StepBudgetMax] via
@@ -795,6 +801,17 @@ func (a *Agent) Chat(ctx context.Context, userInput string) error {
 			// not assumed. A pure conversational turn (no tools) rides the light
 			// path (i_cass_5, placement-by-reversibility) and ends frictionlessly.
 			if a.gateStrict(stateTouched, workTouched) {
+				// Don't discard the model's natural answer while steering it to the
+				// completion gate: it IS the user-facing reply (the gate only needs
+				// task_complete as internal completion proof). Commit it as durable
+				// narration so it survives — the redundant task_complete summary then
+				// gets hidden by the client (narration already produced), instead of
+				// the answer vanishing and the raw completion object surfacing in its
+				// place. Dedupe so a re-issued identical answer doesn't stack.
+				if answer != gateSurfaced {
+					a.out.Status(answer)
+					gateSurfaced = answer
+				}
 				a.working = append(a.working, llm.UserMessage("(you did real work this turn, so don't finish with a plain message — call task_complete with the outcome for the user: a summary, coverage, and anything still open. You don't need to cite evidence; just give the honest result.)"))
 				continue
 			}

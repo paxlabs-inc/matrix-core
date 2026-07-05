@@ -6,7 +6,7 @@ package llm
 import "testing"
 
 // xAI's grok-4.3 takes the OpenAI-style `reasoning_effort` control, pinned
-// explicitly from the per-client flag ("high" when set, "none" when clear).
+// explicitly from the per-client flag ("medium" when set, "none" when clear).
 // Only grok-4.3 supports the field; other Grok models (grok-build-*,
 // grok-4.20-*-non-reasoning) omit it. Kimi (moonshotai/*) stays Baseten-served
 // with reasoning OPT-IN via chat_template_args.enable_thinking.
@@ -31,8 +31,8 @@ func TestSupportsReasoningEffort(t *testing.T) {
 }
 
 func TestReasoningEffort(t *testing.T) {
-	if got := reasoningEffort(true); got != "high" {
-		t.Errorf("reasoningEffort(true) = %q, want \"high\"", got)
+	if got := reasoningEffort(true); got != "medium" {
+		t.Errorf("reasoningEffort(true) = %q, want \"medium\"", got)
 	}
 	if got := reasoningEffort(false); got != "none" {
 		t.Errorf("reasoningEffort(false) = %q, want \"none\"", got)

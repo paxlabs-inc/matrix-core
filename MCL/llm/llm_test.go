@@ -115,7 +115,7 @@ func TestXaiModelPassesThroughUnchanged(t *testing.T) {
 
 // TestReasoningEffortWire pins the xAI reasoning_effort request contract that
 // replaced the retired Z.ai `thinking` block. Only grok-4.3 carries the field:
-// EnableThinking=true maps to "high", EnableThinking=false maps to "none", and
+// EnableThinking=true maps to "medium", EnableThinking=false maps to "none", and
 // models that do not support reasoning_effort (grok-build-*, the non-reasoning
 // grok, and non-grok models) omit the field entirely (omitempty).
 func TestReasoningEffortWire(t *testing.T) {
@@ -125,7 +125,7 @@ func TestReasoningEffortWire(t *testing.T) {
 		enableThinking bool
 		wantEffort     string // "" means the field must be omitted from the wire
 	}{
-		{"grok43 thinking on -> high", "grok-4.3", true, "high"},
+		{"grok43 thinking on -> medium", "grok-4.3", true, "medium"},
 		{"grok43 thinking off -> none", "grok-4.3", false, "none"},
 		{"grok-build omits", "grok-build-0.1", true, ""},
 		{"grok non-reasoning omits", "grok-4.20-0309-non-reasoning", true, ""},
@@ -171,6 +171,69 @@ func TestReasoningEffortWire(t *testing.T) {
 			}
 			if string(effort) != `"`+tt.wantEffort+`"` {
 				t.Errorf("reasoning_effort = %s, want %q", effort, tt.wantEffort)
+			}
+		})
+	}
+}
+
+// TestMaxCompletionTokensWire pins FIX 2: xAI/grok requests carry
+// `max_completion_tokens` and OMIT the deprecated `max_tokens`, while every
+// other provider keeps `max_tokens` and never emits `max_completion_tokens`.
+// It marshals the REAL buildRequest output (the shared skeleton Decode/Stream
+// both send) so the wire contract is asserted end-to-end.
+func TestMaxCompletionTokensWire(t *testing.T) {
+	tests := []struct {
+		name          string
+		model         string
+		wantCompletion bool // true: expect max_completion_tokens (grok); false: expect max_tokens
+	}{
+		{"grok uses max_completion_tokens", "grok-4.3", true},
+		{"non-grok uses max_tokens", "accounts/fireworks/models/deepseek-v4-flash", false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			client, err := NewChatClient(&Config{
+				Model:     tt.model,
+				APIKey:    "test-key",
+				Endpoint:  "http://example.invalid/v1/chat/completions",
+				MaxTokens: 2048,
+			})
+			if err != nil {
+				t.Fatalf("NewChatClient: %v", err)
+			}
+			req, err := client.buildRequest([]interpreter.Message{
+				{Role: "user", Content: "hi"},
+			}, "")
+			if err != nil {
+				t.Fatalf("buildRequest: %v", err)
+			}
+			raw, err := json.Marshal(req)
+			if err != nil {
+				t.Fatalf("marshal: %v", err)
+			}
+			var m map[string]json.RawMessage
+			if err := json.Unmarshal(raw, &m); err != nil {
+				t.Fatalf("unmarshal: %v", err)
+			}
+			_, hasMax := m["max_tokens"]
+			maxCompletion, hasCompletion := m["max_completion_tokens"]
+			if tt.wantCompletion {
+				if !hasCompletion {
+					t.Errorf("grok request missing max_completion_tokens; got %s", raw)
+				}
+				if string(maxCompletion) != "2048" {
+					t.Errorf("max_completion_tokens = %s, want 2048", maxCompletion)
+				}
+				if hasMax {
+					t.Errorf("grok request must OMIT max_tokens; got %s", raw)
+				}
+			} else {
+				if !hasMax {
+					t.Errorf("non-grok request missing max_tokens; got %s", raw)
+				}
+				if hasCompletion {
+					t.Errorf("non-grok request must OMIT max_completion_tokens; got %s", raw)
+				}
 			}
 		})
 	}
