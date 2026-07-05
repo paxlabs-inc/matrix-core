@@ -10,7 +10,7 @@ SHELL              := /usr/bin/env bash
 .SHELLFLAGS        := -eu -o pipefail -c
 .DEFAULT_GOAL      := help
 
-MODULES            := MCL bridge executor gateway router cortex tachyon deus neo chronos layerx construct cassandra chronos cody uwac
+MODULES            := MCL bridge executor gateway router cortex tachyon deus neo chronos layerx construct cassandra chronos cody uwac codegraph
 GO                 ?= /usr/local/go/bin/go
 GOFLAGS            ?=
 GOTEST_FLAGS       ?= -count=1
@@ -95,6 +95,7 @@ install: ## Install runnable binaries into ./bin.
 	@$(GO) -C construct build -o $(BIN_DIR)/construct      ./cmd/construct
 	@$(GO) -C cody     build -o $(BIN_DIR)/codyd           ./cmd/codyd
 	@$(GO) -C uwac     build -o $(BIN_DIR)/uwacd           ./cmd/uwacd
+	@$(GO) -C codegraph build -o $(BIN_DIR)/codegraph      ./cmd/codegraph
 	@printf "  $(C_GREEN)binaries$(C_RESET) -> $(BIN_DIR)\n"
 	@ls -1 $(BIN_DIR) | sed 's/^/    /'
 

@@ -794,12 +794,21 @@ func (a *Agent) Chat(ctx context.Context, userInput string) error {
 			// model may have been inlining a large blob). Saying it raw leaks
 			// internal thoughts into the chat. Nudge and let it retry compactly.
 			if res.FinishReason == "length" {
-				a.working = append(a.working, llm.UserMessage("(your last message was cut off by the output limit — don't inline large payloads in prose; call a tool with compact arguments, or give a concise final answer)"))
+				// Guidance channel + bounded: this is system steering the model
+				// must act on (not a user turn), and a model that keeps getting
+				// cut off can't re-nudge forever.
+				if a.pushGuidanceNudge("Your last message was cut off by the output limit — don't inline large payloads in prose; call a tool with compact arguments, or give a concise final answer.", &guidanceNudges) {
+					return a.escalateGuidance(guidanceNudges)
+				}
 				continue
 			}
 			if answer == "" {
-				// anti-premature: empty AND no tools → nudge once to continue.
-				a.working = append(a.working, llm.UserMessage("(continue: either call a tool to make progress, or give the final answer)"))
+				// anti-premature: empty AND no tools → steer to continue via the
+				// guidance channel, bounded so a model that keeps returning
+				// nothing escalates rather than looping forever.
+				if a.pushGuidanceNudge("Continue: either call a tool to make progress, or give the final answer.", &guidanceNudges) {
+					return a.escalateGuidance(guidanceNudges)
+				}
 				continue
 			}
 			// Read-full discipline (req.4.2): a tool result too large to show
@@ -829,7 +838,18 @@ func (a *Agent) Chat(ctx context.Context, userInput string) error {
 					a.out.Status(answer)
 					gateSurfaced = answer
 				}
-				a.working = append(a.working, llm.UserMessage("(you did real work this turn, so don't finish with a plain message — call task_complete with the outcome for the user: a summary, coverage, and anything still open. You don't need to cite evidence; just give the honest result.)"))
+				// Route the completion steer through the GUIDANCE channel, not a
+				// raw user turn: the model must recognize this as private system
+				// steering to act on (call task_complete) and never surface it —
+				// delivered as a user message it reads like a contentless user
+				// turn and greets back instead, the bare-message spiral. Bounded:
+				// once a model keeps ending with a plain answer past the nudge cap,
+				// accept THAT answer as the honest final (it already did the work
+				// and the reply is surfaced) rather than re-steering forever.
+				if a.pushGuidanceNudge("You did real work this turn, so don't finish with a plain message — call task_complete with the outcome for the user: a summary, coverage, and anything still open. You don't need to cite evidence; just give the honest result.", &guidanceNudges) {
+					a.finishTurn(ctx, answer, surfaced, surfacedSnips, userInput, false)
+					return nil
+				}
 				continue
 			}
 			a.finishTurn(ctx, answer, surfaced, surfacedSnips, userInput, false)
@@ -974,7 +994,7 @@ func (a *Agent) Chat(ctx context.Context, userInput string) error {
 		guidanceNudges = 0
 		if injectConvergeNudge {
 			convergeNudged = true
-			a.working = append(a.working, llm.UserMessage("(you already obtained the result and showed it — do NOT fetch or render it again. Give the user the answer now and call task_complete with it.)"))
+			a.working = append(a.working, llm.GuidanceMessage("You already obtained the result and showed it — do NOT fetch or render it again. Give the user the answer now and call task_complete with it."))
 		}
 	}
 

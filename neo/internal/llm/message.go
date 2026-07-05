@@ -145,18 +145,27 @@ func ToolResult(callID, name, content string) Message {
 
 // GuidanceMessage builds a guidance-channel turn: system steering the model is
 // instructed to act on but never acknowledge or echo (the Cascade
-// <system_guidance> contract). It rides as a user-role turn — every provider
-// accepts a user message mid-conversation — with the content wrapped in the
+// <system_guidance> contract). It rides as a SYSTEM-role turn — the steering
+// comes from the system, not the user, and every OpenAI-compatible provider
+// accepts a system message mid-conversation — with the content wrapped in the
 // guidance envelope and the Guidance flag set so the harness keeps it off every
 // user-facing surface (reasoning/thinking deltas and the durable transcript).
-// Blank content yields a zero Message (no empty guidance turn is emitted).
+//
+// The system role matters for correctness, not just labeling: the transcript's
+// compaction/tail logic (safeTail, splitForCompaction) anchors the retained
+// window on the last USER message. A guidance nudge delivered as a user turn
+// becomes that anchor, so once the window compacts the real task transcript is
+// trimmed away and the model — now seeing only the system prompt plus a bare
+// nudge — greets as if a fresh conversation and never completes, the nudge
+// spiral. Keeping guidance on the system role leaves the true user task as the
+// anchor. Blank content yields a zero Message (no empty guidance turn emitted).
 func GuidanceMessage(content string) Message {
 	content = strings.TrimSpace(content)
 	if content == "" {
 		return Message{}
 	}
 	return Message{
-		Role:     RoleUser,
+		Role:     RoleSystem,
 		Content:  GuidanceOpen + "\n" + content + "\n" + GuidanceClose,
 		Guidance: true,
 	}
