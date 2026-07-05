@@ -1,83 +1,83 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:2dc69ec8dbbe0231373534486cf12ff6fdb0eaad7b2dfdcbc4d73453c8542ee8
+# GENERATED gen=codegraph do-not-edit merkle=b3:f74330f0bf1dc65cdd0901e9d2f8d845f86c988efd32b159987d38404d9dabb2
 
 NODE id=matrix/cody/internal/gate kind=package
-  digest=b3:1d2dcaefb84670accad6a944ec6443d5eb5203e36c3e4bec0bc8a4277f634a2c file=cody/internal/gate range=0:0 lang=go exported=true
+  digest=b3:0e48f77cd65f486947248de014f7b0fe1e7ea19796825521bac9655219d67528 file=cody/internal/gate range=0:0 lang=go exported=true
 EDGES
   contains=matrix/cody/internal/gate/gate.go
   ^contains=mod:matrix/cody
 
 NODE id=matrix/cody/internal/gate.Adjudicate kind=func
-  digest=b3:1ee8d64c525095477604ab4b75a92538189d2b5ad1496cd2b9f5491841ab704e file=cody/internal/gate/gate.go range=376:408 lang=go exported=true byte_range=13555:14853
+  digest=b3:e0355a55876411eea511ce3f28d3fa4e287345f24a565bda094646067e7ab4ce file=cody/internal/gate/gate.go range=387:419 lang=go exported=true byte_range=13928:15169
   sig=func Adjudicate(ctx context.Context, adj *cassandra.Adjudicator, root string, sheet *contract.TaskSheet, report *contract.TurnInReport, rerun string) string
   doc=Adjudicate renders the goal-vs-outcome verdict on a done claim. Empty\nverdict = accept. An adjudicator error fails OPEN (returns accept): the\nindependent green verification record is the structural floor, and a\nCassandra hiccup never wedges a plan (the proven Neo posture).
 EDGES
   ^defines=matrix/cody/internal/gate/gate.go
 
 NODE id=matrix/cody/internal/gate.BuildEvidence kind=func
-  digest=b3:d0124bdd391f104f2bb486fc20b1337e36efb9b031f1a7136305485abd06a077 file=cody/internal/gate/gate.go range=347:374 lang=go exported=true byte_range=12359:13553
+  digest=b3:d0124bdd391f104f2bb486fc20b1337e36efb9b031f1a7136305485abd06a077 file=cody/internal/gate/gate.go range=358:385 lang=go exported=true byte_range=12732:13926
   sig=func BuildEvidence(root string, report *contract.TurnInReport, rerun string) string
   doc=BuildEvidence renders the ground truth for the verdict: the worker's factual\nchange record, the ACTUAL SOURCE of the changed files read from the\nworkspace, and the ORCHESTRATOR'S OWN independent verification re-run — the\nworker's narration is the claim, never the evidence.
 EDGES
   ^defines=matrix/cody/internal/gate/gate.go
 
 NODE id=matrix/cody/internal/gate.BuildRequest kind=func
-  digest=b3:1c215521758560685f52009425e72ea92dd24d87726239397387bd773fc7625a file=cody/internal/gate/gate.go range=268:285 lang=go exported=true byte_range=9084:10222
+  digest=b3:1c215521758560685f52009425e72ea92dd24d87726239397387bd773fc7625a file=cody/internal/gate/gate.go range=279:296 lang=go exported=true byte_range=9461:10599
   sig=func BuildRequest(sheet *contract.TaskSheet) string
   doc=BuildRequest renders the sheet as the contract the adjudicator judges\nagainst: the goal, the testable acceptance criteria, and the constitution\nclauses the outcome must not have violated.
 EDGES
   ^defines=matrix/cody/internal/gate/gate.go
 
 NODE id=matrix/cody/internal/gate.CaptureTests kind=func
-  digest=b3:1ade7476afc2106ad5ee97b001567ac029a551d1a3ea46c6c6bacc8b6ab7faf4 file=cody/internal/gate/gate.go range=99:133 lang=go exported=true byte_range=3041:3926
+  digest=b3:1ade7476afc2106ad5ee97b001567ac029a551d1a3ea46c6c6bacc8b6ab7faf4 file=cody/internal/gate/gate.go range=100:134 lang=go exported=true byte_range=3070:3955
   sig=func CaptureTests(root string) (TestBaseline, error)
   doc=CaptureTests walks the workspace and fingerprints every test file. Captured\nby the orchestrator BEFORE each dispatch so the screen compares the turn-in\nagainst what the worker was actually handed.
 EDGES
   ^defines=matrix/cody/internal/gate/gate.go
 
 NODE id=matrix/cody/internal/gate.IsTestFile kind=func
-  digest=b3:4bab0b2f73a8893b81f36a3d1abf30052c6724cf7c4fc3df77ef20cc6675610f file=cody/internal/gate/gate.go range=49:67 lang=go exported=true byte_range=1719:2315
+  digest=b3:4bab0b2f73a8893b81f36a3d1abf30052c6724cf7c4fc3df77ef20cc6675610f file=cody/internal/gate/gate.go range=50:68 lang=go exported=true byte_range=1748:2344
   sig=func IsTestFile(rel string) bool
   doc=IsTestFile reports whether a workspace-relative path looks like a test file\nacross the supported ecosystems.
 EDGES
   ^defines=matrix/cody/internal/gate/gate.go
 
 NODE id=matrix/cody/internal/gate.NewLLMDecoder kind=func
-  digest=b3:55630b01f6fa50235127cc3562cce653c0a05acf1b0766a27424537494ab91cd file=cody/internal/gate/gate.go range=413:415 lang=go exported=true byte_range=14971:15151
+  digest=b3:55630b01f6fa50235127cc3562cce653c0a05acf1b0766a27424537494ab91cd file=cody/internal/gate/gate.go range=424:426 lang=go exported=true byte_range=15287:15467
   sig=func NewLLMDecoder(c *llm.Client) cassandra.Decoder
   doc=NewLLMDecoder wraps a Cody llm client (temperature 0 recommended) as a\ncassandra Decoder.
 EDGES
   ^defines=matrix/cody/internal/gate/gate.go
 
 NODE id=matrix/cody/internal/gate.Screen kind=func
-  digest=b3:ecd4943b171ed12fd6817c0fe0fb36f6991616cb1ba5758447de6fbc1c5221f8 file=cody/internal/gate/gate.go range=135:192 lang=go exported=true byte_range=3928:6166
+  digest=b3:a9bf22964ea104447bc44cd9cfffca98e670a206b36cc3e58706e567e3c46c1b file=cody/internal/gate/gate.go range=136:199 lang=go exported=true byte_range=3957:6475
   sig=func Screen(root string, baseline TestBaseline, sheet *contract.TaskSheet, report *contract.TurnInReport) string
   doc=Screen runs the deterministic constitution checks on a turn-in. It returns\n"" when the turn-in passes, or a concrete rejection verdict. Violations here\nare hard: they can never be talked past because no report content is\nconsulted for the facts — only the workspace itself.
 EDGES
   ^defines=matrix/cody/internal/gate/gate.go
 
 NODE id=matrix/cody/internal/gate.ScreenDesign kind=func
-  digest=b3:431fa65bcf06a253df24b4a005b647852527c4a13c142b0f1ef794036b10a579 file=cody/internal/gate/gate.go range=200:231 lang=go exported=true byte_range=6392:7737
+  digest=b3:dad2801090a13c6ecc74e00aed08f95a4e297914c48c01a850568ecba8b73a01 file=cody/internal/gate/gate.go range=207:242 lang=go exported=true byte_range=6701:8114
   sig=func ScreenDesign(root string, sheet *contract.TaskSheet, report *contract.TurnInReport) string
   doc=ScreenDesign is the deterministic design-drift screen (req 9.3): when a UI\nsheet carries a Design Language Record, the changed UI files are scanned for\nthe banned AI-tells the record forbids (purple/indigo gradient heroes,\ngradient/glass blobs, default framework blue, stock component themes, emoji\nchrome). A hit is a hard rejection — the same banned-defaults doctrine that\nscreened the DLR at authoring time screens its downstream implementation.\nReturns "" when the turn-in passes or the sheet is not a DLR-bound UI task.
 EDGES
   ^defines=matrix/cody/internal/gate/gate.go
 
 NODE id=matrix/cody/internal/gate.ScreenScreenshot kind=func
-  digest=b3:1049004ba6d8cbe518236fd69f8bb087281fc3ad4dedbbbbe9e1699a8af4385a file=cody/internal/gate/gate.go range=233:266 lang=go exported=true byte_range=7739:9082
+  digest=b3:1049004ba6d8cbe518236fd69f8bb087281fc3ad4dedbbbbe9e1699a8af4385a file=cody/internal/gate/gate.go range=244:277 lang=go exported=true byte_range=8116:9459
   sig=func ScreenScreenshot(sheet *contract.TaskSheet, report *contract.TurnInReport) string
   doc=ScreenScreenshot enforces the screenshot-evidence requirement on UI turn-ins\n(req 13.2): a UI task's turn-in must carry a screenshot artifact in its\nverification evidence — design quality is verified against what was built,\nnot asserted. The requirement is EVIDENCE-BASED: it applies only when the\nturn-in actually changed a renderable UI file. UITask is set by an\ninclusive keyword heuristic (orchestrator.IsUITask), so a pure-logic task\n(e.g. a Go library) can be flagged UI by a false positive; requiring a\nscreenshot of a surface that does not exist would wedge such a task\npermanently with no satisfiable action. Returns "" when the sheet is not a\nUI task, changed no rendered surface, or a screenshot is present.
 EDGES
   ^defines=matrix/cody/internal/gate/gate.go
 
 NODE id=matrix/cody/internal/gate.TestBaseline kind=type
-  digest=b3:f3ba982789906aaf4253284473b08896f4015f899901dcf6c534728dad47351c file=cody/internal/gate/gate.go range=45:47 lang=go exported=true byte_range=1540:1717
+  digest=b3:f3ba982789906aaf4253284473b08896f4015f899901dcf6c534728dad47351c file=cody/internal/gate/gate.go range=46:48 lang=go exported=true byte_range=1569:1746
   sig=type TestBaseline map[string]TestStats
   doc=TestBaseline is the pre-dispatch fingerprint of every test file in the\nworkspace — the ground truth a turn-in is screened against.
 EDGES
   ^defines=matrix/cody/internal/gate/gate.go
 
 NODE id=matrix/cody/internal/gate.TestStats kind=type
-  digest=b3:9ac49584830ca6ff94fe7366b74cb67298b04c3923d5f7197cd0f434480104f0 file=cody/internal/gate/gate.go range=38:43 lang=go exported=true byte_range=1369:1538
+  digest=b3:9ac49584830ca6ff94fe7366b74cb67298b04c3923d5f7197cd0f434480104f0 file=cody/internal/gate/gate.go range=39:44 lang=go exported=true byte_range=1398:1567
   sig=type TestStats struct {\n	Funcs	int\n	Skips	int\n}
   doc=TestStats fingerprints one test file: how many test cases it declares and\nhow many skip/disable markers it carries.
 EDGES
@@ -85,19 +85,19 @@ EDGES
   ^defines=matrix/cody/internal/gate/gate.go
 
 NODE id=matrix/cody/internal/gate.TestStats#Funcs kind=field
-  digest=b3:eda5268bc2d7696ae97132047ef1306282f7e2fda7572265a646a6bcb4e23035 file=cody/internal/gate/gate.go range=41:41 lang=go exported=true byte_range=1516:1525
+  digest=b3:eda5268bc2d7696ae97132047ef1306282f7e2fda7572265a646a6bcb4e23035 file=cody/internal/gate/gate.go range=42:42 lang=go exported=true byte_range=1545:1554
   sig=int
 EDGES
   ^contains=matrix/cody/internal/gate.TestStats
 
 NODE id=matrix/cody/internal/gate.TestStats#Skips kind=field
-  digest=b3:e6a94d1f51f79a51db4e915c5be2a579340bf972dec513bd06c4dfa9da2d7417 file=cody/internal/gate/gate.go range=42:42 lang=go exported=true byte_range=1527:1536
+  digest=b3:e6a94d1f51f79a51db4e915c5be2a579340bf972dec513bd06c4dfa9da2d7417 file=cody/internal/gate/gate.go range=43:43 lang=go exported=true byte_range=1556:1565
   sig=int
 EDGES
   ^contains=matrix/cody/internal/gate.TestStats
 
 NODE id=matrix/cody/internal/gate.llmDecoder kind=type
-  digest=b3:e96cc4cad9f2b06586a9040109dc9a3936d85cd706711e4905a5281fd6650838 file=cody/internal/gate/gate.go range=410:411 lang=go exported=false byte_range=14855:14969
+  digest=b3:e96cc4cad9f2b06586a9040109dc9a3936d85cd706711e4905a5281fd6650838 file=cody/internal/gate/gate.go range=421:422 lang=go exported=false byte_range=15171:15285
   sig=type llmDecoder struct{ client *llm.Client }
   doc=llmDecoder adapts Cody's llm.Client to the cassandra.Decoder seam.
 EDGES
@@ -105,82 +105,82 @@ EDGES
   ^defines=matrix/cody/internal/gate/gate.go
 
 NODE id=matrix/cody/internal/gate.llmDecoder#client kind=field
-  digest=b3:5cd1d48999148e9bf01c9a014d565ee83f5d55a55e2e19181485bd991a88d2e3 file=cody/internal/gate/gate.go range=411:411 lang=go exported=false byte_range=14949:14967
+  digest=b3:5cd1d48999148e9bf01c9a014d565ee83f5d55a55e2e19181485bd991a88d2e3 file=cody/internal/gate/gate.go range=422:422 lang=go exported=false byte_range=15265:15283
   sig=*llm.Client
 EDGES
   ^contains=matrix/cody/internal/gate.llmDecoder
 
 NODE id=matrix/cody/internal/gate.llmDecoder.Decode kind=method
-  digest=b3:a08179d0f6cd9ea2df41bb3d343cc4929d9b4b85501f145ee795ea802f53a3fe file=cody/internal/gate/gate.go range=417:426 lang=go exported=true byte_range=15153:15443
+  digest=b3:a08179d0f6cd9ea2df41bb3d343cc4929d9b4b85501f145ee795ea802f53a3fe file=cody/internal/gate/gate.go range=428:437 lang=go exported=true byte_range=15469:15759
   sig=func (d llmDecoder) Decode(ctx context.Context, system, user string) (string, error)
 EDGES
   ^contains=matrix/cody/internal/gate.llmDecoder
   ^defines=matrix/cody/internal/gate/gate.go
 
 NODE id=matrix/cody/internal/gate.renderSource kind=func
-  digest=b3:2131e24cce91d75ef97996a69cfde99b7ae4265692c9280353d50e981c96a450 file=cody/internal/gate/gate.go range=297:345 lang=go exported=false byte_range=10682:12357
+  digest=b3:b66d20826a176cd12eb9cb8709189f866efcd64649dac3dd33f60d79722d9df2 file=cody/internal/gate/gate.go range=308:356 lang=go exported=false byte_range=11059:12730
   sig=func renderSource(root string, report *contract.TurnInReport) string
   doc=renderSource reads the created/edited files named in the turn-in from the\nreal workspace and renders them as adjudication evidence. This is the ground\ntruth for structural acceptance criteria: the outcome is judged against the\ncode that was actually written, not against the worker's narration or a\ngreen build that never prints the source. Deletes carry no content; missing\nor oversized files are noted rather than silently dropped.
 EDGES
   ^defines=matrix/cody/internal/gate/gate.go
 
 NODE id=matrix/cody/internal/gate.skipDirs kind=var
-  digest=b3:462338b7d3fe440cc8a55fc0a8d677e304ea3dba8cb5b2c3d37a775b378b7330 file=cody/internal/gate/gate.go range=30:36 lang=go exported=false byte_range=1071:1367
+  digest=b3:462338b7d3fe440cc8a55fc0a8d677e304ea3dba8cb5b2c3d37a775b378b7330 file=cody/internal/gate/gate.go range=31:37 lang=go exported=false byte_range=1100:1396
   sig=map[string]bool
   doc=skipDirs are never scanned for test baselines.
 EDGES
   ^defines=matrix/cody/internal/gate/gate.go
 
 NODE id=matrix/cody/internal/gate.skipMarkers kind=var
-  digest=b3:5ff013559f08ac84c1ca475c4a207ceb5ced25b6a7d7460924776ffb9dc4a8b6 file=cody/internal/gate/gate.go range=77:86 lang=go exported=false byte_range=2509:2814
+  digest=b3:5ff013559f08ac84c1ca475c4a207ceb5ced25b6a7d7460924776ffb9dc4a8b6 file=cody/internal/gate/gate.go range=78:87 lang=go exported=false byte_range=2538:2843
   sig=[]string
   doc=skipMarkers count disabled/skipped tests per file flavor.
 EDGES
   ^defines=matrix/cody/internal/gate/gate.go
 
 NODE id=matrix/cody/internal/gate.sourceMaxFileBytes kind=const
-  digest=b3:3304620e176232b971c2e4677b70543095449a10a8a3808d67de89e10caa0061 file=cody/internal/gate/gate.go range=287:292 lang=go exported=false byte_range=10224:10571
+  digest=b3:3304620e176232b971c2e4677b70543095449a10a8a3808d67de89e10caa0061 file=cody/internal/gate/gate.go range=298:303 lang=go exported=false byte_range=10601:10948
   sig=untyped int
   doc=Source-evidence bounds: structural acceptance criteria ("the struct has a\nmutex field", "Allow locks for the whole critical section") can ONLY be\njudged against the actual code, so the changed files are read into the\nevidence — but bounded so a large diff cannot blow the adjudicator's window.
 EDGES
   ^defines=matrix/cody/internal/gate/gate.go
 
 NODE id=matrix/cody/internal/gate.sourceMaxFiles kind=const
-  digest=b3:02a6c81f6c810a50a7bde26cf6752b1daed8eff7afc916123fc44da86e0d8a1d file=cody/internal/gate/gate.go range=287:294 lang=go exported=false byte_range=10224:10678
+  digest=b3:02a6c81f6c810a50a7bde26cf6752b1daed8eff7afc916123fc44da86e0d8a1d file=cody/internal/gate/gate.go range=298:305 lang=go exported=false byte_range=10601:11055
   sig=untyped int
   doc=Source-evidence bounds: structural acceptance criteria ("the struct has a\nmutex field", "Allow locks for the whole critical section") can ONLY be\njudged against the actual code, so the changed files are read into the\nevidence — but bounded so a large diff cannot blow the adjudicator's window.
 EDGES
   ^defines=matrix/cody/internal/gate/gate.go
 
 NODE id=matrix/cody/internal/gate.sourceMaxTotal kind=const
-  digest=b3:14539e56ae023fb0f7b9e8639dd17169b43a7e5f64fccd7edd0788d74a28af3f file=cody/internal/gate/gate.go range=287:293 lang=go exported=false byte_range=10224:10625
+  digest=b3:14539e56ae023fb0f7b9e8639dd17169b43a7e5f64fccd7edd0788d74a28af3f file=cody/internal/gate/gate.go range=298:304 lang=go exported=false byte_range=10601:11002
   sig=untyped int
   doc=Source-evidence bounds: structural acceptance criteria ("the struct has a\nmutex field", "Allow locks for the whole critical section") can ONLY be\njudged against the actual code, so the changed files are read into the\nevidence — but bounded so a large diff cannot blow the adjudicator's window.
 EDGES
   ^defines=matrix/cody/internal/gate/gate.go
 
 NODE id=matrix/cody/internal/gate.statsOf kind=func
-  digest=b3:fd408f97a86feffeda43f6f85a69c0c4caa0e429ac80eea8388160e25e76f2a1 file=cody/internal/gate/gate.go range=88:97 lang=go exported=false byte_range=2816:3039
+  digest=b3:fd408f97a86feffeda43f6f85a69c0c4caa0e429ac80eea8388160e25e76f2a1 file=cody/internal/gate/gate.go range=89:98 lang=go exported=false byte_range=2845:3068
   sig=func statsOf(content string) TestStats
 EDGES
   ^defines=matrix/cody/internal/gate/gate.go
 
 NODE id=matrix/cody/internal/gate.testCaseMarkers kind=var
-  digest=b3:6ca32ee1ea7c38d67f02c67a817ddd5057bb4b333173f6431651d5c6e929cf4b file=cody/internal/gate/gate.go range=69:75 lang=go exported=false byte_range=2317:2507
+  digest=b3:6ca32ee1ea7c38d67f02c67a817ddd5057bb4b333173f6431651d5c6e929cf4b file=cody/internal/gate/gate.go range=70:76 lang=go exported=false byte_range=2346:2536
   sig=[]string
   doc=testCaseMarkers count declared test cases per file flavor.
 EDGES
   ^defines=matrix/cody/internal/gate/gate.go
 
 NODE id=matrix/cody/internal/gate.uiDriftExts kind=var
-  digest=b3:17b86185510070c942a2d56b4fa3e18cca8acb19a001d33370ca82a10777ad17 file=cody/internal/gate/gate.go range=194:198 lang=go exported=false byte_range=6168:6390
+  digest=b3:17b86185510070c942a2d56b4fa3e18cca8acb19a001d33370ca82a10777ad17 file=cody/internal/gate/gate.go range=201:205 lang=go exported=false byte_range=6477:6699
   sig=map[string]bool
   doc=uiDriftExts are the changed-file extensions the design-drift screen inspects.
 EDGES
   ^defines=matrix/cody/internal/gate/gate.go
 
 NODE id=matrix/cody/internal/gate/gate.go kind=file
-  digest=b3:3f59cb4bf1fbef4c69d7f14bc6c4dbadbdff6956c7196ba9e200dcf21cc02231 file=cody/internal/gate/gate.go range=1:426 lang=go exported=true
+  digest=b3:7cc79f6da7a800260d2ba85fc9b234c0c0571e70838089f9e3dd968d2d0a5b7c file=cody/internal/gate/gate.go range=1:437 lang=go exported=true
 EDGES
   defines=matrix/cody/internal/gate.Adjudicate,matrix/cody/internal/gate.BuildEvidence,matrix/cody/internal/gate.BuildRequest,matrix/cody/internal/gate.CaptureTests,matrix/cody/internal/gate.IsTestFile,matrix/cody/internal/gate.NewLLMDecoder,matrix/cody/internal/gate.Screen,matrix/cody/internal/gate.ScreenDesign,matrix/cody/internal/gate.ScreenScreenshot,matrix/cody/internal/gate.TestBaseline,matrix/cody/internal/gate.TestStats,matrix/cody/internal/gate.llmDecoder,matrix/cody/internal/gate.llmDecoder.Decode,matrix/cody/internal/gate.renderSource,matrix/cody/internal/gate.skipDirs,matrix/cody/internal/gate.skipMarkers,matrix/cody/internal/gate.sourceMaxFileBytes,matrix/cody/internal/gate.sourceMaxFiles,matrix/cody/internal/gate.sourceMaxTotal,matrix/cody/internal/gate.statsOf,matrix/cody/internal/gate.testCaseMarkers,matrix/cody/internal/gate.uiDriftExts
   ^contains=matrix/cody/internal/gate

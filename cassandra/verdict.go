@@ -116,11 +116,24 @@ func (v *Verdict) CoverageComplete() bool {
 	return v != nil && v.Coverage == CoverageFull && len(v.Missing) == 0
 }
 
+// IsGrounded reports the evidence-grounding half of Sound: every load-bearing
+// claim in the answer is backed by real executed evidence — grounded AND no
+// unverified claims (the hallucination surface is empty). This is the single
+// definition of "grounded" every consumer (Neo, Cody, Cassandra) shares; the
+// honest-partial gate consults it directly, while Sound composes it with
+// coverage for the full-completion decision.
+func (v *Verdict) IsGrounded() bool {
+	return v != nil && v.Grounded && len(v.UnverifiedClaims) == 0
+}
+
 // Sound reports the full grounded verdict Neo's completion gate consults
 // (Phase 3): every deliverable produced AND every load-bearing claim grounded
 // in real evidence ([coupling].high_stakes). Stricter than CoverageComplete.
+// It is the single source of truth for verdict acceptance — Neo's
+// verdictAccepts and Cody's gate.Adjudicate both decide through it (or through
+// IsGrounded for the honest-partial path) rather than re-implementing the rule.
 func (v *Verdict) Sound() bool {
-	return v.CoverageComplete() && v.Grounded && len(v.UnverifiedClaims) == 0
+	return v.CoverageComplete() && v.IsGrounded()
 }
 
 // cleanList trims whitespace and drops blank entries while preserving order.

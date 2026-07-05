@@ -5,6 +5,34 @@ package cassandra
 
 import "testing"
 
+// TestSoundComposesCoverageAndGrounded pins the canonical acceptance predicate
+// (X1, req 6.1): Sound is exactly CoverageComplete AND IsGrounded, and
+// IsGrounded is exactly grounded AND no unverified claims. Neo's verdictAccepts
+// and Cody's gate.Adjudicate decide through these same methods, so this table
+// is the shared truth the three consumers cannot drift from (req 6.3).
+func TestSoundComposesCoverageAndGrounded(t *testing.T) {
+	cases := []struct {
+		name string
+		v    *Verdict
+	}{
+		{"grounded_full", &Verdict{Grounded: true, Coverage: CoverageFull}},
+		{"ungrounded_full", &Verdict{Grounded: false, Coverage: CoverageFull}},
+		{"grounded_but_unverified", &Verdict{Grounded: true, Coverage: CoverageFull, UnverifiedClaims: []string{"the deploy succeeded"}}},
+		{"grounded_partial", &Verdict{Grounded: true, Coverage: CoveragePartial, Missing: []string{"criterion 2 unexercised"}}},
+		{"full_with_missing", &Verdict{Grounded: true, Coverage: CoverageFull, Missing: []string{"the refund was never sent"}}},
+	}
+	for _, tc := range cases {
+		tc.v.Normalize()
+		wantGrounded := tc.v.Grounded && len(tc.v.UnverifiedClaims) == 0
+		if got := tc.v.IsGrounded(); got != wantGrounded {
+			t.Errorf("%s: IsGrounded()=%v, want %v", tc.name, got, wantGrounded)
+		}
+		if got := tc.v.Sound(); got != (tc.v.CoverageComplete() && tc.v.IsGrounded()) {
+			t.Errorf("%s: Sound() must equal CoverageComplete && IsGrounded, got %v", tc.name, got)
+		}
+	}
+}
+
 func TestNormalize_G1_FullWithMissingForcesPartial(t *testing.T) {
 	v := &Verdict{Coverage: CoverageFull, Missing: []string{"deploy the contract"}}
 	v.Normalize()
@@ -82,28 +110,6 @@ func TestCoverageCompleteAndSound(t *testing.T) {
 	}
 	if covOnly.Sound() {
 		t.Fatal("Sound must require grounding")
-	}
-}
-
-func TestCheckCitations_G3_PhantomEvidenceUnGrounds(t *testing.T) {
-	evidence := "TOOL chain_info\n  -> {\"blockNumber\": 998877}\n"
-	v := &Verdict{Grounded: true, Coverage: CoverageFull}
-	v.Normalize()
-	phantom := v.CheckCitations([]string{"998877", "0xdeadbeef"}, evidence)
-	if len(phantom) != 1 || phantom[0] != "0xdeadbeef" {
-		t.Fatalf("expected phantom [0xdeadbeef], got %#v", phantom)
-	}
-	if v.Grounded {
-		t.Fatal("g3: grounded must be forced false when a cited ref is absent from evidence")
-	}
-
-	v2 := &Verdict{Grounded: true, Coverage: CoverageFull}
-	v2.Normalize()
-	if got := v2.CheckCitations([]string{"998877"}, evidence); len(got) != 0 {
-		t.Fatalf("expected no phantom refs, got %#v", got)
-	}
-	if !v2.Grounded {
-		t.Fatal("g3: grounded must stay true when all cited refs are present")
 	}
 }
 

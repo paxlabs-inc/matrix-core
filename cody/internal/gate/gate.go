@@ -24,6 +24,7 @@ import (
 	"matrix/cassandra"
 	"matrix/cody/internal/contract"
 	"matrix/cody/internal/decide"
+	"matrix/cody/internal/edit"
 	"matrix/cody/internal/llm"
 )
 
@@ -143,7 +144,13 @@ func Screen(root string, baseline TestBaseline, sheet *contract.TaskSheet, repor
 	// mutation time, but the gate re-verifies the REPORT so a non-conforming
 	// worker cannot slip an out-of-scope change through.
 	for _, ch := range report.Changes {
+		// Normalize through the single seam so an absolute in-root path is
+		// screened identically to its relative form (a relative do-not-touch
+		// pattern can never match an un-normalized absolute path).
 		clean := filepath.ToSlash(filepath.Clean(ch.Path))
+		if norm, err := edit.Rel(root, ch.Path); err == nil {
+			clean = norm
+		}
 		for _, pattern := range sheet.Deliverable.DoNotTouch {
 			p := filepath.ToSlash(strings.TrimSpace(pattern))
 			if p == "" {
@@ -216,7 +223,11 @@ func ScreenDesign(root string, sheet *contract.TaskSheet, report *contract.TurnI
 		if !uiDriftExts[strings.ToLower(filepath.Ext(ch.Path))] {
 			continue
 		}
-		data, err := os.ReadFile(filepath.Join(root, filepath.FromSlash(ch.Path)))
+		rel, err := edit.Rel(root, ch.Path)
+		if err != nil {
+			continue
+		}
+		data, err := os.ReadFile(filepath.Join(root, filepath.FromSlash(rel)))
 		if err != nil {
 			continue
 		}
@@ -314,8 +325,8 @@ func renderSource(root string, report *contract.TurnInReport) string {
 			b.WriteString(fmt.Sprintf("(%d more changed files omitted from evidence)\n", len(report.Changes)-files))
 			break
 		}
-		rel := filepath.Clean(ch.Path)
-		if rel == "." || strings.HasPrefix(rel, "..") || filepath.IsAbs(rel) {
+		rel, err := edit.Rel(root, ch.Path)
+		if err != nil || rel == "." || strings.HasPrefix(rel, "..") {
 			continue
 		}
 		data, err := os.ReadFile(filepath.Join(root, filepath.FromSlash(rel)))
@@ -388,7 +399,7 @@ func Adjudicate(ctx context.Context, adj *cassandra.Adjudicator, root string, sh
 	if err != nil {
 		return "" // fail open: verification is green and the screens passed
 	}
-	if v.Grounded && len(v.UnverifiedClaims) == 0 && v.CoverageComplete() {
+	if v.Sound() {
 		return ""
 	}
 	var reasons []string

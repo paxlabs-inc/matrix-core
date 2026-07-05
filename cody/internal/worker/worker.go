@@ -469,15 +469,16 @@ func (w *Worker) recordChange(rel, kind string) {
 }
 
 func (w *Worker) toolRead(args map[string]interface{}) string {
-	rel := str(args, "path")
-	if rel == "" {
+	raw := str(args, "path")
+	if raw == "" {
 		return "error: path is required"
 	}
-	offset := num(args, "offset")
-	abs := rel
-	if !filepath.IsAbs(abs) {
-		abs = filepath.Join(w.opts.Root, rel)
+	rel, err := w.edits.Rel(raw)
+	if err != nil {
+		return "error: " + err.Error()
 	}
+	offset := num(args, "offset")
+	abs := filepath.Join(w.opts.Root, filepath.FromSlash(rel))
 	data, err := w.edits.Read(rel)
 	if err != nil {
 		return "error: " + err.Error()
@@ -524,11 +525,15 @@ func numberLines(chunk string, startLine int) string {
 }
 
 func (w *Worker) toolList(args map[string]interface{}) string {
-	rel := str(args, "path")
-	if rel == "" {
-		rel = "."
+	raw := str(args, "path")
+	if raw == "" {
+		raw = "."
 	}
-	abs := filepath.Join(w.opts.Root, rel)
+	rel, err := w.edits.Rel(raw)
+	if err != nil {
+		return "error: " + err.Error()
+	}
+	abs := filepath.Join(w.opts.Root, filepath.FromSlash(rel))
 	entries, err := os.ReadDir(abs)
 	if err != nil {
 		return "error: " + err.Error()
@@ -545,15 +550,19 @@ func (w *Worker) toolList(args map[string]interface{}) string {
 }
 
 func (w *Worker) toolWrite(args map[string]interface{}) string {
-	rel := str(args, "path")
+	raw := str(args, "path")
 	content := str(args, "content")
-	if rel == "" {
+	if raw == "" {
 		return "error: path is required"
+	}
+	rel, err := w.edits.Rel(raw)
+	if err != nil {
+		return "error: " + err.Error()
 	}
 	if err := w.guardTouch(rel); err != nil {
 		return "error: " + err.Error()
 	}
-	abs := filepath.Join(w.opts.Root, rel)
+	abs := filepath.Join(w.opts.Root, filepath.FromSlash(rel))
 	if _, err := os.Stat(abs); os.IsNotExist(err) {
 		if err := w.edits.Create(rel, content); err != nil {
 			return "error: " + err.Error()
@@ -569,12 +578,16 @@ func (w *Worker) toolWrite(args map[string]interface{}) string {
 }
 
 func (w *Worker) toolEdit(args map[string]interface{}) string {
-	rel := str(args, "path")
+	raw := str(args, "path")
 	oldText := str(args, "old_text")
 	newText := str(args, "new_text")
 	replaceAll, _ := args["replace_all"].(bool)
-	if rel == "" {
+	if raw == "" {
 		return "error: path is required"
+	}
+	rel, err := w.edits.Rel(raw)
+	if err != nil {
+		return "error: " + err.Error()
 	}
 	if err := w.guardTouch(rel); err != nil {
 		return "error: " + err.Error()
@@ -587,9 +600,13 @@ func (w *Worker) toolEdit(args map[string]interface{}) string {
 }
 
 func (w *Worker) toolDelete(args map[string]interface{}) string {
-	rel := str(args, "path")
-	if rel == "" {
+	raw := str(args, "path")
+	if raw == "" {
 		return "error: path is required"
+	}
+	rel, err := w.edits.Rel(raw)
+	if err != nil {
+		return "error: " + err.Error()
 	}
 	if err := w.guardTouch(rel); err != nil {
 		return "error: " + err.Error()

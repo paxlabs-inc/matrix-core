@@ -64,18 +64,55 @@ func New(root string) (*Engine, error) {
 // Root reports the engine's workspace root.
 func (e *Engine) Root() string { return e.root }
 
-// resolve turns a workspace-relative (or absolute) path into a verified
-// absolute path inside the root.
-func (e *Engine) resolve(path string) (string, error) {
+// resolveIn turns a workspace-relative (or absolute) path into a verified
+// absolute path inside root. root must already be absolute and clean. This is
+// the single resolution core: both the Engine (via its own root) and callers
+// that only hold a root string (e.g. the acceptance gate) share it, so path
+// normalization can never drift between the tool boundary and adjudication.
+func resolveIn(root, path string) (string, error) {
 	abs := path
 	if !filepath.IsAbs(abs) {
-		abs = filepath.Join(e.root, path)
+		abs = filepath.Join(root, path)
 	}
 	abs = filepath.Clean(abs)
-	if abs != e.root && !strings.HasPrefix(abs, e.root+string(filepath.Separator)) {
+	if abs != root && !strings.HasPrefix(abs, root+string(filepath.Separator)) {
 		return "", fmt.Errorf("%w: %s", ErrOutsideRoot, path)
 	}
 	return abs, nil
+}
+
+// Rel is the single workspace-path normalization seam, usable without an
+// Engine: it resolves a model-supplied path against root, rejects escapes, and
+// returns a clean, slash-separated workspace-relative path. An absolute in-root
+// path and its relative form normalize to the identical result, so callers
+// never carry an absolute path forward and never double-join.
+func Rel(root, path string) (string, error) {
+	absRoot, err := filepath.Abs(root)
+	if err != nil {
+		return "", err
+	}
+	absRoot = filepath.Clean(absRoot)
+	abs, err := resolveIn(absRoot, path)
+	if err != nil {
+		return "", err
+	}
+	rel, err := filepath.Rel(absRoot, abs)
+	if err != nil {
+		return "", err
+	}
+	return filepath.ToSlash(rel), nil
+}
+
+// resolve turns a workspace-relative (or absolute) path into a verified
+// absolute path inside the engine's root.
+func (e *Engine) resolve(path string) (string, error) {
+	return resolveIn(e.root, path)
+}
+
+// Rel normalizes a model-supplied path against the engine's root. See the
+// package-level Rel for the contract.
+func (e *Engine) Rel(path string) (string, error) {
+	return Rel(e.root, path)
 }
 
 func hashOf(data []byte) string {

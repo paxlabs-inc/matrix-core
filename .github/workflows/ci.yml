@@ -314,13 +314,58 @@ jobs:
           fi
 
   # -------------------------------------------------------------------------
+  # Safety-critical faculties — the Neo completion gate and the Cassandra
+  # completeness auditor. These modules were previously checked only locally,
+  # which let a citation-removal refactor land with non-compiling test packages
+  # (zero regression protection on the two subsystems that spiral). This job
+  # forbids a non-compiling or red test package in either module (cody-launch
+  # req.1 ac_4): a failing `go test ./...` here fails the build.
+  # -------------------------------------------------------------------------
+  agent-gate:
+    name: build / ${{ matrix.module }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        module: [cassandra, neo]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: ${{ matrix.module }}/go.mod
+          cache: true
+          cache-dependency-path: ${{ matrix.module }}/go.sum
+
+      - name: go mod download
+        working-directory: ${{ matrix.module }}
+        run: go mod download
+
+      - name: go vet
+        working-directory: ${{ matrix.module }}
+        run: go vet ./...
+
+      - name: go build
+        working-directory: ${{ matrix.module }}
+        run: go build ./...
+
+      # A non-compiling test package fails `go test` (build-time), so this step
+      # is the CI-style guard req.1 ac_4 requires: the refactor that broke these
+      # packages could not have landed green.
+      - name: go test
+        working-directory: ${{ matrix.module }}
+        run: go test -count=1 -race -timeout=10m ./...
+
+  # -------------------------------------------------------------------------
   # Aggregator job — branch protection should require `ci-passed` only.
   # Any added/removed leaf job stays decoupled from the protection rule.
   # -------------------------------------------------------------------------
   ci-passed:
     name: ci-passed
     runs-on: ubuntu-latest
-    needs: [build, mtx-corpus, deus, marketplace, codegraph]
+    needs: [build, agent-gate, mtx-corpus, deus, marketplace, codegraph]
     if: always()
     steps:
       - name: aggregate

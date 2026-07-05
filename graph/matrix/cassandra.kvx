@@ -1,7 +1,7 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:2dc69ec8dbbe0231373534486cf12ff6fdb0eaad7b2dfdcbc4d73453c8542ee8
+# GENERATED gen=codegraph do-not-edit merkle=b3:f74330f0bf1dc65cdd0901e9d2f8d845f86c988efd32b159987d38404d9dabb2
 
 NODE id=matrix/cassandra kind=package
-  digest=b3:81fd569e792b4ac194982a9bff572dbf1c00714cc65014e2272be7c1a7c446ca file=cassandra range=0:0 lang=go exported=true
+  digest=b3:15a29e94a24a652af8d845e1e9234395caad8b885c860038413d9872850d4984 file=cassandra range=0:0 lang=go exported=true
 EDGES
   contains=matrix/cassandra/adjudicator.go,matrix/cassandra/parse.go,matrix/cassandra/priors.go,matrix/cassandra/prompt.go,matrix/cassandra/verdict.go
   ^contains=mod:matrix/cassandra
@@ -248,7 +248,7 @@ NODE id=matrix/cassandra.Verdict kind=type
   sig=type Verdict struct {\n	// Grounded is true only when every load-bearing claim in the answer is\n	// backed by a real executed step + real result in the evidence digest\n	// ([verdict.fields].grounded).\n	Grounded	bool	`json:"grounded"`\n	// Coverage is full only if every explicitly requested deliverable was\n	// produced; else partial ([verdict.fields].coverage).\n	Coverage	Coverage	`json:"coverage"`\n	// Missing enumerates still-unsatisfied requested deliverables, phrased as\n	// concrete actionable items a re-planner/continuation can turn into work.\n	Missing	[]string	`json:"missing"`\n	// UnverifiedClaims are assertions the agent made that NO executed evidence\n	// supports — the hallucination surface.\n	UnverifiedClaims	[]string	`json:"unverified_claims"`\n	// Assumptions are defaults the agent silently chose that materially shape\n	// the result.\n	Assumptions	[]string	`json:"assumptions"`\n	// OpenUnknowns is the absence-as-object field: things NOT confirmed that\n	// should have been. An empty list is an explicit, attributable claim of\n	// "no unknowns", never silence ([principles].make_absence_present).\n	OpenUnknowns	[]string	`json:"open_unknowns"`\n	// Certainty is Cassandra's confidence in her OWN verdict (0..1). Low\n	// certainty on a reversible turn defers to the agent (fail-open).\n	Certainty	float64	`json:"certainty"`\n	// Rationale is a one-line explanation (audit/transcript only).\n	Rationale	string	`json:"rationale"`\n}
   doc=Verdict is the canonical structured judgement every Cassandra adjudication\nreturns ([verdict].schema). It generalizes the legacy\ncriticVerdict{Complete, Missing, Rationale}: Coverage+Missing carry the old\ndeliverable-coverage decision (CoverageComplete), while Grounded /\nUnverifiedClaims / Assumptions / OpenUnknowns add the evidence-grounding\ndimension that Neo's gate consumes (Sound).
 EDGES
-  contains=matrix/cassandra.Verdict#Assumptions,matrix/cassandra.Verdict#Certainty,matrix/cassandra.Verdict#Coverage,matrix/cassandra.Verdict#Grounded,matrix/cassandra.Verdict#Missing,matrix/cassandra.Verdict#OpenUnknowns,matrix/cassandra.Verdict#Rationale,matrix/cassandra.Verdict#UnverifiedClaims,matrix/cassandra.Verdict.CoverageComplete,matrix/cassandra.Verdict.Normalize,matrix/cassandra.Verdict.Sound
+  contains=matrix/cassandra.Verdict#Assumptions,matrix/cassandra.Verdict#Certainty,matrix/cassandra.Verdict#Coverage,matrix/cassandra.Verdict#Grounded,matrix/cassandra.Verdict#Missing,matrix/cassandra.Verdict#OpenUnknowns,matrix/cassandra.Verdict#Rationale,matrix/cassandra.Verdict#UnverifiedClaims,matrix/cassandra.Verdict.CoverageComplete,matrix/cassandra.Verdict.IsGrounded,matrix/cassandra.Verdict.Normalize,matrix/cassandra.Verdict.Sound
   ^defines=matrix/cassandra/verdict.go
 
 NODE id=matrix/cassandra.Verdict#Assumptions kind=field
@@ -315,6 +315,14 @@ EDGES
   ^contains=matrix/cassandra.Verdict
   ^defines=matrix/cassandra/verdict.go
 
+NODE id=matrix/cassandra.Verdict.IsGrounded kind=method
+  digest=b3:c9de88773724900723fc9c370e2a952f0d20e1c98eba3dd901d822163cde62df file=cassandra/verdict.go range=119:127 lang=go exported=true byte_range=5311:5847
+  sig=func (v *Verdict) IsGrounded() bool
+  doc=IsGrounded reports the evidence-grounding half of Sound: every load-bearing\nclaim in the answer is backed by real executed evidence — grounded AND no\nunverified claims (the hallucination surface is empty). This is the single\ndefinition of "grounded" every consumer (Neo, Cody, Cassandra) shares; the\nhonest-partial gate consults it directly, while Sound composes it with\ncoverage for the full-completion decision.
+EDGES
+  ^contains=matrix/cassandra.Verdict
+  ^defines=matrix/cassandra/verdict.go
+
 NODE id=matrix/cassandra.Verdict.Normalize kind=method
   digest=b3:3ec5eff5ba4b3ca94b5afdbd4bc04443d9a73580d2d17d43a4e85f03b1f7a563 file=cassandra/verdict.go range=66:108 lang=go exported=true byte_range=3282:4815
   sig=func (v *Verdict) Normalize()
@@ -324,9 +332,9 @@ EDGES
   ^defines=matrix/cassandra/verdict.go
 
 NODE id=matrix/cassandra.Verdict.Sound kind=method
-  digest=b3:c6aefd6353dff8eb1eb4864a6e4833027018577db7e222f06e2d124b35f41b0f file=cassandra/verdict.go range=119:124 lang=go exported=true byte_range=5311:5651
+  digest=b3:c14fdd50f0df8b99196ce61434b064283ab725ceb37a64e70e3c850333f9d745 file=cassandra/verdict.go range=129:137 lang=go exported=true byte_range=5849:6391
   sig=func (v *Verdict) Sound() bool
-  doc=Sound reports the full grounded verdict Neo's completion gate consults\n(Phase 3): every deliverable produced AND every load-bearing claim grounded\nin real evidence ([coupling].high_stakes). Stricter than CoverageComplete.
+  doc=Sound reports the full grounded verdict Neo's completion gate consults\n(Phase 3): every deliverable produced AND every load-bearing claim grounded\nin real evidence ([coupling].high_stakes). Stricter than CoverageComplete.\nIt is the single source of truth for verdict acceptance — Neo's\nverdictAccepts and Cody's gate.Adjudicate both decide through it (or through\nIsGrounded for the honest-partial path) rather than re-implementing the rule.
 EDGES
   ^contains=matrix/cassandra.Verdict
   ^defines=matrix/cassandra/verdict.go
@@ -346,7 +354,7 @@ EDGES
   ^defines=matrix/cassandra/parse.go
 
 NODE id=matrix/cassandra.cleanList kind=func
-  digest=b3:a875bbd84af0fe55e1cc07ad771f0a2bf2ba8705a8d103071ff33ba803fb79aa file=cassandra/verdict.go range=126:138 lang=go exported=false byte_range=5653:5929
+  digest=b3:a875bbd84af0fe55e1cc07ad771f0a2bf2ba8705a8d103071ff33ba803fb79aa file=cassandra/verdict.go range=139:151 lang=go exported=false byte_range=6393:6669
   sig=func cleanList(in []string) []string
   doc=cleanList trims whitespace and drops blank entries while preserving order.
 EDGES
@@ -497,7 +505,7 @@ EDGES
   ^contains=matrix/cassandra
 
 NODE id=matrix/cassandra/verdict.go kind=file
-  digest=b3:0a0aa001f881c2533e4d9dbf2e1101dedb9113eb4aba09c4cb4ef9437b083cf5 file=cassandra/verdict.go range=1:140 lang=go exported=true
+  digest=b3:325b6ac9eee8151b140fbbfbb490b81ab41d8326b061eb07e63bcbba69bfb466 file=cassandra/verdict.go range=1:153 lang=go exported=true
 EDGES
-  defines=matrix/cassandra.Coverage,matrix/cassandra.CoverageFull,matrix/cassandra.CoveragePartial,matrix/cassandra.Verdict,matrix/cassandra.Verdict.CoverageComplete,matrix/cassandra.Verdict.Normalize,matrix/cassandra.Verdict.Sound,matrix/cassandra.cleanList
+  defines=matrix/cassandra.Coverage,matrix/cassandra.CoverageFull,matrix/cassandra.CoveragePartial,matrix/cassandra.Verdict,matrix/cassandra.Verdict.CoverageComplete,matrix/cassandra.Verdict.IsGrounded,matrix/cassandra.Verdict.Normalize,matrix/cassandra.Verdict.Sound,matrix/cassandra.cleanList
   ^contains=matrix/cassandra
