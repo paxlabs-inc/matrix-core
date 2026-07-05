@@ -540,11 +540,16 @@ func (a *Agent) Chat(ctx context.Context, userInput string) error {
 	collectSurfacedSnips(surfacedSnips, retrieved)
 
 	repeats := 0
-	// guidanceNudges counts CONSECUTIVE system-guidance nudges (completion-gate
-	// rejections, read-full steers) so the loop can escalate to a stop-and-ask
-	// rather than re-nudging unbounded (req.1.5). Reset to 0 on genuine progress
-	// (a tool dispatch / accepted completion).
-	guidanceNudges := 0
+	// unproductive is the ONE unified unproductive-attempt counter (N2/req.8.1):
+	// completion-gate rejections, no-progress repeats, and guidance nudges all
+	// feed it, and the loop escalates to an honest stop-and-ask once it passes
+	// the bound rather than re-nudging (or re-attempting a premature completion)
+	// unbounded (req.1.5). It is reset ONLY by genuine ACCEPTED progress (an
+	// accepted completion, which ends the turn) — a plain tool call interleaved
+	// between completion rejections does NOT reset it (req.8.2), so a
+	// work->premature-complete->reject loop is bounded well before the step
+	// budget instead of running to it.
+	unproductive := 0
 	prevSig := ""
 	// prevCalls is the previous turn's tool-call batch, kept so the no-progress
 	// guard can detect a SEMANTIC repeat (same operation, reworded arguments),
@@ -584,6 +589,37 @@ func (a *Agent) Chat(ctx context.Context, userInput string) error {
 	// StepBudgetMax (== StepBudget == 50) and the loop is byte-identical to
 	// the pre-P2-7 fixed-budget loop.
 	distinctToolSet := map[string]struct{}{}
+
+	// noteBatch advances the no-progress/stall read for ONE assistant
+	// tool-calling batch — a normal tool dispatch OR a premature task_complete.
+	// Sharing it between the dispatch path and the completion branch is what
+	// stops the completion branch from bypassing stall detection (N2/req.8.3):
+	// a repeated premature task_complete now trips the same repeat guard as a
+	// repeated tool call. A byte-identical or SEMANTIC repeat, or a rotating
+	// A→B→A→B cycle that introduces no new tool, increments the repeat count;
+	// a distinct operation resets it (NE-4). Returns whether the batch was a
+	// repeat and whether the pure-repeat stall bound (NoProgressStall) is met.
+	noteBatch := func(calls []llm.ToolCall) (repeat, stalled bool) {
+		sig := batchSignature(calls)
+		introducedNewTool := false
+		for _, c := range calls {
+			if _, seen := distinctToolSet[c.Function.Name]; !seen {
+				introducedNewTool = true
+				break
+			}
+		}
+		cyclic := !introducedNewTool && sigInWindow(recentSigs, sig)
+		if sig == prevSig || a.semanticRepeat(prevCalls, calls) || cyclic {
+			repeats++
+			repeat = true
+		} else {
+			repeats = 0
+		}
+		recentSigs = pushWindow(recentSigs, sig, stallWindow)
+		prevSig = sig
+		prevCalls = calls
+		return repeat, repeats >= a.cfg.NoProgressStall
+	}
 
 	for step := 0; ; step++ {
 		budget := a.effectiveStepBudget(effectiveBudgetSignals{
@@ -801,8 +837,8 @@ func (a *Agent) Chat(ctx context.Context, userInput string) error {
 				// Guidance channel + bounded: this is system steering the model
 				// must act on (not a user turn), and a model that keeps getting
 				// cut off can't re-nudge forever.
-				if a.pushGuidanceNudge("Your last message was cut off by the output limit — don't inline large payloads in prose; call a tool with compact arguments, or give a concise final answer.", &guidanceNudges) {
-					return a.escalateGuidance(guidanceNudges)
+				if a.pushGuidanceNudge("Your last message was cut off by the output limit — don't inline large payloads in prose; call a tool with compact arguments, or give a concise final answer.", &unproductive) {
+					return a.escalateGuidance(unproductive)
 				}
 				continue
 			}
@@ -810,8 +846,8 @@ func (a *Agent) Chat(ctx context.Context, userInput string) error {
 				// anti-premature: empty AND no tools → steer to continue via the
 				// guidance channel, bounded so a model that keeps returning
 				// nothing escalates rather than looping forever.
-				if a.pushGuidanceNudge("Continue: either call a tool to make progress, or give the final answer.", &guidanceNudges) {
-					return a.escalateGuidance(guidanceNudges)
+				if a.pushGuidanceNudge("Continue: either call a tool to make progress, or give the final answer.", &unproductive) {
+					return a.escalateGuidance(unproductive)
 				}
 				continue
 			}
@@ -821,8 +857,8 @@ func (a *Agent) Chat(ctx context.Context, userInput string) error {
 			// guidance channel) to read it first, so the answer can't be drawn
 			// from a truncated result.
 			if a.overflowUnread() {
-				if a.pushGuidanceNudge(a.overflowUnreadNudge(), &guidanceNudges) {
-					return a.escalateGuidance(guidanceNudges)
+				if a.pushGuidanceNudge(a.overflowUnreadNudge(), &unproductive) {
+					return a.escalateGuidance(unproductive)
 				}
 				continue
 			}
@@ -837,7 +873,7 @@ func (a *Agent) Chat(ctx context.Context, userInput string) error {
 			if scrubbed, leaked := scrubIdentity(a.agentName(), answer); leaked {
 				a.emitAudit(auditEventIdentityLeak, map[string]interface{}{"where": "answer"})
 				answer = scrubbed
-				if a.pushGuidanceNudge(identityReanchorNudge(a.agentName()), &guidanceNudges) {
+				if a.pushGuidanceNudge(identityReanchorNudge(a.agentName()), &unproductive) {
 					a.finishTurn(ctx, answer, surfaced, surfacedSnips, userInput, false)
 					return nil
 				}
@@ -867,7 +903,7 @@ func (a *Agent) Chat(ctx context.Context, userInput string) error {
 				// once a model keeps ending with a plain answer past the nudge cap,
 				// accept THAT answer as the honest final (it already did the work
 				// and the reply is surfaced) rather than re-steering forever.
-				if a.pushGuidanceNudge("You did real work this turn, so don't finish with a plain message — call task_complete with the outcome for the user: a summary, coverage, and anything still open. You don't need to cite evidence; just give the honest result.", &guidanceNudges) {
+				if a.pushGuidanceNudge("You did real work this turn, so don't finish with a plain message — call task_complete with the outcome for the user: a summary, coverage, and anything still open. You don't need to cite evidence; just give the honest result.", &unproductive) {
 					a.finishTurn(ctx, answer, surfaced, surfacedSnips, userInput, false)
 					return nil
 				}
@@ -902,6 +938,16 @@ func (a *Agent) Chat(ctx context.Context, userInput string) error {
 		// transcript before the claim is judged; every tool_call receives a
 		// result so the transcript stays well-formed.
 		if cc, rest := splitCompletion(res.Message.ToolCalls); cc != nil {
+			// req.8.3 (N2): the completion branch no longer bypasses stall
+			// detection. Advance the shared no-progress read on the completion
+			// batch BEFORE the branch can continue, so a repeated premature
+			// task_complete trips the same stall as a repeated tool call instead
+			// of riding to the step budget. The reject path below additionally
+			// folds each rejection into the unified unproductive counter.
+			if _, stalled := noteBatch(res.Message.ToolCalls); stalled {
+				a.consolidateWorking()
+				return fmt.Errorf("%w: repeating the same completion claim without progress. Where it got stuck: %s", ErrIncomplete, oneLine(a.lastToolSummary()))
+			}
 			// Run any sibling tool calls, then FALL THROUGH to adjudicate the
 			// completion against the transcript that now includes their results.
 			// This replaces the old "call task_complete on its own" bounce: grok
@@ -926,8 +972,8 @@ func (a *Agent) Chat(ctx context.Context, userInput string) error {
 			// completion can't be proven from a truncated result.
 			if a.overflowUnread() {
 				a.working = append(a.working, llm.ToolResult(cc.ID, tools.TaskCompleteTool, gateNotAcceptedToolResult))
-				if a.pushGuidanceNudge(a.overflowUnreadNudge(), &guidanceNudges) {
-					return a.escalateGuidance(guidanceNudges)
+				if a.pushGuidanceNudge(a.overflowUnreadNudge(), &unproductive) {
+					return a.escalateGuidance(unproductive)
 				}
 				continue
 			}
@@ -952,46 +998,36 @@ func (a *Agent) Chat(ctx context.Context, userInput string) error {
 			// gate keeps rejecting without progress, escalate to a stop-and-ask
 			// rather than re-nudging unbounded (req.1.5).
 			a.working = append(a.working, llm.ToolResult(cc.ID, tools.TaskCompleteTool, gateNotAcceptedToolResult))
-			if a.pushGuidanceNudge(verdict.feedback, &guidanceNudges) {
-				return a.escalateGuidance(guidanceNudges)
+			if a.pushGuidanceNudge(verdict.feedback, &unproductive) {
+				return a.escalateGuidance(unproductive)
 			}
 			continue
 		}
 
-		// No-progress detection: a repeat is either a byte-identical batch
-		// signature OR a SEMANTIC repeat — the same operation (same tool shape
-		// + same target) reworded — so a cosmetic reword can't reset the
-		// counter and loop forever (NE-4). Distinct operations (different
-		// target/tool) reset it.
-		sig := batchSignature(res.Message.ToolCalls)
-		// Cycle-aware no-progress: a rotating set of already-seen operations that
-		// introduces no NEW tool (e.g. price → render → price → render) is a spiral
-		// even though consecutive signatures differ — count it so an A-B-A-B loop
-		// trips the stall instead of running silently to the step budget. Any
-		// genuinely new tool this step resets the spiral read.
-		introducedNewTool := false
-		for _, c := range res.Message.ToolCalls {
-			if _, seen := distinctToolSet[c.Function.Name]; !seen {
-				introducedNewTool = true
-				break
-			}
-		}
-		cyclic := !introducedNewTool && sigInWindow(recentSigs, sig)
-		if sig == prevSig || a.semanticRepeat(prevCalls, res.Message.ToolCalls) || cyclic {
-			repeats++
-		} else {
-			repeats = 0
-		}
-		recentSigs = pushWindow(recentSigs, sig, stallWindow)
-		prevSig = sig
-		prevCalls = res.Message.ToolCalls
-		if repeats >= a.cfg.NoProgressStall {
+		// No-progress detection (shared with the completion branch above via
+		// noteBatch): a repeat is a byte-identical batch signature, a SEMANTIC
+		// repeat (same operation reworded — a cosmetic reword can't reset the
+		// counter and loop forever, NE-4), or a rotating A→B→A→B cycle that
+		// introduces no new tool. Distinct operations reset the repeat read.
+		repeat, stalled := noteBatch(res.Message.ToolCalls)
+		if stalled {
 			// No-progress stall: do NOT fabricate a close. Return an incomplete
 			// signal so the supervisor can respawn a fresh agent and continue —
 			// the task is not done. (On the bare CLI path, with no supervisor, the
 			// wrapped reason is printed.)
 			a.consolidateWorking()
 			return fmt.Errorf("%w: repeating the same step without progress. Where it got stuck: %s", ErrIncomplete, oneLine(a.lastToolSummary()))
+		}
+		// req.8.1: a no-progress repeat is itself an unproductive attempt — fold
+		// it into the ONE unified counter (alongside completion rejections and
+		// guidance nudges) so an interleaved mix that never trips the pure-repeat
+		// stall is still bounded, and escalate to an honest stop-and-ask past the
+		// bound rather than running to the step budget.
+		if repeat {
+			unproductive++
+			if a.capExceeded(unproductive) {
+				return a.escalateGuidance(unproductive)
+			}
 		}
 		// One firm convergence steer just before the hard stall: grok in particular
 		// re-does work it already completed (re-fetching/re-rendering a value it
@@ -1019,10 +1055,12 @@ func (a *Agent) Chat(ctx context.Context, userInput string) error {
 
 		a.runToolCalls(ctx, res.Message.ToolCalls)
 		workTouched = true
-		// Genuine progress: a tool dispatch resets the consecutive-guidance
-		// counter so the bounded-escalation budget only trips on a true nudge
-		// loop, never on steps separated by real work (req.1.5).
-		guidanceNudges = 0
+		// req.8.2 (N2): a plain tool dispatch does NOT reset the unified
+		// unproductive counter — only genuine ACCEPTED progress does (an accepted
+		// completion, which ends the turn). This is the fix for the
+		// work->premature-complete->reject loop, where an interleaved real tool
+		// call used to silently reset the completion-reject bound and let the
+		// loop run to the step budget.
 		if injectConvergeNudge {
 			convergeNudged = true
 			a.working = append(a.working, llm.GuidanceMessage("You already obtained the result and showed it — do NOT fetch or render it again. Give the user the answer now and call task_complete with it."))
@@ -1046,27 +1084,37 @@ func (a *Agent) gateStrict(stateTouched, workTouched bool) bool {
 }
 
 // pushGuidanceNudge routes a system-steering nudge through the guidance channel
-// (req.1.1) and enforces the bounded-escalation budget (req.1.5): it increments
-// the CONSECUTIVE-nudge counter and reports whether the cap is now exceeded. The
-// caller resets the counter on genuine progress (a tool dispatch / accepted
-// completion). A cap of 0 disables the bound (unbounded nudging).
+// (req.1.1) and folds it into the ONE unified unproductive-attempt counter
+// (req.8.1): it increments the counter and reports whether the bound is now
+// exceeded. Completion-gate rejections and read-full/identity steers all push
+// through here, so they share ONE bound with the no-progress repeats fed in the
+// loop. The counter is reset ONLY on genuine accepted progress (req.8.2) — never
+// by a plain tool dispatch. A cap of 0 disables the bound (unbounded nudging).
 func (a *Agent) pushGuidanceNudge(text string, counter *int) (capExceeded bool) {
 	if g := llm.GuidanceMessage(text); g.Content != "" {
 		a.working = append(a.working, g)
 	}
 	*counter++
-	return a.cfg.MaxGuidanceNudges > 0 && *counter > a.cfg.MaxGuidanceNudges
+	return a.capExceeded(*counter)
 }
 
-// escalateGuidance ends the turn with an honest stop-and-ask once the guidance
-// nudge cap is exceeded (req.1.5): re-nudging the model indefinitely is not the
-// answer, so it marks a DETERMINISTIC blocker (the task supervisor then
-// stops-and-asks the user rather than respawning into the same loop) and returns
-// ErrIncomplete with an honest where-it-stands digest.
-func (a *Agent) escalateGuidance(nudges int) error {
+// capExceeded reports whether the unified unproductive-attempt counter has
+// passed its bound (config MaxGuidanceNudges, the shared unproductive-attempt
+// cap). A cap of 0 disables the bound (unbounded).
+func (a *Agent) capExceeded(counter int) bool {
+	return a.cfg.MaxGuidanceNudges > 0 && counter > a.cfg.MaxGuidanceNudges
+}
+
+// escalateGuidance ends the turn with an honest stop-and-ask once the unified
+// unproductive-attempt bound is exceeded (req.1.5, req.8): re-nudging — or
+// re-attempting a premature completion — indefinitely is not the answer, so it
+// marks a DETERMINISTIC blocker (the task supervisor then stops-and-asks the
+// user rather than respawning into the same loop) and returns ErrIncomplete
+// with an honest where-it-stands digest.
+func (a *Agent) escalateGuidance(attempts int) error {
 	a.lastFailureClass = delegate.ClassDeterministic
 	a.consolidateWorking()
-	return fmt.Errorf("%w: I kept being steered to fix the same thing without closing it (%d consecutive nudges). Where it stands: %s", ErrIncomplete, nudges, oneLine(a.lastToolSummary()))
+	return fmt.Errorf("%w: I made no productive progress after %d unproductive attempts (repeated steer/reject without closing it). Where it stands: %s", ErrIncomplete, attempts, oneLine(a.lastToolSummary()))
 }
 
 // oneLine collapses whitespace and clamps a digest to a single readable line
