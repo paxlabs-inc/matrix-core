@@ -207,6 +207,39 @@ and verifies it live**:
   turn-in cards carry real verification evidence, in result language, with zero
   orchestrator/worker/sheet jargon leaking to consumer copy.
 
+### The per-tier reference target (locked 2026-07-05)
+
+The three disclosure tiers each have a best-in-class reference surface — one
+reference per mode, not a single unified layout. Reference screenshots live at
+`temp/ui_options_for_cody/{emergent_style,leap_new_style,replit_style}`.
+
+- **Prototype → Emergent style.** A cloud/atmosphere hero ("What will you build
+  today?"), an intent-tabbed composer (Full Stack / Mobile / Landing /
+  Brainstorm), then a chat-left + live **App Preview**-right split with a
+  run-details panel (credits, machine, model, assets, GitHub) and a prominent
+  Deploy. Vibe-first, preview-as-hero, minimal machinery.
+- **Engineer → Leap.new style.** A left rail of change history + task-step
+  progress + a "What's next?" composer (Scope / Thinking / Debug chips); the main
+  area is a top-tab workspace **Preview | Code | Architecture | Infrastructure |
+  Service Catalog** with a file-tree + diff-line-count code view, an architecture
+  diagram, and a DB/infra panel; a bottom **BUILD / LOGS / TESTS** console. The
+  engineering cockpit.
+- **Architect → Replit style.** A three-pane layout: a chat rail (transcript +
+  "Checkpoint made" / "Worked for Ns" + Plan/Economy composer) | a tabbed center
+  (Preview / Shell / Database / editor + a "search tools & files" command
+  palette) | a right **Library** file tree; Invite/Publish affordances; full
+  control including the terminal/shell. Maximum machinery.
+
+**Non-negotiable overlay.** Adopt each reference's *information architecture and
+interaction patterns only* — never its chrome. All three references use border
+strokes for depth and glow/gradient accents, which are BANNED by the house
+rules. Every tier renders in Matrix styling: separation by background-tone
+contrast only, single Paxeer Blue accent, no glow, no gradients, no emojis,
+result-over-protocol copy. This mapping is the durable design target for the
+`task.5.x` surface work (`req.12`) and refines the `cody-client` tier
+composition (`req.4`); the built surface lives in
+`apps/client/components/matrix/cody/`.
+
 ## The 25-session working protocol (baked in — follow every session)
 
 Each of the 25 tasks is ONE session. The protocol is the durable operating

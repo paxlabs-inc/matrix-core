@@ -813,6 +813,12 @@ func (e *Engine) drive(ctx context.Context, r *run, message string, m mode.Mode,
 			}
 		}
 	}
+	// Deterministic backstop to the planner's workspace-relative-path prompt
+	// (req 3.3, Y1 upstream): whatever shape the model emitted (or an older
+	// persisted plan carries), the plan that is published, saved, and folded
+	// into every sheet's goal/grounding/verify is normalized to relative paths
+	// so the worker and the acceptance gate share the identical shape.
+	plan.Relativize(r.root)
 	e.publish(r, "plan.created", map[string]interface{}{
 		"goal": plan.Goal, "tasks": planTasks(plan), "mode": string(m),
 	})
@@ -974,6 +980,10 @@ func (e *Engine) runOrchestrator(ctx context.Context, r *run, st *contract.Store
 		},
 		MaxAttempts:   e.opts.MaxAttempts,
 		VerifyTimeout: e.opts.VerifyTimeout,
+		// Typed screenshot capability (req 4.1): true only when a shared
+		// browser service is configured. Stamped on every sheet so the worker
+		// prompt and the gate's screenshot screen agree on what can exist.
+		ScreenshotCapable: e.opts.BrowserURL != "",
 		Observer: func(event string, fields map[string]interface{}) {
 			e.publish(r, event, fields)
 			// Mirror the loop's milestones onto the live activity spine so the

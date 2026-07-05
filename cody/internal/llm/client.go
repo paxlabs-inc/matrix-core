@@ -628,9 +628,15 @@ type streamOptions struct {
 
 // wireMessage is the request-side message shape. It deliberately omits the
 // reasoning channel so prior assistant reasoning is never echoed back.
+// Content is NEVER omitempty: an assistant turn that carries only tool calls
+// and a tool result whose output is empty both have Content == "", and a
+// strict provider deserializer (xAI) rejects the WHOLE request with a
+// non-retryable 422 ("missing field `content`") when the key is absent —
+// which kills the worker attempt mid-task. An explicit "content":"" is
+// accepted by every OpenAI-compatible provider.
 type wireMessage struct {
 	Role       string     `json:"role"`
-	Content    string     `json:"content,omitempty"`
+	Content    string     `json:"content"`
 	ToolCalls  []ToolCall `json:"tool_calls,omitempty"`
 	ToolCallID string     `json:"tool_call_id,omitempty"`
 	Name       string     `json:"name,omitempty"`

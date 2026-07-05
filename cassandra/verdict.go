@@ -64,12 +64,16 @@ type Verdict struct {
 }
 
 // Normalize trims blank list entries and applies the coherence guards
-// ([verdict.coherence_guards]) that bias every incoherent verdict toward MORE
-// work, never toward a false success ([principles].coherence_toward_more_work,
-// invariant i_cass_7):
+// ([verdict.coherence_guards]) that bias every incoherent or under-signalled
+// verdict toward MORE work, never toward a false success
+// ([principles].coherence_toward_more_work, invariant i_cass_7):
 //
 //	g1 — Coverage=full with a non-empty Missing list -> force Coverage=partial.
 //	g2 — Grounded=true with non-empty UnverifiedClaims -> force Grounded=false.
+//	g4 — Unknown/blank Coverage -> Coverage=partial (a missing signal fails
+//	     toward refusal; completeness is only ever asserted by an explicit
+//	     coverage=full). The grounded counterpart (g5) is applied at parse
+//	     (an omitted grounded field is read as false, never inferred true).
 //
 // There is no citation-matching guard: completion is judged by whether the
 // OUTCOME satisfies the GOAL over the executed transcript (grounded +
@@ -84,13 +88,11 @@ func (v *Verdict) Normalize() {
 	v.OpenUnknowns = cleanList(v.OpenUnknowns)
 
 	if v.Coverage != CoverageFull && v.Coverage != CoveragePartial {
-		// Unknown/blank coverage normalizes by the safe rule: any missing
-		// item means partial; otherwise full.
-		if len(v.Missing) > 0 {
-			v.Coverage = CoveragePartial
-		} else {
-			v.Coverage = CoverageFull
-		}
+		// Unknown/blank coverage carries NO affirmative completeness signal, so
+		// it fails TOWARD REFUSAL: partial, never full (g4 / req 7.1). An empty
+		// missing list is silence, not a claim of completion — completeness is
+		// only ever asserted by an explicit coverage=full.
+		v.Coverage = CoveragePartial
 	}
 	// g1: coverage cannot be "full" while items remain missing.
 	if v.Coverage == CoverageFull && len(v.Missing) > 0 {

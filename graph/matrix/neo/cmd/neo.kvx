@@ -1,7 +1,7 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:f74330f0bf1dc65cdd0901e9d2f8d845f86c988efd32b159987d38404d9dabb2
+# GENERATED gen=codegraph do-not-edit merkle=b3:9b68327501b45793fd7687f43b30c960fd68ae8aaff6b2f1bb36ec3e2df2de2f
 
 NODE id=matrix/neo/cmd/neo kind=package
-  digest=b3:5f7189e55c85b1eb921e599fb57186bdfd45ec8d06e577b4dad0e02f4126f25e file=neo/cmd/neo range=0:0 lang=go exported=true
+  digest=b3:7abaa82b00f0481647dd9c593b0cf2099e2d3266aa57b360406b50b3cbb7a727 file=neo/cmd/neo range=0:0 lang=go exported=true
 EDGES
   contains=matrix/neo/cmd/neo/main.go,matrix/neo/cmd/neo/serve.go
   ^contains=mod:matrix/neo
@@ -52,7 +52,7 @@ EDGES
   ^defines=matrix/neo/cmd/neo/main.go
 
 NODE id=matrix/neo/cmd/neo.oneLine kind=func
-  digest=b3:62c3dddfdfe14f9d1f9e6a426721398a3876f8fd741e2a0eeab3afc51f6a6d64 file=neo/cmd/neo/main.go range=312:321 lang=go exported=false byte_range=9853:10036
+  digest=b3:62c3dddfdfe14f9d1f9e6a426721398a3876f8fd741e2a0eeab3afc51f6a6d64 file=neo/cmd/neo/main.go range=317:326 lang=go exported=false byte_range=10161:10344
   sig=func oneLine(s string) string
 EDGES
   ^defines=matrix/neo/cmd/neo/main.go
@@ -87,12 +87,12 @@ NODE id=matrix/neo/cmd/neo.stdoutReporter kind=type
   sig=type stdoutReporter struct{}
   doc=stdoutReporter renders the agent's output to a terminal: answers on stdout,\nephemeral progress + notices on stderr so piping `-prompt` yields a clean\nanswer.
 EDGES
-  contains=matrix/neo/cmd/neo.stdoutReporter.Delta,matrix/neo/cmd/neo.stdoutReporter.Notice,matrix/neo/cmd/neo.stdoutReporter.Say,matrix/neo/cmd/neo.stdoutReporter.Status,matrix/neo/cmd/neo.stdoutReporter.Think
+  contains=matrix/neo/cmd/neo.stdoutReporter.Delta,matrix/neo/cmd/neo.stdoutReporter.Notice,matrix/neo/cmd/neo.stdoutReporter.Progress,matrix/neo/cmd/neo.stdoutReporter.Say,matrix/neo/cmd/neo.stdoutReporter.Status,matrix/neo/cmd/neo.stdoutReporter.Think
   implements=matrix/neo/internal/agent.Reporter
   ^defines=matrix/neo/cmd/neo/main.go
 
 NODE id=matrix/neo/cmd/neo.stdoutReporter.Delta kind=method
-  digest=b3:b85eb90de0a9c5f17752fb620005de4e75b85765057e1ab50fbbbf988e6c76bb file=neo/cmd/neo/main.go range=308:310 lang=go exported=true byte_range=9660:9851
+  digest=b3:b85eb90de0a9c5f17752fb620005de4e75b85765057e1ab50fbbbf988e6c76bb file=neo/cmd/neo/main.go range=313:315 lang=go exported=true byte_range=9968:10159
   sig=func (stdoutReporter) Delta(int, string, string)
   doc=Delta is a no-op for the CLI: the terminal prints the complete answer at the\nend (Say); live token streaming is an SSE/UI affordance.
 EDGES
@@ -100,8 +100,16 @@ EDGES
   ^defines=matrix/neo/cmd/neo/main.go
 
 NODE id=matrix/neo/cmd/neo.stdoutReporter.Notice kind=method
-  digest=b3:a36210598506beaef1e72d6b408bbfd7108c0cc00417b8c36f8b9db10d68fc36 file=neo/cmd/neo/main.go range=305:305 lang=go exported=true byte_range=9466:9562
+  digest=b3:847ca7f057ccdc0f74492626b7b7a60a98aa46e3d53ba94847d64ef52aaa631e file=neo/cmd/neo/main.go range=310:310 lang=go exported=true byte_range=9770:9868
   sig=func (stdoutReporter) Notice(text string)
+EDGES
+  ^contains=matrix/neo/cmd/neo.stdoutReporter
+  ^defines=matrix/neo/cmd/neo/main.go
+
+NODE id=matrix/neo/cmd/neo.stdoutReporter.Progress kind=method
+  digest=b3:720286e2770988d8f799cef56be9474d6b142a2e450efbe5202f9b2e5f023bff file=neo/cmd/neo/main.go range=306:309 lang=go exported=true byte_range=9472:9769
+  sig=func (stdoutReporter) Progress(text string)
+  doc=Progress prints the ephemeral narrate-before-act intent stub to stderr (like\nStatus): the terminal has no durable-thread notion, so ephemeral vs durable\nonly matters for the SSE/UI surface.
 EDGES
   ^contains=matrix/neo/cmd/neo.stdoutReporter
   ^defines=matrix/neo/cmd/neo/main.go
@@ -114,23 +122,23 @@ EDGES
   ^defines=matrix/neo/cmd/neo/main.go
 
 NODE id=matrix/neo/cmd/neo.stdoutReporter.Status kind=method
-  digest=b3:1be54a41850e006649658c178fd20dc0d88315ab0646a75a1814efc2a64731c2 file=neo/cmd/neo/main.go range=304:304 lang=go exported=true byte_range=9369:9465
+  digest=b3:e5abc8914204879c51d89e276e49e2ed0b16aa64153a6ba41041e5d495f90222 file=neo/cmd/neo/main.go range=304:304 lang=go exported=true byte_range=9369:9470
   sig=func (stdoutReporter) Status(text string)
 EDGES
   ^contains=matrix/neo/cmd/neo.stdoutReporter
   ^defines=matrix/neo/cmd/neo/main.go
 
 NODE id=matrix/neo/cmd/neo.stdoutReporter.Think kind=method
-  digest=b3:a5e8a5442ca18b95d91289729fe01d97f5b2142c8a0a87d83b2ddddb697031df file=neo/cmd/neo/main.go range=306:306 lang=go exported=true byte_range=9563:9658
+  digest=b3:464f9f7885cc2cc79220eb603a4b5e13cce4364878b304c754ad6b9084fe8bd2 file=neo/cmd/neo/main.go range=311:311 lang=go exported=true byte_range=9869:9966
   sig=func (stdoutReporter) Think(text string)
 EDGES
   ^contains=matrix/neo/cmd/neo.stdoutReporter
   ^defines=matrix/neo/cmd/neo/main.go
 
 NODE id=matrix/neo/cmd/neo/main.go kind=file
-  digest=b3:50d026a4d1a4f6bff1e32ab24ade7e77f9d4e9574754d399130912335862a23c file=neo/cmd/neo/main.go range=1:321 lang=go exported=true
+  digest=b3:cc75931153f8567cd9e77c458b6df964354e0f430a2a7e3663fbd3ac12ffbb15 file=neo/cmd/neo/main.go range=1:326 lang=go exported=true
 EDGES
-  defines=matrix/neo/cmd/neo.main,matrix/neo/cmd/neo.newApprover,matrix/neo/cmd/neo.newCassandraAdjudicator,matrix/neo/cmd/neo.newClient,matrix/neo/cmd/neo.newSlotClient,matrix/neo/cmd/neo.oneLine,matrix/neo/cmd/neo.printBanner,matrix/neo/cmd/neo.readLine,matrix/neo/cmd/neo.runInteractive,matrix/neo/cmd/neo.stdoutReporter,matrix/neo/cmd/neo.stdoutReporter.Delta,matrix/neo/cmd/neo.stdoutReporter.Notice,matrix/neo/cmd/neo.stdoutReporter.Say,matrix/neo/cmd/neo.stdoutReporter.Status,matrix/neo/cmd/neo.stdoutReporter.Think
+  defines=matrix/neo/cmd/neo.main,matrix/neo/cmd/neo.newApprover,matrix/neo/cmd/neo.newCassandraAdjudicator,matrix/neo/cmd/neo.newClient,matrix/neo/cmd/neo.newSlotClient,matrix/neo/cmd/neo.oneLine,matrix/neo/cmd/neo.printBanner,matrix/neo/cmd/neo.readLine,matrix/neo/cmd/neo.runInteractive,matrix/neo/cmd/neo.stdoutReporter,matrix/neo/cmd/neo.stdoutReporter.Delta,matrix/neo/cmd/neo.stdoutReporter.Notice,matrix/neo/cmd/neo.stdoutReporter.Progress,matrix/neo/cmd/neo.stdoutReporter.Say,matrix/neo/cmd/neo.stdoutReporter.Status,matrix/neo/cmd/neo.stdoutReporter.Think
   ^contains=matrix/neo/cmd/neo
 
 NODE id=matrix/neo/cmd/neo/serve.go kind=file

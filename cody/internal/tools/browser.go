@@ -11,6 +11,7 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -30,6 +31,12 @@ import (
 
 // screenshotDir is where captured screenshots land under the workspace.
 const screenshotDir = ".cody/screenshots"
+
+// ErrScreenshotUnavailable is the typed signal that screenshot capability is
+// absent in this environment (req 4.4). Callers dispatch on it with errors.Is;
+// it is NEVER returned as a success message in the path slot, so no caller can
+// mistake the explanation for a screenshot path.
+var ErrScreenshotUnavailable = errors.New("screenshot capability is unavailable")
 
 // jsonRPCRequest is one JSON-RPC 2.0 call.
 type jsonRPCRequest struct {
@@ -70,7 +77,7 @@ func (b *Bridge) browserScreenshot(ctx context.Context, target, name string) (st
 		return "", fmt.Errorf("url is required")
 	}
 	if b.cfg.BrowserURL == "" {
-		return "the browser service is not configured; cannot capture a screenshot.", nil
+		return "", fmt.Errorf("%w: the browser service is not configured", ErrScreenshotUnavailable)
 	}
 	sess, err := b.mcpInitialize(ctx)
 	if err != nil {

@@ -1,7 +1,7 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:f74330f0bf1dc65cdd0901e9d2f8d845f86c988efd32b159987d38404d9dabb2
+# GENERATED gen=codegraph do-not-edit merkle=b3:9b68327501b45793fd7687f43b30c960fd68ae8aaff6b2f1bb36ec3e2df2de2f
 
 NODE id=matrix/cody/internal/server kind=package
-  digest=b3:4d64048766cab8f8829e7c64193d3dbb3892b6c7279b0e2cc2fa45ec9d2fad61 file=cody/internal/server range=0:0 lang=go exported=true
+  digest=b3:83929d045159da45ba5e2487a5de44e8fb94abd69e3ea475f2fa59cac3d1ea28 file=cody/internal/server range=0:0 lang=go exported=true
 EDGES
   contains=matrix/cody/internal/server/decision.go,matrix/cody/internal/server/design_decision.go,matrix/cody/internal/server/engine.go,matrix/cody/internal/server/inbox.go,matrix/cody/internal/server/projects.go,matrix/cody/internal/server/server.go,matrix/cody/internal/server/sse.go,matrix/cody/internal/server/trace.go,matrix/cody/internal/server/workspace.go
   ^contains=mod:matrix/cody
@@ -147,7 +147,7 @@ EDGES
   ^defines=matrix/cody/internal/server/engine.go
 
 NODE id=matrix/cody/internal/server.Engine.activity kind=method
-  digest=b3:945c4cdb3d18dacf8d83bbecd0ecd3c82a1c440832870a84fd98fb6f68391d77 file=cody/internal/server/engine.go range=1069:1082 lang=go exported=false byte_range=36263:36917
+  digest=b3:945c4cdb3d18dacf8d83bbecd0ecd3c82a1c440832870a84fd98fb6f68391d77 file=cody/internal/server/engine.go range=1079:1092 lang=go exported=false byte_range=36915:37569
   sig=func (e *Engine) activity(r *run, phase, detail string)
   doc=activity publishes a milestone run.activity event: the current phase, a\nplain-language label, an optional detail (e.g. the task being built), and\nelapsed time since the run began. It is a pure side-channel — no loop, gate,\nor plan-determinism effect — and (once whitelisted in trace.go) persists so\nthe client rebuilds the last-known phase on reopen.
 EDGES
@@ -210,7 +210,7 @@ EDGES
   ^defines=matrix/cody/internal/server/inbox.go
 
 NODE id=matrix/cody/internal/server.Engine.drive kind=method
-  digest=b3:38afcea23ea0b189663677991e768745a5a65a98d85d19863cb52ae9d31fd3d8 file=cody/internal/server/engine.go range=689:937 lang=go exported=false byte_range=21965:31572
+  digest=b3:c1d5fc9748d43174540b48e726aa4a587987bbdb4668fe8ef51c753091e2dd05 file=cody/internal/server/engine.go range=689:943 lang=go exported=false byte_range=21965:31967
   sig=func (e *Engine) drive(ctx context.Context, r *run, message string, m mode.Mode, resume bool, spec, specSource string)
   doc=drive executes one plan run on a background context, supervised: the\norchestrator is respawned over the same durable state on transient\nfailures, deterministic failures stop-and-ask, and every terminal is\nhonest. The client connection is never load-bearing.
 EDGES
@@ -242,7 +242,7 @@ EDGES
   ^defines=matrix/cody/internal/server/inbox.go
 
 NODE id=matrix/cody/internal/server.Engine.finish kind=method
-  digest=b3:bec7f0be4a4e1cee78385aa76706351e6917544e6cc17acdbf819fe636d1e63d file=cody/internal/server/engine.go range=1189:1206 lang=go exported=false byte_range=40640:41234
+  digest=b3:bec7f0be4a4e1cee78385aa76706351e6917544e6cc17acdbf819fe636d1e63d file=cody/internal/server/engine.go range=1199:1216 lang=go exported=false byte_range=41292:41886
   sig=func (e *Engine) finish(r *run, status, note string)
   doc=finish records the terminal, updates the ledger (status + this run's token\nspend folded into the conversation total), and closes the topic.
 EDGES
@@ -258,7 +258,7 @@ EDGES
   ^defines=matrix/cody/internal/server/engine.go
 
 NODE id=matrix/cody/internal/server.Engine.heartbeat kind=method
-  digest=b3:96ab5a33781070539874ee12d5bbc674d02e3cf0a14ebbf6760db03caa7e483e file=cody/internal/server/engine.go range=1088:1126 lang=go exported=false byte_range=37080:38613
+  digest=b3:96ab5a33781070539874ee12d5bbc674d02e3cf0a14ebbf6760db03caa7e483e file=cody/internal/server/engine.go range=1098:1136 lang=go exported=false byte_range=37732:39265
   sig=func (e *Engine) heartbeat(ctx context.Context, r *run) (stop func())
   doc=heartbeat starts the run's cancel-safe liveness ticker: while a long phase\n(SDR / plan / DLR authoring, worker execution) runs between milestone\nboundaries, it periodically re-emits the run's CURRENT phase as a\nrun.activity event carrying heartbeat=true, so the client shows continuous\nprogress instead of a frozen state. Heartbeats are live-only liveness\nsignals — the heartbeat flag keeps them out of the durable trace (milestone\nactivities persist; ticks do not). Ticks are suppressed while the run is\nparked awaiting human input (needs_input is its own honest surface) and\nbefore the first boundary sets a phase. The ticker stops on ctx cancel or\nwhen the returned stop func runs at the run's terminal; stop is idempotent\nand returns after the goroutine has fully unwound.
 EDGES
@@ -328,7 +328,7 @@ EDGES
   ^defines=matrix/cody/internal/server/engine.go
 
 NODE id=matrix/cody/internal/server.Engine.projectHasLiveRun kind=method
-  digest=b3:29c5ae6124cdc581238bfbe800d1a2a67d4478db957423f52b5c3da88d4446b0 file=cody/internal/server/engine.go range=1156:1167 lang=go exported=false byte_range=39488:39859
+  digest=b3:29c5ae6124cdc581238bfbe800d1a2a67d4478db957423f52b5c3da88d4446b0 file=cody/internal/server/engine.go range=1166:1177 lang=go exported=false byte_range=40140:40511
   sig=func (e *Engine) projectHasLiveRun(root string) bool
   doc=projectHasLiveRun reports whether any run rooted at root is currently running\n— the "a worker is alive" guard that refuses a destructive restore (req 14.1).
 EDGES
@@ -336,7 +336,7 @@ EDGES
   ^defines=matrix/cody/internal/server/engine.go
 
 NODE id=matrix/cody/internal/server.Engine.projectMemory kind=method
-  digest=b3:f70ec4b952236893ddc923ba0d3ecf5eff3284b5f4d11baa063e8cd844b90d93 file=cody/internal/server/engine.go range=1128:1135 lang=go exported=false byte_range=38615:38900
+  digest=b3:f70ec4b952236893ddc923ba0d3ecf5eff3284b5f4d11baa063e8cd844b90d93 file=cody/internal/server/engine.go range=1138:1145 lang=go exported=false byte_range=39267:39552
   sig=func (e *Engine) projectMemory(projectID string) *checkpoint.ProjectMemory
   doc=projectMemory returns the project's cortex-backed memory surface, nil when\ncortex is not wired.
 EDGES
@@ -344,7 +344,7 @@ EDGES
   ^defines=matrix/cody/internal/server/engine.go
 
 NODE id=matrix/cody/internal/server.Engine.publish kind=method
-  digest=b3:c9ce27ff3eb88b827ace4bffaf1d386f44425af51da66595a024e034d3572c8b file=cody/internal/server/engine.go range=1039:1042 lang=go exported=false byte_range=35193:35377
+  digest=b3:c9ce27ff3eb88b827ace4bffaf1d386f44425af51da66595a024e034d3572c8b file=cody/internal/server/engine.go range=1049:1052 lang=go exported=false byte_range=35845:36029
   sig=func (e *Engine) publish(r *run, typ string, fields map[string]interface{})
   doc=publish emits one event on the run topic (phase "cody").
 EDGES
@@ -352,7 +352,7 @@ EDGES
   ^defines=matrix/cody/internal/server/engine.go
 
 NODE id=matrix/cody/internal/server.Engine.publishToConversation kind=method
-  digest=b3:297662555a6c9cb162e1d5aab396bbb1948289bf4cd8c72cfabc9dad6b1f8718 file=cody/internal/server/engine.go range=1169:1182 lang=go exported=false byte_range=39861:40456
+  digest=b3:297662555a6c9cb162e1d5aab396bbb1948289bf4cd8c72cfabc9dad6b1f8718 file=cody/internal/server/engine.go range=1179:1192 lang=go exported=false byte_range=40513:41108
   sig=func (e *Engine) publishToConversation(convID, typ string, fields map[string]interface{})
   doc=publishToConversation best-effort emits an event on a conversation's run topic\nso a workspace-level action (snapshot/restore) lands in the live timeline and\nthe durable trace. It is a no-op when the conversation has no live topic — the\naction still succeeds; only the trace annotation is skipped.
 EDGES
@@ -399,7 +399,7 @@ EDGES
   ^defines=matrix/cody/internal/server/projects.go
 
 NODE id=matrix/cody/internal/server.Engine.recallProjectMemory kind=method
-  digest=b3:1252aa8e09b838975542d7576de28b2bc46956c53ba368a643e7c5cd9e9ab3bb file=cody/internal/server/engine.go range=1140:1154 lang=go exported=false byte_range=39006:39486
+  digest=b3:1252aa8e09b838975542d7576de28b2bc46956c53ba368a643e7c5cd9e9ab3bb file=cody/internal/server/engine.go range=1150:1164 lang=go exported=false byte_range=39658:40138
   sig=func (e *Engine) recallProjectMemory(projectID string) string
   doc=recallProjectMemory renders the project's recent memory (stack/design\ndecisions + accepted turn-ins) as the grounding section, "" when there is\nnone.
 EDGES
@@ -462,7 +462,7 @@ EDGES
   ^defines=matrix/cody/internal/server/decision.go
 
 NODE id=matrix/cody/internal/server.Engine.runOrchestrator kind=method
-  digest=b3:2a4730cdc5aa35ad32cef2e79cc5c7f1529b8183c186aaecb60853eafc18c696 file=cody/internal/server/engine.go range=939:996 lang=go exported=false byte_range=31574:33683
+  digest=b3:3965249b8e63b151c3933ab726bf7d3aba079a7bed46ab1f80091ea120a08a37 file=cody/internal/server/engine.go range=945:1006 lang=go exported=false byte_range=31969:34335
   sig=func (e *Engine) runOrchestrator(ctx context.Context, r *run, st *contract.Store, plan *orchestrator.Plan, pol mode.Policy, rules *policy.Rules, designLanguage, projectMemory string) (*orchestrator.Result, error)
   doc=runOrchestrator wires one orchestrator instance over the durable state.
 EDGES
@@ -484,7 +484,7 @@ EDGES
   ^defines=matrix/cody/internal/server/decision.go
 
 NODE id=matrix/cody/internal/server.Engine.say kind=method
-  digest=b3:109596f23e89d121376a218d0c682d1ef1aa850af6d162e2c37cafec8a0db8c1 file=cody/internal/server/engine.go range=1184:1187 lang=go exported=false byte_range=40458:40638
+  digest=b3:109596f23e89d121376a218d0c682d1ef1aa850af6d162e2c37cafec8a0db8c1 file=cody/internal/server/engine.go range=1194:1197 lang=go exported=false byte_range=41110:41290
   sig=func (e *Engine) say(r *run, text string)
   doc=say publishes a user-facing assistant message.
 EDGES
@@ -522,7 +522,7 @@ EDGES
   ^defines=matrix/cody/internal/server/decision.go
 
 NODE id=matrix/cody/internal/server.Engine.workerFunc kind=method
-  digest=b3:38041d59d18c50be8837d1d104606115a1e51dcdae9f463716a883e364332961 file=cody/internal/server/engine.go range=998:1037 lang=go exported=false byte_range=33685:35191
+  digest=b3:38041d59d18c50be8837d1d104606115a1e51dcdae9f463716a883e364332961 file=cody/internal/server/engine.go range=1008:1047 lang=go exported=false byte_range=34337:35843
   sig=func (e *Engine) workerFunc(pol mode.Policy, r *run) orchestrator.WorkerFunc
   doc=workerFunc dispatches one REAL fresh-context worker per sheet. Each worker is\nhanded the ExtraTools bridge (browser/fetch/web-search) so a UI task can\ncapture a real screenshot as gate evidence (req 13.1); the bridge is\nboot-safe, so an unconfigured service simply omits or degrades a tool.
 EDGES
@@ -1096,7 +1096,7 @@ EDGES
   ^defines=matrix/cody/internal/server/sse.go
 
 NODE id=matrix/cody/internal/server.completionMessage kind=func
-  digest=b3:335c98b3a7ee79c5de0db6bfc5f66e07ee56041c33a33485496bc1f133985716 file=cody/internal/server/engine.go range=1208:1243 lang=go exported=false byte_range=41236:42456
+  digest=b3:335c98b3a7ee79c5de0db6bfc5f66e07ee56041c33a33485496bc1f133985716 file=cody/internal/server/engine.go range=1218:1253 lang=go exported=false byte_range=41888:43108
   sig=func completionMessage(pol mode.Policy, plan *orchestrator.Plan, res *orchestrator.Result) string
   doc=completionMessage renders the terminal report in the mode's register —\nresult, not protocol: no orchestrator/worker/sheet jargon reaches the user.
 EDGES
@@ -1277,14 +1277,14 @@ EDGES
   ^defines=matrix/cody/internal/server/workspace.go
 
 NODE id=matrix/cody/internal/server.firstErr kind=func
-  digest=b3:21e395d7cb38eae7562aa50f184820ed972d00c14f7602caf1f3808cc79bbbc3 file=cody/internal/server/engine.go range=1255:1263 lang=go exported=false byte_range=42751:42921
+  digest=b3:21e395d7cb38eae7562aa50f184820ed972d00c14f7602caf1f3808cc79bbbc3 file=cody/internal/server/engine.go range=1265:1273 lang=go exported=false byte_range=43403:43573
   sig=func firstErr(errs ...error) error
   doc=firstErr returns the first non-nil error, or nil.
 EDGES
   ^defines=matrix/cody/internal/server/engine.go
 
 NODE id=matrix/cody/internal/server.heartbeatInterval kind=var
-  digest=b3:17417238647735db0cdbc19796223f78a2eb1a91c64c8768e59157ca2a356540 file=cody/internal/server/engine.go range=1084:1086 lang=go exported=false byte_range=36919:37078
+  digest=b3:17417238647735db0cdbc19796223f78a2eb1a91c64c8768e59157ca2a356540 file=cody/internal/server/engine.go range=1094:1096 lang=go exported=false byte_range=37571:37730
   sig=time.Duration
   doc=heartbeatInterval paces the liveness heartbeat during long LLM phases. A\npackage var so tests can compress time.
 EDGES
@@ -1421,7 +1421,7 @@ EDGES
   ^defines=matrix/cody/internal/server/projects.go
 
 NODE id=matrix/cody/internal/server.newRunID kind=func
-  digest=b3:eb4a0c45db616e982f4910b0cee994d3da78a240f48f618b65ae6993df808fa2 file=cody/internal/server/engine.go range=1265:1271 lang=go exported=false byte_range=42923:43107
+  digest=b3:eb4a0c45db616e982f4910b0cee994d3da78a240f48f618b65ae6993df808fa2 file=cody/internal/server/engine.go range=1275:1281 lang=go exported=false byte_range=43575:43759
   sig=func newRunID() string
 EDGES
   ^defines=matrix/cody/internal/server/engine.go
@@ -1440,69 +1440,69 @@ EDGES
   ^defines=matrix/cody/internal/server/engine.go
 
 NODE id=matrix/cody/internal/server.phaseContinuing kind=const
-  digest=b3:1b4e50aca031d807357e61042b3d2a596b00e77f1d5c98a22d43897d394c0cf7 file=cody/internal/server/engine.go range=1044:1055 lang=go exported=false byte_range=35379:35880
+  digest=b3:1b4e50aca031d807357e61042b3d2a596b00e77f1d5c98a22d43897d394c0cf7 file=cody/internal/server/engine.go range=1054:1065 lang=go exported=false byte_range=36031:36532
   sig=untyped string
   doc=Run activity phases — the plain-language lifecycle the client's live spine\nrenders so the surface is never blank while Cody works. Copy is\nresult-oriented: no orchestrator/worker/sheet jargon ever reaches the user.
 EDGES
   ^defines=matrix/cody/internal/server/engine.go
 
 NODE id=matrix/cody/internal/server.phaseDesign kind=const
-  digest=b3:f740aaa2a815555c028160e07827f8eba305639880f72a829969b807c4eaa13b file=cody/internal/server/engine.go range=1044:1051 lang=go exported=false byte_range=35379:35744
+  digest=b3:f740aaa2a815555c028160e07827f8eba305639880f72a829969b807c4eaa13b file=cody/internal/server/engine.go range=1054:1061 lang=go exported=false byte_range=36031:36396
   sig=untyped string
   doc=Run activity phases — the plain-language lifecycle the client's live spine\nrenders so the surface is never blank while Cody works. Copy is\nresult-oriented: no orchestrator/worker/sheet jargon ever reaches the user.
 EDGES
   ^defines=matrix/cody/internal/server/engine.go
 
 NODE id=matrix/cody/internal/server.phaseLabels kind=var
-  digest=b3:33733f3b89887b27893960128e82c73f8d335382523585a39ac65f0d0ac121f3 file=cody/internal/server/engine.go range=1058:1067 lang=go exported=false byte_range=35888:36261
+  digest=b3:33733f3b89887b27893960128e82c73f8d335382523585a39ac65f0d0ac121f3 file=cody/internal/server/engine.go range=1068:1077 lang=go exported=false byte_range=36540:36913
   sig=map[string]string
 EDGES
   ^defines=matrix/cody/internal/server/engine.go
 
 NODE id=matrix/cody/internal/server.phasePlanning kind=const
-  digest=b3:fe80352bbeda84e0b08a752a09eca0e3439891214758a17530b3ff10e67e848f file=cody/internal/server/engine.go range=1044:1050 lang=go exported=false byte_range=35379:35713
+  digest=b3:fe80352bbeda84e0b08a752a09eca0e3439891214758a17530b3ff10e67e848f file=cody/internal/server/engine.go range=1054:1060 lang=go exported=false byte_range=36031:36365
   sig=untyped string
   doc=Run activity phases — the plain-language lifecycle the client's live spine\nrenders so the surface is never blank while Cody works. Copy is\nresult-oriented: no orchestrator/worker/sheet jargon ever reaches the user.
 EDGES
   ^defines=matrix/cody/internal/server/engine.go
 
 NODE id=matrix/cody/internal/server.phasePreviewing kind=const
-  digest=b3:cb61d9df1e81656bd47db6cb49a532ad1b8667ec92ff53d4c4a212232c308ee1 file=cody/internal/server/engine.go range=1044:1054 lang=go exported=false byte_range=35379:35845
+  digest=b3:cb61d9df1e81656bd47db6cb49a532ad1b8667ec92ff53d4c4a212232c308ee1 file=cody/internal/server/engine.go range=1054:1064 lang=go exported=false byte_range=36031:36497
   sig=untyped string
   doc=Run activity phases — the plain-language lifecycle the client's live spine\nrenders so the surface is never blank while Cody works. Copy is\nresult-oriented: no orchestrator/worker/sheet jargon ever reaches the user.
 EDGES
   ^defines=matrix/cody/internal/server/engine.go
 
 NODE id=matrix/cody/internal/server.phaseStack kind=const
-  digest=b3:64bd0d831cb24c7f529d6a14d7498e6d0d3f7beb10124d69b91cb295d2b37713 file=cody/internal/server/engine.go range=1044:1049 lang=go exported=false byte_range=35379:35680
+  digest=b3:64bd0d831cb24c7f529d6a14d7498e6d0d3f7beb10124d69b91cb295d2b37713 file=cody/internal/server/engine.go range=1054:1059 lang=go exported=false byte_range=36031:36332
   sig=untyped string
   doc=Run activity phases — the plain-language lifecycle the client's live spine\nrenders so the surface is never blank while Cody works. Copy is\nresult-oriented: no orchestrator/worker/sheet jargon ever reaches the user.
 EDGES
   ^defines=matrix/cody/internal/server/engine.go
 
 NODE id=matrix/cody/internal/server.phaseUnderstanding kind=const
-  digest=b3:c69ca67e0d22594cc937be6b408cbea660cef0d8611e9bfd74269c2b6b09a50e file=cody/internal/server/engine.go range=1044:1048 lang=go exported=false byte_range=35379:35650
+  digest=b3:c69ca67e0d22594cc937be6b408cbea660cef0d8611e9bfd74269c2b6b09a50e file=cody/internal/server/engine.go range=1054:1058 lang=go exported=false byte_range=36031:36302
   sig=untyped string
   doc=Run activity phases — the plain-language lifecycle the client's live spine\nrenders so the surface is never blank while Cody works. Copy is\nresult-oriented: no orchestrator/worker/sheet jargon ever reaches the user.
 EDGES
   ^defines=matrix/cody/internal/server/engine.go
 
 NODE id=matrix/cody/internal/server.phaseVerifying kind=const
-  digest=b3:0212c1fcf371a271c5dfc0813947ab567c499072109cea8bc22c84cf72bc8842 file=cody/internal/server/engine.go range=1044:1053 lang=go exported=false byte_range=35379:35810
+  digest=b3:0212c1fcf371a271c5dfc0813947ab567c499072109cea8bc22c84cf72bc8842 file=cody/internal/server/engine.go range=1054:1063 lang=go exported=false byte_range=36031:36462
   sig=untyped string
   doc=Run activity phases — the plain-language lifecycle the client's live spine\nrenders so the surface is never blank while Cody works. Copy is\nresult-oriented: no orchestrator/worker/sheet jargon ever reaches the user.
 EDGES
   ^defines=matrix/cody/internal/server/engine.go
 
 NODE id=matrix/cody/internal/server.phaseWorking kind=const
-  digest=b3:737a24914473fb156f4f5a988c3e5691d3dfefc68513e9576f1a85245dabdf42 file=cody/internal/server/engine.go range=1044:1052 lang=go exported=false byte_range=35379:35776
+  digest=b3:737a24914473fb156f4f5a988c3e5691d3dfefc68513e9576f1a85245dabdf42 file=cody/internal/server/engine.go range=1054:1062 lang=go exported=false byte_range=36031:36428
   sig=untyped string
   doc=Run activity phases — the plain-language lifecycle the client's live spine\nrenders so the surface is never blank while Cody works. Copy is\nresult-oriented: no orchestrator/worker/sheet jargon ever reaches the user.
 EDGES
   ^defines=matrix/cody/internal/server/engine.go
 
 NODE id=matrix/cody/internal/server.planTasks kind=func
-  digest=b3:2817a87acff6366ac6228899d896986f2bb9f7340f539860cc8bbe6ed8e657f9 file=cody/internal/server/engine.go range=1245:1253 lang=go exported=false byte_range=42458:42749
+  digest=b3:2817a87acff6366ac6228899d896986f2bb9f7340f539860cc8bbe6ed8e657f9 file=cody/internal/server/engine.go range=1255:1263 lang=go exported=false byte_range=43110:43401
   sig=func planTasks(p *orchestrator.Plan) []map[string]interface{}
 EDGES
   ^defines=matrix/cody/internal/server/engine.go
@@ -1561,7 +1561,7 @@ EDGES
   ^defines=matrix/cody/internal/server/projects.go
 
 NODE id=matrix/cody/internal/server.projectMemoryRecall kind=const
-  digest=b3:4d11e3edc81d2be0a39e8e851f3b3fe5781325ee26c5028c518c45b7c7aac65f file=cody/internal/server/engine.go range=1137:1138 lang=go exported=false byte_range=38902:39004
+  digest=b3:4d11e3edc81d2be0a39e8e851f3b3fe5781325ee26c5028c518c45b7c7aac65f file=cody/internal/server/engine.go range=1147:1148 lang=go exported=false byte_range=39554:39656
   sig=untyped int
   doc=projectMemoryRecall is how many recent project records ground a run.
 EDGES
@@ -2193,7 +2193,7 @@ EDGES
   ^contains=matrix/cody/internal/server
 
 NODE id=matrix/cody/internal/server/engine.go kind=file
-  digest=b3:67e15ed46afcbaaa2c0f529be935b2587ee6fa32044f7f26a254cb898e16cdf3 file=cody/internal/server/engine.go range=1:1271 lang=go exported=true
+  digest=b3:200eb2dfc9a09fb3c16e8b37639ca9293864326e29dbf41656396dd950f6db80 file=cody/internal/server/engine.go range=1:1281 lang=go exported=true
 EDGES
   defines=matrix/cody/internal/server.Engine,matrix/cody/internal/server.Engine.Close,matrix/cody/internal/server.Engine.ListConversations,matrix/cody/internal/server.Engine.ResumeOrphanedPlans,matrix/cody/internal/server.Engine.Stop,matrix/cody/internal/server.Engine.Submit,matrix/cody/internal/server.Engine.activity,matrix/cody/internal/server.Engine.drive,matrix/cody/internal/server.Engine.finish,matrix/cody/internal/server.Engine.generateTitle,matrix/cody/internal/server.Engine.heartbeat,matrix/cody/internal/server.Engine.lookupRun,matrix/cody/internal/server.Engine.mutateLedger,matrix/cody/internal/server.Engine.planDir,matrix/cody/internal/server.Engine.projectHasLiveRun,matrix/cody/internal/server.Engine.projectMemory,matrix/cody/internal/server.Engine.publish,matrix/cody/internal/server.Engine.publishToConversation,matrix/cody/internal/server.Engine.publishUserTurn,matrix/cody/internal/server.Engine.readLedger,matrix/cody/internal/server.Engine.recallProjectMemory,matrix/cody/internal/server.Engine.recordTrace,matrix/cody/internal/server.Engine.registerRun,matrix/cody/internal/server.Engine.runOrchestrator,matrix/cody/internal/server.Engine.say,matrix/cody/internal/server.Engine.session,matrix/cody/internal/server.Engine.workerFunc,matrix/cody/internal/server.Engine.writeLedger,matrix/cody/internal/server.EngineOptions,matrix/cody/internal/server.NewEngine,matrix/cody/internal/server.completionMessage,matrix/cody/internal/server.conversationSummary,matrix/cody/internal/server.conversationTitle,matrix/cody/internal/server.firstErr,matrix/cody/internal/server.heartbeatInterval,matrix/cody/internal/server.ledger,matrix/cody/internal/server.newRunID,matrix/cody/internal/server.parseModeOrDefault,matrix/cody/internal/server.phaseContinuing,matrix/cody/internal/server.phaseDesign,matrix/cody/internal/server.phaseLabels,matrix/cody/internal/server.phasePlanning,matrix/cody/internal/server.phasePreviewing,matrix/cody/internal/server.phaseStack,matrix/cody/internal/server.phaseUnderstanding,matrix/cody/internal/server.phaseVerifying,matrix/cody/internal/server.phaseWorking,matrix/cody/internal/server.planTasks,matrix/cody/internal/server.projectMemoryRecall,matrix/cody/internal/server.run,matrix/cody/internal/server.run.addUsage,matrix/cody/internal/server.run.beginAwait,matrix/cody/internal/server.run.currentActivity,matrix/cody/internal/server.run.deliverAnswer,matrix/cody/internal/server.run.endAwait,matrix/cody/internal/server.run.getStatus,matrix/cody/internal/server.run.getUsage,matrix/cody/internal/server.run.isAwaiting,matrix/cody/internal/server.run.setActivity,matrix/cody/internal/server.run.setStatus,matrix/cody/internal/server.sanitizeTitle,matrix/cody/internal/server.session,matrix/cody/internal/server.titleMessageCap
   ^contains=matrix/cody/internal/server

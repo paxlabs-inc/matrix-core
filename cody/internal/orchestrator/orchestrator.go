@@ -90,6 +90,10 @@ type Options struct {
 	// OnAccepted, when set, receives every accepted task (id + turn-in summary)
 	// — the engine's project-memory write seam. Pure side-channel.
 	OnAccepted func(taskID, summary string)
+	// ScreenshotCapable is the engine's typed screenshot-capability signal
+	// (req 4.1): stamped on every authored sheet so the worker prompt and the
+	// gate's screenshot screen agree on whether a screenshot can exist.
+	ScreenshotCapable bool
 }
 
 // Result is the loop outcome — always honest: done, failed, and why it
@@ -252,6 +256,7 @@ func (o *Orchestrator) runTask(ctx context.Context, task *Task, grounding string
 	}
 
 	feedback := ""
+	lastVerdict := ""
 	for attempt := 1; attempt <= o.opts.MaxAttempts; attempt++ {
 		if err := ctx.Err(); err != nil {
 			return false, "", err
@@ -326,6 +331,17 @@ func (o *Orchestrator) runTask(ctx context.Context, task *Task, grounding string
 		}
 
 		// --- reject: concrete feedback, bounded ---------------------------
+		// Unsatisfiable-gate detection (req 5.1, 5.2): when the gate rejects a
+		// SECOND attempt for the same reason, no worker action resolved it and
+		// none will — the demand is structural (a criterion no verify command
+		// can demonstrate, a capability the environment lacks). Burning the
+		// remaining attempts re-authoring the same sheet is pure waste: stop
+		// and ask the user instead of failing the plan on identical rejections.
+		if attempt > 1 && sameRejection(lastVerdict, verdict) {
+			o.emit("task.rejected", map[string]interface{}{"task_id": task.ID, "attempt": attempt, "verdict": verdict, "unsatisfiable": true})
+			return false, "the acceptance gate rejected task " + task.ID + " twice for the same reason — no worker action can satisfy it: " + verdict, nil
+		}
+		lastVerdict = verdict
 		feedback = verdict
 		if rerun != "" {
 			feedback += "\nIndependent verification output:\n" + rerun
@@ -343,6 +359,43 @@ func (o *Orchestrator) runTask(ctx context.Context, task *Task, grounding string
 		})
 	}
 	return false, "", nil
+}
+
+// sameRejection reports whether two rejection verdicts state the same reason
+// (req 5.1). Deterministic screens repeat byte-identically; adjudicator
+// verdicts restate the same gap with varied phrasing between attempts, so the
+// comparison is a normalized token-set overlap rather than string equality.
+func sameRejection(prev, cur string) bool {
+	if prev == "" || cur == "" {
+		return false
+	}
+	if prev == cur {
+		return true
+	}
+	a, b := rejectionTokens(prev), rejectionTokens(cur)
+	if len(a) == 0 || len(b) == 0 {
+		return false
+	}
+	inter := 0
+	for t := range a {
+		if b[t] {
+			inter++
+		}
+	}
+	union := len(a) + len(b) - inter
+	return float64(inter)/float64(union) >= 0.6
+}
+
+// rejectionTokens normalizes a verdict into its significant word set.
+func rejectionTokens(s string) map[string]bool {
+	out := map[string]bool{}
+	for _, f := range strings.Fields(strings.ToLower(s)) {
+		f = strings.Trim(f, ".,;:!?\"'()[]")
+		if len(f) >= 3 {
+			out[f] = true
+		}
+	}
+	return out
 }
 
 // savePlan persists the plan durably, and — in Architect mode — keeps the
@@ -514,6 +567,7 @@ func (o *Orchestrator) specSheet(task *Task, attempt int, feedback string) *cont
 		Feedback:    feedback,
 		Steers:      append([]string{}, o.steers...),
 		UITask:      ui,
+		ScreenshotCapable: o.opts.ScreenshotCapable,
 	}
 }
 

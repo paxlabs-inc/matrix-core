@@ -251,8 +251,14 @@ func ScreenDesign(root string, sheet *contract.TaskSheet, report *contract.TurnI
 // screenshot of a surface that does not exist would wedge such a task
 // permanently with no satisfiable action. Returns "" when the sheet is not a
 // UI task, changed no rendered surface, or a screenshot is present.
+//
+// Capability-aware degradation (req 4.3): when the sheet says the environment
+// CANNOT capture a screenshot (no reachable browser service), demanding one is
+// unsatisfiable by construction — the screen degrades to a pass. The
+// deterministic verification re-run and the adjudicator still hold the turn-in
+// to the sheet's acceptance criteria; only the impossible demand is dropped.
 func ScreenScreenshot(sheet *contract.TaskSheet, report *contract.TurnInReport) string {
-	if !sheet.UITask {
+	if !sheet.UITask || !sheet.ScreenshotCapable {
 		return ""
 	}
 	changedUI := false

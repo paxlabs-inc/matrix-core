@@ -46,6 +46,12 @@ type TaskSheet struct {
 	// (req 13.2) and, when a Design Language Record is in force, must not drift
 	// from it (req 9.3).
 	UITask bool `json:"ui_task,omitempty"`
+	// ScreenshotCapable is the engine's typed capability signal (req 4.1):
+	// true only when a screenshot can actually be captured in this
+	// environment. When false, the worker is told NOT to produce screenshots
+	// and the gate's screenshot screen degrades to a non-blocking advisory
+	// (req 4.3) — a demand nothing can satisfy is never issued.
+	ScreenshotCapable bool `json:"screenshot_capable,omitempty"`
 }
 
 // Grounding pins the sheet to exact seams in the workspace: the files the

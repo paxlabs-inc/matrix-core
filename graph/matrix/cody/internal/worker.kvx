@@ -1,7 +1,7 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:f74330f0bf1dc65cdd0901e9d2f8d845f86c988efd32b159987d38404d9dabb2
+# GENERATED gen=codegraph do-not-edit merkle=b3:9b68327501b45793fd7687f43b30c960fd68ae8aaff6b2f1bb36ec3e2df2de2f
 
 NODE id=matrix/cody/internal/worker kind=package
-  digest=b3:8fae112995b7c17cc6ebeebd8c7c641889a4d2cb10cf5aa01d239ed11ea254db file=cody/internal/worker range=0:0 lang=go exported=true
+  digest=b3:7ac89d76c02c52b8ae2fbdd7e921ff0095a2c9874f34ae92c5b568b5c7469416 file=cody/internal/worker range=0:0 lang=go exported=true
 EDGES
   contains=matrix/cody/internal/worker/diagnostics.go,matrix/cody/internal/worker/jobs.go,matrix/cody/internal/worker/loop.go,matrix/cody/internal/worker/scaffold.go,matrix/cody/internal/worker/search.go,matrix/cody/internal/worker/worker.go
   ^contains=mod:matrix/cody
@@ -329,7 +329,7 @@ EDGES
   ^defines=matrix/cody/internal/worker/worker.go
 
 NODE id=matrix/cody/internal/worker.Worker.systemPrompt kind=method
-  digest=b3:020fbcb9869c0bd3c2b40ad3ff562f1678b7c279e6914649d82667b5fe0c43f6 file=cody/internal/worker/worker.go range=804:850 lang=go exported=false byte_range=25263:28122
+  digest=b3:605385bed2000e8ba8b2ca4161bc923febe9a93edb681e2d7f54a2fe3887afb5 file=cody/internal/worker/worker.go range=816:862 lang=go exported=false byte_range=26240:28846
   sig=func (w *Worker) systemPrompt() string
 EDGES
   ^contains=matrix/cody/internal/worker.Worker
@@ -404,7 +404,7 @@ EDGES
   ^defines=matrix/cody/internal/worker/worker.go
 
 NODE id=matrix/cody/internal/worker.Worker.toolSchemas kind=method
-  digest=b3:a09b9c63b62d8dd701b914ff31e29f69f3caf1dca7641d34cb5ef6706c1f0a56 file=cody/internal/worker/worker.go range=899:983 lang=go exported=false byte_range=29730:35723
+  digest=b3:a09b9c63b62d8dd701b914ff31e29f69f3caf1dca7641d34cb5ef6706c1f0a56 file=cody/internal/worker/worker.go range=911:995 lang=go exported=false byte_range=30454:36447
   sig=func (w *Worker) toolSchemas() []llm.Tool
 EDGES
   ^contains=matrix/cody/internal/worker.Worker
@@ -463,7 +463,7 @@ EDGES
   ^defines=matrix/cody/internal/worker/worker.go
 
 NODE id=matrix/cody/internal/worker.Worker.userPrompt kind=method
-  digest=b3:0ebd22793290f6efc5d2f50a5596057ea8afdcbc5f9b3202aba6cdfeed7cc81c file=cody/internal/worker/worker.go range=852:897 lang=go exported=false byte_range=28124:29728
+  digest=b3:0ebd22793290f6efc5d2f50a5596057ea8afdcbc5f9b3202aba6cdfeed7cc81c file=cody/internal/worker/worker.go range=864:909 lang=go exported=false byte_range=28848:30452
   sig=func (w *Worker) userPrompt() string
 EDGES
   ^contains=matrix/cody/internal/worker.Worker
@@ -742,6 +742,13 @@ NODE id=matrix/cody/internal/worker.runDiag kind=func
 EDGES
   ^defines=matrix/cody/internal/worker/diagnostics.go
 
+NODE id=matrix/cody/internal/worker.screenshotInstruction kind=func
+  digest=b3:f720f2ac8e400c985166e560366910e38f9d958ebb4ba439074e0d3573c0658e file=cody/internal/worker/worker.go range=804:814 lang=go exported=false byte_range=25263:26238
+  sig=func screenshotInstruction(s *contract.TaskSheet) string
+  doc=screenshotInstruction renders the UI-evidence instruction to match the\nenvironment's REAL capability (req 4.1): when a screenshot can be captured\nthe gate demands one; when it cannot, the worker is explicitly told not to\nimprovise one — a fabricated or repo-committed image is not evidence, and\nthe gate will not ask for what the environment cannot produce (req 4.3).
+EDGES
+  ^defines=matrix/cody/internal/worker/worker.go
+
 NODE id=matrix/cody/internal/worker.searchIgnoredDirs kind=var
   digest=b3:11a3b8fb8a6e11a60f2f588d6ddf204468c3a4f3db8e7c7e947cddee234564cc file=cody/internal/worker/search.go range=26:33 lang=go exported=false byte_range=579:970
   sig=map[string]bool
@@ -793,7 +800,7 @@ EDGES
   ^contains=matrix/cody/internal/worker
 
 NODE id=matrix/cody/internal/worker/worker.go kind=file
-  digest=b3:2c7eb03f7ab48632e984e56995e035fd14a0050f28d9953cdfd8054fa39caf27 file=cody/internal/worker/worker.go range=1:983 lang=go exported=true
+  digest=b3:f1d2311b945efeaf7bd40c94a5846648abd35e15573e8b11e43cb6b6330b4301 file=cody/internal/worker/worker.go range=1:995 lang=go exported=true
 EDGES
-  defines=matrix/cody/internal/worker.New,matrix/cody/internal/worker.Options,matrix/cody/internal/worker.Worker,matrix/cody/internal/worker.Worker.Run,matrix/cody/internal/worker.Worker.dispatch,matrix/cody/internal/worker.Worker.evidence,matrix/cody/internal/worker.Worker.finishInlineExec,matrix/cody/internal/worker.Worker.guardTouch,matrix/cody/internal/worker.Worker.pendingOverflows,matrix/cody/internal/worker.Worker.reapJob,matrix/cody/internal/worker.Worker.recordChange,matrix/cody/internal/worker.Worker.screenshotEvidence,matrix/cody/internal/worker.Worker.stopAllServices,matrix/cody/internal/worker.Worker.synthesizeReport,matrix/cody/internal/worker.Worker.systemPrompt,matrix/cody/internal/worker.Worker.toolDelete,matrix/cody/internal/worker.Worker.toolEdit,matrix/cody/internal/worker.Worker.toolExec,matrix/cody/internal/worker.Worker.toolList,matrix/cody/internal/worker.Worker.toolRead,matrix/cody/internal/worker.Worker.toolSchemas,matrix/cody/internal/worker.Worker.toolServiceStart,matrix/cody/internal/worker.Worker.toolServiceStop,matrix/cody/internal/worker.Worker.toolSkillLoad,matrix/cody/internal/worker.Worker.toolVerifyRun,matrix/cody/internal/worker.Worker.toolWrite,matrix/cody/internal/worker.Worker.trackedChanges,matrix/cody/internal/worker.Worker.tryTurnIn,matrix/cody/internal/worker.Worker.userPrompt,matrix/cody/internal/worker.defaultConstitution,matrix/cody/internal/worker.execOutputCap,matrix/cody/internal/worker.fsReadCap,matrix/cody/internal/worker.maxNudges,matrix/cody/internal/worker.num,matrix/cody/internal/worker.numberLines,matrix/cody/internal/worker.overflowState,matrix/cody/internal/worker.str
+  defines=matrix/cody/internal/worker.New,matrix/cody/internal/worker.Options,matrix/cody/internal/worker.Worker,matrix/cody/internal/worker.Worker.Run,matrix/cody/internal/worker.Worker.dispatch,matrix/cody/internal/worker.Worker.evidence,matrix/cody/internal/worker.Worker.finishInlineExec,matrix/cody/internal/worker.Worker.guardTouch,matrix/cody/internal/worker.Worker.pendingOverflows,matrix/cody/internal/worker.Worker.reapJob,matrix/cody/internal/worker.Worker.recordChange,matrix/cody/internal/worker.Worker.screenshotEvidence,matrix/cody/internal/worker.Worker.stopAllServices,matrix/cody/internal/worker.Worker.synthesizeReport,matrix/cody/internal/worker.Worker.systemPrompt,matrix/cody/internal/worker.Worker.toolDelete,matrix/cody/internal/worker.Worker.toolEdit,matrix/cody/internal/worker.Worker.toolExec,matrix/cody/internal/worker.Worker.toolList,matrix/cody/internal/worker.Worker.toolRead,matrix/cody/internal/worker.Worker.toolSchemas,matrix/cody/internal/worker.Worker.toolServiceStart,matrix/cody/internal/worker.Worker.toolServiceStop,matrix/cody/internal/worker.Worker.toolSkillLoad,matrix/cody/internal/worker.Worker.toolVerifyRun,matrix/cody/internal/worker.Worker.toolWrite,matrix/cody/internal/worker.Worker.trackedChanges,matrix/cody/internal/worker.Worker.tryTurnIn,matrix/cody/internal/worker.Worker.userPrompt,matrix/cody/internal/worker.defaultConstitution,matrix/cody/internal/worker.execOutputCap,matrix/cody/internal/worker.fsReadCap,matrix/cody/internal/worker.maxNudges,matrix/cody/internal/worker.num,matrix/cody/internal/worker.numberLines,matrix/cody/internal/worker.overflowState,matrix/cody/internal/worker.screenshotInstruction,matrix/cody/internal/worker.str
   ^contains=matrix/cody/internal/worker

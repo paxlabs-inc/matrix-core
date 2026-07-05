@@ -69,13 +69,42 @@ func (a *Adjudicator) Adjudicate(ctx context.Context, in AuditInput) (*Verdict, 
 	}
 	// Tiered escalation: a stronger auditor renders a second opinion only when
 	// configured, the turn is high-stakes, and the primary verdict is
-	// low-certainty. Escalation failure is non-fatal — keep the primary verdict.
+	// low-certainty. The STRICTER of the two verdicts is kept, so escalation can
+	// only ever HOLD or TIGHTEN the primary — it can never flip a refusing
+	// primary into an acceptance (C3 / req 7.2). Escalation failure is
+	// non-fatal: the primary verdict stands.
 	if a.Escalate != nil && in.HighStakes && v.Certainty < a.lowCertainty() {
 		if ev, eerr := a.decode(ctx, a.Escalate, in); eerr == nil {
-			return ev, nil
+			return stricter(v, ev), nil
 		}
 	}
 	return v, nil
+}
+
+// stricter returns the more-conservative of two verdicts, biasing toward
+// refusal ([principles].coherence_toward_more_work, req 7.2). A verdict that
+// does NOT accept (Sound is false) is stricter than one that does, so when the
+// primary and the escalated auditor disagree on the accept/refuse decision the
+// refusing verdict wins — escalation tightens, never loosens. When both agree
+// on that decision, the more-certain reading is kept.
+func stricter(primary, escalated *Verdict) *Verdict {
+	if primary == nil {
+		return escalated
+	}
+	if escalated == nil {
+		return primary
+	}
+	ps, es := primary.Sound(), escalated.Sound()
+	if ps != es {
+		if !ps {
+			return primary
+		}
+		return escalated
+	}
+	if escalated.Certainty > primary.Certainty {
+		return escalated
+	}
+	return primary
 }
 
 func (a *Adjudicator) lowCertainty() float64 {

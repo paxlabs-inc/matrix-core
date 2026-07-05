@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"matrix/cody/internal/contract"
+	"matrix/cody/internal/edit"
 )
 
 // TaskStatus tracks a plan task through the loop.
@@ -70,6 +71,49 @@ func (p *Plan) Validate() error {
 		}
 	}
 	return nil
+}
+
+// Relativize rewrites absolute in-root paths across the plan into clean,
+// workspace-relative form so the fresh-context worker and the acceptance gate
+// are primed with the identical path shape (req 3.3, the Y1 upstream). This is
+// the deterministic backstop to the planner's prompt: whatever shape the model
+// emits, the plan that is persisted, published, and folded into every sheet
+// carries relative paths. Path-list fields (grounding files, do-not-touch) are
+// normalized element-wise through the single edit.Rel seam; free-form fields
+// (plan/task goal, grounding notes, verify commands) have the absolute
+// workspace-root prefix stripped so an in-root path becomes relative while
+// verification still runs from the root (so a relativized command is
+// unchanged in meaning). Paths that escape the root or are not in-root are
+// left untouched. Idempotent.
+func (p *Plan) Relativize(root string) {
+	absRoot, err := filepath.Abs(root)
+	if err != nil {
+		return
+	}
+	absRoot = filepath.Clean(absRoot)
+	prefix := absRoot + string(filepath.Separator)
+	relList := func(in []string) []string {
+		for i, s := range in {
+			trimmed := strings.TrimSpace(s)
+			if trimmed == "" {
+				continue
+			}
+			if rel, err := edit.Rel(absRoot, trimmed); err == nil {
+				in[i] = rel
+			}
+		}
+		return in
+	}
+	p.Goal = strings.ReplaceAll(p.Goal, prefix, "")
+	for _, t := range p.Tasks {
+		t.Goal = strings.ReplaceAll(t.Goal, prefix, "")
+		t.Grounding.Notes = strings.ReplaceAll(t.Grounding.Notes, prefix, "")
+		t.Grounding.Files = relList(t.Grounding.Files)
+		t.Deliverable.DoNotTouch = relList(t.Deliverable.DoNotTouch)
+		for i, cmd := range t.Verify {
+			t.Verify[i] = strings.ReplaceAll(cmd, prefix, "")
+		}
+	}
 }
 
 // Get returns the task with the given id, or nil.

@@ -7,11 +7,11 @@
 ## P0 — Regression-safety unblock (the test suites must compile before anything is trusted)
 
 - [ ] 1. Restore the safety-critical test suites
-  - [ ] 1.1 Neo agent test package compiles + passes (real Verdicts, no fakes)
+  - [x] 1.1 Neo agent test package compiles + passes (real Verdicts, no fakes)
     - Update neo/internal/agent tests to the current API: 3-arg verdictAccepts -> 2-arg, 6-arg buildAuditContract -> 5-arg, remove/replace the salientTokens test — against REAL cassandra.Verdict values asserting the pure mapping, never a fake
     - Make neo go build ./... , go vet ./... , go test ./... green
     - _Requirements: 1.1, 1.3_
-  - [ ] 1.2 Cassandra test package compiles + passes (transcript-judged behavior)
+  - [x] 1.2 Cassandra test package compiles + passes (transcript-judged behavior)
     - Re-express cassandra tests that referenced the removed CheckCitations against the current transcript-judged verdict behavior (build a real Verdict / run the real mapping)
     - Make cassandra go build ./... , go vet ./... , go test ./... green; add a check that forbids a non-compiling or red module test package
     - _Requirements: 1.2, 1.3, 1.4_
@@ -19,18 +19,18 @@
 ## P1 — Cody runtime blockers (the audit's Y-series)
 
 - [ ] 2. Path seam, gate evidence, capability-aware UI verification, unsatisfiable-gate detection
-  - [ ] 2.1 Unified workspace-path normalization seam at the tool boundary (Y2)
+  - [x] 2.1 Unified workspace-path normalization seam at the tool boundary (Y2)
     - Add ONE normalization function (resolve against root, reject escapes, return clean workspace-relative) and route worker.toolList/toolRead/toolWrite/toolDelete through it — eliminating the filepath.Join double-join on absolute in-root paths
     - Make worker.recordChange store the normalized workspace-relative path so report.Changes never carries an absolute path; table-driven test proving abs-in-root == relative behavior
     - _Requirements: 2.1, 2.2, 2.3, 2.4_
-  - [ ] 2.2 Gate adjudication sees the real changed source (Y1)
+  - [x] 2.2 Gate adjudication sees the real changed source (Y1)
     - Make gate.renderSource relativize a report.Changes path against the root before reading (absolute in-root path included, never skipped); make the do-not-touch + test-weakening screens compare normalized paths
     - Test: a worker writes an absolute-path file; the gate's evidence contains the file source; the real adjudicator grounds on it
     - _Requirements: 3.1, 3.2, 3.4_
-  - [ ] 2.3 Planner + sheets emit workspace-relative paths (Y1 upstream)
+  - [x] 2.3 Planner + sheets emit workspace-relative paths (Y1 upstream)
     - Make the planner emit workspace-relative paths in a sheet's goal, verification commands, and grounding so the worker is primed with the relative shape (verification still runs from the workspace root)
     - _Requirements: 3.3_
-  - [ ] 2.4 Screenshot capability probe + typed contract (Y3, Y4)
+  - [-] 2.4 Screenshot capability probe + typed contract (Y3, Y4)
     - Probe screenshot capability (browser service reachable) and expose it as a typed signal; make browserScreenshot return 'not configured' as a typed result, never a message in the path slot; ensure no caller records that message as a screenshot path
     - _Requirements: 4.1, 4.4_
   - [ ] 2.5 Graceful UI-verification degradation + unsatisfiable-gate detection (Y3, Y6)
@@ -45,17 +45,17 @@
 ## P2 — Shared faculties: Neo completion loop + Cassandra
 
 - [ ] 3. One acceptance predicate, fail-toward-refusal, bounded Neo loop
-  - [ ] 3.1 One shared acceptance predicate (X1)
+  - [x] 3.1 One shared acceptance predicate (X1)
     - Make cassandra.Sound() the single source of truth for verdict acceptance; repoint neo.verdictAccepts and Cody's gate.Adjudicate to call it (or a shared exported predicate) instead of re-implementing the rule inline; test the same Verdict decides identically in all three
     - _Requirements: 6.1, 6.2, 6.3_
-  - [ ] 3.2 Cassandra fails toward refusal + escalation keeps the stricter verdict (C2, C3)
+  - [x] 3.2 Cassandra fails toward refusal + escalation keeps the stricter verdict (C2, C3)
     - Normalize a parsed verdict missing coverage/groundedness signals TOWARD refusal (not coverage=full/grounded=true); make tiered escalation keep the stricter/more-certain verdict rather than unconditionally replacing the primary
     - Tests over real degenerate/low-confidence Verdicts proving refusal-by-default and stricter-wins escalation
     - _Requirements: 7.1, 7.2_
   - [ ] 3.3 Goal-type classification coverage with a grounding guard (C5)
     - Pin the question/status/truthful-no classification with tests including a grounding guard, so an UNCHECKED negative cannot pass as complete
     - _Requirements: 7.3_
-  - [ ] 3.4 Neo completion loop bounded by unified unproductive-attempt accounting (N2, N3, N4)
+  - [x] 3.4 Neo completion loop bounded by unified unproductive-attempt accounting (N2, N3, N4)
     - Introduce one unproductive-attempt counter fed by completion-gate rejections, no-progress stalls, and guidance nudges; only genuine accepted progress resets it (a genuine tool call between completion rejections does NOT silently reset the completion-reject bound); the completion branch advances the no-progress read before it continues
     - _Requirements: 8.1, 8.2, 8.3_
   - [ ] 3.5 Faculty regression: bounded Neo loop + degenerate-verdict safety (N2, C2/C3)
@@ -82,7 +82,7 @@
 ## P4 — Coding UI to the Claude Code bar (harden + polish the built surface)
 
 - [ ] 5. Design conformance, progress/narration, diff/tree/terminal/preview, plan board
-  - [ ] 5.1 Design-quality audit + house-rules conformance of the built /cody surface
+  - [x] 5.1 Design-quality audit + house-rules conformance of the built /cody surface
     - Audit the built /cody surface (spec/cody-client, spec/cody-smoothness) against rules/web/design-quality.md; fix any drift to the house rules: separation by background-color contrast only (no border strokes for depth), no emojis, no purple/indigo gradients, no glow
     - _Requirements: 12.1_
   - [ ] 5.2 Progress spine + narration hardening (never blank, including approve->next)

@@ -36,7 +36,9 @@ Output ONLY a JSON object, no prose, no code fences:
   ]
 }
 
-Rules: every task must be independently executable by a fresh-context worker from its sheet alone; verify commands are the project's own (prefer the detected ones in the workspace context); waves order dependencies (same wave = independent); keep the plan as small as the request allows.`
+Rules: every task must be independently executable by a fresh-context worker from its sheet alone; verify commands are the project's own (prefer the detected ones in the workspace context); waves order dependencies (same wave = independent); keep the plan as small as the request allows. Every path you emit — in goal, grounding.files, verify commands, and deliverable — MUST be workspace-relative (relative to the workspace root), never an absolute filesystem path; verification runs from the workspace root.
+
+PROVABILITY (hard rule): every acceptance criterion MUST be demonstrable by the output of that task's verify commands — the acceptance gate grounds its judgment ONLY in what those commands print when re-run. Never author a criterion no listed command can prove (a claim like "the dev server starts" needs a bounded command that exercises it, e.g. a timeout-wrapped start + curl probe; "package X is installed" needs a command that greps the manifest or resolves the module). If a criterion cannot be checked by a bounded shell command, rewrite it as one that can, or drop it — an unprovable criterion wedges the task in rejection forever. Verify commands must be BOUNDED: never a bare long-running process (dev server, watcher) that hangs; wrap with timeout and background + probe + kill instead.`
 
 // plannerCriteria is what the judge weighs candidate plans against when more
 // than one survives parsing.
@@ -150,7 +152,9 @@ Output ONLY a JSON object, no prose, no code fences:
   ]
 }
 
-Rules: every task must be independently executable by a fresh-context worker from its sheet alone; preserve the document's requirement wording in acceptance criteria; preserve the document's waves/phases as the dependency waves where it defines them; verify commands are the project's own (prefer detected ones); stay faithful to the document — never drop or invent scope.`
+Rules: every task must be independently executable by a fresh-context worker from its sheet alone; preserve the document's requirement wording in acceptance criteria; preserve the document's waves/phases as the dependency waves where it defines them; verify commands are the project's own (prefer detected ones); stay faithful to the document — never drop or invent scope. Every path you emit — in goal, grounding.files, verify commands, and deliverable — MUST be workspace-relative (relative to the workspace root), never an absolute filesystem path; verification runs from the workspace root.
+
+PROVABILITY (hard rule): every acceptance criterion MUST be demonstrable by the output of that task's verify commands — the acceptance gate grounds its judgment ONLY in what those commands print when re-run. Author verify commands that exercise each criterion (a "server starts" criterion needs a timeout-wrapped start + curl probe; "package X present" needs a manifest grep). Verify commands must be BOUNDED: never a bare long-running process (dev server, watcher) that hangs; wrap with timeout and background + probe + kill instead.`
 
 // adoptCriteria is what the judge weighs candidate adoptions against.
 const adoptCriteria = "The plan that most faithfully adopts THIS specification document — every stated requirement mapped to a task's acceptance criteria, the document's own waves/phases preserved, nothing dropped or invented; reject a plan that paraphrases loosely or reshapes the document's structure without cause."

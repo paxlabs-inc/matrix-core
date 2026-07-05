@@ -801,6 +801,18 @@ var defaultConstitution = []string{
 	"RESPECT THE PROJECT: follow existing repo style; no drive-by comments, docs, or refactors outside the sheet's scope; never weaken or delete tests to pass.",
 }
 
+// screenshotInstruction renders the UI-evidence instruction to match the
+// environment's REAL capability (req 4.1): when a screenshot can be captured
+// the gate demands one; when it cannot, the worker is explicitly told not to
+// improvise one — a fabricated or repo-committed image is not evidence, and
+// the gate will not ask for what the environment cannot produce (req 4.3).
+func screenshotInstruction(s *contract.TaskSheet) string {
+	if s.ScreenshotCapable {
+		return "After building UI, capture a screenshot of the rendered result with the browser_screenshot tool and record its path as turn-in evidence (the gate rejects a UI turn-in without one).\n"
+	}
+	return "Screenshot capture is NOT available in this environment: do NOT fabricate screenshot files, do NOT write image files into the repository, and do NOT claim screenshots you did not capture. Prove your UI work through the verification commands instead; the gate does not require a screenshot here.\n"
+}
+
 func (w *Worker) systemPrompt() string {
 	s := w.opts.Sheet
 	var b strings.Builder
@@ -820,9 +832,9 @@ func (w *Worker) systemPrompt() string {
 	if s.Constraints.DesignLanguage != "" {
 		b.WriteString("\nDESIGN LANGUAGE (binding — build EXACTLY to this; the gate rejects drift back to AI-default patterns):\n")
 		b.WriteString(s.Constraints.DesignLanguage + "\n")
-		b.WriteString("After building UI, capture a screenshot of the rendered result and record it as turn-in evidence (the gate rejects a UI turn-in without one).\n")
+		b.WriteString(screenshotInstruction(s))
 	} else if s.UITask {
-		b.WriteString("\nThis is a UI task: after building, capture a screenshot of the rendered result and record it as turn-in evidence (the gate rejects a UI turn-in without one).\n")
+		b.WriteString("\n" + screenshotInstruction(s))
 	}
 	if len(s.Constraints.RulesRefs) > 0 {
 		b.WriteString("\nApplicable standards (read them with fs_read if you need the details):\n")

@@ -110,6 +110,48 @@ Note: I am confident in this. {ignored: true}`
 	}
 }
 
+func TestParseVerdict_MissingCoverageSignalFailsTowardRefusal(t *testing.T) {
+	// req 7.1 (C2): a verdict that carries a grounding surface but OMITS the
+	// coverage signal entirely (no coverage field, no legacy complete flag)
+	// must NOT be read as full — the absent completeness signal fails toward
+	// refusal (g4).
+	raw := `{"grounded": true, "unverified_claims": [], "rationale": "looks fine"}`
+	v, err := ParseVerdict(raw)
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	if v.Coverage != CoveragePartial {
+		t.Fatalf("omitted coverage must fail toward refusal (partial), got %q", v.Coverage)
+	}
+	if v.CoverageComplete() || v.Sound() {
+		t.Fatal("a verdict missing its coverage signal must not be accepted as complete")
+	}
+}
+
+func TestParseVerdict_MissingGroundedSignalFailsTowardRefusal(t *testing.T) {
+	// req 7.1 (C2): coverage is explicitly full and no unverified claims are
+	// listed, but the grounded field is OMITTED. The absent grounding signal
+	// fails toward refusal (g5): grounded=false, so the verdict is NOT Sound —
+	// grounding is never inferred true from the mere absence of a listed
+	// hallucination surface.
+	raw := `{"coverage": "full", "missing": [], "unverified_claims": [], "certainty": 0.9}`
+	v, err := ParseVerdict(raw)
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	if v.Grounded {
+		t.Fatal("omitted grounded field must fail toward refusal (grounded=false)")
+	}
+	if v.Sound() {
+		t.Fatal("a verdict missing its grounded signal must not be Sound")
+	}
+	// The coverage half is still honoured — the MCL gate (CoverageComplete)
+	// remains byte-identical for an explicit coverage=full.
+	if !v.CoverageComplete() {
+		t.Fatal("explicit coverage=full with no missing must still be CoverageComplete")
+	}
+}
+
 func TestParseVerdict_EmptyObjectFailsOpen(t *testing.T) {
 	// A content-free "{}" carries no verdict signal; ParseVerdict errors so the
 	// caller fails OPEN (a critic hiccup never converts a clean run to failure).

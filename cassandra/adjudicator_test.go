@@ -85,6 +85,50 @@ func TestAdjudicate_NoEscalateWhenCertaintyHigh(t *testing.T) {
 	}
 }
 
+func TestAdjudicate_EscalationCannotFlipRefusalIntoAcceptance(t *testing.T) {
+	// C3 / req 7.2: the primary REFUSES (ungrounded full, Sound=false) with
+	// low certainty on a high-stakes turn, and the escalated auditor would
+	// ACCEPT (grounded full, Sound=true). Escalation must NOT loosen — the
+	// stricter (refusing) primary is kept, so a stronger model can never flip a
+	// refusing primary into an acceptance.
+	primary := &fakeDecoder{resp: `{"grounded": false, "coverage": "full", "missing": [], "certainty": 0.2}`}
+	escalate := &fakeDecoder{resp: `{"grounded": true, "coverage": "full", "missing": [], "unverified_claims": [], "certainty": 0.95}`}
+	a := &Adjudicator{Primary: primary, Escalate: escalate}
+	v, err := a.Adjudicate(context.Background(), AuditInput{Request: "deploy", Evidence: "e", HighStakes: true})
+	if err != nil {
+		t.Fatalf("adjudicate: %v", err)
+	}
+	if escalate.calls != 1 {
+		t.Fatalf("expected escalation to run, calls=%d", escalate.calls)
+	}
+	if v.Sound() {
+		t.Fatal("escalation must not flip a refusing primary into an acceptance")
+	}
+}
+
+func TestAdjudicate_EscalationTightensAcceptingPrimary(t *testing.T) {
+	// C3 / req 7.2: the primary ACCEPTS (grounded full, Sound=true) but with
+	// low certainty on a high-stakes turn; the escalated auditor REFUSES
+	// (partial, missing item). Escalation TIGHTENS — the stricter refusing
+	// verdict wins.
+	primary := &fakeDecoder{resp: `{"grounded": true, "coverage": "full", "missing": [], "unverified_claims": [], "certainty": 0.2}`}
+	escalate := &fakeDecoder{resp: `{"grounded": false, "coverage": "partial", "missing": ["the on-chain state was never read back"], "certainty": 0.9}`}
+	a := &Adjudicator{Primary: primary, Escalate: escalate}
+	v, err := a.Adjudicate(context.Background(), AuditInput{Request: "deploy", Evidence: "e", HighStakes: true})
+	if err != nil {
+		t.Fatalf("adjudicate: %v", err)
+	}
+	if escalate.calls != 1 {
+		t.Fatalf("expected escalation to run, calls=%d", escalate.calls)
+	}
+	if v.Sound() || v.CoverageComplete() {
+		t.Fatal("escalation must tighten an accepting primary toward the stricter refusing verdict")
+	}
+	if len(v.Missing) == 0 {
+		t.Fatal("the stricter escalated verdict (with its missing item) should be kept")
+	}
+}
+
 func TestAdjudicate_EscalationFailureKeepsPrimary(t *testing.T) {
 	primary := &fakeDecoder{resp: `{"coverage": "full", "missing": [], "certainty": 0.1}`}
 	escalate := &fakeDecoder{err: errors.New("upstream 500")}

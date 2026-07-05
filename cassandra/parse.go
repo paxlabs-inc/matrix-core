@@ -64,15 +64,16 @@ func (dto verdictDTO) toVerdict() *Verdict {
 	case "partial":
 		v.Coverage = CoveragePartial
 	default:
-		// Coverage omitted: derive from the legacy complete flag, else from
-		// the missing list (Normalize re-checks the missing/coverage guard).
+		// Coverage omitted: derive from the legacy complete flag when the
+		// auditor supplied one. Otherwise there is NO affirmative completeness
+		// signal, so fail TOWARD REFUSAL — an absent coverage signal is never
+		// read as full (g4 / req 7.1). The mere absence of a missing list is
+		// silence, not a claim of completion.
 		switch {
 		case dto.Complete != nil && *dto.Complete:
 			v.Coverage = CoverageFull
 		case dto.Complete != nil && !*dto.Complete:
 			v.Coverage = CoveragePartial
-		case len(cleanList(append([]string(nil), dto.Missing...))) == 0:
-			v.Coverage = CoverageFull
 		default:
 			v.Coverage = CoveragePartial
 		}
@@ -81,8 +82,11 @@ func (dto verdictDTO) toVerdict() *Verdict {
 	if dto.Grounded != nil {
 		v.Grounded = *dto.Grounded
 	} else {
-		// Grounded omitted: infer from the hallucination surface.
-		v.Grounded = len(cleanList(append([]string(nil), dto.UnverifiedClaims...))) == 0
+		// Grounded omitted: no affirmative grounding signal, so fail TOWARD
+		// REFUSAL (grounded=false) rather than inferring grounded from the mere
+		// absence of a listed hallucination surface (g5 / req 7.1). A non-empty
+		// unverified list would force false anyway via g2.
+		v.Grounded = false
 	}
 
 	if dto.Certainty != nil {

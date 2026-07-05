@@ -43,11 +43,11 @@
 name        = "Cassandra"
 codename    = "cassandra"
 kind        = "epistemic-completeness-faculty-module"
-version     = "1.1.0"
+version     = "1.2.0"
 status      = "frozen"
 frozen_at   = "2026-06-20"
-revised_at  = "2026-07-01"
-revision    = "1.1.0 — retire the evidence-citation mechanism; Neo declares the OUTCOME (no evidence[]), Cassandra holds the GOAL (logged at dispatch) and checks outcome-satisfies-goal over the transcript; no substring/word matching; coherence guard g3 removed"
+revised_at  = "2026-07-05"
+revision    = "1.2.0 — fail-toward-refusal on under-signalled verdicts (C2/req 7.1): an absent coverage signal normalizes to partial (g4) and an absent grounded field to false (g5), never inferred toward completion; tiered escalation keeps the STRICTER verdict (C3/req 7.2, i_cass_9) so a stronger auditor can only hold/tighten the primary, never flip a refusal into an acceptance. 1.1.0 — retire the evidence-citation mechanism; Neo declares the OUTCOME (no evidence[]), Cassandra holds the GOAL (logged at dispatch) and checks outcome-satisfies-goal over the transcript; no substring/word matching; coherence guard g3 removed"
 authors     = ["Andrew", "cursor-agent"]
 relation    = "shared top-level module (like cortex/atlas); consumed by Neo + the MCL pipeline; absorbs + generalizes the MCL completeness critic"
 supersedes  = "the inline MCL completeness critic (executor/cmd/mcl-execute/critique.go) — Cassandra subsumes it; MCL Phase 11.5 becomes a Cassandra consumer"
@@ -122,6 +122,8 @@ g2 = "grounded=true with non-empty unverified_claims -> force grounded=false"
 # g3 (phantom-citation) RETIRED in 1.1.0: Neo cites no evidence, so there is no
 # ref-to-digest substring match; grounding is judged by the auditor against the
 # executed transcript, never by word-matching.
+g4 = "absent coverage signal (no coverage field, no legacy complete flag) -> coverage=partial; a missing signal fails TOWARD REFUSAL, never inferred full from the mere absence of a missing list (silence is not a claim of completion)"
+g5 = "absent grounded signal (no grounded field) -> grounded=false; grounding is never inferred true from the mere absence of a listed unverified_claims surface (fail toward refusal)"
 
 # ============================== COUPLING MODEL =============================
 # Mirrors Atlas's proven detect/prevent split, re-polarized for completeness.
@@ -166,6 +168,7 @@ model      = "tiered, mirrors Atlas + the compiler escalation: cheap determinist
 priors     = "deterministic signal extractors run first and free: truncation markers in tool results, empty/degenerate results, explicit TODO/'could not'/'unable' strings, requested-deliverable count vs produced count, finish_reason=length"
 digest     = "audits buildExecutionDigest-style ground truth (dispatch-ordered tool calls + truncated real results), NOT the plan's intent and NOT the narration"
 free_form  = "verdict is free-form JSON (not the plan grammar); parse the object out of raw output; normalize + apply coherence guards"
+escalate   = "when an Escalate decoder is configured AND the turn is high-stakes AND the primary verdict is low-certainty, a stronger auditor renders a second opinion; the STRICTER of the two verdicts is kept — a non-accepting (Sound=false) verdict is stricter than an accepting one, so escalation can only HOLD or TIGHTEN the primary and can NEVER flip a refusing primary into an acceptance (C3 / req 7.2). When both agree on the accept/refuse decision the more-certain reading is kept. Escalation failure is non-fatal: the primary verdict stands."
 
 [adjudicator.slot]
 label    = "cassandra"
@@ -206,8 +209,9 @@ i_cass_3 = "absence is converted to a present object — gaps/unknowns/assumptio
 i_cass_4 = "advisor-not-effector — Cassandra signs nothing on the happy path; the agent enacts the safeguard"
 i_cass_5 = "fail-open on reversible turns; stricter (full grounded verdict) only at irreversible seams / external-fact claims"
 i_cass_6 = "side-channel purity — no cortex writes / no envelopes on the happy path; MCL D11 byte-identity preserved; extra envelopes only on a genuine continue"
-i_cass_7 = "incoherent verdicts resolve toward MORE work (coverage->partial, grounded->false), never toward false success"
+i_cass_7 = "incoherent OR under-signalled verdicts resolve toward MORE work (coverage->partial, grounded->false), never toward false success — an absent coverage/grounded signal fails toward refusal (g4/g5), never inferred toward completion"
 i_cass_8 = "Cassandra never adjudicates intent/malice (Atlas) or cost (spend policy) — completeness only"
+i_cass_9 = "tiered escalation is monotone toward refusal: the stricter (non-accepting) verdict is kept, so a stronger auditor can only HOLD or TIGHTEN the primary, never flip a refusing primary into an acceptance (C3)"
 
 # ============================ DEFERRED / NEXT =============================
 

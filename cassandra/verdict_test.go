@@ -70,16 +70,23 @@ func TestNormalize_BlankEntriesDropped(t *testing.T) {
 	}
 }
 
-func TestNormalize_CoverageInferredWhenBlank(t *testing.T) {
-	full := &Verdict{Coverage: "", Missing: nil}
-	full.Normalize()
-	if full.Coverage != CoverageFull {
-		t.Fatalf("blank coverage with no missing should infer full, got %q", full.Coverage)
+func TestNormalize_BlankCoverageFailsTowardRefusal(t *testing.T) {
+	// g4 / req 7.1: a blank coverage carries NO affirmative completeness
+	// signal, so it fails TOWARD REFUSAL (partial) — an empty missing list is
+	// silence, never a claim of completion. Completeness is only ever asserted
+	// by an explicit coverage=full.
+	noSignal := &Verdict{Coverage: "", Missing: nil}
+	noSignal.Normalize()
+	if noSignal.Coverage != CoveragePartial {
+		t.Fatalf("blank coverage with no missing must fail toward refusal (partial), got %q", noSignal.Coverage)
 	}
-	partial := &Verdict{Coverage: "", Missing: []string{"x"}}
-	partial.Normalize()
-	if partial.Coverage != CoveragePartial {
-		t.Fatalf("blank coverage with missing should infer partial, got %q", partial.Coverage)
+	if noSignal.CoverageComplete() {
+		t.Fatal("a signal-less verdict must not report CoverageComplete")
+	}
+	withMissing := &Verdict{Coverage: "", Missing: []string{"x"}}
+	withMissing.Normalize()
+	if withMissing.Coverage != CoveragePartial {
+		t.Fatalf("blank coverage with missing should be partial, got %q", withMissing.Coverage)
 	}
 }
 
