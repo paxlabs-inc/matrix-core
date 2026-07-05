@@ -94,43 +94,22 @@ func TestValidateCompletionLightPath(t *testing.T) {
 	}
 }
 
-func TestValidateCompletionStrictRequiresEvidence(t *testing.T) {
+func TestValidateCompletionStrictFailsOpenWithoutAdjudicator(t *testing.T) {
+	// The strict path no longer does any local word/citation matching: with no
+	// adjudicator wired (CLI / tests) a coherent completion FAILS OPEN and is
+	// accepted (i_cass_5). Grounding is judged by the Cassandra adjudicator over
+	// the executed transcript, not by matching the words the model typed.
 	a := New(Options{Config: config.Default()})
+	if a.adjudicator != nil {
+		t.Fatal("precondition: no adjudicator should be wired for this test")
+	}
 	a.working = []llm.Message{
 		llm.UserMessage("what's the block height?"),
 		llm.ToolResult("chain", "chain_info", `{"blockNumber":20531991,"chainId":125}`),
 	}
-	// State-touching turn with NO cited evidence → reject (positive proof).
-	if v := a.validateCompletion(context.Background(), completeCall(`{"summary":"The block height is 20531991.","coverage":"full"}`), true, true, ""); v.ok {
-		t.Error("state-touching completion with no evidence must reject")
-	}
-}
-
-func TestValidateCompletionStrictRejectsPhantomEvidence(t *testing.T) {
-	a := New(Options{Config: config.Default()})
-	a.working = []llm.Message{
-		llm.UserMessage("what's the block height?"),
-		llm.ToolResult("chain", "chain_info", `{"blockNumber":20531991,"chainId":125}`),
-	}
-	// The classic failure: claim a fact (123456) that NO tool result supports.
-	// The cited evidence is phantom → reject (g3-analog: no phantom evidence).
-	v := a.validateCompletion(context.Background(), completeCall(`{"summary":"The block height is 123456.","coverage":"full","evidence":["chain_info returned blockNumber 123456"]}`), true, true, "")
-	if v.ok {
-		t.Error("phantom evidence (123456 absent from transcript) must reject")
-	}
-}
-
-func TestValidateCompletionStrictAcceptsGroundedEvidence(t *testing.T) {
-	a := New(Options{Config: config.Default()})
-	a.working = []llm.Message{
-		llm.UserMessage("what's the block height?"),
-		llm.ToolResult("chain", "chain_info", `{"blockNumber":20531991,"chainId":125}`),
-	}
-	// Evidence whose salient token (the real block number) appears in the
-	// transcript is grounded → accept.
-	v := a.validateCompletion(context.Background(), completeCall(`{"summary":"The block height is 20531991.","coverage":"full","evidence":["chain_info returned blockNumber 20531991"]}`), true, true, "")
-	if !v.ok {
-		t.Errorf("grounded evidence must accept, got reject: %s", v.feedback)
+	v := a.validateCompletion(context.Background(), completeCall(`{"summary":"The block height is 20531991.","coverage":"full"}`), true, true, "")
+	if !v.ok || v.answer != "The block height is 20531991." {
+		t.Errorf("strict path with no adjudicator must fail open (accept), got ok=%v answer=%q feedback=%q", v.ok, v.answer, v.feedback)
 	}
 }
 
@@ -144,30 +123,5 @@ func TestStringSliceShapes(t *testing.T) {
 	}
 	if stringSlice(nil) != nil {
 		t.Error("nil → nil")
-	}
-}
-
-func TestSalientTokens(t *testing.T) {
-	got := salientTokens("blockNumber 20531991 0xAbCd")
-	want := map[string]bool{"blocknumber": true, "20531991": true, "0xabcd": true}
-	for _, g := range got {
-		delete(want, g)
-	}
-	if len(want) != 0 {
-		t.Errorf("salientTokens missing %v (got %v)", want, got)
-	}
-	// Short/punctuation-only yields nothing.
-	if len(salientTokens("a, b! c?")) != 0 {
-		t.Error("no token >=4 chars should yield empty")
-	}
-}
-
-func TestFirstUngrounded(t *testing.T) {
-	corpus := `{"blocknumber":20531991,"chainid":125}`
-	if firstUngrounded([]string{"blockNumber 20531991"}, corpus) != "" {
-		t.Error("grounded token should pass")
-	}
-	if firstUngrounded([]string{"value 99999999"}, corpus) == "" {
-		t.Error("ungrounded token must be flagged")
 	}
 }

@@ -150,9 +150,15 @@ func verdictAccepts(coverage string, v *cassandra.Verdict) bool {
 	if v == nil {
 		return false
 	}
-	grounded := v.Grounded && len(v.UnverifiedClaims) == 0
-	fullOK := coverage == "partial" || v.CoverageComplete()
-	return grounded && fullOK
+	// A claimed-full turn must be Sound (the shared acceptance predicate:
+	// grounded AND coverage complete). A claimed-partial turn is honest
+	// incompleteness that only needs grounding, so it consults IsGrounded — the
+	// same grounded half Sound composes. Both decide through cassandra's single
+	// source of truth, never a re-implemented inline rule.
+	if coverage == "partial" {
+		return v.IsGrounded()
+	}
+	return v.Sound()
 }
 
 // cappedUnknowns returns the (capped) list of Cassandra-flagged unknowns for an

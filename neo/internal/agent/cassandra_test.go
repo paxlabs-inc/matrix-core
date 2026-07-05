@@ -21,7 +21,7 @@ import (
 func TestVerdictAcceptsGroundedFull(t *testing.T) {
 	// A grounded, full-coverage verdict on a claimed-full turn → finish.
 	v := &cassandra.Verdict{Grounded: true, Coverage: cassandra.CoverageFull}
-	if !verdictAccepts("full", v, nil) {
+	if !verdictAccepts("full", v) {
 		t.Error("grounded + full coverage must accept")
 	}
 }
@@ -30,7 +30,7 @@ func TestVerdictRejectsUngrounded(t *testing.T) {
 	// The hallucination case: the model declares done but a load-bearing claim
 	// has no supporting evidence → loop, never finish.
 	v := &cassandra.Verdict{Grounded: false, Coverage: cassandra.CoverageFull}
-	if verdictAccepts("full", v, nil) {
+	if verdictAccepts("full", v) {
 		t.Error("ungrounded verdict must reject (loop)")
 	}
 }
@@ -43,16 +43,8 @@ func TestVerdictRejectsUnverifiedClaims(t *testing.T) {
 		Coverage:         cassandra.CoverageFull,
 		UnverifiedClaims: []string{"the deploy succeeded"},
 	}
-	if verdictAccepts("full", v, nil) {
+	if verdictAccepts("full", v) {
 		t.Error("unverified claims must reject even when grounded=true")
-	}
-}
-
-func TestVerdictRejectsPhantomCitation(t *testing.T) {
-	// A cited evidence ref absent from the transcript (g3) forces a reject.
-	v := &cassandra.Verdict{Grounded: true, Coverage: cassandra.CoverageFull}
-	if verdictAccepts("full", v, []string{"tx 0xdeadbeef confirmed"}) {
-		t.Error("phantom citation must reject")
 	}
 }
 
@@ -65,7 +57,7 @@ func TestVerdictAcceptsHonestPartial(t *testing.T) {
 		Coverage: cassandra.CoveragePartial,
 		Missing:  []string{"the second contract is still unverified"},
 	}
-	if !verdictAccepts("partial", v, nil) {
+	if !verdictAccepts("partial", v) {
 		t.Error("honest, grounded partial must accept")
 	}
 }
@@ -78,8 +70,37 @@ func TestVerdictRejectsClaimedFullButIncomplete(t *testing.T) {
 		Coverage: cassandra.CoveragePartial,
 		Missing:  []string{"the refund was never sent"},
 	}
-	if verdictAccepts("full", v, nil) {
+	if verdictAccepts("full", v) {
 		t.Error("claimed-full but Cassandra-incomplete must reject")
+	}
+}
+
+// TestVerdictAcceptsDecidesThroughSharedPredicate proves Neo's verdictAccepts
+// decides through the single shared cassandra predicate rather than a
+// re-implemented inline rule (req 6.1, 6.2): a claimed-full turn is accepted
+// exactly when cassandra.Sound() is true, and a claimed-partial turn exactly
+// when cassandra.IsGrounded() is true (the honest-partial extension over the
+// same grounded half Sound composes). The verdict shapes mirror the identical
+// table exercised in Cody and Cassandra so the three consumers cannot drift.
+func TestVerdictAcceptsDecidesThroughSharedPredicate(t *testing.T) {
+	cases := []struct {
+		name string
+		v    *cassandra.Verdict
+	}{
+		{"grounded_full", &cassandra.Verdict{Grounded: true, Coverage: cassandra.CoverageFull}},
+		{"ungrounded_full", &cassandra.Verdict{Grounded: false, Coverage: cassandra.CoverageFull}},
+		{"grounded_but_unverified", &cassandra.Verdict{Grounded: true, Coverage: cassandra.CoverageFull, UnverifiedClaims: []string{"the deploy succeeded"}}},
+		{"grounded_partial", &cassandra.Verdict{Grounded: true, Coverage: cassandra.CoveragePartial, Missing: []string{"criterion 2 unexercised"}}},
+		{"full_with_missing", &cassandra.Verdict{Grounded: true, Coverage: cassandra.CoverageFull, Missing: []string{"the refund was never sent"}}},
+	}
+	for _, tc := range cases {
+		tc.v.Normalize()
+		if got := verdictAccepts("full", tc.v); got != tc.v.Sound() {
+			t.Errorf("%s: verdictAccepts(full)=%v but Sound()=%v — the full path must be Sound()", tc.name, got, tc.v.Sound())
+		}
+		if got := verdictAccepts("partial", tc.v); got != tc.v.IsGrounded() {
+			t.Errorf("%s: verdictAccepts(partial)=%v but IsGrounded()=%v — the partial path must be IsGrounded()", tc.name, got, tc.v.IsGrounded())
+		}
 	}
 }
 
@@ -112,8 +133,8 @@ func TestContinueFeedbackEnumeratesNegativeSpace(t *testing.T) {
 		UnverifiedClaims: []string{"balance is 5 PAX"},
 		OpenUnknowns:     []string{"did the swap settle"},
 	}
-	fb := continueFeedback(v, []string{"tx 0xabc"})
-	for _, want := range []string{"send the receipt", "balance is 5 PAX", "tx 0xabc", "did the swap settle", "partial"} {
+	fb := continueFeedback(v)
+	for _, want := range []string{"send the receipt", "balance is 5 PAX", "did the swap settle", "partial"} {
 		if !strings.Contains(fb, want) {
 			t.Errorf("feedback missing %q: %s", want, fb)
 		}
@@ -142,7 +163,6 @@ func TestBuildAuditContractFoldsTheClaim(t *testing.T) {
 		"Sent 1 PAX to alice.",
 		"full",
 		[]string{"tx 0xabc confirmed"},
-		nil,
 		nil,
 	)
 	for _, want := range []string{"send 1 PAX to alice", "Sent 1 PAX to alice.", "full", "tx 0xabc confirmed"} {

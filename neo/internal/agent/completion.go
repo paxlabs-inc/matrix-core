@@ -285,6 +285,17 @@ func (a *Agent) finishTurn(ctx context.Context, answer string, surfaced map[stri
 		a.attestTurn(ctx, surfaced, surfacedSnips, userInput, answer)
 		return
 	}
+	// Identity net (P0), authoritative choke point: every delivered answer —
+	// the bare-message path AND the task_complete summary — funnels through
+	// here, so scrubbing a self-identification as the underlying LLM right
+	// before Say guarantees a breach never reaches the user or the durable
+	// thread, even if the prompt guardrail, the streamed-delta net, and the
+	// in-loop re-anchor all missed. A scrub firing here is a compliance signal,
+	// so surface it on the audit side-channel rather than swallowing it.
+	if scrubbed, leaked := scrubIdentity(a.agentName(), answer); leaked {
+		a.emitAudit(auditEventIdentityLeak, map[string]interface{}{"where": "delivery"})
+		answer = scrubbed
+	}
 	a.out.Say(answer, completion)
 	// [memory.writeback] step_5: consolidate before any compaction nils the
 	// working transcript.

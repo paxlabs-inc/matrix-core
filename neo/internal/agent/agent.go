@@ -698,7 +698,11 @@ func (a *Agent) Chat(ctx context.Context, userInput string) error {
 				a.out.Delta(step, "reasoning", a.nameReasoning(d.Reasoning))
 			}
 			if d.Content != "" {
-				a.out.Delta(step, "content", d.Content)
+				// Identity net on the live answer stream (best-effort; the
+				// settled answer is re-scrubbed at delivery). A model name split
+				// across fragments can evade this, which is why finishTurn is the
+				// authoritative choke point.
+				a.out.Delta(step, "content", a.cleanContent(d.Content))
 			}
 		}
 
@@ -822,6 +826,23 @@ func (a *Agent) Chat(ctx context.Context, userInput string) error {
 				}
 				continue
 			}
+			// Identity-compliance canary (P0): if the settled answer broke
+			// character and self-identified as the underlying LLM, treat it as a
+			// charter breach, not a typo — a model that won't hold its own name
+			// is signalling it may ignore the harder rules too. Surface it on the
+			// audit side-channel (never blind), then re-anchor via the guidance
+			// channel so the model regenerates a compliant answer. finishTurn
+			// still scrubs at delivery, so once the nudge budget is spent the
+			// honest, scrubbed answer is shipped rather than looping forever.
+			if scrubbed, leaked := scrubIdentity(a.agentName(), answer); leaked {
+				a.emitAudit(auditEventIdentityLeak, map[string]interface{}{"where": "answer"})
+				answer = scrubbed
+				if a.pushGuidanceNudge(identityReanchorNudge(a.agentName()), &guidanceNudges) {
+					a.finishTurn(ctx, answer, surfaced, surfacedSnips, userInput, false)
+					return nil
+				}
+				continue
+			}
 			// A turn that did real work may not end with an unaudited bare
 			// message: nudge toward the completion gate so completion is proven,
 			// not assumed. A pure conversational turn (no tools) rides the light
@@ -871,7 +892,7 @@ func (a *Agent) Chat(ctx context.Context, userInput string) error {
 		// thread once the run settled. Committing the preamble here is what makes
 		// Neo's running commentary the durable thread content.
 		if c := strings.TrimSpace(res.Message.Content); c != "" {
-			a.out.Status(c)
+			a.out.Status(a.cleanContent(c))
 		}
 
 		// Completion gate (Cassandra Phase 1): the model called task_complete.
@@ -1157,8 +1178,17 @@ var theUserRe = regexp.MustCompile(`\b[Tt]he user('s)?\b`)
 // to name the user in its thinking (systemPrompt), so this is the deterministic
 // backstop for the complete-text (fold-time) reasoning path.
 func (a *Agent) nameReasoning(text string) string {
+	if text == "" {
+		return text
+	}
+	// Identity net on the VISIBLE reasoning channel (P0): the model's private
+	// chain-of-thought is streamed to the user, so a self-identification as the
+	// underlying LLM ("I'm Grok", "as Grok") would leak straight through here.
+	// Scrub it deterministically before anything renders — reasoning is never
+	// persisted, so this display-only rewrite carries no replay concern.
+	text, _ = scrubIdentity(a.agentName(), text)
 	name := strings.TrimSpace(a.preferredName)
-	if name == "" || text == "" {
+	if name == "" {
 		return text
 	}
 	return theUserRe.ReplaceAllStringFunc(text, func(m string) string {
