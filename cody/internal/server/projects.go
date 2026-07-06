@@ -31,6 +31,7 @@ type project struct {
 	Name      string    `json:"name"`
 	Root      string    `json:"root"` // absolute workspace subtree
 	Mode      string    `json:"mode"`
+	Archived  bool      `json:"archived,omitempty"`
 	CreatedAt time.Time `json:"created_at"`
 }
 
@@ -104,6 +105,11 @@ func (pr *projectRegistry) create(p project) error {
 }
 
 func (pr *projectRegistry) setMode(id string, md mode.Mode) (project, error) {
+	return pr.patch(id, func(p *project) { p.Mode = string(md) })
+}
+
+// patch applies fn to an existing project record and persists the result.
+func (pr *projectRegistry) patch(id string, fn func(*project)) (project, error) {
 	pr.mu.Lock()
 	defer pr.mu.Unlock()
 	m := pr.loadLocked()
@@ -111,8 +117,24 @@ func (pr *projectRegistry) setMode(id string, md mode.Mode) (project, error) {
 	if !ok {
 		return project{}, fmt.Errorf("unknown project %q", id)
 	}
-	p.Mode = string(md)
+	fn(&p)
 	m[id] = p
+	if err := pr.saveLocked(m); err != nil {
+		return project{}, err
+	}
+	return p, nil
+}
+
+// remove deletes a project record from the registry.
+func (pr *projectRegistry) remove(id string) (project, error) {
+	pr.mu.Lock()
+	defer pr.mu.Unlock()
+	m := pr.loadLocked()
+	p, ok := m[id]
+	if !ok {
+		return project{}, fmt.Errorf("unknown project %q", id)
+	}
+	delete(m, id)
 	if err := pr.saveLocked(m); err != nil {
 		return project{}, err
 	}
@@ -285,25 +307,104 @@ func (s *Server) handleProject(w http.ResponseWriter, r *http.Request) {
 			writeJSON(w, http.StatusBadRequest, map[string]interface{}{"error": "the default project's mode is fixed by the daemon's default mode"})
 			return
 		}
-		var req struct {
-			Mode string `json:"mode"`
-		}
-		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-			writeJSON(w, http.StatusBadRequest, map[string]interface{}{"error": "invalid body: " + err.Error()})
-			return
-		}
-		m, err := mode.Parse(req.Mode)
+		s.handlePatchProject(w, r, id)
+	case http.MethodDelete:
+		s.handleDeleteProject(w, r, id)
+	default:
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+	}
+}
+
+// handlePatchProject updates any subset of {mode, name, archived} on a
+// registry project. The default project is synthesized, so none of its fields
+// are patchable.
+func (s *Server) handlePatchProject(w http.ResponseWriter, r *http.Request, id string) {
+	var req struct {
+		Mode     *string `json:"mode"`
+		Name     *string `json:"name"`
+		Archived *bool   `json:"archived"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]interface{}{"error": "invalid body: " + err.Error()})
+		return
+	}
+	if req.Mode == nil && req.Name == nil && req.Archived == nil {
+		writeJSON(w, http.StatusBadRequest, map[string]interface{}{"error": "nothing to change: provide mode, name, or archived"})
+		return
+	}
+	var md mode.Mode
+	if req.Mode != nil {
+		parsed, err := mode.Parse(*req.Mode)
 		if err != nil {
 			writeJSON(w, http.StatusBadRequest, map[string]interface{}{"error": err.Error()})
 			return
 		}
-		p, err := s.engine.projects.setMode(id, m)
-		if err != nil {
-			http.Error(w, "unknown project", http.StatusNotFound)
+		md = parsed
+	}
+	if req.Name != nil && strings.TrimSpace(*req.Name) == "" {
+		writeJSON(w, http.StatusBadRequest, map[string]interface{}{"error": "name cannot be empty"})
+		return
+	}
+	p, err := s.engine.projects.patch(id, func(p *project) {
+		if req.Mode != nil {
+			p.Mode = string(md)
+		}
+		if req.Name != nil {
+			p.Name = strings.TrimSpace(*req.Name)
+		}
+		if req.Archived != nil {
+			p.Archived = *req.Archived
+		}
+	})
+	if err != nil {
+		http.Error(w, "unknown project", http.StatusNotFound)
+		return
+	}
+	writeJSON(w, http.StatusOK, p)
+}
+
+// handleDeleteProject removes a project from the registry. It REFUSES while a
+// run is live in that project. With ?purge=true the workspace subtree is also
+// removed — guarded to a strict subdirectory of the workspace root so a
+// mis-rooted record can never delete the whole volume.
+func (s *Server) handleDeleteProject(w http.ResponseWriter, r *http.Request, id string) {
+	p, ok := s.engine.projects.get(id)
+	if !ok {
+		http.Error(w, "unknown project", http.StatusNotFound)
+		return
+	}
+	if s.engine.projectHasLiveRun(p.Root) {
+		writeJSON(w, http.StatusConflict, map[string]interface{}{"error": "a run is live in this project; stop it before deleting"})
+		return
+	}
+	purge := r.URL.Query().Get("purge") == "true"
+	if purge {
+		if err := s.engine.purgeProjectRoot(p.Root); err != nil {
+			writeJSON(w, http.StatusInternalServerError, map[string]interface{}{"error": "purge workspace subtree: " + err.Error()})
 			return
 		}
-		writeJSON(w, http.StatusOK, p)
-	default:
-		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 	}
+	if _, err := s.engine.projects.remove(id); err != nil {
+		http.Error(w, "unknown project", http.StatusNotFound)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]interface{}{"deleted": true, "id": id, "purged": purge})
+}
+
+// purgeProjectRoot removes a project's workspace subtree. The root must
+// resolve to a strict subdirectory of the workspace root.
+func (e *Engine) purgeProjectRoot(root string) error {
+	wsRoot, err := filepath.Abs(e.opts.WorkspaceRoot)
+	if err != nil {
+		return err
+	}
+	abs, err := filepath.Abs(root)
+	if err != nil {
+		return err
+	}
+	rel, err := filepath.Rel(wsRoot, abs)
+	if err != nil || rel == "." || rel == "" || strings.HasPrefix(rel, "..") {
+		return fmt.Errorf("project root %q is not a workspace subdirectory", root)
+	}
+	return os.RemoveAll(abs)
 }

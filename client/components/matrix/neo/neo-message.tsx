@@ -21,6 +21,7 @@ import { MessageResponse } from '@/components/ai-elements/message'
 import { MarkdownErrorBoundary } from '@/components/ai-elements/markdown-error-boundary'
 import { TooltipIconButton } from '@/components/assistant-ui/tooltip-icon-button'
 import { NeoMediaGrid, NeoMediaItem, parseAttachments } from '@/components/matrix/neo/neo-media'
+import { PixelGrid, WaveBars } from '@/components/matrix/cody/loaders'
 import { cn } from '@/lib/utils'
 import type { ChatMessage } from '@/hooks/api/useChat'
 
@@ -167,7 +168,8 @@ function NeoMessageActions({ text }: { text: string }) {
   )
 }
 
-/** An assistant turn: avatar + prose (+ reasoning, media, actions). When
+/** A settled assistant turn: prose (+ reasoning, media, actions), no avatar
+ *  — the identicon is reserved for Neo's live-status slot only. When
  *  `failed` the prose renders in a tone-only error block. */
 export function NeoAssistantMessage({
   message,
@@ -177,32 +179,29 @@ export function NeoAssistantMessage({
   failed?: boolean
 }) {
   return (
-    <div className="flex w-full gap-3">
-      <ChatAvatar seed={message.id} />
-      <div className="flex min-w-0 flex-1 flex-col gap-1">
-        {message.reasoning && <NeoReasoning reasoning={message.reasoning} />}
-        {failed ? (
-          <div className="bg-destructive/10 text-destructive rounded-lg px-3 py-2 text-sm">
-            <Prose text={message.text} />
-          </div>
-        ) : (
-          <div className={NEO_PROSE_CLASS}>
-            <Prose text={message.text} />
-          </div>
-        )}
-        <NeoMediaGrid media={message.media} />
-        {message.text && <NeoMessageActions text={message.text} />}
-      </div>
+    <div className="flex min-w-0 w-full flex-col gap-1">
+      {message.reasoning && <NeoReasoning reasoning={message.reasoning} />}
+      {failed ? (
+        <div className="bg-destructive/10 text-destructive rounded-lg px-3 py-2 text-sm">
+          <Prose text={message.text} />
+        </div>
+      ) : (
+        <div className={NEO_PROSE_CLASS}>
+          <Prose text={message.text} />
+        </div>
+      )}
+      <NeoMediaGrid media={message.media} />
+      {message.text && <NeoMessageActions text={message.text} />}
     </div>
   )
 }
 
-/** A user turn: a right-aligned accent bubble with the user's avatar. Uploaded
+/** A user turn: a right-aligned accent bubble, no avatar. Uploaded
  *  attachments render as thumbnails; their raw markers are stripped from text. */
 export function NeoUserMessage({ message }: { message: ChatMessage }) {
   const { clean, items } = parseAttachments(message.text)
   return (
-    <div className="flex w-full justify-end gap-3">
+    <div className="flex w-full justify-end">
       <div className="bg-accent text-foreground max-w-[85%] min-w-0 rounded-2xl rounded-br-md px-3.5 py-2 text-[0.95rem] leading-relaxed [overflow-wrap:anywhere]">
         {items.length > 0 && (
           <div className="mb-2 flex flex-col gap-2">
@@ -213,25 +212,25 @@ export function NeoUserMessage({ message }: { message: ChatMessage }) {
         )}
         {clean && <span className="whitespace-pre-wrap">{clean}</span>}
       </div>
-      <ChatAvatar seed={message.id} />
     </div>
   )
 }
 
 /** The live "thinking / working" indicator, shown as a nascent assistant turn
- *  (avatar + shimmering label) while the run has not yet produced prose. */
+ *  (mark + shimmering label) while the run has not yet produced prose. The
+ *  mark is Neo's live-status slot: Pixel Grid while idle/not yet responding. */
 export function NeoThinking({
   label,
   reduce,
-  seed = 'neo-thinking',
 }: {
   label: string
   reduce: boolean
-  seed?: string
 }) {
   return (
     <div className="flex w-full gap-3">
-      <ChatAvatar seed={seed} />
+      <span className="grid size-8 shrink-0 place-items-center">
+        <PixelGrid size={24} />
+      </span>
       <div className="text-muted-foreground flex items-center gap-2 pt-1.5 text-sm">
         <WaveSpinner
           size="sm"
@@ -303,12 +302,19 @@ export function NeoLiveTurn({
 }) {
   const answer = streamingAnswer?.trim() ? streamingAnswer : ''
   const thoughts = thinking?.trim() ? thinking : ''
-  // Nothing to show yet → the nascent shimmer indicator (avatar + label).
+  // Nothing to show yet → the nascent shimmer indicator (mark + label).
   if (!answer && !thoughts) {
-    return <NeoThinking label={label} reduce={reduce} seed={seed} />
+    return <NeoThinking label={label} reduce={reduce} />
   }
   return (
-    <NeoAssistantRow seed={seed}>
+    <NeoAssistantRow
+      seed={seed}
+      avatar={
+        <span className="grid size-8 shrink-0 place-items-center">
+          <WaveBars size={24} bars={4} />
+        </span>
+      }
+    >
       {thoughts && <NeoLiveThinking text={thoughts} />}
       {answer ? (
         <div className={NEO_PROSE_CLASS}>
@@ -331,11 +337,20 @@ export function NeoLiveTurn({
 }
 
 /** Generic slot wrapper used where the surface needs an assistant-styled row
- *  around arbitrary content (e.g. the settled task answer). */
-export function NeoAssistantRow({ seed, children }: { seed: string; children: ReactNode }) {
+ *  around arbitrary content (e.g. the settled task answer). `avatar` overrides
+ *  the default identicon — callers on Neo's live-status slot pass a spinner. */
+export function NeoAssistantRow({
+  seed,
+  avatar,
+  children,
+}: {
+  seed: string
+  avatar?: ReactNode
+  children: ReactNode
+}) {
   return (
     <div className="flex w-full gap-3">
-      <ChatAvatar seed={seed} />
+      {avatar ?? <ChatAvatar seed={seed} />}
       <div className="flex min-w-0 flex-1 flex-col gap-1">{children}</div>
     </div>
   )

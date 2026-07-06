@@ -15,18 +15,25 @@ export interface SubscribeOptions {
    *  on an already-finished (or mid-flight) run shows nothing because the
    *  live firehose only carries events emitted after the subscription. */
   replay?: boolean
+  /** Path prefix for the events routes. Empty targets the Neo daemon
+   *  (/events…); '/cody' targets the co-located codyd engine the router
+   *  proxies on its own port (/cody/events…). */
+  basePath?: string
   onUpdate: (u: SSEUpdate) => void
 }
 
 export function subscribeEvents(opts: SubscribeOptions) {
+  const base = opts.basePath ?? ''
   const qs = new URLSearchParams()
   if (opts.intentId) qs.set('intent_id', opts.intentId)
   if (opts.phase) qs.set('phase', opts.phase)
   const replayPath =
-    opts.replay && opts.intentId ? `/events/replay/${encodeURIComponent(opts.intentId)}` : undefined
+    opts.replay && opts.intentId
+      ? `${base}/events/replay/${encodeURIComponent(opts.intentId)}`
+      : undefined
   return subscribeSSEHub(
     {
-      path: `/events${qs.toString() ? `?${qs.toString()}` : ''}`,
+      path: `${base}/events${qs.toString() ? `?${qs.toString()}` : ''}`,
       replayPath,
       sinceSeq: opts.sinceSeq,
     },

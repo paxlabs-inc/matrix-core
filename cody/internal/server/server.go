@@ -37,6 +37,9 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("/workspace/", s.handleWorkspace)
 	mux.HandleFunc("/projects", s.handleProjects)
 	mux.HandleFunc("/projects/", s.handleProject)
+	mux.HandleFunc("/upload", s.handleUpload)
+	mux.HandleFunc("/media/", s.handleMedia)
+	mux.HandleFunc("/github/", s.handleGithub)
 	return mux
 }
 

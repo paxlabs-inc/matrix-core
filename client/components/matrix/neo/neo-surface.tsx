@@ -45,6 +45,7 @@ import { getSession } from '@/lib/auth/session'
 import type { ConversationSummary } from '@/lib/api/conversations'
 import type { ChatMessage, ChatPhase, NeoTask, PendingGate } from '@/hooks/api/useChat'
 import type { AskResponse } from '@/lib/construct/types.gen'
+import { PixelGrid, WaveBars } from '@/components/matrix/cody/loaders'
 import { NeoComputer } from '@/components/matrix/neo/neo-computer'
 import { WalletApproval } from '@/components/matrix/neo/wallet-approval'
 import { NeoComposer, composeNeoMessage, type NeoMode } from '@/components/matrix/neo/neo-composer'
@@ -93,6 +94,13 @@ function NeoMark({ className }: { className?: string }) {
       <span className="bg-background block size-[38%] rounded-[2px]" />
     </span>
   )
+}
+
+/** NeoStatusMark — Neo's persistent live-status mark, rendered under the
+ *  latest turn in the thread: Pixel Grid while idle (no task, not
+ *  responding), Wave Bars while a run is thinking/working. */
+function NeoStatusMark({ live }: { live: boolean }) {
+  return live ? <WaveBars size={26} bars={4} /> : <PixelGrid size={26} />
 }
 
 function StatePill({
@@ -323,7 +331,9 @@ function NeoSidebar({
       {/* navigation */}
       <div className="mt-2 flex flex-col gap-0.5 px-3">
         {onOpenHistory && <SidebarLink icon={Search} label="Search" onClick={onOpenHistory} />}
-        {onOpenTimeline && <SidebarLink icon={BrainIcon} label="Timeline" onClick={onOpenTimeline} />}
+        {onOpenTimeline && (
+          <SidebarLink icon={BrainIcon} label="Timeline" onClick={onOpenTimeline} />
+        )}
         {onOpenFiles && <SidebarLink icon={FileIcon} label="Workspace" onClick={onOpenFiles} />}
       </div>
 
@@ -624,7 +634,11 @@ export function NeoSurface({
   const handleStopAll = useCallback(async () => {
     try {
       const { halted } = await haltAll()
-      toast.success(halted > 0 ? `Stopped ${halted} running task${halted === 1 ? '' : 's'}` : 'Nothing was running')
+      toast.success(
+        halted > 0
+          ? `Stopped ${halted} running task${halted === 1 ? '' : 's'}`
+          : 'Nothing was running',
+      )
     } catch {
       toast.error('Could not stop tasks. Try again.')
     } finally {
@@ -842,6 +856,12 @@ export function NeoSurface({
 
                   {lastIsTaskAnswer && lastMessage && (
                     <NeoAssistantMessage message={lastMessage} failed={task?.failed} />
+                  )}
+
+                  {!live && !gated && hasThread && (
+                    <div className="flex justify-start">
+                      <NeoStatusMark live={false} />
+                    </div>
                   )}
                 </div>
 

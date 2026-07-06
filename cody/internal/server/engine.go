@@ -48,6 +48,9 @@ type EngineOptions struct {
 	WorkspaceRoot string
 	// DataDir holds codyd durable state (plans, traces) — /data/cody.
 	DataDir string
+	// MediaDir overrides where uploads live; empty derives <volume>/media from
+	// DataDir (the same /data/media plane Neo uses on a shared volume).
+	MediaDir string
 	// Cortex is the per-user cortex instance (progress checkpoints).
 	Cortex *cortex.Cortex
 	// GatewayURL + ActorDID meter every LLM call on the cody slot.

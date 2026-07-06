@@ -7,11 +7,29 @@ const toOrigin = (value: string | undefined): string => {
   }
 }
 
+/** The Matrix Router origin the client talks to (API + SSE + preview proxy). */
+export function routerOrigin(): string {
+  return toOrigin(process.env.NEXT_PUBLIC_MATRIX_ROUTER_URL || 'https://api.paxlabs.app')
+}
+
+/**
+ * Build frame-src allow-list. The Cody preview pane embeds the running app in
+ * an <iframe> served by the router's /preview/{user} proxy, so the router
+ * origin must be framable; without this the iframe falls back to default-src
+ * 'self' and the preview is blocked.
+ */
+export function buildFrameSrc(): string {
+  const origins = new Set<string>(["'self'"])
+  const router = routerOrigin()
+  if (router) origins.add(router)
+  return [...origins].join(' ')
+}
+
 /** Build connect-src allow-list for CSP (shared by proxy). */
 export function buildConnectSrc(): string {
   const origins = new Set<string>(["'self'"])
 
-  const router = toOrigin(process.env.NEXT_PUBLIC_MATRIX_ROUTER_URL || 'https://matrix.paxeer.app')
+  const router = routerOrigin()
   if (router) {
     origins.add(router)
     origins.add(router.replace(/^http/i, 'ws'))
@@ -57,6 +75,7 @@ export function buildContentSecurityPolicy(nonceValue: string): string {
     "img-src 'self' data: blob: https:",
     "font-src 'self' data:",
     `connect-src ${buildConnectSrc()}`,
+    `frame-src ${buildFrameSrc()}`,
     "frame-ancestors 'none'",
     "base-uri 'self'",
     "object-src 'none'",

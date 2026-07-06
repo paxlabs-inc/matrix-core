@@ -47,8 +47,6 @@ import {
 import type { NeoTask } from '@/hooks/api/useChat'
 import { NeoIllustration } from '@/components/matrix/neo/neo-illustration'
 
-const EASE = [0.32, 0.72, 0, 1] as const
-
 type KindFilter = 'all' | MediaKind
 
 const KIND_FILTERS: { id: KindFilter; label: string }[] = [
@@ -214,7 +212,11 @@ export function NeoFiles({
               disabled={busy}
               className="bg-primary text-primary-foreground hover:bg-primary/90 flex shrink-0 items-center gap-2 rounded-full px-3.5 py-2 text-sm font-semibold transition-colors disabled:opacity-60"
             >
-              {busy ? <Loader2 className="size-4 animate-spin" /> : <Paperclip className="size-4" />}
+              {busy ? (
+                <Loader2 className="size-4 animate-spin" />
+              ) : (
+                <Paperclip className="size-4" />
+              )}
               Upload
             </button>
             <button
@@ -341,7 +343,11 @@ function FileCard({ file }: { file: WorkspaceFile }) {
           title="Download"
           className="bg-background/80 text-foreground hover:bg-background absolute top-2 right-2 grid size-8 place-items-center rounded-full opacity-0 backdrop-blur transition group-hover:opacity-100 focus-visible:opacity-100"
         >
-          {downloading ? <Loader2 className="size-4 animate-spin" /> : <Download className="size-4" />}
+          {downloading ? (
+            <Loader2 className="size-4 animate-spin" />
+          ) : (
+            <Download className="size-4" />
+          )}
         </button>
       </div>
       <div className="flex flex-col gap-0.5 p-2.5">

@@ -12,7 +12,7 @@ import { z } from 'zod'
 
 const PublicSchema = z.object({
   /** Base URL of the Matrix Router (the public-facing JWT-protected proxy). */
-  routerUrl: z.string().url().default('https://matrix.paxeer.app'),
+  routerUrl: z.string().url().default('https://api.paxlabs.app'),
   /** Supabase project URL — used by the browser client for auth. */
   supabaseUrl: z.string().url().optional(),
   /** Supabase anon (publishable) key. Safe to ship in the client bundle. */

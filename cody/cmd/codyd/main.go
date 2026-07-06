@@ -81,8 +81,11 @@ func main() {
 	}
 
 	engine, err := server.NewEngine(server.EngineOptions{
-		WorkspaceRoot:     *workspaceRoot,
-		DataDir:           *dataDir,
+		WorkspaceRoot: *workspaceRoot,
+		DataDir:       *dataDir,
+		// Uploads land on the machine volume; empty derives <volume>/media from
+		// the data dir — the same plane Neo serves on a shared /data volume.
+		MediaDir:          os.Getenv("CODY_MEDIA_DIR"),
 		Cortex:            cortex.New(st),
 		GatewayURL:        os.Getenv("MATRIX_GATEWAY_URL"),
 		ActorDID:          os.Getenv("CODY_ACTOR_DID"),

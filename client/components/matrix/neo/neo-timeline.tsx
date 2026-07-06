@@ -23,14 +23,8 @@ import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
 import { BrainIcon, Clock, Lock, Search, X } from '@/lib/matrix-icons'
 import { cn } from '@/lib/utils'
-import {
-  listMemoryTypeCounts,
-  searchMemories,
-  type MemoryEntry,
-} from '@/lib/api/memory'
+import { listMemoryTypeCounts, searchMemories, type MemoryEntry } from '@/lib/api/memory'
 import { NeoIllustration } from '@/components/matrix/neo/neo-illustration'
-
-const EASE = [0.32, 0.72, 0, 1] as const
 
 /** Friendly, human labels for the cortex type names. */
 const TYPE_LABEL: Record<string, string> = {
@@ -213,10 +207,7 @@ export function NeoTimeline({ open, onClose }: { open: boolean; onClose: () => v
               {loading && items.length === 0 ? (
                 <MemorySkeleton />
               ) : error ? (
-                <EmptyState
-                  title="Memory is unavailable"
-                  body={error}
-                />
+                <EmptyState title="Memory is unavailable" body={error} />
               ) : items.length === 0 ? (
                 <EmptyState
                   title={query || activeType ? 'No matching memories' : 'No memories yet'}

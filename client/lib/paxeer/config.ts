@@ -1,6 +1,7 @@
 /**
  * Paxeer embedded-wallet client configuration.
  *
+ * The wallet API (connect.paxportwallet.com) is authenticated with the SAME
  * Supabase JWT the Matrix client already holds: the user's Supabase identity
  * owns a primary embedded wallet on the server, which in turn owns the agent
  * wallet(s). So we reuse the existing session token (lib/auth/session
@@ -12,7 +13,7 @@
  */
 
 /** Production wallet API origin. Override with NEXT_PUBLIC_PAXEER_WALLET_API. */
-export const DEFAULT_WALLET_API_URL = ''
+export const DEFAULT_WALLET_API_URL = 'https://connect.paxportwallet.com'
 
 /** Paxeer Network mainnet. Override with NEXT_PUBLIC_PAXEER_CHAIN_ID. */
 export const DEFAULT_CHAIN_ID = 125
@@ -24,10 +25,10 @@ export const DEFAULT_RPC_URL = 'https://public-mainnet.rpcpaxeer.online/evm'
 export const DEFAULT_EXPLORER_API_URL = 'https://api.paxscan.io'
 
 /** Portfolio / Argus user-stats indexer (USD values, PnL, charts). */
-export const DEFAULT_PORTFOLIO_API_URL = ''
+export const DEFAULT_PORTFOLIO_API_URL = 'https://us-east-1.user-stats.sidiora.exchange'
 
 /** PAX + bridged-major price/OHLC API. */
-export const DEFAULT_PRICE_API_URL = ''
+export const DEFAULT_PRICE_API_URL = 'https://data-api.crossverse.app/api'
 
 function trimTrailingSlash(s: string): string {
   return s.replace(/\/+$/, '')

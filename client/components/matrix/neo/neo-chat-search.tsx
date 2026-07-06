@@ -87,8 +87,7 @@ export function NeoChatSearch({
     if (!q) return conversations
     return conversations.filter(
       (c) =>
-        (c.title || '').toLowerCase().includes(q) ||
-        (c.preview || '').toLowerCase().includes(q),
+        (c.title || '').toLowerCase().includes(q) || (c.preview || '').toLowerCase().includes(q),
     )
   }, [conversations, query])
 
