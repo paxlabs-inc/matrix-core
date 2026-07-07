@@ -78,9 +78,9 @@ func TestModelPolicyPerRole(t *testing.T) {
 			t.Fatalf("%s: decisions (%v) must run hotter than implementation (%v)", m, dec.Temperature, work.Temperature)
 		}
 	}
-	// Every role in every mode pins grok-build-0.1 (xAI Grok) — the fast tier
-	// and the strong tier are the same Grok model under the cody slot.
-	const want = "grok-build-0.1"
+	// Every role in every mode pins xiaomimimo/mimo-v2.5-pro (Novita MiMo) —
+	// the fast tier and the strong tier are the same model under the cody slot.
+	const want = "xiaomimimo/mimo-v2.5-pro"
 	if FastModel != want {
 		t.Fatalf("FastModel = %q, want %q", FastModel, want)
 	}

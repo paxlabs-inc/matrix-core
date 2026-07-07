@@ -87,7 +87,15 @@ import (
 // path are removed entirely; pre-v9 ledger rows that reference zai-org/GLM-5.2
 // are NOT replayable against this card (accepted at migration). All three grok
 // PAX rates are PLACEHOLDERS pending the real xAI prices.
-const RateTableVersion = 9
+//
+// v10 (2026-07-07, Andrew directed) makes the Novita-served
+// xiaomimimo/mimo-v2.5-pro (ModelMimoV25Pro) the primary chat model for every
+// agentic slot (Neo, Cody, MCL compiler/planner/executor, liaison). Purely
+// ADDITIVE: one new rateTable row + whitelisting MiMo on those slots. The grok
+// rows stay on the card (still used by the Cassandra slot + as fallbacks) so
+// pre-v10 ledger rows remain replayable. MiMo's PAX rate is a PLACEHOLDER
+// pending the real Novita provider price.
+const RateTableVersion = 10
 
 // PaxUsdReference is the USD price of 1 PAX the v3 rate card was
 // denominated against. Exposed so ops/telemetry can re-derive or
@@ -165,6 +173,10 @@ const (
 	// ModelNomicEmbed is the Fireworks-hosted embedding model behind the
 	// gateway's /v1/embeddings route (768-dim; matches cortex DefaultDim).
 	ModelNomicEmbed = "nomic-ai/nomic-embed-text-v1.5"
+	// ModelMimoV25Pro is the Novita-served Xiaomi MiMo v2.5 Pro — the v10 primary
+	// chat model for every agentic slot (Neo, Cody, MCL). Routes to Novita
+	// (api.novita.ai) via the "xiaomimimo/" prefix in internal/routing.
+	ModelMimoV25Pro = "xiaomimimo/mimo-v2.5-pro"
 )
 
 // Rate is the per-Mtoken price in PAX for a single model. Both prompt
@@ -277,6 +289,13 @@ var rateTable = []Rate{
 		OutputPaxPerMTokens: 0,           // embeddings have no completion side
 		Notes:               "Fireworks nomic-embed-text-v1.5 — Neo cortex semantic page-faulting via gateway /v1/embeddings (768-dim).",
 	},
+	{
+		Model:               ModelMimoV25Pro,
+		Group:               GroupReason,
+		InputPaxPerMTokens:  0.087489064, // ≈ $1.00 / Mtoken  [PLACEHOLDER — Andrew to set the real Novita MiMo price]
+		OutputPaxPerMTokens: 0.174978128, // ≈ $2.00 / Mtoken  [PLACEHOLDER — Andrew to set the real Novita MiMo price]
+		Notes:               "Novita xiaomimimo/mimo-v2.5-pro — v10 primary chat model for every agentic slot (Neo/Cody/MCL). PLACEHOLDER rate pending the real Novita provider price.",
+	},
 }
 
 // rateIndex maps model id -> Rate. Initialized once at package load.
@@ -320,27 +339,27 @@ func FreeTierWhitelist() map[string][]string {
 		// the low-confidence escalation target (compile.go re-invokes the
 		// compiler slot with a stronger model when the frame call self-reports
 		// low confidence or emits an invalid verb).
-		"compiler": {ModelGrok43, ModelCompilerFreeTier, ModelDeepSeekV4Pro},
+		"compiler": {ModelMimoV25Pro, ModelGrok43, ModelCompilerFreeTier, ModelDeepSeekV4Pro},
 		// executor: grok-4.3 is the primary; deepseek-v4-flash stays allowed
 		// (summarize / long-ctx + back-compat); kimi-k2.6 stays as an
 		// alternative executor pinnable via MATRIX_EXECUTOR_MODEL.
-		"executor": {ModelGrok43, ModelExecutorFreeTier, ModelKimiK26},
+		"executor": {ModelMimoV25Pro, ModelGrok43, ModelExecutorFreeTier, ModelKimiK26},
 		// planner: grok-4.3 is the primary; kimi-k2.6, deepseek-v4-pro,
 		// gpt-oss-120b + v4-flash stay allowed for deployments that pin a
 		// different planner. All are on the rate card.
-		"planner": {ModelGrok43, ModelKimiK26, ModelCompilerFreeTier, ModelExecutorFreeTier, ModelDeepSeekV4Pro},
+		"planner": {ModelMimoV25Pro, ModelGrok43, ModelKimiK26, ModelCompilerFreeTier, ModelExecutorFreeTier, ModelDeepSeekV4Pro},
 		// liaison: the user-facing conversational narrator (SlotLiaison).
 		// grok-4.20-0309-non-reasoning is the cheap non-reasoning default for
 		// folding large event batches; grok-4.3 + deepseek-v4-flash/kimi-k2.6
 		// stay allowed as prose upgrades pinnable via MATRIX_LIAISON_MODEL.
-		"liaison": {ModelGrok420NR, ModelGrok43, ModelDeepSeekV4Flash, ModelKimiK26},
+		"liaison": {ModelMimoV25Pro, ModelGrok420NR, ModelGrok43, ModelDeepSeekV4Flash, ModelKimiK26},
 		// neo: the Neo default conversational AGENT (SlotNeo). NOT the
 		// Liaison — Neo drives the conversation + tools and delegates money to
 		// MCL. main = grok-4.3 (conversational loop); cheap + consolidation =
 		// grok-4.20-0309-non-reasoning (background write-back/compaction/
 		// memory-logging); nomic-embed-text-v1.5 is the cortex pager's
 		// embedding model via /v1/embeddings.
-		"neo": {ModelGrok43, ModelGrok420NR, ModelNomicEmbed},
+		"neo": {ModelMimoV25Pro, ModelGrok43, ModelGrok420NR, ModelNomicEmbed},
 		// cassandra: the epistemic-completeness faculty (SlotCassandra). The
 		// completeness critic pins grok-4.20-0309-non-reasoning as the
 		// prior+scan adjudicator; grok-4.3 is the strong escalation adjudicator;
@@ -352,7 +371,7 @@ func FreeTierWhitelist() map[string][]string {
 		// this slot with grok-build-0.1; grok-4.3 stays allowed for the
 		// orchestrator's Cassandra-style adjudication. codegraph enrichment's
 		// summarizer also meters here on grok-build-0.1.
-		"cody": {ModelGrokBuild, ModelGrok43},
+		"cody": {ModelMimoV25Pro, ModelGrokBuild, ModelGrok43},
 	}
 }
 

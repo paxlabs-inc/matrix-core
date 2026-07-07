@@ -30,15 +30,15 @@ func TestDefaultsMatchFrozenSpec(t *testing.T) {
 			t.Errorf("%s = %d, want %d", ch.name, ch.got, ch.want)
 		}
 	}
-	// xAI Grok migration: the main lane pins grok-4.3 (reasoning), the cheap
-	// lanes pin grok-4.20-0309-non-reasoning.
-	if c.MainModel != "grok-4.3" {
+	// Novita MiMo migration: every Neo lane pins xiaomimimo/mimo-v2.5-pro
+	// (reasoning_effort high on the main loop, low on the background lanes).
+	if c.MainModel != "xiaomimimo/mimo-v2.5-pro" {
 		t.Errorf("MainModel = %q", c.MainModel)
 	}
-	if c.CheapModel != "grok-4.20-0309-non-reasoning" {
+	if c.CheapModel != "xiaomimimo/mimo-v2.5-pro" {
 		t.Errorf("CheapModel = %q", c.CheapModel)
 	}
-	if c.ConsolidationModel != "grok-4.20-0309-non-reasoning" {
+	if c.ConsolidationModel != "xiaomimimo/mimo-v2.5-pro" {
 		t.Errorf("ConsolidationModel = %q", c.ConsolidationModel)
 	}
 	if c.CassandraModel != "grok-4.20-0309-non-reasoning" {

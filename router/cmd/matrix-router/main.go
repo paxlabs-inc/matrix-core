@@ -149,21 +149,21 @@ func main() {
 			"MATRIX_GATEWAY_URL":   os.Getenv("MATRIX_GATEWAY_URL"),
 			"MATRIX_GATEWAY_TOKEN": os.Getenv("MATRIX_GATEWAY_TOKEN"),
 			// Pin the fleet to the gateway free-tier whitelist + rate card
-			// (gateway/internal/rates, RateTableVersion 2). xAI/Grok pins:
-			//   compiler = grok-4.3, escalating to grok-4.3 on a
+			// (gateway/internal/rates, RateTableVersion 10). Novita/MiMo pins:
+			//   compiler = xiaomimimo/mimo-v2.5-pro, escalating to the same on a
 			//              low-confidence frame (MATRIX_COMPILER_ESCALATE_MODEL);
-			//   planner  = grok-4.3 (dedicated MATRIX_PLANNER_MODEL knob,
-			//              decoupled from the executor knob);
-			//   executor = grok-4.3;
-			//   liaison  = grok-4.20-0309-non-reasoning (user-facing
-			//              conversational narrator; MATRIX_LIAISON_MODEL knob).
+			//   planner  = xiaomimimo/mimo-v2.5-pro (dedicated MATRIX_PLANNER_MODEL
+			//              knob, decoupled from the executor knob);
+			//   executor = xiaomimimo/mimo-v2.5-pro;
+			//   liaison  = xiaomimimo/mimo-v2.5-pro (user-facing conversational
+			//              narrator; MATRIX_LIAISON_MODEL knob).
 			// Override any of these via /etc/matrix/router.env if the gateway
 			// whitelist changes.
-			"MATRIX_COMPILER_MODEL":          envOr("MATRIX_COMPILER_MODEL", "grok-4.3"),
-			"MATRIX_COMPILER_ESCALATE_MODEL": envOr("MATRIX_COMPILER_ESCALATE_MODEL", "grok-4.3"),
-			"MATRIX_PLANNER_MODEL":           envOr("MATRIX_PLANNER_MODEL", "grok-4.3"),
-			"MATRIX_EXECUTOR_MODEL":          envOr("MATRIX_EXECUTOR_MODEL", "grok-4.3"),
-			"MATRIX_LIAISON_MODEL":           envOr("MATRIX_LIAISON_MODEL", "grok-4.20-0309-non-reasoning"),
+			"MATRIX_COMPILER_MODEL":          envOr("MATRIX_COMPILER_MODEL", "xiaomimimo/mimo-v2.5-pro"),
+			"MATRIX_COMPILER_ESCALATE_MODEL": envOr("MATRIX_COMPILER_ESCALATE_MODEL", "xiaomimimo/mimo-v2.5-pro"),
+			"MATRIX_PLANNER_MODEL":           envOr("MATRIX_PLANNER_MODEL", "xiaomimimo/mimo-v2.5-pro"),
+			"MATRIX_EXECUTOR_MODEL":          envOr("MATRIX_EXECUTOR_MODEL", "xiaomimimo/mimo-v2.5-pro"),
+			"MATRIX_LIAISON_MODEL":           envOr("MATRIX_LIAISON_MODEL", "xiaomimimo/mimo-v2.5-pro"),
 			"MATRIX_DEFAULT_SKILL":           envOr("MATRIX_DEFAULT_SKILL", "matrix://skill/paxeer-assistant@0.1.0"),
 			// Web search (tools/websearch/web-search.mjs MCP server in the
 			// daemon image). The stdio bridge inherits the Machine env (its

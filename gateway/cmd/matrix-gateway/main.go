@@ -36,7 +36,8 @@
 // Required environment:
 //
 //	MATRIX_GATEWAY_TOKEN  shared bearer token; clients send Authorization: Bearer ...
-//	XAI_API_KEY           gateway's own upstream key for xAI (primary chat: grok-* Grok)
+//	NOVITA_API_KEY        gateway's own upstream key for Novita (primary chat: xiaomimimo/* MiMo)
+//	XAI_API_KEY           gateway's own upstream key for xAI (grok-* fallback + Cassandra lanes)
 //	BASETEN_API_KEY       gateway's own upstream key for Baseten (fallback chat lanes; optional)
 //	FIREWORKS_API_KEY     gateway's own upstream key for Fireworks (nomic embeddings; optional)
 //	TOGETHER_API_KEY      gateway's own upstream key for Together (optional)
@@ -111,17 +112,23 @@ func run(args []string) error {
 
 	logf := newLogger(*logFormat)
 
-	// Fail-fast: free-tier-only pins the primary chat model (grok-4.3) on the
-	// agentic slots, and grok-* routes to the xAI upstream — so the gateway's
-	// XAI_API_KEY is mandatory. Without it the gateway boots fine but 401s every
-	// chat call — a silent fleet-wide outage.
-	// (MATRIX_GATEWAY_TOKEN is enforced by auth.New below.) BASETEN_API_KEY
-	// becomes optional — it only serves the non-Grok "<vendor>/<model>"
-	// fallback lanes (Kimi/Qwen/DeepSeek) still on the whitelist.
+	// Fail-fast: free-tier-only pins the primary chat model
+	// (xiaomimimo/mimo-v2.5-pro) on the agentic slots, and xiaomimimo/* routes to
+	// the Novita upstream — so the gateway's NOVITA_API_KEY is mandatory. Without
+	// it the gateway boots fine but 401s every chat call — a silent fleet-wide
+	// outage. XAI_API_KEY becomes a warning: it still serves the grok-* fallback
+	// + the Cassandra lanes. (MATRIX_GATEWAY_TOKEN is enforced by auth.New below.)
+	// BASETEN_API_KEY stays optional — it only serves the non-Grok
+	// "<vendor>/<model>" fallback lanes (Kimi/Qwen/DeepSeek).
 	// FIREWORKS_API_KEY stays optional — only the nomic-ai/* embedding route
 	// still forwards to Fireworks.
+	if *freeTierOnly && os.Getenv("NOVITA_API_KEY") == "" {
+		return fmt.Errorf("matrix-gateway: -free-tier-only=true requires NOVITA_API_KEY (gateway upstream key for the primary xiaomimimo/* MiMo chat lane)")
+	}
 	if *freeTierOnly && os.Getenv("XAI_API_KEY") == "" {
-		return fmt.Errorf("matrix-gateway: -free-tier-only=true requires XAI_API_KEY (gateway upstream key for the primary grok-* chat lane)")
+		logf("gateway.warn.xai_key_missing", map[string]any{
+			"detail": "XAI_API_KEY unset: the grok-* fallback + Cassandra lanes will 401 upstream",
+		})
 	}
 	if *freeTierOnly && os.Getenv("BASETEN_API_KEY") == "" {
 		logf("gateway.warn.baseten_key_missing", map[string]any{
@@ -175,6 +182,7 @@ func run(args []string) error {
 		Ledger:      lg,
 		RateLimiter: rl,
 		Provider: proxy.ProviderKeys{
+			NovitaKey:    os.Getenv("NOVITA_API_KEY"),
 			XaiKey:       os.Getenv("XAI_API_KEY"),
 			BasetenKey:   os.Getenv("BASETEN_API_KEY"),
 			FireworksKey: os.Getenv("FIREWORKS_API_KEY"),

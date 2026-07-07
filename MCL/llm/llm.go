@@ -44,6 +44,7 @@ const (
 	ProviderOpencode                  // opencode.ai/zen (Session 34 / Forge)
 	ProviderBaseten                   // inference.baseten.co (fallback chat provider)
 	ProviderXai                       // api.x.ai (xAI Grok — primary chat provider)
+	ProviderNovita                    // api.novita.ai (Xiaomi MiMo — primary chat provider)
 )
 
 func (p Provider) String() string {
@@ -58,6 +59,8 @@ func (p Provider) String() string {
 		return "baseten"
 	case ProviderXai:
 		return "xai"
+	case ProviderNovita:
+		return "novita"
 	}
 	return "unknown"
 }
@@ -645,7 +648,8 @@ func (c *Client) buildRequest(messages []interpreter.Message, grammar string) (*
 	} else {
 		req.MaxTokens = c.cfg.MaxTokens
 	}
-	if IsXaiModel(c.cfg.Model) && supportsReasoningEffort(c.cfg.Model) {
+	switch {
+	case IsXaiModel(c.cfg.Model) && supportsReasoningEffort(c.cfg.Model):
 		// xAI's grok-4.3 accepts reasoning_effort; pin it per-role so the
 		// provider switch preserves each role's posture — reasoning ("medium")
 		// only where EnableThinking was set, and "none" for token-tight
@@ -653,6 +657,11 @@ func (c *Client) buildRequest(messages []interpreter.Message, grammar string) (*
 		// tokens. The fleet id is xAI's native model code, so no rewrite of
 		// req.Model is needed on the direct hop.
 		req.ReasoningEffort = reasoningEffort(c.cfg.EnableThinking)
+	case IsNovitaModel(c.cfg.Model):
+		// Novita-served MiMo reasons by default and accepts the OpenAI-style
+		// reasoning_effort enum: "high" for the agentic reasoning roles
+		// (EnableThinking set), "low" for token-tight mechanical roles.
+		req.ReasoningEffort = novitaReasoningEffort(c.cfg.EnableThinking)
 	}
 
 	if c.cfg.Seed != 0 {
@@ -804,6 +813,8 @@ func DetectProvider(model string) (Provider, error) {
 		return ProviderFireworks, nil
 	case IsXaiModel(model):
 		return ProviderXai, nil
+	case IsNovitaModel(model):
+		return ProviderNovita, nil
 	case isOpencodeModelID(model):
 		return ProviderOpencode, nil
 	case strings.Contains(model, "/"):
@@ -836,6 +847,24 @@ func reasoningEffort(enabled bool) string {
 		return "medium"
 	}
 	return "none"
+}
+
+// IsNovitaModel reports whether the fleet model id is a Novita-served model
+// (the Xiaomi MiMo family, "xiaomimimo/*"), routed to Novita's OpenAI-
+// compatible chat-completions API.
+func IsNovitaModel(model string) bool {
+	return strings.HasPrefix(strings.ToLower(model), "xiaomimimo/")
+}
+
+// novitaReasoningEffort maps the per-role EnableThinking flag onto MiMo's
+// reasoning_effort enum: ON → "high" (the agentic reasoning posture pinned for
+// the fleet), OFF → "low" (token-tight background roles keep reasoning minimal).
+// MiMo reasons by default and accepts the OpenAI-style reasoning_effort enum.
+func novitaReasoningEffort(enabled bool) string {
+	if enabled {
+		return "high"
+	}
+	return "low"
 }
 
 // isOpencodeModelID returns true for the bare model ids served by
@@ -889,12 +918,18 @@ func defaultEndpoint(p Provider) string {
 		return "https://inference.baseten.co/v1/chat/completions"
 	case ProviderXai:
 		return XaiChatEndpoint
+	case ProviderNovita:
+		return NovitaChatEndpoint
 	}
 	return ""
 }
 
 // XaiChatEndpoint is xAI's OpenAI-compatible chat-completions endpoint.
 const XaiChatEndpoint = "https://api.x.ai/v1/chat/completions"
+
+// NovitaChatEndpoint is Novita's OpenAI-compatible chat-completions endpoint
+// (serves the Xiaomi MiMo family, e.g. xiaomimimo/mimo-v2.5-pro).
+const NovitaChatEndpoint = "https://api.novita.ai/openai/v1/chat/completions"
 
 func envKey(p Provider) (string, error) {
 	var name string
@@ -909,6 +944,8 @@ func envKey(p Provider) (string, error) {
 		name = "BASETEN_API_KEY"
 	case ProviderXai:
 		name = "XAI_API_KEY"
+	case ProviderNovita:
+		name = "NOVITA_API_KEY"
 	default:
 		return "", fmt.Errorf("llm: unknown provider %d", p)
 	}
@@ -940,15 +977,15 @@ type chatMessage struct {
 }
 
 type chatRequest struct {
-	Model          string          `json:"model"`
-	Messages       []chatMessage   `json:"messages"`
-	Temperature    float64         `json:"temperature"`
-	MaxTokens      int             `json:"max_tokens,omitempty"`
+	Model       string        `json:"model"`
+	Messages    []chatMessage `json:"messages"`
+	Temperature float64       `json:"temperature"`
+	MaxTokens   int           `json:"max_tokens,omitempty"`
 	// MaxCompletionTokens is xAI/grok's replacement for the deprecated
 	// max_tokens; it bounds only visible output (not reasoning/tool tokens).
-	MaxCompletionTokens int `json:"max_completion_tokens,omitempty"`
-	Seed           *int64          `json:"seed,omitempty"`
-	ResponseFormat *responseFormat `json:"response_format,omitempty"`
+	MaxCompletionTokens int             `json:"max_completion_tokens,omitempty"`
+	Seed                *int64          `json:"seed,omitempty"`
+	ResponseFormat      *responseFormat `json:"response_format,omitempty"`
 	// Stream toggles SSE delivery on /v1/chat/completions. Set by
 	// (*Client).Stream; unset by Decode (omitempty preserves wire
 	// shape parity with pre-P3 Decode requests for replay tests).

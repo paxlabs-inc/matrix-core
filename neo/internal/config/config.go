@@ -194,9 +194,9 @@ func Default() Config {
 		ManifestPath: "agents/default.json",
 		SkillsRoot:   "skills",
 
-		MainModel:          "grok-4.3",
-		CheapModel:         "grok-4.20-0309-non-reasoning",
-		ConsolidationModel: "grok-4.20-0309-non-reasoning",
+		MainModel:          "xiaomimimo/mimo-v2.5-pro",
+		CheapModel:         "xiaomimimo/mimo-v2.5-pro",
+		ConsolidationModel: "xiaomimimo/mimo-v2.5-pro",
 		EmbedModel:         "nomic-ai/nomic-embed-text-v1.5",
 		// Cassandra completeness auditor: a cheap/fast primary + a stronger
 		// escalation model, both on the gateway cassandra-slot whitelist

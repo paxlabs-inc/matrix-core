@@ -352,7 +352,7 @@ func DefaultRegistry() *ModelRegistry {
 
 	// --- SlotCompiler --------------------------------------------------------
 	compiler := Config{
-		Model:       "grok-4.3",
+		Model:       "xiaomimimo/mimo-v2.5-pro",
 		Temperature: 0,
 		Seed:        42,
 		MaxTokens:   512,
@@ -362,7 +362,7 @@ func DefaultRegistry() *ModelRegistry {
 	// LongCtx: when cortex bundle exceeds ~100k tokens, DeepSeek-V4-Flash's
 	// 1M context is the safe escalation.
 	compilerLongCtx := Config{
-		Model:       "grok-4.3",
+		Model:       "xiaomimimo/mimo-v2.5-pro",
 		Temperature: 0,
 		Seed:        42,
 		MaxTokens:   1024,
@@ -377,42 +377,46 @@ func DefaultRegistry() *ModelRegistry {
 	// truncates the plan mid-object (the 'unexpected end of JSON input'
 	// synth.parse.error class). Plans rarely approach this ceiling.
 	planner := Config{
-		Model:       "grok-4.3",
-		Temperature: 0.2,
-		Seed:        42,
-		MaxTokens:   8192,
-		GrammarMode: GrammarJSONSchema,
-		Grammars:    grammars,
+		Model:          "xiaomimimo/mimo-v2.5-pro",
+		Temperature:    0.2,
+		Seed:           42,
+		MaxTokens:      8192,
+		GrammarMode:    GrammarJSONSchema,
+		Grammars:       grammars,
+		EnableThinking: true,
 	}
 	// LongCtx: GLM-5.1's 202k window for plans with extensive context.
 	plannerLongCtx := Config{
-		Model:       "grok-4.3",
-		Temperature: 0.2,
-		Seed:        42,
-		MaxTokens:   3072,
-		GrammarMode: GrammarJSONSchema,
-		Grammars:    grammars,
+		Model:          "xiaomimimo/mimo-v2.5-pro",
+		Temperature:    0.2,
+		Seed:           42,
+		MaxTokens:      3072,
+		GrammarMode:    GrammarJSONSchema,
+		Grammars:       grammars,
+		EnableThinking: true,
 	}
 
 	// --- SlotExecutor: KindReason (default agentic) --------------------------
 	executorReason := Config{
-		Model:       "grok-4.3",
-		Temperature: 0.4,
-		MaxTokens:   10000,
-		GrammarMode: GrammarNone,
+		Model:          "xiaomimimo/mimo-v2.5-pro",
+		Temperature:    0.4,
+		MaxTokens:      10000,
+		GrammarMode:    GrammarNone,
+		EnableThinking: true,
 	}
 
 	// --- SlotExecutor: KindCode (code-gen specialist) ------------------------
 	executorCode := Config{
-		Model:       "grok-4.3",
-		Temperature: 0.2,
-		MaxTokens:   4096,
-		GrammarMode: GrammarNone,
+		Model:          "xiaomimimo/mimo-v2.5-pro",
+		Temperature:    0.2,
+		MaxTokens:      4096,
+		GrammarMode:    GrammarNone,
+		EnableThinking: true,
 	}
 
 	// --- SlotExecutor: KindSummarize (long-context specialist) ---------------
 	executorSummarize := Config{
-		Model:       "grok-4.3",
+		Model:       "xiaomimimo/mimo-v2.5-pro",
 		Temperature: 0.2,
 		MaxTokens:   2048,
 		GrammarMode: GrammarNone,
@@ -420,15 +424,16 @@ func DefaultRegistry() *ModelRegistry {
 
 	// --- SlotExecutor: KindWrite (prose specialist) --------------------------
 	executorWrite := Config{
-		Model:       "grok-4.3",
-		Temperature: 0.6,
-		MaxTokens:   2048,
-		GrammarMode: GrammarNone,
+		Model:          "xiaomimimo/mimo-v2.5-pro",
+		Temperature:    0.6,
+		MaxTokens:      2048,
+		GrammarMode:    GrammarNone,
+		EnableThinking: true,
 	}
 
 	// --- SlotExecutor: KindTransform (structured shape, no creativity) -------
 	executorTransform := Config{
-		Model:       "grok-4.3",
+		Model:       "xiaomimimo/mimo-v2.5-pro",
 		Temperature: 0,
 		Seed:        42,
 		MaxTokens:   1024,
@@ -437,7 +442,7 @@ func DefaultRegistry() *ModelRegistry {
 
 	// --- SlotExecutor: KindClassify (pick-from-list with grammar) ------------
 	executorClassify := Config{
-		Model:       "grok-4.3",
+		Model:       "xiaomimimo/mimo-v2.5-pro",
 		Temperature: 0,
 		Seed:        42,
 		MaxTokens:   64,
@@ -447,10 +452,11 @@ func DefaultRegistry() *ModelRegistry {
 
 	// --- SlotExecutor: KindHardReason (opt-in frontier) ----------------------
 	executorHardReason := Config{
-		Model:       "grok-4.3",
-		Temperature: 0.2,
-		MaxTokens:   4096,
-		GrammarMode: GrammarNone,
+		Model:          "xiaomimimo/mimo-v2.5-pro",
+		Temperature:    0.2,
+		MaxTokens:      4096,
+		GrammarMode:    GrammarNone,
+		EnableThinking: true,
 	}
 
 	// --- SlotLiaison (user-facing conversational narrator) -------------------
@@ -459,7 +465,7 @@ func DefaultRegistry() *ModelRegistry {
 	// without latency spikes. Free-form prose; no seed (natural variation is
 	// fine — the Liaison is a side-channel and is never replayed).
 	liaison := Config{
-		Model:       "grok-4.3",
+		Model:       "xiaomimimo/mimo-v2.5-pro",
 		Temperature: 0.5,
 		MaxTokens:   1024,
 		GrammarMode: GrammarNone,

@@ -39,6 +39,7 @@ const (
 	ProviderTogether
 	ProviderBaseten
 	ProviderXai
+	ProviderNovita
 )
 
 func (p Provider) String() string {
@@ -51,6 +52,8 @@ func (p Provider) String() string {
 		return "baseten"
 	case ProviderXai:
 		return "xai"
+	case ProviderNovita:
+		return "novita"
 	}
 	return "unknown"
 }
@@ -66,6 +69,8 @@ const (
 	// xAI (Grok) serves grok-* directly on an OpenAI-compatible /v1 surface.
 	DefaultXaiChat       = "https://api.x.ai/v1/chat/completions"
 	DefaultXaiEmbeddings = "https://api.x.ai/v1/embeddings"
+	// Novita serves the Xiaomi MiMo family on an OpenAI-compatible surface.
+	DefaultNovitaChat = "https://api.novita.ai/openai/v1/chat/completions"
 )
 
 // Endpoint identifies which upstream URL to forward to.
@@ -144,6 +149,7 @@ type Options struct {
 	BasetenEmbeddingsURL   string
 	XaiChatURL             string
 	XaiEmbeddingsURL       string
+	NovitaChatURL          string
 }
 
 // New constructs a Decider with the supplied options.
@@ -161,6 +167,7 @@ func New(opts Options) *Decider {
 			ProviderTogether:  pick(opts.TogetherChatURL, DefaultTogetherChat),
 			ProviderBaseten:   pick(opts.BasetenChatURL, DefaultBasetenChat),
 			ProviderXai:       pick(opts.XaiChatURL, DefaultXaiChat),
+			ProviderNovita:    pick(opts.NovitaChatURL, DefaultNovitaChat),
 		},
 		embeddingURL: map[Provider]string{
 			ProviderFireworks: pick(opts.FireworksEmbeddingsURL, DefaultFireworksEmbeddings),
@@ -278,6 +285,8 @@ func detectProvider(model string) (Provider, error) {
 		return ProviderFireworks, nil
 	case strings.HasPrefix(strings.ToLower(model), "grok-"):
 		return ProviderXai, nil
+	case strings.HasPrefix(strings.ToLower(model), "xiaomimimo/"):
+		return ProviderNovita, nil
 	case strings.Contains(model, "/"):
 		return ProviderBaseten, nil
 	}

@@ -183,9 +183,12 @@ func (c *Client) Chat(ctx context.Context, req ChatRequest) (*ChatResult, error)
 	// keep reasoning off; other Grok models (grok-build-*) ignore/reject it, so
 	// it is omitted for them. Kimi (moonshotai/*, Baseten) keeps the legacy
 	// opt-in chat_template_args.
-	if mcllm.IsXaiModel(c.model) && supportsReasoningEffort(c.model) {
+	switch {
+	case mcllm.IsXaiModel(c.model) && supportsReasoningEffort(c.model):
 		wire.ReasoningEffort = reasoningEffort(c.enableThinking)
-	} else if c.enableThinking {
+	case mcllm.IsNovitaModel(c.model):
+		wire.ReasoningEffort = novitaReasoningEffort(c.enableThinking)
+	case c.enableThinking:
 		if args := enableThinkingArgs(c.model); args != nil {
 			wire.ChatTemplateArgs = args
 		}
@@ -584,6 +587,16 @@ func reasoningEffort(enabled bool) string {
 	return "none"
 }
 
+// novitaReasoningEffort maps the per-role enableThinking flag onto MiMo's
+// reasoning_effort enum: ON → "high" (the agentic reasoning posture pinned for
+// the fleet), OFF → "low" (token-tight background roles keep reasoning minimal).
+func novitaReasoningEffort(enabled bool) string {
+	if enabled {
+		return "high"
+	}
+	return "low"
+}
+
 // enableThinkingArgs returns the chat_template_args that turn reasoning ON for
 // Baseten-served models where it is OPT-IN: Kimi (moonshotai/*) emits its
 // chain-of-thought as visible `content` unless enable_thinking makes the
@@ -600,19 +613,19 @@ func enableThinkingArgs(model string) map[string]any {
 // --- wire types (OpenAI chat-completions with tools) ---
 
 type chatRequestWire struct {
-	Model            string         `json:"model"`
-	Messages         []wireMessage  `json:"messages"`
-	Temperature      float64        `json:"temperature"`
-	MaxTokens        int            `json:"max_tokens,omitempty"`
+	Model       string        `json:"model"`
+	Messages    []wireMessage `json:"messages"`
+	Temperature float64       `json:"temperature"`
+	MaxTokens   int           `json:"max_tokens,omitempty"`
 	// MaxCompletionTokens is xAI/grok's replacement for the deprecated
 	// max_tokens; it bounds only visible output (not reasoning/tool tokens).
-	MaxCompletionTokens int    `json:"max_completion_tokens,omitempty"`
-	Seed                *int64 `json:"seed,omitempty"`
-	Tools            []Tool         `json:"tools,omitempty"`
-	ToolChoice       interface{}    `json:"tool_choice,omitempty"`
-	Stream           bool           `json:"stream,omitempty"`
-	StreamOptions    *streamOptions `json:"stream_options,omitempty"`
-	ChatTemplateArgs map[string]any `json:"chat_template_args,omitempty"`
+	MaxCompletionTokens int            `json:"max_completion_tokens,omitempty"`
+	Seed                *int64         `json:"seed,omitempty"`
+	Tools               []Tool         `json:"tools,omitempty"`
+	ToolChoice          interface{}    `json:"tool_choice,omitempty"`
+	Stream              bool           `json:"stream,omitempty"`
+	StreamOptions       *streamOptions `json:"stream_options,omitempty"`
+	ChatTemplateArgs    map[string]any `json:"chat_template_args,omitempty"`
 	// ReasoningEffort is xAI's reasoning-depth control ("none"|"low"|"medium"|
 	// "high"); set ONLY for grok-4.3 (omitempty keeps every other model's wire
 	// shape unchanged).
