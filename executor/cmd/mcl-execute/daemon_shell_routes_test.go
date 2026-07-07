@@ -189,7 +189,7 @@ func TestForgeShell_E2E(t *testing.T) {
 			Shell:               "/bin/sh",
 			IdleTimeout:         10 * time.Second,
 			MaxFrameBytes:       64 * 1024,
-			MaxOutputFrameBytes: 4096,
+			MaxOutputFrameBytes: 8192,
 			HandshakeTimeout:    5 * time.Second,
 		},
 	}

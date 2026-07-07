@@ -284,7 +284,7 @@ func TestDecodeWithMockServer(t *testing.T) {
 		Endpoint:    server.URL,
 		Temperature: 0,
 		Seed:        42,
-		MaxTokens:   4096,
+		MaxTokens:   8192,
 	})
 	if err != nil {
 		t.Fatalf("New: %v", err)

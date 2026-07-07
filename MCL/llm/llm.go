@@ -143,7 +143,7 @@ type Config struct {
 	// Seed for reproducible generation (D11). 0 means no seed param sent.
 	Seed int64
 
-	// MaxTokens caps output length. Default 4096.
+	// MaxTokens caps output length. Default 8192.
 	MaxTokens int
 
 	// EnableThinking opts this client into extended reasoning for models
@@ -352,7 +352,7 @@ func New(cfg *Config) (interpreter.LLM, error) {
 
 	// Defaults
 	if local.MaxTokens == 0 {
-		local.MaxTokens = 4096
+		local.MaxTokens = 8192
 	}
 	if local.Timeout == 0 {
 		local.Timeout = 90 * time.Second

@@ -409,7 +409,7 @@ func DefaultRegistry() *ModelRegistry {
 	executorCode := Config{
 		Model:          "xiaomimimo/mimo-v2.5-pro",
 		Temperature:    0.2,
-		MaxTokens:      4096,
+		MaxTokens:      8192,
 		GrammarMode:    GrammarNone,
 		EnableThinking: true,
 	}
@@ -454,7 +454,7 @@ func DefaultRegistry() *ModelRegistry {
 	executorHardReason := Config{
 		Model:          "xiaomimimo/mimo-v2.5-pro",
 		Temperature:    0.2,
-		MaxTokens:      4096,
+		MaxTokens:      8192,
 		GrammarMode:    GrammarNone,
 		EnableThinking: true,
 	}
@@ -581,12 +581,12 @@ func ForgeRegistry() *ModelRegistry {
 	compiler := gpt55(0, 512)
 	compiler.Seed = 42
 
-	planner := opus(0.2, 4096)
+	planner := opus(0.2, 8192)
 
-	executorReason := opus(0.4, 4096)
+	executorReason := opus(0.4, 8192)
 	executorCode := opus(0.2, 8192)
-	executorSummarize := gpt55(0.2, 4096)
-	executorWrite := opus(0.6, 4096)
+	executorSummarize := gpt55(0.2, 8192)
+	executorWrite := opus(0.6, 8192)
 	executorTransform := gpt55(0, 1024)
 	executorTransform.Seed = 42
 	executorClassify := gpt55(0, 128)

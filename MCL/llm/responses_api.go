@@ -19,7 +19,7 @@
 //	  "model":        "gpt-5.5",
 //	  "instructions": "<concatenated system messages>",
 //	  "input":        [{"role":"user","content":"..."}, ...],
-//	  "max_output_tokens": 4096,
+//	  "max_output_tokens": 8192,
 //	  "temperature":  0.4,
 //	  "stream":       false
 //	}
@@ -311,7 +311,7 @@ func (c *responsesClient) buildRequest(messages []interpreter.Message) *response
 
 	maxOut := c.cfg.MaxTokens
 	if maxOut == 0 {
-		maxOut = 4096
+		maxOut = 8192
 	}
 
 	req := &responsesRequest{

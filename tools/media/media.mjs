@@ -62,7 +62,7 @@ const TTS_VOICE = (process.env.MATRIX_MEDIA_TTS_VOICE || 'Emily').trim()
 const TTS_LANGUAGE = (process.env.MATRIX_MEDIA_TTS_LANGUAGE || 'en-US').trim()
 
 const MEDIA_DIR = (process.env.MATRIX_MEDIA_DIR || join(tmpdir(), 'matrix-media')).replace(/\/+$/, '')
-const MEDIA_BASE = '/' + (process.env.MATRIX_MEDIA_BASE || '/media').replace(/^\/+|\/+$/g, '')
+const MEDIA_BASE = '/' + (process.env.MATRIX_MEDIA_BASE || '/data/media').replace(/^\/+|\/+$/g, '')
 
 const HTTP_TIMEOUT_MS = clampInt(process.env.MATRIX_MEDIA_TIMEOUT_MS, 120000, 5000, 300000)
 const TASK_POLL_MS = clampInt(process.env.MATRIX_MEDIA_TASK_POLL_MS, 3000, 1000, 60000)

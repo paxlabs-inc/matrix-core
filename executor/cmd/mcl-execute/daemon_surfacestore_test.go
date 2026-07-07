@@ -16,7 +16,7 @@ package main
 // isolation:
 //
 //  1. NON-BLOCKING UNDER SATURATION (R16.1/16.2): flooding the wired path far
-//     beyond the store's writer-queue depth (queueDepth = 4096) must NOT slow the
+//     beyond the store's writer-queue depth (queueDepth = 8192) must NOT slow the
 //     broker publish path. A saturated writer queue (which drops) can never push
 //     back through the tee subscriber channel to stall broker.Publish or the agent
 //     loop. We measure that every Publish returns promptly and the whole burst
@@ -57,7 +57,7 @@ func TestSurfaceStoreTee_NonBlockingDropOnSaturation(t *testing.T) {
 	const (
 		intentID       = "intent_tee_saturation"
 		conversationID = "conv_tee_saturation"
-		// Far beyond the store writer queue depth (4096) so the queue is
+		// Far beyond the store writer queue depth (8192) so the queue is
 		// guaranteed to saturate and Record must drop. The producer is orders of
 		// magnitude faster than the disk writer (which open/append/close-s per
 		// frame), so the queue fills almost immediately.

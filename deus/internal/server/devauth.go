@@ -42,7 +42,7 @@ import (
 const (
 	devAuthNonceTTL     = 5 * time.Minute
 	devAuthTokenTTL     = 24 * time.Hour
-	maxSIWEMessageBytes = 4096
+	maxSIWEMessageBytes = 8192
 	maxDevAuthBodyBytes = 16 * 1024
 )
 

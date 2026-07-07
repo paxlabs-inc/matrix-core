@@ -98,7 +98,7 @@ func runServe(args []string) {
 	defer stop()
 
 	// --- models ---
-	main, err := newClient(cfg.MainModel, 0.4, 4096, true, cfg)
+	main, err := newClient(cfg.MainModel, 0.4, 8192, true, cfg)
 	if err != nil {
 		fatal("cannot start main model %q: %v\n      set XAI_API_KEY (or MATRIX_GATEWAY_URL + MATRIX_GATEWAY_TOKEN) and retry.", cfg.MainModel, err)
 	}
@@ -109,7 +109,7 @@ func runServe(args []string) {
 	// Background sub-agents (spawn_subagents) run on the main-capability model
 	// but with EXTENDED REASONING OFF: only the user-facing Neo loop and the
 	// core MCL pipeline think. nil falls back to the main client in the swarm.
-	subMain, err := newClient(cfg.MainModel, 0.4, 4096, false, cfg)
+	subMain, err := newClient(cfg.MainModel, 0.4, 8192, false, cfg)
 	if err != nil {
 		subMain = nil
 	}

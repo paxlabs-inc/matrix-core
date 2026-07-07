@@ -111,7 +111,7 @@ RUN set -eux; \
         ca-certificates curl git tini gnupg \
         build-essential pkg-config \
         python3 python3-pip python3-venv \
-        unzip zstd jq; \
+        unzip zstd jq ffmpeg tmux; \
     curl -fsSL https://deb.nodesource.com/setup_22.x | bash -; \
     apt-get install -y --no-install-recommends nodejs; \
     rm -rf /var/lib/apt/lists/*; \
@@ -209,6 +209,35 @@ RUN set -eux; \
     # Rust: clippy as a rustup component on the stable toolchain installed above.
     rustup component add clippy; \
     cargo clippy --version
+
+# Docker CLI (+ buildx/compose plugins), CLI-ONLY — no daemon is baked. Lets the
+# exec shell drive `docker build` / `docker compose` against a mounted socket or
+# a remote host (the Hermes model). Daemon/DinD is intentionally NOT included.
+RUN set -eux; \
+    install -m 0755 -d /etc/apt/keyrings; \
+    curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc; \
+    chmod a+r /etc/apt/keyrings/docker.asc; \
+    echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo "$VERSION_CODENAME") stable" \
+        > /etc/apt/sources.list.d/docker.list; \
+    apt-get update; \
+    apt-get install -y --no-install-recommends \
+        docker-ce-cli docker-buildx-plugin docker-compose-plugin; \
+    rm -rf /var/lib/apt/lists/*; \
+    docker --version; \
+    docker buildx version; \
+    docker compose version
+
+# Extra language package managers so lockfile-pinned projects build without
+# friction: yarn + bun (JS, alongside npm/pnpm above) and poetry (Python,
+# alongside uv). bun installs into /usr/local/bin via BUN_INSTALL; poetry is a
+# uv-managed tool (shim in /root/.local/bin, already on PATH).
+RUN set -eux; \
+    npm install -g yarn; \
+    yarn --version; \
+    curl -fsSL https://bun.sh/install | BUN_INSTALL=/usr/local bash; \
+    bun --version; \
+    uv tool install poetry; \
+    poetry --version
 
 # Pre-install MCP servers so first cold-start does not hit registries.
 # Versions PINNED to releases whose tools/list exactly matches default.json.

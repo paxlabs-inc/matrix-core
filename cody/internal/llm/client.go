@@ -68,6 +68,10 @@ type Client struct {
 	enableThinking bool
 
 	httpClient *http.Client
+	// streamIdle bounds silence BETWEEN stream chunks (NOT total request
+	// duration): the idle-stall watchdog in Chat cancels the request only if no
+	// bytes arrive for this long, so a long but healthy generation survives.
+	streamIdle time.Duration
 }
 
 // New builds a function-calling client from an mcl/llm.Config.
@@ -115,12 +119,20 @@ func New(cfg mcllm.Config) (*Client, error) {
 
 	maxTok := cfg.MaxTokens
 	if maxTok == 0 {
-		maxTok = 4096
+		maxTok = 8192
 	}
-	timeout := cfg.Timeout
-	if timeout == 0 {
-		timeout = 120 * time.Second
+	// idle is the SILENCE budget between stream chunks, NOT a total-request
+	// deadline. A total http.Client.Timeout kills a long but healthy streaming
+	// generation mid-body-read (the "context deadline exceeded ... while reading
+	// body" planner failure), so Client.Timeout stays 0 and we govern with (a)
+	// ResponseHeaderTimeout for time-to-first-byte and (b) an idle-stall
+	// watchdog over the streaming body (see Chat).
+	idle := cfg.Timeout
+	if idle == 0 {
+		idle = 120 * time.Second
 	}
+	transport := http.DefaultTransport.(*http.Transport).Clone()
+	transport.ResponseHeaderTimeout = idle
 
 	return &Client{
 		model:           cfg.Model,
@@ -136,7 +148,8 @@ func New(cfg mcllm.Config) (*Client, error) {
 		maxTokens:       maxTok,
 		seed:            cfg.Seed,
 		enableThinking:  cfg.EnableThinking,
-		httpClient:      &http.Client{Timeout: timeout},
+		httpClient:      &http.Client{Timeout: 0, Transport: transport},
+		streamIdle:      idle,
 	}, nil
 }
 
@@ -210,7 +223,14 @@ func (c *Client) Chat(ctx context.Context, req ChatRequest) (*ChatResult, error)
 		return nil, fmt.Errorf("neo/llm: marshal request: %w", err)
 	}
 
-	httpReq, err := c.newHTTPRequest(ctx, body)
+	// Stream-aware cancellation: there is no total-request timeout (that would
+	// strangle a long healthy generation). An idle-stall watchdog over the
+	// response body cancels this context only if the stream goes silent for
+	// streamIdle.
+	streamCtx, cancelStream := context.WithCancel(ctx)
+	defer cancelStream()
+
+	httpReq, err := c.newHTTPRequest(streamCtx, body)
 	if err != nil {
 		return nil, err
 	}
@@ -274,7 +294,9 @@ func (c *Client) Chat(ctx context.Context, req ChatRequest) (*ChatResult, error)
 	// pre-cleaned incremental fragments to req.OnDelta (when set) as the bytes
 	// arrive off the wire — real token-by-token streaming, not a post-hoc
 	// replay of a buffered body. With OnDelta nil this is a pure parse.
-	msg, finish, usage, err := aggregateStreamReader(resp.Body, req.OnDelta)
+	stream := newIdleTimeoutReader(resp.Body, c.streamIdle, cancelStream)
+	defer stream.stop()
+	msg, finish, usage, err := aggregateStreamReader(stream, req.OnDelta)
 	if err != nil {
 		return nil, fmt.Errorf("neo/llm: %s parse stream: %w", c.provider, err)
 	}

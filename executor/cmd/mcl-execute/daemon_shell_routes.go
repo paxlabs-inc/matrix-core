@@ -135,8 +135,8 @@ type shellExitMessage struct {
 }
 
 var shellUpgrader = websocket.Upgrader{
-	ReadBufferSize:  4096,
-	WriteBufferSize: 4096,
+	ReadBufferSize:  8192,
+	WriteBufferSize: 8192,
 	// Origin-pinned: this route lands in an interactive shell, so an
 	// unrestricted CheckOrigin would be a cross-site WebSocket-hijacking /
 	// DNS-rebinding path — any page a logged-in operator visits could open

@@ -211,7 +211,7 @@ func (c *Client) Call(model string, messages []ChatMessage, tools []ToolDef, tem
 		Messages:    messages,
 		Tools:       tools,
 		Temperature: temperature,
-		MaxTokens:   4096,
+		MaxTokens:   8192,
 	}
 	if len(tools) > 0 {
 		req.ToolChoice = "auto"

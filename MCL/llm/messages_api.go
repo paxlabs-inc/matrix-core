@@ -17,7 +17,7 @@
 //	Authorization: Bearer <OPENCODE_API_KEY>   (or x-api-key for direct Anthropic)
 //	{
 //	  "model":      "claude-opus-4-7",
-//	  "max_tokens": 4096,
+//	  "max_tokens": 8192,
 //	  "system":     "<system message text>",         // concatenated system msgs
 //	  "messages":   [{"role":"user","content":"..."}, ...],
 //	  "temperature": 0.4,
@@ -223,7 +223,7 @@ func (c *messagesClient) buildRequest(messages []interpreter.Message) *messagesR
 
 	maxTokens := c.cfg.MaxTokens
 	if maxTokens == 0 {
-		maxTokens = 4096
+		maxTokens = 8192
 	}
 
 	req := &messagesRequest{

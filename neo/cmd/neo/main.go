@@ -75,7 +75,7 @@ func runInteractive() {
 	in := bufio.NewReader(os.Stdin)
 
 	// --- main + cheap models ---
-	main, err := newClient(cfg.MainModel, 0.4, 4096, true, cfg)
+	main, err := newClient(cfg.MainModel, 0.4, 8192, true, cfg)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "neo: cannot start the model %q: %v\n", cfg.MainModel, err)
 		fmt.Fprintf(os.Stderr, "      set FIREWORKS_API_KEY (or MATRIX_GATEWAY_URL + MATRIX_GATEWAY_TOKEN) and retry.\n")
