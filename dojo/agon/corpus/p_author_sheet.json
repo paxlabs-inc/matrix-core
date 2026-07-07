@@ -1,0 +1,29 @@
+{
+  "id": "p_author_sheet",
+  "suite": "agentic",
+  "kind": "plain",
+  "title": "Planner authors a sheet; we execute its verify commands",
+  "capabilities": [
+    "agentic.planning.satisfiable_verify"
+  ],
+  "difficulty": "hard",
+  "seed_source": "dojo: 2026-07-06 incident (planner authored unpassable verify)",
+  "contamination_class": "public",
+  "scorer": "score_planner",
+  "system": "You are the Cody planner. You author a self-contained task sheet for a fresh-context worker agent. Respond with STRICT JSON only - no prose, no markdown fences. The verification commands you author are executed verbatim by a shell harness; a command that cannot pass against a correct deliverable destroys the task, so author only commands you are certain are well-formed POSIX shell.",
+  "sheet": "Author a task sheet as STRICT JSON with exactly these keys:\n{\"goal\": string, \"acceptance_criteria\": [string], \"verification\": [string], \"deliverable_shape\": string}\n\nThe task to plan: a worker must create index.html for the 'Paxie Slots' page. The correct deliverable will contain: <title>Paxie Slots</title>; CSS custom properties --bg:#0C0D11 and --blue:#5B8FD6 inside a :root block (each on its own line); SVG gradient defs with id=\"g-U\"; and elements with id=\"reels\" and id=\"spin\".\n\nThe \"verification\" array must contain POSIX shell commands that will be executed verbatim with the workspace as cwd; every command must exit 0 against a correct deliverable. Verify at minimum: the file exists, the title, both CSS custom properties, and the reels and spin ids.",
+  "golden": {
+    "correct": {
+      "result": {
+        "content": "{\"goal\": \"Create index.html for the Paxie Slots page.\", \"acceptance_criteria\": [\"file exists\", \"title present\", \"css vars present\", \"reels+spin ids present\"], \"verification\": [\"test -f index.html\", \"grep -q '<title>Paxie Slots</title>' index.html\", \"grep -q -- '--bg:#0C0D11' index.html\", \"grep -q -- '--blue:#5B8FD6' index.html\", \"grep -q 'id=\\\"g-U\\\"' index.html\", \"grep -q 'id=\\\"reels\\\"' index.html\", \"grep -q 'id=\\\"spin\\\"' index.html\"], \"deliverable_shape\": \"index.html with head+style+svg+body\"}"
+      }
+    },
+    "incorrect": {
+      "result": {
+        "content": "{\"goal\": \"make the page\", \"acceptance_criteria\": [\"file exists\"], \"verification\": [\"grep -q '--bg' index.html\"], \"deliverable_shape\": \"index.html\"}"
+      }
+    }
+  },
+  "temperature": 0.2,
+  "max_tokens": 16000
+}

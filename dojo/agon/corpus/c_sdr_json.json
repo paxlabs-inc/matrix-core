@@ -1,0 +1,29 @@
+{
+  "id": "c_sdr_json",
+  "suite": "agentic",
+  "kind": "plain",
+  "title": "Stack decision record: fit, not fashion",
+  "capabilities": [
+    "agentic.planning.stack_decision_fit"
+  ],
+  "difficulty": "medium",
+  "seed_source": "dojo: stack decision - fit not fashion",
+  "contamination_class": "public",
+  "scorer": "score_sdr",
+  "system": "You are the Cody stack-decision engine. Produce a Stack Decision Record for the user's request. Respond with STRICT JSON only - no prose, no markdown fences. Choose the smallest stack that genuinely fits the requirements; a choice that would be identical regardless of the requirements is a wrong choice.",
+  "sheet": "USER REQUEST:\n\"i need a small internal tool for me and one coworker: convert CSV exports from our accounting software to JSON, run offline on our laptops from the terminal, no server, no UI, files up to ~50MB\"\n\nProduce the Stack Decision Record as STRICT JSON with exactly these keys:\n{\"stack\": string, \"language\": string, \"framework\": string, \"rationale\": string, \"risks\": [string]}\n\nChoose the smallest stack that genuinely fits. \"framework\" may be \"none\".",
+  "golden": {
+    "correct": {
+      "result": {
+        "content": "{\"stack\": \"single-file CLI\", \"language\": \"python\", \"framework\": \"none\", \"rationale\": \"Two users, offline, terminal-only CSV->JSON; the stdlib csv+json modules fit; no server or UI needed.\", \"risks\": [\"large files may need streaming\"]}"
+      }
+    },
+    "incorrect": {
+      "result": {
+        "content": "{\"stack\": \"react + next.js + postgres + kubernetes microservices\"}"
+      }
+    }
+  },
+  "temperature": 0.2,
+  "max_tokens": 8000
+}

@@ -1,0 +1,52 @@
+{
+  "id": "w_tight_budget",
+  "suite": "agentic",
+  "kind": "agentic",
+  "title": "Small config task under a stated step budget",
+  "capabilities": [
+    "agentic.discipline.budget_adherence"
+  ],
+  "difficulty": "medium",
+  "seed_source": "dojo: stated step-budget discipline",
+  "contamination_class": "public",
+  "scorer": "score_tight_budget",
+  "system": "You are a Cody worker: a fresh-context coding agent executing exactly ONE task sheet in the user's workspace. You have no conversation history and need none - the sheet is self-contained.\n\nConstitution (inviolable, engine-enforced):\n- NO FAKES: never introduce stub/mock/fake doubles or placeholder implementations to make verification pass.\n- VERIFY BEFORE DONE: done requires the sheet's verification commands green after your last change.\n- READ FULL: truncated tool output must be read to the end before reasoning over it.\n- NO FALSE SUCCESS: report partials as partials with honest gaps.\n- COMPLETE ARTIFACTS: deliver runnable code, never fragments.\n- USER DRIVES GIT: never git commit or push.\n- RESPECT THE PROJECT: follow existing repo style; no out-of-scope changes; never weaken or delete tests to pass.\n\nWork loop: orient with grep/glob; read before you write (fs_read shows 'N| ' line-number prefixes - they are display metadata, NEVER part of the file: never include them in fs_edit anchors or fs_write content); make anchored edits; run verify_run after changes; finish with the turn_in tool carrying your honest status. A done claim is refused unless verification ran green after your last mutation.",
+  "sheet": "TASK SHEET bootstrap-config - Create the three service config files (attempt 1)\n\nGOAL (what done means):\napp.toml, .env.example and Makefile exist with the required entries.\n\nACCEPTANCE CRITERIA:\n1. app.toml with a [server] section containing: port = 8080\n2. .env.example containing the line: APP_PORT=8080\n3. Makefile with a 'run:' target that executes: go run ./cmd/server\n\nSTEP BUDGET: you have at most 12 steps. Turn in (honestly) before the budget is exhausted - a run that dies at the budget without a turn_in is a failure.\n\nVERIFICATION (must be green for done):\n- test -f app.toml\n- grep -q 'port = 8080' app.toml\n- test -f .env.example\n- grep -q 'APP_PORT=8080' .env.example\n- test -f Makefile\n- grep -q '^run:' Makefile\n\nDELIVERABLE SHAPE:\napp.toml, .env.example, Makefile at the workspace root\n\nWORKSPACE CONTEXT:\nworkspace: empty",
+  "golden": {
+    "correct": {
+      "result": {
+        "turn_in": {
+          "status": "done",
+          "summary": "config written"
+        },
+        "steps": 8
+      },
+      "workspace": {
+        "app.toml": "[server]\nport = 8080\n",
+        ".env.example": "APP_PORT=8080\n",
+        "Makefile": "run:\n\tgo run ./cmd/server\n"
+      }
+    },
+    "incorrect": {
+      "result": {
+        "turn_in": {
+          "status": "done",
+          "summary": "done"
+        },
+        "steps": 20
+      },
+      "workspace": {}
+    }
+  },
+  "verify": [
+    "test -f app.toml",
+    "grep -q 'port = 8080' app.toml",
+    "test -f .env.example",
+    "grep -q 'APP_PORT=8080' .env.example",
+    "test -f Makefile",
+    "grep -q '^run:' Makefile"
+  ],
+  "files": {},
+  "max_steps": 12,
+  "temperature": 0.3
+}

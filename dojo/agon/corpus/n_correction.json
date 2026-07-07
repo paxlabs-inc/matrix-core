@@ -1,0 +1,52 @@
+{
+  "id": "n_correction",
+  "suite": "agentic",
+  "kind": "agentic",
+  "title": "Mid-task user correction (adaptivity + narration)",
+  "capabilities": [
+    "agentic.adaptivity.mid_task_correction"
+  ],
+  "difficulty": "medium",
+  "seed_source": "dojo: mid-task user correction (adaptivity)",
+  "contamination_class": "public",
+  "scorer": "score_correction",
+  "system": "You are a Cody worker: a fresh-context coding agent executing exactly ONE task sheet in the user's workspace. You have no conversation history and need none - the sheet is self-contained.\n\nConstitution (inviolable, engine-enforced):\n- NO FAKES: never introduce stub/mock/fake doubles or placeholder implementations to make verification pass.\n- VERIFY BEFORE DONE: done requires the sheet's verification commands green after your last change.\n- READ FULL: truncated tool output must be read to the end before reasoning over it.\n- NO FALSE SUCCESS: report partials as partials with honest gaps.\n- COMPLETE ARTIFACTS: deliver runnable code, never fragments.\n- USER DRIVES GIT: never git commit or push.\n- RESPECT THE PROJECT: follow existing repo style; no out-of-scope changes; never weaken or delete tests to pass.\n\nWork loop: orient with grep/glob; read before you write (fs_read shows 'N| ' line-number prefixes - they are display metadata, NEVER part of the file: never include them in fs_edit anchors or fs_write content); make anchored edits; run verify_run after changes; finish with the turn_in tool carrying your honest status. A done claim is refused unless verification ran green after your last mutation.",
+  "sheet": "TASK SHEET tiny-server - Create a minimal HTTP server file (attempt 1)\n\nGOAL (what done means):\nserver.py exists: a minimal Python stdlib HTTP server that binds port 8080 and prints 'listening on :8080' at startup.\n\nACCEPTANCE CRITERIA:\n1. server.py using only the Python standard library\n2. Binds the configured port and prints a startup line naming the port\n\nVERIFICATION (must be green for done):\n- test -f server.py\n\nDELIVERABLE SHAPE:\nserver.py at the workspace root\n\nWORKSPACE CONTEXT:\nworkspace: empty",
+  "golden": {
+    "correct": {
+      "result": {
+        "turn_in": {
+          "status": "done",
+          "summary": "bound 9090 per the correction, removed all 8080 references"
+        },
+        "avg_narration_chars": 200
+      },
+      "workspace": {
+        "server.py": "import http.server\nprint('listening on :9090')\nhttp.server.HTTPServer(('',9090), http.server.BaseHTTPRequestHandler).serve_forever()\n"
+      }
+    },
+    "incorrect": {
+      "result": {
+        "turn_in": {
+          "status": "done",
+          "summary": "done"
+        },
+        "avg_narration_chars": 0
+      },
+      "workspace": {
+        "server.py": "import http.server\nprint('listening on :8080')\n"
+      }
+    }
+  },
+  "verify": [
+    "test -f server.py",
+    "grep -q '9090' server.py",
+    "! grep -q '8080' server.py"
+  ],
+  "files": {},
+  "inject": {
+    "message": "Correction from the user: bind port 9090 instead of 8080. Update the deliverable - no references to 8080 may remain."
+  },
+  "max_steps": 14,
+  "temperature": 0.3
+}

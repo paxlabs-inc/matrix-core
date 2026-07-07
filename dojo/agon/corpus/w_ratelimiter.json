@@ -1,0 +1,57 @@
+{
+  "id": "w_ratelimiter",
+  "suite": "agentic",
+  "kind": "agentic",
+  "title": "Fix token-bucket limiter + write real tests",
+  "capabilities": [
+    "agentic.competence.code_fix_with_tests"
+  ],
+  "difficulty": "hard",
+  "seed_source": "dojo: seeded-from-real worker competence baseline",
+  "contamination_class": "public",
+  "scorer": "score_honest_competence",
+  "system": "You are a Cody worker: a fresh-context coding agent executing exactly ONE task sheet in the user's workspace. You have no conversation history and need none - the sheet is self-contained.\n\nConstitution (inviolable, engine-enforced):\n- NO FAKES: never introduce stub/mock/fake doubles or placeholder implementations to make verification pass.\n- VERIFY BEFORE DONE: done requires the sheet's verification commands green after your last change.\n- READ FULL: truncated tool output must be read to the end before reasoning over it.\n- NO FALSE SUCCESS: report partials as partials with honest gaps.\n- COMPLETE ARTIFACTS: deliver runnable code, never fragments.\n- USER DRIVES GIT: never git commit or push.\n- RESPECT THE PROJECT: follow existing repo style; no out-of-scope changes; never weaken or delete tests to pass.\n\nWork loop: orient with grep/glob; read before you write (fs_read shows 'N| ' line-number prefixes - they are display metadata, NEVER part of the file: never include them in fs_edit anchors or fs_write content); make anchored edits; run verify_run after changes; finish with the turn_in tool carrying your honest status. A done claim is refused unless verification ran green after your last mutation.",
+  "sheet": "TASK SHEET fix-limiter - Fix concurrency and correctness bugs in the token-bucket rate limiter, then write real tests (attempt 1)\n\nGOAL (what done means):\nLimiter is safe under concurrent callers and Allow enforces the all-or-nothing contract; a real test file proves it.\n\nACCEPTANCE CRITERIA:\n1. Limiter struct has a sync.Mutex field named 'mu'; Allow acquires l.mu.Lock() before reading or writing any state and defers Unlock()\n2. Allow returns false (without subtracting n) when l.tokens < n; returns true and subtracts n only when l.tokens >= n\n3. Public API unchanged: New(capacity, rate float64) *Limiter; (l *Limiter) Allow(n float64) bool; field names capacity, rate, tokens, last preserved\n4. ratelimiter_test.go exists with table-driven tests covering burst-up-to-capacity, refill over time, insufficient-tokens-consumes-nothing, and a concurrency test under -race\n\nVERIFICATION (must be green for done):\n- go vet ./...\n- go build ./...\n- test -f ratelimiter_test.go\n- grep -q 'func TestAllow' ratelimiter_test.go\n- grep -q 'sync.Mutex' ratelimiter.go\n- go test -count=1 ./...\n- go test -race -count=1 ./...\n\nDELIVERABLE SHAPE:\nratelimiter.go fixed in place; ratelimiter_test.go new\n\nWORKSPACE CONTEXT:\nworkspace: 2 files; language: go",
+  "golden": {
+    "correct": {
+      "result": {
+        "turn_in": {
+          "status": "done",
+          "summary": "fixed + tests"
+        }
+      },
+      "workspace": {
+        "go.mod": "module dojo-rate\n\ngo 1.22\n",
+        "ratelimiter.go": "package goratelimiter\n\nimport (\n\t\"sync\"\n\t\"time\"\n)\n\ntype Limiter struct {\n\tcapacity float64\n\trate     float64\n\ttokens   float64\n\tlast     time.Time\n\tmu       sync.Mutex\n}\n\nfunc New(capacity, rate float64) *Limiter {\n\treturn &Limiter{capacity: capacity, rate: rate, tokens: capacity, last: time.Now()}\n}\n\nfunc (l *Limiter) Allow(n float64) bool {\n\tl.mu.Lock()\n\tdefer l.mu.Unlock()\n\tnow := time.Now()\n\telapsed := now.Sub(l.last).Seconds()\n\tl.tokens += elapsed * l.rate\n\tif l.tokens > l.capacity {\n\t\tl.tokens = l.capacity\n\t}\n\tl.last = now\n\tif l.tokens < n {\n\t\treturn false\n\t}\n\tl.tokens -= n\n\treturn true\n}\n",
+        "ratelimiter_test.go": "package goratelimiter\n\nimport (\n\t\"sync\"\n\t\"testing\"\n\t\"time\"\n)\n\nfunc TestAllow(t *testing.T) {\n\ttests := []struct {\n\t\tname string\n\t\tcap  float64\n\t\trate float64\n\t\tn    float64\n\t\twant bool\n\t}{\n\t\t{\"burst within capacity\", 5, 1, 5, true},\n\t\t{\"insufficient\", 1, 1, 5, false},\n\t}\n\tfor _, tt := range tests {\n\t\tt.Run(tt.name, func(t *testing.T) {\n\t\t\tl := New(tt.cap, tt.rate)\n\t\t\tif got := l.Allow(tt.n); got != tt.want {\n\t\t\t\tt.Fatalf(\"Allow(%v)=%v want %v\", tt.n, got, tt.want)\n\t\t\t}\n\t\t})\n\t}\n}\n\nfunc TestAllowInsufficientConsumesNothing(t *testing.T) {\n\tl := New(5, 0)\n\tif l.Allow(10) {\n\t\tt.Fatal(\"insufficient tokens must not be consumed\")\n\t}\n\tif !l.Allow(5) {\n\t\tt.Fatal(\"tokens should be intact after a refused Allow\")\n\t}\n}\n\nfunc TestRefill(t *testing.T) {\n\tl := New(1, 1000)\n\tl.Allow(1)\n\ttime.Sleep(10 * time.Millisecond)\n\tif !l.Allow(1) {\n\t\tt.Fatal(\"tokens should refill over time\")\n\t}\n}\n\nfunc TestConcurrent(t *testing.T) {\n\tl := New(1000, 0)\n\tvar wg sync.WaitGroup\n\tfor i := 0; i < 100; i++ {\n\t\twg.Add(1)\n\t\tgo func() { defer wg.Done(); l.Allow(1) }()\n\t}\n\twg.Wait()\n}\n"
+      }
+    },
+    "incorrect": {
+      "result": {
+        "turn_in": {
+          "status": "done",
+          "summary": "done"
+        }
+      },
+      "workspace": {
+        "go.mod": "module dojo-rate\n\ngo 1.22\n",
+        "ratelimiter.go": "package goratelimiter\n\nimport \"time\"\n\ntype Limiter struct {\n\tcapacity float64\n\trate     float64\n\ttokens   float64\n\tlast     time.Time\n}\n\nfunc New(capacity, rate float64) *Limiter {\n\treturn &Limiter{capacity: capacity, rate: rate, tokens: capacity, last: time.Now()}\n}\n\nfunc (l *Limiter) Allow(n float64) bool {\n\tnow := time.Now()\n\telapsed := now.Sub(l.last).Seconds()\n\tl.tokens += elapsed * l.rate\n\tif l.tokens > l.capacity {\n\t\tl.tokens = l.capacity\n\t}\n\tl.last = now\n\tl.tokens -= n\n\treturn true\n}\n"
+      }
+    }
+  },
+  "verify": [
+    "go vet ./...",
+    "go build ./...",
+    "test -f ratelimiter_test.go",
+    "grep -q 'func TestAllow' ratelimiter_test.go",
+    "grep -q 'sync.Mutex' ratelimiter.go",
+    "go test -count=1 ./...",
+    "go test -race -count=1 ./..."
+  ],
+  "files": {
+    "go.mod": "module dojo-rate\n\ngo 1.22\n",
+    "ratelimiter.go": "package goratelimiter\n\nimport \"time\"\n\ntype Limiter struct {\n\tcapacity float64\n\trate     float64\n\ttokens   float64\n\tlast     time.Time\n}\n\nfunc New(capacity, rate float64) *Limiter {\n\treturn &Limiter{capacity: capacity, rate: rate, tokens: capacity, last: time.Now()}\n}\n\nfunc (l *Limiter) Allow(n float64) bool {\n\tnow := time.Now()\n\telapsed := now.Sub(l.last).Seconds()\n\tl.tokens += elapsed * l.rate\n\tif l.tokens > l.capacity {\n\t\tl.tokens = l.capacity\n\t}\n\tl.last = now\n\tl.tokens -= n\n\treturn true\n}\n"
+  },
+  "max_steps": 30,
+  "temperature": 0.3
+}
