@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://cdn.redixusercontent.ocfstudio.com/12d18e00-ba71-4a45-a444-e671771d54f5.png" alt="Matrix" />
+  <img src="https://cdn.redixusercontent.ocfstudio.com/matrix.png" alt="Matrix" />
 </p>
 
 <p align="center">

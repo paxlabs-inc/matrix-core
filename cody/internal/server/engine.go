@@ -25,11 +25,9 @@ import (
 	"sync"
 	"time"
 
-	"matrix/cassandra"
 	"matrix/cody/internal/checkpoint"
 	"matrix/cody/internal/contract"
 	"matrix/cody/internal/delegate"
-	"matrix/cody/internal/gate"
 	"matrix/cody/internal/llm"
 	"matrix/cody/internal/mode"
 	"matrix/cody/internal/orchestrator"
@@ -82,9 +80,15 @@ type EngineOptions struct {
 	MaxRespawns int
 	// VerifyTimeout bounds one verification command.
 	VerifyTimeout time.Duration
-	// DisableAdjudication turns the goal-vs-outcome LLM verdict off (the
-	// structural gate still holds). For constrained deployments.
-	DisableAdjudication bool
+	// CassandraDisabled turns the worker-loop silent-voice controller off
+	// (Cassandra 2.0); the structural gate still holds. The knobs mirror the
+	// controller defaults (min_step 2, max 3 mods/run, loop_threshold derived,
+	// cooldown 2) and 0 keeps each default.
+	CassandraDisabled      bool
+	CassandraMinStep       int
+	CassandraMaxMods       int
+	CassandraLoopThreshold int
+	CassandraCooldown      int
 	// Preview wiring (req 7): a configured Railway sandbox client plus the
 	// router-facing coordinates turn "plan completed" into an on-demand preview.
 	// When Sandbox is nil (or the coordinates are empty) previews are disabled
@@ -947,15 +951,6 @@ func (e *Engine) drive(ctx context.Context, r *run, message string, m mode.Mode,
 
 // runOrchestrator wires one orchestrator instance over the durable state.
 func (e *Engine) runOrchestrator(ctx context.Context, r *run, st *contract.Store, plan *orchestrator.Plan, pol mode.Policy, rules *policy.Rules, designLanguage, projectMemory string) (*orchestrator.Result, error) {
-	var adjudicator *cassandra.Adjudicator
-	if !e.opts.DisableAdjudication {
-		cfg := pol.OrchestratorLLM(e.opts.GatewayURL, e.opts.ActorDID)
-		cfg.Temperature = 0
-		cfg.MaxTokens = 1024
-		if client, err := llm.New(cfg); err == nil {
-			adjudicator = &cassandra.Adjudicator{Primary: gate.NewLLMDecoder(client)}
-		}
-	}
 	var progress *checkpoint.Progress
 	if e.opts.Cortex != nil {
 		progress = checkpoint.NewProgress(e.opts.Cortex, r.convID)
@@ -969,7 +964,6 @@ func (e *Engine) runOrchestrator(ctx context.Context, r *run, st *contract.Store
 		Worker:         e.workerFunc(pol, r),
 		Rules:          rules,
 		ModePolicy:     pol.Render(),
-		Adjudicator:    adjudicator,
 		SpecFiles:      pol.PlanningDepth == mode.PlanSpecFiles,
 		DesignLanguage: designLanguage,
 		ExtraGrounding: projectMemory,
@@ -1035,6 +1029,17 @@ func (e *Engine) workerFunc(pol mode.Policy, r *run) orchestrator.WorkerFunc {
 			ExtraDispatch: bridge.Dispatch,
 			Skills:        e.skills,
 			ScaffoldDir:   e.opts.ScaffoldDir,
+			// Cassandra 2.0 silent-voice controller (worker-loop honesty
+			// pressure); its cassandra.mod dual-records ride the run's event
+			// stream as pure observability.
+			CassandraDisabled:      e.opts.CassandraDisabled,
+			CassandraMinStep:       e.opts.CassandraMinStep,
+			CassandraMaxMods:       e.opts.CassandraMaxMods,
+			CassandraLoopThreshold: e.opts.CassandraLoopThreshold,
+			CassandraCooldown:      e.opts.CassandraCooldown,
+			Audit: func(event string, fields map[string]interface{}) {
+				e.publish(r, event, fields)
+			},
 		})
 		if err != nil {
 			return nil, delegate.Mark(delegate.ClassDeterministic, err)

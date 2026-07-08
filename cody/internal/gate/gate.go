@@ -3,17 +3,15 @@
 
 // Package gate is Cody's acceptance gate beyond the green-verification floor:
 // deterministic constitution screens (tests may never be weakened or deleted
-// to pass; the sheet's do-not-touch set is re-checked on the turn-in) plus
-// Cassandra-style goal-vs-outcome adjudication — does the outcome satisfy the
-// sheet's goal and acceptance criteria, judged against real evidence, never by
-// string-matching the worker's report. The gate follows the proven Cassandra
-// posture: deterministic screens decide hard violations; the LLM verdict
-// decides completeness/groundedness; an adjudicator hiccup fails OPEN (the
-// independent green verification record remains the structural floor).
+// to pass; the sheet's do-not-touch set is re-checked on the turn-in). The
+// proof-of-work goal-vs-outcome LLM adjudication is RETIRED (Cassandra 2.0):
+// honesty pressure now lives INSIDE the worker loop as the silent-voice
+// controller (worker/cassandra.go), and acceptance is the structural floor —
+// the orchestrator's independent green verification re-run plus these
+// deterministic screens.
 package gate
 
 import (
-	"context"
 	"fmt"
 	"io/fs"
 	"os"
@@ -21,11 +19,9 @@ import (
 	"sort"
 	"strings"
 
-	"matrix/cassandra"
 	"matrix/cody/internal/contract"
 	"matrix/cody/internal/decide"
 	"matrix/cody/internal/edit"
-	"matrix/cody/internal/llm"
 )
 
 // skipDirs are never scanned for test baselines.
@@ -280,164 +276,4 @@ func ScreenScreenshot(sheet *contract.TaskSheet, report *contract.TurnInReport) 
 		}
 	}
 	return "UI turn-in changed a rendered surface but carries no screenshot artifact: capture a screenshot of the rendered result as evidence (req 13.2)"
-}
-
-// BuildRequest renders the sheet as the contract the adjudicator judges
-// against: the goal, the testable acceptance criteria, and the constitution
-// clauses the outcome must not have violated.
-func BuildRequest(sheet *contract.TaskSheet) string {
-	var b strings.Builder
-	fmt.Fprintf(&b, "== THE TASK SHEET (the contract to satisfy) ==\nTask %s: %s\n\nGOAL (what done means):\n%s\n\nACCEPTANCE CRITERIA (each must be satisfied by the executed evidence):\n", sheet.TaskID, sheet.Title, sheet.Goal)
-	for i, a := range sheet.Acceptance {
-		fmt.Fprintf(&b, "%d. %s\n", i+1, a)
-	}
-	if len(sheet.Constraints.Constitution) > 0 {
-		b.WriteString("\nCONSTITUTION (an outcome violating any of these is NOT complete, no matter what the worker claims):\n")
-		for _, c := range sheet.Constraints.Constitution {
-			b.WriteString("- " + c + "\n")
-		}
-	}
-	b.WriteString("\nDecide whether the turn-in below satisfies this sheet, judged ONLY against the executed evidence — never against what the worker said it would do. A stub/mock/fake or placeholder introduced to make verification pass is an unverified claim of completion.")
-	return b.String()
-}
-
-// Source-evidence bounds: structural acceptance criteria ("the struct has a
-// mutex field", "Allow locks for the whole critical section") can ONLY be
-// judged against the actual code, so the changed files are read into the
-// evidence — but bounded so a large diff cannot blow the adjudicator's window.
-const (
-	sourceMaxFileBytes = 24 * 1024  // per changed file
-	sourceMaxTotal     = 128 * 1024 // across all changed files
-	sourceMaxFiles     = 40
-)
-
-// renderSource reads the created/edited files named in the turn-in from the
-// real workspace and renders them as adjudication evidence. This is the ground
-// truth for structural acceptance criteria: the outcome is judged against the
-// code that was actually written, not against the worker's narration or a
-// green build that never prints the source. Deletes carry no content; missing
-// or oversized files are noted rather than silently dropped.
-func renderSource(root string, report *contract.TurnInReport) string {
-	if strings.TrimSpace(root) == "" {
-		return ""
-	}
-	var b strings.Builder
-	total, files := 0, 0
-	for _, ch := range report.Changes {
-		if ch.Kind == "delete" {
-			continue
-		}
-		if files >= sourceMaxFiles {
-			b.WriteString(fmt.Sprintf("(%d more changed files omitted from evidence)\n", len(report.Changes)-files))
-			break
-		}
-		rel, err := edit.Rel(root, ch.Path)
-		if err != nil || rel == "." || strings.HasPrefix(rel, "..") {
-			continue
-		}
-		data, err := os.ReadFile(filepath.Join(root, filepath.FromSlash(rel)))
-		if err != nil {
-			fmt.Fprintf(&b, "=== %s (claimed %s, but unreadable now: %v) ===\n", ch.Path, ch.Kind, err)
-			files++
-			continue
-		}
-		content := string(data)
-		note := ""
-		if len(content) > sourceMaxFileBytes {
-			content = content[:sourceMaxFileBytes]
-			note = " (truncated)"
-		}
-		if total+len(content) > sourceMaxTotal {
-			b.WriteString("(remaining changed files omitted: evidence budget reached)\n")
-			break
-		}
-		total += len(content)
-		files++
-		fmt.Fprintf(&b, "=== %s [%s]%s ===\n%s", ch.Path, ch.Kind, note, content)
-		if !strings.HasSuffix(content, "\n") {
-			b.WriteString("\n")
-		}
-	}
-	return b.String()
-}
-
-// BuildEvidence renders the ground truth for the verdict: the worker's factual
-// change record, the ACTUAL SOURCE of the changed files read from the
-// workspace, and the ORCHESTRATOR'S OWN independent verification re-run — the
-// worker's narration is the claim, never the evidence.
-func BuildEvidence(root string, report *contract.TurnInReport, rerun string) string {
-	var b strings.Builder
-	fmt.Fprintf(&b, "--- THE WORKER'S TURN-IN (the claim) ---\nstatus: %s\nsummary: %s\n", report.Status, report.Summary)
-	for _, ch := range report.Changes {
-		fmt.Fprintf(&b, "changed: [%s] %s — %s\n", ch.Kind, ch.Path, ch.Why)
-	}
-	for _, g := range report.Gaps {
-		b.WriteString("admitted gap: " + g + "\n")
-	}
-	for _, a := range report.Assumptions {
-		b.WriteString("assumption: " + a + "\n")
-	}
-	if src := renderSource(root, report); src != "" {
-		b.WriteString("\n--- CHANGED FILES (actual source in the workspace, ground truth) ---\n")
-		b.WriteString(src)
-	}
-	b.WriteString("\n--- INDEPENDENT VERIFICATION (re-run by the orchestrator, ground truth) ---\n")
-	if strings.TrimSpace(rerun) == "" {
-		b.WriteString("(no output)\n")
-	} else {
-		b.WriteString(rerun + "\n")
-	}
-	return b.String()
-}
-
-// Adjudicate renders the goal-vs-outcome verdict on a done claim. Empty
-// verdict = accept. An adjudicator error fails OPEN (returns accept): the
-// independent green verification record is the structural floor, and a
-// Cassandra hiccup never wedges a plan (the proven Neo posture).
-func Adjudicate(ctx context.Context, adj *cassandra.Adjudicator, root string, sheet *contract.TaskSheet, report *contract.TurnInReport, rerun string) string {
-	if adj == nil {
-		return ""
-	}
-	v, err := adj.Adjudicate(ctx, cassandra.AuditInput{
-		Request:  BuildRequest(sheet),
-		Evidence: BuildEvidence(root, report, rerun),
-	})
-	if err != nil {
-		return "" // fail open: verification is green and the screens passed
-	}
-	if v.Sound() {
-		return ""
-	}
-	var reasons []string
-	for _, m := range v.Missing {
-		reasons = append(reasons, "missing: "+m)
-	}
-	for _, u := range v.UnverifiedClaims {
-		reasons = append(reasons, "unverified claim: "+u)
-	}
-	if len(reasons) == 0 && v.Rationale != "" {
-		reasons = append(reasons, v.Rationale)
-	}
-	if len(reasons) == 0 {
-		reasons = append(reasons, "the outcome does not satisfy the sheet's goal and acceptance criteria")
-	}
-	return "goal-vs-outcome adjudication rejected the turn-in: " + strings.Join(reasons, "; ")
-}
-
-// llmDecoder adapts Cody's llm.Client to the cassandra.Decoder seam.
-type llmDecoder struct{ client *llm.Client }
-
-// NewLLMDecoder wraps a Cody llm client (temperature 0 recommended) as a
-// cassandra Decoder.
-func NewLLMDecoder(c *llm.Client) cassandra.Decoder { return llmDecoder{client: c} }
-
-func (d llmDecoder) Decode(ctx context.Context, system, user string) (string, error) {
-	res, err := d.client.Chat(ctx, llm.ChatRequest{Messages: []llm.Message{
-		llm.SystemMessage(system),
-		llm.UserMessage(user),
-	}})
-	if err != nil {
-		return "", err
-	}
-	return res.Message.Content, nil
 }

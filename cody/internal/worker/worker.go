@@ -62,6 +62,20 @@ type Options struct {
 	// (scaffold-<stack>.sh). Greenfield structure comes from a scaffolder run
 	// via exec, never hand-written boilerplate.
 	ScaffoldDir string
+	// Cassandra 2.0 — the silent-voice controller (see cassandra.go). ON by
+	// default (a clean run is byte-identical to disabled, so it costs nothing
+	// when healthy). CassandraDisabled turns it into a complete no-op. The
+	// knobs default to min_step 2, max 3 mods/run, loop_threshold
+	// loopMaxRepeats-1 (fire one step before the hard loop stop), cooldown 2
+	// steps per trigger class.
+	CassandraDisabled      bool
+	CassandraMinStep       int
+	CassandraMaxMods       int
+	CassandraLoopThreshold int
+	CassandraCooldown      int
+	// Audit receives Cassandra's cassandra.mod observability events (dual-
+	// record of every silent modification). nil discards them.
+	Audit func(event string, fields map[string]interface{})
 }
 
 // execOutputCap is the inline byte cap for exec output before it spills to an
@@ -104,6 +118,19 @@ type Worker struct {
 	loops loopDetector
 	// usage accumulates the worker's LLM token spend across the run.
 	usage contract.Usage
+	// Cassandra 2.0 silent-voice controller state (see cassandra.go).
+	// casModsThisRun caps modifications per run; casCooldown records the step
+	// each trigger CLASS last fired; casRecord is the dual-record audit ground
+	// truth for every modification. casPrevSig / casRecentSigs / casRepeats /
+	// casDistinct are the controller's committed batch history — the behavioral
+	// read that lets it fire one step before the hard loopDetector stop.
+	casModsThisRun int
+	casCooldown    map[modTrigger]int
+	casRecord      []cassandraMod
+	casPrevSig     string
+	casRecentSigs  []string
+	casRepeats     int
+	casDistinct    map[string]struct{}
 }
 
 type overflowState struct {
@@ -140,14 +167,16 @@ func New(opts Options) (*Worker, error) {
 		opts.ExecTimeout = 5 * time.Minute
 	}
 	return &Worker{
-		opts:      opts,
-		edits:     eng,
-		runner:    runner,
-		changes:   map[string]string{},
-		changeWhy: map[string]string{},
-		overflows: map[string]*overflowState{},
-		services:  map[string]*exec.Cmd{},
-		jobs:      map[string]*job{},
+		opts:        opts,
+		edits:       eng,
+		runner:      runner,
+		changes:     map[string]string{},
+		changeWhy:   map[string]string{},
+		overflows:   map[string]*overflowState{},
+		services:    map[string]*exec.Cmd{},
+		jobs:        map[string]*job{},
+		casCooldown: map[modTrigger]int{},
+		casDistinct: map[string]struct{}{},
 	}, nil
 }
 
@@ -175,6 +204,17 @@ func (w *Worker) Run(ctx context.Context) (*contract.TurnInReport, error) {
 		w.usage.CompletionTokens += res.Usage.CompletionTokens
 		w.usage.TotalTokens += res.Usage.TotalTokens
 		w.messages = append(w.messages, res.Message)
+
+		// Cassandra 2.0 (the silent-voice controller): immediately after the
+		// assistant turn is appended and BEFORE it is acted on, the controller
+		// may edit that message's OWN Content in place — folding in doubt /
+		// assurance so the model re-reads it as its own emerging thought next
+		// step. It is a no-op when disabled, before min_step, when the per-run
+		// budget is spent, or when no behavioral trigger fires (the healthy
+		// case: the window is byte-identical to the controller disabled).
+		if !w.opts.CassandraDisabled {
+			w.cassandraStep(w.buildCassandraSignals(step, res.Message, !res.HasToolCalls()))
+		}
 
 		if !res.HasToolCalls() {
 			nudges++

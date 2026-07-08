@@ -3,7 +3,6 @@ module matrix/cody
 go 1.21
 
 require (
-	matrix/cassandra v0.0.0
 	matrix/cortex v0.0.0-00010101000000-000000000000
 	matrix/mcl v0.0.0
 )
@@ -41,7 +40,6 @@ require (
 	google.golang.org/protobuf v1.28.1 // indirect
 )
 
-replace matrix/cassandra => ../cassandra
 
 replace matrix/cortex => ../cortex
 

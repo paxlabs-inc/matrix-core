@@ -161,9 +161,9 @@ func For(m Mode) Policy {
 }
 
 // OrchestratorLLM builds the orchestrator-role client config: the stronger
-// model, cold temperature (planning adjudication + the Cassandra gate), the
-// cody slot. This is the COLD judge for decision phases — divergent candidates
-// are generated hot (DecisionLLM) and picked cold here.
+// model, cold temperature (planning + decision adjudication), the cody slot.
+// This is the COLD judge for decision phases — divergent candidates are
+// generated hot (DecisionLLM) and picked cold here.
 func (p Policy) OrchestratorLLM(gatewayURL, actorDID string) mcllm.Config {
 	return mcllm.Config{
 		Model:       p.OrchestratorModel,

@@ -22,7 +22,6 @@ import (
 	"sync/atomic"
 	"time"
 
-	"matrix/cassandra"
 	"matrix/cody/internal/checkpoint"
 	"matrix/cody/internal/contract"
 	"matrix/cody/internal/delegate"
@@ -60,10 +59,6 @@ type Options struct {
 	// SpecFiles, when true (Architect mode), keeps durable in-workspace spec
 	// files (.cody/spec/requirements.md + tasks.md) in sync with the plan.
 	SpecFiles bool
-	// Adjudicator, when set, renders the Cassandra-style goal-vs-outcome
-	// verdict on every done claim (after the green re-run). Optional: without
-	// it the gate is the structural floor alone (re-run + screens).
-	Adjudicator *cassandra.Adjudicator
 	// MaxAttempts bounds re-dispatch per task (default 3).
 	MaxAttempts int
 	// VerifyTimeout bounds one independent verification command.
@@ -471,8 +466,9 @@ func (o *Orchestrator) dispatch(ctx context.Context, sheet *contract.TaskSheet, 
 // (1) the independent verification re-run — a report claiming done is never
 // trusted, and acceptance is impossible without the orchestrator's own green
 // record; (2) the deterministic constitution screens (weakened/deleted tests,
-// do-not-touch); (3) the Cassandra-style goal-vs-outcome adjudication of the
-// turn-in against the sheet's acceptance criteria.
+// do-not-touch). The proof-of-work LLM adjudication layer is RETIRED
+// (Cassandra 2.0): honesty pressure lives inside the worker loop as the
+// silent-voice controller, backstopped by this structural floor.
 func (o *Orchestrator) adjudicate(ctx context.Context, sheet *contract.TaskSheet, report *contract.TurnInReport, baseline gate.TestBaseline) (verdict, rerunOutput string, err error) {
 	if report.TaskID != sheet.TaskID {
 		return fmt.Sprintf("report task id %q does not match the sheet %q", report.TaskID, sheet.TaskID), "", nil
@@ -510,30 +506,7 @@ func (o *Orchestrator) adjudicate(ctx context.Context, sheet *contract.TaskSheet
 	if v := gate.ScreenDesign(o.opts.Root, sheet, report); v != "" {
 		return v, "", nil
 	}
-	// Layer 3: goal-vs-outcome adjudication (never string-matching the
-	// report). Judged against the orchestrator's own green record as evidence.
-	if v := gate.Adjudicate(ctx, o.opts.Adjudicator, o.opts.Root, sheet, report, renderRerun(results)); v != "" {
-		return v, "", nil
-	}
 	return "", "", nil
-}
-
-// renderRerun digests the orchestrator's own verification results as
-// adjudication evidence.
-func renderRerun(results []verify.Result) string {
-	var b strings.Builder
-	for _, r := range results {
-		state := "GREEN"
-		if !r.Green {
-			state = "RED"
-		}
-		out := r.Output
-		if len(out) > 2048 {
-			out = out[:2048] + "..."
-		}
-		fmt.Fprintf(&b, "[%s exit %d] %s\n%s\n", state, r.Exit, r.Command.Cmd, out)
-	}
-	return b.String()
 }
 
 // specSheet authors the self-contained sheet for a plan task.
@@ -555,18 +528,18 @@ func (o *Orchestrator) specSheet(task *Task, attempt int, feedback string) *cont
 		constraints.DesignLanguage = o.opts.DesignLanguage
 	}
 	return &contract.TaskSheet{
-		TaskID:      task.ID,
-		Title:       task.Title,
-		Goal:        task.Goal,
-		Acceptance:  task.Acceptance,
-		Grounding:   task.Grounding,
-		Constraints: constraints,
-		Verify:      contract.Verify{Commands: task.Verify, MustBeGreen: true},
-		Deliverable: task.Deliverable,
-		Attempt:     attempt,
-		Feedback:    feedback,
-		Steers:      append([]string{}, o.steers...),
-		UITask:      ui,
+		TaskID:            task.ID,
+		Title:             task.Title,
+		Goal:              task.Goal,
+		Acceptance:        task.Acceptance,
+		Grounding:         task.Grounding,
+		Constraints:       constraints,
+		Verify:            contract.Verify{Commands: task.Verify, MustBeGreen: true},
+		Deliverable:       task.Deliverable,
+		Attempt:           attempt,
+		Feedback:          feedback,
+		Steers:            append([]string{}, o.steers...),
+		UITask:            ui,
 		ScreenshotCapable: o.opts.ScreenshotCapable,
 	}
 }

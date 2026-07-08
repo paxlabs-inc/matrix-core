@@ -17,6 +17,7 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
+	"strconv"
 	"syscall"
 	"time"
 
@@ -32,6 +33,17 @@ func envOrDefault(key, def string) string {
 		return v
 	}
 	return def
+}
+
+// envInt parses a positive integer env knob; unset/invalid keeps 0 (the
+// consumer's default).
+func envInt(key string) int {
+	if v := os.Getenv(key); v != "" {
+		if n, err := strconv.Atoi(v); err == nil && n > 0 {
+			return n
+		}
+	}
+	return 0
 }
 
 func main() {
@@ -114,7 +126,16 @@ func main() {
 		PreviewPublicBase:  os.Getenv("CODY_PREVIEW_PUBLIC_BASE"),
 		PreviewTTL:         previewTTL,
 		PreviewImage:       os.Getenv("CODY_PREVIEW_IMAGE"),
-		Logf:               log.Printf,
+		// Cassandra 2.0 silent-voice controller (worker loop). ON by default;
+		// CODY_CASSANDRA_ENABLED=false disables. The knobs keep the controller
+		// defaults when unset (min_step 2, max 3 mods/run, loop_threshold
+		// derived from the hard loop stop, cooldown 2).
+		CassandraDisabled:      os.Getenv("CODY_CASSANDRA_ENABLED") == "false",
+		CassandraMinStep:       envInt("CODY_CASSANDRA_MIN_STEP"),
+		CassandraMaxMods:       envInt("CODY_CASSANDRA_MAX_MODS"),
+		CassandraLoopThreshold: envInt("CODY_CASSANDRA_LOOP_THRESHOLD"),
+		CassandraCooldown:      envInt("CODY_CASSANDRA_COOLDOWN"),
+		Logf:                   log.Printf,
 	})
 	if err != nil {
 		log.Fatalf("codyd: %v", err)
