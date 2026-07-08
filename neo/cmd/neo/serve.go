@@ -179,7 +179,6 @@ func runServe(args []string) {
 		Tools:                 tm,
 		Pager:                 pager,
 		Consolidator:          cons,
-		Adjudicator:           newCassandraAdjudicator(cfg),
 		ConversationDir:       convDir,
 		TaskDir:               taskDir,
 		TraceDir:              traceDir,

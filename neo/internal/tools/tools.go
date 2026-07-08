@@ -62,17 +62,6 @@ const SpawnSubagentsTool = "spawn_subagents"
 // NOT a real MCP server, so it never enters the manifest tool-bijection check.
 const ConstructRenderTool = projection.ConstructRenderTool
 
-// TaskCompleteTool is the synthetic completion gate (Cassandra Phase 1): the
-// ONLY legal way for Neo to end a turn that touched state. It carries a
-// completeness object (summary + coverage + evidence + open_gaps +
-// assumptions) that the agent loop validates against the working transcript
-// (the ground truth) before the turn may terminate — positive-proof of
-// completion, never the mere absence of further tool calls. Like core_execute
-// it is synthetic (no MCP server, no manifest bijection); unlike the others it
-// is intercepted in the agent loop, not routed through Manager.Dispatch,
-// because the validator needs the live transcript the Manager cannot see.
-const TaskCompleteTool = "task_complete"
-
 // WriteSkillTool is the synthetic function Neo exposes for the agent to
 // CONSCIOUSLY persist a reusable recipe as a cortex Pattern (P2-2: the
 // skill-writing / synthesis loop). After a proven task, the agent authors a
@@ -352,9 +341,6 @@ func (m *Manager) Schemas() []llm.Tool {
 	if m.todo != nil {
 		out = append(out, todoSchema())
 	}
-	// The completion gate is ALWAYS advertised to the top-level agent: it is
-	// the only sanctioned way to end a state-touching turn (Cassandra Phase 1).
-	out = append(out, taskCompleteSchema())
 	return out
 }
 
@@ -971,41 +957,6 @@ func spawnSubagentsSchema() llm.Tool {
 func constructRenderSchema() llm.Tool {
 	spec := projection.RenderTools()[0]
 	return llm.NewFunctionTool(spec.Name, spec.Description, spec.Params)
-}
-
-// taskCompleteSchema advertises the completion gate (Cassandra Phase 1). The
-// model calls it to declare the turn done, carrying the completeness object the
-// agent loop validates against the working transcript before it may terminate.
-func taskCompleteSchema() llm.Tool {
-	return llm.NewFunctionTool(
-		TaskCompleteTool,
-		"Declare this turn complete. Call this ONLY when you are actually done — it is the single way to finish a turn in which you took an action, ran a tool, changed state, or made a claim about real-world facts. Just tell the user the outcome; you do NOT need to cite or prove evidence. Your outcome is checked automatically against the task's goal and what actually ran, so simply give the honest result: what you accomplished (summary), whether every requested deliverable was produced (coverage), anything still unfinished or unconfirmed (open_gaps), and any assumptions you made. Be truthful about gaps — do not claim a task is fully done when it is not. If you are not done, keep working instead of calling this.",
-		map[string]interface{}{
-			"type": "object",
-			"properties": map[string]interface{}{
-				"summary": map[string]interface{}{
-					"type":        "string",
-					"description": "Your final answer / narration to the user, in plain human terms — the outcome they are meant to read. This is what gets checked against the goal.",
-				},
-				"coverage": map[string]interface{}{
-					"type":        "string",
-					"enum":        []string{"full", "partial"},
-					"description": "\"full\" only if EVERY explicitly requested deliverable was produced; otherwise \"partial\".",
-				},
-				"open_gaps": map[string]interface{}{
-					"type":        "array",
-					"items":       map[string]interface{}{"type": "string"},
-					"description": "Things still unsatisfied or NOT confirmed that arguably should have been — phrased as concrete items. An empty list is an explicit claim of \"nothing left open\", so only leave it empty if that is true. Required to be empty when coverage is \"full\".",
-				},
-				"assumptions": map[string]interface{}{
-					"type":        "array",
-					"items":       map[string]interface{}{"type": "string"},
-					"description": "Defaults you silently chose that materially shape the result, surfaced rather than buried.",
-				},
-			},
-			"required": []string{"summary", "coverage"},
-		},
-	)
 }
 
 func funcName(alias, name string) string {

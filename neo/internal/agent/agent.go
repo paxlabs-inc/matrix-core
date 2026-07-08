@@ -26,7 +26,6 @@ import (
 	"sync"
 	"time"
 
-	"matrix/cassandra"
 	"matrix/neo/internal/config"
 	"matrix/neo/internal/delegate"
 	"matrix/neo/internal/llm"
@@ -44,15 +43,6 @@ import (
 // honest where-I-got-stuck digest for the next attempt's catch-up.
 // Detect with errors.Is(err, agent.ErrIncomplete).
 var ErrIncomplete = errors.New("neo: turn incomplete (task not finished)")
-
-// gateNotAcceptedToolResult is the neutral, non-narratable token used to answer
-// a rejected (or prematurely-batched) task_complete call. Every tool_call must
-// receive a tool result or a strict provider 400s, but the ACTIONABLE rejection
-// reason no longer rides this in-band result (where the model would narrate it
-// into the user-visible reasoning stream, req.1.2) — it travels the guidance
-// channel instead (llm.GuidanceMessage). The model still learns the turn is not
-// done; the steering detail stays off every user surface.
-const gateNotAcceptedToolResult = "Not accepted yet — keep working."
 
 // Consolidator is the background write-back hook: it receives a completed
 // turn's transcript and promotes durable learnings to cortex out-of-band.
@@ -115,12 +105,22 @@ type Agent struct {
 	recaller     ConvRecaller
 	observer     ToolObserver
 
-	// adjudicator is the shared Cassandra epistemic-completeness faculty
-	// consulted at the completion gate on state-touching turns (Phase 3). nil
-	// falls back to the deterministic local grounding check. auditObserver
-	// streams cassandra.* audit events to the harness; nil discards them.
-	adjudicator   *cassandra.Adjudicator
+	// auditObserver streams Cassandra 2.0 controller audit events (cassandra.mod)
+	// to the harness on a pure observability side-channel; nil discards them.
 	auditObserver AuditObserver
+
+	// Cassandra 2.0 silent-voice controller — per-turn state (reset at the top of
+	// each Chat turn). casModsThisTurn caps modifications per turn
+	// (max_mods_per_turn); casCooldown records the step each trigger CLASS last
+	// fired so the same drift is not nagged every step (per-trigger cooldown);
+	// casRecord is the dual-record audit ground truth — {original_content,
+	// cassandra_mod, trigger, side, step, target} for every modification — so what
+	// the agent actually said versus what Cassandra folded in is always
+	// recoverable (guardrail 3). None of it is durable: cortex keeps the original
+	// (req.7.1) and the audit rides the side-channel.
+	casModsThisTurn int
+	casCooldown     map[modTrigger]int
+	casRecord       []cassandraMod
 
 	// memObserver receives this turn's continuous-memory activation summary
 	// (durable story-so-far + coarse timeline) so the harness can surface the
@@ -223,12 +223,8 @@ type Options struct {
 	Recaller     ConvRecaller // optional: relevant past-turn recall (additive read-lane)
 	Observer     ToolObserver // optional: per-tool-result surfacing (show the work)
 
-	// Adjudicator is the shared Cassandra completeness faculty consulted at the
-	// completion gate on state-touching turns: it checks the OUTCOME against the
-	// task GOAL over the executed transcript. nil fails open on the strict path
-	// (i_cass_5) — there is no local word-matching stand-in. AuditObserver
-	// streams cassandra.* audit events to the harness; nil discards them.
-	Adjudicator   *cassandra.Adjudicator
+	// AuditObserver streams Cassandra 2.0 controller audit events (cassandra.mod)
+	// to the harness; nil discards them.
 	AuditObserver AuditObserver
 
 	// MemoryObserver receives this turn's continuous-memory activation summary
@@ -270,7 +266,6 @@ func New(o Options) *Agent {
 		consolidator:  o.Consolidator,
 		recaller:      o.Recaller,
 		observer:      o.Observer,
-		adjudicator:   o.Adjudicator,
 		auditObserver: o.AuditObserver,
 		memObserver:   o.MemoryObserver,
 		persona:       strings.TrimSpace(o.Persona),
@@ -449,13 +444,14 @@ func (a *Agent) Chat(ctx context.Context, userInput string) error {
 	}
 	if a.activeGoal == "" {
 		a.activeGoal = userInput
-		// Cassandra logs the task GOAL quietly at dispatch (side-channel only).
-		// The completion gate later checks the OUTCOME Neo returns against this
-		// goal over the executed transcript — Neo never has to cite evidence.
-		a.emitAudit(auditEventGoal, map[string]interface{}{"goal": a.activeGoal})
 	}
 	a.turnSeq++
 	a.lastFailureClass = delegate.ClassNone
+	// Cassandra 2.0: reset the per-turn controller state so the mod cap, cooldowns,
+	// and dual-record scope to THIS turn (silent-when-healthy discipline, req.4).
+	a.casModsThisTurn = 0
+	a.casCooldown = map[modTrigger]int{}
+	a.casRecord = nil
 	// Run-scoped overflow files (neo-smoothness req.4.3) are ephemeral to this
 	// turn: clean them up on every exit (completion, stall, budget, error).
 	defer func() {
@@ -561,24 +557,6 @@ func (a *Agent) Chat(ctx context.Context, userInput string) error {
 	// gates the one-time "stop re-doing completed work and finish" steer.
 	recentSigs := make([]string, 0, stallWindow)
 	convergeNudged := false
-	// stateTouched latches once this turn reaches the irreversible seam
-	// (core_execute). It selects the strict completion path (a full grounded
-	// completeness object) over the reversible light path — the placement rule
-	// of the Cassandra Phase 1 completion gate.
-	stateTouched := false
-	// workTouched latches once this turn runs ANY non-trivial tool (not just
-	// the money/chain seam). Under GateAllWork it promotes a substantial
-	// reversible deliverable (a researched paper, a built site, generated code)
-	// onto the grounded completion path too — so "done" is proven, not
-	// self-asserted — while a pure conversational turn (no tools) still ends on
-	// the frictionless light path. This is the "highest standard" gate.
-	workTouched := false
-
-	// gateSurfaced holds the last plain answer we committed as durable narration
-	// when the completion gate forced task_complete. It dedupes so a model that
-	// re-issues the same prose (before it finally calls task_complete) does not
-	// stack duplicate bubbles.
-	gateSurfaced := ""
 
 	// P2-7: adaptive step budget. Track distinct tool names dispatched so far
 	// (tool-call breadth) as the complexity signal. The effective budget is
@@ -796,10 +774,23 @@ func (a *Agent) Chat(ctx context.Context, userInput string) error {
 		}
 		a.working = append(a.working, res.Message)
 		// Continuous-memory (task 6.1): record the assistant turn (content +
-		// tool calls) to the durable cortex transcript. No-op when off.
+		// tool calls) to the durable cortex transcript. No-op when off. The
+		// ORIGINAL content is recorded here BEFORE the Cassandra controller may
+		// edit the in-window copy, so cortex stays ground truth (req.7.1).
 		a.cmRecordAssistant(res.Message)
-		if batchTouchesState(res.Message.ToolCalls) {
-			stateTouched = true
+
+		// Cassandra 2.0 (the silent-voice controller): immediately after the
+		// assistant turn is appended and BEFORE the next model call, the controller
+		// may edit that message's OWN Content in place — folding in doubt / assurance
+		// so the model re-reads it as its own emerging thought next turn. It is a
+		// no-op when disabled, before min_step, when the per-turn/step budget is
+		// spent, or when no behavioral trigger fires (the healthy case). The signals
+		// are read from the loop's existing state (repeats / recentSigs / prevCalls /
+		// distinct tools / whether this turn is closing). casMod records whether a
+		// mod fired THIS step so a would-be close can re-loop (self-heal) below.
+		casMod := false
+		if a.cfg.CassandraEnabled {
+			casMod = a.cassandraStep(a.buildCassandraSignals(step, res.Message, repeats, recentSigs, prevSig, prevCalls, distinctToolSet, !res.HasToolCalls()))
 		}
 
 		// Show SOME of the thinking: surface a trimmed glimpse of this turn's
@@ -815,11 +806,14 @@ func (a *Agent) Chat(ctx context.Context, userInput string) error {
 			}
 		}
 
-		// Positive-proof termination (Cassandra Phase 1). A turn no longer ends
-		// on the mere ABSENCE of tool calls (i_cass_1): a bare final message may
-		// close only a reversible, non-state-touching turn (the light path). A
-		// turn that reached the irreversible seam must finish through the
-		// validated task_complete gate handled below.
+		// Termination (Cassandra 2.0: the proof-of-work completion gate is
+		// retired). A turn ends when the model emits NO tool calls — the single
+		// completion path — after the identity scrub, inbox drain, and the
+		// empty/length/overflow guidance nudges below. A work-touched bare-answer
+		// turn no longer needs a task_complete object; honesty emerges from the
+		// agent re-verifying under Cassandra's injected doubt, backstopped by the
+		// loop-discipline guarantees (no-progress stall / step budget / unified
+		// unproductive counter), not from a terminal adjudicator.
 		if !res.HasToolCalls() {
 			// F5: a message queued mid-turn may have arrived during this model
 			// call, just as the agent is about to finish. Address it instead of
@@ -879,34 +873,15 @@ func (a *Agent) Chat(ctx context.Context, userInput string) error {
 				}
 				continue
 			}
-			// A turn that did real work may not end with an unaudited bare
-			// message: nudge toward the completion gate so completion is proven,
-			// not assumed. A pure conversational turn (no tools) rides the light
-			// path (i_cass_5, placement-by-reversibility) and ends frictionlessly.
-			if a.gateStrict(stateTouched, workTouched) {
-				// Don't discard the model's natural answer while steering it to the
-				// completion gate: it IS the user-facing reply (the gate only needs
-				// task_complete as internal completion proof). Commit it as durable
-				// narration so it survives — the redundant task_complete summary then
-				// gets hidden by the client (narration already produced), instead of
-				// the answer vanishing and the raw completion object surfacing in its
-				// place. Dedupe so a re-issued identical answer doesn't stack.
-				if answer != gateSurfaced {
-					a.out.Status(answer)
-					gateSurfaced = answer
-				}
-				// Route the completion steer through the GUIDANCE channel, not a
-				// raw user turn: the model must recognize this as private system
-				// steering to act on (call task_complete) and never surface it —
-				// delivered as a user message it reads like a contentless user
-				// turn and greets back instead, the bare-message spiral. Bounded:
-				// once a model keeps ending with a plain answer past the nudge cap,
-				// accept THAT answer as the honest final (it already did the work
-				// and the reply is surfaced) rather than re-steering forever.
-				if a.pushGuidanceNudge("You did real work this turn, so don't finish with a plain message — call task_complete with the outcome for the user: a summary, coverage, and anything still open. You don't need to cite evidence; just give the honest result.", &unproductive) {
-					a.finishTurn(ctx, answer, surfaced, surfacedSnips, userInput, false)
-					return nil
-				}
+			// Cassandra 2.0 self-heal on a would-be close (req.6.2): if the
+			// controller folded doubt into this bare answer (premature/unverified
+			// close, or a close that bailed out of a loop), re-loop so the model
+			// re-reads its OWN doubt and re-verifies instead of finishing. The
+			// delivered answer is untouched (finishTurn reads res.Message, a
+			// separate copy from the edited a.working entry); it is bounded by the
+			// per-turn mod cap + per-trigger cooldown so it can never loop forever,
+			// and never fabricates a completion — it only asks the agent to check.
+			if casMod {
 				continue
 			}
 			a.finishTurn(ctx, answer, surfaced, surfacedSnips, userInput, false)
@@ -920,92 +895,15 @@ func (a *Agent) Chat(ctx context.Context, userInput string) error {
 		}
 
 		// Surface any preamble the model wrote alongside its tool calls as
-		// DURABLE narration — Neo "thinking out loud" before it acts. This must
-		// run for EVERY tool-calling turn, including the task_complete gate
-		// below: a turn that goes straight to task_complete (e.g. it already had
-		// the data) would otherwise commit nothing, and with the completion
-		// summary kept out of the thread the user would be left with an empty
-		// thread once the run settled. Committing the preamble here is what makes
-		// Neo's running commentary the durable thread content.
+		// DURABLE narration — Neo "thinking out loud" before it acts. This runs
+		// for EVERY tool-calling turn: it is what makes Neo's running commentary
+		// the durable thread content.
 		if c := strings.TrimSpace(res.Message.Content); c != "" {
 			a.out.Status(a.cleanContent(c))
 		}
 
-		// Completion gate (Cassandra Phase 1): the model called task_complete.
-		// Adjudicate the completeness object against the working transcript (the
-		// ground truth — real tool results) before the turn may end. Sibling
-		// tool calls in the same batch run FIRST so their results are in the
-		// transcript before the claim is judged; every tool_call receives a
-		// result so the transcript stays well-formed.
-		if cc, rest := splitCompletion(res.Message.ToolCalls); cc != nil {
-			// req.8.3 (N2): the completion branch no longer bypasses stall
-			// detection. Advance the shared no-progress read on the completion
-			// batch BEFORE the branch can continue, so a repeated premature
-			// task_complete trips the same stall as a repeated tool call instead
-			// of riding to the step budget. The reject path below additionally
-			// folds each rejection into the unified unproductive counter.
-			if _, stalled := noteBatch(res.Message.ToolCalls); stalled {
-				a.consolidateWorking()
-				return fmt.Errorf("%w: repeating the same completion claim without progress. Where it got stuck: %s", ErrIncomplete, oneLine(a.lastToolSummary()))
-			}
-			// Run any sibling tool calls, then FALL THROUGH to adjudicate the
-			// completion against the transcript that now includes their results.
-			// This replaces the old "call task_complete on its own" bounce: grok
-			// naturally bundles a final bookkeeping call (e.g. todo) WITH
-			// task_complete, and bouncing it made grok answer with a bare
-			// greeting, which spiralled — bundled-complete and bare-message
-			// alternated forever, the bounce reset the nudge budget (so the cap
-			// never tripped), and both branches continue'd before the no-progress
-			// stall, so nothing bounded it. A premature claim is still caught: a
-			// spilled/unread sibling result trips the overflow gate below, and a
-			// claim contradicted by what actually ran is rejected by adjudication
-			// (which then rides the bounded guidance channel).
-			if len(rest) > 0 {
-				a.runToolCalls(ctx, rest)
-				workTouched = true
-				if batchTouchesState(rest) {
-					stateTouched = true
-				}
-			}
-			// Read-full discipline (req.4.2): block completion while a spilled
-			// overflow result is unread, steering through the guidance channel —
-			// completion can't be proven from a truncated result.
-			if a.overflowUnread() {
-				a.working = append(a.working, llm.ToolResult(cc.ID, tools.TaskCompleteTool, gateNotAcceptedToolResult))
-				if a.pushGuidanceNudge(a.overflowUnreadNudge(), &unproductive) {
-					return a.escalateGuidance(unproductive)
-				}
-				continue
-			}
-			verdict := a.validateCompletion(ctx, cc, a.gateStrict(stateTouched, workTouched), stateTouched, userInput)
-			if verdict.ok {
-				a.working = append(a.working, llm.ToolResult(cc.ID, tools.TaskCompleteTool, "Completion accepted."))
-				a.finishTurn(ctx, verdict.answer, surfaced, surfacedSnips, userInput, true)
-				// Cooperative compaction is retired on the continuous-memory
-				// path (req.9.3): story-so-far is durable in cortex.
-				if !cm && a.budgetPct(a.buildSystem(pinned, retrieved, procedural, triggered, recalled)) >= a.cfg.SoftPct {
-					a.compact(ctx, "soft")
-				}
-				return nil
-			}
-			// Rejected: answer the task_complete call with a neutral token (so
-			// the transcript stays well-formed — every tool_call needs a result)
-			// and ride the actionable reason on the guidance channel rather than
-			// as an in-band tool result whose text the model narrates into the
-			// user-visible reasoning stream (req.1.2). The agent still learns it
-			// must keep working and how to close the gap — in clean terms it does
-			// not echo (advisor-not-effector — the agent enacts the fix). If the
-			// gate keeps rejecting without progress, escalate to a stop-and-ask
-			// rather than re-nudging unbounded (req.1.5).
-			a.working = append(a.working, llm.ToolResult(cc.ID, tools.TaskCompleteTool, gateNotAcceptedToolResult))
-			if a.pushGuidanceNudge(verdict.feedback, &unproductive) {
-				return a.escalateGuidance(unproductive)
-			}
-			continue
-		}
-
-		// No-progress detection (shared with the completion branch above via
-		// noteBatch): a repeat is a byte-identical batch signature, a SEMANTIC
+		// No-progress detection (Cassandra 2.0: no completion gate to share it
+		// with anymore): a repeat is a byte-identical batch signature, a SEMANTIC
 		// repeat (same operation reworded — a cosmetic reword can't reset the
 		// counter and loop forever, NE-4), or a rotating A→B→A→B cycle that
 		// introduces no new tool. Distinct operations reset the repeat read.
@@ -1029,11 +927,18 @@ func (a *Agent) Chat(ctx context.Context, userInput string) error {
 				return a.escalateGuidance(unproductive)
 			}
 		}
-		// One firm convergence steer just before the hard stall: grok in particular
+		// One firm convergence steer just before the hard stall: the model
 		// re-does work it already completed (re-fetching/re-rendering a value it
-		// already has) instead of closing out. Injected AFTER this step's tool
-		// results below so the transcript stays well-formed.
-		injectConvergeNudge := a.cfg.NoProgressStall >= 2 && repeats == a.cfg.NoProgressStall-1 && !convergeNudged
+		// already has) instead of closing out. SUPERSEDED by Cassandra 2.0
+		// (req.6.3): when the controller is enabled, its loop trigger fires at the
+		// same point (loop_threshold defaults to no_progress_stall-1) and delivers
+		// the same "you're re-doing completed work — step back" intent as the
+		// agent's OWN doubt inside its assistant channel, one step before the hard
+		// stall. This legacy GuidanceMessage steer only runs when the controller is
+		// DISABLED, keeping that path byte-identical to the pre-feature loop
+		// (req.10.2). Injected AFTER this step's tool results below so the
+		// transcript stays well-formed.
+		injectConvergeNudge := !a.cfg.CassandraEnabled && a.cfg.NoProgressStall >= 2 && repeats == a.cfg.NoProgressStall-1 && !convergeNudged
 
 		// P2-7: record distinct tool names for the adaptive budget signal.
 		for _, c := range res.Message.ToolCalls {
@@ -1050,8 +955,8 @@ func (a *Agent) Chat(ctx context.Context, userInput string) error {
 		// it from the tool name, e.g. "Layerx deposit."), so it rides the
 		// EPHEMERAL Progress channel — never persisted, never counted as the
 		// delivered answer. Routing it through durable Status was the bug where a
-		// straight-to-task_complete turn marked itself "already narrated" and the
-		// real task_complete summary was hidden, so the user saw only the stub.
+		// straight-to-tools turn marked itself "already narrated" and a later
+		// bare-answer surface was hidden, so the user saw only the stub.
 		if strings.TrimSpace(res.Message.Content) == "" {
 			if line := narrateBatch(res.Message.ToolCalls); line != "" {
 				a.out.Progress(line)
@@ -1059,16 +964,13 @@ func (a *Agent) Chat(ctx context.Context, userInput string) error {
 		}
 
 		a.runToolCalls(ctx, res.Message.ToolCalls)
-		workTouched = true
 		// req.8.2 (N2): a plain tool dispatch does NOT reset the unified
-		// unproductive counter — only genuine ACCEPTED progress does (an accepted
-		// completion, which ends the turn). This is the fix for the
-		// work->premature-complete->reject loop, where an interleaved real tool
-		// call used to silently reset the completion-reject bound and let the
-		// loop run to the step budget.
+		// unproductive counter — only genuine accepted progress does. This keeps
+		// an interleaved real tool call from silently resetting the loop-discipline
+		// bound and letting the loop run to the step budget.
 		if injectConvergeNudge {
 			convergeNudged = true
-			a.working = append(a.working, llm.GuidanceMessage("You already obtained the result and showed it — do NOT fetch or render it again. Give the user the answer now and call task_complete with it."))
+			a.working = append(a.working, llm.GuidanceMessage("You already obtained the result and showed it — do NOT fetch or render it again. Give the user the answer now and finish."))
 		}
 	}
 
@@ -1077,15 +979,6 @@ func (a *Agent) Chat(ctx context.Context, userInput string) error {
 	// fresh window rather than stopping with a partial.
 	a.consolidateWorking()
 	return fmt.Errorf("%w: reached the step budget without finishing. Progress so far: %s", ErrIncomplete, oneLine(a.lastToolSummary()))
-}
-
-// gateStrict reports whether THIS turn must finish through the grounded
-// completion gate rather than the light structural path: always for a
-// state-touching (money/chain) turn, and — under GateAllWork — for any turn
-// that did substantive tool work. A pure conversational turn (no tools) stays
-// on the light path.
-func (a *Agent) gateStrict(stateTouched, workTouched bool) bool {
-	return stateTouched || (a.cfg.GateAllWork && workTouched)
 }
 
 // pushGuidanceNudge routes a system-steering nudge through the guidance channel

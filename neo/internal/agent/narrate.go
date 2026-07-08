@@ -75,11 +75,11 @@ func narrateBatch(calls []llm.ToolCall) string {
 // should not be narrated (the completion gate).
 func narratePhrase(call llm.ToolCall) string {
 	name := call.Function.Name
-	// The completion gate, the task-list update, and the internal overflow read
-	// are not narrated: the gate is internal, the live checklist surface speaks
-	// for itself, and read_overflow is plumbing (paging a truncated result back
-	// in) — a narration line for any of these would be noise.
-	if name == tools.TaskCompleteTool || name == tools.TodoTool || name == readOverflowTool {
+	// The task-list update and the internal overflow read are not narrated: the
+	// live checklist surface speaks for itself, and read_overflow is plumbing
+	// (paging a truncated result back in) — a narration line for either would be
+	// noise.
+	if name == tools.TodoTool || name == readOverflowTool {
 		return ""
 	}
 	args, _ := call.ParseArgs() // best-effort; a parse error yields nil args

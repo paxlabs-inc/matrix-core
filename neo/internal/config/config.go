@@ -112,7 +112,6 @@ type Config struct {
 	// and even daemon restart/suspend — at least one agent stays on it until
 	// the objective is met to standard; see the Task Durability Rule) ---
 	SuperviseTasks     bool          // master switch: wrap each turn in the persistent supervisor
-	GateAllWork        bool          // route substantial reversible deliverables through the completion gate too (not just money/chain turns)
 	TaskMaxWall        time.Duration // hard wall-clock ceiling for one supervised task (generous; anti-runaway)
 	TaskAttemptTimeout time.Duration // ceiling for a single supervised attempt (one agent run)
 	TaskMaxRespawns    int           // max fresh-agent respawns before delivering an honest partial
@@ -131,6 +130,34 @@ type Config struct {
 	// so the legacy pager path is byte-identical when disabled. Config:
 	// [continuous_memory] enabled / env NEO_CONTINUOUS_MEMORY.
 	ContinuousMemory bool
+
+	// --- cassandra 2.0 (the silent-voice controller) ---
+	// Cassandra 2.0 replaces the retired proof-of-work completion gate with a
+	// silent, first-person feedback controller that edits the agent's OWN prior
+	// assistant-message content in place (folding in Doubt / Questioning /
+	// Curiosity / Assurance / Urge-to-verify) so the model reads it as its own
+	// emerging thought. It is a two-sided damping loop and a self-healing loop
+	// killer; it is SILENT on a clean run. These knobs gate it. Config:
+	// [cassandra] block / NEO_CASSANDRA_* env.
+	//
+	// CassandraEnabled is the master switch: when false the controller is a
+	// COMPLETE no-op and the window is byte-identical to the pre-feature loop.
+	CassandraEnabled bool
+	// CassandraMinStep is the first loop step at which a mod may fire — there is
+	// no prior assistant turn to edit before step 2 (default 2).
+	CassandraMinStep int
+	// CassandraMaxModsPerTurn caps total modifications in one Chat turn (anti-nag;
+	// default 3).
+	CassandraMaxModsPerTurn int
+	// CassandraLoopThreshold is the repeat count that arms the doubt side, chosen
+	// to fire ONE step BEFORE the hard no-progress stall (NoProgressStall). 0 (the
+	// default) derives it as NoProgressStall-1 so it tracks the stall bound when
+	// unset; a positive value overrides.
+	CassandraLoopThreshold int
+	// CassandraCooldownSteps is the minimum number of steps between mods of the
+	// same trigger class, so the controller never nags the same drift every step
+	// (default 2).
+	CassandraCooldownSteps int
 
 	// --- heartbeat (P1-4: Chronos-driven proactive turn convention) ---
 	// HeartbeatInterval is the recurring-alarm interval (minutes) for Neo's
@@ -236,10 +263,8 @@ func Default() Config {
 		// Task durability: ON by default. The ceilings are generous-but-finite
 		// (the user chose "max persistence" — effectively no practical limit —
 		// but a hard backstop must exist so a wedged task can't burn metered
-		// spend forever). GateAllWork makes every substantial deliverable prove
-		// completeness (not just money/chain turns) — "highest standard".
+		// spend forever).
 		SuperviseTasks:     true,
-		GateAllWork:        true,
 		TaskMaxWall:        6 * time.Hour,
 		TaskAttemptTimeout: 20 * time.Minute,
 		TaskMaxRespawns:    50,
@@ -249,6 +274,17 @@ func Default() Config {
 		// Continuous-memory collapse: OFF by default while it lands (the
 		// legacy pager path stays byte-identical when disabled).
 		ContinuousMemory: false,
+
+		// Cassandra 2.0 silent-voice controller. ON by default (a clean run is
+		// byte-identical to disabled, so it costs nothing when healthy). min_step
+		// 2 (no prior turn to edit at step 1), max 3 mods/turn (anti-nag),
+		// loop_threshold 0 = derive NoProgressStall-1 (fire one step before the
+		// hard stall), cooldown 2 steps per trigger class.
+		CassandraEnabled:        true,
+		CassandraMinStep:        2,
+		CassandraMaxModsPerTurn: 3,
+		CassandraLoopThreshold:  0,
+		CassandraCooldownSteps:  2,
 
 		// Automatrix (proactive surprise tasks). Default OFF; capture still runs
 		// regardless of this switch so the opportunity queue is warm, but Neo
@@ -398,7 +434,6 @@ func (c *Config) applyDoc(d *kvxDoc) {
 	}
 	if d.has("supervisor") {
 		c.SuperviseTasks = d.boolOr("supervisor", "supervise_tasks", c.SuperviseTasks)
-		c.GateAllWork = d.boolOr("supervisor", "gate_all_work", c.GateAllWork)
 		if m := d.intOr("supervisor", "task_max_wall_minutes", 0); m > 0 {
 			c.TaskMaxWall = time.Duration(m) * time.Minute
 		}
@@ -412,6 +447,13 @@ func (c *Config) applyDoc(d *kvxDoc) {
 	}
 	if d.has("continuous_memory") {
 		c.ContinuousMemory = d.boolOr("continuous_memory", "enabled", c.ContinuousMemory)
+	}
+	if d.has("cassandra") {
+		c.CassandraEnabled = d.boolOr("cassandra", "enabled", c.CassandraEnabled)
+		c.CassandraMinStep = d.intOr("cassandra", "min_step", c.CassandraMinStep)
+		c.CassandraMaxModsPerTurn = d.intOr("cassandra", "max_mods_per_turn", c.CassandraMaxModsPerTurn)
+		c.CassandraLoopThreshold = d.intOr("cassandra", "loop_threshold", c.CassandraLoopThreshold)
+		c.CassandraCooldownSteps = d.intOr("cassandra", "cooldown_steps", c.CassandraCooldownSteps)
 	}
 	if d.has("heartbeat") {
 		c.HeartbeatInterval = d.intOr("heartbeat", "interval_minutes", c.HeartbeatInterval)
@@ -476,7 +518,6 @@ func (c *Config) applyEnv() {
 
 	// Task supervisor (durability).
 	c.SuperviseTasks = envBool("NEO_SUPERVISE_TASKS", c.SuperviseTasks)
-	c.GateAllWork = envBool("NEO_GATE_ALL_WORK", c.GateAllWork)
 	if m := envInt("NEO_TASK_MAX_WALL_MINUTES", 0); m > 0 {
 		c.TaskMaxWall = time.Duration(m) * time.Minute
 	}
@@ -516,6 +557,16 @@ func (c *Config) applyEnv() {
 
 	// Continuous-memory collapse feature flag.
 	c.ContinuousMemory = envBool("NEO_CONTINUOUS_MEMORY", c.ContinuousMemory)
+
+	// Cassandra 2.0 silent-voice controller. enabled is a plain bool switch.
+	// min_step / max_mods_per_turn / cooldown_steps are positive counts (envInt
+	// rejects 0, keeping the default). loop_threshold accepts 0 (the "derive
+	// NoProgressStall-1" sentinel), so it uses the non-negative variant.
+	c.CassandraEnabled = envBool("NEO_CASSANDRA_ENABLED", c.CassandraEnabled)
+	c.CassandraMinStep = envInt("NEO_CASSANDRA_MIN_STEP", c.CassandraMinStep)
+	c.CassandraMaxModsPerTurn = envInt("NEO_CASSANDRA_MAX_MODS", c.CassandraMaxModsPerTurn)
+	c.CassandraLoopThreshold = envIntNonNeg("NEO_CASSANDRA_LOOP_THRESHOLD", c.CassandraLoopThreshold)
+	c.CassandraCooldownSteps = envInt("NEO_CASSANDRA_COOLDOWN", c.CassandraCooldownSteps)
 }
 
 // envInt overlays a positive integer from the environment, keeping the

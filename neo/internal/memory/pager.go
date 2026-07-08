@@ -135,6 +135,15 @@ func (p *Pager) AppendMessage(m cortex.Message) (memory.URI, error) {
 	return p.cortex.AppendMessage(m)
 }
 
+// Transcript reads the durable conversation transcript back from cortex (a thin
+// delegate to cortex.Transcript). It is a pure read — no journal append, no SMT
+// write — and returns messages from sinceSeq onward, up to limit (0 = all). Used
+// to observe the durable ground truth (e.g. that Cassandra's in-window overlay
+// never rewrote what the agent actually said).
+func (p *Pager) Transcript(conv string, sinceSeq uint64, limit int) ([]cortex.Message, error) {
+	return p.cortex.Transcript(conv, sinceSeq, limit)
+}
+
 // Activate composes the whole per-turn working set for a conversation via
 // cortex.Activate (continuous-memory task 6.2): {Pinned, Timeline(T0),
 // Recent(T1), Transcript(T2 slice), StorySoFar, ReachableURIs(T3 handles)},

@@ -60,11 +60,11 @@ func (c *channelReporter) Think(string)              {}
 func (c *channelReporter) Delta(int, string, string) {}
 
 // straightToCompleteServer scripts the exact grok shape from the 2026-07-05
-// LayerX drop: the model goes STRAIGHT to a tool with NO preamble content
-// (first call), then closes with a lone task_complete whose summary IS the
-// answer and again NO bare message (second call). No genuine narration is ever
-// emitted — the only "narration" is the synthetic intent stub. If that stub is
-// treated as durable narration, the real answer is suppressed.
+// LayerX drop, adapted to Cassandra 2.0 (the completion gate is retired): the
+// model goes STRAIGHT to a tool with NO preamble content (first call), then
+// closes with a lone BARE ANSWER message and no genuine preceding narration
+// (second call). The only "narration" is the synthetic intent stub. If that stub
+// is treated as durable narration, the real answer is suppressed.
 func straightToCompleteServer(t *testing.T, calls *int, mu *sync.Mutex) *httptest.Server {
 	t.Helper()
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -74,35 +74,38 @@ func straightToCompleteServer(t *testing.T, calls *int, mu *sync.Mutex) *httptes
 		mu.Unlock()
 
 		w.Header().Set("Content-Type", "text/event-stream")
-		var tcJSON map[string]any
 		if idx == 0 {
 			// Straight to a real tool, no preamble content.
-			tcJSON = map[string]any{
+			tcJSON := map[string]any{
 				"index": 0, "id": "call_search", "type": "function",
 				"function": map[string]any{
 					"name":      "web_search",
 					"arguments": `{"query":"layerx balance"}`,
 				},
 			}
-		} else {
-			// Lone task_complete carrying the answer; no bare message.
-			tcJSON = map[string]any{
-				"index": 0, "id": "call_done", "type": "function",
-				"function": map[string]any{
-					"name":      tools.TaskCompleteTool,
-					"arguments": `{"summary":"Your LayerX balance is 1000.000000 USDX (all in escrow).","coverage":"full"}`,
-				},
+			frame := map[string]any{
+				"choices": []any{map[string]any{
+					"index": 0,
+					"delta": map[string]any{"role": "assistant", "tool_calls": []any{tcJSON}},
+				}},
 			}
+			fb, _ := json.Marshal(frame)
+			fmt.Fprintf(w, "data: %s\n", fb)
+			fmt.Fprint(w, `data: {"choices":[{"index":0,"delta":{},"finish_reason":"tool_calls"}]}`+"\n")
+			fmt.Fprint(w, "data: [DONE]\n")
+			return
 		}
+		// Close with a lone bare answer (no tool calls) — the single completion
+		// path now that the gate is retired.
 		frame := map[string]any{
 			"choices": []any{map[string]any{
 				"index": 0,
-				"delta": map[string]any{"role": "assistant", "tool_calls": []any{tcJSON}},
+				"delta": map[string]any{"role": "assistant", "content": "Your LayerX balance is 1000.000000 USDX (all in escrow)."},
 			}},
 		}
 		fb, _ := json.Marshal(frame)
 		fmt.Fprintf(w, "data: %s\n", fb)
-		fmt.Fprint(w, `data: {"choices":[{"index":0,"delta":{},"finish_reason":"tool_calls"}]}`+"\n")
+		fmt.Fprint(w, `data: {"choices":[{"index":0,"delta":{},"finish_reason":"stop"}]}`+"\n")
 		fmt.Fprint(w, "data: [DONE]\n")
 	}))
 	t.Cleanup(srv.Close)
@@ -135,7 +138,6 @@ func TestStraightToCompleteDeliversAnswerViaEphemeralStub(t *testing.T) {
 	cfg.ContinuousMemory = true
 	cfg.CortexRoot = t.TempDir()
 	cfg.CortexActor = "neo-straight-complete"
-	cfg.GateAllWork = true
 
 	pager, err := memory.Open(cfg)
 	if err != nil {
@@ -176,10 +178,11 @@ func TestStraightToCompleteDeliversAnswerViaEphemeralStub(t *testing.T) {
 	if !strings.Contains(rep.said[0], "1000.000000 USDX") {
 		t.Fatalf("delivered answer must carry the real balance, got %q", rep.said[0])
 	}
-	// And it is the validated task_complete summary (completion=true) — the
-	// server/client keep it visible precisely because no genuine narration
-	// (run.narrated / durableProduced) preceded it.
-	if !rep.sayFinal[0] {
-		t.Fatalf("the delivered answer should be the task_complete completion summary (completion=true)")
+	// With the completion gate retired, the answer is delivered on the single
+	// bare-answer completion path, so completion=false (there is no separate
+	// task_complete summary anymore). What matters is that the REAL answer was
+	// delivered via Say and the synthetic stub did not suppress it.
+	if rep.sayFinal[0] {
+		t.Fatalf("a bare-answer completion must be delivered with completion=false (the gate is retired)")
 	}
 }

@@ -176,10 +176,8 @@ func (s *session) rebuildAgent() {
 		Consolidator: e.consolidator,
 		Recaller:     recaller,
 		Observer:     func(ev agent.ToolEvent) { e.surfaceTool(s.cur, ev) },
-		// Cassandra Phase 3: the shared completeness faculty audits the
-		// completion gate on state-touching turns; its verdicts stream as
-		// cassandra.* events onto the live run.
-		Adjudicator:   e.adjudicator,
+		// Cassandra 2.0: the silent-voice controller streams its cassandra.mod
+		// audit events onto the live run via the AuditObserver side-channel.
 		AuditObserver: func(ev agent.AuditEvent) { e.publishAudit(s.cur, ev) },
 		// Continuous-memory task 7.1: surface the memory Neo carries (durable
 		// story-so-far + coarse timeline) onto the live run as a memory.activation
@@ -535,7 +533,7 @@ func resumePrime(objective string, attempt int) string {
 	var b strings.Builder
 	b.WriteString("[continue this task] A previous attempt was interrupted before the task was finished. Your objective is unchanged:\n\n")
 	b.WriteString(strings.TrimSpace(objective))
-	b.WriteString("\n\nWork from a previous attempt may already exist — check your workspace (list/read the relevant files, re-run a quick status check) and BUILD ON what is already done instead of restarting from scratch. Keep going until the objective is fully achieved to a high standard, then call task_complete with honest coverage and the real evidence behind it.")
+	b.WriteString("\n\nWork from a previous attempt may already exist — check your workspace (list/read the relevant files, re-run a quick status check) and BUILD ON what is already done instead of restarting from scratch. Keep going until the objective is fully achieved to a high standard, then give your final answer with honest coverage and the real evidence behind it.")
 	if attempt >= 3 {
 		b.WriteString(" If you keep getting stuck on one piece, break it into smaller concrete steps, or delegate parallel parts with spawn_subagents.")
 	}
@@ -632,8 +630,9 @@ func superviseBackoff(ctx context.Context, attempt int, rateLimited bool) bool {
 // real supervisor's policy EXACTLY — the same pure superviseDecision over the
 // agent's clean finish / failure class / wall-clock, the same jittered backoff,
 // the same FRESH-agent respawn over durable state across a non-clean exit — so
-// a proactive run is held to the SAME completion gate (inside agent.Chat:
-// GateAllWork + the Cassandra adjudicator) as any state-touching turn. The two
+// a proactive run is held to the SAME loop discipline (inside agent.Chat:
+// no-progress stall / step budget / the unified unproductive counter, plus the
+// Cassandra 2.0 silent-voice controller) as any interactive turn. The two
 // differences from superviseTask are deliberate: (1) the agent is the
 // RESTRICTED no-money surface (the session was minted with automatrix=true), and
 // (2) it surfaces NOTHING — no SSE/broker terminals, no honest-partial bubble in
@@ -890,10 +889,10 @@ func (r *sseReporter) Say(text string, completion bool) {
 	text = llm.StripGuidance(text)
 	fields := s.chatFields(run, text, true)
 	if completion {
-		// Mark the validated task_complete summary so the client keeps it out of
-		// the thread — it is a redundant recap on top of the narration the user
-		// already read. It is STILL sent here, and message.complete still fires,
-		// so Cassandra's accepted completion deterministically closes the task.
+		// Legacy completion marker: kept for wire compatibility with the client's
+		// "redundant recap" handling. With the proof-of-work gate retired (Cassandra
+		// 2.0), Neo's own loop delivers every answer with completion=false, so this
+		// path is dormant; message.complete still fires to close the run.
 		fields["completion"] = true
 	}
 	s.engine.broker.publish(run.id, "message.complete", "neo", map[string]interface{}{"status": "completed"})

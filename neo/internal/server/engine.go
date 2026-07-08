@@ -22,7 +22,6 @@ import (
 	"sync/atomic"
 	"time"
 
-	"matrix/cassandra"
 	"matrix/construct/backchannel"
 	"matrix/construct/schema"
 	"matrix/construct/schema/primitives"
@@ -56,8 +55,7 @@ type Engine struct {
 	tools        *tools.Manager
 	pager        *memory.Pager
 	consolidator agent.Consolidator
-	adjudicator  *cassandra.Adjudicator // shared Cassandra completeness faculty (Phase 3); nil = deterministic fallback
-	conv         *conversation.Store    // durable chat-thread history (per conversation_id)
+	conv         *conversation.Store // durable chat-thread history (per conversation_id)
 	tasks        *task.Store            // durable task-supervision ledger (survives restart/suspend)
 	trace        *trace.Store           // durable per-run workspace timeline ("Neo's Computer"); sidecar, never cortex
 	automatrix   *automatrixlog.Store   // durable Automatrix completion inbox (in-app surprise results); sidecar, never cortex
@@ -150,8 +148,7 @@ type EngineOptions struct {
 	Tools                 *tools.Manager
 	Pager                 *memory.Pager
 	Consolidator          agent.Consolidator
-	Adjudicator           *cassandra.Adjudicator // shared Cassandra completeness faculty (Phase 3)
-	ConversationDir       string                 // durable conversation store dir ("" disables persistence)
+	ConversationDir       string // durable conversation store dir ("" disables persistence)
 	TaskDir               string                 // durable task-ledger dir ("" disables; reaper needs it to resume after restart)
 	TraceDir              string                 // durable workspace-trace dir ("" disables; the reopen-survives-reload store, F3)
 	AutomatrixDir         string                 // durable Automatrix completion-inbox dir ("" disables; the in-app surprise-results store)
@@ -172,7 +169,6 @@ func NewEngine(o EngineOptions) *Engine {
 		tools:        o.Tools,
 		pager:        o.Pager,
 		consolidator: o.Consolidator,
-		adjudicator:  o.Adjudicator,
 		conv:         conversation.Open(o.ConversationDir),
 		tasks:        task.Open(o.TaskDir),
 		trace:        trace.Open(o.TraceDir),

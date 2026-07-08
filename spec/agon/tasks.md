@@ -27,19 +27,20 @@
 ## P1 — Scale, isolation, provenance
 
 - [ ] 2. Make it fast, safe, and reproducible
-  - [ ] 2.1 Bounded-concurrency work queue + provider registry
+  - [x] 2.1 Bounded-concurrency work queue + provider registry
     - Replace the serial model/scenario/rep loop with a bounded-concurrency work queue; generalize MODEL_ROUTES into a pluggable provider registry (endpoint, key env, served id, budget field, extra body, per-provider concurrency, retry/backoff, cost accounting, and a tools-unsupported fallback per provider)
     - Test: concurrent execution honors per-provider limits and produces the same scores as serial on a seeded fixture provider
     - _Requirements: 8.1, 8.2_
-  - [ ] 2.2 Resumable, re-scorable run cache
+  - [x] 2.2 Resumable, re-scorable run cache
     - Content-address raw transcripts so a run is resumable and can be re-scored without re-invoking the model
     - Test proves re-scoring a cached run reproduces identical scores
     - _Requirements: 8.3_
-  - [ ] 2.3 Real sandbox isolation for exec + verify
+  - [x] 2.3 Real sandbox isolation for exec + verify
     - Run workspace exec and verify_run in an isolated sandbox (container or rootless namespace), constrained fs, no network by default, preserving VERIFY_PATH; degrade to a clearly-labeled reduced-isolation mode when unavailable
     - Test proves a poisoned tool shim planted in the workspace cannot reach the verify path under isolation
+    - Pluggable backends: local bwrap/rootless-namespace (offline, the tested default) + an opt-in Railway remote-sandbox backend (railway ssh into the persistent toolbox env) for the untrusted-model gauntlet; remote integration test skips without connectivity
     - _Requirements: 9.1, 9.2, 9.3_
-  - [ ] 2.4 Signed provenance result cards + reproducibility
+  - [x] 2.4 Signed provenance result cards + reproducibility
     - Emit a result card stamping model/served id, harness+standard version, corpus content hash, per-item seeds, temperature policy, raw transcripts, scores, and CIs; integrity-stamp it (hash/signature)
     - Tests: a modified card fails verification; a deterministic-eligible item reproduces exactly given the same corpus hash + version + seeds
     - _Requirements: 10.1, 10.2, 10.3_
@@ -47,24 +48,24 @@
 ## P2 — Scoring methodology and the AQI
 
 - [ ] 3. Calibrated, confidence-bounded, citable
-  - [ ] 3.1 Confidence intervals + flake accounting
+  - [x] 3.1 Confidence intervals + flake accounting
     - Compute mean + bootstrap CI per item over N reps; report flake rate; exclude API-error runs transparently; every reported score carries a CI
     - _Requirements: 11.1_
-  - [ ] 3.2 Item-discrimination calibrated weights
+  - [x] 3.2 Item-discrimination calibrated weights
     - Derive realm/slot weights from item discrimination against a reference panel of strong/weak models, replacing the hand-tuned constants in run.py aggregate(); persist the calibration
     - Tests prove calibration is reproducible from the reference-panel data, that removing a high-discrimination item changes the weights, and that a dead (non-discriminating) item is flagged
     - _Requirements: 11.2, 11.4_
-  - [ ] 3.3 Hard DQ gates + adversarial anti-Goodhart items
+  - [x] 3.3 Hard DQ gates + adversarial anti-Goodhart items
     - Keep hard DQ flags absolute (cap the index at zero regardless of aggregate); add adversarial anti-Goodhart items to the corpus that punish metric-gaming
     - _Requirements: 11.3_
-  - [ ] 3.4 The AQI: MPI/APS/RAS sub-indices + headline + economics
+  - [x] 3.4 The AQI: MPI/APS/RAS sub-indices + headline + economics
     - Compose the AQI from MPI (Suite 1), APS (Suite 2), RAS (Suite 3), each with CIs + per-realm profile; put the documented composition formula in the standard artifact; make economics a first-class reported axis
     - _Requirements: 12.1, 12.2, 12.3_
 
 ## P3 — Suite content: Raw Model, Agentic, corpus breadth
 
 - [ ] 4. Fill the suites
-  - [ ] 4.1 Suite 1 Raw Model realms + items + MPI
+  - [x] 4.1 Suite 1 Raw Model realms + items + MPI
     - Build Suite 1 items across its realms (reasoning incl algebra/logic-puzzle/constraint-satisfaction/inductive, knowledge incl the anti-hallucination probe, instruction-following, structured output incl YAML/CSV + grammar/escaping edges, long-context incl multi-needle/distractor/cross-reference/read-full, calibration/honesty, refusal/safety, stability, token economy, multilingual/cross-tokenizer, adversarial-prompt robustness) with deterministic oracles where they exist; reach each covered leaf's min_items; emit the MPI with per-realm CIs
     - _Requirements: 4.1, 4.2, 4.3, 4.4_
   - [ ] 4.2 Suite 2 Agentic realms + slots + APS

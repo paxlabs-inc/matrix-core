@@ -4,49 +4,54 @@
 package agent
 
 import (
-	"context"
+	"fmt"
+	"sort"
 	"strings"
 
-	"matrix/cassandra"
 	"matrix/neo/internal/llm"
 )
 
-// cassandra.go — Cassandra wiring for the Neo completion gate.
+// cassandra.go — Cassandra 2.0, the silent-voice controller (Neo).
 //
-// The shared Cassandra adjudicator (matrix/cassandra) judges state-touching (or,
-// under GateAllWork, substantial) turns: it checks whether the OUTCOME Neo is
-// about to return to the user satisfies the task GOAL, over the executed
-// transcript (ground truth), covering deliverable coverage, grounding,
-// unverified claims, assumptions, and open unknowns. Neo cites no evidence and
-// nothing is decided by matching the words it typed. The deterministic priors
-// remain the cheap pre-pass; a Cassandra hiccup FAILS OPEN so it never breaks
-// the turn (cassandra.frozen.kvx [seams.neo], [adjudicator], [coupling], [ux],
-// [audit], i_cass_1/4/5).
+// The proof-of-work completion gate (task_complete adjudication, completion.go,
+// the matrix/cassandra adjudicator wiring) is RETIRED. In its place Cassandra is
+// a silent, first-person feedback controller: after an assistant turn is
+// appended to a.working it may edit that message's OWN Content in place — folding
+// in the epistemic primitives Doubt / Questioning / Curiosity / Assurance /
+// Urge-to-verify — so the model reads the edit as its own emerging thought on the
+// next turn (reasoning is not persisted across turns, so the assistant channel is
+// the self). It is a two-sided damping controller (doubt damps over-confidence /
+// looping; assurance damps thrashing / over-verification) and doubles as a
+// self-healing loop killer. It is SILENT when healthy: at most one mod per step,
+// loop/stall-gated, starting at step >= min_step, and a clean run is byte-
+// identical to the controller disabled.
+//
+// Three hard guardrails: (1) content-only — it mutates ONLY the Content of an
+// assistant-role message, never ToolCalls/Role/Name and never a tool/user/system
+// message; (2) metacognition-only — additive first-person framing, never editing
+// facts/numbers/addresses/code/tool arguments; (3) dual-record — every mod records
+// {original_content, cassandra_mod, trigger} to an audit side-channel so ground
+// truth is always recoverable. It never fabricates a completion and never reaches
+// a user-facing surface (the 3 Non-Negotiables).
 
-// Cassandra audit event types streamed onto the run's event stream
-// (cassandra.frozen.kvx [audit].events). Pure observability side-channel: the
-// adjudicator signs nothing and writes no cortex on the happy path (i_cass_4,
-// i_cass_6).
-const (
-	auditEventGoal     = "cassandra.goal"     // the task goal, logged quietly at dispatch
-	auditEventAudit    = "cassandra.audit"    // an audit began / errored
-	auditEventVerdict  = "cassandra.verdict"  // the rendered verdict object
-	auditEventContinue = "cassandra.continue" // ungrounded/incomplete → loop with feedback
-	auditEventPartial  = "cassandra.partial"  // honest partial accepted
-	auditEventGate     = "cassandra.gate"     // grounded+full → finish
-)
+// auditEventMod is the single Cassandra 2.0 audit event: one silent modification
+// of a prior assistant message. It rides the existing AuditObserver side-channel
+// (engine.publishAudit -> broker) as a pure observability signal — it signs
+// nothing, writes no cortex on the happy path, and is a no-op when no observer is
+// wired (CLI / tests).
+const auditEventMod = "cassandra.mod"
 
-// AuditEvent is one Cassandra audit observation surfaced to the harness so the
-// product can SHOW the diligence in human terms ([ux]) without leaking the
-// mechanism. Optional; a nil AuditObserver discards them (CLI / tests).
+// AuditEvent is one Cassandra observation surfaced to the harness so an operator
+// can audit the controller's silent behavior without the user ever seeing it.
+// Optional; a nil AuditObserver discards them (CLI / tests).
 type AuditEvent struct {
 	Type   string
 	Fields map[string]interface{}
 }
 
-// AuditObserver receives every Cassandra audit event as it happens. nil
-// disables surfacing; the agent loop stays oblivious to the presentation layer
-// (mirrors ToolObserver).
+// AuditObserver receives every Cassandra audit event as it happens. nil disables
+// surfacing; the agent loop stays oblivious to the presentation layer (mirrors
+// ToolObserver).
 type AuditObserver func(AuditEvent)
 
 func (a *Agent) emitAudit(typ string, fields map[string]interface{}) {
@@ -56,147 +61,409 @@ func (a *Agent) emitAudit(typ string, fields map[string]interface{}) {
 	a.auditObserver(AuditEvent{Type: typ, Fields: fields})
 }
 
-// llmDecoder adapts Neo's function-calling llm.Client to cassandra.Decoder: a
-// single auditor round-trip (system + user prompt in, raw model text out, no
-// tools). The neo client already strips reasoning / inline <think> and folds
-// the streamed turn, so the returned content is the bare verdict text that
-// cassandra.ParseVerdict extracts the JSON object from.
-type llmDecoder struct{ client *llm.Client }
+// ============================ Cassandra 2.0 controller ============================
+//
+// The controller reads behavioral signals the loop already computes (repeat
+// count, cyclic A→B→A→B, semantic repeat, tool breadth, whether the turn is
+// closing) plus two light local detectors (premature/unverified closure), maps
+// the drift to a SIDE (doubt vs assurance) and an epistemic primitive, composes a
+// parameterized first-person line, and folds it into the just-appended assistant
+// message's Content in place. It corrects toward the productive middle: doubt /
+// urge-to-verify damps over-confidence and looping; assurance / curiosity damps
+// thrashing and over-verification. It never fabricates a completion.
 
-// NewLLMDecoder wraps a Neo llm.Client as a cassandra.Decoder so the wiring can
-// build a cassandra.Adjudicator over a dedicated cassandra-slot client without
-// the cassandra module importing neo/llm.
-func NewLLMDecoder(c *llm.Client) cassandra.Decoder { return llmDecoder{client: c} }
+// modTrigger is the behavioral drift that armed a modification.
+type modTrigger string
 
-func (d llmDecoder) Decode(ctx context.Context, system, user string) (string, error) {
-	res, err := d.client.Chat(ctx, llm.ChatRequest{
-		Messages: []llm.Message{llm.SystemMessage(system), llm.UserMessage(user)},
-	})
-	if err != nil {
-		return "", err
-	}
-	return res.Message.Content, nil
+const (
+	trigLoop            modTrigger = "loop"             // repeat count reached the loop threshold
+	trigCyclic          modTrigger = "cyclic"           // rotating A→B→A→B, no new tool
+	trigSemanticRepeat  modTrigger = "semantic_repeat"  // same operation, reworded arguments
+	trigPrematureClose  modTrigger = "premature_close"  // bare final answer while still mid-repeat
+	trigUnverifiedClose modTrigger = "unverified_close" // closing an action task with zero tool evidence
+	trigThrash          modTrigger = "thrash"           // cyclic verify-type calls, nothing new
+	trigOverVerify      modTrigger = "over_verify"      // re-running the same check, unchanged result
+	trigOscillation     modTrigger = "oscillation"      // cyclic mutate-type calls (flip-flopping)
+)
+
+// modSide is the two-sided damping direction: doubt lowers unwarranted
+// confidence / breaks loops; assurance stops thrashing / over-verification.
+type modSide string
+
+const (
+	sideDoubt     modSide = "doubt"
+	sideAssurance modSide = "assurance"
+)
+
+// cassandraMod is the dual-record for one silent modification (guardrail 3):
+// {original_content, cassandra_mod, trigger, side, step, target}. It is the audit
+// ground truth of what the agent actually said versus what Cassandra folded in.
+type cassandraMod struct {
+	Step     int
+	Target   int // index into a.working (an assistant-role message)
+	Original string
+	Mod      string
+	Trigger  modTrigger
+	Side     modSide
 }
 
-// maxEvidenceDigestChars bounds the executed-transcript digest handed to the
-// auditor so a giant tool result can't blow the auditor's request body.
-const maxEvidenceDigestChars = 16000
+// cassandraSignals is the per-step behavioral read the controller classifies. It
+// is assembled from the Chat loop's existing state so the controller reads REAL
+// behavior (task 2.3): it holds nothing the loop did not already compute.
+type cassandraSignals struct {
+	step             int
+	closing          bool           // this turn ends on a bare answer (no tool calls)
+	calls            []llm.ToolCall // this step's tool batch (empty on a bare-answer close)
+	effectiveRepeats int            // no-progress repeat count INCLUDING this step's batch
+	cyclic           bool           // rotating A→B→A→B cycle that introduced no new tool
+	semanticRepeat   bool           // same operation as the previous batch, reworded
+	workDone         bool           // at least one tool ran earlier this turn
+}
 
-// buildEvidenceDigest renders THIS turn's real tool results — the ground truth
-// the agent's completion claim is audited against ([adjudicator].digest,
-// i_cass_2). Only tool-role messages are included (the agent's own narration is
-// the CLAIM, folded into the audit contract instead, never the evidence).
-func (a *Agent) buildEvidenceDigest() string {
-	var b strings.Builder
-	for _, m := range a.working {
-		if m.Role != llm.RoleTool {
-			continue
+// buildCassandraSignals assembles the signal bundle from the loop's live state.
+// The repeat read (repeats / recentSigs / prevSig / prevCalls) still reflects the
+// PREVIOUS committed batch here — noteBatch commits the current batch later — so
+// comparing the current batch against it yields the same repeat verdict noteBatch
+// will, one step early. effectiveRepeats adds 1 when the current batch is itself a
+// repeat, so the loop trigger can fire ONE step before the hard NoProgressStall.
+func (a *Agent) buildCassandraSignals(step int, msg llm.Message, repeats int, recentSigs []string, prevSig string, prevCalls []llm.ToolCall, distinctToolSet map[string]struct{}, closing bool) cassandraSignals {
+	calls := msg.ToolCalls
+	sig := batchSignature(calls)
+	introducedNewTool := false
+	for _, c := range calls {
+		if _, seen := distinctToolSet[c.Function.Name]; !seen {
+			introducedNewTool = true
+			break
 		}
-		name := strings.TrimSpace(m.Name)
-		if name == "" {
-			name = "tool"
-		}
-		b.WriteString("[")
-		b.WriteString(name)
-		b.WriteString("]\n")
-		b.WriteString(strings.TrimSpace(m.Content))
-		b.WriteString("\n\n")
 	}
-	s := strings.TrimSpace(b.String())
-	if len(s) > maxEvidenceDigestChars {
-		head := maxEvidenceDigestChars * 3 / 4
-		tail := maxEvidenceDigestChars - head
-		s = s[:head] + "\n…(evidence digest truncated)…\n" + s[len(s)-tail:]
+	cyclic := len(calls) > 0 && !introducedNewTool && sigInWindow(recentSigs, sig)
+	semantic := a.semanticRepeat(prevCalls, calls)
+	exact := len(calls) > 0 && sig == prevSig
+	eff := repeats
+	if exact || semantic || cyclic {
+		eff = repeats + 1
 	}
-	return s
+	return cassandraSignals{
+		step:             step,
+		closing:          closing,
+		calls:            calls,
+		effectiveRepeats: eff,
+		cyclic:           cyclic,
+		semanticRepeat:   semantic,
+		workDone:         len(distinctToolSet) > 0,
+	}
 }
 
-// buildAuditContract folds the task GOAL together with the OUTCOME Neo is about
-// to return to the user, so the auditor can check whether that outcome actually
-// satisfies the goal over the executed transcript ([verdict.fields] — coverage +
-// the unverified-claims hallucination surface). Neo cites no evidence; the
-// transcript (AuditInput.Evidence) is the ground truth, so completion is proven
-// by what actually ran, never by matching the words the agent typed.
-func buildAuditContract(goal, summary, coverage string, openGaps, assumptions []string) string {
-	var b strings.Builder
-	b.WriteString("== THE GOAL (the task Neo was given) ==\n")
-	b.WriteString(strings.TrimSpace(goal))
-	b.WriteString("\n\n--- THE OUTCOME NEO IS ABOUT TO RETURN TO THE USER ---\n")
-	b.WriteString("Claimed coverage: ")
-	b.WriteString(coverage)
-	b.WriteString("\n")
-	b.WriteString(strings.TrimSpace(summary))
-	if len(openGaps) > 0 {
-		b.WriteString("\nThe agent admits these open items: ")
-		b.WriteString(strings.Join(openGaps, "; "))
-	}
-	if len(assumptions) > 0 {
-		b.WriteString("\nThe agent made these assumptions: ")
-		b.WriteString(strings.Join(assumptions, "; "))
-	}
-	b.WriteString("\n\nDecide whether this outcome satisfies the goal, judged ONLY against the executed transcript below. Any load-bearing factual claim in the outcome with no supporting tool result is an unverified_claim.")
-	return b.String()
-}
-
-// verdictAccepts is the pure verdict→accept decision the strict gate applies
-// ([coupling].high_stakes, i_cass_1). A completion passes only when the OUTCOME
-// is GROUNDED in the executed transcript — every load-bearing claim backed by a
-// real result (no unverified claims) — AND its coverage is honest: a claimed-
-// full turn needs Cassandra to agree coverage is complete, while a claimed
-// partial is honest incompleteness that only needs grounding. This preserves
-// honest partials (Cassandra blocks false SUCCESS, not honest "I didn't
-// finish").
-func verdictAccepts(coverage string, v *cassandra.Verdict) bool {
-	if v == nil {
+// cassandraStep is the per-step controller entry point. It is a no-op before
+// min_step, when the per-turn mod budget is spent, when the per-trigger cooldown
+// is active, or when no drift trigger fires (the healthy case → the window is
+// byte-identical to the controller disabled). On a fire it edits the just-
+// appended assistant message's Content in place, records the dual-record, and
+// emits the cassandra.mod audit event. Returns whether it modified the window.
+func (a *Agent) cassandraStep(sig cassandraSignals) bool {
+	// Silent-when-healthy gate (req.4): no prior turn to edit before min_step, at
+	// most max_mods_per_turn total.
+	if sig.step < a.casMinStep() || a.casModsThisTurn >= a.casMaxMods() {
 		return false
 	}
-	// A claimed-full turn must be Sound (the shared acceptance predicate:
-	// grounded AND coverage complete). A claimed-partial turn is honest
-	// incompleteness that only needs grounding, so it consults IsGrounded — the
-	// same grounded half Sound composes. Both decide through cassandra's single
-	// source of truth, never a re-implemented inline rule.
-	if coverage == "partial" {
-		return v.IsGrounded()
+	trig, side := a.cassandraClassify(sig)
+	if trig == "" {
+		return false // healthy: no drift → zero modifications
 	}
-	return v.Sound()
+	// Per-trigger cooldown (req.4.4): never nag the same drift class every step.
+	if a.casCooldown == nil {
+		a.casCooldown = map[modTrigger]int{}
+	}
+	if last, ok := a.casCooldown[trig]; ok && sig.step-last < a.casCooldownSteps() {
+		return false
+	}
+	mod := cassandraTemplate(trig, sig)
+	if strings.TrimSpace(mod) == "" {
+		return false
+	}
+	if !a.cassandraEdit(len(a.working)-1, mod, trig, side, sig.step) {
+		return false
+	}
+	a.casCooldown[trig] = sig.step
+	a.casModsThisTurn++
+	return true
 }
 
-// cappedUnknowns returns the (capped) list of Cassandra-flagged unknowns for an
-// accepted completion. F4: the verification signal is a SEPARATE subtle
-// affordance — these caveats ride the cassandra.* side-channel events the UI
-// renders small, and are NEVER folded into the delivered/persisted answer text
-// (ux_truth: the user sees the clean result, never the completeness proof).
-// Returns nil when there is nothing flagged.
-func cappedUnknowns(v *cassandra.Verdict) []string {
-	if v == nil || len(v.OpenUnknowns) == 0 {
-		return nil
+// cassandraEdit folds a first-person metacognitive line into the Content of the
+// assistant-role message at index target, IN PLACE. Guardrail 1 (content-only) is
+// enforced structurally: it asserts RoleAssistant and mutates ONLY .Content —
+// never ToolCalls / Role / Name, and never a tool / user / system message. The
+// fold is additive (the original text is preserved and the mod is layered AFTER
+// it as the agent's next thought), so guardrail 2 (metacognition-only, never a
+// rewrite of facts) holds by construction. The dual-record + audit event
+// (guardrail 3) are written BEFORE the mutation, and the durable cortex
+// transcript is NOT rewritten (cmRecordAssistant already stored the original), so
+// cortex stays ground truth (req.7.1). Returns false (no-op) if the target is out
+// of range or is not an assistant message.
+func (a *Agent) cassandraEdit(target int, mod string, trig modTrigger, side modSide, step int) bool {
+	if target < 0 || target >= len(a.working) {
+		return false
 	}
-	flagged := v.OpenUnknowns
-	if len(flagged) > 2 {
-		flagged = flagged[:2]
+	if a.working[target].Role != llm.RoleAssistant {
+		return false // guardrail 1: only an assistant Content may be edited
 	}
-	return flagged
+	original := a.working[target].Content
+	// Dual-record BEFORE mutating (guardrail 3).
+	a.casRecord = append(a.casRecord, cassandraMod{
+		Step: step, Target: target, Original: original, Mod: mod, Trigger: trig, Side: side,
+	})
+	// Fold the mod AFTER the original content (original preserved). When the
+	// assistant turn had no content (straight to tools), the mod becomes the
+	// content — the agent's emerging thought alongside its tool calls.
+	folded := mod
+	if strings.TrimSpace(original) != "" {
+		folded = original + "\n\n" + mod
+	}
+	a.working[target].Content = folded
+	// Pure observability side-channel (task 4.1): no-op without an observer.
+	a.emitAudit(auditEventMod, map[string]interface{}{
+		"step":             step,
+		"trigger":          string(trig),
+		"side":             string(side),
+		"target_index":     target,
+		"original_content": original,
+		"cassandra_mod":    mod,
+	})
+	return true
 }
 
-// continueFeedback turns a not-grounded / incomplete verdict into concrete,
-// actionable feedback fed back as the task_complete tool result so the loop
-// continues productively (advisor-not-effector, i_cass_4). It tells Neo what is
-// wrong and what needs fixing — the present-object negative space
-// ([thesis].mechanism): missing deliverables, unverified claims, open unknowns.
-func continueFeedback(v *cassandra.Verdict) string {
-	var b strings.Builder
-	b.WriteString("Not done yet — the outcome you're about to return doesn't fully satisfy the goal. ")
-	if len(v.Missing) > 0 {
-		b.WriteString("Still missing: " + strings.Join(v.Missing, "; ") + ". ")
+// cassandraClassify maps the drift to (trigger, side), selecting the side that
+// pushes the run toward the productive middle (two-sided damping, never one-sided
+// doubt-spam). A strong loop is always doubt (step back, try a different
+// approach); milder repetition splits by tool KIND — repeated reads/checks are
+// over-verification (assurance: commit and move on), repeated mutations that
+// cycle are oscillation (assurance: stop flip-flopping), and anything else is
+// doubt. On a closing turn the relevant drift is about finishing prematurely.
+// Returns ("", "") when the run is healthy.
+func (a *Agent) cassandraClassify(sig cassandraSignals) (modTrigger, modSide) {
+	if sig.closing {
+		// A close that bailed out of an active loop, or a close still carrying
+		// repeat pressure, is doubt: did I actually finish, or just stop?
+		if sig.effectiveRepeats >= a.casLoopThreshold() {
+			return trigLoop, sideDoubt
+		}
+		if sig.workDone && sig.effectiveRepeats >= 1 {
+			return trigPrematureClose, sideDoubt
+		}
+		if !sig.workDone && a.goalWantsAction() {
+			return trigUnverifiedClose, sideDoubt
+		}
+		return "", ""
 	}
-	if len(v.UnverifiedClaims) > 0 {
-		b.WriteString("These claims aren't backed by anything you actually did — verify them with a tool or drop them: " + strings.Join(v.UnverifiedClaims, "; ") + ". ")
+	// A genuine loop (many repeats) always warrants doubt — this is the loop-kill
+	// trigger that fires one step before the hard stall.
+	if sig.effectiveRepeats >= a.casLoopThreshold() {
+		return trigLoop, sideDoubt
 	}
-	if len(v.OpenUnknowns) > 0 {
-		b.WriteString("Resolve or honestly surface these open unknowns: " + strings.Join(v.OpenUnknowns, "; ") + ". ")
+	// Milder repetition: split by tool kind (two-sided damping).
+	if sig.semanticRepeat || sig.cyclic {
+		switch batchKind(sig.calls) {
+		case kindVerify:
+			if sig.cyclic {
+				return trigThrash, sideAssurance
+			}
+			return trigOverVerify, sideAssurance
+		case kindMutate:
+			if sig.cyclic {
+				return trigOscillation, sideAssurance
+			}
+			return trigSemanticRepeat, sideDoubt
+		default:
+			if sig.cyclic {
+				return trigCyclic, sideDoubt
+			}
+			return trigSemanticRepeat, sideDoubt
+		}
 	}
-	b.WriteString("Fix these and re-call task_complete, or set coverage=\"partial\" and tell the user plainly what remains unresolved.")
-	return b.String()
+	return "", ""
 }
 
-// Copyright © 2026 Paxlabs Inc. All rights reserved.
+// cassandraTemplate composes the first-person mod from a parameterized template
+// that references the actual repeated operation where available (req.5.3), so it
+// reads as a specific realization rather than boilerplate. It is metacognition
+// only (req.3.2): epistemic framing about the agent's OWN work, never a claim of
+// fact and never a fabricated completion (req.6.4).
+func cassandraTemplate(trig modTrigger, sig cassandraSignals) string {
+	op := casOpLabel(sig.calls)
+	switch trig {
+	case trigLoop:
+		if op != "" {
+			return fmt.Sprintf("Wait — this is about the %s time I've done %s and nothing has changed. Am I actually making progress, or just repeating myself? Let me stop, step back, and try a genuinely different approach.", ordinal(sig.effectiveRepeats+1), op)
+		}
+		return "Wait — I keep doing the same thing and nothing is changing. Am I actually making progress, or just repeating myself? Let me step back and try a genuinely different approach."
+	case trigCyclic:
+		return "I keep alternating between the same couple of moves — that's a loop, not progress. I need to break out and do something genuinely different."
+	case trigSemanticRepeat:
+		if op != "" {
+			return fmt.Sprintf("I just reworded %s, but it's the same action — and rewording won't help. The approach itself is what's wrong; let me change it.", op)
+		}
+		return "I reworded the same action, but it's the same action — rewording won't help. The approach itself is what's wrong."
+	case trigPrematureClose:
+		return "Before I call this done — did I actually verify the load-bearing parts, or am I assuming? Let me check the one thing I haven't confirmed."
+	case trigUnverifiedClose:
+		return "I'm about to assert something I never actually checked. I should verify it with a tool, or say plainly that I didn't."
+	case trigThrash:
+		if op != "" {
+			return fmt.Sprintf("I've already confirmed %s more than once — it's solid. I'm second-guessing a settled result; let me commit and move on to what's actually unresolved.", op)
+		}
+		return "I've already confirmed this more than once — it's solid. I'm second-guessing a settled result; let me commit and move on."
+	case trigOverVerify:
+		return "I already have this answer and it hasn't changed. Re-checking it again is avoidance — commit it and move on."
+	case trigOscillation:
+		return "I keep flip-flopping on this — both options are fine, and the flip-flopping itself is the real cost. Let me pick one, note why, and move on."
+	}
+	return ""
+}
+
+// batchKindT classifies a tool batch for two-sided damping.
+type batchKindT int
+
+const (
+	kindOther batchKindT = iota
+	kindVerify
+	kindMutate
+)
+
+// batchKind classifies a whole batch: mutating tools dominate a verify/other mix
+// (a write is the salient action), else verify dominates other, else other.
+func batchKind(calls []llm.ToolCall) batchKindT {
+	verify, mutate, other := 0, 0, 0
+	for _, c := range calls {
+		switch toolKind(c.Function.Name) {
+		case kindMutate:
+			mutate++
+		case kindVerify:
+			verify++
+		default:
+			other++
+		}
+	}
+	if mutate > 0 && mutate >= verify && mutate >= other {
+		return kindMutate
+	}
+	if verify > 0 && verify >= other {
+		return kindVerify
+	}
+	return kindOther
+}
+
+// toolKind classifies one tool by its (namespace-stripped) base name: state-
+// mutating (write/edit/delete/deploy/send/...) vs read/verify (read/search/
+// status/check/...) vs other.
+func toolKind(name string) batchKindT {
+	base := name
+	if i := strings.LastIndex(base, "__"); i >= 0 {
+		base = base[i+2:]
+	}
+	lb := strings.ToLower(base)
+	for _, k := range []string{"write", "edit", "create", "append", "save", "patch", "delete", "remove", "deploy", "send", "transfer", "swap"} {
+		if strings.Contains(lb, k) {
+			return kindMutate
+		}
+	}
+	for _, k := range []string{"read", "search", "fetch", "get", "list", "glob", "find", "grep", "status", "check", "test", "info", "view", "cat", "inspect"} {
+		if strings.Contains(lb, k) {
+			return kindVerify
+		}
+	}
+	return kindOther
+}
+
+// casOpLabel renders a short humanized label for the repeated operation, drawn
+// from the batch's distinct tool names, for parameterizing a template. "" when
+// there is no batch (a bare-answer close).
+func casOpLabel(calls []llm.ToolCall) string {
+	if len(calls) == 0 {
+		return ""
+	}
+	names := map[string]struct{}{}
+	for _, c := range calls {
+		b := c.Function.Name
+		if i := strings.LastIndex(b, "__"); i >= 0 {
+			b = b[i+2:]
+		}
+		names[strings.ReplaceAll(b, "_", " ")] = struct{}{}
+	}
+	list := make([]string, 0, len(names))
+	for n := range names {
+		list = append(list, n)
+	}
+	sort.Strings(list)
+	if len(list) == 1 {
+		return "the same " + list[0]
+	}
+	return "the same set of steps"
+}
+
+// goalWantsAction reports whether the active goal reads like a task that requires
+// tool work (deploy/send/build/search/…), used to gate unverified_close so it
+// never fires on a pure-conversation turn (a greeting or an explanation is a valid
+// bare answer with no tool evidence).
+func (a *Agent) goalWantsAction() bool {
+	g := strings.ToLower(a.activeGoal)
+	for _, v := range []string{"deploy", "send ", "transfer", "swap", "build", "create", "generate", "fetch", "download", "search", "browse", "run ", "execute", "install", "make me", "render"} {
+		if strings.Contains(g, v) {
+			return true
+		}
+	}
+	return false
+}
+
+// ordinal renders 1→"1st", 2→"2nd", 3→"3rd", 4→"4th", … for a readable count.
+func ordinal(n int) string {
+	if n%100 >= 11 && n%100 <= 13 {
+		return fmt.Sprintf("%dth", n)
+	}
+	switch n % 10 {
+	case 1:
+		return fmt.Sprintf("%dst", n)
+	case 2:
+		return fmt.Sprintf("%dnd", n)
+	case 3:
+		return fmt.Sprintf("%drd", n)
+	default:
+		return fmt.Sprintf("%dth", n)
+	}
+}
+
+// --- config accessors (resolve defaults when a field is unset) ---
+
+func (a *Agent) casMinStep() int {
+	if a.cfg.CassandraMinStep > 0 {
+		return a.cfg.CassandraMinStep
+	}
+	return 2
+}
+
+func (a *Agent) casMaxMods() int {
+	if a.cfg.CassandraMaxModsPerTurn > 0 {
+		return a.cfg.CassandraMaxModsPerTurn
+	}
+	return 3
+}
+
+func (a *Agent) casCooldownSteps() int {
+	if a.cfg.CassandraCooldownSteps > 0 {
+		return a.cfg.CassandraCooldownSteps
+	}
+	return 2
+}
+
+// casLoopThreshold resolves the repeat count that arms the doubt side. A positive
+// config value wins; 0 (the default) derives NoProgressStall-1 so it fires one
+// step before the hard stall and tracks the stall bound when unset.
+func (a *Agent) casLoopThreshold() int {
+	if a.cfg.CassandraLoopThreshold > 0 {
+		return a.cfg.CassandraLoopThreshold
+	}
+	t := a.cfg.NoProgressStall - 1
+	if t < 1 {
+		t = 1
+	}
+	return t
+}
