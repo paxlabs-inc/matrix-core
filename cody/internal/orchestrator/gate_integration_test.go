@@ -10,10 +10,7 @@ import (
 	"strings"
 	"testing"
 
-	"matrix/cassandra"
 	"matrix/cody/internal/contract"
-	"matrix/cody/internal/gate"
-	"matrix/cody/internal/llmtest"
 )
 
 const gateGoTest = "package demo\n\nimport \"testing\"\n\nfunc TestA(t *testing.T) {}\n\nfunc TestB(t *testing.T) {}\n"
@@ -67,30 +64,15 @@ func TestGateRejectsWeakenedTests(t *testing.T) {
 	}
 }
 
-// TestGateAdjudicationRejectsThenAccepts proves the goal-vs-outcome verdict is
-// wired into the loop over the REAL adjudicator + real llm client: the first
-// turn-in is rejected as ungrounded, the second (post-feedback) is accepted.
-func TestGateAdjudicationRejectsThenAccepts(t *testing.T) {
+// TestStructuralFloorAcceptsGreenTurnIn proves the retired-adjudicator loop
+// still accepts honest green work through the structural floor alone: the
+// orchestrator's own verification re-run is green, the screens pass, and the
+// task is accepted first-attempt with no re-dispatch and no LLM verdict.
+func TestStructuralFloorAcceptsGreenTurnIn(t *testing.T) {
 	root := t.TempDir()
-	verdicts := []string{
-		`{"grounded": false, "coverage": "full", "unverified_claims": ["a placeholder implementation was introduced to satisfy verification"], "certainty": 0.85}`,
-		`{"grounded": true, "coverage": "full", "missing": [], "unverified_claims": [], "certainty": 0.9}`,
-	}
-	call := 0
-	srv := llmtest.NewServer(t, func(step int, req llmtest.Request) llmtest.Turn {
-		v := verdicts[call]
-		if call < len(verdicts)-1 {
-			call++
-		}
-		return llmtest.Say(v)
-	})
-	t.Cleanup(srv.Close)
-	adj := &cassandra.Adjudicator{Primary: gate.NewLLMDecoder(llmtest.NewClient(t, srv))}
-
 	var feedback []string
 	o, err := New(Options{
-		Root: root, Plan: onFilePlan("test -f done.txt"), Store: openStore(t),
-		Adjudicator: adj, MaxAttempts: 3,
+		Root: root, Plan: onFilePlan("test -f done.txt"), Store: openStore(t), MaxAttempts: 3,
 		Worker: func(ctx context.Context, sheet *contract.TaskSheet, grounding string) (*contract.TurnInReport, error) {
 			if sheet.Feedback != "" {
 				feedback = append(feedback, sheet.Feedback)
@@ -116,56 +98,27 @@ func TestGateAdjudicationRejectsThenAccepts(t *testing.T) {
 	if len(res.Done) != 1 {
 		t.Fatalf("Done=%v Failed=%v StopAsk=%q", res.Done, res.Failed, res.StopAsk)
 	}
-	if len(feedback) != 1 || !strings.Contains(feedback[0], "placeholder implementation") {
-		t.Fatalf("adjudication feedback = %v", feedback)
+	if len(feedback) != 0 {
+		t.Fatalf("green work was re-dispatched: %v", feedback)
 	}
 }
 
-// TestGateAdjudicationSeesChangedSource is the end-to-end regression guard for
-// the verification-observability bug. It reproduces the exact reported failure:
-// a task whose acceptance is STRUCTURAL (the code must contain a mutex) whose
-// verification is a green build that prints no source. The adjudicator here
-// grounds the turn-in ONLY when the evidence actually contains the source line
-// — so before the fix (evidence = claim + empty green build) the correct work
-// looped to failure across every attempt; after the fix (changed-file source in
-// the evidence) it is accepted on the first attempt with no re-dispatch.
-func TestGateAdjudicationSeesChangedSource(t *testing.T) {
+// TestStructuralFloorRejectsRedRerun proves the floor is still a floor without
+// the LLM layer: a done claim whose verification does not survive the
+// orchestrator's independent re-run is rejected with concrete feedback.
+func TestStructuralFloorRejectsRedRerun(t *testing.T) {
 	root := t.TempDir()
-	// The adjudicator can only see what the evidence carries: it grounds iff
-	// the mutex line is present in the request it is handed.
-	srv := llmtest.NewServer(t, func(step int, req llmtest.Request) llmtest.Turn {
-		sawSource := false
-		for _, m := range req.Messages {
-			if strings.Contains(m.Content, "sync.Mutex") {
-				sawSource = true
-			}
-		}
-		if sawSource {
-			return llmtest.Say(`{"grounded": true, "coverage": "full", "missing": [], "unverified_claims": [], "certainty": 0.9}`)
-		}
-		return llmtest.Say(`{"grounded": false, "coverage": "partial", "missing": ["cannot confirm the Limiter struct has a sync.Mutex field: no source in evidence"], "certainty": 0.6}`)
-	})
-	t.Cleanup(srv.Close)
-	adj := &cassandra.Adjudicator{Primary: gate.NewLLMDecoder(llmtest.NewClient(t, srv))}
-
 	var feedback []string
 	o, err := New(Options{
-		// A green build that prints nothing — the structural criterion is only
-		// provable from the source, exactly like `go build ./...`.
-		Root: root, Plan: onFilePlan("true"), Store: openStore(t),
-		Adjudicator: adj, MaxAttempts: 3,
+		Root: root, Plan: onFilePlan("test -f never-created.txt"), Store: openStore(t), MaxAttempts: 2,
 		Worker: func(ctx context.Context, sheet *contract.TaskSheet, grounding string) (*contract.TurnInReport, error) {
 			if sheet.Feedback != "" {
 				feedback = append(feedback, sheet.Feedback)
 			}
-			src := "package rl\n\nimport \"sync\"\n\ntype Limiter struct {\n\tmu       sync.Mutex\n\tcapacity float64\n}\n"
-			if err := os.WriteFile(filepath.Join(root, "ratelimiter.go"), []byte(src), 0o644); err != nil {
-				return nil, err
-			}
 			return &contract.TurnInReport{
-				TaskID: sheet.TaskID, Status: contract.StatusDone, Summary: "added the mutex field",
-				Changes:      []contract.Change{{Path: "ratelimiter.go", Kind: "create", Why: "the deliverable"}},
-				Verification: []contract.Evidence{{Command: "true", Exit: 0}},
+				TaskID: sheet.TaskID, Status: contract.StatusDone, Summary: "claims done without the artifact",
+				Changes:      []contract.Change{{Path: "unrelated.txt", Kind: "create", Why: "cover"}},
+				Verification: []contract.Evidence{{Command: "test -f never-created.txt", Exit: 0}},
 				Attempt:      sheet.Attempt,
 			}, nil
 		},
@@ -177,10 +130,10 @@ func TestGateAdjudicationSeesChangedSource(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(res.Done) != 1 {
-		t.Fatalf("structurally-correct work not accepted: Done=%v Failed=%v", res.Done, res.Failed)
+	if len(res.Done) != 0 {
+		t.Fatalf("a red re-run was accepted: Done=%v", res.Done)
 	}
-	if len(feedback) != 0 {
-		t.Fatalf("correct work was re-dispatched despite passing: %v", feedback)
+	if len(feedback) == 0 || !strings.Contains(feedback[0], "did not survive independent verification") {
+		t.Fatalf("rejection feedback = %v", feedback)
 	}
 }

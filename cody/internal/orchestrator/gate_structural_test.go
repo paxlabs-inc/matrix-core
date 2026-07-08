@@ -11,68 +11,36 @@ import (
 	"strings"
 	"testing"
 
-	"matrix/cassandra"
 	"matrix/cody/internal/contract"
-	"matrix/cody/internal/gate"
-	"matrix/cody/internal/llmtest"
 )
 
-// TestNoFakesViolationRejectedThenGreenAcceptedCheckpointed is Property 3's
-// no-fakes arm end-to-end: attempt 1 introduces a hardcoded placeholder that
-// makes the sheet's verification pass (green re-run, screens pass), and the
-// REAL adjudicator — a real cassandra.Adjudicator over the real llm client
-// and real SSE — rejects it as an unverified claim of completion. Attempt 2
-// ships the real implementation and is accepted AND checkpointed to REAL
-// cortex.
-func TestNoFakesViolationRejectedThenGreenAcceptedCheckpointed(t *testing.T) {
+// TestGreenTurnInAcceptedCheckpointed proves the structural floor end-to-end
+// after the adjudicator retirement: a real implementation whose verification
+// survives the orchestrator's independent re-run is accepted first-attempt AND
+// checkpointed to REAL cortex, with the honest attempt history persisted.
+// (The no-fakes honesty pressure now lives inside the worker loop as the
+// Cassandra 2.0 silent-voice controller — see worker/cassandra.go tests.)
+func TestGreenTurnInAcceptedCheckpointed(t *testing.T) {
 	root := t.TempDir()
 	plan := &Plan{Goal: "a real sum implementation", Tasks: []*Task{{
 		ID: "t1", Title: "Implement sum.sh", Wave: 1,
 		Goal:        "sum.sh computes the sum of its two arguments",
-		Acceptance:  []string{"sh sum.sh 2 3 prints 5 because it adds, not because 5 is hardcoded"},
+		Acceptance:  []string{"sh sum.sh 2 3 prints 5 because it adds"},
 		Verify:      []string{`test "$(sh sum.sh 2 3)" = "5"`},
 		Deliverable: contract.Deliverable{Shape: "sum.sh"},
 	}}}
 
-	verdicts := []string{
-		`{"grounded": false, "coverage": "full", "unverified_claims": ["sum.sh is a hardcoded placeholder (echo 5) introduced to make verification pass, not an implementation"], "certainty": 0.9}`,
-		`{"grounded": true, "coverage": "full", "missing": [], "unverified_claims": [], "certainty": 0.9}`,
-	}
-	call := 0
-	srv := llmtest.NewServer(t, func(step int, req llmtest.Request) llmtest.Turn {
-		v := verdicts[call]
-		if call < len(verdicts)-1 {
-			call++
-		}
-		return llmtest.Say(v)
-	})
-	t.Cleanup(srv.Close)
-	adj := &cassandra.Adjudicator{Primary: gate.NewLLMDecoder(llmtest.NewClient(t, srv))}
-
-	progress := openProgress(t, "plan-nofakes")
+	progress := openProgress(t, "plan-structural-floor")
 	st := openStore(t)
-	var feedback []string
 	o, err := New(Options{
-		Root: root, Plan: plan, Store: st, Progress: progress,
-		Adjudicator: adj, MaxAttempts: 3,
+		Root: root, Plan: plan, Store: st, Progress: progress, MaxAttempts: 3,
 		Worker: func(ctx context.Context, sheet *contract.TaskSheet, grounding string) (*contract.TurnInReport, error) {
-			if sheet.Feedback != "" {
-				feedback = append(feedback, sheet.Feedback)
-			}
-			// Attempt 1: the fake — a hardcoded stub that goes green.
-			content := "echo 5\n"
-			why := "the deliverable"
-			if sheet.Attempt > 1 {
-				// Attempt 2: the real implementation.
-				content = "echo $(( $1 + $2 ))\n"
-				why = "real addition, not a hardcoded value"
-			}
-			if err := os.WriteFile(filepath.Join(root, "sum.sh"), []byte(content), 0o644); err != nil {
+			if err := os.WriteFile(filepath.Join(root, "sum.sh"), []byte("echo $(( $1 + $2 ))\n"), 0o644); err != nil {
 				return nil, err
 			}
 			return &contract.TurnInReport{
 				TaskID: sheet.TaskID, Status: contract.StatusDone, Summary: "implemented sum.sh",
-				Changes:      []contract.Change{{Path: "sum.sh", Kind: "create", Why: why}},
+				Changes:      []contract.Change{{Path: "sum.sh", Kind: "create", Why: "real addition"}},
 				Verification: []contract.Evidence{{Command: sheet.Verify.Commands[0], Exit: 0}},
 				Attempt:      sheet.Attempt,
 			}, nil
@@ -88,21 +56,17 @@ func TestNoFakesViolationRejectedThenGreenAcceptedCheckpointed(t *testing.T) {
 	if len(res.Done) != 1 || res.Done[0] != "t1" {
 		t.Fatalf("Done = %v, Failed = %v, StopAsk = %q", res.Done, res.Failed, res.StopAsk)
 	}
-	// The rejection carried the no-fakes citation as concrete feedback.
-	if len(feedback) != 1 || !strings.Contains(feedback[0], "placeholder") {
-		t.Fatalf("no-fakes feedback = %v", feedback)
-	}
 	// The green turn-in was checkpointed to REAL cortex.
 	done, err := progress.Done()
 	if err != nil || !done["t1"] {
 		t.Fatalf("cortex checkpoint = %v, %v", done, err)
 	}
-	// Both attempts persisted as the honest history.
+	// The single accepted attempt persisted as the honest history.
 	reports, err := st.LoadReports("t1")
-	if err != nil || len(reports) != 2 {
+	if err != nil || len(reports) != 1 {
 		t.Fatalf("attempt history = %+v, %v", reports, err)
 	}
-	// The accepted artifact is the real implementation, not the stub.
+	// The accepted artifact is the real implementation.
 	data, err := os.ReadFile(filepath.Join(root, "sum.sh"))
 	if err != nil || !strings.Contains(string(data), "$1 + $2") {
 		t.Fatalf("sum.sh = %q, %v", data, err)
