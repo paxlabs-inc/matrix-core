@@ -205,7 +205,9 @@ func (a *Agent) emitMemory(b *cortex.ActivationBundle) {
 
 // renderActivationBundle renders the cortex.Activate bundle into the trailing
 // working-memory block that REPLACES the dynamicTail memory sections (req.9.4).
-// It surfaces the current goal, the Pinned tier (identity, hard constraints,
+// It frames the block as in-progress reference (never a new instruction — the
+// leading line tells the model to continue, not restart), then surfaces the
+// standing objective as background, the Pinned tier (identity, hard constraints,
 // active cortex goals), the durable story-so-far, the T0 timeline and T1 recent
 // tiers, and a note that exact specifics page in on demand via memory_recall
 // (T3 handles — the pull-over-push philosophy, req.9.5). The transcript slice is
@@ -218,9 +220,10 @@ func (a *Agent) emitMemory(b *cortex.ActivationBundle) {
 func (a *Agent) renderActivationBundle(b *cortex.ActivationBundle) string {
 	var sb strings.Builder
 
-	goal := strings.TrimSpace(a.activeGoal)
-	if goal != "" {
-		fmt.Fprintf(&sb, "Current goal: %s\n", goal)
+	sb.WriteString("(Reference notes, not a new message — this conversation is already in progress. Continue from the live exchange above; do NOT restart it or re-answer an earlier request.)\n")
+
+	if goal := strings.TrimSpace(a.activeGoal); goal != "" {
+		fmt.Fprintf(&sb, "Standing objective for this conversation (background, already underway — not a fresh request): %s\n", goal)
 	}
 
 	if b == nil {

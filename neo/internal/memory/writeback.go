@@ -173,6 +173,33 @@ func (p *Pager) RecordOutcome(ctx context.Context, summary string, outcome memor
 	return string(uri), err
 }
 
+// RecordLoopDeath persists a durable death-journal entry when a supervised
+// attempt died in a loop-affecting way and forced a respawn — the DURABLE read
+// path of the death journal (the immediate path is the successor's resume
+// prime). It is a failure-outcome observation Event so ordinary recall/Activate
+// surfaces it, letting the agent self-author its world-model of how it fails.
+// Importance 6 sits above a routine outcome (4) so a recurring failure mode
+// stays salient enough to inform future attempts. Best-effort: an empty summary
+// or a write error is swallowed so it can never block a respawn.
+func (p *Pager) RecordLoopDeath(ctx context.Context, summary, intentRef string) (string, error) {
+	summary = strings.TrimSpace(summary)
+	if summary == "" {
+		return "", nil
+	}
+	uri, err := p.cortex.Write(
+		p.head(6),
+		memory.EventData{
+			SchemaVersion: 1,
+			Kind:          memory.EventObservation,
+			OutcomeVal:    memory.OutcomeFailure,
+			Summary:       summary,
+			IntentRef:     intentRef,
+		},
+		p.writeMeta(),
+	)
+	return string(uri), err
+}
+
 // WritePattern stores a candidate procedural pattern (the nursery for MCL
 // skills). The structured spec is encoded onto cortex's flat Statement field.
 // Coverage starts low and is reinforced on each repeat success; retrieval gates

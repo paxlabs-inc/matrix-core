@@ -6,6 +6,7 @@ package server
 import (
 	"context"
 	"errors"
+	"fmt"
 	"strings"
 	"testing"
 	"time"
@@ -65,7 +66,7 @@ func TestSuperviseDecision(t *testing.T) {
 // after several stuck attempts.
 func TestResumePrime(t *testing.T) {
 	obj := "write a solid academic paper with citations on the thesis"
-	early := resumePrime(obj, 1)
+	early := resumePrime(obj, 1, nil)
 	if !strings.Contains(early, obj) {
 		t.Error("resume prime must carry the verbatim objective")
 	}
@@ -75,9 +76,51 @@ func TestResumePrime(t *testing.T) {
 	if strings.Contains(strings.ToLower(early), "spawn_subagents") {
 		t.Error("the decomposition nudge must NOT appear on an early attempt")
 	}
-	late := resumePrime(obj, 3)
+	late := resumePrime(obj, 3, nil)
 	if !strings.Contains(strings.ToLower(late), "spawn_subagents") {
 		t.Error("the decomposition nudge must appear after several stuck attempts")
+	}
+}
+
+// TestResumePrimeDeathDigest: when the predecessor died with an ErrIncomplete
+// where-it-got-stuck digest, the successor's prime folds it in (the immediate
+// death-journal read path) with a do-NOT-repeat framing, and strips the raw
+// ErrIncomplete sentinel so only the digest reaches the model. A nil predecessor
+// (first attempt) folds in nothing.
+func TestResumePrimeDeathDigest(t *testing.T) {
+	obj := "compile and ship the migration"
+	const stuck = "repeating the same step without progress. Where it got stuck: re-rendering a value already in hand"
+	prev := fmt.Errorf("%w: %s", agent.ErrIncomplete, stuck)
+
+	with := resumePrime(obj, 2, prev)
+	if !strings.Contains(with, stuck) {
+		t.Errorf("prime must fold in the predecessor's death digest; got:\n%s", with)
+	}
+	if !strings.Contains(strings.ToLower(with), "do not repeat") {
+		t.Error("prime must tell the successor not to repeat the losing move")
+	}
+	if strings.Contains(with, agent.ErrIncomplete.Error()) {
+		t.Errorf("prime must strip the raw ErrIncomplete sentinel; got:\n%s", with)
+	}
+
+	if got := resumePrime(obj, 2, nil); strings.Contains(strings.ToLower(got), "do not repeat") {
+		t.Error("a nil predecessor must not add a death-digest section")
+	}
+}
+
+// TestDeathDigest: the digest strips the ErrIncomplete sentinel prefix, returns
+// the remaining where-it-got-stuck text, and is empty for a nil error.
+func TestDeathDigest(t *testing.T) {
+	if got := deathDigest(nil); got != "" {
+		t.Errorf("deathDigest(nil) = %q, want empty", got)
+	}
+	prev := fmt.Errorf("%w: reached the step budget without finishing. Progress so far: wrote 2 of 5 files", agent.ErrIncomplete)
+	got := deathDigest(prev)
+	if strings.Contains(got, "turn incomplete") {
+		t.Errorf("deathDigest must strip the sentinel; got %q", got)
+	}
+	if !strings.Contains(got, "wrote 2 of 5 files") {
+		t.Errorf("deathDigest must keep the progress digest; got %q", got)
 	}
 }
 

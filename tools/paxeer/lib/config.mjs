@@ -36,19 +36,18 @@ export const CHAIN = {
 // All read-only. No key material, no auth (except portfolio webhooks).
 export const ENDPOINTS = {
   // EVM JSON-RPC (direct node access).
-  rpc: pick('PAXEER_RPC_URL', 'GIDEON_RPC_URL') ?? 'https://eu-east-1.public.node.hyperpaxeer.com/evm/',
+  rpc: pick('PAXEER_RPC_URL', 'GIDEON_RPC_URL') ?? 'https://api.hyperpax.xyz',
   // Alternate documented EVM RPC.
   rpcAlt: pick('PAXEER_RPC_ALT_URL') ?? 'https://api.hyperpax.xyz',
   // PaxScan = Paxeer's Blockscout v2 explorer. Client hits `${paxscan}/api/v2/...`.
   paxscan: (pick('PAXEER_PAXSCAN_URL') ?? 'https://api.paxscan.io').replace(/\/+$/, ''),
   // Portfolio / Argus user-stats indexer (pnl, rank, performance, charts, rewards).
-  portfolio: (pick('PAXEER_PORTFOLIO_URL') ?? 'https://us-east-1.user-stats.sidiora.exchange').replace(/\/+$/, ''),
+  portfolio: (pick('PAXEER_PORTFOLIO_URL') ?? 'https://indexer.cloud.hyperpaxeer.com').replace(/\/+$/, ''),
   // PaxSpot DEX market-data API.
   spot: (pick('PAXEER_SPOT_URL') ?? 'https://us-east-1.spot-api.sidiora.exchange').replace(/\/+$/, ''),
   // Price + OHLC data API (PAX + bridged majors).
   price: (pick('PAXEER_PRICE_URL') ?? 'https://data-api.crossverse.app/api').replace(/\/+$/, ''),
   // Points / rewards indexer.
-  points: (pick('PAXEER_POINTS_URL') ?? 'https://sidiora-points-indexer-production.up.railway.app').replace(/\/+$/, ''),
 }
 
 // ── Embedded wallet REST API (the network-side custody + enforcement surface) ─
@@ -150,7 +149,7 @@ export const CONTRACTS = {
   },
   // HyperPax DEX (network-operated v5 Adaptive Sigmoid AMM, EIP-2535 Diamond).
   hyperpaxDex: {
-    diamond:         '0x9595a92d63884d2D9924e0002D45C34d717DB291',
+    diamond:         '0xFEf3751eFA8d861C54A58A8041a2F8814BbBA623',
     router:          '0x635aC031f7d26035FCc8b138b0835fec0cf6b8AA',
     quoter:          '0x2092D242Cc5d3673D1644128DBd4D199dE51266e',
     positionManager: '0x8f60EcD67Ef9aF953Dfc1a94F03C1D7e4363e092',
@@ -159,8 +158,8 @@ export const CONTRACTS = {
   },
   // HyperPax Perps (synthetic perpetuals, 19-facet Diamond; events from Diamond).
   perps: {
-    diamond:            '0x7c902dA1ad5859D1862528Dd01840086517ac2d4',
-    userVaultImpl:      '0x6498dC90eea8e93d24A740b565349160C5374280',
+    diamond:            '0xFEf3751eFA8d861C54A58A8041a2F8814BbBA623',
+    userVaultImpl:      '0x723A14ED5c479b2e79Da27f77f91Cd0b1766fE1B',
   },
   // Sidiora.fun launchpad (docs; same router/quoter as wired sidiora*).
   sidioraFun: {

@@ -424,13 +424,18 @@ func (s *session) superviseTask(ctx context.Context, r *run, objective string, r
 		maxRespawns = 0
 	}
 
+	// lastErr carries the PREVIOUS attempt's death (the ErrIncomplete
+	// where-it-got-stuck digest) across the respawn boundary so the successor's
+	// catch-up prime is born knowing how its predecessor died — the immediate
+	// death-journal read path. nil on the first attempt (no predecessor).
+	var lastErr error
 	for attempt := 1; ; attempt++ {
 		// A fresh first dispatch runs the user's message verbatim (the session
 		// is already seeded from durable history WITHOUT it). A reaper resume,
 		// or any respawn, uses the catch-up prime over the rebuilt agent.
 		prompt := objective
 		if resume || attempt > 1 {
-			prompt = resumePrime(objective, attempt)
+			prompt = resumePrime(objective, attempt, lastErr)
 		}
 
 		actx, acancel := s.attemptContext(ctx)
@@ -461,11 +466,13 @@ func (s *session) superviseTask(ctx context.Context, r *run, objective string, r
 			return s.deliverCeiling(r, "couldn't fully verify it was done after several attempts")
 		}
 
-		// actRespawn — not done, keep going. Checkpoint, reassure the user (no
-		// fake done), back off with jitter, then respawn a fresh agent over
-		// durable state.
+		// actRespawn — not done, keep going. Checkpoint, journal the death,
+		// reassure the user (no fake done), back off with jitter, then respawn a
+		// fresh agent over durable state.
 		s.engine.tasks.Checkpoint(s.id, r.id, attempt+1, friendlyErr(err))
+		s.recordLoopDeath(ctx, objective, attempt, err, failClass)
 		s.emitProgress(r, attempt, err)
+		lastErr = err
 		if !superviseBackoff(ctx, attempt, errors.Is(err, llm.ErrRateLimited)) {
 			if r.stopped.Load() {
 				return task.StatusInterrupted
@@ -527,17 +534,59 @@ func (s *session) attemptContext(parent context.Context) (context.Context, conte
 
 // resumePrime is the catch-up instruction for a respawned / resumed agent: the
 // objective is unchanged, prior work may already be on the volume, build on it,
-// and keep going until it is genuinely done. After a few stuck attempts it also
-// nudges decomposition / delegation.
-func resumePrime(objective string, attempt int) string {
+// and keep going until it is genuinely done. When the predecessor died with a
+// where-it-got-stuck digest (prev != nil), that is folded in so the successor is
+// born knowing how the last attempt failed and is told not to repeat it — the
+// immediate death-journal read path. After a few stuck attempts it also nudges
+// decomposition / delegation.
+func resumePrime(objective string, attempt int, prev error) string {
 	var b strings.Builder
 	b.WriteString("[continue this task] A previous attempt was interrupted before the task was finished. Your objective is unchanged:\n\n")
 	b.WriteString(strings.TrimSpace(objective))
+	if d := deathDigest(prev); d != "" {
+		b.WriteString("\n\nHow the previous attempt ended (learn from this — do NOT repeat the same move that got it stuck): ")
+		b.WriteString(d)
+	}
 	b.WriteString("\n\nWork from a previous attempt may already exist — check your workspace (list/read the relevant files, re-run a quick status check) and BUILD ON what is already done instead of restarting from scratch. Keep going until the objective is fully achieved to a high standard, then give your final answer with honest coverage and the real evidence behind it.")
 	if attempt >= 3 {
 		b.WriteString(" If you keep getting stuck on one piece, break it into smaller concrete steps, or delegate parallel parts with spawn_subagents.")
 	}
 	return b.String()
+}
+
+// deathDigest extracts a concise, model-readable reason a prior supervised
+// attempt ended, for the successor's catch-up prime. It strips the ErrIncomplete
+// sentinel prefix so only the where-it-got-stuck digest remains. Returns "" when
+// there is no prior failure (the first attempt).
+func deathDigest(prev error) string {
+	if prev == nil {
+		return ""
+	}
+	msg := strings.TrimSpace(prev.Error())
+	sentinel := agent.ErrIncomplete.Error() + ": "
+	if i := strings.Index(msg, sentinel); i >= 0 {
+		msg = strings.TrimSpace(msg[i+len(sentinel):])
+	}
+	return clip(msg, 400)
+}
+
+// recordLoopDeath persists a structured death-journal entry to cortex when a
+// supervised attempt died and forced a respawn — the DURABLE read path of the
+// death journal (the immediate path is the successor's resume prime). The
+// summary carries the objective, attempt number, failure class, and the
+// where-it-got-stuck digest so future recall can inform how the agent avoids the
+// same pitfall. Best-effort: a nil pager, a clean exit, or a write error never
+// blocks the respawn.
+func (s *session) recordLoopDeath(ctx context.Context, objective string, attempt int, err error, failClass delegate.FailureClass) {
+	if s.engine == nil || s.engine.pager == nil || err == nil {
+		return
+	}
+	digest := deathDigest(err)
+	if digest == "" {
+		digest = friendlyErr(err)
+	}
+	summary := fmt.Sprintf("Loop death (attempt %d, class=%s): objective %q did not finish. Where it got stuck: %s", attempt, failClass, clip(objective, 160), digest)
+	_, _ = s.engine.pager.RecordLoopDeath(ctx, summary, s.id)
 }
 
 // emitProgress tells the user the task is STILL IN PROGRESS after a failed
@@ -646,10 +695,11 @@ func (s *session) superviseAutomatrixTask(ctx context.Context, objective string)
 	if maxRespawns < 0 || !cfg.SuperviseTasks {
 		maxRespawns = 0
 	}
+	var lastErr error
 	for attempt := 1; ; attempt++ {
 		prompt := objective
 		if attempt > 1 {
-			prompt = resumePrime(objective, attempt)
+			prompt = resumePrime(objective, attempt, lastErr)
 		}
 		actx, acancel := s.attemptContext(ctx)
 		err := s.agent.Chat(actx, prompt)
@@ -666,9 +716,11 @@ func (s *session) superviseAutomatrixTask(ctx context.Context, objective string)
 		case actCeiling:
 			return task.StatusCeiling
 		}
-		// actRespawn — not done. Back off (honoring cancellation), then respawn
-		// a FRESH restricted agent over durable state and try again. No progress
-		// is surfaced to the user (req 5.5).
+		// actRespawn — not done. Journal the death, back off (honoring
+		// cancellation), then respawn a FRESH restricted agent over durable state
+		// and try again. No progress is surfaced to the user (req 5.5).
+		s.recordLoopDeath(ctx, objective, attempt, err, failClass)
+		lastErr = err
 		if !superviseBackoff(ctx, attempt, errors.Is(err, llm.ErrRateLimited)) {
 			return task.StatusCeiling
 		}
