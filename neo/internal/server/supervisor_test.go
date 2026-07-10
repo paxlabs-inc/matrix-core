@@ -124,6 +124,52 @@ func TestDeathDigest(t *testing.T) {
 	}
 }
 
+// TestDeathPathsConsistent proves the two death-journal read paths describe the
+// SAME death (self-model task 3.1, req.4.3): the immediate successor-prime and
+// the durable cortex record are both rendered from the where-it-got-stuck digest
+// of the one attempt error, over the same objective — so a successor's prime and
+// the durable journal entry can never disagree about how the predecessor died.
+func TestDeathPathsConsistent(t *testing.T) {
+	obj := "compile and ship the migration to the new schema"
+	const stuck = "kept re-running the same status check without editing a file. Progress: 2 of 5 tables migrated"
+	err := fmt.Errorf("%w: %s", agent.ErrIncomplete, stuck)
+	const state = " [loop-state: reason=no_progress_stall faculty=conversation last_tool=web_search repeats=4 distinct_tools=1 context_fill=12% steps=6]"
+
+	entry := newDeathEntry(obj, 2, err, delegate.ClassNone, state)
+	durable := entry.durableSummary()
+	prime := resumePrime(obj, 3, err)
+
+	// The single shared digest is the where-it-got-stuck text, sentinel-stripped.
+	digest := deathDigest(err)
+	if digest == "" || !strings.Contains(digest, "2 of 5 tables") {
+		t.Fatalf("precondition: shared digest not derived; got %q", digest)
+	}
+	// Both paths carry that SAME digest.
+	if !strings.Contains(durable, digest) {
+		t.Errorf("durable record must carry the shared digest:\n%s", durable)
+	}
+	if !strings.Contains(prime, digest) {
+		t.Errorf("immediate prime must carry the shared digest:\n%s", prime)
+	}
+	// Both paths carry the SAME objective (durable clips to 160; this objective
+	// is shorter, so it appears verbatim in both).
+	if !strings.Contains(durable, obj) || !strings.Contains(prime, obj) {
+		t.Error("both paths must describe the same objective")
+	}
+	// The durable record additionally carries the attempt, class, and the rich
+	// loop-state suffix (its richer surface), and never re-embeds the raw
+	// ErrIncomplete sentinel.
+	if !strings.Contains(durable, "attempt 2") || !strings.Contains(durable, "class=none") {
+		t.Errorf("durable record must carry attempt and class:\n%s", durable)
+	}
+	if !strings.Contains(durable, "reason=no_progress_stall") {
+		t.Errorf("durable record must carry the rich loop-state suffix:\n%s", durable)
+	}
+	if strings.Contains(durable, agent.ErrIncomplete.Error()) {
+		t.Errorf("durable record must not re-embed the raw ErrIncomplete sentinel:\n%s", durable)
+	}
+}
+
 // TestSuperviseBackoffCancelled: backoff returns false immediately when the
 // task context is already cancelled (so a stopped task never sleeps) — for both
 // the normal and the (much longer) rate-limited path.

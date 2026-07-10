@@ -1,10 +1,11 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:9b68327501b45793fd7687f43b30c960fd68ae8aaff6b2f1bb36ec3e2df2de2f
+# GENERATED gen=codegraph do-not-edit merkle=b3:20e53aba2ea11552396417e53b3e04e87dd1bbb7bef3aa554a45bb92cf89e7f2
 
 NODE id=matrix/cortex/embed kind=package
   digest=b3:d73a343f26470a67c3d49857b29dab227853cc8813b40c4b56be5ba0b394de13 file=cortex/embed range=0:0 lang=go exported=true
 EDGES
   contains=matrix/cortex/embed/api_embedder.go,matrix/cortex/embed/chain.go,matrix/cortex/embed/embed.go
   ^contains=mod:matrix/cortex
+  ^imports=matrix/bridge/cmd/mclc-cortex,matrix/codegraph/enrich,matrix/cortex,matrix/cortex/cmd/cortex-shell,matrix/cortex/cmd/embed-smoke,matrix/executor/cmd/mcl-e2e,matrix/executor/cmd/mcl-execute,matrix/neo/internal/agent,matrix/neo/internal/memory,matrix/neo/internal/recall
 
 NODE id=matrix/cortex/embed.APIEmbedder kind=type
   digest=b3:7577e666cbaa6283f84da5719f9e7019fad3f2d88019dab4980ccc41c99fc9b8 file=cortex/embed/api_embedder.go range=107:115 lang=go exported=true byte_range=4241:4525
@@ -13,6 +14,8 @@ NODE id=matrix/cortex/embed.APIEmbedder kind=type
 EDGES
   contains=matrix/cortex/embed.APIEmbedder#apiKey,matrix/cortex/embed.APIEmbedder#cfg,matrix/cortex/embed.APIEmbedder#endpoint,matrix/cortex/embed.APIEmbedder#httpClient,matrix/cortex/embed.APIEmbedder#model,matrix/cortex/embed.APIEmbedder.Dim,matrix/cortex/embed.APIEmbedder.Embed,matrix/cortex/embed.APIEmbedder.Model,matrix/cortex/embed.APIEmbedder.embedCtx,matrix/cortex/embed.APIEmbedder.embedOnce
   implements=matrix/cortex/embed.Embedder
+  references=matrix/cortex/embed.APIEmbedderConfig
+  ^references=matrix/cortex/embed.APIEmbedder.Dim,matrix/cortex/embed.APIEmbedder.Embed,matrix/cortex/embed.APIEmbedder.Model,matrix/cortex/embed.APIEmbedder.embedCtx,matrix/cortex/embed.APIEmbedder.embedOnce,matrix/cortex/embed.NewAPIEmbedder,matrix/cortex/embed._
   ^defines=matrix/cortex/embed/api_embedder.go
 
 NODE id=matrix/cortex/embed.APIEmbedder#apiKey kind=field
@@ -50,7 +53,10 @@ NODE id=matrix/cortex/embed.APIEmbedder.Dim kind=method
   sig=func (e *APIEmbedder) Dim() int
   doc=Dim implements Embedder.
 EDGES
+  references=matrix/cortex/embed.APIEmbedder,matrix/cortex/embed.e
   ^contains=matrix/cortex/embed.APIEmbedder
+  ^calls=matrix/cortex/cmd/embed-smoke.main,matrix/cortex/embed.EmbedderChain.Dim,matrix/cortex/embed.EmbedderChain.Embed,matrix/cortex/embed.NewEmbedderChain,matrix/neo/internal/memory.probeEmbedder
+  ^references=matrix/cortex/cmd/embed-smoke.main
   ^defines=matrix/cortex/embed/api_embedder.go
 
 NODE id=matrix/cortex/embed.APIEmbedder.Embed kind=method
@@ -58,7 +64,11 @@ NODE id=matrix/cortex/embed.APIEmbedder.Embed kind=method
   sig=func (e *APIEmbedder) Embed(text string) ([]float32, error)
   doc=Embed implements Embedder. The text is sent verbatim to the provider; the\nresponse vector is L2-normalised before return (most providers already\nnormalise but we enforce for HNSW cosine-via-dot-product correctness).\n\nEmpty text: returns ErrEmptyInput rather than the deterministic-stub fallback\nof HashEmbedder. Production embedders typically reject empty inputs.\n\nRetries: transient errors (network failure, 5xx, 429 rate-limit) are\nretried with exponential backoff up to MaxRetries.
 EDGES
+  calls=matrix/cortex/embed.APIEmbedder.embedCtx
+  references=matrix/cortex/embed.APIEmbedder,matrix/cortex/embed.APIEmbedder.embedCtx,matrix/cortex/embed.ErrEmptyInput,matrix/cortex/embed.cancel,matrix/cortex/embed.ctx,matrix/cortex/embed.e,matrix/cortex/embed.text
   ^contains=matrix/cortex/embed.APIEmbedder
+  ^calls=matrix/cortex/cmd/embed-smoke.main,matrix/cortex/embed.EmbedderChain.embedWithTimeout,matrix/neo/internal/memory.probeEmbedder
+  ^references=matrix/cortex/cmd/embed-smoke.main
   ^defines=matrix/cortex/embed/api_embedder.go
 
 NODE id=matrix/cortex/embed.APIEmbedder.Model kind=method
@@ -66,7 +76,10 @@ NODE id=matrix/cortex/embed.APIEmbedder.Model kind=method
   sig=func (e *APIEmbedder) Model() string
   doc=Model implements Embedder. Format: "<model-id>@<provider>".\ne.g. "nomic-ai/nomic-embed-text-v1.5@fireworks".
 EDGES
+  references=matrix/cortex/embed.APIEmbedder,matrix/cortex/embed.e
   ^contains=matrix/cortex/embed.APIEmbedder
+  ^calls=matrix/cortex/cmd/embed-smoke.main,matrix/cortex/embed.EmbedderChain.Embed,matrix/cortex/embed.EmbedderChain.Model,matrix/cortex/embed.EmbedderChain.embedWithTimeout,matrix/cortex/embed.NewEmbedderChain
+  ^references=matrix/cortex/cmd/embed-smoke.main
   ^defines=matrix/cortex/embed/api_embedder.go
 
 NODE id=matrix/cortex/embed.APIEmbedder.embedCtx kind=method
@@ -74,7 +87,11 @@ NODE id=matrix/cortex/embed.APIEmbedder.embedCtx kind=method
   sig=func (e *APIEmbedder) embedCtx(ctx context.Context, text string) ([]float32, error)
   doc=embedCtx is the cancellation-aware embed call. Exposed for tests; the\npublic Embed wraps it with the configured timeout.
 EDGES
+  calls=matrix/cortex/embed.APIEmbedder.embedOnce
+  references=matrix/cortex/embed.APIEmbedder,matrix/cortex/embed.APIEmbedder.embedOnce,matrix/cortex/embed.attempt,matrix/cortex/embed.body,matrix/cortex/embed.ctx,matrix/cortex/embed.delay,matrix/cortex/embed.e,matrix/cortex/embed.embedRequest,matrix/cortex/embed.err,matrix/cortex/embed.lastErr,matrix/cortex/embed.payload,matrix/cortex/embed.retryable,matrix/cortex/embed.text,matrix/cortex/embed.vec
   ^contains=matrix/cortex/embed.APIEmbedder
+  ^calls=matrix/cortex/embed.APIEmbedder.Embed
+  ^references=matrix/cortex/embed.APIEmbedder.Embed
   ^defines=matrix/cortex/embed/api_embedder.go
 
 NODE id=matrix/cortex/embed.APIEmbedder.embedOnce kind=method
@@ -82,7 +99,11 @@ NODE id=matrix/cortex/embed.APIEmbedder.embedOnce kind=method
   sig=func (e *APIEmbedder) embedOnce(ctx context.Context, payload []byte) (vec []float32, retryable bool, err error)
   doc=embedOnce issues a single HTTP request. Returns (vec, retryable, err).
 EDGES
+  calls=matrix/cortex/embed.truncate
+  references=matrix/cortex/embed.APIEmbedder,matrix/cortex/embed.ErrDimMismatch,matrix/cortex/embed.ctx,matrix/cortex/embed.e,matrix/cortex/embed.embedResponse,matrix/cortex/embed.err,matrix/cortex/embed.httpReq,matrix/cortex/embed.i,matrix/cortex/embed.inv,matrix/cortex/embed.out,matrix/cortex/embed.parsed,matrix/cortex/embed.payload,matrix/cortex/embed.raw,matrix/cortex/embed.resp,matrix/cortex/embed.respBody,matrix/cortex/embed.sumSq,matrix/cortex/embed.truncate,matrix/cortex/embed.v
   ^contains=matrix/cortex/embed.APIEmbedder
+  ^calls=matrix/cortex/embed.APIEmbedder.embedCtx
+  ^references=matrix/cortex/embed.APIEmbedder.embedCtx
   ^defines=matrix/cortex/embed/api_embedder.go
 
 NODE id=matrix/cortex/embed.APIEmbedderConfig kind=type
@@ -91,6 +112,7 @@ NODE id=matrix/cortex/embed.APIEmbedderConfig kind=type
   doc=APIEmbedderConfig configures an APIEmbedder.
 EDGES
   contains=matrix/cortex/embed.APIEmbedderConfig#APIKey,matrix/cortex/embed.APIEmbedderConfig#Dim,matrix/cortex/embed.APIEmbedderConfig#Endpoint,matrix/cortex/embed.APIEmbedderConfig#HTTPClient,matrix/cortex/embed.APIEmbedderConfig#MaxRetries,matrix/cortex/embed.APIEmbedderConfig#Model,matrix/cortex/embed.APIEmbedderConfig#ProviderTag,matrix/cortex/embed.APIEmbedderConfig#RetryBaseDelay,matrix/cortex/embed.APIEmbedderConfig#Timeout
+  ^references=matrix/bridge/cmd/mclc-cortex.startEmbedder,matrix/cortex/cmd/embed-smoke.main,matrix/cortex/embed.APIEmbedder,matrix/cortex/embed.NewAPIEmbedder,matrix/cortex/embed.NewChainFromEnv,matrix/executor/cmd/mcl-e2e.MakeAndDrainEmbedder,matrix/executor/cmd/mcl-execute.newInfra,matrix/neo/internal/memory.pickEmbedder
   ^defines=matrix/cortex/embed/api_embedder.go
 
 NODE id=matrix/cortex/embed.APIEmbedderConfig#APIKey kind=field
@@ -161,6 +183,7 @@ NODE id=matrix/cortex/embed.BasetenEmbedEndpoint kind=const
   sig=untyped string
   doc=BasetenEmbedEndpoint is the Baseten OpenAI-compatible embeddings URL\n(Model APIs / BEI). Requires a Baseten-served embedding model; when the\nconfigured model is not available the embedder chain probe fails and the\ncaller falls back to the gateway or the deterministic hash embedder.
 EDGES
+  ^references=matrix/neo/internal/memory.pickEmbedder
   ^defines=matrix/cortex/embed/api_embedder.go
 
 NODE id=matrix/cortex/embed.ChainConfig kind=type
@@ -169,6 +192,8 @@ NODE id=matrix/cortex/embed.ChainConfig kind=type
   doc=ChainConfig configures an EmbedderChain.
 EDGES
   contains=matrix/cortex/embed.ChainConfig#Logf,matrix/cortex/embed.ChainConfig#Providers,matrix/cortex/embed.ChainConfig#Timeout
+  references=matrix/cortex/embed.Embedder
+  ^references=matrix/cortex/embed.NewChainFromEnv,matrix/cortex/embed.NewEmbedderChain,matrix/neo/internal/memory.pickEmbedder
   ^defines=matrix/cortex/embed/chain.go
 
 NODE id=matrix/cortex/embed.ChainConfig#Logf kind=field
@@ -197,6 +222,9 @@ NODE id=matrix/cortex/embed.Cosine kind=func
   sig=func Cosine(a, b []float32) float32
   doc=Cosine returns the cosine similarity of a and b. Both slices must be the\nsame length; returns 0 on a length mismatch rather than erroring so\ncallers in tight loops don't have to plumb errors. The HNSW index uses\nCosine via the negative-cosine distance to keep min-heap semantics\n(lower distance = closer).\n\nImplementation note: a and b are expected to be unit-normalized (the\nHashEmbedder and the planned production embedder both normalize) so\nCosine reduces to a plain dot product. We still divide by the norms to\nstay correct under non-normalized inputs.
 EDGES
+  references=matrix/cortex/embed.a,matrix/cortex/embed.ax,matrix/cortex/embed.b,matrix/cortex/embed.bx,matrix/cortex/embed.dot,matrix/cortex/embed.i,matrix/cortex/embed.na,matrix/cortex/embed.nb
+  ^calls=matrix/cortex/cmd/embed-smoke.main,matrix/neo/internal/agent.topicTracker.observeVec,matrix/neo/internal/memory.Pager.RejectionCandidates,matrix/neo/internal/memory.Pager.duplicatePendingOpportunity,matrix/neo/internal/recall.Recaller.Relevant
+  ^references=matrix/cortex/cmd/embed-smoke.main,matrix/neo/internal/agent.topicTracker.observeVec,matrix/neo/internal/memory.Pager.RejectionCandidates,matrix/neo/internal/memory.Pager.duplicatePendingOpportunity,matrix/neo/internal/recall.Recaller.Relevant
   ^defines=matrix/cortex/embed/embed.go
 
 NODE id=matrix/cortex/embed.DefaultDim kind=const
@@ -204,6 +232,7 @@ NODE id=matrix/cortex/embed.DefaultDim kind=const
   sig=untyped int
   doc=DefaultDim is the embedding dimensionality used by the Phase 5 stub. It\nmatches the spec lean (nomic-embed-text-v1.5 at 768 dims) so swapping in\na real embedder does not force a re-index. Lower-dim Matryoshka slices\n(e.g. 256) remain available by composing a custom Embedder.
 EDGES
+  ^references=matrix/cortex/embed.NewAPIEmbedder,matrix/cortex/embed.NewHashEmbedder,matrix/cortex/embed.NewHashEmbedderWith
   ^defines=matrix/cortex/embed/embed.go
 
 NODE id=matrix/cortex/embed.DefaultModelFireworks kind=const
@@ -211,6 +240,7 @@ NODE id=matrix/cortex/embed.DefaultModelFireworks kind=const
   sig=untyped string
   doc=DefaultModelFireworks is the recommended Fireworks embedding model:\nnomic-embed-text-v1.5 at 768-dim (Matryoshka-capable, multilingual).
 EDGES
+  ^references=matrix/cortex/cmd/embed-smoke.main,matrix/cortex/embed.NewAPIEmbedder,matrix/cortex/embed.NewChainFromEnv,matrix/neo/internal/memory.pickEmbedder
   ^defines=matrix/cortex/embed/api_embedder.go
 
 NODE id=matrix/cortex/embed.Embedder kind=interface
@@ -219,6 +249,7 @@ NODE id=matrix/cortex/embed.Embedder kind=interface
   doc=Embedder maps text to a fixed-dimensional vector. Implementations must be\nsafe for concurrent use; the worker fans out batches across goroutines.
 EDGES
   ^implements=matrix/cortex/embed.APIEmbedder,matrix/cortex/embed.EmbedderChain,matrix/cortex/embed.HashEmbedder
+  ^references=matrix/bridge/cmd/mclc-cortex.startEmbedder,matrix/codegraph/enrich.CortexEmbedder,matrix/codegraph/enrich.WrapEmbedder,matrix/cortex.EmbedderOptions,matrix/cortex.embedderState,matrix/cortex/embed.ChainConfig,matrix/cortex/embed.EmbedderChain,matrix/cortex/embed.EmbedderChain.embedWithTimeout,matrix/cortex/embed.NewEmbedderChain,matrix/cortex/embed._,matrix/executor/cmd/mcl-e2e.MakeAndDrainEmbedder,matrix/executor/cmd/mcl-execute.newInfra,matrix/neo/internal/agent.newTopicTracker,matrix/neo/internal/agent.topicTracker,matrix/neo/internal/memory.Pager,matrix/neo/internal/memory.Pager.Embedder,matrix/neo/internal/memory.pickEmbedder,matrix/neo/internal/memory.probeEmbedder,matrix/neo/internal/recall.New,matrix/neo/internal/recall.Recaller
   ^defines=matrix/cortex/embed/embed.go
 
 NODE id=matrix/cortex/embed.EmbedderChain kind=type
@@ -228,6 +259,8 @@ NODE id=matrix/cortex/embed.EmbedderChain kind=type
 EDGES
   contains=matrix/cortex/embed.EmbedderChain#lastDim,matrix/cortex/embed.EmbedderChain#lastModel,matrix/cortex/embed.EmbedderChain#logf,matrix/cortex/embed.EmbedderChain#mu,matrix/cortex/embed.EmbedderChain#providers,matrix/cortex/embed.EmbedderChain#timeout,matrix/cortex/embed.EmbedderChain.Dim,matrix/cortex/embed.EmbedderChain.Embed,matrix/cortex/embed.EmbedderChain.Model,matrix/cortex/embed.EmbedderChain.embedWithTimeout
   implements=matrix/cortex/embed.Embedder
+  references=matrix/cortex/embed.Embedder,matrix/cortex/embed.chanMutex
+  ^references=matrix/cortex/embed.EmbedderChain.Dim,matrix/cortex/embed.EmbedderChain.Embed,matrix/cortex/embed.EmbedderChain.Model,matrix/cortex/embed.EmbedderChain.embedWithTimeout,matrix/cortex/embed.NewChainFromEnv,matrix/cortex/embed.NewEmbedderChain,matrix/cortex/embed._
   ^defines=matrix/cortex/embed/chain.go
 
 NODE id=matrix/cortex/embed.EmbedderChain#lastDim kind=field
@@ -272,6 +305,8 @@ NODE id=matrix/cortex/embed.EmbedderChain.Dim kind=method
   sig=func (c *EmbedderChain) Dim() int
   doc=Dim implements Embedder. Returns the Dim() of the most-recently-resolved\nprovider (or the first provider before any Embed call). All providers in a\nwell-formed chain share the same Dim (DefaultDim); a mismatch is a config\nerror surfaced by the worker's len(vec) != Dim() check.
 EDGES
+  calls=matrix/cortex/embed.APIEmbedder.Dim,matrix/cortex/embed.HashEmbedder.Dim,matrix/cortex/embed.chanMutex.lock,matrix/cortex/embed.chanMutex.unlock
+  references=matrix/cortex/embed.Embedder.Dim,matrix/cortex/embed.EmbedderChain,matrix/cortex/embed.c,matrix/cortex/embed.chanMutex.lock,matrix/cortex/embed.chanMutex.unlock
   ^contains=matrix/cortex/embed.EmbedderChain
   ^defines=matrix/cortex/embed/chain.go
 
@@ -280,7 +315,10 @@ NODE id=matrix/cortex/embed.EmbedderChain.Embed kind=method
   sig=func (c *EmbedderChain) Embed(text string) ([]float32, error)
   doc=Embed implements Embedder. Tries each provider in order with a per-provider\ntimeout; on error or timeout, falls through to the next provider. The\nterminal Hash stub (appended at construction) guarantees a non-error result.
 EDGES
+  calls=matrix/cortex/embed.APIEmbedder.Dim,matrix/cortex/embed.APIEmbedder.Model,matrix/cortex/embed.EmbedderChain.embedWithTimeout,matrix/cortex/embed.HashEmbedder.Dim,matrix/cortex/embed.HashEmbedder.Model,matrix/cortex/embed.chanMutex.lock,matrix/cortex/embed.chanMutex.unlock
+  references=matrix/cortex/embed.Embedder.Dim,matrix/cortex/embed.Embedder.Model,matrix/cortex/embed.EmbedderChain,matrix/cortex/embed.EmbedderChain.embedWithTimeout,matrix/cortex/embed.c,matrix/cortex/embed.chanMutex.lock,matrix/cortex/embed.chanMutex.unlock,matrix/cortex/embed.err,matrix/cortex/embed.lastErr,matrix/cortex/embed.p,matrix/cortex/embed.text,matrix/cortex/embed.vec
   ^contains=matrix/cortex/embed.EmbedderChain
+  ^calls=matrix/neo/internal/agent.topicTracker.observe,matrix/neo/internal/memory.Pager.RejectionCandidates,matrix/neo/internal/memory.Pager.duplicatePendingOpportunity,matrix/neo/internal/recall.Recaller.Relevant,matrix/neo/internal/recall.Recaller.refreshLocked
   ^defines=matrix/cortex/embed/chain.go
 
 NODE id=matrix/cortex/embed.EmbedderChain.Model kind=method
@@ -288,6 +326,8 @@ NODE id=matrix/cortex/embed.EmbedderChain.Model kind=method
   sig=func (c *EmbedderChain) Model() string
   doc=Model implements Embedder. Returns the Model() of the most-recently-resolved\nprovider (or the first provider before any Embed call). This is what feeds\nHead.EmbeddingRef.Model and thus the replay invariant — it MUST reflect the\nprovider that actually produced the vectors, never a synthetic chain id.
 EDGES
+  calls=matrix/cortex/embed.APIEmbedder.Model,matrix/cortex/embed.HashEmbedder.Model,matrix/cortex/embed.chanMutex.lock,matrix/cortex/embed.chanMutex.unlock
+  references=matrix/cortex/embed.Embedder.Model,matrix/cortex/embed.EmbedderChain,matrix/cortex/embed.c,matrix/cortex/embed.chanMutex.lock,matrix/cortex/embed.chanMutex.unlock
   ^contains=matrix/cortex/embed.EmbedderChain
   ^defines=matrix/cortex/embed/chain.go
 
@@ -296,7 +336,11 @@ NODE id=matrix/cortex/embed.EmbedderChain.embedWithTimeout kind=method
   sig=func (c *EmbedderChain) embedWithTimeout(p Embedder, text string) ([]float32, error)
   doc=embedWithTimeout calls p.Embed with a context-bounded deadline. If p.Embed\ndoes not respect context cancellation (the HashEmbedder and APIEmbedder do,\nbut a custom Embedder might not), the goroutine is abandoned after Timeout\nand the error is treated as a fallthrough trigger — the chain proceeds to\nthe next provider. This bounds latency even with a misbehaving embedder.
 EDGES
+  calls=matrix/cortex/embed.APIEmbedder.Embed,matrix/cortex/embed.APIEmbedder.Model,matrix/cortex/embed.HashEmbedder.Embed,matrix/cortex/embed.HashEmbedder.Model
+  references=matrix/cortex/embed.Embedder,matrix/cortex/embed.Embedder.Embed,matrix/cortex/embed.Embedder.Model,matrix/cortex/embed.EmbedderChain,matrix/cortex/embed.HashEmbedder,matrix/cortex/embed.c,matrix/cortex/embed.cancel,matrix/cortex/embed.ctx,matrix/cortex/embed.err,matrix/cortex/embed.ok,matrix/cortex/embed.p,matrix/cortex/embed.r,matrix/cortex/embed.resCh,matrix/cortex/embed.result,matrix/cortex/embed.text,matrix/cortex/embed.vec
   ^contains=matrix/cortex/embed.EmbedderChain
+  ^calls=matrix/cortex/embed.EmbedderChain.Embed
+  ^references=matrix/cortex/embed.EmbedderChain.Embed
   ^defines=matrix/cortex/embed/chain.go
 
 NODE id=matrix/cortex/embed.ErrDimMismatch kind=var
@@ -304,6 +348,7 @@ NODE id=matrix/cortex/embed.ErrDimMismatch kind=var
   sig=error
   doc=ErrDimMismatch is returned when an embedder produces a vector whose\nlength does not equal the Dim() it advertises. Callers (the vector\nworker, the Find Near path) MUST treat this as a hard error rather\nthan silently truncating, since it indicates either an embedder bug\nor a model-version mismatch.
 EDGES
+  ^references=matrix/cortex.embedderState.processWriteEntry,matrix/cortex/embed.APIEmbedder.embedOnce
   ^defines=matrix/cortex/embed/embed.go
 
 NODE id=matrix/cortex/embed.ErrEmptyInput kind=var
@@ -311,6 +356,7 @@ NODE id=matrix/cortex/embed.ErrEmptyInput kind=var
   sig=error
   doc=ErrEmptyInput indicates an embedder rejected zero-length text. The\nstub accepts empty strings (returns a zero-mean vector); HTTP-backed\nembedders may differ.
 EDGES
+  ^references=matrix/cortex/embed.APIEmbedder.Embed
   ^defines=matrix/cortex/embed/embed.go
 
 NODE id=matrix/cortex/embed.FireworksEmbedEndpoint kind=const
@@ -318,6 +364,7 @@ NODE id=matrix/cortex/embed.FireworksEmbedEndpoint kind=const
   sig=untyped string
   doc=FireworksEmbedEndpoint is the default OpenAI-compat embeddings URL.
 EDGES
+  ^references=matrix/cortex/embed.NewAPIEmbedder
   ^defines=matrix/cortex/embed/api_embedder.go
 
 NODE id=matrix/cortex/embed.HashEmbedder kind=type
@@ -327,6 +374,7 @@ NODE id=matrix/cortex/embed.HashEmbedder kind=type
 EDGES
   contains=matrix/cortex/embed.HashEmbedder#dim,matrix/cortex/embed.HashEmbedder#model,matrix/cortex/embed.HashEmbedder#salt,matrix/cortex/embed.HashEmbedder.Dim,matrix/cortex/embed.HashEmbedder.Embed,matrix/cortex/embed.HashEmbedder.Model
   implements=matrix/cortex/embed.Embedder
+  ^references=matrix/cortex/embed.EmbedderChain.embedWithTimeout,matrix/cortex/embed.HashEmbedder.Dim,matrix/cortex/embed.HashEmbedder.Embed,matrix/cortex/embed.HashEmbedder.Model,matrix/cortex/embed.NewEmbedderChain,matrix/cortex/embed.NewHashEmbedder,matrix/cortex/embed.NewHashEmbedderWith
   ^defines=matrix/cortex/embed/embed.go
 
 NODE id=matrix/cortex/embed.HashEmbedder#dim kind=field
@@ -352,7 +400,9 @@ NODE id=matrix/cortex/embed.HashEmbedder.Dim kind=method
   sig=func (h *HashEmbedder) Dim() int
   doc=Dim implements Embedder.
 EDGES
+  references=matrix/cortex/embed.HashEmbedder,matrix/cortex/embed.h
   ^contains=matrix/cortex/embed.HashEmbedder
+  ^calls=matrix/codegraph/enrich.CortexEmbedder.Dim,matrix/cortex.Cortex.StartEmbedder,matrix/cortex.embedderState.processWriteEntry,matrix/cortex/embed.EmbedderChain.Dim,matrix/cortex/embed.EmbedderChain.Embed,matrix/cortex/embed.NewEmbedderChain
   ^defines=matrix/cortex/embed/embed.go
 
 NODE id=matrix/cortex/embed.HashEmbedder.Embed kind=method
@@ -360,7 +410,9 @@ NODE id=matrix/cortex/embed.HashEmbedder.Embed kind=method
   sig=func (h *HashEmbedder) Embed(text string) ([]float32, error)
   doc=Embed returns a unit-normalized pseudo-vector derived from sha256 of the\n(salt, text) pair. Algorithm:\n\n 1. seed = sha256("hash-stub.v1" || salt || text)\n 2. Stream a sha256-based xorshift PRNG keyed by seed to produce dim\n    float32 components in [-1, 1].\n 3. L2-normalize the vector so dot-products match cosine similarity\n    (HNSW search and Find Near use dot-product as their distance proxy).\n\nDeterminism: byte-identical for byte-identical (salt, text). No\nsystem-clock, no PRNG state outside the seeded chain.\n\nEmpty-text handling: returns a deterministic vector (the seed expansion\nof just salt). This differs from production embedders but keeps tests\nclean — they can write a memory with empty rendered text without\ncrashing the worker.
 EDGES
+  references=matrix/cortex/embed.HashEmbedder,matrix/cortex/embed.bits,matrix/cortex/embed.block,matrix/cortex/embed.f,matrix/cortex/embed.h,matrix/cortex/embed.i,matrix/cortex/embed.inv,matrix/cortex/embed.j,matrix/cortex/embed.next,matrix/cortex/embed.out,matrix/cortex/embed.seed,matrix/cortex/embed.seedHasher,matrix/cortex/embed.sumSq,matrix/cortex/embed.text,matrix/cortex/embed.x
   ^contains=matrix/cortex/embed.HashEmbedder
+  ^calls=matrix/codegraph/enrich.CortexEmbedder.Embed,matrix/cortex.Cortex.EmbedText,matrix/cortex.Cortex.resolveNear,matrix/cortex.embedderState.processWriteEntry,matrix/cortex/embed.EmbedderChain.embedWithTimeout
   ^defines=matrix/cortex/embed/embed.go
 
 NODE id=matrix/cortex/embed.HashEmbedder.Model kind=method
@@ -368,7 +420,9 @@ NODE id=matrix/cortex/embed.HashEmbedder.Model kind=method
   sig=func (h *HashEmbedder) Model() string
   doc=Model implements Embedder.
 EDGES
+  references=matrix/cortex/embed.HashEmbedder,matrix/cortex/embed.h
   ^contains=matrix/cortex/embed.HashEmbedder
+  ^calls=matrix/codegraph/enrich.CortexEmbedder.Model,matrix/cortex.Cortex.EmbedderModel,matrix/cortex.Cortex.StartEmbedder,matrix/cortex.embedderState.processWriteEntry,matrix/cortex/embed.EmbedderChain.Embed,matrix/cortex/embed.EmbedderChain.Model,matrix/cortex/embed.EmbedderChain.embedWithTimeout,matrix/cortex/embed.NewEmbedderChain
   ^defines=matrix/cortex/embed/embed.go
 
 NODE id=matrix/cortex/embed.NewAPIEmbedder kind=func
@@ -376,6 +430,10 @@ NODE id=matrix/cortex/embed.NewAPIEmbedder kind=func
   sig=func NewAPIEmbedder(cfg APIEmbedderConfig) (*APIEmbedder, error)
   doc=NewAPIEmbedder constructs an APIEmbedder from cfg. Returns an error if the\nAPI key cannot be resolved.
 EDGES
+  calls=matrix/cortex/embed.envVarForEndpoint,matrix/cortex/embed.inferProviderTag
+  references=matrix/cortex/embed.APIEmbedder,matrix/cortex/embed.APIEmbedderConfig,matrix/cortex/embed.DefaultDim,matrix/cortex/embed.DefaultModelFireworks,matrix/cortex/embed.FireworksEmbedEndpoint,matrix/cortex/embed.apiKey,matrix/cortex/embed.cfg,matrix/cortex/embed.envName,matrix/cortex/embed.envVarForEndpoint,matrix/cortex/embed.httpClient,matrix/cortex/embed.inferProviderTag
+  ^calls=matrix/bridge/cmd/mclc-cortex.startEmbedder,matrix/cortex/cmd/embed-smoke.main,matrix/cortex/embed.NewChainFromEnv,matrix/executor/cmd/mcl-e2e.MakeAndDrainEmbedder,matrix/executor/cmd/mcl-execute.newInfra,matrix/neo/internal/memory.pickEmbedder
+  ^references=matrix/bridge/cmd/mclc-cortex.startEmbedder,matrix/cortex/cmd/embed-smoke.main,matrix/cortex/embed.NewChainFromEnv,matrix/executor/cmd/mcl-e2e.MakeAndDrainEmbedder,matrix/executor/cmd/mcl-execute.newInfra,matrix/neo/internal/memory.pickEmbedder
   ^defines=matrix/cortex/embed/api_embedder.go
 
 NODE id=matrix/cortex/embed.NewChainFromEnv kind=func
@@ -383,6 +441,8 @@ NODE id=matrix/cortex/embed.NewChainFromEnv kind=func
   sig=func NewChainFromEnv(model string, gatewayDID string) *EmbedderChain
   doc=NewChainFromEnv builds an EmbedderChain from environment variables, mirroring\nthe preference order used by neo/internal/memory.pickEmbedder:\n\n 1. the Matrix gateway when MATRIX_GATEWAY_URL + MATRIX_GATEWAY_TOKEN are set;\n 2. the provider directly when FIREWORKS_API_KEY is set;\n 3. the Hash stub terminal fallback (always present).\n\nThis lets production wiring construct a chain declaratively while tests pass\nan explicit provider list via NewEmbedderChain.\n\ngatewayDID, when non-empty, is stamped as X-Matrix-Actor-DID on gateway\nrequests for metering attribution.
 EDGES
+  calls=matrix/cortex/embed.NewAPIEmbedder,matrix/cortex/embed.NewEmbedderChain
+  references=matrix/cortex/embed.APIEmbedderConfig,matrix/cortex/embed.ChainConfig,matrix/cortex/embed.DefaultModelFireworks,matrix/cortex/embed.EmbedderChain,matrix/cortex/embed.NewAPIEmbedder,matrix/cortex/embed.NewEmbedderChain,matrix/cortex/embed.cfg,matrix/cortex/embed.e,matrix/cortex/embed.err,matrix/cortex/embed.gw,matrix/cortex/embed.model,matrix/cortex/embed.tok
   ^defines=matrix/cortex/embed/chain.go
 
 NODE id=matrix/cortex/embed.NewEmbedderChain kind=func
@@ -390,6 +450,10 @@ NODE id=matrix/cortex/embed.NewEmbedderChain kind=func
   sig=func NewEmbedderChain(cfg ChainConfig) *EmbedderChain
   doc=NewEmbedderChain constructs an EmbedderChain from cfg. If none of the\nconfigured providers is a *HashEmbedder, a fresh NewHashEmbedder() is\nappended as the terminal fallback so Embed() can never return an error.
 EDGES
+  calls=matrix/cortex/embed.APIEmbedder.Dim,matrix/cortex/embed.APIEmbedder.Model,matrix/cortex/embed.HashEmbedder.Dim,matrix/cortex/embed.HashEmbedder.Model,matrix/cortex/embed.NewHashEmbedder,matrix/cortex/embed.newChanMutex
+  references=matrix/cortex/embed.ChainConfig,matrix/cortex/embed.Embedder,matrix/cortex/embed.Embedder.Dim,matrix/cortex/embed.Embedder.Model,matrix/cortex/embed.EmbedderChain,matrix/cortex/embed.HashEmbedder,matrix/cortex/embed.NewHashEmbedder,matrix/cortex/embed.c,matrix/cortex/embed.cfg,matrix/cortex/embed.hasHash,matrix/cortex/embed.newChanMutex,matrix/cortex/embed.ok,matrix/cortex/embed.p,matrix/cortex/embed.providers
+  ^calls=matrix/cortex/embed.NewChainFromEnv,matrix/neo/internal/memory.pickEmbedder
+  ^references=matrix/cortex/embed.NewChainFromEnv,matrix/neo/internal/memory.pickEmbedder
   ^defines=matrix/cortex/embed/chain.go
 
 NODE id=matrix/cortex/embed.NewHashEmbedder kind=func
@@ -397,6 +461,10 @@ NODE id=matrix/cortex/embed.NewHashEmbedder kind=func
   sig=func NewHashEmbedder() *HashEmbedder
   doc=NewHashEmbedder returns a HashEmbedder at DefaultDim with no salt. Its\nModel() returns "hash-stub@v1".
 EDGES
+  calls=matrix/cortex/embed.NewHashEmbedderWith
+  references=matrix/cortex/embed.DefaultDim,matrix/cortex/embed.HashEmbedder,matrix/cortex/embed.NewHashEmbedderWith
+  ^calls=matrix/bridge/cmd/mclc-cortex.startEmbedder,matrix/cortex/cmd/cortex-shell.ensureEmbedder,matrix/cortex/embed.NewEmbedderChain,matrix/executor/cmd/mcl-execute.newInfra
+  ^references=matrix/bridge/cmd/mclc-cortex.startEmbedder,matrix/cortex/cmd/cortex-shell.ensureEmbedder,matrix/cortex/embed.NewEmbedderChain,matrix/executor/cmd/mcl-execute.newInfra
   ^defines=matrix/cortex/embed/embed.go
 
 NODE id=matrix/cortex/embed.NewHashEmbedderWith kind=func
@@ -404,6 +472,10 @@ NODE id=matrix/cortex/embed.NewHashEmbedderWith kind=func
   sig=func NewHashEmbedderWith(dim int, salt string) *HashEmbedder
   doc=NewHashEmbedderWith returns a HashEmbedder at the given dim and salt.\nModel() returns "hash-stub@<digest>" where the digest captures both dim\nand salt so two stubs configured differently are never confused at the\naudit boundary.
 EDGES
+  calls=matrix/cortex/embed.hex8
+  references=matrix/cortex/embed.DefaultDim,matrix/cortex/embed.HashEmbedder,matrix/cortex/embed.d,matrix/cortex/embed.digest,matrix/cortex/embed.dim,matrix/cortex/embed.h,matrix/cortex/embed.hex8,matrix/cortex/embed.salt
+  ^calls=matrix/codegraph/enrich.NewHashEmbedder,matrix/cortex/embed.NewHashEmbedder
+  ^references=matrix/codegraph/enrich.NewHashEmbedder,matrix/cortex/embed.NewHashEmbedder
   ^defines=matrix/cortex/embed/embed.go
 
 NODE id=matrix/cortex/embed.TogetherEmbedEndpoint kind=const
@@ -418,6 +490,7 @@ NODE id=matrix/cortex/embed._ kind=var
   sig=embed.Embedder
   doc=Ensure EmbedderChain satisfies Embedder at compile time.
 EDGES
+  references=matrix/cortex/embed.APIEmbedder,matrix/cortex/embed.Embedder,matrix/cortex/embed.EmbedderChain
   ^defines=matrix/cortex/embed/api_embedder.go,matrix/cortex/embed/chain.go
 
 NODE id=matrix/cortex/embed.chanMutex kind=type
@@ -426,6 +499,7 @@ NODE id=matrix/cortex/embed.chanMutex kind=type
   doc=chanMutex is a tiny helper so we don't pull in sync just for one field; it\nserializes Model()/Dim() reads against Embed() writes. Embeddings are never\non the hot path of a query (the worker is single-threaded; query reads the\nHNSW index, not Embed), so the lock is uncontended in practice.
 EDGES
   contains=matrix/cortex/embed.chanMutex#c,matrix/cortex/embed.chanMutex.lock,matrix/cortex/embed.chanMutex.unlock
+  ^references=matrix/cortex/embed.EmbedderChain,matrix/cortex/embed.chanMutex.lock,matrix/cortex/embed.chanMutex.unlock,matrix/cortex/embed.newChanMutex
   ^defines=matrix/cortex/embed/chain.go
 
 NODE id=matrix/cortex/embed.chanMutex#c kind=field
@@ -438,14 +512,20 @@ NODE id=matrix/cortex/embed.chanMutex.lock kind=method
   digest=b3:e8a819090eb531479c76fb1285cceb91ddd2ef862095f29fad278211424197f0 file=cortex/embed/chain.go range=84:84 lang=go exported=false byte_range=3469:3506
   sig=func (m chanMutex) lock()
 EDGES
+  references=matrix/cortex/embed.chanMutex,matrix/cortex/embed.m
   ^contains=matrix/cortex/embed.chanMutex
+  ^calls=matrix/cortex/embed.EmbedderChain.Dim,matrix/cortex/embed.EmbedderChain.Embed,matrix/cortex/embed.EmbedderChain.Model
+  ^references=matrix/cortex/embed.EmbedderChain.Dim,matrix/cortex/embed.EmbedderChain.Embed,matrix/cortex/embed.EmbedderChain.Model
   ^defines=matrix/cortex/embed/chain.go
 
 NODE id=matrix/cortex/embed.chanMutex.unlock kind=method
   digest=b3:139f56cbfc1acce0e1d8781e8b0ce2f616b448b3f689b0fe5801ad22cd6aca2e file=cortex/embed/chain.go range=85:85 lang=go exported=false byte_range=3507:3556
   sig=func (m chanMutex) unlock()
 EDGES
+  references=matrix/cortex/embed.chanMutex,matrix/cortex/embed.m
   ^contains=matrix/cortex/embed.chanMutex
+  ^calls=matrix/cortex/embed.EmbedderChain.Dim,matrix/cortex/embed.EmbedderChain.Embed,matrix/cortex/embed.EmbedderChain.Model
+  ^references=matrix/cortex/embed.EmbedderChain.Dim,matrix/cortex/embed.EmbedderChain.Embed,matrix/cortex/embed.EmbedderChain.Model
   ^defines=matrix/cortex/embed/chain.go
 
 NODE id=matrix/cortex/embed.embedDatum kind=type
@@ -453,6 +533,7 @@ NODE id=matrix/cortex/embed.embedDatum kind=type
   sig=type embedDatum struct {\n	Object		string		`json:"object"`	// "embedding"\n	Embedding	[]float64	`json:"embedding"`\n	Index		int		`json:"index"`\n}
 EDGES
   contains=matrix/cortex/embed.embedDatum#Embedding,matrix/cortex/embed.embedDatum#Index,matrix/cortex/embed.embedDatum#Object
+  ^references=matrix/cortex/embed.embedResponse
   ^defines=matrix/cortex/embed/api_embedder.go
 
 NODE id=matrix/cortex/embed.embedDatum#Embedding kind=field
@@ -478,6 +559,7 @@ NODE id=matrix/cortex/embed.embedErrorBody kind=type
   sig=type embedErrorBody struct {\n	Message	string	`json:"message"`\n	Type	string	`json:"type"`\n	Code	string	`json:"code"`\n}
 EDGES
   contains=matrix/cortex/embed.embedErrorBody#Code,matrix/cortex/embed.embedErrorBody#Message,matrix/cortex/embed.embedErrorBody#Type
+  ^references=matrix/cortex/embed.embedResponse
   ^defines=matrix/cortex/embed/api_embedder.go
 
 NODE id=matrix/cortex/embed.embedErrorBody#Code kind=field
@@ -504,6 +586,7 @@ NODE id=matrix/cortex/embed.embedRequest kind=type
   doc=embedRequest is the request body for /v1/embeddings. The OpenAI spec allows\n`input` to be a string or []string; we always send a string for now (single\ncall per Embed). Batch support is deferred until the worker layer adopts it.
 EDGES
   contains=matrix/cortex/embed.embedRequest#Input,matrix/cortex/embed.embedRequest#Model
+  ^references=matrix/cortex/embed.APIEmbedder.embedCtx
   ^defines=matrix/cortex/embed/api_embedder.go
 
 NODE id=matrix/cortex/embed.embedRequest#Input kind=field
@@ -523,6 +606,8 @@ NODE id=matrix/cortex/embed.embedResponse kind=type
   sig=type embedResponse struct {\n	Object	string		`json:"object"`	// "list"\n	Data	[]embedDatum	`json:"data"`\n	Model	string		`json:"model"`\n	Usage	*embedUsage	`json:"usage,omitempty"`\n	Error	*embedErrorBody	`json:"error,omitempty"`\n}
 EDGES
   contains=matrix/cortex/embed.embedResponse#Data,matrix/cortex/embed.embedResponse#Error,matrix/cortex/embed.embedResponse#Model,matrix/cortex/embed.embedResponse#Object,matrix/cortex/embed.embedResponse#Usage
+  references=matrix/cortex/embed.embedDatum,matrix/cortex/embed.embedErrorBody,matrix/cortex/embed.embedUsage
+  ^references=matrix/cortex/embed.APIEmbedder.embedOnce
   ^defines=matrix/cortex/embed/api_embedder.go
 
 NODE id=matrix/cortex/embed.embedResponse#Data kind=field
@@ -560,6 +645,7 @@ NODE id=matrix/cortex/embed.embedUsage kind=type
   sig=type embedUsage struct {\n	PromptTokens	int	`json:"prompt_tokens"`\n	TotalTokens	int	`json:"total_tokens"`\n}
 EDGES
   contains=matrix/cortex/embed.embedUsage#PromptTokens,matrix/cortex/embed.embedUsage#TotalTokens
+  ^references=matrix/cortex/embed.embedResponse
   ^defines=matrix/cortex/embed/api_embedder.go
 
 NODE id=matrix/cortex/embed.embedUsage#PromptTokens kind=field
@@ -579,6 +665,9 @@ NODE id=matrix/cortex/embed.envVarForEndpoint kind=func
   sig=func envVarForEndpoint(endpoint string) string
   doc=envVarForEndpoint picks the canonical API-key env var based on endpoint URL.
 EDGES
+  references=matrix/cortex/embed.endpoint
+  ^calls=matrix/cortex/embed.NewAPIEmbedder
+  ^references=matrix/cortex/embed.NewAPIEmbedder
   ^defines=matrix/cortex/embed/api_embedder.go
 
 NODE id=matrix/cortex/embed.hex8 kind=func
@@ -586,6 +675,9 @@ NODE id=matrix/cortex/embed.hex8 kind=func
   sig=func hex8(b []byte) string
   doc=hex8 renders the first 4 bytes of digest as 8 lowercase hex characters.\nShort enough to fit in audit logs, distinctive enough to spot\nsalted/unsalted variants by eye.
 EDGES
+  references=matrix/cortex/embed.b,matrix/cortex/embed.hexAlphabet,matrix/cortex/embed.i,matrix/cortex/embed.out
+  ^calls=matrix/cortex/embed.NewHashEmbedderWith
+  ^references=matrix/cortex/embed.NewHashEmbedderWith
   ^defines=matrix/cortex/embed/embed.go
 
 NODE id=matrix/cortex/embed.inferProviderTag kind=func
@@ -593,18 +685,27 @@ NODE id=matrix/cortex/embed.inferProviderTag kind=func
   sig=func inferProviderTag(endpoint string) string
   doc=inferProviderTag returns a short identifier for the provider, used in\nModel() string to keep audit logs unambiguous.
 EDGES
+  references=matrix/cortex/embed.endpoint
+  ^calls=matrix/cortex/embed.NewAPIEmbedder
+  ^references=matrix/cortex/embed.NewAPIEmbedder
   ^defines=matrix/cortex/embed/api_embedder.go
 
 NODE id=matrix/cortex/embed.newChanMutex kind=func
   digest=b3:8a633b1a851234f01094ef74a23135045d9343f5bee9920fc4b1cac3d3382de8 file=cortex/embed/chain.go range=78:82 lang=go exported=false byte_range=3364:3467
   sig=func newChanMutex() chanMutex
 EDGES
+  references=matrix/cortex/embed.c,matrix/cortex/embed.chanMutex
+  ^calls=matrix/cortex/embed.NewEmbedderChain
+  ^references=matrix/cortex/embed.NewEmbedderChain
   ^defines=matrix/cortex/embed/chain.go
 
 NODE id=matrix/cortex/embed.truncate kind=func
   digest=b3:aef98bcecd1bec2c20323e380dc201ab827146b8fc985f7331fc6ba9717f76ae file=cortex/embed/api_embedder.go range=335:340 lang=go exported=false byte_range=11039:11134
   sig=func truncate(s string, n int) string
 EDGES
+  references=matrix/cortex/embed.n,matrix/cortex/embed.s
+  ^calls=matrix/cortex/embed.APIEmbedder.embedOnce
+  ^references=matrix/cortex/embed.APIEmbedder.embedOnce
   ^defines=matrix/cortex/embed/api_embedder.go
 
 NODE id=matrix/cortex/embed/api_embedder.go kind=file

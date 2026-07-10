@@ -1,0 +1,1937 @@
+# GENERATED gen=codegraph do-not-edit merkle=b3:75a956136eb56a920059d717ea1f7ba394b53bef834ab6db66f06d328eb5d650
+
+NODE id=matrix/executor/mcp kind=package
+  digest=b3:9021b116faad31cbfacf1a1dd7702118ad8c24f9a547965048574c583ab15d58 file=executor/mcp range=0:0 lang=go exported=true
+EDGES
+  contains=matrix/executor/mcp/client.go,matrix/executor/mcp/http.go,matrix/executor/mcp/jsonrpc.go,matrix/executor/mcp/manager.go,matrix/executor/mcp/mock_server.go,matrix/executor/mcp/protocol.go,matrix/executor/mcp/stdio.go,matrix/executor/mcp/transport.go
+  ^contains=mod:matrix/executor
+
+NODE id=matrix/executor/mcp.CallToolParams kind=type
+  digest=b3:faa81c2641ba8bcd4d094d8ba38e90f0a210816eae98914179d62a8806a1ad13 file=executor/mcp/protocol.go range=160:164 lang=go exported=true byte_range=6700:6900
+  sig=type CallToolParams struct {\n	Name		string			`json:"name"`\n	Arguments	map[string]interface{}	`json:"arguments,omitempty"`\n}
+  doc=CallToolParams is the params object sent on tools/call.
+EDGES
+  contains=matrix/executor/mcp.CallToolParams#Arguments,matrix/executor/mcp.CallToolParams#Name
+  ^defines=matrix/executor/mcp/protocol.go
+
+NODE id=matrix/executor/mcp.CallToolParams#Arguments kind=field
+  digest=b3:f26185d9c6781acfcde5e7799c6221749d14f88cb96413dd76c43e720607e7f3 file=executor/mcp/protocol.go range=163:163 lang=go exported=true byte_range=6837:6898
+  sig=map[string]interface{}
+EDGES
+  ^contains=matrix/executor/mcp.CallToolParams
+
+NODE id=matrix/executor/mcp.CallToolParams#Name kind=field
+  digest=b3:38abace3eb1462d1d7a6cef129287c94653d6db1f3f4c064175f1315bb889aa7 file=executor/mcp/protocol.go range=162:162 lang=go exported=true byte_range=6789:6835
+  sig=string
+EDGES
+  ^contains=matrix/executor/mcp.CallToolParams
+
+NODE id=matrix/executor/mcp.CallToolResult kind=type
+  digest=b3:662578aa010e9725d77c4b451f911b1272ec8a52f5824545600881815f669a0a file=executor/mcp/protocol.go range=166:173 lang=go exported=true byte_range=6902:7254
+  sig=type CallToolResult struct {\n	Content	[]Content	`json:"content"`\n	IsError	bool		`json:"isError,omitempty"`\n}
+  doc=CallToolResult is the typed response to tools/call. IsError captures\nin-band tool failure (e.g. "shell command exited 1") without the\ntransport-level error path. Both surfaces are mapped to Matrix\nfailure modes by the executor.
+EDGES
+  contains=matrix/executor/mcp.CallToolResult#Content,matrix/executor/mcp.CallToolResult#IsError
+  ^defines=matrix/executor/mcp/protocol.go
+
+NODE id=matrix/executor/mcp.CallToolResult#Content kind=field
+  digest=b3:9856cb4c8916a04ca5aa05fafb6386ceb46df7a7b675f43d7f5d375deefa5fdc file=executor/mcp/protocol.go range=171:171 lang=go exported=true byte_range=7172:7206
+  sig=[]mcp.Content
+EDGES
+  ^contains=matrix/executor/mcp.CallToolResult
+
+NODE id=matrix/executor/mcp.CallToolResult#IsError kind=field
+  digest=b3:d56e4b5b126d7ef6f93152c15371d865898a3960814cea6130420f48f87d12c3 file=executor/mcp/protocol.go range=172:172 lang=go exported=true byte_range=7208:7252
+  sig=bool
+EDGES
+  ^contains=matrix/executor/mcp.CallToolResult
+
+NODE id=matrix/executor/mcp.Classify kind=func
+  digest=b3:b45f3936d047a1ccd8611b729d00e4690f78d9cf6328c7cb895883ff112e3814 file=executor/mcp/jsonrpc.go range=205:260 lang=go exported=true byte_range=7180:8849
+  sig=func Classify(data []byte) (MessageKind, *Request, *Response, *Notification, error)
+  doc=Classify parses an inbound JSON-RPC frame and returns the discriminated\nkind plus the typed message. The caller can pattern-match on kind\nand use the corresponding pointer (the others will be nil).\n\nJSON-RPC 2.0 routing rules:\n  - id present + method present  → Request\n  - id absent  + method present  → Notification\n  - id present + (result | error) → Response\n  - anything else                → ErrUnknownMessage\n\njsonrpc version mismatch returns ErrInvalidVersion regardless of shape.
+EDGES
+  ^defines=matrix/executor/mcp/jsonrpc.go
+
+NODE id=matrix/executor/mcp.Client kind=type
+  digest=b3:7b04eaffb7bed17d14c462f735cdeb09520c198b74a5a5e4debab4527189c1e8 file=executor/mcp/client.go range=15:60 lang=go exported=true byte_range=262:2043
+  sig=type Client struct {\n	t	Transport\n\n	// idCounter generates monotonic outbound request IDs. Use atomic\n	// access so concurrent callers don't collide.\n	idCounter	atomic.Uint64\n\n	// pending maps in-flight request id → response channel. Filled by\n	// Send-side, drained by the read loop. Protected by mu.\n	mu	sync.Mutex\n	pending	map[uint64]chan *Response\n\n	// sendMu serializes Transport.Send calls to keep frames whole. The\n	// Transport itself locks too, but client-side framing (encode +\n	// pending-map insert + send) must be atomic w.r.t. read loop.\n	sendMu	sync.Mutex\n\n	// closed signals the read loop to exit and prevents new sends.\n	closed	atomic.Bool\n\n	// readDone is closed when the read loop exits, so Close can wait\n	// for clean shutdown.\n	readDone	chan struct{}\n\n	// readErr captures the read loop's exit error (nil for clean close,\n	// or the underlying transport error for unexpected exits).\n	readErrMu	sync.Mutex\n	readErr		error\n\n	// notifyHandler is an optional callback invoked from the read loop\n	// for inbound notifications. v1 wires this only for diagnostic\n	// logging (notifications/cancelled, notifications/progress).\n	notifyHandler	func(*Notification)\n\n	// info captures the InitializeResult once Initialize succeeds.\n	infoMu	sync.RWMutex\n	info	*InitializeResult\n}
+  doc=Client is a JSON-RPC 2.0 + MCP layer above a Transport. One Client\ndrives one server connection. Servers and clients are paired N:1\nbehind the manager (one Client per server, one manager per agent).\n\nConcurrency: Initialize must be called exactly once before any other\nmethod, but is itself goroutine-safe through the read loop. After\nInitialize, ToolsList / ToolsCall / Ping may be called from any\ngoroutine; the Client serializes through its outbound mutex.
+EDGES
+  contains=matrix/executor/mcp.Client#closed,matrix/executor/mcp.Client#idCounter,matrix/executor/mcp.Client#info,matrix/executor/mcp.Client#infoMu,matrix/executor/mcp.Client#mu,matrix/executor/mcp.Client#notifyHandler,matrix/executor/mcp.Client#pending,matrix/executor/mcp.Client#readDone,matrix/executor/mcp.Client#readErr,matrix/executor/mcp.Client#readErrMu,matrix/executor/mcp.Client#sendMu,matrix/executor/mcp.Client#t,matrix/executor/mcp.Client.Call,matrix/executor/mcp.Client.Close,matrix/executor/mcp.Client.Info,matrix/executor/mcp.Client.Initialize,matrix/executor/mcp.Client.Notify,matrix/executor/mcp.Client.Ping,matrix/executor/mcp.Client.ReadError,matrix/executor/mcp.Client.ToolsCall,matrix/executor/mcp.Client.ToolsList,matrix/executor/mcp.Client.readLoop,matrix/executor/mcp.Client.routeResponse
+  ^defines=matrix/executor/mcp/client.go
+
+NODE id=matrix/executor/mcp.Client#closed kind=field
+  digest=b3:aed5317d7155196a76debd041d2cb4693bcd0cc6eeba48e549efcf425817d0d3 file=executor/mcp/client.go range=40:41 lang=go exported=false byte_range=1325:1408
+  sig=atomic.Bool
+  doc=closed signals the read loop to exit and prevents new sends.
+EDGES
+  ^contains=matrix/executor/mcp.Client
+
+NODE id=matrix/executor/mcp.Client#idCounter kind=field
+  digest=b3:578cfc8ff1c9467e31fa045ce80767b61cad5a942604c9316ceca9afc0f6ed93 file=executor/mcp/client.go range=26:28 lang=go exported=false byte_range=781:919
+  sig=atomic.Uint64
+  doc=idCounter generates monotonic outbound request IDs. Use atomic\naccess so concurrent callers don't collide.
+EDGES
+  ^contains=matrix/executor/mcp.Client
+
+NODE id=matrix/executor/mcp.Client#info kind=field
+  digest=b3:cd5356ce5c60a0420addc5302d2051aafb37f77aa3bb3c633e9e6cdef9102f82 file=executor/mcp/client.go range=59:59 lang=go exported=false byte_range=2017:2041
+  sig=*mcp.InitializeResult
+EDGES
+  ^contains=matrix/executor/mcp.Client
+
+NODE id=matrix/executor/mcp.Client#infoMu kind=field
+  digest=b3:7f936f921f7651fda043ef18e9d188ccf467ece5a71e87558f2978db9aafb857 file=executor/mcp/client.go range=57:58 lang=go exported=false byte_range=1931:2015
+  sig=sync.RWMutex
+  doc=info captures the InitializeResult once Initialize succeeds.
+EDGES
+  ^contains=matrix/executor/mcp.Client
+
+NODE id=matrix/executor/mcp.Client#mu kind=field
+  digest=b3:df0c9b40f7aaad62fe0072076f7c33b31858eec2f69e903493b3571c87df8d40 file=executor/mcp/client.go range=30:32 lang=go exported=false byte_range=922:1068
+  sig=sync.Mutex
+  doc=pending maps in-flight request id → response channel. Filled by\nSend-side, drained by the read loop. Protected by mu.
+EDGES
+  ^contains=matrix/executor/mcp.Client
+
+NODE id=matrix/executor/mcp.Client#notifyHandler kind=field
+  digest=b3:6ab85936ae886102466c70bf9fad8c6f9dce4a79ff0e0c40904a69f1104a5b51 file=executor/mcp/client.go range=52:55 lang=go exported=false byte_range=1698:1928
+  sig=func(*mcp.Notification)
+  doc=notifyHandler is an optional callback invoked from the read loop\nfor inbound notifications. v1 wires this only for diagnostic\nlogging (notifications/cancelled, notifications/progress).
+EDGES
+  ^contains=matrix/executor/mcp.Client
+
+NODE id=matrix/executor/mcp.Client#pending kind=field
+  digest=b3:5f88e58dbdf21eb4795ec9849723aac0a3a858cba52c16dda2ceb9b3b1431277 file=executor/mcp/client.go range=33:33 lang=go exported=false byte_range=1070:1103
+  sig=map[uint64]chan *mcp.Response
+EDGES
+  ^contains=matrix/executor/mcp.Client
+
+NODE id=matrix/executor/mcp.Client#readDone kind=field
+  digest=b3:2ddcc8431a08cc0f459598032abf8784157a30160074f2823a1a5f18e0d6d8b4 file=executor/mcp/client.go range=43:45 lang=go exported=false byte_range=1411:1524
+  sig=chan struct{}
+  doc=readDone is closed when the read loop exits, so Close can wait\nfor clean shutdown.
+EDGES
+  ^contains=matrix/executor/mcp.Client
+
+NODE id=matrix/executor/mcp.Client#readErr kind=field
+  digest=b3:4afe5faa51075df6268ebaeb4963dcd9cef24d78b44da49298a52c5d72cb957a file=executor/mcp/client.go range=50:50 lang=go exported=false byte_range=1680:1695
+  sig=error
+EDGES
+  ^contains=matrix/executor/mcp.Client
+
+NODE id=matrix/executor/mcp.Client#readErrMu kind=field
+  digest=b3:d92c87433455565c7ff87eb08c82586f0719ccd985ea9f9fa0e642eeac86a8d9 file=executor/mcp/client.go range=47:49 lang=go exported=false byte_range=1527:1678
+  sig=sync.Mutex
+  doc=readErr captures the read loop's exit error (nil for clean close,\nor the underlying transport error for unexpected exits).
+EDGES
+  ^contains=matrix/executor/mcp.Client
+
+NODE id=matrix/executor/mcp.Client#sendMu kind=field
+  digest=b3:c8146d1f7a6842588846d001207eca481ba7a2da02242f41a2fd74397e1758f6 file=executor/mcp/client.go range=35:38 lang=go exported=false byte_range=1106:1322
+  sig=sync.Mutex
+  doc=sendMu serializes Transport.Send calls to keep frames whole. The\nTransport itself locks too, but client-side framing (encode +\npending-map insert + send) must be atomic w.r.t. read loop.
+EDGES
+  ^contains=matrix/executor/mcp.Client
+
+NODE id=matrix/executor/mcp.Client#t kind=field
+  digest=b3:081f74283589ef7ff5b7e4179cd6c881f7f9ad937610535229adf79986be3dbc file=executor/mcp/client.go range=24:24 lang=go exported=false byte_range=767:778
+  sig=mcp.Transport
+EDGES
+  ^contains=matrix/executor/mcp.Client
+
+NODE id=matrix/executor/mcp.Client.Call kind=method
+  digest=b3:f792a76f6cacb1caa3bacfe18aa9d6f161f57ab8ac620a68e137f2f230c51685 file=executor/mcp/client.go range=198:265 lang=go exported=true byte_range=6270:7911
+  sig=func (c *Client) Call(ctx context.Context, method string, params interface{}, resultPtr interface{}) error
+  doc=Call performs a synchronous request/response. params is JSON-encoded\ninline; result is JSON-decoded into resultPtr (must be a pointer to\na struct or map). resultPtr may be nil if the caller doesn't care\nabout the response body shape.\n\nSurfaces RPCError verbatim through err so callers can switch on\ncodes (ErrCodeMethodNotFound, etc.).
+EDGES
+  ^contains=matrix/executor/mcp.Client
+  ^defines=matrix/executor/mcp/client.go
+
+NODE id=matrix/executor/mcp.Client.Close kind=method
+  digest=b3:4b52956e5accb5aa6d6e60954f7e88be009e2b53093d973addad7663d6e05621 file=executor/mcp/client.go range=288:304 lang=go exported=true byte_range=8476:8906
+  sig=func (c *Client) Close() error
+  doc=Close shuts down the read loop and the underlying transport. Safe\nto call multiple times. Pending Calls unblock with ErrClosed.
+EDGES
+  ^contains=matrix/executor/mcp.Client
+  ^defines=matrix/executor/mcp/client.go
+
+NODE id=matrix/executor/mcp.Client.Info kind=method
+  digest=b3:8d00c169a36a0e95202c71d04f02880392fbcf20af90d4a8b1c5560f8fa9da77 file=executor/mcp/client.go range=128:138 lang=go exported=true byte_range=3965:4243
+  sig=func (c *Client) Info() *InitializeResult
+  doc=Info returns the InitializeResult cached after a successful\nInitialize call, or nil if Initialize hasn't completed yet.
+EDGES
+  ^contains=matrix/executor/mcp.Client
+  ^defines=matrix/executor/mcp/client.go
+
+NODE id=matrix/executor/mcp.Client.Initialize kind=method
+  digest=b3:aaba5ac1032b5f5ceb22dbee350c5777f321571bc779ce44cbf58472f8bb76a1 file=executor/mcp/client.go range=88:126 lang=go exported=true byte_range=2795:3963
+  sig=func (c *Client) Initialize(ctx context.Context) (*InitializeResult, error)
+  doc=Initialize completes the MCP handshake: sends initialize request,\nawaits the result, sends notifications/initialized, and stashes the\nserver's capabilities for later inspection via Info.\n\nCalling Initialize twice is a no-op the second time (returns the\ncached InitializeResult). This is forgiving by design; the manager\ntreats Initialize as idempotent during reconnect attempts.
+EDGES
+  ^contains=matrix/executor/mcp.Client
+  ^defines=matrix/executor/mcp/client.go
+
+NODE id=matrix/executor/mcp.Client.Notify kind=method
+  digest=b3:485d396a516abafb51697fd22c6ec4e5cfd2b77bd92f88e7dec996eb513c881f file=executor/mcp/client.go range=267:286 lang=go exported=true byte_range=7913:8474
+  sig=func (c *Client) Notify(ctx context.Context, method string, params interface{}) error
+  doc=Notify sends a one-way notification (no response expected).
+EDGES
+  ^contains=matrix/executor/mcp.Client
+  ^defines=matrix/executor/mcp/client.go
+
+NODE id=matrix/executor/mcp.Client.Ping kind=method
+  digest=b3:46e7d380bfbb2411afce86e02d1418e29091c2137b368adfd43d7d34e9dbe7ad file=executor/mcp/client.go range=188:196 lang=go exported=true byte_range=5943:6268
+  sig=func (c *Client) Ping(ctx context.Context) error
+  doc=Ping issues a JSON-RPC ping (Q16 health-pinged lifecycle). Returns\nnil on success, transport error otherwise.
+EDGES
+  ^contains=matrix/executor/mcp.Client
+  ^defines=matrix/executor/mcp/client.go
+
+NODE id=matrix/executor/mcp.Client.ReadError kind=method
+  digest=b3:7857981432231b459d5efc59aab5f20fa59ed4bba6a5f73a9e3cf948c4a947d1 file=executor/mcp/client.go range=390:396 lang=go exported=true byte_range=10988:11228
+  sig=func (c *Client) ReadError() error
+  doc=ReadError returns the read loop's terminating error after Close, or\nnil if the loop is still running or closed cleanly via Close.
+EDGES
+  ^contains=matrix/executor/mcp.Client
+  ^defines=matrix/executor/mcp/client.go
+
+NODE id=matrix/executor/mcp.Client.ToolsCall kind=method
+  digest=b3:19823004fa1fe4cc59da54226a0cd3b696b4e767abdd1028576982493332bd0e file=executor/mcp/client.go range=168:186 lang=go exported=true byte_range=5057:5941
+  sig=func (c *Client) ToolsCall(ctx context.Context, name string, args map[string]interface{}) (*CallToolResult, error)
+  doc=ToolsCall invokes a tool by name. Args are server-validated against\nthe tool's inputSchema (and Matrix re-validates client-side via the\ntool registry).\n\nReturns the typed CallToolResult. Note: result.IsError=true is NOT\nsurfaced as a Go error — that's an in-band tool-level failure (e.g.\n"shell exit 1") which the executor maps to a Failure step. Only\ntransport-level / RPC-level errors come back through err.
+EDGES
+  ^contains=matrix/executor/mcp.Client
+  ^defines=matrix/executor/mcp/client.go
+
+NODE id=matrix/executor/mcp.Client.ToolsList kind=method
+  digest=b3:1b49984362ad04bcb2a25ca78cd5defda5b35de5796ea1b6929b70556210ea54 file=executor/mcp/client.go range=140:166 lang=go exported=true byte_range=4245:5055
+  sig=func (c *Client) ToolsList(ctx context.Context) ([]Tool, error)
+  doc=ToolsList enumerates the server's exposed tools. Used by the\nmanager at startup to verify the agent manifest matches what the\nserver actually offers (Q21).\n\nPagination via NextCursor is fully consumed here so callers see one\nflat list; paginated servers are uncommon at v1 scale but the spec\nallows them.
+EDGES
+  ^contains=matrix/executor/mcp.Client
+  ^defines=matrix/executor/mcp/client.go
+
+NODE id=matrix/executor/mcp.Client.readLoop kind=method
+  digest=b3:d887ecce6a262331f903b495040337c610367c40ad22e47b33aa814411c60a63 file=executor/mcp/client.go range=306:343 lang=go exported=false byte_range=8908:9955
+  sig=func (c *Client) readLoop()
+  doc=readLoop consumes inbound frames, classifies them, and routes to\npending response channels (responses) or the notify handler\n(notifications). Inbound requests are not expected at v1 (no\nsampling/createMessage support); they're logged and ignored.
+EDGES
+  ^contains=matrix/executor/mcp.Client
+  ^defines=matrix/executor/mcp/client.go
+
+NODE id=matrix/executor/mcp.Client.routeResponse kind=method
+  digest=b3:acc4db52bf6480c84084a0365259ed10fe9f123f70df067498ab7e727a79d86d file=executor/mcp/client.go range=345:366 lang=go exported=false byte_range=9957:10417
+  sig=func (c *Client) routeResponse(resp *Response)
+  doc=routeResponse hands resp to the matching pending channel. Drops\nsilently on no match (caller cancelled, double-response, etc.).
+EDGES
+  ^contains=matrix/executor/mcp.Client
+  ^defines=matrix/executor/mcp/client.go
+
+NODE id=matrix/executor/mcp.ClientCapabilities kind=type
+  digest=b3:88fb462661b7869d73008482408d68109bc81744ddb8eafe31051a8748352ad6 file=executor/mcp/protocol.go range=69:84 lang=go exported=true byte_range=3041:3832
+  sig=type ClientCapabilities struct {\n	// Roots advertises filesystem roots clients expose to servers.\n	// Deferred — Matrix routes through filesystem-mcp on the server side.\n	Roots	*RootsCapability	`json:"roots,omitempty"`\n\n	// Sampling advertises that the client can serve sampling/createMessage\n	// callbacks. Not in v1 (Q-locked: executor owns its own llm slot).\n	Sampling	*SamplingCapability	`json:"sampling,omitempty"`\n\n	// Experimental holds any non-standardized capability extensions.\n	// Always omitted in v1.\n	Experimental	map[string]json.RawMessage	`json:"experimental,omitempty"`\n}
+  doc=ClientCapabilities is the capability set we advertise to servers.\nv1 advertises no client-side capabilities (no roots subscription,\nno sampling callback) — Matrix is a pure client-of-tools.
+EDGES
+  contains=matrix/executor/mcp.ClientCapabilities#Experimental,matrix/executor/mcp.ClientCapabilities#Roots,matrix/executor/mcp.ClientCapabilities#Sampling
+  ^defines=matrix/executor/mcp/protocol.go
+
+NODE id=matrix/executor/mcp.ClientCapabilities#Experimental kind=field
+  digest=b3:6c48d1bccb706e74115e37074be6b2867efa3daaac6165db262c7546b9e0582a file=executor/mcp/protocol.go range=81:83 lang=go exported=true byte_range=3666:3830
+  sig=map[string]json.RawMessage
+  doc=Experimental holds any non-standardized capability extensions.\nAlways omitted in v1.
+EDGES
+  ^contains=matrix/executor/mcp.ClientCapabilities
+
+NODE id=matrix/executor/mcp.ClientCapabilities#Roots kind=field
+  digest=b3:ef068da13903c67ed790c47d9dedec7d48b1ce0562511e158503df853b893cba file=executor/mcp/protocol.go range=73:75 lang=go exported=true byte_range=3276:3462
+  sig=*mcp.RootsCapability
+  doc=Roots advertises filesystem roots clients expose to servers.\nDeferred — Matrix routes through filesystem-mcp on the server side.
+EDGES
+  ^contains=matrix/executor/mcp.ClientCapabilities
+
+NODE id=matrix/executor/mcp.ClientCapabilities#Sampling kind=field
+  digest=b3:06f1a36f8b1a379df65afa0d7d18bc2cbc10b60cb46c2badc7e7cca5f60d1695 file=executor/mcp/protocol.go range=77:79 lang=go exported=true byte_range=3465:3663
+  sig=*mcp.SamplingCapability
+  doc=Sampling advertises that the client can serve sampling/createMessage\ncallbacks. Not in v1 (Q-locked: executor owns its own llm slot).
+EDGES
+  ^contains=matrix/executor/mcp.ClientCapabilities
+
+NODE id=matrix/executor/mcp.ClientName kind=const
+  digest=b3:f6c59d243e845da254550fa6debea1ab7c233987317ef1387a0b3dde78a7932c file=executor/mcp/protocol.go range=38:41 lang=go exported=true byte_range=1915:2075
+  sig=untyped string
+  doc=ClientName + ClientVersion identify Matrix in the initialize handshake\nso MCP servers can log who's connecting.
+EDGES
+  ^defines=matrix/executor/mcp/protocol.go
+
+NODE id=matrix/executor/mcp.ClientParams kind=type
+  digest=b3:5e532da83cca86295517e162cc6bd37494f79232e7b498314de57f5b137ac2f1 file=executor/mcp/client.go range=62:69 lang=go exported=true byte_range=2045:2264
+  sig=type ClientParams struct {\n	// Transport is required.\n	Transport	Transport\n\n	// NotifyHandler is invoked on inbound notifications. Default: drop.\n	NotifyHandler	func(*Notification)\n}
+  doc=ClientParams configures a Client.
+EDGES
+  contains=matrix/executor/mcp.ClientParams#NotifyHandler,matrix/executor/mcp.ClientParams#Transport
+  ^defines=matrix/executor/mcp/client.go
+
+NODE id=matrix/executor/mcp.ClientParams#NotifyHandler kind=field
+  digest=b3:306752d0ed7e7af335719e0d862a3d7364043000343840d7a9b117b55e52784a file=executor/mcp/client.go range=67:68 lang=go exported=true byte_range=2159:2262
+  sig=func(*mcp.Notification)
+  doc=NotifyHandler is invoked on inbound notifications. Default: drop.
+EDGES
+  ^contains=matrix/executor/mcp.ClientParams
+
+NODE id=matrix/executor/mcp.ClientParams#Transport kind=field
+  digest=b3:c5847cfbd69068c7389731163032e9a412c3aafd36b9bbec7bc7f7368ecf7a6f file=executor/mcp/client.go range=64:65 lang=go exported=true byte_range=2110:2156
+  sig=mcp.Transport
+  doc=Transport is required.
+EDGES
+  ^contains=matrix/executor/mcp.ClientParams
+
+NODE id=matrix/executor/mcp.ClientVersion kind=const
+  digest=b3:a42e55ebc22b37ce1f17cdb9c1464afffc0ee5230b901ec1453608738e77d99f file=executor/mcp/protocol.go range=38:42 lang=go exported=true byte_range=1915:2100
+  sig=untyped string
+  doc=ClientName + ClientVersion identify Matrix in the initialize handshake\nso MCP servers can log who's connecting.
+EDGES
+  ^defines=matrix/executor/mcp/protocol.go
+
+NODE id=matrix/executor/mcp.Content kind=type
+  digest=b3:c9f4412844761bb70dce5dc8e79d89687c0ae741f8e9c95fdbf76b39828d101f file=executor/mcp/protocol.go range=175:191 lang=go exported=true byte_range=7256:7816
+  sig=type Content struct {\n	Type	string	`json:"type"`\n\n	// For Type=="text".\n	Text	string	`json:"text,omitempty"`\n\n	// For Type=="image".\n	Data		string	`json:"data,omitempty"`		// base64\n	MimeType	string	`json:"mimeType,omitempty"`	// e.g. "image/png"\n\n	// For Type=="resource".\n	Resource	*EmbeddedResource	`json:"resource,omitempty"`\n}
+  doc=Content is a single piece of the tool result. MCP supports text,\nimage, and embedded-resource content kinds; Matrix v1 surfaces text\ndirectly to the LLM and stores image/resource as base64 cortex Fact\nmemories.
+EDGES
+  contains=matrix/executor/mcp.Content#Data,matrix/executor/mcp.Content#MimeType,matrix/executor/mcp.Content#Resource,matrix/executor/mcp.Content#Text,matrix/executor/mcp.Content#Type
+  ^defines=matrix/executor/mcp/protocol.go
+
+NODE id=matrix/executor/mcp.Content#Data kind=field
+  digest=b3:ac05001241cc304f9c12a8c8ba001a1bb982f00f1eae6cbc1e101244d54a63b1 file=executor/mcp/protocol.go range=185:186 lang=go exported=true byte_range=7590:7652
+  sig=string
+  doc=For Type=="image".
+EDGES
+  ^contains=matrix/executor/mcp.Content
+
+NODE id=matrix/executor/mcp.Content#MimeType kind=field
+  digest=b3:c5815f8a5f988a9a4da306a256daa26c149de8a591b6a7e631429f6db326b60e file=executor/mcp/protocol.go range=187:187 lang=go exported=true byte_range=7668:7711
+  sig=string
+EDGES
+  ^contains=matrix/executor/mcp.Content
+
+NODE id=matrix/executor/mcp.Content#Resource kind=field
+  digest=b3:0e49c07013562df5fa2dfe6ddd00dcad2d376e655de9a3898f1fcd1b6878635d file=executor/mcp/protocol.go range=189:190 lang=go exported=true byte_range=7734:7814
+  sig=*mcp.EmbeddedResource
+  doc=For Type=="resource".
+EDGES
+  ^contains=matrix/executor/mcp.Content
+
+NODE id=matrix/executor/mcp.Content#Text kind=field
+  digest=b3:13d629622ee48eb85edfc688a468e3b88d6e1885914a444dceadd6773ad07673 file=executor/mcp/protocol.go range=182:183 lang=go exported=true byte_range=7530:7587
+  sig=string
+  doc=For Type=="text".
+EDGES
+  ^contains=matrix/executor/mcp.Content
+
+NODE id=matrix/executor/mcp.Content#Type kind=field
+  digest=b3:b534c428e65aa3fcac1331240852454e3f85c1d3244dee98a5b4d92aed30a5b0 file=executor/mcp/protocol.go range=180:180 lang=go exported=true byte_range=7502:7527
+  sig=string
+EDGES
+  ^contains=matrix/executor/mcp.Content
+
+NODE id=matrix/executor/mcp.ContentTypeImage kind=const
+  digest=b3:2c4ff45fa64d30377d64fbe664fb399ee627ae5429252d498ae5c89b5c6c6d9c file=executor/mcp/protocol.go range=221:224 lang=go exported=true byte_range=8887:9009
+  sig=untyped string
+  doc=Content type constants for CallToolResult.Content.
+EDGES
+  ^defines=matrix/executor/mcp/protocol.go
+
+NODE id=matrix/executor/mcp.ContentTypeResource kind=const
+  digest=b3:0f7f85b18a4b873278e230c4d8333d429a61b5c85671b3f92a3ab59528e6b301 file=executor/mcp/protocol.go range=221:225 lang=go exported=true byte_range=8887:9043
+  sig=untyped string
+  doc=Content type constants for CallToolResult.Content.
+EDGES
+  ^defines=matrix/executor/mcp/protocol.go
+
+NODE id=matrix/executor/mcp.ContentTypeText kind=const
+  digest=b3:c0f5d3a52a51a3d05251721ea5e168c83bd206ad9242b9c2c7a098dfa03784e9 file=executor/mcp/protocol.go range=221:223 lang=go exported=true byte_range=8887:8978
+  sig=untyped string
+  doc=Content type constants for CallToolResult.Content.
+EDGES
+  ^defines=matrix/executor/mcp/protocol.go
+
+NODE id=matrix/executor/mcp.EmbeddedResource kind=type
+  digest=b3:29b59328065a90a2fe3ee6bcc942003fb3b3d094d54fd8ed6282585e990bde97 file=executor/mcp/protocol.go range=193:199 lang=go exported=true byte_range=7818:8137
+  sig=type EmbeddedResource struct {\n	URI		string	`json:"uri"`\n	MimeType	string	`json:"mimeType,omitempty"`\n	Text		string	`json:"text,omitempty"`	// for text resources\n	Blob		string	`json:"blob,omitempty"`	// base64 for binary resources\n}
+  doc=EmbeddedResource is a server-supplied resource attached to a tool result.
+EDGES
+  contains=matrix/executor/mcp.EmbeddedResource#Blob,matrix/executor/mcp.EmbeddedResource#MimeType,matrix/executor/mcp.EmbeddedResource#Text,matrix/executor/mcp.EmbeddedResource#URI
+  ^defines=matrix/executor/mcp/protocol.go
+
+NODE id=matrix/executor/mcp.EmbeddedResource#Blob kind=field
+  digest=b3:a6d32717499e22850f54110579e70be21bec602d32a19ad9aa64ae34b62ba033 file=executor/mcp/protocol.go range=198:198 lang=go exported=true byte_range=8065:8104
+  sig=string
+EDGES
+  ^contains=matrix/executor/mcp.EmbeddedResource
+
+NODE id=matrix/executor/mcp.EmbeddedResource#MimeType kind=field
+  digest=b3:c5815f8a5f988a9a4da306a256daa26c149de8a591b6a7e631429f6db326b60e file=executor/mcp/protocol.go range=196:196 lang=go exported=true byte_range=7957:8000
+  sig=string
+EDGES
+  ^contains=matrix/executor/mcp.EmbeddedResource
+
+NODE id=matrix/executor/mcp.EmbeddedResource#Text kind=field
+  digest=b3:2122489187d4f0fc30d6c3b29ce35b6982b453651cb4a390f4991afd560a1f7c file=executor/mcp/protocol.go range=197:197 lang=go exported=true byte_range=8002:8041
+  sig=string
+EDGES
+  ^contains=matrix/executor/mcp.EmbeddedResource
+
+NODE id=matrix/executor/mcp.EmbeddedResource#URI kind=field
+  digest=b3:4b9954052566710780a51c8b7686a38e97a4e937b7e5c134910aa2b88557e5c3 file=executor/mcp/protocol.go range=195:195 lang=go exported=true byte_range=7927:7955
+  sig=string
+EDGES
+  ^contains=matrix/executor/mcp.EmbeddedResource
+
+NODE id=matrix/executor/mcp.EncodeNotification kind=func
+  digest=b3:c2be1a35c07dfdcf537b527d0b83c9704224e2aef2fcf8f95d58dd2cdbe6a910 file=executor/mcp/jsonrpc.go range=142:153 lang=go exported=true byte_range=5232:5545
+  sig=func EncodeNotification(n *Notification) ([]byte, error)
+  doc=EncodeNotification serializes a notification to wire bytes.
+EDGES
+  ^defines=matrix/executor/mcp/jsonrpc.go
+
+NODE id=matrix/executor/mcp.EncodeRequest kind=func
+  digest=b3:5631c937fce505420bfbd6023ec823435b6b1b8f2991865683b4bea8cac511aa file=executor/mcp/jsonrpc.go range=123:140 lang=go exported=true byte_range=4721:5230
+  sig=func EncodeRequest(r *Request) ([]byte, error)
+  doc=EncodeRequest serializes a request to JSON-RPC 2.0 wire bytes.\nAlways emits jsonrpc: "2.0" regardless of caller-supplied value\nso callers can construct Request{} without filling in the version\nfield every time.
+EDGES
+  ^defines=matrix/executor/mcp/jsonrpc.go
+
+NODE id=matrix/executor/mcp.EncodeResponse kind=func
+  digest=b3:a98408b135fe9de2114267cdbeb81b83aee3ca5a8c6b939b0e9e9a3a1c6d8489 file=executor/mcp/jsonrpc.go range=155:172 lang=go exported=true byte_range=5547:6042
+  sig=func EncodeResponse(r *Response) ([]byte, error)
+  doc=EncodeResponse serializes a response to wire bytes. Used by the\nin-process mock server in tests; production clients only decode.
+EDGES
+  ^defines=matrix/executor/mcp/jsonrpc.go
+
+NODE id=matrix/executor/mcp.ErrAmbiguousResponse kind=var
+  digest=b3:c625fa44591799c07ae7264c3df2cbf677aee6ee3b209cf20d821ae17cf57923 file=executor/mcp/jsonrpc.go range=114:116 lang=go exported=true byte_range=4285:4521
+  sig=error
+  doc=ErrAmbiguousResponse fires when a Response carries both Result\nAND Error, or neither. Per JSON-RPC spec exactly one is required.
+EDGES
+  ^defines=matrix/executor/mcp/jsonrpc.go
+
+NODE id=matrix/executor/mcp.ErrClosed kind=var
+  digest=b3:cb3f086572937dcff4afff0665e41dcf4bae40c7fc5a81cf8c6fc65f055f00c7 file=executor/mcp/transport.go range=37:40 lang=go exported=true byte_range=1339:1579
+  sig=error
+  doc=ErrClosed signals that a Transport has been closed (either locally\nvia Close, by the peer disconnecting, or by EOF on the underlying\nstream). Returned by Send and Recv post-close.
+EDGES
+  ^defines=matrix/executor/mcp/transport.go
+
+NODE id=matrix/executor/mcp.ErrCodeInternalError kind=const
+  digest=b3:00f2b74117683992aedde2d1ef6fccd34c7c9e4910cf18f3f6882b60bfd76b42 file=executor/mcp/jsonrpc.go range=78:84 lang=go exported=true byte_range=2882:3127
+  sig=untyped int
+  doc=Standard JSON-RPC 2.0 error codes (https://www.jsonrpc.org/specification).
+EDGES
+  ^defines=matrix/executor/mcp/jsonrpc.go
+
+NODE id=matrix/executor/mcp.ErrCodeInvalidParams kind=const
+  digest=b3:e689b6b5b12abb6b1e7aed0d75d2230ed6d04dd4ba2765d28951eddad4846dd7 file=executor/mcp/jsonrpc.go range=78:83 lang=go exported=true byte_range=2882:3095
+  sig=untyped int
+  doc=Standard JSON-RPC 2.0 error codes (https://www.jsonrpc.org/specification).
+EDGES
+  ^defines=matrix/executor/mcp/jsonrpc.go
+
+NODE id=matrix/executor/mcp.ErrCodeInvalidRequest kind=const
+  digest=b3:ce952b0199e5d610ba53b020f0db21c23ccfe6033a37b225019a4b0f03890563 file=executor/mcp/jsonrpc.go range=78:81 lang=go exported=true byte_range=2882:3031
+  sig=untyped int
+  doc=Standard JSON-RPC 2.0 error codes (https://www.jsonrpc.org/specification).
+EDGES
+  ^defines=matrix/executor/mcp/jsonrpc.go
+
+NODE id=matrix/executor/mcp.ErrCodeInvalidToolInput kind=const
+  digest=b3:53a04ee22368dce8d6095ca193fbc99661569769e1ed975c8f70334e3e397bf0 file=executor/mcp/jsonrpc.go range=87:93 lang=go exported=true byte_range=3131:3452
+  sig=untyped int
+  doc=MCP-specific error codes (server-defined range -32000..-32099 per\nJSON-RPC spec). These are subject to MCP spec evolution; recorded\nhere so the client can map common server errors to typed sentinels.
+EDGES
+  ^defines=matrix/executor/mcp/jsonrpc.go
+
+NODE id=matrix/executor/mcp.ErrCodeMethodNotFound kind=const
+  digest=b3:76df735b44d0f1aca039dc99cfa67330064c8e6c9b7f66a140d48a1a15cf31c8 file=executor/mcp/jsonrpc.go range=78:82 lang=go exported=true byte_range=2882:3063
+  sig=untyped int
+  doc=Standard JSON-RPC 2.0 error codes (https://www.jsonrpc.org/specification).
+EDGES
+  ^defines=matrix/executor/mcp/jsonrpc.go
+
+NODE id=matrix/executor/mcp.ErrCodeParseError kind=const
+  digest=b3:3bd7e0fefef54abc6a7de1682458310bf6e86bb5de047fa9ab68a13ba58ad4d9 file=executor/mcp/jsonrpc.go range=78:80 lang=go exported=true byte_range=2882:2999
+  sig=untyped int
+  doc=Standard JSON-RPC 2.0 error codes (https://www.jsonrpc.org/specification).
+EDGES
+  ^defines=matrix/executor/mcp/jsonrpc.go
+
+NODE id=matrix/executor/mcp.ErrCodeServerError kind=const
+  digest=b3:356bdad3cc4e36061c070837040e756a6be3ca9115af5cf7a81653681b09875f file=executor/mcp/jsonrpc.go range=87:91 lang=go exported=true byte_range=3131:3382
+  sig=untyped int
+  doc=MCP-specific error codes (server-defined range -32000..-32099 per\nJSON-RPC spec). These are subject to MCP spec evolution; recorded\nhere so the client can map common server errors to typed sentinels.
+EDGES
+  ^defines=matrix/executor/mcp/jsonrpc.go
+
+NODE id=matrix/executor/mcp.ErrCodeServerUnavailable kind=const
+  digest=b3:753367b96ef73ba7ca68d66ebc13106bbee46196b5aba8979304a8275b66ac84 file=executor/mcp/jsonrpc.go range=87:94 lang=go exported=true byte_range=3131:3511
+  sig=untyped int
+  doc=MCP-specific error codes (server-defined range -32000..-32099 per\nJSON-RPC spec). These are subject to MCP spec evolution; recorded\nhere so the client can map common server errors to typed sentinels.
+EDGES
+  ^defines=matrix/executor/mcp/jsonrpc.go
+
+NODE id=matrix/executor/mcp.ErrCodeToolNotFound kind=const
+  digest=b3:543354a114058032f6f1c67528f956e2d5c0a17006e7e92819aeabdb2e3754e8 file=executor/mcp/jsonrpc.go range=87:92 lang=go exported=true byte_range=3131:3417
+  sig=untyped int
+  doc=MCP-specific error codes (server-defined range -32000..-32099 per\nJSON-RPC spec). These are subject to MCP spec evolution; recorded\nhere so the client can map common server errors to typed sentinels.
+EDGES
+  ^defines=matrix/executor/mcp/jsonrpc.go
+
+NODE id=matrix/executor/mcp.ErrInvalidVersion kind=var
+  digest=b3:c49d89413609c7c8ae8e396b0ecac53af006244d2868831f1ec9ed85d8ce51c9 file=executor/mcp/jsonrpc.go range=100:103 lang=go exported=true byte_range=3632:3891
+  sig=error
+  doc=ErrInvalidVersion fires when an inbound message lacks the required\n"jsonrpc": "2.0" header. MCP servers that emit JSON-RPC 1.0 or\narbitrary JSON are rejected at the codec boundary.
+EDGES
+  ^defines=matrix/executor/mcp/jsonrpc.go
+
+NODE id=matrix/executor/mcp.ErrMissingID kind=var
+  digest=b3:20293b7b393a9e66c0fccfed8085c99932a1a9996549df23b2d441351f413ecb file=executor/mcp/jsonrpc.go range=109:112 lang=go exported=true byte_range=4048:4282
+  sig=error
+  doc=ErrMissingID fires when a Request has no id field. Note that\nNotifications legitimately have no ID; the codec routes the\nframe correctly via the absent-id check.
+EDGES
+  ^defines=matrix/executor/mcp/jsonrpc.go
+
+NODE id=matrix/executor/mcp.ErrMissingMethod kind=var
+  digest=b3:72d125e0be130b0e2fe194ad78cf0b8b289eb062ae91b941f32f02c226a8475a file=executor/mcp/jsonrpc.go range=105:107 lang=go exported=true byte_range=3894:4045
+  sig=error
+  doc=ErrMissingMethod fires when a Request or Notification has no\nmethod field.
+EDGES
+  ^defines=matrix/executor/mcp/jsonrpc.go
+
+NODE id=matrix/executor/mcp.ErrUnknownMessage kind=var
+  digest=b3:31850ab9fd439c2ecd017a54ba27bda538eaef32c549f6d54d5365a7b402593d file=executor/mcp/jsonrpc.go range=118:120 lang=go exported=true byte_range=4524:4717
+  sig=error
+  doc=ErrUnknownMessage fires when an inbound JSON object cannot be\nclassified as Request, Response, or Notification.
+EDGES
+  ^defines=matrix/executor/mcp/jsonrpc.go
+
+NODE id=matrix/executor/mcp.ExtractText kind=func
+  digest=b3:0bd2ea87737ccc81596e0420d9b1621ecb863817553c5e0da6223b7c7b71b99c file=executor/mcp/protocol.go range=228:246 lang=go exported=true byte_range=9047:9465
+  sig=func ExtractText(r *CallToolResult) string
+  doc=ExtractText concatenates every text-typed content block in a\nCallToolResult. Convenience for the common path where a tool returns\n"what happened" as plain text.
+EDGES
+  ^defines=matrix/executor/mcp/protocol.go
+
+NODE id=matrix/executor/mcp.HTTPParams kind=type
+  digest=b3:c2ccf22cc869989bad86384b6ce61f5384746a30df78cc26b57a24971af09bd2 file=executor/mcp/http.go range=52:68 lang=go exported=true byte_range=1541:2120
+  sig=type HTTPParams struct {\n	// Endpoint is the absolute URL of the MCP server (e.g.\n	// "https://mcp.example.com/v1/jsonrpc").\n	Endpoint	string\n\n	// Headers are appended to every outbound request. Q18 lock: bearer\n	// tokens go here; never logged, never journaled.\n	Headers	http.Header\n\n	// Timeout is the per-request HTTP timeout. Zero = 30s default.\n	Timeout	time.Duration\n\n	// Client allows tests to inject a custom *http.Client (mock\n	// transport). Default = http.DefaultClient with Timeout applied.\n	Client	*http.Client\n}
+  doc=HTTPParams configures a streamable HTTP transport.
+EDGES
+  contains=matrix/executor/mcp.HTTPParams#Client,matrix/executor/mcp.HTTPParams#Endpoint,matrix/executor/mcp.HTTPParams#Headers,matrix/executor/mcp.HTTPParams#Timeout
+  ^defines=matrix/executor/mcp/http.go
+
+NODE id=matrix/executor/mcp.HTTPParams#Client kind=field
+  digest=b3:8e8f53e42c6b578e141346010113709cb7292eff1b63aae8d4aab19de59f7467 file=executor/mcp/http.go range=65:67 lang=go exported=true byte_range=1970:2118
+  sig=*http.Client
+  doc=Client allows tests to inject a custom *http.Client (mock\ntransport). Default = http.DefaultClient with Timeout applied.
+EDGES
+  ^contains=matrix/executor/mcp.HTTPParams
+
+NODE id=matrix/executor/mcp.HTTPParams#Endpoint kind=field
+  digest=b3:b33fe6c116e6f30c6cfd09b495a518052eab0d5934e634637a31aa5b7f2d383e file=executor/mcp/http.go range=54:56 lang=go exported=true byte_range=1621:1736
+  sig=string
+  doc=Endpoint is the absolute URL of the MCP server (e.g.\n"https://mcp.example.com/v1/jsonrpc").
+EDGES
+  ^contains=matrix/executor/mcp.HTTPParams
+
+NODE id=matrix/executor/mcp.HTTPParams#Headers kind=field
+  digest=b3:6ef0be304d943f6e8bd13bd8d4c2dd89d7540c14762975d0a22ab624d29267cc file=executor/mcp/http.go range=58:60 lang=go exported=true byte_range=1739:1878
+  sig=http.Header
+  doc=Headers are appended to every outbound request. Q18 lock: bearer\ntokens go here; never logged, never journaled.
+EDGES
+  ^contains=matrix/executor/mcp.HTTPParams
+
+NODE id=matrix/executor/mcp.HTTPParams#Timeout kind=field
+  digest=b3:099f8b01bde4c7860e98be14d7fcfcbdd0814e6909db4891115f94dc8e23d2f9 file=executor/mcp/http.go range=62:63 lang=go exported=true byte_range=1881:1967
+  sig=time.Duration
+  doc=Timeout is the per-request HTTP timeout. Zero = 30s default.
+EDGES
+  ^contains=matrix/executor/mcp.HTTPParams
+
+NODE id=matrix/executor/mcp.HTTPTransport kind=type
+  digest=b3:ee954df7e9d5002c0fda2cea7005e1147846359ba296ad9e47d00bc835bfa2c7 file=executor/mcp/http.go range=17:50 lang=go exported=true byte_range=265:1539
+  sig=type HTTPTransport struct {\n	endpoint	string\n	headers		http.Header\n	client		*http.Client\n\n	// inbox carries response frames into Recv. Sized to one because\n	// v1 issues exactly one Send before each Recv (Client.Call is\n	// strictly request/response).\n	inbox	chan []byte\n\n	// errInbox carries transport-level errors to Recv so the Client\n	// surfaces them as call failures rather than hangs.\n	errInbox	chan error\n\n	// done is closed by Close so a Recv blocked on inbox/errInbox can\n	// unblock cleanly.\n	done	chan struct{}\n\n	mu	sync.Mutex\n	closed	bool\n}
+  doc=HTTPTransport implements the Streamable HTTP transport per the\n2024-11-05 MCP spec revision (Q15 lock).\n\nWire shape:\n  - Each client→server message is a POST to a single endpoint URL.\n  - The request body is one JSON-RPC frame (no batching at v1).\n  - Successful responses arrive synchronously as the POST response body.\n    Server-initiated notifications (and SSE-shaped streamed responses)\n    are deferred to v1.1 — Matrix v1 only consumes simple JSON responses.\n\nQ14 + executor_deferrals: streaming progress / SSE-shaped responses\ndeferred to v1.1; we surface a clean error if a server tries to use\nthem so manifest authors notice the gap rather than silently lose data.
+EDGES
+  contains=matrix/executor/mcp.HTTPTransport#client,matrix/executor/mcp.HTTPTransport#closed,matrix/executor/mcp.HTTPTransport#done,matrix/executor/mcp.HTTPTransport#endpoint,matrix/executor/mcp.HTTPTransport#errInbox,matrix/executor/mcp.HTTPTransport#headers,matrix/executor/mcp.HTTPTransport#inbox,matrix/executor/mcp.HTTPTransport#mu,matrix/executor/mcp.HTTPTransport.Close,matrix/executor/mcp.HTTPTransport.Recv,matrix/executor/mcp.HTTPTransport.Send
+  implements=matrix/executor/mcp.Transport
+  ^defines=matrix/executor/mcp/http.go
+
+NODE id=matrix/executor/mcp.HTTPTransport#client kind=field
+  digest=b3:3b2a2bd77a1dce9611ad25fd7f91e2259002968b6bec74f347d82f36c4201b11 file=executor/mcp/http.go range=33:33 lang=go exported=false byte_range=1049:1070
+  sig=*http.Client
+EDGES
+  ^contains=matrix/executor/mcp.HTTPTransport
+
+NODE id=matrix/executor/mcp.HTTPTransport#closed kind=field
+  digest=b3:1141798bff5ece15c0143841d27bde1b1e1acbb195f262d5eb5127b561770822 file=executor/mcp/http.go range=49:49 lang=go exported=false byte_range=1526:1537
+  sig=bool
+EDGES
+  ^contains=matrix/executor/mcp.HTTPTransport
+
+NODE id=matrix/executor/mcp.HTTPTransport#done kind=field
+  digest=b3:37424b2bf556e66659c12eacc64475cb4c28a4d57888814146b0bf009ab0bc09 file=executor/mcp/http.go range=44:46 lang=go exported=false byte_range=1397:1504
+  sig=chan struct{}
+  doc=done is closed by Close so a Recv blocked on inbox/errInbox can\nunblock cleanly.
+EDGES
+  ^contains=matrix/executor/mcp.HTTPTransport
+
+NODE id=matrix/executor/mcp.HTTPTransport#endpoint kind=field
+  digest=b3:a18b42b3110977e7c5e961063f26f619be105163d889d17e24c714a6a0d72e34 file=executor/mcp/http.go range=31:31 lang=go exported=false byte_range=1010:1025
+  sig=string
+EDGES
+  ^contains=matrix/executor/mcp.HTTPTransport
+
+NODE id=matrix/executor/mcp.HTTPTransport#errInbox kind=field
+  digest=b3:639692b6fd1649ac0280b6985926dafc17b403d8df862555018df9ade7e9e2c8 file=executor/mcp/http.go range=40:42 lang=go exported=false byte_range=1255:1394
+  sig=chan error
+  doc=errInbox carries transport-level errors to Recv so the Client\nsurfaces them as call failures rather than hangs.
+EDGES
+  ^contains=matrix/executor/mcp.HTTPTransport
+
+NODE id=matrix/executor/mcp.HTTPTransport#headers kind=field
+  digest=b3:21373fa3d775fcafbdbcbdada2d177cd6488252e08d70fa2b2b2b2ff544cef62 file=executor/mcp/http.go range=32:32 lang=go exported=false byte_range=1027:1047
+  sig=http.Header
+EDGES
+  ^contains=matrix/executor/mcp.HTTPTransport
+
+NODE id=matrix/executor/mcp.HTTPTransport#inbox kind=field
+  digest=b3:6b34b050eaa21f102d41c98a2edbbca4df399b56b33e284f493c21aaef04ed2c file=executor/mcp/http.go range=35:38 lang=go exported=false byte_range=1073:1252
+  sig=chan []byte
+  doc=inbox carries response frames into Recv. Sized to one because\nv1 issues exactly one Send before each Recv (Client.Call is\nstrictly request/response).
+EDGES
+  ^contains=matrix/executor/mcp.HTTPTransport
+
+NODE id=matrix/executor/mcp.HTTPTransport#mu kind=field
+  digest=b3:104dc836435d5ef8442f9bfbde658e9de40c6f0a6a782ec8db1f57575a3b03f9 file=executor/mcp/http.go range=48:48 lang=go exported=false byte_range=1507:1524
+  sig=sync.Mutex
+EDGES
+  ^contains=matrix/executor/mcp.HTTPTransport
+
+NODE id=matrix/executor/mcp.HTTPTransport.Close kind=method
+  digest=b3:fd860f62297feeb08bc5c346e2fdb1cc976ff32ad45cdbb2d6fc7c9967f3d43b file=executor/mcp/http.go range=197:209 lang=go exported=true byte_range=5436:5703
+  sig=func (t *HTTPTransport) Close() error
+  doc=Close marks the transport closed and drains pending channels.\nSubsequent Send/Recv return ErrClosed.
+EDGES
+  ^contains=matrix/executor/mcp.HTTPTransport
+  ^defines=matrix/executor/mcp/http.go
+
+NODE id=matrix/executor/mcp.HTTPTransport.Recv kind=method
+  digest=b3:ad9baa0342a947f70a15235f46ae278ba77b19ca0cb89ff2b247f30f1746eb66 file=executor/mcp/http.go range=176:195 lang=go exported=true byte_range=4997:5434
+  sig=func (t *HTTPTransport) Recv(ctx context.Context) ([]byte, error)
+  doc=Recv blocks for the next frame, an out-of-band error, ctx cancel,\nor transport close.
+EDGES
+  ^contains=matrix/executor/mcp.HTTPTransport
+  ^defines=matrix/executor/mcp/http.go
+
+NODE id=matrix/executor/mcp.HTTPTransport.Send kind=method
+  digest=b3:5826402e019430c5bd41f220cb45a1ace192175053f481939d2dbac5238889a5 file=executor/mcp/http.go range=104:174 lang=go exported=true byte_range=2929:4995
+  sig=func (t *HTTPTransport) Send(ctx context.Context, frame []byte) error
+  doc=Send POSTs one JSON-RPC frame to the endpoint. The response body\n(if it carries a JSON-RPC frame, which it always does for\nrequests; never for notifications) is enqueued on inbox for the\nnext Recv.\n\nNotifications get a 202 with empty body per spec; we don't enqueue\nanything in that case.
+EDGES
+  ^contains=matrix/executor/mcp.HTTPTransport
+  ^defines=matrix/executor/mcp/http.go
+
+NODE id=matrix/executor/mcp.Implementation kind=type
+  digest=b3:a71555c899e2af4958b10971d3fe8850b01e021b35f3b8d66dac05e93a908eac file=executor/mcp/protocol.go range=63:67 lang=go exported=true byte_range=2872:3039
+  sig=type Implementation struct {\n	Name	string	`json:"name"`\n	Version	string	`json:"version"`\n}
+  doc=Implementation identifies a peer (server or client) by name + version.
+EDGES
+  contains=matrix/executor/mcp.Implementation#Name,matrix/executor/mcp.Implementation#Version
+  ^defines=matrix/executor/mcp/protocol.go
+
+NODE id=matrix/executor/mcp.Implementation#Name kind=field
+  digest=b3:794a1ede203fe985a48518448e5f8659b78a74b26db55472037cd4f60e2527d8 file=executor/mcp/protocol.go range=65:65 lang=go exported=true byte_range=2976:3004
+  sig=string
+EDGES
+  ^contains=matrix/executor/mcp.Implementation
+
+NODE id=matrix/executor/mcp.Implementation#Version kind=field
+  digest=b3:b2750f0e9c8cf542ea516e77edc45a7f8042513b06ac839302251c1738181a0d file=executor/mcp/protocol.go range=66:66 lang=go exported=true byte_range=3006:3037
+  sig=string
+EDGES
+  ^contains=matrix/executor/mcp.Implementation
+
+NODE id=matrix/executor/mcp.InitializeParams kind=type
+  digest=b3:4b64731b4c7b8cfc758ba1ee95cebc3983d5cb8d40687c1ec164a1cfb806bcc0 file=executor/mcp/protocol.go range=45:50 lang=go exported=true byte_range=2104:2384
+  sig=type InitializeParams struct {\n	ProtocolVersion	string			`json:"protocolVersion"`\n	Capabilities	ClientCapabilities	`json:"capabilities"`\n	ClientInfo	Implementation		`json:"clientInfo"`\n}
+  doc=InitializeParams is the params object sent on the initialize request.
+EDGES
+  contains=matrix/executor/mcp.InitializeParams#Capabilities,matrix/executor/mcp.InitializeParams#ClientInfo,matrix/executor/mcp.InitializeParams#ProtocolVersion
+  ^defines=matrix/executor/mcp/protocol.go
+
+NODE id=matrix/executor/mcp.InitializeParams#Capabilities kind=field
+  digest=b3:d53af9a7f8c750fc43958ee3322a243fe60b00890b45b7e8f8a46a24e1f26b37 file=executor/mcp/protocol.go range=48:48 lang=go exported=true byte_range=2270:2326
+  sig=mcp.ClientCapabilities
+EDGES
+  ^contains=matrix/executor/mcp.InitializeParams
+
+NODE id=matrix/executor/mcp.InitializeParams#ClientInfo kind=field
+  digest=b3:735ea5e8e412fa077861fb839842967636297496df61c5084610f93778066c87 file=executor/mcp/protocol.go range=49:49 lang=go exported=true byte_range=2328:2382
+  sig=mcp.Implementation
+EDGES
+  ^contains=matrix/executor/mcp.InitializeParams
+
+NODE id=matrix/executor/mcp.InitializeParams#ProtocolVersion kind=field
+  digest=b3:65982230dc2c573f5440a80d0bcde1ce6f6d70a2702dfe2765968eed98c87ef1 file=executor/mcp/protocol.go range=47:47 lang=go exported=true byte_range=2209:2268
+  sig=string
+EDGES
+  ^contains=matrix/executor/mcp.InitializeParams
+
+NODE id=matrix/executor/mcp.InitializeResult kind=type
+  digest=b3:122f590063d0bbf4f24f9ae9f637f472ef8486182a655ebc19a8cf29d18f9332 file=executor/mcp/protocol.go range=52:61 lang=go exported=true byte_range=2386:2870
+  sig=type InitializeResult struct {\n	ProtocolVersion	string			`json:"protocolVersion"`\n	Capabilities	ServerCapabilities	`json:"capabilities"`\n	ServerInfo	Implementation		`json:"serverInfo"`\n	// Instructions is an optional server-supplied human-readable hint\n	// (often documentation about tool semantics). Logged at debug,\n	// not threaded into prompts.\n	Instructions	string	`json:"instructions,omitempty"`\n}
+  doc=InitializeResult is the server's response to initialize.
+EDGES
+  contains=matrix/executor/mcp.InitializeResult#Capabilities,matrix/executor/mcp.InitializeResult#Instructions,matrix/executor/mcp.InitializeResult#ProtocolVersion,matrix/executor/mcp.InitializeResult#ServerInfo
+  ^defines=matrix/executor/mcp/protocol.go
+
+NODE id=matrix/executor/mcp.InitializeResult#Capabilities kind=field
+  digest=b3:1b9ff7759745cbc17a9916a7aa6b8807d1dcee189cbe5f7c75952db2f9b44a31 file=executor/mcp/protocol.go range=55:55 lang=go exported=true byte_range=2539:2595
+  sig=mcp.ServerCapabilities
+EDGES
+  ^contains=matrix/executor/mcp.InitializeResult
+
+NODE id=matrix/executor/mcp.InitializeResult#Instructions kind=field
+  digest=b3:d65dc8346623ea2941b419d99af08025ddca893b0d9b40ac24d2cb4fa79967bc file=executor/mcp/protocol.go range=57:60 lang=go exported=true byte_range=2653:2868
+  sig=string
+  doc=Instructions is an optional server-supplied human-readable hint\n(often documentation about tool semantics). Logged at debug,\nnot threaded into prompts.
+EDGES
+  ^contains=matrix/executor/mcp.InitializeResult
+
+NODE id=matrix/executor/mcp.InitializeResult#ProtocolVersion kind=field
+  digest=b3:65982230dc2c573f5440a80d0bcde1ce6f6d70a2702dfe2765968eed98c87ef1 file=executor/mcp/protocol.go range=54:54 lang=go exported=true byte_range=2478:2537
+  sig=string
+EDGES
+  ^contains=matrix/executor/mcp.InitializeResult
+
+NODE id=matrix/executor/mcp.InitializeResult#ServerInfo kind=field
+  digest=b3:4bd703134cbabfbf9b2436e3ee49cc2efb232067ce40a01451a4e9ce72e59825 file=executor/mcp/protocol.go range=56:56 lang=go exported=true byte_range=2597:2651
+  sig=mcp.Implementation
+EDGES
+  ^contains=matrix/executor/mcp.InitializeResult
+
+NODE id=matrix/executor/mcp.JSONRPCVersion kind=const
+  digest=b3:38386aa7eb4f723950e5263588e917795eb51dd0535155b91c53b5ace4c18b7c file=executor/mcp/jsonrpc.go range=25:27 lang=go exported=true byte_range=975:1099
+  sig=untyped string
+  doc=JSONRPCVersion is the protocol version identifier required on every\nJSON-RPC 2.0 message.
+EDGES
+  ^defines=matrix/executor/mcp/jsonrpc.go
+
+NODE id=matrix/executor/mcp.KindNotification kind=const
+  digest=b3:27e355be2d375bdcb2a75707b83c97e2051285c7f563a6a37f9e70b8dc2e93ac file=executor/mcp/jsonrpc.go range=189:190 lang=go exported=true byte_range=6594:6676
+  sig=mcp.MessageKind
+  doc=KindNotification is an inbound server-initiated notification.
+EDGES
+  ^defines=matrix/executor/mcp/jsonrpc.go
+
+NODE id=matrix/executor/mcp.KindRequest kind=const
+  digest=b3:10760ba6a31a4c0d8097af97c24645799d40a15e8aec9a1d0b551d67060f327e file=executor/mcp/jsonrpc.go range=180:184 lang=go exported=true byte_range=6248:6503
+  sig=mcp.MessageKind
+  doc=KindRequest is an inbound request from peer. MCP servers do not\nsend requests to clients in v1, but the spec allows it (e.g.\nfor sampling/createMessage callbacks); we surface it for forward\ncompatibility.
+EDGES
+  ^defines=matrix/executor/mcp/jsonrpc.go
+
+NODE id=matrix/executor/mcp.KindResponse kind=const
+  digest=b3:ea08563c8eca154e26a8f631b942d1deb960e39cc4ad94538414a6d14d1b6ac9 file=executor/mcp/jsonrpc.go range=186:187 lang=go exported=true byte_range=6506:6591
+  sig=mcp.MessageKind
+  doc=KindResponse is an inbound response to one of our outgoing requests.
+EDGES
+  ^defines=matrix/executor/mcp/jsonrpc.go
+
+NODE id=matrix/executor/mcp.LoggingCapability kind=type
+  digest=b3:6b22c78c60d03ba25ca9b58506bce02ee25e8d0da3895132ff2d24ebf490ba7c file=executor/mcp/protocol.go range=118:120 lang=go exported=true byte_range=5018:5194
+  sig=type LoggingCapability struct{}
+  doc=LoggingCapability is a capability flag (no fields) that signals the\nserver emits notifications/message log events. Matrix v1 ignores them.
+EDGES
+  ^defines=matrix/executor/mcp/protocol.go
+
+NODE id=matrix/executor/mcp.Manager kind=type
+  digest=b3:bb45d70a23aa546b3e887b55fa4adec2cdc04fd592942e1cd501578f134de45d file=executor/mcp/manager.go range=15:56 lang=go exported=true byte_range=244:1963
+  sig=type Manager struct {\n	mu	sync.RWMutex\n	clients	map[string]*Client\n	specs	map[string]ServerSpec\n\n	// tools caches the live tools/list response per alias, keyed by\n	// alias. Populated by Spawn after verifyTools succeeds. Synthesizer\n	// reads this so the executor LLM sees real InputSchemas instead of\n	// hallucinating tool args.\n	tools	map[string][]Tool\n\n	// healthInterval is the ping cadence. Zero disables periodic health\n	// checks (default for tests; production sets a non-zero value).\n	healthInterval	time.Duration\n\n	// onUnhealthy fires after a health-check failure for a server.\n	// Default is to log + attempt reconnect; tests may override.\n	onUnhealthy	func(alias string, err error)\n\n	// stderrSink optionally receives subprocess stderr. nil = discard.\n	stderrSink	io.Writer\n\n	// transportBuilder optionally overrides the default stdio/http\n	// transport selection. Tests inject pipeTransports through this\n	// hook; production leaves it nil to use the standard builders.\n	transportBuilder	func(spec ServerSpec) (Transport, error)\n\n	// shutdown coordinates Close: cancels the health-check goroutines\n	// and prevents new server registration.\n	shutdownCtx	context.Context\n	shutdownCancel	context.CancelFunc\n	wg		sync.WaitGroup\n}
+  doc=Manager is the per-agent MCP server pool (Q16 lock). It owns the\nlifecycle of every server an agent has declared in its manifest:\nspawn-on-boot, health-pinged, auto-reconnect on death, graceful drain\non agent stop.\n\nOne Manager per agent (NOT per intent — servers persist across\nintents for the duration of the agent process). Tools layer\n(executor/tool) consults Manager.Client(serverAlias) to resolve\ntool URIs at dispatch time.
+EDGES
+  contains=matrix/executor/mcp.Manager#clients,matrix/executor/mcp.Manager#healthInterval,matrix/executor/mcp.Manager#mu,matrix/executor/mcp.Manager#onUnhealthy,matrix/executor/mcp.Manager#shutdownCancel,matrix/executor/mcp.Manager#shutdownCtx,matrix/executor/mcp.Manager#specs,matrix/executor/mcp.Manager#stderrSink,matrix/executor/mcp.Manager#tools,matrix/executor/mcp.Manager#transportBuilder,matrix/executor/mcp.Manager#wg,matrix/executor/mcp.Manager.Aliases,matrix/executor/mcp.Manager.Client,matrix/executor/mcp.Manager.Close,matrix/executor/mcp.Manager.Spawn,matrix/executor/mcp.Manager.Spec,matrix/executor/mcp.Manager.Stop,matrix/executor/mcp.Manager.Tools,matrix/executor/mcp.Manager.buildTransport,matrix/executor/mcp.Manager.healthLoop,matrix/executor/mcp.Manager.verifyTools
+  ^defines=matrix/executor/mcp/manager.go
+
+NODE id=matrix/executor/mcp.Manager#clients kind=field
+  digest=b3:2177604a127bdf0bcb31bc0a6a84a03a52c7845b5f8c4741f03915e73885b4ce file=executor/mcp/manager.go range=26:26 lang=go exported=false byte_range=748:774
+  sig=map[string]*mcp.Client
+EDGES
+  ^contains=matrix/executor/mcp.Manager
+
+NODE id=matrix/executor/mcp.Manager#healthInterval kind=field
+  digest=b3:a7a7a7a2fa98f80685ba7ad0a74b808bd1a566b9fdd0bf45580772c404af0bac file=executor/mcp/manager.go range=35:37 lang=go exported=false byte_range=1068:1232
+  sig=time.Duration
+  doc=healthInterval is the ping cadence. Zero disables periodic health\nchecks (default for tests; production sets a non-zero value).
+EDGES
+  ^contains=matrix/executor/mcp.Manager
+
+NODE id=matrix/executor/mcp.Manager#mu kind=field
+  digest=b3:2b3aca656be86b1364299bc663a42eca650fb3e1973f2cc43d61a600dafbe706 file=executor/mcp/manager.go range=25:25 lang=go exported=false byte_range=726:746
+  sig=sync.RWMutex
+EDGES
+  ^contains=matrix/executor/mcp.Manager
+
+NODE id=matrix/executor/mcp.Manager#onUnhealthy kind=field
+  digest=b3:40265d4ab706f21709a775fa3f8a715b84fe255338d50a0269153bd90ac3b99a file=executor/mcp/manager.go range=39:41 lang=go exported=false byte_range=1235:1404
+  sig=func(alias string, err error)
+  doc=onUnhealthy fires after a health-check failure for a server.\nDefault is to log + attempt reconnect; tests may override.
+EDGES
+  ^contains=matrix/executor/mcp.Manager
+
+NODE id=matrix/executor/mcp.Manager#shutdownCancel kind=field
+  digest=b3:42e3865f86b28cc78847d6b535fdbcb866d6169226c4b6c84693347291203f19 file=executor/mcp/manager.go range=54:54 lang=go exported=false byte_range=1897:1930
+  sig=context.CancelFunc
+EDGES
+  ^contains=matrix/executor/mcp.Manager
+
+NODE id=matrix/executor/mcp.Manager#shutdownCtx kind=field
+  digest=b3:9ec3f3923719ef7c2aa664a7b792e330a1b392f281a8cddd27c7f29e324c9e41 file=executor/mcp/manager.go range=51:53 lang=go exported=false byte_range=1755:1895
+  sig=context.Context
+  doc=shutdown coordinates Close: cancels the health-check goroutines\nand prevents new server registration.
+EDGES
+  ^contains=matrix/executor/mcp.Manager
+
+NODE id=matrix/executor/mcp.Manager#specs kind=field
+  digest=b3:fba365188dee34f2d4e391ed5ac58f23b6d09e7e61182fd20a67edf4d06aefb5 file=executor/mcp/manager.go range=27:27 lang=go exported=false byte_range=776:805
+  sig=map[string]mcp.ServerSpec
+EDGES
+  ^contains=matrix/executor/mcp.Manager
+
+NODE id=matrix/executor/mcp.Manager#stderrSink kind=field
+  digest=b3:327d7577b31d311a4aebde177b024cba103cd3e938fdb70281fdd9fa0644eaa8 file=executor/mcp/manager.go range=43:44 lang=go exported=false byte_range=1407:1496
+  sig=io.Writer
+  doc=stderrSink optionally receives subprocess stderr. nil = discard.
+EDGES
+  ^contains=matrix/executor/mcp.Manager
+
+NODE id=matrix/executor/mcp.Manager#tools kind=field
+  digest=b3:5eb4ac1c757751677e8b86881eaf19f4dbab04685a048d8cbc78500014f2ed80 file=executor/mcp/manager.go range=29:33 lang=go exported=false byte_range=808:1065
+  sig=map[string][]mcp.Tool
+  doc=tools caches the live tools/list response per alias, keyed by\nalias. Populated by Spawn after verifyTools succeeds. Synthesizer\nreads this so the executor LLM sees real InputSchemas instead of\nhallucinating tool args.
+EDGES
+  ^contains=matrix/executor/mcp.Manager
+
+NODE id=matrix/executor/mcp.Manager#transportBuilder kind=field
+  digest=b3:58315c9d0ac81b402eb58e17328892986df426a0c49b3623487316ebd9df2dae file=executor/mcp/manager.go range=46:49 lang=go exported=false byte_range=1499:1752
+  sig=func(spec mcp.ServerSpec) (mcp.Transport, error)
+  doc=transportBuilder optionally overrides the default stdio/http\ntransport selection. Tests inject pipeTransports through this\nhook; production leaves it nil to use the standard builders.
+EDGES
+  ^contains=matrix/executor/mcp.Manager
+
+NODE id=matrix/executor/mcp.Manager#wg kind=field
+  digest=b3:d8b41ac6731a97ccbab54b8a5e38dd83f1c3d4c42e5387b6b7cda0cca9c690a0 file=executor/mcp/manager.go range=55:55 lang=go exported=false byte_range=1932:1961
+  sig=sync.WaitGroup
+EDGES
+  ^contains=matrix/executor/mcp.Manager
+
+NODE id=matrix/executor/mcp.Manager.Aliases kind=method
+  digest=b3:884d909b554662ac34a915ee0f67cccf572fc6c2376fbb1891d60a2fa7d662bd file=executor/mcp/manager.go range=187:197 lang=go exported=true byte_range=5948:6261
+  sig=func (m *Manager) Aliases() []string
+  doc=Aliases returns the sorted set of currently registered aliases.\nSnapshot — does not lock for the duration of caller use.
+EDGES
+  ^contains=matrix/executor/mcp.Manager
+  ^defines=matrix/executor/mcp/manager.go
+
+NODE id=matrix/executor/mcp.Manager.Client kind=method
+  digest=b3:28eec8afd6fa43876fe77f38533c8a493d0a77b49443064661552a6ee9da0e1c file=executor/mcp/manager.go range=179:185 lang=go exported=true byte_range=5736:5946
+  sig=func (m *Manager) Client(alias string) *Client
+  doc=Client returns the live client for the given alias, or nil if the\nalias hasn't been spawned.
+EDGES
+  ^contains=matrix/executor/mcp.Manager
+  ^defines=matrix/executor/mcp/manager.go
+
+NODE id=matrix/executor/mcp.Manager.Close kind=method
+  digest=b3:de6df02e852f61959aeca774e160f335f9ca54d3825cf738aec25cdc51199e28 file=executor/mcp/manager.go range=238:256 lang=go exported=true byte_range=7180:7614
+  sig=func (m *Manager) Close() error
+  doc=Close drains all registered servers. Safe to call multiple times.
+EDGES
+  ^contains=matrix/executor/mcp.Manager
+  ^defines=matrix/executor/mcp/manager.go
+
+NODE id=matrix/executor/mcp.Manager.Spawn kind=method
+  digest=b3:9874358213826d08408d044cf87d82dfb6757960e56d676001e3afda3b830144 file=executor/mcp/manager.go range=125:177 lang=go exported=true byte_range=4310:5734
+  sig=func (m *Manager) Spawn(ctx context.Context, spec ServerSpec) (*Client, error)
+  doc=Spawn launches an MCP server, runs the initialize handshake, and\nvalidates the tool manifest (Q21). On success, the server is\nregistered under its alias and ready for ToolsCall.\n\nSpawn is idempotent: spawning an alias that's already running is a\nno-op (returns the existing client). To replace, call Stop first.
+EDGES
+  ^contains=matrix/executor/mcp.Manager
+  ^defines=matrix/executor/mcp/manager.go
+
+NODE id=matrix/executor/mcp.Manager.Spec kind=method
+  digest=b3:ce061eb64416c52df2469b00aeb7cc880ba6c19790cb6f0af4e052675f98ddef file=executor/mcp/manager.go range=199:205 lang=go exported=true byte_range=6263:6458
+  sig=func (m *Manager) Spec(alias string) ServerSpec
+  doc=Spec returns the ServerSpec for an alias. Empty alias returned if\nnot present.
+EDGES
+  ^contains=matrix/executor/mcp.Manager
+  ^defines=matrix/executor/mcp/manager.go
+
+NODE id=matrix/executor/mcp.Manager.Stop kind=method
+  digest=b3:d0fc64c88c8d56fe9fad66c47386f7b291c1d25c9eba035644c952bd41dd2c46 file=executor/mcp/manager.go range=223:236 lang=go exported=true byte_range=6899:7178
+  sig=func (m *Manager) Stop(alias string) error
+  doc=Stop terminates a single server cleanly.
+EDGES
+  ^contains=matrix/executor/mcp.Manager
+  ^defines=matrix/executor/mcp/manager.go
+
+NODE id=matrix/executor/mcp.Manager.Tools kind=method
+  digest=b3:9013c6485acd3b3d04bdf5d83cc69f3de6271ab923d1ef486944f7bc72362724 file=executor/mcp/manager.go range=207:221 lang=go exported=true byte_range=6460:6897
+  sig=func (m *Manager) Tools(alias string) []Tool
+  doc=Tools returns the live tool descriptors (including JSON-Schema\nInputSchemas) advertised by the server with the given alias. Empty\nslice if the alias is not registered. The returned slice is a copy\nsafe for caller mutation.
+EDGES
+  ^contains=matrix/executor/mcp.Manager
+  ^defines=matrix/executor/mcp/manager.go
+
+NODE id=matrix/executor/mcp.Manager.buildTransport kind=method
+  digest=b3:fa0f396f13eb7221dae3560a016e447a2a3fae25757b302f2f251a6469f40814 file=executor/mcp/manager.go range=258:291 lang=go exported=false byte_range=7616:8652
+  sig=func (m *Manager) buildTransport(spec ServerSpec) (Transport, error)
+  doc=buildTransport instantiates the right Transport for the spec.
+EDGES
+  ^contains=matrix/executor/mcp.Manager
+  ^defines=matrix/executor/mcp/manager.go
+
+NODE id=matrix/executor/mcp.Manager.healthLoop kind=method
+  digest=b3:588af4549f1300caa7e59b7c96726e8b151f34d8ce0cc4f3d53e134e12eb9c4c file=executor/mcp/manager.go range=329:357 lang=go exported=false byte_range=9957:10664
+  sig=func (m *Manager) healthLoop(alias string)
+  doc=healthLoop periodically pings the server and invokes onUnhealthy\non failure. v1 does NOT auto-restart (keeps blast radius small);\nthe unhealthy callback is the integration point for caller-decided\nrecovery.
+EDGES
+  ^contains=matrix/executor/mcp.Manager
+  ^defines=matrix/executor/mcp/manager.go
+
+NODE id=matrix/executor/mcp.Manager.verifyTools kind=method
+  digest=b3:f8a18fb9bcd7a87f217f1798529b61c2b47ed35c259300c9b4cf40bd493bf321 file=executor/mcp/manager.go range=293:327 lang=go exported=false byte_range=8654:9955
+  sig=func (m *Manager) verifyTools(ctx context.Context, client *Client, spec ServerSpec) ([]Tool, error)
+  doc=verifyTools enforces Q21 — what the server advertises must match\nwhat the manifest declared. Drift is fatal. On success returns the\nadvertised tool list (with InputSchemas) so callers can cache it.
+EDGES
+  ^contains=matrix/executor/mcp.Manager
+  ^defines=matrix/executor/mcp/manager.go
+
+NODE id=matrix/executor/mcp.ManagerParams kind=type
+  digest=b3:0dd1b5d3b2d2a6fcf991742761af31b6243d11f318bc03b66e772bdf8d871606 file=executor/mcp/manager.go range=90:107 lang=go exported=true byte_range=3086:3771
+  sig=type ManagerParams struct {\n	// HealthInterval enables periodic ping. Zero disables.\n	HealthInterval	time.Duration\n\n	// OnUnhealthy is called after a failed health check. Default logs\n	// to stderr.\n	OnUnhealthy	func(alias string, err error)\n\n	// StderrSink receives subprocess stderr. Default discards.\n	StderrSink	io.Writer\n\n	// TransportBuilder optionally replaces the default stdio/http\n	// dispatch with a caller-supplied builder. Tests use this to inject\n	// pipe-based mock transports. Leave nil in production to use the\n	// canonical stdio + streamable HTTP transports per Q15.\n	TransportBuilder	func(spec ServerSpec) (Transport, error)\n}
+  doc=ManagerParams configures a Manager.
+EDGES
+  contains=matrix/executor/mcp.ManagerParams#HealthInterval,matrix/executor/mcp.ManagerParams#OnUnhealthy,matrix/executor/mcp.ManagerParams#StderrSink,matrix/executor/mcp.ManagerParams#TransportBuilder
+  ^defines=matrix/executor/mcp/manager.go
+
+NODE id=matrix/executor/mcp.ManagerParams#HealthInterval kind=field
+  digest=b3:56b33808f78494c8e79345f98dadaa6455636ebd2015e4a7de3739cfde2b9693 file=executor/mcp/manager.go range=92:93 lang=go exported=true byte_range=3154:3239
+  sig=time.Duration
+  doc=HealthInterval enables periodic ping. Zero disables.
+EDGES
+  ^contains=matrix/executor/mcp.ManagerParams
+
+NODE id=matrix/executor/mcp.ManagerParams#OnUnhealthy kind=field
+  digest=b3:fceaab698778eaa13d335d8dd5071e56457b17d53643a79130fcbe85c33f0c94 file=executor/mcp/manager.go range=95:97 lang=go exported=true byte_range=3242:3366
+  sig=func(alias string, err error)
+  doc=OnUnhealthy is called after a failed health check. Default logs\nto stderr.
+EDGES
+  ^contains=matrix/executor/mcp.ManagerParams
+
+NODE id=matrix/executor/mcp.ManagerParams#StderrSink kind=field
+  digest=b3:9a991d9e4bb70c4f2f99e37a79fcedffb6fe48acda3521886a3f1a843ef33b13 file=executor/mcp/manager.go range=99:100 lang=go exported=true byte_range=3369:3450
+  sig=io.Writer
+  doc=StderrSink receives subprocess stderr. Default discards.
+EDGES
+  ^contains=matrix/executor/mcp.ManagerParams
+
+NODE id=matrix/executor/mcp.ManagerParams#TransportBuilder kind=field
+  digest=b3:1f893620e8df73303a65010003d0df77a9194ba352b04ce54eddffa3972ad014 file=executor/mcp/manager.go range=102:106 lang=go exported=true byte_range=3453:3769
+  sig=func(spec mcp.ServerSpec) (mcp.Transport, error)
+  doc=TransportBuilder optionally replaces the default stdio/http\ndispatch with a caller-supplied builder. Tests use this to inject\npipe-based mock transports. Leave nil in production to use the\ncanonical stdio + streamable HTTP transports per Q15.
+EDGES
+  ^contains=matrix/executor/mcp.ManagerParams
+
+NODE id=matrix/executor/mcp.MessageKind kind=type
+  digest=b3:798ff7d8f06fb3e81050e7688d0672cc075235928404ca471e857b59d5469c7e file=executor/mcp/jsonrpc.go range=174:177 lang=go exported=true byte_range=6044:6237
+  sig=type MessageKind int
+  doc=MessageKind discriminates inbound JSON-RPC frames after a single\npass of generic parsing. Used by the transport layer to route\nframes into the right typed channel.
+EDGES
+  ^defines=matrix/executor/mcp/jsonrpc.go
+
+NODE id=matrix/executor/mcp.MethodInitialize kind=const
+  digest=b3:c67486358e79e78563eacf49f9970c052ff157cabf2311b4f3351df20f988a84 file=executor/mcp/protocol.go range=209:212 lang=go exported=true byte_range=8427:8579
+  sig=untyped string
+  doc=MCP method names — exported as constants so the client and tests\nshare one source of truth.
+EDGES
+  ^defines=matrix/executor/mcp/protocol.go
+
+NODE id=matrix/executor/mcp.MethodNotificationsCancelled kind=const
+  digest=b3:1fd0f5af7afd00d43d0022d4d5d84277e5dd6f918b1912f0e55892d0a5703d0b file=executor/mcp/protocol.go range=209:214 lang=go exported=true byte_range=8427:8697
+  sig=untyped string
+  doc=MCP method names — exported as constants so the client and tests\nshare one source of truth.
+EDGES
+  ^defines=matrix/executor/mcp/protocol.go
+
+NODE id=matrix/executor/mcp.MethodNotificationsInit kind=const
+  digest=b3:b4c7b23e00c76f33e11a55ee1a226336c8a5b85b17ea75c55ff9c5ead0fa1ec5 file=executor/mcp/protocol.go range=209:213 lang=go exported=true byte_range=8427:8639
+  sig=untyped string
+  doc=MCP method names — exported as constants so the client and tests\nshare one source of truth.
+EDGES
+  ^defines=matrix/executor/mcp/protocol.go
+
+NODE id=matrix/executor/mcp.MethodNotificationsProgress kind=const
+  digest=b3:08fd810808702e3a4d0c020d38e14d5247b87856a2bddd864ec442fdc201b91a file=executor/mcp/protocol.go range=209:215 lang=go exported=true byte_range=8427:8754
+  sig=untyped string
+  doc=MCP method names — exported as constants so the client and tests\nshare one source of truth.
+EDGES
+  ^defines=matrix/executor/mcp/protocol.go
+
+NODE id=matrix/executor/mcp.MethodPing kind=const
+  digest=b3:6ea5ea02fd503856679087c4ca126cb70dfa9576009281c815de4cd723e26e9a file=executor/mcp/protocol.go range=209:218 lang=go exported=true byte_range=8427:8883
+  sig=untyped string
+  doc=MCP method names — exported as constants so the client and tests\nshare one source of truth.
+EDGES
+  ^defines=matrix/executor/mcp/protocol.go
+
+NODE id=matrix/executor/mcp.MethodToolsCall kind=const
+  digest=b3:3dda261206cd44e0f45d3d4859657b1760ccde6fe380597f0fe07f2145c256c9 file=executor/mcp/protocol.go range=209:217 lang=go exported=true byte_range=8427:8844
+  sig=untyped string
+  doc=MCP method names — exported as constants so the client and tests\nshare one source of truth.
+EDGES
+  ^defines=matrix/executor/mcp/protocol.go
+
+NODE id=matrix/executor/mcp.MethodToolsList kind=const
+  digest=b3:b44489bc9694769d73f13078da8259f18aa12dc151a2b4d22dfd2c0d408f8438 file=executor/mcp/protocol.go range=209:216 lang=go exported=true byte_range=8427:8799
+  sig=untyped string
+  doc=MCP method names — exported as constants so the client and tests\nshare one source of truth.
+EDGES
+  ^defines=matrix/executor/mcp/protocol.go
+
+NODE id=matrix/executor/mcp.MockServer kind=type
+  digest=b3:d314e36bea6d490bb0a91fc4b9892f87dc35241bff41f7873859ca36442c66d0 file=executor/mcp/mock_server.go range=14:41 lang=go exported=true byte_range=247:1206
+  sig=type MockServer struct {\n	mu	sync.Mutex\n\n	tools	[]Tool\n\n	// callHandler is invoked for tools/call requests. Default returns\n	// an "unhandled" CallToolResult so tests notice missing wiring.\n	callHandler	func(name string, args map[string]interface{}) (*CallToolResult, error)\n\n	// pingHandler optionally overrides the default ping behavior for\n	// tests of failure paths.\n	pingHandler	func() error\n\n	// log captures every inbound JSON-RPC frame for test assertions.\n	log	[][]byte\n\n	// initialized is set true after notifications/initialized arrives.\n	initialized	bool\n\n	serverInfo	Implementation\n}
+  doc=MockServer is an in-process MCP server stub used by tests. It pairs\nwith a matching mockTransport so a Client can drive it without\nspawning a subprocess or opening a socket.\n\nBehavior: implements initialize, tools/list, tools/call, ping with\nconfigurable handlers + a captured request log so tests can assert\non the wire shape after the fact.
+EDGES
+  contains=matrix/executor/mcp.MockServer#callHandler,matrix/executor/mcp.MockServer#initialized,matrix/executor/mcp.MockServer#log,matrix/executor/mcp.MockServer#mu,matrix/executor/mcp.MockServer#pingHandler,matrix/executor/mcp.MockServer#serverInfo,matrix/executor/mcp.MockServer#tools,matrix/executor/mcp.MockServer.Initialized,matrix/executor/mcp.MockServer.Log,matrix/executor/mcp.MockServer.SetTools,matrix/executor/mcp.MockServer.handle,matrix/executor/mcp.MockServer.handleRequest,matrix/executor/mcp.MockServer.respond
+  ^defines=matrix/executor/mcp/mock_server.go
+
+NODE id=matrix/executor/mcp.MockServer#callHandler kind=field
+  digest=b3:1f9aa311ff161a29396f749c5c9dd1922ea1a9796cc1c25f9b775e9737437663 file=executor/mcp/mock_server.go range=26:28 lang=go exported=false byte_range=667:884
+  sig=func(name string, args map[string]interface{}) (*mcp.CallToolResult, error)
+  doc=callHandler is invoked for tools/call requests. Default returns\nan "unhandled" CallToolResult so tests notice missing wiring.
+EDGES
+  ^contains=matrix/executor/mcp.MockServer
+
+NODE id=matrix/executor/mcp.MockServer#initialized kind=field
+  digest=b3:950261e48d87961a88613a54078dd401e70c1ebcf6382103ae7d64baa7ab10e0 file=executor/mcp/mock_server.go range=37:38 lang=go exported=false byte_range=1091:1176
+  sig=bool
+  doc=initialized is set true after notifications/initialized arrives.
+EDGES
+  ^contains=matrix/executor/mcp.MockServer
+
+NODE id=matrix/executor/mcp.MockServer#log kind=field
+  digest=b3:cc65b9b6353409f76221abfe0db9c4d9991f6e9a2461bedcbe105928a7ed8764 file=executor/mcp/mock_server.go range=34:35 lang=go exported=false byte_range=1009:1088
+  sig=[][]byte
+  doc=log captures every inbound JSON-RPC frame for test assertions.
+EDGES
+  ^contains=matrix/executor/mcp.MockServer
+
+NODE id=matrix/executor/mcp.MockServer#mu kind=field
+  digest=b3:39900127b880b54480d22cb732bafa4d327158a75dfaf9a471d531a79898660c file=executor/mcp/mock_server.go range=22:22 lang=go exported=false byte_range=636:649
+  sig=sync.Mutex
+EDGES
+  ^contains=matrix/executor/mcp.MockServer
+
+NODE id=matrix/executor/mcp.MockServer#pingHandler kind=field
+  digest=b3:6218d7d6c6504277b1e6e71d2f6f2d3e81eaf90901c88c1b50844239517eec2c file=executor/mcp/mock_server.go range=30:32 lang=go exported=false byte_range=887:1006
+  sig=func() error
+  doc=pingHandler optionally overrides the default ping behavior for\ntests of failure paths.
+EDGES
+  ^contains=matrix/executor/mcp.MockServer
+
+NODE id=matrix/executor/mcp.MockServer#serverInfo kind=field
+  digest=b3:c7e8672e09ce895623cbaebe5e48254efbe351da377969077c8395ad8b21bc5b file=executor/mcp/mock_server.go range=40:40 lang=go exported=false byte_range=1179:1204
+  sig=mcp.Implementation
+EDGES
+  ^contains=matrix/executor/mcp.MockServer
+
+NODE id=matrix/executor/mcp.MockServer#tools kind=field
+  digest=b3:dd650d55b1daa50bb5891d387da07a63196233fdf90101ea4fd31c2b2a41e223 file=executor/mcp/mock_server.go range=24:24 lang=go exported=false byte_range=652:664
+  sig=[]mcp.Tool
+EDGES
+  ^contains=matrix/executor/mcp.MockServer
+
+NODE id=matrix/executor/mcp.MockServer.Initialized kind=method
+  digest=b3:379e8eb18b6bd7cb02072f2561f5f3c15dc647a285cf9b16785df72c9cf485ae file=executor/mcp/mock_server.go range=91:96 lang=go exported=true byte_range=2361:2533
+  sig=func (m *MockServer) Initialized() bool
+  doc=Initialized reports whether the post-initialize notification arrived.
+EDGES
+  ^contains=matrix/executor/mcp.MockServer
+  ^defines=matrix/executor/mcp/mock_server.go
+
+NODE id=matrix/executor/mcp.MockServer.Log kind=method
+  digest=b3:9135d087f6161fe20e55ce9b9657321f84f58ea7a74b0e2a7724f1ba143b3f0b file=executor/mcp/mock_server.go range=78:89 lang=go exported=true byte_range=2104:2359
+  sig=func (m *MockServer) Log() [][]byte
+  doc=Log returns a copy of the captured request log.
+EDGES
+  ^contains=matrix/executor/mcp.MockServer
+  ^defines=matrix/executor/mcp/mock_server.go
+
+NODE id=matrix/executor/mcp.MockServer.SetTools kind=method
+  digest=b3:0db0b275e3957b86999457da1494b6075f194a76d2337df7b270cfd4af8413d8 file=executor/mcp/mock_server.go range=70:76 lang=go exported=true byte_range=1880:2102
+  sig=func (m *MockServer) SetTools(tools []Tool)
+  doc=SetTools replaces the advertised tools list. Used by tests of\nmanifest-drift detection (Q21).
+EDGES
+  ^contains=matrix/executor/mcp.MockServer
+  ^defines=matrix/executor/mcp/mock_server.go
+
+NODE id=matrix/executor/mcp.MockServer.handle kind=method
+  digest=b3:00e378c519db7c69f5667bd854315699cd28ce16b26ee2f4558e43e1177684b6 file=executor/mcp/mock_server.go range=98:126 lang=go exported=false byte_range=2535:3282
+  sig=func (m *MockServer) handle(frame []byte) ([]byte, error)
+  doc=handle dispatches one inbound frame and returns the response frame\n(or empty bytes for notifications, which never get a response).
+EDGES
+  ^contains=matrix/executor/mcp.MockServer
+  ^defines=matrix/executor/mcp/mock_server.go
+
+NODE id=matrix/executor/mcp.MockServer.handleRequest kind=method
+  digest=b3:da1c882797871bf27819c5b48be45f65854d249357eac928ebbb1460b4bac965 file=executor/mcp/mock_server.go range=128:192 lang=go exported=false byte_range=3284:4867
+  sig=func (m *MockServer) handleRequest(req *Request) ([]byte, error)
+EDGES
+  ^contains=matrix/executor/mcp.MockServer
+  ^defines=matrix/executor/mcp/mock_server.go
+
+NODE id=matrix/executor/mcp.MockServer.respond kind=method
+  digest=b3:f3bbf83fcc01bbb2f6f263d56c7a012b4d30fb3304e61db8b5643d735705db01 file=executor/mcp/mock_server.go range=194:207 lang=go exported=false byte_range=4869:5246
+  sig=func (m *MockServer) respond(id json.RawMessage, result interface{}, rpcErr *RPCError) ([]byte, error)
+  doc=respond builds a Response frame for the given id, result, error.
+EDGES
+  ^contains=matrix/executor/mcp.MockServer
+  ^defines=matrix/executor/mcp/mock_server.go
+
+NODE id=matrix/executor/mcp.MockServerParams kind=type
+  digest=b3:0f1c6d208a11a76074a73dab34ea6da01aefeaef5d0a88eb7801345deb0edaa2 file=executor/mcp/mock_server.go range=43:50 lang=go exported=true byte_range=1208:1456
+  sig=type MockServerParams struct {\n	Tools		[]Tool\n	CallHandler	func(name string, args map[string]interface{}) (*CallToolResult, error)\n	PingHandler	func() error\n	ServerName	string\n	ServerVer	string\n}
+  doc=MockServerParams configures a MockServer.
+EDGES
+  contains=matrix/executor/mcp.MockServerParams#CallHandler,matrix/executor/mcp.MockServerParams#PingHandler,matrix/executor/mcp.MockServerParams#ServerName,matrix/executor/mcp.MockServerParams#ServerVer,matrix/executor/mcp.MockServerParams#Tools
+  ^defines=matrix/executor/mcp/mock_server.go
+
+NODE id=matrix/executor/mcp.MockServerParams#CallHandler kind=field
+  digest=b3:2f0fd48876b60bb07b5be47ab3cfdfa11f1100780cb2bcbe96988d03597bdb3b file=executor/mcp/mock_server.go range=46:46 lang=go exported=true byte_range=1305:1388
+  sig=func(name string, args map[string]interface{}) (*mcp.CallToolResult, error)
+EDGES
+  ^contains=matrix/executor/mcp.MockServerParams
+
+NODE id=matrix/executor/mcp.MockServerParams#PingHandler kind=field
+  digest=b3:686271bfc2d5601b790acb0ecba9792672718596890ee2d109bc9b557474d312 file=executor/mcp/mock_server.go range=47:47 lang=go exported=true byte_range=1390:1414
+  sig=func() error
+EDGES
+  ^contains=matrix/executor/mcp.MockServerParams
+
+NODE id=matrix/executor/mcp.MockServerParams#ServerName kind=field
+  digest=b3:f2aa21a500cff44417f33760fb6d9be1b21eb642ed354994cde4e06af54eac4b file=executor/mcp/mock_server.go range=48:48 lang=go exported=true byte_range=1416:1434
+  sig=string
+EDGES
+  ^contains=matrix/executor/mcp.MockServerParams
+
+NODE id=matrix/executor/mcp.MockServerParams#ServerVer kind=field
+  digest=b3:58150531bbe3a3b677ba2e453d4a410e3bcf42680e302f44cffe66e97974f56d file=executor/mcp/mock_server.go range=49:49 lang=go exported=true byte_range=1436:1454
+  sig=string
+EDGES
+  ^contains=matrix/executor/mcp.MockServerParams
+
+NODE id=matrix/executor/mcp.MockServerParams#Tools kind=field
+  digest=b3:1aad5fde826bf170a2f4e4574165941f43fd4a90aa8fe3464d30c35ba31c6370 file=executor/mcp/mock_server.go range=45:45 lang=go exported=true byte_range=1285:1303
+  sig=[]mcp.Tool
+EDGES
+  ^contains=matrix/executor/mcp.MockServerParams
+
+NODE id=matrix/executor/mcp.NewClient kind=func
+  digest=b3:9483a179441074287e01cb5504e26700ec6645978d7ac641c6d09e74ee9e4be7 file=executor/mcp/client.go range=71:86 lang=go exported=true byte_range=2266:2793
+  sig=func NewClient(p ClientParams) (*Client, error)
+  doc=NewClient wraps a Transport and starts the read loop. The caller\nmust call Initialize before issuing other methods. Close on the\nreturned Client also closes the underlying Transport.
+EDGES
+  ^defines=matrix/executor/mcp/client.go
+
+NODE id=matrix/executor/mcp.NewHTTPTransport kind=func
+  digest=b3:af593c3ecf6d59bf57743b1a1547329d3b21fe8edbb4fdfd271a2baa8a2a1d26 file=executor/mcp/http.go range=70:102 lang=go exported=true byte_range=2122:2927
+  sig=func NewHTTPTransport(p HTTPParams) (*HTTPTransport, error)
+  doc=NewHTTPTransport constructs a streamable HTTP transport. No network\nactivity here — the first Send actually contacts the server.
+EDGES
+  ^defines=matrix/executor/mcp/http.go
+
+NODE id=matrix/executor/mcp.NewIDInt kind=func
+  digest=b3:710a5c2ccc58ed408e5bb181ab83c1b895bbfcdb0da4624bba3dcab00a5482e4 file=executor/mcp/jsonrpc.go range=262:268 lang=go exported=true byte_range=8851:9097
+  sig=func NewIDInt(n uint64) json.RawMessage
+  doc=NewIDInt constructs a json.RawMessage holding a numeric id. MCP\nservers tolerate either string or numeric ids; the client uses\nmonotonic ints for compactness.
+EDGES
+  ^defines=matrix/executor/mcp/jsonrpc.go
+
+NODE id=matrix/executor/mcp.NewIDString kind=func
+  digest=b3:61312923ca60f62b042382c6b02bc641ad36c741b604d04f7417a995b5dd4714 file=executor/mcp/jsonrpc.go range=270:275 lang=go exported=true byte_range=9099:9300
+  sig=func NewIDString(s string) json.RawMessage
+  doc=NewIDString constructs a json.RawMessage holding a string id. Useful\nfor tests where readable ids ease debugging.
+EDGES
+  ^defines=matrix/executor/mcp/jsonrpc.go
+
+NODE id=matrix/executor/mcp.NewManager kind=func
+  digest=b3:951e66cedc825a5b216ec81780a3651e53b806edabd8deb3a785ebc2970fb3e4 file=executor/mcp/manager.go range=109:123 lang=go exported=true byte_range=3773:4308
+  sig=func NewManager(p ManagerParams) *Manager
+  doc=NewManager constructs an empty Manager. Servers are added via Spawn.
+EDGES
+  ^defines=matrix/executor/mcp/manager.go
+
+NODE id=matrix/executor/mcp.NewMockServer kind=func
+  digest=b3:95f677f28d373fbd3b587595b958669af567ebd97aafc99281d9c1e86bf5ef91 file=executor/mcp/mock_server.go range=52:68 lang=go exported=true byte_range=1458:1878
+  sig=func NewMockServer(p MockServerParams) *MockServer
+  doc=NewMockServer constructs an in-process server stub.
+EDGES
+  ^defines=matrix/executor/mcp/mock_server.go
+
+NODE id=matrix/executor/mcp.NewStdioTransport kind=func
+  digest=b3:cba1e0bbdfeebf81ae417e3fa76af3bacdd5ae22db02048f66b4e245486282ab file=executor/mcp/stdio.go range=65:121 lang=go exported=true byte_range=1784:3375
+  sig=func NewStdioTransport(p StdioParams) (*StdioTransport, error)
+  doc=NewStdioTransport spawns the configured subprocess and wires its\nstdio streams. Returns the transport ready to Send/Recv. Errors\nfrom the spawn itself (binary not found, permission denied) surface\nhere; runtime errors come back through Send/Recv.\n\nThe caller (manager) is responsible for calling Close to signal\nshutdown; the transport will then close stdin and let the subprocess\ndrain naturally before reaping.
+EDGES
+  ^defines=matrix/executor/mcp/stdio.go
+
+NODE id=matrix/executor/mcp.Notification kind=type
+  digest=b3:d69f523b4b700a68c8e6fb3d290dddc13d08168dc42c3477d1ca1bd53e8539a8 file=executor/mcp/jsonrpc.go range=42:50 lang=go exported=true byte_range=1622:2036
+  sig=type Notification struct {\n	JSONRPC	string		`json:"jsonrpc"`\n	Method	string		`json:"method"`\n	Params	json.RawMessage	`json:"params,omitempty"`\n}
+  doc=Notification is a JSON-RPC 2.0 notification — like Request but with\nno ID and no expected response. Used by MCP for\nnotifications/initialized, notifications/cancelled, and\nnotifications/progress (the latter two deferred to v1.1 per Q14).
+EDGES
+  contains=matrix/executor/mcp.Notification#JSONRPC,matrix/executor/mcp.Notification#Method,matrix/executor/mcp.Notification#Params
+  ^defines=matrix/executor/mcp/jsonrpc.go
+
+NODE id=matrix/executor/mcp.Notification#JSONRPC kind=field
+  digest=b3:e922b6deddabec44b26208ae989c23f029415d4258b8fa54aeb4a41c3dd567f3 file=executor/mcp/jsonrpc.go range=47:47 lang=go exported=true byte_range=1902:1942
+  sig=string
+EDGES
+  ^contains=matrix/executor/mcp.Notification
+
+NODE id=matrix/executor/mcp.Notification#Method kind=field
+  digest=b3:1645cedaaf7f1d03700c8acfad2ffa5b60299f417245b9bc3aaa87f673aaa6c0 file=executor/mcp/jsonrpc.go range=48:48 lang=go exported=true byte_range=1944:1983
+  sig=string
+EDGES
+  ^contains=matrix/executor/mcp.Notification
+
+NODE id=matrix/executor/mcp.Notification#Params kind=field
+  digest=b3:5f2f2f30caac193d23dbca1d876fd43d5aee08e3429721cabe41f9f6ed5ad461 file=executor/mcp/jsonrpc.go range=49:49 lang=go exported=true byte_range=1985:2034
+  sig=json.RawMessage
+EDGES
+  ^contains=matrix/executor/mcp.Notification
+
+NODE id=matrix/executor/mcp.PingParams kind=type
+  digest=b3:eef6743eaa3fbbb25dc1ec08a0402c9fda215b300c2aee9ad5560dfb308f4b98 file=executor/mcp/protocol.go range=201:203 lang=go exported=true byte_range=8139:8280
+  sig=type PingParams struct{}
+  doc=PingParams is the (empty) params object for ping. Spec allows an\narbitrary object; we send {} for compactness.
+EDGES
+  ^defines=matrix/executor/mcp/protocol.go
+
+NODE id=matrix/executor/mcp.PingResult kind=type
+  digest=b3:4d09d134b5c86ee7505ead4be37b202e98263f12b47a46b0f68ff80e5dfba666 file=executor/mcp/protocol.go range=205:207 lang=go exported=true byte_range=8282:8425
+  sig=type PingResult struct{}
+  doc=PingResult is the (empty) response object for ping. A response with\nno error is success; the body is irrelevant.
+EDGES
+  ^defines=matrix/executor/mcp/protocol.go
+
+NODE id=matrix/executor/mcp.PipeMock kind=func
+  digest=b3:0dd165b84c39a808ade5e2b6bcca0498a85be462ad37d86e1af2e139a4c287ce file=executor/mcp/mock_server.go range=209:216 lang=go exported=true byte_range=5248:5523
+  sig=func PipeMock(server *MockServer) Transport
+  doc=PipeMock pairs a MockServer with a Transport stub so a Client can\ndrive it directly. Returns the client-facing Transport. Close on\nthe transport tears down the pair.
+EDGES
+  ^defines=matrix/executor/mcp/mock_server.go
+
+NODE id=matrix/executor/mcp.PromptsCapability kind=type
+  digest=b3:6ad667492a3e97bfaf8e2bb90f9058a908ed7cca2593708a3f281a3a959c2d2e file=executor/mcp/protocol.go range=105:109 lang=go exported=true byte_range=4615:4788
+  sig=type PromptsCapability struct {\n	ListChanged bool `json:"listChanged,omitempty"`\n}
+  doc=PromptsCapability mirrors ToolsCapability shape for server prompts\n(deferred at v1).
+EDGES
+  contains=matrix/executor/mcp.PromptsCapability#ListChanged
+  ^defines=matrix/executor/mcp/protocol.go
+
+NODE id=matrix/executor/mcp.PromptsCapability#ListChanged kind=field
+  digest=b3:550091f8c5a33863add477fe3413f38cb135d8a76ee2047bdc92c95eb6e235a6 file=executor/mcp/protocol.go range=108:108 lang=go exported=true byte_range=4739:4786
+  sig=bool
+EDGES
+  ^contains=matrix/executor/mcp.PromptsCapability
+
+NODE id=matrix/executor/mcp.ProtocolVersion kind=const
+  digest=b3:6d56c03fedb1bdc7b932675590213a710adda0cfe941b63939c23b36a704a945 file=executor/mcp/protocol.go range=30:36 lang=go exported=true byte_range=1493:1913
+  sig=untyped string
+  doc=ProtocolVersion is the MCP wire-protocol version this client speaks.\nPinned to "2024-11-05" — the snapshot at which streamable HTTP became\ncanonical and SSE-only legacy was deprecated. Servers reporting an\nolder version are accepted (servers MUST be backward-compatible per\nspec) but downgrade behavior is logged so manifest authors can\nupgrade their server pins.
+EDGES
+  ^defines=matrix/executor/mcp/protocol.go
+
+NODE id=matrix/executor/mcp.RPCError kind=type
+  digest=b3:5f718085872e0c4fee713f5bcd4fdff5d464b95c1e1f3e164917994c8f3f82fb file=executor/mcp/jsonrpc.go range=62:67 lang=go exported=true byte_range=2422:2622
+  sig=type RPCError struct {\n	Code	int		`json:"code"`\n	Message	string		`json:"message"`\n	Data	json.RawMessage	`json:"data,omitempty"`\n}
+  doc=RPCError is the JSON-RPC 2.0 error object.
+EDGES
+  contains=matrix/executor/mcp.RPCError#Code,matrix/executor/mcp.RPCError#Data,matrix/executor/mcp.RPCError#Message,matrix/executor/mcp.RPCError.Error
+  ^defines=matrix/executor/mcp/jsonrpc.go
+
+NODE id=matrix/executor/mcp.RPCError#Code kind=field
+  digest=b3:2d55c34991d1cc1f02d8a04ba3ea5ea9a86a04a7e746488fc151f69c574cb853 file=executor/mcp/jsonrpc.go range=64:64 lang=go exported=true byte_range=2492:2529
+  sig=int
+EDGES
+  ^contains=matrix/executor/mcp.RPCError
+
+NODE id=matrix/executor/mcp.RPCError#Data kind=field
+  digest=b3:865bfe50bc91bbd0653b678642df200f0cd732fb5be61464553a34252ab30c86 file=executor/mcp/jsonrpc.go range=66:66 lang=go exported=true byte_range=2573:2620
+  sig=json.RawMessage
+EDGES
+  ^contains=matrix/executor/mcp.RPCError
+
+NODE id=matrix/executor/mcp.RPCError#Message kind=field
+  digest=b3:27e36cb159bac0626da12a0528f92de3e6ee56f2b7c8d9d1bb1d591523f036bf file=executor/mcp/jsonrpc.go range=65:65 lang=go exported=true byte_range=2531:2571
+  sig=string
+EDGES
+  ^contains=matrix/executor/mcp.RPCError
+
+NODE id=matrix/executor/mcp.RPCError.Error kind=method
+  digest=b3:01e229b9f00cb7f30f0ca75d5b39af801d10c0a2bb27c25f47bfb0a01545f077 file=executor/mcp/jsonrpc.go range=69:76 lang=go exported=true byte_range=2624:2880
+  sig=func (e *RPCError) Error() string
+  doc=Error implements the error interface so RPCError can be returned\nfrom client methods without unwrapping.
+EDGES
+  ^contains=matrix/executor/mcp.RPCError
+  ^defines=matrix/executor/mcp/jsonrpc.go
+
+NODE id=matrix/executor/mcp.Request kind=type
+  digest=b3:4482e16e6c13a6e77df23c1c7545cce9bb74e5af68408fd1976b2714823e96fd file=executor/mcp/jsonrpc.go range=29:40 lang=go exported=true byte_range=1101:1620
+  sig=type Request struct {\n	JSONRPC	string		`json:"jsonrpc"`\n	ID	json.RawMessage	`json:"id"`\n	Method	string		`json:"method"`\n	Params	json.RawMessage	`json:"params,omitempty"`\n}
+  doc=Request is a JSON-RPC 2.0 request envelope. ID is required for\nrequests and absent for notifications (see Notification).\n\nParams is left as raw bytes so the codec doesn't depend on knowledge\nof the method's parameter shape — the MCP-specific protocol layer\nin protocol.go decodes against the typed struct.
+EDGES
+  contains=matrix/executor/mcp.Request#ID,matrix/executor/mcp.Request#JSONRPC,matrix/executor/mcp.Request#Method,matrix/executor/mcp.Request#Params
+  ^defines=matrix/executor/mcp/jsonrpc.go
+
+NODE id=matrix/executor/mcp.Request#ID kind=field
+  digest=b3:7513b6d4f428f10100e5553e4e456ea33cd3706148078274cb2d11cefaa9d5dc file=executor/mcp/jsonrpc.go range=37:37 lang=go exported=true byte_range=1491:1526
+  sig=json.RawMessage
+EDGES
+  ^contains=matrix/executor/mcp.Request
+
+NODE id=matrix/executor/mcp.Request#JSONRPC kind=field
+  digest=b3:e922b6deddabec44b26208ae989c23f029415d4258b8fa54aeb4a41c3dd567f3 file=executor/mcp/jsonrpc.go range=36:36 lang=go exported=true byte_range=1449:1489
+  sig=string
+EDGES
+  ^contains=matrix/executor/mcp.Request
+
+NODE id=matrix/executor/mcp.Request#Method kind=field
+  digest=b3:1645cedaaf7f1d03700c8acfad2ffa5b60299f417245b9bc3aaa87f673aaa6c0 file=executor/mcp/jsonrpc.go range=38:38 lang=go exported=true byte_range=1528:1567
+  sig=string
+EDGES
+  ^contains=matrix/executor/mcp.Request
+
+NODE id=matrix/executor/mcp.Request#Params kind=field
+  digest=b3:5f2f2f30caac193d23dbca1d876fd43d5aee08e3429721cabe41f9f6ed5ad461 file=executor/mcp/jsonrpc.go range=39:39 lang=go exported=true byte_range=1569:1618
+  sig=json.RawMessage
+EDGES
+  ^contains=matrix/executor/mcp.Request
+
+NODE id=matrix/executor/mcp.ResourcesCapability kind=type
+  digest=b3:3d49fbff861a092abe2cdf09df4c936a154c7f31f7baad2c3b32025846a45f55 file=executor/mcp/protocol.go range=111:116 lang=go exported=true byte_range=4790:5016
+  sig=type ResourcesCapability struct {\n	Subscribe	bool	`json:"subscribe,omitempty"`\n	ListChanged	bool	`json:"listChanged,omitempty"`\n}
+  doc=ResourcesCapability mirrors ToolsCapability shape for server resources\n(deferred at v1).
+EDGES
+  contains=matrix/executor/mcp.ResourcesCapability#ListChanged,matrix/executor/mcp.ResourcesCapability#Subscribe
+  ^defines=matrix/executor/mcp/protocol.go
+
+NODE id=matrix/executor/mcp.ResourcesCapability#ListChanged kind=field
+  digest=b3:550091f8c5a33863add477fe3413f38cb135d8a76ee2047bdc92c95eb6e235a6 file=executor/mcp/protocol.go range=115:115 lang=go exported=true byte_range=4967:5014
+  sig=bool
+EDGES
+  ^contains=matrix/executor/mcp.ResourcesCapability
+
+NODE id=matrix/executor/mcp.ResourcesCapability#Subscribe kind=field
+  digest=b3:cf441be9b4d97c8b99abe004449a7306891fa955d6a67d7e21a3c25209dc69e5 file=executor/mcp/protocol.go range=114:114 lang=go exported=true byte_range=4920:4965
+  sig=bool
+EDGES
+  ^contains=matrix/executor/mcp.ResourcesCapability
+
+NODE id=matrix/executor/mcp.Response kind=type
+  digest=b3:3cbff8f37663347e913b733e10c8c5cff1bbe39ea44ce1d91b9aae2e76cabef9 file=executor/mcp/jsonrpc.go range=52:60 lang=go exported=true byte_range=2038:2420
+  sig=type Response struct {\n	JSONRPC	string		`json:"jsonrpc"`\n	ID	json.RawMessage	`json:"id"`\n	Result	json.RawMessage	`json:"result,omitempty"`\n	Error	*RPCError	`json:"error,omitempty"`\n}
+  doc=Response is a JSON-RPC 2.0 response envelope. Exactly one of Result\nor Error must be populated; the codec rejects malformed responses\nwhere both or neither are present.
+EDGES
+  contains=matrix/executor/mcp.Response#Error,matrix/executor/mcp.Response#ID,matrix/executor/mcp.Response#JSONRPC,matrix/executor/mcp.Response#Result
+  ^defines=matrix/executor/mcp/jsonrpc.go
+
+NODE id=matrix/executor/mcp.Response#Error kind=field
+  digest=b3:119285c49e36fc5379ee9acbebc17d2523e7200d367f237087b5ff6a3e77b6bd file=executor/mcp/jsonrpc.go range=59:59 lang=go exported=true byte_range=2370:2418
+  sig=*mcp.RPCError
+EDGES
+  ^contains=matrix/executor/mcp.Response
+
+NODE id=matrix/executor/mcp.Response#ID kind=field
+  digest=b3:7513b6d4f428f10100e5553e4e456ea33cd3706148078274cb2d11cefaa9d5dc file=executor/mcp/jsonrpc.go range=57:57 lang=go exported=true byte_range=2282:2317
+  sig=json.RawMessage
+EDGES
+  ^contains=matrix/executor/mcp.Response
+
+NODE id=matrix/executor/mcp.Response#JSONRPC kind=field
+  digest=b3:e922b6deddabec44b26208ae989c23f029415d4258b8fa54aeb4a41c3dd567f3 file=executor/mcp/jsonrpc.go range=56:56 lang=go exported=true byte_range=2240:2280
+  sig=string
+EDGES
+  ^contains=matrix/executor/mcp.Response
+
+NODE id=matrix/executor/mcp.Response#Result kind=field
+  digest=b3:2ac6b6c9ad3239d7c5917dcb11746bd554a4cbe96e7877d4291f75a92d67d791 file=executor/mcp/jsonrpc.go range=58:58 lang=go exported=true byte_range=2319:2368
+  sig=json.RawMessage
+EDGES
+  ^contains=matrix/executor/mcp.Response
+
+NODE id=matrix/executor/mcp.RootsCapability kind=type
+  digest=b3:ceccde03ab7de15828fdc27648550f2e256ea50b07bbaea603504aabde143e1e file=executor/mcp/protocol.go range=122:126 lang=go exported=true byte_range=5196:5380
+  sig=type RootsCapability struct {\n	ListChanged bool `json:"listChanged,omitempty"`\n}
+  doc=RootsCapability advertises that the client maintains a list of\nfilesystem roots (deferred at v1).
+EDGES
+  contains=matrix/executor/mcp.RootsCapability#ListChanged
+  ^defines=matrix/executor/mcp/protocol.go
+
+NODE id=matrix/executor/mcp.RootsCapability#ListChanged kind=field
+  digest=b3:550091f8c5a33863add477fe3413f38cb135d8a76ee2047bdc92c95eb6e235a6 file=executor/mcp/protocol.go range=125:125 lang=go exported=true byte_range=5331:5378
+  sig=bool
+EDGES
+  ^contains=matrix/executor/mcp.RootsCapability
+
+NODE id=matrix/executor/mcp.SamplingCapability kind=type
+  digest=b3:72f48b935cae37aaba7f67cb89dd0ea7bf82fbafff6a898d45a949393ad6f5b4 file=executor/mcp/protocol.go range=128:130 lang=go exported=true byte_range=5382:5513
+  sig=type SamplingCapability struct{}
+  doc=SamplingCapability advertises that the client can be sampled by the\nserver (deferred at v1).
+EDGES
+  ^defines=matrix/executor/mcp/protocol.go
+
+NODE id=matrix/executor/mcp.ServerCapabilities kind=type
+  digest=b3:01432bf7398071154087d9eb50e17e372da964c6b253f871de8be5171d5a01d1 file=executor/mcp/protocol.go range=86:96 lang=go exported=true byte_range=3834:4352
+  sig=type ServerCapabilities struct {\n	Tools		*ToolsCapability	`json:"tools,omitempty"`\n	Prompts		*PromptsCapability	`json:"prompts,omitempty"`\n	Resources	*ResourcesCapability	`json:"resources,omitempty"`\n	Logging		*LoggingCapability	`json:"logging,omitempty"`\n\n	Experimental	map[string]json.RawMessage	`json:"experimental,omitempty"`\n}
+  doc=ServerCapabilities is the capability set the server advertises in\ninitialize. We inspect Tools to decide whether to verify the\ntools/list manifest at startup (Q21).
+EDGES
+  contains=matrix/executor/mcp.ServerCapabilities#Experimental,matrix/executor/mcp.ServerCapabilities#Logging,matrix/executor/mcp.ServerCapabilities#Prompts,matrix/executor/mcp.ServerCapabilities#Resources,matrix/executor/mcp.ServerCapabilities#Tools
+  ^defines=matrix/executor/mcp/protocol.go
+
+NODE id=matrix/executor/mcp.ServerCapabilities#Experimental kind=field
+  digest=b3:238e97254e0f824cb065a5963270cd3d8c4e663b854019c96889cdf644a8f938 file=executor/mcp/protocol.go range=95:95 lang=go exported=true byte_range=4279:4350
+  sig=map[string]json.RawMessage
+EDGES
+  ^contains=matrix/executor/mcp.ServerCapabilities
+
+NODE id=matrix/executor/mcp.ServerCapabilities#Logging kind=field
+  digest=b3:06d04b2a5ae6a15ec149076111373490b2632516580f93e669ea3be28af8ca3c file=executor/mcp/protocol.go range=93:93 lang=go exported=true byte_range=4219:4276
+  sig=*mcp.LoggingCapability
+EDGES
+  ^contains=matrix/executor/mcp.ServerCapabilities
+
+NODE id=matrix/executor/mcp.ServerCapabilities#Prompts kind=field
+  digest=b3:e01fc8e8a6943c6259c3b4b685b401cf48ebac4228e93cfa35d34e0919275d8d file=executor/mcp/protocol.go range=91:91 lang=go exported=true byte_range=4099:4156
+  sig=*mcp.PromptsCapability
+EDGES
+  ^contains=matrix/executor/mcp.ServerCapabilities
+
+NODE id=matrix/executor/mcp.ServerCapabilities#Resources kind=field
+  digest=b3:c17e978918f7014f3dd76ef4a879e8f6de6ea0cdb3cde72d155998b32acf18ae file=executor/mcp/protocol.go range=92:92 lang=go exported=true byte_range=4158:4217
+  sig=*mcp.ResourcesCapability
+EDGES
+  ^contains=matrix/executor/mcp.ServerCapabilities
+
+NODE id=matrix/executor/mcp.ServerCapabilities#Tools kind=field
+  digest=b3:26012338f34c30fe3a2318221f0656024baa249165539f37c20ccb788a991995 file=executor/mcp/protocol.go range=90:90 lang=go exported=true byte_range=4042:4097
+  sig=*mcp.ToolsCapability
+EDGES
+  ^contains=matrix/executor/mcp.ServerCapabilities
+
+NODE id=matrix/executor/mcp.ServerSpec kind=type
+  digest=b3:d62e52340b8430a271f18561fedab8b3b99947dde131f9493410059e7c34bea9 file=executor/mcp/manager.go range=58:88 lang=go exported=true byte_range=1965:3084
+  sig=type ServerSpec struct {\n	// Alias is the local logical name used in matrix://tool/mcp/<alias>/...\n	// URIs (Q17 lock). Stable across server-package upgrades.\n	Alias	string\n\n	// Transport is "stdio" or "http". Q15 lock excludes anything else.\n	Transport	string\n\n	// Command + Args + Env apply when Transport=="stdio".\n	Command	string\n	Args	[]string\n	Env	[]string\n\n	// Endpoint applies when Transport=="http". Headers carries any\n	// auth tokens (Q18 — never logged).\n	Endpoint	string\n	Headers		map[string]string\n\n	// PackageDigest is the sha256 hash that pins this server's package\n	// version (Q22). Manager records it but verification of the local\n	// package against the digest is the tool layer's responsibility\n	// (it knows where the package came from).\n	PackageDigest	string\n\n	// ExpectedTools is the manifest-declared tool list. Manager calls\n	// tools/list at startup and rejects on drift (Q21).\n	ExpectedTools	[]string\n}
+  doc=ServerSpec is the manifest entry for one MCP server. Cross-references\na tool/manifest.go ServerEntry; mirrored here so the mcp package\nstays free of tool-package imports.
+EDGES
+  contains=matrix/executor/mcp.ServerSpec#Alias,matrix/executor/mcp.ServerSpec#Args,matrix/executor/mcp.ServerSpec#Command,matrix/executor/mcp.ServerSpec#Endpoint,matrix/executor/mcp.ServerSpec#Env,matrix/executor/mcp.ServerSpec#ExpectedTools,matrix/executor/mcp.ServerSpec#Headers,matrix/executor/mcp.ServerSpec#PackageDigest,matrix/executor/mcp.ServerSpec#Transport
+  ^defines=matrix/executor/mcp/manager.go
+
+NODE id=matrix/executor/mcp.ServerSpec#Alias kind=field
+  digest=b3:c985f7ee79f2d66f7ad3490f14957c4b2230e5f4bcb73537354c2868bb9ff266 file=executor/mcp/manager.go range=62:64 lang=go exported=true byte_range=2171:2317
+  sig=string
+  doc=Alias is the local logical name used in matrix://tool/mcp/<alias>/...\nURIs (Q17 lock). Stable across server-package upgrades.
+EDGES
+  ^contains=matrix/executor/mcp.ServerSpec
+
+NODE id=matrix/executor/mcp.ServerSpec#Args kind=field
+  digest=b3:61ddacc10eeac5a64aa60f895683de54b2794249d2bf8acfff5872a27ac575e4 file=executor/mcp/manager.go range=71:71 lang=go exported=true byte_range=2480:2496
+  sig=[]string
+EDGES
+  ^contains=matrix/executor/mcp.ServerSpec
+
+NODE id=matrix/executor/mcp.ServerSpec#Command kind=field
+  digest=b3:76fc8fdb167d4d3b79dc292d8578f4c28636a1c6a8721f6f2432f61aba774847 file=executor/mcp/manager.go range=69:70 lang=go exported=true byte_range=2408:2478
+  sig=string
+  doc=Command + Args + Env apply when Transport=="stdio".
+EDGES
+  ^contains=matrix/executor/mcp.ServerSpec
+
+NODE id=matrix/executor/mcp.ServerSpec#Endpoint kind=field
+  digest=b3:96b1a039db2f3b159e56cc47ff105e948097a8cbd6bcf8a8d63d626945bc7694 file=executor/mcp/manager.go range=74:76 lang=go exported=true byte_range=2517:2637
+  sig=string
+  doc=Endpoint applies when Transport=="http". Headers carries any\nauth tokens (Q18 — never logged).
+EDGES
+  ^contains=matrix/executor/mcp.ServerSpec
+
+NODE id=matrix/executor/mcp.ServerSpec#Env kind=field
+  digest=b3:1706448ae7f6537d514ef8db1c95ccc21464d3cac816c265f360e6c2da313926 file=executor/mcp/manager.go range=72:72 lang=go exported=true byte_range=2498:2514
+  sig=[]string
+EDGES
+  ^contains=matrix/executor/mcp.ServerSpec
+
+NODE id=matrix/executor/mcp.ServerSpec#ExpectedTools kind=field
+  digest=b3:384ddb3ebeb72ce221be3715065bf77d5cf8e24d1b389f490ff036c2990726b5 file=executor/mcp/manager.go range=85:87 lang=go exported=true byte_range=2938:3082
+  sig=[]string
+  doc=ExpectedTools is the manifest-declared tool list. Manager calls\ntools/list at startup and rejects on drift (Q21).
+EDGES
+  ^contains=matrix/executor/mcp.ServerSpec
+
+NODE id=matrix/executor/mcp.ServerSpec#Headers kind=field
+  digest=b3:e7e1faa9b5416ffbdabebddafc3af50668ed5edcc94d77235a6dd68a675c7a0a file=executor/mcp/manager.go range=77:77 lang=go exported=true byte_range=2639:2665
+  sig=map[string]string
+EDGES
+  ^contains=matrix/executor/mcp.ServerSpec
+
+NODE id=matrix/executor/mcp.ServerSpec#PackageDigest kind=field
+  digest=b3:426f8a4f5060224473ab2e79402974c9fe46238ae155bd3da42fc081c140e93d file=executor/mcp/manager.go range=79:83 lang=go exported=true byte_range=2668:2935
+  sig=string
+  doc=PackageDigest is the sha256 hash that pins this server's package\nversion (Q22). Manager records it but verification of the local\npackage against the digest is the tool layer's responsibility\n(it knows where the package came from).
+EDGES
+  ^contains=matrix/executor/mcp.ServerSpec
+
+NODE id=matrix/executor/mcp.ServerSpec#Transport kind=field
+  digest=b3:d12ebe3fcaad5846ca0b9811b891130cf950a7b76101fb2cf99cf4d626b4d10a file=executor/mcp/manager.go range=66:67 lang=go exported=true byte_range=2320:2405
+  sig=string
+  doc=Transport is "stdio" or "http". Q15 lock excludes anything else.
+EDGES
+  ^contains=matrix/executor/mcp.ServerSpec
+
+NODE id=matrix/executor/mcp.StdioParams kind=type
+  digest=b3:7035eb9b49b1d42a31748021841c983a045cf0235993ee008547dbbd9ea4a77b file=executor/mcp/stdio.go range=42:63 lang=go exported=true byte_range=1052:1782
+  sig=type StdioParams struct {\n	// Command is the executable to run (e.g. "npx", "uvx", "/usr/bin/git-mcp").\n	Command	string\n\n	// Args are positional arguments passed verbatim. Sensitive values\n	// MUST go in Env, never Args.\n	Args	[]string\n\n	// Env is the subprocess environment. Manager-supplied; overrides\n	// the parent process's environment to avoid leaking unrelated env\n	// (Q18: credential boundary).\n	Env	[]string\n\n	// Dir is the working directory for the subprocess. Empty = inherit.\n	Dir	string\n\n	// StderrSink optionally receives subprocess stderr for logging.\n	// Default nil = discard. Tests pass os.Stderr; manager wires its\n	// own logger.\n	StderrSink	io.Writer\n}
+  doc=StdioParams configures a stdio subprocess transport.
+EDGES
+  contains=matrix/executor/mcp.StdioParams#Args,matrix/executor/mcp.StdioParams#Command,matrix/executor/mcp.StdioParams#Dir,matrix/executor/mcp.StdioParams#Env,matrix/executor/mcp.StdioParams#StderrSink
+  ^defines=matrix/executor/mcp/stdio.go
+
+NODE id=matrix/executor/mcp.StdioParams#Args kind=field
+  digest=b3:5c83e12b43a22a26b506f9d0d39e714ea0f5569c49ca67e103ea9256a286a377 file=executor/mcp/stdio.go range=47:49 lang=go exported=true byte_range=1230:1343
+  sig=[]string
+  doc=Args are positional arguments passed verbatim. Sensitive values\nMUST go in Env, never Args.
+EDGES
+  ^contains=matrix/executor/mcp.StdioParams
+
+NODE id=matrix/executor/mcp.StdioParams#Command kind=field
+  digest=b3:edd59e930a7305edb1dc90672fe7ae04899e654e8d6f9bbfd0cc3e440918b22b file=executor/mcp/stdio.go range=44:45 lang=go exported=true byte_range=1135:1227
+  sig=string
+  doc=Command is the executable to run (e.g. "npx", "uvx", "/usr/bin/git-mcp").
+EDGES
+  ^contains=matrix/executor/mcp.StdioParams
+
+NODE id=matrix/executor/mcp.StdioParams#Dir kind=field
+  digest=b3:852bb5503ea3a841619e24647676eead5018b91646c1ece2f1a1771153b470f5 file=executor/mcp/stdio.go range=56:57 lang=go exported=true byte_range=1528:1608
+  sig=string
+  doc=Dir is the working directory for the subprocess. Empty = inherit.
+EDGES
+  ^contains=matrix/executor/mcp.StdioParams
+
+NODE id=matrix/executor/mcp.StdioParams#Env kind=field
+  digest=b3:afc5d73d64abc2a5eb391d78a23c6dacdbe31e24370982f62c4a58c375ae4a78 file=executor/mcp/stdio.go range=51:54 lang=go exported=true byte_range=1346:1525
+  sig=[]string
+  doc=Env is the subprocess environment. Manager-supplied; overrides\nthe parent process's environment to avoid leaking unrelated env\n(Q18: credential boundary).
+EDGES
+  ^contains=matrix/executor/mcp.StdioParams
+
+NODE id=matrix/executor/mcp.StdioParams#StderrSink kind=field
+  digest=b3:e46aee4361cdb241e05badf2979371f62ee88aa385c3ebc7ef4eda247fb4a38b file=executor/mcp/stdio.go range=59:62 lang=go exported=true byte_range=1611:1780
+  sig=io.Writer
+  doc=StderrSink optionally receives subprocess stderr for logging.\nDefault nil = discard. Tests pass os.Stderr; manager wires its\nown logger.
+EDGES
+  ^contains=matrix/executor/mcp.StdioParams
+
+NODE id=matrix/executor/mcp.StdioTransport kind=type
+  digest=b3:cfea2fc3947721334b8c6dbd756f4c82289b25c489391acda86b788e2f72749c file=executor/mcp/stdio.go range=17:40 lang=go exported=true byte_range=262:1050
+  sig=type StdioTransport struct {\n	cmd	*exec.Cmd\n\n	stdin	io.WriteCloser\n	stdout	*bufio.Reader\n	stderr	io.ReadCloser\n\n	mu	sync.Mutex\n	closed	bool\n\n	// stderrSink optionally captures the subprocess's stderr for diagnostic\n	// surfacing. Default nil = discard. Manager wires this to a logger.\n	stderrSink	io.Writer\n}
+  doc=StdioTransport runs an MCP server as a subprocess and exchanges\nJSON-RPC frames over its stdin/stdout, one frame per line.\n\nQ15 + Q16 locks: stdio is the primary v1 transport; the subprocess\nis owned by the manager (per-agent persistent), spawn-on-boot,\ngraceful drain on stop.\n\nQ18 lock: env-var refs in the agent manifest are resolved upstream\nand passed via Cmd.Env. Credentials never appear in the args slice\n(would leak through ps listings).
+EDGES
+  contains=matrix/executor/mcp.StdioTransport#closed,matrix/executor/mcp.StdioTransport#cmd,matrix/executor/mcp.StdioTransport#mu,matrix/executor/mcp.StdioTransport#stderr,matrix/executor/mcp.StdioTransport#stderrSink,matrix/executor/mcp.StdioTransport#stdin,matrix/executor/mcp.StdioTransport#stdout,matrix/executor/mcp.StdioTransport.Close,matrix/executor/mcp.StdioTransport.Process,matrix/executor/mcp.StdioTransport.Recv,matrix/executor/mcp.StdioTransport.Send,matrix/executor/mcp.StdioTransport.drainStderr
+  implements=matrix/executor/mcp.Transport
+  ^defines=matrix/executor/mcp/stdio.go
+
+NODE id=matrix/executor/mcp.StdioTransport#closed kind=field
+  digest=b3:1141798bff5ece15c0143841d27bde1b1e1acbb195f262d5eb5127b561770822 file=executor/mcp/stdio.go range=35:35 lang=go exported=false byte_range=870:881
+  sig=bool
+EDGES
+  ^contains=matrix/executor/mcp.StdioTransport
+
+NODE id=matrix/executor/mcp.StdioTransport#cmd kind=field
+  digest=b3:e055e84d363059244621cf526f817daa4cf7d8a45806bfafce0d7012df3e00f3 file=executor/mcp/stdio.go range=28:28 lang=go exported=false byte_range=767:780
+  sig=*exec.Cmd
+EDGES
+  ^contains=matrix/executor/mcp.StdioTransport
+
+NODE id=matrix/executor/mcp.StdioTransport#mu kind=field
+  digest=b3:104dc836435d5ef8442f9bfbde658e9de40c6f0a6a782ec8db1f57575a3b03f9 file=executor/mcp/stdio.go range=34:34 lang=go exported=false byte_range=851:868
+  sig=sync.Mutex
+EDGES
+  ^contains=matrix/executor/mcp.StdioTransport
+
+NODE id=matrix/executor/mcp.StdioTransport#stderr kind=field
+  digest=b3:b1b35f10b77ca226e14f1af2fcc8a1761c51445b7364b151deb490b56ca6b61e file=executor/mcp/stdio.go range=32:32 lang=go exported=false byte_range=828:848
+  sig=io.ReadCloser
+EDGES
+  ^contains=matrix/executor/mcp.StdioTransport
+
+NODE id=matrix/executor/mcp.StdioTransport#stderrSink kind=field
+  digest=b3:09644512fce085cff853d0ac406dbc447be41e5b04e0710ec51159f963726fe8 file=executor/mcp/stdio.go range=37:39 lang=go exported=false byte_range=884:1048
+  sig=io.Writer
+  doc=stderrSink optionally captures the subprocess's stderr for diagnostic\nsurfacing. Default nil = discard. Manager wires this to a logger.
+EDGES
+  ^contains=matrix/executor/mcp.StdioTransport
+
+NODE id=matrix/executor/mcp.StdioTransport#stdin kind=field
+  digest=b3:f41f37b9144ea20c4ddd69211fb931e26dfdeafac1a8443922d316ad4dcfb1bd file=executor/mcp/stdio.go range=30:30 lang=go exported=false byte_range=783:804
+  sig=io.WriteCloser
+EDGES
+  ^contains=matrix/executor/mcp.StdioTransport
+
+NODE id=matrix/executor/mcp.StdioTransport#stdout kind=field
+  digest=b3:2daaaa1f6af4476af630be48ef305eaf0d11b09519979bdf08abea3c0a5cae8c file=executor/mcp/stdio.go range=31:31 lang=go exported=false byte_range=806:826
+  sig=*bufio.Reader
+EDGES
+  ^contains=matrix/executor/mcp.StdioTransport
+
+NODE id=matrix/executor/mcp.StdioTransport.Close kind=method
+  digest=b3:4efa005d4eb042cd0b98a1a40e205317d26a65638e8e14ea8768a62ed62c2d05 file=executor/mcp/stdio.go range=178:207 lang=go exported=true byte_range=4767:5564
+  sig=func (t *StdioTransport) Close() error
+  doc=Close shuts the subprocess down: closes stdin (signaling graceful\nshutdown to MCP servers that respect it), waits up to a small grace\nfor the process to exit, then kills + reaps.\n\nIdempotent: subsequent calls return nil.
+EDGES
+  ^contains=matrix/executor/mcp.StdioTransport
+  ^defines=matrix/executor/mcp/stdio.go
+
+NODE id=matrix/executor/mcp.StdioTransport.Process kind=method
+  digest=b3:2fd64d3169b7628e6f0e7d0df26336c263a2ea92ad3ccc8671d7e3708183d48a file=executor/mcp/stdio.go range=209:216 lang=go exported=true byte_range=5566:5780
+  sig=func (t *StdioTransport) Process() *os.Process
+  doc=Process exposes the underlying *os.Process so the manager can issue\na hard kill on shutdown timeout.
+EDGES
+  ^contains=matrix/executor/mcp.StdioTransport
+  ^defines=matrix/executor/mcp/stdio.go
+
+NODE id=matrix/executor/mcp.StdioTransport.Recv kind=method
+  digest=b3:4d8256037e23b83b400e4e249b2d07ddc720d55ce0c21089c216d662ecc09785 file=executor/mcp/stdio.go range=150:176 lang=go exported=true byte_range=4036:4765
+  sig=func (t *StdioTransport) Recv(ctx context.Context) ([]byte, error)
+  doc=Recv reads the next newline-terminated JSON frame from stdout.\nReturns ErrClosed on EOF.
+EDGES
+  ^contains=matrix/executor/mcp.StdioTransport
+  ^defines=matrix/executor/mcp/stdio.go
+
+NODE id=matrix/executor/mcp.StdioTransport.Send kind=method
+  digest=b3:49a49dca0e2e516920a60563365e82f54823b475fbe5deaf79e7850f31de5d50 file=executor/mcp/stdio.go range=123:148 lang=go exported=true byte_range=3377:4034
+  sig=func (t *StdioTransport) Send(ctx context.Context, frame []byte) error
+  doc=Send writes one JSON-RPC frame followed by a newline to the\nsubprocess's stdin.
+EDGES
+  ^contains=matrix/executor/mcp.StdioTransport
+  ^defines=matrix/executor/mcp/stdio.go
+
+NODE id=matrix/executor/mcp.StdioTransport.drainStderr kind=method
+  digest=b3:16c6a5850bef45e6de4a302e7c2e55c52e0531e1eaca81ebec033f71ca29627a file=executor/mcp/stdio.go range=218:231 lang=go exported=false byte_range=5782:6138
+  sig=func (t *StdioTransport) drainStderr()
+  doc=drainStderr reads subprocess stderr to either a configured sink or\n/dev/null. Runs until EOF (process exit) or close.
+EDGES
+  ^contains=matrix/executor/mcp.StdioTransport
+  ^defines=matrix/executor/mcp/stdio.go
+
+NODE id=matrix/executor/mcp.Tool kind=type
+  digest=b3:4a154f55b10ddace83103273efcef55cc1c62bd39fd8e6f78ee3d381b0c43ccf file=executor/mcp/protocol.go range=132:149 lang=go exported=true byte_range=5515:6360
+  sig=type Tool struct {\n	// Name uniquely identifies the tool within its server. Tools sharing\n	// names across servers are addressed via matrix://tool/mcp/<server>/<name>.\n	Name	string	`json:"name"`\n\n	// Description is the natural-language summary the LLM sees when\n	// deciding whether to invoke the tool. Threaded into the executor\n	// model's tool-selection prompt.\n	Description	string	`json:"description,omitempty"`\n\n	// InputSchema is a JSON Schema describing the tool's args. Validated\n	// at call time by both the executor (prior to dispatch) and the MCP\n	// server (after receipt).\n	InputSchema	json.RawMessage	`json:"inputSchema,omitempty"`\n}
+  doc=Tool is the wire-format description of a single tool exposed by an\nMCP server. The Matrix tool registry pins each (Name, Server) pair\nagainst a manifest at startup and rejects drift (Q21).
+EDGES
+  contains=matrix/executor/mcp.Tool#Description,matrix/executor/mcp.Tool#InputSchema,matrix/executor/mcp.Tool#Name
+  ^defines=matrix/executor/mcp/protocol.go
+
+NODE id=matrix/executor/mcp.Tool#Description kind=field
+  digest=b3:d1dcfeacbb1eeb5b2df70f83ab926505d076678b639cda3ef793252fc8ff80e2 file=executor/mcp/protocol.go range=140:143 lang=go exported=true byte_range=5910:6128
+  sig=string
+  doc=Description is the natural-language summary the LLM sees when\ndeciding whether to invoke the tool. Threaded into the executor\nmodel's tool-selection prompt.
+EDGES
+  ^contains=matrix/executor/mcp.Tool
+
+NODE id=matrix/executor/mcp.Tool#InputSchema kind=field
+  digest=b3:d2420fef67977ac0fed5a526ddcbfd0ea9db8262cd0f2a58e06d8a94a09da75f file=executor/mcp/protocol.go range=145:148 lang=go exported=true byte_range=6131:6358
+  sig=json.RawMessage
+  doc=InputSchema is a JSON Schema describing the tool's args. Validated\nat call time by both the executor (prior to dispatch) and the MCP\nserver (after receipt).
+EDGES
+  ^contains=matrix/executor/mcp.Tool
+
+NODE id=matrix/executor/mcp.Tool#Name kind=field
+  digest=b3:98e3ac1c275581f4579100b354cf51f480a128807b81095ec727df39fd45a77e file=executor/mcp/protocol.go range=136:138 lang=go exported=true byte_range=5733:5907
+  sig=string
+  doc=Name uniquely identifies the tool within its server. Tools sharing\nnames across servers are addressed via matrix://tool/mcp/<server>/<name>.
+EDGES
+  ^contains=matrix/executor/mcp.Tool
+
+NODE id=matrix/executor/mcp.ToolsCapability kind=type
+  digest=b3:c4d487b2f39809934db2cd564333c020b4182aca9f4b10b85c38d359be40ac94 file=executor/mcp/protocol.go range=98:103 lang=go exported=true byte_range=4354:4613
+  sig=type ToolsCapability struct {\n	ListChanged bool `json:"listChanged,omitempty"`\n}
+  doc=ToolsCapability tells us if the server supports list-changed\nnotifications (forward-compatibility flag; Matrix v1 doesn't react\nto these — manifest is static per Q21).
+EDGES
+  contains=matrix/executor/mcp.ToolsCapability#ListChanged
+  ^defines=matrix/executor/mcp/protocol.go
+
+NODE id=matrix/executor/mcp.ToolsCapability#ListChanged kind=field
+  digest=b3:550091f8c5a33863add477fe3413f38cb135d8a76ee2047bdc92c95eb6e235a6 file=executor/mcp/protocol.go range=102:102 lang=go exported=true byte_range=4564:4611
+  sig=bool
+EDGES
+  ^contains=matrix/executor/mcp.ToolsCapability
+
+NODE id=matrix/executor/mcp.ToolsListResult kind=type
+  digest=b3:1b0d41b59fcc6f6d51cb94e2ffad2348d5153080c9f5fd1cca3d766fbbb0ee52 file=executor/mcp/protocol.go range=151:158 lang=go exported=true byte_range=6362:6698
+  sig=type ToolsListResult struct {\n	Tools	[]Tool	`json:"tools"`\n	// NextCursor is set when the server supports pagination. Matrix v1\n	// fetches the full list in one shot at startup; we'll page only\n	// if a server returns NextCursor.\n	NextCursor	string	`json:"nextCursor,omitempty"`\n}
+  doc=ToolsListResult is the typed response to tools/list.
+EDGES
+  contains=matrix/executor/mcp.ToolsListResult#NextCursor,matrix/executor/mcp.ToolsListResult#Tools
+  ^defines=matrix/executor/mcp/protocol.go
+
+NODE id=matrix/executor/mcp.ToolsListResult#NextCursor kind=field
+  digest=b3:419afc062043141dbdeeea3674d9854d9cccf0f5579df59299d56d0130ec9d1c file=executor/mcp/protocol.go range=154:157 lang=go exported=true byte_range=6478:6696
+  sig=string
+  doc=NextCursor is set when the server supports pagination. Matrix v1\nfetches the full list in one shot at startup; we'll page only\nif a server returns NextCursor.
+EDGES
+  ^contains=matrix/executor/mcp.ToolsListResult
+
+NODE id=matrix/executor/mcp.ToolsListResult#Tools kind=field
+  digest=b3:ed1b5179481e7ffd8baae65e992c8351dd1018d5a3fbac4348175d44ecff7159 file=executor/mcp/protocol.go range=153:153 lang=go exported=true byte_range=6449:6476
+  sig=[]mcp.Tool
+EDGES
+  ^contains=matrix/executor/mcp.ToolsListResult
+
+NODE id=matrix/executor/mcp.Transport kind=interface
+  digest=b3:960b276fc0cb493c7f08f78fc5e1284c95f07b9d7c8afa59d1fcab736a635d9b file=executor/mcp/transport.go range=11:35 lang=go exported=true byte_range=215:1337
+  sig=type Transport interface {\n	// Send writes a single JSON-RPC frame (already encoded, no trailing\n	// newline) to the peer. Stdio transports append the line terminator;\n	// HTTP transports treat the frame as the request body.\n	Send(ctx context.Context, frame []byte) error\n\n	// Recv reads the next JSON-RPC frame from the peer. Returns ErrClosed\n	// once the peer disconnects or Close is called locally.\n	Recv(ctx context.Context) ([]byte, error)\n\n	// Close shuts the transport down. After Close, Send and Recv return\n	// ErrClosed. Close is safe to call multiple times.\n	Close() error\n}
+  doc=Transport abstracts the wire-format channel between Client and an MCP\nserver. Implementations exist for stdio (subprocess) and streamable\nHTTP (Q15 lock).\n\nConcurrency contract:\n  - Send may be called from any goroutine; implementations serialize\n    internally.\n  - Recv is called by exactly one reader goroutine inside Client; it\n    blocks until a frame arrives or the transport is closed.\n  - Close is idempotent and can race with Send/Recv; both must return\n    promptly with ErrClosed after Close.
+EDGES
+  ^implements=matrix/executor/mcp.HTTPTransport,matrix/executor/mcp.StdioTransport,matrix/executor/mcp.pipeTransport
+  ^defines=matrix/executor/mcp/transport.go
+
+NODE id=matrix/executor/mcp._ kind=var
+  digest=b3:177d2d55e3a5c5fd55d388475e6bc2a9b97128317fd2af83fdc505ce19e0fb6f file=executor/mcp/mock_server.go range=341:343 lang=go exported=false byte_range=8064:8217
+  sig=func(text string) error
+  doc=ensure errors is used; mock_server imports it for fmt.Errorf which\nalready pulls it in. Belt-and-suspenders for refactor safety.
+EDGES
+  ^defines=matrix/executor/mcp/mock_server.go
+
+NODE id=matrix/executor/mcp.encodeParams kind=func
+  digest=b3:d757532b38fc8b357667599caf941f204fce6b46fdd38378e193693befb62cb0 file=executor/mcp/client.go range=368:388 lang=go exported=false byte_range=10419:10986
+  sig=func encodeParams(v interface{}) (json.RawMessage, error)
+  doc=encodeParams marshals an arbitrary value to json.RawMessage, with\nspecial-case handling for nil → empty params.
+EDGES
+  ^defines=matrix/executor/mcp/client.go
+
+NODE id=matrix/executor/mcp.extractID kind=func
+  digest=b3:2fefb238b4a3fef2054f9deab6593dbf8131427780837f641be84a230387c6f9 file=executor/mcp/mock_server.go range=323:336 lang=go exported=false byte_range=7610:7988
+  sig=func extractID(frame []byte) json.RawMessage
+  doc=extractID pulls the id out of a JSON-RPC frame for error-response\ntargeting; returns nil if the frame has no id or is malformed.
+EDGES
+  ^defines=matrix/executor/mcp/mock_server.go
+
+NODE id=matrix/executor/mcp.isSSE kind=func
+  digest=b3:c0d412170eddd21b68b844c09c4d1ee2bf92ab1878885a90f8a76ad49b446605 file=executor/mcp/http.go range=211:224 lang=go exported=false byte_range=5705:6046
+  sig=func isSSE(ct string) bool
+  doc=isSSE reports whether a Content-Type header is text/event-stream.
+EDGES
+  ^defines=matrix/executor/mcp/http.go
+
+NODE id=matrix/executor/mcp.mapStdioError kind=func
+  digest=b3:e0bea02d812c96ea3b0107eb4915dc2d222b5984adeec1e179674e36a820fcc6 file=executor/mcp/stdio.go range=233:243 lang=go exported=false byte_range=6140:6517
+  sig=func mapStdioError(err error) error
+  doc=mapStdioError maps subprocess pipe errors to ErrClosed when the pipe\nis gone, preserving the error otherwise for caller inspection.
+EDGES
+  ^defines=matrix/executor/mcp/stdio.go
+
+NODE id=matrix/executor/mcp.newPipeTransport kind=func
+  digest=b3:dbcf110df7e6317c3d3f985db01455cabe6b90be595fc88f666d592ed0dbab73 file=executor/mcp/mock_server.go range=232:239 lang=go exported=false byte_range=5941:6141
+  sig=func newPipeTransport(s *MockServer) *pipeTransport
+EDGES
+  ^defines=matrix/executor/mcp/mock_server.go
+
+NODE id=matrix/executor/mcp.pipeTransport kind=type
+  digest=b3:5356b878f9de95fe3ca3e6731823b57382f7de94e4a2ef106f855cc6d66b5de5 file=executor/mcp/mock_server.go range=218:230 lang=go exported=false byte_range=5525:5939
+  sig=type pipeTransport struct {\n	server	*MockServer\n\n	inbound		chan []byte	// frames going to server\n	outbound	chan []byte	// frames coming back to client\n\n	mu	sync.Mutex\n	closed	bool\n	done	chan struct{}\n}
+  doc=pipeTransport is the in-process Transport that drives a MockServer.\nImplements Transport with two channels: outbound frames go to the\nserver's handle() and the response goes onto the inbox channel.
+EDGES
+  contains=matrix/executor/mcp.pipeTransport#closed,matrix/executor/mcp.pipeTransport#done,matrix/executor/mcp.pipeTransport#inbound,matrix/executor/mcp.pipeTransport#mu,matrix/executor/mcp.pipeTransport#outbound,matrix/executor/mcp.pipeTransport#server,matrix/executor/mcp.pipeTransport.Close,matrix/executor/mcp.pipeTransport.Recv,matrix/executor/mcp.pipeTransport.Send,matrix/executor/mcp.pipeTransport.deliver,matrix/executor/mcp.pipeTransport.run
+  implements=matrix/executor/mcp.Transport
+  ^defines=matrix/executor/mcp/mock_server.go
+
+NODE id=matrix/executor/mcp.pipeTransport#closed kind=field
+  digest=b3:1141798bff5ece15c0143841d27bde1b1e1acbb195f262d5eb5127b561770822 file=executor/mcp/mock_server.go range=228:228 lang=go exported=false byte_range=5904:5915
+  sig=bool
+EDGES
+  ^contains=matrix/executor/mcp.pipeTransport
+
+NODE id=matrix/executor/mcp.pipeTransport#done kind=field
+  digest=b3:c48cac66cb9606115c9417301b9d437b5d8a72b1585c32218002e09388862570 file=executor/mcp/mock_server.go range=229:229 lang=go exported=false byte_range=5917:5937
+  sig=chan struct{}
+EDGES
+  ^contains=matrix/executor/mcp.pipeTransport
+
+NODE id=matrix/executor/mcp.pipeTransport#inbound kind=field
+  digest=b3:418bb63dda8c6e770cdf253f2d10f12896473697217786afb5a4ef22302ace4c file=executor/mcp/mock_server.go range=224:224 lang=go exported=false byte_range=5782:5802
+  sig=chan []byte
+EDGES
+  ^contains=matrix/executor/mcp.pipeTransport
+
+NODE id=matrix/executor/mcp.pipeTransport#mu kind=field
+  digest=b3:104dc836435d5ef8442f9bfbde658e9de40c6f0a6a782ec8db1f57575a3b03f9 file=executor/mcp/mock_server.go range=227:227 lang=go exported=false byte_range=5885:5902
+  sig=sync.Mutex
+EDGES
+  ^contains=matrix/executor/mcp.pipeTransport
+
+NODE id=matrix/executor/mcp.pipeTransport#outbound kind=field
+  digest=b3:ca6757e8e6702e58533d738ce5d2b2f2c68850c63b6b3344d4fae1d6c820f4d5 file=executor/mcp/mock_server.go range=225:225 lang=go exported=false byte_range=5830:5850
+  sig=chan []byte
+EDGES
+  ^contains=matrix/executor/mcp.pipeTransport
+
+NODE id=matrix/executor/mcp.pipeTransport#server kind=field
+  digest=b3:b3d65620543ecd5f9e7e89d3c302d2c856e85c7b41c81936b70d6f87a800b260 file=executor/mcp/mock_server.go range=222:222 lang=go exported=false byte_range=5761:5779
+  sig=*mcp.MockServer
+EDGES
+  ^contains=matrix/executor/mcp.pipeTransport
+
+NODE id=matrix/executor/mcp.pipeTransport.Close kind=method
+  digest=b3:ae8f12a732531d5c39c979b0087bd102a958a8d63ae5aef390213cd13fd48083 file=executor/mcp/mock_server.go range=274:284 lang=go exported=true byte_range=6726:6886
+  sig=func (t *pipeTransport) Close() error
+EDGES
+  ^contains=matrix/executor/mcp.pipeTransport
+  ^defines=matrix/executor/mcp/mock_server.go
+
+NODE id=matrix/executor/mcp.pipeTransport.Recv kind=method
+  digest=b3:b926009eb877ff14d3c056d63d7e5a9fa110d6cc3b37bf655df3d0478ef21b3b file=executor/mcp/mock_server.go range=260:272 lang=go exported=true byte_range=6473:6724
+  sig=func (t *pipeTransport) Recv(ctx context.Context) ([]byte, error)
+EDGES
+  ^contains=matrix/executor/mcp.pipeTransport
+  ^defines=matrix/executor/mcp/mock_server.go
+
+NODE id=matrix/executor/mcp.pipeTransport.Send kind=method
+  digest=b3:77911368289f66d2e863abcd575c1f53436207cbd5283a40667e3f8ed9a5157d file=executor/mcp/mock_server.go range=241:258 lang=go exported=true byte_range=6143:6471
+  sig=func (t *pipeTransport) Send(ctx context.Context, frame []byte) error
+EDGES
+  ^contains=matrix/executor/mcp.pipeTransport
+  ^defines=matrix/executor/mcp/mock_server.go
+
+NODE id=matrix/executor/mcp.pipeTransport.deliver kind=method
+  digest=b3:974d15dd711eb37373f83a9b812638f1c73bb4724bdbb680b0b297c1202c969f file=executor/mcp/mock_server.go range=316:321 lang=go exported=false byte_range=7511:7608
+  sig=func (t *pipeTransport) deliver(b []byte)
+EDGES
+  ^contains=matrix/executor/mcp.pipeTransport
+  ^defines=matrix/executor/mcp/mock_server.go
+
+NODE id=matrix/executor/mcp.pipeTransport.run kind=method
+  digest=b3:7aedabccddc585f70b8127999b3a2c4384a1b4ad2ff8ba0e12b812d1d8887dd2 file=executor/mcp/mock_server.go range=286:314 lang=go exported=false byte_range=6888:7509
+  sig=func (t *pipeTransport) run()
+  doc=run is the server-side dispatcher loop.
+EDGES
+  ^contains=matrix/executor/mcp.pipeTransport
+  ^defines=matrix/executor/mcp/mock_server.go
+
+NODE id=matrix/executor/mcp.rawFrame kind=type
+  digest=b3:56a29cddff689d3f51cae79033e2bd626625b3f66bd0baa3a32ea96400919218 file=executor/mcp/jsonrpc.go range=193:203 lang=go exported=false byte_range=6680:7178
+  sig=type rawFrame struct {\n	JSONRPC	string		`json:"jsonrpc"`\n	ID	json.RawMessage	`json:"id,omitempty"`\n	Method	string		`json:"method,omitempty"`\n	Params	json.RawMessage	`json:"params,omitempty"`\n	Result	json.RawMessage	`json:"result,omitempty"`\n	Error	*RPCError	`json:"error,omitempty"`\n}
+  doc=rawFrame is an internal scratch struct for two-pass classification.\nDecodes once into RawMessage fields, then we inspect which fields\nwere present to discriminate the kind.
+EDGES
+  contains=matrix/executor/mcp.rawFrame#Error,matrix/executor/mcp.rawFrame#ID,matrix/executor/mcp.rawFrame#JSONRPC,matrix/executor/mcp.rawFrame#Method,matrix/executor/mcp.rawFrame#Params,matrix/executor/mcp.rawFrame#Result
+  ^defines=matrix/executor/mcp/jsonrpc.go
+
+NODE id=matrix/executor/mcp.rawFrame#Error kind=field
+  digest=b3:119285c49e36fc5379ee9acbebc17d2523e7200d367f237087b5ff6a3e77b6bd file=executor/mcp/jsonrpc.go range=202:202 lang=go exported=true byte_range=7128:7176
+  sig=*mcp.RPCError
+EDGES
+  ^contains=matrix/executor/mcp.rawFrame
+
+NODE id=matrix/executor/mcp.rawFrame#ID kind=field
+  digest=b3:f4623268392bce33f5bc42fd1930ad31693bc1f53df93b86de60c569e274b28e file=executor/mcp/jsonrpc.go range=198:198 lang=go exported=true byte_range=6928:6973
+  sig=json.RawMessage
+EDGES
+  ^contains=matrix/executor/mcp.rawFrame
+
+NODE id=matrix/executor/mcp.rawFrame#JSONRPC kind=field
+  digest=b3:e922b6deddabec44b26208ae989c23f029415d4258b8fa54aeb4a41c3dd567f3 file=executor/mcp/jsonrpc.go range=197:197 lang=go exported=true byte_range=6886:6926
+  sig=string
+EDGES
+  ^contains=matrix/executor/mcp.rawFrame
+
+NODE id=matrix/executor/mcp.rawFrame#Method kind=field
+  digest=b3:5d084904cfe97d911b875be205da2fbb463fb9bec9e4f3a9f553d910fc7c90f1 file=executor/mcp/jsonrpc.go range=199:199 lang=go exported=true byte_range=6975:7024
+  sig=string
+EDGES
+  ^contains=matrix/executor/mcp.rawFrame
+
+NODE id=matrix/executor/mcp.rawFrame#Params kind=field
+  digest=b3:5f2f2f30caac193d23dbca1d876fd43d5aee08e3429721cabe41f9f6ed5ad461 file=executor/mcp/jsonrpc.go range=200:200 lang=go exported=true byte_range=7026:7075
+  sig=json.RawMessage
+EDGES
+  ^contains=matrix/executor/mcp.rawFrame
+
+NODE id=matrix/executor/mcp.rawFrame#Result kind=field
+  digest=b3:2ac6b6c9ad3239d7c5917dcb11746bd554a4cbe96e7877d4291f75a92d67d791 file=executor/mcp/jsonrpc.go range=201:201 lang=go exported=true byte_range=7077:7126
+  sig=json.RawMessage
+EDGES
+  ^contains=matrix/executor/mcp.rawFrame
+
+NODE id=matrix/executor/mcp.truncate kind=func
+  digest=b3:17a1cebda2c16bced2739fd715b61c3b6abb89404d192c490092e929749e2037 file=executor/mcp/http.go range=226:232 lang=go exported=false byte_range=6048:6195
+  sig=func truncate(s string, max int) string
+  doc=truncate caps a string for error messages.
+EDGES
+  ^defines=matrix/executor/mcp/http.go
+
+NODE id=matrix/executor/mcp/client.go kind=file
+  digest=b3:735f27eb94cc7ba8553e209bc47a257c1d6a8cebbe2ecf5afaef4c3217ae170e file=executor/mcp/client.go range=1:398 lang=go exported=true
+EDGES
+  defines=matrix/executor/mcp.Client,matrix/executor/mcp.Client.Call,matrix/executor/mcp.Client.Close,matrix/executor/mcp.Client.Info,matrix/executor/mcp.Client.Initialize,matrix/executor/mcp.Client.Notify,matrix/executor/mcp.Client.Ping,matrix/executor/mcp.Client.ReadError,matrix/executor/mcp.Client.ToolsCall,matrix/executor/mcp.Client.ToolsList,matrix/executor/mcp.Client.readLoop,matrix/executor/mcp.Client.routeResponse,matrix/executor/mcp.ClientParams,matrix/executor/mcp.NewClient,matrix/executor/mcp.encodeParams
+  ^contains=matrix/executor/mcp
+
+NODE id=matrix/executor/mcp/http.go kind=file
+  digest=b3:935597601dce7a9d48c9181edf145478254dd87e4bbf957e6eb4237359347307 file=executor/mcp/http.go range=1:234 lang=go exported=true
+EDGES
+  defines=matrix/executor/mcp.HTTPParams,matrix/executor/mcp.HTTPTransport,matrix/executor/mcp.HTTPTransport.Close,matrix/executor/mcp.HTTPTransport.Recv,matrix/executor/mcp.HTTPTransport.Send,matrix/executor/mcp.NewHTTPTransport,matrix/executor/mcp.isSSE,matrix/executor/mcp.truncate
+  ^contains=matrix/executor/mcp
+
+NODE id=matrix/executor/mcp/jsonrpc.go kind=file
+  digest=b3:1c28f0d8633bb6d86da8e36c9dd2226710dbd62531d63a220424b692ff80bc96 file=executor/mcp/jsonrpc.go range=1:277 lang=go exported=true
+EDGES
+  defines=matrix/executor/mcp.Classify,matrix/executor/mcp.EncodeNotification,matrix/executor/mcp.EncodeRequest,matrix/executor/mcp.EncodeResponse,matrix/executor/mcp.ErrAmbiguousResponse,matrix/executor/mcp.ErrCodeInternalError,matrix/executor/mcp.ErrCodeInvalidParams,matrix/executor/mcp.ErrCodeInvalidRequest,matrix/executor/mcp.ErrCodeInvalidToolInput,matrix/executor/mcp.ErrCodeMethodNotFound,matrix/executor/mcp.ErrCodeParseError,matrix/executor/mcp.ErrCodeServerError,matrix/executor/mcp.ErrCodeServerUnavailable,matrix/executor/mcp.ErrCodeToolNotFound,matrix/executor/mcp.ErrInvalidVersion,matrix/executor/mcp.ErrMissingID,matrix/executor/mcp.ErrMissingMethod,matrix/executor/mcp.ErrUnknownMessage,matrix/executor/mcp.JSONRPCVersion,matrix/executor/mcp.KindNotification,matrix/executor/mcp.KindRequest,matrix/executor/mcp.KindResponse,matrix/executor/mcp.MessageKind,matrix/executor/mcp.NewIDInt,matrix/executor/mcp.NewIDString,matrix/executor/mcp.Notification,matrix/executor/mcp.RPCError,matrix/executor/mcp.RPCError.Error,matrix/executor/mcp.Request,matrix/executor/mcp.Response,matrix/executor/mcp.rawFrame
+  ^contains=matrix/executor/mcp
+
+NODE id=matrix/executor/mcp/manager.go kind=file
+  digest=b3:1a64ba426560de931ffa0c9ea218ac3949ee7e8379da82582619dcc520475cb9 file=executor/mcp/manager.go range=1:359 lang=go exported=true
+EDGES
+  defines=matrix/executor/mcp.Manager,matrix/executor/mcp.Manager.Aliases,matrix/executor/mcp.Manager.Client,matrix/executor/mcp.Manager.Close,matrix/executor/mcp.Manager.Spawn,matrix/executor/mcp.Manager.Spec,matrix/executor/mcp.Manager.Stop,matrix/executor/mcp.Manager.Tools,matrix/executor/mcp.Manager.buildTransport,matrix/executor/mcp.Manager.healthLoop,matrix/executor/mcp.Manager.verifyTools,matrix/executor/mcp.ManagerParams,matrix/executor/mcp.NewManager,matrix/executor/mcp.ServerSpec
+  ^contains=matrix/executor/mcp
+
+NODE id=matrix/executor/mcp/mock_server.go kind=file
+  digest=b3:5067ca5997f32d20f905db35faf13c8030c7926ef5d1d2a6d230b08a3670ba3e file=executor/mcp/mock_server.go range=1:345 lang=go exported=true
+EDGES
+  defines=matrix/executor/mcp.MockServer,matrix/executor/mcp.MockServer.Initialized,matrix/executor/mcp.MockServer.Log,matrix/executor/mcp.MockServer.SetTools,matrix/executor/mcp.MockServer.handle,matrix/executor/mcp.MockServer.handleRequest,matrix/executor/mcp.MockServer.respond,matrix/executor/mcp.MockServerParams,matrix/executor/mcp.NewMockServer,matrix/executor/mcp.PipeMock,matrix/executor/mcp._,matrix/executor/mcp.extractID,matrix/executor/mcp.newPipeTransport,matrix/executor/mcp.pipeTransport,matrix/executor/mcp.pipeTransport.Close,matrix/executor/mcp.pipeTransport.Recv,matrix/executor/mcp.pipeTransport.Send,matrix/executor/mcp.pipeTransport.deliver,matrix/executor/mcp.pipeTransport.run
+  ^contains=matrix/executor/mcp
+
+NODE id=matrix/executor/mcp/protocol.go kind=file
+  digest=b3:ee576127d46fd62ecb9830f668a0de5373db5877947dba3344b2be4cdf9cbd31 file=executor/mcp/protocol.go range=1:248 lang=go exported=true
+EDGES
+  defines=matrix/executor/mcp.CallToolParams,matrix/executor/mcp.CallToolResult,matrix/executor/mcp.ClientCapabilities,matrix/executor/mcp.ClientName,matrix/executor/mcp.ClientVersion,matrix/executor/mcp.Content,matrix/executor/mcp.ContentTypeImage,matrix/executor/mcp.ContentTypeResource,matrix/executor/mcp.ContentTypeText,matrix/executor/mcp.EmbeddedResource,matrix/executor/mcp.ExtractText,matrix/executor/mcp.Implementation,matrix/executor/mcp.InitializeParams,matrix/executor/mcp.InitializeResult,matrix/executor/mcp.LoggingCapability,matrix/executor/mcp.MethodInitialize,matrix/executor/mcp.MethodNotificationsCancelled,matrix/executor/mcp.MethodNotificationsInit,matrix/executor/mcp.MethodNotificationsProgress,matrix/executor/mcp.MethodPing,matrix/executor/mcp.MethodToolsCall,matrix/executor/mcp.MethodToolsList,matrix/executor/mcp.PingParams,matrix/executor/mcp.PingResult,matrix/executor/mcp.PromptsCapability,matrix/executor/mcp.ProtocolVersion,matrix/executor/mcp.ResourcesCapability,matrix/executor/mcp.RootsCapability,matrix/executor/mcp.SamplingCapability,matrix/executor/mcp.ServerCapabilities,matrix/executor/mcp.Tool,matrix/executor/mcp.ToolsCapability,matrix/executor/mcp.ToolsListResult
+  ^contains=matrix/executor/mcp
+
+NODE id=matrix/executor/mcp/stdio.go kind=file
+  digest=b3:4abb816682a8c1e1aab4ccaa708a42820e95e0adbfa15db7d155326d517a5736 file=executor/mcp/stdio.go range=1:245 lang=go exported=true
+EDGES
+  defines=matrix/executor/mcp.NewStdioTransport,matrix/executor/mcp.StdioParams,matrix/executor/mcp.StdioTransport,matrix/executor/mcp.StdioTransport.Close,matrix/executor/mcp.StdioTransport.Process,matrix/executor/mcp.StdioTransport.Recv,matrix/executor/mcp.StdioTransport.Send,matrix/executor/mcp.StdioTransport.drainStderr,matrix/executor/mcp.mapStdioError
+  ^contains=matrix/executor/mcp
+
+NODE id=matrix/executor/mcp/transport.go kind=file
+  digest=b3:ecd45fbc604b95572b566ea7ac9c2a1500fdb66f03c510500c65957a7c6a75d5 file=executor/mcp/transport.go range=1:42 lang=go exported=true
+EDGES
+  defines=matrix/executor/mcp.ErrClosed,matrix/executor/mcp.Transport
+  ^contains=matrix/executor/mcp

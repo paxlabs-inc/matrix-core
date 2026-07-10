@@ -1,9 +1,10 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:9b68327501b45793fd7687f43b30c960fd68ae8aaff6b2f1bb36ec3e2df2de2f
+# GENERATED gen=codegraph do-not-edit merkle=b3:20e53aba2ea11552396417e53b3e04e87dd1bbb7bef3aa554a45bb92cf89e7f2
 
 NODE id=matrix/cody/internal/llmtest kind=package
   digest=b3:905ddaf841042f2bc71c398198f00c7754bf135c93924010adba9a5a14e91780 file=cody/internal/llmtest range=0:0 lang=go exported=true
 EDGES
   contains=matrix/cody/internal/llmtest/llmtest.go
+  imports=matrix/cody/internal/llm,matrix/mcl/llm
   ^contains=mod:matrix/cody
 
 NODE id=matrix/cody/internal/llmtest.Call kind=type
@@ -12,6 +13,7 @@ NODE id=matrix/cody/internal/llmtest.Call kind=type
   doc=Call is one scripted tool call.
 EDGES
   contains=matrix/cody/internal/llmtest.Call#Args,matrix/cody/internal/llmtest.Call#Name
+  ^references=matrix/cody/internal/llmtest.CallTool,matrix/cody/internal/llmtest.Turn
   ^defines=matrix/cody/internal/llmtest/llmtest.go
 
 NODE id=matrix/cody/internal/llmtest.Call#Args kind=field
@@ -31,6 +33,7 @@ NODE id=matrix/cody/internal/llmtest.CallTool kind=func
   sig=func CallTool(name string, args map[string]interface{}) Turn
   doc=CallTool scripts a single-tool-call turn.
 EDGES
+  references=matrix/cody/internal/llmtest.Call,matrix/cody/internal/llmtest.Turn,matrix/cody/internal/llmtest.args,matrix/cody/internal/llmtest.name
   ^defines=matrix/cody/internal/llmtest/llmtest.go
 
 NODE id=matrix/cody/internal/llmtest.Msg kind=type
@@ -39,6 +42,7 @@ NODE id=matrix/cody/internal/llmtest.Msg kind=type
   doc=Msg is one request-side message as seen by the scripted endpoint.
 EDGES
   contains=matrix/cody/internal/llmtest.Msg#Content,matrix/cody/internal/llmtest.Msg#Name,matrix/cody/internal/llmtest.Msg#Role,matrix/cody/internal/llmtest.Msg#ToolCallID
+  ^references=matrix/cody/internal/llmtest.Request
   ^defines=matrix/cody/internal/llmtest/llmtest.go
 
 NODE id=matrix/cody/internal/llmtest.Msg#Content kind=field
@@ -70,6 +74,8 @@ NODE id=matrix/cody/internal/llmtest.NewClient kind=func
   sig=func NewClient(t *testing.T, srv *httptest.Server) *llm.Client
   doc=NewClient builds a real llm.Client pointed at the scripted server via the\ngateway path (no API key needed).
 EDGES
+  calls=matrix/cody/internal/llm.New
+  references=matrix/cody/internal/llm.Client,matrix/cody/internal/llm.New,matrix/cody/internal/llmtest.c,matrix/cody/internal/llmtest.err,matrix/cody/internal/llmtest.srv,matrix/cody/internal/llmtest.t,matrix/mcl/llm.Config,matrix/mcl/llm.ProviderFireworks
   ^defines=matrix/cody/internal/llmtest/llmtest.go
 
 NODE id=matrix/cody/internal/llmtest.NewServer kind=func
@@ -77,6 +83,7 @@ NODE id=matrix/cody/internal/llmtest.NewServer kind=func
   sig=func NewServer(t *testing.T, script func(step int, req Request) Turn) *httptest.Server
   doc=NewServer starts a real HTTP server speaking OpenAI chat-completions SSE.\nEach request advances the script; the script sees the full live message\nwindow so steps can react to real tool results exactly as a model would.
 EDGES
+  references=matrix/cody/internal/llmtest.Request,matrix/cody/internal/llmtest.Turn,matrix/cody/internal/llmtest.args,matrix/cody/internal/llmtest.body,matrix/cody/internal/llmtest.c,matrix/cody/internal/llmtest.choice,matrix/cody/internal/llmtest.chunk,matrix/cody/internal/llmtest.data,matrix/cody/internal/llmtest.delta,matrix/cody/internal/llmtest.deltaTool,matrix/cody/internal/llmtest.deltaToolFn,matrix/cody/internal/llmtest.err,matrix/cody/internal/llmtest.finish,matrix/cody/internal/llmtest.i,matrix/cody/internal/llmtest.mu,matrix/cody/internal/llmtest.r,matrix/cody/internal/llmtest.req,matrix/cody/internal/llmtest.rw,matrix/cody/internal/llmtest.script,matrix/cody/internal/llmtest.step,matrix/cody/internal/llmtest.t,matrix/cody/internal/llmtest.turn,matrix/cody/internal/llmtest.usage,matrix/cody/internal/llmtest.v,matrix/cody/internal/llmtest.writeChunk
   ^defines=matrix/cody/internal/llmtest/llmtest.go
 
 NODE id=matrix/cody/internal/llmtest.Request kind=type
@@ -85,6 +92,8 @@ NODE id=matrix/cody/internal/llmtest.Request kind=type
   doc=Request is the decoded chat-completions request body.
 EDGES
   contains=matrix/cody/internal/llmtest.Request#Messages,matrix/cody/internal/llmtest.Request.LastToolResult
+  references=matrix/cody/internal/llmtest.Msg
+  ^references=matrix/cody/internal/llmtest.NewServer,matrix/cody/internal/llmtest.Request.LastToolResult
   ^defines=matrix/cody/internal/llmtest/llmtest.go
 
 NODE id=matrix/cody/internal/llmtest.Request#Messages kind=field
@@ -98,6 +107,7 @@ NODE id=matrix/cody/internal/llmtest.Request.LastToolResult kind=method
   sig=func (r Request) LastToolResult() string
   doc=LastToolResult returns the content of the most recent tool-role message.
 EDGES
+  references=matrix/cody/internal/llmtest.Request,matrix/cody/internal/llmtest.i,matrix/cody/internal/llmtest.r
   ^contains=matrix/cody/internal/llmtest.Request
   ^defines=matrix/cody/internal/llmtest/llmtest.go
 
@@ -106,6 +116,7 @@ NODE id=matrix/cody/internal/llmtest.Say kind=func
   sig=func Say(content string) Turn
   doc=Say scripts a plain content turn.
 EDGES
+  references=matrix/cody/internal/llmtest.Turn,matrix/cody/internal/llmtest.content
   ^defines=matrix/cody/internal/llmtest/llmtest.go
 
 NODE id=matrix/cody/internal/llmtest.Turn kind=type
@@ -114,6 +125,8 @@ NODE id=matrix/cody/internal/llmtest.Turn kind=type
   doc=Turn is one scripted assistant turn: either content or tool calls.
 EDGES
   contains=matrix/cody/internal/llmtest.Turn#Calls,matrix/cody/internal/llmtest.Turn#Content
+  references=matrix/cody/internal/llmtest.Call
+  ^references=matrix/cody/internal/llmtest.CallTool,matrix/cody/internal/llmtest.NewServer,matrix/cody/internal/llmtest.Say
   ^defines=matrix/cody/internal/llmtest/llmtest.go
 
 NODE id=matrix/cody/internal/llmtest.Turn#Calls kind=field

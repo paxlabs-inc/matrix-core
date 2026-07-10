@@ -1,28 +1,34 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:9b68327501b45793fd7687f43b30c960fd68ae8aaff6b2f1bb36ec3e2df2de2f
+# GENERATED gen=codegraph do-not-edit merkle=b3:20e53aba2ea11552396417e53b3e04e87dd1bbb7bef3aa554a45bb92cf89e7f2
 
 NODE id=matrix/cortex/journal kind=package
   digest=b3:d57122d513aeb564f14962db68d6aea3ae0c0675ae810359d43353e2ffebe868 file=cortex/journal range=0:0 lang=go exported=true
 EDGES
   contains=matrix/cortex/journal/journal.go
   ^contains=mod:matrix/cortex
+  ^imports=matrix/cortex,matrix/cortex/cmd/cortex-shell,matrix/cortex/query,matrix/cortex/replay,matrix/cortex/store
 
 NODE id=matrix/cortex/journal.AttestOutcome kind=type
   digest=b3:31e1d621311a338044f26fd587d6b7c05c6d0343cd9250a51d1849b45789ebb0 file=cortex/journal/journal.go range=536:539 lang=go exported=true byte_range=26198:26425
   sig=type AttestOutcome uint8
   doc=AttestOutcome enumerates the success/failure semantics carried by an\nAttestPayload. Closed enum (research/04-cortex.md §8.3 only defines\ntwo outcome branches: success and failure-with-reason).
 EDGES
+  ^references=matrix/cortex.AttestOutcome,matrix/cortex/journal.AttestOutcomeFailure,matrix/cortex/journal.AttestOutcomeSuccess,matrix/cortex/journal.AttestPayload
   ^defines=matrix/cortex/journal/journal.go
 
 NODE id=matrix/cortex/journal.AttestOutcomeFailure kind=const
   digest=b3:a435381faaa00bbc429b18d365e5abbda35217fe0c11e5b3e66d63e7eff665e4 file=cortex/journal/journal.go range=543:543 lang=go exported=true byte_range=26476:26514
   sig=journal.AttestOutcome
 EDGES
+  references=matrix/cortex/journal.AttestOutcome
+  ^references=matrix/cortex.AttestOutcomeFailure,matrix/cortex.Cortex.BuildRollup,matrix/cortex/replay.rebuildSalienceFromJournal
   ^defines=matrix/cortex/journal/journal.go
 
 NODE id=matrix/cortex/journal.AttestOutcomeSuccess kind=const
   digest=b3:223917081dfe70e5f82a00adf47825af9d8573c5063953eebcc3ea9e973a25a3 file=cortex/journal/journal.go range=542:542 lang=go exported=true byte_range=26436:26474
   sig=journal.AttestOutcome
 EDGES
+  references=matrix/cortex/journal.AttestOutcome
+  ^references=matrix/cortex.AttestOutcomeSuccess,matrix/cortex.Cortex.BuildRollup,matrix/cortex/replay.rebuildSalienceFromJournal
   ^defines=matrix/cortex/journal/journal.go
 
 NODE id=matrix/cortex/journal.AttestPayload kind=type
@@ -31,6 +37,8 @@ NODE id=matrix/cortex/journal.AttestPayload kind=type
   doc=AttestPayload is the canonical shape carried by KindAttest entries\n(Phase 11.5). Spec: research/04-cortex.md §8.3.\n\nIntentID identifies the intent whose attestation produced this entry\n(matches MCL intent.attest message kind, research/02 §3). CitedIDs are\nthe memory IDs referenced in the plan that this attest covers; the\nAttestPayload acts as the journal-level record of which salience cache\nentries were bumped (success) or decremented (failure-with-reason).\n\nOutcome+Reason determine the salience side-effect at write-and-replay\ntime. We do NOT inline the (post-bump) salience values here — those\nlive in salience/<id>; this payload only carries the inputs so the\nreplay harness can reconstruct the same bumps from the same starting\nstate. Cap on CitedIDs is enforced by the cortex.Attest caller, not\nthe encoder, so this struct can also represent oversized attestations\nfor diagnostic decoding.
 EDGES
   contains=matrix/cortex/journal.AttestPayload#CitedIDs,matrix/cortex/journal.AttestPayload#IntentID,matrix/cortex/journal.AttestPayload#Outcome,matrix/cortex/journal.AttestPayload#Reason,matrix/cortex/journal.AttestPayload#SchemaVersion
+  references=matrix/cortex/journal.AttestOutcome
+  ^references=matrix/cortex.Cortex.Attest,matrix/cortex.Cortex.BuildRollup,matrix/cortex/cmd/cortex-shell.runDumpAttest,matrix/cortex/journal.DecodeAttestPayload,matrix/cortex/journal.EncodeAttestPayload,matrix/cortex/replay.rebuildSalienceFromJournal
   ^defines=matrix/cortex/journal/journal.go
 
 NODE id=matrix/cortex/journal.AttestPayload#CitedIDs kind=field
@@ -68,6 +76,7 @@ NODE id=matrix/cortex/journal.AttestReasonFactualError kind=const
   sig=untyped string
   doc=AttestReason* are the closed set of failure reasons that, per\nresearch/04-cortex.md §8.3, trigger decrement of cite_in_successful_plans\non the cited memories. Any other reason (or empty) on a failure attest\nleaves Citations unchanged — the attest is logged for audit but no\nsalience-side decrement fires.
 EDGES
+  ^references=matrix/cortex.AttestReasonFactualError,matrix/cortex/replay.rebuildSalienceFromJournal
   ^defines=matrix/cortex/journal/journal.go
 
 NODE id=matrix/cortex/journal.AttestReasonWrongAssumption kind=const
@@ -75,6 +84,7 @@ NODE id=matrix/cortex/journal.AttestReasonWrongAssumption kind=const
   sig=untyped string
   doc=AttestReason* are the closed set of failure reasons that, per\nresearch/04-cortex.md §8.3, trigger decrement of cite_in_successful_plans\non the cited memories. Any other reason (or empty) on a failure attest\nleaves Citations unchanged — the attest is logged for audit but no\nsalience-side decrement fires.
 EDGES
+  ^references=matrix/cortex.AttestReasonWrongAssumption,matrix/cortex/replay.rebuildSalienceFromJournal
   ^defines=matrix/cortex/journal/journal.go
 
 NODE id=matrix/cortex/journal.CompactPayload kind=type
@@ -83,6 +93,7 @@ NODE id=matrix/cortex/journal.CompactPayload kind=type
   doc=CompactPayload is the canonical shape carried by KindCompact entries\n(Phase 9). Spec: research/03-retrieval-patterns.md §5.1 step 3 + §5.3.\n\nIntentID + StepID together form the checkpoint identity (Pebble key\nchk/<intent>/<step>; filesystem mirror at journal/thoughts/<intent>/\n<step>.snapshot per Andrew lock A1). KeptCount + CompactedCount are\naudit denormalizations so a journal scan can summarize compactions\nwithout a Pebble Get on chk/. CheckpointHash is sha256 over the\ncanonical CBOR encoding of the CheckpointRecord stored at chk/; same\nintegrity discipline as EmbedPayload.VectorHash (the payload doesn't\ninline heavy data, but pins it cryptographically).\n\nBudgetTokens preserves the §5.3 budget_tokens parameter so replay /\naudit can verify the compaction was bounded at the value the caller\nasked for (caller can't claim "I asked for 8000" after the fact).
 EDGES
   contains=matrix/cortex/journal.CompactPayload#BudgetTokens,matrix/cortex/journal.CompactPayload#CheckpointHash,matrix/cortex/journal.CompactPayload#CompactedCount,matrix/cortex/journal.CompactPayload#IntentID,matrix/cortex/journal.CompactPayload#KeptCount,matrix/cortex/journal.CompactPayload#SchemaVersion,matrix/cortex/journal.CompactPayload#StepID
+  ^references=matrix/cortex.Cortex.Compact,matrix/cortex/journal.DecodeCompactPayload,matrix/cortex/journal.EncodeCompactPayload
   ^defines=matrix/cortex/journal/journal.go
 
 NODE id=matrix/cortex/journal.CompactPayload#BudgetTokens kind=field
@@ -132,6 +143,9 @@ NODE id=matrix/cortex/journal.Decode kind=func
   sig=func Decode(b []byte, out *Entry) error
   doc=Decode parses canonical CBOR into out.
 EDGES
+  references=matrix/cortex/journal.Entry,matrix/cortex/journal.b,matrix/cortex/journal.canonicalDec,matrix/cortex/journal.out
+  ^calls=matrix/cortex.readJournalEntry,matrix/cortex/cmd/cortex-shell.runDumpAttest,matrix/cortex/replay.rebuildSalienceFromJournal,matrix/cortex/store.Store.IterJournal
+  ^references=matrix/cortex.readJournalEntry,matrix/cortex/cmd/cortex-shell.runDumpAttest,matrix/cortex/replay.rebuildSalienceFromJournal,matrix/cortex/store.Store.IterJournal
   ^defines=matrix/cortex/journal/journal.go
 
 NODE id=matrix/cortex/journal.DecodeAttestPayload kind=func
@@ -139,6 +153,9 @@ NODE id=matrix/cortex/journal.DecodeAttestPayload kind=func
   sig=func DecodeAttestPayload(b []byte, out *AttestPayload) error
   doc=DecodeAttestPayload parses canonical CBOR into out.
 EDGES
+  references=matrix/cortex/journal.AttestPayload,matrix/cortex/journal.b,matrix/cortex/journal.canonicalDec,matrix/cortex/journal.out
+  ^calls=matrix/cortex/cmd/cortex-shell.runDumpAttest,matrix/cortex/replay.rebuildSalienceFromJournal
+  ^references=matrix/cortex.Cortex.BuildRollup,matrix/cortex/cmd/cortex-shell.runDumpAttest,matrix/cortex/replay.rebuildSalienceFromJournal
   ^defines=matrix/cortex/journal/journal.go
 
 NODE id=matrix/cortex/journal.DecodeCompactPayload kind=func
@@ -146,6 +163,7 @@ NODE id=matrix/cortex/journal.DecodeCompactPayload kind=func
   sig=func DecodeCompactPayload(b []byte, out *CompactPayload) error
   doc=DecodeCompactPayload parses canonical CBOR into out.
 EDGES
+  references=matrix/cortex/journal.CompactPayload,matrix/cortex/journal.b,matrix/cortex/journal.canonicalDec,matrix/cortex/journal.out
   ^defines=matrix/cortex/journal/journal.go
 
 NODE id=matrix/cortex/journal.DecodeEdgePayload kind=func
@@ -153,6 +171,7 @@ NODE id=matrix/cortex/journal.DecodeEdgePayload kind=func
   sig=func DecodeEdgePayload(b []byte, out *EdgePayload) error
   doc=DecodeEdgePayload parses canonical CBOR into out.
 EDGES
+  references=matrix/cortex/journal.EdgePayload,matrix/cortex/journal.b,matrix/cortex/journal.canonicalDec,matrix/cortex/journal.out
   ^defines=matrix/cortex/journal/journal.go
 
 NODE id=matrix/cortex/journal.DecodeEmbedPayload kind=func
@@ -160,6 +179,7 @@ NODE id=matrix/cortex/journal.DecodeEmbedPayload kind=func
   sig=func DecodeEmbedPayload(b []byte, out *EmbedPayload) error
   doc=DecodeEmbedPayload parses canonical CBOR into out.
 EDGES
+  references=matrix/cortex/journal.EmbedPayload,matrix/cortex/journal.b,matrix/cortex/journal.canonicalDec,matrix/cortex/journal.out
   ^defines=matrix/cortex/journal/journal.go
 
 NODE id=matrix/cortex/journal.DecodeEnrichPayload kind=func
@@ -167,6 +187,7 @@ NODE id=matrix/cortex/journal.DecodeEnrichPayload kind=func
   sig=func DecodeEnrichPayload(b []byte, out *EnrichPayload) error
   doc=DecodeEnrichPayload parses canonical CBOR into out.
 EDGES
+  references=matrix/cortex/journal.EnrichPayload,matrix/cortex/journal.b,matrix/cortex/journal.canonicalDec,matrix/cortex/journal.out
   ^defines=matrix/cortex/journal/journal.go
 
 NODE id=matrix/cortex/journal.DecodeLateBindingPayload kind=func
@@ -174,6 +195,9 @@ NODE id=matrix/cortex/journal.DecodeLateBindingPayload kind=func
   sig=func DecodeLateBindingPayload(b []byte, out *LateBindingPayload) error
   doc=DecodeLateBindingPayload parses canonical CBOR into out.
 EDGES
+  references=matrix/cortex/journal.LateBindingPayload,matrix/cortex/journal.b,matrix/cortex/journal.canonicalDec,matrix/cortex/journal.out
+  ^calls=matrix/cortex/replay.rebuildSalienceFromJournal
+  ^references=matrix/cortex/replay.rebuildSalienceFromJournal
   ^defines=matrix/cortex/journal/journal.go
 
 NODE id=matrix/cortex/journal.DecodeLearnWeightsPayload kind=func
@@ -181,6 +205,9 @@ NODE id=matrix/cortex/journal.DecodeLearnWeightsPayload kind=func
   sig=func DecodeLearnWeightsPayload(b []byte, out *LearnWeightsPayload) error
   doc=DecodeLearnWeightsPayload parses canonical CBOR into out.
 EDGES
+  references=matrix/cortex/journal.LearnWeightsPayload,matrix/cortex/journal.b,matrix/cortex/journal.canonicalDec,matrix/cortex/journal.out
+  ^calls=matrix/cortex/replay.rebuildSalienceFromJournal
+  ^references=matrix/cortex/replay.rebuildSalienceFromJournal
   ^defines=matrix/cortex/journal/journal.go
 
 NODE id=matrix/cortex/journal.DecodeRollupPayload kind=func
@@ -188,6 +215,7 @@ NODE id=matrix/cortex/journal.DecodeRollupPayload kind=func
   sig=func DecodeRollupPayload(b []byte, out *RollupPayload) error
   doc=DecodeRollupPayload parses canonical CBOR into out.
 EDGES
+  references=matrix/cortex/journal.RollupPayload,matrix/cortex/journal.b,matrix/cortex/journal.canonicalDec,matrix/cortex/journal.out
   ^defines=matrix/cortex/journal/journal.go
 
 NODE id=matrix/cortex/journal.DecodeScopeViolationPayload kind=func
@@ -195,6 +223,7 @@ NODE id=matrix/cortex/journal.DecodeScopeViolationPayload kind=func
   sig=func DecodeScopeViolationPayload(b []byte, out *ScopeViolationPayload) error
   doc=DecodeScopeViolationPayload parses canonical CBOR into out.
 EDGES
+  references=matrix/cortex/journal.ScopeViolationPayload,matrix/cortex/journal.b,matrix/cortex/journal.canonicalDec,matrix/cortex/journal.out
   ^defines=matrix/cortex/journal/journal.go
 
 NODE id=matrix/cortex/journal.DecodeSessionPayload kind=func
@@ -202,6 +231,7 @@ NODE id=matrix/cortex/journal.DecodeSessionPayload kind=func
   sig=func DecodeSessionPayload(b []byte, out *SessionPayload) error
   doc=DecodeSessionPayload parses canonical CBOR into out.
 EDGES
+  references=matrix/cortex/journal.SessionPayload,matrix/cortex/journal.b,matrix/cortex/journal.canonicalDec,matrix/cortex/journal.out
   ^defines=matrix/cortex/journal/journal.go
 
 NODE id=matrix/cortex/journal.DecodeStorySoFarPayload kind=func
@@ -209,6 +239,7 @@ NODE id=matrix/cortex/journal.DecodeStorySoFarPayload kind=func
   sig=func DecodeStorySoFarPayload(b []byte, out *StorySoFarPayload) error
   doc=DecodeStorySoFarPayload parses canonical CBOR into out.
 EDGES
+  references=matrix/cortex/journal.StorySoFarPayload,matrix/cortex/journal.b,matrix/cortex/journal.canonicalDec,matrix/cortex/journal.out
   ^defines=matrix/cortex/journal/journal.go
 
 NODE id=matrix/cortex/journal.DecodeUpdateHeadPayload kind=func
@@ -216,6 +247,7 @@ NODE id=matrix/cortex/journal.DecodeUpdateHeadPayload kind=func
   sig=func DecodeUpdateHeadPayload(b []byte, out *UpdateHeadPayload) error
   doc=DecodeUpdateHeadPayload parses canonical CBOR into out.
 EDGES
+  references=matrix/cortex/journal.UpdateHeadPayload,matrix/cortex/journal.b,matrix/cortex/journal.canonicalDec,matrix/cortex/journal.out
   ^defines=matrix/cortex/journal/journal.go
 
 NODE id=matrix/cortex/journal.DecodeWritePayload kind=func
@@ -223,6 +255,9 @@ NODE id=matrix/cortex/journal.DecodeWritePayload kind=func
   sig=func DecodeWritePayload(b []byte, out *WritePayload) error
   doc=DecodeWritePayload parses canonical CBOR into out.
 EDGES
+  references=matrix/cortex/journal.WritePayload,matrix/cortex/journal.b,matrix/cortex/journal.canonicalDec,matrix/cortex/journal.out
+  ^calls=matrix/cortex.embedderState.processWriteEntry
+  ^references=matrix/cortex.Cortex.BuildRollup,matrix/cortex.embedderState.processWriteEntry
   ^defines=matrix/cortex/journal/journal.go
 
 NODE id=matrix/cortex/journal.EdgePayload kind=type
@@ -231,6 +266,7 @@ NODE id=matrix/cortex/journal.EdgePayload kind=type
   doc=EdgePayload is the canonical shape carried by KindAddEdge and\nKindRemoveEdge entries (Phase 6). The full EdgeRecord lives in the\nstore at e/from/<src>/<t>/<dst> and e/to/<dst>/<t>/<src>; this payload\ncarries enough to replay the mutation deterministically and to audit\n"who edged what to what when" without a Pebble Get on the full record.\n\nTombstoned distinguishes KindAddEdge (false) from KindRemoveEdge (true)\nat decode time so a reader inspecting only payloads doesn't have to\nalso inspect Entry.Kind. Reason/By are populated on RemoveEdge only.
 EDGES
   contains=matrix/cortex/journal.EdgePayload#By,matrix/cortex/journal.EdgePayload#Dst,matrix/cortex/journal.EdgePayload#Reason,matrix/cortex/journal.EdgePayload#SchemaVersion,matrix/cortex/journal.EdgePayload#Src,matrix/cortex/journal.EdgePayload#Tombstoned,matrix/cortex/journal.EdgePayload#Type,matrix/cortex/journal.EdgePayload#Weight
+  ^references=matrix/cortex.Cortex.AddEdge,matrix/cortex.Cortex.RemoveEdge,matrix/cortex/journal.DecodeEdgePayload,matrix/cortex/journal.EncodeEdgePayload
   ^defines=matrix/cortex/journal/journal.go
 
 NODE id=matrix/cortex/journal.EdgePayload#By kind=field
@@ -287,6 +323,7 @@ NODE id=matrix/cortex/journal.EmbedPayload kind=type
   doc=EmbedPayload is the canonical shape carried by KindEmbed entries. It is\nintentionally small (no full vector) so the journal stays a manageable\nsize at 100k+ embeddings; the vector bytes live in vec/meta/<id> and the\n32-byte VectorHash here is the integrity check used by the replay harness\n(Phase 11) to detect drift between recomputed and persisted vectors.
 EDGES
   contains=matrix/cortex/journal.EmbedPayload#Dim,matrix/cortex/journal.EmbedPayload#ID,matrix/cortex/journal.EmbedPayload#Model,matrix/cortex/journal.EmbedPayload#SchemaVersion,matrix/cortex/journal.EmbedPayload#SourceVersion,matrix/cortex/journal.EmbedPayload#VectorHash,matrix/cortex/journal.EmbedPayload#VertexID
+  ^references=matrix/cortex.embedderState.processWriteEntry,matrix/cortex/journal.DecodeEmbedPayload,matrix/cortex/journal.EncodeEmbedPayload
   ^defines=matrix/cortex/journal/journal.go
 
 NODE id=matrix/cortex/journal.EmbedPayload#Dim kind=field
@@ -336,6 +373,9 @@ NODE id=matrix/cortex/journal.EncodeAttestPayload kind=func
   sig=func EncodeAttestPayload(p *AttestPayload) ([]byte, error)
   doc=EncodeAttestPayload returns canonical deterministic CBOR for p.
 EDGES
+  references=matrix/cortex/journal.AttestPayload,matrix/cortex/journal.canonicalEnc,matrix/cortex/journal.p
+  ^calls=matrix/cortex.Cortex.Attest
+  ^references=matrix/cortex.Cortex.Attest
   ^defines=matrix/cortex/journal/journal.go
 
 NODE id=matrix/cortex/journal.EncodeCompactPayload kind=func
@@ -343,6 +383,9 @@ NODE id=matrix/cortex/journal.EncodeCompactPayload kind=func
   sig=func EncodeCompactPayload(p *CompactPayload) ([]byte, error)
   doc=EncodeCompactPayload returns canonical deterministic CBOR for p.
 EDGES
+  references=matrix/cortex/journal.CompactPayload,matrix/cortex/journal.canonicalEnc,matrix/cortex/journal.p
+  ^calls=matrix/cortex.Cortex.Compact
+  ^references=matrix/cortex.Cortex.Compact
   ^defines=matrix/cortex/journal/journal.go
 
 NODE id=matrix/cortex/journal.EncodeEdgePayload kind=func
@@ -350,6 +393,9 @@ NODE id=matrix/cortex/journal.EncodeEdgePayload kind=func
   sig=func EncodeEdgePayload(p *EdgePayload) ([]byte, error)
   doc=EncodeEdgePayload returns canonical deterministic CBOR for p.
 EDGES
+  references=matrix/cortex/journal.EdgePayload,matrix/cortex/journal.canonicalEnc,matrix/cortex/journal.p
+  ^calls=matrix/cortex.Cortex.AddEdge,matrix/cortex.Cortex.RemoveEdge
+  ^references=matrix/cortex.Cortex.AddEdge,matrix/cortex.Cortex.RemoveEdge
   ^defines=matrix/cortex/journal/journal.go
 
 NODE id=matrix/cortex/journal.EncodeEmbedPayload kind=func
@@ -357,6 +403,9 @@ NODE id=matrix/cortex/journal.EncodeEmbedPayload kind=func
   sig=func EncodeEmbedPayload(p *EmbedPayload) ([]byte, error)
   doc=EncodeEmbedPayload returns canonical deterministic CBOR for p.
 EDGES
+  references=matrix/cortex/journal.EmbedPayload,matrix/cortex/journal.canonicalEnc,matrix/cortex/journal.p
+  ^calls=matrix/cortex.embedderState.processWriteEntry
+  ^references=matrix/cortex.embedderState.processWriteEntry
   ^defines=matrix/cortex/journal/journal.go
 
 NODE id=matrix/cortex/journal.EncodeEnrichPayload kind=func
@@ -364,6 +413,9 @@ NODE id=matrix/cortex/journal.EncodeEnrichPayload kind=func
   sig=func EncodeEnrichPayload(p *EnrichPayload) ([]byte, error)
   doc=EncodeEnrichPayload returns canonical deterministic CBOR for p.
 EDGES
+  references=matrix/cortex/journal.EnrichPayload,matrix/cortex/journal.canonicalEnc,matrix/cortex/journal.p
+  ^calls=matrix/cortex.Cortex.EnrichRollup
+  ^references=matrix/cortex.Cortex.EnrichRollup
   ^defines=matrix/cortex/journal/journal.go
 
 NODE id=matrix/cortex/journal.EncodeLateBindingPayload kind=func
@@ -371,6 +423,9 @@ NODE id=matrix/cortex/journal.EncodeLateBindingPayload kind=func
   sig=func EncodeLateBindingPayload(p *LateBindingPayload) ([]byte, error)
   doc=EncodeLateBindingPayload returns canonical deterministic CBOR for p.
 EDGES
+  references=matrix/cortex/journal.LateBindingPayload,matrix/cortex/journal.canonicalEnc,matrix/cortex/journal.p
+  ^calls=matrix/cortex/query.journalLateBinding
+  ^references=matrix/cortex/query.journalLateBinding
   ^defines=matrix/cortex/journal/journal.go
 
 NODE id=matrix/cortex/journal.EncodeLearnWeightsPayload kind=func
@@ -378,6 +433,9 @@ NODE id=matrix/cortex/journal.EncodeLearnWeightsPayload kind=func
   sig=func EncodeLearnWeightsPayload(p *LearnWeightsPayload) ([]byte, error)
   doc=EncodeLearnWeightsPayload returns canonical deterministic CBOR for p.
 EDGES
+  references=matrix/cortex/journal.LearnWeightsPayload,matrix/cortex/journal.canonicalEnc,matrix/cortex/journal.p
+  ^calls=matrix/cortex.Cortex.Attest
+  ^references=matrix/cortex.Cortex.Attest
   ^defines=matrix/cortex/journal/journal.go
 
 NODE id=matrix/cortex/journal.EncodeRollupPayload kind=func
@@ -385,6 +443,9 @@ NODE id=matrix/cortex/journal.EncodeRollupPayload kind=func
   sig=func EncodeRollupPayload(p *RollupPayload) ([]byte, error)
   doc=EncodeRollupPayload returns canonical deterministic CBOR for p.
 EDGES
+  references=matrix/cortex/journal.RollupPayload,matrix/cortex/journal.canonicalEnc,matrix/cortex/journal.p
+  ^calls=matrix/cortex.Cortex.BuildRollup,matrix/cortex.Cortex.buildCoarseRollup
+  ^references=matrix/cortex.Cortex.BuildRollup,matrix/cortex.Cortex.buildCoarseRollup
   ^defines=matrix/cortex/journal/journal.go
 
 NODE id=matrix/cortex/journal.EncodeScopeViolationPayload kind=func
@@ -392,6 +453,9 @@ NODE id=matrix/cortex/journal.EncodeScopeViolationPayload kind=func
   sig=func EncodeScopeViolationPayload(p *ScopeViolationPayload) ([]byte, error)
   doc=EncodeScopeViolationPayload returns canonical deterministic CBOR for p.
 EDGES
+  references=matrix/cortex/journal.ScopeViolationPayload,matrix/cortex/journal.canonicalEnc,matrix/cortex/journal.p
+  ^calls=matrix/cortex.Cortex.logScopeViolation
+  ^references=matrix/cortex.Cortex.logScopeViolation
   ^defines=matrix/cortex/journal/journal.go
 
 NODE id=matrix/cortex/journal.EncodeSessionPayload kind=func
@@ -399,6 +463,9 @@ NODE id=matrix/cortex/journal.EncodeSessionPayload kind=func
   sig=func EncodeSessionPayload(p *SessionPayload) ([]byte, error)
   doc=EncodeSessionPayload returns canonical deterministic CBOR for p.
 EDGES
+  references=matrix/cortex/journal.SessionPayload,matrix/cortex/journal.canonicalEnc,matrix/cortex/journal.p
+  ^calls=matrix/cortex.Cortex.AppendMessage
+  ^references=matrix/cortex.Cortex.AppendMessage
   ^defines=matrix/cortex/journal/journal.go
 
 NODE id=matrix/cortex/journal.EncodeStorySoFarPayload kind=func
@@ -406,6 +473,9 @@ NODE id=matrix/cortex/journal.EncodeStorySoFarPayload kind=func
   sig=func EncodeStorySoFarPayload(p *StorySoFarPayload) ([]byte, error)
   doc=EncodeStorySoFarPayload returns canonical deterministic CBOR for p.
 EDGES
+  references=matrix/cortex/journal.StorySoFarPayload,matrix/cortex/journal.canonicalEnc,matrix/cortex/journal.p
+  ^calls=matrix/cortex.Cortex.BuildStorySoFar
+  ^references=matrix/cortex.Cortex.BuildStorySoFar
   ^defines=matrix/cortex/journal/journal.go
 
 NODE id=matrix/cortex/journal.EncodeUpdateHeadPayload kind=func
@@ -413,6 +483,9 @@ NODE id=matrix/cortex/journal.EncodeUpdateHeadPayload kind=func
   sig=func EncodeUpdateHeadPayload(p *UpdateHeadPayload) ([]byte, error)
   doc=EncodeUpdateHeadPayload returns canonical deterministic CBOR for p.
 EDGES
+  references=matrix/cortex/journal.UpdateHeadPayload,matrix/cortex/journal.canonicalEnc,matrix/cortex/journal.p
+  ^calls=matrix/cortex.Cortex.UpdateHead
+  ^references=matrix/cortex.Cortex.UpdateHead
   ^defines=matrix/cortex/journal/journal.go
 
 NODE id=matrix/cortex/journal.EncodeWritePayload kind=func
@@ -420,6 +493,9 @@ NODE id=matrix/cortex/journal.EncodeWritePayload kind=func
   sig=func EncodeWritePayload(p *WritePayload) ([]byte, error)
   doc=EncodeWritePayload returns canonical deterministic CBOR for p.
 EDGES
+  references=matrix/cortex/journal.WritePayload,matrix/cortex/journal.canonicalEnc,matrix/cortex/journal.p
+  ^calls=matrix/cortex.Cortex.CloseValidity,matrix/cortex.Cortex.Update,matrix/cortex.Cortex.Write
+  ^references=matrix/cortex.Cortex.CloseValidity,matrix/cortex.Cortex.Update,matrix/cortex.Cortex.Write
   ^defines=matrix/cortex/journal/journal.go
 
 NODE id=matrix/cortex/journal.EnrichPayload kind=type
@@ -428,6 +504,7 @@ NODE id=matrix/cortex/journal.EnrichPayload kind=type
   doc=EnrichPayload is the canonical shape carried by KindRollupEnrich entries\n(continuous-memory task 2.3). Mirrors RollupPayload discipline: the payload\ncarries only the window identity, the source + self cryptographic pins, and\nthe model tag — never the heavy prose.\n\nTier + Start together form the record identity (Pebble key enr/<tier><start>,\nparallel to roll/<tier><start>). SourceRecordHash is the RecordHash of the\nRollupRecord the enrichment was derived from, so staleness is detectable: a\nreader that recomputes the current rollup's RecordHash can tell the\nenrichment is stale (and MUST fall back to the deterministic short-form)\nwhen the hashes diverge. RecordHash is sha256 over the canonical CBOR\nencoding of the EnrichRecord stored at enr/ — the same integrity discipline\nas RollupPayload.RecordHash. Model records which LLM produced the prose.
 EDGES
   contains=matrix/cortex/journal.EnrichPayload#Model,matrix/cortex/journal.EnrichPayload#RecordHash,matrix/cortex/journal.EnrichPayload#SchemaVersion,matrix/cortex/journal.EnrichPayload#SourceRecordHash,matrix/cortex/journal.EnrichPayload#Start,matrix/cortex/journal.EnrichPayload#Tier
+  ^references=matrix/cortex.Cortex.EnrichRollup,matrix/cortex/journal.DecodeEnrichPayload,matrix/cortex/journal.EncodeEnrichPayload
   ^defines=matrix/cortex/journal/journal.go
 
 NODE id=matrix/cortex/journal.EnrichPayload#Model kind=field
@@ -472,6 +549,8 @@ NODE id=matrix/cortex/journal.Entry kind=type
   doc=Entry is one record in the per-actor append-only log.\n\nField order in the CBOR map is fixed by the cbor library's canonical mode\n(keys sorted lexicographically by their encoded form). Struct tags use\nshort keys to keep entries compact.
 EDGES
   contains=matrix/cortex/journal.Entry#CreatedAt,matrix/cortex/journal.Entry#CreatedBy,matrix/cortex/journal.Entry#Kind,matrix/cortex/journal.Entry#Payload,matrix/cortex/journal.Entry#Seq,matrix/cortex/journal.Entry.Encode
+  references=matrix/cortex/journal.Kind
+  ^references=matrix/cortex.Cortex.AddEdge,matrix/cortex.Cortex.AppendMessage,matrix/cortex.Cortex.Attest,matrix/cortex.Cortex.BuildRollup,matrix/cortex.Cortex.BuildStorySoFar,matrix/cortex.Cortex.CloseValidity,matrix/cortex.Cortex.Compact,matrix/cortex.Cortex.EnrichRollup,matrix/cortex.Cortex.RemoveEdge,matrix/cortex.Cortex.Tombstone,matrix/cortex.Cortex.Update,matrix/cortex.Cortex.UpdateHead,matrix/cortex.Cortex.Write,matrix/cortex.Cortex.buildCoarseRollup,matrix/cortex.Cortex.cascadeHours,matrix/cortex.Cortex.logScopeViolation,matrix/cortex.embedderState.processTombstoneEntry,matrix/cortex.embedderState.processWriteEntry,matrix/cortex.readJournalEntry,matrix/cortex/cmd/cortex-shell.main,matrix/cortex/cmd/cortex-shell.runDumpAttest,matrix/cortex/journal.Decode,matrix/cortex/journal.Entry.Encode,matrix/cortex/query.journalLateBinding,matrix/cortex/replay.rebuildSalienceFromJournal,matrix/cortex/store.Store.AppendJournal,matrix/cortex/store.Store.IterJournal,matrix/cortex/store.WriteBatch.AppendJournal
   ^defines=matrix/cortex/journal/journal.go
 
 NODE id=matrix/cortex/journal.Entry#CreatedAt kind=field
@@ -509,7 +588,10 @@ NODE id=matrix/cortex/journal.Entry.Encode kind=method
   sig=func (e *Entry) Encode() ([]byte, error)
   doc=Encode returns the canonical deterministic CBOR encoding of e.
 EDGES
+  references=matrix/cortex/journal.Entry,matrix/cortex/journal.canonicalEnc,matrix/cortex/journal.e
   ^contains=matrix/cortex/journal.Entry
+  ^calls=matrix/cortex/store.Store.AppendJournal,matrix/cortex/store.WriteBatch.AppendJournal
+  ^references=matrix/cortex/store.Store.AppendJournal,matrix/cortex/store.WriteBatch.AppendJournal
   ^defines=matrix/cortex/journal/journal.go
 
 NODE id=matrix/cortex/journal.Kind kind=type
@@ -517,12 +599,15 @@ NODE id=matrix/cortex/journal.Kind kind=type
   sig=type Kind string
   doc=Kind enumerates the journal operation types. Phase 1 only emits KindRaw;\nlater phases will populate the rest. Kept as strings (not enums) so the\njournal stays self-describing under cbor diagnostics.
 EDGES
+  ^references=matrix/cortex/cmd/cortex-shell.main,matrix/cortex/journal.Entry,matrix/cortex/journal.KindAddEdge,matrix/cortex/journal.KindAttest,matrix/cortex/journal.KindCompact,matrix/cortex/journal.KindEmbed,matrix/cortex/journal.KindFind,matrix/cortex/journal.KindGC,matrix/cortex/journal.KindLearnWeights,matrix/cortex/journal.KindMigration,matrix/cortex/journal.KindRaw,matrix/cortex/journal.KindRemoveEdge,matrix/cortex/journal.KindRollup,matrix/cortex/journal.KindRollupEnrich,matrix/cortex/journal.KindScopeViolation,matrix/cortex/journal.KindSession,matrix/cortex/journal.KindStorySoFar,matrix/cortex/journal.KindTombstone,matrix/cortex/journal.KindUpdate,matrix/cortex/journal.KindUpdateHead,matrix/cortex/journal.KindWrite
   ^defines=matrix/cortex/journal/journal.go
 
 NODE id=matrix/cortex/journal.KindAddEdge kind=const
   digest=b3:c095d0739a12cb2e687bb0b12c475f6ec1d413f3b2cfdac240367f7336c062a2 file=cortex/journal/journal.go range=42:42 lang=go exported=true byte_range=1816:1848
   sig=journal.Kind
 EDGES
+  references=matrix/cortex/journal.Kind
+  ^references=matrix/cortex.Cortex.AddEdge
   ^defines=matrix/cortex/journal/journal.go
 
 NODE id=matrix/cortex/journal.KindAttest kind=const
@@ -530,6 +615,8 @@ NODE id=matrix/cortex/journal.KindAttest kind=const
   sig=journal.Kind
   doc=KindAttest is appended by cortex.Attest (Phase 11.5) when an\nagent runtime calls back to record the outcome of an executed\nintent. Spec: research/04-cortex.md §8.3 ("Two updates fire on\n`intent.attest`"). The payload is a canonical CBOR AttestPayload\n(see below); it carries the affected memory IDs so the replay\nharness can re-apply salience.Citations bumps deterministically.\nCitations and AccessCount on cited memories are mutated in the\nsame atomic batch as this journal entry. This is the cortex-\nside primitive that the MCL `intent.attest` message kind (see\nresearch/02-protocol.md §3 — kind 12 of 15) hands off to.
 EDGES
+  references=matrix/cortex/journal.Kind
+  ^references=matrix/cortex.Cortex.Attest,matrix/cortex.Cortex.BuildRollup,matrix/cortex/cmd/cortex-shell.runDumpAttest,matrix/cortex/replay.rebuildSalienceFromJournal
   ^defines=matrix/cortex/journal/journal.go
 
 NODE id=matrix/cortex/journal.KindCompact kind=const
@@ -537,6 +624,8 @@ NODE id=matrix/cortex/journal.KindCompact kind=const
   sig=journal.Kind
   doc=KindCompact is appended by cortex.Compact (Phase 9) when it persists\na checkpoint record. Spec: research/03-retrieval-patterns.md §5.1\nstep 3 ("Emit a journal checkpoint") + §5.3 (the cortex.compact\nprimitive). The payload is a canonical CBOR CompactPayload (see\nbelow); the full CheckpointRecord lives at chk/<intent>/<step>\nand is integrity-bound to this entry via CheckpointHash. Same\nshape rationale as KindEmbed: payload stays small (no full URI\nlist or compacted-stub vector), the heavy data lives at its own\ncontent-addressable key, replay re-derives the heavy data from\nthe journal entry + cortex state at this seq.
 EDGES
+  references=matrix/cortex/journal.Kind
+  ^references=matrix/cortex.Cortex.Compact
   ^defines=matrix/cortex/journal/journal.go
 
 NODE id=matrix/cortex/journal.KindEmbed kind=const
@@ -544,6 +633,8 @@ NODE id=matrix/cortex/journal.KindEmbed kind=const
   sig=journal.Kind
   doc=KindEmbed is appended by the async embedding worker (Phase 5) when it\npersists a freshly computed vector to vec/meta/<id> and updates the\ncorresponding MemoryHead.EmbeddingRef. The payload is a canonical\nCBOR EmbedPayload (see below). Logged so the replay invariant covers\nvec/meta: re-running the journal reproduces every embedding write\nwithout re-embedding from scratch (the vector bytes live in the\nvec/meta value rather than the journal payload to keep payloads\ncompact; replay re-embeds with the same deterministic Embedder).
 EDGES
+  references=matrix/cortex/journal.Kind
+  ^references=matrix/cortex.embedderState.processWriteEntry
   ^defines=matrix/cortex/journal/journal.go
 
 NODE id=matrix/cortex/journal.KindFind kind=const
@@ -551,12 +642,15 @@ NODE id=matrix/cortex/journal.KindFind kind=const
   sig=journal.Kind
   doc=KindFind is appended ONLY when a Find call is flagged late_binding=true\n(i.e. issued mid-execution rather than at compile time). Compile-time\nFinds are not journaled; this is an audit hook for D13 anti-pattern\ndetection (research/04-cortex.md §12.3).
 EDGES
+  references=matrix/cortex/journal.Kind
+  ^references=matrix/cortex/query.journalLateBinding,matrix/cortex/replay.rebuildSalienceFromJournal
   ^defines=matrix/cortex/journal/journal.go
 
 NODE id=matrix/cortex/journal.KindGC kind=const
   digest=b3:29a217b6f2050658b86ede18ed1c491d2451a0ca24e89b1dc374c9232ec9eef9 file=cortex/journal/journal.go range=44:44 lang=go exported=true byte_range=1949:1975
   sig=journal.Kind
 EDGES
+  references=matrix/cortex/journal.Kind
   ^defines=matrix/cortex/journal/journal.go
 
 NODE id=matrix/cortex/journal.KindLearnWeights kind=const
@@ -564,24 +658,30 @@ NODE id=matrix/cortex/journal.KindLearnWeights kind=const
   sig=journal.Kind
   doc=KindLearnWeights is appended by cortex.Attest (Phase 12) immediately\nafter the matching KindAttest entry. It records one EMA step on the\nper-actor salience weights (research/04-cortex.md §8.3 "EMA-update\nthe actor's weights toward / away from the high-performing\nweighting"). Payload is a canonical CBOR LearnWeightsPayload (see\nbelow) carrying both PrevW* and NewW* so the entry is\nself-validating: a replay can reconstruct the same NewW* from the\nSourceSeq's KindAttest entry + the salience.Score values at that\nseq, and tampering with the persisted weights would diverge from\nthe journal-of-record.\n\nAtomic with the matching KindAttest: both entries land in one\nstore.BeginWrite batch (KindAttest at seq=N, KindLearnWeights at\nseq=N+1). Replay determinism: rebuildSalienceFromJournal applies\nthe citation bumps from KindAttest first, then the weight update\nfrom KindLearnWeights, in seq order. Phase 7 anchors the journal\nMMR so both entries' leaves participate in OverallRoot.
 EDGES
+  references=matrix/cortex/journal.Kind
+  ^references=matrix/cortex.Cortex.Attest,matrix/cortex/replay.rebuildSalienceFromJournal
   ^defines=matrix/cortex/journal/journal.go
 
 NODE id=matrix/cortex/journal.KindMigration kind=const
   digest=b3:2ff532ae84aac3ede07c7348f95cd8248bb7e37017df7a0869a4ddf6b3633e08 file=cortex/journal/journal.go range=45:45 lang=go exported=true byte_range=2006:2039
   sig=journal.Kind
 EDGES
+  references=matrix/cortex/journal.Kind
   ^defines=matrix/cortex/journal/journal.go
 
 NODE id=matrix/cortex/journal.KindRaw kind=const
   digest=b3:781927525b0d6e80ed0cfdb5044f36e30285e40c6e2f98a7489b79b2275dbe26 file=cortex/journal/journal.go range=38:38 lang=go exported=true byte_range=1531:1558
   sig=journal.Kind
 EDGES
+  references=matrix/cortex/journal.Kind
   ^defines=matrix/cortex/journal/journal.go
 
 NODE id=matrix/cortex/journal.KindRemoveEdge kind=const
   digest=b3:145f501fe355ae1fcf977940f3cf03335a5cd9e7997386a35d99a9b4f2eafbe3 file=cortex/journal/journal.go range=43:43 lang=go exported=true byte_range=1881:1916
   sig=journal.Kind
 EDGES
+  references=matrix/cortex/journal.Kind
+  ^references=matrix/cortex.Cortex.RemoveEdge
   ^defines=matrix/cortex/journal/journal.go
 
 NODE id=matrix/cortex/journal.KindRollup kind=const
@@ -589,6 +689,8 @@ NODE id=matrix/cortex/journal.KindRollup kind=const
   sig=journal.Kind
   doc=KindRollup is appended by cortex.BuildRollup (continuous-memory task\n2.1) when it persists a temporal-ladder rollup record. Rides the SAME\nderived, journaled-but-NOT-anchored lane as KindCompact\n(compact.go:429-431) and KindSession: a journal entry + a derived\nroll/<tier><start> store record, with NO memories/edges SMT write, so\nthe multi-resolution temporal index (hour → day → epoch) is built over\nthe journal WITHOUT perturbing OverallRoot / the D11 replay\nbyte-identity of the anchored world-state.\n\nThe payload is a canonical CBOR RollupPayload (see below); the full\nRollupRecord (time window, member refs, deterministic short-form,\nsalience) lives at roll/<tier><start> and is integrity-bound to this\nentry via RecordHash. Same shape rationale as KindEmbed / KindCompact /\nKindSession: the payload stays small (only the window identity + a\ncryptographic pin), the heavy record lives at its own key, and the\nrecord is a PURE function of the journal facts in the window (so it is\ndeterministic and rebuildable regardless of when BuildRollup runs).
 EDGES
+  references=matrix/cortex/journal.Kind
+  ^references=matrix/cortex.Cortex.BuildRollup,matrix/cortex.Cortex.buildCoarseRollup,matrix/cortex.Cortex.cascadeHours
   ^defines=matrix/cortex/journal/journal.go
 
 NODE id=matrix/cortex/journal.KindRollupEnrich kind=const
@@ -596,6 +698,8 @@ NODE id=matrix/cortex/journal.KindRollupEnrich kind=const
   sig=journal.Kind
   doc=KindRollupEnrich is appended by cortex.EnrichRollup (continuous-memory\ntask 2.3) when it persists an OPTIONAL LLM-enrichment record for a\nrollup window. Rides the SAME derived, journaled-but-NOT-anchored lane\nas KindRollup / KindCompact / KindSession: a journal entry + a derived\nenr/<tier><start> store record, with NO memories/edges SMT write, so the\nenrichment lane perturbs neither OverallRoot's anchored namespaces nor\nthe D11 replay byte-identity of the canonical world-state.\n\nThe enrichment is a SEPARATE derived record parallel to the rollup — the\nstored RollupRecord is NEVER mutated to reference it, so the\ndeterministic rollup floor stays byte-stable and the enrichment can\nNEVER be load-bearing for determinism or replay (req.4.3). The record is\nREBUILDABLE from the deterministic ShortForm and is treated as\nstale/absent whenever its SourceRecordHash diverges from the rollup's\ncurrent RecordHash.\n\nThe payload is a canonical CBOR EnrichPayload (see below); the full\nEnrichRecord (window, source-record hash, prose, model) lives at\nenr/<tier><start> and is integrity-bound to this entry via RecordHash.\nSame shape rationale as KindRollup: the payload stays small (window\nidentity + the source pin + the enrichment's own pin + model), the heavy\nprose lives at its own key.
 EDGES
+  references=matrix/cortex/journal.Kind
+  ^references=matrix/cortex.Cortex.EnrichRollup
   ^defines=matrix/cortex/journal/journal.go
 
 NODE id=matrix/cortex/journal.KindScopeViolation kind=const
@@ -603,6 +707,8 @@ NODE id=matrix/cortex/journal.KindScopeViolation kind=const
   sig=journal.Kind
   doc=KindScopeViolation is appended whenever a sub-agent attempts to\naccess a memory outside its CortexScope, or to write under a\nnon-writable scope. Spec: research/06-agents.md §7.2 ("logged as\na j/ journal event with severity: high; repeated violations\nfrom the same sub-agent trigger automatic dispatch revocation").\nThe payload is a canonical CBOR ScopeViolationPayload (see\nbelow); the violating sub-agent's GrantedTo ref + the offending\nmemory id (or empty for write-no-scope-writable) + the kind of\nviolation are all captured for downstream auto-revocation.
 EDGES
+  references=matrix/cortex/journal.Kind
+  ^references=matrix/cortex.Cortex.logScopeViolation
   ^defines=matrix/cortex/journal/journal.go
 
 NODE id=matrix/cortex/journal.KindSession kind=const
@@ -610,6 +716,8 @@ NODE id=matrix/cortex/journal.KindSession kind=const
   sig=journal.Kind
   doc=KindSession is appended by cortex.AppendMessage (continuous-memory\ntask 1.1) when it persists one durable conversation-transcript\nmessage. Rides the SAME derived, journaled-but-NOT-anchored lane as\nKindCompact (compact.go:429-431): a journal entry + a derived\nsess/<conv>/<seq> store record, with NO memories/edges SMT write, so\ncortex can own the live transcript without perturbing OverallRoot /\nthe D11 replay byte-identity of the anchored world-state.\n\nThe payload is a canonical CBOR SessionPayload (see below); the full\nSessionRecord (role, content, tool call/result, media refs, ts)\nlives at sess/<conv>/<seq> and is integrity-bound to this entry via\nRecordHash. Same shape rationale as KindEmbed / KindCompact: the\npayload stays small (no message content — deliberately, so message\nbodies are never duplicated into the journal), the heavy record\nlives at its own key, and replay re-derives it from the entry +\ncortex state at this seq.
 EDGES
+  references=matrix/cortex/journal.Kind
+  ^references=matrix/cortex.Cortex.AppendMessage
   ^defines=matrix/cortex/journal/journal.go
 
 NODE id=matrix/cortex/journal.KindStorySoFar kind=const
@@ -617,18 +725,24 @@ NODE id=matrix/cortex/journal.KindStorySoFar kind=const
   sig=journal.Kind
   doc=KindStorySoFar is appended by cortex.BuildStorySoFar (continuous-memory\ntask 4.2) when it persists the durable per-conversation "story so far"\nrecord. Rides the SAME derived, journaled-but-NOT-anchored lane as\nKindSession/KindRollup: NO snap.StageMemoryUpdate / StageEdgeUpdate, so\nthis entry contributes only a journal-MMR leaf and never perturbs the\nanchored "memories"/"edges" SMT roots or the D11 replay byte-identity\nof the anchored world-state.\n\nThe payload is a canonical CBOR StorySoFarPayload (see below); the\nfull StorySoFarRecord (role tallies, message count, deterministic\nextractive short-form) lives at story/<conv> and is integrity-bound to\nthis entry via RecordHash. Same shape rationale as KindSession/\nKindRollup: the payload stays small, the heavy record lives at its\nown key, and the record is a PURE function of the conversation's own\nsess/<conv>/* transcript up to UpToSeq (deterministic and rebuildable\nregardless of when BuildStorySoFar runs).
 EDGES
+  references=matrix/cortex/journal.Kind
+  ^references=matrix/cortex.Cortex.BuildStorySoFar
   ^defines=matrix/cortex/journal/journal.go
 
 NODE id=matrix/cortex/journal.KindTombstone kind=const
   digest=b3:5c34d1b0df8e27ae466874d3f6d7d3f18800515c98dc08eb769abcafc038b1e9 file=cortex/journal/journal.go range=41:41 lang=go exported=true byte_range=1749:1782
   sig=journal.Kind
 EDGES
+  references=matrix/cortex/journal.Kind
+  ^references=matrix/cortex.Cortex.Tombstone,matrix/cortex.embedderState.drainPending
   ^defines=matrix/cortex/journal/journal.go
 
 NODE id=matrix/cortex/journal.KindUpdate kind=const
   digest=b3:2927a867a40d79663990e84b2bb0fcce52fbd5d189016fe80226bf195161f1ce file=cortex/journal/journal.go range=40:40 lang=go exported=true byte_range=1671:1701
   sig=journal.Kind
 EDGES
+  references=matrix/cortex/journal.Kind
+  ^references=matrix/cortex.Cortex.BuildRollup,matrix/cortex.Cortex.CloseValidity,matrix/cortex.Cortex.Update,matrix/cortex.embedderState.drainPending
   ^defines=matrix/cortex/journal/journal.go
 
 NODE id=matrix/cortex/journal.KindUpdateHead kind=const
@@ -636,12 +750,16 @@ NODE id=matrix/cortex/journal.KindUpdateHead kind=const
   sig=journal.Kind
   doc=KindUpdateHead is appended by cortex.UpdateHead (Phase 10) when it\nrewrites mutable Head fields (Tags, Frames, DeclaredImportance,\nVisibility) on an existing memory WITHOUT bumping mv/<id>/v/n\n(Phase 10 Q5 lock: Version is Data-versioned per research/04\n§6.1; Head-only mutations don't create a new Data version).\nThe payload is a canonical CBOR UpdateHeadPayload (see below);\nit carries the field diff (before+after for each mutated field)\nso replay walks j/ forward, applies UpdateHeadPayload deltas to\nthe in-memory Head, and recomputes idx/tag + idx/frame +\nidx/actor_obj keys deterministically.
 EDGES
+  references=matrix/cortex/journal.Kind
+  ^references=matrix/cortex.Cortex.UpdateHead
   ^defines=matrix/cortex/journal/journal.go
 
 NODE id=matrix/cortex/journal.KindWrite kind=const
   digest=b3:ac015f69457c156c72061bed8b613db3e5fdcb2841dceae33374b182bbba894e file=cortex/journal/journal.go range=39:39 lang=go exported=true byte_range=1608:1637
   sig=journal.Kind
 EDGES
+  references=matrix/cortex/journal.Kind
+  ^references=matrix/cortex.Cortex.BuildRollup,matrix/cortex.Cortex.Write,matrix/cortex.embedderState.drainPending,matrix/cortex.embedderState.processWriteEntry
   ^defines=matrix/cortex/journal/journal.go
 
 NODE id=matrix/cortex/journal.LateBindingPayload kind=type
@@ -650,6 +768,7 @@ NODE id=matrix/cortex/journal.LateBindingPayload kind=type
   doc=LateBindingPayload is the canonical shape carried by KindFind entries\n(Phase 3 introduced the kind; Phase 11.5 extended the payload with\nAccessedIDs so the replay harness can re-apply salience.AccessCount\nbumps deterministically).\n\nLateBinding=true Finds are the only path that journals; compile-time\nFinds (issued during pre-resolution per D13) do NOT emit a payload at\nall. The audit posture matches research/04-cortex.md §12.3 anti-pattern\ndetection: a journal scan can flag actors whose compile-time-to-late-\nbinding ratio is unusual.\n\nPredicate is the canonical String() form of the Where AST (audit-only,\nnot used by replay). Types is the byte-encoded memory.Type list. Limit\nand Tags mirror Query input. ResultCount is the post-trim returned\ncount. AccessedIDs is the per-candidate memory IDs whose salience\nAccessCount was bumped in the same atomic batch as this journal entry;\nlen(AccessedIDs) <= ResultCount because BudgetTokens trim can drop\ncandidates from the rendered set before they're counted as accessed.
 EDGES
   contains=matrix/cortex/journal.LateBindingPayload#AccessedIDs,matrix/cortex/journal.LateBindingPayload#Limit,matrix/cortex/journal.LateBindingPayload#Predicate,matrix/cortex/journal.LateBindingPayload#ResultCount,matrix/cortex/journal.LateBindingPayload#SchemaVersion,matrix/cortex/journal.LateBindingPayload#Tags,matrix/cortex/journal.LateBindingPayload#Types
+  ^references=matrix/cortex/journal.DecodeLateBindingPayload,matrix/cortex/journal.EncodeLateBindingPayload,matrix/cortex/query.LateBindingPayload,matrix/cortex/query.journalLateBinding,matrix/cortex/replay.rebuildSalienceFromJournal
   ^defines=matrix/cortex/journal/journal.go
 
 NODE id=matrix/cortex/journal.LateBindingPayload#AccessedIDs kind=field
@@ -699,6 +818,7 @@ NODE id=matrix/cortex/journal.LeafDomain kind=const
   sig=untyped string
   doc=LeafDomain is prepended to the canonical CBOR before hashing. Bumping the\nversion string forces a clean re-anchor of all existing journals.
 EDGES
+  ^references=matrix/cortex/journal.LeafHash
   ^defines=matrix/cortex/journal/journal.go
 
 NODE id=matrix/cortex/journal.LeafHash kind=func
@@ -706,6 +826,9 @@ NODE id=matrix/cortex/journal.LeafHash kind=func
   sig=func LeafHash(encoded []byte) [32]byte
   doc=LeafHash returns sha256(LeafDomain || encoded). Inputs to this function are\nexpected to be already canonical-encoded Entry bytes.
 EDGES
+  references=matrix/cortex/journal.LeafDomain,matrix/cortex/journal.encoded,matrix/cortex/journal.h,matrix/cortex/journal.out
+  ^calls=matrix/cortex/replay.journalLeafHash,matrix/cortex/store.Store.AppendJournal,matrix/cortex/store.WriteBatch.AppendJournal
+  ^references=matrix/cortex/replay.journalLeafHash,matrix/cortex/store.Store.AppendJournal,matrix/cortex/store.WriteBatch.AppendJournal
   ^defines=matrix/cortex/journal/journal.go
 
 NODE id=matrix/cortex/journal.LearnWeightsPayload kind=type
@@ -714,6 +837,7 @@ NODE id=matrix/cortex/journal.LearnWeightsPayload kind=type
   doc=LearnWeightsPayload is the canonical shape carried by KindLearnWeights\nentries (Phase 12). Spec: research/04-cortex.md §8.3 (EMA weight\nlearning).\n\nSourceSeq is the seq of the KindAttest entry that produced this update;\nalways exactly SourceSeq+1 == this entry's seq (one EMA step per\nattest). DecrementOnFailure mirrors the attest-side flag for whether\nthe EMA was a toward-pull (false; success or non-decrement-reason\nfailure) or an away-pull (true; failure with reason ∈ §8.3 decrement\nset). Skipped is true when the EMA update was a no-op (degenerate\nprofile or empty cited set); when true, the NewW* fields equal the\nPrevW* fields and Alpha is still stamped for audit.\n\nPrev/New weights are inlined as float32 fields (not a nested struct) so\ncanonical CBOR encoding is byte-stable and a journal dump shows the\nfull state transition in one record.
 EDGES
   contains=matrix/cortex/journal.LearnWeightsPayload#Alpha,matrix/cortex/journal.LearnWeightsPayload#DecrementOnFailure,matrix/cortex/journal.LearnWeightsPayload#NewWA,matrix/cortex/journal.LearnWeightsPayload#NewWC,matrix/cortex/journal.LearnWeightsPayload#NewWD,matrix/cortex/journal.LearnWeightsPayload#NewWR,matrix/cortex/journal.LearnWeightsPayload#NewWV,matrix/cortex/journal.LearnWeightsPayload#PrevWA,matrix/cortex/journal.LearnWeightsPayload#PrevWC,matrix/cortex/journal.LearnWeightsPayload#PrevWD,matrix/cortex/journal.LearnWeightsPayload#PrevWR,matrix/cortex/journal.LearnWeightsPayload#PrevWV,matrix/cortex/journal.LearnWeightsPayload#SchemaVersion,matrix/cortex/journal.LearnWeightsPayload#Skipped,matrix/cortex/journal.LearnWeightsPayload#SourceSeq
+  ^references=matrix/cortex.Cortex.Attest,matrix/cortex/journal.DecodeLearnWeightsPayload,matrix/cortex/journal.EncodeLearnWeightsPayload,matrix/cortex/replay.applyLearnWeights,matrix/cortex/replay.rebuildSalienceFromJournal
   ^defines=matrix/cortex/journal/journal.go
 
 NODE id=matrix/cortex/journal.LearnWeightsPayload#Alpha kind=field
@@ -812,6 +936,7 @@ NODE id=matrix/cortex/journal.RollupPayload kind=type
   doc=RollupPayload is the canonical shape carried by KindRollup entries\n(continuous-memory task 2.1). Mirrors CompactPayload / SessionPayload\ndiscipline: the payload carries only the window identity + a cryptographic\npin, never the heavy record.\n\nTier + Start together form the record identity (Pebble key\nroll/<tier><start>). Start/End are the [Start, End) window bounds in Unix\nnanoseconds. EntryCount is an audit denormalization so a journal scan can\nsummarize a rollup without a Pebble Get on roll/. RecordHash is sha256 over\nthe canonical CBOR encoding of the RollupRecord stored at roll/ — the same\nintegrity discipline as EmbedPayload.VectorHash and\nCompactPayload.CheckpointHash.
 EDGES
   contains=matrix/cortex/journal.RollupPayload#End,matrix/cortex/journal.RollupPayload#EntryCount,matrix/cortex/journal.RollupPayload#RecordHash,matrix/cortex/journal.RollupPayload#SchemaVersion,matrix/cortex/journal.RollupPayload#Start,matrix/cortex/journal.RollupPayload#Tier
+  ^references=matrix/cortex.Cortex.BuildRollup,matrix/cortex.Cortex.buildCoarseRollup,matrix/cortex/journal.DecodeRollupPayload,matrix/cortex/journal.EncodeRollupPayload
   ^defines=matrix/cortex/journal/journal.go
 
 NODE id=matrix/cortex/journal.RollupPayload#End kind=field
@@ -856,6 +981,7 @@ NODE id=matrix/cortex/journal.ScopeViolationPayload kind=type
   doc=ScopeViolationPayload is the canonical shape carried by\nKindScopeViolation entries (Phase 10). Spec: research/06-agents.md\n§7.2 — "logged as a j/ journal event with severity: high; repeated\nviolations from the same sub-agent trigger automatic dispatch\nrevocation".\n\nAt the cortex layer we don't currently auto-revoke (no DID\nresolution path); an agent runtime / tools/registry consumer counts\nthese entries and decides to revoke. Cortex's job is just to make\nevery violation visible in the canonical journal so it cannot be\nretroactively edited away.\n\nMemoryID is zero on violations that don't bind to a specific memory\n(e.g. UpdateHead under non-writable scope). Reason is a short\nmachine-readable code (see scope.ErrViolation / scope.ErrNotWritable\n/ scope.ErrActorMismatch — the cortex enforce path picks the\nappropriate code).
 EDGES
   contains=matrix/cortex/journal.ScopeViolationPayload#GrantedBy,matrix/cortex/journal.ScopeViolationPayload#GrantedTo,matrix/cortex/journal.ScopeViolationPayload#MemoryID,matrix/cortex/journal.ScopeViolationPayload#Mode,matrix/cortex/journal.ScopeViolationPayload#Reason,matrix/cortex/journal.ScopeViolationPayload#SchemaVersion
+  ^references=matrix/cortex.Cortex.logScopeViolation,matrix/cortex/journal.DecodeScopeViolationPayload,matrix/cortex/journal.EncodeScopeViolationPayload
   ^defines=matrix/cortex/journal/journal.go
 
 NODE id=matrix/cortex/journal.ScopeViolationPayload#GrantedBy kind=field
@@ -900,6 +1026,7 @@ NODE id=matrix/cortex/journal.SessionPayload kind=type
   doc=SessionPayload is the canonical shape carried by KindSession entries\n(continuous-memory task 1.1). Mirrors CompactPayload's discipline: the\npayload carries only the identity + a cryptographic pin, never the\nmessage body.\n\nConversationID + Seq form the record identity (Pebble key\nsess/<conv>/<seq>). Role is the small enumerated cortex/session.Role\n(user|assistant|tool_call|tool_result|system) denormalized so a journal\nscan can classify a message without a Pebble Get on sess/. RecordHash is\nsha256 over the canonical CBOR encoding of the SessionRecord stored at\nsess/<conv>/<seq> — the same integrity discipline as\nEmbedPayload.VectorHash and CompactPayload.CheckpointHash.
 EDGES
   contains=matrix/cortex/journal.SessionPayload#ConversationID,matrix/cortex/journal.SessionPayload#RecordHash,matrix/cortex/journal.SessionPayload#Role,matrix/cortex/journal.SessionPayload#SchemaVersion,matrix/cortex/journal.SessionPayload#Seq
+  ^references=matrix/cortex.Cortex.AppendMessage,matrix/cortex/journal.DecodeSessionPayload,matrix/cortex/journal.EncodeSessionPayload
   ^defines=matrix/cortex/journal/journal.go
 
 NODE id=matrix/cortex/journal.SessionPayload#ConversationID kind=field
@@ -938,6 +1065,7 @@ NODE id=matrix/cortex/journal.StorySoFarPayload kind=type
   doc=StorySoFarPayload is the canonical shape carried by KindStorySoFar entries\n(continuous-memory task 4.2). Mirrors SessionPayload / RollupPayload\ndiscipline: the payload carries only the conversation identity + the\nwindow it covers + a cryptographic pin, never the heavy record.\n\nConversationID identifies the single story/<conv> record (there is one\nper conversation, overwritten as the transcript grows — unlike sess/ or\nroll/ which are keyed by seq/window). UpToSeq is the highest session seq\n(inclusive) folded into this build, so a reader can tell whether a\npersisted record is stale relative to the current transcript head.\nRecordHash is sha256 over the canonical CBOR encoding of the\nStorySoFarRecord stored at story/<conv> — the same integrity discipline\nas RollupPayload.RecordHash / SessionPayload.RecordHash.
 EDGES
   contains=matrix/cortex/journal.StorySoFarPayload#ConversationID,matrix/cortex/journal.StorySoFarPayload#RecordHash,matrix/cortex/journal.StorySoFarPayload#SchemaVersion,matrix/cortex/journal.StorySoFarPayload#UpToSeq
+  ^references=matrix/cortex.Cortex.BuildStorySoFar,matrix/cortex/journal.DecodeStorySoFarPayload,matrix/cortex/journal.EncodeStorySoFarPayload
   ^defines=matrix/cortex/journal/journal.go
 
 NODE id=matrix/cortex/journal.StorySoFarPayload#ConversationID kind=field
@@ -970,6 +1098,7 @@ NODE id=matrix/cortex/journal.UpdateHeadPayload kind=type
   doc=UpdateHeadPayload is the canonical shape carried by KindUpdateHead\nentries (Phase 10). Carries the post-write Head bytes so replay can\nreconstruct the new Head deterministically and re-derive the\nidx/tag, idx/frame, and idx/actor_obj key sets without needing to\nalso load the prior Head from store/.\n\nHeadHash is sha256 over canonical CBOR Head bytes — a cross-check\nthe replay harness uses to validate that a re-applied UpdateHead\nproduced the same Head bytes the journal entry references. Mirrors\nEmbedPayload.VectorHash + CompactPayload.CheckpointHash discipline.\n\nVersion is the unchanged Data version at the time of the\nUpdateHead. UpdateHead does NOT bump versions (Phase 10 Q5).\nCarrying it here lets replay verify "the Data version this\nUpdateHead targeted exists at mv/<id>/v/<version>".
 EDGES
   contains=matrix/cortex/journal.UpdateHeadPayload#HeadHash,matrix/cortex/journal.UpdateHeadPayload#ID,matrix/cortex/journal.UpdateHeadPayload#SchemaVersion,matrix/cortex/journal.UpdateHeadPayload#Version
+  ^references=matrix/cortex.Cortex.UpdateHead,matrix/cortex/journal.DecodeUpdateHeadPayload,matrix/cortex/journal.EncodeUpdateHeadPayload
   ^defines=matrix/cortex/journal/journal.go
 
 NODE id=matrix/cortex/journal.UpdateHeadPayload#HeadHash kind=field
@@ -1002,6 +1131,7 @@ NODE id=matrix/cortex/journal.WritePayload kind=type
   doc=WritePayload is the canonical shape carried by KindWrite and KindUpdate\nentries. Phase 2 carried the version hash as the raw Payload byte slice,\nwhich was sufficient for replay-by-bytes but didn't let downstream\nconsumers (Phase 5 embedder) map an entry to its memory ID without a\nsecondary index. The CBOR map shape carries everything needed for\nreplay AND for the async worker to look up Head/Version by ID.\n\nSchema version is bumped if fields are added in a way that breaks\ndecoders; new optional fields don't require a bump.
 EDGES
   contains=matrix/cortex/journal.WritePayload#Hash,matrix/cortex/journal.WritePayload#ID,matrix/cortex/journal.WritePayload#SchemaVersion,matrix/cortex/journal.WritePayload#Type,matrix/cortex/journal.WritePayload#Version
+  ^references=matrix/cortex.Cortex.BuildRollup,matrix/cortex.Cortex.CloseValidity,matrix/cortex.Cortex.Update,matrix/cortex.Cortex.Write,matrix/cortex.embedderState.processWriteEntry,matrix/cortex/journal.DecodeWritePayload,matrix/cortex/journal.EncodeWritePayload
   ^defines=matrix/cortex/journal/journal.go
 
 NODE id=matrix/cortex/journal.WritePayload#Hash kind=field
@@ -1039,6 +1169,7 @@ NODE id=matrix/cortex/journal.canonicalDec kind=var
   sig=cbor.DecMode
   doc=canonicalDec is the matching decoder. Default decoder is fine; we keep it\nscoped so we can tune it later (e.g. max-array-size limits).
 EDGES
+  ^references=matrix/cortex/journal.Decode,matrix/cortex/journal.DecodeAttestPayload,matrix/cortex/journal.DecodeCompactPayload,matrix/cortex/journal.DecodeEdgePayload,matrix/cortex/journal.DecodeEmbedPayload,matrix/cortex/journal.DecodeEnrichPayload,matrix/cortex/journal.DecodeLateBindingPayload,matrix/cortex/journal.DecodeLearnWeightsPayload,matrix/cortex/journal.DecodeRollupPayload,matrix/cortex/journal.DecodeScopeViolationPayload,matrix/cortex/journal.DecodeSessionPayload,matrix/cortex/journal.DecodeStorySoFarPayload,matrix/cortex/journal.DecodeUpdateHeadPayload,matrix/cortex/journal.DecodeWritePayload,matrix/cortex/journal.init
   ^defines=matrix/cortex/journal/journal.go
 
 NODE id=matrix/cortex/journal.canonicalEnc kind=var
@@ -1046,12 +1177,14 @@ NODE id=matrix/cortex/journal.canonicalEnc kind=var
   sig=cbor.EncMode
   doc=canonicalEnc is the package-level canonical CBOR encoder.
 EDGES
+  ^references=matrix/cortex/journal.EncodeAttestPayload,matrix/cortex/journal.EncodeCompactPayload,matrix/cortex/journal.EncodeEdgePayload,matrix/cortex/journal.EncodeEmbedPayload,matrix/cortex/journal.EncodeEnrichPayload,matrix/cortex/journal.EncodeLateBindingPayload,matrix/cortex/journal.EncodeLearnWeightsPayload,matrix/cortex/journal.EncodeRollupPayload,matrix/cortex/journal.EncodeScopeViolationPayload,matrix/cortex/journal.EncodeSessionPayload,matrix/cortex/journal.EncodeStorySoFarPayload,matrix/cortex/journal.EncodeUpdateHeadPayload,matrix/cortex/journal.EncodeWritePayload,matrix/cortex/journal.Entry.Encode,matrix/cortex/journal.init
   ^defines=matrix/cortex/journal/journal.go
 
 NODE id=matrix/cortex/journal.init kind=func
   digest=b3:f83ca739134b0d82aaf8da3ccbd04e09e334935f986bdbddca7b8a47bd600792 file=cortex/journal/journal.go range=701:714 lang=go exported=false byte_range=33394:33733
   sig=func init()
 EDGES
+  references=matrix/cortex/journal.canonicalDec,matrix/cortex/journal.canonicalEnc,matrix/cortex/journal.dm,matrix/cortex/journal.em,matrix/cortex/journal.err,matrix/cortex/journal.opts
   ^defines=matrix/cortex/journal/journal.go
 
 NODE id=matrix/cortex/journal/journal.go kind=file

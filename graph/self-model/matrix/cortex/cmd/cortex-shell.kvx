@@ -1,0 +1,183 @@
+# GENERATED gen=codegraph do-not-edit merkle=b3:75a956136eb56a920059d717ea1f7ba394b53bef834ab6db66f06d328eb5d650
+
+NODE id=matrix/cortex/cmd/cortex-shell kind=package
+  digest=b3:add887fb7a7104221a6deb2cfa0b287392f0829e4f7045e21f5570396156035d file=cortex/cmd/cortex-shell range=0:0 lang=go exported=true
+EDGES
+  contains=matrix/cortex/cmd/cortex-shell/main.go
+  ^contains=mod:matrix/cortex
+
+NODE id=matrix/cortex/cmd/cortex-shell.die kind=func
+  digest=b3:7680010ddf0cf379a7e842316e52d23400add1224b24804c563af5b1b142bf67 file=cortex/cmd/cortex-shell/main.go range=1400:1403 lang=go exported=false byte_range=44361:44470
+  sig=func die(format string, a ...any)
+EDGES
+  ^defines=matrix/cortex/cmd/cortex-shell/main.go
+
+NODE id=matrix/cortex/cmd/cortex-shell.edgeURIToID kind=func
+  digest=b3:2b30768a0752113e9dc884ac36b38cf9bc793541bb3513fa7cbf1039c9130570 file=cortex/cmd/cortex-shell/main.go range=734:743 lang=go exported=false byte_range=22631:23010
+  sig=func edgeURIToID(s string) (memory.ID, bool)
+  doc=edgeURIToID extracts the memory ID from a canonical cortex URI; returns\n(id, true) on success and (zero, false) on parse failure. The CLI uses\nthis for edge subcommands where Type and version are irrelevant.
+EDGES
+  ^defines=matrix/cortex/cmd/cortex-shell/main.go
+
+NODE id=matrix/cortex/cmd/cortex-shell.ensureEmbedder kind=func
+  digest=b3:d5cda7c22358816e7986897a7bb4638c8adf787407c33946d045b6d511095cd7 file=cortex/cmd/cortex-shell/main.go range=1180:1198 lang=go exported=false byte_range=35861:36674
+  sig=func ensureEmbedder(c *cortex.Cortex, root, actor string)
+  doc=ensureEmbedder boots the deterministic HashEmbedder + persisted HNSW\nindex for this actor, then drains the journal backlog. Called only from\nthe find subcommand when -near / -near-uri is set. The index file lives\nalongside the actor's Pebble DB so subsequent CLI invocations reuse it.
+EDGES
+  ^defines=matrix/cortex/cmd/cortex-shell/main.go
+
+NODE id=matrix/cortex/cmd/cortex-shell.main kind=func
+  digest=b3:ca04a6dca4d261463b499cefe22f62e7d3ae5361d502d478752663a529b459bb file=cortex/cmd/cortex-shell/main.go range=40:470 lang=go exported=false byte_range=997:13517
+  sig=func main()
+EDGES
+  ^defines=matrix/cortex/cmd/cortex-shell/main.go
+
+NODE id=matrix/cortex/cmd/cortex-shell.multiFlag kind=type
+  digest=b3:8bdb3ebad9ad14796cfe2ce542487794587dd24740db5573b4cb3d87642b2088 file=cortex/cmd/cortex-shell/main.go range=1393:1395 lang=go exported=false byte_range=44071:44210
+  sig=type multiFlag []string
+  doc=multiFlag implements flag.Value for repeated string flags (e.g.\n`-load uri1 -load uri2`). Used by runCompact.
+EDGES
+  contains=matrix/cortex/cmd/cortex-shell.multiFlag.Set,matrix/cortex/cmd/cortex-shell.multiFlag.String
+  ^defines=matrix/cortex/cmd/cortex-shell/main.go
+
+NODE id=matrix/cortex/cmd/cortex-shell.multiFlag.Set kind=method
+  digest=b3:aa11e72ec9e57ac4f64eb0921f2b1466ac3d135130640086372ded298d675d42 file=cortex/cmd/cortex-shell/main.go range=1398:1398 lang=go exported=true byte_range=44285:44359
+  sig=func (m *multiFlag) Set(v string) error
+EDGES
+  ^contains=matrix/cortex/cmd/cortex-shell.multiFlag
+  ^defines=matrix/cortex/cmd/cortex-shell/main.go
+
+NODE id=matrix/cortex/cmd/cortex-shell.multiFlag.String kind=method
+  digest=b3:bb48ed0146208a1f5b996e231658eac4144982d639768cbe33fe2920025ade09 file=cortex/cmd/cortex-shell/main.go range=1397:1397 lang=go exported=true byte_range=44212:44284
+  sig=func (m *multiFlag) String() string
+EDGES
+  ^contains=matrix/cortex/cmd/cortex-shell.multiFlag
+  ^defines=matrix/cortex/cmd/cortex-shell/main.go
+
+NODE id=matrix/cortex/cmd/cortex-shell.outcomeString kind=func
+  digest=b3:ba789dac2e3ed04d09ad5731c62e5c1bfbd86744e21f2117eb82f56e4f2c8f18 file=cortex/cmd/cortex-shell/main.go range=666:676 lang=go exported=false byte_range=20394:20695
+  sig=func outcomeString(o cortex.AttestOutcome) string
+  doc=outcomeString returns the canonical CLI string form of an AttestOutcome.
+EDGES
+  ^defines=matrix/cortex/cmd/cortex-shell/main.go
+
+NODE id=matrix/cortex/cmd/cortex-shell.parseFollowExpr kind=func
+  digest=b3:984b4dca85b01e82d55dc531c81c975c33ad04d127d8a7721d0eb732c64807b3 file=cortex/cmd/cortex-shell/main.go range=1131:1178 lang=go exported=false byte_range=34371:35859
+  sig=func parseFollowExpr(s string) (*query.EdgeExpr, error)
+  doc=parseFollowExpr accepts <type>[,<type>...]:<dir>:<min..max> e.g.\n\n	references:out:1..2\n	references,corroborates:both:1..3\n\nEmpty type list (":out:1..2") means any type. Direction defaults to "out";\nhop range defaults to "1..1".
+EDGES
+  ^defines=matrix/cortex/cmd/cortex-shell/main.go
+
+NODE id=matrix/cortex/cmd/cortex-shell.parseFrameSpec kind=func
+  digest=b3:a0e921852aae8e1abc0659befb4ce7a840a98098c469521ae1af223f19845ddc file=cortex/cmd/cortex-shell/main.go range=993:1019 lang=go exported=false byte_range=30256:31258
+  sig=func parseFrameSpec(s string) (memory.FrameRef, error)
+  doc=parseFrameSpec parses one `verb:kind:ref` spec into a FrameRef. Verb\nand kind use the lower-case enum names from memory.ParseVerb /\nmemory.ParseObjKind. Ref is anything up to MaxObjRefLen; colons in\nthe ref are permitted by splitting on the first two ':'.
+EDGES
+  ^defines=matrix/cortex/cmd/cortex-shell/main.go
+
+NODE id=matrix/cortex/cmd/cortex-shell.parseTypeName kind=func
+  digest=b3:d477ca432728f247e6b32534851df30fbbc74060bb09aee2b34bd9f8d189a013 file=cortex/cmd/cortex-shell/main.go range=1292:1314 lang=go exported=false byte_range=38864:39346
+  sig=func parseTypeName(name string) memory.Type
+EDGES
+  ^defines=matrix/cortex/cmd/cortex-shell/main.go
+
+NODE id=matrix/cortex/cmd/cortex-shell.parseTypedJSON kind=func
+  digest=b3:a889ea864423cc4ca19f1e2e24b0549a854205380a71e6d47f944babf5d812f1 file=cortex/cmd/cortex-shell/main.go range=1200:1290 lang=go exported=false byte_range=36676:38862
+  sig=func parseTypedJSON(typeName, body string) (memory.TypedData, error)
+  doc=parseTypedJSON converts a JSON body into the corresponding TypedData.\n\nNote: this uses encoding/json (the convenient ergonomic wrapper), not\ncanonical CBOR. The cortex stores the canonical CBOR form internally; the\nJSON here is only the CLI surface.
+EDGES
+  ^defines=matrix/cortex/cmd/cortex-shell/main.go
+
+NODE id=matrix/cortex/cmd/cortex-shell.printMemory kind=func
+  digest=b3:caadd855a1685674b39e3a36db126771c08f9c4ceb4025b6a153615a7fbd1960 file=cortex/cmd/cortex-shell/main.go range=1316:1342 lang=go exported=false byte_range=39348:40249
+  sig=func printMemory(m *memory.Memory)
+EDGES
+  ^defines=matrix/cortex/cmd/cortex-shell/main.go
+
+NODE id=matrix/cortex/cmd/cortex-shell.runAttest kind=func
+  digest=b3:a3d1f8f4abf6e1d270d9f2e565fabb963dcf65ae5d49aefebc92ef5004a7ed5f file=cortex/cmd/cortex-shell/main.go range=501:559 lang=go exported=false byte_range=14760:16981
+  sig=func runAttest(c *cortex.Cortex, actor string, args []string)
+  doc=runAttest parses CLI flags and invokes cortex.Attest. Positional\n<uri>... args are the cited memories. Mirrors research/04-cortex.md §8.3\n"intent.attest" but the cortex-side primitive only — the MCL envelope\n+ agent-runtime wiring is out of scope for this CLI.
+EDGES
+  ^defines=matrix/cortex/cmd/cortex-shell/main.go
+
+NODE id=matrix/cortex/cmd/cortex-shell.runCompact kind=func
+  digest=b3:c43aed02e25a62ab4d05b175e6459bc922d17caeae84cf1657b2a0d8f84339da file=cortex/cmd/cortex-shell/main.go range=678:732 lang=go exported=false byte_range=20697:22629
+  sig=func runCompact(c *cortex.Cortex, args []string)
+  doc=runCompact parses CLI flags and invokes cortex.Compact. The positional\n<uri>... args form the InContext list; -load URI (repeatable) becomes\nLoadBearing; -dir sets CheckpointDir (filesystem mirror). Mirrors the\nresearch/03 §5.3 primitive signature.
+EDGES
+  ^defines=matrix/cortex/cmd/cortex-shell/main.go
+
+NODE id=matrix/cortex/cmd/cortex-shell.runContext kind=func
+  digest=b3:3987347fa87d290360f55a361b6aac2dde2f0af491b82f08f6c5d46671c916ad file=cortex/cmd/cortex-shell/main.go range=1021:1129 lang=go exported=false byte_range=31260:34369
+  sig=func runContext(c *cortex.Cortex, args []string)
+  doc=runContext drives the §12.1 Context bundle composer from the CLI:\n\n	context [-verb V] [-obj kind:ref]... [-include-tier t]...\n	        [-budget N] [-outcome-limit N] [-form short|medium|full]\n\nPrints one line per memory across the three tiers, plus a header\nwith bundle compile_metadata for latency/budget audit.
+EDGES
+  ^defines=matrix/cortex/cmd/cortex-shell/main.go
+
+NODE id=matrix/cortex/cmd/cortex-shell.runDumpAttest kind=func
+  digest=b3:c04b8c8965c11de3ce80452f15c2e34ede253709a2f38d90a04c5f487ce1f0a5 file=cortex/cmd/cortex-shell/main.go range=561:615 lang=go exported=false byte_range=16983:18831
+  sig=func runDumpAttest(c *cortex.Cortex, seqStr string)
+  doc=runDumpAttest reads j/<seq> and prints the decoded AttestPayload as\nindented JSON. Fails if the entry at seq is not KindAttest.
+EDGES
+  ^defines=matrix/cortex/cmd/cortex-shell/main.go
+
+NODE id=matrix/cortex/cmd/cortex-shell.runDumpSalience kind=func
+  digest=b3:12753a506e7b219bf1661b6c4506d3375d32333535a8b16f89878e5a0c151b62 file=cortex/cmd/cortex-shell/main.go range=617:643 lang=go exported=false byte_range=18833:19656
+  sig=func runDumpSalience(c *cortex.Cortex, uri string)
+  doc=runDumpSalience reads salience/<id> for the memory referenced by uri\nand prints it as JSON. ID is parsed from the URI; the cached Score is\nread raw (no live recompute).
+EDGES
+  ^defines=matrix/cortex/cmd/cortex-shell/main.go
+
+NODE id=matrix/cortex/cmd/cortex-shell.runDumpScope kind=func
+  digest=b3:1b7617d11c83af8918a1e55ebabe07f3698dfa8ffb4da217f2a05ab61bb2939d file=cortex/cmd/cortex-shell/main.go range=972:991 lang=go exported=false byte_range=29589:30254
+  sig=func runDumpScope(path string)
+  doc=runDumpScope reads canonical CBOR Scope bytes from path, decodes,\nand prints a JSON-pretty view. Pure offline tool — does NOT verify\nthe scope (no key resolver wired here). Useful for inspecting a\nscope envelope received from a parent agent before plumbing it into\na sub-agent's Cortex.
+EDGES
+  ^defines=matrix/cortex/cmd/cortex-shell/main.go
+
+NODE id=matrix/cortex/cmd/cortex-shell.runDumpWeights kind=func
+  digest=b3:2461cc80588c116bbdcac8cf0cdaf38341a29a213dc8d30e7518147c6306eb17 file=cortex/cmd/cortex-shell/main.go range=645:664 lang=go exported=false byte_range=19658:20392
+  sig=func runDumpWeights(c *cortex.Cortex)
+  doc=runDumpWeights prints the per-actor learned salience.Weights from\nmeta/salience_weights as JSON. Cold start (key absent) prints the\nDefaultWeights set with a `cold_start: true` annotation so the caller\ncan tell apart "no EMA updates yet" from "learned but happens to\nmatch cold weights".
+EDGES
+  ^defines=matrix/cortex/cmd/cortex-shell/main.go
+
+NODE id=matrix/cortex/cmd/cortex-shell.runFind kind=func
+  digest=b3:5e88dc5e65c7a551a8f11906a52f02835f0a4963d3c7f135579c673088be56e0 file=cortex/cmd/cortex-shell/main.go range=745:888 lang=go exported=false byte_range=23012:26962
+  sig=func runFind(c *cortex.Cortex, root, actor string, args []string)
+  doc=runFind drives the §12 typed Find surface from the CLI. Supports a tiny\nsubset of the predicate AST so smoke tests can exercise the engine end\nto end:\n\n	find <Type|*> [-tag T]... [-eq field=value]... [-limit N] [-late]\n	              [-near "text"|-near-uri <uri>]\n	              [-from <uri> [-follow <type>:<dir>:<min..max>]]\n\nMore expressive querying is intentionally NOT exposed here; complex\npredicates belong in a real authoring layer, not a smoke shell.
+EDGES
+  ^defines=matrix/cortex/cmd/cortex-shell/main.go
+
+NODE id=matrix/cortex/cmd/cortex-shell.runRebuild kind=func
+  digest=b3:64364824feae02cb23b18af04163d09813f5c4ab6b66fec48bd4fab4b66bd970 file=cortex/cmd/cortex-shell/main.go range=472:499 lang=go exported=false byte_range=13519:14758
+  sig=func runRebuild(c *cortex.Cortex, args []string)
+  doc=runRebuild parses CLI flags and invokes cortex.Rebuild. With\n-verify-only, the post-rebuild root MUST equal the pre-drop root or\nthe command exits non-zero — useful in CI / disaster-recovery scripts\nto assert the §13.4 invariant on a real actor's data.
+EDGES
+  ^defines=matrix/cortex/cmd/cortex-shell/main.go
+
+NODE id=matrix/cortex/cmd/cortex-shell.runUpdateHead kind=func
+  digest=b3:8d22cd1cca63af2a415f0582fa4cf4315f20c4db85580e04bf5508814b7bcbcf file=cortex/cmd/cortex-shell/main.go range=890:970 lang=go exported=false byte_range=26964:29587
+  sig=func runUpdateHead(c *cortex.Cortex, actor string, args []string)
+  doc=runUpdateHead drives Phase 10 cortex.UpdateHead from the CLI:\n\n	update-head <uri> [-tag T]... [-frame V:K:R]...\n	            [-importance N] [-visibility private|scoped|actor_public]\n\nEmpty -tag/-frame flag sets are NOT a "remove all" — to clear, pass\nthe explicit -clear-tags / -clear-frames flag. Pointer-vs-zero\nsemantics mirrors the HeadPatch struct.
+EDGES
+  ^defines=matrix/cortex/cmd/cortex-shell/main.go
+
+NODE id=matrix/cortex/cmd/cortex-shell.summarize kind=func
+  digest=b3:8d64c9cde2ac869499936df1842047c1a458f93d14ec5e234f859e078c342531 file=cortex/cmd/cortex-shell/main.go range=1344:1350 lang=go exported=false byte_range=40251:40367
+  sig=func summarize(s string) string
+EDGES
+  ^defines=matrix/cortex/cmd/cortex-shell/main.go
+
+NODE id=matrix/cortex/cmd/cortex-shell.usage kind=func
+  digest=b3:a9a538b1efaf234e900395c69ac022fb03b393ac26b95df1d815f4b7cb25a8e9 file=cortex/cmd/cortex-shell/main.go range=1352:1391 lang=go exported=false byte_range=40369:44069
+  sig=func usage()
+EDGES
+  ^defines=matrix/cortex/cmd/cortex-shell/main.go
+
+NODE id=matrix/cortex/cmd/cortex-shell/main.go kind=file
+  digest=b3:92ceed296f5057720731ad11d3467f14a29f5a575b49a1ee6800e762d8504266 file=cortex/cmd/cortex-shell/main.go range=1:1405 lang=go exported=true
+EDGES
+  defines=matrix/cortex/cmd/cortex-shell.die,matrix/cortex/cmd/cortex-shell.edgeURIToID,matrix/cortex/cmd/cortex-shell.ensureEmbedder,matrix/cortex/cmd/cortex-shell.main,matrix/cortex/cmd/cortex-shell.multiFlag,matrix/cortex/cmd/cortex-shell.multiFlag.Set,matrix/cortex/cmd/cortex-shell.multiFlag.String,matrix/cortex/cmd/cortex-shell.outcomeString,matrix/cortex/cmd/cortex-shell.parseFollowExpr,matrix/cortex/cmd/cortex-shell.parseFrameSpec,matrix/cortex/cmd/cortex-shell.parseTypeName,matrix/cortex/cmd/cortex-shell.parseTypedJSON,matrix/cortex/cmd/cortex-shell.printMemory,matrix/cortex/cmd/cortex-shell.runAttest,matrix/cortex/cmd/cortex-shell.runCompact,matrix/cortex/cmd/cortex-shell.runContext,matrix/cortex/cmd/cortex-shell.runDumpAttest,matrix/cortex/cmd/cortex-shell.runDumpSalience,matrix/cortex/cmd/cortex-shell.runDumpScope,matrix/cortex/cmd/cortex-shell.runDumpWeights,matrix/cortex/cmd/cortex-shell.runFind,matrix/cortex/cmd/cortex-shell.runRebuild,matrix/cortex/cmd/cortex-shell.runUpdateHead,matrix/cortex/cmd/cortex-shell.summarize,matrix/cortex/cmd/cortex-shell.usage
+  ^contains=matrix/cortex/cmd/cortex-shell

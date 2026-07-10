@@ -1,10 +1,12 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:9b68327501b45793fd7687f43b30c960fd68ae8aaff6b2f1bb36ec3e2df2de2f
+# GENERATED gen=codegraph do-not-edit merkle=b3:20e53aba2ea11552396417e53b3e04e87dd1bbb7bef3aa554a45bb92cf89e7f2
 
 NODE id=matrix/cody/internal/checkpoint kind=package
   digest=b3:3886947c6c6e09b8e324fc6435ec8ad6ad4dc520d42d78de870280279f917a15 file=cody/internal/checkpoint range=0:0 lang=go exported=true
 EDGES
   contains=matrix/cody/internal/checkpoint/checkpoint.go
+  imports=matrix/cortex
   ^contains=mod:matrix/cody
+  ^imports=matrix/cody/internal/orchestrator,matrix/cody/internal/server
 
 NODE id=matrix/cody/internal/checkpoint.Checkpoint kind=type
   digest=b3:9c0509dc34e5bb56a28ed2b67fe5106f320743483a57152825b662566901c4ce file=cody/internal/checkpoint/checkpoint.go range=234:242 lang=go exported=true byte_range=6116:6463
@@ -12,6 +14,7 @@ NODE id=matrix/cody/internal/checkpoint.Checkpoint kind=type
   doc=Checkpoint is one durable progress record: a task accepted (or honestly\nsurfaced as partial/blocked) with its adjudicated outcome.
 EDGES
   contains=matrix/cody/internal/checkpoint.Checkpoint#At,matrix/cody/internal/checkpoint.Checkpoint#Attempt,matrix/cody/internal/checkpoint.Checkpoint#Status,matrix/cody/internal/checkpoint.Checkpoint#Summary,matrix/cody/internal/checkpoint.Checkpoint#TaskID
+  ^references=matrix/cody/internal/checkpoint.Progress.All,matrix/cody/internal/checkpoint.Progress.Latest,matrix/cody/internal/checkpoint.Progress.Record,matrix/cody/internal/orchestrator.Orchestrator.runTask
   ^defines=matrix/cody/internal/checkpoint/checkpoint.go
 
 NODE id=matrix/cody/internal/checkpoint.Checkpoint#At kind=field
@@ -50,6 +53,7 @@ NODE id=matrix/cody/internal/checkpoint.Info kind=type
   doc=Info describes one stored snapshot.
 EDGES
   contains=matrix/cody/internal/checkpoint.Info#At,matrix/cody/internal/checkpoint.Info#Files,matrix/cody/internal/checkpoint.Info#ID,matrix/cody/internal/checkpoint.Info#Label
+  ^references=matrix/cody/internal/checkpoint.Snapshotter.List,matrix/cody/internal/checkpoint.Snapshotter.Snapshot,matrix/cody/internal/server.Server.handleWorkspaceSnapshots
   ^defines=matrix/cody/internal/checkpoint/checkpoint.go
 
 NODE id=matrix/cody/internal/checkpoint.Info#At kind=field
@@ -81,6 +85,9 @@ NODE id=matrix/cody/internal/checkpoint.NewProgress kind=func
   sig=func NewProgress(c *cortex.Cortex, conv string) *Progress
   doc=NewProgress binds a progress writer to a cortex instance and a per-plan\nconversation id.
 EDGES
+  references=matrix/cody/internal/checkpoint.Progress,matrix/cody/internal/checkpoint.c,matrix/cody/internal/checkpoint.conv,matrix/cortex.Cortex
+  ^calls=matrix/cody/internal/server.Engine.runOrchestrator
+  ^references=matrix/cody/internal/server.Engine.runOrchestrator
   ^defines=matrix/cody/internal/checkpoint/checkpoint.go
 
 NODE id=matrix/cody/internal/checkpoint.NewProjectMemory kind=func
@@ -88,6 +95,9 @@ NODE id=matrix/cody/internal/checkpoint.NewProjectMemory kind=func
   sig=func NewProjectMemory(c *cortex.Cortex, projectID string) *ProjectMemory
   doc=NewProjectMemory binds project memory to a cortex instance and a project id.
 EDGES
+  references=matrix/cody/internal/checkpoint.ProjectMemory,matrix/cody/internal/checkpoint.c,matrix/cody/internal/checkpoint.projectID,matrix/cortex.Cortex
+  ^calls=matrix/cody/internal/server.Engine.projectMemory
+  ^references=matrix/cody/internal/server.Engine.projectMemory
   ^defines=matrix/cody/internal/checkpoint/checkpoint.go
 
 NODE id=matrix/cody/internal/checkpoint.NewSnapshotter kind=func
@@ -95,6 +105,9 @@ NODE id=matrix/cody/internal/checkpoint.NewSnapshotter kind=func
   sig=func NewSnapshotter(root string) (*Snapshotter, error)
   doc=NewSnapshotter creates a snapshotter for a workspace root.
 EDGES
+  references=matrix/cody/internal/checkpoint.Snapshotter,matrix/cody/internal/checkpoint.abs,matrix/cody/internal/checkpoint.err,matrix/cody/internal/checkpoint.fi,matrix/cody/internal/checkpoint.root
+  ^calls=matrix/cody/internal/server.Server.handleWorkspaceRestore,matrix/cody/internal/server.Server.handleWorkspaceSnapshot,matrix/cody/internal/server.Server.handleWorkspaceSnapshots
+  ^references=matrix/cody/internal/server.Server.handleWorkspaceRestore,matrix/cody/internal/server.Server.handleWorkspaceSnapshot,matrix/cody/internal/server.Server.handleWorkspaceSnapshots
   ^defines=matrix/cody/internal/checkpoint/checkpoint.go
 
 NODE id=matrix/cody/internal/checkpoint.Progress kind=type
@@ -103,6 +116,8 @@ NODE id=matrix/cody/internal/checkpoint.Progress kind=type
   doc=Progress writes and reads per-task progress checkpoints through the cortex\ncontinuous-memory session surface (AppendMessage / Transcript) — the\nderived, journaled lane, so checkpoints are durable, ordered, and\nrebuildable without touching anchored world-state.
 EDGES
   contains=matrix/cody/internal/checkpoint.Progress#c,matrix/cody/internal/checkpoint.Progress#conv,matrix/cody/internal/checkpoint.Progress.All,matrix/cody/internal/checkpoint.Progress.Done,matrix/cody/internal/checkpoint.Progress.Latest,matrix/cody/internal/checkpoint.Progress.Record
+  references=matrix/cortex.Cortex
+  ^references=matrix/cody/internal/checkpoint.NewProgress,matrix/cody/internal/checkpoint.Progress.All,matrix/cody/internal/checkpoint.Progress.Done,matrix/cody/internal/checkpoint.Progress.Latest,matrix/cody/internal/checkpoint.Progress.Record,matrix/cody/internal/orchestrator.Options,matrix/cody/internal/server.Engine.runOrchestrator
   ^defines=matrix/cody/internal/checkpoint/checkpoint.go
 
 NODE id=matrix/cody/internal/checkpoint.Progress#c kind=field
@@ -122,7 +137,11 @@ NODE id=matrix/cody/internal/checkpoint.Progress.All kind=method
   sig=func (p *Progress) All() ([]Checkpoint, error)
   doc=All returns every checkpoint of the plan conversation in append order.
 EDGES
+  calls=matrix/cortex.Cortex.Transcript
+  references=matrix/cody/internal/checkpoint.Checkpoint,matrix/cody/internal/checkpoint.Progress,matrix/cody/internal/checkpoint.checkpointPrefix,matrix/cody/internal/checkpoint.cp,matrix/cody/internal/checkpoint.err,matrix/cody/internal/checkpoint.m,matrix/cody/internal/checkpoint.msgs,matrix/cody/internal/checkpoint.out,matrix/cody/internal/checkpoint.p,matrix/cortex.Cortex.Transcript,matrix/cortex.RoleSystem
   ^contains=matrix/cody/internal/checkpoint.Progress
+  ^calls=matrix/cody/internal/checkpoint.Progress.Done,matrix/cody/internal/checkpoint.Progress.Latest,matrix/cody/internal/orchestrator.Orchestrator.reconstructWindow
+  ^references=matrix/cody/internal/checkpoint.Progress.Done,matrix/cody/internal/checkpoint.Progress.Latest,matrix/cody/internal/orchestrator.Orchestrator.reconstructWindow
   ^defines=matrix/cody/internal/checkpoint/checkpoint.go
 
 NODE id=matrix/cody/internal/checkpoint.Progress.Done kind=method
@@ -130,7 +149,11 @@ NODE id=matrix/cody/internal/checkpoint.Progress.Done kind=method
   sig=func (p *Progress) Done() (map[string]bool, error)
   doc=Done returns the set of task ids checkpointed with an accepted (done)\nstatus — the resume computation's input.
 EDGES
+  calls=matrix/cody/internal/checkpoint.Progress.All
+  references=matrix/cody/internal/checkpoint.Progress,matrix/cody/internal/checkpoint.Progress.All,matrix/cody/internal/checkpoint.all,matrix/cody/internal/checkpoint.cp,matrix/cody/internal/checkpoint.done,matrix/cody/internal/checkpoint.err,matrix/cody/internal/checkpoint.p
   ^contains=matrix/cody/internal/checkpoint.Progress
+  ^calls=matrix/cody/internal/orchestrator.Orchestrator.Run
+  ^references=matrix/cody/internal/orchestrator.Orchestrator.Run
   ^defines=matrix/cody/internal/checkpoint/checkpoint.go
 
 NODE id=matrix/cody/internal/checkpoint.Progress.Latest kind=method
@@ -138,6 +161,8 @@ NODE id=matrix/cody/internal/checkpoint.Progress.Latest kind=method
   sig=func (p *Progress) Latest() (*Checkpoint, error)
   doc=Latest returns the most recent checkpoint, or nil when none exist.
 EDGES
+  calls=matrix/cody/internal/checkpoint.Progress.All
+  references=matrix/cody/internal/checkpoint.Checkpoint,matrix/cody/internal/checkpoint.Progress,matrix/cody/internal/checkpoint.Progress.All,matrix/cody/internal/checkpoint.all,matrix/cody/internal/checkpoint.err,matrix/cody/internal/checkpoint.p
   ^contains=matrix/cody/internal/checkpoint.Progress
   ^defines=matrix/cody/internal/checkpoint/checkpoint.go
 
@@ -146,7 +171,11 @@ NODE id=matrix/cody/internal/checkpoint.Progress.Record kind=method
   sig=func (p *Progress) Record(cp Checkpoint) error
   doc=Record durably appends a checkpoint.
 EDGES
+  calls=matrix/cortex.Cortex.AppendMessage
+  references=matrix/cody/internal/checkpoint.Checkpoint,matrix/cody/internal/checkpoint.Progress,matrix/cody/internal/checkpoint.checkpointPrefix,matrix/cody/internal/checkpoint.cp,matrix/cody/internal/checkpoint.data,matrix/cody/internal/checkpoint.err,matrix/cody/internal/checkpoint.p,matrix/cortex.Cortex.AppendMessage,matrix/cortex.Message,matrix/cortex.RoleSystem
   ^contains=matrix/cody/internal/checkpoint.Progress
+  ^calls=matrix/cody/internal/orchestrator.Orchestrator.runTask
+  ^references=matrix/cody/internal/orchestrator.Orchestrator.runTask
   ^defines=matrix/cody/internal/checkpoint/checkpoint.go
 
 NODE id=matrix/cody/internal/checkpoint.ProjectMemory kind=type
@@ -155,6 +184,8 @@ NODE id=matrix/cody/internal/checkpoint.ProjectMemory kind=type
   doc=ProjectMemory reads and writes project-scoped memory through the cortex\ncontinuous-memory session surface, keyed by project id (NOT by\nconversation) so records accumulate across conversations.
 EDGES
   contains=matrix/cody/internal/checkpoint.ProjectMemory#c,matrix/cody/internal/checkpoint.ProjectMemory#conv,matrix/cody/internal/checkpoint.ProjectMemory.Recent,matrix/cody/internal/checkpoint.ProjectMemory.Record
+  references=matrix/cortex.Cortex
+  ^references=matrix/cody/internal/checkpoint.NewProjectMemory,matrix/cody/internal/checkpoint.ProjectMemory.Recent,matrix/cody/internal/checkpoint.ProjectMemory.Record,matrix/cody/internal/server.Engine.projectMemory
   ^defines=matrix/cody/internal/checkpoint/checkpoint.go
 
 NODE id=matrix/cody/internal/checkpoint.ProjectMemory#c kind=field
@@ -174,7 +205,11 @@ NODE id=matrix/cody/internal/checkpoint.ProjectMemory.Recent kind=method
   sig=func (p *ProjectMemory) Recent(n int) ([]ProjectRecord, error)
   doc=Recent returns the newest n project records, oldest first.
 EDGES
+  calls=matrix/cortex.Cortex.Transcript
+  references=matrix/cody/internal/checkpoint.ProjectMemory,matrix/cody/internal/checkpoint.ProjectRecord,matrix/cody/internal/checkpoint.err,matrix/cody/internal/checkpoint.m,matrix/cody/internal/checkpoint.msgs,matrix/cody/internal/checkpoint.n,matrix/cody/internal/checkpoint.out,matrix/cody/internal/checkpoint.p,matrix/cody/internal/checkpoint.projectMemoryPrefix,matrix/cody/internal/checkpoint.rec,matrix/cortex.Cortex.Transcript,matrix/cortex.RoleSystem
   ^contains=matrix/cody/internal/checkpoint.ProjectMemory
+  ^calls=matrix/cody/internal/server.Engine.recallProjectMemory
+  ^references=matrix/cody/internal/server.Engine.recallProjectMemory
   ^defines=matrix/cody/internal/checkpoint/checkpoint.go
 
 NODE id=matrix/cody/internal/checkpoint.ProjectMemory.Record kind=method
@@ -182,7 +217,11 @@ NODE id=matrix/cody/internal/checkpoint.ProjectMemory.Record kind=method
   sig=func (p *ProjectMemory) Record(kind, summary string) error
   doc=Record durably appends one project-memory record.
 EDGES
+  calls=matrix/cortex.Cortex.AppendMessage
+  references=matrix/cody/internal/checkpoint.ProjectMemory,matrix/cody/internal/checkpoint.ProjectRecord,matrix/cody/internal/checkpoint.data,matrix/cody/internal/checkpoint.err,matrix/cody/internal/checkpoint.kind,matrix/cody/internal/checkpoint.p,matrix/cody/internal/checkpoint.projectMemoryPrefix,matrix/cody/internal/checkpoint.projectSummaryCap,matrix/cody/internal/checkpoint.summary,matrix/cortex.Cortex.AppendMessage,matrix/cortex.Message,matrix/cortex.RoleSystem
   ^contains=matrix/cody/internal/checkpoint.ProjectMemory
+  ^calls=matrix/cody/internal/server.Engine.finalizeStackDecision,matrix/cody/internal/server.Engine.recordDesignMemory
+  ^references=matrix/cody/internal/server.Engine.finalizeStackDecision,matrix/cody/internal/server.Engine.recordDesignMemory,matrix/cody/internal/server.Engine.runOrchestrator
   ^defines=matrix/cody/internal/checkpoint/checkpoint.go
 
 NODE id=matrix/cody/internal/checkpoint.ProjectRecord kind=type
@@ -191,6 +230,7 @@ NODE id=matrix/cody/internal/checkpoint.ProjectRecord kind=type
   doc=ProjectRecord is one durable piece of project memory: a resolved Stack\nDecision Record, a resolved Design Language Record, or an accepted task's\nturn-in summary. Together they are what the project IS — recalled as\ngrounding for every later conversation in the same project, so Cody plans\nfrom accumulated memory instead of re-deriving from a file scan.
 EDGES
   contains=matrix/cody/internal/checkpoint.ProjectRecord#At,matrix/cody/internal/checkpoint.ProjectRecord#Kind,matrix/cody/internal/checkpoint.ProjectRecord#Summary
+  ^references=matrix/cody/internal/checkpoint.ProjectMemory.Recent,matrix/cody/internal/checkpoint.ProjectMemory.Record,matrix/cody/internal/checkpoint.RenderProjectMemory
   ^defines=matrix/cody/internal/checkpoint/checkpoint.go
 
 NODE id=matrix/cody/internal/checkpoint.ProjectRecord#At kind=field
@@ -216,6 +256,9 @@ NODE id=matrix/cody/internal/checkpoint.RenderProjectMemory kind=func
   sig=func RenderProjectMemory(records []ProjectRecord) string
   doc=RenderProjectMemory renders records as the grounding section planners and\ntask sheets carry. Decisions (SDR/DLR) render before task summaries because\nthey bind everything after them.
 EDGES
+  references=matrix/cody/internal/checkpoint.ProjectRecord,matrix/cody/internal/checkpoint.b,matrix/cody/internal/checkpoint.decisions,matrix/cody/internal/checkpoint.label,matrix/cody/internal/checkpoint.r,matrix/cody/internal/checkpoint.records,matrix/cody/internal/checkpoint.tasks
+  ^calls=matrix/cody/internal/server.Engine.recallProjectMemory
+  ^references=matrix/cody/internal/server.Engine.recallProjectMemory
   ^defines=matrix/cody/internal/checkpoint/checkpoint.go
 
 NODE id=matrix/cody/internal/checkpoint.Snapshotter kind=type
@@ -224,6 +267,7 @@ NODE id=matrix/cody/internal/checkpoint.Snapshotter kind=type
   doc=Snapshotter snapshots and restores a workspace tree.
 EDGES
   contains=matrix/cody/internal/checkpoint.Snapshotter#root,matrix/cody/internal/checkpoint.Snapshotter.List,matrix/cody/internal/checkpoint.Snapshotter.Restore,matrix/cody/internal/checkpoint.Snapshotter.Snapshot,matrix/cody/internal/checkpoint.Snapshotter.walkTree
+  ^references=matrix/cody/internal/checkpoint.NewSnapshotter,matrix/cody/internal/checkpoint.Snapshotter.List,matrix/cody/internal/checkpoint.Snapshotter.Restore,matrix/cody/internal/checkpoint.Snapshotter.Snapshot,matrix/cody/internal/checkpoint.Snapshotter.walkTree
   ^defines=matrix/cody/internal/checkpoint/checkpoint.go
 
 NODE id=matrix/cody/internal/checkpoint.Snapshotter#root kind=field
@@ -237,7 +281,10 @@ NODE id=matrix/cody/internal/checkpoint.Snapshotter.List kind=method
   sig=func (s *Snapshotter) List() ([]Info, error)
   doc=List returns the stored snapshots, oldest first.
 EDGES
+  references=matrix/cody/internal/checkpoint.Info,matrix/cody/internal/checkpoint.Snapshotter,matrix/cody/internal/checkpoint.data,matrix/cody/internal/checkpoint.e,matrix/cody/internal/checkpoint.entries,matrix/cody/internal/checkpoint.err,matrix/cody/internal/checkpoint.i,matrix/cody/internal/checkpoint.info,matrix/cody/internal/checkpoint.j,matrix/cody/internal/checkpoint.out,matrix/cody/internal/checkpoint.s,matrix/cody/internal/checkpoint.snapshotsDir
   ^contains=matrix/cody/internal/checkpoint.Snapshotter
+  ^calls=matrix/cody/internal/server.Server.handleWorkspaceSnapshots
+  ^references=matrix/cody/internal/server.Server.handleWorkspaceSnapshots
   ^defines=matrix/cody/internal/checkpoint/checkpoint.go
 
 NODE id=matrix/cody/internal/checkpoint.Snapshotter.Restore kind=method
@@ -245,7 +292,11 @@ NODE id=matrix/cody/internal/checkpoint.Snapshotter.Restore kind=method
   sig=func (s *Snapshotter) Restore(id string) error
   doc=Restore rolls the workspace tree back to a snapshot: snapshot files are\ncopied back, and files created since (outside the skip dirs) are removed.
 EDGES
+  calls=matrix/cody/internal/checkpoint.Snapshotter.walkTree
+  references=matrix/cody/internal/checkpoint.Snapshotter,matrix/cody/internal/checkpoint.Snapshotter.walkTree,matrix/cody/internal/checkpoint.copyFile,matrix/cody/internal/checkpoint.d,matrix/cody/internal/checkpoint.dst,matrix/cody/internal/checkpoint.err,matrix/cody/internal/checkpoint.fi,matrix/cody/internal/checkpoint.id,matrix/cody/internal/checkpoint.info,matrix/cody/internal/checkpoint.path,matrix/cody/internal/checkpoint.rel,matrix/cody/internal/checkpoint.s,matrix/cody/internal/checkpoint.snapFiles,matrix/cody/internal/checkpoint.snapshotsDir,matrix/cody/internal/checkpoint.tree
   ^contains=matrix/cody/internal/checkpoint.Snapshotter
+  ^calls=matrix/cody/internal/server.Server.handleWorkspaceRestore
+  ^references=matrix/cody/internal/server.Server.handleWorkspaceRestore
   ^defines=matrix/cody/internal/checkpoint/checkpoint.go
 
 NODE id=matrix/cody/internal/checkpoint.Snapshotter.Snapshot kind=method
@@ -253,7 +304,11 @@ NODE id=matrix/cody/internal/checkpoint.Snapshotter.Snapshot kind=method
   sig=func (s *Snapshotter) Snapshot(label string) (string, error)
   doc=Snapshot copies the workspace tree (skip dirs excluded) into a new\nsnapshot and returns its id.
 EDGES
+  calls=matrix/cody/internal/checkpoint.Snapshotter.walkTree,matrix/cody/internal/checkpoint.sanitizeLabel
+  references=matrix/cody/internal/checkpoint.Info,matrix/cody/internal/checkpoint.Snapshotter,matrix/cody/internal/checkpoint.Snapshotter.walkTree,matrix/cody/internal/checkpoint.at,matrix/cody/internal/checkpoint.copyFile,matrix/cody/internal/checkpoint.data,matrix/cody/internal/checkpoint.dest,matrix/cody/internal/checkpoint.dst,matrix/cody/internal/checkpoint.err,matrix/cody/internal/checkpoint.files,matrix/cody/internal/checkpoint.id,matrix/cody/internal/checkpoint.info,matrix/cody/internal/checkpoint.label,matrix/cody/internal/checkpoint.meta,matrix/cody/internal/checkpoint.rel,matrix/cody/internal/checkpoint.s,matrix/cody/internal/checkpoint.sanitizeLabel,matrix/cody/internal/checkpoint.snapshotsDir,matrix/cody/internal/checkpoint.src
   ^contains=matrix/cody/internal/checkpoint.Snapshotter
+  ^calls=matrix/cody/internal/server.Server.handleWorkspaceSnapshot
+  ^references=matrix/cody/internal/server.Server.handleWorkspaceSnapshot
   ^defines=matrix/cody/internal/checkpoint/checkpoint.go
 
 NODE id=matrix/cody/internal/checkpoint.Snapshotter.walkTree kind=method
@@ -261,7 +316,10 @@ NODE id=matrix/cody/internal/checkpoint.Snapshotter.walkTree kind=method
   sig=func (s *Snapshotter) walkTree(root string, fn func(rel string, info fs.FileInfo) error) error
   doc=walkTree visits every regular file under root outside the skip dirs.
 EDGES
+  references=matrix/cody/internal/checkpoint.Snapshotter,matrix/cody/internal/checkpoint.d,matrix/cody/internal/checkpoint.err,matrix/cody/internal/checkpoint.fn,matrix/cody/internal/checkpoint.info,matrix/cody/internal/checkpoint.path,matrix/cody/internal/checkpoint.rel,matrix/cody/internal/checkpoint.root,matrix/cody/internal/checkpoint.skipDirs
   ^contains=matrix/cody/internal/checkpoint.Snapshotter
+  ^calls=matrix/cody/internal/checkpoint.Snapshotter.Restore,matrix/cody/internal/checkpoint.Snapshotter.Snapshot
+  ^references=matrix/cody/internal/checkpoint.Snapshotter.Restore,matrix/cody/internal/checkpoint.Snapshotter.Snapshot
   ^defines=matrix/cody/internal/checkpoint/checkpoint.go
 
 NODE id=matrix/cody/internal/checkpoint.checkpointPrefix kind=const
@@ -269,12 +327,15 @@ NODE id=matrix/cody/internal/checkpoint.checkpointPrefix kind=const
   sig=untyped string
   doc=checkpointPrefix tags progress checkpoints in the cortex transcript so\nthey filter cleanly out of other session messages.
 EDGES
+  ^references=matrix/cody/internal/checkpoint.Progress.All,matrix/cody/internal/checkpoint.Progress.Record
   ^defines=matrix/cody/internal/checkpoint/checkpoint.go
 
 NODE id=matrix/cody/internal/checkpoint.copyFile kind=func
   digest=b3:fcbfccd5d40bea1598cb0343f4c3dc9085e965046324538651fa18aed6e6f52a file=cody/internal/checkpoint/checkpoint.go range=195:210 lang=go exported=false byte_range=5260:5594
   sig=func copyFile(src, dst string, perm fs.FileMode) error
 EDGES
+  references=matrix/cody/internal/checkpoint.dst,matrix/cody/internal/checkpoint.err,matrix/cody/internal/checkpoint.in,matrix/cody/internal/checkpoint.out,matrix/cody/internal/checkpoint.perm,matrix/cody/internal/checkpoint.src
+  ^references=matrix/cody/internal/checkpoint.Snapshotter.Restore,matrix/cody/internal/checkpoint.Snapshotter.Snapshot
   ^defines=matrix/cody/internal/checkpoint/checkpoint.go
 
 NODE id=matrix/cody/internal/checkpoint.projectMemoryPrefix kind=const
@@ -282,6 +343,7 @@ NODE id=matrix/cody/internal/checkpoint.projectMemoryPrefix kind=const
   sig=untyped string
   doc=projectMemoryPrefix tags project-memory records in the cortex transcript.
 EDGES
+  ^references=matrix/cody/internal/checkpoint.ProjectMemory.Recent,matrix/cody/internal/checkpoint.ProjectMemory.Record
   ^defines=matrix/cody/internal/checkpoint/checkpoint.go
 
 NODE id=matrix/cody/internal/checkpoint.projectSummaryCap kind=const
@@ -289,12 +351,16 @@ NODE id=matrix/cody/internal/checkpoint.projectSummaryCap kind=const
   sig=untyped int
   doc=projectSummaryCap bounds one stored record so a verbose design language can\nnever bloat the recall bundle.
 EDGES
+  ^references=matrix/cody/internal/checkpoint.ProjectMemory.Record
   ^defines=matrix/cody/internal/checkpoint/checkpoint.go
 
 NODE id=matrix/cody/internal/checkpoint.sanitizeLabel kind=func
   digest=b3:c54d9010418bc37654c1538454f11a66aec0456ca17e10a9765ddd648e5f2574 file=cody/internal/checkpoint/checkpoint.go range=212:228 lang=go exported=false byte_range=5596:5938
   sig=func sanitizeLabel(label string) string
 EDGES
+  references=matrix/cody/internal/checkpoint.b,matrix/cody/internal/checkpoint.label,matrix/cody/internal/checkpoint.max,matrix/cody/internal/checkpoint.out,matrix/cody/internal/checkpoint.r
+  ^calls=matrix/cody/internal/checkpoint.Snapshotter.Snapshot
+  ^references=matrix/cody/internal/checkpoint.Snapshotter.Snapshot
   ^defines=matrix/cody/internal/checkpoint/checkpoint.go
 
 NODE id=matrix/cody/internal/checkpoint.skipDirs kind=var
@@ -302,6 +368,7 @@ NODE id=matrix/cody/internal/checkpoint.skipDirs kind=var
   sig=map[string]bool
   doc=skipDirs are never snapshotted nor deleted by a restore.
 EDGES
+  ^references=matrix/cody/internal/checkpoint.Snapshotter.walkTree
   ^defines=matrix/cody/internal/checkpoint/checkpoint.go
 
 NODE id=matrix/cody/internal/checkpoint.snapshotsDir kind=const
@@ -309,6 +376,7 @@ NODE id=matrix/cody/internal/checkpoint.snapshotsDir kind=const
   sig=untyped string
   doc=snapshotsDir lives under the workspace's .cody state dir.
 EDGES
+  ^references=matrix/cody/internal/checkpoint.Snapshotter.List,matrix/cody/internal/checkpoint.Snapshotter.Restore,matrix/cody/internal/checkpoint.Snapshotter.Snapshot
   ^defines=matrix/cody/internal/checkpoint/checkpoint.go
 
 NODE id=matrix/cody/internal/checkpoint/checkpoint.go kind=file

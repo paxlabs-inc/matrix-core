@@ -1,16 +1,20 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:9b68327501b45793fd7687f43b30c960fd68ae8aaff6b2f1bb36ec3e2df2de2f
+# GENERATED gen=codegraph do-not-edit merkle=b3:20e53aba2ea11552396417e53b3e04e87dd1bbb7bef3aa554a45bb92cf89e7f2
 
 NODE id=matrix/mcl/mtx/canonical kind=package
   digest=b3:093a5419a23ee8e084197adc22a03a6acfce5668da5884fc6ebe25211d1e2623 file=MCL/mtx/canonical range=0:0 lang=go exported=true
 EDGES
   contains=matrix/mcl/mtx/canonical/canonical.go
+  imports=matrix/mcl/mtx/ast
   ^contains=mod:matrix/mcl
+  ^imports=matrix/bridge/cmd/mclc-cortex,matrix/executor/cmd/mcl-e2e,matrix/executor/runtime,matrix/mcl/cmd/mclc
 
 NODE id=matrix/mcl/mtx/canonical.Bytes kind=func
   digest=b3:0ab059aeba57c18e9ff0e5a0bd9100c93397b44b1fb0d61bb19af6671543df10 file=MCL/mtx/canonical/canonical.go range=35:40 lang=go exported=true byte_range=1095:1272
   sig=func Bytes(file *ast.File) []byte
   doc=Bytes returns the canonical byte representation (before hashing).\nUseful for debugging.
 EDGES
+  calls=matrix/mcl/mtx/canonical.appendFile
+  references=matrix/mcl/mtx/ast.File,matrix/mcl/mtx/canonical.appendFile,matrix/mcl/mtx/canonical.buf,matrix/mcl/mtx/canonical.file
   ^defines=matrix/mcl/mtx/canonical/canonical.go
 
 NODE id=matrix/mcl/mtx/canonical.Hash kind=func
@@ -18,54 +22,88 @@ NODE id=matrix/mcl/mtx/canonical.Hash kind=func
   sig=func Hash(file *ast.File) string
   doc=Hash computes the sha256 AST hash of a MatrixScript file.\nReturns the hex-encoded digest string.
 EDGES
+  calls=matrix/mcl/mtx/canonical.appendFile
+  references=matrix/mcl/mtx/ast.File,matrix/mcl/mtx/canonical.appendFile,matrix/mcl/mtx/canonical.buf,matrix/mcl/mtx/canonical.file,matrix/mcl/mtx/canonical.sum
+  ^calls=matrix/bridge/cmd/mclc-cortex.run,matrix/executor/cmd/mcl-e2e.RunCompile,matrix/executor/runtime.SkillLoader.Load,matrix/mcl/cmd/mclc.cmdCompile,matrix/mcl/cmd/mclc.cmdHash
+  ^references=matrix/bridge/cmd/mclc-cortex.run,matrix/executor/cmd/mcl-e2e.RunCompile,matrix/executor/runtime.SkillLoader.Load,matrix/mcl/cmd/mclc.cmdCompile,matrix/mcl/cmd/mclc.cmdHash
   ^defines=matrix/mcl/mtx/canonical/canonical.go
 
 NODE id=matrix/mcl/mtx/canonical.appendCondition kind=func
   digest=b3:c27f3cff7a940c6b55b8490c9f3a8c265897651f6f3fc99cb6dcde9a6a203a70 file=MCL/mtx/canonical/canonical.go range=171:189 lang=go exported=false byte_range=4279:4825
   sig=func appendCondition(buf []byte, cond ast.Condition) []byte
 EDGES
+  calls=matrix/mcl/mtx/canonical.appendValue
+  references=matrix/mcl/mtx/ast.Condition,matrix/mcl/mtx/ast.ConfidenceCondition,matrix/mcl/mtx/ast.SlotValCondition,matrix/mcl/mtx/ast.UnknownCondition,matrix/mcl/mtx/ast.VerbCondition,matrix/mcl/mtx/canonical.appendValue,matrix/mcl/mtx/canonical.buf,matrix/mcl/mtx/canonical.c,matrix/mcl/mtx/canonical.cond
+  ^calls=matrix/mcl/mtx/canonical.appendEntry
+  ^references=matrix/mcl/mtx/canonical.appendEntry
   ^defines=matrix/mcl/mtx/canonical/canonical.go
 
 NODE id=matrix/mcl/mtx/canonical.appendEntry kind=func
   digest=b3:0dcd245aff29f2195e45fac2f1342f414aed868b9e4303175af2ac42de0b774f file=MCL/mtx/canonical/canonical.go range=67:169 lang=go exported=false byte_range=1760:4277
   sig=func appendEntry(buf []byte, entry ast.Entry) []byte
 EDGES
+  calls=matrix/mcl/mtx/canonical.appendCondition,matrix/mcl/mtx/canonical.appendQuotedString,matrix/mcl/mtx/canonical.appendSlotModifier,matrix/mcl/mtx/canonical.appendTypeRef,matrix/mcl/mtx/canonical.appendValue
+  references=matrix/mcl/mtx/ast.ClarifyBlock,matrix/mcl/mtx/ast.Comment,matrix/mcl/mtx/ast.Entry,matrix/mcl/mtx/ast.FailEntry,matrix/mcl/mtx/ast.KVPair,matrix/mcl/mtx/ast.NoneEntry,matrix/mcl/mtx/ast.OnBlock,matrix/mcl/mtx/ast.PromptBlock,matrix/mcl/mtx/ast.RefEntry,matrix/mcl/mtx/ast.ResolveStmt,matrix/mcl/mtx/ast.SlotDecl,matrix/mcl/mtx/ast.UnknownBlock,matrix/mcl/mtx/canonical.appendCondition,matrix/mcl/mtx/canonical.appendQuotedString,matrix/mcl/mtx/canonical.appendSlotModifier,matrix/mcl/mtx/canonical.appendTypeRef,matrix/mcl/mtx/canonical.appendValue,matrix/mcl/mtx/canonical.arg,matrix/mcl/mtx/canonical.buf,matrix/mcl/mtx/canonical.e,matrix/mcl/mtx/canonical.entry,matrix/mcl/mtx/canonical.i,matrix/mcl/mtx/canonical.mod,matrix/mcl/mtx/canonical.role,matrix/mcl/mtx/canonical.sub
+  ^calls=matrix/mcl/mtx/canonical.appendSection
+  ^references=matrix/mcl/mtx/canonical.appendSection
   ^defines=matrix/mcl/mtx/canonical/canonical.go
 
 NODE id=matrix/mcl/mtx/canonical.appendFile kind=func
   digest=b3:2ac2f195ed6c97c3e211d243b21d7a6c4b5ad374bbbd2974d171d4831023c004 file=MCL/mtx/canonical/canonical.go range=44:53 lang=go exported=false byte_range=1307:1526
   sig=func appendFile(buf []byte, file *ast.File) []byte
 EDGES
+  calls=matrix/mcl/mtx/canonical.appendSection
+  references=matrix/mcl/mtx/ast.File,matrix/mcl/mtx/canonical.appendSection,matrix/mcl/mtx/canonical.buf,matrix/mcl/mtx/canonical.file,matrix/mcl/mtx/canonical.sec
+  ^calls=matrix/mcl/mtx/canonical.Bytes,matrix/mcl/mtx/canonical.Hash
+  ^references=matrix/mcl/mtx/canonical.Bytes,matrix/mcl/mtx/canonical.Hash
   ^defines=matrix/mcl/mtx/canonical/canonical.go
 
 NODE id=matrix/mcl/mtx/canonical.appendQuotedString kind=func
   digest=b3:c25f5d95b1789d8716498c1be9e3781f82340ef5843d3521740a60eba8298218 file=MCL/mtx/canonical/canonical.go range=275:293 lang=go exported=false byte_range=6702:7098
   sig=func appendQuotedString(buf []byte, s string) []byte
 EDGES
+  references=matrix/mcl/mtx/canonical.buf,matrix/mcl/mtx/canonical.r,matrix/mcl/mtx/canonical.s
+  ^calls=matrix/mcl/mtx/canonical.appendEntry,matrix/mcl/mtx/canonical.appendValue
+  ^references=matrix/mcl/mtx/canonical.appendEntry,matrix/mcl/mtx/canonical.appendValue
   ^defines=matrix/mcl/mtx/canonical/canonical.go
 
 NODE id=matrix/mcl/mtx/canonical.appendSection kind=func
   digest=b3:423fb62f33e86af1f4d289cbd5671bb1d6b9efd653e2b81531fd76c3ace2b2fb file=MCL/mtx/canonical/canonical.go range=55:65 lang=go exported=false byte_range=1528:1758
   sig=func appendSection(buf []byte, sec *ast.Section) []byte
 EDGES
+  calls=matrix/mcl/mtx/canonical.appendEntry
+  references=matrix/mcl/mtx/ast.Section,matrix/mcl/mtx/canonical.appendEntry,matrix/mcl/mtx/canonical.buf,matrix/mcl/mtx/canonical.entry,matrix/mcl/mtx/canonical.sec
+  ^calls=matrix/mcl/mtx/canonical.appendFile
+  ^references=matrix/mcl/mtx/canonical.appendFile
   ^defines=matrix/mcl/mtx/canonical/canonical.go
 
 NODE id=matrix/mcl/mtx/canonical.appendSlotModifier kind=func
   digest=b3:e9c27c36a242d94892d1cbf92807238e10aeb52c2c1b509e45d337aec9b52af3 file=MCL/mtx/canonical/canonical.go range=253:273 lang=go exported=false byte_range=6134:6700
   sig=func appendSlotModifier(buf []byte, mod *ast.SlotModifier) []byte
 EDGES
+  calls=matrix/mcl/mtx/canonical.appendValue
+  references=matrix/mcl/mtx/ast.ModDefault,matrix/mcl/mtx/ast.ModHint,matrix/mcl/mtx/ast.ModMax,matrix/mcl/mtx/ast.ModOptional,matrix/mcl/mtx/ast.ModRequired,matrix/mcl/mtx/ast.SlotModifier,matrix/mcl/mtx/canonical.appendValue,matrix/mcl/mtx/canonical.buf,matrix/mcl/mtx/canonical.mod
+  ^calls=matrix/mcl/mtx/canonical.appendEntry
+  ^references=matrix/mcl/mtx/canonical.appendEntry
   ^defines=matrix/mcl/mtx/canonical/canonical.go
 
 NODE id=matrix/mcl/mtx/canonical.appendTypeRef kind=func
   digest=b3:1ca88a577461e4e8c243fd48eaf3cf0d2df7e645811414674c37a52cf17e193e file=MCL/mtx/canonical/canonical.go range=234:251 lang=go exported=false byte_range=5755:6132
   sig=func appendTypeRef(buf []byte, tr *ast.TypeRef) []byte
 EDGES
+  references=matrix/mcl/mtx/ast.TypeRef,matrix/mcl/mtx/canonical.buf,matrix/mcl/mtx/canonical.i,matrix/mcl/mtx/canonical.tr,matrix/mcl/mtx/canonical.v
+  ^calls=matrix/mcl/mtx/canonical.appendEntry
+  ^references=matrix/mcl/mtx/canonical.appendEntry
   ^defines=matrix/mcl/mtx/canonical/canonical.go
 
 NODE id=matrix/mcl/mtx/canonical.appendValue kind=func
   digest=b3:c929e152551eeb34cfa82147ecb9d4bd60410052764c5399453db31c6564839d file=MCL/mtx/canonical/canonical.go range=191:232 lang=go exported=false byte_range=4827:5753
   sig=func appendValue(buf []byte, val ast.Value) []byte
 EDGES
+  calls=matrix/mcl/mtx/canonical.appendQuotedString
+  references=matrix/mcl/mtx/ast.BoolValue,matrix/mcl/mtx/ast.FloatValue,matrix/mcl/mtx/ast.IdentValue,matrix/mcl/mtx/ast.IntValue,matrix/mcl/mtx/ast.OptionListValue,matrix/mcl/mtx/ast.SlotExprValue,matrix/mcl/mtx/ast.SpaceListValue,matrix/mcl/mtx/ast.StringValue,matrix/mcl/mtx/ast.URIValue,matrix/mcl/mtx/ast.Value,matrix/mcl/mtx/canonical.appendQuotedString,matrix/mcl/mtx/canonical.buf,matrix/mcl/mtx/canonical.i,matrix/mcl/mtx/canonical.item,matrix/mcl/mtx/canonical.v,matrix/mcl/mtx/canonical.val
+  ^calls=matrix/mcl/mtx/canonical.appendCondition,matrix/mcl/mtx/canonical.appendEntry,matrix/mcl/mtx/canonical.appendSlotModifier
+  ^references=matrix/mcl/mtx/canonical.appendCondition,matrix/mcl/mtx/canonical.appendEntry,matrix/mcl/mtx/canonical.appendSlotModifier
   ^defines=matrix/mcl/mtx/canonical/canonical.go
 
 NODE id=matrix/mcl/mtx/canonical/canonical.go kind=file

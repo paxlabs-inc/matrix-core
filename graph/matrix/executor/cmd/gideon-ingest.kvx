@@ -1,9 +1,10 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:9b68327501b45793fd7687f43b30c960fd68ae8aaff6b2f1bb36ec3e2df2de2f
+# GENERATED gen=codegraph do-not-edit merkle=b3:20e53aba2ea11552396417e53b3e04e87dd1bbb7bef3aa554a45bb92cf89e7f2
 
 NODE id=matrix/executor/cmd/gideon-ingest kind=package
   digest=b3:9e86660631c26bff61df191c0e83548bbbdd7c9347ec27f26dc9e5a8259ac26b file=executor/cmd/gideon-ingest range=0:0 lang=go exported=true
 EDGES
   contains=matrix/executor/cmd/gideon-ingest/corpus.go,matrix/executor/cmd/gideon-ingest/ingest.go,matrix/executor/cmd/gideon-ingest/main.go,matrix/executor/cmd/gideon-ingest/modules.go
+  imports=matrix/cortex,matrix/cortex/memory,matrix/cortex/store
   ^contains=mod:matrix/executor
 
 NODE id=matrix/executor/cmd/gideon-ingest.buildTags kind=func
@@ -11,6 +12,9 @@ NODE id=matrix/executor/cmd/gideon-ingest.buildTags kind=func
   sig=func buildTags(key string, extra []string) []memory.Tag
   doc=buildTags assembles the tag slice, always leading with the ingest marker and\nthe stable key, then de-dupes and clamps to cortex's per-memory limits.
 EDGES
+  references=matrix/cortex/memory.MaxTagLen,matrix/cortex/memory.MaxTagsPerMemory,matrix/cortex/memory.Tag,matrix/executor/cmd/gideon-ingest.dup,matrix/executor/cmd/gideon-ingest.extra,matrix/executor/cmd/gideon-ingest.ingestKeyTagNS,matrix/executor/cmd/gideon-ingest.ingestTag,matrix/executor/cmd/gideon-ingest.key,matrix/executor/cmd/gideon-ingest.out,matrix/executor/cmd/gideon-ingest.raw,matrix/executor/cmd/gideon-ingest.s,matrix/executor/cmd/gideon-ingest.seen
+  ^calls=matrix/executor/cmd/gideon-ingest.ingester.upsertNode
+  ^references=matrix/executor/cmd/gideon-ingest.ingester.upsertNode
   ^defines=matrix/executor/cmd/gideon-ingest/ingest.go
 
 NODE id=matrix/executor/cmd/gideon-ingest.condense kind=func
@@ -18,12 +22,16 @@ NODE id=matrix/executor/cmd/gideon-ingest.condense kind=func
   sig=func condense(s string) string
   doc=condense collapses all runs of whitespace (including newlines) into single\nspaces and trims the result.
 EDGES
+  references=matrix/executor/cmd/gideon-ingest.s
+  ^calls=matrix/executor/cmd/gideon-ingest.docAbovePackage,matrix/executor/cmd/gideon-ingest.docAboveType,matrix/executor/cmd/gideon-ingest.firstParagraph,matrix/executor/cmd/gideon-ingest.ingester.ingestChat,matrix/executor/cmd/gideon-ingest.ingester.ingestModules,matrix/executor/cmd/gideon-ingest.ingester.ingestRunbook
+  ^references=matrix/executor/cmd/gideon-ingest.docAbovePackage,matrix/executor/cmd/gideon-ingest.docAboveType,matrix/executor/cmd/gideon-ingest.firstParagraph,matrix/executor/cmd/gideon-ingest.ingester.ingestChat,matrix/executor/cmd/gideon-ingest.ingester.ingestModules,matrix/executor/cmd/gideon-ingest.ingester.ingestRunbook
   ^defines=matrix/executor/cmd/gideon-ingest/corpus.go
 
 NODE id=matrix/executor/cmd/gideon-ingest.createdBy kind=const
   digest=b3:74e3bd2b4421177b1344e912d81bc89d73cfc08b01e35d8bd44856a3d1516bad file=executor/cmd/gideon-ingest/ingest.go range=47:47 lang=go exported=false byte_range=1753:1785
   sig=untyped string
 EDGES
+  ^references=matrix/executor/cmd/gideon-ingest.ingester.linkEdge,matrix/executor/cmd/gideon-ingest.ingester.upsertNode
   ^defines=matrix/executor/cmd/gideon-ingest/ingest.go
 
 NODE id=matrix/executor/cmd/gideon-ingest.discoverModules kind=func
@@ -31,6 +39,9 @@ NODE id=matrix/executor/cmd/gideon-ingest.discoverModules kind=func
   sig=func discoverModules(root string) []string
   doc=discoverModules returns the sorted relpaths of every module target:\nevery subdir of x/ and precompiles/, plus the app/rpc/indexer singletons.
 EDGES
+  references=matrix/executor/cmd/gideon-ingest.e,matrix/executor/cmd/gideon-ingest.entries,matrix/executor/cmd/gideon-ingest.err,matrix/executor/cmd/gideon-ingest.fi,matrix/executor/cmd/gideon-ingest.parent,matrix/executor/cmd/gideon-ingest.rels,matrix/executor/cmd/gideon-ingest.root,matrix/executor/cmd/gideon-ingest.single
+  ^calls=matrix/executor/cmd/gideon-ingest.ingester.ingestModules
+  ^references=matrix/executor/cmd/gideon-ingest.ingester.ingestModules
   ^defines=matrix/executor/cmd/gideon-ingest/modules.go
 
 NODE id=matrix/executor/cmd/gideon-ingest.docAbovePackage kind=func
@@ -38,6 +49,10 @@ NODE id=matrix/executor/cmd/gideon-ingest.docAbovePackage kind=func
   sig=func docAbovePackage(content string) string
   doc=docAbovePackage returns the contiguous //-comment block directly above the\n`package` clause, ignoring license/copyright boilerplate.
 EDGES
+  calls=matrix/executor/cmd/gideon-ingest.condense,matrix/executor/cmd/gideon-ingest.looksLikeLicense,matrix/executor/cmd/gideon-ingest.truncate
+  references=matrix/executor/cmd/gideon-ingest.condense,matrix/executor/cmd/gideon-ingest.content,matrix/executor/cmd/gideon-ingest.doc,matrix/executor/cmd/gideon-ingest.i,matrix/executor/cmd/gideon-ingest.l,matrix/executor/cmd/gideon-ingest.lines,matrix/executor/cmd/gideon-ingest.ln,matrix/executor/cmd/gideon-ingest.looksLikeLicense,matrix/executor/cmd/gideon-ingest.pkgIdx,matrix/executor/cmd/gideon-ingest.r,matrix/executor/cmd/gideon-ingest.rev,matrix/executor/cmd/gideon-ingest.t,matrix/executor/cmd/gideon-ingest.truncate
+  ^calls=matrix/executor/cmd/gideon-ingest.igDeriveSummary
+  ^references=matrix/executor/cmd/gideon-ingest.igDeriveSummary
   ^defines=matrix/executor/cmd/gideon-ingest/modules.go
 
 NODE id=matrix/executor/cmd/gideon-ingest.docAboveType kind=func
@@ -45,24 +60,38 @@ NODE id=matrix/executor/cmd/gideon-ingest.docAboveType kind=func
   sig=func docAboveType(content string, names []string) string
   doc=docAboveType returns the first-sentence doc comment attached to one of the\nnamed exported types (e.g. Keeper).
 EDGES
+  calls=matrix/executor/cmd/gideon-ingest.condense,matrix/executor/cmd/gideon-ingest.firstSentence,matrix/executor/cmd/gideon-ingest.looksLikeLicense,matrix/executor/cmd/gideon-ingest.truncate
+  references=matrix/executor/cmd/gideon-ingest.condense,matrix/executor/cmd/gideon-ingest.content,matrix/executor/cmd/gideon-ingest.ct,matrix/executor/cmd/gideon-ingest.doc,matrix/executor/cmd/gideon-ingest.firstSentence,matrix/executor/cmd/gideon-ingest.i,matrix/executor/cmd/gideon-ingest.j,matrix/executor/cmd/gideon-ingest.l,matrix/executor/cmd/gideon-ingest.lines,matrix/executor/cmd/gideon-ingest.ln,matrix/executor/cmd/gideon-ingest.looksLikeLicense,matrix/executor/cmd/gideon-ingest.name,matrix/executor/cmd/gideon-ingest.names,matrix/executor/cmd/gideon-ingest.r,matrix/executor/cmd/gideon-ingest.rev,matrix/executor/cmd/gideon-ingest.t,matrix/executor/cmd/gideon-ingest.truncate
+  ^calls=matrix/executor/cmd/gideon-ingest.igDeriveSummary
+  ^references=matrix/executor/cmd/gideon-ingest.igDeriveSummary
   ^defines=matrix/executor/cmd/gideon-ingest/modules.go
 
 NODE id=matrix/executor/cmd/gideon-ingest.extractImport kind=func
   digest=b3:111da8852c123dc96de73a91f4035d63dc82bd478b13955b670867cb060c6b61 file=executor/cmd/gideon-ingest/modules.go range=351:361 lang=go exported=false byte_range=9550:9759
   sig=func extractImport(t string) (string, bool)
 EDGES
+  references=matrix/executor/cmd/gideon-ingest.i,matrix/executor/cmd/gideon-ingest.j,matrix/executor/cmd/gideon-ingest.t
+  ^calls=matrix/executor/cmd/gideon-ingest.scanGoFile
+  ^references=matrix/executor/cmd/gideon-ingest.scanGoFile
   ^defines=matrix/executor/cmd/gideon-ingest/modules.go
 
 NODE id=matrix/executor/cmd/gideon-ingest.firstParagraph kind=func
   digest=b3:d4df7be327c8c477025959e961d9e69f79da86256dc4ee341192fedb9d2372cf file=executor/cmd/gideon-ingest/modules.go range=460:482 lang=go exported=false byte_range=12163:12652
   sig=func firstParagraph(md string) string
 EDGES
+  calls=matrix/executor/cmd/gideon-ingest.condense,matrix/executor/cmd/gideon-ingest.truncate
+  references=matrix/executor/cmd/gideon-ingest.buf,matrix/executor/cmd/gideon-ingest.condense,matrix/executor/cmd/gideon-ingest.lines,matrix/executor/cmd/gideon-ingest.ln,matrix/executor/cmd/gideon-ingest.md,matrix/executor/cmd/gideon-ingest.started,matrix/executor/cmd/gideon-ingest.t,matrix/executor/cmd/gideon-ingest.truncate
+  ^calls=matrix/executor/cmd/gideon-ingest.igDeriveSummary
+  ^references=matrix/executor/cmd/gideon-ingest.igDeriveSummary
   ^defines=matrix/executor/cmd/gideon-ingest/modules.go
 
 NODE id=matrix/executor/cmd/gideon-ingest.firstSentence kind=func
   digest=b3:af6bcdcb2f5e33efb01826c602aca1b8e46da271982722b8c34abe2ec69a0567 file=executor/cmd/gideon-ingest/modules.go range=484:489 lang=go exported=false byte_range=12654:12764
   sig=func firstSentence(s string) string
 EDGES
+  references=matrix/executor/cmd/gideon-ingest.i,matrix/executor/cmd/gideon-ingest.s
+  ^calls=matrix/executor/cmd/gideon-ingest.docAboveType
+  ^references=matrix/executor/cmd/gideon-ingest.docAboveType
   ^defines=matrix/executor/cmd/gideon-ingest/modules.go
 
 NODE id=matrix/executor/cmd/gideon-ingest.gatherModule kind=func
@@ -70,12 +99,19 @@ NODE id=matrix/executor/cmd/gideon-ingest.gatherModule kind=func
   sig=func gatherModule(root, rel string, known map[string]struct{}) (*moduleInfo, error)
   doc=gatherModule scans one module directory: package name, derived summary,\nkeeper presence, and the set of sibling modules it imports.
 EDGES
+  calls=matrix/executor/cmd/gideon-ingest.hasAnyGo,matrix/executor/cmd/gideon-ingest.igDeriveSummary,matrix/executor/cmd/gideon-ingest.orderedNames,matrix/executor/cmd/gideon-ingest.readGoFiles,matrix/executor/cmd/gideon-ingest.scanGoFile
+  references=matrix/executor/cmd/gideon-ingest.abs,matrix/executor/cmd/gideon-ingest.b,matrix/executor/cmd/gideon-ingest.d,matrix/executor/cmd/gideon-ingest.dep,matrix/executor/cmd/gideon-ingest.err,matrix/executor/cmd/gideon-ingest.fi,matrix/executor/cmd/gideon-ingest.hasAnyGo,matrix/executor/cmd/gideon-ingest.igDeriveSummary,matrix/executor/cmd/gideon-ingest.imp,matrix/executor/cmd/gideon-ingest.imports,matrix/executor/cmd/gideon-ingest.known,matrix/executor/cmd/gideon-ingest.mi,matrix/executor/cmd/gideon-ingest.moduleInfo,matrix/executor/cmd/gideon-ingest.n,matrix/executor/cmd/gideon-ingest.name,matrix/executor/cmd/gideon-ingest.ok,matrix/executor/cmd/gideon-ingest.order,matrix/executor/cmd/gideon-ingest.orderedNames,matrix/executor/cmd/gideon-ingest.p,matrix/executor/cmd/gideon-ingest.pkg,matrix/executor/cmd/gideon-ingest.readGoFiles,matrix/executor/cmd/gideon-ingest.rel,matrix/executor/cmd/gideon-ingest.rerr,matrix/executor/cmd/gideon-ingest.resolveModuleRel,matrix/executor/cmd/gideon-ingest.root,matrix/executor/cmd/gideon-ingest.scanGoFile,matrix/executor/cmd/gideon-ingest.topFiles
+  ^calls=matrix/executor/cmd/gideon-ingest.ingester.ingestModules
+  ^references=matrix/executor/cmd/gideon-ingest.ingester.ingestModules
   ^defines=matrix/executor/cmd/gideon-ingest/modules.go
 
 NODE id=matrix/executor/cmd/gideon-ingest.hasAnyGo kind=func
   digest=b3:d3cf33041f7d4049c805a28febf2af0ef99dbac31b9df75b0f12d0ce3f614568 file=executor/cmd/gideon-ingest/modules.go range=281:294 lang=go exported=false byte_range=7871:8159
   sig=func hasAnyGo(dir string) bool
 EDGES
+  references=matrix/executor/cmd/gideon-ingest.d,matrix/executor/cmd/gideon-ingest.dir,matrix/executor/cmd/gideon-ingest.err,matrix/executor/cmd/gideon-ingest.found,matrix/executor/cmd/gideon-ingest.p
+  ^calls=matrix/executor/cmd/gideon-ingest.gatherModule
+  ^references=matrix/executor/cmd/gideon-ingest.gatherModule
   ^defines=matrix/executor/cmd/gideon-ingest/modules.go
 
 NODE id=matrix/executor/cmd/gideon-ingest.headings kind=func
@@ -83,6 +119,9 @@ NODE id=matrix/executor/cmd/gideon-ingest.headings kind=func
   sig=func headings(md string) []string
   doc=headings returns the titles of every level-2 and level-3 heading in md, in\ndocument order — a deterministic outline of a chat transcript.
 EDGES
+  references=matrix/executor/cmd/gideon-ingest.ln,matrix/executor/cmd/gideon-ingest.md,matrix/executor/cmd/gideon-ingest.out,matrix/executor/cmd/gideon-ingest.t
+  ^calls=matrix/executor/cmd/gideon-ingest.ingester.ingestChat
+  ^references=matrix/executor/cmd/gideon-ingest.ingester.ingestChat
   ^defines=matrix/executor/cmd/gideon-ingest/corpus.go
 
 NODE id=matrix/executor/cmd/gideon-ingest.igDeriveSummary kind=func
@@ -90,6 +129,10 @@ NODE id=matrix/executor/cmd/gideon-ingest.igDeriveSummary kind=func
   sig=func igDeriveSummary(abs string, topFiles map[string]string, order []string, mi *moduleInfo) string
   doc=igDeriveSummary applies the deterministic heuristic cascade.
 EDGES
+  calls=matrix/executor/cmd/gideon-ingest.docAbovePackage,matrix/executor/cmd/gideon-ingest.docAboveType,matrix/executor/cmd/gideon-ingest.firstParagraph
+  references=matrix/executor/cmd/gideon-ingest.abs,matrix/executor/cmd/gideon-ingest.b,matrix/executor/cmd/gideon-ingest.candidates,matrix/executor/cmd/gideon-ingest.doc,matrix/executor/cmd/gideon-ingest.docAbovePackage,matrix/executor/cmd/gideon-ingest.docAboveType,matrix/executor/cmd/gideon-ingest.err,matrix/executor/cmd/gideon-ingest.firstParagraph,matrix/executor/cmd/gideon-ingest.kb,matrix/executor/cmd/gideon-ingest.mi,matrix/executor/cmd/gideon-ingest.moduleInfo,matrix/executor/cmd/gideon-ingest.n,matrix/executor/cmd/gideon-ingest.order,matrix/executor/cmd/gideon-ingest.para,matrix/executor/cmd/gideon-ingest.pkg,matrix/executor/cmd/gideon-ingest.topFiles
+  ^calls=matrix/executor/cmd/gideon-ingest.gatherModule
+  ^references=matrix/executor/cmd/gideon-ingest.gatherModule
   ^defines=matrix/executor/cmd/gideon-ingest/modules.go
 
 NODE id=matrix/executor/cmd/gideon-ingest.ingestKeyTagNS kind=const
@@ -97,6 +140,7 @@ NODE id=matrix/executor/cmd/gideon-ingest.ingestKeyTagNS kind=const
   sig=untyped string
   doc=ingestKeyTagNS namespaces the per-node stable de-dup key.
 EDGES
+  ^references=matrix/executor/cmd/gideon-ingest.buildTags
   ^defines=matrix/executor/cmd/gideon-ingest/ingest.go
 
 NODE id=matrix/executor/cmd/gideon-ingest.ingestTag kind=const
@@ -104,6 +148,7 @@ NODE id=matrix/executor/cmd/gideon-ingest.ingestTag kind=const
   sig=untyped string
   doc=ingestTag marks every memory this tool emits so an operator can list\nthe whole graph with one tag filter.
 EDGES
+  ^references=matrix/executor/cmd/gideon-ingest.buildTags
   ^defines=matrix/executor/cmd/gideon-ingest/ingest.go
 
 NODE id=matrix/executor/cmd/gideon-ingest.ingester kind=type
@@ -111,6 +156,8 @@ NODE id=matrix/executor/cmd/gideon-ingest.ingester kind=type
   sig=type ingester struct {\n	cx	*cortex.Cortex\n	actor	string\n	dryRun	bool\n\n	// moduleFacts maps a source module's base name (e.g. "evm") -> its Fact\n	// node ID, for depends-on resolution and pattern cross-linking.\n	moduleFacts	map[string]memory.ID\n\n	failurePatterns	[]keywordRef\n	fixPatterns	[]patternRef\n\n	wrote	int\n	updated	int\n	skipped	int\n	edges	int\n}
 EDGES
   contains=matrix/executor/cmd/gideon-ingest.ingester#actor,matrix/executor/cmd/gideon-ingest.ingester#cx,matrix/executor/cmd/gideon-ingest.ingester#dryRun,matrix/executor/cmd/gideon-ingest.ingester#edges,matrix/executor/cmd/gideon-ingest.ingester#failurePatterns,matrix/executor/cmd/gideon-ingest.ingester#fixPatterns,matrix/executor/cmd/gideon-ingest.ingester#moduleFacts,matrix/executor/cmd/gideon-ingest.ingester#skipped,matrix/executor/cmd/gideon-ingest.ingester#updated,matrix/executor/cmd/gideon-ingest.ingester#wrote,matrix/executor/cmd/gideon-ingest.ingester.crossLinkPatternsToModules,matrix/executor/cmd/gideon-ingest.ingester.ingestChat,matrix/executor/cmd/gideon-ingest.ingester.ingestChats,matrix/executor/cmd/gideon-ingest.ingester.ingestModules,matrix/executor/cmd/gideon-ingest.ingester.ingestRunbook,matrix/executor/cmd/gideon-ingest.ingester.linkEdge,matrix/executor/cmd/gideon-ingest.ingester.matchFailures,matrix/executor/cmd/gideon-ingest.ingester.report,matrix/executor/cmd/gideon-ingest.ingester.upsertNode
+  references=matrix/cortex.Cortex,matrix/cortex/memory.ID,matrix/executor/cmd/gideon-ingest.keywordRef,matrix/executor/cmd/gideon-ingest.patternRef
+  ^references=matrix/executor/cmd/gideon-ingest.ingester.crossLinkPatternsToModules,matrix/executor/cmd/gideon-ingest.ingester.ingestChat,matrix/executor/cmd/gideon-ingest.ingester.ingestChats,matrix/executor/cmd/gideon-ingest.ingester.ingestModules,matrix/executor/cmd/gideon-ingest.ingester.ingestRunbook,matrix/executor/cmd/gideon-ingest.ingester.linkEdge,matrix/executor/cmd/gideon-ingest.ingester.matchFailures,matrix/executor/cmd/gideon-ingest.ingester.report,matrix/executor/cmd/gideon-ingest.ingester.upsertNode,matrix/executor/cmd/gideon-ingest.newIngester
   ^defines=matrix/executor/cmd/gideon-ingest/ingest.go
 
 NODE id=matrix/executor/cmd/gideon-ingest.ingester#actor kind=field
@@ -179,35 +226,55 @@ NODE id=matrix/executor/cmd/gideon-ingest.ingester.crossLinkPatternsToModules ki
   sig=func (ig *ingester) crossLinkPatternsToModules() error
   doc=crossLinkPatternsToModules wires every fix/diagnosis Pattern to the source\nmodule Facts it names, by case-insensitive whole-token match.
 EDGES
+  calls=matrix/executor/cmd/gideon-ingest.ingester.linkEdge,matrix/executor/cmd/gideon-ingest.tokenSet
+  references=matrix/cortex/memory.EdgeReferences,matrix/executor/cmd/gideon-ingest.err,matrix/executor/cmd/gideon-ingest.ig,matrix/executor/cmd/gideon-ingest.ingester,matrix/executor/cmd/gideon-ingest.ingester.linkEdge,matrix/executor/cmd/gideon-ingest.n,matrix/executor/cmd/gideon-ingest.names,matrix/executor/cmd/gideon-ingest.ok,matrix/executor/cmd/gideon-ingest.p,matrix/executor/cmd/gideon-ingest.tokenSet,matrix/executor/cmd/gideon-ingest.toks
   ^contains=matrix/executor/cmd/gideon-ingest.ingester
+  ^calls=matrix/executor/cmd/gideon-ingest.run
+  ^references=matrix/executor/cmd/gideon-ingest.run
   ^defines=matrix/executor/cmd/gideon-ingest/ingest.go
 
 NODE id=matrix/executor/cmd/gideon-ingest.ingester.ingestChat kind=method
   digest=b3:d34ae42ce00885643d79b4ea665e7dd248b7a049990c39af99ec554f2ae1bb7e file=executor/cmd/gideon-ingest/corpus.go range=324:385 lang=go exported=false byte_range=8979:11053
   sig=func (ig *ingester) ingestChat(path string) error
 EDGES
+  calls=matrix/executor/cmd/gideon-ingest.condense,matrix/executor/cmd/gideon-ingest.headings,matrix/executor/cmd/gideon-ingest.ingester.linkEdge,matrix/executor/cmd/gideon-ingest.ingester.matchFailures,matrix/executor/cmd/gideon-ingest.ingester.upsertNode,matrix/executor/cmd/gideon-ingest.slugify,matrix/executor/cmd/gideon-ingest.truncate
+  references=matrix/cortex/memory.EdgeCausedBy,matrix/cortex/memory.EdgeDerivedFrom,matrix/cortex/memory.EventData,matrix/cortex/memory.EventObservation,matrix/cortex/memory.OutcomeSuccess,matrix/cortex/memory.PatternData,matrix/executor/cmd/gideon-ingest.base,matrix/executor/cmd/gideon-ingest.condense,matrix/executor/cmd/gideon-ingest.err,matrix/executor/cmd/gideon-ingest.ev,matrix/executor/cmd/gideon-ingest.evID,matrix/executor/cmd/gideon-ingest.evKey,matrix/executor/cmd/gideon-ingest.fid,matrix/executor/cmd/gideon-ingest.headings,matrix/executor/cmd/gideon-ingest.ig,matrix/executor/cmd/gideon-ingest.ingester,matrix/executor/cmd/gideon-ingest.ingester.linkEdge,matrix/executor/cmd/gideon-ingest.ingester.matchFailures,matrix/executor/cmd/gideon-ingest.ingester.upsertNode,matrix/executor/cmd/gideon-ingest.md,matrix/executor/cmd/gideon-ingest.outline,matrix/executor/cmd/gideon-ingest.pat,matrix/executor/cmd/gideon-ingest.patID,matrix/executor/cmd/gideon-ingest.patKey,matrix/executor/cmd/gideon-ingest.path,matrix/executor/cmd/gideon-ingest.patternRef,matrix/executor/cmd/gideon-ingest.raw,matrix/executor/cmd/gideon-ingest.slug,matrix/executor/cmd/gideon-ingest.slugify,matrix/executor/cmd/gideon-ingest.source,matrix/executor/cmd/gideon-ingest.stmt,matrix/executor/cmd/gideon-ingest.truncate
   ^contains=matrix/executor/cmd/gideon-ingest.ingester
+  ^calls=matrix/executor/cmd/gideon-ingest.ingester.ingestChats
+  ^references=matrix/executor/cmd/gideon-ingest.ingester.ingestChats
   ^defines=matrix/executor/cmd/gideon-ingest/corpus.go
 
 NODE id=matrix/executor/cmd/gideon-ingest.ingester.ingestChats kind=method
   digest=b3:dd5560bd822b2f589acb9b5163e17d28a8864c05b1f80ce1b66e9a2d69efe84c file=executor/cmd/gideon-ingest/corpus.go range=307:322 lang=go exported=false byte_range=8550:8977
   sig=func (ig *ingester) ingestChats(dir string) error
 EDGES
+  calls=matrix/executor/cmd/gideon-ingest.ingester.ingestChat
+  references=matrix/executor/cmd/gideon-ingest.dir,matrix/executor/cmd/gideon-ingest.e,matrix/executor/cmd/gideon-ingest.entries,matrix/executor/cmd/gideon-ingest.err,matrix/executor/cmd/gideon-ingest.ig,matrix/executor/cmd/gideon-ingest.ingester,matrix/executor/cmd/gideon-ingest.ingester.ingestChat,matrix/executor/cmd/gideon-ingest.name
   ^contains=matrix/executor/cmd/gideon-ingest.ingester
+  ^calls=matrix/executor/cmd/gideon-ingest.run
+  ^references=matrix/executor/cmd/gideon-ingest.run
   ^defines=matrix/executor/cmd/gideon-ingest/corpus.go
 
 NODE id=matrix/executor/cmd/gideon-ingest.ingester.ingestModules kind=method
   digest=b3:359db150b621da4aa4688ab429765a6769116517152325c9e19418fdd015eeb6 file=executor/cmd/gideon-ingest/modules.go range=38:122 lang=go exported=false byte_range=1146:3444
   sig=func (ig *ingester) ingestModules(root string) error
 EDGES
+  calls=matrix/executor/cmd/gideon-ingest.condense,matrix/executor/cmd/gideon-ingest.discoverModules,matrix/executor/cmd/gideon-ingest.gatherModule,matrix/executor/cmd/gideon-ingest.ingester.linkEdge,matrix/executor/cmd/gideon-ingest.ingester.upsertNode,matrix/executor/cmd/gideon-ingest.truncate
+  references=matrix/cortex/memory.CapabilityData,matrix/cortex/memory.EdgePartOf,matrix/cortex/memory.EdgeReferences,matrix/cortex/memory.FactData,matrix/cortex/memory.ID,matrix/executor/cmd/gideon-ingest.byRel,matrix/executor/cmd/gideon-ingest.capData,matrix/executor/cmd/gideon-ingest.condense,matrix/executor/cmd/gideon-ingest.d,matrix/executor/cmd/gideon-ingest.dep,matrix/executor/cmd/gideon-ingest.deps,matrix/executor/cmd/gideon-ingest.discoverModules,matrix/executor/cmd/gideon-ingest.dstID,matrix/executor/cmd/gideon-ingest.err,matrix/executor/cmd/gideon-ingest.fact,matrix/executor/cmd/gideon-ingest.gatherModule,matrix/executor/cmd/gideon-ingest.id,matrix/executor/cmd/gideon-ingest.ig,matrix/executor/cmd/gideon-ingest.ingester,matrix/executor/cmd/gideon-ingest.ingester.linkEdge,matrix/executor/cmd/gideon-ingest.ingester.upsertNode,matrix/executor/cmd/gideon-ingest.kid,matrix/executor/cmd/gideon-ingest.known,matrix/executor/cmd/gideon-ingest.mi,matrix/executor/cmd/gideon-ingest.mods,matrix/executor/cmd/gideon-ingest.moduleInfo,matrix/executor/cmd/gideon-ingest.ok,matrix/executor/cmd/gideon-ingest.r,matrix/executor/cmd/gideon-ingest.rel,matrix/executor/cmd/gideon-ingest.relpaths,matrix/executor/cmd/gideon-ingest.root,matrix/executor/cmd/gideon-ingest.stableObservedAt,matrix/executor/cmd/gideon-ingest.truncate
   ^contains=matrix/executor/cmd/gideon-ingest.ingester
+  ^calls=matrix/executor/cmd/gideon-ingest.run
+  ^references=matrix/executor/cmd/gideon-ingest.run
   ^defines=matrix/executor/cmd/gideon-ingest/modules.go
 
 NODE id=matrix/executor/cmd/gideon-ingest.ingester.ingestRunbook kind=method
   digest=b3:55c1c8f4886cf559b886220e34958aec495084455d62cda4d4cdb40a404c05ef file=executor/cmd/gideon-ingest/corpus.go range=143:251 lang=go exported=false byte_range=3688:7313
   sig=func (ig *ingester) ingestRunbook(path string) error
 EDGES
+  calls=matrix/cortex/memory.ID.IsZero,matrix/executor/cmd/gideon-ingest.condense,matrix/executor/cmd/gideon-ingest.ingester.linkEdge,matrix/executor/cmd/gideon-ingest.ingester.matchFailures,matrix/executor/cmd/gideon-ingest.ingester.upsertNode,matrix/executor/cmd/gideon-ingest.parseTableRows,matrix/executor/cmd/gideon-ingest.significantKeywords,matrix/executor/cmd/gideon-ingest.slugify,matrix/executor/cmd/gideon-ingest.splitSections,matrix/executor/cmd/gideon-ingest.truncate
+  references=matrix/cortex/memory.CapabilityData,matrix/cortex/memory.EdgeCausedBy,matrix/cortex/memory.EdgeReferences,matrix/cortex/memory.EventData,matrix/cortex/memory.EventObservation,matrix/cortex/memory.ID,matrix/cortex/memory.ID.IsZero,matrix/cortex/memory.OutcomeSuccess,matrix/cortex/memory.PatternData,matrix/executor/cmd/gideon-ingest.block,matrix/executor/cmd/gideon-ingest.body,matrix/executor/cmd/gideon-ingest.byTitle,matrix/executor/cmd/gideon-ingest.capData,matrix/executor/cmd/gideon-ingest.condense,matrix/executor/cmd/gideon-ingest.date,matrix/executor/cmd/gideon-ingest.err,matrix/executor/cmd/gideon-ingest.ev,matrix/executor/cmd/gideon-ingest.fid,matrix/executor/cmd/gideon-ingest.fix,matrix/executor/cmd/gideon-ingest.fm,matrix/executor/cmd/gideon-ingest.i,matrix/executor/cmd/gideon-ingest.id,matrix/executor/cmd/gideon-ingest.ig,matrix/executor/cmd/gideon-ingest.ingester,matrix/executor/cmd/gideon-ingest.ingester.linkEdge,matrix/executor/cmd/gideon-ingest.ingester.matchFailures,matrix/executor/cmd/gideon-ingest.ingester.upsertNode,matrix/executor/cmd/gideon-ingest.issue,matrix/executor/cmd/gideon-ingest.key,matrix/executor/cmd/gideon-ingest.keywordRef,matrix/executor/cmd/gideon-ingest.md,matrix/executor/cmd/gideon-ingest.ok,matrix/executor/cmd/gideon-ingest.params,matrix/executor/cmd/gideon-ingest.parseTableRows,matrix/executor/cmd/gideon-ingest.pat,matrix/executor/cmd/gideon-ingest.path,matrix/executor/cmd/gideon-ingest.patternRef,matrix/executor/cmd/gideon-ingest.raw,matrix/executor/cmd/gideon-ingest.recoveryID,matrix/executor/cmd/gideon-ingest.row,matrix/executor/cmd/gideon-ingest.s,matrix/executor/cmd/gideon-ingest.significantKeywords,matrix/executor/cmd/gideon-ingest.slugify,matrix/executor/cmd/gideon-ingest.source,matrix/executor/cmd/gideon-ingest.splitSections,matrix/executor/cmd/gideon-ingest.stableObservedAt,matrix/executor/cmd/gideon-ingest.summary,matrix/executor/cmd/gideon-ingest.title,matrix/executor/cmd/gideon-ingest.truncate
   ^contains=matrix/executor/cmd/gideon-ingest.ingester
+  ^calls=matrix/executor/cmd/gideon-ingest.run
+  ^references=matrix/executor/cmd/gideon-ingest.run
   ^defines=matrix/executor/cmd/gideon-ingest/corpus.go
 
 NODE id=matrix/executor/cmd/gideon-ingest.ingester.linkEdge kind=method
@@ -215,7 +282,11 @@ NODE id=matrix/executor/cmd/gideon-ingest.ingester.linkEdge kind=method
   sig=func (ig *ingester) linkEdge(src memory.ID, t memory.EdgeType, dst memory.ID, label string) error
   doc=linkEdge ensures a typed edge exists. label rides in EdgeRecord.Data as an\nopaque disambiguator (e.g. "depends-on" vs "resolved-by") since the 14\ncanonical edge types are reused across several ops-graph relations.
 EDGES
+  calls=matrix/cortex.Cortex.AddEdge,matrix/cortex/memory.ID.IsZero
+  references=matrix/cortex.AddEdgeMeta,matrix/cortex.Cortex.AddEdge,matrix/cortex/memory.EdgeType,matrix/cortex/memory.ID,matrix/cortex/memory.ID.IsZero,matrix/executor/cmd/gideon-ingest.createdBy,matrix/executor/cmd/gideon-ingest.dst,matrix/executor/cmd/gideon-ingest.err,matrix/executor/cmd/gideon-ingest.ig,matrix/executor/cmd/gideon-ingest.ingester,matrix/executor/cmd/gideon-ingest.label,matrix/executor/cmd/gideon-ingest.meta,matrix/executor/cmd/gideon-ingest.src,matrix/executor/cmd/gideon-ingest.t
   ^contains=matrix/executor/cmd/gideon-ingest.ingester
+  ^calls=matrix/executor/cmd/gideon-ingest.ingester.crossLinkPatternsToModules,matrix/executor/cmd/gideon-ingest.ingester.ingestChat,matrix/executor/cmd/gideon-ingest.ingester.ingestModules,matrix/executor/cmd/gideon-ingest.ingester.ingestRunbook
+  ^references=matrix/executor/cmd/gideon-ingest.ingester.crossLinkPatternsToModules,matrix/executor/cmd/gideon-ingest.ingester.ingestChat,matrix/executor/cmd/gideon-ingest.ingester.ingestModules,matrix/executor/cmd/gideon-ingest.ingester.ingestRunbook
   ^defines=matrix/executor/cmd/gideon-ingest/ingest.go
 
 NODE id=matrix/executor/cmd/gideon-ingest.ingester.matchFailures kind=method
@@ -223,14 +294,20 @@ NODE id=matrix/executor/cmd/gideon-ingest.ingester.matchFailures kind=method
   sig=func (ig *ingester) matchFailures(text string) []memory.ID
   doc=matchFailures returns RUNBOOK failure-mode Pattern IDs whose distinctive\nkeywords appear (as substrings) in the lowercased text.
 EDGES
+  references=matrix/cortex/memory.ID,matrix/executor/cmd/gideon-ingest.f,matrix/executor/cmd/gideon-ingest.ig,matrix/executor/cmd/gideon-ingest.ingester,matrix/executor/cmd/gideon-ingest.kw,matrix/executor/cmd/gideon-ingest.lt,matrix/executor/cmd/gideon-ingest.out,matrix/executor/cmd/gideon-ingest.text
   ^contains=matrix/executor/cmd/gideon-ingest.ingester
+  ^calls=matrix/executor/cmd/gideon-ingest.ingester.ingestChat,matrix/executor/cmd/gideon-ingest.ingester.ingestRunbook
+  ^references=matrix/executor/cmd/gideon-ingest.ingester.ingestChat,matrix/executor/cmd/gideon-ingest.ingester.ingestRunbook
   ^defines=matrix/executor/cmd/gideon-ingest/ingest.go
 
 NODE id=matrix/executor/cmd/gideon-ingest.ingester.report kind=method
   digest=b3:868ba2ba5ebc2332596712b53451f4c4db09f670ff1964b630032911b49fad1c file=executor/cmd/gideon-ingest/ingest.go range=248:260 lang=go exported=false byte_range=7610:8193
   sig=func (ig *ingester) report(w io.Writer, root, actor string, dryRun bool)
 EDGES
+  references=matrix/executor/cmd/gideon-ingest.actor,matrix/executor/cmd/gideon-ingest.dryRun,matrix/executor/cmd/gideon-ingest.ig,matrix/executor/cmd/gideon-ingest.ingester,matrix/executor/cmd/gideon-ingest.mode,matrix/executor/cmd/gideon-ingest.root,matrix/executor/cmd/gideon-ingest.w
   ^contains=matrix/executor/cmd/gideon-ingest.ingester
+  ^calls=matrix/executor/cmd/gideon-ingest.run
+  ^references=matrix/executor/cmd/gideon-ingest.run
   ^defines=matrix/executor/cmd/gideon-ingest/ingest.go
 
 NODE id=matrix/executor/cmd/gideon-ingest.ingester.upsertNode kind=method
@@ -238,13 +315,20 @@ NODE id=matrix/executor/cmd/gideon-ingest.ingester.upsertNode kind=method
   sig=func (ig *ingester) upsertNode(key string, data memory.TypedData, importance uint8, confidence float32, extraTags ...string) (memory.ID, error)
   doc=upsertNode is the single write path. It is idempotent: Write on first sight,\nskip when the encoded Data is unchanged, Update when content drifted.
 EDGES
+  calls=matrix/cortex.BuildURI,matrix/cortex.Cortex.ResolveLatest,matrix/cortex.Cortex.Update,matrix/cortex.Cortex.Write,matrix/cortex/memory.EncodeData,matrix/cortex/memory.TypeOf,matrix/executor/cmd/gideon-ingest.buildTags,matrix/executor/cmd/gideon-ingest.keyID
+  references=matrix/cortex.BuildURI,matrix/cortex.Cortex.ResolveLatest,matrix/cortex.Cortex.Update,matrix/cortex.Cortex.Write,matrix/cortex.WriteMeta,matrix/cortex/memory.EncodeData,matrix/cortex/memory.ErrNotFound,matrix/cortex/memory.Head,matrix/cortex/memory.ID,matrix/cortex/memory.Provenance,matrix/cortex/memory.SourceImported,matrix/cortex/memory.TypeOf,matrix/cortex/memory.TypedData,matrix/cortex/memory.VisActorPublic,matrix/executor/cmd/gideon-ingest.buildTags,matrix/executor/cmd/gideon-ingest.confidence,matrix/executor/cmd/gideon-ingest.createdBy,matrix/executor/cmd/gideon-ingest.data,matrix/executor/cmd/gideon-ingest.encoded,matrix/executor/cmd/gideon-ingest.err,matrix/executor/cmd/gideon-ingest.extraTags,matrix/executor/cmd/gideon-ingest.head,matrix/executor/cmd/gideon-ingest.id,matrix/executor/cmd/gideon-ingest.ig,matrix/executor/cmd/gideon-ingest.importance,matrix/executor/cmd/gideon-ingest.ingester,matrix/executor/cmd/gideon-ingest.key,matrix/executor/cmd/gideon-ingest.keyID,matrix/executor/cmd/gideon-ingest.mem,matrix/executor/cmd/gideon-ingest.meta,matrix/executor/cmd/gideon-ingest.t,matrix/executor/cmd/gideon-ingest.uri
   ^contains=matrix/executor/cmd/gideon-ingest.ingester
+  ^calls=matrix/executor/cmd/gideon-ingest.ingester.ingestChat,matrix/executor/cmd/gideon-ingest.ingester.ingestModules,matrix/executor/cmd/gideon-ingest.ingester.ingestRunbook
+  ^references=matrix/executor/cmd/gideon-ingest.ingester.ingestChat,matrix/executor/cmd/gideon-ingest.ingester.ingestModules,matrix/executor/cmd/gideon-ingest.ingester.ingestRunbook
   ^defines=matrix/executor/cmd/gideon-ingest/ingest.go
 
 NODE id=matrix/executor/cmd/gideon-ingest.isSeparatorRow kind=func
   digest=b3:5eb7d7c3f85172c6f33c675f45c32ca52b8c9b37b77cd69d2105aa4830b84277 file=executor/cmd/gideon-ingest/corpus.go range=292:303 lang=go exported=false byte_range=8268:8469
   sig=func isSeparatorRow(cells []string) bool
 EDGES
+  references=matrix/executor/cmd/gideon-ingest.c,matrix/executor/cmd/gideon-ingest.cells
+  ^calls=matrix/executor/cmd/gideon-ingest.parseTableRows
+  ^references=matrix/executor/cmd/gideon-ingest.parseTableRows
   ^defines=matrix/executor/cmd/gideon-ingest/corpus.go
 
 NODE id=matrix/executor/cmd/gideon-ingest.keyID kind=func
@@ -252,6 +336,9 @@ NODE id=matrix/executor/cmd/gideon-ingest.keyID kind=func
   sig=func keyID(key string) memory.ID
   doc=keyID derives a deterministic 16-byte memory ID from a stable ingest key\n(sha256 prefix). This is the load-bearing idempotency primitive: the same\nkey always maps to the same memory ID across runs, so re-ingest resolves the\nexisting node by ID and Updates-or-skips rather than minting a duplicate. It\navoids any reliance on a lookup tag (tags are capped at 64 bytes and would\ntruncate long keys).
 EDGES
+  references=matrix/cortex/memory.ID,matrix/executor/cmd/gideon-ingest.id,matrix/executor/cmd/gideon-ingest.key,matrix/executor/cmd/gideon-ingest.sum
+  ^calls=matrix/executor/cmd/gideon-ingest.ingester.upsertNode
+  ^references=matrix/executor/cmd/gideon-ingest.ingester.upsertNode
   ^defines=matrix/executor/cmd/gideon-ingest/ingest.go
 
 NODE id=matrix/executor/cmd/gideon-ingest.keywordRef kind=type
@@ -260,6 +347,8 @@ NODE id=matrix/executor/cmd/gideon-ingest.keywordRef kind=type
   doc=keywordRef ties a RUNBOOK failure-mode Pattern to the distinctive keywords\nin its title so incident rows and chat logs can be linked back to it.
 EDGES
   contains=matrix/executor/cmd/gideon-ingest.keywordRef#id,matrix/executor/cmd/gideon-ingest.keywordRef#keywords
+  references=matrix/cortex/memory.ID
+  ^references=matrix/executor/cmd/gideon-ingest.ingester,matrix/executor/cmd/gideon-ingest.ingester.ingestRunbook
   ^defines=matrix/executor/cmd/gideon-ingest/ingest.go
 
 NODE id=matrix/executor/cmd/gideon-ingest.keywordRef#id kind=field
@@ -278,12 +367,17 @@ NODE id=matrix/executor/cmd/gideon-ingest.looksLikeLicense kind=func
   digest=b3:5421d07b2a4317a66f4c52e875bcbdc3b19c22db2440e5fb14b8d31abe13cbc0 file=executor/cmd/gideon-ingest/modules.go range=491:499 lang=go exported=false byte_range=12766:13005
   sig=func looksLikeLicense(s string) bool
 EDGES
+  references=matrix/executor/cmd/gideon-ingest.l,matrix/executor/cmd/gideon-ingest.m,matrix/executor/cmd/gideon-ingest.s
+  ^calls=matrix/executor/cmd/gideon-ingest.docAbovePackage,matrix/executor/cmd/gideon-ingest.docAboveType
+  ^references=matrix/executor/cmd/gideon-ingest.docAbovePackage,matrix/executor/cmd/gideon-ingest.docAboveType
   ^defines=matrix/executor/cmd/gideon-ingest/modules.go
 
 NODE id=matrix/executor/cmd/gideon-ingest.main kind=func
   digest=b3:74dc169f72040d257527242fafbe8eaf86afa9832aca8383546560561d4f2410 file=executor/cmd/gideon-ingest/main.go range=42:58 lang=go exported=false byte_range=1623:2300
   sig=func main()
 EDGES
+  calls=matrix/executor/cmd/gideon-ingest.run
+  references=matrix/executor/cmd/gideon-ingest.cortexActor,matrix/executor/cmd/gideon-ingest.cortexRoot,matrix/executor/cmd/gideon-ingest.dryRun,matrix/executor/cmd/gideon-ingest.err,matrix/executor/cmd/gideon-ingest.knowledge,matrix/executor/cmd/gideon-ingest.run
   ^defines=matrix/executor/cmd/gideon-ingest/main.go
 
 NODE id=matrix/executor/cmd/gideon-ingest.moduleInfo kind=type
@@ -292,6 +386,8 @@ NODE id=matrix/executor/cmd/gideon-ingest.moduleInfo kind=type
   doc=moduleInfo is the gathered, pre-write description of one source module.
 EDGES
   contains=matrix/executor/cmd/gideon-ingest.moduleInfo#abs,matrix/executor/cmd/gideon-ingest.moduleInfo#base,matrix/executor/cmd/gideon-ingest.moduleInfo#deps,matrix/executor/cmd/gideon-ingest.moduleInfo#factID,matrix/executor/cmd/gideon-ingest.moduleInfo#hasKeeper,matrix/executor/cmd/gideon-ingest.moduleInfo#pkg,matrix/executor/cmd/gideon-ingest.moduleInfo#relpath,matrix/executor/cmd/gideon-ingest.moduleInfo#summary
+  references=matrix/cortex/memory.ID
+  ^references=matrix/executor/cmd/gideon-ingest.gatherModule,matrix/executor/cmd/gideon-ingest.igDeriveSummary,matrix/executor/cmd/gideon-ingest.ingester.ingestModules
   ^defines=matrix/executor/cmd/gideon-ingest/modules.go
 
 NODE id=matrix/executor/cmd/gideon-ingest.moduleInfo#abs kind=field
@@ -346,6 +442,9 @@ NODE id=matrix/executor/cmd/gideon-ingest.newIngester kind=func
   digest=b3:6dd8d09e3254329bff4637fda6a428c29a65c6370ac30df1bf5df5996602f15c file=executor/cmd/gideon-ingest/ingest.go range=87:93 lang=go exported=false byte_range=2820:2983
   sig=func newIngester(actor string, dryRun bool) *ingester
 EDGES
+  references=matrix/cortex/memory.ID,matrix/executor/cmd/gideon-ingest.actor,matrix/executor/cmd/gideon-ingest.dryRun,matrix/executor/cmd/gideon-ingest.ingester
+  ^calls=matrix/executor/cmd/gideon-ingest.run
+  ^references=matrix/executor/cmd/gideon-ingest.run
   ^defines=matrix/executor/cmd/gideon-ingest/ingest.go
 
 NODE id=matrix/executor/cmd/gideon-ingest.orderedNames kind=func
@@ -353,6 +452,9 @@ NODE id=matrix/executor/cmd/gideon-ingest.orderedNames kind=func
   sig=func orderedNames(files map[string]string, prefer string) []string
   doc=orderedNames returns the file names with `prefer` first (if present), the\nrest sorted for determinism.
 EDGES
+  references=matrix/executor/cmd/gideon-ingest.files,matrix/executor/cmd/gideon-ingest.n,matrix/executor/cmd/gideon-ingest.names,matrix/executor/cmd/gideon-ingest.ok,matrix/executor/cmd/gideon-ingest.out,matrix/executor/cmd/gideon-ingest.prefer
+  ^calls=matrix/executor/cmd/gideon-ingest.gatherModule
+  ^references=matrix/executor/cmd/gideon-ingest.gatherModule
   ^defines=matrix/executor/cmd/gideon-ingest/modules.go
 
 NODE id=matrix/executor/cmd/gideon-ingest.parseTableRows kind=func
@@ -360,6 +462,10 @@ NODE id=matrix/executor/cmd/gideon-ingest.parseTableRows kind=func
   sig=func parseTableRows(body string) [][]string
   doc=parseTableRows extracts the data rows of the first markdown pipe-table in\nbody, dropping the header and the separator row. Each row is a slice of\ntrimmed cell strings.
 EDGES
+  calls=matrix/executor/cmd/gideon-ingest.isSeparatorRow,matrix/executor/cmd/gideon-ingest.splitTableRow
+  references=matrix/executor/cmd/gideon-ingest.body,matrix/executor/cmd/gideon-ingest.cells,matrix/executor/cmd/gideon-ingest.header,matrix/executor/cmd/gideon-ingest.isSeparatorRow,matrix/executor/cmd/gideon-ingest.lines,matrix/executor/cmd/gideon-ingest.ln,matrix/executor/cmd/gideon-ingest.rows,matrix/executor/cmd/gideon-ingest.splitTableRow,matrix/executor/cmd/gideon-ingest.t
+  ^calls=matrix/executor/cmd/gideon-ingest.ingester.ingestRunbook
+  ^references=matrix/executor/cmd/gideon-ingest.ingester.ingestRunbook
   ^defines=matrix/executor/cmd/gideon-ingest/corpus.go
 
 NODE id=matrix/executor/cmd/gideon-ingest.patternRef kind=type
@@ -368,6 +474,8 @@ NODE id=matrix/executor/cmd/gideon-ingest.patternRef kind=type
   doc=patternRef is a fix/diagnosis Pattern plus the lowercased text we scan for\nmodule-name mentions during cross-linking.
 EDGES
   contains=matrix/executor/cmd/gideon-ingest.patternRef#id,matrix/executor/cmd/gideon-ingest.patternRef#text
+  references=matrix/cortex/memory.ID
+  ^references=matrix/executor/cmd/gideon-ingest.ingester,matrix/executor/cmd/gideon-ingest.ingester.ingestChat,matrix/executor/cmd/gideon-ingest.ingester.ingestRunbook
   ^defines=matrix/executor/cmd/gideon-ingest/ingest.go
 
 NODE id=matrix/executor/cmd/gideon-ingest.patternRef#id kind=field
@@ -387,6 +495,9 @@ NODE id=matrix/executor/cmd/gideon-ingest.readGoFiles kind=func
   sig=func readGoFiles(dir string, recurse bool) (map[string]string, error)
   doc=readGoFiles returns name->content for .go files in dir. When recurse is\nfalse only the top level is read; _test.go files are always skipped.
 EDGES
+  references=matrix/executor/cmd/gideon-ingest.b,matrix/executor/cmd/gideon-ingest.dir,matrix/executor/cmd/gideon-ingest.e,matrix/executor/cmd/gideon-ingest.entries,matrix/executor/cmd/gideon-ingest.err,matrix/executor/cmd/gideon-ingest.name,matrix/executor/cmd/gideon-ingest.out,matrix/executor/cmd/gideon-ingest.rerr
+  ^calls=matrix/executor/cmd/gideon-ingest.gatherModule
+  ^references=matrix/executor/cmd/gideon-ingest.gatherModule
   ^defines=matrix/executor/cmd/gideon-ingest/modules.go
 
 NODE id=matrix/executor/cmd/gideon-ingest.resolveModuleRel kind=func
@@ -394,12 +505,18 @@ NODE id=matrix/executor/cmd/gideon-ingest.resolveModuleRel kind=func
   sig=func resolveModuleRel(importPath string, known map[string]struct{}) (string, bool)
   doc=resolveModuleRel maps an import path to a known module relpath, if any.
 EDGES
+  references=matrix/executor/cmd/gideon-ingest.cand,matrix/executor/cmd/gideon-ingest.i,matrix/executor/cmd/gideon-ingest.importPath,matrix/executor/cmd/gideon-ingest.known,matrix/executor/cmd/gideon-ingest.ok,matrix/executor/cmd/gideon-ingest.s,matrix/executor/cmd/gideon-ingest.segs,matrix/executor/cmd/gideon-ingest.single
+  ^references=matrix/executor/cmd/gideon-ingest.gatherModule
   ^defines=matrix/executor/cmd/gideon-ingest/modules.go
 
 NODE id=matrix/executor/cmd/gideon-ingest.run kind=func
   digest=b3:8cee8547c32415648cb3d9223a87c322b1ebc8f6e0a13a73bb8e917f4afaae4d file=executor/cmd/gideon-ingest/main.go range=60:100 lang=go exported=false byte_range=2302:3574
   sig=func run(root, actor, knowledge string, dryRun bool) error
 EDGES
+  calls=matrix/cortex.New,matrix/cortex/store.Open,matrix/cortex/store.Store.Close,matrix/executor/cmd/gideon-ingest.ingester.crossLinkPatternsToModules,matrix/executor/cmd/gideon-ingest.ingester.ingestChats,matrix/executor/cmd/gideon-ingest.ingester.ingestModules,matrix/executor/cmd/gideon-ingest.ingester.ingestRunbook,matrix/executor/cmd/gideon-ingest.ingester.report,matrix/executor/cmd/gideon-ingest.newIngester
+  references=matrix/cortex.New,matrix/cortex/store.Open,matrix/cortex/store.Store.Close,matrix/executor/cmd/gideon-ingest.actor,matrix/executor/cmd/gideon-ingest.coreChats,matrix/executor/cmd/gideon-ingest.dryRun,matrix/executor/cmd/gideon-ingest.err,matrix/executor/cmd/gideon-ingest.hyperpax,matrix/executor/cmd/gideon-ingest.ig,matrix/executor/cmd/gideon-ingest.ingester.crossLinkPatternsToModules,matrix/executor/cmd/gideon-ingest.ingester.ingestChats,matrix/executor/cmd/gideon-ingest.ingester.ingestModules,matrix/executor/cmd/gideon-ingest.ingester.ingestRunbook,matrix/executor/cmd/gideon-ingest.ingester.report,matrix/executor/cmd/gideon-ingest.knowledge,matrix/executor/cmd/gideon-ingest.newIngester,matrix/executor/cmd/gideon-ingest.root,matrix/executor/cmd/gideon-ingest.runbook,matrix/executor/cmd/gideon-ingest.s
+  ^calls=matrix/executor/cmd/gideon-ingest.main
+  ^references=matrix/executor/cmd/gideon-ingest.main
   ^defines=matrix/executor/cmd/gideon-ingest/main.go
 
 NODE id=matrix/executor/cmd/gideon-ingest.scanGoFile kind=func
@@ -407,6 +524,10 @@ NODE id=matrix/executor/cmd/gideon-ingest.scanGoFile kind=func
   sig=func scanGoFile(content string) (pkg string, imports []string)
   doc=scanGoFile pulls the package name and the import paths out of Go source via\nline scanning (no go/parser dependency, robust to fork-specific syntax).
 EDGES
+  calls=matrix/executor/cmd/gideon-ingest.extractImport
+  references=matrix/executor/cmd/gideon-ingest.content,matrix/executor/cmd/gideon-ingest.extractImport,matrix/executor/cmd/gideon-ingest.f,matrix/executor/cmd/gideon-ingest.imp,matrix/executor/cmd/gideon-ingest.imports,matrix/executor/cmd/gideon-ingest.inBlock,matrix/executor/cmd/gideon-ingest.ln,matrix/executor/cmd/gideon-ingest.ok,matrix/executor/cmd/gideon-ingest.pkg,matrix/executor/cmd/gideon-ingest.t
+  ^calls=matrix/executor/cmd/gideon-ingest.gatherModule
+  ^references=matrix/executor/cmd/gideon-ingest.gatherModule
   ^defines=matrix/executor/cmd/gideon-ingest/modules.go
 
 NODE id=matrix/executor/cmd/gideon-ingest.section kind=type
@@ -415,6 +536,7 @@ NODE id=matrix/executor/cmd/gideon-ingest.section kind=type
   doc=section is one markdown heading and its body.
 EDGES
   contains=matrix/executor/cmd/gideon-ingest.section#body,matrix/executor/cmd/gideon-ingest.section#title
+  ^references=matrix/executor/cmd/gideon-ingest.splitSections
   ^defines=matrix/executor/cmd/gideon-ingest/corpus.go
 
 NODE id=matrix/executor/cmd/gideon-ingest.section#body kind=field
@@ -434,6 +556,10 @@ NODE id=matrix/executor/cmd/gideon-ingest.significantKeywords kind=func
   sig=func significantKeywords(s string) []string
   doc=significantKeywords returns lowercased tokens of length >= 4 from s, used to\nlink incidents/chats back to failure-mode patterns.
 EDGES
+  calls=matrix/executor/cmd/gideon-ingest.tokenSet
+  references=matrix/executor/cmd/gideon-ingest.dup,matrix/executor/cmd/gideon-ingest.out,matrix/executor/cmd/gideon-ingest.s,matrix/executor/cmd/gideon-ingest.seen,matrix/executor/cmd/gideon-ingest.tok,matrix/executor/cmd/gideon-ingest.tokenSet
+  ^calls=matrix/executor/cmd/gideon-ingest.ingester.ingestRunbook
+  ^references=matrix/executor/cmd/gideon-ingest.ingester.ingestRunbook
   ^defines=matrix/executor/cmd/gideon-ingest/corpus.go
 
 NODE id=matrix/executor/cmd/gideon-ingest.slugify kind=func
@@ -441,6 +567,9 @@ NODE id=matrix/executor/cmd/gideon-ingest.slugify kind=func
   sig=func slugify(s string) string
   doc=slugify lowercases s and reduces it to a stable [a-z0-9-] token usable in an\ningest key.
 EDGES
+  references=matrix/executor/cmd/gideon-ingest.b,matrix/executor/cmd/gideon-ingest.prevDash,matrix/executor/cmd/gideon-ingest.r,matrix/executor/cmd/gideon-ingest.s
+  ^calls=matrix/executor/cmd/gideon-ingest.ingester.ingestChat,matrix/executor/cmd/gideon-ingest.ingester.ingestRunbook
+  ^references=matrix/executor/cmd/gideon-ingest.ingester.ingestChat,matrix/executor/cmd/gideon-ingest.ingester.ingestRunbook
   ^defines=matrix/executor/cmd/gideon-ingest/corpus.go
 
 NODE id=matrix/executor/cmd/gideon-ingest.splitSections kind=func
@@ -448,12 +577,18 @@ NODE id=matrix/executor/cmd/gideon-ingest.splitSections kind=func
   sig=func splitSections(md string, level int) []section
   doc=splitSections splits md into sections headed by exactly `level` hashes\nfollowed by a space. Deeper or shallower headings are kept inside the body\n(the prefix check naturally excludes them: "### " does not start with "## ").
 EDGES
+  references=matrix/executor/cmd/gideon-ingest.buf,matrix/executor/cmd/gideon-ingest.cur,matrix/executor/cmd/gideon-ingest.flush,matrix/executor/cmd/gideon-ingest.level,matrix/executor/cmd/gideon-ingest.ln,matrix/executor/cmd/gideon-ingest.md,matrix/executor/cmd/gideon-ingest.prefix,matrix/executor/cmd/gideon-ingest.secs,matrix/executor/cmd/gideon-ingest.section
+  ^calls=matrix/executor/cmd/gideon-ingest.ingester.ingestRunbook
+  ^references=matrix/executor/cmd/gideon-ingest.ingester.ingestRunbook
   ^defines=matrix/executor/cmd/gideon-ingest/corpus.go
 
 NODE id=matrix/executor/cmd/gideon-ingest.splitTableRow kind=func
   digest=b3:bb1cd29244c230418b239f536517129693d07543c83ff86712df18493b6eb834 file=executor/cmd/gideon-ingest/corpus.go range=282:290 lang=go exported=false byte_range=8045:8266
   sig=func splitTableRow(t string) []string
 EDGES
+  references=matrix/executor/cmd/gideon-ingest.out,matrix/executor/cmd/gideon-ingest.p,matrix/executor/cmd/gideon-ingest.parts,matrix/executor/cmd/gideon-ingest.t
+  ^calls=matrix/executor/cmd/gideon-ingest.parseTableRows
+  ^references=matrix/executor/cmd/gideon-ingest.parseTableRows
   ^defines=matrix/executor/cmd/gideon-ingest/corpus.go
 
 NODE id=matrix/executor/cmd/gideon-ingest.stableObservedAt kind=var
@@ -461,6 +596,7 @@ NODE id=matrix/executor/cmd/gideon-ingest.stableObservedAt kind=var
   sig=time.Time
   doc=stableObservedAt is the fixed timestamp used for CapabilityData.LastObserved.\nUsing wall-clock would make Version.Data differ on every run and defeat the\nskip-if-unchanged path.
 EDGES
+  ^references=matrix/executor/cmd/gideon-ingest.ingester.ingestModules,matrix/executor/cmd/gideon-ingest.ingester.ingestRunbook
   ^defines=matrix/executor/cmd/gideon-ingest/ingest.go
 
 NODE id=matrix/executor/cmd/gideon-ingest.tokenSet kind=func
@@ -468,6 +604,9 @@ NODE id=matrix/executor/cmd/gideon-ingest.tokenSet kind=func
   sig=func tokenSet(s string) map[string]struct{}
   doc=tokenSet returns the set of lowercased alphanumeric tokens in s.
 EDGES
+  references=matrix/executor/cmd/gideon-ingest.f,matrix/executor/cmd/gideon-ingest.out,matrix/executor/cmd/gideon-ingest.r,matrix/executor/cmd/gideon-ingest.s
+  ^calls=matrix/executor/cmd/gideon-ingest.ingester.crossLinkPatternsToModules,matrix/executor/cmd/gideon-ingest.significantKeywords
+  ^references=matrix/executor/cmd/gideon-ingest.ingester.crossLinkPatternsToModules,matrix/executor/cmd/gideon-ingest.significantKeywords
   ^defines=matrix/executor/cmd/gideon-ingest/corpus.go
 
 NODE id=matrix/executor/cmd/gideon-ingest.truncate kind=func
@@ -475,12 +614,19 @@ NODE id=matrix/executor/cmd/gideon-ingest.truncate kind=func
   sig=func truncate(s string, n int) string
   doc=truncate clamps s to at most n bytes on a rune boundary, appending an\nellipsis marker when it cut.
 EDGES
+  calls=matrix/executor/cmd/gideon-ingest.utf8RuneStart
+  references=matrix/executor/cmd/gideon-ingest.cut,matrix/executor/cmd/gideon-ingest.n,matrix/executor/cmd/gideon-ingest.s,matrix/executor/cmd/gideon-ingest.utf8RuneStart
+  ^calls=matrix/executor/cmd/gideon-ingest.docAbovePackage,matrix/executor/cmd/gideon-ingest.docAboveType,matrix/executor/cmd/gideon-ingest.firstParagraph,matrix/executor/cmd/gideon-ingest.ingester.ingestChat,matrix/executor/cmd/gideon-ingest.ingester.ingestModules,matrix/executor/cmd/gideon-ingest.ingester.ingestRunbook
+  ^references=matrix/executor/cmd/gideon-ingest.docAbovePackage,matrix/executor/cmd/gideon-ingest.docAboveType,matrix/executor/cmd/gideon-ingest.firstParagraph,matrix/executor/cmd/gideon-ingest.ingester.ingestChat,matrix/executor/cmd/gideon-ingest.ingester.ingestModules,matrix/executor/cmd/gideon-ingest.ingester.ingestRunbook
   ^defines=matrix/executor/cmd/gideon-ingest/corpus.go
 
 NODE id=matrix/executor/cmd/gideon-ingest.utf8RuneStart kind=func
   digest=b3:35d8e73044cb0c9f5fc2cc9f1099e23e0178c94c7c995edc014f712dfc84ff8f file=executor/cmd/gideon-ingest/corpus.go range=60:60 lang=go exported=false byte_range=1464:1521
   sig=func utf8RuneStart(b byte) bool
 EDGES
+  references=matrix/executor/cmd/gideon-ingest.b
+  ^calls=matrix/executor/cmd/gideon-ingest.truncate
+  ^references=matrix/executor/cmd/gideon-ingest.truncate
   ^defines=matrix/executor/cmd/gideon-ingest/corpus.go
 
 NODE id=matrix/executor/cmd/gideon-ingest/corpus.go kind=file

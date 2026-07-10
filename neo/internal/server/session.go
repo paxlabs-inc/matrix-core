@@ -72,6 +72,14 @@ type session struct {
 
 	asksMu sync.Mutex
 	asks   map[string]*askWaiter // ask surface id -> waiter, for Construct Ask back-channel
+
+	// deathsSinceConsolidate counts loop deaths recorded since the last
+	// self-authoring consolidation pass (self-model task 3.2). When it reaches
+	// cfg.DeathConsolidateEvery the pass runs and the counter resets, so
+	// consolidation happens on a bounded cadence — never every turn (req.5.2).
+	// Mutated only under the serialized turn path (drive holds s.mu), so it needs
+	// no separate lock.
+	deathsSinceConsolidate int
 }
 
 // askWaiter parks a construct_render(kind=ask) tool call until the human posts
@@ -570,23 +578,94 @@ func deathDigest(prev error) string {
 	return clip(msg, 400)
 }
 
-// recordLoopDeath persists a structured death-journal entry to cortex when a
-// supervised attempt died and forced a respawn — the DURABLE read path of the
-// death journal (the immediate path is the successor's resume prime). The
-// summary carries the objective, attempt number, failure class, and the
-// where-it-got-stuck digest so future recall can inform how the agent avoids the
-// same pitfall. Best-effort: a nil pager, a clean exit, or a write error never
-// blocks the respawn.
-func (s *session) recordLoopDeath(ctx context.Context, objective string, attempt int, err error, failClass delegate.FailureClass) {
-	if s.engine == nil || s.engine.pager == nil || err == nil {
-		return
-	}
+// deathEntry is the SINGLE description of one supervised-attempt death — the
+// shared source for BOTH death-journal read paths (self-model task 3.1,
+// req.4.3), so the immediate successor-prime digest and the durable cortex
+// record cannot describe the same death differently. The where-it-got-stuck
+// Digest is the same deathDigest(err) both paths read; Class and State live on
+// the durable record (the richer surface), while the prime folds in the Digest.
+type deathEntry struct {
+	Objective string
+	Attempt   int
+	Class     delegate.FailureClass
+	Digest    string // where-it-got-stuck, ErrIncomplete sentinel already stripped
+	State     string // the agent's rich loop-state line ("" when unavailable)
+}
+
+// newDeathEntry builds the shared death descriptor from one attempt's outcome.
+// The Digest is exactly the deathDigest(err) the successor's resume prime folds
+// in; when that is empty (a non-ErrIncomplete death) it falls back to the
+// friendly error so the durable record is never blank.
+func newDeathEntry(objective string, attempt int, err error, class delegate.FailureClass, state string) deathEntry {
 	digest := deathDigest(err)
 	if digest == "" {
 		digest = friendlyErr(err)
 	}
-	summary := fmt.Sprintf("Loop death (attempt %d, class=%s): objective %q did not finish. Where it got stuck: %s", attempt, failClass, clip(objective, 160), digest)
-	_, _ = s.engine.pager.RecordLoopDeath(ctx, summary, s.id)
+	return deathEntry{
+		Objective: objective,
+		Attempt:   attempt,
+		Class:     class,
+		Digest:    digest,
+		State:     state,
+	}
+}
+
+// durableSummary renders the entry as the durable cortex death-journal line: the
+// unchanged prefix from last session (objective, attempt, class, digest) plus
+// the agent's rich loop-state suffix (self-model task 2.2), so the record
+// carries the actual failure MODE, not just a sentence.
+func (e deathEntry) durableSummary() string {
+	return fmt.Sprintf(
+		"Loop death (attempt %d, class=%s): objective %q did not finish. Where it got stuck: %s",
+		e.Attempt, e.Class, clip(e.Objective, 160), e.Digest,
+	) + e.State
+}
+
+// recordLoopDeath persists a structured death-journal entry to cortex when a
+// supervised attempt died and forced a respawn — the DURABLE read path of the
+// death journal (the immediate path is the successor's resume prime). It is
+// built from the shared deathEntry so it describes the SAME death the successor's
+// prime folds in (req.4.3). Best-effort: a nil pager, a clean exit, or a write
+// error never blocks the respawn.
+func (s *session) recordLoopDeath(ctx context.Context, objective string, attempt int, err error, failClass delegate.FailureClass) {
+	if s.engine == nil || s.engine.pager == nil || err == nil {
+		return
+	}
+	// Fold the agent's RICH loop-state capture — the real repeat count,
+	// recent-signature shape, last tool, context fill, faculty, and death reason
+	// at death — onto the durable record (self-model task 2.2). LastDeath is
+	// per-turn and cleared on the next Chat, so it MUST be read here, before the
+	// supervisor rebuilds the agent.
+	state := ""
+	if s.agent != nil {
+		if d, ok := s.agent.LastDeath(); ok {
+			state = d.StateLine()
+		}
+	}
+	entry := newDeathEntry(objective, attempt, err, failClass, state)
+	_, _ = s.engine.pager.RecordLoopDeath(ctx, entry.durableSummary(), s.id)
+	s.maybeConsolidateDeaths(ctx)
+}
+
+// maybeConsolidateDeaths runs the self-authoring consolidation pass (self-model
+// task 3.2) on a bounded cadence: every cfg.DeathConsolidateEvery recorded loop
+// deaths, the agent reads its death journal and writes/reinforces durable
+// how-I-fail failure-pattern memories, then the counter resets. It runs NEVER
+// every turn (req.5.2) and is a pure observability + reasoning side-channel
+// (req.5.4). Best-effort: a store error is swallowed so it can never block the
+// respawn (Task-Durability preserved). cfg.DeathConsolidateEvery <= 0 disables
+// the pass.
+func (s *session) maybeConsolidateDeaths(ctx context.Context) {
+	every := s.engine.cfg.DeathConsolidateEvery
+	if every <= 0 {
+		return
+	}
+	s.deathsSinceConsolidate++
+	if s.deathsSinceConsolidate < every {
+		return
+	}
+	s.deathsSinceConsolidate = 0
+	_, _ = s.engine.pager.ConsolidateDeathJournal(ctx)
 }
 
 // emitProgress tells the user the task is STILL IN PROGRESS after a failed

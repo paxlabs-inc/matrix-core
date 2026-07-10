@@ -1,16 +1,19 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:9b68327501b45793fd7687f43b30c960fd68ae8aaff6b2f1bb36ec3e2df2de2f
+# GENERATED gen=codegraph do-not-edit merkle=b3:20e53aba2ea11552396417e53b3e04e87dd1bbb7bef3aa554a45bb92cf89e7f2
 
 NODE id=matrix/cortex/salience kind=package
   digest=b3:0f092d243dab6cc9d63865facafbc29fdfec9c3be8196a01f2743631f57f0ea5 file=cortex/salience range=0:0 lang=go exported=true
 EDGES
   contains=matrix/cortex/salience/salience.go
+  imports=matrix/cortex/keys,matrix/cortex/memory,matrix/cortex/store
   ^contains=mod:matrix/cortex
+  ^imports=matrix/cortex,matrix/cortex/cmd/cortex-shell,matrix/cortex/query,matrix/cortex/replay,matrix/neo/internal/memory
 
 NODE id=matrix/cortex/salience.AccessSaturation kind=const
   digest=b3:d3fbdb491e2b9dd9c426733e9f8ccc16292570ed35a82b491b0551b3f2b6c911 file=cortex/salience/salience.go range=150:156 lang=go exported=true byte_range=6019:6465
   sig=untyped float
   doc=AccessSaturation is the denominator constant used to normalize\naccess_count and cite_in_successful_plans into [0,1]. We use a fixed\nconstant (not per-actor max) because the spec's max-based formula is\nunstable under cold start and creates ranking discontinuities when a\nsingle memory pulls the max upward. log(1+1000) is the saturation point\nwhere ranking gain approaches zero in practical loads.
 EDGES
+  ^references=matrix/cortex/salience.logSat
   ^defines=matrix/cortex/salience/salience.go
 
 NODE id=matrix/cortex/salience.BumpForAccess kind=func
@@ -18,6 +21,10 @@ NODE id=matrix/cortex/salience.BumpForAccess kind=func
   sig=func BumpForAccess(s *Score, now time.Time)
   doc=BumpForAccess increments AccessCount, advances LastUsed, and recomputes\nthe cached cold score. Fired per returned candidate from a LateBinding\nFind (research/04-cortex.md §8.1 input `access_count` + §8.4 cache\ninvalidation trigger). AccessCount saturates at math.MaxUint64; the\nlogSat normalizer floors the score contribution at 1.0 well before\nthen, so we just refuse to wrap rather than journal an overflow.\n\nPhase 11.5: this is the only path that feeds salience.AccessCount.\nCompile-time Find does NOT call this (research/04 §12 + Phase 3\ninvariant: compile-time Find does not journal); compile-time access\ngets accounted for downstream via cortex.Attest cited_uris.
 EDGES
+  calls=matrix/cortex/salience.ColdScore
+  references=matrix/cortex/salience.ColdScore,matrix/cortex/salience.Score,matrix/cortex/salience.now,matrix/cortex/salience.s
+  ^calls=matrix/cortex/query.journalLateBinding,matrix/cortex/replay.applySalienceBumps
+  ^references=matrix/cortex/query.journalLateBinding,matrix/cortex/replay.applySalienceBumps
   ^defines=matrix/cortex/salience/salience.go
 
 NODE id=matrix/cortex/salience.BumpForCitation kind=func
@@ -25,6 +32,10 @@ NODE id=matrix/cortex/salience.BumpForCitation kind=func
   sig=func BumpForCitation(s *Score, now time.Time)
   doc=BumpForCitation increments Citations AND AccessCount, advances LastUsed,\nand recomputes the cached cold score. Fired per cited URI from a\nsuccessful cortex.Attest (research/04-cortex.md §8.3 verbatim: "For\neach `cited` memory in the plan, increment `cite_in_successful_plans`").\n\nAccessCount also goes up because a citation implies an access — the\nagent had to read the memory to cite it. Bundling the two bumps in a\nsingle primitive keeps the salience cache consistent across the\nFind→Attest path: a memory found via late-binding Find and then cited\nin a successful attest has both signals reflected.
 EDGES
+  calls=matrix/cortex/salience.ColdScore
+  references=matrix/cortex/salience.ColdScore,matrix/cortex/salience.Score,matrix/cortex/salience.now,matrix/cortex/salience.s
+  ^calls=matrix/cortex.Cortex.Attest,matrix/cortex/replay.applySalienceBumps
+  ^references=matrix/cortex.Cortex.Attest,matrix/cortex/replay.applySalienceBumps
   ^defines=matrix/cortex/salience/salience.go
 
 NODE id=matrix/cortex/salience.BumpForUpdate kind=func
@@ -32,6 +43,10 @@ NODE id=matrix/cortex/salience.BumpForUpdate kind=func
   sig=func BumpForUpdate(s *Score, importance uint8, now time.Time)
   doc=BumpForUpdate refreshes a Score after a memory's Data was updated.\nLastUsed advances to now and the cached value is recomputed.
 EDGES
+  calls=matrix/cortex/salience.ColdScore
+  references=matrix/cortex/salience.ColdScore,matrix/cortex/salience.Score,matrix/cortex/salience.importance,matrix/cortex/salience.now,matrix/cortex/salience.s
+  ^calls=matrix/cortex.Cortex.Update,matrix/cortex.Cortex.UpdateHead
+  ^references=matrix/cortex.Cortex.Update,matrix/cortex.Cortex.UpdateHead
   ^defines=matrix/cortex/salience/salience.go
 
 NODE id=matrix/cortex/salience.ColdScore kind=func
@@ -39,6 +54,10 @@ NODE id=matrix/cortex/salience.ColdScore kind=func
   sig=func ColdScore(s *Score, now time.Time) float32
   doc=ColdScore computes salience(m) using the cold (default) weights with V\nskipped (no q.near). Preserved for source-compat with Phase 3+ callers;\ninternally delegates to ColdScoreWith.\n\nLive ranking SHOULD prefer ColdScoreWith with the actor's learned\nWeights (loaded via ReadWeights) so EMA updates are honored. Bumpers\n(BumpForAccess/BumpForCitation/etc.) intentionally use this default-\nweights path for sc.Cached: per Phase 12 Q4, sc.Cached is a debug\nsnapshot, not the live ranking value.
 EDGES
+  calls=matrix/cortex/salience.ColdScoreWith,matrix/cortex/salience.DefaultWeights
+  references=matrix/cortex/salience.ColdScoreWith,matrix/cortex/salience.DefaultWeights,matrix/cortex/salience.Score,matrix/cortex/salience.now,matrix/cortex/salience.s,matrix/cortex/salience.w
+  ^calls=matrix/cortex.Cortex.Attest,matrix/cortex/salience.BumpForAccess,matrix/cortex/salience.BumpForCitation,matrix/cortex/salience.BumpForUpdate,matrix/cortex/salience.DecrementCitation,matrix/cortex/salience.NewForWrite
+  ^references=matrix/cortex.Cortex.Attest,matrix/cortex/salience.BumpForAccess,matrix/cortex/salience.BumpForCitation,matrix/cortex/salience.BumpForUpdate,matrix/cortex/salience.DecrementCitation,matrix/cortex/salience.NewForWrite
   ^defines=matrix/cortex/salience/salience.go
 
 NODE id=matrix/cortex/salience.ColdScoreWith kind=func
@@ -46,6 +65,10 @@ NODE id=matrix/cortex/salience.ColdScoreWith kind=func
   sig=func ColdScoreWith(s *Score, w Weights, now time.Time) float32
   doc=ColdScoreWith computes salience(m) using the supplied weights with V\nskipped (q.near unset). The non-vector weights are renormalised over\ntheir own sum so the final score lives in [0,1] regardless of what\nEMA has done to WV.\n\n§8.2 "vector weight gating" rule when q.near is unset: w5 is\nredistributed across the remaining weights proportionally. Equivalent\nto dividing the non-vector component by (WR+WA+WC+WD). Done here so\nthe formula is symmetric for both default and learned weights.\n\nPinned memories floor at PinnedFloor.
 EDGES
+  calls=matrix/cortex/salience.logSat,matrix/cortex/salience.recency
+  references=matrix/cortex/salience.PinnedFloor,matrix/cortex/salience.Score,matrix/cortex/salience.Weights,matrix/cortex/salience.a,matrix/cortex/salience.c,matrix/cortex/salience.d,matrix/cortex/salience.denom,matrix/cortex/salience.logSat,matrix/cortex/salience.now,matrix/cortex/salience.r,matrix/cortex/salience.recency,matrix/cortex/salience.s,matrix/cortex/salience.score,matrix/cortex/salience.w
+  ^calls=matrix/cortex.Cortex.Activate,matrix/cortex.Cortex.BuildRollup,matrix/cortex.Cortex.Compact,matrix/cortex.Cortex.Context,matrix/cortex.Cortex.RecentEpisodes,matrix/cortex.descentState.leaf,matrix/cortex/query.Run,matrix/cortex/salience.ColdScore
+  ^references=matrix/cortex.Cortex.Activate,matrix/cortex.Cortex.BuildRollup,matrix/cortex.Cortex.Compact,matrix/cortex.Cortex.Context,matrix/cortex.Cortex.RecentEpisodes,matrix/cortex.descentState.leaf,matrix/cortex/query.Run,matrix/cortex/salience.ColdScore
   ^defines=matrix/cortex/salience/salience.go
 
 NODE id=matrix/cortex/salience.ColdScoreWithV kind=func
@@ -53,6 +76,10 @@ NODE id=matrix/cortex/salience.ColdScoreWithV kind=func
   sig=func ColdScoreWithV(s *Score, w Weights, dist float32, now time.Time) float32
   doc=ColdScoreWithV computes salience(m) using the supplied weights with the\nV (vector-similarity) term LIVE — the q.near-SET counterpart to\nColdScoreWith. The §8.1 V(m,q) = cos(embedding(m), embedding(q)) term is\nrecovered from the HNSW distance: distance is 1 - cosine in unit-norm\nspace (vector package), so v := 1 - dist/2 maps dist∈[0,2] back to a\ncosine-like proximity in [0,1] (dist=0 → v=1, dist=2 → v=0). v is clamped\nto [0,1] defensively.\n\nAll five weights already sum to 1.0 (DefaultWeights and the EMA\nrenormaliser both preserve this), so — unlike ColdScoreWith, which\nredistributes WV across the other four when q.near is unset — no\nrenormalisation denominator is applied here. Utility stays primary by\nweight (WC=0.30 citations, plus WR/WA/WD) dwarfing WV=0.10, so semantic\nproximity refines the utility ranking rather than dominating it.\n\nPinned memories floor at PinnedFloor; the result is clamped to [0,1].
 EDGES
+  calls=matrix/cortex/salience.logSat,matrix/cortex/salience.recency
+  references=matrix/cortex/salience.PinnedFloor,matrix/cortex/salience.Score,matrix/cortex/salience.Weights,matrix/cortex/salience.a,matrix/cortex/salience.c,matrix/cortex/salience.d,matrix/cortex/salience.dist,matrix/cortex/salience.logSat,matrix/cortex/salience.now,matrix/cortex/salience.r,matrix/cortex/salience.recency,matrix/cortex/salience.s,matrix/cortex/salience.score,matrix/cortex/salience.v,matrix/cortex/salience.w
+  ^calls=matrix/cortex/query.Run
+  ^references=matrix/cortex/query.Run
   ^defines=matrix/cortex/salience/salience.go
 
 NODE id=matrix/cortex/salience.Decode kind=func
@@ -60,6 +87,9 @@ NODE id=matrix/cortex/salience.Decode kind=func
   sig=func Decode(b []byte, out *Score) error
   doc=Decode parses canonical CBOR into out.
 EDGES
+  references=matrix/cortex/salience.Score,matrix/cortex/salience.b,matrix/cortex/salience.canonicalDec,matrix/cortex/salience.out
+  ^calls=matrix/cortex.Cortex.Attest,matrix/cortex/cmd/cortex-shell.runDumpSalience,matrix/cortex/query.journalLateBinding,matrix/cortex/replay.applySalienceBumps,matrix/cortex/salience.Read
+  ^references=matrix/cortex.Cortex.Attest,matrix/cortex/cmd/cortex-shell.runDumpSalience,matrix/cortex/query.journalLateBinding,matrix/cortex/replay.applySalienceBumps,matrix/cortex/salience.Read
   ^defines=matrix/cortex/salience/salience.go
 
 NODE id=matrix/cortex/salience.DecodeWeights kind=func
@@ -67,6 +97,9 @@ NODE id=matrix/cortex/salience.DecodeWeights kind=func
   sig=func DecodeWeights(b []byte, out *Weights) error
   doc=DecodeWeights parses canonical CBOR into out.
 EDGES
+  references=matrix/cortex/salience.Weights,matrix/cortex/salience.b,matrix/cortex/salience.canonicalDec,matrix/cortex/salience.out
+  ^calls=matrix/cortex/salience.ReadWeights
+  ^references=matrix/cortex/salience.ReadWeights
   ^defines=matrix/cortex/salience/salience.go
 
 NODE id=matrix/cortex/salience.DecrementCitation kind=func
@@ -74,6 +107,10 @@ NODE id=matrix/cortex/salience.DecrementCitation kind=func
   sig=func DecrementCitation(s *Score, now time.Time)
   doc=DecrementCitation decrements Citations (floored at zero), advances\nLastUsed, and recomputes the cached cold score. Fired per cited URI\nfrom a failed cortex.Attest whose reason ∈ {factual_error,\nwrong_assumption} (research/04-cortex.md §8.3: "For memories cited\nat the failed step, *decrement* `cite_in_successful_plans`").\n\nAccessCount is NOT decremented — the access happened, even if the\ndownstream use was wrong. Only the success-citation signal flips.\n\nLastUsed advances because the attest action is itself a touch of\nthese memories (the agent had them in context at attest time); this\nmatches BumpForCitation symmetry and avoids the "decrement zeros R"\nsurprise where a recently-cited-but-failed memory would otherwise\nstay at its pre-attest recency.
 EDGES
+  calls=matrix/cortex/salience.ColdScore
+  references=matrix/cortex/salience.ColdScore,matrix/cortex/salience.Score,matrix/cortex/salience.now,matrix/cortex/salience.s
+  ^calls=matrix/cortex.Cortex.Attest,matrix/cortex/replay.applySalienceBumps
+  ^references=matrix/cortex.Cortex.Attest,matrix/cortex/replay.applySalienceBumps
   ^defines=matrix/cortex/salience/salience.go
 
 NODE id=matrix/cortex/salience.DefaultWeights kind=func
@@ -81,6 +118,9 @@ NODE id=matrix/cortex/salience.DefaultWeights kind=func
   sig=func DefaultWeights() Weights
   doc=DefaultWeights returns the cold-start weights from §8.2.
 EDGES
+  references=matrix/cortex/salience.WA,matrix/cortex/salience.WC,matrix/cortex/salience.WD,matrix/cortex/salience.WR,matrix/cortex/salience.WV,matrix/cortex/salience.Weights,matrix/cortex/salience.WeightsSchemaVersion
+  ^calls=matrix/cortex/salience.ColdScore,matrix/cortex/salience.ReadWeights
+  ^references=matrix/cortex/salience.ColdScore,matrix/cortex/salience.ReadWeights
   ^defines=matrix/cortex/salience/salience.go
 
 NODE id=matrix/cortex/salience.EMARate kind=const
@@ -88,6 +128,7 @@ NODE id=matrix/cortex/salience.EMARate kind=const
   sig=float32
   doc=EMARate is alpha from research/04-cortex.md §8.3 ("EMA rate α = 0.05\n(slow)"). Exported so the journal/cortex layers can stamp it on\nLearnWeightsPayload entries for audit-replay determinism, and so a\nfuture migration can change it without ambiguity over which value any\ngiven replay step used.
 EDGES
+  ^references=matrix/cortex.Cortex.Attest
   ^defines=matrix/cortex/salience/salience.go
 
 NODE id=matrix/cortex/salience.Encode kind=func
@@ -95,6 +136,9 @@ NODE id=matrix/cortex/salience.Encode kind=func
   sig=func Encode(s *Score) ([]byte, error)
   doc=Encode returns the canonical CBOR encoding of s.
 EDGES
+  references=matrix/cortex/salience.Score,matrix/cortex/salience.canonicalEnc,matrix/cortex/salience.s
+  ^calls=matrix/cortex.Cortex.Attest,matrix/cortex.Cortex.Tombstone,matrix/cortex.Cortex.Update,matrix/cortex.Cortex.UpdateHead,matrix/cortex.Cortex.Write,matrix/cortex/query.journalLateBinding,matrix/cortex/replay.applySalienceBumps,matrix/cortex/replay.rebuildOneMemory
+  ^references=matrix/cortex.Cortex.Attest,matrix/cortex.Cortex.Tombstone,matrix/cortex.Cortex.Update,matrix/cortex.Cortex.UpdateHead,matrix/cortex.Cortex.Write,matrix/cortex/query.journalLateBinding,matrix/cortex/replay.applySalienceBumps,matrix/cortex/replay.rebuildOneMemory
   ^defines=matrix/cortex/salience/salience.go
 
 NODE id=matrix/cortex/salience.EncodeWeights kind=func
@@ -102,6 +146,9 @@ NODE id=matrix/cortex/salience.EncodeWeights kind=func
   sig=func EncodeWeights(w *Weights) ([]byte, error)
   doc=EncodeWeights returns canonical deterministic CBOR for w.
 EDGES
+  references=matrix/cortex/salience.Weights,matrix/cortex/salience.canonicalEnc,matrix/cortex/salience.w
+  ^calls=matrix/cortex.Cortex.Attest,matrix/cortex/replay.applyLearnWeights
+  ^references=matrix/cortex.Cortex.Attest,matrix/cortex/replay.applyLearnWeights
   ^defines=matrix/cortex/salience/salience.go
 
 NODE id=matrix/cortex/salience.HalfLifeNanos kind=const
@@ -109,6 +156,7 @@ NODE id=matrix/cortex/salience.HalfLifeNanos kind=const
   sig=int64
   doc=HalfLifeNanos is the recency time constant from §8.1: 90 days. The spec\nformula is `exp(-Δt / half_life)`; despite the label, this is a 1/e decay\n(R drops to ~0.368 at one constant, not 0.5). Adopting the spec formula\nverbatim keeps cortex_snapshot_hash byte-identical with any independent\nre-implementation. If we ever switch to a strict-half-life decay\n(`exp(-Δt·ln2 / H)`), every salience cache entry needs recomputation —\nthat's a journaled migration, not a code change.
 EDGES
+  ^references=matrix/cortex.DefaultTimelineLookbackNanos,matrix/cortex/salience.recency
   ^defines=matrix/cortex/salience/salience.go
 
 NODE id=matrix/cortex/salience.NewForWrite kind=func
@@ -116,6 +164,10 @@ NODE id=matrix/cortex/salience.NewForWrite kind=func
   sig=func NewForWrite(importance uint8, now time.Time) Score
   doc=NewForWrite builds an initial Score for a freshly-written memory at the\ngiven clock. AccessCount and Citations are zero; LastUsed = now.
 EDGES
+  calls=matrix/cortex/salience.ColdScore
+  references=matrix/cortex/salience.ColdScore,matrix/cortex/salience.SchemaVersion,matrix/cortex/salience.Score,matrix/cortex/salience.importance,matrix/cortex/salience.now,matrix/cortex/salience.s
+  ^calls=matrix/cortex.Cortex.Attest,matrix/cortex.Cortex.Update,matrix/cortex.Cortex.UpdateHead,matrix/cortex.Cortex.Write,matrix/cortex/query.journalLateBinding,matrix/cortex/replay.applySalienceBumps,matrix/cortex/replay.rebuildOneMemory
+  ^references=matrix/cortex.Cortex.Attest,matrix/cortex.Cortex.Update,matrix/cortex.Cortex.UpdateHead,matrix/cortex.Cortex.Write,matrix/cortex/query.journalLateBinding,matrix/cortex/replay.applySalienceBumps,matrix/cortex/replay.rebuildOneMemory
   ^defines=matrix/cortex/salience/salience.go
 
 NODE id=matrix/cortex/salience.PinnedFloor kind=const
@@ -123,6 +175,7 @@ NODE id=matrix/cortex/salience.PinnedFloor kind=const
   sig=float32
   doc=PinnedFloor is the §8.2 floor for memories with Pinned=true.
 EDGES
+  ^references=matrix/cortex.Cortex.Activate,matrix/cortex.Cortex.Context,matrix/cortex/salience.ColdScoreWith,matrix/cortex/salience.ColdScoreWithV
   ^defines=matrix/cortex/salience/salience.go
 
 NODE id=matrix/cortex/salience.Read kind=func
@@ -130,6 +183,10 @@ NODE id=matrix/cortex/salience.Read kind=func
   sig=func Read(s *store.Store, id memory.ID) (*Score, bool, error)
   doc=Read fetches the salience record for id. Returns (nil, false, nil) if\nabsent (e.g. memories written before Phase 3 wiring; planner falls back\nto a zero score).
 EDGES
+  calls=matrix/cortex/keys.SalienceKey,matrix/cortex/salience.Decode,matrix/cortex/store.Store.Get
+  references=matrix/cortex/keys.SalienceKey,matrix/cortex/keys.ULID,matrix/cortex/memory.ID,matrix/cortex/salience.Decode,matrix/cortex/salience.Score,matrix/cortex/salience.err,matrix/cortex/salience.id,matrix/cortex/salience.ok,matrix/cortex/salience.raw,matrix/cortex/salience.s,matrix/cortex/salience.sc,matrix/cortex/salience.u,matrix/cortex/store.Store,matrix/cortex/store.Store.Get
+  ^calls=matrix/cortex.Cortex.Activate,matrix/cortex.Cortex.BuildRollup,matrix/cortex.Cortex.Compact,matrix/cortex.Cortex.Context,matrix/cortex.Cortex.RecentEpisodes,matrix/cortex.Cortex.Tombstone,matrix/cortex.Cortex.Update,matrix/cortex.Cortex.UpdateHead,matrix/cortex.descentState.leaf,matrix/cortex/query.Run,matrix/neo/internal/memory.Pager.lastUsedNano
+  ^references=matrix/cortex.Cortex.Activate,matrix/cortex.Cortex.BuildRollup,matrix/cortex.Cortex.Compact,matrix/cortex.Cortex.Context,matrix/cortex.Cortex.RecentEpisodes,matrix/cortex.Cortex.Tombstone,matrix/cortex.Cortex.Update,matrix/cortex.Cortex.UpdateHead,matrix/cortex.descentState.leaf,matrix/cortex/query.Run,matrix/neo/internal/memory.Pager.lastUsedNano
   ^defines=matrix/cortex/salience/salience.go
 
 NODE id=matrix/cortex/salience.ReadWeights kind=func
@@ -137,6 +194,10 @@ NODE id=matrix/cortex/salience.ReadWeights kind=func
   sig=func ReadWeights(s *store.Store) (Weights, bool, error)
   doc=ReadWeights fetches the actor's learned weights from meta/salience_weights.\nReturns (DefaultWeights(), false, nil) when the key is absent (cold start).
 EDGES
+  calls=matrix/cortex/salience.DecodeWeights,matrix/cortex/salience.DefaultWeights,matrix/cortex/store.Store.Get
+  references=matrix/cortex/keys.MetaSalienceWeights,matrix/cortex/salience.DecodeWeights,matrix/cortex/salience.DefaultWeights,matrix/cortex/salience.Weights,matrix/cortex/salience.err,matrix/cortex/salience.ok,matrix/cortex/salience.raw,matrix/cortex/salience.s,matrix/cortex/salience.w,matrix/cortex/store.Store,matrix/cortex/store.Store.Get
+  ^calls=matrix/cortex.Cortex.Activate,matrix/cortex.Cortex.Attest,matrix/cortex.Cortex.BuildRollup,matrix/cortex.Cortex.Compact,matrix/cortex.Cortex.Context,matrix/cortex.Cortex.RecallDescend,matrix/cortex.Cortex.RecentEpisodes,matrix/cortex/cmd/cortex-shell.runDumpWeights,matrix/cortex/query.Run,matrix/cortex/replay.applyLearnWeights
+  ^references=matrix/cortex.Cortex.Activate,matrix/cortex.Cortex.Attest,matrix/cortex.Cortex.BuildRollup,matrix/cortex.Cortex.Compact,matrix/cortex.Cortex.Context,matrix/cortex.Cortex.RecallDescend,matrix/cortex.Cortex.RecentEpisodes,matrix/cortex/cmd/cortex-shell.runDumpWeights,matrix/cortex/query.Run,matrix/cortex/replay.applyLearnWeights
   ^defines=matrix/cortex/salience/salience.go
 
 NODE id=matrix/cortex/salience.SchemaVersion kind=const
@@ -144,6 +205,7 @@ NODE id=matrix/cortex/salience.SchemaVersion kind=const
   sig=uint8
   doc=SchemaVersion is bumped on any incompatible Score-encoding change.
 EDGES
+  ^references=matrix/cortex/salience.NewForWrite
   ^defines=matrix/cortex/salience/salience.go
 
 NODE id=matrix/cortex/salience.Score kind=type
@@ -152,6 +214,7 @@ NODE id=matrix/cortex/salience.Score kind=type
   doc=Score is the cached salience record at salience/<id>.\n\nAll factor inputs are stored alongside the cached score so a recompute\ntriggered by a single input change (e.g. attestation citation update) is\nO(1) without needing to re-scan the head/version.
 EDGES
   contains=matrix/cortex/salience.Score#AccessCount,matrix/cortex/salience.Score#Cached,matrix/cortex/salience.Score#Citations,matrix/cortex/salience.Score#ComputedAt,matrix/cortex/salience.Score#Importance,matrix/cortex/salience.Score#LastUsed,matrix/cortex/salience.Score#Pinned,matrix/cortex/salience.Score#SchemaVersion
+  ^references=matrix/cortex.Cortex.Activate,matrix/cortex.Cortex.Attest,matrix/cortex.Cortex.BuildRollup,matrix/cortex.Cortex.Compact,matrix/cortex.Cortex.Context,matrix/cortex.Cortex.RecentEpisodes,matrix/cortex.Cortex.Update,matrix/cortex.Cortex.UpdateHead,matrix/cortex.descentState.leaf,matrix/cortex/cmd/cortex-shell.runDumpSalience,matrix/cortex/query.Run,matrix/cortex/query.journalLateBinding,matrix/cortex/replay.applySalienceBumps,matrix/cortex/salience.BumpForAccess,matrix/cortex/salience.BumpForCitation,matrix/cortex/salience.BumpForUpdate,matrix/cortex/salience.ColdScore,matrix/cortex/salience.ColdScoreWith,matrix/cortex/salience.ColdScoreWithV,matrix/cortex/salience.Decode,matrix/cortex/salience.DecrementCitation,matrix/cortex/salience.Encode,matrix/cortex/salience.NewForWrite,matrix/cortex/salience.Read,matrix/cortex/salience.UpdateWeightsEMA,matrix/cortex/salience.ZeroForTombstone,matrix/cortex/salience.factorProfile
   ^defines=matrix/cortex/salience/salience.go
 
 NODE id=matrix/cortex/salience.Score#AccessCount kind=field
@@ -207,6 +270,10 @@ NODE id=matrix/cortex/salience.UpdateWeightsEMA kind=func
   sig=func UpdateWeightsEMA(w *Weights, citedScores []Score, alpha float32, decrementOnFailure bool, now time.Time) bool
   doc=UpdateWeightsEMA applies one EMA step to w in place, training toward (on\nsuccess) or away from (on failure with reason ∈ §8.3 decrement set) the\naverage per-factor profile of citedScores at the given clock.\n\nSpec: research/04-cortex.md §8.3 ("EMA-update the actor's weights\ntoward the high-performing weighting" / "away from the weighting that\nranked the bad memory highly"). alpha is the EMA rate (typically\nEMARate = 0.05). decrementOnFailure indicates whether the (outcome,\nreason) pair triggers the away-pull (i.e. matches §8.3 decrement set);\nwhen false (success or any other failure reason) the toward-pull is\napplied.\n\nAlgorithm:\n 1. profile_i = average over citedScores of factor i (i ∈ {R,A,C,D})\n 2. normalise profile so sum_i profile_i = 1; if sum_i == 0 (all\n    cited memories have zero factor inputs — degenerate cold-start\n    case) skip the update entirely and return false.\n 3. delta_i = profile_i - w_i\n 4. w_i_new = w_i + α·delta_i           (toward)\n    or       = w_i - α·delta_i          (away)\n 5. Clamp w_i_new ≥ 0; if any clamp fired we still proceed to renormalise.\n 6. Renormalise: w_i_new /= Σ_j w_j_new (V preserved exactly).\n\nThe V (vector) weight is left at its current value through this entire\nstep — Phase 12 trains four-factor only. Renormalisation step (6) does\ninclude w.WV in the denominator so the full 5-weight sum stays at 1.0.\n\nReturns true iff an update was applied; false on degenerate input\n(empty citedScores or all-zero profile). UpdatedAt is advanced and\nUpdates incremented when an update IS applied.
 EDGES
+  calls=matrix/cortex/salience.factorProfile
+  references=matrix/cortex/salience.Score,matrix/cortex/salience.Weights,matrix/cortex/salience.alpha,matrix/cortex/salience.avg,matrix/cortex/salience.avgSum,matrix/cortex/salience.citedScores,matrix/cortex/salience.cur,matrix/cortex/salience.decrementOnFailure,matrix/cortex/salience.delta,matrix/cortex/salience.factorProfile,matrix/cortex/salience.i,matrix/cortex/salience.n,matrix/cortex/salience.newSum,matrix/cortex/salience.next,matrix/cortex/salience.now,matrix/cortex/salience.p,matrix/cortex/salience.profile,matrix/cortex/salience.sign,matrix/cortex/salience.sum,matrix/cortex/salience.v,matrix/cortex/salience.w
+  ^calls=matrix/cortex.Cortex.Attest
+  ^references=matrix/cortex.Cortex.Attest
   ^defines=matrix/cortex/salience/salience.go
 
 NODE id=matrix/cortex/salience.WA kind=const
@@ -214,6 +281,7 @@ NODE id=matrix/cortex/salience.WA kind=const
   sig=float32
   doc=Cold weights from §8.2. They sum to 1.0. These are the DEFAULT weights\nused when meta/salience_weights is absent (i.e. a freshly initialized\nactor) and the floor that BumpFor* helpers use to recompute sc.Cached.\nAuthoritative live ranking uses the learned Weights via ColdScoreWith.
 EDGES
+  ^references=matrix/cortex/salience.DefaultWeights
   ^defines=matrix/cortex/salience/salience.go
 
 NODE id=matrix/cortex/salience.WC kind=const
@@ -221,6 +289,7 @@ NODE id=matrix/cortex/salience.WC kind=const
   sig=float32
   doc=Cold weights from §8.2. They sum to 1.0. These are the DEFAULT weights\nused when meta/salience_weights is absent (i.e. a freshly initialized\nactor) and the floor that BumpFor* helpers use to recompute sc.Cached.\nAuthoritative live ranking uses the learned Weights via ColdScoreWith.
 EDGES
+  ^references=matrix/cortex/salience.DefaultWeights
   ^defines=matrix/cortex/salience/salience.go
 
 NODE id=matrix/cortex/salience.WD kind=const
@@ -228,6 +297,7 @@ NODE id=matrix/cortex/salience.WD kind=const
   sig=float32
   doc=Cold weights from §8.2. They sum to 1.0. These are the DEFAULT weights\nused when meta/salience_weights is absent (i.e. a freshly initialized\nactor) and the floor that BumpFor* helpers use to recompute sc.Cached.\nAuthoritative live ranking uses the learned Weights via ColdScoreWith.
 EDGES
+  ^references=matrix/cortex/salience.DefaultWeights
   ^defines=matrix/cortex/salience/salience.go
 
 NODE id=matrix/cortex/salience.WR kind=const
@@ -235,6 +305,7 @@ NODE id=matrix/cortex/salience.WR kind=const
   sig=float32
   doc=Cold weights from §8.2. They sum to 1.0. These are the DEFAULT weights\nused when meta/salience_weights is absent (i.e. a freshly initialized\nactor) and the floor that BumpFor* helpers use to recompute sc.Cached.\nAuthoritative live ranking uses the learned Weights via ColdScoreWith.
 EDGES
+  ^references=matrix/cortex/salience.DefaultWeights
   ^defines=matrix/cortex/salience/salience.go
 
 NODE id=matrix/cortex/salience.WV kind=const
@@ -242,6 +313,7 @@ NODE id=matrix/cortex/salience.WV kind=const
   sig=float32
   doc=Cold weights from §8.2. They sum to 1.0. These are the DEFAULT weights\nused when meta/salience_weights is absent (i.e. a freshly initialized\nactor) and the floor that BumpFor* helpers use to recompute sc.Cached.\nAuthoritative live ranking uses the learned Weights via ColdScoreWith.
 EDGES
+  ^references=matrix/cortex/salience.DefaultWeights
   ^defines=matrix/cortex/salience/salience.go
 
 NODE id=matrix/cortex/salience.Weights kind=type
@@ -250,6 +322,7 @@ NODE id=matrix/cortex/salience.Weights kind=type
   doc=Weights is the per-actor learned weight set persisted at\nmeta/salience_weights. WR+WA+WC+WD+WV must sum to 1.0 (renormalised on\nevery UpdateWeightsEMA). UpdatedAt + Updates are advisory audit fields,\nnot part of the math — the journal-of-record is KindLearnWeights.
 EDGES
   contains=matrix/cortex/salience.Weights#SchemaVersion,matrix/cortex/salience.Weights#UpdatedAt,matrix/cortex/salience.Weights#Updates,matrix/cortex/salience.Weights#WA,matrix/cortex/salience.Weights#WC,matrix/cortex/salience.Weights#WD,matrix/cortex/salience.Weights#WR,matrix/cortex/salience.Weights#WV
+  ^references=matrix/cortex.AttestResult,matrix/cortex.descentState,matrix/cortex/cmd/cortex-shell.runDumpWeights,matrix/cortex/replay.applyLearnWeights,matrix/cortex/salience.ColdScoreWith,matrix/cortex/salience.ColdScoreWithV,matrix/cortex/salience.DecodeWeights,matrix/cortex/salience.DefaultWeights,matrix/cortex/salience.EncodeWeights,matrix/cortex/salience.ReadWeights,matrix/cortex/salience.UpdateWeightsEMA
   ^defines=matrix/cortex/salience/salience.go
 
 NODE id=matrix/cortex/salience.Weights#SchemaVersion kind=field
@@ -305,6 +378,7 @@ NODE id=matrix/cortex/salience.WeightsSchemaVersion kind=const
   sig=uint8
   doc=WeightsSchemaVersion is bumped on any incompatible Weights-encoding\nchange. Bump invalidates every actor's learned weights → fallback to\nDefaultWeights at next read.
 EDGES
+  ^references=matrix/cortex/replay.applyLearnWeights,matrix/cortex/salience.DefaultWeights
   ^defines=matrix/cortex/salience/salience.go
 
 NODE id=matrix/cortex/salience.ZeroForTombstone kind=func
@@ -312,6 +386,9 @@ NODE id=matrix/cortex/salience.ZeroForTombstone kind=func
   sig=func ZeroForTombstone(s *Score, now time.Time)
   doc=ZeroForTombstone collapses a Score to a tombstoned-equivalent state. We\nkeep the record (as opposed to deleting it) so that operational replay\nfrom journal+m/+mv/ produces a byte-identical salience namespace; deleting\nwould require an explicit tombstone marker in the salience namespace too,\nwhich is unnecessary complexity.
 EDGES
+  references=matrix/cortex/salience.Score,matrix/cortex/salience.now,matrix/cortex/salience.s
+  ^calls=matrix/cortex.Cortex.Tombstone,matrix/cortex/replay.rebuildOneMemory
+  ^references=matrix/cortex.Cortex.Tombstone,matrix/cortex/replay.rebuildOneMemory
   ^defines=matrix/cortex/salience/salience.go
 
 NODE id=matrix/cortex/salience.canonicalDec kind=var
@@ -319,6 +396,7 @@ NODE id=matrix/cortex/salience.canonicalDec kind=var
   sig=cbor.DecMode
   doc=canonicalEnc / canonicalDec ensure Score encodes deterministically so the\ncached bytes hash identically across processes (matters for snapshot\nintegrity in Phase 7).
 EDGES
+  ^references=matrix/cortex/salience.Decode,matrix/cortex/salience.DecodeWeights,matrix/cortex/salience.init
   ^defines=matrix/cortex/salience/salience.go
 
 NODE id=matrix/cortex/salience.canonicalEnc kind=var
@@ -326,6 +404,7 @@ NODE id=matrix/cortex/salience.canonicalEnc kind=var
   sig=cbor.EncMode
   doc=canonicalEnc / canonicalDec ensure Score encodes deterministically so the\ncached bytes hash identically across processes (matters for snapshot\nintegrity in Phase 7).
 EDGES
+  ^references=matrix/cortex/salience.Encode,matrix/cortex/salience.EncodeWeights,matrix/cortex/salience.init
   ^defines=matrix/cortex/salience/salience.go
 
 NODE id=matrix/cortex/salience.factorProfile kind=func
@@ -333,12 +412,17 @@ NODE id=matrix/cortex/salience.factorProfile kind=func
   sig=func factorProfile(s *Score, now time.Time) [4]float32
   doc=factorProfile returns the (R, A, C, D) factor contributions for one\nScore at the given clock, normalised against the cold-weight denominator.\nV is omitted (Phase 12 trains four-factor only; vector signal lands when\nV-aware Find ranking lands in a later phase). Returned slice always has\nlength 4 in order WR, WA, WC, WD.
 EDGES
+  calls=matrix/cortex/salience.logSat,matrix/cortex/salience.recency
+  references=matrix/cortex/salience.Score,matrix/cortex/salience.a,matrix/cortex/salience.c,matrix/cortex/salience.d,matrix/cortex/salience.logSat,matrix/cortex/salience.now,matrix/cortex/salience.r,matrix/cortex/salience.recency,matrix/cortex/salience.s
+  ^calls=matrix/cortex/salience.UpdateWeightsEMA
+  ^references=matrix/cortex/salience.UpdateWeightsEMA
   ^defines=matrix/cortex/salience/salience.go
 
 NODE id=matrix/cortex/salience.init kind=func
   digest=b3:e27dc940b384d2de32b865e83bc01c4e805ed924992d002b00d21453c5ed0cf4 file=cortex/salience/salience.go range=182:193 lang=go exported=false byte_range=7545:7837
   sig=func init()
 EDGES
+  references=matrix/cortex/salience.canonicalDec,matrix/cortex/salience.canonicalEnc,matrix/cortex/salience.dm,matrix/cortex/salience.em,matrix/cortex/salience.err
   ^defines=matrix/cortex/salience/salience.go
 
 NODE id=matrix/cortex/salience.logSat kind=func
@@ -346,6 +430,9 @@ NODE id=matrix/cortex/salience.logSat kind=func
   sig=func logSat(x uint64) float32
   doc=logSat returns log(1+x) / log(1+saturation), clamped to [0,1].
 EDGES
+  references=matrix/cortex/salience.AccessSaturation,matrix/cortex/salience.v,matrix/cortex/salience.x
+  ^calls=matrix/cortex/salience.ColdScoreWith,matrix/cortex/salience.ColdScoreWithV,matrix/cortex/salience.factorProfile
+  ^references=matrix/cortex/salience.ColdScoreWith,matrix/cortex/salience.ColdScoreWithV,matrix/cortex/salience.factorProfile
   ^defines=matrix/cortex/salience/salience.go
 
 NODE id=matrix/cortex/salience.recency kind=func
@@ -353,6 +440,9 @@ NODE id=matrix/cortex/salience.recency kind=func
   sig=func recency(lastUsedUnixNano int64, now time.Time) float32
   doc=recency returns R(m) at the given clock.
 EDGES
+  references=matrix/cortex/salience.HalfLifeNanos,matrix/cortex/salience.dt,matrix/cortex/salience.lastUsedUnixNano,matrix/cortex/salience.now,matrix/cortex/salience.r
+  ^calls=matrix/cortex/salience.ColdScoreWith,matrix/cortex/salience.ColdScoreWithV,matrix/cortex/salience.factorProfile
+  ^references=matrix/cortex/salience.ColdScoreWith,matrix/cortex/salience.ColdScoreWithV,matrix/cortex/salience.factorProfile
   ^defines=matrix/cortex/salience/salience.go
 
 NODE id=matrix/cortex/salience/salience.go kind=file

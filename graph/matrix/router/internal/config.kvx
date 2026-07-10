@@ -1,10 +1,11 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:9b68327501b45793fd7687f43b30c960fd68ae8aaff6b2f1bb36ec3e2df2de2f
+# GENERATED gen=codegraph do-not-edit merkle=b3:20e53aba2ea11552396417e53b3e04e87dd1bbb7bef3aa554a45bb92cf89e7f2
 
 NODE id=matrix/router/internal/config kind=package
   digest=b3:0198ad51854e8866bd865566108d5fba3bd86b62db353f59ce62e24e54153660 file=router/internal/config range=0:0 lang=go exported=true
 EDGES
   contains=matrix/router/internal/config/config.go
   ^contains=mod:matrix/router
+  ^imports=matrix/router/cmd/matrix-router
 
 NODE id=matrix/router/internal/config.Config kind=type
   digest=b3:8f8b1a7eb04a6040e9573835185ea1cdf96383157c5eff9c3975f508ad70ed55 file=router/internal/config/config.go range=56:118 lang=go exported=true byte_range=2301:4612
@@ -12,6 +13,7 @@ NODE id=matrix/router/internal/config.Config kind=type
   doc=Config aggregates every env-driven setting matrix-router needs.\n\nEmpty optional fields fall back to package-level defaults; required\nfields are validated by Load and surface as errors with the offending\nenv-var name so operators see the missing key directly.
 EDGES
   contains=matrix/router/internal/config.Config#AdminToken,matrix/router/internal/config.Config#CORSOrigins,matrix/router/internal/config.Config#CodyPort,matrix/router/internal/config.Config#DaemonPort,matrix/router/internal/config.Config#DaemonReadyTimeout,matrix/router/internal/config.Config#DatabaseURL,matrix/router/internal/config.Config#FlyAPIToken,matrix/router/internal/config.Config#FlyApp,matrix/router/internal/config.Config#FlyRegion,matrix/router/internal/config.Config#InternalAddr,matrix/router/internal/config.Config#PreviewToken,matrix/router/internal/config.Config#ProbeInterval,matrix/router/internal/config.Config#Provider,matrix/router/internal/config.Config#ProxyTimeout,matrix/router/internal/config.Config#PublicAddr,matrix/router/internal/config.Config#RailwayAPIToken,matrix/router/internal/config.Config#RailwayEnvironmentID,matrix/router/internal/config.Config#RailwayProjectID,matrix/router/internal/config.Config#S3Bucket,matrix/router/internal/config.Config#S3Endpoint,matrix/router/internal/config.Config#SupabaseLegacyJWTSecret,matrix/router/internal/config.Config#SupabaseURL,matrix/router/internal/config.Config#WakeTimeout,matrix/router/internal/config.Config#WakeToken,matrix/router/internal/config.Config.AdminEnabled
+  ^references=matrix/router/internal/config.Config.AdminEnabled,matrix/router/internal/config.Load
   ^defines=matrix/router/internal/config/config.go
 
 NODE id=matrix/router/internal/config.Config#AdminToken kind=field
@@ -169,7 +171,10 @@ NODE id=matrix/router/internal/config.Config.AdminEnabled kind=method
   sig=func (c *Config) AdminEnabled() bool
   doc=AdminEnabled reports whether the admin endpoints should be mounted.\nWe require a non-empty token to mount admin routes at all so a\nmisconfigured deploy can't accidentally expose user-creation.
 EDGES
+  references=matrix/router/internal/config.Config,matrix/router/internal/config.c
   ^contains=matrix/router/internal/config.Config
+  ^calls=matrix/router/cmd/matrix-router.main
+  ^references=matrix/router/cmd/matrix-router.main
   ^defines=matrix/router/internal/config/config.go
 
 NODE id=matrix/router/internal/config.DefaultDaemonPort kind=const
@@ -177,6 +182,7 @@ NODE id=matrix/router/internal/config.DefaultDaemonPort kind=const
   sig=untyped string
   doc=Defaults — applied when an env value is unset or empty.
 EDGES
+  ^references=matrix/router/internal/config.Load
   ^defines=matrix/router/internal/config/config.go
 
 NODE id=matrix/router/internal/config.DefaultDaemonReadyTimeout kind=const
@@ -184,6 +190,7 @@ NODE id=matrix/router/internal/config.DefaultDaemonReadyTimeout kind=const
   sig=time.Duration
   doc=Defaults — applied when an env value is unset or empty.
 EDGES
+  ^references=matrix/router/internal/config.Load
   ^defines=matrix/router/internal/config/config.go
 
 NODE id=matrix/router/internal/config.DefaultProbeInterval kind=const
@@ -191,6 +198,7 @@ NODE id=matrix/router/internal/config.DefaultProbeInterval kind=const
   sig=time.Duration
   doc=Defaults — applied when an env value is unset or empty.
 EDGES
+  ^references=matrix/router/internal/config.Load
   ^defines=matrix/router/internal/config/config.go
 
 NODE id=matrix/router/internal/config.DefaultProxyTimeout kind=const
@@ -198,6 +206,7 @@ NODE id=matrix/router/internal/config.DefaultProxyTimeout kind=const
   sig=time.Duration
   doc=Defaults — applied when an env value is unset or empty.
 EDGES
+  ^references=matrix/router/internal/config.Load
   ^defines=matrix/router/internal/config/config.go
 
 NODE id=matrix/router/internal/config.DefaultWakeTimeout kind=const
@@ -205,6 +214,7 @@ NODE id=matrix/router/internal/config.DefaultWakeTimeout kind=const
   sig=time.Duration
   doc=Defaults — applied when an env value is unset or empty.
 EDGES
+  ^references=matrix/router/internal/config.Load
   ^defines=matrix/router/internal/config/config.go
 
 NODE id=matrix/router/internal/config.ErrAdminDisabled kind=var
@@ -219,6 +229,10 @@ NODE id=matrix/router/internal/config.Load kind=func
   sig=func Load() (*Config, error)
   doc=Load reads from os.Getenv. Returns aggregate error listing every\nmissing required field. ParseDuration failures are also surfaced.
 EDGES
+  calls=matrix/router/internal/config.getOrDefault,matrix/router/internal/config.parseCSV,matrix/router/internal/config.parseDurationOr
+  references=matrix/router/internal/config.Config,matrix/router/internal/config.DefaultDaemonPort,matrix/router/internal/config.DefaultDaemonReadyTimeout,matrix/router/internal/config.DefaultProbeInterval,matrix/router/internal/config.DefaultProxyTimeout,matrix/router/internal/config.DefaultWakeTimeout,matrix/router/internal/config.ProviderFly,matrix/router/internal/config.ProviderRailway,matrix/router/internal/config.c,matrix/router/internal/config.err,matrix/router/internal/config.getOrDefault,matrix/router/internal/config.missing,matrix/router/internal/config.parseCSV,matrix/router/internal/config.parseDurationOr
+  ^calls=matrix/router/cmd/matrix-router.main
+  ^references=matrix/router/cmd/matrix-router.main
   ^defines=matrix/router/internal/config/config.go
 
 NODE id=matrix/router/internal/config.ProviderFly kind=const
@@ -226,6 +240,7 @@ NODE id=matrix/router/internal/config.ProviderFly kind=const
   sig=untyped string
   doc=Provider values for Config.Provider (ROUTER_PROVIDER).
 EDGES
+  ^references=matrix/router/internal/config.Load
   ^defines=matrix/router/internal/config/config.go
 
 NODE id=matrix/router/internal/config.ProviderRailway kind=const
@@ -233,12 +248,16 @@ NODE id=matrix/router/internal/config.ProviderRailway kind=const
   sig=untyped string
   doc=Provider values for Config.Provider (ROUTER_PROVIDER).
 EDGES
+  ^references=matrix/router/cmd/matrix-router.main,matrix/router/internal/config.Load
   ^defines=matrix/router/internal/config/config.go
 
 NODE id=matrix/router/internal/config.getOrDefault kind=func
   digest=b3:2c464053e57dd7472a07d344ee519268cf3b58954a62d9070746f6dfd2db4e6f file=router/internal/config/config.go range=215:220 lang=go exported=false byte_range=8022:8128
   sig=func getOrDefault(env, def string) string
 EDGES
+  references=matrix/router/internal/config.def,matrix/router/internal/config.env,matrix/router/internal/config.v
+  ^calls=matrix/router/internal/config.Load
+  ^references=matrix/router/internal/config.Load
   ^defines=matrix/router/internal/config/config.go
 
 NODE id=matrix/router/internal/config.parseCSV kind=func
@@ -246,12 +265,18 @@ NODE id=matrix/router/internal/config.parseCSV kind=func
   sig=func parseCSV(v string) []string
   doc=parseCSV splits a comma-separated env value into trimmed, non-empty entries.\nAn empty input yields nil (the CORS middleware treats nil as allow-any).
 EDGES
+  references=matrix/router/internal/config.out,matrix/router/internal/config.p,matrix/router/internal/config.parts,matrix/router/internal/config.v
+  ^calls=matrix/router/internal/config.Load
+  ^references=matrix/router/internal/config.Load
   ^defines=matrix/router/internal/config/config.go
 
 NODE id=matrix/router/internal/config.parseDurationOr kind=func
   digest=b3:8d14acccff9148b914e658fab154d7fff0d10c41d58bcc8a5b59d5afd105da4a file=router/internal/config/config.go range=238:248 lang=go exported=false byte_range=8554:8807
   sig=func parseDurationOr(env string, def time.Duration) (time.Duration, error)
 EDGES
+  references=matrix/router/internal/config.d,matrix/router/internal/config.def,matrix/router/internal/config.env,matrix/router/internal/config.err,matrix/router/internal/config.v
+  ^calls=matrix/router/internal/config.Load
+  ^references=matrix/router/internal/config.Load
   ^defines=matrix/router/internal/config/config.go
 
 NODE id=matrix/router/internal/config/config.go kind=file

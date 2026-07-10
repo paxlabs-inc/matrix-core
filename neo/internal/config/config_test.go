@@ -44,7 +44,7 @@ func TestDefaultsMatchFrozenSpec(t *testing.T) {
 	if c.CassandraModel != "grok-4.20-0309-non-reasoning" {
 		t.Errorf("CassandraModel = %q", c.CassandraModel)
 	}
-	if c.CassandraEscalateModel != "grok-4.3" {
+	if c.CassandraEscalateModel != "xiaomimimo/mimo-v2.5-pro" {
 		t.Errorf("CassandraEscalateModel = %q", c.CassandraEscalateModel)
 	}
 	if len(c.NaturalAllow) == 0 || len(c.EscalateActions) == 0 {

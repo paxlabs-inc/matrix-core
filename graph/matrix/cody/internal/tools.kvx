@@ -1,10 +1,12 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:9b68327501b45793fd7687f43b30c960fd68ae8aaff6b2f1bb36ec3e2df2de2f
+# GENERATED gen=codegraph do-not-edit merkle=b3:20e53aba2ea11552396417e53b3e04e87dd1bbb7bef3aa554a45bb92cf89e7f2
 
 NODE id=matrix/cody/internal/tools kind=package
   digest=b3:5efbdb8b7b8df92338cbab2840e16439e7d00077abea651c6f03934986d474c1 file=cody/internal/tools range=0:0 lang=go exported=true
 EDGES
   contains=matrix/cody/internal/tools/browser.go,matrix/cody/internal/tools/tools.go
+  imports=matrix/cody/internal/llm
   ^contains=mod:matrix/cody
+  ^imports=matrix/cody/internal/server
 
 NODE id=matrix/cody/internal/tools.Bridge kind=type
   digest=b3:cdf2373c330945fcf5ea9c76dc1f8668ac07ae23ed19fd0014d3df40f209aa05 file=cody/internal/tools/tools.go range=43:47 lang=go exported=true byte_range=1532:1657
@@ -12,6 +14,8 @@ NODE id=matrix/cody/internal/tools.Bridge kind=type
   doc=Bridge exposes the extra tool surface and dispatches its calls.
 EDGES
   contains=matrix/cody/internal/tools.Bridge#cfg,matrix/cody/internal/tools.Bridge#client,matrix/cody/internal/tools.Bridge.Dispatch,matrix/cody/internal/tools.Bridge.Tools,matrix/cody/internal/tools.Bridge.browserScreenshot,matrix/cody/internal/tools.Bridge.fetch,matrix/cody/internal/tools.Bridge.mcpInitialize,matrix/cody/internal/tools.Bridge.mcpToolCall,matrix/cody/internal/tools.Bridge.rpc,matrix/cody/internal/tools.Bridge.saveScreenshot,matrix/cody/internal/tools.Bridge.webSearch
+  references=matrix/cody/internal/tools.Config
+  ^references=matrix/cody/internal/tools.Bridge.Dispatch,matrix/cody/internal/tools.Bridge.Tools,matrix/cody/internal/tools.Bridge.browserScreenshot,matrix/cody/internal/tools.Bridge.fetch,matrix/cody/internal/tools.Bridge.mcpInitialize,matrix/cody/internal/tools.Bridge.mcpToolCall,matrix/cody/internal/tools.Bridge.rpc,matrix/cody/internal/tools.Bridge.saveScreenshot,matrix/cody/internal/tools.Bridge.webSearch,matrix/cody/internal/tools.New
   ^defines=matrix/cody/internal/tools/tools.go
 
 NODE id=matrix/cody/internal/tools.Bridge#cfg kind=field
@@ -31,7 +35,11 @@ NODE id=matrix/cody/internal/tools.Bridge.Dispatch kind=method
   sig=func (b *Bridge) Dispatch(ctx context.Context, name string, args map[string]interface{}) (string, error)
   doc=Dispatch executes one ExtraTools call by name. It matches the worker's\nExtraDispatch signature.
 EDGES
+  calls=matrix/cody/internal/tools.Bridge.browserScreenshot,matrix/cody/internal/tools.Bridge.fetch,matrix/cody/internal/tools.Bridge.webSearch,matrix/cody/internal/tools.str
+  references=matrix/cody/internal/tools.Bridge,matrix/cody/internal/tools.Bridge.browserScreenshot,matrix/cody/internal/tools.Bridge.fetch,matrix/cody/internal/tools.Bridge.webSearch,matrix/cody/internal/tools.args,matrix/cody/internal/tools.b,matrix/cody/internal/tools.ctx,matrix/cody/internal/tools.name,matrix/cody/internal/tools.str
   ^contains=matrix/cody/internal/tools.Bridge
+  ^calls=matrix/cody/internal/worker.Worker.dispatch
+  ^references=matrix/cody/internal/server.Engine.workerFunc
   ^defines=matrix/cody/internal/tools/tools.go
 
 NODE id=matrix/cody/internal/tools.Bridge.Tools kind=method
@@ -39,7 +47,10 @@ NODE id=matrix/cody/internal/tools.Bridge.Tools kind=method
   sig=func (b *Bridge) Tools() []llm.Tool
   doc=Tools returns the tool schemas to append to the worker's surface. The browser\nscreenshot tool is advertised only when a browser service is configured, so a\nworker never sees a tool it cannot use.
 EDGES
+  calls=matrix/cody/internal/llm.NewFunctionTool
+  references=matrix/cody/internal/llm.NewFunctionTool,matrix/cody/internal/llm.Tool,matrix/cody/internal/tools.Bridge,matrix/cody/internal/tools.b,matrix/cody/internal/tools.desc,matrix/cody/internal/tools.obj,matrix/cody/internal/tools.props,matrix/cody/internal/tools.required,matrix/cody/internal/tools.s,matrix/cody/internal/tools.strProp,matrix/cody/internal/tools.tools
   ^contains=matrix/cody/internal/tools.Bridge
+  ^references=matrix/cody/internal/server.Engine.workerFunc
   ^defines=matrix/cody/internal/tools/tools.go
 
 NODE id=matrix/cody/internal/tools.Bridge.browserScreenshot kind=method
@@ -47,14 +58,21 @@ NODE id=matrix/cody/internal/tools.Bridge.browserScreenshot kind=method
   sig=func (b *Bridge) browserScreenshot(ctx context.Context, target, name string) (string, error)
   doc=browserScreenshot navigates the shared browser to url and saves a screenshot\nunder the workspace, returning the workspace-relative path.
 EDGES
+  calls=matrix/cody/internal/tools.Bridge.mcpInitialize,matrix/cody/internal/tools.Bridge.mcpToolCall,matrix/cody/internal/tools.Bridge.saveScreenshot
+  references=matrix/cody/internal/tools.Bridge,matrix/cody/internal/tools.Bridge.mcpInitialize,matrix/cody/internal/tools.Bridge.mcpToolCall,matrix/cody/internal/tools.Bridge.saveScreenshot,matrix/cody/internal/tools.ErrScreenshotUnavailable,matrix/cody/internal/tools.b,matrix/cody/internal/tools.c,matrix/cody/internal/tools.ctx,matrix/cody/internal/tools.derr,matrix/cody/internal/tools.err,matrix/cody/internal/tools.img,matrix/cody/internal/tools.name,matrix/cody/internal/tools.raw,matrix/cody/internal/tools.rel,matrix/cody/internal/tools.res,matrix/cody/internal/tools.sess,matrix/cody/internal/tools.target
   ^contains=matrix/cody/internal/tools.Bridge
+  ^calls=matrix/cody/internal/tools.Bridge.Dispatch
+  ^references=matrix/cody/internal/tools.Bridge.Dispatch
   ^defines=matrix/cody/internal/tools/browser.go
 
 NODE id=matrix/cody/internal/tools.Bridge.fetch kind=method
   digest=b3:02129d3eef6ae2dd38b1223d04fe5c4f8b966303076b25d5897679e4114f3131 file=cody/internal/tools/tools.go range=107:129 lang=go exported=false byte_range=4124:4874
   sig=func (b *Bridge) fetch(ctx context.Context, raw string) (string, error)
 EDGES
+  references=matrix/cody/internal/tools.Bridge,matrix/cody/internal/tools.b,matrix/cody/internal/tools.body,matrix/cody/internal/tools.ctx,matrix/cody/internal/tools.err,matrix/cody/internal/tools.fetchCap,matrix/cody/internal/tools.raw,matrix/cody/internal/tools.req,matrix/cody/internal/tools.resp,matrix/cody/internal/tools.truncated,matrix/cody/internal/tools.u
   ^contains=matrix/cody/internal/tools.Bridge
+  ^calls=matrix/cody/internal/tools.Bridge.Dispatch
+  ^references=matrix/cody/internal/tools.Bridge.Dispatch
   ^defines=matrix/cody/internal/tools/tools.go
 
 NODE id=matrix/cody/internal/tools.Bridge.mcpInitialize kind=method
@@ -62,7 +80,11 @@ NODE id=matrix/cody/internal/tools.Bridge.mcpInitialize kind=method
   sig=func (b *Bridge) mcpInitialize(ctx context.Context) (*mcpSession, error)
   doc=mcpInitialize performs the MCP handshake and returns the session.
 EDGES
+  calls=matrix/cody/internal/tools.Bridge.rpc
+  references=matrix/cody/internal/tools.Bridge,matrix/cody/internal/tools.Bridge.rpc,matrix/cody/internal/tools.b,matrix/cody/internal/tools.ctx,matrix/cody/internal/tools.err,matrix/cody/internal/tools.jsonRPCRequest,matrix/cody/internal/tools.mcpSession,matrix/cody/internal/tools.resp,matrix/cody/internal/tools.sess,matrix/cody/internal/tools.sessID
   ^contains=matrix/cody/internal/tools.Bridge
+  ^calls=matrix/cody/internal/tools.Bridge.browserScreenshot
+  ^references=matrix/cody/internal/tools.Bridge.browserScreenshot
   ^defines=matrix/cody/internal/tools/browser.go
 
 NODE id=matrix/cody/internal/tools.Bridge.mcpToolCall kind=method
@@ -70,7 +92,11 @@ NODE id=matrix/cody/internal/tools.Bridge.mcpToolCall kind=method
   sig=func (b *Bridge) mcpToolCall(ctx context.Context, sess *mcpSession, name string, args map[string]interface{}) (*toolCallResult, error)
   doc=mcpToolCall invokes one MCP tool and decodes the tools/call result.
 EDGES
+  calls=matrix/cody/internal/tools.Bridge.rpc
+  references=matrix/cody/internal/tools.Bridge,matrix/cody/internal/tools.Bridge.rpc,matrix/cody/internal/tools.args,matrix/cody/internal/tools.b,matrix/cody/internal/tools.ctx,matrix/cody/internal/tools.err,matrix/cody/internal/tools.jsonRPCRequest,matrix/cody/internal/tools.mcpSession,matrix/cody/internal/tools.name,matrix/cody/internal/tools.out,matrix/cody/internal/tools.resp,matrix/cody/internal/tools.sess,matrix/cody/internal/tools.toolCallResult
   ^contains=matrix/cody/internal/tools.Bridge
+  ^calls=matrix/cody/internal/tools.Bridge.browserScreenshot
+  ^references=matrix/cody/internal/tools.Bridge.browserScreenshot
   ^defines=matrix/cody/internal/tools/browser.go
 
 NODE id=matrix/cody/internal/tools.Bridge.rpc kind=method
@@ -78,7 +104,11 @@ NODE id=matrix/cody/internal/tools.Bridge.rpc kind=method
   sig=func (b *Bridge) rpc(ctx context.Context, sessID string, msg jsonRPCRequest) (jsonRPCResponse, string, error)
   doc=rpc POSTs one JSON-RPC message to the browser endpoint and returns the first\nmatching response. The Streamable-HTTP transport may answer with a single\nJSON body or an SSE stream of framed messages; both are handled. It returns\nthe (possibly empty) session id echoed by the server. A notification (no id)\nexpects no body and returns a zero response.
 EDGES
+  calls=matrix/cody/internal/tools.readSSEResponse
+  references=matrix/cody/internal/tools.Bridge,matrix/cody/internal/tools.b,matrix/cody/internal/tools.body,matrix/cody/internal/tools.ct,matrix/cody/internal/tools.ctx,matrix/cody/internal/tools.err,matrix/cody/internal/tools.jsonRPCRequest,matrix/cody/internal/tools.jsonRPCResponse,matrix/cody/internal/tools.msg,matrix/cody/internal/tools.out,matrix/cody/internal/tools.outSess,matrix/cody/internal/tools.payload,matrix/cody/internal/tools.readSSEResponse,matrix/cody/internal/tools.req,matrix/cody/internal/tools.resp,matrix/cody/internal/tools.sessID
   ^contains=matrix/cody/internal/tools.Bridge
+  ^calls=matrix/cody/internal/tools.Bridge.mcpInitialize,matrix/cody/internal/tools.Bridge.mcpToolCall
+  ^references=matrix/cody/internal/tools.Bridge.mcpInitialize,matrix/cody/internal/tools.Bridge.mcpToolCall
   ^defines=matrix/cody/internal/tools/browser.go
 
 NODE id=matrix/cody/internal/tools.Bridge.saveScreenshot kind=method
@@ -86,14 +116,21 @@ NODE id=matrix/cody/internal/tools.Bridge.saveScreenshot kind=method
   sig=func (b *Bridge) saveScreenshot(name, target string, img []byte) (string, error)
   doc=saveScreenshot writes the PNG under <root>/.cody/screenshots and returns its\nworkspace-relative path.
 EDGES
+  calls=matrix/cody/internal/tools.sanitizeName
+  references=matrix/cody/internal/tools.Bridge,matrix/cody/internal/tools.b,matrix/cody/internal/tools.base,matrix/cody/internal/tools.dir,matrix/cody/internal/tools.err,matrix/cody/internal/tools.img,matrix/cody/internal/tools.name,matrix/cody/internal/tools.rel,matrix/cody/internal/tools.sanitizeName,matrix/cody/internal/tools.screenshotDir,matrix/cody/internal/tools.sum,matrix/cody/internal/tools.target
   ^contains=matrix/cody/internal/tools.Bridge
+  ^calls=matrix/cody/internal/tools.Bridge.browserScreenshot
+  ^references=matrix/cody/internal/tools.Bridge.browserScreenshot
   ^defines=matrix/cody/internal/tools/browser.go
 
 NODE id=matrix/cody/internal/tools.Bridge.webSearch kind=method
   digest=b3:93f6e7c1999a96252f911889b536e5a8856583562a14cd1f4d1ab57436975c02 file=cody/internal/tools/tools.go range=138:173 lang=go exported=false byte_range=5041:6245
   sig=func (b *Bridge) webSearch(ctx context.Context, query string) (string, error)
 EDGES
+  references=matrix/cody/internal/tools.Bridge,matrix/cody/internal/tools.b,matrix/cody/internal/tools.b2,matrix/cody/internal/tools.ctx,matrix/cody/internal/tools.endpoint,matrix/cody/internal/tools.err,matrix/cody/internal/tools.i,matrix/cody/internal/tools.out,matrix/cody/internal/tools.query,matrix/cody/internal/tools.r,matrix/cody/internal/tools.req,matrix/cody/internal/tools.resp,matrix/cody/internal/tools.searxResult
   ^contains=matrix/cody/internal/tools.Bridge
+  ^calls=matrix/cody/internal/tools.Bridge.Dispatch
+  ^references=matrix/cody/internal/tools.Bridge.Dispatch
   ^defines=matrix/cody/internal/tools/tools.go
 
 NODE id=matrix/cody/internal/tools.Config kind=type
@@ -102,6 +139,7 @@ NODE id=matrix/cody/internal/tools.Config kind=type
   doc=Config wires the shared tool services into a worker bridge.
 EDGES
   contains=matrix/cody/internal/tools.Config#BrowserToken,matrix/cody/internal/tools.Config#BrowserURL,matrix/cody/internal/tools.Config#Root,matrix/cody/internal/tools.Config#SearxngToken,matrix/cody/internal/tools.Config#SearxngURL,matrix/cody/internal/tools.Config#Timeout
+  ^references=matrix/cody/internal/server.Engine.workerFunc,matrix/cody/internal/tools.Bridge,matrix/cody/internal/tools.New
   ^defines=matrix/cody/internal/tools/tools.go
 
 NODE id=matrix/cody/internal/tools.Config#BrowserToken kind=field
@@ -149,6 +187,7 @@ NODE id=matrix/cody/internal/tools.ErrScreenshotUnavailable kind=var
   sig=error
   doc=ErrScreenshotUnavailable is the typed signal that screenshot capability is\nabsent in this environment (req 4.4). Callers dispatch on it with errors.Is;\nit is NEVER returned as a success message in the path slot, so no caller can\nmistake the explanation for a screenshot path.
 EDGES
+  ^references=matrix/cody/internal/tools.Bridge.browserScreenshot
   ^defines=matrix/cody/internal/tools/browser.go
 
 NODE id=matrix/cody/internal/tools.New kind=func
@@ -156,6 +195,8 @@ NODE id=matrix/cody/internal/tools.New kind=func
   sig=func New(cfg Config) *Bridge
   doc=New builds a bridge. A nil-safe zero Config yields fetch + a not-configured\nweb_search (no browser tool advertised) — always safe to construct.
 EDGES
+  references=matrix/cody/internal/tools.Bridge,matrix/cody/internal/tools.Config,matrix/cody/internal/tools.cfg
+  ^references=matrix/cody/internal/server.Engine.workerFunc
   ^defines=matrix/cody/internal/tools/tools.go
 
 NODE id=matrix/cody/internal/tools.fetchCap kind=const
@@ -163,6 +204,7 @@ NODE id=matrix/cody/internal/tools.fetchCap kind=const
   sig=untyped int
   doc=fetchCap bounds a fetch/search response body kept inline.
 EDGES
+  ^references=matrix/cody/internal/tools.Bridge.fetch
   ^defines=matrix/cody/internal/tools/tools.go
 
 NODE id=matrix/cody/internal/tools.jsonRPCRequest kind=type
@@ -171,6 +213,7 @@ NODE id=matrix/cody/internal/tools.jsonRPCRequest kind=type
   doc=jsonRPCRequest is one JSON-RPC 2.0 call.
 EDGES
   contains=matrix/cody/internal/tools.jsonRPCRequest#ID,matrix/cody/internal/tools.jsonRPCRequest#JSONRPC,matrix/cody/internal/tools.jsonRPCRequest#Method,matrix/cody/internal/tools.jsonRPCRequest#Params
+  ^references=matrix/cody/internal/tools.Bridge.mcpInitialize,matrix/cody/internal/tools.Bridge.mcpToolCall,matrix/cody/internal/tools.Bridge.rpc
   ^defines=matrix/cody/internal/tools/browser.go
 
 NODE id=matrix/cody/internal/tools.jsonRPCRequest#ID kind=field
@@ -203,6 +246,7 @@ NODE id=matrix/cody/internal/tools.jsonRPCResponse kind=type
   doc=jsonRPCResponse is a JSON-RPC 2.0 reply (result or error).
 EDGES
   contains=matrix/cody/internal/tools.jsonRPCResponse#Error,matrix/cody/internal/tools.jsonRPCResponse#ID,matrix/cody/internal/tools.jsonRPCResponse#JSONRPC,matrix/cody/internal/tools.jsonRPCResponse#Result
+  ^references=matrix/cody/internal/tools.Bridge.rpc,matrix/cody/internal/tools.readSSEResponse
   ^defines=matrix/cody/internal/tools/browser.go
 
 NODE id=matrix/cody/internal/tools.jsonRPCResponse#Error kind=field
@@ -235,6 +279,7 @@ NODE id=matrix/cody/internal/tools.mcpSession kind=type
   doc=mcpSession carries the negotiated session id (if the server issued one).
 EDGES
   contains=matrix/cody/internal/tools.mcpSession#id
+  ^references=matrix/cody/internal/tools.Bridge.mcpInitialize,matrix/cody/internal/tools.Bridge.mcpToolCall
   ^defines=matrix/cody/internal/tools/browser.go
 
 NODE id=matrix/cody/internal/tools.mcpSession#id kind=field
@@ -248,12 +293,18 @@ NODE id=matrix/cody/internal/tools.readSSEResponse kind=func
   sig=func readSSEResponse(r io.Reader, id int) (jsonRPCResponse, error)
   doc=readSSEResponse scans an SSE stream for the JSON-RPC message matching id.
 EDGES
+  references=matrix/cody/internal/tools.data,matrix/cody/internal/tools.err,matrix/cody/internal/tools.id,matrix/cody/internal/tools.jsonRPCResponse,matrix/cody/internal/tools.line,matrix/cody/internal/tools.out,matrix/cody/internal/tools.r,matrix/cody/internal/tools.sc
+  ^calls=matrix/cody/internal/tools.Bridge.rpc
+  ^references=matrix/cody/internal/tools.Bridge.rpc
   ^defines=matrix/cody/internal/tools/browser.go
 
 NODE id=matrix/cody/internal/tools.sanitizeName kind=func
   digest=b3:c7ae20824061c27c6dd3d1e5d0cbb98bf673b5ed58ad95af453198fe0602c1be file=cody/internal/tools/browser.go range=253:269 lang=go exported=false byte_range=8930:9303
   sig=func sanitizeName(s string) string
 EDGES
+  references=matrix/cody/internal/tools.b,matrix/cody/internal/tools.out,matrix/cody/internal/tools.r,matrix/cody/internal/tools.s
+  ^calls=matrix/cody/internal/tools.Bridge.saveScreenshot
+  ^references=matrix/cody/internal/tools.Bridge.saveScreenshot
   ^defines=matrix/cody/internal/tools/browser.go
 
 NODE id=matrix/cody/internal/tools.screenshotDir kind=const
@@ -261,6 +312,7 @@ NODE id=matrix/cody/internal/tools.screenshotDir kind=const
   sig=untyped string
   doc=screenshotDir is where captured screenshots land under the workspace.
 EDGES
+  ^references=matrix/cody/internal/tools.Bridge.saveScreenshot
   ^defines=matrix/cody/internal/tools/browser.go
 
 NODE id=matrix/cody/internal/tools.searxResult kind=type
@@ -269,6 +321,7 @@ NODE id=matrix/cody/internal/tools.searxResult kind=type
   doc=searxResult is one SearXNG JSON result.
 EDGES
   contains=matrix/cody/internal/tools.searxResult#Content,matrix/cody/internal/tools.searxResult#Title,matrix/cody/internal/tools.searxResult#URL
+  ^references=matrix/cody/internal/tools.Bridge.webSearch
   ^defines=matrix/cody/internal/tools/tools.go
 
 NODE id=matrix/cody/internal/tools.searxResult#Content kind=field
@@ -293,6 +346,9 @@ NODE id=matrix/cody/internal/tools.str kind=func
   digest=b3:fb5e8021c38d47be21529abcb059416dfb23229f20cb03a2e55e356f0ed2f168 file=cody/internal/tools/tools.go range=175:180 lang=go exported=false byte_range=6247:6370
   sig=func str(args map[string]interface{}, key string) string
 EDGES
+  references=matrix/cody/internal/tools.args,matrix/cody/internal/tools.key,matrix/cody/internal/tools.ok,matrix/cody/internal/tools.v
+  ^calls=matrix/cody/internal/tools.Bridge.Dispatch
+  ^references=matrix/cody/internal/tools.Bridge.Dispatch
   ^defines=matrix/cody/internal/tools/tools.go
 
 NODE id=matrix/cody/internal/tools.toolCallResult kind=type
@@ -301,6 +357,7 @@ NODE id=matrix/cody/internal/tools.toolCallResult kind=type
   doc=toolCallResult is the MCP tools/call result: content blocks, one of which is\nthe screenshot image for browser_take_screenshot.
 EDGES
   contains=matrix/cody/internal/tools.toolCallResult#Content,matrix/cody/internal/tools.toolCallResult#IsError
+  ^references=matrix/cody/internal/tools.Bridge.mcpToolCall
   ^defines=matrix/cody/internal/tools/browser.go
 
 NODE id=matrix/cody/internal/tools.toolCallResult#Content kind=field

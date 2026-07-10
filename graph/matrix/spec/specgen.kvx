@@ -1,4 +1,4 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:9b68327501b45793fd7687f43b30c960fd68ae8aaff6b2f1bb36ec3e2df2de2f
+# GENERATED gen=codegraph do-not-edit merkle=b3:20e53aba2ea11552396417e53b3e04e87dd1bbb7bef3aa554a45bb92cf89e7f2
 
 NODE id=matrix/spec/specgen kind=package
   digest=b3:12a05b3c765d1d112cb437a6665132521e5739f600a0e2808d7f3532c5829c36 file=spec/specgen range=0:0 lang=go exported=true
@@ -12,6 +12,7 @@ NODE id=matrix/spec/specgen.Doc kind=type
   doc=Doc is a parsed .kvx file: an ordered, sectioned key/value document.\n\nIt mirrors the grammar of tachyon/internal/config/kvx.go (zero-dep,\ndeterministic, one `key = value` per line, double-quoted strings, bracketed\nlists, ${ENV} interpolation, # comments outside quotes) but additionally\npreserves the insertion ORDER of both sections and the keys within each\nsection, so rendered output is deterministic.
 EDGES
   contains=matrix/spec/specgen.Doc#keyOrder,matrix/spec/specgen.Doc#order,matrix/spec/specgen.Doc#sections,matrix/spec/specgen.Doc.Bool,matrix/spec/specgen.Doc.Has,matrix/spec/specgen.Doc.IsList,matrix/spec/specgen.Doc.Keys,matrix/spec/specgen.Doc.List,matrix/spec/specgen.Doc.OrderedKV,matrix/spec/specgen.Doc.Raw,matrix/spec/specgen.Doc.Sections,matrix/spec/specgen.Doc.SectionsWithPrefix,matrix/spec/specgen.Doc.Str,matrix/spec/specgen.Doc.UintOr,matrix/spec/specgen.Doc.ensure
+  ^references=matrix/spec/specgen.Doc.Bool,matrix/spec/specgen.Doc.Has,matrix/spec/specgen.Doc.IsList,matrix/spec/specgen.Doc.Keys,matrix/spec/specgen.Doc.List,matrix/spec/specgen.Doc.OrderedKV,matrix/spec/specgen.Doc.Raw,matrix/spec/specgen.Doc.Sections,matrix/spec/specgen.Doc.SectionsWithPrefix,matrix/spec/specgen.Doc.Str,matrix/spec/specgen.Doc.UintOr,matrix/spec/specgen.Doc.ensure,matrix/spec/specgen.ParseFile,matrix/spec/specgen.buildBrief,matrix/spec/specgen.newDoc,matrix/spec/specgen.parse,matrix/spec/specgen.renderDesign,matrix/spec/specgen.renderRequirements,matrix/spec/specgen.renderTasks,matrix/spec/specgen.renderWaveGraph
   ^defines=matrix/spec/specgen/kvx.go
 
 NODE id=matrix/spec/specgen.Doc#keyOrder kind=field
@@ -37,7 +38,11 @@ NODE id=matrix/spec/specgen.Doc.Bool kind=method
   sig=func (d *Doc) Bool(section, key string, fallback bool) bool
   doc=Bool returns section.key as a bool (true|1|yes), or fallback.
 EDGES
+  calls=matrix/spec/specgen.Doc.Str
+  references=matrix/spec/specgen.Doc,matrix/spec/specgen.Doc.Str,matrix/spec/specgen.d,matrix/spec/specgen.fallback,matrix/spec/specgen.key,matrix/spec/specgen.section,matrix/spec/specgen.v
   ^contains=matrix/spec/specgen.Doc
+  ^calls=matrix/spec/specgen.run
+  ^references=matrix/spec/specgen.run
   ^defines=matrix/spec/specgen/kvx.go
 
 NODE id=matrix/spec/specgen.Doc.Has kind=method
@@ -45,6 +50,7 @@ NODE id=matrix/spec/specgen.Doc.Has kind=method
   sig=func (d *Doc) Has(section string) bool
   doc=Has reports whether a section is present.
 EDGES
+  references=matrix/spec/specgen.Doc,matrix/spec/specgen.d,matrix/spec/specgen.ok,matrix/spec/specgen.section
   ^contains=matrix/spec/specgen.Doc
   ^defines=matrix/spec/specgen/kvx.go
 
@@ -53,7 +59,11 @@ NODE id=matrix/spec/specgen.Doc.IsList kind=method
   sig=func (d *Doc) IsList(section, key string) bool
   doc=IsList reports whether section.key holds a bracketed list token.
 EDGES
+  calls=matrix/spec/specgen.Doc.Raw
+  references=matrix/spec/specgen.Doc,matrix/spec/specgen.Doc.Raw,matrix/spec/specgen.d,matrix/spec/specgen.key,matrix/spec/specgen.raw,matrix/spec/specgen.section
   ^contains=matrix/spec/specgen.Doc
+  ^calls=matrix/spec/specgen.renderDesign
+  ^references=matrix/spec/specgen.renderDesign
   ^defines=matrix/spec/specgen/kvx.go
 
 NODE id=matrix/spec/specgen.Doc.Keys kind=method
@@ -61,7 +71,10 @@ NODE id=matrix/spec/specgen.Doc.Keys kind=method
   sig=func (d *Doc) Keys(section string) []string
   doc=Keys returns the keys of a section in file order.
 EDGES
+  references=matrix/spec/specgen.Doc,matrix/spec/specgen.d,matrix/spec/specgen.section
   ^contains=matrix/spec/specgen.Doc
+  ^calls=matrix/spec/specgen.renderDesign
+  ^references=matrix/spec/specgen.renderDesign
   ^defines=matrix/spec/specgen/kvx.go
 
 NODE id=matrix/spec/specgen.Doc.List kind=method
@@ -69,7 +82,11 @@ NODE id=matrix/spec/specgen.Doc.List kind=method
   sig=func (d *Doc) List(section, key string) []string
   doc=List returns a bracketed list value as interpolated strings.
 EDGES
+  calls=matrix/spec/specgen.interpolate,matrix/spec/specgen.splitList,matrix/spec/specgen.unquote
+  references=matrix/spec/specgen.Doc,matrix/spec/specgen.d,matrix/spec/specgen.inner,matrix/spec/specgen.interpolate,matrix/spec/specgen.key,matrix/spec/specgen.ok,matrix/spec/specgen.out,matrix/spec/specgen.part,matrix/spec/specgen.raw,matrix/spec/specgen.sec,matrix/spec/specgen.section,matrix/spec/specgen.splitList,matrix/spec/specgen.unquote,matrix/spec/specgen.v
   ^contains=matrix/spec/specgen.Doc
+  ^calls=matrix/spec/specgen.renderDesign,matrix/spec/specgen.renderTasks
+  ^references=matrix/spec/specgen.renderDesign,matrix/spec/specgen.renderTasks
   ^defines=matrix/spec/specgen/kvx.go
 
 NODE id=matrix/spec/specgen.Doc.OrderedKV kind=method
@@ -77,7 +94,11 @@ NODE id=matrix/spec/specgen.Doc.OrderedKV kind=method
   sig=func (d *Doc) OrderedKV(section, prefix string) [][2]string
   doc=OrderedKV returns the (key, interpolated-string) pairs of a section in file\norder, optionally filtered to keys with the given prefix.
 EDGES
+  calls=matrix/spec/specgen.interpolate,matrix/spec/specgen.unquote
+  references=matrix/spec/specgen.Doc,matrix/spec/specgen.d,matrix/spec/specgen.interpolate,matrix/spec/specgen.k,matrix/spec/specgen.out,matrix/spec/specgen.prefix,matrix/spec/specgen.section,matrix/spec/specgen.unquote
   ^contains=matrix/spec/specgen.Doc
+  ^calls=matrix/spec/specgen.buildBrief,matrix/spec/specgen.renderRequirements,matrix/spec/specgen.renderTasks,matrix/spec/specgen.run
+  ^references=matrix/spec/specgen.buildBrief,matrix/spec/specgen.renderRequirements,matrix/spec/specgen.renderTasks,matrix/spec/specgen.run
   ^defines=matrix/spec/specgen/kvx.go
 
 NODE id=matrix/spec/specgen.Doc.Raw kind=method
@@ -85,7 +106,10 @@ NODE id=matrix/spec/specgen.Doc.Raw kind=method
   sig=func (d *Doc) Raw(section, key string) string
   doc=Raw returns the un-interpolated, un-unquoted token for section.key (so a\ncaller can tell a list ("[...]") from a scalar). Empty when absent.
 EDGES
+  references=matrix/spec/specgen.Doc,matrix/spec/specgen.d,matrix/spec/specgen.key,matrix/spec/specgen.ok,matrix/spec/specgen.sec,matrix/spec/specgen.section
   ^contains=matrix/spec/specgen.Doc
+  ^calls=matrix/spec/specgen.Doc.IsList,matrix/spec/specgen.renderWaveGraph
+  ^references=matrix/spec/specgen.Doc.IsList,matrix/spec/specgen.renderWaveGraph
   ^defines=matrix/spec/specgen/kvx.go
 
 NODE id=matrix/spec/specgen.Doc.Sections kind=method
@@ -93,6 +117,7 @@ NODE id=matrix/spec/specgen.Doc.Sections kind=method
   sig=func (d *Doc) Sections() []string
   doc=Sections returns section names in file order.
 EDGES
+  references=matrix/spec/specgen.Doc,matrix/spec/specgen.d
   ^contains=matrix/spec/specgen.Doc
   ^defines=matrix/spec/specgen/kvx.go
 
@@ -101,7 +126,10 @@ NODE id=matrix/spec/specgen.Doc.SectionsWithPrefix kind=method
   sig=func (d *Doc) SectionsWithPrefix(prefix string) []string
   doc=SectionsWithPrefix returns the sub-section names under "prefix." (e.g.\n"req.1" -> "1") in file order, for table-style groups.
 EDGES
+  references=matrix/spec/specgen.Doc,matrix/spec/specgen.d,matrix/spec/specgen.out,matrix/spec/specgen.p,matrix/spec/specgen.prefix,matrix/spec/specgen.s
   ^contains=matrix/spec/specgen.Doc
+  ^calls=matrix/spec/specgen.renderDesign,matrix/spec/specgen.renderRequirements,matrix/spec/specgen.renderTasks
+  ^references=matrix/spec/specgen.renderDesign,matrix/spec/specgen.renderRequirements,matrix/spec/specgen.renderTasks
   ^defines=matrix/spec/specgen/kvx.go
 
 NODE id=matrix/spec/specgen.Doc.Str kind=method
@@ -109,7 +137,11 @@ NODE id=matrix/spec/specgen.Doc.Str kind=method
   sig=func (d *Doc) Str(section, key string) string
   doc=Str returns the interpolated string value of section.key, or "".
 EDGES
+  calls=matrix/spec/specgen.interpolate,matrix/spec/specgen.unquote
+  references=matrix/spec/specgen.Doc,matrix/spec/specgen.d,matrix/spec/specgen.interpolate,matrix/spec/specgen.key,matrix/spec/specgen.ok,matrix/spec/specgen.raw,matrix/spec/specgen.sec,matrix/spec/specgen.section,matrix/spec/specgen.unquote
   ^contains=matrix/spec/specgen.Doc
+  ^calls=matrix/spec/specgen.Doc.Bool,matrix/spec/specgen.Doc.UintOr,matrix/spec/specgen.buildBrief,matrix/spec/specgen.renderDesign,matrix/spec/specgen.renderFeature,matrix/spec/specgen.renderRequirements,matrix/spec/specgen.renderTasks,matrix/spec/specgen.run
+  ^references=matrix/spec/specgen.Doc.Bool,matrix/spec/specgen.Doc.UintOr,matrix/spec/specgen.buildBrief,matrix/spec/specgen.renderDesign,matrix/spec/specgen.renderFeature,matrix/spec/specgen.renderRequirements,matrix/spec/specgen.renderTasks,matrix/spec/specgen.run
   ^defines=matrix/spec/specgen/kvx.go
 
 NODE id=matrix/spec/specgen.Doc.UintOr kind=method
@@ -117,14 +149,21 @@ NODE id=matrix/spec/specgen.Doc.UintOr kind=method
   sig=func (d *Doc) UintOr(section, key string, fallback uint64) uint64
   doc=UintOr parses section.key as uint64, returning fallback when absent/invalid.
 EDGES
+  calls=matrix/spec/specgen.Doc.Str
+  references=matrix/spec/specgen.Doc,matrix/spec/specgen.Doc.Str,matrix/spec/specgen.d,matrix/spec/specgen.err,matrix/spec/specgen.fallback,matrix/spec/specgen.key,matrix/spec/specgen.n,matrix/spec/specgen.section,matrix/spec/specgen.v
   ^contains=matrix/spec/specgen.Doc
+  ^calls=matrix/spec/specgen.renderWaveGraph
+  ^references=matrix/spec/specgen.renderWaveGraph
   ^defines=matrix/spec/specgen/kvx.go
 
 NODE id=matrix/spec/specgen.Doc.ensure kind=method
   digest=b3:73e8401642f4dee7d0096d3bcfb9c616dfad747d9904c31b4811ae32a2e00108 file=spec/specgen/kvx.go range=84:89 lang=go exported=false byte_range=2191:2355
   sig=func (d *Doc) ensure(section string)
 EDGES
+  references=matrix/spec/specgen.Doc,matrix/spec/specgen.d,matrix/spec/specgen.ok,matrix/spec/specgen.section
   ^contains=matrix/spec/specgen.Doc
+  ^calls=matrix/spec/specgen.parse
+  ^references=matrix/spec/specgen.parse
   ^defines=matrix/spec/specgen/kvx.go
 
 NODE id=matrix/spec/specgen.ParseFile kind=func
@@ -132,6 +171,10 @@ NODE id=matrix/spec/specgen.ParseFile kind=func
   sig=func ParseFile(path string) (*Doc, error)
   doc=ParseFile reads and parses a .kvx file. A missing file is an error.
 EDGES
+  calls=matrix/spec/specgen.parse
+  references=matrix/spec/specgen.Doc,matrix/spec/specgen.err,matrix/spec/specgen.f,matrix/spec/specgen.parse,matrix/spec/specgen.path
+  ^calls=matrix/spec/specgen.renderFeature,matrix/spec/specgen.run
+  ^references=matrix/spec/specgen.renderFeature,matrix/spec/specgen.run
   ^defines=matrix/spec/specgen/kvx.go
 
 NODE id=matrix/spec/specgen.SortDottedIDs kind=func
@@ -139,6 +182,9 @@ NODE id=matrix/spec/specgen.SortDottedIDs kind=func
   sig=func SortDottedIDs(ids []string)
   doc=SortDottedIDs sorts ids like "1","1.10","1.2","2" by numeric segments.
 EDGES
+  references=matrix/spec/specgen.a,matrix/spec/specgen.aerr,matrix/spec/specgen.ai,matrix/spec/specgen.as,matrix/spec/specgen.b,matrix/spec/specgen.berr,matrix/spec/specgen.bi,matrix/spec/specgen.bs,matrix/spec/specgen.i,matrix/spec/specgen.ids,matrix/spec/specgen.j,matrix/spec/specgen.less
+  ^calls=matrix/spec/specgen.renderRequirements,matrix/spec/specgen.renderTasks,matrix/spec/specgen.renderWaveGraph
+  ^references=matrix/spec/specgen.renderRequirements,matrix/spec/specgen.renderTasks,matrix/spec/specgen.renderWaveGraph
   ^defines=matrix/spec/specgen/kvx.go
 
 NODE id=matrix/spec/specgen.adapter kind=func
@@ -146,6 +192,9 @@ NODE id=matrix/spec/specgen.adapter kind=func
   sig=func adapter(label, brief, banner string) string
   doc=adapter renders one IDE pointer file from the shared brief + a banner.
 EDGES
+  references=matrix/spec/specgen.banner,matrix/spec/specgen.brief,matrix/spec/specgen.cmt,matrix/spec/specgen.fm,matrix/spec/specgen.label
+  ^calls=matrix/spec/specgen.run
+  ^references=matrix/spec/specgen.run
   ^defines=matrix/spec/specgen/adapters.go
 
 NODE id=matrix/spec/specgen.buildBrief kind=func
@@ -153,18 +202,28 @@ NODE id=matrix/spec/specgen.buildBrief kind=func
   sig=func buildBrief(wf *Doc) string
   doc=buildBrief composes the shared, IDE-neutral operating brief from\nworkflow.kvx. Every per-IDE adapter wraps this same body.
 EDGES
+  calls=matrix/spec/specgen.Doc.OrderedKV,matrix/spec/specgen.Doc.Str,matrix/spec/specgen.humanize
+  references=matrix/spec/specgen.Doc,matrix/spec/specgen.Doc.OrderedKV,matrix/spec/specgen.Doc.Str,matrix/spec/specgen.active,matrix/spec/specgen.b,matrix/spec/specgen.humanize,matrix/spec/specgen.kv,matrix/spec/specgen.n,matrix/spec/specgen.name,matrix/spec/specgen.sot,matrix/spec/specgen.wf
+  ^calls=matrix/spec/specgen.run
+  ^references=matrix/spec/specgen.run
   ^defines=matrix/spec/specgen/adapters.go
 
 NODE id=matrix/spec/specgen.checkSuffix kind=func
   digest=b3:b4e2e9377fd98b7ed1f0528e69e09e56fb99e258298c315634d8bcca0ae5aab7 file=spec/specgen/main.go range=181:186 lang=go exported=false byte_range=4835:4953
   sig=func checkSuffix(check bool, stale int) string
 EDGES
+  references=matrix/spec/specgen.check,matrix/spec/specgen.stale
+  ^calls=matrix/spec/specgen.main
+  ^references=matrix/spec/specgen.main
   ^defines=matrix/spec/specgen/main.go
 
 NODE id=matrix/spec/specgen.checkbox kind=func
   digest=b3:ac4f65a832331884cfe1db86b5a1e9ebcb9694fc17f07d9824859e3f692e35bc file=spec/specgen/render.go range=226:235 lang=go exported=false byte_range=6905:7054
   sig=func checkbox(status string) string
 EDGES
+  references=matrix/spec/specgen.status
+  ^calls=matrix/spec/specgen.renderTasks
+  ^references=matrix/spec/specgen.renderTasks
   ^defines=matrix/spec/specgen/render.go
 
 NODE id=matrix/spec/specgen.discoverFeatures kind=func
@@ -172,12 +231,16 @@ NODE id=matrix/spec/specgen.discoverFeatures kind=func
   sig=func discoverFeatures(specDir string) ([]string, error)
   doc=discoverFeatures returns the spec/<feature> dirs that contain a spec.kvx.
 EDGES
+  references=matrix/spec/specgen.e,matrix/spec/specgen.entries,matrix/spec/specgen.err,matrix/spec/specgen.out,matrix/spec/specgen.p,matrix/spec/specgen.specDir
+  ^calls=matrix/spec/specgen.run
+  ^references=matrix/spec/specgen.run
   ^defines=matrix/spec/specgen/main.go
 
 NODE id=matrix/spec/specgen.envRef kind=var
   digest=b3:3c00e8b443a15eb06179e655b4c16e71bc90bc0248327f875379342c61236a4d file=spec/specgen/kvx.go range=25:25 lang=go exported=false byte_range=701:762
   sig=*regexp.Regexp
 EDGES
+  ^references=matrix/spec/specgen.interpolate
   ^defines=matrix/spec/specgen/kvx.go
 
 NODE id=matrix/spec/specgen.humanize kind=func
@@ -185,36 +248,54 @@ NODE id=matrix/spec/specgen.humanize kind=func
   sig=func humanize(k string) string
   doc=humanize turns a snake_case kvx key into a Title Cased label.
 EDGES
+  references=matrix/spec/specgen.i,matrix/spec/specgen.k,matrix/spec/specgen.p,matrix/spec/specgen.parts
+  ^calls=matrix/spec/specgen.buildBrief
+  ^references=matrix/spec/specgen.buildBrief
   ^defines=matrix/spec/specgen/adapters.go
 
 NODE id=matrix/spec/specgen.interpolate kind=func
   digest=b3:f9a0de3a73bceebbc089608e417ec40c25049c4725542da4e9fd5785837e4785 file=spec/specgen/kvx.go range=252:259 lang=go exported=false byte_range=6179:6366
   sig=func interpolate(s string) string
 EDGES
+  references=matrix/spec/specgen.envRef,matrix/spec/specgen.m,matrix/spec/specgen.s
+  ^calls=matrix/spec/specgen.Doc.List,matrix/spec/specgen.Doc.OrderedKV,matrix/spec/specgen.Doc.Str
+  ^references=matrix/spec/specgen.Doc.List,matrix/spec/specgen.Doc.OrderedKV,matrix/spec/specgen.Doc.Str
   ^defines=matrix/spec/specgen/kvx.go
 
 NODE id=matrix/spec/specgen.main kind=func
   digest=b3:0fd9bfcc5009d18d633feb2a8b5ac52cbe3ebcbd1a0f21804f1920b29df18324 file=spec/specgen/main.go range=23:46 lang=go exported=false byte_range=700:1478
   sig=func main()
 EDGES
+  calls=matrix/spec/specgen.checkSuffix,matrix/spec/specgen.must,matrix/spec/specgen.run
+  references=matrix/spec/specgen.check,matrix/spec/specgen.checkSuffix,matrix/spec/specgen.err,matrix/spec/specgen.must,matrix/spec/specgen.repo,matrix/spec/specgen.root,matrix/spec/specgen.run,matrix/spec/specgen.w,matrix/spec/specgen.wd,matrix/spec/specgen.writer
   ^defines=matrix/spec/specgen/main.go
 
 NODE id=matrix/spec/specgen.must kind=func
   digest=b3:ad2408fc5aa524e378a0c5c055e5a5d19159d6f4f30b123e8dff71716f94d956 file=spec/specgen/main.go range=188:192 lang=go exported=false byte_range=4955:5012
   sig=func must(err error)
 EDGES
+  references=matrix/spec/specgen.err
+  ^calls=matrix/spec/specgen.main
+  ^references=matrix/spec/specgen.main
   ^defines=matrix/spec/specgen/main.go
 
 NODE id=matrix/spec/specgen.newDoc kind=func
   digest=b3:fe772284c34c7e752cd23354d625ea4dc0888660f8d090b6478abeda6387d28d file=spec/specgen/kvx.go range=27:32 lang=go exported=false byte_range=764:882
   sig=func newDoc() *Doc
 EDGES
+  references=matrix/spec/specgen.Doc
+  ^calls=matrix/spec/specgen.parse
+  ^references=matrix/spec/specgen.parse
   ^defines=matrix/spec/specgen/kvx.go
 
 NODE id=matrix/spec/specgen.parse kind=func
   digest=b3:d3fb54c8926a0d987ca0d3d1c7a4d390f3579fb72055ce308bcd90fbfdbb1f98 file=spec/specgen/kvx.go range=44:82 lang=go exported=false byte_range=1105:2189
   sig=func parse(r *os.File, path string) (*Doc, error)
 EDGES
+  calls=matrix/spec/specgen.Doc.ensure,matrix/spec/specgen.newDoc,matrix/spec/specgen.stripComment
+  references=matrix/spec/specgen.Doc,matrix/spec/specgen.Doc.ensure,matrix/spec/specgen.doc,matrix/spec/specgen.err,matrix/spec/specgen.key,matrix/spec/specgen.line,matrix/spec/specgen.lineNo,matrix/spec/specgen.newDoc,matrix/spec/specgen.ok,matrix/spec/specgen.path,matrix/spec/specgen.r,matrix/spec/specgen.sc,matrix/spec/specgen.section,matrix/spec/specgen.seen,matrix/spec/specgen.stripComment,matrix/spec/specgen.val
+  ^calls=matrix/spec/specgen.ParseFile
+  ^references=matrix/spec/specgen.ParseFile
   ^defines=matrix/spec/specgen/kvx.go
 
 NODE id=matrix/spec/specgen.renderDesign kind=func
@@ -222,12 +303,20 @@ NODE id=matrix/spec/specgen.renderDesign kind=func
   sig=func renderDesign(f *Doc, featureDir, banner string) (string, error)
   doc=renderDesign builds design.md from a feature spec.kvx.\n\nSchema: [design] overview="..." include="design.body.md" (inlined verbatim);\nplus optional [design.<name>] sections (title + ordered scalar paragraphs or\nlist bullets) for structured outline content.
 EDGES
+  calls=matrix/spec/specgen.Doc.IsList,matrix/spec/specgen.Doc.Keys,matrix/spec/specgen.Doc.List,matrix/spec/specgen.Doc.SectionsWithPrefix,matrix/spec/specgen.Doc.Str
+  references=matrix/spec/specgen.Doc,matrix/spec/specgen.Doc.IsList,matrix/spec/specgen.Doc.Keys,matrix/spec/specgen.Doc.List,matrix/spec/specgen.Doc.SectionsWithPrefix,matrix/spec/specgen.Doc.Str,matrix/spec/specgen.b,matrix/spec/specgen.banner,matrix/spec/specgen.body,matrix/spec/specgen.err,matrix/spec/specgen.f,matrix/spec/specgen.featureDir,matrix/spec/specgen.inc,matrix/spec/specgen.item,matrix/spec/specgen.k,matrix/spec/specgen.name,matrix/spec/specgen.ov,matrix/spec/specgen.sec,matrix/spec/specgen.title
+  ^calls=matrix/spec/specgen.renderFeature
+  ^references=matrix/spec/specgen.renderFeature
   ^defines=matrix/spec/specgen/render.go
 
 NODE id=matrix/spec/specgen.renderFeature kind=func
   digest=b3:37c9f34c8a9c8d34f1e4deea63801798f0dbcc118a9c61728d26a4053ac88f9c file=spec/specgen/main.go range=87:130 lang=go exported=false byte_range=2580:3656
   sig=func renderFeature(repo, specDir, fdir, banner string, mirrorKiro bool, w *writer) error
 EDGES
+  calls=matrix/spec/specgen.Doc.Str,matrix/spec/specgen.ParseFile,matrix/spec/specgen.renderDesign,matrix/spec/specgen.renderRequirements,matrix/spec/specgen.renderTasks,matrix/spec/specgen.writer.write
+  references=matrix/spec/specgen.Doc.Str,matrix/spec/specgen.ParseFile,matrix/spec/specgen.banner,matrix/spec/specgen.des,matrix/spec/specgen.err,matrix/spec/specgen.f,matrix/spec/specgen.fdir,matrix/spec/specgen.feature,matrix/spec/specgen.kdir,matrix/spec/specgen.mirrorKiro,matrix/spec/specgen.out,matrix/spec/specgen.p,matrix/spec/specgen.paths,matrix/spec/specgen.renderDesign,matrix/spec/specgen.renderRequirements,matrix/spec/specgen.renderTasks,matrix/spec/specgen.repo,matrix/spec/specgen.req,matrix/spec/specgen.tasks,matrix/spec/specgen.w,matrix/spec/specgen.writer,matrix/spec/specgen.writer.write
+  ^calls=matrix/spec/specgen.run
+  ^references=matrix/spec/specgen.run
   ^defines=matrix/spec/specgen/main.go
 
 NODE id=matrix/spec/specgen.renderRequirements kind=func
@@ -235,6 +324,10 @@ NODE id=matrix/spec/specgen.renderRequirements kind=func
   sig=func renderRequirements(f *Doc, banner string) string
   doc=renderRequirements builds requirements.md from a feature spec.kvx.\n\nSchema: [req.<n>] title="..." story="..." ac_1="..." ac_2="..." (ordered).
 EDGES
+  calls=matrix/spec/specgen.Doc.OrderedKV,matrix/spec/specgen.Doc.SectionsWithPrefix,matrix/spec/specgen.Doc.Str,matrix/spec/specgen.SortDottedIDs
+  references=matrix/spec/specgen.Doc,matrix/spec/specgen.Doc.OrderedKV,matrix/spec/specgen.Doc.SectionsWithPrefix,matrix/spec/specgen.Doc.Str,matrix/spec/specgen.SortDottedIDs,matrix/spec/specgen.b,matrix/spec/specgen.banner,matrix/spec/specgen.f,matrix/spec/specgen.id,matrix/spec/specgen.ids,matrix/spec/specgen.intro,matrix/spec/specgen.kv,matrix/spec/specgen.n,matrix/spec/specgen.sec,matrix/spec/specgen.story,matrix/spec/specgen.title
+  ^calls=matrix/spec/specgen.renderFeature
+  ^references=matrix/spec/specgen.renderFeature
   ^defines=matrix/spec/specgen/render.go
 
 NODE id=matrix/spec/specgen.renderTasks kind=func
@@ -242,6 +335,10 @@ NODE id=matrix/spec/specgen.renderTasks kind=func
   sig=func renderTasks(f *Doc, featureDir, banner string) (string, error)
   doc=renderTasks builds tasks.md from a feature spec.kvx.\n\nSchema:\n\n	[tasks]  heading="Implementation Plan: X"\n	         overview_include="tasks.overview.md"  notes_include="tasks.notes.md"\n	[task.<id>]  title  status=pending|in_progress|done  wave=<n>\n	             section="MVP First Slice ..."    (heading emitted before a top-level task)\n	             do_1, do_2, ...                  (ordered implementation detail bullets)\n	             note                             (a plain detail bullet, e.g. for checkpoints)\n	             property                         (-> "**Property ...**")\n	             validates                        (-> "**Validates: ...**")\n	             reqs=["1.1","16.2"]              (-> "_Requirements: ..._")\n\nIDs are dotted (1, 1.1, 1.2). A task uses EITHER property+validates (a\nproperty test) OR reqs (an implementation task) — emitted in that order\nafter the detail bullets, mirroring the hand-authored convention.
 EDGES
+  calls=matrix/spec/specgen.Doc.List,matrix/spec/specgen.Doc.OrderedKV,matrix/spec/specgen.Doc.SectionsWithPrefix,matrix/spec/specgen.Doc.Str,matrix/spec/specgen.SortDottedIDs,matrix/spec/specgen.checkbox,matrix/spec/specgen.renderWaveGraph
+  references=matrix/spec/specgen.Doc,matrix/spec/specgen.Doc.List,matrix/spec/specgen.Doc.OrderedKV,matrix/spec/specgen.Doc.SectionsWithPrefix,matrix/spec/specgen.Doc.Str,matrix/spec/specgen.SortDottedIDs,matrix/spec/specgen.b,matrix/spec/specgen.banner,matrix/spec/specgen.body,matrix/spec/specgen.checkbox,matrix/spec/specgen.depth,matrix/spec/specgen.err,matrix/spec/specgen.f,matrix/spec/specgen.featureDir,matrix/spec/specgen.heading,matrix/spec/specgen.i,matrix/spec/specgen.id,matrix/spec/specgen.idLabel,matrix/spec/specgen.ids,matrix/spec/specgen.inc,matrix/spec/specgen.indent,matrix/spec/specgen.kv,matrix/spec/specgen.note,matrix/spec/specgen.prop,matrix/spec/specgen.renderWaveGraph,matrix/spec/specgen.reqs,matrix/spec/specgen.sec,matrix/spec/specgen.section,matrix/spec/specgen.val
+  ^calls=matrix/spec/specgen.renderFeature
+  ^references=matrix/spec/specgen.renderFeature
   ^defines=matrix/spec/specgen/render.go
 
 NODE id=matrix/spec/specgen.renderWaveGraph kind=func
@@ -249,30 +346,47 @@ NODE id=matrix/spec/specgen.renderWaveGraph kind=func
   sig=func renderWaveGraph(f *Doc, ids []string) string
   doc=renderWaveGraph emits the "## Task Dependency Graph" JSON block, grouping\nleaf tasks by their `wave` value (ids sorted within each wave).
 EDGES
+  calls=matrix/spec/specgen.Doc.Raw,matrix/spec/specgen.Doc.UintOr,matrix/spec/specgen.SortDottedIDs
+  references=matrix/spec/specgen.Doc,matrix/spec/specgen.Doc.Raw,matrix/spec/specgen.Doc.UintOr,matrix/spec/specgen.SortDottedIDs,matrix/spec/specgen.any,matrix/spec/specgen.b,matrix/spec/specgen.comma,matrix/spec/specgen.f,matrix/spec/specgen.i,matrix/spec/specgen.id,matrix/spec/specgen.idField,matrix/spec/specgen.ids,matrix/spec/specgen.j,matrix/spec/specgen.maxWave,matrix/spec/specgen.ok,matrix/spec/specgen.present,matrix/spec/specgen.quoted,matrix/spec/specgen.sec,matrix/spec/specgen.t,matrix/spec/specgen.ts,matrix/spec/specgen.w,matrix/spec/specgen.waves
+  ^calls=matrix/spec/specgen.renderTasks
+  ^references=matrix/spec/specgen.renderTasks
   ^defines=matrix/spec/specgen/render.go
 
 NODE id=matrix/spec/specgen.run kind=func
   digest=b3:a358cef7512e4205527ce6cd93738953070db850b3723350bb014acb2b8c1185 file=spec/specgen/main.go range=48:85 lang=go exported=false byte_range=1480:2578
   sig=func run(repo string, w *writer) error
 EDGES
+  calls=matrix/spec/specgen.Doc.Bool,matrix/spec/specgen.Doc.OrderedKV,matrix/spec/specgen.Doc.Str,matrix/spec/specgen.ParseFile,matrix/spec/specgen.adapter,matrix/spec/specgen.buildBrief,matrix/spec/specgen.discoverFeatures,matrix/spec/specgen.renderFeature,matrix/spec/specgen.writer.write
+  references=matrix/spec/specgen.Doc.Bool,matrix/spec/specgen.Doc.OrderedKV,matrix/spec/specgen.Doc.Str,matrix/spec/specgen.ParseFile,matrix/spec/specgen.adapter,matrix/spec/specgen.banner,matrix/spec/specgen.brief,matrix/spec/specgen.buildBrief,matrix/spec/specgen.discoverFeatures,matrix/spec/specgen.err,matrix/spec/specgen.fdir,matrix/spec/specgen.features,matrix/spec/specgen.kv,matrix/spec/specgen.label,matrix/spec/specgen.mirrorKiro,matrix/spec/specgen.rel,matrix/spec/specgen.renderFeature,matrix/spec/specgen.repo,matrix/spec/specgen.specDir,matrix/spec/specgen.w,matrix/spec/specgen.wf,matrix/spec/specgen.writer,matrix/spec/specgen.writer.write
+  ^calls=matrix/spec/specgen.main
+  ^references=matrix/spec/specgen.main
   ^defines=matrix/spec/specgen/main.go
 
 NODE id=matrix/spec/specgen.splitList kind=func
   digest=b3:a1b09a6c057f263eb0f3a189dc7ed201ef9c58f9412b42a39088a8d0bf84204f file=spec/specgen/kvx.go range=226:242 lang=go exported=false byte_range=5725:6023
   sig=func splitList(s string) []string
 EDGES
+  references=matrix/spec/specgen.i,matrix/spec/specgen.inQuote,matrix/spec/specgen.parts,matrix/spec/specgen.s,matrix/spec/specgen.start
+  ^calls=matrix/spec/specgen.Doc.List
+  ^references=matrix/spec/specgen.Doc.List
   ^defines=matrix/spec/specgen/kvx.go
 
 NODE id=matrix/spec/specgen.stripComment kind=func
   digest=b3:3bb7ffd7088ab322ec64724dd6eace8c72eb7d46001e333095f9906b5b1f2254 file=spec/specgen/kvx.go range=91:104 lang=go exported=false byte_range=2357:2596
   sig=func stripComment(line string) string
 EDGES
+  references=matrix/spec/specgen.i,matrix/spec/specgen.inQuote,matrix/spec/specgen.line
+  ^calls=matrix/spec/specgen.parse
+  ^references=matrix/spec/specgen.parse
   ^defines=matrix/spec/specgen/kvx.go
 
 NODE id=matrix/spec/specgen.unquote kind=func
   digest=b3:62067a66dc7f956b660b2b948fef953a2c9d77c404cfce3c1f4b433eda682a84 file=spec/specgen/kvx.go range=244:250 lang=go exported=false byte_range=6025:6177
   sig=func unquote(s string) string
 EDGES
+  references=matrix/spec/specgen.s
+  ^calls=matrix/spec/specgen.Doc.List,matrix/spec/specgen.Doc.OrderedKV,matrix/spec/specgen.Doc.Str
+  ^references=matrix/spec/specgen.Doc.List,matrix/spec/specgen.Doc.OrderedKV,matrix/spec/specgen.Doc.Str
   ^defines=matrix/spec/specgen/kvx.go
 
 NODE id=matrix/spec/specgen.writer kind=type
@@ -281,6 +395,7 @@ NODE id=matrix/spec/specgen.writer kind=type
   doc=writer writes files idempotently (skips unchanged) and supports -check mode\n(reports staleness without writing).
 EDGES
   contains=matrix/spec/specgen.writer#check,matrix/spec/specgen.writer#stale,matrix/spec/specgen.writer#unchanged,matrix/spec/specgen.writer#written,matrix/spec/specgen.writer.write
+  ^references=matrix/spec/specgen.main,matrix/spec/specgen.renderFeature,matrix/spec/specgen.run,matrix/spec/specgen.writer.write
   ^defines=matrix/spec/specgen/main.go
 
 NODE id=matrix/spec/specgen.writer#check kind=field
@@ -311,7 +426,10 @@ NODE id=matrix/spec/specgen.writer.write kind=method
   digest=b3:05d5973ba42f3ba9a7812fea3264c2cb723771e2fbbefab6b914499daca65db6 file=spec/specgen/main.go range=159:179 lang=go exported=false byte_range=4359:4833
   sig=func (w *writer) write(path, content string) error
 EDGES
+  references=matrix/spec/specgen.content,matrix/spec/specgen.err,matrix/spec/specgen.old,matrix/spec/specgen.path,matrix/spec/specgen.w,matrix/spec/specgen.writer
   ^contains=matrix/spec/specgen.writer
+  ^calls=matrix/spec/specgen.renderFeature,matrix/spec/specgen.run
+  ^references=matrix/spec/specgen.renderFeature,matrix/spec/specgen.run
   ^defines=matrix/spec/specgen/main.go
 
 NODE id=matrix/spec/specgen/adapters.go kind=file

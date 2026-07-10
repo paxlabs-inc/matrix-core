@@ -1,16 +1,20 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:9b68327501b45793fd7687f43b30c960fd68ae8aaff6b2f1bb36ec3e2df2de2f
+# GENERATED gen=codegraph do-not-edit merkle=b3:20e53aba2ea11552396417e53b3e04e87dd1bbb7bef3aa554a45bb92cf89e7f2
 
 NODE id=matrix/executor/lifecycle kind=package
   digest=b3:6d6d1ac7fbbf93c31e7e6f0cec9fd0a860236f7d20264d615a500d4e7e7c6aa7 file=executor/lifecycle range=0:0 lang=go exported=true
 EDGES
   contains=matrix/executor/lifecycle/machine.go,matrix/executor/lifecycle/state.go
+  imports=matrix/mcl/envelope
   ^contains=mod:matrix/executor
+  ^imports=matrix/executor/cmd/mcl-e2e,matrix/executor/cmd/mcl-execute
 
 NODE id=matrix/executor/lifecycle.AllStates kind=var
   digest=b3:f1a605f60a1c52757c1a9bd81dbca3c02bc2662ee157700d846f98b630dc505f file=executor/lifecycle/state.go range=71:81 lang=go exported=true byte_range=2511:2724
   sig=[]lifecycle.State
   doc=AllStates is the canonical ordered list of 8 states.
 EDGES
+  references=matrix/executor/lifecycle.State,matrix/executor/lifecycle.StateAccepted,matrix/executor/lifecycle.StateCancelled,matrix/executor/lifecycle.StateClarifying,matrix/executor/lifecycle.StateCompleted,matrix/executor/lifecycle.StateDrafting,matrix/executor/lifecycle.StateExecuting,matrix/executor/lifecycle.StateFailed,matrix/executor/lifecycle.StateProposed
+  ^references=matrix/executor/lifecycle.validStates
   ^defines=matrix/executor/lifecycle/state.go
 
 NODE id=matrix/executor/lifecycle.AllowedNext kind=func
@@ -18,6 +22,7 @@ NODE id=matrix/executor/lifecycle.AllowedNext kind=func
   sig=func AllowedNext(from State) []State
   doc=AllowedNext returns the set of states reachable in one transition\nfrom `from`, sorted alphabetically for deterministic output. Empty\nfor terminal states.
 EDGES
+  references=matrix/executor/lifecycle.State,matrix/executor/lifecycle.allowedTransitions,matrix/executor/lifecycle.from,matrix/executor/lifecycle.i,matrix/executor/lifecycle.j,matrix/executor/lifecycle.next,matrix/executor/lifecycle.ok,matrix/executor/lifecycle.out,matrix/executor/lifecycle.s
   ^defines=matrix/executor/lifecycle/state.go
 
 NODE id=matrix/executor/lifecycle.ApplyOpts kind=type
@@ -26,6 +31,7 @@ NODE id=matrix/executor/lifecycle.ApplyOpts kind=type
   doc=ApplyOpts configures Apply behavior for kinds that need extra context\n(specifically intent.correct, which needs the materiality flag).
 EDGES
   contains=matrix/executor/lifecycle.ApplyOpts#Material,matrix/executor/lifecycle.ApplyOpts#Notes,matrix/executor/lifecycle.ApplyOpts#Now
+  ^references=matrix/executor/cmd/mcl-e2e.LifecycleDriver.DriveAccept,matrix/executor/cmd/mcl-e2e.LifecycleDriver.DriveAnswer,matrix/executor/cmd/mcl-e2e.LifecycleDriver.DriveAttest,matrix/executor/cmd/mcl-e2e.LifecycleDriver.DriveClarify,matrix/executor/cmd/mcl-e2e.LifecycleDriver.DriveCompiled,matrix/executor/cmd/mcl-e2e.LifecycleDriver.DriveCorrectMaterial,matrix/executor/cmd/mcl-e2e.LifecycleDriver.DriveCorrectNonMaterial,matrix/executor/cmd/mcl-e2e.LifecycleDriver.DrivePlanProposed,matrix/executor/cmd/mcl-e2e.LifecycleDriver.drive,matrix/executor/cmd/mcl-execute.lifecycleDriver.DriveAccept,matrix/executor/cmd/mcl-execute.lifecycleDriver.DriveAnswer,matrix/executor/cmd/mcl-execute.lifecycleDriver.DriveAttest,matrix/executor/cmd/mcl-execute.lifecycleDriver.DriveCancel,matrix/executor/cmd/mcl-execute.lifecycleDriver.DriveClarify,matrix/executor/cmd/mcl-execute.lifecycleDriver.DriveCompiled,matrix/executor/cmd/mcl-execute.lifecycleDriver.DriveCorrectMaterial,matrix/executor/cmd/mcl-execute.lifecycleDriver.DriveCorrectNonMaterial,matrix/executor/cmd/mcl-execute.lifecycleDriver.DriveFail,matrix/executor/cmd/mcl-execute.lifecycleDriver.DrivePlanProposed,matrix/executor/cmd/mcl-execute.lifecycleDriver.drive,matrix/executor/lifecycle.Machine.Apply
   ^defines=matrix/executor/lifecycle/machine.go
 
 NODE id=matrix/executor/lifecycle.ApplyOpts#Material kind=field
@@ -54,6 +60,7 @@ NODE id=matrix/executor/lifecycle.ErrAlreadyAtTerminal kind=var
   sig=error
   doc=Lifecycle errors.
 EDGES
+  ^references=matrix/executor/lifecycle.Machine.Apply
   ^defines=matrix/executor/lifecycle/machine.go
 
 NODE id=matrix/executor/lifecycle.ErrCorrectionPolicy kind=var
@@ -68,6 +75,7 @@ NODE id=matrix/executor/lifecycle.ErrEnvelopeMismatch kind=var
   sig=error
   doc=Lifecycle errors.
 EDGES
+  ^references=matrix/executor/lifecycle.Machine.Apply
   ^defines=matrix/executor/lifecycle/machine.go
 
 NODE id=matrix/executor/lifecycle.ErrInvalidTransition kind=var
@@ -75,6 +83,7 @@ NODE id=matrix/executor/lifecycle.ErrInvalidTransition kind=var
   sig=error
   doc=Lifecycle errors.
 EDGES
+  ^references=matrix/executor/lifecycle.Machine.Apply
   ^defines=matrix/executor/lifecycle/machine.go
 
 NODE id=matrix/executor/lifecycle.ErrTerminal kind=var
@@ -89,6 +98,7 @@ NODE id=matrix/executor/lifecycle.ErrUnknownKind kind=var
   sig=error
   doc=Lifecycle errors.
 EDGES
+  ^references=matrix/executor/lifecycle.Machine.Apply
   ^defines=matrix/executor/lifecycle/machine.go
 
 NODE id=matrix/executor/lifecycle.ErrUnknownState kind=var
@@ -96,6 +106,7 @@ NODE id=matrix/executor/lifecycle.ErrUnknownState kind=var
   sig=error
   doc=Lifecycle errors.
 EDGES
+  ^references=matrix/executor/lifecycle.New
   ^defines=matrix/executor/lifecycle/machine.go
 
 NODE id=matrix/executor/lifecycle.Event kind=type
@@ -104,6 +115,8 @@ NODE id=matrix/executor/lifecycle.Event kind=type
   doc=Event records a single lifecycle transition. Persisted into both the\nenvelope log (journal/logs/...) and cortex (as an Event memory) so\nthe lifecycle is queryable via cortex.find AND auditable via the\nenvelope chain.
 EDGES
   contains=matrix/executor/lifecycle.Event#At,matrix/executor/lifecycle.Event#EnvelopeID,matrix/executor/lifecycle.Event#From,matrix/executor/lifecycle.Event#IntentID,matrix/executor/lifecycle.Event#Kind,matrix/executor/lifecycle.Event#Material,matrix/executor/lifecycle.Event#Notes,matrix/executor/lifecycle.Event#To
+  references=matrix/executor/lifecycle.State
+  ^references=matrix/executor/cmd/mcl-e2e.LifecycleDriver.History,matrix/executor/cmd/mcl-execute.lifecycleDriver.History,matrix/executor/lifecycle.Machine,matrix/executor/lifecycle.Machine.Apply,matrix/executor/lifecycle.Machine.History
   ^defines=matrix/executor/lifecycle/machine.go
 
 NODE id=matrix/executor/lifecycle.Event#At kind=field
@@ -167,6 +180,8 @@ NODE id=matrix/executor/lifecycle.Machine kind=type
   doc=Machine is a per-intent lifecycle state holder. Thread-safe. Apply\na transition by calling Apply with an envelope; reject and remain at\nthe current state if the move is invalid.\n\nThe Machine itself does NOT persist state; the caller is responsible\nfor journaling Event records and reconstructing on restart.
 EDGES
   contains=matrix/executor/lifecycle.Machine#MaxHistory,matrix/executor/lifecycle.Machine#history,matrix/executor/lifecycle.Machine#intentID,matrix/executor/lifecycle.Machine#mu,matrix/executor/lifecycle.Machine#state,matrix/executor/lifecycle.Machine.Apply,matrix/executor/lifecycle.Machine.History,matrix/executor/lifecycle.Machine.IntentID,matrix/executor/lifecycle.Machine.State
+  references=matrix/executor/lifecycle.Event,matrix/executor/lifecycle.State
+  ^references=matrix/executor/cmd/mcl-e2e.LifecycleDriver,matrix/executor/cmd/mcl-execute.lifecycleDriver,matrix/executor/lifecycle.Machine.Apply,matrix/executor/lifecycle.Machine.History,matrix/executor/lifecycle.Machine.IntentID,matrix/executor/lifecycle.Machine.State,matrix/executor/lifecycle.New
   ^defines=matrix/executor/lifecycle/machine.go
 
 NODE id=matrix/executor/lifecycle.Machine#MaxHistory kind=field
@@ -205,7 +220,11 @@ NODE id=matrix/executor/lifecycle.Machine.Apply kind=method
   sig=func (m *Machine) Apply(env *envelope.Envelope, opts ApplyOpts) (State, *Event, error)
   doc=Apply attempts to transition based on the given envelope. Returns the\nnew state and the recorded Event. On invalid transitions, returns an\nerror and leaves the state unchanged.\n\nThe kind→transition table (MessageKindTransition) drives which target\nstate each envelope kind moves to from the current state. Kinds that\ndo not drive transitions (plan.step, plan.output, policy.gate,\npolicy.gate.resolve) return ErrUnknownKind so the caller can opt to\nignore them at the lifecycle layer.
 EDGES
+  calls=matrix/executor/lifecycle.State.IsTerminal,matrix/executor/lifecycle.Transition,matrix/executor/lifecycle.formatTransition,matrix/executor/lifecycle.lookupTransition
+  references=matrix/executor/lifecycle.ApplyOpts,matrix/executor/lifecycle.ErrAlreadyAtTerminal,matrix/executor/lifecycle.ErrEnvelopeMismatch,matrix/executor/lifecycle.ErrInvalidTransition,matrix/executor/lifecycle.ErrUnknownKind,matrix/executor/lifecycle.Event,matrix/executor/lifecycle.Machine,matrix/executor/lifecycle.State,matrix/executor/lifecycle.State.IsTerminal,matrix/executor/lifecycle.Transition,matrix/executor/lifecycle.env,matrix/executor/lifecycle.evt,matrix/executor/lifecycle.formatTransition,matrix/executor/lifecycle.lookupTransition,matrix/executor/lifecycle.m,matrix/executor/lifecycle.now,matrix/executor/lifecycle.ok,matrix/executor/lifecycle.opts,matrix/executor/lifecycle.target,matrix/mcl/envelope.Envelope,matrix/mcl/envelope.KindIntentCorrect
   ^contains=matrix/executor/lifecycle.Machine
+  ^calls=matrix/executor/cmd/mcl-e2e.LifecycleDriver.drive,matrix/executor/cmd/mcl-execute.lifecycleDriver.drive
+  ^references=matrix/executor/cmd/mcl-e2e.LifecycleDriver.drive,matrix/executor/cmd/mcl-execute.lifecycleDriver.drive
   ^defines=matrix/executor/lifecycle/machine.go
 
 NODE id=matrix/executor/lifecycle.Machine.History kind=method
@@ -213,7 +232,10 @@ NODE id=matrix/executor/lifecycle.Machine.History kind=method
   sig=func (m *Machine) History() []Event
   doc=History returns a copy of the lifecycle events in arrival order.
 EDGES
+  references=matrix/executor/lifecycle.Event,matrix/executor/lifecycle.Machine,matrix/executor/lifecycle.m,matrix/executor/lifecycle.out
   ^contains=matrix/executor/lifecycle.Machine
+  ^calls=matrix/executor/cmd/mcl-e2e.LifecycleDriver.History,matrix/executor/cmd/mcl-e2e.LifecycleDriver.Summary,matrix/executor/cmd/mcl-execute.lifecycleDriver.Summary
+  ^references=matrix/executor/cmd/mcl-e2e.LifecycleDriver.History,matrix/executor/cmd/mcl-e2e.LifecycleDriver.Summary,matrix/executor/cmd/mcl-execute.lifecycleDriver.History,matrix/executor/cmd/mcl-execute.lifecycleDriver.Summary
   ^defines=matrix/executor/lifecycle/machine.go
 
 NODE id=matrix/executor/lifecycle.Machine.IntentID kind=method
@@ -221,6 +243,7 @@ NODE id=matrix/executor/lifecycle.Machine.IntentID kind=method
   sig=func (m *Machine) IntentID() string
   doc=IntentID returns the bound intent id.
 EDGES
+  references=matrix/executor/lifecycle.Machine,matrix/executor/lifecycle.m
   ^contains=matrix/executor/lifecycle.Machine
   ^defines=matrix/executor/lifecycle/machine.go
 
@@ -229,7 +252,10 @@ NODE id=matrix/executor/lifecycle.Machine.State kind=method
   sig=func (m *Machine) State() State
   doc=State returns the current lifecycle state.
 EDGES
+  references=matrix/executor/lifecycle.Machine,matrix/executor/lifecycle.State,matrix/executor/lifecycle.m
   ^contains=matrix/executor/lifecycle.Machine
+  ^calls=matrix/executor/cmd/mcl-e2e.LifecycleDriver.State,matrix/executor/cmd/mcl-e2e.LifecycleDriver.drive,matrix/executor/cmd/mcl-execute.lifecycleDriver.drive
+  ^references=matrix/executor/cmd/mcl-e2e.LifecycleDriver.State,matrix/executor/cmd/mcl-e2e.LifecycleDriver.drive,matrix/executor/cmd/mcl-execute.lifecycleDriver.State,matrix/executor/cmd/mcl-execute.lifecycleDriver.drive
   ^defines=matrix/executor/lifecycle/machine.go
 
 NODE id=matrix/executor/lifecycle.MessageKindTransition kind=var
@@ -237,6 +263,8 @@ NODE id=matrix/executor/lifecycle.MessageKindTransition kind=var
   sig=map[string]lifecycle.TransitionEffect
   doc=MessageKindTransition is the table consulted by lookupTransition.\nKinds not in this map do not drive lifecycle transitions.
 EDGES
+  references=matrix/executor/lifecycle.StateAccepted,matrix/executor/lifecycle.StateCancelled,matrix/executor/lifecycle.StateClarifying,matrix/executor/lifecycle.StateCompleted,matrix/executor/lifecycle.StateExecuting,matrix/executor/lifecycle.StateFailed,matrix/executor/lifecycle.StateProposed,matrix/executor/lifecycle.TransitionEffect,matrix/mcl/envelope.KindIntentAccept,matrix/mcl/envelope.KindIntentAnswer,matrix/mcl/envelope.KindIntentAttest,matrix/mcl/envelope.KindIntentCancel,matrix/mcl/envelope.KindIntentClarify,matrix/mcl/envelope.KindIntentCompiled,matrix/mcl/envelope.KindIntentCorrect,matrix/mcl/envelope.KindIntentFail,matrix/mcl/envelope.KindPlanProposed
+  ^references=matrix/executor/lifecycle.lookupTransition
   ^defines=matrix/executor/lifecycle/machine.go
 
 NODE id=matrix/executor/lifecycle.New kind=func
@@ -244,6 +272,10 @@ NODE id=matrix/executor/lifecycle.New kind=func
   sig=func New(intentID string, initial State) (*Machine, error)
   doc=New constructs a Machine for the given intent at the initial state\n(typically StateDrafting). Returns an error if state is not a valid\nlifecycle state.
 EDGES
+  calls=matrix/executor/lifecycle.ValidState
+  references=matrix/executor/lifecycle.ErrUnknownState,matrix/executor/lifecycle.Machine,matrix/executor/lifecycle.State,matrix/executor/lifecycle.ValidState,matrix/executor/lifecycle.initial,matrix/executor/lifecycle.intentID
+  ^calls=matrix/executor/cmd/mcl-e2e.NewLifecycleDriver,matrix/executor/cmd/mcl-execute.newLifecycleDriver
+  ^references=matrix/executor/cmd/mcl-e2e.NewLifecycleDriver,matrix/executor/cmd/mcl-execute.newLifecycleDriver
   ^defines=matrix/executor/lifecycle/machine.go
 
 NODE id=matrix/executor/lifecycle.State kind=type
@@ -252,6 +284,7 @@ NODE id=matrix/executor/lifecycle.State kind=type
   doc=State is one of 8 lifecycle states. Closed enum.\n\nTerminal states: StateCompleted, StateFailed, StateCancelled.\nNo transitions out of a terminal state.
 EDGES
   contains=matrix/executor/lifecycle.State.IsTerminal
+  ^references=matrix/executor/cmd/mcl-e2e.LifecycleDriver.State,matrix/executor/cmd/mcl-e2e.LifecycleDriver.drive,matrix/executor/cmd/mcl-execute.lifecycleDriver.State,matrix/executor/cmd/mcl-execute.lifecycleDriver.drive,matrix/executor/lifecycle.AllStates,matrix/executor/lifecycle.AllowedNext,matrix/executor/lifecycle.Event,matrix/executor/lifecycle.Machine,matrix/executor/lifecycle.Machine.Apply,matrix/executor/lifecycle.Machine.State,matrix/executor/lifecycle.New,matrix/executor/lifecycle.State.IsTerminal,matrix/executor/lifecycle.StateAccepted,matrix/executor/lifecycle.StateCancelled,matrix/executor/lifecycle.StateClarifying,matrix/executor/lifecycle.StateCompleted,matrix/executor/lifecycle.StateDrafting,matrix/executor/lifecycle.StateExecuting,matrix/executor/lifecycle.StateFailed,matrix/executor/lifecycle.StateProposed,matrix/executor/lifecycle.Transition,matrix/executor/lifecycle.TransitionEffect,matrix/executor/lifecycle.ValidState,matrix/executor/lifecycle.allowedTransitions,matrix/executor/lifecycle.formatTransition,matrix/executor/lifecycle.lookupTransition,matrix/executor/lifecycle.validStates
   ^defines=matrix/executor/lifecycle/state.go
 
 NODE id=matrix/executor/lifecycle.State.IsTerminal kind=method
@@ -259,7 +292,10 @@ NODE id=matrix/executor/lifecycle.State.IsTerminal kind=method
   sig=func (s State) IsTerminal() bool
   doc=IsTerminal reports whether s is one of the three terminal states.\nNo transitions out of a terminal state are permitted.
 EDGES
+  references=matrix/executor/lifecycle.State,matrix/executor/lifecycle.StateCancelled,matrix/executor/lifecycle.StateCompleted,matrix/executor/lifecycle.StateFailed,matrix/executor/lifecycle.s
   ^contains=matrix/executor/lifecycle.State
+  ^calls=matrix/executor/lifecycle.Machine.Apply,matrix/executor/lifecycle.Transition
+  ^references=matrix/executor/lifecycle.Machine.Apply,matrix/executor/lifecycle.Transition
   ^defines=matrix/executor/lifecycle/state.go
 
 NODE id=matrix/executor/lifecycle.StateAccepted kind=const
@@ -267,6 +303,8 @@ NODE id=matrix/executor/lifecycle.StateAccepted kind=const
   sig=lifecycle.State
   doc=StateAccepted means the user signed intent.accept. The executor\nhas a valid signed IR to run.
 EDGES
+  references=matrix/executor/lifecycle.State
+  ^references=matrix/executor/cmd/mcl-e2e.LifecycleDriver.DriveAccept,matrix/executor/cmd/mcl-e2e.LifecycleDriver.DriveCorrectMaterial,matrix/executor/cmd/mcl-execute.lifecycleDriver.DriveAccept,matrix/executor/cmd/mcl-execute.lifecycleDriver.DriveCorrectMaterial,matrix/executor/lifecycle.AllStates,matrix/executor/lifecycle.MessageKindTransition,matrix/executor/lifecycle.allowedTransitions
   ^defines=matrix/executor/lifecycle/state.go
 
 NODE id=matrix/executor/lifecycle.StateCancelled kind=const
@@ -274,6 +312,8 @@ NODE id=matrix/executor/lifecycle.StateCancelled kind=const
   sig=lifecycle.State
   doc=StateCancelled is terminal: intent.cancel was honored before\ncompletion.
 EDGES
+  references=matrix/executor/lifecycle.State
+  ^references=matrix/executor/cmd/mcl-execute.lifecycleDriver.DriveCancel,matrix/executor/lifecycle.AllStates,matrix/executor/lifecycle.MessageKindTransition,matrix/executor/lifecycle.State.IsTerminal,matrix/executor/lifecycle.allowedTransitions
   ^defines=matrix/executor/lifecycle/state.go
 
 NODE id=matrix/executor/lifecycle.StateClarifying kind=const
@@ -281,6 +321,8 @@ NODE id=matrix/executor/lifecycle.StateClarifying kind=const
   sig=lifecycle.State
   doc=StateClarifying means the agent has emitted intent.clarify and is\nwaiting for intent.answer. Can be re-entered if subsequent clarify\nrounds are needed.
 EDGES
+  references=matrix/executor/lifecycle.State
+  ^references=matrix/executor/cmd/mcl-e2e.LifecycleDriver.DriveClarify,matrix/executor/cmd/mcl-execute.lifecycleDriver.DriveClarify,matrix/executor/lifecycle.AllStates,matrix/executor/lifecycle.MessageKindTransition,matrix/executor/lifecycle.allowedTransitions
   ^defines=matrix/executor/lifecycle/state.go
 
 NODE id=matrix/executor/lifecycle.StateCompleted kind=const
@@ -288,6 +330,8 @@ NODE id=matrix/executor/lifecycle.StateCompleted kind=const
   sig=lifecycle.State
   doc=StateCompleted is terminal: intent.attest with outcome=success\nhas been emitted.
 EDGES
+  references=matrix/executor/lifecycle.State
+  ^references=matrix/executor/cmd/mcl-e2e.LifecycleDriver.DriveAttest,matrix/executor/cmd/mcl-execute.lifecycleDriver.DriveAttest,matrix/executor/lifecycle.AllStates,matrix/executor/lifecycle.MessageKindTransition,matrix/executor/lifecycle.State.IsTerminal,matrix/executor/lifecycle.allowedTransitions
   ^defines=matrix/executor/lifecycle/state.go
 
 NODE id=matrix/executor/lifecycle.StateDrafting kind=const
@@ -295,6 +339,8 @@ NODE id=matrix/executor/lifecycle.StateDrafting kind=const
   sig=lifecycle.State
   doc=StateDrafting is the initial state after intent.draft is received\nby the agent. Compiler is running.
 EDGES
+  references=matrix/executor/lifecycle.State
+  ^references=matrix/executor/cmd/mcl-e2e.NewLifecycleDriver,matrix/executor/cmd/mcl-execute.newLifecycleDriver,matrix/executor/lifecycle.AllStates,matrix/executor/lifecycle.allowedTransitions
   ^defines=matrix/executor/lifecycle/state.go
 
 NODE id=matrix/executor/lifecycle.StateExecuting kind=const
@@ -302,6 +348,8 @@ NODE id=matrix/executor/lifecycle.StateExecuting kind=const
   sig=lifecycle.State
   doc=StateExecuting means the executor is actively walking the plan.\nPolicyGate transitions overlay on this state without leaving it.
 EDGES
+  references=matrix/executor/lifecycle.State
+  ^references=matrix/executor/cmd/mcl-e2e.LifecycleDriver.DriveCorrectNonMaterial,matrix/executor/cmd/mcl-e2e.LifecycleDriver.DrivePlanProposed,matrix/executor/cmd/mcl-execute.lifecycleDriver.DriveCorrectNonMaterial,matrix/executor/cmd/mcl-execute.lifecycleDriver.DrivePlanProposed,matrix/executor/lifecycle.AllStates,matrix/executor/lifecycle.MessageKindTransition,matrix/executor/lifecycle.allowedTransitions
   ^defines=matrix/executor/lifecycle/state.go
 
 NODE id=matrix/executor/lifecycle.StateFailed kind=const
@@ -309,6 +357,8 @@ NODE id=matrix/executor/lifecycle.StateFailed kind=const
   sig=lifecycle.State
   doc=StateFailed is terminal: intent.fail has been emitted.
 EDGES
+  references=matrix/executor/lifecycle.State
+  ^references=matrix/executor/cmd/mcl-execute.lifecycleDriver.DriveFail,matrix/executor/lifecycle.AllStates,matrix/executor/lifecycle.MessageKindTransition,matrix/executor/lifecycle.State.IsTerminal,matrix/executor/lifecycle.allowedTransitions
   ^defines=matrix/executor/lifecycle/state.go
 
 NODE id=matrix/executor/lifecycle.StateProposed kind=const
@@ -316,6 +366,8 @@ NODE id=matrix/executor/lifecycle.StateProposed kind=const
   sig=lifecycle.State
   doc=StateProposed means the typed Intent IR has been returned to the\nuser (intent.compiled sent). User is reviewing.
 EDGES
+  references=matrix/executor/lifecycle.State
+  ^references=matrix/executor/cmd/mcl-e2e.LifecycleDriver.DriveAnswer,matrix/executor/cmd/mcl-e2e.LifecycleDriver.DriveCompiled,matrix/executor/cmd/mcl-execute.lifecycleDriver.DriveAnswer,matrix/executor/cmd/mcl-execute.lifecycleDriver.DriveCompiled,matrix/executor/lifecycle.AllStates,matrix/executor/lifecycle.MessageKindTransition,matrix/executor/lifecycle.allowedTransitions
   ^defines=matrix/executor/lifecycle/state.go
 
 NODE id=matrix/executor/lifecycle.Transition kind=func
@@ -323,6 +375,10 @@ NODE id=matrix/executor/lifecycle.Transition kind=func
   sig=func Transition(from, to State) bool
   doc=Transition returns true if moving from `from` to `to` is permitted.\nSelf-transitions are rejected EXCEPT for the executing→executing\nno-op used by non-material corrections (explicit allow in the table).
 EDGES
+  calls=matrix/executor/lifecycle.State.IsTerminal,matrix/executor/lifecycle.ValidState
+  references=matrix/executor/lifecycle.State,matrix/executor/lifecycle.State.IsTerminal,matrix/executor/lifecycle.ValidState,matrix/executor/lifecycle.allowedTransitions,matrix/executor/lifecycle.from,matrix/executor/lifecycle.next,matrix/executor/lifecycle.ok,matrix/executor/lifecycle.to
+  ^calls=matrix/executor/lifecycle.Machine.Apply
+  ^references=matrix/executor/lifecycle.Machine.Apply
   ^defines=matrix/executor/lifecycle/state.go
 
 NODE id=matrix/executor/lifecycle.TransitionEffect kind=type
@@ -331,6 +387,8 @@ NODE id=matrix/executor/lifecycle.TransitionEffect kind=type
   doc=MessageKindTransition is the documentation-table of which message\nkinds drive which lifecycle transitions. Exported for the executor's\naudit + UI surfaces.\n\nEntries map: kind → (TransitionEffect describing the move).
 EDGES
   contains=matrix/executor/lifecycle.TransitionEffect#Description,matrix/executor/lifecycle.TransitionEffect#MaterialTo,matrix/executor/lifecycle.TransitionEffect#To
+  references=matrix/executor/lifecycle.State
+  ^references=matrix/executor/lifecycle.MessageKindTransition
   ^defines=matrix/executor/lifecycle/machine.go
 
 NODE id=matrix/executor/lifecycle.TransitionEffect#Description kind=field
@@ -359,6 +417,9 @@ NODE id=matrix/executor/lifecycle.ValidState kind=func
   sig=func ValidState(s State) bool
   doc=ValidState reports whether s is one of the 8 known states.
 EDGES
+  references=matrix/executor/lifecycle.State,matrix/executor/lifecycle.s,matrix/executor/lifecycle.validStates
+  ^calls=matrix/executor/lifecycle.New,matrix/executor/lifecycle.Transition
+  ^references=matrix/executor/lifecycle.New,matrix/executor/lifecycle.Transition
   ^defines=matrix/executor/lifecycle/state.go
 
 NODE id=matrix/executor/lifecycle.allowedTransitions kind=var
@@ -366,6 +427,8 @@ NODE id=matrix/executor/lifecycle.allowedTransitions kind=var
   sig=map[lifecycle.State]map[lifecycle.State]bool
   doc=allowedTransitions encodes the directed graph of legal moves per\nresearch/02-protocol.md §7. (current, next) → allowed.\n\nNotes:\n  - drafting → proposed       compiler emits intent.compiled\n  - proposed → clarifying     agent emits intent.clarify\n  - clarifying → proposed     user emits intent.answer (re-compile loop)\n  - proposed → accepted       user emits intent.accept\n  - accepted → executing      executor begins plan walk\n  - executing → completed     intent.attest outcome=success\n  - executing → failed        intent.fail\n  - executing → cancelled     intent.cancel honored mid-flight\n  - Any non-terminal → cancelled (user can cancel at any time before terminal)\n\nCorrection (intent.correct) lands as either:\n  - executing → executing (non-material) — handled by the executor\n    internally; lifecycle state unchanged\n  - executing → accepted   (material; requires fresh accept loop) —\n    re-derives a new plan, must transit back through accepted\n\nBoth directions are encoded so the lifecycle machine doesn't need\nout-of-band knowledge of materiality (the executor passes the\nclassified-material flag at apply time).
 EDGES
+  references=matrix/executor/lifecycle.State,matrix/executor/lifecycle.StateAccepted,matrix/executor/lifecycle.StateCancelled,matrix/executor/lifecycle.StateClarifying,matrix/executor/lifecycle.StateCompleted,matrix/executor/lifecycle.StateDrafting,matrix/executor/lifecycle.StateExecuting,matrix/executor/lifecycle.StateFailed,matrix/executor/lifecycle.StateProposed
+  ^references=matrix/executor/lifecycle.AllowedNext,matrix/executor/lifecycle.Transition
   ^defines=matrix/executor/lifecycle/state.go
 
 NODE id=matrix/executor/lifecycle.formatTransition kind=func
@@ -373,6 +436,9 @@ NODE id=matrix/executor/lifecycle.formatTransition kind=func
   sig=func formatTransition(from, to State) string
   doc=formatTransition is a debug-friendly stringer for transitions.
 EDGES
+  references=matrix/executor/lifecycle.State,matrix/executor/lifecycle.from,matrix/executor/lifecycle.to
+  ^calls=matrix/executor/lifecycle.Machine.Apply
+  ^references=matrix/executor/lifecycle.Machine.Apply
   ^defines=matrix/executor/lifecycle/state.go
 
 NODE id=matrix/executor/lifecycle.lookupTransition kind=func
@@ -380,6 +446,9 @@ NODE id=matrix/executor/lifecycle.lookupTransition kind=func
   sig=func lookupTransition(kind string, material bool) (State, bool)
   doc=lookupTransition returns the target state for the given envelope\nkind, taking into account the materiality flag for intent.correct.
 EDGES
+  references=matrix/executor/lifecycle.MessageKindTransition,matrix/executor/lifecycle.State,matrix/executor/lifecycle.eff,matrix/executor/lifecycle.kind,matrix/executor/lifecycle.material,matrix/executor/lifecycle.ok,matrix/mcl/envelope.KindIntentCorrect
+  ^calls=matrix/executor/lifecycle.Machine.Apply
+  ^references=matrix/executor/lifecycle.Machine.Apply
   ^defines=matrix/executor/lifecycle/machine.go
 
 NODE id=matrix/executor/lifecycle.validStates kind=var
@@ -387,6 +456,8 @@ NODE id=matrix/executor/lifecycle.validStates kind=var
   sig=map[lifecycle.State]bool
   doc=validStates is the lookup set built once.
 EDGES
+  references=matrix/executor/lifecycle.AllStates,matrix/executor/lifecycle.State,matrix/executor/lifecycle.m,matrix/executor/lifecycle.s
+  ^references=matrix/executor/lifecycle.ValidState
   ^defines=matrix/executor/lifecycle/state.go
 
 NODE id=matrix/executor/lifecycle/machine.go kind=file

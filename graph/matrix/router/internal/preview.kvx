@@ -1,10 +1,12 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:9b68327501b45793fd7687f43b30c960fd68ae8aaff6b2f1bb36ec3e2df2de2f
+# GENERATED gen=codegraph do-not-edit merkle=b3:20e53aba2ea11552396417e53b3e04e87dd1bbb7bef3aa554a45bb92cf89e7f2
 
 NODE id=matrix/router/internal/preview kind=package
   digest=b3:0c438b163a082b61246b0233fce003db2356873c6a97ffeaac25dbe92922e947 file=router/internal/preview range=0:0 lang=go exported=true
 EDGES
   contains=matrix/router/internal/preview/preview.go
+  imports=matrix/router/internal/proxy
   ^contains=mod:matrix/router
+  ^imports=matrix/router/cmd/matrix-router
 
 NODE id=matrix/router/internal/preview.Handler kind=type
   digest=b3:063c40a47755d43738aa2e8e0262cf0bcd1a4cd4a3f3769ad8f13951ed58ab29 file=router/internal/preview/preview.go range=84:90 lang=go exported=true byte_range=2711:2980
@@ -12,6 +14,8 @@ NODE id=matrix/router/internal/preview.Handler kind=type
   doc=Handler is the PUBLIC /preview/ mount. It authorizes the request against\nthe JWT subject (stashed by mw.JWT via proxy.WithSubject), then\nreverse-proxies to the user's registered private target.
 EDGES
   contains=matrix/router/internal/preview.Handler#Logf,matrix/router/internal/preview.Handler#Reg,matrix/router/internal/preview.Handler.ServeHTTP,matrix/router/internal/preview.Handler.logf
+  references=matrix/router/internal/preview.Registry
+  ^references=matrix/router/cmd/matrix-router.main,matrix/router/internal/preview.Handler.ServeHTTP,matrix/router/internal/preview.Handler.logf
   ^defines=matrix/router/internal/preview/preview.go
 
 NODE id=matrix/router/internal/preview.Handler#Logf kind=field
@@ -31,6 +35,8 @@ NODE id=matrix/router/internal/preview.Handler.ServeHTTP kind=method
   sig=func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request)
   doc=ServeHTTP implements http.Handler for the public /preview/ mount.\n\nPath shape: /preview/{userID}/<rest>. {userID} MUST equal the verified\ntoken subject (403 otherwise) — this is the whole point: previews are\nnever cross-user readable.
 EDGES
+  calls=matrix/router/internal/preview.Handler.logf,matrix/router/internal/preview.Registry.Get,matrix/router/internal/preview.hostPort,matrix/router/internal/preview.parsePreviewPath,matrix/router/internal/proxy.Subject
+  references=matrix/router/internal/preview.Handler,matrix/router/internal/preview.Handler.logf,matrix/router/internal/preview.Registry.Get,matrix/router/internal/preview.err,matrix/router/internal/preview.found,matrix/router/internal/preview.h,matrix/router/internal/preview.hostPort,matrix/router/internal/preview.ok,matrix/router/internal/preview.parsePreviewPath,matrix/router/internal/preview.previewCookie,matrix/router/internal/preview.qt,matrix/router/internal/preview.r,matrix/router/internal/preview.req,matrix/router/internal/preview.rest,matrix/router/internal/preview.rp,matrix/router/internal/preview.sub,matrix/router/internal/preview.t,matrix/router/internal/preview.target,matrix/router/internal/preview.userID,matrix/router/internal/preview.w,matrix/router/internal/proxy.Subject
   ^contains=matrix/router/internal/preview.Handler
   ^defines=matrix/router/internal/preview/preview.go
 
@@ -38,7 +44,10 @@ NODE id=matrix/router/internal/preview.Handler.logf kind=method
   digest=b3:ef7d756db69d094f093e9c82dd4532ba22c30ef5828107e5fe9b29a499e09bf3 file=router/internal/preview/preview.go range=92:96 lang=go exported=false byte_range=2982:3085
   sig=func (h *Handler) logf(format string, args ...any)
 EDGES
+  references=matrix/router/internal/preview.Handler,matrix/router/internal/preview.args,matrix/router/internal/preview.format,matrix/router/internal/preview.h
   ^contains=matrix/router/internal/preview.Handler
+  ^calls=matrix/router/internal/preview.Handler.ServeHTTP
+  ^references=matrix/router/internal/preview.Handler.ServeHTTP
   ^defines=matrix/router/internal/preview/preview.go
 
 NODE id=matrix/router/internal/preview.NewRegistry kind=func
@@ -46,6 +55,9 @@ NODE id=matrix/router/internal/preview.NewRegistry kind=func
   sig=func NewRegistry() *Registry
   doc=NewRegistry returns an empty, ready-to-use Registry.
 EDGES
+  references=matrix/router/internal/preview.Registry,matrix/router/internal/preview.Target
+  ^calls=matrix/router/cmd/matrix-router.main
+  ^references=matrix/router/cmd/matrix-router.main
   ^defines=matrix/router/internal/preview/preview.go
 
 NODE id=matrix/router/internal/preview.RegisterHandler kind=func
@@ -53,6 +65,9 @@ NODE id=matrix/router/internal/preview.RegisterHandler kind=func
   sig=func RegisterHandler(reg *Registry) http.Handler
   doc=RegisterHandler returns the INTERNAL listener handler for preview target\nlifecycle. It is mounted behind the internal listener's token middleware\nin main.go, so it performs no auth of its own.\n\n	POST   /internal/preview/register  {"user_id","host","port"}  → register\n	DELETE /internal/preview/register  ?user_id=... | {"user_id"}  → deregister
 EDGES
+  references=matrix/router/internal/preview.Registry,matrix/router/internal/preview.Registry.Deregister,matrix/router/internal/preview.Registry.Register,matrix/router/internal/preview.Target,matrix/router/internal/preview.body,matrix/router/internal/preview.err,matrix/router/internal/preview.r,matrix/router/internal/preview.reg,matrix/router/internal/preview.registerRequest,matrix/router/internal/preview.userID,matrix/router/internal/preview.w,matrix/router/internal/preview.writeOK
+  ^calls=matrix/router/cmd/matrix-router.main
+  ^references=matrix/router/cmd/matrix-router.main
   ^defines=matrix/router/internal/preview/preview.go
 
 NODE id=matrix/router/internal/preview.Registry kind=type
@@ -61,6 +76,8 @@ NODE id=matrix/router/internal/preview.Registry kind=type
   doc=Registry is a thread-safe map of supabase user id → preview Target.\ncodyd owns the lifecycle (register on start, deregister on teardown);\nthe router just holds the current binding.
 EDGES
   contains=matrix/router/internal/preview.Registry#mu,matrix/router/internal/preview.Registry#targets,matrix/router/internal/preview.Registry.Deregister,matrix/router/internal/preview.Registry.Get,matrix/router/internal/preview.Registry.Register
+  references=matrix/router/internal/preview.Target
+  ^references=matrix/router/internal/preview.Handler,matrix/router/internal/preview.NewRegistry,matrix/router/internal/preview.RegisterHandler,matrix/router/internal/preview.Registry.Deregister,matrix/router/internal/preview.Registry.Get,matrix/router/internal/preview.Registry.Register
   ^defines=matrix/router/internal/preview/preview.go
 
 NODE id=matrix/router/internal/preview.Registry#mu kind=field
@@ -80,7 +97,9 @@ NODE id=matrix/router/internal/preview.Registry.Deregister kind=method
   sig=func (r *Registry) Deregister(userID string)
   doc=Deregister removes any preview Target for userID (no-op if absent).
 EDGES
+  references=matrix/router/internal/preview.Registry,matrix/router/internal/preview.r,matrix/router/internal/preview.userID
   ^contains=matrix/router/internal/preview.Registry
+  ^references=matrix/router/internal/preview.RegisterHandler
   ^defines=matrix/router/internal/preview/preview.go
 
 NODE id=matrix/router/internal/preview.Registry.Get kind=method
@@ -88,7 +107,10 @@ NODE id=matrix/router/internal/preview.Registry.Get kind=method
   sig=func (r *Registry) Get(userID string) (Target, bool)
   doc=Get returns the preview Target for userID and whether one is registered.
 EDGES
+  references=matrix/router/internal/preview.Registry,matrix/router/internal/preview.Target,matrix/router/internal/preview.ok,matrix/router/internal/preview.r,matrix/router/internal/preview.t,matrix/router/internal/preview.userID
   ^contains=matrix/router/internal/preview.Registry
+  ^calls=matrix/router/internal/preview.Handler.ServeHTTP
+  ^references=matrix/router/internal/preview.Handler.ServeHTTP
   ^defines=matrix/router/internal/preview/preview.go
 
 NODE id=matrix/router/internal/preview.Registry.Register kind=method
@@ -96,7 +118,9 @@ NODE id=matrix/router/internal/preview.Registry.Register kind=method
   sig=func (r *Registry) Register(userID string, t Target)
   doc=Register sets (or replaces) the preview Target for userID.
 EDGES
+  references=matrix/router/internal/preview.Registry,matrix/router/internal/preview.Target,matrix/router/internal/preview.r,matrix/router/internal/preview.t,matrix/router/internal/preview.userID
   ^contains=matrix/router/internal/preview.Registry
+  ^references=matrix/router/internal/preview.RegisterHandler
   ^defines=matrix/router/internal/preview/preview.go
 
 NODE id=matrix/router/internal/preview.Target kind=type
@@ -105,6 +129,7 @@ NODE id=matrix/router/internal/preview.Target kind=type
   doc=Target is a registered preview backend: the private host:port a user's\npreview server binds to, plus when it was registered.
 EDGES
   contains=matrix/router/internal/preview.Target#Host,matrix/router/internal/preview.Target#Port,matrix/router/internal/preview.Target#RegisteredAt
+  ^references=matrix/router/internal/preview.NewRegistry,matrix/router/internal/preview.RegisterHandler,matrix/router/internal/preview.Registry,matrix/router/internal/preview.Registry.Get,matrix/router/internal/preview.Registry.Register
   ^defines=matrix/router/internal/preview/preview.go
 
 NODE id=matrix/router/internal/preview.Target#Host kind=field
@@ -130,6 +155,9 @@ NODE id=matrix/router/internal/preview.hostPort kind=func
   sig=func hostPort(host, port string) string
   doc=hostPort joins host and port, bracketing IPv6 literals per RFC 3986\n§3.2.2 so the URL authority parses correctly.
 EDGES
+  references=matrix/router/internal/preview.host,matrix/router/internal/preview.port
+  ^calls=matrix/router/internal/preview.Handler.ServeHTTP
+  ^references=matrix/router/internal/preview.Handler.ServeHTTP
   ^defines=matrix/router/internal/preview/preview.go
 
 NODE id=matrix/router/internal/preview.parsePreviewPath kind=func
@@ -137,6 +165,9 @@ NODE id=matrix/router/internal/preview.parsePreviewPath kind=func
   sig=func parsePreviewPath(p string) (userID, rest string, ok bool)
   doc=parsePreviewPath splits "/preview/{userID}/<rest>" into the userID and\nthe leading-slash rest path ("/" when empty). Reports ok=false when the\npath isn't under /preview/ or carries no userID segment.
 EDGES
+  references=matrix/router/internal/preview.i,matrix/router/internal/preview.p,matrix/router/internal/preview.prefix,matrix/router/internal/preview.rest,matrix/router/internal/preview.tail,matrix/router/internal/preview.userID
+  ^calls=matrix/router/internal/preview.Handler.ServeHTTP
+  ^references=matrix/router/internal/preview.Handler.ServeHTTP
   ^defines=matrix/router/internal/preview/preview.go
 
 NODE id=matrix/router/internal/preview.previewCookie kind=const
@@ -144,6 +175,7 @@ NODE id=matrix/router/internal/preview.previewCookie kind=const
   sig=untyped string
   doc=previewCookie MUST match mw.PreviewCookie. It is duplicated (not imported)\nbecause mw imports this package, so importing mw here would cycle.
 EDGES
+  ^references=matrix/router/internal/preview.Handler.ServeHTTP
   ^defines=matrix/router/internal/preview/preview.go
 
 NODE id=matrix/router/internal/preview.registerRequest kind=type
@@ -152,6 +184,7 @@ NODE id=matrix/router/internal/preview.registerRequest kind=type
   doc=registerRequest is the JSON body for the internal register/deregister\nendpoint.
 EDGES
   contains=matrix/router/internal/preview.registerRequest#Host,matrix/router/internal/preview.registerRequest#Port,matrix/router/internal/preview.registerRequest#UserID
+  ^references=matrix/router/internal/preview.RegisterHandler
   ^defines=matrix/router/internal/preview/preview.go
 
 NODE id=matrix/router/internal/preview.registerRequest#Host kind=field
@@ -176,6 +209,8 @@ NODE id=matrix/router/internal/preview.writeOK kind=func
   digest=b3:cc3d42e96813eed52b35d6600d5728350e89a5d9707525e32718daad7b3002bf file=router/internal/preview/preview.go range=271:274 lang=go exported=false byte_range=8660:8790
   sig=func writeOK(w http.ResponseWriter)
 EDGES
+  references=matrix/router/internal/preview.w
+  ^references=matrix/router/internal/preview.RegisterHandler
   ^defines=matrix/router/internal/preview/preview.go
 
 NODE id=matrix/router/internal/preview/preview.go kind=file

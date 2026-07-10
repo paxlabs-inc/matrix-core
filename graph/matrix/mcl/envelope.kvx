@@ -1,16 +1,19 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:9b68327501b45793fd7687f43b30c960fd68ae8aaff6b2f1bb36ec3e2df2de2f
+# GENERATED gen=codegraph do-not-edit merkle=b3:20e53aba2ea11552396417e53b3e04e87dd1bbb7bef3aa554a45bb92cf89e7f2
 
 NODE id=matrix/mcl/envelope kind=package
   digest=b3:8ed49b7a85f9570647c32f9ceeca1d44abe6af6fd293a104531394641c6805cf file=MCL/envelope range=0:0 lang=go exported=true
 EDGES
   contains=matrix/mcl/envelope/body.go,matrix/mcl/envelope/envelope.go,matrix/mcl/envelope/json.go,matrix/mcl/envelope/keyresolver.go,matrix/mcl/envelope/kinds.go
   ^contains=mod:matrix/mcl
+  ^imports=matrix/executor/cmd/mcl-e2e,matrix/executor/cmd/mcl-execute,matrix/executor/lifecycle,matrix/executor/runtime
 
 NODE id=matrix/mcl/envelope.AllKinds kind=var
   digest=b3:877ba5482cf24d827ada81162c3fe9f55fb94f763da7dd278e45aa9b32161a9d file=MCL/envelope/kinds.go range=60:78 lang=go exported=true byte_range=1942:2385
   sig=[]string
   doc=AllKinds is the canonical ordered list of 15 kinds.\nOrder matches research/02-protocol.md §5 table for documentation parity.
 EDGES
+  references=matrix/mcl/envelope.KindIntentAccept,matrix/mcl/envelope.KindIntentAnswer,matrix/mcl/envelope.KindIntentAttest,matrix/mcl/envelope.KindIntentCancel,matrix/mcl/envelope.KindIntentClarify,matrix/mcl/envelope.KindIntentCompiled,matrix/mcl/envelope.KindIntentCorrect,matrix/mcl/envelope.KindIntentDispatch,matrix/mcl/envelope.KindIntentDraft,matrix/mcl/envelope.KindIntentFail,matrix/mcl/envelope.KindPlanOutput,matrix/mcl/envelope.KindPlanProposed,matrix/mcl/envelope.KindPlanStep,matrix/mcl/envelope.KindPolicyGate,matrix/mcl/envelope.KindPolicyGateResolve
+  ^references=matrix/mcl/envelope.validKinds
   ^defines=matrix/mcl/envelope/kinds.go
 
 NODE id=matrix/mcl/envelope.BodyTypeOf kind=func
@@ -18,6 +21,7 @@ NODE id=matrix/mcl/envelope.BodyTypeOf kind=func
   sig=func BodyTypeOf(kind string) reflect.Type
   doc=BodyTypeOf returns the reflect.Type expected for the given kind, or\nnil if kind is not a valid kind. Used by external decoders that need\nto allocate the right typed struct dynamically.
 EDGES
+  references=matrix/mcl/envelope.kind,matrix/mcl/envelope.kindBodyType
   ^defines=matrix/mcl/envelope/body.go
 
 NODE id=matrix/mcl/envelope.ClarifyQuestion kind=type
@@ -26,6 +30,7 @@ NODE id=matrix/mcl/envelope.ClarifyQuestion kind=type
   doc=ClarifyQuestion is a single question targeting one Unknown.
 EDGES
   contains=matrix/mcl/envelope.ClarifyQuestion#Default,matrix/mcl/envelope.ClarifyQuestion#Field,matrix/mcl/envelope.ClarifyQuestion#Options,matrix/mcl/envelope.ClarifyQuestion#Prompt,matrix/mcl/envelope.ClarifyQuestion#Required,matrix/mcl/envelope.ClarifyQuestion#Type,matrix/mcl/envelope.ClarifyQuestion#UnknownID
+  ^references=matrix/executor/cmd/mcl-e2e.LifecycleDriver.DriveClarify,matrix/executor/cmd/mcl-e2e.RunOnce,matrix/executor/cmd/mcl-execute.lifecycleDriver.DriveClarify,matrix/mcl/envelope.IntentClarifyBody
   ^defines=matrix/mcl/envelope/body.go
 
 NODE id=matrix/mcl/envelope.ClarifyQuestion#Default kind=field
@@ -82,6 +87,7 @@ NODE id=matrix/mcl/envelope.Decode kind=func
   sig=func Decode(b []byte, out *Envelope) error
   doc=Decode parses canonical CBOR wire bytes into out. out should be zero.
 EDGES
+  references=matrix/mcl/envelope.Envelope,matrix/mcl/envelope.b,matrix/mcl/envelope.canonicalDec,matrix/mcl/envelope.out
   ^defines=matrix/mcl/envelope/envelope.go
 
 NODE id=matrix/mcl/envelope.Encode kind=func
@@ -89,6 +95,7 @@ NODE id=matrix/mcl/envelope.Encode kind=func
   sig=func Encode(env *Envelope) ([]byte, error)
   doc=Encode returns canonical CBOR for the envelope INCLUDING Signature.\nThis is the wire form.
 EDGES
+  references=matrix/mcl/envelope.Envelope,matrix/mcl/envelope.canonicalEnc,matrix/mcl/envelope.env
   ^defines=matrix/mcl/envelope/envelope.go
 
 NODE id=matrix/mcl/envelope.Envelope kind=type
@@ -97,6 +104,7 @@ NODE id=matrix/mcl/envelope.Envelope kind=type
   doc=Envelope is the canonical message wrapper for all 15 MCL message kinds.\nBody is opaque CBOR bytes; the caller knows the kind (Kind field) and\ndecodes Body into the matching typed struct via DecodeBody.\n\nCBOR field tags are integer keyasint. New fields land at the next\nunused integer; deletions require a SchemaVersion bump.
 EDGES
   contains=matrix/mcl/envelope.Envelope#At,matrix/mcl/envelope.Envelope#Body,matrix/mcl/envelope.Envelope#CausationID,matrix/mcl/envelope.Envelope#CorrelationID,matrix/mcl/envelope.Envelope#From,matrix/mcl/envelope.Envelope#ID,matrix/mcl/envelope.Envelope#Intent,matrix/mcl/envelope.Envelope#Kind,matrix/mcl/envelope.Envelope#ProtocolVersion,matrix/mcl/envelope.Envelope#SchemaVersion,matrix/mcl/envelope.Envelope#Signature,matrix/mcl/envelope.Envelope#To,matrix/mcl/envelope.Envelope.DecodeBody
+  ^references=matrix/executor/cmd/mcl-e2e.EnvelopeStream,matrix/executor/cmd/mcl-e2e.EnvelopeStream.Chain,matrix/executor/cmd/mcl-e2e.EnvelopeStream.Last,matrix/executor/cmd/mcl-e2e.EnvelopeStream.SignAndPersist,matrix/executor/cmd/mcl-e2e.LifecycleDriver.DriveAccept,matrix/executor/cmd/mcl-e2e.LifecycleDriver.DriveAnswer,matrix/executor/cmd/mcl-e2e.LifecycleDriver.DriveAttest,matrix/executor/cmd/mcl-e2e.LifecycleDriver.DriveClarify,matrix/executor/cmd/mcl-e2e.LifecycleDriver.DriveCompiled,matrix/executor/cmd/mcl-e2e.LifecycleDriver.DriveCorrectMaterial,matrix/executor/cmd/mcl-e2e.LifecycleDriver.DriveCorrectNonMaterial,matrix/executor/cmd/mcl-e2e.LifecycleDriver.DrivePlanProposed,matrix/executor/cmd/mcl-e2e.LifecycleDriver.drive,matrix/executor/cmd/mcl-e2e.signStep,matrix/executor/cmd/mcl-execute.envelopeStream,matrix/executor/cmd/mcl-execute.envelopeStream.Chain,matrix/executor/cmd/mcl-execute.envelopeStream.SignAndPersist,matrix/executor/cmd/mcl-execute.lifecycleDriver.DriveAccept,matrix/executor/cmd/mcl-execute.lifecycleDriver.DriveAnswer,matrix/executor/cmd/mcl-execute.lifecycleDriver.DriveAttest,matrix/executor/cmd/mcl-execute.lifecycleDriver.DriveCancel,matrix/executor/cmd/mcl-execute.lifecycleDriver.DriveClarify,matrix/executor/cmd/mcl-execute.lifecycleDriver.DriveCompiled,matrix/executor/cmd/mcl-execute.lifecycleDriver.DriveCorrectMaterial,matrix/executor/cmd/mcl-execute.lifecycleDriver.DriveCorrectNonMaterial,matrix/executor/cmd/mcl-execute.lifecycleDriver.DriveFail,matrix/executor/cmd/mcl-execute.lifecycleDriver.DrivePlanProposed,matrix/executor/cmd/mcl-execute.lifecycleDriver.drive,matrix/executor/cmd/mcl-execute.signTerminalAttest,matrix/executor/cmd/mcl-execute.signTerminalFail,matrix/executor/lifecycle.Machine.Apply,matrix/executor/runtime.EnvelopeSink,matrix/mcl/envelope.Decode,matrix/mcl/envelope.Encode,matrix/mcl/envelope.Envelope.DecodeBody,matrix/mcl/envelope.EnvelopeFromJSON,matrix/mcl/envelope.EnvelopeJSON,matrix/mcl/envelope.NewEnvelope,matrix/mcl/envelope.SelfHash,matrix/mcl/envelope.Sign,matrix/mcl/envelope.UnsignedBytes,matrix/mcl/envelope.ValidateBody,matrix/mcl/envelope.Verify,matrix/mcl/envelope.VerifySignature,matrix/mcl/envelope.requireRequiredHeaderFields
   ^defines=matrix/mcl/envelope/envelope.go
 
 NODE id=matrix/mcl/envelope.Envelope#At kind=field
@@ -188,7 +196,10 @@ NODE id=matrix/mcl/envelope.Envelope.DecodeBody kind=method
   sig=func (env *Envelope) DecodeBody(out interface{}) error
   doc=DecodeBody parses env.Body into out. out must be a pointer to the\ntyped struct matching env.Kind. Mismatched out types are still\ndecoded if the field tags align — DecodeBody does NOT enforce the\nexpected Go type, only that env.Kind is a valid kind. Use ValidateBody\nfor strict kind↔type matching.
 EDGES
+  references=matrix/mcl/envelope.Envelope,matrix/mcl/envelope.ErrBodyEmpty,matrix/mcl/envelope.canonicalDec,matrix/mcl/envelope.env,matrix/mcl/envelope.out
   ^contains=matrix/mcl/envelope.Envelope
+  ^calls=matrix/mcl/envelope.EnvelopeJSON,matrix/mcl/envelope.ValidateBody
+  ^references=matrix/mcl/envelope.EnvelopeJSON,matrix/mcl/envelope.ValidateBody
   ^defines=matrix/mcl/envelope/envelope.go
 
 NODE id=matrix/mcl/envelope.EnvelopeFromJSON kind=func
@@ -196,6 +207,8 @@ NODE id=matrix/mcl/envelope.EnvelopeFromJSON kind=func
   sig=func EnvelopeFromJSON(b []byte) (*Envelope, error)
   doc=EnvelopeFromJSON parses an on-disk JSONEnvelope and re-encodes the\nbody into canonical CBOR so the resulting Envelope is signature-\nequivalent to the original. Bodies sourced via the BodyHex fallback\nare restored byte-for-byte; typed bodies are re-CBOR-encoded.\n\nThis is the round-trip path for journal recovery and human edits.\nSelfHash is recomputed and cross-checked against the on-disk value;\nmismatch returns ErrSelfHashMismatch.
 EDGES
+  calls=matrix/mcl/envelope.NewTypedBody,matrix/mcl/envelope.SelfHash
+  references=matrix/mcl/envelope.Envelope,matrix/mcl/envelope.ErrSelfHashMismatch,matrix/mcl/envelope.ErrUnknownKind,matrix/mcl/envelope.JSONEnvelope,matrix/mcl/envelope.NewTypedBody,matrix/mcl/envelope.SelfHash,matrix/mcl/envelope.b,matrix/mcl/envelope.canonicalEnc,matrix/mcl/envelope.env,matrix/mcl/envelope.err,matrix/mcl/envelope.got,matrix/mcl/envelope.in,matrix/mcl/envelope.raw,matrix/mcl/envelope.sig,matrix/mcl/envelope.typed
   ^defines=matrix/mcl/envelope/json.go
 
 NODE id=matrix/mcl/envelope.EnvelopeJSON kind=func
@@ -203,6 +216,10 @@ NODE id=matrix/mcl/envelope.EnvelopeJSON kind=func
   sig=func EnvelopeJSON(env *Envelope) ([]byte, error)
   doc=EnvelopeJSON renders env into its on-disk JSON form. If the kind is\nknown the body is decoded into the typed struct + marshaled as JSON;\notherwise the raw CBOR bytes are hex-encoded into BodyHex.\n\nSelfHash is always populated (it's free + useful for journal indexes).
 EDGES
+  calls=matrix/mcl/envelope.Envelope.DecodeBody,matrix/mcl/envelope.NewTypedBody,matrix/mcl/envelope.SelfHash
+  references=matrix/mcl/envelope.Envelope,matrix/mcl/envelope.Envelope.DecodeBody,matrix/mcl/envelope.JSONEnvelope,matrix/mcl/envelope.NewTypedBody,matrix/mcl/envelope.SelfHash,matrix/mcl/envelope.b,matrix/mcl/envelope.env,matrix/mcl/envelope.err,matrix/mcl/envelope.kindBodyType,matrix/mcl/envelope.out,matrix/mcl/envelope.sh,matrix/mcl/envelope.t,matrix/mcl/envelope.typed
+  ^calls=matrix/executor/cmd/mcl-e2e.EnvelopeStream.SignAndPersist,matrix/executor/cmd/mcl-execute.envelopeStream.SignAndPersist
+  ^references=matrix/executor/cmd/mcl-e2e.EnvelopeStream.SignAndPersist,matrix/executor/cmd/mcl-execute.envelopeStream.SignAndPersist
   ^defines=matrix/mcl/envelope/json.go
 
 NODE id=matrix/mcl/envelope.ErrAtMissing kind=var
@@ -210,6 +227,7 @@ NODE id=matrix/mcl/envelope.ErrAtMissing kind=var
   sig=error
   doc=Common errors.
 EDGES
+  ^references=matrix/mcl/envelope.requireRequiredHeaderFields
   ^defines=matrix/mcl/envelope/envelope.go
 
 NODE id=matrix/mcl/envelope.ErrBodyEmpty kind=var
@@ -217,6 +235,7 @@ NODE id=matrix/mcl/envelope.ErrBodyEmpty kind=var
   sig=error
   doc=Common errors.
 EDGES
+  ^references=matrix/mcl/envelope.Envelope.DecodeBody
   ^defines=matrix/mcl/envelope/envelope.go
 
 NODE id=matrix/mcl/envelope.ErrBodyTypeMismatch kind=var
@@ -224,6 +243,7 @@ NODE id=matrix/mcl/envelope.ErrBodyTypeMismatch kind=var
   sig=error
   doc=Common errors.
 EDGES
+  ^references=matrix/mcl/envelope.checkBodyKind
   ^defines=matrix/mcl/envelope/envelope.go
 
 NODE id=matrix/mcl/envelope.ErrFromMissing kind=var
@@ -231,6 +251,7 @@ NODE id=matrix/mcl/envelope.ErrFromMissing kind=var
   sig=error
   doc=Common errors.
 EDGES
+  ^references=matrix/mcl/envelope.requireRequiredHeaderFields
   ^defines=matrix/mcl/envelope/envelope.go
 
 NODE id=matrix/mcl/envelope.ErrIDMissing kind=var
@@ -238,6 +259,7 @@ NODE id=matrix/mcl/envelope.ErrIDMissing kind=var
   sig=error
   doc=Common errors.
 EDGES
+  ^references=matrix/mcl/envelope.requireRequiredHeaderFields
   ^defines=matrix/mcl/envelope/envelope.go
 
 NODE id=matrix/mcl/envelope.ErrIntentMissing kind=var
@@ -245,6 +267,7 @@ NODE id=matrix/mcl/envelope.ErrIntentMissing kind=var
   sig=error
   doc=Common errors.
 EDGES
+  ^references=matrix/mcl/envelope.requireRequiredHeaderFields
   ^defines=matrix/mcl/envelope/envelope.go
 
 NODE id=matrix/mcl/envelope.ErrSchemaVersion kind=var
@@ -252,6 +275,7 @@ NODE id=matrix/mcl/envelope.ErrSchemaVersion kind=var
   sig=error
   doc=Common errors.
 EDGES
+  ^references=matrix/mcl/envelope.Verify
   ^defines=matrix/mcl/envelope/envelope.go
 
 NODE id=matrix/mcl/envelope.ErrSelfHashMismatch kind=var
@@ -259,6 +283,7 @@ NODE id=matrix/mcl/envelope.ErrSelfHashMismatch kind=var
   sig=error
   doc=Common errors.
 EDGES
+  ^references=matrix/mcl/envelope.EnvelopeFromJSON
   ^defines=matrix/mcl/envelope/envelope.go
 
 NODE id=matrix/mcl/envelope.ErrSignatureInvalid kind=var
@@ -266,6 +291,7 @@ NODE id=matrix/mcl/envelope.ErrSignatureInvalid kind=var
   sig=error
   doc=Common errors.
 EDGES
+  ^references=matrix/mcl/envelope.Sign,matrix/mcl/envelope.VerifySignature
   ^defines=matrix/mcl/envelope/envelope.go
 
 NODE id=matrix/mcl/envelope.ErrSignatureMissing kind=var
@@ -273,6 +299,7 @@ NODE id=matrix/mcl/envelope.ErrSignatureMissing kind=var
   sig=error
   doc=Common errors.
 EDGES
+  ^references=matrix/mcl/envelope.VerifySignature
   ^defines=matrix/mcl/envelope/envelope.go
 
 NODE id=matrix/mcl/envelope.ErrUnknownKind kind=var
@@ -280,6 +307,7 @@ NODE id=matrix/mcl/envelope.ErrUnknownKind kind=var
   sig=error
   doc=Common errors.
 EDGES
+  ^references=matrix/mcl/envelope.EnvelopeFromJSON,matrix/mcl/envelope.NewEnvelope,matrix/mcl/envelope.ValidateBody,matrix/mcl/envelope.Verify,matrix/mcl/envelope.checkBodyKind
   ^defines=matrix/mcl/envelope/envelope.go
 
 NODE id=matrix/mcl/envelope.ErrUnknownPrincipal kind=var
@@ -287,6 +315,7 @@ NODE id=matrix/mcl/envelope.ErrUnknownPrincipal kind=var
   sig=error
   doc=Common errors.
 EDGES
+  ^references=matrix/mcl/envelope.StaticKeyResolver.ResolveKey
   ^defines=matrix/mcl/envelope/envelope.go
 
 NODE id=matrix/mcl/envelope.IntentAcceptBody kind=type
@@ -295,6 +324,7 @@ NODE id=matrix/mcl/envelope.IntentAcceptBody kind=type
   doc=IntentAcceptBody — user's signed sign-off on the IR.\nThe Envelope's outer Signature IS the acceptance signature; the body\njust pins the IR hash for replay-binding.
 EDGES
   contains=matrix/mcl/envelope.IntentAcceptBody#AcceptedAt,matrix/mcl/envelope.IntentAcceptBody#AnchorRequested,matrix/mcl/envelope.IntentAcceptBody#IntentHash
+  ^references=matrix/executor/cmd/mcl-e2e.LifecycleDriver.DriveAccept,matrix/executor/cmd/mcl-execute.lifecycleDriver.DriveAccept,matrix/mcl/envelope.kindBodyType
   ^defines=matrix/mcl/envelope/body.go
 
 NODE id=matrix/mcl/envelope.IntentAcceptBody#AcceptedAt kind=field
@@ -324,6 +354,7 @@ NODE id=matrix/mcl/envelope.IntentAnswerBody kind=type
   doc=IntentAnswerBody — slot patches answering clarify questions.\nWire form is RFC 6902 JSON Patch per D8; the typed authoring surface\n(SlotPatch) compiles to RFC 6902 in MCL/patch (separate package).
 EDGES
   contains=matrix/mcl/envelope.IntentAnswerBody#AnswerOf,matrix/mcl/envelope.IntentAnswerBody#Patches
+  ^references=matrix/executor/cmd/mcl-e2e.LifecycleDriver.DriveAnswer,matrix/executor/cmd/mcl-execute.lifecycleDriver.DriveAnswer,matrix/mcl/envelope.kindBodyType
   ^defines=matrix/mcl/envelope/body.go
 
 NODE id=matrix/mcl/envelope.IntentAnswerBody#AnswerOf kind=field
@@ -346,6 +377,7 @@ NODE id=matrix/mcl/envelope.IntentAttestBody kind=type
   doc=IntentAttestBody — signed completion receipt.
 EDGES
   contains=matrix/mcl/envelope.IntentAttestBody#AnchorTx,matrix/mcl/envelope.IntentAttestBody#CitedURIs,matrix/mcl/envelope.IntentAttestBody#CompletedAt,matrix/mcl/envelope.IntentAttestBody#EvidenceJSON,matrix/mcl/envelope.IntentAttestBody#Outcome
+  ^references=matrix/executor/cmd/mcl-e2e.LifecycleDriver.DriveAttest,matrix/executor/cmd/mcl-execute.buildIntentSummary,matrix/executor/cmd/mcl-execute.daemonState.handleIntentAttestation,matrix/executor/cmd/mcl-execute.lifecycleDriver.DriveAttest,matrix/mcl/envelope.kindBodyType
   ^defines=matrix/mcl/envelope/body.go
 
 NODE id=matrix/mcl/envelope.IntentAttestBody#AnchorTx kind=field
@@ -389,6 +421,7 @@ NODE id=matrix/mcl/envelope.IntentCancelBody kind=type
   doc=IntentCancelBody — user revokes before completion.
 EDGES
   contains=matrix/mcl/envelope.IntentCancelBody#CancelledAt,matrix/mcl/envelope.IntentCancelBody#Reason
+  ^references=matrix/executor/cmd/mcl-execute.daemonState.handleIntentAttestation,matrix/executor/cmd/mcl-execute.lifecycleDriver.DriveCancel,matrix/mcl/envelope.kindBodyType
   ^defines=matrix/mcl/envelope/body.go
 
 NODE id=matrix/mcl/envelope.IntentCancelBody#CancelledAt kind=field
@@ -411,6 +444,8 @@ NODE id=matrix/mcl/envelope.IntentClarifyBody kind=type
   doc=IntentClarifyBody — structured questions for unknowns.
 EDGES
   contains=matrix/mcl/envelope.IntentClarifyBody#Questions
+  references=matrix/mcl/envelope.ClarifyQuestion
+  ^references=matrix/executor/cmd/mcl-e2e.LifecycleDriver.DriveClarify,matrix/executor/cmd/mcl-execute.lifecycleDriver.DriveClarify,matrix/mcl/envelope.kindBodyType
   ^defines=matrix/mcl/envelope/body.go
 
 NODE id=matrix/mcl/envelope.IntentClarifyBody#Questions kind=field
@@ -426,6 +461,7 @@ NODE id=matrix/mcl/envelope.IntentCompiledBody kind=type
   doc=IntentCompiledBody — agent's typed Intent IR for user review.\nThe Intent itself is carried as canonical JSON bytes (deterministic\nhash per D11) inside IntentJSON. We do NOT re-encode it in CBOR\nbecause the canonical JSON IS the IR's content address; re-encoding\nwould lose that property.
 EDGES
   contains=matrix/mcl/envelope.IntentCompiledBody#CompileLatencyMs,matrix/mcl/envelope.IntentCompiledBody#IntentJSON
+  ^references=matrix/executor/cmd/mcl-e2e.LifecycleDriver.DriveCompiled,matrix/executor/cmd/mcl-execute.buildIntentSummary,matrix/executor/cmd/mcl-execute.lifecycleDriver.DriveCompiled,matrix/mcl/envelope.kindBodyType
   ^defines=matrix/mcl/envelope/body.go
 
 NODE id=matrix/mcl/envelope.IntentCompiledBody#CompileLatencyMs kind=field
@@ -448,6 +484,7 @@ NODE id=matrix/mcl/envelope.IntentCorrectBody kind=type
   doc=IntentCorrectBody — user patches an Intent or plan mid-flight.
 EDGES
   contains=matrix/mcl/envelope.IntentCorrectBody#Patches,matrix/mcl/envelope.IntentCorrectBody#Reason,matrix/mcl/envelope.IntentCorrectBody#RetryFrom,matrix/mcl/envelope.IntentCorrectBody#Target
+  ^references=matrix/executor/cmd/mcl-e2e.LifecycleDriver.DriveCorrectMaterial,matrix/executor/cmd/mcl-e2e.LifecycleDriver.DriveCorrectNonMaterial,matrix/executor/cmd/mcl-execute.lifecycleDriver.DriveCorrectMaterial,matrix/executor/cmd/mcl-execute.lifecycleDriver.DriveCorrectNonMaterial,matrix/mcl/envelope.kindBodyType
   ^defines=matrix/mcl/envelope/body.go
 
 NODE id=matrix/mcl/envelope.IntentCorrectBody#Patches kind=field
@@ -484,6 +521,7 @@ NODE id=matrix/mcl/envelope.IntentDispatchBody kind=type
   doc=IntentDispatchBody — sub-intent to a delegated agent.
 EDGES
   contains=matrix/mcl/envelope.IntentDispatchBody#PaymentChannel,matrix/mcl/envelope.IntentDispatchBody#ScopeURI,matrix/mcl/envelope.IntentDispatchBody#SubIntentJSON
+  ^references=matrix/mcl/envelope.kindBodyType
   ^defines=matrix/mcl/envelope/body.go
 
 NODE id=matrix/mcl/envelope.IntentDispatchBody#PaymentChannel kind=field
@@ -513,6 +551,7 @@ NODE id=matrix/mcl/envelope.IntentDraftBody kind=type
   doc=IntentDraftBody — initial NL goal from user.
 EDGES
   contains=matrix/mcl/envelope.IntentDraftBody#PreferredSkill,matrix/mcl/envelope.IntentDraftBody#Prose,matrix/mcl/envelope.IntentDraftBody#SlotValues
+  ^references=matrix/mcl/envelope.kindBodyType
   ^defines=matrix/mcl/envelope/body.go
 
 NODE id=matrix/mcl/envelope.IntentDraftBody#PreferredSkill kind=field
@@ -542,6 +581,7 @@ NODE id=matrix/mcl/envelope.IntentFailBody kind=type
   doc=IntentFailBody — typed failure.
 EDGES
   contains=matrix/mcl/envelope.IntentFailBody#EvidenceJSON,matrix/mcl/envelope.IntentFailBody#FailedAt,matrix/mcl/envelope.IntentFailBody#Message,matrix/mcl/envelope.IntentFailBody#PartialURIs,matrix/mcl/envelope.IntentFailBody#Reason
+  ^references=matrix/executor/cmd/mcl-execute.buildIntentSummary,matrix/executor/cmd/mcl-execute.daemonState.handleIntentAttestation,matrix/executor/cmd/mcl-execute.lifecycleDriver.DriveFail,matrix/mcl/envelope.kindBodyType
   ^defines=matrix/mcl/envelope/body.go
 
 NODE id=matrix/mcl/envelope.IntentFailBody#EvidenceJSON kind=field
@@ -585,6 +625,7 @@ NODE id=matrix/mcl/envelope.JSONEnvelope kind=type
   doc=JSONEnvelope is the on-disk schema. Field names mirror the CBOR\nkeyasint mapping but in human-readable form.
 EDGES
   contains=matrix/mcl/envelope.JSONEnvelope#At,matrix/mcl/envelope.JSONEnvelope#Body,matrix/mcl/envelope.JSONEnvelope#BodyHex,matrix/mcl/envelope.JSONEnvelope#CausationID,matrix/mcl/envelope.JSONEnvelope#CorrelationID,matrix/mcl/envelope.JSONEnvelope#From,matrix/mcl/envelope.JSONEnvelope#ID,matrix/mcl/envelope.JSONEnvelope#Intent,matrix/mcl/envelope.JSONEnvelope#Kind,matrix/mcl/envelope.JSONEnvelope#ProtocolVersion,matrix/mcl/envelope.JSONEnvelope#SchemaVersion,matrix/mcl/envelope.JSONEnvelope#SelfHash,matrix/mcl/envelope.JSONEnvelope#Signature,matrix/mcl/envelope.JSONEnvelope#To
+  ^references=matrix/mcl/envelope.EnvelopeFromJSON,matrix/mcl/envelope.EnvelopeJSON
   ^defines=matrix/mcl/envelope/json.go
 
 NODE id=matrix/mcl/envelope.JSONEnvelope#At kind=field
@@ -677,6 +718,7 @@ NODE id=matrix/mcl/envelope.KeyResolver kind=interface
   doc=KeyResolver resolves an envelope's From principal to its ed25519\npublic key. Implementations live in the agent runtime / executor /\ntools/registry layer; envelope uses the interface so it has no\ndependency on DID resolution mechanics (D4: chain coupling lives\nin tools/).\n\nMirrors cortex/scope/verify.KeyResolver pattern.
 EDGES
   ^implements=matrix/mcl/envelope.StaticKeyResolver
+  ^references=matrix/mcl/envelope.Verify
   ^defines=matrix/mcl/envelope/keyresolver.go
 
 NODE id=matrix/mcl/envelope.KindIntentAccept kind=const
@@ -684,6 +726,7 @@ NODE id=matrix/mcl/envelope.KindIntentAccept kind=const
   sig=untyped string
   doc=User → agent: signed sign-off on the IR. Lifecycle transition\nproposed → accepted.
 EDGES
+  ^references=matrix/executor/cmd/mcl-e2e.LifecycleDriver.DriveAccept,matrix/executor/cmd/mcl-execute.lifecycleDriver.DriveAccept,matrix/executor/lifecycle.MessageKindTransition,matrix/mcl/envelope.AllKinds,matrix/mcl/envelope.kindBodyType
   ^defines=matrix/mcl/envelope/kinds.go
 
 NODE id=matrix/mcl/envelope.KindIntentAnswer kind=const
@@ -691,6 +734,7 @@ NODE id=matrix/mcl/envelope.KindIntentAnswer kind=const
   sig=untyped string
   doc=User → agent: answers to clarify questions (slot patches).
 EDGES
+  ^references=matrix/executor/cmd/mcl-e2e.LifecycleDriver.DriveAnswer,matrix/executor/cmd/mcl-execute.lifecycleDriver.DriveAnswer,matrix/executor/lifecycle.MessageKindTransition,matrix/mcl/envelope.AllKinds,matrix/mcl/envelope.kindBodyType
   ^defines=matrix/mcl/envelope/kinds.go
 
 NODE id=matrix/mcl/envelope.KindIntentAttest kind=const
@@ -698,6 +742,7 @@ NODE id=matrix/mcl/envelope.KindIntentAttest kind=const
   sig=untyped string
   doc=Agent → user/chain: signed completion receipt.
 EDGES
+  ^references=matrix/executor/cmd/mcl-e2e.LifecycleDriver.DriveAttest,matrix/executor/cmd/mcl-execute.lifecycleDriver.DriveAttest,matrix/executor/lifecycle.MessageKindTransition,matrix/mcl/envelope.AllKinds,matrix/mcl/envelope.kindBodyType
   ^defines=matrix/mcl/envelope/kinds.go
 
 NODE id=matrix/mcl/envelope.KindIntentCancel kind=const
@@ -705,6 +750,7 @@ NODE id=matrix/mcl/envelope.KindIntentCancel kind=const
   sig=untyped string
   doc=User → agent: revoke before completion.
 EDGES
+  ^references=matrix/executor/cmd/mcl-execute.lifecycleDriver.DriveCancel,matrix/executor/lifecycle.MessageKindTransition,matrix/mcl/envelope.AllKinds,matrix/mcl/envelope.kindBodyType
   ^defines=matrix/mcl/envelope/kinds.go
 
 NODE id=matrix/mcl/envelope.KindIntentClarify kind=const
@@ -712,6 +758,7 @@ NODE id=matrix/mcl/envelope.KindIntentClarify kind=const
   sig=untyped string
   doc=Agent → user: structured questions for unknowns.
 EDGES
+  ^references=matrix/executor/cmd/mcl-e2e.LifecycleDriver.DriveClarify,matrix/executor/cmd/mcl-execute.lifecycleDriver.DriveClarify,matrix/executor/lifecycle.MessageKindTransition,matrix/mcl/envelope.AllKinds,matrix/mcl/envelope.kindBodyType
   ^defines=matrix/mcl/envelope/kinds.go
 
 NODE id=matrix/mcl/envelope.KindIntentCompiled kind=const
@@ -719,6 +766,7 @@ NODE id=matrix/mcl/envelope.KindIntentCompiled kind=const
   sig=untyped string
   doc=Agent → user: typed Intent IR for review.
 EDGES
+  ^references=matrix/executor/cmd/mcl-e2e.LifecycleDriver.DriveCompiled,matrix/executor/cmd/mcl-execute.lifecycleDriver.DriveCompiled,matrix/executor/lifecycle.MessageKindTransition,matrix/mcl/envelope.AllKinds,matrix/mcl/envelope.kindBodyType
   ^defines=matrix/mcl/envelope/kinds.go
 
 NODE id=matrix/mcl/envelope.KindIntentCorrect kind=const
@@ -726,6 +774,7 @@ NODE id=matrix/mcl/envelope.KindIntentCorrect kind=const
   sig=untyped string
   doc=User → agent: patch an Intent or plan mid-flight.
 EDGES
+  ^references=matrix/executor/cmd/mcl-e2e.LifecycleDriver.DriveCorrectMaterial,matrix/executor/cmd/mcl-e2e.LifecycleDriver.DriveCorrectNonMaterial,matrix/executor/cmd/mcl-execute.lifecycleDriver.DriveCorrectMaterial,matrix/executor/cmd/mcl-execute.lifecycleDriver.DriveCorrectNonMaterial,matrix/executor/lifecycle.Machine.Apply,matrix/executor/lifecycle.MessageKindTransition,matrix/executor/lifecycle.lookupTransition,matrix/mcl/envelope.AllKinds,matrix/mcl/envelope.kindBodyType
   ^defines=matrix/mcl/envelope/kinds.go
 
 NODE id=matrix/mcl/envelope.KindIntentDispatch kind=const
@@ -733,6 +782,7 @@ NODE id=matrix/mcl/envelope.KindIntentDispatch kind=const
   sig=untyped string
   doc=Agent → agent: sub-intent to a delegated agent.
 EDGES
+  ^references=matrix/mcl/envelope.AllKinds,matrix/mcl/envelope.kindBodyType
   ^defines=matrix/mcl/envelope/kinds.go
 
 NODE id=matrix/mcl/envelope.KindIntentDraft kind=const
@@ -740,6 +790,7 @@ NODE id=matrix/mcl/envelope.KindIntentDraft kind=const
   sig=untyped string
   doc=User → agent: initial NL goal + any pre-filled slots.
 EDGES
+  ^references=matrix/mcl/envelope.AllKinds,matrix/mcl/envelope.kindBodyType
   ^defines=matrix/mcl/envelope/kinds.go
 
 NODE id=matrix/mcl/envelope.KindIntentFail kind=const
@@ -747,6 +798,7 @@ NODE id=matrix/mcl/envelope.KindIntentFail kind=const
   sig=untyped string
   doc=Agent → user: typed failure.
 EDGES
+  ^references=matrix/executor/cmd/mcl-execute.lifecycleDriver.DriveFail,matrix/executor/lifecycle.MessageKindTransition,matrix/mcl/envelope.AllKinds,matrix/mcl/envelope.kindBodyType
   ^defines=matrix/mcl/envelope/kinds.go
 
 NODE id=matrix/mcl/envelope.KindPlanOutput kind=const
@@ -754,6 +806,7 @@ NODE id=matrix/mcl/envelope.KindPlanOutput kind=const
   sig=untyped string
   doc=Agent → user: streaming intermediate output (the only streaming kind).
 EDGES
+  ^references=matrix/mcl/envelope.AllKinds,matrix/mcl/envelope.kindBodyType
   ^defines=matrix/mcl/envelope/kinds.go
 
 NODE id=matrix/mcl/envelope.KindPlanProposed kind=const
@@ -761,6 +814,7 @@ NODE id=matrix/mcl/envelope.KindPlanProposed kind=const
   sig=untyped string
   doc=Agent → user: decomposition into steps before execution.
 EDGES
+  ^references=matrix/executor/cmd/mcl-e2e.LifecycleDriver.DrivePlanProposed,matrix/executor/cmd/mcl-execute.lifecycleDriver.DrivePlanProposed,matrix/executor/lifecycle.MessageKindTransition,matrix/mcl/envelope.AllKinds,matrix/mcl/envelope.kindBodyType
   ^defines=matrix/mcl/envelope/kinds.go
 
 NODE id=matrix/mcl/envelope.KindPlanStep kind=const
@@ -768,6 +822,7 @@ NODE id=matrix/mcl/envelope.KindPlanStep kind=const
   sig=untyped string
   doc=Agent → agent/tool: execution of a single step (executor-internal).
 EDGES
+  ^references=matrix/executor/cmd/mcl-e2e.signStep,matrix/executor/runtime.Walker.signStep,matrix/mcl/envelope.AllKinds,matrix/mcl/envelope.kindBodyType
   ^defines=matrix/mcl/envelope/kinds.go
 
 NODE id=matrix/mcl/envelope.KindPolicyGate kind=const
@@ -775,6 +830,7 @@ NODE id=matrix/mcl/envelope.KindPolicyGate kind=const
   sig=untyped string
   doc=Agent → user: human-in-loop checkpoint (rule-triggered).
 EDGES
+  ^references=matrix/mcl/envelope.AllKinds,matrix/mcl/envelope.kindBodyType
   ^defines=matrix/mcl/envelope/kinds.go
 
 NODE id=matrix/mcl/envelope.KindPolicyGateResolve kind=const
@@ -782,6 +838,7 @@ NODE id=matrix/mcl/envelope.KindPolicyGateResolve kind=const
   sig=untyped string
   doc=User → agent: approve/deny gate.
 EDGES
+  ^references=matrix/mcl/envelope.AllKinds,matrix/mcl/envelope.kindBodyType
   ^defines=matrix/mcl/envelope/kinds.go
 
 NODE id=matrix/mcl/envelope.NewEnvelope kind=func
@@ -789,6 +846,10 @@ NODE id=matrix/mcl/envelope.NewEnvelope kind=func
   sig=func NewEnvelope(kind string, body interface{}) (*Envelope, error)
   doc=NewEnvelope constructs an unsigned Envelope from a typed body struct.\nThe kind argument MUST match the body's expected kind (validated against\nkindForBody). Body is canonical-CBOR-encoded into env.Body.\n\nThe caller is responsible for populating ID, At, From, To, Intent,\nCorrelationID, CausationID before calling Sign.
 EDGES
+  calls=matrix/mcl/envelope.ValidKind,matrix/mcl/envelope.checkBodyKind
+  references=matrix/mcl/envelope.Envelope,matrix/mcl/envelope.ErrUnknownKind,matrix/mcl/envelope.ProtocolVersion,matrix/mcl/envelope.SchemaVersion,matrix/mcl/envelope.ValidKind,matrix/mcl/envelope.body,matrix/mcl/envelope.canonicalEnc,matrix/mcl/envelope.checkBodyKind,matrix/mcl/envelope.err,matrix/mcl/envelope.kind,matrix/mcl/envelope.raw
+  ^calls=matrix/executor/cmd/mcl-e2e.EnvelopeStream.SignAndPersist,matrix/executor/cmd/mcl-execute.envelopeStream.SignAndPersist
+  ^references=matrix/executor/cmd/mcl-e2e.EnvelopeStream.SignAndPersist,matrix/executor/cmd/mcl-execute.envelopeStream.SignAndPersist
   ^defines=matrix/mcl/envelope/envelope.go
 
 NODE id=matrix/mcl/envelope.NewTypedBody kind=func
@@ -796,6 +857,9 @@ NODE id=matrix/mcl/envelope.NewTypedBody kind=func
   sig=func NewTypedBody(kind string) interface{}
   doc=NewTypedBody allocates a fresh zero-valued body for kind as a pointer\nusable with env.DecodeBody. Returns nil for unknown kinds.
 EDGES
+  references=matrix/mcl/envelope.kind,matrix/mcl/envelope.kindBodyType,matrix/mcl/envelope.t
+  ^calls=matrix/mcl/envelope.EnvelopeFromJSON,matrix/mcl/envelope.EnvelopeJSON,matrix/mcl/envelope.ValidateBody
+  ^references=matrix/mcl/envelope.EnvelopeFromJSON,matrix/mcl/envelope.EnvelopeJSON,matrix/mcl/envelope.ValidateBody
   ^defines=matrix/mcl/envelope/body.go
 
 NODE id=matrix/mcl/envelope.PlanOutputBody kind=type
@@ -804,6 +868,7 @@ NODE id=matrix/mcl/envelope.PlanOutputBody kind=type
   doc=PlanOutputBody — streaming intermediate output. Multiple of these\nmay share an Intent + PlanID + NodeID, distinguished by Sequence.
 EDGES
   contains=matrix/mcl/envelope.PlanOutputBody#Channel,matrix/mcl/envelope.PlanOutputBody#Chunk,matrix/mcl/envelope.PlanOutputBody#Final,matrix/mcl/envelope.PlanOutputBody#NodeID,matrix/mcl/envelope.PlanOutputBody#PlanID,matrix/mcl/envelope.PlanOutputBody#Sequence
+  ^references=matrix/mcl/envelope.kindBodyType
   ^defines=matrix/mcl/envelope/body.go
 
 NODE id=matrix/mcl/envelope.PlanOutputBody#Channel kind=field
@@ -854,6 +919,7 @@ NODE id=matrix/mcl/envelope.PlanProposedBody kind=type
   doc=PlanProposedBody — agent's decomposition into steps before execution.\nCarries a PlanTree as canonical JSON bytes (mirrors IntentCompiledBody\nposture — the canonical JSON IS the content address).
 EDGES
   contains=matrix/mcl/envelope.PlanProposedBody#PlanJSON
+  ^references=matrix/executor/cmd/mcl-e2e.LifecycleDriver.DrivePlanProposed,matrix/executor/cmd/mcl-execute.daemonState.handleIntentPlan,matrix/executor/cmd/mcl-execute.lifecycleDriver.DrivePlanProposed,matrix/mcl/envelope.kindBodyType
   ^defines=matrix/mcl/envelope/body.go
 
 NODE id=matrix/mcl/envelope.PlanProposedBody#PlanJSON kind=field
@@ -869,6 +935,7 @@ NODE id=matrix/mcl/envelope.PlanStepBody kind=type
   doc=PlanStepBody — single step execution envelope (executor-internal).\nUsed for inter-component messaging within an executor; rarely user-visible.
 EDGES
   contains=matrix/mcl/envelope.PlanStepBody#Error,matrix/mcl/envelope.PlanStepBody#LatencyMs,matrix/mcl/envelope.PlanStepBody#NodeID,matrix/mcl/envelope.PlanStepBody#PlanID,matrix/mcl/envelope.PlanStepBody#Result,matrix/mcl/envelope.PlanStepBody#Status
+  ^references=matrix/executor/cmd/mcl-e2e.signStep,matrix/executor/runtime.Walker.signStep,matrix/mcl/envelope.kindBodyType
   ^defines=matrix/mcl/envelope/body.go
 
 NODE id=matrix/mcl/envelope.PlanStepBody#Error kind=field
@@ -919,6 +986,7 @@ NODE id=matrix/mcl/envelope.PolicyGateBody kind=type
   doc=PolicyGateBody — human-in-loop checkpoint emitted by the executor\nwhen a rule fires with `gate` rather than `block`.
 EDGES
   contains=matrix/mcl/envelope.PolicyGateBody#ExpiresAt,matrix/mcl/envelope.PolicyGateBody#NodeID,matrix/mcl/envelope.PolicyGateBody#Options,matrix/mcl/envelope.PolicyGateBody#PlanID,matrix/mcl/envelope.PolicyGateBody#Question,matrix/mcl/envelope.PolicyGateBody#RuleRef
+  ^references=matrix/mcl/envelope.kindBodyType
   ^defines=matrix/mcl/envelope/body.go
 
 NODE id=matrix/mcl/envelope.PolicyGateBody#ExpiresAt kind=field
@@ -968,6 +1036,7 @@ NODE id=matrix/mcl/envelope.PolicyGateResolveBody kind=type
   doc=PolicyGateResolveBody — user approves/denies a gate.
 EDGES
   contains=matrix/mcl/envelope.PolicyGateResolveBody#Answer,matrix/mcl/envelope.PolicyGateResolveBody#Decision,matrix/mcl/envelope.PolicyGateResolveBody#GateOf,matrix/mcl/envelope.PolicyGateResolveBody#ResolvedAt
+  ^references=matrix/mcl/envelope.kindBodyType
   ^defines=matrix/mcl/envelope/body.go
 
 NODE id=matrix/mcl/envelope.PolicyGateResolveBody#Answer kind=field
@@ -1003,6 +1072,7 @@ NODE id=matrix/mcl/envelope.ProtocolVersion kind=const
   sig=untyped string
   doc=ProtocolVersion is the MCL protocol version string carried in the\nenvelope header. Pinned to "mcl/0.1" per research/02-protocol.md §4.
 EDGES
+  ^references=matrix/mcl/envelope.NewEnvelope
   ^defines=matrix/mcl/envelope/envelope.go
 
 NODE id=matrix/mcl/envelope.SchemaVersion kind=const
@@ -1010,6 +1080,7 @@ NODE id=matrix/mcl/envelope.SchemaVersion kind=const
   sig=uint8
   doc=SchemaVersion is the wire-format schema for Envelope. Bumped on any\nshape change that would alter encode bytes. Mixed into the canonical\nsigned bytes so signatures from one schema cannot be replayed under\nanother.
 EDGES
+  ^references=matrix/mcl/envelope.NewEnvelope,matrix/mcl/envelope.Verify
   ^defines=matrix/mcl/envelope/envelope.go
 
 NODE id=matrix/mcl/envelope.SelfHash kind=func
@@ -1017,6 +1088,10 @@ NODE id=matrix/mcl/envelope.SelfHash kind=func
   sig=func SelfHash(env *Envelope) (string, error)
   doc=SelfHash returns the sha256 hex digest of UnsignedBytes(env). Used as\na content-address for journal storage and as the input to Merkle\nanchoring (when an agent posts an attest envelope on-chain). Does NOT\nrequire the envelope to be signed.
 EDGES
+  calls=matrix/mcl/envelope.UnsignedBytes
+  references=matrix/mcl/envelope.Envelope,matrix/mcl/envelope.UnsignedBytes,matrix/mcl/envelope.b,matrix/mcl/envelope.env,matrix/mcl/envelope.err,matrix/mcl/envelope.sum
+  ^calls=matrix/executor/cmd/mcl-e2e.EnvelopeStream.SignAndPersist,matrix/executor/cmd/mcl-execute.envelopeStream.SignAndPersist,matrix/mcl/envelope.EnvelopeFromJSON,matrix/mcl/envelope.EnvelopeJSON
+  ^references=matrix/executor/cmd/mcl-e2e.EnvelopeStream.SignAndPersist,matrix/executor/cmd/mcl-execute.envelopeStream.SignAndPersist,matrix/mcl/envelope.EnvelopeFromJSON,matrix/mcl/envelope.EnvelopeJSON
   ^defines=matrix/mcl/envelope/envelope.go
 
 NODE id=matrix/mcl/envelope.Sign kind=func
@@ -1024,6 +1099,10 @@ NODE id=matrix/mcl/envelope.Sign kind=func
   sig=func Sign(env *Envelope, priv ed25519.PrivateKey) error
   doc=Sign sets env.Signature to ed25519.Sign(priv, UnsignedBytes(env)).\nCortex never calls this — signing lives in the agent runtime, the\nexecutor (for agent → user messages), and tooling that emits\nintent.draft / intent.accept from the user side.
 EDGES
+  calls=matrix/mcl/envelope.UnsignedBytes,matrix/mcl/envelope.requireRequiredHeaderFields
+  references=matrix/mcl/envelope.Envelope,matrix/mcl/envelope.ErrSignatureInvalid,matrix/mcl/envelope.UnsignedBytes,matrix/mcl/envelope.env,matrix/mcl/envelope.err,matrix/mcl/envelope.msg,matrix/mcl/envelope.priv,matrix/mcl/envelope.requireRequiredHeaderFields
+  ^calls=matrix/executor/cmd/mcl-e2e.EnvelopeStream.SignAndPersist,matrix/executor/cmd/mcl-execute.envelopeStream.SignAndPersist
+  ^references=matrix/executor/cmd/mcl-e2e.EnvelopeStream.SignAndPersist,matrix/executor/cmd/mcl-execute.envelopeStream.SignAndPersist
   ^defines=matrix/mcl/envelope/envelope.go
 
 NODE id=matrix/mcl/envelope.StaticKeyResolver kind=type
@@ -1033,6 +1112,7 @@ NODE id=matrix/mcl/envelope.StaticKeyResolver kind=type
 EDGES
   contains=matrix/mcl/envelope.StaticKeyResolver.ResolveKey
   implements=matrix/mcl/envelope.KeyResolver
+  ^references=matrix/mcl/envelope.StaticKeyResolver.ResolveKey
   ^defines=matrix/mcl/envelope/keyresolver.go
 
 NODE id=matrix/mcl/envelope.StaticKeyResolver.ResolveKey kind=method
@@ -1040,6 +1120,7 @@ NODE id=matrix/mcl/envelope.StaticKeyResolver.ResolveKey kind=method
   sig=func (s StaticKeyResolver) ResolveKey(principal string) (ed25519.PublicKey, error)
   doc=ResolveKey implements KeyResolver.
 EDGES
+  references=matrix/mcl/envelope.ErrUnknownPrincipal,matrix/mcl/envelope.StaticKeyResolver,matrix/mcl/envelope.ok,matrix/mcl/envelope.pk,matrix/mcl/envelope.principal,matrix/mcl/envelope.s
   ^contains=matrix/mcl/envelope.StaticKeyResolver
   ^defines=matrix/mcl/envelope/keyresolver.go
 
@@ -1048,6 +1129,9 @@ NODE id=matrix/mcl/envelope.UnsignedBytes kind=func
   sig=func UnsignedBytes(env *Envelope) ([]byte, error)
   doc=UnsignedBytes returns the canonical CBOR encoding with Signature\nexplicitly cleared. This is what From's ed25519 key signs (and what\nVerifySignature checks against).\n\nSchemaVersion is retained in the unsigned bytes so signature replays\nacross schema versions are blocked.
 EDGES
+  references=matrix/mcl/envelope.Envelope,matrix/mcl/envelope.c,matrix/mcl/envelope.canonicalEnc,matrix/mcl/envelope.env
+  ^calls=matrix/mcl/envelope.SelfHash,matrix/mcl/envelope.Sign,matrix/mcl/envelope.VerifySignature
+  ^references=matrix/mcl/envelope.SelfHash,matrix/mcl/envelope.Sign,matrix/mcl/envelope.VerifySignature
   ^defines=matrix/mcl/envelope/envelope.go
 
 NODE id=matrix/mcl/envelope.ValidKind kind=func
@@ -1055,6 +1139,9 @@ NODE id=matrix/mcl/envelope.ValidKind kind=func
   sig=func ValidKind(s string) bool
   doc=ValidKind reports whether s is one of the 15 closed message kinds.
 EDGES
+  references=matrix/mcl/envelope.s,matrix/mcl/envelope.validKinds
+  ^calls=matrix/mcl/envelope.NewEnvelope,matrix/mcl/envelope.Verify
+  ^references=matrix/mcl/envelope.NewEnvelope,matrix/mcl/envelope.Verify
   ^defines=matrix/mcl/envelope/kinds.go
 
 NODE id=matrix/mcl/envelope.ValidateBody kind=func
@@ -1062,6 +1149,8 @@ NODE id=matrix/mcl/envelope.ValidateBody kind=func
   sig=func ValidateBody(env *Envelope) (interface{}, error)
   doc=ValidateBody decodes env.Body into the kind-matched typed struct and\nreturns the typed value (as an interface{}). Use this when the caller\nwants strict kind↔type validation in one step. Returns ErrBodyTypeMismatch\n(via NewTypedBody) for unknown kinds.
 EDGES
+  calls=matrix/mcl/envelope.Envelope.DecodeBody,matrix/mcl/envelope.NewTypedBody
+  references=matrix/mcl/envelope.Envelope,matrix/mcl/envelope.Envelope.DecodeBody,matrix/mcl/envelope.ErrUnknownKind,matrix/mcl/envelope.NewTypedBody,matrix/mcl/envelope.env,matrix/mcl/envelope.err,matrix/mcl/envelope.out
   ^defines=matrix/mcl/envelope/body.go
 
 NODE id=matrix/mcl/envelope.Verify kind=func
@@ -1069,6 +1158,10 @@ NODE id=matrix/mcl/envelope.Verify kind=func
   sig=func Verify(env *Envelope, resolver KeyResolver) error
   doc=Verify runs the full envelope verification chain:\n\n 1. SchemaVersion matches package constant.\n 2. Required header fields populated (Kind, ID, At, From, Intent).\n 3. Kind is in the closed set.\n 4. KeyResolver returns a pubkey for env.From.\n 5. Signature is valid ed25519 sig over UnsignedBytes.\n\nBody shape is NOT validated here (that is ValidateBody's job, called\nafter the receiver has decoded into a typed struct). Verify only\nchecks "this envelope was actually sent by env.From and hasn't been\ntampered with."
 EDGES
+  calls=matrix/mcl/envelope.ValidKind,matrix/mcl/envelope.VerifySignature,matrix/mcl/envelope.requireRequiredHeaderFields
+  references=matrix/mcl/envelope.Envelope,matrix/mcl/envelope.ErrSchemaVersion,matrix/mcl/envelope.ErrUnknownKind,matrix/mcl/envelope.KeyResolver,matrix/mcl/envelope.KeyResolver.ResolveKey,matrix/mcl/envelope.SchemaVersion,matrix/mcl/envelope.ValidKind,matrix/mcl/envelope.VerifySignature,matrix/mcl/envelope.env,matrix/mcl/envelope.err,matrix/mcl/envelope.pub,matrix/mcl/envelope.requireRequiredHeaderFields,matrix/mcl/envelope.resolver
+  ^calls=matrix/executor/cmd/mcl-e2e.EnvelopeStream.SignAndPersist,matrix/executor/cmd/mcl-execute.envelopeStream.SignAndPersist
+  ^references=matrix/executor/cmd/mcl-e2e.EnvelopeStream.SignAndPersist,matrix/executor/cmd/mcl-execute.envelopeStream.SignAndPersist
   ^defines=matrix/mcl/envelope/envelope.go
 
 NODE id=matrix/mcl/envelope.VerifySignature kind=func
@@ -1076,12 +1169,17 @@ NODE id=matrix/mcl/envelope.VerifySignature kind=func
   sig=func VerifySignature(env *Envelope, pub ed25519.PublicKey) error
   doc=VerifySignature checks env.Signature against pub over UnsignedBytes(env).\nReturns ErrSignatureInvalid on any failure.
 EDGES
+  calls=matrix/mcl/envelope.UnsignedBytes
+  references=matrix/mcl/envelope.Envelope,matrix/mcl/envelope.ErrSignatureInvalid,matrix/mcl/envelope.ErrSignatureMissing,matrix/mcl/envelope.UnsignedBytes,matrix/mcl/envelope.env,matrix/mcl/envelope.err,matrix/mcl/envelope.msg,matrix/mcl/envelope.pub
+  ^calls=matrix/mcl/envelope.Verify
+  ^references=matrix/mcl/envelope.Verify
   ^defines=matrix/mcl/envelope/envelope.go
 
 NODE id=matrix/mcl/envelope.canonicalDec kind=var
   digest=b3:3f2738f9bc26544c887f88c0c9155dd21da56a2147932f5bdfd8fb8fcbdd1e31 file=MCL/envelope/envelope.go range=107:107 lang=go exported=false byte_range=4346:4371
   sig=cbor.DecMode
 EDGES
+  ^references=matrix/mcl/envelope.Decode,matrix/mcl/envelope.Envelope.DecodeBody,matrix/mcl/envelope.init
   ^defines=matrix/mcl/envelope/envelope.go
 
 NODE id=matrix/mcl/envelope.canonicalEnc kind=var
@@ -1089,6 +1187,7 @@ NODE id=matrix/mcl/envelope.canonicalEnc kind=var
   sig=cbor.EncMode
   doc=canonicalEnc / canonicalDec — same posture as cortex/scope.
 EDGES
+  ^references=matrix/mcl/envelope.Encode,matrix/mcl/envelope.EnvelopeFromJSON,matrix/mcl/envelope.NewEnvelope,matrix/mcl/envelope.UnsignedBytes,matrix/mcl/envelope.init
   ^defines=matrix/mcl/envelope/envelope.go
 
 NODE id=matrix/mcl/envelope.checkBodyKind kind=func
@@ -1096,12 +1195,16 @@ NODE id=matrix/mcl/envelope.checkBodyKind kind=func
   sig=func checkBodyKind(kind string, body interface{}) error
   doc=checkBodyKind validates that body is of the expected Go type for kind.\nAccepts both value and pointer-to-value of the expected type.
 EDGES
+  references=matrix/mcl/envelope.ErrBodyTypeMismatch,matrix/mcl/envelope.ErrUnknownKind,matrix/mcl/envelope.body,matrix/mcl/envelope.got,matrix/mcl/envelope.kind,matrix/mcl/envelope.kindBodyType,matrix/mcl/envelope.ok,matrix/mcl/envelope.want
+  ^calls=matrix/mcl/envelope.NewEnvelope
+  ^references=matrix/mcl/envelope.NewEnvelope
   ^defines=matrix/mcl/envelope/body.go
 
 NODE id=matrix/mcl/envelope.init kind=func
   digest=b3:32d243f7c834e1ea60b8debfa0a66c6f93193217bef593721d5a21c5fe5649f9 file=MCL/envelope/envelope.go range=109:120 lang=go exported=false byte_range=4373:4665
   sig=func init()
 EDGES
+  references=matrix/mcl/envelope.canonicalDec,matrix/mcl/envelope.canonicalEnc,matrix/mcl/envelope.dm,matrix/mcl/envelope.em,matrix/mcl/envelope.err
   ^defines=matrix/mcl/envelope/envelope.go
 
 NODE id=matrix/mcl/envelope.kindBodyType kind=var
@@ -1109,12 +1212,17 @@ NODE id=matrix/mcl/envelope.kindBodyType kind=var
   sig=map[string]reflect.Type
   doc=kindBodyType maps each kind to its expected Go body type.\nUsed by NewEnvelope and ValidateBody for strict kind↔type checking.
 EDGES
+  references=matrix/mcl/envelope.IntentAcceptBody,matrix/mcl/envelope.IntentAnswerBody,matrix/mcl/envelope.IntentAttestBody,matrix/mcl/envelope.IntentCancelBody,matrix/mcl/envelope.IntentClarifyBody,matrix/mcl/envelope.IntentCompiledBody,matrix/mcl/envelope.IntentCorrectBody,matrix/mcl/envelope.IntentDispatchBody,matrix/mcl/envelope.IntentDraftBody,matrix/mcl/envelope.IntentFailBody,matrix/mcl/envelope.KindIntentAccept,matrix/mcl/envelope.KindIntentAnswer,matrix/mcl/envelope.KindIntentAttest,matrix/mcl/envelope.KindIntentCancel,matrix/mcl/envelope.KindIntentClarify,matrix/mcl/envelope.KindIntentCompiled,matrix/mcl/envelope.KindIntentCorrect,matrix/mcl/envelope.KindIntentDispatch,matrix/mcl/envelope.KindIntentDraft,matrix/mcl/envelope.KindIntentFail,matrix/mcl/envelope.KindPlanOutput,matrix/mcl/envelope.KindPlanProposed,matrix/mcl/envelope.KindPlanStep,matrix/mcl/envelope.KindPolicyGate,matrix/mcl/envelope.KindPolicyGateResolve,matrix/mcl/envelope.PlanOutputBody,matrix/mcl/envelope.PlanProposedBody,matrix/mcl/envelope.PlanStepBody,matrix/mcl/envelope.PolicyGateBody,matrix/mcl/envelope.PolicyGateResolveBody
+  ^references=matrix/mcl/envelope.BodyTypeOf,matrix/mcl/envelope.EnvelopeJSON,matrix/mcl/envelope.NewTypedBody,matrix/mcl/envelope.checkBodyKind
   ^defines=matrix/mcl/envelope/body.go
 
 NODE id=matrix/mcl/envelope.requireRequiredHeaderFields kind=func
   digest=b3:bbbd5f824939932693e9885619fdc08193b10f4c5a8e3b4be4855481c99fe4fd file=MCL/envelope/envelope.go range=304:318 lang=go exported=false byte_range=10838:11095
   sig=func requireRequiredHeaderFields(env *Envelope) error
 EDGES
+  references=matrix/mcl/envelope.Envelope,matrix/mcl/envelope.ErrAtMissing,matrix/mcl/envelope.ErrFromMissing,matrix/mcl/envelope.ErrIDMissing,matrix/mcl/envelope.ErrIntentMissing,matrix/mcl/envelope.env
+  ^calls=matrix/mcl/envelope.Sign,matrix/mcl/envelope.Verify
+  ^references=matrix/mcl/envelope.Sign,matrix/mcl/envelope.Verify
   ^defines=matrix/mcl/envelope/envelope.go
 
 NODE id=matrix/mcl/envelope.validKinds kind=var
@@ -1122,6 +1230,8 @@ NODE id=matrix/mcl/envelope.validKinds kind=var
   sig=map[string]bool
   doc=validKinds is the lookup set; built once at init.
 EDGES
+  references=matrix/mcl/envelope.AllKinds,matrix/mcl/envelope.k,matrix/mcl/envelope.m
+  ^references=matrix/mcl/envelope.ValidKind
   ^defines=matrix/mcl/envelope/kinds.go
 
 NODE id=matrix/mcl/envelope/body.go kind=file

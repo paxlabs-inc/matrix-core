@@ -1,10 +1,11 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:9b68327501b45793fd7687f43b30c960fd68ae8aaff6b2f1bb36ec3e2df2de2f
+# GENERATED gen=codegraph do-not-edit merkle=b3:20e53aba2ea11552396417e53b3e04e87dd1bbb7bef3aa554a45bb92cf89e7f2
 
 NODE id=matrix/construct/schema/primitives kind=package
   digest=b3:1aa3f09404b899ec1a5d257419112dce3f96d240941a2147bd662a8dc9910498 file=construct/schema/primitives range=0:0 lang=go exported=true
 EDGES
   contains=matrix/construct/schema/primitives/ask.go,matrix/construct/schema/primitives/canvas.go,matrix/construct/schema/primitives/entity.go,matrix/construct/schema/primitives/metric.go,matrix/construct/schema/primitives/narration.go,matrix/construct/schema/primitives/stream.go,matrix/construct/schema/primitives/structure.go,matrix/construct/schema/primitives/timeline.go
   ^contains=mod:matrix/construct
+  ^imports=matrix/construct/backchannel,matrix/construct/internal/codegen,matrix/construct/projection,matrix/construct/schema,matrix/construct/transport,matrix/neo/internal/server,matrix/neo/internal/tools
 
 NODE id=matrix/construct/schema/primitives.Affordance kind=type
   digest=b3:0f83450b2a030292b8f10790667f67fe6366904eab6a3b5b1d5850a5083e0b3c file=construct/schema/primitives/entity.go range=28:39 lang=go exported=true byte_range=1042:1587
@@ -12,6 +13,8 @@ NODE id=matrix/construct/schema/primitives.Affordance kind=type
   doc=Affordance is an action the human may take on an entity. Affordances NEVER\nembed behaviour — they are typed intents the trusted renderer wires to a\nlink, a clipboard copy, or an Ask back-channel surface.
 EDGES
   contains=matrix/construct/schema/primitives.Affordance#AskRef,matrix/construct/schema/primitives.Affordance#Href,matrix/construct/schema/primitives.Affordance#ID,matrix/construct/schema/primitives.Affordance#Kind,matrix/construct/schema/primitives.Affordance#Label
+  references=matrix/construct/schema/primitives.AffordanceKind
+  ^references=matrix/construct/internal/codegen.structs,matrix/construct/schema/primitives.Entity
   ^defines=matrix/construct/schema/primitives/entity.go
 
 NODE id=matrix/construct/schema/primitives.Affordance#AskRef kind=field
@@ -51,6 +54,8 @@ NODE id=matrix/construct/schema/primitives.AffordanceAsk kind=const
   sig=primitives.AffordanceKind
   doc=AffordanceAsk triggers a back-channel request (uses AskRef to point at\nan Ask surface — e.g. an irreversible action's sign/confirm).
 EDGES
+  references=matrix/construct/schema/primitives.AffordanceKind
+  ^references=matrix/construct/internal/codegen.enums
   ^defines=matrix/construct/schema/primitives/entity.go
 
 NODE id=matrix/construct/schema/primitives.AffordanceCopy kind=const
@@ -58,6 +63,8 @@ NODE id=matrix/construct/schema/primitives.AffordanceCopy kind=const
   sig=primitives.AffordanceKind
   doc=AffordanceCopy copies the entity identity/field to the clipboard.
 EDGES
+  references=matrix/construct/schema/primitives.AffordanceKind
+  ^references=matrix/construct/internal/codegen.enums
   ^defines=matrix/construct/schema/primitives/entity.go
 
 NODE id=matrix/construct/schema/primitives.AffordanceKind kind=type
@@ -65,6 +72,7 @@ NODE id=matrix/construct/schema/primitives.AffordanceKind kind=type
   sig=type AffordanceKind string
   doc=AffordanceKind is the interaction an affordance exposes on an entity.
 EDGES
+  ^references=matrix/construct/schema/primitives.Affordance,matrix/construct/schema/primitives.AffordanceAsk,matrix/construct/schema/primitives.AffordanceCopy,matrix/construct/schema/primitives.AffordanceLink
   ^defines=matrix/construct/schema/primitives/entity.go
 
 NODE id=matrix/construct/schema/primitives.AffordanceLink kind=const
@@ -72,6 +80,8 @@ NODE id=matrix/construct/schema/primitives.AffordanceLink kind=const
   sig=primitives.AffordanceKind
   doc=AffordanceLink opens an external/internal reference (uses Href).
 EDGES
+  references=matrix/construct/schema/primitives.AffordanceKind
+  ^references=matrix/construct/internal/codegen.enums
   ^defines=matrix/construct/schema/primitives/entity.go
 
 NODE id=matrix/construct/schema/primitives.Ask kind=type
@@ -80,6 +90,8 @@ NODE id=matrix/construct/schema/primitives.Ask kind=type
   doc=Ask is the blocking, typed request-for-human (axis: action ->\nrequest-for-human). It is the half the industry has zero answer for beyond a\ntext reply (frozen [vocabulary.ask].role, load_bearing).
 EDGES
   contains=matrix/construct/schema/primitives.Ask#AskKind,matrix/construct/schema/primitives.Ask#Expected,matrix/construct/schema/primitives.Ask#Options,matrix/construct/schema/primitives.Ask#Prompt,matrix/construct/schema/primitives.Ask#Required,matrix/construct/schema/primitives.Ask#Response
+  references=matrix/construct/schema/primitives.AskKind,matrix/construct/schema/primitives.AskOption,matrix/construct/schema/primitives.AskResponse
+  ^references=matrix/construct/backchannel.Summarize,matrix/construct/backchannel.ValidateResponse,matrix/construct/internal/codegen.structs,matrix/construct/projection.buildSurface,matrix/construct/schema.NewAsk,matrix/construct/schema.Surface,matrix/neo/internal/server.askWaiter,matrix/neo/internal/server.session.pendingAsk,matrix/neo/internal/server.session.registerAsk
   ^defines=matrix/construct/schema/primitives/ask.go
 
 NODE id=matrix/construct/schema/primitives.Ask#AskKind kind=field
@@ -128,18 +140,24 @@ NODE id=matrix/construct/schema/primitives.AskChoose kind=const
   digest=b3:a3d8fb851e047e6cc79a3b77473b801f6db9d365f9eb473b76f5be10d667fad5 file=construct/schema/primitives/ask.go range=12:12 lang=go exported=true byte_range=452:481
   sig=primitives.AskKind
 EDGES
+  references=matrix/construct/schema/primitives.AskKind
+  ^references=matrix/construct/backchannel.Summarize,matrix/construct/backchannel.ValidateResponse,matrix/construct/schema/primitives.AskKindValues,matrix/construct/schema/primitives.ValidAskKind
   ^defines=matrix/construct/schema/primitives/ask.go
 
 NODE id=matrix/construct/schema/primitives.AskConfirm kind=const
   digest=b3:1a90196edbffd8f5009f9519ea7f0a575863c6e957fde190cacd9c8943ea8b41 file=construct/schema/primitives/ask.go range=14:14 lang=go exported=true byte_range=513:543
   sig=primitives.AskKind
 EDGES
+  references=matrix/construct/schema/primitives.AskKind
+  ^references=matrix/construct/backchannel.Summarize,matrix/construct/backchannel.ValidateResponse,matrix/construct/schema/primitives.AskKindValues,matrix/construct/schema/primitives.ValidAskKind
   ^defines=matrix/construct/schema/primitives/ask.go
 
 NODE id=matrix/construct/schema/primitives.AskInput kind=const
   digest=b3:48b0dc7dc9659c3acad18a2626c05959fbd4bfb38e7342ed468aafa5eb71c417 file=construct/schema/primitives/ask.go range=13:13 lang=go exported=true byte_range=483:511
   sig=primitives.AskKind
 EDGES
+  references=matrix/construct/schema/primitives.AskKind
+  ^references=matrix/construct/backchannel.Summarize,matrix/construct/backchannel.ValidateResponse,matrix/construct/schema/primitives.AskKindValues,matrix/construct/schema/primitives.ValidAskKind
   ^defines=matrix/construct/schema/primitives/ask.go
 
 NODE id=matrix/construct/schema/primitives.AskKind kind=type
@@ -147,6 +165,7 @@ NODE id=matrix/construct/schema/primitives.AskKind kind=type
   sig=type AskKind string
   doc=AskKind is the type of blocking request-for-human (frozen [vocabulary.ask]:\n"kind in {choose | input | confirm | sign | upload}"). It is the ONE\ninherently bidirectional primitive — the back-channel anchor (invariant i5).
 EDGES
+  ^references=matrix/construct/internal/codegen.askKindStrings,matrix/construct/schema/primitives.Ask,matrix/construct/schema/primitives.AskChoose,matrix/construct/schema/primitives.AskConfirm,matrix/construct/schema/primitives.AskInput,matrix/construct/schema/primitives.AskKindValues,matrix/construct/schema/primitives.AskSign,matrix/construct/schema/primitives.AskUpload,matrix/construct/schema/primitives.ValidAskKind
   ^defines=matrix/construct/schema/primitives/ask.go
 
 NODE id=matrix/construct/schema/primitives.AskKindValues kind=var
@@ -154,6 +173,8 @@ NODE id=matrix/construct/schema/primitives.AskKindValues kind=var
   sig=[]primitives.AskKind
   doc=AskKindValues is the frozen, ordered set of ask kinds.
 EDGES
+  references=matrix/construct/schema/primitives.AskChoose,matrix/construct/schema/primitives.AskConfirm,matrix/construct/schema/primitives.AskInput,matrix/construct/schema/primitives.AskKind,matrix/construct/schema/primitives.AskSign,matrix/construct/schema/primitives.AskUpload
+  ^references=matrix/construct/internal/codegen.enums
   ^defines=matrix/construct/schema/primitives/ask.go
 
 NODE id=matrix/construct/schema/primitives.AskOption kind=type
@@ -162,6 +183,7 @@ NODE id=matrix/construct/schema/primitives.AskOption kind=type
   doc=AskOption is one selectable choice for an AskChoose request.
 EDGES
   contains=matrix/construct/schema/primitives.AskOption#ID,matrix/construct/schema/primitives.AskOption#Label
+  ^references=matrix/construct/backchannel.hasOption,matrix/construct/backchannel.optionLabel,matrix/construct/internal/codegen.structs,matrix/construct/schema/primitives.Ask
   ^defines=matrix/construct/schema/primitives/ask.go
 
 NODE id=matrix/construct/schema/primitives.AskOption#ID kind=field
@@ -182,6 +204,7 @@ NODE id=matrix/construct/schema/primitives.AskResponse kind=type
   doc=AskResponse is the typed human reply to an Ask. It is filled in when the\nhuman answers and flows back to the agent as an INPUT on the same footing as\na user message (replayable, deterministic) — NEVER a mutation of plan/walk/\ncortex. The relevant field is set per AskKind: Choice (choose), Value\n(input), Confirmed (confirm), Signature (sign), UploadRef (upload).
 EDGES
   contains=matrix/construct/schema/primitives.AskResponse#AnsweredAt,matrix/construct/schema/primitives.AskResponse#Choice,matrix/construct/schema/primitives.AskResponse#Confirmed,matrix/construct/schema/primitives.AskResponse#Signature,matrix/construct/schema/primitives.AskResponse#UploadRef,matrix/construct/schema/primitives.AskResponse#Value
+  ^references=matrix/construct/backchannel.Answered,matrix/construct/backchannel.Summarize,matrix/construct/backchannel.ValidateResponse,matrix/construct/backchannel.confirmedTrue,matrix/construct/internal/codegen.structs,matrix/construct/schema/primitives.Ask,matrix/neo/internal/server.Engine.respondAsk,matrix/neo/internal/server.Server.handleAskAnswer,matrix/neo/internal/server.askWaiter,matrix/neo/internal/server.session.answerAsk,matrix/neo/internal/server.session.registerAsk,matrix/neo/internal/tools.AskFunc
   ^defines=matrix/construct/schema/primitives/ask.go
 
 NODE id=matrix/construct/schema/primitives.AskResponse#AnsweredAt kind=field
@@ -224,12 +247,16 @@ NODE id=matrix/construct/schema/primitives.AskSign kind=const
   digest=b3:4e53ffbe14277494da236522ef675206cdbab4c00672cb23488437c546a11397 file=construct/schema/primitives/ask.go range=15:15 lang=go exported=true byte_range=545:572
   sig=primitives.AskKind
 EDGES
+  references=matrix/construct/schema/primitives.AskKind
+  ^references=matrix/construct/backchannel.Summarize,matrix/construct/backchannel.ValidateResponse,matrix/construct/schema/primitives.AskKindValues,matrix/construct/schema/primitives.ValidAskKind
   ^defines=matrix/construct/schema/primitives/ask.go
 
 NODE id=matrix/construct/schema/primitives.AskUpload kind=const
   digest=b3:0a81e8c8679a69cda49c96b26283caccffba25ada681bd56d3363a3b2405190a file=construct/schema/primitives/ask.go range=16:16 lang=go exported=true byte_range=574:603
   sig=primitives.AskKind
 EDGES
+  references=matrix/construct/schema/primitives.AskKind
+  ^references=matrix/construct/backchannel.Summarize,matrix/construct/backchannel.ValidateResponse,matrix/construct/schema/primitives.AskKindValues,matrix/construct/schema/primitives.ValidAskKind
   ^defines=matrix/construct/schema/primitives/ask.go
 
 NODE id=matrix/construct/schema/primitives.Canvas kind=type
@@ -238,6 +265,8 @@ NODE id=matrix/construct/schema/primitives.Canvas kind=type
   doc=Canvas is a show-as-is visual/media blob with optional interactive regions\n(axis: spatial + media). It covers a rendered web page, image, chart, audio,\nvideo (frozen [vocabulary.canvas]).
 EDGES
   contains=matrix/construct/schema/primitives.Canvas#Caption,matrix/construct/schema/primitives.Canvas#Chart,matrix/construct/schema/primitives.Canvas#Media,matrix/construct/schema/primitives.Canvas#Regions
+  references=matrix/construct/schema/primitives.CanvasMedia,matrix/construct/schema/primitives.CanvasRegion,matrix/construct/schema/primitives.Chart
+  ^references=matrix/construct/internal/codegen.structs,matrix/construct/projection.buildSurface,matrix/construct/schema.NewCanvas,matrix/construct/schema.Surface
   ^defines=matrix/construct/schema/primitives/canvas.go
 
 NODE id=matrix/construct/schema/primitives.Canvas#Caption kind=field
@@ -274,6 +303,8 @@ NODE id=matrix/construct/schema/primitives.CanvasMedia kind=type
   doc=CanvasMedia describes the blob a canvas renders.
 EDGES
   contains=matrix/construct/schema/primitives.CanvasMedia#Alt,matrix/construct/schema/primitives.CanvasMedia#Kind,matrix/construct/schema/primitives.CanvasMedia#MIME,matrix/construct/schema/primitives.CanvasMedia#URL
+  references=matrix/construct/schema/primitives.MediaKind
+  ^references=matrix/construct/internal/codegen.structs,matrix/construct/schema/primitives.Canvas
   ^defines=matrix/construct/schema/primitives/canvas.go
 
 NODE id=matrix/construct/schema/primitives.CanvasMedia#Alt kind=field
@@ -310,6 +341,7 @@ NODE id=matrix/construct/schema/primitives.CanvasRegion kind=type
   doc=CanvasRegion is an optional interactive hotspot over the blob, expressed in\nnormalised 0..1 coordinates so the renderer is resolution-independent. A\nregion may point at an Ask surface to make a part of the canvas actionable.
 EDGES
   contains=matrix/construct/schema/primitives.CanvasRegion#AskRef,matrix/construct/schema/primitives.CanvasRegion#H,matrix/construct/schema/primitives.CanvasRegion#ID,matrix/construct/schema/primitives.CanvasRegion#Label,matrix/construct/schema/primitives.CanvasRegion#W,matrix/construct/schema/primitives.CanvasRegion#X,matrix/construct/schema/primitives.CanvasRegion#Y
+  ^references=matrix/construct/internal/codegen.structs,matrix/construct/schema/primitives.Canvas
   ^defines=matrix/construct/schema/primitives/canvas.go
 
 NODE id=matrix/construct/schema/primitives.CanvasRegion#AskRef kind=field
@@ -362,6 +394,8 @@ NODE id=matrix/construct/schema/primitives.Chart kind=type
   doc=Chart is inline, data-driven chart content the renderer draws trustedly\n(area|bar|line|pie|radar|scatter). Present on a Canvas whose media kind is\n"chart"; richer than a static chart image because the data survives the wire\nand the chart stays legible/responsive at any size.
 EDGES
   contains=matrix/construct/schema/primitives.Chart#Kind,matrix/construct/schema/primitives.Chart#Points,matrix/construct/schema/primitives.Chart#Series,matrix/construct/schema/primitives.Chart#Stacked,matrix/construct/schema/primitives.Chart#XLabel,matrix/construct/schema/primitives.Chart#YLabel
+  references=matrix/construct/schema/primitives.ChartKind,matrix/construct/schema/primitives.ChartPoint,matrix/construct/schema/primitives.ChartSeries
+  ^references=matrix/construct/internal/codegen.structs,matrix/construct/schema/primitives.Canvas
   ^defines=matrix/construct/schema/primitives/canvas.go
 
 NODE id=matrix/construct/schema/primitives.Chart#Kind kind=field
@@ -409,12 +443,16 @@ NODE id=matrix/construct/schema/primitives.ChartArea kind=const
   digest=b3:27d90be3940f44f5b141b10c49a56a826cf13b96b7f35d58970aedb99fa092d4 file=construct/schema/primitives/canvas.go range=37:37 lang=go exported=true byte_range=1273:1304
   sig=primitives.ChartKind
 EDGES
+  references=matrix/construct/schema/primitives.ChartKind
+  ^references=matrix/construct/schema/primitives.ChartKindValues,matrix/construct/schema/primitives.ValidChartKind
   ^defines=matrix/construct/schema/primitives/canvas.go
 
 NODE id=matrix/construct/schema/primitives.ChartBar kind=const
   digest=b3:3a4838bb04f8060b0ed852d5a5c7ef29a3f9405b3d63f68a6afa82a2cf04d342 file=construct/schema/primitives/canvas.go range=38:38 lang=go exported=true byte_range=1306:1336
   sig=primitives.ChartKind
 EDGES
+  references=matrix/construct/schema/primitives.ChartKind
+  ^references=matrix/construct/schema/primitives.ChartKindValues,matrix/construct/schema/primitives.ValidChartKind
   ^defines=matrix/construct/schema/primitives/canvas.go
 
 NODE id=matrix/construct/schema/primitives.ChartKind kind=type
@@ -422,6 +460,7 @@ NODE id=matrix/construct/schema/primitives.ChartKind kind=type
   sig=type ChartKind string
   doc=ChartKind is the data-driven chart shape a Canvas renders from inline data\n(rather than a media URL). It lives squarely inside the frozen\n[vocabulary.canvas] "chart" charter — it gives the agent a way to project a\nchart as DATA the trusted renderer draws, never as arbitrary markup\n(invariant i2). Gauge/single-value charts are a Metric concern, not here.
 EDGES
+  ^references=matrix/construct/internal/codegen.chartKindStrings,matrix/construct/schema/primitives.Chart,matrix/construct/schema/primitives.ChartArea,matrix/construct/schema/primitives.ChartBar,matrix/construct/schema/primitives.ChartKindValues,matrix/construct/schema/primitives.ChartLine,matrix/construct/schema/primitives.ChartPie,matrix/construct/schema/primitives.ChartRadar,matrix/construct/schema/primitives.ChartScatter,matrix/construct/schema/primitives.ValidChartKind
   ^defines=matrix/construct/schema/primitives/canvas.go
 
 NODE id=matrix/construct/schema/primitives.ChartKindValues kind=var
@@ -429,18 +468,24 @@ NODE id=matrix/construct/schema/primitives.ChartKindValues kind=var
   sig=[]primitives.ChartKind
   doc=ChartKindValues is the frozen-ordered set of chart kinds (codegen emit order).
 EDGES
+  references=matrix/construct/schema/primitives.ChartArea,matrix/construct/schema/primitives.ChartBar,matrix/construct/schema/primitives.ChartKind,matrix/construct/schema/primitives.ChartLine,matrix/construct/schema/primitives.ChartPie,matrix/construct/schema/primitives.ChartRadar,matrix/construct/schema/primitives.ChartScatter
+  ^references=matrix/construct/internal/codegen.enums
   ^defines=matrix/construct/schema/primitives/canvas.go
 
 NODE id=matrix/construct/schema/primitives.ChartLine kind=const
   digest=b3:b2e2fd944be16bd66c38c635e13db41cac8d6d2e3ae14c1fd97387cf405674ab file=construct/schema/primitives/canvas.go range=39:39 lang=go exported=true byte_range=1338:1369
   sig=primitives.ChartKind
 EDGES
+  references=matrix/construct/schema/primitives.ChartKind
+  ^references=matrix/construct/schema/primitives.ChartKindValues,matrix/construct/schema/primitives.ValidChartKind
   ^defines=matrix/construct/schema/primitives/canvas.go
 
 NODE id=matrix/construct/schema/primitives.ChartPie kind=const
   digest=b3:3b8771c0e3ac6c6cbf81ce87fc0edee6df6571656989e02e7caf3723e584ca99 file=construct/schema/primitives/canvas.go range=40:40 lang=go exported=true byte_range=1371:1401
   sig=primitives.ChartKind
 EDGES
+  references=matrix/construct/schema/primitives.ChartKind
+  ^references=matrix/construct/schema/primitives.ChartKindValues,matrix/construct/schema/primitives.ValidChartKind
   ^defines=matrix/construct/schema/primitives/canvas.go
 
 NODE id=matrix/construct/schema/primitives.ChartPoint kind=type
@@ -449,6 +494,7 @@ NODE id=matrix/construct/schema/primitives.ChartPoint kind=type
   doc=ChartPoint is one row of chart data: an optional categorical Label (the\nx-axis tick / pie-slice / radar-spoke name) plus the numeric value per\nseries key. Numbers stay numeric so the renderer can scale axes itself.
 EDGES
   contains=matrix/construct/schema/primitives.ChartPoint#Label,matrix/construct/schema/primitives.ChartPoint#Values
+  ^references=matrix/construct/internal/codegen.structs,matrix/construct/schema/primitives.Chart
   ^defines=matrix/construct/schema/primitives/canvas.go
 
 NODE id=matrix/construct/schema/primitives.ChartPoint#Label kind=field
@@ -467,12 +513,16 @@ NODE id=matrix/construct/schema/primitives.ChartRadar kind=const
   digest=b3:6facb54c9d7806dde9e04f4b3f16371ebbf1c075e5d8ba987c977f4f1f0ac875 file=construct/schema/primitives/canvas.go range=41:41 lang=go exported=true byte_range=1403:1435
   sig=primitives.ChartKind
 EDGES
+  references=matrix/construct/schema/primitives.ChartKind
+  ^references=matrix/construct/schema/primitives.ChartKindValues,matrix/construct/schema/primitives.ValidChartKind
   ^defines=matrix/construct/schema/primitives/canvas.go
 
 NODE id=matrix/construct/schema/primitives.ChartScatter kind=const
   digest=b3:8899504f74af272a587fb374c726f70b0ecd849a4ede378d3042d06bf6f032d1 file=construct/schema/primitives/canvas.go range=42:42 lang=go exported=true byte_range=1437:1471
   sig=primitives.ChartKind
 EDGES
+  references=matrix/construct/schema/primitives.ChartKind
+  ^references=matrix/construct/schema/primitives.ChartKindValues,matrix/construct/schema/primitives.ValidChartKind
   ^defines=matrix/construct/schema/primitives/canvas.go
 
 NODE id=matrix/construct/schema/primitives.ChartSeries kind=type
@@ -481,6 +531,7 @@ NODE id=matrix/construct/schema/primitives.ChartSeries kind=type
   doc=ChartSeries is one plotted series; Key indexes into each ChartPoint.Values.
 EDGES
   contains=matrix/construct/schema/primitives.ChartSeries#Color,matrix/construct/schema/primitives.ChartSeries#Key,matrix/construct/schema/primitives.ChartSeries#Name
+  ^references=matrix/construct/internal/codegen.structs,matrix/construct/schema/primitives.Chart
   ^defines=matrix/construct/schema/primitives/canvas.go
 
 NODE id=matrix/construct/schema/primitives.ChartSeries#Color kind=field
@@ -510,6 +561,8 @@ NODE id=matrix/construct/schema/primitives.Entity kind=type
   doc=Entity is a referenceable typed object: type + identity + fields +\naffordances (axis: structured + reference). It gives world-state an IDENTITY\nso it can be re-referenced and acted on later (frozen [vocabulary.entity]).
 EDGES
   contains=matrix/construct/schema/primitives.Entity#Affordances,matrix/construct/schema/primitives.Entity#Fields,matrix/construct/schema/primitives.Entity#Identity,matrix/construct/schema/primitives.Entity#Label,matrix/construct/schema/primitives.Entity#Type
+  references=matrix/construct/schema/primitives.Affordance,matrix/construct/schema/primitives.EntityField
+  ^references=matrix/construct/internal/codegen.structs,matrix/construct/projection.buildSurface,matrix/construct/projection.entityFromObject,matrix/construct/projection.projectToolResult,matrix/construct/schema.NewEntity,matrix/construct/schema.Surface
   ^defines=matrix/construct/schema/primitives/entity.go
 
 NODE id=matrix/construct/schema/primitives.Entity#Affordances kind=field
@@ -553,6 +606,7 @@ NODE id=matrix/construct/schema/primitives.EntityField kind=type
   doc=EntityField is one labelled attribute of an entity. A field may itself carry\na ref to link to another surface/entity (composition by reference).
 EDGES
   contains=matrix/construct/schema/primitives.EntityField#Key,matrix/construct/schema/primitives.EntityField#Ref,matrix/construct/schema/primitives.EntityField#Value
+  ^references=matrix/construct/internal/codegen.structs,matrix/construct/projection.entityFromObject,matrix/construct/projection.projectToolResult,matrix/construct/schema/primitives.Entity
   ^defines=matrix/construct/schema/primitives/entity.go
 
 NODE id=matrix/construct/schema/primitives.EntityField#Key kind=field
@@ -578,18 +632,24 @@ NODE id=matrix/construct/schema/primitives.MediaAudio kind=const
   digest=b3:116a2f7292b01822856fc3dea9281b3f6c3fc7617d2448f49918e1d20d915fa5 file=construct/schema/primitives/canvas.go range=12:12 lang=go exported=true byte_range=337:367
   sig=primitives.MediaKind
 EDGES
+  references=matrix/construct/schema/primitives.MediaKind
+  ^references=matrix/construct/internal/codegen.enums
   ^defines=matrix/construct/schema/primitives/canvas.go
 
 NODE id=matrix/construct/schema/primitives.MediaChart kind=const
   digest=b3:5a91a841febb461cabd6a24a6e69b6ccfbad1487883be81a07dd113ef42450ae file=construct/schema/primitives/canvas.go range=14:14 lang=go exported=true byte_range=400:430
   sig=primitives.MediaKind
 EDGES
+  references=matrix/construct/schema/primitives.MediaKind
+  ^references=matrix/construct/internal/codegen.enums
   ^defines=matrix/construct/schema/primitives/canvas.go
 
 NODE id=matrix/construct/schema/primitives.MediaImage kind=const
   digest=b3:2fb31f3395d48f5207d948157a5bf0b1d5dbcdd10c78299dd514cc1f2ed2d817 file=construct/schema/primitives/canvas.go range=10:10 lang=go exported=true byte_range=273:303
   sig=primitives.MediaKind
 EDGES
+  references=matrix/construct/schema/primitives.MediaKind
+  ^references=matrix/construct/internal/codegen.enums
   ^defines=matrix/construct/schema/primitives/canvas.go
 
 NODE id=matrix/construct/schema/primitives.MediaKind kind=type
@@ -597,18 +657,23 @@ NODE id=matrix/construct/schema/primitives.MediaKind kind=type
   sig=type MediaKind string
   doc=MediaKind is the blob type a Canvas shows as-is.
 EDGES
+  ^references=matrix/construct/schema/primitives.CanvasMedia,matrix/construct/schema/primitives.MediaAudio,matrix/construct/schema/primitives.MediaChart,matrix/construct/schema/primitives.MediaImage,matrix/construct/schema/primitives.MediaPage,matrix/construct/schema/primitives.MediaVideo
   ^defines=matrix/construct/schema/primitives/canvas.go
 
 NODE id=matrix/construct/schema/primitives.MediaPage kind=const
   digest=b3:df1d90f9626eec779820ccb1132fed46e87f17e236510d30977023c2c6acc713 file=construct/schema/primitives/canvas.go range=13:13 lang=go exported=true byte_range=369:398
   sig=primitives.MediaKind
 EDGES
+  references=matrix/construct/schema/primitives.MediaKind
+  ^references=matrix/construct/internal/codegen.enums
   ^defines=matrix/construct/schema/primitives/canvas.go
 
 NODE id=matrix/construct/schema/primitives.MediaVideo kind=const
   digest=b3:0668972010b5ef5acc664d5ac8ae6556f0ff13bb308356d49a40135db7cd283a file=construct/schema/primitives/canvas.go range=11:11 lang=go exported=true byte_range=305:335
   sig=primitives.MediaKind
 EDGES
+  references=matrix/construct/schema/primitives.MediaKind
+  ^references=matrix/construct/internal/codegen.enums
   ^defines=matrix/construct/schema/primitives/canvas.go
 
 NODE id=matrix/construct/schema/primitives.Metric kind=type
@@ -617,6 +682,8 @@ NODE id=matrix/construct/schema/primitives.Metric kind=type
   doc=Metric is a named value with optional magnitude / trend / threshold / unit\n(axis: quantity). Value is a string so precision and formatting (hex, big\ndecimals, currency) survive the wire intact; Magnitude is the optional\nnumeric projection for bars/gauges.
 EDGES
   contains=matrix/construct/schema/primitives.Metric#Display,matrix/construct/schema/primitives.Metric#Label,matrix/construct/schema/primitives.Metric#Magnitude,matrix/construct/schema/primitives.Metric#Scale,matrix/construct/schema/primitives.Metric#Threshold,matrix/construct/schema/primitives.Metric#Trend,matrix/construct/schema/primitives.Metric#Unit,matrix/construct/schema/primitives.Metric#Value
+  references=matrix/construct/schema/primitives.MetricDisplay,matrix/construct/schema/primitives.MetricThreshold,matrix/construct/schema/primitives.Trend
+  ^references=matrix/construct/internal/codegen.structs,matrix/construct/projection.buildSurface,matrix/construct/projection.projectToolResult,matrix/construct/schema.NewMetric,matrix/construct/schema.Surface
   ^defines=matrix/construct/schema/primitives/metric.go
 
 NODE id=matrix/construct/schema/primitives.Metric#Display kind=field
@@ -680,24 +747,31 @@ NODE id=matrix/construct/schema/primitives.MetricDisplay kind=type
   sig=type MetricDisplay string
   doc=MetricDisplay selects how a metric renders its magnitude: as plain text, a\nlinear fill bar, or a radial gauge. Empty lets the renderer choose (a bar\nwhen a threshold is present, else plain) — preserving prior behaviour.
 EDGES
+  ^references=matrix/construct/internal/codegen.metricDisplayStrings,matrix/construct/schema/primitives.Metric,matrix/construct/schema/primitives.MetricDisplayBar,matrix/construct/schema/primitives.MetricDisplayGauge,matrix/construct/schema/primitives.MetricDisplayPlain,matrix/construct/schema/primitives.MetricDisplayValues,matrix/construct/schema/primitives.ValidMetricDisplay
   ^defines=matrix/construct/schema/primitives/metric.go
 
 NODE id=matrix/construct/schema/primitives.MetricDisplayBar kind=const
   digest=b3:cf507da8024620e51b7f2d21a9f067a08d7deb5916557a529474a831315e431e file=construct/schema/primitives/metric.go range=22:22 lang=go exported=true byte_range=664:704
   sig=primitives.MetricDisplay
 EDGES
+  references=matrix/construct/schema/primitives.MetricDisplay
+  ^references=matrix/construct/schema/primitives.MetricDisplayValues,matrix/construct/schema/primitives.ValidMetricDisplay
   ^defines=matrix/construct/schema/primitives/metric.go
 
 NODE id=matrix/construct/schema/primitives.MetricDisplayGauge kind=const
   digest=b3:070280408d1145a9fd36946d87131293bb5ba044e5f9278735c78ae282ae2830 file=construct/schema/primitives/metric.go range=23:23 lang=go exported=true byte_range=706:748
   sig=primitives.MetricDisplay
 EDGES
+  references=matrix/construct/schema/primitives.MetricDisplay
+  ^references=matrix/construct/schema/primitives.MetricDisplayValues,matrix/construct/schema/primitives.ValidMetricDisplay
   ^defines=matrix/construct/schema/primitives/metric.go
 
 NODE id=matrix/construct/schema/primitives.MetricDisplayPlain kind=const
   digest=b3:6ec9c8c2f194d737793eb8737558d7e96808f3cce5ad5df1d7dd854f585f5078 file=construct/schema/primitives/metric.go range=21:21 lang=go exported=true byte_range=620:662
   sig=primitives.MetricDisplay
 EDGES
+  references=matrix/construct/schema/primitives.MetricDisplay
+  ^references=matrix/construct/schema/primitives.MetricDisplayValues,matrix/construct/schema/primitives.ValidMetricDisplay
   ^defines=matrix/construct/schema/primitives/metric.go
 
 NODE id=matrix/construct/schema/primitives.MetricDisplayValues kind=var
@@ -705,6 +779,8 @@ NODE id=matrix/construct/schema/primitives.MetricDisplayValues kind=var
   sig=[]primitives.MetricDisplay
   doc=MetricDisplayValues is the frozen-ordered set of metric display modes.
 EDGES
+  references=matrix/construct/schema/primitives.MetricDisplay,matrix/construct/schema/primitives.MetricDisplayBar,matrix/construct/schema/primitives.MetricDisplayGauge,matrix/construct/schema/primitives.MetricDisplayPlain
+  ^references=matrix/construct/internal/codegen.enums
   ^defines=matrix/construct/schema/primitives/metric.go
 
 NODE id=matrix/construct/schema/primitives.MetricThreshold kind=type
@@ -713,6 +789,7 @@ NODE id=matrix/construct/schema/primitives.MetricThreshold kind=type
   doc=MetricThreshold marks where a metric crosses from nominal into warning or\nlimit territory, so the renderer can colour a gauge/bar without inventing\nthresholds itself.
 EDGES
   contains=matrix/construct/schema/primitives.MetricThreshold#Direction,matrix/construct/schema/primitives.MetricThreshold#Limit,matrix/construct/schema/primitives.MetricThreshold#Warn
+  ^references=matrix/construct/internal/codegen.structs,matrix/construct/schema/primitives.Metric
   ^defines=matrix/construct/schema/primitives/metric.go
 
 NODE id=matrix/construct/schema/primitives.MetricThreshold#Direction kind=field
@@ -742,6 +819,8 @@ NODE id=matrix/construct/schema/primitives.Narration kind=type
   doc=Narration is the agent's language: reasoning, intent, answers\n(axis: language).
 EDGES
   contains=matrix/construct/schema/primitives.Narration#Role,matrix/construct/schema/primitives.Narration#Text
+  references=matrix/construct/schema/primitives.NarrationRole
+  ^references=matrix/construct/internal/codegen.structs,matrix/construct/projection.buildSurface,matrix/construct/projection.projectStepText,matrix/construct/schema.NewNarration,matrix/construct/schema.Surface
   ^defines=matrix/construct/schema/primitives/narration.go
 
 NODE id=matrix/construct/schema/primitives.Narration#Role kind=field
@@ -762,12 +841,16 @@ NODE id=matrix/construct/schema/primitives.NarrationAnswer kind=const
   digest=b3:4a5c17eeee09c0440233905f2a8960355c4667cc1f93441cde1659dd57371423 file=construct/schema/primitives/narration.go range=20:20 lang=go exported=true byte_range=923:965
   sig=primitives.NarrationRole
 EDGES
+  references=matrix/construct/schema/primitives.NarrationRole
+  ^references=matrix/construct/internal/codegen.enums
   ^defines=matrix/construct/schema/primitives/narration.go
 
 NODE id=matrix/construct/schema/primitives.NarrationIntent kind=const
   digest=b3:977d86d89c7b964c6ab482052b1c7d50aea9a009505970457e58616d3b25ad99 file=construct/schema/primitives/narration.go range=19:19 lang=go exported=true byte_range=879:921
   sig=primitives.NarrationRole
 EDGES
+  references=matrix/construct/schema/primitives.NarrationRole
+  ^references=matrix/construct/internal/codegen.enums
   ^defines=matrix/construct/schema/primitives/narration.go
 
 NODE id=matrix/construct/schema/primitives.NarrationRole kind=type
@@ -775,12 +858,15 @@ NODE id=matrix/construct/schema/primitives.NarrationRole kind=type
   sig=type NarrationRole string
   doc=NarrationRole distinguishes the sub-state of the agent's language: its\nin-progress thinking, a stated intent, or the final answer\n(construct.frozen.kvx [vocabulary.narration]: "'thinking' vs 'answer' is a\nsub-state"). Empty defaults to a plain answer.
 EDGES
+  ^references=matrix/construct/schema/primitives.Narration,matrix/construct/schema/primitives.NarrationAnswer,matrix/construct/schema/primitives.NarrationIntent,matrix/construct/schema/primitives.NarrationThinking
   ^defines=matrix/construct/schema/primitives/narration.go
 
 NODE id=matrix/construct/schema/primitives.NarrationThinking kind=const
   digest=b3:b2640bbd3653b720ce1b4a9d84079aa6616933957559a9970b8fdc48f49167d1 file=construct/schema/primitives/narration.go range=18:18 lang=go exported=true byte_range=833:877
   sig=primitives.NarrationRole
 EDGES
+  references=matrix/construct/schema/primitives.NarrationRole
+  ^references=matrix/construct/internal/codegen.enums,matrix/construct/projection.projectStepText
   ^defines=matrix/construct/schema/primitives/narration.go
 
 NODE id=matrix/construct/schema/primitives.Shape kind=type
@@ -788,24 +874,31 @@ NODE id=matrix/construct/schema/primitives.Shape kind=type
   sig=type Shape string
   doc=Shape is the composite form a Structure takes (frozen [vocabulary.structure]:\n"shape in {list | table | tree}").
 EDGES
+  ^references=matrix/construct/internal/codegen.shapeStrings,matrix/construct/schema/primitives.ShapeList,matrix/construct/schema/primitives.ShapeTable,matrix/construct/schema/primitives.ShapeTree,matrix/construct/schema/primitives.ShapeValues,matrix/construct/schema/primitives.Structure,matrix/construct/schema/primitives.ValidShape
   ^defines=matrix/construct/schema/primitives/structure.go
 
 NODE id=matrix/construct/schema/primitives.ShapeList kind=const
   digest=b3:1b2630f70097749de865edd8ec22df62f8589b8959db87e21cd4518635605a1e file=construct/schema/primitives/structure.go range=16:16 lang=go exported=true byte_range=376:401
   sig=primitives.Shape
 EDGES
+  references=matrix/construct/schema/primitives.Shape
+  ^references=matrix/construct/projection.structureFromArray,matrix/construct/schema/primitives.ShapeValues,matrix/construct/schema/primitives.ValidShape
   ^defines=matrix/construct/schema/primitives/structure.go
 
 NODE id=matrix/construct/schema/primitives.ShapeTable kind=const
   digest=b3:71f21c1742119cbcf6307628adeae53c2d26d3a7feb4334e1277a6a9dbb90fd2 file=construct/schema/primitives/structure.go range=17:17 lang=go exported=true byte_range=403:429
   sig=primitives.Shape
 EDGES
+  references=matrix/construct/schema/primitives.Shape
+  ^references=matrix/construct/schema/primitives.ShapeValues,matrix/construct/schema/primitives.ValidShape
   ^defines=matrix/construct/schema/primitives/structure.go
 
 NODE id=matrix/construct/schema/primitives.ShapeTree kind=const
   digest=b3:9958a99c5bde1bcfcbb76e67cbc4ab65cae34fe26918cb81e500cd0e4519abef file=construct/schema/primitives/structure.go range=18:18 lang=go exported=true byte_range=431:456
   sig=primitives.Shape
 EDGES
+  references=matrix/construct/schema/primitives.Shape
+  ^references=matrix/construct/schema/primitives.ShapeValues,matrix/construct/schema/primitives.ValidShape
   ^defines=matrix/construct/schema/primitives/structure.go
 
 NODE id=matrix/construct/schema/primitives.ShapeValues kind=var
@@ -813,30 +906,40 @@ NODE id=matrix/construct/schema/primitives.ShapeValues kind=var
   sig=[]primitives.Shape
   doc=ShapeValues is the frozen, ordered set of structure shapes.
 EDGES
+  references=matrix/construct/schema/primitives.Shape,matrix/construct/schema/primitives.ShapeList,matrix/construct/schema/primitives.ShapeTable,matrix/construct/schema/primitives.ShapeTree
+  ^references=matrix/construct/internal/codegen.enums
   ^defines=matrix/construct/schema/primitives/structure.go
 
 NODE id=matrix/construct/schema/primitives.StepDone kind=const
   digest=b3:346036d42cd1633d7bf586b5033fa06f1c6daf07b3141407162ee712c855e095 file=construct/schema/primitives/timeline.go range=14:14 lang=go exported=true byte_range=525:556
   sig=primitives.StepStatus
 EDGES
+  references=matrix/construct/schema/primitives.StepStatus
+  ^references=matrix/construct/schema/primitives.StepStatusValues,matrix/construct/schema/primitives.ValidStepStatus
   ^defines=matrix/construct/schema/primitives/timeline.go
 
 NODE id=matrix/construct/schema/primitives.StepFailed kind=const
   digest=b3:f0d8df01e989811b84718cf947fd4845ac92f95e5f0540c9aa1ee1dd53b78335 file=construct/schema/primitives/timeline.go range=15:15 lang=go exported=true byte_range=558:591
   sig=primitives.StepStatus
 EDGES
+  references=matrix/construct/schema/primitives.StepStatus
+  ^references=matrix/construct/schema/primitives.StepStatusValues,matrix/construct/schema/primitives.ValidStepStatus
   ^defines=matrix/construct/schema/primitives/timeline.go
 
 NODE id=matrix/construct/schema/primitives.StepPending kind=const
   digest=b3:94ea194fb20615bbd87954776726f0ac2eadc6b5b91a4f840172271d68a53edb file=construct/schema/primitives/timeline.go range=12:12 lang=go exported=true byte_range=453:487
   sig=primitives.StepStatus
 EDGES
+  references=matrix/construct/schema/primitives.StepStatus
+  ^references=matrix/construct/schema/primitives.StepStatusValues,matrix/construct/schema/primitives.ValidStepStatus
   ^defines=matrix/construct/schema/primitives/timeline.go
 
 NODE id=matrix/construct/schema/primitives.StepRunning kind=const
   digest=b3:d10c8bc77b7ee9ec00420f85cad61eee3257223f242ffad04cedb835d0c2df34 file=construct/schema/primitives/timeline.go range=13:13 lang=go exported=true byte_range=489:523
   sig=primitives.StepStatus
 EDGES
+  references=matrix/construct/schema/primitives.StepStatus
+  ^references=matrix/construct/schema/primitives.StepStatusValues,matrix/construct/schema/primitives.ValidStepStatus
   ^defines=matrix/construct/schema/primitives/timeline.go
 
 NODE id=matrix/construct/schema/primitives.StepStatus kind=type
@@ -844,6 +947,7 @@ NODE id=matrix/construct/schema/primitives.StepStatus kind=type
   sig=type StepStatus string
   doc=StepStatus is the state of one timeline step. This is what distinguishes a\nTimeline from a Stream: each step is STATEFUL (has status/result), not just\nappend-only bytes (frozen [vocabulary.timeline].distinct_from_stream).
 EDGES
+  ^references=matrix/construct/internal/codegen.stepStatusStrings,matrix/construct/schema/primitives.StepDone,matrix/construct/schema/primitives.StepFailed,matrix/construct/schema/primitives.StepPending,matrix/construct/schema/primitives.StepRunning,matrix/construct/schema/primitives.StepStatusValues,matrix/construct/schema/primitives.TimelineStep,matrix/construct/schema/primitives.ValidStepStatus
   ^defines=matrix/construct/schema/primitives/timeline.go
 
 NODE id=matrix/construct/schema/primitives.StepStatusValues kind=var
@@ -851,6 +955,8 @@ NODE id=matrix/construct/schema/primitives.StepStatusValues kind=var
   sig=[]primitives.StepStatus
   doc=StepStatusValues is the frozen, ordered set of timeline step states.
 EDGES
+  references=matrix/construct/schema/primitives.StepDone,matrix/construct/schema/primitives.StepFailed,matrix/construct/schema/primitives.StepPending,matrix/construct/schema/primitives.StepRunning,matrix/construct/schema/primitives.StepStatus
+  ^references=matrix/construct/internal/codegen.enums
   ^defines=matrix/construct/schema/primitives/timeline.go
 
 NODE id=matrix/construct/schema/primitives.Stream kind=type
@@ -859,6 +965,8 @@ NODE id=matrix/construct/schema/primitives.Stream kind=type
   doc=Stream is an append-only temporal byte/line/event sequence (axis: stream).\nIt covers terminal output, logs, a raw reasoning trace (frozen\n[vocabulary.stream]). Chunks are appended progressively via\nconstruct.surface.patch; Closed marks the stream complete.
 EDGES
   contains=matrix/construct/schema/primitives.Stream#Chunks,matrix/construct/schema/primitives.Stream#Closed,matrix/construct/schema/primitives.Stream#Source,matrix/construct/schema/primitives.Stream#Title
+  references=matrix/construct/schema/primitives.StreamChunk
+  ^references=matrix/construct/internal/codegen.structs,matrix/construct/projection.buildSurface,matrix/construct/schema.NewStream,matrix/construct/schema.Surface,matrix/construct/transport.mergeStream
   ^defines=matrix/construct/schema/primitives/stream.go
 
 NODE id=matrix/construct/schema/primitives.Stream#Chunks kind=field
@@ -895,6 +1003,7 @@ NODE id=matrix/construct/schema/primitives.StreamChunk kind=type
   doc=StreamChunk is one appended fragment of a stream. Chunks carry their own\nmonotonic Seq so a progressive (patched) stream stays ordered and\nidempotent on replay.
 EDGES
   contains=matrix/construct/schema/primitives.StreamChunk#Channel,matrix/construct/schema/primitives.StreamChunk#Seq,matrix/construct/schema/primitives.StreamChunk#Text
+  ^references=matrix/construct/internal/codegen.structs,matrix/construct/schema/primitives.Stream
   ^defines=matrix/construct/schema/primitives/stream.go
 
 NODE id=matrix/construct/schema/primitives.StreamChunk#Channel kind=field
@@ -924,6 +1033,8 @@ NODE id=matrix/construct/schema/primitives.Structure kind=type
   doc=Structure is a composite of records (axis: tree / structured). It covers\ncollections, filesystem trees, plan DAGs, the DOM (frozen\n[vocabulary.structure]).
 EDGES
   contains=matrix/construct/schema/primitives.Structure#Columns,matrix/construct/schema/primitives.Structure#Records,matrix/construct/schema/primitives.Structure#Shape
+  references=matrix/construct/schema/primitives.Shape,matrix/construct/schema/primitives.StructureNode
+  ^references=matrix/construct/internal/codegen.structs,matrix/construct/projection.buildSurface,matrix/construct/projection.structureFromArray,matrix/construct/schema.NewStructure,matrix/construct/schema.Surface
   ^defines=matrix/construct/schema/primitives/structure.go
 
 NODE id=matrix/construct/schema/primitives.Structure#Columns kind=field
@@ -953,6 +1064,7 @@ NODE id=matrix/construct/schema/primitives.StructureNode kind=type
   doc=StructureNode is one record in a structure. The same node serves all three\nshapes: a list uses Label; a table uses Cells (column -> value); a tree uses\nChildren. A node may carry a Ref to link to another surface/entity.
 EDGES
   contains=matrix/construct/schema/primitives.StructureNode#Cells,matrix/construct/schema/primitives.StructureNode#Children,matrix/construct/schema/primitives.StructureNode#ID,matrix/construct/schema/primitives.StructureNode#Label,matrix/construct/schema/primitives.StructureNode#Ref,matrix/construct/schema/primitives.StructureNode.UnmarshalJSON
+  ^references=matrix/construct/internal/codegen.structs,matrix/construct/projection.structureFromArray,matrix/construct/schema/primitives.Structure,matrix/construct/schema/primitives.StructureNode.UnmarshalJSON
   ^defines=matrix/construct/schema/primitives/structure.go
 
 NODE id=matrix/construct/schema/primitives.StructureNode#Cells kind=field
@@ -992,6 +1104,8 @@ NODE id=matrix/construct/schema/primitives.StructureNode.UnmarshalJSON kind=meth
   sig=func (n *StructureNode) UnmarshalJSON(b []byte) error
   doc=UnmarshalJSON decodes a node while COERCING every table cell value to a\nstring. The wire/render contract for cells is map[string]string, but models\nroutinely fill table cells with raw numbers or booleans (a price, a count, a\nflag) instead of strings. Rather than fail the entire render with "cannot\nunmarshal number into Go value of type string", we accept any JSON scalar and\nkeep its textual form. Children recurse through this same method.
 EDGES
+  calls=matrix/construct/schema/primitives.coerceCellValue
+  references=matrix/construct/schema/primitives.StructureNode,matrix/construct/schema/primitives.alias,matrix/construct/schema/primitives.aux,matrix/construct/schema/primitives.b,matrix/construct/schema/primitives.coerceCellValue,matrix/construct/schema/primitives.err,matrix/construct/schema/primitives.k,matrix/construct/schema/primitives.n,matrix/construct/schema/primitives.raw
   ^contains=matrix/construct/schema/primitives.StructureNode
   ^defines=matrix/construct/schema/primitives/structure.go
 
@@ -1001,6 +1115,8 @@ NODE id=matrix/construct/schema/primitives.Timeline kind=type
   doc=Timeline is structured, STATEFUL steps over time (axis: temporal-process).\nIt covers plan execution, async jobs, lifecycle, swarm (frozen\n[vocabulary.timeline]).
 EDGES
   contains=matrix/construct/schema/primitives.Timeline#Steps,matrix/construct/schema/primitives.Timeline#Title
+  references=matrix/construct/schema/primitives.TimelineStep
+  ^references=matrix/construct/internal/codegen.structs,matrix/construct/projection.buildSurface,matrix/construct/schema.NewTimeline,matrix/construct/schema.Surface,matrix/construct/transport.mergeTimeline
   ^defines=matrix/construct/schema/primitives/timeline.go
 
 NODE id=matrix/construct/schema/primitives.Timeline#Steps kind=field
@@ -1023,6 +1139,8 @@ NODE id=matrix/construct/schema/primitives.TimelineStep kind=type
   doc=TimelineStep is one stateful step over time (a plan node, async job stage,\nlifecycle transition, swarm member).
 EDGES
   contains=matrix/construct/schema/primitives.TimelineStep#Detail,matrix/construct/schema/primitives.TimelineStep#ID,matrix/construct/schema/primitives.TimelineStep#Label,matrix/construct/schema/primitives.TimelineStep#Ref,matrix/construct/schema/primitives.TimelineStep#Status
+  references=matrix/construct/schema/primitives.StepStatus
+  ^references=matrix/construct/internal/codegen.structs,matrix/construct/schema/primitives.Timeline
   ^defines=matrix/construct/schema/primitives/timeline.go
 
 NODE id=matrix/construct/schema/primitives.TimelineStep#Detail kind=field
@@ -1062,24 +1180,31 @@ NODE id=matrix/construct/schema/primitives.Trend kind=type
   sig=type Trend string
   doc=Trend is the optional direction-of-change of a metric.
 EDGES
+  ^references=matrix/construct/schema/primitives.Metric,matrix/construct/schema/primitives.TrendDown,matrix/construct/schema/primitives.TrendFlat,matrix/construct/schema/primitives.TrendUp
   ^defines=matrix/construct/schema/primitives/metric.go
 
 NODE id=matrix/construct/schema/primitives.TrendDown kind=const
   digest=b3:caa37c486b47e83658a1a5006ef8068f54ac8e78da7f4912d690294e142d5ae8 file=construct/schema/primitives/metric.go range=11:11 lang=go exported=true byte_range=299:323
   sig=primitives.Trend
 EDGES
+  references=matrix/construct/schema/primitives.Trend
+  ^references=matrix/construct/internal/codegen.enums
   ^defines=matrix/construct/schema/primitives/metric.go
 
 NODE id=matrix/construct/schema/primitives.TrendFlat kind=const
   digest=b3:8a19e1cc3b32dd10b7a7232ea121fc2eee6f8618df876b28247e5a671cbe5cdc file=construct/schema/primitives/metric.go range=12:12 lang=go exported=true byte_range=325:349
   sig=primitives.Trend
 EDGES
+  references=matrix/construct/schema/primitives.Trend
+  ^references=matrix/construct/internal/codegen.enums
   ^defines=matrix/construct/schema/primitives/metric.go
 
 NODE id=matrix/construct/schema/primitives.TrendUp kind=const
   digest=b3:f94917b19d2d2bab5c77c9a1c18a2748cc0fcb9a84fcd2758165159d1350cfdb file=construct/schema/primitives/metric.go range=10:10 lang=go exported=true byte_range=275:297
   sig=primitives.Trend
 EDGES
+  references=matrix/construct/schema/primitives.Trend
+  ^references=matrix/construct/internal/codegen.enums
   ^defines=matrix/construct/schema/primitives/metric.go
 
 NODE id=matrix/construct/schema/primitives.ValidAskKind kind=func
@@ -1087,6 +1212,9 @@ NODE id=matrix/construct/schema/primitives.ValidAskKind kind=func
   sig=func ValidAskKind(k AskKind) bool
   doc=ValidAskKind reports whether k is a known ask kind.
 EDGES
+  references=matrix/construct/schema/primitives.AskChoose,matrix/construct/schema/primitives.AskConfirm,matrix/construct/schema/primitives.AskInput,matrix/construct/schema/primitives.AskKind,matrix/construct/schema/primitives.AskSign,matrix/construct/schema/primitives.AskUpload,matrix/construct/schema/primitives.k
+  ^calls=matrix/construct/backchannel.ValidateResponse,matrix/construct/schema.Surface.validatePayload
+  ^references=matrix/construct/backchannel.ValidateResponse,matrix/construct/schema.Surface.validatePayload
   ^defines=matrix/construct/schema/primitives/ask.go
 
 NODE id=matrix/construct/schema/primitives.ValidChartKind kind=func
@@ -1094,6 +1222,9 @@ NODE id=matrix/construct/schema/primitives.ValidChartKind kind=func
   sig=func ValidChartKind(c ChartKind) bool
   doc=ValidChartKind reports whether c is a known chart kind.
 EDGES
+  references=matrix/construct/schema/primitives.ChartArea,matrix/construct/schema/primitives.ChartBar,matrix/construct/schema/primitives.ChartKind,matrix/construct/schema/primitives.ChartLine,matrix/construct/schema/primitives.ChartPie,matrix/construct/schema/primitives.ChartRadar,matrix/construct/schema/primitives.ChartScatter,matrix/construct/schema/primitives.c
+  ^calls=matrix/construct/schema.Surface.validatePayload
+  ^references=matrix/construct/schema.Surface.validatePayload
   ^defines=matrix/construct/schema/primitives/canvas.go
 
 NODE id=matrix/construct/schema/primitives.ValidMetricDisplay kind=func
@@ -1101,6 +1232,9 @@ NODE id=matrix/construct/schema/primitives.ValidMetricDisplay kind=func
   sig=func ValidMetricDisplay(d MetricDisplay) bool
   doc=ValidMetricDisplay reports whether d is a known display mode (empty allowed:\nrenderer chooses).
 EDGES
+  references=matrix/construct/schema/primitives.MetricDisplay,matrix/construct/schema/primitives.MetricDisplayBar,matrix/construct/schema/primitives.MetricDisplayGauge,matrix/construct/schema/primitives.MetricDisplayPlain,matrix/construct/schema/primitives.d
+  ^calls=matrix/construct/schema.Surface.validatePayload
+  ^references=matrix/construct/schema.Surface.validatePayload
   ^defines=matrix/construct/schema/primitives/metric.go
 
 NODE id=matrix/construct/schema/primitives.ValidShape kind=func
@@ -1108,6 +1242,9 @@ NODE id=matrix/construct/schema/primitives.ValidShape kind=func
   sig=func ValidShape(s Shape) bool
   doc=ValidShape reports whether s is a known structure shape.
 EDGES
+  references=matrix/construct/schema/primitives.Shape,matrix/construct/schema/primitives.ShapeList,matrix/construct/schema/primitives.ShapeTable,matrix/construct/schema/primitives.ShapeTree,matrix/construct/schema/primitives.s
+  ^calls=matrix/construct/schema.Surface.validatePayload
+  ^references=matrix/construct/schema.Surface.validatePayload
   ^defines=matrix/construct/schema/primitives/structure.go
 
 NODE id=matrix/construct/schema/primitives.ValidStepStatus kind=func
@@ -1115,6 +1252,9 @@ NODE id=matrix/construct/schema/primitives.ValidStepStatus kind=func
   sig=func ValidStepStatus(s StepStatus) bool
   doc=ValidStepStatus reports whether s is a known step status.
 EDGES
+  references=matrix/construct/schema/primitives.StepDone,matrix/construct/schema/primitives.StepFailed,matrix/construct/schema/primitives.StepPending,matrix/construct/schema/primitives.StepRunning,matrix/construct/schema/primitives.StepStatus,matrix/construct/schema/primitives.s
+  ^calls=matrix/construct/schema.Surface.validatePayload
+  ^references=matrix/construct/schema.Surface.validatePayload
   ^defines=matrix/construct/schema/primitives/timeline.go
 
 NODE id=matrix/construct/schema/primitives.coerceCellValue kind=func
@@ -1122,6 +1262,9 @@ NODE id=matrix/construct/schema/primitives.coerceCellValue kind=func
   sig=func coerceCellValue(raw json.RawMessage) string
   doc=coerceCellValue renders a JSON scalar as plain text: strings are unquoted;\nnumbers and booleans keep their literal form; null/empty becomes "". Objects\nand arrays (not valid cell values) fall through as their raw JSON so the\ninformation is not silently dropped.
 EDGES
+  references=matrix/construct/schema/primitives.err,matrix/construct/schema/primitives.raw,matrix/construct/schema/primitives.s,matrix/construct/schema/primitives.str
+  ^calls=matrix/construct/schema/primitives.StructureNode.UnmarshalJSON
+  ^references=matrix/construct/schema/primitives.StructureNode.UnmarshalJSON
   ^defines=matrix/construct/schema/primitives/structure.go
 
 NODE id=matrix/construct/schema/primitives/ask.go kind=file

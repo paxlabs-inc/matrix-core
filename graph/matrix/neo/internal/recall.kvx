@@ -1,10 +1,12 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:9b68327501b45793fd7687f43b30c960fd68ae8aaff6b2f1bb36ec3e2df2de2f
+# GENERATED gen=codegraph do-not-edit merkle=b3:20e53aba2ea11552396417e53b3e04e87dd1bbb7bef3aa554a45bb92cf89e7f2
 
 NODE id=matrix/neo/internal/recall kind=package
   digest=b3:516d1edcc30254544cd98af3c6a74268cc2cbf0cf8b7755c54342792735d01d5 file=neo/internal/recall range=0:0 lang=go exported=true
 EDGES
   contains=matrix/neo/internal/recall/recall.go
+  imports=matrix/cortex/embed,matrix/neo/internal/conversation
   ^contains=mod:matrix/neo
+  ^imports=matrix/neo/internal/agent,matrix/neo/internal/server
 
 NODE id=matrix/neo/internal/recall.Hit kind=type
   digest=b3:be7e5e99c1c99a25739b3f3759c0cfce2c37d8da97131cbc36e8ef1b60782f30 file=neo/internal/recall/recall.go range=33:38 lang=go exported=true byte_range=1389:1581
@@ -12,6 +14,7 @@ NODE id=matrix/neo/internal/recall.Hit kind=type
   doc=Hit is one recalled past turn, rendered verbatim (high-entropy tokens are\nnever paraphrased — the trust contract).
 EDGES
   contains=matrix/neo/internal/recall.Hit#Role,matrix/neo/internal/recall.Hit#Text
+  ^references=matrix/neo/internal/agent.Agent.Chat,matrix/neo/internal/agent.Agent.buildSystem,matrix/neo/internal/agent.Agent.dynamicTail,matrix/neo/internal/agent.Agent.recallTurns,matrix/neo/internal/agent.Agent.renderRecall,matrix/neo/internal/agent.ConvRecaller,matrix/neo/internal/recall.Recaller.Relevant
   ^defines=matrix/neo/internal/recall/recall.go
 
 NODE id=matrix/neo/internal/recall.Hit#Role kind=field
@@ -31,6 +34,9 @@ NODE id=matrix/neo/internal/recall.New kind=func
   sig=func New(conv *conversation.Store, convID string, emb embed.Embedder, topK, budgetTokens int) *Recaller
   doc=New builds a Recaller for convID. A nil embedder or disabled store yields a\nsafe no-op recaller (Relevant returns nil). topK / budgetTokens fall back to\nsane defaults when non-positive.
 EDGES
+  references=matrix/cortex/embed.Embedder,matrix/neo/internal/conversation.Store,matrix/neo/internal/recall.Recaller,matrix/neo/internal/recall.budgetTokens,matrix/neo/internal/recall.conv,matrix/neo/internal/recall.convID,matrix/neo/internal/recall.emb,matrix/neo/internal/recall.topK
+  ^calls=matrix/neo/internal/server.session.rebuildAgent
+  ^references=matrix/neo/internal/server.session.rebuildAgent
   ^defines=matrix/neo/internal/recall/recall.go
 
 NODE id=matrix/neo/internal/recall.Recaller kind=type
@@ -40,6 +46,8 @@ NODE id=matrix/neo/internal/recall.Recaller kind=type
 EDGES
   contains=matrix/neo/internal/recall.Recaller#budget,matrix/neo/internal/recall.Recaller#cache,matrix/neo/internal/recall.Recaller#conv,matrix/neo/internal/recall.Recaller#convID,matrix/neo/internal/recall.Recaller#emb,matrix/neo/internal/recall.Recaller#embedded,matrix/neo/internal/recall.Recaller#mu,matrix/neo/internal/recall.Recaller#topK,matrix/neo/internal/recall.Recaller.Relevant,matrix/neo/internal/recall.Recaller.enabled,matrix/neo/internal/recall.Recaller.refreshLocked
   implements=matrix/neo/internal/agent.ConvRecaller
+  references=matrix/cortex/embed.Embedder,matrix/neo/internal/conversation.Store,matrix/neo/internal/recall.turnVec
+  ^references=matrix/neo/internal/recall.New,matrix/neo/internal/recall.Recaller.Relevant,matrix/neo/internal/recall.Recaller.enabled,matrix/neo/internal/recall.Recaller.refreshLocked
   ^defines=matrix/neo/internal/recall/recall.go
 
 NODE id=matrix/neo/internal/recall.Recaller#budget kind=field
@@ -95,14 +103,21 @@ NODE id=matrix/neo/internal/recall.Recaller.Relevant kind=method
   sig=func (r *Recaller) Relevant(ctx context.Context, queryText string) []Hit
   doc=Relevant returns up to topK past turns most similar to queryText, ranked by\ncosine similarity and bounded by the token budget. Best-effort: any embed\nfailure degrades to fewer/no hits rather than erroring (the RAM tier + recent\ntail still carry the turn). The caller is expected to drop any hit already\npresent in the live transcript (dedup lives at the agent boundary).
 EDGES
+  calls=matrix/cortex/embed.Cosine,matrix/cortex/embed.EmbedderChain.Embed,matrix/neo/internal/recall.Recaller.enabled,matrix/neo/internal/recall.Recaller.refreshLocked
+  references=matrix/cortex/embed.Cosine,matrix/cortex/embed.Embedder.Embed,matrix/neo/internal/recall.Hit,matrix/neo/internal/recall.Recaller,matrix/neo/internal/recall.Recaller.enabled,matrix/neo/internal/recall.Recaller.refreshLocked,matrix/neo/internal/recall.a,matrix/neo/internal/recall.b,matrix/neo/internal/recall.cost,matrix/neo/internal/recall.ctx,matrix/neo/internal/recall.err,matrix/neo/internal/recall.i,matrix/neo/internal/recall.out,matrix/neo/internal/recall.queryText,matrix/neo/internal/recall.qv,matrix/neo/internal/recall.r,matrix/neo/internal/recall.s,matrix/neo/internal/recall.scored,matrix/neo/internal/recall.scores,matrix/neo/internal/recall.tv,matrix/neo/internal/recall.used
   ^contains=matrix/neo/internal/recall.Recaller
+  ^calls=matrix/neo/internal/agent.Agent.recallTurns
   ^defines=matrix/neo/internal/recall/recall.go
 
 NODE id=matrix/neo/internal/recall.Recaller.enabled kind=method
   digest=b3:a677a38ba37f514ebf6cfc140c766c15ac7e9bf17466cb26ed4a7fba898ea189 file=neo/internal/recall/recall.go range=83:85 lang=go exported=false byte_range=2902:3027
   sig=func (r *Recaller) enabled() bool
 EDGES
+  calls=matrix/neo/internal/conversation.Store.Enabled
+  references=matrix/neo/internal/conversation.Store.Enabled,matrix/neo/internal/recall.Recaller,matrix/neo/internal/recall.r
   ^contains=matrix/neo/internal/recall.Recaller
+  ^calls=matrix/neo/internal/recall.Recaller.Relevant
+  ^references=matrix/neo/internal/recall.Recaller.Relevant
   ^defines=matrix/neo/internal/recall/recall.go
 
 NODE id=matrix/neo/internal/recall.Recaller.refreshLocked kind=method
@@ -110,7 +125,11 @@ NODE id=matrix/neo/internal/recall.Recaller.refreshLocked kind=method
   sig=func (r *Recaller) refreshLocked()
   doc=refreshLocked embeds any turns appended since the last call, extending the\ncache. On an embed error it stops and leaves the remaining turns for a later\npass (embedded is not advanced past the failed turn), so transient embedder\nhiccups self-heal. Caller MUST hold r.mu.
 EDGES
+  calls=matrix/cortex/embed.EmbedderChain.Embed,matrix/neo/internal/conversation.Store.Get
+  references=matrix/cortex/embed.Embedder.Embed,matrix/neo/internal/conversation.Store.Get,matrix/neo/internal/recall.Recaller,matrix/neo/internal/recall.err,matrix/neo/internal/recall.i,matrix/neo/internal/recall.r,matrix/neo/internal/recall.rec,matrix/neo/internal/recall.text,matrix/neo/internal/recall.turnVec,matrix/neo/internal/recall.turns,matrix/neo/internal/recall.vec
   ^contains=matrix/neo/internal/recall.Recaller
+  ^calls=matrix/neo/internal/recall.Recaller.Relevant
+  ^references=matrix/neo/internal/recall.Recaller.Relevant
   ^defines=matrix/neo/internal/recall/recall.go
 
 NODE id=matrix/neo/internal/recall.turnVec kind=type
@@ -119,6 +138,7 @@ NODE id=matrix/neo/internal/recall.turnVec kind=type
   doc=turnVec caches one embedded turn in thread order.
 EDGES
   contains=matrix/neo/internal/recall.turnVec#role,matrix/neo/internal/recall.turnVec#text,matrix/neo/internal/recall.turnVec#vec
+  ^references=matrix/neo/internal/recall.Recaller,matrix/neo/internal/recall.Recaller.refreshLocked
   ^defines=matrix/neo/internal/recall/recall.go
 
 NODE id=matrix/neo/internal/recall.turnVec#role kind=field

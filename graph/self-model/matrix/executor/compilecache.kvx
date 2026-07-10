@@ -1,0 +1,138 @@
+# GENERATED gen=codegraph do-not-edit merkle=b3:75a956136eb56a920059d717ea1f7ba394b53bef834ab6db66f06d328eb5d650
+
+NODE id=matrix/executor/compilecache kind=package
+  digest=b3:df6512c16c7db3d875d820382662248030a1e101e2333552e99ecbe3f6934557 file=executor/compilecache range=0:0 lang=go exported=true
+EDGES
+  contains=matrix/executor/compilecache/cache.go
+  ^contains=mod:matrix/executor
+
+NODE id=matrix/executor/compilecache.Decode kind=func
+  digest=b3:774354128b388bcc149d33c7b79bfb7730e5a33f9c3762a942cea0119c132e85 file=executor/compilecache/cache.go range=131:134 lang=go exported=true byte_range=5013:5137
+  sig=func Decode(b []byte, out *Entry) error
+  doc=Decode parses canonical CBOR into out.
+EDGES
+  ^defines=matrix/executor/compilecache/cache.go
+
+NODE id=matrix/executor/compilecache.Encode kind=func
+  digest=b3:92bf6e4cd4e0ecf75900c153cb248d36d4fb0a55d2802f35efacd316364a50ae file=executor/compilecache/cache.go range=123:129 lang=go exported=true byte_range=4828:5011
+  sig=func Encode(e *Entry) ([]byte, error)
+  doc=Encode returns canonical CBOR for e.
+EDGES
+  ^defines=matrix/executor/compilecache/cache.go
+
+NODE id=matrix/executor/compilecache.Entry kind=type
+  digest=b3:97c17eae5b86b432fc5ff2fc83eff0b4d3d9aa7c2abf3a4b42a372ca51a0f075 file=executor/compilecache/cache.go range=59:71 lang=go exported=true byte_range=2566:3241
+  sig=type Entry struct {\n	SchemaVersion	uint8	`cbor:"0,keyasint"`\n	IntentJSON	[]byte	`cbor:"1,keyasint"`\n	IntentHash	string	`cbor:"2,keyasint"`\n	ModelDigest	string	`cbor:"3,keyasint"`\n	CachedAt	int64	`cbor:"4,keyasint"`		// unix nano\n	Verb		string	`cbor:"5,keyasint,omitempty"`	// for audit/debug\n	SkillDigest	string	`cbor:"6,keyasint,omitempty"`	// for audit/debug\n	SnapHash	string	`cbor:"7,keyasint,omitempty"`	// for audit/debug\n}
+  doc=Entry is one cached compile result. IntentJSON is the canonical-JSON\nbytes of *ir.Intent at hash time. IntentHash is the hash of those\nbytes (also computed independently by the caller for paranoia).
+EDGES
+  contains=matrix/executor/compilecache.Entry#CachedAt,matrix/executor/compilecache.Entry#IntentHash,matrix/executor/compilecache.Entry#IntentJSON,matrix/executor/compilecache.Entry#ModelDigest,matrix/executor/compilecache.Entry#SchemaVersion,matrix/executor/compilecache.Entry#SkillDigest,matrix/executor/compilecache.Entry#SnapHash,matrix/executor/compilecache.Entry#Verb
+  ^defines=matrix/executor/compilecache/cache.go
+
+NODE id=matrix/executor/compilecache.Entry#CachedAt kind=field
+  digest=b3:87473520163428a92ecfd94f800907cd4e52d8a069f50909ba6c4e089a3d7d01 file=executor/compilecache/cache.go range=67:67 lang=go exported=true byte_range=2963:3003
+  sig=int64
+EDGES
+  ^contains=matrix/executor/compilecache.Entry
+
+NODE id=matrix/executor/compilecache.Entry#IntentHash kind=field
+  digest=b3:7328a345e82225c9968e50c2de6cf7e0caaef84a72608e0743cae798c2fa2b3e file=executor/compilecache/cache.go range=65:65 lang=go exported=true byte_range=2879:2919
+  sig=string
+EDGES
+  ^contains=matrix/executor/compilecache.Entry
+
+NODE id=matrix/executor/compilecache.Entry#IntentJSON kind=field
+  digest=b3:d893b4eb33b6f11c54f9715a5232f3ae5a61f005db34f14509d6129004543c70 file=executor/compilecache/cache.go range=64:64 lang=go exported=true byte_range=2837:2877
+  sig=[]byte
+EDGES
+  ^contains=matrix/executor/compilecache.Entry
+
+NODE id=matrix/executor/compilecache.Entry#ModelDigest kind=field
+  digest=b3:2672b7db3776095b6e8db875375112cb5fdf961d36be76b906090174d8207a89 file=executor/compilecache/cache.go range=66:66 lang=go exported=true byte_range=2921:2961
+  sig=string
+EDGES
+  ^contains=matrix/executor/compilecache.Entry
+
+NODE id=matrix/executor/compilecache.Entry#SchemaVersion kind=field
+  digest=b3:88bb18e0fb4e6b08d6cdc4e7c02b68c72d4757b7d969e8b19a102762eb73a696 file=executor/compilecache/cache.go range=63:63 lang=go exported=true byte_range=2795:2835
+  sig=uint8
+EDGES
+  ^contains=matrix/executor/compilecache.Entry
+
+NODE id=matrix/executor/compilecache.Entry#SkillDigest kind=field
+  digest=b3:693879d48e17d7ea73d36792587e1fa1d0a72f29b59634e38400ca3229eb2f1b file=executor/compilecache/cache.go range=69:69 lang=go exported=true byte_range=3099:3149
+  sig=string
+EDGES
+  ^contains=matrix/executor/compilecache.Entry
+
+NODE id=matrix/executor/compilecache.Entry#SnapHash kind=field
+  digest=b3:9698d24e53ab60ea5168b1ef8ccd9421af99218a166c47e61d8a54dc799f96de file=executor/compilecache/cache.go range=70:70 lang=go exported=true byte_range=3170:3220
+  sig=string
+EDGES
+  ^contains=matrix/executor/compilecache.Entry
+
+NODE id=matrix/executor/compilecache.Entry#Verb kind=field
+  digest=b3:85478c538ab34e673233d984975c3b04b638b1eecf3da57f6a17b6af96f853e6 file=executor/compilecache/cache.go range=68:68 lang=go exported=true byte_range=3028:3078
+  sig=string
+EDGES
+  ^contains=matrix/executor/compilecache.Entry
+
+NODE id=matrix/executor/compilecache.Key kind=func
+  digest=b3:6876df29019a16c41a799ddca500e4f290438c915590bb05e1240c47632b95a3 file=executor/compilecache/cache.go range=100:121 lang=go exported=true byte_range=4078:4826
+  sig=func Key(skillDigest, prose, snapHash, verb, modelDigest string) string
+  doc=Key derives the lowercase hex sha256 cache key from the five\ncomponents. Components may be empty (e.g. cold cortex with\nsnap_hash = 64 zeros) — the separator ensures the empty case\nhashes distinctly from a populated case with leading null.\n\n	sha256(skill_digest || US || prose || US || snap_hash\n	   || US || verb || US || model_digest)\n\nResult is 64 lowercase hex chars.
+EDGES
+  ^defines=matrix/executor/compilecache/cache.go
+
+NODE id=matrix/executor/compilecache.Lookup kind=func
+  digest=b3:1f5163fb81645c8c7b5bbd22239742f7a753690cc7ca292462a63f4e7a02b573 file=executor/compilecache/cache.go range=136:174 lang=go exported=true byte_range=5139:6456
+  sig=func Lookup(s *store.Store, hexKey string) (*Entry, bool, error)
+  doc=Lookup fetches the cached Entry for hexKey. Returns (nil, false, nil)\nwhen:\n  - the key is absent (cold cache)\n  - the stored SchemaVersion mismatches the current one (forward-\n    incompatible upgrade; treat as cold so we never deserialize\n    into the wrong shape)\n\nErrors are returned only for store-level I/O failures or CBOR decode\nerrors against a current-version blob (the latter implies actual\ncorruption).
+EDGES
+  ^defines=matrix/executor/compilecache/cache.go
+
+NODE id=matrix/executor/compilecache.SchemaVersion kind=const
+  digest=b3:2b2a2707187620a78287a4b88f04d79d3a59d0a7d9931da8cb9ace101ed91973 file=executor/compilecache/cache.go range=54:57 lang=go exported=true byte_range=2331:2564
+  sig=uint8
+  doc=SchemaVersion is bumped on any incompatible Entry-encoding change.\nCold-load mismatch ⇒ Lookup returns (nil, false, nil) so the cache\nbehaves like a cold start instead of poisoning Intent IRs.
+EDGES
+  ^defines=matrix/executor/compilecache/cache.go
+
+NODE id=matrix/executor/compilecache.Store kind=func
+  digest=b3:9f239ab65f3f2d1d7d8d6cad18666219db53c18e8e2173aa93bb3a499d8dd8ed file=executor/compilecache/cache.go range=176:211 lang=go exported=true byte_range=6458:7722
+  sig=func Store(s *store.Store, hexKey string, e *Entry) error
+  doc=Store writes e at meta/compile_cache/<hexKey>. Overwrites silently\nwhen the key already exists (compile is deterministic for the same\ninputs, so a re-write of the same Entry is by construction a\nbyte-identical update; an over-write across model changes is the\nintended replacement semantic).\n\nThe caller MUST set Entry.SchemaVersion to SchemaVersion (Store\nvalidates and rejects otherwise so a forward-incompat write can't\npoison the cache before the schema bump is wired through the rest\nof the stack).
+EDGES
+  ^defines=matrix/executor/compilecache/cache.go
+
+NODE id=matrix/executor/compilecache.US kind=const
+  digest=b3:72a8cc5ecbee8d4f261df9a692ca1704aba6a98929fc6ca9ee9615edaff2e130 file=executor/compilecache/cache.go range=94:98 lang=go exported=true byte_range=3810:4076
+  sig=byte
+  doc=US is the 0x1f Unit Separator byte used to delimit the cache-key\ncomponents. Same separator the compiler seed derivation uses\n(executor/cmd/mcl-execute/compile.go:compilerSeed) so the two key\nderivations are stylistically consistent.
+EDGES
+  ^defines=matrix/executor/compilecache/cache.go
+
+NODE id=matrix/executor/compilecache.canonicalDec kind=var
+  digest=b3:2e9f5bdf0e9d7c1f9329201b73cd61ef934e3f1f905d616e25934930812a6167 file=executor/compilecache/cache.go range=73:78 lang=go exported=false byte_range=3243:3504
+  sig=cbor.DecMode
+  doc=canonicalEnc + canonicalDec enforce deterministic CBOR for Entry so\nrepeated cache writes of the same Entry produce byte-identical\nvalues (matters for store-level dedup + future blob hashing).
+EDGES
+  ^defines=matrix/executor/compilecache/cache.go
+
+NODE id=matrix/executor/compilecache.canonicalEnc kind=var
+  digest=b3:336b0e49b36567d8df631bb5eae04c9822d36fd3e2392aa79fff37f993ff73a5 file=executor/compilecache/cache.go range=73:77 lang=go exported=false byte_range=3243:3477
+  sig=cbor.EncMode
+  doc=canonicalEnc + canonicalDec enforce deterministic CBOR for Entry so\nrepeated cache writes of the same Entry produce byte-identical\nvalues (matters for store-level dedup + future blob hashing).
+EDGES
+  ^defines=matrix/executor/compilecache/cache.go
+
+NODE id=matrix/executor/compilecache.init kind=func
+  digest=b3:5aa6c62427dfe8ab1382180569c9be6e3856dbac1e2e3d79c0d5057fd8e534b3 file=executor/compilecache/cache.go range=81:92 lang=go exported=false byte_range=3508:3808
+  sig=func init()
+EDGES
+  ^defines=matrix/executor/compilecache/cache.go
+
+NODE id=matrix/executor/compilecache/cache.go kind=file
+  digest=b3:d58160165653a42c5c0fb1478d63625a08f450a781d4d7042c802cc9f7c9e8f2 file=executor/compilecache/cache.go range=1:213 lang=go exported=true
+EDGES
+  defines=matrix/executor/compilecache.Decode,matrix/executor/compilecache.Encode,matrix/executor/compilecache.Entry,matrix/executor/compilecache.Key,matrix/executor/compilecache.Lookup,matrix/executor/compilecache.SchemaVersion,matrix/executor/compilecache.Store,matrix/executor/compilecache.US,matrix/executor/compilecache.canonicalDec,matrix/executor/compilecache.canonicalEnc,matrix/executor/compilecache.init
+  ^contains=matrix/executor/compilecache

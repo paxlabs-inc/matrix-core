@@ -1,10 +1,11 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:9b68327501b45793fd7687f43b30c960fd68ae8aaff6b2f1bb36ec3e2df2de2f
+# GENERATED gen=codegraph do-not-edit merkle=b3:20e53aba2ea11552396417e53b3e04e87dd1bbb7bef3aa554a45bb92cf89e7f2
 
 NODE id=matrix/cody/internal/edit kind=package
   digest=b3:1e655fea1f180acfdc2f946769e121c4b997330bddd6916acbf12b1785a5e3d7 file=cody/internal/edit range=0:0 lang=go exported=true
 EDGES
   contains=matrix/cody/internal/edit/edit.go
   ^contains=mod:matrix/cody
+  ^imports=matrix/cody/internal/gate,matrix/cody/internal/orchestrator,matrix/cody/internal/worker
 
 NODE id=matrix/cody/internal/edit.Engine kind=type
   digest=b3:14d262041f74cc67aaabd3d3a5fe27767d0edda131e8e70c22ccd013bfc9bce7 file=cody/internal/edit/edit.go range=42:49 lang=go exported=true byte_range=1768:2016
@@ -12,6 +13,7 @@ NODE id=matrix/cody/internal/edit.Engine kind=type
   doc=Engine tracks read state per file and applies gated mutations under a\nworkspace root. It is safe for concurrent use.
 EDGES
   contains=matrix/cody/internal/edit.Engine#mu,matrix/cody/internal/edit.Engine#reads,matrix/cody/internal/edit.Engine#root,matrix/cody/internal/edit.Engine.Apply,matrix/cody/internal/edit.Engine.Create,matrix/cody/internal/edit.Engine.Delete,matrix/cody/internal/edit.Engine.Overwrite,matrix/cody/internal/edit.Engine.Read,matrix/cody/internal/edit.Engine.Rel,matrix/cody/internal/edit.Engine.Root,matrix/cody/internal/edit.Engine.checkFresh,matrix/cody/internal/edit.Engine.commit,matrix/cody/internal/edit.Engine.resolve
+  ^references=matrix/cody/internal/edit.Engine.Apply,matrix/cody/internal/edit.Engine.Create,matrix/cody/internal/edit.Engine.Delete,matrix/cody/internal/edit.Engine.Overwrite,matrix/cody/internal/edit.Engine.Read,matrix/cody/internal/edit.Engine.Rel,matrix/cody/internal/edit.Engine.Root,matrix/cody/internal/edit.Engine.checkFresh,matrix/cody/internal/edit.Engine.commit,matrix/cody/internal/edit.Engine.resolve,matrix/cody/internal/edit.New,matrix/cody/internal/worker.Worker
   ^defines=matrix/cody/internal/edit/edit.go
 
 NODE id=matrix/cody/internal/edit.Engine#mu kind=field
@@ -37,7 +39,11 @@ NODE id=matrix/cody/internal/edit.Engine.Apply kind=method
   sig=func (e *Engine) Apply(path, oldText, newText string, replaceAll bool) error
   doc=Apply performs an anchored find/replace: oldText must occur exactly once\n(or replaceAll must be set), and the file must be unchanged since Read.
 EDGES
+  calls=matrix/cody/internal/edit.Engine.checkFresh,matrix/cody/internal/edit.Engine.commit,matrix/cody/internal/edit.Engine.resolve
+  references=matrix/cody/internal/edit.Engine,matrix/cody/internal/edit.Engine.checkFresh,matrix/cody/internal/edit.Engine.commit,matrix/cody/internal/edit.Engine.resolve,matrix/cody/internal/edit.ErrAnchorAmbiguous,matrix/cody/internal/edit.ErrAnchorNotFound,matrix/cody/internal/edit.abs,matrix/cody/internal/edit.content,matrix/cody/internal/edit.data,matrix/cody/internal/edit.e,matrix/cody/internal/edit.err,matrix/cody/internal/edit.n,matrix/cody/internal/edit.newText,matrix/cody/internal/edit.next,matrix/cody/internal/edit.oldText,matrix/cody/internal/edit.path,matrix/cody/internal/edit.replaceAll
   ^contains=matrix/cody/internal/edit.Engine
+  ^calls=matrix/cody/internal/worker.Worker.toolEdit
+  ^references=matrix/cody/internal/worker.Worker.toolEdit
   ^defines=matrix/cody/internal/edit/edit.go
 
 NODE id=matrix/cody/internal/edit.Engine.Create kind=method
@@ -45,7 +51,11 @@ NODE id=matrix/cody/internal/edit.Engine.Create kind=method
   sig=func (e *Engine) Create(path, content string) error
   doc=Create writes a NEW file. It fails if the file already exists — existing\ncontent is only reachable through Read + Apply/Overwrite.
 EDGES
+  calls=matrix/cody/internal/edit.Engine.commit,matrix/cody/internal/edit.Engine.resolve
+  references=matrix/cody/internal/edit.Engine,matrix/cody/internal/edit.Engine.commit,matrix/cody/internal/edit.Engine.resolve,matrix/cody/internal/edit.ErrExists,matrix/cody/internal/edit.abs,matrix/cody/internal/edit.content,matrix/cody/internal/edit.e,matrix/cody/internal/edit.err,matrix/cody/internal/edit.path
   ^contains=matrix/cody/internal/edit.Engine
+  ^calls=matrix/cody/internal/worker.Worker.toolWrite
+  ^references=matrix/cody/internal/worker.Worker.toolWrite
   ^defines=matrix/cody/internal/edit/edit.go
 
 NODE id=matrix/cody/internal/edit.Engine.Delete kind=method
@@ -53,7 +63,11 @@ NODE id=matrix/cody/internal/edit.Engine.Delete kind=method
   sig=func (e *Engine) Delete(path string) error
   doc=Delete removes a file, gated the same way as an edit: it must have been\nread and still be fresh, so nothing is deleted sight-unseen.
 EDGES
+  calls=matrix/cody/internal/edit.Engine.checkFresh,matrix/cody/internal/edit.Engine.resolve
+  references=matrix/cody/internal/edit.Engine,matrix/cody/internal/edit.Engine.checkFresh,matrix/cody/internal/edit.Engine.resolve,matrix/cody/internal/edit.abs,matrix/cody/internal/edit.e,matrix/cody/internal/edit.err,matrix/cody/internal/edit.path
   ^contains=matrix/cody/internal/edit.Engine
+  ^calls=matrix/cody/internal/worker.Worker.toolDelete
+  ^references=matrix/cody/internal/worker.Worker.toolDelete
   ^defines=matrix/cody/internal/edit/edit.go
 
 NODE id=matrix/cody/internal/edit.Engine.Overwrite kind=method
@@ -61,7 +75,11 @@ NODE id=matrix/cody/internal/edit.Engine.Overwrite kind=method
   sig=func (e *Engine) Overwrite(path, content string) error
   doc=Overwrite replaces the full content of an EXISTING file that was read and\nis still fresh. It refuses files never read and files that drifted.
 EDGES
+  calls=matrix/cody/internal/edit.Engine.checkFresh,matrix/cody/internal/edit.Engine.commit,matrix/cody/internal/edit.Engine.resolve
+  references=matrix/cody/internal/edit.Engine,matrix/cody/internal/edit.Engine.checkFresh,matrix/cody/internal/edit.Engine.commit,matrix/cody/internal/edit.Engine.resolve,matrix/cody/internal/edit.abs,matrix/cody/internal/edit.content,matrix/cody/internal/edit.e,matrix/cody/internal/edit.err,matrix/cody/internal/edit.path
   ^contains=matrix/cody/internal/edit.Engine
+  ^calls=matrix/cody/internal/worker.Worker.toolWrite
+  ^references=matrix/cody/internal/worker.Worker.toolWrite
   ^defines=matrix/cody/internal/edit/edit.go
 
 NODE id=matrix/cody/internal/edit.Engine.Read kind=method
@@ -69,7 +87,11 @@ NODE id=matrix/cody/internal/edit.Engine.Read kind=method
   sig=func (e *Engine) Read(path string) (string, error)
   doc=Read returns the file content and records its hash as the freshness anchor\nfor subsequent edits.
 EDGES
+  calls=matrix/cody/internal/edit.Engine.resolve,matrix/cody/internal/edit.hashOf
+  references=matrix/cody/internal/edit.Engine,matrix/cody/internal/edit.Engine.resolve,matrix/cody/internal/edit.abs,matrix/cody/internal/edit.data,matrix/cody/internal/edit.e,matrix/cody/internal/edit.err,matrix/cody/internal/edit.hashOf,matrix/cody/internal/edit.path
   ^contains=matrix/cody/internal/edit.Engine
+  ^calls=matrix/cody/internal/worker.Worker.toolRead
+  ^references=matrix/cody/internal/worker.Worker.toolRead
   ^defines=matrix/cody/internal/edit/edit.go
 
 NODE id=matrix/cody/internal/edit.Engine.Rel kind=method
@@ -77,7 +99,11 @@ NODE id=matrix/cody/internal/edit.Engine.Rel kind=method
   sig=func (e *Engine) Rel(path string) (string, error)
   doc=Rel normalizes a model-supplied path against the engine's root. See the\npackage-level Rel for the contract.
 EDGES
+  calls=matrix/cody/internal/edit.Rel
+  references=matrix/cody/internal/edit.Engine,matrix/cody/internal/edit.Rel,matrix/cody/internal/edit.e,matrix/cody/internal/edit.path
   ^contains=matrix/cody/internal/edit.Engine
+  ^calls=matrix/cody/internal/worker.Worker.toolDelete,matrix/cody/internal/worker.Worker.toolEdit,matrix/cody/internal/worker.Worker.toolList,matrix/cody/internal/worker.Worker.toolRead,matrix/cody/internal/worker.Worker.toolWrite
+  ^references=matrix/cody/internal/worker.Worker.toolDelete,matrix/cody/internal/worker.Worker.toolEdit,matrix/cody/internal/worker.Worker.toolList,matrix/cody/internal/worker.Worker.toolRead,matrix/cody/internal/worker.Worker.toolWrite
   ^defines=matrix/cody/internal/edit/edit.go
 
 NODE id=matrix/cody/internal/edit.Engine.Root kind=method
@@ -85,6 +111,7 @@ NODE id=matrix/cody/internal/edit.Engine.Root kind=method
   sig=func (e *Engine) Root() string
   doc=Root reports the engine's workspace root.
 EDGES
+  references=matrix/cody/internal/edit.Engine,matrix/cody/internal/edit.e
   ^contains=matrix/cody/internal/edit.Engine
   ^defines=matrix/cody/internal/edit/edit.go
 
@@ -93,7 +120,11 @@ NODE id=matrix/cody/internal/edit.Engine.checkFresh kind=method
   sig=func (e *Engine) checkFresh(abs string) ([]byte, error)
   doc=checkFresh verifies the file still matches the recorded read. Returns the\ncurrent content when fresh.
 EDGES
+  calls=matrix/cody/internal/edit.hashOf
+  references=matrix/cody/internal/edit.Engine,matrix/cody/internal/edit.ErrNotRead,matrix/cody/internal/edit.ErrStale,matrix/cody/internal/edit.abs,matrix/cody/internal/edit.data,matrix/cody/internal/edit.e,matrix/cody/internal/edit.err,matrix/cody/internal/edit.hashOf,matrix/cody/internal/edit.ok,matrix/cody/internal/edit.readHash
   ^contains=matrix/cody/internal/edit.Engine
+  ^calls=matrix/cody/internal/edit.Engine.Apply,matrix/cody/internal/edit.Engine.Delete,matrix/cody/internal/edit.Engine.Overwrite
+  ^references=matrix/cody/internal/edit.Engine.Apply,matrix/cody/internal/edit.Engine.Delete,matrix/cody/internal/edit.Engine.Overwrite
   ^defines=matrix/cody/internal/edit/edit.go
 
 NODE id=matrix/cody/internal/edit.Engine.commit kind=method
@@ -101,7 +132,11 @@ NODE id=matrix/cody/internal/edit.Engine.commit kind=method
   sig=func (e *Engine) commit(abs string, content []byte) error
   doc=commit writes content atomically and refreshes the read anchor so chained\nedits by the same holder keep working.
 EDGES
+  calls=matrix/cody/internal/edit.filePerm,matrix/cody/internal/edit.hashOf
+  references=matrix/cody/internal/edit.Engine,matrix/cody/internal/edit.abs,matrix/cody/internal/edit.content,matrix/cody/internal/edit.e,matrix/cody/internal/edit.err,matrix/cody/internal/edit.filePerm,matrix/cody/internal/edit.hashOf,matrix/cody/internal/edit.tmp
   ^contains=matrix/cody/internal/edit.Engine
+  ^calls=matrix/cody/internal/edit.Engine.Apply,matrix/cody/internal/edit.Engine.Create,matrix/cody/internal/edit.Engine.Overwrite
+  ^references=matrix/cody/internal/edit.Engine.Apply,matrix/cody/internal/edit.Engine.Create,matrix/cody/internal/edit.Engine.Overwrite
   ^defines=matrix/cody/internal/edit/edit.go
 
 NODE id=matrix/cody/internal/edit.Engine.resolve kind=method
@@ -109,7 +144,11 @@ NODE id=matrix/cody/internal/edit.Engine.resolve kind=method
   sig=func (e *Engine) resolve(path string) (string, error)
   doc=resolve turns a workspace-relative (or absolute) path into a verified\nabsolute path inside the engine's root.
 EDGES
+  calls=matrix/cody/internal/edit.resolveIn
+  references=matrix/cody/internal/edit.Engine,matrix/cody/internal/edit.e,matrix/cody/internal/edit.path,matrix/cody/internal/edit.resolveIn
   ^contains=matrix/cody/internal/edit.Engine
+  ^calls=matrix/cody/internal/edit.Engine.Apply,matrix/cody/internal/edit.Engine.Create,matrix/cody/internal/edit.Engine.Delete,matrix/cody/internal/edit.Engine.Overwrite,matrix/cody/internal/edit.Engine.Read
+  ^references=matrix/cody/internal/edit.Engine.Apply,matrix/cody/internal/edit.Engine.Create,matrix/cody/internal/edit.Engine.Delete,matrix/cody/internal/edit.Engine.Overwrite,matrix/cody/internal/edit.Engine.Read
   ^defines=matrix/cody/internal/edit/edit.go
 
 NODE id=matrix/cody/internal/edit.ErrAnchorAmbiguous kind=var
@@ -117,6 +156,7 @@ NODE id=matrix/cody/internal/edit.ErrAnchorAmbiguous kind=var
   sig=error
   doc=ErrAnchorAmbiguous means the anchored old text occurs more than once and\nthe edit did not request replace-all.
 EDGES
+  ^references=matrix/cody/internal/edit.Engine.Apply
   ^defines=matrix/cody/internal/edit/edit.go
 
 NODE id=matrix/cody/internal/edit.ErrAnchorNotFound kind=var
@@ -124,6 +164,7 @@ NODE id=matrix/cody/internal/edit.ErrAnchorNotFound kind=var
   sig=error
   doc=ErrAnchorNotFound means the anchored old text does not occur in the file.
 EDGES
+  ^references=matrix/cody/internal/edit.Engine.Apply
   ^defines=matrix/cody/internal/edit/edit.go
 
 NODE id=matrix/cody/internal/edit.ErrExists kind=var
@@ -131,6 +172,7 @@ NODE id=matrix/cody/internal/edit.ErrExists kind=var
   sig=error
   doc=ErrExists means Create was called for a file that already exists.
 EDGES
+  ^references=matrix/cody/internal/edit.Engine.Create
   ^defines=matrix/cody/internal/edit/edit.go
 
 NODE id=matrix/cody/internal/edit.ErrNotRead kind=var
@@ -138,6 +180,7 @@ NODE id=matrix/cody/internal/edit.ErrNotRead kind=var
   sig=error
   doc=ErrNotRead means a mutation was attempted on a file the engine has not\nread this session — reads gate writes, always.
 EDGES
+  ^references=matrix/cody/internal/edit.Engine.checkFresh
   ^defines=matrix/cody/internal/edit/edit.go
 
 NODE id=matrix/cody/internal/edit.ErrOutsideRoot kind=var
@@ -145,6 +188,7 @@ NODE id=matrix/cody/internal/edit.ErrOutsideRoot kind=var
   sig=error
   doc=ErrOutsideRoot means the path escapes the engine's workspace root.
 EDGES
+  ^references=matrix/cody/internal/edit.resolveIn
   ^defines=matrix/cody/internal/edit/edit.go
 
 NODE id=matrix/cody/internal/edit.ErrStale kind=var
@@ -152,6 +196,7 @@ NODE id=matrix/cody/internal/edit.ErrStale kind=var
   sig=error
   doc=ErrStale means the file on disk no longer matches the content the\nengine read: someone (or something) changed it, so the edit is refused\nand the caller must re-read.
 EDGES
+  ^references=matrix/cody/internal/edit.Engine.checkFresh
   ^defines=matrix/cody/internal/edit/edit.go
 
 NODE id=matrix/cody/internal/edit.New kind=func
@@ -159,6 +204,9 @@ NODE id=matrix/cody/internal/edit.New kind=func
   sig=func New(root string) (*Engine, error)
   doc=New creates an edit engine rooted at the workspace directory.
 EDGES
+  references=matrix/cody/internal/edit.Engine,matrix/cody/internal/edit.abs,matrix/cody/internal/edit.err,matrix/cody/internal/edit.fi,matrix/cody/internal/edit.root
+  ^calls=matrix/cody/internal/worker.New
+  ^references=matrix/cody/internal/worker.New
   ^defines=matrix/cody/internal/edit/edit.go
 
 NODE id=matrix/cody/internal/edit.Rel kind=func
@@ -166,18 +214,28 @@ NODE id=matrix/cody/internal/edit.Rel kind=func
   sig=func Rel(root, path string) (string, error)
   doc=Rel is the single workspace-path normalization seam, usable without an\nEngine: it resolves a model-supplied path against root, rejects escapes, and\nreturns a clean, slash-separated workspace-relative path. An absolute in-root\npath and its relative form normalize to the identical result, so callers\nnever carry an absolute path forward and never double-join.
 EDGES
+  calls=matrix/cody/internal/edit.resolveIn
+  references=matrix/cody/internal/edit.abs,matrix/cody/internal/edit.absRoot,matrix/cody/internal/edit.err,matrix/cody/internal/edit.path,matrix/cody/internal/edit.rel,matrix/cody/internal/edit.resolveIn,matrix/cody/internal/edit.root
+  ^calls=matrix/cody/internal/edit.Engine.Rel,matrix/cody/internal/gate.Screen,matrix/cody/internal/gate.ScreenDesign
+  ^references=matrix/cody/internal/edit.Engine.Rel,matrix/cody/internal/gate.Screen,matrix/cody/internal/gate.ScreenDesign,matrix/cody/internal/orchestrator.Plan.Relativize
   ^defines=matrix/cody/internal/edit/edit.go
 
 NODE id=matrix/cody/internal/edit.filePerm kind=func
   digest=b3:e603cc153e044793d0c46cb00da792167e484fbcb9b8ebb1a98b7ec82def64c0 file=cody/internal/edit/edit.go range=175:180 lang=go exported=false byte_range=5672:5798
   sig=func filePerm(abs string) os.FileMode
 EDGES
+  references=matrix/cody/internal/edit.abs,matrix/cody/internal/edit.err,matrix/cody/internal/edit.fi
+  ^calls=matrix/cody/internal/edit.Engine.commit
+  ^references=matrix/cody/internal/edit.Engine.commit
   ^defines=matrix/cody/internal/edit/edit.go
 
 NODE id=matrix/cody/internal/edit.hashOf kind=func
   digest=b3:2be748e8fc310c09b420fcd581b9b829fa4a2f4bcdf4c132226e79d65898f64d file=cody/internal/edit/edit.go range=118:121 lang=go exported=false byte_range=4304:4402
   sig=func hashOf(data []byte) string
 EDGES
+  references=matrix/cody/internal/edit.data,matrix/cody/internal/edit.sum
+  ^calls=matrix/cody/internal/edit.Engine.Read,matrix/cody/internal/edit.Engine.checkFresh,matrix/cody/internal/edit.Engine.commit
+  ^references=matrix/cody/internal/edit.Engine.Read,matrix/cody/internal/edit.Engine.checkFresh,matrix/cody/internal/edit.Engine.commit
   ^defines=matrix/cody/internal/edit/edit.go
 
 NODE id=matrix/cody/internal/edit.resolveIn kind=func
@@ -185,6 +243,9 @@ NODE id=matrix/cody/internal/edit.resolveIn kind=func
   sig=func resolveIn(root, path string) (string, error)
   doc=resolveIn turns a workspace-relative (or absolute) path into a verified\nabsolute path inside root. root must already be absolute and clean. This is\nthe single resolution core: both the Engine (via its own root) and callers\nthat only hold a root string (e.g. the acceptance gate) share it, so path\nnormalization can never drift between the tool boundary and adjudication.
 EDGES
+  references=matrix/cody/internal/edit.ErrOutsideRoot,matrix/cody/internal/edit.abs,matrix/cody/internal/edit.path,matrix/cody/internal/edit.root
+  ^calls=matrix/cody/internal/edit.Engine.resolve,matrix/cody/internal/edit.Rel
+  ^references=matrix/cody/internal/edit.Engine.resolve,matrix/cody/internal/edit.Rel
   ^defines=matrix/cody/internal/edit/edit.go
 
 NODE id=matrix/cody/internal/edit/edit.go kind=file

@@ -1,0 +1,311 @@
+# GENERATED gen=codegraph do-not-edit merkle=b3:75a956136eb56a920059d717ea1f7ba394b53bef834ab6db66f06d328eb5d650
+
+NODE id=matrix/cortex/replay kind=package
+  digest=b3:61ea0bef135aec982f24027c6c46d8013e40e2ad35ba2c89065cb11397bf7561 file=cortex/replay range=0:0 lang=go exported=true
+EDGES
+  contains=matrix/cortex/replay/drop.go,matrix/cortex/replay/rebuild.go,matrix/cortex/replay/replay.go
+  ^contains=mod:matrix/cortex
+
+NODE id=matrix/cortex/replay.CountDerived kind=func
+  digest=b3:f8dfe15bbd5f2e7ad117a0fd0e1cfa2d7c00798bbe49c7352b698fc78da30b52 file=cortex/replay/drop.go range=126:154 lang=go exported=true byte_range=4916:5674
+  sig=func CountDerived(s *store.Store) (uint64, error)
+  doc=CountDerived returns the total number of derived-namespace keys present\nin s. Used by tests to assert that DropDerived left the store empty\nunder indexes/ and by ops dashboards measuring index size.
+EDGES
+  ^defines=matrix/cortex/replay/drop.go
+
+NODE id=matrix/cortex/replay.DropDerived kind=func
+  digest=b3:2a540962334ee73ab9d76ff515e8f0af6406a7e4bc7d4b5eef16b3c77b3d8086 file=cortex/replay/drop.go range=79:124 lang=go exported=true byte_range=3320:4914
+  sig=func DropDerived(s *store.Store) error
+  doc=DropDerived deletes every key under spec's `indexes/` namespace from s.\nIdempotent — running twice is the same as running once.\n\nAfter this call returns:\n\n	accum/* idx/* salience/* vec/* — empty\n	meta/embed_cursor              — absent\n	meta/embed_vertex_next         — absent\n\nCanonical state is untouched:\n\n	m/* mv/* e/* j/* tomb/* snap/* chk/*  — preserved byte-identical\n	meta/journal_head meta/snapshot_seq    — preserved byte-identical\n\nCallers that hold an open snapshot.State on s must reconstruct its\nin-process MMR + SMT views by calling CurrentRoots after the rebuild\n(the underlying handles read from the persisted accum/+idx/smt/* keys\nevery call, so they auto-pick-up the post-rebuild state).
+EDGES
+  ^defines=matrix/cortex/replay/drop.go
+
+NODE id=matrix/cortex/replay.ErrNilSnapshot kind=var
+  digest=b3:40048905304fc95703bde5f9ca20f5073d14562f2fdf56392dd7eec38542f7e4 file=cortex/replay/replay.go range=121:124 lang=go exported=true byte_range=5114:5276
+  sig=error
+  doc=Errors returned by Rebuild / Verify.
+EDGES
+  ^defines=matrix/cortex/replay/replay.go
+
+NODE id=matrix/cortex/replay.ErrNilStore kind=var
+  digest=b3:eea64973d16b693ea6842d397e5916ec2b09b0295a61c33533a8805c6b5cb98e file=cortex/replay/replay.go range=121:123 lang=go exported=true byte_range=5114:5213
+  sig=error
+  doc=Errors returned by Rebuild / Verify.
+EDGES
+  ^defines=matrix/cortex/replay/replay.go
+
+NODE id=matrix/cortex/replay.ErrNoSnapshot kind=var
+  digest=b3:ad01c56edd08c1eb24da228c64c79463ba83bc74b9bedf22644de7637c80820c file=cortex/replay/replay.go range=121:126 lang=go exported=true byte_range=5114:5409
+  sig=error
+  doc=Errors returned by Rebuild / Verify.
+EDGES
+  ^defines=matrix/cortex/replay/replay.go
+
+NODE id=matrix/cortex/replay.ErrRootMismatch kind=var
+  digest=b3:bbc327bfd805d2df13ed22917168b494ef7e8f7d46beca4de1689624b6b7f2c0 file=cortex/replay/replay.go range=121:125 lang=go exported=true byte_range=5114:5347
+  sig=error
+  doc=Errors returned by Rebuild / Verify.
+EDGES
+  ^defines=matrix/cortex/replay/replay.go
+
+NODE id=matrix/cortex/replay.ErrSnapshotNoMatch kind=var
+  digest=b3:dd93703bcacf4f488d47864577b1bfee9220731ca46ffd30337e06611d5f9081 file=cortex/replay/replay.go range=121:127 lang=go exported=true byte_range=5114:5495
+  sig=error
+  doc=Errors returned by Rebuild / Verify.
+EDGES
+  ^defines=matrix/cortex/replay/replay.go
+
+NODE id=matrix/cortex/replay.Options kind=type
+  digest=b3:da39af37b15c78762bdce241907297f7455864e5017919da3e5f208200910250 file=cortex/replay/replay.go range=66:81 lang=go exported=true byte_range=2887:3686
+  sig=type Options struct {\n	// Now is the clock used for salience recomputation. salience.Cached is\n	// recency-decay weighted (research/04-cortex.md §8) so the value\n	// depends on the chosen clock. Zero value falls back to time.Now().UTC().\n	//\n	// salience values are NOT inputs to OverallRoot — different clocks\n	// produce different caches and identical roots, by design.\n	Now	func() time.Time\n\n	// Logf, if non-nil, receives one-line progress messages keyed by phase\n	// ("drop", "rebuild_memories", "rebuild_edges", "rebuild_journal").\n	// Defaults to a no-op so library users don't get stderr spam.\n	Logf	func(format string, args ...any)\n}
+  doc=Options configures a Rebuild call. All fields optional; the zero value is\na valid "rebuild against the underlying store with the wallclock" config.
+EDGES
+  contains=matrix/cortex/replay.Options#Logf,matrix/cortex/replay.Options#Now
+  ^defines=matrix/cortex/replay/replay.go
+
+NODE id=matrix/cortex/replay.Options#Logf kind=field
+  digest=b3:d1afbd0bc4803f2138c5eb277f3bd462fbb09080f5d65d754fe24e3256120bc2 file=cortex/replay/replay.go range=77:80 lang=go exported=true byte_range=3440:3684
+  sig=func(format string, args ...any)
+  doc=Logf, if non-nil, receives one-line progress messages keyed by phase\n("drop", "rebuild_memories", "rebuild_edges", "rebuild_journal").\nDefaults to a no-op so library users don't get stderr spam.
+EDGES
+  ^contains=matrix/cortex/replay.Options
+
+NODE id=matrix/cortex/replay.Options#Now kind=field
+  digest=b3:26d10e4fe2e491f75b82a3c123843304aa18082e0a93966617d600261fee5f44 file=cortex/replay/replay.go range=69:75 lang=go exported=true byte_range=3064:3437
+  sig=func() time.Time
+  doc=Now is the clock used for salience recomputation. salience.Cached is\nrecency-decay weighted (research/04-cortex.md §8) so the value\ndepends on the chosen clock. Zero value falls back to time.Now().UTC().\n\nsalience values are NOT inputs to OverallRoot — different clocks\nproduce different caches and identical roots, by design.
+EDGES
+  ^contains=matrix/cortex/replay.Options
+
+NODE id=matrix/cortex/replay.Rebuild kind=func
+  digest=b3:e35665e9b882195af6b7c5e356540a9d8ca9d44b39bb0ea109624d706cd2fcec file=cortex/replay/replay.go range=130:222 lang=go exported=true byte_range=5499:8656
+  sig=func Rebuild(s *store.Store, snap *snapshot.State, opts Options) (*Result, error)
+  doc=Rebuild executes the full drop + rebuild cycle. The supplied snapshot.State\nMUST be the same instance the cortex uses (so its in-process MMR/SMT\nhandles see the rebuilt accum/+idx/smt/* keys).\n\nCaptures pre-drop OverallRoot into Result.PreOverallRoot so callers can\nverify the invariant in one call:\n\n	r, err := replay.Rebuild(s, snap, opts)\n	if r.PreOverallRoot != r.PostOverallRoot { ... }\n\nSide effects on the store:\n\n	DROP   vec/*  idx/*  salience/*  accum/*\n	       meta/embed_cursor  meta/embed_vertex_next\n	WRITE  idx/type/*  idx/tag/*  idx/frame/*  idx/actor_obj/*\n	       salience/*\n	       accum/mmr/leafcount  accum/mmr/n/*\n	       idx/smt/memories/n/*  idx/smt/edges/n/*\n\nAll other namespaces (m/, mv/, e/, j/, tomb/, snap/, chk/, meta/journal_head,\nmeta/snapshot_seq) are read but never mutated.
+EDGES
+  ^defines=matrix/cortex/replay/replay.go
+
+NODE id=matrix/cortex/replay.Result kind=type
+  digest=b3:1f3b56f47932424660b4b9e175acb556f679a637bca50bf7d64d561c98fb5c09 file=cortex/replay/replay.go range=83:119 lang=go exported=true byte_range=3688:5112
+  sig=type Result struct {\n	// JournalSeq is the journal head observed at rebuild time. After\n	// Rebuild returns, accum/mmr/leafcount == JournalSeq.\n	JournalSeq	uint64\n\n	// MemoriesScanned is the count of m/<id> heads re-emitted into idx/\n	// and the memories SMT.\n	MemoriesScanned	uint64\n\n	// EdgesScanned is the count of e/from/<src>/<t>/<dst> records\n	// re-emitted into the edges SMT.\n	EdgesScanned	uint64\n\n	// JournalLeavesAppended is the count of j/<seq> entries staged onto\n	// the rebuilt MMR. Equals JournalSeq under the gap-free journal\n	// invariant.\n	JournalLeavesAppended	uint64\n\n	// PreOverallRoot is the OverallRoot observed BEFORE the drop. Set\n	// only when Options.PreservesOverallRootCheck was true (or the\n	// Cortex-level Rebuild method passed it). Used by VerifyPreservesRoot\n	// downstream.\n	PreOverallRoot	[32]byte\n\n	// PostOverallRoot is the OverallRoot observed AFTER the rebuild.\n	// Always populated.\n	PostOverallRoot	[32]byte\n\n	// SalienceBumpsApplied is the count of (j/<seq>, memoryID) pairs\n	// the Phase 11.5 journal walk re-applied to salience.AccessCount/\n	// Citations. Equal to sum(len(payload.AccessedIDs) for KindFind) +\n	// sum(len(payload.CitedIDs) for KindAttest) over the journal,\n	// minus dedupe of tombstoned-at-replay-time memories. Reported for\n	// ops visibility and so tests can assert the walk ran at all.\n	SalienceBumpsApplied	uint64\n}
+  doc=Result summarizes a completed Rebuild.
+EDGES
+  contains=matrix/cortex/replay.Result#EdgesScanned,matrix/cortex/replay.Result#JournalLeavesAppended,matrix/cortex/replay.Result#JournalSeq,matrix/cortex/replay.Result#MemoriesScanned,matrix/cortex/replay.Result#PostOverallRoot,matrix/cortex/replay.Result#PreOverallRoot,matrix/cortex/replay.Result#SalienceBumpsApplied
+  ^defines=matrix/cortex/replay/replay.go
+
+NODE id=matrix/cortex/replay.Result#EdgesScanned kind=field
+  digest=b3:be38a974cd4c08c580a51ecee26b700a2d8698f7b913143d79206dd087634275 file=cortex/replay/replay.go range=93:95 lang=go exported=true byte_range=4016:4134
+  sig=uint64
+  doc=EdgesScanned is the count of e/from/<src>/<t>/<dst> records\nre-emitted into the edges SMT.
+EDGES
+  ^contains=matrix/cortex/replay.Result
+
+NODE id=matrix/cortex/replay.Result#JournalLeavesAppended kind=field
+  digest=b3:d5e1638b46deac09d28bd3b64a594fb143f5228adf10ae32a5df0e33c0197e33 file=cortex/replay/replay.go range=97:100 lang=go exported=true byte_range=4137:4316
+  sig=uint64
+  doc=JournalLeavesAppended is the count of j/<seq> entries staged onto\nthe rebuilt MMR. Equals JournalSeq under the gap-free journal\ninvariant.
+EDGES
+  ^contains=matrix/cortex/replay.Result
+
+NODE id=matrix/cortex/replay.Result#JournalSeq kind=field
+  digest=b3:056e0b9f7b328b82efa72728410e8aaf5b5ba66566733d01953b0daf7b40c9e1 file=cortex/replay/replay.go range=85:87 lang=go exported=true byte_range=3752:3892
+  sig=uint64
+  doc=JournalSeq is the journal head observed at rebuild time. After\nRebuild returns, accum/mmr/leafcount == JournalSeq.
+EDGES
+  ^contains=matrix/cortex/replay.Result
+
+NODE id=matrix/cortex/replay.Result#MemoriesScanned kind=field
+  digest=b3:6ea82d72ebf8d605989e43d21916f5e1faae47a2a012d388104d8ab35e004102 file=cortex/replay/replay.go range=89:91 lang=go exported=true byte_range=3895:4013
+  sig=uint64
+  doc=MemoriesScanned is the count of m/<id> heads re-emitted into idx/\nand the memories SMT.
+EDGES
+  ^contains=matrix/cortex/replay.Result
+
+NODE id=matrix/cortex/replay.Result#PostOverallRoot kind=field
+  digest=b3:99a6a94d73b97728338330d9cd75e23f4f55a97a33768f26a7ff21389be2cb9c file=cortex/replay/replay.go range=108:110 lang=go exported=true byte_range=4566:4679
+  sig=[32]byte
+  doc=PostOverallRoot is the OverallRoot observed AFTER the rebuild.\nAlways populated.
+EDGES
+  ^contains=matrix/cortex/replay.Result
+
+NODE id=matrix/cortex/replay.Result#PreOverallRoot kind=field
+  digest=b3:7e33bc83ab93a8ac9573137d9eb36281174f9099a076759ded8150a328f0f9b9 file=cortex/replay/replay.go range=102:106 lang=go exported=true byte_range=4319:4563
+  sig=[32]byte
+  doc=PreOverallRoot is the OverallRoot observed BEFORE the drop. Set\nonly when Options.PreservesOverallRootCheck was true (or the\nCortex-level Rebuild method passed it). Used by VerifyPreservesRoot\ndownstream.
+EDGES
+  ^contains=matrix/cortex/replay.Result
+
+NODE id=matrix/cortex/replay.Result#SalienceBumpsApplied kind=field
+  digest=b3:8f14e34622da022494f7dfcf38b6072d5662c0fa35f6a9866b102b0b44e47436 file=cortex/replay/replay.go range=112:118 lang=go exported=true byte_range=4682:5110
+  sig=uint64
+  doc=SalienceBumpsApplied is the count of (j/<seq>, memoryID) pairs\nthe Phase 11.5 journal walk re-applied to salience.AccessCount/\nCitations. Equal to sum(len(payload.AccessedIDs) for KindFind) +\nsum(len(payload.CitedIDs) for KindAttest) over the journal,\nminus dedupe of tombstoned-at-replay-time memories. Reported for\nops visibility and so tests can assert the walk ran at all.
+EDGES
+  ^contains=matrix/cortex/replay.Result
+
+NODE id=matrix/cortex/replay.VerifyAgainstSnapshot kind=func
+  digest=b3:1b68552ae98f10c403e210cc03cfd64a4bc702fa8ead8de9dbb1e4b145a0e255 file=cortex/replay/replay.go range=241:262 lang=go exported=true byte_range=9278:10226
+  sig=func VerifyAgainstSnapshot(r *Result, m *snapshot.Manifest) error
+  doc=VerifyAgainstSnapshot returns nil iff r.PostOverallRoot equals the\nOverallRoot persisted in m. This implements the spec §13.4 verification\npath verbatim ("Verify(state_roots equal) against latest snap/<seq>").\n\nCaller responsibility: pass the LATEST snapshot for the actor (i.e. the\nsnapshot taken at the journal head before the drop). Snapshots taken at\nolder journal seqs will not match — that's not a bug, that's the\nsnapshot being stale relative to current state.
+EDGES
+  ^defines=matrix/cortex/replay/replay.go
+
+NODE id=matrix/cortex/replay.VerifyPreservesRoot kind=func
+  digest=b3:01ed7ff2403f0ad3d0ea7555d1c580774f714395cca86c0aed9c983046765de1 file=cortex/replay/replay.go range=224:239 lang=go exported=true byte_range=8658:9276
+  sig=func VerifyPreservesRoot(r *Result) error
+  doc=VerifyPreservesRoot returns nil iff r.PreOverallRoot == r.PostOverallRoot.\nWraps ErrRootMismatch with the two roots on mismatch so callers can\nsurface them in error messages.\n\nThis is the §13.4 invariant test in its strongest form: "indexes are pure\nprojection of canonical state", proved by drop+rebuild round-trip.
+EDGES
+  ^defines=matrix/cortex/replay/replay.go
+
+NODE id=matrix/cortex/replay.applyLearnWeights kind=func
+  digest=b3:cd5556fbbe450fa2821ca7e19fc1a53c736a1200f9cf92575f3b99d427a19122 file=cortex/replay/rebuild.go range=389:431 lang=go exported=false byte_range=13763:15529
+  sig=func applyLearnWeights(s *store.Store, pl *journal.LearnWeightsPayload, now time.Time) error
+  doc=applyLearnWeights persists pl.NewW* to meta/salience_weights, matching\nthe live cortex.Attest write. Trusts the journaled NewW* values: any\ntampering with the payload would change the journal-leaf hash and\ndiverge journal_root (and therefore OverallRoot), so the byte stream\nIS authoritative. Updates count is preserved as journaled; UpdatedAt\nis stamped to the replay clock so it stays consistent with the rest\nof the replay clock (LastUsed/Cached/ComputedAt convention).\n\nDrift in UpdatedAt across replay clocks is acceptable for the same\nreason salience.Cached drift is acceptable: meta/salience_weights is\nNOT in OverallRoot, only journal_root is.
+EDGES
+  ^defines=matrix/cortex/replay/rebuild.go
+
+NODE id=matrix/cortex/replay.applySalienceBumps kind=func
+  digest=b3:5205c5042c1e7d6646c027220b4f328da52dc0d087e73c9170c5bf36a5dc8d1d file=cortex/replay/rebuild.go range=313:387 lang=go exported=false byte_range=11400:13761
+  sig=func applySalienceBumps(s *store.Store, ids [][16]byte, kind salienceBumpKind, now time.Time) (uint64, error)
+  doc=applySalienceBumps reads, mutates, and writes salience/<id> for each\nid in ids. Tombstoned-at-replay-time memories (m/<id> present and\nHead.Tombstoned != nil) are skipped. Missing m/<id> (e.g. a Find that\noccurred before the memory was tombstone-deleted) is also skipped.\n\nWe use a fresh Pebble batch per call (one journal entry = one batch\nof N salience writes) and commit with Sync to match the durability\nposture of the live write path.
+EDGES
+  ^defines=matrix/cortex/replay/rebuild.go
+
+NODE id=matrix/cortex/replay.derivedPrefixes kind=var
+  digest=b3:914092061baaedf6a0b3c4e94e468399c60d022e21eb63d47cd3631e47c15eaf file=cortex/replay/drop.go range=54:77 lang=go exported=false byte_range=2275:3318
+  sig=[][]byte
+  doc=derivedPrefixes lists every key prefix that maps to spec's indexes/ side\nof the §1 architecture. Order is alphabetical for deterministic\niteration in tests; DropDerived doesn't depend on the order.\n\nCitation per prefix:\n\n	vec/         research/04-cortex.md:23 (indexes/vector/)\n	idx/type/    research/04-cortex.md:24 (indexes/predicate/)\n	idx/tag/     research/04-cortex.md:24 (indexes/predicate/)\n	idx/frame/   research/04-cortex.md:24 (indexes/predicate/)\n	idx/actor_obj/ research/04-cortex.md:24 (indexes/predicate/)\n	idx/smt/     sess#7 phase7_locked_design Q3 (anchored-namespace SMT nodes)\n	salience/    research/04-cortex.md:25 (indexes/salience/)\n	accum/       sess#7 phase7_locked_design Q2 (MMR persistence)
+EDGES
+  ^defines=matrix/cortex/replay/drop.go
+
+NODE id=matrix/cortex/replay.derivedSingleMetaKeys kind=var
+  digest=b3:f4629b106864e84ee788ffb2a258e5a87f26c5d41a9adffc05a069644e6c23b3 file=cortex/replay/drop.go range=41:52 lang=go exported=false byte_range=1741:2273
+  sig=[][]byte
+  doc=derivedSingleMetaKeys are meta/ keys that map to derived state (cleared\non drop, rewritten by rebuild from the kept canonical state + journal).\nKept separate from derivedPrefixes because meta/ as a whole is partly\ncanonical (meta/journal_head, meta/snapshot_seq) and partly derived.
+EDGES
+  ^defines=matrix/cortex/replay/drop.go
+
+NODE id=matrix/cortex/replay.hashTag kind=func
+  digest=b3:e9b74cc6758ff99af1cc40b1c40d9e230786506fc19a09bc78f3603bba097bc5 file=cortex/replay/rebuild.go range=556:563 lang=go exported=false byte_range=19399:19690
+  sig=func hashTag(tag string) [keys.TagHashSize]byte
+  doc=hashTag mirrors cortex.hashTag — computes the 8-byte sha256 prefix of\na tag string used as the idx/tag bucket key.
+EDGES
+  ^defines=matrix/cortex/replay/rebuild.go
+
+NODE id=matrix/cortex/replay.journalLeafHash kind=func
+  digest=b3:6a058358ad0fb55c65b04a59477157e0b881dca43e4fce3826ba4e47fa8c5f06 file=cortex/replay/rebuild.go range=565:570 lang=go exported=false byte_range=19692:19985
+  sig=func journalLeafHash(encoded []byte) [32]byte
+  doc=journalLeafHash returns the canonical leaf hash for the persisted CBOR\nbytes of a j/<seq> value. Thin alias around journal.LeafHash so this\nfile reads symmetrically with the other domain-keyed hashes.
+EDGES
+  ^defines=matrix/cortex/replay/rebuild.go
+
+NODE id=matrix/cortex/replay.metaEmbedCursor kind=var
+  digest=b3:97b83866cfd5c9d7569e10b63cd3b36e1b61ea3b26e4a7e01dc8e5d3d3470c11 file=cortex/replay/drop.go range=27:32 lang=go exported=false byte_range=945:1291
+  sig=[]byte
+  doc=metaEmbedCursor and metaEmbedVertexNext mirror the package-private\nconstants in cortex/embedder.go. Duplicated here so the replay package\nhas no import on cortex (which would create a cycle: cortex imports\nreplay via cortex.Rebuild).
+EDGES
+  ^defines=matrix/cortex/replay/drop.go
+
+NODE id=matrix/cortex/replay.metaEmbedModel kind=var
+  digest=b3:c6f6788cf4005a1a9266c62548217cb4b4cef07cebb4617ae2ccaf4d26e0e50b file=cortex/replay/drop.go range=34:38 lang=go exported=false byte_range=1393:1737
+  sig=[]byte
+  doc=metaEmbedModel — sess#19 Q3 lazy-migrate: records the Model() string\nof the last completed embedder pass. Derived state; cleared on drop so\nthe next StartEmbedder re-walks the journal from seq=0 under whichever\nmodel the caller passes in.
+EDGES
+  ^defines=matrix/cortex/replay/drop.go
+
+NODE id=matrix/cortex/replay.metaEmbedVertexNext kind=var
+  digest=b3:82ef235fe184dca0a3d1b908d4c9c20698f591e215ed2d14955513efc0febede file=cortex/replay/drop.go range=27:33 lang=go exported=false byte_range=945:1391
+  sig=[]byte
+  doc=metaEmbedCursor and metaEmbedVertexNext mirror the package-private\nconstants in cortex/embedder.go. Duplicated here so the replay package\nhas no import on cortex (which would create a cycle: cortex imports\nreplay via cortex.Rebuild).
+EDGES
+  ^defines=matrix/cortex/replay/drop.go
+
+NODE id=matrix/cortex/replay.readVersion kind=func
+  digest=b3:8dc911a7e97e0246e148b0594f97bf5497a50909ab2adbc9a94acc5a072c77d2 file=cortex/replay/rebuild.go range=529:544 lang=go exported=false byte_range=18572:19085
+  sig=func readVersion(s *store.Store, id memory.ID, version uint64) (*memory.Version, error)
+  doc=readVersion fetches mv/<id>/v/<version> as a fully-decoded memory.Version.
+EDGES
+  ^defines=matrix/cortex/replay/rebuild.go
+
+NODE id=matrix/cortex/replay.rebuildEdgesSMT kind=func
+  digest=b3:9af6cab9541fcc9d431b3853aa9e0bdb4462dcb564834ee9f68283d06b7dc436 file=cortex/replay/rebuild.go range=433:474 lang=go exported=false byte_range=15531:16859
+  sig=func rebuildEdgesSMT(s *store.Store, snap *snapshot.State) (uint64, error)
+  doc=rebuildEdgesSMT walks e/from/<src>/<t>/<dst> and stages an edges SMT\nupdate per record. Forward direction only — the reverse e/to/ records\nare byte-identical and would double-count (Phase 7 invariant).
+EDGES
+  ^defines=matrix/cortex/replay/rebuild.go
+
+NODE id=matrix/cortex/replay.rebuildJournalMMR kind=func
+  digest=b3:f1eb4617dc17c5c50127001d608b4a4ee050abdd6ef2340e75f829bb8ff8756c file=cortex/replay/rebuild.go range=476:527 lang=go exported=false byte_range=16861:18570
+  sig=func rebuildJournalMMR(s *store.Store, snap *snapshot.State) (uint64, error)
+  doc=rebuildJournalMMR walks j/<seq> in seq order and stages the MMR leaf\nfor each. Leaf hash is computed via journal.LeafHash over the persisted\nCBOR bytes — same function the live AppendJournal path uses, so the\nrebuilt MMR is byte-identical to the live one (assuming j/ is intact).\n\nEach MMR.StageAppend reads previously-committed MMR sibling positions,\nwhich means we MUST commit each leaf's batch before staging the next\n(see file header).
+EDGES
+  ^defines=matrix/cortex/replay/rebuild.go
+
+NODE id=matrix/cortex/replay.rebuildMemoriesIndexes kind=func
+  digest=b3:fe9358cdf5ef1ff4f1c5805ceb239135e3df0b45d37dd629a614a78894d20320 file=cortex/replay/rebuild.go range=42:95 lang=go exported=false byte_range=1338:3591
+  sig=func rebuildMemoriesIndexes(s *store.Store, snap *snapshot.State, nowFn func() time.Time) (uint64, error)
+  doc=rebuildMemoriesIndexes walks m/<id> heads and re-emits every derived key\nthe original cortex.Write path emits, plus the memories SMT update.\n\nidx/type and idx/tag carry a `created` time component. The original\nWrite code uses the wallclock time of the write. We can't recover that\nexactly without the journal payload carrying it (it doesn't), so we\nload mv/<id>/v/1 (immutable, always present, carries CreatedAt of the\noriginal Write) and use that. For memories never updated, this exactly\nmatches the original key bytes; for updated memories it matches the\nFIRST-WRITE time, which is the documented semantics of "created".\n\nidx/* keys are NOT inputs to OverallRoot, so any deterministic created\nvalue would satisfy the §13.4 invariant. Using v/1.CreatedAt is the\nmost faithful reconstruction.
+EDGES
+  ^defines=matrix/cortex/replay/rebuild.go
+
+NODE id=matrix/cortex/replay.rebuildOneMemory kind=func
+  digest=b3:cebf851ca33d1a76d55d30f8a69c2159befda2ef08ff37ce3bd504c1639ff0ee file=cortex/replay/rebuild.go range=97:197 lang=go exported=false byte_range=3593:6974
+  sig=func rebuildOneMemory(s *store.Store, snap *snapshot.State, id memory.ID, headBytes []byte, now time.Time) error
+  doc=rebuildOneMemory commits one Pebble batch for one m/<id> head: the\nidx/* projections, salience cold score, and the memories SMT update.\n\nAll writes go through a raw *pebble.Batch (bypassing store.BeginWrite)\nbecause rebuild does NOT journal — it re-derives state from existing\nj/ entries which were already journaled at original-write time.
+EDGES
+  ^defines=matrix/cortex/replay/rebuild.go
+
+NODE id=matrix/cortex/replay.rebuildSalienceFromJournal kind=func
+  digest=b3:388b67fd13438ac12b069bc41111326bbc75ec6f48e4a997252a6e9853a60a50 file=cortex/replay/rebuild.go range=199:302 lang=go exported=false byte_range=6976:11201
+  sig=func rebuildSalienceFromJournal(s *store.Store, now time.Time) (uint64, error)
+  doc=rebuildSalienceFromJournal walks j/<seq> in seq order and replays\nthe Phase 11.5 salience-mutation events (KindFind LateBinding,\nKindAttest). For each matching entry, decode the payload and apply\nthe same BumpForAccess / BumpForCitation / DecrementCitation that\nthe original write path applied — so post-rebuild salience.AccessCount\nand salience.Citations match pre-drop values exactly.\n\nLastUsed and Cached drift with the replay clock (research/04 §8.4\nrecency factor) — that's acceptable because salience.* is not in\nOverallRoot. The byte-exact reconstruction target is AccessCount +\nCitations, which are integer counters fed by the journal.\n\nWe commit one batch per journal entry. Salience writes do NOT stage\nany SMT update so the per-entry batch is just N salience writes; no\nsibling-read race like the SMT/MMR rebuild loops above.\n\nReturns the total number of (j/<seq>, memoryID) bump-pairs applied.\nTombstoned-at-replay-time memories are silently skipped (matches\nFind/Attest live-path filter); they don't count toward the returned\ntotal.
+EDGES
+  ^defines=matrix/cortex/replay/rebuild.go
+
+NODE id=matrix/cortex/replay.salienceBumpAccess kind=const
+  digest=b3:4d516f1e829526532ff0c97f3aa8f645b1adcf1eeb48d7280dc0386559aa7e6b file=cortex/replay/rebuild.go range=308:308 lang=go exported=false byte_range=11309:11351
+  sig=replay.salienceBumpKind
+EDGES
+  ^defines=matrix/cortex/replay/rebuild.go
+
+NODE id=matrix/cortex/replay.salienceBumpCitation kind=const
+  digest=b3:50f29c94f20d8cadc693a1f06c0a1e62c9b2a59cc2804c9fcd6fd77c5c977c8b file=cortex/replay/rebuild.go range=309:309 lang=go exported=false byte_range=11353:11373
+  sig=replay.salienceBumpKind
+EDGES
+  ^defines=matrix/cortex/replay/rebuild.go
+
+NODE id=matrix/cortex/replay.salienceBumpDecrement kind=const
+  digest=b3:ce536feb31193fefa231f6d31825739414578a2614e9907f6e0838f758fce0f7 file=cortex/replay/rebuild.go range=310:310 lang=go exported=false byte_range=11375:11396
+  sig=replay.salienceBumpKind
+EDGES
+  ^defines=matrix/cortex/replay/rebuild.go
+
+NODE id=matrix/cortex/replay.salienceBumpKind kind=type
+  digest=b3:8312762c9a33a6e00d0be6e836225f3199093470daf0be1f79f9d36848cf29a0 file=cortex/replay/rebuild.go range=304:305 lang=go exported=false byte_range=11203:11298
+  sig=type salienceBumpKind int
+  doc=salienceBumpKind enumerates the three Phase 11.5 mutation flavors.
+EDGES
+  ^defines=matrix/cortex/replay/rebuild.go
+
+NODE id=matrix/cortex/replay.toKeysULID kind=func
+  digest=b3:c33976aa9ead20ea30b7519af220b56ac82fd29901e1630210ee576144214b0c file=cortex/replay/rebuild.go range=546:554 lang=go exported=false byte_range=19087:19397
+  sig=func toKeysULID(id memory.ID) keys.ULID
+  doc=toKeysULID mirrors the cortex package-private helper. memory.ID and\nkeys.ULID are both [16]byte but the Go type system requires an\nexplicit conversion. Duplicated here so this package has no import on\ncortex.
+EDGES
+  ^defines=matrix/cortex/replay/rebuild.go
+
+NODE id=matrix/cortex/replay/drop.go kind=file
+  digest=b3:46ef9351c1d433209af2266d3eede01c2f2e20859b9e6eedfc1f4e31fe910076 file=cortex/replay/drop.go range=1:156 lang=go exported=true
+EDGES
+  defines=matrix/cortex/replay.CountDerived,matrix/cortex/replay.DropDerived,matrix/cortex/replay.derivedPrefixes,matrix/cortex/replay.derivedSingleMetaKeys,matrix/cortex/replay.metaEmbedCursor,matrix/cortex/replay.metaEmbedModel,matrix/cortex/replay.metaEmbedVertexNext
+  ^contains=matrix/cortex/replay
+
+NODE id=matrix/cortex/replay/rebuild.go kind=file
+  digest=b3:9bc7c49c6703a4468203406c6afb13ca252f15e3b8fae8ef7c13a90861f9a67e file=cortex/replay/rebuild.go range=1:572 lang=go exported=true
+EDGES
+  defines=matrix/cortex/replay.applyLearnWeights,matrix/cortex/replay.applySalienceBumps,matrix/cortex/replay.hashTag,matrix/cortex/replay.journalLeafHash,matrix/cortex/replay.readVersion,matrix/cortex/replay.rebuildEdgesSMT,matrix/cortex/replay.rebuildJournalMMR,matrix/cortex/replay.rebuildMemoriesIndexes,matrix/cortex/replay.rebuildOneMemory,matrix/cortex/replay.rebuildSalienceFromJournal,matrix/cortex/replay.salienceBumpAccess,matrix/cortex/replay.salienceBumpCitation,matrix/cortex/replay.salienceBumpDecrement,matrix/cortex/replay.salienceBumpKind,matrix/cortex/replay.toKeysULID
+  ^contains=matrix/cortex/replay
+
+NODE id=matrix/cortex/replay/replay.go kind=file
+  digest=b3:7c4fc4f2d73f4378c84bc2d8bbc25d4135a32276167c3546c56564a68303eed2 file=cortex/replay/replay.go range=1:264 lang=go exported=true
+EDGES
+  defines=matrix/cortex/replay.ErrNilSnapshot,matrix/cortex/replay.ErrNilStore,matrix/cortex/replay.ErrNoSnapshot,matrix/cortex/replay.ErrRootMismatch,matrix/cortex/replay.ErrSnapshotNoMatch,matrix/cortex/replay.Options,matrix/cortex/replay.Rebuild,matrix/cortex/replay.Result,matrix/cortex/replay.VerifyAgainstSnapshot,matrix/cortex/replay.VerifyPreservesRoot
+  ^contains=matrix/cortex/replay

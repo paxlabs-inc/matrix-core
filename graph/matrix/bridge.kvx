@@ -1,10 +1,12 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:9b68327501b45793fd7687f43b30c960fd68ae8aaff6b2f1bb36ec3e2df2de2f
+# GENERATED gen=codegraph do-not-edit merkle=b3:20e53aba2ea11552396417e53b3e04e87dd1bbb7bef3aa554a45bb92cf89e7f2
 
 NODE id=matrix/bridge kind=package
   digest=b3:cd0f1dcbbca9e5c3234b340684b5f254546379eae34e18a9f87c7546cde56ed7 file=bridge range=0:0 lang=go exported=true
 EDGES
   contains=matrix/bridge/args.go,matrix/bridge/bridge.go,matrix/bridge/bundle.go
+  imports=matrix/cortex,matrix/cortex/memory,matrix/cortex/query,matrix/cortex/vector,matrix/mcl/mtx/interpreter
   ^contains=mod:matrix/bridge
+  ^imports=matrix/bridge/cmd/mclc-cortex,matrix/executor/cmd/mcl-e2e,matrix/executor/cmd/mcl-execute
 
 NODE id=matrix/bridge.Adapter kind=type
   digest=b3:f564a32811e0b2c893d779a10546399378b1683f992f6c513ba62a0804aec1e7 file=bridge/bridge.go range=47:58 lang=go exported=true byte_range=1865:2258
@@ -12,6 +14,8 @@ NODE id=matrix/bridge.Adapter kind=type
   doc=Adapter implements interpreter.Cortex against a live *cortex.Cortex.\n\nConstruct via New and pass to interpreter.New as the third argument.\nThe same Adapter is safe to share across goroutines as long as the\nunderlying Cortex is; cortex's own concurrency guarantees apply.
 EDGES
   contains=matrix/bridge.Adapter#c,matrix/bridge.Adapter#defaultForm,matrix/bridge.Adapter#defaultLimit,matrix/bridge.Adapter#lateBinding,matrix/bridge.Adapter.Context,matrix/bridge.Adapter.Find,matrix/bridge.Adapter.Resolve,matrix/bridge.Adapter.buildContextOpts,matrix/bridge.Adapter.buildQuery
+  references=matrix/cortex.Cortex,matrix/cortex/query.FormKind
+  ^references=matrix/bridge.Adapter.Context,matrix/bridge.Adapter.Find,matrix/bridge.Adapter.Resolve,matrix/bridge.Adapter.buildContextOpts,matrix/bridge.Adapter.buildQuery,matrix/bridge.New,matrix/bridge.Option,matrix/bridge.WithDefaultForm,matrix/bridge.WithDefaultLimit,matrix/bridge.WithLateBinding
   ^defines=matrix/bridge/bridge.go
 
 NODE id=matrix/bridge.Adapter#c kind=field
@@ -43,6 +47,8 @@ NODE id=matrix/bridge.Adapter.Context kind=method
   sig=func (a *Adapter) Context(ctx context.Context, args map[string]string) (string, error)
   doc=Context drives cortex.Context with parsed args and formats the\nreturned Bundle into a single human/LLM-readable string suitable for\n`{cortex.bundle}` prompt interpolation (spec §8).\n\nSupported arg keys:\n\n	verb=<verb>              closed D7 verb (defaults to none)\n	objects=<k:r,k:r,...>    obj_kind:ref pairs; comma OR semicolon\n	                         separated; ref may contain anything except\n	                         the chosen separator\n	budget_tokens=<int>      total token cap (defaults to cortex default)\n	outcome_limit=<int>      Outcomes tier cap (defaults to 3)\n	form=<short|medium|full> rendered form (defaults to medium)
 EDGES
+  calls=matrix/bridge.Adapter.buildContextOpts,matrix/bridge.FormatBundle,matrix/cortex.Cortex.Context
+  references=matrix/bridge.Adapter,matrix/bridge.Adapter.buildContextOpts,matrix/bridge.FormatBundle,matrix/bridge.a,matrix/bridge.args,matrix/bridge.bundle,matrix/bridge.ctx,matrix/bridge.err,matrix/bridge.opts,matrix/cortex.Cortex.Context
   ^contains=matrix/bridge.Adapter
   ^defines=matrix/bridge/bridge.go
 
@@ -51,6 +57,8 @@ NODE id=matrix/bridge.Adapter.Find kind=method
   sig=func (a *Adapter) Find(ctx context.Context, args map[string]string) ([]interpreter.CortexResult, error)
   doc=Find translates the MCL arg dict into a query.Query and runs it\nagainst the bound cortex.\n\nSupported arg keys (all optional; see args.go for parser):\n\n	type=<TypeName>          e.g. Fact, Goal, Identity, ...\n	tag=<tag>                single tag; repeats not yet supported\n	near=<text>              NL phrase → vector recall (embedder req.)\n	limit=<int>              candidate cap (defaults to 10)\n	form=<short|medium|full> render granularity for Summary\n	late=true|false          override the Adapter's default LateBinding\n\nAny unrecognized arg returns an error so SKILL.mtx authors notice\ntypos at compile time rather than silently dropping a filter.
 EDGES
+  calls=matrix/bridge.Adapter.buildQuery,matrix/bridge.selectSummary,matrix/cortex.BuildURI,matrix/cortex.Cortex.Find,matrix/cortex/memory.Type.String
+  references=matrix/bridge.Adapter,matrix/bridge.Adapter.buildQuery,matrix/bridge.a,matrix/bridge.args,matrix/bridge.ctx,matrix/bridge.err,matrix/bridge.i,matrix/bridge.m,matrix/bridge.out,matrix/bridge.q,matrix/bridge.res,matrix/bridge.selectSummary,matrix/bridge.summary,matrix/bridge.uri,matrix/cortex.BuildURI,matrix/cortex.Cortex.Find,matrix/cortex/memory.Type.String,matrix/cortex/vector.ErrEmptyIndex,matrix/mcl/mtx/interpreter.CortexResult
   ^contains=matrix/bridge.Adapter
   ^defines=matrix/bridge/bridge.go
 
@@ -59,6 +67,8 @@ NODE id=matrix/bridge.Adapter.Resolve kind=method
   sig=func (a *Adapter) Resolve(ctx context.Context, expr string) (*interpreter.CortexResult, error)
   doc=Resolve maps to cortex.Resolve when expr is a matrix:// URI; falls\nback to a near-search top-1 when expr is natural-language text\n(typical pattern: `cortex.resolve(slot.target.prose)`).\n\nReturns ErrNotResolvable when no candidate was produced. Callers\nexpect a nil return + nil error means "treat as unresolved but do\nnot fail the on-block"; we follow that convention by returning\n(nil, nil) when the URI path returns memory.ErrNotFound.
 EDGES
+  calls=matrix/bridge.memoryToResult,matrix/cortex.Cortex.Find,matrix/cortex.Cortex.Resolve
+  references=matrix/bridge.Adapter,matrix/bridge.ErrEmptyExpr,matrix/bridge.ErrNotResolvable,matrix/bridge.a,matrix/bridge.ctx,matrix/bridge.err,matrix/bridge.expr,matrix/bridge.m,matrix/bridge.memoryToResult,matrix/bridge.q,matrix/bridge.r,matrix/bridge.res,matrix/cortex.Cortex.Find,matrix/cortex.Cortex.Resolve,matrix/cortex/memory.ErrNotFound,matrix/cortex/memory.URI,matrix/cortex/query.Query,matrix/cortex/vector.ErrEmptyIndex,matrix/mcl/mtx/interpreter.CortexResult
   ^contains=matrix/bridge.Adapter
   ^defines=matrix/bridge/bridge.go
 
@@ -67,7 +77,11 @@ NODE id=matrix/bridge.Adapter.buildContextOpts kind=method
   sig=func (a *Adapter) buildContextOpts(args map[string]string) (cortex.ContextOpts, error)
   doc=buildContextOpts translates an MCL arg dict into a cortex.ContextOpts.
 EDGES
+  calls=matrix/bridge.parseForm,matrix/bridge.parseObjects,matrix/cortex/memory.ParseVerb
+  references=matrix/bridge.Adapter,matrix/bridge.args,matrix/bridge.err,matrix/bridge.f,matrix/bridge.k,matrix/bridge.m,matrix/bridge.n,matrix/bridge.ok,matrix/bridge.opts,matrix/bridge.parseForm,matrix/bridge.parseObjects,matrix/bridge.v,matrix/bridge.vb,matrix/cortex.ContextOpts,matrix/cortex/memory.ParseVerb
   ^contains=matrix/bridge.Adapter
+  ^calls=matrix/bridge.Adapter.Context
+  ^references=matrix/bridge.Adapter.Context
   ^defines=matrix/bridge/args.go
 
 NODE id=matrix/bridge.Adapter.buildQuery kind=method
@@ -75,7 +89,11 @@ NODE id=matrix/bridge.Adapter.buildQuery kind=method
   sig=func (a *Adapter) buildQuery(args map[string]string) (query.Query, error)
   doc=buildQuery translates an MCL arg dict into a query.Query.\n\nUnknown keys are an error so SKILL.mtx typos are caught at compile\ntime rather than silently dropped (research/04 §12 "no silent\ndegradation" discipline).
 EDGES
+  calls=matrix/bridge.parseForm,matrix/bridge.parseTypeName
+  references=matrix/bridge.Adapter,matrix/bridge.ErrUnknownType,matrix/bridge.a,matrix/bridge.args,matrix/bridge.b,matrix/bridge.conjuncts,matrix/bridge.err,matrix/bridge.f,matrix/bridge.k,matrix/bridge.n,matrix/bridge.ok,matrix/bridge.parseForm,matrix/bridge.parseTypeName,matrix/bridge.q,matrix/bridge.t,matrix/bridge.v,matrix/cortex/query.And,matrix/cortex/query.HasTag,matrix/cortex/query.Predicate,matrix/cortex/query.Query
   ^contains=matrix/bridge.Adapter
+  ^calls=matrix/bridge.Adapter.Find
+  ^references=matrix/bridge.Adapter.Find
   ^defines=matrix/bridge/args.go
 
 NODE id=matrix/bridge.ErrEmptyExpr kind=var
@@ -83,6 +101,7 @@ NODE id=matrix/bridge.ErrEmptyExpr kind=var
   sig=error
   doc=ErrEmptyExpr is returned by Resolve when expr is empty after\ntrimming whitespace.
 EDGES
+  ^references=matrix/bridge.Adapter.Resolve
   ^defines=matrix/bridge/bridge.go
 
 NODE id=matrix/bridge.ErrNotResolvable kind=var
@@ -90,6 +109,7 @@ NODE id=matrix/bridge.ErrNotResolvable kind=var
   sig=error
   doc=ErrNotResolvable is returned by Resolve when the expression is\nneither a matrix:// URI nor produced any candidate via near\nsearch. Callers should treat this as "no match" and surface a\nblocking unknown.
 EDGES
+  ^references=matrix/bridge.Adapter.Resolve
   ^defines=matrix/bridge/bridge.go
 
 NODE id=matrix/bridge.ErrUnknownType kind=var
@@ -97,6 +117,7 @@ NODE id=matrix/bridge.ErrUnknownType kind=var
   sig=error
   doc=ErrUnknownType is returned by Find when args["type"] is not a\nvalid memory.Type name.
 EDGES
+  ^references=matrix/bridge.Adapter.buildQuery
   ^defines=matrix/bridge/bridge.go
 
 NODE id=matrix/bridge.FormatBundle kind=func
@@ -104,6 +125,10 @@ NODE id=matrix/bridge.FormatBundle kind=func
   sig=func FormatBundle(b *cortex.Bundle) string
   doc=FormatBundle renders a *cortex.Bundle into the canonical text shape\nthat fills `{cortex.bundle}` in MCL prompt interpolation.\n\nThe format is stable, deterministic, and easy for an LLM to parse:\n\n	## Pinned\n	- matrix://cortex/Identity/<ulid>#<v> — <summary>\n	- ...\n\n	## Frame-relevant\n	- ...\n\n	## Outcomes\n	- ...\n\n	## Reachable (lazy)\n	- matrix://cortex/...#<v>\n\n	---\n	form=medium  total_tokens=N  trimmed=N  latency_ms=N\n\nEmpty tiers are omitted. The Reachable section only renders when\nbundle.ReachableURIs is non-empty. Sections are emitted in fixed\norder regardless of caller-requested IncludeTiers so the output\nshape is predictable.\n\nPure function: same Bundle bytes → same string bytes.
 EDGES
+  calls=matrix/bridge.formOrDefault,matrix/bridge.writeTier
+  references=matrix/bridge.b,matrix/bridge.formOrDefault,matrix/bridge.sb,matrix/bridge.u,matrix/bridge.writeTier,matrix/cortex.Bundle
+  ^calls=matrix/bridge.Adapter.Context
+  ^references=matrix/bridge.Adapter.Context
   ^defines=matrix/bridge/bundle.go
 
 NODE id=matrix/bridge.New kind=func
@@ -111,6 +136,9 @@ NODE id=matrix/bridge.New kind=func
   sig=func New(c *cortex.Cortex, opts ...Option) *Adapter
   doc=New constructs an Adapter wrapping c.
 EDGES
+  references=matrix/bridge.Adapter,matrix/bridge.Option,matrix/bridge.a,matrix/bridge.c,matrix/bridge.opt,matrix/bridge.opts,matrix/cortex.Cortex,matrix/cortex/query.FormMedium
+  ^calls=matrix/bridge/cmd/mclc-cortex.run,matrix/executor/cmd/mcl-e2e.RunCompile,matrix/executor/cmd/mcl-execute.compile
+  ^references=matrix/bridge/cmd/mclc-cortex.run,matrix/executor/cmd/mcl-e2e.RunCompile,matrix/executor/cmd/mcl-execute.compile
   ^defines=matrix/bridge/bridge.go
 
 NODE id=matrix/bridge.Option kind=type
@@ -118,6 +146,8 @@ NODE id=matrix/bridge.Option kind=type
   sig=type Option func(*Adapter)
   doc=Option configures an Adapter at construction.
 EDGES
+  references=matrix/bridge.Adapter
+  ^references=matrix/bridge.New,matrix/bridge.WithDefaultForm,matrix/bridge.WithDefaultLimit,matrix/bridge.WithLateBinding
   ^defines=matrix/bridge/bridge.go
 
 NODE id=matrix/bridge.WithDefaultForm kind=func
@@ -125,6 +155,7 @@ NODE id=matrix/bridge.WithDefaultForm kind=func
   sig=func WithDefaultForm(f query.FormKind) Option
   doc=WithDefaultForm sets the default Find FormKind when a SKILL.mtx call\nomits `form=`. The package default is FormMedium so CortexResult.Summary\ngets a non-empty rendering by default.
 EDGES
+  references=matrix/bridge.Adapter,matrix/bridge.Option,matrix/bridge.a,matrix/bridge.f,matrix/cortex/query.FormKind
   ^defines=matrix/bridge/bridge.go
 
 NODE id=matrix/bridge.WithDefaultLimit kind=func
@@ -132,6 +163,9 @@ NODE id=matrix/bridge.WithDefaultLimit kind=func
   sig=func WithDefaultLimit(n int) Option
   doc=WithDefaultLimit sets the default Find limit when a SKILL.mtx call\nomits `limit=`. Zero or negative values are ignored. The package\ndefault is 10.
 EDGES
+  references=matrix/bridge.Adapter,matrix/bridge.Option,matrix/bridge.a,matrix/bridge.n
+  ^calls=matrix/executor/cmd/mcl-execute.compile
+  ^references=matrix/executor/cmd/mcl-execute.compile
   ^defines=matrix/bridge/bridge.go
 
 NODE id=matrix/bridge.WithLateBinding kind=func
@@ -139,12 +173,16 @@ NODE id=matrix/bridge.WithLateBinding kind=func
   sig=func WithLateBinding(on bool) Option
   doc=WithLateBinding controls Query.LateBinding for every Find call. The\nMCL interpreter runs at compile time (D13) so the default is false:\ncompile-time Find never journals. Callers that wire this Adapter into\nan executor-side path may set true to honor the cortex audit\ninvariants for runtime binding.
 EDGES
+  references=matrix/bridge.Adapter,matrix/bridge.Option,matrix/bridge.a,matrix/bridge.on
   ^defines=matrix/bridge/bridge.go
 
 NODE id=matrix/bridge.formOrDefault kind=func
   digest=b3:c82718f92de154b0785b8f0e41e20ad6d4be83c90cb78dd2b896f4c79b656bc3 file=bridge/bundle.go range=107:113 lang=go exported=false byte_range=2682:2790
   sig=func formOrDefault(f any) string
 EDGES
+  references=matrix/bridge.f,matrix/bridge.s
+  ^calls=matrix/bridge.FormatBundle
+  ^references=matrix/bridge.FormatBundle
   ^defines=matrix/bridge/bundle.go
 
 NODE id=matrix/bridge.memoryToResult kind=func
@@ -152,6 +190,10 @@ NODE id=matrix/bridge.memoryToResult kind=func
   sig=func memoryToResult(m *memory.Memory) *interpreter.CortexResult
   doc=memoryToResult converts a *memory.Memory into a CortexResult.\nSummary falls through to Forms.Medium then Forms.Short.
 EDGES
+  calls=matrix/cortex.BuildURI,matrix/cortex/memory.Type.String
+  references=matrix/bridge.m,matrix/bridge.summary,matrix/bridge.uri,matrix/cortex.BuildURI,matrix/cortex/memory.Memory,matrix/cortex/memory.Type.String,matrix/mcl/mtx/interpreter.CortexResult
+  ^calls=matrix/bridge.Adapter.Resolve
+  ^references=matrix/bridge.Adapter.Resolve
   ^defines=matrix/bridge/bridge.go
 
 NODE id=matrix/bridge.parseForm kind=func
@@ -159,6 +201,9 @@ NODE id=matrix/bridge.parseForm kind=func
   sig=func parseForm(s string) (query.FormKind, bool)
   doc=parseForm maps a SKILL.mtx form= value to a query.FormKind.
 EDGES
+  references=matrix/bridge.s,matrix/cortex/query.FormFull,matrix/cortex/query.FormKind,matrix/cortex/query.FormMedium,matrix/cortex/query.FormShort
+  ^calls=matrix/bridge.Adapter.buildContextOpts,matrix/bridge.Adapter.buildQuery
+  ^references=matrix/bridge.Adapter.buildContextOpts,matrix/bridge.Adapter.buildQuery
   ^defines=matrix/bridge/args.go
 
 NODE id=matrix/bridge.parseObjects kind=func
@@ -166,6 +211,10 @@ NODE id=matrix/bridge.parseObjects kind=func
   sig=func parseObjects(s string) (map[string]string, error)
   doc=parseObjects parses a Context objects= argument into the ContextOpts\nObjects map. Accepted shapes:\n\n	"service:foo,agent:bar"\n	"service:foo;agent:bar"\n	"service:foo"             (single)\n\nkind must be a closed v1 ObjKind name (see memory.ParseObjKind);\nunknown kinds return an error so SKILL.mtx typos surface at compile.\n\nWhitespace around delimiters is tolerated; whitespace inside `ref`\nis preserved verbatim.
 EDGES
+  calls=matrix/cortex/memory.ParseObjKind
+  references=matrix/bridge.idx,matrix/bridge.kind,matrix/bridge.ok,matrix/bridge.out,matrix/bridge.p,matrix/bridge.pairs,matrix/bridge.ref,matrix/bridge.s,matrix/bridge.sep,matrix/cortex/memory.ParseObjKind
+  ^calls=matrix/bridge.Adapter.buildContextOpts
+  ^references=matrix/bridge.Adapter.buildContextOpts
   ^defines=matrix/bridge/args.go
 
 NODE id=matrix/bridge.parseTypeName kind=func
@@ -173,6 +222,9 @@ NODE id=matrix/bridge.parseTypeName kind=func
   sig=func parseTypeName(name string) (memory.Type, bool)
   doc=parseTypeName maps the canonical Type string to memory.Type. Returns\n(TypeZero, false) on no match. Mirrors the cortex-shell CLI helper but\nlives in the bridge so MCL surfaces are not coupled to the CLI package.
 EDGES
+  references=matrix/bridge.name,matrix/cortex/memory.Type,matrix/cortex/memory.TypeBelief,matrix/cortex/memory.TypeCapability,matrix/cortex/memory.TypeConstraint,matrix/cortex/memory.TypeEvent,matrix/cortex/memory.TypeFact,matrix/cortex/memory.TypeGoal,matrix/cortex/memory.TypeIdentity,matrix/cortex/memory.TypePattern,matrix/cortex/memory.TypePreference
+  ^calls=matrix/bridge.Adapter.buildQuery
+  ^references=matrix/bridge.Adapter.buildQuery
   ^defines=matrix/bridge/args.go
 
 NODE id=matrix/bridge.selectSummary kind=func
@@ -180,12 +232,19 @@ NODE id=matrix/bridge.selectSummary kind=func
   sig=func selectSummary(m *memory.Memory, res *query.Result, i int, form query.FormKind) string
   doc=selectSummary picks the best summary string for a Find result. When\nthe query was rendered (Form set), prefer res.Rendered[i]; otherwise\nfall back to the persisted Forms.Medium/Short.
 EDGES
+  references=matrix/bridge.form,matrix/bridge.i,matrix/bridge.m,matrix/bridge.res,matrix/cortex/memory.Memory,matrix/cortex/query.FormKind,matrix/cortex/query.FormShort,matrix/cortex/query.Result
+  ^calls=matrix/bridge.Adapter.Find
+  ^references=matrix/bridge.Adapter.Find
   ^defines=matrix/bridge/bridge.go
 
 NODE id=matrix/bridge.writeTier kind=func
   digest=b3:67f2fa6059d7731e964750c92f6a0a01b5a17254c5cda8215172271001f28213 file=bridge/bundle.go range=77:105 lang=go exported=false byte_range=1933:2680
   sig=func writeTier(sb *strings.Builder, label string, mems []*memory.Memory, rendered map[memory.ID]string)
 EDGES
+  calls=matrix/cortex.BuildURI
+  references=matrix/bridge.label,matrix/bridge.m,matrix/bridge.mems,matrix/bridge.rendered,matrix/bridge.sb,matrix/bridge.summary,matrix/bridge.uri,matrix/cortex.BuildURI,matrix/cortex/memory.ID,matrix/cortex/memory.Memory
+  ^calls=matrix/bridge.FormatBundle
+  ^references=matrix/bridge.FormatBundle
   ^defines=matrix/bridge/bundle.go
 
 NODE id=matrix/bridge/args.go kind=file

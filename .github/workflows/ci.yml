@@ -306,12 +306,11 @@ jobs:
 
       - name: codegraph staleness gate
         working-directory: codegraph
-        run: |
-          if [ -f ../graph/merkle.kvx ]; then
-            go run ./cmd/codegraph check -root .. -out ../graph
-          else
-            echo "no committed graph store (../graph/merkle.kvx); skipping staleness gate"
-          fi
+        run: go run ./cmd/codegraph check -root .. -out ../graph
+
+      - name: self-model graph staleness gate
+        working-directory: codegraph
+        run: go run ./cmd/codegraph check -root .. -self-model -out ../graph/self-model
 
   # -------------------------------------------------------------------------
   # Safety-critical faculties — the Neo completion gate and the Cassandra

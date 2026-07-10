@@ -1,28 +1,38 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:9b68327501b45793fd7687f43b30c960fd68ae8aaff6b2f1bb36ec3e2df2de2f
+# GENERATED gen=codegraph do-not-edit merkle=b3:20e53aba2ea11552396417e53b3e04e87dd1bbb7bef3aa554a45bb92cf89e7f2
 
 NODE id=matrix/gateway/cmd/matrix-gateway kind=package
-  digest=b3:74f165b8e5b2b84d28d3c690e2f655447791ecac0b53447f344bd363604278e8 file=gateway/cmd/matrix-gateway range=0:0 lang=go exported=true
+  digest=b3:c12a47364b6d92fd01e805d6cdf85d57793a41b46c322b85fecf78b7f3da7166 file=gateway/cmd/matrix-gateway range=0:0 lang=go exported=true
 EDGES
   contains=matrix/gateway/cmd/matrix-gateway/driver.go,matrix/gateway/cmd/matrix-gateway/main.go
+  imports=matrix/gateway/internal/auth,matrix/gateway/internal/ledger,matrix/gateway/internal/proxy,matrix/gateway/internal/ratelimit,matrix/gateway/internal/routing
   ^contains=mod:matrix/gateway
 
 NODE id=matrix/gateway/cmd/matrix-gateway.main kind=func
-  digest=b3:349082b203b753e2e2f891e4c67a42185c7ac6fa7521c040772a4efb172bb6c4 file=gateway/cmd/matrix-gateway/main.go range=86:91 lang=go exported=false byte_range=3126:3253
+  digest=b3:349082b203b753e2e2f891e4c67a42185c7ac6fa7521c040772a4efb172bb6c4 file=gateway/cmd/matrix-gateway/main.go range=87:92 lang=go exported=false byte_range=3231:3358
   sig=func main()
 EDGES
+  calls=matrix/gateway/cmd/matrix-gateway.run
+  references=matrix/gateway/cmd/matrix-gateway.err,matrix/gateway/cmd/matrix-gateway.run
   ^defines=matrix/gateway/cmd/matrix-gateway/main.go
 
 NODE id=matrix/gateway/cmd/matrix-gateway.newLogger kind=func
-  digest=b3:4638fbeaea2b569e38f6100da74168d5d7c549cf2e1c763dbb822325150175fa file=gateway/cmd/matrix-gateway/main.go range=240:274 lang=go exported=false byte_range=8455:9529
+  digest=b3:4638fbeaea2b569e38f6100da74168d5d7c549cf2e1c763dbb822325150175fa file=gateway/cmd/matrix-gateway/main.go range=248:282 lang=go exported=false byte_range=8928:10002
   sig=func newLogger(format string) func(string, map[string]any)
   doc=newLogger returns a logging function. text emits one event per line\nin `key=value` shape; json emits a single-line JSON object per event.\nLogging is deliberately minimal — operators rely on Prometheus +\nthe box's nginx access log for the bulk of observability; this\ndaemon-side logger is for state transitions only.
 EDGES
+  references=matrix/gateway/cmd/matrix-gateway.b,matrix/gateway/cmd/matrix-gateway.enc,matrix/gateway/cmd/matrix-gateway.err,matrix/gateway/cmd/matrix-gateway.event,matrix/gateway/cmd/matrix-gateway.fields,matrix/gateway/cmd/matrix-gateway.format,matrix/gateway/cmd/matrix-gateway.k,matrix/gateway/cmd/matrix-gateway.l,matrix/gateway/cmd/matrix-gateway.row,matrix/gateway/cmd/matrix-gateway.v
+  ^calls=matrix/gateway/cmd/matrix-gateway.run
+  ^references=matrix/gateway/cmd/matrix-gateway.run
   ^defines=matrix/gateway/cmd/matrix-gateway/main.go
 
 NODE id=matrix/gateway/cmd/matrix-gateway.run kind=func
-  digest=b3:3b0f7172e0a8a1821fb40f19f66cef4ebcabeb7db132a769fc04154989911340 file=gateway/cmd/matrix-gateway/main.go range=93:238 lang=go exported=false byte_range=3255:8453
+  digest=b3:c91e1b50d6e85e670eb5fabd6ea3c5def6ad925c8e36a3c95e9bd88df67e8e5c file=gateway/cmd/matrix-gateway/main.go range=94:246 lang=go exported=false byte_range=3360:8926
   sig=func run(args []string) error
 EDGES
+  calls=matrix/gateway/cmd/matrix-gateway.newLogger,matrix/gateway/internal/auth.New,matrix/gateway/internal/ledger.Memory.Close,matrix/gateway/internal/ledger.NewMemory,matrix/gateway/internal/ledger.NewPostgres,matrix/gateway/internal/ledger.Postgres.Close,matrix/gateway/internal/proxy.New,matrix/gateway/internal/proxy.Server.Mux,matrix/gateway/internal/ratelimit.New,matrix/gateway/internal/routing.New
+  references=matrix/gateway/cmd/matrix-gateway.addr,matrix/gateway/cmd/matrix-gateway.args,matrix/gateway/cmd/matrix-gateway.authn,matrix/gateway/cmd/matrix-gateway.b,matrix/gateway/cmd/matrix-gateway.cancel,matrix/gateway/cmd/matrix-gateway.ctx,matrix/gateway/cmd/matrix-gateway.db,matrix/gateway/cmd/matrix-gateway.defaultCap,matrix/gateway/cmd/matrix-gateway.disabled,matrix/gateway/cmd/matrix-gateway.err,matrix/gateway/cmd/matrix-gateway.freeTierOnly,matrix/gateway/cmd/matrix-gateway.fs,matrix/gateway/cmd/matrix-gateway.httpSrv,matrix/gateway/cmd/matrix-gateway.lg,matrix/gateway/cmd/matrix-gateway.listenErr,matrix/gateway/cmd/matrix-gateway.logFormat,matrix/gateway/cmd/matrix-gateway.logf,matrix/gateway/cmd/matrix-gateway.newLogger,matrix/gateway/cmd/matrix-gateway.postgresDriver,matrix/gateway/cmd/matrix-gateway.postgresURI,matrix/gateway/cmd/matrix-gateway.preEstimate,matrix/gateway/cmd/matrix-gateway.rateBurst,matrix/gateway/cmd/matrix-gateway.ratePerSec,matrix/gateway/cmd/matrix-gateway.readHeader,matrix/gateway/cmd/matrix-gateway.rl,matrix/gateway/cmd/matrix-gateway.router,matrix/gateway/cmd/matrix-gateway.shutdownTimeout,matrix/gateway/cmd/matrix-gateway.sig,matrix/gateway/cmd/matrix-gateway.sigCh,matrix/gateway/cmd/matrix-gateway.srv,matrix/gateway/cmd/matrix-gateway.v,matrix/gateway/internal/auth.New,matrix/gateway/internal/auth.Options,matrix/gateway/internal/ledger.DefaultDailyPaxCap,matrix/gateway/internal/ledger.Ledger,matrix/gateway/internal/ledger.Ledger.Close,matrix/gateway/internal/ledger.NewMemory,matrix/gateway/internal/ledger.NewPostgres,matrix/gateway/internal/proxy.New,matrix/gateway/internal/proxy.Options,matrix/gateway/internal/proxy.ProviderKeys,matrix/gateway/internal/proxy.Server.Mux,matrix/gateway/internal/ratelimit.New,matrix/gateway/internal/routing.New,matrix/gateway/internal/routing.Options
+  ^calls=matrix/gateway/cmd/matrix-gateway.main
+  ^references=matrix/gateway/cmd/matrix-gateway.main
   ^defines=matrix/gateway/cmd/matrix-gateway/main.go
 
 NODE id=matrix/gateway/cmd/matrix-gateway/driver.go kind=file
@@ -31,7 +41,7 @@ EDGES
   ^contains=matrix/gateway/cmd/matrix-gateway
 
 NODE id=matrix/gateway/cmd/matrix-gateway/main.go kind=file
-  digest=b3:8cdf68db6c85ee800612522f00ba04a0be25d622ceb3bf394c63c09dd4b3d6fd file=gateway/cmd/matrix-gateway/main.go range=1:276 lang=go exported=true
+  digest=b3:0953d5059fbb8643a0e28c3ba08f323212a990704fb4e9c9b6ce8178c6819019 file=gateway/cmd/matrix-gateway/main.go range=1:284 lang=go exported=true
 EDGES
   defines=matrix/gateway/cmd/matrix-gateway.main,matrix/gateway/cmd/matrix-gateway.newLogger,matrix/gateway/cmd/matrix-gateway.run
   ^contains=matrix/gateway/cmd/matrix-gateway

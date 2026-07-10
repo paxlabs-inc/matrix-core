@@ -433,7 +433,7 @@ func TestProxyXaiUpstreamHop(t *testing.T) {
 	}
 
 	// A non-streaming grok call: the gateway forwards the body verbatim.
-	reqBody := []byte(`{"model":"grok-4.3","messages":[{"role":"user","content":"hi"}],"reasoning_effort":"high"}`)
+	reqBody := []byte(`{"model":"xiaomimimo/mimo-v2.5-pro","messages":[{"role":"user","content":"hi"}],"reasoning_effort":"high"}`)
 	r := newGatewayRequest("POST", "/v1/chat/completions", reqBody, map[string]string{
 		types.HeaderSlot: "neo",
 	})
@@ -453,7 +453,7 @@ func TestProxyXaiUpstreamHop(t *testing.T) {
 	if err := json.Unmarshal(gotBody, &sent); err != nil {
 		t.Fatalf("upstream body not JSON: %v (%s)", err, gotBody)
 	}
-	if string(sent["model"]) != `"grok-4.3"` {
+	if string(sent["model"]) != `"xiaomimimo/mimo-v2.5-pro"` {
 		t.Fatalf("upstream model: %s (grok id must pass through unchanged)", sent["model"])
 	}
 	// No Z.ai-style `thinking` block is ever synthesized on the hop.

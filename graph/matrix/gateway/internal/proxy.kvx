@@ -1,103 +1,112 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:9b68327501b45793fd7687f43b30c960fd68ae8aaff6b2f1bb36ec3e2df2de2f
+# GENERATED gen=codegraph do-not-edit merkle=b3:20e53aba2ea11552396417e53b3e04e87dd1bbb7bef3aa554a45bb92cf89e7f2
 
 NODE id=matrix/gateway/internal/proxy kind=package
-  digest=b3:81ab727425c960d50b72660e6790ff8da47d40a3b2a2017db19d67824a09b992 file=gateway/internal/proxy range=0:0 lang=go exported=true
+  digest=b3:84dca1a6d57f20b6068d8c1ac84efefd54391f32bdb44d72a0f47e78fc5d2e2c file=gateway/internal/proxy range=0:0 lang=go exported=true
 EDGES
   contains=matrix/gateway/internal/proxy/proxy.go
+  imports=matrix/gateway/internal/auth,matrix/gateway/internal/ledger,matrix/gateway/internal/ratelimit,matrix/gateway/internal/rates,matrix/gateway/internal/routing,matrix/gateway/internal/types
   ^contains=mod:matrix/gateway
+  ^imports=matrix/gateway/cmd/matrix-gateway
 
 NODE id=matrix/gateway/internal/proxy.New kind=func
-  digest=b3:bb21f069305b36f66c63a68b67e940e71ef5bb1a826ee5d4d5fa741999277535 file=gateway/internal/proxy/proxy.go range=103:155 lang=go exported=true byte_range=3509:4657
+  digest=b3:bb21f069305b36f66c63a68b67e940e71ef5bb1a826ee5d4d5fa741999277535 file=gateway/internal/proxy/proxy.go range=104:156 lang=go exported=true byte_range=3530:4678
   sig=func New(opts Options) (*Server, error)
   doc=New builds a Server.
 EDGES
+  calls=matrix/gateway/internal/ratelimit.New
+  references=matrix/gateway/internal/proxy.Options,matrix/gateway/internal/proxy.Server,matrix/gateway/internal/proxy.disabled,matrix/gateway/internal/proxy.hc,matrix/gateway/internal/proxy.logf,matrix/gateway/internal/proxy.maxBody,matrix/gateway/internal/proxy.now,matrix/gateway/internal/proxy.opts,matrix/gateway/internal/proxy.pre,matrix/gateway/internal/proxy.rl,matrix/gateway/internal/ratelimit.New
+  ^calls=matrix/gateway/cmd/matrix-gateway.run
+  ^references=matrix/gateway/cmd/matrix-gateway.run
   ^defines=matrix/gateway/internal/proxy/proxy.go
 
 NODE id=matrix/gateway/internal/proxy.Options kind=type
-  digest=b3:3675f7d74f938491f26b79189f7017350ad80a4eb018147d9055908125d4ef6f file=gateway/internal/proxy/proxy.go range=79:101 lang=go exported=true byte_range=2575:3507
+  digest=b3:3675f7d74f938491f26b79189f7017350ad80a4eb018147d9055908125d4ef6f file=gateway/internal/proxy/proxy.go range=80:102 lang=go exported=true byte_range=2596:3528
   sig=type Options struct {\n	Auth		*auth.Authenticator\n	Router		*routing.Decider\n	Ledger		ledger.Ledger\n	RateLimiter	*ratelimit.Limiter\n	Provider	ProviderKeys\n	HTTPClient	*http.Client\n	// Logf is invoked for every audit-worthy event. nil → swallow.\n	Logf	func(event string, fields map[string]any)\n	// Disabled is consulted on every request; when it returns true,\n	// the gateway responds 503 to everything except /healthz. Used by\n	// the kill switch (env MATRIX_GATEWAY_DISABLED=true).\n	Disabled	func() bool\n	// MaxBodyBytes caps request body size. Default 1 MiB.\n	MaxBodyBytes	int64\n	// Now is the clock function (test injection). nil → time.Now.\n	Now	func() time.Time\n	// PreEstimatePax is a fixed PAX-string used as the pre-flight\n	// projected cost for budget gating. Empty defaults to "0.5"\n	// (covers the common-case classify call upper bound).\n	PreEstimatePax	string\n}
   doc=Options drives Server construction.
 EDGES
   contains=matrix/gateway/internal/proxy.Options#Auth,matrix/gateway/internal/proxy.Options#Disabled,matrix/gateway/internal/proxy.Options#HTTPClient,matrix/gateway/internal/proxy.Options#Ledger,matrix/gateway/internal/proxy.Options#Logf,matrix/gateway/internal/proxy.Options#MaxBodyBytes,matrix/gateway/internal/proxy.Options#Now,matrix/gateway/internal/proxy.Options#PreEstimatePax,matrix/gateway/internal/proxy.Options#Provider,matrix/gateway/internal/proxy.Options#RateLimiter,matrix/gateway/internal/proxy.Options#Router
+  references=matrix/gateway/internal/auth.Authenticator,matrix/gateway/internal/ledger.Ledger,matrix/gateway/internal/proxy.ProviderKeys,matrix/gateway/internal/ratelimit.Limiter,matrix/gateway/internal/routing.Decider
+  ^references=matrix/gateway/cmd/matrix-gateway.run,matrix/gateway/internal/proxy.New
   ^defines=matrix/gateway/internal/proxy/proxy.go
 
 NODE id=matrix/gateway/internal/proxy.Options#Auth kind=field
-  digest=b3:7412ec60cdf98bc3d8a5c40dc37a5e8efb0750ca782ad273d9359453c0518460 file=gateway/internal/proxy/proxy.go range=81:81 lang=go exported=true byte_range=2637:2668
+  digest=b3:7412ec60cdf98bc3d8a5c40dc37a5e8efb0750ca782ad273d9359453c0518460 file=gateway/internal/proxy/proxy.go range=82:82 lang=go exported=true byte_range=2658:2689
   sig=*auth.Authenticator
 EDGES
   ^contains=matrix/gateway/internal/proxy.Options
 
 NODE id=matrix/gateway/internal/proxy.Options#Disabled kind=field
-  digest=b3:2e83c2949013442f4512a2dc5bcacbdabde7e6bc0ed9e3e4fcaa59318b0180e6 file=gateway/internal/proxy/proxy.go range=89:92 lang=go exported=true byte_range=2926:3136
+  digest=b3:2e83c2949013442f4512a2dc5bcacbdabde7e6bc0ed9e3e4fcaa59318b0180e6 file=gateway/internal/proxy/proxy.go range=90:93 lang=go exported=true byte_range=2947:3157
   sig=func() bool
   doc=Disabled is consulted on every request; when it returns true,\nthe gateway responds 503 to everything except /healthz. Used by\nthe kill switch (env MATRIX_GATEWAY_DISABLED=true).
 EDGES
   ^contains=matrix/gateway/internal/proxy.Options
 
 NODE id=matrix/gateway/internal/proxy.Options#HTTPClient kind=field
-  digest=b3:6e0b57c19a7a6057823f4bdbdae777392b3683a02f623c8edd3197cd90b05ea9 file=gateway/internal/proxy/proxy.go range=86:86 lang=go exported=true byte_range=2785:2809
+  digest=b3:6e0b57c19a7a6057823f4bdbdae777392b3683a02f623c8edd3197cd90b05ea9 file=gateway/internal/proxy/proxy.go range=87:87 lang=go exported=true byte_range=2806:2830
   sig=*http.Client
 EDGES
   ^contains=matrix/gateway/internal/proxy.Options
 
 NODE id=matrix/gateway/internal/proxy.Options#Ledger kind=field
-  digest=b3:98144d349f6655f43710086d8e2e87db6c6efbcb0b550aaf157c85213dceff90 file=gateway/internal/proxy/proxy.go range=83:83 lang=go exported=true byte_range=2700:2725
+  digest=b3:98144d349f6655f43710086d8e2e87db6c6efbcb0b550aaf157c85213dceff90 file=gateway/internal/proxy/proxy.go range=84:84 lang=go exported=true byte_range=2721:2746
   sig=ledger.Ledger
 EDGES
   ^contains=matrix/gateway/internal/proxy.Options
 
 NODE id=matrix/gateway/internal/proxy.Options#Logf kind=field
-  digest=b3:17aef1921f41fd0d7c827c1221de7474d6c573e39fd4c1836912400c101acbbb file=gateway/internal/proxy/proxy.go range=87:88 lang=go exported=true byte_range=2811:2924
+  digest=b3:17aef1921f41fd0d7c827c1221de7474d6c573e39fd4c1836912400c101acbbb file=gateway/internal/proxy/proxy.go range=88:89 lang=go exported=true byte_range=2832:2945
   sig=func(event string, fields map[string]any)
   doc=Logf is invoked for every audit-worthy event. nil → swallow.
 EDGES
   ^contains=matrix/gateway/internal/proxy.Options
 
 NODE id=matrix/gateway/internal/proxy.Options#MaxBodyBytes kind=field
-  digest=b3:f395831bc7fb94f8c4beb09a643245a826423dc45abb7342eb3c7129ce39fc93 file=gateway/internal/proxy/proxy.go range=93:94 lang=go exported=true byte_range=3138:3212
+  digest=b3:f395831bc7fb94f8c4beb09a643245a826423dc45abb7342eb3c7129ce39fc93 file=gateway/internal/proxy/proxy.go range=94:95 lang=go exported=true byte_range=3159:3233
   sig=int64
   doc=MaxBodyBytes caps request body size. Default 1 MiB.
 EDGES
   ^contains=matrix/gateway/internal/proxy.Options
 
 NODE id=matrix/gateway/internal/proxy.Options#Now kind=field
-  digest=b3:370288c33822adf18548af2c7b57f71c9d32eee185678b3f1b0c2b3a045524d7 file=gateway/internal/proxy/proxy.go range=95:96 lang=go exported=true byte_range=3214:3300
+  digest=b3:370288c33822adf18548af2c7b57f71c9d32eee185678b3f1b0c2b3a045524d7 file=gateway/internal/proxy/proxy.go range=96:97 lang=go exported=true byte_range=3235:3321
   sig=func() time.Time
   doc=Now is the clock function (test injection). nil → time.Now.
 EDGES
   ^contains=matrix/gateway/internal/proxy.Options
 
 NODE id=matrix/gateway/internal/proxy.Options#PreEstimatePax kind=field
-  digest=b3:b380e78016e34bb9ae66f810ef3f1a08ed067ac71f295bffb65e14f169929422 file=gateway/internal/proxy/proxy.go range=97:100 lang=go exported=true byte_range=3302:3505
+  digest=b3:b380e78016e34bb9ae66f810ef3f1a08ed067ac71f295bffb65e14f169929422 file=gateway/internal/proxy/proxy.go range=98:101 lang=go exported=true byte_range=3323:3526
   sig=string
   doc=PreEstimatePax is a fixed PAX-string used as the pre-flight\nprojected cost for budget gating. Empty defaults to "0.5"\n(covers the common-case classify call upper bound).
 EDGES
   ^contains=matrix/gateway/internal/proxy.Options
 
 NODE id=matrix/gateway/internal/proxy.Options#Provider kind=field
-  digest=b3:4033b702755c779ed29c9ef6aa76f54be3f5011f96ce6cf7d7831cbd6f837636 file=gateway/internal/proxy/proxy.go range=85:85 lang=go exported=true byte_range=2759:2783
+  digest=b3:4033b702755c779ed29c9ef6aa76f54be3f5011f96ce6cf7d7831cbd6f837636 file=gateway/internal/proxy/proxy.go range=86:86 lang=go exported=true byte_range=2780:2804
   sig=proxy.ProviderKeys
 EDGES
   ^contains=matrix/gateway/internal/proxy.Options
 
 NODE id=matrix/gateway/internal/proxy.Options#RateLimiter kind=field
-  digest=b3:f6cfbdb1b2da05794a1f23777b4a3aeb418a407d6c7baee70235abfc4c1bce27 file=gateway/internal/proxy/proxy.go range=84:84 lang=go exported=true byte_range=2727:2757
+  digest=b3:f6cfbdb1b2da05794a1f23777b4a3aeb418a407d6c7baee70235abfc4c1bce27 file=gateway/internal/proxy/proxy.go range=85:85 lang=go exported=true byte_range=2748:2778
   sig=*ratelimit.Limiter
 EDGES
   ^contains=matrix/gateway/internal/proxy.Options
 
 NODE id=matrix/gateway/internal/proxy.Options#Router kind=field
-  digest=b3:24dc061c854875d230faf2afa43b2e04caf70983d9ae9ed1d79bd16a87ebe5fb file=gateway/internal/proxy/proxy.go range=82:82 lang=go exported=true byte_range=2670:2698
+  digest=b3:24dc061c854875d230faf2afa43b2e04caf70983d9ae9ed1d79bd16a87ebe5fb file=gateway/internal/proxy/proxy.go range=83:83 lang=go exported=true byte_range=2691:2719
   sig=*routing.Decider
 EDGES
   ^contains=matrix/gateway/internal/proxy.Options
 
 NODE id=matrix/gateway/internal/proxy.ProviderKeys kind=type
-  digest=b3:cd69e55fccd725c8c0408736aed26042a2db680d39da7124927336532b631dc2 file=gateway/internal/proxy/proxy.go range=69:77 lang=go exported=true byte_range=2282:2573
-  sig=type ProviderKeys struct {\n	FireworksKey	string\n	TogetherKey	string\n	BasetenKey	string\n	XaiKey		string\n}
+  digest=b3:99bd91f7a330684ade917268a82e910f06be3e8ab667980b88bbc785aef2dc71 file=gateway/internal/proxy/proxy.go range=69:78 lang=go exported=true byte_range=2282:2594
+  sig=type ProviderKeys struct {\n	FireworksKey	string\n	TogetherKey	string\n	BasetenKey	string\n	XaiKey		string\n	NovitaKey	string\n}
   doc=ProviderKeys holds the gateway's own upstream API keys (used when\nthe caller is metered and not BYO). Empty values fall back to env\nlookups by the proxy at request time.
 EDGES
-  contains=matrix/gateway/internal/proxy.ProviderKeys#BasetenKey,matrix/gateway/internal/proxy.ProviderKeys#FireworksKey,matrix/gateway/internal/proxy.ProviderKeys#TogetherKey,matrix/gateway/internal/proxy.ProviderKeys#XaiKey
+  contains=matrix/gateway/internal/proxy.ProviderKeys#BasetenKey,matrix/gateway/internal/proxy.ProviderKeys#FireworksKey,matrix/gateway/internal/proxy.ProviderKeys#NovitaKey,matrix/gateway/internal/proxy.ProviderKeys#TogetherKey,matrix/gateway/internal/proxy.ProviderKeys#XaiKey
+  ^references=matrix/gateway/cmd/matrix-gateway.run,matrix/gateway/internal/proxy.Options,matrix/gateway/internal/proxy.Server
   ^defines=matrix/gateway/internal/proxy/proxy.go
 
 NODE id=matrix/gateway/internal/proxy.ProviderKeys#BasetenKey kind=field
@@ -108,6 +117,12 @@ EDGES
 
 NODE id=matrix/gateway/internal/proxy.ProviderKeys#FireworksKey kind=field
   digest=b3:9a5bfcec7a637ecd6a3c621f4d932dc34b4f80b662624fd7b668bc7e32ad8d2c file=gateway/internal/proxy/proxy.go range=73:73 lang=go exported=true byte_range=2489:2508
+  sig=string
+EDGES
+  ^contains=matrix/gateway/internal/proxy.ProviderKeys
+
+NODE id=matrix/gateway/internal/proxy.ProviderKeys#NovitaKey kind=field
+  digest=b3:a6da133eebbfa890b951ab82d68ac83da0bc2dc1b0712271071feb690ea438a9 file=gateway/internal/proxy/proxy.go range=77:77 lang=go exported=true byte_range=2573:2592
   sig=string
 EDGES
   ^contains=matrix/gateway/internal/proxy.ProviderKeys
@@ -130,6 +145,8 @@ NODE id=matrix/gateway/internal/proxy.Server kind=type
   doc=Server is the HTTP entry point.
 EDGES
   contains=matrix/gateway/internal/proxy.Server#auth,matrix/gateway/internal/proxy.Server#disabled,matrix/gateway/internal/proxy.Server#httpClient,matrix/gateway/internal/proxy.Server#ledger,matrix/gateway/internal/proxy.Server#logf,matrix/gateway/internal/proxy.Server#maxBodyBytes,matrix/gateway/internal/proxy.Server#now,matrix/gateway/internal/proxy.Server#preEstimate,matrix/gateway/internal/proxy.Server#provider,matrix/gateway/internal/proxy.Server#rl,matrix/gateway/internal/proxy.Server#router,matrix/gateway/internal/proxy.Server.Mux,matrix/gateway/internal/proxy.Server.buildUpstreamRequest,matrix/gateway/internal/proxy.Server.handleBuffered,matrix/gateway/internal/proxy.Server.handleHealthz,matrix/gateway/internal/proxy.Server.handleProxy,matrix/gateway/internal/proxy.Server.handleStreaming,matrix/gateway/internal/proxy.Server.makeHandler,matrix/gateway/internal/proxy.Server.maybeDebit,matrix/gateway/internal/proxy.Server.stampCostHeaders
+  references=matrix/gateway/internal/auth.Authenticator,matrix/gateway/internal/ledger.Ledger,matrix/gateway/internal/proxy.ProviderKeys,matrix/gateway/internal/ratelimit.Limiter,matrix/gateway/internal/routing.Decider
+  ^references=matrix/gateway/internal/proxy.New,matrix/gateway/internal/proxy.Server.Mux,matrix/gateway/internal/proxy.Server.buildUpstreamRequest,matrix/gateway/internal/proxy.Server.handleBuffered,matrix/gateway/internal/proxy.Server.handleHealthz,matrix/gateway/internal/proxy.Server.handleProxy,matrix/gateway/internal/proxy.Server.handleStreaming,matrix/gateway/internal/proxy.Server.makeHandler,matrix/gateway/internal/proxy.Server.maybeDebit,matrix/gateway/internal/proxy.Server.stampCostHeaders
   ^defines=matrix/gateway/internal/proxy/proxy.go
 
 NODE id=matrix/gateway/internal/proxy.Server#auth kind=field
@@ -199,168 +216,222 @@ EDGES
   ^contains=matrix/gateway/internal/proxy.Server
 
 NODE id=matrix/gateway/internal/proxy.Server.Mux kind=method
-  digest=b3:78d7abb36991da4b94d01ebe85a256eccffd5ed8292f046e67c03843e3c44cf4 file=gateway/internal/proxy/proxy.go range=157:165 lang=go exported=true byte_range=4659:5080
+  digest=b3:78d7abb36991da4b94d01ebe85a256eccffd5ed8292f046e67c03843e3c44cf4 file=gateway/internal/proxy/proxy.go range=158:166 lang=go exported=true byte_range=4680:5101
   sig=func (s *Server) Mux() *http.ServeMux
   doc=Mux returns an *http.ServeMux mounting the gateway's two endpoints.\nCallers wrap with their own middleware (CORS, request id) if needed.
 EDGES
+  calls=matrix/gateway/internal/proxy.Server.makeHandler
+  references=matrix/gateway/internal/proxy.Server,matrix/gateway/internal/proxy.Server.handleHealthz,matrix/gateway/internal/proxy.Server.makeHandler,matrix/gateway/internal/proxy.mux,matrix/gateway/internal/proxy.s,matrix/gateway/internal/routing.EndpointChat,matrix/gateway/internal/routing.EndpointEmbedding
   ^contains=matrix/gateway/internal/proxy.Server
+  ^calls=matrix/gateway/cmd/matrix-gateway.run
+  ^references=matrix/gateway/cmd/matrix-gateway.run
   ^defines=matrix/gateway/internal/proxy/proxy.go
 
 NODE id=matrix/gateway/internal/proxy.Server.buildUpstreamRequest kind=method
-  digest=b3:07353307147ec35e2960e3d3306fcefafa16f5e525f0be5c3e01aa9fa3c4a982 file=gateway/internal/proxy/proxy.go range=561:595 lang=go exported=false byte_range=17772:19004
+  digest=b3:df25b052747fbd91c2f57c714b521b6bde5ecbbbe197051addf38ed27a7a0d8c file=gateway/internal/proxy/proxy.go range=562:598 lang=go exported=false byte_range=17793:19089
   sig=func (s *Server) buildUpstreamRequest(ctx context.Context, r *http.Request, dec *routing.Decision, body []byte) (*http.Request, error)
   doc=buildUpstreamRequest copies the inbound request body to a new\nupstream request bound to dec.UpstreamURL. Sets Authorization +\ncontent type. BYO calls use the caller's UserAPIKey; metered\ncalls use the gateway's own provider key.
 EDGES
+  references=matrix/gateway/internal/proxy.Server,matrix/gateway/internal/proxy.apiKey,matrix/gateway/internal/proxy.body,matrix/gateway/internal/proxy.ctx,matrix/gateway/internal/proxy.dec,matrix/gateway/internal/proxy.err,matrix/gateway/internal/proxy.r,matrix/gateway/internal/proxy.req,matrix/gateway/internal/proxy.s,matrix/gateway/internal/routing.Decision,matrix/gateway/internal/routing.ProviderBaseten,matrix/gateway/internal/routing.ProviderFireworks,matrix/gateway/internal/routing.ProviderNovita,matrix/gateway/internal/routing.ProviderTogether,matrix/gateway/internal/routing.ProviderXai
   ^contains=matrix/gateway/internal/proxy.Server
+  ^calls=matrix/gateway/internal/proxy.Server.handleProxy
+  ^references=matrix/gateway/internal/proxy.Server.handleProxy
   ^defines=matrix/gateway/internal/proxy/proxy.go
 
 NODE id=matrix/gateway/internal/proxy.Server.handleBuffered kind=method
-  digest=b3:8c8d47fe6d383370268e917c3210a044c9522286622c6b42678ae8b5acfec8ba file=gateway/internal/proxy/proxy.go range=354:371 lang=go exported=false byte_range=10787:11407
+  digest=b3:8c8d47fe6d383370268e917c3210a044c9522286622c6b42678ae8b5acfec8ba file=gateway/internal/proxy/proxy.go range=355:372 lang=go exported=false byte_range=10808:11428
   sig=func (s *Server) handleBuffered(w http.ResponseWriter, resp *http.Response, dec *routing.Decision, lc ledgerCtx)
   doc=handleBuffered reads upstream response fully, extracts usage, debits\nledger, then forwards body + cost headers to the client.
 EDGES
+  calls=matrix/gateway/internal/proxy.Server.maybeDebit,matrix/gateway/internal/proxy.Server.stampCostHeaders,matrix/gateway/internal/proxy.copyHeaders,matrix/gateway/internal/proxy.extractUsage,matrix/gateway/internal/proxy.writeJSONErr
+  references=matrix/gateway/internal/proxy.Server,matrix/gateway/internal/proxy.Server.maybeDebit,matrix/gateway/internal/proxy.Server.stampCostHeaders,matrix/gateway/internal/proxy.body,matrix/gateway/internal/proxy.copyHeaders,matrix/gateway/internal/proxy.cost,matrix/gateway/internal/proxy.costErr,matrix/gateway/internal/proxy.dec,matrix/gateway/internal/proxy.err,matrix/gateway/internal/proxy.extractUsage,matrix/gateway/internal/proxy.lc,matrix/gateway/internal/proxy.ledgerCtx,matrix/gateway/internal/proxy.resp,matrix/gateway/internal/proxy.s,matrix/gateway/internal/proxy.usage,matrix/gateway/internal/proxy.w,matrix/gateway/internal/proxy.writeJSONErr,matrix/gateway/internal/routing.Decision
   ^contains=matrix/gateway/internal/proxy.Server
+  ^calls=matrix/gateway/internal/proxy.Server.handleProxy
+  ^references=matrix/gateway/internal/proxy.Server.handleProxy
   ^defines=matrix/gateway/internal/proxy/proxy.go
 
 NODE id=matrix/gateway/internal/proxy.Server.handleHealthz kind=method
-  digest=b3:02c7865101857b006aef422f7fe371c8b9e29759f50c35313c3c25c91c108ad8 file=gateway/internal/proxy/proxy.go range=167:176 lang=go exported=false byte_range=5082:5409
+  digest=b3:02c7865101857b006aef422f7fe371c8b9e29759f50c35313c3c25c91c108ad8 file=gateway/internal/proxy/proxy.go range=168:177 lang=go exported=false byte_range=5103:5430
   sig=func (s *Server) handleHealthz(w http.ResponseWriter, _ *http.Request)
 EDGES
+  references=matrix/gateway/internal/proxy.Server,matrix/gateway/internal/proxy.s,matrix/gateway/internal/proxy.w
   ^contains=matrix/gateway/internal/proxy.Server
+  ^references=matrix/gateway/internal/proxy.Server.Mux
   ^defines=matrix/gateway/internal/proxy/proxy.go
 
 NODE id=matrix/gateway/internal/proxy.Server.handleProxy kind=method
-  digest=b3:4bd817d6d072072d970230b805e1f42edaf5b1d95830ed88f6680937f54a90aa file=gateway/internal/proxy/proxy.go range=192:341 lang=go exported=false byte_range=5798:10536
+  digest=b3:4bd817d6d072072d970230b805e1f42edaf5b1d95830ed88f6680937f54a90aa file=gateway/internal/proxy/proxy.go range=193:342 lang=go exported=false byte_range=5819:10557
   sig=func (s *Server) handleProxy(w http.ResponseWriter, r *http.Request, ep routing.Endpoint)
   doc=handleProxy is the request lifecycle.
 EDGES
+  calls=matrix/gateway/internal/auth.Authenticator.Verify,matrix/gateway/internal/auth.Authenticator.VerifySignature,matrix/gateway/internal/ledger.CheckBudget,matrix/gateway/internal/ledger.Memory.DailyCap,matrix/gateway/internal/ledger.Memory.DailySpend,matrix/gateway/internal/ledger.Postgres.DailyCap,matrix/gateway/internal/ledger.Postgres.DailySpend,matrix/gateway/internal/proxy.Server.buildUpstreamRequest,matrix/gateway/internal/proxy.Server.handleBuffered,matrix/gateway/internal/proxy.Server.handleStreaming,matrix/gateway/internal/proxy.copyHeaders,matrix/gateway/internal/proxy.ensureStreamUsage,matrix/gateway/internal/proxy.writeAuthError,matrix/gateway/internal/proxy.writeBudgetExhausted,matrix/gateway/internal/proxy.writeJSONErr,matrix/gateway/internal/ratelimit.Limiter.Allow,matrix/gateway/internal/routing.Decider.Decide
+  references=matrix/gateway/internal/auth.Authenticator.Verify,matrix/gateway/internal/auth.Authenticator.VerifySignature,matrix/gateway/internal/ledger.CheckBudget,matrix/gateway/internal/ledger.Ledger.DailyCap,matrix/gateway/internal/ledger.Ledger.DailySpend,matrix/gateway/internal/proxy.Server,matrix/gateway/internal/proxy.Server.buildUpstreamRequest,matrix/gateway/internal/proxy.Server.handleBuffered,matrix/gateway/internal/proxy.Server.handleStreaming,matrix/gateway/internal/proxy.actor,matrix/gateway/internal/proxy.bErr,matrix/gateway/internal/proxy.body,matrix/gateway/internal/proxy.capErr,matrix/gateway/internal/proxy.capPax,matrix/gateway/internal/proxy.copyHeaders,matrix/gateway/internal/proxy.ctx,matrix/gateway/internal/proxy.decision,matrix/gateway/internal/proxy.ensureStreamUsage,matrix/gateway/internal/proxy.ep,matrix/gateway/internal/proxy.err,matrix/gateway/internal/proxy.exhausted,matrix/gateway/internal/proxy.goalID,matrix/gateway/internal/proxy.head,matrix/gateway/internal/proxy.intentID,matrix/gateway/internal/proxy.ledgerCtx,matrix/gateway/internal/proxy.preCap,matrix/gateway/internal/proxy.preSpent,matrix/gateway/internal/proxy.r,matrix/gateway/internal/proxy.resp,matrix/gateway/internal/proxy.s,matrix/gateway/internal/proxy.spent,matrix/gateway/internal/proxy.upstream,matrix/gateway/internal/proxy.upstreamBody,matrix/gateway/internal/proxy.w,matrix/gateway/internal/proxy.writeAuthError,matrix/gateway/internal/proxy.writeBudgetExhausted,matrix/gateway/internal/proxy.writeJSONErr,matrix/gateway/internal/ratelimit.Limiter.Allow,matrix/gateway/internal/routing.Decider.Decide,matrix/gateway/internal/routing.Endpoint,matrix/gateway/internal/routing.ErrBYOMissingKey,matrix/gateway/internal/routing.ErrFreeTierNotWhitelisted,matrix/gateway/internal/routing.ErrInvalidSlot,matrix/gateway/internal/types.ChatCompletionRequest,matrix/gateway/internal/types.HeaderGoalID,matrix/gateway/internal/types.HeaderIntentID
   ^contains=matrix/gateway/internal/proxy.Server
+  ^references=matrix/gateway/internal/proxy.Server.makeHandler
   ^defines=matrix/gateway/internal/proxy/proxy.go
 
 NODE id=matrix/gateway/internal/proxy.Server.handleStreaming kind=method
-  digest=b3:bd7115ad9c3877a9a95c85523764e4c4db7f2427d01689c6364d75b4f9ed4419 file=gateway/internal/proxy/proxy.go range=373:420 lang=go exported=false byte_range=11409:12892
+  digest=b3:bd7115ad9c3877a9a95c85523764e4c4db7f2427d01689c6364d75b4f9ed4419 file=gateway/internal/proxy/proxy.go range=374:421 lang=go exported=false byte_range=11430:12913
   sig=func (s *Server) handleStreaming(w http.ResponseWriter, resp *http.Response, dec *routing.Decision, lc ledgerCtx)
   doc=handleStreaming pipes the SSE response through to the client while\nscanning for the trailing `data: {"usage":...}` chunk so cost can\nbe extracted + debited BEFORE the stream terminates from the\nclient's perspective. Cost headers can NOT be added after the\ninitial 200 OK is flushed, so streaming clients must read trailing\nSSE events `data: {"matrix": {"cost_pax": "..."}}` if they want the\ncost surface — kept off the wire for v1; the daemon receives cost\nvia the per-call ledger snapshot endpoint instead.
 EDGES
+  calls=matrix/gateway/internal/proxy.Server.maybeDebit,matrix/gateway/internal/proxy.copyHeaders,matrix/gateway/internal/proxy.scanUsageFromChunk
+  references=matrix/gateway/internal/proxy.Server,matrix/gateway/internal/proxy.Server.maybeDebit,matrix/gateway/internal/proxy.chunk,matrix/gateway/internal/proxy.copyHeaders,matrix/gateway/internal/proxy.dec,matrix/gateway/internal/proxy.err,matrix/gateway/internal/proxy.flusher,matrix/gateway/internal/proxy.header,matrix/gateway/internal/proxy.lastUsage,matrix/gateway/internal/proxy.lc,matrix/gateway/internal/proxy.ledgerCtx,matrix/gateway/internal/proxy.ok,matrix/gateway/internal/proxy.resp,matrix/gateway/internal/proxy.s,matrix/gateway/internal/proxy.scanUsageFromChunk,matrix/gateway/internal/proxy.scanner,matrix/gateway/internal/proxy.u,matrix/gateway/internal/proxy.w,matrix/gateway/internal/proxy.werr,matrix/gateway/internal/routing.Decision,matrix/gateway/internal/types.UpstreamUsage
   ^contains=matrix/gateway/internal/proxy.Server
+  ^calls=matrix/gateway/internal/proxy.Server.handleProxy
+  ^references=matrix/gateway/internal/proxy.Server.handleProxy
   ^defines=matrix/gateway/internal/proxy/proxy.go
 
 NODE id=matrix/gateway/internal/proxy.Server.makeHandler kind=method
-  digest=b3:a4135a0979ba16d403e8920cc6c0a55fb42942beb3890e6b70549a1c68e7ac7b file=gateway/internal/proxy/proxy.go range=178:190 lang=go exported=false byte_range=5411:5796
+  digest=b3:a4135a0979ba16d403e8920cc6c0a55fb42942beb3890e6b70549a1c68e7ac7b file=gateway/internal/proxy/proxy.go range=179:191 lang=go exported=false byte_range=5432:5817
   sig=func (s *Server) makeHandler(ep routing.Endpoint) http.HandlerFunc
 EDGES
+  references=matrix/gateway/internal/proxy.Server,matrix/gateway/internal/proxy.Server.handleProxy,matrix/gateway/internal/proxy.ep,matrix/gateway/internal/proxy.r,matrix/gateway/internal/proxy.s,matrix/gateway/internal/proxy.w,matrix/gateway/internal/routing.Endpoint
   ^contains=matrix/gateway/internal/proxy.Server
+  ^calls=matrix/gateway/internal/proxy.Server.Mux
+  ^references=matrix/gateway/internal/proxy.Server.Mux
   ^defines=matrix/gateway/internal/proxy/proxy.go
 
 NODE id=matrix/gateway/internal/proxy.Server.maybeDebit kind=method
-  digest=b3:5918f9e40f579010f06df6e0486f088593df726e2dad06d611fe01a1a7a74695 file=gateway/internal/proxy/proxy.go range=485:537 lang=go exported=false byte_range=14985:17069
+  digest=b3:5918f9e40f579010f06df6e0486f088593df726e2dad06d611fe01a1a7a74695 file=gateway/internal/proxy/proxy.go range=486:538 lang=go exported=false byte_range=15006:17090
   sig=func (s *Server) maybeDebit(dec *routing.Decision, usage *types.UpstreamUsage, lc ledgerCtx) (string, error)
   doc=maybeDebit prices the call + writes a ledger row, returning the\ncost-pax string for response-header stamping. BYO calls return ""\n(no debit; caller pays direct). Errors are logged but not returned\nto the client (the call already succeeded upstream — losing the\nledger row is preferable to a confusing client-side error).
 EDGES
+  calls=matrix/gateway/internal/ledger.Memory.Record,matrix/gateway/internal/ledger.Postgres.Record,matrix/gateway/internal/rates.Cost
+  references=matrix/gateway/internal/ledger.Entry,matrix/gateway/internal/ledger.Ledger.Record,matrix/gateway/internal/proxy.Server,matrix/gateway/internal/proxy.cancel,matrix/gateway/internal/proxy.cost,matrix/gateway/internal/proxy.dec,matrix/gateway/internal/proxy.entry,matrix/gateway/internal/proxy.err,matrix/gateway/internal/proxy.lc,matrix/gateway/internal/proxy.ledgerCtx,matrix/gateway/internal/proxy.recCtx,matrix/gateway/internal/proxy.s,matrix/gateway/internal/proxy.usage,matrix/gateway/internal/rates.Cost,matrix/gateway/internal/rates.RateTableVersion,matrix/gateway/internal/routing.Decision,matrix/gateway/internal/types.UpstreamUsage
   ^contains=matrix/gateway/internal/proxy.Server
+  ^calls=matrix/gateway/internal/proxy.Server.handleBuffered,matrix/gateway/internal/proxy.Server.handleStreaming
+  ^references=matrix/gateway/internal/proxy.Server.handleBuffered,matrix/gateway/internal/proxy.Server.handleStreaming
   ^defines=matrix/gateway/internal/proxy/proxy.go
 
 NODE id=matrix/gateway/internal/proxy.Server.stampCostHeaders kind=method
-  digest=b3:2026403cf31c23c6ba623a9aad97295a5b47c307f2df474e74877ebf1b645c9e file=gateway/internal/proxy/proxy.go range=539:559 lang=go exported=false byte_range=17071:17770
+  digest=b3:2026403cf31c23c6ba623a9aad97295a5b47c307f2df474e74877ebf1b645c9e file=gateway/internal/proxy/proxy.go range=540:560 lang=go exported=false byte_range=17092:17791
   sig=func (s *Server) stampCostHeaders(h http.Header, cost string, lc ledgerCtx)
   doc=stampCostHeaders sets the X-Matrix-Cost-Pax / Daily-Spent /\nDaily-Remaining headers on the response. Best-effort: any\narithmetic failure logs but never blocks the response.
 EDGES
+  calls=matrix/gateway/internal/rates.AddPax,matrix/gateway/internal/rates.SubPax
+  references=matrix/gateway/internal/proxy.Server,matrix/gateway/internal/proxy.cost,matrix/gateway/internal/proxy.err,matrix/gateway/internal/proxy.h,matrix/gateway/internal/proxy.lc,matrix/gateway/internal/proxy.ledgerCtx,matrix/gateway/internal/proxy.rem,matrix/gateway/internal/proxy.totalSpent,matrix/gateway/internal/rates.AddPax,matrix/gateway/internal/rates.RateTableVersion,matrix/gateway/internal/rates.SubPax,matrix/gateway/internal/types.HeaderCostPax,matrix/gateway/internal/types.HeaderDailyRemainingPax,matrix/gateway/internal/types.HeaderDailySpentPax,matrix/gateway/internal/types.HeaderRateTableVersion
   ^contains=matrix/gateway/internal/proxy.Server
+  ^calls=matrix/gateway/internal/proxy.Server.handleBuffered
+  ^references=matrix/gateway/internal/proxy.Server.handleBuffered
   ^defines=matrix/gateway/internal/proxy/proxy.go
 
 NODE id=matrix/gateway/internal/proxy.copyHeaders kind=func
-  digest=b3:8092b4ab27c1dc1a01371a3d96a21c40d7930d7fb5e9a798b3c31c0f6ebe5de8 file=gateway/internal/proxy/proxy.go range=633:657 lang=go exported=false byte_range=20169:20958
+  digest=b3:8092b4ab27c1dc1a01371a3d96a21c40d7930d7fb5e9a798b3c31c0f6ebe5de8 file=gateway/internal/proxy/proxy.go range=636:660 lang=go exported=false byte_range=20254:21043
   sig=func copyHeaders(dst, src http.Header)
   doc=copyHeaders copies non-hop-by-hop headers from src to dst. Skips\nhop headers that are illegal to forward per RFC 7230 §6.1, and\ndrops any Authorization header that the upstream may have echoed\n(we never want to leak provider-side credentials downstream).
 EDGES
+  references=matrix/gateway/internal/proxy.drop,matrix/gateway/internal/proxy.dst,matrix/gateway/internal/proxy.hopByHop,matrix/gateway/internal/proxy.k,matrix/gateway/internal/proxy.src,matrix/gateway/internal/proxy.v,matrix/gateway/internal/proxy.vs
+  ^calls=matrix/gateway/internal/proxy.Server.handleBuffered,matrix/gateway/internal/proxy.Server.handleProxy,matrix/gateway/internal/proxy.Server.handleStreaming
+  ^references=matrix/gateway/internal/proxy.Server.handleBuffered,matrix/gateway/internal/proxy.Server.handleProxy,matrix/gateway/internal/proxy.Server.handleStreaming
   ^defines=matrix/gateway/internal/proxy/proxy.go
 
 NODE id=matrix/gateway/internal/proxy.ensureStreamUsage kind=func
-  digest=b3:a32afdcda9a2f6e5ae1076fc9113ac0a81c5efdcec0e1054540e845ef7348b22 file=gateway/internal/proxy/proxy.go range=452:483 lang=go exported=false byte_range=13794:14983
+  digest=b3:a32afdcda9a2f6e5ae1076fc9113ac0a81c5efdcec0e1054540e845ef7348b22 file=gateway/internal/proxy/proxy.go range=453:484 lang=go exported=false byte_range=13815:15004
   sig=func ensureStreamUsage(body []byte) []byte
   doc=ensureStreamUsage rewrites a streaming chat-completions request body to\nset stream_options.include_usage=true. Fireworks + Together emit the\ntoken `usage` block only in the trailing SSE chunk, and only when this\nflag is present; handleStreaming relies on it to debit the ledger.\n\nAll other request fields are preserved verbatim. An existing\nstream_options object is merged (not clobbered) so caller-set fields\nsurvive. Fail-open: a body that isn't a JSON object is returned\nuntouched — metering completeness must never break a live request.
 EDGES
+  references=matrix/gateway/internal/proxy.body,matrix/gateway/internal/proxy.err,matrix/gateway/internal/proxy.m,matrix/gateway/internal/proxy.ok,matrix/gateway/internal/proxy.optBytes,matrix/gateway/internal/proxy.opts,matrix/gateway/internal/proxy.out,matrix/gateway/internal/proxy.raw
+  ^calls=matrix/gateway/internal/proxy.Server.handleProxy
+  ^references=matrix/gateway/internal/proxy.Server.handleProxy
   ^defines=matrix/gateway/internal/proxy/proxy.go
 
 NODE id=matrix/gateway/internal/proxy.extractUsage kind=func
-  digest=b3:601e0f5b52f627c6504962e9988b5ac8fa27568eaf767ddfd6e48f33d46ee79e file=gateway/internal/proxy/proxy.go range=443:450 lang=go exported=false byte_range=13542:13792
+  digest=b3:601e0f5b52f627c6504962e9988b5ac8fa27568eaf767ddfd6e48f33d46ee79e file=gateway/internal/proxy/proxy.go range=444:451 lang=go exported=false byte_range=13563:13813
   sig=func extractUsage(body []byte) *types.UpstreamUsage
   doc=extractUsage reads `usage` from a buffered (non-stream) response.
 EDGES
+  references=matrix/gateway/internal/proxy.body,matrix/gateway/internal/proxy.env,matrix/gateway/internal/proxy.err,matrix/gateway/internal/types.UpstreamResponseEnvelope,matrix/gateway/internal/types.UpstreamUsage
+  ^calls=matrix/gateway/internal/proxy.Server.handleBuffered
+  ^references=matrix/gateway/internal/proxy.Server.handleBuffered
   ^defines=matrix/gateway/internal/proxy/proxy.go
 
 NODE id=matrix/gateway/internal/proxy.ledgerCtx kind=type
-  digest=b3:c5b63f2f0b0f2ae3ed498a70d54cddc1c12a1c62ab720e18df12862331e0eeea file=gateway/internal/proxy/proxy.go range=343:352 lang=go exported=false byte_range=10538:10785
+  digest=b3:c5b63f2f0b0f2ae3ed498a70d54cddc1c12a1c62ab720e18df12862331e0eeea file=gateway/internal/proxy/proxy.go range=344:353 lang=go exported=false byte_range=10559:10806
   sig=type ledgerCtx struct {\n	ctx		context.Context\n	actor		string\n	intentID	string\n	goalID		string\n	preSpent	string\n	preCap		string\n}
   doc=ledgerCtx bundles the per-request fields that the cost-debit step\nneeds after the upstream call returns.
 EDGES
   contains=matrix/gateway/internal/proxy.ledgerCtx#actor,matrix/gateway/internal/proxy.ledgerCtx#ctx,matrix/gateway/internal/proxy.ledgerCtx#goalID,matrix/gateway/internal/proxy.ledgerCtx#intentID,matrix/gateway/internal/proxy.ledgerCtx#preCap,matrix/gateway/internal/proxy.ledgerCtx#preSpent
+  ^references=matrix/gateway/internal/proxy.Server.handleBuffered,matrix/gateway/internal/proxy.Server.handleProxy,matrix/gateway/internal/proxy.Server.handleStreaming,matrix/gateway/internal/proxy.Server.maybeDebit,matrix/gateway/internal/proxy.Server.stampCostHeaders
   ^defines=matrix/gateway/internal/proxy/proxy.go
 
 NODE id=matrix/gateway/internal/proxy.ledgerCtx#actor kind=field
-  digest=b3:e5c18ecb5293378fba86124a68e11c495e74691438814182767ec99c1fb5b4a7 file=gateway/internal/proxy/proxy.go range=347:347 lang=go exported=false byte_range=10700:10715
+  digest=b3:e5c18ecb5293378fba86124a68e11c495e74691438814182767ec99c1fb5b4a7 file=gateway/internal/proxy/proxy.go range=348:348 lang=go exported=false byte_range=10721:10736
   sig=string
 EDGES
   ^contains=matrix/gateway/internal/proxy.ledgerCtx
 
 NODE id=matrix/gateway/internal/proxy.ledgerCtx#ctx kind=field
-  digest=b3:bb1fd76fd13ce6c18d3b166690167073e9d9fa303e29b5b6d5a56c018fe84525 file=gateway/internal/proxy/proxy.go range=346:346 lang=go exported=false byte_range=10674:10698
+  digest=b3:bb1fd76fd13ce6c18d3b166690167073e9d9fa303e29b5b6d5a56c018fe84525 file=gateway/internal/proxy/proxy.go range=347:347 lang=go exported=false byte_range=10695:10719
   sig=context.Context
 EDGES
   ^contains=matrix/gateway/internal/proxy.ledgerCtx
 
 NODE id=matrix/gateway/internal/proxy.ledgerCtx#goalID kind=field
-  digest=b3:1b19e7e6069098e7268e35cdbe1189e1fc0c04c7224b9a624fbbe96ba7b81a82 file=gateway/internal/proxy/proxy.go range=349:349 lang=go exported=false byte_range=10734:10749
+  digest=b3:1b19e7e6069098e7268e35cdbe1189e1fc0c04c7224b9a624fbbe96ba7b81a82 file=gateway/internal/proxy/proxy.go range=350:350 lang=go exported=false byte_range=10755:10770
   sig=string
 EDGES
   ^contains=matrix/gateway/internal/proxy.ledgerCtx
 
 NODE id=matrix/gateway/internal/proxy.ledgerCtx#intentID kind=field
-  digest=b3:36dded1e02a7463599126085c3741615fa4aba3ebede3ca468dd9fcb1fac8c85 file=gateway/internal/proxy/proxy.go range=348:348 lang=go exported=false byte_range=10717:10732
+  digest=b3:36dded1e02a7463599126085c3741615fa4aba3ebede3ca468dd9fcb1fac8c85 file=gateway/internal/proxy/proxy.go range=349:349 lang=go exported=false byte_range=10738:10753
   sig=string
 EDGES
   ^contains=matrix/gateway/internal/proxy.ledgerCtx
 
 NODE id=matrix/gateway/internal/proxy.ledgerCtx#preCap kind=field
-  digest=b3:e0eeebbad9671e3079971f394cbee11ec36f33871ffe6df134bdb1649489a642 file=gateway/internal/proxy/proxy.go range=351:351 lang=go exported=false byte_range=10768:10783
+  digest=b3:e0eeebbad9671e3079971f394cbee11ec36f33871ffe6df134bdb1649489a642 file=gateway/internal/proxy/proxy.go range=352:352 lang=go exported=false byte_range=10789:10804
   sig=string
 EDGES
   ^contains=matrix/gateway/internal/proxy.ledgerCtx
 
 NODE id=matrix/gateway/internal/proxy.ledgerCtx#preSpent kind=field
-  digest=b3:d18192eb48c03114f8deb5dbcdad1c07f2ccafa250f338b1b3f0d4eb12faaa96 file=gateway/internal/proxy/proxy.go range=350:350 lang=go exported=false byte_range=10751:10766
+  digest=b3:d18192eb48c03114f8deb5dbcdad1c07f2ccafa250f338b1b3f0d4eb12faaa96 file=gateway/internal/proxy/proxy.go range=351:351 lang=go exported=false byte_range=10772:10787
   sig=string
 EDGES
   ^contains=matrix/gateway/internal/proxy.ledgerCtx
 
 NODE id=matrix/gateway/internal/proxy.scanUsageFromChunk kind=func
-  digest=b3:c0c809b72ad566bb4b05b9ce63c995c92f8bec05a3672f981161e1c5dfa498dc file=gateway/internal/proxy/proxy.go range=422:441 lang=go exported=false byte_range=12894:13540
+  digest=b3:c0c809b72ad566bb4b05b9ce63c995c92f8bec05a3672f981161e1c5dfa498dc file=gateway/internal/proxy/proxy.go range=423:442 lang=go exported=false byte_range=12915:13561
   sig=func scanUsageFromChunk(b []byte) (*types.UpstreamUsage, bool)
   doc=scanUsageFromChunk attempts to parse a `data: {...}` SSE chunk for\na `usage` field. Returns the usage + true on success.
 EDGES
+  references=matrix/gateway/internal/proxy.b,matrix/gateway/internal/proxy.env,matrix/gateway/internal/proxy.err,matrix/gateway/internal/proxy.line,matrix/gateway/internal/proxy.payload,matrix/gateway/internal/types.UpstreamResponseEnvelope,matrix/gateway/internal/types.UpstreamUsage
+  ^calls=matrix/gateway/internal/proxy.Server.handleStreaming
+  ^references=matrix/gateway/internal/proxy.Server.handleStreaming
   ^defines=matrix/gateway/internal/proxy/proxy.go
 
 NODE id=matrix/gateway/internal/proxy.writeAuthError kind=func
-  digest=b3:d45774a42abfe7252d0366ef29594d401e3623dbbab744ad8f16f2d3cfcba9ca file=gateway/internal/proxy/proxy.go range=597:608 lang=go exported=false byte_range=19006:19483
+  digest=b3:d45774a42abfe7252d0366ef29594d401e3623dbbab744ad8f16f2d3cfcba9ca file=gateway/internal/proxy/proxy.go range=600:611 lang=go exported=false byte_range=19091:19568
   sig=func writeAuthError(w http.ResponseWriter, err error)
   doc=writeAuthError maps auth failures to JSON 401/400.
 EDGES
+  calls=matrix/gateway/internal/proxy.writeJSONErr
+  references=matrix/gateway/internal/auth.ErrMalformedActor,matrix/gateway/internal/auth.ErrMissingActor,matrix/gateway/internal/auth.ErrUnauthorized,matrix/gateway/internal/proxy.err,matrix/gateway/internal/proxy.w,matrix/gateway/internal/proxy.writeJSONErr
+  ^calls=matrix/gateway/internal/proxy.Server.handleProxy
+  ^references=matrix/gateway/internal/proxy.Server.handleProxy
   ^defines=matrix/gateway/internal/proxy/proxy.go
 
 NODE id=matrix/gateway/internal/proxy.writeBudgetExhausted kind=func
-  digest=b3:31f7c6722ebfd307f2e843f4ec809278102e97bafac6207ff53872c97e6a7c1a file=gateway/internal/proxy/proxy.go range=620:631 lang=go exported=false byte_range=19743:20167
+  digest=b3:31f7c6722ebfd307f2e843f4ec809278102e97bafac6207ff53872c97e6a7c1a file=gateway/internal/proxy/proxy.go range=623:634 lang=go exported=false byte_range=19828:20252
   sig=func writeBudgetExhausted(w http.ResponseWriter, spent, capPax string)
 EDGES
+  references=matrix/gateway/internal/proxy.body,matrix/gateway/internal/proxy.capPax,matrix/gateway/internal/proxy.spent,matrix/gateway/internal/proxy.w,matrix/gateway/internal/types.BudgetExhaustedResponse,matrix/gateway/internal/types.HeaderDailyRemainingPax,matrix/gateway/internal/types.HeaderDailySpentPax
+  ^calls=matrix/gateway/internal/proxy.Server.handleProxy
+  ^references=matrix/gateway/internal/proxy.Server.handleProxy
   ^defines=matrix/gateway/internal/proxy/proxy.go
 
 NODE id=matrix/gateway/internal/proxy.writeJSONErr kind=func
-  digest=b3:e8b908112f2e9ad2a413e99dca84c9d8ae4b6cae353483f347ff4b61c5d0d72d file=gateway/internal/proxy/proxy.go range=610:618 lang=go exported=false byte_range=19485:19741
+  digest=b3:e8b908112f2e9ad2a413e99dca84c9d8ae4b6cae353483f347ff4b61c5d0d72d file=gateway/internal/proxy/proxy.go range=613:621 lang=go exported=false byte_range=19570:19826
   sig=func writeJSONErr(w http.ResponseWriter, status int, kind, msg string)
 EDGES
+  references=matrix/gateway/internal/proxy.body,matrix/gateway/internal/proxy.kind,matrix/gateway/internal/proxy.msg,matrix/gateway/internal/proxy.status,matrix/gateway/internal/proxy.w
+  ^calls=matrix/gateway/internal/proxy.Server.handleBuffered,matrix/gateway/internal/proxy.Server.handleProxy,matrix/gateway/internal/proxy.writeAuthError
+  ^references=matrix/gateway/internal/proxy.Server.handleBuffered,matrix/gateway/internal/proxy.Server.handleProxy,matrix/gateway/internal/proxy.writeAuthError
   ^defines=matrix/gateway/internal/proxy/proxy.go
 
 NODE id=matrix/gateway/internal/proxy/proxy.go kind=file
-  digest=b3:e3f0ac26699f3e04ac51a73ff5b6b425f41f59d3cbb830bf142c879391820e46 file=gateway/internal/proxy/proxy.go range=1:659 lang=go exported=true
+  digest=b3:d6acd907f138d892d086ee564073f622a610caf1898f7026227d26ee2029689e file=gateway/internal/proxy/proxy.go range=1:662 lang=go exported=true
 EDGES
   defines=matrix/gateway/internal/proxy.New,matrix/gateway/internal/proxy.Options,matrix/gateway/internal/proxy.ProviderKeys,matrix/gateway/internal/proxy.Server,matrix/gateway/internal/proxy.Server.Mux,matrix/gateway/internal/proxy.Server.buildUpstreamRequest,matrix/gateway/internal/proxy.Server.handleBuffered,matrix/gateway/internal/proxy.Server.handleHealthz,matrix/gateway/internal/proxy.Server.handleProxy,matrix/gateway/internal/proxy.Server.handleStreaming,matrix/gateway/internal/proxy.Server.makeHandler,matrix/gateway/internal/proxy.Server.maybeDebit,matrix/gateway/internal/proxy.Server.stampCostHeaders,matrix/gateway/internal/proxy.copyHeaders,matrix/gateway/internal/proxy.ensureStreamUsage,matrix/gateway/internal/proxy.extractUsage,matrix/gateway/internal/proxy.ledgerCtx,matrix/gateway/internal/proxy.scanUsageFromChunk,matrix/gateway/internal/proxy.writeAuthError,matrix/gateway/internal/proxy.writeBudgetExhausted,matrix/gateway/internal/proxy.writeJSONErr
   ^contains=matrix/gateway/internal/proxy

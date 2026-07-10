@@ -1,16 +1,20 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:9b68327501b45793fd7687f43b30c960fd68ae8aaff6b2f1bb36ec3e2df2de2f
+# GENERATED gen=codegraph do-not-edit merkle=b3:20e53aba2ea11552396417e53b3e04e87dd1bbb7bef3aa554a45bb92cf89e7f2
 
 NODE id=matrix/neo/internal/automatrixlog kind=package
   digest=b3:757ac490611fc16c746afe5ef46b68c6a6aba3ee00ae20f8013acb7f4edd203d file=neo/internal/automatrixlog range=0:0 lang=go exported=true
 EDGES
   contains=matrix/neo/internal/automatrixlog/automatrixlog.go
   ^contains=mod:matrix/neo
+  ^imports=matrix/neo/cmd/neo,matrix/neo/internal/server
 
 NODE id=matrix/neo/internal/automatrixlog.Dir kind=func
   digest=b3:87e0993f0b55ff7e59a031b97343f6c63a69b82e8f6273f8b6f30550b87538d9 file=neo/internal/automatrixlog/automatrixlog.go range=251:264 lang=go exported=true byte_range=7677:8235
   sig=func Dir(override, cortexRoot string) string
   doc=Dir resolves Neo's Automatrix completion-inbox directory. An explicit\noverride wins; else it is derived from the cortex root's parent (matching the\nconversation / task / trace stores, so the inbox shares /data with them and\nsurvives suspend / redeploy). Returns "" when neither is available\n(persistence disabled).
 EDGES
+  references=matrix/neo/internal/automatrixlog.c,matrix/neo/internal/automatrixlog.cortexRoot,matrix/neo/internal/automatrixlog.o,matrix/neo/internal/automatrixlog.override
+  ^calls=matrix/neo/cmd/neo.runServe
+  ^references=matrix/neo/cmd/neo.runServe
   ^defines=matrix/neo/internal/automatrixlog/automatrixlog.go
 
 NODE id=matrix/neo/internal/automatrixlog.Open kind=func
@@ -18,6 +22,9 @@ NODE id=matrix/neo/internal/automatrixlog.Open kind=func
   sig=func Open(dir string) *Store
   doc=Open builds a store rooted at dir. An empty dir yields a disabled store\n(every method is a safe no-op) so dev/CLI runs work unchanged.
 EDGES
+  references=matrix/neo/internal/automatrixlog.Store,matrix/neo/internal/automatrixlog.dir
+  ^calls=matrix/neo/internal/server.NewEngine
+  ^references=matrix/neo/internal/server.NewEngine
   ^defines=matrix/neo/internal/automatrixlog/automatrixlog.go
 
 NODE id=matrix/neo/internal/automatrixlog.Record kind=type
@@ -26,6 +33,7 @@ NODE id=matrix/neo/internal/automatrixlog.Record kind=type
   doc=Record is one durable Automatrix completion — an in-app inbox item. Its shape\nis the whole no-secrets guarantee: these are the only fields that exist.
 EDGES
   contains=matrix/neo/internal/automatrixlog.Record#ConversationID,matrix/neo/internal/automatrixlog.Record#CreatedAt,matrix/neo/internal/automatrixlog.Record#ID,matrix/neo/internal/automatrixlog.Record#OpportunitySummary,matrix/neo/internal/automatrixlog.Record#Read,matrix/neo/internal/automatrixlog.Record#ResultSummary
+  ^references=matrix/neo/internal/automatrixlog.Store.Append,matrix/neo/internal/automatrixlog.Store.List,matrix/neo/internal/automatrixlog.appendJSONL,matrix/neo/internal/automatrixlog.readJSONL,matrix/neo/internal/automatrixlog.rewriteJSONL,matrix/neo/internal/server.Engine.emitAutomatrixComplete
   ^defines=matrix/neo/internal/automatrixlog/automatrixlog.go
 
 NODE id=matrix/neo/internal/automatrixlog.Record#ConversationID kind=field
@@ -70,6 +78,7 @@ NODE id=matrix/neo/internal/automatrixlog.Store kind=type
   doc=Store is the durable Automatrix completion inbox. All disk access is\nserialised by mu; reads go straight to the filesystem under the lock, every\nwrite is crash-atomic, so a concurrent reader always sees a consistent file.
 EDGES
   contains=matrix/neo/internal/automatrixlog.Store#dir,matrix/neo/internal/automatrixlog.Store#mu,matrix/neo/internal/automatrixlog.Store.Append,matrix/neo/internal/automatrixlog.Store.Enabled,matrix/neo/internal/automatrixlog.Store.List,matrix/neo/internal/automatrixlog.Store.MarkRead,matrix/neo/internal/automatrixlog.Store.Unread,matrix/neo/internal/automatrixlog.Store.path
+  ^references=matrix/neo/internal/automatrixlog.Open,matrix/neo/internal/automatrixlog.Store.Append,matrix/neo/internal/automatrixlog.Store.Enabled,matrix/neo/internal/automatrixlog.Store.List,matrix/neo/internal/automatrixlog.Store.MarkRead,matrix/neo/internal/automatrixlog.Store.Unread,matrix/neo/internal/automatrixlog.Store.path,matrix/neo/internal/server.Engine,matrix/neo/internal/server.Engine.AutomatrixInbox
   ^defines=matrix/neo/internal/automatrixlog/automatrixlog.go
 
 NODE id=matrix/neo/internal/automatrixlog.Store#dir kind=field
@@ -89,7 +98,11 @@ NODE id=matrix/neo/internal/automatrixlog.Store.Append kind=method
   sig=func (s *Store) Append(rec Record) (Record, error)
   doc=Append writes one completion record durably and returns the stored record\n(with its ID and CreatedAt filled in). A blank ID is assigned an unguessable\nrandom id; a blank CreatedAt is stamped now (UTC, RFC3339). New records are\nalways unread. A disabled store returns the record unchanged with no error,\nso a result is never lost on a misconfigured dev run.
 EDGES
+  calls=matrix/neo/internal/automatrixlog.Store.Enabled,matrix/neo/internal/automatrixlog.Store.path,matrix/neo/internal/automatrixlog.appendJSONL,matrix/neo/internal/automatrixlog.newID
+  references=matrix/neo/internal/automatrixlog.Record,matrix/neo/internal/automatrixlog.Store,matrix/neo/internal/automatrixlog.Store.Enabled,matrix/neo/internal/automatrixlog.Store.path,matrix/neo/internal/automatrixlog.appendJSONL,matrix/neo/internal/automatrixlog.err,matrix/neo/internal/automatrixlog.newID,matrix/neo/internal/automatrixlog.rec,matrix/neo/internal/automatrixlog.s
   ^contains=matrix/neo/internal/automatrixlog.Store
+  ^calls=matrix/neo/internal/server.Engine.emitAutomatrixComplete
+  ^references=matrix/neo/internal/server.Engine.emitAutomatrixComplete
   ^defines=matrix/neo/internal/automatrixlog/automatrixlog.go
 
 NODE id=matrix/neo/internal/automatrixlog.Store.Enabled kind=method
@@ -97,7 +110,10 @@ NODE id=matrix/neo/internal/automatrixlog.Store.Enabled kind=method
   sig=func (s *Store) Enabled() bool
   doc=Enabled reports whether persistence is on (a non-empty directory).
 EDGES
+  references=matrix/neo/internal/automatrixlog.Store,matrix/neo/internal/automatrixlog.s
   ^contains=matrix/neo/internal/automatrixlog.Store
+  ^calls=matrix/neo/internal/automatrixlog.Store.Append,matrix/neo/internal/automatrixlog.Store.List,matrix/neo/internal/automatrixlog.Store.MarkRead,matrix/neo/internal/automatrixlog.Store.Unread,matrix/neo/internal/automatrixlog.Store.path
+  ^references=matrix/neo/internal/automatrixlog.Store.Append,matrix/neo/internal/automatrixlog.Store.List,matrix/neo/internal/automatrixlog.Store.MarkRead,matrix/neo/internal/automatrixlog.Store.Unread,matrix/neo/internal/automatrixlog.Store.path
   ^defines=matrix/neo/internal/automatrixlog/automatrixlog.go
 
 NODE id=matrix/neo/internal/automatrixlog.Store.List kind=method
@@ -105,7 +121,11 @@ NODE id=matrix/neo/internal/automatrixlog.Store.List kind=method
   sig=func (s *Store) List() []Record
   doc=List returns the inbox newest-first (most recent completion at index 0), or\nnil when empty / disabled.
 EDGES
+  calls=matrix/neo/internal/automatrixlog.Store.Enabled,matrix/neo/internal/automatrixlog.Store.path,matrix/neo/internal/automatrixlog.readJSONL
+  references=matrix/neo/internal/automatrixlog.Record,matrix/neo/internal/automatrixlog.Store,matrix/neo/internal/automatrixlog.Store.Enabled,matrix/neo/internal/automatrixlog.Store.path,matrix/neo/internal/automatrixlog.i,matrix/neo/internal/automatrixlog.j,matrix/neo/internal/automatrixlog.readJSONL,matrix/neo/internal/automatrixlog.recs,matrix/neo/internal/automatrixlog.s
   ^contains=matrix/neo/internal/automatrixlog.Store
+  ^calls=matrix/neo/internal/server.Server.handleAutomatrixInbox
+  ^references=matrix/neo/internal/server.Server.handleAutomatrixInbox
   ^defines=matrix/neo/internal/automatrixlog/automatrixlog.go
 
 NODE id=matrix/neo/internal/automatrixlog.Store.MarkRead kind=method
@@ -113,7 +133,11 @@ NODE id=matrix/neo/internal/automatrixlog.Store.MarkRead kind=method
   sig=func (s *Store) MarkRead(id string) (bool, error)
   doc=MarkRead flips one record's unread flag via an atomic tmp+rename rewrite and\nreports whether a record actually changed (false when the id is unknown or it\nwas already read). A disabled store reports false.
 EDGES
+  calls=matrix/neo/internal/automatrixlog.Store.Enabled,matrix/neo/internal/automatrixlog.Store.path,matrix/neo/internal/automatrixlog.readJSONL,matrix/neo/internal/automatrixlog.rewriteJSONL
+  references=matrix/neo/internal/automatrixlog.Store,matrix/neo/internal/automatrixlog.Store.Enabled,matrix/neo/internal/automatrixlog.Store.path,matrix/neo/internal/automatrixlog.changed,matrix/neo/internal/automatrixlog.err,matrix/neo/internal/automatrixlog.i,matrix/neo/internal/automatrixlog.id,matrix/neo/internal/automatrixlog.readJSONL,matrix/neo/internal/automatrixlog.recs,matrix/neo/internal/automatrixlog.rewriteJSONL,matrix/neo/internal/automatrixlog.s
   ^contains=matrix/neo/internal/automatrixlog.Store
+  ^calls=matrix/neo/internal/server.Server.handleAutomatrixInboxRead
+  ^references=matrix/neo/internal/server.Server.handleAutomatrixInboxRead
   ^defines=matrix/neo/internal/automatrixlog/automatrixlog.go
 
 NODE id=matrix/neo/internal/automatrixlog.Store.Unread kind=method
@@ -121,14 +145,22 @@ NODE id=matrix/neo/internal/automatrixlog.Store.Unread kind=method
   sig=func (s *Store) Unread() int
   doc=Unread returns the number of unread completion records — the in-app badge\ncount. Zero when empty / disabled.
 EDGES
+  calls=matrix/neo/internal/automatrixlog.Store.Enabled,matrix/neo/internal/automatrixlog.Store.path,matrix/neo/internal/automatrixlog.readJSONL
+  references=matrix/neo/internal/automatrixlog.Store,matrix/neo/internal/automatrixlog.Store.Enabled,matrix/neo/internal/automatrixlog.Store.path,matrix/neo/internal/automatrixlog.n,matrix/neo/internal/automatrixlog.r,matrix/neo/internal/automatrixlog.readJSONL,matrix/neo/internal/automatrixlog.s
   ^contains=matrix/neo/internal/automatrixlog.Store
+  ^calls=matrix/neo/internal/server.Server.handleAutomatrixInbox
+  ^references=matrix/neo/internal/server.Server.handleAutomatrixInbox
   ^defines=matrix/neo/internal/automatrixlog/automatrixlog.go
 
 NODE id=matrix/neo/internal/automatrixlog.Store.path kind=method
   digest=b3:fee534e641b19f27d1a056d25ccdc64239b2c3bf8eb901d7489b9f40241d4f0a file=neo/internal/automatrixlog/automatrixlog.go range=162:167 lang=go exported=false byte_range=5548:5656
   sig=func (s *Store) path() string
 EDGES
+  calls=matrix/neo/internal/automatrixlog.Store.Enabled
+  references=matrix/neo/internal/automatrixlog.Store,matrix/neo/internal/automatrixlog.Store.Enabled,matrix/neo/internal/automatrixlog.recordFile,matrix/neo/internal/automatrixlog.s
   ^contains=matrix/neo/internal/automatrixlog.Store
+  ^calls=matrix/neo/internal/automatrixlog.Store.Append,matrix/neo/internal/automatrixlog.Store.List,matrix/neo/internal/automatrixlog.Store.MarkRead,matrix/neo/internal/automatrixlog.Store.Unread
+  ^references=matrix/neo/internal/automatrixlog.Store.Append,matrix/neo/internal/automatrixlog.Store.List,matrix/neo/internal/automatrixlog.Store.MarkRead,matrix/neo/internal/automatrixlog.Store.Unread
   ^defines=matrix/neo/internal/automatrixlog/automatrixlog.go
 
 NODE id=matrix/neo/internal/automatrixlog.appendJSONL kind=func
@@ -136,6 +168,9 @@ NODE id=matrix/neo/internal/automatrixlog.appendJSONL kind=func
   sig=func appendJSONL(path string, rec Record) error
   doc=appendJSONL appends one record as a single JSON line. O_APPEND + a single\nWrite makes the line atomically visible (POSIX); a torn write yields an\nunparseable final line that readJSONL skips (crash-atomic).
 EDGES
+  references=matrix/neo/internal/automatrixlog.Record,matrix/neo/internal/automatrixlog.b,matrix/neo/internal/automatrixlog.err,matrix/neo/internal/automatrixlog.f,matrix/neo/internal/automatrixlog.path,matrix/neo/internal/automatrixlog.rec
+  ^calls=matrix/neo/internal/automatrixlog.Store.Append
+  ^references=matrix/neo/internal/automatrixlog.Store.Append
   ^defines=matrix/neo/internal/automatrixlog/automatrixlog.go
 
 NODE id=matrix/neo/internal/automatrixlog.newID kind=func
@@ -143,6 +178,9 @@ NODE id=matrix/neo/internal/automatrixlog.newID kind=func
   sig=func newID() string
   doc=newID returns an unguessable record id (no time/user info leaked).
 EDGES
+  references=matrix/neo/internal/automatrixlog.b,matrix/neo/internal/automatrixlog.err
+  ^calls=matrix/neo/internal/automatrixlog.Store.Append
+  ^references=matrix/neo/internal/automatrixlog.Store.Append
   ^defines=matrix/neo/internal/automatrixlog/automatrixlog.go
 
 NODE id=matrix/neo/internal/automatrixlog.readJSONL kind=func
@@ -150,6 +188,9 @@ NODE id=matrix/neo/internal/automatrixlog.readJSONL kind=func
   sig=func readJSONL(path string) []Record
   doc=readJSONL parses a newline-delimited JSON record file, oldest-first. A line\nthat fails to unmarshal (including a crash-truncated final line) is skipped —\ncrash-atomic.
 EDGES
+  references=matrix/neo/internal/automatrixlog.Record,matrix/neo/internal/automatrixlog.err,matrix/neo/internal/automatrixlog.f,matrix/neo/internal/automatrixlog.line,matrix/neo/internal/automatrixlog.out,matrix/neo/internal/automatrixlog.path,matrix/neo/internal/automatrixlog.rec,matrix/neo/internal/automatrixlog.sc
+  ^calls=matrix/neo/internal/automatrixlog.Store.List,matrix/neo/internal/automatrixlog.Store.MarkRead,matrix/neo/internal/automatrixlog.Store.Unread
+  ^references=matrix/neo/internal/automatrixlog.Store.List,matrix/neo/internal/automatrixlog.Store.MarkRead,matrix/neo/internal/automatrixlog.Store.Unread
   ^defines=matrix/neo/internal/automatrixlog/automatrixlog.go
 
 NODE id=matrix/neo/internal/automatrixlog.recordFile kind=const
@@ -157,6 +198,7 @@ NODE id=matrix/neo/internal/automatrixlog.recordFile kind=const
   sig=untyped string
   doc=recordFile is the single per-daemon inbox file. The daemon is per-user, so\none file holds that user/agent's completion inbox; the records carry no user\nid (the directory scoping is the ownership boundary), and no secrets.
 EDGES
+  ^references=matrix/neo/internal/automatrixlog.Store.path
   ^defines=matrix/neo/internal/automatrixlog/automatrixlog.go
 
 NODE id=matrix/neo/internal/automatrixlog.rewriteJSONL kind=func
@@ -164,6 +206,9 @@ NODE id=matrix/neo/internal/automatrixlog.rewriteJSONL kind=func
   sig=func rewriteJSONL(path string, recs []Record) error
   doc=rewriteJSONL atomically replaces the file with recs (tmp+rename), used by\nMarkRead. A crash leaves either the old or the new file intact, never a torn\none.
 EDGES
+  references=matrix/neo/internal/automatrixlog.Record,matrix/neo/internal/automatrixlog.b,matrix/neo/internal/automatrixlog.buf,matrix/neo/internal/automatrixlog.err,matrix/neo/internal/automatrixlog.path,matrix/neo/internal/automatrixlog.r,matrix/neo/internal/automatrixlog.recs,matrix/neo/internal/automatrixlog.tmp
+  ^calls=matrix/neo/internal/automatrixlog.Store.MarkRead
+  ^references=matrix/neo/internal/automatrixlog.Store.MarkRead
   ^defines=matrix/neo/internal/automatrixlog/automatrixlog.go
 
 NODE id=matrix/neo/internal/automatrixlog/automatrixlog.go kind=file

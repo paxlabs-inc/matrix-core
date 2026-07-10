@@ -1,10 +1,12 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:9b68327501b45793fd7687f43b30c960fd68ae8aaff6b2f1bb36ec3e2df2de2f
+# GENERATED gen=codegraph do-not-edit merkle=b3:20e53aba2ea11552396417e53b3e04e87dd1bbb7bef3aa554a45bb92cf89e7f2
 
 NODE id=matrix/gateway/internal/auth kind=package
   digest=b3:2fb1c8dd1ea78d747cf0c58f652e0b510ef91e09cd03a5363d80b813a36e4de0 file=gateway/internal/auth range=0:0 lang=go exported=true
 EDGES
   contains=matrix/gateway/internal/auth/auth.go
+  imports=matrix/gateway/internal/types
   ^contains=mod:matrix/gateway
+  ^imports=matrix/gateway/cmd/matrix-gateway,matrix/gateway/internal/proxy
 
 NODE id=matrix/gateway/internal/auth.Authenticator kind=type
   digest=b3:087759848286d44b6df44242ba3acbf0b8585fecb352bde7c670c44e90dd8c3d file=gateway/internal/auth/auth.go range=25:38 lang=go exported=true byte_range=799:1423
@@ -12,6 +14,7 @@ NODE id=matrix/gateway/internal/auth.Authenticator kind=type
   doc=Authenticator validates the gateway shared bearer token and the\nX-Matrix-Actor-DID actor header. Construct once per process via\nNewAuthenticator; safe for concurrent use.
 EDGES
   contains=matrix/gateway/internal/auth.Authenticator#allowEmptyToken,matrix/gateway/internal/auth.Authenticator#token,matrix/gateway/internal/auth.Authenticator.Verify,matrix/gateway/internal/auth.Authenticator.VerifySignature,matrix/gateway/internal/auth.Authenticator.checkBearer
+  ^references=matrix/gateway/internal/auth.Authenticator.Verify,matrix/gateway/internal/auth.Authenticator.VerifySignature,matrix/gateway/internal/auth.Authenticator.checkBearer,matrix/gateway/internal/auth.New,matrix/gateway/internal/proxy.Options,matrix/gateway/internal/proxy.Server
   ^defines=matrix/gateway/internal/auth/auth.go
 
 NODE id=matrix/gateway/internal/auth.Authenticator#allowEmptyToken kind=field
@@ -33,7 +36,11 @@ NODE id=matrix/gateway/internal/auth.Authenticator.Verify kind=method
   sig=func (a *Authenticator) Verify(r *http.Request) (actor string, err error)
   doc=Verify checks the Authorization header against the configured token\nand the actor header for presence. Returns the actor DID on success.\n\nReturns one of: ErrUnauthorized, ErrMissingActor, ErrMalformedActor,\nor nil. Callers map these to HTTP 401 / 400 themselves so the\npackage stays HTTP-framework agnostic.
 EDGES
+  calls=matrix/gateway/internal/auth.Authenticator.checkBearer,matrix/gateway/internal/auth.looksLikeDID
+  references=matrix/gateway/internal/auth.Authenticator,matrix/gateway/internal/auth.Authenticator.checkBearer,matrix/gateway/internal/auth.ErrMalformedActor,matrix/gateway/internal/auth.ErrMissingActor,matrix/gateway/internal/auth.ErrUnauthorized,matrix/gateway/internal/auth.a,matrix/gateway/internal/auth.actor,matrix/gateway/internal/auth.looksLikeDID,matrix/gateway/internal/auth.r,matrix/gateway/internal/types.HeaderActorDID,matrix/gateway/internal/types.HeaderAuthorization
   ^contains=matrix/gateway/internal/auth.Authenticator
+  ^calls=matrix/gateway/internal/proxy.Server.handleProxy
+  ^references=matrix/gateway/internal/proxy.Server.handleProxy
   ^defines=matrix/gateway/internal/auth/auth.go
 
 NODE id=matrix/gateway/internal/auth.Authenticator.VerifySignature kind=method
@@ -41,14 +48,20 @@ NODE id=matrix/gateway/internal/auth.Authenticator.VerifySignature kind=method
   sig=func (a *Authenticator) VerifySignature(_ *http.Request, _ string) error
   doc=VerifySignature is a placeholder for future ed25519 wallet\nverification across the canonical request body. The plan §5.15\nreserves this surface; v1 returns nil unconditionally so wiring\ncan land without forcing daemon-side signing in the same change.\n\nWhen implemented, it will:\n 1. Read Authorization-Signature: ed25519=<base58> from the request\n 2. Resolve the wallet pubkey for the actor DID (from a cache\n    populated by /wallet/keys, or via a future on-chain lookup)\n 3. Recompute canonical body bytes and verify the signature\n\nUntil then, callers should still invoke it so the boundary check\nis wired in advance.
 EDGES
+  references=matrix/gateway/internal/auth.Authenticator
   ^contains=matrix/gateway/internal/auth.Authenticator
+  ^calls=matrix/gateway/internal/proxy.Server.handleProxy
+  ^references=matrix/gateway/internal/proxy.Server.handleProxy
   ^defines=matrix/gateway/internal/auth/auth.go
 
 NODE id=matrix/gateway/internal/auth.Authenticator.checkBearer kind=method
   digest=b3:c8a405a35e5eb2ee3367878600fe6f0976b8fb966147eb8de46c8dba66e5b04f file=gateway/internal/auth/auth.go range=120:134 lang=go exported=false byte_range=4673:5078
   sig=func (a *Authenticator) checkBearer(header string) bool
 EDGES
+  references=matrix/gateway/internal/auth.Authenticator,matrix/gateway/internal/auth.a,matrix/gateway/internal/auth.header,matrix/gateway/internal/auth.prefix,matrix/gateway/internal/auth.supplied
   ^contains=matrix/gateway/internal/auth.Authenticator
+  ^calls=matrix/gateway/internal/auth.Authenticator.Verify
+  ^references=matrix/gateway/internal/auth.Authenticator.Verify
   ^defines=matrix/gateway/internal/auth/auth.go
 
 NODE id=matrix/gateway/internal/auth.ErrMalformedActor kind=var
@@ -56,6 +69,7 @@ NODE id=matrix/gateway/internal/auth.ErrMalformedActor kind=var
   sig=error
   doc=ErrMalformedActor is returned when the actor header is present but\nnot a recognizable DID-shape ("did:" prefix, single colon-separated\ntriple). The check is deliberately permissive — any string starting\nwith "did:" passes; deeper validation is the wallet's job.
 EDGES
+  ^references=matrix/gateway/internal/auth.Authenticator.Verify,matrix/gateway/internal/proxy.writeAuthError
   ^defines=matrix/gateway/internal/auth/auth.go
 
 NODE id=matrix/gateway/internal/auth.ErrMissingActor kind=var
@@ -63,6 +77,7 @@ NODE id=matrix/gateway/internal/auth.ErrMissingActor kind=var
   sig=error
   doc=ErrMissingActor is returned when X-Matrix-Actor-DID is empty.
 EDGES
+  ^references=matrix/gateway/internal/auth.Authenticator.Verify,matrix/gateway/internal/proxy.writeAuthError
   ^defines=matrix/gateway/internal/auth/auth.go
 
 NODE id=matrix/gateway/internal/auth.ErrUnauthorized kind=var
@@ -70,6 +85,7 @@ NODE id=matrix/gateway/internal/auth.ErrUnauthorized kind=var
   sig=error
   doc=ErrUnauthorized is returned when the bearer token is missing or\nfails constant-time comparison against the expected token.
 EDGES
+  ^references=matrix/gateway/internal/auth.Authenticator.Verify,matrix/gateway/internal/proxy.writeAuthError
   ^defines=matrix/gateway/internal/auth/auth.go
 
 NODE id=matrix/gateway/internal/auth.New kind=func
@@ -77,6 +93,9 @@ NODE id=matrix/gateway/internal/auth.New kind=func
   sig=func New(opts Options) (*Authenticator, error)
   doc=New constructs a new Authenticator from the supplied options.
 EDGES
+  references=matrix/gateway/internal/auth.Authenticator,matrix/gateway/internal/auth.Options,matrix/gateway/internal/auth.opts
+  ^calls=matrix/gateway/cmd/matrix-gateway.run
+  ^references=matrix/gateway/cmd/matrix-gateway.run
   ^defines=matrix/gateway/internal/auth/auth.go
 
 NODE id=matrix/gateway/internal/auth.Options kind=type
@@ -85,6 +104,7 @@ NODE id=matrix/gateway/internal/auth.Options kind=type
   doc=Options controls Authenticator behavior.
 EDGES
   contains=matrix/gateway/internal/auth.Options#AllowEmptyToken,matrix/gateway/internal/auth.Options#Token
+  ^references=matrix/gateway/cmd/matrix-gateway.run,matrix/gateway/internal/auth.New
   ^defines=matrix/gateway/internal/auth/auth.go
 
 NODE id=matrix/gateway/internal/auth.Options#AllowEmptyToken kind=field
@@ -106,6 +126,9 @@ NODE id=matrix/gateway/internal/auth.looksLikeDID kind=func
   sig=func looksLikeDID(s string) bool
   doc=looksLikeDID is a deliberately permissive shape check. The DID Core\nspec allows arbitrary methods + identifiers; we only enforce the\n"did:<method>:<id>" triple structure. Heavy validation is wallet\nresponsibility.
 EDGES
+  references=matrix/gateway/internal/auth.parts,matrix/gateway/internal/auth.s
+  ^calls=matrix/gateway/internal/auth.Authenticator.Verify
+  ^references=matrix/gateway/internal/auth.Authenticator.Verify
   ^defines=matrix/gateway/internal/auth/auth.go
 
 NODE id=matrix/gateway/internal/auth/auth.go kind=file

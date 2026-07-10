@@ -1,16 +1,19 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:9b68327501b45793fd7687f43b30c960fd68ae8aaff6b2f1bb36ec3e2df2de2f
+# GENERATED gen=codegraph do-not-edit merkle=b3:20e53aba2ea11552396417e53b3e04e87dd1bbb7bef3aa554a45bb92cf89e7f2
 
 NODE id=matrix/executor/materiality kind=package
   digest=b3:a0304ec571490779cd1a71905bdf684a020e21b1f54c1fa424849fd2de080039 file=executor/materiality range=0:0 lang=go exported=true
 EDGES
   contains=matrix/executor/materiality/classify.go
+  imports=matrix/executor/tool,matrix/mcl/ir
   ^contains=mod:matrix/executor
+  ^imports=matrix/executor/cmd/mcl-execute
 
 NODE id=matrix/executor/materiality.AllRules kind=var
   digest=b3:5716e69f6f3e70d64f4824b50592397a47156f88c93c181d2f0b77c64cbfaee8 file=executor/materiality/classify.go range=102:112 lang=go exported=true byte_range=3620:3879
   sig=[]string
   doc=AllRules is the canonical ordered list of §18.1 rules.
 EDGES
+  references=matrix/executor/materiality.RuleAnchorFlip,matrix/executor/materiality.RuleBudgetDelta,matrix/executor/materiality.RuleDeadlineShift,matrix/executor/materiality.RuleHardConstraintRelaxed,matrix/executor/materiality.RuleNewSubAgent,matrix/executor/materiality.RuleNewToolNamespace,matrix/executor/materiality.RuleScopeExpansion,matrix/executor/materiality.RuleSuccessCriteriaChanged
   ^defines=matrix/executor/materiality/classify.go
 
 NODE id=matrix/executor/materiality.BudgetAbsoluteThresholdPAX kind=const
@@ -18,6 +21,7 @@ NODE id=matrix/executor/materiality.BudgetAbsoluteThresholdPAX kind=const
   sig=untyped float
   doc=BudgetAbsoluteThresholdPAX: §18.1 "OR expected_cost_new − expected_cost_original > 5 PAX".
 EDGES
+  ^references=matrix/executor/materiality.ruleBudgetDelta
   ^defines=matrix/executor/materiality/classify.go
 
 NODE id=matrix/executor/materiality.BudgetPercentThreshold kind=const
@@ -25,6 +29,7 @@ NODE id=matrix/executor/materiality.BudgetPercentThreshold kind=const
   sig=untyped float
   doc=BudgetPercentThreshold: §18.1 "expected_cost_new > expected_cost_original × 1.10".
 EDGES
+  ^references=matrix/executor/materiality.ruleBudgetDelta
   ^defines=matrix/executor/materiality/classify.go
 
 NODE id=matrix/executor/materiality.Classification kind=type
@@ -33,6 +38,8 @@ NODE id=matrix/executor/materiality.Classification kind=type
   doc=Classification is the outcome of a single classifier run.
 EDGES
   contains=matrix/executor/materiality.Classification#Material,matrix/executor/materiality.Classification#Reasons
+  references=matrix/executor/materiality.Reason
+  ^references=matrix/executor/materiality.Classify
   ^defines=matrix/executor/materiality/classify.go
 
 NODE id=matrix/executor/materiality.Classification#Material kind=field
@@ -54,6 +61,10 @@ NODE id=matrix/executor/materiality.Classify kind=func
   sig=func Classify(in Inputs) Classification
   doc=Classify runs every §18.1 rule against the inputs and returns the\naggregate Classification. Material iff at least one rule fires.
 EDGES
+  calls=matrix/executor/materiality.ruleAnchorFlip,matrix/executor/materiality.ruleBudgetDelta,matrix/executor/materiality.ruleDeadlineShift,matrix/executor/materiality.ruleHardConstraintRelaxed,matrix/executor/materiality.ruleNewSubAgent,matrix/executor/materiality.ruleNewToolNamespace,matrix/executor/materiality.ruleScopeExpansion,matrix/executor/materiality.ruleSuccessCriteriaChanged
+  references=matrix/executor/materiality.Classification,matrix/executor/materiality.Inputs,matrix/executor/materiality.Reason,matrix/executor/materiality.fn,matrix/executor/materiality.in,matrix/executor/materiality.r,matrix/executor/materiality.reasons,matrix/executor/materiality.ruleAnchorFlip,matrix/executor/materiality.ruleBudgetDelta,matrix/executor/materiality.ruleDeadlineShift,matrix/executor/materiality.ruleHardConstraintRelaxed,matrix/executor/materiality.ruleNewSubAgent,matrix/executor/materiality.ruleNewToolNamespace,matrix/executor/materiality.ruleScopeExpansion,matrix/executor/materiality.ruleSuccessCriteriaChanged
+  ^calls=matrix/executor/cmd/mcl-execute.daemonState.handleClassify,matrix/executor/cmd/mcl-execute.runClassify
+  ^references=matrix/executor/cmd/mcl-execute.daemonState.handleClassify,matrix/executor/cmd/mcl-execute.runClassify
   ^defines=matrix/executor/materiality/classify.go
 
 NODE id=matrix/executor/materiality.DeadlineShiftThreshold kind=const
@@ -61,6 +72,7 @@ NODE id=matrix/executor/materiality.DeadlineShiftThreshold kind=const
   sig=untyped float
   doc=DeadlineShiftThreshold: §18.1 "New deadline moves the remaining-time\nwindow by more than 25%".
 EDGES
+  ^references=matrix/executor/materiality.ruleDeadlineShift
   ^defines=matrix/executor/materiality/classify.go
 
 NODE id=matrix/executor/materiality.Inputs kind=type
@@ -69,6 +81,8 @@ NODE id=matrix/executor/materiality.Inputs kind=type
   doc=Inputs are the comparison surfaces for the §18.1 ruleset.\n\nOriginal* fields are the last-accepted plan + intent (what the user\nsigned). New* fields are the post-correction candidates.\nOriginalAnchor / NewAnchor carry the D10 anchor flag from the\ncorresponding intent.accept envelopes (Intent itself does not store\nanchor state; the accept envelope does — envelope/body.go:107).\n\nNow is the wall-clock used for deadline-shift remaining-window\ncalculation. Zero defers to time.Now().UTC().
 EDGES
   contains=matrix/executor/materiality.Inputs#NewAnchor,matrix/executor/materiality.Inputs#NewIntent,matrix/executor/materiality.Inputs#NewPlan,matrix/executor/materiality.Inputs#Now,matrix/executor/materiality.Inputs#OriginalAnchor,matrix/executor/materiality.Inputs#OriginalIntent,matrix/executor/materiality.Inputs#OriginalPlan
+  references=matrix/mcl/ir.Intent,matrix/mcl/ir.PlanTree
+  ^references=matrix/executor/cmd/mcl-execute.daemonState.handleClassify,matrix/executor/cmd/mcl-execute.runClassify,matrix/executor/materiality.Classify,matrix/executor/materiality.ruleAnchorFlip,matrix/executor/materiality.ruleBudgetDelta,matrix/executor/materiality.ruleDeadlineShift,matrix/executor/materiality.ruleHardConstraintRelaxed,matrix/executor/materiality.ruleNewSubAgent,matrix/executor/materiality.ruleNewToolNamespace,matrix/executor/materiality.ruleScopeExpansion,matrix/executor/materiality.ruleSuccessCriteriaChanged
   ^defines=matrix/executor/materiality/classify.go
 
 NODE id=matrix/executor/materiality.Inputs#NewAnchor kind=field
@@ -119,6 +133,7 @@ NODE id=matrix/executor/materiality.Reason kind=type
   doc=Reason names one §18.1 rule that fired.
 EDGES
   contains=matrix/executor/materiality.Reason#Detail,matrix/executor/materiality.Reason#Rule
+  ^references=matrix/executor/cmd/mcl-execute.classifyResponse,matrix/executor/materiality.Classification,matrix/executor/materiality.Classify,matrix/executor/materiality.ruleAnchorFlip,matrix/executor/materiality.ruleBudgetDelta,matrix/executor/materiality.ruleDeadlineShift,matrix/executor/materiality.ruleHardConstraintRelaxed,matrix/executor/materiality.ruleNewSubAgent,matrix/executor/materiality.ruleNewToolNamespace,matrix/executor/materiality.ruleScopeExpansion,matrix/executor/materiality.ruleSuccessCriteriaChanged
   ^defines=matrix/executor/materiality/classify.go
 
 NODE id=matrix/executor/materiality.Reason#Detail kind=field
@@ -140,6 +155,7 @@ NODE id=matrix/executor/materiality.RuleAnchorFlip kind=const
   sig=untyped string
   doc=Rule name constants (machine-routable, stable across versions).
 EDGES
+  ^references=matrix/executor/materiality.AllRules,matrix/executor/materiality.ruleAnchorFlip
   ^defines=matrix/executor/materiality/classify.go
 
 NODE id=matrix/executor/materiality.RuleBudgetDelta kind=const
@@ -147,6 +163,7 @@ NODE id=matrix/executor/materiality.RuleBudgetDelta kind=const
   sig=untyped string
   doc=Rule name constants (machine-routable, stable across versions).
 EDGES
+  ^references=matrix/executor/materiality.AllRules,matrix/executor/materiality.ruleBudgetDelta
   ^defines=matrix/executor/materiality/classify.go
 
 NODE id=matrix/executor/materiality.RuleDeadlineShift kind=const
@@ -154,6 +171,7 @@ NODE id=matrix/executor/materiality.RuleDeadlineShift kind=const
   sig=untyped string
   doc=Rule name constants (machine-routable, stable across versions).
 EDGES
+  ^references=matrix/executor/materiality.AllRules,matrix/executor/materiality.ruleDeadlineShift
   ^defines=matrix/executor/materiality/classify.go
 
 NODE id=matrix/executor/materiality.RuleHardConstraintRelaxed kind=const
@@ -161,6 +179,7 @@ NODE id=matrix/executor/materiality.RuleHardConstraintRelaxed kind=const
   sig=untyped string
   doc=Rule name constants (machine-routable, stable across versions).
 EDGES
+  ^references=matrix/executor/materiality.AllRules,matrix/executor/materiality.ruleHardConstraintRelaxed
   ^defines=matrix/executor/materiality/classify.go
 
 NODE id=matrix/executor/materiality.RuleNewSubAgent kind=const
@@ -168,6 +187,7 @@ NODE id=matrix/executor/materiality.RuleNewSubAgent kind=const
   sig=untyped string
   doc=Rule name constants (machine-routable, stable across versions).
 EDGES
+  ^references=matrix/executor/materiality.AllRules,matrix/executor/materiality.ruleNewSubAgent
   ^defines=matrix/executor/materiality/classify.go
 
 NODE id=matrix/executor/materiality.RuleNewToolNamespace kind=const
@@ -175,6 +195,7 @@ NODE id=matrix/executor/materiality.RuleNewToolNamespace kind=const
   sig=untyped string
   doc=Rule name constants (machine-routable, stable across versions).
 EDGES
+  ^references=matrix/executor/materiality.AllRules,matrix/executor/materiality.ruleNewToolNamespace
   ^defines=matrix/executor/materiality/classify.go
 
 NODE id=matrix/executor/materiality.RuleScopeExpansion kind=const
@@ -182,6 +203,7 @@ NODE id=matrix/executor/materiality.RuleScopeExpansion kind=const
   sig=untyped string
   doc=Rule name constants (machine-routable, stable across versions).
 EDGES
+  ^references=matrix/executor/materiality.AllRules,matrix/executor/materiality.ruleScopeExpansion
   ^defines=matrix/executor/materiality/classify.go
 
 NODE id=matrix/executor/materiality.RuleSuccessCriteriaChanged kind=const
@@ -189,42 +211,64 @@ NODE id=matrix/executor/materiality.RuleSuccessCriteriaChanged kind=const
   sig=untyped string
   doc=Rule name constants (machine-routable, stable across versions).
 EDGES
+  ^references=matrix/executor/materiality.AllRules,matrix/executor/materiality.ruleSuccessCriteriaChanged
   ^defines=matrix/executor/materiality/classify.go
 
 NODE id=matrix/executor/materiality.budgetAmount kind=func
   digest=b3:61cf7afbf04f24bd14bce88e984807866ff071798f42262ff0c2875121fa1e95 file=executor/materiality/classify.go range=208:216 lang=go exported=false byte_range=6721:7178
   sig=func budgetAmount(intent *ir.Intent, plan *ir.PlanTree) (maybeBudget, string)
 EDGES
+  references=matrix/executor/materiality.intent,matrix/executor/materiality.maybeBudget,matrix/executor/materiality.plan,matrix/mcl/ir.Intent,matrix/mcl/ir.PlanTree
+  ^calls=matrix/executor/materiality.ruleBudgetDelta
+  ^references=matrix/executor/materiality.ruleBudgetDelta
   ^defines=matrix/executor/materiality/classify.go
 
 NODE id=matrix/executor/materiality.collectAgentRefs kind=func
   digest=b3:90357423c8e28fb9c4e87e608fcd27cc422943d39533b52f07eb509f883b23dd file=executor/materiality/classify.go range=247:258 lang=go exported=false byte_range=8044:8364
   sig=func collectAgentRefs(plan *ir.PlanTree) map[string]bool
 EDGES
+  calls=matrix/executor/materiality.walkPlanNodes
+  references=matrix/executor/materiality.n,matrix/executor/materiality.out,matrix/executor/materiality.plan,matrix/executor/materiality.walkPlanNodes,matrix/mcl/ir.NodeSubDispatch,matrix/mcl/ir.PlanNode,matrix/mcl/ir.PlanTree
+  ^calls=matrix/executor/materiality.ruleNewSubAgent
+  ^references=matrix/executor/materiality.ruleNewSubAgent
   ^defines=matrix/executor/materiality/classify.go
 
 NODE id=matrix/executor/materiality.collectAgentScope kind=func
   digest=b3:6bdefdd78417743fb2bb36c968b5d1664fd668312081a0eb5e0f7a82b66e7c99 file=executor/materiality/classify.go range=310:318 lang=go exported=false byte_range=9971:10280
   sig=func collectAgentScope(plan *ir.PlanTree) map[string]string
 EDGES
+  calls=matrix/executor/materiality.walkPlanNodes
+  references=matrix/executor/materiality.n,matrix/executor/materiality.out,matrix/executor/materiality.plan,matrix/executor/materiality.walkPlanNodes,matrix/mcl/ir.NodeSubDispatch,matrix/mcl/ir.PlanNode,matrix/mcl/ir.PlanTree
+  ^calls=matrix/executor/materiality.ruleScopeExpansion
+  ^references=matrix/executor/materiality.ruleScopeExpansion
   ^defines=matrix/executor/materiality/classify.go
 
 NODE id=matrix/executor/materiality.collectToolNamespaces kind=func
   digest=b3:482ac9e5dff00519741d748489b005a2341a22f4adc1e47e1be06da5dd22fe17 file=executor/materiality/classify.go range=353:377 lang=go exported=false byte_range=11336:11955
   sig=func collectToolNamespaces(plan *ir.PlanTree) map[string]bool
 EDGES
+  calls=matrix/executor/materiality.walkPlanNodes
+  references=matrix/executor/materiality.err,matrix/executor/materiality.n,matrix/executor/materiality.out,matrix/executor/materiality.plan,matrix/executor/materiality.u,matrix/executor/materiality.walkPlanNodes,matrix/executor/tool.ParseToolURI,matrix/executor/tool.ToolURI.IsMCP,matrix/mcl/ir.NodeToolCall,matrix/mcl/ir.PlanNode,matrix/mcl/ir.PlanTree
+  ^calls=matrix/executor/materiality.ruleNewToolNamespace
+  ^references=matrix/executor/materiality.ruleNewToolNamespace
   ^defines=matrix/executor/materiality/classify.go
 
 NODE id=matrix/executor/materiality.constraintsOf kind=func
   digest=b3:af3cc952627aae5868b2586f6e4ae9ce5156894252aea7cb567689db92bf3faa file=executor/materiality/classify.go range=421:426 lang=go exported=false byte_range=13198:13324
   sig=func constraintsOf(intent *ir.Intent) []ir.Constraint
 EDGES
+  references=matrix/executor/materiality.intent,matrix/mcl/ir.Constraint,matrix/mcl/ir.Intent
+  ^calls=matrix/executor/materiality.ruleHardConstraintRelaxed
+  ^references=matrix/executor/materiality.ruleHardConstraintRelaxed
   ^defines=matrix/executor/materiality/classify.go
 
 NODE id=matrix/executor/materiality.deadlineOf kind=func
   digest=b3:01dd5488e05eb18b407a27323d74e893ec02bbf09b8a30cf8e565a43ae9bb1d7 file=executor/materiality/classify.go range=674:679 lang=go exported=false byte_range=20604:20708
   sig=func deadlineOf(intent *ir.Intent) string
 EDGES
+  references=matrix/executor/materiality.intent,matrix/mcl/ir.Intent
+  ^calls=matrix/executor/materiality.ruleDeadlineShift
+  ^references=matrix/executor/materiality.ruleDeadlineShift
   ^defines=matrix/executor/materiality/classify.go
 
 NODE id=matrix/executor/materiality.indexHardConstraints kind=func
@@ -232,12 +276,19 @@ NODE id=matrix/executor/materiality.indexHardConstraints kind=func
   sig=func indexHardConstraints(list []ir.Constraint) map[string]ir.Constraint
   doc=indexHardConstraints keys constraints by a stable identifier so the\ncomparison can find matched pairs across the two intents.
 EDGES
+  references=matrix/executor/materiality.c,matrix/executor/materiality.key,matrix/executor/materiality.list,matrix/executor/materiality.out,matrix/mcl/ir.Constraint
+  ^calls=matrix/executor/materiality.ruleHardConstraintRelaxed
+  ^references=matrix/executor/materiality.ruleHardConstraintRelaxed
   ^defines=matrix/executor/materiality/classify.go
 
 NODE id=matrix/executor/materiality.indexPredicates kind=func
   digest=b3:359b0e8019de5bb8aa3d0b9b4c739c5e98111441fdb56534c5b0ce28636dbf5b file=executor/materiality/classify.go range=580:586 lang=go exported=false byte_range=17871:18042
   sig=func indexPredicates(list []ir.Predicate) map[string]ir.Predicate
 EDGES
+  calls=matrix/executor/materiality.predicateKey
+  references=matrix/executor/materiality.list,matrix/executor/materiality.out,matrix/executor/materiality.p,matrix/executor/materiality.predicateKey,matrix/mcl/ir.Predicate
+  ^calls=matrix/executor/materiality.ruleSuccessCriteriaChanged
+  ^references=matrix/executor/materiality.ruleSuccessCriteriaChanged
   ^defines=matrix/executor/materiality/classify.go
 
 NODE id=matrix/executor/materiality.looser kind=func
@@ -245,6 +296,10 @@ NODE id=matrix/executor/materiality.looser kind=func
   sig=func looser(orig, cand ir.Constraint) (bool, string)
   doc=looser reports whether candidate is a looser version of the original.\nReturns (loose=false) on equal or tighter (non-material direction).\n\n"Loosening" semantics per §18.1:\n\n	budget   — Max higher\n	deadline — By later\n	quality  — Min lower\n	jurisdiction — Allow widened OR Deny narrowed\n	rule/policy/x:custom — any change (we can't reason about internal\n	                       loosening without resolving the ref)
 EDGES
+  calls=matrix/executor/materiality.parseTime,matrix/executor/materiality.stringDifference
+  references=matrix/executor/materiality.added,matrix/executor/materiality.cand,matrix/executor/materiality.cerr,matrix/executor/materiality.ct,matrix/executor/materiality.oerr,matrix/executor/materiality.orig,matrix/executor/materiality.ot,matrix/executor/materiality.parseTime,matrix/executor/materiality.removed,matrix/executor/materiality.stringDifference,matrix/mcl/ir.Constraint
+  ^calls=matrix/executor/materiality.ruleHardConstraintRelaxed
+  ^references=matrix/executor/materiality.ruleHardConstraintRelaxed
   ^defines=matrix/executor/materiality/classify.go
 
 NODE id=matrix/executor/materiality.maybeBudget kind=type
@@ -253,6 +308,7 @@ NODE id=matrix/executor/materiality.maybeBudget kind=type
   doc=budgetAmount returns the MaxCost from the plan (preferred) or intent.
 EDGES
   contains=matrix/executor/materiality.maybeBudget#amount,matrix/executor/materiality.maybeBudget#valid
+  ^references=matrix/executor/materiality.budgetAmount
   ^defines=matrix/executor/materiality/classify.go
 
 NODE id=matrix/executor/materiality.maybeBudget#amount kind=field
@@ -272,24 +328,36 @@ NODE id=matrix/executor/materiality.parseTime kind=func
   sig=func parseTime(s string) (time.Time, error)
   doc=parseTime tries RFC3339 then RFC3339Nano then date-only. Returns the\nfirst successful parse.
 EDGES
+  references=matrix/executor/materiality.err,matrix/executor/materiality.layout,matrix/executor/materiality.s,matrix/executor/materiality.t
+  ^calls=matrix/executor/materiality.looser,matrix/executor/materiality.ruleDeadlineShift
+  ^references=matrix/executor/materiality.looser,matrix/executor/materiality.ruleDeadlineShift
   ^defines=matrix/executor/materiality/classify.go
 
 NODE id=matrix/executor/materiality.predicateEqual kind=func
   digest=b3:1d28c436e1e4d3ea2df5316d04f283859dcc71afc4c855b3cec18a3aa6b820ad file=executor/materiality/classify.go range=604:614 lang=go exported=false byte_range=18391:18653
   sig=func predicateEqual(a, b ir.Predicate) bool
 EDGES
+  references=matrix/executor/materiality.a,matrix/executor/materiality.b,matrix/mcl/ir.Predicate
+  ^calls=matrix/executor/materiality.ruleSuccessCriteriaChanged
+  ^references=matrix/executor/materiality.ruleSuccessCriteriaChanged
   ^defines=matrix/executor/materiality/classify.go
 
 NODE id=matrix/executor/materiality.predicateKey kind=func
   digest=b3:7981a008435b4b9d65718b76344a329452f55e4b72315190c745a55044b7e9b0 file=executor/materiality/classify.go range=588:602 lang=go exported=false byte_range=18044:18389
   sig=func predicateKey(p ir.Predicate) string
 EDGES
+  references=matrix/executor/materiality.p,matrix/mcl/ir.Predicate
+  ^calls=matrix/executor/materiality.indexPredicates
+  ^references=matrix/executor/materiality.indexPredicates
   ^defines=matrix/executor/materiality/classify.go
 
 NODE id=matrix/executor/materiality.predicatesOf kind=func
   digest=b3:7a51a981c88b3cc58b280b2a613ce0e3a27663c18e789075073ad19f6703e8c0 file=executor/materiality/classify.go range=573:578 lang=go exported=false byte_range=17741:17869
   sig=func predicatesOf(intent *ir.Intent) []ir.Predicate
 EDGES
+  references=matrix/executor/materiality.intent,matrix/mcl/ir.Intent,matrix/mcl/ir.Predicate
+  ^calls=matrix/executor/materiality.ruleSuccessCriteriaChanged
+  ^references=matrix/executor/materiality.ruleSuccessCriteriaChanged
   ^defines=matrix/executor/materiality/classify.go
 
 NODE id=matrix/executor/materiality.ruleAnchorFlip kind=func
@@ -297,6 +365,9 @@ NODE id=matrix/executor/materiality.ruleAnchorFlip kind=func
   sig=func ruleAnchorFlip(in Inputs) *Reason
   doc=---- rule 8: Anchor flip ----\n\n§18.1: "The plan changes from anchor-off to anchor-on (per D10), or\n\n	vice-versa."
 EDGES
+  references=matrix/executor/materiality.Inputs,matrix/executor/materiality.Reason,matrix/executor/materiality.RuleAnchorFlip,matrix/executor/materiality.dir,matrix/executor/materiality.in
+  ^calls=matrix/executor/materiality.Classify
+  ^references=matrix/executor/materiality.Classify
   ^defines=matrix/executor/materiality/classify.go
 
 NODE id=matrix/executor/materiality.ruleBudgetDelta kind=func
@@ -304,6 +375,10 @@ NODE id=matrix/executor/materiality.ruleBudgetDelta kind=func
   sig=func ruleBudgetDelta(in Inputs) *Reason
   doc=---- rule 1: Budget delta ----\n\n§18.1: "expected_cost_new > expected_cost_original × 1.10 OR\n\n	expected_cost_new − expected_cost_original > 5 PAX.\n	(Whichever is larger.)"\n\nSource of expected_cost: ir.Budget.MaxCost (intent or plan). Plan budget\nnarrows intent budget (MCL/ir/plan.go:63-65); we read from plan when\npresent, else from intent.
 EDGES
+  calls=matrix/executor/materiality.budgetAmount
+  references=matrix/executor/materiality.BudgetAbsoluteThresholdPAX,matrix/executor/materiality.BudgetPercentThreshold,matrix/executor/materiality.Inputs,matrix/executor/materiality.Reason,matrix/executor/materiality.RuleBudgetDelta,matrix/executor/materiality.absTrigger,matrix/executor/materiality.budgetAmount,matrix/executor/materiality.cand,matrix/executor/materiality.candAsset,matrix/executor/materiality.delta,matrix/executor/materiality.in,matrix/executor/materiality.orig,matrix/executor/materiality.origAsset,matrix/executor/materiality.pctTrigger
+  ^calls=matrix/executor/materiality.Classify
+  ^references=matrix/executor/materiality.Classify
   ^defines=matrix/executor/materiality/classify.go
 
 NODE id=matrix/executor/materiality.ruleDeadlineShift kind=func
@@ -311,6 +386,10 @@ NODE id=matrix/executor/materiality.ruleDeadlineShift kind=func
   sig=func ruleDeadlineShift(in Inputs) *Reason
   doc=---- rule 7: Deadline shift > 25% ----\n\n§18.1: "New deadline moves the remaining-time window by more than 25%."\n\nremaining_orig = original_deadline − now\nremaining_new  = new_deadline − now\nshift_ratio    = |remaining_new − remaining_orig| / |remaining_orig|\nmaterial iff shift_ratio > 0.25.\n\nEdge cases:\n  - Adding a deadline where none existed → material (new constraint)\n  - Removing a deadline → material (removed deadline = unbounded)\n  - Original deadline already in the past → cannot compute remaining\n    window; treat any change as material.
 EDGES
+  calls=matrix/executor/materiality.deadlineOf,matrix/executor/materiality.parseTime
+  references=matrix/executor/materiality.DeadlineShiftThreshold,matrix/executor/materiality.Inputs,matrix/executor/materiality.Reason,matrix/executor/materiality.RuleDeadlineShift,matrix/executor/materiality.deadlineOf,matrix/executor/materiality.deltaAbs,matrix/executor/materiality.in,matrix/executor/materiality.nerr,matrix/executor/materiality.newStr,matrix/executor/materiality.nt,matrix/executor/materiality.oerr,matrix/executor/materiality.origStr,matrix/executor/materiality.ot,matrix/executor/materiality.parseTime,matrix/executor/materiality.ratio,matrix/executor/materiality.remNew,matrix/executor/materiality.remOrig
+  ^calls=matrix/executor/materiality.Classify
+  ^references=matrix/executor/materiality.Classify
   ^defines=matrix/executor/materiality/classify.go
 
 NODE id=matrix/executor/materiality.ruleHardConstraintRelaxed kind=func
@@ -318,6 +397,10 @@ NODE id=matrix/executor/materiality.ruleHardConstraintRelaxed kind=func
   sig=func ruleHardConstraintRelaxed(in Inputs) *Reason
   doc=---- rule 5: Hard constraint relaxation ----\n\n§18.1: "Any Constraint { hard: true } removed, or its bound loosened\n\n	(budget up, deadline later, quality min down, jurisdiction set\n	widened)."\n\nComparison strategy:\n  - Build a map of original hard constraints keyed by (Type, identifier).\n  - For each candidate constraint, find the matching original and check\n    whether the bound moved in the loosening direction.\n  - For each original hard constraint missing from candidate, fire.
 EDGES
+  calls=matrix/executor/materiality.constraintsOf,matrix/executor/materiality.indexHardConstraints,matrix/executor/materiality.looser
+  references=matrix/executor/materiality.Inputs,matrix/executor/materiality.Reason,matrix/executor/materiality.RuleHardConstraintRelaxed,matrix/executor/materiality.candHard,matrix/executor/materiality.cc,matrix/executor/materiality.constraintsOf,matrix/executor/materiality.in,matrix/executor/materiality.indexHardConstraints,matrix/executor/materiality.key,matrix/executor/materiality.loose,matrix/executor/materiality.looser,matrix/executor/materiality.msgs,matrix/executor/materiality.oc,matrix/executor/materiality.origHard,matrix/executor/materiality.present,matrix/executor/materiality.why
+  ^calls=matrix/executor/materiality.Classify
+  ^references=matrix/executor/materiality.Classify
   ^defines=matrix/executor/materiality/classify.go
 
 NODE id=matrix/executor/materiality.ruleNewSubAgent kind=func
@@ -325,6 +408,10 @@ NODE id=matrix/executor/materiality.ruleNewSubAgent kind=func
   sig=func ruleNewSubAgent(in Inputs) *Reason
   doc=---- rule 2: New sub-agent ----\n\n§18.1: "Any intent.dispatch to an AgentRef not present in the\n\n	originally-accepted plan."\n\nWe approximate intent.dispatch presence via NodeSubDispatch.AgentRef\nin the PlanTree (the plan-time declaration of what dispatches will\nfire). A run-time dispatch to an AgentRef NOT pre-declared in the\noriginally-accepted plan would be caught here when the corrected\nplan is the input.
 EDGES
+  calls=matrix/executor/materiality.collectAgentRefs
+  references=matrix/executor/materiality.Inputs,matrix/executor/materiality.Reason,matrix/executor/materiality.RuleNewSubAgent,matrix/executor/materiality.added,matrix/executor/materiality.candidate,matrix/executor/materiality.collectAgentRefs,matrix/executor/materiality.in,matrix/executor/materiality.original,matrix/executor/materiality.ref
+  ^calls=matrix/executor/materiality.Classify
+  ^references=matrix/executor/materiality.Classify
   ^defines=matrix/executor/materiality/classify.go
 
 NODE id=matrix/executor/materiality.ruleNewToolNamespace kind=func
@@ -332,6 +419,10 @@ NODE id=matrix/executor/materiality.ruleNewToolNamespace kind=func
   sig=func ruleNewToolNamespace(in Inputs) *Reason
   doc=---- rule 4: New tool namespace ----\n\n§18.1: "A ToolRef whose namespace (tools/<ns>/*) was not in the original\n\n	plan. Same-namespace swaps are non-material."\n\nWe parse every ToolRef via tool.ParseToolURI (which already enforces\nthe Q17 split into Provider/Server). The "namespace" is:\n\n  - For MCP tools: (Provider, Server). Two MCP tools differing only\n    in Name are same-namespace; differing in Server are different.\n  - For native tools: Provider alone (one of the 8 S6 namespaces).\n\nUnparseable tool refs surface as a material reason since they would\nfail validation anyway.
 EDGES
+  calls=matrix/executor/materiality.collectToolNamespaces
+  references=matrix/executor/materiality.Inputs,matrix/executor/materiality.Reason,matrix/executor/materiality.RuleNewToolNamespace,matrix/executor/materiality.added,matrix/executor/materiality.candidate,matrix/executor/materiality.collectToolNamespaces,matrix/executor/materiality.in,matrix/executor/materiality.ns,matrix/executor/materiality.original
+  ^calls=matrix/executor/materiality.Classify
+  ^references=matrix/executor/materiality.Classify
   ^defines=matrix/executor/materiality/classify.go
 
 NODE id=matrix/executor/materiality.ruleScopeExpansion kind=func
@@ -339,6 +430,10 @@ NODE id=matrix/executor/materiality.ruleScopeExpansion kind=func
   sig=func ruleScopeExpansion(in Inputs) *Reason
   doc=---- rule 3: Scope expansion ----\n\n§18.1: "Any CortexScope.include or query widening passed to an existing\n\n	sub-agent vs. the originally-accepted scope."\n\nWe detect ScopeURI added/changed for an existing AgentRef. Full\nCortexScope set-difference would require resolving the Scope record\nfrom cortex (CortexScope lives in cortex/scope/ per Phase 10).\nv1 lock: signature-level change is the trigger; deeper Scope.include\ndiffing is deferred to v1.1 when the materiality classifier can take\nthe resolved Scope records as inputs.
 EDGES
+  calls=matrix/executor/materiality.collectAgentScope
+  references=matrix/executor/materiality.Inputs,matrix/executor/materiality.Reason,matrix/executor/materiality.RuleScopeExpansion,matrix/executor/materiality.agent,matrix/executor/materiality.candidate,matrix/executor/materiality.collectAgentScope,matrix/executor/materiality.existed,matrix/executor/materiality.expanded,matrix/executor/materiality.in,matrix/executor/materiality.newScope,matrix/executor/materiality.origScope,matrix/executor/materiality.original
+  ^calls=matrix/executor/materiality.Classify
+  ^references=matrix/executor/materiality.Classify
   ^defines=matrix/executor/materiality/classify.go
 
 NODE id=matrix/executor/materiality.ruleSuccessCriteriaChanged kind=func
@@ -346,6 +441,10 @@ NODE id=matrix/executor/materiality.ruleSuccessCriteriaChanged kind=func
   sig=func ruleSuccessCriteriaChanged(in Inputs) *Reason
   doc=---- rule 6: Success criteria change ----\n\n§18.1: "Any add, remove, or weakening of a Predicate in\n\n	frame.success_criteria."\n\nv1 detection: signature-level (Type + key identifying field). Any add\nor remove fires. Weakening of identically-typed predicates is hard to\nreason about without semantic understanding of the predicate's\ninternal data; we treat parameter changes on the same (Type, key)\npair as a material reason.
 EDGES
+  calls=matrix/executor/materiality.indexPredicates,matrix/executor/materiality.predicateEqual,matrix/executor/materiality.predicatesOf
+  references=matrix/executor/materiality.Inputs,matrix/executor/materiality.Reason,matrix/executor/materiality.RuleSuccessCriteriaChanged,matrix/executor/materiality.c,matrix/executor/materiality.candSet,matrix/executor/materiality.in,matrix/executor/materiality.indexPredicates,matrix/executor/materiality.k,matrix/executor/materiality.msgs,matrix/executor/materiality.o,matrix/executor/materiality.origSet,matrix/executor/materiality.predicateEqual,matrix/executor/materiality.predicatesOf,matrix/executor/materiality.present
+  ^calls=matrix/executor/materiality.Classify
+  ^references=matrix/executor/materiality.Classify
   ^defines=matrix/executor/materiality/classify.go
 
 NODE id=matrix/executor/materiality.stringDifference kind=func
@@ -353,6 +452,9 @@ NODE id=matrix/executor/materiality.stringDifference kind=func
   sig=func stringDifference(a, b []string) []string
   doc=stringDifference returns elements present in a but not in b.
 EDGES
+  references=matrix/executor/materiality.a,matrix/executor/materiality.b,matrix/executor/materiality.bset,matrix/executor/materiality.diff,matrix/executor/materiality.s
+  ^calls=matrix/executor/materiality.looser
+  ^references=matrix/executor/materiality.looser
   ^defines=matrix/executor/materiality/classify.go
 
 NODE id=matrix/executor/materiality.walkPlanNodes kind=func
@@ -360,6 +462,9 @@ NODE id=matrix/executor/materiality.walkPlanNodes kind=func
   sig=func walkPlanNodes(n *ir.PlanNode, fn func(*ir.PlanNode))
   doc=walkPlanNodes is a simple recursive visitor over the plan tree.\nNot exported because callers should compose with the kind-specific\nextractors below rather than re-implement traversal.
 EDGES
+  references=matrix/executor/materiality.fn,matrix/executor/materiality.i,matrix/executor/materiality.n,matrix/mcl/ir.PlanNode
+  ^calls=matrix/executor/materiality.collectAgentRefs,matrix/executor/materiality.collectAgentScope,matrix/executor/materiality.collectToolNamespaces
+  ^references=matrix/executor/materiality.collectAgentRefs,matrix/executor/materiality.collectAgentScope,matrix/executor/materiality.collectToolNamespaces
   ^defines=matrix/executor/materiality/classify.go
 
 NODE id=matrix/executor/materiality/classify.go kind=file

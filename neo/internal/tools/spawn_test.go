@@ -14,8 +14,8 @@ func TestParseSubagentSpecs(t *testing.T) {
 		"agents": []interface{}{
 			map[string]interface{}{"name": "Go Analyst", "persona": "senior Go reviewer", "task": "review the executor package"},
 			map[string]interface{}{"persona": "security", "task": "audit the contracts"}, // no name -> synthesized
-			map[string]interface{}{"name": "Empty", "persona": "x"},                       // no task -> dropped
-			"not-an-object",                                                               // wrong type -> skipped
+			map[string]interface{}{"name": "Empty", "persona": "x"},                      // no task -> dropped
+			"not-an-object", // wrong type -> skipped
 		},
 	}
 	specs := parseSubagentSpecs(args)
@@ -66,5 +66,30 @@ func TestSubagentSchemasExcludeSynthetic(t *testing.T) {
 	}
 	if !names["fs__read_file"] || !names["exec__run"] {
 		t.Errorf("sub-agent surface should keep the natural tools, got %v", names)
+	}
+}
+
+// TestSubagentSurfacePassesValueTransferWall proves the sub-agent alignment
+// contract never weakens the value-transfer wall (self-model task 4.3, req.9.3):
+// even though the FULL parent surface advertises the money core_execute tool,
+// the sub-agent surface (SubagentSchemas — what every spawned sub-agent runs on)
+// passes AssertNoValueTransferTools.
+func TestSubagentSurfacePassesValueTransferWall(t *testing.T) {
+	m := &Manager{
+		byFunc: map[string]*boundTool{
+			"fs__read_file": {funcName: "fs__read_file", desc: "read", params: map[string]interface{}{"type": "object"}},
+		},
+		order: []string{"fs__read_file"},
+	}
+	// Wire the money delegate so the FULL surface advertises core_execute.
+	m.delegate = func(context.Context, string) (string, error) { return "", nil }
+
+	// Precondition: the full parent surface DOES carry a value-transfer tool.
+	if err := AssertNoValueTransferTools(m.Schemas()); err == nil {
+		t.Fatal("precondition: the full surface must advertise core_execute (the money wall)")
+	}
+	// The sub-agent surface must be clean.
+	if err := AssertNoValueTransferTools(m.SubagentSchemas()); err != nil {
+		t.Errorf("sub-agent surface must pass the value-transfer wall: %v", err)
 	}
 }

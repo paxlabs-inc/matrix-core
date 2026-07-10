@@ -184,6 +184,21 @@ func (a *Agent) systemPrompt() string {
 	if a.persona != "" {
 		fmt.Fprintf(&b, "You are \"%s\", a focused sub-agent working as part of a larger task.\n", name)
 		fmt.Fprintf(&b, "Your role: %s\n\n", a.persona)
+		// Alignment contract (self-model task 4.3, req.9.1): a sub-agent is the
+		// SAME mind (Neo) on a scoped slice, so it inherits the shared self-model —
+		// how it is built and how it tends to fail — plus an explicit ephemeral-role
+		// awareness and its bounds. This is what makes a sub-agent act as an aligned
+		// extension of the one identity rather than a blank helper.
+		b.WriteString("Who you are:\n")
+		b.WriteString("- You are an EPHEMERAL, scoped instance of the same agent that spawned you — you exist only for this one task, and when you report back you're done. You share that agent's identity and self-model; you are not a separate bot.\n")
+		if sm := strings.TrimSpace(a.selfModel); sm != "" {
+			b.WriteString("- Your shared self-model (how you are built and how you tend to fail — reason from it, and avoid the failure patterns):\n")
+			b.WriteString(indentBlock(sm, "    "))
+			b.WriteString("\n")
+		}
+		b.WriteString("\nYour bounds:\n")
+		b.WriteString("- A restricted toolset: the full reversible tools (shell, files, browser, web, git), but NO money/value-transfer path and NO ability to spawn your own sub-agents. Money and further decomposition stay with the top-level agent.\n")
+		fmt.Fprintf(&b, "- A bounded budget of about %d tool-call steps and your own isolated context window — work efficiently within them and report before you run out.\n\n", a.cfg.StepBudget)
 		b.WriteString("How you work as a sub-agent:\n")
 		b.WriteString("- You were given ONE specific task by an orchestrating agent. Carry it out end to end using your tools, then report what you found or did. Stay tightly scoped to your task — don't wander into the broader goal.\n")
 		b.WriteString("- There is NO human in this loop. Never ask questions or wait for approval — make reasonable assumptions, note them, and proceed. You cannot move funds or spawn further sub-agents.\n")
@@ -284,4 +299,18 @@ func (a *Agent) systemPrompt() string {
 		b.WriteString("\n")
 	}
 	return b.String()
+}
+
+// indentBlock prefixes every non-empty line of s with prefix, so an inherited
+// multi-line self-model block nests cleanly under its bullet in a sub-agent's
+// charter.
+func indentBlock(s, prefix string) string {
+	lines := strings.Split(strings.TrimRight(s, "\n"), "\n")
+	for i, ln := range lines {
+		if strings.TrimSpace(ln) == "" {
+			continue
+		}
+		lines[i] = prefix + ln
+	}
+	return strings.Join(lines, "\n")
 }

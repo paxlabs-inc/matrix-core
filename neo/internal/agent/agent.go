@@ -152,6 +152,12 @@ type Agent struct {
 	// reporting their findings back to the orchestrating agent.
 	persona string
 
+	// selfModel is the shared self-model this sub-agent inherited at spawn (the
+	// structural self-summary + relevant how-I-fail patterns), injected into its
+	// charter so it reasons as the same mind on a scoped slice (self-model task
+	// 4.3). Empty on the top-level agent.
+	selfModel string
+
 	// convID scopes the per-turn attestation IntentID for audit; empty on the
 	// CLI path (falls back to "cli"). turnSeq counts user turns this session so
 	// each attest has a distinct, stable IntentID.
@@ -192,6 +198,16 @@ type Agent struct {
 	// threaded result-assembly path (never from the concurrent dispatch
 	// goroutines), so it is race-free.
 	lastFailureClass delegate.FailureClass
+
+	// curLoop is the live per-turn loop-state snapshot (self-model task 2.2),
+	// refreshed each Chat iteration so a death exit can capture the REAL loop
+	// state at death (repeat count, recent signatures, last tool, context fill,
+	// steps) without threading locals through every return path. lastDeath is
+	// the structured record finalized at a loop-affecting death (nil = the turn
+	// did not die in a loop-affecting way). Both are reset at the top of every
+	// Chat turn and written only from the single-threaded loop goroutine.
+	curLoop   loopSnapshot
+	lastDeath *LoopDeath
 
 	// overflow holds this turn's oversized tool results that were spilled to
 	// run-scoped files (neo-smoothness req.4): the transcript keeps a bounded
@@ -235,6 +251,15 @@ type Options struct {
 	// Persona frames this as a task-scoped sub-agent with a specific role
 	// (empty = the top-level conversational agent).
 	Persona string
+	// SelfModel is the shared self-model a sub-agent INHERITS from the agent that
+	// spawned it (self-model task 4.3, req.9.1): a compact rendering of the
+	// structural self-summary plus the relevant how-I-fail patterns, injected into
+	// the sub-agent's charter so it acts as the SAME mind (Neo) on a scoped slice
+	// — knowing how it is built and how it tends to fail — rather than a blank
+	// helper. Empty on the top-level agent (which carries its self-model through
+	// its own memory surface) and on any sub-agent spawned before the self-model
+	// is populated.
+	SelfModel string
 	// ConvID is the conversation this agent serves; stamped on the per-turn
 	// attestation IntentID for audit. Empty on the CLI path.
 	ConvID string
@@ -269,6 +294,7 @@ func New(o Options) *Agent {
 		auditObserver: o.AuditObserver,
 		memObserver:   o.MemoryObserver,
 		persona:       strings.TrimSpace(o.Persona),
+		selfModel:     strings.TrimSpace(o.SelfModel),
 		convID:        strings.TrimSpace(o.ConvID),
 		inbox:         o.Inbox,
 	}
@@ -447,6 +473,10 @@ func (a *Agent) Chat(ctx context.Context, userInput string) error {
 	}
 	a.turnSeq++
 	a.lastFailureClass = delegate.ClassNone
+	// Self-model task 2.2: clear the previous turn's death capture so LastDeath
+	// only reports a death from THIS turn (mirrors lastFailureClass).
+	a.lastDeath = nil
+	a.curLoop = loopSnapshot{}
 	// Cassandra 2.0: reset the per-turn controller state so the mod cap, cooldowns,
 	// and dual-record scope to THIS turn (silent-when-healthy discipline, req.4).
 	a.casModsThisTurn = 0
@@ -661,7 +691,7 @@ func (a *Agent) Chat(ctx context.Context, userInput string) error {
 				}
 			}
 			pct = a.budgetPct(baseSystem)
-			tail = cmTail + fmt.Sprintf("\n\n[context: %d%% used]\n", pct)
+			tail = cmTail + a.budgetTail(pct)
 			window = assembleWindowUserTail(a.stableSystem(), a.working, tail)
 		} else {
 			if a.pager != nil {
@@ -696,7 +726,7 @@ func (a *Agent) Chat(ctx context.Context, userInput string) error {
 			// the prefix stays byte-identical turn-over-turn and rides the
 			// provider's longest-stable-prefix cache. baseSystem (stable + tail)
 			// still drives the budget stat above.
-			tail = a.dynamicTail(pinned, retrieved, procedural, triggered, recalled) + fmt.Sprintf("\n\n[context: %d%% used]\n", pct)
+			tail = a.dynamicTail(pinned, retrieved, procedural, triggered, recalled) + a.budgetTail(pct)
 			window = assembleWindow(a.stableSystem(), a.working, tail)
 		}
 
@@ -746,12 +776,12 @@ func (a *Agent) Chat(ctx context.Context, userInput string) error {
 						// a.compact retired (req.9.3): non-summarizing trim.
 						a.cmTrimWorking()
 						baseSystem = a.stableSystem() + cmTail
-						tail = cmTail + fmt.Sprintf("\n\n[context: %d%% used]\n", a.budgetPct(baseSystem))
+						tail = cmTail + a.budgetTail(a.budgetPct(baseSystem))
 						window = assembleWindowUserTail(a.stableSystem(), a.working, tail)
 					} else {
 						a.compact(ctx, "hard")
 						baseSystem = a.buildSystem(pinned, retrieved, procedural, triggered, recalled)
-						tail = a.dynamicTail(pinned, retrieved, procedural, triggered, recalled) + fmt.Sprintf("\n\n[context: %d%% used]\n", a.budgetPct(baseSystem))
+						tail = a.dynamicTail(pinned, retrieved, procedural, triggered, recalled) + a.budgetTail(a.budgetPct(baseSystem))
 						window = assembleWindow(a.stableSystem(), a.working, tail)
 					}
 					res, err = a.chatWithRetry(ctx, llm.ChatRequest{Messages: window, Tools: a.schemas, OnDelta: onDelta})
@@ -908,12 +938,16 @@ func (a *Agent) Chat(ctx context.Context, userInput string) error {
 		// counter and loop forever, NE-4), or a rotating A→B→A→B cycle that
 		// introduces no new tool. Distinct operations reset the repeat read.
 		repeat, stalled := noteBatch(res.Message.ToolCalls)
+		// Self-model task 2.2: refresh the live loop-state snapshot for THIS
+		// step so any death exit below captures the real state at death.
+		a.snapshotLoop(step, pct, repeats, recentSigs, res.Message.ToolCalls, distinctToolSet)
 		if stalled {
 			// No-progress stall: do NOT fabricate a close. Return an incomplete
 			// signal so the supervisor can respawn a fresh agent and continue —
 			// the task is not done. (On the bare CLI path, with no supervisor, the
 			// wrapped reason is printed.)
 			a.consolidateWorking()
+			a.recordDeath(DeathReasonStall, a.lastToolSummary())
 			return fmt.Errorf("%w: repeating the same step without progress. Where it got stuck: %s", ErrIncomplete, oneLine(a.lastToolSummary()))
 		}
 		// req.8.1: a no-progress repeat is itself an unproductive attempt — fold
@@ -978,6 +1012,7 @@ func (a *Agent) Chat(ctx context.Context, userInput string) error {
 	// close: return an incomplete signal so the supervisor keeps going with a
 	// fresh window rather than stopping with a partial.
 	a.consolidateWorking()
+	a.recordDeath(DeathReasonStepBudget, a.lastToolSummary())
 	return fmt.Errorf("%w: reached the step budget without finishing. Progress so far: %s", ErrIncomplete, oneLine(a.lastToolSummary()))
 }
 
@@ -1012,6 +1047,7 @@ func (a *Agent) capExceeded(counter int) bool {
 func (a *Agent) escalateGuidance(attempts int) error {
 	a.lastFailureClass = delegate.ClassDeterministic
 	a.consolidateWorking()
+	a.recordDeath(DeathReasonUnproductive, a.lastToolSummary())
 	return fmt.Errorf("%w: I made no productive progress after %d unproductive attempts (repeated steer/reject without closing it). Where it stands: %s", ErrIncomplete, attempts, oneLine(a.lastToolSummary()))
 }
 

@@ -19,6 +19,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"path/filepath"
 	"sort"
 	"strings"
 	"sync"
@@ -79,6 +80,12 @@ func Open(cfg config.Config) (*Pager, error) {
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 		_ = c.DrainEmbedder(ctx)
 		cancel()
+	}
+	if _, statErr := os.Stat(filepath.Join(cfg.SelfModelGraph, "self-model.json")); statErr == nil {
+		if _, loadErr := p.LoadStructuralSelf(context.Background()); loadErr != nil {
+			_ = p.Close()
+			return nil, fmt.Errorf("neo/memory: load structural self-model: %w", loadErr)
+		}
 	}
 	return p, nil
 }
@@ -824,6 +831,15 @@ func (p *Pager) RecallHits(_ context.Context, queryText string, types []string, 
 // tool never regresses. With the flag off the flat lookup is byte-identical to
 // the legacy behavior.
 func (p *Pager) Recall(ctx context.Context, queryText string, types []string, k int, asOf *time.Time) (string, error) {
+	// Self-model paging (self-model task 2.1, req.2.2): a "self:<symbol>" query
+	// pages the agent's OWN structural self-graph on demand through this same
+	// retrieval verb, returning a compact codegraph fragment — never raw source.
+	// A bare "self:" returns the resident structural self-summary. This is how
+	// the full self-graph reaches the agent lazily, so specifics page in only
+	// when it asks (respecting the scarce context budget).
+	if rest, ok := strings.CutPrefix(strings.TrimSpace(queryText), selfLookupPrefix); ok {
+		return p.recallSelf(ctx, strings.TrimSpace(rest))
+	}
 	if p.cfg.ContinuousMemory {
 		return p.recallRecursive(ctx, queryText, types, k, asOf)
 	}

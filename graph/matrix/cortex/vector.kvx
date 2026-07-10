@@ -1,16 +1,18 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:9b68327501b45793fd7687f43b30c960fd68ae8aaff6b2f1bb36ec3e2df2de2f
+# GENERATED gen=codegraph do-not-edit merkle=b3:20e53aba2ea11552396417e53b3e04e87dd1bbb7bef3aa554a45bb92cf89e7f2
 
 NODE id=matrix/cortex/vector kind=package
   digest=b3:35229d067dbbe7440b42f64555177c3fda0175859f098f62c50eae49c00988a6 file=cortex/vector range=0:0 lang=go exported=true
 EDGES
   contains=matrix/cortex/vector/vector.go
   ^contains=mod:matrix/cortex
+  ^imports=matrix/bridge,matrix/codegraph/enrich,matrix/cortex,matrix/cortex/query
 
 NODE id=matrix/cortex/vector.ErrBadFile kind=var
   digest=b3:996369969cb46873f617a82dd7d6e4088e8a63cd8751b5ebc91e9a5fd3d2fd35 file=cortex/vector/vector.go range=96:102 lang=go exported=true byte_range=3934:4310
   sig=error
   doc=Errors returned by Index operations.
 EDGES
+  ^references=matrix/cortex/vector.Load
   ^defines=matrix/cortex/vector/vector.go
 
 NODE id=matrix/cortex/vector.ErrDimMismatch kind=var
@@ -18,6 +20,7 @@ NODE id=matrix/cortex/vector.ErrDimMismatch kind=var
   sig=error
   doc=Errors returned by Index operations.
 EDGES
+  ^references=matrix/cortex/vector.Index.Add,matrix/cortex/vector.Index.Search
   ^defines=matrix/cortex/vector/vector.go
 
 NODE id=matrix/cortex/vector.ErrDuplicateID kind=var
@@ -25,6 +28,7 @@ NODE id=matrix/cortex/vector.ErrDuplicateID kind=var
   sig=error
   doc=Errors returned by Index operations.
 EDGES
+  ^references=matrix/cortex.loadOrBuildIndex,matrix/cortex/vector.Index.Add
   ^defines=matrix/cortex/vector/vector.go
 
 NODE id=matrix/cortex/vector.ErrEmptyIndex kind=var
@@ -32,6 +36,7 @@ NODE id=matrix/cortex/vector.ErrEmptyIndex kind=var
   sig=error
   doc=Errors returned by Index operations.
 EDGES
+  ^references=matrix/bridge.Adapter.Find,matrix/bridge.Adapter.Resolve,matrix/codegraph/enrich.CortexIndex.Search,matrix/cortex/vector.Index.Search
   ^defines=matrix/cortex/vector/vector.go
 
 NODE id=matrix/cortex/vector.ErrUnknownID kind=var
@@ -46,6 +51,7 @@ NODE id=matrix/cortex/vector.ErrWrongVersion kind=var
   sig=error
   doc=Errors returned by Index operations.
 EDGES
+  ^references=matrix/cortex/vector.Load
   ^defines=matrix/cortex/vector/vector.go
 
 NODE id=matrix/cortex/vector.FileFormatVersion kind=const
@@ -53,6 +59,7 @@ NODE id=matrix/cortex/vector.FileFormatVersion kind=const
   sig=uint8
   doc=FileFormatVersion is bumped on any breaking change to the on-disk layout.\nLoaders refuse files with a different version (no migration in Phase 5).
 EDGES
+  ^references=matrix/cortex/vector.Index.writeHeader,matrix/cortex/vector.Load
   ^defines=matrix/cortex/vector/vector.go
 
 NODE id=matrix/cortex/vector.Hit kind=type
@@ -61,6 +68,8 @@ NODE id=matrix/cortex/vector.Hit kind=type
   doc=Hit is one returned candidate from Search. Distance is 1 - cosine in\nthe unit-norm space (so [0, 2], 0 = identical).
 EDGES
   contains=matrix/cortex/vector.Hit#Distance,matrix/cortex/vector.Hit#MemoryID,matrix/cortex/vector.Hit#VertexID
+  references=matrix/cortex/vector.MemoryID
+  ^references=matrix/cortex/vector.Index.Search
   ^defines=matrix/cortex/vector/vector.go
 
 NODE id=matrix/cortex/vector.Hit#Distance kind=field
@@ -87,6 +96,8 @@ NODE id=matrix/cortex/vector.Index kind=type
   doc=Index is a single per-actor HNSW graph. Safe for concurrent reads;\ncallers must serialize concurrent Add/Remove (the embedder worker is the\nonly writer and is single-goroutine, so this is satisfied in practice).
 EDGES
   contains=matrix/cortex/vector.Index#boundStore,matrix/cortex/vector.Index#byMemory,matrix/cortex/vector.Index#entryPoint,matrix/cortex/vector.Index#hasEntry,matrix/cortex/vector.Index#mL,matrix/cortex/vector.Index#maxLevel,matrix/cortex/vector.Index#mu,matrix/cortex/vector.Index#nodes,matrix/cortex/vector.Index#params,matrix/cortex/vector.Index#rng,matrix/cortex/vector.Index.Add,matrix/cortex/vector.Index.BindStore,matrix/cortex/vector.Index.Len,matrix/cortex/vector.Index.Lookup,matrix/cortex/vector.Index.MemoryID,matrix/cortex/vector.Index.Params,matrix/cortex/vector.Index.Save,matrix/cortex/vector.Index.Search,matrix/cortex/vector.Index.Tombstone,matrix/cortex/vector.Index.chooseLevel,matrix/cortex/vector.Index.distFromQuery,matrix/cortex/vector.Index.greedyDescend,matrix/cortex/vector.Index.searchLayer,matrix/cortex/vector.Index.shrinkNeighbours,matrix/cortex/vector.Index.writeHeader,matrix/cortex/vector.Index.writeNode
+  references=matrix/cortex/vector.MemoryID,matrix/cortex/vector.Params,matrix/cortex/vector.VectorStore,matrix/cortex/vector.node
+  ^references=matrix/codegraph/enrich.CortexIndex,matrix/cortex.Cortex.Index,matrix/cortex.embedderState,matrix/cortex.loadOrBuildIndex,matrix/cortex/query.Query,matrix/cortex/vector.Index.Add,matrix/cortex/vector.Index.BindStore,matrix/cortex/vector.Index.Len,matrix/cortex/vector.Index.Lookup,matrix/cortex/vector.Index.MemoryID,matrix/cortex/vector.Index.Params,matrix/cortex/vector.Index.Save,matrix/cortex/vector.Index.Search,matrix/cortex/vector.Index.Tombstone,matrix/cortex/vector.Index.chooseLevel,matrix/cortex/vector.Index.distFromQuery,matrix/cortex/vector.Index.greedyDescend,matrix/cortex/vector.Index.searchLayer,matrix/cortex/vector.Index.shrinkNeighbours,matrix/cortex/vector.Index.writeHeader,matrix/cortex/vector.Index.writeNode,matrix/cortex/vector.Load,matrix/cortex/vector.NewIndex,matrix/cortex/vector.newOverlayStore,matrix/cortex/vector.overlayStore
   ^defines=matrix/cortex/vector/vector.go
 
 NODE id=matrix/cortex/vector.Index#boundStore kind=field
@@ -156,7 +167,11 @@ NODE id=matrix/cortex/vector.Index.Add kind=method
   sig=func (i *Index) Add(vid uint64, mid MemoryID, vec []float32) error
   doc=Add inserts vertex vid (bound to memory mid) with vector vec into the\nindex. Caller is responsible for vertex-id monotonicity (the cortex\nembedder allocates from a per-actor counter).\n\nAlgorithm 1 of the HNSW paper, transcribed:\n 1. Pick level l for the new node.\n 2. Walk down from the current entry point through layers > l using ef=1\n    (greedy nearest), refining the search entry.\n 3. From min(maxLevel, l) down to 0: search_layer(ef=efConstruction),\n    pick M closest, wire bidirectional edges, shrink the neighbor\n    of each victim if degree exceeds Mmax at that level.\n 4. If l > current max, become the new entry point.
 EDGES
+  calls=matrix/cortex/vector.Index.chooseLevel,matrix/cortex/vector.Index.distFromQuery,matrix/cortex/vector.Index.greedyDescend,matrix/cortex/vector.Index.searchLayer,matrix/cortex/vector.Index.shrinkNeighbours,matrix/cortex/vector.appendUnique,matrix/cortex/vector.minInt,matrix/cortex/vector.newOverlayStore
+  references=matrix/cortex/vector.ErrDimMismatch,matrix/cortex/vector.ErrDuplicateID,matrix/cortex/vector.Index,matrix/cortex/vector.Index.chooseLevel,matrix/cortex/vector.Index.distFromQuery,matrix/cortex/vector.Index.greedyDescend,matrix/cortex/vector.Index.searchLayer,matrix/cortex/vector.Index.shrinkNeighbours,matrix/cortex/vector.MemoryID,matrix/cortex/vector.Mmax,matrix/cortex/vector.a,matrix/cortex/vector.appendUnique,matrix/cortex/vector.b,matrix/cortex/vector.c,matrix/cortex/vector.candidates,matrix/cortex/vector.curDist,matrix/cortex/vector.dup,matrix/cortex/vector.ep,matrix/cortex/vector.exists,matrix/cortex/vector.i,matrix/cortex/vector.lc,matrix/cortex/vector.level,matrix/cortex/vector.mid,matrix/cortex/vector.minInt,matrix/cortex/vector.nd,matrix/cortex/vector.neighbors,matrix/cortex/vector.newOverlayStore,matrix/cortex/vector.node,matrix/cortex/vector.other,matrix/cortex/vector.out,matrix/cortex/vector.store,matrix/cortex/vector.vec,matrix/cortex/vector.vid
   ^contains=matrix/cortex/vector.Index
+  ^calls=matrix/codegraph/enrich.CortexIndex.Add,matrix/cortex.embedderState.processWriteEntry,matrix/cortex.loadOrBuildIndex
+  ^references=matrix/codegraph/enrich.CortexIndex.Add,matrix/cortex.embedderState.processWriteEntry,matrix/cortex.loadOrBuildIndex
   ^defines=matrix/cortex/vector/vector.go
 
 NODE id=matrix/cortex/vector.Index.BindStore kind=method
@@ -164,7 +179,10 @@ NODE id=matrix/cortex/vector.Index.BindStore kind=method
   sig=func (i *Index) BindStore(s VectorStore)
   doc=BindStore sets the VectorStore that Add will use to resolve neighbor\nvectors. The cortex embedder calls this once at startup with a\nPebble-backed store; tests call it with a MapStore.\n\nWhy not just thread the store through Add? Because Add's signature is\nfixed (vid, mid, vec) and the embedder, the rebuild loop, and the tests\nall want to call Add with no extra ceremony. The binding model also\nkeeps Search's signature consistent with Add — both use the same\nresolution strategy.
 EDGES
+  references=matrix/cortex/vector.Index,matrix/cortex/vector.VectorStore,matrix/cortex/vector.i,matrix/cortex/vector.s
   ^contains=matrix/cortex/vector.Index
+  ^calls=matrix/codegraph/enrich.NewCortexIndex,matrix/cortex.Cortex.StartEmbedder,matrix/cortex.loadOrBuildIndex
+  ^references=matrix/codegraph/enrich.NewCortexIndex,matrix/cortex.Cortex.StartEmbedder,matrix/cortex.loadOrBuildIndex
   ^defines=matrix/cortex/vector/vector.go
 
 NODE id=matrix/cortex/vector.Index.Len kind=method
@@ -172,7 +190,10 @@ NODE id=matrix/cortex/vector.Index.Len kind=method
   sig=func (i *Index) Len() int
   doc=Len returns the number of non-tombstoned vertices in the index.
 EDGES
+  references=matrix/cortex/vector.Index,matrix/cortex/vector.i,matrix/cortex/vector.n,matrix/cortex/vector.nd
   ^contains=matrix/cortex/vector.Index
+  ^calls=matrix/codegraph/enrich.CortexIndex.Len
+  ^references=matrix/codegraph/enrich.CortexIndex.Len
   ^defines=matrix/cortex/vector/vector.go
 
 NODE id=matrix/cortex/vector.Index.Lookup kind=method
@@ -180,6 +201,7 @@ NODE id=matrix/cortex/vector.Index.Lookup kind=method
   sig=func (i *Index) Lookup(mid MemoryID) (uint64, bool)
   doc=Lookup returns the vertex id bound to mid, or (0, false) if absent.\nUsed by the embedder to detect re-embedding of an already-vectored\nmemory.
 EDGES
+  references=matrix/cortex/vector.Index,matrix/cortex/vector.MemoryID,matrix/cortex/vector.i,matrix/cortex/vector.mid,matrix/cortex/vector.ok,matrix/cortex/vector.v
   ^contains=matrix/cortex/vector.Index
   ^defines=matrix/cortex/vector/vector.go
 
@@ -188,6 +210,7 @@ NODE id=matrix/cortex/vector.Index.MemoryID kind=method
   sig=func (i *Index) MemoryID(vid uint64) (MemoryID, bool)
   doc=MemoryID returns the memory.ID bound to a given vertex id, or\n(zero, false). Used by the search path to map results back to the\nPebble key namespace.
 EDGES
+  references=matrix/cortex/vector.Index,matrix/cortex/vector.MemoryID,matrix/cortex/vector.i,matrix/cortex/vector.nd,matrix/cortex/vector.ok,matrix/cortex/vector.vid
   ^contains=matrix/cortex/vector.Index
   ^defines=matrix/cortex/vector/vector.go
 
@@ -196,6 +219,7 @@ NODE id=matrix/cortex/vector.Index.Params kind=method
   sig=func (i *Index) Params() Params
   doc=Params returns the (defaulted) construction parameters.
 EDGES
+  references=matrix/cortex/vector.Index,matrix/cortex/vector.Params,matrix/cortex/vector.i
   ^contains=matrix/cortex/vector.Index
   ^defines=matrix/cortex/vector/vector.go
 
@@ -204,7 +228,11 @@ NODE id=matrix/cortex/vector.Index.Save kind=method
   sig=func (i *Index) Save(path string) error
   doc=Save writes the graph to path atomically (writes to path+".tmp" then\nrenames). The vectors are NOT included; rebuild reads them from the\nVectorStore.
 EDGES
+  calls=matrix/cortex/vector.Index.writeHeader,matrix/cortex/vector.Index.writeNode
+  references=matrix/cortex/vector.Index,matrix/cortex/vector.Index.writeHeader,matrix/cortex/vector.Index.writeNode,matrix/cortex/vector.a,matrix/cortex/vector.b,matrix/cortex/vector.buf,matrix/cortex/vector.err,matrix/cortex/vector.i,matrix/cortex/vector.ids,matrix/cortex/vector.path,matrix/cortex/vector.tmp,matrix/cortex/vector.vid
   ^contains=matrix/cortex/vector.Index
+  ^calls=matrix/cortex.Cortex.StopEmbedder
+  ^references=matrix/cortex.Cortex.StopEmbedder
   ^defines=matrix/cortex/vector/vector.go
 
 NODE id=matrix/cortex/vector.Index.Search kind=method
@@ -212,7 +240,11 @@ NODE id=matrix/cortex/vector.Index.Search kind=method
   sig=func (i *Index) Search(q []float32, k int) ([]Hit, error)
   doc=Search returns the up-to-k vertex IDs closest to q, ordered closest\nfirst. Tombstoned vertices are skipped. Returns ErrEmptyIndex if the\nindex has no entry point yet. Concurrent-safe with readers only.\nUses the VectorStore bound via BindStore to resolve neighbor vectors;\nreturns an error if no store is bound and the graph is non-empty.
 EDGES
+  calls=matrix/cortex/vector.Index.distFromQuery,matrix/cortex/vector.Index.greedyDescend,matrix/cortex/vector.Index.searchLayer,matrix/cortex/vector.max
+  references=matrix/cortex/vector.ErrDimMismatch,matrix/cortex/vector.ErrEmptyIndex,matrix/cortex/vector.Hit,matrix/cortex/vector.Index,matrix/cortex/vector.Index.distFromQuery,matrix/cortex/vector.Index.greedyDescend,matrix/cortex/vector.Index.searchLayer,matrix/cortex/vector.a,matrix/cortex/vector.b,matrix/cortex/vector.c,matrix/cortex/vector.cands,matrix/cortex/vector.curDist,matrix/cortex/vector.ep,matrix/cortex/vector.i,matrix/cortex/vector.k,matrix/cortex/vector.lc,matrix/cortex/vector.max,matrix/cortex/vector.nd,matrix/cortex/vector.out,matrix/cortex/vector.q,matrix/cortex/vector.store
   ^contains=matrix/cortex/vector.Index
+  ^calls=matrix/codegraph/enrich.CortexIndex.Search,matrix/cortex/query.scanByNear
+  ^references=matrix/codegraph/enrich.CortexIndex.Search,matrix/cortex/query.scanByNear
   ^defines=matrix/cortex/vector/vector.go
 
 NODE id=matrix/cortex/vector.Index.Tombstone kind=method
@@ -220,7 +252,10 @@ NODE id=matrix/cortex/vector.Index.Tombstone kind=method
   sig=func (i *Index) Tombstone(mid MemoryID)
   doc=Tombstone marks the node bound to mid as logically deleted; subsequent\nSearch calls skip it. The graph edges are retained so other nodes can\nstill traverse through the deleted vertex. Idempotent.
 EDGES
+  references=matrix/cortex/vector.Index,matrix/cortex/vector.MemoryID,matrix/cortex/vector.i,matrix/cortex/vector.mid,matrix/cortex/vector.nd,matrix/cortex/vector.ok,matrix/cortex/vector.v
   ^contains=matrix/cortex/vector.Index
+  ^calls=matrix/codegraph/enrich.CortexIndex.Add,matrix/cortex.embedderState.processTombstoneEntry
+  ^references=matrix/codegraph/enrich.CortexIndex.Add,matrix/cortex.embedderState.processTombstoneEntry
   ^defines=matrix/cortex/vector/vector.go
 
 NODE id=matrix/cortex/vector.Index.chooseLevel kind=method
@@ -228,7 +263,10 @@ NODE id=matrix/cortex/vector.Index.chooseLevel kind=method
   sig=func (i *Index) chooseLevel() int
   doc=chooseLevel samples a level from the geometric distribution dictated by\nthe §13.1 HNSW spec: level = floor(-ln(U) * mL). Higher levels are\nexponentially rarer.
 EDGES
+  references=matrix/cortex/vector.Index,matrix/cortex/vector.i,matrix/cortex/vector.l,matrix/cortex/vector.u
   ^contains=matrix/cortex/vector.Index
+  ^calls=matrix/cortex/vector.Index.Add
+  ^references=matrix/cortex/vector.Index.Add
   ^defines=matrix/cortex/vector/vector.go
 
 NODE id=matrix/cortex/vector.Index.distFromQuery kind=method
@@ -236,7 +274,11 @@ NODE id=matrix/cortex/vector.Index.distFromQuery kind=method
   sig=func (i *Index) distFromQuery(store VectorStore, q []float32, vid uint64) float32
   doc=distFromQuery returns 1 - dot(q, vec(vid)) under the unit-norm assumption.
 EDGES
+  calls=matrix/cortex.pebbleVectorStore.GetVector,matrix/cortex/vector.overlayStore.GetVector
+  references=matrix/cortex/vector.Index,matrix/cortex/vector.VectorStore,matrix/cortex/vector.VectorStore.GetVector,matrix/cortex/vector.dot,matrix/cortex/vector.i,matrix/cortex/vector.ok,matrix/cortex/vector.q,matrix/cortex/vector.store,matrix/cortex/vector.v,matrix/cortex/vector.vid
   ^contains=matrix/cortex/vector.Index
+  ^calls=matrix/cortex/vector.Index.Add,matrix/cortex/vector.Index.Search,matrix/cortex/vector.Index.greedyDescend,matrix/cortex/vector.Index.searchLayer,matrix/cortex/vector.Index.shrinkNeighbours
+  ^references=matrix/cortex/vector.Index.Add,matrix/cortex/vector.Index.Search,matrix/cortex/vector.Index.greedyDescend,matrix/cortex/vector.Index.searchLayer,matrix/cortex/vector.Index.shrinkNeighbours
   ^defines=matrix/cortex/vector/vector.go
 
 NODE id=matrix/cortex/vector.Index.greedyDescend kind=method
@@ -244,7 +286,11 @@ NODE id=matrix/cortex/vector.Index.greedyDescend kind=method
   sig=func (i *Index) greedyDescend(store VectorStore, q []float32, ep uint64, dist float32, lc int) (uint64, float32)
   doc=greedyDescend takes ep at layer lc and walks to the closest neighbor\nrepeatedly until no neighbor improves. Returns the final (ep, dist).
 EDGES
+  calls=matrix/cortex/vector.Index.distFromQuery
+  references=matrix/cortex/vector.Index,matrix/cortex/vector.Index.distFromQuery,matrix/cortex/vector.VectorStore,matrix/cortex/vector.bestDist,matrix/cortex/vector.bestID,matrix/cortex/vector.d,matrix/cortex/vector.dist,matrix/cortex/vector.ep,matrix/cortex/vector.i,matrix/cortex/vector.improved,matrix/cortex/vector.lc,matrix/cortex/vector.n,matrix/cortex/vector.nd,matrix/cortex/vector.q,matrix/cortex/vector.store
   ^contains=matrix/cortex/vector.Index
+  ^calls=matrix/cortex/vector.Index.Add,matrix/cortex/vector.Index.Search
+  ^references=matrix/cortex/vector.Index.Add,matrix/cortex/vector.Index.Search
   ^defines=matrix/cortex/vector/vector.go
 
 NODE id=matrix/cortex/vector.Index.searchLayer kind=method
@@ -252,7 +298,11 @@ NODE id=matrix/cortex/vector.Index.searchLayer kind=method
   sig=func (i *Index) searchLayer(store VectorStore, q []float32, entry uint64, ef int, lc int, excludeID uint64) []candidate
   doc=searchLayer is Algorithm 2 from the paper. Returns up to ef candidates\nclosest to q at layer lc, starting from entry. excludeID may be set to\nskip a known-pending insert (so a node doesn't try to be its own\nneighbor during Add); 0 = no exclusion (vertex IDs are 1-indexed by\nthe embedder).
 EDGES
+  calls=matrix/cortex/vector.Index.distFromQuery,matrix/cortex/vector.maxHeap.Len,matrix/cortex/vector.minHeap.Len
+  references=matrix/cortex/vector.Index,matrix/cortex/vector.Index.distFromQuery,matrix/cortex/vector.VectorStore,matrix/cortex/vector.c,matrix/cortex/vector.candidate,matrix/cortex/vector.cands,matrix/cortex/vector.d,matrix/cortex/vector.ef,matrix/cortex/vector.entry,matrix/cortex/vector.entryDist,matrix/cortex/vector.excludeID,matrix/cortex/vector.f,matrix/cortex/vector.i,matrix/cortex/vector.lc,matrix/cortex/vector.maxHeap,matrix/cortex/vector.maxHeap.Len,matrix/cortex/vector.minHeap,matrix/cortex/vector.minHeap.Len,matrix/cortex/vector.n,matrix/cortex/vector.nd,matrix/cortex/vector.out,matrix/cortex/vector.q,matrix/cortex/vector.seen,matrix/cortex/vector.store,matrix/cortex/vector.visited,matrix/cortex/vector.w
   ^contains=matrix/cortex/vector.Index
+  ^calls=matrix/cortex/vector.Index.Add,matrix/cortex/vector.Index.Search
+  ^references=matrix/cortex/vector.Index.Add,matrix/cortex/vector.Index.Search
   ^defines=matrix/cortex/vector/vector.go
 
 NODE id=matrix/cortex/vector.Index.shrinkNeighbours kind=method
@@ -260,21 +310,31 @@ NODE id=matrix/cortex/vector.Index.shrinkNeighbours kind=method
   sig=func (i *Index) shrinkNeighbours(store VectorStore, nd *node, lc int, Mmax int) []uint64
   doc=shrinkNeighbours keeps the Mmax closest neighbors by recomputing\ndistances against the node's own vector and sorting ascending.
 EDGES
+  calls=matrix/cortex/vector.Index.distFromQuery,matrix/cortex/vector.overlayStore.GetVector
+  references=matrix/cortex/vector.Index,matrix/cortex/vector.Index.distFromQuery,matrix/cortex/vector.Mmax,matrix/cortex/vector.VectorStore,matrix/cortex/vector.VectorStore.GetVector,matrix/cortex/vector.a,matrix/cortex/vector.b,matrix/cortex/vector.current,matrix/cortex/vector.d,matrix/cortex/vector.i,matrix/cortex/vector.keep,matrix/cortex/vector.lc,matrix/cortex/vector.n,matrix/cortex/vector.nd,matrix/cortex/vector.node,matrix/cortex/vector.ok,matrix/cortex/vector.out,matrix/cortex/vector.r,matrix/cortex/vector.rec,matrix/cortex/vector.scored,matrix/cortex/vector.store,matrix/cortex/vector.v
   ^contains=matrix/cortex/vector.Index
+  ^calls=matrix/cortex/vector.Index.Add
+  ^references=matrix/cortex/vector.Index.Add
   ^defines=matrix/cortex/vector/vector.go
 
 NODE id=matrix/cortex/vector.Index.writeHeader kind=method
   digest=b3:cac271b265880e1c99ef92b22328460cfc6b5803f28b9abcc48d4ff9bf0e7566 file=cortex/vector/vector.go range=640:675 lang=go exported=false byte_range=20295:21267
   sig=func (i *Index) writeHeader(w io.Writer) error
 EDGES
+  references=matrix/cortex/vector.FileFormatVersion,matrix/cortex/vector.Index,matrix/cortex/vector.err,matrix/cortex/vector.f,matrix/cortex/vector.fields,matrix/cortex/vector.fileMagic,matrix/cortex/vector.i,matrix/cortex/vector.m,matrix/cortex/vector.modelBytes,matrix/cortex/vector.reserved,matrix/cortex/vector.w
   ^contains=matrix/cortex/vector.Index
+  ^calls=matrix/cortex/vector.Index.Save
+  ^references=matrix/cortex/vector.Index.Save
   ^defines=matrix/cortex/vector/vector.go
 
 NODE id=matrix/cortex/vector.Index.writeNode kind=method
   digest=b3:1e960fb9ef9fdbe07051d1ff639073cf0f83224fe7d47f3d53d6939f3a45032b file=cortex/vector/vector.go range=677:710 lang=go exported=false byte_range=21269:22130
   sig=func (i *Index) writeNode(w io.Writer, nd *node) error
 EDGES
+  references=matrix/cortex/vector.Index,matrix/cortex/vector.arr,matrix/cortex/vector.err,matrix/cortex/vector.lc,matrix/cortex/vector.n,matrix/cortex/vector.nd,matrix/cortex/vector.node,matrix/cortex/vector.tomb,matrix/cortex/vector.w
   ^contains=matrix/cortex/vector.Index
+  ^calls=matrix/cortex/vector.Index.Save
+  ^references=matrix/cortex/vector.Index.Save
   ^defines=matrix/cortex/vector/vector.go
 
 NODE id=matrix/cortex/vector.Load kind=func
@@ -282,6 +342,10 @@ NODE id=matrix/cortex/vector.Load kind=func
   sig=func Load(path string) (*Index, error)
   doc=Load reads an index file written by Save. Returns ErrBadFile if the magic\nor version is wrong. The returned Index has no vectors loaded; callers\nmust hold a VectorStore that can resolve every vertex_id at search time\n(same constraint as in-memory Add).
 EDGES
+  calls=matrix/cortex/vector.NewIndex
+  references=matrix/cortex/vector.ErrBadFile,matrix/cortex/vector.ErrWrongVersion,matrix/cortex/vector.FileFormatVersion,matrix/cortex/vector.Index,matrix/cortex/vector.M,matrix/cortex/vector.M0,matrix/cortex/vector.NewIndex,matrix/cortex/vector.Params,matrix/cortex/vector.arr,matrix/cortex/vector.data,matrix/cortex/vector.dim,matrix/cortex/vector.efC,matrix/cortex/vector.efS,matrix/cortex/vector.entryPoint,matrix/cortex/vector.err,matrix/cortex/vector.fileMagic,matrix/cortex/vector.idx,matrix/cortex/vector.j,matrix/cortex/vector.k,matrix/cortex/vector.lc,matrix/cortex/vector.lvl,matrix/cortex/vector.magic,matrix/cortex/vector.maxLevel,matrix/cortex/vector.model,matrix/cortex/vector.modelBytes,matrix/cortex/vector.n,matrix/cortex/vector.nd,matrix/cortex/vector.node,matrix/cortex/vector.nodeCount,matrix/cortex/vector.path,matrix/cortex/vector.r,matrix/cortex/vector.reserved,matrix/cortex/vector.seed,matrix/cortex/vector.tomb,matrix/cortex/vector.ver
+  ^calls=matrix/cortex.loadOrBuildIndex
+  ^references=matrix/cortex.loadOrBuildIndex
   ^defines=matrix/cortex/vector/vector.go
 
 NODE id=matrix/cortex/vector.MapStore kind=type
@@ -291,6 +355,7 @@ NODE id=matrix/cortex/vector.MapStore kind=type
 EDGES
   contains=matrix/cortex/vector.MapStore#m,matrix/cortex/vector.MapStore#mu,matrix/cortex/vector.MapStore.GetVector,matrix/cortex/vector.MapStore.Put
   implements=matrix/cortex/vector.VectorStore
+  ^references=matrix/codegraph/enrich.CortexIndex,matrix/cortex/vector.MapStore.GetVector,matrix/cortex/vector.MapStore.Put,matrix/cortex/vector.NewMapStore,matrix/cortex/vector.overlayStore
   ^defines=matrix/cortex/vector/vector.go
 
 NODE id=matrix/cortex/vector.MapStore#m kind=field
@@ -310,7 +375,10 @@ NODE id=matrix/cortex/vector.MapStore.GetVector kind=method
   sig=func (s *MapStore) GetVector(vid uint64) ([]float32, bool)
   doc=GetVector implements VectorStore.
 EDGES
+  references=matrix/cortex/vector.MapStore,matrix/cortex/vector.ok,matrix/cortex/vector.s,matrix/cortex/vector.v,matrix/cortex/vector.vid
   ^contains=matrix/cortex/vector.MapStore
+  ^calls=matrix/cortex/vector.overlayStore.GetVector
+  ^references=matrix/cortex/vector.overlayStore.GetVector
   ^defines=matrix/cortex/vector/vector.go
 
 NODE id=matrix/cortex/vector.MapStore.Put kind=method
@@ -318,7 +386,10 @@ NODE id=matrix/cortex/vector.MapStore.Put kind=method
   sig=func (s *MapStore) Put(vid uint64, vec []float32)
   doc=Put stores vec under vid.
 EDGES
+  references=matrix/cortex/vector.MapStore,matrix/cortex/vector.cp,matrix/cortex/vector.s,matrix/cortex/vector.vec,matrix/cortex/vector.vid
   ^contains=matrix/cortex/vector.MapStore
+  ^calls=matrix/codegraph/enrich.CortexIndex.Add,matrix/cortex/vector.newOverlayStore
+  ^references=matrix/codegraph/enrich.CortexIndex.Add,matrix/cortex/vector.newOverlayStore
   ^defines=matrix/cortex/vector/vector.go
 
 NODE id=matrix/cortex/vector.MemoryID kind=type
@@ -326,6 +397,7 @@ NODE id=matrix/cortex/vector.MemoryID kind=type
   sig=type MemoryID [16]byte
   doc=MemoryID mirrors memory.ID without importing the memory package, keeping\nthis package self-contained (the embedder bridges between memory.ID and\nvector.MemoryID at the boundary).
 EDGES
+  ^references=matrix/codegraph/enrich.midFor,matrix/cortex.embedderState.processTombstoneEntry,matrix/cortex.embedderState.processWriteEntry,matrix/cortex.loadOrBuildIndex,matrix/cortex/vector.Hit,matrix/cortex/vector.Index,matrix/cortex/vector.Index.Add,matrix/cortex/vector.Index.Lookup,matrix/cortex/vector.Index.MemoryID,matrix/cortex/vector.Index.Tombstone,matrix/cortex/vector.NewIndex,matrix/cortex/vector.node
   ^defines=matrix/cortex/vector/vector.go
 
 NODE id=matrix/cortex/vector.NewIndex kind=func
@@ -333,6 +405,10 @@ NODE id=matrix/cortex/vector.NewIndex kind=func
   sig=func NewIndex(p Params) *Index
   doc=NewIndex constructs an empty index with the given params.
 EDGES
+  calls=matrix/cortex/vector.Params.withDefaults
+  references=matrix/cortex/vector.Index,matrix/cortex/vector.MemoryID,matrix/cortex/vector.Params,matrix/cortex/vector.Params.withDefaults,matrix/cortex/vector.node,matrix/cortex/vector.p,matrix/cortex/vector.src
+  ^calls=matrix/codegraph/enrich.NewCortexIndex,matrix/cortex.loadOrBuildIndex,matrix/cortex/vector.Load
+  ^references=matrix/codegraph/enrich.NewCortexIndex,matrix/cortex.loadOrBuildIndex,matrix/cortex/vector.Load
   ^defines=matrix/cortex/vector/vector.go
 
 NODE id=matrix/cortex/vector.NewMapStore kind=func
@@ -340,6 +416,9 @@ NODE id=matrix/cortex/vector.NewMapStore kind=func
   sig=func NewMapStore() *MapStore
   doc=NewMapStore returns an empty MapStore.
 EDGES
+  references=matrix/cortex/vector.MapStore
+  ^calls=matrix/codegraph/enrich.NewCortexIndex,matrix/cortex/vector.newOverlayStore
+  ^references=matrix/codegraph/enrich.NewCortexIndex,matrix/cortex/vector.newOverlayStore
   ^defines=matrix/cortex/vector/vector.go
 
 NODE id=matrix/cortex/vector.Params kind=type
@@ -348,6 +427,7 @@ NODE id=matrix/cortex/vector.Params kind=type
   doc=Params controls HNSW construction and search. Zero values fall back to\nthe spec §19 defaults so callers can pass Params{}.
 EDGES
   contains=matrix/cortex/vector.Params#Dim,matrix/cortex/vector.Params#EfConstruction,matrix/cortex/vector.Params#EfSearch,matrix/cortex/vector.Params#M,matrix/cortex/vector.Params#M0,matrix/cortex/vector.Params#Model,matrix/cortex/vector.Params#Seed,matrix/cortex/vector.Params.withDefaults
+  ^references=matrix/codegraph/enrich.NewCortexIndex,matrix/cortex.EmbedderOptions,matrix/cortex/vector.Index,matrix/cortex/vector.Index.Params,matrix/cortex/vector.Load,matrix/cortex/vector.NewIndex,matrix/cortex/vector.Params.withDefaults
   ^defines=matrix/cortex/vector/vector.go
 
 NODE id=matrix/cortex/vector.Params#Dim kind=field
@@ -397,7 +477,10 @@ NODE id=matrix/cortex/vector.Params.withDefaults kind=method
   sig=func (p Params) withDefaults() Params
   doc=withDefaults returns p with zero fields replaced by spec §19 defaults.
 EDGES
+  references=matrix/cortex/vector.Params,matrix/cortex/vector.h,matrix/cortex/vector.p
   ^contains=matrix/cortex/vector.Params
+  ^calls=matrix/cortex/vector.NewIndex
+  ^references=matrix/cortex/vector.NewIndex
   ^defines=matrix/cortex/vector/vector.go
 
 NODE id=matrix/cortex/vector.SelectMode kind=const
@@ -413,6 +496,7 @@ NODE id=matrix/cortex/vector.VectorStore kind=interface
   doc=VectorStore abstracts how the index loads vectors. The cortex passes a\nclosure that fetches from vec/meta/<id>; tests pass an in-memory map.\nReturning ok=false signals "the index believes this vertex exists but\nits vector is unreachable", which is treated as a soft miss (skipped in\nsearch, errored on insert).
 EDGES
   ^implements=matrix/cortex.pebbleVectorStore,matrix/cortex/vector.MapStore,matrix/cortex/vector.overlayStore
+  ^references=matrix/cortex/vector.Index,matrix/cortex/vector.Index.BindStore,matrix/cortex/vector.Index.distFromQuery,matrix/cortex/vector.Index.greedyDescend,matrix/cortex/vector.Index.searchLayer,matrix/cortex/vector.Index.shrinkNeighbours,matrix/cortex/vector.overlayStore
   ^defines=matrix/cortex/vector/vector.go
 
 NODE id=matrix/cortex/vector.appendUnique kind=func
@@ -420,6 +504,9 @@ NODE id=matrix/cortex/vector.appendUnique kind=func
   sig=func appendUnique(s []uint64, v uint64) []uint64
   doc=appendUnique appends v to s only if v is not already present. Stable;\npreserves order. Used when wiring a new reverse edge.
 EDGES
+  references=matrix/cortex/vector.s,matrix/cortex/vector.v,matrix/cortex/vector.x
+  ^calls=matrix/cortex/vector.Index.Add
+  ^references=matrix/cortex/vector.Index.Add
   ^defines=matrix/cortex/vector/vector.go
 
 NODE id=matrix/cortex/vector.candidate kind=type
@@ -428,6 +515,7 @@ NODE id=matrix/cortex/vector.candidate kind=type
   doc=candidate pairs a vertex id with its distance from the query for use in\nthe search heaps.
 EDGES
   contains=matrix/cortex/vector.candidate#dist,matrix/cortex/vector.candidate#vertexID
+  ^references=matrix/cortex/vector.Index.searchLayer,matrix/cortex/vector.maxHeap,matrix/cortex/vector.maxHeap.Push,matrix/cortex/vector.minHeap,matrix/cortex/vector.minHeap.Push
   ^defines=matrix/cortex/vector/vector.go
 
 NODE id=matrix/cortex/vector.candidate#dist kind=field
@@ -447,12 +535,16 @@ NODE id=matrix/cortex/vector.fileMagic kind=var
   sig=[8]byte
   doc=Magic prefixes the on-disk file so loaders can sanity-check the format\nbefore parsing anything that could mis-read garbage.
 EDGES
+  ^references=matrix/cortex/vector.Index.writeHeader,matrix/cortex/vector.Load
   ^defines=matrix/cortex/vector/vector.go
 
 NODE id=matrix/cortex/vector.max kind=func
   digest=b3:1704e0c3ee9f0daf51df85e33bab4864e048d52e90f5ba9743ddcd88625fc7c2 file=cortex/vector/vector.go range=926:931 lang=go exported=false byte_range=28560:28622
   sig=func max(a, b int) int
 EDGES
+  references=matrix/cortex/vector.a,matrix/cortex/vector.b
+  ^calls=matrix/cortex/vector.Index.Search
+  ^references=matrix/cortex/vector.Index.Search
   ^defines=matrix/cortex/vector/vector.go
 
 NODE id=matrix/cortex/vector.maxHeap kind=type
@@ -461,19 +553,25 @@ NODE id=matrix/cortex/vector.maxHeap kind=type
   doc=maxHeap is a container/heap.Interface ordered by distance descending,\nso heap.Pop returns the furthest candidate. Used for the dynamic W list\nduring HNSW search.
 EDGES
   contains=matrix/cortex/vector.maxHeap.Len,matrix/cortex/vector.maxHeap.Less,matrix/cortex/vector.maxHeap.Pop,matrix/cortex/vector.maxHeap.Push,matrix/cortex/vector.maxHeap.Swap
+  references=matrix/cortex/vector.candidate
+  ^references=matrix/cortex/vector.Index.searchLayer,matrix/cortex/vector.maxHeap.Len,matrix/cortex/vector.maxHeap.Less,matrix/cortex/vector.maxHeap.Pop,matrix/cortex/vector.maxHeap.Push,matrix/cortex/vector.maxHeap.Swap
   ^defines=matrix/cortex/vector/vector.go
 
 NODE id=matrix/cortex/vector.maxHeap.Len kind=method
   digest=b3:76ef2e9ed98cec041171d0d206ebebdf5dca0e8e7940834ab6ca8befdc3dec1b file=cortex/vector/vector.go range=955:955 lang=go exported=true byte_range=29359:29413
   sig=func (h maxHeap) Len() int
 EDGES
+  references=matrix/cortex/vector.h,matrix/cortex/vector.maxHeap
   ^contains=matrix/cortex/vector.maxHeap
+  ^calls=matrix/cortex/vector.Index.searchLayer
+  ^references=matrix/cortex/vector.Index.searchLayer
   ^defines=matrix/cortex/vector/vector.go
 
 NODE id=matrix/cortex/vector.maxHeap.Less kind=method
   digest=b3:2dace4dd09f223f8c0028871782776661f211c768c7bbe88a5dac3d56105108a file=cortex/vector/vector.go range=956:956 lang=go exported=true byte_range=29414:29483
   sig=func (h maxHeap) Less(a, b int) bool
 EDGES
+  references=matrix/cortex/vector.a,matrix/cortex/vector.b,matrix/cortex/vector.h,matrix/cortex/vector.maxHeap
   ^contains=matrix/cortex/vector.maxHeap
   ^defines=matrix/cortex/vector/vector.go
 
@@ -481,6 +579,7 @@ NODE id=matrix/cortex/vector.maxHeap.Pop kind=method
   digest=b3:d160c6721628ab65968336b6b5ca478450572e9768420baf6d1fc64ed258d9d0 file=cortex/vector/vector.go range=959:965 lang=go exported=true byte_range=29621:29719
   sig=func (h *maxHeap) Pop() any
 EDGES
+  references=matrix/cortex/vector.h,matrix/cortex/vector.maxHeap,matrix/cortex/vector.n,matrix/cortex/vector.old,matrix/cortex/vector.x
   ^contains=matrix/cortex/vector.maxHeap
   ^defines=matrix/cortex/vector/vector.go
 
@@ -488,6 +587,7 @@ NODE id=matrix/cortex/vector.maxHeap.Push kind=method
   digest=b3:93d1f00fbfb74747e73898e417c920994d265b2a407cca1d99fc84913e0ffaa4 file=cortex/vector/vector.go range=958:958 lang=go exported=true byte_range=29549:29620
   sig=func (h *maxHeap) Push(x any)
 EDGES
+  references=matrix/cortex/vector.candidate,matrix/cortex/vector.h,matrix/cortex/vector.maxHeap,matrix/cortex/vector.x
   ^contains=matrix/cortex/vector.maxHeap
   ^defines=matrix/cortex/vector/vector.go
 
@@ -495,6 +595,7 @@ NODE id=matrix/cortex/vector.maxHeap.Swap kind=method
   digest=b3:8d9d5d2737a4dd2fb4ac308a75123d8b0996ae43168c6c3169b696f14d0dfe4b file=cortex/vector/vector.go range=957:957 lang=go exported=true byte_range=29484:29548
   sig=func (h maxHeap) Swap(a, b int)
 EDGES
+  references=matrix/cortex/vector.a,matrix/cortex/vector.b,matrix/cortex/vector.h,matrix/cortex/vector.maxHeap
   ^contains=matrix/cortex/vector.maxHeap
   ^defines=matrix/cortex/vector/vector.go
 
@@ -504,19 +605,25 @@ NODE id=matrix/cortex/vector.minHeap kind=type
   doc=minHeap is a container/heap.Interface ordered by distance ascending.
 EDGES
   contains=matrix/cortex/vector.minHeap.Len,matrix/cortex/vector.minHeap.Less,matrix/cortex/vector.minHeap.Pop,matrix/cortex/vector.minHeap.Push,matrix/cortex/vector.minHeap.Swap
+  references=matrix/cortex/vector.candidate
+  ^references=matrix/cortex/vector.Index.searchLayer,matrix/cortex/vector.minHeap.Len,matrix/cortex/vector.minHeap.Less,matrix/cortex/vector.minHeap.Pop,matrix/cortex/vector.minHeap.Push,matrix/cortex/vector.minHeap.Swap
   ^defines=matrix/cortex/vector/vector.go
 
 NODE id=matrix/cortex/vector.minHeap.Len kind=method
   digest=b3:40a9ed31402b71b6e38ce3707280e7ef57de19747356497816a7a143344de941 file=cortex/vector/vector.go range=938:938 lang=go exported=true byte_range=28800:28854
   sig=func (h minHeap) Len() int
 EDGES
+  references=matrix/cortex/vector.h,matrix/cortex/vector.minHeap
   ^contains=matrix/cortex/vector.minHeap
+  ^calls=matrix/cortex/vector.Index.searchLayer
+  ^references=matrix/cortex/vector.Index.searchLayer
   ^defines=matrix/cortex/vector/vector.go
 
 NODE id=matrix/cortex/vector.minHeap.Less kind=method
   digest=b3:20dac465e6092b8b11dc47ffc45fc63ed67ceb484a52d89ebc31897af22a168a file=cortex/vector/vector.go range=939:939 lang=go exported=true byte_range=28855:28924
   sig=func (h minHeap) Less(a, b int) bool
 EDGES
+  references=matrix/cortex/vector.a,matrix/cortex/vector.b,matrix/cortex/vector.h,matrix/cortex/vector.minHeap
   ^contains=matrix/cortex/vector.minHeap
   ^defines=matrix/cortex/vector/vector.go
 
@@ -524,6 +631,7 @@ NODE id=matrix/cortex/vector.minHeap.Pop kind=method
   digest=b3:87a8d9e7e1404fcf9b16b6950de01d4cfda4e2ffb8533511fed668142d3b5911 file=cortex/vector/vector.go range=942:948 lang=go exported=true byte_range=29062:29160
   sig=func (h *minHeap) Pop() any
 EDGES
+  references=matrix/cortex/vector.h,matrix/cortex/vector.minHeap,matrix/cortex/vector.n,matrix/cortex/vector.old,matrix/cortex/vector.x
   ^contains=matrix/cortex/vector.minHeap
   ^defines=matrix/cortex/vector/vector.go
 
@@ -531,6 +639,7 @@ NODE id=matrix/cortex/vector.minHeap.Push kind=method
   digest=b3:1ec291ddd6a30fad52f4a93be3478a1129e27036589c7c000b9a3b08a1b71130 file=cortex/vector/vector.go range=941:941 lang=go exported=true byte_range=28990:29061
   sig=func (h *minHeap) Push(x any)
 EDGES
+  references=matrix/cortex/vector.candidate,matrix/cortex/vector.h,matrix/cortex/vector.minHeap,matrix/cortex/vector.x
   ^contains=matrix/cortex/vector.minHeap
   ^defines=matrix/cortex/vector/vector.go
 
@@ -538,6 +647,7 @@ NODE id=matrix/cortex/vector.minHeap.Swap kind=method
   digest=b3:0ecbb48e631ca5c6bb74cae815051a60e88a60d6a8984a344ca19fa0025ee85a file=cortex/vector/vector.go range=940:940 lang=go exported=true byte_range=28925:28989
   sig=func (h minHeap) Swap(a, b int)
 EDGES
+  references=matrix/cortex/vector.a,matrix/cortex/vector.b,matrix/cortex/vector.h,matrix/cortex/vector.minHeap
   ^contains=matrix/cortex/vector.minHeap
   ^defines=matrix/cortex/vector/vector.go
 
@@ -545,12 +655,19 @@ NODE id=matrix/cortex/vector.minInt kind=func
   digest=b3:1fb2eef770a0a46e79965d9c482c1b7c8c8471a11cfda4a540395666e4d746ec file=cortex/vector/vector.go range=919:924 lang=go exported=false byte_range=28493:28558
   sig=func minInt(a, b int) int
 EDGES
+  references=matrix/cortex/vector.a,matrix/cortex/vector.b
+  ^calls=matrix/cortex/vector.Index.Add
+  ^references=matrix/cortex/vector.Index.Add
   ^defines=matrix/cortex/vector/vector.go
 
 NODE id=matrix/cortex/vector.newOverlayStore kind=func
   digest=b3:b83ff992f51efaeac66df978dd6d5b910417cf1530f178c5bb47ef57dfecf892 file=cortex/vector/vector.go range=874:878 lang=go exported=false byte_range=27143:27328
   sig=func newOverlayStore(i *Index, vid uint64, vec []float32) *overlayStore
 EDGES
+  calls=matrix/cortex/vector.MapStore.Put,matrix/cortex/vector.NewMapStore
+  references=matrix/cortex/vector.Index,matrix/cortex/vector.MapStore.Put,matrix/cortex/vector.NewMapStore,matrix/cortex/vector.i,matrix/cortex/vector.ms,matrix/cortex/vector.overlayStore,matrix/cortex/vector.vec,matrix/cortex/vector.vid
+  ^calls=matrix/cortex/vector.Index.Add
+  ^references=matrix/cortex/vector.Index.Add
   ^defines=matrix/cortex/vector/vector.go
 
 NODE id=matrix/cortex/vector.node kind=type
@@ -559,6 +676,8 @@ NODE id=matrix/cortex/vector.node kind=type
   doc=node is one vertex in the HNSW graph. Vectors live OUTSIDE the node\nstruct (in vec/meta in Pebble) — the index borrows them via the\nVectorStore callback during search/insert. This keeps the in-memory\ngraph compact even at 100k+ vertices.
 EDGES
   contains=matrix/cortex/vector.node#level,matrix/cortex/vector.node#memoryID,matrix/cortex/vector.node#neighbors,matrix/cortex/vector.node#tombstoned,matrix/cortex/vector.node#vertexID
+  references=matrix/cortex/vector.MemoryID
+  ^references=matrix/cortex/vector.Index,matrix/cortex/vector.Index.Add,matrix/cortex/vector.Index.shrinkNeighbours,matrix/cortex/vector.Index.writeNode,matrix/cortex/vector.Load,matrix/cortex/vector.NewIndex
   ^defines=matrix/cortex/vector/vector.go
 
 NODE id=matrix/cortex/vector.node#level kind=field
@@ -600,6 +719,8 @@ NODE id=matrix/cortex/vector.overlayStore kind=type
 EDGES
   contains=matrix/cortex/vector.overlayStore#indexRef,matrix/cortex/vector.overlayStore#overlay,matrix/cortex/vector.overlayStore#primary,matrix/cortex/vector.overlayStore.GetVector
   implements=matrix/cortex/vector.VectorStore
+  references=matrix/cortex/vector.Index,matrix/cortex/vector.MapStore,matrix/cortex/vector.VectorStore
+  ^references=matrix/cortex/vector.newOverlayStore,matrix/cortex/vector.overlayStore.GetVector
   ^defines=matrix/cortex/vector/vector.go
 
 NODE id=matrix/cortex/vector.overlayStore#indexRef kind=field
@@ -624,7 +745,10 @@ NODE id=matrix/cortex/vector.overlayStore.GetVector kind=method
   digest=b3:acb0eff72d1cd8c08dc749f6ed2125de93acb01ba4eeb87b084ff25b291e06a9 file=cortex/vector/vector.go range=880:888 lang=go exported=true byte_range=27330:27539
   sig=func (s *overlayStore) GetVector(vid uint64) ([]float32, bool)
 EDGES
+  calls=matrix/cortex.pebbleVectorStore.GetVector,matrix/cortex/vector.MapStore.GetVector
+  references=matrix/cortex/vector.MapStore.GetVector,matrix/cortex/vector.VectorStore.GetVector,matrix/cortex/vector.ok,matrix/cortex/vector.overlayStore,matrix/cortex/vector.s,matrix/cortex/vector.v,matrix/cortex/vector.vid
   ^contains=matrix/cortex/vector.overlayStore
+  ^calls=matrix/cortex/vector.Index.distFromQuery,matrix/cortex/vector.Index.shrinkNeighbours
   ^defines=matrix/cortex/vector/vector.go
 
 NODE id=matrix/cortex/vector/vector.go kind=file

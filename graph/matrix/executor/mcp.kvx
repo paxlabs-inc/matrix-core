@@ -1,10 +1,11 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:9b68327501b45793fd7687f43b30c960fd68ae8aaff6b2f1bb36ec3e2df2de2f
+# GENERATED gen=codegraph do-not-edit merkle=b3:20e53aba2ea11552396417e53b3e04e87dd1bbb7bef3aa554a45bb92cf89e7f2
 
 NODE id=matrix/executor/mcp kind=package
   digest=b3:9021b116faad31cbfacf1a1dd7702118ad8c24f9a547965048574c583ab15d58 file=executor/mcp range=0:0 lang=go exported=true
 EDGES
   contains=matrix/executor/mcp/client.go,matrix/executor/mcp/http.go,matrix/executor/mcp/jsonrpc.go,matrix/executor/mcp/manager.go,matrix/executor/mcp/mock_server.go,matrix/executor/mcp/protocol.go,matrix/executor/mcp/stdio.go,matrix/executor/mcp/transport.go
   ^contains=mod:matrix/executor
+  ^imports=matrix/executor/cmd/mcl-e2e,matrix/executor/cmd/mcl-execute,matrix/executor/cmd/mcl-tools,matrix/executor/tool,matrix/neo/internal/tools
 
 NODE id=matrix/executor/mcp.CallToolParams kind=type
   digest=b3:faa81c2641ba8bcd4d094d8ba38e90f0a210816eae98914179d62a8806a1ad13 file=executor/mcp/protocol.go range=160:164 lang=go exported=true byte_range=6700:6900
@@ -12,6 +13,7 @@ NODE id=matrix/executor/mcp.CallToolParams kind=type
   doc=CallToolParams is the params object sent on tools/call.
 EDGES
   contains=matrix/executor/mcp.CallToolParams#Arguments,matrix/executor/mcp.CallToolParams#Name
+  ^references=matrix/executor/mcp.Client.ToolsCall,matrix/executor/mcp.MockServer.handleRequest
   ^defines=matrix/executor/mcp/protocol.go
 
 NODE id=matrix/executor/mcp.CallToolParams#Arguments kind=field
@@ -32,6 +34,8 @@ NODE id=matrix/executor/mcp.CallToolResult kind=type
   doc=CallToolResult is the typed response to tools/call. IsError captures\nin-band tool failure (e.g. "shell command exited 1") without the\ntransport-level error path. Both surfaces are mapped to Matrix\nfailure modes by the executor.
 EDGES
   contains=matrix/executor/mcp.CallToolResult#Content,matrix/executor/mcp.CallToolResult#IsError
+  references=matrix/executor/mcp.Content
+  ^references=matrix/executor/mcp.Client.ToolsCall,matrix/executor/mcp.ExtractText,matrix/executor/mcp.MockServer,matrix/executor/mcp.MockServer.handleRequest,matrix/executor/mcp.MockServerParams
   ^defines=matrix/executor/mcp/protocol.go
 
 NODE id=matrix/executor/mcp.CallToolResult#Content kind=field
@@ -51,6 +55,9 @@ NODE id=matrix/executor/mcp.Classify kind=func
   sig=func Classify(data []byte) (MessageKind, *Request, *Response, *Notification, error)
   doc=Classify parses an inbound JSON-RPC frame and returns the discriminated\nkind plus the typed message. The caller can pattern-match on kind\nand use the corresponding pointer (the others will be nil).\n\nJSON-RPC 2.0 routing rules:\n  - id present + method present  → Request\n  - id absent  + method present  → Notification\n  - id present + (result | error) → Response\n  - anything else                → ErrUnknownMessage\n\njsonrpc version mismatch returns ErrInvalidVersion regardless of shape.
 EDGES
+  references=matrix/executor/mcp.ErrAmbiguousResponse,matrix/executor/mcp.ErrInvalidVersion,matrix/executor/mcp.ErrUnknownMessage,matrix/executor/mcp.JSONRPCVersion,matrix/executor/mcp.KindNotification,matrix/executor/mcp.KindRequest,matrix/executor/mcp.KindResponse,matrix/executor/mcp.MessageKind,matrix/executor/mcp.Notification,matrix/executor/mcp.Request,matrix/executor/mcp.Response,matrix/executor/mcp.data,matrix/executor/mcp.err,matrix/executor/mcp.f,matrix/executor/mcp.hasError,matrix/executor/mcp.hasResult,matrix/executor/mcp.idPresent,matrix/executor/mcp.rawFrame
+  ^calls=matrix/executor/mcp.Client.readLoop,matrix/executor/mcp.MockServer.handle
+  ^references=matrix/executor/mcp.Client.readLoop,matrix/executor/mcp.MockServer.handle
   ^defines=matrix/executor/mcp/jsonrpc.go
 
 NODE id=matrix/executor/mcp.Client kind=type
@@ -59,6 +66,8 @@ NODE id=matrix/executor/mcp.Client kind=type
   doc=Client is a JSON-RPC 2.0 + MCP layer above a Transport. One Client\ndrives one server connection. Servers and clients are paired N:1\nbehind the manager (one Client per server, one manager per agent).\n\nConcurrency: Initialize must be called exactly once before any other\nmethod, but is itself goroutine-safe through the read loop. After\nInitialize, ToolsList / ToolsCall / Ping may be called from any\ngoroutine; the Client serializes through its outbound mutex.
 EDGES
   contains=matrix/executor/mcp.Client#closed,matrix/executor/mcp.Client#idCounter,matrix/executor/mcp.Client#info,matrix/executor/mcp.Client#infoMu,matrix/executor/mcp.Client#mu,matrix/executor/mcp.Client#notifyHandler,matrix/executor/mcp.Client#pending,matrix/executor/mcp.Client#readDone,matrix/executor/mcp.Client#readErr,matrix/executor/mcp.Client#readErrMu,matrix/executor/mcp.Client#sendMu,matrix/executor/mcp.Client#t,matrix/executor/mcp.Client.Call,matrix/executor/mcp.Client.Close,matrix/executor/mcp.Client.Info,matrix/executor/mcp.Client.Initialize,matrix/executor/mcp.Client.Notify,matrix/executor/mcp.Client.Ping,matrix/executor/mcp.Client.ReadError,matrix/executor/mcp.Client.ToolsCall,matrix/executor/mcp.Client.ToolsList,matrix/executor/mcp.Client.readLoop,matrix/executor/mcp.Client.routeResponse
+  references=matrix/executor/mcp.InitializeResult,matrix/executor/mcp.Notification,matrix/executor/mcp.Response,matrix/executor/mcp.Transport
+  ^references=matrix/executor/mcp.Client.Call,matrix/executor/mcp.Client.Close,matrix/executor/mcp.Client.Info,matrix/executor/mcp.Client.Initialize,matrix/executor/mcp.Client.Notify,matrix/executor/mcp.Client.Ping,matrix/executor/mcp.Client.ReadError,matrix/executor/mcp.Client.ToolsCall,matrix/executor/mcp.Client.ToolsList,matrix/executor/mcp.Client.readLoop,matrix/executor/mcp.Client.routeResponse,matrix/executor/mcp.Manager,matrix/executor/mcp.Manager.Client,matrix/executor/mcp.Manager.Close,matrix/executor/mcp.Manager.Spawn,matrix/executor/mcp.Manager.verifyTools,matrix/executor/mcp.NewClient,matrix/executor/mcp.NewManager
   ^defines=matrix/executor/mcp/client.go
 
 NODE id=matrix/executor/mcp.Client#closed kind=field
@@ -146,7 +155,11 @@ NODE id=matrix/executor/mcp.Client.Call kind=method
   sig=func (c *Client) Call(ctx context.Context, method string, params interface{}, resultPtr interface{}) error
   doc=Call performs a synchronous request/response. params is JSON-encoded\ninline; result is JSON-decoded into resultPtr (must be a pointer to\na struct or map). resultPtr may be nil if the caller doesn't care\nabout the response body shape.\n\nSurfaces RPCError verbatim through err so callers can switch on\ncodes (ErrCodeMethodNotFound, etc.).
 EDGES
+  calls=matrix/executor/mcp.EncodeRequest,matrix/executor/mcp.HTTPTransport.Send,matrix/executor/mcp.NewIDInt,matrix/executor/mcp.StdioTransport.Send,matrix/executor/mcp.encodeParams
+  references=matrix/executor/mcp.Client,matrix/executor/mcp.EncodeRequest,matrix/executor/mcp.ErrClosed,matrix/executor/mcp.NewIDInt,matrix/executor/mcp.Request,matrix/executor/mcp.Response,matrix/executor/mcp.Transport.Send,matrix/executor/mcp.c,matrix/executor/mcp.ctx,matrix/executor/mcp.encodeParams,matrix/executor/mcp.err,matrix/executor/mcp.frame,matrix/executor/mcp.id,matrix/executor/mcp.idJSON,matrix/executor/mcp.method,matrix/executor/mcp.ok,matrix/executor/mcp.params,matrix/executor/mcp.rawParams,matrix/executor/mcp.resp,matrix/executor/mcp.respCh,matrix/executor/mcp.resultPtr
   ^contains=matrix/executor/mcp.Client
+  ^calls=matrix/executor/mcp.Client.Initialize,matrix/executor/mcp.Client.Ping,matrix/executor/mcp.Client.ToolsCall,matrix/executor/mcp.Client.ToolsList
+  ^references=matrix/executor/mcp.Client.Initialize,matrix/executor/mcp.Client.Ping,matrix/executor/mcp.Client.ToolsCall,matrix/executor/mcp.Client.ToolsList
   ^defines=matrix/executor/mcp/client.go
 
 NODE id=matrix/executor/mcp.Client.Close kind=method
@@ -154,7 +167,11 @@ NODE id=matrix/executor/mcp.Client.Close kind=method
   sig=func (c *Client) Close() error
   doc=Close shuts down the read loop and the underlying transport. Safe\nto call multiple times. Pending Calls unblock with ErrClosed.
 EDGES
+  calls=matrix/executor/mcp.HTTPTransport.Close,matrix/executor/mcp.StdioTransport.Close
+  references=matrix/executor/mcp.Client,matrix/executor/mcp.Transport.Close,matrix/executor/mcp.c,matrix/executor/mcp.ch,matrix/executor/mcp.err,matrix/executor/mcp.id
   ^contains=matrix/executor/mcp.Client
+  ^calls=matrix/executor/mcp.Manager.Close,matrix/executor/mcp.Manager.Spawn,matrix/executor/mcp.Manager.Stop
+  ^references=matrix/executor/mcp.Manager.Close,matrix/executor/mcp.Manager.Spawn,matrix/executor/mcp.Manager.Stop
   ^defines=matrix/executor/mcp/client.go
 
 NODE id=matrix/executor/mcp.Client.Info kind=method
@@ -162,6 +179,7 @@ NODE id=matrix/executor/mcp.Client.Info kind=method
   sig=func (c *Client) Info() *InitializeResult
   doc=Info returns the InitializeResult cached after a successful\nInitialize call, or nil if Initialize hasn't completed yet.
 EDGES
+  references=matrix/executor/mcp.Client,matrix/executor/mcp.InitializeResult,matrix/executor/mcp.c,matrix/executor/mcp.cp
   ^contains=matrix/executor/mcp.Client
   ^defines=matrix/executor/mcp/client.go
 
@@ -170,7 +188,11 @@ NODE id=matrix/executor/mcp.Client.Initialize kind=method
   sig=func (c *Client) Initialize(ctx context.Context) (*InitializeResult, error)
   doc=Initialize completes the MCP handshake: sends initialize request,\nawaits the result, sends notifications/initialized, and stashes the\nserver's capabilities for later inspection via Info.\n\nCalling Initialize twice is a no-op the second time (returns the\ncached InitializeResult). This is forgiving by design; the manager\ntreats Initialize as idempotent during reconnect attempts.
 EDGES
+  calls=matrix/executor/mcp.Client.Call,matrix/executor/mcp.Client.Notify
+  references=matrix/executor/mcp.Client,matrix/executor/mcp.Client.Call,matrix/executor/mcp.Client.Notify,matrix/executor/mcp.ClientCapabilities,matrix/executor/mcp.ClientName,matrix/executor/mcp.ClientVersion,matrix/executor/mcp.Implementation,matrix/executor/mcp.InitializeParams,matrix/executor/mcp.InitializeResult,matrix/executor/mcp.MethodInitialize,matrix/executor/mcp.MethodNotificationsInit,matrix/executor/mcp.ProtocolVersion,matrix/executor/mcp.c,matrix/executor/mcp.cached,matrix/executor/mcp.ctx,matrix/executor/mcp.err,matrix/executor/mcp.params,matrix/executor/mcp.result
   ^contains=matrix/executor/mcp.Client
+  ^calls=matrix/executor/mcp.Manager.Spawn
+  ^references=matrix/executor/mcp.Manager.Spawn
   ^defines=matrix/executor/mcp/client.go
 
 NODE id=matrix/executor/mcp.Client.Notify kind=method
@@ -178,7 +200,11 @@ NODE id=matrix/executor/mcp.Client.Notify kind=method
   sig=func (c *Client) Notify(ctx context.Context, method string, params interface{}) error
   doc=Notify sends a one-way notification (no response expected).
 EDGES
+  calls=matrix/executor/mcp.EncodeNotification,matrix/executor/mcp.HTTPTransport.Send,matrix/executor/mcp.StdioTransport.Send,matrix/executor/mcp.encodeParams
+  references=matrix/executor/mcp.Client,matrix/executor/mcp.EncodeNotification,matrix/executor/mcp.ErrClosed,matrix/executor/mcp.Notification,matrix/executor/mcp.Transport.Send,matrix/executor/mcp.c,matrix/executor/mcp.ctx,matrix/executor/mcp.encodeParams,matrix/executor/mcp.err,matrix/executor/mcp.frame,matrix/executor/mcp.method,matrix/executor/mcp.params,matrix/executor/mcp.rawParams
   ^contains=matrix/executor/mcp.Client
+  ^calls=matrix/executor/mcp.Client.Initialize
+  ^references=matrix/executor/mcp.Client.Initialize
   ^defines=matrix/executor/mcp/client.go
 
 NODE id=matrix/executor/mcp.Client.Ping kind=method
@@ -186,7 +212,11 @@ NODE id=matrix/executor/mcp.Client.Ping kind=method
   sig=func (c *Client) Ping(ctx context.Context) error
   doc=Ping issues a JSON-RPC ping (Q16 health-pinged lifecycle). Returns\nnil on success, transport error otherwise.
 EDGES
+  calls=matrix/executor/mcp.Client.Call
+  references=matrix/executor/mcp.Client,matrix/executor/mcp.Client.Call,matrix/executor/mcp.MethodPing,matrix/executor/mcp.PingResult,matrix/executor/mcp.c,matrix/executor/mcp.ctx,matrix/executor/mcp.err,matrix/executor/mcp.result
   ^contains=matrix/executor/mcp.Client
+  ^calls=matrix/executor/mcp.Manager.healthLoop
+  ^references=matrix/executor/mcp.Manager.healthLoop
   ^defines=matrix/executor/mcp/client.go
 
 NODE id=matrix/executor/mcp.Client.ReadError kind=method
@@ -194,6 +224,7 @@ NODE id=matrix/executor/mcp.Client.ReadError kind=method
   sig=func (c *Client) ReadError() error
   doc=ReadError returns the read loop's terminating error after Close, or\nnil if the loop is still running or closed cleanly via Close.
 EDGES
+  references=matrix/executor/mcp.Client,matrix/executor/mcp.c
   ^contains=matrix/executor/mcp.Client
   ^defines=matrix/executor/mcp/client.go
 
@@ -202,7 +233,11 @@ NODE id=matrix/executor/mcp.Client.ToolsCall kind=method
   sig=func (c *Client) ToolsCall(ctx context.Context, name string, args map[string]interface{}) (*CallToolResult, error)
   doc=ToolsCall invokes a tool by name. Args are server-validated against\nthe tool's inputSchema (and Matrix re-validates client-side via the\ntool registry).\n\nReturns the typed CallToolResult. Note: result.IsError=true is NOT\nsurfaced as a Go error — that's an in-band tool-level failure (e.g.\n"shell exit 1") which the executor maps to a Failure step. Only\ntransport-level / RPC-level errors come back through err.
 EDGES
+  calls=matrix/executor/mcp.Client.Call
+  references=matrix/executor/mcp.CallToolParams,matrix/executor/mcp.CallToolResult,matrix/executor/mcp.Client,matrix/executor/mcp.Client.Call,matrix/executor/mcp.MethodToolsCall,matrix/executor/mcp.args,matrix/executor/mcp.c,matrix/executor/mcp.ctx,matrix/executor/mcp.err,matrix/executor/mcp.name,matrix/executor/mcp.params,matrix/executor/mcp.result
   ^contains=matrix/executor/mcp.Client
+  ^calls=matrix/executor/tool.MCPTool.Call
+  ^references=matrix/executor/tool.MCPTool.Call
   ^defines=matrix/executor/mcp/client.go
 
 NODE id=matrix/executor/mcp.Client.ToolsList kind=method
@@ -210,7 +245,11 @@ NODE id=matrix/executor/mcp.Client.ToolsList kind=method
   sig=func (c *Client) ToolsList(ctx context.Context) ([]Tool, error)
   doc=ToolsList enumerates the server's exposed tools. Used by the\nmanager at startup to verify the agent manifest matches what the\nserver actually offers (Q21).\n\nPagination via NextCursor is fully consumed here so callers see one\nflat list; paginated servers are uncommon at v1 scale but the spec\nallows them.
 EDGES
+  calls=matrix/executor/mcp.Client.Call
+  references=matrix/executor/mcp.Client,matrix/executor/mcp.Client.Call,matrix/executor/mcp.MethodToolsList,matrix/executor/mcp.Tool,matrix/executor/mcp.ToolsListResult,matrix/executor/mcp.all,matrix/executor/mcp.c,matrix/executor/mcp.ctx,matrix/executor/mcp.cursor,matrix/executor/mcp.err,matrix/executor/mcp.params,matrix/executor/mcp.result
   ^contains=matrix/executor/mcp.Client
+  ^calls=matrix/executor/mcp.Manager.verifyTools
+  ^references=matrix/executor/mcp.Manager.verifyTools
   ^defines=matrix/executor/mcp/client.go
 
 NODE id=matrix/executor/mcp.Client.readLoop kind=method
@@ -218,7 +257,11 @@ NODE id=matrix/executor/mcp.Client.readLoop kind=method
   sig=func (c *Client) readLoop()
   doc=readLoop consumes inbound frames, classifies them, and routes to\npending response channels (responses) or the notify handler\n(notifications). Inbound requests are not expected at v1 (no\nsampling/createMessage support); they're logged and ignored.
 EDGES
+  calls=matrix/executor/mcp.Classify,matrix/executor/mcp.Client.routeResponse,matrix/executor/mcp.HTTPTransport.Recv,matrix/executor/mcp.StdioTransport.Recv
+  references=matrix/executor/mcp.Classify,matrix/executor/mcp.Client,matrix/executor/mcp.Client.routeResponse,matrix/executor/mcp.KindNotification,matrix/executor/mcp.KindRequest,matrix/executor/mcp.KindResponse,matrix/executor/mcp.Transport.Recv,matrix/executor/mcp.c,matrix/executor/mcp.classifyErr,matrix/executor/mcp.ctx,matrix/executor/mcp.err,matrix/executor/mcp.frame,matrix/executor/mcp.kind,matrix/executor/mcp.note,matrix/executor/mcp.resp
   ^contains=matrix/executor/mcp.Client
+  ^calls=matrix/executor/mcp.NewClient
+  ^references=matrix/executor/mcp.NewClient
   ^defines=matrix/executor/mcp/client.go
 
 NODE id=matrix/executor/mcp.Client.routeResponse kind=method
@@ -226,7 +269,10 @@ NODE id=matrix/executor/mcp.Client.routeResponse kind=method
   sig=func (c *Client) routeResponse(resp *Response)
   doc=routeResponse hands resp to the matching pending channel. Drops\nsilently on no match (caller cancelled, double-response, etc.).
 EDGES
+  references=matrix/executor/mcp.Client,matrix/executor/mcp.Response,matrix/executor/mcp.c,matrix/executor/mcp.ch,matrix/executor/mcp.err,matrix/executor/mcp.id,matrix/executor/mcp.ok,matrix/executor/mcp.resp
   ^contains=matrix/executor/mcp.Client
+  ^calls=matrix/executor/mcp.Client.readLoop
+  ^references=matrix/executor/mcp.Client.readLoop
   ^defines=matrix/executor/mcp/client.go
 
 NODE id=matrix/executor/mcp.ClientCapabilities kind=type
@@ -235,6 +281,8 @@ NODE id=matrix/executor/mcp.ClientCapabilities kind=type
   doc=ClientCapabilities is the capability set we advertise to servers.\nv1 advertises no client-side capabilities (no roots subscription,\nno sampling callback) — Matrix is a pure client-of-tools.
 EDGES
   contains=matrix/executor/mcp.ClientCapabilities#Experimental,matrix/executor/mcp.ClientCapabilities#Roots,matrix/executor/mcp.ClientCapabilities#Sampling
+  references=matrix/executor/mcp.RootsCapability,matrix/executor/mcp.SamplingCapability
+  ^references=matrix/executor/mcp.Client.Initialize,matrix/executor/mcp.InitializeParams
   ^defines=matrix/executor/mcp/protocol.go
 
 NODE id=matrix/executor/mcp.ClientCapabilities#Experimental kind=field
@@ -263,6 +311,7 @@ NODE id=matrix/executor/mcp.ClientName kind=const
   sig=untyped string
   doc=ClientName + ClientVersion identify Matrix in the initialize handshake\nso MCP servers can log who's connecting.
 EDGES
+  ^references=matrix/executor/mcp.Client.Initialize
   ^defines=matrix/executor/mcp/protocol.go
 
 NODE id=matrix/executor/mcp.ClientParams kind=type
@@ -271,6 +320,8 @@ NODE id=matrix/executor/mcp.ClientParams kind=type
   doc=ClientParams configures a Client.
 EDGES
   contains=matrix/executor/mcp.ClientParams#NotifyHandler,matrix/executor/mcp.ClientParams#Transport
+  references=matrix/executor/mcp.Notification,matrix/executor/mcp.Transport
+  ^references=matrix/executor/mcp.Manager.Spawn,matrix/executor/mcp.NewClient
   ^defines=matrix/executor/mcp/client.go
 
 NODE id=matrix/executor/mcp.ClientParams#NotifyHandler kind=field
@@ -292,6 +343,7 @@ NODE id=matrix/executor/mcp.ClientVersion kind=const
   sig=untyped string
   doc=ClientName + ClientVersion identify Matrix in the initialize handshake\nso MCP servers can log who's connecting.
 EDGES
+  ^references=matrix/executor/mcp.Client.Initialize
   ^defines=matrix/executor/mcp/protocol.go
 
 NODE id=matrix/executor/mcp.Content kind=type
@@ -300,6 +352,8 @@ NODE id=matrix/executor/mcp.Content kind=type
   doc=Content is a single piece of the tool result. MCP supports text,\nimage, and embedded-resource content kinds; Matrix v1 surfaces text\ndirectly to the LLM and stores image/resource as base64 cortex Fact\nmemories.
 EDGES
   contains=matrix/executor/mcp.Content#Data,matrix/executor/mcp.Content#MimeType,matrix/executor/mcp.Content#Resource,matrix/executor/mcp.Content#Text,matrix/executor/mcp.Content#Type
+  references=matrix/executor/mcp.EmbeddedResource
+  ^references=matrix/executor/mcp.CallToolResult,matrix/executor/mcp.MockServer.handleRequest
   ^defines=matrix/executor/mcp/protocol.go
 
 NODE id=matrix/executor/mcp.Content#Data kind=field
@@ -354,6 +408,7 @@ NODE id=matrix/executor/mcp.ContentTypeText kind=const
   sig=untyped string
   doc=Content type constants for CallToolResult.Content.
 EDGES
+  ^references=matrix/executor/mcp.ExtractText,matrix/executor/mcp.MockServer.handleRequest
   ^defines=matrix/executor/mcp/protocol.go
 
 NODE id=matrix/executor/mcp.EmbeddedResource kind=type
@@ -362,6 +417,7 @@ NODE id=matrix/executor/mcp.EmbeddedResource kind=type
   doc=EmbeddedResource is a server-supplied resource attached to a tool result.
 EDGES
   contains=matrix/executor/mcp.EmbeddedResource#Blob,matrix/executor/mcp.EmbeddedResource#MimeType,matrix/executor/mcp.EmbeddedResource#Text,matrix/executor/mcp.EmbeddedResource#URI
+  ^references=matrix/executor/mcp.Content,matrix/executor/tool.embeddedURI
   ^defines=matrix/executor/mcp/protocol.go
 
 NODE id=matrix/executor/mcp.EmbeddedResource#Blob kind=field
@@ -393,6 +449,9 @@ NODE id=matrix/executor/mcp.EncodeNotification kind=func
   sig=func EncodeNotification(n *Notification) ([]byte, error)
   doc=EncodeNotification serializes a notification to wire bytes.
 EDGES
+  references=matrix/executor/mcp.ErrMissingMethod,matrix/executor/mcp.JSONRPCVersion,matrix/executor/mcp.Notification,matrix/executor/mcp.n,matrix/executor/mcp.out
+  ^calls=matrix/executor/mcp.Client.Notify
+  ^references=matrix/executor/mcp.Client.Notify
   ^defines=matrix/executor/mcp/jsonrpc.go
 
 NODE id=matrix/executor/mcp.EncodeRequest kind=func
@@ -400,6 +459,9 @@ NODE id=matrix/executor/mcp.EncodeRequest kind=func
   sig=func EncodeRequest(r *Request) ([]byte, error)
   doc=EncodeRequest serializes a request to JSON-RPC 2.0 wire bytes.\nAlways emits jsonrpc: "2.0" regardless of caller-supplied value\nso callers can construct Request{} without filling in the version\nfield every time.
 EDGES
+  references=matrix/executor/mcp.ErrMissingID,matrix/executor/mcp.ErrMissingMethod,matrix/executor/mcp.JSONRPCVersion,matrix/executor/mcp.Request,matrix/executor/mcp.out,matrix/executor/mcp.r
+  ^calls=matrix/executor/mcp.Client.Call
+  ^references=matrix/executor/mcp.Client.Call
   ^defines=matrix/executor/mcp/jsonrpc.go
 
 NODE id=matrix/executor/mcp.EncodeResponse kind=func
@@ -407,6 +469,9 @@ NODE id=matrix/executor/mcp.EncodeResponse kind=func
   sig=func EncodeResponse(r *Response) ([]byte, error)
   doc=EncodeResponse serializes a response to wire bytes. Used by the\nin-process mock server in tests; production clients only decode.
 EDGES
+  references=matrix/executor/mcp.ErrAmbiguousResponse,matrix/executor/mcp.ErrMissingID,matrix/executor/mcp.JSONRPCVersion,matrix/executor/mcp.Response,matrix/executor/mcp.hasError,matrix/executor/mcp.hasResult,matrix/executor/mcp.out,matrix/executor/mcp.r
+  ^calls=matrix/executor/mcp.MockServer.respond,matrix/executor/mcp.pipeTransport.run
+  ^references=matrix/executor/mcp.MockServer.respond,matrix/executor/mcp.pipeTransport.run
   ^defines=matrix/executor/mcp/jsonrpc.go
 
 NODE id=matrix/executor/mcp.ErrAmbiguousResponse kind=var
@@ -414,6 +479,7 @@ NODE id=matrix/executor/mcp.ErrAmbiguousResponse kind=var
   sig=error
   doc=ErrAmbiguousResponse fires when a Response carries both Result\nAND Error, or neither. Per JSON-RPC spec exactly one is required.
 EDGES
+  ^references=matrix/executor/mcp.Classify,matrix/executor/mcp.EncodeResponse
   ^defines=matrix/executor/mcp/jsonrpc.go
 
 NODE id=matrix/executor/mcp.ErrClosed kind=var
@@ -421,6 +487,7 @@ NODE id=matrix/executor/mcp.ErrClosed kind=var
   sig=error
   doc=ErrClosed signals that a Transport has been closed (either locally\nvia Close, by the peer disconnecting, or by EOF on the underlying\nstream). Returned by Send and Recv post-close.
 EDGES
+  ^references=matrix/executor/mcp.Client.Call,matrix/executor/mcp.Client.Notify,matrix/executor/mcp.HTTPTransport.Recv,matrix/executor/mcp.HTTPTransport.Send,matrix/executor/mcp.StdioTransport.Recv,matrix/executor/mcp.StdioTransport.Send,matrix/executor/mcp.mapStdioError,matrix/executor/mcp.pipeTransport.Recv,matrix/executor/mcp.pipeTransport.Send
   ^defines=matrix/executor/mcp/transport.go
 
 NODE id=matrix/executor/mcp.ErrCodeInternalError kind=const
@@ -428,6 +495,7 @@ NODE id=matrix/executor/mcp.ErrCodeInternalError kind=const
   sig=untyped int
   doc=Standard JSON-RPC 2.0 error codes (https://www.jsonrpc.org/specification).
 EDGES
+  ^references=matrix/executor/mcp.pipeTransport.run
   ^defines=matrix/executor/mcp/jsonrpc.go
 
 NODE id=matrix/executor/mcp.ErrCodeInvalidParams kind=const
@@ -435,6 +503,7 @@ NODE id=matrix/executor/mcp.ErrCodeInvalidParams kind=const
   sig=untyped int
   doc=Standard JSON-RPC 2.0 error codes (https://www.jsonrpc.org/specification).
 EDGES
+  ^references=matrix/executor/mcp.MockServer.handleRequest
   ^defines=matrix/executor/mcp/jsonrpc.go
 
 NODE id=matrix/executor/mcp.ErrCodeInvalidRequest kind=const
@@ -456,6 +525,7 @@ NODE id=matrix/executor/mcp.ErrCodeMethodNotFound kind=const
   sig=untyped int
   doc=Standard JSON-RPC 2.0 error codes (https://www.jsonrpc.org/specification).
 EDGES
+  ^references=matrix/executor/mcp.MockServer.handleRequest
   ^defines=matrix/executor/mcp/jsonrpc.go
 
 NODE id=matrix/executor/mcp.ErrCodeParseError kind=const
@@ -470,6 +540,7 @@ NODE id=matrix/executor/mcp.ErrCodeServerError kind=const
   sig=untyped int
   doc=MCP-specific error codes (server-defined range -32000..-32099 per\nJSON-RPC spec). These are subject to MCP spec evolution; recorded\nhere so the client can map common server errors to typed sentinels.
 EDGES
+  ^references=matrix/executor/mcp.MockServer.handleRequest
   ^defines=matrix/executor/mcp/jsonrpc.go
 
 NODE id=matrix/executor/mcp.ErrCodeServerUnavailable kind=const
@@ -477,6 +548,7 @@ NODE id=matrix/executor/mcp.ErrCodeServerUnavailable kind=const
   sig=untyped int
   doc=MCP-specific error codes (server-defined range -32000..-32099 per\nJSON-RPC spec). These are subject to MCP spec evolution; recorded\nhere so the client can map common server errors to typed sentinels.
 EDGES
+  ^references=matrix/executor/mcp.MockServer.handleRequest
   ^defines=matrix/executor/mcp/jsonrpc.go
 
 NODE id=matrix/executor/mcp.ErrCodeToolNotFound kind=const
@@ -491,6 +563,7 @@ NODE id=matrix/executor/mcp.ErrInvalidVersion kind=var
   sig=error
   doc=ErrInvalidVersion fires when an inbound message lacks the required\n"jsonrpc": "2.0" header. MCP servers that emit JSON-RPC 1.0 or\narbitrary JSON are rejected at the codec boundary.
 EDGES
+  ^references=matrix/executor/mcp.Classify
   ^defines=matrix/executor/mcp/jsonrpc.go
 
 NODE id=matrix/executor/mcp.ErrMissingID kind=var
@@ -498,6 +571,7 @@ NODE id=matrix/executor/mcp.ErrMissingID kind=var
   sig=error
   doc=ErrMissingID fires when a Request has no id field. Note that\nNotifications legitimately have no ID; the codec routes the\nframe correctly via the absent-id check.
 EDGES
+  ^references=matrix/executor/mcp.EncodeRequest,matrix/executor/mcp.EncodeResponse
   ^defines=matrix/executor/mcp/jsonrpc.go
 
 NODE id=matrix/executor/mcp.ErrMissingMethod kind=var
@@ -505,6 +579,7 @@ NODE id=matrix/executor/mcp.ErrMissingMethod kind=var
   sig=error
   doc=ErrMissingMethod fires when a Request or Notification has no\nmethod field.
 EDGES
+  ^references=matrix/executor/mcp.EncodeNotification,matrix/executor/mcp.EncodeRequest
   ^defines=matrix/executor/mcp/jsonrpc.go
 
 NODE id=matrix/executor/mcp.ErrUnknownMessage kind=var
@@ -512,6 +587,7 @@ NODE id=matrix/executor/mcp.ErrUnknownMessage kind=var
   sig=error
   doc=ErrUnknownMessage fires when an inbound JSON object cannot be\nclassified as Request, Response, or Notification.
 EDGES
+  ^references=matrix/executor/mcp.Classify
   ^defines=matrix/executor/mcp/jsonrpc.go
 
 NODE id=matrix/executor/mcp.ExtractText kind=func
@@ -519,6 +595,7 @@ NODE id=matrix/executor/mcp.ExtractText kind=func
   sig=func ExtractText(r *CallToolResult) string
   doc=ExtractText concatenates every text-typed content block in a\nCallToolResult. Convenience for the common path where a tool returns\n"what happened" as plain text.
 EDGES
+  references=matrix/executor/mcp.CallToolResult,matrix/executor/mcp.ContentTypeText,matrix/executor/mcp.c,matrix/executor/mcp.i,matrix/executor/mcp.out,matrix/executor/mcp.r
   ^defines=matrix/executor/mcp/protocol.go
 
 NODE id=matrix/executor/mcp.HTTPParams kind=type
@@ -527,6 +604,7 @@ NODE id=matrix/executor/mcp.HTTPParams kind=type
   doc=HTTPParams configures a streamable HTTP transport.
 EDGES
   contains=matrix/executor/mcp.HTTPParams#Client,matrix/executor/mcp.HTTPParams#Endpoint,matrix/executor/mcp.HTTPParams#Headers,matrix/executor/mcp.HTTPParams#Timeout
+  ^references=matrix/executor/mcp.Manager.buildTransport,matrix/executor/mcp.NewHTTPTransport
   ^defines=matrix/executor/mcp/http.go
 
 NODE id=matrix/executor/mcp.HTTPParams#Client kind=field
@@ -564,6 +642,7 @@ NODE id=matrix/executor/mcp.HTTPTransport kind=type
 EDGES
   contains=matrix/executor/mcp.HTTPTransport#client,matrix/executor/mcp.HTTPTransport#closed,matrix/executor/mcp.HTTPTransport#done,matrix/executor/mcp.HTTPTransport#endpoint,matrix/executor/mcp.HTTPTransport#errInbox,matrix/executor/mcp.HTTPTransport#headers,matrix/executor/mcp.HTTPTransport#inbox,matrix/executor/mcp.HTTPTransport#mu,matrix/executor/mcp.HTTPTransport.Close,matrix/executor/mcp.HTTPTransport.Recv,matrix/executor/mcp.HTTPTransport.Send
   implements=matrix/executor/mcp.Transport
+  ^references=matrix/executor/mcp.HTTPTransport.Close,matrix/executor/mcp.HTTPTransport.Recv,matrix/executor/mcp.HTTPTransport.Send,matrix/executor/mcp.NewHTTPTransport
   ^defines=matrix/executor/mcp/http.go
 
 NODE id=matrix/executor/mcp.HTTPTransport#client kind=field
@@ -622,7 +701,9 @@ NODE id=matrix/executor/mcp.HTTPTransport.Close kind=method
   sig=func (t *HTTPTransport) Close() error
   doc=Close marks the transport closed and drains pending channels.\nSubsequent Send/Recv return ErrClosed.
 EDGES
+  references=matrix/executor/mcp.HTTPTransport,matrix/executor/mcp.t
   ^contains=matrix/executor/mcp.HTTPTransport
+  ^calls=matrix/executor/mcp.Client.Close,matrix/executor/mcp.Manager.Spawn
   ^defines=matrix/executor/mcp/http.go
 
 NODE id=matrix/executor/mcp.HTTPTransport.Recv kind=method
@@ -630,7 +711,9 @@ NODE id=matrix/executor/mcp.HTTPTransport.Recv kind=method
   sig=func (t *HTTPTransport) Recv(ctx context.Context) ([]byte, error)
   doc=Recv blocks for the next frame, an out-of-band error, ctx cancel,\nor transport close.
 EDGES
+  references=matrix/executor/mcp.ErrClosed,matrix/executor/mcp.HTTPTransport,matrix/executor/mcp.closed,matrix/executor/mcp.ctx,matrix/executor/mcp.err,matrix/executor/mcp.frame,matrix/executor/mcp.t
   ^contains=matrix/executor/mcp.HTTPTransport
+  ^calls=matrix/executor/mcp.Client.readLoop
   ^defines=matrix/executor/mcp/http.go
 
 NODE id=matrix/executor/mcp.HTTPTransport.Send kind=method
@@ -638,7 +721,10 @@ NODE id=matrix/executor/mcp.HTTPTransport.Send kind=method
   sig=func (t *HTTPTransport) Send(ctx context.Context, frame []byte) error
   doc=Send POSTs one JSON-RPC frame to the endpoint. The response body\n(if it carries a JSON-RPC frame, which it always does for\nrequests; never for notifications) is enqueued on inbox for the\nnext Recv.\n\nNotifications get a 202 with empty body per spec; we don't enqueue\nanything in that case.
 EDGES
+  calls=matrix/executor/mcp.isSSE,matrix/executor/mcp.truncate
+  references=matrix/executor/mcp.ErrClosed,matrix/executor/mcp.HTTPTransport,matrix/executor/mcp.body,matrix/executor/mcp.closed,matrix/executor/mcp.ct,matrix/executor/mcp.ctx,matrix/executor/mcp.err,matrix/executor/mcp.frame,matrix/executor/mcp.isSSE,matrix/executor/mcp.k,matrix/executor/mcp.req,matrix/executor/mcp.resp,matrix/executor/mcp.t,matrix/executor/mcp.truncate,matrix/executor/mcp.v,matrix/executor/mcp.vs
   ^contains=matrix/executor/mcp.HTTPTransport
+  ^calls=matrix/executor/mcp.Client.Call,matrix/executor/mcp.Client.Notify
   ^defines=matrix/executor/mcp/http.go
 
 NODE id=matrix/executor/mcp.Implementation kind=type
@@ -647,6 +733,7 @@ NODE id=matrix/executor/mcp.Implementation kind=type
   doc=Implementation identifies a peer (server or client) by name + version.
 EDGES
   contains=matrix/executor/mcp.Implementation#Name,matrix/executor/mcp.Implementation#Version
+  ^references=matrix/executor/mcp.Client.Initialize,matrix/executor/mcp.InitializeParams,matrix/executor/mcp.InitializeResult,matrix/executor/mcp.MockServer,matrix/executor/mcp.NewMockServer
   ^defines=matrix/executor/mcp/protocol.go
 
 NODE id=matrix/executor/mcp.Implementation#Name kind=field
@@ -667,6 +754,8 @@ NODE id=matrix/executor/mcp.InitializeParams kind=type
   doc=InitializeParams is the params object sent on the initialize request.
 EDGES
   contains=matrix/executor/mcp.InitializeParams#Capabilities,matrix/executor/mcp.InitializeParams#ClientInfo,matrix/executor/mcp.InitializeParams#ProtocolVersion
+  references=matrix/executor/mcp.ClientCapabilities,matrix/executor/mcp.Implementation
+  ^references=matrix/executor/mcp.Client.Initialize
   ^defines=matrix/executor/mcp/protocol.go
 
 NODE id=matrix/executor/mcp.InitializeParams#Capabilities kind=field
@@ -693,6 +782,8 @@ NODE id=matrix/executor/mcp.InitializeResult kind=type
   doc=InitializeResult is the server's response to initialize.
 EDGES
   contains=matrix/executor/mcp.InitializeResult#Capabilities,matrix/executor/mcp.InitializeResult#Instructions,matrix/executor/mcp.InitializeResult#ProtocolVersion,matrix/executor/mcp.InitializeResult#ServerInfo
+  references=matrix/executor/mcp.Implementation,matrix/executor/mcp.ServerCapabilities
+  ^references=matrix/executor/mcp.Client,matrix/executor/mcp.Client.Info,matrix/executor/mcp.Client.Initialize,matrix/executor/mcp.MockServer.handleRequest
   ^defines=matrix/executor/mcp/protocol.go
 
 NODE id=matrix/executor/mcp.InitializeResult#Capabilities kind=field
@@ -725,6 +816,7 @@ NODE id=matrix/executor/mcp.JSONRPCVersion kind=const
   sig=untyped string
   doc=JSONRPCVersion is the protocol version identifier required on every\nJSON-RPC 2.0 message.
 EDGES
+  ^references=matrix/executor/mcp.Classify,matrix/executor/mcp.EncodeNotification,matrix/executor/mcp.EncodeRequest,matrix/executor/mcp.EncodeResponse
   ^defines=matrix/executor/mcp/jsonrpc.go
 
 NODE id=matrix/executor/mcp.KindNotification kind=const
@@ -732,6 +824,7 @@ NODE id=matrix/executor/mcp.KindNotification kind=const
   sig=mcp.MessageKind
   doc=KindNotification is an inbound server-initiated notification.
 EDGES
+  ^references=matrix/executor/mcp.Classify,matrix/executor/mcp.Client.readLoop,matrix/executor/mcp.MockServer.handle
   ^defines=matrix/executor/mcp/jsonrpc.go
 
 NODE id=matrix/executor/mcp.KindRequest kind=const
@@ -739,6 +832,8 @@ NODE id=matrix/executor/mcp.KindRequest kind=const
   sig=mcp.MessageKind
   doc=KindRequest is an inbound request from peer. MCP servers do not\nsend requests to clients in v1, but the spec allows it (e.g.\nfor sampling/createMessage callbacks); we surface it for forward\ncompatibility.
 EDGES
+  references=matrix/executor/mcp.MessageKind
+  ^references=matrix/executor/mcp.Classify,matrix/executor/mcp.Client.readLoop,matrix/executor/mcp.MockServer.handle
   ^defines=matrix/executor/mcp/jsonrpc.go
 
 NODE id=matrix/executor/mcp.KindResponse kind=const
@@ -746,6 +841,7 @@ NODE id=matrix/executor/mcp.KindResponse kind=const
   sig=mcp.MessageKind
   doc=KindResponse is an inbound response to one of our outgoing requests.
 EDGES
+  ^references=matrix/executor/mcp.Classify,matrix/executor/mcp.Client.readLoop
   ^defines=matrix/executor/mcp/jsonrpc.go
 
 NODE id=matrix/executor/mcp.LoggingCapability kind=type
@@ -753,6 +849,7 @@ NODE id=matrix/executor/mcp.LoggingCapability kind=type
   sig=type LoggingCapability struct{}
   doc=LoggingCapability is a capability flag (no fields) that signals the\nserver emits notifications/message log events. Matrix v1 ignores them.
 EDGES
+  ^references=matrix/executor/mcp.ServerCapabilities
   ^defines=matrix/executor/mcp/protocol.go
 
 NODE id=matrix/executor/mcp.Manager kind=type
@@ -761,6 +858,8 @@ NODE id=matrix/executor/mcp.Manager kind=type
   doc=Manager is the per-agent MCP server pool (Q16 lock). It owns the\nlifecycle of every server an agent has declared in its manifest:\nspawn-on-boot, health-pinged, auto-reconnect on death, graceful drain\non agent stop.\n\nOne Manager per agent (NOT per intent — servers persist across\nintents for the duration of the agent process). Tools layer\n(executor/tool) consults Manager.Client(serverAlias) to resolve\ntool URIs at dispatch time.
 EDGES
   contains=matrix/executor/mcp.Manager#clients,matrix/executor/mcp.Manager#healthInterval,matrix/executor/mcp.Manager#mu,matrix/executor/mcp.Manager#onUnhealthy,matrix/executor/mcp.Manager#shutdownCancel,matrix/executor/mcp.Manager#shutdownCtx,matrix/executor/mcp.Manager#specs,matrix/executor/mcp.Manager#stderrSink,matrix/executor/mcp.Manager#tools,matrix/executor/mcp.Manager#transportBuilder,matrix/executor/mcp.Manager#wg,matrix/executor/mcp.Manager.Aliases,matrix/executor/mcp.Manager.Client,matrix/executor/mcp.Manager.Close,matrix/executor/mcp.Manager.Spawn,matrix/executor/mcp.Manager.Spec,matrix/executor/mcp.Manager.Stop,matrix/executor/mcp.Manager.Tools,matrix/executor/mcp.Manager.buildTransport,matrix/executor/mcp.Manager.healthLoop,matrix/executor/mcp.Manager.verifyTools
+  references=matrix/executor/mcp.Client,matrix/executor/mcp.ServerSpec,matrix/executor/mcp.Tool,matrix/executor/mcp.Transport
+  ^references=matrix/executor/cmd/mcl-execute.buildSystemPrompt,matrix/executor/cmd/mcl-execute.buildToolListing,matrix/executor/cmd/mcl-execute.infra,matrix/executor/cmd/mcl-execute.liveSchemaMap,matrix/executor/cmd/mcl-execute.liveToolSchemas,matrix/executor/cmd/mcl-execute.synthesizeOpts,matrix/executor/cmd/mcl-execute.writeToolListing,matrix/executor/cmd/mcl-execute.writeToolSection,matrix/executor/mcp.Manager.Aliases,matrix/executor/mcp.Manager.Client,matrix/executor/mcp.Manager.Close,matrix/executor/mcp.Manager.Spawn,matrix/executor/mcp.Manager.Spec,matrix/executor/mcp.Manager.Stop,matrix/executor/mcp.Manager.Tools,matrix/executor/mcp.Manager.buildTransport,matrix/executor/mcp.Manager.healthLoop,matrix/executor/mcp.Manager.verifyTools,matrix/executor/mcp.NewManager,matrix/executor/tool.MCPTool,matrix/executor/tool.Registry,matrix/executor/tool.RegistryParams,matrix/neo/internal/tools.Manager
   ^defines=matrix/executor/mcp/manager.go
 
 NODE id=matrix/executor/mcp.Manager#clients kind=field
@@ -840,7 +939,10 @@ NODE id=matrix/executor/mcp.Manager.Aliases kind=method
   sig=func (m *Manager) Aliases() []string
   doc=Aliases returns the sorted set of currently registered aliases.\nSnapshot — does not lock for the duration of caller use.
 EDGES
+  references=matrix/executor/mcp.Manager,matrix/executor/mcp.a,matrix/executor/mcp.m,matrix/executor/mcp.out
   ^contains=matrix/executor/mcp.Manager
+  ^calls=matrix/executor/cmd/mcl-execute.daemonState.handleDiagMCP
+  ^references=matrix/executor/cmd/mcl-execute.daemonState.handleDiagMCP
   ^defines=matrix/executor/mcp/manager.go
 
 NODE id=matrix/executor/mcp.Manager.Client kind=method
@@ -848,7 +950,10 @@ NODE id=matrix/executor/mcp.Manager.Client kind=method
   sig=func (m *Manager) Client(alias string) *Client
   doc=Client returns the live client for the given alias, or nil if the\nalias hasn't been spawned.
 EDGES
+  references=matrix/executor/mcp.Client,matrix/executor/mcp.Manager,matrix/executor/mcp.alias,matrix/executor/mcp.m
   ^contains=matrix/executor/mcp.Manager
+  ^calls=matrix/executor/cmd/mcl-execute.daemonState.handleDiagMCP,matrix/executor/cmd/mcl-execute.daemonState.handleServersList,matrix/executor/tool.MCPTool.Call
+  ^references=matrix/executor/cmd/mcl-execute.daemonState.handleDiagMCP,matrix/executor/cmd/mcl-execute.daemonState.handleServersList,matrix/executor/tool.MCPTool.Call
   ^defines=matrix/executor/mcp/manager.go
 
 NODE id=matrix/executor/mcp.Manager.Close kind=method
@@ -856,7 +961,11 @@ NODE id=matrix/executor/mcp.Manager.Close kind=method
   sig=func (m *Manager) Close() error
   doc=Close drains all registered servers. Safe to call multiple times.
 EDGES
+  calls=matrix/executor/mcp.Client.Close
+  references=matrix/executor/mcp.Client,matrix/executor/mcp.Client.Close,matrix/executor/mcp.Manager,matrix/executor/mcp.ServerSpec,matrix/executor/mcp.Tool,matrix/executor/mcp.c,matrix/executor/mcp.clients,matrix/executor/mcp.err,matrix/executor/mcp.firstErr,matrix/executor/mcp.m
   ^contains=matrix/executor/mcp.Manager
+  ^calls=matrix/executor/cmd/mcl-e2e.RunOnce,matrix/executor/cmd/mcl-execute.infra.Close,matrix/executor/cmd/mcl-tools.runCall,matrix/neo/internal/tools.Manager.Close,matrix/neo/internal/tools.Spawn
+  ^references=matrix/executor/cmd/mcl-e2e.RunOnce,matrix/executor/cmd/mcl-execute.infra.Close,matrix/executor/cmd/mcl-tools.runCall,matrix/neo/internal/tools.Manager.Close,matrix/neo/internal/tools.Spawn
   ^defines=matrix/executor/mcp/manager.go
 
 NODE id=matrix/executor/mcp.Manager.Spawn kind=method
@@ -864,7 +973,11 @@ NODE id=matrix/executor/mcp.Manager.Spawn kind=method
   sig=func (m *Manager) Spawn(ctx context.Context, spec ServerSpec) (*Client, error)
   doc=Spawn launches an MCP server, runs the initialize handshake, and\nvalidates the tool manifest (Q21). On success, the server is\nregistered under its alias and ready for ToolsCall.\n\nSpawn is idempotent: spawning an alias that's already running is a\nno-op (returns the existing client). To replace, call Stop first.
 EDGES
+  calls=matrix/executor/mcp.Client.Close,matrix/executor/mcp.Client.Initialize,matrix/executor/mcp.HTTPTransport.Close,matrix/executor/mcp.Manager.buildTransport,matrix/executor/mcp.Manager.healthLoop,matrix/executor/mcp.Manager.verifyTools,matrix/executor/mcp.NewClient,matrix/executor/mcp.StdioTransport.Close
+  references=matrix/executor/mcp.Client,matrix/executor/mcp.Client.Close,matrix/executor/mcp.Client.Initialize,matrix/executor/mcp.ClientParams,matrix/executor/mcp.Manager,matrix/executor/mcp.Manager.buildTransport,matrix/executor/mcp.Manager.healthLoop,matrix/executor/mcp.Manager.verifyTools,matrix/executor/mcp.NewClient,matrix/executor/mcp.ServerSpec,matrix/executor/mcp.Transport.Close,matrix/executor/mcp.advertised,matrix/executor/mcp.client,matrix/executor/mcp.ctx,matrix/executor/mcp.err,matrix/executor/mcp.existing,matrix/executor/mcp.m,matrix/executor/mcp.ok,matrix/executor/mcp.spec,matrix/executor/mcp.transport
   ^contains=matrix/executor/mcp.Manager
+  ^calls=matrix/executor/cmd/mcl-e2e.RunOnce,matrix/executor/cmd/mcl-execute.newInfra,matrix/executor/cmd/mcl-tools.runCall,matrix/neo/internal/tools.Spawn
+  ^references=matrix/executor/cmd/mcl-e2e.RunOnce,matrix/executor/cmd/mcl-execute.newInfra,matrix/executor/cmd/mcl-tools.runCall,matrix/neo/internal/tools.Spawn
   ^defines=matrix/executor/mcp/manager.go
 
 NODE id=matrix/executor/mcp.Manager.Spec kind=method
@@ -872,6 +985,7 @@ NODE id=matrix/executor/mcp.Manager.Spec kind=method
   sig=func (m *Manager) Spec(alias string) ServerSpec
   doc=Spec returns the ServerSpec for an alias. Empty alias returned if\nnot present.
 EDGES
+  references=matrix/executor/mcp.Manager,matrix/executor/mcp.ServerSpec,matrix/executor/mcp.alias,matrix/executor/mcp.m
   ^contains=matrix/executor/mcp.Manager
   ^defines=matrix/executor/mcp/manager.go
 
@@ -880,6 +994,8 @@ NODE id=matrix/executor/mcp.Manager.Stop kind=method
   sig=func (m *Manager) Stop(alias string) error
   doc=Stop terminates a single server cleanly.
 EDGES
+  calls=matrix/executor/mcp.Client.Close
+  references=matrix/executor/mcp.Client.Close,matrix/executor/mcp.Manager,matrix/executor/mcp.alias,matrix/executor/mcp.c,matrix/executor/mcp.m,matrix/executor/mcp.ok
   ^contains=matrix/executor/mcp.Manager
   ^defines=matrix/executor/mcp/manager.go
 
@@ -888,7 +1004,10 @@ NODE id=matrix/executor/mcp.Manager.Tools kind=method
   sig=func (m *Manager) Tools(alias string) []Tool
   doc=Tools returns the live tool descriptors (including JSON-Schema\nInputSchemas) advertised by the server with the given alias. Empty\nslice if the alias is not registered. The returned slice is a copy\nsafe for caller mutation.
 EDGES
+  references=matrix/executor/mcp.Manager,matrix/executor/mcp.Tool,matrix/executor/mcp.alias,matrix/executor/mcp.m,matrix/executor/mcp.out,matrix/executor/mcp.src
   ^contains=matrix/executor/mcp.Manager
+  ^calls=matrix/executor/cmd/mcl-execute.daemonState.handleDiagMCP,matrix/executor/cmd/mcl-execute.liveSchemaMap,matrix/executor/cmd/mcl-execute.liveToolSchemas,matrix/neo/internal/tools.Manager.bind
+  ^references=matrix/executor/cmd/mcl-execute.daemonState.handleDiagMCP,matrix/executor/cmd/mcl-execute.liveSchemaMap,matrix/executor/cmd/mcl-execute.liveToolSchemas,matrix/neo/internal/tools.Manager.bind
   ^defines=matrix/executor/mcp/manager.go
 
 NODE id=matrix/executor/mcp.Manager.buildTransport kind=method
@@ -896,7 +1015,11 @@ NODE id=matrix/executor/mcp.Manager.buildTransport kind=method
   sig=func (m *Manager) buildTransport(spec ServerSpec) (Transport, error)
   doc=buildTransport instantiates the right Transport for the spec.
 EDGES
+  calls=matrix/executor/mcp.NewHTTPTransport,matrix/executor/mcp.NewStdioTransport
+  references=matrix/executor/mcp.HTTPParams,matrix/executor/mcp.Manager,matrix/executor/mcp.NewHTTPTransport,matrix/executor/mcp.NewStdioTransport,matrix/executor/mcp.ServerSpec,matrix/executor/mcp.StdioParams,matrix/executor/mcp.Transport,matrix/executor/mcp.hdr,matrix/executor/mcp.k,matrix/executor/mcp.m,matrix/executor/mcp.spec,matrix/executor/mcp.v
   ^contains=matrix/executor/mcp.Manager
+  ^calls=matrix/executor/mcp.Manager.Spawn
+  ^references=matrix/executor/mcp.Manager.Spawn
   ^defines=matrix/executor/mcp/manager.go
 
 NODE id=matrix/executor/mcp.Manager.healthLoop kind=method
@@ -904,7 +1027,11 @@ NODE id=matrix/executor/mcp.Manager.healthLoop kind=method
   sig=func (m *Manager) healthLoop(alias string)
   doc=healthLoop periodically pings the server and invokes onUnhealthy\non failure. v1 does NOT auto-restart (keeps blast radius small);\nthe unhealthy callback is the integration point for caller-decided\nrecovery.
 EDGES
+  calls=matrix/executor/mcp.Client.Ping
+  references=matrix/executor/mcp.Client.Ping,matrix/executor/mcp.Manager,matrix/executor/mcp.alias,matrix/executor/mcp.c,matrix/executor/mcp.cancel,matrix/executor/mcp.ctx,matrix/executor/mcp.err,matrix/executor/mcp.m,matrix/executor/mcp.ticker
   ^contains=matrix/executor/mcp.Manager
+  ^calls=matrix/executor/mcp.Manager.Spawn
+  ^references=matrix/executor/mcp.Manager.Spawn
   ^defines=matrix/executor/mcp/manager.go
 
 NODE id=matrix/executor/mcp.Manager.verifyTools kind=method
@@ -912,7 +1039,11 @@ NODE id=matrix/executor/mcp.Manager.verifyTools kind=method
   sig=func (m *Manager) verifyTools(ctx context.Context, client *Client, spec ServerSpec) ([]Tool, error)
   doc=verifyTools enforces Q21 — what the server advertises must match\nwhat the manifest declared. Drift is fatal. On success returns the\nadvertised tool list (with InputSchemas) so callers can cache it.
 EDGES
+  calls=matrix/executor/mcp.Client.ToolsList
+  references=matrix/executor/mcp.Client,matrix/executor/mcp.Client.ToolsList,matrix/executor/mcp.Manager,matrix/executor/mcp.ServerSpec,matrix/executor/mcp.Tool,matrix/executor/mcp.advertised,matrix/executor/mcp.client,matrix/executor/mcp.ctx,matrix/executor/mcp.err,matrix/executor/mcp.got,matrix/executor/mcp.spec,matrix/executor/mcp.t,matrix/executor/mcp.want
   ^contains=matrix/executor/mcp.Manager
+  ^calls=matrix/executor/mcp.Manager.Spawn
+  ^references=matrix/executor/mcp.Manager.Spawn
   ^defines=matrix/executor/mcp/manager.go
 
 NODE id=matrix/executor/mcp.ManagerParams kind=type
@@ -921,6 +1052,8 @@ NODE id=matrix/executor/mcp.ManagerParams kind=type
   doc=ManagerParams configures a Manager.
 EDGES
   contains=matrix/executor/mcp.ManagerParams#HealthInterval,matrix/executor/mcp.ManagerParams#OnUnhealthy,matrix/executor/mcp.ManagerParams#StderrSink,matrix/executor/mcp.ManagerParams#TransportBuilder
+  references=matrix/executor/mcp.ServerSpec,matrix/executor/mcp.Transport
+  ^references=matrix/executor/cmd/mcl-e2e.RunOnce,matrix/executor/cmd/mcl-execute.newInfra,matrix/executor/cmd/mcl-tools.runCall,matrix/executor/mcp.NewManager,matrix/neo/internal/tools.Spawn
   ^defines=matrix/executor/mcp/manager.go
 
 NODE id=matrix/executor/mcp.ManagerParams#HealthInterval kind=field
@@ -956,6 +1089,7 @@ NODE id=matrix/executor/mcp.MessageKind kind=type
   sig=type MessageKind int
   doc=MessageKind discriminates inbound JSON-RPC frames after a single\npass of generic parsing. Used by the transport layer to route\nframes into the right typed channel.
 EDGES
+  ^references=matrix/executor/mcp.Classify,matrix/executor/mcp.KindRequest
   ^defines=matrix/executor/mcp/jsonrpc.go
 
 NODE id=matrix/executor/mcp.MethodInitialize kind=const
@@ -963,6 +1097,7 @@ NODE id=matrix/executor/mcp.MethodInitialize kind=const
   sig=untyped string
   doc=MCP method names — exported as constants so the client and tests\nshare one source of truth.
 EDGES
+  ^references=matrix/executor/mcp.Client.Initialize,matrix/executor/mcp.MockServer.handleRequest
   ^defines=matrix/executor/mcp/protocol.go
 
 NODE id=matrix/executor/mcp.MethodNotificationsCancelled kind=const
@@ -977,6 +1112,7 @@ NODE id=matrix/executor/mcp.MethodNotificationsInit kind=const
   sig=untyped string
   doc=MCP method names — exported as constants so the client and tests\nshare one source of truth.
 EDGES
+  ^references=matrix/executor/mcp.Client.Initialize,matrix/executor/mcp.MockServer.handle
   ^defines=matrix/executor/mcp/protocol.go
 
 NODE id=matrix/executor/mcp.MethodNotificationsProgress kind=const
@@ -991,6 +1127,7 @@ NODE id=matrix/executor/mcp.MethodPing kind=const
   sig=untyped string
   doc=MCP method names — exported as constants so the client and tests\nshare one source of truth.
 EDGES
+  ^references=matrix/executor/mcp.Client.Ping,matrix/executor/mcp.MockServer.handleRequest
   ^defines=matrix/executor/mcp/protocol.go
 
 NODE id=matrix/executor/mcp.MethodToolsCall kind=const
@@ -998,6 +1135,7 @@ NODE id=matrix/executor/mcp.MethodToolsCall kind=const
   sig=untyped string
   doc=MCP method names — exported as constants so the client and tests\nshare one source of truth.
 EDGES
+  ^references=matrix/executor/mcp.Client.ToolsCall,matrix/executor/mcp.MockServer.handleRequest
   ^defines=matrix/executor/mcp/protocol.go
 
 NODE id=matrix/executor/mcp.MethodToolsList kind=const
@@ -1005,6 +1143,7 @@ NODE id=matrix/executor/mcp.MethodToolsList kind=const
   sig=untyped string
   doc=MCP method names — exported as constants so the client and tests\nshare one source of truth.
 EDGES
+  ^references=matrix/executor/mcp.Client.ToolsList,matrix/executor/mcp.MockServer.handleRequest
   ^defines=matrix/executor/mcp/protocol.go
 
 NODE id=matrix/executor/mcp.MockServer kind=type
@@ -1013,6 +1152,8 @@ NODE id=matrix/executor/mcp.MockServer kind=type
   doc=MockServer is an in-process MCP server stub used by tests. It pairs\nwith a matching mockTransport so a Client can drive it without\nspawning a subprocess or opening a socket.\n\nBehavior: implements initialize, tools/list, tools/call, ping with\nconfigurable handlers + a captured request log so tests can assert\non the wire shape after the fact.
 EDGES
   contains=matrix/executor/mcp.MockServer#callHandler,matrix/executor/mcp.MockServer#initialized,matrix/executor/mcp.MockServer#log,matrix/executor/mcp.MockServer#mu,matrix/executor/mcp.MockServer#pingHandler,matrix/executor/mcp.MockServer#serverInfo,matrix/executor/mcp.MockServer#tools,matrix/executor/mcp.MockServer.Initialized,matrix/executor/mcp.MockServer.Log,matrix/executor/mcp.MockServer.SetTools,matrix/executor/mcp.MockServer.handle,matrix/executor/mcp.MockServer.handleRequest,matrix/executor/mcp.MockServer.respond
+  references=matrix/executor/mcp.CallToolResult,matrix/executor/mcp.Implementation,matrix/executor/mcp.Tool
+  ^references=matrix/executor/mcp.MockServer.Initialized,matrix/executor/mcp.MockServer.Log,matrix/executor/mcp.MockServer.SetTools,matrix/executor/mcp.MockServer.handle,matrix/executor/mcp.MockServer.handleRequest,matrix/executor/mcp.MockServer.respond,matrix/executor/mcp.NewMockServer,matrix/executor/mcp.PipeMock,matrix/executor/mcp.newPipeTransport,matrix/executor/mcp.pipeTransport
   ^defines=matrix/executor/mcp/mock_server.go
 
 NODE id=matrix/executor/mcp.MockServer#callHandler kind=field
@@ -1066,6 +1207,7 @@ NODE id=matrix/executor/mcp.MockServer.Initialized kind=method
   sig=func (m *MockServer) Initialized() bool
   doc=Initialized reports whether the post-initialize notification arrived.
 EDGES
+  references=matrix/executor/mcp.MockServer,matrix/executor/mcp.m
   ^contains=matrix/executor/mcp.MockServer
   ^defines=matrix/executor/mcp/mock_server.go
 
@@ -1074,6 +1216,7 @@ NODE id=matrix/executor/mcp.MockServer.Log kind=method
   sig=func (m *MockServer) Log() [][]byte
   doc=Log returns a copy of the captured request log.
 EDGES
+  references=matrix/executor/mcp.MockServer,matrix/executor/mcp.b,matrix/executor/mcp.c,matrix/executor/mcp.i,matrix/executor/mcp.m,matrix/executor/mcp.out
   ^contains=matrix/executor/mcp.MockServer
   ^defines=matrix/executor/mcp/mock_server.go
 
@@ -1082,6 +1225,7 @@ NODE id=matrix/executor/mcp.MockServer.SetTools kind=method
   sig=func (m *MockServer) SetTools(tools []Tool)
   doc=SetTools replaces the advertised tools list. Used by tests of\nmanifest-drift detection (Q21).
 EDGES
+  references=matrix/executor/mcp.MockServer,matrix/executor/mcp.Tool,matrix/executor/mcp.m,matrix/executor/mcp.tools
   ^contains=matrix/executor/mcp.MockServer
   ^defines=matrix/executor/mcp/mock_server.go
 
@@ -1090,14 +1234,22 @@ NODE id=matrix/executor/mcp.MockServer.handle kind=method
   sig=func (m *MockServer) handle(frame []byte) ([]byte, error)
   doc=handle dispatches one inbound frame and returns the response frame\n(or empty bytes for notifications, which never get a response).
 EDGES
+  calls=matrix/executor/mcp.Classify,matrix/executor/mcp.MockServer.handleRequest
+  references=matrix/executor/mcp.Classify,matrix/executor/mcp.KindNotification,matrix/executor/mcp.KindRequest,matrix/executor/mcp.MethodNotificationsInit,matrix/executor/mcp.MockServer,matrix/executor/mcp.MockServer.handleRequest,matrix/executor/mcp.err,matrix/executor/mcp.frame,matrix/executor/mcp.kind,matrix/executor/mcp.m,matrix/executor/mcp.note,matrix/executor/mcp.req
   ^contains=matrix/executor/mcp.MockServer
+  ^calls=matrix/executor/mcp.pipeTransport.run
+  ^references=matrix/executor/mcp.pipeTransport.run
   ^defines=matrix/executor/mcp/mock_server.go
 
 NODE id=matrix/executor/mcp.MockServer.handleRequest kind=method
   digest=b3:da1c882797871bf27819c5b48be45f65854d249357eac928ebbb1460b4bac965 file=executor/mcp/mock_server.go range=128:192 lang=go exported=false byte_range=3284:4867
   sig=func (m *MockServer) handleRequest(req *Request) ([]byte, error)
 EDGES
+  calls=matrix/executor/mcp.MockServer.respond
+  references=matrix/executor/mcp.CallToolParams,matrix/executor/mcp.CallToolResult,matrix/executor/mcp.Content,matrix/executor/mcp.ContentTypeText,matrix/executor/mcp.ErrCodeInvalidParams,matrix/executor/mcp.ErrCodeMethodNotFound,matrix/executor/mcp.ErrCodeServerError,matrix/executor/mcp.ErrCodeServerUnavailable,matrix/executor/mcp.InitializeResult,matrix/executor/mcp.MethodInitialize,matrix/executor/mcp.MethodPing,matrix/executor/mcp.MethodToolsCall,matrix/executor/mcp.MethodToolsList,matrix/executor/mcp.MockServer,matrix/executor/mcp.MockServer.respond,matrix/executor/mcp.PingResult,matrix/executor/mcp.ProtocolVersion,matrix/executor/mcp.RPCError,matrix/executor/mcp.Request,matrix/executor/mcp.ServerCapabilities,matrix/executor/mcp.Tool,matrix/executor/mcp.ToolsCapability,matrix/executor/mcp.ToolsListResult,matrix/executor/mcp.err,matrix/executor/mcp.h,matrix/executor/mcp.m,matrix/executor/mcp.p,matrix/executor/mcp.req,matrix/executor/mcp.result,matrix/executor/mcp.tools
   ^contains=matrix/executor/mcp.MockServer
+  ^calls=matrix/executor/mcp.MockServer.handle
+  ^references=matrix/executor/mcp.MockServer.handle
   ^defines=matrix/executor/mcp/mock_server.go
 
 NODE id=matrix/executor/mcp.MockServer.respond kind=method
@@ -1105,7 +1257,11 @@ NODE id=matrix/executor/mcp.MockServer.respond kind=method
   sig=func (m *MockServer) respond(id json.RawMessage, result interface{}, rpcErr *RPCError) ([]byte, error)
   doc=respond builds a Response frame for the given id, result, error.
 EDGES
+  calls=matrix/executor/mcp.EncodeResponse
+  references=matrix/executor/mcp.EncodeResponse,matrix/executor/mcp.MockServer,matrix/executor/mcp.RPCError,matrix/executor/mcp.Response,matrix/executor/mcp.b,matrix/executor/mcp.err,matrix/executor/mcp.id,matrix/executor/mcp.resp,matrix/executor/mcp.result,matrix/executor/mcp.rpcErr
   ^contains=matrix/executor/mcp.MockServer
+  ^calls=matrix/executor/mcp.MockServer.handleRequest
+  ^references=matrix/executor/mcp.MockServer.handleRequest
   ^defines=matrix/executor/mcp/mock_server.go
 
 NODE id=matrix/executor/mcp.MockServerParams kind=type
@@ -1114,6 +1270,8 @@ NODE id=matrix/executor/mcp.MockServerParams kind=type
   doc=MockServerParams configures a MockServer.
 EDGES
   contains=matrix/executor/mcp.MockServerParams#CallHandler,matrix/executor/mcp.MockServerParams#PingHandler,matrix/executor/mcp.MockServerParams#ServerName,matrix/executor/mcp.MockServerParams#ServerVer,matrix/executor/mcp.MockServerParams#Tools
+  references=matrix/executor/mcp.CallToolResult,matrix/executor/mcp.Tool
+  ^references=matrix/executor/mcp.NewMockServer
   ^defines=matrix/executor/mcp/mock_server.go
 
 NODE id=matrix/executor/mcp.MockServerParams#CallHandler kind=field
@@ -1151,6 +1309,10 @@ NODE id=matrix/executor/mcp.NewClient kind=func
   sig=func NewClient(p ClientParams) (*Client, error)
   doc=NewClient wraps a Transport and starts the read loop. The caller\nmust call Initialize before issuing other methods. Close on the\nreturned Client also closes the underlying Transport.
 EDGES
+  calls=matrix/executor/mcp.Client.readLoop
+  references=matrix/executor/mcp.Client,matrix/executor/mcp.Client.readLoop,matrix/executor/mcp.ClientParams,matrix/executor/mcp.Response,matrix/executor/mcp.c,matrix/executor/mcp.p
+  ^calls=matrix/executor/mcp.Manager.Spawn
+  ^references=matrix/executor/mcp.Manager.Spawn
   ^defines=matrix/executor/mcp/client.go
 
 NODE id=matrix/executor/mcp.NewHTTPTransport kind=func
@@ -1158,6 +1320,9 @@ NODE id=matrix/executor/mcp.NewHTTPTransport kind=func
   sig=func NewHTTPTransport(p HTTPParams) (*HTTPTransport, error)
   doc=NewHTTPTransport constructs a streamable HTTP transport. No network\nactivity here — the first Send actually contacts the server.
 EDGES
+  references=matrix/executor/mcp.HTTPParams,matrix/executor/mcp.HTTPTransport,matrix/executor/mcp.cl,matrix/executor/mcp.hdr,matrix/executor/mcp.k,matrix/executor/mcp.p,matrix/executor/mcp.timeout,matrix/executor/mcp.v,matrix/executor/mcp.vs
+  ^calls=matrix/executor/mcp.Manager.buildTransport
+  ^references=matrix/executor/mcp.Manager.buildTransport
   ^defines=matrix/executor/mcp/http.go
 
 NODE id=matrix/executor/mcp.NewIDInt kind=func
@@ -1165,6 +1330,9 @@ NODE id=matrix/executor/mcp.NewIDInt kind=func
   sig=func NewIDInt(n uint64) json.RawMessage
   doc=NewIDInt constructs a json.RawMessage holding a numeric id. MCP\nservers tolerate either string or numeric ids; the client uses\nmonotonic ints for compactness.
 EDGES
+  references=matrix/executor/mcp.b,matrix/executor/mcp.n
+  ^calls=matrix/executor/mcp.Client.Call
+  ^references=matrix/executor/mcp.Client.Call
   ^defines=matrix/executor/mcp/jsonrpc.go
 
 NODE id=matrix/executor/mcp.NewIDString kind=func
@@ -1172,6 +1340,7 @@ NODE id=matrix/executor/mcp.NewIDString kind=func
   sig=func NewIDString(s string) json.RawMessage
   doc=NewIDString constructs a json.RawMessage holding a string id. Useful\nfor tests where readable ids ease debugging.
 EDGES
+  references=matrix/executor/mcp.b,matrix/executor/mcp.s
   ^defines=matrix/executor/mcp/jsonrpc.go
 
 NODE id=matrix/executor/mcp.NewManager kind=func
@@ -1179,6 +1348,9 @@ NODE id=matrix/executor/mcp.NewManager kind=func
   sig=func NewManager(p ManagerParams) *Manager
   doc=NewManager constructs an empty Manager. Servers are added via Spawn.
 EDGES
+  references=matrix/executor/mcp.Client,matrix/executor/mcp.Manager,matrix/executor/mcp.ManagerParams,matrix/executor/mcp.ServerSpec,matrix/executor/mcp.Tool,matrix/executor/mcp.cancel,matrix/executor/mcp.ctx,matrix/executor/mcp.p
+  ^calls=matrix/executor/cmd/mcl-e2e.RunOnce,matrix/executor/cmd/mcl-execute.newInfra,matrix/executor/cmd/mcl-tools.runCall,matrix/neo/internal/tools.Spawn
+  ^references=matrix/executor/cmd/mcl-e2e.RunOnce,matrix/executor/cmd/mcl-execute.newInfra,matrix/executor/cmd/mcl-tools.runCall,matrix/neo/internal/tools.Spawn
   ^defines=matrix/executor/mcp/manager.go
 
 NODE id=matrix/executor/mcp.NewMockServer kind=func
@@ -1186,6 +1358,7 @@ NODE id=matrix/executor/mcp.NewMockServer kind=func
   sig=func NewMockServer(p MockServerParams) *MockServer
   doc=NewMockServer constructs an in-process server stub.
 EDGES
+  references=matrix/executor/mcp.Implementation,matrix/executor/mcp.MockServer,matrix/executor/mcp.MockServerParams,matrix/executor/mcp.Tool,matrix/executor/mcp.name,matrix/executor/mcp.p,matrix/executor/mcp.ver
   ^defines=matrix/executor/mcp/mock_server.go
 
 NODE id=matrix/executor/mcp.NewStdioTransport kind=func
@@ -1193,6 +1366,10 @@ NODE id=matrix/executor/mcp.NewStdioTransport kind=func
   sig=func NewStdioTransport(p StdioParams) (*StdioTransport, error)
   doc=NewStdioTransport spawns the configured subprocess and wires its\nstdio streams. Returns the transport ready to Send/Recv. Errors\nfrom the spawn itself (binary not found, permission denied) surface\nhere; runtime errors come back through Send/Recv.\n\nThe caller (manager) is responsible for calling Close to signal\nshutdown; the transport will then close stdin and let the subprocess\ndrain naturally before reaping.
 EDGES
+  calls=matrix/executor/mcp.StdioTransport.drainStderr
+  references=matrix/executor/mcp.StdioParams,matrix/executor/mcp.StdioTransport,matrix/executor/mcp.StdioTransport.drainStderr,matrix/executor/mcp.cmd,matrix/executor/mcp.err,matrix/executor/mcp.p,matrix/executor/mcp.stderr,matrix/executor/mcp.stdin,matrix/executor/mcp.stdout,matrix/executor/mcp.t
+  ^calls=matrix/executor/mcp.Manager.buildTransport
+  ^references=matrix/executor/mcp.Manager.buildTransport
   ^defines=matrix/executor/mcp/stdio.go
 
 NODE id=matrix/executor/mcp.Notification kind=type
@@ -1201,6 +1378,7 @@ NODE id=matrix/executor/mcp.Notification kind=type
   doc=Notification is a JSON-RPC 2.0 notification — like Request but with\nno ID and no expected response. Used by MCP for\nnotifications/initialized, notifications/cancelled, and\nnotifications/progress (the latter two deferred to v1.1 per Q14).
 EDGES
   contains=matrix/executor/mcp.Notification#JSONRPC,matrix/executor/mcp.Notification#Method,matrix/executor/mcp.Notification#Params
+  ^references=matrix/executor/mcp.Classify,matrix/executor/mcp.Client,matrix/executor/mcp.Client.Notify,matrix/executor/mcp.ClientParams,matrix/executor/mcp.EncodeNotification
   ^defines=matrix/executor/mcp/jsonrpc.go
 
 NODE id=matrix/executor/mcp.Notification#JSONRPC kind=field
@@ -1233,6 +1411,7 @@ NODE id=matrix/executor/mcp.PingResult kind=type
   sig=type PingResult struct{}
   doc=PingResult is the (empty) response object for ping. A response with\nno error is success; the body is irrelevant.
 EDGES
+  ^references=matrix/executor/mcp.Client.Ping,matrix/executor/mcp.MockServer.handleRequest
   ^defines=matrix/executor/mcp/protocol.go
 
 NODE id=matrix/executor/mcp.PipeMock kind=func
@@ -1240,6 +1419,8 @@ NODE id=matrix/executor/mcp.PipeMock kind=func
   sig=func PipeMock(server *MockServer) Transport
   doc=PipeMock pairs a MockServer with a Transport stub so a Client can\ndrive it directly. Returns the client-facing Transport. Close on\nthe transport tears down the pair.
 EDGES
+  calls=matrix/executor/mcp.newPipeTransport,matrix/executor/mcp.pipeTransport.run
+  references=matrix/executor/mcp.MockServer,matrix/executor/mcp.Transport,matrix/executor/mcp.newPipeTransport,matrix/executor/mcp.pipeTransport.run,matrix/executor/mcp.server,matrix/executor/mcp.t
   ^defines=matrix/executor/mcp/mock_server.go
 
 NODE id=matrix/executor/mcp.PromptsCapability kind=type
@@ -1248,6 +1429,7 @@ NODE id=matrix/executor/mcp.PromptsCapability kind=type
   doc=PromptsCapability mirrors ToolsCapability shape for server prompts\n(deferred at v1).
 EDGES
   contains=matrix/executor/mcp.PromptsCapability#ListChanged
+  ^references=matrix/executor/mcp.ServerCapabilities
   ^defines=matrix/executor/mcp/protocol.go
 
 NODE id=matrix/executor/mcp.PromptsCapability#ListChanged kind=field
@@ -1261,6 +1443,7 @@ NODE id=matrix/executor/mcp.ProtocolVersion kind=const
   sig=untyped string
   doc=ProtocolVersion is the MCP wire-protocol version this client speaks.\nPinned to "2024-11-05" — the snapshot at which streamable HTTP became\ncanonical and SSE-only legacy was deprecated. Servers reporting an\nolder version are accepted (servers MUST be backward-compatible per\nspec) but downgrade behavior is logged so manifest authors can\nupgrade their server pins.
 EDGES
+  ^references=matrix/executor/mcp.Client.Initialize,matrix/executor/mcp.MockServer.handleRequest
   ^defines=matrix/executor/mcp/protocol.go
 
 NODE id=matrix/executor/mcp.RPCError kind=type
@@ -1269,6 +1452,7 @@ NODE id=matrix/executor/mcp.RPCError kind=type
   doc=RPCError is the JSON-RPC 2.0 error object.
 EDGES
   contains=matrix/executor/mcp.RPCError#Code,matrix/executor/mcp.RPCError#Data,matrix/executor/mcp.RPCError#Message,matrix/executor/mcp.RPCError.Error
+  ^references=matrix/executor/mcp.MockServer.handleRequest,matrix/executor/mcp.MockServer.respond,matrix/executor/mcp.RPCError.Error,matrix/executor/mcp.Response,matrix/executor/mcp.pipeTransport.run,matrix/executor/mcp.rawFrame
   ^defines=matrix/executor/mcp/jsonrpc.go
 
 NODE id=matrix/executor/mcp.RPCError#Code kind=field
@@ -1294,6 +1478,7 @@ NODE id=matrix/executor/mcp.RPCError.Error kind=method
   sig=func (e *RPCError) Error() string
   doc=Error implements the error interface so RPCError can be returned\nfrom client methods without unwrapping.
 EDGES
+  references=matrix/executor/mcp.RPCError,matrix/executor/mcp.e
   ^contains=matrix/executor/mcp.RPCError
   ^defines=matrix/executor/mcp/jsonrpc.go
 
@@ -1303,6 +1488,7 @@ NODE id=matrix/executor/mcp.Request kind=type
   doc=Request is a JSON-RPC 2.0 request envelope. ID is required for\nrequests and absent for notifications (see Notification).\n\nParams is left as raw bytes so the codec doesn't depend on knowledge\nof the method's parameter shape — the MCP-specific protocol layer\nin protocol.go decodes against the typed struct.
 EDGES
   contains=matrix/executor/mcp.Request#ID,matrix/executor/mcp.Request#JSONRPC,matrix/executor/mcp.Request#Method,matrix/executor/mcp.Request#Params
+  ^references=matrix/executor/mcp.Classify,matrix/executor/mcp.Client.Call,matrix/executor/mcp.EncodeRequest,matrix/executor/mcp.MockServer.handleRequest
   ^defines=matrix/executor/mcp/jsonrpc.go
 
 NODE id=matrix/executor/mcp.Request#ID kind=field
@@ -1335,6 +1521,7 @@ NODE id=matrix/executor/mcp.ResourcesCapability kind=type
   doc=ResourcesCapability mirrors ToolsCapability shape for server resources\n(deferred at v1).
 EDGES
   contains=matrix/executor/mcp.ResourcesCapability#ListChanged,matrix/executor/mcp.ResourcesCapability#Subscribe
+  ^references=matrix/executor/mcp.ServerCapabilities
   ^defines=matrix/executor/mcp/protocol.go
 
 NODE id=matrix/executor/mcp.ResourcesCapability#ListChanged kind=field
@@ -1355,6 +1542,8 @@ NODE id=matrix/executor/mcp.Response kind=type
   doc=Response is a JSON-RPC 2.0 response envelope. Exactly one of Result\nor Error must be populated; the codec rejects malformed responses\nwhere both or neither are present.
 EDGES
   contains=matrix/executor/mcp.Response#Error,matrix/executor/mcp.Response#ID,matrix/executor/mcp.Response#JSONRPC,matrix/executor/mcp.Response#Result
+  references=matrix/executor/mcp.RPCError
+  ^references=matrix/executor/mcp.Classify,matrix/executor/mcp.Client,matrix/executor/mcp.Client.Call,matrix/executor/mcp.Client.routeResponse,matrix/executor/mcp.EncodeResponse,matrix/executor/mcp.MockServer.respond,matrix/executor/mcp.NewClient,matrix/executor/mcp.pipeTransport.run
   ^defines=matrix/executor/mcp/jsonrpc.go
 
 NODE id=matrix/executor/mcp.Response#Error kind=field
@@ -1387,6 +1576,7 @@ NODE id=matrix/executor/mcp.RootsCapability kind=type
   doc=RootsCapability advertises that the client maintains a list of\nfilesystem roots (deferred at v1).
 EDGES
   contains=matrix/executor/mcp.RootsCapability#ListChanged
+  ^references=matrix/executor/mcp.ClientCapabilities
   ^defines=matrix/executor/mcp/protocol.go
 
 NODE id=matrix/executor/mcp.RootsCapability#ListChanged kind=field
@@ -1400,6 +1590,7 @@ NODE id=matrix/executor/mcp.SamplingCapability kind=type
   sig=type SamplingCapability struct{}
   doc=SamplingCapability advertises that the client can be sampled by the\nserver (deferred at v1).
 EDGES
+  ^references=matrix/executor/mcp.ClientCapabilities
   ^defines=matrix/executor/mcp/protocol.go
 
 NODE id=matrix/executor/mcp.ServerCapabilities kind=type
@@ -1408,6 +1599,8 @@ NODE id=matrix/executor/mcp.ServerCapabilities kind=type
   doc=ServerCapabilities is the capability set the server advertises in\ninitialize. We inspect Tools to decide whether to verify the\ntools/list manifest at startup (Q21).
 EDGES
   contains=matrix/executor/mcp.ServerCapabilities#Experimental,matrix/executor/mcp.ServerCapabilities#Logging,matrix/executor/mcp.ServerCapabilities#Prompts,matrix/executor/mcp.ServerCapabilities#Resources,matrix/executor/mcp.ServerCapabilities#Tools
+  references=matrix/executor/mcp.LoggingCapability,matrix/executor/mcp.PromptsCapability,matrix/executor/mcp.ResourcesCapability,matrix/executor/mcp.ToolsCapability
+  ^references=matrix/executor/mcp.InitializeResult,matrix/executor/mcp.MockServer.handleRequest
   ^defines=matrix/executor/mcp/protocol.go
 
 NODE id=matrix/executor/mcp.ServerCapabilities#Experimental kind=field
@@ -1446,6 +1639,7 @@ NODE id=matrix/executor/mcp.ServerSpec kind=type
   doc=ServerSpec is the manifest entry for one MCP server. Cross-references\na tool/manifest.go ServerEntry; mirrored here so the mcp package\nstays free of tool-package imports.
 EDGES
   contains=matrix/executor/mcp.ServerSpec#Alias,matrix/executor/mcp.ServerSpec#Args,matrix/executor/mcp.ServerSpec#Command,matrix/executor/mcp.ServerSpec#Endpoint,matrix/executor/mcp.ServerSpec#Env,matrix/executor/mcp.ServerSpec#ExpectedTools,matrix/executor/mcp.ServerSpec#Headers,matrix/executor/mcp.ServerSpec#PackageDigest,matrix/executor/mcp.ServerSpec#Transport
+  ^references=matrix/executor/cmd/mcl-e2e.RunOnce,matrix/executor/cmd/mcl-execute.newInfra,matrix/executor/cmd/mcl-tools.findServerSpec,matrix/executor/mcp.Manager,matrix/executor/mcp.Manager.Close,matrix/executor/mcp.Manager.Spawn,matrix/executor/mcp.Manager.Spec,matrix/executor/mcp.Manager.buildTransport,matrix/executor/mcp.Manager.verifyTools,matrix/executor/mcp.ManagerParams,matrix/executor/mcp.NewManager,matrix/neo/internal/tools.Spawn
   ^defines=matrix/executor/mcp/manager.go
 
 NODE id=matrix/executor/mcp.ServerSpec#Alias kind=field
@@ -1514,6 +1708,7 @@ NODE id=matrix/executor/mcp.StdioParams kind=type
   doc=StdioParams configures a stdio subprocess transport.
 EDGES
   contains=matrix/executor/mcp.StdioParams#Args,matrix/executor/mcp.StdioParams#Command,matrix/executor/mcp.StdioParams#Dir,matrix/executor/mcp.StdioParams#Env,matrix/executor/mcp.StdioParams#StderrSink
+  ^references=matrix/executor/mcp.Manager.buildTransport,matrix/executor/mcp.NewStdioTransport
   ^defines=matrix/executor/mcp/stdio.go
 
 NODE id=matrix/executor/mcp.StdioParams#Args kind=field
@@ -1558,6 +1753,7 @@ NODE id=matrix/executor/mcp.StdioTransport kind=type
 EDGES
   contains=matrix/executor/mcp.StdioTransport#closed,matrix/executor/mcp.StdioTransport#cmd,matrix/executor/mcp.StdioTransport#mu,matrix/executor/mcp.StdioTransport#stderr,matrix/executor/mcp.StdioTransport#stderrSink,matrix/executor/mcp.StdioTransport#stdin,matrix/executor/mcp.StdioTransport#stdout,matrix/executor/mcp.StdioTransport.Close,matrix/executor/mcp.StdioTransport.Process,matrix/executor/mcp.StdioTransport.Recv,matrix/executor/mcp.StdioTransport.Send,matrix/executor/mcp.StdioTransport.drainStderr
   implements=matrix/executor/mcp.Transport
+  ^references=matrix/executor/mcp.NewStdioTransport,matrix/executor/mcp.StdioTransport.Close,matrix/executor/mcp.StdioTransport.Process,matrix/executor/mcp.StdioTransport.Recv,matrix/executor/mcp.StdioTransport.Send,matrix/executor/mcp.StdioTransport.drainStderr
   ^defines=matrix/executor/mcp/stdio.go
 
 NODE id=matrix/executor/mcp.StdioTransport#closed kind=field
@@ -1608,7 +1804,9 @@ NODE id=matrix/executor/mcp.StdioTransport.Close kind=method
   sig=func (t *StdioTransport) Close() error
   doc=Close shuts the subprocess down: closes stdin (signaling graceful\nshutdown to MCP servers that respect it), waits up to a small grace\nfor the process to exit, then kills + reaps.\n\nIdempotent: subsequent calls return nil.
 EDGES
+  references=matrix/executor/mcp.StdioTransport,matrix/executor/mcp.done,matrix/executor/mcp.t
   ^contains=matrix/executor/mcp.StdioTransport
+  ^calls=matrix/executor/mcp.Client.Close,matrix/executor/mcp.Manager.Spawn
   ^defines=matrix/executor/mcp/stdio.go
 
 NODE id=matrix/executor/mcp.StdioTransport.Process kind=method
@@ -1616,6 +1814,7 @@ NODE id=matrix/executor/mcp.StdioTransport.Process kind=method
   sig=func (t *StdioTransport) Process() *os.Process
   doc=Process exposes the underlying *os.Process so the manager can issue\na hard kill on shutdown timeout.
 EDGES
+  references=matrix/executor/mcp.StdioTransport,matrix/executor/mcp.t
   ^contains=matrix/executor/mcp.StdioTransport
   ^defines=matrix/executor/mcp/stdio.go
 
@@ -1624,7 +1823,9 @@ NODE id=matrix/executor/mcp.StdioTransport.Recv kind=method
   sig=func (t *StdioTransport) Recv(ctx context.Context) ([]byte, error)
   doc=Recv reads the next newline-terminated JSON frame from stdout.\nReturns ErrClosed on EOF.
 EDGES
+  references=matrix/executor/mcp.ErrClosed,matrix/executor/mcp.StdioTransport,matrix/executor/mcp.closed,matrix/executor/mcp.ctx,matrix/executor/mcp.err,matrix/executor/mcp.line,matrix/executor/mcp.t
   ^contains=matrix/executor/mcp.StdioTransport
+  ^calls=matrix/executor/mcp.Client.readLoop
   ^defines=matrix/executor/mcp/stdio.go
 
 NODE id=matrix/executor/mcp.StdioTransport.Send kind=method
@@ -1632,7 +1833,10 @@ NODE id=matrix/executor/mcp.StdioTransport.Send kind=method
   sig=func (t *StdioTransport) Send(ctx context.Context, frame []byte) error
   doc=Send writes one JSON-RPC frame followed by a newline to the\nsubprocess's stdin.
 EDGES
+  calls=matrix/executor/mcp.mapStdioError
+  references=matrix/executor/mcp.ErrClosed,matrix/executor/mcp.StdioTransport,matrix/executor/mcp.closed,matrix/executor/mcp.err,matrix/executor/mcp.frame,matrix/executor/mcp.mapStdioError,matrix/executor/mcp.t
   ^contains=matrix/executor/mcp.StdioTransport
+  ^calls=matrix/executor/mcp.Client.Call,matrix/executor/mcp.Client.Notify
   ^defines=matrix/executor/mcp/stdio.go
 
 NODE id=matrix/executor/mcp.StdioTransport.drainStderr kind=method
@@ -1640,7 +1844,10 @@ NODE id=matrix/executor/mcp.StdioTransport.drainStderr kind=method
   sig=func (t *StdioTransport) drainStderr()
   doc=drainStderr reads subprocess stderr to either a configured sink or\n/dev/null. Runs until EOF (process exit) or close.
 EDGES
+  references=matrix/executor/mcp.StdioTransport,matrix/executor/mcp.err,matrix/executor/mcp.line,matrix/executor/mcp.r,matrix/executor/mcp.t
   ^contains=matrix/executor/mcp.StdioTransport
+  ^calls=matrix/executor/mcp.NewStdioTransport
+  ^references=matrix/executor/mcp.NewStdioTransport
   ^defines=matrix/executor/mcp/stdio.go
 
 NODE id=matrix/executor/mcp.Tool kind=type
@@ -1649,6 +1856,7 @@ NODE id=matrix/executor/mcp.Tool kind=type
   doc=Tool is the wire-format description of a single tool exposed by an\nMCP server. The Matrix tool registry pins each (Name, Server) pair\nagainst a manifest at startup and rejects drift (Q21).
 EDGES
   contains=matrix/executor/mcp.Tool#Description,matrix/executor/mcp.Tool#InputSchema,matrix/executor/mcp.Tool#Name
+  ^references=matrix/executor/mcp.Client.ToolsList,matrix/executor/mcp.Manager,matrix/executor/mcp.Manager.Close,matrix/executor/mcp.Manager.Tools,matrix/executor/mcp.Manager.verifyTools,matrix/executor/mcp.MockServer,matrix/executor/mcp.MockServer.SetTools,matrix/executor/mcp.MockServer.handleRequest,matrix/executor/mcp.MockServerParams,matrix/executor/mcp.NewManager,matrix/executor/mcp.NewMockServer,matrix/executor/mcp.ToolsListResult
   ^defines=matrix/executor/mcp/protocol.go
 
 NODE id=matrix/executor/mcp.Tool#Description kind=field
@@ -1678,6 +1886,7 @@ NODE id=matrix/executor/mcp.ToolsCapability kind=type
   doc=ToolsCapability tells us if the server supports list-changed\nnotifications (forward-compatibility flag; Matrix v1 doesn't react\nto these — manifest is static per Q21).
 EDGES
   contains=matrix/executor/mcp.ToolsCapability#ListChanged
+  ^references=matrix/executor/mcp.MockServer.handleRequest,matrix/executor/mcp.ServerCapabilities
   ^defines=matrix/executor/mcp/protocol.go
 
 NODE id=matrix/executor/mcp.ToolsCapability#ListChanged kind=field
@@ -1692,6 +1901,8 @@ NODE id=matrix/executor/mcp.ToolsListResult kind=type
   doc=ToolsListResult is the typed response to tools/list.
 EDGES
   contains=matrix/executor/mcp.ToolsListResult#NextCursor,matrix/executor/mcp.ToolsListResult#Tools
+  references=matrix/executor/mcp.Tool
+  ^references=matrix/executor/mcp.Client.ToolsList,matrix/executor/mcp.MockServer.handleRequest
   ^defines=matrix/executor/mcp/protocol.go
 
 NODE id=matrix/executor/mcp.ToolsListResult#NextCursor kind=field
@@ -1713,6 +1924,7 @@ NODE id=matrix/executor/mcp.Transport kind=interface
   doc=Transport abstracts the wire-format channel between Client and an MCP\nserver. Implementations exist for stdio (subprocess) and streamable\nHTTP (Q15 lock).\n\nConcurrency contract:\n  - Send may be called from any goroutine; implementations serialize\n    internally.\n  - Recv is called by exactly one reader goroutine inside Client; it\n    blocks until a frame arrives or the transport is closed.\n  - Close is idempotent and can race with Send/Recv; both must return\n    promptly with ErrClosed after Close.
 EDGES
   ^implements=matrix/executor/mcp.HTTPTransport,matrix/executor/mcp.StdioTransport,matrix/executor/mcp.pipeTransport
+  ^references=matrix/executor/mcp.Client,matrix/executor/mcp.ClientParams,matrix/executor/mcp.Manager,matrix/executor/mcp.Manager.buildTransport,matrix/executor/mcp.ManagerParams,matrix/executor/mcp.PipeMock,matrix/executor/mcp._
   ^defines=matrix/executor/mcp/transport.go
 
 NODE id=matrix/executor/mcp._ kind=var
@@ -1720,6 +1932,7 @@ NODE id=matrix/executor/mcp._ kind=var
   sig=func(text string) error
   doc=ensure errors is used; mock_server imports it for fmt.Errorf which\nalready pulls it in. Belt-and-suspenders for refactor safety.
 EDGES
+  references=matrix/executor/mcp.Transport,matrix/executor/mcp.pipeTransport
   ^defines=matrix/executor/mcp/mock_server.go
 
 NODE id=matrix/executor/mcp.encodeParams kind=func
@@ -1727,6 +1940,9 @@ NODE id=matrix/executor/mcp.encodeParams kind=func
   sig=func encodeParams(v interface{}) (json.RawMessage, error)
   doc=encodeParams marshals an arbitrary value to json.RawMessage, with\nspecial-case handling for nil → empty params.
 EDGES
+  references=matrix/executor/mcp.b,matrix/executor/mcp.err,matrix/executor/mcp.ok,matrix/executor/mcp.v
+  ^calls=matrix/executor/mcp.Client.Call,matrix/executor/mcp.Client.Notify
+  ^references=matrix/executor/mcp.Client.Call,matrix/executor/mcp.Client.Notify
   ^defines=matrix/executor/mcp/client.go
 
 NODE id=matrix/executor/mcp.extractID kind=func
@@ -1734,6 +1950,9 @@ NODE id=matrix/executor/mcp.extractID kind=func
   sig=func extractID(frame []byte) json.RawMessage
   doc=extractID pulls the id out of a JSON-RPC frame for error-response\ntargeting; returns nil if the frame has no id or is malformed.
 EDGES
+  references=matrix/executor/mcp.err,matrix/executor/mcp.f,matrix/executor/mcp.frame
+  ^calls=matrix/executor/mcp.pipeTransport.run
+  ^references=matrix/executor/mcp.pipeTransport.run
   ^defines=matrix/executor/mcp/mock_server.go
 
 NODE id=matrix/executor/mcp.isSSE kind=func
@@ -1741,6 +1960,9 @@ NODE id=matrix/executor/mcp.isSSE kind=func
   sig=func isSSE(ct string) bool
   doc=isSSE reports whether a Content-Type header is text/event-stream.
 EDGES
+  references=matrix/executor/mcp.ct,matrix/executor/mcp.i
+  ^calls=matrix/executor/mcp.HTTPTransport.Send
+  ^references=matrix/executor/mcp.HTTPTransport.Send
   ^defines=matrix/executor/mcp/http.go
 
 NODE id=matrix/executor/mcp.mapStdioError kind=func
@@ -1748,12 +1970,18 @@ NODE id=matrix/executor/mcp.mapStdioError kind=func
   sig=func mapStdioError(err error) error
   doc=mapStdioError maps subprocess pipe errors to ErrClosed when the pipe\nis gone, preserving the error otherwise for caller inspection.
 EDGES
+  references=matrix/executor/mcp.ErrClosed,matrix/executor/mcp.err
+  ^calls=matrix/executor/mcp.StdioTransport.Send
+  ^references=matrix/executor/mcp.StdioTransport.Send
   ^defines=matrix/executor/mcp/stdio.go
 
 NODE id=matrix/executor/mcp.newPipeTransport kind=func
   digest=b3:dbcf110df7e6317c3d3f985db01455cabe6b90be595fc88f666d592ed0dbab73 file=executor/mcp/mock_server.go range=232:239 lang=go exported=false byte_range=5941:6141
   sig=func newPipeTransport(s *MockServer) *pipeTransport
 EDGES
+  references=matrix/executor/mcp.MockServer,matrix/executor/mcp.pipeTransport,matrix/executor/mcp.s
+  ^calls=matrix/executor/mcp.PipeMock
+  ^references=matrix/executor/mcp.PipeMock
   ^defines=matrix/executor/mcp/mock_server.go
 
 NODE id=matrix/executor/mcp.pipeTransport kind=type
@@ -1763,6 +1991,8 @@ NODE id=matrix/executor/mcp.pipeTransport kind=type
 EDGES
   contains=matrix/executor/mcp.pipeTransport#closed,matrix/executor/mcp.pipeTransport#done,matrix/executor/mcp.pipeTransport#inbound,matrix/executor/mcp.pipeTransport#mu,matrix/executor/mcp.pipeTransport#outbound,matrix/executor/mcp.pipeTransport#server,matrix/executor/mcp.pipeTransport.Close,matrix/executor/mcp.pipeTransport.Recv,matrix/executor/mcp.pipeTransport.Send,matrix/executor/mcp.pipeTransport.deliver,matrix/executor/mcp.pipeTransport.run
   implements=matrix/executor/mcp.Transport
+  references=matrix/executor/mcp.MockServer
+  ^references=matrix/executor/mcp._,matrix/executor/mcp.newPipeTransport,matrix/executor/mcp.pipeTransport.Close,matrix/executor/mcp.pipeTransport.Recv,matrix/executor/mcp.pipeTransport.Send,matrix/executor/mcp.pipeTransport.deliver,matrix/executor/mcp.pipeTransport.run
   ^defines=matrix/executor/mcp/mock_server.go
 
 NODE id=matrix/executor/mcp.pipeTransport#closed kind=field
@@ -1805,6 +2035,7 @@ NODE id=matrix/executor/mcp.pipeTransport.Close kind=method
   digest=b3:ae8f12a732531d5c39c979b0087bd102a958a8d63ae5aef390213cd13fd48083 file=executor/mcp/mock_server.go range=274:284 lang=go exported=true byte_range=6726:6886
   sig=func (t *pipeTransport) Close() error
 EDGES
+  references=matrix/executor/mcp.pipeTransport,matrix/executor/mcp.t
   ^contains=matrix/executor/mcp.pipeTransport
   ^defines=matrix/executor/mcp/mock_server.go
 
@@ -1812,6 +2043,7 @@ NODE id=matrix/executor/mcp.pipeTransport.Recv kind=method
   digest=b3:b926009eb877ff14d3c056d63d7e5a9fa110d6cc3b37bf655df3d0478ef21b3b file=executor/mcp/mock_server.go range=260:272 lang=go exported=true byte_range=6473:6724
   sig=func (t *pipeTransport) Recv(ctx context.Context) ([]byte, error)
 EDGES
+  references=matrix/executor/mcp.ErrClosed,matrix/executor/mcp.b,matrix/executor/mcp.ctx,matrix/executor/mcp.ok,matrix/executor/mcp.pipeTransport,matrix/executor/mcp.t
   ^contains=matrix/executor/mcp.pipeTransport
   ^defines=matrix/executor/mcp/mock_server.go
 
@@ -1819,6 +2051,7 @@ NODE id=matrix/executor/mcp.pipeTransport.Send kind=method
   digest=b3:77911368289f66d2e863abcd575c1f53436207cbd5283a40667e3f8ed9a5157d file=executor/mcp/mock_server.go range=241:258 lang=go exported=true byte_range=6143:6471
   sig=func (t *pipeTransport) Send(ctx context.Context, frame []byte) error
 EDGES
+  references=matrix/executor/mcp.ErrClosed,matrix/executor/mcp.closed,matrix/executor/mcp.cp,matrix/executor/mcp.ctx,matrix/executor/mcp.frame,matrix/executor/mcp.pipeTransport,matrix/executor/mcp.t
   ^contains=matrix/executor/mcp.pipeTransport
   ^defines=matrix/executor/mcp/mock_server.go
 
@@ -1826,7 +2059,10 @@ NODE id=matrix/executor/mcp.pipeTransport.deliver kind=method
   digest=b3:974d15dd711eb37373f83a9b812638f1c73bb4724bdbb680b0b297c1202c969f file=executor/mcp/mock_server.go range=316:321 lang=go exported=false byte_range=7511:7608
   sig=func (t *pipeTransport) deliver(b []byte)
 EDGES
+  references=matrix/executor/mcp.b,matrix/executor/mcp.pipeTransport,matrix/executor/mcp.t
   ^contains=matrix/executor/mcp.pipeTransport
+  ^calls=matrix/executor/mcp.pipeTransport.run
+  ^references=matrix/executor/mcp.pipeTransport.run
   ^defines=matrix/executor/mcp/mock_server.go
 
 NODE id=matrix/executor/mcp.pipeTransport.run kind=method
@@ -1834,7 +2070,11 @@ NODE id=matrix/executor/mcp.pipeTransport.run kind=method
   sig=func (t *pipeTransport) run()
   doc=run is the server-side dispatcher loop.
 EDGES
+  calls=matrix/executor/mcp.EncodeResponse,matrix/executor/mcp.MockServer.handle,matrix/executor/mcp.extractID,matrix/executor/mcp.pipeTransport.deliver
+  references=matrix/executor/mcp.EncodeResponse,matrix/executor/mcp.ErrCodeInternalError,matrix/executor/mcp.MockServer.handle,matrix/executor/mcp.RPCError,matrix/executor/mcp.Response,matrix/executor/mcp.b,matrix/executor/mcp.err,matrix/executor/mcp.extractID,matrix/executor/mcp.frame,matrix/executor/mcp.id,matrix/executor/mcp.pipeTransport,matrix/executor/mcp.pipeTransport.deliver,matrix/executor/mcp.resp,matrix/executor/mcp.t
   ^contains=matrix/executor/mcp.pipeTransport
+  ^calls=matrix/executor/mcp.PipeMock
+  ^references=matrix/executor/mcp.PipeMock
   ^defines=matrix/executor/mcp/mock_server.go
 
 NODE id=matrix/executor/mcp.rawFrame kind=type
@@ -1843,6 +2083,8 @@ NODE id=matrix/executor/mcp.rawFrame kind=type
   doc=rawFrame is an internal scratch struct for two-pass classification.\nDecodes once into RawMessage fields, then we inspect which fields\nwere present to discriminate the kind.
 EDGES
   contains=matrix/executor/mcp.rawFrame#Error,matrix/executor/mcp.rawFrame#ID,matrix/executor/mcp.rawFrame#JSONRPC,matrix/executor/mcp.rawFrame#Method,matrix/executor/mcp.rawFrame#Params,matrix/executor/mcp.rawFrame#Result
+  references=matrix/executor/mcp.RPCError
+  ^references=matrix/executor/mcp.Classify
   ^defines=matrix/executor/mcp/jsonrpc.go
 
 NODE id=matrix/executor/mcp.rawFrame#Error kind=field
@@ -1886,6 +2128,9 @@ NODE id=matrix/executor/mcp.truncate kind=func
   sig=func truncate(s string, max int) string
   doc=truncate caps a string for error messages.
 EDGES
+  references=matrix/executor/mcp.max,matrix/executor/mcp.s
+  ^calls=matrix/executor/mcp.HTTPTransport.Send
+  ^references=matrix/executor/mcp.HTTPTransport.Send
   ^defines=matrix/executor/mcp/http.go
 
 NODE id=matrix/executor/mcp/client.go kind=file

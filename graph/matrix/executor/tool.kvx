@@ -1,10 +1,12 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:9b68327501b45793fd7687f43b30c960fd68ae8aaff6b2f1bb36ec3e2df2de2f
+# GENERATED gen=codegraph do-not-edit merkle=b3:20e53aba2ea11552396417e53b3e04e87dd1bbb7bef3aa554a45bb92cf89e7f2
 
 NODE id=matrix/executor/tool kind=package
   digest=b3:0062c71719ecb17049b0c457c46e7665bb1a680a6ee478da5b810a3df1651302 file=executor/tool range=0:0 lang=go exported=true
 EDGES
   contains=matrix/executor/tool/manifest.go,matrix/executor/tool/registry.go,matrix/executor/tool/tool.go,matrix/executor/tool/uri.go
+  imports=matrix/executor/mcp
   ^contains=mod:matrix/executor
+  ^imports=matrix/executor/cmd/mcl-e2e,matrix/executor/cmd/mcl-execute,matrix/executor/cmd/mcl-tools,matrix/executor/materiality,matrix/executor/runtime,matrix/neo/internal/tools
 
 NODE id=matrix/executor/tool.AgentManifest kind=type
   digest=b3:68cd14ccd9bd0395e7b7b76fabe9d6fb018757947a7108451d46c6f5d10325c7 file=executor/tool/manifest.go range=14:50 lang=go exported=true byte_range=253:1940
@@ -12,6 +14,8 @@ NODE id=matrix/executor/tool.AgentManifest kind=type
   doc=AgentManifest is the JSON-on-disk schema declaring what tools an\nagent can use. Loaded once at executor startup; passed to Registry\nfor resolution.\n\nSchema lock points (executor_locked_design):\n\n	Q17 tool URI scheme: matrix://tool/mcp/<server-alias>/<tool-name>@<version>\n	Q18 server credentials via env-var refs ("$env:GITHUB_TOKEN")\n	Q19 NativeTool slot kept for future chain tools (none ship in v1)\n	Q21 ExpectedTools enumeration enforced by mcp.Manager (tools/list match)\n	Q22 server pinning via PackageDigest (sha256 of distribution package)
 EDGES
   contains=matrix/executor/tool.AgentManifest#Agent,matrix/executor/tool.AgentManifest#AllowedSideEffects,matrix/executor/tool.AgentManifest#Description,matrix/executor/tool.AgentManifest#NativeTools,matrix/executor/tool.AgentManifest#SchemaVersion,matrix/executor/tool.AgentManifest#Servers,matrix/executor/tool.AgentManifest.Validate
+  references=matrix/executor/tool.NativeToolEntry,matrix/executor/tool.ServerEntry
+  ^references=matrix/executor/cmd/mcl-e2e.BuildAgentManifest,matrix/executor/cmd/mcl-e2e.PersistManifest,matrix/executor/cmd/mcl-execute.buildSystemPrompt,matrix/executor/cmd/mcl-execute.buildToolListing,matrix/executor/cmd/mcl-execute.countManifestTools,matrix/executor/cmd/mcl-execute.infra,matrix/executor/cmd/mcl-execute.synthesizeOpts,matrix/executor/cmd/mcl-execute.writeToolListing,matrix/executor/cmd/mcl-execute.writeToolSection,matrix/executor/cmd/mcl-tools.findServerSpec,matrix/executor/cmd/mcl-tools.mustLoad,matrix/executor/tool.AgentManifest.Validate,matrix/executor/tool.LoadAgentManifest,matrix/executor/tool.ParseAgentManifest,matrix/executor/tool.Registry,matrix/executor/tool.Registry.Manifest,matrix/executor/tool.RegistryParams,matrix/neo/internal/tools.Manager
   ^defines=matrix/executor/tool/manifest.go
 
 NODE id=matrix/executor/tool.AgentManifest#Agent kind=field
@@ -61,7 +65,11 @@ NODE id=matrix/executor/tool.AgentManifest.Validate kind=method
   sig=func (m *AgentManifest) Validate() error
   doc=Validate enforces Q17/Q18/Q19/Q21/Q22 invariants. Returns the first\nfailure; callers may surface as-is to fail manifest load.
 EDGES
+  calls=matrix/executor/tool.NativeToolEntry.Validate,matrix/executor/tool.ServerEntry.Validate
+  references=matrix/executor/tool.AgentManifest,matrix/executor/tool.ErrInvalidSideEffect,matrix/executor/tool.NativeToolEntry.Validate,matrix/executor/tool.ServerEntry.Validate,matrix/executor/tool.ValidSideEffectClasses,matrix/executor/tool.aliases,matrix/executor/tool.c,matrix/executor/tool.err,matrix/executor/tool.i,matrix/executor/tool.m,matrix/executor/tool.nt,matrix/executor/tool.s
   ^contains=matrix/executor/tool.AgentManifest
+  ^calls=matrix/executor/tool.NewRegistry,matrix/executor/tool.ParseAgentManifest
+  ^references=matrix/executor/tool.NewRegistry,matrix/executor/tool.ParseAgentManifest
   ^defines=matrix/executor/tool/manifest.go
 
 NODE id=matrix/executor/tool.AllowAllSideEffects kind=func
@@ -69,6 +77,9 @@ NODE id=matrix/executor/tool.AllowAllSideEffects kind=func
   sig=func AllowAllSideEffects(sideEffect string) bool
   doc=AllowAllSideEffects is the default gate (allows everything in\nValidSideEffectClasses). Production agent manifests should pass a\nnarrower gate.
 EDGES
+  references=matrix/executor/tool.ValidSideEffectClasses,matrix/executor/tool.sideEffect
+  ^calls=matrix/executor/tool.Registry.Get
+  ^references=matrix/executor/tool.NewRegistry
   ^defines=matrix/executor/tool/tool.go
 
 NODE id=matrix/executor/tool.AllowOnlySideEffects kind=func
@@ -76,6 +87,9 @@ NODE id=matrix/executor/tool.AllowOnlySideEffects kind=func
   sig=func AllowOnlySideEffects(allowed ...string) CapabilityGate
   doc=AllowOnlySideEffects returns a CapabilityGate that admits only the\nlisted classes (each must be in the closed enum).
 EDGES
+  references=matrix/executor/tool.CapabilityGate,matrix/executor/tool.allowed,matrix/executor/tool.s,matrix/executor/tool.set,matrix/executor/tool.sideEffect
+  ^calls=matrix/executor/tool.NewRegistry
+  ^references=matrix/executor/tool.NewRegistry
   ^defines=matrix/executor/tool/tool.go
 
 NODE id=matrix/executor/tool.CapabilityGate kind=type
@@ -83,6 +97,7 @@ NODE id=matrix/executor/tool.CapabilityGate kind=type
   sig=type CapabilityGate func(sideEffect string) bool
   doc=CapabilityGate decides whether a tool's declared SideEffectClass is\npermitted by the agent's manifest. Default-allow at v1 (all 5 classes\nusable); production agent manifests will narrow this via a closed\nallow-list. Implemented as a function type so tests can vary it.
 EDGES
+  ^references=matrix/executor/tool.AllowOnlySideEffects,matrix/executor/tool.Registry,matrix/executor/tool.RegistryParams
   ^defines=matrix/executor/tool/tool.go
 
 NODE id=matrix/executor/tool.Content kind=type
@@ -91,6 +106,7 @@ NODE id=matrix/executor/tool.Content kind=type
   doc=Content is a single piece of a tool result. Mirrors mcp.Content but\nkept separate so the tool layer doesn't leak mcp types upward to\nthe executor / plan walker.
 EDGES
   contains=matrix/executor/tool.Content#Data,matrix/executor/tool.Content#MimeType,matrix/executor/tool.Content#Text,matrix/executor/tool.Content#Type,matrix/executor/tool.Content#URI
+  ^references=matrix/executor/tool.MCPTool.Call,matrix/executor/tool.Result
   ^defines=matrix/executor/tool/tool.go
 
 NODE id=matrix/executor/tool.Content#Data kind=field
@@ -128,6 +144,7 @@ NODE id=matrix/executor/tool.ContentTypeImage kind=const
   sig=untyped string
   doc=Content type constants (subset mirrored from mcp.ContentType*).
 EDGES
+  ^references=matrix/neo/internal/tools.summarizeNonText
   ^defines=matrix/executor/tool/tool.go
 
 NODE id=matrix/executor/tool.ContentTypeResource kind=const
@@ -135,6 +152,7 @@ NODE id=matrix/executor/tool.ContentTypeResource kind=const
   sig=untyped string
   doc=Content type constants (subset mirrored from mcp.ContentType*).
 EDGES
+  ^references=matrix/neo/internal/tools.summarizeNonText
   ^defines=matrix/executor/tool/tool.go
 
 NODE id=matrix/executor/tool.ContentTypeText kind=const
@@ -142,6 +160,7 @@ NODE id=matrix/executor/tool.ContentTypeText kind=const
   sig=untyped string
   doc=Content type constants (subset mirrored from mcp.ContentType*).
 EDGES
+  ^references=matrix/executor/tool.ExtractText
   ^defines=matrix/executor/tool/tool.go
 
 NODE id=matrix/executor/tool.ErrInvalidSideEffect kind=var
@@ -149,6 +168,7 @@ NODE id=matrix/executor/tool.ErrInvalidSideEffect kind=var
   sig=error
   doc=ErrInvalidSideEffect fires when a manifest declares an unknown\nside-effect class. Closed enum is exhaustive.
 EDGES
+  ^references=matrix/executor/tool.AgentManifest.Validate,matrix/executor/tool.validateSideEffect
   ^defines=matrix/executor/tool/tool.go
 
 NODE id=matrix/executor/tool.ErrInvalidURI kind=var
@@ -156,6 +176,7 @@ NODE id=matrix/executor/tool.ErrInvalidURI kind=var
   sig=error
   doc=ErrInvalidURI fires when a URI doesn't parse as\nmatrix://tool/<provider>/<name>@<version> form. Q17 lock.
 EDGES
+  ^references=matrix/executor/tool.ParseToolURI
   ^defines=matrix/executor/tool/tool.go
 
 NODE id=matrix/executor/tool.ErrNativeToolNotImplemented kind=var
@@ -163,6 +184,7 @@ NODE id=matrix/executor/tool.ErrNativeToolNotImplemented kind=var
   sig=error
   doc=ErrNativeToolNotImplemented signals the v1 placeholder behavior.\nWraps cleanly with errors.Is for plan-walker error routing.
 EDGES
+  ^references=matrix/executor/tool.NativeTool.Call
   ^defines=matrix/executor/tool/registry.go
 
 NODE id=matrix/executor/tool.ErrSideEffectDenied kind=var
@@ -170,6 +192,7 @@ NODE id=matrix/executor/tool.ErrSideEffectDenied kind=var
   sig=error
   doc=ErrSideEffectDenied fires when the executor's capability gate\nrejects a tool's declared side-effect class.
 EDGES
+  ^references=matrix/executor/tool.Registry.Get
   ^defines=matrix/executor/tool/tool.go
 
 NODE id=matrix/executor/tool.ErrUnknownTool kind=var
@@ -177,6 +200,7 @@ NODE id=matrix/executor/tool.ErrUnknownTool kind=var
   sig=error
   doc=ErrUnknownTool fires when Registry.Get receives a URI for a tool\nnot in the agent manifest. Distinct from "tool returned IsError"\n— caller must look up a different URI or fail the plan node.
 EDGES
+  ^references=matrix/executor/tool.Registry.Get
   ^defines=matrix/executor/tool/tool.go
 
 NODE id=matrix/executor/tool.ErrUnpinnedTool kind=var
@@ -184,6 +208,7 @@ NODE id=matrix/executor/tool.ErrUnpinnedTool kind=var
   sig=error
   doc=ErrUnpinnedTool fires when a URI has no @version. S4 hard rule.
 EDGES
+  ^references=matrix/executor/tool.ParseToolURI
   ^defines=matrix/executor/tool/tool.go
 
 NODE id=matrix/executor/tool.ExtractText kind=func
@@ -191,6 +216,9 @@ NODE id=matrix/executor/tool.ExtractText kind=func
   sig=func ExtractText(r *Result) string
   doc=ExtractText concatenates every text-typed Content block. Convenience\nfor the common path where a tool returns "what happened" as text.
 EDGES
+  references=matrix/executor/tool.ContentTypeText,matrix/executor/tool.Result,matrix/executor/tool.c,matrix/executor/tool.i,matrix/executor/tool.out,matrix/executor/tool.r
+  ^calls=matrix/executor/cmd/mcl-e2e.execToolCall,matrix/executor/runtime.Walker.execToolCall,matrix/neo/internal/tools.Manager.Dispatch
+  ^references=matrix/executor/cmd/mcl-e2e.execToolCall,matrix/executor/runtime.Walker.execToolCall,matrix/neo/internal/tools.Manager.Dispatch
   ^defines=matrix/executor/tool/tool.go
 
 NODE id=matrix/executor/tool.LoadAgentManifest kind=func
@@ -198,6 +226,10 @@ NODE id=matrix/executor/tool.LoadAgentManifest kind=func
   sig=func LoadAgentManifest(path string) (*AgentManifest, error)
   doc=LoadAgentManifest reads and validates a manifest from a JSON file.
 EDGES
+  calls=matrix/executor/tool.ParseAgentManifest
+  references=matrix/executor/tool.AgentManifest,matrix/executor/tool.ParseAgentManifest,matrix/executor/tool.abs,matrix/executor/tool.data,matrix/executor/tool.err,matrix/executor/tool.path
+  ^calls=matrix/executor/cmd/mcl-execute.newInfra,matrix/executor/cmd/mcl-tools.mustLoad,matrix/neo/internal/tools.Spawn
+  ^references=matrix/executor/cmd/mcl-execute.newInfra,matrix/executor/cmd/mcl-tools.mustLoad,matrix/neo/internal/tools.Spawn
   ^defines=matrix/executor/tool/manifest.go
 
 NODE id=matrix/executor/tool.MCPTool kind=type
@@ -207,6 +239,8 @@ NODE id=matrix/executor/tool.MCPTool kind=type
 EDGES
   contains=matrix/executor/tool.MCPTool#cache,matrix/executor/tool.MCPTool#cacheable,matrix/executor/tool.MCPTool#clock,matrix/executor/tool.MCPTool#desc,matrix/executor/tool.MCPTool#mgr,matrix/executor/tool.MCPTool#name,matrix/executor/tool.MCPTool#server,matrix/executor/tool.MCPTool#sideEffect,matrix/executor/tool.MCPTool#timeout,matrix/executor/tool.MCPTool#uri,matrix/executor/tool.MCPTool.Call,matrix/executor/tool.MCPTool.Description,matrix/executor/tool.MCPTool.Name,matrix/executor/tool.MCPTool.Server,matrix/executor/tool.MCPTool.SideEffectClass,matrix/executor/tool.MCPTool.URI
   implements=matrix/executor/tool.Tool
+  references=matrix/executor/mcp.Manager,matrix/executor/tool.resultCache
+  ^references=matrix/executor/cmd/mcl-tools.runDescribeTool,matrix/executor/tool.MCPTool.Call,matrix/executor/tool.MCPTool.Description,matrix/executor/tool.MCPTool.Name,matrix/executor/tool.MCPTool.Server,matrix/executor/tool.MCPTool.SideEffectClass,matrix/executor/tool.MCPTool.URI,matrix/executor/tool.NewRegistry,matrix/executor/tool.Registry
   ^defines=matrix/executor/tool/registry.go
 
 NODE id=matrix/executor/tool.MCPTool#cache kind=field
@@ -276,7 +310,10 @@ NODE id=matrix/executor/tool.MCPTool.Call kind=method
   sig=func (t *MCPTool) Call(ctx context.Context, args map[string]interface{}) (*Result, error)
   doc=Call invokes the tool through the manager-managed MCP client.\n\nSurfaces transport / RPC errors as Go errors; in-band tool failures\n(the tool ran but reports IsError) are returned via Result.IsError.\n\nP2-5: for tools in the cacheableTools allow-list (web_search, web_news)\nwith SideEffectRead, a successful result is served from the TTL cache\non a hit and stored on a miss. Side-effecting / money tools never hit\nthe cache (cacheable is precomputed false for them). Cache misses and\nerrors always go to the wire.
 EDGES
+  calls=matrix/executor/mcp.Client.ToolsCall,matrix/executor/mcp.Manager.Client,matrix/executor/tool.cacheKey,matrix/executor/tool.embeddedURI,matrix/executor/tool.newCallID,matrix/executor/tool.resultCache.get,matrix/executor/tool.resultCache.put
+  references=matrix/executor/mcp.Client.ToolsCall,matrix/executor/mcp.Manager.Client,matrix/executor/tool.Content,matrix/executor/tool.MCPTool,matrix/executor/tool.Result,matrix/executor/tool.args,matrix/executor/tool.c,matrix/executor/tool.cacheKey,matrix/executor/tool.cached,matrix/executor/tool.callCtx,matrix/executor/tool.callID,matrix/executor/tool.cancel,matrix/executor/tool.ctx,matrix/executor/tool.dur,matrix/executor/tool.embeddedURI,matrix/executor/tool.err,matrix/executor/tool.hit,matrix/executor/tool.key,matrix/executor/tool.mcpResult,matrix/executor/tool.newCallID,matrix/executor/tool.ok,matrix/executor/tool.out,matrix/executor/tool.resultCache.get,matrix/executor/tool.resultCache.put,matrix/executor/tool.start,matrix/executor/tool.t
   ^contains=matrix/executor/tool.MCPTool
+  ^calls=matrix/executor/cmd/mcl-e2e.execToolCall,matrix/executor/cmd/mcl-tools.runCall,matrix/executor/runtime.Walker.execToolCall
   ^defines=matrix/executor/tool/registry.go
 
 NODE id=matrix/executor/tool.MCPTool.Description kind=method
@@ -284,7 +321,9 @@ NODE id=matrix/executor/tool.MCPTool.Description kind=method
   sig=func (t *MCPTool) Description() string
   doc=Description implements Tool.
 EDGES
+  references=matrix/executor/tool.MCPTool,matrix/executor/tool.t
   ^contains=matrix/executor/tool.MCPTool
+  ^calls=matrix/executor/cmd/mcl-tools.runDescribeTool
   ^defines=matrix/executor/tool/registry.go
 
 NODE id=matrix/executor/tool.MCPTool.Name kind=method
@@ -292,7 +331,10 @@ NODE id=matrix/executor/tool.MCPTool.Name kind=method
   sig=func (t *MCPTool) Name() string
   doc=Name returns the server-local tool name.
 EDGES
+  references=matrix/executor/tool.MCPTool,matrix/executor/tool.t
   ^contains=matrix/executor/tool.MCPTool
+  ^calls=matrix/executor/cmd/mcl-tools.runDescribeTool
+  ^references=matrix/executor/cmd/mcl-tools.runDescribeTool
   ^defines=matrix/executor/tool/registry.go
 
 NODE id=matrix/executor/tool.MCPTool.Server kind=method
@@ -300,7 +342,10 @@ NODE id=matrix/executor/tool.MCPTool.Server kind=method
   sig=func (t *MCPTool) Server() string
   doc=Server returns the alias of the MCP server backing this tool.\nExposed so the cmd/mcl-tools CLI can show resolution.
 EDGES
+  references=matrix/executor/tool.MCPTool,matrix/executor/tool.t
   ^contains=matrix/executor/tool.MCPTool
+  ^calls=matrix/executor/cmd/mcl-tools.runDescribeTool
+  ^references=matrix/executor/cmd/mcl-tools.runDescribeTool
   ^defines=matrix/executor/tool/registry.go
 
 NODE id=matrix/executor/tool.MCPTool.SideEffectClass kind=method
@@ -308,7 +353,9 @@ NODE id=matrix/executor/tool.MCPTool.SideEffectClass kind=method
   sig=func (t *MCPTool) SideEffectClass() string
   doc=SideEffectClass implements Tool.
 EDGES
+  references=matrix/executor/tool.MCPTool,matrix/executor/tool.t
   ^contains=matrix/executor/tool.MCPTool
+  ^calls=matrix/executor/cmd/mcl-tools.runDescribeTool
   ^defines=matrix/executor/tool/registry.go
 
 NODE id=matrix/executor/tool.MCPTool.URI kind=method
@@ -316,7 +363,9 @@ NODE id=matrix/executor/tool.MCPTool.URI kind=method
   sig=func (t *MCPTool) URI() string
   doc=URI implements Tool.
 EDGES
+  references=matrix/executor/tool.MCPTool,matrix/executor/tool.t
   ^contains=matrix/executor/tool.MCPTool
+  ^calls=matrix/executor/cmd/mcl-tools.runDescribeTool
   ^defines=matrix/executor/tool/registry.go
 
 NODE id=matrix/executor/tool.NativeTool kind=type
@@ -326,6 +375,7 @@ NODE id=matrix/executor/tool.NativeTool kind=type
 EDGES
   contains=matrix/executor/tool.NativeTool#digest,matrix/executor/tool.NativeTool#name,matrix/executor/tool.NativeTool#namespace,matrix/executor/tool.NativeTool#sideEffect,matrix/executor/tool.NativeTool#uri,matrix/executor/tool.NativeTool#version,matrix/executor/tool.NativeTool.Call,matrix/executor/tool.NativeTool.Description,matrix/executor/tool.NativeTool.Digest,matrix/executor/tool.NativeTool.Namespace,matrix/executor/tool.NativeTool.SideEffectClass,matrix/executor/tool.NativeTool.URI
   implements=matrix/executor/tool.Tool
+  ^references=matrix/executor/cmd/mcl-tools.runDescribeTool,matrix/executor/tool.NativeTool.Call,matrix/executor/tool.NativeTool.Description,matrix/executor/tool.NativeTool.Digest,matrix/executor/tool.NativeTool.Namespace,matrix/executor/tool.NativeTool.SideEffectClass,matrix/executor/tool.NativeTool.URI,matrix/executor/tool.NewRegistry,matrix/executor/tool.Registry
   ^defines=matrix/executor/tool/registry.go
 
 NODE id=matrix/executor/tool.NativeTool#digest kind=field
@@ -369,7 +419,9 @@ NODE id=matrix/executor/tool.NativeTool.Call kind=method
   sig=func (t *NativeTool) Call(ctx context.Context, args map[string]interface{}) (*Result, error)
   doc=Call always returns ErrNativeToolNotImplemented in v1.
 EDGES
+  references=matrix/executor/tool.ErrNativeToolNotImplemented,matrix/executor/tool.NativeTool,matrix/executor/tool.Result,matrix/executor/tool.t
   ^contains=matrix/executor/tool.NativeTool
+  ^calls=matrix/executor/cmd/mcl-e2e.execToolCall,matrix/executor/cmd/mcl-tools.runCall,matrix/executor/runtime.Walker.execToolCall
   ^defines=matrix/executor/tool/registry.go
 
 NODE id=matrix/executor/tool.NativeTool.Description kind=method
@@ -377,7 +429,9 @@ NODE id=matrix/executor/tool.NativeTool.Description kind=method
   sig=func (t *NativeTool) Description() string
   doc=Description implements Tool.
 EDGES
+  references=matrix/executor/tool.NativeTool,matrix/executor/tool.t
   ^contains=matrix/executor/tool.NativeTool
+  ^calls=matrix/executor/cmd/mcl-tools.runDescribeTool
   ^defines=matrix/executor/tool/registry.go
 
 NODE id=matrix/executor/tool.NativeTool.Digest kind=method
@@ -385,7 +439,10 @@ NODE id=matrix/executor/tool.NativeTool.Digest kind=method
   sig=func (t *NativeTool) Digest() string
   doc=Digest returns the contract/abi digest pinned at manifest time.
 EDGES
+  references=matrix/executor/tool.NativeTool,matrix/executor/tool.t
   ^contains=matrix/executor/tool.NativeTool
+  ^calls=matrix/executor/cmd/mcl-tools.runDescribeTool
+  ^references=matrix/executor/cmd/mcl-tools.runDescribeTool
   ^defines=matrix/executor/tool/registry.go
 
 NODE id=matrix/executor/tool.NativeTool.Namespace kind=method
@@ -393,7 +450,10 @@ NODE id=matrix/executor/tool.NativeTool.Namespace kind=method
   sig=func (t *NativeTool) Namespace() string
   doc=Namespace returns the S6 namespace.
 EDGES
+  references=matrix/executor/tool.NativeTool,matrix/executor/tool.t
   ^contains=matrix/executor/tool.NativeTool
+  ^calls=matrix/executor/cmd/mcl-tools.runDescribeTool
+  ^references=matrix/executor/cmd/mcl-tools.runDescribeTool
   ^defines=matrix/executor/tool/registry.go
 
 NODE id=matrix/executor/tool.NativeTool.SideEffectClass kind=method
@@ -401,7 +461,9 @@ NODE id=matrix/executor/tool.NativeTool.SideEffectClass kind=method
   sig=func (t *NativeTool) SideEffectClass() string
   doc=SideEffectClass implements Tool.
 EDGES
+  references=matrix/executor/tool.NativeTool,matrix/executor/tool.t
   ^contains=matrix/executor/tool.NativeTool
+  ^calls=matrix/executor/cmd/mcl-tools.runDescribeTool
   ^defines=matrix/executor/tool/registry.go
 
 NODE id=matrix/executor/tool.NativeTool.URI kind=method
@@ -409,7 +471,9 @@ NODE id=matrix/executor/tool.NativeTool.URI kind=method
   sig=func (t *NativeTool) URI() string
   doc=URI implements Tool.
 EDGES
+  references=matrix/executor/tool.NativeTool,matrix/executor/tool.t
   ^contains=matrix/executor/tool.NativeTool
+  ^calls=matrix/executor/cmd/mcl-tools.runDescribeTool
   ^defines=matrix/executor/tool/registry.go
 
 NODE id=matrix/executor/tool.NativeToolEntry kind=type
@@ -418,6 +482,7 @@ NODE id=matrix/executor/tool.NativeToolEntry kind=type
   doc=NativeToolEntry is a placeholder schema for chain tools (Q19). v1\nships no implementations; the schema lands now so agent manifests\ndon't need a v2 migration when the first chain tool launches.
 EDGES
   contains=matrix/executor/tool.NativeToolEntry#Digest,matrix/executor/tool.NativeToolEntry#Name,matrix/executor/tool.NativeToolEntry#Namespace,matrix/executor/tool.NativeToolEntry#SideEffectClass,matrix/executor/tool.NativeToolEntry#Version,matrix/executor/tool.NativeToolEntry.Validate
+  ^references=matrix/executor/tool.AgentManifest,matrix/executor/tool.NativeToolEntry.Validate
   ^defines=matrix/executor/tool/manifest.go
 
 NODE id=matrix/executor/tool.NativeToolEntry#Digest kind=field
@@ -460,7 +525,11 @@ NODE id=matrix/executor/tool.NativeToolEntry.Validate kind=method
   sig=func (nt *NativeToolEntry) Validate() error
   doc=Validate enforces NativeToolEntry invariants.
 EDGES
+  calls=matrix/executor/tool.validDigest,matrix/executor/tool.validNativeNamespace,matrix/executor/tool.validateSideEffect
+  references=matrix/executor/tool.NativeToolEntry,matrix/executor/tool.err,matrix/executor/tool.nt,matrix/executor/tool.validDigest,matrix/executor/tool.validNativeNamespace,matrix/executor/tool.validateSideEffect
   ^contains=matrix/executor/tool.NativeToolEntry
+  ^calls=matrix/executor/tool.AgentManifest.Validate
+  ^references=matrix/executor/tool.AgentManifest.Validate
   ^defines=matrix/executor/tool/manifest.go
 
 NODE id=matrix/executor/tool.NewRegistry kind=func
@@ -468,6 +537,10 @@ NODE id=matrix/executor/tool.NewRegistry kind=func
   sig=func NewRegistry(p RegistryParams) (*Registry, error)
   doc=NewRegistry builds a registry from a manifest. MCP servers are\nexpected to already be Spawned in the supplied Manager — that's the\nboot-order responsibility of the caller (typically cmd/mcl-execute).
 EDGES
+  calls=matrix/executor/tool.AgentManifest.Validate,matrix/executor/tool.AllowOnlySideEffects,matrix/executor/tool.ToolURI.String,matrix/executor/tool.isCacheable,matrix/executor/tool.newResultCache,matrix/executor/tool.teTimeout
+  references=matrix/executor/tool.AgentManifest.Validate,matrix/executor/tool.AllowAllSideEffects,matrix/executor/tool.AllowOnlySideEffects,matrix/executor/tool.MCPTool,matrix/executor/tool.NativeTool,matrix/executor/tool.Registry,matrix/executor/tool.RegistryParams,matrix/executor/tool.SideEffectChain,matrix/executor/tool.ToolURI,matrix/executor/tool.ToolURI.String,matrix/executor/tool.clock,matrix/executor/tool.err,matrix/executor/tool.gate,matrix/executor/tool.i,matrix/executor/tool.isCacheable,matrix/executor/tool.j,matrix/executor/tool.newResultCache,matrix/executor/tool.nt,matrix/executor/tool.p,matrix/executor/tool.r,matrix/executor/tool.s,matrix/executor/tool.side,matrix/executor/tool.te,matrix/executor/tool.teTimeout,matrix/executor/tool.uri
+  ^calls=matrix/executor/cmd/mcl-e2e.RunOnce,matrix/executor/cmd/mcl-execute.newInfra,matrix/executor/cmd/mcl-tools.runCall,matrix/executor/cmd/mcl-tools.runDescribeTool,matrix/executor/cmd/mcl-tools.runListTools,matrix/neo/internal/tools.Spawn
+  ^references=matrix/executor/cmd/mcl-e2e.RunOnce,matrix/executor/cmd/mcl-execute.newInfra,matrix/executor/cmd/mcl-tools.runCall,matrix/executor/cmd/mcl-tools.runDescribeTool,matrix/executor/cmd/mcl-tools.runListTools,matrix/neo/internal/tools.Spawn
   ^defines=matrix/executor/tool/registry.go
 
 NODE id=matrix/executor/tool.ParseAgentManifest kind=func
@@ -475,6 +548,10 @@ NODE id=matrix/executor/tool.ParseAgentManifest kind=func
   sig=func ParseAgentManifest(data []byte) (*AgentManifest, error)
   doc=ParseAgentManifest decodes + validates a manifest from raw JSON.
 EDGES
+  calls=matrix/executor/tool.AgentManifest.Validate
+  references=matrix/executor/tool.AgentManifest,matrix/executor/tool.AgentManifest.Validate,matrix/executor/tool.data,matrix/executor/tool.err,matrix/executor/tool.m
+  ^calls=matrix/executor/tool.LoadAgentManifest
+  ^references=matrix/executor/tool.LoadAgentManifest
   ^defines=matrix/executor/tool/manifest.go
 
 NODE id=matrix/executor/tool.ParseToolURI kind=func
@@ -482,6 +559,10 @@ NODE id=matrix/executor/tool.ParseToolURI kind=func
   sig=func ParseToolURI(s string) (ToolURI, error)
   doc=ParseToolURI splits a tool URI per Q17 / S4. Returns ErrInvalidURI\nor ErrUnpinnedTool on malformed input.
 EDGES
+  calls=matrix/executor/tool.validAlias,matrix/executor/tool.validVersion
+  references=matrix/executor/tool.ErrInvalidURI,matrix/executor/tool.ErrUnpinnedTool,matrix/executor/tool.ToolURI,matrix/executor/tool.at,matrix/executor/tool.beforeVersion,matrix/executor/tool.parts,matrix/executor/tool.rest,matrix/executor/tool.s,matrix/executor/tool.toolScheme,matrix/executor/tool.validAlias,matrix/executor/tool.validNativeNamespaces,matrix/executor/tool.validVersion,matrix/executor/tool.version
+  ^calls=matrix/executor/cmd/mcl-execute.toolNameFromRef,matrix/executor/cmd/mcl-tools.runCall,matrix/executor/tool.Registry.Get
+  ^references=matrix/executor/cmd/mcl-execute.toolNameFromRef,matrix/executor/cmd/mcl-tools.runCall,matrix/executor/materiality.collectToolNamespaces,matrix/executor/tool.Registry.Get
   ^defines=matrix/executor/tool/uri.go
 
 NODE id=matrix/executor/tool.Registry kind=type
@@ -490,6 +571,8 @@ NODE id=matrix/executor/tool.Registry kind=type
   doc=Registry resolves matrix://tool/... URIs to live Tool implementations.\n\nWires NativeTool slots (Q19 placeholders) and MCPTool entries\n(Q4 + Q21) against a backing mcp.Manager. Built once per agent at\nboot from an AgentManifest; immutable afterwards (manifest reloads\nrebuild the registry).
 EDGES
   contains=matrix/executor/tool.Registry#cache,matrix/executor/tool.Registry#clock,matrix/executor/tool.Registry#gate,matrix/executor/tool.Registry#manifest,matrix/executor/tool.Registry#mcps,matrix/executor/tool.Registry#mgr,matrix/executor/tool.Registry#mu,matrix/executor/tool.Registry#natives,matrix/executor/tool.Registry.Get,matrix/executor/tool.Registry.List,matrix/executor/tool.Registry.Manifest
+  references=matrix/executor/mcp.Manager,matrix/executor/tool.AgentManifest,matrix/executor/tool.CapabilityGate,matrix/executor/tool.MCPTool,matrix/executor/tool.NativeTool,matrix/executor/tool.resultCache
+  ^references=matrix/executor/cmd/mcl-e2e.WalkPlan,matrix/executor/cmd/mcl-e2e.execToolCall,matrix/executor/cmd/mcl-e2e.walkNode,matrix/executor/cmd/mcl-execute.infra,matrix/executor/cmd/mcl-execute.synthesizeOpts,matrix/executor/cmd/mcl-execute.verifyToolRefs,matrix/executor/runtime.Walker,matrix/executor/runtime.WalkerParams,matrix/executor/tool.NewRegistry,matrix/executor/tool.Registry.Get,matrix/executor/tool.Registry.List,matrix/executor/tool.Registry.Manifest,matrix/neo/internal/tools.Manager
   ^defines=matrix/executor/tool/registry.go
 
 NODE id=matrix/executor/tool.Registry#cache kind=field
@@ -550,7 +633,11 @@ NODE id=matrix/executor/tool.Registry.Get kind=method
   sig=func (r *Registry) Get(uri string) (Tool, error)
   doc=Get resolves a tool URI to a Tool. Returns ErrUnknownTool when the\nURI doesn't appear in the agent manifest.
 EDGES
+  calls=matrix/executor/tool.AllowAllSideEffects,matrix/executor/tool.ParseToolURI,matrix/executor/tool.ToolURI.IsMCP,matrix/executor/tool.ToolURI.IsNative,matrix/executor/tool.ToolURI.String
+  references=matrix/executor/tool.ErrSideEffectDenied,matrix/executor/tool.ErrUnknownTool,matrix/executor/tool.ParseToolURI,matrix/executor/tool.Registry,matrix/executor/tool.Tool,matrix/executor/tool.ToolURI.IsMCP,matrix/executor/tool.ToolURI.IsNative,matrix/executor/tool.ToolURI.String,matrix/executor/tool.err,matrix/executor/tool.ok,matrix/executor/tool.parsed,matrix/executor/tool.r,matrix/executor/tool.t,matrix/executor/tool.uri
   ^contains=matrix/executor/tool.Registry
+  ^calls=matrix/executor/cmd/mcl-e2e.execToolCall,matrix/executor/cmd/mcl-tools.runCall,matrix/executor/cmd/mcl-tools.runDescribeTool,matrix/executor/runtime.Walker.execToolCall,matrix/neo/internal/tools.Manager.Dispatch
+  ^references=matrix/executor/cmd/mcl-e2e.execToolCall,matrix/executor/cmd/mcl-execute.verifyToolRefs,matrix/executor/cmd/mcl-tools.runCall,matrix/executor/cmd/mcl-tools.runDescribeTool,matrix/executor/runtime.Walker.execToolCall,matrix/neo/internal/tools.Manager.Dispatch
   ^defines=matrix/executor/tool/registry.go
 
 NODE id=matrix/executor/tool.Registry.List kind=method
@@ -558,7 +645,11 @@ NODE id=matrix/executor/tool.Registry.List kind=method
   sig=func (r *Registry) List() []string
   doc=List returns every tool URI in the registry, sorted alphabetically.\nUsed by mcl-tools CLI and audit log paths.
 EDGES
+  calls=matrix/executor/tool.sortStrings
+  references=matrix/executor/tool.Registry,matrix/executor/tool.out,matrix/executor/tool.r,matrix/executor/tool.sortStrings,matrix/executor/tool.uri
   ^contains=matrix/executor/tool.Registry
+  ^calls=matrix/executor/cmd/mcl-e2e.RunOnce,matrix/executor/cmd/mcl-execute.newInfra,matrix/executor/cmd/mcl-tools.runListTools
+  ^references=matrix/executor/cmd/mcl-e2e.RunOnce,matrix/executor/cmd/mcl-execute.newInfra,matrix/executor/cmd/mcl-tools.runListTools
   ^defines=matrix/executor/tool/registry.go
 
 NODE id=matrix/executor/tool.Registry.Manifest kind=method
@@ -566,6 +657,7 @@ NODE id=matrix/executor/tool.Registry.Manifest kind=method
   sig=func (r *Registry) Manifest() *AgentManifest
   doc=Manifest returns the underlying agent manifest. Read-only.
 EDGES
+  references=matrix/executor/tool.AgentManifest,matrix/executor/tool.Registry,matrix/executor/tool.r
   ^contains=matrix/executor/tool.Registry
   ^defines=matrix/executor/tool/registry.go
 
@@ -575,6 +667,8 @@ NODE id=matrix/executor/tool.RegistryParams kind=type
   doc=RegistryParams configures a Registry.
 EDGES
   contains=matrix/executor/tool.RegistryParams#CacheTTL,matrix/executor/tool.RegistryParams#Clock,matrix/executor/tool.RegistryParams#Gate,matrix/executor/tool.RegistryParams#MCP,matrix/executor/tool.RegistryParams#Manifest
+  references=matrix/executor/mcp.Manager,matrix/executor/tool.AgentManifest,matrix/executor/tool.CapabilityGate
+  ^references=matrix/executor/cmd/mcl-e2e.RunOnce,matrix/executor/cmd/mcl-execute.newInfra,matrix/executor/cmd/mcl-tools.runCall,matrix/executor/cmd/mcl-tools.runDescribeTool,matrix/executor/cmd/mcl-tools.runListTools,matrix/executor/tool.NewRegistry,matrix/neo/internal/tools.Spawn
   ^defines=matrix/executor/tool/registry.go
 
 NODE id=matrix/executor/tool.RegistryParams#CacheTTL kind=field
@@ -615,6 +709,9 @@ NODE id=matrix/executor/tool.ResolveEnv kind=func
   sig=func ResolveEnv(token string, lookup func(string) (string, bool)) (string, bool)
   doc=ResolveEnv expands "$env:NAME" tokens against the supplied lookup\n(typically os.LookupEnv). Used by the manager when spawning servers.\n\nReturns the expanded string and ok=false when a reference fails to\nresolve. Literal values pass through unchanged.
 EDGES
+  references=matrix/executor/tool.lookup,matrix/executor/tool.name,matrix/executor/tool.ok,matrix/executor/tool.prefix,matrix/executor/tool.token,matrix/executor/tool.v
+  ^calls=matrix/executor/cmd/mcl-execute.resolveHeaderEnv,matrix/executor/cmd/mcl-tools.findServerSpec,matrix/executor/tool.ResolveEnvList,matrix/neo/internal/tools.resolveHeaderEnv
+  ^references=matrix/executor/cmd/mcl-execute.resolveHeaderEnv,matrix/executor/cmd/mcl-tools.findServerSpec,matrix/executor/tool.ResolveEnvList,matrix/neo/internal/tools.resolveHeaderEnv
   ^defines=matrix/executor/tool/manifest.go
 
 NODE id=matrix/executor/tool.ResolveEnvList kind=func
@@ -622,6 +719,10 @@ NODE id=matrix/executor/tool.ResolveEnvList kind=func
   sig=func ResolveEnvList(in []string, lookup func(string) (string, bool)) ([]string, string, error)
   doc=ResolveEnvList is the slice form: resolves every entry. Returns a\nnew slice plus the first unresolved name (if any).
 EDGES
+  calls=matrix/executor/tool.ResolveEnv
+  references=matrix/executor/tool.ResolveEnv,matrix/executor/tool.e,matrix/executor/tool.eq,matrix/executor/tool.in,matrix/executor/tool.k,matrix/executor/tool.lookup,matrix/executor/tool.ok,matrix/executor/tool.out,matrix/executor/tool.v,matrix/executor/tool.vv
+  ^calls=matrix/executor/cmd/mcl-execute.newInfra,matrix/executor/cmd/mcl-tools.findServerSpec,matrix/neo/internal/tools.Spawn
+  ^references=matrix/executor/cmd/mcl-execute.newInfra,matrix/executor/cmd/mcl-tools.findServerSpec,matrix/neo/internal/tools.Spawn
   ^defines=matrix/executor/tool/manifest.go
 
 NODE id=matrix/executor/tool.Result kind=type
@@ -630,6 +731,8 @@ NODE id=matrix/executor/tool.Result kind=type
   doc=Result is the typed outcome of a single Tool.Call.\n\nMirrors mcp.CallToolResult so MCPTool can pass through cleanly, with\nadded Matrix-specific fields (CallID, DurationMs) so the executor\ncan journal Event memories without re-deriving them.
 EDGES
   contains=matrix/executor/tool.Result#CallID,matrix/executor/tool.Result#Content,matrix/executor/tool.Result#DurationMs,matrix/executor/tool.Result#IsError
+  references=matrix/executor/tool.Content
+  ^references=matrix/executor/runtime.marshalToolResult,matrix/executor/tool.ExtractText,matrix/executor/tool.MCPTool.Call,matrix/executor/tool.NativeTool.Call,matrix/executor/tool.Tool,matrix/executor/tool.cacheEntry,matrix/executor/tool.resultCache.get,matrix/executor/tool.resultCache.put,matrix/neo/internal/tools.summarizeNonText
   ^defines=matrix/executor/tool/tool.go
 
 NODE id=matrix/executor/tool.Result#CallID kind=field
@@ -666,6 +769,8 @@ NODE id=matrix/executor/tool.ServerEntry kind=type
   doc=ServerEntry is one MCP server in an agent's manifest.
 EDGES
   contains=matrix/executor/tool.ServerEntry#Alias,matrix/executor/tool.ServerEntry#Args,matrix/executor/tool.ServerEntry#Command,matrix/executor/tool.ServerEntry#Endpoint,matrix/executor/tool.ServerEntry#Env,matrix/executor/tool.ServerEntry#Headers,matrix/executor/tool.ServerEntry#PackageDigest,matrix/executor/tool.ServerEntry#Tools,matrix/executor/tool.ServerEntry#Transport,matrix/executor/tool.ServerEntry#Version,matrix/executor/tool.ServerEntry.Validate
+  references=matrix/executor/tool.ToolEntry
+  ^references=matrix/executor/cmd/mcl-e2e.BuildAgentManifest,matrix/executor/tool.AgentManifest,matrix/executor/tool.ServerEntry.Validate
   ^defines=matrix/executor/tool/manifest.go
 
 NODE id=matrix/executor/tool.ServerEntry#Alias kind=field
@@ -742,7 +847,11 @@ NODE id=matrix/executor/tool.ServerEntry.Validate kind=method
   sig=func (s *ServerEntry) Validate() error
   doc=Validate enforces ServerEntry invariants.
 EDGES
+  calls=matrix/executor/tool.ToolEntry.Validate,matrix/executor/tool.validAlias,matrix/executor/tool.validDigest
+  references=matrix/executor/tool.ServerEntry,matrix/executor/tool.ToolEntry.Validate,matrix/executor/tool.err,matrix/executor/tool.i,matrix/executor/tool.s,matrix/executor/tool.te,matrix/executor/tool.toolNames,matrix/executor/tool.validAlias,matrix/executor/tool.validDigest
   ^contains=matrix/executor/tool.ServerEntry
+  ^calls=matrix/executor/tool.AgentManifest.Validate
+  ^references=matrix/executor/tool.AgentManifest.Validate
   ^defines=matrix/executor/tool/manifest.go
 
 NODE id=matrix/executor/tool.SideEffectChain kind=const
@@ -750,6 +859,7 @@ NODE id=matrix/executor/tool.SideEffectChain kind=const
   sig=untyped string
   doc=SideEffectClass constants — closed enum mirrored from\nMCL/ir/plan.go ValidSideEffectClasses to avoid a circular import.
 EDGES
+  ^references=matrix/executor/tool.NewRegistry,matrix/executor/tool.ValidSideEffectClasses
   ^defines=matrix/executor/tool/tool.go
 
 NODE id=matrix/executor/tool.SideEffectNetwork kind=const
@@ -757,6 +867,7 @@ NODE id=matrix/executor/tool.SideEffectNetwork kind=const
   sig=untyped string
   doc=SideEffectClass constants — closed enum mirrored from\nMCL/ir/plan.go ValidSideEffectClasses to avoid a circular import.
 EDGES
+  ^references=matrix/executor/tool.ValidSideEffectClasses
   ^defines=matrix/executor/tool/tool.go
 
 NODE id=matrix/executor/tool.SideEffectRead kind=const
@@ -764,6 +875,7 @@ NODE id=matrix/executor/tool.SideEffectRead kind=const
   sig=untyped string
   doc=SideEffectClass constants — closed enum mirrored from\nMCL/ir/plan.go ValidSideEffectClasses to avoid a circular import.
 EDGES
+  ^references=matrix/executor/tool.ValidSideEffectClasses,matrix/executor/tool.isCacheable
   ^defines=matrix/executor/tool/tool.go
 
 NODE id=matrix/executor/tool.SideEffectShell kind=const
@@ -771,6 +883,7 @@ NODE id=matrix/executor/tool.SideEffectShell kind=const
   sig=untyped string
   doc=SideEffectClass constants — closed enum mirrored from\nMCL/ir/plan.go ValidSideEffectClasses to avoid a circular import.
 EDGES
+  ^references=matrix/executor/tool.ValidSideEffectClasses
   ^defines=matrix/executor/tool/tool.go
 
 NODE id=matrix/executor/tool.SideEffectWrite kind=const
@@ -778,6 +891,7 @@ NODE id=matrix/executor/tool.SideEffectWrite kind=const
   sig=untyped string
   doc=SideEffectClass constants — closed enum mirrored from\nMCL/ir/plan.go ValidSideEffectClasses to avoid a circular import.
 EDGES
+  ^references=matrix/executor/tool.ValidSideEffectClasses
   ^defines=matrix/executor/tool/tool.go
 
 NODE id=matrix/executor/tool.Tool kind=interface
@@ -785,7 +899,9 @@ NODE id=matrix/executor/tool.Tool kind=interface
   sig=type Tool interface {\n	// URI returns the canonical matrix://tool/... URI this tool exposes,\n	// version-pinned (Q22).\n	URI() string\n\n	// Description is the LLM-facing summary used for tool selection.\n	// May embed escape-text from server (text/markdown allowed).\n	Description() string\n\n	// SideEffectClass declares what kind of side-effect this tool can\n	// have. Closed enum from MCL/ir/plan.go ValidSideEffectClasses.\n	// Used by the executor's capability gate before dispatch.\n	SideEffectClass() string\n\n	// Call invokes the tool. Args MUST already be schema-validated by\n	// the caller (registry does this once at dispatch entry); Call may\n	// assume well-formed input.\n	Call(ctx context.Context, args map[string]interface{}) (*Result, error)\n}
   doc=Tool is the uniform interface that every Matrix tool implementation\nsatisfies. The plan walker (next session) holds *Tool values\n(resolved via Registry.Get(uri)) and invokes Call.\n\nResult.IsError captures in-band tool failures (e.g. "shell exit 1");\ntransport / protocol / capability errors come back through err.
 EDGES
+  references=matrix/executor/tool.Result
   ^implements=matrix/executor/tool.MCPTool,matrix/executor/tool.NativeTool
+  ^references=matrix/executor/tool.Registry.Get
   ^defines=matrix/executor/tool/tool.go
 
 NODE id=matrix/executor/tool.ToolEntry kind=type
@@ -794,6 +910,7 @@ NODE id=matrix/executor/tool.ToolEntry kind=type
   doc=ToolEntry is a single tool exposed by a server.
 EDGES
   contains=matrix/executor/tool.ToolEntry#Description,matrix/executor/tool.ToolEntry#Name,matrix/executor/tool.ToolEntry#SideEffectClass,matrix/executor/tool.ToolEntry#TimeoutMs,matrix/executor/tool.ToolEntry.Validate
+  ^references=matrix/executor/cmd/mcl-e2e.BuildAgentManifest,matrix/executor/cmd/mcl-e2e.toolNames,matrix/executor/cmd/mcl-execute.toolNames,matrix/executor/tool.ServerEntry,matrix/executor/tool.ToolEntry.Validate,matrix/neo/internal/tools.toolNames
   ^defines=matrix/executor/tool/manifest.go
 
 NODE id=matrix/executor/tool.ToolEntry#Description kind=field
@@ -829,7 +946,11 @@ NODE id=matrix/executor/tool.ToolEntry.Validate kind=method
   sig=func (te *ToolEntry) Validate() error
   doc=Validate enforces ToolEntry invariants.
 EDGES
+  calls=matrix/executor/tool.validateSideEffect
+  references=matrix/executor/tool.ToolEntry,matrix/executor/tool.err,matrix/executor/tool.te,matrix/executor/tool.validateSideEffect
   ^contains=matrix/executor/tool.ToolEntry
+  ^calls=matrix/executor/tool.ServerEntry.Validate
+  ^references=matrix/executor/tool.ServerEntry.Validate
   ^defines=matrix/executor/tool/manifest.go
 
 NODE id=matrix/executor/tool.ToolURI kind=type
@@ -838,6 +959,7 @@ NODE id=matrix/executor/tool.ToolURI kind=type
   doc=ToolURI is a parsed matrix:// tool URI.\n\nForms (Q17 lock):\n\n	matrix://tool/mcp/<server-alias>/<tool-name>@<version>     MCP-backed\n	matrix://tool/<namespace>/<tool-name>@<version>            native (chain)\n\nThe MCP form has Provider="mcp" and Server set to the alias.\nThe native form has Provider equal to one of the closed S6\nnamespaces (argus/orob/plv/...); Server is unused.\n\nBare-head URIs (no @version) are rejected at parse time per S4.
 EDGES
   contains=matrix/executor/tool.ToolURI#Name,matrix/executor/tool.ToolURI#Provider,matrix/executor/tool.ToolURI#Raw,matrix/executor/tool.ToolURI#Server,matrix/executor/tool.ToolURI#Version,matrix/executor/tool.ToolURI.IsMCP,matrix/executor/tool.ToolURI.IsNative,matrix/executor/tool.ToolURI.String
+  ^references=matrix/executor/tool.NewRegistry,matrix/executor/tool.ParseToolURI,matrix/executor/tool.ToolURI.IsMCP,matrix/executor/tool.ToolURI.IsNative,matrix/executor/tool.ToolURI.String,matrix/neo/internal/tools.Manager.bind
   ^defines=matrix/executor/tool/uri.go
 
 NODE id=matrix/executor/tool.ToolURI#Name kind=field
@@ -875,7 +997,10 @@ NODE id=matrix/executor/tool.ToolURI.IsMCP kind=method
   sig=func (u ToolURI) IsMCP() bool
   doc=IsMCP reports whether the URI is MCP-backed.
 EDGES
+  references=matrix/executor/tool.ToolURI,matrix/executor/tool.u
   ^contains=matrix/executor/tool.ToolURI
+  ^calls=matrix/executor/cmd/mcl-tools.runCall,matrix/executor/tool.Registry.Get,matrix/executor/tool.ToolURI.String
+  ^references=matrix/executor/cmd/mcl-tools.runCall,matrix/executor/materiality.collectToolNamespaces,matrix/executor/tool.Registry.Get,matrix/executor/tool.ToolURI.String
   ^defines=matrix/executor/tool/uri.go
 
 NODE id=matrix/executor/tool.ToolURI.IsNative kind=method
@@ -883,7 +1008,10 @@ NODE id=matrix/executor/tool.ToolURI.IsNative kind=method
   sig=func (u ToolURI) IsNative() bool
   doc=IsNative reports whether the URI is a native chain tool.
 EDGES
+  references=matrix/executor/tool.ToolURI,matrix/executor/tool.u,matrix/executor/tool.validNativeNamespaces
   ^contains=matrix/executor/tool.ToolURI
+  ^calls=matrix/executor/tool.Registry.Get
+  ^references=matrix/executor/tool.Registry.Get
   ^defines=matrix/executor/tool/uri.go
 
 NODE id=matrix/executor/tool.ToolURI.String kind=method
@@ -891,7 +1019,11 @@ NODE id=matrix/executor/tool.ToolURI.String kind=method
   sig=func (u ToolURI) String() string
   doc=String returns the URI in canonical form.
 EDGES
+  calls=matrix/executor/tool.ToolURI.IsMCP
+  references=matrix/executor/tool.ToolURI,matrix/executor/tool.ToolURI.IsMCP,matrix/executor/tool.toolScheme,matrix/executor/tool.u
   ^contains=matrix/executor/tool.ToolURI
+  ^calls=matrix/executor/tool.NewRegistry,matrix/executor/tool.Registry.Get,matrix/neo/internal/tools.Manager.bind
+  ^references=matrix/executor/tool.NewRegistry,matrix/executor/tool.Registry.Get,matrix/neo/internal/tools.Manager.bind
   ^defines=matrix/executor/tool/uri.go
 
 NODE id=matrix/executor/tool.ValidSideEffectClasses kind=var
@@ -899,6 +1031,8 @@ NODE id=matrix/executor/tool.ValidSideEffectClasses kind=var
   sig=map[string]bool
   doc=ValidSideEffectClasses is the closed enum used by the capability gate.
 EDGES
+  references=matrix/executor/tool.SideEffectChain,matrix/executor/tool.SideEffectNetwork,matrix/executor/tool.SideEffectRead,matrix/executor/tool.SideEffectShell,matrix/executor/tool.SideEffectWrite
+  ^references=matrix/executor/tool.AgentManifest.Validate,matrix/executor/tool.AllowAllSideEffects,matrix/executor/tool.validateSideEffect
   ^defines=matrix/executor/tool/tool.go
 
 NODE id=matrix/executor/tool.cacheEntry kind=type
@@ -907,6 +1041,8 @@ NODE id=matrix/executor/tool.cacheEntry kind=type
   doc=cacheEntry stores one cached Call result with its expiry instant.
 EDGES
   contains=matrix/executor/tool.cacheEntry#expiry,matrix/executor/tool.cacheEntry#result
+  references=matrix/executor/tool.Result
+  ^references=matrix/executor/tool.newResultCache,matrix/executor/tool.resultCache,matrix/executor/tool.resultCache.put
   ^defines=matrix/executor/tool/registry.go
 
 NODE id=matrix/executor/tool.cacheEntry#expiry kind=field
@@ -926,6 +1062,10 @@ NODE id=matrix/executor/tool.cacheKey kind=func
   sig=func cacheKey(uri string, args map[string]interface{}) (string, bool)
   doc=cacheKey builds the canonical cache key for one (uri, args) pair. The\nargs map is JSON-encoded with sorted keys so two calls with the same\narguments in different map-iteration order produce the same key\n(determinism, i6).
 EDGES
+  calls=matrix/executor/tool.canonicalArgs
+  references=matrix/executor/tool.args,matrix/executor/tool.b,matrix/executor/tool.canonicalArgs,matrix/executor/tool.err,matrix/executor/tool.uri
+  ^calls=matrix/executor/tool.MCPTool.Call
+  ^references=matrix/executor/tool.MCPTool.Call
   ^defines=matrix/executor/tool/registry.go
 
 NODE id=matrix/executor/tool.cacheableTools kind=var
@@ -933,6 +1073,7 @@ NODE id=matrix/executor/tool.cacheableTools kind=var
   sig=map[string]bool
   doc=cacheableTools is the closed allow-list of tool NAMES (server-local,\ni.e. the ToolEntry.Name, NOT the function name) whose results are\nsafe to cache: pure read-only idempotent lookups. web_search /\nweb_news return ranked results for a fixed query and never mutate\nstate. Anything that writes, shells out, touches the chain, or moves\nfunds is excluded by omission — "NEVER cache side-effecting or money\ntools" (P2-5 mandate).
 EDGES
+  ^references=matrix/executor/tool.isCacheable
   ^defines=matrix/executor/tool/registry.go
 
 NODE id=matrix/executor/tool.canonicalArgs kind=func
@@ -940,12 +1081,19 @@ NODE id=matrix/executor/tool.canonicalArgs kind=func
   sig=func canonicalArgs(args map[string]interface{}) ([]byte, error)
   doc=canonicalArgs marshals args to JSON with sorted object keys so the\ncache key is deterministic regardless of map iteration order.
 EDGES
+  calls=matrix/executor/tool.sortStrings
+  references=matrix/executor/tool.args,matrix/executor/tool.err,matrix/executor/tool.i,matrix/executor/tool.k,matrix/executor/tool.kb,matrix/executor/tool.keys,matrix/executor/tool.sb,matrix/executor/tool.sortStrings,matrix/executor/tool.vb
+  ^calls=matrix/executor/tool.cacheKey
+  ^references=matrix/executor/tool.cacheKey
   ^defines=matrix/executor/tool/registry.go
 
 NODE id=matrix/executor/tool.embeddedURI kind=func
   digest=b3:a4ca48e10471bdb55d9ecbd5e0bcbe0000662311b8f8e500b9f854dcb0d030a9 file=executor/tool/registry.go range=475:480 lang=go exported=false byte_range=13817:13913
   sig=func embeddedURI(r *mcp.EmbeddedResource) string
 EDGES
+  references=matrix/executor/mcp.EmbeddedResource,matrix/executor/tool.r
+  ^calls=matrix/executor/tool.MCPTool.Call
+  ^references=matrix/executor/tool.MCPTool.Call
   ^defines=matrix/executor/tool/registry.go
 
 NODE id=matrix/executor/tool.isCacheable kind=func
@@ -953,6 +1101,9 @@ NODE id=matrix/executor/tool.isCacheable kind=func
   sig=func isCacheable(name, sideEffect string) bool
   doc=isCacheable reports whether a tool's results may be cached, given its\nserver-local name and declared side-effect class. Both conditions must\nhold: the name must be in the explicit allow-list AND the side-effect\nclass must be a read-class (SideEffectRead). The double gate means a\ntool named web_search that someone later retags as "write" stops\nbeing cached automatically — defense in depth against manifest drift.
 EDGES
+  references=matrix/executor/tool.SideEffectRead,matrix/executor/tool.cacheableTools,matrix/executor/tool.name,matrix/executor/tool.sideEffect
+  ^calls=matrix/executor/tool.NewRegistry
+  ^references=matrix/executor/tool.NewRegistry
   ^defines=matrix/executor/tool/registry.go
 
 NODE id=matrix/executor/tool.newCallID kind=func
@@ -960,6 +1111,9 @@ NODE id=matrix/executor/tool.newCallID kind=func
   sig=func newCallID() string
   doc=newCallID generates a 16-byte random hex id for tool invocations.\nNot a ULID (tool layer doesn't depend on cortex's oklog/ulid); we\nuse crypto/rand so the id is collision-free even under high concurrency.
 EDGES
+  references=matrix/executor/tool.b
+  ^calls=matrix/executor/tool.MCPTool.Call
+  ^references=matrix/executor/tool.MCPTool.Call
   ^defines=matrix/executor/tool/registry.go
 
 NODE id=matrix/executor/tool.newResultCache kind=func
@@ -967,6 +1121,9 @@ NODE id=matrix/executor/tool.newResultCache kind=func
   sig=func newResultCache(ttl time.Duration, now func() time.Time) *resultCache
   doc=newResultCache constructs a cache. ttl<=0 returns a disabled cache\n(all get/put are no-ops), which is the default.
 EDGES
+  references=matrix/executor/tool.cacheEntry,matrix/executor/tool.now,matrix/executor/tool.resultCache,matrix/executor/tool.ttl
+  ^calls=matrix/executor/tool.NewRegistry
+  ^references=matrix/executor/tool.NewRegistry
   ^defines=matrix/executor/tool/registry.go
 
 NODE id=matrix/executor/tool.resultCache kind=type
@@ -975,6 +1132,8 @@ NODE id=matrix/executor/tool.resultCache kind=type
   doc=resultCache is an OPT-IN TTL cache for idempotent read-only tool\nresults (P2-5). It is keyed by (toolURI, canonicalArgsJSON) and only\never stores results for tools explicitly listed in cacheableTools\n(start: web_search, web_news). Side-effecting, shell, chain, and\nmoney tools are NEVER cached regardless of args.\n\nThe cache lives in the Registry (the layer that owns MCPTool.Call and\nknows each tool's declared side-effect class), NOT in mcp.Manager —\nthe server-pool lifecycle stays untouched (Q16 acceptance).\n\nThread-safe. A zero CacheTTL disables caching entirely (the default\nfor tests and for any production path that hasn't opted in via\nNEO_MCP_CACHE_TTL_SECONDS).
 EDGES
   contains=matrix/executor/tool.resultCache#mu,matrix/executor/tool.resultCache#now,matrix/executor/tool.resultCache#reqs,matrix/executor/tool.resultCache#ttl,matrix/executor/tool.resultCache.get,matrix/executor/tool.resultCache.put
+  references=matrix/executor/tool.cacheEntry
+  ^references=matrix/executor/tool.MCPTool,matrix/executor/tool.Registry,matrix/executor/tool.newResultCache,matrix/executor/tool.resultCache.get,matrix/executor/tool.resultCache.put
   ^defines=matrix/executor/tool/registry.go
 
 NODE id=matrix/executor/tool.resultCache#mu kind=field
@@ -1006,7 +1165,10 @@ NODE id=matrix/executor/tool.resultCache.get kind=method
   sig=func (c *resultCache) get(key string) (*Result, bool)
   doc=get returns a cached result if present and not expired.
 EDGES
+  references=matrix/executor/tool.Result,matrix/executor/tool.c,matrix/executor/tool.cp,matrix/executor/tool.e,matrix/executor/tool.key,matrix/executor/tool.ok,matrix/executor/tool.resultCache
   ^contains=matrix/executor/tool.resultCache
+  ^calls=matrix/executor/tool.MCPTool.Call
+  ^references=matrix/executor/tool.MCPTool.Call
   ^defines=matrix/executor/tool/registry.go
 
 NODE id=matrix/executor/tool.resultCache.put kind=method
@@ -1014,7 +1176,10 @@ NODE id=matrix/executor/tool.resultCache.put kind=method
   sig=func (c *resultCache) put(key string, res *Result)
   doc=put stores a result with the configured TTL. No-op when caching is\ndisabled (ttl<=0) or the result is an in-band error (we don't cache\nfailures — a transient IsError shouldn't poison subsequent calls).
 EDGES
+  references=matrix/executor/tool.Result,matrix/executor/tool.c,matrix/executor/tool.cacheEntry,matrix/executor/tool.cp,matrix/executor/tool.key,matrix/executor/tool.res,matrix/executor/tool.resultCache
   ^contains=matrix/executor/tool.resultCache
+  ^calls=matrix/executor/tool.MCPTool.Call
+  ^references=matrix/executor/tool.MCPTool.Call
   ^defines=matrix/executor/tool/registry.go
 
 NODE id=matrix/executor/tool.sortStrings kind=func
@@ -1022,6 +1187,9 @@ NODE id=matrix/executor/tool.sortStrings kind=func
   sig=func sortStrings(s []string)
   doc=sortStrings is a small in-package sort to avoid importing sort from\nevery consumer.
 EDGES
+  references=matrix/executor/tool.i,matrix/executor/tool.j,matrix/executor/tool.s
+  ^calls=matrix/executor/tool.Registry.List,matrix/executor/tool.canonicalArgs
+  ^references=matrix/executor/tool.Registry.List,matrix/executor/tool.canonicalArgs
   ^defines=matrix/executor/tool/registry.go
 
 NODE id=matrix/executor/tool.teTimeout kind=func
@@ -1029,12 +1197,16 @@ NODE id=matrix/executor/tool.teTimeout kind=func
   sig=func teTimeout(ms int) time.Duration
   doc=teTimeout maps the manifest TimeoutMs (0 = default) to a duration\nused by MCPTool.Call. 30s default mirrors http.DefaultClient.
 EDGES
+  references=matrix/executor/tool.ms
+  ^calls=matrix/executor/tool.NewRegistry
+  ^references=matrix/executor/tool.NewRegistry
   ^defines=matrix/executor/tool/registry.go
 
 NODE id=matrix/executor/tool.toolScheme kind=const
   digest=b3:43308593e80bd8d042052f58ba7a26588146d0ace6127d2adf6ff184e0293606 file=executor/tool/uri.go range=31:31 lang=go exported=false byte_range=878:907
   sig=untyped string
 EDGES
+  ^references=matrix/executor/tool.ParseToolURI,matrix/executor/tool.ToolURI.String
   ^defines=matrix/executor/tool/uri.go
 
 NODE id=matrix/executor/tool.validAlias kind=func
@@ -1042,6 +1214,9 @@ NODE id=matrix/executor/tool.validAlias kind=func
   sig=func validAlias(s string) bool
   doc=validAlias permits lowercase letters, digits, hyphens. No '/' so\nthe URI parser can split unambiguously.
 EDGES
+  references=matrix/executor/tool.r,matrix/executor/tool.s
+  ^calls=matrix/executor/tool.ParseToolURI,matrix/executor/tool.ServerEntry.Validate
+  ^references=matrix/executor/tool.ParseToolURI,matrix/executor/tool.ServerEntry.Validate
   ^defines=matrix/executor/tool/manifest.go
 
 NODE id=matrix/executor/tool.validDigest kind=func
@@ -1049,12 +1224,18 @@ NODE id=matrix/executor/tool.validDigest kind=func
   sig=func validDigest(d string) bool
   doc=validDigest checks the "sha256:<64-hex>" form. Strict to keep\nchain-attestation surface clean.
 EDGES
+  references=matrix/executor/tool.d,matrix/executor/tool.prefix,matrix/executor/tool.r,matrix/executor/tool.rest
+  ^calls=matrix/executor/tool.NativeToolEntry.Validate,matrix/executor/tool.ServerEntry.Validate
+  ^references=matrix/executor/tool.NativeToolEntry.Validate,matrix/executor/tool.ServerEntry.Validate
   ^defines=matrix/executor/tool/manifest.go
 
 NODE id=matrix/executor/tool.validNativeNamespace kind=func
   digest=b3:f56b1f2f94a3cc6dacb4bf1703e628f5af08cb7ca969194ec9ffed06359c5c82 file=executor/tool/manifest.go range=298:298 lang=go exported=false byte_range=10102:10180
   sig=func validNativeNamespace(ns string) bool
 EDGES
+  references=matrix/executor/tool.ns,matrix/executor/tool.validNativeNamespaces
+  ^calls=matrix/executor/tool.NativeToolEntry.Validate
+  ^references=matrix/executor/tool.NativeToolEntry.Validate
   ^defines=matrix/executor/tool/manifest.go
 
 NODE id=matrix/executor/tool.validNativeNamespaces kind=var
@@ -1062,6 +1243,7 @@ NODE id=matrix/executor/tool.validNativeNamespaces kind=var
   sig=map[string]bool
   doc=validNativeNamespaces is the closed S6 set per research/05.
 EDGES
+  ^references=matrix/executor/tool.ParseToolURI,matrix/executor/tool.ToolURI.IsNative,matrix/executor/tool.validNativeNamespace
   ^defines=matrix/executor/tool/manifest.go
 
 NODE id=matrix/executor/tool.validVersion kind=func
@@ -1069,6 +1251,9 @@ NODE id=matrix/executor/tool.validVersion kind=func
   sig=func validVersion(v string) bool
   doc=validVersion is permissive: any non-empty token without '/' is OK.\nConcrete shape (semver, sha256-pinned digest, contract address) is\nvalidated by the downstream provider.
 EDGES
+  references=matrix/executor/tool.r,matrix/executor/tool.v
+  ^calls=matrix/executor/tool.ParseToolURI
+  ^references=matrix/executor/tool.ParseToolURI
   ^defines=matrix/executor/tool/uri.go
 
 NODE id=matrix/executor/tool.validateSideEffect kind=func
@@ -1076,6 +1261,9 @@ NODE id=matrix/executor/tool.validateSideEffect kind=func
   sig=func validateSideEffect(s string) error
   doc=validateSideEffect rejects unknown classes. Manifest validation\nuses this to fail at load time rather than at dispatch.
 EDGES
+  references=matrix/executor/tool.ErrInvalidSideEffect,matrix/executor/tool.ValidSideEffectClasses,matrix/executor/tool.s
+  ^calls=matrix/executor/tool.NativeToolEntry.Validate,matrix/executor/tool.ToolEntry.Validate
+  ^references=matrix/executor/tool.NativeToolEntry.Validate,matrix/executor/tool.ToolEntry.Validate
   ^defines=matrix/executor/tool/tool.go
 
 NODE id=matrix/executor/tool/manifest.go kind=file

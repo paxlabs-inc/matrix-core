@@ -1,0 +1,173 @@
+# GENERATED gen=codegraph do-not-edit merkle=b3:75a956136eb56a920059d717ea1f7ba394b53bef834ab6db66f06d328eb5d650
+
+NODE id=matrix/neo/internal/automatrixlog kind=package
+  digest=b3:757ac490611fc16c746afe5ef46b68c6a6aba3ee00ae20f8013acb7f4edd203d file=neo/internal/automatrixlog range=0:0 lang=go exported=true
+EDGES
+  contains=matrix/neo/internal/automatrixlog/automatrixlog.go
+  ^contains=mod:matrix/neo
+
+NODE id=matrix/neo/internal/automatrixlog.Dir kind=func
+  digest=b3:87e0993f0b55ff7e59a031b97343f6c63a69b82e8f6273f8b6f30550b87538d9 file=neo/internal/automatrixlog/automatrixlog.go range=251:264 lang=go exported=true byte_range=7677:8235
+  sig=func Dir(override, cortexRoot string) string
+  doc=Dir resolves Neo's Automatrix completion-inbox directory. An explicit\noverride wins; else it is derived from the cortex root's parent (matching the\nconversation / task / trace stores, so the inbox shares /data with them and\nsurvives suspend / redeploy). Returns "" when neither is available\n(persistence disabled).
+EDGES
+  ^defines=matrix/neo/internal/automatrixlog/automatrixlog.go
+
+NODE id=matrix/neo/internal/automatrixlog.Open kind=func
+  digest=b3:95153b6d2fa250dc9e1abece1ba6af40419d59de99e86b07359301444466d547 file=neo/internal/automatrixlog/automatrixlog.go range=67:71 lang=go exported=true byte_range=2904:3121
+  sig=func Open(dir string) *Store
+  doc=Open builds a store rooted at dir. An empty dir yields a disabled store\n(every method is a safe no-op) so dev/CLI runs work unchanged.
+EDGES
+  ^defines=matrix/neo/internal/automatrixlog/automatrixlog.go
+
+NODE id=matrix/neo/internal/automatrixlog.Record kind=type
+  digest=b3:d3f321a93825d7a699ef883f56c8cbd3003d63c6a41c81b54fa5bb5daf4700ea file=neo/internal/automatrixlog/automatrixlog.go range=48:57 lang=go exported=true byte_range=2153:2620
+  sig=type Record struct {\n	ID			string	`json:"id"`\n	OpportunitySummary	string	`json:"opportunity_summary"`\n	ResultSummary		string	`json:"result_summary"`\n	ConversationID		string	`json:"conversation_id"`\n	CreatedAt		string	`json:"created_at"`\n	Read			bool	`json:"read"`\n}
+  doc=Record is one durable Automatrix completion — an in-app inbox item. Its shape\nis the whole no-secrets guarantee: these are the only fields that exist.
+EDGES
+  contains=matrix/neo/internal/automatrixlog.Record#ConversationID,matrix/neo/internal/automatrixlog.Record#CreatedAt,matrix/neo/internal/automatrixlog.Record#ID,matrix/neo/internal/automatrixlog.Record#OpportunitySummary,matrix/neo/internal/automatrixlog.Record#Read,matrix/neo/internal/automatrixlog.Record#ResultSummary
+  ^defines=matrix/neo/internal/automatrixlog/automatrixlog.go
+
+NODE id=matrix/neo/internal/automatrixlog.Record#ConversationID kind=field
+  digest=b3:9940a17f1fb545f9a9d0a4666db8f431e69a7d29e2f7caa3d1e9cd1ed9f5c227 file=neo/internal/automatrixlog/automatrixlog.go range=54:54 lang=go exported=true byte_range=2480:2530
+  sig=string
+EDGES
+  ^contains=matrix/neo/internal/automatrixlog.Record
+
+NODE id=matrix/neo/internal/automatrixlog.Record#CreatedAt kind=field
+  digest=b3:6f60826ade1010c6279c3deb53ad2a77c9c4f719fa39f10c95dbb0198932e347 file=neo/internal/automatrixlog/automatrixlog.go range=55:55 lang=go exported=true byte_range=2532:2577
+  sig=string
+EDGES
+  ^contains=matrix/neo/internal/automatrixlog.Record
+
+NODE id=matrix/neo/internal/automatrixlog.Record#ID kind=field
+  digest=b3:7baf9982254cdeb2cd35178a6633f71948cba6b295ef6d42d6ef33872e02fc7a file=neo/internal/automatrixlog/automatrixlog.go range=51:51 lang=go exported=true byte_range=2334:2371
+  sig=string
+EDGES
+  ^contains=matrix/neo/internal/automatrixlog.Record
+
+NODE id=matrix/neo/internal/automatrixlog.Record#OpportunitySummary kind=field
+  digest=b3:9bf044ab33bc564744c118aa0cabd8d551c0e855df2f6462d93dda80d9931961 file=neo/internal/automatrixlog/automatrixlog.go range=52:52 lang=go exported=true byte_range=2373:2427
+  sig=string
+EDGES
+  ^contains=matrix/neo/internal/automatrixlog.Record
+
+NODE id=matrix/neo/internal/automatrixlog.Record#Read kind=field
+  digest=b3:639a32476612069eaf5a96c5eb4bd2b1d87f8b7a32fa9ff4836815a9dc33fa5d file=neo/internal/automatrixlog/automatrixlog.go range=56:56 lang=go exported=true byte_range=2579:2618
+  sig=bool
+EDGES
+  ^contains=matrix/neo/internal/automatrixlog.Record
+
+NODE id=matrix/neo/internal/automatrixlog.Record#ResultSummary kind=field
+  digest=b3:8309bc8165314479eafadb0323714abbab8a893c2c65412c08b802c579a24f64 file=neo/internal/automatrixlog/automatrixlog.go range=53:53 lang=go exported=true byte_range=2429:2478
+  sig=string
+EDGES
+  ^contains=matrix/neo/internal/automatrixlog.Record
+
+NODE id=matrix/neo/internal/automatrixlog.Store kind=type
+  digest=b3:cc870d7255c04236f3f9cd8247707292b242d234145c686cfcabaf8dab5c470b file=neo/internal/automatrixlog/automatrixlog.go range=59:65 lang=go exported=true byte_range=2622:2902
+  sig=type Store struct {\n	dir	string\n	mu	sync.Mutex\n}
+  doc=Store is the durable Automatrix completion inbox. All disk access is\nserialised by mu; reads go straight to the filesystem under the lock, every\nwrite is crash-atomic, so a concurrent reader always sees a consistent file.
+EDGES
+  contains=matrix/neo/internal/automatrixlog.Store#dir,matrix/neo/internal/automatrixlog.Store#mu,matrix/neo/internal/automatrixlog.Store.Append,matrix/neo/internal/automatrixlog.Store.Enabled,matrix/neo/internal/automatrixlog.Store.List,matrix/neo/internal/automatrixlog.Store.MarkRead,matrix/neo/internal/automatrixlog.Store.Unread,matrix/neo/internal/automatrixlog.Store.path
+  ^defines=matrix/neo/internal/automatrixlog/automatrixlog.go
+
+NODE id=matrix/neo/internal/automatrixlog.Store#dir kind=field
+  digest=b3:7c4974b33207052e1ad5cbf5d42e280f9267cc0d0077d2de0f7524e692427f50 file=neo/internal/automatrixlog/automatrixlog.go range=63:63 lang=go exported=false byte_range=2874:2884
+  sig=string
+EDGES
+  ^contains=matrix/neo/internal/automatrixlog.Store
+
+NODE id=matrix/neo/internal/automatrixlog.Store#mu kind=field
+  digest=b3:1a708959b007248f2220cf2e77d08f481b8daacea806d7eb1762f37792d66b44 file=neo/internal/automatrixlog/automatrixlog.go range=64:64 lang=go exported=false byte_range=2886:2900
+  sig=sync.Mutex
+EDGES
+  ^contains=matrix/neo/internal/automatrixlog.Store
+
+NODE id=matrix/neo/internal/automatrixlog.Store.Append kind=method
+  digest=b3:5b9082eb90647c36072d2ad664b0674c462f22e562229f34a9a3211109c16afd file=neo/internal/automatrixlog/automatrixlog.go range=76:101 lang=go exported=true byte_range=3260:4174
+  sig=func (s *Store) Append(rec Record) (Record, error)
+  doc=Append writes one completion record durably and returns the stored record\n(with its ID and CreatedAt filled in). A blank ID is assigned an unguessable\nrandom id; a blank CreatedAt is stamped now (UTC, RFC3339). New records are\nalways unread. A disabled store returns the record unchanged with no error,\nso a result is never lost on a misconfigured dev run.
+EDGES
+  ^contains=matrix/neo/internal/automatrixlog.Store
+  ^defines=matrix/neo/internal/automatrixlog/automatrixlog.go
+
+NODE id=matrix/neo/internal/automatrixlog.Store.Enabled kind=method
+  digest=b3:7ee9e38ccc8392a851473d2022e1d350a39a14aa9839d862e6605b5c0828361a file=neo/internal/automatrixlog/automatrixlog.go range=73:74 lang=go exported=true byte_range=3123:3258
+  sig=func (s *Store) Enabled() bool
+  doc=Enabled reports whether persistence is on (a non-empty directory).
+EDGES
+  ^contains=matrix/neo/internal/automatrixlog.Store
+  ^defines=matrix/neo/internal/automatrixlog/automatrixlog.go
+
+NODE id=matrix/neo/internal/automatrixlog.Store.List kind=method
+  digest=b3:ad246a760ac969d7490a0fa25c5278bd41121e2c85cc3a6cc97819d33e935e6a file=neo/internal/automatrixlog/automatrixlog.go range=103:116 lang=go exported=true byte_range=4176:4526
+  sig=func (s *Store) List() []Record
+  doc=List returns the inbox newest-first (most recent completion at index 0), or\nnil when empty / disabled.
+EDGES
+  ^contains=matrix/neo/internal/automatrixlog.Store
+  ^defines=matrix/neo/internal/automatrixlog/automatrixlog.go
+
+NODE id=matrix/neo/internal/automatrixlog.Store.MarkRead kind=method
+  digest=b3:caba0c4ebc0ed7338977ce0dba372cd7336e4f431b259c8455b08c7adf0360c3 file=neo/internal/automatrixlog/automatrixlog.go range=135:160 lang=go exported=true byte_range=4834:5546
+  sig=func (s *Store) MarkRead(id string) (bool, error)
+  doc=MarkRead flips one record's unread flag via an atomic tmp+rename rewrite and\nreports whether a record actually changed (false when the id is unknown or it\nwas already read). A disabled store reports false.
+EDGES
+  ^contains=matrix/neo/internal/automatrixlog.Store
+  ^defines=matrix/neo/internal/automatrixlog/automatrixlog.go
+
+NODE id=matrix/neo/internal/automatrixlog.Store.Unread kind=method
+  digest=b3:04840e0334b65a2be681268349c40823f61f407dd4258150d319d9de633e8285 file=neo/internal/automatrixlog/automatrixlog.go range=118:133 lang=go exported=true byte_range=4528:4832
+  sig=func (s *Store) Unread() int
+  doc=Unread returns the number of unread completion records — the in-app badge\ncount. Zero when empty / disabled.
+EDGES
+  ^contains=matrix/neo/internal/automatrixlog.Store
+  ^defines=matrix/neo/internal/automatrixlog/automatrixlog.go
+
+NODE id=matrix/neo/internal/automatrixlog.Store.path kind=method
+  digest=b3:fee534e641b19f27d1a056d25ccdc64239b2c3bf8eb901d7489b9f40241d4f0a file=neo/internal/automatrixlog/automatrixlog.go range=162:167 lang=go exported=false byte_range=5548:5656
+  sig=func (s *Store) path() string
+EDGES
+  ^contains=matrix/neo/internal/automatrixlog.Store
+  ^defines=matrix/neo/internal/automatrixlog/automatrixlog.go
+
+NODE id=matrix/neo/internal/automatrixlog.appendJSONL kind=func
+  digest=b3:857568c17a1b623c2c993e2190074758b31d980def4cb29c65be8b86ad22c468 file=neo/internal/automatrixlog/automatrixlog.go range=178:196 lang=go exported=false byte_range=5910:6454
+  sig=func appendJSONL(path string, rec Record) error
+  doc=appendJSONL appends one record as a single JSON line. O_APPEND + a single\nWrite makes the line atomically visible (POSIX); a torn write yields an\nunparseable final line that readJSONL skips (crash-atomic).
+EDGES
+  ^defines=matrix/neo/internal/automatrixlog/automatrixlog.go
+
+NODE id=matrix/neo/internal/automatrixlog.newID kind=func
+  digest=b3:dd267a2a64fa2daf17a59496cdb0c80b7d56372de7d6be1cab018b81d90dd4da file=neo/internal/automatrixlog/automatrixlog.go range=169:176 lang=go exported=false byte_range=5658:5908
+  sig=func newID() string
+  doc=newID returns an unguessable record id (no time/user info leaked).
+EDGES
+  ^defines=matrix/neo/internal/automatrixlog/automatrixlog.go
+
+NODE id=matrix/neo/internal/automatrixlog.readJSONL kind=func
+  digest=b3:f958e8ddd991c2f17d38f932da0e288d8a82df5f993ecb1af4df357d1c2e8dc1 file=neo/internal/automatrixlog/automatrixlog.go range=222:249 lang=go exported=false byte_range=7034:7675
+  sig=func readJSONL(path string) []Record
+  doc=readJSONL parses a newline-delimited JSON record file, oldest-first. A line\nthat fails to unmarshal (including a crash-truncated final line) is skipped —\ncrash-atomic.
+EDGES
+  ^defines=matrix/neo/internal/automatrixlog/automatrixlog.go
+
+NODE id=matrix/neo/internal/automatrixlog.recordFile kind=const
+  digest=b3:7777aabb625d350e07cdf85b71d03ec5a6d0f9b22d31b2ff72a5aeccd5584a5e file=neo/internal/automatrixlog/automatrixlog.go range=43:46 lang=go exported=false byte_range=1874:2151
+  sig=untyped string
+  doc=recordFile is the single per-daemon inbox file. The daemon is per-user, so\none file holds that user/agent's completion inbox; the records carry no user\nid (the directory scoping is the ownership boundary), and no secrets.
+EDGES
+  ^defines=matrix/neo/internal/automatrixlog/automatrixlog.go
+
+NODE id=matrix/neo/internal/automatrixlog.rewriteJSONL kind=func
+  digest=b3:b59b61dd4c8b997fd3e08b125607c98a917b867dc6c79c068d5e0a2194ec106c file=neo/internal/automatrixlog/automatrixlog.go range=198:220 lang=go exported=false byte_range=6456:7032
+  sig=func rewriteJSONL(path string, recs []Record) error
+  doc=rewriteJSONL atomically replaces the file with recs (tmp+rename), used by\nMarkRead. A crash leaves either the old or the new file intact, never a torn\none.
+EDGES
+  ^defines=matrix/neo/internal/automatrixlog/automatrixlog.go
+
+NODE id=matrix/neo/internal/automatrixlog/automatrixlog.go kind=file
+  digest=b3:10c4123b7984e38c0a13c2cbb6b86b0bb6323f6c1b8911691909cd9c67debf74 file=neo/internal/automatrixlog/automatrixlog.go range=1:264 lang=go exported=true
+EDGES
+  defines=matrix/neo/internal/automatrixlog.Dir,matrix/neo/internal/automatrixlog.Open,matrix/neo/internal/automatrixlog.Record,matrix/neo/internal/automatrixlog.Store,matrix/neo/internal/automatrixlog.Store.Append,matrix/neo/internal/automatrixlog.Store.Enabled,matrix/neo/internal/automatrixlog.Store.List,matrix/neo/internal/automatrixlog.Store.MarkRead,matrix/neo/internal/automatrixlog.Store.Unread,matrix/neo/internal/automatrixlog.Store.path,matrix/neo/internal/automatrixlog.appendJSONL,matrix/neo/internal/automatrixlog.newID,matrix/neo/internal/automatrixlog.readJSONL,matrix/neo/internal/automatrixlog.recordFile,matrix/neo/internal/automatrixlog.rewriteJSONL
+  ^contains=matrix/neo/internal/automatrixlog

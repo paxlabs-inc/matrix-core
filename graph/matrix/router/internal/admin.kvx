@@ -1,10 +1,12 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:9b68327501b45793fd7687f43b30c960fd68ae8aaff6b2f1bb36ec3e2df2de2f
+# GENERATED gen=codegraph do-not-edit merkle=b3:20e53aba2ea11552396417e53b3e04e87dd1bbb7bef3aa554a45bb92cf89e7f2
 
 NODE id=matrix/router/internal/admin kind=package
   digest=b3:6e945b5b7af8e00d17446b14ecbad40b7a32448f0bf3d04f991169de160bcb8c file=router/internal/admin range=0:0 lang=go exported=true
 EDGES
   contains=matrix/router/internal/admin/admin.go,matrix/router/internal/admin/beta.go
+  imports=matrix/router/internal/db,matrix/router/internal/provision
   ^contains=mod:matrix/router
+  ^imports=matrix/router/cmd/matrix-router
 
 NODE id=matrix/router/internal/admin.CreateInviteRequest kind=type
   digest=b3:8990c6089eb1713bcae0bc11ea91863be59931647fe44d0dc7f77593c296c137 file=router/internal/admin/beta.go range=27:31 lang=go exported=true byte_range=746:985
@@ -12,6 +14,7 @@ NODE id=matrix/router/internal/admin.CreateInviteRequest kind=type
   doc=CreateInviteRequest is the POST /admin/invites body.
 EDGES
   contains=matrix/router/internal/admin.CreateInviteRequest#ExpiresAt,matrix/router/internal/admin.CreateInviteRequest#MaxRedemptions
+  ^references=matrix/router/internal/admin.Handler.createInvite
   ^defines=matrix/router/internal/admin/beta.go
 
 NODE id=matrix/router/internal/admin.CreateInviteRequest#ExpiresAt kind=field
@@ -32,6 +35,7 @@ NODE id=matrix/router/internal/admin.CreateUserRequest kind=type
   doc=CreateUserRequest is the POST /admin/users body.
 EDGES
   contains=matrix/router/internal/admin.CreateUserRequest#Email,matrix/router/internal/admin.CreateUserRequest#Handle,matrix/router/internal/admin.CreateUserRequest#Region,matrix/router/internal/admin.CreateUserRequest#SupabaseUserID
+  ^references=matrix/router/internal/admin.Handler.handleUsersCollection
   ^defines=matrix/router/internal/admin/admin.go
 
 NODE id=matrix/router/internal/admin.CreateUserRequest#Email kind=field
@@ -64,6 +68,7 @@ NODE id=matrix/router/internal/admin.CreateUserResponse kind=type
   doc=CreateUserResponse mirrors enough of the user row for the operator\nto confirm provisioning landed. The fly_-prefixed JSON keys are kept\nfor operator-tooling compatibility; they carry the active provider's\nenvironment/volume ids.
 EDGES
   contains=matrix/router/internal/admin.CreateUserResponse#FlyMachineID,matrix/router/internal/admin.CreateUserResponse#FlyVolumeID,matrix/router/internal/admin.CreateUserResponse#JobID,matrix/router/internal/admin.CreateUserResponse#Region,matrix/router/internal/admin.CreateUserResponse#State,matrix/router/internal/admin.CreateUserResponse#UserID
+  ^references=matrix/router/internal/admin.Handler.handleUsersCollection
   ^defines=matrix/router/internal/admin/admin.go
 
 NODE id=matrix/router/internal/admin.CreateUserResponse#FlyMachineID kind=field
@@ -109,6 +114,8 @@ NODE id=matrix/router/internal/admin.Handler kind=type
 EDGES
   contains=matrix/router/internal/admin.Handler#DB,matrix/router/internal/admin.Handler#DefaultRegion,matrix/router/internal/admin.Handler#Log,matrix/router/internal/admin.Handler#MachineEnv,matrix/router/internal/admin.Handler#Prov,matrix/router/internal/admin.Handler#Provider,matrix/router/internal/admin.Handler#ProvisionTimeout,matrix/router/internal/admin.Handler#inflight,matrix/router/internal/admin.Handler.EnsureMachine,matrix/router/internal/admin.Handler.Mount,matrix/router/internal/admin.Handler.MountBeta,matrix/router/internal/admin.Handler.StartProvision,matrix/router/internal/admin.Handler.createInvite,matrix/router/internal/admin.Handler.deleteUser,matrix/router/internal/admin.Handler.getUser,matrix/router/internal/admin.Handler.handleInviteItem,matrix/router/internal/admin.Handler.handleInvitesCollection,matrix/router/internal/admin.Handler.handleReportItem,matrix/router/internal/admin.Handler.handleReportsCollection,matrix/router/internal/admin.Handler.handleUserItem,matrix/router/internal/admin.Handler.handleUsersCollection,matrix/router/internal/admin.Handler.instanceEnv,matrix/router/internal/admin.Handler.listInvites,matrix/router/internal/admin.Handler.logf,matrix/router/internal/admin.Handler.setState,matrix/router/internal/admin.Handler.timeout
   implements=matrix/router/internal/proxy.Provisioner
+  references=matrix/router/internal/admin.Logf,matrix/router/internal/db.DB,matrix/router/internal/provision.Provisioner
+  ^references=matrix/router/cmd/matrix-router.main,matrix/router/internal/admin.Handler.EnsureMachine,matrix/router/internal/admin.Handler.Mount,matrix/router/internal/admin.Handler.MountBeta,matrix/router/internal/admin.Handler.StartProvision,matrix/router/internal/admin.Handler.createInvite,matrix/router/internal/admin.Handler.deleteUser,matrix/router/internal/admin.Handler.getUser,matrix/router/internal/admin.Handler.handleInviteItem,matrix/router/internal/admin.Handler.handleInvitesCollection,matrix/router/internal/admin.Handler.handleReportItem,matrix/router/internal/admin.Handler.handleReportsCollection,matrix/router/internal/admin.Handler.handleUserItem,matrix/router/internal/admin.Handler.handleUsersCollection,matrix/router/internal/admin.Handler.instanceEnv,matrix/router/internal/admin.Handler.listInvites,matrix/router/internal/admin.Handler.logf,matrix/router/internal/admin.Handler.setState,matrix/router/internal/admin.Handler.timeout
   ^defines=matrix/router/internal/admin/admin.go
 
 NODE id=matrix/router/internal/admin.Handler#DB kind=field
@@ -165,7 +172,11 @@ NODE id=matrix/router/internal/admin.Handler.EnsureMachine kind=method
   sig=func (h *Handler) EnsureMachine(ctx context.Context, userID, email, handle, region string) (*db.User, bool, error)
   doc=EnsureMachine idempotently makes sure userID has a row plus an\nattached environment, provisioning a volume + instance via the\nactive provider when absent. Returns the resulting user row and\nwhether an environment was provisioned in this call. Shared by the\nadmin POST /admin/users handler and the proxy's first-request\nauto-provisioning path.
 EDGES
+  calls=matrix/router/internal/admin.Handler.instanceEnv,matrix/router/internal/admin.Handler.logf,matrix/router/internal/db.DB.AttachMachine,matrix/router/internal/db.DB.CreateOrTouchUser,matrix/router/internal/db.DB.FinishProvisionJob,matrix/router/internal/db.DB.LookupForRoute,matrix/router/internal/db.DB.QueueProvisionJob,matrix/router/internal/db.DB.SetUserState,matrix/router/internal/fly.Provisioner.Ensure,matrix/router/internal/railway.Provisioner.Ensure
+  references=matrix/router/internal/admin.Handler,matrix/router/internal/admin.Handler.instanceEnv,matrix/router/internal/admin.Handler.logf,matrix/router/internal/admin.ctx,matrix/router/internal/admin.email,matrix/router/internal/admin.env,matrix/router/internal/admin.envJSON,matrix/router/internal/admin.err,matrix/router/internal/admin.h,matrix/router/internal/admin.handle,matrix/router/internal/admin.jobID,matrix/router/internal/admin.provErr,matrix/router/internal/admin.region,matrix/router/internal/admin.user,matrix/router/internal/admin.userID,matrix/router/internal/db.DB.AttachMachine,matrix/router/internal/db.DB.CreateOrTouchUser,matrix/router/internal/db.DB.FinishProvisionJob,matrix/router/internal/db.DB.LookupForRoute,matrix/router/internal/db.DB.QueueProvisionJob,matrix/router/internal/db.DB.SetUserState,matrix/router/internal/db.StateFailed,matrix/router/internal/db.User,matrix/router/internal/provision.CreateRequest,matrix/router/internal/provision.Provisioner.Ensure
   ^contains=matrix/router/internal/admin.Handler
+  ^calls=matrix/router/internal/admin.Handler.handleUsersCollection
+  ^references=matrix/router/internal/admin.Handler.StartProvision,matrix/router/internal/admin.Handler.handleUsersCollection
   ^defines=matrix/router/internal/admin/admin.go
 
 NODE id=matrix/router/internal/admin.Handler.Mount kind=method
@@ -173,7 +184,11 @@ NODE id=matrix/router/internal/admin.Handler.Mount kind=method
   sig=func (h *Handler) Mount(mux *http.ServeMux)
   doc=Mount registers the admin routes onto mux under "/admin/".\n\nHandler bodies are JSON; on success they return 200 + a JSON\nsnapshot of the user row. On error they return text (operator\ndebugging) with the appropriate status.
 EDGES
+  calls=matrix/router/internal/admin.Handler.MountBeta
+  references=matrix/router/internal/admin.Handler,matrix/router/internal/admin.Handler.MountBeta,matrix/router/internal/admin.Handler.handleUserItem,matrix/router/internal/admin.Handler.handleUsersCollection,matrix/router/internal/admin.h,matrix/router/internal/admin.mux
   ^contains=matrix/router/internal/admin.Handler
+  ^calls=matrix/router/cmd/matrix-router.main
+  ^references=matrix/router/cmd/matrix-router.main
   ^defines=matrix/router/internal/admin/admin.go
 
 NODE id=matrix/router/internal/admin.Handler.MountBeta kind=method
@@ -181,7 +196,10 @@ NODE id=matrix/router/internal/admin.Handler.MountBeta kind=method
   sig=func (h *Handler) MountBeta(mux *http.ServeMux)
   doc=MountBeta registers the beta-launch admin routes onto mux under "/admin/".\nCalled by Mount after the core user routes are registered.
 EDGES
+  references=matrix/router/internal/admin.Handler,matrix/router/internal/admin.Handler.handleInviteItem,matrix/router/internal/admin.Handler.handleInvitesCollection,matrix/router/internal/admin.Handler.handleReportItem,matrix/router/internal/admin.Handler.handleReportsCollection,matrix/router/internal/admin.h,matrix/router/internal/admin.mux
   ^contains=matrix/router/internal/admin.Handler
+  ^calls=matrix/router/internal/admin.Handler.Mount
+  ^references=matrix/router/internal/admin.Handler.Mount
   ^defines=matrix/router/internal/admin/beta.go
 
 NODE id=matrix/router/internal/admin.Handler.StartProvision kind=method
@@ -189,56 +207,82 @@ NODE id=matrix/router/internal/admin.Handler.StartProvision kind=method
   sig=func (h *Handler) StartProvision(userID, email string)
   doc=StartProvision triggers EnsureMachine for userID out-of-band and\nreturns immediately, so the proxy can auto-provision on a first\nauthenticated request without blocking the response. Concurrent calls\nfor the same user are deduplicated via inflight, so a burst of first\nrequests provisions exactly one environment.
 EDGES
+  references=matrix/router/internal/admin.Handler,matrix/router/internal/admin.Handler.EnsureMachine,matrix/router/internal/admin.Handler.logf,matrix/router/internal/admin.Handler.timeout,matrix/router/internal/admin.busy,matrix/router/internal/admin.cancel,matrix/router/internal/admin.ctx,matrix/router/internal/admin.email,matrix/router/internal/admin.err,matrix/router/internal/admin.h,matrix/router/internal/admin.redeemed,matrix/router/internal/admin.userID,matrix/router/internal/db.DB.HasRedeemedInvite
   ^contains=matrix/router/internal/admin.Handler
+  ^calls=matrix/router/internal/beta.Handler.handleRedeem,matrix/router/internal/proxy.Handler.ServeHTTP
   ^defines=matrix/router/internal/admin/admin.go
 
 NODE id=matrix/router/internal/admin.Handler.createInvite kind=method
   digest=b3:70ad63c5f1095a7ebb44edb4839a23121f73538403adaa2f76a5b641ef041122 file=router/internal/admin/beta.go range=56:92 lang=go exported=false byte_range=1756:2873
   sig=func (h *Handler) createInvite(w http.ResponseWriter, r *http.Request)
 EDGES
+  calls=matrix/router/internal/admin.Handler.logf,matrix/router/internal/admin.generateInviteCode,matrix/router/internal/admin.writeJSON,matrix/router/internal/db.DB.GenerateInviteCode
+  references=matrix/router/internal/admin.CreateInviteRequest,matrix/router/internal/admin.Handler,matrix/router/internal/admin.Handler.logf,matrix/router/internal/admin.cancel,matrix/router/internal/admin.code,matrix/router/internal/admin.createdBy,matrix/router/internal/admin.ctx,matrix/router/internal/admin.err,matrix/router/internal/admin.generateInviteCode,matrix/router/internal/admin.h,matrix/router/internal/admin.r,matrix/router/internal/admin.req,matrix/router/internal/admin.w,matrix/router/internal/admin.writeJSON,matrix/router/internal/db.DB.GenerateInviteCode
   ^contains=matrix/router/internal/admin.Handler
+  ^calls=matrix/router/internal/admin.Handler.handleInvitesCollection
+  ^references=matrix/router/internal/admin.Handler.handleInvitesCollection
   ^defines=matrix/router/internal/admin/beta.go
 
 NODE id=matrix/router/internal/admin.Handler.deleteUser kind=method
   digest=b3:b28ff68e28909135eb81c982cc03cb113f50def5807852ea7d654340076e530c file=router/internal/admin/admin.go range=301:324 lang=go exported=false byte_range=10549:11388
   sig=func (h *Handler) deleteUser(ctx context.Context, w http.ResponseWriter, userID string)
 EDGES
+  calls=matrix/router/internal/admin.Handler.logf,matrix/router/internal/admin.writeJSON,matrix/router/internal/db.DB.LookupForRoute,matrix/router/internal/db.DB.SetUserState,matrix/router/internal/fly.Provisioner.Destroy,matrix/router/internal/railway.Provisioner.Destroy
+  references=matrix/router/internal/admin.Handler,matrix/router/internal/admin.Handler.logf,matrix/router/internal/admin.ctx,matrix/router/internal/admin.err,matrix/router/internal/admin.h,matrix/router/internal/admin.ref,matrix/router/internal/admin.u,matrix/router/internal/admin.userID,matrix/router/internal/admin.w,matrix/router/internal/admin.writeJSON,matrix/router/internal/db.DB.LookupForRoute,matrix/router/internal/db.DB.SetUserState,matrix/router/internal/db.ErrUserNotFound,matrix/router/internal/db.StateDeleted,matrix/router/internal/provision.ErrNotFound,matrix/router/internal/provision.Provisioner.Destroy,matrix/router/internal/provision.Ref
   ^contains=matrix/router/internal/admin.Handler
+  ^calls=matrix/router/internal/admin.Handler.handleUserItem
+  ^references=matrix/router/internal/admin.Handler.handleUserItem
   ^defines=matrix/router/internal/admin/admin.go
 
 NODE id=matrix/router/internal/admin.Handler.getUser kind=method
   digest=b3:57b796600e933fdc0eea091ca593d7d03217fd3fddacdb24bce0a07154cfff41 file=router/internal/admin/admin.go range=274:285 lang=go exported=false byte_range=9756:10117
   sig=func (h *Handler) getUser(ctx context.Context, w http.ResponseWriter, userID string)
 EDGES
+  calls=matrix/router/internal/admin.writeJSON,matrix/router/internal/db.DB.LookupForRoute
+  references=matrix/router/internal/admin.Handler,matrix/router/internal/admin.ctx,matrix/router/internal/admin.err,matrix/router/internal/admin.h,matrix/router/internal/admin.u,matrix/router/internal/admin.userID,matrix/router/internal/admin.w,matrix/router/internal/admin.writeJSON,matrix/router/internal/db.DB.LookupForRoute,matrix/router/internal/db.ErrUserNotFound
   ^contains=matrix/router/internal/admin.Handler
+  ^calls=matrix/router/internal/admin.Handler.handleUserItem
+  ^references=matrix/router/internal/admin.Handler.handleUserItem
   ^defines=matrix/router/internal/admin/admin.go
 
 NODE id=matrix/router/internal/admin.Handler.handleInviteItem kind=method
   digest=b3:3b3358f9cdd6bba9ae0622c46ca35cdaec9c37d85f87dc0a336e51c2eb9dc6e7 file=router/internal/admin/beta.go range=120:156 lang=go exported=false byte_range=3655:4744
   sig=func (h *Handler) handleInviteItem(w http.ResponseWriter, r *http.Request)
 EDGES
+  calls=matrix/router/internal/admin.writeJSON,matrix/router/internal/db.DB.ListInviteCodes
+  references=matrix/router/internal/admin.Handler,matrix/router/internal/admin.InviteResponse,matrix/router/internal/admin.c,matrix/router/internal/admin.cancel,matrix/router/internal/admin.code,matrix/router/internal/admin.codes,matrix/router/internal/admin.ctx,matrix/router/internal/admin.err,matrix/router/internal/admin.h,matrix/router/internal/admin.r,matrix/router/internal/admin.w,matrix/router/internal/admin.writeJSON,matrix/router/internal/db.DB.ListInviteCodes
   ^contains=matrix/router/internal/admin.Handler
+  ^references=matrix/router/internal/admin.Handler.MountBeta
   ^defines=matrix/router/internal/admin/beta.go
 
 NODE id=matrix/router/internal/admin.Handler.handleInvitesCollection kind=method
   digest=b3:01aed39659632a5665fdeda72a0f4d80d7d7343c281d3c5f617df6790b03bd9e file=router/internal/admin/beta.go range=44:54 lang=go exported=false byte_range=1441:1754
   sig=func (h *Handler) handleInvitesCollection(w http.ResponseWriter, r *http.Request)
 EDGES
+  calls=matrix/router/internal/admin.Handler.createInvite,matrix/router/internal/admin.Handler.listInvites
+  references=matrix/router/internal/admin.Handler,matrix/router/internal/admin.Handler.createInvite,matrix/router/internal/admin.Handler.listInvites,matrix/router/internal/admin.h,matrix/router/internal/admin.r,matrix/router/internal/admin.w
   ^contains=matrix/router/internal/admin.Handler
+  ^references=matrix/router/internal/admin.Handler.MountBeta
   ^defines=matrix/router/internal/admin/beta.go
 
 NODE id=matrix/router/internal/admin.Handler.handleReportItem kind=method
   digest=b3:5e5775c62b255a79bfe770e22d4795f95b349bc9e603d941f6a6f58e17da5993 file=router/internal/admin/beta.go range=192:226 lang=go exported=false byte_range=5754:6751
   sig=func (h *Handler) handleReportItem(w http.ResponseWriter, r *http.Request)
 EDGES
+  calls=matrix/router/internal/admin.writeJSON,matrix/router/internal/db.DB.GetBugReport
+  references=matrix/router/internal/admin.Handler,matrix/router/internal/admin.br,matrix/router/internal/admin.cancel,matrix/router/internal/admin.ctx,matrix/router/internal/admin.err,matrix/router/internal/admin.h,matrix/router/internal/admin.id,matrix/router/internal/admin.idStr,matrix/router/internal/admin.r,matrix/router/internal/admin.w,matrix/router/internal/admin.writeJSON,matrix/router/internal/db.DB.GetBugReport
   ^contains=matrix/router/internal/admin.Handler
+  ^references=matrix/router/internal/admin.Handler.MountBeta
   ^defines=matrix/router/internal/admin/beta.go
 
 NODE id=matrix/router/internal/admin.Handler.handleReportsCollection kind=method
   digest=b3:567755507a8c80e9ee52e4478618e38d06fc6dd6d3895c3211042f77db1d0738 file=router/internal/admin/beta.go range=160:190 lang=go exported=false byte_range=4823:5752
   sig=func (h *Handler) handleReportsCollection(w http.ResponseWriter, r *http.Request)
 EDGES
+  calls=matrix/router/internal/admin.Handler.logf,matrix/router/internal/admin.writeJSON,matrix/router/internal/db.DB.ListBugReports
+  references=matrix/router/internal/admin.Handler,matrix/router/internal/admin.Handler.logf,matrix/router/internal/admin.br,matrix/router/internal/admin.cancel,matrix/router/internal/admin.ctx,matrix/router/internal/admin.err,matrix/router/internal/admin.h,matrix/router/internal/admin.out,matrix/router/internal/admin.r,matrix/router/internal/admin.reports,matrix/router/internal/admin.w,matrix/router/internal/admin.writeJSON,matrix/router/internal/db.DB.ListBugReports
   ^contains=matrix/router/internal/admin.Handler
+  ^references=matrix/router/internal/admin.Handler.MountBeta
   ^defines=matrix/router/internal/admin/beta.go
 
 NODE id=matrix/router/internal/admin.Handler.handleUserItem kind=method
@@ -246,14 +290,20 @@ NODE id=matrix/router/internal/admin.Handler.handleUserItem kind=method
   sig=func (h *Handler) handleUserItem(w http.ResponseWriter, r *http.Request)
   doc=handleUserItem dispatches /admin/users/{id}[/{action}].
 EDGES
+  calls=matrix/router/internal/admin.Handler.deleteUser,matrix/router/internal/admin.Handler.getUser,matrix/router/internal/admin.Handler.setState,matrix/router/internal/admin.Handler.timeout
+  references=matrix/router/internal/admin.Handler,matrix/router/internal/admin.Handler.deleteUser,matrix/router/internal/admin.Handler.getUser,matrix/router/internal/admin.Handler.setState,matrix/router/internal/admin.Handler.timeout,matrix/router/internal/admin.action,matrix/router/internal/admin.cancel,matrix/router/internal/admin.ctx,matrix/router/internal/admin.h,matrix/router/internal/admin.parts,matrix/router/internal/admin.r,matrix/router/internal/admin.rest,matrix/router/internal/admin.userID,matrix/router/internal/admin.w,matrix/router/internal/db.StateActive,matrix/router/internal/db.StateSuspended
   ^contains=matrix/router/internal/admin.Handler
+  ^references=matrix/router/internal/admin.Handler.Mount
   ^defines=matrix/router/internal/admin/admin.go
 
 NODE id=matrix/router/internal/admin.Handler.handleUsersCollection kind=method
   digest=b3:720046103c02b6e4f530e367c86bfc5972f4bf4c9c3014fdb42a103c9bd77997 file=router/internal/admin/admin.go range=87:122 lang=go exported=false byte_range=3177:4294
   sig=func (h *Handler) handleUsersCollection(w http.ResponseWriter, r *http.Request)
 EDGES
+  calls=matrix/router/internal/admin.Handler.EnsureMachine,matrix/router/internal/admin.Handler.logf,matrix/router/internal/admin.Handler.timeout,matrix/router/internal/admin.writeJSON
+  references=matrix/router/internal/admin.CreateUserRequest,matrix/router/internal/admin.CreateUserResponse,matrix/router/internal/admin.Handler,matrix/router/internal/admin.Handler.EnsureMachine,matrix/router/internal/admin.Handler.logf,matrix/router/internal/admin.Handler.timeout,matrix/router/internal/admin.cancel,matrix/router/internal/admin.created,matrix/router/internal/admin.ctx,matrix/router/internal/admin.err,matrix/router/internal/admin.h,matrix/router/internal/admin.r,matrix/router/internal/admin.req,matrix/router/internal/admin.status,matrix/router/internal/admin.user,matrix/router/internal/admin.w,matrix/router/internal/admin.writeJSON
   ^contains=matrix/router/internal/admin.Handler
+  ^references=matrix/router/internal/admin.Handler.Mount
   ^defines=matrix/router/internal/admin/admin.go
 
 NODE id=matrix/router/internal/admin.Handler.instanceEnv kind=method
@@ -261,28 +311,42 @@ NODE id=matrix/router/internal/admin.Handler.instanceEnv kind=method
   sig=func (h *Handler) instanceEnv(userID string) map[string]string
   doc=instanceEnv builds the per-instance environment-variable set: the\nuser identity plus the operator baseline (MachineEnv).
 EDGES
+  references=matrix/router/internal/admin.Handler,matrix/router/internal/admin.env,matrix/router/internal/admin.h,matrix/router/internal/admin.k,matrix/router/internal/admin.userID,matrix/router/internal/admin.v
   ^contains=matrix/router/internal/admin.Handler
+  ^calls=matrix/router/internal/admin.Handler.EnsureMachine
+  ^references=matrix/router/internal/admin.Handler.EnsureMachine
   ^defines=matrix/router/internal/admin/admin.go
 
 NODE id=matrix/router/internal/admin.Handler.listInvites kind=method
   digest=b3:29ddc7c9762c1357facb300e917dec11847d9520282491be5c7d19c576c7ce89 file=router/internal/admin/beta.go range=94:118 lang=go exported=false byte_range=2875:3653
   sig=func (h *Handler) listInvites(w http.ResponseWriter, r *http.Request)
 EDGES
+  calls=matrix/router/internal/admin.Handler.logf,matrix/router/internal/admin.writeJSON,matrix/router/internal/db.DB.ListInviteCodes
+  references=matrix/router/internal/admin.Handler,matrix/router/internal/admin.Handler.logf,matrix/router/internal/admin.InviteResponse,matrix/router/internal/admin.c,matrix/router/internal/admin.cancel,matrix/router/internal/admin.codes,matrix/router/internal/admin.ctx,matrix/router/internal/admin.err,matrix/router/internal/admin.h,matrix/router/internal/admin.out,matrix/router/internal/admin.r,matrix/router/internal/admin.w,matrix/router/internal/admin.writeJSON,matrix/router/internal/db.DB.ListInviteCodes
   ^contains=matrix/router/internal/admin.Handler
+  ^calls=matrix/router/internal/admin.Handler.handleInvitesCollection
+  ^references=matrix/router/internal/admin.Handler.handleInvitesCollection
   ^defines=matrix/router/internal/admin/beta.go
 
 NODE id=matrix/router/internal/admin.Handler.logf kind=method
   digest=b3:0226664825b2fbf3b1cc0a77858948171afb3826f38176513b09b4eccd4feaeb file=router/internal/admin/admin.go range=334:338 lang=go exported=false byte_range=11576:11685
   sig=func (h *Handler) logf(format string, args ...interface{})
 EDGES
+  references=matrix/router/internal/admin.Handler,matrix/router/internal/admin.args,matrix/router/internal/admin.format,matrix/router/internal/admin.h
   ^contains=matrix/router/internal/admin.Handler
+  ^calls=matrix/router/internal/admin.Handler.EnsureMachine,matrix/router/internal/admin.Handler.createInvite,matrix/router/internal/admin.Handler.deleteUser,matrix/router/internal/admin.Handler.handleReportsCollection,matrix/router/internal/admin.Handler.handleUsersCollection,matrix/router/internal/admin.Handler.listInvites
+  ^references=matrix/router/internal/admin.Handler.EnsureMachine,matrix/router/internal/admin.Handler.StartProvision,matrix/router/internal/admin.Handler.createInvite,matrix/router/internal/admin.Handler.deleteUser,matrix/router/internal/admin.Handler.handleReportsCollection,matrix/router/internal/admin.Handler.handleUsersCollection,matrix/router/internal/admin.Handler.listInvites
   ^defines=matrix/router/internal/admin/admin.go
 
 NODE id=matrix/router/internal/admin.Handler.setState kind=method
   digest=b3:7684dd0b79910afa424836d91a67d0fe2ff5c037c628ed1c7a952dd4f5e91081 file=router/internal/admin/admin.go range=287:299 lang=go exported=false byte_range=10119:10547
   sig=func (h *Handler) setState(ctx context.Context, w http.ResponseWriter, userID, state string)
 EDGES
+  calls=matrix/router/internal/admin.writeJSON,matrix/router/internal/db.DB.SetUserState
+  references=matrix/router/internal/admin.Handler,matrix/router/internal/admin.ctx,matrix/router/internal/admin.err,matrix/router/internal/admin.h,matrix/router/internal/admin.state,matrix/router/internal/admin.userID,matrix/router/internal/admin.w,matrix/router/internal/admin.writeJSON,matrix/router/internal/db.DB.SetUserState,matrix/router/internal/db.ErrUserNotFound
   ^contains=matrix/router/internal/admin.Handler
+  ^calls=matrix/router/internal/admin.Handler.handleUserItem
+  ^references=matrix/router/internal/admin.Handler.handleUserItem
   ^defines=matrix/router/internal/admin/admin.go
 
 NODE id=matrix/router/internal/admin.Handler.timeout kind=method
@@ -290,7 +354,10 @@ NODE id=matrix/router/internal/admin.Handler.timeout kind=method
   sig=func (h *Handler) timeout() time.Duration
   doc=timeout returns ProvisionTimeout or a 60s default.
 EDGES
+  references=matrix/router/internal/admin.Handler,matrix/router/internal/admin.h
   ^contains=matrix/router/internal/admin.Handler
+  ^calls=matrix/router/internal/admin.Handler.handleUserItem,matrix/router/internal/admin.Handler.handleUsersCollection
+  ^references=matrix/router/internal/admin.Handler.StartProvision,matrix/router/internal/admin.Handler.handleUserItem,matrix/router/internal/admin.Handler.handleUsersCollection
   ^defines=matrix/router/internal/admin/admin.go
 
 NODE id=matrix/router/internal/admin.InviteResponse kind=type
@@ -299,6 +366,7 @@ NODE id=matrix/router/internal/admin.InviteResponse kind=type
   doc=InviteResponse is the JSON shape for a single invite code.
 EDGES
   contains=matrix/router/internal/admin.InviteResponse#Code,matrix/router/internal/admin.InviteResponse#CreatedAt,matrix/router/internal/admin.InviteResponse#CreatedBy,matrix/router/internal/admin.InviteResponse#ExpiresAt,matrix/router/internal/admin.InviteResponse#MaxRedemptions,matrix/router/internal/admin.InviteResponse#RedemptionsUsed,matrix/router/internal/admin.InviteResponse#Remaining
+  ^references=matrix/router/internal/admin.Handler.handleInviteItem,matrix/router/internal/admin.Handler.listInvites
   ^defines=matrix/router/internal/admin/beta.go
 
 NODE id=matrix/router/internal/admin.InviteResponse#Code kind=field
@@ -348,6 +416,7 @@ NODE id=matrix/router/internal/admin.Logf kind=type
   sig=type Logf func(format string, args ...interface{})
   doc=Logf is the optional log sink used by handlers. Cmd/main.go wires\nto os.Stderr.
 EDGES
+  ^references=matrix/router/internal/admin.Handler
   ^defines=matrix/router/internal/admin/admin.go
 
 NODE id=matrix/router/internal/admin.generateInviteCode kind=func
@@ -355,6 +424,9 @@ NODE id=matrix/router/internal/admin.generateInviteCode kind=func
   sig=func generateInviteCode() (string, error)
   doc=generateInviteCode produces a 24-character hex string (12 bytes of\ncrypto-strong entropy). 2^96 possibilities — unguessable. Returns an\nerror if the system CSPRNG fails, so a degraded-entropy (e.g. all-zero)\ncode can never be issued.
 EDGES
+  references=matrix/router/internal/admin.b,matrix/router/internal/admin.err
+  ^calls=matrix/router/internal/admin.Handler.createInvite
+  ^references=matrix/router/internal/admin.Handler.createInvite
   ^defines=matrix/router/internal/admin/beta.go
 
 NODE id=matrix/router/internal/admin.writeJSON kind=func
@@ -362,6 +434,9 @@ NODE id=matrix/router/internal/admin.writeJSON kind=func
   sig=func writeJSON(w http.ResponseWriter, status int, v any)
   doc=writeJSON marshals v + writes as application/json with the given status.
 EDGES
+  references=matrix/router/internal/admin.status,matrix/router/internal/admin.v,matrix/router/internal/admin.w
+  ^calls=matrix/router/internal/admin.Handler.createInvite,matrix/router/internal/admin.Handler.deleteUser,matrix/router/internal/admin.Handler.getUser,matrix/router/internal/admin.Handler.handleInviteItem,matrix/router/internal/admin.Handler.handleReportItem,matrix/router/internal/admin.Handler.handleReportsCollection,matrix/router/internal/admin.Handler.handleUsersCollection,matrix/router/internal/admin.Handler.listInvites,matrix/router/internal/admin.Handler.setState
+  ^references=matrix/router/internal/admin.Handler.createInvite,matrix/router/internal/admin.Handler.deleteUser,matrix/router/internal/admin.Handler.getUser,matrix/router/internal/admin.Handler.handleInviteItem,matrix/router/internal/admin.Handler.handleReportItem,matrix/router/internal/admin.Handler.handleReportsCollection,matrix/router/internal/admin.Handler.handleUsersCollection,matrix/router/internal/admin.Handler.listInvites,matrix/router/internal/admin.Handler.setState
   ^defines=matrix/router/internal/admin/admin.go
 
 NODE id=matrix/router/internal/admin/admin.go kind=file

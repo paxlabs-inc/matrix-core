@@ -1,10 +1,11 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:9b68327501b45793fd7687f43b30c960fd68ae8aaff6b2f1bb36ec3e2df2de2f
+# GENERATED gen=codegraph do-not-edit merkle=b3:20e53aba2ea11552396417e53b3e04e87dd1bbb7bef3aa554a45bb92cf89e7f2
 
 NODE id=matrix/cody/internal/contract kind=package
   digest=b3:91865bcc156655b1446c5e7ccab80e952fc5d535d3270c36303c58a96feba64c file=cody/internal/contract range=0:0 lang=go exported=true
 EDGES
   contains=matrix/cody/internal/contract/contract.go,matrix/cody/internal/contract/store.go
   ^contains=mod:matrix/cody
+  ^imports=matrix/cody/internal/gate,matrix/cody/internal/orchestrator,matrix/cody/internal/server,matrix/cody/internal/worker
 
 NODE id=matrix/cody/internal/contract.Change kind=type
   digest=b3:afd3e0b4b78d274846a30350b1a1137b2f0066273ef2d6c8854d322e6c2dc3e2 file=cody/internal/contract/contract.go range=165:171 lang=go exported=true byte_range=6906:7112
@@ -12,6 +13,7 @@ NODE id=matrix/cody/internal/contract.Change kind=type
   doc=Change records one workspace mutation the worker made.
 EDGES
   contains=matrix/cody/internal/contract.Change#Kind,matrix/cody/internal/contract.Change#Path,matrix/cody/internal/contract.Change#Why
+  ^references=matrix/cody/internal/contract.TurnInReport,matrix/cody/internal/worker.Worker.trackedChanges,matrix/cody/internal/worker.Worker.tryTurnIn
   ^defines=matrix/cody/internal/contract/contract.go
 
 NODE id=matrix/cody/internal/contract.Change#Kind kind=field
@@ -39,6 +41,7 @@ NODE id=matrix/cody/internal/contract.Constraints kind=type
   doc=Constraints binds the worker: the constitution clauses (always), the active\nmode policy rendered as prose, and the applicable rules/<language> files.
 EDGES
   contains=matrix/cody/internal/contract.Constraints#Constitution,matrix/cody/internal/contract.Constraints#DesignLanguage,matrix/cody/internal/contract.Constraints#ModePolicy,matrix/cody/internal/contract.Constraints#RulesRefs
+  ^references=matrix/cody/internal/contract.TaskSheet,matrix/cody/internal/orchestrator.Orchestrator.specSheet
   ^defines=matrix/cody/internal/contract/contract.go
 
 NODE id=matrix/cody/internal/contract.Constraints#Constitution kind=field
@@ -72,6 +75,7 @@ NODE id=matrix/cody/internal/contract.Deliverable kind=type
   doc=Deliverable describes the expected shape of the work and the explicit\ndo-not-touch set (path prefixes/globs the worker must never modify).
 EDGES
   contains=matrix/cody/internal/contract.Deliverable#DoNotTouch,matrix/cody/internal/contract.Deliverable#Shape
+  ^references=matrix/cody/internal/contract.TaskSheet,matrix/cody/internal/orchestrator.Task
   ^defines=matrix/cody/internal/contract/contract.go
 
 NODE id=matrix/cody/internal/contract.Deliverable#DoNotTouch kind=field
@@ -92,6 +96,7 @@ NODE id=matrix/cody/internal/contract.Evidence kind=type
   doc=Evidence is one real verification command run: the command, its exit code,\nand an excerpt of its output. Fabricating evidence is pointless — the\norchestrator re-runs the commands itself before accepting.
 EDGES
   contains=matrix/cody/internal/contract.Evidence#Command,matrix/cody/internal/contract.Evidence#Exit,matrix/cody/internal/contract.Evidence#OutputExcerpt,matrix/cody/internal/contract.Evidence#OverflowPath,matrix/cody/internal/contract.Evidence#Screenshot,matrix/cody/internal/contract.Evidence.Green
+  ^references=matrix/cody/internal/contract.Evidence.Green,matrix/cody/internal/contract.TurnInReport,matrix/cody/internal/worker.Worker.evidence,matrix/cody/internal/worker.Worker.screenshotEvidence
   ^defines=matrix/cody/internal/contract/contract.go
 
 NODE id=matrix/cody/internal/contract.Evidence#Command kind=field
@@ -131,7 +136,10 @@ NODE id=matrix/cody/internal/contract.Evidence.Green kind=method
   sig=func (e Evidence) Green() bool
   doc=Green reports whether the evidence records a passing run.
 EDGES
+  references=matrix/cody/internal/contract.Evidence,matrix/cody/internal/contract.e
   ^contains=matrix/cody/internal/contract.Evidence
+  ^calls=matrix/cody/internal/contract.TurnInReport.AllGreen,matrix/cody/internal/contract.TurnInReport.Validate
+  ^references=matrix/cody/internal/contract.TurnInReport.AllGreen,matrix/cody/internal/contract.TurnInReport.Validate
   ^defines=matrix/cody/internal/contract/contract.go
 
 NODE id=matrix/cody/internal/contract.Grounding kind=type
@@ -140,6 +148,7 @@ NODE id=matrix/cody/internal/contract.Grounding kind=type
   doc=Grounding pins the sheet to exact seams in the workspace: the files the\nworker must read before writing, line-level references, and free-form notes.
 EDGES
   contains=matrix/cody/internal/contract.Grounding#Files,matrix/cody/internal/contract.Grounding#LineRefs,matrix/cody/internal/contract.Grounding#Notes
+  ^references=matrix/cody/internal/contract.TaskSheet,matrix/cody/internal/orchestrator.Task
   ^defines=matrix/cody/internal/contract/contract.go
 
 NODE id=matrix/cody/internal/contract.Grounding#Files kind=field
@@ -165,6 +174,9 @@ NODE id=matrix/cody/internal/contract.OpenStore kind=func
   sig=func OpenStore(dir string) (*Store, error)
   doc=OpenStore creates (if needed) and opens a durable contract store rooted at\ndir.
 EDGES
+  references=matrix/cody/internal/contract.Store,matrix/cody/internal/contract.dir,matrix/cody/internal/contract.err,matrix/cody/internal/contract.sub
+  ^calls=matrix/cody/internal/server.Engine.Answer,matrix/cody/internal/server.Engine.drive
+  ^references=matrix/cody/internal/server.Engine.Answer,matrix/cody/internal/server.Engine.drive
   ^defines=matrix/cody/internal/contract/store.go
 
 NODE id=matrix/cody/internal/contract.Status kind=type
@@ -173,13 +185,17 @@ NODE id=matrix/cody/internal/contract.Status kind=type
   doc=Status is the worker's honest self-assessment of the turn-in. It is an\ninput to the acceptance gate, never a substitute for it.
 EDGES
   contains=matrix/cody/internal/contract.Status.valid
+  ^references=matrix/cody/internal/contract.Status.valid,matrix/cody/internal/contract.StatusBlocked,matrix/cody/internal/contract.StatusDone,matrix/cody/internal/contract.StatusPartial,matrix/cody/internal/contract.TurnInReport,matrix/cody/internal/worker.Worker.tryTurnIn
   ^defines=matrix/cody/internal/contract/contract.go
 
 NODE id=matrix/cody/internal/contract.Status.valid kind=method
   digest=b3:beac0d2b0f627eda2dbf9790c45c8759615c5e15d8eb95cdc93ddf32c10cf739 file=cody/internal/contract/contract.go range=141:147 lang=go exported=false byte_range=6203:6326
   sig=func (s Status) valid() bool
 EDGES
+  references=matrix/cody/internal/contract.Status,matrix/cody/internal/contract.StatusBlocked,matrix/cody/internal/contract.StatusDone,matrix/cody/internal/contract.StatusPartial,matrix/cody/internal/contract.s
   ^contains=matrix/cody/internal/contract.Status
+  ^calls=matrix/cody/internal/contract.TurnInReport.Validate
+  ^references=matrix/cody/internal/contract.TurnInReport.Validate
   ^defines=matrix/cody/internal/contract/contract.go
 
 NODE id=matrix/cody/internal/contract.StatusBlocked kind=const
@@ -187,6 +203,8 @@ NODE id=matrix/cody/internal/contract.StatusBlocked kind=const
   sig=contract.Status
   doc=StatusBlocked means the worker could not proceed (missing precondition,\nambiguity, deterministic failure) and explains why in Gaps.
 EDGES
+  references=matrix/cody/internal/contract.Status
+  ^references=matrix/cody/internal/contract.Status.valid,matrix/cody/internal/contract.TurnInReport.Validate,matrix/cody/internal/worker.Worker.synthesizeReport
   ^defines=matrix/cody/internal/contract/contract.go
 
 NODE id=matrix/cody/internal/contract.StatusDone kind=const
@@ -194,6 +212,8 @@ NODE id=matrix/cody/internal/contract.StatusDone kind=const
   sig=contract.Status
   doc=StatusDone means the worker believes every acceptance criterion is met\nand verification is green. The orchestrator still re-verifies.
 EDGES
+  references=matrix/cody/internal/contract.Status
+  ^references=matrix/cody/internal/contract.Status.valid,matrix/cody/internal/contract.TurnInReport.Validate,matrix/cody/internal/orchestrator.Orchestrator.adjudicate,matrix/cody/internal/worker.Worker.tryTurnIn
   ^defines=matrix/cody/internal/contract/contract.go
 
 NODE id=matrix/cody/internal/contract.StatusPartial kind=const
@@ -201,6 +221,8 @@ NODE id=matrix/cody/internal/contract.StatusPartial kind=const
   sig=contract.Status
   doc=StatusPartial means real progress with honest gaps; partials surface as\npartials, never dressed up as done.
 EDGES
+  references=matrix/cody/internal/contract.Status
+  ^references=matrix/cody/internal/contract.Status.valid,matrix/cody/internal/contract.TurnInReport.Validate,matrix/cody/internal/worker.Worker.synthesizeReport
   ^defines=matrix/cody/internal/contract/contract.go
 
 NODE id=matrix/cody/internal/contract.Store kind=type
@@ -209,6 +231,7 @@ NODE id=matrix/cody/internal/contract.Store kind=type
   doc=Store persists sheets and turn-in reports as JSON files under a root\ndirectory (the plan directory on the volume). Writes are atomic\n(tmp + rename) so a crash never leaves a torn record; a crashed worker is\nreplaced by a fresh one dispatched from the same persisted sheet.
 EDGES
   contains=matrix/cody/internal/contract.Store#root,matrix/cody/internal/contract.Store.ListSheets,matrix/cody/internal/contract.Store.LoadReports,matrix/cody/internal/contract.Store.LoadSheet,matrix/cody/internal/contract.Store.Root,matrix/cody/internal/contract.Store.SaveReport,matrix/cody/internal/contract.Store.SaveSheet
+  ^references=matrix/cody/internal/contract.OpenStore,matrix/cody/internal/contract.Store.ListSheets,matrix/cody/internal/contract.Store.LoadReports,matrix/cody/internal/contract.Store.LoadSheet,matrix/cody/internal/contract.Store.Root,matrix/cody/internal/contract.Store.SaveReport,matrix/cody/internal/contract.Store.SaveSheet,matrix/cody/internal/orchestrator.Options,matrix/cody/internal/server.Engine.applyAnswer,matrix/cody/internal/server.Engine.runOrchestrator
   ^defines=matrix/cody/internal/contract/store.go
 
 NODE id=matrix/cody/internal/contract.Store#root kind=field
@@ -222,6 +245,8 @@ NODE id=matrix/cody/internal/contract.Store.ListSheets kind=method
   sig=func (st *Store) ListSheets() ([]string, error)
   doc=ListSheets returns the task ids of all persisted sheets, sorted.
 EDGES
+  calls=matrix/cody/internal/contract.listIDs
+  references=matrix/cody/internal/contract.Store,matrix/cody/internal/contract.listIDs,matrix/cody/internal/contract.st
   ^contains=matrix/cody/internal/contract.Store
   ^defines=matrix/cody/internal/contract/store.go
 
@@ -230,7 +255,11 @@ NODE id=matrix/cody/internal/contract.Store.LoadReports kind=method
   sig=func (st *Store) LoadReports(taskID string) ([]*TurnInReport, error)
   doc=LoadReports returns every persisted report for a task id in attempt order.
 EDGES
+  calls=matrix/cody/internal/contract.readJSON,matrix/cody/internal/contract.validateID
+  references=matrix/cody/internal/contract.Store,matrix/cody/internal/contract.TurnInReport,matrix/cody/internal/contract.e,matrix/cody/internal/contract.entries,matrix/cody/internal/contract.err,matrix/cody/internal/contract.i,matrix/cody/internal/contract.j,matrix/cody/internal/contract.out,matrix/cody/internal/contract.r,matrix/cody/internal/contract.readJSON,matrix/cody/internal/contract.st,matrix/cody/internal/contract.taskID,matrix/cody/internal/contract.validateID
   ^contains=matrix/cody/internal/contract.Store
+  ^calls=matrix/cody/internal/orchestrator.Orchestrator.reconstructWindow
+  ^references=matrix/cody/internal/orchestrator.Orchestrator.reconstructWindow
   ^defines=matrix/cody/internal/contract/store.go
 
 NODE id=matrix/cody/internal/contract.Store.LoadSheet kind=method
@@ -238,7 +267,11 @@ NODE id=matrix/cody/internal/contract.Store.LoadSheet kind=method
   sig=func (st *Store) LoadSheet(taskID string) (*TaskSheet, error)
   doc=LoadSheet reads the persisted sheet for a task id.
 EDGES
+  calls=matrix/cody/internal/contract.readJSON,matrix/cody/internal/contract.validateID
+  references=matrix/cody/internal/contract.Store,matrix/cody/internal/contract.TaskSheet,matrix/cody/internal/contract.err,matrix/cody/internal/contract.readJSON,matrix/cody/internal/contract.s,matrix/cody/internal/contract.st,matrix/cody/internal/contract.taskID,matrix/cody/internal/contract.validateID
   ^contains=matrix/cody/internal/contract.Store
+  ^calls=matrix/cody/internal/orchestrator.Orchestrator.reconstructWindow
+  ^references=matrix/cody/internal/orchestrator.Orchestrator.reconstructWindow
   ^defines=matrix/cody/internal/contract/store.go
 
 NODE id=matrix/cody/internal/contract.Store.Root kind=method
@@ -246,7 +279,10 @@ NODE id=matrix/cody/internal/contract.Store.Root kind=method
   sig=func (st *Store) Root() string
   doc=Root reports the store's root directory.
 EDGES
+  references=matrix/cody/internal/contract.Store,matrix/cody/internal/contract.st
   ^contains=matrix/cody/internal/contract.Store
+  ^calls=matrix/cody/internal/orchestrator.Orchestrator.savePlan,matrix/cody/internal/server.Engine.Answer,matrix/cody/internal/server.Engine.applyAnswer,matrix/cody/internal/server.Engine.drive
+  ^references=matrix/cody/internal/orchestrator.Orchestrator.savePlan,matrix/cody/internal/server.Engine.Answer,matrix/cody/internal/server.Engine.applyAnswer,matrix/cody/internal/server.Engine.drive
   ^defines=matrix/cody/internal/contract/store.go
 
 NODE id=matrix/cody/internal/contract.Store.SaveReport kind=method
@@ -254,7 +290,11 @@ NODE id=matrix/cody/internal/contract.Store.SaveReport kind=method
   sig=func (st *Store) SaveReport(r *TurnInReport) error
   doc=SaveReport validates and durably persists a turn-in report. Reports are\nkeyed by task id + attempt so a re-dispatch never overwrites the history it\nwas rejected over.
 EDGES
+  calls=matrix/cody/internal/contract.TurnInReport.Validate,matrix/cody/internal/contract.writeJSON
+  references=matrix/cody/internal/contract.Store,matrix/cody/internal/contract.TurnInReport,matrix/cody/internal/contract.TurnInReport.Validate,matrix/cody/internal/contract.err,matrix/cody/internal/contract.name,matrix/cody/internal/contract.r,matrix/cody/internal/contract.st,matrix/cody/internal/contract.writeJSON
   ^contains=matrix/cody/internal/contract.Store
+  ^calls=matrix/cody/internal/orchestrator.Orchestrator.runTask
+  ^references=matrix/cody/internal/orchestrator.Orchestrator.runTask
   ^defines=matrix/cody/internal/contract/store.go
 
 NODE id=matrix/cody/internal/contract.Store.SaveSheet kind=method
@@ -262,7 +302,11 @@ NODE id=matrix/cody/internal/contract.Store.SaveSheet kind=method
   sig=func (st *Store) SaveSheet(s *TaskSheet) error
   doc=SaveSheet validates and durably persists a task sheet.
 EDGES
+  calls=matrix/cody/internal/contract.TaskSheet.Validate,matrix/cody/internal/contract.writeJSON
+  references=matrix/cody/internal/contract.Store,matrix/cody/internal/contract.TaskSheet,matrix/cody/internal/contract.TaskSheet.Validate,matrix/cody/internal/contract.err,matrix/cody/internal/contract.s,matrix/cody/internal/contract.st,matrix/cody/internal/contract.writeJSON
   ^contains=matrix/cody/internal/contract.Store
+  ^calls=matrix/cody/internal/orchestrator.Orchestrator.runTask
+  ^references=matrix/cody/internal/orchestrator.Orchestrator.runTask
   ^defines=matrix/cody/internal/contract/store.go
 
 NODE id=matrix/cody/internal/contract.TaskSheet kind=type
@@ -271,6 +315,8 @@ NODE id=matrix/cody/internal/contract.TaskSheet kind=type
   doc=TaskSheet is the self-contained delegation contract for exactly one task.\nIt carries everything a fresh-context worker needs: what done means, how\ndone is proven, where to look, and what must not be touched.
 EDGES
   contains=matrix/cody/internal/contract.TaskSheet#Acceptance,matrix/cody/internal/contract.TaskSheet#Attempt,matrix/cody/internal/contract.TaskSheet#Constraints,matrix/cody/internal/contract.TaskSheet#Deliverable,matrix/cody/internal/contract.TaskSheet#Feedback,matrix/cody/internal/contract.TaskSheet#Goal,matrix/cody/internal/contract.TaskSheet#Grounding,matrix/cody/internal/contract.TaskSheet#ScreenshotCapable,matrix/cody/internal/contract.TaskSheet#Steers,matrix/cody/internal/contract.TaskSheet#TaskID,matrix/cody/internal/contract.TaskSheet#Title,matrix/cody/internal/contract.TaskSheet#UITask,matrix/cody/internal/contract.TaskSheet#Verify,matrix/cody/internal/contract.TaskSheet.Validate
+  references=matrix/cody/internal/contract.Constraints,matrix/cody/internal/contract.Deliverable,matrix/cody/internal/contract.Grounding,matrix/cody/internal/contract.Verify
+  ^references=matrix/cody/internal/contract.Store.LoadSheet,matrix/cody/internal/contract.Store.SaveSheet,matrix/cody/internal/contract.TaskSheet.Validate,matrix/cody/internal/gate.Screen,matrix/cody/internal/gate.ScreenDesign,matrix/cody/internal/gate.ScreenScreenshot,matrix/cody/internal/orchestrator.Orchestrator.adjudicate,matrix/cody/internal/orchestrator.Orchestrator.dispatch,matrix/cody/internal/orchestrator.Orchestrator.specSheet,matrix/cody/internal/orchestrator.WorkerFunc,matrix/cody/internal/orchestrator.renderSheet,matrix/cody/internal/server.Engine.workerFunc,matrix/cody/internal/worker.Options,matrix/cody/internal/worker.screenshotInstruction
   ^defines=matrix/cody/internal/contract/contract.go
 
 NODE id=matrix/cody/internal/contract.TaskSheet#Acceptance kind=field
@@ -363,7 +409,11 @@ NODE id=matrix/cody/internal/contract.TaskSheet.Validate kind=method
   sig=func (s *TaskSheet) Validate() error
   doc=Validate enforces the self-containment bar: a sheet missing its goal,\nacceptance criteria, or verification commands cannot be executed by a\nfresh-context worker and is rejected before dispatch.
 EDGES
+  calls=matrix/cody/internal/contract.validateID
+  references=matrix/cody/internal/contract.TaskSheet,matrix/cody/internal/contract.err,matrix/cody/internal/contract.problems,matrix/cody/internal/contract.s,matrix/cody/internal/contract.validateID
   ^contains=matrix/cody/internal/contract.TaskSheet
+  ^calls=matrix/cody/internal/contract.Store.SaveSheet,matrix/cody/internal/worker.New
+  ^references=matrix/cody/internal/contract.Store.SaveSheet,matrix/cody/internal/worker.New
   ^defines=matrix/cody/internal/contract/contract.go
 
 NODE id=matrix/cody/internal/contract.TurnInReport kind=type
@@ -372,6 +422,8 @@ NODE id=matrix/cody/internal/contract.TurnInReport kind=type
   doc=TurnInReport is the worker's structured turn-in: status, what changed and\nwhy, real verification evidence, and honest gaps/assumptions. It is the ONLY\nartifact of the worker that survives acceptance — the transcript is\ndiscarded.
 EDGES
   contains=matrix/cody/internal/contract.TurnInReport#Assumptions,matrix/cody/internal/contract.TurnInReport#Attempt,matrix/cody/internal/contract.TurnInReport#Changes,matrix/cody/internal/contract.TurnInReport#Gaps,matrix/cody/internal/contract.TurnInReport#Status,matrix/cody/internal/contract.TurnInReport#Summary,matrix/cody/internal/contract.TurnInReport#TaskID,matrix/cody/internal/contract.TurnInReport#Usage,matrix/cody/internal/contract.TurnInReport#Verification,matrix/cody/internal/contract.TurnInReport.AllGreen,matrix/cody/internal/contract.TurnInReport.Validate
+  references=matrix/cody/internal/contract.Change,matrix/cody/internal/contract.Evidence,matrix/cody/internal/contract.Status,matrix/cody/internal/contract.Usage
+  ^references=matrix/cody/internal/contract.Store.LoadReports,matrix/cody/internal/contract.Store.SaveReport,matrix/cody/internal/contract.TurnInReport.AllGreen,matrix/cody/internal/contract.TurnInReport.Validate,matrix/cody/internal/gate.Screen,matrix/cody/internal/gate.ScreenDesign,matrix/cody/internal/gate.ScreenScreenshot,matrix/cody/internal/orchestrator.Orchestrator.adjudicate,matrix/cody/internal/orchestrator.Orchestrator.dispatch,matrix/cody/internal/orchestrator.WorkerFunc,matrix/cody/internal/orchestrator.changeRecords,matrix/cody/internal/orchestrator.evidenceRecords,matrix/cody/internal/orchestrator.renderReport,matrix/cody/internal/server.Engine.workerFunc,matrix/cody/internal/worker.Worker.Run,matrix/cody/internal/worker.Worker.synthesizeReport,matrix/cody/internal/worker.Worker.tryTurnIn
   ^defines=matrix/cody/internal/contract/contract.go
 
 NODE id=matrix/cody/internal/contract.TurnInReport#Assumptions kind=field
@@ -435,6 +487,8 @@ NODE id=matrix/cody/internal/contract.TurnInReport.AllGreen kind=method
   sig=func (r *TurnInReport) AllGreen() bool
   doc=AllGreen reports whether every verification evidence entry passed. An empty\nevidence set is NOT green — absence of failure is not success.
 EDGES
+  calls=matrix/cody/internal/contract.Evidence.Green
+  references=matrix/cody/internal/contract.Evidence.Green,matrix/cody/internal/contract.TurnInReport,matrix/cody/internal/contract.ev,matrix/cody/internal/contract.r
   ^contains=matrix/cody/internal/contract.TurnInReport
   ^defines=matrix/cody/internal/contract/contract.go
 
@@ -443,7 +497,11 @@ NODE id=matrix/cody/internal/contract.TurnInReport.Validate kind=method
   sig=func (r *TurnInReport) Validate() error
   doc=Validate enforces the report contract: a known status, a matching task id,\nand — for a done claim — verification evidence to adjudicate. A done claim\nwith red evidence is rejected here before it ever reaches the gate.
 EDGES
+  calls=matrix/cody/internal/contract.Evidence.Green,matrix/cody/internal/contract.Status.valid
+  references=matrix/cody/internal/contract.Evidence.Green,matrix/cody/internal/contract.Status.valid,matrix/cody/internal/contract.StatusBlocked,matrix/cody/internal/contract.StatusDone,matrix/cody/internal/contract.StatusPartial,matrix/cody/internal/contract.TurnInReport,matrix/cody/internal/contract.ev,matrix/cody/internal/contract.problems,matrix/cody/internal/contract.r
   ^contains=matrix/cody/internal/contract.TurnInReport
+  ^calls=matrix/cody/internal/contract.Store.SaveReport,matrix/cody/internal/worker.Worker.tryTurnIn
+  ^references=matrix/cody/internal/contract.Store.SaveReport,matrix/cody/internal/worker.Worker.tryTurnIn
   ^defines=matrix/cody/internal/contract/contract.go
 
 NODE id=matrix/cody/internal/contract.Usage kind=type
@@ -452,6 +510,7 @@ NODE id=matrix/cody/internal/contract.Usage kind=type
   doc=Usage is a worker's LLM token accounting for one task attempt — the run\nledger accumulates it per run so the metered spend is visible on the\ndeliverable, not just in the gateway's books.
 EDGES
   contains=matrix/cody/internal/contract.Usage#CompletionTokens,matrix/cody/internal/contract.Usage#PromptTokens,matrix/cody/internal/contract.Usage#TotalTokens,matrix/cody/internal/contract.Usage.Add
+  ^references=matrix/cody/internal/contract.TurnInReport,matrix/cody/internal/contract.Usage.Add,matrix/cody/internal/server.ledger,matrix/cody/internal/server.run,matrix/cody/internal/server.run.addUsage,matrix/cody/internal/server.run.getUsage,matrix/cody/internal/worker.Worker
   ^defines=matrix/cody/internal/contract/contract.go
 
 NODE id=matrix/cody/internal/contract.Usage#CompletionTokens kind=field
@@ -477,7 +536,10 @@ NODE id=matrix/cody/internal/contract.Usage.Add kind=method
   sig=func (u *Usage) Add(o Usage)
   doc=Add folds another accounting into this one.
 EDGES
+  references=matrix/cody/internal/contract.Usage,matrix/cody/internal/contract.o,matrix/cody/internal/contract.u
   ^contains=matrix/cody/internal/contract.Usage
+  ^calls=matrix/cody/internal/server.run.addUsage
+  ^references=matrix/cody/internal/server.Engine.finish,matrix/cody/internal/server.run.addUsage
   ^defines=matrix/cody/internal/contract/contract.go
 
 NODE id=matrix/cody/internal/contract.Verify kind=type
@@ -486,6 +548,7 @@ NODE id=matrix/cody/internal/contract.Verify kind=type
   doc=Verify lists the verification commands that must be green for the task to\nbe accepted. The orchestrator independently re-runs these on turn-in.
 EDGES
   contains=matrix/cody/internal/contract.Verify#Commands,matrix/cody/internal/contract.Verify#MustBeGreen,matrix/cody/internal/contract.Verify#TimeoutSecs,matrix/cody/internal/contract.Verify#WorkingDir
+  ^references=matrix/cody/internal/contract.TaskSheet,matrix/cody/internal/orchestrator.Orchestrator.specSheet
   ^defines=matrix/cody/internal/contract/contract.go
 
 NODE id=matrix/cody/internal/contract.Verify#Commands kind=field
@@ -516,18 +579,25 @@ NODE id=matrix/cody/internal/contract.errBadID kind=var
   digest=b3:7cd5a97ebe7fd5df01f66664e0781fe57c1e2e33a416946977a8c03880fabc76 file=cody/internal/contract/contract.go range=254:254 lang=go exported=false byte_range=10396:10476
   sig=error
 EDGES
+  ^references=matrix/cody/internal/contract.validateID
   ^defines=matrix/cody/internal/contract/contract.go
 
 NODE id=matrix/cody/internal/contract.listIDs kind=func
   digest=b3:fd97fd9e58abecc9ba4a462750a74ea21d64ec92c7583d3cfce1efea949db23e file=cody/internal/contract/store.go range=100:114 lang=go exported=false byte_range=2984:3320
   sig=func listIDs(dir string) ([]string, error)
 EDGES
+  references=matrix/cody/internal/contract.dir,matrix/cody/internal/contract.e,matrix/cody/internal/contract.entries,matrix/cody/internal/contract.err,matrix/cody/internal/contract.ids
+  ^calls=matrix/cody/internal/contract.Store.ListSheets
+  ^references=matrix/cody/internal/contract.Store.ListSheets
   ^defines=matrix/cody/internal/contract/store.go
 
 NODE id=matrix/cody/internal/contract.readJSON kind=func
   digest=b3:7ed8618ab6d37546c38b9239321324319d9b3ea9d1d22d97531e52c2a5daf4de file=cody/internal/contract/store.go range=128:134 lang=go exported=false byte_range=3592:3740
   sig=func readJSON(path string, v interface{}) error
 EDGES
+  references=matrix/cody/internal/contract.data,matrix/cody/internal/contract.err,matrix/cody/internal/contract.path,matrix/cody/internal/contract.v
+  ^calls=matrix/cody/internal/contract.Store.LoadReports,matrix/cody/internal/contract.Store.LoadSheet
+  ^references=matrix/cody/internal/contract.Store.LoadReports,matrix/cody/internal/contract.Store.LoadSheet
   ^defines=matrix/cody/internal/contract/store.go
 
 NODE id=matrix/cody/internal/contract.validateID kind=func
@@ -535,12 +605,18 @@ NODE id=matrix/cody/internal/contract.validateID kind=func
   sig=func validateID(id string) error
   doc=validateID keeps task ids safe as file names for the durable store.
 EDGES
+  references=matrix/cody/internal/contract.errBadID,matrix/cody/internal/contract.id,matrix/cody/internal/contract.r
+  ^calls=matrix/cody/internal/contract.Store.LoadReports,matrix/cody/internal/contract.Store.LoadSheet,matrix/cody/internal/contract.TaskSheet.Validate
+  ^references=matrix/cody/internal/contract.Store.LoadReports,matrix/cody/internal/contract.Store.LoadSheet,matrix/cody/internal/contract.TaskSheet.Validate
   ^defines=matrix/cody/internal/contract/contract.go
 
 NODE id=matrix/cody/internal/contract.writeJSON kind=func
   digest=b3:728622bd433d35ce4afce009831a0045ac2c23cd3662e6ed080eb9bf31ca6457 file=cody/internal/contract/store.go range=116:126 lang=go exported=false byte_range=3322:3590
   sig=func writeJSON(path string, v interface{}) error
 EDGES
+  references=matrix/cody/internal/contract.data,matrix/cody/internal/contract.err,matrix/cody/internal/contract.path,matrix/cody/internal/contract.tmp,matrix/cody/internal/contract.v
+  ^calls=matrix/cody/internal/contract.Store.SaveReport,matrix/cody/internal/contract.Store.SaveSheet
+  ^references=matrix/cody/internal/contract.Store.SaveReport,matrix/cody/internal/contract.Store.SaveSheet
   ^defines=matrix/cody/internal/contract/store.go
 
 NODE id=matrix/cody/internal/contract/contract.go kind=file

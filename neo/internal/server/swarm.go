@@ -109,6 +109,12 @@ func (e *Engine) runSwarm(ctx context.Context, specs []tools.SubagentSpec) (stri
 	results := make([]subResult, len(specs))
 	var wg sync.WaitGroup
 
+	// Resolve the shared self-model ONCE for the whole swarm (the alignment
+	// contract, self-model task 4.3, req.9.1): every sub-agent inherits the SAME
+	// structural self-summary + how-I-fail patterns, so they act as one aligned
+	// mind on scoped slices rather than divergent blank helpers.
+	selfModel := e.subagentSelfModelBrief(ctx)
+
 	for i, s := range specs {
 		wg.Add(1)
 		go func(idx int, spec tools.SubagentSpec) {
@@ -121,7 +127,7 @@ func (e *Engine) runSwarm(ctx context.Context, specs []tools.SubagentSpec) (stri
 				e.publishSubagent(r, swarmID, idx+1, "subagent.status", map[string]interface{}{"name": spec.Name, "status": "failed", "summary": "cancelled"})
 				return
 			}
-			results[idx] = e.runOneSubagent(ctx, r, swarmID, idx+1, spec)
+			results[idx] = e.runOneSubagent(ctx, r, swarmID, idx+1, spec, selfModel)
 		}(i, s)
 	}
 	wg.Wait()
@@ -141,7 +147,7 @@ func (e *Engine) runSwarm(ctx context.Context, specs []tools.SubagentSpec) (stri
 // index, and returns its distilled report. A hard failure with no usable output
 // is retried with a fresh window (bounded by subagentMaxAttempts) so a
 // transient provider error doesn't kill the sub-agent outright.
-func (e *Engine) runOneSubagent(ctx context.Context, r *run, swarmID string, index int, spec tools.SubagentSpec) subResult {
+func (e *Engine) runOneSubagent(ctx context.Context, r *run, swarmID string, index int, spec tools.SubagentSpec, selfModel string) subResult {
 	// A fresh config with the sub-agent's name + smaller step budget.
 	cfg := e.cfg
 	cfg.AgentName = spec.Name
@@ -174,6 +180,7 @@ func (e *Engine) runOneSubagent(ctx context.Context, r *run, swarmID string, ind
 			Reporter:      rep,
 			Observer:      func(ev agent.ToolEvent) { e.surfaceSubagentStep(r, swarmID, index, spec.Name, ev) },
 			Persona:       spec.Persona,
+			SelfModel:     selfModel,
 			RestrictTools: true,
 		})
 
@@ -279,6 +286,54 @@ func (e *Engine) publishSubagent(r *run, swarmID string, index int, typ string, 
 		f[k] = v
 	}
 	e.broker.publish(r.id, typ, "neo", f)
+}
+
+// subagentMaxInheritedPatterns caps how many how-I-fail patterns a sub-agent
+// inherits, so the alignment context stays compact against the sub-agent's
+// smaller window while still carrying the recurring failure modes to avoid.
+const subagentMaxInheritedPatterns = 5
+
+// subagentSelfModelBrief renders the shared self-model each sub-agent inherits
+// at spawn (self-model task 4.3, req.9.1): the structural self-summary (how the
+// agent is built) plus the most salient how-I-fail patterns (what to avoid). It
+// is resolved once per swarm from the shared cortex pager. Returns "" when no
+// pager is wired or the self-model is empty (a fresh install before the
+// self-graph is loaded) — the sub-agent then runs on its persona + bounds alone,
+// never blocked on the self-model.
+func (e *Engine) subagentSelfModelBrief(ctx context.Context) string {
+	if e.pager == nil {
+		return ""
+	}
+	model, err := e.pager.SelfModel(ctx)
+	if err != nil {
+		return ""
+	}
+	summary := strings.TrimSpace(model.Structural.Summary)
+	if summary == "" && len(model.FailurePatterns) == 0 {
+		return ""
+	}
+	var b strings.Builder
+	if summary != "" {
+		b.WriteString("Architecture (how you are built): ")
+		b.WriteString(summary)
+		b.WriteString("\n")
+	}
+	if len(model.FailurePatterns) > 0 {
+		b.WriteString("Failure patterns to avoid:\n")
+		for i, fp := range model.FailurePatterns {
+			if i >= subagentMaxInheritedPatterns {
+				break
+			}
+			stmt := strings.TrimSpace(fp.Statement)
+			if stmt == "" {
+				continue
+			}
+			b.WriteString("- ")
+			b.WriteString(stmt)
+			b.WriteString("\n")
+		}
+	}
+	return strings.TrimSpace(b.String())
 }
 
 // aggregateResults distils the swarm's outcomes into one model-readable block

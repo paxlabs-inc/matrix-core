@@ -1,10 +1,11 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:9b68327501b45793fd7687f43b30c960fd68ae8aaff6b2f1bb36ec3e2df2de2f
+# GENERATED gen=codegraph do-not-edit merkle=b3:20e53aba2ea11552396417e53b3e04e87dd1bbb7bef3aa554a45bb92cf89e7f2
 
 NODE id=matrix/router/internal/db kind=package
   digest=b3:9f83b9315759969b868e82512199326a451e7213df4aef65a75397ae3a18047e file=router/internal/db range=0:0 lang=go exported=true
 EDGES
   contains=matrix/router/internal/db/beta.go,matrix/router/internal/db/db.go
   ^contains=mod:matrix/router
+  ^imports=matrix/router/cmd/matrix-router,matrix/router/internal/admin,matrix/router/internal/beta,matrix/router/internal/proxy
 
 NODE id=matrix/router/internal/db.BugReport kind=type
   digest=b3:3fa65fb1fe3c5c9b5b1cce13c494364e8607c970d7fdc28ad904bdacd8c2721d file=router/internal/db/beta.go range=46:55 lang=go exported=true byte_range=900:1125
@@ -12,6 +13,7 @@ NODE id=matrix/router/internal/db.BugReport kind=type
   doc=BugReport mirrors the bug_reports table.
 EDGES
   contains=matrix/router/internal/db.BugReport#AttachmentRef,matrix/router/internal/db.BugReport#Context,matrix/router/internal/db.BugReport#CreatedAt,matrix/router/internal/db.BugReport#ID,matrix/router/internal/db.BugReport#Message,matrix/router/internal/db.BugReport#Status,matrix/router/internal/db.BugReport#UserID
+  ^references=matrix/router/internal/db.DB.GetBugReport,matrix/router/internal/db.DB.ListBugReports
   ^defines=matrix/router/internal/db/beta.go
 
 NODE id=matrix/router/internal/db.BugReport#AttachmentRef kind=field
@@ -62,6 +64,7 @@ NODE id=matrix/router/internal/db.Consent kind=type
   doc=Consent mirrors the beta_consent table.
 EDGES
   contains=matrix/router/internal/db.Consent#DecidedAt,matrix/router/internal/db.Consent#PolicyVersion,matrix/router/internal/db.Consent#TrainingOptIn,matrix/router/internal/db.Consent#UserID
+  ^references=matrix/router/internal/db.DB.GetConsent
   ^defines=matrix/router/internal/db/beta.go
 
 NODE id=matrix/router/internal/db.Consent#DecidedAt kind=field
@@ -94,6 +97,7 @@ NODE id=matrix/router/internal/db.DB kind=type
   doc=DB is the matrix-router DB facade. Holds a pgxpool.Pool for cheap\nconnection reuse across requests.
 EDGES
   contains=matrix/router/internal/db.DB#pool,matrix/router/internal/db.DB.AttachMachine,matrix/router/internal/db.DB.Close,matrix/router/internal/db.DB.CreateOrTouchUser,matrix/router/internal/db.DB.FinishProvisionJob,matrix/router/internal/db.DB.GenerateInviteCode,matrix/router/internal/db.DB.GetBugReport,matrix/router/internal/db.DB.GetConsent,matrix/router/internal/db.DB.HasRedeemedInvite,matrix/router/internal/db.DB.InsertBugReport,matrix/router/internal/db.DB.InsertDisclosureAck,matrix/router/internal/db.DB.ListBugReports,matrix/router/internal/db.DB.ListInviteCodes,matrix/router/internal/db.DB.LookupForRoute,matrix/router/internal/db.DB.Ping,matrix/router/internal/db.DB.QueueProvisionJob,matrix/router/internal/db.DB.RedeemInviteCode,matrix/router/internal/db.DB.SetUserState,matrix/router/internal/db.DB.UpsertConsent
+  ^references=matrix/router/internal/admin.Handler,matrix/router/internal/beta.Handler,matrix/router/internal/db.DB.AttachMachine,matrix/router/internal/db.DB.Close,matrix/router/internal/db.DB.CreateOrTouchUser,matrix/router/internal/db.DB.FinishProvisionJob,matrix/router/internal/db.DB.GenerateInviteCode,matrix/router/internal/db.DB.GetBugReport,matrix/router/internal/db.DB.GetConsent,matrix/router/internal/db.DB.HasRedeemedInvite,matrix/router/internal/db.DB.InsertBugReport,matrix/router/internal/db.DB.InsertDisclosureAck,matrix/router/internal/db.DB.ListBugReports,matrix/router/internal/db.DB.ListInviteCodes,matrix/router/internal/db.DB.LookupForRoute,matrix/router/internal/db.DB.Ping,matrix/router/internal/db.DB.QueueProvisionJob,matrix/router/internal/db.DB.RedeemInviteCode,matrix/router/internal/db.DB.SetUserState,matrix/router/internal/db.DB.UpsertConsent,matrix/router/internal/db.Open,matrix/router/internal/proxy.Handler,matrix/router/internal/proxy.New
   ^defines=matrix/router/internal/db/db.go
 
 NODE id=matrix/router/internal/db.DB#pool kind=field
@@ -107,7 +111,10 @@ NODE id=matrix/router/internal/db.DB.AttachMachine kind=method
   sig=func (d *DB) AttachMachine(ctx context.Context, supabaseUserID, provider, envID, volumeID, region string) error
   doc=AttachMachine binds an environment + volume + region to a user and\ntransitions the user state to active. The environment id is stored\nprovider-neutrally (env_id / env_volume_id); the legacy fly_ columns\nare kept in sync for fly rows so pre-migration tooling keeps\nworking. Returns ErrUserNotFound if the user row vanished between\nprovision-create and attach.
 EDGES
+  references=matrix/router/internal/db.DB,matrix/router/internal/db.ErrUserNotFound,matrix/router/internal/db.ctx,matrix/router/internal/db.d,matrix/router/internal/db.envID,matrix/router/internal/db.err,matrix/router/internal/db.provider,matrix/router/internal/db.q,matrix/router/internal/db.region,matrix/router/internal/db.supabaseUserID,matrix/router/internal/db.tag,matrix/router/internal/db.volumeID
   ^contains=matrix/router/internal/db.DB
+  ^calls=matrix/router/internal/admin.Handler.EnsureMachine
+  ^references=matrix/router/internal/admin.Handler.EnsureMachine
   ^defines=matrix/router/internal/db/db.go
 
 NODE id=matrix/router/internal/db.DB.Close kind=method
@@ -115,7 +122,10 @@ NODE id=matrix/router/internal/db.DB.Close kind=method
   sig=func (d *DB) Close()
   doc=Close releases all pool connections. Safe to call once.
 EDGES
+  references=matrix/router/internal/db.DB,matrix/router/internal/db.d
   ^contains=matrix/router/internal/db.DB
+  ^calls=matrix/router/cmd/matrix-router.main
+  ^references=matrix/router/cmd/matrix-router.main
   ^defines=matrix/router/internal/db/db.go
 
 NODE id=matrix/router/internal/db.DB.CreateOrTouchUser kind=method
@@ -123,7 +133,10 @@ NODE id=matrix/router/internal/db.DB.CreateOrTouchUser kind=method
   sig=func (d *DB) CreateOrTouchUser(ctx context.Context, supabaseUserID, email, handle string) (created bool, err error)
   doc=CreateOrTouchUser inserts a row in 'provisioning' state if absent;\notherwise updates email/handle. Returns whether a new row was made.
 EDGES
+  references=matrix/router/internal/db.DB,matrix/router/internal/db.created,matrix/router/internal/db.ctx,matrix/router/internal/db.d,matrix/router/internal/db.email,matrix/router/internal/db.err,matrix/router/internal/db.handle,matrix/router/internal/db.q,matrix/router/internal/db.supabaseUserID
   ^contains=matrix/router/internal/db.DB
+  ^calls=matrix/router/internal/admin.Handler.EnsureMachine
+  ^references=matrix/router/internal/admin.Handler.EnsureMachine
   ^defines=matrix/router/internal/db/db.go
 
 NODE id=matrix/router/internal/db.DB.FinishProvisionJob kind=method
@@ -131,7 +144,10 @@ NODE id=matrix/router/internal/db.DB.FinishProvisionJob kind=method
   sig=func (d *DB) FinishProvisionJob(ctx context.Context, jobID int64, state, errMsg string, response []byte) error
   doc=FinishProvisionJob updates a provision_jobs row to terminal state.
 EDGES
+  references=matrix/router/internal/db.DB,matrix/router/internal/db.ctx,matrix/router/internal/db.d,matrix/router/internal/db.err,matrix/router/internal/db.errMsg,matrix/router/internal/db.jobID,matrix/router/internal/db.q,matrix/router/internal/db.response,matrix/router/internal/db.state
   ^contains=matrix/router/internal/db.DB
+  ^calls=matrix/router/internal/admin.Handler.EnsureMachine
+  ^references=matrix/router/internal/admin.Handler.EnsureMachine
   ^defines=matrix/router/internal/db/db.go
 
 NODE id=matrix/router/internal/db.DB.GenerateInviteCode kind=method
@@ -139,7 +155,10 @@ NODE id=matrix/router/internal/db.DB.GenerateInviteCode kind=method
   sig=func (d *DB) GenerateInviteCode(ctx context.Context, code string, maxRedemptions int, expiresAt *time.Time, createdBy string) error
   doc=GenerateInviteCode inserts a new invite code. The caller is responsible\nfor generating the crypto-strong code string.
 EDGES
+  references=matrix/router/internal/db.DB,matrix/router/internal/db.code,matrix/router/internal/db.createdBy,matrix/router/internal/db.ctx,matrix/router/internal/db.d,matrix/router/internal/db.err,matrix/router/internal/db.expiresAt,matrix/router/internal/db.maxRedemptions,matrix/router/internal/db.q
   ^contains=matrix/router/internal/db.DB
+  ^calls=matrix/router/internal/admin.Handler.createInvite
+  ^references=matrix/router/internal/admin.Handler.createInvite
   ^defines=matrix/router/internal/db/beta.go
 
 NODE id=matrix/router/internal/db.DB.GetBugReport kind=method
@@ -147,7 +166,10 @@ NODE id=matrix/router/internal/db.DB.GetBugReport kind=method
   sig=func (d *DB) GetBugReport(ctx context.Context, id int64) (*BugReport, error)
   doc=GetBugReport returns a single bug report by id.
 EDGES
+  references=matrix/router/internal/db.BugReport,matrix/router/internal/db.DB,matrix/router/internal/db.br,matrix/router/internal/db.ctx,matrix/router/internal/db.d,matrix/router/internal/db.err,matrix/router/internal/db.id,matrix/router/internal/db.q
   ^contains=matrix/router/internal/db.DB
+  ^calls=matrix/router/internal/admin.Handler.handleReportItem
+  ^references=matrix/router/internal/admin.Handler.handleReportItem
   ^defines=matrix/router/internal/db/beta.go
 
 NODE id=matrix/router/internal/db.DB.GetConsent kind=method
@@ -155,7 +177,10 @@ NODE id=matrix/router/internal/db.DB.GetConsent kind=method
   sig=func (d *DB) GetConsent(ctx context.Context, userID string) (*Consent, error)
   doc=GetConsent reads the training consent for a user. Returns nil + nil\nerror when no row exists (user has not yet consented).
 EDGES
+  references=matrix/router/internal/db.Consent,matrix/router/internal/db.DB,matrix/router/internal/db.c,matrix/router/internal/db.ctx,matrix/router/internal/db.d,matrix/router/internal/db.err,matrix/router/internal/db.q,matrix/router/internal/db.userID
   ^contains=matrix/router/internal/db.DB
+  ^calls=matrix/router/internal/beta.Handler.getConsent
+  ^references=matrix/router/internal/beta.Handler.getConsent
   ^defines=matrix/router/internal/db/beta.go
 
 NODE id=matrix/router/internal/db.DB.HasRedeemedInvite kind=method
@@ -163,7 +188,10 @@ NODE id=matrix/router/internal/db.DB.HasRedeemedInvite kind=method
   sig=func (d *DB) HasRedeemedInvite(ctx context.Context, userID string) (bool, error)
   doc=HasRedeemedInvite returns true if the user has redeemed any valid\n(non-expired-at-redemption-time) invite code. Checks all redemption\nrows for the user.
 EDGES
+  references=matrix/router/internal/db.DB,matrix/router/internal/db.ctx,matrix/router/internal/db.d,matrix/router/internal/db.dummy,matrix/router/internal/db.err,matrix/router/internal/db.q,matrix/router/internal/db.userID
   ^contains=matrix/router/internal/db.DB
+  ^calls=matrix/router/internal/proxy.Handler.ServeHTTP
+  ^references=matrix/router/internal/admin.Handler.StartProvision,matrix/router/internal/proxy.Handler.ServeHTTP
   ^defines=matrix/router/internal/db/beta.go
 
 NODE id=matrix/router/internal/db.DB.InsertBugReport kind=method
@@ -171,7 +199,10 @@ NODE id=matrix/router/internal/db.DB.InsertBugReport kind=method
   sig=func (d *DB) InsertBugReport(ctx context.Context, userID, message string, contextJSON []byte, attachmentRef string) (int64, error)
   doc=InsertBugReport creates a new bug/feedback report and returns its id.
 EDGES
+  references=matrix/router/internal/db.DB,matrix/router/internal/db.attachmentRef,matrix/router/internal/db.contextJSON,matrix/router/internal/db.ctx,matrix/router/internal/db.d,matrix/router/internal/db.err,matrix/router/internal/db.id,matrix/router/internal/db.message,matrix/router/internal/db.q,matrix/router/internal/db.userID
   ^contains=matrix/router/internal/db.DB
+  ^calls=matrix/router/internal/beta.Handler.handleReports
+  ^references=matrix/router/internal/beta.Handler.handleReports
   ^defines=matrix/router/internal/db/beta.go
 
 NODE id=matrix/router/internal/db.DB.InsertDisclosureAck kind=method
@@ -179,7 +210,10 @@ NODE id=matrix/router/internal/db.DB.InsertDisclosureAck kind=method
   sig=func (d *DB) InsertDisclosureAck(ctx context.Context, userID, disclosureVersion string) error
   doc=InsertDisclosureAck records a beta disclosure acknowledgement. If the\nuser already acked this disclosure version, the row is unchanged\n(ON CONFLICT DO NOTHING).
 EDGES
+  references=matrix/router/internal/db.DB,matrix/router/internal/db.ctx,matrix/router/internal/db.d,matrix/router/internal/db.disclosureVersion,matrix/router/internal/db.err,matrix/router/internal/db.q,matrix/router/internal/db.userID
   ^contains=matrix/router/internal/db.DB
+  ^calls=matrix/router/internal/beta.Handler.handleDisclosureAck
+  ^references=matrix/router/internal/beta.Handler.handleDisclosureAck
   ^defines=matrix/router/internal/db/beta.go
 
 NODE id=matrix/router/internal/db.DB.ListBugReports kind=method
@@ -187,7 +221,10 @@ NODE id=matrix/router/internal/db.DB.ListBugReports kind=method
   sig=func (d *DB) ListBugReports(ctx context.Context) ([]BugReport, error)
   doc=ListBugReports returns all bug reports ordered by created_at desc.
 EDGES
+  references=matrix/router/internal/db.BugReport,matrix/router/internal/db.DB,matrix/router/internal/db.br,matrix/router/internal/db.ctx,matrix/router/internal/db.d,matrix/router/internal/db.err,matrix/router/internal/db.out,matrix/router/internal/db.q,matrix/router/internal/db.rows
   ^contains=matrix/router/internal/db.DB
+  ^calls=matrix/router/internal/admin.Handler.handleReportsCollection
+  ^references=matrix/router/internal/admin.Handler.handleReportsCollection
   ^defines=matrix/router/internal/db/beta.go
 
 NODE id=matrix/router/internal/db.DB.ListInviteCodes kind=method
@@ -195,7 +232,10 @@ NODE id=matrix/router/internal/db.DB.ListInviteCodes kind=method
   sig=func (d *DB) ListInviteCodes(ctx context.Context) ([]InviteCode, error)
   doc=ListInviteCodes returns all invite codes ordered by created_at desc.
 EDGES
+  references=matrix/router/internal/db.DB,matrix/router/internal/db.InviteCode,matrix/router/internal/db.ctx,matrix/router/internal/db.d,matrix/router/internal/db.err,matrix/router/internal/db.ic,matrix/router/internal/db.out,matrix/router/internal/db.q,matrix/router/internal/db.rows
   ^contains=matrix/router/internal/db.DB
+  ^calls=matrix/router/internal/admin.Handler.handleInviteItem,matrix/router/internal/admin.Handler.listInvites
+  ^references=matrix/router/internal/admin.Handler.handleInviteItem,matrix/router/internal/admin.Handler.listInvites
   ^defines=matrix/router/internal/db/beta.go
 
 NODE id=matrix/router/internal/db.DB.LookupForRoute kind=method
@@ -203,7 +243,10 @@ NODE id=matrix/router/internal/db.DB.LookupForRoute kind=method
   sig=func (d *DB) LookupForRoute(ctx context.Context, supabaseUserID string) (*User, error)
   doc=LookupForRoute fetches the row needed to route a request: state,\nfly_machine_id, region. Bumps last_seen_at as a side effect (single\nrow update, single connection acquisition).\n\nReturns ErrUserNotFound on no row.
 EDGES
+  references=matrix/router/internal/db.DB,matrix/router/internal/db.ErrUserNotFound,matrix/router/internal/db.User,matrix/router/internal/db.ctx,matrix/router/internal/db.d,matrix/router/internal/db.err,matrix/router/internal/db.q,matrix/router/internal/db.supabaseUserID,matrix/router/internal/db.u
   ^contains=matrix/router/internal/db.DB
+  ^calls=matrix/router/internal/admin.Handler.EnsureMachine,matrix/router/internal/admin.Handler.deleteUser,matrix/router/internal/admin.Handler.getUser,matrix/router/internal/beta.Handler.handleProvisionStatus,matrix/router/internal/proxy.Handler.ServeHTTP
+  ^references=matrix/router/internal/admin.Handler.EnsureMachine,matrix/router/internal/admin.Handler.deleteUser,matrix/router/internal/admin.Handler.getUser,matrix/router/internal/beta.Handler.handleProvisionStatus,matrix/router/internal/proxy.Handler.ServeHTTP,matrix/router/internal/proxy.Handler.WakeHandler
   ^defines=matrix/router/internal/db/db.go
 
 NODE id=matrix/router/internal/db.DB.Ping kind=method
@@ -211,7 +254,9 @@ NODE id=matrix/router/internal/db.DB.Ping kind=method
   sig=func (d *DB) Ping(ctx context.Context) error
   doc=Ping returns nil iff at least one DB connection is healthy.
 EDGES
+  references=matrix/router/internal/db.DB,matrix/router/internal/db.ctx,matrix/router/internal/db.d
   ^contains=matrix/router/internal/db.DB
+  ^references=matrix/router/cmd/matrix-router.main
   ^defines=matrix/router/internal/db/db.go
 
 NODE id=matrix/router/internal/db.DB.QueueProvisionJob kind=method
@@ -219,7 +264,10 @@ NODE id=matrix/router/internal/db.DB.QueueProvisionJob kind=method
   sig=func (d *DB) QueueProvisionJob(ctx context.Context, userID, op string) (int64, error)
   doc=QueueProvisionJob writes a row in provision_jobs with state=queued.\nReturns the new job id.
 EDGES
+  references=matrix/router/internal/db.DB,matrix/router/internal/db.ctx,matrix/router/internal/db.d,matrix/router/internal/db.err,matrix/router/internal/db.id,matrix/router/internal/db.op,matrix/router/internal/db.q,matrix/router/internal/db.userID
   ^contains=matrix/router/internal/db.DB
+  ^calls=matrix/router/internal/admin.Handler.EnsureMachine
+  ^references=matrix/router/internal/admin.Handler.EnsureMachine
   ^defines=matrix/router/internal/db/db.go
 
 NODE id=matrix/router/internal/db.DB.RedeemInviteCode kind=method
@@ -227,7 +275,10 @@ NODE id=matrix/router/internal/db.DB.RedeemInviteCode kind=method
   sig=func (d *DB) RedeemInviteCode(ctx context.Context, code, userID string) error
   doc=RedeemInviteCode atomically validates + consumes one redemption of the\ngiven code for the given user. It checks:\n  - the code exists\n  - the code has not expired\n  - redemptions remain (used < max)\n  - the user has not already redeemed this code\n\nOn success it increments redemptions_used and inserts an\ninvite_redemptions row in a single transaction. On any failure no\nredemption is consumed.
 EDGES
+  references=matrix/router/internal/db.DB,matrix/router/internal/db.ErrAlreadyRedeemed,matrix/router/internal/db.ErrInviteExhausted,matrix/router/internal/db.ErrInviteExpired,matrix/router/internal/db.ErrInviteNotFound,matrix/router/internal/db.code,matrix/router/internal/db.ctx,matrix/router/internal/db.d,matrix/router/internal/db.dummy,matrix/router/internal/db.dupQ,matrix/router/internal/db.err,matrix/router/internal/db.expires,matrix/router/internal/db.incrQ,matrix/router/internal/db.insQ,matrix/router/internal/db.maxR,matrix/router/internal/db.selQ,matrix/router/internal/db.tx,matrix/router/internal/db.used,matrix/router/internal/db.userID
   ^contains=matrix/router/internal/db.DB
+  ^calls=matrix/router/internal/beta.Handler.handleRedeem
+  ^references=matrix/router/internal/beta.Handler.handleRedeem
   ^defines=matrix/router/internal/db/beta.go
 
 NODE id=matrix/router/internal/db.DB.SetUserState kind=method
@@ -235,7 +286,10 @@ NODE id=matrix/router/internal/db.DB.SetUserState kind=method
   sig=func (d *DB) SetUserState(ctx context.Context, supabaseUserID, newState string) error
   doc=SetUserState transitions an existing user to the given closed enum\nstate. Used by admin endpoints (suspend, restore, etc).
 EDGES
+  references=matrix/router/internal/db.DB,matrix/router/internal/db.ErrUserNotFound,matrix/router/internal/db.ctx,matrix/router/internal/db.d,matrix/router/internal/db.err,matrix/router/internal/db.newState,matrix/router/internal/db.q,matrix/router/internal/db.supabaseUserID,matrix/router/internal/db.tag
   ^contains=matrix/router/internal/db.DB
+  ^calls=matrix/router/internal/admin.Handler.EnsureMachine,matrix/router/internal/admin.Handler.deleteUser,matrix/router/internal/admin.Handler.setState
+  ^references=matrix/router/internal/admin.Handler.EnsureMachine,matrix/router/internal/admin.Handler.deleteUser,matrix/router/internal/admin.Handler.setState
   ^defines=matrix/router/internal/db/db.go
 
 NODE id=matrix/router/internal/db.DB.UpsertConsent kind=method
@@ -243,7 +297,10 @@ NODE id=matrix/router/internal/db.DB.UpsertConsent kind=method
   sig=func (d *DB) UpsertConsent(ctx context.Context, userID string, trainingOptIn bool, policyVersion string) error
   doc=UpsertConsent writes or updates the training consent for a user.
 EDGES
+  references=matrix/router/internal/db.DB,matrix/router/internal/db.ctx,matrix/router/internal/db.d,matrix/router/internal/db.err,matrix/router/internal/db.policyVersion,matrix/router/internal/db.q,matrix/router/internal/db.trainingOptIn,matrix/router/internal/db.userID
   ^contains=matrix/router/internal/db.DB
+  ^calls=matrix/router/internal/beta.Handler.putConsent
+  ^references=matrix/router/internal/beta.Handler.putConsent
   ^defines=matrix/router/internal/db/beta.go
 
 NODE id=matrix/router/internal/db.DisclosureAck kind=type
@@ -277,6 +334,7 @@ NODE id=matrix/router/internal/db.ErrAlreadyRedeemed kind=var
   sig=error
   doc=ErrAlreadyRedeemed is returned when a user has already redeemed a given code.
 EDGES
+  ^references=matrix/router/internal/beta.Handler.handleRedeem,matrix/router/internal/db.DB.RedeemInviteCode
   ^defines=matrix/router/internal/db/beta.go
 
 NODE id=matrix/router/internal/db.ErrInviteExhausted kind=var
@@ -284,6 +342,7 @@ NODE id=matrix/router/internal/db.ErrInviteExhausted kind=var
   sig=error
   doc=ErrInviteExhausted is returned when an invite code has no redemptions remaining.
 EDGES
+  ^references=matrix/router/internal/beta.Handler.handleRedeem,matrix/router/internal/db.DB.RedeemInviteCode
   ^defines=matrix/router/internal/db/beta.go
 
 NODE id=matrix/router/internal/db.ErrInviteExpired kind=var
@@ -291,6 +350,7 @@ NODE id=matrix/router/internal/db.ErrInviteExpired kind=var
   sig=error
   doc=ErrInviteExpired is returned when an invite code has passed its expiry.
 EDGES
+  ^references=matrix/router/internal/beta.Handler.handleRedeem,matrix/router/internal/db.DB.RedeemInviteCode
   ^defines=matrix/router/internal/db/beta.go
 
 NODE id=matrix/router/internal/db.ErrInviteNotFound kind=var
@@ -298,6 +358,7 @@ NODE id=matrix/router/internal/db.ErrInviteNotFound kind=var
   sig=error
   doc=ErrInviteNotFound is returned when an invite code does not exist.
 EDGES
+  ^references=matrix/router/internal/beta.Handler.handleRedeem,matrix/router/internal/db.DB.RedeemInviteCode
   ^defines=matrix/router/internal/db/beta.go
 
 NODE id=matrix/router/internal/db.ErrUserNotFound kind=var
@@ -305,6 +366,7 @@ NODE id=matrix/router/internal/db.ErrUserNotFound kind=var
   sig=error
   doc=ErrUserNotFound surfaces from LookupForRoute when no row matches.
 EDGES
+  ^references=matrix/router/internal/admin.Handler.deleteUser,matrix/router/internal/admin.Handler.getUser,matrix/router/internal/admin.Handler.setState,matrix/router/internal/beta.Handler.handleProvisionStatus,matrix/router/internal/db.DB.AttachMachine,matrix/router/internal/db.DB.LookupForRoute,matrix/router/internal/db.DB.SetUserState,matrix/router/internal/proxy.Handler.ServeHTTP,matrix/router/internal/proxy.Handler.WakeHandler
   ^defines=matrix/router/internal/db/db.go
 
 NODE id=matrix/router/internal/db.InviteCode kind=type
@@ -313,6 +375,7 @@ NODE id=matrix/router/internal/db.InviteCode kind=type
   doc=InviteCode mirrors the invite_codes table.
 EDGES
   contains=matrix/router/internal/db.InviteCode#Code,matrix/router/internal/db.InviteCode#CreatedAt,matrix/router/internal/db.InviteCode#CreatedBy,matrix/router/internal/db.InviteCode#ExpiresAt,matrix/router/internal/db.InviteCode#MaxRedemptions,matrix/router/internal/db.InviteCode#RedemptionsUsed
+  ^references=matrix/router/internal/db.DB.ListInviteCodes
   ^defines=matrix/router/internal/db/beta.go
 
 NODE id=matrix/router/internal/db.InviteCode#Code kind=field
@@ -382,6 +445,9 @@ NODE id=matrix/router/internal/db.Open kind=func
   sig=func Open(ctx context.Context, dsn string) (*DB, error)
   doc=Open parses dsn (DATABASE_URL form) and opens a pool. Fails fast on\nPing so misconfiguration surfaces at boot rather than first request.
 EDGES
+  references=matrix/router/internal/db.DB,matrix/router/internal/db.cancel,matrix/router/internal/db.cfg,matrix/router/internal/db.ctx,matrix/router/internal/db.dsn,matrix/router/internal/db.err,matrix/router/internal/db.pingCtx,matrix/router/internal/db.pool
+  ^calls=matrix/router/cmd/matrix-router.main
+  ^references=matrix/router/cmd/matrix-router.main
   ^defines=matrix/router/internal/db/db.go
 
 NODE id=matrix/router/internal/db.StateActive kind=const
@@ -389,6 +455,7 @@ NODE id=matrix/router/internal/db.StateActive kind=const
   sig=untyped string
   doc=User states. Keep aligned with the closed enum in schema.sql line 18.
 EDGES
+  ^references=matrix/router/internal/admin.Handler.handleUserItem,matrix/router/internal/proxy.Handler.ServeHTTP,matrix/router/internal/proxy.Handler.WakeHandler
   ^defines=matrix/router/internal/db/db.go
 
 NODE id=matrix/router/internal/db.StateDeleted kind=const
@@ -396,6 +463,7 @@ NODE id=matrix/router/internal/db.StateDeleted kind=const
   sig=untyped string
   doc=User states. Keep aligned with the closed enum in schema.sql line 18.
 EDGES
+  ^references=matrix/router/internal/admin.Handler.deleteUser,matrix/router/internal/proxy.Handler.ServeHTTP,matrix/router/internal/proxy.Handler.WakeHandler
   ^defines=matrix/router/internal/db/db.go
 
 NODE id=matrix/router/internal/db.StateFailed kind=const
@@ -403,6 +471,7 @@ NODE id=matrix/router/internal/db.StateFailed kind=const
   sig=untyped string
   doc=User states. Keep aligned with the closed enum in schema.sql line 18.
 EDGES
+  ^references=matrix/router/internal/admin.Handler.EnsureMachine
   ^defines=matrix/router/internal/db/db.go
 
 NODE id=matrix/router/internal/db.StateProvisioning kind=const
@@ -410,6 +479,7 @@ NODE id=matrix/router/internal/db.StateProvisioning kind=const
   sig=untyped string
   doc=User states. Keep aligned with the closed enum in schema.sql line 18.
 EDGES
+  ^references=matrix/router/internal/proxy.Handler.ServeHTTP,matrix/router/internal/proxy.Handler.WakeHandler
   ^defines=matrix/router/internal/db/db.go
 
 NODE id=matrix/router/internal/db.StateSuspended kind=const
@@ -417,6 +487,7 @@ NODE id=matrix/router/internal/db.StateSuspended kind=const
   sig=untyped string
   doc=User states. Keep aligned with the closed enum in schema.sql line 18.
 EDGES
+  ^references=matrix/router/internal/admin.Handler.handleUserItem,matrix/router/internal/proxy.Handler.ServeHTTP,matrix/router/internal/proxy.Handler.WakeHandler
   ^defines=matrix/router/internal/db/db.go
 
 NODE id=matrix/router/internal/db.User kind=type
@@ -425,6 +496,7 @@ NODE id=matrix/router/internal/db.User kind=type
   doc=User mirrors the columns of the public.users table that matrix-router\nreads at request time. State is one of the closed enum values\n{provisioning, active, suspended, deleted, failed}.
 EDGES
   contains=matrix/router/internal/db.User#CreatedAt,matrix/router/internal/db.User#DailyBudget,matrix/router/internal/db.User#Email,matrix/router/internal/db.User#EnvID,matrix/router/internal/db.User#ID,matrix/router/internal/db.User#LastSeenAt,matrix/router/internal/db.User#Provider,matrix/router/internal/db.User#Region,matrix/router/internal/db.User#S3AccessKey,matrix/router/internal/db.User#State,matrix/router/internal/db.User#UpdatedAt,matrix/router/internal/db.User#VolumeID
+  ^references=matrix/router/internal/admin.Handler.EnsureMachine,matrix/router/internal/db.DB.LookupForRoute
   ^defines=matrix/router/internal/db/db.go
 
 NODE id=matrix/router/internal/db.User#CreatedAt kind=field

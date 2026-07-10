@@ -27,7 +27,7 @@ func TestDetectProvider(t *testing.T) {
 		// opencode). The remaining bare "<vendor>/<model>" shape (including the
 		// retired zai-org/GLM ids) resolves to Baseten; Together is only
 		// reachable via explicit Config.Provider + ProviderSet.
-		{"grok-4.3", ProviderXai, false},
+		{"xiaomimimo/mimo-v2.5-pro", ProviderXai, false},
 		{"grok-build-0.1", ProviderXai, false},
 		{"grok-4.20-0309-non-reasoning", ProviderXai, false},
 		{"zai-org/GLM-5.2", ProviderBaseten, false},
@@ -60,10 +60,10 @@ func TestIsXaiModel(t *testing.T) {
 		in   string
 		want bool
 	}{
-		{"grok-4.3", true},
+		{"xiaomimimo/mimo-v2.5-pro", true},
 		{"grok-build-0.1", true},
 		{"grok-4.20-0309-non-reasoning", true},
-		{"GROK-4.3", true}, // case-insensitive prefix
+		{"xiaomimimo/mimo-v2.5-pro", true}, // case-insensitive prefix
 		{"zai-org/GLM-5.2", false},
 		{"deepseek-ai/DeepSeek-V4-Flash", false},
 		{"accounts/fireworks/models/gpt-oss-120b", false},
@@ -96,7 +96,7 @@ func TestXaiModelPassesThroughUnchanged(t *testing.T) {
 	defer server.Close()
 
 	client, err := New(&Config{
-		Model:    "grok-4.3",
+		Model:    "xiaomimimo/mimo-v2.5-pro",
 		APIKey:   "test-key",
 		Endpoint: server.URL,
 	})
@@ -108,13 +108,13 @@ func TestXaiModelPassesThroughUnchanged(t *testing.T) {
 	}, ""); err != nil {
 		t.Fatalf("Decode: %v", err)
 	}
-	if gotModel != "grok-4.3" {
-		t.Errorf("upstream model = %q, want %q (grok id must pass through unchanged)", gotModel, "grok-4.3")
+	if gotModel != "xiaomimimo/mimo-v2.5-pro" {
+		t.Errorf("upstream model = %q, want %q (grok id must pass through unchanged)", gotModel, "xiaomimimo/mimo-v2.5-pro")
 	}
 }
 
 // TestReasoningEffortWire pins the xAI reasoning_effort request contract that
-// replaced the retired Z.ai `thinking` block. Only grok-4.3 carries the field:
+// replaced the retired Z.ai `thinking` block. Only xiaomimimo/mimo-v2.5-pro carries the field:
 // EnableThinking=true maps to "medium", EnableThinking=false maps to "none", and
 // models that do not support reasoning_effort (grok-build-*, the non-reasoning
 // grok, and non-grok models) omit the field entirely (omitempty).
@@ -125,8 +125,8 @@ func TestReasoningEffortWire(t *testing.T) {
 		enableThinking bool
 		wantEffort     string // "" means the field must be omitted from the wire
 	}{
-		{"grok43 thinking on -> medium", "grok-4.3", true, "medium"},
-		{"grok43 thinking off -> none", "grok-4.3", false, "none"},
+		{"grok43 thinking on -> medium", "xiaomimimo/mimo-v2.5-pro", true, "medium"},
+		{"grok43 thinking off -> none", "xiaomimimo/mimo-v2.5-pro", false, "none"},
 		{"grok-build omits", "grok-build-0.1", true, ""},
 		{"grok non-reasoning omits", "grok-4.20-0309-non-reasoning", true, ""},
 		{"non-grok omits", "deepseek-ai/DeepSeek-V4-Flash", true, ""},
@@ -187,7 +187,7 @@ func TestMaxCompletionTokensWire(t *testing.T) {
 		model         string
 		wantCompletion bool // true: expect max_completion_tokens (grok); false: expect max_tokens
 	}{
-		{"grok uses max_completion_tokens", "grok-4.3", true},
+		{"grok uses max_completion_tokens", "xiaomimimo/mimo-v2.5-pro", true},
 		{"non-grok uses max_tokens", "accounts/fireworks/models/deepseek-v4-flash", false},
 	}
 	for _, tt := range tests {

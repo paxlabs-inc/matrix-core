@@ -1,16 +1,22 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:9b68327501b45793fd7687f43b30c960fd68ae8aaff6b2f1bb36ec3e2df2de2f
+# GENERATED gen=codegraph do-not-edit merkle=b3:20e53aba2ea11552396417e53b3e04e87dd1bbb7bef3aa554a45bb92cf89e7f2
 
 NODE id=matrix/codegraph/mcp kind=package
   digest=b3:4afe5d1fd1558c7b5a5421662ab7e3b75591efd65470aa239326f3845b3d273e file=codegraph/mcp range=0:0 lang=go exported=true
 EDGES
   contains=matrix/codegraph/mcp/guard.go,matrix/codegraph/mcp/server.go
+  imports=matrix/codegraph/model,matrix/codegraph/retrieve,matrix/codegraph/store
   ^contains=mod:matrix/codegraph
+  ^imports=matrix/codegraph/cmd/codegraph
 
 NODE id=matrix/codegraph/mcp.New kind=func
   digest=b3:aa566398757b154015aff20226ec2dd05b3e4f8cdd3b0734372ca79f37db5896 file=codegraph/mcp/server.go range=38:148 lang=go exported=true byte_range=976:4825
   sig=func New(ix *model.Index) *Server
   doc=New builds a Server over an in-memory graph Index and registers the retrieval\ntools that are currently implemented (symbol_lookup, neighbors, impact).\nAdditional tools (diff, subgraph, search) register here as they land.
 EDGES
+  calls=matrix/codegraph/mcp.object,matrix/codegraph/mcp.prop,matrix/codegraph/retrieve.New
+  references=matrix/codegraph/mcp.Server,matrix/codegraph/mcp.args,matrix/codegraph/mcp.err,matrix/codegraph/mcp.ix,matrix/codegraph/mcp.ixA,matrix/codegraph/mcp.ixB,matrix/codegraph/mcp.object,matrix/codegraph/mcp.p,matrix/codegraph/mcp.parseDir,matrix/codegraph/mcp.prop,matrix/codegraph/mcp.props,matrix/codegraph/mcp.s,matrix/codegraph/mcp.tool,matrix/codegraph/model.EdgeType,matrix/codegraph/model.Index,matrix/codegraph/model.Kind,matrix/codegraph/retrieve.API.Impact,matrix/codegraph/retrieve.API.Neighbors,matrix/codegraph/retrieve.API.SymbolLookup,matrix/codegraph/retrieve.Diff,matrix/codegraph/retrieve.New,matrix/codegraph/store.Load
+  ^calls=matrix/codegraph/cmd/codegraph.cmdMCP
+  ^references=matrix/codegraph/cmd/codegraph.cmdMCP
   ^defines=matrix/codegraph/mcp/server.go
 
 NODE id=matrix/codegraph/mcp.Server kind=type
@@ -19,6 +25,8 @@ NODE id=matrix/codegraph/mcp.Server kind=type
   doc=Server serves the CodeGraph retrieval tools over MCP. Construct it with New,\nthen drive it with Serve. Tools are held in a fixed registration order so\ntools/list is deterministic.
 EDGES
   contains=matrix/codegraph/mcp.Server#api,matrix/codegraph/mcp.Server#tools,matrix/codegraph/mcp.Server.Serve,matrix/codegraph/mcp.Server.ToolNames,matrix/codegraph/mcp.Server.callTool,matrix/codegraph/mcp.Server.handle,matrix/codegraph/mcp.Server.toolList
+  references=matrix/codegraph/mcp.tool,matrix/codegraph/retrieve.API
+  ^references=matrix/codegraph/mcp.New,matrix/codegraph/mcp.Server.Serve,matrix/codegraph/mcp.Server.ToolNames,matrix/codegraph/mcp.Server.callTool,matrix/codegraph/mcp.Server.handle,matrix/codegraph/mcp.Server.toolList
   ^defines=matrix/codegraph/mcp/server.go
 
 NODE id=matrix/codegraph/mcp.Server#api kind=field
@@ -38,7 +46,11 @@ NODE id=matrix/codegraph/mcp.Server.Serve kind=method
   sig=func (s *Server) Serve(in io.Reader, out io.Writer) error
   doc=Serve reads newline-delimited JSON-RPC requests from in and writes responses\nto out until in is exhausted.
 EDGES
+  calls=matrix/codegraph/mcp.Server.handle
+  references=matrix/codegraph/mcp.Server,matrix/codegraph/mcp.Server.handle,matrix/codegraph/mcp.b,matrix/codegraph/mcp.bw,matrix/codegraph/mcp.err,matrix/codegraph/mcp.in,matrix/codegraph/mcp.line,matrix/codegraph/mcp.out,matrix/codegraph/mcp.resp,matrix/codegraph/mcp.s,matrix/codegraph/mcp.scanner
   ^contains=matrix/codegraph/mcp.Server
+  ^calls=matrix/codegraph/cmd/codegraph.cmdMCP
+  ^references=matrix/codegraph/cmd/codegraph.cmdMCP
   ^defines=matrix/codegraph/mcp/server.go
 
 NODE id=matrix/codegraph/mcp.Server.ToolNames kind=method
@@ -46,6 +58,7 @@ NODE id=matrix/codegraph/mcp.Server.ToolNames kind=method
   sig=func (s *Server) ToolNames() []string
   doc=ToolNames returns the registered tool names in registration order.
 EDGES
+  references=matrix/codegraph/mcp.Server,matrix/codegraph/mcp.i,matrix/codegraph/mcp.out,matrix/codegraph/mcp.s,matrix/codegraph/mcp.t
   ^contains=matrix/codegraph/mcp.Server
   ^defines=matrix/codegraph/mcp/server.go
 
@@ -53,21 +66,32 @@ NODE id=matrix/codegraph/mcp.Server.callTool kind=method
   digest=b3:c270793b04ac46d49f2c4865f3ad2a1609fbafcb3f909112587c44d4f0d78a64 file=codegraph/mcp/server.go range=227:253 lang=go exported=false byte_range=6841:7638
   sig=func (s *Server) callTool(id any, params json.RawMessage) map[string]any
 EDGES
+  calls=matrix/codegraph/mcp.guardFragment,matrix/codegraph/mcp.rpcErr,matrix/codegraph/mcp.rpcOk,matrix/codegraph/mcp.toolError
+  references=matrix/codegraph/mcp.Server,matrix/codegraph/mcp.err,matrix/codegraph/mcp.frag,matrix/codegraph/mcp.guardFragment,matrix/codegraph/mcp.id,matrix/codegraph/mcp.p,matrix/codegraph/mcp.params,matrix/codegraph/mcp.rpcErr,matrix/codegraph/mcp.rpcOk,matrix/codegraph/mcp.s,matrix/codegraph/mcp.t,matrix/codegraph/mcp.toolError
   ^contains=matrix/codegraph/mcp.Server
+  ^calls=matrix/codegraph/mcp.Server.handle
+  ^references=matrix/codegraph/mcp.Server.handle
   ^defines=matrix/codegraph/mcp/server.go
 
 NODE id=matrix/codegraph/mcp.Server.handle kind=method
   digest=b3:0f716f7f03a951aac1ef97bc92d8716708104a7f2fe171a65e2b9fde37928fe6 file=codegraph/mcp/server.go range=184:213 lang=go exported=false byte_range=5645:6569
   sig=func (s *Server) handle(line []byte) map[string]any
 EDGES
+  calls=matrix/codegraph/mcp.Server.callTool,matrix/codegraph/mcp.Server.toolList,matrix/codegraph/mcp.rpcErr,matrix/codegraph/mcp.rpcOk
+  references=matrix/codegraph/mcp.Server,matrix/codegraph/mcp.Server.callTool,matrix/codegraph/mcp.Server.toolList,matrix/codegraph/mcp.err,matrix/codegraph/mcp.line,matrix/codegraph/mcp.protocolVersion,matrix/codegraph/mcp.req,matrix/codegraph/mcp.rpcErr,matrix/codegraph/mcp.rpcOk,matrix/codegraph/mcp.s
   ^contains=matrix/codegraph/mcp.Server
+  ^calls=matrix/codegraph/mcp.Server.Serve
+  ^references=matrix/codegraph/mcp.Server.Serve
   ^defines=matrix/codegraph/mcp/server.go
 
 NODE id=matrix/codegraph/mcp.Server.toolList kind=method
   digest=b3:2a12318ac40a42197c830742232cf4a850c20262a3268137369aa54ab86ac4cb file=codegraph/mcp/server.go range=215:225 lang=go exported=false byte_range=6571:6839
   sig=func (s *Server) toolList() []map[string]any
 EDGES
+  references=matrix/codegraph/mcp.Server,matrix/codegraph/mcp.out,matrix/codegraph/mcp.s,matrix/codegraph/mcp.t
   ^contains=matrix/codegraph/mcp.Server
+  ^calls=matrix/codegraph/mcp.Server.handle
+  ^references=matrix/codegraph/mcp.Server.handle
   ^defines=matrix/codegraph/mcp/server.go
 
 NODE id=matrix/codegraph/mcp.guardFragment kind=func
@@ -75,54 +99,77 @@ NODE id=matrix/codegraph/mcp.guardFragment kind=func
   sig=func guardFragment(s string) error
   doc=guardFragment enforces the fragments-not-source invariant at the tool\nboundary: every result must be a well-formed .kvx fragment of ids, locations,\nsignatures, and one-line summaries — never a raw source range. Any line that\nfalls outside the fragment grammar is treated as a possible source leak and\nfails closed, so it never reaches the agent.\n\nThe grammar of a fragment line is exactly one of:\n  - empty\n  - a comment line beginning with "#"\n  - a NODE header line beginning with "NODE "\n  - the literal "EDGES"\n  - an indented "  key=value" field (including "  ^type=..." reverse edges)\n\nSource bodies (indented with tabs, or unindented statements/decls) match none\nof these, so a leaked range is rejected.
 EDGES
+  references=matrix/codegraph/mcp.i,matrix/codegraph/mcp.line,matrix/codegraph/mcp.s,matrix/codegraph/mcp.sawHeader
+  ^calls=matrix/codegraph/mcp.Server.callTool
+  ^references=matrix/codegraph/mcp.Server.callTool
   ^defines=matrix/codegraph/mcp/guard.go
 
 NODE id=matrix/codegraph/mcp.mapProps kind=func
   digest=b3:c3843174d07820db5dfab033343da7980547319846ff20ef6b9191ca33ef2d74 file=codegraph/mcp/server.go range=300:306 lang=go exported=false byte_range=8674:8803
   sig=func mapProps(p props) map[string]any
 EDGES
+  references=matrix/codegraph/mcp.k,matrix/codegraph/mcp.out,matrix/codegraph/mcp.p,matrix/codegraph/mcp.props,matrix/codegraph/mcp.v
+  ^calls=matrix/codegraph/mcp.object
+  ^references=matrix/codegraph/mcp.object
   ^defines=matrix/codegraph/mcp/server.go
 
 NODE id=matrix/codegraph/mcp.object kind=func
   digest=b3:a0d9bb335e08831edede0359e5163dc9794f54ee6030513495f7a677deae7157 file=codegraph/mcp/server.go range=289:298 lang=go exported=false byte_range=8438:8672
   sig=func object(p props, required ...string) map[string]any
 EDGES
+  calls=matrix/codegraph/mcp.mapProps
+  references=matrix/codegraph/mcp.mapProps,matrix/codegraph/mcp.p,matrix/codegraph/mcp.props,matrix/codegraph/mcp.required,matrix/codegraph/mcp.schema
+  ^calls=matrix/codegraph/mcp.New
+  ^references=matrix/codegraph/mcp.New
   ^defines=matrix/codegraph/mcp/server.go
 
 NODE id=matrix/codegraph/mcp.parseDir kind=func
   digest=b3:9d9d21035533319bdf9eb0e674a0dc9a861db7b8754efb32a082376c745c6bca file=codegraph/mcp/server.go range=262:271 lang=go exported=false byte_range=7814:7964
   sig=func parseDir(s string) model.Direction
 EDGES
+  references=matrix/codegraph/mcp.s,matrix/codegraph/model.Both,matrix/codegraph/model.Direction,matrix/codegraph/model.In,matrix/codegraph/model.Out
+  ^references=matrix/codegraph/mcp.New
   ^defines=matrix/codegraph/mcp/server.go
 
 NODE id=matrix/codegraph/mcp.prop kind=func
   digest=b3:1e4358051cdfc19725b5351a1d5609ceb1c39a44a1dbf8b3eaa23347ece0fc5e file=codegraph/mcp/server.go range=285:287 lang=go exported=false byte_range=8333:8436
   sig=func prop(typ, desc string) map[string]any
 EDGES
+  references=matrix/codegraph/mcp.desc,matrix/codegraph/mcp.typ
+  ^calls=matrix/codegraph/mcp.New
+  ^references=matrix/codegraph/mcp.New
   ^defines=matrix/codegraph/mcp/server.go
 
 NODE id=matrix/codegraph/mcp.props kind=type
   digest=b3:591d09cade12be33e23662639f9b68dd06b637615ad7b47513e9f5cdee82c6b9 file=codegraph/mcp/server.go range=283:283 lang=go exported=false byte_range=8295:8331
   sig=type props map[string]map[string]any
 EDGES
+  ^references=matrix/codegraph/mcp.New,matrix/codegraph/mcp.mapProps,matrix/codegraph/mcp.object
   ^defines=matrix/codegraph/mcp/server.go
 
 NODE id=matrix/codegraph/mcp.protocolVersion kind=const
   digest=b3:ecf1e8f556bfa98011325658e2b0d8bd1c1312aff8a4623234d7fc756ff4e538 file=codegraph/mcp/server.go range=20:20 lang=go exported=false byte_range=487:517
   sig=untyped string
 EDGES
+  ^references=matrix/codegraph/mcp.Server.handle
   ^defines=matrix/codegraph/mcp/server.go
 
 NODE id=matrix/codegraph/mcp.rpcErr kind=func
   digest=b3:1007f7fa1feab2f645e833845384ab03653604094a9ef0758e4b7271b4615db8 file=codegraph/mcp/server.go range=277:279 lang=go exported=false byte_range=8082:8256
   sig=func rpcErr(id any, code int, message string) map[string]any
 EDGES
+  references=matrix/codegraph/mcp.code,matrix/codegraph/mcp.id,matrix/codegraph/mcp.message
+  ^calls=matrix/codegraph/mcp.Server.callTool,matrix/codegraph/mcp.Server.handle
+  ^references=matrix/codegraph/mcp.Server.callTool,matrix/codegraph/mcp.Server.handle
   ^defines=matrix/codegraph/mcp/server.go
 
 NODE id=matrix/codegraph/mcp.rpcOk kind=func
   digest=b3:9badce362acfe4f8d65714f29548e2981d19daebd283b6138d722a127d57abb3 file=codegraph/mcp/server.go range=273:275 lang=go exported=false byte_range=7966:8080
   sig=func rpcOk(id, result any) map[string]any
 EDGES
+  references=matrix/codegraph/mcp.id,matrix/codegraph/mcp.result
+  ^calls=matrix/codegraph/mcp.Server.callTool,matrix/codegraph/mcp.Server.handle,matrix/codegraph/mcp.toolError
+  ^references=matrix/codegraph/mcp.Server.callTool,matrix/codegraph/mcp.Server.handle,matrix/codegraph/mcp.toolError
   ^defines=matrix/codegraph/mcp/server.go
 
 NODE id=matrix/codegraph/mcp.tool kind=type
@@ -131,6 +178,7 @@ NODE id=matrix/codegraph/mcp.tool kind=type
   doc=tool is one registered MCP tool over the retrieval surface.
 EDGES
   contains=matrix/codegraph/mcp.tool#Description,matrix/codegraph/mcp.tool#Name,matrix/codegraph/mcp.tool#Schema,matrix/codegraph/mcp.tool#call
+  ^references=matrix/codegraph/mcp.New,matrix/codegraph/mcp.Server
   ^defines=matrix/codegraph/mcp/server.go
 
 NODE id=matrix/codegraph/mcp.tool#Description kind=field
@@ -161,6 +209,10 @@ NODE id=matrix/codegraph/mcp.toolError kind=func
   digest=b3:e7cf5a208d309ab02005ad3e2140c8123aa6c45fd906af37b5f8d50f531d953c file=codegraph/mcp/server.go range=255:260 lang=go exported=false byte_range=7640:7812
   sig=func toolError(id any, msg string) map[string]any
 EDGES
+  calls=matrix/codegraph/mcp.rpcOk
+  references=matrix/codegraph/mcp.id,matrix/codegraph/mcp.msg,matrix/codegraph/mcp.rpcOk
+  ^calls=matrix/codegraph/mcp.Server.callTool
+  ^references=matrix/codegraph/mcp.Server.callTool
   ^defines=matrix/codegraph/mcp/server.go
 
 NODE id=matrix/codegraph/mcp/guard.go kind=file

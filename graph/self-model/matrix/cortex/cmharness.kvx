@@ -1,0 +1,41 @@
+# GENERATED gen=codegraph do-not-edit merkle=b3:75a956136eb56a920059d717ea1f7ba394b53bef834ab6db66f06d328eb5d650
+
+NODE id=matrix/cortex/cmharness kind=package
+  digest=b3:fa5e883d0a0bdf864a2d35ff08a7868d62eee633f57c05f7018bb3e2ec5bafc4 file=cortex/cmharness range=0:0 lang=go exported=true
+EDGES
+  contains=matrix/cortex/cmharness/harness.go
+  ^contains=mod:matrix/cortex
+
+NODE id=matrix/cortex/cmharness.AnchoredRoots kind=func
+  digest=b3:bb7b33703dc9a50c6702254cfacd063dbe513f50567c735d4c28a94ea1913528 file=cortex/cmharness/harness.go range=71:96 lang=go exported=true byte_range=3486:4444
+  sig=func AnchoredRoots(c *cortex.Cortex) (map[string][32]byte, error)
+  doc=AnchoredRoots returns the current SMT root for each anchored namespace\n(snapshot.AnchoredNamespaces = {"edges","memories"}), keyed by namespace.\nThese are the byte-strings that define the anchored world-state; a\nderived-lane write must leave every one of them unchanged.
+EDGES
+  ^defines=matrix/cortex/cmharness/harness.go
+
+NODE id=matrix/cortex/cmharness.AssertNoAnchoredDrift kind=func
+  digest=b3:1d339b34808402cf4c5bb86eead411a94edb3250e5c25e745ad1b69f5ddd6c6b file=cortex/cmharness/harness.go range=98:131 lang=go exported=true byte_range=4446:5818
+  sig=func AssertNoAnchoredDrift(c *cortex.Cortex, mutate func() error) error
+  doc=AssertNoAnchoredDrift captures the anchored roots, runs mutate, re-captures,\nand returns a non-nil error if any anchored root changed. This is the\nreusable req.11.1 assertion for ANY derived-lane write: pass an\nAppendMessage (now) or a rollup/enrichment/cache write (later) as mutate.\n\nmutate must not be nil. Any error mutate returns is propagated (wrapped)\nbefore the after-capture, so a failed derived write is surfaced honestly\nrather than masquerading as "no drift".
+EDGES
+  ^defines=matrix/cortex/cmharness/harness.go
+
+NODE id=matrix/cortex/cmharness.CompareAnchoredRoots kind=func
+  digest=b3:d48821bee7f9b52c8a29ed64e4e338cdc980c17616aea1f4f42f78962ec90045 file=cortex/cmharness/harness.go range=133:155 lang=go exported=true byte_range=5820:6800
+  sig=func CompareAnchoredRoots(a, b *cortex.Cortex) error
+  doc=CompareAnchoredRoots returns a non-nil error unless both instances' anchored\nroots (memories AND edges) are byte-identical. This is the reusable\nactive-vs-inactive req.11.2 assertion: drive two cortex instances with the\nSAME anchored ops (identical deterministic clock + idGen so memory IDs\nmatch), have one of them additionally carry continuous-memory derived-lane\nwrites, then assert their anchored world-state is identical.
+EDGES
+  ^defines=matrix/cortex/cmharness/harness.go
+
+NODE id=matrix/cortex/cmharness.ReplayPreservesRoot kind=func
+  digest=b3:92a774b51722decfc21d9e21d990ddc6702634daab496d92894e4ff295572088 file=cortex/cmharness/harness.go range=157:183 lang=go exported=true byte_range=6802:8133
+  sig=func ReplayPreservesRoot(c *cortex.Cortex, now func() time.Time) (*replay.Result, error)
+  doc=ReplayPreservesRoot runs replay.Rebuild against the cortex's own store +\nsnapshot state and then replay.VerifyPreservesRoot on the result. It returns\nthe *replay.Result on success, or the wrapped root-mismatch error on\nfailure. This is the reusable D11 proof entrypoint: it proves the FULL\nOverallRoot (including the derived-lane journal-MMR leaves) rebuilds\nbyte-identically from canonical state after dropping the derived indexes.\n\nnow is the clock used for salience recomputation during rebuild (salience is\nNOT an OverallRoot input, so any clock preserves the root); nil falls back to\nthe wallclock inside replay.Rebuild.\n\nNOTE on lane discipline: this must live in cmharness (not in package replay)\nbecause it drives a *cortex.Cortex and replay cannot import cortex (cortex\nimports replay).
+EDGES
+  ^defines=matrix/cortex/cmharness/harness.go
+
+NODE id=matrix/cortex/cmharness/harness.go kind=file
+  digest=b3:4633a06a0f328811e12ac1ded80e046c2eadebdf25ab772e8548306c197647f4 file=cortex/cmharness/harness.go range=1:183 lang=go exported=true
+EDGES
+  defines=matrix/cortex/cmharness.AnchoredRoots,matrix/cortex/cmharness.AssertNoAnchoredDrift,matrix/cortex/cmharness.CompareAnchoredRoots,matrix/cortex/cmharness.ReplayPreservesRoot
+  ^contains=matrix/cortex/cmharness

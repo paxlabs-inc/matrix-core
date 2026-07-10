@@ -72,6 +72,12 @@ func (s *Server) Handler() http.Handler {
 	// and the completion inbox. Neo-owned routes registered before the catch-all
 	// proxy (the daemon has never heard of them).
 	mux.HandleFunc("/automatrix/", s.handleAutomatrix)
+	// Self-model observability (self-model task 6.2, req.13): a read-only,
+	// side-effect-free inspection surface returning the agent's CURRENT resident
+	// self-summary and its active failure-pattern memories, so a wrong or stale
+	// self-model is caught rather than silently trusted. Neo-owned, registered
+	// before the catch-all proxy (the daemon has never heard of it).
+	mux.HandleFunc("/diag/self-model", s.handleDiagSelfModel)
 	mux.HandleFunc("/", s.proxy.ServeHTTP) // healthz, /messages, /memory, /tools, … → daemon
 	// Q2 warm-on-open: the FIRST inbound request (whatever the app hits on
 	// open) triggers a one-shot, non-blocking warm of the embedder + HNSW
@@ -87,6 +93,59 @@ func (s *Server) warmOnFirstRequest(next http.Handler) http.Handler {
 		s.engine.Warm()
 		next.ServeHTTP(w, r)
 	})
+}
+
+// selfModelDiag is the read-only inspection payload: what the agent currently
+// believes about ITSELF — its resident structural summary (how it is built) and
+// its active failure-pattern memories (how it tends to fail) — plus the scope
+// and context limit that back them. It is a pure projection of the shared cortex
+// self-model; it never mutates it.
+type selfModelDiag struct {
+	Identity        string               `json:"identity"`
+	ResidentSummary string               `json:"resident_summary"`
+	Scope           []string             `json:"scope,omitempty"`
+	ContextLimit    int                  `json:"context_limit,omitempty"`
+	StructuralURI   string               `json:"structural_uri,omitempty"`
+	FailurePatterns []failurePatternDiag `json:"failure_patterns"`
+}
+
+type failurePatternDiag struct {
+	Statement string `json:"statement"`
+	URI       string `json:"uri,omitempty"`
+}
+
+// handleDiagSelfModel serves GET /diag/self-model: the current resident
+// self-summary and the active failure-pattern memories (self-model req.13.1). It
+// is read-only and side-effect free (req.13.2) — it resolves the shared
+// self-model through the pager's read path and never signs, mutates the model,
+// or touches plan/walk.
+func (s *Server) handleDiagSelfModel(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	if s.engine == nil || s.engine.pager == nil {
+		http.Error(w, "self-model unavailable (no cortex pager)", http.StatusServiceUnavailable)
+		return
+	}
+	model, err := s.engine.pager.SelfModel(r.Context())
+	if err != nil {
+		http.Error(w, fmt.Sprintf("self-model read failed: %v", err), http.StatusInternalServerError)
+		return
+	}
+	resp := selfModelDiag{
+		Identity:        model.Identity,
+		ResidentSummary: model.Structural.Summary,
+		Scope:           model.Structural.Scope,
+		ContextLimit:    model.Structural.ContextLimit,
+		StructuralURI:   model.StructuralURI,
+		FailurePatterns: make([]failurePatternDiag, 0, len(model.FailurePatterns)),
+	}
+	for _, fp := range model.FailurePatterns {
+		resp.FailurePatterns = append(resp.FailurePatterns, failurePatternDiag{Statement: fp.Statement, URI: fp.URI})
+	}
+	w.Header().Set("Content-Type", "application/json")
+	_ = json.NewEncoder(w).Encode(resp)
 }
 
 // chatRequest mirrors the daemon's POST /chat body (only the fields Neo needs).

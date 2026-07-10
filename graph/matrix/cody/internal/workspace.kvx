@@ -1,10 +1,11 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:9b68327501b45793fd7687f43b30c960fd68ae8aaff6b2f1bb36ec3e2df2de2f
+# GENERATED gen=codegraph do-not-edit merkle=b3:20e53aba2ea11552396417e53b3e04e87dd1bbb7bef3aa554a45bb92cf89e7f2
 
 NODE id=matrix/cody/internal/workspace kind=package
   digest=b3:5f9e4dc8584d940879c1b3bd147abd3aa41e64abca2e513d73c456d47274ed40 file=cody/internal/workspace range=0:0 lang=go exported=true
 EDGES
   contains=matrix/cody/internal/workspace/workspace.go
   ^contains=mod:matrix/cody
+  ^imports=matrix/cody/internal/orchestrator,matrix/cody/internal/policy,matrix/cody/internal/preview,matrix/cody/internal/server
 
 NODE id=matrix/cody/internal/workspace.File kind=type
   digest=b3:405c0d2ebe5c5ad51a8d0f28ed2477a2a345dd9e8fc66bfadf5fa6193235db05 file=cody/internal/workspace/workspace.go range=34:39 lang=go exported=true byte_range=1031:1181
@@ -12,6 +13,7 @@ NODE id=matrix/cody/internal/workspace.File kind=type
   doc=File is one indexed workspace file.
 EDGES
   contains=matrix/cody/internal/workspace.File#Lang,matrix/cody/internal/workspace.File#Path,matrix/cody/internal/workspace.File#Size
+  ^references=matrix/cody/internal/workspace.Model,matrix/cody/internal/workspace.Scan
   ^defines=matrix/cody/internal/workspace/workspace.go
 
 NODE id=matrix/cody/internal/workspace.File#Lang kind=field
@@ -37,6 +39,9 @@ NODE id=matrix/cody/internal/workspace.Load kind=func
   sig=func Load(root string) (*Model, error)
   doc=Load reads the persisted index for a workspace root. It fails if no index\nhas been persisted yet.
 EDGES
+  references=matrix/cody/internal/workspace.Model,matrix/cody/internal/workspace.StateDir,matrix/cody/internal/workspace.abs,matrix/cody/internal/workspace.data,matrix/cody/internal/workspace.err,matrix/cody/internal/workspace.indexFile,matrix/cody/internal/workspace.m,matrix/cody/internal/workspace.root
+  ^calls=matrix/cody/internal/workspace.LoadOrScan
+  ^references=matrix/cody/internal/workspace.LoadOrScan
   ^defines=matrix/cody/internal/workspace/workspace.go
 
 NODE id=matrix/cody/internal/workspace.LoadOrScan kind=func
@@ -44,6 +49,10 @@ NODE id=matrix/cody/internal/workspace.LoadOrScan kind=func
   sig=func LoadOrScan(root string) (*Model, error)
   doc=LoadOrScan loads the persisted index when present, otherwise scans and\npersists a fresh one — the cross-session entry point.
 EDGES
+  calls=matrix/cody/internal/workspace.Load,matrix/cody/internal/workspace.Refresh
+  references=matrix/cody/internal/workspace.Load,matrix/cody/internal/workspace.Model,matrix/cody/internal/workspace.Refresh,matrix/cody/internal/workspace.err,matrix/cody/internal/workspace.m,matrix/cody/internal/workspace.root
+  ^calls=matrix/cody/internal/orchestrator.Orchestrator.Run,matrix/cody/internal/preview.Manager.provision,matrix/cody/internal/server.Engine.drive
+  ^references=matrix/cody/internal/orchestrator.Orchestrator.Run,matrix/cody/internal/preview.Manager.provision,matrix/cody/internal/server.Engine.drive
   ^defines=matrix/cody/internal/workspace/workspace.go
 
 NODE id=matrix/cody/internal/workspace.Model kind=type
@@ -52,6 +61,8 @@ NODE id=matrix/cody/internal/workspace.Model kind=type
   doc=Model is the persistent repo index.
 EDGES
   contains=matrix/cody/internal/workspace.Model#BuildTargets,matrix/cody/internal/workspace.Model#EntryPoints,matrix/cody/internal/workspace.Model#FileCount,matrix/cody/internal/workspace.Model#Files,matrix/cody/internal/workspace.Model#Frameworks,matrix/cody/internal/workspace.Model#GeneratedAt,matrix/cody/internal/workspace.Model#Languages,matrix/cody/internal/workspace.Model#Root,matrix/cody/internal/workspace.Model.Greenfield,matrix/cody/internal/workspace.Model.PrimaryLanguages,matrix/cody/internal/workspace.Model.Save,matrix/cody/internal/workspace.Model.Summary,matrix/cody/internal/workspace.Model.UIBearing,matrix/cody/internal/workspace.Model.has
+  references=matrix/cody/internal/workspace.File
+  ^references=matrix/cody/internal/policy.LoadRules,matrix/cody/internal/preview.DetectStart,matrix/cody/internal/preview.hasEntry,matrix/cody/internal/preview.hasPackageJSON,matrix/cody/internal/server.Engine.resolveDesignDecision,matrix/cody/internal/server.Engine.resolveStackDecision,matrix/cody/internal/server.designBrief,matrix/cody/internal/server.stackBrief,matrix/cody/internal/server.uiBearing,matrix/cody/internal/workspace.Load,matrix/cody/internal/workspace.LoadOrScan,matrix/cody/internal/workspace.Model.Greenfield,matrix/cody/internal/workspace.Model.PrimaryLanguages,matrix/cody/internal/workspace.Model.Save,matrix/cody/internal/workspace.Model.Summary,matrix/cody/internal/workspace.Model.UIBearing,matrix/cody/internal/workspace.Model.has,matrix/cody/internal/workspace.Refresh,matrix/cody/internal/workspace.Scan,matrix/cody/internal/workspace.detectBuildTargets,matrix/cody/internal/workspace.detectEntryPoints,matrix/cody/internal/workspace.detectFrameworks
   ^defines=matrix/cody/internal/workspace/workspace.go
 
 NODE id=matrix/cody/internal/workspace.Model#BuildTargets kind=field
@@ -111,7 +122,10 @@ NODE id=matrix/cody/internal/workspace.Model.Greenfield kind=method
   sig=func (m *Model) Greenfield() bool
   doc=Greenfield reports whether the workspace holds no existing codebase to build\non: no source-language files and no invocable build targets. A fresh /workspace\n(or one seeded with only plain-text scaffolding) is greenfield — the signal\nthat gates the Stack Decision Record before planning (req 8.1).
 EDGES
+  references=matrix/cody/internal/workspace.Model,matrix/cody/internal/workspace.m
   ^contains=matrix/cody/internal/workspace.Model
+  ^calls=matrix/cody/internal/server.Engine.drive
+  ^references=matrix/cody/internal/server.Engine.drive
   ^defines=matrix/cody/internal/workspace/workspace.go
 
 NODE id=matrix/cody/internal/workspace.Model.PrimaryLanguages kind=method
@@ -119,7 +133,10 @@ NODE id=matrix/cody/internal/workspace.Model.PrimaryLanguages kind=method
   sig=func (m *Model) PrimaryLanguages() []string
   doc=PrimaryLanguages returns the detected languages ordered by file count\ndescending — the stack the rules injection keys off.
 EDGES
+  references=matrix/cody/internal/workspace.Model,matrix/cody/internal/workspace.i,matrix/cody/internal/workspace.j,matrix/cody/internal/workspace.l,matrix/cody/internal/workspace.langs,matrix/cody/internal/workspace.m
   ^contains=matrix/cody/internal/workspace.Model
+  ^calls=matrix/cody/internal/policy.LoadRules,matrix/cody/internal/workspace.Model.Summary
+  ^references=matrix/cody/internal/policy.LoadRules,matrix/cody/internal/workspace.Model.Summary
   ^defines=matrix/cody/internal/workspace/workspace.go
 
 NODE id=matrix/cody/internal/workspace.Model.Save kind=method
@@ -127,7 +144,10 @@ NODE id=matrix/cody/internal/workspace.Model.Save kind=method
   sig=func (m *Model) Save() error
   doc=Save persists the index under <root>/.cody/workspace.json atomically.
 EDGES
+  references=matrix/cody/internal/workspace.Model,matrix/cody/internal/workspace.StateDir,matrix/cody/internal/workspace.data,matrix/cody/internal/workspace.dir,matrix/cody/internal/workspace.err,matrix/cody/internal/workspace.indexFile,matrix/cody/internal/workspace.m,matrix/cody/internal/workspace.path,matrix/cody/internal/workspace.tmp
   ^contains=matrix/cody/internal/workspace.Model
+  ^calls=matrix/cody/internal/workspace.Refresh
+  ^references=matrix/cody/internal/workspace.Refresh
   ^defines=matrix/cody/internal/workspace/workspace.go
 
 NODE id=matrix/cody/internal/workspace.Model.Summary kind=method
@@ -135,7 +155,11 @@ NODE id=matrix/cody/internal/workspace.Model.Summary kind=method
   sig=func (m *Model) Summary() string
   doc=Summary renders a compact human/model-readable digest of the index for the\norchestrator's understand step and worker grounding bundles.
 EDGES
+  calls=matrix/cody/internal/workspace.Model.PrimaryLanguages
+  references=matrix/cody/internal/workspace.Model,matrix/cody/internal/workspace.Model.PrimaryLanguages,matrix/cody/internal/workspace.b,matrix/cody/internal/workspace.langs,matrix/cody/internal/workspace.m
   ^contains=matrix/cody/internal/workspace.Model
+  ^calls=matrix/cody/internal/orchestrator.Orchestrator.Run,matrix/cody/internal/server.Engine.drive,matrix/cody/internal/server.designBrief,matrix/cody/internal/server.stackBrief
+  ^references=matrix/cody/internal/orchestrator.Orchestrator.Run,matrix/cody/internal/server.Engine.drive,matrix/cody/internal/server.designBrief,matrix/cody/internal/server.stackBrief
   ^defines=matrix/cody/internal/workspace/workspace.go
 
 NODE id=matrix/cody/internal/workspace.Model.UIBearing kind=method
@@ -143,7 +167,10 @@ NODE id=matrix/cody/internal/workspace.Model.UIBearing kind=method
   sig=func (m *Model) UIBearing() bool
   doc=UIBearing reports whether an existing workspace already carries a user-facing\nUI: a detected frontend framework, or CSS/HTML/component files. It is the\nsignal (alongside the plan's own UI tasks) that gates the Design Language\nRecord before the first UI task (req 9.1). A greenfield workspace has nothing\nto detect yet, so UI intent there is read from the authored plan instead.
 EDGES
+  references=matrix/cody/internal/workspace.Model,matrix/cody/internal/workspace.f,matrix/cody/internal/workspace.fw,matrix/cody/internal/workspace.lang,matrix/cody/internal/workspace.m,matrix/cody/internal/workspace.uiFrameworks,matrix/cody/internal/workspace.uiLangs
   ^contains=matrix/cody/internal/workspace.Model
+  ^calls=matrix/cody/internal/server.uiBearing
+  ^references=matrix/cody/internal/server.uiBearing
   ^defines=matrix/cody/internal/workspace/workspace.go
 
 NODE id=matrix/cody/internal/workspace.Model.has kind=method
@@ -151,7 +178,10 @@ NODE id=matrix/cody/internal/workspace.Model.has kind=method
   sig=func (m *Model) has(rel string) bool
   doc=has reports whether an indexed file exists at rel (exact match).
 EDGES
+  references=matrix/cody/internal/workspace.Model,matrix/cody/internal/workspace.i,matrix/cody/internal/workspace.m,matrix/cody/internal/workspace.rel
   ^contains=matrix/cody/internal/workspace.Model
+  ^calls=matrix/cody/internal/workspace.detectBuildTargets,matrix/cody/internal/workspace.detectEntryPoints,matrix/cody/internal/workspace.detectFrameworks
+  ^references=matrix/cody/internal/workspace.detectBuildTargets,matrix/cody/internal/workspace.detectEntryPoints,matrix/cody/internal/workspace.detectFrameworks
   ^defines=matrix/cody/internal/workspace/workspace.go
 
 NODE id=matrix/cody/internal/workspace.Refresh kind=func
@@ -159,6 +189,10 @@ NODE id=matrix/cody/internal/workspace.Refresh kind=func
   sig=func Refresh(root string) (*Model, error)
   doc=Refresh rescans the workspace and persists the fresh index.
 EDGES
+  calls=matrix/cody/internal/workspace.Model.Save,matrix/cody/internal/workspace.Scan
+  references=matrix/cody/internal/workspace.Model,matrix/cody/internal/workspace.Model.Save,matrix/cody/internal/workspace.Scan,matrix/cody/internal/workspace.err,matrix/cody/internal/workspace.m,matrix/cody/internal/workspace.root
+  ^calls=matrix/cody/internal/workspace.LoadOrScan
+  ^references=matrix/cody/internal/workspace.LoadOrScan
   ^defines=matrix/cody/internal/workspace/workspace.go
 
 NODE id=matrix/cody/internal/workspace.Scan kind=func
@@ -166,6 +200,10 @@ NODE id=matrix/cody/internal/workspace.Scan kind=func
   sig=func Scan(root string) (*Model, error)
   doc=Scan walks the workspace and builds a fresh Model. It does not persist;\ncallers use Save (or Refresh which does both).
 EDGES
+  calls=matrix/cody/internal/workspace.detectBuildTargets,matrix/cody/internal/workspace.detectEntryPoints,matrix/cody/internal/workspace.detectFrameworks
+  references=matrix/cody/internal/workspace.File,matrix/cody/internal/workspace.Model,matrix/cody/internal/workspace.abs,matrix/cody/internal/workspace.d,matrix/cody/internal/workspace.detectBuildTargets,matrix/cody/internal/workspace.detectEntryPoints,matrix/cody/internal/workspace.detectFrameworks,matrix/cody/internal/workspace.err,matrix/cody/internal/workspace.fi,matrix/cody/internal/workspace.i,matrix/cody/internal/workspace.ignoredDirs,matrix/cody/internal/workspace.info,matrix/cody/internal/workspace.j,matrix/cody/internal/workspace.lang,matrix/cody/internal/workspace.langByExt,matrix/cody/internal/workspace.m,matrix/cody/internal/workspace.maxIndexedFiles,matrix/cody/internal/workspace.path,matrix/cody/internal/workspace.rel,matrix/cody/internal/workspace.root
+  ^calls=matrix/cody/internal/workspace.Refresh
+  ^references=matrix/cody/internal/workspace.Refresh
   ^defines=matrix/cody/internal/workspace/workspace.go
 
 NODE id=matrix/cody/internal/workspace.StateDir kind=const
@@ -173,66 +211,89 @@ NODE id=matrix/cody/internal/workspace.StateDir kind=const
   sig=untyped string
   doc=StateDir is the per-workspace directory Cody keeps its own state in. It is\nalways excluded from the index and from worker edits.
 EDGES
+  ^references=matrix/cody/internal/workspace.Load,matrix/cody/internal/workspace.Model.Save,matrix/cody/internal/workspace.ignoredDirs
   ^defines=matrix/cody/internal/workspace/workspace.go
 
 NODE id=matrix/cody/internal/workspace.dedupe kind=func
   digest=b3:9452978e01e15df7b4d563bcbedb15cd64176bd8c93be9eb1284d3d9f075ed0e file=cody/internal/workspace/workspace.go range=387:397 lang=go exported=false byte_range=11540:11723
   sig=func dedupe(in []string) []string
 EDGES
+  references=matrix/cody/internal/workspace.in,matrix/cody/internal/workspace.out,matrix/cody/internal/workspace.s,matrix/cody/internal/workspace.seen
+  ^calls=matrix/cody/internal/workspace.detectEntryPoints
+  ^references=matrix/cody/internal/workspace.detectEntryPoints
   ^defines=matrix/cody/internal/workspace/workspace.go
 
 NODE id=matrix/cody/internal/workspace.detectBuildTargets kind=func
   digest=b3:cbfed5e926755c9854c90b672d16b71bd1ffbf313ec8985255593823d2b2e46f file=cody/internal/workspace/workspace.go range=316:359 lang=go exported=false byte_range=9651:10716
   sig=func detectBuildTargets(m *Model)
 EDGES
+  calls=matrix/cody/internal/workspace.Model.has,matrix/cody/internal/workspace.readPackageJSONScripts
+  references=matrix/cody/internal/workspace.Model,matrix/cody/internal/workspace.Model.has,matrix/cody/internal/workspace.add,matrix/cody/internal/workspace.err,matrix/cody/internal/workspace.f,matrix/cody/internal/workspace.m,matrix/cody/internal/workspace.makefileTarget,matrix/cody/internal/workspace.mt,matrix/cody/internal/workspace.name,matrix/cody/internal/workspace.names,matrix/cody/internal/workspace.readPackageJSONScripts,matrix/cody/internal/workspace.sc,matrix/cody/internal/workspace.scripts,matrix/cody/internal/workspace.seen,matrix/cody/internal/workspace.t,matrix/cody/internal/workspace.targets
+  ^calls=matrix/cody/internal/workspace.Scan
+  ^references=matrix/cody/internal/workspace.Scan
   ^defines=matrix/cody/internal/workspace/workspace.go
 
 NODE id=matrix/cody/internal/workspace.detectEntryPoints kind=func
   digest=b3:af60047b084f34fc90ffa76e9657cf88d63257f416f380ede9de073fd7745a86 file=cody/internal/workspace/workspace.go range=361:385 lang=go exported=false byte_range=10718:11538
   sig=func detectEntryPoints(m *Model)
 EDGES
+  calls=matrix/cody/internal/workspace.Model.has,matrix/cody/internal/workspace.dedupe,matrix/cody/internal/workspace.readPackageJSONMain
+  references=matrix/cody/internal/workspace.Model,matrix/cody/internal/workspace.Model.has,matrix/cody/internal/workspace.c,matrix/cody/internal/workspace.candidates,matrix/cody/internal/workspace.dedupe,matrix/cody/internal/workspace.f,matrix/cody/internal/workspace.m,matrix/cody/internal/workspace.p,matrix/cody/internal/workspace.pkgMain,matrix/cody/internal/workspace.readPackageJSONMain
+  ^calls=matrix/cody/internal/workspace.Scan
+  ^references=matrix/cody/internal/workspace.Scan
   ^defines=matrix/cody/internal/workspace/workspace.go
 
 NODE id=matrix/cody/internal/workspace.detectFrameworks kind=func
   digest=b3:30d16670d302fbe587457d68de1b35c990f561ca46f4215dbf145b3d18b73cd5 file=cody/internal/workspace/workspace.go range=276:312 lang=go exported=false byte_range=8702:9563
   sig=func detectFrameworks(m *Model)
 EDGES
+  calls=matrix/cody/internal/workspace.Model.has,matrix/cody/internal/workspace.readPackageJSONDeps
+  references=matrix/cody/internal/workspace.Model,matrix/cody/internal/workspace.Model.has,matrix/cody/internal/workspace.add,matrix/cody/internal/workspace.data,matrix/cody/internal/workspace.deps,matrix/cody/internal/workspace.err,matrix/cody/internal/workspace.fw,matrix/cody/internal/workspace.knownJSFrameworks,matrix/cody/internal/workspace.knownPyFrameworks,matrix/cody/internal/workspace.low,matrix/cody/internal/workspace.m,matrix/cody/internal/workspace.name,matrix/cody/internal/workspace.ok,matrix/cody/internal/workspace.readPackageJSONDeps,matrix/cody/internal/workspace.seen
+  ^calls=matrix/cody/internal/workspace.Scan
+  ^references=matrix/cody/internal/workspace.Scan
   ^defines=matrix/cody/internal/workspace/workspace.go
 
 NODE id=matrix/cody/internal/workspace.ignoredDirs kind=var
   digest=b3:137d925568f245574b3f6c39af208ce124b29f8a7cfb4f6e227f9f6ef3ae601a file=cody/internal/workspace/workspace.go range=103:108 lang=go exported=false byte_range=3523:3769
   sig=map[string]bool
 EDGES
+  references=matrix/cody/internal/workspace.StateDir
+  ^references=matrix/cody/internal/workspace.Scan
   ^defines=matrix/cody/internal/workspace/workspace.go
 
 NODE id=matrix/cody/internal/workspace.indexFile kind=const
   digest=b3:8930a4d87e19b5314b4119f267ae830e77769285ce73b268bcb6bec185ddfdff file=cody/internal/workspace/workspace.go range=28:28 lang=go exported=false byte_range=820:848
   sig=untyped string
 EDGES
+  ^references=matrix/cody/internal/workspace.Load,matrix/cody/internal/workspace.Model.Save
   ^defines=matrix/cody/internal/workspace/workspace.go
 
 NODE id=matrix/cody/internal/workspace.knownJSFrameworks kind=var
   digest=b3:9c203278def2d82ce02acd749b291bd76be2fde48a39b0b427bc8f210bd77706 file=cody/internal/workspace/workspace.go range=269:272 lang=go exported=false byte_range=8485:8626
   sig=[]string
 EDGES
+  ^references=matrix/cody/internal/workspace.detectFrameworks
   ^defines=matrix/cody/internal/workspace/workspace.go
 
 NODE id=matrix/cody/internal/workspace.knownPyFrameworks kind=var
   digest=b3:a8633c05d41a430e4b8a92bcfe2b17bb5bb7b47a97439314ed4998491dde6775 file=cody/internal/workspace/workspace.go range=274:274 lang=go exported=false byte_range=8632:8700
   sig=[]string
 EDGES
+  ^references=matrix/cody/internal/workspace.detectFrameworks
   ^defines=matrix/cody/internal/workspace/workspace.go
 
 NODE id=matrix/cody/internal/workspace.langByExt kind=var
   digest=b3:d08b34f0333cefdd2dc6590aa814793d1a3646351b03da2213ee3e53e1797809 file=cody/internal/workspace/workspace.go range=110:118 lang=go exported=false byte_range=3775:4249
   sig=map[string]string
 EDGES
+  ^references=matrix/cody/internal/workspace.Scan
   ^defines=matrix/cody/internal/workspace/workspace.go
 
 NODE id=matrix/cody/internal/workspace.makefileTarget kind=var
   digest=b3:395d221ac1e598d98b0fb7b0da32d1c98aadb68e37042497ef5be9595423a081 file=cody/internal/workspace/workspace.go range=314:314 lang=go exported=false byte_range=9569:9649
   sig=*regexp.Regexp
 EDGES
+  ^references=matrix/cody/internal/workspace.detectBuildTargets
   ^defines=matrix/cody/internal/workspace/workspace.go
 
 NODE id=matrix/cody/internal/workspace.maxIndexedFiles kind=const
@@ -240,6 +301,7 @@ NODE id=matrix/cody/internal/workspace.maxIndexedFiles kind=const
   sig=untyped int
   doc=maxIndexedFiles bounds the persisted file list so a huge monorepo cannot\nballoon the index; language/framework detection still sees every file.
 EDGES
+  ^references=matrix/cody/internal/workspace.Scan
   ^defines=matrix/cody/internal/workspace/workspace.go
 
 NODE id=matrix/cody/internal/workspace.packageJSON kind=type
@@ -247,6 +309,7 @@ NODE id=matrix/cody/internal/workspace.packageJSON kind=type
   sig=type packageJSON struct {\n	Main		string			`json:"main"`\n	Scripts		map[string]string	`json:"scripts"`\n	Dependencies	map[string]string	`json:"dependencies"`\n	DevDependencies	map[string]string	`json:"devDependencies"`\n}
 EDGES
   contains=matrix/cody/internal/workspace.packageJSON#Dependencies,matrix/cody/internal/workspace.packageJSON#DevDependencies,matrix/cody/internal/workspace.packageJSON#Main,matrix/cody/internal/workspace.packageJSON#Scripts
+  ^references=matrix/cody/internal/workspace.readPackageJSON
   ^defines=matrix/cody/internal/workspace/workspace.go
 
 NODE id=matrix/cody/internal/workspace.packageJSON#Dependencies kind=field
@@ -277,24 +340,39 @@ NODE id=matrix/cody/internal/workspace.readPackageJSON kind=func
   digest=b3:69b6bdfef04b7ccda9b7971d8d6e78cb10930d81b359c58e916ea63218510fce file=cody/internal/workspace/workspace.go range=406:416 lang=go exported=false byte_range=11972:12177
   sig=func readPackageJSON(path string) *packageJSON
 EDGES
+  references=matrix/cody/internal/workspace.data,matrix/cody/internal/workspace.err,matrix/cody/internal/workspace.packageJSON,matrix/cody/internal/workspace.path,matrix/cody/internal/workspace.pkg
+  ^calls=matrix/cody/internal/workspace.readPackageJSONDeps,matrix/cody/internal/workspace.readPackageJSONMain,matrix/cody/internal/workspace.readPackageJSONScripts
+  ^references=matrix/cody/internal/workspace.readPackageJSONDeps,matrix/cody/internal/workspace.readPackageJSONMain,matrix/cody/internal/workspace.readPackageJSONScripts
   ^defines=matrix/cody/internal/workspace/workspace.go
 
 NODE id=matrix/cody/internal/workspace.readPackageJSONDeps kind=func
   digest=b3:3c457644cc8fc76bdf043d89883928a49479c36bd084db1e60f4c1fbe123f6b7 file=cody/internal/workspace/workspace.go range=418:431 lang=go exported=false byte_range=12179:12456
   sig=func readPackageJSONDeps(path string) map[string]string
 EDGES
+  calls=matrix/cody/internal/workspace.readPackageJSON
+  references=matrix/cody/internal/workspace.deps,matrix/cody/internal/workspace.k,matrix/cody/internal/workspace.path,matrix/cody/internal/workspace.pkg,matrix/cody/internal/workspace.readPackageJSON,matrix/cody/internal/workspace.v
+  ^calls=matrix/cody/internal/workspace.detectFrameworks
+  ^references=matrix/cody/internal/workspace.detectFrameworks
   ^defines=matrix/cody/internal/workspace/workspace.go
 
 NODE id=matrix/cody/internal/workspace.readPackageJSONMain kind=func
   digest=b3:fb47f57ccbe192199274b24da76ce218c7a610cda47b64f845839be4f8d414e3 file=cody/internal/workspace/workspace.go range=440:445 lang=go exported=false byte_range=12605:12732
   sig=func readPackageJSONMain(path string) string
 EDGES
+  calls=matrix/cody/internal/workspace.readPackageJSON
+  references=matrix/cody/internal/workspace.path,matrix/cody/internal/workspace.pkg,matrix/cody/internal/workspace.readPackageJSON
+  ^calls=matrix/cody/internal/workspace.detectEntryPoints
+  ^references=matrix/cody/internal/workspace.detectEntryPoints
   ^defines=matrix/cody/internal/workspace/workspace.go
 
 NODE id=matrix/cody/internal/workspace.readPackageJSONScripts kind=func
   digest=b3:c604f3a5508d81230adbd3a8eb25d50797143d8a956a1ff8beb09aac1ba41666 file=cody/internal/workspace/workspace.go range=433:438 lang=go exported=false byte_range=12458:12603
   sig=func readPackageJSONScripts(path string) map[string]string
 EDGES
+  calls=matrix/cody/internal/workspace.readPackageJSON
+  references=matrix/cody/internal/workspace.path,matrix/cody/internal/workspace.pkg,matrix/cody/internal/workspace.readPackageJSON
+  ^calls=matrix/cody/internal/workspace.detectBuildTargets
+  ^references=matrix/cody/internal/workspace.detectBuildTargets
   ^defines=matrix/cody/internal/workspace/workspace.go
 
 NODE id=matrix/cody/internal/workspace.uiFrameworks kind=var
@@ -302,6 +380,7 @@ NODE id=matrix/cody/internal/workspace.uiFrameworks kind=var
   sig=map[string]bool
   doc=uiFrameworks are the detected frameworks that imply a user-facing surface.
 EDGES
+  ^references=matrix/cody/internal/workspace.Model.UIBearing
   ^defines=matrix/cody/internal/workspace/workspace.go
 
 NODE id=matrix/cody/internal/workspace.uiLangs kind=var
@@ -309,6 +388,7 @@ NODE id=matrix/cody/internal/workspace.uiLangs kind=var
   sig=map[string]bool
   doc=uiLangs are the languages that imply UI markup/styling files.
 EDGES
+  ^references=matrix/cody/internal/workspace.Model.UIBearing
   ^defines=matrix/cody/internal/workspace/workspace.go
 
 NODE id=matrix/cody/internal/workspace/workspace.go kind=file

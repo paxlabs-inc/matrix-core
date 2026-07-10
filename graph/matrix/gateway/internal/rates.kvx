@@ -1,296 +1,361 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:9b68327501b45793fd7687f43b30c960fd68ae8aaff6b2f1bb36ec3e2df2de2f
+# GENERATED gen=codegraph do-not-edit merkle=b3:20e53aba2ea11552396417e53b3e04e87dd1bbb7bef3aa554a45bb92cf89e7f2
 
 NODE id=matrix/gateway/internal/rates kind=package
-  digest=b3:2a44ff26480659aaded8fec955d4d77219efa50c1e089fb86ab516ac18e81942 file=gateway/internal/rates range=0:0 lang=go exported=true
+  digest=b3:e06601d76e517de413256844a652c2e65f2e9667be3f96f29433e02e38dce2c5 file=gateway/internal/rates range=0:0 lang=go exported=true
 EDGES
   contains=matrix/gateway/internal/rates/rates.go
   ^contains=mod:matrix/gateway
+  ^imports=matrix/gateway/internal/ledger,matrix/gateway/internal/proxy,matrix/gateway/internal/routing
 
 NODE id=matrix/gateway/internal/rates.AddPax kind=func
-  digest=b3:e0d472d4fff6bb19412a5c121e031333ea8791c5254f64efd0f6c78340a4653a file=gateway/internal/rates/rates.go range=396:417 lang=go exported=true byte_range=20019:20744
+  digest=b3:e0d472d4fff6bb19412a5c121e031333ea8791c5254f64efd0f6c78340a4653a file=gateway/internal/rates/rates.go range=415:436 lang=go exported=true byte_range=21388:22113
   sig=func AddPax(a, b string) (string, error)
   doc=AddPax sums two PAX-denominated decimal strings. Returns "" + an\nerror when either input fails to parse. Used by the ledger to\nroll up the daily-spend trailer header without re-querying Postgres.
 EDGES
+  calls=matrix/gateway/internal/rates.formatPax
+  references=matrix/gateway/internal/rates.a,matrix/gateway/internal/rates.af,matrix/gateway/internal/rates.b,matrix/gateway/internal/rates.bf,matrix/gateway/internal/rates.err,matrix/gateway/internal/rates.formatPax,matrix/gateway/internal/rates.prec,matrix/gateway/internal/rates.sum
+  ^calls=matrix/gateway/internal/ledger.CheckBudget,matrix/gateway/internal/ledger.Memory.DailySpend,matrix/gateway/internal/proxy.Server.stampCostHeaders
+  ^references=matrix/gateway/internal/ledger.CheckBudget,matrix/gateway/internal/ledger.Memory.DailySpend,matrix/gateway/internal/proxy.Server.stampCostHeaders
   ^defines=matrix/gateway/internal/rates/rates.go
 
 NODE id=matrix/gateway/internal/rates.All kind=func
-  digest=b3:8b41290c1d5c284504ffc2348816141736577fca96a000edf0f21811b4fab3a8 file=gateway/internal/rates/rates.go range=291:297 lang=go exported=true byte_range=14606:14808
+  digest=b3:8b41290c1d5c284504ffc2348816141736577fca96a000edf0f21811b4fab3a8 file=gateway/internal/rates/rates.go range=310:316 lang=go exported=true byte_range=15873:16075
   sig=func All() []Rate
   doc=All returns a snapshot of the rate table. The returned slice is\nsafe to mutate; callers receive a copy.
 EDGES
+  references=matrix/gateway/internal/rates.Rate,matrix/gateway/internal/rates.out,matrix/gateway/internal/rates.rateTable
   ^defines=matrix/gateway/internal/rates/rates.go
 
 NODE id=matrix/gateway/internal/rates.CmpPax kind=func
-  digest=b3:1bc80b26dc6c7fef240b4b1a25ced159ba5be0ff833c40b0a9ce317a9ae4ca7c file=gateway/internal/rates/rates.go range=444:463 lang=go exported=true byte_range=21452:22050
+  digest=b3:1bc80b26dc6c7fef240b4b1a25ced159ba5be0ff833c40b0a9ce317a9ae4ca7c file=gateway/internal/rates/rates.go range=463:482 lang=go exported=true byte_range=22821:23419
   sig=func CmpPax(a, b string) (int, error)
   doc=CmpPax compares two PAX-denominated decimal strings. Returns -1, 0,\nor 1 (a < b, a == b, a > b). Errors propagate parse failures.
 EDGES
+  references=matrix/gateway/internal/rates.a,matrix/gateway/internal/rates.af,matrix/gateway/internal/rates.b,matrix/gateway/internal/rates.bf,matrix/gateway/internal/rates.err,matrix/gateway/internal/rates.prec
+  ^calls=matrix/gateway/internal/ledger.CheckBudget,matrix/gateway/internal/rates.ExceedsDailyLimit
+  ^references=matrix/gateway/internal/ledger.CheckBudget,matrix/gateway/internal/rates.ExceedsDailyLimit
   ^defines=matrix/gateway/internal/rates/rates.go
 
 NODE id=matrix/gateway/internal/rates.Cost kind=func
-  digest=b3:3398896bcb1f365f3b8a91dbce30b572ff72abda110fc7585a391fb6dc1cd42e file=gateway/internal/rates/rates.go range=359:394 lang=go exported=true byte_range=18345:20017
+  digest=b3:3398896bcb1f365f3b8a91dbce30b572ff72abda110fc7585a391fb6dc1cd42e file=gateway/internal/rates/rates.go range=378:413 lang=go exported=true byte_range=19714:21386
   sig=func Cost(model string, promptTokens, completionTokens int) (string, error)
   doc=Cost computes the PAX cost for a (model, prompt, completion) tuple.\nReturns a base-PAX decimal string ("0.000123") suitable for the\nX-Matrix-Cost-Pax response header AND the credit_ledger.cost_pax\nNUMERIC(20,12) column. Errors when the model is not on the rate card.\n\nThe math uses big.Float internally so the divide-by-1e6 step\npreserves precision at NUMERIC(20,12) granularity. Output is\ntruncated (NOT rounded) at 12 decimals to match the schema; we never\nround UP because that would over-bill.
 EDGES
+  calls=matrix/gateway/internal/rates.Lookup,matrix/gateway/internal/rates.formatPax
+  references=matrix/gateway/internal/rates.Lookup,matrix/gateway/internal/rates.RateTableVersion,matrix/gateway/internal/rates.completionTokens,matrix/gateway/internal/rates.cost,matrix/gateway/internal/rates.formatPax,matrix/gateway/internal/rates.in,matrix/gateway/internal/rates.million,matrix/gateway/internal/rates.model,matrix/gateway/internal/rates.num,matrix/gateway/internal/rates.ok,matrix/gateway/internal/rates.out,matrix/gateway/internal/rates.prec,matrix/gateway/internal/rates.promptTokens,matrix/gateway/internal/rates.r,matrix/gateway/internal/rates.rin,matrix/gateway/internal/rates.rout
+  ^calls=matrix/gateway/internal/proxy.Server.maybeDebit
+  ^references=matrix/gateway/internal/proxy.Server.maybeDebit
   ^defines=matrix/gateway/internal/rates/rates.go
 
 NODE id=matrix/gateway/internal/rates.DailyFreeTierLimitPax kind=const
-  digest=b3:6818c10e7b52275a36215625db633cc57edb2fef47b7a06f99397d183a19c975 file=gateway/internal/rates/rates.go range=110:120 lang=go exported=true byte_range=5472:6066
+  digest=b3:6818c10e7b52275a36215625db633cc57edb2fef47b7a06f99397d183a19c975 file=gateway/internal/rates/rates.go range=118:128 lang=go exported=true byte_range=5968:6562
   sig=untyped string
   doc=DailyFreeTierLimitPax is the per-account free-tier spend cap, in PAX,\nenforced by internal/routing against the running daily total. It is a\ndecimal string so it composes directly with AddPax/SubPax/CmpPax and\nthe ledger's PAX representation. Callers that reach it must flip\nX-Matrix-BYO-API-Key to continue.\n\n10 PAX/day = $114.30/day at the v3 reference (1 PAX = $11.43). Note\nthis is a large headroom relative to per-call costs (e.g. ~127M\ndeepseek-v4-flash output tokens/day); tighten here if the intent is a\nstricter free lane.
 EDGES
+  ^references=matrix/gateway/internal/rates.DailyRemainingPax,matrix/gateway/internal/rates.ExceedsDailyLimit
   ^defines=matrix/gateway/internal/rates/rates.go
 
 NODE id=matrix/gateway/internal/rates.DailyRemainingPax kind=func
-  digest=b3:9eda2f8b08083ab49f9d29e40ba747cd9624ad4f33b0b207bc5d568c16788ab3 file=gateway/internal/rates/rates.go range=465:471 lang=go exported=true byte_range=22052:22434
+  digest=b3:9eda2f8b08083ab49f9d29e40ba747cd9624ad4f33b0b207bc5d568c16788ab3 file=gateway/internal/rates/rates.go range=484:490 lang=go exported=true byte_range=23421:23803
   sig=func DailyRemainingPax(spentPax string) (string, error)
   doc=DailyRemainingPax returns max(DailyFreeTierLimitPax - spentPax, 0) as\na PAX decimal string — the value internal/routing stamps into the\nX-Matrix-Daily-Remaining-Pax header. Thin wrapper over SubPax so the\ncap lives in exactly one place (DailyFreeTierLimitPax).
 EDGES
+  calls=matrix/gateway/internal/rates.SubPax
+  references=matrix/gateway/internal/rates.DailyFreeTierLimitPax,matrix/gateway/internal/rates.SubPax,matrix/gateway/internal/rates.spentPax
   ^defines=matrix/gateway/internal/rates/rates.go
 
 NODE id=matrix/gateway/internal/rates.ExceedsDailyLimit kind=func
-  digest=b3:56bf683c75b7b9f0f24a45c9a092d7eb5fa392da1a588c77edb9df38e9c58638 file=gateway/internal/rates/rates.go range=473:483 lang=go exported=true byte_range=22436:22851
+  digest=b3:56bf683c75b7b9f0f24a45c9a092d7eb5fa392da1a588c77edb9df38e9c58638 file=gateway/internal/rates/rates.go range=492:502 lang=go exported=true byte_range=23805:24220
   sig=func ExceedsDailyLimit(spentPax string) (bool, error)
   doc=ExceedsDailyLimit reports whether spentPax has reached or passed the\nfree-tier cap (spentPax >= DailyFreeTierLimitPax). True means the\ncaller must flip X-Matrix-BYO-API-Key to continue. Errors propagate\nparse failures from CmpPax.
 EDGES
+  calls=matrix/gateway/internal/rates.CmpPax
+  references=matrix/gateway/internal/rates.CmpPax,matrix/gateway/internal/rates.DailyFreeTierLimitPax,matrix/gateway/internal/rates.cmp,matrix/gateway/internal/rates.err,matrix/gateway/internal/rates.spentPax
   ^defines=matrix/gateway/internal/rates/rates.go
 
 NODE id=matrix/gateway/internal/rates.FreeTierWhitelist kind=func
-  digest=b3:1d8afe1594cbcf8720402b64fd40183385b3f551049f825e2bdd59af3c77621f file=gateway/internal/rates/rates.go range=308:357 lang=go exported=true byte_range=15145:18343
+  digest=b3:32e122ce32d52f0b02eba380f4544e659d4a87283b0f12a37ef29b8308fcd44d file=gateway/internal/rates/rates.go range=327:376 lang=go exported=true byte_range=16412:19712
   sig=func FreeTierWhitelist() map[string][]string
   doc=FreeTierWhitelist returns the slot -> model whitelist enforced by\ninternal/routing. Exported for tests + introspection.
 EDGES
+  references=matrix/gateway/internal/rates.ModelCompilerFreeTier,matrix/gateway/internal/rates.ModelDeepSeekV4Flash,matrix/gateway/internal/rates.ModelDeepSeekV4Pro,matrix/gateway/internal/rates.ModelExecutorFreeTier,matrix/gateway/internal/rates.ModelGrok420NR,matrix/gateway/internal/rates.ModelGrok43,matrix/gateway/internal/rates.ModelGrokBuild,matrix/gateway/internal/rates.ModelKimiK26,matrix/gateway/internal/rates.ModelMimoV25Pro,matrix/gateway/internal/rates.ModelNomicEmbed
+  ^calls=matrix/gateway/internal/routing.enforceFreeTier
+  ^references=matrix/gateway/internal/routing.enforceFreeTier
   ^defines=matrix/gateway/internal/rates/rates.go
 
 NODE id=matrix/gateway/internal/rates.GroupClassify kind=const
-  digest=b3:eb04cca8cd06e52d22041018c9506b8aadebdc3eae37f0cca6cbc0c2ee64a75c file=gateway/internal/rates/rates.go range=97:104 lang=go exported=true byte_range=5056:5387
+  digest=b3:eb04cca8cd06e52d22041018c9506b8aadebdc3eae37f0cca6cbc0c2ee64a75c file=gateway/internal/rates/rates.go range=105:112 lang=go exported=true byte_range=5552:5883
   sig=untyped string
   doc=freeTierGroup partitions models into the lanes the gateway routes\non. Each lane has its own free-tier whitelist (see internal/routing).\n\nGroup strings echo verbatim into the Prometheus labels for cost\ntelemetry, so they MUST stay stable across versions.
 EDGES
+  ^references=matrix/gateway/internal/rates.rateTable
   ^defines=matrix/gateway/internal/rates/rates.go
 
 NODE id=matrix/gateway/internal/rates.GroupCode kind=const
-  digest=b3:b951c75aa92fa0f9f6dedc5462eafba6bf100abee9a7dffe12f745e013441841 file=gateway/internal/rates/rates.go range=97:106 lang=go exported=true byte_range=5056:5442
+  digest=b3:b951c75aa92fa0f9f6dedc5462eafba6bf100abee9a7dffe12f745e013441841 file=gateway/internal/rates/rates.go range=105:114 lang=go exported=true byte_range=5552:5938
   sig=untyped string
   doc=freeTierGroup partitions models into the lanes the gateway routes\non. Each lane has its own free-tier whitelist (see internal/routing).\n\nGroup strings echo verbatim into the Prometheus labels for cost\ntelemetry, so they MUST stay stable across versions.
 EDGES
+  ^references=matrix/gateway/internal/rates.rateTable
   ^defines=matrix/gateway/internal/rates/rates.go
 
 NODE id=matrix/gateway/internal/rates.GroupOther kind=const
-  digest=b3:fafa692730d9fb4c9fe4b4a1f84c92a592f148945f4f6075d962baffe73b8000 file=gateway/internal/rates/rates.go range=97:107 lang=go exported=true byte_range=5056:5468
+  digest=b3:fafa692730d9fb4c9fe4b4a1f84c92a592f148945f4f6075d962baffe73b8000 file=gateway/internal/rates/rates.go range=105:115 lang=go exported=true byte_range=5552:5964
   sig=untyped string
   doc=freeTierGroup partitions models into the lanes the gateway routes\non. Each lane has its own free-tier whitelist (see internal/routing).\n\nGroup strings echo verbatim into the Prometheus labels for cost\ntelemetry, so they MUST stay stable across versions.
 EDGES
+  ^references=matrix/gateway/internal/rates.rateTable
   ^defines=matrix/gateway/internal/rates/rates.go
 
 NODE id=matrix/gateway/internal/rates.GroupReason kind=const
-  digest=b3:37e16f1327f3ee004fe149a0185151ed32801e2f3c3cdd1ae98f69f87c7b64df file=gateway/internal/rates/rates.go range=97:103 lang=go exported=true byte_range=5056:5358
+  digest=b3:37e16f1327f3ee004fe149a0185151ed32801e2f3c3cdd1ae98f69f87c7b64df file=gateway/internal/rates/rates.go range=105:111 lang=go exported=true byte_range=5552:5854
   sig=untyped string
   doc=freeTierGroup partitions models into the lanes the gateway routes\non. Each lane has its own free-tier whitelist (see internal/routing).\n\nGroup strings echo verbatim into the Prometheus labels for cost\ntelemetry, so they MUST stay stable across versions.
 EDGES
+  ^references=matrix/gateway/internal/rates.rateTable
   ^defines=matrix/gateway/internal/rates/rates.go
 
 NODE id=matrix/gateway/internal/rates.GroupSummarize kind=const
-  digest=b3:8bd42f8794e7ff3b8787034d3b07f0c5b9a708e115bedddfd72547a334794edc file=gateway/internal/rates/rates.go range=97:105 lang=go exported=true byte_range=5056:5417
+  digest=b3:8bd42f8794e7ff3b8787034d3b07f0c5b9a708e115bedddfd72547a334794edc file=gateway/internal/rates/rates.go range=105:113 lang=go exported=true byte_range=5552:5913
   sig=untyped string
   doc=freeTierGroup partitions models into the lanes the gateway routes\non. Each lane has its own free-tier whitelist (see internal/routing).\n\nGroup strings echo verbatim into the Prometheus labels for cost\ntelemetry, so they MUST stay stable across versions.
 EDGES
+  ^references=matrix/gateway/internal/rates.rateTable
   ^defines=matrix/gateway/internal/rates/rates.go
 
 NODE id=matrix/gateway/internal/rates.Lookup kind=func
-  digest=b3:8ea919474fc54d7ab3db3c817c26d7354dcd1e4552d6b5f2c4f07ff2e2340ddd file=gateway/internal/rates/rates.go range=299:306 lang=go exported=true byte_range=14810:15143
+  digest=b3:8ea919474fc54d7ab3db3c817c26d7354dcd1e4552d6b5f2c4f07ff2e2340ddd file=gateway/internal/rates/rates.go range=318:325 lang=go exported=true byte_range=16077:16410
   sig=func Lookup(model string) (Rate, bool)
   doc=Lookup returns the Rate for a model id, or (Rate{}, false) when the\nmodel is not on the rate card. Callers MUST treat false as "do not\ndebit" — pricing an unknown model would either over-bill or\nunder-bill, both of which are incorrect.
 EDGES
+  references=matrix/gateway/internal/rates.Rate,matrix/gateway/internal/rates.model,matrix/gateway/internal/rates.ok,matrix/gateway/internal/rates.r,matrix/gateway/internal/rates.rateIndex
+  ^calls=matrix/gateway/internal/rates.Cost
+  ^references=matrix/gateway/internal/rates.Cost
   ^defines=matrix/gateway/internal/rates/rates.go
 
 NODE id=matrix/gateway/internal/rates.ModelCompilerFreeTier kind=const
-  digest=b3:50dc8c048327284fe491637896655b3091f07b2de1830ac3ee856860decb1cde file=gateway/internal/rates/rates.go range=122:139 lang=go exported=true byte_range=6068:6996
+  digest=b3:50dc8c048327284fe491637896655b3091f07b2de1830ac3ee856860decb1cde file=gateway/internal/rates/rates.go range=130:147 lang=go exported=true byte_range=6564:7492
   sig=untyped string
   doc=Free-tier model identifiers. v1 launch (2026-06-01) per-slot whitelist:\n\n	compiler — gpt-oss-120b (primary) + deepseek-v4-pro (low-confidence\n	           escalation target; compile.go re-invokes the compiler slot\n	           with the stronger model when a frame self-reports low\n	           confidence or an invalid verb).\n	planner  — gpt-oss-120b + deepseek-v4-flash + deepseek-v4-pro (the\n	           launch planner upgrade, pinned via MATRIX_PLANNER_MODEL).\n	executor — deepseek-v4-flash + kimi-k2.6 (the launch executor upgrade,\n	           pinned via MATRIX_EXECUTOR_MODEL).\n\nDocumented in plan §5.15. Other slots/models are 403 unless the caller\nflips X-Matrix-BYO-API-Key.\n\nConstants are exported so internal/routing imports them rather than\nre-declaring; ALSO exposed via FreeTierWhitelist() for tests.
 EDGES
+  ^references=matrix/gateway/internal/rates.FreeTierWhitelist
   ^defines=matrix/gateway/internal/rates/rates.go
 
 NODE id=matrix/gateway/internal/rates.ModelDeepSeekV4Flash kind=const
-  digest=b3:6e08fa8a4623aedaff57419e56179e07d7a7e65ec16ca858f4daf0bbbcca2dcc file=gateway/internal/rates/rates.go range=122:141 lang=go exported=true byte_range=6068:7138
+  digest=b3:6e08fa8a4623aedaff57419e56179e07d7a7e65ec16ca858f4daf0bbbcca2dcc file=gateway/internal/rates/rates.go range=130:149 lang=go exported=true byte_range=6564:7634
   sig=untyped string
   doc=Free-tier model identifiers. v1 launch (2026-06-01) per-slot whitelist:\n\n	compiler — gpt-oss-120b (primary) + deepseek-v4-pro (low-confidence\n	           escalation target; compile.go re-invokes the compiler slot\n	           with the stronger model when a frame self-reports low\n	           confidence or an invalid verb).\n	planner  — gpt-oss-120b + deepseek-v4-flash + deepseek-v4-pro (the\n	           launch planner upgrade, pinned via MATRIX_PLANNER_MODEL).\n	executor — deepseek-v4-flash + kimi-k2.6 (the launch executor upgrade,\n	           pinned via MATRIX_EXECUTOR_MODEL).\n\nDocumented in plan §5.15. Other slots/models are 403 unless the caller\nflips X-Matrix-BYO-API-Key.\n\nConstants are exported so internal/routing imports them rather than\nre-declaring; ALSO exposed via FreeTierWhitelist() for tests.
 EDGES
+  ^references=matrix/gateway/internal/rates.FreeTierWhitelist,matrix/gateway/internal/rates.rateTable
   ^defines=matrix/gateway/internal/rates/rates.go
 
 NODE id=matrix/gateway/internal/rates.ModelDeepSeekV4Pro kind=const
-  digest=b3:6d8919a3aecc52b77be0686bc244e6ff9bd2657c7e2003011d15e25c21043cf2 file=gateway/internal/rates/rates.go range=122:142 lang=go exported=true byte_range=6068:7207
+  digest=b3:6d8919a3aecc52b77be0686bc244e6ff9bd2657c7e2003011d15e25c21043cf2 file=gateway/internal/rates/rates.go range=130:150 lang=go exported=true byte_range=6564:7703
   sig=untyped string
   doc=Free-tier model identifiers. v1 launch (2026-06-01) per-slot whitelist:\n\n	compiler — gpt-oss-120b (primary) + deepseek-v4-pro (low-confidence\n	           escalation target; compile.go re-invokes the compiler slot\n	           with the stronger model when a frame self-reports low\n	           confidence or an invalid verb).\n	planner  — gpt-oss-120b + deepseek-v4-flash + deepseek-v4-pro (the\n	           launch planner upgrade, pinned via MATRIX_PLANNER_MODEL).\n	executor — deepseek-v4-flash + kimi-k2.6 (the launch executor upgrade,\n	           pinned via MATRIX_EXECUTOR_MODEL).\n\nDocumented in plan §5.15. Other slots/models are 403 unless the caller\nflips X-Matrix-BYO-API-Key.\n\nConstants are exported so internal/routing imports them rather than\nre-declaring; ALSO exposed via FreeTierWhitelist() for tests.
 EDGES
+  ^references=matrix/gateway/internal/rates.FreeTierWhitelist,matrix/gateway/internal/rates.rateTable
   ^defines=matrix/gateway/internal/rates/rates.go
 
 NODE id=matrix/gateway/internal/rates.ModelExecutorFreeTier kind=const
-  digest=b3:9f19df46ca5486fc0a3fc39605f3340ab7bab711f1e5096a8a3b46768464509d file=gateway/internal/rates/rates.go range=122:140 lang=go exported=true byte_range=6068:7067
+  digest=b3:9f19df46ca5486fc0a3fc39605f3340ab7bab711f1e5096a8a3b46768464509d file=gateway/internal/rates/rates.go range=130:148 lang=go exported=true byte_range=6564:7563
   sig=untyped string
   doc=Free-tier model identifiers. v1 launch (2026-06-01) per-slot whitelist:\n\n	compiler — gpt-oss-120b (primary) + deepseek-v4-pro (low-confidence\n	           escalation target; compile.go re-invokes the compiler slot\n	           with the stronger model when a frame self-reports low\n	           confidence or an invalid verb).\n	planner  — gpt-oss-120b + deepseek-v4-flash + deepseek-v4-pro (the\n	           launch planner upgrade, pinned via MATRIX_PLANNER_MODEL).\n	executor — deepseek-v4-flash + kimi-k2.6 (the launch executor upgrade,\n	           pinned via MATRIX_EXECUTOR_MODEL).\n\nDocumented in plan §5.15. Other slots/models are 403 unless the caller\nflips X-Matrix-BYO-API-Key.\n\nConstants are exported so internal/routing imports them rather than\nre-declaring; ALSO exposed via FreeTierWhitelist() for tests.
 EDGES
+  ^references=matrix/gateway/internal/rates.FreeTierWhitelist
   ^defines=matrix/gateway/internal/rates/rates.go
 
 NODE id=matrix/gateway/internal/rates.ModelGLM5p1Fast kind=const
-  digest=b3:522bcc75d47705824e046b1c8def5a9c7a623e027f84d0ceaaa80a0d102f5a15 file=gateway/internal/rates/rates.go range=122:148 lang=go exported=true byte_range=6068:7589
+  digest=b3:522bcc75d47705824e046b1c8def5a9c7a623e027f84d0ceaaa80a0d102f5a15 file=gateway/internal/rates/rates.go range=130:156 lang=go exported=true byte_range=6564:8085
   sig=untyped string
   doc=Free-tier model identifiers. v1 launch (2026-06-01) per-slot whitelist:\n\n	compiler — gpt-oss-120b (primary) + deepseek-v4-pro (low-confidence\n	           escalation target; compile.go re-invokes the compiler slot\n	           with the stronger model when a frame self-reports low\n	           confidence or an invalid verb).\n	planner  — gpt-oss-120b + deepseek-v4-flash + deepseek-v4-pro (the\n	           launch planner upgrade, pinned via MATRIX_PLANNER_MODEL).\n	executor — deepseek-v4-flash + kimi-k2.6 (the launch executor upgrade,\n	           pinned via MATRIX_EXECUTOR_MODEL).\n\nDocumented in plan §5.15. Other slots/models are 403 unless the caller\nflips X-Matrix-BYO-API-Key.\n\nConstants are exported so internal/routing imports them rather than\nre-declaring; ALSO exposed via FreeTierWhitelist() for tests.
 EDGES
+  ^references=matrix/gateway/internal/rates.rateTable
   ^defines=matrix/gateway/internal/rates/rates.go
 
 NODE id=matrix/gateway/internal/rates.ModelGPTOSS120B kind=const
-  digest=b3:d06e36f304872d0f31cd28314c8d63897fb185f0ebaa26af563d01592ae5967b file=gateway/internal/rates/rates.go range=122:149 lang=go exported=true byte_range=6068:7649
+  digest=b3:d06e36f304872d0f31cd28314c8d63897fb185f0ebaa26af563d01592ae5967b file=gateway/internal/rates/rates.go range=130:157 lang=go exported=true byte_range=6564:8145
   sig=untyped string
   doc=Free-tier model identifiers. v1 launch (2026-06-01) per-slot whitelist:\n\n	compiler — gpt-oss-120b (primary) + deepseek-v4-pro (low-confidence\n	           escalation target; compile.go re-invokes the compiler slot\n	           with the stronger model when a frame self-reports low\n	           confidence or an invalid verb).\n	planner  — gpt-oss-120b + deepseek-v4-flash + deepseek-v4-pro (the\n	           launch planner upgrade, pinned via MATRIX_PLANNER_MODEL).\n	executor — deepseek-v4-flash + kimi-k2.6 (the launch executor upgrade,\n	           pinned via MATRIX_EXECUTOR_MODEL).\n\nDocumented in plan §5.15. Other slots/models are 403 unless the caller\nflips X-Matrix-BYO-API-Key.\n\nConstants are exported so internal/routing imports them rather than\nre-declaring; ALSO exposed via FreeTierWhitelist() for tests.
 EDGES
+  ^references=matrix/gateway/internal/rates.rateTable
   ^defines=matrix/gateway/internal/rates/rates.go
 
 NODE id=matrix/gateway/internal/rates.ModelGPTOSS20B kind=const
-  digest=b3:5d06bf2e65a39b90accc84617121b03480e5f8673745ad4ac4e2a2093b7cc2ab file=gateway/internal/rates/rates.go range=122:150 lang=go exported=true byte_range=6068:7708
+  digest=b3:5d06bf2e65a39b90accc84617121b03480e5f8673745ad4ac4e2a2093b7cc2ab file=gateway/internal/rates/rates.go range=130:158 lang=go exported=true byte_range=6564:8204
   sig=untyped string
   doc=Free-tier model identifiers. v1 launch (2026-06-01) per-slot whitelist:\n\n	compiler — gpt-oss-120b (primary) + deepseek-v4-pro (low-confidence\n	           escalation target; compile.go re-invokes the compiler slot\n	           with the stronger model when a frame self-reports low\n	           confidence or an invalid verb).\n	planner  — gpt-oss-120b + deepseek-v4-flash + deepseek-v4-pro (the\n	           launch planner upgrade, pinned via MATRIX_PLANNER_MODEL).\n	executor — deepseek-v4-flash + kimi-k2.6 (the launch executor upgrade,\n	           pinned via MATRIX_EXECUTOR_MODEL).\n\nDocumented in plan §5.15. Other slots/models are 403 unless the caller\nflips X-Matrix-BYO-API-Key.\n\nConstants are exported so internal/routing imports them rather than\nre-declaring; ALSO exposed via FreeTierWhitelist() for tests.
 EDGES
+  ^references=matrix/gateway/internal/rates.rateTable
   ^defines=matrix/gateway/internal/rates/rates.go
 
 NODE id=matrix/gateway/internal/rates.ModelGrok420NR kind=const
-  digest=b3:aaa45bf59dc73e7282a508d5b0409318b92e8c2df68528fe440e947a54da86a1 file=gateway/internal/rates/rates.go range=161:164 lang=go exported=true byte_range=8251:8474
+  digest=b3:aaa45bf59dc73e7282a508d5b0409318b92e8c2df68528fe440e947a54da86a1 file=gateway/internal/rates/rates.go range=169:172 lang=go exported=true byte_range=8747:8970
   sig=untyped string
   doc=ModelGrok420NR is grok-4.20-0309-non-reasoning, the cheap non-reasoning\nmodel for Cassandra, Neo's cheap/consolidation background agents, and the\nliaison narrator.
 EDGES
+  ^references=matrix/gateway/internal/rates.FreeTierWhitelist,matrix/gateway/internal/rates.rateTable
   ^defines=matrix/gateway/internal/rates/rates.go
 
 NODE id=matrix/gateway/internal/rates.ModelGrok43 kind=const
-  digest=b3:2dc29a2df4e75ba8e70b77a16cbd5687f1cbade38d72e8f04c951ef1708ca5b0 file=gateway/internal/rates/rates.go range=153:157 lang=go exported=true byte_range=7827:8126
+  digest=b3:2dc29a2df4e75ba8e70b77a16cbd5687f1cbade38d72e8f04c951ef1708ca5b0 file=gateway/internal/rates/rates.go range=161:165 lang=go exported=true byte_range=8323:8622
   sig=untyped string
   doc=xAI Grok fleet ids — the v9 migration off Z.ai GLM. All are bare ids that\nroute to xAI (api.x.ai) via the "grok-*" prefix in internal/routing.\nModelGrok43 is grok-4.3, the primary reasoning model pinned on Neo's main\nloop and the MCL triage/registry slots.
 EDGES
+  ^references=matrix/gateway/internal/rates.FreeTierWhitelist,matrix/gateway/internal/rates.rateTable
   ^defines=matrix/gateway/internal/rates/rates.go
 
 NODE id=matrix/gateway/internal/rates.ModelGrokBuild kind=const
-  digest=b3:9cb3f35f9445890c25bf1da5b3654647e882cc4d85447e1f4893556b22dcb50e file=gateway/internal/rates/rates.go range=158:160 lang=go exported=true byte_range=8128:8249
+  digest=b3:9cb3f35f9445890c25bf1da5b3654647e882cc4d85447e1f4893556b22dcb50e file=gateway/internal/rates/rates.go range=166:168 lang=go exported=true byte_range=8624:8745
   sig=untyped string
   doc=ModelGrokBuild is grok-build-0.1, the Cody coding-agent model (all Cody\nroles).
 EDGES
+  ^references=matrix/gateway/internal/rates.FreeTierWhitelist,matrix/gateway/internal/rates.rateTable
   ^defines=matrix/gateway/internal/rates/rates.go
 
 NODE id=matrix/gateway/internal/rates.ModelKimiK26 kind=const
-  digest=b3:36ac7e4d080bbbe2f5919b9b2ca55bab898cf87d83f3801343857598b4e029c0 file=gateway/internal/rates/rates.go range=122:143 lang=go exported=true byte_range=6068:7251
+  digest=b3:36ac7e4d080bbbe2f5919b9b2ca55bab898cf87d83f3801343857598b4e029c0 file=gateway/internal/rates/rates.go range=130:151 lang=go exported=true byte_range=6564:7747
   sig=untyped string
   doc=Free-tier model identifiers. v1 launch (2026-06-01) per-slot whitelist:\n\n	compiler — gpt-oss-120b (primary) + deepseek-v4-pro (low-confidence\n	           escalation target; compile.go re-invokes the compiler slot\n	           with the stronger model when a frame self-reports low\n	           confidence or an invalid verb).\n	planner  — gpt-oss-120b + deepseek-v4-flash + deepseek-v4-pro (the\n	           launch planner upgrade, pinned via MATRIX_PLANNER_MODEL).\n	executor — deepseek-v4-flash + kimi-k2.6 (the launch executor upgrade,\n	           pinned via MATRIX_EXECUTOR_MODEL).\n\nDocumented in plan §5.15. Other slots/models are 403 unless the caller\nflips X-Matrix-BYO-API-Key.\n\nConstants are exported so internal/routing imports them rather than\nre-declaring; ALSO exposed via FreeTierWhitelist() for tests.
 EDGES
+  ^references=matrix/gateway/internal/rates.FreeTierWhitelist,matrix/gateway/internal/rates.rateTable
   ^defines=matrix/gateway/internal/rates/rates.go
 
 NODE id=matrix/gateway/internal/rates.ModelLlama405B kind=const
-  digest=b3:2f0450a7975a622cca892420f5da4d7ce7b113072b330d506ec317e68603fbe5 file=gateway/internal/rates/rates.go range=122:152 lang=go exported=true byte_range=6068:7825
+  digest=b3:2f0450a7975a622cca892420f5da4d7ce7b113072b330d506ec317e68603fbe5 file=gateway/internal/rates/rates.go range=130:160 lang=go exported=true byte_range=6564:8321
   sig=untyped string
   doc=Free-tier model identifiers. v1 launch (2026-06-01) per-slot whitelist:\n\n	compiler — gpt-oss-120b (primary) + deepseek-v4-pro (low-confidence\n	           escalation target; compile.go re-invokes the compiler slot\n	           with the stronger model when a frame self-reports low\n	           confidence or an invalid verb).\n	planner  — gpt-oss-120b + deepseek-v4-flash + deepseek-v4-pro (the\n	           launch planner upgrade, pinned via MATRIX_PLANNER_MODEL).\n	executor — deepseek-v4-flash + kimi-k2.6 (the launch executor upgrade,\n	           pinned via MATRIX_EXECUTOR_MODEL).\n\nDocumented in plan §5.15. Other slots/models are 403 unless the caller\nflips X-Matrix-BYO-API-Key.\n\nConstants are exported so internal/routing imports them rather than\nre-declaring; ALSO exposed via FreeTierWhitelist() for tests.
 EDGES
+  ^references=matrix/gateway/internal/rates.rateTable
+  ^defines=matrix/gateway/internal/rates/rates.go
+
+NODE id=matrix/gateway/internal/rates.ModelMimoV25Pro kind=const
+  digest=b3:92110a5c365c1b56823e6e3ba5ee4b471b3d350791ff49a0b66013e76af60664 file=gateway/internal/rates/rates.go range=176:179 lang=go exported=true byte_range=9168:9437
+  sig=untyped string
+  doc=ModelMimoV25Pro is the Novita-served Xiaomi MiMo v2.5 Pro — the v10 primary\nchat model for every agentic slot (Neo, Cody, MCL). Routes to Novita\n(api.novita.ai) via the "xiaomimimo/" prefix in internal/routing.
+EDGES
+  ^references=matrix/gateway/internal/rates.FreeTierWhitelist,matrix/gateway/internal/rates.rateTable
   ^defines=matrix/gateway/internal/rates/rates.go
 
 NODE id=matrix/gateway/internal/rates.ModelNeoMain kind=const
-  digest=b3:fcbf089bd8352d4f02ef96c2275975013f96b4f4d03728bc9632c98c7d7c3ecc file=gateway/internal/rates/rates.go range=144:147 lang=go exported=true byte_range=7253:7528
+  digest=b3:fcbf089bd8352d4f02ef96c2275975013f96b4f4d03728bc9632c98c7d7c3ecc file=gateway/internal/rates/rates.go range=152:155 lang=go exported=true byte_range=7749:8024
   sig=untyped string
   doc=ModelNeoMain is Neo's main conversational loop model: the Together-served\nDeepSeek-V4-Pro (NOT the Fireworks deepseek-v4-pro — different provider\nroute + string). Pinned on the `neo` slot via neo config.MainModel.
 EDGES
+  ^references=matrix/gateway/internal/rates.rateTable
   ^defines=matrix/gateway/internal/rates/rates.go
 
 NODE id=matrix/gateway/internal/rates.ModelNomicEmbed kind=const
-  digest=b3:2eb02d046ff145c8de30473d8bdf276cf19ef937c2cc674b57be79a50aca9b0a file=gateway/internal/rates/rates.go range=165:167 lang=go exported=true byte_range=8476:8670
+  digest=b3:2eb02d046ff145c8de30473d8bdf276cf19ef937c2cc674b57be79a50aca9b0a file=gateway/internal/rates/rates.go range=173:175 lang=go exported=true byte_range=8972:9166
   sig=untyped string
   doc=ModelNomicEmbed is the Fireworks-hosted embedding model behind the\ngateway's /v1/embeddings route (768-dim; matches cortex DefaultDim).
 EDGES
+  ^references=matrix/gateway/internal/rates.FreeTierWhitelist,matrix/gateway/internal/rates.rateTable
   ^defines=matrix/gateway/internal/rates/rates.go
 
 NODE id=matrix/gateway/internal/rates.ModelQwenCoder kind=const
-  digest=b3:066c1c43da67946b19426c9ba66c1df4f85144b0fbe9a38b7fa78d4baa00fb59 file=gateway/internal/rates/rates.go range=122:151 lang=go exported=true byte_range=6068:7769
+  digest=b3:066c1c43da67946b19426c9ba66c1df4f85144b0fbe9a38b7fa78d4baa00fb59 file=gateway/internal/rates/rates.go range=130:159 lang=go exported=true byte_range=6564:8265
   sig=untyped string
   doc=Free-tier model identifiers. v1 launch (2026-06-01) per-slot whitelist:\n\n	compiler — gpt-oss-120b (primary) + deepseek-v4-pro (low-confidence\n	           escalation target; compile.go re-invokes the compiler slot\n	           with the stronger model when a frame self-reports low\n	           confidence or an invalid verb).\n	planner  — gpt-oss-120b + deepseek-v4-flash + deepseek-v4-pro (the\n	           launch planner upgrade, pinned via MATRIX_PLANNER_MODEL).\n	executor — deepseek-v4-flash + kimi-k2.6 (the launch executor upgrade,\n	           pinned via MATRIX_EXECUTOR_MODEL).\n\nDocumented in plan §5.15. Other slots/models are 403 unless the caller\nflips X-Matrix-BYO-API-Key.\n\nConstants are exported so internal/routing imports them rather than\nre-declaring; ALSO exposed via FreeTierWhitelist() for tests.
 EDGES
+  ^references=matrix/gateway/internal/rates.rateTable
   ^defines=matrix/gateway/internal/rates/rates.go
 
 NODE id=matrix/gateway/internal/rates.PaxUsdReference kind=const
-  digest=b3:5ba749960b204a204019b7aa7e6949cb4ee6807b22d3404175d002bf96d72d3f file=gateway/internal/rates/rates.go range=92:95 lang=go exported=true byte_range=4827:5054
+  digest=b3:5ba749960b204a204019b7aa7e6949cb4ee6807b22d3404175d002bf96d72d3f file=gateway/internal/rates/rates.go range=100:103 lang=go exported=true byte_range=5323:5550
   sig=untyped float
   doc=PaxUsdReference is the USD price of 1 PAX the v3 rate card was\ndenominated against. Exposed so ops/telemetry can re-derive or\naudit the PAX amounts from the row-level `≈ $X` USD targets.
 EDGES
   ^defines=matrix/gateway/internal/rates/rates.go
 
 NODE id=matrix/gateway/internal/rates.Rate kind=type
-  digest=b3:e2e6b5b79992425e274813cbc7796d836746d6d4e7715596798f40d2a0dd4e4f file=gateway/internal/rates/rates.go range=170:179 lang=go exported=true byte_range=8674:9143
+  digest=b3:e2e6b5b79992425e274813cbc7796d836746d6d4e7715596798f40d2a0dd4e4f file=gateway/internal/rates/rates.go range=182:191 lang=go exported=true byte_range=9441:9910
   sig=type Rate struct {\n	Model			string\n	Group			string\n	InputPaxPerMTokens	float64	// PAX charged per million prompt tokens\n	OutputPaxPerMTokens	float64	// PAX charged per million completion tokens\n	Notes			string	// free-form provenance / sourcing\n}
   doc=Rate is the per-Mtoken price in PAX for a single model. Both prompt\n(input) and completion (output) sides are tracked because providers\ngenerally price the two asymmetrically.
 EDGES
   contains=matrix/gateway/internal/rates.Rate#Group,matrix/gateway/internal/rates.Rate#InputPaxPerMTokens,matrix/gateway/internal/rates.Rate#Model,matrix/gateway/internal/rates.Rate#Notes,matrix/gateway/internal/rates.Rate#OutputPaxPerMTokens
+  ^references=matrix/gateway/internal/rates.All,matrix/gateway/internal/rates.Lookup,matrix/gateway/internal/rates.rateIndex,matrix/gateway/internal/rates.rateTable
   ^defines=matrix/gateway/internal/rates/rates.go
 
 NODE id=matrix/gateway/internal/rates.Rate#Group kind=field
-  digest=b3:0cd686cfea7fcc62e9bec2d081519112cb5b7c118349a7337566373619093dd2 file=gateway/internal/rates/rates.go range=175:175 lang=go exported=true byte_range=8907:8933
+  digest=b3:0cd686cfea7fcc62e9bec2d081519112cb5b7c118349a7337566373619093dd2 file=gateway/internal/rates/rates.go range=187:187 lang=go exported=true byte_range=9674:9700
   sig=string
 EDGES
   ^contains=matrix/gateway/internal/rates.Rate
 
 NODE id=matrix/gateway/internal/rates.Rate#InputPaxPerMTokens kind=field
-  digest=b3:3847359708773a58426979dba18c5270ee20a5fe46f726d0e5a1cb0021b11b4d file=gateway/internal/rates/rates.go range=176:176 lang=go exported=true byte_range=8935:8962
+  digest=b3:3847359708773a58426979dba18c5270ee20a5fe46f726d0e5a1cb0021b11b4d file=gateway/internal/rates/rates.go range=188:188 lang=go exported=true byte_range=9702:9729
   sig=float64
 EDGES
   ^contains=matrix/gateway/internal/rates.Rate
 
 NODE id=matrix/gateway/internal/rates.Rate#Model kind=field
-  digest=b3:d69b4dd09883d94c48791689f3e58e3443cc5e1e749714ff207699f4948d2e87 file=gateway/internal/rates/rates.go range=174:174 lang=go exported=true byte_range=8879:8905
+  digest=b3:d69b4dd09883d94c48791689f3e58e3443cc5e1e749714ff207699f4948d2e87 file=gateway/internal/rates/rates.go range=186:186 lang=go exported=true byte_range=9646:9672
   sig=string
 EDGES
   ^contains=matrix/gateway/internal/rates.Rate
 
 NODE id=matrix/gateway/internal/rates.Rate#Notes kind=field
-  digest=b3:ce051f3115a52b398ade99a9b703fa7f96c2e8365a814b1a91715fbaced709ca file=gateway/internal/rates/rates.go range=178:178 lang=go exported=true byte_range=9079:9105
+  digest=b3:ce051f3115a52b398ade99a9b703fa7f96c2e8365a814b1a91715fbaced709ca file=gateway/internal/rates/rates.go range=190:190 lang=go exported=true byte_range=9846:9872
   sig=string
 EDGES
   ^contains=matrix/gateway/internal/rates.Rate
 
 NODE id=matrix/gateway/internal/rates.Rate#OutputPaxPerMTokens kind=field
-  digest=b3:2d36369e9ff44bd9d98817e444c21f6bd00a55c139af0abe404776def4a1f40a file=gateway/internal/rates/rates.go range=177:177 lang=go exported=true byte_range=9005:9032
+  digest=b3:2d36369e9ff44bd9d98817e444c21f6bd00a55c139af0abe404776def4a1f40a file=gateway/internal/rates/rates.go range=189:189 lang=go exported=true byte_range=9772:9799
   sig=float64
 EDGES
   ^contains=matrix/gateway/internal/rates.Rate
 
 NODE id=matrix/gateway/internal/rates.RateTableVersion kind=const
-  digest=b3:70340c9bbe66f8529eb508ba50b636cadd63e5a93f2dc126949398060b9f74fd file=gateway/internal/rates/rates.go range=33:90 lang=go exported=true byte_range=1297:4825
+  digest=b3:130146bd6268b16fbfb5b6c5368f744c2fd70a77b874ef4f9897d9579a997f50 file=gateway/internal/rates/rates.go range=33:98 lang=go exported=true byte_range=1297:5321
   sig=untyped int
-  doc=RateTableVersion identifies the immutable rate-card snapshot used to\nprice LLM calls. Bump on every schedule change. Ledger rows record\nthis so historical cost computations remain reproducible after a\nlater rate update.\n\nv2 (2026-06-01, v1 launch): added deepseek-v4-pro (planner upgrade +\ncompiler low-confidence escalation target) and kimi-k2.6 (executor\nupgrade). See FreeTierWhitelist + rateTable below.\n\nv3 (2026-06-04, PAX reference reprice): re-denominated the entire\nrate card from the placeholder 1 PAX = $0.01 anchor to the actual\nlaunch price 1 PAX = $11.43. No models added/removed and no USD\ntargets changed — every PAX-per-Mtoken value was recomputed as\nusd_per_mtoken / 11.43 (a uniform /1143 vs v2). Also introduced the\nDailyFreeTierLimitPax cap (10 PAX/day). Ledger rows priced under v2\nkeep their v2 figures; only v3+ rows use the new amounts.\n\nv4 (2026-06-08) adds glm-5p1-fast to the rate card for the new `neo`\nslot (Neo's cheap background model: write-back / compaction / summary\nvalidation). NOTE: the glm rate below is a PLACEHOLDER mirrored from the\ndeepseek-v4-flash tier — Andrew to replace with the real provider price.\n\nv5 (2026-06-10, Andrew approved) adds nomic-embed-text-v1.5 for the `neo`\nslot: Neo's cortex pager now does real semantic page-faulting through the\ngateway /v1/embeddings route. Embeddings are input-only (no completion\nside), so the output rate is 0. USD target $0.008/Mtoken (Fireworks list).\n\nv6 (2026-06-22, Andrew approved) adds deepseek-ai/DeepSeek-V4-Pro (Together)\nas Neo's main conversational loop model, replacing Qwen/Qwen3.7-Max on the\n`neo` slot whitelist. NOTE: the rate is a PLACEHOLDER mirrored from the\nFireworks v4-pro tier ($1/$2 per Mtoken) — replace with the real Together\nprovider price. The Qwen row stays on the card (still used by other slots).\n\nv7 (2026-07-01) ADDS the Baseten-served zai-org/GLM-5.2 (ModelGLM52) as the\nprimary chat model for every slot (Neo config + MCL DefaultRegistry now pin\nit; bare "<vendor>/<model>" now routes to Baseten in internal/routing). This\nis a purely ADDITIVE change: one new rateTable row + whitelisting GLM-5.2 on\nevery slot. All historical Fireworks/Together rows stay on the card so pre-v7\nledger rows remain replayable. GLM-5.2's PAX rate is a PLACEHOLDER pending the\nreal Baseten Model APIs price.\n\nv8 (2026-07-02, Andrew directed) REPLACES zai-org/GLM-5.2 with the\nBaseten-served zai-org/GLM-5.2 (ModelNemotron3Ultra)\nas the primary chat model on every slot (Neo config, Cody mode policy, MCL\nDefaultRegistry, deploy pins). One new rateTable row + the whitelist swap on\nevery lane. The GLM-5.2 row stays on the card so pre-v8 ledger rows remain\nreplayable. Nemotron's PAX rate is a PLACEHOLDER pending the real Baseten\nModel APIs price.\n\nv9 (2026-07-05, Andrew directed) MIGRATES the fleet off Z.ai GLM onto xAI\nGrok, REMOVING the zai-org/GLM-5.2 rows and ADDING three grok rows:\ngrok-4.3 (ModelGrok43 — Neo main + MCL triage/registry), grok-build-0.1\n(ModelGrokBuild — Cody), grok-4.20-0309-non-reasoning (ModelGrok420NR —\nCassandra + Neo cheap/consolidation + liaison). The Z.ai provider + upstream\npath are removed entirely; pre-v9 ledger rows that reference zai-org/GLM-5.2\nare NOT replayable against this card (accepted at migration). All three grok\nPAX rates are PLACEHOLDERS pending the real xAI prices.
+  doc=RateTableVersion identifies the immutable rate-card snapshot used to\nprice LLM calls. Bump on every schedule change. Ledger rows record\nthis so historical cost computations remain reproducible after a\nlater rate update.\n\nv2 (2026-06-01, v1 launch): added deepseek-v4-pro (planner upgrade +\ncompiler low-confidence escalation target) and kimi-k2.6 (executor\nupgrade). See FreeTierWhitelist + rateTable below.\n\nv3 (2026-06-04, PAX reference reprice): re-denominated the entire\nrate card from the placeholder 1 PAX = $0.01 anchor to the actual\nlaunch price 1 PAX = $11.43. No models added/removed and no USD\ntargets changed — every PAX-per-Mtoken value was recomputed as\nusd_per_mtoken / 11.43 (a uniform /1143 vs v2). Also introduced the\nDailyFreeTierLimitPax cap (10 PAX/day). Ledger rows priced under v2\nkeep their v2 figures; only v3+ rows use the new amounts.\n\nv4 (2026-06-08) adds glm-5p1-fast to the rate card for the new `neo`\nslot (Neo's cheap background model: write-back / compaction / summary\nvalidation). NOTE: the glm rate below is a PLACEHOLDER mirrored from the\ndeepseek-v4-flash tier — Andrew to replace with the real provider price.\n\nv5 (2026-06-10, Andrew approved) adds nomic-embed-text-v1.5 for the `neo`\nslot: Neo's cortex pager now does real semantic page-faulting through the\ngateway /v1/embeddings route. Embeddings are input-only (no completion\nside), so the output rate is 0. USD target $0.008/Mtoken (Fireworks list).\n\nv6 (2026-06-22, Andrew approved) adds deepseek-ai/DeepSeek-V4-Pro (Together)\nas Neo's main conversational loop model, replacing Qwen/Qwen3.7-Max on the\n`neo` slot whitelist. NOTE: the rate is a PLACEHOLDER mirrored from the\nFireworks v4-pro tier ($1/$2 per Mtoken) — replace with the real Together\nprovider price. The Qwen row stays on the card (still used by other slots).\n\nv7 (2026-07-01) ADDS the Baseten-served zai-org/GLM-5.2 (ModelGLM52) as the\nprimary chat model for every slot (Neo config + MCL DefaultRegistry now pin\nit; bare "<vendor>/<model>" now routes to Baseten in internal/routing). This\nis a purely ADDITIVE change: one new rateTable row + whitelisting GLM-5.2 on\nevery slot. All historical Fireworks/Together rows stay on the card so pre-v7\nledger rows remain replayable. GLM-5.2's PAX rate is a PLACEHOLDER pending the\nreal Baseten Model APIs price.\n\nv8 (2026-07-02, Andrew directed) REPLACES zai-org/GLM-5.2 with the\nBaseten-served zai-org/GLM-5.2 (ModelNemotron3Ultra)\nas the primary chat model on every slot (Neo config, Cody mode policy, MCL\nDefaultRegistry, deploy pins). One new rateTable row + the whitelist swap on\nevery lane. The GLM-5.2 row stays on the card so pre-v8 ledger rows remain\nreplayable. Nemotron's PAX rate is a PLACEHOLDER pending the real Baseten\nModel APIs price.\n\nv9 (2026-07-05, Andrew directed) MIGRATES the fleet off Z.ai GLM onto xAI\nGrok, REMOVING the zai-org/GLM-5.2 rows and ADDING three grok rows:\ngrok-4.3 (ModelGrok43 — Neo main + MCL triage/registry), grok-build-0.1\n(ModelGrokBuild — Cody), grok-4.20-0309-non-reasoning (ModelGrok420NR —\nCassandra + Neo cheap/consolidation + liaison). The Z.ai provider + upstream\npath are removed entirely; pre-v9 ledger rows that reference zai-org/GLM-5.2\nare NOT replayable against this card (accepted at migration). All three grok\nPAX rates are PLACEHOLDERS pending the real xAI prices.\n\nv10 (2026-07-07, Andrew directed) makes the Novita-served\nxiaomimimo/mimo-v2.5-pro (ModelMimoV25Pro) the primary chat model for every\nagentic slot (Neo, Cody, MCL compiler/planner/executor, liaison). Purely\nADDITIVE: one new rateTable row + whitelisting MiMo on those slots. The grok\nrows stay on the card (still used by the Cassandra slot + as fallbacks) so\npre-v10 ledger rows remain replayable. MiMo's PAX rate is a PLACEHOLDER\npending the real Novita provider price.
 EDGES
+  ^references=matrix/gateway/internal/ledger.Memory.Record,matrix/gateway/internal/ledger.Postgres.Record,matrix/gateway/internal/proxy.Server.maybeDebit,matrix/gateway/internal/proxy.Server.stampCostHeaders,matrix/gateway/internal/rates.Cost
   ^defines=matrix/gateway/internal/rates/rates.go
 
 NODE id=matrix/gateway/internal/rates.SubPax kind=func
-  digest=b3:66a9bd4e1d1345cb5e2a48900d1910bbc5f16645742c35f642968887209430db file=gateway/internal/rates/rates.go range=419:442 lang=go exported=true byte_range=20746:21450
+  digest=b3:66a9bd4e1d1345cb5e2a48900d1910bbc5f16645742c35f642968887209430db file=gateway/internal/rates/rates.go range=438:461 lang=go exported=true byte_range=22115:22819
   sig=func SubPax(a, b string) (string, error)
   doc=SubPax returns max(a-b, 0) in PAX-denominated decimal-string form.\nUsed to compute X-Matrix-Daily-Remaining-Pax without re-querying.
 EDGES
+  calls=matrix/gateway/internal/rates.formatPax
+  references=matrix/gateway/internal/rates.a,matrix/gateway/internal/rates.af,matrix/gateway/internal/rates.b,matrix/gateway/internal/rates.bf,matrix/gateway/internal/rates.diff,matrix/gateway/internal/rates.err,matrix/gateway/internal/rates.formatPax,matrix/gateway/internal/rates.prec
+  ^calls=matrix/gateway/internal/ledger.CheckBudget,matrix/gateway/internal/proxy.Server.stampCostHeaders,matrix/gateway/internal/rates.DailyRemainingPax
+  ^references=matrix/gateway/internal/ledger.CheckBudget,matrix/gateway/internal/proxy.Server.stampCostHeaders,matrix/gateway/internal/rates.DailyRemainingPax
   ^defines=matrix/gateway/internal/rates/rates.go
 
 NODE id=matrix/gateway/internal/rates.formatPax kind=func
-  digest=b3:ab8d94a68af02e0adf8b22a4e38652eb4618947277ca21d65bb36015e203a8e3 file=gateway/internal/rates/rates.go range=485:490 lang=go exported=false byte_range=22853:23099
+  digest=b3:ab8d94a68af02e0adf8b22a4e38652eb4618947277ca21d65bb36015e203a8e3 file=gateway/internal/rates/rates.go range=504:509 lang=go exported=false byte_range=24222:24468
   sig=func formatPax(f *big.Float) string
   doc=formatPax stringifies a big.Float as a fixed-point decimal at 12\ndecimals (matching NUMERIC(20,12)). Trailing zeros are NOT trimmed\nso the wire format is stable across rows.
 EDGES
+  references=matrix/gateway/internal/rates.f
+  ^calls=matrix/gateway/internal/rates.AddPax,matrix/gateway/internal/rates.Cost,matrix/gateway/internal/rates.SubPax
+  ^references=matrix/gateway/internal/rates.AddPax,matrix/gateway/internal/rates.Cost,matrix/gateway/internal/rates.SubPax
   ^defines=matrix/gateway/internal/rates/rates.go
 
 NODE id=matrix/gateway/internal/rates.rateIndex kind=var
-  digest=b3:885b95f60792c8cf09aa899cb594260c0db31ad4367da0004e1ce7fd02fd3283 file=gateway/internal/rates/rates.go range=282:289 lang=go exported=false byte_range=14385:14604
+  digest=b3:885b95f60792c8cf09aa899cb594260c0db31ad4367da0004e1ce7fd02fd3283 file=gateway/internal/rates/rates.go range=301:308 lang=go exported=false byte_range=15652:15871
   sig=map[string]rates.Rate
   doc=rateIndex maps model id -> Rate. Initialized once at package load.
 EDGES
+  references=matrix/gateway/internal/rates.Rate,matrix/gateway/internal/rates.m,matrix/gateway/internal/rates.r,matrix/gateway/internal/rates.rateTable
+  ^references=matrix/gateway/internal/rates.Lookup
   ^defines=matrix/gateway/internal/rates/rates.go
 
 NODE id=matrix/gateway/internal/rates.rateTable kind=var
-  digest=b3:5c1767a96b203282af5b1bc4441cfd531e83faa478f8241b22dfacd7cd33ba80 file=gateway/internal/rates/rates.go range=181:280 lang=go exported=false byte_range=9145:14383
+  digest=b3:4cb25c59b8c1f525b6dbfb4147298292ee0ed709f5b0f1301c4215ea7150bd40 file=gateway/internal/rates/rates.go range=193:299 lang=go exported=false byte_range=9912:15650
   sig=[]rates.Rate
   doc=rateTable is the immutable v3 rate card. Adding a model OR repricing\nREQUIRES bumping RateTableVersion to keep historical ledger rows\nreplayable. Order is documentation only; the lookup is a map (see init).\n\nPAX values = USD target / 11.43 (1 PAX = $11.43, v3 reference). The\n`≈ $X` USD targets are the invariant; bake in real provider rates\nbefore GA and re-derive.
 EDGES
+  references=matrix/gateway/internal/rates.GroupClassify,matrix/gateway/internal/rates.GroupCode,matrix/gateway/internal/rates.GroupOther,matrix/gateway/internal/rates.GroupReason,matrix/gateway/internal/rates.GroupSummarize,matrix/gateway/internal/rates.ModelDeepSeekV4Flash,matrix/gateway/internal/rates.ModelDeepSeekV4Pro,matrix/gateway/internal/rates.ModelGLM5p1Fast,matrix/gateway/internal/rates.ModelGPTOSS120B,matrix/gateway/internal/rates.ModelGPTOSS20B,matrix/gateway/internal/rates.ModelGrok420NR,matrix/gateway/internal/rates.ModelGrok43,matrix/gateway/internal/rates.ModelGrokBuild,matrix/gateway/internal/rates.ModelKimiK26,matrix/gateway/internal/rates.ModelLlama405B,matrix/gateway/internal/rates.ModelMimoV25Pro,matrix/gateway/internal/rates.ModelNeoMain,matrix/gateway/internal/rates.ModelNomicEmbed,matrix/gateway/internal/rates.ModelQwenCoder,matrix/gateway/internal/rates.Rate
+  ^references=matrix/gateway/internal/rates.All,matrix/gateway/internal/rates.rateIndex
   ^defines=matrix/gateway/internal/rates/rates.go
 
 NODE id=matrix/gateway/internal/rates/rates.go kind=file
-  digest=b3:5af1a074d7370ba22d4bace7a6660f37cd14f4609489ceee5524c8f346536da7 file=gateway/internal/rates/rates.go range=1:492 lang=go exported=true
+  digest=b3:7aa0593e5badaf3e9212f5e319d1514b3387712d6dc6dad8cae26c73ba27eb62 file=gateway/internal/rates/rates.go range=1:511 lang=go exported=true
 EDGES
-  defines=matrix/gateway/internal/rates.AddPax,matrix/gateway/internal/rates.All,matrix/gateway/internal/rates.CmpPax,matrix/gateway/internal/rates.Cost,matrix/gateway/internal/rates.DailyFreeTierLimitPax,matrix/gateway/internal/rates.DailyRemainingPax,matrix/gateway/internal/rates.ExceedsDailyLimit,matrix/gateway/internal/rates.FreeTierWhitelist,matrix/gateway/internal/rates.GroupClassify,matrix/gateway/internal/rates.GroupCode,matrix/gateway/internal/rates.GroupOther,matrix/gateway/internal/rates.GroupReason,matrix/gateway/internal/rates.GroupSummarize,matrix/gateway/internal/rates.Lookup,matrix/gateway/internal/rates.ModelCompilerFreeTier,matrix/gateway/internal/rates.ModelDeepSeekV4Flash,matrix/gateway/internal/rates.ModelDeepSeekV4Pro,matrix/gateway/internal/rates.ModelExecutorFreeTier,matrix/gateway/internal/rates.ModelGLM5p1Fast,matrix/gateway/internal/rates.ModelGPTOSS120B,matrix/gateway/internal/rates.ModelGPTOSS20B,matrix/gateway/internal/rates.ModelGrok420NR,matrix/gateway/internal/rates.ModelGrok43,matrix/gateway/internal/rates.ModelGrokBuild,matrix/gateway/internal/rates.ModelKimiK26,matrix/gateway/internal/rates.ModelLlama405B,matrix/gateway/internal/rates.ModelNeoMain,matrix/gateway/internal/rates.ModelNomicEmbed,matrix/gateway/internal/rates.ModelQwenCoder,matrix/gateway/internal/rates.PaxUsdReference,matrix/gateway/internal/rates.Rate,matrix/gateway/internal/rates.RateTableVersion,matrix/gateway/internal/rates.SubPax,matrix/gateway/internal/rates.formatPax,matrix/gateway/internal/rates.rateIndex,matrix/gateway/internal/rates.rateTable
+  defines=matrix/gateway/internal/rates.AddPax,matrix/gateway/internal/rates.All,matrix/gateway/internal/rates.CmpPax,matrix/gateway/internal/rates.Cost,matrix/gateway/internal/rates.DailyFreeTierLimitPax,matrix/gateway/internal/rates.DailyRemainingPax,matrix/gateway/internal/rates.ExceedsDailyLimit,matrix/gateway/internal/rates.FreeTierWhitelist,matrix/gateway/internal/rates.GroupClassify,matrix/gateway/internal/rates.GroupCode,matrix/gateway/internal/rates.GroupOther,matrix/gateway/internal/rates.GroupReason,matrix/gateway/internal/rates.GroupSummarize,matrix/gateway/internal/rates.Lookup,matrix/gateway/internal/rates.ModelCompilerFreeTier,matrix/gateway/internal/rates.ModelDeepSeekV4Flash,matrix/gateway/internal/rates.ModelDeepSeekV4Pro,matrix/gateway/internal/rates.ModelExecutorFreeTier,matrix/gateway/internal/rates.ModelGLM5p1Fast,matrix/gateway/internal/rates.ModelGPTOSS120B,matrix/gateway/internal/rates.ModelGPTOSS20B,matrix/gateway/internal/rates.ModelGrok420NR,matrix/gateway/internal/rates.ModelGrok43,matrix/gateway/internal/rates.ModelGrokBuild,matrix/gateway/internal/rates.ModelKimiK26,matrix/gateway/internal/rates.ModelLlama405B,matrix/gateway/internal/rates.ModelMimoV25Pro,matrix/gateway/internal/rates.ModelNeoMain,matrix/gateway/internal/rates.ModelNomicEmbed,matrix/gateway/internal/rates.ModelQwenCoder,matrix/gateway/internal/rates.PaxUsdReference,matrix/gateway/internal/rates.Rate,matrix/gateway/internal/rates.RateTableVersion,matrix/gateway/internal/rates.SubPax,matrix/gateway/internal/rates.formatPax,matrix/gateway/internal/rates.rateIndex,matrix/gateway/internal/rates.rateTable
   ^contains=matrix/gateway/internal/rates

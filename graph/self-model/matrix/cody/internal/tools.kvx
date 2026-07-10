@@ -1,0 +1,328 @@
+# GENERATED gen=codegraph do-not-edit merkle=b3:75a956136eb56a920059d717ea1f7ba394b53bef834ab6db66f06d328eb5d650
+
+NODE id=matrix/cody/internal/tools kind=package
+  digest=b3:5efbdb8b7b8df92338cbab2840e16439e7d00077abea651c6f03934986d474c1 file=cody/internal/tools range=0:0 lang=go exported=true
+EDGES
+  contains=matrix/cody/internal/tools/browser.go,matrix/cody/internal/tools/tools.go
+  ^contains=mod:matrix/cody
+
+NODE id=matrix/cody/internal/tools.Bridge kind=type
+  digest=b3:cdf2373c330945fcf5ea9c76dc1f8668ac07ae23ed19fd0014d3df40f209aa05 file=cody/internal/tools/tools.go range=43:47 lang=go exported=true byte_range=1532:1657
+  sig=type Bridge struct {\n	cfg	Config\n	client	*http.Client\n}
+  doc=Bridge exposes the extra tool surface and dispatches its calls.
+EDGES
+  contains=matrix/cody/internal/tools.Bridge#cfg,matrix/cody/internal/tools.Bridge#client,matrix/cody/internal/tools.Bridge.Dispatch,matrix/cody/internal/tools.Bridge.Tools,matrix/cody/internal/tools.Bridge.browserScreenshot,matrix/cody/internal/tools.Bridge.fetch,matrix/cody/internal/tools.Bridge.mcpInitialize,matrix/cody/internal/tools.Bridge.mcpToolCall,matrix/cody/internal/tools.Bridge.rpc,matrix/cody/internal/tools.Bridge.saveScreenshot,matrix/cody/internal/tools.Bridge.webSearch
+  ^defines=matrix/cody/internal/tools/tools.go
+
+NODE id=matrix/cody/internal/tools.Bridge#cfg kind=field
+  digest=b3:e66c8afdd97a84f99adb6814f23958fd89e673a59fc452dbb3867e37564d71a3 file=cody/internal/tools/tools.go range=45:45 lang=go exported=false byte_range=1621:1634
+  sig=tools.Config
+EDGES
+  ^contains=matrix/cody/internal/tools.Bridge
+
+NODE id=matrix/cody/internal/tools.Bridge#client kind=field
+  digest=b3:7c0cb504d41523547241354fab9d688332215bc4ca84cd570ca943751af4029f file=cody/internal/tools/tools.go range=46:46 lang=go exported=false byte_range=1636:1655
+  sig=*http.Client
+EDGES
+  ^contains=matrix/cody/internal/tools.Bridge
+
+NODE id=matrix/cody/internal/tools.Bridge.Dispatch kind=method
+  digest=b3:93f42191f5e32af43eab684288ad0be3b1a95c1c83e576f663a9956ef3d2491d file=cody/internal/tools/tools.go range=89:102 lang=go exported=true byte_range=3520:4033
+  sig=func (b *Bridge) Dispatch(ctx context.Context, name string, args map[string]interface{}) (string, error)
+  doc=Dispatch executes one ExtraTools call by name. It matches the worker's\nExtraDispatch signature.
+EDGES
+  ^contains=matrix/cody/internal/tools.Bridge
+  ^defines=matrix/cody/internal/tools/tools.go
+
+NODE id=matrix/cody/internal/tools.Bridge.Tools kind=method
+  digest=b3:fc912185920b4f32ab9db13ef4577b373a731c5c01674beae4c03748f64894d5 file=cody/internal/tools/tools.go range=58:87 lang=go exported=true byte_range=1974:3518
+  sig=func (b *Bridge) Tools() []llm.Tool
+  doc=Tools returns the tool schemas to append to the worker's surface. The browser\nscreenshot tool is advertised only when a browser service is configured, so a\nworker never sees a tool it cannot use.
+EDGES
+  ^contains=matrix/cody/internal/tools.Bridge
+  ^defines=matrix/cody/internal/tools/tools.go
+
+NODE id=matrix/cody/internal/tools.Bridge.browserScreenshot kind=method
+  digest=b3:8455b16eb04dc584d8a0caa98b3ba9f4b38229759ea75468c5c7434843ca1402 file=cody/internal/tools/browser.go range=72:110 lang=go exported=false byte_range=2445:3878
+  sig=func (b *Bridge) browserScreenshot(ctx context.Context, target, name string) (string, error)
+  doc=browserScreenshot navigates the shared browser to url and saves a screenshot\nunder the workspace, returning the workspace-relative path.
+EDGES
+  ^contains=matrix/cody/internal/tools.Bridge
+  ^defines=matrix/cody/internal/tools/browser.go
+
+NODE id=matrix/cody/internal/tools.Bridge.fetch kind=method
+  digest=b3:02129d3eef6ae2dd38b1223d04fe5c4f8b966303076b25d5897679e4114f3131 file=cody/internal/tools/tools.go range=107:129 lang=go exported=false byte_range=4124:4874
+  sig=func (b *Bridge) fetch(ctx context.Context, raw string) (string, error)
+EDGES
+  ^contains=matrix/cody/internal/tools.Bridge
+  ^defines=matrix/cody/internal/tools/tools.go
+
+NODE id=matrix/cody/internal/tools.Bridge.mcpInitialize kind=method
+  digest=b3:c49810b4c419c232a788702372ee2d84251167acf8a52a37e3590bc2dd9a367a file=cody/internal/tools/browser.go range=134:154 lang=go exported=false byte_range=4646:5474
+  sig=func (b *Bridge) mcpInitialize(ctx context.Context) (*mcpSession, error)
+  doc=mcpInitialize performs the MCP handshake and returns the session.
+EDGES
+  ^contains=matrix/cody/internal/tools.Bridge
+  ^defines=matrix/cody/internal/tools/browser.go
+
+NODE id=matrix/cody/internal/tools.Bridge.mcpToolCall kind=method
+  digest=b3:5456609e840cf686b2b6cfd704d2caba1dcee6ca7a7d4bec4c3f9f6bec06a442 file=cody/internal/tools/browser.go range=156:178 lang=go exported=false byte_range=5476:6297
+  sig=func (b *Bridge) mcpToolCall(ctx context.Context, sess *mcpSession, name string, args map[string]interface{}) (*toolCallResult, error)
+  doc=mcpToolCall invokes one MCP tool and decodes the tools/call result.
+EDGES
+  ^contains=matrix/cody/internal/tools.Bridge
+  ^defines=matrix/cody/internal/tools/browser.go
+
+NODE id=matrix/cody/internal/tools.Bridge.rpc kind=method
+  digest=b3:4626742586b7927620c36cc6e9eab9b43f863d4a1b643fb8bb496f41cb30bb56 file=cody/internal/tools/browser.go range=180:227 lang=go exported=false byte_range=6299:8230
+  sig=func (b *Bridge) rpc(ctx context.Context, sessID string, msg jsonRPCRequest) (jsonRPCResponse, string, error)
+  doc=rpc POSTs one JSON-RPC message to the browser endpoint and returns the first\nmatching response. The Streamable-HTTP transport may answer with a single\nJSON body or an SSE stream of framed messages; both are handled. It returns\nthe (possibly empty) session id echoed by the server. A notification (no id)\nexpects no body and returns a zero response.
+EDGES
+  ^contains=matrix/cody/internal/tools.Bridge
+  ^defines=matrix/cody/internal/tools/browser.go
+
+NODE id=matrix/cody/internal/tools.Bridge.saveScreenshot kind=method
+  digest=b3:16fec007155c8285921836a61b69880291f9efe99370a009ac61aa279ad99644 file=cody/internal/tools/browser.go range=112:129 lang=go exported=false byte_range=3880:4531
+  sig=func (b *Bridge) saveScreenshot(name, target string, img []byte) (string, error)
+  doc=saveScreenshot writes the PNG under <root>/.cody/screenshots and returns its\nworkspace-relative path.
+EDGES
+  ^contains=matrix/cody/internal/tools.Bridge
+  ^defines=matrix/cody/internal/tools/browser.go
+
+NODE id=matrix/cody/internal/tools.Bridge.webSearch kind=method
+  digest=b3:93f6e7c1999a96252f911889b536e5a8856583562a14cd1f4d1ab57436975c02 file=cody/internal/tools/tools.go range=138:173 lang=go exported=false byte_range=5041:6245
+  sig=func (b *Bridge) webSearch(ctx context.Context, query string) (string, error)
+EDGES
+  ^contains=matrix/cody/internal/tools.Bridge
+  ^defines=matrix/cody/internal/tools/tools.go
+
+NODE id=matrix/cody/internal/tools.Config kind=type
+  digest=b3:a558d9eeacd83d96996d7690639aee117f7eb2541a97164531595641af42976f file=cody/internal/tools/tools.go range=27:41 lang=go exported=true byte_range=903:1530
+  sig=type Config struct {\n	// Root is the workspace root a browser screenshot is saved under.\n	Root	string\n	// BrowserURL is the shared browser MCP Streamable-HTTP endpoint\n	// (MATRIX_BROWSER_URL). Empty disables the browser bridge (boot-safe).\n	BrowserURL	string\n	BrowserToken	string\n	// SearxngURL is the shared SearXNG JSON endpoint (MATRIX_SEARXNG_URL).\n	// Empty makes web_search return a structured "not configured" result.\n	SearxngURL	string\n	SearxngToken	string\n	// Timeout bounds one fetch/search/browser round-trip (default 30s).\n	Timeout	time.Duration\n}
+  doc=Config wires the shared tool services into a worker bridge.
+EDGES
+  contains=matrix/cody/internal/tools.Config#BrowserToken,matrix/cody/internal/tools.Config#BrowserURL,matrix/cody/internal/tools.Config#Root,matrix/cody/internal/tools.Config#SearxngToken,matrix/cody/internal/tools.Config#SearxngURL,matrix/cody/internal/tools.Config#Timeout
+  ^defines=matrix/cody/internal/tools/tools.go
+
+NODE id=matrix/cody/internal/tools.Config#BrowserToken kind=field
+  digest=b3:2a94f2a2d3ccfe9a54ec12e6b96afbfb83cecfde2c267615ca2a56e39518e7c7 file=cody/internal/tools/tools.go range=34:34 lang=go exported=true byte_range=1229:1248
+  sig=string
+EDGES
+  ^contains=matrix/cody/internal/tools.Config
+
+NODE id=matrix/cody/internal/tools.Config#BrowserURL kind=field
+  digest=b3:46f289fadb356977e35fffb88f3eed7c01365b3545234a75e2c40c19c9973598 file=cody/internal/tools/tools.go range=31:33 lang=go exported=true byte_range=1069:1227
+  sig=string
+  doc=BrowserURL is the shared browser MCP Streamable-HTTP endpoint\n(MATRIX_BROWSER_URL). Empty disables the browser bridge (boot-safe).
+EDGES
+  ^contains=matrix/cody/internal/tools.Config
+
+NODE id=matrix/cody/internal/tools.Config#Root kind=field
+  digest=b3:32870712dc50fe0c8d58cc28949b4307bb12ec72fa2e295fb2db351e7e08de21 file=cody/internal/tools/tools.go range=29:30 lang=go exported=true byte_range=988:1067
+  sig=string
+  doc=Root is the workspace root a browser screenshot is saved under.
+EDGES
+  ^contains=matrix/cody/internal/tools.Config
+
+NODE id=matrix/cody/internal/tools.Config#SearxngToken kind=field
+  digest=b3:5c42d7e477d5b9cec539ca8f5ca7fe79efd079133920a774df2bab467bc8bd15 file=cody/internal/tools/tools.go range=38:38 lang=go exported=true byte_range=1416:1435
+  sig=string
+EDGES
+  ^contains=matrix/cody/internal/tools.Config
+
+NODE id=matrix/cody/internal/tools.Config#SearxngURL kind=field
+  digest=b3:ba29c164854e7c0570a3dbb348fc06b5d43de182273e63782e800daed60298cc file=cody/internal/tools/tools.go range=35:37 lang=go exported=true byte_range=1250:1414
+  sig=string
+  doc=SearxngURL is the shared SearXNG JSON endpoint (MATRIX_SEARXNG_URL).\nEmpty makes web_search return a structured "not configured" result.
+EDGES
+  ^contains=matrix/cody/internal/tools.Config
+
+NODE id=matrix/cody/internal/tools.Config#Timeout kind=field
+  digest=b3:1f75b7e1c46b7da4f16c60e57ed5b9ce5fdc975046c69d5b7068395e55498f27 file=cody/internal/tools/tools.go range=39:40 lang=go exported=true byte_range=1437:1528
+  sig=time.Duration
+  doc=Timeout bounds one fetch/search/browser round-trip (default 30s).
+EDGES
+  ^contains=matrix/cody/internal/tools.Config
+
+NODE id=matrix/cody/internal/tools.ErrScreenshotUnavailable kind=var
+  digest=b3:b15ff6343cad3815f8ba2f8948083b466ebda512836bfca41a7f1fa98eef0f48 file=cody/internal/tools/browser.go range=35:39 lang=go exported=true byte_range=1054:1423
+  sig=error
+  doc=ErrScreenshotUnavailable is the typed signal that screenshot capability is\nabsent in this environment (req 4.4). Callers dispatch on it with errors.Is;\nit is NEVER returned as a success message in the path slot, so no caller can\nmistake the explanation for a screenshot path.
+EDGES
+  ^defines=matrix/cody/internal/tools/browser.go
+
+NODE id=matrix/cody/internal/tools.New kind=func
+  digest=b3:e0418020b5196d865ccf838419b4f050fbdd56292211e389fd2638f3024d701c file=cody/internal/tools/tools.go range=49:56 lang=go exported=true byte_range=1659:1972
+  sig=func New(cfg Config) *Bridge
+  doc=New builds a bridge. A nil-safe zero Config yields fetch + a not-configured\nweb_search (no browser tool advertised) — always safe to construct.
+EDGES
+  ^defines=matrix/cody/internal/tools/tools.go
+
+NODE id=matrix/cody/internal/tools.fetchCap kind=const
+  digest=b3:1990f0e08caea2dbebcb07969d3ddef413a94689f35f2be8ab0fb009c6c514a4 file=cody/internal/tools/tools.go range=104:105 lang=go exported=false byte_range=4035:4122
+  sig=untyped int
+  doc=fetchCap bounds a fetch/search response body kept inline.
+EDGES
+  ^defines=matrix/cody/internal/tools/tools.go
+
+NODE id=matrix/cody/internal/tools.jsonRPCRequest kind=type
+  digest=b3:4c2bb23d32496b856a0cbf5c80cbe90c9bafe502a9efc8960adbc31c593525a0 file=cody/internal/tools/browser.go range=41:47 lang=go exported=false byte_range=1425:1664
+  sig=type jsonRPCRequest struct {\n	JSONRPC	string		`json:"jsonrpc"`\n	ID	int		`json:"id,omitempty"`\n	Method	string		`json:"method"`\n	Params	interface{}	`json:"params,omitempty"`\n}
+  doc=jsonRPCRequest is one JSON-RPC 2.0 call.
+EDGES
+  contains=matrix/cody/internal/tools.jsonRPCRequest#ID,matrix/cody/internal/tools.jsonRPCRequest#JSONRPC,matrix/cody/internal/tools.jsonRPCRequest#Method,matrix/cody/internal/tools.jsonRPCRequest#Params
+  ^defines=matrix/cody/internal/tools/browser.go
+
+NODE id=matrix/cody/internal/tools.jsonRPCRequest#ID kind=field
+  digest=b3:4440104636a4d801fd9a7a6353269654e98ac62a93edf61b2127c2b0eac7078d file=cody/internal/tools/browser.go range=44:44 lang=go exported=true byte_range=1537:1578
+  sig=int
+EDGES
+  ^contains=matrix/cody/internal/tools.jsonRPCRequest
+
+NODE id=matrix/cody/internal/tools.jsonRPCRequest#JSONRPC kind=field
+  digest=b3:51482f71a04452b057ae0299b5d7a9b52907c44565295a4c70dbbe9864805f91 file=cody/internal/tools/browser.go range=43:43 lang=go exported=true byte_range=1499:1535
+  sig=string
+EDGES
+  ^contains=matrix/cody/internal/tools.jsonRPCRequest
+
+NODE id=matrix/cody/internal/tools.jsonRPCRequest#Method kind=field
+  digest=b3:b751578242f1abbf1b31b5ec4e7dd6272c92cd29345bf0771c71a7cbb543884c file=cody/internal/tools/browser.go range=45:45 lang=go exported=true byte_range=1580:1615
+  sig=string
+EDGES
+  ^contains=matrix/cody/internal/tools.jsonRPCRequest
+
+NODE id=matrix/cody/internal/tools.jsonRPCRequest#Params kind=field
+  digest=b3:8b8aaba21ee615409b3d86043f0501781c24497b86e132d58a8f7f7156eff44f file=cody/internal/tools/browser.go range=46:46 lang=go exported=true byte_range=1617:1662
+  sig=interface{}
+EDGES
+  ^contains=matrix/cody/internal/tools.jsonRPCRequest
+
+NODE id=matrix/cody/internal/tools.jsonRPCResponse kind=type
+  digest=b3:579ba70f0f423b452605d655e81dc6ce156aa1e1bfc43f46b597baecdd04ca8c file=cody/internal/tools/browser.go range=49:58 lang=go exported=false byte_range=1666:2001
+  sig=type jsonRPCResponse struct {\n	JSONRPC	string		`json:"jsonrpc"`\n	ID	int		`json:"id"`\n	Result	json.RawMessage	`json:"result,omitempty"`\n	Error	*struct {\n		Code	int	`json:"code"`\n		Message	string	`json:"message"`\n	}	`json:"error,omitempty"`\n}
+  doc=jsonRPCResponse is a JSON-RPC 2.0 reply (result or error).
+EDGES
+  contains=matrix/cody/internal/tools.jsonRPCResponse#Error,matrix/cody/internal/tools.jsonRPCResponse#ID,matrix/cody/internal/tools.jsonRPCResponse#JSONRPC,matrix/cody/internal/tools.jsonRPCResponse#Result
+  ^defines=matrix/cody/internal/tools/browser.go
+
+NODE id=matrix/cody/internal/tools.jsonRPCResponse#Error kind=field
+  digest=b3:0f0b682ddc066f7a0c58c2a127909ac22d5811cf0c70182555f95977d510e5f0 file=cody/internal/tools/browser.go range=54:57 lang=go exported=true byte_range=1889:1999
+  sig=*struct{Code int "json:\\"code\\""; Message string "json:\\"message\\""}
+EDGES
+  ^contains=matrix/cody/internal/tools.jsonRPCResponse
+
+NODE id=matrix/cody/internal/tools.jsonRPCResponse#ID kind=field
+  digest=b3:165aa22d964fccac1c3dda4b02a0f6c065880da7892fb18286d414bb27a6dded file=cody/internal/tools/browser.go range=52:52 lang=go exported=true byte_range=1801:1836
+  sig=int
+EDGES
+  ^contains=matrix/cody/internal/tools.jsonRPCResponse
+
+NODE id=matrix/cody/internal/tools.jsonRPCResponse#JSONRPC kind=field
+  digest=b3:e922b6deddabec44b26208ae989c23f029415d4258b8fa54aeb4a41c3dd567f3 file=cody/internal/tools/browser.go range=51:51 lang=go exported=true byte_range=1759:1799
+  sig=string
+EDGES
+  ^contains=matrix/cody/internal/tools.jsonRPCResponse
+
+NODE id=matrix/cody/internal/tools.jsonRPCResponse#Result kind=field
+  digest=b3:2ac6b6c9ad3239d7c5917dcb11746bd554a4cbe96e7877d4291f75a92d67d791 file=cody/internal/tools/browser.go range=53:53 lang=go exported=true byte_range=1838:1887
+  sig=json.RawMessage
+EDGES
+  ^contains=matrix/cody/internal/tools.jsonRPCResponse
+
+NODE id=matrix/cody/internal/tools.mcpSession kind=type
+  digest=b3:1fd2be3ef32be21cff1bcc50d216535a0e248cf0327c9404f2c27421b93f8f17 file=cody/internal/tools/browser.go range=131:132 lang=go exported=false byte_range=4533:4644
+  sig=type mcpSession struct{ id string }
+  doc=mcpSession carries the negotiated session id (if the server issued one).
+EDGES
+  contains=matrix/cody/internal/tools.mcpSession#id
+  ^defines=matrix/cody/internal/tools/browser.go
+
+NODE id=matrix/cody/internal/tools.mcpSession#id kind=field
+  digest=b3:55ca4c3e83db336eb1e0b89dac5bb979a906d46e4f4d6ea382f956c941078724 file=cody/internal/tools/browser.go range=132:132 lang=go exported=false byte_range=4633:4642
+  sig=string
+EDGES
+  ^contains=matrix/cody/internal/tools.mcpSession
+
+NODE id=matrix/cody/internal/tools.readSSEResponse kind=func
+  digest=b3:1ad0e728bd8fe5e41d2c982b0c375f8bc00411041e55bc452cc7473eb316f0a8 file=cody/internal/tools/browser.go range=229:251 lang=go exported=false byte_range=8232:8928
+  sig=func readSSEResponse(r io.Reader, id int) (jsonRPCResponse, error)
+  doc=readSSEResponse scans an SSE stream for the JSON-RPC message matching id.
+EDGES
+  ^defines=matrix/cody/internal/tools/browser.go
+
+NODE id=matrix/cody/internal/tools.sanitizeName kind=func
+  digest=b3:c7ae20824061c27c6dd3d1e5d0cbb98bf673b5ed58ad95af453198fe0602c1be file=cody/internal/tools/browser.go range=253:269 lang=go exported=false byte_range=8930:9303
+  sig=func sanitizeName(s string) string
+EDGES
+  ^defines=matrix/cody/internal/tools/browser.go
+
+NODE id=matrix/cody/internal/tools.screenshotDir kind=const
+  digest=b3:4acd67ed2628aa12770925461a40b40fd4b58f86c6697140c498448d8edabcae file=cody/internal/tools/browser.go range=32:33 lang=go exported=false byte_range=938:1052
+  sig=untyped string
+  doc=screenshotDir is where captured screenshots land under the workspace.
+EDGES
+  ^defines=matrix/cody/internal/tools/browser.go
+
+NODE id=matrix/cody/internal/tools.searxResult kind=type
+  digest=b3:1f24852544011fe91cb859d4e220cf5955d7bbbdf93c3ddd00001caa4285dda7 file=cody/internal/tools/tools.go range=131:136 lang=go exported=false byte_range=4876:5039
+  sig=type searxResult struct {\n	Title	string	`json:"title"`\n	URL	string	`json:"url"`\n	Content	string	`json:"content"`\n}
+  doc=searxResult is one SearXNG JSON result.
+EDGES
+  contains=matrix/cody/internal/tools.searxResult#Content,matrix/cody/internal/tools.searxResult#Title,matrix/cody/internal/tools.searxResult#URL
+  ^defines=matrix/cody/internal/tools/tools.go
+
+NODE id=matrix/cody/internal/tools.searxResult#Content kind=field
+  digest=b3:fefe1ec2be22665969c25f6cc4e0e95996b9421b94af031c95e60555f56e5beb file=cody/internal/tools/tools.go range=135:135 lang=go exported=true byte_range=5006:5037
+  sig=string
+EDGES
+  ^contains=matrix/cody/internal/tools.searxResult
+
+NODE id=matrix/cody/internal/tools.searxResult#Title kind=field
+  digest=b3:1aea887f1633ba5a953348eacb7ea9b967c93497eb794651622f33e673ab1806 file=cody/internal/tools/tools.go range=133:133 lang=go exported=true byte_range=4946:4975
+  sig=string
+EDGES
+  ^contains=matrix/cody/internal/tools.searxResult
+
+NODE id=matrix/cody/internal/tools.searxResult#URL kind=field
+  digest=b3:456d11d92dd5ecc1d9c161724fe7cc6c6396185aead5eabf2a4b6df964210f36 file=cody/internal/tools/tools.go range=134:134 lang=go exported=true byte_range=4977:5004
+  sig=string
+EDGES
+  ^contains=matrix/cody/internal/tools.searxResult
+
+NODE id=matrix/cody/internal/tools.str kind=func
+  digest=b3:fb5e8021c38d47be21529abcb059416dfb23229f20cb03a2e55e356f0ed2f168 file=cody/internal/tools/tools.go range=175:180 lang=go exported=false byte_range=6247:6370
+  sig=func str(args map[string]interface{}, key string) string
+EDGES
+  ^defines=matrix/cody/internal/tools/tools.go
+
+NODE id=matrix/cody/internal/tools.toolCallResult kind=type
+  digest=b3:d37d56778127ab3f9cb40caf92af88ff7476d8fa4dfdb7267e9d4091a9830629 file=cody/internal/tools/browser.go range=60:70 lang=go exported=false byte_range=2003:2443
+  sig=type toolCallResult struct {\n	Content	[]struct {\n		Type		string	`json:"type"`\n		Text		string	`json:"text,omitempty"`\n		Data		string	`json:"data,omitempty"`	// base64 image (type == "image")\n		MimeType	string	`json:"mimeType,omitempty"`\n	}	`json:"content"`\n	IsError	bool	`json:"isError,omitempty"`\n}
+  doc=toolCallResult is the MCP tools/call result: content blocks, one of which is\nthe screenshot image for browser_take_screenshot.
+EDGES
+  contains=matrix/cody/internal/tools.toolCallResult#Content,matrix/cody/internal/tools.toolCallResult#IsError
+  ^defines=matrix/cody/internal/tools/browser.go
+
+NODE id=matrix/cody/internal/tools.toolCallResult#Content kind=field
+  digest=b3:45aedfe498b10bb7f4c585fb9c1566308608ad3bc638bc6a3c3012d26b11e861 file=cody/internal/tools/browser.go range=63:68 lang=go exported=true byte_range=2166:2400
+  sig=[]struct{Type string "json:\\"type\\""; Text string "json:\\"text,omitempty\\""; Data string "json:\\"data,omitempty\\""; MimeType string "json:\\"mimeType,omitempty\\""}
+EDGES
+  ^contains=matrix/cody/internal/tools.toolCallResult
+
+NODE id=matrix/cody/internal/tools.toolCallResult#IsError kind=field
+  digest=b3:5bc9c0639dd4add275d7d9ac015cc55078d2e5303eee88e21b7f52b4e215866b file=cody/internal/tools/browser.go range=69:69 lang=go exported=true byte_range=2402:2441
+  sig=bool
+EDGES
+  ^contains=matrix/cody/internal/tools.toolCallResult
+
+NODE id=matrix/cody/internal/tools/browser.go kind=file
+  digest=b3:ac9250aa05ae61b7c687b4a73456ef4c4919279f7bf908c49946fcdebd3d90af file=cody/internal/tools/browser.go range=1:269 lang=go exported=true
+EDGES
+  defines=matrix/cody/internal/tools.Bridge.browserScreenshot,matrix/cody/internal/tools.Bridge.mcpInitialize,matrix/cody/internal/tools.Bridge.mcpToolCall,matrix/cody/internal/tools.Bridge.rpc,matrix/cody/internal/tools.Bridge.saveScreenshot,matrix/cody/internal/tools.ErrScreenshotUnavailable,matrix/cody/internal/tools.jsonRPCRequest,matrix/cody/internal/tools.jsonRPCResponse,matrix/cody/internal/tools.mcpSession,matrix/cody/internal/tools.readSSEResponse,matrix/cody/internal/tools.sanitizeName,matrix/cody/internal/tools.screenshotDir,matrix/cody/internal/tools.toolCallResult
+  ^contains=matrix/cody/internal/tools
+
+NODE id=matrix/cody/internal/tools/tools.go kind=file
+  digest=b3:3f253543b12d0c8163ac45eedcaa75f52069aaaebe4ce95195ef76b15cad1177 file=cody/internal/tools/tools.go range=1:180 lang=go exported=true
+EDGES
+  defines=matrix/cody/internal/tools.Bridge,matrix/cody/internal/tools.Bridge.Dispatch,matrix/cody/internal/tools.Bridge.Tools,matrix/cody/internal/tools.Bridge.fetch,matrix/cody/internal/tools.Bridge.webSearch,matrix/cody/internal/tools.Config,matrix/cody/internal/tools.New,matrix/cody/internal/tools.fetchCap,matrix/cody/internal/tools.searxResult,matrix/cody/internal/tools.str
+  ^contains=matrix/cody/internal/tools

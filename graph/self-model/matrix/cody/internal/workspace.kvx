@@ -1,0 +1,318 @@
+# GENERATED gen=codegraph do-not-edit merkle=b3:75a956136eb56a920059d717ea1f7ba394b53bef834ab6db66f06d328eb5d650
+
+NODE id=matrix/cody/internal/workspace kind=package
+  digest=b3:5f9e4dc8584d940879c1b3bd147abd3aa41e64abca2e513d73c456d47274ed40 file=cody/internal/workspace range=0:0 lang=go exported=true
+EDGES
+  contains=matrix/cody/internal/workspace/workspace.go
+  ^contains=mod:matrix/cody
+
+NODE id=matrix/cody/internal/workspace.File kind=type
+  digest=b3:405c0d2ebe5c5ad51a8d0f28ed2477a2a345dd9e8fc66bfadf5fa6193235db05 file=cody/internal/workspace/workspace.go range=34:39 lang=go exported=true byte_range=1031:1181
+  sig=type File struct {\n	Path	string	`json:"path"`\n	Size	int64	`json:"size"`\n	Lang	string	`json:"lang,omitempty"`\n}
+  doc=File is one indexed workspace file.
+EDGES
+  contains=matrix/cody/internal/workspace.File#Lang,matrix/cody/internal/workspace.File#Path,matrix/cody/internal/workspace.File#Size
+  ^defines=matrix/cody/internal/workspace/workspace.go
+
+NODE id=matrix/cody/internal/workspace.File#Lang kind=field
+  digest=b3:437f00c17f58d5e4b96848407577b00e54b25b0c15304d0be168b0b60701b0c9 file=cody/internal/workspace/workspace.go range=38:38 lang=go exported=true byte_range=1144:1179
+  sig=string
+EDGES
+  ^contains=matrix/cody/internal/workspace.File
+
+NODE id=matrix/cody/internal/workspace.File#Path kind=field
+  digest=b3:5dbb695d2bfd17814db36cff0b4ff87a24889546e87d7070a46f4d0da13e0018 file=cody/internal/workspace/workspace.go range=36:36 lang=go exported=true byte_range=1090:1115
+  sig=string
+EDGES
+  ^contains=matrix/cody/internal/workspace.File
+
+NODE id=matrix/cody/internal/workspace.File#Size kind=field
+  digest=b3:ba22801d4230a70acb1a38818934df41d6ff1b4a4307cd47618e230cb71c6368 file=cody/internal/workspace/workspace.go range=37:37 lang=go exported=true byte_range=1117:1142
+  sig=int64
+EDGES
+  ^contains=matrix/cody/internal/workspace.File
+
+NODE id=matrix/cody/internal/workspace.Load kind=func
+  digest=b3:db771f69691832a690f8abfecfb25b2bc71b5fa77dbab77512dbd4d9609b3d05 file=cody/internal/workspace/workspace.go range=181:198 lang=go exported=true byte_range=5813:6291
+  sig=func Load(root string) (*Model, error)
+  doc=Load reads the persisted index for a workspace root. It fails if no index\nhas been persisted yet.
+EDGES
+  ^defines=matrix/cody/internal/workspace/workspace.go
+
+NODE id=matrix/cody/internal/workspace.LoadOrScan kind=func
+  digest=b3:c53966b99e29b9365be51a11c0039ccbc5287fbca9427ec43c065909549e38c7 file=cody/internal/workspace/workspace.go range=200:207 lang=go exported=true byte_range=6293:6554
+  sig=func LoadOrScan(root string) (*Model, error)
+  doc=LoadOrScan loads the persisted index when present, otherwise scans and\npersists a fresh one — the cross-session entry point.
+EDGES
+  ^defines=matrix/cody/internal/workspace/workspace.go
+
+NODE id=matrix/cody/internal/workspace.Model kind=type
+  digest=b3:c93dd94c472f5d47479792f5574d499a6a0cfdcbb1b766901892ea91a36dbf4f file=cody/internal/workspace/workspace.go range=41:56 lang=go exported=true byte_range=1183:1942
+  sig=type Model struct {\n	Root		string		`json:"root"`\n	GeneratedAt	time.Time	`json:"generated_at"`\n	FileCount	int		`json:"file_count"`\n	Files		[]File		`json:"files"`\n	// Languages maps language name -> file count, descending significance.\n	Languages	map[string]int	`json:"languages"`\n	// Frameworks lists detected frameworks/runtimes (next, react, django, ...).\n	Frameworks	[]string	`json:"frameworks,omitempty"`\n	// BuildTargets lists the project's own invocable targets\n	// (package.json script names, Makefile targets, go/cargo defaults).\n	BuildTargets	[]string	`json:"build_targets,omitempty"`\n	// EntryPoints lists likely program entry files.\n	EntryPoints	[]string	`json:"entry_points,omitempty"`\n}
+  doc=Model is the persistent repo index.
+EDGES
+  contains=matrix/cody/internal/workspace.Model#BuildTargets,matrix/cody/internal/workspace.Model#EntryPoints,matrix/cody/internal/workspace.Model#FileCount,matrix/cody/internal/workspace.Model#Files,matrix/cody/internal/workspace.Model#Frameworks,matrix/cody/internal/workspace.Model#GeneratedAt,matrix/cody/internal/workspace.Model#Languages,matrix/cody/internal/workspace.Model#Root,matrix/cody/internal/workspace.Model.Greenfield,matrix/cody/internal/workspace.Model.PrimaryLanguages,matrix/cody/internal/workspace.Model.Save,matrix/cody/internal/workspace.Model.Summary,matrix/cody/internal/workspace.Model.UIBearing,matrix/cody/internal/workspace.Model.has
+  ^defines=matrix/cody/internal/workspace/workspace.go
+
+NODE id=matrix/cody/internal/workspace.Model#BuildTargets kind=field
+  digest=b3:c6a66ffbbc548926f9d0b5cedfeacfd210ad19450d5916bf96d610844526f1e4 file=cody/internal/workspace/workspace.go range=51:53 lang=go exported=true byte_range=1653:1836
+  sig=[]string
+  doc=BuildTargets lists the project's own invocable targets\n(package.json script names, Makefile targets, go/cargo defaults).
+EDGES
+  ^contains=matrix/cody/internal/workspace.Model
+
+NODE id=matrix/cody/internal/workspace.Model#EntryPoints kind=field
+  digest=b3:541907c8316f455651c28f5ee628ebd3e1618d91d7c565bdaf239d57016bdc4e file=cody/internal/workspace/workspace.go range=54:55 lang=go exported=true byte_range=1838:1940
+  sig=[]string
+  doc=EntryPoints lists likely program entry files.
+EDGES
+  ^contains=matrix/cody/internal/workspace.Model
+
+NODE id=matrix/cody/internal/workspace.Model#FileCount kind=field
+  digest=b3:c8b8cd1017aa7381c9a1b02505ac4cfafa824a6b5682b65fdb8f49daa94cf821 file=cody/internal/workspace/workspace.go range=45:45 lang=go exported=true byte_range=1325:1366
+  sig=int
+EDGES
+  ^contains=matrix/cody/internal/workspace.Model
+
+NODE id=matrix/cody/internal/workspace.Model#Files kind=field
+  digest=b3:7a33642b5c840b4e69d1c1624f7c5c576eead62d2e451e885df8d0670a7a63fa file=cody/internal/workspace/workspace.go range=46:46 lang=go exported=true byte_range=1368:1404
+  sig=[]workspace.File
+EDGES
+  ^contains=matrix/cody/internal/workspace.Model
+
+NODE id=matrix/cody/internal/workspace.Model#Frameworks kind=field
+  digest=b3:b660058cc4cb3b047ae5a31bfb58fbcde03fec806f8f254e3d5e4edfaa44d7d8 file=cody/internal/workspace/workspace.go range=49:50 lang=go exported=true byte_range=1524:1651
+  sig=[]string
+  doc=Frameworks lists detected frameworks/runtimes (next, react, django, ...).
+EDGES
+  ^contains=matrix/cody/internal/workspace.Model
+
+NODE id=matrix/cody/internal/workspace.Model#GeneratedAt kind=field
+  digest=b3:9646d22f1eb625fb747ad9b1d7f7e13e43e93f2ee59d6689935ffb24746f0263 file=cody/internal/workspace/workspace.go range=44:44 lang=go exported=true byte_range=1280:1323
+  sig=time.Time
+EDGES
+  ^contains=matrix/cody/internal/workspace.Model
+
+NODE id=matrix/cody/internal/workspace.Model#Languages kind=field
+  digest=b3:2b1e63314a31690d863071af19b9a2b94798f44e10391ce598bb4b8fe71f5877 file=cody/internal/workspace/workspace.go range=47:48 lang=go exported=true byte_range=1406:1522
+  sig=map[string]int
+  doc=Languages maps language name -> file count, descending significance.
+EDGES
+  ^contains=matrix/cody/internal/workspace.Model
+
+NODE id=matrix/cody/internal/workspace.Model#Root kind=field
+  digest=b3:a7a39071c1842bfd613c0d6b5b32b726c6dcf2e5df9a116a7a2637bf0d502f81 file=cody/internal/workspace/workspace.go range=43:43 lang=go exported=true byte_range=1243:1278
+  sig=string
+EDGES
+  ^contains=matrix/cody/internal/workspace.Model
+
+NODE id=matrix/cody/internal/workspace.Model.Greenfield kind=method
+  digest=b3:bc60cd2fefba5fb49f46fe5352e376e402cc5aae6b1b80e641d5b9b9167fed39 file=cody/internal/workspace/workspace.go range=58:64 lang=go exported=true byte_range=1944:2350
+  sig=func (m *Model) Greenfield() bool
+  doc=Greenfield reports whether the workspace holds no existing codebase to build\non: no source-language files and no invocable build targets. A fresh /workspace\n(or one seeded with only plain-text scaffolding) is greenfield — the signal\nthat gates the Stack Decision Record before planning (req 8.1).
+EDGES
+  ^contains=matrix/cody/internal/workspace.Model
+  ^defines=matrix/cody/internal/workspace/workspace.go
+
+NODE id=matrix/cody/internal/workspace.Model.PrimaryLanguages kind=method
+  digest=b3:928d6a53a3cc50f8031dc7102dbbe4e8d274a435f3a89a85a16f8286576be171 file=cody/internal/workspace/workspace.go range=227:241 lang=go exported=true byte_range=7023:7509
+  sig=func (m *Model) PrimaryLanguages() []string
+  doc=PrimaryLanguages returns the detected languages ordered by file count\ndescending — the stack the rules injection keys off.
+EDGES
+  ^contains=matrix/cody/internal/workspace.Model
+  ^defines=matrix/cody/internal/workspace/workspace.go
+
+NODE id=matrix/cody/internal/workspace.Model.Save kind=method
+  digest=b3:87c5ce117cc1b6d849d222baef79e4b8ab2283667326c1a7576e12bb3c7bf45e file=cody/internal/workspace/workspace.go range=209:225 lang=go exported=true byte_range=6556:7021
+  sig=func (m *Model) Save() error
+  doc=Save persists the index under <root>/.cody/workspace.json atomically.
+EDGES
+  ^contains=matrix/cody/internal/workspace.Model
+  ^defines=matrix/cody/internal/workspace/workspace.go
+
+NODE id=matrix/cody/internal/workspace.Model.Summary kind=method
+  digest=b3:a3ee3a644a0e8c91e7d83ee1fd60800add39b984208062ab7173520084583d84 file=cody/internal/workspace/workspace.go range=243:261 lang=go exported=true byte_range=7511:8234
+  sig=func (m *Model) Summary() string
+  doc=Summary renders a compact human/model-readable digest of the index for the\norchestrator's understand step and worker grounding bundles.
+EDGES
+  ^contains=matrix/cody/internal/workspace.Model
+  ^defines=matrix/cody/internal/workspace/workspace.go
+
+NODE id=matrix/cody/internal/workspace.Model.UIBearing kind=method
+  digest=b3:29eb682a37f95df30bee2cb330ef8720f9b7f1da8b399a578c4a10720193a4ff file=cody/internal/workspace/workspace.go range=77:101 lang=go exported=true byte_range=2715:3517
+  sig=func (m *Model) UIBearing() bool
+  doc=UIBearing reports whether an existing workspace already carries a user-facing\nUI: a detected frontend framework, or CSS/HTML/component files. It is the\nsignal (alongside the plan's own UI tasks) that gates the Design Language\nRecord before the first UI task (req 9.1). A greenfield workspace has nothing\nto detect yet, so UI intent there is read from the authored plan instead.
+EDGES
+  ^contains=matrix/cody/internal/workspace.Model
+  ^defines=matrix/cody/internal/workspace/workspace.go
+
+NODE id=matrix/cody/internal/workspace.Model.has kind=method
+  digest=b3:9c05dd2031a19e83a7b57d8d616086cede040120705de007d3f074825a0d6ca0 file=cody/internal/workspace/workspace.go range=263:267 lang=go exported=false byte_range=8236:8479
+  sig=func (m *Model) has(rel string) bool
+  doc=has reports whether an indexed file exists at rel (exact match).
+EDGES
+  ^contains=matrix/cody/internal/workspace.Model
+  ^defines=matrix/cody/internal/workspace/workspace.go
+
+NODE id=matrix/cody/internal/workspace.Refresh kind=func
+  digest=b3:be1582506815d63136eec8cf1d9baff44ffd738419561c4c6ba5f4edb6454a15 file=cody/internal/workspace/workspace.go range=169:179 lang=go exported=true byte_range=5573:5811
+  sig=func Refresh(root string) (*Model, error)
+  doc=Refresh rescans the workspace and persists the fresh index.
+EDGES
+  ^defines=matrix/cody/internal/workspace/workspace.go
+
+NODE id=matrix/cody/internal/workspace.Scan kind=func
+  digest=b3:4f98910d2cf332a3ab3277cc807a9b730912c865d1b9b9007aab02efd2368ef6 file=cody/internal/workspace/workspace.go range=120:167 lang=go exported=true byte_range=4251:5571
+  sig=func Scan(root string) (*Model, error)
+  doc=Scan walks the workspace and builds a fresh Model. It does not persist;\ncallers use Save (or Refresh which does both).
+EDGES
+  ^defines=matrix/cody/internal/workspace/workspace.go
+
+NODE id=matrix/cody/internal/workspace.StateDir kind=const
+  digest=b3:2cf7cbcaa509a7267f09be3dfef5579c6aa4057bd8247ffcb13ca554fc899749 file=cody/internal/workspace/workspace.go range=24:26 lang=go exported=true byte_range=653:812
+  sig=untyped string
+  doc=StateDir is the per-workspace directory Cody keeps its own state in. It is\nalways excluded from the index and from worker edits.
+EDGES
+  ^defines=matrix/cody/internal/workspace/workspace.go
+
+NODE id=matrix/cody/internal/workspace.dedupe kind=func
+  digest=b3:9452978e01e15df7b4d563bcbedb15cd64176bd8c93be9eb1284d3d9f075ed0e file=cody/internal/workspace/workspace.go range=387:397 lang=go exported=false byte_range=11540:11723
+  sig=func dedupe(in []string) []string
+EDGES
+  ^defines=matrix/cody/internal/workspace/workspace.go
+
+NODE id=matrix/cody/internal/workspace.detectBuildTargets kind=func
+  digest=b3:cbfed5e926755c9854c90b672d16b71bd1ffbf313ec8985255593823d2b2e46f file=cody/internal/workspace/workspace.go range=316:359 lang=go exported=false byte_range=9651:10716
+  sig=func detectBuildTargets(m *Model)
+EDGES
+  ^defines=matrix/cody/internal/workspace/workspace.go
+
+NODE id=matrix/cody/internal/workspace.detectEntryPoints kind=func
+  digest=b3:af60047b084f34fc90ffa76e9657cf88d63257f416f380ede9de073fd7745a86 file=cody/internal/workspace/workspace.go range=361:385 lang=go exported=false byte_range=10718:11538
+  sig=func detectEntryPoints(m *Model)
+EDGES
+  ^defines=matrix/cody/internal/workspace/workspace.go
+
+NODE id=matrix/cody/internal/workspace.detectFrameworks kind=func
+  digest=b3:30d16670d302fbe587457d68de1b35c990f561ca46f4215dbf145b3d18b73cd5 file=cody/internal/workspace/workspace.go range=276:312 lang=go exported=false byte_range=8702:9563
+  sig=func detectFrameworks(m *Model)
+EDGES
+  ^defines=matrix/cody/internal/workspace/workspace.go
+
+NODE id=matrix/cody/internal/workspace.ignoredDirs kind=var
+  digest=b3:137d925568f245574b3f6c39af208ce124b29f8a7cfb4f6e227f9f6ef3ae601a file=cody/internal/workspace/workspace.go range=103:108 lang=go exported=false byte_range=3523:3769
+  sig=map[string]bool
+EDGES
+  ^defines=matrix/cody/internal/workspace/workspace.go
+
+NODE id=matrix/cody/internal/workspace.indexFile kind=const
+  digest=b3:8930a4d87e19b5314b4119f267ae830e77769285ce73b268bcb6bec185ddfdff file=cody/internal/workspace/workspace.go range=28:28 lang=go exported=false byte_range=820:848
+  sig=untyped string
+EDGES
+  ^defines=matrix/cody/internal/workspace/workspace.go
+
+NODE id=matrix/cody/internal/workspace.knownJSFrameworks kind=var
+  digest=b3:9c203278def2d82ce02acd749b291bd76be2fde48a39b0b427bc8f210bd77706 file=cody/internal/workspace/workspace.go range=269:272 lang=go exported=false byte_range=8485:8626
+  sig=[]string
+EDGES
+  ^defines=matrix/cody/internal/workspace/workspace.go
+
+NODE id=matrix/cody/internal/workspace.knownPyFrameworks kind=var
+  digest=b3:a8633c05d41a430e4b8a92bcfe2b17bb5bb7b47a97439314ed4998491dde6775 file=cody/internal/workspace/workspace.go range=274:274 lang=go exported=false byte_range=8632:8700
+  sig=[]string
+EDGES
+  ^defines=matrix/cody/internal/workspace/workspace.go
+
+NODE id=matrix/cody/internal/workspace.langByExt kind=var
+  digest=b3:d08b34f0333cefdd2dc6590aa814793d1a3646351b03da2213ee3e53e1797809 file=cody/internal/workspace/workspace.go range=110:118 lang=go exported=false byte_range=3775:4249
+  sig=map[string]string
+EDGES
+  ^defines=matrix/cody/internal/workspace/workspace.go
+
+NODE id=matrix/cody/internal/workspace.makefileTarget kind=var
+  digest=b3:395d221ac1e598d98b0fb7b0da32d1c98aadb68e37042497ef5be9595423a081 file=cody/internal/workspace/workspace.go range=314:314 lang=go exported=false byte_range=9569:9649
+  sig=*regexp.Regexp
+EDGES
+  ^defines=matrix/cody/internal/workspace/workspace.go
+
+NODE id=matrix/cody/internal/workspace.maxIndexedFiles kind=const
+  digest=b3:e57010a1fa2ad6ac10457e35f463915e5a6af2e56c5d791fa6a407ffdefc4ddd file=cody/internal/workspace/workspace.go range=30:32 lang=go exported=false byte_range=850:1029
+  sig=untyped int
+  doc=maxIndexedFiles bounds the persisted file list so a huge monorepo cannot\nballoon the index; language/framework detection still sees every file.
+EDGES
+  ^defines=matrix/cody/internal/workspace/workspace.go
+
+NODE id=matrix/cody/internal/workspace.packageJSON kind=type
+  digest=b3:6f2071423e79bb9e9da9c4edea130220729160a5d09a27c1d796058aaa97aab4 file=cody/internal/workspace/workspace.go range=399:404 lang=go exported=false byte_range=11725:11970
+  sig=type packageJSON struct {\n	Main		string			`json:"main"`\n	Scripts		map[string]string	`json:"scripts"`\n	Dependencies	map[string]string	`json:"dependencies"`\n	DevDependencies	map[string]string	`json:"devDependencies"`\n}
+EDGES
+  contains=matrix/cody/internal/workspace.packageJSON#Dependencies,matrix/cody/internal/workspace.packageJSON#DevDependencies,matrix/cody/internal/workspace.packageJSON#Main,matrix/cody/internal/workspace.packageJSON#Scripts
+  ^defines=matrix/cody/internal/workspace/workspace.go
+
+NODE id=matrix/cody/internal/workspace.packageJSON#Dependencies kind=field
+  digest=b3:e5d5f371e4c160cc6871ddd372c38b09b358d991d7732a6e44c13b0eb302a3a7 file=cody/internal/workspace/workspace.go range=402:402 lang=go exported=true byte_range=11853:11908
+  sig=map[string]string
+EDGES
+  ^contains=matrix/cody/internal/workspace.packageJSON
+
+NODE id=matrix/cody/internal/workspace.packageJSON#DevDependencies kind=field
+  digest=b3:f7053382a3a9aa7b8dcde5cf2267b44f8bcbaf55aef7e06cb4199864440d0fa8 file=cody/internal/workspace/workspace.go range=403:403 lang=go exported=true byte_range=11910:11968
+  sig=map[string]string
+EDGES
+  ^contains=matrix/cody/internal/workspace.packageJSON
+
+NODE id=matrix/cody/internal/workspace.packageJSON#Main kind=field
+  digest=b3:a5ac0bfda60cd0bb0edeb90f51a7fa94ccd9c57e50504b24bb07f2dffef1ff70 file=cody/internal/workspace/workspace.go range=400:400 lang=go exported=true byte_range=11752:11799
+  sig=string
+EDGES
+  ^contains=matrix/cody/internal/workspace.packageJSON
+
+NODE id=matrix/cody/internal/workspace.packageJSON#Scripts kind=field
+  digest=b3:7f4801e6d3c771281edea5424041f15624ad5eb5202bef04d44d1d683588fe2e file=cody/internal/workspace/workspace.go range=401:401 lang=go exported=true byte_range=11801:11851
+  sig=map[string]string
+EDGES
+  ^contains=matrix/cody/internal/workspace.packageJSON
+
+NODE id=matrix/cody/internal/workspace.readPackageJSON kind=func
+  digest=b3:69b6bdfef04b7ccda9b7971d8d6e78cb10930d81b359c58e916ea63218510fce file=cody/internal/workspace/workspace.go range=406:416 lang=go exported=false byte_range=11972:12177
+  sig=func readPackageJSON(path string) *packageJSON
+EDGES
+  ^defines=matrix/cody/internal/workspace/workspace.go
+
+NODE id=matrix/cody/internal/workspace.readPackageJSONDeps kind=func
+  digest=b3:3c457644cc8fc76bdf043d89883928a49479c36bd084db1e60f4c1fbe123f6b7 file=cody/internal/workspace/workspace.go range=418:431 lang=go exported=false byte_range=12179:12456
+  sig=func readPackageJSONDeps(path string) map[string]string
+EDGES
+  ^defines=matrix/cody/internal/workspace/workspace.go
+
+NODE id=matrix/cody/internal/workspace.readPackageJSONMain kind=func
+  digest=b3:fb47f57ccbe192199274b24da76ce218c7a610cda47b64f845839be4f8d414e3 file=cody/internal/workspace/workspace.go range=440:445 lang=go exported=false byte_range=12605:12732
+  sig=func readPackageJSONMain(path string) string
+EDGES
+  ^defines=matrix/cody/internal/workspace/workspace.go
+
+NODE id=matrix/cody/internal/workspace.readPackageJSONScripts kind=func
+  digest=b3:c604f3a5508d81230adbd3a8eb25d50797143d8a956a1ff8beb09aac1ba41666 file=cody/internal/workspace/workspace.go range=433:438 lang=go exported=false byte_range=12458:12603
+  sig=func readPackageJSONScripts(path string) map[string]string
+EDGES
+  ^defines=matrix/cody/internal/workspace/workspace.go
+
+NODE id=matrix/cody/internal/workspace.uiFrameworks kind=var
+  digest=b3:d96cdcb6c3a97afc5a4b1f4ccc181afbfecf76d667d72f5c9efb5f17785c10e1 file=cody/internal/workspace/workspace.go range=66:70 lang=go exported=false byte_range=2352:2557
+  sig=map[string]bool
+  doc=uiFrameworks are the detected frameworks that imply a user-facing surface.
+EDGES
+  ^defines=matrix/cody/internal/workspace/workspace.go
+
+NODE id=matrix/cody/internal/workspace.uiLangs kind=var
+  digest=b3:2a542ae6b88b2204649ae9e676ee4a6965fa3e391cd7672fcb99b8b032771de9 file=cody/internal/workspace/workspace.go range=72:75 lang=go exported=false byte_range=2559:2713
+  sig=map[string]bool
+  doc=uiLangs are the languages that imply UI markup/styling files.
+EDGES
+  ^defines=matrix/cody/internal/workspace/workspace.go
+
+NODE id=matrix/cody/internal/workspace/workspace.go kind=file
+  digest=b3:82e402d6b146cd1b9ed782ec5768ce2322daed2a686578bd9d373f6298d1880f file=cody/internal/workspace/workspace.go range=1:445 lang=go exported=true
+EDGES
+  defines=matrix/cody/internal/workspace.File,matrix/cody/internal/workspace.Load,matrix/cody/internal/workspace.LoadOrScan,matrix/cody/internal/workspace.Model,matrix/cody/internal/workspace.Model.Greenfield,matrix/cody/internal/workspace.Model.PrimaryLanguages,matrix/cody/internal/workspace.Model.Save,matrix/cody/internal/workspace.Model.Summary,matrix/cody/internal/workspace.Model.UIBearing,matrix/cody/internal/workspace.Model.has,matrix/cody/internal/workspace.Refresh,matrix/cody/internal/workspace.Scan,matrix/cody/internal/workspace.StateDir,matrix/cody/internal/workspace.dedupe,matrix/cody/internal/workspace.detectBuildTargets,matrix/cody/internal/workspace.detectEntryPoints,matrix/cody/internal/workspace.detectFrameworks,matrix/cody/internal/workspace.ignoredDirs,matrix/cody/internal/workspace.indexFile,matrix/cody/internal/workspace.knownJSFrameworks,matrix/cody/internal/workspace.knownPyFrameworks,matrix/cody/internal/workspace.langByExt,matrix/cody/internal/workspace.makefileTarget,matrix/cody/internal/workspace.maxIndexedFiles,matrix/cody/internal/workspace.packageJSON,matrix/cody/internal/workspace.readPackageJSON,matrix/cody/internal/workspace.readPackageJSONDeps,matrix/cody/internal/workspace.readPackageJSONMain,matrix/cody/internal/workspace.readPackageJSONScripts,matrix/cody/internal/workspace.uiFrameworks,matrix/cody/internal/workspace.uiLangs
+  ^contains=matrix/cody/internal/workspace

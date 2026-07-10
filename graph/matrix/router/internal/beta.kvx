@@ -1,10 +1,12 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:9b68327501b45793fd7687f43b30c960fd68ae8aaff6b2f1bb36ec3e2df2de2f
+# GENERATED gen=codegraph do-not-edit merkle=b3:20e53aba2ea11552396417e53b3e04e87dd1bbb7bef3aa554a45bb92cf89e7f2
 
 NODE id=matrix/router/internal/beta kind=package
   digest=b3:f2b4ea06ee7850645883f75f556574d579fcdcd9ad9cf249efa0206e5fb2fe6a file=router/internal/beta range=0:0 lang=go exported=true
 EDGES
   contains=matrix/router/internal/beta/beta.go
+  imports=matrix/router/internal/db,matrix/router/internal/proxy
   ^contains=mod:matrix/router
+  ^imports=matrix/router/cmd/matrix-router
 
 NODE id=matrix/router/internal/beta.Handler kind=type
   digest=b3:216cad2cd65da8e06f54361e69f94fe3de82942a1fc5c44dc0ee208e76c10bae file=router/internal/beta/beta.go range=29:34 lang=go exported=true byte_range=874:1104
@@ -12,6 +14,8 @@ NODE id=matrix/router/internal/beta.Handler kind=type
   doc=Handler bundles dependencies for the beta user routes.
 EDGES
   contains=matrix/router/internal/beta.Handler#DB,matrix/router/internal/beta.Handler#Log,matrix/router/internal/beta.Handler#Provision,matrix/router/internal/beta.Handler.Mount,matrix/router/internal/beta.Handler.getConsent,matrix/router/internal/beta.Handler.handleConsent,matrix/router/internal/beta.Handler.handleDisclosureAck,matrix/router/internal/beta.Handler.handleProvisionStatus,matrix/router/internal/beta.Handler.handleRedeem,matrix/router/internal/beta.Handler.handleReports,matrix/router/internal/beta.Handler.logf,matrix/router/internal/beta.Handler.putConsent
+  references=matrix/router/internal/db.DB,matrix/router/internal/proxy.Provisioner
+  ^references=matrix/router/cmd/matrix-router.main,matrix/router/internal/beta.Handler.Mount,matrix/router/internal/beta.Handler.getConsent,matrix/router/internal/beta.Handler.handleConsent,matrix/router/internal/beta.Handler.handleDisclosureAck,matrix/router/internal/beta.Handler.handleProvisionStatus,matrix/router/internal/beta.Handler.handleRedeem,matrix/router/internal/beta.Handler.handleReports,matrix/router/internal/beta.Handler.logf,matrix/router/internal/beta.Handler.putConsent
   ^defines=matrix/router/internal/beta/beta.go
 
 NODE id=matrix/router/internal/beta.Handler#DB kind=field
@@ -37,63 +41,92 @@ NODE id=matrix/router/internal/beta.Handler.Mount kind=method
   sig=func (h *Handler) Mount(mux *http.ServeMux)
   doc=Mount registers the beta user routes on mux. The mux MUST be wrapped\nby mw.JWT upstream so that proxy.Subject(ctx) is populated.
 EDGES
+  references=matrix/router/internal/beta.Handler,matrix/router/internal/beta.Handler.handleConsent,matrix/router/internal/beta.Handler.handleDisclosureAck,matrix/router/internal/beta.Handler.handleProvisionStatus,matrix/router/internal/beta.Handler.handleRedeem,matrix/router/internal/beta.Handler.handleReports,matrix/router/internal/beta.h,matrix/router/internal/beta.mux
   ^contains=matrix/router/internal/beta.Handler
+  ^calls=matrix/router/cmd/matrix-router.main
+  ^references=matrix/router/cmd/matrix-router.main
   ^defines=matrix/router/internal/beta/beta.go
 
 NODE id=matrix/router/internal/beta.Handler.getConsent kind=method
   digest=b3:231be417c955fe7dd455793249a09c184b9069bca8ed4bf2805a693dc1fd5414 file=router/internal/beta/beta.go range=126:153 lang=go exported=false byte_range=4120:4911
   sig=func (h *Handler) getConsent(w http.ResponseWriter, r *http.Request, sub string)
 EDGES
+  calls=matrix/router/internal/beta.Handler.logf,matrix/router/internal/beta.writeJSON,matrix/router/internal/db.DB.GetConsent
+  references=matrix/router/internal/beta.Handler,matrix/router/internal/beta.Handler.logf,matrix/router/internal/beta.c,matrix/router/internal/beta.cancel,matrix/router/internal/beta.ctx,matrix/router/internal/beta.err,matrix/router/internal/beta.h,matrix/router/internal/beta.r,matrix/router/internal/beta.sub,matrix/router/internal/beta.w,matrix/router/internal/beta.writeJSON,matrix/router/internal/db.DB.GetConsent
   ^contains=matrix/router/internal/beta.Handler
+  ^calls=matrix/router/internal/beta.Handler.handleConsent
+  ^references=matrix/router/internal/beta.Handler.handleConsent
   ^defines=matrix/router/internal/beta/beta.go
 
 NODE id=matrix/router/internal/beta.Handler.handleConsent kind=method
   digest=b3:97d451b90b11d9c908201be80100ea476c3108c9a36bb53f2518c42dcf67b08f file=router/internal/beta/beta.go range=108:124 lang=go exported=false byte_range=3632:4118
   sig=func (h *Handler) handleConsent(w http.ResponseWriter, r *http.Request)
 EDGES
+  calls=matrix/router/internal/beta.Handler.getConsent,matrix/router/internal/beta.Handler.putConsent,matrix/router/internal/beta.writeJSON,matrix/router/internal/proxy.Subject
+  references=matrix/router/internal/beta.Handler,matrix/router/internal/beta.Handler.getConsent,matrix/router/internal/beta.Handler.putConsent,matrix/router/internal/beta.h,matrix/router/internal/beta.r,matrix/router/internal/beta.sub,matrix/router/internal/beta.w,matrix/router/internal/beta.writeJSON,matrix/router/internal/proxy.Subject
   ^contains=matrix/router/internal/beta.Handler
+  ^references=matrix/router/internal/beta.Handler.Mount
   ^defines=matrix/router/internal/beta/beta.go
 
 NODE id=matrix/router/internal/beta.Handler.handleDisclosureAck kind=method
   digest=b3:a7fba52863ec1f468aab617aa48efcafa0cb74fc67f960af94756d08685eeb96 file=router/internal/beta/beta.go range=186:217 lang=go exported=false byte_range=5905:7067
   sig=func (h *Handler) handleDisclosureAck(w http.ResponseWriter, r *http.Request)
 EDGES
+  calls=matrix/router/internal/beta.Handler.logf,matrix/router/internal/beta.writeJSON,matrix/router/internal/db.DB.InsertDisclosureAck,matrix/router/internal/proxy.Subject
+  references=matrix/router/internal/beta.Handler,matrix/router/internal/beta.Handler.logf,matrix/router/internal/beta.cancel,matrix/router/internal/beta.ctx,matrix/router/internal/beta.disclosureAckRequest,matrix/router/internal/beta.err,matrix/router/internal/beta.h,matrix/router/internal/beta.r,matrix/router/internal/beta.req,matrix/router/internal/beta.sub,matrix/router/internal/beta.w,matrix/router/internal/beta.writeJSON,matrix/router/internal/db.DB.InsertDisclosureAck,matrix/router/internal/proxy.Subject
   ^contains=matrix/router/internal/beta.Handler
+  ^references=matrix/router/internal/beta.Handler.Mount
   ^defines=matrix/router/internal/beta/beta.go
 
 NODE id=matrix/router/internal/beta.Handler.handleProvisionStatus kind=method
   digest=b3:21c514c484b87e72338a927cd342784b9c77d4d4c229e481cc4c3f8dfd179d22 file=router/internal/beta/beta.go range=270:304 lang=go exported=false byte_range=8704:9623
   sig=func (h *Handler) handleProvisionStatus(w http.ResponseWriter, r *http.Request)
 EDGES
+  calls=matrix/router/internal/beta.Handler.logf,matrix/router/internal/beta.writeJSON,matrix/router/internal/db.DB.LookupForRoute,matrix/router/internal/proxy.Subject
+  references=matrix/router/internal/beta.Handler,matrix/router/internal/beta.Handler.logf,matrix/router/internal/beta.cancel,matrix/router/internal/beta.ctx,matrix/router/internal/beta.err,matrix/router/internal/beta.h,matrix/router/internal/beta.r,matrix/router/internal/beta.state,matrix/router/internal/beta.sub,matrix/router/internal/beta.user,matrix/router/internal/beta.w,matrix/router/internal/beta.writeJSON,matrix/router/internal/db.DB.LookupForRoute,matrix/router/internal/db.ErrUserNotFound,matrix/router/internal/proxy.Subject
   ^contains=matrix/router/internal/beta.Handler
+  ^references=matrix/router/internal/beta.Handler.Mount
   ^defines=matrix/router/internal/beta/beta.go
 
 NODE id=matrix/router/internal/beta.Handler.handleRedeem kind=method
   digest=b3:991b2de7a7b47e61bdfca21e3fd47f3e678ebd84342f91511d2cfd45a7caf7a0 file=router/internal/beta/beta.go range=52:99 lang=go exported=false byte_range=1685:3428
   sig=func (h *Handler) handleRedeem(w http.ResponseWriter, r *http.Request)
 EDGES
+  calls=matrix/router/internal/admin.Handler.StartProvision,matrix/router/internal/beta.Handler.logf,matrix/router/internal/beta.writeJSON,matrix/router/internal/db.DB.RedeemInviteCode,matrix/router/internal/proxy.Email,matrix/router/internal/proxy.Subject
+  references=matrix/router/internal/beta.Handler,matrix/router/internal/beta.Handler.logf,matrix/router/internal/beta.cancel,matrix/router/internal/beta.code,matrix/router/internal/beta.ctx,matrix/router/internal/beta.err,matrix/router/internal/beta.h,matrix/router/internal/beta.r,matrix/router/internal/beta.redeemRequest,matrix/router/internal/beta.req,matrix/router/internal/beta.sub,matrix/router/internal/beta.w,matrix/router/internal/beta.writeJSON,matrix/router/internal/db.DB.RedeemInviteCode,matrix/router/internal/db.ErrAlreadyRedeemed,matrix/router/internal/db.ErrInviteExhausted,matrix/router/internal/db.ErrInviteExpired,matrix/router/internal/db.ErrInviteNotFound,matrix/router/internal/proxy.Email,matrix/router/internal/proxy.Provisioner.StartProvision,matrix/router/internal/proxy.Subject
   ^contains=matrix/router/internal/beta.Handler
+  ^references=matrix/router/internal/beta.Handler.Mount
   ^defines=matrix/router/internal/beta/beta.go
 
 NODE id=matrix/router/internal/beta.Handler.handleReports kind=method
   digest=b3:e955e5a415c6adfce41f2eb19704ed26b3fc510de39591863b96348f6c3c1505 file=router/internal/beta/beta.go range=227:266 lang=go exported=false byte_range=7338:8625
   sig=func (h *Handler) handleReports(w http.ResponseWriter, r *http.Request)
 EDGES
+  calls=matrix/router/internal/beta.Handler.logf,matrix/router/internal/beta.writeJSON,matrix/router/internal/db.DB.InsertBugReport,matrix/router/internal/proxy.Subject
+  references=matrix/router/internal/beta.Handler,matrix/router/internal/beta.Handler.logf,matrix/router/internal/beta.cancel,matrix/router/internal/beta.ctx,matrix/router/internal/beta.err,matrix/router/internal/beta.h,matrix/router/internal/beta.id,matrix/router/internal/beta.r,matrix/router/internal/beta.reportRequest,matrix/router/internal/beta.req,matrix/router/internal/beta.sub,matrix/router/internal/beta.w,matrix/router/internal/beta.writeJSON,matrix/router/internal/db.DB.InsertBugReport,matrix/router/internal/proxy.Subject
   ^contains=matrix/router/internal/beta.Handler
+  ^references=matrix/router/internal/beta.Handler.Mount
   ^defines=matrix/router/internal/beta/beta.go
 
 NODE id=matrix/router/internal/beta.Handler.logf kind=method
   digest=b3:0226664825b2fbf3b1cc0a77858948171afb3826f38176513b09b4eccd4feaeb file=router/internal/beta/beta.go range=308:312 lang=go exported=false byte_range=9702:9811
   sig=func (h *Handler) logf(format string, args ...interface{})
 EDGES
+  references=matrix/router/internal/beta.Handler,matrix/router/internal/beta.args,matrix/router/internal/beta.format,matrix/router/internal/beta.h
   ^contains=matrix/router/internal/beta.Handler
+  ^calls=matrix/router/internal/beta.Handler.getConsent,matrix/router/internal/beta.Handler.handleDisclosureAck,matrix/router/internal/beta.Handler.handleProvisionStatus,matrix/router/internal/beta.Handler.handleRedeem,matrix/router/internal/beta.Handler.handleReports,matrix/router/internal/beta.Handler.putConsent
+  ^references=matrix/router/internal/beta.Handler.getConsent,matrix/router/internal/beta.Handler.handleDisclosureAck,matrix/router/internal/beta.Handler.handleProvisionStatus,matrix/router/internal/beta.Handler.handleRedeem,matrix/router/internal/beta.Handler.handleReports,matrix/router/internal/beta.Handler.putConsent
   ^defines=matrix/router/internal/beta/beta.go
 
 NODE id=matrix/router/internal/beta.Handler.putConsent kind=method
   digest=b3:c81d6517cc44609a159797fd9d0ab099136ea41039e4a53bdf2bdb92aa948432 file=router/internal/beta/beta.go range=155:178 lang=go exported=false byte_range=4913:5734
   sig=func (h *Handler) putConsent(w http.ResponseWriter, r *http.Request, sub string)
 EDGES
+  calls=matrix/router/internal/beta.Handler.logf,matrix/router/internal/beta.writeJSON,matrix/router/internal/db.DB.UpsertConsent
+  references=matrix/router/internal/beta.Handler,matrix/router/internal/beta.Handler.logf,matrix/router/internal/beta.cancel,matrix/router/internal/beta.consentRequest,matrix/router/internal/beta.ctx,matrix/router/internal/beta.err,matrix/router/internal/beta.h,matrix/router/internal/beta.r,matrix/router/internal/beta.req,matrix/router/internal/beta.sub,matrix/router/internal/beta.w,matrix/router/internal/beta.writeJSON,matrix/router/internal/db.DB.UpsertConsent
   ^contains=matrix/router/internal/beta.Handler
+  ^calls=matrix/router/internal/beta.Handler.handleConsent
+  ^references=matrix/router/internal/beta.Handler.handleConsent
   ^defines=matrix/router/internal/beta/beta.go
 
 NODE id=matrix/router/internal/beta.consentRequest kind=type
@@ -101,6 +134,7 @@ NODE id=matrix/router/internal/beta.consentRequest kind=type
   sig=type consentRequest struct {\n	TrainingOptIn	bool	`json:"training_opt_in"`\n	PolicyVersion	string	`json:"policy_version"`\n}
 EDGES
   contains=matrix/router/internal/beta.consentRequest#PolicyVersion,matrix/router/internal/beta.consentRequest#TrainingOptIn
+  ^references=matrix/router/internal/beta.Handler.putConsent
   ^defines=matrix/router/internal/beta/beta.go
 
 NODE id=matrix/router/internal/beta.consentRequest#PolicyVersion kind=field
@@ -120,6 +154,7 @@ NODE id=matrix/router/internal/beta.disclosureAckRequest kind=type
   sig=type disclosureAckRequest struct {\n	DisclosureVersion string `json:"disclosure_version"`\n}
 EDGES
   contains=matrix/router/internal/beta.disclosureAckRequest#DisclosureVersion
+  ^references=matrix/router/internal/beta.Handler.handleDisclosureAck
   ^defines=matrix/router/internal/beta/beta.go
 
 NODE id=matrix/router/internal/beta.disclosureAckRequest#DisclosureVersion kind=field
@@ -133,6 +168,7 @@ NODE id=matrix/router/internal/beta.redeemRequest kind=type
   sig=type redeemRequest struct {\n	Code string `json:"code"`\n}
 EDGES
   contains=matrix/router/internal/beta.redeemRequest#Code
+  ^references=matrix/router/internal/beta.Handler.handleRedeem
   ^defines=matrix/router/internal/beta/beta.go
 
 NODE id=matrix/router/internal/beta.redeemRequest#Code kind=field
@@ -146,6 +182,7 @@ NODE id=matrix/router/internal/beta.reportRequest kind=type
   sig=type reportRequest struct {\n	Message		string		`json:"message"`\n	Context		json.RawMessage	`json:"context"`\n	AttachmentRef	string		`json:"attachment_ref,omitempty"`\n}
 EDGES
   contains=matrix/router/internal/beta.reportRequest#AttachmentRef,matrix/router/internal/beta.reportRequest#Context,matrix/router/internal/beta.reportRequest#Message
+  ^references=matrix/router/internal/beta.Handler.handleReports
   ^defines=matrix/router/internal/beta/beta.go
 
 NODE id=matrix/router/internal/beta.reportRequest#AttachmentRef kind=field
@@ -170,6 +207,9 @@ NODE id=matrix/router/internal/beta.writeJSON kind=func
   digest=b3:3ea8f00584e900c26a3dea4e43d2db4631253983bb775334759e0ad0852a4a2a file=router/internal/beta/beta.go range=314:318 lang=go exported=false byte_range=9813:9997
   sig=func writeJSON(w http.ResponseWriter, status int, v any)
 EDGES
+  references=matrix/router/internal/beta.status,matrix/router/internal/beta.v,matrix/router/internal/beta.w
+  ^calls=matrix/router/internal/beta.Handler.getConsent,matrix/router/internal/beta.Handler.handleConsent,matrix/router/internal/beta.Handler.handleDisclosureAck,matrix/router/internal/beta.Handler.handleProvisionStatus,matrix/router/internal/beta.Handler.handleRedeem,matrix/router/internal/beta.Handler.handleReports,matrix/router/internal/beta.Handler.putConsent
+  ^references=matrix/router/internal/beta.Handler.getConsent,matrix/router/internal/beta.Handler.handleConsent,matrix/router/internal/beta.Handler.handleDisclosureAck,matrix/router/internal/beta.Handler.handleProvisionStatus,matrix/router/internal/beta.Handler.handleRedeem,matrix/router/internal/beta.Handler.handleReports,matrix/router/internal/beta.Handler.putConsent
   ^defines=matrix/router/internal/beta/beta.go
 
 NODE id=matrix/router/internal/beta/beta.go kind=file

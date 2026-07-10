@@ -765,6 +765,13 @@ func (m *Manager) SurfaceEnabled() bool { return m != nil && m.surface != nil }
 // the model to PULL memory mid-thought (v3 #1) only when it can actually do so.
 func (m *Manager) RecallEnabled() bool { return m != nil && m.recall != nil }
 
+// SpawnEnabled reports whether spawn_subagents is advertised this session (the
+// swarm runner is wired) AND, therefore, whether the top-level agent can
+// decompose at all. The self-aware decomposition router (self-model task 4.2)
+// surfaces the agent's own context limits at the decision point only when this
+// is true — there is no point teaching a decision the agent cannot act on.
+func (m *Manager) SpawnEnabled() bool { return m != nil && m.swarm != nil }
+
 // NaturalToolNames returns the advertised (directly-callable) function names.
 func (m *Manager) NaturalToolNames() []string { return append([]string{}, m.order...) }
 
@@ -803,7 +810,7 @@ func coreExecuteSchema() llm.Tool {
 func memoryRecallSchema() llm.Tool {
 	return llm.NewFunctionTool(
 		MemoryRecallTool,
-		"Search your own durable memory (the cortex) — the user's profile, stored facts, past outcomes, preferences, and proven approaches — which persists across conversations and restarts. This is your PRIMARY way to bring in prior context: PULL from it before you reason about the user, their projects, or past work, and before claiming a fact you'd have learned earlier. Use it ITERATIVELY: start broad, read what comes back, then call again with a narrower query (or a type filter) as you learn what you actually need. Each result line shows the memory's type, any contradiction to reconcile, and its cortex URI so you can cite it. Returns a rendered digest, ranked by how useful each memory has proven.",
+		"Search your own durable memory (the cortex) — the user's profile, stored facts, past outcomes, preferences, and proven approaches — which persists across conversations and restarts. This is your PRIMARY way to bring in prior context: PULL from it before you reason about the user, their projects, or past work, and before claiming a fact you'd have learned earlier. Use it ITERATIVELY: start broad, read what comes back, then call again with a narrower query (or a type filter) as you learn what you actually need. Each result line shows the memory's type, any contradiction to reconcile, and its cortex URI so you can cite it. Returns a rendered digest, ranked by how useful each memory has proven. SELF-MODEL: a query of \"self:\" returns your compact structural self-summary (your own loop, faculties, window assembly, and safety wall, derived from your source), and \"self:<Symbol>\" (e.g. \"self:assembleWindowUserTail\") pages the full graph fragment for one of your own symbols on demand — use it to reason about how you are built and where you are limited.",
 		map[string]interface{}{
 			"type": "object",
 			"properties": map[string]interface{}{

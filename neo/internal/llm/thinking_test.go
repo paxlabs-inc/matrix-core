@@ -5,9 +5,9 @@ package llm
 
 import "testing"
 
-// xAI's grok-4.3 takes the OpenAI-style `reasoning_effort` control, pinned
+// xAI's xiaomimimo/mimo-v2.5-pro takes the OpenAI-style `reasoning_effort` control, pinned
 // explicitly from the per-client flag ("medium" when set, "none" when clear).
-// Only grok-4.3 supports the field; other Grok models (grok-build-*,
+// Only xiaomimimo/mimo-v2.5-pro supports the field; other Grok models (grok-build-*,
 // grok-4.20-*-non-reasoning) omit it. Kimi (moonshotai/*) stays Baseten-served
 // with reasoning OPT-IN via chat_template_args.enable_thinking.
 func TestSupportsReasoningEffort(t *testing.T) {
@@ -15,8 +15,8 @@ func TestSupportsReasoningEffort(t *testing.T) {
 		model string
 		want  bool
 	}{
-		{"grok-4.3", true},
-		{"Grok-4.3", true},
+		{"xiaomimimo/mimo-v2.5-pro", true},
+		{"xiaomimimo/mimo-v2.5-pro", true},
 		{"grok-4.20-0309-non-reasoning", false},
 		{"grok-build-0.1", false},
 		{"moonshotai/Kimi-K2.6", false},
@@ -46,7 +46,7 @@ func TestEnableThinkingArgs(t *testing.T) {
 	}{
 		{"moonshotai/Kimi-K2.6", true},
 		// Grok uses xAI's reasoning_effort control, not chat_template_args.
-		{"grok-4.3", false},
+		{"xiaomimimo/mimo-v2.5-pro", false},
 		{"grok-4.20-0309-non-reasoning", false},
 		{"deepseek-ai/DeepSeek-V4-Pro", false},
 		{"openai/gpt-oss-120b", false},

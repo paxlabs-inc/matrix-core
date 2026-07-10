@@ -1,10 +1,11 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:9b68327501b45793fd7687f43b30c960fd68ae8aaff6b2f1bb36ec3e2df2de2f
+# GENERATED gen=codegraph do-not-edit merkle=b3:20e53aba2ea11552396417e53b3e04e87dd1bbb7bef3aa554a45bb92cf89e7f2
 
 NODE id=matrix/router/internal/provision kind=package
   digest=b3:920f91121d087734fc0d4da295d81be901b5a61f9d930e4aa13a788fa1f98e60 file=router/internal/provision range=0:0 lang=go exported=true
 EDGES
   contains=matrix/router/internal/provision/provision.go
   ^contains=mod:matrix/router
+  ^imports=matrix/router/cmd/matrix-router,matrix/router/internal/admin,matrix/router/internal/fly,matrix/router/internal/proxy,matrix/router/internal/railway
 
 NODE id=matrix/router/internal/provision.CreateRequest kind=type
   digest=b3:48ad6e15f7ca06f234f197e3288d99c3e6645d8b95842d3ffa7b4506b677f3c2 file=router/internal/provision/provision.go range=61:70 lang=go exported=true byte_range=2304:2684
@@ -12,6 +13,7 @@ NODE id=matrix/router/internal/provision.CreateRequest kind=type
   doc=CreateRequest carries everything Ensure needs to provision a fresh\nenvironment + volume. Env is the complete environment-variable set\nfor the instance (identity + control-plane URLs), built by the\nadmin layer; provider-specific config (image, sizing) lives on the\nimplementation.
 EDGES
   contains=matrix/router/internal/provision.CreateRequest#Env,matrix/router/internal/provision.CreateRequest#Region,matrix/router/internal/provision.CreateRequest#UserID
+  ^references=matrix/router/internal/admin.Handler.EnsureMachine,matrix/router/internal/fly.Provisioner.Ensure,matrix/router/internal/provision.Provisioner,matrix/router/internal/railway.Provisioner.Ensure
   ^defines=matrix/router/internal/provision/provision.go
 
 NODE id=matrix/router/internal/provision.CreateRequest#Env kind=field
@@ -38,6 +40,7 @@ NODE id=matrix/router/internal/provision.Endpoint kind=type
   doc=Endpoint is where the environment's daemon HTTP server is reachable\non the private network. Host is unbracketed — a 6PN IPv6 address on\nFly, a <service>.railway.internal hostname on Railway; callers\nbracket IPv6 literals when composing URLs. Port, when empty, falls\nback to the router's configured daemon port.
 EDGES
   contains=matrix/router/internal/provision.Endpoint#Host,matrix/router/internal/provision.Endpoint#Port
+  ^references=matrix/router/internal/fly.Provisioner.env,matrix/router/internal/provision.Env,matrix/router/internal/proxy.buildUpstreamURL,matrix/router/internal/railway.Provisioner.env
   ^defines=matrix/router/internal/provision/provision.go
 
 NODE id=matrix/router/internal/provision.Endpoint#Host kind=field
@@ -58,6 +61,8 @@ NODE id=matrix/router/internal/provision.Env kind=type
   doc=Env is the provider-neutral view of a per-user environment.
 EDGES
   contains=matrix/router/internal/provision.Env#Endpoint,matrix/router/internal/provision.Env#ID,matrix/router/internal/provision.Env#Ready,matrix/router/internal/provision.Env#Region,matrix/router/internal/provision.Env#State,matrix/router/internal/provision.Env#VolumeID
+  references=matrix/router/internal/provision.Endpoint
+  ^references=matrix/router/internal/fly.Provisioner.Ensure,matrix/router/internal/fly.Provisioner.Status,matrix/router/internal/fly.Provisioner.Wake,matrix/router/internal/fly.Provisioner.env,matrix/router/internal/provision.Provisioner,matrix/router/internal/proxy.Handler.deliverChat,matrix/router/internal/proxy.Handler.waitDaemonReady,matrix/router/internal/proxy.chatURL,matrix/router/internal/proxy.healthzURL,matrix/router/internal/railway.Provisioner.Ensure,matrix/router/internal/railway.Provisioner.Status,matrix/router/internal/railway.Provisioner.Wake,matrix/router/internal/railway.Provisioner.env
   ^defines=matrix/router/internal/provision/provision.go
 
 NODE id=matrix/router/internal/provision.Env#Endpoint kind=field
@@ -101,6 +106,7 @@ NODE id=matrix/router/internal/provision.ErrNotFound kind=var
   sig=error
   doc=ErrNotFound: the environment (or its app/project scope) no\nlonger exists at the provider.
 EDGES
+  ^references=matrix/router/internal/admin.Handler.deleteUser,matrix/router/internal/fly.mapErr,matrix/router/internal/proxy.Handler.WakeHandler,matrix/router/internal/proxy.Handler.forward,matrix/router/internal/railway.mapErr
   ^defines=matrix/router/internal/provision/provision.go
 
 NODE id=matrix/router/internal/provision.ErrUnauthorized kind=var
@@ -108,6 +114,7 @@ NODE id=matrix/router/internal/provision.ErrUnauthorized kind=var
   sig=error
   doc=ErrUnauthorized: the provider rejected the router's credential.
 EDGES
+  ^references=matrix/router/internal/fly.mapErr,matrix/router/internal/proxy.Handler.forward,matrix/router/internal/railway.mapErr
   ^defines=matrix/router/internal/provision/provision.go
 
 NODE id=matrix/router/internal/provision.Provisioner kind=interface
@@ -115,7 +122,9 @@ NODE id=matrix/router/internal/provision.Provisioner kind=interface
   sig=type Provisioner interface {\n	// Ensure provisions a fresh environment + volume for the user and\n	// returns it ready enough for the router to attach and route to.\n	// Idempotence at the user level is the caller's job (the admin\n	// layer checks the users row before calling).\n	Ensure(ctx context.Context, req CreateRequest) (*Env, error)\n\n	// Status reports the environment's current state. Ready mirrors\n	// the provider's own readiness signal (machine started / latest\n	// deployment succeeded) and feeds the provision-status gate.\n	Status(ctx context.Context, ref Ref) (*Env, error)\n\n	// Wake makes sure the environment can take traffic and returns\n	// its endpoint. Providers with an explicit start API block until\n	// the instance runs; wake-on-request providers return immediately\n	// (the forwarded request itself is the wake signal).\n	Wake(ctx context.Context, ref Ref) (*Env, error)\n\n	// Destroy tears the environment down (volume follows the\n	// provider's lifecycle rules). Destroying a vanished environment\n	// returns ErrNotFound.\n	Destroy(ctx context.Context, ref Ref) error\n\n	// WakeOnRequest reports whether waking is platform-managed by\n	// inbound traffic (Wake is a no-op and the readiness probe must\n	// absorb the whole cold boot, including gateway 502/503s emitted\n	// while the platform revives the instance).\n	WakeOnRequest() bool\n}
   doc=Provisioner is the per-user environment lifecycle: ensure/create,\nstatus, wake, destroy — environment plus its persistent volume.
 EDGES
+  references=matrix/router/internal/provision.CreateRequest,matrix/router/internal/provision.Env,matrix/router/internal/provision.Ref
   ^implements=matrix/router/internal/fly.Provisioner,matrix/router/internal/railway.Provisioner
+  ^references=matrix/router/cmd/matrix-router.main,matrix/router/internal/admin.Handler,matrix/router/internal/fly._,matrix/router/internal/proxy.Handler,matrix/router/internal/proxy.New,matrix/router/internal/railway._
   ^defines=matrix/router/internal/provision/provision.go
 
 NODE id=matrix/router/internal/provision.Ref kind=type
@@ -124,6 +133,7 @@ NODE id=matrix/router/internal/provision.Ref kind=type
   doc=Ref identifies an existing environment for status/wake/destroy. The\nids come from the router's users row; UserID rides along so\nproviders with deterministic per-user naming (Railway service\nhostnames) can derive the endpoint without an API round-trip.
 EDGES
   contains=matrix/router/internal/provision.Ref#EnvID,matrix/router/internal/provision.Ref#UserID,matrix/router/internal/provision.Ref#VolumeID
+  ^references=matrix/router/internal/admin.Handler.deleteUser,matrix/router/internal/fly.Provisioner.Destroy,matrix/router/internal/fly.Provisioner.Status,matrix/router/internal/fly.Provisioner.Wake,matrix/router/internal/provision.Provisioner,matrix/router/internal/proxy.Handler.ServeHTTP,matrix/router/internal/proxy.Handler.WakeHandler,matrix/router/internal/proxy.Handler.forward,matrix/router/internal/railway.Provisioner.Destroy,matrix/router/internal/railway.Provisioner.Status,matrix/router/internal/railway.Provisioner.Wake
   ^defines=matrix/router/internal/provision/provision.go
 
 NODE id=matrix/router/internal/provision.Ref#EnvID kind=field

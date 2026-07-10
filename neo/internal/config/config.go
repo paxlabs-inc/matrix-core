@@ -30,6 +30,7 @@ type Config struct {
 	DaemonURL    string // base URL of the MCL daemon for core_execute delegation
 	ManifestPath string // agent manifest declaring MCP servers (agents/default.json)
 	SkillsRoot   string // skills corpus root (procedural-pattern promotion target)
+	SelfModelGraph string
 
 	// --- models (provider-qualified ids; see matrix/mcl/llm DetectProvider) ---
 	MainModel  string // the conversational tool-calling loop
@@ -115,6 +116,14 @@ type Config struct {
 	TaskMaxWall        time.Duration // hard wall-clock ceiling for one supervised task (generous; anti-runaway)
 	TaskAttemptTimeout time.Duration // ceiling for a single supervised attempt (one agent run)
 	TaskMaxRespawns    int           // max fresh-agent respawns before delivering an honest partial
+
+	// DeathConsolidateEvery is the bounded cadence for the self-authoring
+	// consolidation pass (self-model task 3.2, req.5.2): after this many recorded
+	// loop deaths, the agent reads its death journal and writes/reinforces durable
+	// how-I-fail failure-pattern memories, deduplicating recurrences of the same
+	// mode into ONE reinforced belief. It runs on this cadence, NEVER every turn;
+	// <= 0 disables the pass.
+	DeathConsolidateEvery int
 
 	// --- procedural memory guards ---
 	MinPatternSuccesses int // successes required before a candidate pattern is injected
@@ -220,6 +229,7 @@ func Default() Config {
 		DaemonURL:    "http://127.0.0.1:8080",
 		ManifestPath: "agents/default.json",
 		SkillsRoot:   "skills",
+		SelfModelGraph: "graph/self-model",
 
 		MainModel:          "xiaomimimo/mimo-v2.5-pro",
 		CheapModel:         "xiaomimimo/mimo-v2.5-pro",
@@ -264,10 +274,11 @@ func Default() Config {
 		// (the user chose "max persistence" — effectively no practical limit —
 		// but a hard backstop must exist so a wedged task can't burn metered
 		// spend forever).
-		SuperviseTasks:     true,
-		TaskMaxWall:        6 * time.Hour,
-		TaskAttemptTimeout: 20 * time.Minute,
-		TaskMaxRespawns:    50,
+		SuperviseTasks:        true,
+		TaskMaxWall:           6 * time.Hour,
+		TaskAttemptTimeout:    20 * time.Minute,
+		TaskMaxRespawns:       50,
+		DeathConsolidateEvery: 3, // self-author how-I-fail memories every 3rd loop death
 
 		MinPatternSuccesses: 3,
 
@@ -393,6 +404,7 @@ func (c *Config) applyDoc(d *kvxDoc) {
 		c.DaemonURL = d.strOr("runtime", "daemon_url", c.DaemonURL)
 		c.ManifestPath = d.strOr("runtime", "manifest_path", c.ManifestPath)
 		c.SkillsRoot = d.strOr("runtime", "skills_root", c.SkillsRoot)
+		c.SelfModelGraph = d.strOr("runtime", "self_model_graph", c.SelfModelGraph)
 		c.GatewayURL = d.strOr("runtime", "gateway_url", c.GatewayURL)
 		c.ActorDID = d.strOr("runtime", "actor_did", c.ActorDID)
 	}
@@ -491,6 +503,7 @@ func (c *Config) applyEnv() {
 	c.DaemonURL = envOr("NEO_DAEMON_URL", c.DaemonURL)
 	c.ManifestPath = envOr("NEO_MANIFEST", c.ManifestPath)
 	c.SkillsRoot = envOr("NEO_SKILLS_ROOT", c.SkillsRoot)
+	c.SelfModelGraph = envOr("NEO_SELF_MODEL_GRAPH", c.SelfModelGraph)
 	c.ActorDID = envOr("NEO_ACTOR_DID", c.ActorDID)
 	// MATRIX_GATEWAY_URL matches the daemon/router env key (router MachineEnv).
 	c.GatewayURL = envOr("MATRIX_GATEWAY_URL", envOr("NEO_GATEWAY_URL", c.GatewayURL))

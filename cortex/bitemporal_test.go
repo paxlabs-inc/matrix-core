@@ -4,6 +4,7 @@
 package cortex
 
 import (
+	"bytes"
 	"testing"
 	"time"
 
@@ -65,7 +66,7 @@ func TestCloseValidityFiltersByAsOf(t *testing.T) {
 		t.Fatalf("ValidUntil = %v want %v", closed.Version.ValidUntil, closeAt)
 	}
 	// Data is preserved verbatim across the close.
-	if !bytes.Equal(closed.Version.Data, fresh.Version.Data) {
+	if !bytes.Equal(closed.Version.Data, []byte("fresh.Version.Data")) {
 		t.Fatalf("CloseValidity must preserve Data bytes")
 	}
 

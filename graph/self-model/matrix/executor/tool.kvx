@@ -1,0 +1,1103 @@
+# GENERATED gen=codegraph do-not-edit merkle=b3:75a956136eb56a920059d717ea1f7ba394b53bef834ab6db66f06d328eb5d650
+
+NODE id=matrix/executor/tool kind=package
+  digest=b3:0062c71719ecb17049b0c457c46e7665bb1a680a6ee478da5b810a3df1651302 file=executor/tool range=0:0 lang=go exported=true
+EDGES
+  contains=matrix/executor/tool/manifest.go,matrix/executor/tool/registry.go,matrix/executor/tool/tool.go,matrix/executor/tool/uri.go
+  ^contains=mod:matrix/executor
+
+NODE id=matrix/executor/tool.AgentManifest kind=type
+  digest=b3:68cd14ccd9bd0395e7b7b76fabe9d6fb018757947a7108451d46c6f5d10325c7 file=executor/tool/manifest.go range=14:50 lang=go exported=true byte_range=253:1940
+  sig=type AgentManifest struct {\n	// SchemaVersion pins the manifest schema. v1 is the only version.\n	SchemaVersion	int	`json:"schema_version"`\n\n	// Agent identifies the agent (DID for production; freeform string\n	// for dev/test). Mirrors research/06-agents.md A1 lock — every\n	// agent has stable identity.\n	Agent	string	`json:"agent"`\n\n	// Description is human-readable; not load-bearing.\n	Description	string	`json:"description,omitempty"`\n\n	// Servers declares the MCP servers this agent uses.\n	Servers	[]ServerEntry	`json:"servers,omitempty"`\n\n	// NativeTools declares architectural slots for chain-touching\n	// native tools (Q19). v1 ships none; agent manifests can be\n	// authored against future chain tools without a schema change.\n	NativeTools	[]NativeToolEntry	`json:"native_tools,omitempty"`\n\n	// AllowedSideEffects narrows the capability gate. Empty = allow\n	// all 5 classes (open default at v1; closed agent manifests will\n	// list explicitly: e.g. ["read", "write", "network"] for a\n	// research agent that's denied shell + chain).\n	AllowedSideEffects	[]string	`json:"allowed_side_effects,omitempty"`\n}
+  doc=AgentManifest is the JSON-on-disk schema declaring what tools an\nagent can use. Loaded once at executor startup; passed to Registry\nfor resolution.\n\nSchema lock points (executor_locked_design):\n\n	Q17 tool URI scheme: matrix://tool/mcp/<server-alias>/<tool-name>@<version>\n	Q18 server credentials via env-var refs ("$env:GITHUB_TOKEN")\n	Q19 NativeTool slot kept for future chain tools (none ship in v1)\n	Q21 ExpectedTools enumeration enforced by mcp.Manager (tools/list match)\n	Q22 server pinning via PackageDigest (sha256 of distribution package)
+EDGES
+  contains=matrix/executor/tool.AgentManifest#Agent,matrix/executor/tool.AgentManifest#AllowedSideEffects,matrix/executor/tool.AgentManifest#Description,matrix/executor/tool.AgentManifest#NativeTools,matrix/executor/tool.AgentManifest#SchemaVersion,matrix/executor/tool.AgentManifest#Servers,matrix/executor/tool.AgentManifest.Validate
+  ^defines=matrix/executor/tool/manifest.go
+
+NODE id=matrix/executor/tool.AgentManifest#Agent kind=field
+  digest=b3:a63c91030a155730bbe9baa155440351bed289b6e5e2dac566ee2f7d18a3fda0 file=executor/tool/manifest.go range=29:32 lang=go exported=true byte_range=967:1160
+  sig=string
+  doc=Agent identifies the agent (DID for production; freeform string\nfor dev/test). Mirrors research/06-agents.md A1 lock — every\nagent has stable identity.
+EDGES
+  ^contains=matrix/executor/tool.AgentManifest
+
+NODE id=matrix/executor/tool.AgentManifest#AllowedSideEffects kind=field
+  digest=b3:fe75e38d17d10bc15ab61ab4f47cab153992c275c9dd6898c37af24dfd8df343 file=executor/tool/manifest.go range=45:49 lang=go exported=true byte_range=1628:1938
+  sig=[]string
+  doc=AllowedSideEffects narrows the capability gate. Empty = allow\nall 5 classes (open default at v1; closed agent manifests will\nlist explicitly: e.g. ["read", "write", "network"] for a\nresearch agent that's denied shell + chain).
+EDGES
+  ^contains=matrix/executor/tool.AgentManifest
+
+NODE id=matrix/executor/tool.AgentManifest#Description kind=field
+  digest=b3:5431fd61d773168bf05ba71cd6eec68f4b208e8f4fb68b8a719fafccd0b693a4 file=executor/tool/manifest.go range=34:35 lang=go exported=true byte_range=1163:1265
+  sig=string
+  doc=Description is human-readable; not load-bearing.
+EDGES
+  ^contains=matrix/executor/tool.AgentManifest
+
+NODE id=matrix/executor/tool.AgentManifest#NativeTools kind=field
+  digest=b3:b3f8c9f94733559f0bb59a9e933ded4a1c2e039f6a4629c2c8f817038d31e70e file=executor/tool/manifest.go range=40:43 lang=go exported=true byte_range=1373:1625
+  sig=[]tool.NativeToolEntry
+  doc=NativeTools declares architectural slots for chain-touching\nnative tools (Q19). v1 ships none; agent manifests can be\nauthored against future chain tools without a schema change.
+EDGES
+  ^contains=matrix/executor/tool.AgentManifest
+
+NODE id=matrix/executor/tool.AgentManifest#SchemaVersion kind=field
+  digest=b3:ca40e4cf18dfb643014d8f8bba8ade890ccf5511653d9cc0ba45d1da14aa9161 file=executor/tool/manifest.go range=26:27 lang=go exported=true byte_range=855:964
+  sig=int
+  doc=SchemaVersion pins the manifest schema. v1 is the only version.
+EDGES
+  ^contains=matrix/executor/tool.AgentManifest
+
+NODE id=matrix/executor/tool.AgentManifest#Servers kind=field
+  digest=b3:d0c0a13018c700751841d2391332f94637883edd09e5d1cd3b10a43b946926a1 file=executor/tool/manifest.go range=37:38 lang=go exported=true byte_range=1268:1370
+  sig=[]tool.ServerEntry
+  doc=Servers declares the MCP servers this agent uses.
+EDGES
+  ^contains=matrix/executor/tool.AgentManifest
+
+NODE id=matrix/executor/tool.AgentManifest.Validate kind=method
+  digest=b3:55a6c37e972092b8ff80107eb585e62437f22744fd873df4cbf1097956fbdf94 file=executor/tool/manifest.go range=168:200 lang=go exported=true byte_range=6298:7330
+  sig=func (m *AgentManifest) Validate() error
+  doc=Validate enforces Q17/Q18/Q19/Q21/Q22 invariants. Returns the first\nfailure; callers may surface as-is to fail manifest load.
+EDGES
+  ^contains=matrix/executor/tool.AgentManifest
+  ^defines=matrix/executor/tool/manifest.go
+
+NODE id=matrix/executor/tool.AllowAllSideEffects kind=func
+  digest=b3:e5112243421a2ea0a6eb845d99bae5227f4011e9870340aa02f18b699f33a914 file=executor/tool/tool.go range=161:166 lang=go exported=true byte_range=6029:6276
+  sig=func AllowAllSideEffects(sideEffect string) bool
+  doc=AllowAllSideEffects is the default gate (allows everything in\nValidSideEffectClasses). Production agent manifests should pass a\nnarrower gate.
+EDGES
+  ^defines=matrix/executor/tool/tool.go
+
+NODE id=matrix/executor/tool.AllowOnlySideEffects kind=func
+  digest=b3:a62fc1375ef335316d1c3e232b8258a4b2a8ff50e9bf310b7c4a5483bff7554c file=executor/tool/tool.go range=168:178 lang=go exported=true byte_range=6278:6623
+  sig=func AllowOnlySideEffects(allowed ...string) CapabilityGate
+  doc=AllowOnlySideEffects returns a CapabilityGate that admits only the\nlisted classes (each must be in the closed enum).
+EDGES
+  ^defines=matrix/executor/tool/tool.go
+
+NODE id=matrix/executor/tool.CapabilityGate kind=type
+  digest=b3:e65955886be89377a24a641af36ab624109a201dda218224c5e28240823f7f8b file=executor/tool/tool.go range=155:159 lang=go exported=true byte_range=5698:6027
+  sig=type CapabilityGate func(sideEffect string) bool
+  doc=CapabilityGate decides whether a tool's declared SideEffectClass is\npermitted by the agent's manifest. Default-allow at v1 (all 5 classes\nusable); production agent manifests will narrow this via a closed\nallow-list. Implemented as a function type so tests can vary it.
+EDGES
+  ^defines=matrix/executor/tool/tool.go
+
+NODE id=matrix/executor/tool.Content kind=type
+  digest=b3:665aa54c83136751854476cb62aa102b1a8e48dc0e792811a32b720a7fb29cf9 file=executor/tool/tool.go range=76:85 lang=go exported=true byte_range=3133:3591
+  sig=type Content struct {\n	Type		string	`json:"type"`\n	Text		string	`json:"text,omitempty"`\n	Data		string	`json:"data,omitempty"`		// base64 for image\n	MimeType	string	`json:"mimeType,omitempty"`	// for image\n	URI		string	`json:"uri,omitempty"`		// for embedded resource\n}
+  doc=Content is a single piece of a tool result. Mirrors mcp.Content but\nkept separate so the tool layer doesn't leak mcp types upward to\nthe executor / plan walker.
+EDGES
+  contains=matrix/executor/tool.Content#Data,matrix/executor/tool.Content#MimeType,matrix/executor/tool.Content#Text,matrix/executor/tool.Content#Type,matrix/executor/tool.Content#URI
+  ^defines=matrix/executor/tool/tool.go
+
+NODE id=matrix/executor/tool.Content#Data kind=field
+  digest=b3:8cd8046897f90cd54bea97fe7fb4acbe431778b2b82215837bb9b744353db976 file=executor/tool/tool.go range=82:82 lang=go exported=true byte_range=3398:3437
+  sig=string
+EDGES
+  ^contains=matrix/executor/tool.Content
+
+NODE id=matrix/executor/tool.Content#MimeType kind=field
+  digest=b3:c5815f8a5f988a9a4da306a256daa26c149de8a591b6a7e631429f6db326b60e file=executor/tool/tool.go range=83:83 lang=go exported=true byte_range=3463:3506
+  sig=string
+EDGES
+  ^contains=matrix/executor/tool.Content
+
+NODE id=matrix/executor/tool.Content#Text kind=field
+  digest=b3:2122489187d4f0fc30d6c3b29ce35b6982b453651cb4a390f4991afd560a1f7c file=executor/tool/tool.go range=81:81 lang=go exported=true byte_range=3357:3396
+  sig=string
+EDGES
+  ^contains=matrix/executor/tool.Content
+
+NODE id=matrix/executor/tool.Content#Type kind=field
+  digest=b3:b5abfd4f111285554e081f8186ca88582f8aff91b65dac74ca516cb4f2c9acd5 file=executor/tool/tool.go range=80:80 lang=go exported=true byte_range=3326:3355
+  sig=string
+EDGES
+  ^contains=matrix/executor/tool.Content
+
+NODE id=matrix/executor/tool.Content#URI kind=field
+  digest=b3:d905bcecbdd683492d2b4ace446fa81dc3e48b9f9f7bbf042d761b9aeffa90ee file=executor/tool/tool.go range=84:84 lang=go exported=true byte_range=3521:3559
+  sig=string
+EDGES
+  ^contains=matrix/executor/tool.Content
+
+NODE id=matrix/executor/tool.ContentTypeImage kind=const
+  digest=b3:23b106191955ab0919763b60a1ddca050a8dc18d93a6f0614375fdac02556f35 file=executor/tool/tool.go range=87:90 lang=go exported=true byte_range=3593:3728
+  sig=untyped string
+  doc=Content type constants (subset mirrored from mcp.ContentType*).
+EDGES
+  ^defines=matrix/executor/tool/tool.go
+
+NODE id=matrix/executor/tool.ContentTypeResource kind=const
+  digest=b3:eb4696c87505ed2d63f360ccaaa0db909a5f78e36b89deb41f504c7c5790cad3 file=executor/tool/tool.go range=87:91 lang=go exported=true byte_range=3593:3762
+  sig=untyped string
+  doc=Content type constants (subset mirrored from mcp.ContentType*).
+EDGES
+  ^defines=matrix/executor/tool/tool.go
+
+NODE id=matrix/executor/tool.ContentTypeText kind=const
+  digest=b3:24e0863a18fd441b44737e47ae55c52bc3b42ef30db2e2d63c1991a99050ef74 file=executor/tool/tool.go range=87:89 lang=go exported=true byte_range=3593:3697
+  sig=untyped string
+  doc=Content type constants (subset mirrored from mcp.ContentType*).
+EDGES
+  ^defines=matrix/executor/tool/tool.go
+
+NODE id=matrix/executor/tool.ErrInvalidSideEffect kind=var
+  digest=b3:4a8c807ae0bdaf5cd2337bebfab1a17e85eb42a421e19dc0a3c2ac4e231f7ba8 file=executor/tool/tool.go range=150:152 lang=go exported=true byte_range=5509:5694
+  sig=error
+  doc=ErrInvalidSideEffect fires when a manifest declares an unknown\nside-effect class. Closed enum is exhaustive.
+EDGES
+  ^defines=matrix/executor/tool/tool.go
+
+NODE id=matrix/executor/tool.ErrInvalidURI kind=var
+  digest=b3:526a83bb7003838e12e5cb7a1209865e6e8e217a796e63511346cafe87c9a736 file=executor/tool/tool.go range=139:141 lang=go exported=true byte_range=4995:5161
+  sig=error
+  doc=ErrInvalidURI fires when a URI doesn't parse as\nmatrix://tool/<provider>/<name>@<version> form. Q17 lock.
+EDGES
+  ^defines=matrix/executor/tool/tool.go
+
+NODE id=matrix/executor/tool.ErrNativeToolNotImplemented kind=var
+  digest=b3:d5c55c31a9f04958ba4c1cff950ea6f025911520287342dd3ab291c6941a6823 file=executor/tool/registry.go range=516:518 lang=go exported=true byte_range=15110:15334
+  sig=error
+  doc=ErrNativeToolNotImplemented signals the v1 placeholder behavior.\nWraps cleanly with errors.Is for plan-walker error routing.
+EDGES
+  ^defines=matrix/executor/tool/registry.go
+
+NODE id=matrix/executor/tool.ErrSideEffectDenied kind=var
+  digest=b3:7e8225ce59099d582a2cfa21d30c04cbaf09cc5a0e0a35450edb1ad47fa71669 file=executor/tool/tool.go range=146:148 lang=go exported=true byte_range=5301:5506
+  sig=error
+  doc=ErrSideEffectDenied fires when the executor's capability gate\nrejects a tool's declared side-effect class.
+EDGES
+  ^defines=matrix/executor/tool/tool.go
+
+NODE id=matrix/executor/tool.ErrUnknownTool kind=var
+  digest=b3:f6e4c004c4ac11da2158038919a8c07f966e9b8f7769262e17405e91f8dc861a file=executor/tool/tool.go range=134:137 lang=go exported=true byte_range=4734:4992
+  sig=error
+  doc=ErrUnknownTool fires when Registry.Get receives a URI for a tool\nnot in the agent manifest. Distinct from "tool returned IsError"\n— caller must look up a different URI or fail the plan node.
+EDGES
+  ^defines=matrix/executor/tool/tool.go
+
+NODE id=matrix/executor/tool.ErrUnpinnedTool kind=var
+  digest=b3:ae1f46d7ccc71a0dba11f8b12c002dd4d82902f4e128a134dcaf9b376850f734 file=executor/tool/tool.go range=143:144 lang=go exported=true byte_range=5164:5298
+  sig=error
+  doc=ErrUnpinnedTool fires when a URI has no @version. S4 hard rule.
+EDGES
+  ^defines=matrix/executor/tool/tool.go
+
+NODE id=matrix/executor/tool.ExtractText kind=func
+  digest=b3:981bbf29ab944ea91bfebebf7ff2a38ffa84ca09a05a8ee6817f7080a2712504 file=executor/tool/tool.go range=113:130 lang=go exported=true byte_range=4304:4685
+  sig=func ExtractText(r *Result) string
+  doc=ExtractText concatenates every text-typed Content block. Convenience\nfor the common path where a tool returns "what happened" as text.
+EDGES
+  ^defines=matrix/executor/tool/tool.go
+
+NODE id=matrix/executor/tool.LoadAgentManifest kind=func
+  digest=b3:ad2265a342728a384ca210772ed4f18f31e1de67a405bfdbe5b91c7ab2644101 file=executor/tool/manifest.go range=143:154 lang=go exported=true byte_range=5556:5955
+  sig=func LoadAgentManifest(path string) (*AgentManifest, error)
+  doc=LoadAgentManifest reads and validates a manifest from a JSON file.
+EDGES
+  ^defines=matrix/executor/tool/manifest.go
+
+NODE id=matrix/executor/tool.MCPTool kind=type
+  digest=b3:0b95bb723dba6957994b37186793192307d384a4bf4f2efb92639652f0c2f8cd file=executor/tool/registry.go range=365:383 lang=go exported=true byte_range=10560:11115
+  sig=type MCPTool struct {\n	uri		string\n	server		string\n	name		string\n	desc		string\n	sideEffect	string\n	timeout		time.Duration\n\n	mgr	*mcp.Manager\n	clock	func() time.Time\n\n	// cache is the shared registry-level result cache (P2-5). nil when\n	// caching is disabled (CacheTTL<=0). Only consulted when cacheable.\n	cache	*resultCache\n	// cacheable is precomputed at build time from isCacheable(name,\n	// sideEffect) so the hot path is a single bool check.\n	cacheable	bool\n}
+  doc=MCPTool is the Tool implementation backed by an MCP server (Q4).
+EDGES
+  contains=matrix/executor/tool.MCPTool#cache,matrix/executor/tool.MCPTool#cacheable,matrix/executor/tool.MCPTool#clock,matrix/executor/tool.MCPTool#desc,matrix/executor/tool.MCPTool#mgr,matrix/executor/tool.MCPTool#name,matrix/executor/tool.MCPTool#server,matrix/executor/tool.MCPTool#sideEffect,matrix/executor/tool.MCPTool#timeout,matrix/executor/tool.MCPTool#uri,matrix/executor/tool.MCPTool.Call,matrix/executor/tool.MCPTool.Description,matrix/executor/tool.MCPTool.Name,matrix/executor/tool.MCPTool.Server,matrix/executor/tool.MCPTool.SideEffectClass,matrix/executor/tool.MCPTool.URI
+  implements=matrix/executor/tool.Tool
+  ^defines=matrix/executor/tool/registry.go
+
+NODE id=matrix/executor/tool.MCPTool#cache kind=field
+  digest=b3:eeb8d5b10d22cf5760188dbaa6c136fb2a6aa8d083ace924058e0e619f2e5485 file=executor/tool/registry.go range=377:379 lang=go exported=false byte_range=10818:10975
+  sig=*tool.resultCache
+  doc=cache is the shared registry-level result cache (P2-5). nil when\ncaching is disabled (CacheTTL<=0). Only consulted when cacheable.
+EDGES
+  ^contains=matrix/executor/tool.MCPTool
+
+NODE id=matrix/executor/tool.MCPTool#cacheable kind=field
+  digest=b3:246022d194a3647117570e32296e7f60f8947cdf332cab2d79b15e945d8f713c file=executor/tool/registry.go range=380:382 lang=go exported=false byte_range=10977:11113
+  sig=bool
+  doc=cacheable is precomputed at build time from isCacheable(name,\nsideEffect) so the hot path is a single bool check.
+EDGES
+  ^contains=matrix/executor/tool.MCPTool
+
+NODE id=matrix/executor/tool.MCPTool#clock kind=field
+  digest=b3:6e5f13ede5e1a5e0590f23d4bf94ad31c3a097ffadcce418e390a7e407ed31ee file=executor/tool/registry.go range=375:375 lang=go exported=false byte_range=10793:10815
+  sig=func() time.Time
+EDGES
+  ^contains=matrix/executor/tool.MCPTool
+
+NODE id=matrix/executor/tool.MCPTool#desc kind=field
+  digest=b3:95e563fd4307cc71d5636f39a970bd69cf3eeaa9e49362c1ec85b193d4cba40c file=executor/tool/registry.go range=370:370 lang=go exported=false byte_range=10708:10725
+  sig=string
+EDGES
+  ^contains=matrix/executor/tool.MCPTool
+
+NODE id=matrix/executor/tool.MCPTool#mgr kind=field
+  digest=b3:9fdbf8aba2d8dae256e01df456c807138644826268d0b2505d65e69264b8d5ad file=executor/tool/registry.go range=374:374 lang=go exported=false byte_range=10773:10791
+  sig=*mcp.Manager
+EDGES
+  ^contains=matrix/executor/tool.MCPTool
+
+NODE id=matrix/executor/tool.MCPTool#name kind=field
+  digest=b3:d213f7186bea3585c2559f18b82f55e7450957f3d3755697b2693a057525de33 file=executor/tool/registry.go range=369:369 lang=go exported=false byte_range=10689:10706
+  sig=string
+EDGES
+  ^contains=matrix/executor/tool.MCPTool
+
+NODE id=matrix/executor/tool.MCPTool#server kind=field
+  digest=b3:fb1ef70c8d211d5b0ccfdbab89df1450e9c88a55e7183e05bdd9fd906863fc52 file=executor/tool/registry.go range=368:368 lang=go exported=false byte_range=10670:10687
+  sig=string
+EDGES
+  ^contains=matrix/executor/tool.MCPTool
+
+NODE id=matrix/executor/tool.MCPTool#sideEffect kind=field
+  digest=b3:621a6c7f82cb13474b8fff20329d48c2804079271176c5b0a0a6ac20f8760b46 file=executor/tool/registry.go range=371:371 lang=go exported=false byte_range=10727:10744
+  sig=string
+EDGES
+  ^contains=matrix/executor/tool.MCPTool
+
+NODE id=matrix/executor/tool.MCPTool#timeout kind=field
+  digest=b3:6bbb2359d080c173fce18e12d6c152f09115267dae27104c7fdf4349abedec08 file=executor/tool/registry.go range=372:372 lang=go exported=false byte_range=10746:10770
+  sig=time.Duration
+EDGES
+  ^contains=matrix/executor/tool.MCPTool
+
+NODE id=matrix/executor/tool.MCPTool#uri kind=field
+  digest=b3:51aac9678936b868cceb5b7d053f3d4c5dba78ae31d70311bb3e4a13e268c999 file=executor/tool/registry.go range=367:367 lang=go exported=false byte_range=10651:10668
+  sig=string
+EDGES
+  ^contains=matrix/executor/tool.MCPTool
+
+NODE id=matrix/executor/tool.MCPTool.Call kind=method
+  digest=b3:8aae4d5c4208efd73856906bec1230f0f1717bb9823b6d4103faa31c6bf2a941 file=executor/tool/registry.go range=401:473 lang=go exported=true byte_range=11656:13815
+  sig=func (t *MCPTool) Call(ctx context.Context, args map[string]interface{}) (*Result, error)
+  doc=Call invokes the tool through the manager-managed MCP client.\n\nSurfaces transport / RPC errors as Go errors; in-band tool failures\n(the tool ran but reports IsError) are returned via Result.IsError.\n\nP2-5: for tools in the cacheableTools allow-list (web_search, web_news)\nwith SideEffectRead, a successful result is served from the TTL cache\non a hit and stored on a miss. Side-effecting / money tools never hit\nthe cache (cacheable is precomputed false for them). Cache misses and\nerrors always go to the wire.
+EDGES
+  ^contains=matrix/executor/tool.MCPTool
+  ^defines=matrix/executor/tool/registry.go
+
+NODE id=matrix/executor/tool.MCPTool.Description kind=method
+  digest=b3:12cede58bde3035d1e82a839c56bf28d48bb5f4afdbe7735f633114762a153b5 file=executor/tool/registry.go range=388:389 lang=go exported=true byte_range=11190:11278
+  sig=func (t *MCPTool) Description() string
+  doc=Description implements Tool.
+EDGES
+  ^contains=matrix/executor/tool.MCPTool
+  ^defines=matrix/executor/tool/registry.go
+
+NODE id=matrix/executor/tool.MCPTool.Name kind=method
+  digest=b3:13964cb953fd20be4ed036529f3fa69d8023642158c6ba6f13bdad73f5348bf3 file=executor/tool/registry.go range=398:399 lang=go exported=true byte_range=11561:11654
+  sig=func (t *MCPTool) Name() string
+  doc=Name returns the server-local tool name.
+EDGES
+  ^contains=matrix/executor/tool.MCPTool
+  ^defines=matrix/executor/tool/registry.go
+
+NODE id=matrix/executor/tool.MCPTool.Server kind=method
+  digest=b3:a943a809c64a2fb4ad6e97b6032ffec354d17f770256e0480769ed4d3050b901 file=executor/tool/registry.go range=394:396 lang=go exported=true byte_range=11384:11559
+  sig=func (t *MCPTool) Server() string
+  doc=Server returns the alias of the MCP server backing this tool.\nExposed so the cmd/mcl-tools CLI can show resolution.
+EDGES
+  ^contains=matrix/executor/tool.MCPTool
+  ^defines=matrix/executor/tool/registry.go
+
+NODE id=matrix/executor/tool.MCPTool.SideEffectClass kind=method
+  digest=b3:4775f8c85e27c41b80cd5a637dc9e7aa112f16e35963a6fe18d0c3570f6e4364 file=executor/tool/registry.go range=391:392 lang=go exported=true byte_range=11280:11382
+  sig=func (t *MCPTool) SideEffectClass() string
+  doc=SideEffectClass implements Tool.
+EDGES
+  ^contains=matrix/executor/tool.MCPTool
+  ^defines=matrix/executor/tool/registry.go
+
+NODE id=matrix/executor/tool.MCPTool.URI kind=method
+  digest=b3:60010d081c70a325652390be51b5892cf4ba608025e8f8843f6f17360f2549e3 file=executor/tool/registry.go range=385:386 lang=go exported=true byte_range=11117:11188
+  sig=func (t *MCPTool) URI() string
+  doc=URI implements Tool.
+EDGES
+  ^contains=matrix/executor/tool.MCPTool
+  ^defines=matrix/executor/tool/registry.go
+
+NODE id=matrix/executor/tool.NativeTool kind=type
+  digest=b3:3913644aaa09ed6b2f2361d063d501cff5d8ac05abfcc38c076cd37a54d5cb08 file=executor/tool/registry.go range=482:492 lang=go exported=true byte_range=13915:14262
+  sig=type NativeTool struct {\n	uri		string\n	namespace	string\n	name		string\n	version		string\n	digest		string\n	sideEffect	string\n}
+  doc=NativeTool is the architectural slot for chain-touching tools (Q19).\nv1 ships no implementations; Call returns a not-implemented error so\nany plan that references a native tool in v1 fails clearly.
+EDGES
+  contains=matrix/executor/tool.NativeTool#digest,matrix/executor/tool.NativeTool#name,matrix/executor/tool.NativeTool#namespace,matrix/executor/tool.NativeTool#sideEffect,matrix/executor/tool.NativeTool#uri,matrix/executor/tool.NativeTool#version,matrix/executor/tool.NativeTool.Call,matrix/executor/tool.NativeTool.Description,matrix/executor/tool.NativeTool.Digest,matrix/executor/tool.NativeTool.Namespace,matrix/executor/tool.NativeTool.SideEffectClass,matrix/executor/tool.NativeTool.URI
+  implements=matrix/executor/tool.Tool
+  ^defines=matrix/executor/tool/registry.go
+
+NODE id=matrix/executor/tool.NativeTool#digest kind=field
+  digest=b3:c5c6820a07c316786e0a33273cb8622e93aadf3ff3f8acf84b97d41deffa9834 file=executor/tool/registry.go range=490:490 lang=go exported=false byte_range=14224:14241
+  sig=string
+EDGES
+  ^contains=matrix/executor/tool.NativeTool
+
+NODE id=matrix/executor/tool.NativeTool#name kind=field
+  digest=b3:d213f7186bea3585c2559f18b82f55e7450957f3d3755697b2693a057525de33 file=executor/tool/registry.go range=488:488 lang=go exported=false byte_range=14186:14203
+  sig=string
+EDGES
+  ^contains=matrix/executor/tool.NativeTool
+
+NODE id=matrix/executor/tool.NativeTool#namespace kind=field
+  digest=b3:100b7dca308b20b631ee9face26bad442155c0e44d693c45d6059c598c3a4759 file=executor/tool/registry.go range=487:487 lang=go exported=false byte_range=14167:14184
+  sig=string
+EDGES
+  ^contains=matrix/executor/tool.NativeTool
+
+NODE id=matrix/executor/tool.NativeTool#sideEffect kind=field
+  digest=b3:621a6c7f82cb13474b8fff20329d48c2804079271176c5b0a0a6ac20f8760b46 file=executor/tool/registry.go range=491:491 lang=go exported=false byte_range=14243:14260
+  sig=string
+EDGES
+  ^contains=matrix/executor/tool.NativeTool
+
+NODE id=matrix/executor/tool.NativeTool#uri kind=field
+  digest=b3:51aac9678936b868cceb5b7d053f3d4c5dba78ae31d70311bb3e4a13e268c999 file=executor/tool/registry.go range=486:486 lang=go exported=false byte_range=14148:14165
+  sig=string
+EDGES
+  ^contains=matrix/executor/tool.NativeTool
+
+NODE id=matrix/executor/tool.NativeTool#version kind=field
+  digest=b3:31d930733d2730e3ebd13994241660f8e3a9f8bf827293ca700aba558e25c64b file=executor/tool/registry.go range=489:489 lang=go exported=false byte_range=14205:14222
+  sig=string
+EDGES
+  ^contains=matrix/executor/tool.NativeTool
+
+NODE id=matrix/executor/tool.NativeTool.Call kind=method
+  digest=b3:601ca3214082844ffdd176a981bd277c55379c8c1754cc60d82a93d49488eb69 file=executor/tool/registry.go range=511:514 lang=go exported=true byte_range=14853:15108
+  sig=func (t *NativeTool) Call(ctx context.Context, args map[string]interface{}) (*Result, error)
+  doc=Call always returns ErrNativeToolNotImplemented in v1.
+EDGES
+  ^contains=matrix/executor/tool.NativeTool
+  ^defines=matrix/executor/tool/registry.go
+
+NODE id=matrix/executor/tool.NativeTool.Description kind=method
+  digest=b3:eafe1d17660f3a51da4fc9be19f5734b664df71ad8d7bc549f664d16deba3dfa file=executor/tool/registry.go range=497:500 lang=go exported=true byte_range=14340:14516
+  sig=func (t *NativeTool) Description() string
+  doc=Description implements Tool.
+EDGES
+  ^contains=matrix/executor/tool.NativeTool
+  ^defines=matrix/executor/tool/registry.go
+
+NODE id=matrix/executor/tool.NativeTool.Digest kind=method
+  digest=b3:2fec3c2fe23dcb5748b753349dc2c54777c83240dbeea6fc6395f206f59d39ca file=executor/tool/registry.go range=508:509 lang=go exported=true byte_range=14728:14851
+  sig=func (t *NativeTool) Digest() string
+  doc=Digest returns the contract/abi digest pinned at manifest time.
+EDGES
+  ^contains=matrix/executor/tool.NativeTool
+  ^defines=matrix/executor/tool/registry.go
+
+NODE id=matrix/executor/tool.NativeTool.Namespace kind=method
+  digest=b3:9265e86e5e41168ed05d44aa1cf7382cb81246ea65434da4c403e1e87a3cfcf6 file=executor/tool/registry.go range=505:506 lang=go exported=true byte_range=14625:14726
+  sig=func (t *NativeTool) Namespace() string
+  doc=Namespace returns the S6 namespace.
+EDGES
+  ^contains=matrix/executor/tool.NativeTool
+  ^defines=matrix/executor/tool/registry.go
+
+NODE id=matrix/executor/tool.NativeTool.SideEffectClass kind=method
+  digest=b3:89bfae05214d1d64f82d1ab96eda1f4fc3808d7b04955a7a863a90ca96868328 file=executor/tool/registry.go range=502:503 lang=go exported=true byte_range=14518:14623
+  sig=func (t *NativeTool) SideEffectClass() string
+  doc=SideEffectClass implements Tool.
+EDGES
+  ^contains=matrix/executor/tool.NativeTool
+  ^defines=matrix/executor/tool/registry.go
+
+NODE id=matrix/executor/tool.NativeTool.URI kind=method
+  digest=b3:6b847c0dd842c95c6685afd5cbcf44a99e1efea5f03d9e97224d4831af62b16b file=executor/tool/registry.go range=494:495 lang=go exported=true byte_range=14264:14338
+  sig=func (t *NativeTool) URI() string
+  doc=URI implements Tool.
+EDGES
+  ^contains=matrix/executor/tool.NativeTool
+  ^defines=matrix/executor/tool/registry.go
+
+NODE id=matrix/executor/tool.NativeToolEntry kind=type
+  digest=b3:d158fd96c968a6a93624e592ce5aa20da11266bc1f84eeefa4cd63b6f32d0a3a file=executor/tool/manifest.go range=120:141 lang=go exported=true byte_range=4661:5554
+  sig=type NativeToolEntry struct {\n	// Namespace is one of "argus", "orob", "plv", "pofq", "registry",\n	// "payments", "attest", "chain" — the 8 Paxeer tool wrappers per\n	// research/05-skills-and-tools.md S6.\n	Namespace	string	`json:"namespace"`\n\n	// Name is the tool name within the namespace.\n	Name	string	`json:"name"`\n\n	// Version pins a contract address + ABI digest (mirrors PackageDigest).\n	Version	string	`json:"version"`\n\n	// Digest is the sha256 of the concrete contract/abi pinning bundle.\n	Digest	string	`json:"digest"`\n\n	// SideEffectClass is "chain" by definition; recorded for the\n	// capability gate without special-casing.\n	SideEffectClass	string	`json:"side_effect_class"`\n}
+  doc=NativeToolEntry is a placeholder schema for chain tools (Q19). v1\nships no implementations; the schema lands now so agent manifests\ndon't need a v2 migration when the first chain tool launches.
+EDGES
+  contains=matrix/executor/tool.NativeToolEntry#Digest,matrix/executor/tool.NativeToolEntry#Name,matrix/executor/tool.NativeToolEntry#Namespace,matrix/executor/tool.NativeToolEntry#SideEffectClass,matrix/executor/tool.NativeToolEntry#Version,matrix/executor/tool.NativeToolEntry.Validate
+  ^defines=matrix/executor/tool/manifest.go
+
+NODE id=matrix/executor/tool.NativeToolEntry#Digest kind=field
+  digest=b3:5c1cf4f3c4171aaf6f8f7259b9738c396db00e3b8ef355a4c842177e5ccbb5d1 file=executor/tool/manifest.go range=135:136 lang=go exported=true byte_range=5294:5393
+  sig=string
+  doc=Digest is the sha256 of the concrete contract/abi pinning bundle.
+EDGES
+  ^contains=matrix/executor/tool.NativeToolEntry
+
+NODE id=matrix/executor/tool.NativeToolEntry#Name kind=field
+  digest=b3:a006f2d254151bc1b12de2d0e5bb094cfd6460fd25dc38b53a214074389c7d12 file=executor/tool/manifest.go range=129:130 lang=go exported=true byte_range=5110:5183
+  sig=string
+  doc=Name is the tool name within the namespace.
+EDGES
+  ^contains=matrix/executor/tool.NativeToolEntry
+
+NODE id=matrix/executor/tool.NativeToolEntry#Namespace kind=field
+  digest=b3:bbbb9ff45b8b62d3e0f0ed336ef845ba36eb7bd923d8a5b98dfb2ac4b023a978 file=executor/tool/manifest.go range=124:127 lang=go exported=true byte_range=4895:5107
+  sig=string
+  doc=Namespace is one of "argus", "orob", "plv", "pofq", "registry",\n"payments", "attest", "chain" — the 8 Paxeer tool wrappers per\nresearch/05-skills-and-tools.md S6.
+EDGES
+  ^contains=matrix/executor/tool.NativeToolEntry
+
+NODE id=matrix/executor/tool.NativeToolEntry#SideEffectClass kind=field
+  digest=b3:1ae8ca7cebcd26fe196ec331e8d274431e599f8a2551f0b5af13d2ece9b91c75 file=executor/tool/manifest.go range=138:140 lang=go exported=true byte_range=5396:5552
+  sig=string
+  doc=SideEffectClass is "chain" by definition; recorded for the\ncapability gate without special-casing.
+EDGES
+  ^contains=matrix/executor/tool.NativeToolEntry
+
+NODE id=matrix/executor/tool.NativeToolEntry#Version kind=field
+  digest=b3:8fd2b7d9280be59a49ad343a138bd646c5f094e3470dbd051a8e1ed96259af73 file=executor/tool/manifest.go range=132:133 lang=go exported=true byte_range=5186:5291
+  sig=string
+  doc=Version pins a contract address + ABI digest (mirrors PackageDigest).
+EDGES
+  ^contains=matrix/executor/tool.NativeToolEntry
+
+NODE id=matrix/executor/tool.NativeToolEntry.Validate kind=method
+  digest=b3:3a4d9bbb9df420a3e3755e15f68c815a9da4a74f1c9b342fd9032b0b4fe9c8c1 file=executor/tool/manifest.go range=267:284 lang=go exported=true byte_range=9227:9837
+  sig=func (nt *NativeToolEntry) Validate() error
+  doc=Validate enforces NativeToolEntry invariants.
+EDGES
+  ^contains=matrix/executor/tool.NativeToolEntry
+  ^defines=matrix/executor/tool/manifest.go
+
+NODE id=matrix/executor/tool.NewRegistry kind=func
+  digest=b3:b3d22b33b266a1ab1aa2f72ca311ba4f99043092eefe25dcc0b6b0533826f273 file=executor/tool/registry.go range=221:303 lang=go exported=true byte_range=6860:8818
+  sig=func NewRegistry(p RegistryParams) (*Registry, error)
+  doc=NewRegistry builds a registry from a manifest. MCP servers are\nexpected to already be Spawned in the supplied Manager — that's the\nboot-order responsibility of the caller (typically cmd/mcl-execute).
+EDGES
+  ^defines=matrix/executor/tool/registry.go
+
+NODE id=matrix/executor/tool.ParseAgentManifest kind=func
+  digest=b3:27d58c5588ef6bf931061222d23c8ab5df04c352978c62c2fad8cedc2d0c0038 file=executor/tool/manifest.go range=156:166 lang=go exported=true byte_range=5957:6296
+  sig=func ParseAgentManifest(data []byte) (*AgentManifest, error)
+  doc=ParseAgentManifest decodes + validates a manifest from raw JSON.
+EDGES
+  ^defines=matrix/executor/tool/manifest.go
+
+NODE id=matrix/executor/tool.ParseToolURI kind=func
+  digest=b3:78447d3731640c714c5ec705d5cec4a8182f14785311832e7572fc809896b24d file=executor/tool/uri.go range=47:103 lang=go exported=true byte_range=1428:3240
+  sig=func ParseToolURI(s string) (ToolURI, error)
+  doc=ParseToolURI splits a tool URI per Q17 / S4. Returns ErrInvalidURI\nor ErrUnpinnedTool on malformed input.
+EDGES
+  ^defines=matrix/executor/tool/uri.go
+
+NODE id=matrix/executor/tool.Registry kind=type
+  digest=b3:725d95ca10498d735667426f36c9bdc6b94952a028b128f9ed017c2adaecc204 file=executor/tool/registry.go range=170:200 lang=go exported=true byte_range=5019:6209
+  sig=type Registry struct {\n	manifest	*AgentManifest\n\n	// gate enforces SideEffectClass against the manifest's allowed set.\n	gate	CapabilityGate\n\n	// mu guards the lookup tables. Tables are populated at Build() time\n	// and never modified afterwards in v1; mutex is here so a future\n	// hot-reload can flip the contents under a lock.\n	mu	sync.RWMutex\n	mcps	map[string]*MCPTool	// canonical URI → tool\n	natives	map[string]*NativeTool	// canonical URI → tool\n\n	// mgr is the MCP server pool. nil = registry has no MCP backends\n	// (still useful for native-only tests).\n	mgr	*mcp.Manager\n\n	// cache is the OPT-IN TTL result cache for idempotent read-only\n	// tools (P2-5). nil when CacheTTL<=0 (caching disabled). Only tools\n	// in the cacheableTools allow-list with SideEffectRead are cached.\n	cache	*resultCache\n\n	// clock is overridable for tests.\n	clock	func() time.Time\n}
+  doc=Registry resolves matrix://tool/... URIs to live Tool implementations.\n\nWires NativeTool slots (Q19 placeholders) and MCPTool entries\n(Q4 + Q21) against a backing mcp.Manager. Built once per agent at\nboot from an AgentManifest; immutable afterwards (manifest reloads\nrebuild the registry).
+EDGES
+  contains=matrix/executor/tool.Registry#cache,matrix/executor/tool.Registry#clock,matrix/executor/tool.Registry#gate,matrix/executor/tool.Registry#manifest,matrix/executor/tool.Registry#mcps,matrix/executor/tool.Registry#mgr,matrix/executor/tool.Registry#mu,matrix/executor/tool.Registry#natives,matrix/executor/tool.Registry.Get,matrix/executor/tool.Registry.List,matrix/executor/tool.Registry.Manifest
+  ^defines=matrix/executor/tool/registry.go
+
+NODE id=matrix/executor/tool.Registry#cache kind=field
+  digest=b3:5cb1326f0b6033d269927d5193b5dff5ee70c4385fa1f400d601f43417dece55 file=executor/tool/registry.go range=193:196 lang=go exported=false byte_range=5923:6146
+  sig=*tool.resultCache
+  doc=cache is the OPT-IN TTL result cache for idempotent read-only\ntools (P2-5). nil when CacheTTL<=0 (caching disabled). Only tools\nin the cacheableTools allow-list with SideEffectRead are cached.
+EDGES
+  ^contains=matrix/executor/tool.Registry
+
+NODE id=matrix/executor/tool.Registry#clock kind=field
+  digest=b3:1cd501c4a34f276d6120be3535d0700e39ed37342dae4b52455bccfa37981ff9 file=executor/tool/registry.go range=198:199 lang=go exported=false byte_range=6149:6207
+  sig=func() time.Time
+  doc=clock is overridable for tests.
+EDGES
+  ^contains=matrix/executor/tool.Registry
+
+NODE id=matrix/executor/tool.Registry#gate kind=field
+  digest=b3:301b7ecda76e4b842c7c9434a116876c7886df2ceeaea8fa780a8fce27a6d986 file=executor/tool/registry.go range=179:180 lang=go exported=false byte_range=5376:5465
+  sig=tool.CapabilityGate
+  doc=gate enforces SideEffectClass against the manifest's allowed set.
+EDGES
+  ^contains=matrix/executor/tool.Registry
+
+NODE id=matrix/executor/tool.Registry#manifest kind=field
+  digest=b3:cc96d8a136a8859d9955ac13b8ef94e33ba0dbe358ab855fd737ff38cbe4ef83 file=executor/tool/registry.go range=177:177 lang=go exported=false byte_range=5350:5373
+  sig=*tool.AgentManifest
+EDGES
+  ^contains=matrix/executor/tool.Registry
+
+NODE id=matrix/executor/tool.Registry#mcps kind=field
+  digest=b3:09f9cdd3700916fc37404cdb1ed00172cbebcb3288ab344e78833d83a44e5088 file=executor/tool/registry.go range=186:186 lang=go exported=false byte_range=5678:5705
+  sig=map[string]*tool.MCPTool
+EDGES
+  ^contains=matrix/executor/tool.Registry
+
+NODE id=matrix/executor/tool.Registry#mgr kind=field
+  digest=b3:15376220599e1af0d216ea9bfaf73f64f9772aa5038c9721dd563799a3ce73c9 file=executor/tool/registry.go range=189:191 lang=go exported=false byte_range=5795:5920
+  sig=*mcp.Manager
+  doc=mgr is the MCP server pool. nil = registry has no MCP backends\n(still useful for native-only tests).
+EDGES
+  ^contains=matrix/executor/tool.Registry
+
+NODE id=matrix/executor/tool.Registry#mu kind=field
+  digest=b3:714905a60b6af8baada0eebeb5872f201f54110baa29df5e336f95b69cfede24 file=executor/tool/registry.go range=182:185 lang=go exported=false byte_range=5468:5676
+  sig=sync.RWMutex
+  doc=mu guards the lookup tables. Tables are populated at Build() time\nand never modified afterwards in v1; mutex is here so a future\nhot-reload can flip the contents under a lock.
+EDGES
+  ^contains=matrix/executor/tool.Registry
+
+NODE id=matrix/executor/tool.Registry#natives kind=field
+  digest=b3:b56ab6012501c1f1d4333b1797a0357f826cefb3685a760515ef146da42c7dae file=executor/tool/registry.go range=187:187 lang=go exported=false byte_range=5736:5766
+  sig=map[string]*tool.NativeTool
+EDGES
+  ^contains=matrix/executor/tool.Registry
+
+NODE id=matrix/executor/tool.Registry.Get kind=method
+  digest=b3:e1b6e6abf65b825da2bc0222028918e0713b35afcc1f07dd0815b4d8c9765558 file=executor/tool/registry.go range=314:344 lang=go exported=true byte_range=9084:10038
+  sig=func (r *Registry) Get(uri string) (Tool, error)
+  doc=Get resolves a tool URI to a Tool. Returns ErrUnknownTool when the\nURI doesn't appear in the agent manifest.
+EDGES
+  ^contains=matrix/executor/tool.Registry
+  ^defines=matrix/executor/tool/registry.go
+
+NODE id=matrix/executor/tool.Registry.List kind=method
+  digest=b3:1a0e0c789447c20ffdcb60e6fcff72eae1b1f1f944bf12d463f87dfe9c80f137 file=executor/tool/registry.go range=346:360 lang=go exported=true byte_range=10040:10428
+  sig=func (r *Registry) List() []string
+  doc=List returns every tool URI in the registry, sorted alphabetically.\nUsed by mcl-tools CLI and audit log paths.
+EDGES
+  ^contains=matrix/executor/tool.Registry
+  ^defines=matrix/executor/tool/registry.go
+
+NODE id=matrix/executor/tool.Registry.Manifest kind=method
+  digest=b3:7d46b4d9f328280edbcbfec3d66453d76009f1fcdb8fa5dd254ceef8d735c605 file=executor/tool/registry.go range=362:363 lang=go exported=true byte_range=10430:10558
+  sig=func (r *Registry) Manifest() *AgentManifest
+  doc=Manifest returns the underlying agent manifest. Read-only.
+EDGES
+  ^contains=matrix/executor/tool.Registry
+  ^defines=matrix/executor/tool/registry.go
+
+NODE id=matrix/executor/tool.RegistryParams kind=type
+  digest=b3:fddbd109d4e1be2ec21ab3bc24084d63a331c4fed64d9d77aa9d298ea1ad8352 file=executor/tool/registry.go range=202:219 lang=go exported=true byte_range=6211:6858
+  sig=type RegistryParams struct {\n	Manifest	*AgentManifest\n	MCP		*mcp.Manager\n\n	// Gate optionally overrides the manifest-derived gate. nil = use\n	// AllowAllSideEffects narrowed by manifest.AllowedSideEffects.\n	Gate	CapabilityGate\n\n	// Clock for tests; defaults to time.Now.\n	Clock	func() time.Time\n\n	// CacheTTL enables the idempotent-read result cache (P2-5) when > 0.\n	// Results for tools in the cacheableTools allow-list (web_search,\n	// web_news) are served from cache within the TTL; side-effecting and\n	// money tools are never cached. Zero (the default) disables caching.\n	CacheTTL	time.Duration\n}
+  doc=RegistryParams configures a Registry.
+EDGES
+  contains=matrix/executor/tool.RegistryParams#CacheTTL,matrix/executor/tool.RegistryParams#Clock,matrix/executor/tool.RegistryParams#Gate,matrix/executor/tool.RegistryParams#MCP,matrix/executor/tool.RegistryParams#Manifest
+  ^defines=matrix/executor/tool/registry.go
+
+NODE id=matrix/executor/tool.RegistryParams#CacheTTL kind=field
+  digest=b3:1e9f2147de842f18b890261cdfe40ed5f0401a97d474d4f148c9d0b8c1286370 file=executor/tool/registry.go range=214:218 lang=go exported=true byte_range=6553:6856
+  sig=time.Duration
+  doc=CacheTTL enables the idempotent-read result cache (P2-5) when > 0.\nResults for tools in the cacheableTools allow-list (web_search,\nweb_news) are served from cache within the TTL; side-effecting and\nmoney tools are never cached. Zero (the default) disables caching.
+EDGES
+  ^contains=matrix/executor/tool.RegistryParams
+
+NODE id=matrix/executor/tool.RegistryParams#Clock kind=field
+  digest=b3:1f07f952d2af1c3092fb1b4c2ec8ab6e7e20b6de653fd0dfefd4500a5b51bc85 file=executor/tool/registry.go range=211:212 lang=go exported=true byte_range=6485:6550
+  sig=func() time.Time
+  doc=Clock for tests; defaults to time.Now.
+EDGES
+  ^contains=matrix/executor/tool.RegistryParams
+
+NODE id=matrix/executor/tool.RegistryParams#Gate kind=field
+  digest=b3:7fedd577a1d0be6646aa01e6571892d42338912db0a18e2c51004b73500addb5 file=executor/tool/registry.go range=207:209 lang=go exported=true byte_range=6331:6482
+  sig=tool.CapabilityGate
+  doc=Gate optionally overrides the manifest-derived gate. nil = use\nAllowAllSideEffects narrowed by manifest.AllowedSideEffects.
+EDGES
+  ^contains=matrix/executor/tool.RegistryParams
+
+NODE id=matrix/executor/tool.RegistryParams#MCP kind=field
+  digest=b3:b9647bbe20c7a4b2eecd81bd88dcaac9dcf27e27282d231843509e7d7afa18be file=executor/tool/registry.go range=205:205 lang=go exported=true byte_range=6307:6328
+  sig=*mcp.Manager
+EDGES
+  ^contains=matrix/executor/tool.RegistryParams
+
+NODE id=matrix/executor/tool.RegistryParams#Manifest kind=field
+  digest=b3:36cb52ee97e33cdef813597714d067c279b042450c0c86f9ab5ac91db3c9d971 file=executor/tool/registry.go range=204:204 lang=go exported=true byte_range=6282:6305
+  sig=*tool.AgentManifest
+EDGES
+  ^contains=matrix/executor/tool.RegistryParams
+
+NODE id=matrix/executor/tool.ResolveEnv kind=func
+  digest=b3:dac0ac69665f8a40ac38ec2ef1acef09a494985a7d2b3c8ea00574d6ea859e53 file=executor/tool/manifest.go range=340:353 lang=go exported=true byte_range=10954:11457
+  sig=func ResolveEnv(token string, lookup func(string) (string, bool)) (string, bool)
+  doc=ResolveEnv expands "$env:NAME" tokens against the supplied lookup\n(typically os.LookupEnv). Used by the manager when spawning servers.\n\nReturns the expanded string and ok=false when a reference fails to\nresolve. Literal values pass through unchanged.
+EDGES
+  ^defines=matrix/executor/tool/manifest.go
+
+NODE id=matrix/executor/tool.ResolveEnvList kind=func
+  digest=b3:7e4667388d36e7a27348ac4f130e1c1f6abb38e00b2a9d1185f4ae209644fb09 file=executor/tool/manifest.go range=355:377 lang=go exported=true byte_range=11459:12208
+  sig=func ResolveEnvList(in []string, lookup func(string) (string, bool)) ([]string, string, error)
+  doc=ResolveEnvList is the slice form: resolves every entry. Returns a\nnew slice plus the first unresolved name (if any).
+EDGES
+  ^defines=matrix/executor/tool/manifest.go
+
+NODE id=matrix/executor/tool.Result kind=type
+  digest=b3:b27a6cbf576422feedd2202b6a072de1024ef6b1feb48c497373a302530cda92 file=executor/tool/tool.go range=49:74 lang=go exported=true byte_range=1955:3131
+  sig=type Result struct {\n	// Content carries the typed return value(s). Text is the common\n	// case; image and embedded resources surface for media-producing\n	// tools (image-mcp, screenshot-mcp).\n	Content	[]Content	`json:"content"`\n\n	// IsError signals an in-band tool failure. Distinct from a Go-level\n	// err: IsError=true is "the tool ran and reports failure"\n	// (e.g. shell exit 1, fetch returned 404), whereas err is\n	// "we couldn't even invoke the tool" (transport, capability, etc.).\n	IsError	bool	`json:"is_error,omitempty"`\n\n	// CallID is a ULID assigned at dispatch entry by the registry.\n	// Pinned into the Matrix Event memory and the journal logs path\n	// for cross-referencing tool args ↔ tool results.\n	CallID	string	`json:"call_id,omitempty"`\n\n	// DurationMs is wall-clock latency of the call (set by registry\n	// dispatch, not by the underlying server).\n	DurationMs	int64	`json:"duration_ms,omitempty"`\n}
+  doc=Result is the typed outcome of a single Tool.Call.\n\nMirrors mcp.CallToolResult so MCPTool can pass through cleanly, with\nadded Matrix-specific fields (CallID, DurationMs) so the executor\ncan journal Event memories without re-deriving them.
+EDGES
+  contains=matrix/executor/tool.Result#CallID,matrix/executor/tool.Result#Content,matrix/executor/tool.Result#DurationMs,matrix/executor/tool.Result#IsError
+  ^defines=matrix/executor/tool/tool.go
+
+NODE id=matrix/executor/tool.Result#CallID kind=field
+  digest=b3:e87042cdd46ec2ff6fa27c7098e3c899cd6e90287a0bece6694a667405d65fc3 file=executor/tool/tool.go range=66:69 lang=go exported=true byte_range=2743:2968
+  sig=string
+  doc=CallID is a ULID assigned at dispatch entry by the registry.\nPinned into the Matrix Event memory and the journal logs path\nfor cross-referencing tool args ↔ tool results.
+EDGES
+  ^contains=matrix/executor/tool.Result
+
+NODE id=matrix/executor/tool.Result#Content kind=field
+  digest=b3:4e2709703f4512ce02d2296904e4e44cfcede14f562a6f98b096741aae366bd7 file=executor/tool/tool.go range=55:58 lang=go exported=true byte_range=2231:2437
+  sig=[]tool.Content
+  doc=Content carries the typed return value(s). Text is the common\ncase; image and embedded resources surface for media-producing\ntools (image-mcp, screenshot-mcp).
+EDGES
+  ^contains=matrix/executor/tool.Result
+
+NODE id=matrix/executor/tool.Result#DurationMs kind=field
+  digest=b3:a6929f05c8920735f5940fcc1d20022e6e69624857d6d3166c6e069a73f11abf file=executor/tool/tool.go range=71:73 lang=go exported=true byte_range=2971:3129
+  sig=int64
+  doc=DurationMs is wall-clock latency of the call (set by registry\ndispatch, not by the underlying server).
+EDGES
+  ^contains=matrix/executor/tool.Result
+
+NODE id=matrix/executor/tool.Result#IsError kind=field
+  digest=b3:bd41f4f36360ed2aa288d2268e5f7cb05fd270c52dc2d79222ecd61df5e83f55 file=executor/tool/tool.go range=60:64 lang=go exported=true byte_range=2440:2740
+  sig=bool
+  doc=IsError signals an in-band tool failure. Distinct from a Go-level\nerr: IsError=true is "the tool ran and reports failure"\n(e.g. shell exit 1, fetch returned 404), whereas err is\n"we couldn't even invoke the tool" (transport, capability, etc.).
+EDGES
+  ^contains=matrix/executor/tool.Result
+
+NODE id=matrix/executor/tool.ServerEntry kind=type
+  digest=b3:285c40e162f9c7b226c207123ce45f64ed58b4bf8146ab522abba429e0e75ef5 file=executor/tool/manifest.go range=52:96 lang=go exported=true byte_range=1942:3861
+  sig=type ServerEntry struct {\n	// Alias is the local logical name. Used in matrix://tool/mcp/<alias>/...\n	// URIs (Q17) and decouples from the underlying package name so the\n	// agent can swap implementations without changing every plan that\n	// referenced the tool.\n	Alias	string	`json:"alias"`\n\n	// Transport is "stdio" or "http". Q15 lock.\n	Transport	string	`json:"transport"`\n\n	// PackageDigest is the sha256 of the published server package\n	// (e.g. an npm tarball or a uv wheel). Q22 hard rule. Validation\n	// against the actual installed package is the responsibility of\n	// the operator — Matrix records it in the agent manifest so\n	// auditors can re-derive what code was running for a given Intent.\n	PackageDigest	string	`json:"package_digest"`\n\n	// Version is the human-readable version string for the server\n	// package (e.g. "2024.11.1"). Mirrors PackageDigest semantically;\n	// PackageDigest is the source-of-truth for replay attestation.\n	Version	string	`json:"version"`\n\n	// Command + Args + Env apply when Transport=="stdio".\n	Command	string		`json:"command,omitempty"`\n	Args	[]string	`json:"args,omitempty"`\n\n	// Env is a list of "KEY=VALUE" entries OR "KEY=$env:NAME" refs\n	// (Q18). EnvRef tokens are resolved at spawn time from the\n	// executor process's environment; literal values pass through.\n	// Sensitive values MUST be passed as $env: refs so they don't\n	// leak through manifest content addressing.\n	Env	[]string	`json:"env,omitempty"`\n\n	// Endpoint applies when Transport=="http".\n	Endpoint	string	`json:"endpoint,omitempty"`\n\n	// Headers apply when Transport=="http". Same env-var ref syntax\n	// as Env.\n	Headers	map[string]string	`json:"headers,omitempty"`\n\n	// Tools enumerates the tools this server is expected to advertise.\n	// Manager verifies tools/list at startup matches exactly (Q21).\n	Tools	[]ToolEntry	`json:"tools"`\n}
+  doc=ServerEntry is one MCP server in an agent's manifest.
+EDGES
+  contains=matrix/executor/tool.ServerEntry#Alias,matrix/executor/tool.ServerEntry#Args,matrix/executor/tool.ServerEntry#Command,matrix/executor/tool.ServerEntry#Endpoint,matrix/executor/tool.ServerEntry#Env,matrix/executor/tool.ServerEntry#Headers,matrix/executor/tool.ServerEntry#PackageDigest,matrix/executor/tool.ServerEntry#Tools,matrix/executor/tool.ServerEntry#Transport,matrix/executor/tool.ServerEntry#Version,matrix/executor/tool.ServerEntry.Validate
+  ^defines=matrix/executor/tool/manifest.go
+
+NODE id=matrix/executor/tool.ServerEntry#Alias kind=field
+  digest=b3:52a3c5df79a00b8261ad84edd6a81d41f01818c50341d688c26853b6535ac9fe file=executor/tool/manifest.go range=54:58 lang=go exported=true byte_range=2026:2290
+  sig=string
+  doc=Alias is the local logical name. Used in matrix://tool/mcp/<alias>/...\nURIs (Q17) and decouples from the underlying package name so the\nagent can swap implementations without changing every plan that\nreferenced the tool.
+EDGES
+  ^contains=matrix/executor/tool.ServerEntry
+
+NODE id=matrix/executor/tool.ServerEntry#Args kind=field
+  digest=b3:4c4e3b40692f37b294c6f6a867473fd29036c025196c37f8ccba4c84fed8876d file=executor/tool/manifest.go range=77:77 lang=go exported=true byte_range=3086:3126
+  sig=[]string
+EDGES
+  ^contains=matrix/executor/tool.ServerEntry
+
+NODE id=matrix/executor/tool.ServerEntry#Command kind=field
+  digest=b3:7e086e2a2b68972b1ffb36b1230805416a596306665c48fc4e89c7c89c1c88b1 file=executor/tool/manifest.go range=75:76 lang=go exported=true byte_range=2985:3084
+  sig=string
+  doc=Command + Args + Env apply when Transport=="stdio".
+EDGES
+  ^contains=matrix/executor/tool.ServerEntry
+
+NODE id=matrix/executor/tool.ServerEntry#Endpoint kind=field
+  digest=b3:b7f35a1f9c752595121f7ad1e65a117f554a9a7d7aae75120a96cd9b4f3acbb0 file=executor/tool/manifest.go range=86:87 lang=go exported=true byte_range=3468:3556
+  sig=string
+  doc=Endpoint applies when Transport=="http".
+EDGES
+  ^contains=matrix/executor/tool.ServerEntry
+
+NODE id=matrix/executor/tool.ServerEntry#Env kind=field
+  digest=b3:f9339551d717570fc7d032e7eee8a41f0202e77222f87081e9af87b4c3c6e1da file=executor/tool/manifest.go range=79:84 lang=go exported=true byte_range=3129:3465
+  sig=[]string
+  doc=Env is a list of "KEY=VALUE" entries OR "KEY=$env:NAME" refs\n(Q18). EnvRef tokens are resolved at spawn time from the\nexecutor process's environment; literal values pass through.\nSensitive values MUST be passed as $env: refs so they don't\nleak through manifest content addressing.
+EDGES
+  ^contains=matrix/executor/tool.ServerEntry
+
+NODE id=matrix/executor/tool.ServerEntry#Headers kind=field
+  digest=b3:ff77e7655326ebd5a30501f3774ca2900c857d6820f7cb0926cdf08260b0df68 file=executor/tool/manifest.go range=89:91 lang=go exported=true byte_range=3559:3689
+  sig=map[string]string
+  doc=Headers apply when Transport=="http". Same env-var ref syntax\nas Env.
+EDGES
+  ^contains=matrix/executor/tool.ServerEntry
+
+NODE id=matrix/executor/tool.ServerEntry#PackageDigest kind=field
+  digest=b3:a824f3b8ceb5b28b5105e0bf444600afd2a89b022decc2f9757bac1d463acab0 file=executor/tool/manifest.go range=63:68 lang=go exported=true byte_range=2377:2751
+  sig=string
+  doc=PackageDigest is the sha256 of the published server package\n(e.g. an npm tarball or a uv wheel). Q22 hard rule. Validation\nagainst the actual installed package is the responsibility of\nthe operator — Matrix records it in the agent manifest so\nauditors can re-derive what code was running for a given Intent.
+EDGES
+  ^contains=matrix/executor/tool.ServerEntry
+
+NODE id=matrix/executor/tool.ServerEntry#Tools kind=field
+  digest=b3:3c19d8d06b8e52c167e3f58ca2cee1d80d09752d313a629f18822fa9eb09887b file=executor/tool/manifest.go range=93:95 lang=go exported=true byte_range=3692:3859
+  sig=[]tool.ToolEntry
+  doc=Tools enumerates the tools this server is expected to advertise.\nManager verifies tools/list at startup matches exactly (Q21).
+EDGES
+  ^contains=matrix/executor/tool.ServerEntry
+
+NODE id=matrix/executor/tool.ServerEntry#Transport kind=field
+  digest=b3:3d8a4ea41066c805e25b26be2e11d7b4d14aa2a4bb0366097928400715ab65c8 file=executor/tool/manifest.go range=60:61 lang=go exported=true byte_range=2293:2374
+  sig=string
+  doc=Transport is "stdio" or "http". Q15 lock.
+EDGES
+  ^contains=matrix/executor/tool.ServerEntry
+
+NODE id=matrix/executor/tool.ServerEntry#Version kind=field
+  digest=b3:4763a81a492715f673f98ddd6458b902b3a8016c025f2173bdc2296862aa3e7c file=executor/tool/manifest.go range=70:73 lang=go exported=true byte_range=2754:2982
+  sig=string
+  doc=Version is the human-readable version string for the server\npackage (e.g. "2024.11.1"). Mirrors PackageDigest semantically;\nPackageDigest is the source-of-truth for replay attestation.
+EDGES
+  ^contains=matrix/executor/tool.ServerEntry
+
+NODE id=matrix/executor/tool.ServerEntry.Validate kind=method
+  digest=b3:2c9a43eae320916d78c166a322a24dea78b3a9872cc349a43a64ead3aa23db38 file=executor/tool/manifest.go range=202:248 lang=go exported=true byte_range=7332:8766
+  sig=func (s *ServerEntry) Validate() error
+  doc=Validate enforces ServerEntry invariants.
+EDGES
+  ^contains=matrix/executor/tool.ServerEntry
+  ^defines=matrix/executor/tool/manifest.go
+
+NODE id=matrix/executor/tool.SideEffectChain kind=const
+  digest=b3:8a521e2e602c7cdd0341f3446902e714d72afbc78cba3480b7026607d9295871 file=executor/tool/tool.go range=94:101 lang=go exported=true byte_range=3766:4047
+  sig=untyped string
+  doc=SideEffectClass constants — closed enum mirrored from\nMCL/ir/plan.go ValidSideEffectClasses to avoid a circular import.
+EDGES
+  ^defines=matrix/executor/tool/tool.go
+
+NODE id=matrix/executor/tool.SideEffectNetwork kind=const
+  digest=b3:de1025c456ae0cb2a2e66ee185044d2e63593b4242aefb0774e2de4b4fe817b1 file=executor/tool/tool.go range=94:99 lang=go exported=true byte_range=3766:3989
+  sig=untyped string
+  doc=SideEffectClass constants — closed enum mirrored from\nMCL/ir/plan.go ValidSideEffectClasses to avoid a circular import.
+EDGES
+  ^defines=matrix/executor/tool/tool.go
+
+NODE id=matrix/executor/tool.SideEffectRead kind=const
+  digest=b3:d3ff3cb998556755702d78659fa573cfbedbed08a1169355c903841969fb5cbb file=executor/tool/tool.go range=94:97 lang=go exported=true byte_range=3766:3929
+  sig=untyped string
+  doc=SideEffectClass constants — closed enum mirrored from\nMCL/ir/plan.go ValidSideEffectClasses to avoid a circular import.
+EDGES
+  ^defines=matrix/executor/tool/tool.go
+
+NODE id=matrix/executor/tool.SideEffectShell kind=const
+  digest=b3:88eab0d425fcabf17615ba765d84f61444261e147980864b6c69f15baa7096bf file=executor/tool/tool.go range=94:100 lang=go exported=true byte_range=3766:4018
+  sig=untyped string
+  doc=SideEffectClass constants — closed enum mirrored from\nMCL/ir/plan.go ValidSideEffectClasses to avoid a circular import.
+EDGES
+  ^defines=matrix/executor/tool/tool.go
+
+NODE id=matrix/executor/tool.SideEffectWrite kind=const
+  digest=b3:669f85d2d81eb203fef40ef4e6b323ac07af8293220ac525fa4e7c22ac0028b3 file=executor/tool/tool.go range=94:98 lang=go exported=true byte_range=3766:3958
+  sig=untyped string
+  doc=SideEffectClass constants — closed enum mirrored from\nMCL/ir/plan.go ValidSideEffectClasses to avoid a circular import.
+EDGES
+  ^defines=matrix/executor/tool/tool.go
+
+NODE id=matrix/executor/tool.Tool kind=interface
+  digest=b3:5d843d2ef5ea6f71a33a26dc60b21c9799782357fa729a1f943a33c1119e8b6e file=executor/tool/tool.go range=23:47 lang=go exported=true byte_range=873:1953
+  sig=type Tool interface {\n	// URI returns the canonical matrix://tool/... URI this tool exposes,\n	// version-pinned (Q22).\n	URI() string\n\n	// Description is the LLM-facing summary used for tool selection.\n	// May embed escape-text from server (text/markdown allowed).\n	Description() string\n\n	// SideEffectClass declares what kind of side-effect this tool can\n	// have. Closed enum from MCL/ir/plan.go ValidSideEffectClasses.\n	// Used by the executor's capability gate before dispatch.\n	SideEffectClass() string\n\n	// Call invokes the tool. Args MUST already be schema-validated by\n	// the caller (registry does this once at dispatch entry); Call may\n	// assume well-formed input.\n	Call(ctx context.Context, args map[string]interface{}) (*Result, error)\n}
+  doc=Tool is the uniform interface that every Matrix tool implementation\nsatisfies. The plan walker (next session) holds *Tool values\n(resolved via Registry.Get(uri)) and invokes Call.\n\nResult.IsError captures in-band tool failures (e.g. "shell exit 1");\ntransport / protocol / capability errors come back through err.
+EDGES
+  ^implements=matrix/executor/tool.MCPTool,matrix/executor/tool.NativeTool
+  ^defines=matrix/executor/tool/tool.go
+
+NODE id=matrix/executor/tool.ToolEntry kind=type
+  digest=b3:951fce186b0eb1f7df085d4c0ddcbd2333958b0e800f91fad717844bcc6b28f8 file=executor/tool/manifest.go range=98:118 lang=go exported=true byte_range=3863:4659
+  sig=type ToolEntry struct {\n	// Name is the server-local tool name (e.g. "read_text_file"). Used\n	// as the suffix of the matrix://tool/mcp/<alias>/<name>@<version>\n	// URI.\n	Name	string	`json:"name"`\n\n	// Description is human-readable; threaded into the executor model's\n	// tool-selection prompt verbatim.\n	Description	string	`json:"description,omitempty"`\n\n	// SideEffectClass is one of ValidSideEffectClasses. Required.\n	SideEffectClass	string	`json:"side_effect_class"`\n\n	// TimeoutMs is the per-call timeout in milliseconds. Zero =\n	// registry default (30s).\n	TimeoutMs	int	`json:"timeout_ms,omitempty"`\n}
+  doc=ToolEntry is a single tool exposed by a server.
+EDGES
+  contains=matrix/executor/tool.ToolEntry#Description,matrix/executor/tool.ToolEntry#Name,matrix/executor/tool.ToolEntry#SideEffectClass,matrix/executor/tool.ToolEntry#TimeoutMs,matrix/executor/tool.ToolEntry.Validate
+  ^defines=matrix/executor/tool/manifest.go
+
+NODE id=matrix/executor/tool.ToolEntry#Description kind=field
+  digest=b3:b0527d2939a915d9dfcdd864110777f736783b0d125a7f8b428462f05a5decc5 file=executor/tool/manifest.go range=105:107 lang=go exported=true byte_range=4113:4268
+  sig=string
+  doc=Description is human-readable; threaded into the executor model's\ntool-selection prompt verbatim.
+EDGES
+  ^contains=matrix/executor/tool.ToolEntry
+
+NODE id=matrix/executor/tool.ToolEntry#Name kind=field
+  digest=b3:7d5052c7b0584c3ac9e90510794b9169fd0862fc051acf8b9489a98b82749301 file=executor/tool/manifest.go range=100:103 lang=go exported=true byte_range=3939:4110
+  sig=string
+  doc=Name is the server-local tool name (e.g. "read_text_file"). Used\nas the suffix of the matrix://tool/mcp/<alias>/<name>@<version>\nURI.
+EDGES
+  ^contains=matrix/executor/tool.ToolEntry
+
+NODE id=matrix/executor/tool.ToolEntry#SideEffectClass kind=field
+  digest=b3:3f8eda404cbae4a700450536b785b6652f6c5a4bf796304ab58dcb7a2aa0f54c file=executor/tool/manifest.go range=109:110 lang=go exported=true byte_range=4271:4384
+  sig=string
+  doc=SideEffectClass is one of ValidSideEffectClasses. Required.
+EDGES
+  ^contains=matrix/executor/tool.ToolEntry
+
+NODE id=matrix/executor/tool.ToolEntry#TimeoutMs kind=field
+  digest=b3:99eb6f9c870832569becf1d6945761ae3629cd89452256e1b4c246cf6780766e file=executor/tool/manifest.go range=112:114 lang=go exported=true byte_range=4387:4520
+  sig=int
+  doc=TimeoutMs is the per-call timeout in milliseconds. Zero =\nregistry default (30s).
+EDGES
+  ^contains=matrix/executor/tool.ToolEntry
+
+NODE id=matrix/executor/tool.ToolEntry.Validate kind=method
+  digest=b3:eb98550fe77ae7687f6fbe8740e403c7706ab27327de60b9c16b68b3b903e1d9 file=executor/tool/manifest.go range=250:265 lang=go exported=true byte_range=8768:9225
+  sig=func (te *ToolEntry) Validate() error
+  doc=Validate enforces ToolEntry invariants.
+EDGES
+  ^contains=matrix/executor/tool.ToolEntry
+  ^defines=matrix/executor/tool/manifest.go
+
+NODE id=matrix/executor/tool.ToolURI kind=type
+  digest=b3:5e562d1dae221f580f73e4d05b3cb5d0d20360f71d90efc86653c55bd02f2089 file=executor/tool/uri.go range=11:29 lang=go exported=true byte_range=213:870
+  sig=type ToolURI struct {\n	Raw		string\n	Provider	string	// "mcp" OR one of validNativeNamespaces\n	Server		string	// MCP form only; empty for native\n	Name		string\n	Version		string\n}
+  doc=ToolURI is a parsed matrix:// tool URI.\n\nForms (Q17 lock):\n\n	matrix://tool/mcp/<server-alias>/<tool-name>@<version>     MCP-backed\n	matrix://tool/<namespace>/<tool-name>@<version>            native (chain)\n\nThe MCP form has Provider="mcp" and Server set to the alias.\nThe native form has Provider equal to one of the closed S6\nnamespaces (argus/orob/plv/...); Server is unused.\n\nBare-head URIs (no @version) are rejected at parse time per S4.
+EDGES
+  contains=matrix/executor/tool.ToolURI#Name,matrix/executor/tool.ToolURI#Provider,matrix/executor/tool.ToolURI#Raw,matrix/executor/tool.ToolURI#Server,matrix/executor/tool.ToolURI#Version,matrix/executor/tool.ToolURI.IsMCP,matrix/executor/tool.ToolURI.IsNative,matrix/executor/tool.ToolURI.String
+  ^defines=matrix/executor/tool/uri.go
+
+NODE id=matrix/executor/tool.ToolURI#Name kind=field
+  digest=b3:d1e505b7d48f50b6d5c978841b9ad9673c9252cbdab6035e1827cd447ec3be97 file=executor/tool/uri.go range=27:27 lang=go exported=true byte_range=836:851
+  sig=string
+EDGES
+  ^contains=matrix/executor/tool.ToolURI
+
+NODE id=matrix/executor/tool.ToolURI#Provider kind=field
+  digest=b3:1c67b4872cd0669e85a25ce26b1d9295c4447bda7d2efed19f690c3ac06134cf file=executor/tool/uri.go range=25:25 lang=go exported=true byte_range=726:741
+  sig=string
+EDGES
+  ^contains=matrix/executor/tool.ToolURI
+
+NODE id=matrix/executor/tool.ToolURI#Raw kind=field
+  digest=b3:e925f4aa7c45ec6232691dcecfd12d7f8de96680cee6115c2af225fce50e1810 file=executor/tool/uri.go range=24:24 lang=go exported=true byte_range=709:724
+  sig=string
+EDGES
+  ^contains=matrix/executor/tool.ToolURI
+
+NODE id=matrix/executor/tool.ToolURI#Server kind=field
+  digest=b3:0e34a16f2102a027e64213b4e9e2a58b77a54e33edb4504f52b015e4a20d5620 file=executor/tool/uri.go range=26:26 lang=go exported=true byte_range=784:799
+  sig=string
+EDGES
+  ^contains=matrix/executor/tool.ToolURI
+
+NODE id=matrix/executor/tool.ToolURI#Version kind=field
+  digest=b3:29e6c6b15b12210c9d438fd3c3a9a84225d5075c394fc2a0da86ba0aa62f9b0b file=executor/tool/uri.go range=28:28 lang=go exported=true byte_range=853:868
+  sig=string
+EDGES
+  ^contains=matrix/executor/tool.ToolURI
+
+NODE id=matrix/executor/tool.ToolURI.IsMCP kind=method
+  digest=b3:2a286217d8097c37fd99087158555853559e28e3ecc5ebd2610c76511745dd0f file=executor/tool/uri.go range=33:34 lang=go exported=true byte_range=909:1017
+  sig=func (u ToolURI) IsMCP() bool
+  doc=IsMCP reports whether the URI is MCP-backed.
+EDGES
+  ^contains=matrix/executor/tool.ToolURI
+  ^defines=matrix/executor/tool/uri.go
+
+NODE id=matrix/executor/tool.ToolURI.IsNative kind=method
+  digest=b3:95f354d18b82f68d11b34e40bd4b54290d48ccfbe44fb1fa89ba0472d53955ea file=executor/tool/uri.go range=36:37 lang=go exported=true byte_range=1019:1156
+  sig=func (u ToolURI) IsNative() bool
+  doc=IsNative reports whether the URI is a native chain tool.
+EDGES
+  ^contains=matrix/executor/tool.ToolURI
+  ^defines=matrix/executor/tool/uri.go
+
+NODE id=matrix/executor/tool.ToolURI.String kind=method
+  digest=b3:fd4c221d9eb013527d714014a8f137214de1fa6ac62f678f4c97579cf0eb983c file=executor/tool/uri.go range=39:45 lang=go exported=true byte_range=1158:1426
+  sig=func (u ToolURI) String() string
+  doc=String returns the URI in canonical form.
+EDGES
+  ^contains=matrix/executor/tool.ToolURI
+  ^defines=matrix/executor/tool/uri.go
+
+NODE id=matrix/executor/tool.ValidSideEffectClasses kind=var
+  digest=b3:1459a1ccb2ed77b4aaafe3c1cc663d5492a0cff4ec92b570aeb221d35fd8a44a file=executor/tool/tool.go range=104:111 lang=go exported=true byte_range=4051:4302
+  sig=map[string]bool
+  doc=ValidSideEffectClasses is the closed enum used by the capability gate.
+EDGES
+  ^defines=matrix/executor/tool/tool.go
+
+NODE id=matrix/executor/tool.cacheEntry kind=type
+  digest=b3:f6b7688daf762a8c8c740d713c15a1a85f324040e2092ce31ce90c5a49dbedfc file=executor/tool/registry.go range=40:44 lang=go exported=false byte_range=1151:1280
+  sig=type cacheEntry struct {\n	result	*Result\n	expiry	time.Time\n}
+  doc=cacheEntry stores one cached Call result with its expiry instant.
+EDGES
+  contains=matrix/executor/tool.cacheEntry#expiry,matrix/executor/tool.cacheEntry#result
+  ^defines=matrix/executor/tool/registry.go
+
+NODE id=matrix/executor/tool.cacheEntry#expiry kind=field
+  digest=b3:8a58e047493e0b407664fb37116ef77883230d9c23a2da2e5a094db5c5764fa7 file=executor/tool/registry.go range=43:43 lang=go exported=false byte_range=1262:1278
+  sig=time.Time
+EDGES
+  ^contains=matrix/executor/tool.cacheEntry
+
+NODE id=matrix/executor/tool.cacheEntry#result kind=field
+  digest=b3:c0d88c3e9af0512f361ae5923e1aa8db55c3e5b79681f32118954a4cb110cf84 file=executor/tool/registry.go range=42:42 lang=go exported=false byte_range=1246:1260
+  sig=*tool.Result
+EDGES
+  ^contains=matrix/executor/tool.cacheEntry
+
+NODE id=matrix/executor/tool.cacheKey kind=func
+  digest=b3:73d3bf4b60a83aec9c2c00a8877250e14cbf20f4d400cf018831a46daf9b225d file=executor/tool/registry.go range=71:85 lang=go exported=false byte_range=2382:2902
+  sig=func cacheKey(uri string, args map[string]interface{}) (string, bool)
+  doc=cacheKey builds the canonical cache key for one (uri, args) pair. The\nargs map is JSON-encoded with sorted keys so two calls with the same\narguments in different map-iteration order produce the same key\n(determinism, i6).
+EDGES
+  ^defines=matrix/executor/tool/registry.go
+
+NODE id=matrix/executor/tool.cacheableTools kind=var
+  digest=b3:d90da26d99e46c747769080ea95f42738285fccb5a56ca19e956d061521cdc8c file=executor/tool/registry.go range=46:56 lang=go exported=false byte_range=1282:1811
+  sig=map[string]bool
+  doc=cacheableTools is the closed allow-list of tool NAMES (server-local,\ni.e. the ToolEntry.Name, NOT the function name) whose results are\nsafe to cache: pure read-only idempotent lookups. web_search /\nweb_news return ranked results for a fixed query and never mutate\nstate. Anything that writes, shells out, touches the chain, or moves\nfunds is excluded by omission — "NEVER cache side-effecting or money\ntools" (P2-5 mandate).
+EDGES
+  ^defines=matrix/executor/tool/registry.go
+
+NODE id=matrix/executor/tool.canonicalArgs kind=func
+  digest=b3:f54d45a3566a6747c0a8b9bab23db3acd41645b11e04b02eaba464a1beebcf6b file=executor/tool/registry.go range=87:118 lang=go exported=false byte_range=2904:3623
+  sig=func canonicalArgs(args map[string]interface{}) ([]byte, error)
+  doc=canonicalArgs marshals args to JSON with sorted object keys so the\ncache key is deterministic regardless of map iteration order.
+EDGES
+  ^defines=matrix/executor/tool/registry.go
+
+NODE id=matrix/executor/tool.embeddedURI kind=func
+  digest=b3:a4ca48e10471bdb55d9ecbd5e0bcbe0000662311b8f8e500b9f854dcb0d030a9 file=executor/tool/registry.go range=475:480 lang=go exported=false byte_range=13817:13913
+  sig=func embeddedURI(r *mcp.EmbeddedResource) string
+EDGES
+  ^defines=matrix/executor/tool/registry.go
+
+NODE id=matrix/executor/tool.isCacheable kind=func
+  digest=b3:1cb4db4d6d3c0b0ac5c81b58243aabcead8f3f3b731ed1fee6c4f22b42d8bbca file=executor/tool/registry.go range=58:69 lang=go exported=false byte_range=1813:2380
+  sig=func isCacheable(name, sideEffect string) bool
+  doc=isCacheable reports whether a tool's results may be cached, given its\nserver-local name and declared side-effect class. Both conditions must\nhold: the name must be in the explicit allow-list AND the side-effect\nclass must be a read-class (SideEffectRead). The double gate means a\ntool named web_search that someone later retags as "write" stops\nbeing cached automatically — defense in depth against manifest drift.
+EDGES
+  ^defines=matrix/executor/tool/registry.go
+
+NODE id=matrix/executor/tool.newCallID kind=func
+  digest=b3:6de3b07100db268965c83aa82f7acf9817c69d47a0ae62c0cb485d1ceacdf25c file=executor/tool/registry.go range=520:527 lang=go exported=false byte_range=15336:15650
+  sig=func newCallID() string
+  doc=newCallID generates a 16-byte random hex id for tool invocations.\nNot a ULID (tool layer doesn't depend on cortex's oklog/ulid); we\nuse crypto/rand so the id is collision-free even under high concurrency.
+EDGES
+  ^defines=matrix/executor/tool/registry.go
+
+NODE id=matrix/executor/tool.newResultCache kind=func
+  digest=b3:33ae2372d2335474d878526d69dbb24ae07070954260ae499453440677868296 file=executor/tool/registry.go range=158:168 lang=go exported=false byte_range=4675:5017
+  sig=func newResultCache(ttl time.Duration, now func() time.Time) *resultCache
+  doc=newResultCache constructs a cache. ttl<=0 returns a disabled cache\n(all get/put are no-ops), which is the default.
+EDGES
+  ^defines=matrix/executor/tool/registry.go
+
+NODE id=matrix/executor/tool.resultCache kind=type
+  digest=b3:20085b82eb610d28731adf123fd72593d7e7ec22d482329ff1d3793d3a9b105b file=executor/tool/registry.go range=20:38 lang=go exported=false byte_range=322:1149
+  sig=type resultCache struct {\n	ttl	time.Duration\n	now	func() time.Time\n	mu	sync.Mutex\n	reqs	map[string]cacheEntry\n}
+  doc=resultCache is an OPT-IN TTL cache for idempotent read-only tool\nresults (P2-5). It is keyed by (toolURI, canonicalArgsJSON) and only\never stores results for tools explicitly listed in cacheableTools\n(start: web_search, web_news). Side-effecting, shell, chain, and\nmoney tools are NEVER cached regardless of args.\n\nThe cache lives in the Registry (the layer that owns MCPTool.Call and\nknows each tool's declared side-effect class), NOT in mcp.Manager —\nthe server-pool lifecycle stays untouched (Q16 acceptance).\n\nThread-safe. A zero CacheTTL disables caching entirely (the default\nfor tests and for any production path that hasn't opted in via\nNEO_MCP_CACHE_TTL_SECONDS).
+EDGES
+  contains=matrix/executor/tool.resultCache#mu,matrix/executor/tool.resultCache#now,matrix/executor/tool.resultCache#reqs,matrix/executor/tool.resultCache#ttl,matrix/executor/tool.resultCache.get,matrix/executor/tool.resultCache.put
+  ^defines=matrix/executor/tool/registry.go
+
+NODE id=matrix/executor/tool.resultCache#mu kind=field
+  digest=b3:8ff013add0648f234c556ef7fe92a8d392586bbbfe3b9662c99f965b99befec0 file=executor/tool/registry.go range=36:36 lang=go exported=false byte_range=1104:1119
+  sig=sync.Mutex
+EDGES
+  ^contains=matrix/executor/tool.resultCache
+
+NODE id=matrix/executor/tool.resultCache#now kind=field
+  digest=b3:6ea2cf3f3fc5dc8789d770dc65470631a24d044bbf46fa3e4b9efabae1825463 file=executor/tool/registry.go range=35:35 lang=go exported=false byte_range=1081:1102
+  sig=func() time.Time
+EDGES
+  ^contains=matrix/executor/tool.resultCache
+
+NODE id=matrix/executor/tool.resultCache#reqs kind=field
+  digest=b3:39a7d0aa4e0d49b473311aa819a5b177869567c0406225f66ce7102b6fd1338f file=executor/tool/registry.go range=37:37 lang=go exported=false byte_range=1121:1147
+  sig=map[string]tool.cacheEntry
+EDGES
+  ^contains=matrix/executor/tool.resultCache
+
+NODE id=matrix/executor/tool.resultCache#ttl kind=field
+  digest=b3:859b0e87c4f3b21c447e613e0689720672c028e9c3562f4ab3402f1a78342ee7 file=executor/tool/registry.go range=34:34 lang=go exported=false byte_range=1061:1079
+  sig=time.Duration
+EDGES
+  ^contains=matrix/executor/tool.resultCache
+
+NODE id=matrix/executor/tool.resultCache.get kind=method
+  digest=b3:4cdf0c9e40d75ed8181374935be974eadc8f5473e1ba54943f36bf0e5285d330 file=executor/tool/registry.go range=120:138 lang=go exported=false byte_range=3625:4060
+  sig=func (c *resultCache) get(key string) (*Result, bool)
+  doc=get returns a cached result if present and not expired.
+EDGES
+  ^contains=matrix/executor/tool.resultCache
+  ^defines=matrix/executor/tool/registry.go
+
+NODE id=matrix/executor/tool.resultCache.put kind=method
+  digest=b3:04a2298128abbe86ab11468c444a8f01954820cba286ff05154b5bf75c3dec40 file=executor/tool/registry.go range=140:156 lang=go exported=false byte_range=4062:4673
+  sig=func (c *resultCache) put(key string, res *Result)
+  doc=put stores a result with the configured TTL. No-op when caching is\ndisabled (ttl<=0) or the result is an in-band error (we don't cache\nfailures — a transient IsError shouldn't poison subsequent calls).
+EDGES
+  ^contains=matrix/executor/tool.resultCache
+  ^defines=matrix/executor/tool/registry.go
+
+NODE id=matrix/executor/tool.sortStrings kind=func
+  digest=b3:df4b82b26f2a8b2a21322020d4e731214792b66f10a6c60c1996446d8ebc36a0 file=executor/tool/registry.go range=529:540 lang=go exported=false byte_range=15652:15961
+  sig=func sortStrings(s []string)
+  doc=sortStrings is a small in-package sort to avoid importing sort from\nevery consumer.
+EDGES
+  ^defines=matrix/executor/tool/registry.go
+
+NODE id=matrix/executor/tool.teTimeout kind=func
+  digest=b3:70faaa429e965d4fcc0d3174c9fa7bcab78614ba511599fa179d3b76ecda5df4 file=executor/tool/registry.go range=305:312 lang=go exported=false byte_range=8820:9082
+  sig=func teTimeout(ms int) time.Duration
+  doc=teTimeout maps the manifest TimeoutMs (0 = default) to a duration\nused by MCPTool.Call. 30s default mirrors http.DefaultClient.
+EDGES
+  ^defines=matrix/executor/tool/registry.go
+
+NODE id=matrix/executor/tool.toolScheme kind=const
+  digest=b3:43308593e80bd8d042052f58ba7a26588146d0ace6127d2adf6ff184e0293606 file=executor/tool/uri.go range=31:31 lang=go exported=false byte_range=878:907
+  sig=untyped string
+EDGES
+  ^defines=matrix/executor/tool/uri.go
+
+NODE id=matrix/executor/tool.validAlias kind=func
+  digest=b3:5cbfac9676f2c4b9b438f5875fadd518af4d9d02ff2b3abd5cd4f533aaf9a68a file=executor/tool/manifest.go range=300:316 lang=go exported=false byte_range=10182:10527
+  sig=func validAlias(s string) bool
+  doc=validAlias permits lowercase letters, digits, hyphens. No '/' so\nthe URI parser can split unambiguously.
+EDGES
+  ^defines=matrix/executor/tool/manifest.go
+
+NODE id=matrix/executor/tool.validDigest kind=func
+  digest=b3:6856af60a89084e17326a525f5f25248646c376f9de8a8fb5084ca6ffd316aa2 file=executor/tool/manifest.go range=318:338 lang=go exported=false byte_range=10529:10952
+  sig=func validDigest(d string) bool
+  doc=validDigest checks the "sha256:<64-hex>" form. Strict to keep\nchain-attestation surface clean.
+EDGES
+  ^defines=matrix/executor/tool/manifest.go
+
+NODE id=matrix/executor/tool.validNativeNamespace kind=func
+  digest=b3:f56b1f2f94a3cc6dacb4bf1703e628f5af08cb7ca969194ec9ffed06359c5c82 file=executor/tool/manifest.go range=298:298 lang=go exported=false byte_range=10102:10180
+  sig=func validNativeNamespace(ns string) bool
+EDGES
+  ^defines=matrix/executor/tool/manifest.go
+
+NODE id=matrix/executor/tool.validNativeNamespaces kind=var
+  digest=b3:c02e899643b163c5c211ee53985c29d96787af6b24f19a4dbe2912a96ca82a94 file=executor/tool/manifest.go range=286:296 lang=go exported=false byte_range=9839:10100
+  sig=map[string]bool
+  doc=validNativeNamespaces is the closed S6 set per research/05.
+EDGES
+  ^defines=matrix/executor/tool/manifest.go
+
+NODE id=matrix/executor/tool.validVersion kind=func
+  digest=b3:19cd82124c10b0ed0271e128c37192c911248574246be8d96db29248344bb177 file=executor/tool/uri.go range=105:123 lang=go exported=false byte_range=3242:3724
+  sig=func validVersion(v string) bool
+  doc=validVersion is permissive: any non-empty token without '/' is OK.\nConcrete shape (semver, sha256-pinned digest, contract address) is\nvalidated by the downstream provider.
+EDGES
+  ^defines=matrix/executor/tool/uri.go
+
+NODE id=matrix/executor/tool.validateSideEffect kind=func
+  digest=b3:591ba6ad00ec82b6fe4c5017ea93e85c8db0629cbbc499ba59f3679f182810da file=executor/tool/tool.go range=180:187 lang=go exported=false byte_range=6625:6897
+  sig=func validateSideEffect(s string) error
+  doc=validateSideEffect rejects unknown classes. Manifest validation\nuses this to fail at load time rather than at dispatch.
+EDGES
+  ^defines=matrix/executor/tool/tool.go
+
+NODE id=matrix/executor/tool/manifest.go kind=file
+  digest=b3:a569c07e2ce8b1ccbd8ded1517f06783a1b1fd20e89139a5f746bc8e624c1523 file=executor/tool/manifest.go range=1:379 lang=go exported=true
+EDGES
+  defines=matrix/executor/tool.AgentManifest,matrix/executor/tool.AgentManifest.Validate,matrix/executor/tool.LoadAgentManifest,matrix/executor/tool.NativeToolEntry,matrix/executor/tool.NativeToolEntry.Validate,matrix/executor/tool.ParseAgentManifest,matrix/executor/tool.ResolveEnv,matrix/executor/tool.ResolveEnvList,matrix/executor/tool.ServerEntry,matrix/executor/tool.ServerEntry.Validate,matrix/executor/tool.ToolEntry,matrix/executor/tool.ToolEntry.Validate,matrix/executor/tool.validAlias,matrix/executor/tool.validDigest,matrix/executor/tool.validNativeNamespace,matrix/executor/tool.validNativeNamespaces
+  ^contains=matrix/executor/tool
+
+NODE id=matrix/executor/tool/registry.go kind=file
+  digest=b3:b38838a061b9d819333405b2cb423972c0d6d5f424589072bdf535c41ff955cd file=executor/tool/registry.go range=1:542 lang=go exported=true
+EDGES
+  defines=matrix/executor/tool.ErrNativeToolNotImplemented,matrix/executor/tool.MCPTool,matrix/executor/tool.MCPTool.Call,matrix/executor/tool.MCPTool.Description,matrix/executor/tool.MCPTool.Name,matrix/executor/tool.MCPTool.Server,matrix/executor/tool.MCPTool.SideEffectClass,matrix/executor/tool.MCPTool.URI,matrix/executor/tool.NativeTool,matrix/executor/tool.NativeTool.Call,matrix/executor/tool.NativeTool.Description,matrix/executor/tool.NativeTool.Digest,matrix/executor/tool.NativeTool.Namespace,matrix/executor/tool.NativeTool.SideEffectClass,matrix/executor/tool.NativeTool.URI,matrix/executor/tool.NewRegistry,matrix/executor/tool.Registry,matrix/executor/tool.Registry.Get,matrix/executor/tool.Registry.List,matrix/executor/tool.Registry.Manifest,matrix/executor/tool.RegistryParams,matrix/executor/tool.cacheEntry,matrix/executor/tool.cacheKey,matrix/executor/tool.cacheableTools,matrix/executor/tool.canonicalArgs,matrix/executor/tool.embeddedURI,matrix/executor/tool.isCacheable,matrix/executor/tool.newCallID,matrix/executor/tool.newResultCache,matrix/executor/tool.resultCache,matrix/executor/tool.resultCache.get,matrix/executor/tool.resultCache.put,matrix/executor/tool.sortStrings,matrix/executor/tool.teTimeout
+  ^contains=matrix/executor/tool
+
+NODE id=matrix/executor/tool/tool.go kind=file
+  digest=b3:8b36e8cfbf83c0f3c4429f017e9a76c3851d72582473cb5048d2c04b5fae3cea file=executor/tool/tool.go range=1:189 lang=go exported=true
+EDGES
+  defines=matrix/executor/tool.AllowAllSideEffects,matrix/executor/tool.AllowOnlySideEffects,matrix/executor/tool.CapabilityGate,matrix/executor/tool.Content,matrix/executor/tool.ContentTypeImage,matrix/executor/tool.ContentTypeResource,matrix/executor/tool.ContentTypeText,matrix/executor/tool.ErrInvalidSideEffect,matrix/executor/tool.ErrInvalidURI,matrix/executor/tool.ErrSideEffectDenied,matrix/executor/tool.ErrUnknownTool,matrix/executor/tool.ErrUnpinnedTool,matrix/executor/tool.ExtractText,matrix/executor/tool.Result,matrix/executor/tool.SideEffectChain,matrix/executor/tool.SideEffectNetwork,matrix/executor/tool.SideEffectRead,matrix/executor/tool.SideEffectShell,matrix/executor/tool.SideEffectWrite,matrix/executor/tool.Tool,matrix/executor/tool.ValidSideEffectClasses,matrix/executor/tool.validateSideEffect
+  ^contains=matrix/executor/tool
+
+NODE id=matrix/executor/tool/uri.go kind=file
+  digest=b3:7402852c5466e3743ba2546bdbab51da47678fce7fba9d3ea17e389d426931c6 file=executor/tool/uri.go range=1:125 lang=go exported=true
+EDGES
+  defines=matrix/executor/tool.ParseToolURI,matrix/executor/tool.ToolURI,matrix/executor/tool.ToolURI.IsMCP,matrix/executor/tool.ToolURI.IsNative,matrix/executor/tool.ToolURI.String,matrix/executor/tool.toolScheme,matrix/executor/tool.validVersion
+  ^contains=matrix/executor/tool

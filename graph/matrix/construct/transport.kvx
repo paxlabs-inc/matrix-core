@@ -1,16 +1,20 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:9b68327501b45793fd7687f43b30c960fd68ae8aaff6b2f1bb36ec3e2df2de2f
+# GENERATED gen=codegraph do-not-edit merkle=b3:20e53aba2ea11552396417e53b3e04e87dd1bbb7bef3aa554a45bb92cf89e7f2
 
 NODE id=matrix/construct/transport kind=package
   digest=b3:aaf2d5f10f96c39ff371fb60c631b1094be32c33e2dcac3febfdd9b9178de8e8 file=construct/transport range=0:0 lang=go exported=true
 EDGES
   contains=matrix/construct/transport/patch.go,matrix/construct/transport/transport.go
+  imports=matrix/construct/schema,matrix/construct/schema/primitives
   ^contains=mod:matrix/construct
+  ^imports=matrix/executor/cmd/mcl-execute,matrix/neo/internal/server
 
 NODE id=matrix/construct/transport.ApplyPatch kind=func
   digest=b3:44d978a46db80ecb6c105a6465479934f7e3cc81ab42d934129494fffc69a47f file=construct/transport/patch.go range=14:70 lang=go exported=true byte_range=290:2342
   sig=func ApplyPatch(base, patch *schema.Surface) (*schema.Surface, error)
   doc=ApplyPatch folds a construct.surface.patch increment onto an existing\nsurface, returning a NEW surface (the base is never mutated). It is the\ncanonical progressive-merge definition; the client renderer mirrors it so\nthe live tap and replay converge to the same state. Semantics by kind:\n\n  - Stream:   APPEND the patch chunks (dedup by chunk seq -> idempotent on\n    replay); Closed latches true; non-empty Source/Title overwrite.\n  - Timeline: UPSERT the patch steps by step id (status/detail/ref update,\n    new ids append); non-empty Title overwrites.\n  - all other kinds: REPLACE the payload wholesale (full re-render). This is\n    how an answered Ask attaches its Response, or a Metric updates its value.\n\nEnvelope decoration carried on the patch (ref/seq/parent/attributes) is\napplied when present. The patch must match the base kind.
 EDGES
+  calls=matrix/construct/transport.clone,matrix/construct/transport.mergeStream,matrix/construct/transport.mergeTimeline
+  references=matrix/construct/schema.KindStream,matrix/construct/schema.KindTimeline,matrix/construct/schema.Surface,matrix/construct/transport.base,matrix/construct/transport.clone,matrix/construct/transport.err,matrix/construct/transport.mergeStream,matrix/construct/transport.mergeTimeline,matrix/construct/transport.out,matrix/construct/transport.patch
   ^defines=matrix/construct/transport/patch.go
 
 NODE id=matrix/construct/transport.EmitSurface kind=func
@@ -18,6 +22,10 @@ NODE id=matrix/construct/transport.EmitSurface kind=func
   sig=func EmitSurface(sink EventSink, intentID, conversationID string, s *schema.Surface) error
   doc=EmitSurface validates and emits a full surface as a construct.surface event.\nintentID/conversationID thread the existing SSE filtering; intentID is also\nwhat the daemon transcript auto-stamps, but we set it explicitly so the\nhelper is correct against any sink. Returns an error only if the surface is\ninvalid (a caller never emits an unvalidated surface — invariant i2).
 EDGES
+  calls=matrix/construct/schema.Surface.Validate,matrix/construct/transport.surfaceFields
+  references=matrix/construct/schema.Surface,matrix/construct/schema.Surface.Validate,matrix/construct/transport.EventSink,matrix/construct/transport.EventSink.Event,matrix/construct/transport.EventSurface,matrix/construct/transport.Phase,matrix/construct/transport.conversationID,matrix/construct/transport.err,matrix/construct/transport.intentID,matrix/construct/transport.s,matrix/construct/transport.sink,matrix/construct/transport.surfaceFields
+  ^calls=matrix/executor/cmd/mcl-execute.daemonState.projectConstructEvent,matrix/neo/internal/server.Engine.emitConstructSurface,matrix/neo/internal/server.Engine.respondAsk
+  ^references=matrix/executor/cmd/mcl-execute.daemonState.projectConstructEvent,matrix/neo/internal/server.Engine.emitConstructSurface,matrix/neo/internal/server.Engine.respondAsk
   ^defines=matrix/construct/transport/transport.go
 
 NODE id=matrix/construct/transport.EventSink kind=interface
@@ -25,6 +33,7 @@ NODE id=matrix/construct/transport.EventSink kind=interface
   sig=type EventSink interface {\n	Event(eventType, phase string, fields map[string]interface{})\n}
   doc=EventSink is the minimal contract the emit helpers need. The daemon's\n*transcript already satisfies it (Event(eventType, phase, fields)), so a\ncaller passes the transcript directly. Keeping it an interface decouples\nthis package from the executor module entirely.
 EDGES
+  ^references=matrix/construct/transport.EmitSurface,matrix/construct/transport.PatchSurface
   ^defines=matrix/construct/transport/transport.go
 
 NODE id=matrix/construct/transport.EventSurface kind=const
@@ -32,6 +41,7 @@ NODE id=matrix/construct/transport.EventSurface kind=const
   sig=untyped string
   doc=EventSurface carries a full surface.
 EDGES
+  ^references=matrix/construct/transport.EmitSurface,matrix/executor/cmd/mcl-execute.daemonState.recordSurfaceFrame
   ^defines=matrix/construct/transport/transport.go
 
 NODE id=matrix/construct/transport.EventSurfacePatch kind=const
@@ -39,6 +49,7 @@ NODE id=matrix/construct/transport.EventSurfacePatch kind=const
   sig=untyped string
   doc=EventSurfacePatch carries a progressive update to an existing surface id.
 EDGES
+  ^references=matrix/construct/transport.PatchSurface,matrix/executor/cmd/mcl-execute.daemonState.recordSurfaceFrame
   ^defines=matrix/construct/transport/transport.go
 
 NODE id=matrix/construct/transport.FieldConversationID kind=const
@@ -46,6 +57,7 @@ NODE id=matrix/construct/transport.FieldConversationID kind=const
   sig=untyped string
   doc=Field keys in the event Fields payload.
 EDGES
+  ^references=matrix/construct/transport.surfaceFields
   ^defines=matrix/construct/transport/transport.go
 
 NODE id=matrix/construct/transport.FieldID kind=const
@@ -53,6 +65,7 @@ NODE id=matrix/construct/transport.FieldID kind=const
   sig=untyped string
   doc=FieldID is the target surface id for a patch.
 EDGES
+  ^references=matrix/construct/transport.surfaceFields
   ^defines=matrix/construct/transport/transport.go
 
 NODE id=matrix/construct/transport.FieldIntentID kind=const
@@ -60,6 +73,7 @@ NODE id=matrix/construct/transport.FieldIntentID kind=const
   sig=untyped string
   doc=FieldIntentID/FieldConversationID thread the existing per-subscriber SSE\nfiltering + /events/replay/:id (unchanged).
 EDGES
+  ^references=matrix/construct/transport.surfaceFields
   ^defines=matrix/construct/transport/transport.go
 
 NODE id=matrix/construct/transport.FieldSurface kind=const
@@ -67,6 +81,7 @@ NODE id=matrix/construct/transport.FieldSurface kind=const
   sig=untyped string
   doc=FieldSurface holds the full schema.Surface (construct.surface) — or, on a\npatch, the increment surface (construct.surface.patch).
 EDGES
+  ^references=matrix/construct/transport.SurfaceFromEvent,matrix/construct/transport.surfaceFields
   ^defines=matrix/construct/transport/transport.go
 
 NODE id=matrix/construct/transport.PatchSurface kind=func
@@ -74,6 +89,10 @@ NODE id=matrix/construct/transport.PatchSurface kind=func
   sig=func PatchSurface(sink EventSink, intentID, conversationID, id string, delta *schema.Surface) error
   doc=PatchSurface emits a progressive update to an existing surface id. delta is a\nsurface of the SAME kind carrying the increment (appended Stream chunks,\nupserted Timeline steps, or a replacement payload for the other kinds — see\nApplyPatch). The id is stamped onto the delta and surfaced as FieldID so the\nclient can target its store.
 EDGES
+  calls=matrix/construct/schema.Surface.Validate,matrix/construct/transport.surfaceFields
+  references=matrix/construct/schema.Surface,matrix/construct/schema.Surface.Validate,matrix/construct/transport.EventSink,matrix/construct/transport.EventSink.Event,matrix/construct/transport.EventSurfacePatch,matrix/construct/transport.Phase,matrix/construct/transport.conversationID,matrix/construct/transport.delta,matrix/construct/transport.err,matrix/construct/transport.id,matrix/construct/transport.intentID,matrix/construct/transport.sink,matrix/construct/transport.surfaceFields
+  ^calls=matrix/neo/internal/server.Engine.respondAsk
+  ^references=matrix/neo/internal/server.Engine.respondAsk
   ^defines=matrix/construct/transport/transport.go
 
 NODE id=matrix/construct/transport.Phase kind=const
@@ -81,6 +100,7 @@ NODE id=matrix/construct/transport.Phase kind=const
   sig=untyped string
   doc=Phase tags every Construct event so the existing per-phase SSE filter\n(and the Liaison's loop-guard) can include/exclude the channel. Mirrors\nthe Liaison's "liaison" phase.
 EDGES
+  ^references=matrix/construct/transport.EmitSurface,matrix/construct/transport.PatchSurface,matrix/executor/cmd/mcl-execute.daemonState.projectConstructEvent,matrix/executor/cmd/mcl-execute.daemonState.recordSurfaceFrame,matrix/neo/internal/server.Engine.respondAsk
   ^defines=matrix/construct/transport/transport.go
 
 NODE id=matrix/construct/transport.SurfaceFromEvent kind=func
@@ -88,6 +108,8 @@ NODE id=matrix/construct/transport.SurfaceFromEvent kind=func
   sig=func SurfaceFromEvent(fields map[string]interface{}) (*schema.Surface, error)
   doc=SurfaceFromEvent extracts a schema.Surface from an event's Fields payload. It\ntolerates both an in-process *schema.Surface (same map read back) and a\nJSON-decoded map[string]interface{} (the SSE/JSONL wire), so it works\nidentically on the live tap and on replay. It does NOT validate; callers at\ntrust boundaries call Validate.
 EDGES
+  calls=matrix/construct/schema.Unmarshal
+  references=matrix/construct/schema.Surface,matrix/construct/schema.Unmarshal,matrix/construct/transport.FieldSurface,matrix/construct/transport.b,matrix/construct/transport.err,matrix/construct/transport.fields,matrix/construct/transport.ok,matrix/construct/transport.raw,matrix/construct/transport.s
   ^defines=matrix/construct/transport/transport.go
 
 NODE id=matrix/construct/transport.clone kind=func
@@ -95,6 +117,10 @@ NODE id=matrix/construct/transport.clone kind=func
   sig=func clone(s *schema.Surface) (*schema.Surface, error)
   doc=clone deep-copies a surface via a JSON round-trip so ApplyPatch never\nmutates its input.
 EDGES
+  calls=matrix/construct/schema.Unmarshal
+  references=matrix/construct/schema.Surface,matrix/construct/schema.Unmarshal,matrix/construct/transport.b,matrix/construct/transport.err,matrix/construct/transport.s
+  ^calls=matrix/construct/transport.ApplyPatch
+  ^references=matrix/construct/transport.ApplyPatch
   ^defines=matrix/construct/transport/patch.go
 
 NODE id=matrix/construct/transport.mergeStream kind=func
@@ -102,6 +128,9 @@ NODE id=matrix/construct/transport.mergeStream kind=func
   sig=func mergeStream(base, patch *primitives.Stream)
   doc=mergeStream appends patch chunks to base, deduping by chunk seq so a\nre-emitted patch (replay) is idempotent. base is non-nil (valid Stream\nsurface); patch may carry a nil Stream (no-op envelope-only patch).
 EDGES
+  references=matrix/construct/schema/primitives.Stream,matrix/construct/transport.base,matrix/construct/transport.c,matrix/construct/transport.patch,matrix/construct/transport.seen
+  ^calls=matrix/construct/transport.ApplyPatch
+  ^references=matrix/construct/transport.ApplyPatch
   ^defines=matrix/construct/transport/patch.go
 
 NODE id=matrix/construct/transport.mergeTimeline kind=func
@@ -109,6 +138,9 @@ NODE id=matrix/construct/transport.mergeTimeline kind=func
   sig=func mergeTimeline(base, patch *primitives.Timeline)
   doc=mergeTimeline upserts patch steps into base by step id (idempotent), and\noverwrites a non-empty title.
 EDGES
+  references=matrix/construct/schema/primitives.Timeline,matrix/construct/transport.base,matrix/construct/transport.i,matrix/construct/transport.idx,matrix/construct/transport.ok,matrix/construct/transport.patch,matrix/construct/transport.s
+  ^calls=matrix/construct/transport.ApplyPatch
+  ^references=matrix/construct/transport.ApplyPatch
   ^defines=matrix/construct/transport/patch.go
 
 NODE id=matrix/construct/transport.surfaceFields kind=func
@@ -116,6 +148,9 @@ NODE id=matrix/construct/transport.surfaceFields kind=func
   sig=func surfaceFields(intentID, conversationID string, s *schema.Surface, patchID string) map[string]interface{}
   doc=surfaceFields builds the event Fields payload. The surface rides as a nested\nobject so the JSONL/SSE encoder serialises it verbatim; on replay the same\nbytes reproduce the same surface (idempotent).
 EDGES
+  references=matrix/construct/schema.Surface,matrix/construct/transport.FieldConversationID,matrix/construct/transport.FieldID,matrix/construct/transport.FieldIntentID,matrix/construct/transport.FieldSurface,matrix/construct/transport.conversationID,matrix/construct/transport.f,matrix/construct/transport.intentID,matrix/construct/transport.patchID,matrix/construct/transport.s
+  ^calls=matrix/construct/transport.EmitSurface,matrix/construct/transport.PatchSurface
+  ^references=matrix/construct/transport.EmitSurface,matrix/construct/transport.PatchSurface
   ^defines=matrix/construct/transport/transport.go
 
 NODE id=matrix/construct/transport/patch.go kind=file

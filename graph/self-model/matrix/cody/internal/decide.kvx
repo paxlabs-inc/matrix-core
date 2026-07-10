@@ -1,0 +1,475 @@
+# GENERATED gen=codegraph do-not-edit merkle=b3:75a956136eb56a920059d717ea1f7ba394b53bef834ab6db66f06d328eb5d650
+
+NODE id=matrix/cody/internal/decide kind=package
+  digest=b3:5f452af7c842fa4fba1d824f16ce2653f5e856583284954e254ab70f60c419e8 file=cody/internal/decide range=0:0 lang=go exported=true
+EDGES
+  contains=matrix/cody/internal/decide/decide.go,matrix/cody/internal/decide/design.go,matrix/cody/internal/decide/stack.go
+  ^contains=mod:matrix/cody
+
+NODE id=matrix/cody/internal/decide.AuthorDesign kind=func
+  digest=b3:ffde53fdcb882527016160d274cae4d7ecce7fd186ac1ecb9e8de896b4e12ea2 file=cody/internal/decide/design.go range=121:164 lang=go exported=true byte_range=5376:6790
+  sig=func AuthorDesign(ctx context.Context, hot, cold *llm.Client, brief, doctrine string, candidates int) (*DesignRecord, error)
+  doc=AuthorDesign authors a Design Language Record the decision way: generate\n`candidates` divergent records HOT, keep the ones that parse and validate,\nand pick the best-fitting one COLD (req 10.2). Returns the chosen record.
+EDGES
+  ^defines=matrix/cody/internal/decide/design.go
+
+NODE id=matrix/cody/internal/decide.AuthorStack kind=func
+  digest=b3:bf349f20bff735a784efe7449a2f474d569e1939ca7163c60f2f2f84bef4455a file=cody/internal/decide/stack.go range=109:153 lang=go exported=true byte_range=4565:6045
+  sig=func AuthorStack(ctx context.Context, hot, cold *llm.Client, brief, doctrine string, candidates int) (*StackRecord, error)
+  doc=AuthorStack authors a Stack Decision Record the decision way: generate\n`candidates` divergent records HOT, keep the ones that parse and validate,\nand pick the best-fitting one COLD (req 10.2). hot is the decision-temperature\nclient; cold is the adjudication client. Returns the chosen record.
+EDGES
+  ^defines=matrix/cody/internal/decide/stack.go
+
+NODE id=matrix/cody/internal/decide.BannedTellsInText kind=func
+  digest=b3:f9a8b184c5f15379bb4e0a3c1e46be25f612ef2c91512e2df02a9d8141f630db file=cody/internal/decide/design.go range=203:216 lang=go exported=true byte_range=8265:8739
+  sig=func BannedTellsInText(text string) []string
+  doc=BannedTellsInText returns the concrete banned AI-tells present in text, or\nnil. Shared by the DLR screen (over the record) and the acceptance gate (over\nchanged UI file content) so the same doctrine screens the decision AND its\ndownstream drift (req 9.2, 9.3).
+EDGES
+  ^defines=matrix/cody/internal/decide/design.go
+
+NODE id=matrix/cody/internal/decide.Candidate kind=type
+  digest=b3:406c4e07300c31de124095e347148d0dfe2329a3fb80bdf7c3f382ef57cffc12 file=cody/internal/decide/decide.go range=23:27 lang=go exported=true byte_range=817:958
+  sig=type Candidate struct {\n	Index	int	`json:"index"`\n	Text	string	`json:"text"`\n}
+  doc=Candidate is one generated option, in generation order.
+EDGES
+  contains=matrix/cody/internal/decide.Candidate#Index,matrix/cody/internal/decide.Candidate#Text
+  ^defines=matrix/cody/internal/decide/decide.go
+
+NODE id=matrix/cody/internal/decide.Candidate#Index kind=field
+  digest=b3:4838cbb4dc793d222cce4efff3736ebe7f9b9092f36990bd8427ce745937ca26 file=cody/internal/decide/decide.go range=25:25 lang=go exported=true byte_range=901:928
+  sig=int
+EDGES
+  ^contains=matrix/cody/internal/decide.Candidate
+
+NODE id=matrix/cody/internal/decide.Candidate#Text kind=field
+  digest=b3:ece8ac1707c7a6dc0d48b4b6d3d5938ca8b5f35b5e5b2a7cfcdffec91f6461d6 file=cody/internal/decide/decide.go range=26:26 lang=go exported=true byte_range=930:956
+  sig=string
+EDGES
+  ^contains=matrix/cody/internal/decide.Candidate
+
+NODE id=matrix/cody/internal/decide.Decision kind=type
+  digest=b3:b5d68458212450c7132794470e47e2fcc670a5ee582fdaf44d6d1ffd32dc7fda file=cody/internal/decide/decide.go range=29:33 lang=go exported=true byte_range=960:1125
+  sig=type Decision struct {\n	Pick		int	`json:"pick"`\n	Rationale	string	`json:"rationale"`\n}
+  doc=Decision is the judge's verdict: the picked candidate index and why.
+EDGES
+  contains=matrix/cody/internal/decide.Decision#Pick,matrix/cody/internal/decide.Decision#Rationale
+  ^defines=matrix/cody/internal/decide/decide.go
+
+NODE id=matrix/cody/internal/decide.Decision#Pick kind=field
+  digest=b3:cb22f784e77f1385b4bc8dcb22b4ecba3ccc3a826a3662dc5ae344e18ffe90d4 file=cody/internal/decide/decide.go range=31:31 lang=go exported=true byte_range=1056:1086
+  sig=int
+EDGES
+  ^contains=matrix/cody/internal/decide.Decision
+
+NODE id=matrix/cody/internal/decide.Decision#Rationale kind=field
+  digest=b3:3406593ff62c7a6e655284cb7267dd6c93a1b730a018e9519d7c3a0c0fba8820 file=cody/internal/decide/decide.go range=32:32 lang=go exported=true byte_range=1088:1123
+  sig=string
+EDGES
+  ^contains=matrix/cody/internal/decide.Decision
+
+NODE id=matrix/cody/internal/decide.DesignProfile kind=type
+  digest=b3:da991e793257725708222eb2eb9c865087388c2245464714d8ca4493a855a631 file=cody/internal/decide/design.go range=16:25 lang=go exported=true byte_range=282:765
+  sig=type DesignProfile struct {\n	ProductKind	string	`json:"product_kind"`\n	Audience	string	`json:"audience"`\n	BrandAdjectives	string	`json:"brand_adjectives"`\n	Surface		string	`json:"surface"`\n}
+  doc=DesignProfile is the product context the design language is chosen FOR — the\nfacts that make one visual direction fit better than another. A direction\nthat ignores this profile is exactly the AI-default the banned-tells screen\nand the anti-default lens reject.
+EDGES
+  contains=matrix/cody/internal/decide.DesignProfile#Audience,matrix/cody/internal/decide.DesignProfile#BrandAdjectives,matrix/cody/internal/decide.DesignProfile#ProductKind,matrix/cody/internal/decide.DesignProfile#Surface
+  ^defines=matrix/cody/internal/decide/design.go
+
+NODE id=matrix/cody/internal/decide.DesignProfile#Audience kind=field
+  digest=b3:640a23b58ffd8390d4f552f24b2d77c518a0ff4c41eca3348429e0c0ad6d0f13 file=cody/internal/decide/design.go range=22:22 lang=go exported=true byte_range=632:672
+  sig=string
+EDGES
+  ^contains=matrix/cody/internal/decide.DesignProfile
+
+NODE id=matrix/cody/internal/decide.DesignProfile#BrandAdjectives kind=field
+  digest=b3:3344a72183cc9ecc12d71ad51fc8149295821257ae4f27657418848ade407417 file=cody/internal/decide/design.go range=23:23 lang=go exported=true byte_range=674:722
+  sig=string
+EDGES
+  ^contains=matrix/cody/internal/decide.DesignProfile
+
+NODE id=matrix/cody/internal/decide.DesignProfile#ProductKind kind=field
+  digest=b3:ac37f4a7b4a881ae558df4318cac8ad993f6e04886df398aef90c7de8a441cfa file=cody/internal/decide/design.go range=21:21 lang=go exported=true byte_range=586:630
+  sig=string
+EDGES
+  ^contains=matrix/cody/internal/decide.DesignProfile
+
+NODE id=matrix/cody/internal/decide.DesignProfile#Surface kind=field
+  digest=b3:0e2562be71331024c43d9883b82fdce4d119b50777589b108a2e5d2502d738e0 file=cody/internal/decide/design.go range=24:24 lang=go exported=true byte_range=724:763
+  sig=string
+EDGES
+  ^contains=matrix/cody/internal/decide.DesignProfile
+
+NODE id=matrix/cody/internal/decide.DesignRecord kind=type
+  digest=b3:197d5ca09c7abb28a134fd8da7948eee50db553edbe28f408c560a6581bb8e77 file=cody/internal/decide/design.go range=27:42 lang=go exported=true byte_range=767:1631
+  sig=type DesignRecord struct {\n	Profile		DesignProfile	`json:"profile"`\n	StyleDirection	string		`json:"style_direction"`\n	Typography	string		`json:"typography"`\n	Palette		[]string	`json:"palette"`\n	Spacing		string		`json:"spacing"`\n	Motion		string		`json:"motion"`\n	ComponentIdiom	string		`json:"component_idiom"`\n	Rationale	string		`json:"rationale"`\n}
+  doc=DesignRecord is the durable Design Language Record: the product profile plus\nthe six binding decisions every subsequent UI task inherits — style\ndirection, typography, palette, spacing/layout system, motion posture, and\ncomponent idiom (req 9.1). Authored HOT (N divergent records generated, judged\nCOLD) and then screened deterministically for banned AI-tells and by the\nanti-default lens before the human resolves it.
+EDGES
+  contains=matrix/cody/internal/decide.DesignRecord#ComponentIdiom,matrix/cody/internal/decide.DesignRecord#Motion,matrix/cody/internal/decide.DesignRecord#Palette,matrix/cody/internal/decide.DesignRecord#Profile,matrix/cody/internal/decide.DesignRecord#Rationale,matrix/cody/internal/decide.DesignRecord#Spacing,matrix/cody/internal/decide.DesignRecord#StyleDirection,matrix/cody/internal/decide.DesignRecord#Typography,matrix/cody/internal/decide.DesignRecord.Summary,matrix/cody/internal/decide.DesignRecord.Validate
+  ^defines=matrix/cody/internal/decide/design.go
+
+NODE id=matrix/cody/internal/decide.DesignRecord#ComponentIdiom kind=field
+  digest=b3:ff8325b16988e1c88e126b72eaaf961f650366e62bbb5e078614386164ca65cd file=cody/internal/decide/design.go range=40:40 lang=go exported=true byte_range=1527:1580
+  sig=string
+EDGES
+  ^contains=matrix/cody/internal/decide.DesignRecord
+
+NODE id=matrix/cody/internal/decide.DesignRecord#Motion kind=field
+  digest=b3:fe9a1d42fc824a53f29e5440b7d24d9408bff622847ef69b7b1421eda4cf1241 file=cody/internal/decide/design.go range=39:39 lang=go exported=true byte_range=1481:1525
+  sig=string
+EDGES
+  ^contains=matrix/cody/internal/decide.DesignRecord
+
+NODE id=matrix/cody/internal/decide.DesignRecord#Palette kind=field
+  digest=b3:2a81494c4dbb9de40a82f75d527e36daaf3a08edd5c0d8a40fe28e58d5f9a71a file=cody/internal/decide/design.go range=37:37 lang=go exported=true byte_range=1387:1432
+  sig=[]string
+EDGES
+  ^contains=matrix/cody/internal/decide.DesignRecord
+
+NODE id=matrix/cody/internal/decide.DesignRecord#Profile kind=field
+  digest=b3:5e22736f420a4f11b3b5b4b65d4f10d53fe0f262dbe6b59763ac5cb3454217bb file=cody/internal/decide/design.go range=34:34 lang=go exported=true byte_range=1235:1280
+  sig=decide.DesignProfile
+EDGES
+  ^contains=matrix/cody/internal/decide.DesignRecord
+
+NODE id=matrix/cody/internal/decide.DesignRecord#Rationale kind=field
+  digest=b3:cc3a7ca3559927696c347efb4b9130c6f9064b5e43a0666ec713d39baa546121 file=cody/internal/decide/design.go range=41:41 lang=go exported=true byte_range=1582:1629
+  sig=string
+EDGES
+  ^contains=matrix/cody/internal/decide.DesignRecord
+
+NODE id=matrix/cody/internal/decide.DesignRecord#Spacing kind=field
+  digest=b3:cc4d3bbb2f570581c39332a997544daf7cf072387efeb41cba52b645a5906826 file=cody/internal/decide/design.go range=38:38 lang=go exported=true byte_range=1434:1479
+  sig=string
+EDGES
+  ^contains=matrix/cody/internal/decide.DesignRecord
+
+NODE id=matrix/cody/internal/decide.DesignRecord#StyleDirection kind=field
+  digest=b3:7387a32fa77f5df3f3e5317ecfea763db2a6e59cca3f08a9f98dc682d3399e9a file=cody/internal/decide/design.go range=35:35 lang=go exported=true byte_range=1282:1335
+  sig=string
+EDGES
+  ^contains=matrix/cody/internal/decide.DesignRecord
+
+NODE id=matrix/cody/internal/decide.DesignRecord#Typography kind=field
+  digest=b3:b0fbadcd8035eca1f5c9156580595fc0b77c9b39e257a45a94c5acd458f665ed file=cody/internal/decide/design.go range=36:36 lang=go exported=true byte_range=1337:1385
+  sig=string
+EDGES
+  ^contains=matrix/cody/internal/decide.DesignRecord
+
+NODE id=matrix/cody/internal/decide.DesignRecord.Summary kind=method
+  digest=b3:4abe3d40b64f2fcefba6934bec9c486cfa865cc5b53eb90c569a45f8052d7468 file=cody/internal/decide/design.go range=67:82 lang=go exported=true byte_range=2403:3132
+  sig=func (r *DesignRecord) Summary() string
+  doc=Summary renders the DLR as the one-block constraint every UI task sheet\ncarries so a fresh-context worker builds to the same design language (req 9.3).
+EDGES
+  ^contains=matrix/cody/internal/decide.DesignRecord
+  ^defines=matrix/cody/internal/decide/design.go
+
+NODE id=matrix/cody/internal/decide.DesignRecord.Validate kind=method
+  digest=b3:3443692a5eb1a4b30383f63056150df18cb856e9e2a14f8f9d5c4aa3303cb5e9 file=cody/internal/decide/design.go range=44:65 lang=go exported=true byte_range=1633:2401
+  sig=func (r *DesignRecord) Validate() error
+  doc=Validate rejects a record that could not bind real UI work: it needs a style\ndirection, a typography choice, a palette, and a component idiom — the fields\na worker's turn-in is screened against for drift.
+EDGES
+  ^contains=matrix/cody/internal/decide.DesignRecord
+  ^defines=matrix/cody/internal/decide/design.go
+
+NODE id=matrix/cody/internal/decide.Generate kind=func
+  digest=b3:1780a19e66e69b9874ad94b2cc1a4df5a67a42eb6319809de4da572a73418e61 file=cody/internal/decide/decide.go range=35:68 lang=go exported=true byte_range=1127:2234
+  sig=func Generate(ctx context.Context, hot *llm.Client, system, user string, n int) ([]Candidate, error)
+  doc=Generate calls the HOT client n times with the same system+user prompt;\ndivergence comes from the decision temperature the client is built at. It\nreturns the candidates in call order. n < 1 is treated as 1. An empty\n(whitespace-only) candidate is dropped — a blank generation is not an option.
+EDGES
+  ^defines=matrix/cody/internal/decide/decide.go
+
+NODE id=matrix/cody/internal/decide.Judge kind=func
+  digest=b3:d0e89d93824dc599744fe82aaa2e260999e5e3d6e80c311d28de0a24b0f712bb file=cody/internal/decide/decide.go range=80:119 lang=go exported=true byte_range=3072:4870
+  sig=func Judge(ctx context.Context, cold *llm.Client, brief, criteria string, cands []Candidate) (Decision, error)
+  doc=Judge asks the COLD client to pick the best candidate for the brief against\nthe criteria. With zero candidates it errors; with one it short-circuits to\nthat candidate (nothing to adjudicate). A judge response that cannot be\nparsed, or an out-of-range pick, fails SAFE to candidate 0 with an honest\nrationale — the decision phase must never wedge on an adjudicator hiccup (the\nproven Cassandra fail-open posture), while still having really run.
+EDGES
+  ^defines=matrix/cody/internal/decide/decide.go
+
+NODE id=matrix/cody/internal/decide.ScreenDesignAntiDefault kind=func
+  digest=b3:ba40537984a4afe75c1e643963d7fc5b9b7f0b61a69c21d46b339f3c43fe675e file=cody/internal/decide/design.go range=246:282 lang=go exported=true byte_range=10411:11802
+  sig=func ScreenDesignAntiDefault(ctx context.Context, cold *llm.Client, rec *DesignRecord) string
+  doc=ScreenDesignAntiDefault runs the anti-AI-default lens over a chosen record. It\nreturns "" when the record passes, or a concrete rejection reason. A judge\ntransport error fails OPEN (empty) — the human still resolves the record, so a\nhiccup never wedges the phase, but an explicit reject verdict is honored (the\nproven Cassandra posture).
+EDGES
+  ^defines=matrix/cody/internal/decide/design.go
+
+NODE id=matrix/cody/internal/decide.ScreenDesignBanned kind=func
+  digest=b3:197ad4ecf2de099c270f42dda55693ba57ab01089034261094370e4e7480a48c file=cody/internal/decide/design.go range=218:234 lang=go exported=true byte_range=8741:9361
+  sig=func ScreenDesignBanned(rec *DesignRecord) string
+  doc=ScreenDesignBanned runs the deterministic banned-defaults screen over a\nrecord. It returns "" when the record passes, or a concrete rejection listing\nevery banned tell it leans on.
+EDGES
+  ^defines=matrix/cody/internal/decide/design.go
+
+NODE id=matrix/cody/internal/decide.ScreenStackAntiDefault kind=func
+  digest=b3:a817f46bb4302f092211ff4f5f72d175a6bddd1bc513097ce83a28e13ac5e8b9 file=cody/internal/decide/stack.go range=171:211 lang=go exported=true byte_range=7223:8864
+  sig=func ScreenStackAntiDefault(ctx context.Context, cold *llm.Client, rec *StackRecord) string
+  doc=ScreenStackAntiDefault runs the anti-default lens over a chosen record. It\nreturns "" when the record passes, or a concrete rejection reason. A judge\ntransport error fails OPEN (empty) — consistent with the proven Cassandra\nposture: the human still resolves the record, so a hiccup never wedges the\nphase, but an explicit reject verdict is honored.
+EDGES
+  ^defines=matrix/cody/internal/decide/stack.go
+
+NODE id=matrix/cody/internal/decide.StackCandidate kind=type
+  digest=b3:1ecc86c7921efa3038c4d3a991f456ad3ba7340c1cb2a2c5a4dbaf3b9661a1c0 file=cody/internal/decide/stack.go range=26:34 lang=go exported=true byte_range=718:1165
+  sig=type StackCandidate struct {\n	Name		string	`json:"name"`\n	Rationale	string	`json:"rationale"`\n	// Deviates flags a pick that departs from rules/stack-selection doctrine;\n	// when true DeviationRationale must state why (req 8.5).\n	Deviates		bool	`json:"deviates_from_doctrine,omitempty"`\n	DeviationRationale	string	`json:"deviation_rationale,omitempty"`\n}
+  doc=StackCandidate is one genuinely divergent option considered in the record.
+EDGES
+  contains=matrix/cody/internal/decide.StackCandidate#Deviates,matrix/cody/internal/decide.StackCandidate#DeviationRationale,matrix/cody/internal/decide.StackCandidate#Name,matrix/cody/internal/decide.StackCandidate#Rationale
+  ^defines=matrix/cody/internal/decide/stack.go
+
+NODE id=matrix/cody/internal/decide.StackCandidate#Deviates kind=field
+  digest=b3:d0b2d8ba28a6851e892171456d674cc77c2bdd5c13f9b7a86328868ebd3fff06 file=cody/internal/decide/stack.go range=30:32 lang=go exported=true byte_range=895:1097
+  sig=bool
+  doc=Deviates flags a pick that departs from rules/stack-selection doctrine;\nwhen true DeviationRationale must state why (req 8.5).
+EDGES
+  ^contains=matrix/cody/internal/decide.StackCandidate
+
+NODE id=matrix/cody/internal/decide.StackCandidate#DeviationRationale kind=field
+  digest=b3:64c6809c71f3f2bc06d250854a732d3fc1cbc852e6b0f15769f8635a820b96f1 file=cody/internal/decide/stack.go range=33:33 lang=go exported=true byte_range=1099:1163
+  sig=string
+EDGES
+  ^contains=matrix/cody/internal/decide.StackCandidate
+
+NODE id=matrix/cody/internal/decide.StackCandidate#Name kind=field
+  digest=b3:ff785850bf10b4407f29821ea0637fcb231bd80fd28fe6a234a833527f468a96 file=cody/internal/decide/stack.go range=28:28 lang=go exported=true byte_range=826:856
+  sig=string
+EDGES
+  ^contains=matrix/cody/internal/decide.StackCandidate
+
+NODE id=matrix/cody/internal/decide.StackCandidate#Rationale kind=field
+  digest=b3:3406593ff62c7a6e655284cb7267dd6c93a1b730a018e9519d7c3a0c0fba8820 file=cody/internal/decide/stack.go range=29:29 lang=go exported=true byte_range=858:893
+  sig=string
+EDGES
+  ^contains=matrix/cody/internal/decide.StackCandidate
+
+NODE id=matrix/cody/internal/decide.StackProfile kind=type
+  digest=b3:8fa1c8e45e8f3e8312fe2adb4f81ac1448b90714406bff17687c1f347c68a1df file=cody/internal/decide/stack.go range=16:24 lang=go exported=true byte_range=282:716
+  sig=type StackProfile struct {\n	AppClass		string	`json:"app_class"`\n	Audience		string	`json:"audience"`\n	DeploymentTarget	string	`json:"deployment_target"`\n	TeamContext		string	`json:"team_context"`\n}
+  doc=StackProfile is the requirements profile the stack is chosen FOR — the facts\nthat make one stack fit better than another. A pick that ignores this profile\nis exactly the default the anti-default lens rejects.
+EDGES
+  contains=matrix/cody/internal/decide.StackProfile#AppClass,matrix/cody/internal/decide.StackProfile#Audience,matrix/cody/internal/decide.StackProfile#DeploymentTarget,matrix/cody/internal/decide.StackProfile#TeamContext
+  ^defines=matrix/cody/internal/decide/stack.go
+
+NODE id=matrix/cody/internal/decide.StackProfile#AppClass kind=field
+  digest=b3:2f7899fa9952a09a80bb1ec165fffd7fe988e459b1fc5a70d92dbe297629a7d2 file=cody/internal/decide/stack.go range=20:20 lang=go exported=true byte_range=530:572
+  sig=string
+EDGES
+  ^contains=matrix/cody/internal/decide.StackProfile
+
+NODE id=matrix/cody/internal/decide.StackProfile#Audience kind=field
+  digest=b3:be1db7bfab262d50da9a84f7b90a20f4056194f247476758acfcc1d4645fc37c file=cody/internal/decide/stack.go range=21:21 lang=go exported=true byte_range=574:615
+  sig=string
+EDGES
+  ^contains=matrix/cody/internal/decide.StackProfile
+
+NODE id=matrix/cody/internal/decide.StackProfile#DeploymentTarget kind=field
+  digest=b3:c795b71c477b25b129b746f1ddfb73b52e7c8644a8d57c2eed05aaa1c515bb2a file=cody/internal/decide/stack.go range=22:22 lang=go exported=true byte_range=617:667
+  sig=string
+EDGES
+  ^contains=matrix/cody/internal/decide.StackProfile
+
+NODE id=matrix/cody/internal/decide.StackProfile#TeamContext kind=field
+  digest=b3:028d3afa51f00f8b5065fb50a96b3f2eba826580f3232f0198fb963829c3a8fc file=cody/internal/decide/stack.go range=23:23 lang=go exported=true byte_range=669:714
+  sig=string
+EDGES
+  ^contains=matrix/cody/internal/decide.StackProfile
+
+NODE id=matrix/cody/internal/decide.StackRecord kind=type
+  digest=b3:388f749352ea1516e3d2513aafb3a24c7f9db4c63f07758fdc3b76af42ba7ec5 file=cody/internal/decide/stack.go range=36:45 lang=go exported=true byte_range=1167:1690
+  sig=type StackRecord struct {\n	Profile		StackProfile		`json:"profile"`\n	Candidates	[]StackCandidate	`json:"candidates"`\n	Pick		int			`json:"pick"`\n	Rationale	string			`json:"rationale"`\n}
+  doc=StackRecord is the durable Stack Decision Record: the requirements profile,\n2-3 divergent candidate stacks with per-candidate rationale citing doctrine,\nand the pick. Authored HOT (N divergent records generated, judged COLD) and\nthen screened by the anti-default lens before the human resolves it.
+EDGES
+  contains=matrix/cody/internal/decide.StackRecord#Candidates,matrix/cody/internal/decide.StackRecord#Pick,matrix/cody/internal/decide.StackRecord#Profile,matrix/cody/internal/decide.StackRecord#Rationale,matrix/cody/internal/decide.StackRecord.Chosen,matrix/cody/internal/decide.StackRecord.Validate
+  ^defines=matrix/cody/internal/decide/stack.go
+
+NODE id=matrix/cody/internal/decide.StackRecord#Candidates kind=field
+  digest=b3:8b6c441acb2b0d202331b63cffc8c7d1220a4a6a88c94c2c6330811682f4b505 file=cody/internal/decide/stack.go range=42:42 lang=go exported=true byte_range=1550:1597
+  sig=[]decide.StackCandidate
+EDGES
+  ^contains=matrix/cody/internal/decide.StackRecord
+
+NODE id=matrix/cody/internal/decide.StackRecord#Pick kind=field
+  digest=b3:065a2a36d78b1e52f0921471ba0f3f3a45954aaf00080eac710ab682762e943e file=cody/internal/decide/stack.go range=43:43 lang=go exported=true byte_range=1599:1640
+  sig=int
+EDGES
+  ^contains=matrix/cody/internal/decide.StackRecord
+
+NODE id=matrix/cody/internal/decide.StackRecord#Profile kind=field
+  digest=b3:c10077bd2be35f5fb1a9f583f7ce3093f55baa97b1b2f447f7e81bb80cfb22a4 file=cody/internal/decide/stack.go range=41:41 lang=go exported=true byte_range=1504:1548
+  sig=decide.StackProfile
+EDGES
+  ^contains=matrix/cody/internal/decide.StackRecord
+
+NODE id=matrix/cody/internal/decide.StackRecord#Rationale kind=field
+  digest=b3:7a832c35fa69977a328f220a31b1a9585561ab496ea0e288d0f175d5ee78bb73 file=cody/internal/decide/stack.go range=44:44 lang=go exported=true byte_range=1642:1688
+  sig=string
+EDGES
+  ^contains=matrix/cody/internal/decide.StackRecord
+
+NODE id=matrix/cody/internal/decide.StackRecord.Chosen kind=method
+  digest=b3:a038ee2eb98d1418594669de6059aeedabcf20026621f30e07998919a4aafcb0 file=cody/internal/decide/stack.go range=47:58 lang=go exported=true byte_range=1692:2002
+  sig=func (r *StackRecord) Chosen() StackCandidate
+  doc=Chosen returns the picked candidate (clamped into range), or a zero value if\nthe record carries no candidates.
+EDGES
+  ^contains=matrix/cody/internal/decide.StackRecord
+  ^defines=matrix/cody/internal/decide/stack.go
+
+NODE id=matrix/cody/internal/decide.StackRecord.Validate kind=method
+  digest=b3:952f06f0e508f0359124242a5be9f1a324ef31465a0eede744843cfdcdcf33b1 file=cody/internal/decide/stack.go range=60:79 lang=go exported=true byte_range=2004:2744
+  sig=func (r *StackRecord) Validate() error
+  doc=Validate rejects a record that could not have been a real decision: fewer\nthan two divergent candidates is not a choice, and a deviation without stated\nrationale violates doctrine (req 8.5).
+EDGES
+  ^contains=matrix/cody/internal/decide.StackRecord
+  ^defines=matrix/cody/internal/decide/stack.go
+
+NODE id=matrix/cody/internal/decide.antiDefaultSystem kind=const
+  digest=b3:7ab98115b157241bd001b4d34d82145ae7492faa1e4ccc57f1b81d678acebe8b file=cody/internal/decide/stack.go range=155:163 lang=go exported=false byte_range=6047:7076
+  sig=untyped string
+  doc=antiDefaultSystem casts the model as the anti-default adjudicator: the gate\nlens whose entire job is to reject a stack choice that would be identical\nregardless of the requirements (req 8.2).
+EDGES
+  ^defines=matrix/cody/internal/decide/stack.go
+
+NODE id=matrix/cody/internal/decide.antiDefaultVerdict kind=type
+  digest=b3:edce663ed812dbbae5af2bdba246e6538dbb78e0818492aa9809dc3df785e40c file=cody/internal/decide/stack.go range=165:169 lang=go exported=false byte_range=7078:7221
+  sig=type antiDefaultVerdict struct {\n	Accept	bool	`json:"accept"`\n	Reason	string	`json:"reason"`\n}
+  doc=antiDefaultVerdict is the gate lens result.
+EDGES
+  contains=matrix/cody/internal/decide.antiDefaultVerdict#Accept,matrix/cody/internal/decide.antiDefaultVerdict#Reason
+  ^defines=matrix/cody/internal/decide/stack.go
+
+NODE id=matrix/cody/internal/decide.antiDefaultVerdict#Accept kind=field
+  digest=b3:5121f3a3ff18c84dd2f999e051b359afd06e6659174fde3959357880264193da file=cody/internal/decide/stack.go range=167:167 lang=go exported=true byte_range=7159:7188
+  sig=bool
+EDGES
+  ^contains=matrix/cody/internal/decide.antiDefaultVerdict
+
+NODE id=matrix/cody/internal/decide.antiDefaultVerdict#Reason kind=field
+  digest=b3:d95b359a80a2bac60dc0c3cd16681504daf9f6cca03d084629476f17bda5f5ba file=cody/internal/decide/stack.go range=168:168 lang=go exported=true byte_range=7190:7219
+  sig=string
+EDGES
+  ^contains=matrix/cody/internal/decide.antiDefaultVerdict
+
+NODE id=matrix/cody/internal/decide.antiDesignSystem kind=const
+  digest=b3:0830987a4e960abb1233d590116c18981d260a99334f9f51574daede69be4a51 file=cody/internal/decide/design.go range=236:244 lang=go exported=false byte_range=9363:10409
+  sig=untyped string
+  doc=antiDesignSystem casts the model as the anti-AI-default adjudicator: the gate\nlens whose job is to reject a design that is indistinguishable from the\ngeneric template look an AI reaches for by default (req 9.2).
+EDGES
+  ^defines=matrix/cody/internal/decide/design.go
+
+NODE id=matrix/cody/internal/decide.bannedTell kind=type
+  digest=b3:a438eb67bd0327e44bb51e968198c0db91ed61e1b33f5e5fd7798c76fce103d0 file=cody/internal/decide/design.go range=166:171 lang=go exported=false byte_range=6792:6994
+  sig=type bannedTell struct {\n	name	string\n	fires	func(low string) bool\n}
+  doc=bannedTell is one deterministic AI-default screen: a human-readable name and\nthe predicate that fires it over lowercased text.
+EDGES
+  contains=matrix/cody/internal/decide.bannedTell#fires,matrix/cody/internal/decide.bannedTell#name
+  ^defines=matrix/cody/internal/decide/design.go
+
+NODE id=matrix/cody/internal/decide.bannedTell#fires kind=field
+  digest=b3:d8f5d6ceae2b8161d09cc3d41fc5b91453a882a2207773259b5cdf15b6662c6d file=cody/internal/decide/design.go range=170:170 lang=go exported=false byte_range=6965:6992
+  sig=func(low string) bool
+EDGES
+  ^contains=matrix/cody/internal/decide.bannedTell
+
+NODE id=matrix/cody/internal/decide.bannedTell#name kind=field
+  digest=b3:26436d16cd607c1f0438e1d85433c03827aa5e1438de1eb4b84448812842486f file=cody/internal/decide/design.go range=169:169 lang=go exported=false byte_range=6951:6963
+  sig=string
+EDGES
+  ^contains=matrix/cody/internal/decide.bannedTell
+
+NODE id=matrix/cody/internal/decide.bannedTells kind=var
+  digest=b3:34055a99ffb2da78e2acea9bfe6168009c52ec4a3f5fb44c11054df3e652d92d file=cody/internal/decide/design.go range=182:201 lang=go exported=false byte_range=7142:8263
+  sig=[]decide.bannedTell
+  doc=bannedTells is the deterministic banned-defaults list (req 9.2): the AI-tells\na Design Language Record may never lean on. Each is a pure text predicate so\nthe screen is fully deterministic — the same record always screens the same.
+EDGES
+  ^defines=matrix/cody/internal/decide/design.go
+
+NODE id=matrix/cody/internal/decide.contains kind=func
+  digest=b3:24b6806a2aa5da810d28b974ec114fdb8f827e01db7f7a55c06aa901b69e81bb file=cody/internal/decide/design.go range=173:180 lang=go exported=false byte_range=6996:7140
+  sig=func contains(low string, subs ...string) bool
+EDGES
+  ^defines=matrix/cody/internal/decide/design.go
+
+NODE id=matrix/cody/internal/decide.designCriteria kind=const
+  digest=b3:847c0f5ed4db83e8c6aa8c88a39cb4aeda61605e76f39a81b983eba2b2bd2277 file=cody/internal/decide/design.go range=118:119 lang=go exported=false byte_range=4999:5374
+  sig=untyped string
+  doc=designCriteria is what the cold judge weighs candidate design records against.
+EDGES
+  ^defines=matrix/cody/internal/decide/design.go
+
+NODE id=matrix/cody/internal/decide.designSystem kind=func
+  digest=b3:2735d150fae41c529c4d66dc6466d51a5cd95d9833bfceeec94a81b7bd8c5350 file=cody/internal/decide/design.go range=84:116 lang=go exported=false byte_range=3134:4997
+  sig=func designSystem(doctrine string) string
+  doc=designSystem casts the model as the design-language author. The banned-tells\nlist is stated up front so the generation itself resists the generic AI look;\nthe design-quality doctrine is injected so the record can cite it.
+EDGES
+  ^defines=matrix/cody/internal/decide/design.go
+
+NODE id=matrix/cody/internal/decide.firstJSONObject kind=func
+  digest=b3:7534f65c0a5bbfc75616a6117fefd80b72ea818987e05e07c1c970f3cd2a181a file=cody/internal/decide/decide.go range=135:167 lang=go exported=false byte_range=5229:5921
+  sig=func firstJSONObject(s string) string
+  doc=firstJSONObject returns the first balanced {...} span in s, string- and\nescape-aware, or "". (Mirrors the planner's tolerant extractor so a judge\nthat wraps its JSON in prose or fences is still read.)
+EDGES
+  ^defines=matrix/cody/internal/decide/decide.go
+
+NODE id=matrix/cody/internal/decide.hasEmoji kind=func
+  digest=b3:9b5c8d0066c4022ebbba174f1f806b33f94fb6e57bd46885faef5aabc2afb981 file=cody/internal/decide/design.go range=297:315 lang=go exported=false byte_range=12224:12903
+  sig=func hasEmoji(s string) bool
+  doc=hasEmoji reports whether s carries a pictographic emoji rune — the "emoji as\nUI chrome" tell. Covers the common emoji blocks (Misc Symbols, Dingbats,\nSupplemental Symbols, and the SMP pictograph planes) plus a couple of\nfrequently-abused standalone marks.
+EDGES
+  ^defines=matrix/cody/internal/decide/design.go
+
+NODE id=matrix/cody/internal/decide.judgeSystem kind=const
+  digest=b3:dc104194b9c99aec51bcef4af95c1907381f01a393595ae2edb325d0b9bb3b57 file=cody/internal/decide/decide.go range=70:78 lang=go exported=false byte_range=2236:3070
+  sig=untyped string
+  doc=judgeSystem casts the model as the decision adjudicator. The anti-default\nlens is explicit: a pick that would be identical regardless of the brief is\nthe failure mode this whole phase exists to prevent.
+EDGES
+  ^defines=matrix/cody/internal/decide/decide.go
+
+NODE id=matrix/cody/internal/decide.parseDecision kind=func
+  digest=b3:52677e8fce635c0df80ffdccb228a161c1c636cfee5d9c8b2e9354f30e89a62f file=cody/internal/decide/decide.go range=121:133 lang=go exported=false byte_range=4872:5227
+  sig=func parseDecision(raw string) (Decision, bool)
+  doc=parseDecision extracts the first balanced JSON object from the judge output\nand unmarshals the verdict.
+EDGES
+  ^defines=matrix/cody/internal/decide/decide.go
+
+NODE id=matrix/cody/internal/decide.parseDesign kind=func
+  digest=b3:7bec7d0d2ed04db95b8dfa2e7b80658b9c4159cafe8ef6371af8ccd83fec2c26 file=cody/internal/decide/design.go range=284:295 lang=go exported=false byte_range=11804:12222
+  sig=func parseDesign(raw string) (*DesignRecord, error)
+  doc=parseDesign extracts the first balanced JSON object and unmarshals a record.
+EDGES
+  ^defines=matrix/cody/internal/decide/design.go
+
+NODE id=matrix/cody/internal/decide.parseStack kind=func
+  digest=b3:2ee9e40917447231fedbacb0271b901defb1920986e04525940c3b6caf69b1a0 file=cody/internal/decide/stack.go range=213:224 lang=go exported=false byte_range=8866:9278
+  sig=func parseStack(raw string) (*StackRecord, error)
+  doc=parseStack extracts the first balanced JSON object and unmarshals a record.
+EDGES
+  ^defines=matrix/cody/internal/decide/stack.go
+
+NODE id=matrix/cody/internal/decide.stackCriteria kind=const
+  digest=b3:f4099de2fd45c4af7477655adb69dcfd0f639e0a3d7f9e17586ce213f8de6921 file=cody/internal/decide/stack.go range=106:107 lang=go exported=false byte_range=4189:4563
+  sig=untyped string
+  doc=stackCriteria is what the cold judge weighs candidate RECORDS against.
+EDGES
+  ^defines=matrix/cody/internal/decide/stack.go
+
+NODE id=matrix/cody/internal/decide.stackSystem kind=func
+  digest=b3:1b291f29b53c9b69f97b869714f7f981ff7a5a8d811d2d825d38d762f70095a9 file=cody/internal/decide/stack.go range=81:104 lang=go exported=false byte_range=2746:4187
+  sig=func stackSystem(doctrine string) string
+  doc=stackSystem casts the model as the stack decision author. The doctrine is\ninjected so the record can cite it; the anti-default posture is stated up\nfront so the generation itself resists the path of least resistance.
+EDGES
+  ^defines=matrix/cody/internal/decide/stack.go
+
+NODE id=matrix/cody/internal/decide/decide.go kind=file
+  digest=b3:399a80af2af5278bc653152d482456e453c4d83b32bb4e23c7d0718cde46c245 file=cody/internal/decide/decide.go range=1:167 lang=go exported=true
+EDGES
+  defines=matrix/cody/internal/decide.Candidate,matrix/cody/internal/decide.Decision,matrix/cody/internal/decide.Generate,matrix/cody/internal/decide.Judge,matrix/cody/internal/decide.firstJSONObject,matrix/cody/internal/decide.judgeSystem,matrix/cody/internal/decide.parseDecision
+  ^contains=matrix/cody/internal/decide
+
+NODE id=matrix/cody/internal/decide/design.go kind=file
+  digest=b3:2b7ac02442aec090910a79774f44a9424dc06f5ef2e60b0c4f125cd3c981e910 file=cody/internal/decide/design.go range=1:315 lang=go exported=true
+EDGES
+  defines=matrix/cody/internal/decide.AuthorDesign,matrix/cody/internal/decide.BannedTellsInText,matrix/cody/internal/decide.DesignProfile,matrix/cody/internal/decide.DesignRecord,matrix/cody/internal/decide.DesignRecord.Summary,matrix/cody/internal/decide.DesignRecord.Validate,matrix/cody/internal/decide.ScreenDesignAntiDefault,matrix/cody/internal/decide.ScreenDesignBanned,matrix/cody/internal/decide.antiDesignSystem,matrix/cody/internal/decide.bannedTell,matrix/cody/internal/decide.bannedTells,matrix/cody/internal/decide.contains,matrix/cody/internal/decide.designCriteria,matrix/cody/internal/decide.designSystem,matrix/cody/internal/decide.hasEmoji,matrix/cody/internal/decide.parseDesign
+  ^contains=matrix/cody/internal/decide
+
+NODE id=matrix/cody/internal/decide/stack.go kind=file
+  digest=b3:5f5c9342bba5cdd2c2e15733a10f40b606611b1a80c99b2dba3c612075af9bab file=cody/internal/decide/stack.go range=1:224 lang=go exported=true
+EDGES
+  defines=matrix/cody/internal/decide.AuthorStack,matrix/cody/internal/decide.ScreenStackAntiDefault,matrix/cody/internal/decide.StackCandidate,matrix/cody/internal/decide.StackProfile,matrix/cody/internal/decide.StackRecord,matrix/cody/internal/decide.StackRecord.Chosen,matrix/cody/internal/decide.StackRecord.Validate,matrix/cody/internal/decide.antiDefaultSystem,matrix/cody/internal/decide.antiDefaultVerdict,matrix/cody/internal/decide.parseStack,matrix/cody/internal/decide.stackCriteria,matrix/cody/internal/decide.stackSystem
+  ^contains=matrix/cody/internal/decide

@@ -1,9 +1,10 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:9b68327501b45793fd7687f43b30c960fd68ae8aaff6b2f1bb36ec3e2df2de2f
+# GENERATED gen=codegraph do-not-edit merkle=b3:20e53aba2ea11552396417e53b3e04e87dd1bbb7bef3aa554a45bb92cf89e7f2
 
 NODE id=matrix/codegraph/enrich kind=package
   digest=b3:af49e382239feb7475ceed69ce0e1b176a98911dc86adbad00101561126b302e file=codegraph/enrich range=0:0 lang=go exported=true
 EDGES
   contains=matrix/codegraph/enrich/cody.go,matrix/codegraph/enrich/cortexidx.go,matrix/codegraph/enrich/embed.go,matrix/codegraph/enrich/enrich.go,matrix/codegraph/enrich/errors.go,matrix/codegraph/enrich/fake.go,matrix/codegraph/enrich/salience.go,matrix/codegraph/enrich/summarize.go
+  imports=matrix/codegraph/model,matrix/cortex/embed,matrix/cortex/vector,matrix/mcl/llm,matrix/mcl/mtx/interpreter
   ^contains=mod:matrix/codegraph
 
 NODE id=matrix/codegraph/enrich.CodyConfig kind=type
@@ -12,6 +13,7 @@ NODE id=matrix/codegraph/enrich.CodyConfig kind=type
   doc=CodyConfig configures the production Summarizer that routes through the\nMatrix Gateway's cheap "cody" tier. GatewayURL and ActorDID are required for\ngateway routing; Model should be one of the cody-slot whitelist (the cheap\nglm-5p1-fast prototype model is the default cheap tier).
 EDGES
   contains=matrix/codegraph/enrich.CodyConfig#ActorDID,matrix/codegraph/enrich.CodyConfig#GatewayURL,matrix/codegraph/enrich.CodyConfig#Model,matrix/codegraph/enrich.CodyConfig#TokenEnv
+  ^references=matrix/codegraph/enrich.NewCody
   ^defines=matrix/codegraph/enrich/cody.go
 
 NODE id=matrix/codegraph/enrich.CodyConfig#ActorDID kind=field
@@ -45,6 +47,8 @@ NODE id=matrix/codegraph/enrich.CodySummarizer kind=type
 EDGES
   contains=matrix/codegraph/enrich.CodySummarizer#llm,matrix/codegraph/enrich.CodySummarizer#model,matrix/codegraph/enrich.CodySummarizer.Summarize
   implements=matrix/codegraph/enrich.Summarizer
+  references=matrix/mcl/mtx/interpreter.LLM
+  ^references=matrix/codegraph/enrich.CodySummarizer.Summarize,matrix/codegraph/enrich.NewCody
   ^defines=matrix/codegraph/enrich/cody.go
 
 NODE id=matrix/codegraph/enrich.CodySummarizer#llm kind=field
@@ -64,6 +68,8 @@ NODE id=matrix/codegraph/enrich.CodySummarizer.Summarize kind=method
   sig=func (c *CodySummarizer) Summarize(ctx context.Context, reqs []Request) ([]string, error)
   doc=Summarize sends one prompt per request through the cody slot, in order.
 EDGES
+  calls=matrix/codegraph/enrich.codyUserPrompt,matrix/codegraph/enrich.oneLine
+  references=matrix/codegraph/enrich.CodySummarizer,matrix/codegraph/enrich.Request,matrix/codegraph/enrich.c,matrix/codegraph/enrich.codyUserPrompt,matrix/codegraph/enrich.ctx,matrix/codegraph/enrich.err,matrix/codegraph/enrich.i,matrix/codegraph/enrich.msgs,matrix/codegraph/enrich.oneLine,matrix/codegraph/enrich.out,matrix/codegraph/enrich.r,matrix/codegraph/enrich.reqs,matrix/codegraph/enrich.summarySystemPrompt,matrix/codegraph/enrich.text,matrix/mcl/mtx/interpreter.LLM.Decode,matrix/mcl/mtx/interpreter.Message
   ^contains=matrix/codegraph/enrich.CodySummarizer
   ^defines=matrix/codegraph/enrich/cody.go
 
@@ -74,6 +80,8 @@ NODE id=matrix/codegraph/enrich.CortexEmbedder kind=type
 EDGES
   contains=matrix/codegraph/enrich.CortexEmbedder#inner,matrix/codegraph/enrich.CortexEmbedder.Dim,matrix/codegraph/enrich.CortexEmbedder.Embed,matrix/codegraph/enrich.CortexEmbedder.Model
   implements=matrix/codegraph/enrich.Embedder
+  references=matrix/cortex/embed.Embedder
+  ^references=matrix/codegraph/enrich.CortexEmbedder.Dim,matrix/codegraph/enrich.CortexEmbedder.Embed,matrix/codegraph/enrich.CortexEmbedder.Model,matrix/codegraph/enrich.NewHashEmbedder,matrix/codegraph/enrich.WrapEmbedder
   ^defines=matrix/codegraph/enrich/cortexidx.go
 
 NODE id=matrix/codegraph/enrich.CortexEmbedder#inner kind=field
@@ -86,6 +94,8 @@ NODE id=matrix/codegraph/enrich.CortexEmbedder.Dim kind=method
   digest=b3:513ba58dbd876bf7baaebef3ba6fe3d3b928113b3e12bc7aeb9f90bbc05d4a3e file=codegraph/enrich/cortexidx.go range=36:36 lang=go exported=true byte_range=1313:1372
   sig=func (a *CortexEmbedder) Dim() int
 EDGES
+  calls=matrix/cortex/embed.HashEmbedder.Dim
+  references=matrix/codegraph/enrich.CortexEmbedder,matrix/codegraph/enrich.a,matrix/cortex/embed.Embedder.Dim
   ^contains=matrix/codegraph/enrich.CortexEmbedder
   ^defines=matrix/codegraph/enrich/cortexidx.go
 
@@ -93,6 +103,8 @@ NODE id=matrix/codegraph/enrich.CortexEmbedder.Embed kind=method
   digest=b3:85ea70f67a3bd02643734842a20f93817cd76fb78b89d4651a99e02cb523b4ae file=codegraph/enrich/cortexidx.go range=38:48 lang=go exported=true byte_range=1374:1632
   sig=func (a *CortexEmbedder) Embed(_ context.Context, texts []string) ([][]float32, error)
 EDGES
+  calls=matrix/cortex/embed.HashEmbedder.Embed
+  references=matrix/codegraph/enrich.CortexEmbedder,matrix/codegraph/enrich.a,matrix/codegraph/enrich.err,matrix/codegraph/enrich.i,matrix/codegraph/enrich.out,matrix/codegraph/enrich.t,matrix/codegraph/enrich.texts,matrix/codegraph/enrich.v,matrix/cortex/embed.Embedder.Embed
   ^contains=matrix/codegraph/enrich.CortexEmbedder
   ^defines=matrix/codegraph/enrich/cortexidx.go
 
@@ -101,6 +113,8 @@ NODE id=matrix/codegraph/enrich.CortexEmbedder.Model kind=method
   sig=func (a *CortexEmbedder) Model() string
   doc=Model reports the underlying cortex embedder's model id, for the index pin.
 EDGES
+  calls=matrix/cortex/embed.HashEmbedder.Model
+  references=matrix/codegraph/enrich.CortexEmbedder,matrix/codegraph/enrich.a,matrix/cortex/embed.Embedder.Model
   ^contains=matrix/codegraph/enrich.CortexEmbedder
   ^defines=matrix/codegraph/enrich/cortexidx.go
 
@@ -111,6 +125,8 @@ NODE id=matrix/codegraph/enrich.CortexIndex kind=type
 EDGES
   contains=matrix/codegraph/enrich.CortexIndex#byId,matrix/codegraph/enrich.CortexIndex#byVid,matrix/codegraph/enrich.CortexIndex#idx,matrix/codegraph/enrich.CortexIndex#next,matrix/codegraph/enrich.CortexIndex#sal,matrix/codegraph/enrich.CortexIndex#store,matrix/codegraph/enrich.CortexIndex.Add,matrix/codegraph/enrich.CortexIndex.Len,matrix/codegraph/enrich.CortexIndex.Search
   implements=matrix/codegraph/enrich.VectorIndex
+  references=matrix/cortex/vector.Index,matrix/cortex/vector.MapStore
+  ^references=matrix/codegraph/enrich.CortexIndex.Add,matrix/codegraph/enrich.CortexIndex.Len,matrix/codegraph/enrich.CortexIndex.Search,matrix/codegraph/enrich.NewCortexIndex
   ^defines=matrix/codegraph/enrich/cortexidx.go
 
 NODE id=matrix/codegraph/enrich.CortexIndex#byId kind=field
@@ -154,6 +170,8 @@ NODE id=matrix/codegraph/enrich.CortexIndex.Add kind=method
   sig=func (c *CortexIndex) Add(id string, vec []float32, salience float64) error
   doc=Add indexes vec under id with a graph-salience weight. Re-adding an id\ntombstones the prior vector and inserts the new one, so an incremental\nre-embed of a moved node replaces its entry rather than duplicating it.
 EDGES
+  calls=matrix/codegraph/enrich.midFor,matrix/cortex/vector.Index.Add,matrix/cortex/vector.Index.Tombstone,matrix/cortex/vector.MapStore.Put
+  references=matrix/codegraph/enrich.CortexIndex,matrix/codegraph/enrich.c,matrix/codegraph/enrich.err,matrix/codegraph/enrich.id,matrix/codegraph/enrich.mid,matrix/codegraph/enrich.midFor,matrix/codegraph/enrich.ok,matrix/codegraph/enrich.salience,matrix/codegraph/enrich.vec,matrix/codegraph/enrich.vid,matrix/cortex/vector.Index.Add,matrix/cortex/vector.Index.Tombstone,matrix/cortex/vector.MapStore.Put
   ^contains=matrix/codegraph/enrich.CortexIndex
   ^defines=matrix/codegraph/enrich/cortexidx.go
 
@@ -162,6 +180,8 @@ NODE id=matrix/codegraph/enrich.CortexIndex.Len kind=method
   sig=func (c *CortexIndex) Len() int
   doc=Len reports how many live vectors are indexed.
 EDGES
+  calls=matrix/cortex/vector.Index.Len
+  references=matrix/codegraph/enrich.CortexIndex,matrix/codegraph/enrich.c,matrix/cortex/vector.Index.Len
   ^contains=matrix/codegraph/enrich.CortexIndex
   ^defines=matrix/codegraph/enrich/cortexidx.go
 
@@ -170,6 +190,8 @@ NODE id=matrix/codegraph/enrich.CortexIndex.Search kind=method
   sig=func (c *CortexIndex) Search(vec []float32, k int) ([]Match, error)
   doc=Search returns up to k salience-weighted nearest neighbors of vec, best\nfirst. Score = cosineSimilarity * (1 + salienceGain*salience), so among\nsemantically comparable hits the higher-salience node ranks ahead.
 EDGES
+  calls=matrix/cortex/vector.Index.Search
+  references=matrix/codegraph/enrich.CortexIndex,matrix/codegraph/enrich.Match,matrix/codegraph/enrich.c,matrix/codegraph/enrich.err,matrix/codegraph/enrich.h,matrix/codegraph/enrich.hits,matrix/codegraph/enrich.i,matrix/codegraph/enrich.id,matrix/codegraph/enrich.j,matrix/codegraph/enrich.k,matrix/codegraph/enrich.ok,matrix/codegraph/enrich.out,matrix/codegraph/enrich.salienceGain,matrix/codegraph/enrich.score,matrix/codegraph/enrich.sim,matrix/codegraph/enrich.vec,matrix/cortex/vector.ErrEmptyIndex,matrix/cortex/vector.Index.Search
   ^contains=matrix/codegraph/enrich.CortexIndex
   ^defines=matrix/codegraph/enrich/cortexidx.go
 
@@ -179,6 +201,7 @@ NODE id=matrix/codegraph/enrich.EmbedStats kind=type
   doc=EmbedStats reports what an Embed pass did.
 EDGES
   contains=matrix/codegraph/enrich.EmbedStats#Eligible,matrix/codegraph/enrich.EmbedStats#Embedded,matrix/codegraph/enrich.EmbedStats#Reused
+  ^references=matrix/codegraph/enrich.Enricher.Embed
   ^defines=matrix/codegraph/enrich/embed.go
 
 NODE id=matrix/codegraph/enrich.EmbedStats#Eligible kind=field
@@ -205,6 +228,7 @@ NODE id=matrix/codegraph/enrich.Embedder kind=interface
   doc=Embedder maps texts to fixed-width vectors, in order. It is the sole\nembedding boundary; a real implementation calls the cortex embedder, a fake\nderives a deterministic vector. len(out) MUST equal len(texts) and every\nvector MUST have length Dim().
 EDGES
   ^implements=matrix/codegraph/enrich.CortexEmbedder,matrix/codegraph/enrich.FakeEmbedder
+  ^references=matrix/codegraph/enrich.Enricher
   ^defines=matrix/codegraph/enrich/enrich.go
 
 NODE id=matrix/codegraph/enrich.Enrichable kind=func
@@ -212,6 +236,9 @@ NODE id=matrix/codegraph/enrich.Enrichable kind=func
   sig=func Enrichable(n *model.Node) bool
   doc=Enrichable reports whether a node participates in the enrichment layer.
 EDGES
+  references=matrix/codegraph/enrich.enrichableKinds,matrix/codegraph/enrich.n,matrix/codegraph/model.Node
+  ^calls=matrix/codegraph/enrich.Enricher.Embed,matrix/codegraph/enrich.Enricher.Summarize,matrix/codegraph/enrich.computeSalience
+  ^references=matrix/codegraph/enrich.Enricher.Embed,matrix/codegraph/enrich.Enricher.Summarize,matrix/codegraph/enrich.computeSalience
   ^defines=matrix/codegraph/enrich/enrich.go
 
 NODE id=matrix/codegraph/enrich.Enricher kind=type
@@ -220,6 +247,8 @@ NODE id=matrix/codegraph/enrich.Enricher kind=type
   doc=Enricher runs the enrichment passes over an index behind the L5 boundary.\nSummarizer and Embedder are required for their respective passes; Vectors is\nthe index the Embed pass writes into. Batch bounds how many nodes go to the\nmodel per call (0 => defaultBatch).
 EDGES
   contains=matrix/codegraph/enrich.Enricher#Batch,matrix/codegraph/enrich.Enricher#Embedder,matrix/codegraph/enrich.Enricher#Summarizer,matrix/codegraph/enrich.Enricher#Vectors,matrix/codegraph/enrich.Enricher.Embed,matrix/codegraph/enrich.Enricher.Summarize,matrix/codegraph/enrich.Enricher.batchSize
+  references=matrix/codegraph/enrich.Embedder,matrix/codegraph/enrich.Summarizer,matrix/codegraph/enrich.VectorIndex
+  ^references=matrix/codegraph/enrich.Enricher.Embed,matrix/codegraph/enrich.Enricher.Summarize,matrix/codegraph/enrich.Enricher.batchSize
   ^defines=matrix/codegraph/enrich/enrich.go
 
 NODE id=matrix/codegraph/enrich.Enricher#Batch kind=field
@@ -251,6 +280,8 @@ NODE id=matrix/codegraph/enrich.Enricher.Embed kind=method
   sig=func (e *Enricher) Embed(ctx context.Context, ix *model.Index) (EmbedStats, error)
   doc=Embed embeds (summary + signature) for every enrichable node whose embedding\nis stale, indexes each vector in the cortex HNSW under namespace codegraph\nweighted by graph salience, and reuses cached embeddings for unchanged\ndigests. It refreshes every enrichable node's graph salience (EMA-blended)\neach pass, since salience tracks graph structure independently of a node's\nown digest. It writes only Enrich.EmbedRef and Enrich.Salience — never a\nstructural field (Requirements 8.1, 9.1, 9.2, 10.4).\n\nNodes are processed in id-sorted, batched order so the pass is deterministic.
 EDGES
+  calls=matrix/codegraph/enrich.Enrichable,matrix/codegraph/enrich.Enricher.batchSize,matrix/codegraph/enrich.blendSalience,matrix/codegraph/enrich.computeSalience,matrix/codegraph/enrich.embedStale,matrix/codegraph/model.Index.Nodes
+  references=matrix/codegraph/enrich.EmbedStats,matrix/codegraph/enrich.Embedder.Dim,matrix/codegraph/enrich.Embedder.Embed,matrix/codegraph/enrich.Enrichable,matrix/codegraph/enrich.Enricher,matrix/codegraph/enrich.Enricher.batchSize,matrix/codegraph/enrich.VectorIndex.Add,matrix/codegraph/enrich.batch,matrix/codegraph/enrich.batchN,matrix/codegraph/enrich.blendSalience,matrix/codegraph/enrich.computeSalience,matrix/codegraph/enrich.ctx,matrix/codegraph/enrich.dim,matrix/codegraph/enrich.e,matrix/codegraph/enrich.embedRef,matrix/codegraph/enrich.embedStale,matrix/codegraph/enrich.embedText,matrix/codegraph/enrich.err,matrix/codegraph/enrich.errEmbedCount,matrix/codegraph/enrich.errEmbedDim,matrix/codegraph/enrich.errNoEmbedder,matrix/codegraph/enrich.errNoVectors,matrix/codegraph/enrich.flush,matrix/codegraph/enrich.i,matrix/codegraph/enrich.ix,matrix/codegraph/enrich.n,matrix/codegraph/enrich.salience,matrix/codegraph/enrich.setEmbedding,matrix/codegraph/enrich.stats,matrix/codegraph/enrich.texts,matrix/codegraph/enrich.vecs,matrix/codegraph/model.Index,matrix/codegraph/model.Index.Nodes,matrix/codegraph/model.Node
   ^contains=matrix/codegraph/enrich.Enricher
   ^defines=matrix/codegraph/enrich/embed.go
 
@@ -259,6 +290,8 @@ NODE id=matrix/codegraph/enrich.Enricher.Summarize kind=method
   sig=func (e *Enricher) Summarize(ctx context.Context, ix *model.Index) (SummaryStats, error)
   doc=Summarize generates one-line summaries for every enrichable node whose\nsummary is stale, batching them through the Summarizer keyed on node digest,\nand reusing cached summaries for unchanged digests. It writes only\nEnrich.Summary and Enrich.SummaryDigest — never a structural field\n(Requirements 8.1, 8.2, 8.3, 8.4). Nodes are processed in id-sorted order so\nthe pass is deterministic.
 EDGES
+  calls=matrix/codegraph/enrich.Enrichable,matrix/codegraph/enrich.Enricher.batchSize,matrix/codegraph/enrich.summaryStale,matrix/codegraph/model.Index.Nodes
+  references=matrix/codegraph/enrich.Enrichable,matrix/codegraph/enrich.Enricher,matrix/codegraph/enrich.Enricher.batchSize,matrix/codegraph/enrich.Request,matrix/codegraph/enrich.Summarizer.Summarize,matrix/codegraph/enrich.SummaryStats,matrix/codegraph/enrich.batch,matrix/codegraph/enrich.batchN,matrix/codegraph/enrich.ctx,matrix/codegraph/enrich.e,matrix/codegraph/enrich.err,matrix/codegraph/enrich.errNoSummarizer,matrix/codegraph/enrich.errSummaryCount,matrix/codegraph/enrich.flush,matrix/codegraph/enrich.i,matrix/codegraph/enrich.ix,matrix/codegraph/enrich.n,matrix/codegraph/enrich.reqs,matrix/codegraph/enrich.requestFor,matrix/codegraph/enrich.setSummary,matrix/codegraph/enrich.stats,matrix/codegraph/enrich.summaries,matrix/codegraph/enrich.summaryStale,matrix/codegraph/model.Index,matrix/codegraph/model.Index.Nodes,matrix/codegraph/model.Node
   ^contains=matrix/codegraph/enrich.Enricher
   ^defines=matrix/codegraph/enrich/summarize.go
 
@@ -266,7 +299,10 @@ NODE id=matrix/codegraph/enrich.Enricher.batchSize kind=method
   digest=b3:e065ad06b0047c1621b173846f9c65e7c8216cc82aa87ff528d4e878e98a6192 file=codegraph/enrich/enrich.go range=122:127 lang=go exported=false byte_range=4583:4680
   sig=func (e *Enricher) batchSize() int
 EDGES
+  references=matrix/codegraph/enrich.Enricher,matrix/codegraph/enrich.defaultBatch,matrix/codegraph/enrich.e
   ^contains=matrix/codegraph/enrich.Enricher
+  ^calls=matrix/codegraph/enrich.Enricher.Embed,matrix/codegraph/enrich.Enricher.Summarize
+  ^references=matrix/codegraph/enrich.Enricher.Embed,matrix/codegraph/enrich.Enricher.Summarize
   ^defines=matrix/codegraph/enrich/enrich.go
 
 NODE id=matrix/codegraph/enrich.FakeEmbedder kind=type
@@ -276,6 +312,7 @@ NODE id=matrix/codegraph/enrich.FakeEmbedder kind=type
 EDGES
   contains=matrix/codegraph/enrich.FakeEmbedder#Calls,matrix/codegraph/enrich.FakeEmbedder#Dimension,matrix/codegraph/enrich.FakeEmbedder.Dim,matrix/codegraph/enrich.FakeEmbedder.Embed
   implements=matrix/codegraph/enrich.Embedder
+  ^references=matrix/codegraph/enrich.FakeEmbedder.Dim,matrix/codegraph/enrich.FakeEmbedder.Embed
   ^defines=matrix/codegraph/enrich/fake.go
 
 NODE id=matrix/codegraph/enrich.FakeEmbedder#Calls kind=field
@@ -296,13 +333,18 @@ NODE id=matrix/codegraph/enrich.FakeEmbedder.Dim kind=method
   digest=b3:66a55d6a9627128164230fa64c4250e865af86bf851ffad44a58d35b0c38bb5d file=codegraph/enrich/fake.go range=52:57 lang=go exported=true byte_range=1449:1542
   sig=func (f *FakeEmbedder) Dim() int
 EDGES
+  references=matrix/codegraph/enrich.FakeEmbedder,matrix/codegraph/enrich.f
   ^contains=matrix/codegraph/enrich.FakeEmbedder
+  ^calls=matrix/codegraph/enrich.FakeEmbedder.Embed
+  ^references=matrix/codegraph/enrich.FakeEmbedder.Embed
   ^defines=matrix/codegraph/enrich/fake.go
 
 NODE id=matrix/codegraph/enrich.FakeEmbedder.Embed kind=method
   digest=b3:a1c2b8010195f04dca6071780d2f6d6c9730faa92b723dd4a209838c3e932d08 file=codegraph/enrich/fake.go range=59:67 lang=go exported=true byte_range=1544:1784
   sig=func (f *FakeEmbedder) Embed(_ context.Context, texts []string) ([][]float32, error)
 EDGES
+  calls=matrix/codegraph/enrich.FakeEmbedder.Dim,matrix/codegraph/enrich.deterministicVector
+  references=matrix/codegraph/enrich.FakeEmbedder,matrix/codegraph/enrich.FakeEmbedder.Dim,matrix/codegraph/enrich.deterministicVector,matrix/codegraph/enrich.dim,matrix/codegraph/enrich.f,matrix/codegraph/enrich.i,matrix/codegraph/enrich.out,matrix/codegraph/enrich.t,matrix/codegraph/enrich.texts
   ^contains=matrix/codegraph/enrich.FakeEmbedder
   ^defines=matrix/codegraph/enrich/fake.go
 
@@ -313,6 +355,7 @@ NODE id=matrix/codegraph/enrich.FakeSummarizer kind=type
 EDGES
   contains=matrix/codegraph/enrich.FakeSummarizer#Calls,matrix/codegraph/enrich.FakeSummarizer.Summarize
   implements=matrix/codegraph/enrich.Summarizer
+  ^references=matrix/codegraph/enrich.FakeSummarizer.Summarize
   ^defines=matrix/codegraph/enrich/fake.go
 
 NODE id=matrix/codegraph/enrich.FakeSummarizer#Calls kind=field
@@ -326,6 +369,8 @@ NODE id=matrix/codegraph/enrich.FakeSummarizer.Summarize kind=method
   digest=b3:30eb48811d3e2f668dbbf21f60da2ee318455dd12d60532ef267f49df7748e11 file=codegraph/enrich/fake.go range=24:40 lang=go exported=true byte_range=639:1051
   sig=func (f *FakeSummarizer) Summarize(_ context.Context, reqs []Request) ([]string, error)
 EDGES
+  calls=matrix/codegraph/enrich.firstLine,matrix/codegraph/enrich.oneLine
+  references=matrix/codegraph/enrich.FakeSummarizer,matrix/codegraph/enrich.Request,matrix/codegraph/enrich.desc,matrix/codegraph/enrich.f,matrix/codegraph/enrich.firstLine,matrix/codegraph/enrich.i,matrix/codegraph/enrich.oneLine,matrix/codegraph/enrich.out,matrix/codegraph/enrich.r,matrix/codegraph/enrich.reqs
   ^contains=matrix/codegraph/enrich.FakeSummarizer
   ^defines=matrix/codegraph/enrich/fake.go
 
@@ -335,6 +380,7 @@ NODE id=matrix/codegraph/enrich.Match kind=type
   doc=Match is one ranked vector-search hit.
 EDGES
   contains=matrix/codegraph/enrich.Match#Id,matrix/codegraph/enrich.Match#Score
+  ^references=matrix/codegraph/enrich.CortexIndex.Search,matrix/codegraph/enrich.VectorIndex
   ^defines=matrix/codegraph/enrich/enrich.go
 
 NODE id=matrix/codegraph/enrich.Match#Id kind=field
@@ -354,6 +400,7 @@ NODE id=matrix/codegraph/enrich.Namespace kind=const
   sig=untyped string
   doc=Namespace is the cortex HNSW namespace CodeGraph embeddings live under.
 EDGES
+  ^references=matrix/codegraph/enrich.embedRef
   ^defines=matrix/codegraph/enrich/enrich.go
 
 NODE id=matrix/codegraph/enrich.NewCody kind=func
@@ -361,6 +408,8 @@ NODE id=matrix/codegraph/enrich.NewCody kind=func
   sig=func NewCody(cfg CodyConfig) (*CodySummarizer, error)
   doc=NewCody builds a CodySummarizer that decodes through the gateway "cody" slot.
 EDGES
+  calls=matrix/mcl/llm.New
+  references=matrix/codegraph/enrich.CodyConfig,matrix/codegraph/enrich.CodySummarizer,matrix/codegraph/enrich.c,matrix/codegraph/enrich.cfg,matrix/codegraph/enrich.client,matrix/codegraph/enrich.codyModelDefault,matrix/codegraph/enrich.err,matrix/codegraph/enrich.model,matrix/mcl/llm.Config,matrix/mcl/llm.New
   ^defines=matrix/codegraph/enrich/cody.go
 
 NODE id=matrix/codegraph/enrich.NewCortexIndex kind=func
@@ -368,6 +417,8 @@ NODE id=matrix/codegraph/enrich.NewCortexIndex kind=func
   sig=func NewCortexIndex(dim int, model string) *CortexIndex
   doc=NewCortexIndex builds an in-memory cortex HNSW index of the given dimension\nunder the codegraph namespace. model pins the embedding model id to the index.
 EDGES
+  calls=matrix/cortex/vector.Index.BindStore,matrix/cortex/vector.NewIndex,matrix/cortex/vector.NewMapStore
+  references=matrix/codegraph/enrich.CortexIndex,matrix/codegraph/enrich.dim,matrix/codegraph/enrich.idx,matrix/codegraph/enrich.model,matrix/codegraph/enrich.store,matrix/cortex/vector.Index.BindStore,matrix/cortex/vector.NewIndex,matrix/cortex/vector.NewMapStore,matrix/cortex/vector.Params
   ^defines=matrix/codegraph/enrich/cortexidx.go
 
 NODE id=matrix/codegraph/enrich.NewHashEmbedder kind=func
@@ -375,6 +426,8 @@ NODE id=matrix/codegraph/enrich.NewHashEmbedder kind=func
   sig=func NewHashEmbedder(dim int) *CortexEmbedder
   doc=NewHashEmbedder returns the deterministic cortex hash embedder at the given\ndimension, salted for codegraph, adapted to the batch boundary. It is a real\nembedder with the replay-deterministic contract — suitable for hermetic tests\nand offline indexing.
 EDGES
+  calls=matrix/codegraph/enrich.WrapEmbedder,matrix/cortex/embed.NewHashEmbedderWith
+  references=matrix/codegraph/enrich.CortexEmbedder,matrix/codegraph/enrich.WrapEmbedder,matrix/codegraph/enrich.dim,matrix/cortex/embed.NewHashEmbedderWith
   ^defines=matrix/codegraph/enrich/cortexidx.go
 
 NODE id=matrix/codegraph/enrich.Request kind=type
@@ -383,6 +436,8 @@ NODE id=matrix/codegraph/enrich.Request kind=type
   doc=Request is the structural view of one node handed across the L5 boundary. It\ncarries only fields already public in the graph store (never raw source), so\nthe boundary cannot leak source text into a summary prompt.
 EDGES
   contains=matrix/codegraph/enrich.Request#Doc,matrix/codegraph/enrich.Request#Id,matrix/codegraph/enrich.Request#Kind,matrix/codegraph/enrich.Request#Lang,matrix/codegraph/enrich.Request#Name,matrix/codegraph/enrich.Request#QName,matrix/codegraph/enrich.Request#Sig
+  references=matrix/codegraph/model.Kind
+  ^references=matrix/codegraph/enrich.CodySummarizer.Summarize,matrix/codegraph/enrich.Enricher.Summarize,matrix/codegraph/enrich.FakeSummarizer.Summarize,matrix/codegraph/enrich.Summarizer,matrix/codegraph/enrich.codyUserPrompt,matrix/codegraph/enrich.requestFor
   ^defines=matrix/codegraph/enrich/enrich.go
 
 NODE id=matrix/codegraph/enrich.Request#Doc kind=field
@@ -432,7 +487,9 @@ NODE id=matrix/codegraph/enrich.Summarizer kind=interface
   sig=type Summarizer interface {\n	Summarize(ctx context.Context, reqs []Request) ([]string, error)\n}
   doc=Summarizer produces a one-line natural-language summary for each request, in\norder. It is the sole place structural facts become prose; a real\nimplementation batches through the cheap model tier (Cody via Gateway), a\nfake returns deterministic text for tests. len(out) MUST equal len(reqs).
 EDGES
+  references=matrix/codegraph/enrich.Request
   ^implements=matrix/codegraph/enrich.CodySummarizer,matrix/codegraph/enrich.FakeSummarizer
+  ^references=matrix/codegraph/enrich.Enricher
   ^defines=matrix/codegraph/enrich/enrich.go
 
 NODE id=matrix/codegraph/enrich.SummaryStats kind=type
@@ -441,6 +498,7 @@ NODE id=matrix/codegraph/enrich.SummaryStats kind=type
   doc=SummaryStats reports what a Summarize pass did.
 EDGES
   contains=matrix/codegraph/enrich.SummaryStats#Eligible,matrix/codegraph/enrich.SummaryStats#Generated,matrix/codegraph/enrich.SummaryStats#Reused
+  ^references=matrix/codegraph/enrich.Enricher.Summarize
   ^defines=matrix/codegraph/enrich/summarize.go
 
 NODE id=matrix/codegraph/enrich.SummaryStats#Eligible kind=field
@@ -466,7 +524,9 @@ NODE id=matrix/codegraph/enrich.VectorIndex kind=interface
   sig=type VectorIndex interface {\n	// Add indexes vec under id with an associated salience weight (see\n	// Requirement 9.2). Re-adding the same id replaces the prior entry.\n	Add(id string, vec []float32, salience float64) error\n	// Search returns up to k node ids nearest to vec, best first, each with its\n	// fused score after salience weighting.\n	Search(vec []float32, k int) ([]Match, error)\n}
   doc=VectorIndex is the semantic-search sink: it indexes an embedding under a node\nid within a namespace and answers k-NN queries. CodeGraph targets the\nexisting cortex HNSW under namespace "codegraph" rather than a new vector\nstore (Requirement 9.1); the interface keeps that dependency behind L5 and\nlets tests substitute an in-memory index.
 EDGES
+  references=matrix/codegraph/enrich.Match
   ^implements=matrix/codegraph/enrich.CortexIndex
+  ^references=matrix/codegraph/enrich.Enricher
   ^defines=matrix/codegraph/enrich/enrich.go
 
 NODE id=matrix/codegraph/enrich.WrapEmbedder kind=func
@@ -474,6 +534,9 @@ NODE id=matrix/codegraph/enrich.WrapEmbedder kind=func
   sig=func WrapEmbedder(e embed.Embedder) *CortexEmbedder
   doc=WrapEmbedder adapts any cortex embed.Embedder into the enrich.Embedder batch\nboundary.
 EDGES
+  references=matrix/codegraph/enrich.CortexEmbedder,matrix/codegraph/enrich.e,matrix/cortex/embed.Embedder
+  ^calls=matrix/codegraph/enrich.NewHashEmbedder
+  ^references=matrix/codegraph/enrich.NewHashEmbedder
   ^defines=matrix/codegraph/enrich/cortexidx.go
 
 NODE id=matrix/codegraph/enrich.blendSalience kind=func
@@ -481,6 +544,9 @@ NODE id=matrix/codegraph/enrich.blendSalience kind=func
   sig=func blendSalience(prior, observed float64) float64
   doc=blendSalience folds an observed salience into a prior via the EMA. A zero\nprior (never scored) adopts the observation outright so the first pass is not\ndamped toward zero.
 EDGES
+  references=matrix/codegraph/enrich.observed,matrix/codegraph/enrich.prior,matrix/codegraph/enrich.salienceEMARate
+  ^calls=matrix/codegraph/enrich.Enricher.Embed
+  ^references=matrix/codegraph/enrich.Enricher.Embed
   ^defines=matrix/codegraph/enrich/salience.go
 
 NODE id=matrix/codegraph/enrich.codyModelDefault kind=const
@@ -488,6 +554,7 @@ NODE id=matrix/codegraph/enrich.codyModelDefault kind=const
   sig=untyped string
   doc=codyModelDefault is the model in the gateway "cody" slot whitelist\n(gateway/internal/rates/rates.go): xAI's grok-build-0.1.
 EDGES
+  ^references=matrix/codegraph/enrich.NewCody
   ^defines=matrix/codegraph/enrich/cody.go
 
 NODE id=matrix/codegraph/enrich.codyUserPrompt kind=func
@@ -495,6 +562,10 @@ NODE id=matrix/codegraph/enrich.codyUserPrompt kind=func
   sig=func codyUserPrompt(r Request) string
   doc=codyUserPrompt renders the structural facts of a symbol for the cheap tier.\nIt passes only already-public graph fields (kind, name, signature, doc) —\nnever raw source — so the enrichment boundary cannot leak source text.
 EDGES
+  calls=matrix/codegraph/enrich.oneLine
+  references=matrix/codegraph/enrich.Request,matrix/codegraph/enrich.b,matrix/codegraph/enrich.oneLine,matrix/codegraph/enrich.r
+  ^calls=matrix/codegraph/enrich.CodySummarizer.Summarize
+  ^references=matrix/codegraph/enrich.CodySummarizer.Summarize
   ^defines=matrix/codegraph/enrich/cody.go
 
 NODE id=matrix/codegraph/enrich.computeSalience kind=func
@@ -502,12 +573,17 @@ NODE id=matrix/codegraph/enrich.computeSalience kind=func
   sig=func computeSalience(ix *model.Index) map[string]float64
   doc=computeSalience returns a normalized [0,1] graph salience for every\nenrichable node, derived from log-scaled reverse-edge fan-in over\nsalienceEdges and normalized by the graph's maximum. Deterministic: a pure\nfunction of the index's edges.
 EDGES
+  calls=matrix/codegraph/enrich.Enrichable,matrix/codegraph/model.Index.Nodes,matrix/codegraph/model.Index.Reverse
+  references=matrix/codegraph/enrich.Enrichable,matrix/codegraph/enrich.deg,matrix/codegraph/enrich.id,matrix/codegraph/enrich.ix,matrix/codegraph/enrich.max,matrix/codegraph/enrich.n,matrix/codegraph/enrich.r,matrix/codegraph/enrich.raw,matrix/codegraph/enrich.salienceEdges,matrix/codegraph/enrich.t,matrix/codegraph/model.Index,matrix/codegraph/model.Index.Nodes,matrix/codegraph/model.Index.Reverse
+  ^calls=matrix/codegraph/enrich.Enricher.Embed
+  ^references=matrix/codegraph/enrich.Enricher.Embed
   ^defines=matrix/codegraph/enrich/salience.go
 
 NODE id=matrix/codegraph/enrich.defaultBatch kind=const
   digest=b3:1f6f5e2dc3200a6b4795dcbac999b51e5821672b3ea344f53fbdea3aa30dba05 file=codegraph/enrich/enrich.go range=120:120 lang=go exported=false byte_range=4564:4581
   sig=untyped int
 EDGES
+  ^references=matrix/codegraph/enrich.Enricher.batchSize
   ^defines=matrix/codegraph/enrich/enrich.go
 
 NODE id=matrix/codegraph/enrich.deterministicVector kind=func
@@ -515,6 +591,9 @@ NODE id=matrix/codegraph/enrich.deterministicVector kind=func
   sig=func deterministicVector(text string, dim int) []float32
   doc=deterministicVector expands blake3(text) into a dim-wide unit vector. Bytes\nare drawn from a counter-extended hash stream so any dimension is supported.
 EDGES
+  references=matrix/codegraph/enrich.buf,matrix/codegraph/enrich.dim,matrix/codegraph/enrich.h,matrix/codegraph/enrich.i,matrix/codegraph/enrich.inv,matrix/codegraph/enrich.norm,matrix/codegraph/enrich.sum,matrix/codegraph/enrich.text,matrix/codegraph/enrich.u,matrix/codegraph/enrich.v,matrix/codegraph/enrich.vec
+  ^calls=matrix/codegraph/enrich.FakeEmbedder.Embed
+  ^references=matrix/codegraph/enrich.FakeEmbedder.Embed
   ^defines=matrix/codegraph/enrich/fake.go
 
 NODE id=matrix/codegraph/enrich.embedRef kind=func
@@ -522,6 +601,9 @@ NODE id=matrix/codegraph/enrich.embedRef kind=func
   sig=func embedRef(id, digest string) string
   doc=embedRef is the digest-stamped reference recorded on a node, pointing at its\nentry in the codegraph vector namespace. Stamping the digest makes the\nreference change exactly when the embedded content moves, so a stale\nembedding is detectable by comparison alone (see embedStale).
 EDGES
+  references=matrix/codegraph/enrich.Namespace,matrix/codegraph/enrich.digest,matrix/codegraph/enrich.id
+  ^calls=matrix/codegraph/enrich.embedStale
+  ^references=matrix/codegraph/enrich.Enricher.Embed,matrix/codegraph/enrich.embedStale,matrix/codegraph/enrich.setEmbedding
   ^defines=matrix/codegraph/enrich/embed.go
 
 NODE id=matrix/codegraph/enrich.embedStale kind=func
@@ -529,6 +611,10 @@ NODE id=matrix/codegraph/enrich.embedStale kind=func
   sig=func embedStale(n *model.Node) bool
   doc=embedStale reports whether a node needs a fresh embedding: its recorded\nembed reference does not match the reference its current digest would\nproduce. Because the reference is digest-stamped (see embedRef), this is true\nexactly when the node has never been embedded or its content moved — so the\npass re-embeds only nodes whose digest changed (Requirements 8.2, 10.4).
 EDGES
+  calls=matrix/codegraph/enrich.embedRef
+  references=matrix/codegraph/enrich.embedRef,matrix/codegraph/enrich.n,matrix/codegraph/model.Node
+  ^calls=matrix/codegraph/enrich.Enricher.Embed
+  ^references=matrix/codegraph/enrich.Enricher.Embed
   ^defines=matrix/codegraph/enrich/embed.go
 
 NODE id=matrix/codegraph/enrich.embedText kind=func
@@ -536,6 +622,8 @@ NODE id=matrix/codegraph/enrich.embedText kind=func
   sig=func embedText(n *model.Node) string
   doc=embedText is what gets embedded for a node: its one-line summary plus its\nsignature. Both are compact, already-public graph fields — never raw source.
 EDGES
+  references=matrix/codegraph/enrich.b,matrix/codegraph/enrich.n,matrix/codegraph/enrich.s,matrix/codegraph/model.Node
+  ^references=matrix/codegraph/enrich.Enricher.Embed
   ^defines=matrix/codegraph/enrich/embed.go
 
 NODE id=matrix/codegraph/enrich.enrichableKinds kind=var
@@ -543,48 +631,59 @@ NODE id=matrix/codegraph/enrich.enrichableKinds kind=var
   sig=map[model.Kind]bool
   doc=enrichableKinds are the symbol kinds worth summarizing and embedding. Whole-\nfile and container nodes (repo/module/package/file) are structural aggregates\nwhose digest already rolls up their children; per-symbol enrichment is what an\nagent retrieves against.
 EDGES
+  references=matrix/codegraph/model.Kind,matrix/codegraph/model.KindConst,matrix/codegraph/model.KindField,matrix/codegraph/model.KindFunc,matrix/codegraph/model.KindInterface,matrix/codegraph/model.KindMethod,matrix/codegraph/model.KindType,matrix/codegraph/model.KindVar
+  ^references=matrix/codegraph/enrich.Enrichable
   ^defines=matrix/codegraph/enrich/enrich.go
 
 NODE id=matrix/codegraph/enrich.errEmbedCount kind=var
   digest=b3:b5b22899893139aea51d7e4d5cc17011ade6b1104ae5f1d12a555b71e526e4bb file=codegraph/enrich/errors.go range=10:10 lang=go exported=false byte_range=324:405
   sig=error
 EDGES
+  ^references=matrix/codegraph/enrich.Enricher.Embed
   ^defines=matrix/codegraph/enrich/errors.go
 
 NODE id=matrix/codegraph/enrich.errEmbedDim kind=var
   digest=b3:cab07a05f51ff3542854b1f4619da34440f1a83684d1a8258e2e566b56954519 file=codegraph/enrich/errors.go range=11:11 lang=go exported=false byte_range=407:492
   sig=error
 EDGES
+  ^references=matrix/codegraph/enrich.Enricher.Embed
   ^defines=matrix/codegraph/enrich/errors.go
 
 NODE id=matrix/codegraph/enrich.errNoEmbedder kind=var
   digest=b3:e233f9472d621d12a8c0eb1eb5f26cdd3644ce702a1798e68732644a65e2615f file=codegraph/enrich/errors.go range=8:8 lang=go exported=false byte_range=193:255
   sig=error
 EDGES
+  ^references=matrix/codegraph/enrich.Enricher.Embed
   ^defines=matrix/codegraph/enrich/errors.go
 
 NODE id=matrix/codegraph/enrich.errNoSummarizer kind=var
   digest=b3:a2cd1e32ec423562aee7092204bcb9e0b1630a20cb64c63c0dfe356932725418 file=codegraph/enrich/errors.go range=6:6 lang=go exported=false byte_range=40:104
   sig=error
 EDGES
+  ^references=matrix/codegraph/enrich.Enricher.Summarize
   ^defines=matrix/codegraph/enrich/errors.go
 
 NODE id=matrix/codegraph/enrich.errNoVectors kind=var
   digest=b3:80e316476f5c69a432cb0f2bd7ac1d8544d2d9e0320498b979c1dcfedea29c4d file=codegraph/enrich/errors.go range=9:9 lang=go exported=false byte_range=257:322
   sig=error
 EDGES
+  ^references=matrix/codegraph/enrich.Enricher.Embed
   ^defines=matrix/codegraph/enrich/errors.go
 
 NODE id=matrix/codegraph/enrich.errSummaryCount kind=var
   digest=b3:48db2588d73b5371a71c3ab3ee330cbee4554e5dd50f7aac764d8c28f58ce4e5 file=codegraph/enrich/errors.go range=7:7 lang=go exported=false byte_range=106:191
   sig=error
 EDGES
+  ^references=matrix/codegraph/enrich.Enricher.Summarize
   ^defines=matrix/codegraph/enrich/errors.go
 
 NODE id=matrix/codegraph/enrich.firstLine kind=func
   digest=b3:a9d484250888c7f8a764b96efb75cd8df3247c532882fe0ce2457c99e9f850ef file=codegraph/enrich/fake.go range=99:104 lang=go exported=false byte_range=2551:2660
   sig=func firstLine(s string) string
 EDGES
+  references=matrix/codegraph/enrich.i,matrix/codegraph/enrich.s
+  ^calls=matrix/codegraph/enrich.FakeSummarizer.Summarize
+  ^references=matrix/codegraph/enrich.FakeSummarizer.Summarize
   ^defines=matrix/codegraph/enrich/fake.go
 
 NODE id=matrix/codegraph/enrich.midFor kind=func
@@ -592,12 +691,18 @@ NODE id=matrix/codegraph/enrich.midFor kind=func
   sig=func midFor(id string) vector.MemoryID
   doc=midFor derives the stable 16-byte cortex MemoryID for a node id.
 EDGES
+  references=matrix/codegraph/enrich.id,matrix/codegraph/enrich.mid,matrix/codegraph/enrich.sum,matrix/cortex/vector.MemoryID
+  ^calls=matrix/codegraph/enrich.CortexIndex.Add
+  ^references=matrix/codegraph/enrich.CortexIndex.Add
   ^defines=matrix/codegraph/enrich/cortexidx.go
 
 NODE id=matrix/codegraph/enrich.oneLine kind=func
   digest=b3:4b8fdba0530f6c263a78a2b68277e046e9a65bd105d458f30034a601a824873b file=codegraph/enrich/fake.go range=106:110 lang=go exported=false byte_range=2662:2835
   sig=func oneLine(s string) string
 EDGES
+  references=matrix/codegraph/enrich.s
+  ^calls=matrix/codegraph/enrich.CodySummarizer.Summarize,matrix/codegraph/enrich.FakeSummarizer.Summarize,matrix/codegraph/enrich.codyUserPrompt
+  ^references=matrix/codegraph/enrich.CodySummarizer.Summarize,matrix/codegraph/enrich.FakeSummarizer.Summarize,matrix/codegraph/enrich.codyUserPrompt
   ^defines=matrix/codegraph/enrich/fake.go
 
 NODE id=matrix/codegraph/enrich.requestFor kind=func
@@ -605,6 +710,8 @@ NODE id=matrix/codegraph/enrich.requestFor kind=func
   sig=func requestFor(n *model.Node) Request
   doc=requestFor builds the boundary Request from a node's structural fields.
 EDGES
+  references=matrix/codegraph/enrich.Request,matrix/codegraph/enrich.n,matrix/codegraph/model.Node
+  ^references=matrix/codegraph/enrich.Enricher.Summarize
   ^defines=matrix/codegraph/enrich/enrich.go
 
 NODE id=matrix/codegraph/enrich.salienceEMARate kind=const
@@ -612,6 +719,7 @@ NODE id=matrix/codegraph/enrich.salienceEMARate kind=const
   sig=untyped float
   doc=salienceEMARate mirrors cortex/salience.EMARate (§8.3): the exponential\nmoving-average alpha used to fold a fresh observation into the running\nsalience so the signal tracks structure without whipsawing. Kept as a local\nconstant so the codegraph module stays free of the cortex store/Pebble\ndependency that the salience package pulls in; the value is intentionally\nidentical to the substrate's.
 EDGES
+  ^references=matrix/codegraph/enrich.blendSalience
   ^defines=matrix/codegraph/enrich/salience.go
 
 NODE id=matrix/codegraph/enrich.salienceEdges kind=var
@@ -619,6 +727,8 @@ NODE id=matrix/codegraph/enrich.salienceEdges kind=var
   sig=[]model.EdgeType
   doc=salienceEdges are the incoming edge types whose fan-in defines a node's graph\nsalience: how many symbols call it, reference it, or (for an interface)\nimplement it. High fan-in ⇒ central ⇒ salient. This mirrors the impact/blast-\nradius edge set.
 EDGES
+  references=matrix/codegraph/model.EdgeCalls,matrix/codegraph/model.EdgeImplements,matrix/codegraph/model.EdgeReferences,matrix/codegraph/model.EdgeType
+  ^references=matrix/codegraph/enrich.computeSalience
   ^defines=matrix/codegraph/enrich/salience.go
 
 NODE id=matrix/codegraph/enrich.salienceGain kind=const
@@ -626,6 +736,7 @@ NODE id=matrix/codegraph/enrich.salienceGain kind=const
   sig=untyped float
   doc=salienceGain scales how strongly graph salience boosts a semantic hit's\nscore. Small and monotonic: it re-ranks near-ties toward higher-salience\nnodes (Requirement 7.2) without overriding clear semantic proximity.
 EDGES
+  ^references=matrix/codegraph/enrich.CortexIndex.Search
   ^defines=matrix/codegraph/enrich/cortexidx.go
 
 NODE id=matrix/codegraph/enrich.setEmbedding kind=func
@@ -633,6 +744,8 @@ NODE id=matrix/codegraph/enrich.setEmbedding kind=func
   sig=func setEmbedding(n *model.Node, embedRef string, salience float64)
   doc=setEmbedding writes the embed reference and salience — the ONLY mutation path\nfor embedding fields. It too touches nothing structural.
 EDGES
+  references=matrix/codegraph/enrich.embedRef,matrix/codegraph/enrich.n,matrix/codegraph/enrich.salience,matrix/codegraph/model.Node
+  ^references=matrix/codegraph/enrich.Enricher.Embed
   ^defines=matrix/codegraph/enrich/enrich.go
 
 NODE id=matrix/codegraph/enrich.setSummary kind=func
@@ -640,6 +753,8 @@ NODE id=matrix/codegraph/enrich.setSummary kind=func
   sig=func setSummary(n *model.Node, summary, digest string)
   doc=setSummary writes a generated summary and stamps it with the digest it was\nderived from — the ONLY mutation path for summary fields. It touches nothing\nstructural, upholding the quarantine invariant (Requirement 8.1).
 EDGES
+  references=matrix/codegraph/enrich.digest,matrix/codegraph/enrich.n,matrix/codegraph/enrich.summary,matrix/codegraph/model.Node
+  ^references=matrix/codegraph/enrich.Enricher.Summarize
   ^defines=matrix/codegraph/enrich/enrich.go
 
 NODE id=matrix/codegraph/enrich.summaryStale kind=func
@@ -647,6 +762,9 @@ NODE id=matrix/codegraph/enrich.summaryStale kind=func
   sig=func summaryStale(n *model.Node) bool
   doc=summaryStale reports whether a node needs a fresh summary: it has no summary\nyet, or its cached summary was derived from a different digest (its body\nmoved). A node whose summary_digest equals its current digest is reused\n(Requirement 8.2); a mismatch is treated as stale (Requirement 8.4).
 EDGES
+  references=matrix/codegraph/enrich.n,matrix/codegraph/model.Node
+  ^calls=matrix/codegraph/enrich.Enricher.Summarize
+  ^references=matrix/codegraph/enrich.Enricher.Summarize
   ^defines=matrix/codegraph/enrich/summarize.go
 
 NODE id=matrix/codegraph/enrich.summarySystemPrompt kind=const
@@ -654,6 +772,7 @@ NODE id=matrix/codegraph/enrich.summarySystemPrompt kind=const
   sig=untyped string
   doc=summarySystemPrompt instructs the cheap tier to emit exactly one terse line\ndescribing a symbol's purpose — never its implementation, never source.
 EDGES
+  ^references=matrix/codegraph/enrich.CodySummarizer.Summarize
   ^defines=matrix/codegraph/enrich/cody.go
 
 NODE id=matrix/codegraph/enrich/cody.go kind=file

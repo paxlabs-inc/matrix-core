@@ -1,9 +1,9 @@
 module matrix/neo
 
-go 1.21
+go 1.25.0
 
 require (
-	matrix/cassandra v0.0.0
+	matrix/codegraph v0.0.0
 	matrix/construct v0.0.0
 	matrix/cortex v0.0.0
 	matrix/executor v0.0.0-00010101000000-000000000000
@@ -25,6 +25,7 @@ require (
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/klauspost/compress v1.15.15 // indirect
+	github.com/klauspost/cpuid/v2 v2.0.9 // indirect
 	github.com/kr/pretty v0.3.1 // indirect
 	github.com/kr/text v0.2.0 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.2-0.20181231171920-c182affec369 // indirect
@@ -41,11 +42,14 @@ require (
 	golang.org/x/text v0.13.0 // indirect
 	golang.org/x/time v0.5.0 // indirect
 	google.golang.org/protobuf v1.28.1 // indirect
+	lukechampine.com/blake3 v1.3.0 // indirect
 )
 
 replace matrix/cassandra => ../cassandra
 
 replace matrix/construct => ../construct
+
+replace matrix/codegraph => ../codegraph
 
 replace matrix/cortex => ../cortex
 

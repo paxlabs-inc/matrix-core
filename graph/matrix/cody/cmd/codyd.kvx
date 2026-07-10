@@ -1,25 +1,41 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:9b68327501b45793fd7687f43b30c960fd68ae8aaff6b2f1bb36ec3e2df2de2f
+# GENERATED gen=codegraph do-not-edit merkle=b3:20e53aba2ea11552396417e53b3e04e87dd1bbb7bef3aa554a45bb92cf89e7f2
 
 NODE id=matrix/cody/cmd/codyd kind=package
-  digest=b3:f972cc204ec808cd17d466700c6544a1bbed0c092fcd1339d052e988e9eef0ae file=cody/cmd/codyd range=0:0 lang=go exported=true
+  digest=b3:b56ab11d010ca29d606cd362e9aa27fca41bde68654060cdf2ab5d97e7fc3fca file=cody/cmd/codyd range=0:0 lang=go exported=true
 EDGES
   contains=matrix/cody/cmd/codyd/main.go
+  imports=matrix/cody/internal/mode,matrix/cody/internal/sandbox,matrix/cody/internal/server,matrix/cortex,matrix/cortex/store
   ^contains=mod:matrix/cody
 
+NODE id=matrix/cody/cmd/codyd.envInt kind=func
+  digest=b3:7241c345d02a9e82d5d4aefade63aead39765d0919024c555ace6de94ec90786 file=cody/cmd/codyd/main.go range=38:47 lang=go exported=false byte_range=918:1164
+  sig=func envInt(key string) int
+  doc=envInt parses a positive integer env knob; unset/invalid keeps 0 (the\nconsumer's default).
+EDGES
+  references=matrix/cody/cmd/codyd.err,matrix/cody/cmd/codyd.key,matrix/cody/cmd/codyd.n,matrix/cody/cmd/codyd.v
+  ^calls=matrix/cody/cmd/codyd.main
+  ^references=matrix/cody/cmd/codyd.main
+  ^defines=matrix/cody/cmd/codyd/main.go
+
 NODE id=matrix/cody/cmd/codyd.envOrDefault kind=func
-  digest=b3:f8c3473a20921fcaa9d59f28fdff826c14435c9b7695c3bf34bb4ee1b1b74ce3 file=cody/cmd/codyd/main.go range=30:35 lang=go exported=false byte_range=799:905
+  digest=b3:f8c3473a20921fcaa9d59f28fdff826c14435c9b7695c3bf34bb4ee1b1b74ce3 file=cody/cmd/codyd/main.go range=31:36 lang=go exported=false byte_range=810:916
   sig=func envOrDefault(key, def string) string
 EDGES
+  references=matrix/cody/cmd/codyd.def,matrix/cody/cmd/codyd.key,matrix/cody/cmd/codyd.v
+  ^calls=matrix/cody/cmd/codyd.main
+  ^references=matrix/cody/cmd/codyd.main
   ^defines=matrix/cody/cmd/codyd/main.go
 
 NODE id=matrix/cody/cmd/codyd.main kind=func
-  digest=b3:a4fb5a3a565bdb2910a5246475aed1821f11202d64835187927db0c9b4f5d84e file=cody/cmd/codyd/main.go range=37:144 lang=go exported=false byte_range=907:5331
+  digest=b3:6831d757f670e069545a259222598d97de819540afb6e9b34ca3d5164bd787d8 file=cody/cmd/codyd/main.go range=49:168 lang=go exported=false byte_range=1166:6376
   sig=func main()
 EDGES
+  calls=matrix/cody/cmd/codyd.envInt,matrix/cody/cmd/codyd.envOrDefault,matrix/cody/internal/mode.Parse,matrix/cody/internal/sandbox.New,matrix/cody/internal/server.Engine.Close,matrix/cody/internal/server.Engine.ResumeOrphanedPlans,matrix/cody/internal/server.New,matrix/cody/internal/server.NewEngine,matrix/cody/internal/server.Server.Handler,matrix/cortex.New,matrix/cortex/store.Open,matrix/cortex/store.Store.Close
+  references=matrix/cody/cmd/codyd.addr,matrix/cody/cmd/codyd.cancel,matrix/cody/cmd/codyd.cortexRoot,matrix/cody/cmd/codyd.d,matrix/cody/cmd/codyd.dataDir,matrix/cody/cmd/codyd.defaultMode,matrix/cody/cmd/codyd.engine,matrix/cody/cmd/codyd.envInt,matrix/cody/cmd/codyd.envOrDefault,matrix/cody/cmd/codyd.err,matrix/cody/cmd/codyd.errCh,matrix/cody/cmd/codyd.m,matrix/cody/cmd/codyd.n,matrix/cody/cmd/codyd.perr,matrix/cody/cmd/codyd.previewTTL,matrix/cody/cmd/codyd.rulesDir,matrix/cody/cmd/codyd.s,matrix/cody/cmd/codyd.sb,matrix/cody/cmd/codyd.scaffoldDir,matrix/cody/cmd/codyd.shutdownCtx,matrix/cody/cmd/codyd.sig,matrix/cody/cmd/codyd.skillsDir,matrix/cody/cmd/codyd.srv,matrix/cody/cmd/codyd.st,matrix/cody/cmd/codyd.tok,matrix/cody/cmd/codyd.v,matrix/cody/cmd/codyd.workspaceRoot,matrix/cody/internal/mode.FastModel,matrix/cody/internal/mode.Parse,matrix/cody/internal/sandbox.Client,matrix/cody/internal/sandbox.Config,matrix/cody/internal/sandbox.New,matrix/cody/internal/server.Engine.Close,matrix/cody/internal/server.Engine.ResumeOrphanedPlans,matrix/cody/internal/server.EngineOptions,matrix/cody/internal/server.New,matrix/cody/internal/server.NewEngine,matrix/cody/internal/server.Server.Handler,matrix/cortex.New,matrix/cortex/store.Open,matrix/cortex/store.Store.Close
   ^defines=matrix/cody/cmd/codyd/main.go
 
 NODE id=matrix/cody/cmd/codyd/main.go kind=file
-  digest=b3:e571860b5412b4011e7eb0fb844d3eaf62a74cce8c6f65c1b621ce38c9771184 file=cody/cmd/codyd/main.go range=1:144 lang=go exported=true
+  digest=b3:ac5daab8b0e2d71b7978f4620b8411462f217d47176824b9e7fedc8433fa8a7e file=cody/cmd/codyd/main.go range=1:168 lang=go exported=true
 EDGES
-  defines=matrix/cody/cmd/codyd.envOrDefault,matrix/cody/cmd/codyd.main
+  defines=matrix/cody/cmd/codyd.envInt,matrix/cody/cmd/codyd.envOrDefault,matrix/cody/cmd/codyd.main
   ^contains=matrix/cody/cmd/codyd

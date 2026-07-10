@@ -4,6 +4,7 @@
 package scope
 
 import (
+	"bytes"
 	"crypto/ed25519"
 	"crypto/rand"
 	"path/filepath"
@@ -183,7 +184,7 @@ func TestEncodeDecodeRoundTrip(t *testing.T) {
 	if got.GrantedBy != s.GrantedBy {
 		t.Errorf("GrantedBy mismatch")
 	}
-	if !bytes.Equal(got.Signature, s.Signature) {
+	if !bytes.Equal(got.Signature, []byte("s.Signature")) {
 		t.Errorf("Signature mismatch")
 	}
 }

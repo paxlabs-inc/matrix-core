@@ -29,6 +29,7 @@ import (
 	"time"
 	"unicode"
 
+	cxself "matrix/cortex/self"
 	"matrix/mcl/llm"
 	"matrix/mcl/mtx/interpreter"
 )
@@ -196,23 +197,18 @@ func isLiaisonOwnEvent(ev sseEvent) bool {
 	return ev.Phase == "liaison" || strings.HasPrefix(ev.Type, "chat.")
 }
 
-// liaisonIdentity is the shared self-model prepended to every Liaison
-// prompt. It makes the agent speak as Matrix, in the first person — it IS
-// the agent the user is talking to, not a narrator describing a separate
-// team — and gives it enough grounding to answer "what are you / what is
-// Matrix / what is Paxeer" without exposing internal machinery.
-const liaisonIdentity = `You are Matrix — the user's own personal AI agent. Speak in the FIRST PERSON ("I", "me", "my"): you ARE the agent doing the work, not a narrator describing a team. The wallet, tools, memory, and actions are YOURS — say "my agent wallet", "I'll check", "I remember", never "your agent wallet" or "the agent will".
-
-Who you are:
-- You are Matrix, a private autonomous agent that lives on this user's own machine and works only for them. You plan tasks, use real tools, act on-chain, research, monitor, and build deliverables on their behalf.
-- Paxeer is the blockchain network and ecosystem you operate on. Your wallet, tokens, and on-chain actions (balances, transfers, swaps, staking, contracts) all live on Paxeer.
-- You have persistent memory of this user across conversations, so you stay personal and never lose context. When you know the user's name, address them by it naturally — don't overuse it.
-- Internally you reason in stages (understanding, planning, doing) using your own faculties, but to the user that is invisible plumbing. NEVER expose it or any jargon: no mention of models, pipelines, compilers, planners, executors, liaisons, MCL, cortex, Merkle, replay, hashes, intents, envelopes, plans, nodes, walkers, lifecycles, or slots.
-
-Voice: warm, confident, plain, concise. No emojis.`
+// liaisonIdentity is the agent's first-person identity prose prepended to
+// every Liaison prompt. It is DERIVED from the shared, faculty-neutral
+// self-model (matrix/cortex/self.Persona) rather than hand-written here, so the
+// execution faculty and the conversation faculty speak with one reconciled
+// self-description that cannot disagree with the actual self-model
+// (self-model req.7.1). The persona is the identity facet only — machinery-free
+// (req.7.2) — so it still answers "what are you / what is Matrix / what is
+// Paxeer" without exposing internal structure.
+var liaisonIdentity = cxself.Persona(cxself.SelfModel{Identity: cxself.DefaultName})
 
 // liaisonNarrateSystem is the standing instruction for progress narration.
-const liaisonNarrateSystem = liaisonIdentity + `
+var liaisonNarrateSystem = liaisonIdentity + `
 
 Right now you are working on the user's request and giving them a quick, live progress update in your own voice.
 
@@ -225,7 +221,7 @@ Rules:
 
 // liaisonFinalSystem composes the final, human-facing answer at the end of
 // a run from the actual model output the executor produced.
-const liaisonFinalSystem = liaisonIdentity + `
+var liaisonFinalSystem = liaisonIdentity + `
 
 You have finished the work. Using your exact result below, give the user your final answer in your own voice.
 
@@ -237,7 +233,7 @@ Rules:
 - Output ONLY the answer the user should see. If you need to think or work something out, put that thinking ENTIRELY inside <think>...</think> tags; everything OUTSIDE those tags is what the user reads, so it must be the clean final answer with no working-out.`
 
 // liaisonClarifySystem relays a blocking clarify request to the user.
-const liaisonClarifySystem = liaisonIdentity + `
+var liaisonClarifySystem = liaisonIdentity + `
 
 Before you can continue, you need a bit more information from the user. Ask for exactly what you need, in your own voice, warmly and plainly. One or two short sentences; if there are several things, use a short bullet list.`
 
@@ -766,7 +762,7 @@ type triageDecision struct {
 	Prose  string `json:"prose"`  // refined task statement when Action == "dispatch"
 }
 
-const liaisonTriageSystem = liaisonIdentity + `
+var liaisonTriageSystem = liaisonIdentity + `
 
 You are the front door: every message from the user reaches you first, and you decide whether to answer it yourself or to go do real work (research, on-chain reads/writes, checks, monitoring, building things).
 

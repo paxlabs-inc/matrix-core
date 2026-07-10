@@ -1,0 +1,1061 @@
+# GENERATED gen=codegraph do-not-edit merkle=b3:75a956136eb56a920059d717ea1f7ba394b53bef834ab6db66f06d328eb5d650
+
+NODE id=matrix/cortex/journal kind=package
+  digest=b3:d57122d513aeb564f14962db68d6aea3ae0c0675ae810359d43353e2ffebe868 file=cortex/journal range=0:0 lang=go exported=true
+EDGES
+  contains=matrix/cortex/journal/journal.go
+  ^contains=mod:matrix/cortex
+
+NODE id=matrix/cortex/journal.AttestOutcome kind=type
+  digest=b3:31e1d621311a338044f26fd587d6b7c05c6d0343cd9250a51d1849b45789ebb0 file=cortex/journal/journal.go range=536:539 lang=go exported=true byte_range=26198:26425
+  sig=type AttestOutcome uint8
+  doc=AttestOutcome enumerates the success/failure semantics carried by an\nAttestPayload. Closed enum (research/04-cortex.md §8.3 only defines\ntwo outcome branches: success and failure-with-reason).
+EDGES
+  ^defines=matrix/cortex/journal/journal.go
+
+NODE id=matrix/cortex/journal.AttestOutcomeFailure kind=const
+  digest=b3:a435381faaa00bbc429b18d365e5abbda35217fe0c11e5b3e66d63e7eff665e4 file=cortex/journal/journal.go range=543:543 lang=go exported=true byte_range=26476:26514
+  sig=journal.AttestOutcome
+EDGES
+  ^defines=matrix/cortex/journal/journal.go
+
+NODE id=matrix/cortex/journal.AttestOutcomeSuccess kind=const
+  digest=b3:223917081dfe70e5f82a00adf47825af9d8573c5063953eebcc3ea9e973a25a3 file=cortex/journal/journal.go range=542:542 lang=go exported=true byte_range=26436:26474
+  sig=journal.AttestOutcome
+EDGES
+  ^defines=matrix/cortex/journal/journal.go
+
+NODE id=matrix/cortex/journal.AttestPayload kind=type
+  digest=b3:1487253209515ec0b527a37fcb3d2f3f207efd99442d0d1e7ff72dbb39fe0d61 file=cortex/journal/journal.go range=556:578 lang=go exported=true byte_range=26949:28193
+  sig=type AttestPayload struct {\n	SchemaVersion	uint8		`cbor:"0,keyasint"`\n	IntentID	string		`cbor:"1,keyasint"`\n	Outcome		AttestOutcome	`cbor:"2,keyasint"`\n	Reason		string		`cbor:"3,keyasint,omitempty"`\n	CitedIDs	[][16]byte	`cbor:"4,keyasint,omitempty"`\n}
+  doc=AttestPayload is the canonical shape carried by KindAttest entries\n(Phase 11.5). Spec: research/04-cortex.md §8.3.\n\nIntentID identifies the intent whose attestation produced this entry\n(matches MCL intent.attest message kind, research/02 §3). CitedIDs are\nthe memory IDs referenced in the plan that this attest covers; the\nAttestPayload acts as the journal-level record of which salience cache\nentries were bumped (success) or decremented (failure-with-reason).\n\nOutcome+Reason determine the salience side-effect at write-and-replay\ntime. We do NOT inline the (post-bump) salience values here — those\nlive in salience/<id>; this payload only carries the inputs so the\nreplay harness can reconstruct the same bumps from the same starting\nstate. Cap on CitedIDs is enforced by the cortex.Attest caller, not\nthe encoder, so this struct can also represent oversized attestations\nfor diagnostic decoding.
+EDGES
+  contains=matrix/cortex/journal.AttestPayload#CitedIDs,matrix/cortex/journal.AttestPayload#IntentID,matrix/cortex/journal.AttestPayload#Outcome,matrix/cortex/journal.AttestPayload#Reason,matrix/cortex/journal.AttestPayload#SchemaVersion
+  ^defines=matrix/cortex/journal/journal.go
+
+NODE id=matrix/cortex/journal.AttestPayload#CitedIDs kind=field
+  digest=b3:64c576b40a2a7adb93b72bc32fa45c176b7630dc24cd34f770f758f6660e39e3 file=cortex/journal/journal.go range=577:577 lang=go exported=true byte_range=28134:28191
+  sig=[][16]byte
+EDGES
+  ^contains=matrix/cortex/journal.AttestPayload
+
+NODE id=matrix/cortex/journal.AttestPayload#IntentID kind=field
+  digest=b3:8973ea71b89b109a9f2b8ae063080d62899e35d56472fbb09a00a8550cb99704 file=cortex/journal/journal.go range=574:574 lang=go exported=true byte_range=27977:28024
+  sig=string
+EDGES
+  ^contains=matrix/cortex/journal.AttestPayload
+
+NODE id=matrix/cortex/journal.AttestPayload#Outcome kind=field
+  digest=b3:d04380727b8ae78da8f218461a6cbc7938a4fba13545e1ae2982c539c2fbebfb file=cortex/journal/journal.go range=575:575 lang=go exported=true byte_range=28026:28073
+  sig=journal.AttestOutcome
+EDGES
+  ^contains=matrix/cortex/journal.AttestPayload
+
+NODE id=matrix/cortex/journal.AttestPayload#Reason kind=field
+  digest=b3:256e46eeeba302dc9dd7942a40e1d311f583e49fecd409c7d59b955a0e36d4c9 file=cortex/journal/journal.go range=576:576 lang=go exported=true byte_range=28075:28132
+  sig=string
+EDGES
+  ^contains=matrix/cortex/journal.AttestPayload
+
+NODE id=matrix/cortex/journal.AttestPayload#SchemaVersion kind=field
+  digest=b3:036922f02139f4005d32d64d5ee0d243588f27a588bb3fab69573d9f52bbbe97 file=cortex/journal/journal.go range=573:573 lang=go exported=true byte_range=27928:27975
+  sig=uint8
+EDGES
+  ^contains=matrix/cortex/journal.AttestPayload
+
+NODE id=matrix/cortex/journal.AttestReasonFactualError kind=const
+  digest=b3:545164144a2c1ebe68b18a0f8ef0a98ed2ca50a78de5af0bab7e8b68d73974e1 file=cortex/journal/journal.go range=546:552 lang=go exported=true byte_range=26518:26895
+  sig=untyped string
+  doc=AttestReason* are the closed set of failure reasons that, per\nresearch/04-cortex.md §8.3, trigger decrement of cite_in_successful_plans\non the cited memories. Any other reason (or empty) on a failure attest\nleaves Citations unchanged — the attest is logged for audit but no\nsalience-side decrement fires.
+EDGES
+  ^defines=matrix/cortex/journal/journal.go
+
+NODE id=matrix/cortex/journal.AttestReasonWrongAssumption kind=const
+  digest=b3:1de78a0f04daa61d569c652d9a1ced7bdcb04e4056269bb9d618f9e0e1d24f4d file=cortex/journal/journal.go range=546:553 lang=go exported=true byte_range=26518:26945
+  sig=untyped string
+  doc=AttestReason* are the closed set of failure reasons that, per\nresearch/04-cortex.md §8.3, trigger decrement of cite_in_successful_plans\non the cited memories. Any other reason (or empty) on a failure attest\nleaves Citations unchanged — the attest is logged for audit but no\nsalience-side decrement fires.
+EDGES
+  ^defines=matrix/cortex/journal/journal.go
+
+NODE id=matrix/cortex/journal.CompactPayload kind=type
+  digest=b3:0dbd310d1051219b263340ab6bb3b3f20aaa02e679b2cbc464d101185fbdba30 file=cortex/journal/journal.go range=289:312 lang=go exported=true byte_range=15263:16523
+  sig=type CompactPayload struct {\n	SchemaVersion	uint8		`cbor:"0,keyasint"`\n	IntentID	string		`cbor:"1,keyasint"`\n	StepID		string		`cbor:"2,keyasint"`\n	BudgetTokens	uint32		`cbor:"3,keyasint"`\n	KeptCount	uint32		`cbor:"4,keyasint"`\n	CompactedCount	uint32		`cbor:"5,keyasint"`\n	CheckpointHash	[32]byte	`cbor:"6,keyasint"`\n}
+  doc=CompactPayload is the canonical shape carried by KindCompact entries\n(Phase 9). Spec: research/03-retrieval-patterns.md §5.1 step 3 + §5.3.\n\nIntentID + StepID together form the checkpoint identity (Pebble key\nchk/<intent>/<step>; filesystem mirror at journal/thoughts/<intent>/\n<step>.snapshot per Andrew lock A1). KeptCount + CompactedCount are\naudit denormalizations so a journal scan can summarize compactions\nwithout a Pebble Get on chk/. CheckpointHash is sha256 over the\ncanonical CBOR encoding of the CheckpointRecord stored at chk/; same\nintegrity discipline as EmbedPayload.VectorHash (the payload doesn't\ninline heavy data, but pins it cryptographically).\n\nBudgetTokens preserves the §5.3 budget_tokens parameter so replay /\naudit can verify the compaction was bounded at the value the caller\nasked for (caller can't claim "I asked for 8000" after the fact).
+EDGES
+  contains=matrix/cortex/journal.CompactPayload#BudgetTokens,matrix/cortex/journal.CompactPayload#CheckpointHash,matrix/cortex/journal.CompactPayload#CompactedCount,matrix/cortex/journal.CompactPayload#IntentID,matrix/cortex/journal.CompactPayload#KeptCount,matrix/cortex/journal.CompactPayload#SchemaVersion,matrix/cortex/journal.CompactPayload#StepID
+  ^defines=matrix/cortex/journal/journal.go
+
+NODE id=matrix/cortex/journal.CompactPayload#BudgetTokens kind=field
+  digest=b3:044353a9546f27af92b8a0d55a8cbc91cc4d050a497abad857e9c35302ffa2a1 file=cortex/journal/journal.go range=308:308 lang=go exported=true byte_range=16343:16386
+  sig=uint32
+EDGES
+  ^contains=matrix/cortex/journal.CompactPayload
+
+NODE id=matrix/cortex/journal.CompactPayload#CheckpointHash kind=field
+  digest=b3:4d8bd058e4bf17aec0fcd78ef85f6fe70ef3e0f76954b5008cc53f02106f7de6 file=cortex/journal/journal.go range=311:311 lang=go exported=true byte_range=16478:16521
+  sig=[32]byte
+EDGES
+  ^contains=matrix/cortex/journal.CompactPayload
+
+NODE id=matrix/cortex/journal.CompactPayload#CompactedCount kind=field
+  digest=b3:4876280727e25f2fe44f4af7be3a344d5383340a0ad89c27ebe8c4c4a8665b62 file=cortex/journal/journal.go range=310:310 lang=go exported=true byte_range=16433:16476
+  sig=uint32
+EDGES
+  ^contains=matrix/cortex/journal.CompactPayload
+
+NODE id=matrix/cortex/journal.CompactPayload#IntentID kind=field
+  digest=b3:7cc6d5ef054bf667320f107170bac0044646b7b35b1f691c759aa78d6e97a25e file=cortex/journal/journal.go range=306:306 lang=go exported=true byte_range=16253:16296
+  sig=string
+EDGES
+  ^contains=matrix/cortex/journal.CompactPayload
+
+NODE id=matrix/cortex/journal.CompactPayload#KeptCount kind=field
+  digest=b3:298891806e161aaeeedf8a4c3e303b87426bc8a958541258d63db6726f4467e6 file=cortex/journal/journal.go range=309:309 lang=go exported=true byte_range=16388:16431
+  sig=uint32
+EDGES
+  ^contains=matrix/cortex/journal.CompactPayload
+
+NODE id=matrix/cortex/journal.CompactPayload#SchemaVersion kind=field
+  digest=b3:74fb1fff6e23749d4cc6025b5313bfe7b22960cb2307ab9cf5aadafe1066f69c file=cortex/journal/journal.go range=305:305 lang=go exported=true byte_range=16208:16251
+  sig=uint8
+EDGES
+  ^contains=matrix/cortex/journal.CompactPayload
+
+NODE id=matrix/cortex/journal.CompactPayload#StepID kind=field
+  digest=b3:0909d9699d9a6479b66179b5e44426eef01e6c1353d4c8982688c2fba01cca28 file=cortex/journal/journal.go range=307:307 lang=go exported=true byte_range=16298:16341
+  sig=string
+EDGES
+  ^contains=matrix/cortex/journal.CompactPayload
+
+NODE id=matrix/cortex/journal.Decode kind=func
+  digest=b3:774354128b388bcc149d33c7b79bfb7730e5a33f9c3762a942cea0119c132e85 file=cortex/journal/journal.go range=724:727 lang=go exported=true byte_range=33958:34082
+  sig=func Decode(b []byte, out *Entry) error
+  doc=Decode parses canonical CBOR into out.
+EDGES
+  ^defines=matrix/cortex/journal/journal.go
+
+NODE id=matrix/cortex/journal.DecodeAttestPayload kind=func
+  digest=b3:f3551d549dfc589684a0593d288b29b0272cc1551e7eccb7039d9bdfa5f8ba05 file=cortex/journal/journal.go range=588:591 lang=go exported=true byte_range=28431:28589
+  sig=func DecodeAttestPayload(b []byte, out *AttestPayload) error
+  doc=DecodeAttestPayload parses canonical CBOR into out.
+EDGES
+  ^defines=matrix/cortex/journal/journal.go
+
+NODE id=matrix/cortex/journal.DecodeCompactPayload kind=func
+  digest=b3:c125a6c22be68fea88f271cfe67940accec00a963c8c0781e2d5b9301a68e867 file=cortex/journal/journal.go range=322:325 lang=go exported=true byte_range=16765:16926
+  sig=func DecodeCompactPayload(b []byte, out *CompactPayload) error
+  doc=DecodeCompactPayload parses canonical CBOR into out.
+EDGES
+  ^defines=matrix/cortex/journal/journal.go
+
+NODE id=matrix/cortex/journal.DecodeEdgePayload kind=func
+  digest=b3:bab6ad4a8a7c6dbcb6728f3539a9698a6456ce7688fd9579ff3d6dfe38493f6d file=cortex/journal/journal.go range=284:287 lang=go exported=true byte_range=15109:15261
+  sig=func DecodeEdgePayload(b []byte, out *EdgePayload) error
+  doc=DecodeEdgePayload parses canonical CBOR into out.
+EDGES
+  ^defines=matrix/cortex/journal/journal.go
+
+NODE id=matrix/cortex/journal.DecodeEmbedPayload kind=func
+  digest=b3:22a0aeedb78ca8c246317e973356580ecca3d589c7f3dd92da036986901a5788 file=cortex/journal/journal.go range=251:254 lang=go exported=true byte_range=13727:13882
+  sig=func DecodeEmbedPayload(b []byte, out *EmbedPayload) error
+  doc=DecodeEmbedPayload parses canonical CBOR into out.
+EDGES
+  ^defines=matrix/cortex/journal/journal.go
+
+NODE id=matrix/cortex/journal.DecodeEnrichPayload kind=func
+  digest=b3:3efc8e3b3dbdacc2569a729f9874d6c15f085f6914ad59e6117c467338caa50e file=cortex/journal/journal.go range=424:427 lang=go exported=true byte_range=21158:21316
+  sig=func DecodeEnrichPayload(b []byte, out *EnrichPayload) error
+  doc=DecodeEnrichPayload parses canonical CBOR into out.
+EDGES
+  ^defines=matrix/cortex/journal/journal.go
+
+NODE id=matrix/cortex/journal.DecodeLateBindingPayload kind=func
+  digest=b3:9c1bb4f65c334ec8e16cefd2712ddafd4ca3bebacadbd36ae8f78143059b6d58 file=cortex/journal/journal.go range=676:679 lang=go exported=true byte_range=32452:32625
+  sig=func DecodeLateBindingPayload(b []byte, out *LateBindingPayload) error
+  doc=DecodeLateBindingPayload parses canonical CBOR into out.
+EDGES
+  ^defines=matrix/cortex/journal/journal.go
+
+NODE id=matrix/cortex/journal.DecodeLearnWeightsPayload kind=func
+  digest=b3:4f8a33ec1cbf59248d45e2fe03b5afb0d35f72e9ad3779a73f0d524e05b14fe5 file=cortex/journal/journal.go range=635:638 lang=go exported=true byte_range=30535:30711
+  sig=func DecodeLearnWeightsPayload(b []byte, out *LearnWeightsPayload) error
+  doc=DecodeLearnWeightsPayload parses canonical CBOR into out.
+EDGES
+  ^defines=matrix/cortex/journal/journal.go
+
+NODE id=matrix/cortex/journal.DecodeRollupPayload kind=func
+  digest=b3:c8f95ebea6d3428040a95e17ed92048124ae3b0b2e8745dc7e1204bbcdffd436 file=cortex/journal/journal.go range=389:392 lang=go exported=true byte_range=19553:19711
+  sig=func DecodeRollupPayload(b []byte, out *RollupPayload) error
+  doc=DecodeRollupPayload parses canonical CBOR into out.
+EDGES
+  ^defines=matrix/cortex/journal/journal.go
+
+NODE id=matrix/cortex/journal.DecodeScopeViolationPayload kind=func
+  digest=b3:b77f2d58c852bc62bf6771d2cc5ae54fb3556edf86dc6b4f8d53b552137d69f6 file=cortex/journal/journal.go range=531:534 lang=go exported=true byte_range=26014:26196
+  sig=func DecodeScopeViolationPayload(b []byte, out *ScopeViolationPayload) error
+  doc=DecodeScopeViolationPayload parses canonical CBOR into out.
+EDGES
+  ^defines=matrix/cortex/journal/journal.go
+
+NODE id=matrix/cortex/journal.DecodeSessionPayload kind=func
+  digest=b3:524d5e84471e857f05c7d5f0e245e060901fc3d6acfbc3dcd3ee78f0635c8ed8 file=cortex/journal/journal.go range=355:358 lang=go exported=true byte_range=18139:18300
+  sig=func DecodeSessionPayload(b []byte, out *SessionPayload) error
+  doc=DecodeSessionPayload parses canonical CBOR into out.
+EDGES
+  ^defines=matrix/cortex/journal/journal.go
+
+NODE id=matrix/cortex/journal.DecodeStorySoFarPayload kind=func
+  digest=b3:56854a01f98d4ec66f51fd8d9e32b62b37035c6078f443017c40854f55fd225e file=cortex/journal/journal.go range=457:460 lang=go exported=true byte_range=22645:22815
+  sig=func DecodeStorySoFarPayload(b []byte, out *StorySoFarPayload) error
+  doc=DecodeStorySoFarPayload parses canonical CBOR into out.
+EDGES
+  ^defines=matrix/cortex/journal/journal.go
+
+NODE id=matrix/cortex/journal.DecodeUpdateHeadPayload kind=func
+  digest=b3:33ea4a8cdcad8f56ec5808bef67c364b813cab0aee510d6de72e6c5eabc38923 file=cortex/journal/journal.go range=492:495 lang=go exported=true byte_range=24188:24358
+  sig=func DecodeUpdateHeadPayload(b []byte, out *UpdateHeadPayload) error
+  doc=DecodeUpdateHeadPayload parses canonical CBOR into out.
+EDGES
+  ^defines=matrix/cortex/journal/journal.go
+
+NODE id=matrix/cortex/journal.DecodeWritePayload kind=func
+  digest=b3:61bb963739089309e52e270c0b03ce41d8649651b587b677ca26a158d1e477e0 file=cortex/journal/journal.go range=223:226 lang=go exported=true byte_range=12462:12617
+  sig=func DecodeWritePayload(b []byte, out *WritePayload) error
+  doc=DecodeWritePayload parses canonical CBOR into out.
+EDGES
+  ^defines=matrix/cortex/journal/journal.go
+
+NODE id=matrix/cortex/journal.EdgePayload kind=type
+  digest=b3:c249bc746b16f32df48ed8338c1880f0f449ab1b77b473eb8187dc874eb1d3f1 file=cortex/journal/journal.go range=256:274 lang=go exported=true byte_range=13884:14879
+  sig=type EdgePayload struct {\n	SchemaVersion	uint8		`cbor:"0,keyasint"`\n	Type		uint8		`cbor:"1,keyasint"`\n	Src		[16]byte	`cbor:"2,keyasint"`\n	Dst		[16]byte	`cbor:"3,keyasint"`\n	Weight		float32		`cbor:"4,keyasint,omitempty"`\n	Tombstoned	bool		`cbor:"5,keyasint,omitempty"`\n	Reason		string		`cbor:"6,keyasint,omitempty"`\n	By		string		`cbor:"7,keyasint,omitempty"`\n}
+  doc=EdgePayload is the canonical shape carried by KindAddEdge and\nKindRemoveEdge entries (Phase 6). The full EdgeRecord lives in the\nstore at e/from/<src>/<t>/<dst> and e/to/<dst>/<t>/<src>; this payload\ncarries enough to replay the mutation deterministically and to audit\n"who edged what to what when" without a Pebble Get on the full record.\n\nTombstoned distinguishes KindAddEdge (false) from KindRemoveEdge (true)\nat decode time so a reader inspecting only payloads doesn't have to\nalso inspect Entry.Kind. Reason/By are populated on RemoveEdge only.
+EDGES
+  contains=matrix/cortex/journal.EdgePayload#By,matrix/cortex/journal.EdgePayload#Dst,matrix/cortex/journal.EdgePayload#Reason,matrix/cortex/journal.EdgePayload#SchemaVersion,matrix/cortex/journal.EdgePayload#Src,matrix/cortex/journal.EdgePayload#Tombstoned,matrix/cortex/journal.EdgePayload#Type,matrix/cortex/journal.EdgePayload#Weight
+  ^defines=matrix/cortex/journal/journal.go
+
+NODE id=matrix/cortex/journal.EdgePayload#By kind=field
+  digest=b3:f43d9046dc1eee48138aa9d09b3ea8016d32a8b6ef2398f7c1738f3b1195559c file=cortex/journal/journal.go range=273:273 lang=go exported=true byte_range=14825:14877
+  sig=string
+EDGES
+  ^contains=matrix/cortex/journal.EdgePayload
+
+NODE id=matrix/cortex/journal.EdgePayload#Dst kind=field
+  digest=b3:76b39634c3265da21e93d9be5d811ee57e9a8f9381745a55a3e04564f3ee796f file=cortex/journal/journal.go range=269:269 lang=go exported=true byte_range=14619:14661
+  sig=[16]byte
+EDGES
+  ^contains=matrix/cortex/journal.EdgePayload
+
+NODE id=matrix/cortex/journal.EdgePayload#Reason kind=field
+  digest=b3:5fd11df414503f7de41eb6634c8c8698337db6d7e04ed802250a20e5fa0441f5 file=cortex/journal/journal.go range=272:272 lang=go exported=true byte_range=14771:14823
+  sig=string
+EDGES
+  ^contains=matrix/cortex/journal.EdgePayload
+
+NODE id=matrix/cortex/journal.EdgePayload#SchemaVersion kind=field
+  digest=b3:fd51f65049349e94dfa920e0a40cbaaa8c59d0b47dc23b918a1503cc9eb5d4aa file=cortex/journal/journal.go range=266:266 lang=go exported=true byte_range=14487:14529
+  sig=uint8
+EDGES
+  ^contains=matrix/cortex/journal.EdgePayload
+
+NODE id=matrix/cortex/journal.EdgePayload#Src kind=field
+  digest=b3:e960ae66af63fa6b104198b996648728c8079d05069c646a631703cb8b3c6315 file=cortex/journal/journal.go range=268:268 lang=go exported=true byte_range=14575:14617
+  sig=[16]byte
+EDGES
+  ^contains=matrix/cortex/journal.EdgePayload
+
+NODE id=matrix/cortex/journal.EdgePayload#Tombstoned kind=field
+  digest=b3:3c70591ff290b8d0b71e45f079201c1739b68fcd90860e3781824d5730412731 file=cortex/journal/journal.go range=271:271 lang=go exported=true byte_range=14717:14769
+  sig=bool
+EDGES
+  ^contains=matrix/cortex/journal.EdgePayload
+
+NODE id=matrix/cortex/journal.EdgePayload#Type kind=field
+  digest=b3:eb1cf315d430a92485680fa62f65c3d4eab166d6cb19d0dcb3068e89a39000be file=cortex/journal/journal.go range=267:267 lang=go exported=true byte_range=14531:14573
+  sig=uint8
+EDGES
+  ^contains=matrix/cortex/journal.EdgePayload
+
+NODE id=matrix/cortex/journal.EdgePayload#Weight kind=field
+  digest=b3:d8cc4bafa970d38759f9f622b54c2008186f7bfa58e999c941feb91ce8365077 file=cortex/journal/journal.go range=270:270 lang=go exported=true byte_range=14663:14715
+  sig=float32
+EDGES
+  ^contains=matrix/cortex/journal.EdgePayload
+
+NODE id=matrix/cortex/journal.EmbedPayload kind=type
+  digest=b3:4d33572d4a5e4734a9c2de78da5c4e26b23e3b58e46dc050adfb070d12ba0bbb file=cortex/journal/journal.go range=228:241 lang=go exported=true byte_range=12619:13493
+  sig=type EmbedPayload struct {\n	SchemaVersion	uint8		`cbor:"0,keyasint"`\n	ID		[16]byte	`cbor:"1,keyasint"`	// memory.ID\n	VertexID	uint64		`cbor:"2,keyasint"`	// HNSW vertex id\n	Model		string		`cbor:"3,keyasint"`	// model identifier (name@digest)\n	Dim		uint16		`cbor:"4,keyasint"`	// vector dimensionality\n	VectorHash	[32]byte	`cbor:"5,keyasint"`	// sha256 over canonical vector bytes\n	SourceVersion	uint64		`cbor:"6,keyasint"`	// memory version that was embedded\n}
+  doc=EmbedPayload is the canonical shape carried by KindEmbed entries. It is\nintentionally small (no full vector) so the journal stays a manageable\nsize at 100k+ embeddings; the vector bytes live in vec/meta/<id> and the\n32-byte VectorHash here is the integrity check used by the replay harness\n(Phase 11) to detect drift between recomputed and persisted vectors.
+EDGES
+  contains=matrix/cortex/journal.EmbedPayload#Dim,matrix/cortex/journal.EmbedPayload#ID,matrix/cortex/journal.EmbedPayload#Model,matrix/cortex/journal.EmbedPayload#SchemaVersion,matrix/cortex/journal.EmbedPayload#SourceVersion,matrix/cortex/journal.EmbedPayload#VectorHash,matrix/cortex/journal.EmbedPayload#VertexID
+  ^defines=matrix/cortex/journal/journal.go
+
+NODE id=matrix/cortex/journal.EmbedPayload#Dim kind=field
+  digest=b3:c05cfedc49326da7ef999ad322d46f1a08274200eefd1a2b616cf24792af17b0 file=cortex/journal/journal.go range=238:238 lang=go exported=true byte_range=13262:13304
+  sig=uint16
+EDGES
+  ^contains=matrix/cortex/journal.EmbedPayload
+
+NODE id=matrix/cortex/journal.EmbedPayload#ID kind=field
+  digest=b3:47e09adeb642eb16c11724e25b2213786485aa8cf9a640411eb207cde1d77967 file=cortex/journal/journal.go range=235:235 lang=go exported=true byte_range=13065:13107
+  sig=[16]byte
+EDGES
+  ^contains=matrix/cortex/journal.EmbedPayload
+
+NODE id=matrix/cortex/journal.EmbedPayload#Model kind=field
+  digest=b3:c89966a893f68fbe93fb295d25fb5bfeec9cb6599d21fb0f576c7124aee4c1dd file=cortex/journal/journal.go range=237:237 lang=go exported=true byte_range=13184:13226
+  sig=string
+EDGES
+  ^contains=matrix/cortex/journal.EmbedPayload
+
+NODE id=matrix/cortex/journal.EmbedPayload#SchemaVersion kind=field
+  digest=b3:fd51f65049349e94dfa920e0a40cbaaa8c59d0b47dc23b918a1503cc9eb5d4aa file=cortex/journal/journal.go range=234:234 lang=go exported=true byte_range=13021:13063
+  sig=uint8
+EDGES
+  ^contains=matrix/cortex/journal.EmbedPayload
+
+NODE id=matrix/cortex/journal.EmbedPayload#SourceVersion kind=field
+  digest=b3:bea56240ad5c0d59f789fb5e8316504b9e4b75abb87233495b59a8f46cb29ad0 file=cortex/journal/journal.go range=240:240 lang=go exported=true byte_range=13413:13455
+  sig=uint64
+EDGES
+  ^contains=matrix/cortex/journal.EmbedPayload
+
+NODE id=matrix/cortex/journal.EmbedPayload#VectorHash kind=field
+  digest=b3:c67219a7eb26f499f83db2d485ccc4038dac933be8f264ceb5094e8a09d22281 file=cortex/journal/journal.go range=239:239 lang=go exported=true byte_range=13331:13373
+  sig=[32]byte
+EDGES
+  ^contains=matrix/cortex/journal.EmbedPayload
+
+NODE id=matrix/cortex/journal.EmbedPayload#VertexID kind=field
+  digest=b3:79819267e9d98ad18619a393ccaec38a41e2b2163dcbdf79c50e095daacd1af5 file=cortex/journal/journal.go range=236:236 lang=go exported=true byte_range=13122:13164
+  sig=uint64
+EDGES
+  ^contains=matrix/cortex/journal.EmbedPayload
+
+NODE id=matrix/cortex/journal.EncodeAttestPayload kind=func
+  digest=b3:ad78661c08e1ee638abd32a5f0c713ee92ff194c18a47209f8a99b947c67bdb0 file=cortex/journal/journal.go range=580:586 lang=go exported=true byte_range=28195:28429
+  sig=func EncodeAttestPayload(p *AttestPayload) ([]byte, error)
+  doc=EncodeAttestPayload returns canonical deterministic CBOR for p.
+EDGES
+  ^defines=matrix/cortex/journal/journal.go
+
+NODE id=matrix/cortex/journal.EncodeCompactPayload kind=func
+  digest=b3:9520f31228760e6f80a9791ac065f3aab689c97409a0511411c4bed90e9a48dd file=cortex/journal/journal.go range=314:320 lang=go exported=true byte_range=16525:16763
+  sig=func EncodeCompactPayload(p *CompactPayload) ([]byte, error)
+  doc=EncodeCompactPayload returns canonical deterministic CBOR for p.
+EDGES
+  ^defines=matrix/cortex/journal/journal.go
+
+NODE id=matrix/cortex/journal.EncodeEdgePayload kind=func
+  digest=b3:29632d3abcf0d442dd80a9406df13983931459450112183cc5444496749ea6c0 file=cortex/journal/journal.go range=276:282 lang=go exported=true byte_range=14881:15107
+  sig=func EncodeEdgePayload(p *EdgePayload) ([]byte, error)
+  doc=EncodeEdgePayload returns canonical deterministic CBOR for p.
+EDGES
+  ^defines=matrix/cortex/journal/journal.go
+
+NODE id=matrix/cortex/journal.EncodeEmbedPayload kind=func
+  digest=b3:d3b13c6c5ea380674e197df80557df4c589e8dab7ce38ecfd4bfd01dfb683358 file=cortex/journal/journal.go range=243:249 lang=go exported=true byte_range=13495:13725
+  sig=func EncodeEmbedPayload(p *EmbedPayload) ([]byte, error)
+  doc=EncodeEmbedPayload returns canonical deterministic CBOR for p.
+EDGES
+  ^defines=matrix/cortex/journal/journal.go
+
+NODE id=matrix/cortex/journal.EncodeEnrichPayload kind=func
+  digest=b3:f13799d48e5b43915547eb78c9cdc6b0b3fc02a890bcaa9ff28b65e54de8c5be file=cortex/journal/journal.go range=416:422 lang=go exported=true byte_range=20922:21156
+  sig=func EncodeEnrichPayload(p *EnrichPayload) ([]byte, error)
+  doc=EncodeEnrichPayload returns canonical deterministic CBOR for p.
+EDGES
+  ^defines=matrix/cortex/journal/journal.go
+
+NODE id=matrix/cortex/journal.EncodeLateBindingPayload kind=func
+  digest=b3:85de3313693c045b2c8f346c00af3d5f54aa3866ecc3f54db56a2c87516b1bf9 file=cortex/journal/journal.go range=668:674 lang=go exported=true byte_range=32196:32450
+  sig=func EncodeLateBindingPayload(p *LateBindingPayload) ([]byte, error)
+  doc=EncodeLateBindingPayload returns canonical deterministic CBOR for p.
+EDGES
+  ^defines=matrix/cortex/journal/journal.go
+
+NODE id=matrix/cortex/journal.EncodeLearnWeightsPayload kind=func
+  digest=b3:0b4d2d6d3c1181f0ceecb23c30a19cc9d72ba68e8b77beb084f8dd3a1f2c9cae file=cortex/journal/journal.go range=627:633 lang=go exported=true byte_range=30275:30533
+  sig=func EncodeLearnWeightsPayload(p *LearnWeightsPayload) ([]byte, error)
+  doc=EncodeLearnWeightsPayload returns canonical deterministic CBOR for p.
+EDGES
+  ^defines=matrix/cortex/journal/journal.go
+
+NODE id=matrix/cortex/journal.EncodeRollupPayload kind=func
+  digest=b3:19cbdb2b2fe8bea9782df2e5822c707ddcbcda8bf327a423fac6c0712c050024 file=cortex/journal/journal.go range=381:387 lang=go exported=true byte_range=19317:19551
+  sig=func EncodeRollupPayload(p *RollupPayload) ([]byte, error)
+  doc=EncodeRollupPayload returns canonical deterministic CBOR for p.
+EDGES
+  ^defines=matrix/cortex/journal/journal.go
+
+NODE id=matrix/cortex/journal.EncodeScopeViolationPayload kind=func
+  digest=b3:ee18d4bb984224b63f5ca5d6f0ec820a2082870554288d75e514b41d674c8576 file=cortex/journal/journal.go range=523:529 lang=go exported=true byte_range=25746:26012
+  sig=func EncodeScopeViolationPayload(p *ScopeViolationPayload) ([]byte, error)
+  doc=EncodeScopeViolationPayload returns canonical deterministic CBOR for p.
+EDGES
+  ^defines=matrix/cortex/journal/journal.go
+
+NODE id=matrix/cortex/journal.EncodeSessionPayload kind=func
+  digest=b3:a1b592c9dbca25a967cc43d75cb4730d738a9ecffc4c911f3c10834c531f143e file=cortex/journal/journal.go range=347:353 lang=go exported=true byte_range=17899:18137
+  sig=func EncodeSessionPayload(p *SessionPayload) ([]byte, error)
+  doc=EncodeSessionPayload returns canonical deterministic CBOR for p.
+EDGES
+  ^defines=matrix/cortex/journal/journal.go
+
+NODE id=matrix/cortex/journal.EncodeStorySoFarPayload kind=func
+  digest=b3:243c84787a054a4e0b0c385d79c68328f64fd14a8ead1913da487b49863bdc32 file=cortex/journal/journal.go range=449:455 lang=go exported=true byte_range=22393:22643
+  sig=func EncodeStorySoFarPayload(p *StorySoFarPayload) ([]byte, error)
+  doc=EncodeStorySoFarPayload returns canonical deterministic CBOR for p.
+EDGES
+  ^defines=matrix/cortex/journal/journal.go
+
+NODE id=matrix/cortex/journal.EncodeUpdateHeadPayload kind=func
+  digest=b3:090cdba5602e544930d110767575616b082f9eb8d457cd110d21057a2ff002b8 file=cortex/journal/journal.go range=484:490 lang=go exported=true byte_range=23936:24186
+  sig=func EncodeUpdateHeadPayload(p *UpdateHeadPayload) ([]byte, error)
+  doc=EncodeUpdateHeadPayload returns canonical deterministic CBOR for p.
+EDGES
+  ^defines=matrix/cortex/journal/journal.go
+
+NODE id=matrix/cortex/journal.EncodeWritePayload kind=func
+  digest=b3:df8cb102833793c0302eab2742b100aebd80a338fa4f721ddc99261075663902 file=cortex/journal/journal.go range=215:221 lang=go exported=true byte_range=12230:12460
+  sig=func EncodeWritePayload(p *WritePayload) ([]byte, error)
+  doc=EncodeWritePayload returns canonical deterministic CBOR for p.
+EDGES
+  ^defines=matrix/cortex/journal/journal.go
+
+NODE id=matrix/cortex/journal.EnrichPayload kind=type
+  digest=b3:1a8a14ff328423874417918406ccdc49db8ed0b67e9e813b2806c6ce92968af7 file=cortex/journal/journal.go range=394:414 lang=go exported=true byte_range=19713:20920
+  sig=type EnrichPayload struct {\n	SchemaVersion		uint8		`cbor:"0,keyasint"`\n	Tier			uint8		`cbor:"1,keyasint"`\n	Start			int64		`cbor:"2,keyasint"`\n	SourceRecordHash	[32]byte	`cbor:"3,keyasint"`\n	RecordHash		[32]byte	`cbor:"4,keyasint"`\n	Model			string		`cbor:"5,keyasint"`\n}
+  doc=EnrichPayload is the canonical shape carried by KindRollupEnrich entries\n(continuous-memory task 2.3). Mirrors RollupPayload discipline: the payload\ncarries only the window identity, the source + self cryptographic pins, and\nthe model tag — never the heavy prose.\n\nTier + Start together form the record identity (Pebble key enr/<tier><start>,\nparallel to roll/<tier><start>). SourceRecordHash is the RecordHash of the\nRollupRecord the enrichment was derived from, so staleness is detectable: a\nreader that recomputes the current rollup's RecordHash can tell the\nenrichment is stale (and MUST fall back to the deterministic short-form)\nwhen the hashes diverge. RecordHash is sha256 over the canonical CBOR\nencoding of the EnrichRecord stored at enr/ — the same integrity discipline\nas RollupPayload.RecordHash. Model records which LLM produced the prose.
+EDGES
+  contains=matrix/cortex/journal.EnrichPayload#Model,matrix/cortex/journal.EnrichPayload#RecordHash,matrix/cortex/journal.EnrichPayload#SchemaVersion,matrix/cortex/journal.EnrichPayload#SourceRecordHash,matrix/cortex/journal.EnrichPayload#Start,matrix/cortex/journal.EnrichPayload#Tier
+  ^defines=matrix/cortex/journal/journal.go
+
+NODE id=matrix/cortex/journal.EnrichPayload#Model kind=field
+  digest=b3:eb50af58dd921c306f0b2bddb27778ae3e956d9ddd23db07f20bc47146286283 file=cortex/journal/journal.go range=413:413 lang=go exported=true byte_range=20873:20918
+  sig=string
+EDGES
+  ^contains=matrix/cortex/journal.EnrichPayload
+
+NODE id=matrix/cortex/journal.EnrichPayload#RecordHash kind=field
+  digest=b3:1c9d7777a97c096fa8ac00a51ce632377133ad6c47b0fef0109be7ae8ba8d0ae file=cortex/journal/journal.go range=412:412 lang=go exported=true byte_range=20826:20871
+  sig=[32]byte
+EDGES
+  ^contains=matrix/cortex/journal.EnrichPayload
+
+NODE id=matrix/cortex/journal.EnrichPayload#SchemaVersion kind=field
+  digest=b3:63d2ff7e63c34205e60b45787326b279b6dd0b181a7ecf98566dc0ace9b9b9d7 file=cortex/journal/journal.go range=408:408 lang=go exported=true byte_range=20638:20683
+  sig=uint8
+EDGES
+  ^contains=matrix/cortex/journal.EnrichPayload
+
+NODE id=matrix/cortex/journal.EnrichPayload#SourceRecordHash kind=field
+  digest=b3:dec4e46255352ed9a79e0ca8f8540cbdc22b8a3478b61f5baf0f84d9b7267375 file=cortex/journal/journal.go range=411:411 lang=go exported=true byte_range=20779:20824
+  sig=[32]byte
+EDGES
+  ^contains=matrix/cortex/journal.EnrichPayload
+
+NODE id=matrix/cortex/journal.EnrichPayload#Start kind=field
+  digest=b3:9a213589c81984f9ee1fa6add60b7c90ca32ede7954d1f061e9332984778c2cd file=cortex/journal/journal.go range=410:410 lang=go exported=true byte_range=20732:20777
+  sig=int64
+EDGES
+  ^contains=matrix/cortex/journal.EnrichPayload
+
+NODE id=matrix/cortex/journal.EnrichPayload#Tier kind=field
+  digest=b3:01590f9eae64afabe1a2a067f7b7e5799144045b9d6d0bf11949c3c6332dc0e4 file=cortex/journal/journal.go range=409:409 lang=go exported=true byte_range=20685:20730
+  sig=uint8
+EDGES
+  ^contains=matrix/cortex/journal.EnrichPayload
+
+NODE id=matrix/cortex/journal.Entry kind=type
+  digest=b3:81667674b2e2bc498ce9d92586543abd11f85cd9573e6d8edbab5c5ae1afa2ef file=cortex/journal/journal.go range=681:692 lang=go exported=true byte_range=32627:33128
+  sig=type Entry struct {\n	Seq		uint64	`cbor:"1,keyasint"`\n	Kind		Kind	`cbor:"2,keyasint"`\n	CreatedAt	int64	`cbor:"3,keyasint"`	// unix nanoseconds\n	CreatedBy	[]byte	`cbor:"4,keyasint,omitempty"`\n	Payload		[]byte	`cbor:"5,keyasint,omitempty"`\n}
+  doc=Entry is one record in the per-actor append-only log.\n\nField order in the CBOR map is fixed by the cbor library's canonical mode\n(keys sorted lexicographically by their encoded form). Struct tags use\nshort keys to keep entries compact.
+EDGES
+  contains=matrix/cortex/journal.Entry#CreatedAt,matrix/cortex/journal.Entry#CreatedBy,matrix/cortex/journal.Entry#Kind,matrix/cortex/journal.Entry#Payload,matrix/cortex/journal.Entry#Seq,matrix/cortex/journal.Entry.Encode
+  ^defines=matrix/cortex/journal/journal.go
+
+NODE id=matrix/cortex/journal.Entry#CreatedAt kind=field
+  digest=b3:817acea6291cc5fa3338aa4b804ef8f2bfa70b9b6f9344757307f73c281323d2 file=cortex/journal/journal.go range=689:689 lang=go exported=true byte_range=32974:33010
+  sig=int64
+EDGES
+  ^contains=matrix/cortex/journal.Entry
+
+NODE id=matrix/cortex/journal.Entry#CreatedBy kind=field
+  digest=b3:944d6d3f8402f8eefa3cd7ca04cc1eebee39c7b24c2d1267c533b962eea6ec4a file=cortex/journal/journal.go range=690:690 lang=go exported=true byte_range=33032:33078
+  sig=[]byte
+EDGES
+  ^contains=matrix/cortex/journal.Entry
+
+NODE id=matrix/cortex/journal.Entry#Kind kind=field
+  digest=b3:b9f3132929e3960686c971b30343f325cad13cf00244b7c79738033a085b4f48 file=cortex/journal/journal.go range=688:688 lang=go exported=true byte_range=32936:32972
+  sig=journal.Kind
+EDGES
+  ^contains=matrix/cortex/journal.Entry
+
+NODE id=matrix/cortex/journal.Entry#Payload kind=field
+  digest=b3:aafa5646e1875bebc148db8c2691d041c6eb402e51b56a7337761827808a3300 file=cortex/journal/journal.go range=691:691 lang=go exported=true byte_range=33080:33126
+  sig=[]byte
+EDGES
+  ^contains=matrix/cortex/journal.Entry
+
+NODE id=matrix/cortex/journal.Entry#Seq kind=field
+  digest=b3:c352a5c228f4a99c179e8d099613036b5fea2edb9dc89033cf05a55c1cb8d336 file=cortex/journal/journal.go range=687:687 lang=go exported=true byte_range=32898:32934
+  sig=uint64
+EDGES
+  ^contains=matrix/cortex/journal.Entry
+
+NODE id=matrix/cortex/journal.Entry.Encode kind=method
+  digest=b3:7d973f493f146b20e650c6476d85c298fd0e1c997725a789a4225eedab0ace33 file=cortex/journal/journal.go range=716:722 lang=go exported=true byte_range=33735:33956
+  sig=func (e *Entry) Encode() ([]byte, error)
+  doc=Encode returns the canonical deterministic CBOR encoding of e.
+EDGES
+  ^contains=matrix/cortex/journal.Entry
+  ^defines=matrix/cortex/journal/journal.go
+
+NODE id=matrix/cortex/journal.Kind kind=type
+  digest=b3:10878427884ab9628c0043d09173f9a7ab173256eb951c0e3a56eca147f9e559 file=cortex/journal/journal.go range=32:35 lang=go exported=true byte_range=1296:1520
+  sig=type Kind string
+  doc=Kind enumerates the journal operation types. Phase 1 only emits KindRaw;\nlater phases will populate the rest. Kept as strings (not enums) so the\njournal stays self-describing under cbor diagnostics.
+EDGES
+  ^defines=matrix/cortex/journal/journal.go
+
+NODE id=matrix/cortex/journal.KindAddEdge kind=const
+  digest=b3:c095d0739a12cb2e687bb0b12c475f6ec1d413f3b2cfdac240367f7336c062a2 file=cortex/journal/journal.go range=42:42 lang=go exported=true byte_range=1816:1848
+  sig=journal.Kind
+EDGES
+  ^defines=matrix/cortex/journal/journal.go
+
+NODE id=matrix/cortex/journal.KindAttest kind=const
+  digest=b3:a80917a109510b68a440f207a4afe631717c7e4c37ec005cb8f686c3da91b552 file=cortex/journal/journal.go range=92:102 lang=go exported=true byte_range=4971:5663
+  sig=journal.Kind
+  doc=KindAttest is appended by cortex.Attest (Phase 11.5) when an\nagent runtime calls back to record the outcome of an executed\nintent. Spec: research/04-cortex.md §8.3 ("Two updates fire on\n`intent.attest`"). The payload is a canonical CBOR AttestPayload\n(see below); it carries the affected memory IDs so the replay\nharness can re-apply salience.Citations bumps deterministically.\nCitations and AccessCount on cited memories are mutated in the\nsame atomic batch as this journal entry. This is the cortex-\nside primitive that the MCL `intent.attest` message kind (see\nresearch/02-protocol.md §3 — kind 12 of 15) hands off to.
+EDGES
+  ^defines=matrix/cortex/journal/journal.go
+
+NODE id=matrix/cortex/journal.KindCompact kind=const
+  digest=b3:5ac2ee65372805be231c116df2421d8e77f1082b9015dad1c12e6f84d3297df3 file=cortex/journal/journal.go range=60:70 lang=go exported=true byte_range=2955:3649
+  sig=journal.Kind
+  doc=KindCompact is appended by cortex.Compact (Phase 9) when it persists\na checkpoint record. Spec: research/03-retrieval-patterns.md §5.1\nstep 3 ("Emit a journal checkpoint") + §5.3 (the cortex.compact\nprimitive). The payload is a canonical CBOR CompactPayload (see\nbelow); the full CheckpointRecord lives at chk/<intent>/<step>\nand is integrity-bound to this entry via CheckpointHash. Same\nshape rationale as KindEmbed: payload stays small (no full URI\nlist or compacted-stub vector), the heavy data lives at its own\ncontent-addressable key, replay re-derives the heavy data from\nthe journal entry + cortex state at this seq.
+EDGES
+  ^defines=matrix/cortex/journal/journal.go
+
+NODE id=matrix/cortex/journal.KindEmbed kind=const
+  digest=b3:15f2d059b3d5cc0d7ad70f998eae2d71dd8280f6ce968dab82d1ccb950df2182 file=cortex/journal/journal.go range=51:59 lang=go exported=true byte_range=2365:2953
+  sig=journal.Kind
+  doc=KindEmbed is appended by the async embedding worker (Phase 5) when it\npersists a freshly computed vector to vec/meta/<id> and updates the\ncorresponding MemoryHead.EmbeddingRef. The payload is a canonical\nCBOR EmbedPayload (see below). Logged so the replay invariant covers\nvec/meta: re-running the journal reproduces every embedding write\nwithout re-embedding from scratch (the vector bytes live in the\nvec/meta value rather than the journal payload to keep payloads\ncompact; replay re-embeds with the same deterministic Embedder).
+EDGES
+  ^defines=matrix/cortex/journal/journal.go
+
+NODE id=matrix/cortex/journal.KindFind kind=const
+  digest=b3:905b9f4731ae1f64fcf565b6654c61cfb8d7b7b091f4c2f26779cd51708a52d2 file=cortex/journal/journal.go range=46:50 lang=go exported=true byte_range=2068:2363
+  sig=journal.Kind
+  doc=KindFind is appended ONLY when a Find call is flagged late_binding=true\n(i.e. issued mid-execution rather than at compile time). Compile-time\nFinds are not journaled; this is an audit hook for D13 anti-pattern\ndetection (research/04-cortex.md §12.3).
+EDGES
+  ^defines=matrix/cortex/journal/journal.go
+
+NODE id=matrix/cortex/journal.KindGC kind=const
+  digest=b3:29a217b6f2050658b86ede18ed1c491d2451a0ca24e89b1dc374c9232ec9eef9 file=cortex/journal/journal.go range=44:44 lang=go exported=true byte_range=1949:1975
+  sig=journal.Kind
+EDGES
+  ^defines=matrix/cortex/journal/journal.go
+
+NODE id=matrix/cortex/journal.KindLearnWeights kind=const
+  digest=b3:68e8b173d2c9d407b52dc86b675314b187d3716c9a7e4cde83c79c5baf08ce75 file=cortex/journal/journal.go range=103:120 lang=go exported=true byte_range=5665:6753
+  sig=journal.Kind
+  doc=KindLearnWeights is appended by cortex.Attest (Phase 12) immediately\nafter the matching KindAttest entry. It records one EMA step on the\nper-actor salience weights (research/04-cortex.md §8.3 "EMA-update\nthe actor's weights toward / away from the high-performing\nweighting"). Payload is a canonical CBOR LearnWeightsPayload (see\nbelow) carrying both PrevW* and NewW* so the entry is\nself-validating: a replay can reconstruct the same NewW* from the\nSourceSeq's KindAttest entry + the salience.Score values at that\nseq, and tampering with the persisted weights would diverge from\nthe journal-of-record.\n\nAtomic with the matching KindAttest: both entries land in one\nstore.BeginWrite batch (KindAttest at seq=N, KindLearnWeights at\nseq=N+1). Replay determinism: rebuildSalienceFromJournal applies\nthe citation bumps from KindAttest first, then the weight update\nfrom KindLearnWeights, in seq order. Phase 7 anchors the journal\nMMR so both entries' leaves participate in OverallRoot.
+EDGES
+  ^defines=matrix/cortex/journal/journal.go
+
+NODE id=matrix/cortex/journal.KindMigration kind=const
+  digest=b3:2ff532ae84aac3ede07c7348f95cd8248bb7e37017df7a0869a4ddf6b3633e08 file=cortex/journal/journal.go range=45:45 lang=go exported=true byte_range=2006:2039
+  sig=journal.Kind
+EDGES
+  ^defines=matrix/cortex/journal/journal.go
+
+NODE id=matrix/cortex/journal.KindRaw kind=const
+  digest=b3:781927525b0d6e80ed0cfdb5044f36e30285e40c6e2f98a7489b79b2275dbe26 file=cortex/journal/journal.go range=38:38 lang=go exported=true byte_range=1531:1558
+  sig=journal.Kind
+EDGES
+  ^defines=matrix/cortex/journal/journal.go
+
+NODE id=matrix/cortex/journal.KindRemoveEdge kind=const
+  digest=b3:145f501fe355ae1fcf977940f3cf03335a5cd9e7997386a35d99a9b4f2eafbe3 file=cortex/journal/journal.go range=43:43 lang=go exported=true byte_range=1881:1916
+  sig=journal.Kind
+EDGES
+  ^defines=matrix/cortex/journal/journal.go
+
+NODE id=matrix/cortex/journal.KindRollup kind=const
+  digest=b3:533c09684fb699ea48d18b19b7d1d59b7c5038d80bd6c23a8e2f7aed0093e9d4 file=cortex/journal/journal.go range=138:155 lang=go exported=true byte_range=7793:8944
+  sig=journal.Kind
+  doc=KindRollup is appended by cortex.BuildRollup (continuous-memory task\n2.1) when it persists a temporal-ladder rollup record. Rides the SAME\nderived, journaled-but-NOT-anchored lane as KindCompact\n(compact.go:429-431) and KindSession: a journal entry + a derived\nroll/<tier><start> store record, with NO memories/edges SMT write, so\nthe multi-resolution temporal index (hour → day → epoch) is built over\nthe journal WITHOUT perturbing OverallRoot / the D11 replay\nbyte-identity of the anchored world-state.\n\nThe payload is a canonical CBOR RollupPayload (see below); the full\nRollupRecord (time window, member refs, deterministic short-form,\nsalience) lives at roll/<tier><start> and is integrity-bound to this\nentry via RecordHash. Same shape rationale as KindEmbed / KindCompact /\nKindSession: the payload stays small (only the window identity + a\ncryptographic pin), the heavy record lives at its own key, and the\nrecord is a PURE function of the journal facts in the window (so it is\ndeterministic and rebuildable regardless of when BuildRollup runs).
+EDGES
+  ^defines=matrix/cortex/journal/journal.go
+
+NODE id=matrix/cortex/journal.KindRollupEnrich kind=const
+  digest=b3:0f62cbe76acff578dfb40b2a5dc5ff32231df8f98cdafa3f9a9fa1d080d9d056 file=cortex/journal/journal.go range=156:178 lang=go exported=true byte_range=8946:10359
+  sig=journal.Kind
+  doc=KindRollupEnrich is appended by cortex.EnrichRollup (continuous-memory\ntask 2.3) when it persists an OPTIONAL LLM-enrichment record for a\nrollup window. Rides the SAME derived, journaled-but-NOT-anchored lane\nas KindRollup / KindCompact / KindSession: a journal entry + a derived\nenr/<tier><start> store record, with NO memories/edges SMT write, so the\nenrichment lane perturbs neither OverallRoot's anchored namespaces nor\nthe D11 replay byte-identity of the canonical world-state.\n\nThe enrichment is a SEPARATE derived record parallel to the rollup — the\nstored RollupRecord is NEVER mutated to reference it, so the\ndeterministic rollup floor stays byte-stable and the enrichment can\nNEVER be load-bearing for determinism or replay (req.4.3). The record is\nREBUILDABLE from the deterministic ShortForm and is treated as\nstale/absent whenever its SourceRecordHash diverges from the rollup's\ncurrent RecordHash.\n\nThe payload is a canonical CBOR EnrichPayload (see below); the full\nEnrichRecord (window, source-record hash, prose, model) lives at\nenr/<tier><start> and is integrity-bound to this entry via RecordHash.\nSame shape rationale as KindRollup: the payload stays small (window\nidentity + the source pin + the enrichment's own pin + model), the heavy\nprose lives at its own key.
+EDGES
+  ^defines=matrix/cortex/journal/journal.go
+
+NODE id=matrix/cortex/journal.KindScopeViolation kind=const
+  digest=b3:c2f0daa9e33b74cb2031e9e0b1b6063e1d44e0c3fc7332a1e643e07f292c5fca file=cortex/journal/journal.go range=82:91 lang=go exported=true byte_range=4329:4969
+  sig=journal.Kind
+  doc=KindScopeViolation is appended whenever a sub-agent attempts to\naccess a memory outside its CortexScope, or to write under a\nnon-writable scope. Spec: research/06-agents.md §7.2 ("logged as\na j/ journal event with severity: high; repeated violations\nfrom the same sub-agent trigger automatic dispatch revocation").\nThe payload is a canonical CBOR ScopeViolationPayload (see\nbelow); the violating sub-agent's GrantedTo ref + the offending\nmemory id (or empty for write-no-scope-writable) + the kind of\nviolation are all captured for downstream auto-revocation.
+EDGES
+  ^defines=matrix/cortex/journal/journal.go
+
+NODE id=matrix/cortex/journal.KindSession kind=const
+  digest=b3:7b7ad0d632d8da19cb4ec16684652fa3e05d958b558d54a87a1ad3d6771b2704 file=cortex/journal/journal.go range=121:137 lang=go exported=true byte_range=6755:7791
+  sig=journal.Kind
+  doc=KindSession is appended by cortex.AppendMessage (continuous-memory\ntask 1.1) when it persists one durable conversation-transcript\nmessage. Rides the SAME derived, journaled-but-NOT-anchored lane as\nKindCompact (compact.go:429-431): a journal entry + a derived\nsess/<conv>/<seq> store record, with NO memories/edges SMT write, so\ncortex can own the live transcript without perturbing OverallRoot /\nthe D11 replay byte-identity of the anchored world-state.\n\nThe payload is a canonical CBOR SessionPayload (see below); the full\nSessionRecord (role, content, tool call/result, media refs, ts)\nlives at sess/<conv>/<seq> and is integrity-bound to this entry via\nRecordHash. Same shape rationale as KindEmbed / KindCompact: the\npayload stays small (no message content — deliberately, so message\nbodies are never duplicated into the journal), the heavy record\nlives at its own key, and replay re-derives it from the entry +\ncortex state at this seq.
+EDGES
+  ^defines=matrix/cortex/journal/journal.go
+
+NODE id=matrix/cortex/journal.KindStorySoFar kind=const
+  digest=b3:f37fc8e0943e1172572c1e08ae41d2a1b33a0fbc551ea6c7336a05dca83ef090 file=cortex/journal/journal.go range=179:195 lang=go exported=true byte_range=10361:11421
+  sig=journal.Kind
+  doc=KindStorySoFar is appended by cortex.BuildStorySoFar (continuous-memory\ntask 4.2) when it persists the durable per-conversation "story so far"\nrecord. Rides the SAME derived, journaled-but-NOT-anchored lane as\nKindSession/KindRollup: NO snap.StageMemoryUpdate / StageEdgeUpdate, so\nthis entry contributes only a journal-MMR leaf and never perturbs the\nanchored "memories"/"edges" SMT roots or the D11 replay byte-identity\nof the anchored world-state.\n\nThe payload is a canonical CBOR StorySoFarPayload (see below); the\nfull StorySoFarRecord (role tallies, message count, deterministic\nextractive short-form) lives at story/<conv> and is integrity-bound to\nthis entry via RecordHash. Same shape rationale as KindSession/\nKindRollup: the payload stays small, the heavy record lives at its\nown key, and the record is a PURE function of the conversation's own\nsess/<conv>/* transcript up to UpToSeq (deterministic and rebuildable\nregardless of when BuildStorySoFar runs).
+EDGES
+  ^defines=matrix/cortex/journal/journal.go
+
+NODE id=matrix/cortex/journal.KindTombstone kind=const
+  digest=b3:5c34d1b0df8e27ae466874d3f6d7d3f18800515c98dc08eb769abcafc038b1e9 file=cortex/journal/journal.go range=41:41 lang=go exported=true byte_range=1749:1782
+  sig=journal.Kind
+EDGES
+  ^defines=matrix/cortex/journal/journal.go
+
+NODE id=matrix/cortex/journal.KindUpdate kind=const
+  digest=b3:2927a867a40d79663990e84b2bb0fcce52fbd5d189016fe80226bf195161f1ce file=cortex/journal/journal.go range=40:40 lang=go exported=true byte_range=1671:1701
+  sig=journal.Kind
+EDGES
+  ^defines=matrix/cortex/journal/journal.go
+
+NODE id=matrix/cortex/journal.KindUpdateHead kind=const
+  digest=b3:910273ca9536f7d315061b944135d80ff5fd83e10962a13eb6dcf655b86d1332 file=cortex/journal/journal.go range=71:81 lang=go exported=true byte_range=3651:4327
+  sig=journal.Kind
+  doc=KindUpdateHead is appended by cortex.UpdateHead (Phase 10) when it\nrewrites mutable Head fields (Tags, Frames, DeclaredImportance,\nVisibility) on an existing memory WITHOUT bumping mv/<id>/v/n\n(Phase 10 Q5 lock: Version is Data-versioned per research/04\n§6.1; Head-only mutations don't create a new Data version).\nThe payload is a canonical CBOR UpdateHeadPayload (see below);\nit carries the field diff (before+after for each mutated field)\nso replay walks j/ forward, applies UpdateHeadPayload deltas to\nthe in-memory Head, and recomputes idx/tag + idx/frame +\nidx/actor_obj keys deterministically.
+EDGES
+  ^defines=matrix/cortex/journal/journal.go
+
+NODE id=matrix/cortex/journal.KindWrite kind=const
+  digest=b3:ac015f69457c156c72061bed8b613db3e5fdcb2841dceae33374b182bbba894e file=cortex/journal/journal.go range=39:39 lang=go exported=true byte_range=1608:1637
+  sig=journal.Kind
+EDGES
+  ^defines=matrix/cortex/journal/journal.go
+
+NODE id=matrix/cortex/journal.LateBindingPayload kind=type
+  digest=b3:6230bdf18a1a66d895348d5a7d61a5c9e2918542e5733b3b2d697aa67a7c9815 file=cortex/journal/journal.go range=640:666 lang=go exported=true byte_range=30713:32194
+  sig=type LateBindingPayload struct {\n	SchemaVersion	uint8		`cbor:"0,keyasint"`\n	Predicate	string		`cbor:"1,keyasint,omitempty"`\n	Types		[]byte		`cbor:"2,keyasint,omitempty"`\n	Limit		int		`cbor:"3,keyasint,omitempty"`\n	ResultCount	int		`cbor:"4,keyasint"`\n	Tags		[]string	`cbor:"5,keyasint,omitempty"`\n	AccessedIDs	[][16]byte	`cbor:"6,keyasint,omitempty"`\n}
+  doc=LateBindingPayload is the canonical shape carried by KindFind entries\n(Phase 3 introduced the kind; Phase 11.5 extended the payload with\nAccessedIDs so the replay harness can re-apply salience.AccessCount\nbumps deterministically).\n\nLateBinding=true Finds are the only path that journals; compile-time\nFinds (issued during pre-resolution per D13) do NOT emit a payload at\nall. The audit posture matches research/04-cortex.md §12.3 anti-pattern\ndetection: a journal scan can flag actors whose compile-time-to-late-\nbinding ratio is unusual.\n\nPredicate is the canonical String() form of the Where AST (audit-only,\nnot used by replay). Types is the byte-encoded memory.Type list. Limit\nand Tags mirror Query input. ResultCount is the post-trim returned\ncount. AccessedIDs is the per-candidate memory IDs whose salience\nAccessCount was bumped in the same atomic batch as this journal entry;\nlen(AccessedIDs) <= ResultCount because BudgetTokens trim can drop\ncandidates from the rendered set before they're counted as accessed.
+EDGES
+  contains=matrix/cortex/journal.LateBindingPayload#AccessedIDs,matrix/cortex/journal.LateBindingPayload#Limit,matrix/cortex/journal.LateBindingPayload#Predicate,matrix/cortex/journal.LateBindingPayload#ResultCount,matrix/cortex/journal.LateBindingPayload#SchemaVersion,matrix/cortex/journal.LateBindingPayload#Tags,matrix/cortex/journal.LateBindingPayload#Types
+  ^defines=matrix/cortex/journal/journal.go
+
+NODE id=matrix/cortex/journal.LateBindingPayload#AccessedIDs kind=field
+  digest=b3:861ffa405ccdec04df9902418d9e19016485370b9a36a3aac396840fa55e1129 file=cortex/journal/journal.go range=665:665 lang=go exported=true byte_range=32138:32192
+  sig=[][16]byte
+EDGES
+  ^contains=matrix/cortex/journal.LateBindingPayload
+
+NODE id=matrix/cortex/journal.LateBindingPayload#Limit kind=field
+  digest=b3:18b19e4eb8dfdaf5f9e01ce84f7ba01611a804853241bff1bfdc21dcc80efede file=cortex/journal/journal.go range=662:662 lang=go exported=true byte_range=31980:32034
+  sig=int
+EDGES
+  ^contains=matrix/cortex/journal.LateBindingPayload
+
+NODE id=matrix/cortex/journal.LateBindingPayload#Predicate kind=field
+  digest=b3:038904546fe4ce908abc9458fef86cc33499f34ae8112ed32a79e1dd7cae90c5 file=cortex/journal/journal.go range=660:660 lang=go exported=true byte_range=31868:31922
+  sig=string
+EDGES
+  ^contains=matrix/cortex/journal.LateBindingPayload
+
+NODE id=matrix/cortex/journal.LateBindingPayload#ResultCount kind=field
+  digest=b3:06c8f13882f3212a9dc4544bad20417ddad0f840b831dbe30a52962c0adbe306 file=cortex/journal/journal.go range=663:663 lang=go exported=true byte_range=32036:32080
+  sig=int
+EDGES
+  ^contains=matrix/cortex/journal.LateBindingPayload
+
+NODE id=matrix/cortex/journal.LateBindingPayload#SchemaVersion kind=field
+  digest=b3:b2f1a2cb423a9812767450e6dedfd9343a9331d772f51590a84b5605f62e02d2 file=cortex/journal/journal.go range=659:659 lang=go exported=true byte_range=31822:31866
+  sig=uint8
+EDGES
+  ^contains=matrix/cortex/journal.LateBindingPayload
+
+NODE id=matrix/cortex/journal.LateBindingPayload#Tags kind=field
+  digest=b3:b429e7a599f4e7e4ad33b80ac236602f3a7959054c1750408a32bc56301fbcd9 file=cortex/journal/journal.go range=664:664 lang=go exported=true byte_range=32082:32136
+  sig=[]string
+EDGES
+  ^contains=matrix/cortex/journal.LateBindingPayload
+
+NODE id=matrix/cortex/journal.LateBindingPayload#Types kind=field
+  digest=b3:278019eb9022c71f91664fac6dc3ed386906398245c34a12c8f796fd5d16534e file=cortex/journal/journal.go range=661:661 lang=go exported=true byte_range=31924:31978
+  sig=[]byte
+EDGES
+  ^contains=matrix/cortex/journal.LateBindingPayload
+
+NODE id=matrix/cortex/journal.LeafDomain kind=const
+  digest=b3:9cd4d55e317651ba4491aa489b8e22355ef785d20a0dab46c691dfa7860dccde file=cortex/journal/journal.go range=28:30 lang=go exported=true byte_range=1103:1294
+  sig=untyped string
+  doc=LeafDomain is prepended to the canonical CBOR before hashing. Bumping the\nversion string forces a clean re-anchor of all existing journals.
+EDGES
+  ^defines=matrix/cortex/journal/journal.go
+
+NODE id=matrix/cortex/journal.LeafHash kind=func
+  digest=b3:989c91145de5fa105c6c3736d4cdb8ceb8c0ebb0e32b3be732a03122a0ca96d7 file=cortex/journal/journal.go range=729:738 lang=go exported=true byte_range=34084:34384
+  sig=func LeafHash(encoded []byte) [32]byte
+  doc=LeafHash returns sha256(LeafDomain || encoded). Inputs to this function are\nexpected to be already canonical-encoded Entry bytes.
+EDGES
+  ^defines=matrix/cortex/journal/journal.go
+
+NODE id=matrix/cortex/journal.LearnWeightsPayload kind=type
+  digest=b3:f2ab3b93f0f13dd41ca6d66bda88c81abc7ad44c76db81db20e50f033e2223f7 file=cortex/journal/journal.go range=593:625 lang=go exported=true byte_range=28591:30273
+  sig=type LearnWeightsPayload struct {\n	SchemaVersion		uint8	`cbor:"0,keyasint"`\n	SourceSeq		uint64	`cbor:"1,keyasint"`\n	Alpha			float32	`cbor:"2,keyasint"`\n	DecrementOnFailure	bool	`cbor:"3,keyasint,omitempty"`\n	Skipped			bool	`cbor:"4,keyasint,omitempty"`\n	PrevWR			float32	`cbor:"5,keyasint"`\n	PrevWA			float32	`cbor:"6,keyasint"`\n	PrevWC			float32	`cbor:"7,keyasint"`\n	PrevWD			float32	`cbor:"8,keyasint"`\n	PrevWV			float32	`cbor:"9,keyasint"`\n	NewWR			float32	`cbor:"10,keyasint"`\n	NewWA			float32	`cbor:"11,keyasint"`\n	NewWC			float32	`cbor:"12,keyasint"`\n	NewWD			float32	`cbor:"13,keyasint"`\n	NewWV			float32	`cbor:"14,keyasint"`\n}
+  doc=LearnWeightsPayload is the canonical shape carried by KindLearnWeights\nentries (Phase 12). Spec: research/04-cortex.md §8.3 (EMA weight\nlearning).\n\nSourceSeq is the seq of the KindAttest entry that produced this update;\nalways exactly SourceSeq+1 == this entry's seq (one EMA step per\nattest). DecrementOnFailure mirrors the attest-side flag for whether\nthe EMA was a toward-pull (false; success or non-decrement-reason\nfailure) or an away-pull (true; failure with reason ∈ §8.3 decrement\nset). Skipped is true when the EMA update was a no-op (degenerate\nprofile or empty cited set); when true, the NewW* fields equal the\nPrevW* fields and Alpha is still stamped for audit.\n\nPrev/New weights are inlined as float32 fields (not a nested struct) so\ncanonical CBOR encoding is byte-stable and a journal dump shows the\nfull state transition in one record.
+EDGES
+  contains=matrix/cortex/journal.LearnWeightsPayload#Alpha,matrix/cortex/journal.LearnWeightsPayload#DecrementOnFailure,matrix/cortex/journal.LearnWeightsPayload#NewWA,matrix/cortex/journal.LearnWeightsPayload#NewWC,matrix/cortex/journal.LearnWeightsPayload#NewWD,matrix/cortex/journal.LearnWeightsPayload#NewWR,matrix/cortex/journal.LearnWeightsPayload#NewWV,matrix/cortex/journal.LearnWeightsPayload#PrevWA,matrix/cortex/journal.LearnWeightsPayload#PrevWC,matrix/cortex/journal.LearnWeightsPayload#PrevWD,matrix/cortex/journal.LearnWeightsPayload#PrevWR,matrix/cortex/journal.LearnWeightsPayload#PrevWV,matrix/cortex/journal.LearnWeightsPayload#SchemaVersion,matrix/cortex/journal.LearnWeightsPayload#Skipped,matrix/cortex/journal.LearnWeightsPayload#SourceSeq
+  ^defines=matrix/cortex/journal/journal.go
+
+NODE id=matrix/cortex/journal.LearnWeightsPayload#Alpha kind=field
+  digest=b3:d862aa27f9d3c9129c7395c1ba102084bc69b89c8ebcf610110300952fe2a1b1 file=cortex/journal/journal.go range=612:612 lang=go exported=true byte_range=29624:29670
+  sig=float32
+EDGES
+  ^contains=matrix/cortex/journal.LearnWeightsPayload
+
+NODE id=matrix/cortex/journal.LearnWeightsPayload#DecrementOnFailure kind=field
+  digest=b3:984f4ec6436bf4f5ac33d797e3ce3108e9a4b8c534e2319e8315a974cea784a1 file=cortex/journal/journal.go range=613:613 lang=go exported=true byte_range=29672:29728
+  sig=bool
+EDGES
+  ^contains=matrix/cortex/journal.LearnWeightsPayload
+
+NODE id=matrix/cortex/journal.LearnWeightsPayload#NewWA kind=field
+  digest=b3:02fd9afa5a84d87d6a4936a7f5dece4effd54aa342b936a49c7cbc8ff3ed98ec file=cortex/journal/journal.go range=621:621 lang=go exported=true byte_range=30077:30124
+  sig=float32
+EDGES
+  ^contains=matrix/cortex/journal.LearnWeightsPayload
+
+NODE id=matrix/cortex/journal.LearnWeightsPayload#NewWC kind=field
+  digest=b3:d0f00bc33935038c159e243fdd1f841b9e88c3929654f235e12c7a99d16c7132 file=cortex/journal/journal.go range=622:622 lang=go exported=true byte_range=30126:30173
+  sig=float32
+EDGES
+  ^contains=matrix/cortex/journal.LearnWeightsPayload
+
+NODE id=matrix/cortex/journal.LearnWeightsPayload#NewWD kind=field
+  digest=b3:bdf5742c4fd688f73ea78796c0ac3e2d0506a84f18b51c70fd1207f374fd33fa file=cortex/journal/journal.go range=623:623 lang=go exported=true byte_range=30175:30222
+  sig=float32
+EDGES
+  ^contains=matrix/cortex/journal.LearnWeightsPayload
+
+NODE id=matrix/cortex/journal.LearnWeightsPayload#NewWR kind=field
+  digest=b3:fcd0aac9613b104d716dc35c0d9a667781bc4a26fb544835c0bb7325c40384a7 file=cortex/journal/journal.go range=620:620 lang=go exported=true byte_range=30028:30075
+  sig=float32
+EDGES
+  ^contains=matrix/cortex/journal.LearnWeightsPayload
+
+NODE id=matrix/cortex/journal.LearnWeightsPayload#NewWV kind=field
+  digest=b3:fade6b2eee1ea68a73c8745cc69a687022aaebeaae6dada1d21d10d28a2fbe73 file=cortex/journal/journal.go range=624:624 lang=go exported=true byte_range=30224:30271
+  sig=float32
+EDGES
+  ^contains=matrix/cortex/journal.LearnWeightsPayload
+
+NODE id=matrix/cortex/journal.LearnWeightsPayload#PrevWA kind=field
+  digest=b3:3f1aee42ebcbfdf6ade9eb96a312edc0818fa8af85285249da7c329efc2db46d file=cortex/journal/journal.go range=616:616 lang=go exported=true byte_range=29836:29882
+  sig=float32
+EDGES
+  ^contains=matrix/cortex/journal.LearnWeightsPayload
+
+NODE id=matrix/cortex/journal.LearnWeightsPayload#PrevWC kind=field
+  digest=b3:80731ca94bd44b2e9fa878e0ef5affb1f3c68e977ee0a1f4a5370d59453fa13a file=cortex/journal/journal.go range=617:617 lang=go exported=true byte_range=29884:29930
+  sig=float32
+EDGES
+  ^contains=matrix/cortex/journal.LearnWeightsPayload
+
+NODE id=matrix/cortex/journal.LearnWeightsPayload#PrevWD kind=field
+  digest=b3:259ff2b9c2dbff10e5a6a67a5b1e54de1c447df6b18a26e4edc57bb9caa5f564 file=cortex/journal/journal.go range=618:618 lang=go exported=true byte_range=29932:29978
+  sig=float32
+EDGES
+  ^contains=matrix/cortex/journal.LearnWeightsPayload
+
+NODE id=matrix/cortex/journal.LearnWeightsPayload#PrevWR kind=field
+  digest=b3:377644971e0edc305e79d2b4ba6910b95c1c08cefc872896bc1f1979978afb68 file=cortex/journal/journal.go range=615:615 lang=go exported=true byte_range=29788:29834
+  sig=float32
+EDGES
+  ^contains=matrix/cortex/journal.LearnWeightsPayload
+
+NODE id=matrix/cortex/journal.LearnWeightsPayload#PrevWV kind=field
+  digest=b3:1be1059ac7172566b6da9ff153f1d8d660ae0c33063b034d1482d4e47346c613 file=cortex/journal/journal.go range=619:619 lang=go exported=true byte_range=29980:30026
+  sig=float32
+EDGES
+  ^contains=matrix/cortex/journal.LearnWeightsPayload
+
+NODE id=matrix/cortex/journal.LearnWeightsPayload#SchemaVersion kind=field
+  digest=b3:525534ab8bbdebe54158987379fd0e3aa176d995a6576e93a990f3116de78f32 file=cortex/journal/journal.go range=610:610 lang=go exported=true byte_range=29528:29574
+  sig=uint8
+EDGES
+  ^contains=matrix/cortex/journal.LearnWeightsPayload
+
+NODE id=matrix/cortex/journal.LearnWeightsPayload#Skipped kind=field
+  digest=b3:77e4be7ce583156174f05bf524a14094045e175433b7e6ce5175431cfc19fd0b file=cortex/journal/journal.go range=614:614 lang=go exported=true byte_range=29730:29786
+  sig=bool
+EDGES
+  ^contains=matrix/cortex/journal.LearnWeightsPayload
+
+NODE id=matrix/cortex/journal.LearnWeightsPayload#SourceSeq kind=field
+  digest=b3:2b51cc101747346dd33a90c3debdc692d27541d1d099abbbc06c5802ded10200 file=cortex/journal/journal.go range=611:611 lang=go exported=true byte_range=29576:29622
+  sig=uint64
+EDGES
+  ^contains=matrix/cortex/journal.LearnWeightsPayload
+
+NODE id=matrix/cortex/journal.RollupPayload kind=type
+  digest=b3:132972fda59f10718aa7342868dbff2d632d6316630395e0759f4c25626f2f29 file=cortex/journal/journal.go range=360:379 lang=go exported=true byte_range=18302:19315
+  sig=type RollupPayload struct {\n	SchemaVersion	uint8		`cbor:"0,keyasint"`\n	Tier		uint8		`cbor:"1,keyasint"`\n	Start		int64		`cbor:"2,keyasint"`\n	End		int64		`cbor:"3,keyasint"`\n	EntryCount	uint32		`cbor:"4,keyasint"`\n	RecordHash	[32]byte	`cbor:"5,keyasint"`\n}
+  doc=RollupPayload is the canonical shape carried by KindRollup entries\n(continuous-memory task 2.1). Mirrors CompactPayload / SessionPayload\ndiscipline: the payload carries only the window identity + a cryptographic\npin, never the heavy record.\n\nTier + Start together form the record identity (Pebble key\nroll/<tier><start>). Start/End are the [Start, End) window bounds in Unix\nnanoseconds. EntryCount is an audit denormalization so a journal scan can\nsummarize a rollup without a Pebble Get on roll/. RecordHash is sha256 over\nthe canonical CBOR encoding of the RollupRecord stored at roll/ — the same\nintegrity discipline as EmbedPayload.VectorHash and\nCompactPayload.CheckpointHash.
+EDGES
+  contains=matrix/cortex/journal.RollupPayload#End,matrix/cortex/journal.RollupPayload#EntryCount,matrix/cortex/journal.RollupPayload#RecordHash,matrix/cortex/journal.RollupPayload#SchemaVersion,matrix/cortex/journal.RollupPayload#Start,matrix/cortex/journal.RollupPayload#Tier
+  ^defines=matrix/cortex/journal/journal.go
+
+NODE id=matrix/cortex/journal.RollupPayload#End kind=field
+  digest=b3:792aca97eb3a65efd7b792c62cdcf6b87581d5c1d3bb1f84d53d87ab44cc6038 file=cortex/journal/journal.go range=376:376 lang=go exported=true byte_range=19183:19225
+  sig=int64
+EDGES
+  ^contains=matrix/cortex/journal.RollupPayload
+
+NODE id=matrix/cortex/journal.RollupPayload#EntryCount kind=field
+  digest=b3:c743ee0cfaeff83e30a9c5402675798056711be583dd200a8d7980516dcc5731 file=cortex/journal/journal.go range=377:377 lang=go exported=true byte_range=19227:19269
+  sig=uint32
+EDGES
+  ^contains=matrix/cortex/journal.RollupPayload
+
+NODE id=matrix/cortex/journal.RollupPayload#RecordHash kind=field
+  digest=b3:348fb4c88f7b091df59a858e40c2ba7344007b96b4a3251c6fefe42d117ce5cf file=cortex/journal/journal.go range=378:378 lang=go exported=true byte_range=19271:19313
+  sig=[32]byte
+EDGES
+  ^contains=matrix/cortex/journal.RollupPayload
+
+NODE id=matrix/cortex/journal.RollupPayload#SchemaVersion kind=field
+  digest=b3:fd51f65049349e94dfa920e0a40cbaaa8c59d0b47dc23b918a1503cc9eb5d4aa file=cortex/journal/journal.go range=373:373 lang=go exported=true byte_range=19051:19093
+  sig=uint8
+EDGES
+  ^contains=matrix/cortex/journal.RollupPayload
+
+NODE id=matrix/cortex/journal.RollupPayload#Start kind=field
+  digest=b3:cf0da5c2cdb9b2ee0e76d39d2fddd9bb920dd5f6c0df5d85ad5f54fbfed42a91 file=cortex/journal/journal.go range=375:375 lang=go exported=true byte_range=19139:19181
+  sig=int64
+EDGES
+  ^contains=matrix/cortex/journal.RollupPayload
+
+NODE id=matrix/cortex/journal.RollupPayload#Tier kind=field
+  digest=b3:d909c8e5e6c2ea84deaeba07545b920b8032615c02508aea6bea0506722d6ee5 file=cortex/journal/journal.go range=374:374 lang=go exported=true byte_range=19095:19137
+  sig=uint8
+EDGES
+  ^contains=matrix/cortex/journal.RollupPayload
+
+NODE id=matrix/cortex/journal.ScopeViolationPayload kind=type
+  digest=b3:eb7cb2e4b2fd870fc53854feb14f6545a25befa448d2fb1c67d211e5fc1cda93 file=cortex/journal/journal.go range=497:521 lang=go exported=true byte_range=24360:25744
+  sig=type ScopeViolationPayload struct {\n	SchemaVersion	uint8		`cbor:"0,keyasint"`\n	GrantedTo	string		`cbor:"1,keyasint,omitempty"`	// sub-agent ref from CortexScope.GrantedTo\n	GrantedBy	string		`cbor:"2,keyasint,omitempty"`	// parent agent ref\n	MemoryID	[16]byte	`cbor:"3,keyasint,omitempty"`	// zero if N/A\n	Reason		string		`cbor:"4,keyasint"`		// short code, e.g. "violation" / "not_writable"\n	Mode		string		`cbor:"5,keyasint,omitempty"`	// "read" | "write"\n}
+  doc=ScopeViolationPayload is the canonical shape carried by\nKindScopeViolation entries (Phase 10). Spec: research/06-agents.md\n§7.2 — "logged as a j/ journal event with severity: high; repeated\nviolations from the same sub-agent trigger automatic dispatch\nrevocation".\n\nAt the cortex layer we don't currently auto-revoke (no DID\nresolution path); an agent runtime / tools/registry consumer counts\nthese entries and decides to revoke. Cortex's job is just to make\nevery violation visible in the canonical journal so it cannot be\nretroactively edited away.\n\nMemoryID is zero on violations that don't bind to a specific memory\n(e.g. UpdateHead under non-writable scope). Reason is a short\nmachine-readable code (see scope.ErrViolation / scope.ErrNotWritable\n/ scope.ErrActorMismatch — the cortex enforce path picks the\nappropriate code).
+EDGES
+  contains=matrix/cortex/journal.ScopeViolationPayload#GrantedBy,matrix/cortex/journal.ScopeViolationPayload#GrantedTo,matrix/cortex/journal.ScopeViolationPayload#MemoryID,matrix/cortex/journal.ScopeViolationPayload#Mode,matrix/cortex/journal.ScopeViolationPayload#Reason,matrix/cortex/journal.ScopeViolationPayload#SchemaVersion
+  ^defines=matrix/cortex/journal/journal.go
+
+NODE id=matrix/cortex/journal.ScopeViolationPayload#GrantedBy kind=field
+  digest=b3:79d9b2dab6b284ebae77c5bcff482f0a256c37fca98459a326e5186fedd1dd59 file=cortex/journal/journal.go range=517:517 lang=go exported=true byte_range=25424:25476
+  sig=string
+EDGES
+  ^contains=matrix/cortex/journal.ScopeViolationPayload
+
+NODE id=matrix/cortex/journal.ScopeViolationPayload#GrantedTo kind=field
+  digest=b3:a1d63fcf0742767c68346e713324fa58e547a1d3853570281181a059f6f3bd07 file=cortex/journal/journal.go range=516:516 lang=go exported=true byte_range=25326:25378
+  sig=string
+EDGES
+  ^contains=matrix/cortex/journal.ScopeViolationPayload
+
+NODE id=matrix/cortex/journal.ScopeViolationPayload#MemoryID kind=field
+  digest=b3:87899fb6a0f310594374e95b311d745839d8bc390ee8b8591576d55193a4c15c file=cortex/journal/journal.go range=518:518 lang=go exported=true byte_range=25498:25550
+  sig=[16]byte
+EDGES
+  ^contains=matrix/cortex/journal.ScopeViolationPayload
+
+NODE id=matrix/cortex/journal.ScopeViolationPayload#Mode kind=field
+  digest=b3:2694242ed4e9008aaaeed137b5d28551068a32d1defd58ee22f4c8df2223741d file=cortex/journal/journal.go range=520:520 lang=go exported=true byte_range=25670:25722
+  sig=string
+EDGES
+  ^contains=matrix/cortex/journal.ScopeViolationPayload
+
+NODE id=matrix/cortex/journal.ScopeViolationPayload#Reason kind=field
+  digest=b3:2fdd1d7f6ccc8912bcde25fc3981246d2ca81431290dfe6e4fe669e8993251e1 file=cortex/journal/journal.go range=519:519 lang=go exported=true byte_range=25567:25609
+  sig=string
+EDGES
+  ^contains=matrix/cortex/journal.ScopeViolationPayload
+
+NODE id=matrix/cortex/journal.ScopeViolationPayload#SchemaVersion kind=field
+  digest=b3:fd51f65049349e94dfa920e0a40cbaaa8c59d0b47dc23b918a1503cc9eb5d4aa file=cortex/journal/journal.go range=515:515 lang=go exported=true byte_range=25282:25324
+  sig=uint8
+EDGES
+  ^contains=matrix/cortex/journal.ScopeViolationPayload
+
+NODE id=matrix/cortex/journal.SessionPayload kind=type
+  digest=b3:d88529943a4dc1404de34ed1f0052dd5635de3f64e3c77ce8f5e29e0fc9c62dd file=cortex/journal/journal.go range=327:345 lang=go exported=true byte_range=16928:17897
+  sig=type SessionPayload struct {\n	SchemaVersion	uint8		`cbor:"0,keyasint"`\n	ConversationID	string		`cbor:"1,keyasint"`\n	Seq		uint64		`cbor:"2,keyasint"`\n	Role		uint8		`cbor:"3,keyasint"`\n	RecordHash	[32]byte	`cbor:"4,keyasint"`\n}
+  doc=SessionPayload is the canonical shape carried by KindSession entries\n(continuous-memory task 1.1). Mirrors CompactPayload's discipline: the\npayload carries only the identity + a cryptographic pin, never the\nmessage body.\n\nConversationID + Seq form the record identity (Pebble key\nsess/<conv>/<seq>). Role is the small enumerated cortex/session.Role\n(user|assistant|tool_call|tool_result|system) denormalized so a journal\nscan can classify a message without a Pebble Get on sess/. RecordHash is\nsha256 over the canonical CBOR encoding of the SessionRecord stored at\nsess/<conv>/<seq> — the same integrity discipline as\nEmbedPayload.VectorHash and CompactPayload.CheckpointHash.
+EDGES
+  contains=matrix/cortex/journal.SessionPayload#ConversationID,matrix/cortex/journal.SessionPayload#RecordHash,matrix/cortex/journal.SessionPayload#Role,matrix/cortex/journal.SessionPayload#SchemaVersion,matrix/cortex/journal.SessionPayload#Seq
+  ^defines=matrix/cortex/journal/journal.go
+
+NODE id=matrix/cortex/journal.SessionPayload#ConversationID kind=field
+  digest=b3:58b4ced71ccbf4d24820f552a1c7ad3f43b2e1ab156e289303a615784cb964af file=cortex/journal/journal.go range=341:341 lang=go exported=true byte_range=17717:17760
+  sig=string
+EDGES
+  ^contains=matrix/cortex/journal.SessionPayload
+
+NODE id=matrix/cortex/journal.SessionPayload#RecordHash kind=field
+  digest=b3:f534fa23980ac67debe66309ac5c54ed1a9b108bb238ec6815735a66998d4aea file=cortex/journal/journal.go range=344:344 lang=go exported=true byte_range=17852:17895
+  sig=[32]byte
+EDGES
+  ^contains=matrix/cortex/journal.SessionPayload
+
+NODE id=matrix/cortex/journal.SessionPayload#Role kind=field
+  digest=b3:59d6b89399ff45a516867729209ca83c083e05e74258751804d92440c80c12b3 file=cortex/journal/journal.go range=343:343 lang=go exported=true byte_range=17807:17850
+  sig=uint8
+EDGES
+  ^contains=matrix/cortex/journal.SessionPayload
+
+NODE id=matrix/cortex/journal.SessionPayload#SchemaVersion kind=field
+  digest=b3:74fb1fff6e23749d4cc6025b5313bfe7b22960cb2307ab9cf5aadafe1066f69c file=cortex/journal/journal.go range=340:340 lang=go exported=true byte_range=17672:17715
+  sig=uint8
+EDGES
+  ^contains=matrix/cortex/journal.SessionPayload
+
+NODE id=matrix/cortex/journal.SessionPayload#Seq kind=field
+  digest=b3:8d52a5ee5d4ddbf9b5e0d649e9ae92e5aab2eafc4b11d41b3a317d1acf9b0df1 file=cortex/journal/journal.go range=342:342 lang=go exported=true byte_range=17762:17805
+  sig=uint64
+EDGES
+  ^contains=matrix/cortex/journal.SessionPayload
+
+NODE id=matrix/cortex/journal.StorySoFarPayload kind=type
+  digest=b3:6cdf135036abc17dbf1cb9de56139dcd70c781721f67dc811951b8b8c1818e21 file=cortex/journal/journal.go range=429:447 lang=go exported=true byte_range=21318:22391
+  sig=type StorySoFarPayload struct {\n	SchemaVersion	uint8		`cbor:"0,keyasint"`\n	ConversationID	string		`cbor:"1,keyasint"`\n	UpToSeq		uint64		`cbor:"2,keyasint"`\n	RecordHash	[32]byte	`cbor:"3,keyasint"`\n}
+  doc=StorySoFarPayload is the canonical shape carried by KindStorySoFar entries\n(continuous-memory task 4.2). Mirrors SessionPayload / RollupPayload\ndiscipline: the payload carries only the conversation identity + the\nwindow it covers + a cryptographic pin, never the heavy record.\n\nConversationID identifies the single story/<conv> record (there is one\nper conversation, overwritten as the transcript grows — unlike sess/ or\nroll/ which are keyed by seq/window). UpToSeq is the highest session seq\n(inclusive) folded into this build, so a reader can tell whether a\npersisted record is stale relative to the current transcript head.\nRecordHash is sha256 over the canonical CBOR encoding of the\nStorySoFarRecord stored at story/<conv> — the same integrity discipline\nas RollupPayload.RecordHash / SessionPayload.RecordHash.
+EDGES
+  contains=matrix/cortex/journal.StorySoFarPayload#ConversationID,matrix/cortex/journal.StorySoFarPayload#RecordHash,matrix/cortex/journal.StorySoFarPayload#SchemaVersion,matrix/cortex/journal.StorySoFarPayload#UpToSeq
+  ^defines=matrix/cortex/journal/journal.go
+
+NODE id=matrix/cortex/journal.StorySoFarPayload#ConversationID kind=field
+  digest=b3:58b4ced71ccbf4d24820f552a1c7ad3f43b2e1ab156e289303a615784cb964af file=cortex/journal/journal.go range=444:444 lang=go exported=true byte_range=22256:22299
+  sig=string
+EDGES
+  ^contains=matrix/cortex/journal.StorySoFarPayload
+
+NODE id=matrix/cortex/journal.StorySoFarPayload#RecordHash kind=field
+  digest=b3:0a37c099577a27205311b69d5c7cca54386708d69dd306f029adaa121bee877c file=cortex/journal/journal.go range=446:446 lang=go exported=true byte_range=22346:22389
+  sig=[32]byte
+EDGES
+  ^contains=matrix/cortex/journal.StorySoFarPayload
+
+NODE id=matrix/cortex/journal.StorySoFarPayload#SchemaVersion kind=field
+  digest=b3:74fb1fff6e23749d4cc6025b5313bfe7b22960cb2307ab9cf5aadafe1066f69c file=cortex/journal/journal.go range=443:443 lang=go exported=true byte_range=22211:22254
+  sig=uint8
+EDGES
+  ^contains=matrix/cortex/journal.StorySoFarPayload
+
+NODE id=matrix/cortex/journal.StorySoFarPayload#UpToSeq kind=field
+  digest=b3:91984e6794e4a371f0f1439c94d1d03c64aae20f31cd40a9dccffbcfce373b4b file=cortex/journal/journal.go range=445:445 lang=go exported=true byte_range=22301:22344
+  sig=uint64
+EDGES
+  ^contains=matrix/cortex/journal.StorySoFarPayload
+
+NODE id=matrix/cortex/journal.UpdateHeadPayload kind=type
+  digest=b3:842e54c404341e93efc4a5be0f685e5bb93182019e26300d9760c996f8666306 file=cortex/journal/journal.go range=462:482 lang=go exported=true byte_range=22817:23934
+  sig=type UpdateHeadPayload struct {\n	SchemaVersion	uint8		`cbor:"0,keyasint"`\n	ID		[16]byte	`cbor:"1,keyasint"`\n	Version		uint64		`cbor:"2,keyasint"`	// unchanged Data version\n	HeadHash	[32]byte	`cbor:"3,keyasint"`	// sha256 over new canonical Head bytes\n}
+  doc=UpdateHeadPayload is the canonical shape carried by KindUpdateHead\nentries (Phase 10). Carries the post-write Head bytes so replay can\nreconstruct the new Head deterministically and re-derive the\nidx/tag, idx/frame, and idx/actor_obj key sets without needing to\nalso load the prior Head from store/.\n\nHeadHash is sha256 over canonical CBOR Head bytes — a cross-check\nthe replay harness uses to validate that a re-applied UpdateHead\nproduced the same Head bytes the journal entry references. Mirrors\nEmbedPayload.VectorHash + CompactPayload.CheckpointHash discipline.\n\nVersion is the unchanged Data version at the time of the\nUpdateHead. UpdateHead does NOT bump versions (Phase 10 Q5).\nCarrying it here lets replay verify "the Data version this\nUpdateHead targeted exists at mv/<id>/v/<version>".
+EDGES
+  contains=matrix/cortex/journal.UpdateHeadPayload#HeadHash,matrix/cortex/journal.UpdateHeadPayload#ID,matrix/cortex/journal.UpdateHeadPayload#SchemaVersion,matrix/cortex/journal.UpdateHeadPayload#Version
+  ^defines=matrix/cortex/journal/journal.go
+
+NODE id=matrix/cortex/journal.UpdateHeadPayload#HeadHash kind=field
+  digest=b3:dce787cfb609cbf3acd01396dd7f4f9ee7d2dea4599252fc73d191ff95e3127e file=cortex/journal/journal.go range=481:481 lang=go exported=true byte_range=23850:23892
+  sig=[32]byte
+EDGES
+  ^contains=matrix/cortex/journal.UpdateHeadPayload
+
+NODE id=matrix/cortex/journal.UpdateHeadPayload#ID kind=field
+  digest=b3:47e09adeb642eb16c11724e25b2213786485aa8cf9a640411eb207cde1d77967 file=cortex/journal/journal.go range=479:479 lang=go exported=true byte_range=23736:23778
+  sig=[16]byte
+EDGES
+  ^contains=matrix/cortex/journal.UpdateHeadPayload
+
+NODE id=matrix/cortex/journal.UpdateHeadPayload#SchemaVersion kind=field
+  digest=b3:fd51f65049349e94dfa920e0a40cbaaa8c59d0b47dc23b918a1503cc9eb5d4aa file=cortex/journal/journal.go range=478:478 lang=go exported=true byte_range=23692:23734
+  sig=uint8
+EDGES
+  ^contains=matrix/cortex/journal.UpdateHeadPayload
+
+NODE id=matrix/cortex/journal.UpdateHeadPayload#Version kind=field
+  digest=b3:9d485e3686ae60d73c1a9676f84421683bdfba379ad3bcd43ef5c053ec789fe5 file=cortex/journal/journal.go range=480:480 lang=go exported=true byte_range=23780:23822
+  sig=uint64
+EDGES
+  ^contains=matrix/cortex/journal.UpdateHeadPayload
+
+NODE id=matrix/cortex/journal.WritePayload kind=type
+  digest=b3:f8f657f1e6f79e944b93c6b5c839cf22e8fe844642ffdd3c105964e881d37f4b file=cortex/journal/journal.go range=198:213 lang=go exported=true byte_range=11425:12228
+  sig=type WritePayload struct {\n	SchemaVersion	uint8		`cbor:"0,keyasint"`\n	ID		[16]byte	`cbor:"1,keyasint"`\n	Version		uint64		`cbor:"2,keyasint"`\n	Type		uint8		`cbor:"3,keyasint"`\n	Hash		[32]byte	`cbor:"4,keyasint"`\n}
+  doc=WritePayload is the canonical shape carried by KindWrite and KindUpdate\nentries. Phase 2 carried the version hash as the raw Payload byte slice,\nwhich was sufficient for replay-by-bytes but didn't let downstream\nconsumers (Phase 5 embedder) map an entry to its memory ID without a\nsecondary index. The CBOR map shape carries everything needed for\nreplay AND for the async worker to look up Head/Version by ID.\n\nSchema version is bumped if fields are added in a way that breaks\ndecoders; new optional fields don't require a bump.
+EDGES
+  contains=matrix/cortex/journal.WritePayload#Hash,matrix/cortex/journal.WritePayload#ID,matrix/cortex/journal.WritePayload#SchemaVersion,matrix/cortex/journal.WritePayload#Type,matrix/cortex/journal.WritePayload#Version
+  ^defines=matrix/cortex/journal/journal.go
+
+NODE id=matrix/cortex/journal.WritePayload#Hash kind=field
+  digest=b3:001f8c8ec4c4dd93f61a06b55ef1cd014fc59b09c864d81c4f9d83b978ea1647 file=cortex/journal/journal.go range=212:212 lang=go exported=true byte_range=12184:12226
+  sig=[32]byte
+EDGES
+  ^contains=matrix/cortex/journal.WritePayload
+
+NODE id=matrix/cortex/journal.WritePayload#ID kind=field
+  digest=b3:47e09adeb642eb16c11724e25b2213786485aa8cf9a640411eb207cde1d77967 file=cortex/journal/journal.go range=209:209 lang=go exported=true byte_range=12052:12094
+  sig=[16]byte
+EDGES
+  ^contains=matrix/cortex/journal.WritePayload
+
+NODE id=matrix/cortex/journal.WritePayload#SchemaVersion kind=field
+  digest=b3:fd51f65049349e94dfa920e0a40cbaaa8c59d0b47dc23b918a1503cc9eb5d4aa file=cortex/journal/journal.go range=208:208 lang=go exported=true byte_range=12008:12050
+  sig=uint8
+EDGES
+  ^contains=matrix/cortex/journal.WritePayload
+
+NODE id=matrix/cortex/journal.WritePayload#Type kind=field
+  digest=b3:c994e4a93921c1534a5d6d0e54bcdf3d693c4320c369554fa5ca2a5e3d77f5d4 file=cortex/journal/journal.go range=211:211 lang=go exported=true byte_range=12140:12182
+  sig=uint8
+EDGES
+  ^contains=matrix/cortex/journal.WritePayload
+
+NODE id=matrix/cortex/journal.WritePayload#Version kind=field
+  digest=b3:9d485e3686ae60d73c1a9676f84421683bdfba379ad3bcd43ef5c053ec789fe5 file=cortex/journal/journal.go range=210:210 lang=go exported=true byte_range=12096:12138
+  sig=uint64
+EDGES
+  ^contains=matrix/cortex/journal.WritePayload
+
+NODE id=matrix/cortex/journal.canonicalDec kind=var
+  digest=b3:880e98b36ea5f86d3a79c7f4d1118a11ad1076e2e0e71a9cc9653c38ce6efe06 file=cortex/journal/journal.go range=697:699 lang=go exported=false byte_range=33222:33392
+  sig=cbor.DecMode
+  doc=canonicalDec is the matching decoder. Default decoder is fine; we keep it\nscoped so we can tune it later (e.g. max-array-size limits).
+EDGES
+  ^defines=matrix/cortex/journal/journal.go
+
+NODE id=matrix/cortex/journal.canonicalEnc kind=var
+  digest=b3:86cb5466b2a118d48fcfa52be84b0c999c754eaa19d430d1c841dc9ee40e4eb6 file=cortex/journal/journal.go range=694:695 lang=go exported=false byte_range=33130:33220
+  sig=cbor.EncMode
+  doc=canonicalEnc is the package-level canonical CBOR encoder.
+EDGES
+  ^defines=matrix/cortex/journal/journal.go
+
+NODE id=matrix/cortex/journal.init kind=func
+  digest=b3:f83ca739134b0d82aaf8da3ccbd04e09e334935f986bdbddca7b8a47bd600792 file=cortex/journal/journal.go range=701:714 lang=go exported=false byte_range=33394:33733
+  sig=func init()
+EDGES
+  ^defines=matrix/cortex/journal/journal.go
+
+NODE id=matrix/cortex/journal/journal.go kind=file
+  digest=b3:d0de37966094c77c91ea931ec0bc32eb2919d4d1a5f2050bd62561c1b281ba78 file=cortex/journal/journal.go range=1:740 lang=go exported=true
+EDGES
+  defines=matrix/cortex/journal.AttestOutcome,matrix/cortex/journal.AttestOutcomeFailure,matrix/cortex/journal.AttestOutcomeSuccess,matrix/cortex/journal.AttestPayload,matrix/cortex/journal.AttestReasonFactualError,matrix/cortex/journal.AttestReasonWrongAssumption,matrix/cortex/journal.CompactPayload,matrix/cortex/journal.Decode,matrix/cortex/journal.DecodeAttestPayload,matrix/cortex/journal.DecodeCompactPayload,matrix/cortex/journal.DecodeEdgePayload,matrix/cortex/journal.DecodeEmbedPayload,matrix/cortex/journal.DecodeEnrichPayload,matrix/cortex/journal.DecodeLateBindingPayload,matrix/cortex/journal.DecodeLearnWeightsPayload,matrix/cortex/journal.DecodeRollupPayload,matrix/cortex/journal.DecodeScopeViolationPayload,matrix/cortex/journal.DecodeSessionPayload,matrix/cortex/journal.DecodeStorySoFarPayload,matrix/cortex/journal.DecodeUpdateHeadPayload,matrix/cortex/journal.DecodeWritePayload,matrix/cortex/journal.EdgePayload,matrix/cortex/journal.EmbedPayload,matrix/cortex/journal.EncodeAttestPayload,matrix/cortex/journal.EncodeCompactPayload,matrix/cortex/journal.EncodeEdgePayload,matrix/cortex/journal.EncodeEmbedPayload,matrix/cortex/journal.EncodeEnrichPayload,matrix/cortex/journal.EncodeLateBindingPayload,matrix/cortex/journal.EncodeLearnWeightsPayload,matrix/cortex/journal.EncodeRollupPayload,matrix/cortex/journal.EncodeScopeViolationPayload,matrix/cortex/journal.EncodeSessionPayload,matrix/cortex/journal.EncodeStorySoFarPayload,matrix/cortex/journal.EncodeUpdateHeadPayload,matrix/cortex/journal.EncodeWritePayload,matrix/cortex/journal.EnrichPayload,matrix/cortex/journal.Entry,matrix/cortex/journal.Entry.Encode,matrix/cortex/journal.Kind,matrix/cortex/journal.KindAddEdge,matrix/cortex/journal.KindAttest,matrix/cortex/journal.KindCompact,matrix/cortex/journal.KindEmbed,matrix/cortex/journal.KindFind,matrix/cortex/journal.KindGC,matrix/cortex/journal.KindLearnWeights,matrix/cortex/journal.KindMigration,matrix/cortex/journal.KindRaw,matrix/cortex/journal.KindRemoveEdge,matrix/cortex/journal.KindRollup,matrix/cortex/journal.KindRollupEnrich,matrix/cortex/journal.KindScopeViolation,matrix/cortex/journal.KindSession,matrix/cortex/journal.KindStorySoFar,matrix/cortex/journal.KindTombstone,matrix/cortex/journal.KindUpdate,matrix/cortex/journal.KindUpdateHead,matrix/cortex/journal.KindWrite,matrix/cortex/journal.LateBindingPayload,matrix/cortex/journal.LeafDomain,matrix/cortex/journal.LeafHash,matrix/cortex/journal.LearnWeightsPayload,matrix/cortex/journal.RollupPayload,matrix/cortex/journal.ScopeViolationPayload,matrix/cortex/journal.SessionPayload,matrix/cortex/journal.StorySoFarPayload,matrix/cortex/journal.UpdateHeadPayload,matrix/cortex/journal.WritePayload,matrix/cortex/journal.canonicalDec,matrix/cortex/journal.canonicalEnc,matrix/cortex/journal.init
+  ^contains=matrix/cortex/journal

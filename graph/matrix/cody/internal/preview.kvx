@@ -1,10 +1,12 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:9b68327501b45793fd7687f43b30c960fd68ae8aaff6b2f1bb36ec3e2df2de2f
+# GENERATED gen=codegraph do-not-edit merkle=b3:20e53aba2ea11552396417e53b3e04e87dd1bbb7bef3aa554a45bb92cf89e7f2
 
 NODE id=matrix/cody/internal/preview kind=package
   digest=b3:d769221b42f4fab1e00565d43e88dbc08af9f32d677edf71995e2505d0a92ae3 file=cody/internal/preview range=0:0 lang=go exported=true
 EDGES
   contains=matrix/cody/internal/preview/detect.go,matrix/cody/internal/preview/preview.go
+  imports=matrix/cody/internal/sandbox,matrix/cody/internal/workspace
   ^contains=mod:matrix/cody
+  ^imports=matrix/cody/internal/server
 
 NODE id=matrix/cody/internal/preview.Config kind=type
   digest=b3:e760cc04ea6cee965baa1c9651af9393fa969655def7a9c22b6ea0fd610bdac0 file=cody/internal/preview/preview.go range=72:94 lang=go exported=true byte_range=2438:3643
@@ -12,6 +14,7 @@ NODE id=matrix/cody/internal/preview.Config kind=type
   doc=Config configures a Manager. UserID and RouterInternalURL are required for a\nworking preview; when either is empty the Manager is disabled and Provision\nreturns a clear error (the engine only builds a Manager when configured).
 EDGES
   contains=matrix/cody/internal/preview.Config#Image,matrix/cody/internal/preview.Config#Logf,matrix/cody/internal/preview.Config#PublicBase,matrix/cody/internal/preview.Config#RouterInternalURL,matrix/cody/internal/preview.Config#RouterToken,matrix/cody/internal/preview.Config#TTL,matrix/cody/internal/preview.Config#UserID
+  ^references=matrix/cody/internal/preview.Manager,matrix/cody/internal/preview.New,matrix/cody/internal/server.NewEngine
   ^defines=matrix/cody/internal/preview/preview.go
 
 NODE id=matrix/cody/internal/preview.Config#Image kind=field
@@ -68,6 +71,10 @@ NODE id=matrix/cody/internal/preview.DetectStart kind=func
   sig=func DetectStart(m *workspace.Model) (StartSpec, bool)
   doc=DetectStart infers how to run a project from its scanned model. It is a pure\nfunction over the workspace.Model (framework + build targets) so it is unit\ntested without a sandbox. ok=false means no runnable app was detected — the\ncaller surfaces preview.failed with an honest reason rather than guessing.
 EDGES
+  calls=matrix/cody/internal/preview.hasEntry,matrix/cody/internal/preview.hasPackageJSON,matrix/cody/internal/preview.nodePort,matrix/cody/internal/preview.nodeServe
+  references=matrix/cody/internal/preview.StartSpec,matrix/cody/internal/preview.env,matrix/cody/internal/preview.f,matrix/cody/internal/preview.frameworks,matrix/cody/internal/preview.hasEntry,matrix/cody/internal/preview.hasPackageJSON,matrix/cody/internal/preview.i,matrix/cody/internal/preview.l,matrix/cody/internal/preview.langs,matrix/cody/internal/preview.lt,matrix/cody/internal/preview.m,matrix/cody/internal/preview.nodePort,matrix/cody/internal/preview.nodeServe,matrix/cody/internal/preview.port,matrix/cody/internal/preview.t,matrix/cody/internal/preview.targets,matrix/cody/internal/workspace.Model
+  ^calls=matrix/cody/internal/preview.Manager.provision
+  ^references=matrix/cody/internal/preview.Manager.provision
   ^defines=matrix/cody/internal/preview/detect.go
 
 NODE id=matrix/cody/internal/preview.Emit kind=type
@@ -75,6 +82,7 @@ NODE id=matrix/cody/internal/preview.Emit kind=type
   sig=type Emit func(convID, typ string, fields map[string]interface{})
   doc=Emit publishes a preview.* event onto a conversation's live topic + durable\ntrace. It is engine.publishToConversation; a no-op when the run has no topic.
 EDGES
+  ^references=matrix/cody/internal/preview.Manager,matrix/cody/internal/preview.New
   ^defines=matrix/cody/internal/preview/preview.go
 
 NODE id=matrix/cody/internal/preview.EvtExpired kind=const
@@ -82,6 +90,7 @@ NODE id=matrix/cody/internal/preview.EvtExpired kind=const
   sig=untyped string
   doc=Event type names (mirrored in the codyd trace whitelist and the client\nreducer's preview.* fold).
 EDGES
+  ^references=matrix/cody/internal/preview.Manager.reapOnce,matrix/cody/internal/preview.Manager.teardownConv
   ^defines=matrix/cody/internal/preview/preview.go
 
 NODE id=matrix/cody/internal/preview.EvtFailed kind=const
@@ -89,6 +98,7 @@ NODE id=matrix/cody/internal/preview.EvtFailed kind=const
   sig=untyped string
   doc=Event type names (mirrored in the codyd trace whitelist and the client\nreducer's preview.* fold).
 EDGES
+  ^references=matrix/cody/internal/preview.Manager.Provision
   ^defines=matrix/cody/internal/preview/preview.go
 
 NODE id=matrix/cody/internal/preview.EvtPending kind=const
@@ -96,6 +106,7 @@ NODE id=matrix/cody/internal/preview.EvtPending kind=const
   sig=untyped string
   doc=Event type names (mirrored in the codyd trace whitelist and the client\nreducer's preview.* fold).
 EDGES
+  ^references=matrix/cody/internal/preview.Manager.Provision
   ^defines=matrix/cody/internal/preview/preview.go
 
 NODE id=matrix/cody/internal/preview.EvtReady kind=const
@@ -103,6 +114,7 @@ NODE id=matrix/cody/internal/preview.EvtReady kind=const
   sig=untyped string
   doc=Event type names (mirrored in the codyd trace whitelist and the client\nreducer's preview.* fold).
 EDGES
+  ^references=matrix/cody/internal/preview.Manager.Provision
   ^defines=matrix/cody/internal/preview/preview.go
 
 NODE id=matrix/cody/internal/preview.Info kind=type
@@ -111,6 +123,7 @@ NODE id=matrix/cody/internal/preview.Info kind=type
   doc=Info is the result of a successful Provision.
 EDGES
   contains=matrix/cody/internal/preview.Info#Host,matrix/cody/internal/preview.Info#Port,matrix/cody/internal/preview.Info#SandboxID,matrix/cody/internal/preview.Info#URL
+  ^references=matrix/cody/internal/preview.Manager.Provision,matrix/cody/internal/preview.Manager.provision
   ^defines=matrix/cody/internal/preview/preview.go
 
 NODE id=matrix/cody/internal/preview.Info#Host kind=field
@@ -143,6 +156,8 @@ NODE id=matrix/cody/internal/preview.Manager kind=type
   doc=Manager owns the live previews for one codyd (one user). It is safe for\nconcurrent use.
 EDGES
   contains=matrix/cody/internal/preview.Manager#active,matrix/cody/internal/preview.Manager#cfg,matrix/cody/internal/preview.Manager#emit,matrix/cody/internal/preview.Manager#hc,matrix/cody/internal/preview.Manager#mu,matrix/cody/internal/preview.Manager#now,matrix/cody/internal/preview.Manager#sb,matrix/cody/internal/preview.Manager.Close,matrix/cody/internal/preview.Manager.Enabled,matrix/cody/internal/preview.Manager.Provision,matrix/cody/internal/preview.Manager.StartReaper,matrix/cody/internal/preview.Manager.Teardown,matrix/cody/internal/preview.Manager.Touch,matrix/cody/internal/preview.Manager.deregister,matrix/cody/internal/preview.Manager.healthProbe,matrix/cody/internal/preview.Manager.logf,matrix/cody/internal/preview.Manager.previewURL,matrix/cody/internal/preview.Manager.provision,matrix/cody/internal/preview.Manager.reapOnce,matrix/cody/internal/preview.Manager.register,matrix/cody/internal/preview.Manager.routerCall,matrix/cody/internal/preview.Manager.teardownConv
+  references=matrix/cody/internal/preview.Config,matrix/cody/internal/preview.Emit,matrix/cody/internal/preview.live,matrix/cody/internal/sandbox.Client
+  ^references=matrix/cody/internal/preview.Manager.Close,matrix/cody/internal/preview.Manager.Enabled,matrix/cody/internal/preview.Manager.Provision,matrix/cody/internal/preview.Manager.StartReaper,matrix/cody/internal/preview.Manager.Teardown,matrix/cody/internal/preview.Manager.Touch,matrix/cody/internal/preview.Manager.deregister,matrix/cody/internal/preview.Manager.healthProbe,matrix/cody/internal/preview.Manager.logf,matrix/cody/internal/preview.Manager.previewURL,matrix/cody/internal/preview.Manager.provision,matrix/cody/internal/preview.Manager.reapOnce,matrix/cody/internal/preview.Manager.register,matrix/cody/internal/preview.Manager.routerCall,matrix/cody/internal/preview.Manager.teardownConv,matrix/cody/internal/preview.New,matrix/cody/internal/server.Engine
   ^defines=matrix/cody/internal/preview/preview.go
 
 NODE id=matrix/cody/internal/preview.Manager#active kind=field
@@ -193,7 +208,11 @@ NODE id=matrix/cody/internal/preview.Manager.Close kind=method
   sig=func (m *Manager) Close()
   doc=Close destroys every live preview (graceful codyd shutdown).
 EDGES
+  calls=matrix/cody/internal/preview.Manager.deregister,matrix/cody/internal/sandbox.client.Destroy
+  references=matrix/cody/internal/preview.Manager,matrix/cody/internal/preview.Manager.deregister,matrix/cody/internal/preview.all,matrix/cody/internal/preview.cancel,matrix/cody/internal/preview.ctx,matrix/cody/internal/preview.l,matrix/cody/internal/preview.live,matrix/cody/internal/preview.m,matrix/cody/internal/sandbox.Client.Destroy
   ^contains=matrix/cody/internal/preview.Manager
+  ^calls=matrix/cody/internal/server.Engine.Close
+  ^references=matrix/cody/internal/server.Engine.Close
   ^defines=matrix/cody/internal/preview/preview.go
 
 NODE id=matrix/cody/internal/preview.Manager.Enabled kind=method
@@ -201,7 +220,10 @@ NODE id=matrix/cody/internal/preview.Manager.Enabled kind=method
   sig=func (m *Manager) Enabled() bool
   doc=Enabled reports whether the Manager can actually provision (configured).
 EDGES
+  references=matrix/cody/internal/preview.Manager,matrix/cody/internal/preview.m
   ^contains=matrix/cody/internal/preview.Manager
+  ^calls=matrix/cody/internal/preview.Manager.Provision,matrix/cody/internal/server.Engine.drive,matrix/cody/internal/server.Server.handleWorkspacePreview
+  ^references=matrix/cody/internal/preview.Manager.Provision,matrix/cody/internal/server.Engine.drive,matrix/cody/internal/server.Server.handleWorkspacePreview
   ^defines=matrix/cody/internal/preview/preview.go
 
 NODE id=matrix/cody/internal/preview.Manager.Provision kind=method
@@ -209,7 +231,11 @@ NODE id=matrix/cody/internal/preview.Manager.Provision kind=method
   sig=func (m *Manager) Provision(ctx context.Context, req Request) (Info, error)
   doc=Provision brings up (or replaces) the preview for a conversation. It emits\npreview.pending immediately, then preview.ready with the proxied URL on\nsuccess or preview.failed with an honest reason on any failure. It is\nsynchronous; the engine calls it from a goroutine on plan completion or from\nthe re-preview route.
 EDGES
+  calls=matrix/cody/internal/preview.Manager.Enabled,matrix/cody/internal/preview.Manager.logf,matrix/cody/internal/preview.Manager.provision,matrix/cody/internal/preview.Manager.teardownConv,matrix/cody/internal/preview.userReason,matrix/cody/internal/server.Engine.publishToConversation
+  references=matrix/cody/internal/preview.EvtFailed,matrix/cody/internal/preview.EvtPending,matrix/cody/internal/preview.EvtReady,matrix/cody/internal/preview.Info,matrix/cody/internal/preview.Manager,matrix/cody/internal/preview.Manager.Enabled,matrix/cody/internal/preview.Manager.logf,matrix/cody/internal/preview.Manager.provision,matrix/cody/internal/preview.Manager.teardownConv,matrix/cody/internal/preview.Request,matrix/cody/internal/preview.StateFailed,matrix/cody/internal/preview.StatePending,matrix/cody/internal/preview.StateReady,matrix/cody/internal/preview.ctx,matrix/cody/internal/preview.err,matrix/cody/internal/preview.info,matrix/cody/internal/preview.m,matrix/cody/internal/preview.req,matrix/cody/internal/preview.userReason
   ^contains=matrix/cody/internal/preview.Manager
+  ^calls=matrix/cody/internal/server.Engine.drive,matrix/cody/internal/server.Server.handleWorkspacePreview
+  ^references=matrix/cody/internal/server.Engine.drive,matrix/cody/internal/server.Server.handleWorkspacePreview
   ^defines=matrix/cody/internal/preview/preview.go
 
 NODE id=matrix/cody/internal/preview.Manager.StartReaper kind=method
@@ -217,7 +243,11 @@ NODE id=matrix/cody/internal/preview.Manager.StartReaper kind=method
   sig=func (m *Manager) StartReaper(ctx context.Context)
   doc=StartReaper runs the idle-preview reaper until ctx is cancelled. Idle\npreviews (untouched for > TTL) are destroyed and emit preview.expired.
 EDGES
+  calls=matrix/cody/internal/preview.Manager.reapOnce
+  references=matrix/cody/internal/preview.Manager,matrix/cody/internal/preview.Manager.reapOnce,matrix/cody/internal/preview.ctx,matrix/cody/internal/preview.m,matrix/cody/internal/preview.t
   ^contains=matrix/cody/internal/preview.Manager
+  ^calls=matrix/cody/internal/server.NewEngine
+  ^references=matrix/cody/internal/server.NewEngine
   ^defines=matrix/cody/internal/preview/preview.go
 
 NODE id=matrix/cody/internal/preview.Manager.Teardown kind=method
@@ -225,6 +255,8 @@ NODE id=matrix/cody/internal/preview.Manager.Teardown kind=method
   sig=func (m *Manager) Teardown(ctx context.Context, convID string)
   doc=Teardown destroys the preview for a conversation and emits preview.expired.
 EDGES
+  calls=matrix/cody/internal/preview.Manager.teardownConv
+  references=matrix/cody/internal/preview.Manager,matrix/cody/internal/preview.Manager.teardownConv,matrix/cody/internal/preview.convID,matrix/cody/internal/preview.ctx,matrix/cody/internal/preview.m
   ^contains=matrix/cody/internal/preview.Manager
   ^defines=matrix/cody/internal/preview/preview.go
 
@@ -233,6 +265,7 @@ NODE id=matrix/cody/internal/preview.Manager.Touch kind=method
   sig=func (m *Manager) Touch(convID string)
   doc=Touch marks a preview as recently used, deferring the reaper.
 EDGES
+  references=matrix/cody/internal/preview.Manager,matrix/cody/internal/preview.convID,matrix/cody/internal/preview.l,matrix/cody/internal/preview.m
   ^contains=matrix/cody/internal/preview.Manager
   ^defines=matrix/cody/internal/preview/preview.go
 
@@ -240,7 +273,11 @@ NODE id=matrix/cody/internal/preview.Manager.deregister kind=method
   digest=b3:ec2d22548d9ea89df0a919fd0542a37891c9709ce86d93ac305416f72edbff87 file=cody/internal/preview/preview.go range=300:303 lang=go exported=false byte_range=10043:10222
   sig=func (m *Manager) deregister(ctx context.Context) error
 EDGES
+  calls=matrix/cody/internal/preview.Manager.routerCall
+  references=matrix/cody/internal/preview.Manager,matrix/cody/internal/preview.Manager.routerCall,matrix/cody/internal/preview.body,matrix/cody/internal/preview.ctx,matrix/cody/internal/preview.m
   ^contains=matrix/cody/internal/preview.Manager
+  ^calls=matrix/cody/internal/preview.Manager.Close,matrix/cody/internal/preview.Manager.reapOnce,matrix/cody/internal/preview.Manager.teardownConv
+  ^references=matrix/cody/internal/preview.Manager.Close,matrix/cody/internal/preview.Manager.reapOnce,matrix/cody/internal/preview.Manager.teardownConv
   ^defines=matrix/cody/internal/preview/preview.go
 
 NODE id=matrix/cody/internal/preview.Manager.healthProbe kind=method
@@ -248,35 +285,53 @@ NODE id=matrix/cody/internal/preview.Manager.healthProbe kind=method
   sig=func (m *Manager) healthProbe(ctx context.Context, sandboxID, port string) error
   doc=healthProbe execs curl inside the sandbox until the app answers or the budget\nis exhausted. A 2xx/3xx/4xx status means the server is up (4xx = routing, not\ndead); only connection refusal / timeout is "not yet".
 EDGES
+  calls=matrix/cody/internal/preview.shell,matrix/cody/internal/sandbox.client.Exec
+  references=matrix/cody/internal/preview.Manager,matrix/cody/internal/preview.code,matrix/cody/internal/preview.ctx,matrix/cody/internal/preview.err,matrix/cody/internal/preview.healthProbeGap,matrix/cody/internal/preview.healthProbeTries,matrix/cody/internal/preview.i,matrix/cody/internal/preview.m,matrix/cody/internal/preview.port,matrix/cody/internal/preview.probe,matrix/cody/internal/preview.res,matrix/cody/internal/preview.sandboxID,matrix/cody/internal/preview.shell,matrix/cody/internal/sandbox.Client.Exec
   ^contains=matrix/cody/internal/preview.Manager
+  ^calls=matrix/cody/internal/preview.Manager.provision
+  ^references=matrix/cody/internal/preview.Manager.provision
   ^defines=matrix/cody/internal/preview/preview.go
 
 NODE id=matrix/cody/internal/preview.Manager.logf kind=method
   digest=b3:58cea3505a1317eb36fc745629f479eef71974b5260549cb8ed38e852700574e file=cody/internal/preview/preview.go range=150:154 lang=go exported=false byte_range=4787:4906
   sig=func (m *Manager) logf(format string, args ...interface{})
 EDGES
+  references=matrix/cody/internal/preview.Manager,matrix/cody/internal/preview.args,matrix/cody/internal/preview.format,matrix/cody/internal/preview.m
   ^contains=matrix/cody/internal/preview.Manager
+  ^calls=matrix/cody/internal/preview.Manager.Provision,matrix/cody/internal/preview.Manager.reapOnce
+  ^references=matrix/cody/internal/preview.Manager.Provision,matrix/cody/internal/preview.Manager.reapOnce
   ^defines=matrix/cody/internal/preview/preview.go
 
 NODE id=matrix/cody/internal/preview.Manager.previewURL kind=method
   digest=b3:cdb557db2a97543818a08aa707a99a2ecd3d92107e216e426b5140f10c218426 file=cody/internal/preview/preview.go range=326:331 lang=go exported=false byte_range=10885:11086
   sig=func (m *Manager) previewURL() string
 EDGES
+  references=matrix/cody/internal/preview.Manager,matrix/cody/internal/preview.base,matrix/cody/internal/preview.m
   ^contains=matrix/cody/internal/preview.Manager
+  ^calls=matrix/cody/internal/preview.Manager.provision
+  ^references=matrix/cody/internal/preview.Manager.provision
   ^defines=matrix/cody/internal/preview/preview.go
 
 NODE id=matrix/cody/internal/preview.Manager.provision kind=method
   digest=b3:f920993316e3fa6ebdb94a398f309ac26b7502a89016339ebc97e50847969686 file=cody/internal/preview/preview.go range=196:264 lang=go exported=false byte_range=6614:8776
   sig=func (m *Manager) provision(ctx context.Context, req Request) (Info, error)
 EDGES
+  calls=matrix/cody/internal/preview.DetectStart,matrix/cody/internal/preview.Manager.healthProbe,matrix/cody/internal/preview.Manager.previewURL,matrix/cody/internal/preview.Manager.register,matrix/cody/internal/preview.collectFiles,matrix/cody/internal/preview.shell,matrix/cody/internal/sandbox.client.Create,matrix/cody/internal/sandbox.client.Exec,matrix/cody/internal/sandbox.client.WriteFiles,matrix/cody/internal/workspace.LoadOrScan
+  references=matrix/cody/internal/preview.DetectStart,matrix/cody/internal/preview.Info,matrix/cody/internal/preview.Manager,matrix/cody/internal/preview.Manager.healthProbe,matrix/cody/internal/preview.Manager.previewURL,matrix/cody/internal/preview.Manager.register,matrix/cody/internal/preview.Request,matrix/cody/internal/preview.cleanup,matrix/cody/internal/preview.collectFiles,matrix/cody/internal/preview.ctx,matrix/cody/internal/preview.err,matrix/cody/internal/preview.files,matrix/cody/internal/preview.live,matrix/cody/internal/preview.m,matrix/cody/internal/preview.model,matrix/cody/internal/preview.ok,matrix/cody/internal/preview.req,matrix/cody/internal/preview.sb,matrix/cody/internal/preview.shell,matrix/cody/internal/preview.spec,matrix/cody/internal/preview.start,matrix/cody/internal/preview.url,matrix/cody/internal/sandbox.Client.Create,matrix/cody/internal/sandbox.Client.Destroy,matrix/cody/internal/sandbox.Client.Exec,matrix/cody/internal/sandbox.Client.WriteFiles,matrix/cody/internal/sandbox.CreateOpts,matrix/cody/internal/sandbox.NetworkPrivate,matrix/cody/internal/workspace.LoadOrScan
   ^contains=matrix/cody/internal/preview.Manager
+  ^calls=matrix/cody/internal/preview.Manager.Provision
+  ^references=matrix/cody/internal/preview.Manager.Provision
   ^defines=matrix/cody/internal/preview/preview.go
 
 NODE id=matrix/cody/internal/preview.Manager.reapOnce kind=method
   digest=b3:ff8b5dcc31f1fc65f585632c3aa3f0f65164d0af36df7cf2369ad40637f80926 file=cody/internal/preview/preview.go range=357:374 lang=go exported=false byte_range=11632:12151
   sig=func (m *Manager) reapOnce(ctx context.Context)
 EDGES
+  calls=matrix/cody/internal/preview.Manager.deregister,matrix/cody/internal/preview.Manager.logf,matrix/cody/internal/sandbox.client.Destroy,matrix/cody/internal/server.Engine.publishToConversation
+  references=matrix/cody/internal/preview.EvtExpired,matrix/cody/internal/preview.Manager,matrix/cody/internal/preview.Manager.deregister,matrix/cody/internal/preview.Manager.logf,matrix/cody/internal/preview.StateExpired,matrix/cody/internal/preview.ctx,matrix/cody/internal/preview.cutoff,matrix/cody/internal/preview.expired,matrix/cody/internal/preview.id,matrix/cody/internal/preview.l,matrix/cody/internal/preview.live,matrix/cody/internal/preview.m,matrix/cody/internal/sandbox.Client.Destroy
   ^contains=matrix/cody/internal/preview.Manager
+  ^calls=matrix/cody/internal/preview.Manager.StartReaper
+  ^references=matrix/cody/internal/preview.Manager.StartReaper
   ^defines=matrix/cody/internal/preview/preview.go
 
 NODE id=matrix/cody/internal/preview.Manager.register kind=method
@@ -284,14 +339,21 @@ NODE id=matrix/cody/internal/preview.Manager.register kind=method
   sig=func (m *Manager) register(ctx context.Context, host, port string) error
   doc=register / deregister talk to the router internal preview door.
 EDGES
+  calls=matrix/cody/internal/preview.Manager.routerCall
+  references=matrix/cody/internal/preview.Manager,matrix/cody/internal/preview.Manager.routerCall,matrix/cody/internal/preview.body,matrix/cody/internal/preview.ctx,matrix/cody/internal/preview.host,matrix/cody/internal/preview.m,matrix/cody/internal/preview.port
   ^contains=matrix/cody/internal/preview.Manager
+  ^calls=matrix/cody/internal/preview.Manager.provision
+  ^references=matrix/cody/internal/preview.Manager.provision
   ^defines=matrix/cody/internal/preview/preview.go
 
 NODE id=matrix/cody/internal/preview.Manager.routerCall kind=method
   digest=b3:e48c9081cb6301a0e87b081876de8967380e8feba895534d2fbde01fca22f87f file=cody/internal/preview/preview.go range=305:324 lang=go exported=false byte_range=10224:10883
   sig=func (m *Manager) routerCall(ctx context.Context, method string, body []byte) error
 EDGES
+  references=matrix/cody/internal/preview.Manager,matrix/cody/internal/preview.body,matrix/cody/internal/preview.ctx,matrix/cody/internal/preview.err,matrix/cody/internal/preview.m,matrix/cody/internal/preview.method,matrix/cody/internal/preview.resp,matrix/cody/internal/preview.rq,matrix/cody/internal/preview.url
   ^contains=matrix/cody/internal/preview.Manager
+  ^calls=matrix/cody/internal/preview.Manager.deregister,matrix/cody/internal/preview.Manager.register
+  ^references=matrix/cody/internal/preview.Manager.deregister,matrix/cody/internal/preview.Manager.register
   ^defines=matrix/cody/internal/preview/preview.go
 
 NODE id=matrix/cody/internal/preview.Manager.teardownConv kind=method
@@ -299,7 +361,11 @@ NODE id=matrix/cody/internal/preview.Manager.teardownConv kind=method
   sig=func (m *Manager) teardownConv(ctx context.Context, convID string, emitExpired bool)
   doc=teardownConv destroys the sandbox for one conversation. When emitExpired is\ntrue it also emits preview.expired (used by explicit teardown, not re-preview\nreplacement, which is silent).
 EDGES
+  calls=matrix/cody/internal/preview.Manager.deregister,matrix/cody/internal/sandbox.client.Destroy,matrix/cody/internal/server.Engine.publishToConversation
+  references=matrix/cody/internal/preview.EvtExpired,matrix/cody/internal/preview.Manager,matrix/cody/internal/preview.Manager.deregister,matrix/cody/internal/preview.StateExpired,matrix/cody/internal/preview.convID,matrix/cody/internal/preview.ctx,matrix/cody/internal/preview.emitExpired,matrix/cody/internal/preview.l,matrix/cody/internal/preview.m,matrix/cody/internal/sandbox.Client.Destroy
   ^contains=matrix/cody/internal/preview.Manager
+  ^calls=matrix/cody/internal/preview.Manager.Provision,matrix/cody/internal/preview.Manager.Teardown
+  ^references=matrix/cody/internal/preview.Manager.Provision,matrix/cody/internal/preview.Manager.Teardown
   ^defines=matrix/cody/internal/preview/preview.go
 
 NODE id=matrix/cody/internal/preview.New kind=func
@@ -307,6 +373,9 @@ NODE id=matrix/cody/internal/preview.New kind=func
   sig=func New(sb sandbox.Client, emit Emit, cfg Config) *Manager
   doc=New builds a Manager over a sandbox client and an event emitter.
 EDGES
+  references=matrix/cody/internal/preview.Config,matrix/cody/internal/preview.Emit,matrix/cody/internal/preview.Manager,matrix/cody/internal/preview.cfg,matrix/cody/internal/preview.defaultImage,matrix/cody/internal/preview.defaultTTL,matrix/cody/internal/preview.emit,matrix/cody/internal/preview.live,matrix/cody/internal/preview.sb,matrix/cody/internal/sandbox.Client
+  ^calls=matrix/cody/internal/server.NewEngine
+  ^references=matrix/cody/internal/server.NewEngine
   ^defines=matrix/cody/internal/preview/preview.go
 
 NODE id=matrix/cody/internal/preview.Request kind=type
@@ -315,6 +384,7 @@ NODE id=matrix/cody/internal/preview.Request kind=type
   doc=Request describes what to preview.
 EDGES
   contains=matrix/cody/internal/preview.Request#ConvID,matrix/cody/internal/preview.Request#Root
+  ^references=matrix/cody/internal/preview.Manager.Provision,matrix/cody/internal/preview.Manager.provision,matrix/cody/internal/server.Engine.drive,matrix/cody/internal/server.Server.handleWorkspacePreview
   ^defines=matrix/cody/internal/preview/preview.go
 
 NODE id=matrix/cody/internal/preview.Request#ConvID kind=field
@@ -335,6 +405,7 @@ NODE id=matrix/cody/internal/preview.StartSpec kind=type
   doc=StartSpec is a detected way to bring a project's app up inside the sandbox:\nan optional one-shot install/build command, the long-lived serve command,\nand the port the app is expected to bind. Host is forced to 0.0.0.0 via env\nso the router can reach it over the private network.
 EDGES
   contains=matrix/cody/internal/preview.StartSpec#Env,matrix/cody/internal/preview.StartSpec#Install,matrix/cody/internal/preview.StartSpec#Port,matrix/cody/internal/preview.StartSpec#Serve
+  ^references=matrix/cody/internal/preview.DetectStart
   ^defines=matrix/cody/internal/preview/detect.go
 
 NODE id=matrix/cody/internal/preview.StartSpec#Env kind=field
@@ -370,30 +441,39 @@ NODE id=matrix/cody/internal/preview.State kind=type
   sig=type State string
   doc=State is the lifecycle state carried on every preview.* event.
 EDGES
+  ^references=matrix/cody/internal/preview.StateExpired,matrix/cody/internal/preview.StateFailed,matrix/cody/internal/preview.StatePending,matrix/cody/internal/preview.StateReady
   ^defines=matrix/cody/internal/preview/preview.go
 
 NODE id=matrix/cody/internal/preview.StateExpired kind=const
   digest=b3:13d5fc5fb94319ecefbce4f49b2c9b53b6bbae408b69f754cec33ada51b46893 file=cody/internal/preview/preview.go range=41:41 lang=go exported=true byte_range=1332:1362
   sig=preview.State
 EDGES
+  references=matrix/cody/internal/preview.State
+  ^references=matrix/cody/internal/preview.Manager.reapOnce,matrix/cody/internal/preview.Manager.teardownConv
   ^defines=matrix/cody/internal/preview/preview.go
 
 NODE id=matrix/cody/internal/preview.StateFailed kind=const
   digest=b3:5a4716fbb8825d31b67bb448979c8a2bac4ee205ab897640de1e8ffb5081634b file=cody/internal/preview/preview.go range=40:40 lang=go exported=true byte_range=1301:1330
   sig=preview.State
 EDGES
+  references=matrix/cody/internal/preview.State
+  ^references=matrix/cody/internal/preview.Manager.Provision
   ^defines=matrix/cody/internal/preview/preview.go
 
 NODE id=matrix/cody/internal/preview.StatePending kind=const
   digest=b3:e9eaf3253119126b5463d9da65bfbb6bac617d93c4f4f39e14debe33f78e7e39 file=cody/internal/preview/preview.go range=38:38 lang=go exported=true byte_range=1239:1269
   sig=preview.State
 EDGES
+  references=matrix/cody/internal/preview.State
+  ^references=matrix/cody/internal/preview.Manager.Provision
   ^defines=matrix/cody/internal/preview/preview.go
 
 NODE id=matrix/cody/internal/preview.StateReady kind=const
   digest=b3:1eb2b8120b4f3bd194209566271aed1097358a086d2ca1696823c0f16eeea361 file=cody/internal/preview/preview.go range=39:39 lang=go exported=true byte_range=1271:1299
   sig=preview.State
 EDGES
+  references=matrix/cody/internal/preview.State
+  ^references=matrix/cody/internal/preview.Manager.Provision
   ^defines=matrix/cody/internal/preview/preview.go
 
 NODE id=matrix/cody/internal/preview.collectFiles kind=func
@@ -401,6 +481,9 @@ NODE id=matrix/cody/internal/preview.collectFiles kind=func
   sig=func collectFiles(root string) ([]sandbox.File, error)
   doc=collectFiles walks a project root into a bounded []sandbox.File payload,\nskipping VCS/build/dependency dirs (they're rebuilt in the sandbox), oversized\nfiles, and obvious binaries. Paths are workspace-relative with forward slashes.
 EDGES
+  references=matrix/cody/internal/preview.d,matrix/cody/internal/preview.data,matrix/cody/internal/preview.err,matrix/cody/internal/preview.info,matrix/cody/internal/preview.isBinary,matrix/cody/internal/preview.maxDeployBytes,matrix/cody/internal/preview.maxDeployFiles,matrix/cody/internal/preview.maxFileBytes,matrix/cody/internal/preview.out,matrix/cody/internal/preview.path,matrix/cody/internal/preview.rel,matrix/cody/internal/preview.root,matrix/cody/internal/preview.skipDir,matrix/cody/internal/preview.total,matrix/cody/internal/sandbox.File
+  ^calls=matrix/cody/internal/preview.Manager.provision
+  ^references=matrix/cody/internal/preview.Manager.provision
   ^defines=matrix/cody/internal/preview/preview.go
 
 NODE id=matrix/cody/internal/preview.defaultImage kind=const
@@ -408,6 +491,7 @@ NODE id=matrix/cody/internal/preview.defaultImage kind=const
   sig=untyped string
   doc=defaultImage carries a Node runtime because most Cody previews are web\napps (npm install + dev server). It has apt on top of Debian bookworm so a\npreview can bootstrap python/go on demand. Override with CODY_PREVIEW_IMAGE\nfor a stack whose runtime it lacks.
 EDGES
+  ^references=matrix/cody/internal/preview.New
   ^defines=matrix/cody/internal/preview/preview.go
 
 NODE id=matrix/cody/internal/preview.defaultTTL kind=const
@@ -415,18 +499,25 @@ NODE id=matrix/cody/internal/preview.defaultTTL kind=const
   sig=time.Duration
   doc=Default limits for deploying a project's state into a sandbox.
 EDGES
+  ^references=matrix/cody/internal/preview.New
   ^defines=matrix/cody/internal/preview/preview.go
 
 NODE id=matrix/cody/internal/preview.hasEntry kind=func
   digest=b3:e834eee842881fc0ad806de9ae8bee8ff568c774ce4a1b89b7ca3efc7b12928e file=cody/internal/preview/detect.go range=152:176 lang=go exported=false byte_range=4901:5428
   sig=func hasEntry(m *workspace.Model, names ...string) bool
 EDGES
+  references=matrix/cody/internal/preview.base,matrix/cody/internal/preview.e,matrix/cody/internal/preview.f,matrix/cody/internal/preview.i,matrix/cody/internal/preview.m,matrix/cody/internal/preview.n,matrix/cody/internal/preview.names,matrix/cody/internal/preview.want,matrix/cody/internal/workspace.Model
+  ^calls=matrix/cody/internal/preview.DetectStart
+  ^references=matrix/cody/internal/preview.DetectStart
   ^defines=matrix/cody/internal/preview/detect.go
 
 NODE id=matrix/cody/internal/preview.hasPackageJSON kind=func
   digest=b3:78d4d09324b333b42414e7ed3ef10d9ed434a18cb7f067da26a47a2185c4e5da file=cody/internal/preview/detect.go range=136:150 lang=go exported=false byte_range=4492:4899
   sig=func hasPackageJSON(m *workspace.Model) bool
 EDGES
+  references=matrix/cody/internal/preview.f,matrix/cody/internal/preview.fw,matrix/cody/internal/preview.m,matrix/cody/internal/workspace.Model
+  ^calls=matrix/cody/internal/preview.DetectStart
+  ^references=matrix/cody/internal/preview.DetectStart
   ^defines=matrix/cody/internal/preview/detect.go
 
 NODE id=matrix/cody/internal/preview.healthProbeGap kind=const
@@ -434,6 +525,7 @@ NODE id=matrix/cody/internal/preview.healthProbeGap kind=const
   sig=time.Duration
   doc=Default limits for deploying a project's state into a sandbox.
 EDGES
+  ^references=matrix/cody/internal/preview.Manager.healthProbe
   ^defines=matrix/cody/internal/preview/preview.go
 
 NODE id=matrix/cody/internal/preview.healthProbeTries kind=const
@@ -441,6 +533,7 @@ NODE id=matrix/cody/internal/preview.healthProbeTries kind=const
   sig=untyped int
   doc=Default limits for deploying a project's state into a sandbox.
 EDGES
+  ^references=matrix/cody/internal/preview.Manager.healthProbe
   ^defines=matrix/cody/internal/preview/preview.go
 
 NODE id=matrix/cody/internal/preview.isBinary kind=func
@@ -448,6 +541,8 @@ NODE id=matrix/cody/internal/preview.isBinary kind=func
   sig=func isBinary(data []byte) bool
   doc=isBinary reports whether a leading NUL byte marks content as non-text; deploy\nskips binaries (they bloat the payload and aren't source).
 EDGES
+  references=matrix/cody/internal/preview.data,matrix/cody/internal/preview.n
+  ^references=matrix/cody/internal/preview.collectFiles
   ^defines=matrix/cody/internal/preview/preview.go
 
 NODE id=matrix/cody/internal/preview.live kind=type
@@ -456,6 +551,7 @@ NODE id=matrix/cody/internal/preview.live kind=type
   doc=live is one provisioned preview.
 EDGES
   contains=matrix/cody/internal/preview.live#convID,matrix/cody/internal/preview.live#host,matrix/cody/internal/preview.live#port,matrix/cody/internal/preview.live#sandboxID,matrix/cody/internal/preview.live#touchedAt,matrix/cody/internal/preview.live#url
+  ^references=matrix/cody/internal/preview.Manager,matrix/cody/internal/preview.Manager.Close,matrix/cody/internal/preview.Manager.provision,matrix/cody/internal/preview.Manager.reapOnce,matrix/cody/internal/preview.New
   ^defines=matrix/cody/internal/preview/preview.go
 
 NODE id=matrix/cody/internal/preview.live#convID kind=field
@@ -499,6 +595,7 @@ NODE id=matrix/cody/internal/preview.maxDeployBytes kind=const
   sig=untyped int
   doc=Default limits for deploying a project's state into a sandbox.
 EDGES
+  ^references=matrix/cody/internal/preview.collectFiles
   ^defines=matrix/cody/internal/preview/preview.go
 
 NODE id=matrix/cody/internal/preview.maxDeployFiles kind=const
@@ -506,6 +603,7 @@ NODE id=matrix/cody/internal/preview.maxDeployFiles kind=const
   sig=untyped int
   doc=Default limits for deploying a project's state into a sandbox.
 EDGES
+  ^references=matrix/cody/internal/preview.collectFiles
   ^defines=matrix/cody/internal/preview/preview.go
 
 NODE id=matrix/cody/internal/preview.maxFileBytes kind=const
@@ -513,6 +611,7 @@ NODE id=matrix/cody/internal/preview.maxFileBytes kind=const
   sig=untyped int
   doc=Default limits for deploying a project's state into a sandbox.
 EDGES
+  ^references=matrix/cody/internal/preview.collectFiles
   ^defines=matrix/cody/internal/preview/preview.go
 
 NODE id=matrix/cody/internal/preview.nodePort kind=func
@@ -520,6 +619,9 @@ NODE id=matrix/cody/internal/preview.nodePort kind=func
   sig=func nodePort(fw map[string]bool) string
   doc=nodePort picks the conventional dev-server port for the detected framework.
 EDGES
+  references=matrix/cody/internal/preview.fw
+  ^calls=matrix/cody/internal/preview.DetectStart
+  ^references=matrix/cody/internal/preview.DetectStart
   ^defines=matrix/cody/internal/preview/detect.go
 
 NODE id=matrix/cody/internal/preview.nodeServe kind=func
@@ -527,6 +629,9 @@ NODE id=matrix/cody/internal/preview.nodeServe kind=func
   sig=func nodeServe(fw map[string]bool, base, port string) string
   doc=nodeServe augments the dev command with the host/port flags a framework needs\nto bind reachably (env alone is not always honoured by Vite-family servers).
 EDGES
+  references=matrix/cody/internal/preview.base,matrix/cody/internal/preview.fw,matrix/cody/internal/preview.port
+  ^calls=matrix/cody/internal/preview.DetectStart
+  ^references=matrix/cody/internal/preview.DetectStart
   ^defines=matrix/cody/internal/preview/detect.go
 
 NODE id=matrix/cody/internal/preview.shell kind=func
@@ -534,12 +639,16 @@ NODE id=matrix/cody/internal/preview.shell kind=func
   sig=func shell(cmdline string) []string
   doc=shell wraps a command line to run under sh -lc inside the sandbox.
 EDGES
+  references=matrix/cody/internal/preview.cmdline
+  ^calls=matrix/cody/internal/preview.Manager.healthProbe,matrix/cody/internal/preview.Manager.provision
+  ^references=matrix/cody/internal/preview.Manager.healthProbe,matrix/cody/internal/preview.Manager.provision
   ^defines=matrix/cody/internal/preview/preview.go
 
 NODE id=matrix/cody/internal/preview.skipDir kind=var
   digest=b3:e259f847845526fd5134a489fa667b39ee50f288672ea50bae00f3413718895d file=cody/internal/preview/preview.go range=486:490 lang=go exported=false byte_range=15333:15573
   sig=map[string]bool
 EDGES
+  ^references=matrix/cody/internal/preview.collectFiles
   ^defines=matrix/cody/internal/preview/preview.go
 
 NODE id=matrix/cody/internal/preview.userReason kind=func
@@ -547,6 +656,9 @@ NODE id=matrix/cody/internal/preview.userReason kind=func
   sig=func userReason(err error) string
   doc=userReason maps an internal error to a consumer-facing sentence (result, not\nprotocol). The full error is logged separately.
 EDGES
+  references=matrix/cody/internal/preview.err,matrix/cody/internal/preview.msg
+  ^calls=matrix/cody/internal/preview.Manager.Provision
+  ^references=matrix/cody/internal/preview.Manager.Provision
   ^defines=matrix/cody/internal/preview/preview.go
 
 NODE id=matrix/cody/internal/preview/detect.go kind=file

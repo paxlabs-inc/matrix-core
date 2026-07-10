@@ -1,16 +1,19 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:9b68327501b45793fd7687f43b30c960fd68ae8aaff6b2f1bb36ec3e2df2de2f
+# GENERATED gen=codegraph do-not-edit merkle=b3:20e53aba2ea11552396417e53b3e04e87dd1bbb7bef3aa554a45bb92cf89e7f2
 
 NODE id=matrix/cortex/store kind=package
   digest=b3:897583c664dd0032ac4586b34f9099b12ee19e4a8bfafa6358c00b2d0a199d12 file=cortex/store range=0:0 lang=go exported=true
 EDGES
   contains=matrix/cortex/store/store.go,matrix/cortex/store/writebatch.go
+  imports=matrix/cortex/journal,matrix/cortex/keys
   ^contains=mod:matrix/cortex
+  ^imports=matrix/bridge/cmd/mclc-cortex,matrix/cody/cmd/codyd,matrix/cortex,matrix/cortex/cmd/cortex-shell,matrix/cortex/cmd/two-model-smoke,matrix/cortex/query,matrix/cortex/replay,matrix/cortex/salience,matrix/cortex/snapshot,matrix/executor/cmd/gideon-ingest,matrix/executor/cmd/mcl-e2e,matrix/executor/cmd/mcl-execute,matrix/executor/compilecache,matrix/neo/internal/memory
 
 NODE id=matrix/cortex/store.ErrBatchAlreadyClosed kind=var
   digest=b3:a75fef52db9c5df660237d5bae06301f9305252af00842b9dad5daa4ab774caa file=cortex/store/writebatch.go range=46:48 lang=go exported=true byte_range=1723:1924
   sig=error
   doc=ErrBatchAlreadyClosed is returned when Commit/Abort is called twice or the\nbatch is used after a previous Commit/Abort.
 EDGES
+  ^references=matrix/cortex/store.WriteBatch.AppendJournal,matrix/cortex/store.WriteBatch.Commit,matrix/cortex/store.WriteBatch.Delete,matrix/cortex/store.WriteBatch.Set
   ^defines=matrix/cortex/store/writebatch.go
 
 NODE id=matrix/cortex/store.ErrBatchNoJournal kind=var
@@ -18,6 +21,7 @@ NODE id=matrix/cortex/store.ErrBatchNoJournal kind=var
   sig=error
   doc=ErrBatchNoJournal is returned by Commit when the caller never wrote a\njournal entry. Every store mutation MUST be journaled (replay invariant).
 EDGES
+  ^references=matrix/cortex/store.WriteBatch.Commit
   ^defines=matrix/cortex/store/writebatch.go
 
 NODE id=matrix/cortex/store.JournalHook kind=type
@@ -25,6 +29,7 @@ NODE id=matrix/cortex/store.JournalHook kind=type
   sig=type JournalHook func(b *pebble.Batch, seq uint64, leafHash [32]byte) error
   doc=JournalHook is invoked from inside AppendJournal (both the standalone\nStore.AppendJournal and the batched WriteBatch.AppendJournal) AFTER the\nj/<seq> key has been staged but BEFORE the batch commits. The hook\nreceives the Pebble batch so it can stage additional keys atomically\nwith the journal write — the canonical use case is the snapshot layer\nappending an MMR leaf for every journal entry.\n\nReturning a non-nil error aborts the batch. The hook MUST NOT call\nAppendJournal recursively; doing so would deadlock the seq mutex.
 EDGES
+  ^references=matrix/cortex/snapshot.State.MMRHook,matrix/cortex/store.Store,matrix/cortex/store.Store.SetJournalHook
   ^defines=matrix/cortex/store/store.go
 
 NODE id=matrix/cortex/store.Open kind=func
@@ -32,6 +37,10 @@ NODE id=matrix/cortex/store.Open kind=func
   sig=func Open(root, actor string, opts *Options) (*Store, error)
   doc=Open opens the actor's Pebble DB rooted under root. The directory layout is\ncreated on first open. The actor string is used as a directory name; it\nmust not contain '/'.
 EDGES
+  calls=matrix/cortex/keys.ValidateNoSeparator,matrix/cortex/store.Store.loadHead
+  references=matrix/cortex/keys.ValidateNoSeparator,matrix/cortex/store.Options,matrix/cortex/store.Store,matrix/cortex/store.Store.loadHead,matrix/cortex/store.actor,matrix/cortex/store.db,matrix/cortex/store.dbDir,matrix/cortex/store.err,matrix/cortex/store.opts,matrix/cortex/store.pebOpts,matrix/cortex/store.root,matrix/cortex/store.s
+  ^calls=matrix/bridge/cmd/mclc-cortex.run,matrix/cody/cmd/codyd.main,matrix/cortex/cmd/cortex-shell.main,matrix/cortex/cmd/two-model-smoke.main,matrix/executor/cmd/gideon-ingest.run,matrix/executor/cmd/mcl-e2e.RunOnce,matrix/executor/cmd/mcl-execute.newInfra,matrix/neo/internal/memory.Open
+  ^references=matrix/bridge/cmd/mclc-cortex.run,matrix/cody/cmd/codyd.main,matrix/cortex/cmd/cortex-shell.main,matrix/cortex/cmd/two-model-smoke.main,matrix/executor/cmd/gideon-ingest.run,matrix/executor/cmd/mcl-e2e.RunOnce,matrix/executor/cmd/mcl-execute.newInfra,matrix/neo/internal/memory.Open
   ^defines=matrix/cortex/store/store.go
 
 NODE id=matrix/cortex/store.Options kind=type
@@ -40,6 +49,7 @@ NODE id=matrix/cortex/store.Options kind=type
   doc=Options control Store.Open. Zero values are valid.
 EDGES
   contains=matrix/cortex/store.Options#Pebble
+  ^references=matrix/cortex/store.Open
   ^defines=matrix/cortex/store/store.go
 
 NODE id=matrix/cortex/store.Options#Pebble kind=field
@@ -55,6 +65,8 @@ NODE id=matrix/cortex/store.Store kind=type
   doc=Store is a handle to one actor's Pebble database.\n\nStores are safe for concurrent use. Journal-seq allocation is serialized by\nseqMu to keep the per-actor monotonic invariant; primary writes through\nthe Pebble API are already concurrent-safe.
 EDGES
   contains=matrix/cortex/store.Store#actor,matrix/cortex/store.Store#db,matrix/cortex/store.Store#journalHook,matrix/cortex/store.Store#nextSeq,matrix/cortex/store.Store#root,matrix/cortex/store.Store#seqMu,matrix/cortex/store.Store.Actor,matrix/cortex/store.Store.AppendJournal,matrix/cortex/store.Store.BeginWrite,matrix/cortex/store.Store.Close,matrix/cortex/store.Store.DB,matrix/cortex/store.Store.DeleteMeta,matrix/cortex/store.Store.Get,matrix/cortex/store.Store.IterJournal,matrix/cortex/store.Store.JournalCount,matrix/cortex/store.Store.NextSeq,matrix/cortex/store.Store.Path,matrix/cortex/store.Store.PrefixIter,matrix/cortex/store.Store.SetJournalHook,matrix/cortex/store.Store.SetMeta,matrix/cortex/store.Store.loadHead
+  references=matrix/cortex/store.JournalHook
+  ^references=matrix/cortex.Cortex,matrix/cortex.Cortex.Store,matrix/cortex.New,matrix/cortex.loadHead,matrix/cortex.loadOrBuildIndex,matrix/cortex.loadVersion,matrix/cortex.newPebbleVectorStore,matrix/cortex.pebbleVectorStore,matrix/cortex.readJournalEntry,matrix/cortex.readMetaUint64,matrix/cortex.writeMetaUint64,matrix/cortex/query.Run,matrix/cortex/query.journalLateBinding,matrix/cortex/query.planCandidates,matrix/cortex/query.planCandidatesGraph,matrix/cortex/query.scanByTags,matrix/cortex/query.scanByTypes,matrix/cortex/query.scanIdxTag,matrix/cortex/replay.CountDerived,matrix/cortex/replay.DropDerived,matrix/cortex/replay.Rebuild,matrix/cortex/replay.applyLearnWeights,matrix/cortex/replay.applySalienceBumps,matrix/cortex/replay.readVersion,matrix/cortex/replay.rebuildEdgesSMT,matrix/cortex/replay.rebuildJournalMMR,matrix/cortex/replay.rebuildMemoriesIndexes,matrix/cortex/replay.rebuildOneMemory,matrix/cortex/replay.rebuildSalienceFromJournal,matrix/cortex/salience.Read,matrix/cortex/salience.ReadWeights,matrix/cortex/snapshot.MMR,matrix/cortex/snapshot.New,matrix/cortex/snapshot.NewMMR,matrix/cortex/snapshot.NewSMT,matrix/cortex/snapshot.SMT,matrix/cortex/snapshot.State,matrix/cortex/snapshot.State.Store,matrix/cortex/snapshot.allocSnapshotSeq,matrix/cortex/snapshot.countEdges,matrix/cortex/snapshot.countMemories,matrix/cortex/store.Open,matrix/cortex/store.Store.Actor,matrix/cortex/store.Store.AppendJournal,matrix/cortex/store.Store.BeginWrite,matrix/cortex/store.Store.Close,matrix/cortex/store.Store.DB,matrix/cortex/store.Store.DeleteMeta,matrix/cortex/store.Store.Get,matrix/cortex/store.Store.IterJournal,matrix/cortex/store.Store.JournalCount,matrix/cortex/store.Store.NextSeq,matrix/cortex/store.Store.Path,matrix/cortex/store.Store.PrefixIter,matrix/cortex/store.Store.SetJournalHook,matrix/cortex/store.Store.SetMeta,matrix/cortex/store.Store.loadHead,matrix/cortex/store.WriteBatch,matrix/executor/cmd/mcl-execute.infra,matrix/executor/compilecache.Lookup,matrix/executor/compilecache.Store,matrix/neo/internal/memory.Pager
   ^defines=matrix/cortex/store/store.go
 
 NODE id=matrix/cortex/store.Store#actor kind=field
@@ -99,7 +111,10 @@ NODE id=matrix/cortex/store.Store.Actor kind=method
   sig=func (s *Store) Actor() string
   doc=Actor returns the actor name this store is bound to.
 EDGES
+  references=matrix/cortex/store.Store,matrix/cortex/store.s
   ^contains=matrix/cortex/store.Store
+  ^calls=matrix/cortex.Cortex.Attest,matrix/cortex.Cortex.Snapshot,matrix/cortex.Cortex.VerifyScope
+  ^references=matrix/cortex.Cortex.Attest,matrix/cortex.Cortex.Snapshot,matrix/cortex.Cortex.VerifyScope
   ^defines=matrix/cortex/store/store.go
 
 NODE id=matrix/cortex/store.Store.AppendJournal kind=method
@@ -107,7 +122,11 @@ NODE id=matrix/cortex/store.Store.AppendJournal kind=method
   sig=func (s *Store) AppendJournal(e *journal.Entry) (uint64, error)
   doc=AppendJournal canonical-encodes e (with Seq filled in by the store), writes\nit to j/<seq>, and bumps meta/journal_head — atomically in one Pebble batch.\n\nOn success returns the allocated Seq. e.Seq is overwritten with that value\nso the caller's struct reflects the persisted state.
 EDGES
+  calls=matrix/cortex/journal.Entry.Encode,matrix/cortex/journal.LeafHash,matrix/cortex/keys.JournalKey
+  references=matrix/cortex/journal.Entry,matrix/cortex/journal.Entry.Encode,matrix/cortex/journal.LeafHash,matrix/cortex/keys.JournalKey,matrix/cortex/keys.MetaJournalHead,matrix/cortex/store.Store,matrix/cortex/store.b,matrix/cortex/store.e,matrix/cortex/store.enc,matrix/cortex/store.err,matrix/cortex/store.headBuf,matrix/cortex/store.leafHash,matrix/cortex/store.s,matrix/cortex/store.seq
   ^contains=matrix/cortex/store.Store
+  ^calls=matrix/cortex/cmd/cortex-shell.main
+  ^references=matrix/cortex/cmd/cortex-shell.main
   ^defines=matrix/cortex/store/store.go
 
 NODE id=matrix/cortex/store.Store.BeginWrite kind=method
@@ -115,7 +134,10 @@ NODE id=matrix/cortex/store.Store.BeginWrite kind=method
   sig=func (s *Store) BeginWrite() *WriteBatch
   doc=BeginWrite starts a new write batch, pre-allocating store.nextSeq as the\nfirst journal seq for this batch. The caller MUST eventually call Commit\nor Abort. Multiple AppendJournal calls consume consecutive seqs starting\nfrom startSeq.\n\nThe backing Pebble batch is an indexed batch (NewIndexedBatch) so derived\nstate stagers (Phase 7 MMR cascade, future SMT multi-update) can read\ntheir own pending writes within a single batch. Cost: small in-memory\nindex overhead per batch; correctness benefit: multi-AppendJournal\nbatches (Phase 12 cortex.Attest emits both KindAttest and\nKindLearnWeights atomically) produce the same OverallRoot live and on\nreplay-rebuild.
 EDGES
+  references=matrix/cortex/store.Store,matrix/cortex/store.WriteBatch,matrix/cortex/store.s,matrix/cortex/store.wb
   ^contains=matrix/cortex/store.Store
+  ^calls=matrix/cortex.Cortex.AddEdge,matrix/cortex.Cortex.AppendMessage,matrix/cortex.Cortex.Attest,matrix/cortex.Cortex.BuildRollup,matrix/cortex.Cortex.BuildStorySoFar,matrix/cortex.Cortex.CloseValidity,matrix/cortex.Cortex.Compact,matrix/cortex.Cortex.EnrichRollup,matrix/cortex.Cortex.RemoveEdge,matrix/cortex.Cortex.Tombstone,matrix/cortex.Cortex.Update,matrix/cortex.Cortex.UpdateHead,matrix/cortex.Cortex.Write,matrix/cortex.Cortex.buildCoarseRollup,matrix/cortex.Cortex.logScopeViolation,matrix/cortex.embedderState.processWriteEntry,matrix/cortex/query.journalLateBinding
+  ^references=matrix/cortex.Cortex.AddEdge,matrix/cortex.Cortex.AppendMessage,matrix/cortex.Cortex.Attest,matrix/cortex.Cortex.BuildRollup,matrix/cortex.Cortex.BuildStorySoFar,matrix/cortex.Cortex.CloseValidity,matrix/cortex.Cortex.Compact,matrix/cortex.Cortex.EnrichRollup,matrix/cortex.Cortex.RemoveEdge,matrix/cortex.Cortex.Tombstone,matrix/cortex.Cortex.Update,matrix/cortex.Cortex.UpdateHead,matrix/cortex.Cortex.Write,matrix/cortex.Cortex.buildCoarseRollup,matrix/cortex.Cortex.logScopeViolation,matrix/cortex.embedderState.processWriteEntry,matrix/cortex/query.journalLateBinding
   ^defines=matrix/cortex/store/writebatch.go
 
 NODE id=matrix/cortex/store.Store.Close kind=method
@@ -123,7 +145,10 @@ NODE id=matrix/cortex/store.Store.Close kind=method
   sig=func (s *Store) Close() error
   doc=Close releases the underlying Pebble DB.
 EDGES
+  references=matrix/cortex/store.Store,matrix/cortex/store.s
   ^contains=matrix/cortex/store.Store
+  ^calls=matrix/bridge/cmd/mclc-cortex.run,matrix/cody/cmd/codyd.main,matrix/cortex/cmd/cortex-shell.main,matrix/cortex/cmd/two-model-smoke.main,matrix/executor/cmd/gideon-ingest.run,matrix/executor/cmd/mcl-e2e.RunOnce,matrix/executor/cmd/mcl-execute.infra.Close,matrix/neo/internal/memory.Pager.Close
+  ^references=matrix/bridge/cmd/mclc-cortex.run,matrix/cody/cmd/codyd.main,matrix/cortex/cmd/cortex-shell.main,matrix/cortex/cmd/two-model-smoke.main,matrix/executor/cmd/gideon-ingest.run,matrix/executor/cmd/mcl-e2e.RunOnce,matrix/executor/cmd/mcl-execute.infra.Close,matrix/neo/internal/memory.Pager.Close
   ^defines=matrix/cortex/store/store.go
 
 NODE id=matrix/cortex/store.Store.DB kind=method
@@ -131,7 +156,10 @@ NODE id=matrix/cortex/store.Store.DB kind=method
   sig=func (s *Store) DB() *pebble.DB
   doc=DB exposes the underlying Pebble handle. Reserved for sibling packages in\nlater phases (memory writer, snapshot accumulator); avoid using from\napplication code.
 EDGES
+  references=matrix/cortex/store.Store,matrix/cortex/store.s
   ^contains=matrix/cortex/store.Store
+  ^calls=matrix/cortex/replay.DropDerived,matrix/cortex/replay.applyLearnWeights,matrix/cortex/replay.applySalienceBumps,matrix/cortex/replay.rebuildEdgesSMT,matrix/cortex/replay.rebuildJournalMMR,matrix/cortex/replay.rebuildOneMemory,matrix/cortex/snapshot.MMR.Reset,matrix/cortex/snapshot.State.Snapshot
+  ^references=matrix/cortex/replay.DropDerived,matrix/cortex/replay.applyLearnWeights,matrix/cortex/replay.applySalienceBumps,matrix/cortex/replay.rebuildEdgesSMT,matrix/cortex/replay.rebuildJournalMMR,matrix/cortex/replay.rebuildOneMemory,matrix/cortex/snapshot.MMR.Reset,matrix/cortex/snapshot.SMT.Reset,matrix/cortex/snapshot.State.Snapshot
   ^defines=matrix/cortex/store/store.go
 
 NODE id=matrix/cortex/store.Store.DeleteMeta kind=method
@@ -139,7 +167,11 @@ NODE id=matrix/cortex/store.Store.DeleteMeta kind=method
   sig=func (s *Store) DeleteMeta(key []byte) error
   doc=DeleteMeta removes a meta/<key>. Mirrors SetMeta in scope (meta/ only)\nso callers cannot smuggle deletes against canonical m/ or e/ state via\nthis surface. Idempotent: deleting an absent key returns nil.\n\nIntended use: sess#32 ambient scheduler tearing down meta/goal_state\nentries when a Goal transitions to GoalAbandoned (housekeeping; the\nstale row is harmless but keeps `cortex.ListGoalStates()` clean).
 EDGES
+  calls=matrix/cortex/store.hasMetaPrefix
+  references=matrix/cortex/store.Store,matrix/cortex/store.hasMetaPrefix,matrix/cortex/store.key,matrix/cortex/store.s
   ^contains=matrix/cortex/store.Store
+  ^calls=matrix/cortex.Cortex.DeleteGoalState
+  ^references=matrix/cortex.Cortex.DeleteGoalState
   ^defines=matrix/cortex/store/store.go
 
 NODE id=matrix/cortex/store.Store.Get kind=method
@@ -147,7 +179,10 @@ NODE id=matrix/cortex/store.Store.Get kind=method
   sig=func (s *Store) Get(key []byte) ([]byte, bool, error)
   doc=Get reads the value at key. Returns (nil, false, nil) if not present. The\nreturned slice is owned by the caller (cloned from Pebble's internal\nbuffer).
 EDGES
+  references=matrix/cortex/store.Store,matrix/cortex/store.closer,matrix/cortex/store.err,matrix/cortex/store.key,matrix/cortex/store.out,matrix/cortex/store.s,matrix/cortex/store.v
   ^contains=matrix/cortex/store.Store
+  ^calls=matrix/cortex.Cortex.AddEdge,matrix/cortex.Cortex.AppendMessage,matrix/cortex.Cortex.Attest,matrix/cortex.Cortex.GetEdge,matrix/cortex.Cortex.LoadCheckpoint,matrix/cortex.Cortex.LoadEnrichment,matrix/cortex.Cortex.LoadRollup,matrix/cortex.Cortex.LoadStorySoFar,matrix/cortex.Cortex.Proof,matrix/cortex.Cortex.ReadGoalState,matrix/cortex.Cortex.RemoveEdge,matrix/cortex.Cortex.Resolve,matrix/cortex.Cortex.ResolveLatest,matrix/cortex.Cortex.ResolveToolResult,matrix/cortex.Cortex.StartEmbedder,matrix/cortex.Cortex.resolveNear,matrix/cortex.loadHead,matrix/cortex.loadVersion,matrix/cortex.readJournalEntry,matrix/cortex.readMetaUint64,matrix/cortex/cmd/cortex-shell.main,matrix/cortex/cmd/cortex-shell.runDumpAttest,matrix/cortex/cmd/cortex-shell.runDumpSalience,matrix/cortex/query.Run,matrix/cortex/query.journalLateBinding,matrix/cortex/replay.CountDerived,matrix/cortex/replay.applySalienceBumps,matrix/cortex/replay.readVersion,matrix/cortex/salience.Read,matrix/cortex/salience.ReadWeights,matrix/cortex/snapshot.MMR.LeafCount,matrix/cortex/snapshot.MMR.Node,matrix/cortex/snapshot.SMT.readNode,matrix/cortex/snapshot.State.LoadSnapshot,matrix/cortex/snapshot.allocSnapshotSeq,matrix/executor/compilecache.Lookup
+  ^references=matrix/cortex.Cortex.AddEdge,matrix/cortex.Cortex.AppendMessage,matrix/cortex.Cortex.Attest,matrix/cortex.Cortex.GetEdge,matrix/cortex.Cortex.LoadCheckpoint,matrix/cortex.Cortex.LoadEnrichment,matrix/cortex.Cortex.LoadRollup,matrix/cortex.Cortex.LoadStorySoFar,matrix/cortex.Cortex.Proof,matrix/cortex.Cortex.ReadGoalState,matrix/cortex.Cortex.RemoveEdge,matrix/cortex.Cortex.Resolve,matrix/cortex.Cortex.ResolveLatest,matrix/cortex.Cortex.ResolveToolResult,matrix/cortex.Cortex.StartEmbedder,matrix/cortex.Cortex.resolveNear,matrix/cortex.loadHead,matrix/cortex.loadVersion,matrix/cortex.readJournalEntry,matrix/cortex.readMetaUint64,matrix/cortex/cmd/cortex-shell.main,matrix/cortex/cmd/cortex-shell.runDumpAttest,matrix/cortex/cmd/cortex-shell.runDumpSalience,matrix/cortex/query.Run,matrix/cortex/query.journalLateBinding,matrix/cortex/replay.CountDerived,matrix/cortex/replay.applySalienceBumps,matrix/cortex/replay.readVersion,matrix/cortex/salience.Read,matrix/cortex/salience.ReadWeights,matrix/cortex/snapshot.MMR.LeafCount,matrix/cortex/snapshot.MMR.Node,matrix/cortex/snapshot.SMT.readNode,matrix/cortex/snapshot.State.LoadSnapshot,matrix/cortex/snapshot.allocSnapshotSeq,matrix/executor/compilecache.Lookup
   ^defines=matrix/cortex/store/store.go
 
 NODE id=matrix/cortex/store.Store.IterJournal kind=method
@@ -155,7 +190,11 @@ NODE id=matrix/cortex/store.Store.IterJournal kind=method
   sig=func (s *Store) IterJournal(fn func(*journal.Entry) error) error
   doc=IterJournal walks the journal in seq order (ascending), invoking fn for each\nentry. The decoded Entry is reused between iterations; callers must not\nretain it across calls. Returning an error from fn aborts iteration.
 EDGES
+  calls=matrix/cortex/journal.Decode,matrix/cortex/keys.JournalRange
+  references=matrix/cortex/journal.Decode,matrix/cortex/journal.Entry,matrix/cortex/keys.JournalRange,matrix/cortex/store.Store,matrix/cortex/store.e,matrix/cortex/store.err,matrix/cortex/store.fn,matrix/cortex/store.hi,matrix/cortex/store.it,matrix/cortex/store.lo,matrix/cortex/store.s,matrix/cortex/store.v
   ^contains=matrix/cortex/store.Store
+  ^calls=matrix/cortex.Cortex.BuildRollup,matrix/cortex.Cortex.cascadeHours,matrix/cortex/cmd/cortex-shell.main
+  ^references=matrix/cortex.Cortex.BuildRollup,matrix/cortex.Cortex.cascadeHours,matrix/cortex/cmd/cortex-shell.main
   ^defines=matrix/cortex/store/store.go
 
 NODE id=matrix/cortex/store.Store.JournalCount kind=method
@@ -163,7 +202,11 @@ NODE id=matrix/cortex/store.Store.JournalCount kind=method
   sig=func (s *Store) JournalCount() uint64
   doc=JournalCount returns the number of entries currently in the journal.\nEquivalent to NextSeq() under the gap-free invariant; provided as a\ndistinct API so callers expressing "how many entries do I have" don't have\nto know about seq semantics.
 EDGES
+  calls=matrix/cortex/store.Store.NextSeq
+  references=matrix/cortex/store.Store,matrix/cortex/store.Store.NextSeq,matrix/cortex/store.s
   ^contains=matrix/cortex/store.Store
+  ^calls=matrix/cortex/cmd/cortex-shell.main
+  ^references=matrix/cortex/cmd/cortex-shell.main
   ^defines=matrix/cortex/store/store.go
 
 NODE id=matrix/cortex/store.Store.NextSeq kind=method
@@ -171,7 +214,10 @@ NODE id=matrix/cortex/store.Store.NextSeq kind=method
   sig=func (s *Store) NextSeq() uint64
   doc=NextSeq returns the seq that the next AppendJournal call will allocate.\nUseful for tests and dump tools. Not stable across concurrent appends.
 EDGES
+  references=matrix/cortex/store.Store,matrix/cortex/store.s
   ^contains=matrix/cortex/store.Store
+  ^calls=matrix/cortex.Cortex.DrainEmbedder,matrix/cortex.Cortex.cachedTierPinned,matrix/cortex.embedderState.drainPending,matrix/cortex.embedderState.serviceDrainRequests,matrix/cortex/cmd/cortex-shell.main,matrix/cortex/store.Store.JournalCount
+  ^references=matrix/cortex.Cortex.DrainEmbedder,matrix/cortex.Cortex.cachedTierPinned,matrix/cortex.embedderState.drainPending,matrix/cortex.embedderState.serviceDrainRequests,matrix/cortex/cmd/cortex-shell.main,matrix/cortex/store.Store.JournalCount
   ^defines=matrix/cortex/store/store.go
 
 NODE id=matrix/cortex/store.Store.Path kind=method
@@ -179,6 +225,7 @@ NODE id=matrix/cortex/store.Store.Path kind=method
   sig=func (s *Store) Path() string
   doc=Path returns the root directory containing the actor's data.
 EDGES
+  references=matrix/cortex/store.Store,matrix/cortex/store.s
   ^contains=matrix/cortex/store.Store
   ^defines=matrix/cortex/store/store.go
 
@@ -187,7 +234,11 @@ NODE id=matrix/cortex/store.Store.PrefixIter kind=method
   sig=func (s *Store) PrefixIter(prefix []byte, fn func(key, value []byte) error) error
   doc=PrefixIter invokes fn for every (key, value) pair whose key begins with\nprefix, in byte-ascending order. The slices passed to fn are valid only\nfor the duration of the call; callers must copy if they need to retain.\nReturning an error from fn aborts iteration.
 EDGES
+  calls=matrix/cortex/keys.PrefixRange
+  references=matrix/cortex/keys.PrefixRange,matrix/cortex/store.Store,matrix/cortex/store.err,matrix/cortex/store.fn,matrix/cortex/store.hi,matrix/cortex/store.it,matrix/cortex/store.lo,matrix/cortex/store.prefix,matrix/cortex/store.s,matrix/cortex/store.v
   ^contains=matrix/cortex/store.Store
+  ^calls=matrix/cortex.Cortex.ListByType,matrix/cortex.Cortex.ListGoalStates,matrix/cortex.Cortex.Rollups,matrix/cortex.Cortex.Transcript,matrix/cortex.Cortex.findIdxActorObjKey,matrix/cortex.Cortex.findIdxTagKey,matrix/cortex.Cortex.iterEdges,matrix/cortex.Cortex.scanTypePrefix,matrix/cortex.Cortex.tierFrameRelevant,matrix/cortex.Cortex.tierOutcomes,matrix/cortex.loadOrBuildIndex,matrix/cortex.pebbleVectorStore.GetVector,matrix/cortex/query.scanByTypes,matrix/cortex/query.scanIdxTag,matrix/cortex/replay.CountDerived,matrix/cortex/replay.rebuildEdgesSMT,matrix/cortex/replay.rebuildJournalMMR,matrix/cortex/replay.rebuildMemoriesIndexes,matrix/cortex/replay.rebuildSalienceFromJournal,matrix/cortex/snapshot.MMR.Reset,matrix/cortex/snapshot.SMT.Reset,matrix/cortex/snapshot.State.IterSnapshots,matrix/cortex/snapshot.countEdges,matrix/cortex/snapshot.countMemories
+  ^references=matrix/cortex.Cortex.ListByType,matrix/cortex.Cortex.ListGoalStates,matrix/cortex.Cortex.Rollups,matrix/cortex.Cortex.Transcript,matrix/cortex.Cortex.findIdxActorObjKey,matrix/cortex.Cortex.findIdxTagKey,matrix/cortex.Cortex.iterEdges,matrix/cortex.Cortex.scanTypePrefix,matrix/cortex.Cortex.tierFrameRelevant,matrix/cortex.Cortex.tierOutcomes,matrix/cortex.loadOrBuildIndex,matrix/cortex.pebbleVectorStore.GetVector,matrix/cortex/query.planCandidatesGraph,matrix/cortex/query.scanByTypes,matrix/cortex/query.scanIdxTag,matrix/cortex/replay.CountDerived,matrix/cortex/replay.rebuildEdgesSMT,matrix/cortex/replay.rebuildJournalMMR,matrix/cortex/replay.rebuildMemoriesIndexes,matrix/cortex/replay.rebuildSalienceFromJournal,matrix/cortex/snapshot.MMR.Reset,matrix/cortex/snapshot.SMT.Reset,matrix/cortex/snapshot.State.IterSnapshots,matrix/cortex/snapshot.countEdges,matrix/cortex/snapshot.countMemories
   ^defines=matrix/cortex/store/store.go
 
 NODE id=matrix/cortex/store.Store.SetJournalHook kind=method
@@ -195,7 +246,10 @@ NODE id=matrix/cortex/store.Store.SetJournalHook kind=method
   sig=func (s *Store) SetJournalHook(fn JournalHook)
   doc=SetJournalHook installs (or replaces) the journal hook. Pass nil to\nuninstall. Safe to call before any AppendJournal; not safe to call\nconcurrently with one (callers must coordinate).
 EDGES
+  references=matrix/cortex/store.JournalHook,matrix/cortex/store.Store,matrix/cortex/store.fn,matrix/cortex/store.s
   ^contains=matrix/cortex/store.Store
+  ^calls=matrix/cortex.New
+  ^references=matrix/cortex.New
   ^defines=matrix/cortex/store/store.go
 
 NODE id=matrix/cortex/store.Store.SetMeta kind=method
@@ -203,7 +257,11 @@ NODE id=matrix/cortex/store.Store.SetMeta kind=method
   sig=func (s *Store) SetMeta(key, value []byte) error
   doc=SetMeta writes value at the given meta/<key>. Restricted to keys with\nthe meta/ prefix so callers can't bypass journaled writes by smuggling\nstate into m/ or vec/ via this surface.\n\nIntended use: derived-state progress markers (Phase 5's embed_cursor,\nembed_vertex_next). Such markers are recomputable by walking the\njournal forward from seq=0, so they live OUTSIDE the journaled-batch\ndiscipline that protects canonical state (§11.1).
 EDGES
+  calls=matrix/cortex/store.hasMetaPrefix
+  references=matrix/cortex/store.Store,matrix/cortex/store.hasMetaPrefix,matrix/cortex/store.key,matrix/cortex/store.s,matrix/cortex/store.value
   ^contains=matrix/cortex/store.Store
+  ^calls=matrix/cortex.Cortex.StartEmbedder,matrix/cortex.Cortex.WriteGoalState,matrix/cortex.writeMetaUint64,matrix/cortex/snapshot.allocSnapshotSeq,matrix/executor/compilecache.Store
+  ^references=matrix/cortex.Cortex.StartEmbedder,matrix/cortex.Cortex.WriteGoalState,matrix/cortex.writeMetaUint64,matrix/cortex/snapshot.allocSnapshotSeq,matrix/executor/compilecache.Store
   ^defines=matrix/cortex/store/store.go
 
 NODE id=matrix/cortex/store.Store.loadHead kind=method
@@ -211,7 +269,10 @@ NODE id=matrix/cortex/store.Store.loadHead kind=method
   sig=func (s *Store) loadHead() error
   doc=loadHead reads meta/journal_head from the DB. If absent, initializes to 0.
 EDGES
+  references=matrix/cortex/keys.MetaJournalHead,matrix/cortex/store.Store,matrix/cortex/store.closer,matrix/cortex/store.err,matrix/cortex/store.s,matrix/cortex/store.v
   ^contains=matrix/cortex/store.Store
+  ^calls=matrix/cortex/store.Open
+  ^references=matrix/cortex/store.Open
   ^defines=matrix/cortex/store/store.go
 
 NODE id=matrix/cortex/store.WriteBatch kind=type
@@ -221,6 +282,8 @@ NODE id=matrix/cortex/store.WriteBatch kind=type
 EDGES
   contains=matrix/cortex/store.WriteBatch#appendCount,matrix/cortex/store.WriteBatch#closed,matrix/cortex/store.WriteBatch#lastSeq,matrix/cortex/store.WriteBatch#leafHash,matrix/cortex/store.WriteBatch#nextSeq,matrix/cortex/store.WriteBatch#pb,matrix/cortex/store.WriteBatch#s,matrix/cortex/store.WriteBatch#startSeq,matrix/cortex/store.WriteBatch.Abort,matrix/cortex/store.WriteBatch.AppendJournal,matrix/cortex/store.WriteBatch.Commit,matrix/cortex/store.WriteBatch.Delete,matrix/cortex/store.WriteBatch.LeafHash,matrix/cortex/store.WriteBatch.Seq,matrix/cortex/store.WriteBatch.Set,matrix/cortex/store.WriteBatch.seqGetter
   implements=matrix/cortex/snapshot.Setter
+  references=matrix/cortex/store.Store
+  ^references=matrix/cortex/store.Store.BeginWrite,matrix/cortex/store.WriteBatch.Abort,matrix/cortex/store.WriteBatch.AppendJournal,matrix/cortex/store.WriteBatch.Commit,matrix/cortex/store.WriteBatch.Delete,matrix/cortex/store.WriteBatch.LeafHash,matrix/cortex/store.WriteBatch.Seq,matrix/cortex/store.WriteBatch.Set,matrix/cortex/store.WriteBatch.seqGetter
   ^defines=matrix/cortex/store/writebatch.go
 
 NODE id=matrix/cortex/store.WriteBatch#appendCount kind=field
@@ -276,7 +339,10 @@ NODE id=matrix/cortex/store.WriteBatch.Abort kind=method
   sig=func (wb *WriteBatch) Abort()
   doc=Abort releases the batch without committing. Safe to call after Commit\n(becomes a no-op). Always safe in a `defer wb.Abort()` line.
 EDGES
+  references=matrix/cortex/store.WriteBatch,matrix/cortex/store.wb
   ^contains=matrix/cortex/store.WriteBatch
+  ^calls=matrix/cortex.Cortex.AddEdge,matrix/cortex.Cortex.AppendMessage,matrix/cortex.Cortex.Attest,matrix/cortex.Cortex.BuildRollup,matrix/cortex.Cortex.BuildStorySoFar,matrix/cortex.Cortex.CloseValidity,matrix/cortex.Cortex.Compact,matrix/cortex.Cortex.EnrichRollup,matrix/cortex.Cortex.RemoveEdge,matrix/cortex.Cortex.Tombstone,matrix/cortex.Cortex.Update,matrix/cortex.Cortex.UpdateHead,matrix/cortex.Cortex.Write,matrix/cortex.Cortex.buildCoarseRollup,matrix/cortex.Cortex.logScopeViolation,matrix/cortex.embedderState.processWriteEntry,matrix/cortex/query.journalLateBinding
+  ^references=matrix/cortex.Cortex.AddEdge,matrix/cortex.Cortex.AppendMessage,matrix/cortex.Cortex.Attest,matrix/cortex.Cortex.BuildRollup,matrix/cortex.Cortex.BuildStorySoFar,matrix/cortex.Cortex.CloseValidity,matrix/cortex.Cortex.Compact,matrix/cortex.Cortex.EnrichRollup,matrix/cortex.Cortex.RemoveEdge,matrix/cortex.Cortex.Tombstone,matrix/cortex.Cortex.Update,matrix/cortex.Cortex.UpdateHead,matrix/cortex.Cortex.Write,matrix/cortex.Cortex.buildCoarseRollup,matrix/cortex.Cortex.logScopeViolation,matrix/cortex.embedderState.processWriteEntry,matrix/cortex/query.journalLateBinding
   ^defines=matrix/cortex/store/writebatch.go
 
 NODE id=matrix/cortex/store.WriteBatch.AppendJournal kind=method
@@ -284,7 +350,11 @@ NODE id=matrix/cortex/store.WriteBatch.AppendJournal kind=method
   sig=func (wb *WriteBatch) AppendJournal(e *journal.Entry) error
   doc=AppendJournal canonical-encodes e (filling Seq from the batch), writes it\nto j/<seq>, and writes meta/journal_head=seq+1. May be called more than\nonce per batch — each call consumes the next seq in the batch's pre-\nallocated range, and meta/journal_head is rewritten to the last-\nappended-seq+1 (Pebble overwrite semantics: the final value wins on\ncommit). Must be called at least once before Commit (the replay\ninvariant: every store mutation MUST be journaled).\n\nMultiple-append usage: cortex.Attest (KindAttest at seq=N then\nKindLearnWeights at seq=N+1) is the canonical case. Other callers\nappend exactly once.
 EDGES
+  calls=matrix/cortex/journal.Entry.Encode,matrix/cortex/journal.LeafHash,matrix/cortex/keys.JournalKey
+  references=matrix/cortex/journal.Entry,matrix/cortex/journal.Entry.Encode,matrix/cortex/journal.LeafHash,matrix/cortex/keys.JournalKey,matrix/cortex/keys.MetaJournalHead,matrix/cortex/store.ErrBatchAlreadyClosed,matrix/cortex/store.WriteBatch,matrix/cortex/store.e,matrix/cortex/store.enc,matrix/cortex/store.err,matrix/cortex/store.headBuf,matrix/cortex/store.seq,matrix/cortex/store.wb
   ^contains=matrix/cortex/store.WriteBatch
+  ^calls=matrix/cortex.Cortex.AddEdge,matrix/cortex.Cortex.AppendMessage,matrix/cortex.Cortex.Attest,matrix/cortex.Cortex.BuildRollup,matrix/cortex.Cortex.BuildStorySoFar,matrix/cortex.Cortex.CloseValidity,matrix/cortex.Cortex.Compact,matrix/cortex.Cortex.EnrichRollup,matrix/cortex.Cortex.RemoveEdge,matrix/cortex.Cortex.Tombstone,matrix/cortex.Cortex.Update,matrix/cortex.Cortex.UpdateHead,matrix/cortex.Cortex.Write,matrix/cortex.Cortex.buildCoarseRollup,matrix/cortex.Cortex.logScopeViolation,matrix/cortex.embedderState.processWriteEntry,matrix/cortex/query.journalLateBinding
+  ^references=matrix/cortex.Cortex.AddEdge,matrix/cortex.Cortex.AppendMessage,matrix/cortex.Cortex.Attest,matrix/cortex.Cortex.BuildRollup,matrix/cortex.Cortex.BuildStorySoFar,matrix/cortex.Cortex.CloseValidity,matrix/cortex.Cortex.Compact,matrix/cortex.Cortex.EnrichRollup,matrix/cortex.Cortex.RemoveEdge,matrix/cortex.Cortex.Tombstone,matrix/cortex.Cortex.Update,matrix/cortex.Cortex.UpdateHead,matrix/cortex.Cortex.Write,matrix/cortex.Cortex.buildCoarseRollup,matrix/cortex.Cortex.logScopeViolation,matrix/cortex.embedderState.processWriteEntry,matrix/cortex/query.journalLateBinding
   ^defines=matrix/cortex/store/writebatch.go
 
 NODE id=matrix/cortex/store.WriteBatch.Commit kind=method
@@ -292,7 +362,10 @@ NODE id=matrix/cortex/store.WriteBatch.Commit kind=method
   sig=func (wb *WriteBatch) Commit() error
   doc=Commit flushes the batch to disk with Pebble's Sync option. On success the\nstore's nextSeq advances to lastSeq+1 (i.e. by the number of journal\nentries appended); on failure the batch is closed and seqMu is released,\nbut nextSeq does not advance (so the same seq range can be reused).
 EDGES
+  references=matrix/cortex/store.ErrBatchAlreadyClosed,matrix/cortex/store.ErrBatchNoJournal,matrix/cortex/store.WriteBatch,matrix/cortex/store.err,matrix/cortex/store.wb
   ^contains=matrix/cortex/store.WriteBatch
+  ^calls=matrix/cortex.Cortex.AddEdge,matrix/cortex.Cortex.AppendMessage,matrix/cortex.Cortex.Attest,matrix/cortex.Cortex.BuildRollup,matrix/cortex.Cortex.BuildStorySoFar,matrix/cortex.Cortex.CloseValidity,matrix/cortex.Cortex.Compact,matrix/cortex.Cortex.EnrichRollup,matrix/cortex.Cortex.RemoveEdge,matrix/cortex.Cortex.Tombstone,matrix/cortex.Cortex.Update,matrix/cortex.Cortex.UpdateHead,matrix/cortex.Cortex.Write,matrix/cortex.Cortex.buildCoarseRollup,matrix/cortex.Cortex.logScopeViolation,matrix/cortex.embedderState.processWriteEntry,matrix/cortex/query.journalLateBinding
+  ^references=matrix/cortex.Cortex.AddEdge,matrix/cortex.Cortex.AppendMessage,matrix/cortex.Cortex.Attest,matrix/cortex.Cortex.BuildRollup,matrix/cortex.Cortex.BuildStorySoFar,matrix/cortex.Cortex.CloseValidity,matrix/cortex.Cortex.Compact,matrix/cortex.Cortex.EnrichRollup,matrix/cortex.Cortex.RemoveEdge,matrix/cortex.Cortex.Tombstone,matrix/cortex.Cortex.Update,matrix/cortex.Cortex.UpdateHead,matrix/cortex.Cortex.Write,matrix/cortex.Cortex.buildCoarseRollup,matrix/cortex.Cortex.logScopeViolation,matrix/cortex.embedderState.processWriteEntry,matrix/cortex/query.journalLateBinding
   ^defines=matrix/cortex/store/writebatch.go
 
 NODE id=matrix/cortex/store.WriteBatch.Delete kind=method
@@ -300,7 +373,10 @@ NODE id=matrix/cortex/store.WriteBatch.Delete kind=method
   sig=func (wb *WriteBatch) Delete(key []byte) error
   doc=Delete adds a key deletion to the batch. Reserved for tombstone-related\nflows; ordinary memory writes never delete primary records.
 EDGES
+  references=matrix/cortex/store.ErrBatchAlreadyClosed,matrix/cortex/store.WriteBatch,matrix/cortex/store.key,matrix/cortex/store.wb
   ^contains=matrix/cortex/store.WriteBatch
+  ^calls=matrix/cortex.Cortex.UpdateHead,matrix/cortex/snapshot.SMT.stageNode
+  ^references=matrix/cortex.Cortex.UpdateHead
   ^defines=matrix/cortex/store/writebatch.go
 
 NODE id=matrix/cortex/store.WriteBatch.LeafHash kind=method
@@ -308,6 +384,7 @@ NODE id=matrix/cortex/store.WriteBatch.LeafHash kind=method
   sig=func (wb *WriteBatch) LeafHash() [32]byte
   doc=LeafHash returns the journal leaf hash computed by the most recent\nAppendJournal call on this batch. Returns the zero hash before\nAppendJournal is called or when no hook recorded a hash. Useful for\ncallers that want to log the leaf hash for audit.
 EDGES
+  references=matrix/cortex/store.WriteBatch,matrix/cortex/store.wb
   ^contains=matrix/cortex/store.WriteBatch
   ^defines=matrix/cortex/store/writebatch.go
 
@@ -316,7 +393,11 @@ NODE id=matrix/cortex/store.WriteBatch.Seq kind=method
   sig=func (wb *WriteBatch) Seq() uint64
   doc=Seq returns the seq of the most recently appended journal entry, or the\nnext-to-allocate seq if no AppendJournal has been called yet. Stable\nafter the most recent AppendJournal on this batch; callers that need\nthe matching seq for an entry should call Seq() IMMEDIATELY after the\nAppendJournal that wrote that entry.
 EDGES
+  calls=matrix/cortex/store.WriteBatch.seqGetter
+  references=matrix/cortex/store.WriteBatch,matrix/cortex/store.WriteBatch.seqGetter,matrix/cortex/store.wb
   ^contains=matrix/cortex/store.WriteBatch
+  ^calls=matrix/cortex.Cortex.Attest
+  ^references=matrix/cortex.Cortex.Attest
   ^defines=matrix/cortex/store/writebatch.go
 
 NODE id=matrix/cortex/store.WriteBatch.Set kind=method
@@ -324,7 +405,10 @@ NODE id=matrix/cortex/store.WriteBatch.Set kind=method
   sig=func (wb *WriteBatch) Set(key, value []byte) error
   doc=Set adds a key/value to the batch. Mirrors pebble.Batch.Set.
 EDGES
+  references=matrix/cortex/store.ErrBatchAlreadyClosed,matrix/cortex/store.WriteBatch,matrix/cortex/store.key,matrix/cortex/store.value,matrix/cortex/store.wb
   ^contains=matrix/cortex/store.WriteBatch
+  ^calls=matrix/cortex.Cortex.AddEdge,matrix/cortex.Cortex.AppendMessage,matrix/cortex.Cortex.Attest,matrix/cortex.Cortex.BuildRollup,matrix/cortex.Cortex.BuildStorySoFar,matrix/cortex.Cortex.CloseValidity,matrix/cortex.Cortex.Compact,matrix/cortex.Cortex.EnrichRollup,matrix/cortex.Cortex.RemoveEdge,matrix/cortex.Cortex.Tombstone,matrix/cortex.Cortex.Update,matrix/cortex.Cortex.UpdateHead,matrix/cortex.Cortex.Write,matrix/cortex.Cortex.buildCoarseRollup,matrix/cortex.embedderState.processWriteEntry,matrix/cortex/query.journalLateBinding,matrix/cortex/snapshot.SMT.stageNode
+  ^references=matrix/cortex.Cortex.AddEdge,matrix/cortex.Cortex.AppendMessage,matrix/cortex.Cortex.Attest,matrix/cortex.Cortex.BuildRollup,matrix/cortex.Cortex.BuildStorySoFar,matrix/cortex.Cortex.CloseValidity,matrix/cortex.Cortex.Compact,matrix/cortex.Cortex.EnrichRollup,matrix/cortex.Cortex.RemoveEdge,matrix/cortex.Cortex.Tombstone,matrix/cortex.Cortex.Update,matrix/cortex.Cortex.UpdateHead,matrix/cortex.Cortex.Write,matrix/cortex.Cortex.buildCoarseRollup,matrix/cortex.embedderState.processWriteEntry,matrix/cortex/query.journalLateBinding
   ^defines=matrix/cortex/store/writebatch.go
 
 NODE id=matrix/cortex/store.WriteBatch.seqGetter kind=method
@@ -332,7 +416,10 @@ NODE id=matrix/cortex/store.WriteBatch.seqGetter kind=method
   sig=func (wb *WriteBatch) seqGetter() uint64
   doc=seqGetter returns wb.lastSeq if there has been at least one AppendJournal\ncall, otherwise startSeq (the to-be-allocated seq).
 EDGES
+  references=matrix/cortex/store.WriteBatch,matrix/cortex/store.wb
   ^contains=matrix/cortex/store.WriteBatch
+  ^calls=matrix/cortex/store.WriteBatch.Seq
+  ^references=matrix/cortex/store.WriteBatch.Seq
   ^defines=matrix/cortex/store/writebatch.go
 
 NODE id=matrix/cortex/store.hasMetaPrefix kind=func
@@ -340,6 +427,9 @@ NODE id=matrix/cortex/store.hasMetaPrefix kind=func
   sig=func hasMetaPrefix(k []byte) bool
   doc=hasMetaPrefix mirrors keys.hasPrefix but is local to avoid an extra\nimport cycle for one-line bytes comparison.
 EDGES
+  references=matrix/cortex/store.i,matrix/cortex/store.k,matrix/cortex/store.p
+  ^calls=matrix/cortex/store.Store.DeleteMeta,matrix/cortex/store.Store.SetMeta
+  ^references=matrix/cortex/store.Store.DeleteMeta,matrix/cortex/store.Store.SetMeta
   ^defines=matrix/cortex/store/store.go
 
 NODE id=matrix/cortex/store/store.go kind=file

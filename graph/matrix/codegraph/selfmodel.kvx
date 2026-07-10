@@ -1,0 +1,77 @@
+# GENERATED gen=codegraph do-not-edit merkle=b3:20e53aba2ea11552396417e53b3e04e87dd1bbb7bef3aa554a45bb92cf89e7f2
+
+NODE id=matrix/codegraph/selfmodel kind=package
+  digest=b3:1d60b7c6d1ea3597296911fda5a651c7f3e8ec35dc937bb25af03ae969460bd3 file=codegraph/selfmodel range=0:0 lang=go exported=true
+EDGES
+  contains=matrix/codegraph/selfmodel/selfmodel.go
+  imports=matrix/codegraph/model,matrix/codegraph/retrieve
+  ^contains=mod:matrix/codegraph
+  ^imports=matrix/codegraph/cmd/codegraph,matrix/neo/internal/memory
+
+NODE id=matrix/codegraph/selfmodel.Artifact kind=type
+  digest=b3:12ec8de983dc7650c966134eab8a7eac2d2607559d9e00f064a56042586ff43c file=codegraph/selfmodel/selfmodel.go range=20:24 lang=go exported=true byte_range=262:388
+  sig=type Artifact struct {\n	Summary	string		`json:"summary"`\n	Merkle	string		`json:"merkle"`\n	Scope	[]string	`json:"scope"`\n}
+EDGES
+  contains=matrix/codegraph/selfmodel.Artifact#Merkle,matrix/codegraph/selfmodel.Artifact#Scope,matrix/codegraph/selfmodel.Artifact#Summary
+  ^references=matrix/codegraph/selfmodel.Distill,matrix/neo/internal/memory.Pager.LoadStructuralSelf
+  ^defines=matrix/codegraph/selfmodel/selfmodel.go
+
+NODE id=matrix/codegraph/selfmodel.Artifact#Merkle kind=field
+  digest=b3:b36da9f2b66f7ffbc179987bd526750457c019ad67e24c6e8da1be19c603bac5 file=codegraph/selfmodel/selfmodel.go range=22:22 lang=go exported=true byte_range=321:353
+  sig=string
+EDGES
+  ^contains=matrix/codegraph/selfmodel.Artifact
+
+NODE id=matrix/codegraph/selfmodel.Artifact#Scope kind=field
+  digest=b3:07ed36d5c44bbdd3f45cc1db4e6d552a461346537b197ace6e4ae4fbd969d722 file=codegraph/selfmodel/selfmodel.go range=23:23 lang=go exported=true byte_range=355:386
+  sig=[]string
+EDGES
+  ^contains=matrix/codegraph/selfmodel.Artifact
+
+NODE id=matrix/codegraph/selfmodel.Artifact#Summary kind=field
+  digest=b3:ebeaa1f7609c64d7aa480ff02d1983e9042396a434da67e2167612988db883e4 file=codegraph/selfmodel/selfmodel.go range=21:21 lang=go exported=true byte_range=286:319
+  sig=string
+EDGES
+  ^contains=matrix/codegraph/selfmodel.Artifact
+
+NODE id=matrix/codegraph/selfmodel.Distill kind=func
+  digest=b3:f83d6f66697e6e6d5a8045c68324d9285dba0991ff8245c87b1c06739b987eda file=codegraph/selfmodel/selfmodel.go range=26:41 lang=go exported=true byte_range=390:1204
+  sig=func Distill(ix *model.Index, merkle string, scope []string, tokenBudget int) Artifact
+EDGES
+  calls=matrix/codegraph/retrieve.API.SymbolLookup,matrix/codegraph/retrieve.New,matrix/codegraph/selfmodel.truncateTokens
+  references=matrix/codegraph/model.Index,matrix/codegraph/retrieve.API.SymbolLookup,matrix/codegraph/retrieve.New,matrix/codegraph/selfmodel.Artifact,matrix/codegraph/selfmodel.api,matrix/codegraph/selfmodel.fragment,matrix/codegraph/selfmodel.ix,matrix/codegraph/selfmodel.merkle,matrix/codegraph/selfmodel.parts,matrix/codegraph/selfmodel.residentSymbols,matrix/codegraph/selfmodel.scope,matrix/codegraph/selfmodel.summary,matrix/codegraph/selfmodel.symbol,matrix/codegraph/selfmodel.tokenBudget,matrix/codegraph/selfmodel.truncateTokens
+  ^calls=matrix/codegraph/cmd/codegraph.cmdBuild
+  ^references=matrix/codegraph/cmd/codegraph.cmdBuild
+  ^defines=matrix/codegraph/selfmodel/selfmodel.go
+
+NODE id=matrix/codegraph/selfmodel.Lookup kind=func
+  digest=b3:175a59e6e679db208890fe6f0e699fed662de6b0e854f199b6b2988a85d99d96 file=codegraph/selfmodel/selfmodel.go range=43:49 lang=go exported=true byte_range=1206:1439
+  sig=func Lookup(ix *model.Index, symbol string) (string, error)
+EDGES
+  calls=matrix/codegraph/retrieve.API.SymbolLookup,matrix/codegraph/retrieve.New
+  references=matrix/codegraph/model.Index,matrix/codegraph/retrieve.API.SymbolLookup,matrix/codegraph/retrieve.New,matrix/codegraph/selfmodel.ix,matrix/codegraph/selfmodel.symbol
+  ^calls=matrix/neo/internal/memory.Pager.LookupStructuralSelf
+  ^references=matrix/neo/internal/memory.Pager.LookupStructuralSelf
+  ^defines=matrix/codegraph/selfmodel/selfmodel.go
+
+NODE id=matrix/codegraph/selfmodel.residentSymbols kind=var
+  digest=b3:d696224e6c47892ce92ae10bf7ab908b07a4af47e0eaf7a13e3ad2dfee8cef20 file=codegraph/selfmodel/selfmodel.go range=11:18 lang=go exported=false byte_range=109:260
+  sig=[]string
+EDGES
+  ^references=matrix/codegraph/selfmodel.Distill
+  ^defines=matrix/codegraph/selfmodel/selfmodel.go
+
+NODE id=matrix/codegraph/selfmodel.truncateTokens kind=func
+  digest=b3:9837d8a37064cc3ed8aab9dcad6e96124775d536b3ae3e293d5cc362f8c23498 file=codegraph/selfmodel/selfmodel.go range=51:57 lang=go exported=false byte_range=1441:1616
+  sig=func truncateTokens(text string, budget int) string
+EDGES
+  references=matrix/codegraph/selfmodel.budget,matrix/codegraph/selfmodel.fields,matrix/codegraph/selfmodel.text
+  ^calls=matrix/codegraph/selfmodel.Distill
+  ^references=matrix/codegraph/selfmodel.Distill
+  ^defines=matrix/codegraph/selfmodel/selfmodel.go
+
+NODE id=matrix/codegraph/selfmodel/selfmodel.go kind=file
+  digest=b3:578804004e9e6fc2a3467bb19acdc94b12cc6f47197d01e7799bddb2e1ae3b0f file=codegraph/selfmodel/selfmodel.go range=1:57 lang=go exported=true
+EDGES
+  defines=matrix/codegraph/selfmodel.Artifact,matrix/codegraph/selfmodel.Distill,matrix/codegraph/selfmodel.Lookup,matrix/codegraph/selfmodel.residentSymbols,matrix/codegraph/selfmodel.truncateTokens
+  ^contains=matrix/codegraph/selfmodel

@@ -1,22 +1,28 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:9b68327501b45793fd7687f43b30c960fd68ae8aaff6b2f1bb36ec3e2df2de2f
+# GENERATED gen=codegraph do-not-edit merkle=b3:20e53aba2ea11552396417e53b3e04e87dd1bbb7bef3aa554a45bb92cf89e7f2
 
 NODE id=matrix/router/cmd/matrix-router kind=package
-  digest=b3:e220aaf0fa421d1cd711cebeed77bbd7a1f9a8d44b1a1905ddb600595d84d857 file=router/cmd/matrix-router range=0:0 lang=go exported=true
+  digest=b3:eb9b9ba6d0aadd1e93e4fc054bb17b013c3a8654f8cd520574d139d5a0c244dc file=router/cmd/matrix-router range=0:0 lang=go exported=true
 EDGES
   contains=matrix/router/cmd/matrix-router/main.go
+  imports=matrix/router/internal/admin,matrix/router/internal/beta,matrix/router/internal/config,matrix/router/internal/db,matrix/router/internal/fly,matrix/router/internal/jwt,matrix/router/internal/mw,matrix/router/internal/preview,matrix/router/internal/provision,matrix/router/internal/proxy,matrix/router/internal/railway
   ^contains=mod:matrix/router
 
 NODE id=matrix/router/cmd/matrix-router.envOr kind=func
-  digest=b3:25912b10400375fcd85bb1fd24c7f422ffc722643799f5d37327012624058111 file=router/cmd/matrix-router/main.go range=464:473 lang=go exported=false byte_range=22115:22449
+  digest=b3:25912b10400375fcd85bb1fd24c7f422ffc722643799f5d37327012624058111 file=router/cmd/matrix-router/main.go range=464:473 lang=go exported=false byte_range=22223:22557
   sig=func envOr(key, def string) string
   doc=envOr returns the value of env key, or def when the key is unset or\nempty. Used to give the provisioned-machine model pins a sane,\ngateway-whitelisted default while letting the operator override via\n/etc/matrix/router.env.
 EDGES
+  references=matrix/router/cmd/matrix-router.def,matrix/router/cmd/matrix-router.key,matrix/router/cmd/matrix-router.v
+  ^calls=matrix/router/cmd/matrix-router.main
+  ^references=matrix/router/cmd/matrix-router.main
   ^defines=matrix/router/cmd/matrix-router/main.go
 
 NODE id=matrix/router/cmd/matrix-router.main kind=func
-  digest=b3:cda09ee693752d9123324d28504f6357af83ef2e1236dc7527927c56b72ac875 file=router/cmd/matrix-router/main.go range=57:462 lang=go exported=false byte_range=1622:22113
+  digest=b3:e681773fcd8423392028055f1b7bed9db468675420d1014ba1add92e73524789 file=router/cmd/matrix-router/main.go range=57:462 lang=go exported=false byte_range=1622:22221
   sig=func main()
 EDGES
+  calls=matrix/router/cmd/matrix-router.envOr,matrix/router/internal/admin.Handler.Mount,matrix/router/internal/beta.Handler.Mount,matrix/router/internal/config.Config.AdminEnabled,matrix/router/internal/config.Load,matrix/router/internal/db.DB.Close,matrix/router/internal/db.Open,matrix/router/internal/fly.New,matrix/router/internal/jwt.New,matrix/router/internal/jwt.Verifier.PrimeJWKS,matrix/router/internal/mw.AccessLog,matrix/router/internal/mw.Admin,matrix/router/internal/mw.CORS,matrix/router/internal/mw.JWT,matrix/router/internal/preview.NewRegistry,matrix/router/internal/preview.RegisterHandler,matrix/router/internal/proxy.Handler.WakeHandler,matrix/router/internal/proxy.New,matrix/router/internal/railway.New
+  references=matrix/router/cmd/matrix-router.adminH,matrix/router/cmd/matrix-router.adminMux,matrix/router/cmd/matrix-router.args,matrix/router/cmd/matrix-router.betaH,matrix/router/cmd/matrix-router.betaMux,matrix/router/cmd/matrix-router.cancel,matrix/router/cmd/matrix-router.cancelDB,matrix/router/cmd/matrix-router.cancelDrain,matrix/router/cmd/matrix-router.cancelPrime,matrix/router/cmd/matrix-router.cfg,matrix/router/cmd/matrix-router.ctx,matrix/router/cmd/matrix-router.daemonImage,matrix/router/cmd/matrix-router.dbCtx,matrix/router/cmd/matrix-router.drainCtx,matrix/router/cmd/matrix-router.envOr,matrix/router/cmd/matrix-router.err,matrix/router/cmd/matrix-router.format,matrix/router/cmd/matrix-router.internalMux,matrix/router/cmd/matrix-router.internalSrv,matrix/router/cmd/matrix-router.logf,matrix/router/cmd/matrix-router.pool,matrix/router/cmd/matrix-router.previewReg,matrix/router/cmd/matrix-router.primeCtx,matrix/router/cmd/matrix-router.prov,matrix/router/cmd/matrix-router.proxyH,matrix/router/cmd/matrix-router.publicMux,matrix/router/cmd/matrix-router.publicSrv,matrix/router/cmd/matrix-router.r,matrix/router/cmd/matrix-router.sig,matrix/router/cmd/matrix-router.sigCh,matrix/router/cmd/matrix-router.srvErr,matrix/router/cmd/matrix-router.verifier,matrix/router/cmd/matrix-router.version,matrix/router/cmd/matrix-router.w,matrix/router/internal/admin.Handler,matrix/router/internal/admin.Handler.Mount,matrix/router/internal/beta.Handler,matrix/router/internal/beta.Handler.Mount,matrix/router/internal/config.Config.AdminEnabled,matrix/router/internal/config.Load,matrix/router/internal/config.ProviderRailway,matrix/router/internal/db.DB.Close,matrix/router/internal/db.DB.Ping,matrix/router/internal/db.Open,matrix/router/internal/fly.New,matrix/router/internal/fly.Provisioner,matrix/router/internal/jwt.New,matrix/router/internal/jwt.Options,matrix/router/internal/jwt.Verifier.PrimeJWKS,matrix/router/internal/mw.AccessLog,matrix/router/internal/mw.Admin,matrix/router/internal/mw.CORS,matrix/router/internal/mw.JWT,matrix/router/internal/preview.Handler,matrix/router/internal/preview.NewRegistry,matrix/router/internal/preview.RegisterHandler,matrix/router/internal/provision.Provisioner,matrix/router/internal/proxy.Handler.WakeHandler,matrix/router/internal/proxy.New,matrix/router/internal/railway.New,matrix/router/internal/railway.Provisioner
   ^defines=matrix/router/cmd/matrix-router/main.go
 
 NODE id=matrix/router/cmd/matrix-router.version kind=var
@@ -24,10 +30,11 @@ NODE id=matrix/router/cmd/matrix-router.version kind=var
   sig=string
   doc=version is the build identity; overridden via -ldflags="-X main.version=...".
 EDGES
+  ^references=matrix/router/cmd/matrix-router.main
   ^defines=matrix/router/cmd/matrix-router/main.go
 
 NODE id=matrix/router/cmd/matrix-router/main.go kind=file
-  digest=b3:c4c18ee2eedf9d2ba3edf031525aee5fcfeffbf1e2bb28f06e6356deb9bd057b file=router/cmd/matrix-router/main.go range=1:475 lang=go exported=true
+  digest=b3:1f704809c9078ec7b9dd549fb0b9d3f448cb12ad6237f3fcfa1f05f908cb1742 file=router/cmd/matrix-router/main.go range=1:475 lang=go exported=true
 EDGES
   defines=matrix/router/cmd/matrix-router.envOr,matrix/router/cmd/matrix-router.main,matrix/router/cmd/matrix-router.version
   ^contains=matrix/router/cmd/matrix-router

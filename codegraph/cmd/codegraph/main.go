@@ -7,6 +7,7 @@
 package main
 
 import (
+	"encoding/json"
 	"flag"
 	"fmt"
 	"io/fs"
@@ -19,6 +20,7 @@ import (
 	codegraphmcp "matrix/codegraph/mcp"
 	"matrix/codegraph/model"
 	"matrix/codegraph/retrieve"
+	"matrix/codegraph/selfmodel"
 	"matrix/codegraph/store"
 )
 
@@ -58,10 +60,11 @@ func usage() {
 }
 
 type common struct {
-	root    string
-	name    string
-	out     string
-	modules string
+	root      string
+	name      string
+	out       string
+	modules   string
+	selfModel bool
 }
 
 func (c *common) bind(fs *flag.FlagSet) {
@@ -69,12 +72,20 @@ func (c *common) bind(fs *flag.FlagSet) {
 	fs.StringVar(&c.name, "name", "", "repo name (default: base of root)")
 	fs.StringVar(&c.out, "out", "", "graph output dir (default: <root>/graph)")
 	fs.StringVar(&c.modules, "modules", "", "comma-separated module dirs (default: auto-discover)")
+	fs.BoolVar(&c.selfModel, "self-model", false, "use the declared unified-agent self-model scope")
 }
 
 func (c *common) config() (extract.Config, error) {
 	root, err := filepath.Abs(c.root)
 	if err != nil {
 		return extract.Config{}, err
+	}
+	if c.selfModel {
+		cfg, selfErr := extract.SelfModelConfig(root)
+		if selfErr != nil {
+			return extract.Config{}, selfErr
+		}
+		return cfg, nil
 	}
 	name := c.name
 	if name == "" {
@@ -119,6 +130,16 @@ func cmdBuild(args []string) error {
 	out := c.graphDir(cfg)
 	if err := e.WriteStore(out, merkle); err != nil {
 		return err
+	}
+	if c.selfModel {
+		artifact := selfmodel.Distill(e.Index(), merkle, extract.SelfModelRequiredPackages, 800)
+		encoded, marshalErr := json.MarshalIndent(artifact, "", "  ")
+		if marshalErr != nil {
+			return marshalErr
+		}
+		if writeErr := os.WriteFile(filepath.Join(out, "self-model.json"), append(encoded, '\n'), 0o644); writeErr != nil {
+			return writeErr
+		}
 	}
 	fmt.Printf("built %d nodes across %d modules -> %s (merkle=%s)\n",
 		e.Index().Len(), len(cfg.Modules), out, merkle)

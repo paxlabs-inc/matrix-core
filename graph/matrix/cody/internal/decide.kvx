@@ -1,16 +1,22 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:9b68327501b45793fd7687f43b30c960fd68ae8aaff6b2f1bb36ec3e2df2de2f
+# GENERATED gen=codegraph do-not-edit merkle=b3:20e53aba2ea11552396417e53b3e04e87dd1bbb7bef3aa554a45bb92cf89e7f2
 
 NODE id=matrix/cody/internal/decide kind=package
   digest=b3:5f452af7c842fa4fba1d824f16ce2653f5e856583284954e254ab70f60c419e8 file=cody/internal/decide range=0:0 lang=go exported=true
 EDGES
   contains=matrix/cody/internal/decide/decide.go,matrix/cody/internal/decide/design.go,matrix/cody/internal/decide/stack.go
+  imports=matrix/cody/internal/llm
   ^contains=mod:matrix/cody
+  ^imports=matrix/cody/internal/gate,matrix/cody/internal/orchestrator,matrix/cody/internal/server
 
 NODE id=matrix/cody/internal/decide.AuthorDesign kind=func
   digest=b3:ffde53fdcb882527016160d274cae4d7ecce7fd186ac1ecb9e8de896b4e12ea2 file=cody/internal/decide/design.go range=121:164 lang=go exported=true byte_range=5376:6790
   sig=func AuthorDesign(ctx context.Context, hot, cold *llm.Client, brief, doctrine string, candidates int) (*DesignRecord, error)
   doc=AuthorDesign authors a Design Language Record the decision way: generate\n`candidates` divergent records HOT, keep the ones that parse and validate,\nand pick the best-fitting one COLD (req 10.2). Returns the chosen record.
 EDGES
+  calls=matrix/cody/internal/decide.DesignRecord.Validate,matrix/cody/internal/decide.Generate,matrix/cody/internal/decide.Judge,matrix/cody/internal/decide.designSystem,matrix/cody/internal/decide.parseDesign
+  references=matrix/cody/internal/decide.Candidate,matrix/cody/internal/decide.DesignRecord,matrix/cody/internal/decide.DesignRecord.Validate,matrix/cody/internal/decide.Generate,matrix/cody/internal/decide.Judge,matrix/cody/internal/decide.brief,matrix/cody/internal/decide.c,matrix/cody/internal/decide.candidates,matrix/cody/internal/decide.cands,matrix/cody/internal/decide.cold,matrix/cody/internal/decide.ctx,matrix/cody/internal/decide.dec,matrix/cody/internal/decide.designCriteria,matrix/cody/internal/decide.designSystem,matrix/cody/internal/decide.doctrine,matrix/cody/internal/decide.err,matrix/cody/internal/decide.hot,matrix/cody/internal/decide.judgeable,matrix/cody/internal/decide.parseDesign,matrix/cody/internal/decide.pick,matrix/cody/internal/decide.rec,matrix/cody/internal/decide.system,matrix/cody/internal/decide.valid,matrix/cody/internal/llm.Client
+  ^calls=matrix/cody/internal/server.Engine.resolveDesignDecision
+  ^references=matrix/cody/internal/server.Engine.resolveDesignDecision
   ^defines=matrix/cody/internal/decide/design.go
 
 NODE id=matrix/cody/internal/decide.AuthorStack kind=func
@@ -18,6 +24,10 @@ NODE id=matrix/cody/internal/decide.AuthorStack kind=func
   sig=func AuthorStack(ctx context.Context, hot, cold *llm.Client, brief, doctrine string, candidates int) (*StackRecord, error)
   doc=AuthorStack authors a Stack Decision Record the decision way: generate\n`candidates` divergent records HOT, keep the ones that parse and validate,\nand pick the best-fitting one COLD (req 10.2). hot is the decision-temperature\nclient; cold is the adjudication client. Returns the chosen record.
 EDGES
+  calls=matrix/cody/internal/decide.Generate,matrix/cody/internal/decide.Judge,matrix/cody/internal/decide.StackRecord.Validate,matrix/cody/internal/decide.parseStack,matrix/cody/internal/decide.stackSystem
+  references=matrix/cody/internal/decide.Candidate,matrix/cody/internal/decide.Generate,matrix/cody/internal/decide.Judge,matrix/cody/internal/decide.StackRecord,matrix/cody/internal/decide.StackRecord.Validate,matrix/cody/internal/decide.brief,matrix/cody/internal/decide.c,matrix/cody/internal/decide.candidates,matrix/cody/internal/decide.cands,matrix/cody/internal/decide.cold,matrix/cody/internal/decide.ctx,matrix/cody/internal/decide.dec,matrix/cody/internal/decide.doctrine,matrix/cody/internal/decide.err,matrix/cody/internal/decide.hot,matrix/cody/internal/decide.judgeable,matrix/cody/internal/decide.parseStack,matrix/cody/internal/decide.pick,matrix/cody/internal/decide.rec,matrix/cody/internal/decide.stackCriteria,matrix/cody/internal/decide.stackSystem,matrix/cody/internal/decide.system,matrix/cody/internal/decide.valid,matrix/cody/internal/llm.Client
+  ^calls=matrix/cody/internal/server.Engine.resolveStackDecision
+  ^references=matrix/cody/internal/server.Engine.resolveStackDecision
   ^defines=matrix/cody/internal/decide/stack.go
 
 NODE id=matrix/cody/internal/decide.BannedTellsInText kind=func
@@ -25,6 +35,9 @@ NODE id=matrix/cody/internal/decide.BannedTellsInText kind=func
   sig=func BannedTellsInText(text string) []string
   doc=BannedTellsInText returns the concrete banned AI-tells present in text, or\nnil. Shared by the DLR screen (over the record) and the acceptance gate (over\nchanged UI file content) so the same doctrine screens the decision AND its\ndownstream drift (req 9.2, 9.3).
 EDGES
+  references=matrix/cody/internal/decide.bannedTells,matrix/cody/internal/decide.hits,matrix/cody/internal/decide.low,matrix/cody/internal/decide.t,matrix/cody/internal/decide.text
+  ^calls=matrix/cody/internal/decide.ScreenDesignBanned,matrix/cody/internal/gate.ScreenDesign
+  ^references=matrix/cody/internal/decide.ScreenDesignBanned,matrix/cody/internal/gate.ScreenDesign
   ^defines=matrix/cody/internal/decide/design.go
 
 NODE id=matrix/cody/internal/decide.Candidate kind=type
@@ -33,6 +46,7 @@ NODE id=matrix/cody/internal/decide.Candidate kind=type
   doc=Candidate is one generated option, in generation order.
 EDGES
   contains=matrix/cody/internal/decide.Candidate#Index,matrix/cody/internal/decide.Candidate#Text
+  ^references=matrix/cody/internal/decide.AuthorDesign,matrix/cody/internal/decide.AuthorStack,matrix/cody/internal/decide.Generate,matrix/cody/internal/decide.Judge,matrix/cody/internal/orchestrator.AdoptSpecDivergent,matrix/cody/internal/orchestrator.PlanFromModelDivergent
   ^defines=matrix/cody/internal/decide/decide.go
 
 NODE id=matrix/cody/internal/decide.Candidate#Index kind=field
@@ -53,6 +67,7 @@ NODE id=matrix/cody/internal/decide.Decision kind=type
   doc=Decision is the judge's verdict: the picked candidate index and why.
 EDGES
   contains=matrix/cody/internal/decide.Decision#Pick,matrix/cody/internal/decide.Decision#Rationale
+  ^references=matrix/cody/internal/decide.Judge,matrix/cody/internal/decide.parseDecision
   ^defines=matrix/cody/internal/decide/decide.go
 
 NODE id=matrix/cody/internal/decide.Decision#Pick kind=field
@@ -73,6 +88,7 @@ NODE id=matrix/cody/internal/decide.DesignProfile kind=type
   doc=DesignProfile is the product context the design language is chosen FOR — the\nfacts that make one visual direction fit better than another. A direction\nthat ignores this profile is exactly the AI-default the banned-tells screen\nand the anti-default lens reject.
 EDGES
   contains=matrix/cody/internal/decide.DesignProfile#Audience,matrix/cody/internal/decide.DesignProfile#BrandAdjectives,matrix/cody/internal/decide.DesignProfile#ProductKind,matrix/cody/internal/decide.DesignProfile#Surface
+  ^references=matrix/cody/internal/decide.DesignRecord
   ^defines=matrix/cody/internal/decide/design.go
 
 NODE id=matrix/cody/internal/decide.DesignProfile#Audience kind=field
@@ -105,6 +121,8 @@ NODE id=matrix/cody/internal/decide.DesignRecord kind=type
   doc=DesignRecord is the durable Design Language Record: the product profile plus\nthe six binding decisions every subsequent UI task inherits — style\ndirection, typography, palette, spacing/layout system, motion posture, and\ncomponent idiom (req 9.1). Authored HOT (N divergent records generated, judged\nCOLD) and then screened deterministically for banned AI-tells and by the\nanti-default lens before the human resolves it.
 EDGES
   contains=matrix/cody/internal/decide.DesignRecord#ComponentIdiom,matrix/cody/internal/decide.DesignRecord#Motion,matrix/cody/internal/decide.DesignRecord#Palette,matrix/cody/internal/decide.DesignRecord#Profile,matrix/cody/internal/decide.DesignRecord#Rationale,matrix/cody/internal/decide.DesignRecord#Spacing,matrix/cody/internal/decide.DesignRecord#StyleDirection,matrix/cody/internal/decide.DesignRecord#Typography,matrix/cody/internal/decide.DesignRecord.Summary,matrix/cody/internal/decide.DesignRecord.Validate
+  references=matrix/cody/internal/decide.DesignProfile
+  ^references=matrix/cody/internal/decide.AuthorDesign,matrix/cody/internal/decide.DesignRecord.Summary,matrix/cody/internal/decide.DesignRecord.Validate,matrix/cody/internal/decide.ScreenDesignAntiDefault,matrix/cody/internal/decide.ScreenDesignBanned,matrix/cody/internal/decide.parseDesign,matrix/cody/internal/server.Engine.finalizeDesignDecision,matrix/cody/internal/server.designConstraint,matrix/cody/internal/server.designFields,matrix/cody/internal/server.designPrompt,matrix/cody/internal/server.storedDesignDecision
   ^defines=matrix/cody/internal/decide/design.go
 
 NODE id=matrix/cody/internal/decide.DesignRecord#ComponentIdiom kind=field
@@ -160,7 +178,10 @@ NODE id=matrix/cody/internal/decide.DesignRecord.Summary kind=method
   sig=func (r *DesignRecord) Summary() string
   doc=Summary renders the DLR as the one-block constraint every UI task sheet\ncarries so a fresh-context worker builds to the same design language (req 9.3).
 EDGES
+  references=matrix/cody/internal/decide.DesignRecord,matrix/cody/internal/decide.b,matrix/cody/internal/decide.r,matrix/cody/internal/decide.s
   ^contains=matrix/cody/internal/decide.DesignRecord
+  ^calls=matrix/cody/internal/decide.ScreenDesignAntiDefault,matrix/cody/internal/server.Engine.resolveDesignDecision,matrix/cody/internal/server.designConstraint,matrix/cody/internal/server.designPrompt
+  ^references=matrix/cody/internal/decide.ScreenDesignAntiDefault,matrix/cody/internal/server.Engine.resolveDesignDecision,matrix/cody/internal/server.designConstraint,matrix/cody/internal/server.designPrompt
   ^defines=matrix/cody/internal/decide/design.go
 
 NODE id=matrix/cody/internal/decide.DesignRecord.Validate kind=method
@@ -168,7 +189,10 @@ NODE id=matrix/cody/internal/decide.DesignRecord.Validate kind=method
   sig=func (r *DesignRecord) Validate() error
   doc=Validate rejects a record that could not bind real UI work: it needs a style\ndirection, a typography choice, a palette, and a component idiom — the fields\na worker's turn-in is screened against for drift.
 EDGES
+  references=matrix/cody/internal/decide.DesignRecord,matrix/cody/internal/decide.missing,matrix/cody/internal/decide.r
   ^contains=matrix/cody/internal/decide.DesignRecord
+  ^calls=matrix/cody/internal/decide.AuthorDesign
+  ^references=matrix/cody/internal/decide.AuthorDesign
   ^defines=matrix/cody/internal/decide/design.go
 
 NODE id=matrix/cody/internal/decide.Generate kind=func
@@ -176,6 +200,10 @@ NODE id=matrix/cody/internal/decide.Generate kind=func
   sig=func Generate(ctx context.Context, hot *llm.Client, system, user string, n int) ([]Candidate, error)
   doc=Generate calls the HOT client n times with the same system+user prompt;\ndivergence comes from the decision temperature the client is built at. It\nreturns the candidates in call order. n < 1 is treated as 1. An empty\n(whitespace-only) candidate is dropped — a blank generation is not an option.
 EDGES
+  calls=matrix/cody/internal/llm.Client.Chat,matrix/cody/internal/llm.SystemMessage,matrix/cody/internal/llm.UserMessage
+  references=matrix/cody/internal/decide.Candidate,matrix/cody/internal/decide.ctx,matrix/cody/internal/decide.err,matrix/cody/internal/decide.hot,matrix/cody/internal/decide.i,matrix/cody/internal/decide.n,matrix/cody/internal/decide.out,matrix/cody/internal/decide.res,matrix/cody/internal/decide.system,matrix/cody/internal/decide.text,matrix/cody/internal/decide.user,matrix/cody/internal/llm.ChatRequest,matrix/cody/internal/llm.Client,matrix/cody/internal/llm.Client.Chat,matrix/cody/internal/llm.Message,matrix/cody/internal/llm.SystemMessage,matrix/cody/internal/llm.UserMessage
+  ^calls=matrix/cody/internal/decide.AuthorDesign,matrix/cody/internal/decide.AuthorStack,matrix/cody/internal/orchestrator.AdoptSpecDivergent,matrix/cody/internal/orchestrator.PlanFromModelDivergent
+  ^references=matrix/cody/internal/decide.AuthorDesign,matrix/cody/internal/decide.AuthorStack,matrix/cody/internal/orchestrator.AdoptSpecDivergent,matrix/cody/internal/orchestrator.PlanFromModelDivergent
   ^defines=matrix/cody/internal/decide/decide.go
 
 NODE id=matrix/cody/internal/decide.Judge kind=func
@@ -183,6 +211,10 @@ NODE id=matrix/cody/internal/decide.Judge kind=func
   sig=func Judge(ctx context.Context, cold *llm.Client, brief, criteria string, cands []Candidate) (Decision, error)
   doc=Judge asks the COLD client to pick the best candidate for the brief against\nthe criteria. With zero candidates it errors; with one it short-circuits to\nthat candidate (nothing to adjudicate). A judge response that cannot be\nparsed, or an out-of-range pick, fails SAFE to candidate 0 with an honest\nrationale — the decision phase must never wedge on an adjudicator hiccup (the\nproven Cassandra fail-open posture), while still having really run.
 EDGES
+  calls=matrix/cody/internal/decide.parseDecision,matrix/cody/internal/llm.Client.Chat,matrix/cody/internal/llm.SystemMessage,matrix/cody/internal/llm.UserMessage
+  references=matrix/cody/internal/decide.Candidate,matrix/cody/internal/decide.Decision,matrix/cody/internal/decide.b,matrix/cody/internal/decide.brief,matrix/cody/internal/decide.c,matrix/cody/internal/decide.cands,matrix/cody/internal/decide.cold,matrix/cody/internal/decide.criteria,matrix/cody/internal/decide.ctx,matrix/cody/internal/decide.dec,matrix/cody/internal/decide.err,matrix/cody/internal/decide.judgeSystem,matrix/cody/internal/decide.ok,matrix/cody/internal/decide.parseDecision,matrix/cody/internal/decide.res,matrix/cody/internal/decide.u,matrix/cody/internal/llm.ChatRequest,matrix/cody/internal/llm.Client,matrix/cody/internal/llm.Client.Chat,matrix/cody/internal/llm.Message,matrix/cody/internal/llm.SystemMessage,matrix/cody/internal/llm.UserMessage
+  ^calls=matrix/cody/internal/decide.AuthorDesign,matrix/cody/internal/decide.AuthorStack,matrix/cody/internal/orchestrator.AdoptSpecDivergent,matrix/cody/internal/orchestrator.PlanFromModelDivergent
+  ^references=matrix/cody/internal/decide.AuthorDesign,matrix/cody/internal/decide.AuthorStack,matrix/cody/internal/orchestrator.AdoptSpecDivergent,matrix/cody/internal/orchestrator.PlanFromModelDivergent
   ^defines=matrix/cody/internal/decide/decide.go
 
 NODE id=matrix/cody/internal/decide.ScreenDesignAntiDefault kind=func
@@ -190,6 +222,10 @@ NODE id=matrix/cody/internal/decide.ScreenDesignAntiDefault kind=func
   sig=func ScreenDesignAntiDefault(ctx context.Context, cold *llm.Client, rec *DesignRecord) string
   doc=ScreenDesignAntiDefault runs the anti-AI-default lens over a chosen record. It\nreturns "" when the record passes, or a concrete rejection reason. A judge\ntransport error fails OPEN (empty) — the human still resolves the record, so a\nhiccup never wedges the phase, but an explicit reject verdict is honored (the\nproven Cassandra posture).
 EDGES
+  calls=matrix/cody/internal/decide.DesignRecord.Summary,matrix/cody/internal/decide.firstJSONObject,matrix/cody/internal/llm.Client.Chat,matrix/cody/internal/llm.SystemMessage,matrix/cody/internal/llm.UserMessage
+  references=matrix/cody/internal/decide.DesignRecord,matrix/cody/internal/decide.DesignRecord.Summary,matrix/cody/internal/decide.antiDefaultVerdict,matrix/cody/internal/decide.antiDesignSystem,matrix/cody/internal/decide.cold,matrix/cody/internal/decide.ctx,matrix/cody/internal/decide.err,matrix/cody/internal/decide.firstJSONObject,matrix/cody/internal/decide.obj,matrix/cody/internal/decide.reason,matrix/cody/internal/decide.rec,matrix/cody/internal/decide.res,matrix/cody/internal/decide.u,matrix/cody/internal/decide.v,matrix/cody/internal/llm.ChatRequest,matrix/cody/internal/llm.Client,matrix/cody/internal/llm.Client.Chat,matrix/cody/internal/llm.Message,matrix/cody/internal/llm.SystemMessage,matrix/cody/internal/llm.UserMessage
+  ^calls=matrix/cody/internal/server.Engine.resolveDesignDecision
+  ^references=matrix/cody/internal/server.Engine.resolveDesignDecision
   ^defines=matrix/cody/internal/decide/design.go
 
 NODE id=matrix/cody/internal/decide.ScreenDesignBanned kind=func
@@ -197,6 +233,10 @@ NODE id=matrix/cody/internal/decide.ScreenDesignBanned kind=func
   sig=func ScreenDesignBanned(rec *DesignRecord) string
   doc=ScreenDesignBanned runs the deterministic banned-defaults screen over a\nrecord. It returns "" when the record passes, or a concrete rejection listing\nevery banned tell it leans on.
 EDGES
+  calls=matrix/cody/internal/decide.BannedTellsInText
+  references=matrix/cody/internal/decide.BannedTellsInText,matrix/cody/internal/decide.DesignRecord,matrix/cody/internal/decide.fields,matrix/cody/internal/decide.hits,matrix/cody/internal/decide.rec
+  ^calls=matrix/cody/internal/server.Engine.resolveDesignDecision
+  ^references=matrix/cody/internal/server.Engine.resolveDesignDecision
   ^defines=matrix/cody/internal/decide/design.go
 
 NODE id=matrix/cody/internal/decide.ScreenStackAntiDefault kind=func
@@ -204,6 +244,10 @@ NODE id=matrix/cody/internal/decide.ScreenStackAntiDefault kind=func
   sig=func ScreenStackAntiDefault(ctx context.Context, cold *llm.Client, rec *StackRecord) string
   doc=ScreenStackAntiDefault runs the anti-default lens over a chosen record. It\nreturns "" when the record passes, or a concrete rejection reason. A judge\ntransport error fails OPEN (empty) — consistent with the proven Cassandra\nposture: the human still resolves the record, so a hiccup never wedges the\nphase, but an explicit reject verdict is honored.
 EDGES
+  calls=matrix/cody/internal/decide.StackRecord.Chosen,matrix/cody/internal/decide.firstJSONObject,matrix/cody/internal/llm.Client.Chat,matrix/cody/internal/llm.SystemMessage,matrix/cody/internal/llm.UserMessage
+  references=matrix/cody/internal/decide.StackRecord,matrix/cody/internal/decide.StackRecord.Chosen,matrix/cody/internal/decide.antiDefaultSystem,matrix/cody/internal/decide.antiDefaultVerdict,matrix/cody/internal/decide.c,matrix/cody/internal/decide.chosen,matrix/cody/internal/decide.cold,matrix/cody/internal/decide.ctx,matrix/cody/internal/decide.err,matrix/cody/internal/decide.firstJSONObject,matrix/cody/internal/decide.i,matrix/cody/internal/decide.obj,matrix/cody/internal/decide.reason,matrix/cody/internal/decide.rec,matrix/cody/internal/decide.res,matrix/cody/internal/decide.u,matrix/cody/internal/decide.v,matrix/cody/internal/llm.ChatRequest,matrix/cody/internal/llm.Client,matrix/cody/internal/llm.Client.Chat,matrix/cody/internal/llm.Message,matrix/cody/internal/llm.SystemMessage,matrix/cody/internal/llm.UserMessage
+  ^calls=matrix/cody/internal/server.Engine.resolveStackDecision
+  ^references=matrix/cody/internal/server.Engine.resolveStackDecision
   ^defines=matrix/cody/internal/decide/stack.go
 
 NODE id=matrix/cody/internal/decide.StackCandidate kind=type
@@ -212,6 +256,7 @@ NODE id=matrix/cody/internal/decide.StackCandidate kind=type
   doc=StackCandidate is one genuinely divergent option considered in the record.
 EDGES
   contains=matrix/cody/internal/decide.StackCandidate#Deviates,matrix/cody/internal/decide.StackCandidate#DeviationRationale,matrix/cody/internal/decide.StackCandidate#Name,matrix/cody/internal/decide.StackCandidate#Rationale
+  ^references=matrix/cody/internal/decide.StackRecord,matrix/cody/internal/decide.StackRecord.Chosen
   ^defines=matrix/cody/internal/decide/stack.go
 
 NODE id=matrix/cody/internal/decide.StackCandidate#Deviates kind=field
@@ -245,6 +290,7 @@ NODE id=matrix/cody/internal/decide.StackProfile kind=type
   doc=StackProfile is the requirements profile the stack is chosen FOR — the facts\nthat make one stack fit better than another. A pick that ignores this profile\nis exactly the default the anti-default lens rejects.
 EDGES
   contains=matrix/cody/internal/decide.StackProfile#AppClass,matrix/cody/internal/decide.StackProfile#Audience,matrix/cody/internal/decide.StackProfile#DeploymentTarget,matrix/cody/internal/decide.StackProfile#TeamContext
+  ^references=matrix/cody/internal/decide.StackRecord
   ^defines=matrix/cody/internal/decide/stack.go
 
 NODE id=matrix/cody/internal/decide.StackProfile#AppClass kind=field
@@ -277,6 +323,8 @@ NODE id=matrix/cody/internal/decide.StackRecord kind=type
   doc=StackRecord is the durable Stack Decision Record: the requirements profile,\n2-3 divergent candidate stacks with per-candidate rationale citing doctrine,\nand the pick. Authored HOT (N divergent records generated, judged COLD) and\nthen screened by the anti-default lens before the human resolves it.
 EDGES
   contains=matrix/cody/internal/decide.StackRecord#Candidates,matrix/cody/internal/decide.StackRecord#Pick,matrix/cody/internal/decide.StackRecord#Profile,matrix/cody/internal/decide.StackRecord#Rationale,matrix/cody/internal/decide.StackRecord.Chosen,matrix/cody/internal/decide.StackRecord.Validate
+  references=matrix/cody/internal/decide.StackCandidate,matrix/cody/internal/decide.StackProfile
+  ^references=matrix/cody/internal/decide.AuthorStack,matrix/cody/internal/decide.ScreenStackAntiDefault,matrix/cody/internal/decide.StackRecord.Chosen,matrix/cody/internal/decide.StackRecord.Validate,matrix/cody/internal/decide.parseStack,matrix/cody/internal/server.Engine.finalizeStackDecision,matrix/cody/internal/server.stackAddendum,matrix/cody/internal/server.stackFields,matrix/cody/internal/server.stackPrompt,matrix/cody/internal/server.storedStackDecision
   ^defines=matrix/cody/internal/decide/stack.go
 
 NODE id=matrix/cody/internal/decide.StackRecord#Candidates kind=field
@@ -308,7 +356,10 @@ NODE id=matrix/cody/internal/decide.StackRecord.Chosen kind=method
   sig=func (r *StackRecord) Chosen() StackCandidate
   doc=Chosen returns the picked candidate (clamped into range), or a zero value if\nthe record carries no candidates.
 EDGES
+  references=matrix/cody/internal/decide.StackCandidate,matrix/cody/internal/decide.StackRecord,matrix/cody/internal/decide.i,matrix/cody/internal/decide.r
   ^contains=matrix/cody/internal/decide.StackRecord
+  ^calls=matrix/cody/internal/decide.ScreenStackAntiDefault,matrix/cody/internal/server.stackAddendum,matrix/cody/internal/server.stackPrompt
+  ^references=matrix/cody/internal/decide.ScreenStackAntiDefault,matrix/cody/internal/server.stackAddendum,matrix/cody/internal/server.stackPrompt
   ^defines=matrix/cody/internal/decide/stack.go
 
 NODE id=matrix/cody/internal/decide.StackRecord.Validate kind=method
@@ -316,7 +367,10 @@ NODE id=matrix/cody/internal/decide.StackRecord.Validate kind=method
   sig=func (r *StackRecord) Validate() error
   doc=Validate rejects a record that could not have been a real decision: fewer\nthan two divergent candidates is not a choice, and a deviation without stated\nrationale violates doctrine (req 8.5).
 EDGES
+  references=matrix/cody/internal/decide.StackRecord,matrix/cody/internal/decide.c,matrix/cody/internal/decide.i,matrix/cody/internal/decide.r
   ^contains=matrix/cody/internal/decide.StackRecord
+  ^calls=matrix/cody/internal/decide.AuthorStack
+  ^references=matrix/cody/internal/decide.AuthorStack
   ^defines=matrix/cody/internal/decide/stack.go
 
 NODE id=matrix/cody/internal/decide.antiDefaultSystem kind=const
@@ -324,6 +378,7 @@ NODE id=matrix/cody/internal/decide.antiDefaultSystem kind=const
   sig=untyped string
   doc=antiDefaultSystem casts the model as the anti-default adjudicator: the gate\nlens whose entire job is to reject a stack choice that would be identical\nregardless of the requirements (req 8.2).
 EDGES
+  ^references=matrix/cody/internal/decide.ScreenStackAntiDefault
   ^defines=matrix/cody/internal/decide/stack.go
 
 NODE id=matrix/cody/internal/decide.antiDefaultVerdict kind=type
@@ -332,6 +387,7 @@ NODE id=matrix/cody/internal/decide.antiDefaultVerdict kind=type
   doc=antiDefaultVerdict is the gate lens result.
 EDGES
   contains=matrix/cody/internal/decide.antiDefaultVerdict#Accept,matrix/cody/internal/decide.antiDefaultVerdict#Reason
+  ^references=matrix/cody/internal/decide.ScreenDesignAntiDefault,matrix/cody/internal/decide.ScreenStackAntiDefault
   ^defines=matrix/cody/internal/decide/stack.go
 
 NODE id=matrix/cody/internal/decide.antiDefaultVerdict#Accept kind=field
@@ -351,6 +407,7 @@ NODE id=matrix/cody/internal/decide.antiDesignSystem kind=const
   sig=untyped string
   doc=antiDesignSystem casts the model as the anti-AI-default adjudicator: the gate\nlens whose job is to reject a design that is indistinguishable from the\ngeneric template look an AI reaches for by default (req 9.2).
 EDGES
+  ^references=matrix/cody/internal/decide.ScreenDesignAntiDefault
   ^defines=matrix/cody/internal/decide/design.go
 
 NODE id=matrix/cody/internal/decide.bannedTell kind=type
@@ -359,6 +416,7 @@ NODE id=matrix/cody/internal/decide.bannedTell kind=type
   doc=bannedTell is one deterministic AI-default screen: a human-readable name and\nthe predicate that fires it over lowercased text.
 EDGES
   contains=matrix/cody/internal/decide.bannedTell#fires,matrix/cody/internal/decide.bannedTell#name
+  ^references=matrix/cody/internal/decide.bannedTells
   ^defines=matrix/cody/internal/decide/design.go
 
 NODE id=matrix/cody/internal/decide.bannedTell#fires kind=field
@@ -378,12 +436,16 @@ NODE id=matrix/cody/internal/decide.bannedTells kind=var
   sig=[]decide.bannedTell
   doc=bannedTells is the deterministic banned-defaults list (req 9.2): the AI-tells\na Design Language Record may never lean on. Each is a pure text predicate so\nthe screen is fully deterministic — the same record always screens the same.
 EDGES
+  references=matrix/cody/internal/decide.bannedTell,matrix/cody/internal/decide.contains,matrix/cody/internal/decide.hasEmoji,matrix/cody/internal/decide.low
+  ^references=matrix/cody/internal/decide.BannedTellsInText
   ^defines=matrix/cody/internal/decide/design.go
 
 NODE id=matrix/cody/internal/decide.contains kind=func
   digest=b3:24b6806a2aa5da810d28b974ec114fdb8f827e01db7f7a55c06aa901b69e81bb file=cody/internal/decide/design.go range=173:180 lang=go exported=false byte_range=6996:7140
   sig=func contains(low string, subs ...string) bool
 EDGES
+  references=matrix/cody/internal/decide.low,matrix/cody/internal/decide.s,matrix/cody/internal/decide.subs
+  ^references=matrix/cody/internal/decide.bannedTells
   ^defines=matrix/cody/internal/decide/design.go
 
 NODE id=matrix/cody/internal/decide.designCriteria kind=const
@@ -391,6 +453,7 @@ NODE id=matrix/cody/internal/decide.designCriteria kind=const
   sig=untyped string
   doc=designCriteria is what the cold judge weighs candidate design records against.
 EDGES
+  ^references=matrix/cody/internal/decide.AuthorDesign
   ^defines=matrix/cody/internal/decide/design.go
 
 NODE id=matrix/cody/internal/decide.designSystem kind=func
@@ -398,6 +461,9 @@ NODE id=matrix/cody/internal/decide.designSystem kind=func
   sig=func designSystem(doctrine string) string
   doc=designSystem casts the model as the design-language author. The banned-tells\nlist is stated up front so the generation itself resists the generic AI look;\nthe design-quality doctrine is injected so the record can cite it.
 EDGES
+  references=matrix/cody/internal/decide.b,matrix/cody/internal/decide.doctrine
+  ^calls=matrix/cody/internal/decide.AuthorDesign
+  ^references=matrix/cody/internal/decide.AuthorDesign
   ^defines=matrix/cody/internal/decide/design.go
 
 NODE id=matrix/cody/internal/decide.firstJSONObject kind=func
@@ -405,6 +471,9 @@ NODE id=matrix/cody/internal/decide.firstJSONObject kind=func
   sig=func firstJSONObject(s string) string
   doc=firstJSONObject returns the first balanced {...} span in s, string- and\nescape-aware, or "". (Mirrors the planner's tolerant extractor so a judge\nthat wraps its JSON in prose or fences is still read.)
 EDGES
+  references=matrix/cody/internal/decide.c,matrix/cody/internal/decide.depth,matrix/cody/internal/decide.esc,matrix/cody/internal/decide.i,matrix/cody/internal/decide.inStr,matrix/cody/internal/decide.s,matrix/cody/internal/decide.start
+  ^calls=matrix/cody/internal/decide.ScreenDesignAntiDefault,matrix/cody/internal/decide.ScreenStackAntiDefault,matrix/cody/internal/decide.parseDecision,matrix/cody/internal/decide.parseDesign,matrix/cody/internal/decide.parseStack
+  ^references=matrix/cody/internal/decide.ScreenDesignAntiDefault,matrix/cody/internal/decide.ScreenStackAntiDefault,matrix/cody/internal/decide.parseDecision,matrix/cody/internal/decide.parseDesign,matrix/cody/internal/decide.parseStack
   ^defines=matrix/cody/internal/decide/decide.go
 
 NODE id=matrix/cody/internal/decide.hasEmoji kind=func
@@ -412,6 +481,8 @@ NODE id=matrix/cody/internal/decide.hasEmoji kind=func
   sig=func hasEmoji(s string) bool
   doc=hasEmoji reports whether s carries a pictographic emoji rune — the "emoji as\nUI chrome" tell. Covers the common emoji blocks (Misc Symbols, Dingbats,\nSupplemental Symbols, and the SMP pictograph planes) plus a couple of\nfrequently-abused standalone marks.
 EDGES
+  references=matrix/cody/internal/decide.r,matrix/cody/internal/decide.s
+  ^references=matrix/cody/internal/decide.bannedTells
   ^defines=matrix/cody/internal/decide/design.go
 
 NODE id=matrix/cody/internal/decide.judgeSystem kind=const
@@ -419,6 +490,7 @@ NODE id=matrix/cody/internal/decide.judgeSystem kind=const
   sig=untyped string
   doc=judgeSystem casts the model as the decision adjudicator. The anti-default\nlens is explicit: a pick that would be identical regardless of the brief is\nthe failure mode this whole phase exists to prevent.
 EDGES
+  ^references=matrix/cody/internal/decide.Judge
   ^defines=matrix/cody/internal/decide/decide.go
 
 NODE id=matrix/cody/internal/decide.parseDecision kind=func
@@ -426,6 +498,10 @@ NODE id=matrix/cody/internal/decide.parseDecision kind=func
   sig=func parseDecision(raw string) (Decision, bool)
   doc=parseDecision extracts the first balanced JSON object from the judge output\nand unmarshals the verdict.
 EDGES
+  calls=matrix/cody/internal/decide.firstJSONObject
+  references=matrix/cody/internal/decide.Decision,matrix/cody/internal/decide.d,matrix/cody/internal/decide.err,matrix/cody/internal/decide.firstJSONObject,matrix/cody/internal/decide.obj,matrix/cody/internal/decide.raw
+  ^calls=matrix/cody/internal/decide.Judge
+  ^references=matrix/cody/internal/decide.Judge
   ^defines=matrix/cody/internal/decide/decide.go
 
 NODE id=matrix/cody/internal/decide.parseDesign kind=func
@@ -433,6 +509,10 @@ NODE id=matrix/cody/internal/decide.parseDesign kind=func
   sig=func parseDesign(raw string) (*DesignRecord, error)
   doc=parseDesign extracts the first balanced JSON object and unmarshals a record.
 EDGES
+  calls=matrix/cody/internal/decide.firstJSONObject
+  references=matrix/cody/internal/decide.DesignRecord,matrix/cody/internal/decide.err,matrix/cody/internal/decide.firstJSONObject,matrix/cody/internal/decide.obj,matrix/cody/internal/decide.raw,matrix/cody/internal/decide.rec
+  ^calls=matrix/cody/internal/decide.AuthorDesign
+  ^references=matrix/cody/internal/decide.AuthorDesign
   ^defines=matrix/cody/internal/decide/design.go
 
 NODE id=matrix/cody/internal/decide.parseStack kind=func
@@ -440,6 +520,10 @@ NODE id=matrix/cody/internal/decide.parseStack kind=func
   sig=func parseStack(raw string) (*StackRecord, error)
   doc=parseStack extracts the first balanced JSON object and unmarshals a record.
 EDGES
+  calls=matrix/cody/internal/decide.firstJSONObject
+  references=matrix/cody/internal/decide.StackRecord,matrix/cody/internal/decide.err,matrix/cody/internal/decide.firstJSONObject,matrix/cody/internal/decide.obj,matrix/cody/internal/decide.raw,matrix/cody/internal/decide.rec
+  ^calls=matrix/cody/internal/decide.AuthorStack
+  ^references=matrix/cody/internal/decide.AuthorStack
   ^defines=matrix/cody/internal/decide/stack.go
 
 NODE id=matrix/cody/internal/decide.stackCriteria kind=const
@@ -447,6 +531,7 @@ NODE id=matrix/cody/internal/decide.stackCriteria kind=const
   sig=untyped string
   doc=stackCriteria is what the cold judge weighs candidate RECORDS against.
 EDGES
+  ^references=matrix/cody/internal/decide.AuthorStack
   ^defines=matrix/cody/internal/decide/stack.go
 
 NODE id=matrix/cody/internal/decide.stackSystem kind=func
@@ -454,6 +539,9 @@ NODE id=matrix/cody/internal/decide.stackSystem kind=func
   sig=func stackSystem(doctrine string) string
   doc=stackSystem casts the model as the stack decision author. The doctrine is\ninjected so the record can cite it; the anti-default posture is stated up\nfront so the generation itself resists the path of least resistance.
 EDGES
+  references=matrix/cody/internal/decide.b,matrix/cody/internal/decide.doctrine
+  ^calls=matrix/cody/internal/decide.AuthorStack
+  ^references=matrix/cody/internal/decide.AuthorStack
   ^defines=matrix/cody/internal/decide/stack.go
 
 NODE id=matrix/cody/internal/decide/decide.go kind=file

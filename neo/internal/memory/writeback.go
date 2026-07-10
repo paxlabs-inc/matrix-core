@@ -177,17 +177,20 @@ func (p *Pager) RecordOutcome(ctx context.Context, summary string, outcome memor
 // attempt died in a loop-affecting way and forced a respawn — the DURABLE read
 // path of the death journal (the immediate path is the successor's resume
 // prime). It is a failure-outcome observation Event so ordinary recall/Activate
-// surfaces it, letting the agent self-author its world-model of how it fails.
-// Importance 6 sits above a routine outcome (4) so a recurring failure mode
-// stays salient enough to inform future attempts. Best-effort: an empty summary
-// or a write error is swallowed so it can never block a respawn.
+// surfaces it, letting the agent self-author its world-model of how it fails,
+// AND it carries the death-journal tag so the journal is directly readable as a
+// whole via DeathJournal (self-model task 3.1, req.4.2) — the tag is additive,
+// never excluding the record from ordinary recall. Importance 6 sits above a
+// routine outcome (4) so a recurring failure mode stays salient enough to inform
+// future attempts. Best-effort: an empty summary or a write error is swallowed
+// so it can never block a respawn.
 func (p *Pager) RecordLoopDeath(ctx context.Context, summary, intentRef string) (string, error) {
 	summary = strings.TrimSpace(summary)
 	if summary == "" {
 		return "", nil
 	}
 	uri, err := p.cortex.Write(
-		p.head(6),
+		p.deathJournalHead(6),
 		memory.EventData{
 			SchemaVersion: 1,
 			Kind:          memory.EventObservation,
