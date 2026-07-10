@@ -49,6 +49,11 @@ ENV CGO_ENABLED=0 \
 # tree MUST be present or `go build` can't resolve the replace target.
 COPY cortex/go.mod  cortex/go.sum  cortex/
 COPY MCL/go.mod     MCL/go.sum     MCL/
+# codegraph (matrix/codegraph) — neo pulls it in via `replace matrix/codegraph
+# => ../codegraph` (the self-model structural self-graph). It in turn replaces
+# ../cortex and ../MCL (copied above), so its tree MUST be present for
+# `go build ./cmd/neo` to resolve.
+COPY codegraph/go.mod codegraph/go.sum codegraph/
 COPY bridge/go.mod  bridge/go.sum  bridge/
 COPY construct/go.mod              construct/
 COPY executor/go.mod executor/go.sum executor/
@@ -62,6 +67,7 @@ COPY cody/go.mod    cody/go.sum    cody/
 # Now the source.
 COPY cortex/    cortex/
 COPY MCL/       MCL/
+COPY codegraph/ codegraph/
 COPY bridge/    bridge/
 COPY construct/ construct/
 COPY executor/  executor/
@@ -300,6 +306,12 @@ COPY agents/         /opt/matrix/agents/
 # rules/ is Cody's language/standards library; the entrypoint points
 # CODY_RULES_DIR at /opt/matrix/rules and CODY_SKILLS_DIR at /opt/matrix/skills.
 COPY rules/          /opt/matrix/rules/
+# graph/self-model is the GENERATED structural self-graph (the codegraph
+# self-scope output) that neo READS at runtime via cfg.SelfModelGraph — the
+# relative default "graph/self-model", resolved from WORKDIR /opt/matrix. It is
+# committed and anti-drift-gated in CI; bake it so the self-model's structural
+# facet is populated in prod instead of degrading to empty.
+COPY graph/self-model/ /opt/matrix/graph/self-model/
 COPY tools/paxeer    /opt/matrix/tools/paxeer
 COPY tools/websearch /opt/matrix/tools/websearch
 COPY tools/browser   /opt/matrix/tools/browser
