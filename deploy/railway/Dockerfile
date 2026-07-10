@@ -34,7 +34,9 @@
 # (see its header comment for the /opt/matrix + /data map).
 
 # -------- 1. Builder --------
-FROM golang:1.22-bookworm AS builder
+# neo/go.mod requires Go >= 1.25.0 (the other modules are 1.21); the builder
+# base MUST be >= that or `go build ./cmd/neo` fails with GOTOOLCHAIN=local.
+FROM golang:1.25-bookworm AS builder
 
 WORKDIR /src
 ENV CGO_ENABLED=0 \
