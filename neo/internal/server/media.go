@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"time"
 )
@@ -25,12 +26,9 @@ import (
 // data URIs by the bridge, never as public URLs.
 
 // uploadMaxBytes caps a single uploaded file (inputs to edit/animate/
-// transcribe). Generous for audio + short clips; the multipart reader rejects
-// anything larger.
+// transcribe, plus documents the agent reads off the volume). Generous for
+// audio + short clips; the multipart reader rejects anything larger.
 const uploadMaxBytes = 100 << 20 // 100 MiB
-
-// allowedUploadKinds gates uploads to media the tools can actually consume.
-var allowedUploadKinds = map[string]bool{"image": true, "audio": true, "video": true}
 
 // mediaExtMIME backstops mime.TypeByExtension for the formats the tools accept
 // (the stdlib table is sparse on some platforms / for newer audio types).
@@ -93,11 +91,20 @@ func safeMediaName(name string) string {
 	return name
 }
 
+// safeExtRE accepts a lowercase alphanumeric extension of sane length, so the
+// stored filename stays a single clean segment whatever the user uploads.
+var safeExtRE = regexp.MustCompile(`^\.[a-z0-9]{1,10}$`)
+
 // extForUpload picks a safe extension from the uploaded filename, falling back
-// to the declared content type. Returns "" if neither yields a known media ext.
+// to the declared content type, then to ".bin". Media extensions keep their
+// exact form (the tools key off them); any other sane extension passes through
+// so documents (.pdf, .csv, .zip, source files, …) keep their identity.
 func extForUpload(filename, contentType string) string {
 	if ext := strings.ToLower(filepath.Ext(filename)); ext != "" {
 		if _, ok := mediaExtMIME[ext]; ok {
+			return ext
+		}
+		if safeExtRE.MatchString(ext) {
 			return ext
 		}
 	}
@@ -115,7 +122,7 @@ func extForUpload(filename, contentType string) string {
 	case "video/mp4":
 		return ".mp4"
 	}
-	return ""
+	return ".bin"
 }
 
 func mintMediaID() string {
@@ -154,9 +161,18 @@ func (s *Server) handleMedia(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "media not found", http.StatusNotFound)
 		return
 	}
-	w.Header().Set("Content-Type", mimeForName(name))
+	m := mimeForName(name)
+	w.Header().Set("Content-Type", m)
 	// Content is immutable (content-addressed by random id); cache hard.
 	w.Header().Set("Cache-Control", "private, max-age=31536000, immutable")
+	// Non-media uploads (documents, archives, html, …) download instead of
+	// rendering: an inline text/html response on this origin would execute
+	// user-uploaded markup (stored XSS). Images/video/audio stay inline for
+	// the chat surface.
+	if kindForMIME(m) == "file" {
+		w.Header().Set("X-Content-Type-Options", "nosniff")
+		w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%q", name))
+	}
 	http.ServeContent(w, r, name, info.ModTime(), f)
 }
 
@@ -192,16 +208,8 @@ func (s *Server) handleUpload(w http.ResponseWriter, r *http.Request) {
 	}
 
 	ext := extForUpload(header.Filename, header.Header.Get("Content-Type"))
-	if ext == "" {
-		writeJSON(w, http.StatusUnsupportedMediaType, map[string]string{"error": "unsupported file type (images, audio, and video only)"})
-		return
-	}
 	m := mimeForName("x" + ext)
 	kind := kindForMIME(m)
-	if !allowedUploadKinds[kind] {
-		writeJSON(w, http.StatusUnsupportedMediaType, map[string]string{"error": "unsupported file type (images, audio, and video only)"})
-		return
-	}
 
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "cannot prepare media storage"})
