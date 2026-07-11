@@ -72,6 +72,16 @@ func (s *Server) Handler() http.Handler {
 	// and the completion inbox. Neo-owned routes registered before the catch-all
 	// proxy (the daemon has never heard of them).
 	mux.HandleFunc("/automatrix/", s.handleAutomatrix)
+	// Coding workbench environment surface: project-scoped workspace tree /
+	// file read / atomic file write / diff / bounded exec on the VM workspace.
+	// Neo-owned routes (the daemon has never heard of them), registered before
+	// the catch-all proxy; same single-tenant trust posture as /media.
+	mux.HandleFunc("/workspace/", s.handleWorkspace)
+	// Workbench project registry: projects are workspace subdirectories with
+	// a minimal registry (list/create/rename/archive/delete), replacing
+	// codyd's project routes. Neo-owned, before the catch-all proxy.
+	mux.HandleFunc("/projects", s.handleProjects)
+	mux.HandleFunc("/projects/", s.handleProject)
 	// Self-model observability (self-model task 6.2, req.13): a read-only,
 	// side-effect-free inspection surface returning the agent's CURRENT resident
 	// self-summary and its active failure-pattern memories, so a wrong or stale
@@ -148,10 +158,14 @@ func (s *Server) handleDiagSelfModel(w http.ResponseWriter, r *http.Request) {
 	_ = json.NewEncoder(w).Encode(resp)
 }
 
-// chatRequest mirrors the daemon's POST /chat body (only the fields Neo needs).
+// chatRequest mirrors the daemon's POST /chat body (only the fields Neo
+// needs). Project is the workbench project tag: a coding-surface chat names
+// its project so History/Workspace scope per project (additive; absent for
+// dashboard chats).
 type chatRequest struct {
 	Message        string `json:"message"`
 	ConversationID string `json:"conversation_id,omitempty"`
+	Project        string `json:"project,omitempty"`
 }
 
 func (s *Server) handleChat(w http.ResponseWriter, r *http.Request) {
@@ -201,6 +215,9 @@ func (s *Server) handleChat(w http.ResponseWriter, r *http.Request) {
 	sess := s.engine.sessions.get(convID)
 	runID, _ := sess.submit(msg)
 	s.engine.conv.AppendUser(convID, runID, msg)
+	if p := strings.TrimSpace(req.Project); p != "" {
+		s.engine.conv.SetProject(convID, p)
+	}
 	writeJSON(w, http.StatusAccepted, map[string]interface{}{
 		"conversation_id": convID,
 		"kind":            "dispatch",
@@ -247,6 +264,17 @@ func (s *Server) handleConversations(w http.ResponseWriter, r *http.Request) {
 	id := strings.Trim(strings.TrimPrefix(r.URL.Path, "/conversations"), "/")
 	if id == "" {
 		items := s.engine.conv.List()
+		// ?project= scopes the list to one workbench project (server-backed
+		// per-project history; the History page's query).
+		if project := strings.TrimSpace(r.URL.Query().Get("project")); project != "" {
+			filtered := make([]conversation.Summary, 0, len(items))
+			for _, it := range items {
+				if it.Project == project {
+					filtered = append(filtered, it)
+				}
+			}
+			items = filtered
+		}
 		if items == nil {
 			items = []conversation.Summary{}
 		}

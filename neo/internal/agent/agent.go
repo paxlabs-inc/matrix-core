@@ -84,6 +84,17 @@ type ToolEvent struct {
 	// terse placeholder); it rides only this observer event so the surface can
 	// render the browsing filmstrip. Empty for non-browser / non-captured calls.
 	ScreenshotURL string
+
+	// Live file-typing channel (NEO-WORKBENCH, Phase==ToolStream only): while
+	// the model is still GENERATING a write_file call, decoded fragments of the
+	// file content stream out so an open editor renders Neo typing. StreamPath
+	// is the target file, StreamDelta the next decoded content fragment, and
+	// StreamOffset the number of decoded bytes that preceded it (gap/order
+	// detection). Best-effort and bounded: a dropped or capped stream degrades
+	// to the final ToolEnd state, never a corrupted buffer.
+	StreamPath   string
+	StreamDelta  string
+	StreamOffset int
 }
 
 // ToolPhase distinguishes the two observer callbacks for one tool call: a
@@ -94,6 +105,11 @@ type ToolPhase string
 const (
 	ToolStart ToolPhase = "start"
 	ToolEnd   ToolPhase = "end"
+	// ToolStream is the mid-flight live-typing fragment for a file write the
+	// model is still generating (StreamPath/StreamDelta/StreamOffset). It fires
+	// BEFORE the call's ToolStart (the model hasn't finished the call yet) and
+	// never carries Args/Result.
+	ToolStream ToolPhase = "stream"
 )
 
 // ToolObserver receives every tool result as it happens. Optional; nil
@@ -781,7 +797,19 @@ func (a *Agent) Chat(ctx context.Context, userInput string) error {
 		// reasoning → the live thinking channel; content → the answer being
 		// typed. step segments the stream so the client resets per turn.
 		streamedReasoning := false
+		// Live file-typing channel (NEO-WORKBENCH): tool-call argument
+		// fragments stream through the typer, which decodes write_file
+		// path/content incrementally and emits bounded ToolStream observer
+		// events. Fresh per model call — each turn's calls index from 0.
+		typer := newLiveTyper(func(ev ToolEvent) {
+			if a.observer != nil {
+				a.observer(ev)
+			}
+		})
 		onDelta := func(d llm.Delta) {
+			if d.Tool != nil {
+				typer.feed(d.Tool)
+			}
 			if d.Reasoning != "" {
 				streamedReasoning = true
 				a.out.Delta(step, "reasoning", a.nameReasoning(d.Reasoning))

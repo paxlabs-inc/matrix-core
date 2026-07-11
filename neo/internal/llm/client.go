@@ -320,6 +320,12 @@ func aggregateStream(body []byte) (wireRespMessage, string, *Usage, error) {
 // per ~handful of tokens rather than one per token).
 const deltaFlushChars = 18
 
+// toolDeltaFlushChars is the coalescing threshold for streaming tool-call
+// argument fragments (the live file-typing channel): chunkier than the chat
+// cadence so a large file write stays a bounded event stream rather than one
+// event per token.
+const toolDeltaFlushChars = 256
+
 // aggregateStreamReader reconstructs a single assistant turn from an
 // OpenAI-style SSE chat-completions stream read incrementally off r (the
 // response shape Together requires for some models; Fireworks + the gateway
@@ -341,6 +347,9 @@ func aggregateStreamReader(r io.Reader, onDelta func(Delta)) (wireRespMessage, s
 	type aggCall struct {
 		id, typ, name string
 		args          strings.Builder
+		// argsEmitted is the live-streaming cursor: how many raw argument bytes
+		// have already been delivered via onDelta for this call.
+		argsEmitted int
 	}
 	calls := map[int]*aggCall{}
 	var order []int
@@ -367,12 +376,27 @@ func aggregateStreamReader(r io.Reader, onDelta func(Delta)) (wireRespMessage, s
 				rFrag = cand
 			}
 		}
-		if cFrag == "" && rFrag == "" {
-			return
+		if cFrag != "" || rFrag != "" {
+			onDelta(Delta{Content: cFrag, Reasoning: rFrag})
+			contentEmitted += len(cFrag)
+			reasoningEmitted += len(rFrag)
 		}
-		onDelta(Delta{Content: cFrag, Reasoning: rFrag})
-		contentEmitted += len(cFrag)
-		reasoningEmitted += len(rFrag)
+		// Tool-call argument fragments (the live file-typing channel): one
+		// Delta per call with pending bytes, in arrival order. Held until the
+		// function name is known so the consumer can classify the call.
+		for _, idx := range order {
+			ac := calls[idx]
+			if ac.name == "" {
+				continue
+			}
+			raw := ac.args.String()
+			pending := raw[ac.argsEmitted:]
+			if pending == "" || (!force && len(pending) < toolDeltaFlushChars) {
+				continue
+			}
+			onDelta(Delta{Tool: &ToolCallDelta{Index: idx, ID: ac.id, Name: ac.name, Args: pending}})
+			ac.argsEmitted = len(raw)
+		}
 	}
 
 	sc := bufio.NewScanner(r)

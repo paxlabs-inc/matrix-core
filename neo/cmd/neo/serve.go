@@ -27,6 +27,8 @@ import (
 	"matrix/neo/internal/config"
 	"matrix/neo/internal/conversation"
 	"matrix/neo/internal/memory"
+	"matrix/neo/internal/preview"
+	sbx "matrix/neo/internal/sandbox"
 	"matrix/neo/internal/server"
 	"matrix/neo/internal/task"
 	"matrix/neo/internal/tools"
@@ -170,6 +172,33 @@ func runServe(args []string) {
 	// so they survive reload / suspend / redeploy and are discoverable on next
 	// open. Derives /data/automatrix; NEO_AUTOMATRIX_DIR wins.
 	automatrixDir := automatrixlog.Dir(os.Getenv("NEO_AUTOMATRIX_DIR"), cfg.CortexRoot)
+	// Coding workbench workspace: the same persisted root the fs/exec tools
+	// mutate (/workspace in prod). NEO_WORKSPACE_DIR wins; absent any root the
+	// workbench surface stays disabled.
+	workspaceDir := server.WorkspaceRoot(os.Getenv("NEO_WORKSPACE_DIR"))
+	// On-demand Railway sandbox previews (dev servers never run on this VM).
+	// Enabled only when the Railway credentials AND the router coordinates +
+	// this user's id are all present; otherwise the workbench shows the honest
+	// "no preview" state. NEO_USER_ID falls back to CODY_USER_ID so existing
+	// per-user deploy env keeps working.
+	var sb sbx.Client
+	if tok := os.Getenv("RAILWAY_API_TOKEN"); tok != "" {
+		sb = sbx.New(sbx.Config{
+			Token:         tok,
+			ProjectID:     os.Getenv("RAILWAY_PROJECT_ID"),
+			EnvironmentID: os.Getenv("RAILWAY_ENVIRONMENT_ID"),
+		})
+	}
+	previewUserID := os.Getenv("NEO_USER_ID")
+	if previewUserID == "" {
+		previewUserID = os.Getenv("CODY_USER_ID")
+	}
+	previewTTL := time.Duration(0)
+	if v := os.Getenv("NEO_PREVIEW_TTL"); v != "" {
+		if d, perr := time.ParseDuration(v); perr == nil {
+			previewTTL = d
+		}
+	}
 
 	engine := server.NewEngine(server.EngineOptions{
 		Config:                cfg,
@@ -185,8 +214,17 @@ func runServe(args []string) {
 		AutomatrixDir:         automatrixDir,
 		AutomatrixSettingsDir: automatrixsettings.Dir(os.Getenv("NEO_AUTOMATRIX_DIR"), cfg.CortexRoot),
 		MediaDir:              mediaPath,
-		BackendURL:            backendURL,
-		BackendToken:          os.Getenv("NEO_DAEMON_TOKEN"),
+		WorkspaceDir:          workspaceDir,
+		Sandbox:               sb,
+		PreviewCfg: preview.Config{
+			UserID:            previewUserID,
+			RouterInternalURL: os.Getenv("ROUTER_INTERNAL_URL"),
+			RouterToken:       os.Getenv("ROUTER_PREVIEW_TOKEN"),
+			TTL:               previewTTL,
+			Image:             os.Getenv("NEO_PREVIEW_IMAGE"),
+		},
+		BackendURL:   backendURL,
+		BackendToken: os.Getenv("NEO_DAEMON_TOKEN"),
 	})
 	if convDir != "" {
 		fmt.Printf("  history: %s\n", convDir)
@@ -203,6 +241,9 @@ func runServe(args []string) {
 	if mediaPath != "" {
 		fmt.Printf("  media: %s (served at /media)\n", mediaPath)
 	}
+	if workspaceDir != "" {
+		fmt.Printf("  workspace: %s (served at /workspace)\n", workspaceDir)
+	}
 
 	// Autonomous Automatrix execution (task 4.1): the wake handler hands a
 	// picked non-financial opportunity to this runner, which marks it
@@ -211,6 +252,9 @@ func runServe(args []string) {
 	// completion gate as any state-touching turn. (The per-user opt-in + Chronos
 	// alarm lifecycle — the governor — is wired by task 6.1.)
 	engine.SetAutomatrixRunner(engine.RunAutomatrixOpportunity)
+
+	// Idle sandbox previews are torn down on a TTL (req 7.4).
+	engine.StartPreviewReaper(ctx)
 
 	srv, err := server.New(engine, backendURL)
 	if err != nil {

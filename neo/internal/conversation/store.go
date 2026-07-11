@@ -76,13 +76,17 @@ type Record struct {
 	Updated        time.Time `json:"updated"`
 }
 
-// Summary is the compact list shape for GET /conversations.
+// Summary is the compact list shape for GET /conversations. Project is the
+// workbench project tag ("" for untagged dashboard threads) — additive
+// omitempty, so the pre-workbench wire shape is unchanged for untagged
+// conversations.
 type Summary struct {
 	ConversationID string    `json:"conversation_id"`
 	Title          string    `json:"title"`
 	Preview        string    `json:"preview"`
 	TurnCount      int       `json:"turn_count"`
 	Updated        time.Time `json:"updated"`
+	Project        string    `json:"project,omitempty"`
 }
 
 // Store is Neo's durable conversation memory. One mutex guards all access;
@@ -293,8 +297,8 @@ func (s *Store) rollIfOverCapLocked(convID string) {
 		return
 	}
 	overflow := len(turns) - cap
-	roll := turns[:overflow]     // oldest, move to archive
-	keep := turns[overflow:]     // newest, stay hot
+	roll := turns[:overflow] // oldest, move to archive
+	keep := turns[overflow:] // newest, stay hot
 
 	archivePath := s.archivePathLocked(convID)
 	if archivePath == "" {
@@ -329,6 +333,77 @@ func buildJSONL(turns []Turn) []byte {
 		buf.WriteByte('\n')
 	}
 	return buf.Bytes()
+}
+
+// convMeta is the per-conversation sidecar (<convID>.meta.json): durable
+// metadata that is not a turn. Today it carries only the workbench project
+// tag.
+type convMeta struct {
+	Project string `json:"project,omitempty"`
+}
+
+func (s *Store) metaPathLocked(convID string) string {
+	if !s.Enabled() || convID == "" {
+		return ""
+	}
+	return filepath.Join(s.dir, convID+".meta.json")
+}
+
+func (s *Store) loadMetaLocked(convID string) convMeta {
+	var m convMeta
+	path := s.metaPathLocked(convID)
+	if path == "" {
+		return m
+	}
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return m
+	}
+	_ = json.Unmarshal(data, &m)
+	return m
+}
+
+// SetProject tags a conversation with a workbench project id (idempotent;
+// atomic tmp+rename sidecar write). Best-effort like Append: IO errors are
+// logged, never fatal.
+func (s *Store) SetProject(convID, projectID string) {
+	if !s.Enabled() || convID == "" || strings.TrimSpace(projectID) == "" {
+		return
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	m := s.loadMetaLocked(convID)
+	if m.Project == projectID {
+		return
+	}
+	m.Project = strings.TrimSpace(projectID)
+	if err := os.MkdirAll(s.dir, 0o755); err != nil {
+		fmt.Fprintf(os.Stderr, "neo/conversation: mkdir %s: %v\n", s.dir, err)
+		return
+	}
+	data, err := json.Marshal(m)
+	if err != nil {
+		return
+	}
+	path := s.metaPathLocked(convID)
+	tmp := path + ".tmp"
+	if err := os.WriteFile(tmp, append(data, '\n'), 0o644); err != nil {
+		fmt.Fprintf(os.Stderr, "neo/conversation: write %s: %v\n", tmp, err)
+		return
+	}
+	if err := os.Rename(tmp, path); err != nil {
+		fmt.Fprintf(os.Stderr, "neo/conversation: rename %s: %v\n", path, err)
+	}
+}
+
+// Project returns a conversation's workbench project tag ("" untagged).
+func (s *Store) Project(convID string) string {
+	if !s.Enabled() || convID == "" {
+		return ""
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.loadMetaLocked(convID).Project
 }
 
 // AppendUser / AppendAssistant are thin helpers for the two turn kinds.
@@ -441,6 +516,9 @@ func (s *Store) List() []Summary {
 		}
 		convID := ""
 		switch {
+		case strings.HasSuffix(name, ".meta.json"):
+			// Metadata sidecars are read via their conversation, never listed.
+			continue
 		case strings.HasSuffix(name, ".jsonl"):
 			convID = strings.TrimSuffix(name, ".jsonl")
 		case strings.HasSuffix(name, ".archive.jsonl"):
@@ -477,6 +555,7 @@ func (s *Store) List() []Summary {
 			Preview:        preview(rec),
 			TurnCount:      len(all),
 			Updated:        rec.Updated,
+			Project:        s.loadMetaLocked(convID).Project,
 		})
 	}
 	sort.Slice(out, func(i, j int) bool { return out[i].Updated.After(out[j].Updated) })

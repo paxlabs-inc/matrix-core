@@ -225,13 +225,32 @@ type ChatRequest struct {
 }
 
 // Delta is one coalesced streaming fragment of an in-flight assistant turn.
-// At most one of the two channels is non-empty per call.
+// At most one of the channels is non-empty per call.
 type Delta struct {
 	// Content is a fragment of the visible answer text being generated.
 	Content string
 	// Reasoning is a fragment of the model's chain-of-thought (reasoning
 	// channel). Never part of the answer.
 	Reasoning string
+	// Tool is a fragment of a STREAMING tool call's argument JSON — the live
+	// "Neo is typing a file" channel. It carries the raw bytes exactly as the
+	// model generates them (append-only per Index); the consumer decodes them
+	// incrementally. The folded ToolCalls on the returned message stay the
+	// authoritative complete arguments.
+	Tool *ToolCallDelta
+}
+
+// ToolCallDelta is one incremental fragment of an in-flight tool call.
+type ToolCallDelta struct {
+	// Index is the call's position in the assistant turn (stable across
+	// fragments of the same call).
+	Index int
+	// ID and Name carry the call id / function name as soon as the stream has
+	// revealed them (repeated verbatim on every fragment thereafter).
+	ID   string
+	Name string
+	// Args is the next raw argument-JSON fragment (append-only).
+	Args string
 }
 
 // ChatResult is the model's single assistant turn plus metadata.

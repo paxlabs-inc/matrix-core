@@ -35,6 +35,8 @@ import (
 	"matrix/neo/internal/llm"
 	"matrix/neo/internal/memory"
 	"matrix/neo/internal/notify"
+	"matrix/neo/internal/preview"
+	"matrix/neo/internal/sandbox"
 	"matrix/neo/internal/task"
 	"matrix/neo/internal/tools"
 	"matrix/neo/internal/trace"
@@ -44,22 +46,33 @@ import (
 // surface, the one cortex pager, the background consolidator) and hands each
 // conversation its own agent loop over them.
 type Engine struct {
-	cfg          config.Config
-	main         *llm.Client
-	cheap        *llm.Client
+	cfg   config.Config
+	main  *llm.Client
+	cheap *llm.Client
 	// subMain is the main-capability model with EXTENDED REASONING OFF, used
 	// for background sub-agents (spawn_subagents). Only the user-facing Neo loop
 	// (e.main) and the core MCL pipeline think; background/headless agents run
 	// without thinking to cut latency + token burn. nil falls back to e.main.
-	subMain      *llm.Client
-	tools        *tools.Manager
-	pager        *memory.Pager
-	consolidator agent.Consolidator
-	conv         *conversation.Store // durable chat-thread history (per conversation_id)
-	tasks        *task.Store            // durable task-supervision ledger (survives restart/suspend)
-	trace        *trace.Store           // durable per-run workspace timeline ("Neo's Computer"); sidecar, never cortex
-	automatrix   *automatrixlog.Store   // durable Automatrix completion inbox (in-app surprise results); sidecar, never cortex
-	mediaDir     string                 // machine-volume dir for generated + uploaded media ("" disables)
+	subMain       *llm.Client
+	tools         *tools.Manager
+	pager         *memory.Pager
+	consolidator  agent.Consolidator
+	conv          *conversation.Store  // durable chat-thread history (per conversation_id)
+	tasks         *task.Store          // durable task-supervision ledger (survives restart/suspend)
+	trace         *trace.Store         // durable per-run workspace timeline ("Neo's Computer"); sidecar, never cortex
+	automatrix    *automatrixlog.Store // durable Automatrix completion inbox (in-app surprise results); sidecar, never cortex
+	mediaDir      string               // machine-volume dir for generated + uploaded media ("" disables)
+	workspaceRoot string               // VM workspace root; projects are its subdirectories ("" disables the workbench surface)
+
+	// projects is the workbench project registry (lazily built over
+	// workspaceRoot; nil when the workbench surface is disabled).
+	projectsOnce sync.Once
+	projects     *projectRegistry
+
+	// preview is the on-demand Railway-sandbox preview controller (nil when
+	// unconfigured — the route answers 503 and the workbench renders the
+	// honest empty state).
+	preview *preview.Manager
 
 	backendURL   string // co-located MCL daemon (core_execute + reverse proxy)
 	backendToken string // optional bearer for the daemon
@@ -160,12 +173,15 @@ type EngineOptions struct {
 	Tools                 *tools.Manager
 	Pager                 *memory.Pager
 	Consolidator          agent.Consolidator
-	ConversationDir       string // durable conversation store dir ("" disables persistence)
-	TaskDir               string                 // durable task-ledger dir ("" disables; reaper needs it to resume after restart)
-	TraceDir              string                 // durable workspace-trace dir ("" disables; the reopen-survives-reload store, F3)
-	AutomatrixDir         string                 // durable Automatrix completion-inbox dir ("" disables; the in-app surprise-results store)
-	AutomatrixSettingsDir string                 // durable Automatrix opt-in settings dir ("" = in-memory only; wiring the production governor)
-	MediaDir              string                 // machine-volume media dir ("" disables image/video/audio I/O)
+	ConversationDir       string         // durable conversation store dir ("" disables persistence)
+	TaskDir               string         // durable task-ledger dir ("" disables; reaper needs it to resume after restart)
+	TraceDir              string         // durable workspace-trace dir ("" disables; the reopen-survives-reload store, F3)
+	AutomatrixDir         string         // durable Automatrix completion-inbox dir ("" disables; the in-app surprise-results store)
+	AutomatrixSettingsDir string         // durable Automatrix opt-in settings dir ("" = in-memory only; wiring the production governor)
+	MediaDir              string         // machine-volume media dir ("" disables image/video/audio I/O)
+	WorkspaceDir          string         // VM workspace root for the coding workbench ("" disables /workspace and /projects)
+	Sandbox               sandbox.Client // Railway sandbox client for previews (nil disables /workspace/preview)
+	PreviewCfg            preview.Config // preview controller config (user id, router door, TTL, image, cap)
 	BackendURL            string
 	BackendToken          string
 }
@@ -174,24 +190,25 @@ type EngineOptions struct {
 // shared tool manager.
 func NewEngine(o EngineOptions) *Engine {
 	e := &Engine{
-		cfg:          o.Config,
-		main:         o.Main,
-		cheap:        o.Cheap,
-		subMain:      o.SubMain,
-		tools:        o.Tools,
-		pager:        o.Pager,
-		consolidator: o.Consolidator,
-		conv:         conversation.Open(o.ConversationDir),
-		tasks:        task.Open(o.TaskDir),
-		trace:        trace.Open(o.TraceDir),
-		automatrix:   automatrixlog.Open(o.AutomatrixDir),
-		mediaDir:     strings.TrimRight(o.MediaDir, "/"),
-		backendURL:   strings.TrimRight(o.BackendURL, "/"),
-		backendToken: o.BackendToken,
-		warmStop:     make(chan struct{}),
-		broker:       newBroker(),
-		runs:         map[string]*run{},
-		gateClaims:   map[string]bool{},
+		cfg:           o.Config,
+		main:          o.Main,
+		cheap:         o.Cheap,
+		subMain:       o.SubMain,
+		tools:         o.Tools,
+		pager:         o.Pager,
+		consolidator:  o.Consolidator,
+		conv:          conversation.Open(o.ConversationDir),
+		tasks:         task.Open(o.TaskDir),
+		trace:         trace.Open(o.TraceDir),
+		automatrix:    automatrixlog.Open(o.AutomatrixDir),
+		mediaDir:      strings.TrimRight(o.MediaDir, "/"),
+		workspaceRoot: strings.TrimRight(o.WorkspaceDir, "/"),
+		backendURL:    strings.TrimRight(o.BackendURL, "/"),
+		backendToken:  o.BackendToken,
+		warmStop:      make(chan struct{}),
+		broker:        newBroker(),
+		runs:          map[string]*run{},
+		gateClaims:    map[string]bool{},
 		// Automatrix jitter/skip RNG (task 3.3): seeded from wall-clock so each
 		// process reschedules on its own unpredictable cadence; tests reseed it
 		// (and pin automatrixSkipProb) for determinism.
@@ -210,6 +227,12 @@ func NewEngine(o EngineOptions) *Engine {
 		}),
 	}
 	e.sessions = newSessionRegistry(e)
+	// On-demand sandbox previews (NEO-WORKBENCH req 7): built only when a
+	// sandbox client is configured; events flow through publishPreview onto
+	// the conversation's run topic (live + durable trace).
+	if o.Sandbox != nil {
+		e.preview = preview.New(o.Sandbox, e.publishPreview, o.PreviewCfg)
+	}
 	// Fetch the onboarding profile from the daemon so it can be injected
 	// into every agent's stable system prompt prefix (req 2.4/2.5).
 	// Best-effort: a missing daemon or absent profile falls back to the
@@ -714,6 +737,13 @@ var traceWorkspaceTypes = map[string]bool{
 	"subagent.note":           true,
 	"subagent.status":         true,
 	"swarm.completed":         true,
+	// Sandbox preview lifecycle (NEO-WORKBENCH req 7.2): durable so reopen
+	// rebuilds the LAST honest preview state. The live-typing tool.delta
+	// channel is deliberately NOT here — deltas are ephemeral by design.
+	"preview.pending": true,
+	"preview.ready":   true,
+	"preview.failed":  true,
+	"preview.expired": true,
 }
 
 // recordTrace is the broker tap (F3): it persists the workspace-relevant slice
@@ -818,6 +848,23 @@ func (e *Engine) latestRunForConv(convID string) string {
 // keep their dedicated rich events (cards / media grid) on completion.
 func (e *Engine) surfaceTool(r *run, ev agent.ToolEvent) {
 	if r == nil {
+		return
+	}
+	// Live file-typing fragment (NEO-WORKBENCH): a mid-generation write_file
+	// content delta. Published as its own ephemeral event type — deliberately
+	// NOT in traceWorkspaceTypes, so the durable trace replays only final
+	// states (the deltas are a live-view garnish; disk + the final tool.step
+	// are the authoritative complete state).
+	if ev.Phase == agent.ToolStream {
+		e.broker.publish(r.id, "tool.delta", "neo", map[string]interface{}{
+			"id":              ev.ID,
+			"tool":            ev.Name,
+			"path":            ev.StreamPath,
+			"delta":           ev.StreamDelta,
+			"offset":          ev.StreamOffset,
+			"intent_id":       r.id,
+			"conversation_id": r.convID,
+		})
 		return
 	}
 	// The animated workspace step (start paints "running"; end fills it in).
