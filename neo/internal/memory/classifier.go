@@ -72,11 +72,53 @@ var financialPhrases = []string{
 // financialSymbols are currency/value glyphs whose mere presence signals money.
 const financialSymbols = "$€£¥₿"
 
-// ClassifyFinancial reports whether the opportunity summary contains a
-// deterministic financial / on-chain signal. It is the reusable keyword + symbol
-// re-check that backs EligibleForAutonomy; it never consults the extraction
-// model's flag, so it is a pure, side-effect-free function of the summary text.
+// analysisVerbs are task-framing verbs whose deliverable is words, models, or
+// designs — never a value movement. A summary whose imperative frame opens with
+// one of these is ANALYSIS work about a (possibly financial) topic, not an
+// action that spends: "Model the PAX subscription revenue…", "Evaluate a burn
+// mechanism…", "Sketch out the tier structure…". The financial boundary guards
+// against tasks that MOVE value, not tasks that DISCUSS it — an analysis task
+// on the restricted autonomous surface structurally cannot reach the signing
+// path regardless of its topic, so gating it on topic keywords only defeats
+// the feature (everything the user works on mentions money).
+var analysisVerbs = map[string]struct{}{
+	"model": {}, "evaluate": {}, "analyze": {}, "analyse": {}, "assess": {},
+	"design": {}, "sketch": {}, "draft": {}, "map": {}, "outline": {},
+	"research": {}, "investigate": {}, "explore": {}, "study": {}, "review": {},
+	"summarize": {}, "summarise": {}, "document": {}, "compare": {},
+	"write": {}, "plan": {}, "estimate": {}, "calculate": {}, "compute": {},
+	"benchmark": {}, "simulate": {}, "prototype": {}, "spec": {}, "propose": {},
+	"brainstorm": {}, "diagram": {}, "chart": {}, "visualize": {}, "visualise": {},
+	"help": {}, "prepare": {}, "explain": {}, "describe": {}, "list": {},
+}
+
+// analysisFramed reports whether the summary's imperative frame is an
+// analysis/authoring verb — i.e. the task's deliverable is a document, model,
+// or design rather than an action. Only the LEADING token frames the task
+// ("Model the PAX price volatility…", "Help Andrew design…" via "help"): a
+// list word appearing later is usually a noun ("Transfer the design files")
+// and must not soften the fail-closed scan.
+func analysisFramed(s string) bool {
+	toks := financialTokens2(strings.ToLower(s))
+	if len(toks) == 0 {
+		return false
+	}
+	_, ok := analysisVerbs[toks[0]]
+	return ok
+}
+
+// ClassifyFinancial reports whether the opportunity summary describes work with
+// a deterministic financial / on-chain ACTION signal. It is the reusable
+// keyword + symbol re-check that backs EligibleForAutonomy; it never consults
+// the extraction model's flag, so it is a pure, side-effect-free function of
+// the summary text. An analysis-framed task (see analysisFramed) is never
+// financial: its deliverable is words about money, not a movement of it —
+// keyword topics like "price"/"subscription"/"token" in a modeling task must
+// not disqualify autonomous work the restricted surface already makes safe.
 func ClassifyFinancial(summary string) bool {
+	if analysisFramed(summary) {
+		return false
+	}
 	s := strings.ToLower(summary)
 	if strings.ContainsAny(s, financialSymbols) {
 		return true
@@ -105,16 +147,24 @@ func financialTokens2(s string) []string {
 	})
 }
 
-// EligibleForAutonomy is the authoritative, fail-closed verdict on whether an
-// opportunity may be run UNPROMPTED by an autonomous Automatrix wake. It is
-// non-financial work only: it returns true ONLY when the extraction model did
-// NOT flag the item financial AND the deterministic ClassifyFinancial re-check
-// finds no financial signal in the summary. Any doubt from either source —
-// model flag set, a financial keyword, a phrase, or a currency symbol — yields
-// false (not eligible), so the system fails closed. A false result does not
-// drop the opportunity: it is still captured and surfaced for explicit user
-// approval, just never auto-run.
+// EligibleForAutonomy is the authoritative verdict on whether an opportunity
+// may be run UNPROMPTED by an autonomous Automatrix wake. The boundary it
+// enforces is value MOVEMENT, not money as a topic (the only hard line is that
+// autonomous work never causes monetary damage — and the restricted autonomous
+// surface structurally lacks every value-moving tool regardless of this
+// verdict):
+//
+//   - an analysis-framed task (deliverable = a document/model/design) is
+//     always eligible — even when the extraction model flagged it financial,
+//     because a topic-level flag on analysis work is exactly the false
+//     positive that stalls the whole feature;
+//   - otherwise the verdict fails CLOSED: the model's financial flag or any
+//     deterministic action signal (keyword, phrase, currency symbol) makes it
+//     ineligible, and the item is surfaced for explicit user approval instead.
 func EligibleForAutonomy(summary string, modelFinancial bool) bool {
+	if analysisFramed(summary) {
+		return true
+	}
 	if modelFinancial {
 		return false
 	}

@@ -16,6 +16,7 @@ import "matrix/neo/internal/llm"
 // accidentally dispatch a proactive run on the full, money-capable surface.
 func NewAutomatrix(o Options) *Agent {
 	o.RestrictTools = true
+	o.Automatrix = true
 	return New(o)
 }
 

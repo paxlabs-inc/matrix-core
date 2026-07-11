@@ -40,6 +40,16 @@ func TestClassifyFinancialKeywords(t *testing.T) {
 	}
 
 	nonFinancial := []string{
+		// Analysis-framed tasks about money topics are NOT financial: the
+		// deliverable is a document/model/design, no value moves. These are the
+		// real captured opportunities the old topic-keyword scan mis-flagged as
+		// "Spends money", stalling the autonomous queue.
+		"Model the PAX-only subscription revenue vs USD-denominated compute cost exposure at different PAX price points",
+		"Model PAX price volatility scenarios for the Matrix subscription business (upside at $50, downside at $2)",
+		"Evaluate a burn or lock mechanism on PAX collected from subscriptions",
+		"Sketch out the Matrix tier structure using USDL pricing base with PAX discount incentive",
+		"Map the tier feature-gating strategy to a billing smart contract design",
+		"Help Andrew design LayerX market microstructure: batch auction engine and role-based staking",
 		"Draft the quarterly update doc you mentioned",
 		"Summarize the API rate-limit thread",
 		"Book the dentist appointment for next Tuesday",
@@ -70,6 +80,12 @@ func TestEligibleForAutonomyFailClosed(t *testing.T) {
 		{"model misses it, symbol catches it", "Reserve the venue for about $500", false, false},
 		{"both agree financial", "Swap PAX for USDC", true, false},
 		{"spec keyword transfer fails closed even for files", "Transfer the slides to the new deck", false, false},
+		// Analysis-framed work is eligible even when the extraction model
+		// topic-flagged it financial — the deliverable is words, and the
+		// restricted surface structurally cannot move value regardless.
+		{"analysis-framed beats a model topic flag", "Model the PAX subscription revenue exposure at different price points", true, true},
+		{"analysis-framed beats keyword topics", "Evaluate a burn or lock mechanism on PAX collected from subscriptions", false, true},
+		{"action-framed money task still fails closed", "Swap idle PAX into USDC while rates are good", true, false},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {

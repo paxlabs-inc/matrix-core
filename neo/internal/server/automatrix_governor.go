@@ -284,22 +284,45 @@ func (c *mcpAlarmController) resolveTool(suffix string) (string, bool) {
 }
 
 // parseAlarmID extracts the created alarm's id from the alarm_set result. The
-// Chronos CreateAlarmResponse is {"id":...,"next_fire_at":...,"status":...};
-// MCP tool text is typically that JSON (possibly wrapped). Best-effort: parse
-// the first JSON object carrying an "id".
+// chronos MCP bridge (tools/chronos/chronos.mjs envelopeResult) returns the
+// chronosd envelope {"ok":true,"data":{"id":...,"next_fire_at":...,"status":...}}
+// as the tool text, so the id normally lives one level down at data.id; a bare
+// {"id":...} object is also accepted. Best-effort: parse the first JSON object
+// carrying an "id", descending through "data"/"alarm" wrappers.
 func parseAlarmID(out string) string {
 	out = strings.TrimSpace(out)
 	if out == "" {
 		return ""
 	}
-	// Direct object.
 	var obj map[string]json.RawMessage
-	if json.Unmarshal([]byte(out), &obj) == nil {
-		if id := stringField(obj, "id"); id != "" {
-			return id
+	if json.Unmarshal([]byte(out), &obj) != nil {
+		return ""
+	}
+	return alarmIDFromObject(obj, 0)
+}
+
+// alarmIDFromObject finds an "id"/"alarm_id" string in obj, unwrapping the
+// common envelope keys ("data", "alarm") up to a shallow depth.
+func alarmIDFromObject(obj map[string]json.RawMessage, depth int) string {
+	if id := stringField(obj, "id"); id != "" {
+		return id
+	}
+	if id := stringField(obj, "alarm_id"); id != "" {
+		return id
+	}
+	if depth >= 2 {
+		return ""
+	}
+	for _, key := range []string{"data", "alarm"} {
+		raw, ok := obj[key]
+		if !ok {
+			continue
 		}
-		if id := stringField(obj, "alarm_id"); id != "" {
-			return id
+		var inner map[string]json.RawMessage
+		if json.Unmarshal(raw, &inner) == nil {
+			if id := alarmIDFromObject(inner, depth+1); id != "" {
+				return id
+			}
 		}
 	}
 	return ""

@@ -163,6 +163,15 @@ func decodeOpportunityGoal(g memory.GoalData, uri string) OpportunitySpec {
 		}
 		break
 	}
+	// Live eligibility heal: items captured under the old topic-keyword
+	// classifier carry a stored eligible_autonomous=false for pure analysis
+	// work ("Model the PAX price…" tripped on "price"). Re-derive with the
+	// current action-based classifier so a stale stored verdict can only be
+	// RELAXED, never tightened — a stored-eligible item stays eligible, and an
+	// action-shaped summary still fails closed through ClassifyFinancial.
+	if !spec.EligibleAutonomous && !ClassifyFinancial(spec.Summary) {
+		spec.EligibleAutonomous = true
+	}
 	return spec
 }
 

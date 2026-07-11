@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"matrix/neo/internal/conversation"
 	"matrix/neo/internal/memory"
 	"matrix/neo/internal/notify"
 	"matrix/neo/internal/task"
@@ -96,7 +97,9 @@ func (e *Engine) dispatchAutomatrixRun(opp memory.OpportunitySpec) {
 	objective := buildAutomatrixObjective(opp)
 
 	e.automatrixInflight.Add(1)
+	e.automatrixWG.Add(1)
 	go func() {
+		defer e.automatrixWG.Done()
 		defer e.automatrixInflight.Add(-1)
 		// Decoupled from the wake request (req 5.1): a fresh wall-clock-bounded
 		// context on context.Background, the SAME ceiling a normal supervised
@@ -186,6 +189,24 @@ func (e *Engine) announceAutomatrixCompletion(convID, opportunitySummary, result
 	})
 }
 
+// lastAssistantText returns the most recent persisted assistant turn of a
+// conversation — the final answer an approve-path run produced (its quiet
+// sibling, the autonomous runner, captures the answer via automatrixReporter
+// instead). Empty when the durable store is disabled or the thread has no
+// assistant turn yet.
+func (e *Engine) lastAssistantText(convID string) string {
+	if !e.conv.Enabled() {
+		return ""
+	}
+	turns := e.conv.Recent(convID, conversation.DefaultRecallTurns)
+	for i := len(turns) - 1; i >= 0; i-- {
+		if turns[i].Role == "assistant" {
+			return turns[i].Text
+		}
+	}
+	return ""
+}
+
 // conciseAutomatrixResult condenses the run's produced answer into a short,
 // result-not-protocol summary for the completion record + ping: it takes the
 // first paragraph, collapses whitespace, and caps the length. No protocol jargon
@@ -235,7 +256,7 @@ func buildAutomatrixObjective(opp memory.OpportunitySpec) string {
 		b.WriteString("\n\nWhy this helps: ")
 		b.WriteString(r)
 	}
-	b.WriteString("\n\nThis is proactive work you took on for the user during their downtime — they did not ask for it this turn. Complete it end-to-end to a high standard using the relevant context from this conversation, and finish only when it genuinely meets the bar.")
+	b.WriteString("\n\nThis is proactive work you took on for the user during their downtime — they did not ask for it this turn and they are not present. Complete it end-to-end to a high standard using the relevant context from this conversation, and finish only when it genuinely meets the bar. Deliver the result as one self-contained written answer they will read later: no screen surfaces, no questions back, no trailing offers.")
 	return b.String()
 }
 

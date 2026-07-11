@@ -101,6 +101,13 @@ type run struct {
 
 	cancel  context.CancelFunc // cancels this turn's ctx (barge-in / explicit stop)
 	stopped atomic.Bool        // set when interrupted, so drive closes quietly
+
+	// onFinish, when set, is invoked exactly once by drive with the run's
+	// terminal task status, after the durable ledger Finish. Used by the
+	// Automatrix approve path to settle the opportunity that dispatched this
+	// run (done -> completion record; failed -> re-pend). Best-effort observer;
+	// it must not block.
+	onFinish func(task.Status)
 }
 
 type gateAnswer struct {
@@ -297,13 +304,22 @@ func firstUserText(turns []conversation.Turn) string {
 // and the dispatch are atomic under actMu so two near-simultaneous messages
 // never both spawn a run (the second folds into the first).
 func (s *session) submit(message string) (runID string, fresh bool) {
+	return s.submitWith(message, nil)
+}
+
+// submitWith is submit with a terminal observer: when the message dispatches a
+// FRESH run, onFinish is attached to it (invoked once with the run's terminal
+// task status). When the message is queued into an already-live run, no hook is
+// attached (the live run belongs to other work) and fresh=false tells the
+// caller so.
+func (s *session) submitWith(message string, onFinish func(task.Status)) (runID string, fresh bool) {
 	s.actMu.Lock()
 	defer s.actMu.Unlock()
 	if r := s.active; r != nil && !r.stopped.Load() {
 		s.enqueueInput(message)
 		return r.id, false
 	}
-	r := s.dispatchLocked(message, false)
+	r := s.dispatchLocked(message, false, onFinish)
 	return r.id, true
 }
 
@@ -321,14 +337,14 @@ func (s *session) startResume(objective string) *run {
 func (s *session) dispatch(message string, resume bool) *run {
 	s.actMu.Lock()
 	defer s.actMu.Unlock()
-	return s.dispatchLocked(message, resume)
+	return s.dispatchLocked(message, resume, nil)
 }
 
 // dispatchLocked is dispatch's body; the caller MUST hold actMu. It records the
 // run as the conversation's active run synchronously (so submit's active check
 // is race-free), creates the SSE topic before returning, then drives the turn.
-func (s *session) dispatchLocked(message string, resume bool) *run {
-	r := &run{id: synthRunID(message), convID: s.id, sess: s}
+func (s *session) dispatchLocked(message string, resume bool, onFinish func(task.Status)) *run {
+	r := &run{id: synthRunID(message), convID: s.id, sess: s, onFinish: onFinish}
 	// Mint the task context HERE, before the drive goroutine exists: r.cancel
 	// is then published under actMu together with `active`, so interrupt()
 	// (which reads the run via actMu) always sees a set cancel — no window
@@ -404,6 +420,9 @@ func (s *session) drive(ctx context.Context, r *run, message string, resume bool
 		}
 		fmt.Fprintf(os.Stderr, "neo/drive: conv=%s run=%s recovered panic: %v\n", s.id, r.id, p)
 		s.engine.tasks.Finish(s.id, r.id, task.StatusCeiling)
+		if r.onFinish != nil {
+			r.onFinish(task.StatusCeiling)
+		}
 		if !r.closed {
 			text := "Something went wrong on my end in the middle of this — I had to stop. Nothing you did; tell me to keep going and I'll pick it back up."
 			s.engine.broker.publish(r.id, "message.complete", "neo", map[string]interface{}{"status": "completed"})
@@ -437,6 +456,9 @@ func (s *session) drive(ctx context.Context, r *run, message string, resume bool
 		// mid-task (F5) so they don't leak into a later, unrelated turn.
 		s.drainInput()
 		s.engine.tasks.Finish(s.id, r.id, task.StatusInterrupted)
+		if r.onFinish != nil {
+			r.onFinish(task.StatusInterrupted)
+		}
 		if !r.closed {
 			// A stop is a normal, user-driven outcome — close it with a calm
 			// final turn, never a bare terminal. Without a closing turn the
@@ -453,6 +475,9 @@ func (s *session) drive(ctx context.Context, r *run, message string, resume bool
 	}
 
 	s.engine.tasks.Finish(s.id, r.id, status)
+	if r.onFinish != nil {
+		r.onFinish(status)
+	}
 	// Defensive backstop: the supervisor always emits a terminal (Say on a
 	// genuine completion, or deliverCeiling at the ceiling), so r.closed is
 	// normally true here. Synthesize one only if somehow it isn't, so the
@@ -892,7 +917,7 @@ func (s *session) clearActive(r *run) {
 	// is the one exception: the user superseded the task, so queued mid-task
 	// messages are deliberately abandoned (they belonged to the old intent).
 	if leftover := s.drainInput(); len(leftover) > 0 && !r.stopped.Load() && s.engine != nil {
-		s.dispatchLocked(strings.Join(leftover, "\n\n"), false)
+		s.dispatchLocked(strings.Join(leftover, "\n\n"), false, nil)
 	}
 }
 

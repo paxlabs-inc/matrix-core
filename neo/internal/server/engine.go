@@ -116,6 +116,11 @@ type Engine struct {
 	// proactive tasks at once for a user, and never competes with the run it
 	// already started. Bumped around the supervised dispatch goroutine.
 	automatrixInflight atomic.Int32
+	// automatrixWG tracks the same dispatch goroutines for shutdown: Close
+	// waits (bounded) so an in-flight settle never touches the pager after the
+	// caller has closed it. A run that outlives the bound simply stays
+	// in_progress and is resumed at next boot (ResumeInProgressAutomatrix).
+	automatrixWG sync.WaitGroup
 
 	// automatrixNotifier is the out-of-app completion ping (task 5.3). It is
 	// built from config in NewEngine (ntfy default + optional Apprise fan-out;
@@ -136,6 +141,13 @@ type Engine struct {
 	// cleared WarmOnOpen flag makes Warm a no-op.
 	warmOnce sync.Once
 	warmed   atomic.Bool
+	// warmStop + warmWG bound the warm goroutine's lifetime to the engine's:
+	// Close closes warmStop (cancelling an in-flight warm read) and waits on
+	// warmWG, so a caller that closes the pager right after Close can never
+	// race the warm's Retrieve.
+	warmStop     chan struct{}
+	warmStopOnce sync.Once
+	warmWG       sync.WaitGroup
 }
 
 // EngineOptions configures NewEngine. Main + Tools are required; the rest are
@@ -176,6 +188,7 @@ func NewEngine(o EngineOptions) *Engine {
 		mediaDir:     strings.TrimRight(o.MediaDir, "/"),
 		backendURL:   strings.TrimRight(o.BackendURL, "/"),
 		backendToken: o.BackendToken,
+		warmStop:     make(chan struct{}),
 		broker:       newBroker(),
 		runs:         map[string]*run{},
 		gateClaims:   map[string]bool{},
@@ -279,7 +292,30 @@ func (e *Engine) Close() {
 	if e == nil {
 		return
 	}
+	// Stop the warm-on-open goroutine and wait it out BEFORE returning, so a
+	// caller that closes the pager next never races an in-flight warm read.
+	e.warmStopOnce.Do(func() { close(e.warmStop) })
+	e.warmWG.Wait()
+	// Drain in-flight autonomous Automatrix dispatch goroutines (bounded):
+	// their terminal settle writes through the pager, which the caller closes
+	// right after this. A run that outlives the bound stays durably
+	// in_progress and resumes at next boot.
+	waitBounded(&e.automatrixWG, 30*time.Second)
 	e.trace.Close()
+}
+
+// waitBounded waits for wg up to d, returning early when it drains. Used only
+// on the shutdown path, where a hung background goroutine must not wedge Close.
+func waitBounded(wg *sync.WaitGroup, d time.Duration) {
+	done := make(chan struct{})
+	go func() {
+		wg.Wait()
+		close(done)
+	}()
+	select {
+	case <-done:
+	case <-time.After(d):
+	}
 }
 
 // warmScope is the sentinel conversation id used only for the warm-on-open
@@ -306,9 +342,26 @@ func (e *Engine) Warm() {
 		if e.pager == nil || !e.pager.HasEmbedder() {
 			return
 		}
+		e.warmWG.Add(1)
 		go func() {
+			defer e.warmWG.Done()
 			ctx, cancel := context.WithTimeout(context.Background(), warmTimeout)
 			defer cancel()
+			// Abort the warm the moment the engine closes: Close waits on
+			// warmWG before returning, so the pager is never closed underneath
+			// a warm read (the shutdown race the -race suite caught).
+			go func() {
+				select {
+				case <-e.warmStop:
+					cancel()
+				case <-ctx.Done():
+				}
+			}()
+			select {
+			case <-e.warmStop:
+				return
+			default:
+			}
 			e.warmBody(ctx)
 		}()
 	})

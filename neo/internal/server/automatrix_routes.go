@@ -31,11 +31,13 @@ package server
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strings"
 
 	"matrix/neo/internal/automatrixsettings"
 	"matrix/neo/internal/memory"
+	"matrix/neo/internal/task"
 )
 
 // automatrixControl is the slice of the production governor the control surface
@@ -244,14 +246,28 @@ func (s *Server) handleAutomatrixApprove(w http.ResponseWriter, r *http.Request)
 	// objective as a normal (gated) user turn, and persist the user turn stamped
 	// with the run id. This is the existing task-dispatch path — no new money
 	// path is invented; a value-moving step still crosses core_execute under the
-	// user's inline approval.
+	// user's inline approval. The terminal observer settles the opportunity when
+	// the run finishes: a genuine completion marks it done and writes the
+	// durable completion record (so it shows in the Done inbox, req 7.4); a
+	// failure re-pends it; a deliberate user stop returns it to the queue
+	// untouched. Without this the approved item was parked at "scheduled"
+	// forever and the finished task never appeared anywhere.
 	sess := s.engine.sessions.get(convID)
-	runID, _ := sess.submit(objective)
+	engine, oppCopy := s.engine, opp
+	runID, fresh := sess.submitWith(objective, func(status task.Status) {
+		engine.settleApprovedOpportunity(oppCopy, convID, status)
+	})
 	s.engine.conv.AppendUser(convID, runID, objective)
 	// The item is now being handled by a user-initiated run; take it out of the
 	// pending management queue.
 	if err := s.engine.pager.SetOpportunityStatus(r.Context(), uri, memory.OpportunityScheduled); err != nil {
 		logAutomatrixGovernorErr("approve set status", err)
+	}
+	if !fresh {
+		// The objective was queued into an already-live run: no terminal
+		// observer rides it, so settle bookkeeping can't run. Log so a stuck
+		// "scheduled" item is diagnosable rather than silent.
+		logAutomatrixGovernorErr("approve", fmt.Errorf("objective queued into live run %s; opportunity %s will not auto-settle", runID, uri))
 	}
 	writeJSON(w, http.StatusAccepted, map[string]interface{}{
 		"ok":              true,
@@ -278,13 +294,46 @@ func (s *Server) findQueuedOpportunity(ctx context.Context, uri string) (memory.
 }
 
 // buildApprovalObjective composes the user-facing task objective for an
-// approved opportunity from its summary + grounding rationale.
+// approved opportunity from its summary + grounding rationale. The framing
+// tells the agent the user approved this from Settings and is likely away —
+// the runs Andrew reviewed ended with "Want me to…?" questions and "on your
+// screen" narration nobody was there to see.
 func buildApprovalObjective(o memory.OpportunitySpec) string {
 	obj := strings.TrimSpace(o.Summary)
 	if r := strings.TrimSpace(o.Rationale); r != "" {
 		obj += "\n\n(Context: " + r + ")"
 	}
+	obj += "\n\nThe user approved this task from their Settings queue — it is background work, and they are probably not watching it run. Complete it end-to-end and deliver ONE self-contained written result they can read later: lead with the outcome, include the concrete artifacts inline, do not present anything as being live on their screen, and do not end with questions or offers — nobody is there to answer them."
 	return obj
+}
+
+// settleApprovedOpportunity records the terminal outcome of an approved
+// (user-initiated, gated) opportunity run — the sibling of
+// settleAutomatrixOpportunity for the approve path. A genuine completion marks
+// the opportunity done and writes the durable completion record + ping (the
+// Done inbox); an interrupted run returns it to pending untouched (the user
+// stopped it on purpose — no attempts penalty); any other terminal re-pends it
+// with attempts++ (bounded, dismissed at the ceiling).
+func (e *Engine) settleApprovedOpportunity(opp memory.OpportunitySpec, convID string, status task.Status) {
+	if e.pager == nil || strings.TrimSpace(opp.URI) == "" {
+		return
+	}
+	ctx := context.Background()
+	switch status {
+	case task.StatusDone:
+		if err := e.pager.SetOpportunityStatus(ctx, opp.URI, memory.OpportunityDone); err != nil {
+			logAutomatrixGovernorErr("approve settle done", err)
+		}
+		e.announceAutomatrixCompletion(convID, opp.Summary, e.lastAssistantText(convID))
+	case task.StatusInterrupted:
+		if err := e.pager.SetOpportunityStatus(ctx, opp.URI, memory.OpportunityPending); err != nil {
+			logAutomatrixGovernorErr("approve settle interrupted", err)
+		}
+	default:
+		if _, err := e.pager.FailOpportunityAttempt(ctx, opp.URI, automatrixMaxAttempts); err != nil {
+			logAutomatrixGovernorErr("approve settle failed attempt", err)
+		}
+	}
 }
 
 // inboxResponse is the GET /automatrix/inbox wire shape — the completion inbox

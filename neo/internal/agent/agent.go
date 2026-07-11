@@ -208,6 +208,15 @@ type Agent struct {
 	// step instead of the message cancelling the run. nil on the CLI path.
 	inbox func() []string
 
+	// automatrix marks an autonomous Automatrix run (Options.Automatrix): the
+	// user is away, the run must be self-contained, and no screen surface or
+	// question back to the user is appropriate.
+	automatrix bool
+	// advertised, when non-nil (restricted agents), is the exact advertised
+	// function-name set; dispatch rejects any name outside it so synthetic
+	// tools the Manager would otherwise serve stay structurally unreachable.
+	advertised map[string]struct{}
+
 	// lastFailureClass records the shared FailureClass of the most recent
 	// classified tool FAILURE this turn (delegate.ClassNone when none). It lets
 	// the task supervisor read the SAME classification the dispatch ladder used
@@ -286,6 +295,12 @@ type Options struct {
 	// full one. Set for sub-agents so money stays with the parent and a
 	// sub-agent can't spawn its own sub-agents.
 	RestrictTools bool
+	// Automatrix marks an autonomous Automatrix run: the user is AWAY and did
+	// not initiate this turn. The system prompt gains an autonomous-mode
+	// section (work self-contained, no screen surfaces, no questions back) and
+	// tool calls are held to the advertised restricted surface. Set by
+	// NewAutomatrix, never directly.
+	Automatrix bool
 
 	// Inbox, when set, returns user messages queued while a turn is in flight
 	// (mid-task messages sent without interrupting). The loop folds them into
@@ -315,6 +330,7 @@ func New(o Options) *Agent {
 		selfModel:     strings.TrimSpace(o.SelfModel),
 		convID:        strings.TrimSpace(o.ConvID),
 		inbox:         o.Inbox,
+		automatrix:    o.Automatrix,
 	}
 	if a.tools != nil {
 		if o.RestrictTools {
@@ -329,6 +345,16 @@ func New(o Options) *Agent {
 	// It is synthetic (intercepted in the loop, not routed through the Manager),
 	// so it never enters the manifest tool-bijection check.
 	a.schemas = append(a.schemas, readOverflowSchema())
+	// A restricted agent is held to its ADVERTISED surface at dispatch time
+	// too: the Manager's dispatch switch handles synthetic tools (e.g.
+	// construct_render) whether or not they were advertised, so a model that
+	// guesses an unadvertised name would otherwise reach past the restriction.
+	if o.RestrictTools {
+		a.advertised = make(map[string]struct{}, len(a.schemas))
+		for _, s := range a.schemas {
+			a.advertised[s.Function.Name] = struct{}{}
+		}
+	}
 	if o.Pager != nil {
 		a.topic = newTopicTracker(o.Pager.Embedder())
 	}
@@ -1618,6 +1644,15 @@ func (a *Agent) dispatchWithRetry(ctx context.Context, name string, args map[str
 	}
 	if a.tools == nil {
 		return "no tools are available in this session.", "", true, delegate.ClassNone
+	}
+	// Restricted agents are held to their advertised surface: the Manager's
+	// dispatch switch serves synthetic tools regardless of advertisement, so an
+	// unadvertised name must be rejected HERE for the restriction to be
+	// structural rather than advisory.
+	if a.advertised != nil {
+		if _, ok := a.advertised[name]; !ok {
+			return fmt.Sprintf("tool %q is not available in this session — use only the tools you were given.", name), "", true, delegate.ClassNone
+		}
 	}
 	var lastErr error
 	for attempt := 0; attempt <= a.cfg.MaxRetriesPerTool; attempt++ {
