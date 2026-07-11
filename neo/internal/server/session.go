@@ -229,9 +229,36 @@ func (s *session) rebuildAgent() {
 	// starting blank.
 	if e.conv.Enabled() {
 		if turns := e.conv.Recent(s.id, conversation.DefaultRecallTurns); len(turns) > 0 {
+			// On a supervisor respawn, the durable history already contains the
+			// CURRENT run's own persisted narration ("Still on it…", status
+			// lines, partial answers). Seeding the successor with its own
+			// narration primes it to re-derive — and re-emit — the same turns
+			// verbatim on the same run id with fresh seqs, which the client
+			// cannot dedup (it keys on intent_id:seq). Drop this run's
+			// assistant turns from the seed; the user's turns (including
+			// mid-run messages) are kept so nothing the user said is lost.
+			turns = dropRunNarration(turns, s.cur)
 			s.agent.Seed(seedMessages(turns), firstUserText(turns))
 		}
 	}
+}
+
+// dropRunNarration filters a respawn seed: assistant turns persisted by the
+// run r itself are removed (they are this task's own in-flight narration, not
+// prior-thread history), while every user turn and every turn from earlier
+// runs is kept. A nil run (first mint, no task in flight) filters nothing.
+func dropRunNarration(turns []conversation.Turn, r *run) []conversation.Turn {
+	if r == nil {
+		return turns
+	}
+	out := make([]conversation.Turn, 0, len(turns))
+	for _, t := range turns {
+		if t.Role == "assistant" && t.IntentID == r.id {
+			continue
+		}
+		out = append(out, t)
+	}
+	return out
 }
 
 // seedMessages converts durable turns into transcript messages (oldest-first),
@@ -302,6 +329,16 @@ func (s *session) dispatch(message string, resume bool) *run {
 // is race-free), creates the SSE topic before returning, then drives the turn.
 func (s *session) dispatchLocked(message string, resume bool) *run {
 	r := &run{id: synthRunID(message), convID: s.id, sess: s}
+	// Mint the task context HERE, before the drive goroutine exists: r.cancel
+	// is then published under actMu together with `active`, so interrupt()
+	// (which reads the run via actMu) always sees a set cancel — no window
+	// where a barge-in races drive's own late assignment.
+	wall := s.engine.cfg.TaskMaxWall
+	if wall <= 0 {
+		wall = 20 * time.Minute
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), wall)
+	r.cancel = cancel
 	s.active = r
 	s.engine.registerRun(r)
 	// Create the SSE topic NOW, before returning the dispatch (and before the
@@ -311,7 +348,7 @@ func (s *session) dispatchLocked(message string, resume bool) *run {
 	// daemon's empty stream. The replay buffer then backfills any events
 	// published between this point and the client's connect.
 	s.engine.broker.ensure(r.id)
-	go s.drive(r, message, resume)
+	go s.drive(ctx, r, message, resume)
 	return r
 }
 
@@ -346,20 +383,36 @@ func (s *session) drainInput() []string {
 // task, respawning across model errors / tool failures / stalls, until the
 // objective is met to standard or a hard ceiling is hit. (The Task Durability
 // Rule.)
-func (s *session) drive(r *run, message string, resume bool) {
+func (s *session) drive(ctx context.Context, r *run, message string, resume bool) {
 	defer s.engine.unregisterRun(r.id)
 
-	wall := s.engine.cfg.TaskMaxWall
-	if wall <= 0 {
-		wall = 20 * time.Minute
-	}
-	// The cancel is registered as THIS run's stop handle BEFORE the turn lock,
-	// so an explicit POST /intents/{id}/stop can cancel it even while it holds
-	// the turn lock. `active` was already published synchronously in dispatch.
-	ctx, cancel := context.WithTimeout(context.Background(), wall)
-	defer cancel()
-	r.cancel = cancel
+	// The wall-clock-bounded ctx and r.cancel were minted in dispatchLocked
+	// (published under actMu together with `active`), so an explicit
+	// POST /intents/{id}/stop can cancel this run from its very first moment
+	// with no unsynchronized window. This defer releases the timer.
+	defer r.cancel()
 	defer s.clearActive(r)
+
+	// Panic backstop: a panic anywhere in the supervised turn must never
+	// strand the client on a stream with no terminal (an open SSE topic the
+	// UI waits on forever). Recover, mark the task honestly, and emit a real
+	// closing turn + terminal so the stream always settles deterministically.
+	defer func() {
+		p := recover()
+		if p == nil {
+			return
+		}
+		fmt.Fprintf(os.Stderr, "neo/drive: conv=%s run=%s recovered panic: %v\n", s.id, r.id, p)
+		s.engine.tasks.Finish(s.id, r.id, task.StatusCeiling)
+		if !r.closed {
+			text := "Something went wrong on my end in the middle of this — I had to stop. Nothing you did; tell me to keep going and I'll pick it back up."
+			s.engine.broker.publish(r.id, "message.complete", "neo", map[string]interface{}{"status": "completed"})
+			s.engine.broker.publish(r.id, "chat.assistant", "neo", s.chatFields(r, text, true))
+			s.engine.conv.AppendAssistant(s.id, r.id, text)
+			r.closed = true
+		}
+		s.engine.broker.closeRun(r.id)
+	}()
 
 	s.mu.Lock()
 	s.cur = r
@@ -385,7 +438,14 @@ func (s *session) drive(r *run, message string, resume bool) {
 		s.drainInput()
 		s.engine.tasks.Finish(s.id, r.id, task.StatusInterrupted)
 		if !r.closed {
+			// A stop is a normal, user-driven outcome — close it with a calm
+			// final turn, never a bare terminal. Without a closing turn the
+			// client's grace window expires into the alarming "task stopped,
+			// try again" copy for something the user did on purpose.
+			text := "Stopped. Say the word and I'll pick this back up where it left off."
 			s.engine.broker.publish(r.id, "message.complete", "neo", map[string]interface{}{"status": "interrupted"})
+			s.engine.broker.publish(r.id, "chat.assistant", "neo", s.chatFields(r, text, true))
+			s.engine.conv.AppendAssistant(s.id, r.id, text)
 			r.closed = true
 		}
 		s.engine.broker.closeRun(r.id)
@@ -405,15 +465,14 @@ func (s *session) drive(r *run, message string, resume bool) {
 	}
 	s.engine.broker.closeRun(r.id)
 
-	// F5: a mid-task message can land in the tiny window AFTER the agent's
-	// final inbox drain but BEFORE this run closed — the agent's loop has
-	// already ended, so it will never see it. Deliver it as a fresh
-	// continuation run rather than stranding it. The deferred clearActive(r)
-	// still points at r, so this dispatch atomically takes over as the new
-	// active run (clearActive then no-ops).
-	if leftover := s.drainInput(); len(leftover) > 0 {
-		s.dispatch(strings.Join(leftover, "\n\n"), false)
-	}
+	// F5: a mid-task message can land AFTER the agent's final inbox drain but
+	// BEFORE this run is fully retired. The leftover sweep lives in the
+	// deferred clearActive(r): it runs under actMu — the same lock submit
+	// holds to route a message — so a message either lands in the inbox
+	// before the sweep (and is re-dispatched as a continuation run) or
+	// arrives after `active` is cleared (and dispatches fresh). There is no
+	// window in which a message can be enqueued onto a run that will never
+	// drain it.
 }
 
 // superviseTask keeps at least one agent on the task until it is genuinely
@@ -820,10 +879,21 @@ func (s *session) setActive(r *run) {
 
 func (s *session) clearActive(r *run) {
 	s.actMu.Lock()
-	if s.active == r {
-		s.active = nil
+	defer s.actMu.Unlock()
+	if s.active != r {
+		return
 	}
-	s.actMu.Unlock()
+	s.active = nil
+	// Finishing-window sweep (F5): submit enqueues to the inbox under this
+	// same actMu whenever `active` was still r, so any message that raced the
+	// run's shutdown is guaranteed to be visible here. Re-dispatch it as a
+	// continuation run instead of stranding it — a message the client already
+	// acked with a 202 must never silently vanish. An explicitly stopped run
+	// is the one exception: the user superseded the task, so queued mid-task
+	// messages are deliberately abandoned (they belonged to the old intent).
+	if leftover := s.drainInput(); len(leftover) > 0 && !r.stopped.Load() && s.engine != nil {
+		s.dispatchLocked(strings.Join(leftover, "\n\n"), false)
+	}
 }
 
 // interruptActive stops the latest dispatched turn (if any). Returns its id, or

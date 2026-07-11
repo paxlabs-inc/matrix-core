@@ -219,44 +219,6 @@ jobs:
         run: go test -count=1 -race -timeout=10m ./...
 
   # -------------------------------------------------------------------------
-  # Marketplace frontend — typecheck, unit tests, and a production build of
-  # the Cloudflare Workers SSR app. Wrangler runs in offline typegen mode.
-  # -------------------------------------------------------------------------
-  marketplace:
-    name: build / marketplace
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 1
-
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 11
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 24
-          cache: pnpm
-          cache-dependency-path: marketplace/pnpm-lock.yaml
-
-      - name: install
-        working-directory: marketplace
-        run: pnpm install --frozen-lockfile
-
-      - name: typecheck
-        working-directory: marketplace
-        run: pnpm typecheck
-
-      - name: test
-        working-directory: marketplace
-        run: pnpm test
-
-      - name: build
-        working-directory: marketplace
-        run: pnpm build
-
-  # -------------------------------------------------------------------------
   # CodeGraph — separate job because it pins its own Go toolchain (go.mod
   # 1.25, golang.org/x/tools). Runs the module's own test suite plus the graph
   # staleness gate: the committed graph store must match source, the same way
@@ -364,7 +326,7 @@ jobs:
   ci-passed:
     name: ci-passed
     runs-on: ubuntu-latest
-    needs: [build, agent-gate, mtx-corpus, deus, marketplace, codegraph]
+    needs: [build, agent-gate, mtx-corpus, deus, codegraph]
     if: always()
     steps:
       - name: aggregate

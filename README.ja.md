@@ -1,191 +1,197 @@
-<!--
-parent:
-  order: false
--->
 <p align="center">
-  <img src="https://zezsqawedbikldiedlse.supabase.co/storage/v1/object/public/cdn.deus.paxeer.app/bcd6e442-788a-4377-b605-42ce2896d32e.png" alt="Paxeer Network" width="1200">
-</p>
-<p align="center">
-<p align="center">
-  <img src="https://img.shields.io/badge/Project-Matrix-FFFFFF?style=for-the-badge&labelColor=004CED" alt="Project: Matrix" />
-  <img src="https://img.shields.io/badge/Built_by-PaxLabs-004CED?style=for-the-badge&labelColor=000000" alt="Built by PaxLabs" />
-  <img src="https://img.shields.io/badge/License-Matrix--Protocol-004CED?style=for-the-badge&labelColor=000000" alt="License: Matrix-Protocol" />
-  <img src="https://img.shields.io/badge/Status-Active-00C896?style=for-the-badge&labelColor=000000" alt="Status: Active" />
+  <img src="https://cdn.redixusercontent.ocfstudio.com/matrix.png" alt="Matrix" />
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Chain-HyperPaxeer-004CED?style=for-the-badge&labelColor=000000" alt="Chain: HyperPaxeer" />
-  <img src="https://img.shields.io/badge/Chain_ID-125-FFFFFF?style=for-the-badge&labelColor=004CED" alt="Chain ID: 125" />
-  <img src="https://img.shields.io/badge/Block_Time-400ms-00C896?style=for-the-badge&labelColor=000000" alt="Block Time: 400ms" />
-  <img src="https://img.shields.io/badge/Finality-400ms-00C896?style=for-the-badge&labelColor=000000" alt="Finality: 400ms" />
+  <a href="https://labs.paxeer.app"><img src="https://img.shields.io/badge/Project-Matrix-0A0A0A?style=flat-square&logo=data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNiIgaGVpZ2h0PSIxNiIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IiNmZmZmZmYiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIj48Y2lyY2xlIGN4PSIxMiIgY3k9IjEyIiByPSIxMCIvPjxwYXRoIGQ9Ik0xMiAxNnYtNCIvPjxwYXRoIGQ9Ik0xMiA4aC4wMSIvPjwvc3ZnPg==&logoColor=white" alt="Project: Matrix" /></a>
+  <a href="https://labs.paxeer.app"><img src="https://img.shields.io/badge/Built%20by-PaxLabs-0A0A0A?style=flat-square&logoColor=white" alt="Built by PaxLabs" /></a>
+  <a href="LICENSE.md"><img src="https://img.shields.io/badge/License-Matrix--Protocol-0A0A0A?style=flat-square" alt="License: Matrix-Protocol" /></a>
+  <a href="#"><img src="https://img.shields.io/badge/Status-Active-0A0A0A?style=flat-square" alt="Status: Active" /></a>
+  <a href="https://paxeer.app"><img src="https://img.shields.io/badge/Layer-Paxeer%20Network-0A0A0A?style=flat-square" alt="Paxeer Network" /></a>
 </p>
 
 <p align="center">
-  <a href="https://github.com/paxlabs-inc/matrix-core/actions/workflows/ci.yml"><img src="https://github.com/paxlabs-inc/matrix-core/actions/workflows/ci.yml/badge.svg?branch=main" alt="ci" /></a>
-  <a href="https://github.com/paxlabs-inc/matrix-core/actions/workflows/lint.yml"><img src="https://github.com/paxlabs-inc/matrix-core/actions/workflows/lint.yml/badge.svg?branch=main" alt="lint" /></a>
-  <a href="https://github.com/paxlabs-inc/matrix-core/actions/workflows/docker.yml"><img src="https://github.com/paxlabs-inc/matrix-core/actions/workflows/docker.yml/badge.svg?branch=main" alt="docker" /></a>
-  <img src="https://img.shields.io/badge/Go-1.22-004CED?logo=go&logoColor=white" alt="Go 1.22" />
-  <img src="https://img.shields.io/badge/Modules-9-004CED" alt="9 Go modules" />
+  <a href="https://github.com/paxlabs-inc/matrix-core/stargazers"><img src="https://img.shields.io/github/stars/paxlabs-inc/matrix-core?style=flat-square&color=0A0A0A" alt="GitHub Stars" /></a>
+  <a href="https://github.com/paxlabs-inc/matrix-core/network/members"><img src="https://img.shields.io/github/forks/paxlabs-inc/matrix-core?style=flat-square&color=0A0A0A" alt="GitHub Forks" /></a>
+  <a href="https://docs.matrixmcl.com"><img src="https://img.shields.io/badge/Docs-docs.matrixmcl.com-0A0A0A?style=flat-square" alt="Documentation" /></a>
+</p>
+
+<p align="center">
+  <img src="https://img.shields.io/badge/Go-38.7%25-00ADD8?style=flat-square&logo=go&logoColor=white" alt="Go" />
+  <img src="https://img.shields.io/badge/Solidity-26.3%25-363636?style=flat-square&logo=solidity&logoColor=white" alt="Solidity" />
+  <img src="https://img.shields.io/badge/JavaScript-16.9%25-F7DF1E?style=flat-square&logo=javascript&logoColor=black" alt="JavaScript" />
+  <img src="https://img.shields.io/badge/TypeScript-11.1%25-3178C6?style=flat-square&logo=typescript&logoColor=white" alt="TypeScript" />
+  <img src="https://img.shields.io/badge/HTML-5.5%25-E34F26?style=flat-square&logo=html5&logoColor=white" alt="HTML" />
+  <img src="https://img.shields.io/badge/Python-0.5%25-3776AB?style=flat-square&logo=python&logoColor=white" alt="Python" />
+</p>
+
+---
+
+<h2 align="center">LLM のためのエージェントフレームワークと認知レイヤー。</h2>
+
+<p align="center">
+  Matrix は LLM をチャットの先へ進め、デジタル領域全体で実際の実行へと接続します <br/>
+  そして、人間と機械が正確さを要求される仕事を協調して行えるようにします。
 </p>
 
 ---
 
 ## Matrix とは？
 
-Matrix は [Paxeer Network](https://paxeer.app) の上に位置する認知層・UX 層です。
-非開発者からの自然言語リクエストを、型付きで検査可能・修正可能な
-**Intent IR（意図中間表現）** に変換し、エージェントが実際に実行できるようにします。
-その際、今日「非開発者 ↔ エージェント」のワークフローを破綻させる
-4 つの典型的な失敗モードを回避します。
+Matrix は、Paxeer Network の Machine Economy ビジョンのために構築された認知レイヤーです。言語モデルを会話の枠を超えて実際の実行へ拡張し、エージェント間のオンチェーン金融調整、高リスクタスクの実行、そして重要かつ機密性の高い業務の安全な処理を可能にします。
 
-1. **プロンプトの脆さ** — わずかな言い換えで出力が大きく変わってしまう。
-2. **意図の消失** — 自然言語が複数ステップの実行を通じて保持されない。
-3. **共有オントロジーの欠如** — どの実体を指しているかでユーザーとエージェントが食い違う。
-4. **構造化された訂正手段の不在** — ドリフトが起きるとユーザーは一から書き直すしかない。
+多くのエージェントスタックがこの種の仕事で破綻する理由は、自然言語を最下層まで持ち込んでしまうからです。人間の言語は情報漏れのあるチャネルです。私たちが生物学的に推論し、知覚し、近似する方法は、生成するすべての文に染み出します。チャットでは問題ありません。しかし、エージェントが資金を移動し、不可逆な書き込みを行い、あるいは機密情報を保持している場合には問題になります。Matrix は、人間の推論や人間の言語が持つ曖昧さを、曖昧であってはならない部分に到達させることなく、人間と機械がまさにその種の仕事を協調して行うための方法を提供します。
 
-Matrix は、共有されたメモリ + 実行基盤の上に **2 本のエージェントレール** を提供します。
+これは 3 つのレイヤーによって実現されます。
 
-- **Neo** — *デフォルト*の会話型ツール呼び出しエージェント。馴染みやすく堅牢で、
-  可逆な作業（shell・コード・fetch・web）には完全に許容的です。金銭が絡む、
-  あるいは不可逆な作業は厳格レールに委譲します。
-- **MCL パイプライン** — *厳格*レール。自然言語 → 型付き Intent IR →
-  プラン → 再生可能なウォークへと進み、高リスク / オンチェーン / 不可逆な作業を扱います。
+## 3 つのレイヤー
 
-スタックは次のように階層化されています。
+### 1 — The Matrix Compiler (MCL)
 
-| レイヤー      | 役割                                                                                          |
-| ------------ | --------------------------------------------------------------------------------------------- |
-| **MCL**      | NL → 型付き Intent IR に変換するプロトコル。動詞はクローズド（10 個）、オブジェクトもクローズド（8 種）。 |
-| **cortex**   | Pebble 上のアクター単位の型付きメモリグラフ。追記専用ジャーナル、Merkle アンカー付きスナップショット。 |
-| **bridge**   | MCL コンパイラの `Cortex` インターフェースを稼働中の cortex インスタンスに繋ぐグルー。           |
-| **executor** | プランウォーカー、ライフサイクルマシン、MCP ツールディスパッチ、ユーザー単位デーモン、Liaison ナレーター、e2e ハーネス。 |
-| **neo**      | デフォルトの会話型エージェント — ページング cortex メモリ付きのツール呼び出しループ。           |
-| **gateway**  | 計量型 LLM プロキシ + PAX クレジット台帳（無料枠ホワイトリスト + レートカード）。                |
-| **router**   | ユーザー単位の Fly Machine プロビジョニング + wake-then-reverse-proxy のフロントドア。           |
-| **deus**     | エージェントサービスのマーケットプレイス：登録、検索、計量呼び出し、EIP-712 レシート、ホスティング。 |
-| **uwac**     | Universal Web Agent Connector — OAuth ボールト → ユーザー単位の MCP ツール。                    |
-| **tachyon**  | エージェントネイティブな Solidity/EVM エンジン — コンパイル / テスト / シミュレート / デプロイ。  |
-| **agents**   | DID にバインドされたマニフェスト。人格ではなくプロトコル。                                       |
-| **tools**    | エージェントが呼び出す MCP サーバー（チェーンに触れるものを含む）。                              |
+**スタック全体の最上位に位置する司令塔。** MCL は、3 つの厳密なエージェントから成るコホートです。これらのエージェントは、人間の言語や人間の入力が持つ制約と曖昧さから切り離された closed-verb プロトコル上で、互いに通信し、計画し、行動します。機械の精度で協調し、それを資金、不可逆な操作、機密情報の取り扱いといった、現実世界の高リスクかつ機密性の高いタスクに適用します。
 
+タスクが重大な結果を伴う領域に入った時点で、ここに送られます。3 つのエージェントは結果空間を計算し、作業に必要なすべての入力を保持していることを確認し、不足していれば明確化を求め、条件がそろった時点で仕様どおりに一度だけ実行します。推測に基づいて何かが実行されることはありません。
 
----
+### 2 — The Cortex
 
-## リポジトリ構成
+**完全なメモリ、コンテキスト、そして不変状態のエンジン。** Cortex は、すべてのエージェントに永続的で耐久性のあるメモリを提供します。アクターごとのイベントタイムライン、アクティブな注意、型付き状態を持ち、すべて追記専用で、バイト単位で決定論的にリプレイできます。継続性は、モデルが各セッションで擬似的に演じなければならない幻想ではなくなります。ユーザーにとって実在し、エージェントにとって壊れることのないものになります。Matrix 上で動作するエージェントは、空の状態で目覚めません。
 
-```text
-matrix/
-├── cortex/        アクター単位の型付きメモリグラフ（Pebble）+ replay 不変条件 + Merkle スナップショット
-├── MCL/           MatrixScript コンパイラ — lexer/parser/validator/canonical/interpreter + Intent IR + envelopes + LLM クライアント
-├── bridge/        MCL ↔ cortex アダプタ（独立 Go モジュール。replace ディレクティブでリンク）
-├── executor/      ライフサイクルマシン、ランタイムウォーカー、MCP クライアント + ツールレジストリ、ユーザー単位デーモン（+ Liaison ナレーター）、e2e ハーネス
-├── neo/           Neo — デフォルトの会話型ツール呼び出しエージェント（金銭/不可逆な作業は MCL に委譲）
-├── gateway/       計量型 LLM プロキシ + PAX クレジット台帳（無料枠ホワイトリスト + レートカード）
-├── router/        ユーザー単位の Fly Machine プロビジョニング + wake-then-reverse-proxy フロントドア
-├── deus/          エージェントサービスのマーケットプレイス：登録、検索、計量呼び出し、EIP-712 レシート、ホスト実行
-├── uwac/          Universal Web Agent Connector — OAuth ボールト → ユーザー単位の MCP ツール（構築中）
-├── tachyon/       エージェントネイティブな Solidity/EVM エンジン — コンパイル/テスト/シミュレート/デプロイ（git サブモジュール）
-├── chronos/       集中型エージェントスケジューラ / wake-up システム（設計凍結済み）
-├── agents/        DID バインドのエージェントマニフェスト（default.json、neo.json）+ MCP サーバーテンプレート
-├── tools/         MCP サーバー — paxeer、browser、tachyon、deus、uwac、web-search、media、cortex
-├── skills/        SKILL.mtx 能力マニフェスト + SKILL.md 散文本体
-├── client/        Matrix コンシューマーアプリ（Next.js / React）
-├── marketplace/   Deus マーケットプレイス + 開発者ダッシュボード（Cloudflare Workers 上の React Router）
-├── deploy/        デーモンイメージ、Fly Machine デプロイ、共有サービスイメージ、box インストールスクリプト
-├── rules/         アイデンティティ + 言語別コーディング規約
-├── knowledge/     正規リファレンス（matrix.kvx プロジェクト状態、モデル）
-└── runs/          一時的なハーネス出力（gitignore 済み）
+### 3 — The Loop Manager
+
+**エージェントごとのループエンジン。** Loop Manager は、各エージェントについて、ユーザー、LLM、Cortex の間で絶えず流入・交換される情報を調整し、作業が重大な結果を伴うものになった瞬間に MCL パイプラインへエスカレーションします。これは、ターン、ツール、時間をまたいでエージェントの一貫性を維持するランタイムであり、どの時点で即興を続けるのではなく判断を上位へ引き上げるべきかを正確に把握します。
+
+## 全体の連携
+
+```
+                        +-----------------------------+
+                        |            User             |
+                        +--------------+--------------+
+                                       |
+                                       v
+                    +------------------+------------------+
+                    |           Loop Manager              |
+                    |     per-agent coordination loop     |
+                    |     user  <->  LLM  <->  Cortex     |
+                    +----+---------------+-----------+----+
+                         |               |           |
+                 reversible work         |       escalation
+                         |               |           |
+                         v               v           v
+                    +---------+    +-----------+  +------------------+
+                    |   LLM   |    |  Cortex   |  |  Matrix Compiler |
+                    | (chat,  |    |  memory   |  |  (MCL)           |
+                    |  tools) |    |  context  |  |  3 rigorous      |
+                    +---------+    |  immutable|  |  closed-verb     |
+                                   +-----------+  |  agents          |
+                                                  +------------------+
+                                                    money / on-chain /
+                                                    irreversible /
+                                                    confidential
 ```
 
-### Go モジュール
+デフォルトの会話エージェント（**Neo**）は Loop Manager 内で動作し、可逆な作業では shell、code、fetch、web ツールを使用できます。リスクが高まった瞬間、Loop Manager は MCL へエスカレーションし、その厳密性が不要になれば制御は Neo に戻ります。
 
-ルートの `Makefile` は **9 つ** の兄弟 Go モジュール — MCL、bridge、executor、gateway、
-router、cortex、tachyon、deus、neo — に加えて **uwac**（および進行中の **chronos**）を駆動します。
-各モジュールは独自の `go.mod` を持ち、独立して `go build`/`go test` 可能です。
-モジュール間のインポートは開発中は `replace` ディレクティブを、公開時は明示的なバージョンを使います。
+## モジュール
 
-```text
-cortex   → matrix/cortex                    型付きメモリグラフ、replay 不変条件、スナップショット/Merkle
-MCL      → matrix/mcl                       コンパイラ + Intent IR + envelopes + LLM クライアント
-bridge   → matrix/bridge                    MCL ↔ cortex アダプタ
-executor → matrix/executor                  プランウォーカー、ライフサイクル、MCP ディスパッチ、デーモン、Liaison
-neo      → matrix/neo                       デフォルトの会話型エージェント
-gateway  → matrix/gateway                   計量型 LLM プロキシ + PAX クレジット台帳
-router   → matrix/router                    ユーザー単位の Fly Machine ルーティング
-deus     → github.com/paxlabs-inc/deus      エージェントサービスのマーケットプレイス
-uwac     → github.com/paxlabs-inc/uwac      外部アプリコネクタ
-tachyon  → github.com/paxlabs-inc/tachyon-tools   Solidity/EVM エンジン（サブモジュール）
-```
+ルートの Makefile は複数の兄弟 Go モジュールを駆動します。各モジュールは独自の `go.mod` を持ち、それぞれ独立して `go build` / `go test` を実行できます。上記 3 レイヤーはこれらのモジュールに対応しており、**MCL** はコンパイラコホート、**cortex** はメモリエンジン、**executor** は Loop Manager を実装します。
 
----
+
+  <img src="https://www.readmecodegen.com/api/file-tree-embed?repo=paxlabs-inc%2Fmatrix-core&branch=main&maxDepth=1&foldersOnly=true&transparentBg=true&showHeader=true" alt="Dynamic File Tree" />
+
+
+| モジュール | 役割 |
+|--------|------|
+| **MCL** | Matrix Compiler コホート。3 つの厳密な closed-verb エージェントが、機械レベルの精度で高リスクかつ機密性の高いタスクを計画・実行します。 |
+| **cortex** | Pebble 上のアクター単位の型付きメモリエンジン。追記専用 journal、Merkle アンカー付き snapshot、バイト単位の決定論的 replay。永続的、不変、耐久性を備えます。 |
+| **bridge** | MCL から cortex へのアダプター。明確なインターフェース境界を維持するための独立した Go モジュール。 |
+| **executor** | Loop Manager。エージェント単位のループエンジン、ライフサイクル状態機械、MCP dispatch、ユーザー単位の daemon、Liaison narrator、end-to-end テストハーネス。 |
+| **neo** | ループ内部で動作するデフォルトの会話エージェント。重大な結果を伴う操作は自動的に MCL へエスカレーションします。 |
+| **gateway** | PAX クレジット台帳、無料枠 allowlist、料金表の適用を備えた従量制 LLM プロキシ。 |
+| **router** | ユーザーごとの Fly Machine プロビジョニングと、wake-then-reverse-proxy 方式のフロントドア。 |
+| **deus** | エージェントサービスのマーケットプレイス：registry、discovery、従量制 invocation、EIP-712 receipt、hosted execution。 |
+| **tachyon** | エージェントネイティブな Solidity/EVM エンジン — compile、test、simulate、deploy。（git submodule） |
+| **uwac** | Universal Web Agent Connector — ユーザーごとの MCP ツールを提供する OAuth vault。 |
+| **layerx** | エージェント残高のための settlement fabric と custody spine。 |
+| **chronos** | 集中型エージェント scheduler と wake-up system。 |
+| **atlas** | 追加のインフラストラクチャ orchestration layer。 |
+| **context** | コンテキスト管理サブシステム。 |
+| **journal** | 決定論的な状態 replay のための追記専用 journal サブシステム。 |
+| **knowledge** | 正規参照：matrix.kvx のプロジェクト状態、モデル、schema 定義。 |
+| **skills** | SKILL.mtx capability manifest と、SKILL.md による文章形式の capability 説明。 |
+| **tools** | MCP サーバー：paxeer、browser、tachyon、deus、uwac、web-search、media、cortex。 |
+| **agents** | DID に紐付いた agent manifest（default.json、neo.json）と MCP サーバーテンプレート。 |
+| **protocol** | プロトコル定義と wire format。 |
+| **marketplace** | Deus marketplace と developer dashboard（Cloudflare Workers 上の React Router）。 |
+| **client** | Matrix コンシューマーアプリケーション（Next.js / React）。 |
+| **deploy** | daemon コンテナイメージ、Fly Machine deploy、共有サービスイメージ、box install script。 |
+
+## 主な設計判断
+
+- **Closed-verb coordination（D7）**：MCL エージェントは 10 個の closed verb — `find`、`acquire`、`build`、`modify`、`deliver`、`analyze`、`negotiate`、`schedule`、`monitor`、`delegate` — を介して協調します。これにより、エージェント間の intent は正確になり、runtime 中に prose から推測されることはありません。
+
+- **8 個の closed object kind**：`service`、`model`、`agent`、`knowledge`、`intent`、`asset`、`plan`、`capability`。すべての operand はこのいずれかです。非構造化 blob が重大な実行領域へ渡されることはありません。
+
+- **Replay invariant（セクション 13.4）**：派生状態は常に journal からバイト単位で同一に再構築できます。これはすべての pull request で `make ci` により強制されます。エージェントが行ったことはすべて追跡され、行っていないことが隠されることもありません。
+
+- **Immutable memory**：Cortex は追記専用かつ content-addressed であるため、エージェントの継続性を密かに書き換えることはできません。エージェントにとって耐久性があり、ユーザーにとって信頼できます。
+
+- **Signed receipts**：重大な実行はすべて EIP-712 receipt — inputs、outputs、cost、hash — で終了し、誰でも事後に検証できます。
 
 ## クイックスタート
 
 ### 前提条件
 
-- Go **1.22+**（全モジュールでツールチェーンを固定）。
-- `make`（GNU make 4.x）。
-- MCP サーバー駆動のフロー向け：`node` ≥ 20、`npx`、`python3` ≥ 3.11、`uv`。
-- デーモンイメージ向け：buildx 付きの `docker`。
+- Go 1.22+
+- GNU Make 4.x
+- Node.js 20+
+- Python 3.11+
+- Buildx 対応 Docker
 
-### クローンとビルド
+### ビルド
 
 ```bash
+# Clone the repository
 git clone https://github.com/paxlabs-inc/matrix-core.git
 cd matrix-core
-make build           # 9 つの Go モジュールをすべてビルド
-make install         # 実行可能な CLI を ./bin に配置
-make test            # モジュールごとに `go test -count=1 -race ./...`
-make vet             # モジュールごとに `go vet ./...`
-make ci              # gofmt-check + vet + tests（GitHub Actions と同等）
+
+# Build all nine Go modules
+make build
+
+# Install runnable CLIs into ./bin
+make install
+
+# Run tests (go test -count=1 -race ./... per module)
+make test
+
+# Full CI check (gofmt + vet + tests; mirrors GitHub Actions)
+make ci
 ```
 
-`golangci-lint` をローカルに用意する場合：
+### 設定
 
 ```bash
-make lint-install    # v1.61.0 に固定
-make lint
-```
-
-### シークレットの設定
-
-```bash
+# Copy the example environment file
 cp .env.example .env
-# dry-run でないコンパイル向けに FIREWORKS_API_KEY / TOGETHER_API_KEY を記入
-# 認証付きでデーモンを動かす場合は MATRIX_DAEMON_TOKEN を記入
+
+# Required for consequential (non-dry-run) execution:
+#   FIREWORKS_API_KEY
+#   TOGETHER_API_KEY
+#
+# Required for authenticated daemon mode:
+#   MATRIX_DAEMON_TOKEN
 ```
 
-`.env` は gitignore されています。`.env.example` は Matrix が読むすべての変数を記載しています。
-
-### 最初の意図をコンパイルする
-
-```bash
-./bin/mclc compile \
-  -skill skills/writing-plans/SKILL.mtx \
-  -prose "Build a deployment pipeline for my Node.js app" \
-  -verb  build
-```
-
-`FIREWORKS_API_KEY` を設定すると、コンパイラは実際の Intent Frame（動詞、型付きオブジェクト、
-ブロッキングする未知項）を出力します。キーがない場合は dry-run モードにフォールバックし、
-完全に補間されたプロンプト構造を表示します。
-
-### エンドツーエンドのウォークを実行する
+### エージェントループを実行
 
 ```bash
 ./bin/mcl-execute walk \
-  -prose       "Summarise the README and write it to /tmp/summary.md" \
+  -prose "Summarise the README and write it to /tmp/summary.md" \
   -manifest    agents/default.json \
   -cortex-root ./runs/dev-cortex \
   -skills-root ./skills
 ```
 
-これはエージェントマニフェストを読み込み、宣言された MCP サーバーを起動し、prose を
-Intent + PlanTree にコンパイルし、プランをウォークし、各ステップを cortex の Event として
-ジャーナルに記録し、最後に `cortex.Attest` が `KindAttest` + `KindLearnWeights` を
-アトミックに書き込んで終了します。
-
-### デーモンを実行する
+### Daemon を起動
 
 ```bash
 ./bin/mcl-execute daemon \
@@ -195,49 +201,75 @@ Intent + PlanTree にコンパイルし、プランをウォークし、各ス�
   -skills-root ./skills
 ```
 
-ルート：
+## API リファレンス
 
-| メソッド | パス             | 目的                                     |
-| ------- | ---------------- | ---------------------------------------- |
-| GET     | `/healthz`       | 死活監視 + SSE ブローカー統計            |
-| POST    | `/chat`          | エージェントと会話（Neo フロントドア）   |
-| GET     | `/events`        | Server-Sent Events のテール（トランスクリプト） |
-| POST    | `/messages`      | prose メッセージを送信（厳格レール）     |
-| GET     | `/intents/{id}`  | ID で意図 envelope チェーンを読む        |
-| GET     | `/me`            | ユーザー単位の設定 + アイデンティティ    |
-| POST    | `/shutdown`      | グレースフルなドレイン                   |
+daemon は、エージェントとの対話のための軽量 HTTP API を公開します。
 
----
+| メソッド | パス | 用途 |
+|--------|------|---------|
+| `GET` | `/healthz` | Liveness probe + SSE broker 統計 |
+| `POST` | `/chat` | エージェントと会話（Neo を介した conversational loop） |
+| `GET` | `/events` | transcript をリアルタイム追跡するための Server-Sent Events stream |
+| `POST` | `/messages` | 重大な結果を伴うメッセージを送信（MCL コホートへエスカレーション） |
+| `GET` | `/intents/{id}` | intent ID によって intent envelope chain を読み取る |
+| `GET` | `/me` | ユーザー単位の設定と identity |
+| `POST` | `/shutdown` | graceful drain と shutdown |
 
 ## ドキュメント
 
-- [`ARCHITECTURE.md`](./ARCHITECTURE.md) — システムマップ、モジュール境界、主要な不変条件
-- [`CONTRIBUTING.md`](./CONTRIBUTING.md) — 開発環境構築、テストの規律、コミットスタイル
-- [`SECURITY.md`](./SECURITY.md) — 脆弱性の開示
-- [`CHANGELOG.md`](./CHANGELOG.md) — Keep-a-Changelog 形式のリリースノート
-- [`deploy/daemon/README.md`](./deploy/daemon/README.md) — イメージビルド + Fly デプロイ
----
+| リソース | 説明 |
+|----------|-------------|
+| [アーキテクチャガイド](ARCHITECTURE.md) | システムマップ、モジュール境界、主要な invariant、設計根拠 |
+| [コントリビューションガイド](CONTRIBUTING.md) | 開発環境のセットアップ、テスト規律、commit style、PR process |
+| [セキュリティポリシー](SECURITY.md) | 脆弱性の開示と責任ある報告 |
+| [Changelog](CHANGELOG.md) | Keep-a-Changelog 形式のリリースノート |
+| [MCL ドキュメント](docs/MCL-docs/index.md) | MCL 言語リファレンス、closed-verb grammar、エージェント内部構造 |
+| [Daemon デプロイガイド](deploy/daemon/README.md) | 本番デプロイ、Fly Machine 設定、運用 |
+| [完全なドキュメント](https://docs.matrixmcl.com) | docs.matrixmcl.com の完全なドキュメントサイト |
 
 ## コントリビューション
 
-Matrix Core はオープンソースであり、**フォークして自由に改変**できます。ただし `main` ブランチはコアチームが厳密に開発しており、依頼のないプルリクエストは原則としてマージされません。外部からの変更は、貢献者と直接協働し、その作業の品質を理解できた場合にのみ受け入れます。
+Matrix Core はオープンソースであり、自由に **fork および変更** できます。ただし、`main` ブランチはコアチームのみが厳格に開発しています。依頼されていない pull request は通常 merge されず、外部からの変更は、その contributor と直接協力した場合にのみ受け入れられます。
 
-何かを開く前に、[コントリビューションガイド](./CONTRIBUTING.md) の冒頭にある貢献ポリシーをお読みください。Issue、バグ報告、脆弱性の開示はいつでも歓迎します。
+何かを開く前に、[コントリビューションガイド](CONTRIBUTING.md) 冒頭の contribution policy を読んでください。Issue、bug report、security disclosure は常に歓迎します。
 
----
+Contributors:
+- dev-paxeer
+- Andrew
+- paxlabs-inc
+- cursoragent
+- Sidiora-Technologies
 
 ## ライセンス
 
-**Matrix-Protocol License** のもとでソース公開されています — [`LICENSE.md`](./LICENSE.md) を参照。
+Matrix Core は [Matrix-Protocol License](LICENSE.md) の下で source-available として提供されています。
 
-短い説明：読む・使う・デプロイする・統合するのは自由です。**改変して再配布**する場合は、
-同じライセンスのもとで変更を公開してください。商業トリガーのしきい値（請求した手数料が
-12 か月で 10 万 USD 超 **または** コントロール下の流動性が 1,000 万 USD 超）を超えると、
-商用ライセンスが必要になります。`LICENSE.md` の拘束力のない要約は便宜のためのものであり、
-ライセンス本文が正式なものです。
+Matrix Core は自由に閲覧、使用、デプロイ、統合できます。ソフトウェアを変更して再配布する場合は、変更内容を同じライセンスの下で公開する必要があります。以下の commercial trigger threshold を超えると、PaxLabs Inc. の商用ライセンスが必要です。
+
+- 任意の 12 か月間に請求した手数料が **100,000 米ドル** を超える場合、または
+- 管理下の流動性が **10,000,000 米ドル** を超える場合。
+
+完全な条件については [LICENSE.md](LICENSE.md) を参照してください。
+
+## 各言語版 README
+
+- [スペイン語](README.es.md)
+- [日本語](README.ja.md)
+- [ポルトガル語](README.pt-BR.md)
+- [ロシア語](README.ru.md)
+- [中国語（簡体字）](README.zh-CN.md)
+
+## 関連
+
+- [Paxeer Network](https://paxeer.app) — Matrix Core が構築されている L1 blockchain。400ms blocks、400ms finality、agentic workload 向けに特化して設計されています。
+- [PaxLabs](https://labs.paxeer.app) — 人間とエージェントの協働の未来を構築しています。
 
 ---
 
 <p align="center">
-  <a href="https://labs.paxeer.app">Paxlabs Inc.</a> により構築 · <code>SPDX-License-Identifier: LicenseRef-Paxlabs-Matrix-Protocol</code>
+  <a href="https://labs.paxeer.app"><strong>PaxLabs Inc.</strong></a> によって開発
+</p>
+
+<p align="center">
+  <sub>SPDX-License-Identifier: Matrix-Protocol</sub>
 </p>

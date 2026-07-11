@@ -1,191 +1,197 @@
-<!--
-parent:
-  order: false
--->
 <p align="center">
-  <img src="https://zezsqawedbikldiedlse.supabase.co/storage/v1/object/public/cdn.deus.paxeer.app/bcd6e442-788a-4377-b605-42ce2896d32e.png" alt="Paxeer Network" width="1200">
-</p>
-<p align="center">
-<p align="center">
-  <img src="https://img.shields.io/badge/Project-Matrix-FFFFFF?style=for-the-badge&labelColor=004CED" alt="Project: Matrix" />
-  <img src="https://img.shields.io/badge/Built_by-PaxLabs-004CED?style=for-the-badge&labelColor=000000" alt="Built by PaxLabs" />
-  <img src="https://img.shields.io/badge/License-Matrix--Protocol-004CED?style=for-the-badge&labelColor=000000" alt="License: Matrix-Protocol" />
-  <img src="https://img.shields.io/badge/Status-Active-00C896?style=for-the-badge&labelColor=000000" alt="Status: Active" />
+  <img src="https://cdn.redixusercontent.ocfstudio.com/matrix.png" alt="Matrix" />
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Chain-HyperPaxeer-004CED?style=for-the-badge&labelColor=000000" alt="Chain: HyperPaxeer" />
-  <img src="https://img.shields.io/badge/Chain_ID-125-FFFFFF?style=for-the-badge&labelColor=004CED" alt="Chain ID: 125" />
-  <img src="https://img.shields.io/badge/Block_Time-400ms-00C896?style=for-the-badge&labelColor=000000" alt="Block Time: 400ms" />
-  <img src="https://img.shields.io/badge/Finality-400ms-00C896?style=for-the-badge&labelColor=000000" alt="Finality: 400ms" />
+  <a href="https://labs.paxeer.app"><img src="https://img.shields.io/badge/Project-Matrix-0A0A0A?style=flat-square&logo=data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNiIgaGVpZ2h0PSIxNiIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IiNmZmZmZmYiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIj48Y2lyY2xlIGN4PSIxMiIgY3k9IjEyIiByPSIxMCIvPjxwYXRoIGQ9Ik0xMiAxNnYtNCIvPjxwYXRoIGQ9Ik0xMiA4aC4wMSIvPjwvc3ZnPg==&logoColor=white" alt="Project: Matrix" /></a>
+  <a href="https://labs.paxeer.app"><img src="https://img.shields.io/badge/Built%20by-PaxLabs-0A0A0A?style=flat-square&logoColor=white" alt="Built by PaxLabs" /></a>
+  <a href="LICENSE.md"><img src="https://img.shields.io/badge/License-Matrix--Protocol-0A0A0A?style=flat-square" alt="License: Matrix-Protocol" /></a>
+  <a href="#"><img src="https://img.shields.io/badge/Status-Active-0A0A0A?style=flat-square" alt="Status: Active" /></a>
+  <a href="https://paxeer.app"><img src="https://img.shields.io/badge/Layer-Paxeer%20Network-0A0A0A?style=flat-square" alt="Paxeer Network" /></a>
 </p>
 
 <p align="center">
-  <a href="https://github.com/paxlabs-inc/matrix-core/actions/workflows/ci.yml"><img src="https://github.com/paxlabs-inc/matrix-core/actions/workflows/ci.yml/badge.svg?branch=main" alt="ci" /></a>
-  <a href="https://github.com/paxlabs-inc/matrix-core/actions/workflows/lint.yml"><img src="https://github.com/paxlabs-inc/matrix-core/actions/workflows/lint.yml/badge.svg?branch=main" alt="lint" /></a>
-  <a href="https://github.com/paxlabs-inc/matrix-core/actions/workflows/docker.yml"><img src="https://github.com/paxlabs-inc/matrix-core/actions/workflows/docker.yml/badge.svg?branch=main" alt="docker" /></a>
-  <img src="https://img.shields.io/badge/Go-1.22-004CED?logo=go&logoColor=white" alt="Go 1.22" />
-  <img src="https://img.shields.io/badge/Modules-9-004CED" alt="9 Go modules" />
+  <a href="https://github.com/paxlabs-inc/matrix-core/stargazers"><img src="https://img.shields.io/github/stars/paxlabs-inc/matrix-core?style=flat-square&color=0A0A0A" alt="GitHub Stars" /></a>
+  <a href="https://github.com/paxlabs-inc/matrix-core/network/members"><img src="https://img.shields.io/github/forks/paxlabs-inc/matrix-core?style=flat-square&color=0A0A0A" alt="GitHub Forks" /></a>
+  <a href="https://docs.matrixmcl.com"><img src="https://img.shields.io/badge/Docs-docs.matrixmcl.com-0A0A0A?style=flat-square" alt="Documentation" /></a>
+</p>
+
+<p align="center">
+  <img src="https://img.shields.io/badge/Go-38.7%25-00ADD8?style=flat-square&logo=go&logoColor=white" alt="Go" />
+  <img src="https://img.shields.io/badge/Solidity-26.3%25-363636?style=flat-square&logo=solidity&logoColor=white" alt="Solidity" />
+  <img src="https://img.shields.io/badge/JavaScript-16.9%25-F7DF1E?style=flat-square&logo=javascript&logoColor=black" alt="JavaScript" />
+  <img src="https://img.shields.io/badge/TypeScript-11.1%25-3178C6?style=flat-square&logo=typescript&logoColor=white" alt="TypeScript" />
+  <img src="https://img.shields.io/badge/HTML-5.5%25-E34F26?style=flat-square&logo=html5&logoColor=white" alt="HTML" />
+  <img src="https://img.shields.io/badge/Python-0.5%25-3776AB?style=flat-square&logo=python&logoColor=white" alt="Python" />
 </p>
 
 ---
 
-## O que é o Matrix?
+<h2 align="center">Um framework de agentes e uma camada de cognição para LLMs.</h2>
 
-O Matrix é a camada de cognição e de experiência do usuário que fica sobre a [Paxeer Network](https://paxeer.app).
-Ele transforma requisições em linguagem natural de pessoas não desenvolvedoras em uma
-**Intent IR** (representação intermediária de intenção) tipada, inspecionável e corrigível
-que um agente consegue de fato executar — sem os quatro modos de falha clássicos
-que hoje quebram os fluxos entre não desenvolvedores e agentes:
-
-1. **Fragilidade do prompt** — pequenas reformulações geram saídas radicalmente diferentes.
-2. **Perda de intenção** — a linguagem natural não sobrevive à execução em vários passos.
-3. **Ausência de ontologia compartilhada** — usuário e agente divergem sobre qual entidade está em questão.
-4. **Sem correção estruturada** — o desvio força o usuário a reescrever do zero.
-
-O Matrix oferece **dois trilhos de agente** sobre um único substrato compartilhado de memória e execução:
-
-- **Neo** — o agente conversacional de chamada de ferramentas *padrão*: familiar, robusto e
-  totalmente permissivo em trabalho reversível (shell, código, fetch, web). Ele delega qualquer
-  tarefa monetária ou irreversível ao trilho rigoroso.
-- **Pipeline MCL** — o trilho *rigoroso*: linguagem natural → Intent IR tipada →
-  plano → caminhada reproduzível, para trabalho de alto risco / on-chain / irreversível.
-
-A pilha é organizada em camadas:
-
-| Camada       | Papel                                                                                          |
-| ------------ | ---------------------------------------------------------------------------------------------- |
-| **MCL**      | Protocolo que transforma NL → Intent IR tipada. Verbos fechados (10), objetos fechados (8 tipos). |
-| **cortex**   | Grafo de memória tipado por ator sobre o Pebble. Journal somente de anexação, snapshots ancorados por Merkle. |
-| **bridge**   | Cola que conecta a interface `Cortex` do compilador MCL a uma instância viva do cortex.         |
-| **executor** | Caminhador de planos, máquina de ciclo de vida, despacho de ferramentas MCP, daemon por usuário, narrador Liaison, suíte e2e. |
-| **neo**      | O agente conversacional padrão — laço de chamada de ferramentas com memória cortex paginada.   |
-| **gateway**  | Proxy de LLM medido + livro-razão de créditos PAX (lista branca da camada gratuita + tabela de preços). |
-| **router**   | Provisionamento de Fly Machine por usuário + porta de entrada wake-then-reverse-proxy.          |
-| **deus**     | Marketplace de serviços de agentes: registro, descoberta, invocação medida, recibos EIP-712, hospedagem. |
-| **uwac**     | Universal Web Agent Connector — cofre OAuth → ferramentas MCP por usuário.                       |
-| **tachyon**  | Motor Solidity/EVM nativo para agentes — compilar / testar / simular / fazer deploy.            |
-| **agents**   | Manifestos vinculados a DID. Protocolo, não personalidade.                                       |
-| **tools**    | Servidores MCP que os agentes invocam (inclusive os que tocam a cadeia).                          |
-
+<p align="center">
+  Matrix leva um LLM além do chat e o coloca em execução por todo o domínio digital <br/>
+  permitindo que humanos e máquinas coordenem trabalhos que precisam ser exatos.
+</p>
 
 ---
 
-## Estrutura do repositório
+## O que é Matrix?
 
-```text
-matrix/
-├── cortex/        Grafo de memória tipado por ator (Pebble) + invariante de replay + snapshots Merkle
-├── MCL/           Compilador MatrixScript — lexer/parser/validador/canonical/interpretador + Intent IR + envelopes + cliente LLM
-├── bridge/        Adaptador MCL ↔ cortex (módulo Go separado; ligado por diretiva replace)
-├── executor/      Máquina de ciclo de vida, caminhador em runtime, cliente MCP + registro de ferramentas, daemon por usuário (+ narrador Liaison), suíte e2e
-├── neo/           Neo — o agente conversacional de chamada de ferramentas padrão (delega o monetário/irreversível ao MCL)
-├── gateway/       Proxy de LLM medido + livro-razão de créditos PAX (lista branca da camada gratuita + tabela de preços)
-├── router/        Provisionamento de Fly Machine por usuário + porta wake-then-reverse-proxy
-├── deus/          Marketplace de serviços de agentes: registro, descoberta, invocação medida, recibos EIP-712, execução hospedada
-├── uwac/          Universal Web Agent Connector — cofre OAuth → ferramentas MCP por usuário (em construção)
-├── tachyon/       Motor Solidity/EVM nativo para agentes — compilar/testar/simular/deploy (submódulo git)
-├── chronos/       Agendador/sistema de wake-up centralizado de agentes (design congelado)
-├── agents/        Manifestos de agente vinculados a DID (default.json, neo.json) + templates de servidor MCP
-├── tools/         Servidores MCP — paxeer, browser, tachyon, deus, uwac, web-search, media, cortex
-├── skills/        Manifestos de capacidade SKILL.mtx + corpos em prosa SKILL.md
-├── client/        App de consumo do Matrix (Next.js / React)
-├── marketplace/   Marketplace Deus + painel para desenvolvedores (React Router sobre Cloudflare Workers)
-├── deploy/        Imagem do daemon, deploy em Fly Machine, imagens de serviços compartilhados, scripts de instalação box
-├── rules/         Identidade + regras de codificação por linguagem
-├── knowledge/     Referências canônicas (estado do projeto matrix.kvx, modelos)
-└── runs/          Saída transitória da suíte (no gitignore)
+Matrix é uma camada de cognição criada para a visão de Machine Economy da Paxeer Network. Ela estende um modelo de linguagem para além da conversa e o leva à execução real: coordenação financeira on-chain entre agentes, execução de tarefas de alto risco e tratamento seguro de trabalhos críticos e confidenciais.
+
+A razão pela qual a maioria das stacks de agentes falha nesse tipo de trabalho é que elas levam linguagem natural até as camadas mais profundas. A linguagem humana é um canal com vazamentos: a forma biológica como raciocinamos, percebemos e fazemos aproximações se infiltra em cada frase que produzimos. Isso funciona para chat. Não funciona quando um agente está movimentando fundos, realizando uma escrita irreversível ou mantendo algo confidencial. Matrix oferece a humanos e máquinas uma forma de coordenar exatamente esse tipo de trabalho *sem* permitir que a ambiguidade do raciocínio humano e da linguagem humana alcance as partes que não podem ser ambíguas.
+
+Ela faz isso por meio de três camadas.
+
+## As três camadas
+
+### 1 — The Matrix Compiler (MCL)
+
+**O nível máximo de comando da stack.** MCL é um grupo de três agentes rigorosos que se comunicam, planejam e agem entre si por meio de um protocolo de verbos fechados, livre das limitações e da ambiguidade da linguagem humana e da entrada humana. Eles se coordenam com a exatidão de uma máquina e aplicam isso a tarefas reais, sensíveis e de alto risco: dinheiro, operações irreversíveis e tratamento de informações confidenciais.
+
+Quando uma tarefa cruza a linha e passa a ter consequências relevantes, ela vem para cá. Os três agentes calculam o espaço de resultados, confirmam que possuem todas as entradas necessárias para o trabalho, pedem esclarecimentos quando não possuem e executam uma única vez, de acordo com a especificação. Nada é executado com base em suposições.
+
+### 2 — The Cortex
+
+**Um mecanismo completo de memória, contexto e estado imutável.** Cortex oferece a cada agente memória persistente e durável: uma linha do tempo de eventos por ator, atenção ativa e estado tipado, tudo somente acrescentável e reproduzível de forma determinística em nível de bytes. A continuidade deixa de ser uma ilusão que o modelo precisa fingir a cada sessão; ela é real para o usuário e inquebrável para o agente. Um agente que roda sobre Matrix não desperta vazio.
+
+### 3 — The Loop Manager
+
+**Um mecanismo de loop por agente.** Para cada agente, o Loop Manager coordena o fluxo e a troca constantes entre o usuário, o LLM e Cortex e escala para o pipeline do MCL no instante em que o trabalho se torna consequencial. É o runtime que mantém um agente coerente entre turnos, ferramentas e tempo, e sabe exatamente quando elevar uma decisão em vez de improvisar além do limite seguro.
+
+## Como tudo se encaixa
+
+```
+                        +-----------------------------+
+                        |            User             |
+                        +--------------+--------------+
+                                       |
+                                       v
+                    +------------------+------------------+
+                    |           Loop Manager              |
+                    |     per-agent coordination loop     |
+                    |     user  <->  LLM  <->  Cortex     |
+                    +----+---------------+-----------+----+
+                         |               |           |
+                 reversible work         |       escalation
+                         |               |           |
+                         v               v           v
+                    +---------+    +-----------+  +------------------+
+                    |   LLM   |    |  Cortex   |  |  Matrix Compiler |
+                    | (chat,  |    |  memory   |  |  (MCL)           |
+                    |  tools) |    |  context  |  |  3 rigorous      |
+                    +---------+    |  immutable|  |  closed-verb     |
+                                   +-----------+  |  agents          |
+                                                  +------------------+
+                                                    money / on-chain /
+                                                    irreversible /
+                                                    confidential
 ```
 
-### Os módulos Go
+O agente conversacional padrão (**Neo**) roda dentro do Loop Manager com ferramentas de shell, code, fetch e web disponíveis para trabalhos reversíveis. No instante em que o nível de risco aumenta, o Loop Manager escala para o MCL, e o controle retorna ao Neo quando esse rigor adicional deixa de ser necessário.
 
-O `Makefile` raiz aciona **nove** módulos Go irmãos — MCL, bridge, executor, gateway,
-router, cortex, tachyon, deus, neo — junto com **uwac** (e **chronos**, em andamento).
-Cada um pode ser `go build`/`go test` de forma independente, com seu próprio `go.mod`; as
-importações entre módulos usam diretivas `replace` durante o desenvolvimento e versões
-explícitas na publicação.
+## Os módulos
 
-```text
-cortex   → matrix/cortex                    grafo de memória tipado, invariante de replay, snapshots/Merkle
-MCL      → matrix/mcl                       compilador + Intent IR + envelopes + cliente LLM
-bridge   → matrix/bridge                    adaptador MCL ↔ cortex
-executor → matrix/executor                  caminhador de planos, ciclo de vida, despacho MCP, daemon, Liaison
-neo      → matrix/neo                       agente conversacional padrão
-gateway  → matrix/gateway                   proxy de LLM medido + livro-razão de créditos PAX
-router   → matrix/router                    roteamento de Fly Machine por usuário
-deus     → github.com/paxlabs-inc/deus      marketplace de serviços de agentes
-uwac     → github.com/paxlabs-inc/uwac      conectores de apps externos
-tachyon  → github.com/paxlabs-inc/tachyon-tools   motor Solidity/EVM (submódulo)
-```
+O Makefile na raiz coordena vários módulos Go irmãos — cada um pode executar `go build` / `go test` de forma independente e possui seu próprio `go.mod`. As três camadas acima são mapeadas para eles: **MCL** é o grupo do compilador, **cortex** é o mecanismo de memória e **executor** implementa o Loop Manager.
 
----
+
+  <img src="https://www.readmecodegen.com/api/file-tree-embed?repo=paxlabs-inc%2Fmatrix-core&branch=main&maxDepth=1&foldersOnly=true&transparentBg=true&showHeader=true" alt="Dynamic File Tree" />
+
+
+| Módulo | Função |
+|--------|------|
+| **MCL** | O grupo do Matrix Compiler. Três agentes rigorosos de verbos fechados que planejam e agem sobre tarefas sensíveis e de alto risco com exatidão de máquina. |
+| **cortex** | Mecanismo de memória tipada por ator sobre Pebble. Journal somente acrescentável, snapshots ancorados em Merkle e replay determinístico em nível de bytes. Persistente, imutável e durável. |
+| **bridge** | Adaptador de MCL para cortex. Módulo Go separado para manter limites de interface limpos. |
+| **executor** | O Loop Manager. Mecanismo de loop por agente, máquina de estados de ciclo de vida, dispatch MCP, daemon por usuário, narrador Liaison e harness de testes end-to-end. |
+| **neo** | Agente conversacional padrão que roda dentro do loop, com escalonamento automático para MCL em operações consequenciais. |
+| **gateway** | Proxy LLM tarifado com ledger de créditos PAX, allowlist da camada gratuita e aplicação da tabela de preços. |
+| **router** | Provisionamento de Fly Machine por usuário com uma entrada que primeiro desperta a máquina e depois atua como reverse proxy. |
+| **deus** | Marketplace de serviços de agentes: registro, descoberta, invocação tarifada, recibos EIP-712 e execução hospedada. |
+| **tachyon** | Mecanismo Solidity/EVM nativo para agentes — compilar, testar, simular e implantar. (git submodule) |
+| **uwac** | Universal Web Agent Connector — cofre OAuth que fornece ferramentas MCP por usuário. |
+| **layerx** | Malha de liquidação e espinha dorsal de custódia para saldos de agentes. |
+| **chronos** | Agendador centralizado de agentes e sistema de despertar. |
+| **atlas** | Camada adicional de orquestração de infraestrutura. |
+| **context** | Subsistema de gerenciamento de contexto. |
+| **journal** | Subsistema de journal somente acrescentável para replay determinístico de estado. |
+| **knowledge** | Referências canônicas: estado do projeto matrix.kvx, modelos e definições de schema. |
+| **skills** | Manifestos de capacidades SKILL.mtx e descrições textuais de capacidades em SKILL.md. |
+| **tools** | Servidores MCP: paxeer, browser, tachyon, deus, uwac, web-search, media, cortex. |
+| **agents** | Manifestos de agentes vinculados a DID (default.json, neo.json) mais templates de servidores MCP. |
+| **protocol** | Definições de protocolo e formatos de comunicação. |
+| **marketplace** | Marketplace Deus e dashboard para desenvolvedores (React Router sobre Cloudflare Workers). |
+| **client** | Aplicação de consumo Matrix (Next.js / React). |
+| **deploy** | Imagem de contêiner do daemon, deploy de Fly Machine, imagens de serviços compartilhados e scripts de instalação de box. |
+
+## Principais decisões de design
+
+- **Coordenação por verbos fechados (D7)**: os agentes do MCL se coordenam por meio de 10 verbos fechados — `find`, `acquire`, `build`, `modify`, `deliver`, `analyze`, `negotiate`, `schedule`, `monitor`, `delegate` — para que a intenção entre agentes seja exata e nunca inferida em runtime a partir de texto livre.
+
+- **8 tipos de objeto fechados**: `service`, `model`, `agent`, `knowledge`, `intent`, `asset`, `plan`, `capability`. Todo operando pertence a um desses tipos. Nenhum bloco não estruturado cruza a fronteira para a execução consequencial.
+
+- **Invariante de replay (seção 13.4)**: o estado derivado sempre pode ser reconstruído a partir do journal com identidade byte a byte. Isso é aplicado a cada pull request por meio de `make ci`. Nada que um agente fez fica sem registro, e nada que ele não fez fica oculto.
+
+- **Memória imutável**: Cortex é somente acrescentável e endereçado por conteúdo, portanto a continuidade de um agente não pode ser reescrita silenciosamente — durável para o agente e confiável para o usuário.
+
+- **Recibos assinados**: toda execução consequencial termina em um recibo EIP-712 — entradas, saídas, custo e hash — que qualquer pessoa pode verificar posteriormente.
 
 ## Início rápido
 
 ### Pré-requisitos
 
-- Go **1.22+** (toolchain fixada em todos os módulos).
-- `make` (GNU make 4.x).
-- Para os fluxos acionados por servidores MCP: `node` ≥ 20, `npx`, `python3` ≥ 3.11, `uv`.
-- Para a imagem do daemon: `docker` com buildx.
+- Go 1.22+
+- GNU Make 4.x
+- Node.js 20+
+- Python 3.11+
+- Docker com Buildx
 
-### Clonar e compilar
+### Build
 
 ```bash
+# Clone the repository
 git clone https://github.com/paxlabs-inc/matrix-core.git
 cd matrix-core
-make build           # compila os nove módulos Go
-make install         # coloca os CLIs executáveis em ./bin
-make test            # `go test -count=1 -race ./...` por módulo
-make vet             # `go vet ./...` por módulo
-make ci              # gofmt-check + vet + tests (espelha o GitHub Actions)
+
+# Build all nine Go modules
+make build
+
+# Install runnable CLIs into ./bin
+make install
+
+# Run tests (go test -count=1 -race ./... per module)
+make test
+
+# Full CI check (gofmt + vet + tests; mirrors GitHub Actions)
+make ci
 ```
 
-Se precisar do `golangci-lint` localmente:
+### Configuração
 
 ```bash
-make lint-install    # fixado em v1.61.0
-make lint
-```
-
-### Configurar os segredos
-
-```bash
+# Copy the example environment file
 cp .env.example .env
-# preencha FIREWORKS_API_KEY / TOGETHER_API_KEY para qualquer compilação que não seja dry-run
-# preencha MATRIX_DAEMON_TOKEN se for rodar o daemon com autenticação
+
+# Required for consequential (non-dry-run) execution:
+#   FIREWORKS_API_KEY
+#   TOGETHER_API_KEY
+#
+# Required for authenticated daemon mode:
+#   MATRIX_DAEMON_TOKEN
 ```
 
-`.env` está no gitignore; `.env.example` documenta toda variável que o Matrix lê.
-
-### Compile sua primeira intenção
-
-```bash
-./bin/mclc compile \
-  -skill skills/writing-plans/SKILL.mtx \
-  -prose "Build a deployment pipeline for my Node.js app" \
-  -verb  build
-```
-
-Com `FIREWORKS_API_KEY` definido, o compilador emite um Intent Frame real (verbo, objetos
-tipados, incógnitas bloqueantes). Sem chaves, ele recorre ao modo dry-run e imprime a
-estrutura do prompt totalmente interpolada.
-
-### Execute uma caminhada de ponta a ponta
+### Executar um loop de agente
 
 ```bash
 ./bin/mcl-execute walk \
-  -prose       "Summarise the README and write it to /tmp/summary.md" \
+  -prose "Summarise the README and write it to /tmp/summary.md" \
   -manifest    agents/default.json \
   -cortex-root ./runs/dev-cortex \
   -skills-root ./skills
 ```
 
-Isso carrega o manifesto do agente, sobe os servidores MCP que ele declara, compila a prosa
-em um Intent + PlanTree, percorre o plano, registra cada passo como um Event do cortex e
-termina com `cortex.Attest` gravando `KindAttest` + `KindLearnWeights` de forma atômica.
-
-### Rodar o daemon
+### Iniciar o Daemon
 
 ```bash
 ./bin/mcl-execute daemon \
@@ -195,41 +201,75 @@ termina com `cortex.Attest` gravando `KindAttest` + `KindLearnWeights` de forma 
   -skills-root ./skills
 ```
 
-Rotas:
+## Referência da API
 
-| Método | Caminho          | Propósito                                |
-| ------ | ---------------- | ---------------------------------------- |
-| GET    | `/healthz`       | Liveness + estatísticas do broker SSE    |
-| POST   | `/chat`          | Conversar com o agente (porta do Neo)    |
-| GET    | `/events`        | Cauda de Server-Sent Events (transcrição) |
-| POST   | `/messages`      | Enviar uma mensagem em prosa (trilho rigoroso) |
-| GET    | `/intents/{id}`  | Ler a cadeia de envelopes de intenção por ID |
-| GET    | `/me`            | Configurações + identidade por usuário   |
-| POST   | `/shutdown`      | Drenagem graciosa                        |
+O daemon expõe uma API HTTP leve para interação com agentes.
 
----
+| Método | Caminho | Finalidade |
+|--------|------|---------|
+| `GET` | `/healthz` | Probe de liveness + estatísticas do broker SSE |
+| `POST` | `/chat` | Conversar com o agente (loop conversacional via Neo) |
+| `GET` | `/events` | Stream de Server-Sent Events para acompanhar o transcript em tempo real |
+| `POST` | `/messages` | Enviar uma mensagem consequencial (escala para o grupo MCL) |
+| `GET` | `/intents/{id}` | Ler a cadeia de intent envelope pelo intent ID |
+| `GET` | `/me` | Configurações e identidade por usuário |
+| `POST` | `/shutdown` | Drenagem e encerramento gracioso |
 
 ## Documentação
 
-- [`ARCHITECTURE.md`](./ARCHITECTURE.md) — mapa do sistema, fronteiras de módulos, invariantes-chave
-- [`CONTRIBUTING.md`](./CONTRIBUTING.md) — configuração de desenvolvimento, disciplina de testes, estilo de commits
-- [`SECURITY.md`](./SECURITY.md) — divulgação de vulnerabilidades
-- [`CHANGELOG.md`](./CHANGELOG.md) — notas de versão no estilo Keep-a-Changelog
-- [`deploy/daemon/README.md`](./deploy/daemon/README.md) — build da imagem + deploy no Fly
----
+| Recurso | Descrição |
+|----------|-------------|
+| [Guia de Arquitetura](ARCHITECTURE.md) | Mapa do sistema, limites dos módulos, invariantes principais e justificativa de design |
+| [Guia de Contribuição](CONTRIBUTING.md) | Configuração de desenvolvimento, disciplina de testes, estilo de commits e processo de PR |
+| [Política de Segurança](SECURITY.md) | Divulgação de vulnerabilidades e comunicação responsável |
+| [Changelog](CHANGELOG.md) | Notas de versão no formato Keep-a-Changelog |
+| [Documentação do MCL](docs/MCL-docs/index.md) | Referência da linguagem MCL, gramática de verbos fechados e funcionamento interno dos agentes |
+| [Guia de Deploy do Daemon](deploy/daemon/README.md) | Deploy em produção, configuração de Fly Machine e operações |
+| [Documentação Completa](https://docs.matrixmcl.com) | Site completo de documentação em docs.matrixmcl.com |
+
+## Contribuição
+
+Matrix Core é open source e você pode **fazer fork e modificá-lo** livremente. A branch `main`, no entanto, é desenvolvida estritamente pela equipe principal: pull requests não solicitados geralmente não são integrados, e mudanças externas só são aceitas depois de trabalharmos diretamente com o contribuidor.
+
+Antes de abrir qualquer coisa, leia a política de contribuição no início do [Guia de Contribuição](CONTRIBUTING.md). Issues, relatórios de bugs e divulgações de segurança são sempre bem-vindos.
+
+Contribuidores:
+- dev-paxeer
+- Andrew
+- paxlabs-inc
+- cursoragent
+- Sidiora-Technologies
 
 ## Licença
 
-Disponível em código-fonte sob a **Matrix-Protocol License** — veja [`LICENSE.md`](./LICENSE.md).
+Matrix Core tem seu código-fonte disponível sob a [Matrix-Protocol License](LICENSE.md).
 
-Versão curta: leia, use, faça deploy e integre livremente. Se você **modificar e redistribuir**,
-publique suas alterações sob a mesma licença. Uma licença comercial é exigida quando você
-ultrapassa os limiares de gatilho comercial (Taxas cobradas > USD 100k / 12 meses **ou**
-Liquidez sob controle > USD 10M). O resumo não vinculante em `LICENSE.md` é por conveniência;
-o corpo da licença é o texto autoritativo.
+Você pode ler, usar, implantar e integrar Matrix Core livremente. Se modificar e redistribuir o software, deverá publicar suas alterações sob a mesma licença. Uma licença comercial da PaxLabs Inc. é necessária quando você ultrapassar os seguintes limites de ativação comercial:
+
+- Taxas cobradas superiores a **USD 100.000** em qualquer período de 12 meses; ou
+- Liquidez sob controle superior a **USD 10.000.000**.
+
+Consulte [LICENSE.md](LICENSE.md) para os termos completos.
+
+## READMEs internacionais
+
+- [Espanhol](README.es.md)
+- [Japonês](README.ja.md)
+- [Português](README.pt-BR.md)
+- [Russo](README.ru.md)
+- [Chinês simplificado](README.zh-CN.md)
+
+## Relacionados
+
+- [Paxeer Network](https://paxeer.app) — A blockchain L1 sobre a qual Matrix Core é construído. Blocos de 400 ms, finalidade em 400 ms e arquitetura criada especificamente para cargas de trabalho de agentes.
+- [PaxLabs](https://labs.paxeer.app) — Construindo o futuro da colaboração entre humanos e agentes.
 
 ---
 
 <p align="center">
-  Construído por <a href="https://labs.paxeer.app">Paxlabs Inc.</a> · <code>SPDX-License-Identifier: LicenseRef-Paxlabs-Matrix-Protocol</code>
+  Criado por <a href="https://labs.paxeer.app"><strong>PaxLabs Inc.</strong></a>
+</p>
+
+<p align="center">
+  <sub>SPDX-License-Identifier: Matrix-Protocol</sub>
 </p>
