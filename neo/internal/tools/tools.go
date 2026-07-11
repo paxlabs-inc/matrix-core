@@ -87,6 +87,17 @@ const TodoTool = "todo"
 // nil until wired, in which case core_execute reports it is unavailable.
 type DelegateFunc func(ctx context.Context, proseIntent string) (string, error)
 
+// MediaPersistFunc writes a tool-produced image (base64 payload + MIME) to the
+// served media plane and returns its /media/<id> URL. It is the seam that keeps
+// a screenshot's bytes OUT of the model transcript (BROWSER-FILMSTRIP req.2):
+// the URL travels out-of-band to the surfacing layer while the model-facing
+// tool result stays a terse placeholder. Injected by the engine wiring (see
+// internal/server); nil until wired, in which case image bytes are simply
+// summarized to a placeholder as before (no persistence, no filmstrip). It is
+// best-effort by contract: an error is swallowed by the caller and never fails
+// the tool call or the turn.
+type MediaPersistFunc func(mimeType, base64Data string) (url string, err error)
+
 // TodoStatus is the lifecycle status of one task-list item. Exactly one item
 // may be TodoInProgress at a time (enforced by dispatchTodo); an item is moved
 // to TodoDone the moment it is finished (not batched at the end).
@@ -181,6 +192,7 @@ type Manager struct {
 	ask        AskFunc
 	writeSkill WriteSkillFunc
 	todo       TodoFunc
+	media      MediaPersistFunc
 	maxAgents  int
 
 	byFunc    map[string]*boundTool
@@ -366,44 +378,118 @@ func (m *Manager) SubagentSchemas() []llm.Tool {
 // (message, true, nil) so the model reads and corrects rather than the harness
 // retrying a doomed call.
 func (m *Manager) Dispatch(ctx context.Context, funcName string, args map[string]interface{}) (string, bool, error) {
-	if funcName == CoreExecuteTool {
-		return m.dispatchCoreExecute(ctx, args)
-	}
-	if funcName == MemoryRecallTool {
-		return m.dispatchMemoryRecall(ctx, args)
-	}
-	if funcName == SpawnSubagentsTool {
-		return m.dispatchSpawnSubagents(ctx, args)
-	}
-	if funcName == ConstructRenderTool {
-		return m.dispatchConstructRender(ctx, args)
-	}
-	if funcName == WriteSkillTool {
-		return m.dispatchWriteSkill(ctx, args)
-	}
-	if funcName == TodoTool {
-		return m.dispatchTodo(ctx, args)
+	content, _, isErr, err := m.dispatch(ctx, funcName, args)
+	return content, isErr, err
+}
+
+// DispatchMedia is Dispatch plus the out-of-band screenshot URL: when the tool
+// returned an image content block (e.g. browser_take_screenshot), its bytes are
+// persisted to the media plane and the /media URL is returned SEPARATELY from
+// the model-facing content string — which stays a terse placeholder so the
+// screenshot never pollutes the transcript (BROWSER-FILMSTRIP req.2). shotURL is
+// "" when the tool produced no image or no media sink is wired.
+func (m *Manager) DispatchMedia(ctx context.Context, funcName string, args map[string]interface{}) (content, shotURL string, isErr bool, err error) {
+	return m.dispatch(ctx, funcName, args)
+}
+
+func (m *Manager) dispatch(ctx context.Context, funcName string, args map[string]interface{}) (content, shotURL string, isErr bool, err error) {
+	switch funcName {
+	case CoreExecuteTool:
+		c, e, er := m.dispatchCoreExecute(ctx, args)
+		return c, "", e, er
+	case MemoryRecallTool:
+		c, e, er := m.dispatchMemoryRecall(ctx, args)
+		return c, "", e, er
+	case SpawnSubagentsTool:
+		c, e, er := m.dispatchSpawnSubagents(ctx, args)
+		return c, "", e, er
+	case ConstructRenderTool:
+		c, e, er := m.dispatchConstructRender(ctx, args)
+		return c, "", e, er
+	case WriteSkillTool:
+		c, e, er := m.dispatchWriteSkill(ctx, args)
+		return c, "", e, er
+	case TodoTool:
+		c, e, er := m.dispatchTodo(ctx, args)
+		return c, "", e, er
 	}
 	bt, ok := m.byFunc[funcName]
 	if !ok {
-		return fmt.Sprintf("unknown tool %q — it is not available in this session", funcName), true, nil
+		return fmt.Sprintf("unknown tool %q — it is not available in this session", funcName), "", true, nil
 	}
 	if bt.surface == Escalate {
-		return fmt.Sprintf("%q moves funds or needs a wallet signature and cannot be called directly; use %q with a clear description of the task so it runs through the secure path under the user's authorization (their inline approval, or a pre-authorized wallet leash).", funcName, CoreExecuteTool), true, nil
+		return fmt.Sprintf("%q moves funds or needs a wallet signature and cannot be called directly; use %q with a clear description of the task so it runs through the secure path under the user's authorization (their inline approval, or a pre-authorized wallet leash).", funcName, CoreExecuteTool), "", true, nil
 	}
 	t, err := m.registry.Get(bt.uri)
 	if err != nil {
-		return fmt.Sprintf("tool %q is unavailable: %v", funcName, err), true, nil
+		return fmt.Sprintf("tool %q is unavailable: %v", funcName, err), "", true, nil
 	}
 	res, err := t.Call(ctx, args)
 	if err != nil {
-		return "", true, err
+		return "", "", true, err
 	}
 	text := tool.ExtractText(res)
+	// Persist any image content block out-of-band (req.2): the /media URL rides
+	// the return, never the model-facing text. Best-effort — a persist error
+	// leaves shotURL empty and never disturbs the result.
+	shotURL = m.persistFirstImage(res)
 	if text == "" {
 		text = summarizeNonText(res)
 	}
-	return text, res.IsError, nil
+	return text, shotURL, res.IsError, nil
+}
+
+// persistFirstImage writes the first image content block in a tool result to the
+// media plane and returns its /media URL, or "" when there is no image, no media
+// sink is wired, or the write fails. Best-effort by contract (req.2 ac_3): the
+// screenshot never fails the tool call.
+func (m *Manager) persistFirstImage(res *tool.Result) string {
+	if m == nil || m.media == nil || res == nil {
+		return ""
+	}
+	for _, c := range res.Content {
+		if c.Type == tool.ContentTypeImage && strings.TrimSpace(c.Data) != "" {
+			url, err := m.media(c.MimeType, c.Data)
+			if err == nil && url != "" {
+				return url
+			}
+		}
+	}
+	return ""
+}
+
+// CaptureViewport fires a viewport JPEG screenshot on the SAME browser MCP
+// session that ran sourceFunc, persists it out-of-band, and returns the /media
+// URL — the deterministic, model-invisible auto-capture behind the browsing
+// filmstrip (BROWSER-FILMSTRIP req.3). It reuses the browser server the source
+// call already used (derived from the "<alias>__" prefix), so the screenshot is
+// of the page the source action just produced. Returns "" when no media sink is
+// wired, the browser has no screenshot tool, or capture fails — best-effort:
+// a screenshot failure never blocks the navigation or the turn (req.3 ac_4).
+func (m *Manager) CaptureViewport(ctx context.Context, sourceFunc string) string {
+	if m == nil || m.media == nil {
+		return ""
+	}
+	shotFunc := "browser_take_screenshot"
+	if i := strings.Index(sourceFunc, "__"); i >= 0 {
+		shotFunc = sourceFunc[:i] + "__browser_take_screenshot"
+	}
+	bt, ok := m.byFunc[shotFunc]
+	if !ok {
+		return ""
+	}
+	t, err := m.registry.Get(bt.uri)
+	if err != nil {
+		return ""
+	}
+	// Viewport JPEG (not full-page PNG): "the section they're viewing", quality/
+	// size bounded by the browser's JPEG encoder (req.7.1). fullPage omitted =>
+	// viewport only.
+	res, err := t.Call(ctx, map[string]interface{}{"type": "jpeg"})
+	if err != nil {
+		return ""
+	}
+	return m.persistFirstImage(res)
 }
 
 func (m *Manager) dispatchCoreExecute(ctx context.Context, args map[string]interface{}) (string, bool, error) {
@@ -693,6 +779,16 @@ func (m *Manager) SetSwarm(s SwarmFunc, maxAgents int) {
 // SetRecall wires the durable-memory lookup after construction (the pager
 // and tool manager are built independently).
 func (m *Manager) SetRecall(r RecallFunc) { m.recall = r }
+
+// SetMediaPersist wires the media-plane sink for tool-produced images after
+// construction (the engine owns the served media dir). nil leaves image bytes
+// summarized to a placeholder as before (no persistence, no filmstrip).
+func (m *Manager) SetMediaPersist(f MediaPersistFunc) { m.media = f }
+
+// MediaPersistEnabled reports whether a media sink is wired (browser stills can
+// be persisted + surfaced). Used by the agent to skip auto-capture cheaply when
+// there is nowhere to write.
+func (m *Manager) MediaPersistEnabled() bool { return m != nil && m.media != nil }
 
 // SetWriteSkill wires the skill-writing function after construction (the
 // pager and tool manager are built independently). When nil, write_skill is

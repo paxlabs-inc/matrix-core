@@ -14,9 +14,14 @@
 #   - Local data services as native server binaries (NOT docker-in-docker):
 #     PostgreSQL, Redis, SQLite — started on demand by the exec bridge.
 #   - The quality toolchain codyd verifies with: golangci-lint, ruff, eslint,
-#     prettier, tsc, vitest, cargo-clippy. Playwright browsers are EXCLUDED
-#     (browser e2e runs in sandboxes, never on the per-user VM).
+#     prettier, tsc, vitest, cargo-clippy.
 #   - agents/cody.json (via the wholesale agents/ COPY).
+#   - A PER-USER Playwright (@playwright/mcp + chromium) baked in and run
+#     in-container by the entrypoint (BROWSER-FILMSTRIP req.1): navigation and
+#     per-navigation screenshot capture are local and cheap on the dedicated
+#     Railway machine, replacing the shelved shared Fly matrix-browser app.
+#     MATRIX_BROWSER_URL points at the local instance; the browser.mjs bridge
+#     forwards to it unchanged in wire shape.
 #
 # Railway specifics (vs the Fly image):
 #   - ONE volume: Railway allows exactly one volume mount per service. It
@@ -184,9 +189,25 @@ RUN set -eux; \
     redis-server --version; \
     sqlite3 --version
 
-# Quality toolchain codyd shells into for its verify/gate stages. Browser e2e
-# (playwright) is deliberately EXCLUDED: it runs in disposable sandboxes, never
-# on the per-user VM — so NO `playwright install` and NO browser binaries here.
+# Per-user Playwright (BROWSER-FILMSTRIP req.1): @playwright/mcp + chromium
+# baked into the image so a freshly-provisioned per-user container can navigate
+# and screenshot locally with no external dependency (ac 1.3). The entrypoint
+# runs it on 127.0.0.1:8931 and points MATRIX_BROWSER_URL at it; the daemon-side
+# stdio bridge (tools/browser/browser.mjs) forwards unchanged in wire shape
+# (ac 1.2). PWMCP_VERSION must match the version whose tools/list is mirrored in
+# tools/browser/playwright-tools.json (and enumerated in agents/neo.json) —
+# same pin discipline as the retired deploy/browser image. Install the browser
+# with @playwright/mcp's OWN bundled playwright CLI (NOT `npx playwright
+# install`) so the chromium revision matches the mcp's pinned playwright.
+ARG PWMCP_VERSION=0.0.75
+ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
+RUN set -eux; \
+    npm install -g @playwright/mcp@${PWMCP_VERSION}; \
+    node "$(npm root -g)/@playwright/mcp/node_modules/playwright/cli.js" install --with-deps chromium; \
+    npm cache clean --force; \
+    rm -rf /var/lib/apt/lists/*
+
+# Quality toolchain codyd shells into for its verify/gate stages.
 # Pins chosen to match real published releases; bump via a rebuild.
 ARG GOLANGCI_LINT_VERSION=v1.61.0
 ARG RUFF_VERSION=0.6.9

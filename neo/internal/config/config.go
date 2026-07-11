@@ -108,6 +108,19 @@ type Config struct {
 	MaxConcurrentSubagents int // semaphore: how many sub-agents run at once (the rest queue)
 	SubagentStepBudget     int // per-sub-agent tool-call iteration budget (smaller than the parent's)
 
+	// --- browser filmstrip (BROWSER-FILMSTRIP; see [browser] / NEO_BROWSER_*) ---
+	// BrowserAutoshot deterministically captures a viewport JPEG after each
+	// view-changing browser action (navigate/back/click/form submit) so the
+	// "Neo's Computer" browsing surface reads as a live filmstrip without
+	// relying on the model choosing to screenshot. Default ON; a capture failure
+	// never blocks the navigation or the turn (best-effort). BrowserAutoshotMax
+	// caps captures per run so a long browsing turn can't grow media without
+	// bound. MediaRetentionHours bounds screenshot/media growth on the volume:
+	// the GC sweep deletes served media files older than this (0 disables).
+	BrowserAutoshot     bool
+	BrowserAutoshotMax  int
+	MediaRetentionHours int
+
 	// --- task supervisor (durability: a dispatched task runs to completion
 	// across model errors, tool failures, early loop-ends, user disconnects,
 	// and even daemon restart/suspend — at least one agent stays on it until
@@ -269,6 +282,14 @@ func Default() Config {
 		MaxSubagents:           8,
 		MaxConcurrentSubagents: 4,
 		SubagentStepBudget:     40,
+
+		// Browser filmstrip: auto-capture ON (a clean turn that never browses is
+		// byte-identical to disabled). 40 stills per run is generous for a real
+		// browsing session yet bounds media growth; the volume GC keeps 7 days of
+		// stills (parallel to the trace retain window).
+		BrowserAutoshot:     true,
+		BrowserAutoshotMax:  40,
+		MediaRetentionHours: 168,
 
 		// Task durability: ON by default. The ceilings are generous-but-finite
 		// (the user chose "max persistence" — effectively no practical limit —
@@ -516,6 +537,13 @@ func (c *Config) applyEnv() {
 	c.MaxSubagents = envInt("NEO_MAX_SUBAGENTS", c.MaxSubagents)
 	c.MaxConcurrentSubagents = envInt("NEO_MAX_CONCURRENT_SUBAGENTS", c.MaxConcurrentSubagents)
 	c.SubagentStepBudget = envInt("NEO_SUBAGENT_STEP_BUDGET", c.SubagentStepBudget)
+
+	// Browser filmstrip (BROWSER-FILMSTRIP). Auto-capture defaults ON; the cap
+	// and retention accept 0 (0 cap = no cap; 0 retention = GC disabled), so they
+	// use the non-negative variant rather than envInt (which rejects 0).
+	c.BrowserAutoshot = envBool("NEO_BROWSER_AUTOSHOT", c.BrowserAutoshot)
+	c.BrowserAutoshotMax = envIntNonNeg("NEO_BROWSER_AUTOSHOT_MAX", c.BrowserAutoshotMax)
+	c.MediaRetentionHours = envIntNonNeg("NEO_MEDIA_RETENTION_HOURS", c.MediaRetentionHours)
 
 	// P2-7: adaptive step budget. StepBudgetMin accepts 0 (adaptation
 	// disabled — the default); StepBudgetMax accepts 0 only to mean "use

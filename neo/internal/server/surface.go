@@ -125,6 +125,13 @@ func fillBrowser(step map[string]interface{}, bare string, ev agent.ToolEvent, r
 	if running {
 		return
 	}
+	// Attach the captured page still (BROWSER-FILMSTRIP req.4): the out-of-band
+	// /media URL rides the ToolEvent, so the browser step carries only the URL —
+	// never inline bytes — and the client renders this navigation as its own
+	// filmstrip screen. Empty for a browser action with no capture.
+	if ev.ScreenshotURL != "" {
+		step["screenshot_url"] = ev.ScreenshotURL
+	}
 	// Lift the real page identity out of the tool report so the chrome shows
 	// where Neo actually is (the URL in args may be empty for click/type/etc.).
 	url, title, body := parseBrowserReport(ev.Result)

@@ -1,0 +1,209 @@
+# spec.kvx — BROWSER-FILMSTRIP: Neo's Computer shows a live-feeling browsing screen.
+# SINGLE SOURCE for this feature's requirements + design + tasks. Rendered to
+# requirements.md / design.md / tasks.md by spec/specgen. Do not edit the
+# generated markdown; edit this file and regenerate.
+#
+# Format: Matrix .kvx (see tachyon/internal/config/kvx.go). One key = value per
+# line; string values double-quoted; lists are ["a","b"]; # starts a comment.
+# Schema:
+#   [req.<n>]   title, story, ac_1..ac_n          (acceptance criteria, EARS)
+#   [design]    overview, include="design.body.md" (rich prose/diagrams inlined)
+#   [task.<id>] title, status, wave, reqs, requires (dotted ids: 1, 1.1, 1.2)
+
+[meta]
+feature      = "browser-filmstrip"
+title        = "BROWSER-FILMSTRIP — Neo's Computer shows a live-feeling browsing screen"
+status       = "complete"
+spec_version = "0.1.0"
+intro        = "BROWSER-FILMSTRIP makes the 'Neo's Computer' surface show the agent's web browsing as a live-feeling filmstrip of screenshots instead of trying to embed the real site. Iframe embedding dies to X-Frame-Options / CSP frame-ancestors on most real sites, so the client captures a viewport screenshot each time the agent navigates or acts and streams the sequence as one still per page, crossfading as Neo moves — the illusion of a lot without the overwhelm of a lot. Two invariants keep it honest: every frame is a faithful capture of what Neo actually saw at that step (labeled 'Neo viewed', never a fake live video feed), and the screenshot never pollutes the model's reasoning (bytes and media URL travel to the client out-of-band while the model-facing tool result stays terse). A full code sweep found the feature ~70% built and merely disconnected: the Playwright browser already exposes browser_take_screenshot (tools/browser/playwright-tools.json:485-529, agents/neo.json:69); the media plane already persists and serves content-addressed assets (neo/internal/server/media.go:121-231); tool.media/tool.step are already durable and replayed on reopen (engine.go:636-651, trace.go, server.go:299-319); and the client already has a full browser-chrome renderer plus a one-screen-at-a-time crossfading scrubber with a Live pill (neo-workspace.tsx:241-366, neo-computer.tsx:116-377). The single broken line is summarizeNonText discarding the image bytes as the placeholder '[image mime]' (neo/internal/tools/tools.go:1010-1031) even though the base64 is intact one layer up (executor/tool/registry.go:453-461). The infrastructure change that unlocks it: the Railway migration gives each user a dedicated 24 vCPU / 48 GB machine, so a per-user Playwright is baked into the daemon image (replacing the shelved shared Fly instance), making per-navigation capture local and cheap with no shared-remote round-trip. The whole instrument is proven with no fakes: a real screenshot through the real dispatch, real media persistence and serving, real tool.step trace-replay, and the real client reducer — never asserted."
+
+[design]
+overview = "See the full design below: the mission (a screenshot filmstrip that reads as a live browsing screen, honest because every frame is a faithful capture and the model transcript stays clean); the load-bearing facts from a full code sweep with file:line citations (what already exists across browser tool, media plane, durable trace, and client browser-frame/scrubber; and the single broken line that discards the bytes); the infrastructure change (per-user Playwright baked into the Railway image, replacing the shared Fly instance); the recommended architecture (attach a still to each browser tool.step and let the existing buildScreens form the filmstrip — no new event type, durability for free); the server and client seam details; the non-goals; and the no-fakes verification strategy. Authored as a rich markdown fragment (design.body.md) and inlined verbatim."
+include  = "design.body.md"
+
+# The per-session working protocol, machine-readable (mirrors design.body.md).
+[protocol]
+step_1_context   = "cortex_recall (MCP) once at session start; READ IN FULL any output flagged truncated before reasoning (hard rule). Then read spec/browser-filmstrip/spec.kvx and the previous session's handoff (the most recent browser-filmstrip cortex outcome/handoff)."
+step_2_select    = "Pick the ONE next eligible task: lowest wave whose every 'requires' task is done and whose status is pending. Set it in_progress in spec.kvx. At most ONE task in_progress at a time."
+step_3_build     = "Implement against the task's referenced acceptance criteria on REAL code (neo, apps/client, tools/browser, the Railway deploy image). Deliver complete, runnable artifacts — never diffs or fragments. Follow existing repo style; add no comments/docs unless asked."
+step_4_test      = "Ship tests over REAL code paths — no stub/mock/fake doubles EVER. A real image content block through the real dispatch, real media persistence and serving, real tool.step trace-replay, the real client reducer. A red check is a stop condition."
+step_5_close_out = "Only when genuinely green: mark the task done in spec.kvx; write a concise next-session handoff; cortex_note_outcome (success|partial|failure) + any durable cortex_remember_*; close out. Never attest a completion that did not happen — surface honest partials."
+step_6_guard     = "Before any destructive/irreversible/prod/secret/network-write action (a daemon image rebuild + Railway redeploy, a prod restart), run cortex_guard and self-check the HARD rules; stop for explicit user YES if it risks a HARD rule. No git on the dev box; the user drives commits."
+handoff_convention = "The handoff is a cortex outcome note prefixed 'HANDOFF browser-filmstrip' carrying: tasks done+green this session, current spec.kvx status, the exact next eligible task id, and any gotchas or partials."
+
+# The non-negotiable quality bar (mirrors design.body.md).
+[quality_bar]
+grade           = "Production grade. This ships to the live per-user daemon and the beta client. The browsing surface must feel alive AND be honest — a frame is only ever a faithful capture."
+honest_frames   = "Every still is a real capture of what Neo saw at that step, labeled 'Neo viewed · <ts>'. Never a synthesized/stock image, never presented as a continuous live video feed it is not."
+model_clean     = "The screenshot bytes and the media URL travel to the client out-of-band. The model-facing tool result stays a terse placeholder — no base64, no URL injected into the transcript (consistent with the config-filter / no-jargon posture)."
+best_effort     = "Capture and persistence are best-effort: a screenshot failure or a media write error never blocks a navigation, a tool call, or a turn."
+house_rules     = "Client UI: separation via background-color contrast only (no border strokes for depth); no glow, no emojis, no purple gradients. The BrowserView device chrome keeps its deliberate dark-zinc window idiom (device chrome, not app-layer depth)."
+no_fakes        = "Real Playwright screenshot (or a real image content block through the real dispatch), real MediaDir persistence + GET /media serving, real tool.step trace-replay, real client reducer. No fake doubles."
+bounded_cost    = "Captures are viewport JPEG (not full-page PNG), quality/resolution bounded, per-run capped, behind NEO_BROWSER_AUTOSHOT (default on). Media growth on /data/media is bounded by a retention/GC sweep."
+non_goals       = "No Matrix/homeserver, no iframe embedding, no site proxy-rewrite, no CDP screencast in v1 (a v2 path off the local per-user Playwright). No change to the MCL signed walk or any value-transfer surface — this is a pure observability surface that signs nothing and moves nothing."
+
+# ============================== REQUIREMENTS ==============================
+
+[req.1]
+title = "Per-user Playwright baked into the Railway daemon image"
+story = "As the platform, I want each user's daemon to run its own Playwright inside its Railway container, so that web browsing and per-navigation screenshots are local and cheap instead of a round-trip to a shared remote."
+ac_1 = "THE browser automation SHALL run as a per-user Playwright instance inside the user's daemon container (Railway, 24 vCPU / 48 GB), not the shared remote Fly instance; MATRIX_BROWSER_URL SHALL point at the local in-container instance."
+ac_2 = "THE existing browser MCP bridge (tools/browser/browser.mjs) SHALL forward to the local instance unchanged in wire shape (initialize / tools/list answered locally, tools/call forwarded), so no bridge contract change is required."
+ac_3 = "THE deploy image build SHALL install Playwright plus its browser binaries so a freshly-provisioned per-user container can navigate and screenshot with no external dependency."
+ac_4 = "A verification SHALL prove a container built from the image can navigate to a URL and take a screenshot locally (no Fly/shared endpoint reachable)."
+
+[req.2]
+title = "Screenshot bytes are persisted to the media plane, never discarded"
+story = "As the client, I want image content blocks returned by tools to be saved as servable media assets, so that a screenshot can reach the workspace instead of being collapsed to a placeholder string."
+ac_1 = "WHEN a tool result carries an image content block, THE dispatch SHALL persist the bytes to the media dir (mint id, write, produce a /media/<id> URL) reusing the existing mintMediaID + write logic, instead of collapsing to the '[image mime]' placeholder in summarizeNonText (neo/internal/tools/tools.go:1010-1031)."
+ac_2 = "THE model-facing tool result string SHALL remain a terse placeholder (no base64, no media URL) — the image URL SHALL travel out-of-band to the surfacing layer (e.g. a new ToolEvent field), keeping the model transcript clean."
+ac_3 = "PERSISTENCE SHALL be best-effort: a media write error never fails the tool call or the turn (the placeholder result is still returned)."
+ac_4 = "A test SHALL prove a real image content block round-trips to a served /media/<id> asset AND that the model-facing result string contains neither the bytes nor the URL."
+
+[req.3]
+title = "Auto-capture on navigation — deterministic and model-invisible"
+story = "As a viewer, I want a fresh screenshot every time Neo changes what it is looking at, so that the filmstrip feels live without relying on the model choosing to screenshot."
+ac_1 = "WHEN the agent completes a view-changing browser action (browser_navigate, browser_navigate_back, browser_click, or a form submit), THE harness SHALL capture a viewport screenshot (JPEG, quality/resolution bounded) of the current page on the same MCP session."
+ac_2 = "THE capture SHALL be deterministic — it SHALL NOT depend on the model deciding to call browser_take_screenshot — and SHALL be invisible to the model (it adds no tool call to the model's transcript and no tokens)."
+ac_3 = "THE capture SHALL be bounded by a per-run cap and gated behind a config flag NEO_BROWSER_AUTOSHOT (default on)."
+ac_4 = "THE capture SHALL be best-effort: a screenshot failure never blocks the navigation, the tool call, or the turn."
+ac_5 = "A test SHALL prove a real navigation produces a persisted frame; that disabling the flag suppresses capture; and that the per-run cap holds."
+
+[req.4]
+title = "Each captured frame rides the browser tool.step and survives reopen"
+story = "As the workspace, I want each navigation's screenshot to arrive on the browser step and persist in the durable trace, so that the filmstrip rebuilds on reopen with no new event type."
+ac_1 = "THE browser tool.step SHALL carry action, url, page_title, and screenshot_url so the client renders each navigation as its own browser screen (the client parseToolStep already consumes these fields, useChat.ts:295-320)."
+ac_2 = "THE frame SHALL be durable by REUSING the existing tool.step whitelist (traceWorkspaceTypes) and trace replay — no new event type and no traceWorkspaceTypes change; the filmstrip rebuilds via handleTrace on reopen."
+ac_3 = "THE screenshot_url on a step SHALL resolve to the persisted /media asset written in req.2, and the persisted event SHALL carry only the URL (never inline bytes)."
+ac_4 = "A test SHALL prove that after reopen the browser steps replay with their screenshot_urls and the referenced /media assets still serve."
+
+[req.5]
+title = "The client renders the filmstrip in the existing browser frame"
+story = "As the user, I want Neo's browsing to appear as a scrubbable, crossfading sequence of real page stills inside a browser frame, so that it feels like I am watching Neo work without any clutter."
+ac_1 = "THE client SHALL load browser stills through the AUTHED media loader (loadMediaObjectURL, apps/client/lib/api/media.ts:65-74), not an unauthed <img>, since /media is auth-gated; the object URL SHALL be revoked on unmount."
+ac_2 = "EACH browsed page SHALL be its own screen in 'Neo's Computer' via the existing buildScreens (neo-computer.tsx:116-222), scrubbable via the tab strip, crossfading on switch, with the follow-newest 'Live' pill; distinct browser step ids SHALL accumulate as siblings (not upsert-overwrite)."
+ac_3 = "FRAMES SHALL be labeled truthfully (e.g. 'Neo viewed · <ts>') and SHALL NOT be presented as a continuous live video feed."
+ac_4 = "THE rendering SHALL follow house rules: separation via background contrast only (no border strokes for depth), no glow, no emojis, no purple gradients."
+ac_5 = "A test SHALL prove a sequence of browser steps renders as an ordered, scrubbable filmstrip and that stills load via the authed loader."
+
+[req.6]
+title = "Optional v2 polish — a dedicated filmstrip history strip"
+story = "As a power viewer, I want a horizontal thumbnail history of the session's stills I can scrub, so that I can flip back through Neo's browsing trail at a glance."
+ac_1 = "THE browser view MAY render a horizontal thumbnail history strip of the session's stills, in order, with click-to-scrub and still-to-still crossfade."
+ac_2 = "THIS strip SHALL be additive polish — v1 correctness (req.1-5) SHALL NOT depend on it — and SHALL obey the same house rules."
+ac_3 = "A test SHALL prove the strip lists prior stills in order and that selecting one shows it."
+
+[req.7]
+title = "Cost and honesty guardrails, and bounded media growth"
+story = "As the operator, I want screenshot capture and storage bounded and every frame honest, so that the feature does not blow up bandwidth, storage, or user trust."
+ac_1 = "CAPTURES SHALL be viewport JPEG (not full-page PNG), quality/resolution bounded, and per-run capped."
+ac_2 = "MEDIA growth on /data/media SHALL be bounded by a retention/GC policy (parallel to the trace retain cap) so accumulated screenshots do not grow the volume without limit."
+ac_3 = "NO frame SHALL be presented as anything other than a faithful capture at its timestamp (no synthesized or stock imagery, no implied live video)."
+ac_4 = "A test SHALL prove the capture format/size bounds hold and that the GC sweep removes stills past retention."
+
+[req.8]
+title = "No-fakes end-to-end proof of the live-browsing filmstrip"
+story = "As the owner, I want the whole instrument proven on the real system, so that launch-readiness of the browsing surface is demonstrated, not asserted."
+ac_1 = "AN end-to-end proof SHALL drive a REAL navigation sequence and assert each navigation produces a persisted, servable frame while the model transcript stays free of bytes/URL."
+ac_2 = "THE proof SHALL assert that after reopen the browser steps replay with their screenshot_urls and the filmstrip rebuilds, with the /media assets still serving."
+ac_3 = "NO test in this feature SHALL substitute a fake for a real code path: a real screenshot/image content block through the real dispatch, real media persistence and serving, real tool.step trace-replay, and the real client reducer throughout."
+
+# ================================ TASKS ==================================
+
+[tasks]
+heading = "Implementation Plan: BROWSER-FILMSTRIP — Neo's Computer live-browsing filmstrip"
+
+[task.1]
+section = "P0 — Foundations: per-user Playwright and the media persist seam"
+title   = "Unlock local capture and stop discarding bytes"
+status  = "done"
+
+[task.1.1]
+title  = "Bake a per-user Playwright into the Railway daemon image; point MATRIX_BROWSER_URL local"
+status = "done"
+wave   = 1
+do_1   = "Install Playwright + its browser binaries into the daemon deploy image so a fresh per-user Railway container (24 vCPU / 48 GB) can navigate and screenshot locally; run the per-user Playwright MCP in-container and set MATRIX_BROWSER_URL to the local instance (replacing the shared Fly matrix-browser.flycast endpoint)"
+do_2   = "Keep the existing browser MCP bridge (tools/browser/browser.mjs) unchanged in wire shape — initialize/tools/list answered locally, tools/call forwarded to the local instance"
+do_3   = "Verify: a container built from the image navigates to a URL and takes a screenshot locally with no Fly/shared endpoint reachable"
+reqs   = ["1.1", "1.2", "1.3", "1.4"]
+
+[task.1.2]
+title  = "Persist image content blocks to the media plane; keep the model transcript terse"
+status = "done"
+wave   = 1
+do_1   = "In summarizeNonText (neo/internal/tools/tools.go:1010-1031), when a content block is an image, persist c.Data to MediaDir (reuse mintMediaID + write from neo/internal/server/media.go:121-231) and produce a /media/<id> URL; carry the URL out-of-band on a new ToolEvent field (agent.go:72-79) so the model-facing Result string stays a terse placeholder"
+do_2   = "Keep persistence best-effort: a media write error returns the placeholder and never fails the tool call or turn"
+do_3   = "Test: a real image content block round-trips to a served /media/<id> asset AND the model-facing result string contains neither the bytes nor the URL"
+reqs   = ["2.1", "2.2", "2.3", "2.4"]
+
+[task.2]
+section = "P1 — Capture on navigation and surface it on the browser step"
+title   = "Turn navigations into durable frames"
+status  = "done"
+
+[task.2.1]
+title  = "Auto-capture a viewport JPEG on each view-changing browser action"
+status = "done"
+wave   = 2
+do_1   = "In the browser tool dispatch, after a successful view-changing action (browser_navigate, browser_navigate_back, browser_click, form submit), issue a follow-up browser_take_screenshot (viewport, JPEG, quality/resolution bounded) on the same MCP session and run it through the task 1.2 persist path"
+do_2   = "Make it deterministic and model-invisible (no tool call added to the model transcript, no tokens); bound it with a per-run cap and gate behind NEO_BROWSER_AUTOSHOT (default on); keep it best-effort (a screenshot failure never blocks the navigation or turn)"
+do_3   = "Test: a real navigation produces a persisted frame; disabling the flag suppresses capture; the per-run cap holds"
+reqs   = ["3.1", "3.2", "3.3", "3.4", "3.5"]
+requires = ["1.1", "1.2"]
+
+[task.2.2]
+title  = "Enrich the browser tool.step with action/url/page_title/screenshot_url and confirm replay"
+status = "done"
+wave   = 2
+do_1   = "In surfaceTool (neo/internal/server/engine.go:753-810) populate the browser tool.step fields with action, url, page_title, and screenshot_url (from the ToolEvent), reusing the already-whitelisted tool.step type so no traceWorkspaceTypes change is needed"
+do_2   = "Confirm the persisted event carries only the /media URL (never inline bytes) and that handleTrace replay (server.go:299-319) rebuilds the browser steps on reopen with their screenshot_urls"
+do_3   = "Test: after reopen the browser steps replay with their screenshot_urls and the referenced /media assets still serve"
+reqs   = ["4.1", "4.2", "4.3", "4.4"]
+requires = ["1.2"]
+
+[task.3]
+section = "P2 — Render the filmstrip in Neo's Computer"
+title   = "Make it feel live on the client"
+status  = "done"
+
+[task.3.1]
+title  = "Authed still loading + filmstrip via the existing browser frame and scrubber"
+status = "done"
+wave   = 3
+do_1   = "Switch BrowserView's screenshot render (neo-workspace.tsx:333-341) from an unauthed <img> to the authed loadMediaObjectURL blob pattern (apps/client/lib/api/media.ts:65-74), revoking the object URL on unmount"
+do_2   = "Confirm each navigation is a distinct browser step id so buildScreens (neo-computer.tsx:116-222) accumulates them as sibling screens (not upsert-overwrite, useChat.ts:284-292); label frames 'Neo viewed · <ts>', never a live-video claim; obey house rules (background-contrast separation, no border-for-depth, no glow/emoji)"
+do_3   = "Test (RTL): a sequence of browser steps renders as an ordered, scrubbable, crossfading filmstrip with the Live pill; stills load via the authed loader"
+reqs   = ["5.1", "5.2", "5.3", "5.4", "5.5"]
+requires = ["2.1", "2.2"]
+
+[task.4]
+section = "P3 — Guardrails, optional polish, and the end-to-end proof"
+title   = "Bound it, polish it, prove it"
+status  = "done"
+
+[task.4.1]
+title  = "Cost/honesty guardrails and bounded media growth"
+status = "done"
+wave   = 4
+do_1   = "Enforce viewport-JPEG, quality/resolution bounds, and the per-run cap on capture; add a retention/GC sweep that bounds screenshot volume on /data/media (parallel to the trace retain cap)"
+do_2   = "Confirm no frame is presented as anything other than a faithful capture at its timestamp"
+do_3   = "Test: capture format/size bounds hold; the GC sweep removes stills past retention"
+reqs   = ["7.1", "7.2", "7.3", "7.4"]
+requires = ["2.1"]
+
+[task.4.2]
+title  = "Optional v2 polish: dedicated filmstrip history strip"
+status = "done"
+wave   = 4
+do_1   = "Add a horizontal thumbnail history strip of the session's stills inside the browser view, in order, with click-to-scrub and still-to-still crossfade; additive only (v1 correctness does not depend on it); same house rules"
+do_2   = "Test: the strip lists prior stills in order and selecting one shows it"
+reqs   = ["6.1", "6.2", "6.3"]
+requires = ["3.1"]
+
+[task.4.3]
+title  = "No-fakes end-to-end proof of the live-browsing filmstrip"
+status = "done"
+wave   = 5
+property  = "Property BROWSER-FILMSTRIP: on a REAL navigation sequence each nav produces a persisted, servable frame while the model transcript stays free of bytes/URL; after reopen the browser steps replay with their screenshot_urls and the filmstrip rebuilds with /media assets still serving — real screenshot, real media persistence/serving, real tool.step trace-replay, real client reducer, no fakes"
+validates = "Requirements 8.1, 8.2, 8.3"
+requires = ["3.1", "4.1"]

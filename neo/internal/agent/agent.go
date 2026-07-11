@@ -76,6 +76,14 @@ type ToolEvent struct {
 	Result string                 // tool result content (raw text/JSON the tool returned); empty at start
 	IsErr  bool                   // the tool reported an error result
 	Phase  ToolPhase              // start (dispatched, no result yet) or end (completed)
+
+	// ScreenshotURL is the out-of-band /media URL of a page still captured for
+	// this call — either the image a browser_take_screenshot returned, or the
+	// deterministic auto-capture fired after a view-changing browser action
+	// (BROWSER-FILMSTRIP). It NEVER enters the model transcript (that stays a
+	// terse placeholder); it rides only this observer event so the surface can
+	// render the browsing filmstrip. Empty for non-browser / non-captured calls.
+	ScreenshotURL string
 }
 
 // ToolPhase distinguishes the two observer callbacks for one tool call: a
@@ -121,6 +129,16 @@ type Agent struct {
 	casModsThisTurn int
 	casCooldown     map[modTrigger]int
 	casRecord       []cassandraMod
+
+	// autoshotCount bounds deterministic browser auto-captures this turn
+	// (BROWSER-FILMSTRIP req.3 ac_3 — per-run cap). Reset at the top of each Chat
+	// turn alongside the Cassandra per-turn state.
+	autoshotCount int
+	// captureFn overrides the browser viewport auto-capture (default: the tool
+	// manager's real CaptureViewport, which fires a screenshot on the live MCP
+	// browser session). Injected only by tests that exercise the gating/cap/
+	// attachment logic without a live browser; nil in production.
+	captureFn func(ctx context.Context, sourceFunc string) string
 
 	// memObserver receives this turn's continuous-memory activation summary
 	// (durable story-so-far + coarse timeline) so the harness can surface the
@@ -482,6 +500,7 @@ func (a *Agent) Chat(ctx context.Context, userInput string) error {
 	a.casModsThisTurn = 0
 	a.casCooldown = map[modTrigger]int{}
 	a.casRecord = nil
+	a.autoshotCount = 0
 	// Run-scoped overflow files (neo-smoothness req.4.3) are ephemeral to this
 	// turn: clean them up on every exit (completion, stall, budget, error).
 	defer func() {
@@ -1374,6 +1393,7 @@ func (a *Agent) runToolCalls(ctx context.Context, calls []llm.ToolCall) {
 
 	type dispatchResult struct {
 		content string
+		shot    string
 		isErr   bool
 		class   delegate.FailureClass
 	}
@@ -1430,8 +1450,8 @@ func (a *Agent) runToolCalls(ctx context.Context, calls []llm.ToolCall) {
 			defer wg.Done()
 			sem <- struct{}{}
 			defer func() { <-sem }()
-			content, isErr, class := a.dispatchWithRetry(ctx, call.Function.Name, args)
-			results[i] = dispatchResult{content: content, isErr: isErr, class: class}
+			content, shot, isErr, class := a.dispatchWithRetry(ctx, call.Function.Name, args)
+			results[i] = dispatchResult{content: content, shot: shot, isErr: isErr, class: class}
 		}(i, call, parsedArgs[i])
 	}
 	wg.Wait()
@@ -1466,7 +1486,12 @@ func (a *Agent) runToolCalls(ctx context.Context, calls []llm.ToolCall) {
 		// durable cortex transcript (cortex spills oversized payloads itself).
 		a.cmRecordToolResult(name, content)
 		if a.observer != nil {
-			a.observer(ToolEvent{ID: stepIDs[i], Name: name, Args: parsedArgs[i], Result: content, IsErr: isErr, Phase: ToolEnd})
+			// Resolve the browsing filmstrip still for this call (a direct
+			// screenshot's URL, or a deterministic auto-capture after a
+			// view-changing action). Single-threaded here, so the per-turn cap
+			// counter is safe. Best-effort: "" when there is no frame.
+			shot := a.screenshotForCall(ctx, name, results[i].shot, isErr)
+			a.observer(ToolEvent{ID: stepIDs[i], Name: name, Args: parsedArgs[i], Result: content, IsErr: isErr, Phase: ToolEnd, ScreenshotURL: shot})
 		}
 	}
 }
@@ -1484,6 +1509,7 @@ func (a *Agent) runToolCallsSerial(ctx context.Context, calls []llm.ToolCall) {
 	joinTo := dedupStateTouching(calls)
 	type dispatchResult struct {
 		content string
+		shot    string
 		isErr   bool
 		class   delegate.FailureClass
 	}
@@ -1510,17 +1536,17 @@ func (a *Agent) runToolCallsSerial(ctx context.Context, calls []llm.ToolCall) {
 		if a.observer != nil {
 			a.observer(ToolEvent{ID: stepID, Name: name, Args: args, Phase: ToolStart})
 		}
-		var content string
+		var content, shot string
 		var isErr bool
 		var class delegate.FailureClass
 		if joinTo[i] >= 0 {
 			// Deduped duplicate: reuse the canonical call's result; do not
 			// submit the same state-touching work twice.
-			content, isErr, class = results[joinTo[i]].content, results[joinTo[i]].isErr, results[joinTo[i]].class
+			content, shot, isErr, class = results[joinTo[i]].content, results[joinTo[i]].shot, results[joinTo[i]].isErr, results[joinTo[i]].class
 		} else {
-			content, isErr, class = a.dispatchWithRetry(ctx, name, args)
+			content, shot, isErr, class = a.dispatchWithRetry(ctx, name, args)
 		}
-		results[i] = dispatchResult{content: content, isErr: isErr, class: class}
+		results[i] = dispatchResult{content: content, shot: shot, isErr: isErr, class: class}
 		// Record the shared failure class (most recent classified failure wins)
 		// so the supervisor reads the SAME classification (NE-5).
 		a.noteFailureClass(class)
@@ -1536,7 +1562,14 @@ func (a *Agent) runToolCallsSerial(ctx context.Context, calls []llm.ToolCall) {
 		// contents, web-search snippets, …) so the product renders real
 		// evidence, not just a synthesized answer.
 		if a.observer != nil {
-			a.observer(ToolEvent{ID: stepID, Name: name, Args: args, Result: content, IsErr: isErr, Phase: ToolEnd})
+			// Attach the browsing filmstrip still (direct screenshot URL, or a
+			// deterministic auto-capture after a view-changing action). A joined
+			// duplicate reuses the canonical still and does NOT re-capture.
+			shotURL := shot
+			if joinTo[i] < 0 {
+				shotURL = a.screenshotForCall(ctx, name, shot, isErr)
+			}
+			a.observer(ToolEvent{ID: stepID, Name: name, Args: args, Result: content, IsErr: isErr, Phase: ToolEnd, ScreenshotURL: shotURL})
 		}
 	}
 }
@@ -1575,16 +1608,16 @@ func (a *Agent) LastFailureClass() delegate.FailureClass { return a.lastFailureC
 // now they keep the bounded-retry behavior. The returned FailureClass is the
 // class of the failure that ended the dispatch (delegate.ClassNone on success),
 // surfaced so the supervisor reads the SAME classification.
-func (a *Agent) dispatchWithRetry(ctx context.Context, name string, args map[string]interface{}) (string, bool, delegate.FailureClass) {
+func (a *Agent) dispatchWithRetry(ctx context.Context, name string, args map[string]interface{}) (string, string, bool, delegate.FailureClass) {
 	// read_overflow is synthetic and agent-owned (the overflow store lives on
 	// the agent, not the Manager): page a truncated result back in and mark it
 	// read (the read-full latch). It never retries or routes to the Manager.
 	if name == readOverflowTool {
 		content, isErr := a.readOverflow(args)
-		return content, isErr, delegate.ClassNone
+		return content, "", isErr, delegate.ClassNone
 	}
 	if a.tools == nil {
-		return "no tools are available in this session.", true, delegate.ClassNone
+		return "no tools are available in this session.", "", true, delegate.ClassNone
 	}
 	var lastErr error
 	for attempt := 0; attempt <= a.cfg.MaxRetriesPerTool; attempt++ {
@@ -1593,9 +1626,9 @@ func (a *Agent) dispatchWithRetry(ctx context.Context, name string, args map[str
 				break
 			}
 		}
-		content, isErr, err := a.tools.Dispatch(ctx, name, args)
+		content, shot, isErr, err := a.tools.DispatchMedia(ctx, name, args)
 		if err == nil {
-			return content, isErr, delegate.ClassNone
+			return content, shot, isErr, delegate.ClassNone
 		}
 		lastErr = err
 		if ctx.Err() != nil {
@@ -1607,10 +1640,79 @@ func (a *Agent) dispatchWithRetry(ctx context.Context, name string, args map[str
 		// gateway, re-spending). Mirrors chatWithRetry's ErrProviderRejected
 		// short-circuit.
 		if delegate.ClassOf(err) == delegate.ClassDeterministic {
-			return fmt.Sprintf("tool %q failed and this is a permanent error that will not change on a retry: %v. Don't repeat this call — adjust the approach or ask the user how they'd like to proceed.", name, lastErr), true, delegate.ClassDeterministic
+			return fmt.Sprintf("tool %q failed and this is a permanent error that will not change on a retry: %v. Don't repeat this call — adjust the approach or ask the user how they'd like to proceed.", name, lastErr), "", true, delegate.ClassDeterministic
 		}
 	}
-	return fmt.Sprintf("tool %q failed after %d attempts: %v. Consider a different approach.", name, a.cfg.MaxRetriesPerTool+1, lastErr), true, delegate.ClassOf(lastErr)
+	return fmt.Sprintf("tool %q failed after %d attempts: %v. Consider a different approach.", name, a.cfg.MaxRetriesPerTool+1, lastErr), "", true, delegate.ClassOf(lastErr)
+}
+
+// screenshotForCall resolves the page still to attach to a completed browser
+// call's observer event (BROWSER-FILMSTRIP). A direct browser_take_screenshot
+// already carries its persisted URL (directShot); otherwise, after a SUCCESSFUL
+// view-changing browser action, it fires the deterministic, model-invisible
+// auto-capture — gated by NEO_BROWSER_AUTOSHOT and bounded by the per-turn cap.
+// Best-effort throughout: it returns "" (no frame) rather than ever disturbing
+// the call's result or the turn. Called only from the single-threaded result-
+// assembly paths, so the per-turn counter never races the dispatch goroutines.
+func (a *Agent) screenshotForCall(ctx context.Context, name, directShot string, isErr bool) string {
+	if directShot != "" {
+		return directShot // the call itself returned an image (browser_take_screenshot)
+	}
+	if isErr || !a.cfg.BrowserAutoshot {
+		return ""
+	}
+	// Nowhere to persist a still → skip cheaply (the test seam bypasses this).
+	if a.captureFn == nil && (a.tools == nil || !a.tools.MediaPersistEnabled()) {
+		return ""
+	}
+	if !isViewChangingBrowser(name) {
+		return ""
+	}
+	if a.cfg.BrowserAutoshotMax > 0 && a.autoshotCount >= a.cfg.BrowserAutoshotMax {
+		return ""
+	}
+	url := a.captureViewport(ctx, name)
+	if url != "" {
+		a.autoshotCount++
+	}
+	return url
+}
+
+// captureViewport fires the browser viewport auto-capture, dispatching to the
+// test override when set and otherwise to the tool manager's real MCP-session
+// capture.
+func (a *Agent) captureViewport(ctx context.Context, sourceFunc string) string {
+	if a.captureFn != nil {
+		return a.captureFn(ctx, sourceFunc)
+	}
+	if a.tools == nil {
+		return ""
+	}
+	return a.tools.CaptureViewport(ctx, sourceFunc)
+}
+
+// isViewChangingBrowser reports whether a browser tool changed what the page
+// shows — a navigation, a back, a click, or a form submit — the moments a fresh
+// still makes the filmstrip feel live (BROWSER-FILMSTRIP req.3 ac_1). Read-only
+// browser tools (snapshot, console/network reads, waits) and the screenshot
+// tool itself are excluded so they neither double-capture nor spend the cap.
+func isViewChangingBrowser(name string) bool {
+	i := strings.Index(name, "__")
+	if i < 0 {
+		return false
+	}
+	switch name[i+2:] {
+	case "browser_navigate", "browser_navigate_back", "browser_click",
+		"browser_fill_form", "browser_select_option":
+		return true
+	case "browser_type", "browser_press_key":
+		// Typing / a key press is view-changing only when it submits (Enter) —
+		// but the page snapshot the action returns already reflects the new
+		// state, and a following navigate/click will capture; treat a submit-y
+		// key press as view-changing so an Enter-to-search still films.
+		return true
+	}
+	return false
 }
 
 func (a *Agent) lastToolSummary() string {

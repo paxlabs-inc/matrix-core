@@ -225,7 +225,20 @@ func NewEngine(o EngineOptions) *Engine {
 		// ordered checklist onto the run's event stream as a tool.todo event
 		// (pure side-channel) and the trace persists it so it survives reopen.
 		e.tools.SetTodo(e.emitTodo)
+		// Browser filmstrip (BROWSER-FILMSTRIP req.2): persist tool-produced
+		// images (browser screenshots) to the served media plane so a still can
+		// reach the workspace out-of-band instead of being discarded. Only wired
+		// when a media dir exists; otherwise images summarize to a placeholder as
+		// before (no filmstrip, no crash).
+		if e.mediaDir != "" {
+			e.tools.SetMediaPersist(e.persistToolImage)
+		}
 	}
+	// Bound screenshot/media growth on the volume (BROWSER-FILMSTRIP req.7.2):
+	// a one-shot GC sweep at boot + a periodic ticker delete media files older
+	// than the retention window, parallel to the trace retain cap. Disabled when
+	// retention is 0 or no media dir is configured.
+	e.startMediaGC()
 	// Production AUTOMATRIX governor (task 6.1): when a settings dir is provided
 	// (serve.go derives it), wire the durable opt-in store + the Chronos
 	// alarm_set/alarm_cancel lifecycle (issued through the MCP tool surface) as

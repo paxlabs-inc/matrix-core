@@ -147,9 +147,43 @@ wait_for_health() {
     return 1
 }
 
+# start_local_browser -> boot the PER-USER Playwright MCP (@playwright/mcp,
+# baked into the image) on loopback and point MATRIX_BROWSER_URL at it
+# (BROWSER-FILMSTRIP req.1). The daemon-side stdio bridge
+# (tools/browser/browser.mjs) forwards to it unchanged in wire shape; it
+# answers initialize/tools/list locally and dials lazily, so a browser that is
+# still booting (or crashed) never bricks daemon boot — browser_* calls just
+# return a structured error until it is up. A tiny restart loop revives a
+# crashed chromium without taking the daemon trio down. --isolated hands each
+# MCP session a fresh context; --no-sandbox is required for root-in-container.
+# Loopback-only traffic keeps the service outbound-quiet for Serverless sleep.
+BROWSER_PORT="${MATRIX_BROWSER_PORT:-8931}"
+start_local_browser() {
+    command -v mcp-server-playwright >/dev/null 2>&1 || npm ls -g @playwright/mcp >/dev/null 2>&1 || {
+        echo "entrypoint: @playwright/mcp not baked in this image; browser_* tools stay remote/disabled" >&2
+        return 0
+    }
+    export MATRIX_BROWSER_URL="http://127.0.0.1:${BROWSER_PORT}/mcp"
+    (
+        while true; do
+            npx @playwright/mcp --headless --isolated --browser chromium --no-sandbox \
+                --host 127.0.0.1 --port "${BROWSER_PORT}" --allowed-hosts '*' \
+                >>/tmp/pwmcp.log 2>&1 || true
+            echo "entrypoint: local browser exited; restarting in 2s" >&2
+            sleep 2
+        done
+    ) &
+    BROWSER_PID=$!
+}
+
 case "${1:-neo}" in
     neo)
         shift || true
+
+        # Per-user local browser (BROWSER-FILMSTRIP): boot it first so
+        # MATRIX_BROWSER_URL is exported before the daemon/neo spawn their
+        # browser.mjs bridges (the bridge reads it at spawn).
+        start_local_browser
 
         # Backend: the MCL daemon on :8081 (background). Neo reaches it for
         # core_execute (rigorous / money tasks) and reverse-proxies every
@@ -232,7 +266,7 @@ case "${1:-neo}" in
         EXIT=$?
         set -e
         echo "entrypoint: a co-located process exited (status ${EXIT}); stopping the trio" >&2
-        kill "${DAEMON_PID}" "${NEO_PID}" "${CODY_PID}" 2>/dev/null || true
+        kill "${DAEMON_PID}" "${NEO_PID}" "${CODY_PID}" ${BROWSER_PID:+"${BROWSER_PID}"} 2>/dev/null || true
         wait 2>/dev/null || true
         exit "${EXIT}"
         ;;
