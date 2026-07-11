@@ -69,8 +69,9 @@ mkdir -p \
 #     front (agents/neo.json) spawn their `media` MCP bridge writing to the
 #     SAME served directory. Neo also derives this path itself, but exporting
 #     it keeps the daemon-side bridge consistent. The bridge needs
-#     NOVITA_API_KEY in the machine env to actually call the upstream API;
-#     without it the bridge still starts (boot-safe) and errors only at call.
+#     XAI_API_KEY (Grok Imagine, primary) and/or NOVITA_API_KEY (mask ops +
+#     TTS fallback) in the machine env to actually call the upstream APIs;
+#     without them the bridge still starts (boot-safe) and errors only at call.
 export MATRIX_MEDIA_DIR="${MATRIX_MEDIA_DIR:-${DATA_DIR}/media}"
 export MATRIX_MEDIA_BASE="${MATRIX_MEDIA_BASE:-/media}"
 

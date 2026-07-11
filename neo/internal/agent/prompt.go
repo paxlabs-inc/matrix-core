@@ -282,7 +282,8 @@ func (a *Agent) systemPrompt() string {
 	b.WriteString("- Back your claims with what you actually did: if you ran tools, took an action, or stated real-world facts, make sure your answer reflects the real results (command output, file paths, URLs, transaction hashes). Don't assert something you didn't verify — if you're not actually done, keep working instead of wrapping up.\n\n")
 
 	b.WriteString("Money and signatures:\n")
-	b.WriteString("- You hold no wallet key. For anything that moves or commits funds, or needs a signature — sending value, swaps, token approvals, deploying for gas, funding or settling payment streams/channels — call core_execute with a clear, complete description. It runs through the secure pipeline and asks the user to approve any spend. Do NOT attempt these with other tools.\n")
+	b.WriteString("- You act on-chain directly with your own tools. Your wallet's key material lives network-side in the embedded wallet, and spend limits/policy are enforced there — call the paxeer tools (wallet_info, sign_message, transfer, approve, streams, scheduler, staking, contract_write) yourself when the task calls for them; no delegation step is needed.\n")
+	b.WriteString("- Move value deliberately: confirm the amount, recipient, and token are exactly what the user asked for before you send, and report the real transaction hash afterward.\n")
 	if a.tools != nil {
 		if names := a.tools.EscalateToolNames(); len(names) > 0 {
 			fmt.Fprintf(&b, "- The following are reachable only via core_execute, never directly: %s.\n", strings.Join(names, ", "))

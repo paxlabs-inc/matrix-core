@@ -1,21 +1,30 @@
 // media — MCP stdio bridge giving Matrix agents (Neo + the MCL daemon) media
-// I/O backed by the Novita AI media APIs: image generation / editing /
-// inpainting, the specialized image utilities (remove/replace background,
-// remove text, cleanup, merge faces), text-to-video / image-to-video, and
-// text-to-speech.
+// I/O. PRIMARY provider is the xAI Grok Imagine API (image generation, image
+// editing incl. multi-reference, text-to-video, image-to-video) — the fleet
+// standardized on xAI and the credits live there. Novita remains the FALLBACK
+// lane for the ops Grok Imagine does not offer: true mask-based inpainting/
+// cleanup, alpha-transparent background removal, and text-to-speech. Each tool
+// picks its provider by capability + configured keys; without XAI_API_KEY the
+// bridge degrades to the original all-Novita behavior, and vice versa.
 //
-// Why a local bridge (not a remote MCP)? Novita exposes plain REST media
-// endpoints, not an MCP server. This bridge speaks the daemon's stdio JSON-RPC
-// (executor/mcp/stdio) on one side and calls Novita on the other, shaping each
-// result into a CallToolResult. It mirrors tools/paxeer/paxeer-net.mjs.
+// Why a local bridge (not a remote MCP)? Both providers expose plain REST
+// media endpoints, not MCP servers. This bridge speaks the daemon's stdio
+// JSON-RPC (executor/mcp/stdio) on one side and calls the provider on the
+// other, shaping each result into a CallToolResult. It mirrors
+// tools/paxeer/paxeer-net.mjs.
 //
-// Two Novita call shapes are handled:
+// xAI call shapes (docs mirrored at /root/matrix/temp/xAI):
+//   - sync   POST /v1/images/generations | /v1/images/edits -> {data:[{url|b64_json}]}
+//   - async  POST /v1/videos/generations -> {request_id}; poll GET
+//            /v1/videos/{request_id} until status done/failed.
+// Novita call shapes:
 //   - async  POST /v3/async/<op> -> {task_id}; poll GET
 //            /v3/async/task-result?task_id=<id> until task.status SUCCEED/FAIL.
-//            Used by txt2img, img2img, inpainting, txt2video, img2video,
-//            txt2speech.
+//            Used by inpainting, txt2speech (and legacy txt2img/img2img/
+//            txt2video/img2video when xAI is unconfigured).
 //   - sync   POST /v3/<op> -> result inline. Used by remove-background,
-//            replace-background, remove-text, cleanup, merge-face.
+//            cleanup (and replace-background/remove-text/merge-face when xAI
+//            is unconfigured).
 //
 // Storage: generated/edited outputs are written to MATRIX_MEDIA_DIR — the
 // agent's OWN machine volume (e.g. /data/media), the same volume that holds
@@ -26,11 +35,16 @@
 // fed straight into the next tool's image arg — Neo chains them (e.g. remove
 // background, then feed the result into remove text, then present).
 //
-// Auth: NOVITA_API_KEY (Bearer). Without it the media tools return a
-// structured error rather than bricking daemon boot (spawn stays non-fatal).
+// Auth: XAI_API_KEY (primary, Bearer) and/or NOVITA_API_KEY (fallback lane,
+// Bearer). With neither set the media tools return a structured error rather
+// than bricking daemon boot (spawn stays non-fatal).
 //
-// Models (env-overridable; only the async generation ops need a checkpoint —
-// the sync image utilities are model-less):
+// Models (env-overridable):
+//   MATRIX_MEDIA_XAI_IMAGE_MODEL  default grok-imagine-image-quality (generate/edit)
+//   MATRIX_MEDIA_XAI_VIDEO_MODEL  default grok-imagine-video (txt2video/img2video)
+//   MATRIX_MEDIA_XAI_RESOLUTION   default 1k ("1k"|"2k", images)
+//   MATRIX_MEDIA_XAI_VIDEO_RES    default 720p ("480p"|"720p"|"1080p")
+// Novita fallback lane:
 //   MATRIX_MEDIA_IMAGE_MODEL      default sd_xl_base_1.0.safetensors  (txt2img/img2img)
 //   MATRIX_MEDIA_INPAINT_MODEL    default realisticVisionV51_v51VAE-inpainting_94324.safetensors
 //   MATRIX_MEDIA_VIDEO_MODEL      default darkSushiMixMix_225D_64380.safetensors (txt2video)
@@ -53,6 +67,13 @@ const PROTOCOL_VERSION = '2024-11-05'
 
 const API_BASE = (process.env.MATRIX_MEDIA_API_BASE || 'https://api.novita.ai').replace(/\/+$/, '')
 const API_KEY = (process.env.NOVITA_API_KEY || '').trim()
+
+const XAI_BASE = (process.env.MATRIX_MEDIA_XAI_BASE || 'https://api.x.ai').replace(/\/+$/, '')
+const XAI_KEY = (process.env.XAI_API_KEY || '').trim()
+const XAI_IMAGE_MODEL = (process.env.MATRIX_MEDIA_XAI_IMAGE_MODEL || 'grok-imagine-image-quality').trim()
+const XAI_VIDEO_MODEL = (process.env.MATRIX_MEDIA_XAI_VIDEO_MODEL || 'grok-imagine-video').trim()
+const XAI_RESOLUTION = (process.env.MATRIX_MEDIA_XAI_RESOLUTION || '1k').trim()
+const XAI_VIDEO_RES = (process.env.MATRIX_MEDIA_XAI_VIDEO_RES || '720p').trim()
 
 const IMAGE_MODEL = (process.env.MATRIX_MEDIA_IMAGE_MODEL || 'sd_xl_base_1.0.safetensors').trim()
 const INPAINT_MODEL = (process.env.MATRIX_MEDIA_INPAINT_MODEL || 'realisticVisionV51_v51VAE-inpainting_94324.safetensors').trim()
@@ -180,7 +201,7 @@ async function resolveBase64(ref) {
   return buf.toString('base64')
 }
 
-// ── Novita HTTP ───────────────────────────────────────────────────────────────
+// ── provider HTTP ─────────────────────────────────────────────────────────────
 function authHeaders(extra = {}) {
   return { Authorization: `Bearer ${API_KEY}`, ...extra }
 }
@@ -190,14 +211,29 @@ async function postJSON(path, body, timeoutMs = HTTP_TIMEOUT_MS) {
     method: 'POST',
     headers: authHeaders({ 'Content-Type': 'application/json', Accept: 'application/json' }),
     body: JSON.stringify(body),
-  }, timeoutMs)
+  }, timeoutMs, 'Novita')
 }
 
 async function getJSON(path, timeoutMs = HTTP_TIMEOUT_MS) {
-  return doFetch(API_BASE + path, { method: 'GET', headers: authHeaders({ Accept: 'application/json' }) }, timeoutMs)
+  return doFetch(API_BASE + path, { method: 'GET', headers: authHeaders({ Accept: 'application/json' }) }, timeoutMs, 'Novita')
 }
 
-async function doFetch(url, init, timeoutMs) {
+async function xaiPostJSON(path, body, timeoutMs = HTTP_TIMEOUT_MS) {
+  return doFetch(XAI_BASE + path, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${XAI_KEY}`, 'Content-Type': 'application/json', Accept: 'application/json' },
+    body: JSON.stringify(body),
+  }, timeoutMs, 'xAI')
+}
+
+async function xaiGetJSON(path, timeoutMs = HTTP_TIMEOUT_MS) {
+  return doFetch(XAI_BASE + path, {
+    method: 'GET',
+    headers: { Authorization: `Bearer ${XAI_KEY}`, Accept: 'application/json' },
+  }, timeoutMs, 'xAI')
+}
+
+async function doFetch(url, init, timeoutMs, provider) {
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), timeoutMs)
   let res
@@ -214,7 +250,7 @@ async function doFetch(url, init, timeoutMs) {
   try { parsed = raw ? JSON.parse(raw) : null } catch { /* non-JSON */ }
   if (!res.ok) {
     const msg = parsed?.message || parsed?.error?.message || parsed?.error || parsed?.reason || raw.slice(0, 300) || `HTTP ${res.status}`
-    throw new Error(`Novita ${res.status}: ${msg}`)
+    throw new Error(`${provider} ${res.status}: ${msg}`)
   }
   return parsed ?? {}
 }
@@ -241,6 +277,79 @@ async function runAsyncTask(path, body) {
     }
     await sleep(TASK_POLL_MS)
   }
+}
+
+// ── xAI Grok Imagine helpers ─────────────────────────────────────────────────
+// resolveImageDataURL turns any image ref into a data: URL for xAI's
+// image/images/reference fields (which accept public URLs or base64 data
+// URLs). /media refs and attachments are inlined so they never need public
+// hosting; the MIME is sniffed from the real bytes.
+async function resolveImageDataURL(ref) {
+  const s = String(ref || '').trim()
+  if (/^data:/i.test(s)) return s
+  const b64 = await resolveBase64(ref)
+  const { mime } = sniffImage(Buffer.from(b64, 'base64'))
+  return `data:${mime};base64,${b64}`
+}
+
+// xaiImageOut persists the first image of an xAI /v1/images/* response
+// ({data:[{url|b64_json}]}) to the media volume and shapes the tool result.
+async function xaiImageOut(tool, res, extra = {}) {
+  const first = Array.isArray(res?.data) ? res.data[0] : null
+  const cand = first?.b64_json || first?.url || first?.file_output?.public_url || null
+  if (!cand) return errResult(tool, 'no image in xAI response', { keys: Object.keys(res || {}) })
+  const w = await storeImageString(cand)
+  return okResult({ ok: true, tool, kind: 'image', url: w.url, mime: w.mime, bytes: w.bytes, model: XAI_IMAGE_MODEL, ...extra })
+}
+
+// runXaiVideo POSTs a /v1/videos/generations request, polls
+// GET /v1/videos/{request_id} until done/failed, and returns the video URL.
+async function runXaiVideo(body) {
+  const job = await xaiPostJSON('/v1/videos/generations', { model: XAI_VIDEO_MODEL, resolution: XAI_VIDEO_RES, ...body })
+  const reqID = job?.request_id
+  if (!reqID) throw new Error(`no request_id returned (raw: ${JSON.stringify(job).slice(0, 200)})`)
+  const deadline = Date.now() + TASK_MAX_WAIT_MS
+  for (;;) {
+    const res = await xaiGetJSON(`/v1/videos/${encodeURIComponent(reqID)}`)
+    const status = String(res?.status || '').toLowerCase()
+    if (status === 'done') {
+      const url = res?.video?.url || res?.video?.file_output?.public_url || null
+      if (!url) {
+        if (res?.video && res.video.respect_moderation === false) throw new Error('video withheld by xAI moderation')
+        throw new Error('xAI video done but no url in result')
+      }
+      return url
+    }
+    if (status === 'failed') throw new Error(res?.error?.message || `xAI video request ${reqID} failed`)
+    if (Date.now() > deadline) {
+      throw new Error(`xAI video request ${reqID} still '${status || 'pending'}' after ${Math.round(TASK_MAX_WAIT_MS / 1000)}s`)
+    }
+    await sleep(TASK_POLL_MS)
+  }
+}
+
+// xAI duration: seconds in [1,15], default 8. The legacy 'frames' arg (from
+// the Novita era, ~8fps) maps down so old callers keep a sensible length.
+function xaiDuration(args) {
+  if (Number.isFinite(Number.parseInt(args?.duration ?? '', 10))) return clampInt(args.duration, 8, 1, 15)
+  const frames = Number.parseInt(args?.frames ?? '', 10)
+  if (Number.isFinite(frames)) return clampInt(Math.round(frames / 8), 8, 1, 15)
+  return 8
+}
+
+// xAI aspect ratios are a superset of the tool's documented values; pass
+// through when valid, omit otherwise (xAI then defaults sensibly).
+const XAI_ASPECTS = new Set(['1:1', '3:4', '4:3', '9:16', '16:9', '2:3', '3:2', '1:2', '2:1', 'auto'])
+function xaiAspect(v) {
+  const s = String(v || '').trim()
+  return XAI_ASPECTS.has(s) ? s : undefined
+}
+
+// foldNegative folds the legacy negative_prompt arg into a single prompt
+// (Grok Imagine takes one natural-language instruction, no negative field).
+function foldNegative(prompt, args) {
+  const neg = String(args?.negative_prompt || '').trim()
+  return neg ? `${prompt}. Avoid: ${neg}` : prompt
 }
 
 async function fetchBytes(url) {
@@ -338,6 +447,13 @@ function seedOf(args) { return Number.isInteger(args?.seed) ? args.seed : -1 }
 async function generateImage(args) {
   const prompt = String(args?.prompt || '').trim()
   if (!prompt) return errResult('generate_image', "a non-empty 'prompt' is required")
+  if (XAI_KEY) {
+    const body = { model: XAI_IMAGE_MODEL, prompt: foldNegative(prompt, args), n: 1, resolution: XAI_RESOLUTION, response_format: 'b64_json' }
+    const ar = xaiAspect(args?.aspect_ratio)
+    if (ar) body.aspect_ratio = ar
+    const res = await xaiPostJSON('/v1/images/generations', body)
+    return xaiImageOut('generate_image', res, { prompt })
+  }
   const { width, height } = dimsFor(args?.aspect_ratio)
   const request = {
     model_name: IMAGE_MODEL,
@@ -358,10 +474,20 @@ async function generateImage(args) {
   return okResult({ ok: true, tool: 'generate_image', kind: 'image', url: w.url, mime: w.mime, bytes: w.bytes, model: IMAGE_MODEL, prompt })
 }
 
+// xaiEdit runs one prompt-based edit of a single source image via xAI.
+async function xaiEdit(tool, imageRef, prompt, extra = {}) {
+  const image = await resolveImageDataURL(imageRef)
+  const res = await xaiPostJSON('/v1/images/edits', {
+    model: XAI_IMAGE_MODEL, prompt, image: { url: image }, n: 1, resolution: XAI_RESOLUTION, response_format: 'b64_json',
+  })
+  return xaiImageOut(tool, res, extra)
+}
+
 async function editImage(args) {
   const prompt = String(args?.prompt || '').trim()
   if (!prompt) return errResult('edit_image', "a non-empty 'prompt' is required")
   if (!args?.image) return errResult('edit_image', "an 'image' reference is required")
+  if (XAI_KEY) return xaiEdit('edit_image', args.image, foldNegative(prompt, args), { prompt })
   const image_base64 = await resolveBase64(args.image)
   const { width, height } = dimsFor(args?.aspect_ratio)
   const request = {
@@ -390,6 +516,13 @@ async function inpaintImage(args) {
   if (!prompt) return errResult('inpaint_image', "a non-empty 'prompt' is required")
   if (!args?.image) return errResult('inpaint_image', "an 'image' reference is required")
   if (!args?.mask) return errResult('inpaint_image', "a 'mask' reference is required (white = area to repaint)")
+  // Novita is the true masked-inpainting path; xAI Grok Imagine has no mask
+  // input, so without a Novita key we approximate with a prompt-based edit.
+  if (!API_KEY && XAI_KEY) {
+    return xaiEdit('inpaint_image', args.image,
+      foldNegative(`Change ONLY the region described, leave everything else pixel-identical: ${prompt}`, args),
+      { prompt, note: 'mask ignored: approximated via prompt-based edit (xAI has no mask input; set NOVITA_API_KEY for true inpainting)' })
+  }
   const image_base64 = await resolveBase64(args.image)
   const mask_image_base64 = await resolveBase64(args.mask)
   const body = {
@@ -420,6 +553,13 @@ async function inpaintImage(args) {
 
 async function removeBackground(args) {
   if (!args?.image) return errResult('remove_background', "an 'image' reference is required")
+  // Novita returns true alpha transparency; xAI edits can only paint a plain
+  // background in. Prefer Novita when available.
+  if (!API_KEY && XAI_KEY) {
+    return xaiEdit('remove_background', args.image,
+      'Remove the background entirely: keep the foreground subject exactly as-is on a flat, uniform, pure white background with no shadows',
+      { note: 'no alpha channel: xAI paints a plain white background (set NOVITA_API_KEY for true transparency)' })
+  }
   const image_file = await resolveBase64(args.image)
   const out = await postJSON('/v3/remove-background', { image_file })
   return shapeSyncImageOut('remove_background', out)
@@ -429,6 +569,11 @@ async function replaceBackground(args) {
   if (!args?.image) return errResult('replace_background', "an 'image' reference is required")
   const prompt = String(args?.prompt || '').trim()
   if (!prompt) return errResult('replace_background', "a non-empty 'prompt' (the new background to place) is required")
+  if (XAI_KEY) {
+    return xaiEdit('replace_background', args.image,
+      `Replace the background with: ${prompt}. Keep the foreground subject exactly as-is — same pose, lighting on the subject, and framing`,
+      { prompt })
+  }
   const image_file = await resolveBase64(args.image)
   const out = await postJSON('/v3/replace-background', { image_file, prompt })
   return shapeSyncImageOut('replace_background', out, { prompt })
@@ -436,6 +581,10 @@ async function replaceBackground(args) {
 
 async function removeText(args) {
   if (!args?.image) return errResult('remove_text', "an 'image' reference is required")
+  if (XAI_KEY) {
+    return xaiEdit('remove_text', args.image,
+      'Erase ALL rendered text, captions, subtitles, logos with lettering, and watermarks from this image, reconstructing the background behind them naturally. Change nothing else')
+  }
   const image_file = await resolveBase64(args.image)
   const out = await postJSON('/v3/remove-text', { image_file })
   return shapeSyncImageOut('remove_text', out)
@@ -444,6 +593,19 @@ async function removeText(args) {
 async function cleanupImage(args) {
   if (!args?.image) return errResult('cleanup_image', "an 'image' reference is required")
   if (!args?.mask) return errResult('cleanup_image', "a 'mask' reference is required (white = object to erase)")
+  // Novita's mask-based cleanup is the real path. Without it, approximate via
+  // xAI multi-reference editing: hand the mask over as a second image.
+  if (!API_KEY && XAI_KEY) {
+    const image = await resolveImageDataURL(args.image)
+    const mask = await resolveImageDataURL(args.mask)
+    const res = await xaiPostJSON('/v1/images/edits', {
+      model: XAI_IMAGE_MODEL,
+      prompt: 'Erase from <IMAGE_0> the object covered by the white region of the mask <IMAGE_1>, filling the area with the surrounding background naturally. Change nothing outside that region',
+      images: [{ url: image }, { url: mask }],
+      n: 1, resolution: XAI_RESOLUTION, response_format: 'b64_json',
+    })
+    return xaiImageOut('cleanup_image', res, { note: 'mask applied via multi-reference edit (set NOVITA_API_KEY for pixel-exact mask cleanup)' })
+  }
   const image_file = await resolveBase64(args.image)
   const mask_file = await resolveBase64(args.mask)
   const out = await postJSON('/v3/cleanup', { image_file, mask_file })
@@ -453,6 +615,17 @@ async function cleanupImage(args) {
 async function mergeFaces(args) {
   if (!args?.image) return errResult('merge_faces', "an 'image' reference (the base photo) is required")
   if (!args?.face) return errResult('merge_faces', "a 'face' reference (the face to swap in) is required")
+  if (XAI_KEY) {
+    const image = await resolveImageDataURL(args.image)
+    const face = await resolveImageDataURL(args.face)
+    const res = await xaiPostJSON('/v1/images/edits', {
+      model: XAI_IMAGE_MODEL,
+      prompt: 'Replace the face of the person in <IMAGE_0> with the face of the person in <IMAGE_1>, blending skin tone and lighting seamlessly. Keep everything else in <IMAGE_0> unchanged',
+      images: [{ url: image }, { url: face }],
+      n: 1, resolution: XAI_RESOLUTION, response_format: 'b64_json',
+    })
+    return xaiImageOut('merge_faces', res)
+  }
   const image_file = await resolveBase64(args.image)
   const face_image_file = await resolveBase64(args.face)
   const out = await postJSON('/v3/merge-face', { image_file, face_image_file })
@@ -462,6 +635,15 @@ async function mergeFaces(args) {
 async function generateVideo(args) {
   const prompt = String(args?.prompt || '').trim()
   if (!prompt) return errResult('generate_video', "a non-empty 'prompt' is required")
+  if (XAI_KEY) {
+    const body = { prompt: foldNegative(prompt, args), duration: xaiDuration(args) }
+    const ar = xaiAspect(args?.aspect_ratio)
+    if (ar && ar !== 'auto' && ar !== '1:2' && ar !== '2:1') body.aspect_ratio = ar
+    const url = await runXaiVideo(body)
+    const buf = Buffer.from(await fetchBytes(url))
+    const w = await writeOutput(buf, 'mp4', 'video/mp4')
+    return okResult({ ok: true, tool: 'generate_video', kind: 'video', url: w.url, mime: w.mime, bytes: w.bytes, model: XAI_VIDEO_MODEL, prompt })
+  }
   const { width, height } = videoDimsFor(args?.aspect_ratio)
   const frames = clampInt(args?.frames, 64, 16, 128)
   const body = {
@@ -483,6 +665,15 @@ async function generateVideo(args) {
 
 async function animateImage(args) {
   if (!args?.image) return errResult('animate_image', "an 'image' reference is required")
+  if (XAI_KEY) {
+    const body = { image: { url: await resolveImageDataURL(args.image) }, duration: xaiDuration(args) }
+    const prompt = String(args?.prompt || '').trim()
+    if (prompt) body.prompt = prompt
+    const url = await runXaiVideo(body)
+    const buf = Buffer.from(await fetchBytes(url))
+    const w = await writeOutput(buf, 'mp4', 'video/mp4')
+    return okResult({ ok: true, tool: 'animate_image', kind: 'video', url: w.url, mime: w.mime, bytes: w.bytes, model: XAI_VIDEO_MODEL })
+  }
   const image_file = await resolveBase64(args.image)
   const body = {
     model_name: IMG2VIDEO_MODEL,
@@ -504,6 +695,9 @@ async function animateImage(args) {
 async function generateSpeech(args) {
   const text = String(args?.text || '').trim()
   if (!text) return errResult('generate_speech', "a non-empty 'text' is required")
+  if (!API_KEY) {
+    return errResult('generate_speech', 'text-to-speech is not configured', { hint: 'xAI Grok Imagine has no TTS API; set NOVITA_API_KEY to enable generate_speech' })
+  }
   if (text.length > 512) return errResult('generate_speech', 'text exceeds the 512-character Novita TTS limit')
   const voice = pickVoice(args?.voice)
   const language = pickLang(args?.language)
@@ -548,8 +742,8 @@ const handlers = {
     const name = params?.name
     const args = params?.arguments || {}
     if (!TOOL_SET.has(name)) return errResult(name, `unknown tool: ${name}`)
-    if (!API_KEY) {
-      return errResult(name, 'media bridge not configured', { hint: 'set NOVITA_API_KEY on the machine to enable image/video/audio' })
+    if (!XAI_KEY && !API_KEY) {
+      return errResult(name, 'media bridge not configured', { hint: 'set XAI_API_KEY (primary) and/or NOVITA_API_KEY (mask ops + TTS) on the machine to enable image/video/audio' })
     }
     try {
       return await impls[name](args)
@@ -599,7 +793,7 @@ function startStdioServer() {
 // same drift into a non-zero exit at build/CI time. Offline (no network).
 // MATRIX_MEDIA_AGENTS_DIR overrides the manifest dir (used by tests).
 function runSelftest() {
-  console.log(`media: ${tools.length} tools (provider=novita, image=${IMAGE_MODEL}, inpaint=${INPAINT_MODEL}, video=${VIDEO_MODEL}, img2video=${IMG2VIDEO_MODEL}, tts=${TTS_VOICE}/${TTS_LANGUAGE}, key=${API_KEY ? 'set' : 'UNSET'})`)
+  console.log(`media: ${tools.length} tools (primary=xai image=${XAI_IMAGE_MODEL} video=${XAI_VIDEO_MODEL} key=${XAI_KEY ? 'set' : 'UNSET'}; fallback=novita inpaint=${INPAINT_MODEL} tts=${TTS_VOICE}/${TTS_LANGUAGE} key=${API_KEY ? 'set' : 'UNSET'})`)
   for (const t of tools) console.log(`  - ${t.name}`)
 
   // Every advertised tool must have an implementation, and vice versa.
