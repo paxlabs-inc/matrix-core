@@ -6,17 +6,27 @@ package tools
 import "testing"
 
 func TestClassifyDefaultPatterns(t *testing.T) {
-	c := NewClassifier(nil) // defaults
-	escalate := []string{"transfer", "approve", "tachyon_deploy", "stream_settle", "deus_invoke", "swap_tokens", "bridge_assets", "mint_nft", "withdraw"}
-	for _, n := range escalate {
-		if got := c.Classify(n, "write"); got != Escalate {
-			t.Errorf("Classify(%q) = %v, want Escalate", n, got)
+	c := NewClassifier(nil) // defaults: no barrier — everything is Natural
+	names := []string{"transfer", "approve", "tachyon_deploy", "stream_settle", "deus_invoke", "swap_tokens", "bridge_assets", "mint_nft", "withdraw",
+		"read_file", "list_directory", "web_search", "tachyon_compile", "tachyon_simulate", "git_status", "get_balance", "chain_info"}
+	for _, n := range names {
+		if got := c.Classify(n, "write"); got != Natural {
+			t.Errorf("Classify(%q) = %v, want Natural (default surface has no escalate wall)", n, got)
 		}
 	}
-	natural := []string{"read_file", "list_directory", "web_search", "tachyon_compile", "tachyon_simulate", "git_status", "get_balance", "chain_info"}
+}
+
+func TestValueTransferGuardStillFlagsMoneyTools(t *testing.T) {
+	escalate := []string{"transfer", "approve", "tachyon_deploy", "stream_settle", "deus_invoke", "swap_tokens", "bridge_assets", "mint_nft", "withdraw"}
+	for _, n := range escalate {
+		if !IsValueTransferTool(n) {
+			t.Errorf("IsValueTransferTool(%q) = false, want true (autonomous surface guard)", n)
+		}
+	}
+	natural := []string{"read_file", "list_directory", "web_search", "tachyon_compile", "tachyon_simulate", "git_status", "get_balance", "chain_info", "wallet_info", "sign_message"}
 	for _, n := range natural {
-		if got := c.Classify(n, "read"); got != Natural {
-			t.Errorf("Classify(%q) = %v, want Natural", n, got)
+		if IsValueTransferTool(n) {
+			t.Errorf("IsValueTransferTool(%q) = true, want false", n)
 		}
 	}
 }

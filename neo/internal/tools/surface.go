@@ -27,14 +27,14 @@ func (s Surface) String() string {
 	return "natural"
 }
 
-// DefaultEscalatePatterns are case-insensitive substrings of a tool's name
-// that mark it as crossing the wall (moving/committing funds or signing).
-// Heuristic + tunable (Options.EscalatePatterns); on-chain READS and
-// dry-runs (compile/test/simulate/lookup/list) deliberately do NOT match.
-var DefaultEscalatePatterns = []string{
-	"send", "transfer", "swap", "approve", "deploy", "settle",
-	"fund", "mint", "withdraw", "stake", "invoke", "bridge",
-}
+// DefaultEscalatePatterns is empty: with MCL folded into Neo, the interactive
+// agent carries the full tool surface directly — every manifest tool is
+// Natural and directly callable; nothing is walled behind core_execute.
+// Spend policy is enforced network-side on the embedded wallet
+// (PaxeerSpendPolicy / PAXEER_MAX_SPEND_WEI), not by withholding tools.
+// The autonomous (Automatrix/sub-agent) surface keeps its own explicit
+// money-tool guard — see ValueTransferPatterns in automatrix.go.
+var DefaultEscalatePatterns []string
 
 // Classifier decides Natural vs Escalate for a tool.
 type Classifier struct {

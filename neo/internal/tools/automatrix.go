@@ -24,16 +24,26 @@ func (m *Manager) AutomatrixSchemas() []llm.Tool {
 	return m.SubagentSchemas()
 }
 
+// ValueTransferPatterns are case-insensitive substrings of a tool's name that
+// mark it as moving/committing funds or signing. The interactive Neo surface
+// no longer escalates these (MCL is folded into Neo; every tool is directly
+// callable there), but AUTONOMOUS surfaces still structurally exclude them —
+// this list exists solely for that guard.
+var ValueTransferPatterns = []string{
+	"send", "transfer", "swap", "approve", "deploy", "settle",
+	"fund", "mint", "withdraw", "stake", "invoke", "bridge",
+}
+
 // IsValueTransferTool reports whether an advertised function name is a
 // value-moving / signing tool that must never appear on an autonomous surface:
-// the synthetic core_execute money/chain delegate, or any name the escalate
-// classifier flags as crossing the wall into MCL (send/transfer/swap/…). It is
-// the predicate the Automatrix guard asserts the advertised surface against.
+// the synthetic core_execute money/chain delegate, or any name matching
+// ValueTransferPatterns (send/transfer/swap/…). It is the predicate the
+// Automatrix guard asserts the advertised surface against.
 func IsValueTransferTool(name string) bool {
 	if name == CoreExecuteTool {
 		return true
 	}
-	return NewClassifier(nil).Classify(name, "") == Escalate
+	return NewClassifier(ValueTransferPatterns).Classify(name, "") == Escalate
 }
 
 // AssertNoValueTransferTools returns an error naming the first value-moving /
