@@ -428,7 +428,7 @@ func (s *Server) handleDeposit(w http.ResponseWriter, r *http.Request) {
 		VaultAddress: s.vaultAddr,
 		ReserveAsset: s.reserveAsset,
 		DIDClaim:     "0x" + claim,
-		Note:         "pass did_claim as the on-chain deposit `did` argument. Deposit USDL for 1:1 USDX, or USDC/USDT/PAX (atomically swapped to USDL at deposit); the depositing EVM address becomes your payout address. Funding from the user wallet escalates to MCL.",
+		Note:         "pass did_claim as the on-chain deposit `did` argument — the vault credits your balance ONLY through its deposit functions (depositUSDL/depositSwap/depositNative); a bare token transfer to the vault is NOT credited. Deposit USDL for 1:1 USDX, or USDC/USDT/PAX (atomically swapped to USDL at deposit; ERC-20 needs a prior approve). The depositing EVM address becomes your payout address.",
 	}))
 }
 

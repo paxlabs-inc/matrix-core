@@ -98,6 +98,11 @@ type run struct {
 	sess     *session
 	closed   bool // a closing (final) turn has been emitted
 	narrated bool // at least one Status narration turn was persisted this run
+	// lastText is the most recent DURABLE assistant text shown to the user this
+	// run (a Status narration or a Say). The ceiling / deterministic-stop
+	// closing turns compare BestEffort against it so they never re-paste an
+	// answer that is already the last bubble on screen (the double-render).
+	lastText string
 
 	cancel  context.CancelFunc // cancels this turn's ctx (barge-in / explicit stop)
 	stopped atomic.Bool        // set when interrupted, so drive closes quietly
@@ -788,7 +793,12 @@ func (s *session) deliverCeiling(r *run, reason string) task.Status {
 	best := strings.TrimSpace(s.agent.BestEffort())
 	text := "I've been working hard on this and made real progress, but I " + reason +
 		", and I won't hand you something I can't stand behind."
-	if best != "" {
+	switch {
+	case best != "" && best == r.lastText:
+		// The best-effort digest IS the last bubble on screen — pointing at it
+		// beats re-pasting it (the double-render).
+		text += " My last message has exactly where it stands."
+	case best != "":
 		text += " Here's exactly where it stands:\n\n" + best
 	}
 	text += "\n\nTell me how you'd like me to continue and I'll pick it right back up."
@@ -805,16 +815,39 @@ func (s *session) deliverCeiling(r *run, reason string) task.Status {
 // would hit the same wall, so the supervisor does NOT respawn and does NOT
 // consume the respawn budget. Unlike the generic "still on it, taking another
 // run at it" progress copy, this states plainly that the task is blocked and
-// hands the user the next step, with the best real work so far. Idempotent if
-// already closed.
+// hands the user the next step, with the best real work so far.
+//
+// The copy tells the truth about WHY it stopped: an unproductive-cap death
+// (the agent spun without closing — often because what it has for the user is
+// a question, not a completion) reads as "I need your direction", never as a
+// permission/limit wall that doesn't exist. And a best-effort digest that IS
+// the last bubble already on screen is referenced, not re-pasted (the
+// double-render). Idempotent if already closed.
 func (s *session) deliverDeterministicStop(r *run) task.Status {
 	if r.closed {
 		return task.StatusCeiling
 	}
 	best := strings.TrimSpace(s.agent.BestEffort())
-	text := "I couldn't complete this — I ran into something I can't get past on my own (a permission, a limit, or a detail that needs to change), and trying the same thing again wouldn't help, so I stopped rather than spin on it."
-	if best != "" {
-		text += " Here's where it got to:\n\n" + best
+	shown := best != "" && best == r.lastText
+	unproductive := false
+	if d, ok := s.agent.LastDeath(); ok && d.Reason == agent.DeathReasonUnproductive {
+		unproductive = true
+	}
+	var text string
+	switch {
+	case unproductive && shown:
+		text = "I've taken this as far as I can on my own — my last message has where things stand."
+	case unproductive && best != "":
+		text = "I've taken this as far as I can on my own. Here's where it stands:\n\n" + best
+	case unproductive:
+		text = "I've taken this as far as I can on my own."
+	default:
+		text = "I couldn't complete this — I ran into something I can't get past on my own (a permission, a limit, or a detail that needs to change), and trying the same thing again wouldn't help, so I stopped rather than spin on it."
+		if shown {
+			text += " My last message has where it got to."
+		} else if best != "" {
+			text += " Here's where it got to:\n\n" + best
+		}
 	}
 	text += "\n\nTell me how you'd like to adjust it and I'll pick it right back up."
 	s.engine.broker.publish(r.id, "message.complete", "neo", map[string]interface{}{"status": "completed"})
@@ -1150,6 +1183,7 @@ func (r *sseReporter) Say(text string, completion bool) {
 	if !completion || !run.narrated {
 		s.engine.conv.AppendAssistant(s.id, run.id, text)
 	}
+	run.lastText = strings.TrimSpace(text)
 	run.closed = true
 }
 
@@ -1176,6 +1210,7 @@ func (r *sseReporter) Status(text string) {
 	// survives a reopen instead of vanishing the moment the run settles.
 	s.engine.conv.AppendAssistant(s.id, run.id, text)
 	run.narrated = true
+	run.lastText = text
 }
 
 // Progress surfaces the SYNTHETIC narrate-before-act intent stub (e.g. "Layerx

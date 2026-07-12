@@ -273,9 +273,16 @@ func (p *Pager) UserProfile(ctx context.Context) []string {
 }
 
 // invariantRules are Neo's hard rules, lifted from the frozen spec invariants
-// (i1–i6) and phrased for the model in human terms (transparency rule).
+// (i1–i6) and phrased for the model in human terms (transparency rule). They
+// must stay TRUE on every surface they are pinned into: the interactive agent
+// carries the paxeer wallet write lane directly (NEO NO-BARRIER, 2026-07-11 —
+// there is no core_execute delegation step on this surface), while restricted
+// surfaces (Automatrix, sub-agents) simply have no money tools advertised at
+// all. A pinned rule naming a tool the surface does not advertise sends the
+// model hunting for a ghost — the 2026-07-12 core_execute circling incident.
 var invariantRules = []string{
-	"You hold no signing key. Anything that moves or commits funds, or needs a wallet signature (sending value, swaps, token approvals, deploying for gas, funding/settling streams or channels), must go through the core_execute tool — never a direct tool. The user approves any spend inline.",
+	"Money moves ONLY through the wallet tools advertised to you (paxeer__transfer, paxeer__approve, paxeer__contract_write, the stream/schedule/staking tools), signed network-side by the Paxeer Embedded Wallet under its spend policy. If those tools are not in your advertised set, you cannot move money at all — say so. Before ANY value-moving call, read that tool's description and use the operation-specific flow it names: protocols with a deposit step (LayerX, vaults, bridges) are funded through their deposit call, never a bare transfer.",
+	"Your advertised tools are your COMPLETE capability surface. A tool name that is not advertised does not exist for you — never search for it, retry it under other names, or assume it will appear; state plainly that you don't have it and use what you do have.",
 	"cortex is your durable memory and the ground truth; this conversation is a working cache that can be summarized and refreshed.",
 	"Copy high-entropy tokens — addresses, tx hashes, IDs, file paths — verbatim. Never paraphrase or invent them.",
 	"Explain what you are doing in plain, human terms. Hide the machinery (memory, hashing, replay); surface the intention.",

@@ -10,7 +10,7 @@
   },
   {
     "name": "layerx_deposit",
-    "description": "Get the on-chain vault deposit address + your DID-claim payload to fund your LayerX balance. Pass the returned did_claim as the deposit `did` argument; deposit USDL for 1:1 USDX, or USDC/USDT/PAX (atomically swapped to USDL). The depositing EVM address becomes your payout address. The actual on-chain deposit FROM the funding wallet moves user funds and escalates to a wallet signature. Read-only.",
+    "description": "STEP 1 of funding your LayerX USDX balance — call this FIRST, before any on-chain action. Returns vault_address, reserve_asset, and your did_claim (bytes32). The deposit itself is then a contract_write on vault_address: depositUSDL(amount, did_claim) for USDL (1:1), depositSwap(tokenIn, amountIn, minUsdlOut, deadline, did_claim) for USDC/USDT/WPAX9, or depositNative(minUsdlOut, deadline, did_claim) with native PAX value; ERC-20 paths need a prior approve(vault_address, amount). The did_claim argument is how the vault credits YOUR balance — a bare `transfer` to the vault emits no Deposit event and credits NOTHING (the funds strand). The depositing EVM address becomes your payout address. Confirm the credit with layerx_balance. This call itself moves no funds. Read-only.",
     "inputSchema": {
       "type": "object",
       "additionalProperties": true,

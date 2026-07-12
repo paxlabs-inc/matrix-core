@@ -1648,10 +1648,11 @@ func (a *Agent) runToolCalls(ctx context.Context, calls []llm.ToolCall) {
 		name := call.Function.Name
 		content := results[i].content
 		isErr := results[i].isErr
-		// Record the shared failure class (most recent classified failure wins)
-		// for the supervisor. Single-threaded here (the concurrent goroutines
-		// only wrote results[i]), so no race on a.lastFailureClass.
-		a.noteFailureClass(results[i].class)
+		// Record the shared class of this dispatch's outcome (a success clears a
+		// prior recorded failure) for the supervisor. Single-threaded here (the
+		// concurrent goroutines only wrote results[i]), so no race on
+		// a.lastFailureClass.
+		a.noteFailureClass(results[i].class, results[i].isErr)
 		// Cap the transcript copy: a single oversized tool result can blow
 		// the provider's request-body byte cap on its own. The observer
 		// below still gets the full, untruncated content so the product
@@ -1740,9 +1741,10 @@ func (a *Agent) runToolCallsSerial(ctx context.Context, calls []llm.ToolCall) {
 			content, shot, isErr, class = a.dispatchWithRetry(ctx, name, args)
 		}
 		results[i] = dispatchResult{content: content, shot: shot, isErr: isErr, class: class}
-		// Record the shared failure class (most recent classified failure wins)
-		// so the supervisor reads the SAME classification (NE-5).
-		a.noteFailureClass(class)
+		// Record the shared class of this dispatch's outcome (a success clears a
+		// prior recorded failure) so the supervisor reads the SAME
+		// classification (NE-5).
+		a.noteFailureClass(class, isErr)
 		// Cap the transcript copy: a single oversized tool result (large
 		// fetch / file read / MCP payload) can blow the provider's request-
 		// body byte cap on its own. The observer below still gets the full,
@@ -1771,15 +1773,24 @@ func (a *Agent) runToolCallsSerial(ctx context.Context, calls []llm.ToolCall) {
 	}
 }
 
-// noteFailureClass records the most recent classified tool FAILURE this turn so
-// the task supervisor (LastFailureClass) reads the SAME taxonomy the dispatch
-// ladder used. A clean dispatch (ClassNone) does not clear a prior failure: a
-// deterministic blocker remains the reason the turn is stuck even if later
-// reversible calls succeed. Called only from the single-threaded result-
-// assembly paths, so it never races the concurrent dispatch goroutines.
-func (a *Agent) noteFailureClass(class delegate.FailureClass) {
-	if class != delegate.ClassNone {
+// noteFailureClass records the classified outcome of the most recent tool
+// dispatch this turn so the task supervisor (LastFailureClass) reads the SAME
+// taxonomy the dispatch ladder used. A SUCCESSFUL dispatch CLEARS a prior
+// failure: recovery is real progress, so a turn that later dies did NOT die on
+// a wall it already got past — without the clear, one recovered exploration
+// miss (a 404 read of a guessed path) converts any later unrelated death into
+// a false deterministic stop-and-ask (the misleading "permission or limit"
+// terminal over a healthy turn). A content-level tool error that carries no
+// classified failure (isErr with ClassNone) leaves the record untouched: the
+// agent may still be stuck on the recorded wall. Called only from the
+// single-threaded result-assembly paths, so it never races the concurrent
+// dispatch goroutines.
+func (a *Agent) noteFailureClass(class delegate.FailureClass, isErr bool) {
+	switch {
+	case class != delegate.ClassNone:
 		a.lastFailureClass = class
+	case !isErr:
+		a.lastFailureClass = delegate.ClassNone
 	}
 }
 
