@@ -74,7 +74,7 @@ type ProviderKeys struct {
 	TogetherKey  string
 	BasetenKey   string
 	XaiKey       string
-	NovitaKey    string
+	XiaomiKey    string
 }
 
 // Options drives Server construction.
@@ -587,8 +587,8 @@ func (s *Server) buildUpstreamRequest(ctx context.Context, r *http.Request, dec 
 			apiKey = s.provider.BasetenKey
 		case routing.ProviderXai:
 			apiKey = s.provider.XaiKey
-		case routing.ProviderNovita:
-			apiKey = s.provider.NovitaKey
+		case routing.ProviderXiaomi:
+			apiKey = s.provider.XiaomiKey
 		}
 	}
 	if apiKey != "" {

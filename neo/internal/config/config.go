@@ -24,12 +24,12 @@ import (
 // Config is Neo's fully-resolved runtime configuration.
 type Config struct {
 	// --- identity / runtime wiring ---
-	AgentName    string // human label, "Neo"
-	CortexRoot   string // root dir of the cortex brain (per-actor stores live under it)
-	CortexActor  string // actor scope for Neo's memory store
-	DaemonURL    string // base URL of the MCL daemon for core_execute delegation
-	ManifestPath string // agent manifest declaring MCP servers (agents/default.json)
-	SkillsRoot   string // skills corpus root (procedural-pattern promotion target)
+	AgentName      string // human label, "Neo"
+	CortexRoot     string // root dir of the cortex brain (per-actor stores live under it)
+	CortexActor    string // actor scope for Neo's memory store
+	DaemonURL      string // base URL of the MCL daemon for core_execute delegation
+	ManifestPath   string // agent manifest declaring MCP servers (agents/default.json)
+	SkillsRoot     string // skills corpus root (procedural-pattern promotion target)
 	SelfModelGraph string
 
 	// --- models (provider-qualified ids; see matrix/mcl/llm DetectProvider) ---
@@ -252,17 +252,17 @@ type Config struct {
 // operational contract (neo/neo.frozen.kvx).
 func Default() Config {
 	return Config{
-		AgentName:    "Neo",
-		CortexRoot:   "/root/.cortex",
-		CortexActor:  "neo",
-		DaemonURL:    "http://127.0.0.1:8080",
-		ManifestPath: "agents/default.json",
-		SkillsRoot:   "skills",
+		AgentName:      "Neo",
+		CortexRoot:     "/root/.cortex",
+		CortexActor:    "neo",
+		DaemonURL:      "http://127.0.0.1:8080",
+		ManifestPath:   "agents/default.json",
+		SkillsRoot:     "skills",
 		SelfModelGraph: "graph/self-model",
 
-		MainModel:          "xiaomimimo/mimo-v2.5-pro",
-		CheapModel:         "xiaomimimo/mimo-v2.5-pro",
-		ConsolidationModel: "xiaomimimo/mimo-v2.5-pro",
+		MainModel:          "mimo-v2.5-pro",
+		CheapModel:         "mimo-v2.5-pro",
+		ConsolidationModel: "mimo-v2.5-pro",
 		EmbedModel:         "nomic-ai/nomic-embed-text-v1.5",
 		// Cassandra completeness auditor: a cheap/fast primary + a stronger
 		// escalation model, both on the gateway cassandra-slot whitelist

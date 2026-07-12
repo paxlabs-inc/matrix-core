@@ -161,7 +161,7 @@ func (c *Client) Model() string { return c.model }
 // tool_calls the caller must execute and feed back as tool-role messages.
 func (c *Client) Chat(ctx context.Context, req ChatRequest) (*ChatResult, error) {
 	wire := chatRequestWire{
-		Model:       c.model,
+		Model:       mcllm.XiaomiModelID(c.model),
 		Messages:    toWireMessages(req.Messages),
 		Temperature: c.temperature,
 		Tools:       req.Tools,
@@ -176,7 +176,7 @@ func (c *Client) Chat(ctx context.Context, req ChatRequest) (*ChatResult, error)
 	// bounds ONLY the visible output (reasoning + tool-call tokens are excluded),
 	// so a reasoning turn cannot starve the answer down to a stub. Every other
 	// provider keeps the legacy max_tokens field.
-	if mcllm.IsXaiModel(c.model) {
+	if mcllm.IsXaiModel(c.model) || mcllm.IsXiaomiModel(c.model) {
 		wire.MaxCompletionTokens = c.maxTokens
 	} else {
 		wire.MaxTokens = c.maxTokens
@@ -194,14 +194,14 @@ func (c *Client) Chat(ctx context.Context, req ChatRequest) (*ChatResult, error)
 	switch {
 	case mcllm.IsXaiModel(c.model) && supportsReasoningEffort(c.model):
 		wire.ReasoningEffort = reasoningEffort(c.enableThinking)
-	case mcllm.IsNovitaModel(c.model):
-		wire.ReasoningEffort = novitaReasoningEffort(c.enableThinking)
+	case mcllm.IsXiaomiModel(c.model):
+		wire.Thinking = &thinkingConfig{Type: xiaomiThinkingType(c.enableThinking)}
 	case c.enableThinking:
 		if args := enableThinkingArgs(c.model); args != nil {
 			wire.ChatTemplateArgs = args
 		}
 	}
-	if c.seed != 0 {
+	if c.seed != 0 && !mcllm.IsXiaomiModel(c.model) {
 		s := c.seed
 		wire.Seed = &s
 	}
@@ -572,6 +572,8 @@ func defaultChatEndpoint(p mcllm.Provider) string {
 		return "https://inference.baseten.co/v1/chat/completions"
 	case mcllm.ProviderXai:
 		return mcllm.XaiChatEndpoint
+	case mcllm.ProviderXiaomi:
+		return mcllm.XiaomiChatEndpoint
 	}
 	return ""
 }
@@ -589,6 +591,8 @@ func envKey(p mcllm.Provider) (string, error) {
 		name = "BASETEN_API_KEY"
 	case mcllm.ProviderXai:
 		name = "XAI_API_KEY"
+	case mcllm.ProviderXiaomi:
+		name = "MIMO_API_KEY"
 	default:
 		return "", fmt.Errorf("neo/llm: unknown provider %d", p)
 	}
@@ -626,14 +630,11 @@ func reasoningEffort(enabled bool) string {
 	return "none"
 }
 
-// novitaReasoningEffort maps the per-role enableThinking flag onto MiMo's
-// reasoning_effort enum: ON → "high" (the agentic reasoning posture pinned for
-// the fleet), OFF → "low" (token-tight background roles keep reasoning minimal).
-func novitaReasoningEffort(enabled bool) string {
+func xiaomiThinkingType(enabled bool) string {
 	if enabled {
-		return "high"
+		return "enabled"
 	}
-	return "low"
+	return "disabled"
 }
 
 // enableThinkingArgs returns the chat_template_args that turn reasoning ON for
@@ -667,7 +668,12 @@ type chatRequestWire struct {
 	// ReasoningEffort is xAI's reasoning-depth control ("none"|"low"|"medium"|
 	// "high"); set ONLY for grok-4.3 (omitempty keeps every other model's wire
 	// shape unchanged).
-	ReasoningEffort string `json:"reasoning_effort,omitempty"`
+	ReasoningEffort string          `json:"reasoning_effort,omitempty"`
+	Thinking        *thinkingConfig `json:"thinking,omitempty"`
+}
+
+type thinkingConfig struct {
+	Type string `json:"type"`
 }
 
 // streamOptions asks the provider to emit a final usage chunk on the SSE
@@ -677,30 +683,32 @@ type streamOptions struct {
 	IncludeUsage bool `json:"include_usage"`
 }
 
-// wireMessage is the request-side message shape. It deliberately omits the
-// reasoning channel so prior assistant reasoning is never echoed back.
+// wireMessage is the request-side message shape. Xiaomi requires prior
+// assistant reasoning_content to be replayed during multi-turn tool calls.
 // Content is NEVER omitempty: an assistant turn that carries only tool calls
 // and a tool result whose output is empty both have Content == "", and a
 // strict provider deserializer (xAI) rejects the WHOLE request with a
 // non-retryable 422 ("missing field `content`") when the key is absent.
 // An explicit "content":"" is accepted by every OpenAI-compatible provider.
 type wireMessage struct {
-	Role       string     `json:"role"`
-	Content    string     `json:"content"`
-	ToolCalls  []ToolCall `json:"tool_calls,omitempty"`
-	ToolCallID string     `json:"tool_call_id,omitempty"`
-	Name       string     `json:"name,omitempty"`
+	Role             string     `json:"role"`
+	Content          string     `json:"content"`
+	ToolCalls        []ToolCall `json:"tool_calls,omitempty"`
+	ToolCallID       string     `json:"tool_call_id,omitempty"`
+	Name             string     `json:"name,omitempty"`
+	ReasoningContent string     `json:"reasoning_content,omitempty"`
 }
 
 func toWireMessages(msgs []Message) []wireMessage {
 	out := make([]wireMessage, len(msgs))
 	for i, m := range msgs {
 		out[i] = wireMessage{
-			Role:       m.Role,
-			Content:    m.Content,
-			ToolCalls:  sanitizeToolCalls(m.ToolCalls),
-			ToolCallID: m.ToolCallID,
-			Name:       m.Name,
+			Role:             m.Role,
+			Content:          m.Content,
+			ToolCalls:        sanitizeToolCalls(m.ToolCalls),
+			ToolCallID:       m.ToolCallID,
+			Name:             m.Name,
+			ReasoningContent: m.Reasoning,
 		}
 	}
 	return out

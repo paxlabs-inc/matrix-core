@@ -44,7 +44,7 @@ const (
 	ProviderOpencode                  // opencode.ai/zen (Session 34 / Forge)
 	ProviderBaseten                   // inference.baseten.co (fallback chat provider)
 	ProviderXai                       // api.x.ai (xAI Grok — primary chat provider)
-	ProviderNovita                    // api.novita.ai (Xiaomi MiMo — primary chat provider)
+	ProviderXiaomi                    // api.xiaomimimo.com (Xiaomi MiMo — primary chat provider)
 )
 
 func (p Provider) String() string {
@@ -59,8 +59,8 @@ func (p Provider) String() string {
 		return "baseten"
 	case ProviderXai:
 		return "xai"
-	case ProviderNovita:
-		return "novita"
+	case ProviderXiaomi:
+		return "xiaomi"
 	}
 	return "unknown"
 }
@@ -643,7 +643,7 @@ func (c *Client) buildRequest(messages []interpreter.Message, grammar string) (*
 	// bounds ONLY the visible output (reasoning + tool-call tokens are excluded),
 	// so a reasoning turn cannot starve the answer down to a stub. Every other
 	// provider keeps the legacy max_tokens field.
-	if IsXaiModel(c.cfg.Model) {
+	if IsXaiModel(c.cfg.Model) || IsXiaomiModel(c.cfg.Model) {
 		req.MaxCompletionTokens = c.cfg.MaxTokens
 	} else {
 		req.MaxTokens = c.cfg.MaxTokens
@@ -657,14 +657,12 @@ func (c *Client) buildRequest(messages []interpreter.Message, grammar string) (*
 		// tokens. The fleet id is xAI's native model code, so no rewrite of
 		// req.Model is needed on the direct hop.
 		req.ReasoningEffort = reasoningEffort(c.cfg.EnableThinking)
-	case IsNovitaModel(c.cfg.Model):
-		// Novita-served MiMo reasons by default and accepts the OpenAI-style
-		// reasoning_effort enum: "high" for the agentic reasoning roles
-		// (EnableThinking set), "low" for token-tight mechanical roles.
-		req.ReasoningEffort = novitaReasoningEffort(c.cfg.EnableThinking)
+	case IsXiaomiModel(c.cfg.Model):
+		req.Model = XiaomiModelID(c.cfg.Model)
+		req.Thinking = &thinkingConfig{Type: xiaomiThinkingType(c.cfg.EnableThinking)}
 	}
 
-	if c.cfg.Seed != 0 {
+	if c.cfg.Seed != 0 && !IsXiaomiModel(c.cfg.Model) {
 		seed := c.cfg.Seed
 		req.Seed = &seed
 	}
@@ -813,8 +811,8 @@ func DetectProvider(model string) (Provider, error) {
 		return ProviderFireworks, nil
 	case IsXaiModel(model):
 		return ProviderXai, nil
-	case IsNovitaModel(model):
-		return ProviderNovita, nil
+	case IsXiaomiModel(model):
+		return ProviderXiaomi, nil
 	case isOpencodeModelID(model):
 		return ProviderOpencode, nil
 	case strings.Contains(model, "/"):
@@ -849,22 +847,25 @@ func reasoningEffort(enabled bool) string {
 	return "none"
 }
 
-// IsNovitaModel reports whether the fleet model id is a Novita-served model
-// (the Xiaomi MiMo family, "xiaomimimo/*"), routed to Novita's OpenAI-
-// compatible chat-completions API.
-func IsNovitaModel(model string) bool {
-	return strings.HasPrefix(strings.ToLower(model), "xiaomimimo/")
+// IsXiaomiModel reports whether the model is Xiaomi MiMo 2.5 Pro, accepting
+// both the native direct-provider id and the retired Novita fleet id.
+func IsXiaomiModel(model string) bool {
+	m := strings.ToLower(strings.TrimSpace(model))
+	return m == "mimo-v2.5-pro" || m == "xiaomimimo/mimo-v2.5-pro"
 }
 
-// novitaReasoningEffort maps the per-role EnableThinking flag onto MiMo's
-// reasoning_effort enum: ON → "high" (the agentic reasoning posture pinned for
-// the fleet), OFF → "low" (token-tight background roles keep reasoning minimal).
-// MiMo reasons by default and accepts the OpenAI-style reasoning_effort enum.
-func novitaReasoningEffort(enabled bool) string {
-	if enabled {
-		return "high"
+func XiaomiModelID(model string) string {
+	if IsXiaomiModel(model) {
+		return "mimo-v2.5-pro"
 	}
-	return "low"
+	return model
+}
+
+func xiaomiThinkingType(enabled bool) string {
+	if enabled {
+		return "enabled"
+	}
+	return "disabled"
 }
 
 // isOpencodeModelID returns true for the bare model ids served by
@@ -918,8 +919,8 @@ func defaultEndpoint(p Provider) string {
 		return "https://inference.baseten.co/v1/chat/completions"
 	case ProviderXai:
 		return XaiChatEndpoint
-	case ProviderNovita:
-		return NovitaChatEndpoint
+	case ProviderXiaomi:
+		return XiaomiChatEndpoint
 	}
 	return ""
 }
@@ -927,9 +928,8 @@ func defaultEndpoint(p Provider) string {
 // XaiChatEndpoint is xAI's OpenAI-compatible chat-completions endpoint.
 const XaiChatEndpoint = "https://api.x.ai/v1/chat/completions"
 
-// NovitaChatEndpoint is Novita's OpenAI-compatible chat-completions endpoint
-// (serves the Xiaomi MiMo family, e.g. xiaomimimo/mimo-v2.5-pro).
-const NovitaChatEndpoint = "https://api.novita.ai/openai/v1/chat/completions"
+// XiaomiChatEndpoint is Xiaomi MiMo's OpenAI-compatible chat-completions endpoint.
+const XiaomiChatEndpoint = "https://api.xiaomimimo.com/v1/chat/completions"
 
 func envKey(p Provider) (string, error) {
 	var name string
@@ -944,8 +944,8 @@ func envKey(p Provider) (string, error) {
 		name = "BASETEN_API_KEY"
 	case ProviderXai:
 		name = "XAI_API_KEY"
-	case ProviderNovita:
-		name = "NOVITA_API_KEY"
+	case ProviderXiaomi:
+		name = "MIMO_API_KEY"
 	default:
 		return "", fmt.Errorf("llm: unknown provider %d", p)
 	}
@@ -993,7 +993,12 @@ type chatRequest struct {
 	// ReasoningEffort is xAI's reasoning-depth control ("none"|"low"|
 	// "medium"|"high"); set ONLY for grok-4.3 (omitempty keeps every other
 	// provider's/model's wire shape unchanged).
-	ReasoningEffort string `json:"reasoning_effort,omitempty"`
+	ReasoningEffort string          `json:"reasoning_effort,omitempty"`
+	Thinking        *thinkingConfig `json:"thinking,omitempty"`
+}
+
+type thinkingConfig struct {
+	Type string `json:"type"`
 }
 
 type responseFormat struct {

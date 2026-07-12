@@ -88,13 +88,13 @@ import (
 // are NOT replayable against this card (accepted at migration). All three grok
 // PAX rates are PLACEHOLDERS pending the real xAI prices.
 //
-// v10 (2026-07-07, Andrew directed) makes the Novita-served
-// xiaomimimo/mimo-v2.5-pro (ModelMimoV25Pro) the primary chat model for every
+// v10 (2026-07-07, Andrew directed) makes the Xiaomi-served
+// mimo-v2.5-pro (ModelMimoV25Pro) the primary chat model for every
 // agentic slot (Neo, Cody, MCL compiler/planner/executor, liaison). Purely
 // ADDITIVE: one new rateTable row + whitelisting MiMo on those slots. The grok
 // rows stay on the card (still used by the Cassandra slot + as fallbacks) so
 // pre-v10 ledger rows remain replayable. MiMo's PAX rate is a PLACEHOLDER
-// pending the real Novita provider price.
+// pending the real Xiaomi provider price.
 const RateTableVersion = 10
 
 // PaxUsdReference is the USD price of 1 PAX the v3 rate card was
@@ -173,10 +173,9 @@ const (
 	// ModelNomicEmbed is the Fireworks-hosted embedding model behind the
 	// gateway's /v1/embeddings route (768-dim; matches cortex DefaultDim).
 	ModelNomicEmbed = "nomic-ai/nomic-embed-text-v1.5"
-	// ModelMimoV25Pro is the Novita-served Xiaomi MiMo v2.5 Pro — the v10 primary
-	// chat model for every agentic slot (Neo, Cody, MCL). Routes to Novita
-	// (api.novita.ai) via the "xiaomimimo/" prefix in internal/routing.
-	ModelMimoV25Pro = "xiaomimimo/mimo-v2.5-pro"
+	// ModelMimoV25Pro is Xiaomi MiMo v2.5 Pro's native direct-provider id — the
+	// primary chat model for every agentic slot (Neo, Cody, MCL).
+	ModelMimoV25Pro = "mimo-v2.5-pro"
 )
 
 // Rate is the per-Mtoken price in PAX for a single model. Both prompt
@@ -292,9 +291,9 @@ var rateTable = []Rate{
 	{
 		Model:               ModelMimoV25Pro,
 		Group:               GroupReason,
-		InputPaxPerMTokens:  0.087489064, // ≈ $1.00 / Mtoken  [PLACEHOLDER — Andrew to set the real Novita MiMo price]
-		OutputPaxPerMTokens: 0.174978128, // ≈ $2.00 / Mtoken  [PLACEHOLDER — Andrew to set the real Novita MiMo price]
-		Notes:               "Novita xiaomimimo/mimo-v2.5-pro — v10 primary chat model for every agentic slot (Neo/Cody/MCL). PLACEHOLDER rate pending the real Novita provider price.",
+		InputPaxPerMTokens:  0.087489064, // ≈ $1.00 / Mtoken  [PLACEHOLDER — set the real Xiaomi MiMo price]
+		OutputPaxPerMTokens: 0.174978128, // ≈ $2.00 / Mtoken  [PLACEHOLDER — set the real Xiaomi MiMo price]
+		Notes:               "Xiaomi direct mimo-v2.5-pro — primary chat model for every agentic slot (Neo/Cody/MCL). PLACEHOLDER rate pending the real Xiaomi provider price.",
 	},
 }
 

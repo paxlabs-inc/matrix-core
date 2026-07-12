@@ -36,7 +36,7 @@
 // Required environment:
 //
 //	MATRIX_GATEWAY_TOKEN  shared bearer token; clients send Authorization: Bearer ...
-//	NOVITA_API_KEY        gateway's own upstream key for Novita (primary chat: xiaomimimo/* MiMo)
+//	MIMO_API_KEY          gateway's own upstream key for Xiaomi MiMo direct (primary chat: mimo-v2.5-pro)
 //	XAI_API_KEY           gateway's own upstream key for xAI (grok-* fallback + Cassandra lanes)
 //	BASETEN_API_KEY       gateway's own upstream key for Baseten (fallback chat lanes; optional)
 //	FIREWORKS_API_KEY     gateway's own upstream key for Fireworks (nomic embeddings; optional)
@@ -113,17 +113,17 @@ func run(args []string) error {
 	logf := newLogger(*logFormat)
 
 	// Fail-fast: free-tier-only pins the primary chat model
-	// (xiaomimimo/mimo-v2.5-pro) on the agentic slots, and xiaomimimo/* routes to
-	// the Novita upstream — so the gateway's NOVITA_API_KEY is mandatory. Without
-	// it the gateway boots fine but 401s every chat call — a silent fleet-wide
-	// outage. XAI_API_KEY becomes a warning: it still serves the grok-* fallback
+	// (mimo-v2.5-pro) on the agentic slots and routes it directly to Xiaomi, so
+	// the gateway's MIMO_API_KEY is mandatory. Without it the gateway boots fine
+	// but 401s every chat call — a silent fleet-wide outage. XAI_API_KEY becomes
+	// a warning: it still serves the grok-* fallback
 	// + the Cassandra lanes. (MATRIX_GATEWAY_TOKEN is enforced by auth.New below.)
 	// BASETEN_API_KEY stays optional — it only serves the non-Grok
 	// "<vendor>/<model>" fallback lanes (Kimi/Qwen/DeepSeek).
 	// FIREWORKS_API_KEY stays optional — only the nomic-ai/* embedding route
 	// still forwards to Fireworks.
-	if *freeTierOnly && os.Getenv("NOVITA_API_KEY") == "" {
-		return fmt.Errorf("matrix-gateway: -free-tier-only=true requires NOVITA_API_KEY (gateway upstream key for the primary xiaomimimo/* MiMo chat lane)")
+	if *freeTierOnly && os.Getenv("MIMO_API_KEY") == "" {
+		return fmt.Errorf("matrix-gateway: -free-tier-only=true requires MIMO_API_KEY (gateway upstream key for the primary Xiaomi MiMo chat lane)")
 	}
 	if *freeTierOnly && os.Getenv("XAI_API_KEY") == "" {
 		logf("gateway.warn.xai_key_missing", map[string]any{
@@ -182,7 +182,7 @@ func run(args []string) error {
 		Ledger:      lg,
 		RateLimiter: rl,
 		Provider: proxy.ProviderKeys{
-			NovitaKey:    os.Getenv("NOVITA_API_KEY"),
+			XiaomiKey:    os.Getenv("MIMO_API_KEY"),
 			XaiKey:       os.Getenv("XAI_API_KEY"),
 			BasetenKey:   os.Getenv("BASETEN_API_KEY"),
 			FireworksKey: os.Getenv("FIREWORKS_API_KEY"),
