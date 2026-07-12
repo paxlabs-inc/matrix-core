@@ -6,6 +6,7 @@ package server
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strings"
 
@@ -37,6 +38,30 @@ func (e *Engine) publishPreview(convID, typ string, fields map[string]interface{
 	fields["conversation_id"] = convID
 	e.broker.ensure(runID)
 	e.broker.publish(runID, typ, "neo", fields)
+}
+
+// agentPreview is the tools.PreviewFunc seam: it lets the agent itself launch
+// the workbench preview for its conversation's active project (the same
+// lifecycle as POST /workspace/preview, resolved from the conversation's
+// project tag instead of a request header). Provisioning is kicked in the
+// background — the tool result is a status line and the user follows the
+// preview.* events in the Preview pane.
+func (e *Engine) agentPreview(ctx context.Context) (string, error) {
+	if e.preview == nil || !e.preview.Enabled() {
+		return "", fmt.Errorf("sandbox previews are not configured in this environment")
+	}
+	r := runFromContext(ctx)
+	if r == nil {
+		return "", fmt.Errorf("no active run on context")
+	}
+	p, err := e.resolveProjectRecord(e.conv.Project(r.convID))
+	if err != nil {
+		return "", err
+	}
+	go func() {
+		_, _ = e.preview.Provision(context.Background(), preview.Request{ConvID: r.convID, Root: p.Root})
+	}()
+	return fmt.Sprintf("Preview of %q is starting — it will appear in the workbench Preview pane when ready (or report a failure there).", p.Name), nil
 }
 
 // StartPreviewReaper runs the idle-sandbox reaper until ctx ends (no-op when

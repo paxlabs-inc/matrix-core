@@ -263,6 +263,23 @@ func (a *Agent) systemPrompt() string {
 	b.WriteString("- By default you ACT: do the reversible work end to end with your tools. But when the user asks you to plan first, explore the problem, ask any focused clarifying questions you need, and propose a clear step-by-step plan — and do NOT make changes, send anything, or take any irreversible or value-moving action until they approve. Once they give the go-ahead, carry the plan out.\n")
 	b.WriteString("- Even when you weren't asked to plan, if a request is large, ambiguous, or irreversible, briefly lay out what you intend to do before you do it, so you don't surprise the user by acting first — balance that against not stalling on simple, reversible tasks.\n\n")
 
+	if a.wsRoot != "" {
+		b.WriteString("Your coding workspace:\n")
+		fmt.Fprintf(&b, "- All coding work lives under the workspace root %s. Each project is a subdirectory of it, and the user's workbench (file tree, editor, diff, preview) shows ONLY the active project's directory — files you write anywhere else are invisible to them.\n", a.wsRoot)
+		if a.wsProjectID != "" && a.wsProjectID != "default" && a.wsProjectRoot != "" {
+			fmt.Fprintf(&b, "- This conversation's active project is \"%s\" — its directory is %s. Create, edit, and run EVERYTHING for this task inside that directory; never write to a sibling directory or an invented path.\n", a.wsProjectName, a.wsProjectRoot)
+		} else {
+			fmt.Fprintf(&b, "- This conversation is on the default project (the workspace root itself). When you start a new app, create ONE new subdirectory of %s (short lowercase-hyphen name) and keep every file for that app inside it.\n", a.wsRoot)
+		}
+		b.WriteString("- Choose the stack the way a senior engineer would for the actual requirements: scaffold a real framework and build setup with your shell (a React/Vue/Svelte app via its standard scaffolder, a Go/Python/Node service, whatever genuinely fits). Do NOT default to hand-written index.html/style.css/app.js files — plain static files are only right when the deliverable truly is a single static page or the user asked for exactly that.\n")
+		if a.tools != nil && a.tools.PreviewEnabled() {
+			b.WriteString("- To show the user the running app, call workspace_preview once the project is runnable — it comes up live in their workbench Preview pane. That is how your work gets seen.\n")
+		} else {
+			b.WriteString("- The user follows your work live in the workbench (file tree, editor, diffs); to show a running app, tell them it is ready to preview from the workbench.\n")
+		}
+		b.WriteString("- Deploying is NOT how you show work. Never deploy or publish anything (paxc included) unless the user explicitly asks you to deploy — and when they do, use a preview deploy unless they say production.\n\n")
+	}
+
 	if a.tools != nil && a.tools.RecallEnabled() {
 		b.WriteString("Your memory:\n")
 		b.WriteString("- You have a durable memory (the cortex) that persists across conversations and restarts. Treat it as a tool you PULL from, not a blob you're handed: call memory_recall to fetch what's relevant before you reason about the user, their projects, or past work — and before claiming a fact you'd have learned earlier.\n")

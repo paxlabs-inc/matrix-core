@@ -212,12 +212,16 @@ func (s *Server) handleChat(w http.ResponseWriter, r *http.Request) {
 	// intent_id (and the `live_run` field on GET /conversations/{id}) to decide
 	// whether to subscribe(replay:true) and reattach — no more "thread looks
 	// done while agent is still working".
-	sess := s.engine.sessions.get(convID)
-	runID, _ := sess.submit(msg)
-	s.engine.conv.AppendUser(convID, runID, msg)
+	// Tag the conversation with its workbench project BEFORE the session is
+	// minted: rebuildAgent reads the tag to inject the coding-workspace
+	// context into the agent's system prompt, so the very first turn must
+	// already see it.
 	if p := strings.TrimSpace(req.Project); p != "" {
 		s.engine.conv.SetProject(convID, p)
 	}
+	sess := s.engine.sessions.get(convID)
+	runID, _ := sess.submit(msg)
+	s.engine.conv.AppendUser(convID, runID, msg)
 	writeJSON(w, http.StatusAccepted, map[string]interface{}{
 		"conversation_id": convID,
 		"kind":            "dispatch",

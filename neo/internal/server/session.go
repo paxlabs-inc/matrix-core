@@ -230,6 +230,20 @@ func (s *session) rebuildAgent() {
 	e.maybeRefreshProfile()
 	agentName, preferredName, expertiseDomains := e.profileSnapshot()
 	s.agent.SetUserProfile(agentName, preferredName, expertiseDomains)
+	// Coding-workspace context (NEO-WORKBENCH): tell the agent where the
+	// workspace root is and which project this conversation is tagged to, so
+	// its file writes land where the workbench actually looks. An unknown or
+	// absent tag resolves to the synthesized default (the bare root); a
+	// daemon with no workspace configured injects nothing.
+	if e.workspaceRoot != "" {
+		proj, err := e.resolveProjectRecord(e.conv.Project(s.id))
+		if err != nil {
+			proj, err = e.resolveProjectRecord("")
+		}
+		if err == nil {
+			s.agent.SetWorkspace(e.workspaceRoot, proj.ID, proj.Name, proj.Root)
+		}
+	}
 	// Resume continuity: if this conversation already has durable turns (a
 	// reopened thread, one that outlived a restart, or a respawn mid-task),
 	// seed the fresh agent's transcript so it remembers the thread instead of

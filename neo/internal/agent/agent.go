@@ -268,6 +268,16 @@ type Agent struct {
 	// user-specific identity section (clean fallback to default "Neo").
 	preferredName    string
 	expertiseDomains []string
+
+	// Coding workspace context (NEO-WORKBENCH): the daemon's workspace root
+	// and this conversation's active project, injected per session rebuild
+	// like the user profile. Per-conversation-stable (a conversation's project
+	// tag is fixed), so it lives in the STABLE system prefix. Empty wsRoot =
+	// no workbench on this daemon, no coding-workspace section.
+	wsRoot        string
+	wsProjectID   string
+	wsProjectName string
+	wsProjectRoot string
 }
 
 // Options configures New.
@@ -432,6 +442,19 @@ func (a *Agent) SetUserProfile(agentName, preferredName string, expertiseDomains
 	}
 	a.preferredName = strings.TrimSpace(preferredName)
 	a.expertiseDomains = expertiseDomains
+}
+
+// SetWorkspace injects the coding-workspace context (workspace root + the
+// conversation's active project) into the STABLE system prefix. Called after
+// agent construction (per session rebuild), mirroring SetUserProfile. The
+// values are per-conversation-stable (the project tag is fixed for a
+// conversation), preserving the prompt-cache byte-stability invariant. An
+// empty root disables the section (no workbench on this daemon).
+func (a *Agent) SetWorkspace(root, projectID, projectName, projectRoot string) {
+	a.wsRoot = strings.TrimSpace(root)
+	a.wsProjectID = strings.TrimSpace(projectID)
+	a.wsProjectName = strings.TrimSpace(projectName)
+	a.wsProjectRoot = strings.TrimSpace(projectRoot)
 }
 
 // effectiveBudgetSignals carries the observable turn-complexity signals the

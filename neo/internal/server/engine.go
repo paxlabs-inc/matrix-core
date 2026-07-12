@@ -261,6 +261,14 @@ func NewEngine(o EngineOptions) *Engine {
 		// ordered checklist onto the run's event stream as a tool.todo event
 		// (pure side-channel) and the trace persists it so it survives reopen.
 		e.tools.SetTodo(e.emitTodo)
+		// Workbench preview (NEO-WORKBENCH req 7): let the agent launch the
+		// active project's sandbox preview itself, so "show the user the app"
+		// has a first-class action that is NOT a deploy. Only wired when the
+		// sandbox controller is configured; otherwise the tool stays
+		// unadvertised and the prompt omits it.
+		if e.preview != nil && e.preview.Enabled() {
+			e.tools.SetPreview(e.agentPreview)
+		}
 		// Browser filmstrip (BROWSER-FILMSTRIP req.2): persist tool-produced
 		// images (browser screenshots) to the served media plane so a still can
 		// reach the workspace out-of-band instead of being discarded. Only wired

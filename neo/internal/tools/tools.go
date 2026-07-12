@@ -82,6 +82,14 @@ const WriteSkillTool = "write_skill"
 // digest, not the user's checklist) and only when a todo emitter is wired.
 const TodoTool = "todo"
 
+// PreviewTool is the synthetic function Neo exposes to launch the workbench
+// preview: it provisions the active project's on-demand sandbox and the result
+// surfaces to the user in the workbench Preview pane via the durable preview.*
+// events (NEO-WORKBENCH req 7). Like todo it is NOT a real MCP server, so it
+// never enters the manifest tool-bijection check; it is advertised only when a
+// preview launcher is wired (sandbox previews configured on this daemon).
+const PreviewTool = "workspace_preview"
+
 // DelegateFunc runs a prose intent through the MCL pipeline and returns its
 // verifiable outcome. Injected by the agent wiring (see internal/delegate);
 // nil until wired, in which case core_execute reports it is unavailable.
@@ -122,6 +130,15 @@ type TodoItem struct {
 // not advertised at all. The items have already been validated by dispatchTodo
 // (non-empty, at most one in_progress).
 type TodoFunc func(ctx context.Context, items []TodoItem) error
+
+// PreviewFunc launches the workbench preview for the calling run's active
+// project (the engine resolves the conversation's project tag to its workspace
+// subtree and provisions the on-demand sandbox). It returns a short
+// model-facing status line; the lifecycle itself unfolds on the durable
+// preview.pending/ready/failed events the client renders. Injected by the
+// engine wiring (see internal/server); nil until wired, in which case the
+// preview tool is not advertised at all.
+type PreviewFunc func(ctx context.Context) (string, error)
 
 // RecallFunc searches the durable memory store and returns a rendered,
 // user-presentable digest. It is the PRIMARY reasoning-time retrieval verb
@@ -192,6 +209,7 @@ type Manager struct {
 	ask        AskFunc
 	writeSkill WriteSkillFunc
 	todo       TodoFunc
+	preview    PreviewFunc
 	media      MediaPersistFunc
 	maxAgents  int
 
@@ -353,6 +371,9 @@ func (m *Manager) Schemas() []llm.Tool {
 	if m.todo != nil {
 		out = append(out, todoSchema())
 	}
+	if m.preview != nil {
+		out = append(out, previewSchema())
+	}
 	return out
 }
 
@@ -411,6 +432,9 @@ func (m *Manager) dispatch(ctx context.Context, funcName string, args map[string
 		return c, "", e, er
 	case TodoTool:
 		c, e, er := m.dispatchTodo(ctx, args)
+		return c, "", e, er
+	case PreviewTool:
+		c, e, er := m.dispatchPreview(ctx)
 		return c, "", e, er
 	}
 	bt, ok := m.byFunc[funcName]
@@ -719,6 +743,33 @@ func (m *Manager) SetTodo(f TodoFunc) { m.todo = f }
 // TodoEnabled reports whether the live task-list tool is wired this session.
 func (m *Manager) TodoEnabled() bool { return m != nil && m.todo != nil }
 
+// SetPreview wires the workbench preview launcher after construction (the
+// launcher needs the engine's sandbox controller + project registry assembled
+// first). nil leaves the preview tool unadvertised.
+func (m *Manager) SetPreview(f PreviewFunc) { m.preview = f }
+
+// PreviewEnabled reports whether the workbench preview tool is wired this
+// session.
+func (m *Manager) PreviewEnabled() bool { return m != nil && m.preview != nil }
+
+// dispatchPreview launches the active project's sandbox preview. The launcher
+// is asynchronous by contract: it kicks provisioning and returns immediately;
+// readiness (or failure) reaches the user through the preview.* events the
+// workbench renders — the model should not poll or wait for the URL.
+func (m *Manager) dispatchPreview(ctx context.Context) (string, bool, error) {
+	if m.preview == nil {
+		return "the workbench preview is not available in this environment", true, nil
+	}
+	out, err := m.preview(ctx)
+	if err != nil {
+		return fmt.Sprintf("could not start the preview: %v", err), true, nil
+	}
+	if out == "" {
+		out = "Preview is starting — it will appear in the workbench Preview pane when ready."
+	}
+	return out, false, nil
+}
+
 // asStringSlice coerces a JSON array argument into a []string, dropping
 // non-string / blank entries. Returns nil for a missing or non-array value.
 func asStringSlice(v interface{}) []string {
@@ -1015,6 +1066,21 @@ func todoSchema() llm.Tool {
 				},
 			},
 			"required": []interface{}{"items"},
+		},
+	)
+}
+
+// previewSchema advertises the workbench preview launcher (NEO-WORKBENCH
+// req 7): fire-and-forget — provisioning is asynchronous and the user watches
+// the Preview pane, so the model calls it once when the project is runnable
+// and moves on.
+func previewSchema() llm.Tool {
+	return llm.NewFunctionTool(
+		PreviewTool,
+		"Start (or restart) the live preview of the active project in the user's workbench: it provisions an isolated sandbox, runs the project's dev command there, and the running app appears in the workbench Preview pane. Call it ONCE when the project is in a runnable state (after your file writes and any install/build steps) so the user can see the app live — this is how you show working software; never deploy anywhere just to show work. It returns immediately: readiness or failure reaches the user through the Preview pane, so do not poll, wait for a URL, or call it repeatedly.",
+		map[string]interface{}{
+			"type":       "object",
+			"properties": map[string]interface{}{},
 		},
 	)
 }
