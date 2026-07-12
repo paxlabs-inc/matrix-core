@@ -55,11 +55,24 @@ const (
 // on-disk/on-cortex contract for the Capability parameters, so the tags must
 // stay byte-stable across faculties.
 type StructuralSelf struct {
-	Summary      string   `json:"summary"`
-	GraphURI     string   `json:"graph_uri,omitempty"`
-	Scope        []string `json:"scope,omitempty"`
-	TokenBudget  int      `json:"token_budget,omitempty"`
-	ContextLimit int      `json:"context_limit,omitempty"`
+	Summary      string        `json:"summary"`
+	GraphURI     string        `json:"graph_uri,omitempty"`
+	Scope        []string      `json:"scope,omitempty"`
+	TokenBudget  int           `json:"token_budget,omitempty"`
+	ContextLimit int           `json:"context_limit,omitempty"`
+	Surface      *SurfaceFacts `json:"surface,omitempty"`
+}
+
+// SurfaceFacts is the derived capability-surface facet of the structural self:
+// the agent's TRUE external API surface (routes/protocols) and its
+// architectural is / is-not facts. It is written from the live serving surface
+// (never hand-authored prose in the prompt) so the resident capability section
+// the agent carries cannot drift from what the process actually serves
+// (epistemic-core req.2.1/2.2).
+type SurfaceFacts struct {
+	API   []string `json:"api,omitempty"`
+	Is    []string `json:"is,omitempty"`
+	IsNot []string `json:"is_not,omitempty"`
 }
 
 // FailurePattern is one self-authored "how I tend to fail" belief.

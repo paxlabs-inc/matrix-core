@@ -186,11 +186,49 @@ type Agent struct {
 	// reporting their findings back to the orchestrating agent.
 	persona string
 
+	// capability is the resolved capability-surface material rendered resident
+	// in the byte-stable prefix (epistemic-core req.2): construction-time
+	// state, so the rendered section is byte-identical across a turn's steps.
+	capability *CapabilitySurface
+
 	// selfModel is the shared self-model this sub-agent inherited at spawn (the
 	// structural self-summary + relevant how-I-fail patterns), injected into its
 	// charter so it reasons as the same mind on a scoped slice (self-model task
 	// 4.3). Empty on the top-level agent.
 	selfModel string
+
+	// ledger is Mechanism 1's premise ledger — the current plan's load-bearing
+	// factual premises with provenance (epistemic-core req.4). Run state: seeded
+	// at plan formation, reset each turn and on plan change.
+	ledger *premiseLedger
+
+	// mismatchMeter / hypotheses are Mechanism 3's run state (epistemic-core
+	// req.6): consecutive prediction mismatches per probe strategy, and each
+	// strategy's live hypothesis premise on the ledger.
+	mismatchMeter map[string]int
+	hypotheses    map[string]*Premise
+
+	// graph is Mechanism 4's reified task graph (epistemic-core req.7): goal →
+	// subgoals → evidence, with convergence computed as evidence-set delta.
+	graph *taskGraph
+
+	// revisionPending, when non-empty, forces a tools-stripped reasoning-only
+	// revision step at the next loop iteration (epistemic-core req.5.2/6.3/
+	// 7.2); revisionsThisTurn bounds them (maxRevisionsPerTurn).
+	revisionPending   string
+	revisionsThisTurn int
+
+	// premiseTail / graphTail are the FIXED epistemic tail slots (epistemic-core
+	// req.3.1): after the activation/memory block, the premise ledger renders,
+	// then the task graph — always in that order. The mechanisms (premise
+	// ledger, task graph) render into these slots the step a transition occurs.
+	premiseTail string
+	graphTail   string
+
+	// pinnedAssemblies counts how many times the pinned block was assembled
+	// this session — the NE-7 observable: exactly once per turn on the legacy
+	// path, never per step.
+	pinnedAssemblies int
 
 	// convID scopes the per-turn attestation IntentID for audit; empty on the
 	// CLI path (falls back to "cli"). turnSeq counts user turns this session so
@@ -304,6 +342,12 @@ type Options struct {
 	// Persona frames this as a task-scoped sub-agent with a specific role
 	// (empty = the top-level conversational agent).
 	Persona string
+	// Capability is the resolved capability-surface material (epistemic-core
+	// req.2): the agent's true external API surface, is/is-not architectural
+	// facts, and failure patterns, resolved from the durable self-model. It
+	// renders resident in the byte-stable prefix; nil renders honest UNKNOWN
+	// gaps (never fabricated facts).
+	Capability *CapabilitySurface
 	// SelfModel is the shared self-model a sub-agent INHERITS from the agent that
 	// spawned it (self-model task 4.3, req.9.1): a compact rendering of the
 	// structural self-summary plus the relevant how-I-fail patterns, injected into
@@ -353,6 +397,7 @@ func New(o Options) *Agent {
 		auditObserver: o.AuditObserver,
 		memObserver:   o.MemoryObserver,
 		persona:       strings.TrimSpace(o.Persona),
+		capability:    o.Capability,
 		selfModel:     strings.TrimSpace(o.SelfModel),
 		convID:        strings.TrimSpace(o.ConvID),
 		inbox:         o.Inbox,
@@ -566,6 +611,16 @@ func (a *Agent) Chat(ctx context.Context, userInput string) error {
 	a.casCooldown = map[modTrigger]int{}
 	a.casRecord = nil
 	a.autoshotCount = 0
+	// Epistemic core: the premise ledger scopes to THIS turn's plan (req.4.1);
+	// its resident tail slot and Mechanism 3's meter/hypotheses reset with it.
+	a.ledger = nil
+	a.premiseTail = ""
+	a.mismatchMeter = nil
+	a.hypotheses = nil
+	a.graph = nil
+	a.graphTail = ""
+	a.revisionPending = ""
+	a.revisionsThisTurn = 0
 	// Run-scoped overflow files (neo-smoothness req.4.3) are ephemeral to this
 	// turn: clean them up on every exit (completion, stall, budget, error).
 	defer func() {
@@ -648,6 +703,17 @@ func (a *Agent) Chat(ctx context.Context, userInput string) error {
 	collectSurfaced(surfaced, retrieved, procedural)
 	collectSurfaced(surfaced, triggered, nil)
 	collectSurfacedSnips(surfacedSnips, retrieved)
+
+	// NE-7 fix (epistemic-core req.3.2): the pinned block is computed ONCE per
+	// turn, not per loop step. The rendered snapshot is frozen for the whole
+	// turn — a mid-turn cortex write surfaces on the NEXT turn's snapshot, and
+	// a multi-step turn stops paying 4-5 cortex scans per step for a block
+	// that must not change mid-turn anyway.
+	var pinned string
+	if !cm && a.pager != nil {
+		pinned = a.pager.Pinned(ctx, a.activeGoal)
+		a.pinnedAssemblies++
+	}
 
 	repeats := 0
 	// unproductive is the ONE unified unproductive-attempt counter (N2/req.8.1):
@@ -750,7 +816,6 @@ func (a *Agent) Chat(ctx context.Context, userInput string) error {
 		}
 
 		var (
-			pinned     string
 			baseSystem string
 			pct        int
 			tail       string
@@ -765,7 +830,7 @@ func (a *Agent) Chat(ctx context.Context, userInput string) error {
 			// durable in cortex and the coarse history rides the durable
 			// story-so-far already surfaced in cmTail.
 			baseSystem = a.stableSystem() + cmTail
-			if a.budgetPct(baseSystem) >= a.cfg.HardPct {
+			if a.overHardBudget(baseSystem) {
 				a.cmTrimWorking()
 			}
 			if a.windowBytes(baseSystem) >= maxRequestBodyBytes {
@@ -775,16 +840,13 @@ func (a *Agent) Chat(ctx context.Context, userInput string) error {
 				}
 			}
 			pct = a.budgetPct(baseSystem)
-			tail = cmTail + a.budgetTail(pct)
+			tail = cmTail + a.epistemicTail() + a.budgetTail(pct)
 			window = assembleWindowUserTail(a.stableSystem(), a.working, tail)
 		} else {
-			if a.pager != nil {
-				pinned = a.pager.Pinned(ctx, a.activeGoal)
-			}
 			baseSystem = a.buildSystem(pinned, retrieved, procedural, triggered, recalled)
 
 			// [control.loop] step_3: forced compaction if over the hard threshold.
-			if a.budgetPct(baseSystem) >= a.cfg.HardPct {
+			if a.overHardBudget(baseSystem) {
 				a.compact(ctx, "hard")
 				baseSystem = a.buildSystem(pinned, retrieved, procedural, triggered, recalled)
 			}
@@ -810,7 +872,7 @@ func (a *Agent) Chat(ctx context.Context, userInput string) error {
 			// the prefix stays byte-identical turn-over-turn and rides the
 			// provider's longest-stable-prefix cache. baseSystem (stable + tail)
 			// still drives the budget stat above.
-			tail = a.dynamicTail(pinned, retrieved, procedural, triggered, recalled) + a.budgetTail(pct)
+			tail = a.dynamicTail(pinned, retrieved, procedural, triggered, recalled) + a.epistemicTail() + a.budgetTail(pct)
 			window = assembleWindow(a.stableSystem(), a.working, tail)
 		}
 
@@ -846,6 +908,17 @@ func (a *Agent) Chat(ctx context.Context, userInput string) error {
 			}
 		}
 
+		// Epistemic-core forced revision (req.5.2/6.3/7.2): a pending revision
+		// runs as a tools-stripped reasoning-only step BEFORE any further
+		// dispatch — the model must revise the plan in text first.
+		if a.revisionPending != "" {
+			if rerr := a.forcedRevisionStep(ctx, window, onDelta); rerr != nil {
+				a.consolidateWorking()
+				return fmt.Errorf("neo: model call failed: %w", rerr)
+			}
+			continue
+		}
+
 		res, err := a.chatWithRetry(ctx, llm.ChatRequest{Messages: window, Tools: a.schemas, OnDelta: onDelta})
 		if err != nil {
 			// HTTP 413 (provider request-body byte cap) is recoverable: the
@@ -872,12 +945,12 @@ func (a *Agent) Chat(ctx context.Context, userInput string) error {
 						// a.compact retired (req.9.3): non-summarizing trim.
 						a.cmTrimWorking()
 						baseSystem = a.stableSystem() + cmTail
-						tail = cmTail + a.budgetTail(a.budgetPct(baseSystem))
+						tail = cmTail + a.epistemicTail() + a.budgetTail(a.budgetPct(baseSystem))
 						window = assembleWindowUserTail(a.stableSystem(), a.working, tail)
 					} else {
 						a.compact(ctx, "hard")
 						baseSystem = a.buildSystem(pinned, retrieved, procedural, triggered, recalled)
-						tail = a.dynamicTail(pinned, retrieved, procedural, triggered, recalled) + a.budgetTail(a.budgetPct(baseSystem))
+						tail = a.dynamicTail(pinned, retrieved, procedural, triggered, recalled) + a.epistemicTail() + a.budgetTail(a.budgetPct(baseSystem))
 						window = assembleWindow(a.stableSystem(), a.working, tail)
 					}
 					res, err = a.chatWithRetry(ctx, llm.ChatRequest{Messages: window, Tools: a.schemas, OnDelta: onDelta})
@@ -1014,7 +1087,7 @@ func (a *Agent) Chat(ctx context.Context, userInput string) error {
 			// [control.loop] step_6: cooperative compaction at a clean boundary.
 			// Retired on the continuous-memory path (req.9.3): story-so-far is
 			// durable in cortex, so no agent-side summarization runs.
-			if !cm && a.budgetPct(a.buildSystem(pinned, retrieved, procedural, triggered, recalled)) >= a.cfg.SoftPct {
+			if !cm && a.overSoftBudget(a.buildSystem(pinned, retrieved, procedural, triggered, recalled)) {
 				a.compact(ctx, "soft")
 			}
 			return nil
@@ -1026,6 +1099,10 @@ func (a *Agent) Chat(ctx context.Context, userInput string) error {
 		// the durable thread content.
 		if c := strings.TrimSpace(res.Message.Content); c != "" {
 			a.out.Status(a.cleanContent(c))
+			// Epistemic-core Mechanism 1 (req.4.1): the first committing
+			// assistant turn IS plan formation — extract its load-bearing
+			// premises with provenance into the resident ledger.
+			a.premiseObservePlan(ctx, c)
 		}
 
 		// No-progress detection (Cassandra 2.0: no completion gate to share it
@@ -1093,7 +1170,12 @@ func (a *Agent) Chat(ctx context.Context, userInput string) error {
 			}
 		}
 
-		a.runToolCalls(ctx, res.Message.ToolCalls)
+		// Epistemic-core check-before-act (req.5): the gate validates the
+		// plan's self-claims against the resident capability surface and
+		// refuses dependent dispatches while a refuted premise stands
+		// (introspection tools stay allowed — they are the discharge path).
+		allowed, _ := a.checkBeforeAct(res.Message.ToolCalls)
+		a.runToolCalls(ctx, allowed)
 		// req.8.2 (N2): a plain tool dispatch does NOT reset the unified
 		// unproductive counter — only genuine accepted progress does. This keeps
 		// an interleaved real tool call from silently resetting the loop-discipline
@@ -1481,6 +1563,7 @@ func (a *Agent) runToolCalls(ctx context.Context, calls []llm.ToolCall) {
 	// once here and reused for the end events.
 	stepIDs := make([]string, n)
 	parsedArgs := make([]map[string]interface{}, n)
+	expects := make([]string, n)
 	for i, call := range calls {
 		name := call.Function.Name
 		args, perr := call.ParseArgs()
@@ -1490,6 +1573,21 @@ func (a *Agent) runToolCalls(ctx context.Context, calls []llm.ToolCall) {
 			parsedArgs[i] = nil // sentinel: already handled, do not dispatch
 			stepIDs[i] = ""
 			continue
+		}
+		// Epistemic-core Mechanism 3: lift the stated expectation off the call
+		// (the tool never sees it); the belief update runs at result assembly.
+		// A probe with NO expectation is a guess — refused at the seam with
+		// the ground-or-hypothesize directive (req.6.1), never dispatched.
+		expects[i] = popExpect(args)
+		if a.epistemicPredictionsOn() && expects[i] == "" {
+			if _, isProbe := probeStrategy(name, args); isProbe {
+				directive := refuseGuess(name)
+				a.working = append(a.working, llm.ToolResult(call.ID, name, directive))
+				a.cmRecordToolResult(name, directive)
+				parsedArgs[i] = nil
+				stepIDs[i] = ""
+				continue
+			}
 		}
 		parsedArgs[i] = args
 		stepID := call.ID
@@ -1562,6 +1660,11 @@ func (a *Agent) runToolCalls(ctx context.Context, calls []llm.ToolCall) {
 		// Continuous-memory (task 6.1): record the FULL tool result to the
 		// durable cortex transcript (cortex spills oversized payloads itself).
 		a.cmRecordToolResult(name, content)
+		// Epistemic-core Mechanisms 3+4 (req.6.2/7.1): the belief-update seam —
+		// the probe's expectation is checked against the real outcome, then the
+		// action links to the task graph and the evidence delta is computed.
+		missed := a.predictionObserve(ctx, name, parsedArgs[i], expects[i], content, isErr)
+		a.graphObserve(name, parsedArgs[i], content, isErr, missed)
 		if a.observer != nil {
 			// Resolve the browsing filmstrip still for this call (a direct
 			// screenshot's URL, or a deterministic auto-capture after a
@@ -1597,6 +1700,19 @@ func (a *Agent) runToolCallsSerial(ctx context.Context, calls []llm.ToolCall) {
 		if perr != nil {
 			a.working = append(a.working, llm.ToolResult(call.ID, name, fmt.Sprintf("could not parse arguments (%v). Re-issue the call with valid JSON arguments.", perr)))
 			continue
+		}
+		// Epistemic-core Mechanism 3: lift the stated expectation off the call
+		// (the tool never sees it); the belief update runs after dispatch.
+		// A probe with NO expectation is a guess — refused at the seam with
+		// the ground-or-hypothesize directive (req.6.1), never dispatched.
+		expect := popExpect(args)
+		if a.epistemicPredictionsOn() && expect == "" {
+			if _, isProbe := probeStrategy(name, args); isProbe {
+				directive := refuseGuess(name)
+				a.working = append(a.working, llm.ToolResult(call.ID, name, directive))
+				a.cmRecordToolResult(name, directive)
+				continue
+			}
 		}
 		// Stable surface id for this call: some providers omit tool_call ids, so
 		// fall back to a per-turn index. Shared across the start/end pair below
@@ -1635,6 +1751,10 @@ func (a *Agent) runToolCallsSerial(ctx context.Context, calls []llm.ToolCall) {
 		// Continuous-memory (task 6.1): record the FULL tool result to the
 		// durable cortex transcript (cortex spills oversized payloads itself).
 		a.cmRecordToolResult(name, content)
+		// Epistemic-core Mechanisms 3+4 (req.6.2/7.1): the belief-update seam,
+		// then the task-graph action link + evidence delta.
+		missed := a.predictionObserve(ctx, name, args, expect, content, isErr)
+		a.graphObserve(name, args, content, isErr, missed)
 		// Surface the completed work (command output, fetched page, file
 		// contents, web-search snippets, …) so the product renders real
 		// evidence, not just a synthesized answer.
@@ -1819,8 +1939,7 @@ func (a *Agent) budgetPct(system string) int {
 	if a.cfg.ContextWindowTokens <= 0 {
 		return 0
 	}
-	used := memory.EstimateTokens(system) + estimateMessagesTokens(a.working) + a.schemaTokens
-	pct := used * 100 / a.cfg.ContextWindowTokens
+	pct := a.usedTokens(system) * 100 / a.cfg.ContextWindowTokens
 	if pct < 0 {
 		pct = 0
 	}
@@ -1828,6 +1947,22 @@ func (a *Agent) budgetPct(system string) int {
 		pct = 100
 	}
 	return pct
+}
+
+func (a *Agent) usedTokens(system string) int {
+	return memory.EstimateTokens(system) + estimateMessagesTokens(a.working) + a.schemaTokens
+}
+
+// overSoftBudget / overHardBudget are the trim/compaction trigger reads: the
+// window is compared against the headroom-derived token budgets (window minus
+// capped headroom), not a raw percentage, so at 1M scale trimming fires only
+// near true pressure while small-window overrides keep their prior behavior.
+func (a *Agent) overSoftBudget(system string) bool {
+	return a.cfg.ContextWindowTokens > 0 && a.usedTokens(system) >= a.cfg.SoftBudgetTokens()
+}
+
+func (a *Agent) overHardBudget(system string) bool {
+	return a.cfg.ContextWindowTokens > 0 && a.usedTokens(system) >= a.cfg.HardBudgetTokens()
 }
 
 // stateTouchDedupKey returns a dedup key for a non-idempotent, state-touching

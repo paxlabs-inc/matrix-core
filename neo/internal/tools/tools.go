@@ -668,6 +668,11 @@ func (m *Manager) dispatchTodo(ctx context.Context, args map[string]interface{})
 	return summarizeTodo(items), false, nil
 }
 
+// ParseTodoItems is the exported todo-argument parser: the agent core's task
+// graph consumes the SAME item vocabulary the todo surface renders (one
+// vocabulary, no parallel plan state — epistemic-core req.7.3).
+func ParseTodoItems(args map[string]interface{}) []TodoItem { return parseTodoItems(args) }
+
 // parseTodoItems reads the model's todo arguments into an ordered item list,
 // tolerating the loose JSON shapes models emit (text under text/title/content/
 // step, status synonyms). An entry with no text is dropped. Order is preserved.

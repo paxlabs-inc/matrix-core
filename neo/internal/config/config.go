@@ -181,6 +181,22 @@ type Config struct {
 	// (default 2).
 	CassandraCooldownSteps int
 
+	// --- epistemic core (EPISTEMIC-CORE; [epistemic] block / NEO_EPISTEMIC_*) ---
+	// EpistemicPremises arms Mechanism 1 (premise ledger + check-before-act
+	// gate): a plan's load-bearing premises are extracted with provenance and
+	// no action dispatches on a cheaply-checkable unverified assumption.
+	EpistemicPremises bool
+	// EpistemicPredictions arms Mechanism 3 (prediction-carrying dispatch):
+	// probe-class tool calls state an expectation; mismatch is a first-class
+	// belief-update event.
+	EpistemicPredictions bool
+	// EpistemicMismatchLimit is the consecutive per-strategy mismatch count
+	// that forces a tools-stripped revision step (default 3).
+	EpistemicMismatchLimit int
+	// EpistemicConvergenceWindow is how many consecutive actions without
+	// evidence growth count as measured non-convergence (default 4).
+	EpistemicConvergenceWindow int
+
 	// --- heartbeat (P1-4: Chronos-driven proactive turn convention) ---
 	// HeartbeatInterval is the recurring-alarm interval (minutes) for Neo's
 	// proactive self-review of active goals/constraints. 0 = disabled (the
@@ -254,7 +270,7 @@ func Default() Config {
 		CassandraModel:         "grok-4.20-0309-non-reasoning",
 		CassandraEscalateModel: "grok-4.3",
 
-		ContextWindowTokens:   256000,
+		ContextWindowTokens:   1000000,
 		SoftPct:               80,
 		HardPct:               92,
 		RetrievalTopK:         8,
@@ -317,6 +333,14 @@ func Default() Config {
 		CassandraMaxModsPerTurn: 3,
 		CassandraLoopThreshold:  0,
 		CassandraCooldownSteps:  2,
+
+		// Epistemic core: both mechanisms ON by default (a clean, grounded run
+		// renders nothing and dispatches nothing differently); bounds per the
+		// design table (mismatch 3, convergence window 4).
+		EpistemicPremises:          true,
+		EpistemicPredictions:       true,
+		EpistemicMismatchLimit:     3,
+		EpistemicConvergenceWindow: 4,
 
 		// Automatrix (proactive surprise tasks). Default OFF; capture still runs
 		// regardless of this switch so the opportunity queue is warm, but Neo
@@ -488,6 +512,12 @@ func (c *Config) applyDoc(d *kvxDoc) {
 		c.CassandraLoopThreshold = d.intOr("cassandra", "loop_threshold", c.CassandraLoopThreshold)
 		c.CassandraCooldownSteps = d.intOr("cassandra", "cooldown_steps", c.CassandraCooldownSteps)
 	}
+	if d.has("epistemic") {
+		c.EpistemicPremises = d.boolOr("epistemic", "premises", c.EpistemicPremises)
+		c.EpistemicPredictions = d.boolOr("epistemic", "predictions", c.EpistemicPredictions)
+		c.EpistemicMismatchLimit = d.intOr("epistemic", "mismatch_limit", c.EpistemicMismatchLimit)
+		c.EpistemicConvergenceWindow = d.intOr("epistemic", "convergence_window", c.EpistemicConvergenceWindow)
+	}
 	if d.has("heartbeat") {
 		c.HeartbeatInterval = d.intOr("heartbeat", "interval_minutes", c.HeartbeatInterval)
 	}
@@ -608,6 +638,13 @@ func (c *Config) applyEnv() {
 	c.CassandraMaxModsPerTurn = envInt("NEO_CASSANDRA_MAX_MODS", c.CassandraMaxModsPerTurn)
 	c.CassandraLoopThreshold = envIntNonNeg("NEO_CASSANDRA_LOOP_THRESHOLD", c.CassandraLoopThreshold)
 	c.CassandraCooldownSteps = envInt("NEO_CASSANDRA_COOLDOWN", c.CassandraCooldownSteps)
+
+	// Epistemic core (EPISTEMIC-CORE req.8.1): both mechanisms honestly
+	// disableable; the bounds are positive counts (envInt rejects 0).
+	c.EpistemicPremises = envBool("NEO_EPISTEMIC_PREMISES", c.EpistemicPremises)
+	c.EpistemicPredictions = envBool("NEO_EPISTEMIC_PREDICTIONS", c.EpistemicPredictions)
+	c.EpistemicMismatchLimit = envInt("NEO_EPISTEMIC_MISMATCH_LIMIT", c.EpistemicMismatchLimit)
+	c.EpistemicConvergenceWindow = envInt("NEO_EPISTEMIC_CONVERGENCE_WINDOW", c.EpistemicConvergenceWindow)
 }
 
 // envInt overlays a positive integer from the environment, keeping the
@@ -676,7 +713,34 @@ func (c Config) IsEscalateAction(action string) bool {
 	return false
 }
 
-// SoftBudgetTokens / HardBudgetTokens convert the % thresholds into absolute
-// token counts against the configured context window.
-func (c Config) SoftBudgetTokens() int { return c.ContextWindowTokens * c.SoftPct / 100 }
-func (c Config) HardBudgetTokens() int { return c.ContextWindowTokens * c.HardPct / 100 }
+// Headroom caps for the budget derivation below: at large windows a percentage
+// threshold reserves an absurd absolute slice (80% of 1M leaves 200K tokens
+// idle), so the reserved headroom is the SMALLER of the percentage-derived
+// slice and these absolute caps. Below ~320K windows the caps never bind, so
+// small local-model configurations (32K via NEO_CONTEXT_WINDOW_TOKENS) keep
+// their exact prior trim/compaction behavior.
+const (
+	softHeadroomCapTokens = 64000
+	hardHeadroomCapTokens = 32000
+)
+
+// SoftBudgetTokens / HardBudgetTokens derive the compaction thresholds from
+// the configured context window: the percentage-derived budget, raised to
+// window-minus-capped-headroom when the percentage would reserve more than the
+// absolute cap — so trimming fires only near true pressure at 1M scale while
+// small windows keep the exact percentage behavior.
+func (c Config) SoftBudgetTokens() int {
+	return budgetTokens(c.ContextWindowTokens, c.SoftPct, softHeadroomCapTokens)
+}
+
+func (c Config) HardBudgetTokens() int {
+	return budgetTokens(c.ContextWindowTokens, c.HardPct, hardHeadroomCapTokens)
+}
+
+func budgetTokens(window, pct, headroomCap int) int {
+	b := window * pct / 100
+	if capped := window - headroomCap; capped > b {
+		b = capped
+	}
+	return b
+}

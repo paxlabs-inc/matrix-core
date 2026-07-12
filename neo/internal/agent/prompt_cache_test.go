@@ -133,10 +133,10 @@ func TestBuildSystem_DynamicContentUnchanged(t *testing.T) {
 		t.Fatalf("stable + dynamicTail must equal the golden buildSystem output (lossless):\n--- full ---\n%s\n--- stable+tail ---\n%s", full, stable+tail)
 	}
 
-	// The stable prefix is EXACTLY systemPrompt() (charter + groundTruth) —
-	// nothing volatile.
-	if stable != a.systemPrompt() {
-		t.Fatal("stable prefix must be exactly systemPrompt() (charter + groundTruth)")
+	// The stable prefix is EXACTLY the charter + the resident capability
+	// surface (both construction-time constants) — nothing volatile.
+	if stable != a.systemPrompt()+a.renderCapabilitySurface() {
+		t.Fatal("stable prefix must be exactly systemPrompt() + capability surface (nothing volatile)")
 	}
 
 	// Every volatile section survives in the dynamic tail, in the ORIGINAL

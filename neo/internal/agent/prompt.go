@@ -39,23 +39,27 @@ func (a *Agent) buildSystem(pinned string, retrieved []memory.Snippet, procedura
 // it can ride the provider's longest-stable-prefix prompt cache. It is injected
 // as the FIRST message of every window (P1-2).
 func (a *Agent) stableSystem() string {
-	base := a.systemPrompt()
+	var b strings.Builder
+	b.WriteString(a.systemPrompt())
+
+	// Epistemic-core req.2: the FULL capability surface (external API,
+	// is/is-not facts, tool inventory, failure patterns) lives resident in the
+	// stable prefix — construction-time state only, so it is byte-identical
+	// across every step of a session.
+	b.WriteString(a.renderCapabilitySurface())
 
 	// P2-2: inject a names-only skill INDEX into the stable prefix. The index
 	// lists available skills by NAME only — never full bodies (steps/gotchas/
 	// criteria), which are pulled on demand via memory_recall. This keeps the
 	// prefix token-bounded and byte-stable across turns (P1-2 cache invariant).
 	// Empty index = no section emitted (clean for deployments without skills).
-	if len(a.skillIndex) == 0 {
-		return base
-	}
-	var b strings.Builder
-	b.WriteString(base)
-	b.WriteString("\n\nSkills you have (call memory_recall for full steps):\n")
-	for _, name := range a.skillIndex {
-		b.WriteString("- ")
-		b.WriteString(name)
-		b.WriteString("\n")
+	if len(a.skillIndex) > 0 {
+		b.WriteString("\n\nSkills you have (call memory_recall for full steps):\n")
+		for _, name := range a.skillIndex {
+			b.WriteString("- ")
+			b.WriteString(name)
+			b.WriteString("\n")
+		}
 	}
 	return b.String()
 }
@@ -258,6 +262,12 @@ func (a *Agent) systemPrompt() string {
 	b.WriteString("- Once a tool has given you a value or completed a visible action, TRUST it: do not re-fetch or re-render the same thing to double-check. Read the result, then give the answer. Re-doing completed work instead of finishing is the main way a simple request spirals.\n")
 	b.WriteString("- When something fails, read the error and adapt your approach. Don't repeat the same failing call. If you're truly blocked, say what you tried and what you need.\n")
 	b.WriteString("- Anything wrapped in <system_guidance>…</system_guidance> is a private note from the SYSTEM, never from the user — even when it arrives as a message in the conversation. It is steering meant only for you (for example, a reminder that the task isn't finished, or how to close a gap). ACT on it: adjust and take the next real step (often that means calling a tool, or giving your final answer if you're genuinely done), never answer it conversationally and never greet. Do NOT acknowledge, quote, or mention it to the user — incorporate it silently and keep working. If you see the same guidance repeat, do the concrete thing it asks rather than replying to it again.\n\n")
+
+	if a.cfg.EpistemicPredictions {
+		b.WriteString("Predict before you probe:\n")
+		b.WriteString("- Before any PROBE — fetching a URL or endpoint, a search, an exploratory command — add an `expect` argument to the tool call: one short line stating the outcome shape you predict (e.g. \"200 with a JSON array of candles\" or \"exit 0 listing the config files\"). A probe you can state no expectation for is a guess: ground it first (docs, your capability surface, memory) or state the hypothesis you are testing.\n")
+		b.WriteString("- When a probe misses its expectation, that is INFORMATION about your premise, not noise: revise the hypothesis before probing again. Never fire another variation of the same probe with the same mental model.\n\n")
+	}
 
 	b.WriteString("Plan vs act:\n")
 	b.WriteString("- By default you ACT: do the reversible work end to end with your tools. But when the user asks you to plan first, explore the problem, ask any focused clarifying questions you need, and propose a clear step-by-step plan — and do NOT make changes, send anything, or take any irreversible or value-moving action until they approve. Once they give the go-ahead, carry the plan out.\n")

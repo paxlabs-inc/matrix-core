@@ -55,7 +55,7 @@ func (p *Pager) LoadStructuralSelf(ctx context.Context) (string, error) {
 	if err := json.Unmarshal(encoded, &artifact); err != nil {
 		return "", err
 	}
-	return p.WriteStructuralSelf(ctx, StructuralSelf{
+	structural := StructuralSelf{
 		Summary:     artifact.Summary,
 		GraphURI:    artifact.Merkle,
 		Scope:       artifact.Scope,
@@ -65,7 +65,14 @@ func (p *Pager) LoadStructuralSelf(ctx context.Context) (string, error) {
 		// is what lets the decomposition router (self-model task 4.2) surface a
 		// self-model-grounded limit at the spawn_subagents decision point.
 		ContextLimit: p.cfg.ContextWindowTokens,
-	})
+	}
+	// Preserve the capability-surface facet across artifact reloads: the surface
+	// is written by the serving layer (WriteSurfaceFacts), not the artifact, and
+	// a boot-time reload must not drop it (epistemic-core req.2.1).
+	if current, ok := p.currentStructural(); ok {
+		structural.Surface = current.Surface
+	}
+	return p.WriteStructuralSelf(ctx, structural)
 }
 
 // recallSelf renders the on-demand self-graph paging behind a "self:<symbol>"
@@ -132,6 +139,35 @@ func (p *Pager) WriteStructuralSelf(_ context.Context, structural StructuralSelf
 	return string(uri), err
 }
 
+// WriteSurfaceFacts merges the derived capability-surface facts (routes,
+// is/is-not architectural facts — epistemic-core req.2.1) into the durable
+// structural self record, preserving the artifact-derived fields. It writes
+// even when no structural summary is loaded yet (a fresh install), so the true
+// external surface is never dropped just because the self-graph is missing.
+func (p *Pager) WriteSurfaceFacts(_ context.Context, facts cxself.SurfaceFacts) (string, error) {
+	structural, _ := p.currentStructural()
+	structural.Surface = &facts
+	params, err := json.Marshal(structural)
+	if err != nil {
+		return "", err
+	}
+	data := cmem.CapabilityData{
+		SchemaVersion: 1,
+		Subject:       selfModelSubject,
+		Capability:    structuralSelfCapability,
+		Parameters:    params,
+		Verified:      true,
+		LastObserved:  time.Now().UTC(),
+	}
+	if current, ok := p.structuralSelfMemory(); ok {
+		uri := cortex.BuildURI(current.Head.Type, current.Head.ID, current.Head.CurrentVersion)
+		updated, updateErr := p.cortex.Update(uri, data, p.writeMeta())
+		return string(updated), updateErr
+	}
+	uri, err := p.cortex.Write(p.head(structuralSelfImportance), data, p.writeMeta())
+	return string(uri), err
+}
+
 func (p *Pager) WriteFailurePattern(_ context.Context, statement string, derivedFrom []string) (string, error) {
 	statement = strings.TrimSpace(statement)
 	if statement == "" {
@@ -158,6 +194,24 @@ func (p *Pager) WriteFailurePattern(_ context.Context, statement string, derived
 // (self-model req.6.4) rather than a per-faculty reimplementation that can drift.
 func (p *Pager) SelfModel(_ context.Context) (SelfModel, error) {
 	return cxself.Resolve(p.cortex, p.cfg.AgentName)
+}
+
+// currentStructural decodes the durable structural self record, if any.
+func (p *Pager) currentStructural() (StructuralSelf, bool) {
+	var structural StructuralSelf
+	current, ok := p.structuralSelfMemory()
+	if !ok {
+		return structural, false
+	}
+	decoded, err := cmem.DecodeData(current.Version.Type, current.Version.Data)
+	if err != nil {
+		return structural, false
+	}
+	data, isCap := decoded.(cmem.CapabilityData)
+	if !isCap {
+		return structural, false
+	}
+	return structural, json.Unmarshal(data.Parameters, &structural) == nil
 }
 
 func (p *Pager) structuralSelfMemory() (*cmem.Memory, bool) {

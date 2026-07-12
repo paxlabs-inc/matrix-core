@@ -84,6 +84,11 @@ const (
 	trigThrash          modTrigger = "thrash"           // cyclic verify-type calls, nothing new
 	trigOverVerify      modTrigger = "over_verify"      // re-running the same check, unchanged result
 	trigOscillation     modTrigger = "oscillation"      // cyclic mutate-type calls (flip-flopping)
+
+	// Premise-provenance triggers (epistemic-core req.4.3): doubt keyed on the
+	// ledger's state — claims judged at birth, not prose at death.
+	trigRefutedPremise  modTrigger = "refuted_premise"  // acting past a refuted premise without revising
+	trigUngroundedClose modTrigger = "ungrounded_close" // closing while the plan rests on unchecked self-assumptions
 )
 
 // modSide is the two-sided damping direction: doubt lowers unwarranted
@@ -118,6 +123,13 @@ type cassandraSignals struct {
 	cyclic           bool           // rotating A→B→A→B cycle that introduced no new tool
 	semanticRepeat   bool           // same operation as the previous batch, reworded
 	workDone         bool           // at least one tool ran earlier this turn
+
+	// Premise provenance (epistemic-core req.4.3): the controller judges
+	// claims at birth, not prose at death. refutedPremises counts standing
+	// refuted premises awaiting plan revision; ungroundedSelfPremises counts
+	// unchecked self-referential assumptions the plan still rests on.
+	refutedPremises        int
+	ungroundedSelfPremises int
 }
 
 // buildCassandraSignals assembles the signal bundle from the loop's live state.
@@ -144,13 +156,15 @@ func (a *Agent) buildCassandraSignals(step int, msg llm.Message, repeats int, re
 		eff = repeats + 1
 	}
 	return cassandraSignals{
-		step:             step,
-		closing:          closing,
-		calls:            calls,
-		effectiveRepeats: eff,
-		cyclic:           cyclic,
-		semanticRepeat:   semantic,
-		workDone:         len(distinctToolSet) > 0,
+		step:                   step,
+		closing:                closing,
+		calls:                  calls,
+		effectiveRepeats:       eff,
+		cyclic:                 cyclic,
+		semanticRepeat:         semantic,
+		workDone:               len(distinctToolSet) > 0,
+		refutedPremises:        len(a.ledger.unrevisedRefuted()),
+		ungroundedSelfPremises: len(a.ledger.ungroundedSelf()),
 	}
 }
 
@@ -241,7 +255,19 @@ func (a *Agent) cassandraEdit(target int, mod string, trig modTrigger, side modS
 // doubt. On a closing turn the relevant drift is about finishing prematurely.
 // Returns ("", "") when the run is healthy.
 func (a *Agent) cassandraClassify(sig cassandraSignals) (modTrigger, modSide) {
+	// Premise provenance outranks behavioral drift (req.4.3): acting past a
+	// refuted premise is the sharpest doubt signal there is — the plan is
+	// KNOWN wrong at a load-bearing point.
+	if sig.refutedPremises > 0 {
+		return trigRefutedPremise, sideDoubt
+	}
 	if sig.closing {
+		// Closing while the plan still rests on unchecked self-referential
+		// assumptions: the claim was never grounded, however finished the
+		// prose sounds.
+		if sig.ungroundedSelfPremises > 0 {
+			return trigUngroundedClose, sideDoubt
+		}
 		// A close that bailed out of an active loop, or a close still carrying
 		// repeat pressure, is doubt: did I actually finish, or just stop?
 		if sig.effectiveRepeats >= a.casLoopThreshold() {
@@ -316,6 +342,10 @@ func cassandraTemplate(trig modTrigger, sig cassandraSignals) string {
 		return "I already have this answer and it hasn't changed. Re-checking it again is avoidance — commit it and move on."
 	case trigOscillation:
 		return "I keep flip-flopping on this — both options are fine, and the flip-flopping itself is the real cost. Let me pick one, note why, and move on."
+	case trigRefutedPremise:
+		return "Hold on — a premise my plan rests on has been REFUTED (it's marked in my premise ledger). Anything I do that depends on it is built on a known falsehood. I need to revise the plan around the refuted premise before taking another dependent step."
+	case trigUngroundedClose:
+		return "Before I close: my plan still rests on an assumption about my OWN capabilities that I never checked against my capability surface. If that assumption is wrong, my answer is wrong. Let me verify it now — it's one lookup away."
 	}
 	return ""
 }

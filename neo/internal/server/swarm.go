@@ -336,6 +336,34 @@ func (e *Engine) subagentSelfModelBrief(ctx context.Context) string {
 	return strings.TrimSpace(b.String())
 }
 
+// capabilitySurface resolves the resident capability-surface material
+// (epistemic-core req.2) from the durable self-model: the derived external API
+// surface + is/is-not facts (written by the serving layer from its live route
+// table), the self-authored failure patterns, and the structural summary. nil
+// when no pager is wired — the agent then renders honest UNKNOWN gaps, never
+// fabricated facts (req.2.3).
+func (e *Engine) capabilitySurface(ctx context.Context) *agent.CapabilitySurface {
+	if e.pager == nil {
+		return nil
+	}
+	model, err := e.pager.SelfModel(ctx)
+	if err != nil {
+		return nil
+	}
+	cs := &agent.CapabilitySurface{StructuralSummary: strings.TrimSpace(model.Structural.Summary)}
+	if sf := model.Structural.Surface; sf != nil {
+		cs.API = append([]string(nil), sf.API...)
+		cs.Is = append([]string(nil), sf.Is...)
+		cs.IsNot = append([]string(nil), sf.IsNot...)
+	}
+	for _, fp := range model.FailurePatterns {
+		if stmt := strings.TrimSpace(fp.Statement); stmt != "" {
+			cs.FailurePatterns = append(cs.FailurePatterns, stmt)
+		}
+	}
+	return cs
+}
+
 // aggregateResults distils the swarm's outcomes into one model-readable block
 // the parent agent reads to compose its answer. Index-ordered (stable), each
 // section labelled with the sub-agent's name + role so the parent can cite it.

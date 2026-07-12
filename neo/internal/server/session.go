@@ -182,11 +182,14 @@ func (s *session) rebuildAgent() {
 		}
 	}
 	opts := agent.Options{
-		Config:       e.cfg,
-		Main:         e.main,
-		Cheap:        e.cheap,
-		Tools:        e.tools,
-		Pager:        e.pager,
+		Config: e.cfg,
+		Main:   e.main,
+		Cheap:  e.cheap,
+		Tools:  e.tools,
+		Pager:  e.pager,
+		// Epistemic-core req.2: the resolved capability surface renders
+		// resident in the agent's byte-stable prefix.
+		Capability:   e.capabilitySurface(context.Background()),
 		Reporter:     &sseReporter{sess: s},
 		Consolidator: e.consolidator,
 		Recaller:     recaller,

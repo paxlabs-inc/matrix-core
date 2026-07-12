@@ -4,6 +4,7 @@
 package server
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -15,6 +16,7 @@ import (
 
 	"matrix/construct/backchannel"
 	"matrix/construct/schema/primitives"
+	cxself "matrix/cortex/self"
 	"matrix/neo/internal/conversation"
 	"matrix/neo/internal/trace"
 )
@@ -41,53 +43,112 @@ func New(engine *Engine, backendURL string) (*Server, error) {
 	// FlushInterval -1 streams proxied SSE/long-poll responses immediately
 	// (matches the matrix-router posture for /events passthrough).
 	rp.FlushInterval = -1
-	return &Server{engine: engine, backend: u, proxy: rp}, nil
+	s := &Server{engine: engine, backend: u, proxy: rp}
+	// Epistemic-core req.2.1: persist the derived capability surface into the
+	// durable self-model at boot, so the resident capability section every
+	// agent carries reflects what this process actually serves.
+	s.recordSurface()
+	return s, nil
 }
 
-// Handler returns the routed mux.
+// routeFact is one Neo-owned route: the mux pattern, its handler, and a
+// one-line EXTERNAL semantic. The table drives BOTH mux registration
+// (Handler) and the derived capability surface (SurfaceFacts), so the
+// self-model's "what can reach me" facts cannot drift from what the process
+// actually serves (epistemic-core req.2.1/2.2). semantic "" keeps a route out
+// of the external surface (internal plumbing).
+type routeFact struct {
+	pattern  string
+	semantic string
+	handler  http.HandlerFunc
+}
+
+// routes is the single source of Neo-owned route registrations. Comments about
+// each route's ownership rationale live with its handler.
+func (s *Server) routes() []routeFact {
+	return []routeFact{
+		{"/chat", "POST /chat — send a user message; the reply streams back over the SSE event stream (this is the ONLY way to talk to you)", s.handleChat},
+		{"/events", "GET /events — the SSE event stream carrying your replies, tool steps, and workspace events", s.handleEvents},
+		{"/events/replay/", "GET /events/replay/{conversation} — replay a conversation's durable event trace", s.handleReplay},
+		{"/messages/async/", "", s.handleAsyncPoll},
+		{"/intents/", "", s.handleIntents},
+		// Global kill switch: interrupts EVERY live Neo run on this
+		// (single-tenant) daemon — the "Stop all" control.
+		{"/halt", "POST /halt — interrupt every live run (the user's stop-all control)", s.handleHalt},
+		// Neo owns conversation history (it persists every Neo turn); serve
+		// list/detail from Neo's own durable store instead of proxying to the
+		// daemon, which never saw a Neo conversation.
+		{"/conversations", "GET /conversations — list conversation history from your durable store", s.handleConversations},
+		{"/conversations/", "", s.handleConversations},
+		// Media plane: generated + uploaded images/video/audio live on the
+		// agent's machine volume.
+		{"/media/", "GET /media/{id} — serve a generated or uploaded media artifact from your machine volume", s.handleMedia},
+		{"/upload", "POST /upload — receive a user file onto your machine volume", s.handleUpload},
+		// Automatrix control surface: per-user opt-in toggle, opportunity
+		// queue, completion inbox.
+		{"/automatrix/", "GET/POST /automatrix/* — the proactive-task (Automatrix) control surface", s.handleAutomatrix},
+		// Coding workbench environment surface: project-scoped workspace
+		// tree / file read / atomic write / diff / bounded exec.
+		{"/workspace/", "GET/POST /workspace/* — the coding workbench surface (tree, file read/write, diff, exec)", s.handleWorkspace},
+		// Workbench project registry: projects are workspace subdirectories.
+		{"/projects", "GET/POST /projects — the workbench project registry", s.handleProjects},
+		{"/projects/", "", s.handleProject},
+		// Self-model observability (self-model req.13): read-only inspection
+		// of the resident self-summary + failure patterns.
+		{"/diag/self-model", "GET /diag/self-model — read-only inspection of your current self-model", s.handleDiagSelfModel},
+	}
+}
+
+// surfaceIs / surfaceIsNot are the architectural is / is-not facts of the
+// serving surface, declared HERE — beside the route table they qualify, owned
+// by the package that IS the surface — and written into the durable self-model
+// (epistemic-core req.2.1): the arena incident's false premise ("I can wire my
+// own API up directly / I have an OpenAI-compatible endpoint") must collide
+// with these resident facts at the moment it would form.
+var (
+	surfaceIs = []string{
+		"You are the conversational agent behind the Matrix daemon's HTTP front: clients send POST /chat and read your streamed replies over SSE GET /events.",
+		"Every route not on your list reverse-proxies to the co-located MCL daemon (healthz, /messages, /memory, /tools, the core_execute plane).",
+	}
+	surfaceIsNot = []string{
+		"You have NO OpenAI-compatible endpoint: /v1/chat/completions, /v1/completions, and /v1/models are NOT served. Nothing can integrate with you as an OpenAI-style API.",
+		"You cannot be wired into another system as a raw LLM/completions backend — external integration happens ONLY via POST /chat + the SSE /events stream.",
+	}
+)
+
+// SurfaceFacts derives the capability-surface facts from the SAME route table
+// Handler registers, plus the declared is/is-not facts. Derived, never
+// hand-written into the prompt, so the resident section cannot drift from the
+// live serving surface (req.2.2).
+func (s *Server) SurfaceFacts() cxself.SurfaceFacts {
+	facts := cxself.SurfaceFacts{
+		Is:    append([]string(nil), surfaceIs...),
+		IsNot: append([]string(nil), surfaceIsNot...),
+	}
+	for _, rt := range s.routes() {
+		if rt.semantic != "" {
+			facts.API = append(facts.API, rt.semantic)
+		}
+	}
+	return facts
+}
+
+// recordSurface persists the derived surface facts into the durable structural
+// self-model (best-effort: a fresh install without a cortex pager simply keeps
+// the honest "unknown" rendering).
+func (s *Server) recordSurface() {
+	if s.engine == nil || s.engine.pager == nil {
+		return
+	}
+	_, _ = s.engine.pager.WriteSurfaceFacts(context.Background(), s.SurfaceFacts())
+}
+
+// Handler returns the routed mux, registered from the route table.
 func (s *Server) Handler() http.Handler {
 	mux := http.NewServeMux()
-	mux.HandleFunc("/chat", s.handleChat)
-	mux.HandleFunc("/events", s.handleEvents)
-	mux.HandleFunc("/events/replay/", s.handleReplay)
-	mux.HandleFunc("/messages/async/", s.handleAsyncPoll)
-	mux.HandleFunc("/intents/", s.handleIntents)
-	// Global kill switch: POST /halt interrupts EVERY live Neo run on this
-	// (single-tenant) daemon — the "Stop all" control. Neo-owned; registered
-	// before the catch-all proxy (the daemon has never heard of it).
-	mux.HandleFunc("/halt", s.handleHalt)
-	// Neo owns conversation history now (it persists every Neo turn); serve the
-	// list/detail from Neo's own durable store instead of proxying to the
-	// daemon, which never saw a Neo conversation. Falls through to the proxy
-	// when persistence is disabled (dev/CLI) so the daemon's store still works.
-	mux.HandleFunc("/conversations", s.handleConversations)
-	mux.HandleFunc("/conversations/", s.handleConversations)
-	// Media plane: generated + uploaded images/video/audio live on the agent's
-	// machine volume. These are Neo-owned routes (the daemon has never heard of
-	// them), registered before the catch-all proxy.
-	mux.HandleFunc("/media/", s.handleMedia)
-	mux.HandleFunc("/upload", s.handleUpload)
-	// Automatrix control surface (task 6.1): the per-user opt-in toggle (which
-	// creates/cancels the AUTOMATRIX alarm), the opportunity management queue,
-	// and the completion inbox. Neo-owned routes registered before the catch-all
-	// proxy (the daemon has never heard of them).
-	mux.HandleFunc("/automatrix/", s.handleAutomatrix)
-	// Coding workbench environment surface: project-scoped workspace tree /
-	// file read / atomic file write / diff / bounded exec on the VM workspace.
-	// Neo-owned routes (the daemon has never heard of them), registered before
-	// the catch-all proxy; same single-tenant trust posture as /media.
-	mux.HandleFunc("/workspace/", s.handleWorkspace)
-	// Workbench project registry: projects are workspace subdirectories with
-	// a minimal registry (list/create/rename/archive/delete), replacing
-	// codyd's project routes. Neo-owned, before the catch-all proxy.
-	mux.HandleFunc("/projects", s.handleProjects)
-	mux.HandleFunc("/projects/", s.handleProject)
-	// Self-model observability (self-model task 6.2, req.13): a read-only,
-	// side-effect-free inspection surface returning the agent's CURRENT resident
-	// self-summary and its active failure-pattern memories, so a wrong or stale
-	// self-model is caught rather than silently trusted. Neo-owned, registered
-	// before the catch-all proxy (the daemon has never heard of it).
-	mux.HandleFunc("/diag/self-model", s.handleDiagSelfModel)
+	for _, rt := range s.routes() {
+		mux.HandleFunc(rt.pattern, rt.handler)
+	}
 	mux.HandleFunc("/", s.proxy.ServeHTTP) // healthz, /messages, /memory, /tools, … → daemon
 	// Q2 warm-on-open: the FIRST inbound request (whatever the app hits on
 	// open) triggers a one-shot, non-blocking warm of the embedder + HNSW

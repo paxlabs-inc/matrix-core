@@ -23,7 +23,7 @@ func TestDefaultsMatchFrozenSpec(t *testing.T) {
 		{"SoftPct", c.SoftPct, 80},
 		{"HardPct", c.HardPct, 92},
 		{"MinPatternSuccesses", c.MinPatternSuccesses, 3},
-		{"ContextWindowTokens", c.ContextWindowTokens, 256000},
+		{"ContextWindowTokens", c.ContextWindowTokens, 1000000},
 	}
 	for _, ch := range checks {
 		if ch.got != ch.want {
@@ -44,7 +44,7 @@ func TestDefaultsMatchFrozenSpec(t *testing.T) {
 	if c.CassandraModel != "grok-4.20-0309-non-reasoning" {
 		t.Errorf("CassandraModel = %q", c.CassandraModel)
 	}
-	if c.CassandraEscalateModel != "xiaomimimo/mimo-v2.5-pro" {
+	if c.CassandraEscalateModel != "grok-4.3" {
 		t.Errorf("CassandraEscalateModel = %q", c.CassandraEscalateModel)
 	}
 	if len(c.NaturalAllow) == 0 || len(c.EscalateActions) == 0 {
@@ -53,12 +53,34 @@ func TestDefaultsMatchFrozenSpec(t *testing.T) {
 }
 
 func TestBudgetTokenMath(t *testing.T) {
+	// 1M default: percentage headroom (200K soft / 80K hard) is absurd at this
+	// scale, so the absolute caps bind — budgets sit just under the window and
+	// trimming fires only near true pressure (req 1.1/1.2).
 	c := Default()
-	if got, want := c.SoftBudgetTokens(), 256000*80/100; got != want {
+	if got, want := c.SoftBudgetTokens(), 1000000-softHeadroomCapTokens; got != want {
 		t.Errorf("SoftBudgetTokens = %d, want %d", got, want)
 	}
-	if got, want := c.HardBudgetTokens(), 256000*92/100; got != want {
+	if got, want := c.HardBudgetTokens(), 1000000-hardHeadroomCapTokens; got != want {
 		t.Errorf("HardBudgetTokens = %d, want %d", got, want)
+	}
+
+	// Small-window override (32K local models via NEO_CONTEXT_WINDOW_TOKENS):
+	// the caps never bind, so the percentage-derived behavior is unchanged.
+	c.ContextWindowTokens = 32768
+	if got, want := c.SoftBudgetTokens(), 32768*80/100; got != want {
+		t.Errorf("32K SoftBudgetTokens = %d, want %d", got, want)
+	}
+	if got, want := c.HardBudgetTokens(), 32768*92/100; got != want {
+		t.Errorf("32K HardBudgetTokens = %d, want %d", got, want)
+	}
+}
+
+func TestWindowOverridesAuthoritative(t *testing.T) {
+	t.Setenv("NEO_CONTEXT_WINDOW_TOKENS", "32768")
+	c := Default()
+	c.applyEnv()
+	if c.ContextWindowTokens != 32768 {
+		t.Fatalf("env override ContextWindowTokens = %d, want 32768", c.ContextWindowTokens)
 	}
 }
 
