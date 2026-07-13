@@ -14,6 +14,7 @@
 //      PAXEER_WALLET_EMAIL + PAXEER_WALLET_PASSWORD (+ PAXEER_SUPABASE_ANON_KEY)
 //      password grant, against the human /v1/wallet/* routes.
 
+import { randomUUID } from 'node:crypto'
 import { WALLET_API, CHAIN } from './config.mjs'
 import { httpJson, httpPost } from './net.mjs'
 import * as agent from './agentauth.mjs'
@@ -143,3 +144,106 @@ export const signMessage = (message) =>
   useAgent()
     ? agent.agentCall('POST', '/v1/agent/sign-message', { message })
     : legacyCall('POST', '/v1/wallet/sign-message', { message })
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Durable actions (high-level intent lane) — /v1/agent/actions/*
+//
+// Unlike send()/sign() (one-shot: the agent builds calldata + nonce + sequences
+// multi-step flows itself, and a disconnect can strand an approve without its
+// call), a durable action hands the WALLET a high-level intent. The server owns
+// the whole approve → confirm → call → confirm → verify sequence, is idempotent
+// on `idempotency_key`, survives a client disconnect, and is polled by id. The
+// agent NEVER decides to replace a tx — that authority is the wallet's.
+//
+// These endpoints exist ONLY on the agent lane; there is no human-token
+// equivalent, so they hard-require agent-native auth.
+// ─────────────────────────────────────────────────────────────────────────────
+
+function requireAgentLane(what) {
+  if (!useAgent()) {
+    throw new Error(
+      `paxeer wallet: ${what} requires agent-native auth (an ed25519 executor key); ` +
+        'the legacy human-token lane has no durable-action endpoints.',
+    )
+  }
+}
+
+// Ensure an idempotency key exists. Resubmitting with the SAME key returns the
+// SAME action (never a second nonce / repeated deposit), so the caller should
+// reuse it across retries. When omitted we mint one and surface it in the
+// result so a retry can pass it back.
+function ensureIdemKey(key) {
+  return key && String(key).trim() ? String(key).trim() : `idem-${randomUUID()}`
+}
+
+// Create (idempotently) a durable LayerX USDL deposit: the wallet does
+// approve(USDL → vault) then depositUSDL(amount, did_claim), confirms each leg,
+// and verifies the LayerX credit. `didClaim` is the bytes32 from layerx_deposit
+// (layerxd GET /v1/deposit) — the vault credits YOUR balance by it. `amount` is
+// a human USDL decimal string (e.g. "250"). Returns the action envelope
+// (poll with getAction / awaitAction).
+export async function createLayerxDeposit({ amount, didClaim, idempotencyKey } = {}) {
+  requireAgentLane('layerx deposit')
+  if (amount == null || String(amount).trim() === '') throw new Error('createLayerxDeposit: amount is required')
+  if (!didClaim) throw new Error('createLayerxDeposit: didClaim (bytes32 from layerx_deposit) is required')
+  const idempotency_key = ensureIdemKey(idempotencyKey)
+  const res = await agent.agentCall('POST', '/v1/agent/actions/layerx/deposit', {
+    asset: 'USDL',
+    amount: String(amount),
+    did_claim: didClaim,
+    idempotency_key,
+  })
+  return { idempotency_key, ...res }
+}
+
+// Create (idempotently) a generic durable approve-then-call: approve(token →
+// spender, amount) then contract.method(args). `amount` and any numeric `args`
+// are RAW base units (this advanced path does no decimal conversion). Prefer
+// the domain routes (e.g. createLayerxDeposit) when the wallet should own
+// ABI/decimals. Returns the action envelope.
+export async function createAllowanceAndCall({ token, amount, spender, contract, method, args, idempotencyKey } = {}) {
+  requireAgentLane('allowance-and-call')
+  for (const [k, v] of Object.entries({ token, amount, spender, contract, method })) {
+    if (v == null || String(v).trim() === '') throw new Error(`createAllowanceAndCall: ${k} is required`)
+  }
+  const idempotency_key = ensureIdemKey(idempotencyKey)
+  const res = await agent.agentCall('POST', '/v1/agent/actions/allowance-and-call', {
+    token,
+    amount: String(amount),
+    spender,
+    contract,
+    method,
+    args: (args || []).map(String),
+    idempotency_key,
+  })
+  return { idempotency_key, ...res }
+}
+
+// Fetch a durable action's current state by id (approve/call tx hashes, status,
+// credit, and the interpretation-free error envelope when a step is unhappy).
+export async function getAction(actionId) {
+  requireAgentLane('action status')
+  if (!actionId) throw new Error('getAction: actionId is required')
+  return agent.agentCall('GET', `/v1/agent/actions/${encodeURIComponent(actionId)}`)
+}
+
+// Poll a durable action until it reaches a terminal state (or the timeout),
+// honouring the server's guidance: it NEVER resubmits (the action is already
+// server-owned) and waits `poll.after_ms` between reads when provided. Returns
+// the final action envelope; `ok===true` means confirmed, `ok===false` a
+// terminal failure whose `error` envelope explains the next move.
+export async function awaitAction(actionId, { timeoutMs = 180000, minIntervalMs = 1000 } = {}) {
+  const deadline = Date.now() + timeoutMs
+  let last = null
+  for (;;) {
+    last = await getAction(actionId)
+    if (last && last.terminal === true) return last
+    if (Date.now() >= deadline) {
+      return { ...last, timed_out: true }
+    }
+    const wait = Math.max(minIntervalMs, Number(last?.poll?.after_ms) || 0)
+    await sleep(Math.min(wait, Math.max(0, deadline - Date.now())))
+  }
+}
+
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms))

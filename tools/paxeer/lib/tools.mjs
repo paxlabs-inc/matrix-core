@@ -23,6 +23,9 @@ const WRITE_TOOL_NAMES = new Set([
   'stream_open', 'stream_settle', 'stream_close', 'stream_update_rate',
   'schedule_job', 'cancel_job', 'reschedule_job',
   'delegate', 'undelegate', 'redelegate', 'contract_write',
+  // durable high-level intents (server-owned approve→call→verify). wallet_action
+  // is a read (polls status) and is intentionally NOT listed here.
+  'wallet_layerx_deposit', 'wallet_allowance_and_call',
 ])
 
 function unitsFor(tokenRef) {
@@ -52,6 +55,20 @@ async function writeTx(tx, extra = {}) {
   guardSpend(tx.value)
   const r = await wallet.send(tx)
   return ok({ ok: true, ...r, explorer: `${ENDPOINTS.paxscan}/tx/${r.tx_hash}`, ...extra })
+}
+
+// Shape a durable-action creation as a tool result. When `wait` is truthy we
+// block until the action reaches a terminal state (final.ok tells the outcome);
+// otherwise we return immediately with the action_id + idempotency_key so the
+// agent can poll wallet_action. The idempotency_key is always surfaced so a
+// retry reuses it (same key → same action, never a second nonce / deposit).
+async function finishAction(name, created, wait) {
+  const actionId = created && created.action_id
+  if ((wait === true || wait === 'true') && actionId) {
+    const final = await wallet.awaitAction(actionId)
+    return ok({ ok: final && final.ok !== false, tool: name, idempotency_key: created.idempotency_key, action_id: actionId, action: final })
+  }
+  return ok({ ok: true, tool: name, idempotency_key: created && created.idempotency_key, action_id: actionId, action: created })
 }
 
 // decodeHexInt parses a 0x-prefixed hex quantity into a BigInt, or null
@@ -320,6 +337,38 @@ export async function dispatch(name, args = {}) {
       return writeTx({ to: args.to, data, value, gas: args.gas }, { kind: 'contract_write', to: args.to, signature: args.signature })
     }
 
+    // —— writes: durable high-level intents (server owns approve→call→verify) ——
+    case 'wallet_layerx_deposit': {
+      if (!wallet.isConfigured()) return ok({ ok: false, error: 'wallet not configured' })
+      const created = await wallet.createLayerxDeposit({
+        amount: args.amount,
+        didClaim: args.did_claim,
+        idempotencyKey: args.idempotency_key,
+      })
+      return finishAction(name, created, args.wait)
+    }
+    case 'wallet_allowance_and_call': {
+      if (!wallet.isConfigured()) return ok({ ok: false, error: 'wallet not configured' })
+      const created = await wallet.createAllowanceAndCall({
+        token: args.token,
+        amount: args.amount,
+        spender: args.spender,
+        contract: args.contract,
+        method: args.method,
+        args: args.args || [],
+        idempotencyKey: args.idempotency_key,
+      })
+      return finishAction(name, created, args.wait)
+    }
+    case 'wallet_action': {
+      if (!wallet.isConfigured()) return ok({ ok: false, error: 'wallet not configured' })
+      if (!args.action_id) return ok({ ok: false, error: 'action_id is required' })
+      const state = args.wait === true || args.wait === 'true'
+        ? await wallet.awaitAction(args.action_id)
+        : await wallet.getAction(args.action_id)
+      return ok({ ok: true, tool: name, action_id: args.action_id, action: state })
+    }
+
     default:
       throw new Error(`unknown tool: ${name}`)
   }
@@ -382,6 +431,13 @@ const ALL_TOOLS = [
   { name: 'redelegate', description: 'Move stake between validators.', inputSchema: A({ srcValidator: S('paxvaloper...'), dstValidator: S('paxvaloper...'), amount: S('human PAX'), delegator: S('0x; optional') }, ['srcValidator', 'dstValidator', 'amount']) },
   // writes — generic (DEX swaps + any contract/precompile)
   { name: 'contract_write', description: 'Sign+send a contract/precompile write via the wallet. Provide signature+args (encoded for you) OR raw data. args: to, signature?, args[]?, data?, value? (human PAX). Use for DEX swaps on CONTRACTS.swap routers.', inputSchema: A({ to: S('contract/precompile 0x'), signature: S('method signature'), args: { type: 'array' }, data: S('0x calldata (overrides signature)'), value: S('human PAX to attach'), gas: S('gas limit') }, ['to']) },
+  // writes — durable high-level intents (one call; the WALLET owns the whole
+  // approve→confirm→call→confirm→verify sequence, is idempotent, and survives a
+  // disconnect). Prefer these over hand-rolling approve + contract_write.
+  { name: 'wallet_layerx_deposit', description: 'Fund your LayerX USDX balance in ONE durable, idempotent call: the wallet does approve(USDL→vault) then depositUSDL(amount, did_claim), confirms each leg, and verifies the credit — surviving disconnects. Get did_claim (bytes32) + amount FIRST from layerx_deposit. amount is a human USDL decimal (e.g. "250"). Returns an action_id; poll wallet_action (or pass wait=true to block until terminal). Reuse idempotency_key on retry — the same key returns the SAME action (never a second deposit). This SUPERSEDES hand-rolling approve + contract_write for LayerX funding.', inputSchema: A({ amount: S('human USDL decimal, e.g. "250"'), did_claim: S('bytes32 did_claim from layerx_deposit'), idempotency_key: S('optional; reuse across retries. auto-generated + returned if omitted'), wait: S('optional "true" to block until the action is terminal') }, ['amount', 'did_claim']) },
+  { name: 'wallet_allowance_and_call', description: 'Generic durable approve-then-call in ONE idempotent action: approve(token→spender, amount) then contract.method(args), each leg confirmed by the wallet. amount + numeric args are RAW base units (no decimal conversion — this is the advanced path; prefer wallet_layerx_deposit for LayerX). Returns an action_id; poll wallet_action or pass wait=true. Reuse idempotency_key on retry.', inputSchema: A({ token: S('ERC-20 0x to approve+spend'), amount: S('RAW base-unit approval amount (integer string)'), spender: S('0x approved to pull the amount'), contract: S('0x the call targets'), method: S('Solidity signature, e.g. "depositUSDL(uint256,bytes32)"'), args: { type: 'array' }, idempotency_key: S('optional; reuse across retries'), wait: S('optional "true" to block until terminal') }, ['token', 'amount', 'spender', 'contract', 'method']) },
+  // read — poll a durable action (NOT a write; available in reads-only mode).
+  { name: 'wallet_action', description: 'Poll a durable action by id: status, phase, approval/call tx hashes, LayerX credit, and — when a step is unhappy — an interpretation-free error envelope (code + retry.strategy + must_not_resubmit + remedy). ok===true means confirmed; ok===false a terminal failure. Pass wait=true to block until the action is terminal. NEVER resubmit a broadcast action — always poll here.', inputSchema: A({ action_id: S('the act_… id returned by wallet_layerx_deposit / wallet_allowance_and_call'), wait: S('optional "true" to block until terminal') }, ['action_id']) },
 ]
 
 // `tools` is the advertised registry. In reads-only mode the signing/spending

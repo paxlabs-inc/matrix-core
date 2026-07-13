@@ -67,6 +67,49 @@ export const chainId = () => rpc('eth_chainId')
 export const peerCount = () => rpc('net_peerCount')
 export const syncing = () => rpc('eth_syncing')
 
+// ── Confirmation helpers ─────────────────────────────────────────────────────
+// Client-side receipt waiting with a structured (never-throws) outcome, so the
+// legacy one-shot contract_write path can confirm robustly too. The durable
+// action lane confirms server-side; this is for callers driving raw sends.
+
+const _sleep = (ms) => new Promise((r) => setTimeout(r, ms))
+
+// Poll for a receipt until it reaches `confirmations` blocks deep, reverts, or
+// the timeout elapses. Returns one of:
+//   { state:'confirmed', receipt }  { state:'reverted', receipt }
+//   { state:'pending' }  (broadcast + still known to the node)
+//   { state:'timeout' }  (gave up; the tx may yet mine — do NOT blindly resend)
+export async function waitForReceipt(hash, { confirmations = 1, timeoutMs = 90000, pollMs = 1500 } = {}) {
+  if (!hash) throw new Error('waitForReceipt: hash is required')
+  const deadline = Date.now() + timeoutMs
+  for (;;) {
+    const receipt = await getTransactionReceipt(hash).catch(() => null)
+    if (receipt && receipt.blockNumber != null) {
+      const success = receipt.status === '0x1' || receipt.status === 1 || receipt.status === true
+      if (!success) return { state: 'reverted', receipt }
+      if (confirmations <= 1) return { state: 'confirmed', receipt }
+      const head = hexToInt(await blockNumber().catch(() => null))
+      const mined = hexToInt(receipt.blockNumber)
+      if (head != null && mined != null && head - mined + 1 >= confirmations) {
+        return { state: 'confirmed', receipt }
+      }
+    }
+    if (Date.now() >= deadline) {
+      if (!receipt) return (await isTxKnown(hash)) ? { state: 'pending' } : { state: 'timeout' }
+      return { state: 'timeout' }
+    }
+    await _sleep(pollMs)
+  }
+}
+
+// True when the node still knows the tx (mined OR queued in the mempool).
+export async function isTxKnown(hash) {
+  const tx = await getTransactionByHash(hash).catch(() => null)
+  if (tx) return true
+  const r = await getTransactionReceipt(hash).catch(() => null)
+  return !!r
+}
+
 // ERC-20 reads bundled (used by balance/portfolio tools).
 export async function erc20(addr, account) {
   const [bal, dec, sym] = await Promise.allSettled([

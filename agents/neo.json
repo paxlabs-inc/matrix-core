@@ -672,8 +672,26 @@
         },
         {
           "name": "contract_write",
-          "description": "Sign+send a generic contract/precompile write — DEX swaps, vault/protocol deposit methods, any function. Provide the Solidity signature + args (e.g. signature \"depositSwap(address,uint256,uint256,uint256,bytes32)\") or raw data, optional native value. WRITE: gated by PaxeerSpendPolicy. This is the tool for LayerX vault deposits (depositUSDL/depositSwap/depositNative with the did_claim from layerx_deposit) and any other contract whose balance is credited by a function call rather than a bare transfer. ERC-20 amounts need a prior `approve` to the contract.",
+          "description": "Sign+send a generic contract/precompile write — DEX swaps, vault/protocol deposit methods, any function. Provide the Solidity signature + args (e.g. signature \"depositSwap(address,uint256,uint256,uint256,bytes32)\") or raw data, optional native value. WRITE: gated by PaxeerSpendPolicy. For a LayerX USDL deposit prefer wallet_layerx_deposit (one durable, idempotent, confirmed call); use contract_write for depositSwap/depositNative or any other contract whose balance is credited by a function call rather than a bare transfer. ERC-20 amounts need a prior `approve` to the contract.",
           "side_effect_class": "write",
+          "timeout_ms": 30000
+        },
+        {
+          "name": "wallet_layerx_deposit",
+          "description": "Durable one-call LayerX USDL deposit (approve+depositUSDL, confirmed + credit-verified server-side, idempotent). Get did_claim+amount from layerx_deposit first. Returns action_id; poll wallet_action. Supersedes hand-rolling approve+contract_write for USDL funding. WRITE: gated by PaxeerSpendPolicy.",
+          "side_effect_class": "write",
+          "timeout_ms": 30000
+        },
+        {
+          "name": "wallet_allowance_and_call",
+          "description": "Durable one-call approve-then-call (raw base units), each leg wallet-confirmed + idempotent. Returns action_id; poll wallet_action. WRITE: gated by PaxeerSpendPolicy.",
+          "side_effect_class": "write",
+          "timeout_ms": 30000
+        },
+        {
+          "name": "wallet_action",
+          "description": "Poll a durable action by id: status, tx hashes, LayerX credit, and the interpretation-free error envelope. Read-only (never resubmits a broadcast action).",
+          "side_effect_class": "network",
           "timeout_ms": 30000
         }
       ]

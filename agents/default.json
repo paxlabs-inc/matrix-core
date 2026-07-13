@@ -907,6 +907,24 @@
           "description": "Sign+send a generic contract/precompile write (DEX swaps + any method). Provide signature+args or raw data, optional value. WRITE: gated by PaxeerSpendPolicy.",
           "side_effect_class": "write",
           "timeout_ms": 30000
+        },
+        {
+          "name": "wallet_layerx_deposit",
+          "description": "Durable one-call LayerX USDL deposit (approve+depositUSDL, confirmed + credit-verified server-side, idempotent). Get did_claim+amount from layerx_deposit first. Returns action_id; poll wallet_action. WRITE: gated by PaxeerSpendPolicy.",
+          "side_effect_class": "write",
+          "timeout_ms": 30000
+        },
+        {
+          "name": "wallet_allowance_and_call",
+          "description": "Durable one-call approve-then-call (raw base units), each leg wallet-confirmed + idempotent. Returns action_id; poll wallet_action. WRITE: gated by PaxeerSpendPolicy.",
+          "side_effect_class": "write",
+          "timeout_ms": 30000
+        },
+        {
+          "name": "wallet_action",
+          "description": "Poll a durable action by id: status, tx hashes, LayerX credit, and the interpretation-free error envelope. Read-only (never resubmits a broadcast action).",
+          "side_effect_class": "network",
+          "timeout_ms": 30000
         }
       ]
     },
