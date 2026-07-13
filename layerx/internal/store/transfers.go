@@ -20,6 +20,7 @@ type TransferRow struct {
 	Tier         string
 	LeafHex      string
 	SigHex       string
+	Ref          string
 	TS           time.Time
 	BatchRootHex string
 	AnchorTx     string
@@ -34,13 +35,13 @@ func (s *Store) GetTransfer(ctx context.Context, seq int64, callerDID string) (T
 	var status *string
 	err := s.pool.QueryRow(ctx, `
 		SELECT t.seq, t.batch_id, t.from_did, t.to_did, t.amount_usdx, t.tier,
-		       COALESCE(t.leaf_hash,''), COALESCE(t.sig,''), t.ts,
+		       COALESCE(t.leaf_hash,''), COALESCE(t.sig,''), COALESCE(t.ref,''), t.ts,
 		       b.root, b.anchor_tx, b.status
 		FROM transfers t
 		LEFT JOIN batches b ON b.id = t.batch_id
 		WHERE t.seq = $1 AND (t.from_did = $2 OR t.to_did = $2)`, seq, callerDID).
 		Scan(&r.Seq, &batchID, &r.FromDID, &r.ToDID, &r.AmountMicro, &r.Tier,
-			&r.LeafHex, &r.SigHex, &r.TS, &root, &anchor, &status)
+			&r.LeafHex, &r.SigHex, &r.Ref, &r.TS, &root, &anchor, &status)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return TransferRow{}, ErrNotFound

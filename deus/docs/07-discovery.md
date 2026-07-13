@@ -85,7 +85,7 @@ invoke, in one pass.
   **operator-attested delivery samples** (success/latency/schema-validity), not
   reviews. A developer cannot fake their own score; the operator attests the
   inputs (honest-operator assumption, [`09-security.md`](./09-security.md) §9.1),
-  which the **caller-co-signed receipt/voucher** ([`04-onchain.md`](./04-onchain.md)
+  which the **payer-signed LayerX receipt** ([`04-onchain.md`](./04-onchain.md)
   §4.3, [`08-payments-billing.md`](./08-payments-billing.md) §8.3) upgrades to
   bilateral attestation. It is hard to fake *without actually delivering*, but it
   is not "objective, unfakeable reputation."

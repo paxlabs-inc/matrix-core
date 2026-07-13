@@ -84,14 +84,17 @@ type QuoteRequest struct {
 	EstimatedUnits string `json:"estimated_units"`
 }
 
-// QuoteResponse is POST /v1/quote/{id} response.
+// QuoteResponse is POST /v1/quote/{id} response. USDX fields are present for
+// USDX-denominated plans (the LayerX rail); wei fields for legacy plans.
 type QuoteResponse struct {
 	QuoteID        string    `json:"quote_id"`
 	ServiceID      string    `json:"service_id"`
 	Operation      string    `json:"operation"`
-	UnitPriceWei   string    `json:"unit_price_wei"`
+	UnitPriceWei   string    `json:"unit_price_wei,omitempty"`
 	MaxUnits       string    `json:"max_units"`
-	MaxTotalWei    string    `json:"max_total_wei"`
+	MaxTotalWei    string    `json:"max_total_wei,omitempty"`
+	UnitPriceUSDX  string    `json:"unit_price_usdx,omitempty"`
+	MaxTotalUSDX   string    `json:"max_total_usdx,omitempty"`
 	PricingVersion int       `json:"pricing_version"`
 	ExpiresAt      time.Time `json:"expires_at"`
 	EIP712         EIP712Sig `json:"eip712"`
@@ -104,42 +107,34 @@ type EIP712Sig struct {
 	Signature string `json:"signature"`
 }
 
+// charged_usdx, layerx_seq and ref cross-bind the execution receipt to the
+// LayerX payment receipt riding the X-LayerX-Receipt header.
+
 // InvokeRequest is POST /v1/invoke/{id}.
 type InvokeRequest struct {
-	Operation        string         `json:"operation"`
-	Args             map[string]any `json:"args"`
-	QuoteID          string         `json:"quote_id"`
-	Payment          PaymentRail    `json:"payment"`
-	IdempotencyKey   string         `json:"idempotency_key"`
-	CallerVoucherSig string         `json:"caller_voucher_sig,omitempty"`
+	Operation      string         `json:"operation"`
+	Args           map[string]any `json:"args"`
+	QuoteID        string         `json:"quote_id"`
+	Payment        PaymentRail    `json:"payment"`
+	IdempotencyKey string         `json:"idempotency_key"`
 }
 
-// PaymentRail selects settlement path.
+// PaymentRail names the settlement rail ("layerx" or empty; LXP is the only
+// rail).
 type PaymentRail struct {
-	Rail     string `json:"rail"`
-	StreamID string `json:"stream_id,omitempty"`
+	Rail string `json:"rail"`
 }
 
 // InvokeResponse is POST /v1/invoke/{id} success body.
 type InvokeResponse struct {
-	InvocationID string          `json:"invocation_id"`
-	Outcome      string          `json:"outcome"`
-	Result       map[string]any  `json:"result"`
-	ChargedWei   string          `json:"charged_wei"`
-	LatencyMS    int             `json:"latency_ms"`
-	Receipt      ReceiptSummary  `json:"receipt"`
-	Voucher      *VoucherSummary `json:"voucher,omitempty"`
-}
-
-// VoucherSummary is inline net-rail voucher metadata.
-type VoucherSummary struct {
-	ChannelID       string `json:"channel_id"`
-	CumulativeWei   string `json:"cumulative_wei"`
-	Nonce           int64  `json:"nonce"`
-	LastReceiptHash string `json:"last_receipt_hash"`
-	Digest          string `json:"digest"`
-	NeedsSignature  bool   `json:"needs_signature"`
-	VoucherID       string `json:"voucher_id,omitempty"`
+	InvocationID string         `json:"invocation_id"`
+	Outcome      string         `json:"outcome"`
+	Result       map[string]any `json:"result"`
+	ChargedUSDX  string         `json:"charged_usdx,omitempty"`
+	LatencyMS    int            `json:"latency_ms"`
+	Receipt      ReceiptSummary `json:"receipt"`
+	LayerXSeq    int64          `json:"layerx_seq,omitempty"`
+	Ref          string         `json:"ref,omitempty"`
 }
 
 // ReceiptSummary is inline receipt metadata.
@@ -158,40 +153,6 @@ type InvocationResponse struct {
 	ChargedWei string         `json:"charged_wei"`
 	LatencyMS  *int           `json:"latency_ms,omitempty"`
 	Receipt    *ReceiptDetail `json:"receipt,omitempty"`
-}
-
-// OpenChannelRequest is POST /v1/channels.
-type OpenChannelRequest struct {
-	CapWei     string `json:"cap_wei"`
-	FundTx     string `json:"fund_tx,omitempty"`
-	EscrowAddr string `json:"escrow_addr,omitempty"`
-}
-
-// ChannelResponse is POST /v1/channels response.
-type ChannelResponse struct {
-	ID            string    `json:"id"`
-	CallerDID     string    `json:"caller_did"`
-	BalanceWei    string    `json:"balance_wei"`
-	ReservedWei   string    `json:"reserved_wei"`
-	CumulativeWei string    `json:"cumulative_wei"`
-	WindowEnd     time.Time `json:"window_end"`
-	Status        string    `json:"status"`
-}
-
-// VoucherCosignRequest is POST /v1/vouchers/cosign.
-type VoucherCosignRequest struct {
-	ChannelID       string `json:"channel_id"`
-	CumulativeWei   string `json:"cumulative_wei"`
-	ChargeWei       string `json:"charge_wei"`
-	Nonce           int64  `json:"nonce"`
-	LastReceiptHash string `json:"last_receipt_hash"`
-	Digest          string `json:"digest"`
-	CallerSig       string `json:"caller_sig"`
-}
-
-// VoucherCosignResponse is POST /v1/vouchers/cosign response.
-type VoucherCosignResponse struct {
-	VoucherID string `json:"voucher_id"`
 }
 
 // ReceiptDetail is GET /v1/receipts/{id}.
@@ -222,42 +183,6 @@ type DeployServiceResponse struct {
 	Status       string `json:"status"`
 	ExecEndpoint string `json:"exec_endpoint,omitempty"`
 	Runtime      string `json:"runtime"`
-}
-
-// OpenStreamRequest is POST /v1/streams.
-type OpenStreamRequest struct {
-	ServiceID string `json:"service_id"`
-	Operation string `json:"operation,omitempty"`
-	CapWei    string `json:"cap_wei"`
-	StopTime  uint64 `json:"stop_time,omitempty"`
-}
-
-// OpenStreamResponse is POST /v1/streams success body.
-type OpenStreamResponse struct {
-	StreamID         string `json:"stream_id"`
-	ChainStreamID    string `json:"chain_stream_id"`
-	ServiceID        string `json:"service_id"`
-	RatePerSecondWei string `json:"rate_per_second_wei"`
-	CapWei           string `json:"cap_wei"`
-	Status           string `json:"status"`
-	OpenTx           string `json:"open_tx,omitempty"`
-}
-
-// StreamStateResponse is GET /v1/streams/{id} and settle/close responses.
-type StreamStateResponse struct {
-	StreamID         string `json:"stream_id"`
-	ChainStreamID    string `json:"chain_stream_id"`
-	ServiceID        string `json:"service_id"`
-	RatePerSecondWei string `json:"rate_per_second_wei"`
-	CapWei           string `json:"cap_wei"`
-	AccruedWei       string `json:"accrued_wei"`
-	SettledWei       string `json:"settled_wei"`
-	MeteredWei       string `json:"metered_wei"`
-	Status           string `json:"status"`
-	OpenTx           string `json:"open_tx,omitempty"`
-	LastSettleTx     string `json:"last_settle_tx,omitempty"`
-	CloseTx          string `json:"close_tx,omitempty"`
-	RefundWei        string `json:"refund_wei,omitempty"`
 }
 
 // DeploymentResponse is GET /v1/services/{id}/deployments/{deployment_id}.
@@ -347,16 +272,6 @@ type ServiceAnalyticsResponse struct {
 	TopOperations    []TopOperation   `json:"top_operations"`
 }
 
-// PayoutRequest is POST /v1/services/{id}/payout.
-type PayoutRequest struct {
-	PayoutAddress string `json:"payout_address"`
-}
-
-// PayoutResponse is POST /v1/services/{id}/payout success body.
-type PayoutResponse struct {
-	SettlementID string `json:"settlement_id"`
-}
-
 // MeResponse is GET /v1/me.
 type MeResponse struct {
 	DID         string `json:"did"`
@@ -393,6 +308,19 @@ type SettlementSummary struct {
 	TxHash      string    `json:"tx_hash,omitempty"`
 }
 
+// LayerXEarnings is the LXP-rail earnings view: every settlement pays the
+// developer's payee DID instantly on LayerX, so there is no pending/settled
+// split and no deus payout machinery — withdrawal is a link-out to layerxd.
+type LayerXEarnings struct {
+	PayeeDID    string `json:"payee_did,omitempty"`
+	EarnedUSDX  string `json:"earned_usdx"`
+	Invocations int    `json:"invocations"`
+	BalanceUSDX string `json:"balance_usdx,omitempty"`
+	EscrowUSDX  string `json:"escrow_usdx,omitempty"`
+	LayerXURL   string `json:"layerx"`
+	WithdrawURL string `json:"withdraw_url"`
+}
+
 // EarningsResponse is GET /v1/me/earnings.
 type EarningsResponse struct {
 	TotalEarnedWei string              `json:"total_earned_wei"`
@@ -400,6 +328,7 @@ type EarningsResponse struct {
 	AvailableWei   string              `json:"available_wei"`
 	PayoutAddress  string              `json:"payout_address,omitempty"`
 	Settlements    []SettlementSummary `json:"settlements"`
+	LayerX         *LayerXEarnings     `json:"layerx,omitempty"`
 }
 
 // SpendEntry is one service's share of caller spend.

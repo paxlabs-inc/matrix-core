@@ -28,10 +28,10 @@ type ReserveInput struct {
 	QuoteID        string
 	Units          string
 	PriceWei       string
+	PriceUSDX      string
 	PricingVersion int
 	ArgsHash       string
 	Rail           string
-	ChannelID      string
 }
 
 // Reserve creates or returns an existing reserved invocation row.
@@ -39,10 +39,6 @@ func (l *Ledger) Reserve(ctx context.Context, in ReserveInput) (store.Invocation
 	var quoteID *string
 	if in.QuoteID != "" {
 		quoteID = &in.QuoteID
-	}
-	var channelID *string
-	if in.ChannelID != "" {
-		channelID = &in.ChannelID
 	}
 	id, err := l.store.InsertReservedInvocation(ctx, store.InvocationRow{
 		IdempotencyKey: in.IdempotencyKey,
@@ -53,10 +49,10 @@ func (l *Ledger) Reserve(ctx context.Context, in ReserveInput) (store.Invocation
 		QuoteID:        quoteID,
 		Units:          in.Units,
 		PriceWei:       in.PriceWei,
+		PriceUSDX:      in.PriceUSDX,
 		PricingVersion: in.PricingVersion,
 		ArgsHash:       in.ArgsHash,
 		Rail:           in.Rail,
-		ChannelID:      channelID,
 	})
 	if err != nil {
 		return store.InvocationRow{}, err
@@ -79,4 +75,10 @@ func (l *Ledger) Finalize(ctx context.Context, invocationID, outcome, resultHash
 // Void releases a reservation without charge.
 func (l *Ledger) Void(ctx context.Context, invocationID string) error {
 	return l.store.VoidInvocation(ctx, invocationID)
+}
+
+// AttachLayerX records the LayerX settlement (transfer seq + optional hold id)
+// on a finalized invocation.
+func (l *Ledger) AttachLayerX(ctx context.Context, invocationID string, seq int64, holdID string) error {
+	return l.store.AttachLayerXSettlement(ctx, invocationID, seq, holdID)
 }

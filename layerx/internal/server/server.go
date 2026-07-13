@@ -64,6 +64,10 @@ var evmAddrRe = regexp.MustCompile(`^0x[0-9a-fA-F]{40}$`)
 // type-cast 500.
 var uuidRe = regexp.MustCompile(`^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$`)
 
+// refRe validates the optional 32-byte binding digest carried on pay/hold
+// intents (0x + 64 hex).
+var refRe = regexp.MustCompile(`^0x[0-9a-fA-F]{64}$`)
+
 // Server bundles the HTTP dependencies.
 type Server struct {
 	store            *store.Store
@@ -186,6 +190,7 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /v1/transfers", s.handleTransfers)
 	mux.HandleFunc("GET /v1/account/{did}", s.handleAccount)
 	mux.HandleFunc("GET /v1/stream", s.handleStream)
+	mux.HandleFunc("GET /v1/hold/{id}", s.handleHoldGet)
 
 	// Auth lane (public; mints a principal token only on a valid DID signature).
 	mux.HandleFunc("POST /v1/agent/auth/challenge", s.handleChallenge)
@@ -196,6 +201,9 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /v1/deposit", s.handleDeposit)
 	mux.HandleFunc("POST /v1/account/evm", s.handleBindEVM)
 	mux.HandleFunc("POST /v1/pay", s.handlePay)
+	mux.HandleFunc("POST /v1/hold", s.handleHold)
+	mux.HandleFunc("POST /v1/hold/{id}/capture", s.handleHoldCapture)
+	mux.HandleFunc("POST /v1/hold/{id}/release", s.handleHoldRelease)
 	mux.HandleFunc("POST /v1/withdraw", s.handleWithdraw)
 	mux.HandleFunc("POST /v1/settle", s.handleSettle)
 	// Rate limit is the OUTERMOST layer (defense in depth behind nginx): it
@@ -296,7 +304,8 @@ func isPublicPath(r *http.Request) bool {
 			return true
 		}
 		if strings.HasPrefix(p, "/v1/batch/") || strings.HasPrefix(p, "/v1/anchor/") ||
-			strings.HasPrefix(p, "/v1/receipt/") || strings.HasPrefix(p, "/v1/account/") {
+			strings.HasPrefix(p, "/v1/receipt/") || strings.HasPrefix(p, "/v1/account/") ||
+			strings.HasPrefix(p, "/v1/hold/") {
 			return true
 		}
 	}
@@ -471,15 +480,27 @@ func (s *Server) handlePay(w http.ResponseWriter, r *http.Request) {
 		writeFail(w, http.StatusBadRequest, types.CodeInvalidRequest, "amount_usdx must be a positive USDX decimal")
 		return
 	}
+	ref := strings.TrimSpace(req.Ref)
+	if ref != "" && !refRe.MatchString(ref) {
+		writeFail(w, http.StatusBadRequest, types.CodeInvalidRequest, "ref must be a 0x-prefixed 32-byte hex digest")
+		return
+	}
 	// Authorize by the X-LayerX-Agent token OR a DID-signed pay intent. The
 	// canonical signed amount is the normalized 6dp decimal so the client and
-	// server agree regardless of input formatting (invariant i6).
-	preimage := auth.IntentMessage("pay", req.FromDID, req.Nonce, req.ToDID, types.FormatUSDX(amount))
+	// server agree regardless of input formatting (invariant i6). When a ref is
+	// present it is part of the signed preimage, so the payment<->invocation
+	// binding is provable by the payer's own signature; the ref-less preimage is
+	// unchanged for lockstep with existing signers.
+	fields := []string{req.ToDID, types.FormatUSDX(amount)}
+	if ref != "" {
+		fields = append(fields, ref)
+	}
+	preimage := auth.IntentMessage("pay", req.FromDID, req.Nonce, fields...)
 	fromDID, ok := s.writeCaller(w, r, req.FromDID, req.PublicKey, req.Nonce, req.Signature, preimage)
 	if !ok {
 		return
 	}
-	receipt, err := s.ledger.Pay(r.Context(), fromDID, req.ToDID, amount)
+	receipt, err := s.ledger.Pay(r.Context(), fromDID, req.ToDID, amount, ref)
 	if err != nil {
 		switch {
 		case errors.Is(err, store.ErrInsufficientFunds):
@@ -521,6 +542,7 @@ func (s *Server) publishTransfer(receipt types.Receipt, fromDID, toDID string) {
 		AmountUSDX:  receipt.AmountUSDX,
 		Tier:        receipt.Tier,
 		LeafHashHex: receipt.LeafHashHex,
+		Ref:         receipt.Ref,
 		Settled:     receipt.Settled,
 		TS:          receipt.TS,
 	})
@@ -990,6 +1012,7 @@ func toTransferView(t store.TransferSummary) types.TransferView {
 		AmountUSDX:   types.FormatUSDX(t.AmountMicro),
 		Tier:         t.Tier,
 		LeafHashHex:  t.LeafHex,
+		Ref:          t.Ref,
 		BatchRootHex: t.BatchRootHex,
 		AnchorTxHash: t.AnchorTx,
 		Settled:      t.Settled,

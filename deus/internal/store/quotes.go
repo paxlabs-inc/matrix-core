@@ -15,6 +15,7 @@ type QuoteRow struct {
 	EndpointID     string
 	PricingVersion int
 	UnitPriceWei   string
+	UnitPriceUSDX  string
 	MaxUnits       string
 	ExpiresAt      time.Time
 	Signature      string
@@ -27,12 +28,12 @@ func (s *Store) InsertQuote(ctx context.Context, q QuoteRow) (string, error) {
 	var id string
 	err := s.pool.QueryRow(ctx, `
 		INSERT INTO quotes (
-			service_id, endpoint_id, pricing_version, unit_price_wei, max_units,
-			expires_at, signature, caller_did
-		) VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
+			service_id, endpoint_id, pricing_version, unit_price_wei, unit_price_usdx,
+			max_units, expires_at, signature, caller_did
+		) VALUES ($1,$2,$3,NULLIF($4,''),NULLIF($5,''),$6,$7,$8,$9)
 		RETURNING id::text`,
-		q.ServiceID, q.EndpointID, q.PricingVersion, q.UnitPriceWei, q.MaxUnits,
-		q.ExpiresAt, q.Signature, q.CallerDID,
+		q.ServiceID, q.EndpointID, q.PricingVersion, q.UnitPriceWei, q.UnitPriceUSDX,
+		q.MaxUnits, q.ExpiresAt, q.Signature, q.CallerDID,
 	).Scan(&id)
 	if err != nil {
 		return "", fmt.Errorf("store: insert quote: %w", err)
@@ -45,10 +46,11 @@ func (s *Store) GetQuote(ctx context.Context, id string) (QuoteRow, error) {
 	var q QuoteRow
 	err := s.pool.QueryRow(ctx, `
 		SELECT id::text, service_id::text, endpoint_id::text, pricing_version,
-		       unit_price_wei, max_units, expires_at, signature, caller_did
+		       COALESCE(unit_price_wei,''), COALESCE(unit_price_usdx,''),
+		       max_units, expires_at, signature, caller_did
 		FROM quotes WHERE id = $1`, id,
 	).Scan(&q.ID, &q.ServiceID, &q.EndpointID, &q.PricingVersion,
-		&q.UnitPriceWei, &q.MaxUnits, &q.ExpiresAt, &q.Signature, &q.CallerDID)
+		&q.UnitPriceWei, &q.UnitPriceUSDX, &q.MaxUnits, &q.ExpiresAt, &q.Signature, &q.CallerDID)
 	if err != nil {
 		if err == pgx.ErrNoRows {
 			return QuoteRow{}, fmt.Errorf("store: quote not found")

@@ -15,52 +15,47 @@ Adversaries: malicious developers, malicious callers/agents, compromised
 runners, network MITM, and a curious-but-honest operator (minimize trust in Deus
 itself).
 
-> **Where the honest-operator assumption currently bites.** Until the caller is
-> in the signing loop, two paths trust the operator more than "minimize trust"
-> implies: (1) **billing** — a gateway-signed receipt alone attests units within
-> the channel/quote cap, so a curious operator could bill up to the cap and the
-> caller couldn't disprove it; (2) **reputation** — quality samples are
-> operator-computed (§4.3). Both are closed by the **caller-co-signed cumulative
-> voucher** ([`08-payments-billing.md`](./08-payments-billing.md) §8.3), which
-> makes the charge *and* the `outcome` sample bilaterally provable. The voucher
-> is therefore a security control, not just a payments detail — it is mandatory
-> for `per_unit` pricing.
+> **The payer is always in the signing loop.** On LXP no payment executes
+> without the payer's own ed25519 signature over the exact amount, payee, and
+> invocation-binding ref ([`08-payments-billing.md`](./08-payments-billing.md)
+> §8.2) — a curious operator cannot bill a micro-USDX the payer did not sign.
+> Hold-mode capture bounds (amount, fixed payee, TTL, payer-authorized captor)
+> are enforced at the LayerX ledger, not by deus.
 
 ## 9.2 Authentication & authorization
 
-- **Callers/agents** authenticate with the embedded-wallet **agent bearer**
-  (ed25519 DID challenge/verify). Deus verifies the DID; spend authority comes
-  from the **wallet**, not Deus.
+- **Callers/agents** identify with a bearer + `X-Caller-DID`. Identity is not
+  spend authority: the only thing that moves money is the payer's own ed25519
+  signature over the canonical LayerX intent preimage (invariant i6),
+  transported in-band via `X-LayerX-Payment`.
 - **Developers** authenticate via Supabase JWT (console) or wallet signature
   (programmatic). Listing mutations require proof of `owner` (on-chain check).
 - **Internal** services talk only over the private 6PN network with mTLS/shared
   bearer; no internal endpoint is public.
-- **Least privilege roles**: `gateway`, `settler`, `indexer`, `orchestrator`
-  each have distinct keys/scopes. The settler key can move escrow funds **only**
-  per anchored receipts; the indexer is read-only on chain.
+- **Least privilege roles**: `gateway`, `indexer`, `orchestrator` each have
+  distinct keys/scopes. The gateway's LayerX DID key (`DEUS_LXP_KEY`) can only
+  capture holds the payer explicitly authorized it for (payer-signed
+  `captor_did`, amount/payee/expiry-bounded at the ledger); the indexer is
+  read-only on chain.
 
 ## 9.3 Spend safety (the "won't go off the rails" guarantee)
 
-- The authoritative spend policy is the **embedded wallet + Argus VM**
-  (`protocol/paxeer-embeded-wallets`). Deus enforces it twice:
-  1. **Fast pre-check** against the `spend_grants` cache (reject obviously
-     over-budget calls cheaply).
-  2. **Authoritative check** on the spend path: the actual reserve/transfer is a
-     wallet operation that the wallet policy can deny (`policy_denied`).
-- Per-call cap, per-window total cap, per-service allowlist, and rate limits are
-  all expressible as wallet policy and **enforced on-chain**, so even a
-  compromised Deus cannot exceed them.
-- Quotes are **signed and bounded** (`max_total_wei`); a caller can never be
-  charged beyond the quote it approved, and — on the channel rail — never beyond
-  its **last co-signed voucher**.
-- **Concurrency is a spend-safety property, not just correctness.** Because the
-  control plane is stateless/N-instance and the grants cache is a fast
-  pre-check, the reserve **must** be an *atomic transactional decrement* of the
-  caller's channel balance (Postgres row lock bounded by the on-chain escrow
-  cap), or two parallel invokes can oversell the channel before the authoritative
-  check fires. This invariant is specified in
-  [`06-execution-hosting.md`](./06-execution-hosting.md) §6.2 and is required for
-  the spend guarantee to hold under load.
+- **The signature IS the authorization.** No payment executes without the
+  payer's ed25519 signature over the canonical intent preimage, which carries
+  the exact amount, payee, nonce, and (hold mode) captor + TTL. A compromised
+  Deus cannot spend a single micro-USDX it was not handed a signature for.
+- The owner-facing spend policy is the **daemon-side leash**
+  (`LAYERX_MAX_SPEND_USDX` per call, `LAYERX_MAX_DAILY_USDX` rolling daily):
+  `deus.mjs` enforces it BEFORE signing; over-leash surfaces the terms to the
+  agent unsigned ([`08-payments-billing.md`](./08-payments-billing.md)).
+- Quotes are **signed and bounded**; the 402 terms carry the same bounds, so
+  the payer always signs a known, exact charge.
+- **Concurrency is a spend-safety property, not just correctness.** The
+  LayerX ledger serializes every debit against the payer's spendable balance
+  in one transaction (holds debit before execution; capture is bounded by the
+  hold), so parallel invokes can never oversell — specified in
+  [`06-execution-hosting.md`](./06-execution-hosting.md) §6.2 and proven by
+  the reserve-invariant property test.
 
 ## 9.4 Tenant isolation (hosted services)
 
@@ -106,12 +101,12 @@ itself).
 - Ledger is append-only; settlement is read-only over it; idempotency keys
   prevent double charges.
 - Receipts are signed and Merkle-anchored, so neither over- nor under-payment
-  can be hidden. On the channel rail the **caller co-signs a cumulative
-  voucher**, so the charge is bilaterally provable — the caller holds proof, not
-  just the developer.
-- The escrow/settlement contract moves caller funds **only** against the
-  highest caller-co-signed voucher and the anchored receipts — it can never pay
-  out more than the caller admitted.
+  can be hidden. Every charge is bilaterally provable: the payer's own intent
+  signature covers amount + payee + ref, and the sequencer-signed LayerX
+  receipt is forever readable at `GET /v1/receipt/{seq}`.
+- The LayerX ledger moves payer funds **only** against the payer's signed
+  intent (or within the payer-consented hold bounds) — deus can never pay
+  itself or move more than the payer authorized.
 
 ## 9.8 Transport & data protection
 
@@ -138,18 +133,21 @@ itself).
 - Structured audit log for every listing mutation, settlement, and policy denial
   (who/what/when, signed).
 - Prometheus metrics: invoke latency, charge totals, denial rates, runner cold
-  starts, settlement lag, indexer lag, attestation pass/fail.
-- Alarms on: settlement lag, indexer lag, abnormal denial spikes, escrow balance
-  drift vs ledger.
+  starts, layerxd settle errors, open-hold age, indexer lag, attestation
+  pass/fail.
+- Alarms on: layerxd unreachable (`payment_unavailable` spikes), holds aging
+  toward expiry, indexer lag, abnormal denial spikes.
 
 ## 9.11 Key management
 
-- Gateway signing key (receipts/quotes), settler key (escrow moves), and any
-  hosted-runner co-sign key are distinct, rotatable, and stored in the platform
-  secret store. Rotation is supported via versioned key ids in receipts.
-- The chain signer for registry/settlement txns uses the agent-wallet
-  forwarding model where possible (no long-lived seed on the box), mirroring
-  Tachyon's multi-tenant token-forwarding signer.
+- Gateway signing key (receipts/quotes), the gateway's LayerX DID key
+  (`DEUS_LXP_KEY`, captor identity — it can never move funds beyond
+  payer-signed hold bounds), and any hosted-runner co-sign key are distinct,
+  rotatable, and stored in the platform secret store. Rotation is supported
+  via versioned key ids in receipts.
+- The chain signer for registry txns uses the agent-wallet forwarding model
+  where possible (no long-lived seed on the box), mirroring Tachyon's
+  multi-tenant token-forwarding signer.
 
 ## 9.12 Compliance posture (forward-looking)
 
@@ -168,9 +166,9 @@ the threat model:
   fork) and discovery on an **external embedder**. Both are mitigated (search
   degrades to lexical+filters; hosting is swappable) but they are real
   dependencies, not zero.
-- **Operator-attested inputs (until caller co-sign).** Billing units and quality
-  samples are operator-computed; the caller-co-signed voucher (§8.3) is what
-  removes this. Stated plainly in §9.1.
+- **Operator-attested quality samples.** Quality samples remain
+  operator-computed; charges themselves are payer-signed (§9.1), so the
+  residual trust is reputational, not monetary.
 - **Proxy reachability is TOCTOU.** The registration reachability probe (§2.5,
   [`06-execution-hosting.md`](./06-execution-hosting.md) §6.4) is necessary, not
   sufficient: a proxy endpoint can pass at listing time then rot. The real

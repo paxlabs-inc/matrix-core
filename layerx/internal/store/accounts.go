@@ -91,7 +91,7 @@ type PayResult struct {
 // ts), then calls finalize(seq, ts) to compute the Merkle leaf + sequencer sig
 // and writes them back — all in ONE DB transaction (layerx.frozen.kvx [ledger]
 // atomicity). The recipient account is created on first receipt.
-func (s *Store) Pay(ctx context.Context, fromDID, toDID string, amountMicro int64, tier string,
+func (s *Store) Pay(ctx context.Context, fromDID, toDID string, amountMicro int64, tier, ref string,
 	finalize func(seq int64, ts time.Time) (leafHex, sigHex string)) (PayResult, error) {
 
 	if amountMicro <= 0 {
@@ -144,9 +144,9 @@ func (s *Store) Pay(ctx context.Context, fromDID, toDID string, amountMicro int6
 	ts := time.Now().UTC()
 	leafHex, sigHex := finalize(seq, ts)
 	if _, err := tx.Exec(ctx, `
-		INSERT INTO transfers (seq, from_did, to_did, amount_usdx, tier, leaf_hash, sig, ts)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
-		seq, fromDID, toDID, amountMicro, tier, leafHex, sigHex, ts); err != nil {
+		INSERT INTO transfers (seq, from_did, to_did, amount_usdx, tier, leaf_hash, sig, ref, ts)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, NULLIF($8,''), $9)`,
+		seq, fromDID, toDID, amountMicro, tier, leafHex, sigHex, ref, ts); err != nil {
 		return PayResult{}, fmt.Errorf("store: insert transfer: %w", err)
 	}
 

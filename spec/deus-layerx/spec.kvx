@@ -1,0 +1,293 @@
+# spec.kvx — DEUS-LAYERX: deus re-platformed as a LayerX-native marketplace (LXP).
+# SINGLE SOURCE for this feature's requirements + design + tasks. Rendered to
+# requirements.md / design.md / tasks.md by spec/specgen. Do not edit the
+# generated markdown; edit this file and regenerate.
+#
+# Format: Matrix .kvx (see tachyon/internal/config/kvx.go). One key = value per
+# line; string values double-quoted; lists are ["a","b"]; # starts a comment.
+# Schema:
+#   [req.<n>]   title, story, ac_1..ac_n          (acceptance criteria, EARS)
+#   [design]    overview, include="design.body.md" (rich prose/diagrams inlined)
+#   [task.<id>] title, status, wave, reqs, requires (dotted ids: 1, 1.1, 1.2)
+
+[meta]
+feature      = "deus-layerx"
+title        = "DEUS-LAYERX — LXP: HTTP-native payments on LayerX; deus keeps registry, discovery, execution; LayerX keeps the money"
+status       = "in_progress"
+spec_version = "0.1.0"
+intro        = "Deus today carries three payment rails it owns end-to-end — direct (per-call PAX transfer via the embedded wallet, gas every call), net (deus-owned pairwise channels + EIP-712 vouchers + own settler + PaymentChannel.sol, the audit's HIGH-finding cluster), and stream (PaymentStreams precompile sessions). LayerX exists precisely as the generalization of the net rail (layerx/DESIGN.md: 'Deus marketplace — a purchase is just a layerx_pay between two DIDs'). This feature deletes all three rails and re-platforms deus as a LayerX application: every payment is USDX between DIDs on the LayerX ledger, authorized in-band over HTTP by LXP — a challenge/response handshake with the interaction shape of Coinbase's x402 but none of its protocol (no EIP-3009, no USDC, no per-call gas, no third-party facilitator). An unpaid request gets HTTP 402 with an lxp/1 terms body carrying a prefetched LayerX challenge nonce; the payer signs the standard LayerX ed25519 intent preimage with its DID key and retries with X-LayerX-Payment; the server submits the intent to layerxd (invariant i6: the signature IS the authorization, the transporter is irrelevant), executes, and responds with X-LayerX-Receipt. LayerX gains one structural primitive — holds (authorize -> capture/release with payer-authorized captor_did) — plus a ref binding field on intents, so deus keeps its reserve/finalize/void safety while never custodying a micro-USDX. Locked decisions (Andrew 2026-07-13): HTTP 402 status with lxp body/headers; USDX-native pricing replaces wei/PAX; payer-authorized captor_did; stream rail deleted outright; middleware kit (Go + Node) in v1 scope; ref row-level v1 with the leaf-domain bump deferred. Deletion lands LAST, only after the end-to-end no-fakes proofs are green on the new path."
+
+[design]
+overview = "See the full design below: the mission (delete the rails, not fix them — the audit HIGH findings live in code this migration removes); the grounded current state of both codebases; the LXP wire protocol (402 challenge with lxp/1 terms + prefetched nonce, X-LayerX-Payment retry, X-LayerX-Receipt response); why v1 needs zero LayerX auth changes (writeCaller accepts a DID-signed intent from any transporter); the holds primitive design at store level (spendable-balance debit into a holds table, capture consuming the hold through the standard transfer/leaf path, TTL release sweep, supply counting so the reserve proof survives); ref binding provable via the payer's own intent signature; the deus gateway re-platform (exact and hold modes mapped onto the existing meter Reserve/Finalize/Void spine); USDX-native pricing; payee DIDs and explorer-backed earnings; the deus.mjs client handshake under a spend leash; the middleware kit; trust and custody analysis; config; non-goals; and the no-fakes verification strategy. Authored as a rich markdown fragment (design.body.md) and inlined verbatim."
+include  = "design.body.md"
+
+# The per-session working protocol, machine-readable (mirrors design.body.md).
+[protocol]
+step_1_context   = "cortex recall once at session start; READ IN FULL any output flagged truncated before reasoning (hard rule). Then read spec/deus-layerx/spec.kvx and the previous session's handoff (the most recent deus-layerx cortex outcome/handoff)."
+step_2_select    = "Pick the ONE next eligible task: lowest wave whose every 'requires' task is done and whose status is pending. Set it in_progress in spec.kvx. At most ONE task in_progress at a time."
+step_3_build     = "Implement against the task's referenced acceptance criteria on REAL code (layerx/internal/{store,ledger,server,settle}, deus/internal/{gateway,server,pricing,metering,receipts}, deus/pkg, tools/deus). Deliver complete, runnable artifacts — never diffs or fragments. Follow existing repo style; add no comments/docs unless asked."
+step_4_test      = "Ship tests over REAL code paths — no stub/mock/fake doubles EVER. Real layerxd handler over the real store, real deus gateway, real ed25519 DID signatures, real httptest round trips. A red check is a stop condition."
+step_5_close_out = "Only when genuinely green: mark the task done in spec.kvx; write a concise next-session handoff; note the outcome (success|partial|failure) + any durable memories; close out. Never attest a completion that did not happen — surface honest partials."
+step_6_guard     = "Before any destructive/irreversible/prod/secret/network-write action, guard-check against the HARD rules; stop for explicit user YES if it risks a HARD rule. No git on the dev box; the user drives commits. The rail deletion (task 6.1) is gated on the proofs (task 5.*) being green."
+handoff_convention = "The handoff is a cortex outcome note prefixed 'HANDOFF deus-layerx' carrying: tasks done+green this session, current spec.kvx status, the exact next eligible task id, and any gotchas or partials."
+
+# The non-negotiable quality bar (mirrors design.body.md).
+[quality_bar]
+grade            = "Money-path grade. Every value movement is DID-signed, escrow-bounded, receipted, and anchored; a regression here moves or strands real USDX."
+no_custody       = "Deus never holds funds. Payments flow payer-DID -> payee-DID on the LayerX ledger; holds lock funds inside the payer's own account; deus transports signed intents and captures only within payer-consented bounds."
+signature_is_authz = "No payment executes without the payer's ed25519 signature over the canonical intent preimage (LayerX invariant i6). Nonces are single-use and DID-bound; replay is structurally impossible."
+reserve_proof    = "The LayerX reserve invariant (circulating USDX == vault USDL) survives every hold/capture/release interleaving. Open holds count as circulating."
+no_free_calls    = "layerxd unreachable or payment invalid means the service does not execute (503 / fresh 402). There is no code path that serves a priced call unpaid."
+fail_open_refund = "Execution failure after a hold releases it; expired holds auto-release. No funds ever stranded (the deus F4 reservation-leak lesson, applied at the ledger)."
+one_implementation = "The deus gateway consumes the same pkg/lxp middleware any third-party service uses — one protocol implementation, dogfooded."
+no_fakes         = "Real layerxd over the real Postgres store, real deus gateway, real signatures, real HTTP. The E2E proofs drive the full 402 -> sign -> settle -> execute -> receipt loop in both modes."
+non_goals        = "No leaf-domain/accumulator change (ref anchoring depth is v2); no LayerX owner-allowance objects (leash stays daemon-side v1); no one-shot client-minted nonces (challenge prefetch covers v1); no console redesign beyond payee/earnings wiring; prod deploy/migration ops are Andrew-driven."
+
+# ============================== REQUIREMENTS ==============================
+
+[req.1]
+title = "LayerX holds: authorize -> capture/release as a ledger primitive"
+story = "As a paying agent, I want funds reserved inside my own account until the service delivers, so that pay-only-on-success holds without anyone custodying my money."
+ac_1 = "WHEN a valid DID-signed hold intent (canonical preimage over to_did, amount, ttl_s, ref, captor_did per auth.IntentMessage) is accepted, THE ledger SHALL atomically debit the payer's spendable balance_usdx into an open hold row (payer, payee, captor, amount, expiry, ref), such that held funds are unspendable by pay and withdraw."
+ac_2 = "WHEN the captor captures amount <= held before expiry, THE ledger SHALL consume the hold and credit the payee by emitting a STANDARD transfer (monotonic seq, Merkle leaf, sequencer signature) through the same store/accumulator path as Pay, returning any remainder to the payer's balance in the same transaction."
+ac_3 = "WHEN a hold is released (by captor or payer) or expires, THE full held amount SHALL return to the payer's balance; the settle worker SHALL sweep expired holds within one tick; hold, capture, and release SHALL be idempotent."
+ac_4 = "THE supply/reserve proof SHALL count open holds as circulating (circulating = sum(balance_usdx) + sum(open holds)), and a property test SHALL prove the reserve invariant and value conservation across arbitrary interleavings of hold/capture/release/pay/withdraw."
+
+[req.2]
+title = "ref binding on intents and receipts (row-level v1)"
+story = "As a marketplace, I want each payment cryptographically bound to the invocation it pays for, so that paid-vs-served disputes are decidable from signed artifacts."
+ac_1 = "PAY and HOLD intents SHALL accept an optional ref (0x + 64 hex); WHEN present it SHALL be part of the payer-signed canonical preimage, making the binding provable by the payer's own ed25519 signature."
+ac_2 = "THE ref SHALL be stored on the transfer row (and hold row) and returned in receipt JSON including the public GET /v1/receipt/{seq} and explorer transfer views; folding ref into the leaf preimage (domain bump) is explicitly deferred to v2."
+ac_3 = "A test SHALL prove a ref-carrying pay round-trips intent -> transfer row -> public receipt, and that a tampered ref fails intent signature verification."
+
+[req.3]
+title = "Hold HTTP surface on layerxd"
+story = "As a resource server, I want hold lifecycle over plain HTTP with the existing LayerX auth model, so that any service can reserve/capture without new trust assumptions."
+ac_1 = "POST /v1/hold SHALL accept a DID-signed intent or X-LayerX-Agent principal token (the writeCaller pattern), returning hold_id + a hold record; insufficient spendable balance SHALL return 402 insufficient_funds in parity with /v1/pay."
+ac_2 = "POST /v1/hold/{id}/capture SHALL be authorized ONLY as the hold's captor_did (principal token or signed capture intent over hold_id + amount), enforcing amount, fixed payee, and expiry bounds; a capture response SHALL carry the emitted transfer receipt."
+ac_3 = "POST /v1/hold/{id}/release SHALL be authorized as captor or payer; GET /v1/hold/{id} SHALL be a public read; write endpoints SHALL sit behind the existing write rate-limit class."
+ac_4 = "REAL HTTP tests over the real store SHALL cover the full lifecycle, captor-authorization rejections, expiry, and double-capture rejection."
+
+[req.4]
+title = "LXP challenge/response wire protocol"
+story = "As a paying agent, I want payment terms and settlement to ride the HTTP exchange itself, so that discovering, paying for, and calling a service is one flow with no accounts or api keys."
+ac_1 = "WHEN a priced resource is requested without X-LayerX-Payment, THE server SHALL respond HTTP 402 with an lxp/1 JSON terms object: protocol, asset (USDX), amount_usdx (normalized 6dp), pay_to (payee DID), mode (exact|hold), nonce (a LayerX challenge prefetched for the payer's DID), ref, layerx (base URL), expires_at (<= nonce TTL), and optional quote_id — plus captor_did and ttl_s when mode=hold."
+ac_2 = "WHEN the request retries with X-LayerX-Payment (base64url JSON: from_did, public_key, nonce, signature, to_did, amount_usdx, mode, ref), THE server SHALL verify shape, submit the intent to layerxd, execute the resource, and respond 200 with X-LayerX-Receipt (base64url JSON: seq, leaf_hash, sequencer_sig, amount_usdx, ref)."
+ac_3 = "AN invalid, expired, replayed, or underfunded payment SHALL yield a fresh 402 challenge (new nonce) with a machine-readable reason — never execution; WHEN layerxd is unreachable THE server SHALL respond 503 payment_unavailable — never a free call."
+ac_4 = "REPLAY of a settled request (same idempotency key + payment) SHALL return the stored result without a second charge."
+
+[req.5]
+title = "deus internal/layerx client"
+story = "As the deus gateway, I want a typed client for layerxd, so that challenge prefetch, settlement, holds, and receipt reads are one seam."
+ac_1 = "AN internal/layerx package SHALL wrap challenge prefetch, pay, hold, capture, release, receipt fetch, and account read against DEUS_LAYERX_URL (+ optional transport bearer), mapping layerxd error codes to typed errors (insufficient_funds, unauthorized, unavailable)."
+ac_2 = "THE gateway SHALL authenticate to layerxd as its own DID (ed25519 key at DEUS_LXP_KEY) for captor operations, via the existing challenge/verify principal-token lane."
+ac_3 = "REAL httptest round-trip tests SHALL run against the real layerxd HTTP handler."
+
+[req.6]
+title = "Gateway re-platform: the LXP rail replaces wallet/channels/streams"
+story = "As the marketplace operator, I want invoke to meter and settle exclusively through LayerX, so that the stubbed wallet and evidence-only channel rails can be deleted."
+ac_1 = "BEHIND DEUS_RAIL_LAYERX, Invoke SHALL run the LXP flow: exact mode executes then submits the pay (preserving the current direct-rail ordering and void-on-failure semantics); hold mode reserves via hold, executes, captures on success and releases on failure — replacing wallet.AuthorizeSpend/Send, channels.Reserve, and vouchers.BuildPending."
+ac_2 = "THE metering ledger SHALL remain the idempotency/replay spine, gaining layerx_seq and hold_id columns and rail value layerx; Reserve/Finalize/Void semantics map onto hold/capture/release."
+ac_3 = "THE signed execution receipt SHALL gain the LayerX seq and ref, so the payment receipt and execution receipt are cross-bound (paid <-> served) for the same call."
+ac_4 = "POST /v1/quote/{id} SHALL remain for pre-flight discovery, and the 402 challenge SHALL carry equivalent terms so the quote round-trip is optional."
+
+[req.7]
+title = "USDX-native pricing"
+story = "As a developer, I want to price my service in USD terms, so that my prices carry no PAX volatility and match how LayerX settles."
+ac_1 = "PRICING plans, quotes, and charges SHALL be denominated in micro-USDX (6dp): pricingmath SHALL gain USDX parse/format/charge operations, and the manifest schema SHALL accept unit_price_usdx / min_charge_usdx."
+ac_2 = "QUOTE responses and LXP challenge terms SHALL carry USDX amounts; no wei/PAX amount SHALL appear on any LayerX-rail pay path."
+ac_3 = "A forward-only migration SHALL convert existing pricing rows and repo fixtures; validation SHALL reject wei-priced manifests once the flag is on."
+
+[req.8]
+title = "Payee DIDs and explorer-backed earnings"
+story = "As a developer or a listed agent, I want to be paid to my DID instantly in USDX, so that earnings need no deus payout machinery and remain 100% mine."
+ac_1 = "SERVICE manifests and developer records SHALL carry payee_did (validated did:matrix shape); registration of a priced service SHALL require it."
+ac_2 = "EVERY LXP settlement SHALL pay the service's payee_did directly on LayerX; deus SHALL never sit in the money path."
+ac_3 = "/v1/me/earnings SHALL join deus invocations with LayerX reads (GET /v1/account/{did}, transfers), and withdrawal SHALL be a link-out to the existing LayerX /v1/withdraw — no deus custody or payout code."
+
+[req.9]
+title = "deus.mjs client handshake under a spend leash"
+story = "As an agent, I want payments handled invisibly under my owner's leash when I call marketplace tools, so that using a paid service is just calling a tool."
+ac_1 = "WHEN a tool call receives an lxp 402 challenge, deus.mjs SHALL enforce the daemon-side leash (LAYERX_MAX_SPEND_USDX per call, LAYERX_MAX_DAILY_USDX rolling daily) BEFORE signing; within leash it signs the canonical intent with executor.key and retries once; over leash it surfaces the terms to the agent and SHALL NOT sign."
+ac_2 = "SETTLED calls SHALL surface the LayerX receipt (seq + amount) in the tool result; insufficient-funds challenges SHALL surface deposit guidance (vault address + did_claim path)."
+ac_3 = "THE signing preimage SHALL be byte-identical to layerxd's auth.IntentMessage (lockstep with tools/layerx/layerx.mjs), proven by a cross-implementation test vector."
+
+[req.10]
+title = "LXP middleware kit (v1 scope)"
+story = "As any service developer, I want a drop-in paywall speaking LXP, so that I can charge for my endpoint without the deus gateway in my data path."
+ac_1 = "A Go package (deus/pkg/lxp) SHALL expose net/http middleware: price configuration, challenge minting (nonce prefetch via layerxd), payment verification + settlement submit, and the receipt response header — usable by any Go service standalone."
+ac_2 = "A Node middleware (runner harness package) SHALL implement the same lxp/1 protocol for hosted and self-hosted JS services, verified against the same test vectors."
+ac_3 = "THE deus gateway SHALL consume pkg/lxp itself (one implementation, dogfooded)."
+ac_4 = "docs/08-payments-billing.md SHALL be rewritten as the LXP protocol spec (wire format, modes, error codes, examples), and the kit SHALL ship a README."
+
+[req.11]
+title = "The deletion: rails, channels, settlement, wallet, streams, contracts"
+story = "As the maintainer, I want the superseded payment machinery gone, so that the audit's HIGH-finding surface no longer exists to maintain or trust."
+ac_1 = "internal/channels, internal/settlement, internal/wallet, internal/streams, contracts/PaymentChannel.sol, the direct/net/stream rails, and routes /v1/channels, /v1/vouchers/cosign, /v1/streams*, /internal/settle/run SHALL be removed; deus SHALL build green with all remaining tests passing."
+ac_2 = "docs and README SHALL reflect the LayerX-native architecture with no dangling references to deleted rails (repo grep clean of channel/voucher/stream rail symbols outside history/spec)."
+ac_3 = "A forward-only migration SHALL retire channel/voucher/stream tables (data preserved, code paths dropped); DEUS_RAIL_LAYERX flag SHALL be removed with LXP as the only rail."
+ac_4 = "THE deletion SHALL land only after the end-to-end proofs (req.12) are green — enforced by task dependency."
+
+[req.12]
+title = "No-fakes end-to-end proof"
+story = "As the owner, I want the full economic loop proven on real components before the old rails die, so that the cutover is demonstrated, not asserted."
+ac_1 = "AN E2E test SHALL drive real deus gateway + real layerxd handler over the real store through the full loop — 402 challenge -> client signs -> settle -> execute -> 200 + receipts — in BOTH exact and hold modes, verifying cross-bound receipts (shared ref, layerx_seq on the execution receipt) and idempotent replay without double charge."
+ac_2 = "CUSTODY/TRUST properties SHALL be proven: the deus gateway DID's LayerX balance never changes across settlements; capture over amount, past expiry, wrong payee, or by a non-captor is rejected; expired holds release; layerxd-down yields 503 with zero executions."
+ac_3 = "NO test in this feature SHALL substitute a fake for a real code path: real Postgres-backed layerxd, real ed25519 signatures, real HTTP, real gateway pipeline."
+
+# ================================ TASKS ==================================
+
+[tasks]
+heading = "Implementation Plan: DEUS-LAYERX — LayerX primitives first, then the protocol, then the re-platform, proofs before deletion"
+
+[task.1]
+section = "P0 — LayerX primitives (layerx module)"
+title   = "Holds, ref binding, and their HTTP surface"
+status  = "done"
+
+[task.1.1]
+title  = "Holds ledger: schema, lifecycle, supply counting"
+status = "done"
+wave   = 1
+do_1   = "Migration: holds table (id, payer_did, payee_did, captor_did, amount_usdx, ref, expires_at, status) + store lifecycle ops — CreateHold (spendable-balance debit, FOR UPDATE lock, ErrInsufficientFunds parity), CaptureHold (consume hold, credit payee, emit standard transfer seq/leaf/sig via the Pay finalize path, remainder back to payer, one tx), ReleaseHold, SweepExpiredHolds (settle worker tick)"
+do_2   = "Supply counting: circulating includes open holds (store.Supply), keeping the public reserve proof exact"
+do_3   = "Property test on the real store: reserve invariant + value conservation across interleaved hold/capture/release/pay/withdraw; idempotence of each lifecycle op"
+reqs   = ["1.1", "1.2", "1.3", "1.4"]
+
+[task.1.2]
+title  = "ref on intents, rows, and receipts"
+status = "done"
+wave   = 1
+do_1   = "Extend pay (and hold) intent preimages with optional ref as a canonical ordered field (auth.IntentMessage lockstep comment updated); persist ref on transfers (+ holds), surface in Receipt/TransferView JSON including public reads"
+do_2   = "Test: ref round-trips intent -> row -> public receipt; tampered ref fails signature verification; leaf/domain unchanged (v2 deferral pinned by test)"
+reqs   = ["2.1", "2.2", "2.3"]
+
+[task.1.3]
+title  = "Hold HTTP endpoints + captor authorization"
+status = "done"
+wave   = 2
+do_1   = "POST /v1/hold, POST /v1/hold/{id}/capture, POST /v1/hold/{id}/release, GET /v1/hold/{id} on layerxd: writeCaller-pattern auth (signed intent or principal token), captor-only capture with amount/payee/expiry bounds, capture returns the emitted transfer receipt, write rate-limit class, SSE publish"
+do_2   = "Real HTTP tests over the real store: lifecycle, captor rejections, expiry, double-capture, insufficient-funds 402 parity"
+reqs   = ["3.1", "3.2", "3.3", "3.4"]
+requires = ["1.1", "1.2"]
+
+[task.2]
+section = "P0 — Deus foundations"
+title   = "USDX pricing and the layerxd client"
+status  = "done"
+
+[task.2.1]
+title  = "USDX-native pricing"
+status = "done"
+wave   = 1
+do_1   = "pricingmath USDX ops (parse/format/charge in micro-USDX 6dp); manifest schema unit_price_usdx / min_charge_usdx; quote flow and responses in USDX; forward-only migration for existing pricing rows + fixture updates; validation rejects wei-priced manifests under the flag"
+do_2   = "Tests: charge math at 6dp bounds, manifest validation both ways, migrated fixtures quote correctly"
+reqs   = ["7.1", "7.2", "7.3"]
+
+[task.2.2]
+title  = "internal/layerx client + gateway DID identity"
+status = "done"
+wave   = 2
+do_1   = "deus/internal/layerx: challenge prefetch, pay/hold/capture/release submit, receipt + account reads against DEUS_LAYERX_URL; typed error mapping; gateway ed25519 identity (DEUS_LXP_KEY) with principal-token auth for captor ops"
+do_2   = "Real httptest round-trips against the real layerxd handler (including the captor token lane)"
+reqs   = ["5.1", "5.2", "5.3"]
+requires = ["1.3"]
+
+[task.3]
+section = "P1 — The protocol"
+title   = "pkg/lxp middleware and the gateway re-platform"
+status  = "pending"
+
+[task.3.1]
+title  = "pkg/lxp: the Go middleware (one implementation)"
+status = "done"
+wave   = 3
+do_1   = "deus/pkg/lxp: terms/challenge construction (402 + lxp/1 body, nonce prefetch, expires_at <= nonce TTL), X-LayerX-Payment parse + verification, settlement submit via the layerx client, X-LayerX-Receipt response, fresh-challenge-on-invalid and 503 payment_unavailable behaviors, exact + hold modes, net/http middleware wrapper usable standalone"
+do_2   = "Tests against the real layerxd handler: challenge shape, happy path both modes, invalid/expired/replayed payment -> fresh 402, layerxd down -> 503 with zero executions"
+reqs   = ["4.1", "4.2", "4.3", "10.1"]
+requires = ["2.2"]
+
+[task.3.2]
+title  = "Gateway LXP rail — exact mode behind DEUS_RAIL_LAYERX"
+status = "done"
+wave   = 4
+do_1   = "Wire pkg/lxp into Invoke behind DEUS_RAIL_LAYERX: challenge-or-verify replaces wallet.AuthorizeSpend/Send; exact mode executes then settles (current direct-rail ordering + void semantics preserved); metering gains layerx_seq/hold_id columns + rail layerx; execution receipt gains seq + ref; quote endpoint intact with challenge carrying equivalent terms"
+do_2   = "Tests: full invoke against real layerxd, idempotent replay without double charge, policy of no-free-calls on layerxd failure"
+reqs   = ["4.4", "6.1", "6.2", "6.3", "6.4"]
+requires = ["3.1", "2.1"]
+
+[task.3.3]
+title  = "Gateway hold mode: reserve -> execute -> capture/release"
+status = "done"
+wave   = 5
+do_1   = "Hold-mode pipeline mapped onto meter Reserve/Finalize/Void: hold before execution (captor_did = gateway DID), capture exact charge on success (remainder auto-released), release on execution failure; hold terms (captor_did, ttl_s) in the challenge"
+do_2   = "Tests: success/failure/expiry paths against real layerxd; no stranded holds"
+reqs   = ["6.1"]
+requires = ["3.2"]
+
+[task.3.4]
+title  = "Payee DIDs, earnings, withdraw link-out"
+status = "done"
+wave   = 5
+do_1   = "payee_did on manifest + developer records (validated, required for priced services); settlements pay payee_did; /v1/me/earnings joins invocations with LayerX account/transfer reads; withdraw link-out; console payee/earnings wiring"
+do_2   = "Tests: registration validation, earnings aggregation against real layerxd reads"
+reqs   = ["8.1", "8.2", "8.3"]
+requires = ["3.2"]
+
+[task.4]
+section = "P1 — Clients"
+title   = "deus.mjs handshake and the Node middleware"
+status  = "pending"
+
+[task.4.1]
+title  = "deus.mjs: leash-gated auto-payment"
+status = "done"
+wave   = 5
+do_1   = "LXP client half in tools/deus/deus.mjs: on 402 lxp challenge enforce LAYERX_MAX_SPEND_USDX / LAYERX_MAX_DAILY_USDX before signing, sign auth.IntentMessage with executor.key (lockstep with tools/layerx/layerx.mjs), retry once, surface receipt in the tool result, deposit guidance on insufficient funds, over-leash surfaces terms without signing"
+do_2   = "Cross-implementation test vector proving byte-identical preimages with layerxd; handshake test against the real gateway"
+reqs   = ["9.1", "9.2", "9.3"]
+requires = ["3.2"]
+
+[task.4.2]
+title  = "Node LXP middleware (runner harness)"
+status = "done"
+wave   = 5
+do_1   = "Node middleware implementing lxp/1 server-side for hosted/self-hosted JS services (challenge mint via layerxd, verify+settle, receipt header), sharing the pkg/lxp test vectors; kit README + docs/08 rewritten as the LXP protocol spec"
+do_2   = "Tests: Node middleware against real layerxd; vector parity with pkg/lxp"
+reqs   = ["10.2", "10.3", "10.4"]
+requires = ["3.1"]
+
+[task.5]
+section = "P2 — Proofs (gate for the deletion)"
+title   = "End-to-end and custody properties on real components"
+status  = "pending"
+
+[task.5.1]
+title  = "E2E property: the full economic loop, both modes"
+status = "done"
+wave   = 6
+property  = "Property E2E: real deus gateway + real layerxd over the real store drive 402 challenge -> client signs -> settle -> execute -> 200 + X-LayerX-Receipt in BOTH exact and hold modes; execution receipt carries layerx_seq + ref matching the payment receipt (paid <-> served cross-proof); replay with the same idempotency key returns the stored result with exactly one charge — no fakes anywhere"
+validates = "Requirements 12.1, 12.3"
+requires  = ["3.3", "3.4", "4.1", "4.2"]
+
+[task.5.2]
+title  = "Custody/trust property: deus never touches the money"
+status = "done"
+wave   = 6
+property  = "Property CUSTODY: across all E2E settlements the gateway DID's LayerX balance is byte-identical before and after; capture over amount, past expiry, to the wrong payee, or by a non-captor is rejected at the ledger; expired holds release on the sweep; with layerxd down every priced call yields 503 and the service endpoint records ZERO executions — real components, no fakes"
+validates = "Requirements 12.2, 12.3"
+requires  = ["3.3", "3.4"]
+
+[task.6]
+section = "P2 — The deletion"
+title   = "Remove the superseded rails (only after proofs are green)"
+status  = "pending"
+
+[task.6.1]
+title  = "Delete rails, channels, settlement, wallet, streams, contracts"
+status = "in_progress"
+wave   = 7
+do_1   = "Remove internal/channels, internal/settlement, internal/wallet, internal/streams, contracts/PaymentChannel.sol, direct/net/stream rails, routes /v1/channels /v1/vouchers/cosign /v1/streams* /internal/settle/run; retire tables via forward-only migration (data preserved); drop DEUS_RAIL_LAYERX making LXP the only rail"
+do_2   = "README/docs sweep: architecture reflects LayerX-native deus, repo grep clean of deleted rail symbols; full build + test suite green"
+reqs   = ["11.1", "11.2", "11.3", "11.4"]
+requires = ["5.1", "5.2"]

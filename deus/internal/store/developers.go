@@ -28,6 +28,20 @@ func (s *Store) UpsertDeveloperByWallet(ctx context.Context, wallet, payout, dis
 	return id, nil
 }
 
+// SetDeveloperPayeeDID records the developer's LayerX payee DID — the identity
+// LXP settlements pay directly (synced from the manifest at registration).
+func (s *Store) SetDeveloperPayeeDID(ctx context.Context, developerID, payeeDID string) error {
+	ct, err := s.pool.Exec(ctx, `
+		UPDATE developers SET payee_did = $2 WHERE id = $1`, developerID, payeeDID)
+	if err != nil {
+		return fmt.Errorf("store: set payee did: %w", err)
+	}
+	if ct.RowsAffected() == 0 {
+		return fmt.Errorf("store: developer not found")
+	}
+	return nil
+}
+
 // DeveloperWalletByID returns wallet_address for a developer id.
 func (s *Store) DeveloperWalletByID(ctx context.Context, developerID string) (string, error) {
 	var wallet string

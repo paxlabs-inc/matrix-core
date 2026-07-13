@@ -56,7 +56,7 @@
               +------------------------+        +----------------------+
                            |                              |
         ===================|=========== ON-CHAIN (Paxeer 125) ==========================
-        |   ServiceRegistry.sol   PaymentStreams 0x0906   PoFQ 0x0904                  |
+        |   ServiceRegistry.sol   PoFQ 0x0904                                          |
         |   Settlement anchor     EIP712 0x0908           TEEAttestor 0x0907           |
         |   Embedded wallet / Argus policy plane          Scheduler 0x0905            |
         ================================================================================
@@ -79,7 +79,7 @@
 | **Discovery** | Structured filter queries + plain-language semantic search over pgvector | [`07-discovery.md`](./07-discovery.md) |
 | **Gateway** | Authenticate caller → check policy/quote → meter → route → sign receipt | [`06-execution-hosting.md`](./06-execution-hosting.md) |
 | **Metering ledger** | Append-only record of every invocation (price, tokens/units, outcome) | [`03-data-model.md`](./03-data-model.md) |
-| **Settlement** | Batches ledger entries → net settlement / stream settle / direct transfer | [`08-payments-billing.md`](./08-payments-billing.md) |
+| **Settlement** | LXP on LayerX: exact settle or hold capture per call | [`08-payments-billing.md`](./08-payments-billing.md) |
 | **Indexer** | Tails `ServiceRegistry` + settlement events → updates Postgres mirror | [`03-data-model.md`](./03-data-model.md) |
 | **Quality** | Computes per-service score via PoFQ from delivery outcomes; writes on-chain | [`04-onchain.md`](./04-onchain.md) |
 | **Hosting orchestrator** | Deploys hosted listings to **Paxeer Cloud** (Appwrite Server API); lifecycle, budget | [`06-execution-hosting.md`](./06-execution-hosting.md) |
@@ -149,15 +149,11 @@ function execution endpoint / domain. The on-chain listing records `hosted=true`
 5. Gateway routes to the runner (hosted) or proxies to the developer endpoint.
 6. On success: result returned to agent; an **EIP-712 call receipt** is signed;
    the ledger entry is finalized; the service's quality sample is recorded.
-7. Settlement later **net-settles** the developer's payout on-chain.
+7. The LXP settlement already paid the developer's payee DID on LayerX at
+   step 5 (exact) or captured the hold (hold mode) — no later payout runs.
 8. PoFQ score updated from the delivery outcome.
 
-### D. Continuous use (streaming)
-For long/continuous services, the caller opens a PaymentStreams (`0x0906`)
-stream to the developer; the gateway meters against accrual and `settle()`s
-periodically; `close()` refunds the unspent cap.
-
-### E. Confidential call (v1.x)
+### D. Confidential call (v1.x)
 Same as C, but the runner executes in a TEE and returns an attestation quote;
 the gateway verifies it via `0x0907` (`verifyAndExpect` against the expected
 report data) before finalizing the receipt and releasing payment.
@@ -180,16 +176,16 @@ report data) before finalizing the receipt and releasing payment.
 | Search/embedding down | Fall back to structured filters; log; never block listing or invoke |
 | Indexer lag | Reads may be slightly stale; invoke still works (gateway reads chain for price commitments on cache miss) |
 | Runner cold/unreachable | Gateway returns structured `service_unavailable`; no charge; quality sample = failure |
-| Settlement batch fails | Ledger retains unsettled entries; retried with backoff; never double-charges (idempotency keys) |
-| Wallet policy denies | `402 payment_required` / `403 policy_denied`; no call made |
+| layerxd unreachable | `503 payment_unavailable`; no execution, no charge (never a free call) |
+| Payment invalid/underfunded | fresh `402` challenge with machine-readable reason; no call made |
 | Chain RPC down | Invoke blocked for new spend (fail-safe); reads serve from mirror |
 
 ## 2.8 Scaling posture
 
 - Control plane: stateless, scale by instance count behind Fly proxy.
 - Gateway throughput dominated by metering writes → batch + use idempotency
-  keys; net settlement amortizes chain writes (one settlement per
-  developer/window, not per call).
+  keys; LayerX batches settlements off the hot path (micropayment tier), so no
+  chain write rides an invoke.
 - Runners: per-service scale-to-zero; hot services pinned warm.
 - Postgres: read replicas for discovery; pgvector index (HNSW) for search.
 - Hard ceiling for v1 mirrors the launch cap (the free-hosting budget on Paxeer

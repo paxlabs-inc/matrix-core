@@ -81,7 +81,7 @@ be the canonical map of the ecosystem's agent capabilities.
 
 **For people and agents using services**
 - *No accounts/keys/subscriptions; pay per call* → wallet-authed invocation +
-  net settlement ([`08-payments-billing.md`](./08-payments-billing.md)).
+  LXP settlement on LayerX ([`08-payments-billing.md`](./08-payments-billing.md)).
 - *Describe in plain language, get the right service* → semantic search
   ([`07-discovery.md`](./07-discovery.md)).
 - *Spending limits/rules enforced automatically* → embedded-wallet policy + Argus
@@ -113,7 +113,7 @@ be the canonical map of the ecosystem's agent capabilities.
 - On-chain `ServiceRegistry` + Postgres mirror + indexer.
 - Discovery: structured filters + plain-language semantic search.
 - Invocation gateway: auth, metering, rate limit, routing, signed receipts.
-- Payments: per-call net settlement (default) + streaming + direct transfer.
+- Payments: LXP on LayerX — USDX per call, exact or hold mode.
 - Quality scoring via PoFQ.
 - Spend enforcement via embedded-wallet policy plane.
 - Developer console + spend dashboard (Next.js).

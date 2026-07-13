@@ -12,7 +12,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/paxlabs-inc/deus/internal/settlement"
 	"github.com/paxlabs-inc/deus/internal/store"
 	"github.com/paxlabs-inc/deus/pkg/types"
 )
@@ -124,7 +123,6 @@ func newFixture(t *testing.T) *fixture {
 
 	s := New(Deps{
 		Store:               st,
-		Settler:             settlement.NewSettler(st, &settlement.DevPayer{}),
 		DevMode:             true,
 		DeveloperAuthSecret: "test-developer-auth-secret",
 	})
@@ -354,7 +352,8 @@ func TestMyServicesAndEarnings(t *testing.T) {
 	if err != nil {
 		t.Fatalf("insert settlement: %v", err)
 	}
-	if err := f.st.MarkInvocationsSettled(ctx, setID, []string{settledID}); err != nil {
+	if _, err := f.st.Pool().Exec(ctx, `
+		UPDATE invocations SET settlement_id = $1 WHERE id = $2`, setID, settledID); err != nil {
 		t.Fatalf("mark settled: %v", err)
 	}
 
@@ -458,27 +457,3 @@ func TestLogsAndAnalytics(t *testing.T) {
 	}
 }
 
-func TestPayout(t *testing.T) {
-	f := newFixture(t)
-
-	// Missing payout address → 400.
-	res, _ := f.do(t, "POST", "/v1/services/"+f.serviceID+"/payout", `{}`, f.devHeaders())
-	if res.StatusCode != http.StatusBadRequest {
-		t.Fatalf("payout missing address: want 400 got %d", res.StatusCode)
-	}
-
-	// Nothing on the net rail to settle → 409 nothing_to_settle, but the payout
-	// address update still lands.
-	payout := `{"payout_address":"0x3333333333333333333333333333333333333333"}`
-	res, body := f.do(t, "POST", "/v1/services/"+f.serviceID+"/payout", payout, f.devHeaders())
-	if res.StatusCode != http.StatusConflict {
-		t.Fatalf("payout nothing to settle: want 409 got %d body %s", res.StatusCode, body)
-	}
-	dev, err := f.st.DeveloperByWallet(context.Background(), f.devWallet)
-	if err != nil {
-		t.Fatalf("developer by wallet: %v", err)
-	}
-	if dev.PayoutAddress != "0x3333333333333333333333333333333333333333" {
-		t.Fatalf("payout address not updated: %+v", dev)
-	}
-}

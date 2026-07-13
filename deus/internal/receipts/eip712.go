@@ -42,15 +42,18 @@ func (s *Signer) GatewayAddress() common.Address {
 	return crypto.PubkeyToAddress(s.PrivateKey.PublicKey)
 }
 
-// QuoteFields are the EIP-712 DeusQuote struct fields.
+// QuoteFields are the EIP-712 DeusQuote struct fields. UnitPriceUSDXMicro is
+// the micro-USDX unit price (0 for legacy wei-only plans) so USDX-denominated
+// quotes are integrity-bound by the same signature.
 type QuoteFields struct {
-	ServiceID      string
-	EndpointID     string
-	PricingVersion int
-	UnitPriceWei   string
-	MaxUnits       string
-	Caller         string
-	ExpiresAt      time.Time
+	ServiceID          string
+	EndpointID         string
+	PricingVersion     int
+	UnitPriceWei       string
+	UnitPriceUSDXMicro int64
+	MaxUnits           string
+	Caller             string
+	ExpiresAt          time.Time
 }
 
 // SignQuote returns digest hex and signature hex.
@@ -68,6 +71,7 @@ func (s *Signer) SignQuote(f QuoteFields) (digest string, sig string, err error)
 				{Name: "endpoint", Type: "string"},
 				{Name: "pricingVersion", Type: "uint256"},
 				{Name: "unitPriceWei", Type: "uint256"},
+				{Name: "unitPriceUsdxMicro", Type: "uint256"},
 				{Name: "maxUnits", Type: "uint256"},
 				{Name: "caller", Type: "string"},
 				{Name: "expiresAt", Type: "uint256"},
@@ -81,13 +85,14 @@ func (s *Signer) SignQuote(f QuoteFields) (digest string, sig string, err error)
 			VerifyingContract: s.VerifyingContract.Hex(),
 		},
 		Message: apitypes.TypedDataMessage{
-			"serviceId":      f.ServiceID,
-			"endpoint":       f.EndpointID,
-			"pricingVersion": fmt.Sprintf("%d", f.PricingVersion),
-			"unitPriceWei":   f.UnitPriceWei,
-			"maxUnits":       f.MaxUnits,
-			"caller":         f.Caller,
-			"expiresAt":      fmt.Sprintf("%d", f.ExpiresAt.Unix()),
+			"serviceId":          f.ServiceID,
+			"endpoint":           f.EndpointID,
+			"pricingVersion":     fmt.Sprintf("%d", f.PricingVersion),
+			"unitPriceWei":       zeroWhenEmpty(f.UnitPriceWei),
+			"unitPriceUsdxMicro": fmt.Sprintf("%d", f.UnitPriceUSDXMicro),
+			"maxUnits":           f.MaxUnits,
+			"caller":             f.Caller,
+			"expiresAt":          fmt.Sprintf("%d", f.ExpiresAt.Unix()),
 		},
 	}
 	hash, _, err := apitypes.TypedDataAndHash(typed)
@@ -104,6 +109,15 @@ func (s *Signer) SignQuote(f QuoteFields) (digest string, sig string, err error)
 	return "0x" + hex.EncodeToString(hash), "0x" + hex.EncodeToString(signature), nil
 }
 
+// zeroWhenEmpty maps an absent decimal amount to "0" so uint256 typed-data
+// encoding never sees an empty string (usdx-only plans carry no wei price).
+func zeroWhenEmpty(s string) string {
+	if s == "" {
+		return "0"
+	}
+	return s
+}
+
 // VerifyQuote checks a quote signature recovers to the gateway address.
 func (s *Signer) VerifyQuote(digestHex, sigHex string) error {
 	got, err := RecoverSigner(digestHex, sigHex)
@@ -116,7 +130,9 @@ func (s *Signer) VerifyQuote(digestHex, sigHex string) error {
 	return nil
 }
 
-// ReceiptFields are the EIP-712 DeusReceipt struct fields.
+// ReceiptFields are the EIP-712 DeusReceipt struct fields. LayerXSeq + Ref
+// cross-bind the execution receipt to the LayerX payment receipt (paid <->
+// served, DEUS-LAYERX req.6.3); both are zero-valued on legacy rails.
 type ReceiptFields struct {
 	InvocationID string
 	ServiceID    string
@@ -127,6 +143,8 @@ type ReceiptFields struct {
 	Units        string
 	Outcome      string
 	Timestamp    time.Time
+	LayerXSeq    int64
+	Ref          string
 }
 
 // SignReceipt returns digest hex and signature hex.
@@ -149,6 +167,8 @@ func (s *Signer) SignReceipt(f ReceiptFields) (digest string, sig string, err er
 				{Name: "units", Type: "uint256"},
 				{Name: "outcome", Type: "string"},
 				{Name: "ts", Type: "uint256"},
+				{Name: "layerxSeq", Type: "uint256"},
+				{Name: "ref", Type: "string"},
 			},
 		},
 		PrimaryType: "DeusReceipt",
@@ -164,10 +184,12 @@ func (s *Signer) SignReceipt(f ReceiptFields) (digest string, sig string, err er
 			"caller":       f.Caller,
 			"argsHash":     f.ArgsHash,
 			"resultHash":   f.ResultHash,
-			"priceWei":     f.PriceWei,
+			"priceWei":     zeroWhenEmpty(f.PriceWei),
 			"units":        f.Units,
 			"outcome":      f.Outcome,
 			"ts":           fmt.Sprintf("%d", f.Timestamp.Unix()),
+			"layerxSeq":    fmt.Sprintf("%d", f.LayerXSeq),
+			"ref":          f.Ref,
 		},
 	}
 	hash, _, err := apitypes.TypedDataAndHash(typed)

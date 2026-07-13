@@ -172,34 +172,15 @@ existing repo file.
 
 ## 12.10 `internal/settlement`
 
-### `internal/settlement/settler.go` `[NEW]`
-- `RunWindow(ctx, developerID)`: select finalized unsettled rows → sum → build
-  merkle (`internal/receipts`) → pay via rail → anchor → mark settled. Idempotent
-  + retry-safe; advisory lock.
+### `internal/layerx` `[NEW]`
+- Typed layerxd client: challenge prefetch, payer-signed pay/hold submission,
+  captor capture/release via the principal-token lane, receipt/account reads.
+  Transports signatures only — never signs on a payer's behalf.
 
-### `internal/settlement/rails.go` `[NEW]`
-- `directSettle` (MVP: inline `agent/send` per call), `netSettle` (redeems the
-  highest caller-co-signed voucher from a channel; one transfer/developer/window
-  + `SettlementAnchor.anchor`), `streamSettle` (calls `0x0906 settle/close`).
-  Each returns a `tx_hash`. Reuses `internal/chain` + `internal/channels`.
-
----
-
-## 12.10b `internal/channels` (Phase 2.5)
-
-### `internal/channels/channels.go` `[NEW]`
-- `Open(callerDID, windowCap)` (funds the per-window escrow, one chain write),
-  `Reserve(channelID, maxWei)` (the **atomic decrement**, the load-bearing
-  invariant from §6.2 — single transactional `UPDATE` / row lock), `Finalize`,
-  `Void`, `Close` (refund remainder).
-
-### `internal/channels/voucher.go` `[NEW]`
-- Build the `DeusVoucher` EIP-712 struct, return it for the caller to co-sign,
-  verify the caller signature (`recoverTypedSigner` on `0x0908`), persist the
-  monotonic `(cumulative_wei, nonce)`. The voucher is the bilateral charge proof
-  ([`08-payments-billing.md`](./08-payments-billing.md) §8.3) and carries the
-  `outcome` bit that makes the quality sample bilateral (§4.3). Reject
-  non-monotonic nonces.
+### `pkg/lxp` `[NEW]`
+- The one LXP (`lxp/1`) protocol implementation: 402 terms minting, payment
+  verification, exact/hold settlement, receipt header, `net/http` middleware.
+  The gateway consumes it; any Go service can import it standalone.
 
 ---
 

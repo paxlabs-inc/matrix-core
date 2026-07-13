@@ -203,6 +203,7 @@ type Receipt struct {
 	LeafHashHex   string    `json:"leaf_hash"`
 	SequencerSig  string    `json:"sequencer_sig"`
 	SequencerKey  string    `json:"sequencer_pubkey"`
+	Ref           string    `json:"ref,omitempty"`            // payer-signed binding digest (row-level v1)
 	BatchRootHex  string    `json:"batch_root,omitempty"`     // set once the batch is sealed
 	InclusionPath []string  `json:"inclusion_path,omitempty"` // set once the batch is sealed
 	AnchorTxHash  string    `json:"anchor_tx,omitempty"`      // set once anchored on Paxeer
@@ -257,11 +258,71 @@ type BalanceResponse struct {
 // canonical pay-intent bytes (invariant i6: the signature IS the authorization).
 type PayRequest struct {
 	ToDID      string `json:"to_did"`
-	AmountUSDX string `json:"amount_usdx"` // decimal USDX
+	AmountUSDX string `json:"amount_usdx"`   // decimal USDX
+	Ref        string `json:"ref,omitempty"` // optional 0x + 64 hex binding digest; when present it is part of the signed preimage
 	FromDID    string `json:"from_did,omitempty"`
 	PublicKey  string `json:"public_key,omitempty"` // hex(ed25519 pubkey) for the signed-intent path
 	Nonce      string `json:"nonce,omitempty"`      // server-issued challenge nonce (single-use)
 	Signature  string `json:"signature,omitempty"`  // hex(ed25519) over the canonical pay intent
+}
+
+// HoldRequest is POST /v1/hold: authorize -> capture/release. The payer's
+// signed intent names WHO may capture (captor_did), bounded by amount, a fixed
+// payee, and a TTL — the card-network auth model. Same dual authorization as
+// PayRequest.
+type HoldRequest struct {
+	ToDID      string `json:"to_did"`
+	AmountUSDX string `json:"amount_usdx"` // decimal USDX
+	CaptorDID  string `json:"captor_did"`  // payer-authorized capture authority
+	TTLSeconds int64  `json:"ttl_s"`       // hold lifetime; expiry auto-releases
+	Ref        string `json:"ref,omitempty"`
+	FromDID    string `json:"from_did,omitempty"`
+	PublicKey  string `json:"public_key,omitempty"`
+	Nonce      string `json:"nonce,omitempty"`
+	Signature  string `json:"signature,omitempty"`
+}
+
+// HoldView is the public view of a hold (GET /v1/hold/{id} and lifecycle
+// responses).
+type HoldView struct {
+	HoldID       string    `json:"hold_id"`
+	PayerDID     string    `json:"payer_did"`
+	PayeeDID     string    `json:"payee_did"`
+	CaptorDID    string    `json:"captor_did"`
+	AmountUSDX   string    `json:"amount_usdx"`
+	Ref          string    `json:"ref,omitempty"`
+	Status       string    `json:"status"` // open | captured | released | expired
+	CapturedUSDX string    `json:"captured_usdx,omitempty"`
+	CaptureSeq   int64     `json:"capture_seq,omitempty"`
+	ExpiresAt    time.Time `json:"expires_at"`
+	CreatedAt    time.Time `json:"created_at"`
+	UpdatedAt    time.Time `json:"updated_at"`
+}
+
+// CaptureRequest is POST /v1/hold/{id}/capture — captor-only, amount <= held,
+// before expiry. Principal token or a signed capture intent over hold_id + the
+// normalized amount.
+type CaptureRequest struct {
+	AmountUSDX string `json:"amount_usdx"`
+	FromDID    string `json:"from_did,omitempty"`
+	PublicKey  string `json:"public_key,omitempty"`
+	Nonce      string `json:"nonce,omitempty"`
+	Signature  string `json:"signature,omitempty"`
+}
+
+// CaptureResponse carries the closed hold + the standard transfer receipt the
+// capture emitted.
+type CaptureResponse struct {
+	Hold    HoldView `json:"hold"`
+	Receipt Receipt  `json:"receipt"`
+}
+
+// ReleaseRequest is POST /v1/hold/{id}/release — captor or payer.
+type ReleaseRequest struct {
+	FromDID   string `json:"from_did,omitempty"`
+	PublicKey string `json:"public_key,omitempty"`
+	Nonce     string `json:"nonce,omitempty"`
+	Signature string `json:"signature,omitempty"`
 }
 
 // WithdrawRequest is POST /v1/withdraw. Same dual authorization as PayRequest.
@@ -382,6 +443,7 @@ type TransferView struct {
 	AmountUSDX   string    `json:"amount_usdx"`
 	Tier         string    `json:"tier"`
 	LeafHashHex  string    `json:"leaf_hash"`
+	Ref          string    `json:"ref,omitempty"`
 	BatchRootHex string    `json:"batch_root,omitempty"`
 	AnchorTxHash string    `json:"anchor_tx,omitempty"`
 	Settled      bool      `json:"settled"`

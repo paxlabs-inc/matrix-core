@@ -68,22 +68,21 @@ Required (values live in box env / secret store — never in repo or cortex):
 DEUS_POSTGRES_URI=postgres://...           # box Postgres, db=deus
 PAXEER_RPC_URL=https://...                 # chain 125 RPC
 DEUS_SERVICE_REGISTRY_ADDR=0x...           # from Deploy.s.sol
-DEUS_SETTLEMENT_ANCHOR_ADDR=0x...
+DEUS_LAYERX_URL=https://...                # layerxd base URL — LXP is the only rail
+DEUS_LXP_KEY=...                           # gateway ed25519 key (captor identity, secret)
 DEUS_OBJSTORE_ENDPOINT=...                 # box MinIO/S3
-DEUS_OBJSTORE_KEY=... DEUS_OBJSTORE_SECRET=...
+DEUS_OBJSTORE_ACCESS_KEY=... DEUS_OBJSTORE_SECRET_KEY=... DEUS_OBJSTORE_BUCKET=...
 DEUS_GATEWAY_SIGNING_KEY_REF=...           # receipts/quotes signer (secret ref)
-DEUS_SETTLER_KEY_REF=...                   # escrow/settlement signer (secret ref)
-MATRIX_WALLET_API_URL=https://connect.paxportwallet.com   # embedded wallet
-DEUS_EMBED_PROVIDER=fireworks DEUS_EMBED_API_KEY=...
+DEUS_EMBED_ENDPOINT=... DEUS_EMBED_MODEL=...   # unset => lexical-only discovery
 DEUS_APPWRITE_ENDPOINT=...                  # Paxeer Cloud (Appwrite) Server API
-DEUS_APPWRITE_PROJECT=...                   # Paxeer Cloud project id
+DEUS_APPWRITE_PROJECT_ID=...                # Paxeer Cloud project id
 DEUS_APPWRITE_API_KEY=...                   # Appwrite server API key (secret ref)
-DEUS_HOSTING_BUDGET_PAX=...                 # aggregate free-hosting ceiling
 DEUS_PORT=9095
 ```
-Optional: worker counts, settlement window seconds, feature flags
-(`DEUS_CONFIDENTIAL_ENABLED`, `DEUS_HOSTED_ENABLED`, `DEUS_HOSTING_KILLSWITCH`).
-`DEUS_FLY_*` only if `deus-control` itself runs on Fly.
+Optional: `DEUS_LAYERX_BEARER` (transport bearer to layerxd),
+`DEUS_LXP_HOLD_TTL` (hold TTL seconds, default 120), worker counts, feature
+flags (`DEUS_HOSTING_KILL_SWITCH`). `DEUS_FLY_*` only if `deus-control` itself
+runs on Fly.
 
 ## 13.4 Data tier (Paxeer box)
 
@@ -99,8 +98,8 @@ Optional: worker counts, settlement window seconds, feature flags
 2. `forge script script/Deploy.s.sol --rpc-url $PAXEER_RPC_URL --broadcast`
    (or via Tachyon's deploy path using the agent wallet).
 3. Record addresses in `configs/chain.<env>.json` + `/etc/matrix/deus.env`.
-4. Register the Deus relayer/settler address in the `x/feemarket` agent fee lane
-   (gov/op step) so registrations + settlements get the lane gas price.
+4. Register the Deus relayer address in the `x/feemarket` agent fee lane
+   (gov/op step) so registrations get the lane gas price.
 5. Seed any initial gov params (none required for v1 registry).
 
 ## 13.6 MCP proxy + daemon
@@ -115,30 +114,32 @@ Optional: worker counts, settlement window seconds, feature flags
 
 ## 13.7 Rollout order
 
-1. Deploy `ServiceRegistry` to chain 125 (Phase 1). (`SettlementAnchor` +
-   channel/escrow contracts come with Phase 2.5.)
+1. Deploy `ServiceRegistry` to chain 125 (Phase 1). (`SettlementAnchor` is
+   optional receipt-batch anchoring, deployable any time.)
 2. Stand up Postgres `deus` DB + MinIO bucket; `deusctl migrate`.
-3. Deploy `deus-control` for the **direct-rail MVP** (proxy listings + discovery
-   + invoke + direct-transfer pay + PoFQ). No escrow/net settlement yet.
+3. Deploy `deus-control` for the **LXP MVP** (proxy listings + discovery +
+   invoke + LXP pay on LayerX + PoFQ), pointed at layerxd via
+   `DEUS_LAYERX_URL`.
 4. Bake + ship `tools/deus` in the daemon image; wire router env.
 5. Deploy the console.
-6. **Fast-follow (Phase 2.5):** deploy `SettlementAnchor` + channel/escrow
-   contracts; enable the payment channel + net settlement.
+6. **Fast-follow (Phase 2.5):** hold mode + the middleware kit (`pkg/lxp` +
+   the Node runner middleware) for third-party services.
 7. Enable hosted listings on **Paxeer Cloud** (Phase 3); wire the hosting budget.
-8. Enable streaming, then confidential (TEE), then scheduler-recurring (v1.x).
+8. Enable continuous metering via holds, then confidential (TEE), then
+   scheduler-recurring (v1.x).
 
 ## 13.8 Observability & ops
 
 - `GET /internal/healthz` (DB + chain RPC + objstore reachability),
   `GET /internal/metrics` (Prometheus).
-- Dashboards: invoke latency/throughput, charge totals, denial rate, settlement
-  lag, indexer lag, runner cold-starts, attestation pass/fail, escrow-vs-ledger
-  drift.
-- Alerts: settlement lag > window, indexer lag > N blocks, escrow drift > 0,
-  denial spike, runner error rate.
+- Dashboards: invoke latency/throughput, charge totals, denial rate, layerxd
+  settle errors (`payment_unavailable` 503s), open-hold age, indexer lag,
+  runner cold-starts, attestation pass/fail.
+- Alerts: layerxd unreachable, open holds aging toward expiry, indexer lag > N
+  blocks, denial spike, runner error rate.
 - Runbooks in `deploy/deus/README.md`: redeploy control, redeploy a hosted
-  service on Paxeer Cloud, replay indexer (`deusctl index replay --from`), force
-  settle, rotate signing keys, pause a service, trip/reset the hosting budget
+  service on Paxeer Cloud, replay indexer (`deusctl index replay --from`),
+  rotate signing keys, pause a service, trip/reset the hosting budget
   kill-switch.
 
 ## 13.9 Backups & DR

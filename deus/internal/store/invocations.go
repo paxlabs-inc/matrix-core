@@ -19,13 +19,15 @@ type InvocationRow struct {
 	QuoteID        *string
 	Units          string
 	PriceWei       string
+	PriceUSDX      string
 	PricingVersion int
 	ArgsHash       string
 	ResultHash     string
 	Outcome        string
 	LatencyMS      *int
 	Rail           string
-	ChannelID      *string
+	LayerXSeq      int64
+	HoldID         string
 	CreatedAt      time.Time
 }
 
@@ -34,19 +36,19 @@ func (s *Store) InsertReservedInvocation(ctx context.Context, row InvocationRow)
 	var id string
 	rail := row.Rail
 	if rail == "" {
-		rail = "direct"
+		rail = "layerx"
 	}
 	err := s.pool.QueryRow(ctx, `
 		INSERT INTO invocations (
 			idempotency_key, service_id, endpoint_id, caller_did, caller_wallet,
-			quote_id, units, price_wei, pricing_version, args_hash, outcome,
-			rail, channel_id
-		) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,'reserved',$11,$12)
+			quote_id, units, price_wei, price_usdx, pricing_version, args_hash, outcome,
+			rail
+		) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,NULLIF($9,''),$10,$11,'reserved',$12)
 		ON CONFLICT (idempotency_key) DO NOTHING
 		RETURNING id::text`,
 		row.IdempotencyKey, row.ServiceID, row.EndpointID, row.CallerDID, row.CallerWallet,
-		row.QuoteID, row.Units, row.PriceWei, row.PricingVersion, row.ArgsHash,
-		rail, row.ChannelID,
+		row.QuoteID, row.Units, row.PriceWei, row.PriceUSDX, row.PricingVersion, row.ArgsHash,
+		rail,
 	).Scan(&id)
 	if err != nil {
 		if err == pgx.ErrNoRows {
@@ -77,14 +79,15 @@ func (s *Store) scanInvocation(ctx context.Context, where string, arg any) (Invo
 	q := fmt.Sprintf(`
 		SELECT id::text, idempotency_key, service_id::text, endpoint_id::text,
 		       caller_did, COALESCE(caller_wallet,''), quote_id::text, units, price_wei,
-		       pricing_version, COALESCE(args_hash,''), COALESCE(result_hash,''),
-		       outcome, latency_ms, COALESCE(rail,'direct'), channel_id::text, created_at
+		       COALESCE(price_usdx,''), pricing_version, COALESCE(args_hash,''), COALESCE(result_hash,''),
+		       outcome, latency_ms, COALESCE(rail,'layerx'),
+		       COALESCE(layerx_seq,0), COALESCE(hold_id,''), created_at
 		FROM invocations WHERE %s`, where)
 	err := s.pool.QueryRow(ctx, q, arg).Scan(
 		&row.ID, &row.IdempotencyKey, &row.ServiceID, &row.EndpointID,
 		&row.CallerDID, &row.CallerWallet, &quoteID, &row.Units, &row.PriceWei,
-		&row.PricingVersion, &row.ArgsHash, &row.ResultHash, &row.Outcome,
-		&row.LatencyMS, &row.Rail, &row.ChannelID, &row.CreatedAt,
+		&row.PriceUSDX, &row.PricingVersion, &row.ArgsHash, &row.ResultHash, &row.Outcome,
+		&row.LatencyMS, &row.Rail, &row.LayerXSeq, &row.HoldID, &row.CreatedAt,
 	)
 	if err != nil {
 		if err == pgx.ErrNoRows {
@@ -107,6 +110,19 @@ func (s *Store) FinalizeInvocation(ctx context.Context, id, outcome, resultHash,
 	}
 	if ct.RowsAffected() == 0 {
 		return fmt.Errorf("store: invocation not in reserved state")
+	}
+	return nil
+}
+
+// AttachLayerXSettlement records the LayerX transfer seq (and hold id when the
+// hold rail settled the row) on an invocation — the metering side of the
+// paid<->served cross-binding.
+func (s *Store) AttachLayerXSettlement(ctx context.Context, id string, seq int64, holdID string) error {
+	_, err := s.pool.Exec(ctx, `
+		UPDATE invocations SET layerx_seq = $2, hold_id = NULLIF($3,'')
+		WHERE id = $1`, id, seq, holdID)
+	if err != nil {
+		return fmt.Errorf("store: attach layerx settlement: %w", err)
 	}
 	return nil
 }

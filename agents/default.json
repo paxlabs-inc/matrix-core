@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "agent": "matrix://agent/default",
-  "description": "Default Matrix agent — the per-user self/cloud runtime. Bundles filesystem + fetch + git MCP servers (Session 22 baseline) PLUS paxeer-net (the public Paxeer chain surface: 42 tools across RPC + PaxScan + Argus + price + agent-economy precompiles + embedded-wallet writes). READS need no auth; chain WRITES sign through the Paxeer Embedded Wallet (custody network-side, spend-policy enforced at the wallet API) and are additionally pre-gated plan-time by PaxeerSpendPolicy (per-call PAXEER_SPEND_CAP_WEI ceiling) before any side effect. Headless wallet auth via PAXEER_WALLET_TOKEN or PAXEER_WALLET_EMAIL+PAXEER_WALLET_PASSWORD (+PAXEER_SUPABASE_ANON_KEY); without it the chain bridge is read-only. PackageDigest values are PLACEHOLDERS; operators MUST replace with the sha256 digest of the actual installed package before any production / chain-anchoring deployment.",
+  "description": "Default Matrix agent \u2014 the per-user self/cloud runtime. Bundles filesystem + fetch + git MCP servers (Session 22 baseline) PLUS paxeer-net (the public Paxeer chain surface: 42 tools across RPC + PaxScan + Argus + price + agent-economy precompiles + embedded-wallet writes). READS need no auth; chain WRITES sign through the Paxeer Embedded Wallet (custody network-side, spend-policy enforced at the wallet API) and are additionally pre-gated plan-time by PaxeerSpendPolicy (per-call PAXEER_SPEND_CAP_WEI ceiling) before any side effect. Headless wallet auth via PAXEER_WALLET_TOKEN or PAXEER_WALLET_EMAIL+PAXEER_WALLET_PASSWORD (+PAXEER_SUPABASE_ANON_KEY); without it the chain bridge is read-only. PackageDigest values are PLACEHOLDERS; operators MUST replace with the sha256 digest of the actual installed package before any production / chain-anchoring deployment.",
   "allowed_side_effects": [
     "read",
     "write",
@@ -387,7 +387,7 @@
         },
         {
           "name": "deus_invoke",
-          "description": "Invoke a Deus proxy service (direct-rail pay + signed receipt). WRITE: spends via agent wallet.",
+          "description": "Invoke a Deus service (proxy or hosted). Payments ride LXP on LayerX: a priced call answers 402 with USDX terms, the bridge auto-signs and retries under the owner leash (LAYERX_MAX_SPEND_USDX per call, LAYERX_MAX_DAILY_USDX rolling daily) and returns the result with the LayerX receipt (layerx_receipt.seq); over-leash or unleashed terms are surfaced without signing. WRITE: spends USDX from the agent DID's LayerX account.",
           "side_effect_class": "write",
           "timeout_ms": 60000
         },
@@ -418,7 +418,7 @@
       "tools": [
         {
           "name": "alarm_set",
-          "description": "Schedule a future wake for yourself. kind='once' with delay_seconds (relative) or fire_at (absolute RFC3339); kind='cron' with cron_expr (+ optional IANA timezone) for recurring. wake_message is REQUIRED — the contextful turn delivered to your future self on fire. Optional conversation_id resumes a thread; payload is opaque state echoed back. Durable: survives restarts.",
+          "description": "Schedule a future wake for yourself. kind='once' with delay_seconds (relative) or fire_at (absolute RFC3339); kind='cron' with cron_expr (+ optional IANA timezone) for recurring. wake_message is REQUIRED \u2014 the contextful turn delivered to your future self on fire. Optional conversation_id resumes a thread; payload is opaque state echoed back. Durable: survives restarts.",
           "side_effect_class": "write",
           "timeout_ms": 30000
         },

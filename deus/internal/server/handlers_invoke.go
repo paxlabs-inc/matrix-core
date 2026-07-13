@@ -10,6 +10,7 @@ import (
 
 	"github.com/paxlabs-inc/deus/internal/auth"
 	"github.com/paxlabs-inc/deus/internal/gateway"
+	"github.com/paxlabs-inc/deus/pkg/lxp"
 	"github.com/paxlabs-inc/deus/pkg/types"
 )
 
@@ -20,10 +21,7 @@ func (s *Server) mountInvokeRoutes(r chi.Router) {
 		r.Post("/invoke/{id}", s.handleInvoke)
 		r.Get("/invocations/{id}", s.handleGetInvocation)
 		r.Get("/receipts/{id}", s.handleGetReceipt)
-		r.Post("/channels", s.handleOpenChannel)
-		r.Post("/vouchers/cosign", s.handleVoucherCosign)
 	})
-	r.Post("/internal/settle/run", s.handleSettleRun)
 }
 
 func (s *Server) handleQuote(w http.ResponseWriter, r *http.Request) {
@@ -58,6 +56,8 @@ func (s *Server) handleQuote(w http.ResponseWriter, r *http.Request) {
 		UnitPriceWei:   res.UnitPriceWei,
 		MaxUnits:       res.MaxUnits,
 		MaxTotalWei:    res.MaxTotalWei,
+		UnitPriceUSDX:  res.UnitPriceUSDX,
+		MaxTotalUSDX:   res.MaxTotalUSDX,
 		PricingVersion: res.PricingVersion,
 		ExpiresAt:      res.ExpiresAt,
 		EIP712: types.EIP712Sig{
@@ -88,49 +88,81 @@ func (s *Server) handleInvoke(w http.ResponseWriter, r *http.Request) {
 	if idem == "" {
 		idem = strings.TrimSpace(r.Header.Get("Idempotency-Key"))
 	}
-	rail := ""
-	if body.Payment.Rail != "" {
-		rail = body.Payment.Rail
+	greq := gateway.InvokeRequest{
+		ServiceID:      serviceID,
+		Operation:      body.Operation,
+		Args:           body.Args,
+		QuoteID:        body.QuoteID,
+		PaymentRail:    body.Payment.Rail,
+		IdempotencyKey: idem,
 	}
-	res, err := s.deps.Gateway.Invoke(r.Context(), caller, gateway.InvokeRequest{
-		ServiceID:        serviceID,
-		Operation:        body.Operation,
-		Args:             body.Args,
-		QuoteID:          body.QuoteID,
-		PaymentRail:      rail,
-		StreamID:         body.Payment.StreamID,
-		IdempotencyKey:   idem,
-		CallerVoucherSig: body.CallerVoucherSig,
-	})
+	// Payments ride the HTTP exchange itself: an unpaid request gets a 402
+	// lxp/1 challenge, the retry carries X-LayerX-Payment, and the response
+	// carries X-LayerX-Receipt — one protocol implementation (pkg/lxp).
+	if s.deps.Gateway.LXPEnabled() {
+		if hdr := strings.TrimSpace(r.Header.Get(lxp.HeaderPayment)); hdr != "" {
+			pay, perr := lxp.ParsePayment(hdr)
+			if perr != nil {
+				s.writeLXPChallenge(w, r, caller, greq, lxp.ReasonInvalidPayment)
+				return
+			}
+			greq.Payment = &pay
+		}
+	}
+	res, err := s.deps.Gateway.Invoke(r.Context(), caller, greq)
 	if err != nil {
+		// Every payment failure answers with a FRESH 402 challenge (new nonce)
+		// carrying the machine-readable reason; a rail outage is 503
+		// payment_unavailable — never execution, never a free call.
+		var gerr *gateway.Error
+		if errors.As(err, &gerr) && s.deps.Gateway.LXPEnabled() {
+			switch gerr.Code {
+			case "payment_required":
+				s.writeLXPChallenge(w, r, caller, greq, gerr.Message)
+				return
+			case "payment_unavailable":
+				lxp.WriteUnavailable(w)
+				return
+			}
+		}
 		s.writeGatewayErr(w, err)
 		return
 	}
-	var voucher *types.VoucherSummary
-	if res.Voucher != nil {
-		voucher = &types.VoucherSummary{
-			ChannelID:       res.Voucher.ChannelID,
-			CumulativeWei:   res.Voucher.CumulativeWei,
-			Nonce:           res.Voucher.Nonce,
-			LastReceiptHash: res.Voucher.LastReceiptHash,
-			Digest:          res.Voucher.Digest,
-			NeedsSignature:  res.Voucher.NeedsSignature,
-			VoucherID:       res.Voucher.VoucherID,
-		}
+	if res.PaymentReceipt != nil {
+		w.Header().Set(lxp.HeaderReceipt, lxp.EncodeReceipt(*res.PaymentReceipt))
 	}
 	writeJSON(w, http.StatusOK, types.InvokeResponse{
 		InvocationID: res.InvocationID,
 		Outcome:      res.Outcome,
 		Result:       res.Result,
-		ChargedWei:   res.ChargedWei,
+		ChargedUSDX:  res.ChargedUSDX,
 		LatencyMS:    res.LatencyMS,
 		Receipt: types.ReceiptSummary{
 			Digest:     res.Receipt.Digest,
 			GatewaySig: res.Receipt.GatewaySig,
 			RunnerSig:  res.Receipt.RunnerSig,
 		},
-		Voucher: voucher,
+		LayerXSeq: res.LayerXSeq,
+		Ref:       res.Ref,
 	})
+}
+
+// writeLXPChallenge answers a priced layerx-rail request with a fresh 402
+// lxp/1 challenge (nonce prefetched for the caller DID) carrying reason; when
+// pricing or the nonce prefetch itself fails the failure maps to the gateway
+// error / 503 posture.
+func (s *Server) writeLXPChallenge(w http.ResponseWriter, r *http.Request, caller auth.Caller, greq gateway.InvokeRequest, reason string) {
+	terms, err := s.deps.Gateway.LXPChallenge(r.Context(), caller, greq)
+	if err != nil {
+		var gerr *gateway.Error
+		if errors.As(err, &gerr) && gerr.Code == "payment_unavailable" {
+			lxp.WriteUnavailable(w)
+			return
+		}
+		s.writeGatewayErr(w, err)
+		return
+	}
+	lxp.WriteChallenge(w, terms, reason)
 }
 
 func (s *Server) handleGetInvocation(w http.ResponseWriter, r *http.Request) {

@@ -21,14 +21,13 @@ the `ServiceRegistry` contract and exactly how each Paxeer precompile is used.
 | `0x0903` | Oracle | optional PAX/USD reference for display pricing |
 | `0x0904` | **PoFQ** | service **quality score** from delivery outcomes |
 | `0x0905` | **Scheduler** | recurring/cron invocations (v1.x) |
-| `0x0906` | **PaymentStreams** | continuous/streaming pay-per-second |
 | `0x0907` | **TEEAttestor** | verify confidential-service execution |
 | `0x0908` | **EIP-712 helper** | hash/recover **signed call receipts & quotes** |
 
 ABIs are already encoded in `protocol/paxeer-embeded-wallets/src/precompiles.ts`
-(`SCHEDULER_ABI`, `STREAMS_ABI`, `EIP712_ABI`, `TEE_ATTESTOR_ABI`) and the chain
-source `knowledge/HyperPax-OS/precompiles/*/abi.json`. **Reuse those ABIs; do
-not re-author them.**
+(`SCHEDULER_ABI`, `EIP712_ABI`, `TEE_ATTESTOR_ABI`) and the chain source
+`knowledge/HyperPax-OS/precompiles/*/abi.json`. **Reuse those ABIs; do not
+re-author them.**
 
 ## 4.2 `ServiceRegistry.sol`
 
@@ -127,12 +126,13 @@ exponentially-decayed rolling score (`scoreFill`, `scoreBatch`,
 > computed **off-chain by the Deus operator** — so the score is
 > **operator-attested input, on-chain reduction**, not "objective, unfakeable
 > reputation." A developer cannot fake their own score, but the honest-operator
-> assumption (§9.1) applies to the *inputs*. The fix that removes it is the same
-> one that closes the billing gap: when the **caller co-signs the receipt /
-> cumulative voucher** ([`08-payments-billing.md`](./08-payments-billing.md)
-> §8.3, including the `outcome` bit), the delivery sample becomes
-> **bilaterally attested** rather than operator-attested. Build the channel and
-> reputation integrity comes with it.
+> assumption (§9.1) applies to the *inputs*. What LXP already gives you is the
+> *paid ↔ served* half: the payer's own ed25519-signed intent binds the payment
+> `ref` to the invocation, and the execution receipt carries the matching
+> `layerxSeq` + `ref` ([`08-payments-billing.md`](./08-payments-billing.md)) —
+> so "was this call paid for and answered" is decidable from signed artifacts.
+> The `outcome` *quality* bit remains operator-attested in v1; a
+> payer-co-signed outcome attestation is future work.
 
 > PoFQ math is stateless precompile math; Deus holds the per-service
 > `(score, weight)` state (in Postgres, mirrored/anchored), and uses the
@@ -141,49 +141,37 @@ exponentially-decayed rolling score (`scoreFill`, `scoreBatch`,
 
 `scoreBatch` is used for efficient bulk folding when settling a window.
 
-## 4.4 Payments (precompile rails)
+## 4.4 Payments (LayerX-native)
 
-Full economics in [`08-payments-billing.md`](./08-payments-billing.md). On-chain
-mechanics:
+Full protocol in [`08-payments-billing.md`](./08-payments-billing.md). Deus
+payments do **not** touch the Paxeer EVM per call at all: every payment is
+USDX moving payer-DID → payee-DID on the **LayerX ledger**, authorized in-band
+over HTTP by **LXP** — the payer signs the canonical LayerX intent preimage
+with its own ed25519 DID key, and that signature IS the authorization (LayerX
+invariant i6). Two modes: **exact** (settle then serve) and **hold**
+(authorize → execute → capture/release inside the payer's own account). Deus
+never custodies a micro-USDX.
 
-- **Per-call net settlement (default rail, post-MVP).** No on-chain write per
-  call. Callers fund a **per-window payment channel** (one write per caller per
-  window) and co-sign a cumulative voucher per call; per developer per window
-  the **Settlement** component pays the net total via a single transfer from the
-  Deus settlement module to `payout` against the highest co-signed voucher, and
-  anchors the receipts root. This is the "5–10× cheaper settlement" lazy-net
-  pattern, applied to services. Funding is **per window, not per reserve** (see
-  [`08-payments-billing.md`](./08-payments-billing.md) §8.3). The launch MVP
-  ships on the **direct rail** first ([`14-roadmap.md`](./14-roadmap.md)).
-- **Streaming (`0x0906`).** For continuous services the caller opens a stream
-  (`open(payee=payout, token, ratePerSecond, start, stop, cap)`); the gateway
-  meters against `accrued()` and calls `settle()` on intervals; `close()`
-  refunds unspent cap. Native PAX or ERC-20 (caller `approve`s the streams
-  precompile first).
-- **Direct transfer.** High-value one-shot calls settle inline via the caller's
-  embedded wallet `agent/send` before the result is released.
-
-All three are initiated through the **caller's embedded agent wallet**
-(`protocol/paxeer-embeded-wallets`), so the wallet's policy plane authorizes
-every spend. Deus never holds caller keys.
+The on-chain footprint is LayerX's own: USDX is fully reserved by USDL locked
+in the LayerX vault on chain 125, and layerxd's settler periodically anchors
+its Merkle transfer log on-chain — so deus inherits chain-grade auditability
+(inclusion proofs at `GET /v1/receipt/{seq}`) with zero per-call gas.
 
 ## 4.5 Signed receipts & quotes via EIP-712 (`0x0908`)
 
 - **Quote**: `domainSeparator(name="DeusQuote", version="1", chainId=125,
   verifyingContract=registry)`; struct hash over `{serviceId, endpoint,
-  pricingVersion, unitPriceWei, maxUnits, caller, expiresAt}`. The gateway signs
+  pricingVersion, unitPriceWei, unitPriceUsdxMicro, maxUnits, caller,
+  expiresAt}` (`unitPriceWei` is `0` on USDX-priced plans). The gateway signs
   the digest; the caller (agent) can `recoverTypedSigner` to verify the quote is
   genuine before committing spend.
 - **Receipt**: `domainSeparator(name="DeusReceipt", ...)`; struct hash over
   `{invocationId, serviceId, caller, argsHash, resultHash, priceWei, units,
-  outcome, ts}`. Signed by the gateway and (for hosted/confidential) co-signed by
-  the runner. Anchored in batches (4.2).
-- **Voucher (channel rail)**: `domainSeparator(name="DeusVoucher", ...)`; struct
-  hash over `{channelId, cumulativeWei, nonce, lastReceiptHash}`, **co-signed by
-  the caller** each call. The voucher is what makes the charge bilaterally
-  provable (not gateway-attested) and doubles as the integrity signature for the
-  quality `outcome` sample (§4.3). Settlement redeems the highest-nonce voucher.
-  See [`08-payments-billing.md`](./08-payments-billing.md) §8.3.
+  outcome, ts, layerxSeq, ref}`. Signed by the gateway and (for
+  hosted/confidential) co-signed by the runner. `layerxSeq` + `ref` cross-bind
+  the execution receipt to the LayerX payment receipt (paid ↔ served), whose
+  own integrity comes from the payer's ed25519 intent signature and the
+  sequencer-signed Merkle leaf (§4.4). Anchored in batches (4.2).
 - Both reuse the `EIP712_ABI` helper for `hashTypedData` / `domainSeparator` /
   `recoverTypedSigner` so on-chain and off-chain agree byte-for-byte.
 

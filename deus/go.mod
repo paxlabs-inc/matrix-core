@@ -58,3 +58,7 @@ require (
 	golang.org/x/text v0.21.0 // indirect
 	rsc.io/tmplfunc v0.0.3 // indirect
 )
+
+require github.com/paxlabs-inc/layerx v0.0.0
+
+replace github.com/paxlabs-inc/layerx => ../layerx

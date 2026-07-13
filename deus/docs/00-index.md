@@ -31,7 +31,7 @@ Read in order for a full picture; jump to a section for a specific task.
 | 05 | [`05-api.md`](./05-api.md) | REST API surface, request/response schemas, error model |
 | 06 | [`06-execution-hosting.md`](./06-execution-hosting.md) | Where it runs (Paxeer Cloud / Appwrite), proxy vs hosted listings, sandbox, invocation gateway |
 | 07 | [`07-discovery.md`](./07-discovery.md) | Plain-language semantic search, embeddings, ranking |
-| 08 | [`08-payments-billing.md`](./08-payments-billing.md) | Per-call micro-payments, streaming, net settlement, economics |
+| 08 | [`08-payments-billing.md`](./08-payments-billing.md) | The LXP protocol: HTTP-native USDX payments on LayerX |
 | 09 | [`09-security.md`](./09-security.md) | Threat model, auth, isolation, confidential (TEE) services, abuse |
 | 10 | [`10-integration.md`](./10-integration.md) | Matrix MCP proxy, agent registry, embedded-wallet, agent fee lane |
 | 11 | [`11-modules.md`](./11-modules.md) | Go module + package responsibility breakdown |
@@ -49,7 +49,7 @@ registry, discovery, metering, settlement, and the public/agent APIs; a
 (Paxeer's deployed Appwrite fork) and proxies external ones; an **on-chain
 layer** — a `ServiceRegistry` Solidity
 contract plus the Paxeer agent precompiles (PoFQ `0x0904` for quality,
-PaymentStreams `0x0906` for streaming pay, EIP-712 `0x0908` for signed
+EIP-712 `0x0908` for signed
 receipts, TEEAttestor `0x0907` for confidential services, Scheduler `0x0905`
 for recurring calls); a **Postgres + pgvector** store for the searchable index
 and metering ledger; and a **Next.js console** for humans. AI agents reach Deus
@@ -75,8 +75,7 @@ existing spend policy; the platform takes **zero** fee.
 | **Quality score** | A `0..1e18` reputation value per service derived from delivery outcomes, fed by PoFQ. |
 | **Caller** | The entity invoking a service — a human (via console) or, primarily, an AI agent. |
 | **Agent wallet** | The caller's Paxeer embedded wallet with on-chain spend policy (see `protocol/paxeer-embeded-wallets`). |
-| **Net settlement** | Batched on-chain settlement of many small invocations (lazy, ~10s windows). |
-| **Stream** | A PaymentStreams (`0x0906`) rate-based payment for long/continuous service use. |
+| **LXP** | HTTP-native payments on LayerX (`lxp/1`): 402 terms, payer-signed intent, receipt header. |
 | **Confidential service** | A service running in a TEE whose execution is provable via TEEAttestor (`0x0907`). |
 | **Gateway** | The Deus component that authenticates, meters, rate-limits, and routes invocations. |
 | **Indexer** | The component mirroring on-chain `ServiceRegistry` events into Postgres. |
@@ -98,8 +97,8 @@ rationale. Change them **here first**, then propagate.
 | **D-4** | The registry is **on-chain first** via a `ServiceRegistry` contract; Postgres is a **read-optimized mirror**. | The whitepaper L3 registry + agent fee lane `Registry` field imply on-chain truth; off-chain index for search speed. |
 | **D-5** | One product: the **agent registry == the API marketplace**. | Per the brief: "one product, not two." A single `services` entity serves both. |
 | **D-6** | Payments via the caller's **Paxeer embedded agent wallet**; **platform fee = 0**. | "Take-nothing economics." Paxeer earns from gas/activity, not a cut. |
-| **D-7** | Three payment rails: **direct transfer** (MVP + high-value one-shot), **per-call net settlement via payment channel** (sub-cent default, fast-follow), **PaymentStreams `0x0906`** (continuous). | Match call shape to cost. **Launch MVP ships direct-rail-only** to de-risk the money code (see D-7a, `14-roadmap.md`). |
-| **D-7a** | Caller funding = **per-window unidirectional payment channel**: fund once/window, **caller co-signs a monotonic cumulative voucher** per call, settle the highest voucher. Reserve = **atomic channel-balance decrement** (row lock), never a per-call chain write. | Closes the gateway-only-attestation hole (charge bilaterally provable, esp. `per_unit`), keeps lazy-net economics, and prevents concurrent-reserve oversell. Funding-and-signing are one mechanism. See `08-payments-billing.md` §8.3. |
+| **D-7** | ONE payment rail: **LXP on LayerX** — every payment is USDX payer-DID → payee-DID, authorized in-band over HTTP (402 challenge → signed intent → receipt), exact or hold mode. | Superseded the three-rail design (direct/net/stream, deleted 2026-07); the audit's HIGH-finding surface no longer exists. See `08-payments-billing.md`. |
+| **D-7a** | Pay-only-on-success = **LayerX holds**: funds lock in the payer's OWN account (payer-authorized captor + TTL), capture emits a standard transfer, release/expiry refunds in full. | Escrow safety with zero custody; reserve/finalize/void maps 1:1 onto hold/capture/release. See `08-payments-billing.md` §8.3. |
 | **D-8** | Quality via **PoFQ `0x0904`**: on-chain *tamper-evident reduction* over **operator-attested** delivery samples (bilateral once the caller co-signs). | Portable, hard-to-fake-without-delivering reputation — but honestly *operator-attested input*, not "objective/unfakeable." |
 | **D-9** | Confidential/trusted services via **TEEAttestor `0x0907`** + signed outputs. | Enables regulated/enterprise + verifiable compute. |
 | **D-10** | Hosted-service execution on **Paxeer Cloud** (Paxeer's deployed **Appwrite fork**): Functions / container Sites, native scale-to-zero, secrets, proxies. Go control plane runs on **Fly app / the box / a Paxeer Cloud container**. | Appwrite already provides build, scale-to-zero, routing, secrets, and edge/proxy — no bespoke machine orchestration. |

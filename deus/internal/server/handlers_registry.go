@@ -28,7 +28,6 @@ func (s *Server) mountRegistryRoutes(r chi.Router) {
 			r.Get("/{id}/deployments/{deployment_id}", s.handleGetDeployment)
 			r.Get("/{id}/logs", s.handleServiceLogs)
 			r.Get("/{id}/analytics", s.handleServiceAnalytics)
-			r.Post("/{id}/payout", s.handleServicePayout)
 		})
 	})
 }

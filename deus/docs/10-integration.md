@@ -100,7 +100,6 @@ callers and (optionally) developers.
 | Precompile | Deus use |
 | ---------- | -------- |
 | PoFQ `0x0904` | service quality score (visibility/ranking) |
-| PaymentStreams `0x0906` | streaming pay-per-second |
 | EIP-712 `0x0908` | signed quotes + receipts |
 | TEEAttestor `0x0907` | confidential-service verification |
 | Scheduler `0x0905` | recurring invocations (v1.x) |

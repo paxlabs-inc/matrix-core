@@ -28,7 +28,7 @@ A **Go control plane** (registry, discovery, invoke gateway, metering,
 settlement, indexer) + a **Node execution layer** (hosted services on **Paxeer
 Cloud**, the Appwrite fork, + proxy egress) + an **on-chain layer**
 (`ServiceRegistry` contract + Paxeer agent
-precompiles: PoFQ `0x0904`, PaymentStreams `0x0906`, EIP-712 `0x0908`,
+precompiles: PoFQ `0x0904`, EIP-712 `0x0908`,
 TEEAttestor `0x0907`, Scheduler `0x0905`) + **Postgres/pgvector** + a **Next.js
 console**, with a **`deus.mjs` MCP proxy** that makes every service a callable
 Matrix agent tool. Payments settle through the caller's Paxeer embedded agent

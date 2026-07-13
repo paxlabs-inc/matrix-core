@@ -321,9 +321,9 @@ func (s *Store) InsertPricingPlans(ctx context.Context, serviceID string, plans 
 	}
 	for _, p := range plans {
 		_, err := tx.Exec(ctx, `
-			INSERT INTO pricing_plans (service_id, model, unit, price_wei, min_charge_wei, version)
-			VALUES ($1,$2,$3,$4,$5,$6)`,
-			serviceID, p.Model, p.Unit, p.PriceWei, p.MinChargeWei, p.Version,
+			INSERT INTO pricing_plans (service_id, model, unit, price_wei, min_charge_wei, price_usdx, min_charge_usdx, version)
+			VALUES ($1,$2,$3,NULLIF($4,''),NULLIF($5,''),NULLIF($6,''),NULLIF($7,''),$8)`,
+			serviceID, p.Model, p.Unit, p.PriceWei, p.MinChargeWei, p.PriceUSDX, p.MinChargeUSDX, p.Version,
 		)
 		if err != nil {
 			return fmt.Errorf("store: insert pricing: %w", err)
@@ -334,11 +334,13 @@ func (s *Store) InsertPricingPlans(ctx context.Context, serviceID string, plans 
 
 // PricingRow is a persisted pricing plan row.
 type PricingRow struct {
-	Model        string
-	Unit         string
-	PriceWei     string
-	MinChargeWei string
-	Version      int
+	Model         string
+	Unit          string
+	PriceWei      string
+	MinChargeWei  string
+	PriceUSDX     string
+	MinChargeUSDX string
+	Version       int
 }
 
 // SetQualityScore updates the rolling quality score for a service.
@@ -353,7 +355,8 @@ func (s *Store) SetQualityScore(ctx context.Context, serviceID, score string) er
 // PricingByService returns pricing plans for discovery responses.
 func (s *Store) PricingByService(ctx context.Context, serviceID string) ([]PricingRow, error) {
 	rows, err := s.pool.Query(ctx, `
-		SELECT model, unit, price_wei, min_charge_wei, version
+		SELECT model, unit, COALESCE(price_wei,''), COALESCE(min_charge_wei,''),
+		       COALESCE(price_usdx,''), COALESCE(min_charge_usdx,''), version
 		FROM pricing_plans WHERE service_id = $1 ORDER BY version DESC`, serviceID,
 	)
 	if err != nil {
@@ -363,7 +366,7 @@ func (s *Store) PricingByService(ctx context.Context, serviceID string) ([]Prici
 	var out []PricingRow
 	for rows.Next() {
 		var p PricingRow
-		if err := rows.Scan(&p.Model, &p.Unit, &p.PriceWei, &p.MinChargeWei, &p.Version); err != nil {
+		if err := rows.Scan(&p.Model, &p.Unit, &p.PriceWei, &p.MinChargeWei, &p.PriceUSDX, &p.MinChargeUSDX, &p.Version); err != nil {
 			return nil, err
 		}
 		out = append(out, p)

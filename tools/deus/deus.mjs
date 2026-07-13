@@ -3,9 +3,9 @@
 // Mirrors tools/browser/browser.mjs: local tools/list, lazy remote on tools/call.
 
 import { createInterface } from 'node:readline'
-import { readdirSync, readFileSync } from 'node:fs'
+import { mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
-import { join } from 'node:path'
+import { dirname, join } from 'node:path'
 import { createPrivateKey, createPublicKey, sign as edSign } from 'node:crypto'
 
 const SERVER_NAME = 'deus'
@@ -92,15 +92,13 @@ async function mintWalletToken() {
   return _walletToken
 }
 
-async function deusFetch(method, path, body, bearer) {
+async function rawFetch(method, path, body, headers = {}) {
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), TIMEOUT_MS)
-  const headers = { Accept: 'application/json', 'Content-Type': 'application/json' }
-  if (bearer) headers.Authorization = `Bearer ${bearer}`
   try {
     const res = await fetch(`${BASE_URL}${path}`, {
       method,
-      headers,
+      headers: { Accept: 'application/json', 'Content-Type': 'application/json', ...headers },
       body: body != null ? JSON.stringify(body) : undefined,
       signal: controller.signal,
     })
@@ -108,17 +106,205 @@ async function deusFetch(method, path, body, bearer) {
     const raw = await res.text()
     let data
     try { data = raw ? JSON.parse(raw) : null } catch { data = { raw } }
-    if (!res.ok) {
-      const err = new Error(data?.message || data?.error || `HTTP ${res.status}`)
-      err.status = res.status
-      err.data = data
-      throw err
-    }
-    return data
+    return { status: res.status, data, headers: res.headers }
   } catch (e) {
     clearTimeout(timer)
     throw e
   }
+}
+
+async function deusFetch(method, path, body, bearer) {
+  const headers = {}
+  if (bearer) headers.Authorization = `Bearer ${bearer}`
+  try {
+    headers['X-Caller-DID'] = loadIdentity().did
+  } catch {}
+  const res = await rawFetch(method, path, body, headers)
+  if (res.status < 200 || res.status >= 300) {
+    const err = new Error(res.data?.message || res.data?.error || `HTTP ${res.status}`)
+    err.status = res.status
+    err.data = res.data
+    throw err
+  }
+  return res.data
+}
+
+// ── LXP: HTTP-native LayerX payments under the owner leash ──────────────────
+// A priced invoke answers 402 with lxp/1 terms (a prefetched LayerX nonce +
+// USDX amount). Within the leash this bridge signs the canonical LayerX
+// intent with the executor key and retries once; over leash it surfaces the
+// terms to the agent and never signs. The signing preimage is byte-identical
+// to layerxd's auth.IntentMessage (lockstep proven by cross-implementation
+// vectors against deus/pkg/lxp).
+
+export function parseUSDXMicro(s) {
+  if (s == null || String(s).trim() === '') return null
+  const m = /^([0-9]+)(?:\.([0-9]{1,6}))?$/.exec(String(s).trim())
+  if (!m) return null
+  return Number(m[1]) * 1_000_000 + Number((m[2] || '').padEnd(6, '0'))
+}
+
+export function formatUSDX(micro) {
+  return `${Math.floor(micro / 1_000_000)}.${String(micro % 1_000_000).padStart(6, '0')}`
+}
+
+export function intentMessage(op, did, nonce, ...fields) {
+  return `matrix-layerx-intent:${op}:${did}:${fields.join(':')}:${nonce}`
+}
+
+export function payPreimage(p) {
+  const fields = [p.to_did, p.amount_usdx]
+  if (p.ref) fields.push(p.ref)
+  return intentMessage('pay', p.from_did, p.nonce, ...fields)
+}
+
+export function holdPreimage(p, ttlSeconds, captorDid) {
+  return intentMessage('hold', p.from_did, p.nonce, p.to_did, p.amount_usdx, String(ttlSeconds), p.ref || '', captorDid)
+}
+
+export function signPayment(terms, identity) {
+  const p = {
+    from_did: identity.did,
+    public_key: identity.pubHex,
+    nonce: terms.nonce,
+    to_did: terms.pay_to,
+    amount_usdx: terms.amount_usdx,
+    mode: terms.mode || 'exact',
+  }
+  if (terms.ref) p.ref = terms.ref
+  const preimage = p.mode === 'hold'
+    ? holdPreimage(p, terms.ttl_s || 120, terms.captor_did || '')
+    : payPreimage(p)
+  p.signature = edSign(null, Buffer.from(preimage, 'utf8'), identity.privateKey).toString('hex')
+  return p
+}
+
+export function encodePaymentHeader(p) {
+  return Buffer.from(JSON.stringify(p)).toString('base64url')
+}
+
+export function decodeReceiptHeader(h) {
+  if (!h) return null
+  try { return JSON.parse(Buffer.from(h, 'base64url').toString('utf8')) } catch { return null }
+}
+
+const LEASH = {
+  maxSpendMicro: parseUSDXMicro(pickEnv('LAYERX_MAX_SPEND_USDX')),
+  maxDailyMicro: parseUSDXMicro(pickEnv('LAYERX_MAX_DAILY_USDX')),
+  journalPath:
+    pickEnv('LAYERX_SPEND_JOURNAL') ||
+    join(pickEnv('MATRIX_DATA_DIR') || '/data', '.matrix', 'lxp-spend.json'),
+}
+
+const DAILY_WINDOW_MS = 24 * 3600 * 1000
+
+export function readSpendJournal(path, now = Date.now()) {
+  let entries = []
+  try {
+    entries = JSON.parse(readFileSync(path, 'utf8')).entries || []
+  } catch {}
+  return entries.filter((e) => Number.isFinite(e?.ts) && Number.isFinite(e?.micro) && now - e.ts < DAILY_WINDOW_MS)
+}
+
+export function recordSpend(micro, path, now = Date.now()) {
+  const entries = readSpendJournal(path, now)
+  entries.push({ ts: now, micro })
+  try {
+    mkdirSync(dirname(path), { recursive: true })
+    writeFileSync(path, JSON.stringify({ entries }))
+  } catch {}
+}
+
+// leashCheck decides whether the bridge may sign a charge of amountMicro.
+// No per-call leash configured means NO invisible payments — the owner opts
+// into auto-payment by setting LAYERX_MAX_SPEND_USDX.
+export function leashCheck(amountMicro, leash = LEASH, now = Date.now()) {
+  if (amountMicro == null) return { ok: false, reason: 'invalid_terms', detail: 'challenge carried no parseable amount_usdx' }
+  if (leash.maxSpendMicro == null) {
+    return {
+      ok: false,
+      reason: 'auto_payment_disabled',
+      detail: 'no spend leash configured; set LAYERX_MAX_SPEND_USDX (per call) and optionally LAYERX_MAX_DAILY_USDX to let deus pay lxp challenges automatically',
+    }
+  }
+  if (amountMicro > leash.maxSpendMicro) {
+    return {
+      ok: false,
+      reason: 'over_per_call_leash',
+      detail: `charge ${formatUSDX(amountMicro)} USDX exceeds LAYERX_MAX_SPEND_USDX ${formatUSDX(leash.maxSpendMicro)}`,
+    }
+  }
+  if (leash.maxDailyMicro != null) {
+    const spent = readSpendJournal(leash.journalPath, now).reduce((a, e) => a + e.micro, 0)
+    if (spent + amountMicro > leash.maxDailyMicro) {
+      return {
+        ok: false,
+        reason: 'over_daily_leash',
+        detail: `charge ${formatUSDX(amountMicro)} USDX would take the rolling 24h total past LAYERX_MAX_DAILY_USDX ${formatUSDX(leash.maxDailyMicro)} (spent ${formatUSDX(spent)})`,
+      }
+    }
+  }
+  return { ok: true }
+}
+
+// invokeLXP runs one priced invoke through the lxp/1 handshake.
+async function invokeLXP(args, bearer) {
+  const body = {
+    operation: args.operation,
+    args: args.args || {},
+    quote_id: args.quote_id,
+    idempotency_key: args.idempotency_key,
+  }
+  if (args.payment_rail) body.payment = { rail: args.payment_rail }
+  const headers = {}
+  if (bearer) headers.Authorization = `Bearer ${bearer}`
+  let identity = null
+  try {
+    identity = loadIdentity()
+    headers['X-Caller-DID'] = identity.did
+  } catch {}
+
+  const path = `/v1/invoke/${args.service_id}`
+  const first = await rawFetch('POST', path, body, headers)
+  if (first.status >= 200 && first.status < 300) return first.data
+  const terms = first.status === 402 ? first.data?.lxp : null
+  if (!terms) {
+    const err = new Error(first.data?.message || first.data?.error || `HTTP ${first.status}`)
+    err.status = first.status
+    err.data = first.data
+    throw err
+  }
+  if (!identity) throw new Error('lxp payment required but no executor key is available to sign with')
+
+  const amountMicro = parseUSDXMicro(terms.amount_usdx)
+  const leash = leashCheck(amountMicro)
+  if (!leash.ok) {
+    const err = new Error(`payment not signed (${leash.reason}): ${leash.detail}`)
+    err.status = 402
+    err.data = { reason: leash.reason, leash: leash.detail, terms }
+    throw err
+  }
+
+  const payment = signPayment(terms, identity)
+  const retry = await rawFetch('POST', path, body, {
+    ...headers,
+    'X-LayerX-Payment': encodePaymentHeader(payment),
+  })
+  if (retry.status >= 200 && retry.status < 300) {
+    recordSpend(amountMicro, LEASH.journalPath)
+    const receipt = decodeReceiptHeader(retry.headers.get('X-LayerX-Receipt'))
+    return receipt ? { ...retry.data, layerx_receipt: receipt } : retry.data
+  }
+  const reason = retry.data?.reason || retry.data?.error || `HTTP ${retry.status}`
+  const err = new Error(`lxp payment failed: ${reason}`)
+  err.status = retry.status
+  err.data = { reason, terms: retry.data?.lxp || terms }
+  if (reason === 'insufficient_funds') {
+    err.data.deposit_hint =
+      `the paying DID ${identity.did} has insufficient USDX on LayerX (${terms.layerx}); ` +
+      'fund it by depositing USDL to the LayerX vault bound to this DID (layerx_deposit tool -> vault address + did_claim), then retry'
+  }
+  throw err
 }
 
 async function callTool(name, args) {
@@ -143,13 +329,7 @@ async function callTool(name, args) {
         estimated_units: args.estimated_units || '1',
       }, bearer || (await mintWalletToken()))
     case 'deus_invoke':
-      return deusFetch('POST', `/v1/invoke/${args.service_id}`, {
-        operation: args.operation,
-        args: args.args || {},
-        quote_id: args.quote_id,
-        idempotency_key: args.idempotency_key,
-        payment: { rail: args.payment_rail || 'direct' },
-      }, bearer)
+      return invokeLXP(args, bearer)
     case 'deus_invocation_status':
       return deusFetch('GET', `/v1/invocations/${args.invocation_id}`, null, bearer)
     case 'deus_my_spend':
@@ -240,8 +420,34 @@ function runSelftest() {
   process.exit(0)
 }
 
+// runVectors computes preimages + signed payments for cross-implementation
+// lockstep vectors (stdin JSON {seed, cases:[{kind,...}]}) so the Go side
+// (deus/pkg/lxp) can assert byte-identity and verify the ed25519 signatures.
+async function runVectors() {
+  const chunks = []
+  for await (const c of process.stdin) chunks.push(c)
+  const input = JSON.parse(Buffer.concat(chunks).toString('utf8'))
+  const seed = Buffer.from(input.seed, 'hex')
+  const privateKey = createPrivateKey({ key: Buffer.concat([ED25519_PKCS8_PREFIX, seed]), format: 'der', type: 'pkcs8' })
+  const spki = createPublicKey(privateKey).export({ format: 'der', type: 'spki' })
+  const pubHex = Buffer.from(spki.subarray(spki.length - 32)).toString('hex')
+  const identity = { did: `did:matrix:${input.label}:${pubHex.slice(0, 16)}`, pubHex, privateKey }
+  const out = input.cases.map((terms) => {
+    const payment = signPayment(terms, identity)
+    const preimage = payment.mode === 'hold'
+      ? holdPreimage(payment, terms.ttl_s || 120, terms.captor_did || '')
+      : payPreimage(payment)
+    return { preimage, payment, header: encodePaymentHeader(payment) }
+  })
+  process.stdout.write(JSON.stringify({ did: identity.did, public_key: pubHex, results: out }))
+}
+
+const invokedDirectly = process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]
+
 if (process.argv.includes('--selftest')) {
   runSelftest()
-} else {
+} else if (process.argv.includes('--vectors')) {
+  runVectors()
+} else if (invokedDirectly) {
   startStdioServer()
 }

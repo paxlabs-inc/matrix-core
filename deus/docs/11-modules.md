@@ -23,8 +23,7 @@ deus/
     gateway/                  invoke pipeline: auth->quote->policy->meter->route->receipt
     metering/                 ledger writes, reserve/finalize/void; atomic channel decrement
     pricing/                  pure pricing math (units->wei), versioned   [see pkg note]
-    channels/                 per-window payment channels + caller-co-signed vouchers
-    settlement/               batch selection, merkle, direct/net/stream rails, voucher redemption
+    layerx/                   typed layerxd client (challenge, pay/hold, receipts)
     quality/                  PoFQ sampling + rolling-score update + on-chain write
     indexer/                  event tailer, idempotent upserts, cursor
     hosting/                  Paxeer Cloud (Appwrite) orchestrator: deploy, lifecycle, budget
@@ -33,7 +32,7 @@ deus/
     store/                    postgres access (pgx), queries, migrations runner
     objstore/                 S3/MinIO client (artifacts, receipts, bodies, logs)
     auth/                     caller/dev/internal authN + DID verify
-    receipts/                 EIP-712 quote+receipt+voucher build/sign/verify, merkle
+    receipts/                 EIP-712 quote+receipt build/sign/verify, merkle
     telemetry/                logging, metrics, tracing
   pkg/                        public, importable (by tools, tests, sdk)
     manifest/                 manifest types, canonicalization, JSON Schema, hashing
@@ -72,8 +71,7 @@ deus/
 | `internal/gateway` | invoke pipeline | metering, pricing, wallet, chain, hosting, receipts | no charge without delivery |
 | `internal/metering` | append-only ledger + state machine + **atomic channel reserve** | store | idempotent; never edits history; reserve = transactional channel decrement |
 | `internal/pricing` | unit→wei (wraps pkg/pricingmath) | — | pure, versioned, deterministic |
-| `internal/channels` | per-window payment channels + **caller-co-signed vouchers** | store, chain, receipts, wallet | fund per window not per reserve; voucher monotonic |
-| `internal/settlement` | batching + rails (direct/net/stream) + anchor | store, chain, channels, receipts | sum(finalized) == paid; redeem highest voucher; never double-pay |
+| `internal/layerx` | typed layerxd client (challenge prefetch, pay/hold/capture/release, reads) | — | transports signatures only; never signs for a payer |
 | `internal/quality` | sample + PoFQ rolling update | chain, store | scores reproducible; samples bilateral once caller co-signs |
 | `internal/indexer` | chain→db mirror | chain, store | idempotent + replay-safe |
 | `internal/hosting` | Paxeer Cloud (Appwrite) deploy/lifecycle | objstore, appwrite api | native scale-to-zero; free-hosting budget-aware |
@@ -82,7 +80,7 @@ deus/
 | `internal/store` | pgx pool, queries, migrations | postgres | big-int as text |
 | `internal/objstore` | blob IO by hash | S3/MinIO | content-addressed |
 | `internal/auth` | authN, DID verify, roles | wallet | least privilege |
-| `internal/receipts` | EIP-712 (quote/receipt/**voucher**) + merkle | chain(0x0908) | digest == on-chain digest |
+| `internal/receipts` | EIP-712 (quote/receipt) + merkle | chain(0x0908) | digest == on-chain digest |
 | `internal/telemetry` | logs/metrics/traces | — | redact secrets |
 | `pkg/manifest` | manifest schema + canonical hash | — | canonicalization is versioned + stable |
 | `pkg/types` | wire types | — | JSON tags stable across versions |

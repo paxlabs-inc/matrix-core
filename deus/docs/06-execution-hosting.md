@@ -20,23 +20,23 @@ The gateway is the single choke point for every billable call. Pipeline (each
 stage fails fast with a structured error):
 
 ```text
-authenticate caller (agent bearer / wallet)            -> 401
-  └─ resolve caller DID + wallet address
-validate quote (matches on-chain pricingHash, !expired) -> 409 quote_expired / 400
-  └─ recompute price; verify EIP-712 signature
-check spend policy (embedded wallet + grants cache)     -> 403 policy_denied / 402
-  └─ confirm against wallet on the spend path (not just cache)
-reserve = ATOMIC channel-balance decrement + ledger row (idempotent)  -> 409 dup / 402 insufficient
-  └─ single transactional UPDATE; never a per-call chain write (see below)
+authenticate caller (bearer + X-Caller-DID)             -> 401
+price (quote or fresh lxp/1 challenge terms)            -> 402 challenge / 409 quote_expired
+  └─ recompute price; verify EIP-712 quote signature when quote_id given
+verify X-LayerX-Payment (shape, amount, terms match)    -> fresh 402 challenge
+reserve metering row (idempotent, keyed idempotency_key) -> replay returns stored result
+settle:
+  exact -> (after execute) submit the payer-signed pay intent to layerxd
+  hold  -> CreateHold BEFORE execute (captor = gateway DID)  -> 402 insufficient
 route:
   proxy   -> egress to manifest.endpoint.proxy_url
   hosted  -> invoke Paxeer Cloud function execution / function domain
   conf.   -> TEE-backed execution; require attestation
 apply request policy (timeout, max bytes, retries)      -> 503 service_unavailable
 capture result, hash args+result
-sign receipt (gateway EIP-712, runner co-sign if hosted)
-finalize ledger entry + record quality sample
-return result to caller
+sign receipt (gateway EIP-712 + layerx_seq + ref; runner co-sign if hosted)
+finalize (capture hold / record seq) or void (release)  -> layerxd down = 503, no free call
+return result + X-LayerX-Receipt to caller
 ```
 
 ### Metering
@@ -44,41 +44,35 @@ return result to caller
   - `per_call` → 1 unit.
   - `per_unit` → units reported by the runner/proxy in a trailer/header
     (`X-Deus-Units`) or derived (e.g. tokens).
-  - `per_second` (stream) → metered against `0x0906` accrual, not per call.
-- `price_wei = unit_price_wei * units`, floored at `min_charge_wei`. Pure,
-  versioned math (`pkg/pricing`) shared with settlement.
+- `charge_usdx = unit_price_usdx * units`, floored at `min_charge_usdx`
+  (micro-USDX, 6dp). Pure, versioned math (`pkg/pricingmath`).
 
 ### Reserve → finalize (no double charge)
 - On accept, write a ledger row in `reserved` state keyed by `idempotency_key`.
 - On result, transition to `finalized` with the real `units`/`outcome`.
-- On failure/timeout, transition to `voided` (no charge) and record a failure
-  quality sample.
-- Settlement only ever reads `finalized` rows.
+- On failure/timeout, transition to `voided` (no charge — the hold is
+  released) and record a failure quality sample.
+- `finalized` rows carry the LayerX `layerx_seq` (+ `hold_id` in hold mode),
+  cross-binding paid ↔ served.
 
-### Reserve invariant — atomic channel-balance decrement (load-bearing)
-The control plane is stateless and N-instance (§2.8) and the `spend_grants`
-cache is a *fast pre-check only* (§9.3). Two concurrent invokes with different
-idempotency keys can both clear the cache and **oversell** the caller's payment
-channel before any authoritative check fires. Therefore the reserve **must** be
-a single serialized, transactional decrement of the caller's channel/escrow
-balance — not a cache read:
+### Reserve invariant — the LayerX ledger is the concurrency authority
+The control plane is stateless and N-instance (§2.8), so deus never arbitrates
+concurrent spend itself. Funds-safety is delegated to the LayerX ledger, where
+every debit is a single serialized transaction against the payer's spendable
+balance (`FOR UPDATE` row lock; insufficient spendable → `402
+insufficient_funds`):
 
-```sql
-UPDATE channels
-   SET reserved = reserved + :max_total_wei
- WHERE channel_id = :id
-   AND (balance - reserved) >= :max_total_wei;   -- 0 rows affected => 402 insufficient
-```
+- **exact mode** — the pay intent debits payer → payee atomically at settle
+  time; two concurrent invokes can never spend the same USDX twice.
+- **hold mode** — `CreateHold` debits the payer's spendable balance into an
+  open hold row *before* execution; capture consumes the hold through the
+  standard transfer path and returns any remainder in the same transaction;
+  release/expiry refunds in full ([`08-payments-billing.md`](./08-payments-billing.md) §8.3).
 
-- The decrement is a **Postgres row lock** (the per-caller channel row is the
-  serialization point), bounded by the on-chain escrow cap. It is **never** an
-  on-chain write per reserve (that would kill lazy-net, [`08-payments-billing.md`](./08-payments-billing.md) §8.3).
-- The off-chain ledger is thus the concurrency authority *within* a window; the
-  escrow contract is the authority *across* windows.
-- `finalize` releases the unused portion of the reservation back to
-  `balance - reserved`; `void` releases the whole reservation.
-- This is an implementation-critical invariant: violating it lets a caller (or
-  a buggy parallel agent) spend past its funded channel.
+Deus-side, the metering row keyed by `idempotency_key` remains the
+replay/no-double-charge spine: reserve → finalize (with `layerx_seq`) or void.
+A caller can never be charged past what its own signed intent authorizes —
+the signature carries the exact amount (invariant i6).
 
 ## 6.3 Hosted runner (Paxeer Cloud / Appwrite fork)
 

@@ -67,6 +67,10 @@ func (f *fakeLedger) ListUnsettled(context.Context, int) ([]store.UnsettledTrans
 	return f.unsettled, nil
 }
 
+func (f *fakeLedger) SweepExpiredHolds(context.Context) (int, error) {
+	return 0, nil
+}
+
 func (f *fakeLedger) SealBatch(context.Context, string, []int64, time.Time, time.Time) (string, error) {
 	return f.sealedID, nil
 }

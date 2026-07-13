@@ -23,18 +23,14 @@ type Config struct {
 	ObjStoreBucket    string
 	ObjStoreUseSSL    bool
 
-	WalletAPIURL         string
 	ServiceRegistryAddr  string
-	SettlementAnchorAddr string
 	GatewaySigningKeyRef string
-	SettlerKeyRef        string
 
 	EmbedEndpoint string
 	EmbedModel    string
 
 	PublishPrivateKey string
 	GatewaySigningKey string
-	SettlerPrivateKey string
 
 	// DeveloperAuthSecret keys SIWE developer-auth nonces and tokens.
 	// Falls back to GatewaySigningKey so existing prod deploys stay valid.
@@ -47,6 +43,13 @@ type Config struct {
 	AppwriteAPIKey    string
 	HostingDevExecURL string
 	HostingKillSwitch bool
+
+	// LXP / LayerX — the only payment rail: invoke metering + settlement ride
+	// LayerX and pricing is USDX-only.
+	LayerXURL     string
+	LXPKey        string
+	LayerXBearer  string
+	LXPHoldTTLSec int
 
 	Dev bool
 }
@@ -68,18 +71,14 @@ func Load() (*Config, error) {
 		ObjStoreBucket:    strings.TrimSpace(os.Getenv("DEUS_OBJSTORE_BUCKET")),
 		ObjStoreUseSSL:    envBool("DEUS_OBJSTORE_USE_SSL", true),
 
-		WalletAPIURL:         strings.TrimSpace(os.Getenv("MATRIX_WALLET_API_URL")),
 		ServiceRegistryAddr:  strings.TrimSpace(os.Getenv("DEUS_SERVICE_REGISTRY_ADDR")),
-		SettlementAnchorAddr: strings.TrimSpace(os.Getenv("DEUS_SETTLEMENT_ANCHOR_ADDR")),
 		GatewaySigningKeyRef: strings.TrimSpace(os.Getenv("DEUS_GATEWAY_SIGNING_KEY_REF")),
-		SettlerKeyRef:        strings.TrimSpace(os.Getenv("DEUS_SETTLER_KEY_REF")),
 
 		EmbedEndpoint: strings.TrimSpace(os.Getenv("DEUS_EMBED_ENDPOINT")),
 		EmbedModel:    envOr("DEUS_EMBED_MODEL", "nomic-embed-text-v1.5"),
 
 		PublishPrivateKey: strings.TrimSpace(os.Getenv("DEUS_PUBLISH_PRIVATE_KEY")),
 		GatewaySigningKey: strings.TrimSpace(os.Getenv("DEUS_GATEWAY_SIGNING_KEY")),
-		SettlerPrivateKey: strings.TrimSpace(os.Getenv("DEUS_SETTLER_PRIVATE_KEY")),
 
 		DeveloperAuthSecret: strings.TrimSpace(os.Getenv("DEUS_DEVELOPER_AUTH_SECRET")),
 		SIWEDomain:          strings.TrimSpace(os.Getenv("DEUS_SIWE_DOMAIN")),
@@ -89,6 +88,11 @@ func Load() (*Config, error) {
 		AppwriteAPIKey:    strings.TrimSpace(os.Getenv("DEUS_APPWRITE_API_KEY")),
 		HostingDevExecURL: strings.TrimSpace(os.Getenv("DEUS_HOSTING_DEV_EXEC_URL")),
 		HostingKillSwitch: envBool("DEUS_HOSTING_KILL_SWITCH", false),
+
+		LayerXURL:     strings.TrimSpace(os.Getenv("DEUS_LAYERX_URL")),
+		LXPKey:        strings.TrimSpace(os.Getenv("DEUS_LXP_KEY")),
+		LayerXBearer:  strings.TrimSpace(os.Getenv("DEUS_LAYERX_BEARER")),
+		LXPHoldTTLSec: envInt("DEUS_LXP_HOLD_TTL", 120),
 
 		Dev: dev,
 	}
@@ -106,11 +110,11 @@ func Load() (*Config, error) {
 		if cfg.GatewaySigningKeyRef == "" && cfg.GatewaySigningKey == "" {
 			return nil, errors.New("config: DEUS_GATEWAY_SIGNING_KEY_REF or DEUS_GATEWAY_SIGNING_KEY is required")
 		}
-		if cfg.WalletAPIURL == "" {
-			return nil, errors.New("config: MATRIX_WALLET_API_URL is required")
-		}
 		if cfg.ServiceRegistryAddr == "" {
 			return nil, errors.New("config: DEUS_SERVICE_REGISTRY_ADDR is required")
+		}
+		if cfg.LayerXURL == "" {
+			return nil, errors.New("config: DEUS_LAYERX_URL is required (LXP is the only payment rail)")
 		}
 	}
 	if cfg.Port < 1 || cfg.Port > 65535 {

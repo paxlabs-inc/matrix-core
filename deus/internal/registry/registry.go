@@ -60,6 +60,10 @@ func (s *Service) Create(ctx context.Context, in CreateInput) (CreateResult, err
 	if err != nil {
 		return CreateResult{}, fmt.Errorf("registry: validate: %w", err)
 	}
+	// LXP is the only rail: listings must be USDX-priced with a payee DID.
+	if err := manifest.ValidateUSDXOnly(m); err != nil {
+		return CreateResult{}, fmt.Errorf("registry: validate: %w", err)
+	}
 	val := ValidateManifest(m)
 	if !val.OK {
 		return CreateResult{}, fmt.Errorf("registry: manifest invalid: %v", val.Errors)
@@ -79,6 +83,11 @@ func (s *Service) Create(ctx context.Context, in CreateInput) (CreateResult, err
 	devID, err := s.store.UpsertDeveloperByWallet(ctx, owner, m.PayoutAddress, m.DisplayName)
 	if err != nil {
 		return CreateResult{}, err
+	}
+	if m.PayeeDID != "" {
+		if err := s.store.SetDeveloperPayeeDID(ctx, devID, m.PayeeDID); err != nil {
+			return CreateResult{}, err
+		}
 	}
 
 	raw, _ := json.Marshal(m)
@@ -150,6 +159,9 @@ func (s *Service) Publish(ctx context.Context, in PublishInput) (PublishResult, 
 	m, err := manifest.Parse(row.Manifest)
 	if err != nil {
 		return PublishResult{}, err
+	}
+	if err := manifest.ValidateUSDXOnly(m); err != nil {
+		return PublishResult{}, fmt.Errorf("registry: validate: %w", err)
 	}
 	val := ValidateManifest(m)
 	if !val.OK {
@@ -240,11 +252,13 @@ func (s *Service) syncChildren(ctx context.Context, serviceID string, m *manifes
 	plans := make([]store.PricingRow, 0, len(m.Pricing))
 	for _, p := range m.Pricing {
 		plans = append(plans, store.PricingRow{
-			Model:        p.Model,
-			Unit:         p.Unit,
-			PriceWei:     p.PriceWei,
-			MinChargeWei: p.MinChargeWei,
-			Version:      1,
+			Model:         p.Model,
+			Unit:          p.Unit,
+			PriceWei:      p.PriceWei,
+			MinChargeWei:  p.MinChargeWei,
+			PriceUSDX:     p.UnitPriceUSDX,
+			MinChargeUSDX: p.MinChargeUSDX,
+			Version:       1,
 		})
 	}
 	return s.store.InsertPricingPlans(ctx, serviceID, plans)

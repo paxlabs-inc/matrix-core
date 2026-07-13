@@ -32,16 +32,17 @@ type DeveloperRow struct {
 	WalletAddress string
 	PayoutAddress string
 	DisplayName   string
+	PayeeDID      string
 }
 
 // DeveloperByWallet loads a developer row by wallet address.
 func (s *Store) DeveloperByWallet(ctx context.Context, wallet string) (DeveloperRow, error) {
 	var row DeveloperRow
-	var displayName *string
+	var displayName, payeeDID *string
 	err := s.pool.QueryRow(ctx, `
-		SELECT id::text, wallet_address, payout_address, display_name
+		SELECT id::text, wallet_address, payout_address, display_name, payee_did
 		FROM developers WHERE lower(wallet_address) = lower($1)`, wallet,
-	).Scan(&row.ID, &row.WalletAddress, &row.PayoutAddress, &displayName)
+	).Scan(&row.ID, &row.WalletAddress, &row.PayoutAddress, &displayName, &payeeDID)
 	if err != nil {
 		if err == pgx.ErrNoRows {
 			return DeveloperRow{}, fmt.Errorf("store: developer not found")
@@ -50,6 +51,9 @@ func (s *Store) DeveloperByWallet(ctx context.Context, wallet string) (Developer
 	}
 	if displayName != nil {
 		row.DisplayName = *displayName
+	}
+	if payeeDID != nil {
+		row.PayeeDID = *payeeDID
 	}
 	return row, nil
 }
@@ -336,6 +340,29 @@ func (s *Store) EarningsForDeveloper(ctx context.Context, developerID string) (E
 	).Scan(&t.TotalEarnedWei, &t.PendingWei, &t.SettledWei)
 	if err != nil {
 		return EarningsTotals{}, fmt.Errorf("store: earnings totals: %w", err)
+	}
+	return t, nil
+}
+
+// LayerXEarningsTotals are lifetime LXP-rail revenue aggregates. There is no
+// pending/settled split: every LayerX settlement pays the payee DID instantly.
+type LayerXEarningsTotals struct {
+	EarnedUSDX  string
+	Invocations int
+}
+
+// LayerXEarningsForDeveloper sums finalized layerx-rail revenue across the
+// developer's services.
+func (s *Store) LayerXEarningsForDeveloper(ctx context.Context, developerID string) (LayerXEarningsTotals, error) {
+	var t LayerXEarningsTotals
+	err := s.pool.QueryRow(ctx, `
+		SELECT COALESCE(SUM(NULLIF(i.price_usdx,'')::numeric), 0)::text, COUNT(*)
+		FROM invocations i
+		JOIN services sv ON sv.id = i.service_id
+		WHERE sv.developer_id = $1 AND i.outcome = 'ok' AND i.rail = 'layerx'`, developerID,
+	).Scan(&t.EarnedUSDX, &t.Invocations)
+	if err != nil {
+		return LayerXEarningsTotals{}, fmt.Errorf("store: layerx earnings totals: %w", err)
 	}
 	return t, nil
 }

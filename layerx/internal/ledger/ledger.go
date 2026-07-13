@@ -48,15 +48,17 @@ func receiptSigningBytes(seq int64, leafHex string) []byte {
 
 // Pay moves amountMicro USDX from fromDID to toDID and returns a signed receipt.
 // The leaf + signature are computed inside the store's Pay transaction so the
-// transfer and its commitment land atomically.
-func (l *Ledger) Pay(ctx context.Context, fromDID, toDID string, amountMicro int64) (types.Receipt, error) {
+// transfer and its commitment land atomically. ref is the optional 32-byte
+// binding digest carried on the row + receipt JSON (row-level v1; the leaf
+// preimage is unchanged — folding ref in is a v2 domain bump).
+func (l *Ledger) Pay(ctx context.Context, fromDID, toDID string, amountMicro int64, ref string) (types.Receipt, error) {
 	tier := l.tierFor(amountMicro)
 	finalize := func(seq int64, ts time.Time) (string, string) {
 		leafHex := accumulator.LeafHashHex(accumulator.CanonicalLeaf(seq, fromDID, toDID, amountMicro, ts.UnixNano()))
 		sigHex := l.signer.Sign(receiptSigningBytes(seq, leafHex))
 		return leafHex, sigHex
 	}
-	res, err := l.st.Pay(ctx, fromDID, toDID, amountMicro, tier, finalize)
+	res, err := l.st.Pay(ctx, fromDID, toDID, amountMicro, tier, ref, finalize)
 	if err != nil {
 		return types.Receipt{}, err
 	}
@@ -70,8 +72,48 @@ func (l *Ledger) Pay(ctx context.Context, fromDID, toDID string, amountMicro int
 		LeafHashHex:  res.LeafHex,
 		SequencerSig: res.SigHex,
 		SequencerKey: l.signer.PublicHex(),
+		Ref:          ref,
 		Settled:      false,
 	}, nil
+}
+
+// CaptureHold consumes an open hold as its payer-authorized captor: the payee
+// is credited amountMicro through the SAME transfer commitment path as Pay
+// (monotonic seq, Merkle leaf, sequencer signature), any remainder returns to
+// the payer, and the signed receipt (carrying the hold's ref) is returned.
+// Idempotent per the store's capture semantics.
+func (l *Ledger) CaptureHold(ctx context.Context, holdID, captorDID string, amountMicro int64) (types.Receipt, store.Hold, error) {
+	tier := l.tierFor(amountMicro)
+	var payer, payee string
+	finalize := func(seq int64, ts time.Time) (string, string) {
+		leafHex := accumulator.LeafHashHex(accumulator.CanonicalLeaf(seq, payer, payee, amountMicro, ts.UnixNano()))
+		sigHex := l.signer.Sign(receiptSigningBytes(seq, leafHex))
+		return leafHex, sigHex
+	}
+	// The store locks + validates the hold before finalize runs; payer/payee are
+	// read back through the closure so the leaf commits to the hold's parties.
+	h, err := l.st.GetHold(ctx, holdID)
+	if err != nil {
+		return types.Receipt{}, store.Hold{}, err
+	}
+	payer, payee = h.PayerDID, h.PayeeDID
+	res, h, err := l.st.CaptureHold(ctx, holdID, captorDID, amountMicro, tier, finalize)
+	if err != nil {
+		return types.Receipt{}, store.Hold{}, err
+	}
+	return types.Receipt{
+		Seq:          res.Seq,
+		FromDID:      h.PayerDID,
+		ToDID:        h.PayeeDID,
+		AmountUSDX:   types.FormatUSDX(amountMicro),
+		Tier:         res.Tier,
+		TS:           res.TS,
+		LeafHashHex:  res.LeafHex,
+		SequencerSig: res.SigHex,
+		SequencerKey: l.signer.PublicHex(),
+		Ref:          h.Ref,
+		Settled:      false,
+	}, h, nil
 }
 
 // Receipt returns the signed receipt for a transfer the caller is party to. If
@@ -93,6 +135,7 @@ func (l *Ledger) Receipt(ctx context.Context, seq int64, callerDID string) (type
 		LeafHashHex:  row.LeafHex,
 		SequencerSig: row.SigHex,
 		SequencerKey: l.signer.PublicHex(),
+		Ref:          row.Ref,
 		BatchRootHex: row.BatchRootHex,
 		AnchorTxHash: row.AnchorTx,
 		Settled:      row.Settled,
@@ -127,6 +170,7 @@ func (l *Ledger) ReceiptPublic(ctx context.Context, seq int64) (types.Receipt, e
 		LeafHashHex:  row.LeafHex,
 		SequencerSig: row.SigHex,
 		SequencerKey: l.signer.PublicHex(),
+		Ref:          row.Ref,
 		BatchRootHex: row.BatchRootHex,
 		AnchorTxHash: row.AnchorTx,
 		Settled:      row.Settled,

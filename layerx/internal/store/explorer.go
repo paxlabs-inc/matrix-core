@@ -121,6 +121,7 @@ type TransferSummary struct {
 	AmountMicro  int64
 	Tier         string
 	LeafHex      string
+	Ref          string
 	TS           time.Time
 	BatchRootHex string
 	AnchorTx     string
@@ -129,7 +130,7 @@ type TransferSummary struct {
 
 const transferSelect = `
 	SELECT t.seq, COALESCE(t.batch_id::text, ''), t.from_did, t.to_did, t.amount_usdx,
-	       t.tier, COALESCE(t.leaf_hash, ''), t.ts,
+	       t.tier, COALESCE(t.leaf_hash, ''), COALESCE(t.ref, ''), t.ts,
 	       COALESCE(b.root, ''), COALESCE(b.anchor_tx, ''), COALESCE(b.status, '')
 	FROM transfers t
 	LEFT JOIN batches b ON b.id = t.batch_id`
@@ -138,7 +139,7 @@ func scanTransfer(rows pgx.Rows) (TransferSummary, error) {
 	var t TransferSummary
 	var status string
 	if err := rows.Scan(&t.Seq, &t.BatchID, &t.FromDID, &t.ToDID, &t.AmountMicro,
-		&t.Tier, &t.LeafHex, &t.TS, &t.BatchRootHex, &t.AnchorTx, &status); err != nil {
+		&t.Tier, &t.LeafHex, &t.Ref, &t.TS, &t.BatchRootHex, &t.AnchorTx, &status); err != nil {
 		return TransferSummary{}, err
 	}
 	t.Settled = status == "anchored"
@@ -223,13 +224,13 @@ func (s *Store) GetTransferPublic(ctx context.Context, seq int64) (TransferRow, 
 	var batchID, root, anchor, status *string
 	err := s.pool.QueryRow(ctx, `
 		SELECT t.seq, t.batch_id, t.from_did, t.to_did, t.amount_usdx, t.tier,
-		       COALESCE(t.leaf_hash,''), COALESCE(t.sig,''), t.ts,
+		       COALESCE(t.leaf_hash,''), COALESCE(t.sig,''), COALESCE(t.ref,''), t.ts,
 		       b.root, b.anchor_tx, b.status
 		FROM transfers t
 		LEFT JOIN batches b ON b.id = t.batch_id
 		WHERE t.seq = $1`, seq).
 		Scan(&r.Seq, &batchID, &r.FromDID, &r.ToDID, &r.AmountMicro, &r.Tier,
-			&r.LeafHex, &r.SigHex, &r.TS, &root, &anchor, &status)
+			&r.LeafHex, &r.SigHex, &r.Ref, &r.TS, &root, &anchor, &status)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return TransferRow{}, ErrNotFound
@@ -260,11 +261,16 @@ type SupplyStats struct {
 	Transfers            int64
 }
 
-// Supply returns the circulating USDX supply and descriptive counts.
+// Supply returns the circulating USDX supply and descriptive counts. Open holds
+// are USDX claims that have left balances but not settled, so they count as
+// circulating — the reserve proof (invariant i1) stays exact across every
+// hold/capture/release interleaving.
 func (s *Store) Supply(ctx context.Context) (SupplyStats, error) {
 	var st SupplyStats
 	if err := s.pool.QueryRow(ctx, `
-		SELECT COALESCE(SUM(balance_usdx), 0), COUNT(*) FROM accounts`).
+		SELECT COALESCE(SUM(balance_usdx), 0)
+		       + (SELECT COALESCE(SUM(amount_usdx), 0) FROM holds WHERE status = 'open'),
+		       COUNT(*) FROM accounts`).
 		Scan(&st.CirculatingMicroUSDX, &st.Accounts); err != nil {
 		return SupplyStats{}, fmt.Errorf("store: supply accounts: %w", err)
 	}

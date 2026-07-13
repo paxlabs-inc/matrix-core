@@ -1,7 +1,6 @@
 package server
 
 import (
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"strings"
@@ -10,6 +9,7 @@ import (
 
 	"github.com/paxlabs-inc/deus/internal/auth"
 	"github.com/paxlabs-inc/deus/internal/store"
+	"github.com/paxlabs-inc/deus/pkg/pricingmath"
 	"github.com/paxlabs-inc/deus/pkg/types"
 )
 
@@ -164,42 +164,6 @@ func (s *Server) handleServiceAnalytics(w http.ResponseWriter, r *http.Request) 
 	writeJSON(w, http.StatusOK, resp)
 }
 
-func (s *Server) handleServicePayout(w http.ResponseWriter, r *http.Request) {
-	row, ok := s.requireServiceOwner(w, r)
-	if !ok {
-		return
-	}
-	var body types.PayoutRequest
-	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
-		writeAPIError(w, http.StatusBadRequest, "invalid_request", "invalid json body", nil)
-		return
-	}
-	payout := strings.TrimSpace(body.PayoutAddress)
-	if payout == "" {
-		writeAPIError(w, http.StatusBadRequest, "invalid_request", "payout_address required", nil)
-		return
-	}
-	if err := s.deps.Store.UpdateDeveloperPayoutAddress(r.Context(), row.DeveloperID, payout); err != nil {
-		writeAPIError(w, http.StatusInternalServerError, "internal_error", err.Error(), nil)
-		return
-	}
-	if s.deps.Settler == nil {
-		writeAPIError(w, http.StatusServiceUnavailable, "internal_error", "settlement not configured", nil)
-		return
-	}
-	res, err := s.deps.Settler.RunWindow(r.Context(), row.DeveloperID, payout)
-	if err != nil {
-		if strings.Contains(err.Error(), "nothing to settle") {
-			writeAPIError(w, http.StatusConflict, "nothing_to_settle",
-				"no unsettled invocations to pay out yet", nil)
-			return
-		}
-		writeAPIError(w, http.StatusInternalServerError, "internal_error", err.Error(), nil)
-		return
-	}
-	writeJSON(w, http.StatusOK, types.PayoutResponse{SettlementID: res.SettlementID})
-}
-
 func (s *Server) handleMe(w http.ResponseWriter, r *http.Request) {
 	caller, callerErr := auth.ResolveRequest(r, s.deps.DevMode)
 	devWallet, _ := resolveDeveloperWallet(r, s.deps.DevMode, s.devAuth)
@@ -332,5 +296,38 @@ func (s *Server) handleMyEarnings(w http.ResponseWriter, r *http.Request) {
 		AvailableWei:   totals.SettledWei,
 		PayoutAddress:  dev.PayoutAddress,
 		Settlements:    settlements,
+		LayerX:         s.layerxEarnings(r, dev),
 	})
+}
+
+// layerxEarnings assembles the LXP-rail earnings block: deus invocation
+// aggregates joined with a live LayerX account read for the developer's payee
+// DID, plus the withdraw link-out (deus has no payout code — earnings already
+// sit in the payee's LayerX account). Nil when the LayerX rail is off; the
+// account read is best-effort so a layerxd outage never breaks the dashboard.
+func (s *Server) layerxEarnings(r *http.Request, dev store.DeveloperRow) *types.LayerXEarnings {
+	if s.deps.Gateway == nil || !s.deps.Gateway.LXPEnabled() {
+		return nil
+	}
+	ctx := r.Context()
+	lx := s.deps.Gateway.LXP()
+	block := &types.LayerXEarnings{
+		PayeeDID:    dev.PayeeDID,
+		EarnedUSDX:  "0.000000",
+		LayerXURL:   lx.LayerXURL(),
+		WithdrawURL: lx.LayerXURL() + "/v1/withdraw",
+	}
+	if totals, err := s.deps.Store.LayerXEarningsForDeveloper(ctx, dev.ID); err == nil {
+		if micro, perr := pricingmath.ParseUSDX(totals.EarnedUSDX); perr == nil {
+			block.EarnedUSDX = pricingmath.FormatUSDX(micro)
+		}
+		block.Invocations = totals.Invocations
+	}
+	if dev.PayeeDID != "" {
+		if acct, err := lx.Client().Account(ctx, dev.PayeeDID); err == nil {
+			block.BalanceUSDX = acct.BalanceUSDX
+			block.EscrowUSDX = acct.EscrowUSDX
+		}
+	}
+	return block
 }

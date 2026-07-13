@@ -67,7 +67,7 @@ func TestStoreLedgerFlow(t *testing.T) {
 	}
 
 	// Pay 2 USDX.
-	res, err := st.Pay(ctx, payer, payee, 2_000_000, "material", finalize(payer, payee, 2_000_000))
+	res, err := st.Pay(ctx, payer, payee, 2_000_000, "material", "", finalize(payer, payee, 2_000_000))
 	if err != nil {
 		t.Fatalf("Pay: %v", err)
 	}
@@ -85,7 +85,7 @@ func TestStoreLedgerFlow(t *testing.T) {
 	}
 
 	// Overspend must be rejected and leave balances intact.
-	if _, err := st.Pay(ctx, payer, payee, 9_000_000, "material", finalize(payer, payee, 9_000_000)); err != ErrInsufficientFunds {
+	if _, err := st.Pay(ctx, payer, payee, 9_000_000, "material", "", finalize(payer, payee, 9_000_000)); err != ErrInsufficientFunds {
 		t.Fatalf("overspend err = %v, want ErrInsufficientFunds", err)
 	}
 	if a, _ := st.GetAccount(ctx, payer); a.BalanceUSDX != 3_000_000 {
@@ -93,7 +93,7 @@ func TestStoreLedgerFlow(t *testing.T) {
 	}
 
 	// Self-pay rejected.
-	if _, err := st.Pay(ctx, payer, payer, 1, "micropayment", finalize(payer, payer, 1)); err == nil {
+	if _, err := st.Pay(ctx, payer, payer, 1, "micropayment", "", finalize(payer, payer, 1)); err == nil {
 		t.Fatal("self-pay must be rejected")
 	}
 

@@ -2,11 +2,13 @@
 
 Deus exposes one HTTP API with three audiences distinguished by auth, not by
 host: **developers** (manage listings), **callers/agents** (discover + invoke),
-and **internal** (indexer/settler/runners). REST + JSON, versioned under `/v1`.
+and **internal** (indexer/runners). REST + JSON, versioned under `/v1`.
 
 - Base URL (public): `https://deus.paxeer.app` (gateway-fronted).
 - Content type: `application/json` unless noted.
-- All money is **PAX wei as a decimal string**, never a number.
+- All money is a **decimal string**, never a number. Pay-path amounts are
+  **USDX at 6dp** (`*_usdx`); legacy `*_wei` fields linger on some analytics
+  responses and are `0`/omitted on USDX-priced plans.
 - All times are RFC3339 UTC.
 
 ## 5.1 Auth model
@@ -15,23 +17,27 @@ and **internal** (indexer/settler/runners). REST + JSON, versioned under `/v1`.
 | -------- | --------- |
 | Developer (console) | Supabase JWT **or** wallet signature (EIP-191/712) over a challenge |
 | Developer (CI/programmatic) | Wallet-signed request: `Authorization: Wallet <addr>:<sig>` over canonical request hash |
-| Caller / agent | `Authorization: Bearer <agent-wallet-token>` (the embedded-wallet agent bearer, ed25519 DID handshake) |
+| Caller / agent | `Authorization: Bearer <token>` + `X-Caller-DID` (identifies the caller for challenge prefetch) |
 | Internal | mTLS / shared bearer on the private 6PN network only |
 
-The agent bearer is the **same token** the embedded wallet issues
-(`/v1/agent/auth/{challenge,verify}` in `paxeer-embeded-wallets`). Deus verifies
-the DID and forwards spend authorization to the wallet — it never mints spend
-authority itself.
+The caller bearer only **identifies**; it never authorizes spend. Payment
+authority is the payer's own ed25519 signature over the canonical LayerX
+intent preimage, carried in-band via `X-LayerX-Payment` (LXP — see
+[`08-payments-billing.md`](./08-payments-billing.md)). Deus never mints spend
+authority.
 
 ## 5.2 Conventions
 
 - **Errors** (uniform envelope):
   ```json
-  { "error": "policy_denied", "message": "spend exceeds per-call cap", "detail": {"cap_wei":"1000","quote_wei":"2000"} }
+  { "error": "quote_expired", "message": "quote expired", "detail": {"quote_id":"uuid"} }
   ```
   Codes: `invalid_request`, `unauthorized`, `forbidden`, `not_found`,
-  `conflict`, `payment_required`, `policy_denied`, `quote_expired`,
-  `service_unavailable`, `rate_limited`, `internal_error`.
+  `conflict`, `payment_required`, `payment_unavailable`, `quote_expired`,
+  `service_unavailable`, `rate_limited`, `internal_error`. Payment failures
+  answer with a **fresh 402 lxp/1 challenge** (new nonce, machine-readable
+  reason); a payment-rail outage is `503 payment_unavailable` — never a free
+  call.
 - **Idempotency**: write/invoke endpoints accept `Idempotency-Key` header;
   replays return the original result.
 - **Pagination**: `?limit=&cursor=`; responses include `next_cursor`.
@@ -47,8 +53,10 @@ POST   /v1/services/{id}/publish    Validate + register on-chain → status=acti
 POST   /v1/services/{id}/pause      status=paused.
 POST   /v1/services/{id}/delist     status=delisted.
 GET    /v1/services/{id}/analytics  Invocations, revenue, quality, latency (owner).
-POST   /v1/services/{id}/payout     Set payout address (owner).
 ```
+
+Priced services **must** register a `payee_did` (validated `did:matrix` shape)
+in the manifest — every LXP settlement pays it directly on LayerX.
 
 ### `POST /v1/services` request
 ```json
@@ -61,10 +69,11 @@ POST   /v1/services/{id}/payout     Set payout address (owner).
 
 ### Hosted listing extras
 ```
-POST   /v1/services/{id}/artifact   multipart upload of code/container (hosted mode)
-GET    /v1/services/{id}/deployment Deployment status (build/deploy/running)
-POST   /v1/services/{id}/redeploy   Rebuild + redeploy
-GET    /v1/services/{id}/logs       Tail runner logs (owner)
+POST   /v1/services/{id}/artifacts    multipart upload of code/container (hosted mode)
+POST   /v1/services/{id}/deploy       Build + deploy
+POST   /v1/services/{id}/redeploy     Rebuild + redeploy
+GET    /v1/services/{id}/deployments  Deployment status (build/deploy/running)
+GET    /v1/services/{id}/logs         Tail runner logs (owner)
 ```
 
 ## 5.4 Discovery endpoints (public / agent)
@@ -72,7 +81,7 @@ GET    /v1/services/{id}/logs       Tail runner logs (owner)
 ```
 GET    /v1/discover                 Structured + semantic search.
 POST   /v1/discover                 Same, richer body (plain-language + filters).
-GET    /v1/services/{id}/manifest   Machine-readable manifest (for agents).
+GET    /v1/services/{id}            Public listing (manifest included).
 GET    /v1/catalog                  Browseable paginated catalog.
 ```
 
@@ -118,11 +127,13 @@ GET    /v1/receipts/{invocation_id} Signed EIP-712 receipt (+ attestation).
 ```json
 {
   "quote_id": "uuid", "service_id": "uuid", "operation": "forecast",
-  "unit_price_wei": "200000000000000", "max_units": "1", "max_total_wei": "200000000000000",
+  "unit_price_usdx": "0.031500", "max_units": "1", "max_total_usdx": "0.031500",
   "pricing_version": 3, "expires_at": "2026-06-08T00:10:00Z",
   "eip712": { "domain": "DeusQuote", "digest": "0x..", "signature": "0x.." }
 }
 ```
+The quote round-trip is **optional**: the 402 challenge carries equivalent
+terms, so an agent can go straight to invoke.
 
 ### `POST /v1/invoke/{service_id}`
 ```json
@@ -130,16 +141,19 @@ GET    /v1/receipts/{invocation_id} Signed EIP-712 receipt (+ attestation).
   "operation": "forecast",
   "args": { "lat": 37.77, "lng": -122.41 },
   "quote_id": "uuid",
-  "payment": { "rail": "net" },          // net | stream | direct ; stream needs stream_id
   "idempotency_key": "client-uuid"
 }
 ```
-Headers: `Authorization: Bearer <agent-wallet-token>`.
+Headers: `Authorization: Bearer <token>`, `X-Caller-DID: did:matrix:...`, and
+on the paid retry `X-LayerX-Payment: <base64url payment>`.
 
 **Gateway sequence** (see [`02-architecture.md`](./02-architecture.md) §2.5C):
-authenticate → validate quote (hash matches on-chain pricing commitment, not
-expired) → confirm wallet policy permits → reserve charge in ledger → route →
-sign receipt → finalize.
+authenticate → price (quote or challenge terms) → verify the payer-signed
+payment → reserve the metering row → settle on LayerX (exact) or hold →
+execute → capture/void → sign receipt → respond with `X-LayerX-Receipt`.
+
+→ unpaid request: `402 Payment Required` with the lxp/1 terms body
+([`08-payments-billing.md`](./08-payments-billing.md) §8.2).
 
 → success
 ```json
@@ -147,41 +161,34 @@ sign receipt → finalize.
   "invocation_id": "uuid",
   "outcome": "ok",
   "result": { "tempC": 14.2, "summary": "Partly cloudy" },
-  "charged_wei": "200000000000000",
+  "charged_usdx": "0.031500",
   "latency_ms": 412,
-  "receipt": { "digest": "0x..", "gateway_sig": "0x..", "runner_sig": "0x..", "attestation": null }
+  "layerx_seq": 4182,
+  "ref": "0x...",
+  "receipt": { "digest": "0x..", "gateway_sig": "0x..", "runner_sig": "0x.." }
 }
 ```
-→ policy failure (no charge, no call)
-```json
-{ "error": "policy_denied", "message": "spend exceeds per-call cap", "detail": {"cap_wei":"100000000000000","quote_wei":"200000000000000"} }
-```
+plus header `X-LayerX-Receipt: base64url({seq, leaf_hash, sequencer_sig,
+amount_usdx, ref})` — the payment receipt, cross-bound to the execution
+receipt via `layerx_seq` + `ref`.
 
-### Streaming
-```
-POST   /v1/streams                  Open a stream for a service (proxies 0x0906 open()).
-POST   /v1/streams/{id}/settle      Settle accrued.
-POST   /v1/streams/{id}/close       Close + refund unspent cap.
-GET    /v1/streams/{id}             Stream state (accrued, cap, settled).
-```
-Then `invoke` with `"payment": {"rail":"stream","stream_id":"..."}`.
-
-## 5.6 Caller spend / account endpoints
+## 5.6 Caller / developer account endpoints
 
 ```
-GET    /v1/me                       Caller identity (DID, wallet), policy summary.
-GET    /v1/me/spend                 Spend history, per-service totals, grants.
-GET    /v1/me/grants                Active spend grants (mirror of wallet policy).
+GET    /v1/me                       Caller identity (DID) summary.
+GET    /v1/me/spend                 Spend history, per-service totals.
+GET    /v1/me/services              Developer's listings (owner).
+GET    /v1/me/earnings              Invocation earnings joined with LayerX reads
+                                    (balance, escrow, transfers) + the LayerX
+                                    /v1/withdraw link-out.
 ```
-Spend grants are **read-only here**; they are set/changed in the wallet's owner
-control plane ([`10-integration.md`](./10-integration.md)).
+Spend limits live **client-side** (the daemon leash: `LAYERX_MAX_SPEND_USDX`,
+`LAYERX_MAX_DAILY_USDX`) — deus never mints or caps spend authority; the
+payer's signature is the authorization.
 
 ## 5.7 Internal endpoints (private network only)
 
 ```
-POST   /internal/index/replay       Re-tail chain from a block (ops).
-POST   /internal/settle/run         Trigger a settlement window (settler).
-POST   /internal/runner/callback    Runner posts result + co-signature.
 GET    /internal/healthz            Liveness/readiness (DB + chain RPC).
 GET    /internal/metrics            Prometheus metrics.
 ```
@@ -189,7 +196,7 @@ GET    /internal/metrics            Prometheus metrics.
 ## 5.8 Rate limits
 
 - Per caller DID and per IP, token-bucket. Discovery is generous; invoke is
-  bounded by wallet policy first, then a safety ceiling.
+  bounded by payment (no valid payment, no execution) plus a safety ceiling.
 - `429 rate_limited` with `Retry-After`.
 
 ## 5.9 OpenAPI

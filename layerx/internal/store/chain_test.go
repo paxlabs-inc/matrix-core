@@ -3,7 +3,9 @@ package store
 import (
 	"context"
 	"errors"
+	"fmt"
 	"testing"
+	"time"
 
 	"github.com/paxlabs-inc/layerx/pkg/types"
 )
@@ -11,7 +13,7 @@ import (
 func TestDIDClaimRegistry(t *testing.T) {
 	st, ctx := newTestStore(t)
 	did := uniqueDID("claimant")
-	claim := "deadbeef" + did[len(did)-8:]
+	claim := fmt.Sprintf("deadbeef%d", time.Now().UnixNano())
 
 	if _, err := st.ResolveDIDClaim(ctx, claim); !errors.Is(err, ErrNotFound) {
 		t.Fatalf("unregistered claim must be ErrNotFound, got %v", err)

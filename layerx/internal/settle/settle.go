@@ -44,7 +44,16 @@ type Ledger interface {
 	SealWithdrawals(ctx context.Context, payoutRoot string, items []store.SealedWithdrawal) error
 	MarkWithdrawalSettled(ctx context.Context, id, payoutTx string) error
 	RecordWithdrawalError(ctx context.Context, payoutRoot, errText string) error
+
+	// Hold expiry sweep (LXP holds): returns past-expiry open holds to their
+	// payers so no funds are ever stranded (fail-open refund).
+	SweepExpiredHolds(ctx context.Context) (int, error)
 }
+
+// holdSweepInterval is how often the worker returns expired holds to their
+// payers. Hold TTLs are short (~minutes), so the sweep runs on its own fast
+// ticker rather than the (hours-long) settlement window.
+const holdSweepInterval = 30 * time.Second
 
 // Worker nets + anchors settlement batches.
 type Worker struct {
@@ -92,11 +101,19 @@ func New(st Ledger, settler chain.Settler, log *slog.Logger, window time.Duratio
 func (w *Worker) Run(ctx context.Context) {
 	t := time.NewTicker(w.window)
 	defer t.Stop()
+	sweep := time.NewTicker(holdSweepInterval)
+	defer sweep.Stop()
 	w.log.Info("settle worker started", "window", w.window.String())
 	for {
 		select {
 		case <-ctx.Done():
 			return
+		case <-sweep.C:
+			if n, err := w.st.SweepExpiredHolds(ctx); err != nil {
+				w.log.Error("hold sweep failed", "error", err.Error())
+			} else if n > 0 {
+				w.log.Info("expired holds released", "count", n)
+			}
 		case <-t.C:
 			if id, err := w.SettleNow(ctx); err != nil {
 				w.log.Error("window settlement failed", "error", err.Error())

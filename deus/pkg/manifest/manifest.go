@@ -12,7 +12,13 @@ type Manifest struct {
 	Tags          []string    `json:"tags,omitempty"`
 	Owner         string      `json:"owner"`
 	PayoutAddress string      `json:"payout_address"`
+	PayeeDID      string      `json:"payee_did,omitempty"` // LayerX earnings identity (LXP rail)
 	Mode          string      `json:"mode"`
+	// SettlementMode picks the LXP rail flow: "exact" (default — execute, then
+	// settle the full amount) or "hold" (reserve in the payer's account before
+	// execution, capture on success, release on failure).
+	SettlementMode string `json:"settlement_mode,omitempty"`
+	HoldTTLS       int64  `json:"hold_ttl_s,omitempty"` // hold lifetime seconds (hold mode)
 	Confidential  bool        `json:"confidential,omitempty"`
 	Operations    []Operation `json:"operations"`
 	Pricing       []Pricing   `json:"pricing"`
@@ -31,13 +37,19 @@ type Operation struct {
 	MaxResponseBytes int            `json:"max_response_bytes,omitempty"`
 }
 
-// Pricing describes per-operation pricing.
+// Pricing describes per-operation pricing. A plan is denominated in USDX
+// (unit_price_usdx/min_charge_usdx, 6dp decimal strings — how LayerX settles)
+// or in legacy PAX wei (price_wei/min_charge_wei), or carries both during the
+// rail migration. USDX-only listings are enforced by ValidateUSDXOnly once the
+// LayerX rail flag is on.
 type Pricing struct {
-	Operation    string `json:"operation"`
-	Model        string `json:"model"`
-	Unit         string `json:"unit"`
-	PriceWei     string `json:"price_wei"`
-	MinChargeWei string `json:"min_charge_wei"`
+	Operation     string `json:"operation"`
+	Model         string `json:"model"`
+	Unit          string `json:"unit"`
+	PriceWei      string `json:"price_wei,omitempty"`
+	MinChargeWei  string `json:"min_charge_wei,omitempty"`
+	UnitPriceUSDX string `json:"unit_price_usdx,omitempty"`
+	MinChargeUSDX string `json:"min_charge_usdx,omitempty"`
 }
 
 // Endpoint holds proxy or hosted routing hints.
