@@ -77,11 +77,15 @@ func TestSubagentSchemasExcludeSynthetic(t *testing.T) {
 func TestSubagentSurfacePassesValueTransferWall(t *testing.T) {
 	m := &Manager{
 		byFunc: map[string]*boundTool{
-			"fs__read_file": {funcName: "fs__read_file", desc: "read", params: map[string]interface{}{"type": "object"}},
+			"fs__read_file":        {funcName: "fs__read_file", desc: "read", params: map[string]interface{}{"type": "object"}},
+			"paxeer__send_payment": {funcName: "paxeer__send_payment", desc: "move funds", params: map[string]interface{}{"type": "object"}, surface: Escalate},
 		},
-		order: []string{"fs__read_file"},
+		order:     []string{"fs__read_file"},
+		escalated: []string{"paxeer__send_payment"},
 	}
-	// Wire the money delegate so the FULL surface advertises core_execute.
+	// Wire the money delegate so the FULL surface advertises core_execute
+	// (advertised only when an Escalate-walled tool exists AND the delegate is
+	// wired — on the no-barrier surface with nothing walled it never appears).
 	m.delegate = func(context.Context, string) (string, error) { return "", nil }
 
 	// Precondition: the full parent surface DOES carry a value-transfer tool.

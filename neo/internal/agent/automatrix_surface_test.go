@@ -12,16 +12,18 @@ import (
 
 // TestNewAutomatrixSurfaceExcludesMoney proves the structural guarantee at the
 // AGENT boundary against the REAL advertised tool schema set (the slice the
-// model is handed as ChatRequest.Tools): a normal agent over the same real
-// Manager advertises core_execute, but an Automatrix agent — built through the
-// existing RestrictTools mechanism — does not, and its advertised set contains
-// no value-moving/signing tool at all.
+// model is handed as ChatRequest.Tools): on the no-barrier surface (nothing
+// Escalate-walled, no delegate — the production default) core_execute is a
+// ghost and must not be advertised to ANY agent, and an Automatrix agent —
+// built through the existing RestrictTools mechanism — advertises no
+// value-moving/signing tool at all. The positive walled-manager advertisement
+// is proven in the tools package (spawn/automatrix tests).
 func TestNewAutomatrixSurfaceExcludesMoney(t *testing.T) {
-	m := &tools.Manager{} // real Manager type; Schemas() always advertises core_execute
+	m := &tools.Manager{} // real Manager, no-barrier: nothing walled, no delegate
 
 	full := New(Options{Tools: m})
-	if !advertises(full, tools.CoreExecuteTool) {
-		t.Fatalf("baseline broken: full agent surface must advertise %q", tools.CoreExecuteTool)
+	if advertises(full, tools.CoreExecuteTool) {
+		t.Fatalf("no-barrier full agent surface must not advertise %q", tools.CoreExecuteTool)
 	}
 
 	auto := NewAutomatrix(Options{Tools: m})

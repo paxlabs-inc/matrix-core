@@ -347,15 +347,23 @@ func (m *Manager) bind(spawned map[string]bool) {
 }
 
 // Schemas returns the function schemas advertised to the model: every Natural
-// tool plus the synthetic core_execute delegation tool (and memory_recall
-// when a memory store is wired). Deterministic order.
+// tool, plus the synthetic core_execute delegation tool ONLY when it actually
+// gates something — at least one tool is classified Escalate AND the MCL
+// delegate is wired. With the wallet write lane carried directly (NEO
+// NO-BARRIER: DefaultEscalatePatterns is empty), nothing is walled, so
+// core_execute is NOT advertised — advertising a money tool the prose says
+// does not exist makes the context window incoherent and the model falls back
+// to it under failure (the 2026-07-13 LayerX deposit transcript). Synthetics
+// (memory_recall etc.) append when their seams are wired. Deterministic order.
 func (m *Manager) Schemas() []llm.Tool {
 	out := make([]llm.Tool, 0, len(m.order)+2)
 	for _, fn := range m.order {
 		bt := m.byFunc[fn]
 		out = append(out, llm.NewFunctionTool(fn, bt.desc, bt.params))
 	}
-	out = append(out, coreExecuteSchema())
+	if len(m.escalated) > 0 && m.delegate != nil {
+		out = append(out, coreExecuteSchema())
+	}
 	if m.recall != nil {
 		out = append(out, memoryRecallSchema())
 	}
@@ -517,6 +525,12 @@ func (m *Manager) CaptureViewport(ctx context.Context, sourceFunc string) string
 }
 
 func (m *Manager) dispatchCoreExecute(ctx context.Context, args map[string]interface{}) (string, bool, error) {
+	if len(m.escalated) == 0 {
+		// Not advertised on this surface (nothing is walled behind escalation):
+		// a call here is a hallucinated ghost tool. Answer exactly like any
+		// other unknown name — the wallet tools ARE the money lane.
+		return fmt.Sprintf("unknown tool %q — it is not available in this session; your advertised wallet tools are the money lane, use them directly", CoreExecuteTool), true, nil
+	}
 	intent, _ := args["intent"].(string)
 	intent = strings.TrimSpace(intent)
 	if intent == "" {

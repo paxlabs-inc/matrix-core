@@ -42,23 +42,29 @@ func sameToolSet(x, y []string) bool {
 }
 
 // TestSafetyWallInvariantUnderMerge proves req.11.1 + 11.4 on the REAL agent
-// surfaces: after unification core_execute stays the only money path (Escalate),
-// still advertised on the unified agent's FULL surface (non-vacuous) yet absent
-// from BOTH the autonomous surface AND every sub-agent surface — each of which
-// passes AssertNoValueTransferTools even when built with a self-model that names
-// the wall. A more capable, self-aware, unified agent is not a more dangerous one.
+// surfaces: core_execute stays classified as the value-transfer money path, yet
+// on the no-barrier surface (nothing Escalate-walled, the production default —
+// the wallet write lane is carried directly) it is advertised NOWHERE: not on
+// the unified agent's full surface, the autonomous surface, or any sub-agent
+// surface. Advertising the ghost tool on the full surface while the pinned
+// prose said it does not exist is what sent the model to core_execute under
+// failure (2026-07-13 LayerX deposit incident). The positive half — a manager
+// that DOES wall tools advertises core_execute on the full surface only — is
+// proven in the tools package with real walled managers (spawn/automatrix
+// tests). A more capable, self-aware, unified agent is not a more dangerous one.
 func TestSafetyWallInvariantUnderMerge(t *testing.T) {
-	m := &tools.Manager{} // real Manager: Schemas() always advertises the core_execute delegate
+	m := &tools.Manager{} // real Manager, no-barrier: nothing walled, no delegate
 
 	// core_execute stays classified as the value-transfer / Escalate money path.
 	if !tools.IsValueTransferTool(tools.CoreExecuteTool) {
 		t.Fatalf("core_execute must classify as the value-transfer money path")
 	}
 
-	// Non-vacuous: the unified agent's full surface really can reach money.
+	// The unified agent's full surface must NOT carry the ghost delegate when
+	// nothing is walled behind it — the wallet tools are the money lane.
 	full := New(Options{Config: config.Default(), Tools: m, SelfModel: selfModelKnowsTheWall})
-	if !advertises(full, tools.CoreExecuteTool) {
-		t.Fatalf("baseline broken: the unified agent's full surface must advertise %q", tools.CoreExecuteTool)
+	if advertises(full, tools.CoreExecuteTool) {
+		t.Fatalf("no-barrier full surface must not advertise %q", tools.CoreExecuteTool)
 	}
 
 	// The autonomous surface — money is structurally absent even with a self-model
