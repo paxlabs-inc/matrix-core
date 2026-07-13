@@ -3,7 +3,7 @@
 // Mirrors tools/browser/browser.mjs: local tools/list, lazy remote on tools/call.
 
 import { createInterface } from 'node:readline'
-import { mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { mkdirSync, readdirSync, readFileSync, realpathSync, writeFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { dirname, join } from 'node:path'
 import { createPrivateKey, createPublicKey, sign as edSign } from 'node:crypto'
@@ -442,7 +442,14 @@ async function runVectors() {
   process.stdout.write(JSON.stringify({ did: identity.did, public_key: pubHex, results: out }))
 }
 
-const invokedDirectly = process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]
+const invokedDirectly = (() => {
+  if (!process.argv[1]) return false
+  try {
+    return realpathSync(process.argv[1]) === realpathSync(fileURLToPath(import.meta.url))
+  } catch {
+    return false
+  }
+})()
 
 if (process.argv.includes('--selftest')) {
   runSelftest()

@@ -1,13 +1,19 @@
 # syntax=docker/dockerfile:1
 # Deus control plane (deusd) image. See deus/docs/13-deployment.md §13.2.
-# Build context is the deus/ module root (self-contained: no sibling replace
-# directives in go.mod), so the image needs nothing else from the monorepo.
+# Build context is the REPO ROOT: deus/go.mod carries
+# `replace github.com/paxlabs-inc/layerx => ../layerx`, so the sibling layerx
+# module must be present in the build tree.
 
 FROM golang:1.24-bookworm AS build
 WORKDIR /src
-COPY go.mod go.sum ./
+COPY layerx/go.mod layerx/go.sum ./layerx/
+COPY deus/go.mod deus/go.sum ./deus/
+WORKDIR /src/deus
 RUN go mod download
-COPY . .
+WORKDIR /src
+COPY layerx/ ./layerx/
+COPY deus/ ./deus/
+WORKDIR /src/deus
 # CGO left enabled (default): go-ethereum pulls c-kzg-4844/blst (cgo) into the
 # import graph; the golang image ships gcc. Runtime debian-slim is glibc-compatible.
 RUN go build -trimpath -ldflags="-s -w" -o /out/deusd ./cmd/deusd \
@@ -21,8 +27,8 @@ WORKDIR /app
 ENV DEUS_ROOT=/app
 COPY --from=build /out/deusd /usr/local/bin/deusd
 COPY --from=build /out/deusctl /usr/local/bin/deusctl
-COPY migrations /app/migrations
-COPY configs /app/configs
-COPY pkg/manifest/schema.json /app/pkg/manifest/schema.json
+COPY deus/migrations /app/migrations
+COPY deus/configs /app/configs
+COPY deus/pkg/manifest/schema.json /app/pkg/manifest/schema.json
 EXPOSE 9095
 ENTRYPOINT ["deusd"]

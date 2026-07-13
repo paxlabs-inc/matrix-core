@@ -10,7 +10,7 @@ name: docker
 #   matrix-gateway         deploy/gateway/Dockerfile  metered LLM proxy
 #   matrix-router          deploy/router/Dockerfile   front door / provisioner
 #   matrix-chronos         deploy/chronos/Dockerfile  scheduler / wake plane
-#   matrix-deus            deploy/deus/Dockerfile     deus control plane (context = deus/)
+#   matrix-deus            deploy/deus/Dockerfile     deus control plane
 #
 # Only images whose inputs changed are rebuilt (the `changes` job computes a
 # dynamic matrix); workflow_dispatch force-builds everything. Docker layer
@@ -45,6 +45,7 @@ on:
       - "router/**"
       - "chronos/**"
       - "deus/**"
+      - "layerx/**"
       - "skills/**"
       - "agents/**"
       - "tools/**"
@@ -140,6 +141,7 @@ jobs:
               - ".github/workflows/docker.yml"
             deus:
               - "deus/**"
+              - "layerx/**"
               - "deploy/deus/**"
               - ".github/workflows/docker.yml"
 
@@ -182,7 +184,7 @@ jobs:
           [[ "$GATEWAY" == "true" ]] && add matrix-gateway        deploy/gateway/Dockerfile
           [[ "$ROUTER"  == "true" ]] && add matrix-router         deploy/router/Dockerfile
           [[ "$CHRONOS" == "true" ]] && add matrix-chronos        deploy/chronos/Dockerfile
-          [[ "$DEUS"    == "true" ]] && add matrix-deus           deploy/deus/Dockerfile deus
+          [[ "$DEUS"    == "true" ]] && add matrix-deus           deploy/deus/Dockerfile
           echo "include=$include" >> "$GITHUB_OUTPUT"
           echo "building: $include"
 
