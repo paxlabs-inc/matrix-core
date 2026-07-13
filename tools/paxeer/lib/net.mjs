@@ -40,8 +40,20 @@ export async function httpJson(method, url, { headers = {}, body, timeoutMs = LI
     /* non-JSON body */
   }
   if (!res.ok) {
-    const m = parsed && (parsed.message || parsed.error) ? parsed.message || parsed.error : raw.slice(0, 500)
-    const e = new Error(`HTTP ${res.status} from ${url}: ${typeof m === 'string' ? m : JSON.stringify(m)}`)
+    // Compose EVERY diagnostic field the service sent (error code + message +
+    // detail). The wallet service puts the underlying signer/node error —
+    // revert reason, nonce conflict, RPC failure — in `detail`; collapsing to
+    // just `error` ("send_failed") hides the actual cause from the agent.
+    let m
+    if (parsed && typeof parsed === 'object') {
+      m = [parsed.error, parsed.message, parsed.detail]
+        .filter((x) => typeof x === 'string' && x.trim() !== '')
+        .join(': ')
+      if (!m) m = JSON.stringify(parsed).slice(0, 500)
+    } else {
+      m = raw.slice(0, 500)
+    }
+    const e = new Error(`HTTP ${res.status} from ${url}: ${m}`)
     e.status = res.status
     e.body = parsed ?? raw
     throw e

@@ -239,15 +239,27 @@ export async function dispatch(name, args = {}) {
 
     // —— writes: payments ——
     case 'transfer': {
+      // Optional explicit nonce + fee ceiling: stuck-tx replacement (fill a
+      // NONCE GAP with a 0-value self-send at the wedged nonce, fees bumped
+      // above the stuck tx so the node accepts the replacement).
+      const overrides = {}
+      if (args.nonce !== undefined && args.nonce !== null && String(args.nonce) !== '') {
+        overrides.nonce = Number(args.nonce)
+        if (!Number.isInteger(overrides.nonce) || overrides.nonce < 0) throw new Error(`invalid nonce ${args.nonce}`)
+      }
+      if (args.max_fee_gwei !== undefined && args.max_fee_gwei !== null && String(args.max_fee_gwei) !== '') {
+        overrides.maxFeePerGas = toBaseUnits(args.max_fee_gwei, 9)
+        overrides.maxPriorityFeePerGas = overrides.maxFeePerGas
+      }
       const isNative = !args.token || String(args.token).toUpperCase() === 'PAX'
       if (isNative) {
         const value = toBaseUnits(args.amount, 18)
-        return writeTx({ to: args.to, value }, { kind: 'native_transfer', to: args.to, amount: args.amount })
+        return writeTx({ to: args.to, value, ...overrides }, { kind: 'native_transfer', to: args.to, amount: args.amount })
       }
       const tokenAddr = addressFor(args.token)
       if (!tokenAddr) throw new Error(`unknown token ${args.token}`)
       const base = toBaseUnits(args.amount, unitsFor(args.token))
-      return writeTx(pc.erc20.transfer(tokenAddr, args.to, base), { kind: 'erc20_transfer', token: tokenAddr, to: args.to, amount: args.amount })
+      return writeTx({ ...pc.erc20.transfer(tokenAddr, args.to, base), ...overrides }, { kind: 'erc20_transfer', token: tokenAddr, to: args.to, amount: args.amount })
     }
     case 'approve': {
       const tokenAddr = addressFor(args.token)
@@ -354,7 +366,7 @@ const ALL_TOOLS = [
   { name: 'wallet_info', description: 'Resolve the agent embedded-wallet address + chain (provisions on first use).', inputSchema: A({}) },
   { name: 'sign_message', description: 'EIP-191 personal_sign a message with the agent wallet (proof of identity).', inputSchema: A({ message: S('message to sign') }, ['message']) },
   // writes — payments
-  { name: 'transfer', description: 'Send PAX (token omitted/"PAX") or an ERC-20 to a plain address. args: to, amount (human), token? ONLY for direct wallet-to-wallet sends — NEVER to fund a deposit-style protocol (LayerX, vaults, bridges): those credit from their own deposit function, so a bare transfer to their address strands the funds. LayerX funding starts with layerx_deposit; contract deposits go through contract_write.', inputSchema: A({ to: S('recipient 0x'), amount: S('human amount e.g. "1.5"'), token: S('symbol or 0x; omit for PAX') }, ['to', 'amount']) },
+  { name: 'transfer', description: 'Send PAX (token omitted/"PAX") or an ERC-20 to a plain address. args: to, amount (human), token?, nonce?, max_fee_gwei? ONLY for direct wallet-to-wallet sends — NEVER to fund a deposit-style protocol (LayerX, vaults, bridges): those credit from their own deposit function, so a bare transfer to their address strands the funds. LayerX funding starts with layerx_deposit; contract deposits go through contract_write. nonce + max_fee_gwei are for stuck-tx replacement: a 0-amount self-send at the wedged nonce with fees above the stuck tx fills a NONCE GAP and unblocks the queue.', inputSchema: A({ to: S('recipient 0x'), amount: S('human amount e.g. "1.5"'), token: S('symbol or 0x; omit for PAX'), nonce: S('optional explicit nonce — replace/fill a stuck (unmined) tx at that nonce'), max_fee_gwei: S('optional max fee in gwei — set above the stuck tx when replacing') }, ['to', 'amount']) },
   { name: 'approve', description: 'ERC-20 approve. args: token, spender, amount (human or "max").', inputSchema: A({ token: S('symbol or 0x'), spender: S('0x'), amount: S('human or "max"') }, ['token', 'spender', 'amount']) },
   { name: 'stream_open', description: 'Open a PaymentStream 0x0906. args: payee, token, ratePerSecond (human/sec), cap?, startTime?, stopTime?', inputSchema: A({ payee: S('0x'), token: S('symbol or 0x'), ratePerSecond: S('human per second'), cap: S('human cap'), startTime: N('unix secs, 0=now'), stopTime: N('unix secs, 0=open') }, ['payee', 'token', 'ratePerSecond']) },
   { name: 'stream_settle', description: 'Settle accrued on a stream (pays the payee).', inputSchema: A({ streamId: S('uint256') }, ['streamId']) },

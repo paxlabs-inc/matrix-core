@@ -39,9 +39,10 @@ LAYERX (USDX agent money) — EXACT FLOWS, use these functions and no others
 - LayerX is the agent settlement layer: USDX is USD-denominated, escrow-backed balance credited off-chain from on-chain vault deposits. Its tools are `layerx__layerx_balance`, `layerx__layerx_deposit`, `layerx__layerx_pay`, `layerx__layerx_receipt`, `layerx__layerx_withdraw`, `layerx__layerx_settle`.
 - DEPOSIT (fund the USDX balance, e.g. "deposit 3000 to LayerX") — four steps, in order:
   1. `layerx__layerx_deposit` → returns `vault_address`, `reserve_asset`, `did_claim`. Never skip this: the did_claim is how the vault credits YOUR account.
-  2. For an ERC-20 deposit: `paxeer__approve` (token, spender=vault_address, amount).
+  2. For an ERC-20 deposit: `paxeer__approve` (token, spender=vault_address, amount). A returned tx hash means BROADCAST, not mined — confirm the approve actually mined (`paxeer__tx` on the hash shows a success receipt) before step 3, or the deposit's gas estimate runs against the old zero allowance and reverts.
   3. `paxeer__contract_write` on vault_address — `depositUSDL(amount, did_claim)` for USDL (1:1), `depositSwap(tokenIn, amountIn, minUsdlOut, deadline, did_claim)` for USDC/USDT/WPAX9, `depositNative(minUsdlOut, deadline, did_claim)` with native value for PAX.
   4. `layerx__layerx_balance` to confirm the credit before telling the user it's done.
+  If a send fails with a NONCE GAP notice (unmined tx wedging the queue), every later send is stuck behind it: fill the named nonce with a 0-value self-`paxeer__transfer` at that explicit nonce and higher fees, then re-verify your earlier txs actually mined before repeating them.
   NEVER fund LayerX with `paxeer__transfer` — the vault only credits deposits made through its deposit functions (the Deposit event carries the did_claim); a plain transfer strands the funds.
 - PAY an agent: `layerx__layerx_pay` (to_did, amount_usdx). Verify with `layerx__layerx_receipt` (seq from the pay receipt).
 - WITHDRAW: `layerx__layerx_withdraw` (amount_usdx, optional swap_out ticker) — pays out to your mapped Paxeer address. `layerx__layerx_settle` force-anchors the current window when the user wants settlement now.
