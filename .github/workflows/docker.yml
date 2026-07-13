@@ -10,12 +10,13 @@ name: docker
 #   matrix-gateway         deploy/gateway/Dockerfile  metered LLM proxy
 #   matrix-router          deploy/router/Dockerfile   front door / provisioner
 #   matrix-chronos         deploy/chronos/Dockerfile  scheduler / wake plane
+#   matrix-deus            deploy/deus/Dockerfile     deus control plane (context = deus/)
 #
 # Only images whose inputs changed are rebuilt (the `changes` job computes a
 # dynamic matrix); workflow_dispatch force-builds everything. Docker layer
 # caching is per-image via the GitHub Actions cache backend.
 #
-# Railway auto-update: the control-plane services (router/gateway/chronos)
+# Railway auto-update: the control-plane services (router/gateway/chronos/deus)
 # run from the :latest GHCR tag; after a successful push the `redeploy` job
 # calls Railway's serviceInstanceRedeploy per rebuilt service so they pull
 # the new image immediately. Per-user daemon services are deliberately NOT
@@ -27,7 +28,7 @@ name: docker
 #   secret RAILWAY_API_TOKEN          project-scoped API token
 #   vars   RAILWAY_ENVIRONMENT_ID     the one Railway environment
 #   vars   RAILWAY_ROUTER_SERVICE_ID / RAILWAY_GATEWAY_SERVICE_ID /
-#          RAILWAY_CHRONOS_SERVICE_ID
+#          RAILWAY_CHRONOS_SERVICE_ID / RAILWAY_DEUS_SERVICE_ID
 
 on:
   push:
@@ -43,6 +44,7 @@ on:
       - "gateway/**"
       - "router/**"
       - "chronos/**"
+      - "deus/**"
       - "skills/**"
       - "agents/**"
       - "tools/**"
@@ -52,6 +54,7 @@ on:
       - "deploy/gateway/**"
       - "deploy/router/**"
       - "deploy/chronos/**"
+      - "deploy/deus/**"
       - ".github/workflows/docker.yml"
   pull_request:
     branches: [main]
@@ -61,6 +64,7 @@ on:
       - "deploy/gateway/**"
       - "deploy/router/**"
       - "deploy/chronos/**"
+      - "deploy/deus/**"
       - ".github/workflows/docker.yml"
   workflow_dispatch:
     inputs:
@@ -93,6 +97,7 @@ jobs:
       gateway: ${{ steps.decide.outputs.gateway }}
       router: ${{ steps.decide.outputs.router }}
       chronos: ${{ steps.decide.outputs.chronos }}
+      deus: ${{ steps.decide.outputs.deus }}
     steps:
       - uses: actions/checkout@v4
 
@@ -133,6 +138,10 @@ jobs:
               - "chronos/**"
               - "deploy/chronos/**"
               - ".github/workflows/docker.yml"
+            deus:
+              - "deus/**"
+              - "deploy/deus/**"
+              - ".github/workflows/docker.yml"
 
       # workflow_dispatch builds everything; push/PR builds what changed.
       - name: decide images
@@ -144,8 +153,9 @@ jobs:
           GATEWAY: ${{ steps.filter.outputs.gateway }}
           ROUTER: ${{ steps.filter.outputs.router }}
           CHRONOS: ${{ steps.filter.outputs.chronos }}
+          DEUS: ${{ steps.filter.outputs.deus }}
         run: |
-          for key in daemon railway gateway router chronos; do
+          for key in daemon railway gateway router chronos deus; do
             var="$(echo "$key" | tr '[:lower:]' '[:upper:]')"
             val="${!var}"
             if [[ "$FORCE" == "true" || "$val" == "true" ]]; then
@@ -163,14 +173,16 @@ jobs:
           GATEWAY: ${{ steps.decide.outputs.gateway }}
           ROUTER: ${{ steps.decide.outputs.router }}
           CHRONOS: ${{ steps.decide.outputs.chronos }}
+          DEUS: ${{ steps.decide.outputs.deus }}
         run: |
           include='[]'
-          add() { include="$(jq -c --arg i "$1" --arg d "$2" '. + [{image:$i, dockerfile:$d}]' <<<"$include")"; }
+          add() { include="$(jq -c --arg i "$1" --arg d "$2" --arg c "${3:-.}" '. + [{image:$i, dockerfile:$d, context:$c}]' <<<"$include")"; }
           [[ "$DAEMON"  == "true" ]] && add matrix-daemon         deploy/daemon/Dockerfile
           [[ "$RAILWAY" == "true" ]] && add matrix-daemon-railway deploy/railway/Dockerfile
           [[ "$GATEWAY" == "true" ]] && add matrix-gateway        deploy/gateway/Dockerfile
           [[ "$ROUTER"  == "true" ]] && add matrix-router         deploy/router/Dockerfile
           [[ "$CHRONOS" == "true" ]] && add matrix-chronos        deploy/chronos/Dockerfile
+          [[ "$DEUS"    == "true" ]] && add matrix-deus           deploy/deus/Dockerfile deus
           echo "include=$include" >> "$GITHUB_OUTPUT"
           echo "building: $include"
 
@@ -211,7 +223,7 @@ jobs:
       - name: build (and push on main)
         uses: docker/build-push-action@v6
         with:
-          context: .
+          context: ${{ matrix.context }}
           file: ${{ matrix.dockerfile }}
           platforms: linux/amd64
           push: ${{ github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || inputs.push == true) }}
@@ -245,9 +257,11 @@ jobs:
           ROUTER_CHANGED: ${{ needs.changes.outputs.router }}
           GATEWAY_CHANGED: ${{ needs.changes.outputs.gateway }}
           CHRONOS_CHANGED: ${{ needs.changes.outputs.chronos }}
+          DEUS_CHANGED: ${{ needs.changes.outputs.deus }}
           RAILWAY_ROUTER_SERVICE_ID: ${{ vars.RAILWAY_ROUTER_SERVICE_ID }}
           RAILWAY_GATEWAY_SERVICE_ID: ${{ vars.RAILWAY_GATEWAY_SERVICE_ID }}
           RAILWAY_CHRONOS_SERVICE_ID: ${{ vars.RAILWAY_CHRONOS_SERVICE_ID }}
+          RAILWAY_DEUS_SERVICE_ID: ${{ vars.RAILWAY_DEUS_SERVICE_ID }}
         run: |
           if [[ -z "$RAILWAY_API_TOKEN" || -z "$RAILWAY_ENVIRONMENT_ID" ]]; then
             echo "::notice::Railway credentials not configured; skipping redeploy"
@@ -282,4 +296,5 @@ jobs:
           redeploy matrix-router  "$ROUTER_CHANGED"  "$RAILWAY_ROUTER_SERVICE_ID"
           redeploy matrix-gateway "$GATEWAY_CHANGED" "$RAILWAY_GATEWAY_SERVICE_ID"
           redeploy matrix-chronos "$CHRONOS_CHANGED" "$RAILWAY_CHRONOS_SERVICE_ID"
+          redeploy matrix-deus    "$DEUS_CHANGED"    "$RAILWAY_DEUS_SERVICE_ID"
           exit "$fail"
