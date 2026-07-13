@@ -327,7 +327,7 @@ func Default() Config {
 
 		// Continuous-memory collapse: OFF by default while it lands (the
 		// legacy pager path stays byte-identical when disabled).
-		ContinuousMemory: false,
+		ContinuousMemory: true,
 
 		// Cassandra 2.0 silent-voice controller. ON by default (a clean run is
 		// byte-identical to disabled, so it costs nothing when healthy). min_step
