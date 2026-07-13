@@ -84,8 +84,13 @@ type Budget struct {
 const (
 	// DefaultActivateBudgetTokens mirrors Context's DefaultBudgetTokens.
 	DefaultActivateBudgetTokens = DefaultBudgetTokens
-	// MaxActivateBudgetTokens mirrors Context's MaxBudgetTokens.
-	MaxActivateBudgetTokens = MaxBudgetTokens
+	// MaxActivateBudgetTokens caps a caller-supplied activation budget. It is
+	// deliberately DECOUPLED from Context's MaxBudgetTokens (4000): the
+	// activation bundle is the agent's whole durable-memory working set, and a
+	// large-window caller (Neo at 1M) legitimately asks for a far richer
+	// bundle than the legacy Context composer ever serves. The ceiling bounds
+	// pathological requests, not normal ones.
+	MaxActivateBudgetTokens = 32000
 
 	// DefaultTimelineLookbackNanos bounds the T0 Timeline tier to the last
 	// N nanoseconds of epoch rollups. Anchored to salience.HalfLifeNanos
@@ -280,10 +285,18 @@ func (c *Cortex) Activate(conv, query string, budget Budget) (*ActivationBundle,
 	if err != nil {
 		return nil, fmt.Errorf("cortex.Activate: transcript: %w", err)
 	}
+	// The tail CANDIDATE cap scales with the budget (a 20K budget can hold
+	// hundreds of messages, not 64) — the global salience trim below is what
+	// actually enforces the token budget; this cap only bounds candidate
+	// scoring work. At the default budget it is exactly the old limit.
+	tailLimit := DefaultTranscriptTailLimit
+	if scaled := tokBudget / 50; scaled > tailLimit {
+		tailLimit = scaled
+	}
 	transcript := allMsgs
 	tailStart := 0
-	if len(allMsgs) > DefaultTranscriptTailLimit {
-		tailStart = len(allMsgs) - DefaultTranscriptTailLimit
+	if len(allMsgs) > tailLimit {
+		tailStart = len(allMsgs) - tailLimit
 		transcript = allMsgs[tailStart:]
 	}
 	for i := range transcript {

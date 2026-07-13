@@ -314,3 +314,35 @@ step_budget_max = 65
 		t.Errorf("StepBudgetMax = %d, want 65 (kvx overlay)", c.StepBudgetMax)
 	}
 }
+
+func TestActivationBudgetDerivation(t *testing.T) {
+	cases := []struct {
+		window, explicit, want int
+	}{
+		{1000000, 0, 20000},     // 1M default: 2% of window
+		{32768, 0, 3000},        // small local-model override keeps the historical floor
+		{150000, 0, 3000},       // at/below the floor knee
+		{256000, 0, 5120},       // proportional in between
+		{4000000, 0, 24000},     // capped under cortex.MaxActivateBudgetTokens
+		{1000000, 12345, 12345}, // explicit knob wins verbatim
+	}
+	for _, tc := range cases {
+		c := Default()
+		c.ContextWindowTokens = tc.window
+		c.ActivationBudgetTokens = tc.explicit
+		if got := c.ActivationBudget(); got != tc.want {
+			t.Errorf("ActivationBudget(window=%d explicit=%d) = %d, want %d", tc.window, tc.explicit, got, tc.want)
+		}
+	}
+}
+
+func TestActivationBudgetEnvOverride(t *testing.T) {
+	t.Setenv("NEO_ACTIVATION_BUDGET_TOKENS", "9000")
+	c, err := Load("")
+	if err != nil {
+		t.Fatalf("Load: %v", err)
+	}
+	if c.ActivationBudget() != 9000 {
+		t.Errorf("ActivationBudget = %d, want 9000 (env override)", c.ActivationBudget())
+	}
+}

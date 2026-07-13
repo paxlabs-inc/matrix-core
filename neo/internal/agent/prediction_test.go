@@ -185,3 +185,102 @@ func TestPredictionMeterAcrossRealDispatches(t *testing.T) {
 		t.Fatal("a mismatched probe's hypothesis premise must be refuted on the ledger")
 	}
 }
+
+// TestInjectExpectParamUniversal proves the universal `expect` advertisement:
+// every advertised schema (native, synthetic, read_overflow) carries the
+// expect property, and the injection is copy-on-write — the Manager's own
+// parameter maps are untouched, so a second consumer sees pristine schemas.
+func TestInjectExpectParamUniversal(t *testing.T) {
+	cfg := config.Default()
+	tm := &tools.Manager{}
+	a := New(Options{Config: cfg, Tools: tm})
+
+	if len(a.schemas) == 0 {
+		t.Fatal("agent advertises no schemas")
+	}
+	for _, s := range a.schemas {
+		props, ok := s.Function.Parameters["properties"].(map[string]interface{})
+		if !ok {
+			t.Fatalf("%s: parameters carry no properties map", s.Function.Name)
+		}
+		exp, ok := props["expect"].(map[string]interface{})
+		if !ok {
+			t.Fatalf("%s: schema does not advertise the expect param", s.Function.Name)
+		}
+		if exp["type"] != "string" {
+			t.Fatalf("%s: expect param is not a string", s.Function.Name)
+		}
+		// Enforcement lives at the dispatch seam, not provider-side JSON
+		// schema strictness: expect must NOT be in required.
+		if req, ok := s.Function.Parameters["required"].([]string); ok {
+			for _, r := range req {
+				if r == "expect" {
+					t.Fatalf("%s: expect must not be schema-required", s.Function.Name)
+				}
+			}
+		}
+	}
+
+	// Copy-on-write: the Manager's schemas stay pristine.
+	for _, s := range tm.Schemas() {
+		if props, ok := s.Function.Parameters["properties"].(map[string]interface{}); ok {
+			if _, leaked := props["expect"]; leaked {
+				t.Fatalf("%s: injection mutated the Manager's shared schema map", s.Function.Name)
+			}
+		}
+	}
+
+	// Disabled predictions ⇒ no injection.
+	off := config.Default()
+	off.EpistemicPredictions = false
+	b := New(Options{Config: off, Tools: &tools.Manager{}})
+	for _, s := range b.schemas {
+		if props, ok := s.Function.Parameters["properties"].(map[string]interface{}); ok {
+			if _, has := props["expect"]; has {
+				t.Fatalf("%s: expect injected with EpistemicPredictions off", s.Function.Name)
+			}
+		}
+	}
+}
+
+// TestPredictionObserveNonProbe proves the universal belief update: a NON-probe
+// call that states an expectation gets the same mismatch treatment (ledger
+// premise, meter, structured guidance), while an expectation-less non-probe
+// stays outside the discipline (refusal is probe-only).
+func TestPredictionObserveNonProbe(t *testing.T) {
+	cfg := config.Default()
+	a := New(Options{Config: cfg, Tools: &tools.Manager{}})
+
+	before := len(a.working)
+	missed := a.predictionObserve(context.Background(), "fs_write", map[string]interface{}{"path": "a.txt"},
+		"file written cleanly", "error: permission denied", true)
+	if !missed {
+		t.Fatal("non-probe mismatch with a stated expectation must count as missed")
+	}
+	if a.mismatchMeter["fs_write"] != 1 {
+		t.Fatalf("meter = %d, want 1 keyed by tool name", a.mismatchMeter["fs_write"])
+	}
+	guided := false
+	for _, m := range a.working[before:] {
+		if strings.Contains(m.Content, "Prediction mismatch") && strings.Contains(m.Content, "fs_write") {
+			guided = true
+		}
+	}
+	if !guided {
+		t.Fatal("mismatch must render structured guidance naming the strategy")
+	}
+
+	// Match resets the meter and discharges the hypothesis.
+	if missed := a.predictionObserve(context.Background(), "fs_write", map[string]interface{}{"path": "a.txt"},
+		"file written cleanly", "wrote 42 bytes to a.txt", false); missed {
+		t.Fatal("matching outcome must not count as missed")
+	}
+	if a.mismatchMeter["fs_write"] != 0 {
+		t.Fatalf("meter = %d after match, want 0", a.mismatchMeter["fs_write"])
+	}
+
+	// Expectation-less non-probe: outside the discipline entirely.
+	if missed := a.predictionObserve(context.Background(), "todo", nil, "", "error: boom", true); missed {
+		t.Fatal("expectation-less non-probe must not be treated as a missed probe")
+	}
+}

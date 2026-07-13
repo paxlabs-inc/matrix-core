@@ -288,3 +288,39 @@ func TestContinuousCollapse_TrimIsNonSummarizing(t *testing.T) {
 		t.Error("cmTrimWorking must keep the recent turns, not clear the window")
 	}
 }
+
+// TestCmActivateCarriesWindowProportionalBudget proves the residency thread
+// end to end on REAL components: with the default 1M window, cmActivate's
+// bundle admits a transcript far beyond cortex's legacy 3-4K default — the
+// derived config.ActivationBudget actually reaches cortex.Activate.
+func TestCmActivateCarriesWindowProportionalBudget(t *testing.T) {
+	cfg := config.Default()
+	cfg.ContinuousMemory = true
+	cfg.CortexRoot = t.TempDir()
+	cfg.CortexActor = "neo-cm-budget"
+	pager, err := memory.Open(cfg)
+	if err != nil {
+		t.Fatalf("memory.Open: %v", err)
+	}
+	defer pager.Close()
+
+	a := New(Options{Config: cfg, Tools: &tools.Manager{}, Pager: pager, ConvID: "conv-cm-budget"})
+
+	line := "step report: verified the build, reran the suite, recorded the outcome for posterity and moved on"
+	for i := 0; i < 300; i++ {
+		if _, err := pager.AppendMessage(cortex.Message{ConversationID: "conv-cm-budget", Role: cortex.RoleUser, Content: line}); err != nil {
+			t.Fatalf("AppendMessage(%d): %v", i, err)
+		}
+	}
+
+	b := a.cmActivate("what happened so far")
+	if b == nil {
+		t.Fatal("cmActivate returned nil")
+	}
+	if b.TotalTokens <= 4000 {
+		t.Fatalf("bundle carries only %d tokens at a 1M window — the legacy cortex default is still binding", b.TotalTokens)
+	}
+	if want := cfg.ActivationBudget(); b.TotalTokens > want {
+		t.Fatalf("bundle %d tokens exceeds the derived budget %d", b.TotalTokens, want)
+	}
+}

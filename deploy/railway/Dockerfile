@@ -4,18 +4,16 @@
 #
 # The Railway sibling of deploy/daemon/Dockerfile: the SAME daemon stack
 # (mcl-execute + neo, baked skills/agents/tools, pre-cached MCP servers, mc)
-# PLUS codyd — the Cody coding engine — supervised beside neo by the
-# entrypoint, on an Ubuntu 24.04 base that additionally bakes the full dev
-# toolchain the per-user environment shells into via the exec MCP server:
+# on an Ubuntu 24.04 base that additionally bakes the full dev toolchain the
+# per-user environment shells into via the exec MCP server:
 #
 #   git, build-essential, Node 22 + pnpm, Go, Python 3.12 + uv, Rust, Foundry
 #
-# For codyd this image also bakes:
+# For Neo's coding workbench this image also bakes:
 #   - Local data services as native server binaries (NOT docker-in-docker):
 #     PostgreSQL, Redis, SQLite — started on demand by the exec bridge.
-#   - The quality toolchain codyd verifies with: golangci-lint, ruff, eslint,
+#   - The quality toolchain Neo verifies with: golangci-lint, ruff, eslint,
 #     prettier, tsc, vitest, cargo-clippy.
-#   - agents/cody.json (via the wholesale agents/ COPY).
 #   - A PER-USER Playwright (@playwright/mcp + chromium) baked in and run
 #     in-container by the entrypoint (BROWSER-FILMSTRIP req.1): navigation and
 #     per-navigation screenshot capture are local and cheap on the dedicated
@@ -63,11 +61,10 @@ COPY bridge/go.mod  bridge/go.sum  bridge/
 COPY construct/go.mod              construct/
 COPY executor/go.mod executor/go.sum executor/
 COPY neo/go.mod     neo/go.sum     neo/
+# cassandra (matrix/cassandra) — imported by the executor's critic stage
+# (cmd/mcl-execute/critique.go), so its tree MUST be present for the daemon
+# build. Neo no longer imports it (Cassandra 2.0 is in-process in neo).
 COPY cassandra/go.mod              cassandra/
-# cody (matrix/cody) — the Cody coding engine. Its go.mod `replace`s point at
-# ../cortex, ../MCL and ../cassandra (copied above), so those trees MUST be
-# present for `go build ./cmd/codyd` to resolve.
-COPY cody/go.mod    cody/go.sum    cody/
 
 # Now the source.
 COPY cortex/    cortex/
@@ -78,7 +75,6 @@ COPY construct/ construct/
 COPY executor/  executor/
 COPY neo/       neo/
 COPY cassandra/ cassandra/
-COPY cody/      cody/
 
 WORKDIR /src/executor
 RUN go build -ldflags="-s -w" -o /out/mcl-execute ./cmd/mcl-execute
@@ -87,15 +83,6 @@ RUN go build -ldflags="-s -w" -o /out/mcl-execute ./cmd/mcl-execute
 # the sibling replace directives in neo/go.mod (those trees are copied above).
 WORKDIR /src/neo
 RUN go build -ldflags="-s -w" -o /out/neo ./cmd/neo
-
-# Cody — the coding engine (matrix/cody). Boots `codyd` beside Neo in the
-# per-user runtime. Reuses cortex/MCL/cassandra via the sibling replace
-# directives in cody/go.mod (those trees are copied above). The Go-native
-# sandbox client (matrix/cody/internal/sandbox) compiles straight INTO this
-# binary — there is no separate sandbox-client binary to copy; it ships in the
-# image by virtue of being linked into codyd.
-WORKDIR /src/cody
-RUN go build -ldflags="-s -w" -o /out/codyd ./cmd/codyd
 
 # -------- 2. Runtime --------
 FROM ubuntu:24.04 AS runtime
@@ -164,14 +151,15 @@ RUN set -eux; \
     cast --version; \
     anvil --version
 
-# Local data services for codyd: PostgreSQL, Redis and SQLite baked as native
-# server binaries — NOT docker-in-docker. Cody's exec bridge (the agent's shell
-# tool) starts them ON DEMAND from inside the workspace shell, e.g.
+# Local data services for the coding workbench: PostgreSQL, Redis and SQLite
+# baked as native server binaries — NOT docker-in-docker. Neo's exec bridge
+# (the agent's shell tool) starts them ON DEMAND from inside the workspace
+# shell, e.g.
 #   pg_ctlcluster 16 main start   # or: pg_ctl -D <datadir> start
 #   redis-server --daemonize yes
 #   sqlite3 <file>                # serverless; no daemon to start
 # They are deliberately NOT auto-started at boot (no systemd in the container);
-# the entrypoint only supervises codyd/neo/daemon. `postgresql` pulls the
+# the entrypoint only supervises the neo/daemon pair. `postgresql` pulls the
 # versioned server (Ubuntu 24.04 → PostgreSQL 16) plus pg_ctlcluster; the
 # default cluster it auto-creates is left stopped.
 RUN set -eux; \
@@ -207,7 +195,7 @@ RUN set -eux; \
     npm cache clean --force; \
     rm -rf /var/lib/apt/lists/*
 
-# Quality toolchain codyd shells into for its verify/gate stages.
+# Quality toolchain Neo shells into for its verify stages.
 # Pins chosen to match real published releases; bump via a rebuild.
 ARG GOLANGCI_LINT_VERSION=v1.61.0
 ARG RUFF_VERSION=0.6.9
@@ -307,25 +295,20 @@ RUN set -eux; \
 
 WORKDIR /opt/matrix
 
-# Copy the static binaries first. mcl-execute = the MCL daemon (backend);
-# neo = the Neo conversational front (matrix/neo serve).
+# Copy the static binaries first. mcl-execute = the co-located plumbing daemon
+# (healthz, /memory + /profile stores, volume snapshots); neo = the agent
+# (matrix/neo serve) — the only agent in the runtime.
 COPY --from=builder /out/mcl-execute /opt/matrix/bin/mcl-execute
 COPY --from=builder /out/neo         /opt/matrix/bin/neo
-# codyd = the Cody coding engine, supervised beside neo by the entrypoint.
-COPY --from=builder /out/codyd       /opt/matrix/bin/codyd
 
 # Bake the skill corpus + agent manifests + tool bridges — the same set as
 # deploy/daemon/Dockerfile (see its per-tool comments); the daemon's strict
 # spawn check exits if any manifest-declared bridge file is missing, so ALL
 # of them MUST be baked.
 COPY skills/         /opt/matrix/skills/
-# agents/ carries every agent manifest, INCLUDING agents/cody.json — it lands
-# at /opt/matrix/agents/cody.json (the same dir every other manifest uses; the
-# runtime symlink /root/matrix → /opt/matrix also exposes it as
-# /root/matrix/agents/cody.json).
+# agents/ carries every agent manifest (agents/neo.json + agents/default.json).
 COPY agents/         /opt/matrix/agents/
-# rules/ is Cody's language/standards library; the entrypoint points
-# CODY_RULES_DIR at /opt/matrix/rules and CODY_SKILLS_DIR at /opt/matrix/skills.
+# rules/ is the language/standards library Neo's coding prompts reference.
 COPY rules/          /opt/matrix/rules/
 # graph/self-model is the GENERATED structural self-graph (the codegraph
 # self-scope output) that neo READS at runtime via cfg.SelfModelGraph — the
@@ -344,7 +327,7 @@ COPY tools/media     /opt/matrix/tools/media
 COPY tools/uwac      /opt/matrix/tools/uwac
 COPY tools/chronos   /opt/matrix/tools/chronos
 COPY tools/layerx    /opt/matrix/tools/layerx
-# Cody scaffolder suite (scaffold-<stack>.sh): workers run these via exec for
+# Scaffolder suite (scaffold-<stack>.sh): Neo runs these via exec for
 # greenfield project structure instead of hand-writing boilerplate.
 COPY tools/scaffold  /opt/matrix/tools/scaffold
 RUN chmod +x /opt/matrix/tools/scaffold/*.sh

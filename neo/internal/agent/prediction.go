@@ -24,6 +24,46 @@ import (
 	"matrix/neo/internal/llm"
 )
 
+// expectParamDescription is the schema-level advertisement of the `expect`
+// argument. Living in every tool's parameter schema (not just prose in the
+// charter) is what makes the model actually include it call after call.
+const expectParamDescription = "REQUIRED on every call: one short line predicting this call's outcome shape (e.g. \"200 with a JSON array of candles\", \"exit 0 listing the config files\"). The system lifts it off the call before the tool runs — it is your stated prediction, not a tool input."
+
+// injectExpectParam returns a copy of the advertised schemas with an `expect`
+// string property added to every tool's parameters (req.6.1 made universal:
+// every call carries a prediction, not just probe-class calls). Copy-on-write:
+// the Manager's own schema maps are never mutated — Schemas() hands out the
+// SAME underlying parameter maps on every call, so an in-place edit here
+// would poison every later consumer (sub-agents, the capability surface).
+func injectExpectParam(schemas []llm.Tool) []llm.Tool {
+	out := make([]llm.Tool, len(schemas))
+	for i, t := range schemas {
+		params := make(map[string]interface{}, len(t.Function.Parameters)+1)
+		for k, v := range t.Function.Parameters {
+			params[k] = v
+		}
+		props := map[string]interface{}{}
+		if raw, ok := params["properties"].(map[string]interface{}); ok {
+			for k, v := range raw {
+				props[k] = v
+			}
+		}
+		if _, exists := props["expect"]; !exists {
+			props["expect"] = map[string]interface{}{
+				"type":        "string",
+				"description": expectParamDescription,
+			}
+		}
+		params["properties"] = props
+		if params["type"] == nil {
+			params["type"] = "object"
+		}
+		t.Function.Parameters = params
+		out[i] = t
+	}
+	return out
+}
+
 // popExpect removes and returns the `expect` argument (the stated expectation)
 // from a tool call's args, so the underlying tool never sees it.
 func popExpect(args map[string]interface{}) string {
@@ -171,7 +211,15 @@ func (a *Agent) predictionObserve(ctx context.Context, name string, args map[str
 	}
 	strategy, isProbe := probeStrategy(name, args)
 	if !isProbe {
-		return false
+		// Non-probe calls join the discipline the moment they state an
+		// expectation (every call is asked to — the universal `expect`
+		// schema param): same ledger, same meter, same guidance, keyed by
+		// tool name. Without one there is nothing to update — refusal at
+		// the dispatch seam stays probe-only.
+		if expect == "" {
+			return false
+		}
+		strategy = name
 	}
 	if expect == "" {
 		// No stated expectation: nothing to update (the refusal-to-dispatch

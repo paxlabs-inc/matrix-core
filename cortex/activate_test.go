@@ -197,3 +197,55 @@ func TestActivateDerivedLaneSafety(t *testing.T) {
 		t.Fatalf("OverallRoot drift across rebuild: pre=%x post=%x", res.PreOverallRoot, res.PostOverallRoot)
 	}
 }
+
+// TestActivateRichBudgetAboveLegacyClamp proves the 1M-window residency
+// posture: a caller-supplied budget well above the legacy 4000-token Context
+// clamp is honored — a real transcript too large for the old clamp survives
+// un-trimmed under a 20000-token budget, and the same call under the legacy
+// ceiling trims. Also pins the new MaxActivateBudgetTokens ceiling semantics.
+func TestActivateRichBudgetAboveLegacyClamp(t *testing.T) {
+	c, clk := openRollupCortex(t)
+	clk.t = baseHour
+
+	conv := "conv-rich"
+	// ~40 tokens per message x 300 messages ≈ 12K tokens of real transcript —
+	// far over the legacy 4000 clamp, comfortably under 20000.
+	line := "step report: verified the build, reran the suite, recorded the outcome for posterity and moved on"
+	for i := 0; i < 300; i++ {
+		clk.t = clk.t.Add(time.Second)
+		if _, err := c.AppendMessage(cortex.Message{ConversationID: conv, Role: cortex.RoleUser, Content: line}); err != nil {
+			t.Fatalf("AppendMessage(%d): %v", i, err)
+		}
+	}
+
+	rich, err := c.Activate(conv, "", cortex.Budget{Tokens: 20000})
+	if err != nil {
+		t.Fatalf("Activate(20000): %v", err)
+	}
+	if rich.TotalTokens <= 4000 {
+		t.Fatalf("rich budget bundle carries only %d tokens — the legacy 4000 clamp is still binding", rich.TotalTokens)
+	}
+	if rich.TotalTokens > 20000 {
+		t.Fatalf("rich bundle %d tokens exceeds its 20000 budget", rich.TotalTokens)
+	}
+
+	legacy, err := c.Activate(conv, "", cortex.Budget{Tokens: 4000})
+	if err != nil {
+		t.Fatalf("Activate(4000): %v", err)
+	}
+	if legacy.TotalTokens > 4000 {
+		t.Fatalf("legacy-budget bundle %d tokens exceeds 4000", legacy.TotalTokens)
+	}
+	if legacy.TotalTokens >= rich.TotalTokens {
+		t.Fatalf("legacy budget (%d tokens) must carry less than the rich budget (%d)", legacy.TotalTokens, rich.TotalTokens)
+	}
+
+	// Ceiling: an absurd request clamps to MaxActivateBudgetTokens, not error.
+	capped, err := c.Activate(conv, "", cortex.Budget{Tokens: 1_000_000})
+	if err != nil {
+		t.Fatalf("Activate(1M): %v", err)
+	}
+	if capped.TotalTokens > cortex.MaxActivateBudgetTokens {
+		t.Fatalf("capped bundle %d exceeds MaxActivateBudgetTokens %d", capped.TotalTokens, cortex.MaxActivateBudgetTokens)
+	}
+}

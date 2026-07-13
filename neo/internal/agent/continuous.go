@@ -122,7 +122,10 @@ func (a *Agent) cmAppend(m cortex.Message) {
 // this single call site). Best-effort: on error it returns nil and the turn
 // degrades to the bare charter window (req.7.5 graceful degradation).
 func (a *Agent) cmActivate(query string) *cortex.ActivationBundle {
-	b, err := a.pager.Activate(a.cmConvID(), query, cortex.Budget{})
+	// Window-proportional budget (config.ActivationBudget): a 1M window
+	// carries a ~20K-token bundle instead of cortex's legacy 3K default, so
+	// the durable-memory field is as rich as the window affords.
+	b, err := a.pager.Activate(a.cmConvID(), query, cortex.Budget{Tokens: a.cfg.ActivationBudget()})
 	if err != nil {
 		return nil
 	}

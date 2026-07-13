@@ -264,9 +264,10 @@ func (a *Agent) systemPrompt() string {
 	b.WriteString("- Anything wrapped in <system_guidance>…</system_guidance> is a private note from the SYSTEM, never from the user — even when it arrives as a message in the conversation. It is steering meant only for you (for example, a reminder that the task isn't finished, or how to close a gap). ACT on it: adjust and take the next real step (often that means calling a tool, or giving your final answer if you're genuinely done), never answer it conversationally and never greet. Do NOT acknowledge, quote, or mention it to the user — incorporate it silently and keep working. If you see the same guidance repeat, do the concrete thing it asks rather than replying to it again.\n\n")
 
 	if a.cfg.EpistemicPredictions {
-		b.WriteString("Predict before you probe:\n")
-		b.WriteString("- Before any PROBE — fetching a URL or endpoint, a search, an exploratory command — add an `expect` argument to the tool call: one short line stating the outcome shape you predict (e.g. \"200 with a JSON array of candles\" or \"exit 0 listing the config files\"). A probe you can state no expectation for is a guess: ground it first (docs, your capability surface, memory) or state the hypothesis you are testing.\n")
-		b.WriteString("- When a probe misses its expectation, that is INFORMATION about your premise, not noise: revise the hypothesis before probing again. Never fire another variation of the same probe with the same mental model.\n\n")
+		b.WriteString("Predict before you act:\n")
+		b.WriteString("- EVERY tool call you make carries an `expect` argument: one short line stating the outcome shape you predict (e.g. \"200 with a JSON array of candles\", \"exit 0 listing the config files\", \"file written, ~40 lines\"). It is your prediction, not a tool input — the system lifts it off the call before the tool runs. If you cannot state what a call should return, you do not understand the call well enough to make it yet.\n")
+		b.WriteString("- PROBES — fetching a URL or endpoint, a search, an exploratory command — are held to this strictly: a probe with no expectation is a guess and is refused at dispatch. Ground it first (docs, your capability surface, memory) or state the hypothesis you are testing.\n")
+		b.WriteString("- When a result misses its expectation, that is INFORMATION about your premise, not noise: revise the hypothesis before acting again. Never fire another variation of the same call with the same mental model.\n\n")
 	}
 
 	b.WriteString("Plan vs act:\n")

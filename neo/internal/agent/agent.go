@@ -416,6 +416,13 @@ func New(o Options) *Agent {
 	// It is synthetic (intercepted in the loop, not routed through the Manager),
 	// so it never enters the manifest tool-bijection check.
 	a.schemas = append(a.schemas, readOverflowSchema())
+	// Epistemic-core Mechanism 3, universal: every advertised tool schema
+	// carries the `expect` parameter so the prediction discipline is enforced
+	// by the schema the model reads, not just charter prose. Copy-on-write —
+	// the Manager's shared parameter maps are never mutated.
+	if a.cfg.EpistemicPredictions {
+		a.schemas = injectExpectParam(a.schemas)
+	}
 	// A restricted agent is held to its ADVERTISED surface at dispatch time
 	// too: the Manager's dispatch switch handles synthetic tools (e.g.
 	// construct_render) whether or not they were advertised, so a model that

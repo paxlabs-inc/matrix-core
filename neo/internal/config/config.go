@@ -65,6 +65,12 @@ type Config struct {
 	PinnedBudgetTokens   int // token ceiling for the always-injected pinned block
 	RecallTopK           int // conversational recall: top-K relevant past turns per turn
 	RecallBudgetTokens   int // token ceiling for the recalled past-turns block
+	// ActivationBudgetTokens caps the per-turn cortex activation bundle (the
+	// continuous-memory trailing tail: pinned + timeline + recent + transcript
+	// slice + story-so-far). 0 = derive from the window via ActivationBudget()
+	// — window-proportional so a 1M window carries a rich bundle while a 32K
+	// local-model override keeps the old 3K behavior byte-identical.
+	ActivationBudgetTokens int
 
 	// FirstTurnRelevancePush injects a bounded RELEVANCE retrieval into the
 	// activation window on the FIRST turn of a conversation only. cortex.Activate's
@@ -471,6 +477,7 @@ func (c *Config) applyDoc(d *kvxDoc) {
 		c.PinnedBudgetTokens = d.intOr("memory", "pinned_budget_tokens", c.PinnedBudgetTokens)
 		c.RecallTopK = d.intOr("memory", "recall_top_k", c.RecallTopK)
 		c.RecallBudgetTokens = d.intOr("memory", "recall_budget_tokens", c.RecallBudgetTokens)
+		c.ActivationBudgetTokens = d.intOr("memory", "activation_budget_tokens", c.ActivationBudgetTokens)
 		c.FirstTurnRelevancePush = d.boolOr("memory", "first_turn_relevance_push", c.FirstTurnRelevancePush)
 		c.WarmOnOpen = d.boolOr("memory", "warm_on_open", c.WarmOnOpen)
 	}
@@ -564,6 +571,7 @@ func (c *Config) applyEnv() {
 			c.ContextWindowTokens = n
 		}
 	}
+	c.ActivationBudgetTokens = envInt("NEO_ACTIVATION_BUDGET_TOKENS", c.ActivationBudgetTokens)
 	c.MaxSubagents = envInt("NEO_MAX_SUBAGENTS", c.MaxSubagents)
 	c.MaxConcurrentSubagents = envInt("NEO_MAX_CONCURRENT_SUBAGENTS", c.MaxConcurrentSubagents)
 	c.SubagentStepBudget = envInt("NEO_SUBAGENT_STEP_BUDGET", c.SubagentStepBudget)
@@ -735,6 +743,33 @@ func (c Config) SoftBudgetTokens() int {
 
 func (c Config) HardBudgetTokens() int {
 	return budgetTokens(c.ContextWindowTokens, c.HardPct, hardHeadroomCapTokens)
+}
+
+// Bounds for the derived activation-bundle budget (ActivationBudget below).
+// The floor is the historical cortex default (small windows keep their exact
+// prior behavior); the ceiling stays under cortex.MaxActivateBudgetTokens.
+const (
+	activationBudgetFloorTokens = 3000
+	activationBudgetCapTokens   = 24000
+)
+
+// ActivationBudget returns the per-turn cortex activation-bundle token budget.
+// An explicit ActivationBudgetTokens wins verbatim; otherwise it derives
+// window-proportionally (2% of the context window) clamped to
+// [activationBudgetFloorTokens, activationBudgetCapTokens] — 1M → 20000,
+// 256K → 5120, and any window ≤ 150K keeps the historical 3000.
+func (c Config) ActivationBudget() int {
+	if c.ActivationBudgetTokens > 0 {
+		return c.ActivationBudgetTokens
+	}
+	b := c.ContextWindowTokens / 50
+	if b < activationBudgetFloorTokens {
+		b = activationBudgetFloorTokens
+	}
+	if b > activationBudgetCapTokens {
+		b = activationBudgetCapTokens
+	}
+	return b
 }
 
 func budgetTokens(window, pct, headroomCap int) int {
