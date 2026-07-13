@@ -1,13 +1,13 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:75a956136eb56a920059d717ea1f7ba394b53bef834ab6db66f06d328eb5d650
+# GENERATED gen=codegraph do-not-edit merkle=b3:7270c3824ecc37257f5e811e088d456ae20503c845e3315015833efad4b363c9
 
 NODE id=matrix/cortex kind=package
-  digest=b3:64d34a06b8277f3ea6773095e6fdf7cdb86fcefe4e3071f6cf5e34fcb6abb703 file=cortex range=0:0 lang=go exported=true
+  digest=b3:ce62b4712b0f588296ce97ad9c7ad3f65353ddc0a71130d30cf4ca2425e71c60 file=cortex range=0:0 lang=go exported=true
 EDGES
   contains=matrix/cortex/activate.go,matrix/cortex/attest.go,matrix/cortex/cascade.go,matrix/cortex/compact.go,matrix/cortex/context.go,matrix/cortex/cortex.go,matrix/cortex/edges.go,matrix/cortex/embedder.go,matrix/cortex/goal_state.go,matrix/cortex/ratelimit.go,matrix/cortex/rebuild.go,matrix/cortex/recall.go,matrix/cortex/recent.go,matrix/cortex/repair.go,matrix/cortex/rollup.go,matrix/cortex/rollup_enrich.go,matrix/cortex/scope_enforce.go,matrix/cortex/session.go,matrix/cortex/story.go,matrix/cortex/sweep.go,matrix/cortex/update_head.go
   ^contains=mod:matrix/cortex
 
 NODE id=matrix/cortex.ActivationBundle kind=type
-  digest=b3:e74ab036cddb730582c585fffc7420d8d5f693cc32b54a51c78ce6c817741fb1 file=cortex/activate.go range=107:142 lang=go exported=true byte_range=5050:6774
+  digest=b3:e74ab036cddb730582c585fffc7420d8d5f693cc32b54a51c78ce6c817741fb1 file=cortex/activate.go range=112:147 lang=go exported=true byte_range=5391:7115
   sig=type ActivationBundle struct {\n	// Pinned mirrors Bundle.Pinned: Identity ∪ Constraint{Hard} ∪\n	// Goal{Active}, salience-desc, PinnedFloor-protected.\n	Pinned	[]*memory.Memory\n	// Timeline is the T0 coarse tier: materialized epoch rollups within\n	// DefaultTimelineLookbackNanos of now, ascending window-start order\n	// (survivors after trim).\n	Timeline	[]RollupRecord\n	// Recent is the T1 mid-range tier: c.RecentEpisodes' materialized\n	// hour-rollup-backed episodes, salience-desc (survivors after trim).\n	Recent	[]Episode\n	// Transcript is the T2 slice: the tail of this conversation's own\n	// session-store transcript, ascending seq order (survivors after trim).\n	Transcript	[]Message\n	// StorySoFar is the durable per-conversation rolling summary (task 4.2),\n	// the replacement for Neo's ephemeral a.summary. Empty when the\n	// conversation has no transcript yet.\n	StorySoFar	string\n\n	// ReachableURIs lists tier candidates that were computed but did NOT\n	// survive the budget trim (T3 handles — resolve lazily), capped at\n	// MaxReachableURIs. Transcript members trim to their session URI\n	// (session.go's BuildSessionURI); Timeline/Recent to their rollup /\n	// memory URI; Pinned to its cortex memory URI.\n	ReachableURIs	[]memory.URI\n\n	// TotalTokens is the final post-trim rendered-token sum (including\n	// StorySoFar, which is never itself trimmed — see activationTrim).\n	TotalTokens	int\n	// Trimmed is the count of tier candidates dropped by budget enforcement.\n	Trimmed	int\n	// LatencyMS is wall-clock from the start of Activate to the return\n	// statement (real time.Now(), not c.now() — see file header).\n	LatencyMS	int64\n}
   doc=ActivationBundle is the response shape from Cortex.Activate (req.7.1).
 EDGES
@@ -15,63 +15,63 @@ EDGES
   ^defines=matrix/cortex/activate.go
 
 NODE id=matrix/cortex.ActivationBundle#LatencyMS kind=field
-  digest=b3:6f3f766d140f392ac5f37ea9225095c5472d7e48dfc888e5c146694e00cdcd3a file=cortex/activate.go range=139:141 lang=go exported=true byte_range=6622:6772
+  digest=b3:6f3f766d140f392ac5f37ea9225095c5472d7e48dfc888e5c146694e00cdcd3a file=cortex/activate.go range=144:146 lang=go exported=true byte_range=6963:7113
   sig=int64
   doc=LatencyMS is wall-clock from the start of Activate to the return\nstatement (real time.Now(), not c.now() — see file header).
 EDGES
   ^contains=matrix/cortex.ActivationBundle
 
 NODE id=matrix/cortex.ActivationBundle#Pinned kind=field
-  digest=b3:a7fa574fe6744ce4cf75527053830771db6b4ee643e3a8f5dac2a63de66cd79d file=cortex/activate.go range=109:111 lang=go exported=true byte_range=5156:5303
+  digest=b3:a7fa574fe6744ce4cf75527053830771db6b4ee643e3a8f5dac2a63de66cd79d file=cortex/activate.go range=114:116 lang=go exported=true byte_range=5497:5644
   sig=[]*memory.Memory
   doc=Pinned mirrors Bundle.Pinned: Identity ∪ Constraint{Hard} ∪\nGoal{Active}, salience-desc, PinnedFloor-protected.
 EDGES
   ^contains=matrix/cortex.ActivationBundle
 
 NODE id=matrix/cortex.ActivationBundle#ReachableURIs kind=field
-  digest=b3:e80cc0669326fd31c6450e4bd92071517041c8e7fb128053f3c5cf3fb7f91a1f file=cortex/activate.go range=127:132 lang=go exported=true byte_range=6020:6374
+  digest=b3:e80cc0669326fd31c6450e4bd92071517041c8e7fb128053f3c5cf3fb7f91a1f file=cortex/activate.go range=132:137 lang=go exported=true byte_range=6361:6715
   sig=[]memory.URI
   doc=ReachableURIs lists tier candidates that were computed but did NOT\nsurvive the budget trim (T3 handles — resolve lazily), capped at\nMaxReachableURIs. Transcript members trim to their session URI\n(session.go's BuildSessionURI); Timeline/Recent to their rollup /\nmemory URI; Pinned to its cortex memory URI.
 EDGES
   ^contains=matrix/cortex.ActivationBundle
 
 NODE id=matrix/cortex.ActivationBundle#Recent kind=field
-  digest=b3:e0328d25a7f555226f36e89f15ab7965a0c12cbf7c287d1b10ef398515de73a1 file=cortex/activate.go range=116:118 lang=go exported=true byte_range=5498:5653
+  digest=b3:e0328d25a7f555226f36e89f15ab7965a0c12cbf7c287d1b10ef398515de73a1 file=cortex/activate.go range=121:123 lang=go exported=true byte_range=5839:5994
   sig=[]cortex.Episode
   doc=Recent is the T1 mid-range tier: c.RecentEpisodes' materialized\nhour-rollup-backed episodes, salience-desc (survivors after trim).
 EDGES
   ^contains=matrix/cortex.ActivationBundle
 
 NODE id=matrix/cortex.ActivationBundle#StorySoFar kind=field
-  digest=b3:9699a5c7f4a7a97aee3e5075c1f0310fb9f8772f7233dd10749be2e6df7cd050 file=cortex/activate.go range=122:125 lang=go exported=true byte_range=5819:6017
+  digest=b3:9699a5c7f4a7a97aee3e5075c1f0310fb9f8772f7233dd10749be2e6df7cd050 file=cortex/activate.go range=127:130 lang=go exported=true byte_range=6160:6358
   sig=string
   doc=StorySoFar is the durable per-conversation rolling summary (task 4.2),\nthe replacement for Neo's ephemeral a.summary. Empty when the\nconversation has no transcript yet.
 EDGES
   ^contains=matrix/cortex.ActivationBundle
 
 NODE id=matrix/cortex.ActivationBundle#Timeline kind=field
-  digest=b3:913f711864492246768acb27075b589bd6b54fa984657b1d126f849cbe9d6671 file=cortex/activate.go range=112:115 lang=go exported=true byte_range=5305:5496
+  digest=b3:913f711864492246768acb27075b589bd6b54fa984657b1d126f849cbe9d6671 file=cortex/activate.go range=117:120 lang=go exported=true byte_range=5646:5837
   sig=[]cortex.RollupRecord
   doc=Timeline is the T0 coarse tier: materialized epoch rollups within\nDefaultTimelineLookbackNanos of now, ascending window-start order\n(survivors after trim).
 EDGES
   ^contains=matrix/cortex.ActivationBundle
 
 NODE id=matrix/cortex.ActivationBundle#TotalTokens kind=field
-  digest=b3:81d24e0f5e147a760c523603a0338d862319be71edd3b35c5c748d5f691b869e file=cortex/activate.go range=134:136 lang=go exported=true byte_range=6377:6532
+  digest=b3:81d24e0f5e147a760c523603a0338d862319be71edd3b35c5c748d5f691b869e file=cortex/activate.go range=139:141 lang=go exported=true byte_range=6718:6873
   sig=int
   doc=TotalTokens is the final post-trim rendered-token sum (including\nStorySoFar, which is never itself trimmed — see activationTrim).
 EDGES
   ^contains=matrix/cortex.ActivationBundle
 
 NODE id=matrix/cortex.ActivationBundle#Transcript kind=field
-  digest=b3:a3eb076c58eae72d26f79b52c976e9280f79930e33db977874fda8309c08270e file=cortex/activate.go range=119:121 lang=go exported=true byte_range=5655:5817
+  digest=b3:a3eb076c58eae72d26f79b52c976e9280f79930e33db977874fda8309c08270e file=cortex/activate.go range=124:126 lang=go exported=true byte_range=5996:6158
   sig=[]cortex.Message
   doc=Transcript is the T2 slice: the tail of this conversation's own\nsession-store transcript, ascending seq order (survivors after trim).
 EDGES
   ^contains=matrix/cortex.ActivationBundle
 
 NODE id=matrix/cortex.ActivationBundle#Trimmed kind=field
-  digest=b3:7c49852ab99b35d4ce3febe55569d84d2bd9c738194e036ab25bb570d2f0c9af file=cortex/activate.go range=137:138 lang=go exported=true byte_range=6534:6620
+  digest=b3:7c49852ab99b35d4ce3febe55569d84d2bd9c738194e036ab25bb570d2f0c9af file=cortex/activate.go range=142:143 lang=go exported=true byte_range=6875:6961
   sig=int
   doc=Trimmed is the count of tier candidates dropped by budget enforcement.
 EDGES
@@ -708,7 +708,7 @@ EDGES
   ^contains=matrix/cortex.Cortex
 
 NODE id=matrix/cortex.Cortex.Activate kind=method
-  digest=b3:ab9c1ed2e81636e32750a24856f213cf2d73527e62bad808d79e2d6618ad53c2 file=cortex/activate.go range=181:336 lang=go exported=true byte_range=7902:13098
+  digest=b3:454a7bbb839074be10fe24b8b37f675fb6d7474b2355adbdd03edb58b113c010 file=cortex/activate.go range=186:349 lang=go exported=true byte_range=8243:13811
   sig=func (c *Cortex) Activate(conv, query string, budget Budget) (*ActivationBundle, error)
   doc=Activate composes the whole per-turn working set described in req.7.1.\nquery is accepted per the design's call shape but is currently UNUSED: no\nacceptance criterion in req.7 assigns it tier-selection behavior (Pinned/\nTimeline/Recent/Transcript are all query-independent — unlike Context's\nFrame/Outcomes tiers, none of Activate's tiers are verb/object-keyed). It\nis reserved for a future extension rather than guessed at here.
 EDGES
@@ -1148,7 +1148,7 @@ EDGES
   ^defines=matrix/cortex/cascade.go
 
 NODE id=matrix/cortex.Cortex.cachedTierPinned kind=method
-  digest=b3:f2dab64bd64bc52593f0d00afdde76715f4293e2a5c0699f52db946ca5fb1cba file=cortex/activate.go range=144:166 lang=go exported=false byte_range=6776:7488
+  digest=b3:f2dab64bd64bc52593f0d00afdde76715f4293e2a5c0699f52db946ca5fb1cba file=cortex/activate.go range=149:171 lang=go exported=false byte_range=7117:7829
   sig=func (c *Cortex) cachedTierPinned() ([]memory.ID, error)
   doc=cachedTierPinned returns the Pinned-tier candidate ID list, served from\nthe in-memory per-turn cache (cortex.go's pinnedCache* fields) when the\njournal head hasn't advanced since it was last computed, or freshly\nscanned (and cached) otherwise. See cortex.go's field doc for the full\ninvalidation rationale (req.7.2, audit NE-7).
 EDGES
@@ -1227,7 +1227,7 @@ EDGES
   ^defines=matrix/cortex/edges.go
 
 NODE id=matrix/cortex.Cortex.loadOrRepairStorySoFar kind=method
-  digest=b3:ae42b20c3a312143301a04b83a572471379b54ca90ebaf64960f0fbce97732c9 file=cortex/activate.go range=338:366 lang=go exported=false byte_range=13100:13963
+  digest=b3:ae42b20c3a312143301a04b83a572471379b54ca90ebaf64960f0fbce97732c9 file=cortex/activate.go range=351:379 lang=go exported=false byte_range=13813:14676
   sig=func (c *Cortex) loadOrRepairStorySoFar(conv string, msgs []Message) (string, error)
   doc=loadOrRepairStorySoFar returns the ShortForm of conv's story-so-far\nrecord, performing the lazy read-repair described in the file header when\nthe persisted record is missing or stale relative to msgs' current head\nseq. Returns "" when the conversation has no transcript yet (req.7.5\ngraceful degradation — never an error).
 EDGES
@@ -1391,7 +1391,7 @@ EDGES
   ^defines=matrix/cortex/ratelimit.go
 
 NODE id=matrix/cortex.DefaultRecentEpisodesN kind=const
-  digest=b3:635368cb225eef2539252799bfdce5f8f10c121238637f59c1b6be72ac6478d2 file=cortex/activate.go range=99:100 lang=go exported=true byte_range=4802:4897
+  digest=b3:635368cb225eef2539252799bfdce5f8f10c121238637f59c1b6be72ac6478d2 file=cortex/activate.go range=104:105 lang=go exported=true byte_range=5143:5238
   sig=untyped int
   doc=DefaultRecentEpisodesN caps the T1 Recent tier's episode count.
 EDGES
@@ -1412,14 +1412,14 @@ EDGES
   ^defines=matrix/cortex/rollup.go
 
 NODE id=matrix/cortex.DefaultTimelineLookbackNanos kind=const
-  digest=b3:48cc3ae627f5520e00d80e93404e9e3d9b583e0d705a8a1fbd364248b2a08630 file=cortex/activate.go range=90:97 lang=go exported=true byte_range=4298:4799
+  digest=b3:48cc3ae627f5520e00d80e93404e9e3d9b583e0d705a8a1fbd364248b2a08630 file=cortex/activate.go range=95:102 lang=go exported=true byte_range=4639:5140
   sig=int64
   doc=DefaultTimelineLookbackNanos bounds the T0 Timeline tier to the last\nN nanoseconds of epoch rollups. Anchored to salience.HalfLifeNanos\n(90 days) — the same constant this whole system already uses to\ndefine "the recent past" via the recency substrate, so the Timeline\nhorizon and the recency decay this feature ranks everything else by\nare the same 90-day notion of "the general past", not an arbitrary\nsecond number.
 EDGES
   ^defines=matrix/cortex/activate.go
 
 NODE id=matrix/cortex.DefaultTranscriptTailLimit kind=const
-  digest=b3:ffa1fbeaeda37d3f9e9e32b973c05ed55c64b28930911c78f889a7e900338c3f file=cortex/activate.go range=102:104 lang=go exported=true byte_range=4900:5046
+  digest=b3:ffa1fbeaeda37d3f9e9e32b973c05ed55c64b28930911c78f889a7e900338c3f file=cortex/activate.go range=107:109 lang=go exported=true byte_range=5241:5387
   sig=untyped int
   doc=DefaultTranscriptTailLimit caps the T2 Transcript slice to the most\nrecent N messages of the conversation.
 EDGES
@@ -1864,9 +1864,9 @@ EDGES
   ^defines=matrix/cortex/attest.go
 
 NODE id=matrix/cortex.MaxActivateBudgetTokens kind=const
-  digest=b3:1adcdbc00f66760c56d14a7286bfcf26a559b2cce720efdd11445dd29995ea6a file=cortex/activate.go range=87:88 lang=go exported=true byte_range=4191:4295
+  digest=b3:5c15919da05ebfef30096e5b861d473bc48f587ed8d8ccab22a7ce7ec4d8476a file=cortex/activate.go range=87:93 lang=go exported=true byte_range=4191:4636
   sig=untyped int
-  doc=MaxActivateBudgetTokens mirrors Context's MaxBudgetTokens.
+  doc=MaxActivateBudgetTokens caps a caller-supplied activation budget. It is\ndeliberately DECOUPLED from Context's MaxBudgetTokens (4000): the\nactivation bundle is the agent's whole durable-memory working set, and a\nlarge-window caller (Neo at 1M) legitimately asks for a far richer\nbundle than the legacy Context composer ever serves. The ceiling bounds\npathological requests, not normal ones.
 EDGES
   ^defines=matrix/cortex/activate.go
 
@@ -2705,7 +2705,7 @@ EDGES
   ^contains=matrix/cortex.WriteMeta
 
 NODE id=matrix/cortex.activationItem kind=type
-  digest=b3:1b14c91b33c86a9f1851c4340c717d1c18cc52d9237b5589436a85d1f294a4e2 file=cortex/activate.go range=168:179 lang=go exported=false byte_range=7490:7900
+  digest=b3:1b14c91b33c86a9f1851c4340c717d1c18cc52d9237b5589436a85d1f294a4e2 file=cortex/activate.go range=173:184 lang=go exported=false byte_range=7831:8241
   sig=type activationItem struct {\n	tier	string\n	idx	int\n	uri	memory.URI\n	score	float64\n	tokens	int\n}
   doc=activationItem is the internal, tier-agnostic row the single global trim\n(req.7.1) ranks and drops from. tier+idx point back into the per-tier\ncandidate slices assembled before trimming, so survivors can be spliced\nback into ActivationBundle's typed fields in their original per-tier\norder.
 EDGES
@@ -2713,31 +2713,31 @@ EDGES
   ^defines=matrix/cortex/activate.go
 
 NODE id=matrix/cortex.activationItem#idx kind=field
-  digest=b3:d1f67976bc229d7e9831e86031a081654139532a21f7a6bbfa8f77f91c84d722 file=cortex/activate.go range=175:175 lang=go exported=false byte_range=7841:7851
+  digest=b3:d1f67976bc229d7e9831e86031a081654139532a21f7a6bbfa8f77f91c84d722 file=cortex/activate.go range=180:180 lang=go exported=false byte_range=8182:8192
   sig=int
 EDGES
   ^contains=matrix/cortex.activationItem
 
 NODE id=matrix/cortex.activationItem#score kind=field
-  digest=b3:9b0e9e8276ce4b801b2313f2fbabbca50f55cd80a97bea37f50efdf992b89882 file=cortex/activate.go range=177:177 lang=go exported=false byte_range=7872:7886
+  digest=b3:9b0e9e8276ce4b801b2313f2fbabbca50f55cd80a97bea37f50efdf992b89882 file=cortex/activate.go range=182:182 lang=go exported=false byte_range=8213:8227
   sig=float64
 EDGES
   ^contains=matrix/cortex.activationItem
 
 NODE id=matrix/cortex.activationItem#tier kind=field
-  digest=b3:4ab5f8886f1b44df2f68ac0d8d81321238a568c9a9a2aa7e507703496f894208 file=cortex/activate.go range=174:174 lang=go exported=false byte_range=7826:7839
+  digest=b3:4ab5f8886f1b44df2f68ac0d8d81321238a568c9a9a2aa7e507703496f894208 file=cortex/activate.go range=179:179 lang=go exported=false byte_range=8167:8180
   sig=string
 EDGES
   ^contains=matrix/cortex.activationItem
 
 NODE id=matrix/cortex.activationItem#tokens kind=field
-  digest=b3:289cc176b3a2e9204b62bc182742a085f1ff5860659e80164683e33833bfcf68 file=cortex/activate.go range=178:178 lang=go exported=false byte_range=7888:7898
+  digest=b3:289cc176b3a2e9204b62bc182742a085f1ff5860659e80164683e33833bfcf68 file=cortex/activate.go range=183:183 lang=go exported=false byte_range=8229:8239
   sig=int
 EDGES
   ^contains=matrix/cortex.activationItem
 
 NODE id=matrix/cortex.activationItem#uri kind=field
-  digest=b3:366a2db52feba2df0843b390859e091d5fa093c756c4b1851ed6fc74a03eb7eb file=cortex/activate.go range=176:176 lang=go exported=false byte_range=7853:7870
+  digest=b3:366a2db52feba2df0843b390859e091d5fa093c756c4b1851ed6fc74a03eb7eb file=cortex/activate.go range=181:181 lang=go exported=false byte_range=8194:8211
   sig=memory.URI
 EDGES
   ^contains=matrix/cortex.activationItem
@@ -3588,7 +3588,7 @@ EDGES
   ^defines=matrix/cortex/cortex.go
 
 NODE id=matrix/cortex.trimActivationItems kind=func
-  digest=b3:1b75e8265c2e14b27ac39be409b3ea632b0aa9323fc8ac1615bc3c44aaf58381 file=cortex/activate.go range=368:414 lang=go exported=false byte_range=13965:15437
+  digest=b3:1b75e8265c2e14b27ac39be409b3ea632b0aa9323fc8ac1615bc3c44aaf58381 file=cortex/activate.go range=381:427 lang=go exported=false byte_range=14678:16150
   sig=func trimActivationItems(items []activationItem, storyTokens, budget int) (survive []bool, reachable []memory.URI, total, trimmed int)
   doc=trimActivationItems applies the single global salience-ascending trim\n(req.7.1): if the pooled token total (storyTokens + every item's tokens)\nalready fits budget, nothing is dropped. Otherwise items are dropped\nlowest-score-first (URI ascending as a deterministic tiebreak), always\nkeeping at least one item overall (the same "≥1 relief valve" convention\ntrimContextByBudget/context.go uses), until the total fits or one item\nremains. storyTokens counts toward the total but StorySoFar is never\nitself a drop candidate (it is a single scalar summary, not a list of\nindependent members).
 EDGES
@@ -3651,7 +3651,7 @@ EDGES
   ^defines=matrix/cortex/embedder.go
 
 NODE id=matrix/cortex/activate.go kind=file
-  digest=b3:0363cf14f2e8e3620a6343af79c0f6fba276c21093796e1d4404209d7040b0d3 file=cortex/activate.go range=1:414 lang=go exported=true
+  digest=b3:cd3db3e4651ff1fc5cae8371d39ad60d78b12cc9f19d54c4d561008663c77e8a file=cortex/activate.go range=1:427 lang=go exported=true
 EDGES
   defines=matrix/cortex.ActivationBundle,matrix/cortex.Budget,matrix/cortex.Cortex.Activate,matrix/cortex.Cortex.cachedTierPinned,matrix/cortex.Cortex.loadOrRepairStorySoFar,matrix/cortex.DefaultActivateBudgetTokens,matrix/cortex.DefaultRecentEpisodesN,matrix/cortex.DefaultTimelineLookbackNanos,matrix/cortex.DefaultTranscriptTailLimit,matrix/cortex.MaxActivateBudgetTokens,matrix/cortex.activationItem,matrix/cortex.trimActivationItems
   ^contains=matrix/cortex

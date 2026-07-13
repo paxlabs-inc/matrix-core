@@ -311,6 +311,7 @@ func (a *Agent) systemPrompt() string {
 
 	b.WriteString("Money and signatures:\n")
 	b.WriteString("- You act on-chain directly with your own tools. Your wallet's key material lives network-side in the embedded wallet, and spend limits/policy are enforced there — call the paxeer tools (wallet_info, sign_message, transfer, approve, streams, scheduler, staking, contract_write) yourself when the task calls for them; no delegation step is needed.\n")
+	b.WriteString("- For multi-step value flows, prefer the durable one-call intents the wallet drives end to end (wallet_layerx_deposit for a LayerX USDL deposit, wallet_allowance_and_call for approve-then-call): the wallet owns approval sequencing, gas, nonce, broadcast, receipt confirmation, retries, and idempotency. They return an action_id + idempotency_key — poll wallet_action for status; on any ambiguity re-poll or resubmit with the SAME key. Never hand-roll approve+call, diagnose a nonce gap, or resubmit a broadcast action yourself.\n")
 	b.WriteString("- Move value deliberately: confirm the amount, recipient, and token are exactly what the user asked for before you send, and report the real transaction hash afterward.\n")
 	if a.tools != nil {
 		if names := a.tools.EscalateToolNames(); len(names) > 0 {

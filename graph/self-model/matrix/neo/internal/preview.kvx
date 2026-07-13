@@ -1,0 +1,615 @@
+# GENERATED gen=codegraph do-not-edit merkle=b3:7270c3824ecc37257f5e811e088d456ae20503c845e3315015833efad4b363c9
+
+NODE id=matrix/neo/internal/preview kind=package
+  digest=b3:e9cbe88baafff803279614ce128abb0c0ba52f23b91c8113a09bc82a3e2f1c00 file=neo/internal/preview range=0:0 lang=go exported=true
+EDGES
+  contains=matrix/neo/internal/preview/detect.go,matrix/neo/internal/preview/preview.go
+  ^contains=mod:matrix/neo
+
+NODE id=matrix/neo/internal/preview.Config kind=type
+  digest=b3:93f5f33219888cc206e9d103255eb2293f27f47aebd954747506b0b0353a1dbc file=neo/internal/preview/preview.go range=71:97 lang=go exported=true byte_range=2411:3855
+  sig=type Config struct {\n	// UserID is the supabase user id — the key the router /preview proxy uses\n	// and the value the daemon registers its target under. MUST match the JWT subject.\n	UserID	string\n	// RouterInternalURL is the base of the router's internal listener, e.g.\n	// http://matrix-router.railway.internal:8088 . the daemon registers/deregisters\n	// its preview target at {RouterInternalURL}/internal/preview/register.\n	RouterInternalURL	string\n	// RouterToken is ROUTER_PREVIEW_TOKEN, sent as a bearer to the internal door.\n	RouterToken	string\n	// PublicBase is the client-facing base for the proxied preview URL. Empty\n	// yields a site-relative "/preview/{user}/" (correct behind the router).\n	PublicBase	string\n	// TTL is the idle lifetime before the reaper destroys a sandbox (default 30m).\n	TTL	time.Duration\n	// MaxActive caps this user's CONCURRENT sandboxes (req 7.4). Provisioning\n	// past the cap evicts the least-recently-touched preview first (destroyed +\n	// preview.expired), so the bound always holds. Default 2.\n	MaxActive	int\n	// Image is the sandbox base image (default ubuntu:24.04).\n	Image	string\n	// Logf receives diagnostics; nil discards.\n	Logf	func(string, ...interface{})\n}
+  doc=Config configures a Manager. UserID and RouterInternalURL are required for a\nworking preview; when either is empty the Manager is disabled and Provision\nreturns a clear error (the engine only builds a Manager when configured).
+EDGES
+  contains=matrix/neo/internal/preview.Config#Image,matrix/neo/internal/preview.Config#Logf,matrix/neo/internal/preview.Config#MaxActive,matrix/neo/internal/preview.Config#PublicBase,matrix/neo/internal/preview.Config#RouterInternalURL,matrix/neo/internal/preview.Config#RouterToken,matrix/neo/internal/preview.Config#TTL,matrix/neo/internal/preview.Config#UserID
+  ^defines=matrix/neo/internal/preview/preview.go
+
+NODE id=matrix/neo/internal/preview.Config#Image kind=field
+  digest=b3:ea9fe84b87835b737300b17a1c28f3a1abd391ace097bd409f4218bac302d042 file=neo/internal/preview/preview.go range=93:94 lang=go exported=true byte_range=3701:3773
+  sig=string
+  doc=Image is the sandbox base image (default ubuntu:24.04).
+EDGES
+  ^contains=matrix/neo/internal/preview.Config
+
+NODE id=matrix/neo/internal/preview.Config#Logf kind=field
+  digest=b3:6a32a89222e7ca5fa854b64f7154bdc7ddedef85598d17291a34f84593147497 file=neo/internal/preview/preview.go range=95:96 lang=go exported=true byte_range=3775:3853
+  sig=func(string, ...interface{})
+  doc=Logf receives diagnostics; nil discards.
+EDGES
+  ^contains=matrix/neo/internal/preview.Config
+
+NODE id=matrix/neo/internal/preview.Config#MaxActive kind=field
+  digest=b3:ed13e1ed95a85ac56ab8d7ea38c42a587baeabef777798c6aa1de9b44ddc7324 file=neo/internal/preview/preview.go range=89:92 lang=go exported=true byte_range=3472:3699
+  sig=int
+  doc=MaxActive caps this user's CONCURRENT sandboxes (req 7.4). Provisioning\npast the cap evicts the least-recently-touched preview first (destroyed +\npreview.expired), so the bound always holds. Default 2.
+EDGES
+  ^contains=matrix/neo/internal/preview.Config
+
+NODE id=matrix/neo/internal/preview.Config#PublicBase kind=field
+  digest=b3:15e82d8599a6150fb5f9435c018658b9e8757bb3e06349853d49749d5671a30f file=neo/internal/preview/preview.go range=84:86 lang=go exported=true byte_range=3202:3370
+  sig=string
+  doc=PublicBase is the client-facing base for the proxied preview URL. Empty\nyields a site-relative "/preview/{user}/" (correct behind the router).
+EDGES
+  ^contains=matrix/neo/internal/preview.Config
+
+NODE id=matrix/neo/internal/preview.Config#RouterInternalURL kind=field
+  digest=b3:052e717d5ad2782a4ccb61c17687f047b85ba516f65f48af477c8b81822d2f48 file=neo/internal/preview/preview.go range=78:81 lang=go exported=true byte_range=2847:3100
+  sig=string
+  doc=RouterInternalURL is the base of the router's internal listener, e.g.\nhttp://matrix-router.railway.internal:8088 . the daemon registers/deregisters\nits preview target at {RouterInternalURL}/internal/preview/register.
+EDGES
+  ^contains=matrix/neo/internal/preview.Config
+
+NODE id=matrix/neo/internal/preview.Config#RouterToken kind=field
+  digest=b3:05cc911724a472aeeb2660df614c942c5781237681e97cb2d7ecc57af9b98c4e file=neo/internal/preview/preview.go range=82:83 lang=go exported=true byte_range=3102:3200
+  sig=string
+  doc=RouterToken is ROUTER_PREVIEW_TOKEN, sent as a bearer to the internal door.
+EDGES
+  ^contains=matrix/neo/internal/preview.Config
+
+NODE id=matrix/neo/internal/preview.Config#TTL kind=field
+  digest=b3:95ce5c8b92ce3e0f6cd55c332cb24d92f77b6cbf35d7248ed079c1657a9eb736 file=neo/internal/preview/preview.go range=87:88 lang=go exported=true byte_range=3372:3470
+  sig=time.Duration
+  doc=TTL is the idle lifetime before the reaper destroys a sandbox (default 30m).
+EDGES
+  ^contains=matrix/neo/internal/preview.Config
+
+NODE id=matrix/neo/internal/preview.Config#UserID kind=field
+  digest=b3:b622556b53cd7e6d307cb3f970e4443f860fa719b8876f905cdb64581bbc0649 file=neo/internal/preview/preview.go range=75:77 lang=go exported=true byte_range=2669:2845
+  sig=string
+  doc=UserID is the supabase user id — the key the router /preview proxy uses\nand the value the daemon registers its target under. MUST match the JWT subject.
+EDGES
+  ^contains=matrix/neo/internal/preview.Config
+
+NODE id=matrix/neo/internal/preview.DetectStart kind=func
+  digest=b3:0b83140c0a89282ca90bc3323989f10a1fe77b65730e93933eef6582456c0df9 file=neo/internal/preview/detect.go range=28:81 lang=go exported=true byte_range=947:2964
+  sig=func DetectStart(root string) (StartSpec, bool)
+  doc=DetectStart infers how to run a project by reading its REAL manifest files\nfrom the workspace root (package.json scripts + dependencies, python\nentrypoints, go.mod). ok=false means no runnable app was detected — the\ncaller surfaces preview.failed with an honest reason rather than guessing.
+EDGES
+  ^defines=matrix/neo/internal/preview/detect.go
+
+NODE id=matrix/neo/internal/preview.Emit kind=type
+  digest=b3:8f640c2f676cbe36fb5a3f1719874b5b7e12dd1128db627060d2603f7402575d file=neo/internal/preview/preview.go range=67:69 lang=go exported=true byte_range=2184:2409
+  sig=type Emit func(convID, typ string, fields map[string]interface{})
+  doc=Emit publishes a preview.* event onto a conversation's live topic + durable\ntrace. It is engine.publishToConversation; a no-op when the run has no topic.
+EDGES
+  ^defines=matrix/neo/internal/preview/preview.go
+
+NODE id=matrix/neo/internal/preview.EvtExpired kind=const
+  digest=b3:4849c417536c2654afb576a5b4f6cac79b0526202a76cd438eac02d2c7bbed79 file=neo/internal/preview/preview.go range=43:49 lang=go exported=true byte_range=1344:1581
+  sig=untyped string
+  doc=Event type names (mirrored in the daemon trace whitelist and the client\nreducer's preview.* fold).
+EDGES
+  ^defines=matrix/neo/internal/preview/preview.go
+
+NODE id=matrix/neo/internal/preview.EvtFailed kind=const
+  digest=b3:6f54e0dc56ab99ebdab1c752c2cf415bff12209c3208d1311181dc016620ff74 file=neo/internal/preview/preview.go range=43:48 lang=go exported=true byte_range=1344:1549
+  sig=untyped string
+  doc=Event type names (mirrored in the daemon trace whitelist and the client\nreducer's preview.* fold).
+EDGES
+  ^defines=matrix/neo/internal/preview/preview.go
+
+NODE id=matrix/neo/internal/preview.EvtPending kind=const
+  digest=b3:2e44e610d7cd381457d9a626ed8161d4715a4f9e3ddb05778737eddd678bc673 file=neo/internal/preview/preview.go range=43:46 lang=go exported=true byte_range=1344:1488
+  sig=untyped string
+  doc=Event type names (mirrored in the daemon trace whitelist and the client\nreducer's preview.* fold).
+EDGES
+  ^defines=matrix/neo/internal/preview/preview.go
+
+NODE id=matrix/neo/internal/preview.EvtReady kind=const
+  digest=b3:84d8a5ffd5cde94a1728f6de12b20b21872bb60b83b14f7c3dc06b579c4b2e32 file=neo/internal/preview/preview.go range=43:47 lang=go exported=true byte_range=1344:1518
+  sig=untyped string
+  doc=Event type names (mirrored in the daemon trace whitelist and the client\nreducer's preview.* fold).
+EDGES
+  ^defines=matrix/neo/internal/preview/preview.go
+
+NODE id=matrix/neo/internal/preview.Info kind=type
+  digest=b3:2003db697959ed0cd1a8de46c37a8e2e54abe892d9a4c7f8c67104eea949fd51 file=neo/internal/preview/preview.go range=124:130 lang=go exported=true byte_range=4382:4523
+  sig=type Info struct {\n	URL		string\n	Host		string\n	Port		string\n	SandboxID	string\n}
+  doc=Info is the result of a successful Provision.
+EDGES
+  contains=matrix/neo/internal/preview.Info#Host,matrix/neo/internal/preview.Info#Port,matrix/neo/internal/preview.Info#SandboxID,matrix/neo/internal/preview.Info#URL
+  ^defines=matrix/neo/internal/preview/preview.go
+
+NODE id=matrix/neo/internal/preview.Info#Host kind=field
+  digest=b3:71b58f745814913db820adc6654647332e9f6d67447013ecd2842f64e371b83e file=neo/internal/preview/preview.go range=127:127 lang=go exported=true byte_range=4469:4485
+  sig=string
+EDGES
+  ^contains=matrix/neo/internal/preview.Info
+
+NODE id=matrix/neo/internal/preview.Info#Port kind=field
+  digest=b3:5960551e5ae6bc950ef15944312dc18197150298246ae4f2d0e51cbea7b68ad6 file=neo/internal/preview/preview.go range=128:128 lang=go exported=true byte_range=4487:4503
+  sig=string
+EDGES
+  ^contains=matrix/neo/internal/preview.Info
+
+NODE id=matrix/neo/internal/preview.Info#SandboxID kind=field
+  digest=b3:6eca7c45240a00282019273c59a9be3408f473728ac2aa89938208c3a2539d51 file=neo/internal/preview/preview.go range=129:129 lang=go exported=true byte_range=4505:4521
+  sig=string
+EDGES
+  ^contains=matrix/neo/internal/preview.Info
+
+NODE id=matrix/neo/internal/preview.Info#URL kind=field
+  digest=b3:aa6d2ebb176ad05b0ca72aba83b8b8bc55ff7a8b17212d42e4f4895ee09cc7b8 file=neo/internal/preview/preview.go range=126:126 lang=go exported=true byte_range=4451:4467
+  sig=string
+EDGES
+  ^contains=matrix/neo/internal/preview.Info
+
+NODE id=matrix/neo/internal/preview.Manager kind=type
+  digest=b3:1ed8fe7ac2ea1e24fec4ad2c8f7ab60088fde67c8de1020b387459d8ea7960c8 file=neo/internal/preview/preview.go range=99:112 lang=go exported=true byte_range=3857:4211
+  sig=type Manager struct {\n	sb	sandbox.Client\n	emit	Emit\n	cfg	Config\n	hc	*http.Client\n\n	// now is the clock; injectable so the reaper is deterministic under test.\n	now	func() time.Time\n\n	mu	sync.Mutex\n	active	map[string]*live	// keyed by conversation id\n}
+  doc=Manager owns the live previews for one daemon (one user). It is safe for\nconcurrent use.
+EDGES
+  contains=matrix/neo/internal/preview.Manager#active,matrix/neo/internal/preview.Manager#cfg,matrix/neo/internal/preview.Manager#emit,matrix/neo/internal/preview.Manager#hc,matrix/neo/internal/preview.Manager#mu,matrix/neo/internal/preview.Manager#now,matrix/neo/internal/preview.Manager#sb,matrix/neo/internal/preview.Manager.Close,matrix/neo/internal/preview.Manager.Enabled,matrix/neo/internal/preview.Manager.Provision,matrix/neo/internal/preview.Manager.StartReaper,matrix/neo/internal/preview.Manager.Teardown,matrix/neo/internal/preview.Manager.Touch,matrix/neo/internal/preview.Manager.deregister,matrix/neo/internal/preview.Manager.evictForCap,matrix/neo/internal/preview.Manager.healthProbe,matrix/neo/internal/preview.Manager.logf,matrix/neo/internal/preview.Manager.previewURL,matrix/neo/internal/preview.Manager.provision,matrix/neo/internal/preview.Manager.reapOnce,matrix/neo/internal/preview.Manager.register,matrix/neo/internal/preview.Manager.routerCall,matrix/neo/internal/preview.Manager.teardownConv
+  ^defines=matrix/neo/internal/preview/preview.go
+
+NODE id=matrix/neo/internal/preview.Manager#active kind=field
+  digest=b3:2155ce528acacb6e6d3e5ab2054785d21bc0414b23b5953738901ed23707a1d9 file=neo/internal/preview/preview.go range=111:111 lang=go exported=false byte_range=4158:4181
+  sig=map[string]*preview.live
+EDGES
+  ^contains=matrix/neo/internal/preview.Manager
+
+NODE id=matrix/neo/internal/preview.Manager#cfg kind=field
+  digest=b3:02749979a610b19cdbcde99fba0e2f1c005489fb24f0cce4ef3616d14985c454 file=neo/internal/preview/preview.go range=104:104 lang=go exported=false byte_range=4007:4018
+  sig=preview.Config
+EDGES
+  ^contains=matrix/neo/internal/preview.Manager
+
+NODE id=matrix/neo/internal/preview.Manager#emit kind=field
+  digest=b3:84066f80c3b61a1aca57b35a12a808cc99e751be67ccfc47968d11402bab5b1a file=neo/internal/preview/preview.go range=103:103 lang=go exported=false byte_range=3996:4005
+  sig=preview.Emit
+EDGES
+  ^contains=matrix/neo/internal/preview.Manager
+
+NODE id=matrix/neo/internal/preview.Manager#hc kind=field
+  digest=b3:3598896d5297b1b8c6b0ddf88f82f3757cd641e5331d9146e673bf519b758658 file=neo/internal/preview/preview.go range=105:105 lang=go exported=false byte_range=4020:4037
+  sig=*http.Client
+EDGES
+  ^contains=matrix/neo/internal/preview.Manager
+
+NODE id=matrix/neo/internal/preview.Manager#mu kind=field
+  digest=b3:104dc836435d5ef8442f9bfbde658e9de40c6f0a6a782ec8db1f57575a3b03f9 file=neo/internal/preview/preview.go range=110:110 lang=go exported=false byte_range=4139:4156
+  sig=sync.Mutex
+EDGES
+  ^contains=matrix/neo/internal/preview.Manager
+
+NODE id=matrix/neo/internal/preview.Manager#now kind=field
+  digest=b3:5f3ef4bd80f3b31bb6cd356a0b0b0a4090d260ec8e393253299787437c84f7ca file=neo/internal/preview/preview.go range=107:108 lang=go exported=false byte_range=4040:4136
+  sig=func() time.Time
+  doc=now is the clock; injectable so the reaper is deterministic under test.
+EDGES
+  ^contains=matrix/neo/internal/preview.Manager
+
+NODE id=matrix/neo/internal/preview.Manager#sb kind=field
+  digest=b3:6d9d5296c767727f4fe7f0439257064b1bb26aed7d126bbc36d7714b7b03df06 file=neo/internal/preview/preview.go range=102:102 lang=go exported=false byte_range=3975:3994
+  sig=sandbox.Client
+EDGES
+  ^contains=matrix/neo/internal/preview.Manager
+
+NODE id=matrix/neo/internal/preview.Manager.Close kind=method
+  digest=b3:8b986fc398514b5603b6912767fd78a49c79bc281d348dbe42d28cd33220a747 file=neo/internal/preview/preview.go range=430:447 lang=go exported=true byte_range=13983:14433
+  sig=func (m *Manager) Close()
+  doc=Close destroys every live preview (graceful daemon shutdown).
+EDGES
+  ^contains=matrix/neo/internal/preview.Manager
+  ^defines=matrix/neo/internal/preview/preview.go
+
+NODE id=matrix/neo/internal/preview.Manager.Enabled kind=method
+  digest=b3:19cf878d9036c893acc8ac70c368417dae4293bb3541e617fda248a38db7eb85 file=neo/internal/preview/preview.go range=162:165 lang=go exported=true byte_range=5169:5368
+  sig=func (m *Manager) Enabled() bool
+  doc=Enabled reports whether the Manager can actually provision (configured).
+EDGES
+  ^contains=matrix/neo/internal/preview.Manager
+  ^defines=matrix/neo/internal/preview/preview.go
+
+NODE id=matrix/neo/internal/preview.Manager.Provision kind=method
+  digest=b3:285e77decaa6d42b9dc4c1171d63e39a33346f0bee7295656725856d4d6a10ce file=neo/internal/preview/preview.go range=173:204 lang=go exported=true byte_range=5566:7059
+  sig=func (m *Manager) Provision(ctx context.Context, req Request) (Info, error)
+  doc=Provision brings up (or replaces) the preview for a conversation. It emits\npreview.pending immediately, then preview.ready with the proxied URL on\nsuccess or preview.failed with an honest reason on any failure. It is\nsynchronous; the engine calls it from a goroutine on the re-preview route (or\na future auto-preview seam).
+EDGES
+  ^contains=matrix/neo/internal/preview.Manager
+  ^defines=matrix/neo/internal/preview/preview.go
+
+NODE id=matrix/neo/internal/preview.Manager.StartReaper kind=method
+  digest=b3:7e125ff82123f83dae7306ff35a2e27eed45280f443abe585da3860c5506793a file=neo/internal/preview/preview.go range=348:361 lang=go exported=true byte_range=11620:11960
+  sig=func (m *Manager) StartReaper(ctx context.Context)
+  doc=StartReaper runs the idle-preview reaper until ctx is cancelled. Idle\npreviews (untouched for > TTL) are destroyed and emit preview.expired.
+EDGES
+  ^contains=matrix/neo/internal/preview.Manager
+  ^defines=matrix/neo/internal/preview/preview.go
+
+NODE id=matrix/neo/internal/preview.Manager.Teardown kind=method
+  digest=b3:4451249cf99f5911c3b4b2f88aec8363caba7b04f6186a2d6bbdce3b59958ae1 file=neo/internal/preview/preview.go range=425:428 lang=go exported=true byte_range=13801:13981
+  sig=func (m *Manager) Teardown(ctx context.Context, convID string)
+  doc=Teardown destroys the preview for a conversation and emits preview.expired.
+EDGES
+  ^contains=matrix/neo/internal/preview.Manager
+  ^defines=matrix/neo/internal/preview/preview.go
+
+NODE id=matrix/neo/internal/preview.Manager.Touch kind=method
+  digest=b3:148ea67c4b74af36d418c899401945709f500d3ef0988e74306c6a7a9c80e7bc file=neo/internal/preview/preview.go range=339:346 lang=go exported=true byte_range=11418:11618
+  sig=func (m *Manager) Touch(convID string)
+  doc=Touch marks a preview as recently used, deferring the reaper.
+EDGES
+  ^contains=matrix/neo/internal/preview.Manager
+  ^defines=matrix/neo/internal/preview/preview.go
+
+NODE id=matrix/neo/internal/preview.Manager.deregister kind=method
+  digest=b3:ec2d22548d9ea89df0a919fd0542a37891c9709ce86d93ac305416f72edbff87 file=neo/internal/preview/preview.go range=306:309 lang=go exported=false byte_range=10373:10552
+  sig=func (m *Manager) deregister(ctx context.Context) error
+EDGES
+  ^contains=matrix/neo/internal/preview.Manager
+  ^defines=matrix/neo/internal/preview/preview.go
+
+NODE id=matrix/neo/internal/preview.Manager.evictForCap kind=method
+  digest=b3:b5f0d50fc72be99b7426091564c360611999254d756925766b195799da1c5f1f file=neo/internal/preview/preview.go range=382:405 lang=go exported=false byte_range=12483:13247
+  sig=func (m *Manager) evictForCap(ctx context.Context)
+  doc=evictForCap destroys least-recently-touched previews until a new one fits\nunder MaxActive. Evicted previews emit preview.expired so their panes render\nthe honest state.
+EDGES
+  ^contains=matrix/neo/internal/preview.Manager
+  ^defines=matrix/neo/internal/preview/preview.go
+
+NODE id=matrix/neo/internal/preview.Manager.healthProbe kind=method
+  digest=b3:d0725839de39b55c00127ca9327c82334c009a18ec180095c939b42f45c7b5a8 file=neo/internal/preview/preview.go range=272:298 lang=go exported=false byte_range=9108:10080
+  sig=func (m *Manager) healthProbe(ctx context.Context, sandboxID, port string) error
+  doc=healthProbe execs curl inside the sandbox until the app answers or the budget\nis exhausted. A 2xx/3xx/4xx status means the server is up (4xx = routing, not\ndead); only connection refusal / timeout is "not yet".
+EDGES
+  ^contains=matrix/neo/internal/preview.Manager
+  ^defines=matrix/neo/internal/preview/preview.go
+
+NODE id=matrix/neo/internal/preview.Manager.logf kind=method
+  digest=b3:58cea3505a1317eb36fc745629f479eef71974b5260549cb8ed38e852700574e file=neo/internal/preview/preview.go range=156:160 lang=go exported=false byte_range=5048:5167
+  sig=func (m *Manager) logf(format string, args ...interface{})
+EDGES
+  ^contains=matrix/neo/internal/preview.Manager
+  ^defines=matrix/neo/internal/preview/preview.go
+
+NODE id=matrix/neo/internal/preview.Manager.previewURL kind=method
+  digest=b3:cdb557db2a97543818a08aa707a99a2ecd3d92107e216e426b5140f10c218426 file=neo/internal/preview/preview.go range=332:337 lang=go exported=false byte_range=11215:11416
+  sig=func (m *Manager) previewURL() string
+EDGES
+  ^contains=matrix/neo/internal/preview.Manager
+  ^defines=matrix/neo/internal/preview/preview.go
+
+NODE id=matrix/neo/internal/preview.Manager.provision kind=method
+  digest=b3:e4f688290430ecb93c34c2193337eaa64b70079605a2a2e3bd2428a72c1a12e9 file=neo/internal/preview/preview.go range=206:270 lang=go exported=false byte_range=7061:9106
+  sig=func (m *Manager) provision(ctx context.Context, req Request) (Info, error)
+EDGES
+  ^contains=matrix/neo/internal/preview.Manager
+  ^defines=matrix/neo/internal/preview/preview.go
+
+NODE id=matrix/neo/internal/preview.Manager.reapOnce kind=method
+  digest=b3:ff8b5dcc31f1fc65f585632c3aa3f0f65164d0af36df7cf2369ad40637f80926 file=neo/internal/preview/preview.go range=363:380 lang=go exported=false byte_range=11962:12481
+  sig=func (m *Manager) reapOnce(ctx context.Context)
+EDGES
+  ^contains=matrix/neo/internal/preview.Manager
+  ^defines=matrix/neo/internal/preview/preview.go
+
+NODE id=matrix/neo/internal/preview.Manager.register kind=method
+  digest=b3:8e98f4f9a80bd60af35249f660476ac6c09d2ff5d51b78b20a400ec579cf7de0 file=neo/internal/preview/preview.go range=300:304 lang=go exported=false byte_range=10082:10371
+  sig=func (m *Manager) register(ctx context.Context, host, port string) error
+  doc=register / deregister talk to the router internal preview door.
+EDGES
+  ^contains=matrix/neo/internal/preview.Manager
+  ^defines=matrix/neo/internal/preview/preview.go
+
+NODE id=matrix/neo/internal/preview.Manager.routerCall kind=method
+  digest=b3:e48c9081cb6301a0e87b081876de8967380e8feba895534d2fbde01fca22f87f file=neo/internal/preview/preview.go range=311:330 lang=go exported=false byte_range=10554:11213
+  sig=func (m *Manager) routerCall(ctx context.Context, method string, body []byte) error
+EDGES
+  ^contains=matrix/neo/internal/preview.Manager
+  ^defines=matrix/neo/internal/preview/preview.go
+
+NODE id=matrix/neo/internal/preview.Manager.teardownConv kind=method
+  digest=b3:d6c74f310ae430bce6b412c57ce7d344c2fada069d03f424b710916728d7cd98 file=neo/internal/preview/preview.go range=407:423 lang=go exported=false byte_range=13249:13799
+  sig=func (m *Manager) teardownConv(ctx context.Context, convID string, emitExpired bool)
+  doc=teardownConv destroys the sandbox for one conversation. When emitExpired is\ntrue it also emits preview.expired (used by explicit teardown, not re-preview\nreplacement, which is silent).
+EDGES
+  ^contains=matrix/neo/internal/preview.Manager
+  ^defines=matrix/neo/internal/preview/preview.go
+
+NODE id=matrix/neo/internal/preview.New kind=func
+  digest=b3:a69ed4bb9d52045ed16a90687e245c17bdac020f80d47ef840cc87399d837726 file=neo/internal/preview/preview.go range=132:154 lang=go exported=true byte_range=4525:5046
+  sig=func New(sb sandbox.Client, emit Emit, cfg Config) *Manager
+  doc=New builds a Manager over a sandbox client and an event emitter.
+EDGES
+  ^defines=matrix/neo/internal/preview/preview.go
+
+NODE id=matrix/neo/internal/preview.Request kind=type
+  digest=b3:498c5168ddcf43e068b580446779975cb7b7bb36e51c599aa3e777fa9db67b90 file=neo/internal/preview/preview.go range=167:171 lang=go exported=true byte_range=5370:5564
+  sig=type Request struct {\n	ConvID	string	// the conversation whose topic carries the preview.* events\n	Root	string	// the project's workspace root to deploy\n}
+  doc=Request describes what to preview.
+EDGES
+  contains=matrix/neo/internal/preview.Request#ConvID,matrix/neo/internal/preview.Request#Root
+  ^defines=matrix/neo/internal/preview/preview.go
+
+NODE id=matrix/neo/internal/preview.Request#ConvID kind=field
+  digest=b3:7dbec2ea64727bfbd05fdf7b4cc6eace536ca4539c3eb130f7e0cdf291da7c97 file=neo/internal/preview/preview.go range=169:169 lang=go exported=true byte_range=5431:5444
+  sig=string
+EDGES
+  ^contains=matrix/neo/internal/preview.Request
+
+NODE id=matrix/neo/internal/preview.Request#Root kind=field
+  digest=b3:b4b7a225cde7026dd907364f57ed94617cb6b2a076912636d18f824ecc0cfc34 file=neo/internal/preview/preview.go range=170:170 lang=go exported=true byte_range=5507:5520
+  sig=string
+EDGES
+  ^contains=matrix/neo/internal/preview.Request
+
+NODE id=matrix/neo/internal/preview.StartSpec kind=type
+  digest=b3:1d45a4b0b112e28659bc37168939c9994952326eb37dc776d6f4334715a9b8ad file=neo/internal/preview/detect.go range=13:26 lang=go exported=true byte_range=249:945
+  sig=type StartSpec struct {\n	// Install runs once before Serve (npm install, pip install …); empty skips.\n	Install	string\n	// Serve is the long-lived dev/serve command; started detached in the sandbox.\n	Serve	string\n	// Port is the port the app binds (string form for the router register call).\n	Port	string\n	// Env is exported before Serve (PORT/HOST so frameworks bind reachably).\n	Env	map[string]string\n}
+  doc=StartSpec is a detected way to bring a project's app up inside the sandbox:\nan optional one-shot install/build command, the long-lived serve command,\nand the port the app is expected to bind. Host is forced to 0.0.0.0 via env\nso the router can reach it over the private network.
+EDGES
+  contains=matrix/neo/internal/preview.StartSpec#Env,matrix/neo/internal/preview.StartSpec#Install,matrix/neo/internal/preview.StartSpec#Port,matrix/neo/internal/preview.StartSpec#Serve
+  ^defines=matrix/neo/internal/preview/detect.go
+
+NODE id=matrix/neo/internal/preview.StartSpec#Env kind=field
+  digest=b3:57585b03a74e444d6da5e242fee3065159438bb606fac8286c53f65a5dd090ce file=neo/internal/preview/detect.go range=24:25 lang=go exported=true byte_range=847:943
+  sig=map[string]string
+  doc=Env is exported before Serve (PORT/HOST so frameworks bind reachably).
+EDGES
+  ^contains=matrix/neo/internal/preview.StartSpec
+
+NODE id=matrix/neo/internal/preview.StartSpec#Install kind=field
+  digest=b3:f02f71049485b3d79e4822133aad5e9908b3816be2de0f5263dfbf9b79363115 file=neo/internal/preview/detect.go range=18:19 lang=go exported=true byte_range=565:659
+  sig=string
+  doc=Install runs once before Serve (npm install, pip install …); empty skips.
+EDGES
+  ^contains=matrix/neo/internal/preview.StartSpec
+
+NODE id=matrix/neo/internal/preview.StartSpec#Port kind=field
+  digest=b3:5e2a72bbb8b73a1a942737100235f9e0ed0b25aa2f9e903127f7e83a448a3afb file=neo/internal/preview/detect.go range=22:23 lang=go exported=true byte_range=755:845
+  sig=string
+  doc=Port is the port the app binds (string form for the router register call).
+EDGES
+  ^contains=matrix/neo/internal/preview.StartSpec
+
+NODE id=matrix/neo/internal/preview.StartSpec#Serve kind=field
+  digest=b3:9a1277aea70bb45f722af56b9ba817d0c54cb384dca53095dde76da6ccbc4748 file=neo/internal/preview/detect.go range=20:21 lang=go exported=true byte_range=661:753
+  sig=string
+  doc=Serve is the long-lived dev/serve command; started detached in the sandbox.
+EDGES
+  ^contains=matrix/neo/internal/preview.StartSpec
+
+NODE id=matrix/neo/internal/preview.State kind=type
+  digest=b3:40d0ff822560f9fc046d7699f77dcab86fbdcbd0d98cb4c659e52346ecd0b869 file=neo/internal/preview/preview.go range=33:34 lang=go exported=true byte_range=1123:1206
+  sig=type State string
+  doc=State is the lifecycle state carried on every preview.* event.
+EDGES
+  ^defines=matrix/neo/internal/preview/preview.go
+
+NODE id=matrix/neo/internal/preview.StateExpired kind=const
+  digest=b3:13d5fc5fb94319ecefbce4f49b2c9b53b6bbae408b69f754cec33ada51b46893 file=neo/internal/preview/preview.go range=40:40 lang=go exported=true byte_range=1310:1340
+  sig=preview.State
+EDGES
+  ^defines=matrix/neo/internal/preview/preview.go
+
+NODE id=matrix/neo/internal/preview.StateFailed kind=const
+  digest=b3:5a4716fbb8825d31b67bb448979c8a2bac4ee205ab897640de1e8ffb5081634b file=neo/internal/preview/preview.go range=39:39 lang=go exported=true byte_range=1279:1308
+  sig=preview.State
+EDGES
+  ^defines=matrix/neo/internal/preview/preview.go
+
+NODE id=matrix/neo/internal/preview.StatePending kind=const
+  digest=b3:e9eaf3253119126b5463d9da65bfbb6bac617d93c4f4f39e14debe33f78e7e39 file=neo/internal/preview/preview.go range=37:37 lang=go exported=true byte_range=1217:1247
+  sig=preview.State
+EDGES
+  ^defines=matrix/neo/internal/preview/preview.go
+
+NODE id=matrix/neo/internal/preview.StateReady kind=const
+  digest=b3:1eb2b8120b4f3bd194209566271aed1097358a086d2ca1696823c0f16eeea361 file=neo/internal/preview/preview.go range=38:38 lang=go exported=true byte_range=1249:1277
+  sig=preview.State
+EDGES
+  ^defines=matrix/neo/internal/preview/preview.go
+
+NODE id=matrix/neo/internal/preview.collectFiles kind=func
+  digest=b3:d4682fb5041e586933738a0003ec261a13115eae31f89c632b1fc9e76fe57d05 file=neo/internal/preview/preview.go range=470:515 lang=go exported=false byte_range=15242:16424
+  sig=func collectFiles(root string) ([]sandbox.File, error)
+  doc=collectFiles walks a project root into a bounded []sandbox.File payload,\nskipping VCS/build/dependency dirs (they're rebuilt in the sandbox), oversized\nfiles, and obvious binaries. Paths are workspace-relative with forward slashes.
+EDGES
+  ^defines=matrix/neo/internal/preview/preview.go
+
+NODE id=matrix/neo/internal/preview.defaultImage kind=const
+  digest=b3:94010678601264a080cee9ceaba2f2e8af2960c1bb7c9fa03e47103d9cdb9ba3 file=neo/internal/preview/preview.go range=55:59 lang=go exported=false byte_range=1691:1996
+  sig=untyped string
+  doc=defaultImage carries a Node runtime because most previews are web\napps (npm install + dev server). It has apt on top of Debian bookworm so a\npreview can bootstrap python/go on demand. Override with NEO_PREVIEW_IMAGE\nfor a stack whose runtime it lacks.
+EDGES
+  ^defines=matrix/neo/internal/preview/preview.go
+
+NODE id=matrix/neo/internal/preview.defaultTTL kind=const
+  digest=b3:97702647aa6a3329a6a037ba6910fac1d0f2b92f670cf93f191c7da39dc970f6 file=neo/internal/preview/preview.go range=52:54 lang=go exported=false byte_range=1585:1689
+  sig=time.Duration
+  doc=Default limits for deploying a project's state into a sandbox.
+EDGES
+  ^defines=matrix/neo/internal/preview/preview.go
+
+NODE id=matrix/neo/internal/preview.fileExists kind=func
+  digest=b3:86187b0793e8c556adc8f7662382ca5b5e2319742ff63d6ac1b2869b7f8e6412 file=neo/internal/preview/detect.go range=157:160 lang=go exported=false byte_range=4962:5090
+  sig=func fileExists(root, name string) bool
+EDGES
+  ^defines=matrix/neo/internal/preview/detect.go
+
+NODE id=matrix/neo/internal/preview.healthProbeGap kind=const
+  digest=b3:3a10773233deb92c6a1ea68e15dcc1f8ef51e2174f3b9ccb74b5c74668a85b7d file=neo/internal/preview/preview.go range=52:64 lang=go exported=false byte_range=1585:2180
+  sig=time.Duration
+  doc=Default limits for deploying a project's state into a sandbox.
+EDGES
+  ^defines=matrix/neo/internal/preview/preview.go
+
+NODE id=matrix/neo/internal/preview.healthProbeTries kind=const
+  digest=b3:68a9a616542f348dfaf87d982b4cbe1ad8df08d16e3412e5c38592ed66242647 file=neo/internal/preview/preview.go range=52:63 lang=go exported=false byte_range=1585:2144
+  sig=untyped int
+  doc=Default limits for deploying a project's state into a sandbox.
+EDGES
+  ^defines=matrix/neo/internal/preview/preview.go
+
+NODE id=matrix/neo/internal/preview.isBinary kind=func
+  digest=b3:e9dd0194c55770acf682475febfd7162c06e9f545b0f3896ebeaacd5d4e4f26d file=neo/internal/preview/preview.go range=523:531 lang=go exported=false byte_range=16671:16936
+  sig=func isBinary(data []byte) bool
+  doc=isBinary reports whether a leading NUL byte marks content as non-text; deploy\nskips binaries (they bloat the payload and aren't source).
+EDGES
+  ^defines=matrix/neo/internal/preview/preview.go
+
+NODE id=matrix/neo/internal/preview.live kind=type
+  digest=b3:ea29c065c31028d0081c900a5f07b37512e549718a1140830641b3ee7a99ee09 file=neo/internal/preview/preview.go range=114:122 lang=go exported=false byte_range=4213:4380
+  sig=type live struct {\n	convID		string\n	sandboxID	string\n	host		string\n	port		string\n	url		string\n	touchedAt	time.Time\n}
+  doc=live is one provisioned preview.
+EDGES
+  contains=matrix/neo/internal/preview.live#convID,matrix/neo/internal/preview.live#host,matrix/neo/internal/preview.live#port,matrix/neo/internal/preview.live#sandboxID,matrix/neo/internal/preview.live#touchedAt,matrix/neo/internal/preview.live#url
+  ^defines=matrix/neo/internal/preview/preview.go
+
+NODE id=matrix/neo/internal/preview.live#convID kind=field
+  digest=b3:f0a3d7d64509eede92405d576d2e19190b0fba421f5b5f4760fc85e4c1ee268b file=neo/internal/preview/preview.go range=116:116 lang=go exported=false byte_range=4269:4285
+  sig=string
+EDGES
+  ^contains=matrix/neo/internal/preview.live
+
+NODE id=matrix/neo/internal/preview.live#host kind=field
+  digest=b3:1555ff837b550d80650ed2094ee910748e27650092dd8f236e0b70d55c3b149b file=neo/internal/preview/preview.go range=118:118 lang=go exported=false byte_range=4305:4321
+  sig=string
+EDGES
+  ^contains=matrix/neo/internal/preview.live
+
+NODE id=matrix/neo/internal/preview.live#port kind=field
+  digest=b3:f969d2d15cf4579aa464885855e5098cc8bb4e9cc118ace7662d31d1806c91bb file=neo/internal/preview/preview.go range=119:119 lang=go exported=false byte_range=4323:4339
+  sig=string
+EDGES
+  ^contains=matrix/neo/internal/preview.live
+
+NODE id=matrix/neo/internal/preview.live#sandboxID kind=field
+  digest=b3:c2dc79a1b686da7d374fe816058d347d6de4f9c9419e4cbe14fee16eb6a5e276 file=neo/internal/preview/preview.go range=117:117 lang=go exported=false byte_range=4287:4303
+  sig=string
+EDGES
+  ^contains=matrix/neo/internal/preview.live
+
+NODE id=matrix/neo/internal/preview.live#touchedAt kind=field
+  digest=b3:371408cb9edee9eb9ac5cf5abff5e6795d877841f6462a146b15a8ce01aa2ca8 file=neo/internal/preview/preview.go range=121:121 lang=go exported=false byte_range=4359:4378
+  sig=time.Time
+EDGES
+  ^contains=matrix/neo/internal/preview.live
+
+NODE id=matrix/neo/internal/preview.live#url kind=field
+  digest=b3:db30c4c1c1779e3bb98c4fbc044a1f4f7615750afc5f4a0e8edbfb1f240f82b6 file=neo/internal/preview/preview.go range=120:120 lang=go exported=false byte_range=4341:4357
+  sig=string
+EDGES
+  ^contains=matrix/neo/internal/preview.live
+
+NODE id=matrix/neo/internal/preview.maxDeployBytes kind=const
+  digest=b3:8526dcb27c2c8ca746ec084006cdf61677e2f736877799be5f52a94a817ace52 file=neo/internal/preview/preview.go range=52:60 lang=go exported=false byte_range=1585:2025
+  sig=untyped int
+  doc=Default limits for deploying a project's state into a sandbox.
+EDGES
+  ^defines=matrix/neo/internal/preview/preview.go
+
+NODE id=matrix/neo/internal/preview.maxDeployFiles kind=const
+  digest=b3:ebb62da3c134cb438c8ee4c04ee13b4700b26ef1358be7b081af0fde6d46f724 file=neo/internal/preview/preview.go range=52:62 lang=go exported=false byte_range=1585:2121
+  sig=untyped int
+  doc=Default limits for deploying a project's state into a sandbox.
+EDGES
+  ^defines=matrix/neo/internal/preview/preview.go
+
+NODE id=matrix/neo/internal/preview.maxFileBytes kind=const
+  digest=b3:0628555294cd71cd5a4fe317b13a2cfe41d611abf094c4421e98e23f0ce43e8a file=neo/internal/preview/preview.go range=52:61 lang=go exported=false byte_range=1585:2077
+  sig=untyped int
+  doc=Default limits for deploying a project's state into a sandbox.
+EDGES
+  ^defines=matrix/neo/internal/preview/preview.go
+
+NODE id=matrix/neo/internal/preview.nodeFrameworks kind=func
+  digest=b3:5432c66cb2ee0e59b11f4edd53eed26345592037dd9bbeeeb06f0507aa148421 file=neo/internal/preview/detect.go range=104:128 lang=go exported=false byte_range=3524:4182
+  sig=func nodeFrameworks(pkg packageJSON) map[string]bool
+  doc=nodeFrameworks reports the framework set from the REAL dependency lists.
+EDGES
+  ^defines=matrix/neo/internal/preview/detect.go
+
+NODE id=matrix/neo/internal/preview.nodePort kind=func
+  digest=b3:ae946f2fdb434e2d26839dd30dd5ee2851d987f467ab4ec342e1f0fd3dd6439a file=neo/internal/preview/detect.go range=130:142 lang=go exported=false byte_range=4184:4500
+  sig=func nodePort(fw map[string]bool) string
+  doc=nodePort picks the conventional dev-server port for the detected framework.
+EDGES
+  ^defines=matrix/neo/internal/preview/detect.go
+
+NODE id=matrix/neo/internal/preview.nodeServe kind=func
+  digest=b3:9e2aa7645fe9fa61f6eebc85ff7ff421c9aafff88dab3724f8fe7e56c3187df0 file=neo/internal/preview/detect.go range=144:155 lang=go exported=false byte_range=4502:4960
+  sig=func nodeServe(fw map[string]bool, base, port string) string
+  doc=nodeServe augments the dev command with the host/port flags a framework needs\nto bind reachably (env alone is not always honoured by Vite-family servers).
+EDGES
+  ^defines=matrix/neo/internal/preview/detect.go
+
+NODE id=matrix/neo/internal/preview.packageJSON kind=type
+  digest=b3:0e9e0fb606b7bd7ef0dafbdbb1b345afaacdb71ea176de5074a2d63aa9b82c73 file=neo/internal/preview/detect.go range=83:87 lang=go exported=false byte_range=2966:3162
+  sig=type packageJSON struct {\n	Scripts		map[string]string	`json:"scripts"`\n	Dependencies	map[string]string	`json:"dependencies"`\n	DevDependencies	map[string]string	`json:"devDependencies"`\n}
+EDGES
+  contains=matrix/neo/internal/preview.packageJSON#Dependencies,matrix/neo/internal/preview.packageJSON#DevDependencies,matrix/neo/internal/preview.packageJSON#Scripts
+  ^defines=matrix/neo/internal/preview/detect.go
+
+NODE id=matrix/neo/internal/preview.packageJSON#Dependencies kind=field
+  digest=b3:e5d5f371e4c160cc6871ddd372c38b09b358d991d7732a6e44c13b0eb302a3a7 file=neo/internal/preview/detect.go range=85:85 lang=go exported=true byte_range=3045:3100
+  sig=map[string]string
+EDGES
+  ^contains=matrix/neo/internal/preview.packageJSON
+
+NODE id=matrix/neo/internal/preview.packageJSON#DevDependencies kind=field
+  digest=b3:f7053382a3a9aa7b8dcde5cf2267b44f8bcbaf55aef7e06cb4199864440d0fa8 file=neo/internal/preview/detect.go range=86:86 lang=go exported=true byte_range=3102:3160
+  sig=map[string]string
+EDGES
+  ^contains=matrix/neo/internal/preview.packageJSON
+
+NODE id=matrix/neo/internal/preview.packageJSON#Scripts kind=field
+  digest=b3:7f4801e6d3c771281edea5424041f15624ad5eb5202bef04d44d1d683588fe2e file=neo/internal/preview/detect.go range=84:84 lang=go exported=true byte_range=2993:3043
+  sig=map[string]string
+EDGES
+  ^contains=matrix/neo/internal/preview.packageJSON
+
+NODE id=matrix/neo/internal/preview.readFileLower kind=func
+  digest=b3:1981a65229f22a16fb4a0214600f049c7c4ffb2e7b5117f78375565a17c7653c file=neo/internal/preview/detect.go range=162:168 lang=go exported=false byte_range=5092:5263
+  sig=func readFileLower(root, name string) string
+EDGES
+  ^defines=matrix/neo/internal/preview/detect.go
+
+NODE id=matrix/neo/internal/preview.readPackageJSON kind=func
+  digest=b3:567a8347770bb2c9e50a8d383cb1da2b836483f10ef59aea41414c684267045f file=neo/internal/preview/detect.go range=89:102 lang=go exported=false byte_range=3164:3522
+  sig=func readPackageJSON(root string) (packageJSON, bool)
+EDGES
+  ^defines=matrix/neo/internal/preview/detect.go
+
+NODE id=matrix/neo/internal/preview.shell kind=func
+  digest=b3:9a55b7e9223dd64d37d4b0e457c2d9dbcc16afe342dd382609d2abbc264bedf0 file=neo/internal/preview/preview.go range=449:452 lang=go exported=false byte_range=14435:14583
+  sig=func shell(cmdline string) []string
+  doc=shell wraps a command line to run under sh -lc inside the sandbox.
+EDGES
+  ^defines=matrix/neo/internal/preview/preview.go
+
+NODE id=matrix/neo/internal/preview.skipDir kind=var
+  digest=b3:4092fcc9ea8af637276c11e396e4f4ca0d45d9940ce8c5ebeea9ca967423cc14 file=neo/internal/preview/preview.go range=517:521 lang=go exported=false byte_range=16430:16669
+  sig=map[string]bool
+EDGES
+  ^defines=matrix/neo/internal/preview/preview.go
+
+NODE id=matrix/neo/internal/preview.userReason kind=func
+  digest=b3:85949d0abefcc7d916e7b8a5516ee887d540679f660797ce1711bbdbfab8e2e0 file=neo/internal/preview/preview.go range=454:468 lang=go exported=false byte_range=14585:15240
+  sig=func userReason(err error) string
+  doc=userReason maps an internal error to a consumer-facing sentence (result, not\nprotocol). The full error is logged separately.
+EDGES
+  ^defines=matrix/neo/internal/preview/preview.go
+
+NODE id=matrix/neo/internal/preview/detect.go kind=file
+  digest=b3:173c0b88e96a45c72b9ae0fc1c0990074ec2bf05779aa77746c4ae24bee2e5a9 file=neo/internal/preview/detect.go range=1:168 lang=go exported=true
+EDGES
+  defines=matrix/neo/internal/preview.DetectStart,matrix/neo/internal/preview.StartSpec,matrix/neo/internal/preview.fileExists,matrix/neo/internal/preview.nodeFrameworks,matrix/neo/internal/preview.nodePort,matrix/neo/internal/preview.nodeServe,matrix/neo/internal/preview.packageJSON,matrix/neo/internal/preview.readFileLower,matrix/neo/internal/preview.readPackageJSON
+  ^contains=matrix/neo/internal/preview
+
+NODE id=matrix/neo/internal/preview/preview.go kind=file
+  digest=b3:93809056f632dcbfb44c79a1ed7eeca81e56fc00572a7c8f7e4564289f7a5e65 file=neo/internal/preview/preview.go range=1:531 lang=go exported=true
+EDGES
+  defines=matrix/neo/internal/preview.Config,matrix/neo/internal/preview.Emit,matrix/neo/internal/preview.EvtExpired,matrix/neo/internal/preview.EvtFailed,matrix/neo/internal/preview.EvtPending,matrix/neo/internal/preview.EvtReady,matrix/neo/internal/preview.Info,matrix/neo/internal/preview.Manager,matrix/neo/internal/preview.Manager.Close,matrix/neo/internal/preview.Manager.Enabled,matrix/neo/internal/preview.Manager.Provision,matrix/neo/internal/preview.Manager.StartReaper,matrix/neo/internal/preview.Manager.Teardown,matrix/neo/internal/preview.Manager.Touch,matrix/neo/internal/preview.Manager.deregister,matrix/neo/internal/preview.Manager.evictForCap,matrix/neo/internal/preview.Manager.healthProbe,matrix/neo/internal/preview.Manager.logf,matrix/neo/internal/preview.Manager.previewURL,matrix/neo/internal/preview.Manager.provision,matrix/neo/internal/preview.Manager.reapOnce,matrix/neo/internal/preview.Manager.register,matrix/neo/internal/preview.Manager.routerCall,matrix/neo/internal/preview.Manager.teardownConv,matrix/neo/internal/preview.New,matrix/neo/internal/preview.Request,matrix/neo/internal/preview.State,matrix/neo/internal/preview.StateExpired,matrix/neo/internal/preview.StateFailed,matrix/neo/internal/preview.StatePending,matrix/neo/internal/preview.StateReady,matrix/neo/internal/preview.collectFiles,matrix/neo/internal/preview.defaultImage,matrix/neo/internal/preview.defaultTTL,matrix/neo/internal/preview.healthProbeGap,matrix/neo/internal/preview.healthProbeTries,matrix/neo/internal/preview.isBinary,matrix/neo/internal/preview.live,matrix/neo/internal/preview.maxDeployBytes,matrix/neo/internal/preview.maxDeployFiles,matrix/neo/internal/preview.maxFileBytes,matrix/neo/internal/preview.shell,matrix/neo/internal/preview.skipDir,matrix/neo/internal/preview.userReason
+  ^contains=matrix/neo/internal/preview

@@ -1,7 +1,7 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:75a956136eb56a920059d717ea1f7ba394b53bef834ab6db66f06d328eb5d650
+# GENERATED gen=codegraph do-not-edit merkle=b3:7270c3824ecc37257f5e811e088d456ae20503c845e3315015833efad4b363c9
 
 NODE id=matrix/cody/internal/mode kind=package
-  digest=b3:f8cf9be0744cf636518c6d1bf374eae24da29b9927418744b044cb841d874fcc file=cody/internal/mode range=0:0 lang=go exported=true
+  digest=b3:9b35cd0306424f1acb226ee4788e1f1bafcd1d2f7503a1da619de0a1b2eaf694 file=cody/internal/mode range=0:0 lang=go exported=true
 EDGES
   contains=matrix/cody/internal/mode/mode.go
   ^contains=mod:matrix/cody
@@ -21,14 +21,14 @@ EDGES
   ^defines=matrix/cody/internal/mode/mode.go
 
 NODE id=matrix/cody/internal/mode.FastModel kind=const
-  digest=b3:aa21b2cf636747fabae61c1b3fdbe79fbbe460fa45cecbbc2338441fa1ba9bf9 file=cody/internal/mode/mode.go range=89:91 lang=go exported=true byte_range=3232:3373
+  digest=b3:aa21b2cf636747fabae61c1b3fdbe79fbbe460fa45cecbbc2338441fa1ba9bf9 file=cody/internal/mode/mode.go range=89:91 lang=go exported=true byte_range=3199:3340
   sig=untyped string
   doc=FastModel is the small/fast whitelisted model for cheap auxiliary calls\n(conversation titles).
 EDGES
   ^defines=matrix/cody/internal/mode/mode.go
 
 NODE id=matrix/cody/internal/mode.For kind=func
-  digest=b3:8ba0c218f6315cc54db1b9e9000df2a573a5eff11807f677747437ee960ea5ab file=cody/internal/mode/mode.go range=118:161 lang=go exported=true byte_range=4703:6174
+  digest=b3:8ba0c218f6315cc54db1b9e9000df2a573a5eff11807f677747437ee960ea5ab file=cody/internal/mode/mode.go range=118:161 lang=go exported=true byte_range=4670:6141
   sig=func For(m Mode) Policy
   doc=For returns the policy tuple for a mode.
 EDGES
@@ -77,7 +77,7 @@ EDGES
   ^defines=matrix/cody/internal/mode/mode.go
 
 NODE id=matrix/cody/internal/mode.Policy kind=type
-  digest=b3:38916f6015e317fff36de21c825c11e7fa62b24456eb48c55e2c82ef2c589240 file=cody/internal/mode/mode.go range=93:116 lang=go exported=true byte_range=3375:4701
+  digest=b3:38916f6015e317fff36de21c825c11e7fa62b24456eb48c55e2c82ef2c589240 file=cody/internal/mode/mode.go range=93:116 lang=go exported=true byte_range=3342:4668
   sig=type Policy struct {\n	Mode		Mode	`json:"mode"`\n	PlanningDepth	string	`json:"planning_depth"`\n	VerifyCadence	string	`json:"verify_cadence"`\n	// DecisionCreativity is the HOT temperature for decision phases — Stack and\n	// Design Language Record authoring and plan-shape authoring — where N\n	// divergent candidates are generated and then judged. Divergence happens by\n	// construction (temperature + candidate count), not by asking one lukewarm\n	// sample to be bold.\n	DecisionCreativity	float64	`json:"decision_creativity"`\n	// ImplementationCreativity is the COLD worker sampling temperature: precise,\n	// low-variance code once the decisions are made.\n	ImplementationCreativity	float64	`json:"implementation_creativity"`\n	// DecisionCandidates is how many divergent candidates a decision phase\n	// generates before judging (2-3).\n	DecisionCandidates	int	`json:"decision_candidates"`\n	Autonomy		string	`json:"autonomy"`	// high | balanced | deliberate\n	Register		string	`json:"register"`\n	// Per-role models, mode-aware. Both route through GatewaySlot.\n	OrchestratorModel	string	`json:"orchestrator_model"`\n	WorkerModel		string	`json:"worker_model"`\n}
   doc=Policy is one mode rendered as an explicit tuple. It parameterizes the one\nengine — it can dial ceremony, never the standard.
 EDGES
@@ -85,71 +85,71 @@ EDGES
   ^defines=matrix/cody/internal/mode/mode.go
 
 NODE id=matrix/cody/internal/mode.Policy#Autonomy kind=field
-  digest=b3:ce0f4312b8944d3a6abaab7674baba8a0210b4ed7c2ffb5c57e2548fbdd50534 file=cody/internal/mode/mode.go range=111:111 lang=go exported=true byte_range=4412:4455
+  digest=b3:ce0f4312b8944d3a6abaab7674baba8a0210b4ed7c2ffb5c57e2548fbdd50534 file=cody/internal/mode/mode.go range=111:111 lang=go exported=true byte_range=4379:4422
   sig=string
 EDGES
   ^contains=matrix/cody/internal/mode.Policy
 
 NODE id=matrix/cody/internal/mode.Policy#DecisionCandidates kind=field
-  digest=b3:6e6f4ebd3574f760d5b265019ec0a11941dc42581e59e38ebdf4245c36ec311f file=cody/internal/mode/mode.go range=108:110 lang=go exported=true byte_range=4247:4410
+  digest=b3:6e6f4ebd3574f760d5b265019ec0a11941dc42581e59e38ebdf4245c36ec311f file=cody/internal/mode/mode.go range=108:110 lang=go exported=true byte_range=4214:4377
   sig=int
   doc=DecisionCandidates is how many divergent candidates a decision phase\ngenerates before judging (2-3).
 EDGES
   ^contains=matrix/cody/internal/mode.Policy
 
 NODE id=matrix/cody/internal/mode.Policy#DecisionCreativity kind=field
-  digest=b3:36c3ead885657366999393f5aa9f75ff15e155b1c00de4f12506bb4601710f52 file=cody/internal/mode/mode.go range=99:104 lang=go exported=true byte_range=3659:4046
+  digest=b3:36c3ead885657366999393f5aa9f75ff15e155b1c00de4f12506bb4601710f52 file=cody/internal/mode/mode.go range=99:104 lang=go exported=true byte_range=3626:4013
   sig=float64
   doc=DecisionCreativity is the HOT temperature for decision phases — Stack and\nDesign Language Record authoring and plan-shape authoring — where N\ndivergent candidates are generated and then judged. Divergence happens by\nconstruction (temperature + candidate count), not by asking one lukewarm\nsample to be bold.
 EDGES
   ^contains=matrix/cody/internal/mode.Policy
 
 NODE id=matrix/cody/internal/mode.Policy#ImplementationCreativity kind=field
-  digest=b3:9f8445bddf2b12005473addd461f937c62b6e44678eff7aaa3c4bf84554509d3 file=cody/internal/mode/mode.go range=105:107 lang=go exported=true byte_range=4048:4245
+  digest=b3:9f8445bddf2b12005473addd461f937c62b6e44678eff7aaa3c4bf84554509d3 file=cody/internal/mode/mode.go range=105:107 lang=go exported=true byte_range=4015:4212
   sig=float64
   doc=ImplementationCreativity is the COLD worker sampling temperature: precise,\nlow-variance code once the decisions are made.
 EDGES
   ^contains=matrix/cody/internal/mode.Policy
 
 NODE id=matrix/cody/internal/mode.Policy#Mode kind=field
-  digest=b3:0c15679ed4de62a866ca231c2d56bd4390bcf3ad6efc16577952f503fb8fa3e0 file=cody/internal/mode/mode.go range=96:96 lang=go exported=true byte_range=3531:3565
+  digest=b3:0c15679ed4de62a866ca231c2d56bd4390bcf3ad6efc16577952f503fb8fa3e0 file=cody/internal/mode/mode.go range=96:96 lang=go exported=true byte_range=3498:3532
   sig=mode.Mode
 EDGES
   ^contains=matrix/cody/internal/mode.Policy
 
 NODE id=matrix/cody/internal/mode.Policy#OrchestratorModel kind=field
-  digest=b3:b88770b71db4752c7e677aea14121e65a284882b22ad57d1cadcc7d6e29b464e file=cody/internal/mode/mode.go range=113:114 lang=go exported=true byte_range=4534:4651
+  digest=b3:b88770b71db4752c7e677aea14121e65a284882b22ad57d1cadcc7d6e29b464e file=cody/internal/mode/mode.go range=113:114 lang=go exported=true byte_range=4501:4618
   sig=string
   doc=Per-role models, mode-aware. Both route through GatewaySlot.
 EDGES
   ^contains=matrix/cody/internal/mode.Policy
 
 NODE id=matrix/cody/internal/mode.Policy#PlanningDepth kind=field
-  digest=b3:b9b39d2e128da3054e552074e88f3ead4f6e2458eb62ac28b6c706e548905fa1 file=cody/internal/mode/mode.go range=97:97 lang=go exported=true byte_range=3567:3611
+  digest=b3:b9b39d2e128da3054e552074e88f3ead4f6e2458eb62ac28b6c706e548905fa1 file=cody/internal/mode/mode.go range=97:97 lang=go exported=true byte_range=3534:3578
   sig=string
 EDGES
   ^contains=matrix/cody/internal/mode.Policy
 
 NODE id=matrix/cody/internal/mode.Policy#Register kind=field
-  digest=b3:64a537bf34dd7323375726a088c58290e943e5190fb16af9a6d8ab196af666f1 file=cody/internal/mode/mode.go range=112:112 lang=go exported=true byte_range=4489:4532
+  digest=b3:64a537bf34dd7323375726a088c58290e943e5190fb16af9a6d8ab196af666f1 file=cody/internal/mode/mode.go range=112:112 lang=go exported=true byte_range=4456:4499
   sig=string
 EDGES
   ^contains=matrix/cody/internal/mode.Policy
 
 NODE id=matrix/cody/internal/mode.Policy#VerifyCadence kind=field
-  digest=b3:9243466e4b16fa74ed4a93df2239cc7d794efea8f3af6224b985b98aa7cf802e file=cody/internal/mode/mode.go range=98:98 lang=go exported=true byte_range=3613:3657
+  digest=b3:9243466e4b16fa74ed4a93df2239cc7d794efea8f3af6224b985b98aa7cf802e file=cody/internal/mode/mode.go range=98:98 lang=go exported=true byte_range=3580:3624
   sig=string
 EDGES
   ^contains=matrix/cody/internal/mode.Policy
 
 NODE id=matrix/cody/internal/mode.Policy#WorkerModel kind=field
-  digest=b3:9a48baf1e9b63fd6ac9c46c248e494620d3cbd71ebaf816e15609a811ff6f1d1 file=cody/internal/mode/mode.go range=115:115 lang=go exported=true byte_range=4653:4699
+  digest=b3:9a48baf1e9b63fd6ac9c46c248e494620d3cbd71ebaf816e15609a811ff6f1d1 file=cody/internal/mode/mode.go range=115:115 lang=go exported=true byte_range=4620:4666
   sig=string
 EDGES
   ^contains=matrix/cody/internal/mode.Policy
 
 NODE id=matrix/cody/internal/mode.Policy.DecisionLLM kind=method
-  digest=b3:1579d72176cd5ffa53cf6851435eb21291bf4056d7f1a3cb500fc1c0d3a4ed5a file=cody/internal/mode/mode.go range=178:191 lang=go exported=true byte_range=6719:7283
+  digest=b3:1579d72176cd5ffa53cf6851435eb21291bf4056d7f1a3cb500fc1c0d3a4ed5a file=cody/internal/mode/mode.go range=178:191 lang=go exported=true byte_range=6686:7250
   sig=func (p Policy) DecisionLLM(gatewayURL, actorDID string) mcllm.Config
   doc=DecisionLLM builds the decision-phase client config: the stronger\norchestrator model at the HOT DecisionCreativity temperature, the cody slot.\nSDR/DLR/plan-shape authoring generate DecisionCandidates divergent options\nthrough this client; the judge runs cold via OrchestratorLLM.
 EDGES
@@ -157,7 +157,7 @@ EDGES
   ^defines=matrix/cody/internal/mode/mode.go
 
 NODE id=matrix/cody/internal/mode.Policy.OrchestratorLLM kind=method
-  digest=b3:eb127afd49b1654eaa4388a9dc55b5b8205a5f5dd23c74ad921d6e41dae8df79 file=cody/internal/mode/mode.go range=163:176 lang=go exported=true byte_range=6176:6717
+  digest=b3:eb127afd49b1654eaa4388a9dc55b5b8205a5f5dd23c74ad921d6e41dae8df79 file=cody/internal/mode/mode.go range=163:176 lang=go exported=true byte_range=6143:6684
   sig=func (p Policy) OrchestratorLLM(gatewayURL, actorDID string) mcllm.Config
   doc=OrchestratorLLM builds the orchestrator-role client config: the stronger\nmodel, cold temperature (planning + decision adjudication), the cody slot.\nThis is the COLD judge for decision phases — divergent candidates are\ngenerated hot (DecisionLLM) and picked cold here.
 EDGES
@@ -165,7 +165,7 @@ EDGES
   ^defines=matrix/cody/internal/mode/mode.go
 
 NODE id=matrix/cody/internal/mode.Policy.Render kind=method
-  digest=b3:8829d06a91ce04665652a86e016cfa52c6b30da0b6463d42bbba1722a2e8849b file=cody/internal/mode/mode.go range=207:239 lang=go exported=true byte_range=7788:9601
+  digest=b3:8829d06a91ce04665652a86e016cfa52c6b30da0b6463d42bbba1722a2e8849b file=cody/internal/mode/mode.go range=207:239 lang=go exported=true byte_range=7755:9568
   sig=func (p Policy) Render() string
   doc=Render produces the mode-policy prose carried by task sheets and prompts.\nIt deliberately restates that the constitution is untouchable: a worker\nreading a Prototype sheet must never mistake speed for permission to fake.
 EDGES
@@ -173,7 +173,7 @@ EDGES
   ^defines=matrix/cody/internal/mode/mode.go
 
 NODE id=matrix/cody/internal/mode.Policy.WorkerLLM kind=method
-  digest=b3:096a9628a0b4e3500bd305f938ebd36629d9be69c41b8827bf8545a7e9fa7341 file=cody/internal/mode/mode.go range=193:205 lang=go exported=true byte_range=7285:7786
+  digest=b3:096a9628a0b4e3500bd305f938ebd36629d9be69c41b8827bf8545a7e9fa7341 file=cody/internal/mode/mode.go range=193:205 lang=go exported=true byte_range=7252:7753
   sig=func (p Policy) WorkerLLM(gatewayURL, actorDID string) mcllm.Config
   doc=WorkerLLM builds the worker-role client config: the mode's worker model at\nthe COLD ImplementationCreativity temperature, the cody slot. Implementation\nruns cold — precise, low-variance code once the decisions are made.
 EDGES
@@ -223,28 +223,28 @@ EDGES
   ^defines=matrix/cody/internal/mode/mode.go
 
 NODE id=matrix/cody/internal/mode.defaultFastWorkerModel kind=const
-  digest=b3:0974cb96609a32b311c719a7af2ec8bf26d86664d0636bb3f32d0ac068bb2b12 file=cody/internal/mode/mode.go range=84:86 lang=go exported=false byte_range=3071:3228
+  digest=b3:4b5d54a448f5ab62cf4cefc28a44d10e010578a7dccef3cf3681aa94c19ba505 file=cody/internal/mode/mode.go range=84:86 lang=go exported=false byte_range=3049:3195
   sig=untyped string
   doc=The fast tier (Prototype workers, conversation titles): MiMo v2.5 Pro\non the cody slot whitelist.
 EDGES
   ^defines=matrix/cody/internal/mode/mode.go
 
 NODE id=matrix/cody/internal/mode.defaultOrchestratorModel kind=const
-  digest=b3:f8e37b26e85fda73b7a25914b5a664c7e25862950bed7fc35f956a0f98d921d8 file=cody/internal/mode/mode.go range=78:82 lang=go exported=false byte_range=2734:3014
+  digest=b3:ad94f17e5336a470a79eaa24968ddf9a0c8fad0099b072cab4c484e0d8c15afc file=cody/internal/mode/mode.go range=78:82 lang=go exported=false byte_range=2734:3003
   sig=untyped string
   doc=Default per-role models. Operators override via config; the defaults stay\non the cody slot whitelist. Every role pins grok-build-0.1 (xAI Grok) in\nevery mode; operators can still override per role via config.
 EDGES
   ^defines=matrix/cody/internal/mode/mode.go
 
 NODE id=matrix/cody/internal/mode.defaultWorkerModel kind=const
-  digest=b3:0b677ab3b89365bc6455ba19e536c0dcd88b529c7ac71029e386dbc32338f849 file=cody/internal/mode/mode.go range=78:83 lang=go exported=false byte_range=2734:3069
+  digest=b3:5abf75969390df856a46fd0e368a841b17a7360cec942318bb25a8cae82240d9 file=cody/internal/mode/mode.go range=78:83 lang=go exported=false byte_range=2734:3047
   sig=untyped string
   doc=Default per-role models. Operators override via config; the defaults stay\non the cody slot whitelist. Every role pins grok-build-0.1 (xAI Grok) in\nevery mode; operators can still override per role via config.
 EDGES
   ^defines=matrix/cody/internal/mode/mode.go
 
 NODE id=matrix/cody/internal/mode/mode.go kind=file
-  digest=b3:2ce44c96c63499159271529e145f227724e35ebd2e5f0799ee0a29db3b5b7999 file=cody/internal/mode/mode.go range=1:239 lang=go exported=true
+  digest=b3:c64e0e9c78ad0b5f91d3377011c2a55a56c2bbc38520c01c4be67592d7258076 file=cody/internal/mode/mode.go range=1:239 lang=go exported=true
 EDGES
   defines=matrix/cody/internal/mode.Architect,matrix/cody/internal/mode.Engineer,matrix/cody/internal/mode.FastModel,matrix/cody/internal/mode.For,matrix/cody/internal/mode.GatewaySlot,matrix/cody/internal/mode.Mode,matrix/cody/internal/mode.Parse,matrix/cody/internal/mode.PlanInline,matrix/cody/internal/mode.PlanSpecFiles,matrix/cody/internal/mode.PlanWaved,matrix/cody/internal/mode.Policy,matrix/cody/internal/mode.Policy.DecisionLLM,matrix/cody/internal/mode.Policy.OrchestratorLLM,matrix/cody/internal/mode.Policy.Render,matrix/cody/internal/mode.Policy.WorkerLLM,matrix/cody/internal/mode.Prototype,matrix/cody/internal/mode.RegisterOutcome,matrix/cody/internal/mode.RegisterTechnical,matrix/cody/internal/mode.VerifyMilestones,matrix/cody/internal/mode.VerifyPerTask,matrix/cody/internal/mode.VerifyPerTaskProperty,matrix/cody/internal/mode.defaultFastWorkerModel,matrix/cody/internal/mode.defaultOrchestratorModel,matrix/cody/internal/mode.defaultWorkerModel
   ^contains=matrix/cody/internal/mode
