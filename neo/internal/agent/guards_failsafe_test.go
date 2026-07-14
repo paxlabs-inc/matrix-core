@@ -53,12 +53,17 @@ func TestGuardsRetainedAsFailsafes(t *testing.T) {
 // converges — one final answer, no tool calls. Otherwise it loops, emitting the
 // SAME tool call every step (the diagnosed re-answer spiral). It is a genuine
 // decision function over the actual request bytes — no fake controller, no
-// canned outcome independent of the window.
-func reframeKeyedServer(t *testing.T, calls *int, mu *sync.Mutex) *httptest.Server {
+// canned outcome independent of the window. loopAlways forces the looping arm
+// regardless of the window, isolating the stall failsafe on the single path
+// (where the reframe is always present).
+func reframeKeyedServer(t *testing.T, calls *int, mu *sync.Mutex, loopAlways bool) *httptest.Server {
 	t.Helper()
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		body, _ := io.ReadAll(r.Body)
 		selfAware := strings.Contains(string(body), selfAwareReframeMarker)
+		if !loopAlways && !selfAware {
+			t.Errorf("the single-path window must always carry the self-aware reframe; it is missing from the request body")
+		}
 
 		mu.Lock()
 		idx := *calls
@@ -66,7 +71,7 @@ func reframeKeyedServer(t *testing.T, calls *int, mu *sync.Mutex) *httptest.Serv
 		mu.Unlock()
 
 		w.Header().Set("Content-Type", "text/event-stream")
-		if selfAware {
+		if selfAware && !loopAlways {
 			// The reframe is in the window: continue from the live exchange and
 			// finish, instead of re-answering the trailing objective.
 			frame := `data: {"choices":[{"index":0,"delta":{"role":"assistant","content":"Done — continuing from the live exchange, nothing to redo."},"finish_reason":"stop"}]}`
@@ -98,23 +103,21 @@ func reframeKeyedClient(t *testing.T, url string) *llm.Client {
 	return client
 }
 
-// TestSelfAwarenessPreventsLoopEarlierGuardsAreFailsafe proves req.10.2 + 10.3
-// on real code paths. The SAME window-keyed model is driven through the REAL
-// agent.Chat loop twice, changing exactly ONE variable — whether the self-aware
-// window-assembly reframe is enabled (ContinuousMemory). Cassandra is off in
-// both runs so the ONLY loop backstop is the no-progress stall guard, isolating
-// the attribution:
+// TestSelfAwarenessPreventsLoopEarlierGuardsAreFailsafe proves the failsafe
+// posture on real code paths, on the SINGLE memory path (the reframe is always
+// present in the window). Cassandra is off in both runs so the ONLY loop
+// backstop is the no-progress stall guard, isolating the attribution:
 //
-//   - bypassed: the reframe is absent, the model loops, and the no-progress
-//     stall FAILSAFE fires with ErrIncomplete (the guard holds without
-//     self-awareness);
-//   - enabled: the reframe is present, the model converges on the FIRST step —
-//     the loop is prevented earlier, before any guard needs to fire.
+//   - looping model: even with the reframe present, a model that spins on the
+//     same call is caught by the no-progress stall FAILSAFE with ErrIncomplete
+//     (the guard holds regardless of self-awareness);
+//   - window-keyed model: the reframe is present in the real window (asserted
+//     inside the server), and the model converges on the FIRST step — the loop
+//     is prevented earlier, before any guard needs to fire.
 func TestSelfAwarenessPreventsLoopEarlierGuardsAreFailsafe(t *testing.T) {
-	newAgent := func(t *testing.T, continuousMemory bool, calls *int, mu *sync.Mutex) (*Agent, func()) {
-		srv := reframeKeyedServer(t, calls, mu)
+	newAgent := func(t *testing.T, loopAlways bool, calls *int, mu *sync.Mutex) (*Agent, func()) {
+		srv := reframeKeyedServer(t, calls, mu, loopAlways)
 		cfg := config.Default()
-		cfg.ContinuousMemory = continuousMemory
 		cfg.CassandraEnabled = false // isolate the no-progress stall failsafe
 		cfg.CortexRoot = t.TempDir()
 		cfg.CortexActor = "neo-self-aware-failsafe"
@@ -132,41 +135,41 @@ func TestSelfAwarenessPreventsLoopEarlierGuardsAreFailsafe(t *testing.T) {
 		return a, func() { _ = pager.Close() }
 	}
 
-	// --- self-awareness BYPASSED: the guard must catch the loop ---
-	var bypassedCalls int
+	// --- looping model: the guard must catch the loop ---
+	var loopCalls int
 	var bmu sync.Mutex
-	bypassed, closeB := newAgent(t, false, &bypassedCalls, &bmu)
+	looping, closeB := newAgent(t, true, &loopCalls, &bmu)
 	defer closeB()
-	errBypassed := bypassed.Chat(context.Background(), "keep searching for the same query")
-	if errBypassed == nil || !errors.Is(errBypassed, ErrIncomplete) {
-		t.Fatalf("without self-awareness the loop must hit the failsafe (ErrIncomplete); got: %v", errBypassed)
+	errLooping := looping.Chat(context.Background(), "keep searching for the same query")
+	if errLooping == nil || !errors.Is(errLooping, ErrIncomplete) {
+		t.Fatalf("a looping model must hit the failsafe (ErrIncomplete); got: %v", errLooping)
 	}
-	if !strings.Contains(errBypassed.Error(), "repeating the same step") {
-		t.Fatalf("the no-progress stall guard must be the failsafe that fired; got: %v", errBypassed)
+	if !strings.Contains(errLooping.Error(), "repeating the same step") {
+		t.Fatalf("the no-progress stall guard must be the failsafe that fired; got: %v", errLooping)
 	}
 	bmu.Lock()
-	nBypassed := bypassedCalls
+	nLooping := loopCalls
 	bmu.Unlock()
-	if nBypassed < config.Default().NoProgressStall {
-		t.Fatalf("the bypassed run must actually loop into the stall bound; only %d calls", nBypassed)
+	if nLooping < config.Default().NoProgressStall {
+		t.Fatalf("the looping run must actually loop into the stall bound; only %d calls", nLooping)
 	}
 
-	// --- self-awareness ENABLED: the loop is prevented earlier ---
-	var enabledCalls int
+	// --- window-keyed model: the reframe prevents the loop earlier ---
+	var keyedCalls int
 	var emu sync.Mutex
-	enabled, closeE := newAgent(t, true, &enabledCalls, &emu)
+	keyed, closeE := newAgent(t, false, &keyedCalls, &emu)
 	defer closeE()
-	errEnabled := enabled.Chat(context.Background(), "keep searching for the same query")
-	if errEnabled != nil {
-		t.Fatalf("with self-awareness the loop must be prevented (no failsafe needed); got: %v", errEnabled)
+	errKeyed := keyed.Chat(context.Background(), "keep searching for the same query")
+	if errKeyed != nil {
+		t.Fatalf("with the reframe present the loop must be prevented (no failsafe needed); got: %v", errKeyed)
 	}
 	emu.Lock()
-	nEnabled := enabledCalls
+	nKeyed := keyedCalls
 	emu.Unlock()
-	if nEnabled != 1 {
-		t.Fatalf("self-awareness must converge on the first step; took %d calls", nEnabled)
+	if nKeyed != 1 {
+		t.Fatalf("self-awareness must converge on the first step; took %d calls", nKeyed)
 	}
-	if nEnabled >= nBypassed {
-		t.Fatalf("self-awareness must prevent the loop EARLIER than the guard: enabled=%d, bypassed=%d", nEnabled, nBypassed)
+	if nKeyed >= nLooping {
+		t.Fatalf("self-awareness must prevent the loop EARLIER than the guard: keyed=%d, looping=%d", nKeyed, nLooping)
 	}
 }

@@ -73,7 +73,6 @@ func TestCassandraFiresOnRealLoopSpiral(t *testing.T) {
 	}
 
 	cfg := config.Default()
-	cfg.ContinuousMemory = true
 	cfg.CortexRoot = t.TempDir()
 	cfg.CortexActor = "neo-cassandra-spiral"
 	if !cfg.CassandraEnabled {
@@ -104,11 +103,11 @@ func TestCassandraFiresOnRealLoopSpiral(t *testing.T) {
 	// The controller must have fired at least one doubt mod during the run — the
 	// Chat-loop wiring (buildCassandraSignals -> cassandraStep after the assistant
 	// append) is exercised on the real loop.
-	if len(a.casRecord) == 0 {
+	if len(a.turn.casRecord) == 0 {
 		t.Fatal("the controller must inject at least one mod during a real spiral")
 	}
 	sawLoopDoubt := false
-	for _, m := range a.casRecord {
+	for _, m := range a.turn.casRecord {
 		if m.Trigger == trigLoop && m.Side == sideDoubt {
 			sawLoopDoubt = true
 		}
@@ -119,7 +118,7 @@ func TestCassandraFiresOnRealLoopSpiral(t *testing.T) {
 		}
 	}
 	if !sawLoopDoubt {
-		t.Errorf("a no-progress spiral must produce a (loop, doubt) mod; got %+v", a.casRecord)
+		t.Errorf("a no-progress spiral must produce a (loop, doubt) mod; got %+v", a.turn.casRecord)
 	}
 	// It must fire BEFORE the step budget (the stall bound is much tighter).
 	mu.Lock()

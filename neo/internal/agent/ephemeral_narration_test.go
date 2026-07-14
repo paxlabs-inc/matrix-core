@@ -135,7 +135,6 @@ func TestStraightToCompleteDeliversAnswerViaEphemeralStub(t *testing.T) {
 	}
 
 	cfg := config.Default()
-	cfg.ContinuousMemory = true
 	cfg.CortexRoot = t.TempDir()
 	cfg.CortexActor = "neo-straight-complete"
 

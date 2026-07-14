@@ -47,10 +47,10 @@ type taskGraph struct {
 
 // ensureGraph lazily seeds the graph from the active goal.
 func (a *Agent) ensureGraph() *taskGraph {
-	if a.graph == nil {
-		a.graph = &taskGraph{Goal: a.activeGoal, evidenceSet: map[string]struct{}{}}
+	if a.turn.graph == nil {
+		a.turn.graph = &taskGraph{Goal: a.activeGoal, evidenceSet: map[string]struct{}{}}
 	}
-	return a.graph
+	return a.turn.graph
 }
 
 // current returns the subgoal actions link to: the one in_progress, else nil
@@ -135,8 +135,8 @@ func (a *Agent) graphObserve(name string, args map[string]interface{}, content s
 		// unchanged evidence set force the same tools-stripped revision step
 		// as the mismatch bound — caught at action N, not token one million.
 		if window := a.cfg.EpistemicConvergenceWindow; window > 0 && g.actionsSinceGrowth >= window &&
-			a.revisionPending == "" && a.revisionsThisTurn < maxRevisionsPerTurn {
-			a.revisionPending = fmt.Sprintf(
+			a.turn.revisionPending == "" && a.turn.revisionsThisTurn < maxRevisionsPerTurn {
+			a.turn.revisionPending = fmt.Sprintf(
 				"Measured non-convergence: your last %d actions added NO new evidence to the task — you are moving without progressing. This step has NO tools on purpose: state what you actually know, what the recent actions were supposed to establish, and write a revised plan whose next action will verifiably add evidence.",
 				g.actionsSinceGrowth)
 		}
@@ -148,9 +148,9 @@ func (a *Agent) graphObserve(name string, args map[string]interface{}, content s
 // is proven (evidence), what is assumed (standing assumptions on the ledger),
 // and what remains (subgoals). Empty graph renders nothing.
 func (a *Agent) renderGraphTail() {
-	g := a.graph
+	g := a.turn.graph
 	if g == nil || (len(g.Subgoals) == 0 && len(g.evidenceSet) == 0) {
-		a.graphTail = ""
+		a.turn.graphTail = ""
 		return
 	}
 	var b strings.Builder
@@ -161,12 +161,12 @@ func (a *Agent) renderGraphTail() {
 	for _, s := range g.Subgoals {
 		fmt.Fprintf(&b, "- [%s] %s (actions: %d, evidence: %d)\n", s.Status, s.Text, s.Actions, len(s.Evidence))
 	}
-	assumptions := len(a.ledger.assumptions())
+	assumptions := len(a.turn.ledger.assumptions())
 	fmt.Fprintf(&b, "Proven: %d evidence items. Assumed: %d unchecked premises. ", len(g.evidenceSet), assumptions)
 	if g.actionsSinceGrowth > 0 {
 		fmt.Fprintf(&b, "Convergence: your last %d action(s) added NO new evidence — if the next action won't either, revise the approach instead of dispatching it.\n", g.actionsSinceGrowth)
 	} else {
 		b.WriteString("Convergence: evidence is growing.\n")
 	}
-	a.graphTail = b.String()
+	a.turn.graphTail = b.String()
 }

@@ -21,7 +21,7 @@ import (
 func newFilmstripAgent(t *testing.T, cfg config.Config) (*Agent, *int) {
 	t.Helper()
 	calls := 0
-	a := &Agent{cfg: cfg, captureFn: func(ctx context.Context, name string) string {
+	a := &Agent{cfg: cfg, turn: newTurn(), captureFn: func(ctx context.Context, name string) string {
 		calls++
 		return fmt.Sprintf("/media/shot-%d.jpg", calls)
 	}}
@@ -39,8 +39,8 @@ func TestScreenshotForCall_CapturesOnViewChange(t *testing.T) {
 	if *calls != 1 {
 		t.Fatalf("capture calls = %d, want 1", *calls)
 	}
-	if a.autoshotCount != 1 {
-		t.Fatalf("autoshotCount = %d, want 1", a.autoshotCount)
+	if a.turn.autoshotCount != 1 {
+		t.Fatalf("autoshotCount = %d, want 1", a.turn.autoshotCount)
 	}
 }
 
@@ -101,8 +101,8 @@ func TestScreenshotForCall_PerRunCapHolds(t *testing.T) {
 	if *calls != 2 {
 		t.Fatalf("per-run cap must bound captures to 2, got %d", *calls)
 	}
-	if a.autoshotCount != 2 {
-		t.Fatalf("autoshotCount = %d, want 2 (capped)", a.autoshotCount)
+	if a.turn.autoshotCount != 2 {
+		t.Fatalf("autoshotCount = %d, want 2 (capped)", a.turn.autoshotCount)
 	}
 
 	// A direct screenshot still passes through even past the cap (it is the

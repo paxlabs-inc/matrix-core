@@ -7,9 +7,6 @@ import (
 	_ "embed"
 	"fmt"
 	"strings"
-
-	"matrix/neo/internal/memory"
-	"matrix/neo/internal/recall"
 )
 
 // groundTruth is Neo's always-injected factual grounding (who it is, that
@@ -19,18 +16,6 @@ import (
 //
 //go:embed knowledge.md
 var groundTruth string
-
-// buildSystem composes the full combined system string used for budget/byte
-// accounting and legacy callers: the byte-stable behavioral charter + ground
-// truth (stableSystem) followed by the turn-varying memory block (dynamicTail).
-// It is exactly the concatenation of the two halves now assembled separately
-// for the prompt cache (P1-2): buildSystem() == stableSystem() + dynamicTail().
-// The actual model-facing window no longer sends this as one front system
-// message — see assembleWindow — but the combined size still drives the
-// budget/byte compaction thresholds, which is why it is retained.
-func (a *Agent) buildSystem(pinned string, retrieved []memory.Snippet, procedural []memory.Pattern, triggered []memory.Snippet, recalled []recall.Hit) string {
-	return a.stableSystem() + a.dynamicTail(pinned, retrieved, procedural, triggered, recalled)
-}
 
 // stableSystem returns the byte-stable system prefix: the behavioral charter
 // (systemPrompt) + the embedded ground truth. It is identical across every
@@ -60,115 +45,6 @@ func (a *Agent) stableSystem() string {
 			b.WriteString(name)
 			b.WriteString("\n")
 		}
-	}
-	return b.String()
-}
-
-// dynamicTail renders the turn-varying memory block that is appended AFTER the
-// append-only transcript as ONE trailing message (P1-2): pinned identity/rules
-// + trigger-matched guidance + consolidated summary + recalled past turns +
-// page-faulted memory seed + proven patterns. The exact rendered content and
-// section ordering are preserved from the former single system block — only the
-// POSITION moves (front concatenation → trailing message). The context-budget
-// stat is appended to this tail by the caller (assembleWindow site in agent.go).
-func (a *Agent) dynamicTail(pinned string, retrieved []memory.Snippet, procedural []memory.Pattern, triggered []memory.Snippet, recalled []recall.Hit) string {
-	var b strings.Builder
-
-	if strings.TrimSpace(pinned) != "" {
-		b.WriteString("\n")
-		b.WriteString(pinned)
-	}
-
-	// Trigger-matched behavioral guidance (Phase 3): learned constraints /
-	// trigger-bearing patterns whose trigger fits THIS request, surfaced even
-	// when their global salience is low. Placed right after the pinned tier so
-	// the right behavior fires on the right turn.
-	if len(triggered) > 0 {
-		b.WriteString("\nApply to this request (behaviors you've learned that fit what you're doing now):\n")
-		seen := make(map[string]struct{}, len(triggered))
-		for _, s := range triggered {
-			line := strings.TrimSpace(s.Text)
-			if line == "" {
-				continue
-			}
-			if _, dup := seen[line]; dup {
-				continue
-			}
-			seen[line] = struct{}{}
-			b.WriteString("- ")
-			b.WriteString(line)
-			b.WriteString("\n")
-		}
-	}
-
-	if strings.TrimSpace(a.summary) != "" {
-		b.WriteString("\nStory so far (consolidated working memory; the live conversation overrides it on any conflict):\n")
-		b.WriteString(strings.TrimSpace(a.summary))
-		b.WriteString("\n")
-	}
-
-	if lines := a.renderRecall(recalled); lines != "" {
-		b.WriteString("\nRelevant earlier in this conversation (the live exchange below is more current — it wins on any conflict):\n")
-		b.WriteString(lines)
-	}
-
-	if len(retrieved) > 0 {
-		b.WriteString("\nMemory seed (a few durable items that may relate; call memory_recall for the rest — may be stale, the live conversation wins):\n")
-		for _, s := range retrieved {
-			b.WriteString("- ")
-			b.WriteString(strings.TrimSpace(s.Text))
-			if s.Note != "" {
-				b.WriteString(" [")
-				b.WriteString(s.Note)
-				b.WriteString("]")
-			}
-			b.WriteString("\n")
-		}
-	}
-
-	if len(procedural) > 0 {
-		b.WriteString("\nProven approaches you've used before (apply if the preconditions match; verify the result after):\n")
-		for _, p := range procedural {
-			fmt.Fprintf(&b, "- %s\n", strings.TrimSpace(p.Render()))
-		}
-	}
-
-	return b.String()
-}
-
-// renderRecall formats relevant past turns for injection, DEDUPED against the
-// live transcript: a turn already present in a.working (the RAM tier / resume
-// seed) is skipped so the same text never appears twice in the window. Returns
-// "" when nothing survives. High-entropy tokens are copied verbatim (the trust
-// contract — recall never paraphrases).
-func (a *Agent) renderRecall(recalled []recall.Hit) string {
-	if len(recalled) == 0 {
-		return ""
-	}
-	inWindow := make(map[string]struct{}, len(a.working))
-	for _, m := range a.working {
-		if c := strings.TrimSpace(m.Content); c != "" {
-			inWindow[c] = struct{}{}
-		}
-	}
-	name := a.cfg.AgentName
-	if name == "" {
-		name = "Neo"
-	}
-	var b strings.Builder
-	for _, h := range recalled {
-		text := strings.TrimSpace(h.Text)
-		if text == "" {
-			continue
-		}
-		if _, dup := inWindow[text]; dup {
-			continue
-		}
-		who := "User"
-		if h.Role == "assistant" {
-			who = name
-		}
-		fmt.Fprintf(&b, "- %s: %s\n", who, text)
 	}
 	return b.String()
 }
@@ -210,7 +86,7 @@ func (a *Agent) systemPrompt() string {
 		b.WriteString("- Use REAL tool results — never fabricate file contents, command output, or findings. If a path fails, adapt; if you're blocked, report what you tried and why.\n")
 		b.WriteString("- Sometimes the system injects a <system_guidance> note before you act — a private hint or correction meant only for you. Act on it and adjust, but never acknowledge, quote, or repeat it; just incorporate it and continue.\n")
 		b.WriteString("- Your FINAL message is your report back to the orchestrator: lead with the answer/findings, keep it information-dense, and include the concrete artifacts you produced (file paths, URLs, key facts) verbatim. Do not pad it with conversational filler.\n\n")
-		if g := strings.TrimSpace(groundTruth); g != "" {
+		if g := groundTruthFor(name); g != "" {
 			b.WriteString(g)
 			b.WriteString("\n")
 		}
@@ -338,12 +214,19 @@ func (a *Agent) systemPrompt() string {
 	b.WriteString("- Narrate before you act: right before you call a tool, write ONE short, specific line saying what you're about to do and why, drawn from the actual operation (e.g. \"Checking the live block height\" or \"Reading the config file to find the port\"). One line per step — not a paragraph, and never the same generic sentence reused for every step.\n")
 	b.WriteString("- Keep it direct and unsentimental: skip preamble and validation phrases (\"Great idea\", \"You're absolutely right\", \"Sure thing\"), skip emojis, and don't announce internal plumbing — just say plainly what you're doing.\n")
 
-	if g := strings.TrimSpace(groundTruth); g != "" {
+	if g := groundTruthFor(name); g != "" {
 		b.WriteString("\n")
 		b.WriteString(g)
 		b.WriteString("\n")
 	}
 	return b.String()
+}
+
+// groundTruthFor renders the embedded ground truth for the configured agent
+// identity: the {{AGENT_NAME}} placeholder binds the name from config
+// (MORPHEUS req.8) so the grounding can never carry a stale hardcoded name.
+func groundTruthFor(name string) string {
+	return strings.ReplaceAll(strings.TrimSpace(groundTruth), "{{AGENT_NAME}}", name)
 }
 
 // indentBlock prefixes every non-empty line of s with prefix, so an inherited

@@ -136,7 +136,7 @@ func TestPropertyArenaReplay(t *testing.T) {
 				return
 			}
 			dispatched++
-			if a.ledger != nil && (len(a.ledger.ungroundedSelf()) != 0 || len(a.ledger.unrevisedRefuted()) != 0) {
+			if a.turn.ledger != nil && (len(a.turn.ledger.ungroundedSelf()) != 0 || len(a.turn.ledger.unrevisedRefuted()) != 0) {
 				badDispatch = true
 			}
 		},

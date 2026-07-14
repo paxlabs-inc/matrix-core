@@ -169,10 +169,10 @@ func (a *Agent) capToolResult(content string) string {
 	if len(content) <= maxToolResultChars {
 		return content
 	}
-	if a.overflow == nil {
-		a.overflow = &overflowStore{}
+	if a.turn.overflow == nil {
+		a.turn.overflow = &overflowStore{}
 	}
-	token, path, ok := a.overflow.put(content)
+	token, path, ok := a.turn.overflow.put(content)
 	if !ok {
 		return capToolResultPlain(content)
 	}
@@ -202,16 +202,16 @@ func capToolResultPlain(s string) string {
 // overflowUnread reports whether any overflow payload from this turn is still
 // unread — the read-full gate the loop checks before letting the turn finish.
 func (a *Agent) overflowUnread() bool {
-	return a.overflow != nil && len(a.overflow.unread()) > 0
+	return a.turn.overflow != nil && len(a.turn.overflow.unread()) > 0
 }
 
 // overflowUnreadNudge composes the guidance-channel steer that blocks finishing
 // while overflow output is unread, naming the outstanding tokens.
 func (a *Agent) overflowUnreadNudge() string {
-	if a.overflow == nil {
+	if a.turn.overflow == nil {
 		return ""
 	}
-	toks := a.overflow.unread()
+	toks := a.turn.overflow.unread()
 	if len(toks) == 0 {
 		return ""
 	}
@@ -225,7 +225,7 @@ func (a *Agent) overflowUnreadNudge() string {
 // of a stored overflow payload and marks it read. Parse/usage errors come back
 // in-band (isError=true) so the model corrects rather than the harness retrying.
 func (a *Agent) readOverflow(args map[string]interface{}) (string, bool) {
-	if a.overflow == nil {
+	if a.turn.overflow == nil {
 		return "there is no saved overflow output to read in this turn.", true
 	}
 	token, _ := args["token"].(string)
@@ -235,7 +235,7 @@ func (a *Agent) readOverflow(args map[string]interface{}) (string, bool) {
 	}
 	offset := argInt(args["offset"], 0)
 	limit := argInt(args["limit"], overflowReadChunk)
-	chunk, total, next, ok := a.overflow.read(token, offset, limit)
+	chunk, total, next, ok := a.turn.overflow.read(token, offset, limit)
 	if !ok {
 		return fmt.Sprintf("no overflow output is stored under token %q.", token), true
 	}

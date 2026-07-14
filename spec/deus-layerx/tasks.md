@@ -44,11 +44,11 @@
     - Wire pkg/lxp into Invoke behind DEUS_RAIL_LAYERX: challenge-or-verify replaces wallet.AuthorizeSpend/Send; exact mode executes then settles (current direct-rail ordering + void semantics preserved); metering gains layerx_seq/hold_id columns + rail layerx; execution receipt gains seq + ref; quote endpoint intact with challenge carrying equivalent terms
     - Tests: full invoke against real layerxd, idempotent replay without double charge, policy of no-free-calls on layerxd failure
     - _Requirements: 4.4, 6.1, 6.2, 6.3, 6.4_
-  - [ ] 3.3 Gateway hold mode: reserve -> execute -> capture/release
+  - [x] 3.3 Gateway hold mode: reserve -> execute -> capture/release
     - Hold-mode pipeline mapped onto meter Reserve/Finalize/Void: hold before execution (captor_did = gateway DID), capture exact charge on success (remainder auto-released), release on execution failure; hold terms (captor_did, ttl_s) in the challenge
     - Tests: success/failure/expiry paths against real layerxd; no stranded holds
     - _Requirements: 6.1_
-  - [ ] 3.4 Payee DIDs, earnings, withdraw link-out
+  - [x] 3.4 Payee DIDs, earnings, withdraw link-out
     - payee_did on manifest + developer records (validated, required for priced services); settlements pay payee_did; /v1/me/earnings joins invocations with LayerX account/transfer reads; withdraw link-out; console payee/earnings wiring
     - Tests: registration validation, earnings aggregation against real layerxd reads
     - _Requirements: 8.1, 8.2, 8.3_
@@ -56,11 +56,11 @@
 ## P1 — Clients
 
 - [ ] 4. deus.mjs handshake and the Node middleware
-  - [ ] 4.1 deus.mjs: leash-gated auto-payment
+  - [x] 4.1 deus.mjs: leash-gated auto-payment
     - LXP client half in tools/deus/deus.mjs: on 402 lxp challenge enforce LAYERX_MAX_SPEND_USDX / LAYERX_MAX_DAILY_USDX before signing, sign auth.IntentMessage with executor.key (lockstep with tools/layerx/layerx.mjs), retry once, surface receipt in the tool result, deposit guidance on insufficient funds, over-leash surfaces terms without signing
     - Cross-implementation test vector proving byte-identical preimages with layerxd; handshake test against the real gateway
     - _Requirements: 9.1, 9.2, 9.3_
-  - [ ] 4.2 Node LXP middleware (runner harness)
+  - [x] 4.2 Node LXP middleware (runner harness)
     - Node middleware implementing lxp/1 server-side for hosted/self-hosted JS services (challenge mint via layerxd, verify+settle, receipt header), sharing the pkg/lxp test vectors; kit README + docs/08 rewritten as the LXP protocol spec
     - Tests: Node middleware against real layerxd; vector parity with pkg/lxp
     - _Requirements: 10.2, 10.3, 10.4_
@@ -68,17 +68,17 @@
 ## P2 — Proofs (gate for the deletion)
 
 - [ ] 5. End-to-end and custody properties on real components
-  - [ ] 5.1 E2E property: the full economic loop, both modes
+  - [x] 5.1 E2E property: the full economic loop, both modes
     - **Property E2E: real deus gateway + real layerxd over the real store drive 402 challenge -> client signs -> settle -> execute -> 200 + X-LayerX-Receipt in BOTH exact and hold modes; execution receipt carries layerx_seq + ref matching the payment receipt (paid <-> served cross-proof); replay with the same idempotency key returns the stored result with exactly one charge — no fakes anywhere**
     - **Validates: Requirements 12.1, 12.3**
-  - [ ] 5.2 Custody/trust property: deus never touches the money
+  - [x] 5.2 Custody/trust property: deus never touches the money
     - **Property CUSTODY: across all E2E settlements the gateway DID's LayerX balance is byte-identical before and after; capture over amount, past expiry, to the wrong payee, or by a non-captor is rejected at the ledger; expired holds release on the sweep; with layerxd down every priced call yields 503 and the service endpoint records ZERO executions — real components, no fakes**
     - **Validates: Requirements 12.2, 12.3**
 
 ## P2 — The deletion
 
 - [ ] 6. Remove the superseded rails (only after proofs are green)
-  - [ ] 6.1 Delete rails, channels, settlement, wallet, streams, contracts
+  - [-] 6.1 Delete rails, channels, settlement, wallet, streams, contracts
     - Remove internal/channels, internal/settlement, internal/wallet, internal/streams, contracts/PaymentChannel.sol, direct/net/stream rails, routes /v1/channels /v1/vouchers/cosign /v1/streams* /internal/settle/run; retire tables via forward-only migration (data preserved); drop DEUS_RAIL_LAYERX making LXP the only rail
     - README/docs sweep: architecture reflects LayerX-native deus, repo grep clean of deleted rail symbols; full build + test suite green
     - _Requirements: 11.1, 11.2, 11.3, 11.4_

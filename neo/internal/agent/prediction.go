@@ -227,31 +227,31 @@ func (a *Agent) predictionObserve(ctx context.Context, name string, args map[str
 		// counts as missed for evidence purposes.
 		return isErr
 	}
-	if a.mismatchMeter == nil {
-		a.mismatchMeter = map[string]int{}
+	if a.turn.mismatchMeter == nil {
+		a.turn.mismatchMeter = map[string]int{}
 	}
-	if a.hypotheses == nil {
-		a.hypotheses = map[string]*Premise{}
+	if a.turn.hypotheses == nil {
+		a.turn.hypotheses = map[string]*Premise{}
 	}
 
 	// The expectation is a premise with provenance (req.6.2 "a mismatch SHALL
 	// update the premise ledger"): seed or refresh the strategy's hypothesis.
-	hyp := a.hypotheses[strategy]
+	hyp := a.turn.hypotheses[strategy]
 	if hyp == nil || hyp.Status == premiseRefuted {
 		if hyp != nil {
 			// A fresh expectation on a refuted hypothesis IS the revision of
 			// that hypothesis — the standing refutation is answered.
 			hyp.Revised = true
 		}
-		if a.ledger == nil {
-			a.ledger = &premiseLedger{}
+		if a.turn.ledger == nil {
+			a.turn.ledger = &premiseLedger{}
 		}
-		hyp = a.ledger.add(Premise{
+		hyp = a.turn.ledger.add(Premise{
 			Statement:  fmt.Sprintf("expectation for %s: %s", strategy, expect),
 			Status:     premiseAssumption,
 			Hypothesis: true,
 		})
-		a.hypotheses[strategy] = hyp
+		a.turn.hypotheses[strategy] = hyp
 	}
 
 	mismatch, decided := detectMismatch(expect, content, isErr)
@@ -259,27 +259,27 @@ func (a *Agent) predictionObserve(ctx context.Context, name string, args map[str
 		mismatch = a.compareExpectationModel(ctx, expect, content)
 	}
 	if !mismatch {
-		a.mismatchMeter[strategy] = 0
+		a.turn.mismatchMeter[strategy] = 0
 		a.premiseDischarge(hyp, "tool-evidence", truncate(strings.TrimSpace(content), 160))
 		return false
 	}
 
-	a.mismatchMeter[strategy]++
-	count := a.mismatchMeter[strategy]
+	a.turn.mismatchMeter[strategy]++
+	count := a.turn.mismatchMeter[strategy]
 	a.premiseRefute(hyp, "observed: "+truncate(strings.TrimSpace(content), 160))
 	// Bound (req.6.3): N consecutive mismatches on ONE strategy force the
 	// tools-stripped revision step before any further dispatch — the epistemic
 	// layer fires BEFORE the outer stall failsafes.
 	if limit := a.cfg.EpistemicMismatchLimit; limit > 0 && count >= limit &&
-		a.revisionPending == "" && a.revisionsThisTurn < maxRevisionsPerTurn {
-		a.revisionPending = fmt.Sprintf(
+		a.turn.revisionPending == "" && a.turn.revisionsThisTurn < maxRevisionsPerTurn {
+		a.turn.revisionPending = fmt.Sprintf(
 			"You have %d consecutive prediction mismatches on strategy %q — the strategy itself is wrong, not its arguments. This step has NO tools on purpose: diagnose WHY every probe of this strategy misses (what premise does the pattern of failures refute?) and write a revised plan built on a different, grounded approach.",
 			count, strategy)
 	}
 	// Structured guidance (req.6.2): the mismatch is a belief-update event the
 	// model must answer, not a failure string it can autocomplete past.
-	a.working = append(a.working, llm.GuidanceMessage(fmt.Sprintf(
+	a.pushGuidance(fmt.Sprintf(
 		"Prediction mismatch on strategy %q (%d consecutive): you expected %q, the probe did not return that shape. Update your beliefs — what does this failure imply about your premise? Do not fire another variation of the same probe without a revised hypothesis.",
-		strategy, count, expect)))
+		strategy, count, expect))
 	return true
 }

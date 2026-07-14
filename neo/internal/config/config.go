@@ -24,7 +24,7 @@ import (
 // Config is Neo's fully-resolved runtime configuration.
 type Config struct {
 	// --- identity / runtime wiring ---
-	AgentName      string // human label, "Neo"
+	AgentName      string // human label, "Morpheus" (the market identity; "Neo" stays a valid configured name)
 	CortexRoot     string // root dir of the cortex brain (per-actor stores live under it)
 	CortexActor    string // actor scope for Neo's memory store
 	DaemonURL      string // base URL of the MCL daemon for core_execute delegation
@@ -147,18 +147,6 @@ type Config struct {
 	// --- procedural memory guards ---
 	MinPatternSuccesses int // successes required before a candidate pattern is injected
 
-	// --- continuous memory (cortex as the self-managing memory brain) ---
-	// ContinuousMemory is the feature flag for the continuous-memory collapse
-	// (spec/continuous-memory): when true, Neo's turn loop appends each
-	// user/assistant/tool message to cortex (cortex.AppendMessage) and sources
-	// its per-turn working set from cortex.Activate (Pinned computed once per
-	// turn, T0/T1 tiers + durable story-so-far), rendered as a USER-role
-	// trailing message — retiring the agent-side pager selection/ranking,
-	// a.summary, a.compact, and the dynamicTail memory sections. Off by default
-	// so the legacy pager path is byte-identical when disabled. Config:
-	// [continuous_memory] enabled / env NEO_CONTINUOUS_MEMORY.
-	ContinuousMemory bool
-
 	// --- cassandra 2.0 (the silent-voice controller) ---
 	// Cassandra 2.0 replaces the retired proof-of-work completion gate with a
 	// silent, first-person feedback controller that edits the agent's OWN prior
@@ -258,7 +246,7 @@ type Config struct {
 // operational contract (neo/neo.frozen.kvx).
 func Default() Config {
 	return Config{
-		AgentName:      "Neo",
+		AgentName:      "Morpheus",
 		CortexRoot:     "/root/.cortex",
 		CortexActor:    "neo",
 		DaemonURL:      "http://127.0.0.1:8080",
@@ -324,10 +312,6 @@ func Default() Config {
 		DeathConsolidateEvery: 3, // self-author how-I-fail memories every 3rd loop death
 
 		MinPatternSuccesses: 3,
-
-		// Continuous-memory collapse: OFF by default while it lands (the
-		// legacy pager path stays byte-identical when disabled).
-		ContinuousMemory: true,
 
 		// Cassandra 2.0 silent-voice controller. ON by default (a clean run is
 		// byte-identical to disabled, so it costs nothing when healthy). min_step
@@ -404,7 +388,7 @@ func Default() Config {
 // guaranteed by this preset.
 func Sandbox() Config {
 	c := Default()
-	c.AgentName = "Neo (sandbox)"
+	c.AgentName = "Morpheus (sandbox)"
 	// Throwaway cortex root under the OS temp dir so no production brain
 	// is touched. os.MkdirAll is deferred to the caller (memory.Open /
 	// newInfra) which already creates the path; here we only name it.
@@ -508,9 +492,6 @@ func (c *Config) applyDoc(d *kvxDoc) {
 	}
 	if d.has("procedural") {
 		c.MinPatternSuccesses = d.intOr("procedural", "min_pattern_successes", c.MinPatternSuccesses)
-	}
-	if d.has("continuous_memory") {
-		c.ContinuousMemory = d.boolOr("continuous_memory", "enabled", c.ContinuousMemory)
 	}
 	if d.has("cassandra") {
 		c.CassandraEnabled = d.boolOr("cassandra", "enabled", c.CassandraEnabled)
@@ -633,9 +614,6 @@ func (c *Config) applyEnv() {
 	}
 	// P2-5: parallel dispatch of independent tool calls. 0 = serial.
 	c.ToolDispatchConcurrency = envIntNonNeg("NEO_TOOL_DISPATCH_CONCURRENCY", c.ToolDispatchConcurrency)
-
-	// Continuous-memory collapse feature flag.
-	c.ContinuousMemory = envBool("NEO_CONTINUOUS_MEMORY", c.ContinuousMemory)
 
 	// Cassandra 2.0 silent-voice controller. enabled is a plain bool switch.
 	// min_step / max_mods_per_turn / cooldown_steps are positive counts (envInt

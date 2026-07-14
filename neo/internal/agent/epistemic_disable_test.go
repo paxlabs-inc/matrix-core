@@ -66,7 +66,7 @@ func TestEpistemicDisablementRestoresPriorBehavior(t *testing.T) {
 		if dispatched != 1 {
 			t.Fatalf("with premises off the scaffold must dispatch un-gated; got %d dispatches", dispatched)
 		}
-		if a.ledger != nil {
+		if a.turn.ledger != nil {
 			t.Fatal("with premises off no ledger must form")
 		}
 		mu.Lock()
@@ -116,7 +116,7 @@ func TestEpistemicDisablementRestoresPriorBehavior(t *testing.T) {
 		if dispatched != 1 {
 			t.Fatalf("with predictions off the probe must dispatch unrefused; got %d dispatches", dispatched)
 		}
-		if len(a.mismatchMeter) != 0 {
+		if len(a.turn.mismatchMeter) != 0 {
 			t.Fatal("with predictions off no meter must accumulate")
 		}
 		mu.Lock()

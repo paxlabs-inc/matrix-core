@@ -96,7 +96,6 @@ func runScripted(t *testing.T, steps []scriptStep, enabled bool, goal string) (*
 	}
 
 	cfg := config.Default()
-	cfg.ContinuousMemory = true
 	cfg.CortexRoot = t.TempDir()
 	cfg.CortexActor = "neo-cassandra-silent"
 	cfg.CassandraEnabled = enabled
@@ -137,8 +136,8 @@ func TestCassandraStaysSilentOnCleanRun(t *testing.T) {
 	if err != nil {
 		t.Fatalf("a clean run must finish cleanly, got: %v", err)
 	}
-	if len(a.casRecord) != 0 {
-		t.Fatalf("a healthy run must receive ZERO mods, got %d: %+v", len(a.casRecord), a.casRecord)
+	if len(a.turn.casRecord) != 0 {
+		t.Fatalf("a healthy run must receive ZERO mods, got %d: %+v", len(a.turn.casRecord), a.turn.casRecord)
 	}
 }
 

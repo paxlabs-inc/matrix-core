@@ -68,7 +68,6 @@ func TestPrompt_SkillIndexStableAcrossTurns(t *testing.T) {
 	p0 := a.stableSystem()
 
 	// Mutate volatile state (would have changed the old single-block prefix).
-	a.summary = "consolidated story"
 	a.working = nil
 
 	p1 := a.stableSystem()
@@ -77,9 +76,9 @@ func TestPrompt_SkillIndexStableAcrossTurns(t *testing.T) {
 	}
 
 	// The skill names must be in the stable prefix, NOT pushed to the tail.
-	tail := a.dynamicTail("pinned", nil, nil, nil, nil)
+	tail := a.renderActivationBundle(nil) + a.epistemicTail() + a.budgetTail(1)
 	if strings.Contains(tail, "deploy-erc20") {
-		t.Error("skill index must live in the STABLE prefix, not the dynamic tail")
+		t.Error("skill index must live in the STABLE prefix, not the activation tail")
 	}
 }
 

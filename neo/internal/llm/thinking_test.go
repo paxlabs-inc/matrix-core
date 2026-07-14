@@ -5,18 +5,22 @@ package llm
 
 import "testing"
 
-// xAI's xiaomimimo/mimo-v2.5-pro takes the OpenAI-style `reasoning_effort` control, pinned
+// xAI's grok-4.3 takes the OpenAI-style `reasoning_effort` control, pinned
 // explicitly from the per-client flag ("medium" when set, "none" when clear).
-// Only xiaomimimo/mimo-v2.5-pro supports the field; other Grok models (grok-build-*,
-// grok-4.20-*-non-reasoning) omit it. Kimi (moonshotai/*) stays Baseten-served
-// with reasoning OPT-IN via chat_template_args.enable_thinking.
+// Only grok-4.3* supports the field; other Grok models (grok-build-*,
+// grok-4.20-*-non-reasoning) omit it. Xiaomi MiMo (mimo-*) rides its own
+// thinking.type lane (xiaomiThinkingType), never reasoning_effort. Kimi
+// (moonshotai/*) stays Baseten-served with reasoning OPT-IN via
+// chat_template_args.enable_thinking.
 func TestSupportsReasoningEffort(t *testing.T) {
 	cases := []struct {
 		model string
 		want  bool
 	}{
-		{"xiaomimimo/mimo-v2.5-pro", true},
-		{"xiaomimimo/mimo-v2.5-pro", true},
+		{"grok-4.3", true},
+		{"grok-4.3-mini", true},
+		{"xiaomimimo/mimo-v2.5-pro", false},
+		{"mimo-v2.5-pro", false},
 		{"grok-4.20-0309-non-reasoning", false},
 		{"grok-build-0.1", false},
 		{"moonshotai/Kimi-K2.6", false},

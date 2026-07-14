@@ -84,7 +84,7 @@ func (a *Agent) snapshotLoop(step, pct, repeats int, recentSigs []string, batch 
 			extra++
 		}
 	}
-	a.curLoop = loopSnapshot{
+	a.turn.curLoop = loopSnapshot{
 		repeats:       repeats,
 		recentSigs:    append([]string(nil), recentSigs...),
 		lastTool:      lastToolName(batch),
@@ -99,16 +99,16 @@ func (a *Agent) snapshotLoop(step, pct, repeats int, recentSigs []string, batch 
 // is best-effort observability: it never blocks or alters the returned error,
 // preserving the existing summary + successor-prime digest (req.3.2).
 func (a *Agent) recordDeath(reason, digest string) {
-	a.lastDeath = &LoopDeath{
+	a.turn.lastDeath = &LoopDeath{
 		Objective:        truncate(strings.TrimSpace(a.activeGoal), 200),
 		Faculty:          a.faculty(),
 		Reason:           reason,
-		LastTool:         a.curLoop.lastTool,
-		RepeatCount:      a.curLoop.repeats,
-		RecentSignatures: a.curLoop.recentSigs,
-		DistinctTools:    a.curLoop.distinctTools,
-		ContextFillPct:   a.curLoop.contextPct,
-		StepsUsed:        a.curLoop.step + 1,
+		LastTool:         a.turn.curLoop.lastTool,
+		RepeatCount:      a.turn.curLoop.repeats,
+		RecentSignatures: a.turn.curLoop.recentSigs,
+		DistinctTools:    a.turn.curLoop.distinctTools,
+		ContextFillPct:   a.turn.curLoop.contextPct,
+		StepsUsed:        a.turn.curLoop.step + 1,
 		Digest:           oneLine(strings.TrimSpace(digest)),
 	}
 }
@@ -119,10 +119,10 @@ func (a *Agent) recordDeath(reason, digest string) {
 // model/transport error). The supervisor reads it to enrich the durable
 // death-journal entry with the real loop state at death.
 func (a *Agent) LastDeath() (LoopDeath, bool) {
-	if a.lastDeath == nil {
+	if a.turn.lastDeath == nil {
 		return LoopDeath{}, false
 	}
-	return *a.lastDeath, true
+	return *a.turn.lastDeath, true
 }
 
 // StateLine renders the structured loop state as a compact, parseable suffix

@@ -109,13 +109,13 @@ const maxRevisionsPerTurn = 3
 // dispatches. Returns the calls that may dispatch and whether a refusal
 // happened.
 func (a *Agent) checkBeforeAct(calls []llm.ToolCall) ([]llm.ToolCall, bool) {
-	if !a.epistemicPremisesOn() || a.ledger == nil {
+	if !a.epistemicPremisesOn() || a.turn.ledger == nil {
 		return calls, false
 	}
 
 	// The check runs at the gate: every unchecked self-claim validates
 	// against the resident surface NOW (one attention read, zero tool calls).
-	for _, p := range a.ledger.ungroundedSelf() {
+	for _, p := range a.turn.ledger.ungroundedSelf() {
 		verdict, citation := a.validateSelfClaim(p)
 		switch verdict {
 		case claimCited:
@@ -123,14 +123,14 @@ func (a *Agent) checkBeforeAct(calls []llm.ToolCall) ([]llm.ToolCall, bool) {
 		case claimRefuted:
 			a.premiseRefute(p, citation)
 			// A self-claim contradiction is a mismatch event (req.5.3).
-			a.working = append(a.working, llm.GuidanceMessage(fmt.Sprintf(
+			a.pushGuidance(fmt.Sprintf(
 				"Self-claim contradiction: your plan asserts %q, but your resident capability surface says otherwise (%s). The claim is refuted — do not retain it.",
-				p.Statement, citation)))
+				p.Statement, citation))
 		}
 	}
 
-	refuted := a.ledger.unrevisedRefuted()
-	if len(refuted) == 0 || a.revisionsThisTurn >= maxRevisionsPerTurn {
+	refuted := a.turn.ledger.unrevisedRefuted()
+	if len(refuted) == 0 || a.turn.revisionsThisTurn >= maxRevisionsPerTurn {
 		return calls, false
 	}
 
@@ -154,7 +154,7 @@ func (a *Agent) checkBeforeAct(calls []llm.ToolCall) ([]llm.ToolCall, bool) {
 		a.cmRecordToolResult(call.Function.Name, directive)
 	}
 	if refusedAny {
-		a.revisionPending = "A premise your plan depends on was refuted: " + strings.Join(names, "; ") +
+		a.turn.revisionPending = "A premise your plan depends on was refuted: " + strings.Join(names, "; ") +
 			". This step has NO tools on purpose: think it through and write your REVISED plan — what does the refutation change, and what grounded approach replaces it? Your premises will be re-read from what you write."
 	}
 	return allowed, refusedAny
@@ -167,11 +167,10 @@ func (a *Agent) checkBeforeAct(calls []llm.ToolCall) ([]llm.ToolCall, bool) {
 // convergence meter resets to give the revised strategy a fresh read. Returns
 // an error only on transport failure.
 func (a *Agent) forcedRevisionStep(ctx context.Context, window []llm.Message, onDelta func(llm.Delta)) error {
-	reason := a.revisionPending
-	a.revisionPending = ""
-	a.revisionsThisTurn++
-	g := llm.GuidanceMessage(reason)
-	a.working = append(a.working, g)
+	reason := a.turn.revisionPending
+	a.turn.revisionPending = ""
+	a.turn.revisionsThisTurn++
+	g := a.pushGuidance(reason)
 	window = append(window, g)
 	res, err := a.chatWithRetry(ctx, llm.ChatRequest{Messages: window, OnDelta: onDelta})
 	if err != nil {
@@ -189,9 +188,9 @@ func (a *Agent) forcedRevisionStep(ctx context.Context, window []llm.Message, on
 	// measurement (a revision that repeats the failure re-trips the bounds).
 	a.premisePlanChanged()
 	a.premiseObservePlan(ctx, content)
-	a.mismatchMeter = nil
-	if a.graph != nil {
-		a.graph.actionsSinceGrowth = 0
+	a.turn.mismatchMeter = nil
+	if a.turn.graph != nil {
+		a.turn.graph.actionsSinceGrowth = 0
 		a.renderGraphTail()
 	}
 	return nil

@@ -184,7 +184,7 @@ func TestEncodeDecodeRoundTrip(t *testing.T) {
 	if got.GrantedBy != s.GrantedBy {
 		t.Errorf("GrantedBy mismatch")
 	}
-	if !bytes.Equal(got.Signature, []byte("s.Signature")) {
+	if !bytes.Equal(got.Signature, s.Signature) {
 		t.Errorf("Signature mismatch")
 	}
 }

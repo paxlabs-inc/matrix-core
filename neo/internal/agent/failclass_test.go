@@ -32,7 +32,7 @@ func TestNoteFailureClassRecoveryClears(t *testing.T) {
 		{"a later deterministic failure supersedes", delegate.ClassDeterministic, true, delegate.ClassDeterministic},
 		{"success clears again", delegate.ClassNone, false, delegate.ClassNone},
 	}
-	a := &Agent{}
+	a := &Agent{turn: newTurn()}
 	for _, s := range steps {
 		a.noteFailureClass(s.class, s.isErr)
 		if got := a.LastFailureClass(); got != s.want {
@@ -48,7 +48,7 @@ func TestNoteFailureClassRecoveryClears(t *testing.T) {
 // deliverDeterministicStop can say "I need your direction" instead of blaming
 // a permission wall that does not exist.
 func TestEscalateGuidanceDeathIsDeterministicUnproductive(t *testing.T) {
-	a := &Agent{}
+	a := &Agent{turn: newTurn()}
 	err := a.escalateGuidance(4)
 	if !errors.Is(err, ErrIncomplete) {
 		t.Fatalf("escalateGuidance must wrap ErrIncomplete, got %v", err)

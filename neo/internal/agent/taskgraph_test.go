@@ -90,7 +90,7 @@ func TestTaskGraphTracksRealRun(t *testing.T) {
 		t.Fatalf("Chat: %v", err)
 	}
 
-	g := a.graph
+	g := a.turn.graph
 	if g == nil {
 		t.Fatal("a real run must seed the task graph")
 	}

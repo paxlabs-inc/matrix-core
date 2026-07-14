@@ -145,7 +145,7 @@ func TestPredictionMeterAcrossRealDispatches(t *testing.T) {
 
 	// The meter aggregated one strategy across differently-argued probes.
 	strategy, _ := probeStrategy("fetch_url", map[string]interface{}{"url": "http://api.example.com/x"})
-	if got := a.mismatchMeter[strategy]; got != 2 {
+	if got := a.turn.mismatchMeter[strategy]; got != 2 {
 		t.Fatalf("meter for %q = %d, want 2 (two differently-argued probes of one strategy)", strategy, got)
 	}
 
@@ -172,11 +172,11 @@ func TestPredictionMeterAcrossRealDispatches(t *testing.T) {
 	if !strings.Contains(bodies[2], "2 consecutive") {
 		t.Fatal("the second mismatch must carry the accumulated per-strategy count")
 	}
-	if a.ledger == nil || len(a.ledger.items) == 0 {
+	if a.turn.ledger == nil || len(a.turn.ledger.items) == 0 {
 		t.Fatal("the probe hypotheses must live on the premise ledger")
 	}
 	refuted := 0
-	for _, p := range a.ledger.items {
+	for _, p := range a.turn.ledger.items {
 		if p.Status == premiseRefuted {
 			refuted++
 		}
@@ -257,8 +257,8 @@ func TestPredictionObserveNonProbe(t *testing.T) {
 	if !missed {
 		t.Fatal("non-probe mismatch with a stated expectation must count as missed")
 	}
-	if a.mismatchMeter["fs_write"] != 1 {
-		t.Fatalf("meter = %d, want 1 keyed by tool name", a.mismatchMeter["fs_write"])
+	if a.turn.mismatchMeter["fs_write"] != 1 {
+		t.Fatalf("meter = %d, want 1 keyed by tool name", a.turn.mismatchMeter["fs_write"])
 	}
 	guided := false
 	for _, m := range a.working[before:] {
@@ -275,8 +275,8 @@ func TestPredictionObserveNonProbe(t *testing.T) {
 		"file written cleanly", "wrote 42 bytes to a.txt", false); missed {
 		t.Fatal("matching outcome must not count as missed")
 	}
-	if a.mismatchMeter["fs_write"] != 0 {
-		t.Fatalf("meter = %d after match, want 0", a.mismatchMeter["fs_write"])
+	if a.turn.mismatchMeter["fs_write"] != 0 {
+		t.Fatalf("meter = %d after match, want 0", a.turn.mismatchMeter["fs_write"])
 	}
 
 	// Expectation-less non-probe: outside the discipline entirely.

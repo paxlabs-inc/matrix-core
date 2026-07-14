@@ -1,22 +1,21 @@
 // Copyright © 2026 Paxlabs Inc. All rights reserved. SPDX-License-Identifier: LicenseRef-Paxlabs-Matrix-Protocol
 // Contact · license@Paxeer.app · legal@Paxeer.app
 
-// continuous.go implements the Neo side of the continuous-memory collapse
-// (spec/continuous-memory, waves 6): Neo is reduced to
+// continuous.go implements the Neo side of the continuous-memory collapse —
+// the ONLY memory path (MORPHEUS req.1): Neo is reduced to
 //
 //	Append(conv, message) -> Activate(conv, query, budget) -> render -> transport
 //
 // cortex owns the durable transcript (via AppendMessage), the temporal ladder,
 // the activation composer, and the durable story-so-far. This file holds ONLY
-// the agent-side glue: recording each message to cortex (task 6.1), rendering
-// the cortex.Activate bundle into a USER-role trailing message that replaces the
-// dynamicTail memory sections (task 6.2), and a non-summarizing window trim that
-// replaces a.compact (task 6.3's a.summary/a.compact retirement). All selection/
-// ranking/recency lives in cortex.Activate now — there is no independent
-// agent-side brain logic on this path.
+// the agent-side glue: recording each message to cortex, rendering the
+// cortex.Activate bundle into a USER-role trailing message, and a
+// non-summarizing window trim. All selection/ranking/recency lives in
+// cortex.Activate — there is no independent agent-side brain logic.
 //
-// Everything here is GATED by a.continuousMemory(): with the feature flag off
-// the legacy pager path is byte-identical (nothing in this file runs).
+// Everything degrades gracefully without a pager (nil = no cortex wired, e.g.
+// a bare test agent): records are dropped, the activation bundle is nil, and
+// the window carries just the charter + reframe tail.
 package agent
 
 import (
@@ -30,13 +29,6 @@ import (
 	"matrix/neo/internal/memory"
 )
 
-// continuousMemory reports whether the continuous-memory collapse is active for
-// this agent: the feature flag is on and a pager (the cortex-brain shim) is
-// wired. The session store is scoped by cmConvID (the conversation, or "cli").
-func (a *Agent) continuousMemory() bool {
-	return a.cfg.ContinuousMemory && a.pager != nil
-}
-
 // cmConvID scopes the cortex session/transcript store: the agent's conversation
 // id, or "cli" on the bare CLI path (mirrors turnIntentID's fallback).
 func (a *Agent) cmConvID() string {
@@ -46,9 +38,9 @@ func (a *Agent) cmConvID() string {
 	return "cli"
 }
 
-// cmRecordUser appends a user message to the cortex transcript (task 6.1).
+// cmRecordUser appends a user message to the cortex transcript.
 func (a *Agent) cmRecordUser(content string) {
-	if !a.continuousMemory() {
+	if a.pager == nil {
 		return
 	}
 	content = strings.TrimSpace(content)
@@ -62,11 +54,11 @@ func (a *Agent) cmRecordUser(content string) {
 	})
 }
 
-// cmRecordAssistant appends an assistant turn to the cortex transcript (task
-// 6.1): its content (if any) as an assistant message, and each tool call as a
-// tool_call message (name + canonical-JSON args, losslessly — req.2.3).
+// cmRecordAssistant appends an assistant turn to the cortex transcript: its
+// content (if any) as an assistant message, and each tool call as a tool_call
+// message (name + canonical-JSON args, losslessly).
 func (a *Agent) cmRecordAssistant(msg llm.Message) {
-	if !a.continuousMemory() {
+	if a.pager == nil {
 		return
 	}
 	// Guidance-channel turns are internal steering, never durable transcript.
@@ -95,11 +87,11 @@ func (a *Agent) cmRecordAssistant(msg llm.Message) {
 	}
 }
 
-// cmRecordToolResult appends a tool result to the cortex transcript (task 6.1).
-// cortex spills an oversized tool_result to a resolvable ref on its own (the
-// overflow discipline lives in session.go), so the full content is handed over.
+// cmRecordToolResult appends a tool result to the cortex transcript. cortex
+// spills an oversized tool_result to a resolvable ref on its own (the overflow
+// discipline lives in session.go), so the full content is handed over.
 func (a *Agent) cmRecordToolResult(name, content string) {
-	if !a.continuousMemory() {
+	if a.pager == nil {
 		return
 	}
 	a.cmAppend(cortex.Message{
@@ -122,6 +114,9 @@ func (a *Agent) cmAppend(m cortex.Message) {
 // this single call site). Best-effort: on error it returns nil and the turn
 // degrades to the bare charter window (req.7.5 graceful degradation).
 func (a *Agent) cmActivate(query string) *cortex.ActivationBundle {
+	if a.pager == nil {
+		return nil
+	}
 	// Window-proportional budget (config.ActivationBudget): a 1M window
 	// carries a ~20K-token bundle instead of cortex's legacy 3K default, so
 	// the durable-memory field is as rich as the window affords.
@@ -207,7 +202,7 @@ func (a *Agent) emitMemory(b *cortex.ActivationBundle) {
 }
 
 // renderActivationBundle renders the cortex.Activate bundle into the trailing
-// working-memory block that REPLACES the dynamicTail memory sections (req.9.4).
+// working-memory block — the single window law's memory tail (MORPHEUS req.1.3).
 // It frames the block as in-progress reference (never a new instruction — the
 // leading line tells the model to continue, not restart), then surfaces the
 // standing objective as background, the Pinned tier (identity, hard constraints,

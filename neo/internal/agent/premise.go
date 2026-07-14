@@ -171,10 +171,10 @@ func (a *Agent) epistemicPremisesOn() bool {
 // the model half: extraction failure degrades to the deterministic premises,
 // never blocks the turn.
 func (a *Agent) premiseObservePlan(ctx context.Context, planText string) {
-	if !a.epistemicPremisesOn() || a.ledger != nil {
+	if !a.epistemicPremisesOn() || a.turn.ledger != nil {
 		return
 	}
-	a.ledger = &premiseLedger{}
+	a.turn.ledger = &premiseLedger{}
 	seen := map[string]struct{}{}
 
 	// Deterministic layer: self-referential capability claims are premises by
@@ -186,7 +186,7 @@ func (a *Agent) premiseObservePlan(ctx context.Context, planText string) {
 			continue
 		}
 		seen[key] = struct{}{}
-		a.ledger.add(Premise{Statement: claim, Status: premiseAssumption, SelfRef: true})
+		a.turn.ledger.add(Premise{Statement: claim, Status: premiseAssumption, SelfRef: true})
 	}
 
 	// Model layer: cheap extraction of the remaining load-bearing premises.
@@ -199,7 +199,7 @@ func (a *Agent) premiseObservePlan(ctx context.Context, planText string) {
 			continue
 		}
 		seen[key] = struct{}{}
-		a.ledger.add(ext)
+		a.turn.ledger.add(ext)
 	}
 	a.renderPremiseTail()
 }
@@ -208,14 +208,14 @@ func (a *Agent) premiseObservePlan(ctx context.Context, planText string) {
 // path, req.4.1 "and on plan change"): standing refuted premises are marked
 // revised, and the next committing turn re-extracts.
 func (a *Agent) premisePlanChanged() {
-	if a.ledger == nil {
+	if a.turn.ledger == nil {
 		return
 	}
-	for _, p := range a.ledger.unrevisedRefuted() {
+	for _, p := range a.turn.ledger.unrevisedRefuted() {
 		p.Revised = true
 	}
-	a.ledger = nil
-	a.premiseTail = ""
+	a.turn.ledger = nil
+	a.turn.premiseTail = ""
 }
 
 // extractPremisesModel is the cheap-model extraction pass. Returns nil on any
@@ -304,13 +304,13 @@ func (a *Agent) premiseRefute(p *Premise, citation string) {
 // renderPremiseTail renders the ledger into its fixed tail slot (req.4.2).
 // Empty ledger renders nothing (a clean turn is byte-identical to disabled).
 func (a *Agent) renderPremiseTail() {
-	if a.ledger == nil || len(a.ledger.items) == 0 {
-		a.premiseTail = ""
+	if a.turn.ledger == nil || len(a.turn.ledger.items) == 0 {
+		a.turn.premiseTail = ""
 		return
 	}
 	var b strings.Builder
 	b.WriteString("\nPremise ledger (what your current plan rests on — never act on an unchecked ASSUMPTION that one lookup could verify):\n")
-	for _, p := range a.ledger.items {
+	for _, p := range a.turn.ledger.items {
 		switch p.Status {
 		case premiseCited:
 			fmt.Fprintf(&b, "- P%d [cited: %s — %s] %s\n", p.ID, p.Source, citationLine(p.Citation), p.Statement)
@@ -324,7 +324,7 @@ func (a *Agent) renderPremiseTail() {
 			fmt.Fprintf(&b, "- P%d [%s] %s\n", p.ID, label, p.Statement)
 		}
 	}
-	a.premiseTail = b.String()
+	a.turn.premiseTail = b.String()
 }
 
 func citationLine(s string) string {

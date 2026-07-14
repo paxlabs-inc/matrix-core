@@ -44,7 +44,6 @@ func TestRealStallProducesStructuredDeathRecord(t *testing.T) {
 	// Disable the Cassandra controller so the raw stall path is exercised
 	// (the death capture is independent of the controller either way).
 	cfg.CassandraEnabled = false
-	cfg.ContinuousMemory = true
 	cfg.CortexRoot = t.TempDir()
 	cfg.CortexActor = "neo-death-capture"
 
@@ -120,7 +119,7 @@ func TestRealStallProducesStructuredDeathRecord(t *testing.T) {
 // loop-affecting death: a turn that does not stall/exhaust leaves LastDeath
 // empty (no false death record).
 func TestLastDeathAbsentOnCleanTurn(t *testing.T) {
-	a := &Agent{}
+	a := &Agent{turn: newTurn()}
 	if _, ok := a.LastDeath(); ok {
 		t.Fatal("LastDeath must be absent before any death")
 	}

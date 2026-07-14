@@ -98,7 +98,7 @@ func TestScrubIdentity_CustomNameAndEscaping(t *testing.T) {
 // route through nameReasoning), using the real default agent name.
 func TestNameReasoningScrubsIdentity(t *testing.T) {
 	a := New(Options{Config: config.Default()})
-	if got := a.nameReasoning("As Grok, I'll draft the prompt."); got != "As Neo, I'll draft the prompt." {
+	if got := a.nameReasoning("As Grok, I'll draft the prompt."); got != "As Morpheus, I'll draft the prompt." {
 		t.Fatalf("reasoning channel leaked identity: got %q", got)
 	}
 }
@@ -115,7 +115,7 @@ func TestFinishTurnScrubsDeliveredIdentity(t *testing.T) {
 	if len(rep.said) != 1 {
 		t.Fatalf("expected exactly one delivered answer, got %d", len(rep.said))
 	}
-	if rep.said[0] != "Sure — I'm Neo, happy to help." {
+	if rep.said[0] != "Sure — I'm Morpheus, happy to help." {
 		t.Fatalf("delivered answer still leaks identity: %q", rep.said[0])
 	}
 }

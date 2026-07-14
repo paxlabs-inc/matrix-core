@@ -88,8 +88,8 @@ func TestRevisionForcedAtMismatchLimit(t *testing.T) {
 
 	mu.Lock()
 	defer mu.Unlock()
-	if a.revisionsThisTurn != 1 {
-		t.Fatalf("the mismatch limit (3) must force exactly one revision; got %d", a.revisionsThisTurn)
+	if a.turn.revisionsThisTurn != 1 {
+		t.Fatalf("the mismatch limit (3) must force exactly one revision; got %d", a.turn.revisionsThisTurn)
 	}
 	if len(bodies) < 4 {
 		t.Fatalf("expected the revision as the 4th model call, got %d calls", len(bodies))
@@ -100,7 +100,7 @@ func TestRevisionForcedAtMismatchLimit(t *testing.T) {
 	if strings.Contains(bodies[3], `"tools"`) {
 		t.Fatal("the forced revision step must be tools-stripped")
 	}
-	if len(a.mismatchMeter) != 0 {
+	if len(a.turn.mismatchMeter) != 0 {
 		t.Fatal("the revision must reset the per-strategy mismatch meters")
 	}
 }
@@ -167,8 +167,8 @@ func TestRevisionForcedAtConvergenceWindow(t *testing.T) {
 
 	mu.Lock()
 	defer mu.Unlock()
-	if a.revisionsThisTurn != 1 {
-		t.Fatalf("measured non-convergence (window 4) must force exactly one revision; got %d", a.revisionsThisTurn)
+	if a.turn.revisionsThisTurn != 1 {
+		t.Fatalf("measured non-convergence (window 4) must force exactly one revision; got %d", a.turn.revisionsThisTurn)
 	}
 	var revision string
 	for _, b := range bodies {

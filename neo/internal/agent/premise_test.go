@@ -91,11 +91,11 @@ func TestPremiseLedgerFromRealPlan(t *testing.T) {
 		t.Fatalf("Chat: %v", err)
 	}
 
-	if a.ledger == nil || len(a.ledger.items) == 0 {
+	if a.turn.ledger == nil || len(a.turn.ledger.items) == 0 {
 		t.Fatal("a committing plan must seed the premise ledger")
 	}
 	var selfClaim, userFact *Premise
-	for _, p := range a.ledger.items {
+	for _, p := range a.turn.ledger.items {
 		if p.SelfRef {
 			selfClaim = p
 		}
@@ -104,7 +104,7 @@ func TestPremiseLedgerFromRealPlan(t *testing.T) {
 		}
 	}
 	if selfClaim == nil {
-		t.Fatalf("the arena-shaped self-claim must be on the ledger; got %+v", a.ledger.items)
+		t.Fatalf("the arena-shaped self-claim must be on the ledger; got %+v", a.turn.ledger.items)
 	}
 	if selfClaim.Status != premiseAssumption {
 		t.Fatalf("a self-referential claim must start as an ASSUMPTION (fail toward checking), got %q", selfClaim.Status)
@@ -138,8 +138,8 @@ func TestPremiseLedgerFromRealPlan(t *testing.T) {
 // drift signal.
 func TestCassandraGainsPremiseProvenance(t *testing.T) {
 	a := New(Options{Config: config.Default()})
-	a.ledger = &premiseLedger{}
-	self := a.ledger.add(Premise{Statement: "I expose an OpenAI-compatible API", Status: premiseAssumption, SelfRef: true})
+	a.turn.ledger = &premiseLedger{}
+	self := a.turn.ledger.add(Premise{Statement: "I expose an OpenAI-compatible API", Status: premiseAssumption, SelfRef: true})
 
 	sig := a.buildCassandraSignals(3, llm.Message{Role: llm.RoleAssistant, Content: "all done"}, 0, nil, "", nil, map[string]struct{}{"web_search": {}}, true)
 	if sig.ungroundedSelfPremises != 1 {
@@ -159,7 +159,7 @@ func TestCassandraGainsPremiseProvenance(t *testing.T) {
 	}
 
 	// The transition re-rendered the resident slot the step it occurred.
-	if !strings.Contains(a.premiseTail, "REFUTED") {
+	if !strings.Contains(a.turn.premiseTail, "REFUTED") {
 		t.Fatal("a refute transition must re-render the resident ledger slot")
 	}
 }

@@ -60,8 +60,8 @@ func TestWorkTouchedBareAnswerFinishesWithoutGate(t *testing.T) {
 	if err != nil {
 		t.Fatalf("a work-touched bare answer must finish without a gate, got: %v", err)
 	}
-	if len(a.casRecord) != 0 {
-		t.Errorf("a clean two-step answer must not be modded, got %d mods", len(a.casRecord))
+	if len(a.turn.casRecord) != 0 {
+		t.Errorf("a clean two-step answer must not be modded, got %d mods", len(a.turn.casRecord))
 	}
 }
 

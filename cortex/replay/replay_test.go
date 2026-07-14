@@ -109,7 +109,7 @@ func TestDropDerivedKeepsCanonical(t *testing.T) {
 		if !ok {
 			t.Fatalf("canonical key %x missing post-drop", k)
 		}
-		if !bytes.Equal(got, []byte("want")) {
+		if !bytes.Equal(got, want) {
 			t.Fatalf("canonical key %x changed: got %x want %x", k, got, want)
 		}
 	}

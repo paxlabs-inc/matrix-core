@@ -134,8 +134,8 @@ func TestTruncate(t *testing.T) {
 func TestCapToolResult(t *testing.T) {
 	a := New(Options{Config: config.Default()})
 	defer func() {
-		if a.overflow != nil {
-			a.overflow.cleanup()
+		if a.turn.overflow != nil {
+			a.turn.overflow.cleanup()
 		}
 	}()
 
@@ -163,11 +163,11 @@ func TestCapToolResult(t *testing.T) {
 		t.Fatal("oversized result must register an unread overflow")
 	}
 	// And the FULL original must be retrievable from the overflow store.
-	tokens := a.overflow.unread()
+	tokens := a.turn.overflow.unread()
 	if len(tokens) != 1 {
 		t.Fatalf("want exactly one overflow token, got %v", tokens)
 	}
-	chunk, total, _, ok := a.overflow.read(tokens[0], 0, len(big))
+	chunk, total, _, ok := a.turn.overflow.read(tokens[0], 0, len(big))
 	if !ok || total != len(big) || chunk != big {
 		t.Errorf("overflow file must hold the FULL output verbatim (ok=%v total=%d want=%d)", ok, total, len(big))
 	}

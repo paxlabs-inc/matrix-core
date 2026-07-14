@@ -4,165 +4,46 @@
 package agent
 
 import (
-	"context"
-	"net/http"
-	"net/http/httptest"
 	"strings"
-	"sync"
 	"testing"
+
+	"matrix/cortex"
 
 	"matrix/neo/internal/config"
 	"matrix/neo/internal/llm"
-	mcllm "matrix/mcl/llm"
+	"matrix/neo/internal/memory"
+	"matrix/neo/internal/tools"
 )
 
-// fakeConsolidator captures Consolidate and ConsolidateSync calls for testing.
-// It implements the Consolidator interface.
-type fakeConsolidator struct {
-	mu         sync.Mutex
-	asyncCalls []string
-	syncCalls  []string
-}
+// These tests cover cmTrimWorking — the single memory path's ONLY window trim
+// (MORPHEUS req.1.4). The legacy a.compact sync-consolidation property
+// ("evicted turns reach cortex before eviction") is structurally subsumed:
+// every message is recorded to the durable cortex transcript AT APPEND TIME
+// (cmRecordUser / cmRecordAssistant / cmRecordToolResult), so anything the
+// trim later drops from the in-memory window is already durable. The tests
+// prove that on the real pager + cortex store, no fakes.
 
-func (f *fakeConsolidator) Consolidate(transcript string) {
-	f.mu.Lock()
-	defer f.mu.Unlock()
-	f.asyncCalls = append(f.asyncCalls, transcript)
-}
-
-func (f *fakeConsolidator) ConsolidateSync(ctx context.Context, transcript string) {
-	f.mu.Lock()
-	defer f.mu.Unlock()
-	f.syncCalls = append(f.syncCalls, transcript)
-}
-
-func (f *fakeConsolidator) syncCallCount() int {
-	f.mu.Lock()
-	defer f.mu.Unlock()
-	return len(f.syncCalls)
-}
-
-func (f *fakeConsolidator) asyncCallCount() int {
-	f.mu.Lock()
-	defer f.mu.Unlock()
-	return len(f.asyncCalls)
-}
-
-func (f *fakeConsolidator) lastSyncCall() string {
-	f.mu.Lock()
-	defer f.mu.Unlock()
-	if len(f.syncCalls) == 0 {
-		return ""
-	}
-	return f.syncCalls[len(f.syncCalls)-1]
-}
-
-// newCompactionTestAgent builds an Agent with an httptest LLM that returns a
-// valid (but minimal) summary response, plus a fake consolidator. The agent
-// has enough configuration to call compact() without panicking.
-func newCompactionTestAgent(t *testing.T) (*Agent, *fakeConsolidator) {
+// newTrimTestAgent builds an Agent over a REAL pager on a temp cortex store.
+// Main is nil: the trim must never touch a model (non-summarizing).
+func newTrimTestAgent(t *testing.T) *Agent {
 	t.Helper()
-	// httptest server that returns a minimal SSE-formatted chat response
-	// so compact()'s LLM call succeeds. The response just needs to be non-empty.
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "text/event-stream")
-		w.WriteHeader(http.StatusOK)
-		// Minimal SSE: one data chunk with content, then [DONE]
-		_, _ = w.Write([]byte("data: {\"choices\":[{\"delta\":{\"content\":\"GOAL: test\\nDECISIONS: none\\nARTIFACTS: none\\nOPEN: none\\nLAST_RESULTS: none\\nNEXT: none\"},\"finish_reason\":\"stop\"}]}\n\n"))
-		_, _ = w.Write([]byte("data: [DONE]\n\n"))
-	}))
-	t.Cleanup(srv.Close)
-
-	client, err := llm.New(mcllm.Config{
-		Model:      "test-model",
-		Endpoint:   srv.URL,
-		GatewayURL: srv.URL,
-		Provider:   mcllm.ProviderFireworks,
-		ProviderSet: true,
-		APIKey:     "test-key",
-	})
+	cfg := config.Default()
+	cfg.CortexRoot = t.TempDir()
+	cfg.CortexActor = "neo-trim-sync"
+	pager, err := memory.Open(cfg)
 	if err != nil {
-		// If llm.New fails (e.g. unknown provider), fall back to a client
-		// that will error on Chat — compact() handles that path gracefully.
-		t.Logf("llm.New failed (%v); compact() will use the error path", err)
-		client = nil
+		t.Fatalf("memory.Open: %v", err)
 	}
-
-	fc := &fakeConsolidator{}
-	a := New(Options{
-		Config:       config.Default(),
-		Main:          client,
-		Consolidator:  fc,
-	})
-	return a, fc
+	t.Cleanup(func() { _ = pager.Close() })
+	return New(Options{Config: cfg, Tools: &tools.Manager{}, Pager: pager, ConvID: "conv-trim-sync"})
 }
 
-// TestCompact_FlushesEvictedTurnsSynchronously verifies that compact() calls
-// ConsolidateSync with the about-to-be-evicted turns' transcript BEFORE
-// replacing a.working. The sync call must happen before the eviction so
-// durable facts reach cortex first.
-func TestCompact_FlushesEvictedTurnsSynchronously(t *testing.T) {
-	a, fc := newCompactionTestAgent(t)
-
-	// Build enough working history to trigger compaction (need > keepRecentUserTurns*2 turns).
-	// Include high-entropy tokens that must survive to cortex.
-	verbatim := "0x742d35Cc6634C0532925a3b844Bc9e7a5C42d8fc"
-	for i := 0; i < 12; i++ {
-		a.working = append(a.working, llm.UserMessage("turn "+string(rune('a'+i))+" "+verbatim))
-		a.working = append(a.working, llm.AssistantMessage("response "+string(rune('a'+i))))
-	}
-
-	workingBefore := len(a.working)
-	a.compact(context.Background(), "hard")
-
-	// compact() must have called ConsolidateSync at least once.
-	if fc.syncCallCount() == 0 {
-		t.Fatal("compact() did not call ConsolidateSync — evicted turns were not synchronously consolidated")
-	}
-
-	// The sync call must have received a transcript containing the evicted turns.
-	syncTranscript := fc.lastSyncCall()
-	if !strings.Contains(syncTranscript, verbatim) {
-		t.Errorf("ConsolidateSync transcript does not contain verbatim token %q; got %d chars", verbatim, len(syncTranscript))
-	}
-
-	// Working must have shrunk (eviction happened).
-	if len(a.working) >= workingBefore {
-		t.Errorf("working not shrunk: before=%d after=%d", workingBefore, len(a.working))
-	}
-}
-
-// TestCompact_SyncFlushIndependentOfAsyncQueue verifies that the sync
-// consolidation path is independent of the async queue. compact() should call
-// ConsolidateSync directly (not through Consolidate/async). We verify this by
-// checking that async was NOT called from compact() — only sync was.
-func TestCompact_SyncFlushIndependentOfAsyncQueue(t *testing.T) {
-	a, fc := newCompactionTestAgent(t)
-
-	// Build enough working history to trigger compaction.
-	for i := 0; i < 12; i++ {
-		a.working = append(a.working, llm.UserMessage("msg "+string(rune('a'+i))))
-		a.working = append(a.working, llm.AssistantMessage("resp "+string(rune('a'+i))))
-	}
-
-	asyncBefore := fc.asyncCallCount()
-	a.compact(context.Background(), "hard")
-
-	// compact() should have called sync, NOT async.
-	if fc.syncCallCount() == 0 {
-		t.Error("compact() should have called ConsolidateSync")
-	}
-	if fc.asyncCallCount() != asyncBefore {
-		t.Errorf("compact() should not call async Consolidate; before=%d after=%d", asyncBefore, fc.asyncCallCount())
-	}
-}
-
-// TestCompact_VerbatimTokensSurviveToCortex verifies that high-entropy tokens
-// (addresses, tx hashes, file paths) in the evicted turns appear VERBATIM in
-// the transcript passed to ConsolidateSync. This is the i3 trust contract:
-// a paraphrased 0x... is a corrupted memory.
-func TestCompact_VerbatimTokensSurviveToCortex(t *testing.T) {
-	a, fc := newCompactionTestAgent(t)
+// TestCmTrim_DroppedTurnsAlreadyDurableInCortex proves the trust contract on
+// the single path: high-entropy tokens in turns the trim drops from the
+// in-memory window are ALREADY in the durable cortex transcript, verbatim —
+// recorded at append time, not flushed at eviction time.
+func TestCmTrim_DroppedTurnsAlreadyDurableInCortex(t *testing.T) {
+	a := newTrimTestAgent(t)
 
 	tokens := []string{
 		"0x742d35Cc6634C0532925a3b844Bc9e7a5C42d8fc",
@@ -170,27 +51,103 @@ func TestCompact_VerbatimTokensSurviveToCortex(t *testing.T) {
 		"/root/project/src/main.go",
 		"tx_4a5e1e3ba096a3b42cf2e7e8b3a5d4c1f9e8d7c6b5a4e3f2d1c0b9a8e7f6d5c4",
 	}
-
 	for i, tok := range tokens {
-		a.working = append(a.working, llm.UserMessage("turn "+string(rune('a'+i))+" ref: "+tok))
-		a.working = append(a.working, llm.AssistantMessage("response "+string(rune('a'+i))))
+		user := "turn " + string(rune('a'+i)) + " ref: " + tok
+		a.working = append(a.working, llm.UserMessage(user))
+		a.cmRecordUser(user)
+		reply := "response " + string(rune('a'+i))
+		a.working = append(a.working, llm.AssistantMessage(reply))
+		a.cmRecordAssistant(llm.AssistantMessage(reply))
 	}
-	// Add enough extra turns to exceed the keepRecent threshold.
+	// Enough extra turns that the token-bearing turns fall in the OLDER
+	// section the trim drops (keepRecentUserTurns bounds the recent tail).
 	for i := 0; i < 6; i++ {
-		a.working = append(a.working, llm.UserMessage("extra "+string(rune('a'+i))))
-		a.working = append(a.working, llm.AssistantMessage("extra resp "+string(rune('a'+i))))
+		user := "extra " + string(rune('a'+i))
+		a.working = append(a.working, llm.UserMessage(user))
+		a.cmRecordUser(user)
+		reply := "extra resp " + string(rune('a'+i))
+		a.working = append(a.working, llm.AssistantMessage(reply))
+		a.cmRecordAssistant(llm.AssistantMessage(reply))
 	}
 
-	a.compact(context.Background(), "hard")
-
-	if fc.syncCallCount() == 0 {
-		t.Fatal("ConsolidateSync was not called")
+	before := len(a.working)
+	a.cmTrimWorking()
+	if len(a.working) >= before {
+		t.Fatalf("cmTrimWorking must shrink the window: before=%d after=%d", before, len(a.working))
 	}
-
-	transcript := fc.lastSyncCall()
+	// The token-bearing turns are gone from the in-memory window…
+	live := ""
+	for _, m := range a.working {
+		live += m.Content + "\n"
+	}
 	for _, tok := range tokens {
-		if !strings.Contains(transcript, tok) {
-			t.Errorf("verbatim token NOT in sync transcript: %q", tok)
+		if strings.Contains(live, tok) {
+			t.Fatalf("test setup: token %q survived the trim in-window; add more recent turns", tok)
 		}
+	}
+	// …and present, verbatim, in the durable cortex transcript.
+	bundle, err := a.pager.Activate("conv-trim-sync", "", cortex.Budget{})
+	if err != nil {
+		t.Fatalf("pager.Activate: %v", err)
+	}
+	durable := ""
+	for _, m := range bundle.Transcript {
+		durable += m.Content + "\n"
+	}
+	for _, tok := range tokens {
+		if !strings.Contains(durable, tok) {
+			t.Errorf("verbatim token NOT durable in the cortex transcript after trim: %q", tok)
+		}
+	}
+}
+
+// TestCmTrim_NonSummarizingAndKeepsRecent proves the trim is a pure in-memory
+// bound: nil model client (a summarization attempt would panic), no summary
+// produced, the most recent user turns survive verbatim.
+func TestCmTrim_NonSummarizingAndKeepsRecent(t *testing.T) {
+	a := newTrimTestAgent(t)
+	for i := 0; i < 10; i++ {
+		a.working = append(a.working,
+			llm.UserMessage("user turn "+string(rune('a'+i))),
+			llm.AssistantMessage("reply "+string(rune('a'+i))),
+		)
+	}
+	lastUser := "user turn " + string(rune('a'+9))
+
+	a.cmTrimWorking() // Main is nil: must not touch a model
+
+	if len(a.working) == 0 {
+		t.Fatal("cmTrimWorking must keep the recent turns, not clear the window")
+	}
+	kept := ""
+	for _, m := range a.working {
+		kept += m.Content + "\n"
+	}
+	if !strings.Contains(kept, lastUser) {
+		t.Errorf("the most recent user turn must survive the trim verbatim; window:\n%s", kept)
+	}
+	if a.working[0].Role != llm.RoleUser {
+		t.Errorf("the trimmed window must start at a user turn (provider-safe shape), got role %q", a.working[0].Role)
+	}
+}
+
+// TestCmTrim_SingleLongTurnFallsBackToSafeTail proves the no-older-section
+// path: when the window is one long turn (nothing to carve), the trim strips
+// dead-weight images and keeps a provider-safe tail instead of summarizing
+// recent verbatim context away.
+func TestCmTrim_SingleLongTurnFallsBackToSafeTail(t *testing.T) {
+	a := newTrimTestAgent(t)
+	a.working = append(a.working, llm.UserMessage("the one long turn"))
+	for i := 0; i < 8; i++ {
+		a.working = append(a.working, llm.AssistantMessage("working on it "+string(rune('a'+i))))
+	}
+
+	a.cmTrimWorking()
+
+	if len(a.working) == 0 {
+		t.Fatal("safeTail must keep the live turn")
+	}
+	if a.working[0].Role != llm.RoleUser || a.working[0].Content != "the one long turn" {
+		t.Errorf("safeTail must keep the transcript from the last user message onward; got first=%q role=%q", a.working[0].Content, a.working[0].Role)
 	}
 }

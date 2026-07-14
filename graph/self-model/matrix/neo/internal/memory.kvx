@@ -1,7 +1,7 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:7270c3824ecc37257f5e811e088d456ae20503c845e3315015833efad4b363c9
+# GENERATED gen=codegraph do-not-edit merkle=b3:23d61f145bbae402b195aceb2927fe75128792a628a4170cb104d91217b0a6d8
 
 NODE id=matrix/neo/internal/memory kind=package
-  digest=b3:7a96e1b0ce973911364a548ebf3e9f1719f5fecbada86c3ae5eafea965f0c06f file=neo/internal/memory range=0:0 lang=go exported=true
+  digest=b3:deb382bc43e091966ab707d757a6e522ac474b7226a8ecb6bf3620b2c001cc51 file=neo/internal/memory range=0:0 lang=go exported=true
 EDGES
   contains=matrix/neo/internal/memory/classifier.go,matrix/neo/internal/memory/consolidate.go,matrix/neo/internal/memory/deathjournal.go,matrix/neo/internal/memory/embedder.go,matrix/neo/internal/memory/opportunity.go,matrix/neo/internal/memory/pager.go,matrix/neo/internal/memory/pattern.go,matrix/neo/internal/memory/relation.go,matrix/neo/internal/memory/salience_realism.go,matrix/neo/internal/memory/self_model.go,matrix/neo/internal/memory/trigger.go,matrix/neo/internal/memory/writeback.go
   ^contains=mod:matrix/neo
@@ -54,7 +54,7 @@ EDGES
   ^defines=matrix/neo/internal/memory/classifier.go
 
 NODE id=matrix/neo/internal/memory.EstimateTokens kind=func
-  digest=b3:1100e8f93e456670efe5155520527ef9fb483d7545f842c43ca218355e12b1ff file=neo/internal/memory/pager.go range=1067:1071 lang=go exported=true byte_range=38185:38438
+  digest=b3:1100e8f93e456670efe5155520527ef9fb483d7545f842c43ca218355e12b1ff file=neo/internal/memory/pager.go range=1062:1066 lang=go exported=true byte_range=37940:38193
   sig=func EstimateTokens(s string) int
   doc=EstimateTokens approximates token count with cortex's bytes/4 heuristic.\nDeterministic and dependency-free; matches the budget math elsewhere.
 EDGES
@@ -446,7 +446,7 @@ EDGES
   ^defines=matrix/neo/internal/memory/pager.go
 
 NODE id=matrix/neo/internal/memory.Pager.Procedural kind=method
-  digest=b3:335ca8e768bacc067fa17bb038cb91c12ebf8bba58f6ddae7858f9c3e43edd37 file=neo/internal/memory/pager.go range=973:1015 lang=go exported=true byte_range=35516:36767
+  digest=b3:335ca8e768bacc067fa17bb038cb91c12ebf8bba58f6ddae7858f9c3e43edd37 file=neo/internal/memory/pager.go range=968:1010 lang=go exported=true byte_range=35271:36522
   sig=func (p *Pager) Procedural(ctx context.Context, goal string) ([]Pattern, error)
   doc=Procedural returns proven how-to patterns whose trigger matches the goal,\ngated by the anti-overfit guard (coverage >= cfg.MinPatternSuccesses).
 EDGES
@@ -462,9 +462,9 @@ EDGES
   ^defines=matrix/neo/internal/memory/writeback.go
 
 NODE id=matrix/neo/internal/memory.Pager.Recall kind=method
-  digest=b3:23c332220c0edba8e16f1c766fc806c9f2bf58c480a2d39f7bf68374f792ad91 file=neo/internal/memory/pager.go range=824:855 lang=go exported=true byte_range=29538:31579
+  digest=b3:b435cd21b1b1c4c2cfa0654169fa268760e12de980a7e07a7182a47b94229d61 file=neo/internal/memory/pager.go range=824:850 lang=go exported=true byte_range=29538:31334
   sig=func (p *Pager) Recall(ctx context.Context, queryText string, types []string, k int, asOf *time.Time) (string, error)
-  doc=Recall renders an explicit, user-visible memory lookup: the pinned user\nprofile plus the structured retrieval for the query. This backs Neo's\nmemory_recall tool so "check your memory" is an action, not an apology, and\nis now the PRIMARY reasoning-time retrieval verb (v3 #1) — the model calls\nit iteratively with narrowing queries/type filters instead of being\nforce-fed an ambient blob. Each rendered line carries the memory's type, a\ncontradiction advisory when present, its valid-until when closed (the as-of\ntime-travel signal), and its cortex URI for citation/provenance.\n\nUnder the continuous-memory collapse (cfg.ContinuousMemory, task 6.3) the\ntool is pointed at the cortex RECURSIVE-RECALL surface (RecallDescend, req.8)\n— the model descends the temporal ladder to page in exact specifics — while\npreserving the AmbientRetrievalTopK pull-over-push philosophy (this is the\npull verb) and the as_of parameter. It falls back to the flat lookup when the\ntimeline yields nothing (pre-cascade / a memory not yet rolled up), so the\ntool never regresses. With the flag off the flat lookup is byte-identical to\nthe legacy behavior.
+  doc=Recall renders an explicit, user-visible memory lookup: the pinned user\nprofile plus the structured retrieval for the query. This backs Neo's\nmemory_recall tool so "check your memory" is an action, not an apology, and\nis now the PRIMARY reasoning-time retrieval verb (v3 #1) — the model calls\nit iteratively with narrowing queries/type filters instead of being\nforce-fed an ambient blob. Each rendered line carries the memory's type, a\ncontradiction advisory when present, its valid-until when closed (the as-of\ntime-travel signal), and its cortex URI for citation/provenance.\n\nThe tool is pointed at the cortex RECURSIVE-RECALL surface (RecallDescend)\n— the model descends the temporal ladder to page in exact specifics — while\npreserving the AmbientRetrievalTopK pull-over-push philosophy (this is the\npull verb) and the as_of parameter. It falls back to the flat lookup when the\ntimeline yields nothing (pre-cascade / a memory not yet rolled up), so the\ntool never regresses.
 EDGES
   ^contains=matrix/neo/internal/memory.Pager
   ^defines=matrix/neo/internal/memory/pager.go
@@ -762,7 +762,7 @@ EDGES
   ^defines=matrix/neo/internal/memory/writeback.go
 
 NODE id=matrix/neo/internal/memory.Pager.recallFlat kind=method
-  digest=b3:ff75e659d5b60002b223b6d331b42ae1b0bac1d744c1bab19183408a74bdf1e5 file=neo/internal/memory/pager.go range=927:971 lang=go exported=false byte_range=34151:35514
+  digest=b3:ff75e659d5b60002b223b6d331b42ae1b0bac1d744c1bab19183408a74bdf1e5 file=neo/internal/memory/pager.go range=922:966 lang=go exported=false byte_range=33906:35269
   sig=func (p *Pager) recallFlat(ctx context.Context, queryText string, types []string, k int, asOf *time.Time) (string, error)
   doc=recallFlat is the flat (single-index) memory lookup: the pinned user profile\nplus a structured cortex.Find retrieval for the query. It is the legacy\nmemory_recall path (continuous-memory off) and the graceful fallback for the\nrecursive path when the timeline reaches nothing.
 EDGES
@@ -770,7 +770,7 @@ EDGES
   ^defines=matrix/neo/internal/memory/pager.go
 
 NODE id=matrix/neo/internal/memory.Pager.recallRecursive kind=method
-  digest=b3:793621d919fad349cebd01190bd4f467fff9121dec6007e20b890a6bb146648c file=neo/internal/memory/pager.go range=857:925 lang=go exported=false byte_range=31581:34149
+  digest=b3:793621d919fad349cebd01190bd4f467fff9121dec6007e20b890a6bb146648c file=neo/internal/memory/pager.go range=852:920 lang=go exported=false byte_range=31336:33904
   sig=func (p *Pager) recallRecursive(ctx context.Context, queryText string, types []string, k int, asOf *time.Time) (string, error)
   doc=recallRecursive renders the recursive-recall descent (RLM applied to time)\nbehind memory_recall under the continuous-memory collapse (task 6.3). It\ndescends the T0 timeline into the finer tiers to reach the exact memories\npaged in on demand, preserving the type filter and the bi-temporal as_of at\nevery level (req.8.3). Each hit is rendered with its type, text, valid-until,\nand cortex URI — the same shape recallFlat renders — so the model's parsing\nis unchanged. When the descent reaches no leaf (empty/pre-cascade timeline,\nor a memory not yet a rollup member) it falls back to the flat index lookup\nso the tool is never worse than before.
 EDGES
@@ -1579,7 +1579,7 @@ EDGES
   ^defines=matrix/neo/internal/memory/pager.go
 
 NODE id=matrix/neo/internal/memory.renderScoredSnippets kind=func
-  digest=b3:ee7a3007689c28f2898cc81946c78e1218da1f476651dc2c6cf7b7bd02b71287 file=neo/internal/memory/pager.go range=1017:1054 lang=go exported=false byte_range=36769:37949
+  digest=b3:ee7a3007689c28f2898cc81946c78e1218da1f476651dc2c6cf7b7bd02b71287 file=neo/internal/memory/pager.go range=1012:1049 lang=go exported=false byte_range=36524:37704
   sig=func renderScoredSnippets(res *query.Result) []scoredSnip
   doc=renderScoredSnippets renders res into snippets paired with each memory's\ncortex salience score (res.Scores), so the seed lanes rank by utility\ninstead of a flat 1.0 (v3 #4). A memory missing from res.Scores defaults\nto 0 — it sinks to the bottom of the working set, which is the correct\nposture for a memory cortex assigned no utility.
 EDGES
@@ -1666,7 +1666,7 @@ EDGES
   ^defines=matrix/neo/internal/memory/trigger.go
 
 NODE id=matrix/neo/internal/memory.truncateTokens kind=func
-  digest=b3:421d3373b8ee5e8fc27fda5ba9ddc3ac507ef5b07536b8756de1a97e0ff71604 file=neo/internal/memory/pager.go range=1056:1065 lang=go exported=false byte_range=37951:38183
+  digest=b3:421d3373b8ee5e8fc27fda5ba9ddc3ac507ef5b07536b8756de1a97e0ff71604 file=neo/internal/memory/pager.go range=1051:1060 lang=go exported=false byte_range=37706:37938
   sig=func truncateTokens(s string, maxTokens int) string
 EDGES
   ^defines=matrix/neo/internal/memory/pager.go
@@ -1743,7 +1743,7 @@ EDGES
   ^contains=matrix/neo/internal/memory
 
 NODE id=matrix/neo/internal/memory/pager.go kind=file
-  digest=b3:8515e7e1fd58cfde5d46817ff6f831f8a693485206f00357b743ef294152b5bb file=neo/internal/memory/pager.go range=1:1071 lang=go exported=true
+  digest=b3:9a3bed0c08d23a9ac0c172ff955d3a0519134bd326a650f4faa2f945dc8febfd file=neo/internal/memory/pager.go range=1:1066 lang=go exported=true
 EDGES
   defines=matrix/neo/internal/memory.EstimateTokens,matrix/neo/internal/memory.Open,matrix/neo/internal/memory.Pager,matrix/neo/internal/memory.Pager.Activate,matrix/neo/internal/memory.Pager.ActiveGoal,matrix/neo/internal/memory.Pager.AppendMessage,matrix/neo/internal/memory.Pager.Close,matrix/neo/internal/memory.Pager.Embedder,matrix/neo/internal/memory.Pager.HasEmbedder,matrix/neo/internal/memory.Pager.LearnedGuidance,matrix/neo/internal/memory.Pager.Pinned,matrix/neo/internal/memory.Pager.Procedural,matrix/neo/internal/memory.Pager.Recall,matrix/neo/internal/memory.Pager.RecallDescend,matrix/neo/internal/memory.Pager.RecallHits,matrix/neo/internal/memory.Pager.Retrieve,matrix/neo/internal/memory.Pager.SetActiveGoal,matrix/neo/internal/memory.Pager.Transcript,matrix/neo/internal/memory.Pager.UserProfile,matrix/neo/internal/memory.Pager.cascadeNeighbors,matrix/neo/internal/memory.Pager.contradictsAnyOf,matrix/neo/internal/memory.Pager.hardConstraints,matrix/neo/internal/memory.Pager.identityDID,matrix/neo/internal/memory.Pager.recallFlat,matrix/neo/internal/memory.Pager.recallRecursive,matrix/neo/internal/memory.RecallHit,matrix/neo/internal/memory.Snippet,matrix/neo/internal/memory.cascadeFollowTypes,matrix/neo/internal/memory.cascadeSeedCap,matrix/neo/internal/memory.contradictionNote,matrix/neo/internal/memory.defaultRecallTypes,matrix/neo/internal/memory.hopDecay,matrix/neo/internal/memory.invariantRules,matrix/neo/internal/memory.learnedGuidanceMax,matrix/neo/internal/memory.learnedPrefFloor,matrix/neo/internal/memory.parseRecallTypes,matrix/neo/internal/memory.recallTypeAliases,matrix/neo/internal/memory.renderPreference,matrix/neo/internal/memory.renderScoredSnippets,matrix/neo/internal/memory.scoredSnip,matrix/neo/internal/memory.truncateTokens,matrix/neo/internal/memory.userProfileMax
   ^contains=matrix/neo/internal/memory

@@ -36,7 +36,7 @@ func Distill(ix *model.Index, merkle string, scope []string, tokenBudget int) Ar
 		}
 		parts = append(parts, fragment)
 	}
-	summary := "Neo's structural self is derived from codegraph. Its conversation loop, context-window assembly, coding and execution faculties, sub-agent decomposition, and value-transfer safety wall are represented by these compact graph fragments:\n" + strings.Join(parts, "\n")
+	summary := "Your structural self is derived from codegraph. Your conversation loop, context-window assembly, coding and execution faculties, sub-agent decomposition, and value-transfer safety wall are represented by these compact graph fragments:\n" + strings.Join(parts, "\n")
 	return Artifact{Summary: truncateTokens(summary, tokenBudget), Merkle: merkle, Scope: append([]string(nil), scope...)}
 }
 

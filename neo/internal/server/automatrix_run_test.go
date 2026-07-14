@@ -140,8 +140,11 @@ func statusIs(want memory.OpportunityStatus) func(memory.OpportunitySpec) bool {
 // guarantee at the SESSION boundary (req 3.2/5.3): the session newAutomatrixSession
 // mints runs on the restricted surface, whose advertised tool schema set
 // contains no value-moving/signing tool — while a NORMAL session over the SAME
-// real tools.Manager does advertise core_execute, so the restriction is real
-// and specific to the autonomous path.
+// real tools.Manager advertises a strictly broader surface (spawn_subagents
+// et al., which the restricted surface structurally excludes), so the
+// restriction is real and specific to the autonomous path. core_execute is no
+// longer the control: under the NO-BARRIER posture it is advertised only when
+// something is actually escalated, which nothing is by default.
 func TestAutomatrixSession_RestrictedSurfaceHasNoMoney(t *testing.T) {
 	e, _ := newRunTestEngine(t, "")
 
@@ -149,19 +152,27 @@ func TestAutomatrixSession_RestrictedSurfaceHasNoMoney(t *testing.T) {
 	if err := tools.AssertNoValueTransferTools(auto.agent.AdvertisedTools()); err != nil {
 		t.Errorf("automatrix session advertised a value-moving tool: %v", err)
 	}
+	restricted := map[string]bool{}
+	for _, s := range auto.agent.AdvertisedTools() {
+		restricted[s.Function.Name] = true
+	}
+	if restricted["spawn_subagents"] || restricted[tools.CoreExecuteTool] {
+		t.Errorf("automatrix surface must exclude decomposition and money delegation; got %v", restricted)
+	}
 
-	// Control: a normal session over the same manager DOES advertise the money
-	// core_execute tool — proving the restriction is the automatrix path's doing.
+	// Control: a normal session over the same manager advertises tools the
+	// restricted surface excludes — proving the restriction is the automatrix
+	// path's doing, not an empty manager.
 	normal := e.newSession("conv-normal")
-	advertisesMoney := false
+	normalHasSpawn := false
 	for _, s := range normal.agent.AdvertisedTools() {
-		if s.Function.Name == tools.CoreExecuteTool {
-			advertisesMoney = true
+		if s.Function.Name == "spawn_subagents" {
+			normalHasSpawn = true
 			break
 		}
 	}
-	if !advertisesMoney {
-		t.Error("precondition: a normal session must advertise core_execute, else the restricted-surface test is vacuous")
+	if !normalHasSpawn {
+		t.Error("precondition: a normal session must advertise spawn_subagents, else the restricted-surface test is vacuous")
 	}
 }
 

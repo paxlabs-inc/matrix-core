@@ -830,14 +830,12 @@ func (p *Pager) RecallHits(_ context.Context, queryText string, types []string, 
 // contradiction advisory when present, its valid-until when closed (the as-of
 // time-travel signal), and its cortex URI for citation/provenance.
 //
-// Under the continuous-memory collapse (cfg.ContinuousMemory, task 6.3) the
-// tool is pointed at the cortex RECURSIVE-RECALL surface (RecallDescend, req.8)
+// The tool is pointed at the cortex RECURSIVE-RECALL surface (RecallDescend)
 // — the model descends the temporal ladder to page in exact specifics — while
 // preserving the AmbientRetrievalTopK pull-over-push philosophy (this is the
 // pull verb) and the as_of parameter. It falls back to the flat lookup when the
 // timeline yields nothing (pre-cascade / a memory not yet rolled up), so the
-// tool never regresses. With the flag off the flat lookup is byte-identical to
-// the legacy behavior.
+// tool never regresses.
 func (p *Pager) Recall(ctx context.Context, queryText string, types []string, k int, asOf *time.Time) (string, error) {
 	// Self-model paging (self-model task 2.1, req.2.2): a "self:<symbol>" query
 	// pages the agent's OWN structural self-graph on demand through this same
@@ -848,10 +846,7 @@ func (p *Pager) Recall(ctx context.Context, queryText string, types []string, k 
 	if rest, ok := strings.CutPrefix(strings.TrimSpace(queryText), selfLookupPrefix); ok {
 		return p.recallSelf(ctx, strings.TrimSpace(rest))
 	}
-	if p.cfg.ContinuousMemory {
-		return p.recallRecursive(ctx, queryText, types, k, asOf)
-	}
-	return p.recallFlat(ctx, queryText, types, k, asOf)
+	return p.recallRecursive(ctx, queryText, types, k, asOf)
 }
 
 // recallRecursive renders the recursive-recall descent (RLM applied to time)

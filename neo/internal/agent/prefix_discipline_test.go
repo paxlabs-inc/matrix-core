@@ -21,12 +21,13 @@ import (
 	"matrix/neo/internal/tools"
 )
 
-// TestPinnedOncePerTurnAndMidTurnWritesDeferred proves req.3.2 on the real
-// loop: the pinned block is assembled ONCE per turn (NE-7), and a cortex write
-// landing MID-TURN (while the loop is between steps) does not mutate the
-// rendered snapshot — it surfaces on the NEXT turn. Real Agent.Chat, real
-// cortex pager, real httptest SSE endpoint; the mid-turn write happens inside
-// the model handler, which genuinely executes between loop steps.
+// TestPinnedOncePerTurnAndMidTurnWritesDeferred proves the NE-7 discipline on
+// the real loop's SINGLE memory path: the activation bundle is assembled ONCE
+// per turn, and a cortex write landing MID-TURN (while the loop is between
+// steps) does not mutate the rendered snapshot — it surfaces on the NEXT turn.
+// Real Agent.Chat, real cortex pager, real httptest SSE endpoint; the mid-turn
+// write happens inside the model handler, which genuinely executes between
+// loop steps.
 func TestPinnedOncePerTurnAndMidTurnWritesDeferred(t *testing.T) {
 	cfg := config.Default()
 	cfg.CassandraEnabled = false
@@ -92,8 +93,8 @@ func TestPinnedOncePerTurnAndMidTurnWritesDeferred(t *testing.T) {
 	if err := a.Chat(context.Background(), "first turn"); err != nil {
 		t.Fatalf("Chat turn 1: %v", err)
 	}
-	if a.pinnedAssemblies != 1 {
-		t.Fatalf("pinned block must be assembled exactly once per turn (NE-7); got %d assemblies", a.pinnedAssemblies)
+	if a.activationAssemblies != 1 {
+		t.Fatalf("activation bundle must be assembled exactly once per turn (NE-7); got %d assemblies", a.activationAssemblies)
 	}
 	mu.Lock()
 	turn1 := append([]string(nil), bodies...)
@@ -111,8 +112,8 @@ func TestPinnedOncePerTurnAndMidTurnWritesDeferred(t *testing.T) {
 	if err := a.Chat(context.Background(), "second turn"); err != nil {
 		t.Fatalf("Chat turn 2: %v", err)
 	}
-	if a.pinnedAssemblies != 2 {
-		t.Fatalf("pinned assemblies after two turns = %d, want 2", a.pinnedAssemblies)
+	if a.activationAssemblies != 2 {
+		t.Fatalf("activation assemblies after two turns = %d, want 2", a.activationAssemblies)
 	}
 	mu.Lock()
 	last := bodies[len(bodies)-1]
@@ -127,8 +128,8 @@ func TestPinnedOncePerTurnAndMidTurnWritesDeferred(t *testing.T) {
 // slot, then the task-graph slot, then the budget stat.
 func TestEpistemicTailFixedOrder(t *testing.T) {
 	a := New(Options{Config: config.Default()})
-	a.premiseTail = "\n[premise-ledger-slot]\n"
-	a.graphTail = "\n[task-graph-slot]\n"
+	a.turn.premiseTail = "\n[premise-ledger-slot]\n"
+	a.turn.graphTail = "\n[task-graph-slot]\n"
 	tail := a.epistemicTail()
 	li := strings.Index(tail, "[premise-ledger-slot]")
 	gi := strings.Index(tail, "[task-graph-slot]")

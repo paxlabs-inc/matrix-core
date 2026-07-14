@@ -11,7 +11,6 @@ import (
 
 func TestSelfModelRoundTripThroughRealCortex(t *testing.T) {
 	cfg := testCfg(t)
-	cfg.ContinuousMemory = false
 	p, err := Open(cfg)
 	if err != nil {
 		t.Fatalf("Open: %v", err)
@@ -45,7 +44,7 @@ func TestSelfModelRoundTripThroughRealCortex(t *testing.T) {
 	if err != nil {
 		t.Fatalf("SelfModel: %v", err)
 	}
-	if model.Identity != "Neo" || model.Structural.Summary != structural.Summary || model.Structural.GraphURI != structural.GraphURI {
+	if model.Identity != cfg.AgentName || model.Structural.Summary != structural.Summary || model.Structural.GraphURI != structural.GraphURI {
 		t.Fatalf("SelfModel structural round trip mismatch: %#v", model)
 	}
 	if len(model.FailurePatterns) != 1 || model.FailurePatterns[0].Statement == "" || len(model.FailurePatterns[0].DerivedFrom) != 1 {

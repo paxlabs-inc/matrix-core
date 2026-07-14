@@ -132,40 +132,17 @@ type cassandraSignals struct {
 	ungroundedSelfPremises int
 }
 
-// buildCassandraSignals assembles the signal bundle from the loop's live state.
-// The repeat read (repeats / recentSigs / prevSig / prevCalls) still reflects the
-// PREVIOUS committed batch here — noteBatch commits the current batch later — so
-// comparing the current batch against it yields the same repeat verdict noteBatch
-// will, one step early. effectiveRepeats adds 1 when the current batch is itself a
-// repeat, so the loop trigger can fire ONE step before the hard NoProgressStall.
+// buildCassandraSignals assembles the controller's signal bundle from an
+// explicitly-supplied loop state — a thin projection over readStepSignals, the
+// ONE place the repeat reads are computed (MORPHEUS req.5.1). The repeat read
+// (repeats / recentSigs / prevSig / prevCalls) still reflects the PREVIOUS
+// committed batch here — noteBatch commits the current batch later — so
+// comparing the current batch against it yields the same repeat verdict
+// noteBatch will, one step early. effectiveRepeats adds 1 when the current
+// batch is itself a repeat, so the loop trigger can fire ONE step before the
+// hard NoProgressStall.
 func (a *Agent) buildCassandraSignals(step int, msg llm.Message, repeats int, recentSigs []string, prevSig string, prevCalls []llm.ToolCall, distinctToolSet map[string]struct{}, closing bool) cassandraSignals {
-	calls := msg.ToolCalls
-	sig := batchSignature(calls)
-	introducedNewTool := false
-	for _, c := range calls {
-		if _, seen := distinctToolSet[c.Function.Name]; !seen {
-			introducedNewTool = true
-			break
-		}
-	}
-	cyclic := len(calls) > 0 && !introducedNewTool && sigInWindow(recentSigs, sig)
-	semantic := a.semanticRepeat(prevCalls, calls)
-	exact := len(calls) > 0 && sig == prevSig
-	eff := repeats
-	if exact || semantic || cyclic {
-		eff = repeats + 1
-	}
-	return cassandraSignals{
-		step:                   step,
-		closing:                closing,
-		calls:                  calls,
-		effectiveRepeats:       eff,
-		cyclic:                 cyclic,
-		semanticRepeat:         semantic,
-		workDone:               len(distinctToolSet) > 0,
-		refutedPremises:        len(a.ledger.unrevisedRefuted()),
-		ungroundedSelfPremises: len(a.ledger.ungroundedSelf()),
-	}
+	return a.readStepSignals(step, msg.ToolCalls, repeats, recentSigs, prevSig, prevCalls, distinctToolSet, closing).cassandraView()
 }
 
 // cassandraStep is the per-step controller entry point. It is a no-op before
@@ -177,7 +154,7 @@ func (a *Agent) buildCassandraSignals(step int, msg llm.Message, repeats int, re
 func (a *Agent) cassandraStep(sig cassandraSignals) bool {
 	// Silent-when-healthy gate (req.4): no prior turn to edit before min_step, at
 	// most max_mods_per_turn total.
-	if sig.step < a.casMinStep() || a.casModsThisTurn >= a.casMaxMods() {
+	if sig.step < a.casMinStep() || a.turn.casModsThisTurn >= a.casMaxMods() {
 		return false
 	}
 	trig, side := a.cassandraClassify(sig)
@@ -185,10 +162,10 @@ func (a *Agent) cassandraStep(sig cassandraSignals) bool {
 		return false // healthy: no drift → zero modifications
 	}
 	// Per-trigger cooldown (req.4.4): never nag the same drift class every step.
-	if a.casCooldown == nil {
-		a.casCooldown = map[modTrigger]int{}
+	if a.turn.casCooldown == nil {
+		a.turn.casCooldown = map[modTrigger]int{}
 	}
-	if last, ok := a.casCooldown[trig]; ok && sig.step-last < a.casCooldownSteps() {
+	if last, ok := a.turn.casCooldown[trig]; ok && sig.step-last < a.casCooldownSteps() {
 		return false
 	}
 	mod := cassandraTemplate(trig, sig)
@@ -198,8 +175,8 @@ func (a *Agent) cassandraStep(sig cassandraSignals) bool {
 	if !a.cassandraEdit(len(a.working)-1, mod, trig, side, sig.step) {
 		return false
 	}
-	a.casCooldown[trig] = sig.step
-	a.casModsThisTurn++
+	a.turn.casCooldown[trig] = sig.step
+	a.turn.casModsThisTurn++
 	return true
 }
 
@@ -223,7 +200,7 @@ func (a *Agent) cassandraEdit(target int, mod string, trig modTrigger, side modS
 	}
 	original := a.working[target].Content
 	// Dual-record BEFORE mutating (guardrail 3).
-	a.casRecord = append(a.casRecord, cassandraMod{
+	a.turn.casRecord = append(a.turn.casRecord, cassandraMod{
 		Step: step, Target: target, Original: original, Mod: mod, Trigger: trig, Side: side,
 	})
 	// Fold the mod AFTER the original content (original preserved). When the

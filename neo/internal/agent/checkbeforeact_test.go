@@ -25,8 +25,8 @@ import (
 // from the self-model at the gate and the dispatch proceeds unrefused.
 func TestSelfClaimDischargeAllowsDispatch(t *testing.T) {
 	a := New(Options{Config: config.Default(), Capability: trueSurface()})
-	a.ledger = &premiseLedger{}
-	p := a.ledger.add(Premise{Statement: "clients reach me via POST /chat", Status: premiseAssumption, SelfRef: true})
+	a.turn.ledger = &premiseLedger{}
+	p := a.turn.ledger.add(Premise{Statement: "clients reach me via POST /chat", Status: premiseAssumption, SelfRef: true})
 
 	calls := []llm.ToolCall{{ID: "c1", Type: "function", Function: llm.FunctionCall{Name: "write_file", Arguments: `{"path":"x"}`}}}
 	allowed, refused := a.checkBeforeAct(calls)
@@ -163,7 +163,7 @@ func TestCheckBeforeActArenaShape(t *testing.T) {
 
 	// The refuted premise was answered by the revision, and the revised plan
 	// carries no standing refutation.
-	if n := len(a.ledger.unrevisedRefuted()); n != 0 {
+	if n := len(a.turn.ledger.unrevisedRefuted()); n != 0 {
 		t.Fatalf("the revision must answer the refuted premise; %d still standing", n)
 	}
 }

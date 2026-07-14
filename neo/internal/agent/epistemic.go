@@ -13,5 +13,5 @@ package agent
 // with no state renders nothing (a clean turn is byte-identical to the
 // pre-epistemic tail).
 func (a *Agent) epistemicTail() string {
-	return a.premiseTail + a.graphTail
+	return a.turn.premiseTail + a.turn.graphTail
 }

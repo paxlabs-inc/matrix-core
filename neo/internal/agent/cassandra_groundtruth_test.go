@@ -51,7 +51,6 @@ func TestCassandraCortexGroundTruth(t *testing.T) {
 	}
 
 	cfg := config.Default()
-	cfg.ContinuousMemory = true
 	cfg.CortexRoot = t.TempDir()
 	cfg.CortexActor = "neo-cassandra-groundtruth"
 
@@ -70,7 +69,7 @@ func TestCassandraCortexGroundTruth(t *testing.T) {
 	}
 
 	// Precondition: the controller actually fired (else the property is vacuous).
-	if len(a.casRecord) == 0 {
+	if len(a.turn.casRecord) == 0 {
 		t.Fatal("the controller must have injected at least one mod for this test to be meaningful")
 	}
 	// The in-WINDOW copy carries the folded doubt (overlay applied).

@@ -74,15 +74,12 @@ func sseChatServer(t *testing.T, answer string, lastBody *[]byte, mu *sync.Mutex
 //   - Neo CONSUMES cortex.Activate and RENDERS the bundle as a trailing
 //     USER-role message, with the byte-stable system prefix at index 0
 //     (req.9.2, 9.4) — the legacy dynamicTail path did not produce this shape.
-//   - a.summary is never populated on the collapse path (a.summary retired,
-//     req.9.3).
 func TestContinuousCollapse_TurnConsumesActivateAndAppends(t *testing.T) {
 	var lastBody []byte
 	var mu sync.Mutex
 	srv := sseChatServer(t, "Hi Andrew, noted.", &lastBody, &mu)
 
 	cfg := config.Default()
-	cfg.ContinuousMemory = true
 	cfg.CortexRoot = t.TempDir()
 	cfg.CortexActor = "neo-collapse-8-5"
 
@@ -110,18 +107,9 @@ func TestContinuousCollapse_TurnConsumesActivateAndAppends(t *testing.T) {
 		Pager:  pager,
 		ConvID: conv,
 	})
-	if !a.continuousMemory() {
-		t.Fatal("precondition: continuous-memory path must be active")
-	}
-
 	const userMsg = "hello, what do you know about me?"
 	if err := a.Chat(context.Background(), userMsg); err != nil {
 		t.Fatalf("Chat: %v", err)
-	}
-
-	// a.summary must never be set on the collapse path (a.summary retired).
-	if a.summary != "" {
-		t.Errorf("a.summary must stay empty on the continuous-memory path, got %q", a.summary)
 	}
 
 	// The window the agent actually sent: system at index 0, and the LAST
@@ -264,7 +252,6 @@ func TestContinuousCollapse_StorySoFarSurvivesRestart(t *testing.T) {
 // it does not.
 func TestContinuousCollapse_TrimIsNonSummarizing(t *testing.T) {
 	cfg := config.Default()
-	cfg.ContinuousMemory = true
 	a := New(Options{Config: cfg}) // Main is nil: no model available
 
 	// A long multi-turn working set with several user turns to carve.
@@ -278,9 +265,6 @@ func TestContinuousCollapse_TrimIsNonSummarizing(t *testing.T) {
 
 	a.cmTrimWorking() // must not touch the (nil) model
 
-	if a.summary != "" {
-		t.Errorf("cmTrimWorking must not produce a summary (a.compact retired), got %q", a.summary)
-	}
 	if len(a.working) >= beforeLen {
 		t.Errorf("cmTrimWorking must bound the window: before=%d after=%d", beforeLen, len(a.working))
 	}
@@ -295,7 +279,6 @@ func TestContinuousCollapse_TrimIsNonSummarizing(t *testing.T) {
 // derived config.ActivationBudget actually reaches cortex.Activate.
 func TestCmActivateCarriesWindowProportionalBudget(t *testing.T) {
 	cfg := config.Default()
-	cfg.ContinuousMemory = true
 	cfg.CortexRoot = t.TempDir()
 	cfg.CortexActor = "neo-cm-budget"
 	pager, err := memory.Open(cfg)

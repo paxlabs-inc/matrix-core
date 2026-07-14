@@ -32,7 +32,6 @@ import (
 // recallFlat, which finds the fact via the deterministic type-filtered scan.
 func TestRecall_ContinuousMemory_FallsBackToFlatWhenNoLadder(t *testing.T) {
 	cfg := testCfg(t)
-	cfg.ContinuousMemory = true
 	p, err := Open(cfg)
 	if err != nil {
 		t.Fatalf("Open: %v", err)
@@ -78,7 +77,6 @@ func TestRecall_ContinuousMemory_DescendsTimeline(t *testing.T) {
 	c := cortex.New(s, cortex.WithClock(nowFn))
 
 	cfg := config.Default()
-	cfg.ContinuousMemory = true
 	// The pager is the thin agent-side shim over this cortex brain; no
 	// embedder is started, so recall runs the deterministic path.
 	p := &Pager{cfg: cfg, cortex: c, store: s}
@@ -145,7 +143,6 @@ func TestRecall_ContinuousMemory_AsOfPreserved(t *testing.T) {
 	c := cortex.New(s, cortex.WithClock(nowFn))
 
 	cfg := config.Default()
-	cfg.ContinuousMemory = true
 	p := &Pager{cfg: cfg, cortex: c, store: s}
 
 	const topic = "quantization"

@@ -26,9 +26,9 @@ func asstToolTurn(name, args string) llm.Message {
 func newCasAgent(t *testing.T) *Agent {
 	t.Helper()
 	a := New(Options{Config: config.Default()})
-	a.casModsThisTurn = 0
-	a.casCooldown = map[modTrigger]int{}
-	a.casRecord = nil
+	a.turn.casModsThisTurn = 0
+	a.turn.casCooldown = map[modTrigger]int{}
+	a.turn.casRecord = nil
 	return a
 }
 
@@ -54,10 +54,10 @@ func TestCassandraLoopKillInjectsDoubt(t *testing.T) {
 	if !a.cassandraStep(loopSig(3, a.casLoopThreshold())) {
 		t.Fatal("a loop at the threshold must inject a mod")
 	}
-	if len(a.casRecord) != 1 {
-		t.Fatalf("exactly one dual-record expected, got %d", len(a.casRecord))
+	if len(a.turn.casRecord) != 1 {
+		t.Fatalf("exactly one dual-record expected, got %d", len(a.turn.casRecord))
 	}
-	rec := a.casRecord[0]
+	rec := a.turn.casRecord[0]
 	if rec.Trigger != trigLoop || rec.Side != sideDoubt {
 		t.Errorf("loop must classify as (loop, doubt), got (%s, %s)", rec.Trigger, rec.Side)
 	}
@@ -93,8 +93,8 @@ func TestCassandraSilentWhenHealthy(t *testing.T) {
 	if a.cassandraStep(sig) {
 		t.Fatal("a healthy step must NOT modify the window")
 	}
-	if len(a.casRecord) != 0 {
-		t.Errorf("a healthy step records nothing, got %d", len(a.casRecord))
+	if len(a.turn.casRecord) != 0 {
+		t.Errorf("a healthy step records nothing, got %d", len(a.turn.casRecord))
 	}
 	if a.working[1].Content != before {
 		t.Errorf("a healthy step leaves content byte-identical, got %q want %q", a.working[1].Content, before)
@@ -109,7 +109,7 @@ func TestCassandraMinStepAndPerTurnCap(t *testing.T) {
 		t.Fatal("no mod may fire before min_step")
 	}
 	// At the per-turn cap: silent.
-	a.casModsThisTurn = a.casMaxMods()
+	a.turn.casModsThisTurn = a.casMaxMods()
 	if a.cassandraStep(loopSig(4, a.casLoopThreshold())) {
 		t.Fatal("no mod may fire once the per-turn cap is spent")
 	}
@@ -144,7 +144,7 @@ func TestCassandraGuardrailRefusesNonAssistant(t *testing.T) {
 	if a.working[2].Content != before {
 		t.Error("a refused edit must not mutate the tool message")
 	}
-	if len(a.casRecord) != 0 {
+	if len(a.turn.casRecord) != 0 {
 		t.Error("a refused edit records nothing")
 	}
 }
@@ -152,7 +152,7 @@ func TestCassandraGuardrailRefusesNonAssistant(t *testing.T) {
 func TestCassandraAuditEmitted(t *testing.T) {
 	var events []AuditEvent
 	a := New(Options{Config: config.Default(), AuditObserver: func(ev AuditEvent) { events = append(events, ev) }})
-	a.casCooldown = map[modTrigger]int{}
+	a.turn.casCooldown = map[modTrigger]int{}
 	a.working = []llm.Message{llm.UserMessage("g"), asstToolTurn("web_search", "{}")}
 	if !a.cassandraStep(loopSig(3, a.casLoopThreshold())) {
 		t.Fatal("expected a mod to fire")
@@ -207,7 +207,7 @@ func TestCassandraTwoSidedAssuranceOnRepeatedRead(t *testing.T) {
 	if !a.cassandraStep(sig) {
 		t.Fatal("a mild repeated read must trigger the assurance side")
 	}
-	rec := a.casRecord[0]
+	rec := a.turn.casRecord[0]
 	if rec.Side != sideAssurance || rec.Trigger != trigOverVerify {
 		t.Errorf("a repeated read must classify as (over_verify, assurance), got (%s, %s)", rec.Trigger, rec.Side)
 	}

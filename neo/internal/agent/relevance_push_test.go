@@ -60,16 +60,12 @@ func newRelevanceAgent(t *testing.T, cfg config.Config, lastBody *[]byte, mu *sy
 		Pager:  pager,
 		ConvID: "conv-relevance",
 	})
-	if !a.continuousMemory() {
-		t.Fatal("precondition: continuous-memory path must be active")
-	}
 	return a
 }
 
 func relevanceCfg(t *testing.T) config.Config {
 	t.Helper()
 	cfg := config.Default()
-	cfg.ContinuousMemory = true
 	cfg.CortexRoot = t.TempDir()
 	cfg.CortexActor = "neo-relevance-push"
 	return cfg

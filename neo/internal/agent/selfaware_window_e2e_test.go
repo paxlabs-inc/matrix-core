@@ -33,7 +33,6 @@ import (
 //     tail regardless of size.
 func TestE2E_SelfAwarenessKillsReAnswerLoop_TailGrowsAndTrims(t *testing.T) {
 	cfg := config.Default()
-	cfg.ContinuousMemory = true
 	cfg.CortexRoot = t.TempDir()
 	cfg.CortexActor = "neo-e2e-window"
 	pager, err := memory.Open(cfg)

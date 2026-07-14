@@ -236,7 +236,6 @@ func TestLiveTyping_EndToEnd_StreamsAndConvergesWithDisk(t *testing.T) {
 	}
 
 	cfg := config.Default()
-	cfg.ContinuousMemory = true
 	cfg.CortexRoot = t.TempDir()
 	cfg.CortexActor = "neo-livetype-e2e"
 	pager, err := memory.Open(cfg)

@@ -100,9 +100,9 @@ func TestCassandraGuardrailBattery(t *testing.T) {
 	fired := 0
 	for turn := 0; turn < 400; turn++ {
 		a := New(Options{Config: config.Default()})
-		a.casModsThisTurn = 0
-		a.casCooldown = map[modTrigger]int{}
-		a.casRecord = nil
+		a.turn.casModsThisTurn = 0
+		a.turn.casCooldown = map[modTrigger]int{}
+		a.turn.casRecord = nil
 		lt := a.casLoopThreshold()
 
 		steps := 1 + r.Intn(6)
@@ -116,7 +116,7 @@ func TestCassandraGuardrailBattery(t *testing.T) {
 
 			snapshot := make([]llm.Message, len(a.working))
 			copy(snapshot, a.working)
-			recordsBefore := len(a.casRecord)
+			recordsBefore := len(a.turn.casRecord)
 
 			did := a.cassandraStep(sig)
 
@@ -125,7 +125,7 @@ func TestCassandraGuardrailBattery(t *testing.T) {
 				t.Fatalf("turn %d step %d: a mod fired before min_step (%d)", turn, step, a.casMinStep())
 			}
 			// BUDGET: at most one mod (one dual-record) per step.
-			grew := len(a.casRecord) - recordsBefore
+			grew := len(a.turn.casRecord) - recordsBefore
 			if grew < 0 || grew > 1 {
 				t.Fatalf("turn %d step %d: a step must record 0 or 1 mods, recorded %d", turn, step, grew)
 			}
@@ -159,7 +159,7 @@ func TestCassandraGuardrailBattery(t *testing.T) {
 					}
 				}
 				// DUAL-RECORD: the new record matches the edit.
-				rec := a.casRecord[len(a.casRecord)-1]
+				rec := a.turn.casRecord[len(a.turn.casRecord)-1]
 				if rec.Target != last || rec.Original != snapshot[last].Content || rec.Mod == "" {
 					t.Fatalf("turn %d step %d: dual-record mismatch: %+v (want target=%d original=%q)", turn, step, rec, last, snapshot[last].Content)
 				}
@@ -169,8 +169,8 @@ func TestCassandraGuardrailBattery(t *testing.T) {
 		if modsThisTurn > a.casMaxMods() {
 			t.Fatalf("turn %d: %d mods exceeds max_mods_per_turn (%d)", turn, modsThisTurn, a.casMaxMods())
 		}
-		if len(a.casRecord) != modsThisTurn {
-			t.Fatalf("turn %d: dual-record count %d != mods fired %d", turn, len(a.casRecord), modsThisTurn)
+		if len(a.turn.casRecord) != modsThisTurn {
+			t.Fatalf("turn %d: dual-record count %d != mods fired %d", turn, len(a.turn.casRecord), modsThisTurn)
 		}
 	}
 	// The battery must have actually exercised the fire path, or it proves nothing.

@@ -7,6 +7,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -90,6 +91,16 @@ func workbenchModelServer(t *testing.T, argsWrite, argsShell string, calls *int,
 		fmt.Fprintf(w, "data: %s\n", b)
 	}
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		body, _ := io.ReadAll(r.Body)
+		// The epistemic premise-extraction pass rides the same model client
+		// (no Cheap wired here). Answer it out-of-band — an empty premise
+		// array — so it never consumes a scripted turn index.
+		if strings.Contains(string(body), "load-bearing FACTUAL PREMISES") {
+			w.Header().Set("Content-Type", "text/event-stream")
+			frame(w, map[string]any{"role": "assistant", "content": "[]"}, "stop")
+			fmt.Fprint(w, "data: [DONE]\n")
+			return
+		}
 		mu.Lock()
 		idx := *calls
 		*calls++
@@ -175,6 +186,10 @@ func TestWorkbenchEndToEnd_RealRunRealWorkspaceRealTrace(t *testing.T) {
 	shellArgs, _ := json.Marshal(map[string]string{
 		"command": "wc -c < src/index.html",
 		"cwd":     proj,
+		// exec__shell is probe-class under the epistemic prediction
+		// discipline: a call without a stated expectation is refused at
+		// dispatch, so the scripted model states one like a real model must.
+		"expect": "the byte count of src/index.html on stdout",
 	})
 
 	var calls int

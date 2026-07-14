@@ -74,7 +74,6 @@ func TestEmptyAnswerLoopBoundedByUnifiedCounter(t *testing.T) {
 	}
 
 	cfg := config.Default()
-	cfg.ContinuousMemory = true
 	cfg.CortexRoot = t.TempDir()
 	cfg.CortexActor = "neo-empty-answer"
 
@@ -97,10 +96,6 @@ func TestEmptyAnswerLoopBoundedByUnifiedCounter(t *testing.T) {
 		Pager:  pager,
 		ConvID: "conv-empty-answer",
 	})
-	if !a.continuousMemory() {
-		t.Fatal("precondition: continuous-memory path must be active")
-	}
-
 	err = a.Chat(context.Background(), "do the thing")
 
 	// The turn must NOT succeed (nothing was ever produced), and must terminate

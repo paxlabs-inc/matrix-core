@@ -118,7 +118,12 @@ const (
 type ToolObserver func(ToolEvent)
 
 // Agent wires the model, tools, and memory into one conversational loop.
+// Every field carries a documented lifetime (MORPHEUS req.2.2): construction
+// (set at New or by the harness immediately after, then stable), session
+// (evolves across turns within one agent), or the turn-scoped handle (the
+// reified turn, replaced at Chat entry).
 type Agent struct {
+	// Lifetime: construction — wiring set at New.
 	cfg          config.Config
 	main         *llm.Client
 	cheap        *llm.Client
@@ -131,29 +136,14 @@ type Agent struct {
 
 	// auditObserver streams Cassandra 2.0 controller audit events (cassandra.mod)
 	// to the harness on a pure observability side-channel; nil discards them.
+	// Lifetime: construction.
 	auditObserver AuditObserver
 
-	// Cassandra 2.0 silent-voice controller — per-turn state (reset at the top of
-	// each Chat turn). casModsThisTurn caps modifications per turn
-	// (max_mods_per_turn); casCooldown records the step each trigger CLASS last
-	// fired so the same drift is not nagged every step (per-trigger cooldown);
-	// casRecord is the dual-record audit ground truth — {original_content,
-	// cassandra_mod, trigger, side, step, target} for every modification — so what
-	// the agent actually said versus what Cassandra folded in is always
-	// recoverable (guardrail 3). None of it is durable: cortex keeps the original
-	// (req.7.1) and the audit rides the side-channel.
-	casModsThisTurn int
-	casCooldown     map[modTrigger]int
-	casRecord       []cassandraMod
-
-	// autoshotCount bounds deterministic browser auto-captures this turn
-	// (BROWSER-FILMSTRIP req.3 ac_3 — per-run cap). Reset at the top of each Chat
-	// turn alongside the Cassandra per-turn state.
-	autoshotCount int
 	// captureFn overrides the browser viewport auto-capture (default: the tool
 	// manager's real CaptureViewport, which fires a screenshot on the live MCP
 	// browser session). Injected only by tests that exercise the gating/cap/
 	// attachment logic without a live browser; nil in production.
+	// Lifetime: construction (test seam).
 	captureFn func(ctx context.Context, sourceFunc string) string
 
 	// memObserver receives this turn's continuous-memory activation summary
@@ -161,8 +151,10 @@ type Agent struct {
 	// memory Neo carries to the user (continuous-memory task 7.1). nil disables
 	// surfacing; the agent loop stays oblivious to the presentation layer
 	// (mirrors auditObserver). Only fires under the continuous-memory collapse.
+	// Lifetime: construction.
 	memObserver MemoryObserver
 
+	// Lifetime: construction — the advertised tool surface, fixed at New.
 	schemas      []llm.Tool
 	schemaTokens int
 	schemaBytes  int
@@ -170,69 +162,59 @@ type Agent struct {
 	// working is the live transcript (user / assistant / tool messages). The
 	// system block (identity + rules + retrieved memory + budget stat) is
 	// re-derived every turn and never stored here, so it can't drift.
+	// Lifetime: session (append-only across turns; Reset/Seed manage it).
 	working []llm.Message
-	// summary is the consolidated story-so-far produced by compaction; it
-	// stands in for evicted working history and is re-derivable (not ground
-	// truth — cortex is).
-	summary string
 	// activeGoal is THIS conversation's task, pinned every turn. Held on the
 	// agent (not the pager) so many conversations can share one cortex store
-	// without clobbering each other's goal.
+	// without clobbering each other's goal. Lifetime: session.
 	activeGoal string
 
 	// persona, when set, frames this agent as a task-scoped SUB-AGENT with a
 	// specific role. Sub-agents run headless (no human in the loop): they get
 	// a restricted tool surface, never ask the user questions, and end by
 	// reporting their findings back to the orchestrating agent.
+	// Lifetime: construction.
 	persona string
 
 	// capability is the resolved capability-surface material rendered resident
 	// in the byte-stable prefix (epistemic-core req.2): construction-time
 	// state, so the rendered section is byte-identical across a turn's steps.
+	// Lifetime: construction.
 	capability *CapabilitySurface
 
 	// selfModel is the shared self-model this sub-agent inherited at spawn (the
 	// structural self-summary + relevant how-I-fail patterns), injected into its
 	// charter so it reasons as the same mind on a scoped slice (self-model task
-	// 4.3). Empty on the top-level agent.
+	// 4.3). Empty on the top-level agent. Lifetime: construction.
 	selfModel string
 
-	// ledger is Mechanism 1's premise ledger — the current plan's load-bearing
-	// factual premises with provenance (epistemic-core req.4). Run state: seeded
-	// at plan formation, reset each turn and on plan change.
-	ledger *premiseLedger
+	// turn is the turn-scoped handle to the reified run state (MORPHEUS
+	// req.2): everything with turn lifetime — the epistemic mechanisms' state,
+	// the Cassandra controller's per-turn state, the overflow latch, the
+	// autoshot/unproductive counters, the stall bookkeeping, the surfaced-
+	// memory sets, the failure-class scratch, and the loop-death capture —
+	// lives on it. Replaced with a fresh turn at Chat entry — constructing the
+	// turn IS the per-turn reset (zero manual field zeroing). Non-nil from New
+	// on; retained after Chat returns so the supervisor's cross-turn reads
+	// (LastFailureClass, LastDeath) reach this turn's records until the next
+	// turn begins. Lifetime: turn-scoped handle.
+	turn *turn
 
-	// mismatchMeter / hypotheses are Mechanism 3's run state (epistemic-core
-	// req.6): consecutive prediction mismatches per probe strategy, and each
-	// strategy's live hypothesis premise on the ledger.
-	mismatchMeter map[string]int
-	hypotheses    map[string]*Premise
+	// activationAssemblies counts how many times the per-turn activation
+	// bundle was assembled this session — the NE-7 observable: exactly once
+	// per turn, never per step. Lifetime: session (accumulates across turns).
+	activationAssemblies int
 
-	// graph is Mechanism 4's reified task graph (epistemic-core req.7): goal →
-	// subgoals → evidence, with convergence computed as evidence-set delta.
-	graph *taskGraph
-
-	// revisionPending, when non-empty, forces a tools-stripped reasoning-only
-	// revision step at the next loop iteration (epistemic-core req.5.2/6.3/
-	// 7.2); revisionsThisTurn bounds them (maxRevisionsPerTurn).
-	revisionPending   string
-	revisionsThisTurn int
-
-	// premiseTail / graphTail are the FIXED epistemic tail slots (epistemic-core
-	// req.3.1): after the activation/memory block, the premise ledger renders,
-	// then the task graph — always in that order. The mechanisms (premise
-	// ledger, task graph) render into these slots the step a transition occurs.
-	premiseTail string
-	graphTail   string
-
-	// pinnedAssemblies counts how many times the pinned block was assembled
-	// this session — the NE-7 observable: exactly once per turn on the legacy
-	// path, never per step.
-	pinnedAssemblies int
+	// windowAssemblies counts how many times the window was assembled this
+	// session — the MORPHEUS req.3.2 observable: exactly once per step on a
+	// healthy turn (prepareWindow is the ONE assembly site; the 413 recovery
+	// re-enters it, adding one per retry). Lifetime: session.
+	windowAssemblies int
 
 	// convID scopes the per-turn attestation IntentID for audit; empty on the
 	// CLI path (falls back to "cli"). turnSeq counts user turns this session so
-	// each attest has a distinct, stable IntentID.
+	// each attest has a distinct, stable IntentID. Lifetime: convID
+	// construction, turnSeq session.
 	convID  string
 	turnSeq int
 
@@ -241,62 +223,33 @@ type Agent struct {
 	// so superseded (late) results can be detected and discarded — a result
 	// whose generation is no longer current is stale. Zero when unset (CLI
 	// path, tests). Not goroutine-safe: accessed only from the Chat goroutine.
+	// Lifetime: session.
 	generation uint64
 
 	// skillIndex is the names-only skill list injected into the STABLE system
 	// prefix (P2-2). Token-bounded: only names, never bodies. Set by the
 	// session/harness from the consolidator's ProposedSkills(). Lives in the
 	// cacheable prefix so it stays byte-identical across turns (consistent
-	// with P1-2). Empty = no skill section emitted.
+	// with P1-2). Empty = no skill section emitted. Lifetime: session.
 	skillIndex []string
-
-	// topic tracks the rolling topic centroid so a pivot to an unrelated
-	// subject can reset the per-turn retrieved working set (Phase 3). nil when
-	// no embedder is available (topic detection is inherently semantic).
-	topic *topicTracker
 
 	// inbox, when set, returns user messages queued (by the session) WHILE
 	// this turn is in flight — mid-task messages the user sent without
 	// interrupting (F5). The loop drains it at each tool-call boundary and
 	// appends them to the transcript, so the agent picks them up on its next
 	// step instead of the message cancelling the run. nil on the CLI path.
+	// Lifetime: construction (explicitly cross-turn seam).
 	inbox func() []string
 
 	// automatrix marks an autonomous Automatrix run (Options.Automatrix): the
 	// user is away, the run must be self-contained, and no screen surface or
-	// question back to the user is appropriate.
+	// question back to the user is appropriate. Lifetime: construction.
 	automatrix bool
 	// advertised, when non-nil (restricted agents), is the exact advertised
 	// function-name set; dispatch rejects any name outside it so synthetic
 	// tools the Manager would otherwise serve stay structurally unreachable.
+	// Lifetime: construction.
 	advertised map[string]struct{}
-
-	// lastFailureClass records the shared FailureClass of the most recent
-	// classified tool FAILURE this turn (delegate.ClassNone when none). It lets
-	// the task supervisor read the SAME classification the dispatch ladder used
-	// (via LastFailureClass) so a deterministic blocker is not respawned over.
-	// Reset at the top of every Chat turn; written only from the single-
-	// threaded result-assembly path (never from the concurrent dispatch
-	// goroutines), so it is race-free.
-	lastFailureClass delegate.FailureClass
-
-	// curLoop is the live per-turn loop-state snapshot (self-model task 2.2),
-	// refreshed each Chat iteration so a death exit can capture the REAL loop
-	// state at death (repeat count, recent signatures, last tool, context fill,
-	// steps) without threading locals through every return path. lastDeath is
-	// the structured record finalized at a loop-affecting death (nil = the turn
-	// did not die in a loop-affecting way). Both are reset at the top of every
-	// Chat turn and written only from the single-threaded loop goroutine.
-	curLoop   loopSnapshot
-	lastDeath *LoopDeath
-
-	// overflow holds this turn's oversized tool results that were spilled to
-	// run-scoped files (neo-smoothness req.4): the transcript keeps a bounded
-	// head+tail + a truncation notice, and the model pages the rest back in via
-	// read_overflow. The loop will not let the turn finish while any overflow is
-	// unread. Created lazily on the first overflow and cleaned up at turn end.
-	// Goroutine-safe (the concurrent dispatch path may both cap and read).
-	overflow *overflowStore
 
 	// userProfile carries the onboarding profile (preferred_name,
 	// expertise_domains) fetched from the daemon's /profile endpoint. It is
@@ -304,6 +257,7 @@ type Agent struct {
 	// in the STABLE system prefix (prompt-cache byte-stability invariant).
 	// agent_name flows through cfg.AgentName separately. Empty = no
 	// user-specific identity section (clean fallback to default "Neo").
+	// Lifetime: session (set per session rebuild via SetUserProfile).
 	preferredName    string
 	expertiseDomains []string
 
@@ -312,6 +266,7 @@ type Agent struct {
 	// like the user profile. Per-conversation-stable (a conversation's project
 	// tag is fixed), so it lives in the STABLE system prefix. Empty wsRoot =
 	// no workbench on this daemon, no coding-workspace section.
+	// Lifetime: session (set per session rebuild via SetWorkspace).
 	wsRoot        string
 	wsProjectID   string
 	wsProjectName string
@@ -402,6 +357,7 @@ func New(o Options) *Agent {
 		convID:        strings.TrimSpace(o.ConvID),
 		inbox:         o.Inbox,
 		automatrix:    o.Automatrix,
+		turn:          newTurn(),
 	}
 	if a.tools != nil {
 		if o.RestrictTools {
@@ -432,9 +388,6 @@ func New(o Options) *Agent {
 		for _, s := range a.schemas {
 			a.advertised[s.Function.Name] = struct{}{}
 		}
-	}
-	if o.Pager != nil {
-		a.topic = newTopicTracker(o.Pager.Embedder())
 	}
 	a.schemaTokens = estimateToolTokens(a.schemas)
 	a.schemaBytes = estimateToolBytes(a.schemas)
@@ -595,9 +548,12 @@ func (a *Agent) effectiveStepBudget(sig effectiveBudgetSignals) int {
 	return scaled
 }
 
-// Chat runs one user turn through the recursive loop until the model yields a
-// final answer (no tool calls), the loop stalls/exhausts its budget, or it is
-// blocked needing the human. Conversation state persists across calls.
+// Chat runs one user turn through the staged loop (MORPHEUS req.3) until the
+// model yields a final answer (no tool calls), the loop stalls/exhausts its
+// budget, or it is blocked needing the human. Chat itself is the skeleton: it
+// constructs the reified turn, runs the per-turn prepare, then iterates steps
+// — prepare → generate → deliberate → act | close — each a named stage with a
+// documented contract. Conversation state persists across calls.
 func (a *Agent) Chat(ctx context.Context, userInput string) error {
 	userInput = strings.TrimSpace(userInput)
 	if userInput == "" {
@@ -607,190 +563,28 @@ func (a *Agent) Chat(ctx context.Context, userInput string) error {
 		a.activeGoal = userInput
 	}
 	a.turnSeq++
-	a.lastFailureClass = delegate.ClassNone
-	// Self-model task 2.2: clear the previous turn's death capture so LastDeath
-	// only reports a death from THIS turn (mirrors lastFailureClass).
-	a.lastDeath = nil
-	a.curLoop = loopSnapshot{}
-	// Cassandra 2.0: reset the per-turn controller state so the mod cap, cooldowns,
-	// and dual-record scope to THIS turn (silent-when-healthy discipline, req.4).
-	a.casModsThisTurn = 0
-	a.casCooldown = map[modTrigger]int{}
-	a.casRecord = nil
-	a.autoshotCount = 0
-	// Epistemic core: the premise ledger scopes to THIS turn's plan (req.4.1);
-	// its resident tail slot and Mechanism 3's meter/hypotheses reset with it.
-	a.ledger = nil
-	a.premiseTail = ""
-	a.mismatchMeter = nil
-	a.hypotheses = nil
-	a.graph = nil
-	a.graphTail = ""
-	a.revisionPending = ""
-	a.revisionsThisTurn = 0
+	// The reified turn (MORPHEUS req.2): constructing the fresh turn IS the
+	// reset of everything with turn lifetime — the epistemic run state, the
+	// Cassandra controller state, the overflow latch, the autoshot/
+	// unproductive counters, the stall bookkeeping, the surfaced sets, the
+	// failure-class scratch, and the death capture all scope to it by
+	// construction. Zero manual field zeroing.
+	t := newTurn()
+	a.turn = t
 	// Run-scoped overflow files (neo-smoothness req.4.3) are ephemeral to this
 	// turn: clean them up on every exit (completion, stall, budget, error).
 	defer func() {
-		if a.overflow != nil {
-			a.overflow.cleanup()
+		if t.overflow != nil {
+			t.overflow.cleanup()
 		}
 	}()
-	a.working = append(a.working, llm.UserMessage(userInput))
-	// Continuous-memory (task 6.1): record the user message to the durable
-	// cortex transcript so cortex — not the in-memory working slice — owns the
-	// turn-by-turn record. No-op when the feature flag is off.
-	a.cmRecordUser(userInput)
-
-	// cm selects the continuous-memory collapse path (tasks 6.1–6.3): the
-	// per-turn working set comes from cortex.Activate (rendered as a trailing
-	// USER-role message) instead of the agent-side pager selection/ranking.
-	cm := a.continuousMemory()
-
-	// Topic-shift detection (Phase 3): if this turn pivots to an unrelated
-	// subject, the previous topic's recalled past-turns must not bleed into it.
-	// The pinned tier and the durable cortex retrieval (re-faulted fresh below)
-	// are preserved; only the conversational-recall working set is reset.
-	pivoted := a.observeTopic(userInput)
-
-	// Page-fault relevant memory + proven patterns + trigger-matched behavioral
-	// guidance for this ask (once/turn). The bulk semantic memory is now only a
-	// THIN ambient seed (v3 #1: reasoning-time retrieval) — capped to
-	// cfg.AmbientRetrievalTopK, or off entirely at 0 so the model pulls what it
-	// needs mid-thought with memory_recall instead of being force-fed a blob.
-	// Proven patterns and trigger-matched guidance are targeted (not the bulk
-	// blob) and stay on the push path.
-	//
-	// Under the continuous-memory collapse (cm) these agent-side lanes are
-	// retired: cortex.Activate is the single source and cmTail holds its
-	// rendered bundle, computed ONCE per turn (Pinned computed once — NE-7).
-	var (
-		retrieved  []memory.Snippet
-		procedural []memory.Pattern
-		triggered  []memory.Snippet
-		recalled   []recall.Hit
-		cmTail     string
-	)
-	if cm {
-		bundle := a.cmActivate(userInput)
-		// Surface the memory Neo carries to the harness (task 7.1) from the
-		// same single bundle before rendering it — no extra Activate call, so
-		// the pinned-once-per-turn discipline (NE-7) holds.
-		a.emitMemory(bundle)
-		cmTail = a.renderActivationBundle(bundle)
-		// Q2 first-message relevance push: Activate's tiers are recency-based
-		// + query-independent, so on the OPENING turn also inject a bounded
-		// relevance retrieval keyed on the message — the agent gets
-		// relevance-matched memory without a reactive memory_recall call.
-		// retrieved is otherwise nil on the cm path; setting it here feeds the
-		// existing collectSurfaced/collectSurfacedSnips usage-salience loop.
-		if pushSnips, pushBlock := a.cmRelevancePush(ctx, userInput); pushBlock != "" {
-			cmTail += pushBlock
-			retrieved = pushSnips
-		}
-	} else {
-		retrieved = a.ambientMemory(ctx, userInput)
-		procedural = a.faultPatterns(ctx, userInput)
-		triggered = a.faultTriggers(ctx, userInput)
-		// Conversational recall: relevant PAST turns beyond the live transcript
-		// — the additive read-lane that keeps an unbounded thread coherent.
-		// Reset on a topic pivot so a fresh subject starts clean.
-		recalled = a.recallTurns(ctx, userInput)
-		if pivoted {
-			recalled = nil
-		}
-	}
-	// Track every cortex memory surfaced this turn so a successful completion
-	// can attest them as USED — the usage-salience + EMA learning signal that
-	// keeps Neo's durable store ranking by what actually helps. surfacedSnips
-	// keeps the retrieved snippets' text/type too, so completion can also send
-	// the NEGATIVE signal for memories that were surfaced but demonstrably
-	// ignored (off-topic to the produced turn).
-	surfaced := map[string]struct{}{}
-	surfacedSnips := map[string]memory.Snippet{}
-	collectSurfaced(surfaced, retrieved, procedural)
-	collectSurfaced(surfaced, triggered, nil)
-	collectSurfacedSnips(surfacedSnips, retrieved)
-
-	// NE-7 fix (epistemic-core req.3.2): the pinned block is computed ONCE per
-	// turn, not per loop step. The rendered snapshot is frozen for the whole
-	// turn — a mid-turn cortex write surfaces on the NEXT turn's snapshot, and
-	// a multi-step turn stops paying 4-5 cortex scans per step for a block
-	// that must not change mid-turn anyway.
-	var pinned string
-	if !cm && a.pager != nil {
-		pinned = a.pager.Pinned(ctx, a.activeGoal)
-		a.pinnedAssemblies++
-	}
-
-	repeats := 0
-	// unproductive is the ONE unified unproductive-attempt counter (N2/req.8.1):
-	// completion-gate rejections, no-progress repeats, and guidance nudges all
-	// feed it, and the loop escalates to an honest stop-and-ask once it passes
-	// the bound rather than re-nudging (or re-attempting a premature completion)
-	// unbounded (req.1.5). It is reset ONLY by genuine ACCEPTED progress (an
-	// accepted completion, which ends the turn) — a plain tool call interleaved
-	// between completion rejections does NOT reset it (req.8.2), so a
-	// work->premature-complete->reject loop is bounded well before the step
-	// budget instead of running to it.
-	unproductive := 0
-	prevSig := ""
-	// prevCalls is the previous turn's tool-call batch, kept so the no-progress
-	// guard can detect a SEMANTIC repeat (same operation, reworded arguments),
-	// not just a byte-identical batch signature (NE-4).
-	var prevCalls []llm.ToolCall
-	// recentSigs is a small window of recent batch signatures, so a rotating set
-	// of already-seen operations (A → B → A → B) that introduces no NEW tool is
-	// caught as a spiral even though consecutive signatures differ. convergeNudged
-	// gates the one-time "stop re-doing completed work and finish" steer.
-	recentSigs := make([]string, 0, stallWindow)
-	convergeNudged := false
-
-	// P2-7: adaptive step budget. Track distinct tool names dispatched so far
-	// (tool-call breadth) as the complexity signal. The effective budget is
-	// recomputed each iteration from [StepBudgetMin, StepBudgetMax] via
-	// effectiveStepBudget, so a turn that fans out to many tools earns more
-	// room, while a simple/stalling turn stays at the floor. When adaptation
-	// is disabled (StepBudgetMin==0, the default), effectiveStepBudget returns
-	// StepBudgetMax (== StepBudget == 50) and the loop is byte-identical to
-	// the pre-P2-7 fixed-budget loop.
-	distinctToolSet := map[string]struct{}{}
-
-	// noteBatch advances the no-progress/stall read for ONE assistant
-	// tool-calling batch — a normal tool dispatch OR a premature task_complete.
-	// Sharing it between the dispatch path and the completion branch is what
-	// stops the completion branch from bypassing stall detection (N2/req.8.3):
-	// a repeated premature task_complete now trips the same repeat guard as a
-	// repeated tool call. A byte-identical or SEMANTIC repeat, or a rotating
-	// A→B→A→B cycle that introduces no new tool, increments the repeat count;
-	// a distinct operation resets it (NE-4). Returns whether the batch was a
-	// repeat and whether the pure-repeat stall bound (NoProgressStall) is met.
-	noteBatch := func(calls []llm.ToolCall) (repeat, stalled bool) {
-		sig := batchSignature(calls)
-		introducedNewTool := false
-		for _, c := range calls {
-			if _, seen := distinctToolSet[c.Function.Name]; !seen {
-				introducedNewTool = true
-				break
-			}
-		}
-		cyclic := !introducedNewTool && sigInWindow(recentSigs, sig)
-		if sig == prevSig || a.semanticRepeat(prevCalls, calls) || cyclic {
-			repeats++
-			repeat = true
-		} else {
-			repeats = 0
-		}
-		recentSigs = pushWindow(recentSigs, sig, stallWindow)
-		prevSig = sig
-		prevCalls = calls
-		return repeat, repeats >= a.cfg.NoProgressStall
-	}
+	cmTail := a.prepareTurn(ctx, userInput)
 
 	for step := 0; ; step++ {
 		budget := a.effectiveStepBudget(effectiveBudgetSignals{
 			step:          step,
-			distinctTools: len(distinctToolSet),
-			stallRepeats:  repeats,
+			distinctTools: len(t.distinctToolSet),
+			stallRepeats:  t.repeats,
 		})
 		if step >= budget {
 			break
@@ -799,419 +593,452 @@ func (a *Agent) Chat(ctx context.Context, userInput string) error {
 		// interrupting) so the agent picks them up on THIS step — delivered at
 		// the tool-call boundary, never cancelling the in-flight run.
 		a.drainInbox()
-		// Mid-turn page-fault refresh: long tool loops drift away from the
-		// opening ask, so periodically re-fault against the latest assistant
-		// narration. Injection stays system-block-only — the transcript
-		// never pays for it. v3 #1: this ambient refresh is opt-in — it runs
-		// only when AmbientRetrievalTopK > 0. Fully tool-driven (0), the model
-		// re-pulls mid-thought with memory_recall instead.
-		if !cm && a.cfg.AmbientRetrievalTopK > 0 && step > 0 && step%refaultEvery == 0 {
-			q := userInput
-			if c := lastAssistantText(a.working, 400); c != "" {
-				q = q + "\n" + c
-			}
-			retrieved = a.ambientMemory(ctx, q)
-			procedural = a.faultPatterns(ctx, q)
-			triggered = a.faultTriggers(ctx, q)
-			recalled = a.recallTurns(ctx, q)
-			if pivoted {
-				recalled = nil
-			}
-			collectSurfaced(surfaced, retrieved, procedural)
-			collectSurfaced(surfaced, triggered, nil)
-			collectSurfacedSnips(surfacedSnips, retrieved)
-		}
 
-		var (
-			baseSystem string
-			pct        int
-			tail       string
-			window     []llm.Message
-		)
-		if cm {
-			// Continuous-memory window (task 6.2): the byte-stable charter
-			// prefix + the live transcript + the rendered Activate bundle as a
-			// trailing USER-role message (req.9.4 — Qwen-template portability).
-			// a.compact is retired (req.9.3): over-budget trimming is
-			// NON-summarizing (cmTrimWorking), because the older turns are
-			// durable in cortex and the coarse history rides the durable
-			// story-so-far already surfaced in cmTail.
-			baseSystem = a.stableSystem() + cmTail
-			if a.overHardBudget(baseSystem) {
-				a.cmTrimWorking()
-			}
-			if a.windowBytes(baseSystem) >= maxRequestBodyBytes {
-				a.stripOldImages()
-				if a.windowBytes(baseSystem) >= maxRequestBodyBytes {
-					a.cmTrimWorking()
-				}
-			}
-			pct = a.budgetPct(baseSystem)
-			tail = cmTail + a.epistemicTail() + a.budgetTail(pct)
-			window = assembleWindowUserTail(a.stableSystem(), a.working, tail)
-		} else {
-			baseSystem = a.buildSystem(pinned, retrieved, procedural, triggered, recalled)
-
-			// [control.loop] step_3: forced compaction if over the hard threshold.
-			if a.overHardBudget(baseSystem) {
-				a.compact(ctx, "hard")
-				baseSystem = a.buildSystem(pinned, retrieved, procedural, triggered, recalled)
-			}
-			// Byte-budget backstop: the provider enforces a hard request-BODY
-			// byte cap (Fireworks: 1 MiB) that is independent of the token budget
-			// above. The token estimate undercounts the serialized JSON (message
-			// envelope + tool schemas + escaping), so a window within token budget
-			// can still exceed the byte cap and 413. Force a compaction when the
-			// approximate body size crosses the ceiling.
-			if a.windowBytes(baseSystem) >= maxRequestBodyBytes {
-				// Drop dead-weight inline image payloads from older turns first — a
-				// cheaper, less lossy step than a full compaction (Phase 4.2).
-				a.stripOldImages()
-				if a.windowBytes(baseSystem) >= maxRequestBodyBytes {
-					a.compact(ctx, "hard")
-					baseSystem = a.buildSystem(pinned, retrieved, procedural, triggered, recalled)
-				}
-			}
-			pct = a.budgetPct(baseSystem)
-			// P1-2: the byte-stable system prefix (charter + ground truth) is the
-			// FIRST message; the turn-varying memory block + context-budget stat
-			// move into ONE trailing message AFTER the append-only transcript, so
-			// the prefix stays byte-identical turn-over-turn and rides the
-			// provider's longest-stable-prefix cache. baseSystem (stable + tail)
-			// still drives the budget stat above.
-			tail = a.dynamicTail(pinned, retrieved, procedural, triggered, recalled) + a.epistemicTail() + a.budgetTail(pct)
-			window = assembleWindow(a.stableSystem(), a.working, tail)
-		}
-
-		// Live "typing" channel: stream the model's incremental fragments as
-		// they generate so the user sees Neo thinking + answering in real time
-		// instead of staring at a blank surface until the whole turn lands.
-		// reasoning → the live thinking channel; content → the answer being
-		// typed. step segments the stream so the client resets per turn.
-		streamedReasoning := false
-		// Live file-typing channel (NEO-WORKBENCH): tool-call argument
-		// fragments stream through the typer, which decodes write_file
-		// path/content incrementally and emits bounded ToolStream observer
-		// events. Fresh per model call — each turn's calls index from 0.
-		typer := newLiveTyper(func(ev ToolEvent) {
-			if a.observer != nil {
-				a.observer(ev)
-			}
-		})
-		onDelta := func(d llm.Delta) {
-			if d.Tool != nil {
-				typer.feed(d.Tool)
-			}
-			if d.Reasoning != "" {
-				streamedReasoning = true
-				a.out.Delta(step, "reasoning", a.nameReasoning(d.Reasoning))
-			}
-			if d.Content != "" {
-				// Identity net on the live answer stream (best-effort; the
-				// settled answer is re-scrubbed at delivery). A model name split
-				// across fragments can evade this, which is why finishTurn is the
-				// authoritative choke point.
-				a.out.Delta(step, "content", a.cleanContent(d.Content))
-			}
-		}
-
-		// Epistemic-core forced revision (req.5.2/6.3/7.2): a pending revision
-		// runs as a tools-stripped reasoning-only step BEFORE any further
-		// dispatch — the model must revise the plan in text first.
-		if a.revisionPending != "" {
-			if rerr := a.forcedRevisionStep(ctx, window, onDelta); rerr != nil {
-				a.consolidateWorking()
-				return fmt.Errorf("neo: model call failed: %w", rerr)
-			}
-			continue
-		}
-
-		res, err := a.chatWithRetry(ctx, llm.ChatRequest{Messages: window, Tools: a.schemas, OnDelta: onDelta})
+		window, tail, pct := a.prepareWindow(cmTail)
+		res, streamedReasoning, proceed, err := a.generate(ctx, step, cmTail, window, tail)
 		if err != nil {
-			// HTTP 413 (provider request-body byte cap) is recoverable: the
-			// window serialized past the byte limit even though it was within
-			// the token budget. Force a compaction and retry once with the
-			// shrunken window rather than failing the whole turn.
-			if errors.Is(err, llm.ErrRequestTooLarge) {
-				// Recover in two escalating steps (Phase 4.2): first strip
-				// dead-weight inline images from older turns and retry — far less
-				// lossy than discarding context. Only if that still 413s do we
-				// fall back to a full compaction and retry once more.
-				if a.stripOldImages() > 0 {
-					// Image stripping only shrinks the transcript; the tail
-					// (turn-varying memory + budget stat) is unchanged.
-					if cm {
-						window = assembleWindowUserTail(a.stableSystem(), a.working, tail)
-					} else {
-						window = assembleWindow(a.stableSystem(), a.working, tail)
-					}
-					res, err = a.chatWithRetry(ctx, llm.ChatRequest{Messages: window, Tools: a.schemas, OnDelta: onDelta})
-				}
-				if err != nil && errors.Is(err, llm.ErrRequestTooLarge) {
-					if cm {
-						// a.compact retired (req.9.3): non-summarizing trim.
-						a.cmTrimWorking()
-						baseSystem = a.stableSystem() + cmTail
-						tail = cmTail + a.epistemicTail() + a.budgetTail(a.budgetPct(baseSystem))
-						window = assembleWindowUserTail(a.stableSystem(), a.working, tail)
-					} else {
-						a.compact(ctx, "hard")
-						baseSystem = a.buildSystem(pinned, retrieved, procedural, triggered, recalled)
-						tail = a.dynamicTail(pinned, retrieved, procedural, triggered, recalled) + a.epistemicTail() + a.budgetTail(a.budgetPct(baseSystem))
-						window = assembleWindow(a.stableSystem(), a.working, tail)
-					}
-					res, err = a.chatWithRetry(ctx, llm.ChatRequest{Messages: window, Tools: a.schemas, OnDelta: onDelta})
-				}
-			}
-			if err != nil {
-				a.consolidateWorking()
-				return fmt.Errorf("neo: model call failed: %w", err)
-			}
+			a.consolidateWorking()
+			return fmt.Errorf("neo: model call failed: %w", err)
 		}
-		// A truncated generation (finish_reason=length) that ALSO carries tool
-		// calls is a half-formed call: the model almost certainly inlined a
-		// large payload as an argument and got cut off mid-JSON. Persisting it
-		// would poison the transcript — it is re-sent verbatim every turn and a
-		// strict provider 400s the malformed function, wedging the whole
-		// conversation. Drop the cut-off turn and nudge for a compact retry.
-		if res.FinishReason == "length" && res.HasToolCalls() {
-			a.working = append(a.working, llm.UserMessage("(your last tool call was cut off by the output limit before its arguments finished — don't inline large content as a tool argument. Write large files in chunks/appends, or call the tool with compact arguments.)"))
+		if !proceed {
 			continue
 		}
-		a.working = append(a.working, res.Message)
-		// Continuous-memory (task 6.1): record the assistant turn (content +
-		// tool calls) to the durable cortex transcript. No-op when off. The
-		// ORIGINAL content is recorded here BEFORE the Cassandra controller may
-		// edit the in-window copy, so cortex stays ground truth (req.7.1).
-		a.cmRecordAssistant(res.Message)
-
-		// Cassandra 2.0 (the silent-voice controller): immediately after the
-		// assistant turn is appended and BEFORE the next model call, the controller
-		// may edit that message's OWN Content in place — folding in doubt / assurance
-		// so the model re-reads it as its own emerging thought next turn. It is a
-		// no-op when disabled, before min_step, when the per-turn/step budget is
-		// spent, or when no behavioral trigger fires (the healthy case). The signals
-		// are read from the loop's existing state (repeats / recentSigs / prevCalls /
-		// distinct tools / whether this turn is closing). casMod records whether a
-		// mod fired THIS step so a would-be close can re-loop (self-heal) below.
-		casMod := false
-		if a.cfg.CassandraEnabled {
-			casMod = a.cassandraStep(a.buildCassandraSignals(step, res.Message, repeats, recentSigs, prevSig, prevCalls, distinctToolSet, !res.HasToolCalls()))
-		}
-
-		// Show SOME of the thinking: surface a trimmed glimpse of this turn's
-		// chain-of-thought as a secondary channel so the user sees how Neo is
-		// reasoning before it acts. Never the answer, never persisted. Skip it
-		// when the reasoning already streamed live (above) — the surface holds
-		// the full thinking and a post-hoc glimpse would only truncate it. This
-		// fallback covers models that return reasoning at fold time (inline
-		// <think>) rather than as a separate streamed channel.
-		if !streamedReasoning {
-			if think := a.nameReasoning(glimpseReasoning(res.Message.Reasoning)); think != "" {
-				a.out.Think(think)
-			}
-		}
-
-		// Termination (Cassandra 2.0: the proof-of-work completion gate is
-		// retired). A turn ends when the model emits NO tool calls — the single
-		// completion path — after the identity scrub, inbox drain, and the
-		// empty/length/overflow guidance nudges below. A work-touched bare-answer
-		// turn no longer needs a task_complete object; honesty emerges from the
-		// agent re-verifying under Cassandra's injected doubt, backstopped by the
-		// loop-discipline guarantees (no-progress stall / step budget / unified
-		// unproductive counter), not from a terminal adjudicator.
+		casMod := a.deliberate(step, res, streamedReasoning)
 		if !res.HasToolCalls() {
-			// F5: a message queued mid-turn may have arrived during this model
-			// call, just as the agent is about to finish. Address it instead of
-			// closing the turn, so a non-interrupting mid-task message is never
-			// dropped at the turn boundary.
-			if a.drainInbox() {
-				continue
+			finished, cerr := a.closeTurn(ctx, res, casMod, userInput)
+			if cerr != nil {
+				return cerr
 			}
-			answer := strings.TrimSpace(res.Message.Content)
-			// Truncated generation (finish_reason=length) is NEVER a final
-			// answer: the cut-off text is half-formed monologue/payload (the
-			// model may have been inlining a large blob). Saying it raw leaks
-			// internal thoughts into the chat. Nudge and let it retry compactly.
-			if res.FinishReason == "length" {
-				// Guidance channel + bounded: this is system steering the model
-				// must act on (not a user turn), and a model that keeps getting
-				// cut off can't re-nudge forever.
-				if a.pushGuidanceNudge("Your last message was cut off by the output limit — don't inline large payloads in prose; call a tool with compact arguments, or give a concise final answer.", &unproductive) {
-					return a.escalateGuidance(unproductive)
-				}
-				continue
+			if finished {
+				return nil
 			}
-			if answer == "" {
-				// anti-premature: empty AND no tools → steer to continue via the
-				// guidance channel, bounded so a model that keeps returning
-				// nothing escalates rather than looping forever.
-				if a.pushGuidanceNudge("Continue: either call a tool to make progress, or give the final answer.", &unproductive) {
-					return a.escalateGuidance(unproductive)
-				}
-				continue
-			}
-			// Read-full discipline (req.4.2): a tool result too large to show
-			// inline was spilled to an overflow file. Don't let the turn end on
-			// a bare answer while that output is still unread — steer (via the
-			// guidance channel) to read it first, so the answer can't be drawn
-			// from a truncated result.
-			if a.overflowUnread() {
-				if a.pushGuidanceNudge(a.overflowUnreadNudge(), &unproductive) {
-					return a.escalateGuidance(unproductive)
-				}
-				continue
-			}
-			// Identity-compliance canary (P0): if the settled answer broke
-			// character and self-identified as the underlying LLM, treat it as a
-			// charter breach, not a typo — a model that won't hold its own name
-			// is signalling it may ignore the harder rules too. Surface it on the
-			// audit side-channel (never blind), then re-anchor via the guidance
-			// channel so the model regenerates a compliant answer. finishTurn
-			// still scrubs at delivery, so once the nudge budget is spent the
-			// honest, scrubbed answer is shipped rather than looping forever.
-			if scrubbed, leaked := scrubIdentity(a.agentName(), answer); leaked {
-				a.emitAudit(auditEventIdentityLeak, map[string]interface{}{"where": "answer"})
-				answer = scrubbed
-				if a.pushGuidanceNudge(identityReanchorNudge(a.agentName()), &unproductive) {
-					a.finishTurn(ctx, answer, surfaced, surfacedSnips, userInput, false)
-					return nil
-				}
-				continue
-			}
-			// Cassandra 2.0 self-heal on a would-be close (req.6.2): if the
-			// controller folded doubt into this bare answer (premature/unverified
-			// close, or a close that bailed out of a loop), re-loop so the model
-			// re-reads its OWN doubt and re-verifies instead of finishing. The
-			// delivered answer is untouched (finishTurn reads res.Message, a
-			// separate copy from the edited a.working entry); it is bounded by the
-			// per-turn mod cap + per-trigger cooldown so it can never loop forever,
-			// and never fabricates a completion — it only asks the agent to check.
-			if casMod {
-				continue
-			}
-			a.finishTurn(ctx, answer, surfaced, surfacedSnips, userInput, false)
-			// [control.loop] step_6: cooperative compaction at a clean boundary.
-			// Retired on the continuous-memory path (req.9.3): story-so-far is
-			// durable in cortex, so no agent-side summarization runs.
-			if !cm && a.overSoftBudget(a.buildSystem(pinned, retrieved, procedural, triggered, recalled)) {
-				a.compact(ctx, "soft")
-			}
-			return nil
+			continue
 		}
-
-		// Surface any preamble the model wrote alongside its tool calls as
-		// DURABLE narration — Neo "thinking out loud" before it acts. This runs
-		// for EVERY tool-calling turn: it is what makes Neo's running commentary
-		// the durable thread content.
-		if c := strings.TrimSpace(res.Message.Content); c != "" {
-			a.out.Status(a.cleanContent(c))
-			// Epistemic-core Mechanism 1 (req.4.1): the first committing
-			// assistant turn IS plan formation — extract its load-bearing
-			// premises with provenance into the resident ledger.
-			a.premiseObservePlan(ctx, c)
-		}
-
-		// No-progress detection (Cassandra 2.0: no completion gate to share it
-		// with anymore): a repeat is a byte-identical batch signature, a SEMANTIC
-		// repeat (same operation reworded — a cosmetic reword can't reset the
-		// counter and loop forever, NE-4), or a rotating A→B→A→B cycle that
-		// introduces no new tool. Distinct operations reset the repeat read.
-		repeat, stalled := noteBatch(res.Message.ToolCalls)
-		// Self-model task 2.2: refresh the live loop-state snapshot for THIS
-		// step so any death exit below captures the real state at death.
-		a.snapshotLoop(step, pct, repeats, recentSigs, res.Message.ToolCalls, distinctToolSet)
-		if stalled {
-			// No-progress stall: do NOT fabricate a close. Return an incomplete
-			// signal so the supervisor can respawn a fresh agent and continue —
-			// the task is not done. (On the bare CLI path, with no supervisor, the
-			// wrapped reason is printed.)
-			a.consolidateWorking()
-			a.recordDeath(DeathReasonStall, a.lastToolSummary())
-			return fmt.Errorf("%w: repeating the same step without progress. Where it got stuck: %s", ErrIncomplete, oneLine(a.lastToolSummary()))
-		}
-		// req.8.1: a no-progress repeat is itself an unproductive attempt — fold
-		// it into the ONE unified counter (alongside completion rejections and
-		// guidance nudges) so an interleaved mix that never trips the pure-repeat
-		// stall is still bounded, and escalate to an honest stop-and-ask past the
-		// bound rather than running to the step budget.
-		if repeat {
-			unproductive++
-			if a.capExceeded(unproductive) {
-				return a.escalateGuidance(unproductive)
-			}
-		}
-		// One firm convergence steer just before the hard stall: the model
-		// re-does work it already completed (re-fetching/re-rendering a value it
-		// already has) instead of closing out. SUPERSEDED by Cassandra 2.0
-		// (req.6.3): when the controller is enabled, its loop trigger fires at the
-		// same point (loop_threshold defaults to no_progress_stall-1) and delivers
-		// the same "you're re-doing completed work — step back" intent as the
-		// agent's OWN doubt inside its assistant channel, one step before the hard
-		// stall. This legacy GuidanceMessage steer only runs when the controller is
-		// DISABLED, keeping that path byte-identical to the pre-feature loop
-		// (req.10.2). Injected AFTER this step's tool results below so the
-		// transcript stays well-formed.
-		injectConvergeNudge := !a.cfg.CassandraEnabled && a.cfg.NoProgressStall >= 2 && repeats == a.cfg.NoProgressStall-1 && !convergeNudged
-
-		// P2-7: record distinct tool names for the adaptive budget signal.
-		for _, c := range res.Message.ToolCalls {
-			distinctToolSet[c.Function.Name] = struct{}{}
-		}
-
-		// Narrate-before-act (req.2): if the model went straight to tools
-		// without writing its own preamble this step (that preamble was already
-		// surfaced above), synthesize ONE concise, action-specific intent line
-		// from the real operation so the user can always follow along — at most
-		// one per action, never a fixed boilerplate. Distinct per-action content
-		// (do_2) lets neo-execution-reliability's coalescing collapse only
-		// genuine consecutive repeats. This is a SYNTHETIC stub (Neo generated
-		// it from the tool name, e.g. "Layerx deposit."), so it rides the
-		// EPHEMERAL Progress channel — never persisted, never counted as the
-		// delivered answer. Routing it through durable Status was the bug where a
-		// straight-to-tools turn marked itself "already narrated" and a later
-		// bare-answer surface was hidden, so the user saw only the stub.
-		if strings.TrimSpace(res.Message.Content) == "" {
-			if line := narrateBatch(res.Message.ToolCalls); line != "" {
-				a.out.Progress(line)
-			}
-		}
-
-		// Epistemic-core check-before-act (req.5): the gate validates the
-		// plan's self-claims against the resident capability surface and
-		// refuses dependent dispatches while a refuted premise stands
-		// (introspection tools stay allowed — they are the discharge path).
-		allowed, _ := a.checkBeforeAct(res.Message.ToolCalls)
-		a.runToolCalls(ctx, allowed)
-		// req.8.2 (N2): a plain tool dispatch does NOT reset the unified
-		// unproductive counter — only genuine accepted progress does. This keeps
-		// an interleaved real tool call from silently resetting the loop-discipline
-		// bound and letting the loop run to the step budget.
-		if injectConvergeNudge {
-			convergeNudged = true
-			a.working = append(a.working, llm.GuidanceMessage("You already obtained the result and showed it — do NOT fetch or render it again. Give the user the answer now and finish."))
+		if aerr := a.act(ctx, step, pct, res); aerr != nil {
+			return aerr
 		}
 	}
 
 	// [loop_discipline] step budget exhausted → NOT done. Never fabricate a
-	// close: return an incomplete signal so the supervisor keeps going with a
-	// fresh window rather than stopping with a partial.
-	a.consolidateWorking()
-	a.recordDeath(DeathReasonStepBudget, a.lastToolSummary())
-	return fmt.Errorf("%w: reached the step budget without finishing. Progress so far: %s", ErrIncomplete, oneLine(a.lastToolSummary()))
+	// close: the governor's terminal verdict returns an incomplete signal so
+	// the supervisor keeps going with a fresh window rather than stopping
+	// with a partial.
+	return a.governDeath(DeathReasonStepBudget, "reached the step budget without finishing. Progress so far:")
 }
 
-// pushGuidanceNudge routes a system-steering nudge through the guidance channel
-// (req.1.1) and folds it into the ONE unified unproductive-attempt counter
-// (req.8.1): it increments the counter and reports whether the bound is now
-// exceeded. Completion-gate rejections and read-full/identity steers all push
-// through here, so they share ONE bound with the no-progress repeats fed in the
-// loop. The counter is reset ONLY on genuine accepted progress (req.8.2) — never
-// by a plain tool dispatch. A cap of 0 disables the bound (unbounded nudging).
-func (a *Agent) pushGuidanceNudge(text string, counter *int) (capExceeded bool) {
-	if g := llm.GuidanceMessage(text); g.Content != "" {
-		a.working = append(a.working, g)
+// prepareTurn is the turn half of the prepare stage (MORPHEUS req.3.1), run
+// ONCE at Chat entry. Contract — inputs: the trimmed user input; mutates: the
+// working transcript (appends the user message), the durable cortex transcript
+// (records it), the turn's surfaced-memory sets, and activationAssemblies;
+// returns: the rendered activation tail (cmTail) frozen for the whole turn.
+//
+// The single memory path (MORPHEUS req.1): the per-turn working set comes
+// from cortex.Activate, computed ONCE per turn and rendered as the trailing
+// USER-role tail (the activation snapshot is frozen for the whole turn — the
+// NE-7 discipline). The Q2 first-turn relevance push rides the same tail so
+// the usage-salience attestation loop still learns from what surfaced.
+func (a *Agent) prepareTurn(ctx context.Context, userInput string) string {
+	a.working = append(a.working, llm.UserMessage(userInput))
+	// Record the user message to the durable cortex transcript so cortex — not
+	// the in-memory working slice — owns the turn-by-turn record.
+	a.cmRecordUser(userInput)
+
+	bundle := a.cmActivate(userInput)
+	a.activationAssemblies++
+	// Surface the memory Neo carries to the harness from the same single
+	// bundle before rendering it — no extra Activate call, so the
+	// once-per-turn discipline (NE-7) holds.
+	a.emitMemory(bundle)
+	cmTail := a.renderActivationBundle(bundle)
+	// Q2 first-message relevance push: Activate's tiers are recency-based
+	// + query-independent, so on the OPENING turn also inject a bounded
+	// relevance retrieval keyed on the message — the agent gets
+	// relevance-matched memory without a reactive memory_recall call.
+	var retrieved []memory.Snippet
+	if pushSnips, pushBlock := a.cmRelevancePush(ctx, userInput); pushBlock != "" {
+		cmTail += pushBlock
+		retrieved = pushSnips
 	}
+	// Track every cortex memory surfaced this turn so a successful completion
+	// can attest them as USED — the usage-salience + EMA learning signal that
+	// keeps Neo's durable store ranking by what actually helps. The snippets
+	// keep text/type too, so completion can also send the NEGATIVE signal for
+	// memories that were surfaced but demonstrably ignored.
+	collectSurfaced(a.turn.surfaced, retrieved, nil)
+	collectSurfacedSnips(a.turn.surfacedSnips, retrieved)
+	return cmTail
+}
+
+// prepareWindow is the step half of the prepare stage and the ONE window-
+// assembly site per step (MORPHEUS req.3.2) — the oversize-recovery path
+// re-enters it rather than assembling its own window. Contract — inputs: the
+// turn-frozen activation tail; mutates: the working transcript ONLY via the
+// trim/strip recovery helpers (cmTrimWorking, stripOldImages) when over
+// budget; returns: the assembled window, the full trailing tail, and the
+// context-fill percentage for the budget stat.
+//
+// The single window law (MORPHEUS req.1.3): the byte-stable charter prefix at
+// index 0 + the append-only live transcript + the rendered Activate bundle as
+// ONE trailing USER-role message (Qwen-template portability). Over-budget
+// trimming is NON-summarizing (cmTrimWorking) because the older turns are
+// durable in cortex and the coarse history rides the durable story-so-far
+// already surfaced in cmTail. The request-body byte cap is independent of the
+// token budget: the token estimate undercounts the serialized JSON, so a
+// window within token budget can still 413 — images strip first (cheaper,
+// less lossy), then the trim.
+func (a *Agent) prepareWindow(cmTail string) (window []llm.Message, tail string, pct int) {
+	baseSystem := a.stableSystem() + cmTail
+	if a.overHardBudget(baseSystem) {
+		a.cmTrimWorking()
+	}
+	if a.windowBytes(baseSystem) >= maxRequestBodyBytes {
+		a.stripOldImages()
+		if a.windowBytes(baseSystem) >= maxRequestBodyBytes {
+			a.cmTrimWorking()
+		}
+	}
+	pct = a.budgetPct(baseSystem)
+	tail = cmTail + a.epistemicTail() + a.budgetTail(pct)
+	window = assembleWindowUserTail(a.stableSystem(), a.working, tail)
+	a.windowAssemblies++
+	return window, tail, pct
+}
+
+// generate is the generate stage (MORPHEUS req.3.1): one model call with live
+// streaming, the forced-revision variant, and the 413 oversize recovery.
+// Contract — inputs: the step index, the turn-frozen activation tail, and this
+// step's prepared window+tail; mutates: the working transcript only on a
+// forced revision (via forcedRevisionStep) or a cut-off tool-call batch (the
+// compact-retry nudge), plus trim/strip during 413 recovery; returns: the
+// model result, whether reasoning streamed live, and proceed=false when the
+// loop must re-enter its next iteration without a result (forced revision ran,
+// or the cut-off batch was dropped). err is a terminal model failure.
+func (a *Agent) generate(ctx context.Context, step int, cmTail string, window []llm.Message, tail string) (res *llm.ChatResult, streamedReasoning, proceed bool, err error) {
+	// Live "typing" channel: stream the model's incremental fragments as
+	// they generate so the user sees Neo thinking + answering in real time
+	// instead of staring at a blank surface until the whole turn lands.
+	// reasoning → the live thinking channel; content → the answer being
+	// typed. step segments the stream so the client resets per turn.
+	// Live file-typing channel (NEO-WORKBENCH): tool-call argument fragments
+	// stream through the typer, which decodes write_file path/content
+	// incrementally and emits bounded ToolStream observer events. Fresh per
+	// model call — each turn's calls index from 0.
+	typer := newLiveTyper(func(ev ToolEvent) {
+		if a.observer != nil {
+			a.observer(ev)
+		}
+	})
+	onDelta := func(d llm.Delta) {
+		if d.Tool != nil {
+			typer.feed(d.Tool)
+		}
+		if d.Reasoning != "" {
+			streamedReasoning = true
+			a.out.Delta(step, "reasoning", a.nameReasoning(d.Reasoning))
+		}
+		if d.Content != "" {
+			// Identity net on the live answer stream (best-effort; the
+			// settled answer is re-scrubbed at delivery). A model name split
+			// across fragments can evade this, which is why finishTurn is the
+			// authoritative choke point.
+			a.out.Delta(step, "content", a.cleanContent(d.Content))
+		}
+	}
+
+	// Governor fire position 1 — the epistemic layer (req.5.2, epistemic-core
+	// req.5.2/6.3/7.2): a pending forced revision runs as a tools-stripped
+	// reasoning-only step BEFORE any further dispatch — the model must revise
+	// the plan in text first.
+	if _, due := a.governEpistemic(); due {
+		if rerr := a.forcedRevisionStep(ctx, window, onDelta); rerr != nil {
+			return nil, streamedReasoning, false, rerr
+		}
+		return nil, streamedReasoning, false, nil
+	}
+
+	res, err = a.chatWithRetry(ctx, llm.ChatRequest{Messages: window, Tools: a.schemas, OnDelta: onDelta})
+	if err != nil {
+		// HTTP 413 (provider request-body byte cap) is recoverable: the
+		// window serialized past the byte limit even though it was within
+		// the token budget. Recover in two escalating steps (Phase 4.2),
+		// each re-entering prepareWindow — the ONE assembly site (req.3.2):
+		// first strip dead-weight inline images from older turns and retry —
+		// far less lossy than discarding context. Only if that still 413s do
+		// we fall back to the non-summarizing trim (the older turns are
+		// durable in cortex) and retry once more.
+		if errors.Is(err, llm.ErrRequestTooLarge) {
+			if a.stripOldImages() > 0 {
+				window, _, _ = a.prepareWindow(cmTail)
+				res, err = a.chatWithRetry(ctx, llm.ChatRequest{Messages: window, Tools: a.schemas, OnDelta: onDelta})
+			}
+			if err != nil && errors.Is(err, llm.ErrRequestTooLarge) {
+				a.cmTrimWorking()
+				window, _, _ = a.prepareWindow(cmTail)
+				res, err = a.chatWithRetry(ctx, llm.ChatRequest{Messages: window, Tools: a.schemas, OnDelta: onDelta})
+			}
+		}
+		if err != nil {
+			return nil, streamedReasoning, false, err
+		}
+	}
+	// A truncated generation (finish_reason=length) that ALSO carries tool
+	// calls is a half-formed call: the model almost certainly inlined a
+	// large payload as an argument and got cut off mid-JSON. Persisting it
+	// would poison the transcript — it is re-sent verbatim every turn and a
+	// strict provider 400s the malformed function, wedging the whole
+	// conversation. Drop the cut-off turn and nudge for a compact retry.
+	if res.FinishReason == "length" && res.HasToolCalls() {
+		a.working = append(a.working, llm.UserMessage("(your last tool call was cut off by the output limit before its arguments finished — don't inline large content as a tool argument. Write large files in chunks/appends, or call the tool with compact arguments.)"))
+		return nil, streamedReasoning, false, nil
+	}
+	return res, streamedReasoning, true, nil
+}
+
+// deliberate is the deliberate stage (MORPHEUS req.3.1): the assistant turn
+// is committed and the Cassandra controller reads the behavioral signals.
+// Contract — inputs: the step index, the model result, and whether reasoning
+// already streamed; mutates: the working transcript (appends the assistant
+// message; Cassandra may edit that message's Content in place) and the
+// Cassandra per-turn state; returns: whether the controller modified the
+// window this step (the close self-heal read).
+func (a *Agent) deliberate(step int, res *llm.ChatResult, streamedReasoning bool) (casMod bool) {
+	t := a.turn
+	a.working = append(a.working, res.Message)
+	// Continuous-memory (task 6.1): record the assistant turn (content +
+	// tool calls) to the durable cortex transcript. No-op when off. The
+	// ORIGINAL content is recorded here BEFORE the Cassandra controller may
+	// edit the in-window copy, so cortex stays ground truth (req.7.1).
+	a.cmRecordAssistant(res.Message)
+
+	// The unified per-step signal state (MORPHEUS req.5.1): computed ONCE
+	// here — the one behavioral read every self-correction consumer shares.
+	// The stall bookkeeping still reflects the previous committed batch
+	// (noteBatch commits in act), so the repeat fields carry the same
+	// one-step-early verdict the controller has always read.
+	t.signals = a.computeStepSignals(step, res.Message)
+
+	// Governor fire position 2 — Cassandra 2.0 (the silent-voice controller):
+	// immediately after the assistant turn is appended and BEFORE the next
+	// model call, the controller may edit that message's OWN Content in place
+	// — folding in doubt / assurance so the model re-reads it as its own
+	// emerging thought next turn. It is a no-op when disabled, before
+	// min_step, when the per-turn/step budget is spent, or when no behavioral
+	// trigger fires (the healthy case). The signals are the unified state's
+	// controller projection. casMod records whether a mod fired THIS step so
+	// a would-be close can re-loop (self-heal).
+	casMod = a.governVoice(t.signals)
+
+	// Show SOME of the thinking: surface a trimmed glimpse of this turn's
+	// chain-of-thought as a secondary channel so the user sees how Neo is
+	// reasoning before it acts. Never the answer, never persisted. Skip it
+	// when the reasoning already streamed live — the surface holds the full
+	// thinking and a post-hoc glimpse would only truncate it. This fallback
+	// covers models that return reasoning at fold time (inline <think>)
+	// rather than as a separate streamed channel.
+	if !streamedReasoning {
+		if think := a.nameReasoning(glimpseReasoning(res.Message.Reasoning)); think != "" {
+			a.out.Think(think)
+		}
+	}
+	return casMod
+}
+
+// closeTurn is the close stage (MORPHEUS req.3.1) and the ONE evaluation site
+// of the termination guard chain (req.4.1): a bare-answer turn (no tool calls)
+// walks closeGuardChain in table order and the first firing guard decides —
+// deliver | nudge-and-continue | suppress — with finishTurn remaining the
+// single delivery choke point. Contract — inputs: the model result, whether
+// Cassandra modified this step, and the turn's user input; mutates: whatever
+// the one firing guard mutates (guidance nudges on the working transcript, the
+// unified unproductive counter, the scrubbed answer); returns finished=true
+// when the turn delivered (Chat returns nil), err on the unproductive-cap
+// escalation, and (false, nil) when the loop must re-enter (a nudge or
+// suppression asked the model to continue).
+//
+// Termination (Cassandra 2.0: the proof-of-work completion gate is retired):
+// a turn ends when the model emits NO tool calls — the single completion path
+// — once no guard in the chain blocks the close. Honesty emerges from the
+// agent re-verifying under Cassandra's injected doubt, backstopped by the
+// loop-discipline guarantees, not from a terminal adjudicator.
+func (a *Agent) closeTurn(ctx context.Context, res *llm.ChatResult, casMod bool, userInput string) (finished bool, err error) {
+	t := a.turn
+	cc := &closeContext{res: res, answer: strings.TrimSpace(res.Message.Content), casMod: casMod}
+	_, dec := a.evalCloseChain(cc)
+	if dec.err != nil {
+		return false, dec.err
+	}
+	if dec.verdict != verdictDeliver {
+		return false, nil
+	}
+	a.finishTurn(ctx, cc.answer, t.surfaced, t.surfacedSnips, userInput, false)
+	return true, nil
+}
+
+// act is the act stage (MORPHEUS req.3.1): narration, the governor's outer
+// failsafe commit for this batch, the check-before-act gate, and tool
+// dispatch with result assembly. Contract — inputs: the step index, this
+// step's context-fill pct, and the tool-calling model result; mutates: the
+// working transcript (tool results, guidance), the turn's stall bookkeeping
+// and counters, the loop snapshot, and the epistemic run state (via the
+// observe seams); returns a terminal error (via governDeath) on a stall death
+// or the unproductive-cap escalation, nil otherwise. (The failsafe commit
+// stays after the preamble narration for order fidelity; its verdict comes
+// from the unified signal state computed at deliberate.)
+func (a *Agent) act(ctx context.Context, step, pct int, res *llm.ChatResult) error {
+	t := a.turn
+	// Surface any preamble the model wrote alongside its tool calls as
+	// DURABLE narration — Neo "thinking out loud" before it acts. This runs
+	// for EVERY tool-calling turn: it is what makes Neo's running commentary
+	// the durable thread content.
+	if c := strings.TrimSpace(res.Message.Content); c != "" {
+		a.out.Status(a.cleanContent(c))
+		// Epistemic-core Mechanism 1 (req.4.1): the first committing
+		// assistant turn IS plan formation — extract its load-bearing
+		// premises with provenance into the resident ledger.
+		a.premiseObservePlan(ctx, c)
+	}
+
+	// Governor fire position 3 — the outer no-progress failsafe: a repeat is
+	// a byte-identical batch signature, a SEMANTIC repeat (same operation
+	// reworded — a cosmetic reword can't reset the counter and loop forever,
+	// NE-4), or a rotating A→B→A→B cycle that introduces no new tool.
+	// Distinct operations reset the repeat read.
+	repeat, stalled := a.governFailsafes(res.Message.ToolCalls)
+	// Self-model task 2.2: refresh the live loop-state snapshot for THIS
+	// step so any death exit below captures the real state at death.
+	a.snapshotLoop(step, pct, t.repeats, t.recentSigs, res.Message.ToolCalls, t.distinctToolSet)
+	if stalled {
+		// No-progress stall: do NOT fabricate a close. Return an incomplete
+		// signal so the supervisor can respawn a fresh agent and continue —
+		// the task is not done. (On the bare CLI path, with no supervisor, the
+		// wrapped reason is printed.)
+		return a.governDeath(DeathReasonStall, "repeating the same step without progress. Where it got stuck:")
+	}
+	// req.8.1: a no-progress repeat is itself an unproductive attempt — fold
+	// it into the ONE unified counter (alongside completion rejections and
+	// guidance nudges) so an interleaved mix that never trips the pure-repeat
+	// stall is still bounded, and escalate to an honest stop-and-ask past the
+	// bound rather than running to the step budget.
+	if repeat {
+		t.unproductive++
+		if a.capExceeded(t.unproductive) {
+			return a.escalateGuidance(t.unproductive)
+		}
+	}
+	// One firm convergence steer just before the hard stall: the model
+	// re-does work it already completed (re-fetching/re-rendering a value it
+	// already has) instead of closing out. SUPERSEDED by Cassandra 2.0
+	// (req.6.3): when the controller is enabled, its loop trigger fires at the
+	// same point (loop_threshold defaults to no_progress_stall-1) and delivers
+	// the same "you're re-doing completed work — step back" intent as the
+	// agent's OWN doubt inside its assistant channel, one step before the hard
+	// stall. This legacy GuidanceMessage steer only runs when the controller is
+	// DISABLED, keeping that path byte-identical to the pre-feature loop
+	// (req.10.2). Injected AFTER this step's tool results below so the
+	// transcript stays well-formed.
+	injectConvergeNudge := !a.cfg.CassandraEnabled && a.cfg.NoProgressStall >= 2 && t.repeats == a.cfg.NoProgressStall-1 && !t.convergeNudged
+
+	// P2-7: record distinct tool names for the adaptive budget signal.
+	for _, c := range res.Message.ToolCalls {
+		t.distinctToolSet[c.Function.Name] = struct{}{}
+	}
+
+	// Narrate-before-act (req.2): if the model went straight to tools
+	// without writing its own preamble this step (that preamble was already
+	// surfaced above), synthesize ONE concise, action-specific intent line
+	// from the real operation so the user can always follow along — at most
+	// one per action, never a fixed boilerplate. Distinct per-action content
+	// (do_2) lets neo-execution-reliability's coalescing collapse only
+	// genuine consecutive repeats. This is a SYNTHETIC stub (Neo generated
+	// it from the tool name, e.g. "Layerx deposit."), so it rides the
+	// EPHEMERAL Progress channel — never persisted, never counted as the
+	// delivered answer. Routing it through durable Status was the bug where a
+	// straight-to-tools turn marked itself "already narrated" and a later
+	// bare-answer surface was hidden, so the user saw only the stub.
+	if strings.TrimSpace(res.Message.Content) == "" {
+		if line := narrateBatch(res.Message.ToolCalls); line != "" {
+			a.out.Progress(line)
+		}
+	}
+
+	// Epistemic-core check-before-act (req.5): the gate validates the
+	// plan's self-claims against the resident capability surface and
+	// refuses dependent dispatches while a refuted premise stands
+	// (introspection tools stay allowed — they are the discharge path).
+	allowed, _ := a.checkBeforeAct(res.Message.ToolCalls)
+	a.runToolCalls(ctx, allowed)
+	// req.8.2 (N2): a plain tool dispatch does NOT reset the unified
+	// unproductive counter — only genuine accepted progress does. This keeps
+	// an interleaved real tool call from silently resetting the loop-discipline
+	// bound and letting the loop run to the step budget.
+	if injectConvergeNudge {
+		t.convergeNudged = true
+		a.pushGuidance("You already obtained the result and showed it — do NOT fetch or render it again. Give the user the answer now and finish.")
+	}
+	return nil
+}
+
+// noteBatch commits the no-progress/stall read for ONE assistant tool-calling
+// batch from the unified per-step signal state (MORPHEUS req.5.1): the repeat
+// verdict (byte-identical, SEMANTIC reword, or a rotating A→B→A→B cycle that
+// introduces no new tool — a distinct operation resets it, NE-4) was computed
+// ONCE in computeStepSignals at deliberate entry; noteBatch advances the
+// committed stall bookkeeping from it. Sharing one read between the dispatch
+// path and the Cassandra controller is what keeps the two from drifting
+// (N2/req.8.3 heritage: nothing bypasses stall detection). Contract — mutates
+// only the turn's stall bookkeeping; returns whether the batch was a repeat
+// and whether the pure-repeat stall bound (NoProgressStall) is met.
+func (a *Agent) noteBatch(calls []llm.ToolCall) (repeat, stalled bool) {
+	t := a.turn
+	s := t.signals
+	// Defensive: a caller outside the staged loop (no stored state for THIS
+	// batch) gets a fresh read over the live turn state — same computation,
+	// same verdict.
+	if s == nil || s.sig != batchSignature(calls) {
+		s = a.computeStepSignals(t.curLoop.step, llm.Message{ToolCalls: calls})
+	}
+	if s.repeat {
+		t.repeats++
+	} else {
+		t.repeats = 0
+	}
+	t.recentSigs = pushWindow(t.recentSigs, s.sig, stallWindow)
+	t.prevSig = s.sig
+	t.prevCalls = calls
+	return s.repeat, t.repeats >= a.cfg.NoProgressStall
+}
+
+// pushGuidance is THE guidance choke point (MORPHEUS req.3.3): every
+// guidance-channel injection — the close-chain nudges, the legacy converge
+// steer, the self-claim contradiction and forced-revision directives, and the
+// prediction-mismatch guidance — flows through this one function. It builds
+// the turn via llm.GuidanceMessage (the Guidance flag + envelope are what keep
+// steering out of the durable cortex transcript — cmRecordAssistant's
+// IsGuidance gate — and off every user-facing surface — StripGuidance at the
+// harness) and appends it to the working transcript. Contract — mutates: the
+// working transcript only; blank text appends nothing. Returns the built
+// message (zero when nothing was appended) so a caller that must also thread
+// the steer into an in-flight window copy (forcedRevisionStep) reuses the SAME
+// turn instead of minting a second one.
+func (a *Agent) pushGuidance(text string) llm.Message {
+	g := llm.GuidanceMessage(text)
+	if g.Content == "" {
+		return g
+	}
+	a.working = append(a.working, g)
+	return g
+}
+
+// pushGuidanceNudge routes a system-steering nudge through the guidance choke
+// point (req.1.1) and folds it into the ONE unified unproductive-attempt
+// counter (req.8.1): it increments the counter and reports whether the bound is
+// now exceeded. The close-chain guards (truncation/empty/read-full/identity
+// steers) all push through here, so they share ONE bound with the no-progress
+// repeats fed in the loop. The counter is reset ONLY on genuine accepted
+// progress (req.8.2) — never by a plain tool dispatch. A cap of 0 disables the
+// bound (unbounded nudging).
+func (a *Agent) pushGuidanceNudge(text string, counter *int) (capExceeded bool) {
+	a.pushGuidance(text)
 	*counter++
 	return a.capExceeded(*counter)
 }
@@ -1227,13 +1054,11 @@ func (a *Agent) capExceeded(counter int) bool {
 // unproductive-attempt bound is exceeded (req.1.5, req.8): re-nudging — or
 // re-attempting a premature completion — indefinitely is not the answer, so it
 // marks a DETERMINISTIC blocker (the task supervisor then stops-and-asks the
-// user rather than respawning into the same loop) and returns ErrIncomplete
-// with an honest where-it-stands digest.
+// user rather than respawning into the same loop) and ends the turn through
+// the governor's terminal verdict with an honest where-it-stands digest.
 func (a *Agent) escalateGuidance(attempts int) error {
-	a.lastFailureClass = delegate.ClassDeterministic
-	a.consolidateWorking()
-	a.recordDeath(DeathReasonUnproductive, a.lastToolSummary())
-	return fmt.Errorf("%w: I made no productive progress after %d unproductive attempts (repeated steer/reject without closing it). Where it stands: %s", ErrIncomplete, attempts, oneLine(a.lastToolSummary()))
+	a.turn.lastFailureClass = delegate.ClassDeterministic
+	return a.governDeath(DeathReasonUnproductive, fmt.Sprintf("I made no productive progress after %d unproductive attempts (repeated steer/reject without closing it). Where it stands:", attempts))
 }
 
 // oneLine collapses whitespace and clamps a digest to a single readable line
@@ -1246,23 +1071,19 @@ func oneLine(s string) string {
 	return s
 }
 
-// Reset clears the live transcript + summary + goal (new conversation).
+// Reset clears the live transcript + goal (new conversation).
 func (a *Agent) Reset() {
 	a.working = nil
-	a.summary = ""
 	a.activeGoal = ""
 }
 
 // BestEffort returns the most honest "where things stand" digest the agent can
 // produce WITHOUT having finished — the latest assistant narration, else the
-// consolidated summary, else the last tool summary. The task supervisor uses
-// it to deliver a truthful partial when a task hits its hard ceiling; it is
-// never a fabricated success. Empty when there is genuinely nothing to report.
+// last tool summary. The task supervisor uses it to deliver a truthful partial
+// when a task hits its hard ceiling; it is never a fabricated success. Empty
+// when there is genuinely nothing to report.
 func (a *Agent) BestEffort() string {
 	if s := strings.TrimSpace(lastAssistantText(a.working, 1600)); s != "" {
-		return s
-	}
-	if s := strings.TrimSpace(a.summary); s != "" {
 		return s
 	}
 	return strings.TrimSpace(a.lastToolSummary())
@@ -1282,11 +1103,6 @@ func (a *Agent) Seed(history []llm.Message, goal string) {
 		a.activeGoal = strings.TrimSpace(goal)
 	}
 }
-
-// refaultEvery is how many loop steps pass between mid-turn page-fault
-// refreshes. Small enough to track sub-goal drift in long tool loops,
-// large enough that retrieval cost (one embed call) stays negligible.
-const refaultEvery = 6
 
 // lastAssistantText returns the most recent non-empty assistant content in
 // the working transcript, truncated to maxLen bytes — the freshest signal of
@@ -1449,69 +1265,6 @@ func (a *Agent) turnIntentID() string {
 	return fmt.Sprintf("neo-turn:%s:%d", cid, a.turnSeq)
 }
 
-func (a *Agent) faultMemory(ctx context.Context, q string) []memory.Snippet {
-	if a.pager == nil {
-		return nil
-	}
-	snips, err := a.pager.Retrieve(ctx, q)
-	if err != nil {
-		return nil
-	}
-	return snips
-}
-
-// ambientMemory returns the THIN ambient memory seed injected into the system
-// block this turn (v3 #1: reasoning-time retrieval). It is the bulk semantic
-// retrieval demoted from a forced blob to a small seed, capped to
-// cfg.AmbientRetrievalTopK. A cap of 0 means fully tool-driven retrieval: no
-// ambient seed at all — the model pulls exactly what it needs mid-thought with
-// the memory_recall tool. The pinned tier (identity, hard rules, learned
-// guidance, active goal, user profile) is injected separately and is NEVER
-// gated by this cap.
-func (a *Agent) ambientMemory(ctx context.Context, q string) []memory.Snippet {
-	if a.cfg.AmbientRetrievalTopK <= 0 {
-		return nil
-	}
-	snips := a.faultMemory(ctx, q)
-	if len(snips) > a.cfg.AmbientRetrievalTopK {
-		snips = snips[:a.cfg.AmbientRetrievalTopK]
-	}
-	return snips
-}
-
-// recallTurns asks the optional conversational recaller for the most relevant
-// PAST turns of this thread (beyond the live transcript). Best-effort: a nil
-// recaller or empty result simply yields no recall section.
-func (a *Agent) recallTurns(ctx context.Context, q string) []recall.Hit {
-	if a.recaller == nil {
-		return nil
-	}
-	return a.recaller.Relevant(ctx, q)
-}
-
-func (a *Agent) faultPatterns(ctx context.Context, q string) []memory.Pattern {
-	if a.pager == nil {
-		return nil
-	}
-	pats, err := a.pager.Procedural(ctx, q)
-	if err != nil {
-		return nil
-	}
-	return pats
-}
-
-// faultTriggers surfaces behavioral guidance whose trigger matches this turn by
-// embedding similarity, independent of global salience (Phase 3). This is the
-// structural fix for "Neo forgets a learned behavior": a learned constraint or
-// trigger-bearing pattern fires on the turns it is ABOUT even after its
-// salience has decayed below the pinned learned-guidance cap. Best-effort.
-func (a *Agent) faultTriggers(ctx context.Context, q string) []memory.Snippet {
-	if a.pager == nil {
-		return nil
-	}
-	return a.pager.TriggeredGuidance(ctx, q)
-}
-
 func (a *Agent) chatWithRetry(ctx context.Context, req llm.ChatRequest) (*llm.ChatResult, error) {
 	var lastErr error
 	for attempt := 0; attempt <= 2; attempt++ {
@@ -1658,7 +1411,7 @@ func (a *Agent) runToolCalls(ctx context.Context, calls []llm.ToolCall) {
 		// Record the shared class of this dispatch's outcome (a success clears a
 		// prior recorded failure) for the supervisor. Single-threaded here (the
 		// concurrent goroutines only wrote results[i]), so no race on
-		// a.lastFailureClass.
+		// a.turn.lastFailureClass.
 		a.noteFailureClass(results[i].class, results[i].isErr)
 		// Cap the transcript copy: a single oversized tool result can blow
 		// the provider's request-body byte cap on its own. The observer
@@ -1795,9 +1548,9 @@ func (a *Agent) runToolCallsSerial(ctx context.Context, calls []llm.ToolCall) {
 func (a *Agent) noteFailureClass(class delegate.FailureClass, isErr bool) {
 	switch {
 	case class != delegate.ClassNone:
-		a.lastFailureClass = class
+		a.turn.lastFailureClass = class
 	case !isErr:
-		a.lastFailureClass = delegate.ClassNone
+		a.turn.lastFailureClass = delegate.ClassNone
 	}
 }
 
@@ -1806,7 +1559,7 @@ func (a *Agent) noteFailureClass(class delegate.FailureClass, isErr bool) {
 // The task supervisor reads it after Chat returns to decide whether a
 // non-clean exit is a deterministic blocker (stop-and-ask, no respawn) or a
 // transient/model/stall failure (the existing respawn path).
-func (a *Agent) LastFailureClass() delegate.FailureClass { return a.lastFailureClass }
+func (a *Agent) LastFailureClass() delegate.FailureClass { return a.turn.lastFailureClass }
 
 // dispatchWithRetry runs one tool call with the recovery ladder: bounded
 // retries for transport/invocation errors (ladder 1); on exhaustion it
@@ -1892,12 +1645,12 @@ func (a *Agent) screenshotForCall(ctx context.Context, name, directShot string, 
 	if !isViewChangingBrowser(name) {
 		return ""
 	}
-	if a.cfg.BrowserAutoshotMax > 0 && a.autoshotCount >= a.cfg.BrowserAutoshotMax {
+	if a.cfg.BrowserAutoshotMax > 0 && a.turn.autoshotCount >= a.cfg.BrowserAutoshotMax {
 		return ""
 	}
 	url := a.captureViewport(ctx, name)
 	if url != "" {
-		a.autoshotCount++
+		a.turn.autoshotCount++
 	}
 	return url
 }
@@ -2118,22 +1871,6 @@ func (a *Agent) windowBytes(system string) int {
 		}
 	}
 	return total
-}
-
-// assembleWindow builds the prompt-cache-friendly window (P1-2): a byte-stable
-// system prefix, the append-only transcript, then ONE trailing dynamic tail
-// (turn-varying memory + context-budget stat). The stable prefix is identical
-// across every turn of a session so the provider's longest-stable-prefix cache
-// stays warm; only the trailing tail (and the growing transcript) change turn
-// to turn. Window order: [stable system] + [transcript] + [dynamic tail].
-//
-// The dynamic block keeps its system role and exact rendered content — only its
-// POSITION moves (formerly concatenated into the front system message, now a
-// trailing message after the transcript). The transcript slice is never mutated:
-// the inner append allocates a fresh backing array, so the outer append onto it
-// cannot alias a.working.
-func assembleWindow(stableSystem string, transcript []llm.Message, dynamicTail string) []llm.Message {
-	return append(append([]llm.Message{llm.SystemMessage(stableSystem)}, transcript...), llm.SystemMessage(dynamicTail))
 }
 
 func estimateMessagesTokens(msgs []llm.Message) int {
