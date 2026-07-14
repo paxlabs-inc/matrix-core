@@ -264,9 +264,13 @@ func (a *Agent) extractPremisesModel(ctx context.Context, planText string) []Pre
 			p.Status, p.Source = premiseCited, "cortex"
 		case "self":
 			// A self-claim never rides the extractor's word: it starts as an
-			// assumption and must discharge against the resident self-model
-			// (fail toward checking — Mechanism 2).
-			p.Status, p.SelfRef = premiseAssumption, true
+			// assumption, and it is gate-checkable SelfRef only when the
+			// deterministic detector agrees — a model-mislabeled premise
+			// (arithmetic, world facts) stays a plain visible assumption
+			// instead of entering the refutation path (fail toward checking
+			// on real self-claims, never toward refusing on mislabels).
+			p.Status = premiseAssumption
+			p.SelfRef = len(detectSelfClaims(p.Statement)) > 0
 		default:
 			p.Status = premiseAssumption
 		}

@@ -30,12 +30,6 @@ const (
 	claimRefuted                     // contradicts the resident surface
 )
 
-// validateSelfClaim checks a self-referential capability premise against the
-// resident capability surface. Deterministic and complete-inventory-backed:
-// the surface section advertises itself as the full inventory ("a capability
-// not listed here is one you do NOT have"), so a surface-shaped claim that
-// matches no resident fact is FALSE, not merely unverified. With no resident
-// surface the verdict is unknown — never fabricated (req.2.3 posture).
 func (a *Agent) validateSelfClaim(p *Premise) (claimVerdict, string) {
 	cs := a.capability
 	if cs == nil || (len(cs.API) == 0 && len(cs.Is) == 0 && len(cs.IsNot) == 0) {
@@ -52,6 +46,14 @@ func (a *Agent) validateSelfClaim(p *Premise) (claimVerdict, string) {
 			}
 		}
 	}
+	// Cited: the claim names an advertised tool — the inventory the surface
+	// section derives from a.schemas IS the resident fact.
+	for _, s := range a.schemas {
+		name := strings.ToLower(strings.TrimSpace(s.Function.Name))
+		if name != "" && strings.Contains(stmt, name) {
+			return claimCited, "advertised tool: " + s.Function.Name
+		}
+	}
 	// Refuted by an explicit is-not fact sharing a distinctive marker
 	// (e.g. the OpenAI-compatible-endpoint refutation).
 	for _, line := range cs.IsNot {
@@ -61,15 +63,28 @@ func (a *Agent) validateSelfClaim(p *Premise) (claimVerdict, string) {
 			}
 		}
 	}
-	// Complete-inventory refutation: a claim about the agent's own surface
-	// that matches nothing resident is false.
-	citation := "your capability surface is the complete inventory and nothing on it matches this claim"
-	if len(cs.API) > 0 {
-		citation += "; your true surface: " + cs.API[0]
+	// Refuted: the claim names a tool-shaped token that matches NO advertised
+	// schema — the inventory is complete, so a named-but-absent tool is false.
+	if tok := toolShapedToken(stmt); tok != "" {
+		return claimRefuted, "your tool inventory is complete and does not contain " + tok
 	}
-	return claimRefuted, citation
+	// Everything else: unverified, not false. A matcher this coarse cannot
+	// prove absence; the premise stays a visible ASSUMPTION (never refuses).
+	return claimUnknown, ""
 }
 
+// toolShapedToken returns a token that looks like a concrete tool name
+// (alias__name shape) if the statement carries one that matches no schema.
+func toolShapedToken(stmt string) string {
+	for _, f := range strings.Fields(stmt) {
+		f = strings.Trim(f, ".,;:()\"'`")
+		if !strings.Contains(f, "__") || len(f) < 5 {
+			continue
+		}
+		return f
+	}
+	return ""
+}
 // routeTokens extracts the concrete route tokens (/chat, /events, …) from a
 // surface line.
 func routeTokens(line string) []string {

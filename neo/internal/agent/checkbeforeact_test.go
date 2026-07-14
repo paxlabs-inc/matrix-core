@@ -38,6 +38,112 @@ func TestSelfClaimDischargeAllowsDispatch(t *testing.T) {
 	}
 }
 
+// TestSelfClaimToolInventoryDischarge pins the false-refutation regression
+// (2026-07-13 layerx transcript): a TRUE premise naming an advertised tool
+// must discharge to cited against the a.schemas-derived inventory — never be
+// refuted against the HTTP API surface — and the dependent dispatch proceeds.
+func TestSelfClaimToolInventoryDischarge(t *testing.T) {
+	a := New(Options{Config: config.Default(), Capability: trueSurface()})
+	a.schemas = append(a.schemas, llm.NewFunctionTool("layerx__layerx_pay", "Pay USDX over LayerX", nil))
+	a.turn.ledger = &premiseLedger{}
+	p := a.turn.ledger.add(Premise{Statement: "layerx__layerx_pay is in my tool inventory", Status: premiseAssumption, SelfRef: true})
+
+	calls := []llm.ToolCall{{ID: "c1", Type: "function", Function: llm.FunctionCall{Name: "layerx__layerx_pay", Arguments: `{}`}}}
+	allowed, refused := a.checkBeforeAct(calls)
+	if refused || len(allowed) != 1 {
+		t.Fatalf("a true tool-inventory claim must not refuse dispatch (refused=%v allowed=%d)", refused, len(allowed))
+	}
+	if p.Status != premiseCited || p.Source != "self-model" || !strings.Contains(p.Citation, "layerx__layerx_pay") {
+		t.Fatalf("the claim must discharge to cited(self-model) with the tool as citation; got %+v", p)
+	}
+}
+
+// TestSelfClaimUnmatchedStaysAssumption pins the verdict polarity: a self-
+// claim the coarse matcher can neither cite nor positively contradict stays a
+// visible ASSUMPTION (claimUnknown) — absence of a substring match is not
+// falsity, and dispatch is never refused over it.
+func TestSelfClaimUnmatchedStaysAssumption(t *testing.T) {
+	a := New(Options{Config: config.Default(), Capability: trueSurface()})
+	a.turn.ledger = &premiseLedger{}
+	p := a.turn.ledger.add(Premise{Statement: "I keep a durable memory of past sessions", Status: premiseAssumption, SelfRef: true})
+
+	calls := []llm.ToolCall{{ID: "c1", Type: "function", Function: llm.FunctionCall{Name: "write_file", Arguments: `{"path":"x"}`}}}
+	allowed, refused := a.checkBeforeAct(calls)
+	if refused || len(allowed) != 1 {
+		t.Fatalf("an unmatched self-claim must never refuse dispatch (refused=%v allowed=%d)", refused, len(allowed))
+	}
+	if p.Status != premiseAssumption {
+		t.Fatalf("an unmatched self-claim must stay an assumption, got %q (citation %q)", p.Status, p.Citation)
+	}
+}
+
+// TestSelfClaimAbsentToolRefuted proves the sound half of the complete-
+// inventory posture survives: a claim naming a concrete tool-shaped token
+// (alias__name) that matches NO advertised schema is positively false — the
+// premise is refuted and the dependent dispatch is refused.
+func TestSelfClaimAbsentToolRefuted(t *testing.T) {
+	a := New(Options{Config: config.Default(), Capability: trueSurface()})
+	a.turn.ledger = &premiseLedger{}
+	p := a.turn.ledger.add(Premise{Statement: "I can call ghost__teleport to move the funds", Status: premiseAssumption, SelfRef: true})
+
+	calls := []llm.ToolCall{{ID: "c1", Type: "function", Function: llm.FunctionCall{Name: "write_file", Arguments: `{"path":"x"}`}}}
+	allowed, refused := a.checkBeforeAct(calls)
+	if !refused || len(allowed) != 0 {
+		t.Fatalf("a named-but-absent tool claim must refuse dispatch (refused=%v allowed=%d)", refused, len(allowed))
+	}
+	if p.Status != premiseRefuted || !strings.Contains(p.Citation, "ghost__teleport") {
+		t.Fatalf("the claim must be refuted naming the absent tool; got %+v", p)
+	}
+	if a.turn.revisionPending == "" {
+		t.Fatal("a genuine refutation must force the plan-revision step")
+	}
+}
+
+// TestExtractorSelfMislabelStaysPlain pins the SelfRef gate on the model
+// half of the extractor: a "self"-basis row the deterministic detector does
+// NOT recognize (arithmetic, world facts) stays a plain assumption — it can
+// never enter the gate's refutation path — while a genuinely self-shaped row
+// still becomes gate-checkable.
+func TestExtractorSelfMislabelStaysPlain(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/event-stream")
+		rows := `[{\"statement\":\"25 x 10 = 250 USDX\",\"basis\":\"self\",\"citation\":\"\"},{\"statement\":\"callers integrate through my own api\",\"basis\":\"self\",\"citation\":\"\"}]`
+		fmt.Fprintf(w, "data: {\"choices\":[{\"index\":0,\"delta\":{\"role\":\"assistant\",\"content\":\"%s\"},\"finish_reason\":\"stop\"}]}\n", rows)
+		fmt.Fprint(w, "data: [DONE]\n")
+	}))
+	t.Cleanup(srv.Close)
+
+	client, err := llm.New(mcllm.Config{
+		Model:       "accounts/fireworks/models/gpt-oss-120b",
+		Provider:    mcllm.ProviderFireworks,
+		ProviderSet: true,
+		GatewayURL:  srv.URL,
+	})
+	if err != nil {
+		t.Fatalf("llm.New: %v", err)
+	}
+	a := New(Options{Config: config.Default(), Cheap: client})
+
+	got := a.extractPremisesModel(context.Background(), "Plan: pay 25 vendors 10 USDX each.")
+	if len(got) != 2 {
+		t.Fatalf("expected 2 extracted premises, got %d (%+v)", len(got), got)
+	}
+	for _, p := range got {
+		switch {
+		case strings.Contains(p.Statement, "250 USDX"):
+			if p.SelfRef || p.Status != premiseAssumption {
+				t.Fatalf("a mislabeled arithmetic row must stay a plain assumption; got %+v", p)
+			}
+		case strings.Contains(p.Statement, "my own api"):
+			if !p.SelfRef || p.Status != premiseAssumption {
+				t.Fatalf("a genuinely self-shaped row must be a gate-checkable self-assumption; got %+v", p)
+			}
+		default:
+			t.Fatalf("unexpected premise %+v", p)
+		}
+	}
+}
+
 // TestCheckBeforeActArenaShape proves refusal, refute→forced-revision, and the
 // self-claim contradiction mismatch event (req.5.1/5.2/5.3/5.4) on the REAL
 // loop and dispatch seams. The model opens with the arena-shaped plan — an
