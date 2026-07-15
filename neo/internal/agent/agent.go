@@ -245,6 +245,14 @@ type Agent struct {
 	// user is away, the run must be self-contained, and no screen surface or
 	// question back to the user is appropriate. Lifetime: construction.
 	automatrix bool
+	// interview marks a personalization-interview conversation (ORACLE task
+	// 5.3): the prompt gains the guided-interview charter and the agent
+	// advertises save_personalization_profile. Lifetime: construction.
+	interview bool
+	// interviewExisting is the rendered existing-answers block a REPEAT
+	// interview re-enters with (req 12.1); empty on a first interview.
+	// Lifetime: construction.
+	interviewExisting string
 	// advertised, when non-nil (restricted agents), is the exact advertised
 	// function-name set; dispatch rejects any name outside it so synthetic
 	// tools the Manager would otherwise serve stay structurally unreachable.
@@ -326,6 +334,24 @@ type Options struct {
 	// tool calls are held to the advertised restricted surface. Set by
 	// NewAutomatrix, never directly.
 	Automatrix bool
+	// Brief marks an autonomous MORNING_BRIEF run (ORACLE req 15): like
+	// Automatrix the user is AWAY and did not initiate this turn, but the tool
+	// surface is TIGHTER — a POSITIVE allowlist of read-only information tools
+	// (web_news/web_search/fetch) plus memory_recall only (Manager.BriefSchemas).
+	// Financial, signing, filesystem, deployment, and arbitrary-execution tools
+	// (including core_execute) are structurally absent. Set by NewMorningBrief,
+	// never directly.
+	Brief bool
+	// Interview marks a personalization-interview conversation (ORACLE task
+	// 5.3, req 12): the system prompt gains the guided-interview charter (five
+	// skippable question groups, one at a time, plain-language summary +
+	// explicit confirmation before saving, no sensitive traits) and the agent
+	// additionally advertises save_personalization_profile — the ONLY surface
+	// that tool is advertised on. Set by NewInterview, never directly.
+	Interview bool
+	// InterviewExisting is the rendered existing-answers block a REPEAT
+	// interview re-enters with (req 12.1); empty on a first interview.
+	InterviewExisting string
 
 	// Inbox, when set, returns user messages queued while a turn is in flight
 	// (mid-task messages sent without interrupting). The loop folds them into
@@ -357,14 +383,28 @@ func New(o Options) *Agent {
 		convID:        strings.TrimSpace(o.ConvID),
 		inbox:         o.Inbox,
 		automatrix:    o.Automatrix,
+		interview:     o.Interview,
 		turn:          newTurn(),
 	}
+	if a.interview {
+		a.interviewExisting = strings.TrimSpace(o.InterviewExisting)
+	}
 	if a.tools != nil {
-		if o.RestrictTools {
+		switch {
+		case o.Brief:
+			// Positive allowlist: read-only information tools + memory_recall
+			// only (ORACLE req 15.1). Tighter than the sub-agent surface.
+			a.schemas = a.tools.BriefSchemas()
+		case o.RestrictTools:
 			a.schemas = a.tools.SubagentSchemas()
-		} else {
+		default:
 			a.schemas = a.tools.Schemas()
 		}
+	}
+	// An interview agent additionally advertises the confirmation-gated profile
+	// save tool — the ONLY surface it is advertised on (ORACLE req 13.3).
+	if o.Interview {
+		a.schemas = append(a.schemas, tools.PersonalizationSchema())
 	}
 	// read_overflow is always advertised (top-level and sub-agent): any tool
 	// result can overflow the inline budget, and the read-full discipline
@@ -383,7 +423,7 @@ func New(o Options) *Agent {
 	// too: the Manager's dispatch switch handles synthetic tools (e.g.
 	// construct_render) whether or not they were advertised, so a model that
 	// guesses an unadvertised name would otherwise reach past the restriction.
-	if o.RestrictTools {
+	if o.RestrictTools || o.Brief {
 		a.advertised = make(map[string]struct{}, len(a.schemas))
 		for _, s := range a.schemas {
 			a.advertised[s.Function.Name] = struct{}{}

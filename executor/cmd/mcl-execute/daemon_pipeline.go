@@ -207,6 +207,9 @@ func runMessage(
 	if err != nil {
 		return nil, fmt.Errorf("daemon: open transcript: %w", err)
 	}
+	// Seal every transcript line at rest (fail-closed when the vault is
+	// required); nil session = legacy plaintext for dev/CLI.
+	t.SetVault(d.vault, d.vaultUser)
 	defer t.Close()
 	// Bind this transcript to the per-message intent_id so every
 	// downstream Event() auto-stamps fields["intent_id"] when the call
@@ -303,6 +306,7 @@ func runMessage(
 	if err != nil {
 		return nil, fmt.Errorf("daemon: envelope stream: %w", err)
 	}
+	stream.SetVault(d.vault, d.vaultUser)
 	drv, err := newLifecycleDriver(intentID, stream, t)
 	if err != nil {
 		return nil, fmt.Errorf("daemon: lifecycle: %w", err)

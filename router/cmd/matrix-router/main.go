@@ -313,6 +313,21 @@ func main() {
 		adminH.MachineEnv["MATRIX_SNAPSHOT_INTERVAL"] = envOr("MATRIX_SNAPSHOT_INTERVAL", "-1s")
 	}
 
+	// Data-at-rest vault: when the platform supplies a key-encryption key, every
+	// per-user machine boots FAIL-CLOSED — VAULT_REQUIRED=true with that KEK — so
+	// no daemon ever writes a user's conversations, memory, or media in the clear
+	// (a per-user key is minted daemon-side and wrapped by this KEK). Absent a
+	// configured KEK the injection is skipped so an un-provisioned fleet keeps
+	// booting (plaintext) rather than bricking; key provisioning is an operator
+	// step (a remote KMS is the production complement, out of scope here).
+	if kek := os.Getenv("MATRIX_VAULT_KEK"); kek != "" {
+		adminH.MachineEnv["VAULT_KEK"] = kek
+		adminH.MachineEnv["VAULT_REQUIRED"] = envOr("VAULT_REQUIRED", "true")
+		if id := os.Getenv("MATRIX_VAULT_KEK_ID"); id != "" {
+			adminH.MachineEnv["VAULT_KEK_ID"] = id
+		}
+	}
+
 	// Wire router-side auto-provisioning: the proxy hands an
 	// authenticated-but-unprovisioned user to the admin provisioner on
 	// first request. Gated on the daemon image so a router without

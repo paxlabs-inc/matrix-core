@@ -52,6 +52,14 @@ import (
 	"sync"
 
 	"matrix/construct/schema"
+	"matrix/vault"
+)
+
+// Store type and schema bound into each frame's associated data, so a sealed
+// surface line cannot be replayed across users, conversations, or positions.
+const (
+	storeSurface  = "construct.surface"
+	schemaFrameV1 = "frame.v1"
 )
 
 // DefaultRetainedFrames caps how many surface frames are retained per
@@ -103,6 +111,30 @@ type Store struct {
 	stop   chan struct{}
 	closed chan struct{}
 	once   sync.Once
+
+	// vault seals each JSONL frame when encrypting; nil = plaintext dev/CLI.
+	// user is the DID bound into each frame's associated data. Set once at engine
+	// assembly (before any Record) so the writer/Load goroutines observe it via
+	// the channel/serving happens-before edge without a lock.
+	vault *vault.Session
+	user  string
+}
+
+// SetVault wires the fail-closed data-at-rest session and owning user DID into
+// the store. Called once at assembly before any frame is recorded; a nil session
+// leaves the store writing legacy plaintext (dev/CLI).
+func (s *Store) SetVault(sess *vault.Session, user string) {
+	if s == nil {
+		return
+	}
+	s.vault = sess
+	s.user = user
+}
+
+// ad reconstructs the associated data for a frame from where it lives — never
+// stored, so a frame moved between users, conversations, or positions fails auth.
+func (s *Store) ad(conversationID string, seq uint64) vault.AD {
+	return vault.AD{User: s.user, Store: storeSurface, Stream: conversationID, Seq: seq, Schema: schemaFrameV1}
 }
 
 // Open builds a store rooted at dir (shares the per-user /data volume with the
@@ -230,7 +262,7 @@ func (s *Store) handle(rec record, counts map[string]int) {
 	if path == "" {
 		return
 	}
-	if err := os.MkdirAll(s.dir, 0o755); err != nil {
+	if err := os.MkdirAll(s.dir, 0o700); err != nil {
 		fmt.Fprintf(os.Stderr, "construct/surfacestore: mkdir %s: %v\n", s.dir, err)
 		return
 	}
@@ -240,7 +272,7 @@ func (s *Store) handle(rec record, counts map[string]int) {
 	if _, ok := counts[rec.conversationID]; !ok {
 		counts[rec.conversationID] = countLines(path)
 	}
-	if err := appendJSONL(path, rec.fr); err != nil {
+	if err := s.appendFrame(rec.conversationID, uint64(counts[rec.conversationID]), path, rec.fr); err != nil {
 		fmt.Fprintf(os.Stderr, "construct/surfacestore: append %s: %v\n", path, err)
 		return
 	}
@@ -252,7 +284,7 @@ func (s *Store) handle(rec record, counts map[string]int) {
 	// presents at most `retain` frames, so the cap is exact for consumers even
 	// while the file briefly holds up to 2·retain.
 	if counts[rec.conversationID] > 2*s.retain {
-		if kept := s.rollLocked(path); kept >= 0 {
+		if kept := s.rollLocked(rec.conversationID, path); kept >= 0 {
 			counts[rec.conversationID] = kept
 		}
 	}
@@ -266,7 +298,7 @@ func (s *Store) Load(conversationID string) []Frame {
 	if !s.Enabled() || !validConversationID(conversationID) {
 		return nil
 	}
-	frames := readJSONL(s.surfacePath(conversationID))
+	frames := s.readFrames(conversationID, s.surfacePath(conversationID))
 	// Present at most `retain` frames (newest), so the cap is exact for
 	// consumers even though the on-disk file is trimmed only amortized
 	// (handle rolls at 2·retain). This is the bound the rehydration read path
@@ -293,23 +325,27 @@ func (s *Store) surfacePath(conversationID string) string {
 
 // rollLocked trims the conversation's JSONL to the newest `retain` frames via an
 // atomic tmp+rename rewrite. Returns the number of frames kept, or -1 on error.
-func (s *Store) rollLocked(path string) int {
-	frames := readJSONL(path)
+func (s *Store) rollLocked(conversationID, path string) int {
+	frames := s.readFrames(conversationID, path)
 	if len(frames) <= s.retain {
 		return len(frames)
 	}
 	keep := frames[len(frames)-s.retain:]
 	var buf bytes.Buffer
-	for _, fr := range keep {
+	for i, fr := range keep {
 		b, err := json.Marshal(fr)
 		if err != nil {
 			continue
 		}
-		buf.Write(b)
+		line, err := s.vault.EncodeLine(s.ad(conversationID, uint64(i)), b)
+		if err != nil {
+			return -1
+		}
+		buf.Write(line)
 		buf.WriteByte('\n')
 	}
 	tmp := path + ".rollup.tmp"
-	if err := os.WriteFile(tmp, buf.Bytes(), 0o644); err != nil {
+	if err := os.WriteFile(tmp, buf.Bytes(), 0o600); err != nil {
 		fmt.Fprintf(os.Stderr, "construct/surfacestore: rollup write %s: %v\n", tmp, err)
 		return -1
 	}
@@ -321,29 +357,37 @@ func (s *Store) rollLocked(path string) int {
 	return len(keep)
 }
 
-// appendJSONL appends one frame as a single JSON line. O_APPEND + a single
-// Write makes the line atomically visible (POSIX); a torn write yields an
-// unparseable final line that readJSONL skips (crash-atomic).
-func appendJSONL(path string, fr Frame) error {
+// appendFrame appends one frame as a single (sealed, when encrypting) JSONL
+// line. O_APPEND + a single Write makes the line atomically visible (POSIX); a
+// torn write yields an unparseable final line that readFrames skips
+// (crash-atomic). seq binds the frame to its position in the conversation.
+func (s *Store) appendFrame(conversationID string, seq uint64, path string, fr Frame) error {
 	b, err := json.Marshal(fr)
 	if err != nil {
 		return err
 	}
-	b = append(b, '\n')
-	f, err := os.OpenFile(path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
+	line, err := s.vault.EncodeLine(s.ad(conversationID, seq), b)
 	if err != nil {
 		return err
 	}
-	if _, err := f.Write(b); err != nil {
+	line = append(line, '\n')
+	f, err := os.OpenFile(path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o600)
+	if err != nil {
+		return err
+	}
+	if _, err := f.Write(line); err != nil {
 		_ = f.Close()
 		return err
 	}
 	return f.Close()
 }
 
-// readJSONL parses a newline-delimited JSON frame file. A line that fails to
-// unmarshal (including a crash-truncated final line) is skipped — crash-atomic.
-func readJSONL(path string) []Frame {
+// readFrames parses a newline-delimited frame file, decrypting each record under
+// the reconstructed associated data (legacy plaintext lines pass through until
+// migrated). A line that fails to decrypt or unmarshal — including a wrong-key,
+// tampered, or crash-truncated final line — is skipped; the record sequence
+// still advances so surviving frames stay bound to their positions.
+func (s *Store) readFrames(conversationID, path string) []Frame {
 	if path == "" {
 		return nil
 	}
@@ -355,13 +399,19 @@ func readJSONL(path string) []Frame {
 	var out []Frame
 	sc := bufio.NewScanner(f)
 	sc.Buffer(make([]byte, 0, 64*1024), 8*1024*1024)
+	var seq uint64
 	for sc.Scan() {
 		line := bytes.TrimSpace(sc.Bytes())
 		if len(line) == 0 {
 			continue
 		}
+		plain, derr := s.vault.DecodeLine(s.ad(conversationID, seq), line)
+		seq++
+		if derr != nil {
+			continue
+		}
 		var fr Frame
-		if err := json.Unmarshal(line, &fr); err != nil {
+		if err := json.Unmarshal(plain, &fr); err != nil {
 			continue
 		}
 		out = append(out, fr)
@@ -369,11 +419,29 @@ func readJSONL(path string) []Frame {
 	return out
 }
 
-// countLines returns the number of parseable JSONL frames in a file (0 if
-// missing). Used to seed the writer's per-conversation count for a pre-existing
-// file.
+// countLines returns the number of non-empty JSONL lines in a file (0 if
+// missing). Used to seed the writer's per-conversation next-sequence for a
+// pre-existing file; it counts raw lines (no decryption) so it stays cheap and
+// matches how readFrames advances the sequence per line.
 func countLines(path string) int {
-	return len(readJSONL(path))
+	if path == "" {
+		return 0
+	}
+	f, err := os.Open(path)
+	if err != nil {
+		return 0
+	}
+	defer f.Close()
+	n := 0
+	sc := bufio.NewScanner(f)
+	sc.Buffer(make([]byte, 0, 64*1024), 8*1024*1024)
+	for sc.Scan() {
+		if len(bytes.TrimSpace(sc.Bytes())) == 0 {
+			continue
+		}
+		n++
+	}
+	return n
 }
 
 // Dir resolves the surface-store directory. An explicit override wins; else it

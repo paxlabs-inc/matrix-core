@@ -81,12 +81,18 @@ func (s *Store) BeginWrite() *WriteBatch {
 // AppendJournal that wrote that entry.
 func (wb *WriteBatch) Seq() uint64 { return wb.seqGetter() }
 
-// Set adds a key/value to the batch. Mirrors pebble.Batch.Set.
+// Set adds a key/value to the batch. Mirrors pebble.Batch.Set. Values in
+// user-content namespaces are sealed at rest here — callers hash the
+// plaintext encoding they pass in, so all anchoring stays above this seam.
 func (wb *WriteBatch) Set(key, value []byte) error {
 	if wb.closed {
 		return ErrBatchAlreadyClosed
 	}
-	return wb.pb.Set(key, value, nil)
+	sealed, err := wb.s.sealValue(key, value)
+	if err != nil {
+		return err
+	}
+	return wb.pb.Set(key, sealed, nil)
 }
 
 // Delete adds a key deletion to the batch. Reserved for tombstone-related
@@ -125,7 +131,14 @@ func (wb *WriteBatch) AppendJournal(e *journal.Entry) error {
 	if err != nil {
 		return fmt.Errorf("store: encode journal entry: %w", err)
 	}
-	if err := wb.pb.Set(keys.JournalKey(seq), enc, nil); err != nil {
+	// Seal the persisted value below the hash boundary: the leaf hash the
+	// hook receives is computed over the canonical plaintext encoding.
+	jkey := keys.JournalKey(seq)
+	sealed, err := wb.s.sealValue(jkey, enc)
+	if err != nil {
+		return err
+	}
+	if err := wb.pb.Set(jkey, sealed, nil); err != nil {
 		return fmt.Errorf("store: set j/%d: %w", seq, err)
 	}
 	var headBuf [8]byte

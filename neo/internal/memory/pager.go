@@ -70,6 +70,10 @@ func Open(cfg config.Config) (*Pager, error) {
 	if err != nil {
 		return nil, fmt.Errorf("neo/memory: open store: %w", err)
 	}
+	// Seal cortex values at rest below the hash boundary. Wired before
+	// cortex.New/StartEmbedder so no write can race in as plaintext; a nil
+	// session keeps legacy plaintext for dev/CLI.
+	s.SetVault(cfg.Vault, cfg.VaultUser)
 	c := cortex.New(s)
 
 	emb := pickEmbedder(cfg)

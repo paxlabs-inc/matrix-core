@@ -41,6 +41,7 @@ import (
 
 	"matrix/executor/runtime"
 	"matrix/mcl/ir"
+	"matrix/vault"
 )
 
 // asyncStatus is the closed enum of async-job lifecycle states.
@@ -84,9 +85,43 @@ type asyncRegistry struct {
 	// message is never dropped" guarantee.
 	dir   string
 	clock func() time.Time
+
+	// vault seals each job file (whole-file AEAD, tmp+rename) when encrypting;
+	// nil = plaintext dev/CLI. user is the DID bound into each job file's
+	// associated data so a job cannot be read across users.
+	vault *vault.Session
+	user  string
 }
 
 const defaultMaxAsyncJobs = 1024
+
+// asyncStore and asyncSchema are bound into each job file's associated data.
+const (
+	asyncStore   = "executor.async"
+	asyncSchema1 = "job.v1"
+)
+
+// SetVault wires the fail-closed data-at-rest session and owning user DID into
+// the registry, then reloads persisted jobs under it (a sealed job that the
+// constructor's plaintext load skipped is now decryptable). Called once at
+// daemon assembly before resumeAsyncJobs; a nil session leaves plaintext.
+func (r *asyncRegistry) SetVault(sess *vault.Session, user string) {
+	if r == nil {
+		return
+	}
+	r.mu.Lock()
+	r.vault = sess
+	r.user = user
+	r.mu.Unlock()
+	r.loadFromDir()
+}
+
+// ad reconstructs the associated data for a job file from where it lives (this
+// user, this intent) — never stored, so a file moved between users or intents
+// fails authentication.
+func (r *asyncRegistry) ad(intentID string) vault.AD {
+	return vault.AD{User: r.user, Store: asyncStore, Stream: intentID, Schema: asyncSchema1}
+}
 
 // newAsyncRegistry builds the registry. When dir is non-empty it is
 // created if missing and any previously-persisted jobs are loaded back

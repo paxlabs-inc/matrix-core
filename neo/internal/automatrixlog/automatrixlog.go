@@ -38,12 +38,21 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"matrix/vault"
 )
 
 // recordFile is the single per-daemon inbox file. The daemon is per-user, so
 // one file holds that user/agent's completion inbox; the records carry no user
 // id (the directory scoping is the ownership boundary), and no secrets.
 const recordFile = "automatrix.complete.jsonl"
+
+// Store type and schema bound into each inbox record's associated data, so a
+// sealed line cannot be read across users or positions.
+const (
+	storeInbox   = "neo.automatrix.log"
+	schemaInbox1 = "record.v1"
+)
 
 // Record is one durable Automatrix completion — an in-app inbox item. Its shape
 // is the whole no-secrets guarantee: these are the only fields that exist.
@@ -62,12 +71,36 @@ type Record struct {
 type Store struct {
 	dir string
 	mu  sync.Mutex
+
+	// vault seals each inbox record line when encrypting; nil = plaintext
+	// dev/CLI. user is the DID bound into each record's associated data.
+	vault *vault.Session
+	user  string
 }
 
 // Open builds a store rooted at dir. An empty dir yields a disabled store
 // (every method is a safe no-op) so dev/CLI runs work unchanged.
 func Open(dir string) *Store {
 	return &Store{dir: strings.TrimSpace(dir)}
+}
+
+// SetVault wires the fail-closed data-at-rest session and owning user DID into
+// the store. Called once at engine assembly before any write; a nil session
+// leaves the store writing legacy plaintext (dev/CLI).
+func (s *Store) SetVault(sess *vault.Session, user string) {
+	if s == nil {
+		return
+	}
+	s.mu.Lock()
+	s.vault = sess
+	s.user = user
+	s.mu.Unlock()
+}
+
+// ad reconstructs the associated data for an inbox record at a given position —
+// never stored, so a record moved between users or positions fails auth.
+func (s *Store) ad(seq uint64) vault.AD {
+	return vault.AD{User: s.user, Store: storeInbox, Seq: seq, Schema: schemaInbox1}
 }
 
 // Enabled reports whether persistence is on (a non-empty directory).
@@ -91,10 +124,10 @@ func (s *Store) Append(rec Record) (Record, error) {
 	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	if err := os.MkdirAll(s.dir, 0o755); err != nil {
+	if err := os.MkdirAll(s.dir, 0o700); err != nil {
 		return rec, fmt.Errorf("automatrixlog: mkdir %s: %w", s.dir, err)
 	}
-	if err := appendJSONL(s.path(), rec); err != nil {
+	if err := s.appendJSONL(s.path(), rec); err != nil {
 		return rec, fmt.Errorf("automatrixlog: append %s: %w", s.path(), err)
 	}
 	return rec, nil
@@ -108,7 +141,7 @@ func (s *Store) List() []Record {
 	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	recs := readJSONL(s.path())
+	recs := s.readJSONL(s.path())
 	for i, j := 0, len(recs)-1; i < j; i, j = i+1, j-1 {
 		recs[i], recs[j] = recs[j], recs[i]
 	}
@@ -124,7 +157,7 @@ func (s *Store) Unread() int {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	n := 0
-	for _, r := range readJSONL(s.path()) {
+	for _, r := range s.readJSONL(s.path()) {
 		if !r.Read {
 			n++
 		}
@@ -141,7 +174,7 @@ func (s *Store) MarkRead(id string) (bool, error) {
 	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	recs := readJSONL(s.path())
+	recs := s.readJSONL(s.path())
 	changed := false
 	for i := range recs {
 		if recs[i].ID == id && !recs[i].Read {
@@ -153,7 +186,7 @@ func (s *Store) MarkRead(id string) (bool, error) {
 	if !changed {
 		return false, nil
 	}
-	if err := rewriteJSONL(s.path(), recs); err != nil {
+	if err := s.rewriteJSONL(s.path(), recs); err != nil {
 		return false, fmt.Errorf("automatrixlog: rewrite %s: %w", s.path(), err)
 	}
 	return true, nil
@@ -175,41 +208,70 @@ func newID() string {
 	return "ax_" + hex.EncodeToString(b[:])
 }
 
-// appendJSONL appends one record as a single JSON line. O_APPEND + a single
-// Write makes the line atomically visible (POSIX); a torn write yields an
-// unparseable final line that readJSONL skips (crash-atomic).
-func appendJSONL(path string, rec Record) error {
+// appendJSONL appends one record as a single (sealed, when encrypting) JSON
+// line. O_APPEND + a single Write makes the line atomically visible (POSIX); a
+// torn write yields an unparseable final line that readJSONL skips (crash-
+// atomic). The record is bound to its on-disk position via the reconstructed AD.
+func (s *Store) appendJSONL(path string, rec Record) error {
 	b, err := json.Marshal(rec)
 	if err != nil {
 		return err
 	}
-	b = append(b, '\n')
-	f, err := os.OpenFile(path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
+	line, err := s.vault.EncodeLine(s.ad(countInboxLines(path)), b)
 	if err != nil {
 		return err
 	}
-	if _, err := f.Write(b); err != nil {
+	line = append(line, '\n')
+	f, err := os.OpenFile(path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o600)
+	if err != nil {
+		return err
+	}
+	if _, err := f.Write(line); err != nil {
 		_ = f.Close()
 		return err
 	}
 	return f.Close()
 }
 
+// countInboxLines counts non-empty lines in the inbox file (0 when absent) so a
+// sealed append binds to its true position.
+func countInboxLines(path string) uint64 {
+	f, err := os.Open(path)
+	if err != nil {
+		return 0
+	}
+	defer f.Close()
+	var n uint64
+	sc := bufio.NewScanner(f)
+	sc.Buffer(make([]byte, 0, 64*1024), 8*1024*1024)
+	for sc.Scan() {
+		if len(bytes.TrimSpace(sc.Bytes())) == 0 {
+			continue
+		}
+		n++
+	}
+	return n
+}
+
 // rewriteJSONL atomically replaces the file with recs (tmp+rename), used by
 // MarkRead. A crash leaves either the old or the new file intact, never a torn
-// one.
-func rewriteJSONL(path string, recs []Record) error {
+// one. Each record is re-sealed at its NEW position.
+func (s *Store) rewriteJSONL(path string, recs []Record) error {
 	var buf bytes.Buffer
-	for _, r := range recs {
+	for i, r := range recs {
 		b, err := json.Marshal(r)
 		if err != nil {
 			return err
 		}
-		buf.Write(b)
+		line, err := s.vault.EncodeLine(s.ad(uint64(i)), b)
+		if err != nil {
+			return err
+		}
+		buf.Write(line)
 		buf.WriteByte('\n')
 	}
 	tmp := path + ".rewrite.tmp"
-	if err := os.WriteFile(tmp, buf.Bytes(), 0o644); err != nil {
+	if err := os.WriteFile(tmp, buf.Bytes(), 0o600); err != nil {
 		return err
 	}
 	if err := os.Rename(tmp, path); err != nil {
@@ -219,10 +281,12 @@ func rewriteJSONL(path string, recs []Record) error {
 	return nil
 }
 
-// readJSONL parses a newline-delimited JSON record file, oldest-first. A line
-// that fails to unmarshal (including a crash-truncated final line) is skipped —
-// crash-atomic.
-func readJSONL(path string) []Record {
+// readJSONL parses a newline-delimited record file, oldest-first, decrypting
+// each sealed line under the reconstructed AD (legacy plaintext passes through
+// until migrated). A line that fails to decrypt or unmarshal (including a
+// wrong-key, tampered, or crash-truncated final line) is skipped; the position
+// counter still advances so surviving records stay position-bound.
+func (s *Store) readJSONL(path string) []Record {
 	if path == "" {
 		return nil
 	}
@@ -234,13 +298,19 @@ func readJSONL(path string) []Record {
 	var out []Record
 	sc := bufio.NewScanner(f)
 	sc.Buffer(make([]byte, 0, 64*1024), 8*1024*1024)
+	var seq uint64
 	for sc.Scan() {
 		line := bytes.TrimSpace(sc.Bytes())
 		if len(line) == 0 {
 			continue
 		}
+		plain, derr := s.vault.DecodeLine(s.ad(seq), append([]byte(nil), line...))
+		seq++
+		if derr != nil {
+			continue
+		}
 		var rec Record
-		if err := json.Unmarshal(line, &rec); err != nil {
+		if err := json.Unmarshal(plain, &rec); err != nil {
 			continue
 		}
 		out = append(out, rec)

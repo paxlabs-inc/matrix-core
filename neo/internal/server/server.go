@@ -87,6 +87,12 @@ func (s *Server) routes() []routeFact {
 		// Automatrix control surface: per-user opt-in toggle, opportunity
 		// queue, completion inbox.
 		{"/automatrix/", "GET/POST /automatrix/* — the proactive-task (Automatrix) control surface", s.handleAutomatrix},
+		// Morning-brief control surface: opt-in toggle, schedule (time/tz/days/
+		// length/sections), and pause for the ORACLE personalized brief.
+		{"/brief/", "GET/PUT /brief/settings — the morning-brief schedule + opt-in control surface", s.handleBrief},
+		// Personalization interview entry (ORACLE task 5.3): mint an interview-
+		// flagged conversation; the interview itself runs in the normal chat.
+		{"/interview/", "POST /interview/start — start (or repeat) the guided personalization interview", s.handleInterview},
 		// Coding workbench environment surface: project-scoped workspace
 		// tree / file read / atomic write / diff / bounded exec.
 		{"/workspace/", "GET/POST /workspace/* — the coding workbench surface (tree, file read/write, diff, exec)", s.handleWorkspace},
@@ -259,6 +265,19 @@ func (s *Server) handleChat(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusAccepted, map[string]interface{}{
 			"conversation_id": convID,
 			"kind":            "automatrix_wake",
+		})
+		return
+	}
+	// Chronos MORNING_BRIEF idle-wake (ORACLE task 5.4): NOT a normal user
+	// turn either. The engine wake handler re-reads the durable schedule, does
+	// zero network when disabled/paused, enforces the day + single-per-local-
+	// date guards, and dispatches the supervised restricted-surface brief run
+	// (delivered out of band as a durable turn + inbox record). It produces no
+	// live conversational run, so respond with an accepted, run-less envelope.
+	if s.engine.MaybeHandleMorningBriefWake(r.Context(), convID, msg) {
+		writeJSON(w, http.StatusAccepted, map[string]interface{}{
+			"conversation_id": convID,
+			"kind":            "morning_brief_wake",
 		})
 		return
 	}

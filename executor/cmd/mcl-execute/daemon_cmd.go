@@ -30,13 +30,21 @@ import (
 
 	"matrix/construct/surfacestore"
 	"matrix/executor/internal/snapshot"
+	"matrix/vault"
 )
 
 // daemonState owns every long-lived dependency the daemon shares
 // across messages. One instance per process.
 type daemonState struct {
-	infra           *infra
-	actor           *actorIdentity
+	infra *infra
+	actor *actorIdentity
+	// vault is the fail-closed data-at-rest session; nil-safe (plaintext dev/
+	// CLI). vaultUser is the DID bound into every sealed object's associated
+	// data (the daemon serves one user). Threaded into the transcript writer,
+	// the conversation store, and the Construct surface store so every
+	// persistence surface seals at rest.
+	vault           *vault.Session
+	vaultUser       string
 	skillsRoot      string
 	journalDir      string
 	transcriptsDir  string
@@ -400,7 +408,7 @@ func runDaemon(args []string) {
 		}
 	}
 
-	if err := os.MkdirAll(*transcriptsDir, 0o755); err != nil {
+	if err := os.MkdirAll(*transcriptsDir, 0o700); err != nil {
 		fatalf("daemon: mkdir transcripts-dir: %v", err)
 	}
 
@@ -486,19 +494,9 @@ func runDaemon(args []string) {
 		})
 	}
 
-	in, err := newInfra(bootCtx, infraOpts{
-		ManifestPath:       *manifestPath,
-		CortexRoot:         *cortexRoot,
-		CortexActor:        *cortexActor,
-		WithEmbedder:       *withEmbedder,
-		WithFireworksEmbed: *withFireworks,
-		StderrSink:         os.Stderr,
-	}, t)
-	if err != nil {
-		fatalf("daemon: infra: %v", err)
-	}
-	defer in.Close()
-
+	// Identity + vault come up BEFORE infra (both keyed off the snapshot-
+	// restored volume, both needed by infra): the cortex store seals its
+	// values under the per-user vault from its first write.
 	actor, err := loadOrCreateIdentity(*keyfile, *didLabel)
 	if err != nil {
 		fatalf("daemon: identity: %v", err)
@@ -507,6 +505,44 @@ func runDaemon(args []string) {
 		"did":  actor.DID,
 		"user": actor.UserURI,
 	})
+
+	// Fail-closed data-at-rest vault. Production (router injects
+	// VAULT_REQUIRED=true) MUST bring up a usable per-user key or the daemon
+	// refuses to boot into plaintext — mirroring the main-model fail-closed
+	// posture, never a best-effort degrade. The wrapped keyfile lives beside
+	// /data (the cortex root's parent). The hermetic sandbox preset runs
+	// plaintext. actor.DID is the per-user identity bound into every sealed
+	// object's associated data.
+	vcfg := vault.ConfigFromEnv(filepath.Dir(*cortexRoot), actor.DID)
+	if *sandbox {
+		vcfg.Required = false
+	}
+	vaultSess, verr := vault.Boot(bootCtx, vcfg)
+	if verr != nil {
+		fatalf("daemon: vault required but unavailable: %v — set VAULT_KEK (64-hex) or VAULT_KEK_FILE, or VAULT_REQUIRED=false for plaintext dev/CLI", verr)
+	}
+	t.Event("vault.boot", "boot", map[string]interface{}{
+		"encrypting": vaultSess.Encrypting(),
+		"user":       actor.DID,
+	})
+	// Future pushes seal the tarball before it leaves the machine; BootPull
+	// (already run) self-bootstraps sealed restores from the keyfile sidecar.
+	snapMgr.SetVault(vaultSess, actor.DID)
+
+	in, err := newInfra(bootCtx, infraOpts{
+		ManifestPath:       *manifestPath,
+		CortexRoot:         *cortexRoot,
+		CortexActor:        *cortexActor,
+		WithEmbedder:       *withEmbedder,
+		WithFireworksEmbed: *withFireworks,
+		StderrSink:         os.Stderr,
+		Vault:              vaultSess,
+		VaultUser:          actor.DID,
+	}, t)
+	if err != nil {
+		fatalf("daemon: infra: %v", err)
+	}
+	defer in.Close()
 
 	broker := newSSEBroker(*bufferSize)
 	t.AttachBroker(broker)
@@ -525,6 +561,8 @@ func runDaemon(args []string) {
 	state := &daemonState{
 		infra:                      in,
 		actor:                      actor,
+		vault:                      vaultSess,
+		vaultUser:                  actor.DID,
 		skillsRoot:                 *skillsRoot,
 		journalDir:                 *journalDir,
 		transcriptsDir:             *transcriptsDir,
@@ -570,6 +608,12 @@ func runDaemon(args []string) {
 		// reads from the SAME instance. Flushed + closed on graceful drain.
 		surfaceStore: surfacestore.Open(surfacestore.Dir(os.Getenv("CONSTRUCT_SURFACE_DIR"), *cortexRoot)),
 	}
+	// Seal every persistence surface at rest under the per-user vault. Called
+	// once here before the server starts serving so no writer races the wire-in;
+	// a nil/plaintext session leaves each store writing legacy plaintext.
+	state.surfaceStore.SetVault(vaultSess, actor.DID)
+	state.convStore.SetVault(vaultSess, actor.DID)
+	state.asyncReg.SetVault(vaultSess, actor.DID)
 	if *forgeMode {
 		state.forgeFS = DefaultForgeFSPolicy()
 		state.gitOps = DefaultGitOpsPolicy()

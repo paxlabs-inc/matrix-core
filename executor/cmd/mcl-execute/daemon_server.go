@@ -90,6 +90,10 @@ func newDaemonMux(d *daemonState, t *transcript) http.Handler {
 	// Identity / settings / diag.
 	mux.HandleFunc("/me", d.handleMe)
 	mux.HandleFunc("/profile", d.handleProfile)
+	// Personalization profile (ORACLE req 13): the confirmed opt-in profile,
+	// a single tagged pinned cortex record separate from the onboarding profile.
+	mux.HandleFunc("/personalization", d.handlePersonalization)
+	mux.HandleFunc("/personalization/export", d.handlePersonalizationExport)
 	mux.HandleFunc("/settings", d.handleSettings)
 	mux.HandleFunc("/diag/embedder", d.handleDiagEmbedder)
 	mux.HandleFunc("/diag/mcp", d.handleDiagMCP)
@@ -482,7 +486,7 @@ func (d *daemonState) handleIntents(w http.ResponseWriter, r *http.Request) {
 		}
 		seq, kind := parseEnvelopeFilename(e.Name())
 		fpath := filepath.Join(dir, e.Name())
-		body, rerr := os.ReadFile(fpath)
+		body, rerr := d.openEnvelopeFile(fpath)
 		if rerr != nil {
 			continue
 		}

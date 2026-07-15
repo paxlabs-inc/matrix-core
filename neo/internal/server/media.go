@@ -161,6 +161,12 @@ func (s *Server) handleMedia(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "media not found", http.StatusNotFound)
 		return
 	}
+	// Sealed media (media_vault.go) decrypt-streams; legacy plaintext serves
+	// exactly as before.
+	if sealed, serr := sniffVaultFile(f); serr == nil && sealed {
+		s.engine.serveSealedMedia(w, r, f, name)
+		return
+	}
 	m := mimeForName(name)
 	w.Header().Set("Content-Type", m)
 	// Content is immutable (content-addressed by random id); cache hard.
@@ -211,17 +217,25 @@ func (s *Server) handleUpload(w http.ResponseWriter, r *http.Request) {
 	m := mimeForName("x" + ext)
 	kind := kindForMIME(m)
 
-	if err := os.MkdirAll(dir, 0o755); err != nil {
+	if err := os.MkdirAll(dir, 0o700); err != nil {
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "cannot prepare media storage"})
 		return
 	}
 	name := mintMediaID() + ext
-	dst, err := os.Create(filepath.Join(dir, name))
+	dst, err := os.OpenFile(filepath.Join(dir, name), os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0o600)
 	if err != nil {
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "cannot store upload"})
 		return
 	}
-	written, copyErr := io.Copy(dst, file)
+	var written int64
+	var copyErr error
+	if s.engine.mediaSealEnabled() {
+		// Seal the upload at rest (opt-in; see media_vault.go). written counts
+		// plaintext bytes so the response reports the real payload size.
+		written, copyErr = sealMediaCopy(s.engine, name, dst, file)
+	} else {
+		written, copyErr = io.Copy(dst, file)
+	}
 	closeErr := dst.Close()
 	if copyErr != nil || closeErr != nil {
 		_ = os.Remove(filepath.Join(dir, name))

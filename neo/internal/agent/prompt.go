@@ -125,6 +125,13 @@ func (a *Agent) systemPrompt() string {
 		b.WriteString("- If the task genuinely cannot proceed without the user's input, stop and report the blocker honestly as your result rather than guessing on anything consequential.\n\n")
 	}
 
+	// Personalization interview (ORACLE task 5.3): this conversation exists to
+	// run the guided five-group interview and save the confirmed profile.
+	// Per-agent-constant, so it lives in the stable prefix.
+	if a.interview {
+		a.interviewCharter(&b, name)
+	}
+
 	b.WriteString("Your standard:\n")
 	b.WriteString("- Hold a high bar on EVERY task, big or small. Do the job the way an expert who cares about their craft would — not the fastest thing that technically answers. When there is an easy path and a right path, take the right one.\n")
 	b.WriteString("- Go beyond the literal ask when it plainly serves the user: anticipate the next need, handle the edge cases, and make the result complete and usable — not a stub, a sketch, or a happy-path demo. Never hand back placeholder, truncated, or half-finished work and call it done.\n")

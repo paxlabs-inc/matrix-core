@@ -213,6 +213,11 @@ type Manager struct {
 	media      MediaPersistFunc
 	maxAgents  int
 
+	// personalization persists the user-confirmed personalization profile
+	// (ORACLE task 5.3). Reached only through save_personalization_profile,
+	// which only interview agents advertise.
+	personalization PersonalizationSaveFunc
+
 	byFunc    map[string]*boundTool
 	order     []string // sorted natural func names (advertised)
 	escalated []string // sorted escalate func names (NOT advertised)
@@ -443,6 +448,9 @@ func (m *Manager) dispatch(ctx context.Context, funcName string, args map[string
 		return c, "", e, er
 	case PreviewTool:
 		c, e, er := m.dispatchPreview(ctx)
+		return c, "", e, er
+	case SavePersonalizationTool:
+		c, e, er := m.dispatchPersonalizationSave(ctx, args)
 		return c, "", e, er
 	}
 	bt, ok := m.byFunc[funcName]

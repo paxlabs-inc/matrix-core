@@ -53,6 +53,15 @@ type session struct {
 	// is the captured result.
 	automatrixOut *automatrixReporter
 
+	// brief marks this as an ephemeral session driving an autonomous
+	// MORNING_BRIEF run (ORACLE task 5.4). Like automatrix it surfaces NOTHING
+	// live and reuses automatrixOut for quiet result capture, but its agent is
+	// built on the TIGHTER read-only brief surface (agent.NewMorningBrief:
+	// web_news/web_search/fetch + memory_recall only — money/signing/fs/deploy/
+	// exec structurally absent, req 15.1) rather than the automatrix restricted
+	// surface. A normal session leaves this false.
+	brief bool
+
 	mu  sync.Mutex // serializes turns in this conversation
 	cur *run       // the in-flight turn (read by the reporter/observer)
 
@@ -218,7 +227,20 @@ func (s *session) rebuildAgent() {
 	// restriction is a property of the constructor — NewAutomatrix forces it —
 	// and it holds across every supervisor respawn because rebuildAgent is the
 	// single place an agent is minted for this session.
-	if s.automatrix {
+	switch {
+	case s.brief:
+		// A morning-brief session runs on the TIGHT read-only information
+		// surface (agent.NewMorningBrief: web_news/web_search/fetch +
+		// memory_recall only; money/signing/fs/deploy/exec + core_execute
+		// structurally absent, req 15.1). It reuses the quiet capture reporter
+		// so nothing surfaces live (req 15.2 delivers out of band) while the
+		// composed brief is retained for durable persistence + notify.
+		if s.automatrixOut == nil {
+			s.automatrixOut = &automatrixReporter{}
+		}
+		opts.Reporter = s.automatrixOut
+		s.agent = agent.NewMorningBrief(opts)
+	case s.automatrix:
 		// Quiet capture reporter: surfaces nothing (req 5.5) but retains the
 		// final answer for the completion ping (task 5.3). Reused across
 		// respawns so the captured result is the last (successful) attempt's.
@@ -227,7 +249,22 @@ func (s *session) rebuildAgent() {
 		}
 		opts.Reporter = s.automatrixOut
 		s.agent = agent.NewAutomatrix(opts)
-	} else {
+	case e.conv.IsInterview(s.id):
+		// A personalization-interview conversation (ORACLE task 5.3): the
+		// normal live surface plus the interview charter and the confirmation-
+		// gated save_personalization_profile tool. Writeback extraction is
+		// STRUCTURALLY excluded — no consolidator is passed, so individual
+		// interview answers can never become fragmented inferred memories
+		// (req 12.3). A repeat interview re-enters with the saved answers.
+		opts.Consolidator = nil
+		existing := ""
+		if e.pager != nil {
+			if prof, _, ok, err := e.pager.PersonalizationProfile(context.Background()); err == nil && ok {
+				existing = prof.RenderForInterview()
+			}
+		}
+		s.agent = agent.NewInterview(opts, existing)
+	default:
 		s.agent = agent.New(opts)
 	}
 	// Inject the onboarding profile (agent_name, preferred_name,
@@ -932,6 +969,56 @@ func (s *session) superviseAutomatrixTask(ctx context.Context, objective string)
 		// actRespawn — not done. Journal the death, back off (honoring
 		// cancellation), then respawn a FRESH restricted agent over durable state
 		// and try again. No progress is surfaced to the user (req 5.5).
+		s.recordLoopDeath(ctx, objective, attempt, err, failClass)
+		lastErr = err
+		if !superviseBackoff(ctx, attempt, errors.Is(err, llm.ErrRateLimited)) {
+			return task.StatusCeiling
+		}
+		s.rebuildAgent()
+	}
+}
+
+// superviseBriefTask is the QUIET sibling of superviseTask for an autonomous
+// MORNING_BRIEF run (ORACLE task 5.4, req 15.1/15.2). It mirrors the real
+// supervisor's policy EXACTLY — the same pure superviseDecision over the agent's
+// clean finish / failure class / wall-clock, the same jittered backoff, the same
+// FRESH-agent respawn over durable state across a non-clean exit — so a brief is
+// held to the SAME loop discipline as any interactive turn. The two differences
+// are deliberate: (1) the agent is the TIGHT read-only brief surface (the
+// session was minted with brief=true, so it physically cannot reach money /
+// signing / filesystem / deploy / exec tools, req 15.1), and (2) it surfaces
+// NOTHING live — the composed brief is delivered out of band as a durable
+// conversation turn + inbox record before any notification (req 15.2). It
+// returns the terminal task.Status so the runner can settle the ledger (done vs
+// ceiling). A user stop cannot happen here (no live run / no barge-in).
+func (s *session) superviseBriefTask(ctx context.Context, objective string) task.Status {
+	cfg := s.engine.cfg
+	maxRespawns := cfg.TaskMaxRespawns
+	if maxRespawns < 0 || !cfg.SuperviseTasks {
+		maxRespawns = 0
+	}
+	var lastErr error
+	for attempt := 1; ; attempt++ {
+		prompt := objective
+		if attempt > 1 {
+			prompt = resumePrime(objective, attempt, lastErr)
+		}
+		actx, acancel := s.attemptContext(ctx)
+		err := s.agent.Chat(actx, prompt)
+		acancel()
+
+		failClass := s.agent.LastFailureClass()
+		switch superviseDecision(false, err, failClass, ctx.Err(), attempt, maxRespawns) {
+		case actDone:
+			return task.StatusDone
+		case actStop:
+			return task.StatusCeiling
+		case actCeiling:
+			return task.StatusCeiling
+		}
+		// actRespawn — not done. Journal the death, back off (honoring
+		// cancellation), then respawn a FRESH brief-surface agent over durable
+		// state and try again. Nothing is surfaced to the user (req 15.2).
 		s.recordLoopDeath(ctx, objective, attempt, err, failClass)
 		lastErr = err
 		if !superviseBackoff(ctx, attempt, errors.Is(err, llm.ErrRateLimited)) {

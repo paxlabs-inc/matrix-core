@@ -15,6 +15,7 @@ require (
 	github.com/gorilla/websocket v1.5.3
 	matrix/bridge v0.0.0-00010101000000-000000000000
 	matrix/cortex v0.0.0
+	matrix/vault v0.0.0
 )
 
 require (
@@ -58,3 +59,5 @@ replace matrix/cortex => ../cortex
 replace matrix/mcl => ../MCL
 
 replace matrix/bridge => ../bridge
+
+replace matrix/vault => ../vault

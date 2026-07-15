@@ -84,6 +84,13 @@ func runMessageDirect(ctx context.Context, d *daemonState, req messageRequest) (
 	if err != nil {
 		return nil, fmt.Errorf("gideon: open transcript: %w", err)
 	}
+	// Seal every transcript line at rest (fail-closed when the vault is
+	// required); nil session = legacy plaintext for dev/CLI.
+	t.SetVault(d.vault, d.vaultUser)
+	// Bind the intent id so each sealed record's associated data stream matches
+	// what readTranscriptLines reconstructs from the file name (the events here
+	// already carry intent_id, so the auto-stamp is a no-op on their fields).
+	t.SetIntentID(intentID)
 	defer t.Close()
 	t.AttachBroker(d.broker)
 	t.AttachMetrics(d.metrics)
@@ -118,6 +125,7 @@ func runMessageDirect(ctx context.Context, d *daemonState, req messageRequest) (
 	if err != nil {
 		return nil, fmt.Errorf("gideon: envelope stream: %w", err)
 	}
+	stream.SetVault(d.vault, d.vaultUser)
 	drv, err := newLifecycleDriver(intentID, stream, t)
 	if err != nil {
 		return nil, fmt.Errorf("gideon: lifecycle: %w", err)

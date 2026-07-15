@@ -7,7 +7,10 @@ require (
 	github.com/fxamacker/cbor/v2 v2.6.0
 	github.com/oklog/ulid/v2 v2.1.1
 	golang.org/x/time v0.5.0
+	matrix/vault v0.0.0
 )
+
+replace matrix/vault => ../vault
 
 require (
 	github.com/DataDog/zstd v1.4.5 // indirect

@@ -19,6 +19,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"matrix/vault"
 )
 
 // Config is Neo's fully-resolved runtime configuration.
@@ -240,6 +242,11 @@ type Config struct {
 	// --- LLM transport ---
 	GatewayURL string // optional metered-LLM gateway (empty = direct provider)
 	ActorDID   string // actor DID stamped on gateway calls
+
+	// --- data-at-rest vault (set programmatically by runServe after
+	// vault.Boot, never from env; nil = legacy plaintext dev/CLI) ---
+	Vault     *vault.Session // fail-closed sealing session for every store incl. cortex
+	VaultUser string         // user DID bound into sealed objects' associated data
 }
 
 // Default returns Neo's defaults, encoding the frozen spec's locked

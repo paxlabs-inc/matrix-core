@@ -18,10 +18,8 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
 	"os"
-	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -135,8 +133,7 @@ func (d *daemonState) handleEventsReplay(w http.ResponseWriter, r *http.Request)
 		})
 		return
 	}
-	path := filepath.Join(d.transcriptsDir, intentID+".jsonl")
-	f, err := os.Open(path)
+	lines, err := d.readTranscriptLines(intentID)
 	if err != nil {
 		if os.IsNotExist(err) {
 			writeJSON(w, http.StatusNotFound, map[string]string{"error": "transcript not found"})
@@ -145,7 +142,6 @@ func (d *daemonState) handleEventsReplay(w http.ResponseWriter, r *http.Request)
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
 		return
 	}
-	defer f.Close()
 
 	w.Header().Set("Content-Type", "text/event-stream")
 	w.Header().Set("Cache-Control", "no-cache")
@@ -155,14 +151,10 @@ func (d *daemonState) handleEventsReplay(w http.ResponseWriter, r *http.Request)
 	fmt.Fprintf(w, ": replay intent=%s\n\n", intentID)
 	flusher.Flush()
 
-	dec := json.NewDecoder(f)
-	for {
+	for _, line := range lines {
 		var ev sseEvent
-		if err := dec.Decode(&ev); err != nil {
-			if err == io.EOF {
-				break
-			}
-			break // tolerate partial reads
+		if err := json.Unmarshal(line, &ev); err != nil {
+			continue // tolerate partial/legacy lines
 		}
 		payload, err := encodeSSEEvent(ev)
 		if err != nil {

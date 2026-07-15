@@ -38,6 +38,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"matrix/vault"
 )
 
 // Config configures the snapshot Manager.
@@ -134,6 +136,12 @@ type Manager struct {
 	// mcEnv is the MC_HOST_<alias> value passed to every mc subprocess.
 	// Computed once in New.
 	mcEnv string
+
+	// vault + sealUser seal the snapshot tarball before it leaves the
+	// machine (vault.go). Wired via SetVault after the daemon's vault
+	// boots; nil keeps legacy plaintext tarballs.
+	vault    *vault.Session
+	sealUser string
 }
 
 // New validates cfg and returns a Manager.
@@ -313,11 +321,32 @@ func (m *Manager) BootPull(ctx context.Context) (bool, error) {
 		return false, fmt.Errorf("snapshot: pulled empty tarball")
 	}
 
+	// Sniff the pulled object: a sealed snapshot is decrypt-verified through
+	// the vault (keyfile sidecar bootstraps a fresh volume); legacy plaintext
+	// extracts exactly as before.
+	sealed, err := isVaultFile(tmpPath)
+	if err != nil {
+		return false, fmt.Errorf("snapshot: sniff tarball: %w", err)
+	}
+	tarPath := tmpPath
+	if sealed {
+		if err := m.ensureKeyfile(ctx); err != nil {
+			return false, err
+		}
+		plainPath := tmpPath + ".plain"
+		defer os.Remove(plainPath)
+		if err := m.openSealedTarball(ctx, tmpPath, plainPath); err != nil {
+			return false, err
+		}
+		tarPath = plainPath
+	}
+
 	m.log("snapshot.pull.extract", map[string]interface{}{
 		"size_bytes": st.Size(),
 		"data_dir":   m.cfg.DataDir,
+		"sealed":     sealed,
 	})
-	if err := untarZst(ctx, tmpPath, m.cfg.DataDir); err != nil {
+	if err := untarZst(ctx, tarPath, m.cfg.DataDir); err != nil {
 		return false, fmt.Errorf("snapshot: untar: %w", err)
 	}
 	if err := m.markSeeded(); err != nil {
@@ -359,7 +388,22 @@ func (m *Manager) Push(ctx context.Context) (string, error) {
 	if err := tarZst(ctx, m.cfg.DataDir, tmpPath); err != nil {
 		return "", fmt.Errorf("snapshot: tar: %w", err)
 	}
-	st, err := os.Stat(tmpPath)
+	// Seal the tarball before it leaves the machine (vault.go). The wrapped
+	// keyfile is mirrored beside it so a fresh machine can bootstrap the
+	// decrypt on restore. A nil/plaintext session pushes legacy plaintext.
+	uploadPath := tmpPath
+	if m.vault.Encrypting() {
+		encPath := tmpPath + ".enc"
+		defer os.Remove(encPath)
+		if err := m.sealFile(tmpPath, encPath); err != nil {
+			return "", err
+		}
+		if err := m.pushKeyfile(ctx); err != nil {
+			return "", err
+		}
+		uploadPath = encPath
+	}
+	st, err := os.Stat(uploadPath)
 	if err != nil {
 		return "", fmt.Errorf("snapshot: stat tarball: %w", err)
 	}
@@ -367,8 +411,9 @@ func (m *Manager) Push(ctx context.Context) (string, error) {
 	m.log("snapshot.push.upload", map[string]interface{}{
 		"key":        snapKey,
 		"size_bytes": st.Size(),
+		"sealed":     uploadPath != tmpPath,
 	})
-	if _, stderr, err := m.runMC(ctx, "cp", "--quiet", tmpPath, m.remotePath(snapKey)); err != nil {
+	if _, stderr, err := m.runMC(ctx, "cp", "--quiet", uploadPath, m.remotePath(snapKey)); err != nil {
 		return "", fmt.Errorf("snapshot: mc cp push: %w (stderr=%q)", err, stderr)
 	}
 

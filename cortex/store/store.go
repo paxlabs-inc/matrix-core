@@ -34,6 +34,7 @@ import (
 
 	"matrix/cortex/journal"
 	"matrix/cortex/keys"
+	"matrix/vault"
 )
 
 // JournalHook is invoked from inside AppendJournal (both the standalone
@@ -65,6 +66,12 @@ type Store struct {
 	// by the snapshot layer (Phase 7) to keep the journal MMR in lock-
 	// step with j/<seq> writes. nil before SetJournalHook is called.
 	journalHook JournalHook
+
+	// vault + vaultUser seal user-content values at rest below the hash
+	// boundary (vaultseam.go). Wired once via SetVault at boot; nil keeps
+	// legacy plaintext.
+	vault     *vault.Session
+	vaultUser string
 }
 
 // SetJournalHook installs (or replaces) the journal hook. Pass nil to
@@ -92,7 +99,7 @@ func Open(root, actor string, opts *Options) (*Store, error) {
 		return nil, errors.New("store: root path required")
 	}
 	dbDir := filepath.Join(root, actor, "store")
-	if err := os.MkdirAll(dbDir, 0o755); err != nil {
+	if err := os.MkdirAll(dbDir, 0o700); err != nil {
 		return nil, fmt.Errorf("store: mkdir %s: %w", dbDir, err)
 	}
 
@@ -185,7 +192,14 @@ func (s *Store) AppendJournal(e *journal.Entry) (uint64, error) {
 	b := s.db.NewBatch()
 	defer b.Close()
 
-	if err := b.Set(keys.JournalKey(seq), enc, nil); err != nil {
+	// Seal the persisted value below the hash boundary: the leaf hash the
+	// hook receives is computed over the canonical plaintext encoding.
+	jkey := keys.JournalKey(seq)
+	sealed, err := s.sealValue(jkey, enc)
+	if err != nil {
+		return 0, err
+	}
+	if err := b.Set(jkey, sealed, nil); err != nil {
 		return 0, fmt.Errorf("store: batch.Set j/%d: %w", seq, err)
 	}
 	var headBuf [8]byte
@@ -225,6 +239,10 @@ func (s *Store) IterJournal(fn func(*journal.Entry) error) error {
 		if err != nil {
 			return fmt.Errorf("store: iter value: %w", err)
 		}
+		v, err = s.openValue(it.Key(), v)
+		if err != nil {
+			return err
+		}
 		var e journal.Entry
 		if err := journal.Decode(v, &e); err != nil {
 			return fmt.Errorf("store: decode journal entry: %w", err)
@@ -253,6 +271,10 @@ func (s *Store) Get(key []byte) ([]byte, bool, error) {
 	defer closer.Close()
 	out := make([]byte, len(v))
 	copy(out, v)
+	out, err = s.openValue(key, out)
+	if err != nil {
+		return nil, false, err
+	}
 	return out, true, nil
 }
 
@@ -271,6 +293,10 @@ func (s *Store) PrefixIter(prefix []byte, fn func(key, value []byte) error) erro
 		v, err := it.ValueAndErr()
 		if err != nil {
 			return fmt.Errorf("store: iter value: %w", err)
+		}
+		v, err = s.openValue(it.Key(), v)
+		if err != nil {
+			return err
 		}
 		if err := fn(it.Key(), v); err != nil {
 			return err

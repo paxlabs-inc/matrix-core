@@ -30,6 +30,8 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	"matrix/vault"
 )
 
 // asyncJobDir derives the durable async-job directory from the daemon's
@@ -65,7 +67,7 @@ func (r *asyncRegistry) persistLocked(job *asyncJob) {
 	if path == "" {
 		return
 	}
-	if err := os.MkdirAll(r.dir, 0o755); err != nil {
+	if err := os.MkdirAll(r.dir, 0o700); err != nil {
 		fmt.Fprintf(os.Stderr, "async: mkdir %s: %v\n", r.dir, err)
 		return
 	}
@@ -74,10 +76,17 @@ func (r *asyncRegistry) persistLocked(job *asyncJob) {
 		fmt.Fprintf(os.Stderr, "async: marshal job %s: %v\n", job.IntentID, err)
 		return
 	}
+	// Seal the whole file at rest (fail-closed when the vault is required);
+	// nil session = legacy plaintext for dev/CLI.
+	data, err = r.vault.MaybeSealFile(r.ad(job.IntentID), data)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "async: seal job %s: %v\n", job.IntentID, err)
+		return
+	}
 	// Write to a temp file then rename so a reader never observes a
 	// half-written job (atomic on the same filesystem).
 	tmp := path + ".tmp"
-	if err := os.WriteFile(tmp, data, 0o644); err != nil {
+	if err := os.WriteFile(tmp, data, 0o600); err != nil {
 		fmt.Fprintf(os.Stderr, "async: write %s: %v\n", tmp, err)
 		return
 	}
@@ -118,6 +127,22 @@ func (r *asyncRegistry) loadFromDir() {
 		data, rerr := os.ReadFile(path)
 		if rerr != nil {
 			continue
+		}
+		// Sniff the header: a sealed job decrypts under the AD reconstructed
+		// from its file name (intent id); a legacy plaintext job parses as
+		// today. The intent id is the file name so the AD is reconstructable
+		// before decode. A wrong-key/tampered job is skipped.
+		intentID := strings.TrimSuffix(e.Name(), ".json")
+		if vault.IsVault(data) {
+			uv := r.vault.UserVault()
+			if uv == nil {
+				continue
+			}
+			plain, oerr := uv.OpenFile(r.ad(intentID), data)
+			if oerr != nil {
+				continue
+			}
+			data = plain
 		}
 		var job asyncJob
 		if jerr := json.Unmarshal(data, &job); jerr != nil || job.IntentID == "" {

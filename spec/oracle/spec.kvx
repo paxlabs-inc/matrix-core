@@ -1,0 +1,376 @@
+# spec.kvx — ORACLE: sealed user data (envelope-encrypted storage + deletion) and
+# opt-in personalization with a morning brief.
+# SINGLE SOURCE for this feature's requirements + design + tasks. Rendered to
+# requirements.md / design.md / tasks.md by spec/specgen. Do not edit the
+# generated markdown; edit this file and regenerate.
+#
+# Format: Matrix .kvx (see tachyon/internal/config/kvx.go). One key = value per
+# line; string values double-quoted; lists are ["a","b"]; # starts a comment.
+# Schema:
+#   [req.<n>]   title, story, ac_1..ac_n          (acceptance criteria, EARS)
+#   [design]    overview, include="design.body.md" (rich prose/diagrams inlined)
+#   [task.<id>] title, status, wave, reqs, requires (dotted ids: 1, 1.1, 1.2)
+
+[meta]
+feature      = "oracle"
+title        = "ORACLE — vault-encrypted user data at rest with cryptographic deletion, plus opt-in personalization and a scheduled morning brief"
+status       = "draft"
+spec_version = "0.1.0"
+intro        = "Every byte of user content Matrix persists today is plaintext: conversations and archives (neo/internal/conversation, JSONL), Neo traces and workspace timelines (neo/internal/trace, JSONL), executor transcripts and Construct surfaces (JSONL), tasks / async jobs / conversation metadata / intent envelopes / Automatrix settings (JSON), the entire cortex (memories, sessions, journal, rollups, vectors as plaintext values in Pebble), media, screenshots, snapshots, and backups — written 0644 into 0755 directories. Half A of this feature builds ONE shared encrypted-storage layer (a new top-level vault module) used by Neo, Cortex, the executor daemon, and Construct: envelope encryption (platform KEK behind a KMS seam, a separately wrapped per-user key, per-object DEKs), AES-256-GCM AEAD per NIST SP 800-38D via Go crypto/cipher, key ids + format versions stored with ciphertext and never raw keys, per-record JSONL encryption so append/recovery/trimming/streaming keep working, whole-file AEAD for atomic JSON, chunked streaming AEAD for media and snapshots, and cortex encryption BELOW its logical encoding + hashing boundary so MMR/SMT/journal roots stay deterministic over logical data while randomized ciphertext is persisted. Production fails closed — no KMS, no plaintext fallback. Deletion becomes a pipeline: disable collection, cancel alarms and jobs, destroy the wrapped user key (cryptographic erasure over all backups), delete ciphertext from active storage / snapshots / training staging on a documented retention schedule, and produce a deletion receipt; training consent stays a separate grant with full export lineage. Half B builds personalization ON that substrate: explicit opt-in (default off), a short guided interview (five skippable question groups, one at a time, confirmed as a plain-language summary before saving), ONE versioned tagged cortex personalization record (never overloading expertise_domains, never fragmented inferred memories), separate schedule state, a dedicated MORNING_BRIEF Chronos alarm in the user's timezone, and a restricted supervised brief run (read-only information tools only) that composes a source-backed, non-repeating morning brief delivered as a normal conversation turn. The main new work is the vault, the personalization schema + interview, the brief scheduling/policy/history, and client surfaces — not a new autonomy framework: the Automatrix settings/governor/wake/restricted-surface/supervisor patterns are reused wholesale."
+
+[design]
+overview = "See the full design below: the grounded plaintext inventory (file:line seams for every store); the vault module layout (envelope key hierarchy KEK -> per-user UK -> per-object DEK, versioned self-describing ciphertext headers, associated-data binding of user/store/conversation/seq/schema); the three ciphertext shapes (record-AEAD JSONL preserving O(1) append + crash-atomicity, whole-file AEAD for tmp+rename JSON, chunked streaming AEAD for media/snapshots); the cortex below-the-hash-boundary posture that keeps OverallRoot and D11 replay byte-identity intact; fail-closed production semantics; the permission sweep; the sniffing-reader migration with per-user quiesce + verify + atomic replace and a forbidden-plaintext production gate; the deletion pipeline with cryptographic erasure and receipts; the training-consent lineage contract; and Half B — the personalization record schema, the interview flow, briefsettings, the MORNING_BRIEF Chronos convention, the tighter positive tool allowlist, the durable supervised brief run, the content policy, recommendation history + explicit feedback, and the client surfaces. Authored as a rich markdown fragment (design.body.md) and inlined verbatim."
+include  = "design.body.md"
+
+# The per-session working protocol, machine-readable (mirrors design.body.md).
+[protocol]
+step_1_context   = "cortex recall once at session start; READ IN FULL any output flagged truncated before reasoning (hard rule). Then read spec/oracle/spec.kvx and the previous session's handoff (the most recent oracle cortex outcome/handoff)."
+step_2_select    = "Pick the ONE next eligible task: lowest wave whose every 'requires' task is done and whose status is pending. Set it in_progress in spec.kvx. At most ONE task in_progress at a time."
+step_3_build     = "Implement against the task's referenced acceptance criteria on REAL code (vault/, neo/internal/{conversation,trace,task,server,agent,tools,memory}, cortex/{store,journal,snapshot}, executor/cmd/mcl-execute, construct/surfacestore, chronos/internal, apps/client). Deliver complete, runnable artifacts — never diffs or fragments. Follow existing repo style; add no comments/docs unless asked."
+step_4_test      = "Ship tests over REAL code paths — no stub/mock/fake doubles EVER. Real vault over real files, real Pebble cortex, real engine + httptest, real Chronos alarm builders. A red check is a stop condition."
+step_5_close_out = "Only when genuinely green: mark the task done in spec.kvx; write a concise next-session handoff; note the outcome (success|partial|failure) + any durable memories; close out. Never attest a completion that did not happen — surface honest partials."
+step_6_guard     = "Before any destructive/irreversible/prod/secret/network-write action, guard-check against the HARD rules; stop for explicit user YES if it risks a HARD rule. No git on the dev box; the user drives commits. Never store key material in cortex or logs."
+handoff_convention = "The handoff is a cortex outcome note prefixed 'HANDOFF oracle' carrying: tasks done+green this session, current spec.kvx status, the exact next eligible task id, and any gotchas or partials."
+
+# The non-negotiable quality bar (mirrors design.body.md).
+[quality_bar]
+grade            = "Custody-of-user-data grade. A regression here discloses private conversations or silently corrupts memory; treat key handling and AD binding with money-path rigor."
+fail_closed      = "Production never writes plaintext when the vault is required: KMS/key unavailability is a hard write error and a boot refusal, never a silent fallback."
+no_raw_keys      = "Raw KEK/UK/DEK bytes never appear in ciphertext, logs, cortex, receipts, or error messages — only key ids and format versions ride with data."
+hash_boundary    = "Cortex MMR/SMT/journal hashes are computed over logical canonical encodings; encryption changes persisted bytes ONLY. OverallRoot and D11 replay byte-identity are provably unchanged."
+crash_semantics  = "Every store keeps its existing crash-atomicity: O_APPEND single-write JSONL lines, tmp+rename JSON, skipped torn tails. Encryption may never weaken a durability property."
+no_dual_write    = "Migration never dual-writes plaintext; new writes are encrypted from the moment the vault is wired; the sniffing reader carries legacy files until migrated."
+consent_separate = "Training consent and personalization opt-in are independent grants; neither implies the other; revocation and deletion are enforceable through recorded lineage."
+default_off      = "Personalization and the morning brief are OFF by default; disabled means zero scheduled network retrieval; only user-confirmed answers enter the profile; no inferred sensitive traits."
+no_fakes         = "Real vault over real files and a real Pebble store, real engine, real HTTP, real alarm builders. Adversarial proofs (wrong user, tamper, truncation, crash, rotation, restore, deletion) run on real storage paths."
+non_goals        = "No KMS deployment ops (seam only); no key/filename encryption inside Pebble (volume encryption is the documented complement); no training-export pipeline rebuild beyond the consent-lineage seam; no push infra beyond ntfy/Apprise; UI house rules hold (no borders/emojis/gradients/glow)."
+
+# ============================== REQUIREMENTS ==============================
+
+[req.1]
+title = "The vault: one shared envelope-encryption layer"
+story = "As the platform owner, I want a single encrypted-storage library used by Neo, Cortex, Executor, and Construct, so that user data at rest is protected uniformly rather than by ad-hoc per-store patches."
+ac_1 = "A new top-level module vault/ SHALL implement envelope encryption: a platform key-encryption key behind a KeyProvider seam (file/env provider for dev, remote KMS provider shape for prod), a separately wrapped per-user key minted at provision and stored only in wrapped form, and a fresh random data-encryption key per file/object wrapped by the user key."
+ac_2 = "ALL encryption SHALL be authenticated (AES-256-GCM via Go crypto/cipher, per NIST SP 800-38D) with random 96-bit nonces and one DEK per object; decryption failures SHALL be indistinguishable between disclosure and tampering (a single authentication error)."
+ac_3 = "EVERY ciphertext object SHALL carry a versioned self-describing header (magic, format version, key id, wrapped DEK, AD schema version); raw key bytes SHALL never be persisted, logged, or returned in errors."
+ac_4 = "WHEN VAULT_REQUIRED is true (production default) and the KeyProvider or user key is unavailable, THE vault SHALL fail writes with a hard error and the daemon SHALL refuse to boot into plaintext mode; no code path SHALL fall back to plaintext writes."
+ac_5 = "KEK rotation SHALL re-wrap user keys without rewriting data objects, and user-key rotation SHALL be expressible per user; keys SHALL never be reused between users."
+
+[req.2]
+title = "Record-encrypted JSONL stores"
+story = "As a user, I want every conversation turn, trace event, transcript line, and surface frame encrypted independently, so that my history is sealed while append, recovery, retention trimming, and streaming reads keep working."
+ac_1 = "THE vault SHALL provide an encrypted JSONL reader/writer where each record is an independent AEAD ciphertext line, preserving O(1) O_APPEND appends, skip-torn-tail crash recovery, retention trimming/archive rollup, and line-streamed reads."
+ac_2 = "EACH record's associated data SHALL bind the user DID, store type, conversation/run id, record sequence, and schema version, such that a record moved between users, stores, conversations, or positions fails authentication."
+ac_3 = "THE Neo conversation store (hot + archive + meta), the Neo trace store, the Construct surface store, and the executor daemon's transcripts and conversation threads SHALL write through the encrypted JSONL layer."
+ac_4 = "READS SHALL sniff the header: encrypted records decrypt, legacy plaintext lines parse as today (until migration completes), and new writes SHALL always be encrypted once the vault is wired."
+
+[req.3]
+title = "Whole-file encryption for atomic JSON"
+story = "As a user, I want my task records, queued jobs, settings, and intent envelopes sealed, so that operational metadata about me is as protected as my conversations."
+ac_1 = "THE vault SHALL provide whole-file AEAD for tmp+rename atomic JSON files, with associated data binding user DID, store type, and file role."
+ac_2 = "THE Neo task ledger, executor async-job registry, conversation meta sidecars, Automatrix settings/inbox stores, and persisted intent envelopes SHALL write through it, preserving tmp+rename atomicity."
+
+[req.4]
+title = "Cortex encryption below the hash boundary"
+story = "As a user, I want my memories, sessions, journal, and embeddings encrypted inside Pebble, so that the most intimate store is sealed without breaking cortex's deterministic integrity anchoring."
+ac_1 = "CORTEX SHALL encrypt Pebble VALUES (journal entries, memory heads/versions, session records, rollups, story-so-far, checkpoints, embedding vectors) at the store write seam, decrypting before decode on every read."
+ac_2 = "JOURNAL leaf hashes, SMT value hashes, and OverallRoot SHALL remain computed over the canonical plaintext logical encodings, byte-identical before and after encryption; a test SHALL prove OverallRoot equality across a plaintext-to-encrypted migration and across replay."
+ac_3 = "RESIDUAL leakage (Pebble key prefixes, ids, sizes, access patterns) SHALL be documented, with volume/database encryption stated as a required complementary layer."
+
+[req.5]
+title = "Media, snapshots, backups: streaming encryption"
+story = "As a user, I want my screenshots, generated files, uploads, and full-machine snapshots encrypted, so that backups and the object store never hold my content in the clear."
+ac_1 = "THE vault SHALL provide chunked streaming AEAD (framed chunks, per-chunk AD with index + final flag) so truncation and reordering fail closed; media files and large exports SHALL write through it."
+ac_2 = "DAEMON snapshot tarballs SHALL be vault-encrypted before push to the S3/MinIO bucket, and restore SHALL decrypt-verify; a restore round-trip test SHALL run on real files."
+
+[req.6]
+title = "Permission tightening and the plaintext production gate"
+story = "As the platform owner, I want the filesystem hardened immediately and a gate that catches any plaintext regression, so that protection does not silently erode."
+ac_1 = "SENSITIVE data directories SHALL be created 0700 and files 0600 across the conversation, trace, surface, task, async, settings, media, snapshot, and cortex stores; tests SHALL assert modes on really-created paths."
+ac_2 = "A plaintext scanner SHALL walk a user's data tree and fail on forbidden plaintext content artifacts (parseable JSON/JSONL content without a vault header) for migrated users, wired as a production/CI gate."
+
+[req.7]
+title = "Migration: versioned, quiesced, never dual-write"
+story = "As an operator, I want existing users migrated to encrypted storage safely, so that no data is lost and no window dual-writes plaintext."
+ac_1 = "VERSIONED readers SHALL make all new writes encrypted immediately while legacy plaintext remains readable until migrated."
+ac_2 = "THE migrator SHALL quiesce one user at a time, encrypt each file into a temporary sibling, verify record counts and full authenticated round trips, then atomically replace the plaintext original; plaintext SHALL never be dual-written during migration."
+ac_3 = "CORTEX migration SHALL rewrite values in batches and prove OverallRoot byte-identity before/after."
+
+[req.8]
+title = "Deletion: pipeline, cryptographic erasure, receipt"
+story = "As a user, I want deletion to be immediate in effect and provable in outcome, so that leaving the platform genuinely removes me."
+ac_1 = "DELETION SHALL immediately disable personalization and training collection and cancel the user's Chronos alarms and background jobs."
+ac_2 = "DELETION SHALL destroy the user's wrapped encryption key, rendering all remaining ciphertext (including every backup/snapshot generation) unreadable from that instant."
+ac_3 = "DELETION SHALL delete ciphertext from active storage, MinIO snapshot generations (including old object versions), and training staging per a documented retention schedule."
+ac_4 = "DELETION SHALL produce a durable receipt/status (per-stage outcome, timestamps) and preserve only minimal non-content compliance records where legally required."
+
+[req.9]
+title = "Training-consent lineage, separate from personalization"
+story = "As a user, I want training use of my data to be its own consent with full lineage, so that revoking it stops exports and deletes what was staged."
+ac_1 = "TRAINING consent (router Postgres) SHALL remain independent of the personalization opt-in; neither grant implies the other."
+ac_2 = "EVERY training export SHALL carry a manifest: consent version, consent time, source record IDs, user/pseudonymous identity, and export batch id."
+ac_3 = "REVOCATION SHALL stop future exports at selection and initiate deletion through the recorded dataset lineage; training datasets SHALL use their own vault keys and access roles, disjoint from user-data keys."
+
+[req.10]
+title = "Adversarial no-fakes verification of the vault"
+story = "As the owner, I want the encryption layer proven against real attacks on real storage paths, so that protection is demonstrated, not asserted."
+ac_1 = "TESTS on real storage paths SHALL prove: wrong-user key fails decryption; flipped ciphertext bytes and cross-context record swaps fail authentication; truncated records/chunks are detected or safely skipped per shape; a crash mid-append leaves a readable store."
+ac_2 = "TESTS SHALL prove KEK rotation re-wraps without data rewrite, snapshot backup/restore round-trips, and post-deletion unreadability of prior ciphertext."
+ac_3 = "NO test in this feature SHALL substitute a fake for a real code path: real vault, real files, real Pebble, real engine."
+
+[req.11]
+title = "Personalization opt-in and settings surface"
+story = "As a user, I want personalization off by default with full control in Settings, so that Neo only knows what I chose to share and briefs arrive only how I want them."
+ac_1 = "PERSONALIZATION and the morning brief SHALL be OFF by default; enabling is an explicit user action."
+ac_2 = "SETTINGS SHALL let the user: enable/disable the morning brief, start/repeat/edit the interview, select delivery time, IANA timezone, days, and brief length, choose sections (news, music, movies/TV, books, games, daily assistance), view and delete the saved profile, and pause briefs without deleting preferences."
+ac_3 = "DISABLING SHALL cancel future briefs immediately (alarm cancelled, zero scheduled network retrieval) while retaining the profile unless the user separately deletes it."
+
+[req.12]
+title = "Guided interview with confirmation"
+story = "As a user, I want a short guided conversation that asks about me one topic at a time and shows me what it understood, so that only what I confirm is saved."
+ac_1 = "WHEN enabled, Neo SHALL run a guided interview of roughly five question groups, one at a time: interests/topics; day-to-day help; media tastes liked and disliked (music, films, shows, books, games, creators); recommendation adventurousness (familiar|balanced|surprising); brief delivery time/timezone/detail."
+ac_2 = "EVERY question SHALL be skippable; skipped groups leave their schema fields empty."
+ac_3 = "NEO SHALL present a plain-language profile summary for confirmation BEFORE saving; nothing is persisted to the profile without confirmation, and interview conversations SHALL be excluded from writeback fact/opportunity extraction so answers never become fragmented inferred memories."
+
+[req.13]
+title = "The personalization profile record"
+story = "As a user, I want my confirmed profile stored as one inspectable, versioned record, so that I can see, edit, export, and delete exactly what Neo knows about me."
+ac_1 = "THE confirmed profile SHALL be ONE versioned, tagged, pinned cortex record with a dedicated schema (interests, day-to-day goals, media tastes with dislikes, adventurousness, brief preferences) — NOT an overload of the onboarding profile's expertise_domains."
+ac_2 = "THE daemon SHALL expose authenticated view/edit/export/delete endpoints for the record, mirroring the /profile route posture; deletion SHALL remove the record and its history from the authoritative surface."
+ac_3 = "THE schema SHALL contain no inferred sensitive-trait fields, and profile mutations SHALL only originate from confirmed interview output, explicit Settings edits, or explicit recommendation feedback."
+
+[req.14]
+title = "Brief schedule state and the MORNING_BRIEF alarm"
+story = "As a user, I want my brief to arrive at my chosen local time on my chosen days, so that scheduling is correct across timezones and DST."
+ac_1 = "SCHEDULE state SHALL live in a dedicated durable settings sidecar, separate from the profile: enabled, timezone, local delivery time, selected days, brief length, sections, paused, alarm id, destination conversation, last-delivered date."
+ac_2 = "A dedicated MORNING_BRIEF Chronos convention (sibling of AUTOMATRIX) SHALL define the wake marker and alarm shape; enabling SHALL create exactly ONE recurring alarm at the user's local time in their IANA timezone (idempotency-keyed), settings changes SHALL reschedule it, and disable/pause SHALL cancel or skip it — DST correctness comes from Chronos cron+timezone scheduling."
+ac_3 = "THE wake handler SHALL re-read settings on EVERY fire (fail closed on a nil governor), skip non-selected days and already-delivered dates, and never deliver twice for one local date."
+
+[req.15]
+title = "The restricted, supervised brief run"
+story = "As a user, I want the autonomous brief run structurally unable to touch money or my machine, and durable against restarts, so that a scheduled agent run is safe and reliable."
+ac_1 = "THE brief run SHALL execute on a positive tool allowlist tighter than Automatrix — recent-news search, web search, fetch/read-only information tools, and memory recall only; financial, signing, filesystem, deployment, and arbitrary-execution tools (including core_execute) SHALL be structurally absent from the advertised schema set, proven against the REAL advertised surface."
+ac_2 = "THE run SHALL be supervised through the durable task ledger so a dropped connection or daemon restart resumes an in-progress brief; the finished brief SHALL be durably persisted (conversation turn + inbox record) before any live notification."
+ac_3 = "WHEN personalization or the brief is disabled at wake time, THE handler SHALL perform zero network retrieval."
+
+[req.16]
+title = "Brief content policy"
+story = "As a user, I want a short, source-backed, honest brief, so that news is current and recommendations are explained rather than spammed."
+ac_1 = "A brief SHALL contain at most five news items across the user's interests; every news claim SHALL derive from fresh web retrieval in the run (never model memory) and carry a publication date and source link, plus a short why-relevant explanation."
+ac_2 = "A brief SHALL include one or two rotating recommendations (not every category daily) and a small 'Neo can help today' section derived from the stated day-to-day goals."
+ac_3 = "THE brief SHALL distinguish current facts from recommendations, and SHALL contain no sponsored or affiliate recommendations without clear disclosure."
+
+[req.17]
+title = "Recommendation history and explicit feedback"
+story = "As a user, I want Neo to remember what it already recommended and learn from my explicit reactions, so that briefs stay fresh and steadily better fit me."
+ac_1 = "DELIVERED recommendation identifiers and news source URLs SHALL be recorded in a durable history sidecar consulted at composition; a recommendation SHALL NOT repeat unless genuinely new context exists."
+ac_2 = "EXPLICIT feedback ('liked', 'not interested', 'show me less of this') SHALL update the history and flow into the profile only as explicit user-attributed preference entries — never as silent inference."
+
+[req.18]
+title = "Half-B verification on the real engine"
+story = "As the owner, I want the personalization loop proven end-to-end on real components, so that opt-in gating, scheduling, restriction, and durability are demonstrated."
+ac_1 = "PROPERTY tests on the real engine SHALL prove: default-off + opt-in gating (a wake with the feature off performs zero tool dispatches), alarm lifecycle idempotence (exactly one alarm across repeated enables), day/date delivery guards, and the structural tool exclusion via the real advertised schema set."
+ac_2 = "AN end-to-end test SHALL drive interview -> confirmation -> profile record -> wake -> supervised run (real httptest-backed search/fetch tools) -> durable brief + history, including supervisor resume of an interrupted brief and the no-repeat property."
+
+# ================================ TASKS ==================================
+
+[tasks]
+heading = "Implementation Plan: ORACLE — vault first (crypto core, stores, migration, deletion), then personalization (profile, schedule, brief) on the sealed substrate"
+
+[task.1]
+section = "P0 — The vault core"
+title   = "Envelope crypto, keys, permissions"
+status  = "pending"
+
+[task.1.1]
+title  = "vault/ crypto core: envelope, header, AEAD shapes"
+status = "done"
+wave   = 1
+do_1   = "New top-level module vault/: KEK KeyProvider seam (file/env dev provider + remote KMS provider shape), per-user wrapped UK mint/load/rotate, per-object DEK wrap/unwrap, AES-256-GCM primitives, versioned self-describing header (magic, format version, key id, wrapped DEK, AD schema version), canonical AD encoding"
+do_2   = "The three ciphertext shapes: record-AEAD (single line/value), whole-file AEAD, chunked streaming AEAD with per-chunk index+final AD framing"
+do_3   = "Tests: round-trips all shapes, wrong-key/tamper/truncation failures, header versioning, KEK rotation re-wraps UK without data rewrite, no raw key bytes in any error/serialized output"
+reqs   = ["1.1", "1.2", "1.3", "1.5"]
+
+[task.1.2]
+title  = "Fail-closed wiring: VAULT_REQUIRED, provision, boot"
+status = "done"
+wave   = 2
+do_1   = "Per-user UK provision/load on daemon boot (wrapped keyfile beside /data), VAULT_REQUIRED env (router MachineEnv injects true in prod): unavailable KeyProvider/UK = hard write error + boot refusal; explicit false = legacy plaintext for dev/CLI"
+do_2   = "Tests: boot refusal with vault required and no key, hard write error path, dev fallback only when explicitly disabled"
+reqs   = ["1.4"]
+requires = ["1.1"]
+
+[task.1.3]
+title  = "Permission sweep: 0700 dirs, 0600 files"
+status = "done"
+wave   = 1
+do_1   = "Sweep MkdirAll/OpenFile/WriteFile/Create modes across neo conversation/trace/task/media stores, construct surfacestore, executor async/transcript/conversation stores, automatrix settings+log, cortex store dir"
+do_2   = "Tests asserting modes on really-created dirs/files in each store"
+reqs   = ["6.1"]
+
+[task.2]
+section = "P0 — Store encryption"
+title   = "Wire every persistence surface through the vault"
+status  = "pending"
+
+[task.2.1]
+title  = "Encrypted JSONL: conversations, traces, surfaces, transcripts"
+status = "done"
+wave   = 3
+do_1   = "vault/jsonl encrypted reader/writer (record AEAD + AD binding user/store/conv-run/seq/schema; header-sniffing reads carry legacy plaintext); wire neo/internal/conversation (hot+archive), neo/internal/trace, construct/surfacestore, executor transcripts + daemon conversation threads"
+do_2   = "Tests per store on real files: encrypted append/read/trim/rollup, torn-tail crash recovery, AD cross-swap rejection, legacy-file readability"
+reqs   = ["2.1", "2.2", "2.3", "2.4"]
+requires = ["1.2"]
+
+[task.2.2]
+title  = "Encrypted atomic JSON: tasks, async jobs, settings, envelopes"
+status = "done"
+wave   = 3
+do_1   = "vault/file whole-file AEAD; wire neo/internal/task, executor asyncRegistry, conversation meta sidecars, automatrixsettings + automatrixlog, persisted intent envelopes; tmp+rename atomicity preserved"
+do_2   = "Tests: round-trip + tamper + wrong-user on real files, atomic replace under simulated crash"
+reqs   = ["3.1", "3.2"]
+requires = ["1.2"]
+
+[task.2.3]
+title  = "Cortex value encryption below the hash boundary"
+status = "done"
+wave   = 4
+do_1   = "Encrypt/decrypt at the cortex store value seam (WriteBatch.Set/Get + read paths) for j/, m/, mv/, sess/, sessblob/, roll/, enr/, story/, chk/, vec/meta/ values; leaf/SMT hashes stay over canonical plaintext CBOR; replay decrypts before re-hash"
+do_2   = "Tests: OverallRoot byte-identity plaintext vs encrypted and across replay-rebuild; recall/activate/rollup paths green over an encrypted store; documented residual-leakage note (keys, sizes)"
+reqs   = ["4.1", "4.2", "4.3"]
+requires = ["1.2"]
+
+[task.2.4]
+title  = "Media + snapshot/backup streaming encryption"
+status = "in_progress"
+wave   = 4
+do_1   = "vault/stream wired into the media plane (uploads, generated media, screenshots) and the daemon snapshot push/pull (tarball encrypted before S3/MinIO, decrypt-verify on restore)"
+do_2   = "Tests: streamed round-trip, truncated/reordered chunk rejection, real snapshot backup/restore round-trip"
+reqs   = ["5.1", "5.2"]
+requires = ["1.2"]
+
+[task.3]
+section = "P1 — Migration and the gate"
+title   = "Encrypt the existing fleet safely"
+status  = "pending"
+
+[task.3.1]
+title  = "Per-user migrator: quiesce, encrypt, verify, swap"
+status = "pending"
+wave   = 5
+do_1   = "Migration tool: quiesce one user, encrypt each file into a temporary sibling, verify counts + authenticated round trips against the source, atomic rename over plaintext; cortex value-batch rewrite proving OverallRoot identity; never dual-write plaintext"
+do_2   = "Tests on a real seeded user tree: full migrate, crash-mid-migrate resume, post-migrate reads green"
+reqs   = ["7.1", "7.2", "7.3"]
+requires = ["2.1", "2.2", "2.3", "2.4"]
+
+[task.3.2]
+title  = "Forbidden-plaintext scanner gate"
+status = "pending"
+wave   = 5
+do_1   = "vault scanner walking a data tree flagging plaintext content artifacts for migrated users; wired as boot check + CI gate"
+do_2   = "Tests: clean tree passes, planted plaintext artifact fails"
+reqs   = ["6.2"]
+requires = ["2.1", "2.2"]
+
+[task.3.3]
+title  = "Adversarial vault property suite"
+status = "pending"
+wave   = 5
+property  = "Property VAULT: on real storage paths — wrong-user key fails decrypt; flipped bytes and cross-context (user/store/conversation/seq) record swaps fail authentication; truncated records/chunks detected or safely skipped per shape; crash mid-append leaves a readable store; KEK rotation re-wraps without data rewrite; snapshot restore round-trips; no fakes anywhere"
+validates = "Requirements 10.1, 10.2, 10.3"
+requires  = ["2.1", "2.2", "2.3", "2.4"]
+
+[task.4]
+section = "P1 — Deletion and consent"
+title   = "Cryptographic erasure and training lineage"
+status  = "pending"
+
+[task.4.1]
+title  = "Deletion pipeline + receipt"
+status = "pending"
+wave   = 6
+do_1   = "Router-orchestrated deletion: disable personalization/training collection, cancel Chronos alarms + drain background jobs, destroy the wrapped UK, delete ciphertext from active /data, MinIO snapshot generations incl. old versions, and training staging per a documented retention schedule; durable per-stage receipt in router Postgres; minimal non-content compliance record"
+do_2   = "Tests: post-deletion ciphertext unreadable (UK gone), receipt records every stage, alarms cancelled, plaintext scanner clean"
+reqs   = ["8.1", "8.2", "8.3", "8.4"]
+requires = ["3.1"]
+
+[task.4.2]
+title  = "Training-consent lineage seam"
+status = "pending"
+wave   = 6
+do_1   = "Consent grant kept independent of personalization opt-in; export manifest contract (consent version/time, source record IDs, identity, batch id); revocation stops selection + triggers lineage deletion; dataset-scoped vault keys/roles disjoint from user UKs"
+do_2   = "Tests against real router Postgres: manifest completeness, revocation stops exports, lineage deletion reaches staged batches"
+reqs   = ["9.1", "9.2", "9.3"]
+requires = ["1.1"]
+
+[task.5]
+section = "P2 — Personalization"
+title   = "Profile, interview, schedule, brief"
+status  = "pending"
+
+[task.5.1]
+title  = "Personalization profile record + endpoints"
+status = "done"
+wave   = 7
+do_1   = "Dedicated versioned tagged pinned cortex record (tag personalization-profile; schema: interests, day-to-day goals, media tastes liked+disliked per category, adventurousness, brief preferences) — separate from onboarding profile; daemon GET/PUT/DELETE + export endpoints mirroring daemon_profile_routes.go; no sensitive-trait fields"
+do_2   = "Tests: real-cortex round-trip, versioned edit, delete removes the authoritative record, export shape"
+reqs   = ["13.1", "13.2", "13.3"]
+requires = ["2.3"]
+
+[task.5.2]
+title  = "briefsettings + MORNING_BRIEF Chronos convention + governor + routes"
+status = "done"
+wave   = 7
+do_1   = "chronos/internal/morningbrief (marker wake_message + BuildAlarm, cron at local time in IANA tz, idempotency key) sibling of automatrix; neo briefsettings durable sidecar (enabled, tz, time, days, length, sections, paused, alarm id, destination conversation, last-delivered date); governor (fail-closed enable = create exactly one alarm, disable/pause = cancel/skip, settings change = reschedule) via the MCP alarm controller; Neo-owned /brief/settings routes"
+do_2   = "Tests: alarm lifecycle idempotence, DST-correct next-fire via schedule.NextCron, live re-read on toggle, default off"
+reqs   = ["11.1", "11.3", "14.1", "14.2"]
+requires = ["2.2"]
+
+[task.5.3]
+title  = "Guided interview + confirmation flow"
+status = "done"
+wave   = 8
+do_1   = "Interview conversation flow in Neo: five skippable question groups one at a time, plain-language summary, explicit confirmation writes the single profile record; interview conversations excluded from writeback extraction (no fragmented inferred memories); repeat/edit re-enters with existing answers"
+do_2   = "Tests: real engine + httptest LLM — skip paths, confirmation-gated persistence, writeback exclusion, repeat-with-existing"
+reqs   = ["12.1", "12.2", "12.3"]
+requires = ["5.1"]
+
+[task.5.4]
+title  = "The brief runner: restricted, supervised, durable"
+status = "done"
+wave   = 8
+do_1   = "MORNING_BRIEF wake handler (re-read settings every fire, fail closed, day/date guards, never twice per local date); supervised run on a positive allowlist (web_news/web_search/fetch/memory recall; money/signing/fs/deploy/exec + core_execute structurally absent) via the advertised-set mechanism; durable through the task ledger with restart resume; brief persisted as conversation turn + inbox record before notification"
+do_2   = "Tests: structural exclusion via AdvertisedTools, zero network when disabled/paused, supervisor resume of an interrupted brief, single-delivery-per-date"
+reqs   = ["14.3", "15.1", "15.2", "15.3"]
+requires = ["5.2"]
+
+[task.5.5]
+title  = "Brief composition policy + recommendation history/feedback"
+status = "done"
+wave   = 8
+do_1   = "Composer policy: <=5 news items from fresh in-run retrieval with date+source link+why-relevant, 1-2 rotating recommendations, 'Neo can help today' from stated goals, facts-vs-recommendations distinction, disclosure rule; briefhistory durable sidecar (delivered rec ids + news URLs + feedback liked/not_interested/less_of_this) consulted at composition; feedback flows to the profile only as explicit user-attributed entries"
+do_2   = "Tests: policy post-check on composed briefs, no-repeat property across runs, feedback round-trip into history + profile"
+reqs   = ["16.1", "16.2", "16.3", "17.1", "17.2"]
+requires = ["5.1", "5.4"]
+
+[task.5.6]
+title  = "Client surfaces: settings, interview entry, brief delivery"
+status = "done"
+wave   = 9
+do_1   = "apps/client: personalization section in Settings (enable/disable, start/repeat interview, time/timezone/days/length, sections, pause, view/export/delete profile), interview runs in the normal chat surface, brief renders as a normal conversation turn + inbox item; i18n x5 locales; house rules (no borders/emojis/gradients/glow)"
+do_2   = "Verify: tsc + eslint + vitest green on changed files"
+reqs   = ["11.2"]
+requires = ["5.2", "5.3"]
+
+[task.6]
+section = "P3 — End-to-end proof"
+title   = "The whole loop on real components"
+status  = "pending"
+
+[task.6.1]
+title  = "Half-B property + E2E suite"
+status = "pending"
+wave   = 10
+property  = "Property ORACLE-B: on the real engine — default-off + opt-in gating (a wake with the feature off dispatches zero tools), exactly-one-alarm idempotence, day/date guards, structural tool exclusion asserted against the REAL advertised schema set; E2E: interview -> confirm -> profile record -> wake -> supervised run over httptest-backed search/fetch -> durable source-backed brief + history, interrupted-brief supervisor resume, no-repeat across consecutive runs — no fakes anywhere"
+validates = "Requirements 18.1, 18.2"
+requires  = ["5.3", "5.4", "5.5"]

@@ -41,6 +41,15 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+
+	"matrix/vault"
+)
+
+// Store type and schema bound into each event's associated data, so a sealed
+// trace line cannot be replayed across users, runs, or positions.
+const (
+	storeTrace    = "neo.trace"
+	schemaEventV1 = "event.v1"
 )
 
 // DefaultRetainedEvents caps how many workspace events are retained per run on
@@ -88,6 +97,30 @@ type Store struct {
 	stop   chan struct{}
 	closed chan struct{}
 	once   sync.Once
+
+	// vault seals each JSONL event when encrypting; nil = plaintext dev/CLI.
+	// user is the DID bound into each event's associated data. Set once at engine
+	// assembly (before any Record), so the writer/Load goroutines observe it via
+	// the channel/serving happens-before edge without a lock.
+	vault *vault.Session
+	user  string
+}
+
+// SetVault wires the fail-closed data-at-rest session and owning user DID into
+// the store. Called once at engine assembly before any event is recorded; a nil
+// session leaves the store writing legacy plaintext (dev/CLI).
+func (s *Store) SetVault(sess *vault.Session, user string) {
+	if s == nil {
+		return
+	}
+	s.vault = sess
+	s.user = user
+}
+
+// ad reconstructs the associated data for an event from where it lives — never
+// stored, so an event moved between users, runs, or positions fails auth.
+func (s *Store) ad(runID string, seq uint64) vault.AD {
+	return vault.AD{User: s.user, Store: storeTrace, Stream: runID, Seq: seq, Schema: schemaEventV1}
 }
 
 // Open builds a store rooted at dir and starts its background writer. An empty
@@ -211,7 +244,7 @@ func (s *Store) handle(rec record, counts map[string]int) {
 	if path == "" {
 		return
 	}
-	if err := os.MkdirAll(s.dir, 0o755); err != nil {
+	if err := os.MkdirAll(s.dir, 0o700); err != nil {
 		fmt.Fprintf(os.Stderr, "neo/trace: mkdir %s: %v\n", s.dir, err)
 		return
 	}
@@ -221,7 +254,7 @@ func (s *Store) handle(rec record, counts map[string]int) {
 	if _, ok := counts[rec.runID]; !ok {
 		counts[rec.runID] = countLines(path)
 	}
-	if err := appendJSONL(path, rec.ev); err != nil {
+	if err := s.appendEvent(rec.runID, uint64(counts[rec.runID]), path, rec.ev); err != nil {
 		fmt.Fprintf(os.Stderr, "neo/trace: append %s: %v\n", path, err)
 		return
 	}
@@ -233,7 +266,7 @@ func (s *Store) handle(rec record, counts map[string]int) {
 	// presents at most `retain` events, so the cap is exact for consumers even
 	// while the file briefly holds up to 2·retain.
 	if counts[rec.runID] > 2*s.retain {
-		if kept := s.rollLocked(path); kept >= 0 {
+		if kept := s.rollLocked(rec.runID, path); kept >= 0 {
 			counts[rec.runID] = kept
 		}
 	}
@@ -246,7 +279,7 @@ func (s *Store) Load(runID string) []Event {
 	if !s.Enabled() || runID == "" {
 		return nil
 	}
-	events := readJSONL(s.tracePath(runID))
+	events := s.readEvents(runID, s.tracePath(runID))
 	// Present at most `retain` events (newest), so the cap is exact for
 	// consumers even though the on-disk file is trimmed only amortized
 	// (handle rolls at 2·retain).
@@ -265,23 +298,27 @@ func (s *Store) tracePath(runID string) string {
 
 // rollLocked trims the run's JSONL to the newest `retain` events via an atomic
 // tmp+rename rewrite. Returns the number of events kept, or -1 on error.
-func (s *Store) rollLocked(path string) int {
-	events := readJSONL(path)
+func (s *Store) rollLocked(runID, path string) int {
+	events := s.readEvents(runID, path)
 	if len(events) <= s.retain {
 		return len(events)
 	}
 	keep := events[len(events)-s.retain:]
 	var buf bytes.Buffer
-	for _, ev := range keep {
+	for i, ev := range keep {
 		b, err := json.Marshal(ev)
 		if err != nil {
 			continue
 		}
-		buf.Write(b)
+		line, err := s.vault.EncodeLine(s.ad(runID, uint64(i)), b)
+		if err != nil {
+			return -1
+		}
+		buf.Write(line)
 		buf.WriteByte('\n')
 	}
 	tmp := path + ".rollup.tmp"
-	if err := os.WriteFile(tmp, buf.Bytes(), 0o644); err != nil {
+	if err := os.WriteFile(tmp, buf.Bytes(), 0o600); err != nil {
 		fmt.Fprintf(os.Stderr, "neo/trace: rollup write %s: %v\n", tmp, err)
 		return -1
 	}
@@ -293,29 +330,37 @@ func (s *Store) rollLocked(path string) int {
 	return len(keep)
 }
 
-// appendJSONL appends one event as a single JSON line. O_APPEND + a single
-// Write makes the line atomically visible (POSIX); a torn write yields an
-// unparseable final line that readJSONL skips (crash-atomic).
-func appendJSONL(path string, ev Event) error {
+// appendEvent appends one event as a single (sealed, when encrypting) JSONL
+// line. O_APPEND + a single Write makes the line atomically visible (POSIX); a
+// torn write yields an unparseable final line that readEvents skips
+// (crash-atomic). seq binds the event to its position in the run.
+func (s *Store) appendEvent(runID string, seq uint64, path string, ev Event) error {
 	b, err := json.Marshal(ev)
 	if err != nil {
 		return err
 	}
-	b = append(b, '\n')
-	f, err := os.OpenFile(path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
+	line, err := s.vault.EncodeLine(s.ad(runID, seq), b)
 	if err != nil {
 		return err
 	}
-	if _, err := f.Write(b); err != nil {
+	line = append(line, '\n')
+	f, err := os.OpenFile(path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o600)
+	if err != nil {
+		return err
+	}
+	if _, err := f.Write(line); err != nil {
 		_ = f.Close()
 		return err
 	}
 	return f.Close()
 }
 
-// readJSONL parses a newline-delimited JSON event file. A line that fails to
-// unmarshal (including a crash-truncated final line) is skipped — crash-atomic.
-func readJSONL(path string) []Event {
+// readEvents parses a newline-delimited event file, decrypting each record under
+// the reconstructed associated data (legacy plaintext lines pass through until
+// migrated). A line that fails to decrypt or unmarshal — including a wrong-key,
+// tampered, or crash-truncated final line — is skipped; the record sequence
+// still advances so surviving events stay bound to their positions.
+func (s *Store) readEvents(runID, path string) []Event {
 	if path == "" {
 		return nil
 	}
@@ -327,13 +372,19 @@ func readJSONL(path string) []Event {
 	var out []Event
 	sc := bufio.NewScanner(f)
 	sc.Buffer(make([]byte, 0, 64*1024), 8*1024*1024)
+	var seq uint64
 	for sc.Scan() {
 		line := bytes.TrimSpace(sc.Bytes())
 		if len(line) == 0 {
 			continue
 		}
+		plain, derr := s.vault.DecodeLine(s.ad(runID, seq), line)
+		seq++
+		if derr != nil {
+			continue
+		}
 		var ev Event
-		if err := json.Unmarshal(line, &ev); err != nil {
+		if err := json.Unmarshal(plain, &ev); err != nil {
 			continue
 		}
 		out = append(out, ev)
@@ -341,10 +392,29 @@ func readJSONL(path string) []Event {
 	return out
 }
 
-// countLines returns the number of parseable JSONL events in a file (0 if
-// missing). Used to seed the writer's per-run count for a pre-existing file.
+// countLines returns the number of non-empty JSONL lines in a file (0 if
+// missing). Used to seed the writer's per-run next-sequence for a pre-existing
+// file; it counts raw lines (no decryption) so it stays cheap and matches how
+// readEvents advances the sequence per line.
 func countLines(path string) int {
-	return len(readJSONL(path))
+	if path == "" {
+		return 0
+	}
+	f, err := os.Open(path)
+	if err != nil {
+		return 0
+	}
+	defer f.Close()
+	n := 0
+	sc := bufio.NewScanner(f)
+	sc.Buffer(make([]byte, 0, 64*1024), 8*1024*1024)
+	for sc.Scan() {
+		if len(bytes.TrimSpace(sc.Bytes())) == 0 {
+			continue
+		}
+		n++
+	}
+	return n
 }
 
 // Dir resolves Neo's trace directory. An explicit override wins; else it is

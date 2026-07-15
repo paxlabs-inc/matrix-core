@@ -4,13 +4,27 @@
 package main
 
 import (
+	"bufio"
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"matrix/vault"
+)
+
+// Store type and schema bound into each transcript record's associated data, so
+// a sealed line cannot be replayed across users, intents, or positions. The
+// reader (readTranscriptLines) reconstructs the SAME AD from where the record
+// lives, so a record moved between users/intents/positions fails authentication.
+const (
+	storeTranscript    = "executor.transcript"
+	schemaTranscriptV1 = "event.v1"
 )
 
 // transcript writes JSONL events to a file + mirrors to stderr for live
@@ -59,6 +73,26 @@ type transcript struct {
 	// caller-safe; legacy CLI flows that never set IntentID retain
 	// their existing emission shape exactly.
 	intentID string
+
+	// vault seals each JSONL record line when encrypting; nil = plaintext
+	// (dev/CLI). user is the DID bound into each record's associated data.
+	// encSeq is the on-disk line position (seeded from any existing lines at
+	// open) so each sealed record is bound to its position and appends stay
+	// O(1). Only file-backed transcripts seal; the stderr mirror is untouched.
+	vault  *vault.Session
+	user   string
+	encSeq uint64
+}
+
+// SetVault wires the fail-closed data-at-rest session and owning user DID into
+// the transcript. Called once right after openTranscript (before any Event) so
+// every emitted line is sealed; a nil session leaves the file writing legacy
+// plaintext (dev/CLI).
+func (t *transcript) SetVault(sess *vault.Session, user string) {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	t.vault = sess
+	t.user = user
 }
 
 // AttachBroker installs an SSE broker so every subsequent Event() call
@@ -106,13 +140,36 @@ func openTranscript(path string) (*transcript, error) {
 		t.enc = json.NewEncoder(os.Stderr)
 		return t, nil
 	}
-	f, err := os.OpenFile(path, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0o644)
+	f, err := os.OpenFile(path, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0o600)
 	if err != nil {
 		return nil, fmt.Errorf("transcript: open %s: %w", path, err)
 	}
 	t.out = f
 	t.enc = json.NewEncoder(f)
+	// Seed the on-disk line position from any existing lines so records
+	// appended after a restart stay bound to their true position.
+	t.encSeq = countTranscriptLines(path)
 	return t, nil
+}
+
+// countTranscriptLines counts non-empty lines in a JSONL transcript (0 when
+// absent) so the sealed-record position counter resumes correctly on reopen.
+func countTranscriptLines(path string) uint64 {
+	f, err := os.Open(path)
+	if err != nil {
+		return 0
+	}
+	defer f.Close()
+	var n uint64
+	sc := bufio.NewScanner(f)
+	sc.Buffer(make([]byte, 0, 64*1024), 16*1024*1024)
+	for sc.Scan() {
+		if len(bytes.TrimSpace(sc.Bytes())) == 0 {
+			continue
+		}
+		n++
+	}
+	return n
 }
 
 // Close flushes and closes the file if any. Safe to call on stderr-only
@@ -156,7 +213,29 @@ func (t *transcript) Event(eventType, phase string, fields map[string]interface{
 		Type:   eventType,
 		Fields: fields,
 	}
-	if err := t.enc.Encode(rec); err != nil {
+	if t.out != nil {
+		// File-backed transcript: seal each record as one newline-free line
+		// (sealed base64, or legacy plaintext JSON when no vault), preserving
+		// O_APPEND single-line crash-atomicity. The AD binds the record to its
+		// user, store, intent, and position so a line moved between users,
+		// intents, or positions fails authentication.
+		if b, err := json.Marshal(rec); err != nil {
+			fmt.Fprintf(os.Stderr, "transcript: marshal: %v\n", err)
+		} else {
+			ad := vault.AD{User: t.user, Store: storeTranscript, Stream: t.intentID, Seq: t.encSeq, Schema: schemaTranscriptV1}
+			line, err := t.vault.EncodeLine(ad, b)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "transcript: seal: %v\n", err)
+			} else {
+				line = append(line, '\n')
+				if _, err := t.out.Write(line); err != nil {
+					fmt.Fprintf(os.Stderr, "transcript: write: %v\n", err)
+				} else {
+					t.encSeq++
+				}
+			}
+		}
+	} else if err := t.enc.Encode(rec); err != nil {
 		fmt.Fprintf(os.Stderr, "transcript: encode: %v\n", err)
 	}
 	// Mirror a one-liner to stderr for live tail; only when t.out != stderr.
@@ -182,6 +261,46 @@ func (t *transcript) Event(eventType, phase string, fields map[string]interface{
 			Fields: fcopy,
 		})
 	}
+}
+
+// transcriptAD reconstructs the associated data for a transcript record from
+// where it lives (this user, the intent's file, the line position). It is never
+// stored, so a record moved between users, intents, or positions fails auth.
+func (d *daemonState) transcriptAD(intentID string, seq uint64) vault.AD {
+	return vault.AD{User: d.vaultUser, Store: storeTranscript, Stream: intentID, Seq: seq, Schema: schemaTranscriptV1}
+}
+
+// readTranscriptLines opens an intent's transcript file and returns each
+// record as plaintext JSON, decrypting sealed lines under the reconstructed AD
+// and passing legacy plaintext lines through unchanged (so a store mid-migration
+// reads both shapes). A wrong-key, tampered, or crash-truncated line is skipped;
+// the position counter still advances so surviving records stay position-bound.
+// The os.Open error (incl. os.IsNotExist) is returned to the caller so the HTTP
+// handlers keep their 404/500 behavior.
+func (d *daemonState) readTranscriptLines(intentID string) ([][]byte, error) {
+	path := filepath.Join(d.transcriptsDir, intentID+".jsonl")
+	f, err := os.Open(path)
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+	var out [][]byte
+	sc := bufio.NewScanner(f)
+	sc.Buffer(make([]byte, 0, 64*1024), 16*1024*1024)
+	var seq uint64
+	for sc.Scan() {
+		line := bytes.TrimSpace(sc.Bytes())
+		if len(line) == 0 {
+			continue
+		}
+		plain, derr := d.vault.DecodeLine(d.transcriptAD(intentID, seq), append([]byte(nil), line...))
+		seq++
+		if derr != nil {
+			continue
+		}
+		out = append(out, append([]byte(nil), plain...))
+	}
+	return out, sc.Err()
 }
 
 // Copyright © 2026 Paxlabs Inc. All rights reserved.

@@ -32,6 +32,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"matrix/vault"
 )
 
 const (
@@ -41,6 +43,12 @@ const (
 	// convRecallTurns is how many recent turns are recalled into the
 	// triage / closing-answer context by default.
 	convRecallTurns = 12
+
+	// storeDaemonConv and schemaConvV1 are bound into each conversation
+	// file's associated data, so a sealed thread cannot be read across
+	// users or conversations.
+	storeDaemonConv = "daemon.conversation"
+	schemaConvV1    = "conv.v1"
 )
 
 // convTurn is one durable line of a conversation: who spoke, what they
@@ -79,6 +87,32 @@ type conversationStore struct {
 	mu  sync.Mutex
 	dir string
 	max int
+
+	// vault seals each conversation file (whole-file AEAD, tmp+rename) when
+	// encrypting; nil = plaintext dev/CLI. user is the DID bound into the
+	// file's associated data so a thread cannot be read across users.
+	vault *vault.Session
+	user  string
+}
+
+// SetVault wires the fail-closed data-at-rest session and owning user DID into
+// the store. Called once at daemon assembly before any Append; a nil session
+// leaves the store writing legacy plaintext (dev/CLI).
+func (s *conversationStore) SetVault(sess *vault.Session, user string) {
+	if s == nil {
+		return
+	}
+	s.mu.Lock()
+	s.vault = sess
+	s.user = user
+	s.mu.Unlock()
+}
+
+// ad reconstructs the associated data for a conversation file from where it
+// lives (this user, this conversation) — never stored, so a file moved between
+// users or conversations fails authentication.
+func (s *conversationStore) ad(convID string) vault.AD {
+	return vault.AD{User: s.user, Store: storeDaemonConv, Stream: convID, Schema: schemaConvV1}
 }
 
 // conversationDir derives the durable conversation directory from the
@@ -124,6 +158,21 @@ func (s *conversationStore) loadLocked(convID string) *conversationRecord {
 	if err != nil {
 		return rec
 	}
+	// Sniff the header: a vault-sealed file decrypts under the reconstructed
+	// AD; a legacy plaintext file parses as today (until migrated). A sealed
+	// file with a wrong/absent key (wrong user, tamper) yields an empty record
+	// rather than leaking bytes.
+	if vault.IsVault(data) {
+		uv := s.vault.UserVault()
+		if uv == nil {
+			return &conversationRecord{ConversationID: convID}
+		}
+		plain, oerr := uv.OpenFile(s.ad(convID), data)
+		if oerr != nil {
+			return &conversationRecord{ConversationID: convID}
+		}
+		data = plain
+	}
 	if jerr := json.Unmarshal(data, rec); jerr != nil {
 		return &conversationRecord{ConversationID: convID}
 	}
@@ -150,7 +199,7 @@ func (s *conversationStore) Append(convID string, turn convTurn) {
 	}
 	rec.Updated = time.Now().UTC()
 
-	if err := os.MkdirAll(s.dir, 0o755); err != nil {
+	if err := os.MkdirAll(s.dir, 0o700); err != nil {
 		fmt.Fprintf(os.Stderr, "conversation: mkdir %s: %v\n", s.dir, err)
 		return
 	}
@@ -159,9 +208,17 @@ func (s *conversationStore) Append(convID string, turn convTurn) {
 		fmt.Fprintf(os.Stderr, "conversation: marshal %s: %v\n", convID, err)
 		return
 	}
+	// Seal the whole file at rest (fail-closed when the vault is required);
+	// nil session = legacy plaintext for dev/CLI. tmp+rename atomicity is
+	// preserved below.
+	data, err = s.vault.MaybeSealFile(s.ad(convID), data)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "conversation: seal %s: %v\n", convID, err)
+		return
+	}
 	path := s.pathLocked(convID)
 	tmp := path + ".tmp"
-	if err := os.WriteFile(tmp, data, 0o644); err != nil {
+	if err := os.WriteFile(tmp, data, 0o600); err != nil {
 		fmt.Fprintf(os.Stderr, "conversation: write %s: %v\n", tmp, err)
 		return
 	}

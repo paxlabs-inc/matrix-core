@@ -29,6 +29,8 @@ import (
 	"matrix/neo/internal/agent"
 	"matrix/neo/internal/automatrixlog"
 	"matrix/neo/internal/automatrixsettings"
+	"matrix/neo/internal/briefhistory"
+	"matrix/neo/internal/briefsettings"
 	"matrix/neo/internal/config"
 	"matrix/neo/internal/conversation"
 	"matrix/neo/internal/delegate"
@@ -40,6 +42,7 @@ import (
 	"matrix/neo/internal/task"
 	"matrix/neo/internal/tools"
 	"matrix/neo/internal/trace"
+	"matrix/vault"
 )
 
 // Engine holds the process-wide shared dependencies (models, the one MCP tool
@@ -61,8 +64,11 @@ type Engine struct {
 	tasks         *task.Store          // durable task-supervision ledger (survives restart/suspend)
 	trace         *trace.Store         // durable per-run workspace timeline ("Neo's Computer"); sidecar, never cortex
 	automatrix    *automatrixlog.Store // durable Automatrix completion inbox (in-app surprise results); sidecar, never cortex
+	briefHistory  *briefhistory.Store  // durable morning-brief recommendation history + feedback (ORACLE task 5.5); sidecar, never cortex
 	mediaDir      string               // machine-volume dir for generated + uploaded media ("" disables)
 	workspaceRoot string               // VM workspace root; projects are its subdirectories ("" disables the workbench surface)
+	vault         *vault.Session       // fail-closed data-at-rest encryption session (nil = plaintext dev/CLI)
+	vaultUser     string               // user DID bound into sealed objects' associated data
 
 	// projects is the workbench project registry (lazily built over
 	// workspaceRoot; nil when the workbench surface is disabled).
@@ -117,8 +123,24 @@ type Engine struct {
 	// automatrixRandMu because rand.Rand is not safe for concurrent use);
 	// automatrixSkipProb is the per-fire skip probability (config-like; tests
 	// pin it to 0/1 for determinism).
-	automatrixGov      AutomatrixGovernor
-	automatrixRunner   AutomatrixRunner
+	automatrixGov    AutomatrixGovernor
+	automatrixRunner AutomatrixRunner
+	// briefGov is the ORACLE morning-brief opt-in + MORNING_BRIEF Chronos-alarm
+	// bookkeeping seam (task 5.2). Nil until wired (BriefSettingsDir set, or a
+	// test seam via SetBriefGovernor); the wake handler + control routes fail
+	// closed without it.
+	briefGov *briefGovernor
+	// briefRunner dispatches the restricted, supervised morning-brief run for a
+	// fired MORNING_BRIEF wake (task 5.4). Nil until wired (serve.go sets it to
+	// RunMorningBrief; tests may install a seam via SetBriefRunner): a wake with
+	// no runner does nothing (fail closed). briefInflight is the busy signal
+	// that keeps a fresh wake from double-dispatching a brief already underway;
+	// briefWG tracks the dispatch goroutines so Close drains them (bounded) —
+	// a run that outlives the bound stays durably running in the task ledger and
+	// resumes on the restricted brief surface at next boot.
+	briefRunner        BriefRunner
+	briefInflight      atomic.Int32
+	briefWG            sync.WaitGroup
 	automatrixRandMu   sync.Mutex
 	automatrixRand     *rand.Rand
 	automatrixSkipProb float64
@@ -178,12 +200,15 @@ type EngineOptions struct {
 	TraceDir              string         // durable workspace-trace dir ("" disables; the reopen-survives-reload store, F3)
 	AutomatrixDir         string         // durable Automatrix completion-inbox dir ("" disables; the in-app surprise-results store)
 	AutomatrixSettingsDir string         // durable Automatrix opt-in settings dir ("" = in-memory only; wiring the production governor)
+	BriefSettingsDir      string         // durable morning-brief schedule sidecar dir ("" = in-memory only; wiring the production brief governor)
+	BriefHistoryDir       string         // durable morning-brief recommendation-history dir ("" disables; the no-repeat + feedback store)
 	MediaDir              string         // machine-volume media dir ("" disables image/video/audio I/O)
 	WorkspaceDir          string         // VM workspace root for the coding workbench ("" disables /workspace and /projects)
 	Sandbox               sandbox.Client // Railway sandbox client for previews (nil disables /workspace/preview)
 	PreviewCfg            preview.Config // preview controller config (user id, router door, TTL, image, cap)
 	BackendURL            string
 	BackendToken          string
+	Vault                 *vault.Session // fail-closed encryption session for data-at-rest ("" nil = plaintext dev/CLI)
 }
 
 // NewEngine assembles the engine and wires core_execute delegation through the
@@ -201,8 +226,10 @@ func NewEngine(o EngineOptions) *Engine {
 		tasks:         task.Open(o.TaskDir),
 		trace:         trace.Open(o.TraceDir),
 		automatrix:    automatrixlog.Open(o.AutomatrixDir),
+		briefHistory:  briefhistory.Open(o.BriefHistoryDir),
 		mediaDir:      strings.TrimRight(o.MediaDir, "/"),
 		workspaceRoot: strings.TrimRight(o.WorkspaceDir, "/"),
+		vault:         o.Vault,
 		backendURL:    strings.TrimRight(o.BackendURL, "/"),
 		backendToken:  o.BackendToken,
 		warmStop:      make(chan struct{}),
@@ -226,6 +253,24 @@ func NewEngine(o EngineOptions) *Engine {
 			AgentDID:   o.Config.ActorDID,
 		}),
 	}
+	// Data-at-rest: seal the durable JSONL conversation store (hot + archive)
+	// under the per-user vault. The user DID bound into each record's associated
+	// data matches the key booted in serve.go (ActorDID, else MATRIX_USER_ID),
+	// so a record cannot be replayed across users, stores, conversations, or
+	// positions. A nil session leaves the store writing legacy plaintext.
+	vaultUser := o.Config.ActorDID
+	if vaultUser == "" {
+		vaultUser = os.Getenv("MATRIX_USER_ID")
+	}
+	e.vaultUser = vaultUser
+	e.conv.SetVault(o.Vault, vaultUser)
+	e.trace.SetVault(o.Vault, vaultUser)
+	// Seal the whole-file/JSONL atomic stores under the same per-user vault
+	// (ORACLE task 2.2): the durable task ledger and the Automatrix completion
+	// inbox. The settings sidecar is sealed where it is opened below.
+	e.tasks.SetVault(o.Vault, vaultUser)
+	e.automatrix.SetVault(o.Vault, vaultUser)
+	e.briefHistory.SetVault(o.Vault, vaultUser)
 	e.sessions = newSessionRegistry(e)
 	// On-demand sandbox previews (NEO-WORKBENCH req 7): built only when a
 	// sandbox client is configured; events flow through publishPreview onto
@@ -261,6 +306,13 @@ func NewEngine(o EngineOptions) *Engine {
 		// ordered checklist onto the run's event stream as a tool.todo event
 		// (pure side-channel) and the trace persists it so it survives reopen.
 		e.tools.SetTodo(e.emitTodo)
+		// Personalization interview (ORACLE task 5.3): the confirmation-gated
+		// save_personalization_profile tool (advertised only to interview
+		// agents) persists the confirmed profile as the single versioned
+		// cortex record through the real pager.
+		if e.pager != nil {
+			e.tools.SetPersonalizationSave(e.savePersonalizationProfile)
+		}
 		// Workbench preview (NEO-WORKBENCH req 7): let the agent launch the
 		// active project's sandbox preview itself, so "show the user the app"
 		// has a first-class action that is NOT a deploy. Only wired when the
@@ -292,10 +344,35 @@ func NewEngine(o EngineOptions) *Engine {
 	// and may install their own seam via SetAutomatrixGovernor.
 	if o.AutomatrixSettingsDir != "" {
 		st := automatrixsettings.Open(o.AutomatrixSettingsDir)
+		// Seal the settings sidecar at rest and (re)load state under the vault
+		// (ORACLE task 2.2) before the governor reads the opt-in.
+		st.SetVault(o.Vault, vaultUser)
 		e.automatrixGov = newAutomatrixGovernor(st, newMCPAlarmController(e.tools), o.Config.AutomatrixBaseIntervalMinutes)
+	}
+	// Production morning-brief governor (ORACLE task 5.2): when a settings dir
+	// is provided (serve.go derives it), wire the durable schedule sidecar +
+	// the MORNING_BRIEF Chronos alarm lifecycle (issued through the MCP tool
+	// surface). The wake handler re-reads the schedule here on every fire, and
+	// the /brief/settings routes toggle/edit it. Tests that leave
+	// BriefSettingsDir empty keep a nil governor (fail closed) and may install
+	// their own via SetBriefGovernor.
+	if o.BriefSettingsDir != "" {
+		bs := briefsettings.Open(o.BriefSettingsDir)
+		bs.SetVault(o.Vault, vaultUser)
+		e.briefGov = newBriefGovernor(bs, newBriefMCPAlarmController(e.tools))
 	}
 	return e
 }
+
+// SetBriefGovernor wires the morning-brief opt-in + alarm bookkeeping seam
+// (task 5.2). Safe to leave unset: the control routes + wake handler fail closed
+// without it.
+func (e *Engine) SetBriefGovernor(g *briefGovernor) { e.briefGov = g }
+
+// Vault returns the daemon's fail-closed data-at-rest encryption session, or nil
+// in an explicitly-disabled plaintext dev/CLI run. Store wiring consults it to
+// seal records/files before write and to open sealed data on read.
+func (e *Engine) Vault() *vault.Session { return e.vault }
 
 // ResumeOrphanedTasks re-dispatches every task left "running" in the durable
 // ledger — tasks orphaned when the daemon was restarted or Fly-suspended
@@ -332,6 +409,10 @@ func (e *Engine) Close() {
 	// right after this. A run that outlives the bound stays durably
 	// in_progress and resumes at next boot.
 	waitBounded(&e.automatrixWG, 30*time.Second)
+	// Drain in-flight morning-brief dispatch goroutines the same way (task 5.4):
+	// a brief that outlives the bound stays durably running in the task ledger
+	// and resumes on the restricted brief surface at next boot.
+	waitBounded(&e.briefWG, 30*time.Second)
 	e.trace.Close()
 }
 

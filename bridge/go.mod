@@ -4,6 +4,7 @@ go 1.21
 
 require (
 	matrix/cortex v0.0.0
+	matrix/vault v0.0.0
 	matrix/mcl v0.0.0
 )
 
@@ -43,3 +44,5 @@ require (
 replace matrix/cortex => ../cortex
 
 replace matrix/mcl => ../MCL
+
+replace matrix/vault => ../vault

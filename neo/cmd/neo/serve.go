@@ -17,6 +17,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"strings"
 	"syscall"
 	"time"
@@ -24,6 +25,8 @@ import (
 	"matrix/neo/internal/agent"
 	"matrix/neo/internal/automatrixlog"
 	"matrix/neo/internal/automatrixsettings"
+	"matrix/neo/internal/briefhistory"
+	"matrix/neo/internal/briefsettings"
 	"matrix/neo/internal/config"
 	"matrix/neo/internal/conversation"
 	"matrix/neo/internal/memory"
@@ -34,6 +37,7 @@ import (
 	"matrix/neo/internal/tools"
 	"matrix/neo/internal/trace"
 	"matrix/neo/internal/writeback"
+	"matrix/vault"
 )
 
 func runServe(args []string) {
@@ -82,6 +86,31 @@ func runServe(args []string) {
 	if backendURL == "" {
 		backendURL = cfg.DaemonURL
 	}
+
+	// Fail-closed data-at-rest vault. Production (router injects VAULT_REQUIRED
+	// =true) MUST bring up a usable per-user key or the daemon refuses to boot
+	// into plaintext — mirroring the main-model fail-closed posture, never the
+	// best-effort degrade path. The wrapped keyfile lives beside /data (the
+	// cortex root's parent). The hermetic sandbox preset runs plaintext.
+	vaultUser := cfg.ActorDID
+	if vaultUser == "" {
+		vaultUser = os.Getenv("MATRIX_USER_ID")
+	}
+	vcfg := vault.ConfigFromEnv(filepath.Dir(cfg.CortexRoot), vaultUser)
+	if *sandbox {
+		vcfg.Required = false
+	}
+	vaultSess, verr := vault.Boot(context.Background(), vcfg)
+	if verr != nil {
+		fatal("vault required but unavailable: %v — set VAULT_KEK (64-hex-char key) or VAULT_KEK_FILE and NEO_ACTOR_DID, or set VAULT_REQUIRED=false for plaintext dev/CLI", verr)
+	}
+	if vaultSess.Encrypting() {
+		fmt.Fprintf(os.Stderr, "neo: data-at-rest vault active for %s\n", cfg.ActorDID)
+	}
+	// Thread the session into cfg so memory.Open seals the cortex store from
+	// its first write (encryption below the hash boundary; vaultseam.go).
+	cfg.Vault = vaultSess
+	cfg.VaultUser = vaultUser
 
 	// Media plane: generated + uploaded media live on the machine volume,
 	// derived from the cortex root's parent (e.g. /data/media) unless overridden
@@ -213,6 +242,8 @@ func runServe(args []string) {
 		TraceDir:              traceDir,
 		AutomatrixDir:         automatrixDir,
 		AutomatrixSettingsDir: automatrixsettings.Dir(os.Getenv("NEO_AUTOMATRIX_DIR"), cfg.CortexRoot),
+		BriefSettingsDir:      briefsettings.Dir(os.Getenv("NEO_BRIEF_DIR"), cfg.CortexRoot),
+		BriefHistoryDir:       briefhistory.Dir(os.Getenv("NEO_BRIEF_DIR"), cfg.CortexRoot),
 		MediaDir:              mediaPath,
 		WorkspaceDir:          workspaceDir,
 		Sandbox:               sb,
@@ -225,6 +256,7 @@ func runServe(args []string) {
 		},
 		BackendURL:   backendURL,
 		BackendToken: os.Getenv("NEO_DAEMON_TOKEN"),
+		Vault:        vaultSess,
 	})
 	if convDir != "" {
 		fmt.Printf("  history: %s\n", convDir)
@@ -252,6 +284,14 @@ func runServe(args []string) {
 	// completion gate as any state-touching turn. (The per-user opt-in + Chronos
 	// alarm lifecycle — the governor — is wired by task 6.1.)
 	engine.SetAutomatrixRunner(engine.RunAutomatrixOpportunity)
+
+	// Autonomous morning-brief execution (ORACLE task 5.4): a fired-and-eligible
+	// MORNING_BRIEF wake hands off to this runner, which drives a supervised,
+	// restart-durable run on the TIGHT read-only brief surface and delivers the
+	// composed brief out of band (durable conversation turn + inbox record, then
+	// a best-effort ping). The per-user opt-in + MORNING_BRIEF alarm lifecycle
+	// (the governor) is wired inside NewEngine when BriefSettingsDir is set.
+	engine.SetBriefRunner(engine.RunMorningBrief)
 
 	// Idle sandbox previews are torn down on a TTL (req 7.4).
 	engine.StartPreviewReaper(ctx)
@@ -292,6 +332,13 @@ func runServe(args []string) {
 	// mid-run) and drive it to completion on the restricted surface (task 4.1).
 	if n := engine.ResumeInProgressAutomatrix(); n > 0 {
 		fmt.Printf("  resuming %d in-progress automatrix opportunity(ies)\n", n)
+	}
+	// Task Durability Rule for the morning brief (ORACLE task 5.4): pick up any
+	// brief left mid-compose by a previous process (crash / suspend) and resume
+	// it on the RESTRICTED brief surface — never the money surface (the normal
+	// reaper above already excludes KindBrief tasks).
+	if n := engine.ResumeInProgressBriefs(); n > 0 {
+		fmt.Printf("  resuming %d in-progress morning brief(s)\n", n)
 	}
 
 	<-ctx.Done()

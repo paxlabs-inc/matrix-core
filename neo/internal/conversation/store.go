@@ -45,6 +45,18 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"matrix/vault"
+)
+
+// Store types and schema bound into each record's associated data, so a sealed
+// line cannot be replayed across users, stores, conversations, or positions.
+const (
+	storeConvHot     = "neo.conversation"
+	storeConvArchive = "neo.conversation.archive"
+	storeConvMeta    = "neo.conversation.meta"
+	schemaTurnV1     = "turn.v1"
+	schemaMetaV1     = "meta.v1"
 )
 
 const (
@@ -98,6 +110,68 @@ type Store struct {
 	// retainedTurns caps the hot .jsonl turn count; overflow rolls to the
 	// archive. Zero means use DefaultRetainedTurns at append time.
 	retainedTurns int
+
+	// vault seals each JSONL record when encrypting; nil = plaintext dev/CLI.
+	// user is the DID bound into each record's associated data. seqs caches the
+	// next record sequence per file so appends stay O(1) (seeded by one line
+	// count) while binding each ciphertext to its position.
+	vault *vault.Session
+	user  string
+	seqs  map[string]uint64
+}
+
+// SetVault wires the fail-closed data-at-rest session and the owning user DID
+// into the store. Called once at engine assembly; a nil session leaves the
+// store writing legacy plaintext (dev/CLI).
+func (s *Store) SetVault(sess *vault.Session, user string) {
+	if s == nil {
+		return
+	}
+	s.mu.Lock()
+	s.vault = sess
+	s.user = user
+	s.mu.Unlock()
+}
+
+// ad reconstructs the associated data for a record from where it lives — never
+// stored, so a record moved between users, stores, conversations, or positions
+// fails authentication.
+func (s *Store) ad(storeType, stream string, seq uint64) vault.AD {
+	return vault.AD{User: s.user, Store: storeType, Stream: stream, Seq: seq, Schema: schemaTurnV1}
+}
+
+// nextSeqLocked returns the next record sequence for a file, seeding the cache
+// once by counting existing lines so the seq binds each record to its position
+// while keeping appends O(1). Caller MUST hold s.mu.
+func (s *Store) nextSeqLocked(path string) uint64 {
+	if s.seqs == nil {
+		s.seqs = map[string]uint64{}
+	}
+	if n, ok := s.seqs[path]; ok {
+		return n
+	}
+	n := countLines(path)
+	s.seqs[path] = n
+	return n
+}
+
+// countLines counts non-empty lines in a JSONL file (0 when absent).
+func countLines(path string) uint64 {
+	f, err := os.Open(path)
+	if err != nil {
+		return 0
+	}
+	defer f.Close()
+	var n uint64
+	sc := bufio.NewScanner(f)
+	sc.Buffer(make([]byte, 0, 64*1024), 8*1024*1024)
+	for sc.Scan() {
+		if len(bytes.TrimSpace(sc.Bytes())) == 0 {
+			continue
+		}
+		n++
+	}
+	return n
 }
 
 // Open builds a store rooted at dir. An empty dir yields a disabled store
@@ -169,7 +243,7 @@ func (s *Store) loadLocked(convID string) *Record {
 	if path == "" {
 		return rec
 	}
-	turns, updated := readJSONLTurns(path)
+	turns, updated := s.readTurns(storeConvHot, convID, path)
 	if turns != nil {
 		rec.Turns = turns
 		rec.Updated = updated
@@ -190,10 +264,13 @@ func (s *Store) loadLocked(convID string) *Record {
 	return rec
 }
 
-// readJSONLTurns parses a newline-delimited JSON turn file. A line that fails
-// to unmarshal (including a crash-truncated final line with no trailing
-// newline) is skipped — crash-atomic. Returns (turns, latestUpdated).
-func readJSONLTurns(path string) ([]Turn, time.Time) {
+// readTurns parses a newline-delimited turn file, decrypting each record under
+// the reconstructed associated data (legacy plaintext lines pass through until
+// migrated). A line that fails to decrypt or unmarshal — including a wrong-key,
+// tampered, or crash-truncated final line — is skipped; the record sequence
+// still advances so surviving records stay bound to their positions. Returns
+// (turns, latestUpdated).
+func (s *Store) readTurns(storeType, stream, path string) ([]Turn, time.Time) {
 	f, err := os.Open(path)
 	if err != nil {
 		return nil, time.Time{}
@@ -204,17 +281,23 @@ func readJSONLTurns(path string) ([]Turn, time.Time) {
 		latest time.Time
 	)
 	sc := bufio.NewScanner(f)
-	// A single turn line is bounded (a turn's text), but allow generous headroom
-	// so large assistant answers are not truncated.
-	sc.Buffer(make([]byte, 0, 64*1024), 4*1024*1024)
+	// A turn line is bounded (a turn's text) but allow generous headroom (with
+	// extra room for base64 ciphertext overhead) so large answers are intact.
+	sc.Buffer(make([]byte, 0, 64*1024), 8*1024*1024)
+	var seq uint64
 	for sc.Scan() {
 		line := bytes.TrimSpace(sc.Bytes())
 		if len(line) == 0 {
 			continue
 		}
+		plain, derr := s.vault.DecodeLine(s.ad(storeType, stream, seq), line)
+		seq++
+		if derr != nil {
+			// Skip wrong-key / tampered / crash-truncated lines.
+			continue
+		}
 		var t Turn
-		if jerr := json.Unmarshal(line, &t); jerr != nil {
-			// Skip unparseable lines (crash-truncated partial writes).
+		if jerr := json.Unmarshal(plain, &t); jerr != nil {
 			continue
 		}
 		turns = append(turns, t)
@@ -223,31 +306,39 @@ func readJSONLTurns(path string) ([]Turn, time.Time) {
 		}
 	}
 	if err := sc.Err(); err != nil {
-		// On read error, return whatever was parsed so far (best-effort).
 		return turns, latest
 	}
 	return turns, latest
 }
 
-// appendJSONLTurn appends one turn as a single JSON line to path. O_APPEND +
-// a single Write makes the line atomically visible (POSIX) — no reader can see
-// a half-written line. Crash-atomic: a torn write yields an unparseable final
-// line that readJSONLTurns skips.
-func appendJSONLTurn(path string, turn Turn) error {
+// appendTurn appends one turn as a single (sealed, when encrypting) JSONL line.
+// O_APPEND + a single Write makes the line atomically visible (POSIX) — no
+// reader sees a half-written line. Crash-atomic: a torn write yields an
+// unparseable final line that readTurns skips. Caller MUST hold s.mu.
+func (s *Store) appendTurn(storeType, stream, path string, turn Turn) error {
 	b, err := json.Marshal(turn)
 	if err != nil {
 		return err
 	}
-	b = append(b, '\n')
-	f, err := os.OpenFile(path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
+	seq := s.nextSeqLocked(path)
+	line, err := s.vault.EncodeLine(s.ad(storeType, stream, seq), b)
 	if err != nil {
 		return err
 	}
-	if _, err := f.Write(b); err != nil {
+	line = append(line, '\n')
+	f, err := os.OpenFile(path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o600)
+	if err != nil {
+		return err
+	}
+	if _, err := f.Write(line); err != nil {
 		_ = f.Close()
 		return err
 	}
-	return f.Close()
+	if err := f.Close(); err != nil {
+		return err
+	}
+	s.seqs[path] = seq + 1
+	return nil
 }
 
 // Append records one turn and persists it as a single JSONL line append (O(1) in
@@ -267,13 +358,13 @@ func (s *Store) Append(convID string, turn Turn) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	if err := os.MkdirAll(s.dir, 0o755); err != nil {
+	if err := os.MkdirAll(s.dir, 0o700); err != nil {
 		fmt.Fprintf(os.Stderr, "neo/conversation: mkdir %s: %v\n", s.dir, err)
 		return
 	}
 
 	path := s.pathLocked(convID)
-	if err := appendJSONLTurn(path, turn); err != nil {
+	if err := s.appendTurn(storeConvHot, convID, path, turn); err != nil {
 		fmt.Fprintf(os.Stderr, "neo/conversation: append %s: %v\n", path, err)
 		return
 	}
@@ -288,7 +379,7 @@ func (s *Store) Append(convID string, turn Turn) {
 // uses the rename-based atomic write (tmp+rename) — the ONLY place that path
 // is used now. Caller MUST hold s.mu.
 func (s *Store) rollIfOverCapLocked(convID string) {
-	turns, _ := readJSONLTurns(s.pathLocked(convID))
+	turns, _ := s.readTurns(storeConvHot, convID, s.pathLocked(convID))
 	cap := s.retainedTurns
 	if cap <= 0 {
 		cap = DefaultRetainedTurns
@@ -305,41 +396,63 @@ func (s *Store) rollIfOverCapLocked(convID string) {
 		return
 	}
 
-	// Append the rolled turns to the existing archive (or create it).
+	// Append the rolled turns to the existing archive (or create it). Each is
+	// sealed under the archive store type at its own growing archive position.
 	for _, t := range roll {
-		_ = appendJSONLTurn(archivePath, t)
+		_ = s.appendTurn(storeConvArchive, convID, archivePath, t)
 	}
 
-	// Rewrite the hot file to contain only the retained set. This is the
-	// compaction/rollup step — the rename-based atomic write lives here.
-	keepJSONL := buildJSONL(keep)
+	// Rewrite the hot file to contain only the retained set, re-sealing each
+	// kept turn at its NEW hot position. This is the compaction/rollup step —
+	// the rename-based atomic write lives here.
+	keepJSONL, err := s.buildJSONL(storeConvHot, convID, keep)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "neo/conversation: rollup seal %s: %v\n", convID, err)
+		return
+	}
 	tmp := s.pathLocked(convID) + ".rollup.tmp"
-	if err := os.WriteFile(tmp, keepJSONL, 0o644); err != nil {
+	if err := os.WriteFile(tmp, keepJSONL, 0o600); err != nil {
 		fmt.Fprintf(os.Stderr, "neo/conversation: rollup write %s: %v\n", tmp, err)
 		return
 	}
 	if err := os.Rename(tmp, s.pathLocked(convID)); err != nil {
 		fmt.Fprintf(os.Stderr, "neo/conversation: rollup rename %s: %v\n", s.pathLocked(convID), err)
 		_ = os.Remove(tmp)
+		return
 	}
+	// The hot file now holds exactly len(keep) records at positions 0..n-1.
+	s.seqs[s.pathLocked(convID)] = uint64(len(keep))
 }
 
-// buildJSONL serializes a turn slice as newline-delimited JSON.
-func buildJSONL(turns []Turn) []byte {
+// buildJSONL serializes a turn slice as newline-delimited (sealed, when
+// encrypting) JSON, binding each record to its position starting at seq 0.
+// Caller MUST hold s.mu.
+func (s *Store) buildJSONL(storeType, stream string, turns []Turn) ([]byte, error) {
 	var buf bytes.Buffer
-	for _, t := range turns {
-		b, _ := json.Marshal(t)
-		buf.Write(b)
+	for i, t := range turns {
+		b, err := json.Marshal(t)
+		if err != nil {
+			return nil, err
+		}
+		line, err := s.vault.EncodeLine(s.ad(storeType, stream, uint64(i)), b)
+		if err != nil {
+			return nil, err
+		}
+		buf.Write(line)
 		buf.WriteByte('\n')
 	}
-	return buf.Bytes()
+	return buf.Bytes(), nil
 }
 
 // convMeta is the per-conversation sidecar (<convID>.meta.json): durable
-// metadata that is not a turn. Today it carries only the workbench project
-// tag.
+// metadata that is not a turn — the workbench project tag and the
+// personalization-interview flag (ORACLE task 5.3).
 type convMeta struct {
 	Project string `json:"project,omitempty"`
+	// Interview marks a personalization-interview conversation: the session
+	// mints the interview agent (guided charter + confirmation-gated save
+	// tool) and writeback extraction is structurally excluded (req 12.3).
+	Interview bool `json:"interview,omitempty"`
 }
 
 func (s *Store) metaPathLocked(convID string) string {
@@ -359,8 +472,28 @@ func (s *Store) loadMetaLocked(convID string) convMeta {
 	if err != nil {
 		return m
 	}
+	// Sniff the header: a sealed sidecar decrypts under the reconstructed AD;
+	// a legacy plaintext sidecar parses as today. A wrong-key/tampered sealed
+	// file yields the zero meta rather than leaking bytes.
+	if vault.IsVault(data) {
+		uv := s.vault.UserVault()
+		if uv == nil {
+			return m
+		}
+		plain, oerr := uv.OpenFile(s.metaAD(convID), data)
+		if oerr != nil {
+			return m
+		}
+		data = plain
+	}
 	_ = json.Unmarshal(data, &m)
 	return m
+}
+
+// metaAD reconstructs the associated data for a conversation's meta sidecar —
+// never stored, so a sidecar moved between users or conversations fails auth.
+func (s *Store) metaAD(convID string) vault.AD {
+	return vault.AD{User: s.user, Store: storeConvMeta, Stream: convID, Schema: schemaMetaV1}
 }
 
 // SetProject tags a conversation with a workbench project id (idempotent;
@@ -377,7 +510,14 @@ func (s *Store) SetProject(convID, projectID string) {
 		return
 	}
 	m.Project = strings.TrimSpace(projectID)
-	if err := os.MkdirAll(s.dir, 0o755); err != nil {
+	s.saveMetaLocked(convID, m)
+}
+
+// saveMetaLocked persists a conversation's meta sidecar (atomic tmp+rename,
+// sealed at rest when the vault is wired). Caller MUST hold s.mu. Best-effort
+// like Append: IO errors are logged, never fatal.
+func (s *Store) saveMetaLocked(convID string, m convMeta) {
+	if err := os.MkdirAll(s.dir, 0o700); err != nil {
 		fmt.Fprintf(os.Stderr, "neo/conversation: mkdir %s: %v\n", s.dir, err)
 		return
 	}
@@ -385,15 +525,48 @@ func (s *Store) SetProject(convID, projectID string) {
 	if err != nil {
 		return
 	}
+	// Seal the sidecar at rest (fail-closed when the vault is required); nil
+	// session = legacy plaintext. tmp+rename atomicity preserved below.
+	data, err = s.vault.MaybeSealFile(s.metaAD(convID), data)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "neo/conversation: seal meta %s: %v\n", convID, err)
+		return
+	}
 	path := s.metaPathLocked(convID)
 	tmp := path + ".tmp"
-	if err := os.WriteFile(tmp, append(data, '\n'), 0o644); err != nil {
+	if err := os.WriteFile(tmp, data, 0o600); err != nil {
 		fmt.Fprintf(os.Stderr, "neo/conversation: write %s: %v\n", tmp, err)
 		return
 	}
 	if err := os.Rename(tmp, path); err != nil {
 		fmt.Fprintf(os.Stderr, "neo/conversation: rename %s: %v\n", path, err)
 	}
+}
+
+// SetInterview marks a conversation as a personalization interview (ORACLE
+// task 5.3). Idempotent; atomic sidecar write.
+func (s *Store) SetInterview(convID string) {
+	if !s.Enabled() || convID == "" {
+		return
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	m := s.loadMetaLocked(convID)
+	if m.Interview {
+		return
+	}
+	m.Interview = true
+	s.saveMetaLocked(convID, m)
+}
+
+// IsInterview reports whether a conversation is a personalization interview.
+func (s *Store) IsInterview(convID string) bool {
+	if !s.Enabled() || convID == "" {
+		return false
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.loadMetaLocked(convID).Interview
 }
 
 // Project returns a conversation's workbench project tag ("" untagged).
@@ -463,7 +636,7 @@ func (s *Store) Archived(convID string) []Turn {
 	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	turns, _ := readJSONLTurns(s.archivePathLocked(convID))
+	turns, _ := s.readTurns(storeConvArchive, convID, s.archivePathLocked(convID))
 	return turns
 }
 
@@ -481,7 +654,7 @@ func (s *Store) History(convID string) []Turn {
 // historyLocked is the full-history read (archive + hot), oldest-first. Caller
 // MUST hold s.mu.
 func (s *Store) historyLocked(convID string) []Turn {
-	archived, _ := readJSONLTurns(s.archivePathLocked(convID))
+	archived, _ := s.readTurns(storeConvArchive, convID, s.archivePathLocked(convID))
 	hot := s.loadLocked(convID).Turns
 	if len(archived) == 0 {
 		return hot

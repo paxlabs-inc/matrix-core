@@ -43,11 +43,24 @@ func (e *Engine) persistToolImage(mimeType, b64 string) (string, error) {
 	if len(data) == 0 {
 		return "", fmt.Errorf("empty image payload")
 	}
-	if err := os.MkdirAll(dir, 0o755); err != nil {
+	if err := os.MkdirAll(dir, 0o700); err != nil {
 		return "", fmt.Errorf("prepare media storage: %w", err)
 	}
 	name := mintMediaID() + extForMIME(mimeType)
-	if err := os.WriteFile(filepath.Join(dir, name), data, 0o644); err != nil {
+	if e.mediaSealEnabled() {
+		f, err := os.OpenFile(filepath.Join(dir, name), os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0o600)
+		if err != nil {
+			return "", fmt.Errorf("write media: %w", err)
+		}
+		if err := e.sealMediaBytes(name, data, f); err != nil {
+			f.Close()
+			_ = os.Remove(filepath.Join(dir, name))
+			return "", fmt.Errorf("seal media: %w", err)
+		}
+		if err := f.Close(); err != nil {
+			return "", fmt.Errorf("write media: %w", err)
+		}
+	} else if err := os.WriteFile(filepath.Join(dir, name), data, 0o600); err != nil {
 		return "", fmt.Errorf("write media: %w", err)
 	}
 	return "/media/" + name, nil

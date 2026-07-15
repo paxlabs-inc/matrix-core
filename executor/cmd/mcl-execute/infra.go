@@ -16,6 +16,7 @@ import (
 	"matrix/cortex/store"
 	"matrix/executor/mcp"
 	"matrix/executor/tool"
+	"matrix/vault"
 )
 
 // infra packages every long-lived dependency the walk subcommand owns:
@@ -43,7 +44,9 @@ type infraOpts struct {
 	WithEmbedder       bool
 	WithFireworksEmbed bool
 	StderrSink         io.Writer
-	SpawnTimeout       time.Duration // default 90s per server
+	SpawnTimeout       time.Duration  // default 90s per server
+	Vault              *vault.Session // seals cortex values at rest; nil = plaintext dev/CLI
+	VaultUser          string         // user DID bound into sealed values' associated data
 }
 
 // newInfra wires every dependency. Returns an error early on any
@@ -151,6 +154,9 @@ func newInfra(ctx context.Context, opts infraOpts, t *transcript) (*infra, error
 			cleanupOnError()
 			return nil, fmt.Errorf("infra: store.Open: %w", err)
 		}
+		// Seal cortex values at rest below the hash boundary, before any
+		// consumer (cortex.New, embedder) can write plaintext.
+		s.SetVault(opts.Vault, opts.VaultUser)
 		in.store = s
 		in.cortex = cortex.New(s)
 		t.Event("cortex.opened", "infra", map[string]interface{}{

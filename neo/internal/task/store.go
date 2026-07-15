@@ -32,10 +32,28 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"matrix/vault"
+)
+
+// Store type and schema bound into each task file's associated data, so a
+// sealed record cannot be read across users or conversations.
+const (
+	storeTask   = "neo.task"
+	schemaTask1 = "task.v1"
 )
 
 // Status is a task's lifecycle state.
 type Status string
+
+const (
+	// KindBrief marks a task whose objective is an autonomous MORNING_BRIEF run
+	// (ORACLE task 5.4). The normal boot reaper (Running) EXCLUDES these — a
+	// brief must never resume on the full interactive/money surface — and the
+	// dedicated brief-resume path (RunningKind) picks them up on the restricted
+	// brief surface instead. An empty Kind is an ordinary interactive task.
+	KindBrief = "brief"
+)
 
 const (
 	// StatusRunning marks a task that has been dispatched and is not yet
@@ -55,10 +73,11 @@ const (
 // last) task.
 type Task struct {
 	ConvID    string    `json:"conversation_id"`
-	RunID     string    `json:"run_id"`   // the supervising run/intent id (the CAS token)
-	Objective string    `json:"objective"` // the original user request the task must fulfil
+	RunID     string    `json:"run_id"`         // the supervising run/intent id (the CAS token)
+	Objective string    `json:"objective"`      // the original user request the task must fulfil
+	Kind      string    `json:"kind,omitempty"` // "" = interactive task; KindBrief = autonomous morning brief
 	Status    Status    `json:"status"`
-	Attempt   int        `json:"attempt"`        // how many supervised attempts have run
+	Attempt   int       `json:"attempt"`        // how many supervised attempts have run
 	Note      string    `json:"note,omitempty"` // last checkpoint note (diagnostic)
 	Created   time.Time `json:"created"`
 	Updated   time.Time `json:"updated"`
@@ -69,12 +88,40 @@ type Task struct {
 type Store struct {
 	mu  sync.Mutex
 	dir string
+
+	// vault seals each task file (whole-file AEAD, tmp+rename) when encrypting;
+	// nil = plaintext dev/CLI. user is the DID bound into the file's associated
+	// data so a record cannot be read across users.
+	vault *vault.Session
+	user  string
 }
 
 // Open builds a store rooted at dir. An empty dir yields a disabled store
 // (every method is a safe no-op) so dev/CLI runs work unchanged.
 func Open(dir string) *Store {
 	return &Store{dir: strings.TrimSpace(dir)}
+}
+
+// SetVault wires the fail-closed data-at-rest session and owning user DID into
+// the store. Called once at engine assembly before any write; a nil session
+// leaves the store writing legacy plaintext (dev/CLI).
+func (s *Store) SetVault(sess *vault.Session, user string) {
+	if s == nil {
+		return
+	}
+	s.mu.Lock()
+	s.vault = sess
+	s.user = user
+	s.mu.Unlock()
+}
+
+// ad reconstructs the associated data for a task file from where it lives (this
+// user, this conversation) — never stored, so a file moved between users or
+// conversations fails authentication.
+func (s *Store) ad(convID string) vault.AD {
+	// Bind to the sanitized id so the write side (original conv id) and the
+	// Running() read side (id derived from the file name) reconstruct the same AD.
+	return vault.AD{User: s.user, Store: storeTask, Stream: sanitize(convID), Schema: schemaTask1}
 }
 
 // Enabled reports whether persistence is on (a non-empty directory).
@@ -106,6 +153,20 @@ func (s *Store) loadLocked(convID string) (Task, bool) {
 	if err != nil {
 		return Task{}, false
 	}
+	// Sniff the header: a vault-sealed file decrypts under the reconstructed AD;
+	// a legacy plaintext file parses as today (until migrated). A wrong-key /
+	// tampered sealed file yields (zero, false) rather than leaking bytes.
+	if vault.IsVault(data) {
+		uv := s.vault.UserVault()
+		if uv == nil {
+			return Task{}, false
+		}
+		plain, oerr := uv.OpenFile(s.ad(convID), data)
+		if oerr != nil {
+			return Task{}, false
+		}
+		data = plain
+	}
 	var t Task
 	if err := json.Unmarshal(data, &t); err != nil {
 		return Task{}, false
@@ -115,7 +176,7 @@ func (s *Store) loadLocked(convID string) (Task, bool) {
 
 // writeLocked persists t atomically (tmp + rename). Caller MUST hold s.mu.
 func (s *Store) writeLocked(t Task) {
-	if err := os.MkdirAll(s.dir, 0o755); err != nil {
+	if err := os.MkdirAll(s.dir, 0o700); err != nil {
 		fmt.Fprintf(os.Stderr, "neo/task: mkdir %s: %v\n", s.dir, err)
 		return
 	}
@@ -124,9 +185,16 @@ func (s *Store) writeLocked(t Task) {
 		fmt.Fprintf(os.Stderr, "neo/task: marshal %s: %v\n", t.ConvID, err)
 		return
 	}
+	// Seal the whole file at rest (fail-closed when the vault is required);
+	// nil session = legacy plaintext for dev/CLI. tmp+rename preserved below.
+	data, err = s.vault.MaybeSealFile(s.ad(t.ConvID), data)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "neo/task: seal %s: %v\n", t.ConvID, err)
+		return
+	}
 	path := s.pathLocked(t.ConvID)
 	tmp := path + ".tmp"
-	if err := os.WriteFile(tmp, data, 0o644); err != nil {
+	if err := os.WriteFile(tmp, data, 0o600); err != nil {
 		fmt.Fprintf(os.Stderr, "neo/task: write %s: %v\n", tmp, err)
 		return
 	}
@@ -142,6 +210,14 @@ func (s *Store) writeLocked(t Task) {
 // no-op. Created is preserved across a same-conversation supersession only if
 // the objective is unchanged (a genuine resume); otherwise it resets.
 func (s *Store) Begin(convID, runID, objective string) {
+	s.BeginKind(convID, runID, objective, "")
+}
+
+// BeginKind is Begin with an explicit task kind ("" = interactive; KindBrief =
+// autonomous morning brief). The kind steers the boot reaper: an interactive
+// task resumes on the full surface (Running), a brief on the restricted brief
+// surface (RunningKind) — a brief must never resume on the money surface.
+func (s *Store) BeginKind(convID, runID, objective, kind string) {
 	if !s.Enabled() || convID == "" || runID == "" {
 		return
 	}
@@ -156,6 +232,7 @@ func (s *Store) Begin(convID, runID, objective string) {
 		ConvID:    convID,
 		RunID:     runID,
 		Objective: strings.TrimSpace(objective),
+		Kind:      strings.TrimSpace(kind),
 		Status:    StatusRunning,
 		Attempt:   1,
 		Created:   created,
@@ -198,9 +275,25 @@ func (s *Store) Finish(convID, runID string, status Status) {
 	s.writeLocked(t)
 }
 
-// Running returns every conversation whose task is still running — the set the
-// boot reaper must resume. Best-effort: unreadable files are skipped.
+// Running returns every INTERACTIVE conversation whose task is still running —
+// the set the normal boot reaper must resume on the full surface. Brief tasks
+// (KindBrief) are deliberately EXCLUDED: they must resume only on the
+// restricted brief surface via RunningKind, never on the money surface.
+// Best-effort: unreadable files are skipped.
 func (s *Store) Running() []Task {
+	return s.running(func(t Task) bool { return t.Kind == "" })
+}
+
+// RunningKind returns every still-running task of the given kind — the dedicated
+// resume set for a specialized surface (e.g. KindBrief for the restricted
+// morning-brief runner). Best-effort: unreadable files are skipped.
+func (s *Store) RunningKind(kind string) []Task {
+	kind = strings.TrimSpace(kind)
+	return s.running(func(t Task) bool { return t.Kind == kind })
+}
+
+// running collects every still-running task whose record satisfies keep.
+func (s *Store) running(keep func(Task) bool) []Task {
 	if !s.Enabled() {
 		return nil
 	}
@@ -219,6 +312,9 @@ func (s *Store) Running() []Task {
 		convID := strings.TrimSuffix(name, ".json")
 		t, ok := s.loadLocked(convID)
 		if !ok || t.Status != StatusRunning || strings.TrimSpace(t.Objective) == "" {
+			continue
+		}
+		if keep != nil && !keep(t) {
 			continue
 		}
 		out = append(out, t)

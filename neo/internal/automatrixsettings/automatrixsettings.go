@@ -33,11 +33,20 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"matrix/vault"
 )
 
 // settingsFile is the single per-daemon settings file. The daemon is per-user,
 // so one file holds that user/agent's Automatrix opt-in state.
 const settingsFile = "automatrix.settings.json"
+
+// Store type and schema bound into the settings file's associated data, so a
+// sealed file cannot be read across users.
+const (
+	storeSettings   = "neo.automatrix.settings"
+	schemaSettings1 = "settings.v1"
+)
 
 // State is the durable Automatrix opt-in state. Its shape is the whole
 // no-secrets guarantee: these are the only fields that exist.
@@ -62,15 +71,24 @@ type Store struct {
 	dir string
 	mu  sync.Mutex
 	st  State
+
+	// vault seals the settings file (whole-file AEAD, tmp+rename) when
+	// encrypting; nil = plaintext dev/CLI. user is the DID bound into the
+	// file's associated data.
+	vault *vault.Session
+	user  string
 }
 
-// Open builds a store rooted at dir and loads any persisted state. An empty dir
-// yields an in-memory-only store (a safe, durable-less fallback) so dev/CLI
-// runs and tests still toggle the opt-in correctly.
+// Open builds a store rooted at dir. State is loaded lazily on the first
+// operation (Load), so SetVault can be wired between Open and first use. An
+// empty dir yields an in-memory-only store (a safe, durable-less fallback) so
+// dev/CLI runs and tests still toggle the opt-in correctly.
 func Open(dir string) *Store {
 	s := &Store{dir: strings.TrimSpace(dir)}
-	if s.dir != "" {
-		if b, err := os.ReadFile(s.path()); err == nil {
+	if s.dir != "" && s.vault == nil {
+		// Best-effort eager load for the no-vault path (backward compatible);
+		// the sealing path re-loads under SetVault via loadLocked.
+		if b, err := os.ReadFile(s.path()); err == nil && !vault.IsVault(b) {
 			var st State
 			if json.Unmarshal(b, &st) == nil {
 				s.st = st
@@ -78,6 +96,54 @@ func Open(dir string) *Store {
 		}
 	}
 	return s
+}
+
+// SetVault wires the fail-closed data-at-rest session and owning user DID into
+// the store and (re)loads persisted state under it. Called once at engine
+// assembly before any mutation; a nil session leaves the store on plaintext.
+func (s *Store) SetVault(sess *vault.Session, user string) {
+	if s == nil {
+		return
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.vault = sess
+	s.user = user
+	s.loadLocked()
+}
+
+// ad reconstructs the settings file's associated data (this user's single
+// settings file). Never stored, so a file moved between users fails auth.
+func (s *Store) ad() vault.AD {
+	return vault.AD{User: s.user, Store: storeSettings, Schema: schemaSettings1}
+}
+
+// loadLocked reads persisted state, decrypting a sealed file under the
+// reconstructed AD (legacy plaintext parses as today). A wrong-key/tampered
+// sealed file leaves the in-memory state at its zero value. Caller holds mu.
+func (s *Store) loadLocked() {
+	if s.dir == "" {
+		return
+	}
+	b, err := os.ReadFile(s.path())
+	if err != nil {
+		return
+	}
+	if vault.IsVault(b) {
+		uv := s.vault.UserVault()
+		if uv == nil {
+			return
+		}
+		plain, oerr := uv.OpenFile(s.ad(), b)
+		if oerr != nil {
+			return
+		}
+		b = plain
+	}
+	var st State
+	if json.Unmarshal(b, &st) == nil {
+		s.st = st
+	}
 }
 
 // Persistent reports whether state is mirrored to disk (a non-empty directory).
@@ -172,15 +238,21 @@ func (s *Store) persistLocked() error {
 	if s.dir == "" {
 		return nil
 	}
-	if err := os.MkdirAll(s.dir, 0o755); err != nil {
+	if err := os.MkdirAll(s.dir, 0o700); err != nil {
 		return fmt.Errorf("automatrixsettings: mkdir %s: %w", s.dir, err)
 	}
 	b, err := json.Marshal(s.st)
 	if err != nil {
 		return fmt.Errorf("automatrixsettings: marshal: %w", err)
 	}
+	// Seal the whole file at rest (fail-closed when the vault is required);
+	// nil session = legacy plaintext for dev/CLI. tmp+rename preserved below.
+	b, err = s.vault.MaybeSealFile(s.ad(), b)
+	if err != nil {
+		return fmt.Errorf("automatrixsettings: seal: %w", err)
+	}
 	tmp := s.path() + ".tmp"
-	if err := os.WriteFile(tmp, b, 0o644); err != nil {
+	if err := os.WriteFile(tmp, b, 0o600); err != nil {
 		return fmt.Errorf("automatrixsettings: write %s: %w", tmp, err)
 	}
 	if err := os.Rename(tmp, s.path()); err != nil {

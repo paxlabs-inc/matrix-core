@@ -55,6 +55,7 @@ import (
 	"time"
 
 	"matrix/mcl/envelope"
+	"matrix/vault"
 )
 
 // intentSummary is the compact view returned by /intents and used as
@@ -211,7 +212,7 @@ func listIntentSummaries(d *daemonState, cur listCursor, limit int, stateFilter 
 			}
 		}
 
-		sum := d.indexCache.summaryFor(e.IntentID, e.Path, e.Mtime)
+		sum := d.indexCache.summaryFor(d, e.IntentID, e.Path, e.Mtime)
 		if sum == nil {
 			continue
 		}
@@ -234,11 +235,11 @@ func listIntentSummaries(d *daemonState, cur listCursor, limit int, stateFilter 
 
 // summaryFor produces (and caches) an intentSummary for a single
 // intent dir. Returns nil if the dir is empty / unreadable.
-func (c *indexCache) summaryFor(intentID, dir string, mtime time.Time) *intentSummary {
+func (c *indexCache) summaryFor(d *daemonState, intentID, dir string, mtime time.Time) *intentSummary {
 	if cached, ok := c.get(intentID, mtime); ok {
 		return cached
 	}
-	sum := buildIntentSummary(intentID, dir)
+	sum := buildIntentSummary(d, intentID, dir)
 	if sum != nil {
 		c.put(intentID, mtime, sum)
 	}
@@ -257,7 +258,7 @@ func (c *indexCache) summaryFor(intentID, dir string, mtime time.Time) *intentSu
 // Skips body parsing of plan.step / plan.output / envelope-signed
 // rows since those are dispatch noise — their seq numbers contribute
 // to envelope_count but not to summary fields.
-func buildIntentSummary(intentID, dir string) *intentSummary {
+func buildIntentSummary(d *daemonState, intentID, dir string) *intentSummary {
 	entries, err := os.ReadDir(dir)
 	if err != nil {
 		return nil
@@ -306,7 +307,7 @@ func buildIntentSummary(intentID, dir string) *intentSummary {
 		if f.Kind != "intent-compiled" {
 			continue
 		}
-		body, err := readEnvelopeBody(filepath.Join(dir, f.Name))
+		body, err := d.readEnvelopeBody(filepath.Join(dir, f.Name))
 		if err != nil {
 			break
 		}
@@ -350,7 +351,7 @@ func buildIntentSummary(intentID, dir string) *intentSummary {
 		sum.HasAttest = last.Kind == "intent-attest"
 		sum.HasFail = last.Kind == "intent-fail"
 		sum.HasCancel = last.Kind == "intent-cancel"
-		body, err := readEnvelopeBody(filepath.Join(dir, last.Name))
+		body, err := d.readEnvelopeBody(filepath.Join(dir, last.Name))
 		if err == nil {
 			sum.EndedAt = body.At
 			switch last.Kind {
@@ -481,10 +482,32 @@ func (r *rawEnvelopeJSON) DecodeBody(out interface{}) error {
 	return json.Unmarshal(r.Body, out)
 }
 
+// openEnvelopeFile reads one persisted envelope's JSON bytes, decrypting a
+// sealed file under the AD reconstructed from its location (this user, the
+// intent id from the directory, the seq from the file name) before any parse
+// or signature verification; a legacy plaintext envelope returns as-is.
+func (d *daemonState) openEnvelopeFile(path string) ([]byte, error) {
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+	if !vault.IsVault(raw) {
+		return raw, nil
+	}
+	uv := d.vault.UserVault()
+	if uv == nil {
+		return nil, fmt.Errorf("envelope: sealed file without a vault session: %s", filepath.Base(path))
+	}
+	dir, name := filepath.Split(path)
+	seq, _ := parseEnvelopeFilename(name)
+	intentID := filepath.Base(filepath.Clean(dir))
+	return uv.OpenFile(envelopeAD(d.vaultUser, intentID, uint64(seq)), raw)
+}
+
 // readEnvelopeBody parses the on-disk pretty JSON of one envelope into
 // a typed-body-decodable shape.
-func readEnvelopeBody(path string) (*rawEnvelopeJSON, error) {
-	raw, err := os.ReadFile(path)
+func (d *daemonState) readEnvelopeBody(path string) (*rawEnvelopeJSON, error) {
+	raw, err := d.openEnvelopeFile(path)
 	if err != nil {
 		return nil, err
 	}

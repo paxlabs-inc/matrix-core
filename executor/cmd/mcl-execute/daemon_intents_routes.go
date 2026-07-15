@@ -34,7 +34,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -181,7 +180,7 @@ func (d *daemonState) handleIntentChain(w http.ResponseWriter, r *http.Request, 
 			continue
 		}
 		seq, kind := parseEnvelopeFilename(e.Name())
-		body, rerr := os.ReadFile(filepath.Join(dir, e.Name()))
+		body, rerr := d.openEnvelopeFile(filepath.Join(dir, e.Name()))
 		if rerr != nil {
 			continue
 		}
@@ -220,7 +219,7 @@ func (d *daemonState) handleIntentSummary(w http.ResponseWriter, r *http.Request
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
 		return
 	}
-	sum := d.indexCache.summaryFor(intentID, dir, info.ModTime())
+	sum := d.indexCache.summaryFor(d, intentID, dir, info.ModTime())
 	if sum == nil {
 		writeJSON(w, http.StatusNotFound, map[string]string{"error": "intent has no envelopes"})
 		return
@@ -260,7 +259,7 @@ func (d *daemonState) handleIntentLifecycle(w http.ResponseWriter, r *http.Reque
 		return
 	}
 	dir := filepath.Join(d.journalDir, intentID)
-	envelopes, err := readSortedEnvelopes(dir)
+	envelopes, err := d.readSortedEnvelopes(dir)
 	if err != nil {
 		writeJSON(w, statusFromFsErr(err), map[string]string{"error": err.Error()})
 		return
@@ -308,7 +307,7 @@ func (d *daemonState) handleIntentPlan(w http.ResponseWriter, r *http.Request, i
 		return
 	}
 	dir := filepath.Join(d.journalDir, intentID)
-	envelopes, err := readSortedEnvelopes(dir)
+	envelopes, err := d.readSortedEnvelopes(dir)
 	if err != nil {
 		writeJSON(w, statusFromFsErr(err), map[string]string{"error": err.Error()})
 		return
@@ -359,8 +358,7 @@ func (d *daemonState) handleIntentTranscript(w http.ResponseWriter, r *http.Requ
 	if _, ok := d.requireAuthPolicy(w, r, authAny); !ok {
 		return
 	}
-	path := filepath.Join(d.transcriptsDir, intentID+".jsonl")
-	f, err := os.Open(path)
+	lines, err := d.readTranscriptLines(intentID)
 	if err != nil {
 		if os.IsNotExist(err) {
 			writeJSON(w, http.StatusNotFound, map[string]string{"error": "transcript not found"})
@@ -369,19 +367,11 @@ func (d *daemonState) handleIntentTranscript(w http.ResponseWriter, r *http.Requ
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
 		return
 	}
-	defer f.Close()
-	dec := json.NewDecoder(f)
 	events := make([]map[string]interface{}, 0, 128)
-	for {
+	for _, line := range lines {
 		var ev map[string]interface{}
-		if err := dec.Decode(&ev); err != nil {
-			if err == io.EOF {
-				break
-			}
-			writeJSON(w, http.StatusInternalServerError, map[string]string{
-				"error": "decode transcript: " + err.Error(),
-			})
-			return
+		if err := json.Unmarshal(line, &ev); err != nil {
+			continue // tolerate partial/legacy lines
 		}
 		events = append(events, ev)
 	}
@@ -406,7 +396,7 @@ func (d *daemonState) handleIntentAttestation(w http.ResponseWriter, r *http.Req
 		return
 	}
 	dir := filepath.Join(d.journalDir, intentID)
-	envelopes, err := readSortedEnvelopes(dir)
+	envelopes, err := d.readSortedEnvelopes(dir)
 	if err != nil {
 		writeJSON(w, statusFromFsErr(err), map[string]string{"error": err.Error()})
 		return
@@ -489,8 +479,7 @@ func (d *daemonState) handleIntentReplayRoots(w http.ResponseWriter, r *http.Req
 	if _, ok := d.requireAuthPolicy(w, r, authAny); !ok {
 		return
 	}
-	path := filepath.Join(d.transcriptsDir, intentID+".jsonl")
-	f, err := os.Open(path)
+	lines, err := d.readTranscriptLines(intentID)
 	if err != nil {
 		if os.IsNotExist(err) {
 			writeJSON(w, http.StatusNotFound, map[string]string{"error": "transcript not found"})
@@ -499,19 +488,14 @@ func (d *daemonState) handleIntentReplayRoots(w http.ResponseWriter, r *http.Req
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": err.Error()})
 		return
 	}
-	defer f.Close()
-	dec := json.NewDecoder(f)
 	var pre, post string
-	for {
+	for _, line := range lines {
 		var ev struct {
 			Type   string                 `json:"type"`
 			Fields map[string]interface{} `json:"fields"`
 		}
-		if err := dec.Decode(&ev); err != nil {
-			if err == io.EOF {
-				break
-			}
-			break // tolerate partial reads
+		if err := json.Unmarshal(line, &ev); err != nil {
+			continue // tolerate partial/legacy lines
 		}
 		switch ev.Type {
 		case "walk.cortex.pre":
@@ -554,7 +538,7 @@ func (d *daemonState) handleIntentEnvelope(w http.ResponseWriter, r *http.Reques
 		if !strings.HasPrefix(e.Name(), prefix) || !strings.HasSuffix(e.Name(), ".json") {
 			continue
 		}
-		body, rerr := os.ReadFile(filepath.Join(dir, e.Name()))
+		body, rerr := d.openEnvelopeFile(filepath.Join(dir, e.Name()))
 		if rerr != nil {
 			writeJSON(w, http.StatusInternalServerError, map[string]string{"error": rerr.Error()})
 			return
@@ -891,7 +875,7 @@ type envelopePair struct {
 
 // readSortedEnvelopes reads all envelope JSON files in an intent dir,
 // sorted by seq ascending. Returns an error when the dir is missing.
-func readSortedEnvelopes(dir string) ([]envelopePair, error) {
+func (d *daemonState) readSortedEnvelopes(dir string) ([]envelopePair, error) {
 	entries, err := os.ReadDir(dir)
 	if err != nil {
 		return nil, err
@@ -902,7 +886,7 @@ func readSortedEnvelopes(dir string) ([]envelopePair, error) {
 			continue
 		}
 		seq, kind := parseEnvelopeFilename(e.Name())
-		body, rerr := readEnvelopeBody(filepath.Join(dir, e.Name()))
+		body, rerr := d.readEnvelopeBody(filepath.Join(dir, e.Name()))
 		if rerr != nil {
 			continue
 		}

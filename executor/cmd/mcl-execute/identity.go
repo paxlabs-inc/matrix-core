@@ -16,7 +16,21 @@ import (
 	"time"
 
 	"matrix/mcl/envelope"
+	"matrix/vault"
 )
+
+const (
+	envelopeStore   = "mcl.envelope"
+	envelopeSchema1 = "envelope.v1"
+)
+
+// envelopeAD reconstructs the associated data for a persisted envelope from
+// where it lives (this user, this intent, this position in the chain) — never
+// stored, so an envelope moved between users, intents, or positions fails
+// authentication.
+func envelopeAD(user, intentID string, seq uint64) vault.AD {
+	return vault.AD{User: user, Store: envelopeStore, Stream: intentID, Seq: seq, Schema: envelopeSchema1}
+}
 
 // actorIdentity carries the ed25519 keypair + DID URIs an executor uses
 // to sign envelopes. Mirrors cmd/mcl-e2e/ActorIdentity in shape but
@@ -132,11 +146,23 @@ type envelopeStream struct {
 	t        *transcript
 	seq      uint64
 	chain    []*envelope.Envelope
+	vault    *vault.Session
+	user     string
+}
+
+// SetVault wires the fail-closed data-at-rest session and owning user DID so
+// persisted envelopes are sealed. Called once right after construction in the
+// daemon pipelines; a nil session leaves legacy plaintext (dev/CLI walk).
+// Signatures stay over the envelope's canonical logical encoding — sealing
+// changes persisted bytes only, and readers decrypt before verify.
+func (es *envelopeStream) SetVault(sess *vault.Session, user string) {
+	es.vault = sess
+	es.user = user
 }
 
 func newEnvelopeStream(parentDir, intentID string, actor *actorIdentity, t *transcript) (*envelopeStream, error) {
 	dir := filepath.Join(parentDir, intentID)
-	if err := os.MkdirAll(dir, 0o755); err != nil {
+	if err := os.MkdirAll(dir, 0o700); err != nil {
 		return nil, fmt.Errorf("envelope_stream: mkdir %s: %w", dir, err)
 	}
 	res := &staticKeyResolver{principals: map[string]ed25519.PublicKey{}}
@@ -156,7 +182,7 @@ func (es *envelopeStream) SignAndPersist(kind string, body interface{}, correlat
 	if err != nil {
 		return nil, fmt.Errorf("envelope_stream: NewEnvelope %s: %w", kind, err)
 	}
-	atomic.AddUint64(&es.seq, 1)
+	seq := atomic.AddUint64(&es.seq, 1)
 	env.ID = newULIDLike()
 	env.At = time.Now().UTC().Format(time.RFC3339Nano)
 	env.From = es.actor.UserURI
@@ -177,8 +203,15 @@ func (es *envelopeStream) SignAndPersist(kind string, body interface{}, correlat
 		return nil, fmt.Errorf("envelope_stream: json %s: %w", kind, err)
 	}
 	pretty := prettyJSON(js)
-	path := filepath.Join(es.dir, fmt.Sprintf("%04d-%s.json", es.seq, sanitiseKind(kind)))
-	if err := os.WriteFile(path, pretty, 0o644); err != nil {
+	// Seal the whole file at rest (fail-closed when the vault is required);
+	// nil session = legacy plaintext for dev/CLI. The AD binds the position
+	// (seq) so a sealed envelope re-ordered inside the chain fails to open.
+	pretty, err = es.vault.MaybeSealFile(envelopeAD(es.user, es.intentID, seq), pretty)
+	if err != nil {
+		return nil, fmt.Errorf("envelope_stream: seal %s: %w", kind, err)
+	}
+	path := filepath.Join(es.dir, fmt.Sprintf("%04d-%s.json", seq, sanitiseKind(kind)))
+	if err := os.WriteFile(path, pretty, 0o600); err != nil {
 		return nil, fmt.Errorf("envelope_stream: write %s: %w", path, err)
 	}
 	es.chain = append(es.chain, env)
