@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import { createInterface } from 'node:readline'
-import { readFileSync, readdirSync, statSync } from 'node:fs'
+import { readFileSync, readdirSync, realpathSync, statSync } from 'node:fs'
 import { basename, join, relative, resolve, sep } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 
@@ -370,7 +370,13 @@ function start() {
   })
 }
 
-const direct = process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href
+export function isDirectExecution(executablePath = process.argv[1], modulePath = fileURLToPath(import.meta.url)) {
+  if (!executablePath) return false
+  try { return realpathSync(executablePath) === realpathSync(modulePath) }
+  catch { return pathToFileURL(modulePath).href === pathToFileURL(executablePath).href }
+}
+
+const direct = isDirectExecution()
 if (direct && process.argv.includes('--selftest')) {
   console.log(`sandbox: ${tools.length} tools`)
   console.log('sandbox OK')

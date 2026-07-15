@@ -1,11 +1,12 @@
 import assert from 'node:assert/strict'
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs'
+import { mkdtempSync, mkdirSync, rmSync, symlinkSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import test from 'node:test'
+import { fileURLToPath } from 'node:url'
 
 const workspace = mkdtempSync('/tmp/matrix-preview-bridge-')
 process.env.MATRIX_WORKSPACE_ROOT = workspace
-const { collectFiles, detectLaunch, handleMcpRequest } = await import('../../tools/sandbox/sandbox.mjs')
+const { collectFiles, detectLaunch, handleMcpRequest, isDirectExecution } = await import('../../tools/sandbox/sandbox.mjs')
 
 test.after(() => rmSync(workspace, { recursive: true, force: true }))
 
@@ -76,4 +77,11 @@ test('Neo sees one tool and receives an exact failure envelope', async () => {
       details: { app_directory: '/outside' },
     },
   })
+})
+
+test('Railway runtime symlink is recognized as direct execution', () => {
+  const bridgePath = fileURLToPath(new URL('../../tools/sandbox/sandbox.mjs', import.meta.url))
+  const linkedPath = join(workspace, 'sandbox-bridge.mjs')
+  symlinkSync(bridgePath, linkedPath)
+  assert.equal(isDirectExecution(linkedPath, bridgePath), true)
 })
