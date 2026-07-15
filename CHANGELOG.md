@@ -6,13 +6,213 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 Cross-references in parentheses point to either `knowledge/matrix.kvx` session
-entries (`sess#NN`) or research decision IDs (`D1`-`D18`).
+entries (`sess#NN`), research decision IDs (`D1`-`D18`), or — from 0.27.0
+onward — feature specs under `spec/<feature>/` (the kvx is the authoritative
+record of each feature's requirements, design, and task statuses). Versions
+from 0.26.0 onward are feature milestones dated by completion; they are not
+git tags.
 
 ## [Unreleased]
 
 ### Added
 
-- **sess#32 ambient-architect — MatrixGateway service** (plan §5.15, §5.16, §10):
+- **ORACLE — sealed user data + opt-in personalization** (`spec/oracle/`,
+  2026-07-15, Half B complete; Half A core complete):
+  - New top-level `vault/` module: envelope encryption (platform KEK behind a
+    KeyProvider seam → wrapped per-user key → per-object DEKs, AES-256-GCM),
+    three ciphertext shapes (record-AEAD JSONL preserving O(1) append +
+    torn-tail crash recovery, whole-file AEAD for tmp+rename JSON, chunked
+    streaming AEAD for media/snapshots), versioned self-describing headers,
+    KEK rotation without data rewrite, fail-closed boot under
+    `VAULT_REQUIRED` (router injects it in prod).
+  - Store encryption wired across the fleet: neo conversations/traces/tasks/
+    settings/inboxes/conv-meta, construct surfaces, executor transcripts/
+    async jobs/intent envelopes, and cortex Pebble VALUES sealed **below**
+    the hash boundary (leaf/SMT hashes over plaintext; `OverallRoot`
+    byte-identity proven live, across replay, and across in-place migration).
+    Daemon snapshot tarballs sealed before S3/MinIO push with decrypt-verify
+    restore. Permission sweep to 0700/0600 across data stores.
+  - Personalization (default OFF): one versioned tagged pinned cortex
+    profile record with daemon `GET/PUT/DELETE /personalization` + export;
+    guided five-group skippable interview in normal chat
+    (`POST /interview/start`), confirmation-gated
+    `save_personalization_profile` advertised only to interview agents,
+    writeback extraction structurally excluded from interview conversations.
+  - Morning brief: `briefsettings` sidecar + dedicated `MORNING_BRIEF`
+    Chronos convention (one idempotent alarm at the user's local time,
+    DST-correct), fail-closed wake gates (disabled/paused = zero network,
+    day/date guards, never twice per local date), supervised run on a
+    POSITIVE read-only tool allowlist (money/signing/fs/deploy/exec
+    structurally absent), task-ledger durability with a dedicated
+    restricted-surface resume path, durable conversation turn + inbox record
+    before any notification, content policy (≤5 source-backed news items,
+    ≤2 rotating recommendations, facts-vs-recommendations, disclosure) with
+    a deterministic post-check and a durable no-repeat/feedback history
+    (`neo/internal/briefhistory`, `POST /brief/feedback`).
+  - Client: morning-brief Settings section (schedule, sections, pause,
+    interview entry, profile view/export/delete), i18n ×5 locales.
+  - Remaining in-spec: media streaming-seal tests (2.4), migration + plaintext
+    scanner (waves 5), deletion pipeline + training-consent lineage (wave 6),
+    Half-B property/E2E suite (6.1).
+- **MORPHEUS — the agent core reassembled** (`spec/morpheus/`, 2026-07-14,
+  waves 1-5): single memory path + one-window law (legacy pager machinery
+  deleted with liveness proofs); a reified per-turn struct owning ALL turn
+  state (zero manual zeroing across respawns); the Chat loop staged into
+  `prepareTurn` / `prepareWindow` / `generate` / `deliberate` / `closeTurn` /
+  `act` with exactly ONE window-assembly site. Remaining: sediment deletions
+  (awaiting owner YES), termination guard chain, guidance choke point,
+  governor waves.
+
+## [0.35.0] - 2026-07-13 — DEUS-LAYERX: LXP payments + Neo consolidation
+
+### Added
+
+- **LXP (`lxp/1`)** (`spec/deus-layerx/`): HTTP-native payments on LayerX —
+  plain 402 challenge with embedded LayerX nonce → client ed25519 DID-signs
+  the intent → server submits to layerxd → `X-LayerX-Receipt`. USDX-native
+  pricing (6dp micro-USDX); layerx holds ledger
+  (authorize/capture/release, payer-authorized captor, TTL sweep, reserve +
+  conservation properties on real Postgres); ref binding on pay/hold
+  preimages; gateway exact + hold rails incl. hosted execution; payee DIDs +
+  `/v1/me/earnings` LayerX block with withdraw link-out; `deus.mjs`
+  leash-gated client (`LAYERX_MAX_SPEND_USDX` / `LAYERX_MAX_DAILY_USDX`,
+  cross-implementation signature vectors); middleware kits `pkg/lxp` (Go) and
+  `runner/src/lxp.js` (Node); E2E + custody property proofs (gateway balance
+  byte-identical across success/failure/replay; rail-down = 503 with zero
+  free executions).
+
+### Removed
+
+- Deus legacy payment rails: `internal/{channels,settlement,wallet,streams}`,
+  `PaymentChannel.sol`, voucher receipts, stream/settle routes — deleted
+  behind the custody proofs; docs swept to the lxp/1 posture.
+
+### Changed
+
+- **Neo consolidation**: MCL, Cassandra, and Cody are GONE as separate
+  agents — Cassandra 2.0 runs in-process inside Neo, the `/cody` workbench is
+  Neo-owned, MCL survives as a library. Legacy `cody/` dir + deploy wiring
+  are dead pending deletion (morpheus 1.3).
+
+## [0.34.0] - 2026-07-12 — EPISTEMIC-CORE
+
+### Added
+
+- `spec/epistemic-core/` complete: the root-cause fix for the
+  assume-then-pursue failure class. Context window re-based to the true 1M
+  tokens; the full structural self-model capability surface rendered
+  byte-stable into the prompt prefix (truth resident at generation time);
+  premise ledger with provenance (`cited|assumption`) + check-before-act
+  dispatch gate; self-claims resolved deterministically from the resident
+  self-model; prediction-carrying dispatch (every probe declares an
+  expectation; mismatches are belief-update events; 3 consecutive
+  per-strategy mismatches force a tools-stripped revision); reified task
+  graph with computable evidence-delta convergence replacing churn-blind
+  stall as the primary termination signal.
+
+## [0.33.0] - 2026-07-11 — NEO-WORKBENCH
+
+### Added
+
+- `spec/neo-workbench/` complete: Neo takes over the coding front end behind
+  the `/cody` route (one workbench, Neo identity). Workspace API
+  (`/workspace/*`: tree, file read, atomic conflict-checked write, diff,
+  bounded exec) + project registry (`/projects`, projects are
+  `/workspace/<dir>` subdirs); bolt.diy-shaped client shell with inline
+  action cards, live-typing CodeMirror editor (real write path, never silent
+  clobber), tabbed buffers, warm-charcoal theme; live previews + unsafe exec
+  in on-demand Railway sandboxes (never the user's main VM); agent
+  workspace-awareness (workspace root + active project injected into the
+  prompt, `workspace_preview` tool, deploy-only-when-asked).
+
+## [0.32.0] - 2026-07-11 — BROWSER-FILMSTRIP
+
+### Added
+
+- `spec/browser-filmstrip/` complete: Neo's Computer shows a live-feeling
+  browsing screen. Tool-produced screenshots persist out-of-band to the media
+  plane (`MediaPersistFunc` seam → `/media/<id>`; the model-facing transcript
+  stays clean); auto-capture after view-changing browser actions; the URL
+  rides `ToolEvent.ScreenshotURL` → `tool.step` → client filmstrip with
+  authed blob loading; per-user Playwright + Chromium baked into the Railway
+  daemon image (loopback browser bridge); media retention GC. Root-caused and
+  fixed the playwright-mcp heartbeat kill (unanswered SSE pings closed every
+  browser session after ~5s).
+
+## [0.31.0] - 2026-07-10 — SELF-MODEL
+
+### Added
+
+- `spec/self-model/` complete: Neo as a self-aware unified agent. Shared
+  `matrix/cortex/self` persona + resolver (single identity spine across
+  surfaces); structural self-model built from the code graph and consulted
+  before capability claims (`memory_recall "self:"`); guards demoted to
+  failsafes; safety-wall-under-merge; end-to-end bug-kill proofs (window
+  re-answer, blind respawn); `GET /diag/self-model` observability.
+
+## [0.30.0] - 2026-07-09 — CASSANDRA 2.0 (silent voice)
+
+### Added
+
+- `spec/cassandra-silent-voice/` shipped inside Neo: the controller observes
+  the working transcript and EDITS the prior assistant message in place
+  (two-sided doubt/assurance damping, guardrail counters, dual-record
+  `cassandra.mod` audit events) — silent when healthy.
+
+### Removed
+
+- The terminal proof-of-work completion gate: `task_complete` adjudication is
+  retired (absent from every advertised schema set; bare-answer turns finish
+  ungated; the neo module no longer imports `matrix/cassandra`).
+
+## [0.29.0] - 2026-07-03 — Railway migration
+
+### Changed
+
+- Deployment re-platformed from Fly Machines to ONE Railway
+  project/environment holding the router (public domain), gateway, chronos,
+  Postgres, MinIO, shared tool services (searxng, gotenberg, stalwart,
+  browser), and all per-user daemon services. Per-user services run
+  Serverless: the proxied request IS the wake (router `waitDaemonReady`
+  absorbs cold boot + edge 502s); daemons stay outbound-quiet when idle
+  (`MATRIX_SNAPSHOT_INTERVAL=-1s`). Snapshot storage moved to MinIO.
+
+## [0.28.0] - 2026-07-02 — AUTOMATRIX
+
+### Added
+
+- `spec/automatrix/` shipped: Neo proactive "surprise tasks". The writeback
+  consolidator captures implied opportunities (grounded, deduped,
+  fail-closed financial classifier) into a cortex Goal-carrier queue;
+  `chronos/internal/automatrix` jittered idle wakes (busy-check, opt-in
+  re-read every fire, per-day cap); supervised execution on the RESTRICTED
+  tool surface (value-transfer tools + `core_execute` structurally absent)
+  resuming the origin conversation, restart-durable with bounded attempts;
+  `neo/internal/notify` (ntfy/Apprise) pings after a durable
+  `automatrixlog` inbox record; `/automatrix/*` control surface + client
+  Settings section (queue review, financial items approval-only, inbox with
+  unread badge). Property suite: idle-only / non-competing / opt-in-gated /
+  bounded wakes proven on the real engine.
+
+## [0.27.0] - 2026-07-01 — CONTINUOUS-MEMORY
+
+### Added
+
+- `spec/continuous-memory/` complete: cortex becomes the self-managing memory
+  brain — durable provider-agnostic session store (`AppendMessage` /
+  `Transcript`), `Activate` working-context composer (pinned / outcomes /
+  timeline / recent, token-budget trim), deterministic temporal-ladder
+  rollups (hour → day → epoch, idempotent, lazily repairable, replay-safe),
+  story-so-far, and recursive recall (`RecallDescend` — the RLM insight
+  applied to time). Neo collapsed onto it: the agent renders and transports;
+  cortex selects, ranks, compacts, and remembers. Kill switch
+  (`POST /admin/halt`) + `memory.activation` client surface.
+
+## [0.26.0] - 2026-05-26 — sess#32 MatrixGateway + repo tooling
+
+### Added
+
+- **MatrixGateway service** (plan §5.15, §5.16, §10):
   - New top-level `gateway/` Go module (`module matrix/gateway`,
     stdlib-only) with `cmd/matrix-gateway` CLI, `internal/proxy`,
     `internal/ledger` (Postgres `credit_ledger` + `daily_budget_caps`

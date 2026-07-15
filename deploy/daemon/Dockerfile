@@ -59,6 +59,12 @@ ENV CGO_ENABLED=0 \
 # executor and neo pull in via `replace matrix/construct => ../construct`
 # (the Construct projection engine + transport + Ask back-channel), so its
 # tree MUST be present or `go build` can't resolve the replace target.
+# vault (matrix/vault) — the ORACLE data-at-rest envelope-encryption module.
+# Pure-stdlib (no go.sum). cortex, neo, executor, construct, bridge, and
+# codegraph all pull it in via `replace matrix/vault => ../vault`, so its
+# tree MUST be present or every downstream `go build` fails to resolve the
+# replace target.
+COPY vault/go.mod                  vault/
 COPY cortex/go.mod  cortex/go.sum  cortex/
 COPY MCL/go.mod     MCL/go.sum     MCL/
 # codegraph (matrix/codegraph) — neo pulls it in via `replace matrix/codegraph
@@ -73,6 +79,7 @@ COPY neo/go.mod     neo/go.sum     neo/
 COPY cassandra/go.mod              cassandra/
 
 # Now the source.
+COPY vault/     vault/
 COPY cortex/    cortex/
 COPY MCL/       MCL/
 COPY codegraph/ codegraph/
