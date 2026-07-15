@@ -34,6 +34,7 @@ import (
 	sbx "matrix/neo/internal/sandbox"
 	"matrix/neo/internal/server"
 	"matrix/neo/internal/task"
+	"matrix/neo/internal/telegramsettings"
 	"matrix/neo/internal/tools"
 	"matrix/neo/internal/trace"
 	"matrix/neo/internal/writeback"
@@ -244,6 +245,7 @@ func runServe(args []string) {
 		AutomatrixSettingsDir: automatrixsettings.Dir(os.Getenv("NEO_AUTOMATRIX_DIR"), cfg.CortexRoot),
 		BriefSettingsDir:      briefsettings.Dir(os.Getenv("NEO_BRIEF_DIR"), cfg.CortexRoot),
 		BriefHistoryDir:       briefhistory.Dir(os.Getenv("NEO_BRIEF_DIR"), cfg.CortexRoot),
+		TelegramSettingsDir:   telegramsettings.Dir(os.Getenv("NEO_TELEGRAM_DIR"), cfg.CortexRoot),
 		MediaDir:              mediaPath,
 		WorkspaceDir:          workspaceDir,
 		Sandbox:               sb,
@@ -295,6 +297,7 @@ func runServe(args []string) {
 
 	// Idle sandbox previews are torn down on a TTL (req 7.4).
 	engine.StartPreviewReaper(ctx)
+	engine.StartTelegram(ctx)
 
 	srv, err := server.New(engine, backendURL)
 	if err != nil {

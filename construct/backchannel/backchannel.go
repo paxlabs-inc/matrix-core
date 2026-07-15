@@ -58,10 +58,11 @@ func ValidateResponse(ask *primitives.Ask, resp *primitives.AskResponse) error {
 		}
 	case primitives.AskSign:
 		// A real wallet signature satisfies sign; so does an explicit
-		// confirmation (the actual signing still crosses the rigorous money
-		// rail via core_execute — the Ask only records the human's intent).
-		if strings.TrimSpace(resp.Signature) == "" && !confirmedTrue(resp) {
-			return fmt.Errorf("construct/backchannel: a sign response requires a signature or an explicit confirmation")
+		// decision (including a denial). The actual signing still crosses the
+		// rigorous money rail via core_execute — the Ask only records the
+		// human's intent.
+		if strings.TrimSpace(resp.Signature) == "" && resp.Confirmed == nil {
+			return fmt.Errorf("construct/backchannel: a sign response requires a signature or an explicit decision")
 		}
 	case primitives.AskUpload:
 		if strings.TrimSpace(resp.UploadRef) == "" {

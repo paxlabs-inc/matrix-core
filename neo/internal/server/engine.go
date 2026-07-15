@@ -40,6 +40,7 @@ import (
 	"matrix/neo/internal/preview"
 	"matrix/neo/internal/sandbox"
 	"matrix/neo/internal/task"
+	"matrix/neo/internal/telegramsettings"
 	"matrix/neo/internal/tools"
 	"matrix/neo/internal/trace"
 	"matrix/vault"
@@ -65,10 +66,11 @@ type Engine struct {
 	trace         *trace.Store         // durable per-run workspace timeline ("Neo's Computer"); sidecar, never cortex
 	automatrix    *automatrixlog.Store // durable Automatrix completion inbox (in-app surprise results); sidecar, never cortex
 	briefHistory  *briefhistory.Store  // durable morning-brief recommendation history + feedback (ORACLE task 5.5); sidecar, never cortex
-	mediaDir      string               // machine-volume dir for generated + uploaded media ("" disables)
-	workspaceRoot string               // VM workspace root; projects are its subdirectories ("" disables the workbench surface)
-	vault         *vault.Session       // fail-closed data-at-rest encryption session (nil = plaintext dev/CLI)
-	vaultUser     string               // user DID bound into sealed objects' associated data
+	telegram      *telegramBridge
+	mediaDir      string         // machine-volume dir for generated + uploaded media ("" disables)
+	workspaceRoot string         // VM workspace root; projects are its subdirectories ("" disables the workbench surface)
+	vault         *vault.Session // fail-closed data-at-rest encryption session (nil = plaintext dev/CLI)
+	vaultUser     string         // user DID bound into sealed objects' associated data
 
 	// projects is the workbench project registry (lazily built over
 	// workspaceRoot; nil when the workbench surface is disabled).
@@ -202,6 +204,7 @@ type EngineOptions struct {
 	AutomatrixSettingsDir string         // durable Automatrix opt-in settings dir ("" = in-memory only; wiring the production governor)
 	BriefSettingsDir      string         // durable morning-brief schedule sidecar dir ("" = in-memory only; wiring the production brief governor)
 	BriefHistoryDir       string         // durable morning-brief recommendation-history dir ("" disables; the no-repeat + feedback store)
+	TelegramSettingsDir   string         // encrypted per-user Telegram bot/channel state ("" disables the integration)
 	MediaDir              string         // machine-volume media dir ("" disables image/video/audio I/O)
 	WorkspaceDir          string         // VM workspace root for the coding workbench ("" disables /workspace and /projects)
 	Sandbox               sandbox.Client // Railway sandbox client for previews (nil disables /workspace/preview)
@@ -361,7 +364,18 @@ func NewEngine(o EngineOptions) *Engine {
 		bs.SetVault(o.Vault, vaultUser)
 		e.briefGov = newBriefGovernor(bs, newBriefMCPAlarmController(e.tools))
 	}
+	if o.TelegramSettingsDir != "" {
+		ts := telegramsettings.Open(o.TelegramSettingsDir)
+		ts.SetVault(o.Vault, vaultUser)
+		e.telegram = newTelegramBridge(e, ts)
+	}
 	return e
+}
+
+func (e *Engine) StartTelegram(ctx context.Context) {
+	if e != nil && e.telegram != nil {
+		e.telegram.Start(ctx)
+	}
 }
 
 // SetBriefGovernor wires the morning-brief opt-in + alarm bookkeeping seam
@@ -399,6 +413,9 @@ func (e *Engine) ResumeOrphanedTasks() int {
 func (e *Engine) Close() {
 	if e == nil {
 		return
+	}
+	if e.telegram != nil {
+		e.telegram.Stop()
 	}
 	// Stop the warm-on-open goroutine and wait it out BEFORE returning, so a
 	// caller that closes the pager next never races an in-flight warm read.

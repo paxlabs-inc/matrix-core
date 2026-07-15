@@ -31,7 +31,7 @@ func TestValidateResponse(t *testing.T) {
 		{"confirm missing", &primitives.Ask{AskKind: primitives.AskConfirm}, &primitives.AskResponse{}, false},
 		{"sign via signature", &primitives.Ask{AskKind: primitives.AskSign}, &primitives.AskResponse{Signature: "0xdeadbeef"}, true},
 		{"sign via confirm", &primitives.Ask{AskKind: primitives.AskSign}, &primitives.AskResponse{Confirmed: boolp(true)}, true},
-		{"sign declined", &primitives.Ask{AskKind: primitives.AskSign}, &primitives.AskResponse{Confirmed: boolp(false)}, false},
+		{"sign declined", &primitives.Ask{AskKind: primitives.AskSign}, &primitives.AskResponse{Confirmed: boolp(false)}, true},
 		{"upload ok", &primitives.Ask{AskKind: primitives.AskUpload}, &primitives.AskResponse{UploadRef: "/media/x.png"}, true},
 		{"upload blank", &primitives.Ask{AskKind: primitives.AskUpload}, &primitives.AskResponse{}, false},
 		{"unknown kind", &primitives.Ask{AskKind: "bogus"}, &primitives.AskResponse{Value: "x"}, false},

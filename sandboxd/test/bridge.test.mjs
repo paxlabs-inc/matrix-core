@@ -15,7 +15,7 @@ test('one-call detector fully configures a Vite app', () => {
   mkdirSync(root)
   writeFileSync(join(root, 'package.json'), JSON.stringify({
     scripts: { dev: 'vite' },
-    dependencies: { vite: '^7.0.0' },
+    devDependencies: { vite: '^7.0.0' },
   }))
   writeFileSync(join(root, 'package-lock.json'), '{}')
   writeFileSync(join(root, 'index.html'), '<h1>real preview</h1>')
@@ -25,9 +25,12 @@ test('one-call detector fully configures a Vite app', () => {
     framework: 'vite',
     packageManager: 'npm',
     packages: ['nodejs', 'npm'],
-    installCommand: 'npm ci',
+    installCommand: 'npm ci --include=dev --include=optional',
     startCommand: 'npm run dev -- --host 0.0.0.0 --port $PORT',
     port: 5173,
+    env: { NODE_ENV: 'development' },
+    dependencyCheckCommand: 'test -x node_modules/.bin/vite && node_modules/.bin/vite --version',
+    requiredBinary: 'vite',
   })
   const upload = collectFiles(root)
   assert.equal(upload.files.length, 3)

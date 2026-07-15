@@ -90,6 +90,7 @@ func (s *Server) routes() []routeFact {
 		// Morning-brief control surface: opt-in toggle, schedule (time/tz/days/
 		// length/sections), and pause for the ORACLE personalized brief.
 		{"/brief/", "GET/PUT /brief/settings — the morning-brief schedule + opt-in control surface", s.handleBrief},
+		{"/integrations/telegram", "GET/PUT/DELETE /integrations/telegram — connect a private Telegram chat to this user's Neo", s.handleTelegram},
 		// Personalization interview entry (ORACLE task 5.3): mint an interview-
 		// flagged conversation; the interview itself runs in the normal chat.
 		{"/interview/", "POST /interview/start — start (or repeat) the guided personalization interview", s.handleInterview},

@@ -5,6 +5,13 @@ import { curlHeaders, decodeFiles, parseCurlHeaders, safePort, shellQuote } from
 const metadataPath = '/.matrix-preview.json'
 const appLogPath = '/tmp/matrix-preview-app.log'
 
+export const dependencyInstallEnv = Object.freeze({
+  NODE_ENV: 'development',
+  NPM_CONFIG_PRODUCTION: 'false',
+  NPM_CONFIG_OMIT: '',
+  YARN_PRODUCTION: 'false',
+})
+
 function operationError(code, stage, message, details = {}, statusCode = 502) {
   return Object.assign(new Error(message), { code, stage, details, statusCode })
 }
@@ -118,13 +125,35 @@ export class SandboxManager {
       const install = String(input.install_command || '').trim()
       if (install) {
         let result
-        try { result = await sandbox.exec(install, { cwd: '/workspace', timeoutSec: 900 }) }
+        try { result = await sandbox.exec(install, { cwd: '/workspace', timeoutSec: 900, env: dependencyInstallEnv }) }
         catch (error) {
           throw operationError('DEPENDENCY_INSTALL_FAILED', 'install', `dependency installation could not run: ${error?.message || error}`, { command: install, ...railwayDetails(error) }, 422)
         }
         if (result.exitCode !== 0) {
           throw operationError('DEPENDENCY_INSTALL_FAILED', 'install', `dependency installation exited with code ${result.exitCode}`, {
             command: install,
+            exit_code: result.exitCode,
+            timed_out: result.timedOut,
+            stdout: String(result.stdout || '').slice(-4000),
+            stderr: String(result.stderr || '').slice(-4000),
+          }, 422)
+        }
+      }
+      const dependencyCheck = String(input.dependency_check_command || '').trim()
+      if (dependencyCheck) {
+        let result
+        try { result = await sandbox.exec(dependencyCheck, { cwd: '/workspace', timeoutSec: 60, env: dependencyInstallEnv }) }
+        catch (error) {
+          throw operationError('DEPENDENCY_INSTALL_INCOMPLETE', 'install', `dependency verification could not run: ${error?.message || error}`, {
+            command: dependencyCheck,
+            required_dependency: String(input.required_dependency || '') || undefined,
+            ...railwayDetails(error),
+          }, 422)
+        }
+        if (result.exitCode !== 0) {
+          throw operationError('DEPENDENCY_INSTALL_INCOMPLETE', 'install', `dependency installation completed but ${String(input.required_dependency || 'the required application executable')} is unavailable`, {
+            command: dependencyCheck,
+            required_dependency: String(input.required_dependency || '') || undefined,
             exit_code: result.exitCode,
             timed_out: result.timedOut,
             stdout: String(result.stdout || '').slice(-4000),

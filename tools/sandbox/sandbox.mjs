@@ -6,7 +6,7 @@ import { basename, join, relative, resolve, sep } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 
 const SERVER_NAME = 'sandbox'
-const SERVER_VERSION = '0.2.0'
+const SERVER_VERSION = '0.3.0'
 const PROTOCOL_VERSION = '2024-11-05'
 const REMOTE_URL = String(process.env.MATRIX_SANDBOX_URL || '').trim().replace(/\/+$/, '')
 const TOKEN = String(process.env.MATRIX_SANDBOX_TOKEN || '').trim()
@@ -139,22 +139,27 @@ function packageManager(root, manifest, names) {
     const version = /^pnpm@([0-9][0-9A-Za-z.-]*)$/.exec(declared)?.[1] || 'latest'
     return {
       name: 'pnpm',
-      install: `npm install --global pnpm@${version} && pnpm install --frozen-lockfile`,
+      install: `npm install --global pnpm@${version} && pnpm install --frozen-lockfile --prod=false`,
       run: (script) => `pnpm run ${script}`,
+      dependencyCheck: (binary) => `pnpm exec ${binary} --version`,
     }
   }
   if (names.has('yarn.lock') || declared.startsWith('yarn@')) {
     const version = /^yarn@([0-9][0-9A-Za-z.-]*)$/.exec(declared)?.[1] || 'latest'
     return {
       name: 'yarn',
-      install: `npm install --global yarn@${version} && yarn install --frozen-lockfile`,
+      install: `npm install --global yarn@${version} && yarn install --frozen-lockfile --production=false`,
       run: (script) => `yarn run ${script}`,
+      dependencyCheck: (binary) => `yarn exec ${binary} --version`,
     }
   }
   return {
     name: 'npm',
-    install: names.has('package-lock.json') || names.has('npm-shrinkwrap.json') ? 'npm ci' : 'npm install',
+    install: names.has('package-lock.json') || names.has('npm-shrinkwrap.json')
+      ? 'npm ci --include=dev --include=optional'
+      : 'npm install --include=dev --include=optional',
     run: (script) => `npm run ${script}`,
+    dependencyCheck: (binary) => `test -x node_modules/.bin/${binary} && node_modules/.bin/${binary} --version`,
   }
 }
 
@@ -187,9 +192,17 @@ function nodeLaunch(root, names) {
   let installCommand = manager.install
   if (!explicit && selected !== 'dev' && scripts.build) installCommand += ` && ${manager.run('build')}`
   const ports = { vite: 5173, astro: 4321, nuxt: 3000, sveltekit: 5173, remix: 5173, next: 3000 }
+  const binaries = {
+    vite: 'vite', astro: 'astro', nuxt: 'nuxt', sveltekit: 'vite', remix: 'remix',
+    next: 'next', 'create-react-app': 'react-scripts',
+  }
+  const requiredBinary = explicit ? '' : binaries[framework] || ''
   return {
     runtime: 'node', framework, packageManager: manager.name,
     packages: ['nodejs', 'npm'], installCommand, startCommand, port: ports[framework] || 3000,
+    env: { NODE_ENV: selected === 'dev' ? 'development' : 'production' },
+    dependencyCheckCommand: requiredBinary ? manager.dependencyCheck(requiredBinary) : '',
+    requiredBinary,
   }
 }
 
@@ -286,9 +299,12 @@ async function previewApp(args) {
       files: upload.files,
       start_command: launch.startCommand,
       install_command: launch.installCommand,
+      dependency_check_command: launch.dependencyCheckCommand || '',
+      required_dependency: launch.requiredBinary || '',
       port: launch.port,
       ttl_seconds: 1800,
       packages: launch.packages,
+      env: launch.env || {},
     })
     const verification = await verifyPreview(created.preview_url)
     return {
