@@ -283,6 +283,8 @@ func main() {
 			// result. MATRIX_SEARXNG_TOKEN is an optional bearer.
 			"MATRIX_SEARXNG_URL":   os.Getenv("MATRIX_SEARXNG_URL"),
 			"MATRIX_SEARXNG_TOKEN": os.Getenv("MATRIX_SEARXNG_TOKEN"),
+			"MATRIX_SANDBOX_URL":   envOr("MATRIX_SANDBOX_URL", "http://matrix-sandboxd.railway.internal:8092"),
+			"MATRIX_SANDBOX_TOKEN": os.Getenv("MATRIX_SANDBOX_TOKEN"),
 			// Cody preview-as-deliverable (spec/cody-client req 7). codyd in the
 			// user VM provisions a Railway sandbox on the PRIVATE network, deploys
 			// the project, and registers the sandbox's private host:port at the

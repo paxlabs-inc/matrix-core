@@ -1,0 +1,62 @@
+[
+  {
+    "name": "sandbox_create",
+    "description": "Create an isolated Railway preview sandbox from a local workspace project and return its Matrix-owned live preview URL. Use this for running or showing user apps, never the user's main machine. Runtime packages are detected; packages? can override. args: root, start_command, port, install_command?, ttl_seconds?, packages?, env?",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "root": { "type": "string" },
+        "start_command": { "type": "string" },
+        "port": { "type": "integer", "minimum": 1, "maximum": 65535 },
+        "install_command": { "type": "string" },
+        "ttl_seconds": { "type": "integer", "minimum": 60, "maximum": 86400 },
+        "packages": { "type": "array", "items": { "type": "string" }, "maxItems": 20 },
+        "env": { "type": "object", "additionalProperties": { "type": "string" } }
+      },
+      "required": ["root", "start_command", "port"],
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "sandbox_list",
+    "description": "List your active Railway preview sandboxes and their Matrix-owned URLs.",
+    "inputSchema": { "type": "object", "properties": {}, "additionalProperties": false }
+  },
+  {
+    "name": "sandbox_exec",
+    "description": "Run a command inside one of your preview sandboxes and return its real stdout, stderr, exit code, and timeout state. args: id, command, timeout_seconds?",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "command": { "type": "string" },
+        "timeout_seconds": { "type": "integer", "minimum": 1, "maximum": 900 }
+      },
+      "required": ["id", "command"],
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "sandbox_sync",
+    "description": "Sync the current files from a local workspace project into an existing preview sandbox. Restart the app with sandbox_exec if its framework does not reload changes. args: id, root",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "root": { "type": "string" }
+      },
+      "required": ["id", "root"],
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "sandbox_destroy",
+    "description": "Destroy one of your Railway preview sandboxes immediately. args: id",
+    "inputSchema": {
+      "type": "object",
+      "properties": { "id": { "type": "string" } },
+      "required": ["id"],
+      "additionalProperties": false
+    }
+  }
+]

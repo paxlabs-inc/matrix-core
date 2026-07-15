@@ -334,6 +334,7 @@ COPY tools/media     /opt/matrix/tools/media
 COPY tools/uwac      /opt/matrix/tools/uwac
 COPY tools/chronos   /opt/matrix/tools/chronos
 COPY tools/layerx    /opt/matrix/tools/layerx
+COPY tools/sandbox   /opt/matrix/tools/sandbox
 # Scaffolder suite (scaffold-<stack>.sh): Neo runs these via exec for
 # greenfield project structure instead of hand-writing boilerplate.
 COPY tools/scaffold  /opt/matrix/tools/scaffold

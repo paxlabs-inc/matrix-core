@@ -11,6 +11,7 @@ name: docker
 #   matrix-router          deploy/router/Dockerfile   front door / provisioner
 #   matrix-chronos         deploy/chronos/Dockerfile  scheduler / wake plane
 #   matrix-deus            deploy/deus/Dockerfile     deus control plane
+#   matrix-sandboxd        sandboxd/Dockerfile        Railway sandbox + branded preview plane
 #
 # Only images whose inputs changed are rebuilt (the `changes` job computes a
 # dynamic matrix); workflow_dispatch force-builds everything. Docker layer
@@ -48,6 +49,7 @@ on:
       - "chronos/**"
       - "deus/**"
       - "layerx/**"
+      - "sandboxd/**"
       - "skills/**"
       - "agents/**"
       - "tools/**"
@@ -68,6 +70,7 @@ on:
       - "deploy/router/**"
       - "deploy/chronos/**"
       - "deploy/deus/**"
+      - "sandboxd/**"
       - ".github/workflows/docker.yml"
   workflow_dispatch:
     inputs:
@@ -101,6 +104,7 @@ jobs:
       router: ${{ steps.decide.outputs.router }}
       chronos: ${{ steps.decide.outputs.chronos }}
       deus: ${{ steps.decide.outputs.deus }}
+      sandbox: ${{ steps.decide.outputs.sandbox }}
     steps:
       - uses: actions/checkout@v4
 
@@ -148,6 +152,9 @@ jobs:
               - "layerx/**"
               - "deploy/deus/**"
               - ".github/workflows/docker.yml"
+            sandbox:
+              - "sandboxd/**"
+              - ".github/workflows/docker.yml"
 
       # workflow_dispatch builds everything; push/PR builds what changed.
       - name: decide images
@@ -160,8 +167,9 @@ jobs:
           ROUTER: ${{ steps.filter.outputs.router }}
           CHRONOS: ${{ steps.filter.outputs.chronos }}
           DEUS: ${{ steps.filter.outputs.deus }}
+          SANDBOX: ${{ steps.filter.outputs.sandbox }}
         run: |
-          for key in daemon railway gateway router chronos deus; do
+          for key in daemon railway gateway router chronos deus sandbox; do
             var="$(echo "$key" | tr '[:lower:]' '[:upper:]')"
             val="${!var}"
             if [[ "$FORCE" == "true" || "$val" == "true" ]]; then
@@ -180,6 +188,7 @@ jobs:
           ROUTER: ${{ steps.decide.outputs.router }}
           CHRONOS: ${{ steps.decide.outputs.chronos }}
           DEUS: ${{ steps.decide.outputs.deus }}
+          SANDBOX: ${{ steps.decide.outputs.sandbox }}
         run: |
           include='[]'
           add() { include="$(jq -c --arg i "$1" --arg d "$2" --arg c "${3:-.}" '. + [{image:$i, dockerfile:$d, context:$c}]' <<<"$include")"; }
@@ -189,6 +198,7 @@ jobs:
           [[ "$ROUTER"  == "true" ]] && add matrix-router         deploy/router/Dockerfile
           [[ "$CHRONOS" == "true" ]] && add matrix-chronos        deploy/chronos/Dockerfile
           [[ "$DEUS"    == "true" ]] && add matrix-deus           deploy/deus/Dockerfile
+          [[ "$SANDBOX" == "true" ]] && add matrix-sandboxd       Dockerfile sandboxd
           echo "include=$include" >> "$GITHUB_OUTPUT"
           echo "building: $include"
 
@@ -264,10 +274,12 @@ jobs:
           GATEWAY_CHANGED: ${{ needs.changes.outputs.gateway }}
           CHRONOS_CHANGED: ${{ needs.changes.outputs.chronos }}
           DEUS_CHANGED: ${{ needs.changes.outputs.deus }}
+          SANDBOX_CHANGED: ${{ needs.changes.outputs.sandbox }}
           RAILWAY_ROUTER_SERVICE_ID: ${{ vars.RAILWAY_ROUTER_SERVICE_ID }}
           RAILWAY_GATEWAY_SERVICE_ID: ${{ vars.RAILWAY_GATEWAY_SERVICE_ID }}
           RAILWAY_CHRONOS_SERVICE_ID: ${{ vars.RAILWAY_CHRONOS_SERVICE_ID }}
           RAILWAY_DEUS_SERVICE_ID: ${{ vars.RAILWAY_DEUS_SERVICE_ID }}
+          RAILWAY_SANDBOX_SERVICE_ID: ${{ vars.RAILWAY_SANDBOX_SERVICE_ID }}
         run: |
           if [[ -z "$RAILWAY_API_TOKEN" || -z "$RAILWAY_ENVIRONMENT_ID" ]]; then
             echo "::notice::Railway credentials not configured; skipping redeploy"
@@ -303,4 +315,5 @@ jobs:
           redeploy matrix-gateway "$GATEWAY_CHANGED" "$RAILWAY_GATEWAY_SERVICE_ID"
           redeploy matrix-chronos "$CHRONOS_CHANGED" "$RAILWAY_CHRONOS_SERVICE_ID"
           redeploy matrix-deus    "$DEUS_CHANGED"    "$RAILWAY_DEUS_SERVICE_ID"
+          redeploy matrix-sandboxd "$SANDBOX_CHANGED" "$RAILWAY_SANDBOX_SERVICE_ID"
           exit "$fail"
