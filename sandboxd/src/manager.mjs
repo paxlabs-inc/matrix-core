@@ -3,6 +3,19 @@ import { Sandbox } from 'railway'
 import { curlHeaders, decodeFiles, parseCurlHeaders, safePort, shellQuote } from './protocol.mjs'
 
 const metadataPath = '/.matrix-preview.json'
+const appLogPath = '/tmp/matrix-preview-app.log'
+
+function operationError(code, stage, message, details = {}, statusCode = 502) {
+  return Object.assign(new Error(message), { code, stage, details, statusCode })
+}
+
+function railwayDetails(error) {
+  return {
+    railway_error: error?.message || String(error),
+    ...(error?.status ? { railway_http_status: error.status } : {}),
+    ...(Array.isArray(error?.errors) ? { railway_errors: error.errors.map((item) => item.message).filter(Boolean).slice(0, 10) } : {}),
+  }
+}
 
 export class SandboxManager {
   constructor(config) {
@@ -84,24 +97,50 @@ export class SandboxManager {
     }
     const template = Sandbox.template().withPackages(...new Set(['curl', ...requestedPackages])).workdir('/workspace')
 
-    const sandbox = await Sandbox.create(template, this.options({
-      idleTimeoutMinutes: Math.ceil(ttl / 60),
-      networkIsolation: 'ISOLATED',
-      env,
-    }))
+    let sandbox
+    try {
+      sandbox = await Sandbox.create(template, this.options({
+        idleTimeoutMinutes: Math.ceil(ttl / 60),
+        networkIsolation: 'ISOLATED',
+        env,
+      }))
+    } catch (error) {
+      throw operationError('RAILWAY_PROVISION_FAILED', 'provision', `Railway could not provision the sandbox: ${error?.message || error}`, railwayDetails(error))
+    }
     let keep = false
     try {
-      await sandbox.files.mkdir('/workspace')
-      for (const file of files) await sandbox.files.write(file.path, file.content, { mode: file.mode })
+      try {
+        await sandbox.files.mkdir('/workspace')
+        for (const file of files) await sandbox.files.write(file.path, file.content, { mode: file.mode })
+      } catch (error) {
+        throw operationError('UPLOAD_FAILED', 'upload', `project upload failed: ${error?.message || error}`, railwayDetails(error))
+      }
       const install = String(input.install_command || '').trim()
       if (install) {
-        const result = await sandbox.exec(install, { cwd: '/workspace', timeoutSec: 900 })
-        if (result.exitCode !== 0) throw new Error(`install command failed: ${result.stderr || result.stdout}`.slice(0, 2000))
+        let result
+        try { result = await sandbox.exec(install, { cwd: '/workspace', timeoutSec: 900 }) }
+        catch (error) {
+          throw operationError('DEPENDENCY_INSTALL_FAILED', 'install', `dependency installation could not run: ${error?.message || error}`, { command: install, ...railwayDetails(error) }, 422)
+        }
+        if (result.exitCode !== 0) {
+          throw operationError('DEPENDENCY_INSTALL_FAILED', 'install', `dependency installation exited with code ${result.exitCode}`, {
+            command: install,
+            exit_code: result.exitCode,
+            timed_out: result.timedOut,
+            stdout: String(result.stdout || '').slice(-4000),
+            stderr: String(result.stderr || '').slice(-4000),
+          }, 422)
+        }
       }
-      const handle = sandbox.exec(startCommand, { cwd: '/workspace' })
-      const sessionName = await handle.sessionName
-      await handle.detach()
-      await this.waitHealthy(sandbox, port)
+      let sessionName
+      try {
+        const handle = sandbox.exec(`(${startCommand}) >${appLogPath} 2>&1`, { cwd: '/workspace' })
+        sessionName = await handle.sessionName
+        await handle.detach()
+      } catch (error) {
+        throw operationError('APP_START_FAILED', 'start', `application process could not be started: ${error?.message || error}`, { command: startCommand, ...railwayDetails(error) }, 422)
+      }
+      await this.waitHealthy(sandbox, port, startCommand)
       const now = Date.now()
       const record = {
         kind: 'matrix-preview-v1',
@@ -124,13 +163,26 @@ export class SandboxManager {
     }
   }
 
-  async waitHealthy(sandbox, port) {
+  async waitHealthy(sandbox, port, startCommand) {
+    let lastProbe = null
     for (let i = 0; i < 40; i++) {
       const result = await sandbox.exec(`curl -sS -o /dev/null -w '%{http_code}' --max-time 2 http://127.0.0.1:${port}/`, { timeoutSec: 5 })
       if (result.exitCode === 0 && /^[234]\d\d$/.test(result.stdout.trim())) return
+      lastProbe = {
+        exit_code: result.exitCode,
+        stdout: String(result.stdout || '').slice(-1000),
+        stderr: String(result.stderr || '').slice(-1000),
+      }
       await new Promise((resolve) => setTimeout(resolve, 3000))
     }
-    throw new Error(`app did not become reachable on port ${port}`)
+    let applicationLog = ''
+    try { applicationLog = String(await sandbox.files.read(appLogPath)).slice(-8000) } catch {}
+    throw operationError('APP_NOT_READY', 'start', `application did not become reachable on port ${port}`, {
+      command: startCommand,
+      port,
+      last_probe: lastProbe,
+      application_log: applicationLog,
+    }, 422)
   }
 
   async exec(userId, slug, command, timeoutSec = 120) {

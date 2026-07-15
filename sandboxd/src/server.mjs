@@ -10,15 +10,25 @@ function json(res, status, value) {
   res.end(body)
 }
 
-function error(res, err) {
+function error(res, err, expose = false) {
   const status = err.statusCode || (/required|must|invalid|files|path|port|ttl/i.test(err.message) ? 400 : 500)
-  json(res, status, { error: status >= 500 ? 'sandbox operation failed' : err.message })
+  const detail = {
+    code: err.code || (status >= 500 ? 'SANDBOX_OPERATION_FAILED' : 'INVALID_REQUEST'),
+    stage: err.stage || 'request',
+    message: expose || status < 500 ? err.message : 'sandbox operation failed',
+    ...(expose && err.details && Object.keys(err.details).length ? { details: err.details } : {}),
+  }
+  json(res, status, { ok: false, status: 'error', error: detail })
   if (status >= 500) console.error(err)
 }
 
 async function inputJSON(req, limit) {
   const body = await readBody(req, limit)
   try { return body.length ? JSON.parse(body) : {} } catch { throw new Error('invalid JSON body') }
+}
+
+function uploadRequestLimit(config) {
+  return Math.ceil(config.maxUploadBytes * 4 / 3) + config.maxFiles * 512 + 1_000_000
 }
 
 export function createServer(config, manager) {
@@ -50,7 +60,7 @@ export function createServer(config, manager) {
       const match = /^\/v1\/sandboxes\/([a-z0-9]{32})(?:\/(exec|files))?$/.exec(url.pathname)
 
       if (url.pathname === '/v1/sandboxes' && req.method === 'POST') {
-        return json(res, 201, await manager.create(userId, await inputJSON(req, config.maxUploadBytes + 1_000_000)))
+        return json(res, 201, await manager.create(userId, await inputJSON(req, uploadRequestLimit(config))))
       }
       if (url.pathname === '/v1/sandboxes' && req.method === 'GET') return json(res, 200, { sandboxes: manager.list(userId) })
       if (!match) return json(res, 404, { error: 'not found' })
@@ -71,12 +81,12 @@ export function createServer(config, manager) {
         return result ? json(res, 200, result) : json(res, 404, { error: 'sandbox not found' })
       }
       if (action === 'files' && req.method === 'PUT') {
-        const result = await manager.writeFiles(userId, id, (await inputJSON(req, config.maxUploadBytes + 1_000_000)).files)
+        const result = await manager.writeFiles(userId, id, (await inputJSON(req, uploadRequestLimit(config))).files)
         return result ? json(res, 200, result) : json(res, 404, { error: 'sandbox not found' })
       }
       return json(res, 405, { error: 'method not allowed' })
     } catch (err) {
-      error(res, err)
+      error(res, err, authorized(req.headers.authorization, config.token))
     }
   })
 }
@@ -84,7 +94,14 @@ export function createServer(config, manager) {
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   const config = loadConfig()
   const manager = new SandboxManager(config)
-  await manager.recover()
+  try {
+    await manager.recover()
+  } catch (err) {
+    if (/not authorized/i.test(String(err?.message))) {
+      console.error(`sandboxd: Railway rejected ${config.railwayAuthVariable} using ${config.railwayAuthType} authentication; verify its token type, environment scope, and sandbox access`)
+    }
+    throw err
+  }
   manager.startReaper()
   const server = createServer(config, manager)
   server.listen(config.port, config.addr, () => console.error(`sandboxd listening on ${config.addr}:${config.port}`))
