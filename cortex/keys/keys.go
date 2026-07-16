@@ -47,6 +47,9 @@ var (
 	PrefixRollup        = []byte("roll/")     // roll/<tier:1><start:8 BE> — continuous-memory temporal-ladder rollup records (derived lane)
 	PrefixEnrich        = []byte("enr/")      // enr/<tier:1><start:8 BE> — continuous-memory OPTIONAL LLM enrichment records (derived lane, parallel to roll/)
 	PrefixStory         = []byte("story/")    // story/<lpstr conv> — continuous-memory per-conversation story-so-far record (derived lane)
+	PrefixLexical       = []byte("lex/")      // lex/{doc,term}/... — DEJA-VU derived transcript lexical index
+	PrefixLexicalDoc    = []byte("lex/doc/")
+	PrefixLexicalTerm   = []byte("lex/term/")
 )
 
 // MetaJournalHead is the meta-namespace key holding the next-to-allocate

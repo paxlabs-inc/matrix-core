@@ -179,7 +179,7 @@ func TestCapture_ImpliedNeedYieldsRealOpportunity(t *testing.T) {
 
 	transcript := "User: I really need to send a " + markerImplied +
 		" but I haven't started it yet.\nNeo: Understood, noted."
-	c.ConsolidateSync(ctx, transcript)
+	c.ConsolidateSync(ctx, transcript, "", 0, 0)
 
 	got, err := p.PendingOpportunities(ctx, 0)
 	if err != nil {
@@ -215,7 +215,7 @@ func TestCapture_NoOpportunityTranscriptYieldsNone(t *testing.T) {
 	ctx := context.Background()
 
 	transcript := "User: Honestly " + markerNone + ", makes me happy.\nNeo: It does sound pleasant."
-	c.ConsolidateSync(ctx, transcript)
+	c.ConsolidateSync(ctx, transcript, "", 0, 0)
 
 	got, err := p.PendingOpportunities(ctx, 0)
 	if err != nil {
@@ -236,7 +236,7 @@ func TestCapture_DirectRequestNotCaptured(t *testing.T) {
 	ctx := context.Background()
 
 	transcript := "User: " + markerDirect + ".\nNeo: Deploying the staging build now."
-	c.ConsolidateSync(ctx, transcript)
+	c.ConsolidateSync(ctx, transcript, "", 0, 0)
 
 	got, err := p.PendingOpportunities(ctx, 0)
 	if err != nil {
@@ -258,8 +258,8 @@ func TestCapture_RepeatMentionDeduped(t *testing.T) {
 
 	transcript := "User: reminder, I still need to send a " + markerImplied + ".\nNeo: Noted."
 	// Two separate turns surfacing the same need.
-	c.ConsolidateSync(ctx, transcript)
-	c.ConsolidateSync(ctx, transcript)
+	c.ConsolidateSync(ctx, transcript, "", 0, 0)
+	c.ConsolidateSync(ctx, transcript, "", 0, 0)
 
 	got, err := p.PendingOpportunities(ctx, 0)
 	if err != nil {
@@ -285,7 +285,7 @@ func TestCapture_RunsIndependentOfOptIn(t *testing.T) {
 	}
 
 	transcript := "User: I keep meaning to send a " + markerImplied + ".\nNeo: Got it."
-	c.ConsolidateSync(ctx, transcript)
+	c.ConsolidateSync(ctx, transcript, "", 0, 0)
 
 	got, err := p.PendingOpportunities(ctx, 0)
 	if err != nil {
@@ -307,7 +307,7 @@ func TestCapture_UngroundedAndLowConfidenceDropped(t *testing.T) {
 
 	t.Run("ungrounded dropped", func(t *testing.T) {
 		c, p, _ := newCaptureHarness(t, client)
-		c.ConsolidateSync(ctx, "User: "+markerUngrounded+".\nNeo: ok")
+		c.ConsolidateSync(ctx, "User: "+markerUngrounded+".\nNeo: ok", "", 0, 0)
 		got, err := p.PendingOpportunities(ctx, 0)
 		if err != nil {
 			t.Fatalf("PendingOpportunities: %v", err)
@@ -322,7 +322,7 @@ func TestCapture_UngroundedAndLowConfidenceDropped(t *testing.T) {
 		if cfg.AutomatrixMinConfidence <= 0.30 {
 			t.Fatalf("test assumes the floor (%v) is above 0.30", cfg.AutomatrixMinConfidence)
 		}
-		c.ConsolidateSync(ctx, "User: "+markerLowConf+".\nNeo: ok")
+		c.ConsolidateSync(ctx, "User: "+markerLowConf+".\nNeo: ok", "", 0, 0)
 		got, err := p.PendingOpportunities(ctx, 0)
 		if err != nil {
 			t.Fatalf("PendingOpportunities: %v", err)

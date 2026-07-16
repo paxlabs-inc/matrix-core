@@ -50,7 +50,8 @@ type stepSignals struct {
 	actionsSinceGrowth int
 
 	// The unified unproductive-attempt counter at step entry.
-	unproductive int
+	unproductive    int
+	episodicPending bool
 }
 
 // readStepSignals is THE one computation of the per-step behavioral read
@@ -95,6 +96,7 @@ func (a *Agent) readStepSignals(step int, calls []llm.ToolCall, repeats int, rec
 		ungroundedSelfPremises: len(t.ledger.ungroundedSelf()),
 		mismatch:               t.mismatchMeter,
 		unproductive:           t.unproductive,
+		episodicPending:        t.episodicPending,
 	}
 	if t.graph != nil {
 		s.evidenceItems = len(t.graph.evidenceSet)
@@ -124,5 +126,6 @@ func (s *stepSignals) cassandraView() cassandraSignals {
 		workDone:               s.workDone,
 		refutedPremises:        s.refutedPremises,
 		ungroundedSelfPremises: s.ungroundedSelfPremises,
+		episodicPending:        s.episodicPending,
 	}
 }

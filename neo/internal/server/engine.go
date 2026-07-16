@@ -726,14 +726,16 @@ func (e *Engine) publishMemory(r *run, ev agent.MemoryEvent) {
 	if r == nil {
 		return
 	}
-	if strings.TrimSpace(ev.StorySoFar) == "" && len(ev.Timeline) == 0 {
+	if strings.TrimSpace(ev.StorySoFar) == "" && len(ev.Timeline) == 0 && len(ev.Excerpts) == 0 {
 		return
 	}
 	e.broker.publish(r.id, "memory.activation", "neo", map[string]interface{}{
-		"intent_id":       r.id,
-		"conversation_id": r.convID,
-		"story_so_far":    ev.StorySoFar,
-		"timeline":        ev.Timeline,
+		"intent_id":         r.id,
+		"conversation_id":   r.convID,
+		"story_so_far":      ev.StorySoFar,
+		"timeline":          ev.Timeline,
+		"episodic_excerpts": ev.Excerpts,
+		"trigger_class":     ev.TriggerClass,
 	})
 }
 

@@ -236,3 +236,44 @@ func TestBuildCassandraSignalsDetectsRepeat(t *testing.T) {
 		t.Errorf("a distinct batch must not add to the repeat count, got %d", sig2.effectiveRepeats)
 	}
 }
+
+func TestCassandraEpisodicUngroundedExactPredicate(t *testing.T) {
+	a := newCasAgent(t)
+	cases := []struct {
+		name    string
+		pending bool
+		closing bool
+		want    modTrigger
+	}{
+		{name: "detected ungrounded closing", pending: true, closing: true, want: trigEpisodicUngrounded},
+		{name: "not detected", pending: false, closing: true},
+		{name: "not closing", pending: true, closing: false},
+		{name: "ordinary", pending: false, closing: false},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			trig, _ := a.cassandraClassify(cassandraSignals{step: 3, episodicPending: tc.pending, closing: tc.closing})
+			if trig != tc.want {
+				t.Fatalf("trigger=%q want %q", trig, tc.want)
+			}
+		})
+	}
+}
+
+func TestCassandraEpisodicUngroundedContentOnlyDualRecord(t *testing.T) {
+	a := newCasAgent(t)
+	a.working = []llm.Message{llm.UserMessage("Remember when?"), llm.AssistantMessage("It happened last week.")}
+	beforeUserRole, beforeUserContent := a.working[0].Role, a.working[0].Content
+	if !a.cassandraStep(cassandraSignals{step: 3, closing: true, episodicPending: true}) {
+		t.Fatal("episodic failsafe did not fire")
+	}
+	if len(a.turn.casRecord) != 1 || a.turn.casRecord[0].Trigger != trigEpisodicUngrounded || a.turn.casRecord[0].Original != "It happened last week." {
+		t.Fatalf("dual record=%+v", a.turn.casRecord)
+	}
+	if a.working[0].Role != beforeUserRole || a.working[0].Content != beforeUserContent {
+		t.Fatal("user turn was modified")
+	}
+	if !strings.Contains(a.working[1].Content, "memory_recall") || !strings.HasPrefix(a.working[1].Content, "It happened last week.") {
+		t.Fatalf("folded assistant content=%q", a.working[1].Content)
+	}
+}

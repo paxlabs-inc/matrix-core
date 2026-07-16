@@ -72,6 +72,7 @@ func (a *Agent) finishTurn(ctx context.Context, answer string, surfaced map[stri
 // Best-effort + idempotent enough: the consolidator de-dupes on write.
 func (a *Agent) consolidateWorking() {
 	if a.consolidator != nil {
-		a.consolidator.Consolidate(renderTranscript(a.working))
+		conv, seqLo, seqHi := a.provenanceRange()
+		a.consolidator.Consolidate(renderTranscript(a.working), conv, seqLo, seqHi)
 	}
 }

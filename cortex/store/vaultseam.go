@@ -55,6 +55,7 @@ var sealedPrefixes = [][]byte{
 	keys.PrefixStory,         // story/   story-so-far records
 	keys.PrefixCheckpoint,    // chk/     compaction checkpoints
 	keys.PrefixVecMeta,       // vec/meta/ embedding metadata payloads
+	keys.PrefixLexical,       // lex/      transcript lexical postings
 }
 
 // SetVault wires the fail-closed data-at-rest session and owning user DID into

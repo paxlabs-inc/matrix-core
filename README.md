@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://cdn.redixusercontent.ocfstudio.com/matrix.png" alt="Matrix" />
+  <img src="https://github.com/paxlabs-inc/matrix-core/blob/main/MATRIX.gif?raw=true" alt="Matrix" />
 </p>
 
 <p align="center">

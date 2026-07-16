@@ -28,6 +28,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sort"
 	"sync"
 
 	"github.com/cockroachdb/pebble"
@@ -138,6 +139,54 @@ func (s *Store) Path() string { return filepath.Join(s.root, s.actor) }
 // later phases (memory writer, snapshot accumulator); avoid using from
 // application code.
 func (s *Store) DB() *pebble.DB { return s.db }
+
+// ReplaceDerivedPrefix atomically replaces one derived namespace without a
+// journal append. It is reserved for deterministic, rebuildable lanes that are
+// not inputs to OverallRoot. Values still pass through the vault seal seam.
+func (s *Store) ReplaceDerivedPrefix(prefix []byte, rows map[string][]byte) error {
+	b := s.db.NewBatch()
+	defer b.Close()
+	upper := append(append([]byte(nil), prefix...), 0xff)
+	if err := b.DeleteRange(prefix, upper, nil); err != nil {
+		return err
+	}
+	keysSorted := make([]string, 0, len(rows))
+	for k := range rows {
+		keysSorted = append(keysSorted, k)
+	}
+	sort.Strings(keysSorted)
+	for _, key := range keysSorted {
+		sealed, err := s.sealValue([]byte(key), rows[key])
+		if err != nil {
+			return err
+		}
+		if err := b.Set([]byte(key), sealed, nil); err != nil {
+			return err
+		}
+	}
+	return b.Commit(pebble.Sync)
+}
+
+// SetDerivedRows atomically upserts derived-lane rows without journaling.
+func (s *Store) SetDerivedRows(rows map[string][]byte) error {
+	b := s.db.NewBatch()
+	defer b.Close()
+	keysSorted := make([]string, 0, len(rows))
+	for k := range rows {
+		keysSorted = append(keysSorted, k)
+	}
+	sort.Strings(keysSorted)
+	for _, key := range keysSorted {
+		sealed, err := s.sealValue([]byte(key), rows[key])
+		if err != nil {
+			return err
+		}
+		if err := b.Set([]byte(key), sealed, nil); err != nil {
+			return err
+		}
+	}
+	return b.Commit(pebble.Sync)
+}
 
 // loadHead reads meta/journal_head from the DB. If absent, initializes to 0.
 func (s *Store) loadHead() error {

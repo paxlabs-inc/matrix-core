@@ -256,6 +256,13 @@ func (s *Server) handleChat(w http.ResponseWriter, r *http.Request) {
 	if convID == "" {
 		convID = synthConvID(msg)
 	}
+	if s.engine.MaybeHandleEpisodicSweep(msg) {
+		writeJSON(w, http.StatusAccepted, map[string]interface{}{
+			"conversation_id": convID,
+			"kind":            "episodic_sweep",
+		})
+		return
+	}
 	// Chronos AUTOMATRIX idle-wake: NOT a normal user turn. The engine wake
 	// handler re-reads the per-user opt-in, defers on a busy session, enforces
 	// the per-day cap, picks one eligible opportunity (handed to the supervised

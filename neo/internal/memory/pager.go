@@ -172,6 +172,13 @@ func (p *Pager) RecallDescend(query string, opts cortex.RecallOpts) (*cortex.Rec
 	return p.cortex.RecallDescend(query, opts)
 }
 
+func (p *Pager) EpisodicBackfill(batch int) (cortex.EpisodicBackfillResult, error) {
+	if p == nil || p.cortex == nil {
+		return cortex.EpisodicBackfillResult{Complete: true}, nil
+	}
+	return p.cortex.EpisodicBackfill(batch, p.cfg.CortexActor)
+}
+
 // Pinned composes the always-injected pinned block: identity, the inviolable
 // operating rules (Neo's invariants + any hard constraints in cortex), and
 // the active goal. Bounded by cfg.PinnedBudgetTokens.
@@ -850,7 +857,42 @@ func (p *Pager) Recall(ctx context.Context, queryText string, types []string, k 
 	if rest, ok := strings.CutPrefix(strings.TrimSpace(queryText), selfLookupPrefix); ok {
 		return p.recallSelf(ctx, strings.TrimSpace(rest))
 	}
-	return p.recallRecursive(ctx, queryText, types, k, asOf)
+	base, baseErr := p.recallRecursive(ctx, queryText, types, k, asOf)
+	lexical := p.recallLexical(queryText, k, asOf)
+	if lexical == "" {
+		return base, baseErr
+	}
+	if baseErr != nil || strings.TrimSpace(base) == "" {
+		return lexical, nil
+	}
+	return strings.TrimSpace(base) + "\n" + lexical, nil
+}
+
+func (p *Pager) recallLexical(queryText string, k int, asOf *time.Time) string {
+	if k <= 0 {
+		k = p.cfg.RetrievalTopK
+	}
+	var until time.Time
+	if asOf != nil {
+		until = asOf.UTC().Add(time.Nanosecond)
+	}
+	hits, err := p.cortex.QueryLexical(queryText, time.Time{}, until, k)
+	if err != nil || len(hits) == 0 {
+		return ""
+	}
+	var b strings.Builder
+	b.WriteString("Verbatim transcript matches:\n")
+	for _, hit := range hits {
+		ex, ok := p.lexicalExcerpt(hit, 1)
+		if !ok {
+			continue
+		}
+		fmt.Fprintf(&b, "- [%s %s seq %d-%d] %s\n", ex.ConversationID, ex.Date.UTC().Format("2006-01-02"), ex.SeqLo, ex.SeqHi, strings.ReplaceAll(ex.Text, "\n", " | "))
+	}
+	if b.String() == "Verbatim transcript matches:\n" {
+		return ""
+	}
+	return b.String()
 }
 
 // recallRecursive renders the recursive-recall descent (RLM applied to time)

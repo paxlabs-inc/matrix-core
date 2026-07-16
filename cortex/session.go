@@ -48,6 +48,8 @@ import (
 	"crypto/sha256"
 	"errors"
 	"fmt"
+	"strconv"
+	"strings"
 
 	"github.com/fxamacker/cbor/v2"
 
@@ -212,6 +214,35 @@ func BuildSessionURI(conv string, seq uint64) memory.URI {
 	return memory.URI(fmt.Sprintf("matrix://cortex/session/%s/%d", conv, seq))
 }
 
+// ParseSessionURI parses a canonical session message URI
+// (matrix://cortex/session/<conv>/<seq>) back into its (conv, seq)
+// components. ok is false for any string that is not a well-formed session
+// message URI — including the /toolresult spill form (which carries a third
+// path segment) and any URI whose conversation id would contain a '/'. It is
+// the inverse of BuildSessionURI and the seam the agent uses to track the
+// per-turn session seq range from AppendMessage's returned URI.
+func ParseSessionURI(uri memory.URI) (conv string, seq uint64, ok bool) {
+	const prefix = "matrix://cortex/session/"
+	s := string(uri)
+	if !strings.HasPrefix(s, prefix) {
+		return "", 0, false
+	}
+	rest := s[len(prefix):]
+	i := strings.LastIndexByte(rest, '/')
+	if i <= 0 || i == len(rest)-1 {
+		return "", 0, false
+	}
+	conv = rest[:i]
+	if strings.ContainsRune(conv, '/') {
+		return "", 0, false // e.g. the .../<seq>/toolresult spill form
+	}
+	n, err := strconv.ParseUint(rest[i+1:], 10, 64)
+	if err != nil {
+		return "", 0, false
+	}
+	return conv, n, true
+}
+
 // BuildToolResultURI returns the resolvable URI for a spilled tool_result
 // payload:
 //
@@ -324,6 +355,9 @@ func (c *Cortex) AppendMessage(m Message) (memory.URI, error) {
 	// world-state (consistent with compact.go:429-431).
 	if err := wb.Set(sessKey, encodedRec); err != nil {
 		return "", fmt.Errorf("cortex.AppendMessage: set sess: %w", err)
+	}
+	if err := c.stageLexicalMessage(wb, rec); err != nil {
+		return "", fmt.Errorf("cortex.AppendMessage: stage lexical index: %w", err)
 	}
 	if spilled != nil {
 		blobKey, berr := keys.SessionBlobKey(m.ConversationID, seq)

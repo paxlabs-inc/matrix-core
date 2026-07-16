@@ -16,6 +16,41 @@ import (
 	"matrix/cortex/query"
 )
 
+// LinkSessionProvenance adds a derived_from provenance edge from a
+// consolidated memory (memURI) back to the session transcript slice it was
+// extracted from — the (conv, seqLo, seqHi) span the consolidator knows at
+// write time (DEJA-VU req 1.1). It is a thin delegate to
+// cortex.AddSessionProvenance. Best-effort per the fail-open doctrine for the
+// write path: an empty URI (a deduped write returns none) or a blank
+// conversation is a no-op; a parse/edge error is returned for the caller to
+// swallow so a failed edge never fails the memory write.
+func (p *Pager) LinkSessionProvenance(memURI, conv string, seqLo, seqHi uint64) error {
+	if p == nil || p.cortex == nil {
+		return nil
+	}
+	memURI = strings.TrimSpace(memURI)
+	if memURI == "" || strings.TrimSpace(conv) == "" {
+		return nil
+	}
+	_, id, _, err := cortex.ParseURI(memory.URI(memURI))
+	if err != nil {
+		return err
+	}
+	return p.cortex.AddSessionProvenance(id, conv, seqLo, seqHi, p.cfg.CortexActor)
+}
+
+// ExpandToTranscript resolves a memory URI to the verbatim past exchange it was
+// extracted from (DEJA-VU req 1.3), following derived_from provenance edges to
+// a session slice (Exact) or falling back to CreatedAt proximity (approximate).
+// A thin delegate to cortex.ExpandToTranscript; a pure read. Returns (nil, nil)
+// when nothing resolves (fail-open).
+func (p *Pager) ExpandToTranscript(memURI string, radius int) (*cortex.TranscriptSlice, error) {
+	if p == nil || p.cortex == nil {
+		return nil, nil
+	}
+	return p.cortex.ExpandToTranscript(memory.URI(strings.TrimSpace(memURI)), radius)
+}
+
 // writeMeta is the standard provenance for Neo's auto-consolidated writes.
 func (p *Pager) writeMeta() cortex.WriteMeta {
 	return cortex.WriteMeta{

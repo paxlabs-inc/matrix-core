@@ -48,11 +48,17 @@ var ErrIncomplete = errors.New("neo: turn incomplete (task not finished)")
 // turn's transcript and promotes durable learnings to cortex out-of-band.
 // Implemented by internal/writeback; optional (nil disables write-back).
 type Consolidator interface {
-	Consolidate(transcript string)
+	// Consolidate enqueues a rendered turn transcript for background
+	// consolidation. conv + [seqLo, seqHi] are the cortex session
+	// conversation id and the (inclusive) session seq span of the turn that
+	// produced the transcript, threaded so every memory the consolidator
+	// writes gets a derived_from provenance edge back to its source
+	// transcript slice (DEJA-VU req 1.1). A blank conv disables provenance
+	// linking (the CLI/bare path with no cortex session state).
+	Consolidate(transcript, conv string, seqLo, seqHi uint64)
 	// ConsolidateSync runs the same extraction synchronously on the caller's
-	// goroutine. Called from compact() before evicting older turns so durable
-	// facts/events/patterns reach cortex before the turns are lost.
-	ConsolidateSync(ctx context.Context, transcript string)
+	// goroutine, carrying the same provenance coordinates as Consolidate.
+	ConsolidateSync(ctx context.Context, transcript, conv string, seqLo, seqHi uint64)
 }
 
 // ConvRecaller surfaces the most relevant PAST turns of this conversation
@@ -152,7 +158,8 @@ type Agent struct {
 	// surfacing; the agent loop stays oblivious to the presentation layer
 	// (mirrors auditObserver). Only fires under the continuous-memory collapse.
 	// Lifetime: construction.
-	memObserver MemoryObserver
+	memObserver      MemoryObserver
+	episodicSurfaced map[string]struct{}
 
 	// Lifetime: construction — the advertised tool surface, fixed at New.
 	schemas      []llm.Tool
@@ -366,25 +373,26 @@ func New(o Options) *Agent {
 		out = nopReporter{}
 	}
 	a := &Agent{
-		cfg:           o.Config,
-		main:          o.Main,
-		cheap:         o.Cheap,
-		tools:         o.Tools,
-		pager:         o.Pager,
-		out:           out,
-		consolidator:  o.Consolidator,
-		recaller:      o.Recaller,
-		observer:      o.Observer,
-		auditObserver: o.AuditObserver,
-		memObserver:   o.MemoryObserver,
-		persona:       strings.TrimSpace(o.Persona),
-		capability:    o.Capability,
-		selfModel:     strings.TrimSpace(o.SelfModel),
-		convID:        strings.TrimSpace(o.ConvID),
-		inbox:         o.Inbox,
-		automatrix:    o.Automatrix,
-		interview:     o.Interview,
-		turn:          newTurn(),
+		cfg:              o.Config,
+		main:             o.Main,
+		cheap:            o.Cheap,
+		tools:            o.Tools,
+		pager:            o.Pager,
+		out:              out,
+		consolidator:     o.Consolidator,
+		recaller:         o.Recaller,
+		observer:         o.Observer,
+		auditObserver:    o.AuditObserver,
+		memObserver:      o.MemoryObserver,
+		episodicSurfaced: map[string]struct{}{},
+		persona:          strings.TrimSpace(o.Persona),
+		capability:       o.Capability,
+		selfModel:        strings.TrimSpace(o.SelfModel),
+		convID:           strings.TrimSpace(o.ConvID),
+		inbox:            o.Inbox,
+		automatrix:       o.Automatrix,
+		interview:        o.Interview,
+		turn:             newTurn(),
 	}
 	if a.interview {
 		a.interviewExisting = strings.TrimSpace(o.InterviewExisting)
@@ -685,10 +693,6 @@ func (a *Agent) prepareTurn(ctx context.Context, userInput string) string {
 
 	bundle := a.cmActivate(userInput)
 	a.activationAssemblies++
-	// Surface the memory Neo carries to the harness from the same single
-	// bundle before rendering it — no extra Activate call, so the
-	// once-per-turn discipline (NE-7) holds.
-	a.emitMemory(bundle)
 	cmTail := a.renderActivationBundle(bundle)
 	// Q2 first-message relevance push: Activate's tiers are recency-based
 	// + query-independent, so on the OPENING turn also inject a bounded
@@ -699,6 +703,38 @@ func (a *Agent) prepareTurn(ctx context.Context, userInput string) string {
 		cmTail += pushBlock
 		retrieved = pushSnips
 	}
+	triggerClass := ""
+	var episodic []memory.EpisodicExcerpt
+	if trigger := classifyEpisodicUserMessage(userInput); trigger.Fired {
+		started := time.Now()
+		a.turn.episodicMark(trigger.Class)
+		triggerClass = trigger.Class
+		extracted := a.extractEpisodic(ctx, userInput)
+		var current []memory.EpisodicCurrentHit
+		if a.recaller != nil {
+			for _, hit := range a.recaller.Relevant(ctx, extracted.Referent) {
+				current = append(current, memory.EpisodicCurrentHit{Role: hit.Role, Text: hit.Text})
+			}
+		}
+		if a.pager != nil {
+			episodic = a.pager.EpisodicRetrieve(ctx, extracted.Referent, memory.EpisodicTimeWindow{From: extracted.Window.From, Until: extracted.Window.Until}, memory.EpisodicBudget{ExcludeConversation: a.cmConvID()}, current)
+		}
+		episodic = a.filterNewEpisodic(episodic)
+		if len(episodic) > 0 {
+			cmTail += renderEpisodicBlock(episodic)
+			a.turn.episodicGrounded()
+			for _, ex := range episodic {
+				collectSurfaced(a.turn.surfaced, ex.RelatedMemories, nil)
+				collectSurfacedSnips(a.turn.surfacedSnips, ex.RelatedMemories)
+			}
+		}
+		injectedTokens := 0
+		for _, ex := range episodic {
+			injectedTokens += (len(ex.Text) + 3) / 4
+		}
+		logEpisodic(trigger.Class, len(episodic), injectedTokens, started)
+	}
+	a.emitMemory(bundle, triggerClass, episodic)
 	// Track every cortex memory surfaced this turn so a successful completion
 	// can attest them as USED — the usage-salience + EMA learning signal that
 	// keeps Neo's durable store ranking by what actually helps. The snippets
@@ -926,6 +962,11 @@ func (a *Agent) closeTurn(ctx context.Context, res *llm.ChatResult, casMod bool,
 // from the unified signal state computed at deliberate.)
 func (a *Agent) act(ctx context.Context, step, pct int, res *llm.ChatResult) error {
 	t := a.turn
+	for _, call := range res.Message.ToolCalls {
+		if call.Function.Name == tools.MemoryRecallTool {
+			t.episodicGrounded()
+		}
+	}
 	// Surface any preamble the model wrote alongside its tool calls as
 	// DURABLE narration — Neo "thinking out loud" before it acts. This runs
 	// for EVERY tool-calling turn: it is what makes Neo's running commentary
@@ -1115,6 +1156,7 @@ func oneLine(s string) string {
 func (a *Agent) Reset() {
 	a.working = nil
 	a.activeGoal = ""
+	a.episodicReset()
 }
 
 // BestEffort returns the most honest "where things stand" digest the agent can

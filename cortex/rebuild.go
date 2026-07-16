@@ -28,6 +28,7 @@ package cortex
 
 import (
 	"errors"
+	"fmt"
 
 	"matrix/cortex/replay"
 )
@@ -89,7 +90,14 @@ func (c *Cortex) Rebuild(opts RebuildOptions) (*RebuildResult, error) {
 	if opts.Now == nil {
 		opts.Now = c.now
 	}
-	return replay.Rebuild(c.s, c.snap, opts)
+	res, err := replay.Rebuild(c.s, c.snap, opts)
+	if err != nil {
+		return nil, err
+	}
+	if err := c.RebuildLexicalIndex(); err != nil {
+		return nil, fmt.Errorf("cortex.Rebuild: lexical index: %w", err)
+	}
+	return res, nil
 }
 
 // Copyright © 2026 Paxlabs Inc. All rights reserved.

@@ -50,6 +50,7 @@ func TestDropDerivedRemovesAll(t *testing.T) {
 	mustSet(append(append([]byte{}, keys.PrefixIdxFrame...), 0x04), []byte("frame"))
 	mustSet(append(append([]byte{}, keys.PrefixIdxActorObj...), 0x05), []byte("actorobj"))
 	mustSet(append(append([]byte{}, keys.PrefixIdxSMT...), 0x06), []byte("smt"))
+	mustSet(append(append([]byte{}, keys.PrefixLexical...), 0x07), []byte("lexical"))
 	mustSet(append(append([]byte{}, keys.PrefixSalience...), 0x07), []byte("sal"))
 	mustSet(append(append([]byte{}, keys.PrefixAccum...), 0x08), []byte("accum"))
 	mustSet(metaEmbedCursor, []byte{0, 0, 0, 0, 0, 0, 0, 1})

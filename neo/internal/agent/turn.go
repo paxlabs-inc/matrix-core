@@ -111,12 +111,25 @@ type turn struct {
 	convergeNudged  bool
 	distinctToolSet map[string]struct{}
 
+	// Session seq range (DEJA-VU req 1.1): the inclusive span of cortex
+	// session seqs appended during THIS turn (via cmAppend), tracked so
+	// end-of-turn consolidation can stamp a derived_from provenance edge from
+	// every memory it writes back to the exact transcript slice it came from.
+	// haveSeq gates the range — false means nothing was appended this turn (no
+	// pager, or a bare test agent), so provenance linking is skipped.
+	seqLo   uint64
+	seqHi   uint64
+	haveSeq bool
+
 	// Surfaced-memory sets: every cortex memory surfaced this turn, so a
 	// successful completion can attest USED vs IGNORED (the usage-salience +
 	// EMA learning signal). Keyed by URI; snippets keep text/type for the
 	// rejection gate.
-	surfaced      map[string]struct{}
-	surfacedSnips map[string]memory.Snippet
+	surfaced         map[string]struct{}
+	surfacedSnips    map[string]memory.Snippet
+	episodicDetected bool
+	episodicPending  bool
+	episodicTrigger  string
 }
 
 // newTurn constructs a fresh turn — the reset state. Maps the loop reads
@@ -128,5 +141,21 @@ func newTurn() *turn {
 		distinctToolSet: map[string]struct{}{},
 		surfaced:        map[string]struct{}{},
 		surfacedSnips:   map[string]memory.Snippet{},
+	}
+}
+
+// noteSessionSeq folds one appended cortex session seq into the turn's
+// inclusive [seqLo, seqHi] range (DEJA-VU req 1.1). The first call opens the
+// range; subsequent calls widen it.
+func (t *turn) noteSessionSeq(seq uint64) {
+	if !t.haveSeq {
+		t.seqLo, t.seqHi, t.haveSeq = seq, seq, true
+		return
+	}
+	if seq < t.seqLo {
+		t.seqLo = seq
+	}
+	if seq > t.seqHi {
+		t.seqHi = seq
 	}
 }

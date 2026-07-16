@@ -93,11 +93,17 @@ func runServe(args []string) {
 	// into plaintext — mirroring the main-model fail-closed posture, never the
 	// best-effort degrade path. The wrapped keyfile lives beside /data (the
 	// cortex root's parent). The hermetic sandbox preset runs plaintext.
+	vaultDataDir := filepath.Dir(cfg.CortexRoot)
 	vaultUser := cfg.ActorDID
 	if vaultUser == "" {
 		vaultUser = os.Getenv("MATRIX_USER_ID")
 	}
-	vcfg := vault.ConfigFromEnv(filepath.Dir(cfg.CortexRoot), vaultUser)
+	if keyfile, err := os.ReadFile(vault.KeyfilePath(vaultDataDir)); err == nil {
+		if existing, err := vault.ParseKeyfile(keyfile); err == nil && strings.TrimSpace(existing.User) != "" {
+			vaultUser = existing.User
+		}
+	}
+	vcfg := vault.ConfigFromEnv(vaultDataDir, vaultUser)
 	if *sandbox {
 		vcfg.Required = false
 	}

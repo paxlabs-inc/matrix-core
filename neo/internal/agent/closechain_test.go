@@ -232,13 +232,13 @@ type recordingConsolidator struct {
 	n  int
 }
 
-func (c *recordingConsolidator) Consolidate(string) {
+func (c *recordingConsolidator) Consolidate(string, string, uint64, uint64) {
 	c.mu.Lock()
 	c.n++
 	c.mu.Unlock()
 }
 
-func (c *recordingConsolidator) ConsolidateSync(context.Context, string) {}
+func (c *recordingConsolidator) ConsolidateSync(context.Context, string, string, uint64, uint64) {}
 
 func (c *recordingConsolidator) count() int {
 	c.mu.Lock()

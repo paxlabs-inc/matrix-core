@@ -30,7 +30,7 @@ type Consolidator struct {
 	classify *llm.Client // cheap relation-classify on the rare similar-neighbor path
 	pager    *memory.Pager
 
-	jobs chan string
+	jobs chan consolidateJob
 	done chan struct{}
 
 	// P2-2: proposed skills awaiting activation. Populated by proposeIfReady
@@ -40,6 +40,18 @@ type Consolidator struct {
 	proposed       []string
 	proposedSet    map[string]struct{}
 	reinforceCount map[string]int // tracks how many times each pattern name was reinforced (for auto-propose)
+}
+
+// consolidateJob is one enqueued consolidation unit: the rendered turn
+// transcript plus the provenance the consolidator threads onto every memory it
+// writes — the conversation id and the (inclusive) session seq span of the turn
+// that produced the transcript (DEJA-VU req 1.1). A blank Conv disables
+// provenance linking (e.g. the CLI/bare path with no cortex session state).
+type consolidateJob struct {
+	transcript string
+	conv       string
+	seqLo      uint64
+	seqHi      uint64
 }
 
 // New builds a consolidator. extract drives the per-turn learning extraction
@@ -52,7 +64,7 @@ func New(extract, classify *llm.Client, pager *memory.Pager, cfg config.Config) 
 		extract:        extract,
 		classify:       classify,
 		pager:          pager,
-		jobs:           make(chan string, 8),
+		jobs:           make(chan consolidateJob, 8),
 		done:           make(chan struct{}),
 		proposedSet:    make(map[string]struct{}),
 		reinforceCount: make(map[string]int),
@@ -72,19 +84,20 @@ func (c *Consolidator) Start() {
 // goroutine instead of being dropped, so a burst of turns never silently
 // rots the durable store (cortex stays best-effort + eventually-current; the
 // live transcript is ground truth for the turn anyway).
-func (c *Consolidator) Consolidate(transcript string) {
+func (c *Consolidator) Consolidate(transcript, conv string, seqLo, seqHi uint64) {
 	if c == nil || strings.TrimSpace(transcript) == "" {
 		return
 	}
+	job := consolidateJob{transcript: transcript, conv: conv, seqLo: seqLo, seqHi: seqHi}
 	select {
-	case c.jobs <- transcript:
+	case c.jobs <- job:
 	default:
 		// Queue full (a burst of turns). Rather than silently DROP the learning
 		// — which is how a durable memory quietly rots — process this one on a
 		// detached goroutine. Bursts are rare (turns are serialized per
 		// conversation and the worker drains continuously), so this overflow
 		// path cannot fan out unboundedly in practice.
-		go c.process(context.Background(), transcript)
+		go c.process(context.Background(), job)
 	}
 }
 
@@ -96,7 +109,7 @@ func (c *Consolidator) Consolidate(transcript string) {
 // gap where an async sweep could lag behind compaction and lose the last
 // turns. The call respects the context deadline and never panics on a nil
 // receiver. It does NOT touch the async queue (steady-state is unchanged).
-func (c *Consolidator) ConsolidateSync(ctx context.Context, transcript string) {
+func (c *Consolidator) ConsolidateSync(ctx context.Context, transcript, conv string, seqLo, seqHi uint64) {
 	if c == nil || strings.TrimSpace(transcript) == "" {
 		return
 	}
@@ -105,7 +118,7 @@ func (c *Consolidator) ConsolidateSync(ctx context.Context, transcript string) {
 	// stall budget (the caller's context already bounds the total time).
 	subCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
 	defer cancel()
-	c.process(subCtx, transcript)
+	c.process(subCtx, consolidateJob{transcript: transcript, conv: conv, seqLo: seqLo, seqHi: seqHi})
 }
 
 // proposeIfReady checks if a pattern has accumulated enough successes
@@ -230,7 +243,20 @@ type extract struct {
 	} `json:"outcome"`
 }
 
-func (c *Consolidator) process(ctx context.Context, transcript string) {
+// linkProvenance adds a best-effort derived_from provenance edge from a
+// freshly written memory back to the session slice it was extracted from
+// (DEJA-VU req 1.1/1.2). It runs AFTER the memory write has already committed,
+// so a failed or impossible edge (empty URI from a deduped write, blank conv on
+// the CLI path, or an edge error) never fails the memory write.
+func (c *Consolidator) linkProvenance(uri string, job consolidateJob) {
+	if c == nil || c.pager == nil || job.conv == "" || strings.TrimSpace(uri) == "" {
+		return
+	}
+	_ = c.pager.LinkSessionProvenance(uri, job.conv, job.seqLo, job.seqHi)
+}
+
+func (c *Consolidator) process(ctx context.Context, job consolidateJob) {
+	transcript := job.transcript
 	if c.extract == nil || c.pager == nil {
 		return
 	}
@@ -258,7 +284,8 @@ func (c *Consolidator) process(ctx context.Context, transcript string) {
 			break
 		}
 		if s := strings.TrimSpace(f); s != "" {
-			_, _ = c.pager.RememberFactRelated(ctx, s, c.classifyRelation)
+			uri, _ := c.pager.RememberFactRelated(ctx, s, c.classifyRelation)
+			c.linkProvenance(uri, job)
 		}
 	}
 	for i, f := range out.UserFacts {
@@ -266,7 +293,8 @@ func (c *Consolidator) process(ctx context.Context, transcript string) {
 			break
 		}
 		if s := strings.TrimSpace(f); s != "" {
-			_, _ = c.pager.RememberUserFact(ctx, s)
+			uri, _ := c.pager.RememberUserFact(ctx, s)
+			c.linkProvenance(uri, job)
 		}
 	}
 	for i, pj := range out.Preferences {
@@ -280,7 +308,8 @@ func (c *Consolidator) process(ctx context.Context, transcript string) {
 		if strength <= 0 {
 			strength = 0.7 // a stated preference is a strong default by construction
 		}
-		_, _ = c.pager.RememberPreferenceRelated(ctx, pj.Topic, pj.Polarity, strength, pj.Rationale, c.classifyRelation)
+		uri, _ := c.pager.RememberPreferenceRelated(ctx, pj.Topic, pj.Polarity, strength, pj.Rationale, c.classifyRelation)
+		c.linkProvenance(uri, job)
 	}
 	for i, corr := range out.Corrections {
 		if i >= 5 {
@@ -289,7 +318,8 @@ func (c *Consolidator) process(ctx context.Context, transcript string) {
 		if s := strings.TrimSpace(corr); s != "" {
 			// A correction is a learned do-rule, firm by default (a strong
 			// standing default, not an inviolable hard rule).
-			_, _ = c.pager.RememberConstraintRelated(ctx, s, "do", "firm", c.classifyRelation)
+			uri, _ := c.pager.RememberConstraintRelated(ctx, s, "do", "firm", c.classifyRelation)
+			c.linkProvenance(uri, job)
 		}
 	}
 	for i, pj := range out.Patterns {
@@ -311,7 +341,8 @@ func (c *Consolidator) process(ctx context.Context, transcript string) {
 		c.reinforceCount[spec.Name]++
 		coverage := c.reinforceCount[spec.Name]
 		c.proposeMu.Unlock()
-		_, _ = c.pager.ReinforcePattern(ctx, spec, nil)
+		uri, _ := c.pager.ReinforcePattern(ctx, spec, nil)
+		c.linkProvenance(uri, job)
 		// P2-2: auto-propose a candidate skill when the pattern crosses
 		// the MinPatternSuccesses guard. The coverage is tracked locally
 		// (ReinforcePattern returns a URI, not a count). proposeIfReady
@@ -319,7 +350,8 @@ func (c *Consolidator) process(ctx context.Context, transcript string) {
 		c.proposeIfReady(spec, coverage)
 	}
 	if out.Outcome != nil && strings.TrimSpace(out.Outcome.Summary) != "" {
-		_, _ = c.pager.RecordOutcome(ctx, out.Outcome.Summary, mapOutcome(out.Outcome.Status), "")
+		uri, _ := c.pager.RecordOutcome(ctx, out.Outcome.Summary, mapOutcome(out.Outcome.Status), "")
+		c.linkProvenance(uri, job)
 	}
 	// Automatrix capture: fan accepted opportunities into the proactive queue.
 	// Capped per turn like the other rich-object class (patterns), and run
@@ -342,12 +374,13 @@ func (c *Consolidator) process(ctx context.Context, transcript string) {
 		if oj.Confidence < c.cfg.AutomatrixMinConfidence {
 			continue
 		}
-		_, _ = c.pager.RememberOpportunity(ctx, memory.OpportunitySpec{
+		uri, _ := c.pager.RememberOpportunity(ctx, memory.OpportunitySpec{
 			Summary:            summary,
 			Rationale:          rationale,
 			Confidence:         oj.Confidence,
 			EligibleAutonomous: !oj.Financial,
 		})
+		c.linkProvenance(uri, job)
 	}
 }
 

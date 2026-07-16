@@ -87,8 +87,9 @@ const (
 
 	// Premise-provenance triggers (epistemic-core req.4.3): doubt keyed on the
 	// ledger's state — claims judged at birth, not prose at death.
-	trigRefutedPremise  modTrigger = "refuted_premise"  // acting past a refuted premise without revising
-	trigUngroundedClose modTrigger = "ungrounded_close" // closing while the plan rests on unchecked self-assumptions
+	trigRefutedPremise     modTrigger = "refuted_premise"  // acting past a refuted premise without revising
+	trigUngroundedClose    modTrigger = "ungrounded_close" // closing while the plan rests on unchecked self-assumptions
+	trigEpisodicUngrounded modTrigger = "episodic_ungrounded"
 )
 
 // modSide is the two-sided damping direction: doubt lowers unwarranted
@@ -130,6 +131,7 @@ type cassandraSignals struct {
 	// unchecked self-referential assumptions the plan still rests on.
 	refutedPremises        int
 	ungroundedSelfPremises int
+	episodicPending        bool
 }
 
 // buildCassandraSignals assembles the controller's signal bundle from an
@@ -239,6 +241,9 @@ func (a *Agent) cassandraClassify(sig cassandraSignals) (modTrigger, modSide) {
 		return trigRefutedPremise, sideDoubt
 	}
 	if sig.closing {
+		if sig.episodicPending {
+			return trigEpisodicUngrounded, sideDoubt
+		}
 		// Closing while the plan still rests on unchecked self-referential
 		// assumptions: the claim was never grounded, however finished the
 		// prose sounds.
@@ -323,6 +328,8 @@ func cassandraTemplate(trig modTrigger, sig cassandraSignals) string {
 		return "Hold on — a premise my plan rests on has been REFUTED (it's marked in my premise ledger). Anything I do that depends on it is built on a known falsehood. I need to revise the plan around the refuted premise before taking another dependent step."
 	case trigUngroundedClose:
 		return "Before I close: my plan still rests on an assumption about my OWN capabilities that I never checked against my capability surface. If that assumption is wrong, my answer is wrong. Let me verify it now — it's one lookup away."
+	case trigEpisodicUngrounded:
+		return "I'm about to assert something about our shared past without any recalled grounding. I need to check memory_recall before I claim what happened, or say plainly that I could not find it."
 	}
 	return ""
 }

@@ -1,0 +1,246 @@
+# spec.kvx — DEJA-VU: automatic episodic recall. When the user's message references
+# a past event/exchange ('remember when', 'last time', 'you said'), Neo detects it
+# deterministically, retrieves the EXACT past exchange from cortex (memories +
+# verbatim session transcript via provenance edges + lexical index), and feeds it
+# into the generation window BEFORE the model answers — with a Cassandra failsafe
+# that catches ungrounded answers about the past.
+# SINGLE SOURCE for this feature's requirements + design + tasks. Rendered to
+# requirements.md / design.md / tasks.md by spec/specgen. Do not edit the
+# generated markdown; edit this file and regenerate.
+#
+# Format: Matrix .kvx (see tachyon/internal/config/kvx.go). One key = value per
+# line; string values double-quoted; lists are ["a","b"]; # starts a comment.
+# Schema:
+#   [req.<n>]   title, story, ac_1..ac_n          (acceptance criteria, EARS)
+#   [design]    overview, include="design.body.md" (rich prose/diagrams inlined)
+#   [task.<id>] title, status, wave, reqs, requires (dotted ids: 1, 1.1, 1.2)
+
+[meta]
+feature      = "deja-vu"
+title        = "DEJA-VU — trigger-fired episodic recall: exact past exchanges auto-injected into the window, grounded in provenance edges and a hybrid lexical+semantic transcript search"
+status       = "complete"
+spec_version = "0.1.0"
+intro        = "Today Neo only auto-recalls on the FIRST turn of a conversation (cmRelevancePush, turnSeq==1) and its recall reaches memory summaries, never the verbatim past exchange: the cortex session store (sess/) is durable but has NO search surface of any kind, the HNSW embedder indexes memories only, RecallDescend bottoms out at memory leaves, and consolidator-written memories carry no pointer back to the session messages they came from. So when the user says 'remember when we discussed X' mid-conversation, Neo either reconstructs from assumption (the exact failure class epistemic-core targets) or must be lucky with a reactive memory_recall call. DEJA-VU closes this in four moves. (1) Provenance: the writeback consolidator stamps a derived_from edge from every memory it writes to the matrix://cortex/session/<conv>/<seq> refs of the turn that produced it, making every future memory an exact pointer into its source transcript. (2) Detection: a deterministic trigger lexicon over the raw user message (zero-latency, fail-open) gates a single cheap-lane extraction call that yields a clean search referent and a time hint. (3) Retrieval + feed: a bounded episodic pipeline — semantic HNSW Find over memories, provenance-edge follow to the verbatim Transcript slice, and (wave 3) a BM25-style lexical index over sess/ built as a replay-safe derived lane — fused by reciprocal rank, rendered as an episodic block appended to the cmTail in prepareTurn, so the exact past exchange is RESIDENT at generation time (never let the LLM assume). The feed channel is LOCKED (Andrew 2026-07-16): cmTail primary, Cassandra failsafe; the user turn itself is never modified. (4) Failsafe + surface: a new deterministic Cassandra doubt trigger fires when an episodic reference was detected but the model closes without any surfaced grounding, and the client timeline shows what was recalled and from when. Everything new that touches cortex persists as derived records only — journal-rebuildable, no SMT writes, values vault-sealed below the hash boundary — with OverallRoot byte-identity proven, because this feature touches the most important system in Matrix and inherits custody-of-memory rigor."
+
+[design]
+overview = "See the full design below: the grounded seam map (prepareTurn/cmRelevancePush, the one window-assembly law, the sess/ store's missing search surface, rollup SeqLo/SeqHi provenance, the memories-only embedder, Cassandra's deterministic post-hoc posture); the locked feed-channel decision (cmTail primary / Cassandra failsafe / no user-turn modification); the trigger lexicon + cheap-lane referent extraction; derived_from provenance edges at the consolidator write site; the three retrieval lanes and reciprocal-rank fusion; the BM25 derived index replay + vault posture; the Chronos idle backfill sweep; the trigEpisodicUngrounded Cassandra trigger; fail-open doctrine; config knobs; observability; and the no-fakes verification plan. Authored as a rich markdown fragment (design.body.md) and inlined verbatim."
+include  = "design.body.md"
+
+# The per-session working protocol, machine-readable (mirrors design.body.md).
+# CADENCE (Andrew 2026-07-16): ONE ENTIRE WAVE per session. Finish every task in
+# the wave, prove it green, write the handoff, close out. Do not start the next
+# wave in the same session.
+[protocol]
+step_1_context   = "Read the standing recall file IN FULL first (paged reads if flagged truncated — hard rule), then spec/deja-vu/spec.kvx and the previous session's 'HANDOFF deja-vu' cortex note. The context window is a disposable cache; the spec and cortex are the plan."
+step_2_select    = "Work by WAVE: pick the lowest wave with any pending task; complete EVERY task in that wave this session, one at a time (single in_progress). Do not begin a task from a later wave."
+step_3_build     = "Implement against the task's acceptance criteria on REAL code (neo/internal/agent, neo/internal/writeback, neo/internal/memory, cortex/, chronos/internal, apps/client). Deliver complete, runnable artifacts — never diffs or fragments. Follow existing repo style; add no comments/docs unless asked."
+step_4_test      = "Ship tests over REAL code paths — no stub/mock/fake doubles EVER. Real Pebble cortex, real agent loop with httptest SSE LLM (the established neo seam), real edges, real Transcript reads. A red check is a stop condition; so is any cortex-integrity regression."
+step_5_close_out = "Only when the whole wave is genuinely green: mark its tasks done in spec.kvx, run spec/specgen, write the 'HANDOFF deja-vu' cortex note (wave done, exact next wave, gotchas/partials), note outcomes, close out. Never attest a completion that did not happen."
+step_6_guard     = "Before any destructive/irreversible action, guard-check against HARD rules. No git on the dev box; the user drives commits. Never store secrets in cortex. Cortex schema/lane changes are guard-checked: derived lanes only, no new SMT writes outside canonical edge mutations."
+handoff_convention = "The handoff is a cortex outcome note prefixed 'HANDOFF deja-vu' carrying: the wave completed + per-task green evidence, current spec.kvx status, the exact next wave, and any gotchas or honest partials. It must also name the recall file the next session reads first."
+
+# The non-negotiable quality bar. This feature touches CORTEX — the single
+# durable brain shared by every Matrix agent. Custody-of-memory rigor applies.
+[quality_bar]
+grade            = "Custody-of-memory grade. A regression here corrupts or silently degrades the one shared memory substrate every agent depends on; treat replay determinism, hash-boundary discipline, and edge semantics with money-path rigor."
+derived_lane_only= "Every new cortex persistence surface (lexical index postings, sweep checkpoints) is a DERIVED record: journal-rebuildable, deterministic (byte-identical rebuild from the same journal), no SMT writes, no new journal kinds unless unavoidable and replay-proven. Provenance edges are canonical AddEdge mutations — journaled and anchored like any edge, never a side channel."
+root_identity    = "OverallRoot and anchored-namespace SMT roots are proven byte-identical with the lexical index present vs absent, and across delete-index-then-rebuild. Replay (D11) byte-identity is proven unchanged."
+vault_sealed     = "All new persisted cortex values ride the existing value-seal seam (sealed below the hash boundary, per ORACLE task 2.3); no new plaintext value family is introduced."
+window_law       = "Injection happens ONLY via the cmTail in prepareTurn — the single activation-assembly site. windowAssemblies/activationAssemblies invariants hold. The user turn in a.working is NEVER modified; cortex ground truth (cmRecordUser/cmRecordAssistant) records originals only."
+fail_open        = "Detection, extraction, retrieval, and injection failures degrade to today's behavior (no episodic block, turn proceeds normally) — they never block, delay unboundedly, or error the user turn. Hot-path budget: lexicon is O(len(message)); the cheap-lane extraction call runs ONLY on trigger turns and is deadline-bounded with a raw-message query fallback."
+cassandra_rules  = "The Cassandra controller stays fully deterministic (no model call), signals-only (no transcript content input), content-only edits on the LAST assistant message, dual-recorded before mutation, cooldown/cap-governed. The new trigger adds one signal field; it does not widen the edit primitive."
+no_fakes         = "Real Pebble cortex, real consolidator against the established httptest SSE LLM seam, real agent Chat loop, real Chronos alarm builders, real edges and Transcript reads. Adversarial proofs (rebuild determinism, replay identity, cross-conversation isolation, fail-open under broken embedder/LLM) run on real storage paths. A green test driven by a fake is not done."
+non_goals        = "No embedding of session messages (lexical index covers exact-match; semantic transcript search is explicitly deferred); no modification of the user turn in the window (option B rejected); no new memory types; no client-facing search UI; no cortex-shell verb changes beyond fusion wiring; UI house rules hold (no borders/emojis/gradients/glow)."
+
+# ============================== REQUIREMENTS ==============================
+
+[req.1]
+title = "Provenance: memories point at their source transcript"
+story = "As Neo, I want every memory the consolidator writes to carry an exact pointer back to the session messages it was extracted from, so that a memory hit can be expanded into the verbatim past exchange."
+ac_1 = "WHEN the writeback consolidator persists a memory (fact, user_fact, preference, correction, pattern, opportunity, outcome), it SHALL add a derived_from edge from the new memory URI to the matrix://cortex/session/<conversation>/<seq> URI(s) of the turn window it processed, using the conversation id and seq range the consolidator already knows at write time."
+ac_2 = "EDGE creation SHALL be best-effort per the fail-open doctrine for the write path (a failed edge never fails the memory write) but SHALL be journaled/anchored exactly like any canonical AddEdge when it succeeds."
+ac_3 = "A resolver SHALL expand a memory URI to its source transcript slice: follow derived_from edges to session refs, then read Transcript(conv, seq-N, seq+N) bounded by a configurable context radius; memories without provenance edges SHALL resolve via the fallback ladder (rollup window SeqLo/SeqHi + timestamp proximity) and be marked approximate."
+
+[req.2]
+title = "Episodic trigger detection"
+story = "As a user, when I say 'remember when', 'last time', 'you said', or reference a shared past event in my own words, I want Neo to notice deterministically and know what to search for, so that recall fires without me invoking a tool."
+ac_1 = "A deterministic trigger lexicon (compiled phrase/regex table over the raw user message: remembrance verbs, shared-past deixis, temporal deixis) SHALL classify each inbound user turn as episodic/not in O(message length) with zero model calls; the lexicon SHALL be table-driven and covered by table tests including negative cases (e.g. 'remember to buy milk' is NOT episodic)."
+ac_2 = "WHEN the lexicon fires, ONE cheap-lane LLM extraction call SHALL produce {referent query, time hint, scope hint} from the user message; the call SHALL be deadline-bounded, and on failure or timeout the raw user message SHALL be used as the referent query (fail-open)."
+ac_3 = "A parsed time hint (yesterday, last week, back in June, when we were doing X) SHALL map onto the retrieval time window / AsOf of the descent; absence of a time hint SHALL leave the default horizon."
+ac_4 = "DETECTION SHALL NOT run on heartbeat/automatrix wake markers, guidance messages, or non-user-authored turns."
+
+[req.3]
+title = "Episodic retrieval pipeline"
+story = "As Neo, I want a bounded pipeline that finds the exact past thing the user means, so that my answer quotes what actually happened instead of reconstructing it."
+ac_1 = "LANE 1 (semantic): the pipeline SHALL run cortex Find with Near=<referent> over the HNSW memory index (reusing the existing pager Retrieve seed lanes), respecting the time window from req 2.3."
+ac_2 = "LANE 2 (exactness): top memory hits SHALL be expanded to verbatim transcript slices via the req 1.3 resolver, cross-conversation (the provenance edge carries the conversation id), with each excerpt carrying provenance metadata: conversation id, date, seq range, and whether exact or approximate."
+ac_3 = "LANE 3 (lexical, wave 3): the pipeline SHALL additionally query the derived lexical index over sess/ for exact-word matches and fuse all lanes by reciprocal rank fusion; before wave 3 the pipeline SHALL run lanes 1+2 only."
+ac_4 = "THE pipeline SHALL also rank the CURRENT conversation's older turns (beyond the Activate T2 tail) via the existing in-memory semantic recall lane, so same-conversation references resolve without cortex round-trips."
+ac_5 = "THE pipeline SHALL be budget-bounded (token cap on total excerpt content, hit-count cap, wall-clock deadline) and SHALL return empty on any internal failure (fail-open), never an error that blocks the turn."
+
+[req.4]
+title = "The feed: episodic block on the cmTail (LOCKED channel)"
+story = "As Neo, I want the recalled exchange resident in my window before I generate, so that my first token is grounded in memory, not assumption."
+ac_1 = "cmRelevancePush SHALL be generalized: the turnSeq==1 relevance push remains as-is, and ANY turn whose user message triggers episodic detection SHALL additionally get an episodic block appended to the cmTail computed in prepareTurn — the single activation-assembly site; no other injection channel is used and the user turn in a.working is never modified."
+ac_2 = "THE episodic block SHALL render: a header stating this is an auto-recalled past exchange the user referenced, each excerpt with conversation/date/exactness provenance, related memory summaries, and an instruction to ground the answer in this material and say so plainly if it does not actually match what the user meant."
+ac_3 = "THE block SHALL be token-capped independently of the Activate bundle trim, and injected excerpt refs SHALL be tracked in the turn's surfaced sets so repeated triggers within one conversation do not re-inject identical excerpts."
+ac_4 = "WHEN the pipeline returns empty, NO block SHALL be injected and a turn-scoped episodicPending signal SHALL remain set for the Cassandra failsafe (req 6)."
+
+[req.5]
+title = "Derived lexical index over the session store"
+story = "As a user, I want Neo to find the exact words I used weeks ago even when no memory was consolidated from them, so that verbatim references (that error about X, the name I mentioned) resolve."
+ac_1 = "CORTEX SHALL maintain a lexical inverted index (deterministic tokenizer, BM25-style scoring) over sess/ message content as a DERIVED lane: postings persisted under a dedicated derived key family, built incrementally at AppendMessage time and rebuildable from the journal + sess/ records; NO SMT writes; rebuild SHALL be byte-deterministic."
+ac_2 = "INDEX values SHALL ride the existing cortex value-seal seam (vault-sealed below the hash boundary); OverallRoot and anchored SMT roots SHALL be proven byte-identical with the index present vs absent and across delete-then-rebuild."
+ac_3 = "A query surface SHALL return scored (conversation, seq) hits for a term/phrase query with a time-range filter, bounded by k, and SHALL be wired into the req 3 pipeline via reciprocal rank fusion."
+ac_4 = "THE fused hybrid (lexical + semantic) SHALL also back pager.Recall / the memory_recall tool for transcript-reaching queries, so reactive recall gains the same exact-match power as the automatic push."
+
+[req.6]
+title = "Cassandra failsafe: trigEpisodicUngrounded"
+story = "As the owner, I want a deterministic backstop when Neo answers about a shared past without grounding, so that the assume-then-pursue failure class cannot slip through the automatic push."
+ac_1 = "A new doubt-side trigger trigEpisodicUngrounded SHALL fire when: an episodic reference was detected this turn AND no episodic grounding was surfaced (empty pipeline result and no memory_recall call this turn) AND the assistant message is closing/answering; it SHALL fold a first-person nudge to check memory_recall before asserting the past."
+ac_2 = "THE trigger SHALL integrate via ONE new field on stepSignals (episodicPending, set in prepareTurn, cleared when grounding is surfaced or memory_recall runs); the Cassandra controller SHALL remain deterministic, transcript-blind, content-only, dual-recorded, and cooldown/cap-governed."
+ac_3 = "EXISTING trigger precedence, casMinStep, casMaxMods, and per-trigger cooldown behavior SHALL be preserved and proven unchanged for non-episodic turns."
+
+[req.7]
+title = "Idle backfill: history gains provenance and postings"
+story = "As a user with months of history, I want past sessions searchable and old memories linked to their sources, so that deja-vu works on what happened before this feature shipped."
+ac_1 = "A Chronos-scheduled idle sweep (sibling of the existing sweep conventions, reusing the busy-check/reschedule posture) SHALL walk historical sess/ records building lexical postings, and heuristically backfill derived_from edges for pre-existing memories (actor + CreatedAt + conversation containment), marking heuristic edges distinguishably from write-time exact edges."
+ac_2 = "THE sweep SHALL be idempotent, checkpointed (resumable after restart via a derived checkpoint record), bounded per wake (batch cap), and SHALL never run while a user turn is live (busy-check defers)."
+ac_3 = "RE-RUNNING a completed sweep SHALL be a no-op (proven), and sweep state SHALL be derived-lane only."
+
+[req.8]
+title = "Observability and client surface"
+story = "As a user, I want to SEE Neo remembering — what it recalled, from when, from which conversation — so that automatic memory is legible instead of spooky."
+ac_1 = "THE episodic push SHALL ride the existing memory.activation broker event (extended fields: excerpts with conversation/date/exactness, trigger phrase class), persisted via traceWorkspaceTypes so it survives reopen."
+ac_2 = "apps/client SHALL render the recalled excerpts in the existing memory/timeline surface (workspace event family, both web and story-so-far surfaces where present), following UI house rules (no borders/emojis/gradients/glow) with i18n across all 5 locales."
+ac_3 = "AN internal counter/log line SHALL record per-turn: trigger fired, lanes queried, hits, excerpt tokens injected, pipeline latency — enough to tune the lexicon and budgets from prod logs."
+
+[req.9]
+title = "End-to-end and property verification (no fakes)"
+story = "As the owner, I want the whole mechanism proven on real components — including that cortex integrity is untouched — so that the most important system in Matrix is demonstrably unharmed and the feature demonstrably works."
+ac_1 = "AN end-to-end test on the real agent loop (real Pager, real Pebble cortex, httptest SSE LLM) SHALL prove: a consolidated memory from conversation A + a later 'remember when' user turn in conversation B yields an episodic block in the assembled window containing the verbatim conversation-A excerpt with correct provenance, and the model's window contains it BEFORE generation."
+ac_2 = "PROPERTY tests SHALL prove: OverallRoot/anchored-root byte-identity with lexical index on/off and across delete-then-rebuild; deterministic index rebuild (byte-identical postings from the same journal); replay byte-identity unchanged; fail-open under a broken embedder, a dead cheap-lane LLM, and a corrupted index (turn proceeds, no block, no error)."
+ac_3 = "CASSANDRA tests SHALL prove trigEpisodicUngrounded fires exactly on (detected AND ungrounded AND closing), never otherwise, and that all pre-existing trigger behavior is byte-unchanged on non-episodic turns."
+ac_4 = "NO test in this feature SHALL substitute a fake for a real code path."
+
+# ================================ TASKS ==================================
+# Cadence: ONE WAVE PER SESSION (Andrew 2026-07-16). Complete every task in the
+# wave, prove green, handoff, close out.
+
+[tasks]
+heading = "Implementation Plan: DEJA-VU — provenance + detection first, then retrieval + feed, then the lexical index, then backfill/failsafe/surface, then the end-to-end proof"
+
+[task.1]
+section = "P0 — Foundation: provenance and detection"
+title   = "Wave 1 — memories learn where they came from; Neo learns to notice"
+status  = "done"
+
+[task.1.1]
+title  = "derived_from provenance edges at the consolidator write site"
+status = "done"
+wave   = 1
+do_1   = "neo/internal/writeback/consolidator.go + neo/internal/memory pager write surface: thread the conversation id + processed seq range into the consolidation write path; on every persisted memory, AddEdge derived_from -> matrix://cortex/session/<conv>/<seq> refs (best-effort, never fails the memory write)"
+do_2   = "cortex-side: session-ref URI parse/format helpers if missing; resolver ExpandToTranscript(memoryURI, radius) following derived_from edges -> Transcript slice with provenance metadata {conv, date, seqLo, seqHi, exact}; fallback ladder (rollup window SeqLo/SeqHi + CreatedAt proximity) marked approximate"
+do_3   = "Tests on real cortex: consolidator run (httptest SSE LLM seam) writes memory + edge; resolver round-trips to the exact verbatim slice; edge failure does not fail the write; fallback path resolves an edge-less memory approximately"
+reqs   = ["1.1", "1.2", "1.3"]
+
+[task.1.2]
+title  = "Trigger lexicon + cheap-lane referent extraction"
+status = "done"
+wave   = 1
+do_1   = "neo/internal/agent (new episodic.go): compiled deterministic trigger lexicon (remembrance verbs, shared-past deixis, temporal deixis; negative guards like 'remember to'); classify(userMsg) -> {fired, class}; skipped for wake markers/guidance/non-user turns"
+do_2   = "Cheap-lane extraction (consolidation model client): one deadline-bounded call -> {referent, timeHint, scopeHint}; parse timeHint to a time window; fail-open fallback = raw message as referent, default horizon"
+do_3   = "Tests: table tests over the lexicon incl. negatives; extraction against httptest SSE LLM incl. timeout fallback; deadline bound proven"
+reqs   = ["2.1", "2.2", "2.3", "2.4"]
+
+[task.2]
+section = "P0 — Retrieval and the feed"
+title   = "Wave 2 — find the exact thing, make it resident"
+status  = "done"
+
+[task.2.1]
+title  = "Episodic retrieval pipeline (lanes 1+2 + current-conversation lane)"
+status = "done"
+wave   = 2
+do_1   = "neo/internal/memory (pager surface EpisodicRetrieve(referent, timeWindow, budget)): lane 1 semantic Find over memories (reuse Retrieve seed lanes, time-filtered); lane 2 expand top hits via the task 1.1 resolver to verbatim cross-conversation excerpts; current-conversation lane via neo/internal/recall over older-than-T2 turns; dedup, rank, budget caps (tokens, k, wall-clock deadline); empty-on-failure"
+do_2   = "Tests on real cortex + real conversation store: cross-conversation exact excerpt retrieval, time-window filtering, budget enforcement, fail-open under broken embedder"
+reqs   = ["3.1", "3.2", "3.4", "3.5"]
+requires = ["1.1", "1.2"]
+
+[task.2.2]
+title  = "Episodic block on the cmTail + turn signal + observability event"
+status = "done"
+wave   = 2
+do_1   = "neo/internal/agent/continuous.go: generalize the relevance-push site — prepareTurn runs episodic detection; on fire, run EpisodicRetrieve and append the rendered episodic block (header + excerpts w/ provenance + grounding instruction) to cmTail; token cap independent of Activate trim; surfaced-set dedup on excerpt refs; set turn.episodicPending, clear on surfaced grounding or memory_recall dispatch"
+do_2   = "Extend the memory.activation broker event with the episodic excerpt fields + trigger class; keep traceWorkspaceTypes persistence; internal metrics line (trigger, lanes, hits, tokens, latency)"
+do_3   = "Tests on the real Chat loop (httptest SSE LLM): E2E remember-when turn -> block present in the assembled window pre-generation with correct provenance; turnSeq==1 push unchanged; no-trigger turns byte-unchanged; empty pipeline -> no block + episodicPending set; window-law invariants (activationAssemblies once/turn, windowAssemblies once/step) hold"
+reqs   = ["4.1", "4.2", "4.3", "4.4", "8.1", "8.3", "9.1"]
+requires = ["2.1"]
+
+[task.3]
+section = "P1 — Lexical reach"
+title   = "Wave 3 — exact words, replay-safe"
+status  = "done"
+
+[task.3.1]
+title  = "Derived BM25 lexical index over sess/"
+status = "done"
+wave   = 3
+do_1   = "cortex (new lexindex or store-adjacent package): deterministic tokenizer + BM25-style postings under a dedicated derived key family; incremental build at AppendMessage; delete+rebuild from journal/sess records byte-deterministic; values through the existing seal seam; query(term/phrase, timeRange, k) -> scored (conv, seq) hits; NO SMT writes"
+do_2   = "Tests on real Pebble: incremental vs rebuilt postings byte-identical; OverallRoot + anchored roots byte-identical index-on vs index-off vs delete-then-rebuild; replay byte-identity unchanged; sealed-value round-trip; corrupted-index fail-open (query returns empty)"
+reqs   = ["5.1", "5.2", "5.3"]
+requires = ["2.2"]
+
+[task.3.2]
+title  = "Hybrid fusion into the pipeline and reactive recall"
+status = "done"
+wave   = 3
+do_1   = "Wire lane 3 into EpisodicRetrieve with reciprocal rank fusion across lanes; wire the fused hybrid into pager.Recall / memory_recall for transcript-reaching queries (recallRecursive gains the lexical lane; rendering carries provenance)"
+do_2   = "Tests: exact-word query that semantic recall misses is found via the lexical lane in BOTH the automatic push and memory_recall; fusion ordering deterministic; budgets hold"
+reqs   = ["3.3", "5.4"]
+requires = ["3.1"]
+
+[task.4]
+section = "P1 — History, failsafe, and the visible surface"
+title   = "Wave 4 — backfill, Cassandra net, client legibility"
+status  = "done"
+
+[task.4.1]
+title  = "Chronos idle backfill sweep"
+status = "done"
+wave   = 4
+do_1   = "Chronos-scheduled sweep (reuse busy-check/reschedule/jitter conventions): walk historical sess/ building postings + heuristically backfill derived_from edges for pre-existing memories (actor + CreatedAt + conversation containment; heuristic edges marked distinguishably); checkpointed derived record, batch-capped per wake, busy-defer"
+do_2   = "Tests: resumable after simulated restart, idempotent (second full run = no-op, proven), busy-defer honored, heuristic vs exact edge marking"
+reqs   = ["7.1", "7.2", "7.3"]
+requires = ["3.1"]
+
+[task.4.2]
+title  = "Cassandra trigEpisodicUngrounded"
+status = "done"
+wave   = 4
+do_1   = "neo/internal/agent/cassandra.go + signals.go: one new stepSignals field (episodicPending); new doubt trigger + template (check memory_recall before asserting the past); classify placement respecting existing precedence; cooldown/caps unchanged"
+do_2   = "Tests: fires exactly on (detected AND ungrounded AND closing), never otherwise; non-episodic turn trigger behavior byte-unchanged (regression sweep over existing cassandra tests); dual-record + content-only guardrails hold"
+reqs   = ["6.1", "6.2", "6.3", "9.3"]
+requires = ["2.2"]
+
+[task.4.3]
+title  = "Client surface: recalled excerpts in the timeline"
+status = "done"
+wave   = 4
+do_1   = "apps/client: render episodic memory.activation excerpts in the existing memory/timeline workspace surface (conversation/date/exactness shown); parse in useChat + buildTaskFromTrace so it survives reopen; i18n x5 locales; house rules"
+do_2   = "Verify: tsc + eslint + vitest green on changed files"
+reqs   = ["8.1", "8.2"]
+requires = ["2.2"]
+
+[task.5]
+section = "P2 — Proof"
+title   = "Wave 5 — the whole loop, adversarially"
+status  = "done"
+
+[task.5.1]
+title  = "DEJA-VU property + E2E suite"
+status = "done"
+wave   = 5
+property  = "Property DEJA-VU: on real components end-to-end — memory consolidated from conversation A, 'remember when' in conversation B, verbatim A-excerpt resident in B's window pre-generation with correct provenance; hybrid lexical+semantic finds exact words semantic-only misses; cortex integrity untouched (OverallRoot/anchored-root identity across index on/off/rebuild, replay identity); deja-vu fully fail-open (broken embedder, dead cheap lane, corrupted index -> normal turn, no block, no error); Cassandra failsafe fires iff detected-ungrounded-closing; backfilled history retrievable — no fakes anywhere"
+validates = "Requirements 9.1, 9.2, 9.3, 9.4"
+requires  = ["3.2", "4.1", "4.2"]

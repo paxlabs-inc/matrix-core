@@ -65,6 +65,7 @@ var derivedSingleMetaKeys = [][]byte{
 //	idx/smt/     sess#7 phase7_locked_design Q3 (anchored-namespace SMT nodes)
 //	salience/    research/04-cortex.md:25 (indexes/salience/)
 //	accum/       sess#7 phase7_locked_design Q2 (MMR persistence)
+//	lex/         spec/deja-vu req.5.1 (derived transcript lexical index)
 var derivedPrefixes = [][]byte{
 	keys.PrefixAccum,
 	keys.PrefixIdxActorObj,
@@ -72,6 +73,7 @@ var derivedPrefixes = [][]byte{
 	keys.PrefixIdxSMT,
 	keys.PrefixIdxTag,
 	keys.PrefixIdxType,
+	keys.PrefixLexical,
 	keys.PrefixSalience,
 	[]byte("vec/"), // PrefixVecMeta is vec/meta/, but vec/ is the broader umbrella; safe to drop the whole tree
 }
@@ -81,7 +83,7 @@ var derivedPrefixes = [][]byte{
 //
 // After this call returns:
 //
-//	accum/* idx/* salience/* vec/* — empty
+//	accum/* idx/* lex/* salience/* vec/* — empty
 //	meta/embed_cursor              — absent
 //	meta/embed_vertex_next         — absent
 //

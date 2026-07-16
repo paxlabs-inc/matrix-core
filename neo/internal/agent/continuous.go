@@ -105,8 +105,32 @@ func (a *Agent) cmRecordToolResult(name, content string) {
 // cmAppend writes one message to the cortex session store. Best-effort: a
 // durable-append failure does not crash the turn (the in-memory transcript
 // remains the live source for THIS turn); durability is a background concern.
+// The allocated session seq is folded into the current turn's seq range
+// (DEJA-VU req 1.1) so end-of-turn consolidation can stamp derived_from
+// provenance edges back to the exact transcript slice this turn produced.
 func (a *Agent) cmAppend(m cortex.Message) {
-	_, _ = a.pager.AppendMessage(m)
+	uri, err := a.pager.AppendMessage(m)
+	if err != nil {
+		return
+	}
+	if a.turn == nil {
+		return
+	}
+	if _, seq, ok := cortex.ParseSessionURI(uri); ok {
+		a.turn.noteSessionSeq(seq)
+	}
+}
+
+// provenanceRange returns the conversation id and inclusive session seq span
+// consolidation should stamp onto every memory it writes this turn (DEJA-VU req
+// 1.1). It returns a blank conv (disabling provenance linking) when nothing was
+// appended this turn (no pager / bare agent), so a memory is never linked to a
+// slice that does not exist.
+func (a *Agent) provenanceRange() (conv string, seqLo, seqHi uint64) {
+	if a.turn == nil || !a.turn.haveSeq {
+		return "", 0, 0
+	}
+	return a.cmConvID(), a.turn.seqLo, a.turn.seqHi
 }
 
 // cmActivate computes this turn's activation bundle ONCE (Pinned computed once
@@ -172,8 +196,19 @@ func (a *Agent) cmRelevancePush(ctx context.Context, query string) ([]memory.Sni
 // coarse timeline of past activity. It deliberately carries NO journal / MMR /
 // rollup / snapshot jargon and no raw URIs — only the RESULT a user should see.
 type MemoryEvent struct {
-	StorySoFar string   // durable rolling summary of this conversation
-	Timeline   []string // coarse timeline short-forms, oldest first
+	StorySoFar   string   // durable rolling summary of this conversation
+	Timeline     []string // coarse timeline short-forms, oldest first
+	TriggerClass string
+	Excerpts     []EpisodicMemoryEvent
+}
+
+type EpisodicMemoryEvent struct {
+	ConversationID string `json:"conversation_id"`
+	Date           string `json:"date"`
+	SeqLo          uint64 `json:"seq_lo"`
+	SeqHi          uint64 `json:"seq_hi"`
+	Exact          bool `json:"exact"`
+	Text           string `json:"text"`
 }
 
 // MemoryObserver receives the per-turn MemoryEvent. nil disables surfacing; the
@@ -184,18 +219,26 @@ type MemoryObserver func(MemoryEvent)
 // bundle so the client can show the memory Neo carries (task 7.1). Pure
 // side-channel: it reads the already-computed read-only bundle, mutates nothing,
 // and is a no-op when no observer is wired or there is nothing to show.
-func (a *Agent) emitMemory(b *cortex.ActivationBundle) {
-	if a.memObserver == nil || b == nil {
+func (a *Agent) emitMemory(b *cortex.ActivationBundle, triggerClass string, excerpts []memory.EpisodicExcerpt) {
+	if a.memObserver == nil {
 		return
 	}
-	timeline := make([]string, 0, len(b.Timeline))
-	for _, r := range b.Timeline {
-		if sf := strings.TrimSpace(r.ShortForm); sf != "" {
-			timeline = append(timeline, sf)
+	var story string
+	var timeline []string
+	if b != nil {
+		story = strings.TrimSpace(b.StorySoFar)
+		timeline = make([]string, 0, len(b.Timeline))
+		for _, r := range b.Timeline {
+			if sf := strings.TrimSpace(r.ShortForm); sf != "" {
+				timeline = append(timeline, sf)
+			}
 		}
 	}
-	ev := MemoryEvent{StorySoFar: strings.TrimSpace(b.StorySoFar), Timeline: timeline}
-	if ev.StorySoFar == "" && len(ev.Timeline) == 0 {
+	ev := MemoryEvent{StorySoFar: story, Timeline: timeline, TriggerClass: triggerClass}
+	for _, ex := range excerpts {
+		ev.Excerpts = append(ev.Excerpts, EpisodicMemoryEvent{ConversationID: ex.ConversationID, Date: ex.Date.UTC().Format("2006-01-02"), SeqLo: ex.SeqLo, SeqHi: ex.SeqHi, Exact: ex.Exact, Text: ex.Text})
+	}
+	if ev.StorySoFar == "" && len(ev.Timeline) == 0 && len(ev.Excerpts) == 0 {
 		return
 	}
 	a.memObserver(ev)
