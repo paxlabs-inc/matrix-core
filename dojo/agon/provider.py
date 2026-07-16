@@ -181,6 +181,6 @@ def default_registry():
         "deepseek", "https://api.deepseek.com/chat/completions", "DEEPSEEK_API",
         extra_body={"reasoning_effort": "high", "thinking": {"type": "enabled"}},
         concurrency=2))
-    reg.bind("xiaomimimo/mimo-v2.5-pro-direct", "xiaomi", "mimo-v2.5-pro")
+    reg.bind("xiaomimimo/mimo-v2.5-pro-ultraspeed-direct", "xiaomi", "mimo-v2.5-pro-ultraspeed")
     reg.bind("deepseek/deepseek-v4-pro-direct", "deepseek", "deepseek-v4-pro")
     return reg

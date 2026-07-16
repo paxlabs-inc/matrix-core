@@ -78,9 +78,9 @@ func TestModelPolicyPerRole(t *testing.T) {
 			t.Fatalf("%s: decisions (%v) must run hotter than implementation (%v)", m, dec.Temperature, work.Temperature)
 		}
 	}
-	// Every role in every mode pins xiaomimimo/mimo-v2.5-pro (Novita MiMo) —
+	// Every role in every mode pins xiaomimimo/mimo-v2.5-pro-ultraspeed (Novita MiMo) —
 	// the fast tier and the strong tier are the same model under the cody slot.
-	const want = "xiaomimimo/mimo-v2.5-pro"
+	const want = "xiaomimimo/mimo-v2.5-pro-ultraspeed"
 	if FastModel != want {
 		t.Fatalf("FastModel = %q, want %q", FastModel, want)
 	}

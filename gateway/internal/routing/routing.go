@@ -285,7 +285,7 @@ func detectProvider(model string) (Provider, error) {
 		return ProviderFireworks, nil
 	case strings.HasPrefix(strings.ToLower(model), "grok-"):
 		return ProviderXai, nil
-	case strings.EqualFold(strings.TrimSpace(model), "mimo-v2.5-pro"), strings.EqualFold(strings.TrimSpace(model), "xiaomimimo/mimo-v2.5-pro"):
+	case strings.EqualFold(strings.TrimSpace(model), "mimo-v2.5-pro-ultraspeed"), strings.EqualFold(strings.TrimSpace(model), "xiaomimimo/mimo-v2.5-pro-ultraspeed"):
 		return ProviderXiaomi, nil
 	case strings.Contains(model, "/"):
 		return ProviderBaseten, nil

@@ -25,7 +25,7 @@ func TestMaxCompletionTokensWire(t *testing.T) {
 		model          string
 		wantCompletion bool // true: expect max_completion_tokens (grok); false: expect max_tokens
 	}{
-		{"grok uses max_completion_tokens", "xiaomimimo/mimo-v2.5-pro", true},
+		{"grok uses max_completion_tokens", "xiaomimimo/mimo-v2.5-pro-ultraspeed", true},
 		{"non-grok uses max_tokens", "accounts/fireworks/models/deepseek-v4-flash", false},
 	}
 	for _, tt := range tests {

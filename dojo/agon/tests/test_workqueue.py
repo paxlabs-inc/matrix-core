@@ -87,7 +87,7 @@ class TestProviderRegistry(unittest.TestCase):
         # Bound models map to their provider + served id.
         self.assertEqual(reg.provider_for("deepseek/deepseek-v4-pro-direct").name, "deepseek")
         self.assertEqual(reg.served_model("deepseek/deepseek-v4-pro-direct"), "deepseek-v4-pro")
-        self.assertEqual(reg.served_model("xiaomimimo/mimo-v2.5-pro-direct"), "mimo-v2.5-pro")
+        self.assertEqual(reg.served_model("xiaomimimo/mimo-v2.5-pro-ultraspeed-direct"), "mimo-v2.5-pro-ultraspeed")
 
     def test_build_body_max_tokens_field_and_extra(self):
         ds = default_registry().provider("deepseek")
@@ -98,7 +98,7 @@ class TestProviderRegistry(unittest.TestCase):
         self.assertEqual(body["reasoning_effort"], "high")
         self.assertIn("tools", body)
         xi = default_registry().provider("xiaomi")
-        body2 = xi.build_body("mimo-v2.5-pro", [], max_tokens=8192)
+        body2 = xi.build_body("mimo-v2.5-pro-ultraspeed", [], max_tokens=8192)
         self.assertIn("max_completion_tokens", body2)
         self.assertNotIn("max_tokens", body2)
 

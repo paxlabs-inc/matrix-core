@@ -31,15 +31,15 @@ func TestDefaultsMatchFrozenSpec(t *testing.T) {
 		}
 	}
 	// MiMo direct-provider migration: every Neo lane pins the native
-	// mimo-v2.5-pro id (the xiaomimimo/ Novita fleet form is a retired alias
+	// mimo-v2.5-pro-ultraspeed id (the xiaomimimo/ Novita fleet form is a retired alias
 	// the client still accepts — MCL llm.IsXiaomiModel).
-	if c.MainModel != "mimo-v2.5-pro" {
+	if c.MainModel != "mimo-v2.5-pro-ultraspeed" {
 		t.Errorf("MainModel = %q", c.MainModel)
 	}
-	if c.CheapModel != "mimo-v2.5-pro" {
+	if c.CheapModel != "mimo-v2.5-pro-ultraspeed" {
 		t.Errorf("CheapModel = %q", c.CheapModel)
 	}
-	if c.ConsolidationModel != "mimo-v2.5-pro" {
+	if c.ConsolidationModel != "mimo-v2.5-pro-ultraspeed" {
 		t.Errorf("ConsolidationModel = %q", c.ConsolidationModel)
 	}
 	if c.CassandraModel != "grok-4.20-0309-non-reasoning" {

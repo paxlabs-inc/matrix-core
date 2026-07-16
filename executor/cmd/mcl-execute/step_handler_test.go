@@ -209,18 +209,18 @@ func stepNode(id, kind string) *ir.PlanNode {
 func TestStepHandler_cfgFor_DefaultsPerKind(t *testing.T) {
 	h := &llmStepHandler{registry: llm.DefaultRegistry()}
 
-	// Every executor kind pins the Xiaomi-served mimo-v2.5-pro in DefaultRegistry.
+	// Every executor kind pins the Xiaomi-served mimo-v2.5-pro-ultraspeed in DefaultRegistry.
 	tests := []struct {
 		kind      llm.StepKind
 		modelFrag string
 	}{
-		{llm.KindReason, "mimo-v2.5-pro"},
-		{llm.KindCode, "mimo-v2.5-pro"},
-		{llm.KindSummarize, "mimo-v2.5-pro"},
-		{llm.KindWrite, "mimo-v2.5-pro"},
-		{llm.KindTransform, "mimo-v2.5-pro"},
-		{llm.KindClassify, "mimo-v2.5-pro"},
-		{llm.KindHardReason, "mimo-v2.5-pro"},
+		{llm.KindReason, "mimo-v2.5-pro-ultraspeed"},
+		{llm.KindCode, "mimo-v2.5-pro-ultraspeed"},
+		{llm.KindSummarize, "mimo-v2.5-pro-ultraspeed"},
+		{llm.KindWrite, "mimo-v2.5-pro-ultraspeed"},
+		{llm.KindTransform, "mimo-v2.5-pro-ultraspeed"},
+		{llm.KindClassify, "mimo-v2.5-pro-ultraspeed"},
+		{llm.KindHardReason, "mimo-v2.5-pro-ultraspeed"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.kind.String(), func(t *testing.T) {
@@ -411,8 +411,8 @@ func TestStepHandler_HandleStep_EmptyKindRoutesToReason(t *testing.T) {
 		}
 		if k, ok := e.Fields["kind"].(string); ok && k == "reason" {
 			saw = true
-			if m, ok := e.Fields["model"].(string); !ok || !strings.Contains(strings.ToLower(m), "mimo-v2.5-pro") {
-				t.Errorf("event model = %v, want mimo-v2.5-pro from DefaultRegistry", e.Fields["model"])
+			if m, ok := e.Fields["model"].(string); !ok || !strings.Contains(strings.ToLower(m), "mimo-v2.5-pro-ultraspeed") {
+				t.Errorf("event model = %v, want mimo-v2.5-pro-ultraspeed from DefaultRegistry", e.Fields["model"])
 			}
 		}
 	}

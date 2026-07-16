@@ -1,7 +1,7 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:6ffdb427705048ae334806cf0b2c0a469bc89c5b3ae063befa9c314c143e49d0
+# GENERATED gen=codegraph do-not-edit merkle=b3:300859de48ad427722029e8f5ee9018d4284b9e0a5f20dbff6f4869382d2cff3
 
 NODE id=matrix/neo/internal/config kind=package
-  digest=b3:2bdc5b3f7e0109b421877f151098b66d27db727f118934a36d1e387046d034c2 file=neo/internal/config range=0:0 lang=go exported=true
+  digest=b3:ef512500c7419d86de7b609f2041deafc23682ad1b589023aea4e10c721d295c file=neo/internal/config range=0:0 lang=go exported=true
 EDGES
   contains=matrix/neo/internal/config/config.go,matrix/neo/internal/config/kvx.go
   ^contains=mod:matrix/neo
@@ -517,7 +517,7 @@ EDGES
   ^contains=matrix/neo/internal/config.Config
 
 NODE id=matrix/neo/internal/config.Config.ActivationBudget kind=method
-  digest=b3:703f03a8e55c2e037d5cfc45bb3a806414ad906dcaf94be933bda11458ac6570 file=neo/internal/config/config.go range=797:814 lang=go exported=true byte_range=39879:40546
+  digest=b3:703f03a8e55c2e037d5cfc45bb3a806414ad906dcaf94be933bda11458ac6570 file=neo/internal/config/config.go range=797:814 lang=go exported=true byte_range=39912:40579
   sig=func (c Config) ActivationBudget() int
   doc=ActivationBudget returns the per-turn cortex activation-bundle token budget.\nAn explicit ActivationBudgetTokens wins verbatim; otherwise it derives\nwindow-proportionally (2% of the context window) clamped to\n[activationBudgetFloorTokens, activationBudgetCapTokens] — 1M → 20000,\n256K → 5120, and any window ≤ 150K keeps the historical 3000.
 EDGES
@@ -525,14 +525,14 @@ EDGES
   ^defines=matrix/neo/internal/config/config.go
 
 NODE id=matrix/neo/internal/config.Config.HardBudgetTokens kind=method
-  digest=b3:79bc0728ebdaab6b8c4240fe339cb56df2c6acd216994a716187436861d2780e file=neo/internal/config/config.go range=785:787 lang=go exported=true byte_range=39442:39562
+  digest=b3:79bc0728ebdaab6b8c4240fe339cb56df2c6acd216994a716187436861d2780e file=neo/internal/config/config.go range=785:787 lang=go exported=true byte_range=39475:39595
   sig=func (c Config) HardBudgetTokens() int
 EDGES
   ^contains=matrix/neo/internal/config.Config
   ^defines=matrix/neo/internal/config/config.go
 
 NODE id=matrix/neo/internal/config.Config.IsEscalateAction kind=method
-  digest=b3:d993c56f58da58e2c20c0b69dc7cc415b52c728f8d540c3db9e00e1df362a42e file=neo/internal/config/config.go range=754:763 lang=go exported=true byte_range=38151:38445
+  digest=b3:d993c56f58da58e2c20c0b69dc7cc415b52c728f8d540c3db9e00e1df362a42e file=neo/internal/config/config.go range=754:763 lang=go exported=true byte_range=38184:38478
   sig=func (c Config) IsEscalateAction(action string) bool
   doc=IsEscalateAction reports whether the named action crosses the wall into\nMCL (requires a user wallet signature) per the execution surface.
 EDGES
@@ -540,7 +540,7 @@ EDGES
   ^defines=matrix/neo/internal/config/config.go
 
 NODE id=matrix/neo/internal/config.Config.SoftBudgetTokens kind=method
-  digest=b3:8503b0cc4f281e582ad30ba88389676a89a0b4d0819cca516f09c67456f683c8 file=neo/internal/config/config.go range=776:783 lang=go exported=true byte_range=38955:39440
+  digest=b3:8503b0cc4f281e582ad30ba88389676a89a0b4d0819cca516f09c67456f683c8 file=neo/internal/config/config.go range=776:783 lang=go exported=true byte_range=38988:39473
   sig=func (c Config) SoftBudgetTokens() int
   doc=SoftBudgetTokens / HardBudgetTokens derive the compaction thresholds from\nthe configured context window: the percentage-derived budget, raised to\nwindow-minus-capped-headroom when the percentage would reserve more than the\nabsolute cap — so trimming fires only near true pressure at 1M scale while\nsmall windows keep the exact percentage behavior.
 EDGES
@@ -548,7 +548,7 @@ EDGES
   ^defines=matrix/neo/internal/config/config.go
 
 NODE id=matrix/neo/internal/config.Config.applyDoc kind=method
-  digest=b3:e292219d3a90911b15d8cd92405f60ceff9a637dae57bacd82b182ffa93bab23 file=neo/internal/config/config.go range=456:569 lang=go exported=false byte_range=22850:29215
+  digest=b3:e292219d3a90911b15d8cd92405f60ceff9a637dae57bacd82b182ffa93bab23 file=neo/internal/config/config.go range=456:569 lang=go exported=false byte_range=22883:29248
   sig=func (c *Config) applyDoc(d *kvxDoc)
   doc=applyDoc overlays a parsed runtime .kvx document onto c. Absent keys keep\ntheir current (default) value.
 EDGES
@@ -556,7 +556,7 @@ EDGES
   ^defines=matrix/neo/internal/config/config.go
 
 NODE id=matrix/neo/internal/config.Config.applyEnv kind=method
-  digest=b3:88e6b04766ac65395f00180949fab340cc1e84eeb1acd7095f6a8d525bd3d088 file=neo/internal/config/config.go range=571:686 lang=go exported=false byte_range=29217:36244
+  digest=b3:88e6b04766ac65395f00180949fab340cc1e84eeb1acd7095f6a8d525bd3d088 file=neo/internal/config/config.go range=571:686 lang=go exported=false byte_range=29250:36277
   sig=func (c *Config) applyEnv()
   doc=applyEnv overlays environment variables (highest precedence).
 EDGES
@@ -564,76 +564,76 @@ EDGES
   ^defines=matrix/neo/internal/config/config.go
 
 NODE id=matrix/neo/internal/config.Default kind=func
-  digest=b3:b802d6cc19847d52e00961616fa05c2f5340e0da9be6a5c5f7683fb7d1d0de41 file=neo/internal/config/config.go range=261:389 lang=go exported=true byte_range=15002:20380
+  digest=b3:611cdbae1abd9740085bbfcdbb82f30e0631b4d6296f9c657513c217b8c846ba file=neo/internal/config/config.go range=261:389 lang=go exported=true byte_range=15002:20413
   sig=func Default() Config
   doc=Default returns Neo's defaults, encoding the frozen spec's locked\noperational contract (neo/neo.frozen.kvx).
 EDGES
   ^defines=matrix/neo/internal/config/config.go
 
 NODE id=matrix/neo/internal/config.Load kind=func
-  digest=b3:f6ec19efc029c3ce6bef206542420bce06e9a8158946836fa5c3a6b437959749 file=neo/internal/config/config.go range=438:454 lang=go exported=true byte_range=22442:22848
+  digest=b3:f6ec19efc029c3ce6bef206542420bce06e9a8158946836fa5c3a6b437959749 file=neo/internal/config/config.go range=438:454 lang=go exported=true byte_range=22475:22881
   sig=func Load(path string) (Config, error)
   doc=Load returns Default(), overlaid with an optional runtime .kvx file (path\nmay be empty or point at a missing file — both are non-fatal), then\noverlaid with environment variables.
 EDGES
   ^defines=matrix/neo/internal/config/config.go
 
 NODE id=matrix/neo/internal/config.Sandbox kind=func
-  digest=b3:7147002d20f9ff735613ea235091071aea88ed9aaa118ca10f4de05cb446a68c file=neo/internal/config/config.go range=391:436 lang=go exported=true byte_range=20382:22440
+  digest=b3:7147002d20f9ff735613ea235091071aea88ed9aaa118ca10f4de05cb446a68c file=neo/internal/config/config.go range=391:436 lang=go exported=true byte_range=20415:22473
   sig=func Sandbox() Config
   doc=Sandbox returns a hermetic local-dev preset that wires a throwaway temp\ncortex, the existing Hash embedder stub, a no-op chain RPC (empty\nDaemonURL), and metering disabled (empty GatewayURL) — by composing the\nEXISTING override points (Config struct fields) only. No new runtime\npaths are introduced; every field set here is one a kvx profile or env\nvar could already set.\n\nThe preset composes Default() and overrides the hermetic-surface fields\non the returned copy. Default() itself is never mutated.\n\nLaunch command (one command, zero external deps):\n\n	neo serve -sandbox\n\nor for the MCL executor daemon:\n\n	mcl-execute daemon -sandbox\n\nThe Hash embedder stub is selected because pickEmbedder() (see\nneo/internal/memory/embedder.go) falls through to embed.NewHashEmbedder()\nwhen GatewayURL is empty and no provider API key env is set — both\nguaranteed by this preset.
 EDGES
   ^defines=matrix/neo/internal/config/config.go
 
 NODE id=matrix/neo/internal/config.activationBudgetCapTokens kind=const
-  digest=b3:ac5a5d2dbb6e169f84a7b82b62676d88270240f04ffae275b7e9037f5ea302b7 file=neo/internal/config/config.go range=789:794 lang=go exported=false byte_range=39564:39875
+  digest=b3:ac5a5d2dbb6e169f84a7b82b62676d88270240f04ffae275b7e9037f5ea302b7 file=neo/internal/config/config.go range=789:794 lang=go exported=false byte_range=39597:39908
   sig=untyped int
   doc=Bounds for the derived activation-bundle budget (ActivationBudget below).\nThe floor is the historical cortex default (small windows keep their exact\nprior behavior); the ceiling stays under cortex.MaxActivateBudgetTokens.
 EDGES
   ^defines=matrix/neo/internal/config/config.go
 
 NODE id=matrix/neo/internal/config.activationBudgetFloorTokens kind=const
-  digest=b3:352958eee67ffe6579fac9489069f4e9356d60d0f73feb3cb0e27668698d300f file=neo/internal/config/config.go range=789:793 lang=go exported=false byte_range=39564:39838
+  digest=b3:352958eee67ffe6579fac9489069f4e9356d60d0f73feb3cb0e27668698d300f file=neo/internal/config/config.go range=789:793 lang=go exported=false byte_range=39597:39871
   sig=untyped int
   doc=Bounds for the derived activation-bundle budget (ActivationBudget below).\nThe floor is the historical cortex default (small windows keep their exact\nprior behavior); the ceiling stays under cortex.MaxActivateBudgetTokens.
 EDGES
   ^defines=matrix/neo/internal/config/config.go
 
 NODE id=matrix/neo/internal/config.budgetTokens kind=func
-  digest=b3:4157a994a1b8f215ff222ae1094efa9206a040680759744c06d00499052fede5 file=neo/internal/config/config.go range=816:822 lang=go exported=false byte_range=40548:40703
+  digest=b3:4157a994a1b8f215ff222ae1094efa9206a040680759744c06d00499052fede5 file=neo/internal/config/config.go range=816:822 lang=go exported=false byte_range=40581:40736
   sig=func budgetTokens(window, pct, headroomCap int) int
 EDGES
   ^defines=matrix/neo/internal/config/config.go
 
 NODE id=matrix/neo/internal/config.envBool kind=func
-  digest=b3:4dc067f137a53f4189c423b5b72c0e300a7a740547058c27d04a988e0e6bdac5 file=neo/internal/config/config.go range=741:752 lang=go exported=false byte_range=37742:38149
+  digest=b3:4dc067f137a53f4189c423b5b72c0e300a7a740547058c27d04a988e0e6bdac5 file=neo/internal/config/config.go range=741:752 lang=go exported=false byte_range=37775:38182
   sig=func envBool(key string, fallback bool) bool
   doc=envBool overlays a boolean from the environment, keeping the fallback when\nthe var is absent or unrecognized. Truthy: 1/true/yes/on; falsy:\n0/false/no/off (case-insensitive).
 EDGES
   ^defines=matrix/neo/internal/config/config.go
 
 NODE id=matrix/neo/internal/config.envFloat32 kind=func
-  digest=b3:730e19dad842d521c93d7b27cd67fe8f3fe1addf539ea9d09137c6195b17d23c file=neo/internal/config/config.go range=730:739 lang=go exported=false byte_range=37405:37740
+  digest=b3:730e19dad842d521c93d7b27cd67fe8f3fe1addf539ea9d09137c6195b17d23c file=neo/internal/config/config.go range=730:739 lang=go exported=false byte_range=37438:37773
   sig=func envFloat32(key string, fallback float32) float32
   doc=envFloat32 overlays a float32 from the environment, keeping the fallback when\nthe var is absent or not a valid float.
 EDGES
   ^defines=matrix/neo/internal/config/config.go
 
 NODE id=matrix/neo/internal/config.envInt kind=func
-  digest=b3:f0435f7bcbfd08453d5126f3d993c566e19544093a25deb944f7133034180a4b file=neo/internal/config/config.go range=688:697 lang=go exported=false byte_range=36246:36569
+  digest=b3:f0435f7bcbfd08453d5126f3d993c566e19544093a25deb944f7133034180a4b file=neo/internal/config/config.go range=688:697 lang=go exported=false byte_range=36279:36602
   sig=func envInt(key string, fallback int) int
   doc=envInt overlays a positive integer from the environment, keeping the\nfallback when the var is absent or not a positive integer.
 EDGES
   ^defines=matrix/neo/internal/config/config.go
 
 NODE id=matrix/neo/internal/config.envIntNonNeg kind=func
-  digest=b3:45d7a67ea60e91d1c56256ded6d6a80a84b7d175cc0b1a34e77dddecd3742a64 file=neo/internal/config/config.go range=699:710 lang=go exported=false byte_range=36571:37063
+  digest=b3:45d7a67ea60e91d1c56256ded6d6a80a84b7d175cc0b1a34e77dddecd3742a64 file=neo/internal/config/config.go range=699:710 lang=go exported=false byte_range=36604:37096
   sig=func envIntNonNeg(key string, fallback int) int
   doc=envIntNonNeg overlays a non-negative integer from the environment, keeping\nthe fallback when the var is absent or not a non-negative integer. Unlike\nenvInt it accepts 0 — used for knobs where zero is a meaningful setting\n(e.g. AmbientRetrievalTopK=0 = fully tool-driven retrieval).
 EDGES
   ^defines=matrix/neo/internal/config/config.go
 
 NODE id=matrix/neo/internal/config.envOr kind=func
-  digest=b3:e2ad6bd1a486daab04d32004a1f88b30c1b78d50db5a35bd8f8f0f942da35a95 file=neo/internal/config/config.go range=712:717 lang=go exported=false byte_range=37065:37193
+  digest=b3:e2ad6bd1a486daab04d32004a1f88b30c1b78d50db5a35bd8f8f0f942da35a95 file=neo/internal/config/config.go range=712:717 lang=go exported=false byte_range=37098:37226
   sig=func envOr(key, fallback string) string
 EDGES
   ^defines=matrix/neo/internal/config/config.go
@@ -645,7 +645,7 @@ EDGES
   ^defines=matrix/neo/internal/config/kvx.go
 
 NODE id=matrix/neo/internal/config.hardHeadroomCapTokens kind=const
-  digest=b3:671a9a4c7b6a15a795b9095a5cdfeefd808cbc910db68eefd8a20caa61b999fb file=neo/internal/config/config.go range=765:773 lang=go exported=false byte_range=38447:38951
+  digest=b3:671a9a4c7b6a15a795b9095a5cdfeefd808cbc910db68eefd8a20caa61b999fb file=neo/internal/config/config.go range=765:773 lang=go exported=false byte_range=38480:38984
   sig=untyped int
   doc=Headroom caps for the budget derivation below: at large windows a percentage\nthreshold reserves an absurd absolute slice (80% of 1M leaves 200K tokens\nidle), so the reserved headroom is the SMALLER of the percentage-derived\nslice and these absolute caps. Below ~320K windows the caps never bind, so\nsmall local-model configurations (32K via NEO_CONTEXT_WINDOW_TOKENS) keep\ntheir exact prior trim/compaction behavior.
 EDGES
@@ -754,7 +754,7 @@ EDGES
   ^defines=matrix/neo/internal/config/kvx.go
 
 NODE id=matrix/neo/internal/config.softHeadroomCapTokens kind=const
-  digest=b3:d000455921b9e16b66b75f29314f0b3516dcf68aa4f6464d7bbc3aedd3441643 file=neo/internal/config/config.go range=765:772 lang=go exported=false byte_range=38447:38920
+  digest=b3:d000455921b9e16b66b75f29314f0b3516dcf68aa4f6464d7bbc3aedd3441643 file=neo/internal/config/config.go range=765:772 lang=go exported=false byte_range=38480:38953
   sig=untyped int
   doc=Headroom caps for the budget derivation below: at large windows a percentage\nthreshold reserves an absurd absolute slice (80% of 1M leaves 200K tokens\nidle), so the reserved headroom is the SMALLER of the percentage-derived\nslice and these absolute caps. Below ~320K windows the caps never bind, so\nsmall local-model configurations (32K via NEO_CONTEXT_WINDOW_TOKENS) keep\ntheir exact prior trim/compaction behavior.
 EDGES
@@ -780,13 +780,13 @@ EDGES
   ^defines=matrix/neo/internal/config/kvx.go
 
 NODE id=matrix/neo/internal/config.voiceModeOr kind=func
-  digest=b3:28e913be3f385211deabe2290cf6e68adc5dd4f720ad40831bb86be41e3c6502 file=neo/internal/config/config.go range=719:728 lang=go exported=false byte_range=37195:37403
+  digest=b3:28e913be3f385211deabe2290cf6e68adc5dd4f720ad40831bb86be41e3c6502 file=neo/internal/config/config.go range=719:728 lang=go exported=false byte_range=37228:37436
   sig=func voiceModeOr(value, fallback string) string
 EDGES
   ^defines=matrix/neo/internal/config/config.go
 
 NODE id=matrix/neo/internal/config/config.go kind=file
-  digest=b3:d306604a1b31c87dfe95c2631bdb2a7d11aff39796bc7e4a5a525e52b2a69fd7 file=neo/internal/config/config.go range=1:822 lang=go exported=true
+  digest=b3:616b4a03e2618130b3cfe794d27d9dcabef51322e2f01a177143fedc1254c0a2 file=neo/internal/config/config.go range=1:822 lang=go exported=true
 EDGES
   defines=matrix/neo/internal/config.Config,matrix/neo/internal/config.Config.ActivationBudget,matrix/neo/internal/config.Config.HardBudgetTokens,matrix/neo/internal/config.Config.IsEscalateAction,matrix/neo/internal/config.Config.SoftBudgetTokens,matrix/neo/internal/config.Config.applyDoc,matrix/neo/internal/config.Config.applyEnv,matrix/neo/internal/config.Default,matrix/neo/internal/config.Load,matrix/neo/internal/config.Sandbox,matrix/neo/internal/config.activationBudgetCapTokens,matrix/neo/internal/config.activationBudgetFloorTokens,matrix/neo/internal/config.budgetTokens,matrix/neo/internal/config.envBool,matrix/neo/internal/config.envFloat32,matrix/neo/internal/config.envInt,matrix/neo/internal/config.envIntNonNeg,matrix/neo/internal/config.envOr,matrix/neo/internal/config.hardHeadroomCapTokens,matrix/neo/internal/config.softHeadroomCapTokens,matrix/neo/internal/config.voiceModeOr
   ^contains=matrix/neo/internal/config

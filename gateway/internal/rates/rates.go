@@ -81,7 +81,7 @@ import (
 //
 // v9 (2026-07-05, Andrew directed) MIGRATES the fleet off Z.ai GLM onto xAI
 // Grok, REMOVING the zai-org/GLM-5.2 rows and ADDING three grok rows:
-// xiaomimimo/mimo-v2.5-pro (ModelGrok43 — Neo main + MCL triage/registry), grok-build-0.1
+// xiaomimimo/mimo-v2.5-pro-ultraspeed (ModelGrok43 — Neo main + MCL triage/registry), grok-build-0.1
 // (ModelGrokBuild — Cody), grok-4.20-0309-non-reasoning (ModelGrok420NR —
 // Cassandra + Neo cheap/consolidation + liaison). The Z.ai provider + upstream
 // path are removed entirely; pre-v9 ledger rows that reference zai-org/GLM-5.2
@@ -89,7 +89,7 @@ import (
 // PAX rates are PLACEHOLDERS pending the real xAI prices.
 //
 // v10 (2026-07-07, Andrew directed) makes the Xiaomi-served
-// mimo-v2.5-pro (ModelMimoV25Pro) the primary chat model for every
+// mimo-v2.5-pro-ultraspeed (ModelMimoV25Pro) the primary chat model for every
 // agentic slot (Neo, Cody, MCL compiler/planner/executor, liaison). Purely
 // ADDITIVE: one new rateTable row + whitelisting MiMo on those slots. The grok
 // rows stay on the card (still used by the Cassandra slot + as fallbacks) so
@@ -160,9 +160,9 @@ const (
 	ModelLlama405B  = "meta-llama/Llama-3.1-405B-Instruct"
 	// xAI Grok fleet ids — the v9 migration off Z.ai GLM. All are bare ids that
 	// route to xAI (api.x.ai) via the "grok-*" prefix in internal/routing.
-	// ModelGrok43 is xiaomimimo/mimo-v2.5-pro, the primary reasoning model pinned on Neo's main
+	// ModelGrok43 is xiaomimimo/mimo-v2.5-pro-ultraspeed, the primary reasoning model pinned on Neo's main
 	// loop and the MCL triage/registry slots.
-	ModelGrok43 = "xiaomimimo/mimo-v2.5-pro"
+	ModelGrok43 = "xiaomimimo/mimo-v2.5-pro-ultraspeed"
 	// ModelGrokBuild is grok-build-0.1, the Cody coding-agent model (all Cody
 	// roles).
 	ModelGrokBuild = "grok-build-0.1"
@@ -175,7 +175,7 @@ const (
 	ModelNomicEmbed = "nomic-ai/nomic-embed-text-v1.5"
 	// ModelMimoV25Pro is Xiaomi MiMo v2.5 Pro's native direct-provider id — the
 	// primary chat model for every agentic slot (Neo, Cody, MCL).
-	ModelMimoV25Pro = "mimo-v2.5-pro"
+	ModelMimoV25Pro = "mimo-v2.5-pro-ultraspeed"
 )
 
 // Rate is the per-Mtoken price in PAX for a single model. Both prompt
@@ -263,9 +263,9 @@ var rateTable = []Rate{
 	{
 		Model:               ModelGrok43,
 		Group:               GroupReason,
-		InputPaxPerMTokens:  0.174978128, // ≈ $2.00 / Mtoken  [PLACEHOLDER — Andrew to set real xAI xiaomimimo/mimo-v2.5-pro price]
-		OutputPaxPerMTokens: 0.699912510, // ≈ $8.00 / Mtoken  [PLACEHOLDER — Andrew to set real xAI xiaomimimo/mimo-v2.5-pro price]
-		Notes:               "xAI xiaomimimo/mimo-v2.5-pro — v9 primary reasoning model: Neo main loop + MCL triage/registry. PLACEHOLDER rate pending the real xAI price.",
+		InputPaxPerMTokens:  0.174978128, // ≈ $2.00 / Mtoken  [PLACEHOLDER — Andrew to set real xAI xiaomimimo/mimo-v2.5-pro-ultraspeed price]
+		OutputPaxPerMTokens: 0.699912510, // ≈ $8.00 / Mtoken  [PLACEHOLDER — Andrew to set real xAI xiaomimimo/mimo-v2.5-pro-ultraspeed price]
+		Notes:               "xAI xiaomimimo/mimo-v2.5-pro-ultraspeed — v9 primary reasoning model: Neo main loop + MCL triage/registry. PLACEHOLDER rate pending the real xAI price.",
 	},
 	{
 		Model:               ModelGrokBuild,
@@ -293,7 +293,7 @@ var rateTable = []Rate{
 		Group:               GroupReason,
 		InputPaxPerMTokens:  0.087489064, // ≈ $1.00 / Mtoken  [PLACEHOLDER — set the real Xiaomi MiMo price]
 		OutputPaxPerMTokens: 0.174978128, // ≈ $2.00 / Mtoken  [PLACEHOLDER — set the real Xiaomi MiMo price]
-		Notes:               "Xiaomi direct mimo-v2.5-pro — primary chat model for every agentic slot (Neo/Cody/MCL). PLACEHOLDER rate pending the real Xiaomi provider price.",
+		Notes:               "Xiaomi direct mimo-v2.5-pro-ultraspeed — primary chat model for every agentic slot (Neo/Cody/MCL). PLACEHOLDER rate pending the real Xiaomi provider price.",
 	},
 }
 
@@ -326,48 +326,48 @@ func Lookup(model string) (Rate, bool) {
 // FreeTierWhitelist returns the slot -> model whitelist enforced by
 // internal/routing. Exported for tests + introspection.
 func FreeTierWhitelist() map[string][]string {
-	// v9 migration (Z.ai GLM → xAI Grok): ModelGrok43 (xiaomimimo/mimo-v2.5-pro) is the primary
+	// v9 migration (Z.ai GLM → xAI Grok): ModelGrok43 (xiaomimimo/mimo-v2.5-pro-ultraspeed) is the primary
 	// reasoning model on the agentic slots; ModelGrok420NR
 	// (grok-4.20-0309-non-reasoning) is the cheap non-reasoning model for
 	// cassandra/liaison/Neo-background; ModelGrokBuild (grok-build-0.1) is the
 	// Cody model. The surviving Fireworks/Together entries stay allowed for
 	// deployments that still pin them.
 	return map[string][]string{
-		// compiler: xiaomimimo/mimo-v2.5-pro is the primary MCL triage/compiler model;
+		// compiler: xiaomimimo/mimo-v2.5-pro-ultraspeed is the primary MCL triage/compiler model;
 		// gpt-oss-120b stays as the free-tier fallback and deepseek-v4-pro as
 		// the low-confidence escalation target (compile.go re-invokes the
 		// compiler slot with a stronger model when the frame call self-reports
 		// low confidence or emits an invalid verb).
 		"compiler": {ModelMimoV25Pro, ModelGrok43, ModelCompilerFreeTier, ModelDeepSeekV4Pro},
-		// executor: xiaomimimo/mimo-v2.5-pro is the primary; deepseek-v4-flash stays allowed
+		// executor: xiaomimimo/mimo-v2.5-pro-ultraspeed is the primary; deepseek-v4-flash stays allowed
 		// (summarize / long-ctx + back-compat); kimi-k2.6 stays as an
 		// alternative executor pinnable via MATRIX_EXECUTOR_MODEL.
 		"executor": {ModelMimoV25Pro, ModelGrok43, ModelExecutorFreeTier, ModelKimiK26},
-		// planner: xiaomimimo/mimo-v2.5-pro is the primary; kimi-k2.6, deepseek-v4-pro,
+		// planner: xiaomimimo/mimo-v2.5-pro-ultraspeed is the primary; kimi-k2.6, deepseek-v4-pro,
 		// gpt-oss-120b + v4-flash stay allowed for deployments that pin a
 		// different planner. All are on the rate card.
 		"planner": {ModelMimoV25Pro, ModelGrok43, ModelKimiK26, ModelCompilerFreeTier, ModelExecutorFreeTier, ModelDeepSeekV4Pro},
 		// liaison: the user-facing conversational narrator (SlotLiaison).
 		// grok-4.20-0309-non-reasoning is the cheap non-reasoning default for
-		// folding large event batches; xiaomimimo/mimo-v2.5-pro + deepseek-v4-flash/kimi-k2.6
+		// folding large event batches; xiaomimimo/mimo-v2.5-pro-ultraspeed + deepseek-v4-flash/kimi-k2.6
 		// stay allowed as prose upgrades pinnable via MATRIX_LIAISON_MODEL.
 		"liaison": {ModelMimoV25Pro, ModelGrok420NR, ModelGrok43, ModelDeepSeekV4Flash, ModelKimiK26},
 		// neo: the Neo default conversational AGENT (SlotNeo). NOT the
 		// Liaison — Neo drives the conversation + tools and delegates money to
-		// MCL. main = xiaomimimo/mimo-v2.5-pro (conversational loop); cheap + consolidation =
+		// MCL. main = xiaomimimo/mimo-v2.5-pro-ultraspeed (conversational loop); cheap + consolidation =
 		// grok-4.20-0309-non-reasoning (background write-back/compaction/
 		// memory-logging); nomic-embed-text-v1.5 is the cortex pager's
 		// embedding model via /v1/embeddings.
 		"neo": {ModelMimoV25Pro, ModelGrok43, ModelGrok420NR, ModelNomicEmbed},
 		// cassandra: the epistemic-completeness faculty (SlotCassandra). The
 		// completeness critic pins grok-4.20-0309-non-reasoning as the
-		// prior+scan adjudicator; xiaomimimo/mimo-v2.5-pro is the strong escalation adjudicator;
+		// prior+scan adjudicator; xiaomimimo/mimo-v2.5-pro-ultraspeed is the strong escalation adjudicator;
 		// deepseek-v4-flash/v4-pro stay allowed for deployments that pin them
 		// via -critic-model. Every model here is on the rate card.
 		"cassandra": {ModelGrok420NR, ModelGrok43, ModelDeepSeekV4Flash, ModelDeepSeekV4Pro},
 		// cody: the Cody coding AGENT (SlotCody, matrix/cody — codyd). All Cody
 		// roles (orchestrator + Engineer/Architect/Prototype workers) meter on
-		// this slot with grok-build-0.1; xiaomimimo/mimo-v2.5-pro stays allowed for the
+		// this slot with grok-build-0.1; xiaomimimo/mimo-v2.5-pro-ultraspeed stays allowed for the
 		// orchestrator's Cassandra-style adjudication. codegraph enrichment's
 		// summarizer also meters here on grok-build-0.1.
 		"cody": {ModelMimoV25Pro, ModelGrokBuild, ModelGrok43},

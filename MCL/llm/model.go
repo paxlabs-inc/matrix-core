@@ -352,7 +352,7 @@ func DefaultRegistry() *ModelRegistry {
 
 	// --- SlotCompiler --------------------------------------------------------
 	compiler := Config{
-		Model:       "mimo-v2.5-pro",
+		Model:       "mimo-v2.5-pro-ultraspeed",
 		Temperature: 0,
 		Seed:        42,
 		MaxTokens:   512,
@@ -362,7 +362,7 @@ func DefaultRegistry() *ModelRegistry {
 	// LongCtx: when cortex bundle exceeds ~100k tokens, DeepSeek-V4-Flash's
 	// 1M context is the safe escalation.
 	compilerLongCtx := Config{
-		Model:       "mimo-v2.5-pro",
+		Model:       "mimo-v2.5-pro-ultraspeed",
 		Temperature: 0,
 		Seed:        42,
 		MaxTokens:   1024,
@@ -377,7 +377,7 @@ func DefaultRegistry() *ModelRegistry {
 	// truncates the plan mid-object (the 'unexpected end of JSON input'
 	// synth.parse.error class). Plans rarely approach this ceiling.
 	planner := Config{
-		Model:          "mimo-v2.5-pro",
+		Model:          "mimo-v2.5-pro-ultraspeed",
 		Temperature:    0.2,
 		Seed:           42,
 		MaxTokens:      8192,
@@ -387,7 +387,7 @@ func DefaultRegistry() *ModelRegistry {
 	}
 	// LongCtx: GLM-5.1's 202k window for plans with extensive context.
 	plannerLongCtx := Config{
-		Model:          "mimo-v2.5-pro",
+		Model:          "mimo-v2.5-pro-ultraspeed",
 		Temperature:    0.2,
 		Seed:           42,
 		MaxTokens:      3072,
@@ -398,7 +398,7 @@ func DefaultRegistry() *ModelRegistry {
 
 	// --- SlotExecutor: KindReason (default agentic) --------------------------
 	executorReason := Config{
-		Model:          "mimo-v2.5-pro",
+		Model:          "mimo-v2.5-pro-ultraspeed",
 		Temperature:    0.4,
 		MaxTokens:      10000,
 		GrammarMode:    GrammarNone,
@@ -407,7 +407,7 @@ func DefaultRegistry() *ModelRegistry {
 
 	// --- SlotExecutor: KindCode (code-gen specialist) ------------------------
 	executorCode := Config{
-		Model:          "mimo-v2.5-pro",
+		Model:          "mimo-v2.5-pro-ultraspeed",
 		Temperature:    0.2,
 		MaxTokens:      8192,
 		GrammarMode:    GrammarNone,
@@ -416,7 +416,7 @@ func DefaultRegistry() *ModelRegistry {
 
 	// --- SlotExecutor: KindSummarize (long-context specialist) ---------------
 	executorSummarize := Config{
-		Model:       "mimo-v2.5-pro",
+		Model:       "mimo-v2.5-pro-ultraspeed",
 		Temperature: 0.2,
 		MaxTokens:   2048,
 		GrammarMode: GrammarNone,
@@ -424,7 +424,7 @@ func DefaultRegistry() *ModelRegistry {
 
 	// --- SlotExecutor: KindWrite (prose specialist) --------------------------
 	executorWrite := Config{
-		Model:          "mimo-v2.5-pro",
+		Model:          "mimo-v2.5-pro-ultraspeed",
 		Temperature:    0.6,
 		MaxTokens:      2048,
 		GrammarMode:    GrammarNone,
@@ -433,7 +433,7 @@ func DefaultRegistry() *ModelRegistry {
 
 	// --- SlotExecutor: KindTransform (structured shape, no creativity) -------
 	executorTransform := Config{
-		Model:       "mimo-v2.5-pro",
+		Model:       "mimo-v2.5-pro-ultraspeed",
 		Temperature: 0,
 		Seed:        42,
 		MaxTokens:   1024,
@@ -442,7 +442,7 @@ func DefaultRegistry() *ModelRegistry {
 
 	// --- SlotExecutor: KindClassify (pick-from-list with grammar) ------------
 	executorClassify := Config{
-		Model:       "mimo-v2.5-pro",
+		Model:       "mimo-v2.5-pro-ultraspeed",
 		Temperature: 0,
 		Seed:        42,
 		MaxTokens:   64,
@@ -452,7 +452,7 @@ func DefaultRegistry() *ModelRegistry {
 
 	// --- SlotExecutor: KindHardReason (opt-in frontier) ----------------------
 	executorHardReason := Config{
-		Model:          "mimo-v2.5-pro",
+		Model:          "mimo-v2.5-pro-ultraspeed",
 		Temperature:    0.2,
 		MaxTokens:      8192,
 		GrammarMode:    GrammarNone,
@@ -465,7 +465,7 @@ func DefaultRegistry() *ModelRegistry {
 	// without latency spikes. Free-form prose; no seed (natural variation is
 	// fine — the Liaison is a side-channel and is never replayed).
 	liaison := Config{
-		Model:       "mimo-v2.5-pro",
+		Model:       "mimo-v2.5-pro-ultraspeed",
 		Temperature: 0.5,
 		MaxTokens:   1024,
 		GrammarMode: GrammarNone,

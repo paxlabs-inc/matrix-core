@@ -281,9 +281,9 @@ func TestRegistryRoutesReturnsAllRegistered(t *testing.T) {
 
 func TestDefaultRegistryCompilerSlot(t *testing.T) {
 	cfg := DefaultRegistry().Resolve(RouteKey{Slot: SlotCompiler})
-	// Current pick: Xiaomi MiMo mimo-v2.5-pro (migration off xAI Grok).
-	if !strings.Contains(cfg.Model, "mimo-v2.5-pro") {
-		t.Errorf("compiler primary model = %q, want to contain mimo-v2.5-pro", cfg.Model)
+	// Current pick: Xiaomi MiMo mimo-v2.5-pro-ultraspeed (migration off xAI Grok).
+	if !strings.Contains(cfg.Model, "mimo-v2.5-pro-ultraspeed") {
+		t.Errorf("compiler primary model = %q, want to contain mimo-v2.5-pro-ultraspeed", cfg.Model)
 	}
 	if cfg.Temperature != 0 {
 		t.Errorf("compiler temperature = %v, want 0 (D11 determinism)", cfg.Temperature)
@@ -301,9 +301,9 @@ func TestDefaultRegistryCompilerSlot(t *testing.T) {
 
 func TestDefaultRegistryCompilerLongCtxSlot(t *testing.T) {
 	cfg := DefaultRegistry().Resolve(RouteKey{Slot: SlotCompiler, LongCtx: true})
-	// LongCtx escalation stays on mimo-v2.5-pro (single-provider fleet).
-	if !strings.Contains(cfg.Model, "mimo-v2.5-pro") {
-		t.Errorf("compiler LongCtx model = %q, want mimo-v2.5-pro", cfg.Model)
+	// LongCtx escalation stays on mimo-v2.5-pro-ultraspeed (single-provider fleet).
+	if !strings.Contains(cfg.Model, "mimo-v2.5-pro-ultraspeed") {
+		t.Errorf("compiler LongCtx model = %q, want mimo-v2.5-pro-ultraspeed", cfg.Model)
 	}
 	if cfg.GrammarMode != GrammarJSONSchema {
 		t.Errorf("compiler LongCtx grammar mode = %v, want GrammarJSONSchema", cfg.GrammarMode)
@@ -312,9 +312,9 @@ func TestDefaultRegistryCompilerLongCtxSlot(t *testing.T) {
 
 func TestDefaultRegistryPlannerSlot(t *testing.T) {
 	cfg := DefaultRegistry().Resolve(RouteKey{Slot: SlotPlanner})
-	// Current pick: mimo-v2.5-pro for plan_tree@1 recursive grammar.
-	if !strings.Contains(cfg.Model, "mimo-v2.5-pro") {
-		t.Errorf("planner model = %q, want to contain mimo-v2.5-pro", cfg.Model)
+	// Current pick: mimo-v2.5-pro-ultraspeed for plan_tree@1 recursive grammar.
+	if !strings.Contains(cfg.Model, "mimo-v2.5-pro-ultraspeed") {
+		t.Errorf("planner model = %q, want to contain mimo-v2.5-pro-ultraspeed", cfg.Model)
 	}
 	if cfg.GrammarMode != GrammarJSONSchema {
 		t.Errorf("planner grammar mode = %v, want GrammarJSONSchema", cfg.GrammarMode)
@@ -326,9 +326,9 @@ func TestDefaultRegistryPlannerSlot(t *testing.T) {
 
 func TestDefaultRegistryExecutorReasonIsDefault(t *testing.T) {
 	cfg := DefaultRegistry().Resolve(RouteKey{Slot: SlotExecutor, Kind: KindReason})
-	// Headline pick: mimo-v2.5-pro for long-horizon agentic loops.
-	if !strings.Contains(cfg.Model, "mimo-v2.5-pro") {
-		t.Errorf("executor reason model = %q, want mimo-v2.5-pro", cfg.Model)
+	// Headline pick: mimo-v2.5-pro-ultraspeed for long-horizon agentic loops.
+	if !strings.Contains(cfg.Model, "mimo-v2.5-pro-ultraspeed") {
+		t.Errorf("executor reason model = %q, want mimo-v2.5-pro-ultraspeed", cfg.Model)
 	}
 	if cfg.GrammarMode != GrammarNone {
 		t.Errorf("executor reason grammar mode = %v, want GrammarNone (free-form)", cfg.GrammarMode)
@@ -344,12 +344,12 @@ func TestDefaultRegistryExecutorKindSpecialists(t *testing.T) {
 		modelFrag   string
 		grammarMode GrammarMode
 	}{
-		{KindCode, "mimo-v2.5-pro", GrammarNone},
-		{KindSummarize, "mimo-v2.5-pro", GrammarNone},
-		{KindWrite, "mimo-v2.5-pro", GrammarNone},
-		{KindTransform, "mimo-v2.5-pro", GrammarNone},
-		{KindClassify, "mimo-v2.5-pro", GrammarJSONSchema},
-		{KindHardReason, "mimo-v2.5-pro", GrammarNone},
+		{KindCode, "mimo-v2.5-pro-ultraspeed", GrammarNone},
+		{KindSummarize, "mimo-v2.5-pro-ultraspeed", GrammarNone},
+		{KindWrite, "mimo-v2.5-pro-ultraspeed", GrammarNone},
+		{KindTransform, "mimo-v2.5-pro-ultraspeed", GrammarNone},
+		{KindClassify, "mimo-v2.5-pro-ultraspeed", GrammarJSONSchema},
+		{KindHardReason, "mimo-v2.5-pro-ultraspeed", GrammarNone},
 	}
 	reg := DefaultRegistry()
 	for _, tt := range tests {

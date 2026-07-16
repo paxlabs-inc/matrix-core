@@ -79,11 +79,11 @@ const GatewaySlot = "cody"
 // on the cody slot whitelist. Every role pins grok-build-0.1 (xAI Grok) in
 // every mode; operators can still override per role via config.
 const (
-	defaultOrchestratorModel = "mimo-v2.5-pro"
-	defaultWorkerModel       = "mimo-v2.5-pro"
+	defaultOrchestratorModel = "mimo-v2.5-pro-ultraspeed"
+	defaultWorkerModel       = "mimo-v2.5-pro-ultraspeed"
 	// The fast tier (Prototype workers, conversation titles): MiMo v2.5 Pro
 	// on the cody slot whitelist.
-	defaultFastWorkerModel = "mimo-v2.5-pro"
+	defaultFastWorkerModel = "mimo-v2.5-pro-ultraspeed"
 )
 
 // FastModel is the small/fast whitelisted model for cheap auxiliary calls

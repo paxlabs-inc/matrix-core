@@ -95,9 +95,9 @@ def load_env_key(env_path, name="NOVITA_API_KEY"):
 DEFAULT_ROUTE = {"url": NOVITA_URL, "key_env": "NOVITA_API_KEY",
                  "max_tokens_field": "max_tokens", "extra_body": {}}
 MODEL_ROUTES = {
-    "xiaomimimo/mimo-v2.5-pro-direct": {
+    "xiaomimimo/mimo-v2.5-pro-ultraspeed-direct": {
         "url": "https://api.xiaomimimo.com/v1/chat/completions",
-        "key_env": "XIAOMI_API_KEY", "served_model": "mimo-v2.5-pro",
+        "key_env": "XIAOMI_API_KEY", "served_model": "mimo-v2.5-pro-ultraspeed",
         "max_tokens_field": "max_completion_tokens", "extra_body": {},
     },
     "deepseek/deepseek-v4-pro-direct": {

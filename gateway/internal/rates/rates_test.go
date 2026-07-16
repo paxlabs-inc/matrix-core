@@ -135,19 +135,19 @@ func TestV9XaiMigration(t *testing.T) {
 		}
 		t.Fatalf("slot %q whitelist missing %q (have %v)", slot, model, wl[slot])
 	}
-	// xiaomimimo/mimo-v2.5-pro is the primary reasoning model across the agentic slots.
+	// xiaomimimo/mimo-v2.5-pro-ultraspeed is the primary reasoning model across the agentic slots.
 	mustContain("compiler", ModelGrok43)
 	mustContain("planner", ModelGrok43)
 	mustContain("executor", ModelGrok43)
-	// neo: xiaomimimo/mimo-v2.5-pro (main) + grok-4.20-0309-non-reasoning (cheap) + nomic-embed.
+	// neo: xiaomimimo/mimo-v2.5-pro-ultraspeed (main) + grok-4.20-0309-non-reasoning (cheap) + nomic-embed.
 	mustContain("neo", ModelGrok43)
 	mustContain("neo", ModelGrok420NR)
 	mustContain("neo", ModelNomicEmbed)
-	// cassandra pins the cheap non-reasoning grok as adjudicator, xiaomimimo/mimo-v2.5-pro as
+	// cassandra pins the cheap non-reasoning grok as adjudicator, xiaomimimo/mimo-v2.5-pro-ultraspeed as
 	// the strong escalation.
 	mustContain("cassandra", ModelGrok420NR)
 	mustContain("cassandra", ModelGrok43)
-	// cody meters on grok-build-0.1 with xiaomimimo/mimo-v2.5-pro for orchestrator adjudication.
+	// cody meters on grok-build-0.1 with xiaomimimo/mimo-v2.5-pro-ultraspeed for orchestrator adjudication.
 	mustContain("cody", ModelGrokBuild)
 	mustContain("cody", ModelGrok43)
 	// liaison narrator defaults to the cheap non-reasoning grok.

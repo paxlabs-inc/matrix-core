@@ -36,7 +36,7 @@
 // Required environment:
 //
 //	MATRIX_GATEWAY_TOKEN  shared bearer token; clients send Authorization: Bearer ...
-//	MIMO_API_KEY          gateway's own upstream key for Xiaomi MiMo direct (primary chat: mimo-v2.5-pro)
+//	MIMO_API_KEY          gateway's own upstream key for Xiaomi MiMo direct (primary chat: mimo-v2.5-pro-ultraspeed)
 //	XAI_API_KEY           gateway's own upstream key for xAI (grok-* fallback + Cassandra lanes)
 //	BASETEN_API_KEY       gateway's own upstream key for Baseten (fallback chat lanes; optional)
 //	FIREWORKS_API_KEY     gateway's own upstream key for Fireworks (nomic embeddings; optional)
@@ -113,7 +113,7 @@ func run(args []string) error {
 	logf := newLogger(*logFormat)
 
 	// Fail-fast: free-tier-only pins the primary chat model
-	// (mimo-v2.5-pro) on the agentic slots and routes it directly to Xiaomi, so
+	// (mimo-v2.5-pro-ultraspeed) on the agentic slots and routes it directly to Xiaomi, so
 	// the gateway's MIMO_API_KEY is mandatory. Without it the gateway boots fine
 	// but 401s every chat call — a silent fleet-wide outage. XAI_API_KEY becomes
 	// a warning: it still serves the grok-* fallback

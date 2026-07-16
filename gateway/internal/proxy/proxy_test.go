@@ -431,7 +431,7 @@ func TestProxyXiaomiUpstreamHop(t *testing.T) {
 	}
 
 	// A non-streaming mimo call: the gateway forwards the body verbatim.
-	reqBody := []byte(`{"model":"mimo-v2.5-pro","messages":[{"role":"user","content":"hi"}],"thinking":{"type":"enabled"}}`)
+	reqBody := []byte(`{"model":"mimo-v2.5-pro-ultraspeed","messages":[{"role":"user","content":"hi"}],"thinking":{"type":"enabled"}}`)
 	r := newGatewayRequest("POST", "/v1/chat/completions", reqBody, map[string]string{
 		types.HeaderSlot: "neo",
 	})
@@ -451,7 +451,7 @@ func TestProxyXiaomiUpstreamHop(t *testing.T) {
 	if err := json.Unmarshal(gotBody, &sent); err != nil {
 		t.Fatalf("upstream body not JSON: %v (%s)", err, gotBody)
 	}
-	if string(sent["model"]) != `"mimo-v2.5-pro"` {
+	if string(sent["model"]) != `"mimo-v2.5-pro-ultraspeed"` {
 		t.Fatalf("upstream model: %s (mimo id must pass through unchanged)", sent["model"])
 	}
 	// The MiMo thinking block set by the caller survives the hop verbatim.

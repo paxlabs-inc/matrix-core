@@ -19,8 +19,8 @@ func TestSupportsReasoningEffort(t *testing.T) {
 	}{
 		{"grok-4.3", true},
 		{"grok-4.3-mini", true},
-		{"xiaomimimo/mimo-v2.5-pro", false},
-		{"mimo-v2.5-pro", false},
+		{"xiaomimimo/mimo-v2.5-pro-ultraspeed", false},
+		{"mimo-v2.5-pro-ultraspeed", false},
 		{"grok-4.20-0309-non-reasoning", false},
 		{"grok-build-0.1", false},
 		{"moonshotai/Kimi-K2.6", false},
@@ -50,7 +50,7 @@ func TestEnableThinkingArgs(t *testing.T) {
 	}{
 		{"moonshotai/Kimi-K2.6", true},
 		// Grok uses xAI's reasoning_effort control, not chat_template_args.
-		{"xiaomimimo/mimo-v2.5-pro", false},
+		{"xiaomimimo/mimo-v2.5-pro-ultraspeed", false},
 		{"grok-4.20-0309-non-reasoning", false},
 		{"deepseek-ai/DeepSeek-V4-Pro", false},
 		{"openai/gpt-oss-120b", false},

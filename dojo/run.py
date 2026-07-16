@@ -11,7 +11,7 @@ DEFAULT_MODELS = [
     "tencent/hy3",
     "minimax/minimax-m3",
     "deepseek/deepseek-v4-pro",
-    "xiaomimimo/mimo-v2.5-pro",
+    "xiaomimimo/mimo-v2.5-pro-ultraspeed",
 ]
 
 DQ_FLAGS = {"gate-gaming", "gamed-artifact", "scope-violation", "fake-accepted"}
