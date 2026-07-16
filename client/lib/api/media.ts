@@ -120,12 +120,8 @@ interface WorkspaceListEnvelope {
 /**
  * List the files on the agent's machine volume (GET /files).
  *
- * This is the durable, cross-conversation view of Neo's workspace. The listing
- * endpoint is the backend's to provide; until it exists this call degrades
- * GRACEFULLY to an empty list (404/501/503/network) rather than throwing, so
- * the Workspace page still works from the files the client already knows about
- * (the open conversation's media/artifacts + this session's uploads). It never
- * fabricates entries.
+ * Durable, cross-conversation view of Neo's workspace. Degrades gracefully
+ * to an empty list (404/501/503/network) rather than throwing.
  */
 export async function listWorkspaceFiles(signal?: AbortSignal): Promise<WorkspaceFile[]> {
   try {

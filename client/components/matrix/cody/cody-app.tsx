@@ -1,15 +1,15 @@
 'use client'
 
 /**
- * CodyApp — the /cody sibling app (task 5.1). Owns the shell (sidebar + top bar
- * + tier-driven viewport), the project registry, and the current run. The Neo
- * dashboard is a separate route and is untouched.
+ * The Neo coding app (NEO-WORKBENCH req 1, 8) — the /cody route rebranded to
+ * Neo end to end. Owns the shell (sidebar + top bar + the ONE workbench
+ * layout), the project registry, and the per-project Neo conversation.
  *
- * Transport is reuse-only: runs fold through useCody (shared SSE hub + trace
- * rebuild); projects and actions go through lib/api/cody over the shared
- * apiFetch. Disclosure follows the active project's mode tier.
+ * Coding runs ARE Neo conversations: the chat rail folds the same useChat
+ * reducer and event stream the dashboard uses (no second reducer, no codyd).
+ * History is server-backed and project-scoped.
  */
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar'
 import { CodySidebar, type CodyPage } from '@/components/matrix/cody/cody-sidebar'
@@ -19,56 +19,28 @@ import { CodyHistory } from '@/components/matrix/cody/cody-history'
 import { CodySettings } from '@/components/matrix/cody/cody-settings'
 import { NewProjectDialog } from '@/components/matrix/cody/new-project-dialog'
 import { CodyLoader } from '@/components/matrix/cody/loaders'
-import { tierFor } from '@/components/matrix/cody/tiering'
-import { useCody } from '@/hooks/api/useCody'
-import type { NewRunInput } from '@/components/matrix/cody/cody-new-run'
-import {
-  answerIntent,
-  createProject,
-  listProjects,
-  rePreview,
-  setProjectMode,
-  steerIntent,
-  stopRun,
-  submitChat,
-  type AnswerVerdict,
-  type CodyMode,
-  type CodyProject,
-} from '@/lib/api/cody'
-import { listRecentRuns, rememberRun, type RecentRun } from '@/lib/cody/recent-runs'
+import { useChat } from '@/hooks/api/useChat'
+import { createProject, listProjects, type NeoProject } from '@/lib/api/workspace'
+import { getPresetBySlug } from '@/lib/data/presets'
 
-export function CodyApp() {
-  const [projects, setProjects] = useState<CodyProject[]>([])
+export function CodyApp({ initialPreset }: { initialPreset?: string }) {
+  const [projects, setProjects] = useState<NeoProject[]>([])
   const [projectsLoaded, setProjectsLoaded] = useState(false)
   const [activeProjectId, setActiveProjectId] = useState<string | null>(null)
   const [page, setPage] = useState<CodyPage>('workspace')
-
-  const [convByProject, setConvByProject] = useState<Record<string, string | undefined>>({})
-  const [pendingAttach, setPendingAttach] = useState<{
-    convID: string
-    intentId: string
-    mode?: CodyMode
-  } | null>(null)
 
   const [newProjectOpen, setNewProjectOpen] = useState(false)
   const [creating, setCreating] = useState(false)
   const [createError, setCreateError] = useState<string | null>(null)
 
-  const [modeBusy, setModeBusy] = useState(false)
-  const [modeError, setModeError] = useState<string | null>(null)
-
-  const [recentRuns, setRecentRuns] = useState<RecentRun[]>([])
-
   const activeProject = useMemo(
     () => projects.find((p) => p.id === activeProjectId) ?? null,
     [projects, activeProjectId],
   )
-  const tier = tierFor(activeProject?.mode)
-  const convID = activeProjectId ? (convByProject[activeProjectId] ?? null) : null
 
-  const { run, connection, attach, reload } = useCody(convID)
-  const isLive =
-    connection === 'open' || connection === 'connecting' || connection === 'reconnecting'
+  // ONE reducer: the same Neo conversation model the dashboard uses, scoped
+  // to the active project (tagged sends + filtered history).
+  const chat = useChat({ project: activeProjectId ?? undefined })
 
   // Load the project registry once.
   useEffect(() => {
@@ -90,117 +62,36 @@ export function CodyApp() {
     }
   }, [])
 
-  // Refresh recent runs when the active project changes.
+  // Auto-send a preset prompt when arriving from the /code gallery.
+  const presetSentRef = useRef(false)
   useEffect(() => {
-    setRecentRuns(listRecentRuns(activeProjectId ?? undefined))
+    if (!projectsLoaded || !initialPreset || presetSentRef.current) return
+    presetSentRef.current = true
+    // Clear the query param so refreshing doesn't re-send.
+    const url = new URL(window.location.href)
+    url.searchParams.delete('preset')
+    window.history.replaceState({}, '', url.toString())
+    // Load the full prompt text and send it.
+    getPresetBySlug(initialPreset).then((preset) => {
+      if (preset) chat.send(preset.prompt)
+    })
+  }, [projectsLoaded, initialPreset, chat])
+
+  // Switching projects starts a fresh thread scope and re-reads history.
+  const selectProject = useCallback(
+    (id: string) => {
+      if (id !== activeProjectId) chat.reset()
+      setActiveProjectId(id)
+      setPage('workspace')
+    },
+    [activeProjectId, chat],
+  )
+  useEffect(() => {
+    if (activeProjectId) chat.refreshConversations()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeProjectId])
 
-  // Attach the live stream once convID has updated to the freshly dispatched run.
-  useEffect(() => {
-    if (pendingAttach && convID === pendingAttach.convID) {
-      attach(pendingAttach.intentId, pendingAttach.mode)
-      setPendingAttach(null)
-    }
-  }, [pendingAttach, convID, attach])
-
-  const setConvForActive = useCallback(
-    (cid: string | null) => {
-      if (!activeProjectId) return
-      setConvByProject((m) => ({ ...m, [activeProjectId]: cid ?? undefined }))
-    },
-    [activeProjectId],
-  )
-
-  const onStartRun = useCallback(
-    async (input: NewRunInput) => {
-      if (!activeProject) return
-      // A prose goal, a pasted spec, or an adopted workspace file — codyd takes
-      // message + optional spec/spec_path. Title the run by whatever was given.
-      const message =
-        input.message ??
-        (input.spec ? 'Build from the pasted spec' : `Adopt ${input.specPath ?? 'spec'}`)
-      try {
-        const dispatch = await submitChat({
-          message,
-          spec: input.spec,
-          spec_path: input.specPath,
-          project_id: activeProject.id === 'default' ? undefined : activeProject.id,
-          mode: activeProject.mode,
-        })
-        setConvForActive(dispatch.conversation_id)
-        setPendingAttach({
-          convID: dispatch.conversation_id,
-          intentId: dispatch.intent_id,
-          mode: activeProject.mode,
-        })
-        const remembered = rememberRun({
-          convID: dispatch.conversation_id,
-          projectID: activeProject.id,
-          title: message.slice(0, 80),
-          startedAt: Date.now(),
-        })
-        setRecentRuns(remembered.filter((r) => r.projectID === activeProject.id))
-      } catch {
-        /* dispatch failed — the entry form stays; the user can retry */
-      }
-    },
-    [activeProject, setConvForActive],
-  )
-
-  const onRePreview = useCallback(() => {
-    if (!activeProject) return
-    const cid = convByProject[activeProject.id]
-    if (!cid) return
-    void rePreview({
-      conversation_id: cid,
-      projectID: activeProject.id === 'default' ? undefined : activeProject.id,
-    })
-  }, [activeProject, convByProject])
-
-  const onSteer = useCallback(
-    (text: string) => {
-      if (run?.runId) void steerIntent(run.runId, text)
-    },
-    [run?.runId],
-  )
-
-  // Continue (req 3.2): re-dispatch the SAME conversation — codyd resumes the
-  // durable plan under the same run id, so the transcript and attach point
-  // carry on instead of starting over.
-  const onContinue = useCallback(
-    async (text: string) => {
-      if (!activeProject || !convID) return
-      try {
-        const dispatch = await submitChat({
-          message: text,
-          conversation_id: convID,
-          project_id: activeProject.id === 'default' ? undefined : activeProject.id,
-          mode: activeProject.mode,
-        })
-        setPendingAttach({
-          convID: dispatch.conversation_id,
-          intentId: dispatch.intent_id,
-          mode: activeProject.mode,
-        })
-      } catch {
-        /* dispatch failed — the composer stays; the user can retry */
-      }
-    },
-    [activeProject, convID],
-  )
-
-  const onAnswer = useCallback(
-    (answer: { text?: string; verdict?: AnswerVerdict }) => {
-      if (run?.runId) void answerIntent(run.runId, answer)
-    },
-    [run?.runId],
-  )
-
-  const onStop = useCallback(() => {
-    if (run?.runId) void stopRun(run.runId)
-  }, [run?.runId])
-
-  const onCreateProject = useCallback(async (input: { name: string; mode: CodyMode }) => {
+  const onCreateProject = useCallback(async (input: { name: string }) => {
     setCreating(true)
     setCreateError(null)
     try {
@@ -216,80 +107,75 @@ export function CodyApp() {
     }
   }, [])
 
-  const onChangeMode = useCallback(
-    async (mode: CodyMode) => {
-      if (!activeProject || activeProject.id === 'default') return
-      setModeBusy(true)
-      setModeError(null)
-      try {
-        const updated = await setProjectMode(activeProject.id, mode)
-        setProjects((list) => list.map((p) => (p.id === updated.id ? updated : p)))
-      } catch (e) {
-        setModeError(e instanceof Error ? e.message : 'Could not change the mode.')
-      } finally {
-        setModeBusy(false)
+  const onProjectChanged = useCallback((updated: NeoProject) => {
+    setProjects((list) => list.map((p) => (p.id === updated.id ? updated : p)))
+  }, [])
+
+  const onProjectDeleted = useCallback((id: string) => {
+    setProjects((list) => list.filter((p) => p.id !== id))
+    setActiveProjectId((cur) => (cur === id ? 'default' : cur))
+    setPage('workspace')
+  }, [])
+
+  const onProjectAction = useCallback(
+    (id: string, action: 'settings' | 'archive' | 'delete') => {
+      if (action === 'archive') {
+        const target = projects.find((p) => p.id === id)
+        if (!target || target.id === 'default') return
+        import('@/lib/api/workspace').then(({ updateProject }) =>
+          updateProject(id, { archived: !target.archived })
+            .then(onProjectChanged)
+            .catch(() => {}),
+        )
+        if (activeProjectId === id && !target.archived) setActiveProjectId('default')
+        return
       }
+      setActiveProjectId(id)
+      setPage('settings')
     },
-    [activeProject],
+    [projects, activeProjectId, onProjectChanged],
   )
 
-  const onOpenRun = useCallback(
-    (cid: string) => {
-      setConvForActive(cid)
+  const visibleProjects = useMemo(() => projects.filter((p) => !p.archived), [projects])
+
+  const onOpenConversation = useCallback(
+    (convID: string) => {
+      chat.selectConversation(convID)
       setPage('workspace')
-      reload()
     },
-    [setConvForActive, reload],
+    [chat],
   )
 
   return (
     <SidebarProvider>
       <CodySidebar
-        projects={projects}
+        projects={visibleProjects}
+        archived={projects.filter((p) => p.archived)}
         activeProjectId={activeProjectId}
-        onSelectProject={(id) => {
-          setActiveProjectId(id)
-          setPage('workspace')
-        }}
+        onProjectAction={onProjectAction}
+        onSelectProject={selectProject}
         onNewProject={() => setNewProjectOpen(true)}
         page={page}
         onNavigate={setPage}
       />
       <SidebarInset className="bg-card flex h-svh min-h-0 flex-col overflow-hidden">
-        <CodyTopbar project={activeProject} run={run} isLive={isLive} onStop={onStop} />
-        <main className="min-h-0 flex-1 overflow-hidden">
+        <CodyTopbar project={activeProject} phase={chat.phase} onStop={chat.dismissTask} />
+        <main className="flex min-h-0 flex-1 flex-col overflow-hidden">
           {!projectsLoaded ? (
-            <CodyLoader variant="ring" label="Loading Cody…" className="h-full justify-center" />
+            <CodyLoader variant="ring" label="Loading…" className="h-full justify-center" />
           ) : page === 'workspace' ? (
             <CodyWorkspace
-              run={run}
-              tier={tier}
-              connecting={connection === 'connecting'}
-              projectID={
-                activeProject && activeProject.id !== 'default' ? activeProject.id : undefined
-              }
-              mode={activeProject?.mode ?? 'engineer'}
-              actions={{
-                onStartRun,
-                onSteer,
-                onAnswer,
-                onContinue,
-                onRePreview,
-                onRestored: reload,
-              }}
+              chat={chat}
+              project={activeProject?.id}
+              projectName={activeProject?.name}
             />
           ) : page === 'history' ? (
-            <CodyHistory
-              projectID={activeProjectId ?? undefined}
-              cache={recentRuns}
-              onOpen={onOpenRun}
-            />
+            <CodyHistory conversations={chat.conversations} onOpen={onOpenConversation} />
           ) : (
             <CodySettings
               project={activeProject}
-              onChangeMode={onChangeMode}
-              busy={modeBusy}
-              error={modeError}
+              onProjectChanged={onProjectChanged}
+              onProjectDeleted={onProjectDeleted}
             />
           )}
         </main>

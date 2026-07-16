@@ -21,7 +21,7 @@
  */
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
-import { BrainIcon, Clock, Lock, Search, X } from '@/lib/matrix-icons'
+import { BrainIcon, Clock, Lock, RotateCcw, Search, X } from '@/lib/matrix-icons'
 import { cn } from '@/lib/utils'
 import { listMemoryTypeCounts, searchMemories, type MemoryEntry } from '@/lib/api/memory'
 import { NeoIllustration } from '@/components/matrix/neo/neo-illustration'
@@ -47,6 +47,8 @@ export function NeoTimeline({ open, onClose }: { open: boolean; onClose: () => v
   const reduce = useReducedMotion()
   const [query, setQuery] = useState('')
   const [activeType, setActiveType] = useState<string | null>(null)
+  const [asOf, setAsOf] = useState<string>('')
+  const [timeTravel, setTimeTravel] = useState(false)
   const [items, setItems] = useState<MemoryEntry[]>([])
   const [typeCounts, setTypeCounts] = useState<{ type: string; count: number }[]>([])
   const [loading, setLoading] = useState(false)
@@ -79,6 +81,7 @@ export function NeoTimeline({ open, onClose }: { open: boolean; onClose: () => v
       searchMemories({
         near: query.trim() || undefined,
         types: activeType ? [activeType] : undefined,
+        asOf: timeTravel && asOf ? new Date(asOf).toISOString() : undefined,
         limit: 120,
         signal: ctrl.signal,
       })
@@ -102,7 +105,7 @@ export function NeoTimeline({ open, onClose }: { open: boolean; onClose: () => v
       ctrl.abort()
       clearTimeout(t)
     }
-  }, [open, query, activeType])
+  }, [open, query, activeType, timeTravel, asOf])
 
   // Focus the search field on open; Escape closes.
   useEffect(() => {
@@ -121,6 +124,8 @@ export function NeoTimeline({ open, onClose }: { open: boolean; onClose: () => v
   const reset = useCallback(() => {
     setQuery('')
     setActiveType(null)
+    setAsOf('')
+    setTimeTravel(false)
   }, [])
 
   return (
@@ -198,6 +203,36 @@ export function NeoTimeline({ open, onClose }: { open: boolean; onClose: () => v
                   </span>
                 </Chip>
               ))}
+            </div>
+
+            {/* bi-temporal time-travel: query what Neo knew at a past instant */}
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setTimeTravel((v) => !v)}
+                className={
+                  timeTravel
+                    ? 'bg-primary/15 text-primary flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium transition-colors'
+                    : 'text-muted-foreground hover:text-foreground flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium transition-colors'
+                }
+              >
+                <RotateCcw className="size-3.5" />
+                Time travel
+              </button>
+              {timeTravel && (
+                <input
+                  type="datetime-local"
+                  value={asOf}
+                  onChange={(e) => setAsOf(e.target.value)}
+                  className="bg-card text-foreground border-muted rounded-lg px-2.5 py-1.5 font-mono text-xs outline-none"
+                  max={new Date().toISOString().slice(0, 16)}
+                />
+              )}
+              {timeTravel && asOf && (
+                <span className="text-muted-foreground text-[0.68rem]">
+                  Showing what Neo knew at {new Date(asOf).toLocaleString()}
+                </span>
+              )}
             </div>
           </div>
 

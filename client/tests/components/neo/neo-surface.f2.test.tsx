@@ -39,6 +39,7 @@ function seededTask(): NeoTask {
     ],
     searches: [],
     media: [],
+    artifacts: [],
     surfaces: [],
     answer: '',
     done: false,

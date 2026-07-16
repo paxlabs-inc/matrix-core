@@ -16,17 +16,44 @@ import { useEffect, useRef } from 'react'
 
 import '@xterm/xterm/css/xterm.css'
 
-import { execCommand } from '@/lib/api/cody'
+import { execCommand } from '@/lib/api/workspace'
 
-const PROMPT = '\x1b[38;5;33m$\x1b[0m '
+const SAGE = '\x1b[38;2;153;189;156m'
+const PROMPT = `${SAGE}$\x1b[0m `
 
+// The warm-charcoal ladder + a low-saturation ANSI set of the same
+// temperature, so tool output (ls, test runners, compilers) reads cohesive
+// instead of terminal-default neon.
 const THEME = {
   background: '#00000000',
-  foreground: '#d4d4d8',
-  cursor: '#d4d4d8',
-  selectionBackground: '#264f78',
-  blue: '#3b82f6',
-  brightBlue: '#60a5fa',
+  foreground: '#d9cfca',
+  cursor: '#99bd9c',
+  cursorAccent: '#161615',
+  selectionBackground: '#4a463f80',
+  black: '#1b1b19',
+  red: '#d98a7e',
+  green: '#99bd9c',
+  yellow: '#d0a97e',
+  blue: '#9fb3bd',
+  magenta: '#c4a6b4',
+  cyan: '#93b3a7',
+  white: '#e3d9d4',
+  brightBlack: '#6e6a62',
+  brightRed: '#e5a396',
+  brightGreen: '#b8c6b9',
+  brightYellow: '#e0cfa8',
+  brightBlue: '#b5c4cc',
+  brightMagenta: '#d4bcc8',
+  brightCyan: '#aec9bf',
+  brightWhite: '#f0e9e5',
+}
+
+/** xterm measures its font on a canvas, where CSS variables never resolve —
+ *  hand it the computed font stack, not `var(--font-mono)`. */
+function resolvedMonoFont(): string {
+  if (typeof window === 'undefined') return 'ui-monospace, monospace'
+  const mono = getComputedStyle(document.documentElement).getPropertyValue('--font-mono').trim()
+  return mono ? `${mono}, ui-monospace, monospace` : 'ui-monospace, monospace'
 }
 
 function fmtDuration(ms: number): string {
@@ -57,7 +84,7 @@ export function CodyShell({ projectID }: { projectID?: string }) {
       const term = new Terminal({
         cursorBlink: true,
         fontSize: 12,
-        fontFamily: 'var(--font-mono, ui-monospace), monospace',
+        fontFamily: resolvedMonoFont(),
         lineHeight: 1.35,
         scrollback: 10_000,
         allowTransparency: true,
@@ -94,7 +121,9 @@ export function CodyShell({ projectID }: { projectID?: string }) {
       })
       observer.observe(host)
 
-      term.writeln('\x1b[2mBounded shell — each command runs to completion in the workspace.\x1b[0m')
+      term.writeln(
+        '\x1b[2mBounded shell — each command runs to completion in the workspace.\x1b[0m',
+      )
       term.write(PROMPT)
 
       let buffer = ''
@@ -113,12 +142,12 @@ export function CodyShell({ projectID }: { projectID?: string }) {
         running = true
         const started = performance.now()
         try {
-          const result = await execCommand(cmd, { projectID: projectRef.current })
+          const result = await execCommand(projectRef.current, cmd)
           if (disposed) return
           if (result.output) term.write(result.output.replace(/\r?\n/g, '\r\n'))
           if (result.output && !result.output.endsWith('\n')) term.write('\r\n')
           const ok = result.exit === 0
-          const color = ok ? '\x1b[38;5;33m' : '\x1b[31m'
+          const color = ok ? SAGE : '\x1b[31m'
           const timedOut = result.timed_out ? ' \x1b[31m(timed out)\x1b[0m' : ''
           term.writeln(
             `${color}exit ${result.exit}\x1b[0m \x1b[2m${fmtDuration(performance.now() - started)}\x1b[0m${timedOut}`,

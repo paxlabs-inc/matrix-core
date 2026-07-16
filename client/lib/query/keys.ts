@@ -28,8 +28,21 @@ export const qk = {
   agentActivity: (did: string) => ['wallet', 'agent', did, 'activity'] as const,
   walletPortfolio: (address: string) => ['wallet', 'portfolio', address.toLowerCase()] as const,
   walletTxs: (address: string) => ['wallet', 'txs', address.toLowerCase()] as const,
+  // LayerX — read-only public account view for the agent's DID.
+  layerxAccount: (did: string) => ['layerx', 'account', did] as const,
+  // LayerX explorer — the full public read surface behind /explorer.
+  layerxInfo: () => ['layerx', 'info'] as const,
+  layerxSupply: () => ['layerx', 'supply'] as const,
+  layerxTransfers: (did?: string) => ['layerx', 'transfers', { did: did ?? '' }] as const,
+  layerxReceipt: (seq: number) => ['layerx', 'receipt', seq] as const,
+  layerxBatches: () => ['layerx', 'batches'] as const,
+  layerxBatch: (id: string) => ['layerx', 'batch', id] as const,
   // Automatrix — proactive opt-in, opportunity queue, and completion inbox.
   automatrixSettings: () => ['automatrix', 'settings'] as const,
   automatrixQueue: () => ['automatrix', 'queue'] as const,
   automatrixInbox: () => ['automatrix', 'inbox'] as const,
+  // Morning brief — schedule/opt-in and the saved personalization profile.
+  briefSettings: () => ['brief', 'settings'] as const,
+  personalization: () => ['personalization'] as const,
+  telegram: () => ['integrations', 'telegram'] as const,
 } as const

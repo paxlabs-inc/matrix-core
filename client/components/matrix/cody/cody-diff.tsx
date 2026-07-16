@@ -24,7 +24,7 @@ import {
   IconChevronRight,
   IconRefresh,
 } from '@/components/matrix/cody/icons'
-import { getDiff, type WorkspaceDiff } from '@/lib/api/cody'
+import { getDiff, type WorkspaceDiff } from '@/lib/api/workspace'
 import { cn } from '@/lib/utils'
 
 // ── Language inference ────────────────────────────────────────────────────────
@@ -239,12 +239,7 @@ export function CodyDiffView({ projectID }: { projectID?: string }) {
       ) : (
         <div className="flex min-h-0 flex-col gap-2 overflow-y-auto">
           {files.map((file) => (
-            <FileDiffBlock
-              key={file.path}
-              file={file}
-              split={split}
-              highlighter={highlighter}
-            />
+            <FileDiffBlock key={file.path} file={file} split={split} highlighter={highlighter} />
           ))}
           {untracked.length > 0 ? <UntrackedBlock paths={untracked} /> : null}
         </div>

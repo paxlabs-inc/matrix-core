@@ -124,7 +124,7 @@ export function AgentLeashSheet({
   )
 }
 
-function LeashBody({
+export function LeashBody({
   t,
   did,
   policy,
@@ -149,8 +149,9 @@ function LeashBody({
   const [allowlistOnly, setAllowlistOnly] = useState(policy?.withdrawal_allowlist_only ?? false)
   const [perTx, setPerTx] = useState('0')
   const [daily, setDaily] = useState('0')
+  const [approve, setApprove] = useState('0')
   const [savingLimits, setSavingLimits] = useState(false)
-  const baseline = useRef({ perTx: '0', daily: '0' })
+  const baseline = useRef({ perTx: '0', daily: '0', approve: '0' })
   const seededFor = useRef<string | null>(null)
 
   function applyPolicy(p: AgentPolicy) {
@@ -159,9 +160,11 @@ function LeashBody({
     setAllowlistOnly(p.withdrawal_allowlist_only)
     const tx = weiToInput(p.max_tx_value_wei)
     const dy = weiToInput(p.max_daily_value_wei)
+    const ap = weiToInput(p.max_approve_wei)
     setPerTx(tx)
     setDaily(dy)
-    baseline.current = { perTx: tx, daily: dy }
+    setApprove(ap)
+    baseline.current = { perTx: tx, daily: dy, approve: ap }
   }
 
   // Seed the form once per open, from the authoritative policy.
@@ -210,12 +213,16 @@ function LeashBody({
     })
   }
 
-  const limitsDirty = perTx !== baseline.current.perTx || daily !== baseline.current.daily
+  const limitsDirty =
+    perTx !== baseline.current.perTx ||
+    daily !== baseline.current.daily ||
+    approve !== baseline.current.approve
 
   function saveLimits() {
     const patch: AgentPolicyPatch = {}
     if (perTx !== baseline.current.perTx) patch.max_tx_value_wei = parseUnits(perTx, 18)
     if (daily !== baseline.current.daily) patch.max_daily_value_wei = parseUnits(daily, 18)
+    if (approve !== baseline.current.approve) patch.max_approve_wei = parseUnits(approve, 18)
     if (Object.keys(patch).length === 0) return
     setSavingLimits(true)
     policyM.mutate(patch, {
@@ -303,6 +310,12 @@ function LeashBody({
           help={t('dailyLimitHelp')}
           value={daily}
           onChange={setDaily}
+        />
+        <LimitField
+          label={t('approveLimit')}
+          help={t('approveLimitHelp')}
+          value={approve}
+          onChange={setApprove}
         />
         <ToggleRow
           label={t('allowNativeTransfer')}
@@ -617,7 +630,7 @@ function ToggleRow({
   )
 }
 
-function LeashSkeleton() {
+export function LeashSkeleton() {
   return (
     <div className="flex flex-col gap-6">
       <Skeleton className="h-16 w-full" />

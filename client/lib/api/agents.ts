@@ -8,18 +8,10 @@
  * picker.
  */
 import { apiFetch } from '@/lib/api/client'
-import type { AgentsManifest, ToolEntry, SkillEntry } from '@/lib/api/types'
+import type { ToolEntry, SkillEntry } from '@/lib/api/types'
 import type { Agent, Tool } from '@/lib/matrix-data'
 import { agents as fallbackAgents, tools as fallbackTools } from '@/lib/matrix-data'
 import { skillsToAgents, toolEntriesToTools } from '@/lib/api/mappers'
-
-export async function getAgentsManifest(signal?: AbortSignal): Promise<AgentsManifest | null> {
-  try {
-    return await apiFetch<AgentsManifest>('/agents/manifest', { signal })
-  } catch {
-    return null
-  }
-}
 
 export async function getTools(signal?: AbortSignal): Promise<ToolEntry[] | null> {
   try {

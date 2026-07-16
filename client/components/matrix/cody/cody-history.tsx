@@ -1,144 +1,63 @@
 'use client'
 
 /**
- * Cody History (cody-smoothness task 4.4) — the user's runs, newest first,
- * scoped to the active project. Server-side and cross-device: the list reads
- * GET /conversations (codyd's durable ledgers); the localStorage recent-runs
- * record remains only a fast-path cache, shown while the fetch is in flight
- * and merged in for anything the server does not know (and as the fallback if
- * the server is unreachable). Opening an entry rebuilds the Workspace from
- * its durable trace.
+ * History (NEO-WORKBENCH req 1.3) — the project's Neo conversations, newest
+ * first, straight from the server-backed conversation list (already scoped
+ * to the active project by the useChat reducer). Opening an entry reopens
+ * the thread and rebuilds the workbench from its durable trace.
  */
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo } from 'react'
 
-import { CodyLoader } from '@/components/matrix/cody/loaders'
-import { IconClock, IconAlertCircle } from '@/components/matrix/cody/icons'
-import { getConversations, type CodyConversationSummary } from '@/lib/api/cody'
-import type { RecentRun } from '@/lib/cody/recent-runs'
-
-export interface HistoryRow {
-  convID: string
-  title: string
-  status?: string
-  mode?: string
-  updatedAtMs: number
-}
-
-/**
- * mergeHistory folds the server list (source of truth) with the local cache:
- * server rows win; local-only rows (e.g. dispatched from this browser while
- * the server list lagged) are appended. Pure, so it is directly testable.
- */
-export function mergeHistory(
-  server: CodyConversationSummary[],
-  cache: RecentRun[],
-  projectID?: string,
-): HistoryRow[] {
-  const rows: HistoryRow[] = server
-    .filter((c) => !projectID || c.project === projectID || (!c.project && projectID === 'default'))
-    .map((c) => ({
-      convID: c.id,
-      title: c.title || c.id,
-      status: c.status,
-      mode: c.mode,
-      updatedAtMs: Date.parse(c.updated_at) || 0,
-    }))
-  const known = new Set(rows.map((r) => r.convID))
-  for (const r of cache) {
-    if (known.has(r.convID)) continue
-    if (projectID && r.projectID !== projectID) continue
-    rows.push({ convID: r.convID, title: r.title, updatedAtMs: r.startedAt })
-  }
-  return rows.sort((a, b) => b.updatedAtMs - a.updatedAtMs)
-}
+import { IconClock } from '@/components/matrix/cody/icons'
+import type { ConversationSummary } from '@/lib/api/conversations'
 
 export function CodyHistory({
-  projectID,
-  cache,
+  conversations,
   onOpen,
 }: {
-  projectID?: string
-  cache: RecentRun[]
+  conversations: ConversationSummary[]
   onOpen: (convID: string) => void
 }) {
-  const [server, setServer] = useState<CodyConversationSummary[] | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [unreachable, setUnreachable] = useState(false)
-
-  useEffect(() => {
-    const ctrl = new AbortController()
-    setLoading(true)
-    setUnreachable(false)
-    getConversations(ctrl.signal)
-      .then((list) => setServer(list))
-      .catch(() => {
-        if (!ctrl.signal.aborted) setUnreachable(true)
-      })
-      .finally(() => {
-        if (!ctrl.signal.aborted) setLoading(false)
-      })
-    return () => ctrl.abort()
-  }, [])
-
   const rows = useMemo(
-    () => mergeHistory(server ?? [], cache, projectID),
-    [server, cache, projectID],
+    () =>
+      [...conversations].sort(
+        (a, b) => (Date.parse(b.updated) || 0) - (Date.parse(a.updated) || 0),
+      ),
+    [conversations],
   )
-
-  if (loading && rows.length === 0) {
-    return <CodyLoader variant="ring" label="Loading history…" className="h-full justify-center" />
-  }
 
   if (rows.length === 0) {
     return (
       <div className="text-muted-foreground m-auto flex h-full flex-col items-center justify-center gap-2 p-8 text-sm">
         <IconClock className="size-6 opacity-60" />
-        <span>No runs yet. Start one from the Workspace.</span>
+        <span>Nothing here yet. Ask Neo to build something from the Workspace.</span>
       </div>
     )
   }
 
   return (
     <div className="flex flex-col gap-2 p-4">
-      {unreachable ? (
-        <div className="bg-surface-secondary flex items-center gap-2 rounded-lg px-4 py-2.5">
-          <IconAlertCircle className="text-muted-foreground size-4 shrink-0" />
-          <span className="text-muted-foreground text-xs">
-            History service unreachable — showing runs started in this browser.
-          </span>
-        </div>
-      ) : null}
       {rows.map((r) => (
         <button
-          key={r.convID}
+          key={r.conversation_id}
           type="button"
-          onClick={() => onOpen(r.convID)}
+          onClick={() => onOpen(r.conversation_id)}
           className="bg-surface-secondary hover:bg-surface-hover flex items-center gap-3 rounded-lg px-4 py-3 text-left transition-colors"
         >
-          <StatusDot status={r.status} />
-          <span className="truncate text-sm">{r.title}</span>
-          {r.mode ? (
-            <span className="text-muted-foreground shrink-0 font-mono text-[10px] uppercase">
-              {r.mode}
+          <IconClock className="text-muted-foreground size-4 shrink-0" />
+          <span className="min-w-0 flex-1 truncate text-sm">{r.title || r.conversation_id}</span>
+          {r.preview ? (
+            <span className="text-muted-foreground hidden max-w-[40%] truncate text-xs lg:block">
+              {r.preview}
             </span>
           ) : null}
           <span className="text-muted-foreground ml-auto shrink-0 font-mono text-[11px]">
-            {relativeTime(r.updatedAtMs)}
+            {relativeTime(Date.parse(r.updated) || 0)}
           </span>
         </button>
       ))}
     </div>
   )
-}
-
-function StatusDot({ status }: { status?: string }) {
-  if (status === 'running' || status === 'needs_input') {
-    return <span className="bg-pax size-2 shrink-0 rounded-full" aria-label={status} />
-  }
-  if (status === 'failed') {
-    return <span className="bg-destructive size-2 shrink-0 rounded-full" aria-label="failed" />
-  }
-  return <IconClock className="text-muted-foreground size-4 shrink-0" />
 }
 
 function relativeTime(ms: number): string {

@@ -56,13 +56,29 @@ const NeoFiles = dynamic(
   () => import('@/components/matrix/neo/neo-files').then((m) => ({ default: m.NeoFiles })),
   { ssr: false },
 )
+const NeoSelfModel = dynamic(
+  () =>
+    import('@/components/matrix/neo/neo-self-model').then((m) => ({
+      default: m.NeoSelfModelOverlay,
+    })),
+  { ssr: false },
+)
+const AgentWalletSheet = dynamic(
+  () =>
+    import('@/components/matrix/agent-wallet-sheet').then((m) => ({
+      default: m.AgentWalletSheet,
+    })),
+  { ssr: false },
+)
 
 export function Dashboard() {
   const chat = useChat()
   const [searchOpen, setSearchOpen] = useState(false)
   const [timelineOpen, setTimelineOpen] = useState(false)
   const [filesOpen, setFilesOpen] = useState(false)
+  const [selfModelOpen, setSelfModelOpen] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
+  const [walletOpen, setWalletOpen] = useState(false)
 
   // The shared surface-state model the shell reads. `useSurfaceFeed` hydrates it
   // from the conversation's durable surface record on a cold open (GET
@@ -139,6 +155,7 @@ export function Dashboard() {
               dismissTask={chat.dismissTask}
               conversations={chat.conversations}
               conversationId={chat.conversationId}
+              onVoiceIntent={chat.attachVoiceIntent}
               onSelectConversation={chat.selectConversation}
               onNewChat={() => chat.reset()}
               onOpenHistory={() => {
@@ -147,7 +164,9 @@ export function Dashboard() {
               }}
               onOpenTimeline={() => setTimelineOpen(true)}
               onOpenFiles={() => setFilesOpen(true)}
+              onOpenSelfModel={() => setSelfModelOpen(true)}
               onOpenSettings={() => setSettingsOpen(true)}
+              onOpenWallet={() => setWalletOpen(true)}
             />
           </PanelErrorBoundary>
         }
@@ -163,11 +182,22 @@ export function Dashboard() {
       />
       <NeoTimeline open={timelineOpen} onClose={() => setTimelineOpen(false)} />
       <NeoFiles open={filesOpen} onClose={() => setFilesOpen(false)} task={chat.task} />
+      <NeoSelfModel open={selfModelOpen} onClose={() => setSelfModelOpen(false)} />
+      <AgentWalletSheet
+        open={walletOpen}
+        onClose={() => setWalletOpen(false)}
+        onAskNeo={(prompt) => {
+          setWalletOpen(false)
+          chat.send(prompt)
+        }}
+      />
       <SettingsSheet
         open={settingsOpen}
         onOpenChange={setSettingsOpen}
         conversationId={chat.conversationId}
         intentId={chat.activeIntentId}
+        onOpenWallet={() => setWalletOpen(true)}
+        onOpenConversation={(id) => chat.selectConversation(id)}
       />
       <Toaster />
     </>

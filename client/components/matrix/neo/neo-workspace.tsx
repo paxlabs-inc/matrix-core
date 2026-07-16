@@ -18,7 +18,7 @@
  * border strokes for depth, per the surface rule), single accent (#004CED via
  * `--primary`), rounded brand font for chrome, mono for code/terminal.
  */
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
 import {
   ArrowLeft,
@@ -53,8 +53,126 @@ import {
 } from '@/components/ai-elements/terminal'
 import { CodeBlock, CodeBlockCopyButton } from '@/components/ai-elements/code-block'
 import { WebPreview, WebPreviewBody } from '@/components/ai-elements/web-preview'
+import { loadMediaObjectURL } from '@/lib/api/media'
 
 const EASE = [0.32, 0.72, 0, 1] as const
+
+/**
+ * useAuthedMediaURL — resolve a `/media/<name>` reference through the AUTHED
+ * media loader into a renderable object URL (BROWSER-FILMSTRIP req.5.1).
+ * `/media` is auth-gated, so a plain `<img src>` 401s; this fetches the blob
+ * with the bearer and revokes the object URL on unmount / ref change. Non-media
+ * refs (absolute http) pass through untouched.
+ */
+function useAuthedMediaURL(ref?: string): string | null {
+  const isMedia = !!ref && ref.startsWith('/media/')
+  const [objectURL, setObjectURL] = useState<string | null>(null)
+  useEffect(() => {
+    if (!isMedia || !ref) return
+    let alive = true
+    let url: string | null = null
+    loadMediaObjectURL(ref).then((u) => {
+      if (alive) {
+        url = u
+        setObjectURL(u)
+      } else if (u) {
+        URL.revokeObjectURL(u)
+      }
+    })
+    return () => {
+      alive = false
+      if (url) URL.revokeObjectURL(url)
+      setObjectURL(null)
+    }
+  }, [ref, isMedia])
+  if (!ref) return null
+  return isMedia ? objectURL : ref
+}
+
+/** "Neo viewed · 14:32:05" — the truthful frame label (every still is a
+ *  faithful capture at its timestamp, never an implied live video feed). */
+function viewedLabel(ts?: string): string {
+  if (!ts) return 'Neo viewed'
+  const d = new Date(ts)
+  if (Number.isNaN(d.getTime())) return 'Neo viewed'
+  return `Neo viewed · ${d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}`
+}
+
+/** One frame of the session's browsing filmstrip (v2 history strip). */
+export interface FilmstripFrame {
+  id: string
+  screenshotUrl: string
+  pageTitle?: string
+  ts?: string
+}
+
+/**
+ * FilmstripThumb — one authed thumbnail in the history strip. Selection is
+ * signalled by background tone only (no border strokes for depth).
+ */
+function FilmstripThumb({
+  frame,
+  selected,
+  onSelect,
+}: {
+  frame: FilmstripFrame
+  selected: boolean
+  onSelect: () => void
+}) {
+  const src = useAuthedMediaURL(frame.screenshotUrl)
+  return (
+    <button
+      type="button"
+      onClick={onSelect}
+      title={frame.pageTitle || viewedLabel(frame.ts)}
+      className={cn(
+        'h-12 w-20 shrink-0 overflow-hidden rounded-md transition-colors',
+        selected ? 'bg-zinc-600' : 'bg-zinc-800 hover:bg-zinc-700',
+      )}
+    >
+      {src ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={src}
+          alt={frame.pageTitle || 'page still'}
+          className={cn('size-full object-cover object-top', !selected && 'opacity-70')}
+        />
+      ) : null}
+    </button>
+  )
+}
+
+/**
+ * FilmstripStrip — the horizontal thumbnail history of the session's stills,
+ * in capture order, click-to-scrub (BROWSER-FILMSTRIP req.6). Additive polish:
+ * rendered only when the session has more than one frame.
+ */
+function FilmstripStrip({
+  frames,
+  selectedId,
+  onSelect,
+}: {
+  frames: FilmstripFrame[]
+  selectedId: string
+  onSelect: (id: string) => void
+}) {
+  if (frames.length < 2) return null
+  return (
+    <div
+      data-testid="filmstrip-strip"
+      className="flex items-center gap-1.5 overflow-x-auto bg-zinc-900/60 px-2.5 py-2"
+    >
+      {frames.map((f) => (
+        <FilmstripThumb
+          key={f.id}
+          frame={f}
+          selected={f.id === selectedId}
+          onSelect={() => onSelect(f.id)}
+        />
+      ))}
+    </div>
+  )
+}
 
 /**
  * NeoThinkingStrip — a subtle, collapsible glimpse of Neo's chain-of-thought.
@@ -101,7 +219,16 @@ export function NeoThinkingStrip({ text }: { text?: string }) {
   )
 }
 
-export function NeoWorkspace({ steps }: { steps: NeoStep[] }) {
+export function NeoWorkspace({
+  steps,
+  filmstrip,
+}: {
+  steps: NeoStep[]
+  /** Session-wide browsing stills, in capture order, for the browser view's
+   *  history strip (BROWSER-FILMSTRIP req.6). Optional — absent renders the
+   *  browser frame exactly as before. */
+  filmstrip?: FilmstripFrame[]
+}) {
   if (steps.length === 0) return null
   return (
     <div className="flex flex-col gap-2.5">
@@ -115,7 +242,7 @@ export function NeoWorkspace({ steps }: { steps: NeoStep[] }) {
             exit={{ opacity: 0 }}
             transition={{ duration: 0.26, ease: EASE }}
           >
-            <StepView step={step} />
+            <StepView step={step} filmstrip={filmstrip} />
           </motion.div>
         ))}
       </AnimatePresence>
@@ -123,12 +250,12 @@ export function NeoWorkspace({ steps }: { steps: NeoStep[] }) {
   )
 }
 
-function StepView({ step }: { step: NeoStep }) {
+function StepView({ step, filmstrip }: { step: NeoStep; filmstrip?: FilmstripFrame[] }) {
   switch (step.kind) {
     case 'terminal':
       return <TerminalView step={step} />
     case 'browser':
-      return <BrowserView step={step} />
+      return <BrowserView step={step} filmstrip={filmstrip} />
     case 'editor':
       return <EditorView step={step} />
     case 'narration':
@@ -179,7 +306,7 @@ function TerminalView({ step }: { step: NeoStep }) {
   const composed = [promptLine, body].filter(Boolean).join('\n')
   return (
     <Terminal output={composed} isStreaming={step.running} autoScroll className="rounded-xl">
-      <TerminalHeader className="border-zinc-800/70">
+      <TerminalHeader className="bg-surface-primary-contrast border-none">
         <TerminalTitle>
           <span className="max-w-[15rem] truncate font-mono text-[0.72rem]">
             {step.cwd || 'bash'}
@@ -238,18 +365,28 @@ function browserStatusLine(step: NeoStep): string {
   }
 }
 
-function BrowserView({ step }: { step: NeoStep }) {
+function BrowserView({ step, filmstrip }: { step: NeoStep; filmstrip?: FilmstripFrame[] }) {
   // Real browser: Chrome-style chrome (nav + secure address bar + live favicon)
   // over EITHER the agent's real captured screenshot (the page Neo actually
   // saw) or a live sandboxed iframe of the real URL (toggle). Reader view is
   // the fallback when a page yielded only extracted text.
   const [mode, setMode] = useState<'shot' | 'live'>('shot')
+  // History-strip scrub (BROWSER-FILMSTRIP req.6): selecting a prior frame
+  // shows THAT still in this viewport (crossfade); default = this step's own.
+  const [scrubId, setScrubId] = useState<string | null>(null)
+  const frames = filmstrip ?? []
+  const scrubbed = scrubId ? frames.find((f) => f.id === scrubId) : undefined
+  const shownShot = scrubbed?.screenshotUrl ?? step.screenshotUrl
+  const shownTs = scrubbed ? scrubbed.ts : step.ts
+  // /media stills are auth-gated: load through the authed blob loader and
+  // revoke on unmount (req.5.1) — a plain <img src="/media/…"> would 401.
+  const stillSrc = useAuthedMediaURL(shownShot)
   const host = hostOf(step.url)
   const isHttp = !!step.url && /^https?:\/\//i.test(step.url)
   const favicon = isHttp ? `https://www.google.com/s2/favicons?domain=${host}&sz=64` : null
   return (
-    <div className="overflow-hidden rounded-xl border border-zinc-800/70 bg-zinc-950">
-      <div className="relative flex items-center gap-1.5 border-b border-zinc-800/70 bg-zinc-900/60 px-2.5 py-2">
+    <div className="bg-surface-primary-alt overflow-hidden rounded-xl">
+      <div className="bg-surface-primary-contrast relative flex items-center gap-1.5 px-2.5 py-2">
         <TrafficDots />
         <div className="ml-1 flex items-center gap-0.5">
           <span className="grid size-6 place-items-center rounded text-zinc-600">
@@ -330,15 +467,45 @@ function BrowserView({ step }: { step: NeoStep }) {
             <WebPreviewBody src={step.url} className="bg-white" />
           </WebPreview>
         </div>
-      ) : step.screenshotUrl ? (
-        <div className="max-h-[32rem] overflow-auto bg-white">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={step.screenshotUrl}
-            alt={step.pageTitle || host}
-            className="w-full object-top"
+      ) : shownShot ? (
+        <>
+          <div className="max-h-[32rem] overflow-auto bg-white">
+            <AnimatePresence mode="wait" initial={false}>
+              {stillSrc ? (
+                <motion.img
+                  key={shownShot}
+                  src={stillSrc}
+                  alt={scrubbed?.pageTitle || step.pageTitle || host}
+                  className="w-full object-top"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.22, ease: EASE }}
+                />
+              ) : (
+                <motion.div
+                  key="loading"
+                  className="grid min-h-[10rem] place-items-center bg-zinc-950"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                >
+                  <Loader2 className="size-4 animate-spin text-zinc-600" />
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+          {/* Truthful frame label: a faithful capture at its timestamp, never
+              an implied live video feed (separation by tone, no borders). */}
+          <div className="flex items-center justify-between bg-zinc-900/60 px-2.5 py-1">
+            <span className="text-[0.62rem] text-zinc-500">{viewedLabel(shownTs)}</span>
+          </div>
+          <FilmstripStrip
+            frames={frames}
+            selectedId={scrubbed?.id ?? step.id}
+            onSelect={(id) => setScrubId(id === step.id ? null : id)}
           />
-        </div>
+        </>
       ) : step.excerpt ? (
         <div className="max-h-80 overflow-auto px-4 py-3.5">
           <p className="mb-2 flex items-center gap-1.5 text-[0.68rem] text-zinc-500">
@@ -479,8 +646,8 @@ function EditorView({ step }: { step: NeoStep }) {
   const lang = coerceLang(step.language, step.path)
   const diff = step.preview ? looksLikeDiff(step.preview) : false
   return (
-    <div className="overflow-hidden rounded-xl border border-zinc-800/70 bg-zinc-950">
-      <div className="flex items-center gap-2 border-b border-zinc-800/70 px-3 py-2">
+    <div className="bg-surface-primary-alt overflow-hidden rounded-xl">
+      <div className="bg-surface-primary-contrast flex items-center gap-2 px-3 py-2">
         <FileText className="size-3.5 shrink-0 text-zinc-400" />
         <span className="truncate font-mono text-[0.72rem] text-zinc-300">
           {step.path || baseName(step.path)}

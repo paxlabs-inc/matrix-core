@@ -62,8 +62,21 @@ export const NEO_PROSE_CLASS = cn(
   '[&_table]:block [&_table]:max-w-full [&_table]:overflow-x-auto',
 )
 
-/** Render markdown prose with a plain-text fallback if rendering throws. */
-function Prose({ text }: { text: string }) {
+/** Render markdown prose with a plain-text fallback if rendering throws.
+ *  While `streaming`, Streamdown runs in streaming mode (incomplete-markdown
+ *  safe) and — unless reduced motion — fades new tokens in, reusing its
+ *  prev-content-length tracking so already-visible prose is never re-animated.
+ *  That plus the rAF-coalesced delta feed is what keeps the live answer smooth
+ *  instead of repainting the whole block per token. */
+function Prose({
+  text,
+  streaming,
+  animate,
+}: {
+  text: string
+  streaming?: boolean
+  animate?: boolean
+}) {
   return (
     <MarkdownErrorBoundary
       resetKey={text}
@@ -73,7 +86,13 @@ function Prose({ text }: { text: string }) {
         </pre>
       }
     >
-      <MessageResponse>{text}</MessageResponse>
+      <MessageResponse
+        {...(streaming
+          ? { mode: 'streaming' as const, isAnimating: true, animated: animate ?? true }
+          : {})}
+      >
+        {text}
+      </MessageResponse>
     </MarkdownErrorBoundary>
   )
 }
@@ -174,12 +193,15 @@ function NeoMessageActions({ text }: { text: string }) {
 export function NeoAssistantMessage({
   message,
   failed,
+  onMediaAction,
 }: {
   message: ChatMessage
   failed?: boolean
+  /** Post-generation image actions (tweak / variations / suggestions) → Neo. */
+  onMediaAction?: (instruction: string) => void
 }) {
   return (
-    <div className="flex min-w-0 w-full flex-col gap-1">
+    <div className="flex w-full min-w-0 flex-col gap-1">
       {message.reasoning && <NeoReasoning reasoning={message.reasoning} />}
       {failed ? (
         <div className="bg-destructive/10 text-destructive rounded-lg px-3 py-2 text-sm">
@@ -190,7 +212,7 @@ export function NeoAssistantMessage({
           <Prose text={message.text} />
         </div>
       )}
-      <NeoMediaGrid media={message.media} />
+      <NeoMediaGrid media={message.media} onAction={onMediaAction} />
       {message.text && <NeoMessageActions text={message.text} />}
     </div>
   )
@@ -202,11 +224,11 @@ export function NeoUserMessage({ message }: { message: ChatMessage }) {
   const { clean, items } = parseAttachments(message.text)
   return (
     <div className="flex w-full justify-end">
-      <div className="bg-accent text-foreground max-w-[85%] min-w-0 rounded-2xl rounded-br-md px-3.5 py-2 text-[0.95rem] leading-relaxed [overflow-wrap:anywhere]">
+      <div className="bg-accent text-foreground max-w-[85%] min-w-0 rounded-2xl rounded-br-md px-4 py-2.5 text-[0.925rem] leading-relaxed [overflow-wrap:anywhere]">
         {items.length > 0 && (
           <div className="mb-2 flex flex-col gap-2">
             {items.map((it, i) => (
-              <NeoMediaItem key={`${it.url}-${i}`} url={it.url} kind={it.kind} />
+              <NeoMediaItem key={`${it.url}-${i}`} url={it.url} kind={it.kind} name={it.name} />
             ))}
           </div>
         )}
@@ -219,13 +241,7 @@ export function NeoUserMessage({ message }: { message: ChatMessage }) {
 /** The live "thinking / working" indicator, shown as a nascent assistant turn
  *  (mark + shimmering label) while the run has not yet produced prose. The
  *  mark is Neo's live-status slot: Pixel Grid while idle/not yet responding. */
-export function NeoThinking({
-  label,
-  reduce,
-}: {
-  label: string
-  reduce: boolean
-}) {
+export function NeoThinking({ label, reduce }: { label: string; reduce: boolean }) {
   return (
     <div className="flex w-full gap-3">
       <span className="grid size-8 shrink-0 place-items-center">
@@ -318,7 +334,7 @@ export function NeoLiveTurn({
       {thoughts && <NeoLiveThinking text={thoughts} />}
       {answer ? (
         <div className={NEO_PROSE_CLASS}>
-          <Prose text={answer} />
+          <Prose text={answer} streaming animate={!reduce} />
           <StreamCaret reduce={reduce} />
         </div>
       ) : (

@@ -1,23 +1,21 @@
 'use client'
 
 /**
- * Sign-in surface — single-column magic-link form. Visually consistent
- * with the rest of the dashboard's dark, high-signal aesthetic; no
- * gradients, no glow.
+ * Sign-in surface — the auth controls (OAuth + magic-link) that sit in the
+ * left column of the split login page. Layers separate by background tone;
+ * no gradients, no glow, no strokes.
  */
 import { useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { useLocale } from 'next-intl'
 import { useRouter } from '@/i18n/navigation'
 import { Github } from '@/lib/matrix-icons'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Field, FieldGroup, FieldLabel, FieldDescription } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { signInWithEmail, signInWithOAuth } from '@/lib/auth/session'
 import { authEnabled } from '@/lib/env'
 import { stripLocalePrefixFromHref } from '@/lib/i18n/proxy-path'
-import { MatrixLogo } from '@/components/matrix/matrix-logo'
 
 type OAuthProvider = 'google' | 'github'
 
@@ -115,15 +113,8 @@ export default function LoginForm() {
   }
 
   return (
-    <Card className="w-full max-w-sm">
-      <CardHeader className="items-center text-center">
-        <div className="mb-2 flex justify-center">
-          <MatrixLogo size="lg" />
-        </div>
-        <CardTitle className="text-base">Sign in to Matrix</CardTitle>
-        <CardDescription>We&rsquo;ll email you a one-time link.</CardDescription>
-      </CardHeader>
-      <CardContent>
+    <div className="bg-surface-secondary flex w-full flex-col gap-4 rounded-2xl p-5">
+      <div>
         {sent ? (
           <p className="text-muted-foreground text-sm">
             Check <span className="text-foreground font-medium">{email}</span> for the magic link.
@@ -198,7 +189,7 @@ export default function LoginForm() {
             Continue without auth (dev only)
           </button>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   )
 }

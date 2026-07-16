@@ -1,63 +1,50 @@
 'use client'
 
 /**
- * Cody top bar — project name, mode chip, live run status, and stop. Sits on
- * `bg-background`; the page body below uses `bg-card`, so the two read as
- * separate layers without a border stroke.
+ * Coding-surface top bar — project name and live run status, on Neo's
+ * identity. Sits on `bg-background`; the page body below uses `bg-card`, so
+ * the two read as separate layers without a border stroke.
  */
 import { SidebarTrigger } from '@/components/ui/sidebar'
 import { Button } from '@/components/ui/button'
 import { IconStop } from '@/components/matrix/cody/icons'
 import { CodyLoader } from '@/components/matrix/cody/loaders'
-import { MODE_LABELS } from '@/components/matrix/cody/tiering'
-import type { CodyProject } from '@/lib/api/cody'
-import type { CodyRun } from '@/hooks/api/useCody'
+import type { NeoProject } from '@/lib/api/workspace'
+import type { ChatPhase } from '@/hooks/api/useChat'
 
-const STATUS_COPY: Record<string, string> = {
-  running: 'Working',
-  needs_input: 'Needs input',
-  completed: 'Done',
-  failed: 'Failed',
-  stopped: 'Stopped',
+const PHASE_COPY: Record<ChatPhase, string> = {
+  idle: '',
+  thinking: 'Thinking',
+  working: 'Working',
 }
 
 export function CodyTopbar({
   project,
-  run,
-  isLive,
+  phase,
   onStop,
 }: {
-  project: CodyProject | null
-  run: CodyRun | null
-  isLive: boolean
+  project: NeoProject | null
+  phase: ChatPhase
   onStop: () => void
 }) {
-  const status = run?.status
-  const running = status === 'running'
-  const canStop = isLive && (running || status === 'needs_input')
-
+  const running = phase !== 'idle'
   return (
     <header className="bg-background flex h-14 shrink-0 items-center gap-3 px-3">
       <SidebarTrigger />
       <div className="flex min-w-0 items-center gap-2">
-        <span className="truncate text-sm font-medium">{project?.name ?? 'Cody'}</span>
-        {project ? (
-          <span className="bg-surface-secondary text-muted-foreground rounded-md px-2 py-0.5 font-mono text-[10px] tracking-wide uppercase">
-            {MODE_LABELS[project.mode]}
-          </span>
-        ) : null}
+        <span className="truncate text-sm font-medium">{project?.name ?? 'Neo'}</span>
       </div>
 
       <div className="ml-auto flex items-center gap-3">
-        {status ? (
+        {running ? (
           <div className="flex items-center gap-2">
-            {running ? <CodyLoader variant="dots" /> : null}
-            <span className="text-muted-foreground font-mono text-xs" data-run-status={status}>
-              {STATUS_COPY[status] ?? status}
+            <CodyLoader variant="dots" />
+            <span className="text-muted-foreground font-mono text-xs" data-run-status={phase}>
+              {PHASE_COPY[phase]}
             </span>
           </div>
         ) : null}
-        {canStop ? (
+        {phase === 'working' ? (
           <Button size="sm" variant="secondary" onClick={onStop}>
             <IconStop className="size-3.5" />
             <span>Stop</span>

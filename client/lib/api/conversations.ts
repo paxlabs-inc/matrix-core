@@ -45,15 +45,22 @@ export interface ConversationSummary {
   preview: string
   turn_count: number
   updated: string
+  /** Workbench project tag (absent for untagged dashboard threads). */
+  project?: string
 }
 
 interface ListResponse {
   items: ConversationSummary[]
 }
 
-/** GET /conversations — every thread, newest-first. */
-export async function listConversations(signal?: AbortSignal): Promise<ConversationSummary[]> {
-  const data = await apiFetch<ListResponse>('/conversations', { signal })
+/** GET /conversations — every thread, newest-first. An optional project id
+ *  scopes the list server-side to one workbench project's history. */
+export async function listConversations(
+  signal?: AbortSignal,
+  project?: string,
+): Promise<ConversationSummary[]> {
+  const qs = project ? `?project=${encodeURIComponent(project)}` : ''
+  const data = await apiFetch<ListResponse>(`/conversations${qs}`, { signal })
   return data.items ?? []
 }
 

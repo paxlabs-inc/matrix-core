@@ -19,12 +19,19 @@ export interface NotifPrefs {
 
 export interface LocalPrefs {
   notif: NotifPrefs
+  voice: VoicePrefs
+}
+
+export interface VoicePrefs {
+  voice: string
+  style: string
 }
 
 /** A shallow patch applied by usePrefs().update — `notif` may be partial and
  *  is merged into the current value. */
 export interface PrefsPatch {
   notif?: Partial<NotifPrefs>
+  voice?: Partial<VoicePrefs>
 }
 
 const KEY = 'mx:prefs:v1'
@@ -32,6 +39,7 @@ const EVENT = 'mx:prefs'
 
 export const DEFAULT_PREFS: LocalPrefs = {
   notif: { completed: true, needsInput: true, failed: true },
+  voice: { voice: 'Mia', style: 'Warm, direct, conversational delivery.' },
 }
 
 export function loadPrefs(): LocalPrefs {
@@ -40,7 +48,10 @@ export function loadPrefs(): LocalPrefs {
     const raw = window.localStorage.getItem(KEY)
     if (!raw) return DEFAULT_PREFS
     const parsed = JSON.parse(raw) as Partial<LocalPrefs>
-    return { notif: { ...DEFAULT_PREFS.notif, ...(parsed.notif ?? {}) } }
+    return {
+      notif: { ...DEFAULT_PREFS.notif, ...(parsed.notif ?? {}) },
+      voice: { ...DEFAULT_PREFS.voice, ...(parsed.voice ?? {}) },
+    }
   } catch {
     return DEFAULT_PREFS
   }
@@ -77,7 +88,11 @@ export function usePrefs(): [LocalPrefs, (next: PrefsPatch) => void] {
 
   const update = useCallback((next: PrefsPatch) => {
     setPrefs((cur) => {
-      const merged: LocalPrefs = { ...cur, notif: { ...cur.notif, ...(next.notif ?? {}) } }
+      const merged: LocalPrefs = {
+        ...cur,
+        notif: { ...cur.notif, ...(next.notif ?? {}) },
+        voice: { ...cur.voice, ...(next.voice ?? {}) },
+      }
       savePrefs(merged)
       return merged
     })

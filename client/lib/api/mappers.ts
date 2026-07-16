@@ -23,7 +23,6 @@ import { buildStages } from '@/lib/matrix-data'
 import type {
   IntentSummary,
   IntentAttestation,
-  AgentsManifest,
   ToolEntry,
   SkillEntry,
   SSEEvent,
@@ -307,15 +306,6 @@ function normaliseArtifactKind(k?: string): ReceiptArtifact['kind'] {
     default:
       return 'record'
   }
-}
-
-/** Translate the daemon's agents.json manifest into the UI Agent[]
- *  shape. The manifest describes MCP server/tool topology rather than
- *  user-facing personas, so the live roster is built from the skill
- *  catalogue instead (see skillsToAgents). Kept for callers that still
- *  reference the manifest; returns null to defer to the skill roster. */
-export function manifestToAgents(_m: AgentsManifest | null | undefined): Agent[] | null {
-  return null
 }
 
 /** Extract the slug from a skill URI (matrix://skill/<slug>@<v>). */

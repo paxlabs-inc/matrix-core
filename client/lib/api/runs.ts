@@ -12,7 +12,6 @@ import type {
   AsyncStartResponse,
   AsyncJob,
   IntentAttestation,
-  ReplayRoots,
 } from '@/lib/api/types'
 import {
   intentToRun,
@@ -71,14 +70,6 @@ export async function listAllRuns(cap = 200, signal?: AbortSignal): Promise<Runs
   return { runs: trimmed.map(intentToRun), raw: trimmed }
 }
 
-/** Get a single intent's compact summary. */
-export async function getRunSummary(id: string, signal?: AbortSignal): Promise<Run> {
-  const sum = await apiFetch<IntentSummary>(`/intents/${encodeURIComponent(id)}/summary`, {
-    signal,
-  })
-  return intentToRun(sum)
-}
-
 /** Pull the signed attestation envelope for a completed intent. Returns
  *  null when the intent has not been signed (still running, failed
  *  before /attest, etc.). */
@@ -96,22 +87,6 @@ export async function getRunReceipt(
     return attestationToReceipt(id, prose, att, endedAt)
   } catch (e) {
     // 404 = no signed envelope yet — that's expected, not an error.
-    if (isNotFound(e)) return null
-    throw e
-  }
-}
-
-/** Get pre/post replay roots for a finished intent. Used to show the
- *  green "replay verified" tick on the receipt sheet. */
-export async function getReplayRoots(
-  id: string,
-  signal?: AbortSignal,
-): Promise<ReplayRoots | null> {
-  try {
-    return await apiFetch<ReplayRoots>(`/intents/${encodeURIComponent(id)}/replay-roots`, {
-      signal,
-    })
-  } catch (e) {
     if (isNotFound(e)) return null
     throw e
   }

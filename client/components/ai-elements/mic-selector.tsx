@@ -64,10 +64,6 @@ export const useAudioDevices = () => {
   }, [])
 
   const loadDevicesWithPermission = useCallback(async () => {
-    if (loading) {
-      return
-    }
-
     try {
       setLoading(true)
       setError(null)
@@ -94,7 +90,7 @@ export const useAudioDevices = () => {
     } finally {
       setLoading(false)
     }
-  }, [loading])
+  }, [])
 
   useEffect(() => {
     loadDevicesWithoutPermission()

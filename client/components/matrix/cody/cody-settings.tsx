@@ -1,143 +1,154 @@
 'use client'
 
 /**
- * Cody Settings — project-level mode (changeable between runs) and preview TTL.
- * Mode changes hit the codyd registry (PATCH /projects/:id); the default
- * project's mode is fixed. Preview TTL is applied when a preview is provisioned
- * (backend task 3.3); surfaced here so the knob lives with the project.
+ * Project settings (NEO-WORKBENCH req 8.1) — rename, archive, and delete
+ * against the Neo daemon's project registry. The default project is
+ * synthesized from the bare workspace root, so its controls are fixed.
+ * Layers separate by background tone only — no border strokes.
  */
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
-import { CodyLoader } from '@/components/matrix/cody/loaders'
-import { MODE_LABELS, MODE_ORDER } from '@/components/matrix/cody/tiering'
-import type { CodyMode, CodyProject } from '@/lib/api/cody'
-
-const TTL_OPTIONS = [
-  { value: '15', label: '15 minutes' },
-  { value: '30', label: '30 minutes' },
-  { value: '60', label: '1 hour' },
-  { value: '120', label: '2 hours' },
-]
+import { deleteProject, updateProject, type NeoProject } from '@/lib/api/workspace'
 
 export function CodySettings({
   project,
-  onChangeMode,
-  busy = false,
-  error,
+  onProjectChanged,
+  onProjectDeleted,
 }: {
-  project: CodyProject | null
-  onChangeMode: (mode: CodyMode) => void
-  busy?: boolean
-  error?: string | null
+  project: NeoProject | null
+  onProjectChanged: (p: NeoProject) => void
+  onProjectDeleted: (id: string) => void
 }) {
-  const isDefault = !project || project.id === 'default'
-  const [ttl, setTtl] = useState('30')
+  const [name, setName] = useState(project?.name ?? '')
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [confirmDelete, setConfirmDelete] = useState(false)
+  const [purge, setPurge] = useState(false)
+
+  useEffect(() => {
+    setName(project?.name ?? '')
+    setConfirmDelete(false)
+    setError(null)
+  }, [project?.id, project?.name])
 
   if (!project) {
     return (
-      <div className="text-muted-foreground m-auto p-8 text-sm">
-        Select a project to edit its settings.
+      <div className="text-muted-foreground grid h-full place-items-center text-sm">
+        Pick a project first.
       </div>
     )
   }
+  const isDefault = project.id === 'default'
+
+  const run = async (fn: () => Promise<void>) => {
+    setBusy(true)
+    setError(null)
+    try {
+      await fn()
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'That did not work — try again.')
+    } finally {
+      setBusy(false)
+    }
+  }
 
   return (
-    <div className="mx-auto flex w-full max-w-xl flex-col gap-6 p-6">
-      <div className="flex flex-col gap-2">
-        <h2 className="text-sm font-medium">Mode</h2>
-        <p className="text-muted-foreground text-xs">
-          The project&apos;s mode sets how much of the machinery the surface reveals. Change it
-          between runs, never mid-run.
-        </p>
-        <div className="bg-surface-secondary flex items-center gap-3 rounded-lg p-4">
-          <Label htmlFor="cody-settings-mode" className="shrink-0">
-            Project mode
-          </Label>
-          <div className="ml-auto flex items-center gap-2">
-            {busy ? <CodyLoader variant="dots" /> : null}
-            <Select
-              value={project.mode}
-              onValueChange={(v) => onChangeMode(v as CodyMode)}
+    <div className="mx-auto flex w-full max-w-xl flex-col gap-4 p-6">
+      <section className="bg-surface-secondary flex flex-col gap-3 rounded-xl p-4">
+        <div className="text-sm font-medium">Project</div>
+        <div className="flex flex-col gap-2">
+          <Label htmlFor="neo-settings-name">Name</Label>
+          <div className="flex gap-2">
+            <Input
+              id="neo-settings-name"
+              value={name}
               disabled={isDefault || busy}
+              onChange={(e) => setName(e.target.value)}
+            />
+            <Button
+              disabled={isDefault || busy || !name.trim() || name.trim() === project.name}
+              onClick={() =>
+                run(async () => {
+                  const updated = await updateProject(project.id, { name: name.trim() })
+                  onProjectChanged(updated)
+                })
+              }
             >
-              <SelectTrigger id="cody-settings-mode" className="w-40">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {MODE_ORDER.map((m) => (
-                  <SelectItem key={m} value={m}>
-                    {MODE_LABELS[m]}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              Rename
+            </Button>
           </div>
+          {isDefault ? (
+            <p className="text-muted-foreground text-xs">
+              This is your main workspace — it cannot be renamed or removed.
+            </p>
+          ) : null}
         </div>
-        {isDefault ? (
-          <p className="text-muted-foreground text-xs">
-            The default project&apos;s mode is fixed. Create a project to choose a mode.
-          </p>
+        <div className="text-muted-foreground font-mono text-xs">{project.root}</div>
+        {!isDefault ? (
+          <div>
+            <Button
+              variant="secondary"
+              disabled={busy}
+              onClick={() =>
+                run(async () => {
+                  const updated = await updateProject(project.id, {
+                    archived: !project.archived,
+                  })
+                  onProjectChanged(updated)
+                })
+              }
+            >
+              {project.archived ? 'Restore' : 'Archive'}
+            </Button>
+          </div>
         ) : null}
-        {error ? <p className="text-destructive text-xs">{error}</p> : null}
-      </div>
+      </section>
 
-      <div className="flex flex-col gap-2">
-        <h2 className="text-sm font-medium">Preview</h2>
-        <div className="bg-surface-secondary flex items-center gap-3 rounded-lg p-4">
-          <Label htmlFor="cody-settings-ttl" className="shrink-0">
-            Idle preview TTL
-          </Label>
-          <Select value={ttl} onValueChange={setTtl}>
-            <SelectTrigger id="cody-settings-ttl" className="ml-auto w-40">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {TTL_OPTIONS.map((o) => (
-                <SelectItem key={o.value} value={o.value}>
-                  {o.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        <p className="text-muted-foreground text-xs">
-          Idle preview sandboxes are reaped after this window. Applied when a preview is
-          provisioned.
-        </p>
-      </div>
+      {!isDefault ? (
+        <section className="bg-surface-secondary flex flex-col gap-3 rounded-xl p-4">
+          <div className="text-destructive text-sm font-medium">Danger</div>
+          {!confirmDelete ? (
+            <div>
+              <Button variant="destructive" disabled={busy} onClick={() => setConfirmDelete(true)}>
+                Delete project…
+              </Button>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-2">
+              <label className="flex items-center gap-2 text-xs">
+                <input
+                  type="checkbox"
+                  checked={purge}
+                  onChange={(e) => setPurge(e.target.checked)}
+                />
+                Also delete the files on disk (cannot be undone)
+              </label>
+              <div className="flex gap-2">
+                <Button
+                  variant="destructive"
+                  disabled={busy}
+                  onClick={() =>
+                    run(async () => {
+                      await deleteProject(project.id, { purge })
+                      onProjectDeleted(project.id)
+                    })
+                  }
+                >
+                  Delete {project.name}
+                </Button>
+                <Button variant="ghost" disabled={busy} onClick={() => setConfirmDelete(false)}>
+                  Cancel
+                </Button>
+              </div>
+            </div>
+          )}
+        </section>
+      ) : null}
 
-      <div className="flex flex-col gap-1">
-        <h2 className="text-sm font-medium">Workspace</h2>
-        <div className="bg-surface-secondary flex flex-col gap-1 rounded-lg p-4">
-          <Row label="Project" value={project.name} />
-          <Row label="Root" value={project.root} mono />
-          <Row label="Created" value={new Date(project.created_at).toLocaleString()} />
-        </div>
-      </div>
-
-      <div className="flex justify-end">
-        <Button variant="ghost" disabled>
-          Saved
-        </Button>
-      </div>
-    </div>
-  )
-}
-
-function Row({ label, value, mono }: { label: string; value: string; mono?: boolean }) {
-  return (
-    <div className="flex items-center gap-3 py-1">
-      <span className="text-muted-foreground w-20 shrink-0 text-xs">{label}</span>
-      <span className={mono ? 'truncate font-mono text-xs' : 'truncate text-sm'}>{value}</span>
+      {error ? <p className="text-destructive text-xs">{error}</p> : null}
     </div>
   )
 }

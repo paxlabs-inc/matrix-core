@@ -1,5 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { renderHook, waitFor } from '@testing-library/react'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { createElement, type ReactNode } from 'react'
 import type {
   ConversationRecord,
   ConversationSummary,
@@ -67,9 +69,19 @@ vi.mock('sonner', () => ({
   toast: { error: vi.fn(), success: vi.fn(), info: vi.fn() },
 }))
 
-import { useChat, buildTaskFromTrace } from '@/hooks/api/useChat'
+import { useChat, buildTaskFromTrace, mediaFromFields } from '@/hooks/api/useChat'
 
 const INTENT = 'neo_trace_run'
+
+function renderUseChat() {
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+  })
+  return renderHook(() => useChat(), {
+    wrapper: ({ children }: { children: ReactNode }) =>
+      createElement(QueryClientProvider, { client: queryClient }, children),
+  })
+}
 
 // A representative workspace trace: a terminal step (running→done collapses to
 // one viewport), a web-search with source cards, generated media, a non-final
@@ -172,6 +184,20 @@ afterEach(() => {
 })
 
 describe('buildTaskFromTrace — pure workspace reducer', () => {
+  it('accepts audio media in the shared live and reopen fold', () => {
+    const fields = { kind: 'audio', url: '/media/reply.wav', mime: 'audio/wav' }
+    expect(mediaFromFields(fields)).toEqual({
+      kind: 'audio',
+      url: '/media/reply.wav',
+      mime: 'audio/wav',
+      prompt: undefined,
+    })
+    const task = buildTaskFromTrace([{ seq: 1, type: 'tool.media', fields }], INTENT)
+    expect(task.media).toEqual([
+      { kind: 'audio', url: '/media/reply.wav', mime: 'audio/wav', prompt: undefined },
+    ])
+  })
+
   it('folds tool steps, source cards, media and narration; ignores the final answer', () => {
     const task = buildTaskFromTrace(workspaceTrace(), INTENT, 'build a tool')
 
@@ -253,6 +279,42 @@ describe('buildTaskFromTrace — pure workspace reducer', () => {
     expect(task.searches).toHaveLength(0)
     expect(task.done).toBe(true)
   })
+
+  it('rebuilds recalled episodic excerpts from the durable memory activation', () => {
+    const task = buildTaskFromTrace(
+      [
+        {
+          seq: 1,
+          type: 'memory.activation',
+          fields: {
+            trigger_class: 'remembrance',
+            episodic_excerpts: [
+              {
+                conversation_id: 'conversation-a',
+                date: '2026-07-10',
+                seq_lo: 4,
+                seq_hi: 5,
+                exact: true,
+                text: 'user: the exact error\nassistant: we fixed it',
+              },
+            ],
+          },
+        },
+      ],
+      INTENT,
+    )
+    expect(task.memory?.triggerClass).toBe('remembrance')
+    expect(task.memory?.excerpts).toEqual([
+      {
+        conversationId: 'conversation-a',
+        date: '2026-07-10',
+        seqLo: 4,
+        seqHi: 5,
+        exact: true,
+        text: 'user: the exact error\nassistant: we fixed it',
+      },
+    ])
+  })
 })
 
 describe('useChat — F3 reopen hydration', () => {
@@ -261,7 +323,11 @@ describe('useChat — F3 reopen hydration', () => {
     conversationsApi.getConversation.mockResolvedValue(settledRecord())
     conversationsApi.getConversationTrace.mockResolvedValue(trace(workspaceTrace()))
 
-    const { result } = renderHook(() => useChat())
+    const { result } = renderUseChat()
+    await waitFor(() => {
+      expect(result.current.conversations).toEqual([SETTLED_SUMMARY])
+    })
+    result.current.selectConversation('conv_trace')
 
     // The settled thread fetches the durable trace (no live subscribe).
     await waitFor(() => {
@@ -288,7 +354,11 @@ describe('useChat — F3 reopen hydration', () => {
     conversationsApi.getConversation.mockResolvedValue(settledRecord())
     conversationsApi.getConversationTrace.mockResolvedValue(trace([]))
 
-    const { result } = renderHook(() => useChat())
+    const { result } = renderUseChat()
+    await waitFor(() => {
+      expect(result.current.conversations).toEqual([SETTLED_SUMMARY])
+    })
+    result.current.selectConversation('conv_trace')
 
     await waitFor(() => {
       expect(conversationsApi.getConversationTrace).toHaveBeenCalled()

@@ -28,6 +28,7 @@ import {
   ImageIcon,
   Monitor,
   Radio,
+  ShieldAlert,
   Sparkles,
   TerminalIcon,
   X,
@@ -35,13 +36,18 @@ import {
 import { cn } from '@/lib/utils'
 import type { ChatPhase, NeoStep, NeoTask } from '@/hooks/api/useChat'
 import type { AskResponse } from '@/lib/construct/types.gen'
-import { NeoWorkspace, NeoThinkingStrip } from '@/components/matrix/neo/neo-workspace'
+import {
+  NeoWorkspace,
+  NeoThinkingStrip,
+  type FilmstripFrame,
+} from '@/components/matrix/neo/neo-workspace'
 import { NeoSwarm } from '@/components/matrix/neo/neo-swarm'
 import { NeoTodoList } from '@/components/matrix/neo/neo-todo'
 import { NeoSearchResults } from '@/components/matrix/neo/neo-search'
 import { NeoMediaGrid } from '@/components/matrix/neo/neo-media'
 import { NeoArtifacts } from '@/components/matrix/neo/neo-artifacts'
 import { NeoMemoryCard } from '@/components/matrix/neo/neo-memory'
+import { NeoAuditTrail } from '@/components/matrix/neo/neo-audit'
 import { ConstructSurfaces } from '@/components/matrix/construct'
 
 const EASE = [0.32, 0.72, 0, 1] as const
@@ -119,6 +125,7 @@ function buildScreens(
   showMedia: boolean,
   onRespond?: (surfaceId: string, response: AskResponse) => void,
   legacyOnly = false,
+  onMediaAction?: (instruction: string) => void,
 ): Screen[] {
   const list: Screen[] = []
   const live = phase === 'thinking' || phase === 'working'
@@ -127,7 +134,10 @@ function buildScreens(
   // coarse timeline it is carrying forward. Read-only; leads the screens so the
   // user can always glance at what Neo remembers. Present in both the typed-
   // surface path and the legacy path.
-  if (task.memory && (task.memory.storySoFar || task.memory.timeline.length > 0)) {
+  if (
+    task.memory &&
+    (task.memory.storySoFar || task.memory.timeline.length > 0 || task.memory.excerpts.length > 0)
+  ) {
     list.push({
       id: 'memory',
       label: 'Memory',
@@ -170,6 +180,11 @@ function buildScreens(
 
   // Legacy NeoStep path: each viewport step is a screen, in the order Neo
   // worked through them; the rich aggregates (sources / agents / media) follow.
+  // The session's browsing stills, in capture order, feed every browser
+  // screen's history strip (BROWSER-FILMSTRIP req.6 — click-to-scrub).
+  const filmstrip: FilmstripFrame[] = task.steps
+    .filter((s) => s.kind === 'browser' && !!s.screenshotUrl)
+    .map((s) => ({ id: s.id, screenshotUrl: s.screenshotUrl!, pageTitle: s.pageTitle, ts: s.ts }))
   for (const st of task.steps) {
     if (st.kind === 'terminal' || st.kind === 'browser' || st.kind === 'editor') {
       list.push({
@@ -177,7 +192,9 @@ function buildScreens(
         label: stepLabel(st),
         icon: stepIcon(st),
         running: !!st.running,
-        node: <NeoWorkspace steps={[st]} />,
+        node: (
+          <NeoWorkspace steps={[st]} filmstrip={st.kind === 'browser' ? filmstrip : undefined} />
+        ),
       })
     }
   }
@@ -205,7 +222,7 @@ function buildScreens(
       label: 'Media',
       icon: ImageIcon,
       running: false,
-      node: <NeoMediaGrid media={task.media} />,
+      node: <NeoMediaGrid media={task.media} onAction={onMediaAction} />,
     })
   }
   // F6: deliverable artifacts (downloadable files/archives, deployed sites).
@@ -218,6 +235,16 @@ function buildScreens(
       node: <NeoArtifacts artifacts={task.artifacts} />,
     })
   }
+  // Cassandra 2.0 audit trail: silent-voice controller edits + identity leaks.
+  if (task.audit && task.audit.length > 0) {
+    list.push({
+      id: 'audit',
+      label: 'Audit',
+      icon: ShieldAlert,
+      running: false,
+      node: <NeoAuditTrail audit={task.audit} />,
+    })
+  }
   return list
 }
 
@@ -227,6 +254,7 @@ export function NeoComputer({
   reduce,
   showMedia,
   onRespond,
+  onMediaAction,
   onClose,
   legacyOnly = false,
   className,
@@ -238,6 +266,8 @@ export function NeoComputer({
   showMedia: boolean
   /** Answer a parked Construct Ask (the bidirectional back-channel). */
   onRespond?: (surfaceId: string, response: AskResponse) => void
+  /** Post-generation image actions (tweak / variations / suggestions) → Neo. */
+  onMediaAction?: (instruction: string) => void
   /** Collapse the panel (NOT an abort — the run keeps going). Omitted when this
    *  is the shell's fixed centerpiece, which is not collapsible. */
   onClose?: () => void
@@ -249,7 +279,7 @@ export function NeoComputer({
   className?: string
 }) {
   const status = statusFor(task, phase)
-  const screens = buildScreens(task, phase, showMedia, onRespond, legacyOnly)
+  const screens = buildScreens(task, phase, showMedia, onRespond, legacyOnly, onMediaAction)
 
   // Single-viewport navigation. By default Neo "drives" — the newest screen is
   // shown as work streams in. The user can click a tab to inspect an earlier

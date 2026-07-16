@@ -62,6 +62,8 @@ import Loader from '@/components/ui/box-loader'
 import { cn } from '@/lib/utils'
 import type { ChatMessage, ChatMedia, ChatPhase } from '@/hooks/api/useChat'
 import type { Agent } from '@/lib/matrix-data'
+import { usePrefs } from '@/lib/prefs'
+import { useVoiceSession } from '@/hooks/api/useVoiceSession'
 
 /** First name (or handle) for a warm, personal greeting. Accepts a full
  *  name or an email; rejects machine identifiers (DIDs, URIs, UUIDs, long
@@ -117,6 +119,8 @@ export function AgentChat({
   agents = [],
   pendingGate,
   answerGate,
+  conversationId,
+  onVoiceIntent,
 }: {
   messages: ChatMessage[]
   phase: ChatPhase
@@ -127,8 +131,18 @@ export function AgentChat({
   agents?: Agent[]
   pendingGate?: { question: string; options: string[]; nodeId: string; intentId: string } | null
   answerGate?: (approved: boolean, answer?: string) => void
+  conversationId?: string | null
+  onVoiceIntent?: (intentId: string) => void
 }) {
   const t = useTranslations('agentChat')
+  const [prefs] = usePrefs()
+  const voice = useVoiceSession({
+    conversationId,
+    settings: prefs.voice,
+    onIntent: onVoiceIntent,
+    unavailableNotice: t('voiceUnavailable'),
+    firstTurnNotice: t('voiceNeedsConversation'),
+  })
   const busy = phase !== 'idle'
   const name = firstName(userName)
   const greeting = name ? t('welcomeBack', { name }) : t('welcome')
@@ -230,7 +244,7 @@ export function AgentChat({
           </div>
         )}
         <PromptInputProvider>
-          <ChatComposer onSend={send} busy={busy} />
+          <ChatComposer onSend={send} busy={busy} voice={voice} />
         </PromptInputProvider>
       </div>
     </div>
@@ -375,7 +389,15 @@ function MediaItem({ url, kind, prompt }: RenderMedia) {
 /*  Composer                                                                  */
 /* -------------------------------------------------------------------------- */
 
-function ChatComposer({ onSend, busy }: { onSend: (text: string) => void; busy: boolean }) {
+function ChatComposer({
+  onSend,
+  busy,
+  voice,
+}: {
+  onSend: (text: string) => void
+  busy: boolean
+  voice: ReturnType<typeof useVoiceSession>
+}) {
   const t = useTranslations('agentChat')
   const { textInput } = usePromptInputController()
 
@@ -437,6 +459,21 @@ function ChatComposer({ onSend, busy }: { onSend: (text: string) => void; busy: 
       className="bg-card rounded-2xl shadow-sm"
     >
       <PromptInputBody>
+        {(voice.active || voice.notice) && (
+          <div className="bg-muted/70 mx-3 mt-3 flex items-center gap-2 rounded-xl px-3 py-2 text-xs">
+            {voice.active && <span className="bg-primary size-1.5 animate-pulse rounded-full" />}
+            <span className="text-muted-foreground flex-1">
+              {voice.notice ||
+                (voice.state === 'listening'
+                  ? t('voiceListening')
+                  : voice.state === 'thinking'
+                    ? t('voiceThinking')
+                    : voice.state === 'speaking'
+                      ? t('voiceSpeaking')
+                      : t('voiceConnecting'))}
+            </span>
+          </div>
+        )}
         <ComposerAttachments />
         <PromptInputTextarea
           placeholder={uploading ? t('uploading') : t('placeholder')}
@@ -452,6 +489,15 @@ function ChatComposer({ onSend, busy }: { onSend: (text: string) => void; busy: 
               <PromptInputActionAddAttachments />
             </PromptInputActionMenuContent>
           </PromptInputActionMenu>
+          <PromptInputButton
+            onClick={voice.toggle}
+            tooltip={voice.active ? t('voiceStop') : t('voiceStart')}
+            aria-label={voice.active ? t('voiceStop') : t('voiceStart')}
+            className={cn(voice.active && 'bg-primary text-primary-foreground')}
+            aria-pressed={voice.active}
+          >
+            {voice.active ? <MicOffIcon className="size-4" /> : <MicIcon className="size-4" />}
+          </PromptInputButton>
           {dictation.supported && (
             <PromptInputButton
               onClick={dictation.toggle}

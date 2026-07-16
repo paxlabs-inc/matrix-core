@@ -25,13 +25,50 @@ import {
   IconFolderOpen,
   IconRefresh,
 } from '@/components/matrix/cody/icons'
-import { getTree, type TreeEntry, type WorkspaceTree } from '@/lib/api/cody'
+import { getTree, type TreeEntry, type WorkspaceTree } from '@/lib/api/workspace'
 import { cn } from '@/lib/utils'
 
 export interface TreeItem {
   id: string
   name: string
   children?: TreeItem[]
+}
+
+/** Per-filetype icon tint — the same warm ladder the editor theme uses, so
+ *  the tree reads scannable without turning into a rainbow. */
+const FILE_TINTS: Record<string, string> = {
+  js: '#99bd9c',
+  jsx: '#99bd9c',
+  ts: '#99bd9c',
+  tsx: '#99bd9c',
+  mjs: '#99bd9c',
+  cjs: '#99bd9c',
+  go: '#93b3a7',
+  py: '#93b3a7',
+  rs: '#93b3a7',
+  css: '#9fb3bd',
+  scss: '#9fb3bd',
+  html: '#d0a97e',
+  htm: '#d0a97e',
+  json: '#c9b590',
+  yml: '#c9b590',
+  yaml: '#c9b590',
+  toml: '#c9b590',
+  md: '#cbbfb8',
+  markdown: '#cbbfb8',
+  svg: '#c9b590',
+  png: '#c9b590',
+  jpg: '#c9b590',
+  jpeg: '#c9b590',
+  webp: '#c9b590',
+  gif: '#c9b590',
+  ico: '#c9b590',
+}
+
+function fileTint(name: string): string | undefined {
+  const dot = name.lastIndexOf('.')
+  if (dot <= 0) return undefined
+  return FILE_TINTS[name.slice(dot + 1).toLowerCase()]
 }
 
 /** Fold the flat, path-keyed entries into arborist's nested shape. */
@@ -126,7 +163,10 @@ export function CodyTree({
 
   return (
     <section
-      className={cn('bg-surface-secondary flex h-full min-h-0 flex-col gap-2 rounded-lg p-2', className)}
+      className={cn(
+        'bg-surface-secondary flex h-full min-h-0 flex-col gap-2 rounded-lg p-2',
+        className,
+      )}
     >
       <div className="flex shrink-0 items-center gap-2 px-1 pt-1">
         <span className="text-muted-foreground font-mono text-[10px] tracking-wide uppercase">
@@ -224,7 +264,10 @@ function TreeRow({ node, style, dragHandle }: NodeRendererProps<TreeItem>) {
           <IconFolder className="text-muted-foreground size-4 shrink-0" />
         )
       ) : (
-        <IconFile className="text-muted-foreground size-4 shrink-0" />
+        <IconFile
+          className="text-muted-foreground size-4 shrink-0"
+          style={{ color: fileTint(node.data.name) }}
+        />
       )}
       <span className="truncate font-mono text-xs">{node.data.name}</span>
     </div>

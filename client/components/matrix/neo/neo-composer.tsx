@@ -33,6 +33,8 @@ import {
   Globe,
   ImageIcon,
   Lightbulb,
+  MicIcon,
+  MicOffIcon,
   Music2Icon,
   Paperclip,
   Plus,
@@ -166,6 +168,16 @@ export function NeoComposer({
   uploading = false,
   isRunning = false,
   onStop,
+  voiceActive = false,
+  voiceStateLabel,
+  voiceNotice,
+  voiceDevices = [],
+  voiceDeviceId = '',
+  onVoiceDeviceChange,
+  onVoiceToggle,
+  voiceStartLabel = 'Start voice',
+  voiceStopLabel = 'Stop voice',
+  voiceMicrophoneLabel = 'Microphone',
 }: {
   value: string
   onChange: (v: string) => void
@@ -189,6 +201,16 @@ export function NeoComposer({
   isRunning?: boolean
   /** Abort the live run. Required for the stop toggle to appear. */
   onStop?: () => void
+  voiceActive?: boolean
+  voiceStateLabel?: string
+  voiceNotice?: string
+  voiceDevices?: MediaDeviceInfo[]
+  voiceDeviceId?: string
+  onVoiceDeviceChange?: (deviceId: string) => void
+  onVoiceToggle?: () => void
+  voiceStartLabel?: string
+  voiceStopLabel?: string
+  voiceMicrophoneLabel?: string
 }) {
   const pill = variant === 'pill'
   const active = neoModeDef(mode)
@@ -225,9 +247,9 @@ export function NeoComposer({
           type="button"
           aria-label={`Tool: ${active.label}`}
           title={`Tool: ${active.label}`}
-          className="group relative flex size-9 shrink-0 items-center justify-center rounded-full bg-zinc-200 text-zinc-500 transition-colors hover:bg-zinc-300 data-[state=open]:bg-zinc-300 data-[state=open]:text-zinc-700 dark:bg-zinc-700 dark:text-zinc-400 dark:hover:bg-zinc-600/90 dark:data-[state=open]:bg-zinc-600 dark:data-[state=open]:text-zinc-100"
+          className="group bg-accent text-muted-foreground hover:bg-surface-hover hover:text-foreground data-[state=open]:bg-surface-hover data-[state=open]:text-foreground relative flex size-8 shrink-0 items-center justify-center rounded-full transition-colors"
         >
-          <ActiveIcon className="size-[18px] shrink-0" />
+          <ActiveIcon className="size-[17px] shrink-0" />
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent
@@ -261,13 +283,12 @@ export function NeoComposer({
     </DropdownMenu>
   )
 
-  // Attach — stage image / video / audio for upload to the agent volume.
+  // Attach — stage any file (media or document) for upload to the agent volume.
   const attachButton = onAddFiles && (
     <>
       <input
         ref={fileRef}
         type="file"
-        accept="image/*,video/*,audio/*"
         multiple
         className="hidden"
         onChange={(e) => {
@@ -279,14 +300,33 @@ export function NeoComposer({
       <button
         type="button"
         aria-label="Attach a file"
-        title="Attach an image, video, or audio file"
+        title="Attach a file (image, video, audio, or document)"
         onClick={() => fileRef.current?.click()}
         disabled={uploading}
-        className="group relative flex size-9 shrink-0 items-center justify-center rounded-full bg-zinc-200 text-zinc-500 transition-colors hover:bg-zinc-300 disabled:cursor-wait disabled:opacity-70 dark:bg-zinc-700 dark:text-zinc-400 dark:hover:bg-zinc-600/90"
+        className="group bg-accent text-muted-foreground hover:bg-surface-hover hover:text-foreground relative flex size-8 shrink-0 items-center justify-center rounded-full transition-colors disabled:cursor-wait disabled:opacity-70"
       >
-        <Plus className="size-[22px]" />
+        <Plus className="size-5" />
       </button>
     </>
+  )
+
+  const voiceButton = onVoiceToggle && (
+    <button
+      type="button"
+      aria-label={voiceActive ? voiceStopLabel : voiceStartLabel}
+      title={voiceActive ? voiceStopLabel : voiceStartLabel}
+      aria-pressed={voiceActive}
+      onClick={onVoiceToggle}
+      disabled={uploading}
+      className={cn(
+        'group flex size-8 shrink-0 items-center justify-center rounded-full transition-colors disabled:opacity-60',
+        voiceActive
+          ? 'bg-primary text-primary-foreground'
+          : 'bg-accent text-muted-foreground hover:bg-surface-hover hover:text-foreground',
+      )}
+    >
+      {voiceActive ? <MicOffIcon className="size-[17px]" /> : <MicIcon className="size-[17px]" />}
+    </button>
   )
 
   const textareaEl = (
@@ -305,7 +345,7 @@ export function NeoComposer({
       autoComplete="off"
       aria-label="Ask Neo"
       disabled={uploading}
-      className="neo-input text-foreground placeholder:text-muted-foreground/70 min-h-9 w-full min-w-0 flex-1 resize-none bg-transparent py-1.5 text-base leading-6 font-medium outline-none disabled:opacity-60"
+      className="neo-input text-foreground placeholder:text-muted-foreground/60 min-h-9 w-full min-w-0 flex-1 resize-none bg-transparent py-1.5 text-[0.975rem] leading-6 font-normal outline-none disabled:opacity-60"
     />
   )
 
@@ -317,7 +357,7 @@ export function NeoComposer({
         onClick={onStop}
         aria-label="Stop"
         title="Stop"
-        className="flex size-9 min-w-9 shrink-0 items-center justify-center rounded-full bg-zinc-200 text-zinc-600 transition-colors hover:bg-zinc-300 dark:bg-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-600"
+        className="bg-accent text-foreground hover:bg-surface-hover flex size-8 min-w-8 shrink-0 items-center justify-center rounded-full transition-colors"
       >
         <SquareIcon className="size-3.5 fill-current" />
       </button>
@@ -327,9 +367,9 @@ export function NeoComposer({
         onClick={onSubmit}
         aria-label="Send"
         disabled={uploading}
-        className="bg-foreground text-background hover:bg-foreground/90 flex size-9 min-w-9 shrink-0 items-center justify-center rounded-full transition-colors disabled:cursor-not-allowed disabled:bg-zinc-200 disabled:text-zinc-400 dark:disabled:bg-zinc-700 dark:disabled:text-zinc-500"
+        className="bg-foreground text-background hover:bg-foreground/90 disabled:bg-accent disabled:text-muted-foreground flex size-8 min-w-8 shrink-0 items-center justify-center rounded-full transition-colors disabled:cursor-not-allowed"
       >
-        <ArrowUp className="size-[18px]" />
+        <ArrowUp className="size-[17px]" />
       </button>
     )
 
@@ -367,6 +407,7 @@ export function NeoComposer({
       <div className="flex items-center gap-1">
         {attachButton}
         {toolSelector}
+        {voiceButton}
       </div>
       {primaryButton}
     </div>
@@ -379,6 +420,36 @@ export function NeoComposer({
   // its own rounded panel for the docked footer.
   const stack = (
     <>
+      {(voiceActive || voiceNotice) && (
+        <div className="bg-muted/70 flex items-center gap-2 rounded-xl px-3 py-2 text-xs">
+          {voiceActive && (
+            <span className="bg-primary size-1.5 shrink-0 animate-pulse rounded-full" />
+          )}
+          <span className="text-muted-foreground min-w-0 flex-1">
+            {voiceNotice || voiceStateLabel}
+          </span>
+          {voiceActive && voiceDevices.length > 1 && (
+            <label className="sr-only" htmlFor="neo-voice-microphone">
+              {voiceMicrophoneLabel}
+            </label>
+          )}
+          {voiceActive && voiceDevices.length > 1 && (
+            <select
+              id="neo-voice-microphone"
+              value={voiceDeviceId}
+              onChange={(event) => onVoiceDeviceChange?.(event.target.value)}
+              aria-label={voiceMicrophoneLabel}
+              className="bg-card text-foreground max-w-40 rounded-lg px-2 py-1 outline-none"
+            >
+              {voiceDevices.map((device) => (
+                <option key={device.deviceId} value={device.deviceId}>
+                  {device.label || voiceMicrophoneLabel}
+                </option>
+              ))}
+            </select>
+          )}
+        </div>
+      )}
       {chips}
       <div className="px-1">{textareaEl}</div>
       {controls}
@@ -386,14 +457,12 @@ export function NeoComposer({
   )
 
   if (pill) {
-    return <div className="flex w-full flex-col gap-1.5 p-2.5">{stack}</div>
+    return <div className="flex w-full flex-col gap-2 p-3">{stack}</div>
   }
 
   return (
     <div className="relative w-full">
-      <div className="flex flex-col gap-1.5 rounded-3xl bg-zinc-100 p-2.5 dark:bg-zinc-800">
-        {stack}
-      </div>
+      <div className="bg-surface-tertiary flex flex-col gap-2 rounded-[1.5rem] p-3">{stack}</div>
     </div>
   )
 }

@@ -23,6 +23,9 @@ export interface ChatInput {
   skill?: string
   /** Pin the dispatched run to a cortex Goal for cost roll-ups. */
   goalId?: string
+  /** Workbench project tag: a coding-surface chat names its project so
+   *  History/Workspace scope per project (Neo daemon persists the tag). */
+  project?: string
 }
 
 /** Liaison answered directly — no pipeline run. */
@@ -52,5 +55,6 @@ export async function sendChat(input: ChatInput): Promise<ChatResponse> {
     slot_values: input.slotValues,
     skill: input.skill,
     goal_id: input.goalId,
+    project: input.project,
   })
 }

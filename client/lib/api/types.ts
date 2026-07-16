@@ -247,15 +247,6 @@ export interface SkillEntry {
   description?: string
 }
 
-/** GET /snapshots — snapshot manager state. */
-export interface SnapshotsResponse {
-  enabled: boolean
-  seeded?: boolean
-  seeded_path?: string
-  actor?: string
-  note?: string
-}
-
 /** GET /metrics — Prometheus text body; we only parse what we need. */
 export interface ParsedMetricsLite {
   intentsCompleted: number

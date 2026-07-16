@@ -165,6 +165,7 @@ function task(partial: Partial<NeoTask>): NeoTask {
     steps: [],
     searches: [],
     media: [],
+    artifacts: [],
     surfaces: [],
     answer: '',
     done: false,

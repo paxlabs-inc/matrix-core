@@ -94,6 +94,9 @@ export interface MemorySearchInput {
   near?: string
   /** Restrict to one or more memory types. */
   types?: string[]
+  /** Bi-temporal valid-time: query what was true at this instant.
+   *  ISO 8601 string. nil/undefined = now. */
+  asOf?: string
   limit?: number
   signal?: AbortSignal
 }
@@ -106,7 +109,7 @@ export interface MemorySearchInput {
 export async function searchMemories(input: MemorySearchInput): Promise<MemoryEntry[]> {
   const near = (input.near ?? '').trim()
   const types = input.types ?? []
-  if (!near && types.length === 0) {
+  if (!near && types.length === 0 && !input.asOf) {
     return listRecentMemories(input.limit ?? 100, input.signal)
   }
   const data = await apiSend<ListEnvelope>(
@@ -114,6 +117,7 @@ export async function searchMemories(input: MemorySearchInput): Promise<MemoryEn
     {
       near: near || undefined,
       type: types.length > 0 ? types : undefined,
+      as_of: input.asOf || undefined,
       limit: clampLimit(input.limit ?? 100),
       form: 'medium',
     },

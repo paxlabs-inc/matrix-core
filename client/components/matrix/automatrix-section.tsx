@@ -17,6 +17,7 @@
  */
 import { useState } from 'react'
 import { useTranslations } from 'next-intl'
+import { toast } from 'sonner'
 import { Sparkles, Trash2Icon, Check, Bell, ShieldCheck } from '@/lib/matrix-icons'
 import { Switch } from '@/components/ui/switch'
 import { Button } from '@/components/ui/button'
@@ -75,7 +76,9 @@ export function AutomatrixSection() {
           </div>
           <Switch
             checked={enabled}
-            onCheckedChange={(v) => setEnabled.mutate(v)}
+            onCheckedChange={(v) =>
+              setEnabled.mutate(v, { onError: () => toast.error(t('toggleError')) })
+            }
             disabled={settings.isLoading || setEnabled.isPending}
             aria-label={t('toggle')}
           />

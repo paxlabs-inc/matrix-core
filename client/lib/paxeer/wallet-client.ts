@@ -206,6 +206,16 @@ export async function unfreezeAgent(did: string): Promise<boolean> {
   return r.is_frozen
 }
 
+/** POST /v1/agents/:did/claim — claim an unowned agent principal for the
+ *  signed-in user. 409 when another user already owns it. */
+export async function claimAgent(did: string): Promise<void> {
+  await request<{ did: string; owner_user_id: string | null }>(
+    'POST',
+    `/v1/agents/${encodeURIComponent(did)}/claim`,
+    { body: {} },
+  )
+}
+
 export interface AddAgentRuleInput {
   effect: AgentRuleEffect
   subject: AgentRuleSubject
