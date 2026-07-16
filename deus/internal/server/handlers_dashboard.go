@@ -3,7 +3,6 @@ package server
 import (
 	"fmt"
 	"net/http"
-	"strings"
 
 	"github.com/go-chi/chi/v5"
 
@@ -42,8 +41,7 @@ func (s *Server) resolveServiceID(r *http.Request, idOrSlug string) string {
 	return row.ID
 }
 
-// requireServiceOwner loads the service and enforces that the authenticated
-// developer wallet owns it.
+// requireServiceOwner loads the service and enforces account or legacy-wallet ownership.
 func (s *Server) requireServiceOwner(w http.ResponseWriter, r *http.Request) (store.ServiceRow, bool) {
 	if s.deps.Store == nil {
 		writeAPIError(w, http.StatusServiceUnavailable, "internal_error", "store not configured", nil)
@@ -55,9 +53,9 @@ func (s *Server) requireServiceOwner(w http.ResponseWriter, r *http.Request) (st
 		writeAPIError(w, http.StatusNotFound, "not_found", "service not found", nil)
 		return store.ServiceRow{}, false
 	}
-	wallet := DeveloperWalletFromContext(r.Context())
-	owner, err := s.deps.Store.DeveloperWalletByID(r.Context(), row.DeveloperID)
-	if err != nil || !strings.EqualFold(owner, wallet) {
+	principal := DeveloperPrincipalFromContext(r.Context())
+	dev, err := s.developerForPrincipal(r.Context(), principal)
+	if err != nil || dev.ID != row.DeveloperID {
 		writeAPIError(w, http.StatusForbidden, "forbidden", "not your service", nil)
 		return store.ServiceRow{}, false
 	}
@@ -137,6 +135,7 @@ func (s *Server) handleServiceAnalytics(w http.ResponseWriter, r *http.Request) 
 		ServiceID:        row.ID,
 		TotalInvocations: totals.TotalInvocations,
 		TotalRevenueWei:  totals.TotalRevenueWei,
+		TotalRevenueUSDX: totals.TotalRevenueUSDX,
 		AvgLatencyMS:     totals.AvgLatencyMS,
 		SuccessRate:      totals.SuccessRate,
 		Series:           make([]types.AnalyticsPoint, 0, len(series)),
@@ -150,6 +149,7 @@ func (s *Server) handleServiceAnalytics(w http.ResponseWriter, r *http.Request) 
 			Date:         d.Date,
 			Invocations:  d.Invocations,
 			RevenueWei:   d.RevenueWei,
+			RevenueUSDX:  d.RevenueUSDX,
 			AvgLatencyMS: d.AvgLatencyMS,
 			SuccessRate:  d.SuccessRate,
 		})
@@ -159,6 +159,7 @@ func (s *Server) handleServiceAnalytics(w http.ResponseWriter, r *http.Request) 
 			Operation:   t.Operation,
 			Invocations: t.Invocations,
 			RevenueWei:  t.RevenueWei,
+			RevenueUSDX: t.RevenueUSDX,
 		})
 	}
 	writeJSON(w, http.StatusOK, resp)
@@ -166,8 +167,8 @@ func (s *Server) handleServiceAnalytics(w http.ResponseWriter, r *http.Request) 
 
 func (s *Server) handleMe(w http.ResponseWriter, r *http.Request) {
 	caller, callerErr := auth.ResolveRequest(r, s.deps.DevMode)
-	devWallet, _ := resolveDeveloperWallet(r, s.deps.DevMode, s.devAuth)
-	if callerErr != nil && devWallet == "" {
+	principal, devErr := s.resolveDeveloperPrincipal(r)
+	if callerErr != nil && devErr != nil {
 		writeAPIError(w, http.StatusUnauthorized, "unauthorized", "caller or developer identity required", nil)
 		return
 	}
@@ -176,14 +177,16 @@ func (s *Server) handleMe(w http.ResponseWriter, r *http.Request) {
 		resp.DID = caller.DID
 		resp.Wallet = caller.Wallet
 	}
-	if devWallet != "" {
-		if resp.Wallet == "" {
-			resp.Wallet = devWallet
+	if devErr == nil {
+		if principal.Kind == DeveloperPrincipalWallet && resp.Wallet == "" {
+			resp.Wallet = principal.Subject
 		}
-		if s.deps.Store != nil {
-			if dev, err := s.deps.Store.DeveloperByWallet(r.Context(), devWallet); err == nil {
-				resp.DisplayName = dev.DisplayName
-			}
+		if principal.Kind == DeveloperPrincipalAccount {
+			resp.DID = principal.Owner
+		}
+		resp.DisplayName = principal.DisplayName
+		if dev, err := s.developerForPrincipal(r.Context(), principal); err == nil && dev.DisplayName != "" {
+			resp.DisplayName = dev.DisplayName
 		}
 	}
 	writeJSON(w, http.StatusOK, resp)
@@ -199,7 +202,7 @@ func (s *Server) handleMySpend(w http.ResponseWriter, r *http.Request) {
 		writeAPIError(w, http.StatusServiceUnavailable, "internal_error", "store not configured", nil)
 		return
 	}
-	total, rows, err := s.deps.Store.SpendByCaller(r.Context(), caller.DID, caller.Wallet)
+	totalWei, totalUSDX, rows, err := s.deps.Store.SpendByCaller(r.Context(), caller.DID, caller.Wallet)
 	if err != nil {
 		writeAPIError(w, http.StatusInternalServerError, "internal_error", err.Error(), nil)
 		return
@@ -211,9 +214,10 @@ func (s *Server) handleMySpend(w http.ResponseWriter, r *http.Request) {
 			DisplayName: e.DisplayName,
 			Invocations: e.Invocations,
 			TotalWei:    e.TotalWei,
+			TotalUSDX:   e.TotalUSDX,
 		})
 	}
-	writeJSON(w, http.StatusOK, types.SpendResponse{TotalSpentWei: total, Entries: entries})
+	writeJSON(w, http.StatusOK, types.SpendResponse{TotalSpentWei: totalWei, TotalSpentUSDX: totalUSDX, Entries: entries})
 }
 
 func (s *Server) handleMyServices(w http.ResponseWriter, r *http.Request) {
@@ -221,8 +225,13 @@ func (s *Server) handleMyServices(w http.ResponseWriter, r *http.Request) {
 		writeAPIError(w, http.StatusServiceUnavailable, "internal_error", "store not configured", nil)
 		return
 	}
-	wallet := DeveloperWalletFromContext(r.Context())
-	rows, err := s.deps.Store.ListServicesByDeveloperWallet(r.Context(), wallet)
+	principal := DeveloperPrincipalFromContext(r.Context())
+	dev, err := s.developerForPrincipal(r.Context(), principal)
+	if err != nil {
+		writeJSON(w, http.StatusOK, types.MyServicesResponse{Services: []types.MyService{}})
+		return
+	}
+	rows, err := s.deps.Store.ListServicesByDeveloperID(r.Context(), dev.ID)
 	if err != nil {
 		writeAPIError(w, http.StatusInternalServerError, "internal_error", err.Error(), nil)
 		return
@@ -238,6 +247,7 @@ func (s *Server) handleMyServices(w http.ResponseWriter, r *http.Request) {
 			Mode:        row.Mode,
 			Invocations: row.Invocations,
 			RevenueWei:  row.RevenueWei,
+			RevenueUSDX: row.RevenueUSDX,
 		}
 		if row.UptimeBPS != nil {
 			item.UptimeBPS = *row.UptimeBPS
@@ -256,8 +266,8 @@ func (s *Server) handleMyEarnings(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	ctx := r.Context()
-	wallet := DeveloperWalletFromContext(ctx)
-	dev, err := s.deps.Store.DeveloperByWallet(ctx, wallet)
+	principal := DeveloperPrincipalFromContext(ctx)
+	dev, err := s.developerForPrincipal(ctx, principal)
 	if err != nil {
 		// A developer with no listings yet has no earnings — empty, not an error.
 		writeJSON(w, http.StatusOK, types.EarningsResponse{

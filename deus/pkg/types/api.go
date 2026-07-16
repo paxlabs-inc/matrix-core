@@ -249,6 +249,7 @@ type AnalyticsPoint struct {
 	Date         string  `json:"date"`
 	Invocations  int     `json:"invocations"`
 	RevenueWei   string  `json:"revenue_wei"`
+	RevenueUSDX  string  `json:"revenue_usdx"`
 	AvgLatencyMS int     `json:"avg_latency_ms"`
 	SuccessRate  float64 `json:"success_rate"`
 }
@@ -258,6 +259,7 @@ type TopOperation struct {
 	Operation   string `json:"operation"`
 	Invocations int    `json:"invocations"`
 	RevenueWei  string `json:"revenue_wei"`
+	RevenueUSDX string `json:"revenue_usdx"`
 }
 
 // ServiceAnalyticsResponse is GET /v1/services/{id}/analytics.
@@ -265,6 +267,7 @@ type ServiceAnalyticsResponse struct {
 	ServiceID        string           `json:"service_id"`
 	TotalInvocations int              `json:"total_invocations"`
 	TotalRevenueWei  string           `json:"total_revenue_wei"`
+	TotalRevenueUSDX string           `json:"total_revenue_usdx"`
 	AvgLatencyMS     int              `json:"avg_latency_ms"`
 	SuccessRate      float64          `json:"success_rate"`
 	UptimeBPS        int              `json:"uptime_bps"`
@@ -289,6 +292,7 @@ type MyService struct {
 	Mode         string `json:"mode"`
 	Invocations  int    `json:"invocations"`
 	RevenueWei   string `json:"revenue_wei"`
+	RevenueUSDX  string `json:"revenue_usdx"`
 	UptimeBPS    int    `json:"uptime_bps,omitempty"`
 	QualityScore string `json:"quality_score,omitempty"`
 }
@@ -337,10 +341,12 @@ type SpendEntry struct {
 	DisplayName string `json:"display_name"`
 	Invocations int    `json:"invocations"`
 	TotalWei    string `json:"total_wei"`
+	TotalUSDX   string `json:"total_usdx"`
 }
 
 // SpendResponse is GET /v1/me/spend.
 type SpendResponse struct {
 	TotalSpentWei string       `json:"total_spent_wei"`
+	TotalSpentUSDX string      `json:"total_spent_usdx"`
 	Entries       []SpendEntry `json:"entries"`
 }

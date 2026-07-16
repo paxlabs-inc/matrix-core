@@ -203,8 +203,9 @@ func run() int {
 		DevMode:           cfg.Dev,
 		PublishPrivateKey: cfg.PublishPrivateKey,
 
-		DeveloperAuthSecret: cfg.DeveloperAuthSecret,
-		SIWEDomain:          cfg.SIWEDomain,
+		DeveloperAuthSecret:   cfg.DeveloperAuthSecret,
+		MarketplaceAuthSecret: cfg.MarketplaceAuthSecret,
+		SIWEDomain:            cfg.SIWEDomain,
 	})
 
 	addr := fmt.Sprintf(":%d", cfg.Port)

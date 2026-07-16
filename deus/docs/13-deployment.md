@@ -1,159 +1,126 @@
-# 13 — Deployment & Operations
+Deus is ready to deploy, but the checked-in runbook has several mismatches that would block or weaken a production launch. I did not perform any chain or production writes.
 
-Deus follows the proven Matrix deploy pattern for the **control plane** (a shared
-private Go service + data on the Paxeer box + a daemon-baked MCP proxy), but
-**hosted-service execution runs on Paxeer Cloud** (the deployed Appwrite fork),
-not on bespoke Fly runners. Mirror `deploy/browser` and `deploy/tachyon` for the
-control-plane shape only.
+Preflight is green:
 
-## 13.1 Control-plane placement (`deus-control`)
+- `go build ./...`
+- MCP self-test: 6 tools, manifest matches
+- Foundry: 6/6 contract tests pass
 
-The `deusd` Go server is stateless and can run wherever is convenient; pick one:
+The repo-supported deployment target is the Paxeer/Supabase box using Docker Compose—not this dev box. This machine currently has no `/opt/deus/deus.env`, `supabase-db`, or `supabase_default` network.
 
-| Option | Public? | Shape | Notes |
-| ------ | ------- | ----- | ----- |
-| Fly app `deus-control` | Yes (TLS) or 6PN | N instances | mirrors `deploy/tachyon`; public IP or box-fronted |
-| Paxeer box (systemd) | via nginx | N instances | `deusd` next to gateway/router; nginx `/deus/` location |
-| Paxeer Cloud container | via Appwrite ingress | N instances | co-located with hosted execution |
+### Fix or work around these blockers first
 
-> If box-fronted (like the gateway/router), run `deus-control` private and add an
-> nginx `/deus/` location (mirror `deploy/box/nginx/...` `/gw/`). The hosted
-> **execution tier is always Paxeer Cloud** regardless of where the control plane
-> runs.
+1. The Compose build context is wrong. It uses `../../deus`, while the Dockerfile requires the repository root to copy both `deus/` and `layerx/`: [docker-compose.yml](/root/matrix/deploy/deus/docker-compose.yml:35), [Dockerfile](/root/matrix/deploy/deus/Dockerfile:3).
 
-## 13.1b Hosted execution (Paxeer Cloud / Appwrite fork)
+   Until patched, build manually from `/root/matrix`:
 
-- Hosted listings are **Paxeer Cloud Functions** (node20 source) or **container
-  Sites** (heavier/confidential), created via the **Appwrite Server API** by
-  `internal/hosting`. Appwrite owns build, scale-to-zero, routing, secrets
-  (function variables), and logs.
-- No `deus-runner` / `deus-svc-<id>` Fly apps. The free-hosting **budget +
-  kill-switch** ([`06-execution-hosting.md`](./06-execution-hosting.md) §6.7) is
-  enforced by the orchestrator against Paxeer Cloud consumption.
-- Confidential services use the Paxeer Cloud TEE runtime where available, else a
-  dedicated runner.
+   ```bash
+   docker build -f deploy/deus/Dockerfile -t deus-control:latest .
+   docker compose -f deploy/deus/docker-compose.yml up -d --no-build
+   ```
 
-## 13.2 `deploy/deus/` files
+2. Verify the MinIO health check on the target before starting `deus-control`:
+
+   ```bash
+   docker compose -f deploy/deus/docker-compose.yml up -d deus-minio
+   docker inspect deus-minio --format '{{json .State.Health}}'
+   ```
+
+   Compose currently expects `mc ready local` inside the MinIO image: [docker-compose.yml](/root/matrix/deploy/deus/docker-compose.yml:28). If it goes unhealthy, that check needs correcting before `deus-control` can start.
+
+3. Use `DEUS_GATEWAY_SIGNING_KEY`, not only `DEUS_GATEWAY_SIGNING_KEY_REF`. Configuration accepts either, but the running server currently constructs the gateway only from the actual key: [main.go](/root/matrix/deus/cmd/deusd/main.go:150).
+
+4. The current deployment script deploys only `ServiceRegistry`, not `SettlementAnchor`: [Deploy.s.sol](/root/matrix/deus/contracts/script/Deploy.s.sol:8). The README’s instruction to record both is stale.
+
+### Deployment order
+
+On the actual Supabase/Paxeer box:
+
+1. Confirm prerequisites:
+
+   ```bash
+   docker inspect supabase-db
+   docker network inspect supabase_default
+   ```
+
+2. Create the `deus` Postgres role/database and enable `vector` and `pgcrypto`, following [the box runbook](/root/matrix/deploy/deus/README.md:17).
+
+3. Create `/opt/deus/deus.env` with mode `0600`, using [deus.env.example](/root/matrix/deploy/deus/deus.env.example:1). Production needs real values for:
+
+   - `DEUS_POSTGRES_URI`
+   - `PAXEER_RPC_URL`
+   - `DEUS_SERVICE_REGISTRY_ADDR`
+   - `DEUS_LAYERX_URL`
+   - `DEUS_LXP_KEY`
+   - all four `DEUS_OBJSTORE_*` variables
+   - `DEUS_GATEWAY_SIGNING_KEY`
+   - `DEUS_DEVELOPER_AUTH_SECRET`
+   - `DEUS_SIWE_DOMAIN`
+
+   Leave `DEUS_APPWRITE_*` unset for the initial LXP MVP; hosted Paxeer Cloud listings can follow later.
+
+4. Deploy `ServiceRegistry`. This is an on-chain write and requires your explicit approval before running the broadcast:
+
+   ```bash
+   cd /root/matrix/deus/contracts
+   forge script script/Deploy.s.sol:Deploy \
+     --rpc-url "$PAXEER_RPC_URL" \
+     --broadcast
+   ```
+
+   Use your normal secure Foundry signer and set `DEUS_REGISTRY_GOVERNOR` to the real governor address. Put the resulting registry address in `/opt/deus/deus.env`.
+
+5. Build and start:
+
+   ```bash
+   cd /root/matrix
+   docker build -f deploy/deus/Dockerfile -t deus-control:latest .
+   docker compose -f deploy/deus/docker-compose.yml up -d --no-build
+   docker logs -f deus-control
+   ```
+
+6. Verify locally:
+
+   ```bash
+   docker exec deus-control curl -fsS \
+     http://localhost:9095/internal/healthz
+   ```
+
+7. Add the external Caddy route:
+
+   ```text
+   deus.paxeer.app -> deus-control:9095
+   ```
+
+   That Caddy configuration is not present in this repository, despite the runbook claiming it exists.
+
+8. Set this on the Matrix router service and redeploy it:
+
+   ```text
+   MATRIX_DEUS_URL=https://deus.paxeer.app
+   ```
+
+   Do not use `deus-control.internal` for Railway user machines; the Docker container hostname is only visible inside `supabase_default`. The router already forwards `MATRIX_DEUS_URL`: [main.go](/root/matrix/router/cmd/matrix-router/main.go:247).
+
+### Payment rollout
+
+Leave automatic payment disabled initially. Without `LAYERX_MAX_SPEND_USDX`, Deus can discover and quote, but the bridge refuses to sign charges by design: [deus.mjs](/root/matrix/tools/deus/deus.mjs:218).
+
+For a real paid canary, set these on one per-user daemon service:
 
 ```text
-deploy/deus/
-  Dockerfile          multi-stage: golang:1.22-bookworm build deusd -> debian-slim
-  fly.toml            deus-control app (service :PORT, TLS, N machines) [if Fly]
-  deploy.sh           org-capable flyctl deploy (unset FLY_API_TOKEN; flyctl auth login)
-  install.sh          box install: binary + systemd unit + env + migrations
-  runner/             Paxeer Cloud function/Site templates (NOT a Fly app)
-    node20/           Appwrite node20 function template (harness + handler shim)
-    container/        container Site template (Dockerfile + entry shim)
-    README.md         how internal/hosting packages + deploys these via Appwrite API
-  README.md           deploy runbook (mirror deploy/tachyon/README.md)
+LAYERX_MAX_SPEND_USDX=<owner-approved per-call amount>
+LAYERX_MAX_DAILY_USDX=<owner-approved rolling-day amount>
 ```
 
-- **Dockerfile (control):** build `cmd/deusd`, copy `migrations/`, `configs/`,
-  `pkg/manifest/schema.json`. `CMD ["deusd"]`.
-- **runner/ templates:** the harness + runtime shims that `internal/hosting`
-  uploads to **Paxeer Cloud** as Functions/Sites — there is **no runner Fly app
-  and no machine image to push**. Egress allowlist + caps are applied on the
-  function spec + enforced by the harness.
-- **deploy.sh (control only):** org-level flyctl creds (the box `FLY_API_TOKEN`
-  is app-scoped to `matrix-daemon` and cannot create new apps — use ambient
-  `flyctl auth login`). Builds, pushes, deploys `deus-control` if on Fly.
-- **install.sh (box):** install `deusd` binary, write systemd unit, write
-  `/etc/matrix/deus.env`, run `deusctl migrate`. Idempotent (mirror
-  `gateway/deploy/install.sh`).
+The router does not currently propagate those variables, so fleet-wide automatic payments need either a small router change or direct per-user service configuration.
 
-## 13.3 Environment (`/etc/matrix/deus.env`)
+Then verify through a provisioned daemon:
 
-Required (values live in box env / secret store — never in repo or cortex):
-```
-DEUS_POSTGRES_URI=postgres://...           # box Postgres, db=deus
-PAXEER_RPC_URL=https://...                 # chain 125 RPC
-DEUS_SERVICE_REGISTRY_ADDR=0x...           # from Deploy.s.sol
-DEUS_LAYERX_URL=https://...                # layerxd base URL — LXP is the only rail
-DEUS_LXP_KEY=...                           # gateway ed25519 key (captor identity, secret)
-DEUS_OBJSTORE_ENDPOINT=...                 # box MinIO/S3
-DEUS_OBJSTORE_ACCESS_KEY=... DEUS_OBJSTORE_SECRET_KEY=... DEUS_OBJSTORE_BUCKET=...
-DEUS_GATEWAY_SIGNING_KEY_REF=...           # receipts/quotes signer (secret ref)
-DEUS_EMBED_ENDPOINT=... DEUS_EMBED_MODEL=...   # unset => lexical-only discovery
-DEUS_APPWRITE_ENDPOINT=...                  # Paxeer Cloud (Appwrite) Server API
-DEUS_APPWRITE_PROJECT_ID=...                # Paxeer Cloud project id
-DEUS_APPWRITE_API_KEY=...                   # Appwrite server API key (secret ref)
-DEUS_PORT=9095
-```
-Optional: `DEUS_LAYERX_BEARER` (transport bearer to layerxd),
-`DEUS_LXP_HOLD_TTL` (hold TTL seconds, default 120), worker counts, feature
-flags (`DEUS_HOSTING_KILL_SWITCH`). `DEUS_FLY_*` only if `deus-control` itself
-runs on Fly.
+1. `/diag/mcp` reports `deus` with six tools.
+2. `deus_discover` reaches production.
+3. `deus_quote` returns signed USDX terms.
+4. A real priced `deus_invoke` settles once on LayerX and returns `layerx_receipt.seq`.
+5. Replaying the same idempotency key returns the stored result without another charge.
 
-## 13.4 Data tier (Paxeer box)
-
-- **Postgres**: a `deus` database on the existing box Postgres (separate from
-  the matrix gateway/router DB; or a separate schema). `create extension vector`.
-- **MinIO/S3**: a `deus-*` bucket for artifacts/receipts/bodies/logs. Apply a
-  lifecycle/retention policy (avoid the unbounded-versioning issue seen with
-  matrix-state).
-
-## 13.5 On-chain deploy
-
-1. `forge build && forge test` in `deus/contracts`.
-2. `forge script script/Deploy.s.sol --rpc-url $PAXEER_RPC_URL --broadcast`
-   (or via Tachyon's deploy path using the agent wallet).
-3. Record addresses in `configs/chain.<env>.json` + `/etc/matrix/deus.env`.
-4. Register the Deus relayer address in the `x/feemarket` agent fee lane
-   (gov/op step) so registrations get the lane gas price.
-5. Seed any initial gov params (none required for v1 registry).
-
-## 13.6 MCP proxy + daemon
-
-1. Bake `tools/deus` into the daemon image (`deploy/daemon/Dockerfile COPY
-   tools/deus`).
-2. Add `deus` to `agents/default.json` (bijection with `deus-tools.json`).
-3. `router` `MachineEnv` injects `MATRIX_DEUS_URL` (+ token).
-4. Rebuild + redeploy the daemon image; new per-user provisions pick it up.
-5. Verify: `node tools/deus/deus.mjs --selftest`; on a provisioned Machine
-   `GET /diag/mcp` shows `deus` running with the right tool count.
-
-## 13.7 Rollout order
-
-1. Deploy `ServiceRegistry` to chain 125 (Phase 1). (`SettlementAnchor` is
-   optional receipt-batch anchoring, deployable any time.)
-2. Stand up Postgres `deus` DB + MinIO bucket; `deusctl migrate`.
-3. Deploy `deus-control` for the **LXP MVP** (proxy listings + discovery +
-   invoke + LXP pay on LayerX + PoFQ), pointed at layerxd via
-   `DEUS_LAYERX_URL`.
-4. Bake + ship `tools/deus` in the daemon image; wire router env.
-5. Deploy the console.
-6. **Fast-follow (Phase 2.5):** hold mode + the middleware kit (`pkg/lxp` +
-   the Node runner middleware) for third-party services.
-7. Enable hosted listings on **Paxeer Cloud** (Phase 3); wire the hosting budget.
-8. Enable continuous metering via holds, then confidential (TEE), then
-   scheduler-recurring (v1.x).
-
-## 13.8 Observability & ops
-
-- `GET /internal/healthz` (DB + chain RPC + objstore reachability),
-  `GET /internal/metrics` (Prometheus).
-- Dashboards: invoke latency/throughput, charge totals, denial rate, layerxd
-  settle errors (`payment_unavailable` 503s), open-hold age, indexer lag,
-  runner cold-starts, attestation pass/fail.
-- Alerts: layerxd unreachable, open holds aging toward expiry, indexer lag > N
-  blocks, denial spike, runner error rate.
-- Runbooks in `deploy/deus/README.md`: redeploy control, redeploy a hosted
-  service on Paxeer Cloud, replay indexer (`deusctl index replay --from`),
-  rotate signing keys, pause a service, trip/reset the hosting budget
-  kill-switch.
-
-## 13.9 Backups & DR
-
-- Postgres: the metering ledger is the only Postgres-origin truth → continuous
-  backup + the receipts are anchored on-chain (recoverable evidence).
-- The registry mirror + embeddings are **rebuildable** from chain + manifests
-  (`deusctl index replay` + re-embed) — DR for those is "rebuild," not "restore."
-- Object store: receipts retained ≥ dispute window; bodies short-TTL.
-
-## 13.10 Invariants for ops (do not violate)
-
-- No git commit/push on the dev box (user drives commits).
-- Destructive chain/data ops require explicit approval.
-- Never store secret values in repo/cortex/logs — only references.
-- Fly app creation needs org-level creds (ambient `flyctl auth login`), not the
-  app-scoped box token.
+The canonical architecture and rollout sequence are in [13-deployment.md](/root/matrix/deus/docs/13-deployment.md:95), but the corrections above reflect the actual current code.

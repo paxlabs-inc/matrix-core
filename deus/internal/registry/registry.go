@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/ethereum/go-ethereum/common"
+	ethcrypto "github.com/ethereum/go-ethereum/crypto"
 
 	"github.com/paxlabs-inc/deus/internal/chain"
 	"github.com/paxlabs-inc/deus/internal/indexer"
@@ -41,8 +42,9 @@ func (s *Service) SetManifestIndexer(ix ManifestIndexer) {
 
 // CreateInput is the POST /v1/services body.
 type CreateInput struct {
-	Manifest json.RawMessage
-	Owner    string
+	Manifest    json.RawMessage
+	Owner       string
+	DeveloperID string
 }
 
 // CreateResult is the POST /v1/services response.
@@ -80,9 +82,12 @@ func (s *Service) Create(ctx context.Context, in CreateInput) (CreateResult, err
 	if err != nil {
 		return CreateResult{}, err
 	}
-	devID, err := s.store.UpsertDeveloperByWallet(ctx, owner, m.PayoutAddress, m.DisplayName)
-	if err != nil {
-		return CreateResult{}, err
+	devID := in.DeveloperID
+	if devID == "" {
+		devID, err = s.store.UpsertDeveloperByWallet(ctx, owner, m.PayoutAddress, m.DisplayName)
+		if err != nil {
+			return CreateResult{}, err
+		}
 	}
 	if m.PayeeDID != "" {
 		if err := s.store.SetDeveloperPayeeDID(ctx, devID, m.PayeeDID); err != nil {
@@ -127,6 +132,7 @@ func (s *Service) Create(ctx context.Context, in CreateInput) (CreateResult, err
 type PublishInput struct {
 	ServiceID     string
 	Owner         string
+	DeveloperID   string
 	PrivateKeyHex string
 }
 
@@ -148,12 +154,18 @@ func (s *Service) Publish(ctx context.Context, in PublishInput) (PublishResult, 
 	if err != nil {
 		return PublishResult{}, err
 	}
-	wallet, err := s.store.DeveloperWalletByID(ctx, row.DeveloperID)
-	if err != nil {
-		return PublishResult{}, err
-	}
-	if in.Owner != "" && !strings.EqualFold(in.Owner, wallet) {
-		return PublishResult{}, fmt.Errorf("registry: forbidden")
+	if in.DeveloperID != "" {
+		if in.DeveloperID != row.DeveloperID {
+			return PublishResult{}, fmt.Errorf("registry: forbidden")
+		}
+	} else {
+		wallet, err := s.store.DeveloperWalletByID(ctx, row.DeveloperID)
+		if err != nil {
+			return PublishResult{}, err
+		}
+		if in.Owner != "" && !strings.EqualFold(in.Owner, wallet) {
+			return PublishResult{}, fmt.Errorf("registry: forbidden")
+		}
 	}
 
 	m, err := manifest.Parse(row.Manifest)
@@ -190,6 +202,13 @@ func (s *Service) Publish(ctx context.Context, in PublishInput) (PublishResult, 
 	}
 
 	payout := common.HexToAddress(m.PayoutAddress)
+	if payout == (common.Address{}) {
+		key, err := ethcrypto.HexToECDSA(strings.TrimPrefix(strings.TrimSpace(in.PrivateKeyHex), "0x"))
+		if err != nil {
+			return PublishResult{}, fmt.Errorf("registry: invalid publish key: %w", err)
+		}
+		payout = ethcrypto.PubkeyToAddress(key.PublicKey)
+	}
 	res, err := s.registry.Register(ctx, chain.RegisterRequest{
 		Payout:        payout,
 		ManifestHash:  mh,

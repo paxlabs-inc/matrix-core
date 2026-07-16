@@ -34,7 +34,8 @@ type Config struct {
 
 	// DeveloperAuthSecret keys SIWE developer-auth nonces and tokens.
 	// Falls back to GatewaySigningKey so existing prod deploys stay valid.
-	DeveloperAuthSecret string
+	DeveloperAuthSecret   string
+	MarketplaceAuthSecret string
 	// SIWEDomain pins the EIP-4361 message domain (marketplace host). Optional.
 	SIWEDomain string
 
@@ -80,8 +81,9 @@ func Load() (*Config, error) {
 		PublishPrivateKey: strings.TrimSpace(os.Getenv("DEUS_PUBLISH_PRIVATE_KEY")),
 		GatewaySigningKey: strings.TrimSpace(os.Getenv("DEUS_GATEWAY_SIGNING_KEY")),
 
-		DeveloperAuthSecret: strings.TrimSpace(os.Getenv("DEUS_DEVELOPER_AUTH_SECRET")),
-		SIWEDomain:          strings.TrimSpace(os.Getenv("DEUS_SIWE_DOMAIN")),
+		DeveloperAuthSecret:   strings.TrimSpace(os.Getenv("DEUS_DEVELOPER_AUTH_SECRET")),
+		MarketplaceAuthSecret: strings.TrimSpace(os.Getenv("DEUS_MARKETPLACE_AUTH_SECRET")),
+		SIWEDomain:            strings.TrimSpace(os.Getenv("DEUS_SIWE_DOMAIN")),
 
 		AppwriteEndpoint:  strings.TrimSpace(os.Getenv("DEUS_APPWRITE_ENDPOINT")),
 		AppwriteProjectID: strings.TrimSpace(os.Getenv("DEUS_APPWRITE_PROJECT_ID")),

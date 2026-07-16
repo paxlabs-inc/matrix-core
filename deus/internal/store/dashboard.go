@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"regexp"
+	"strings"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -31,23 +32,37 @@ type DeveloperRow struct {
 	ID            string
 	WalletAddress string
 	PayoutAddress string
+	AccountID     string
+	AccountDID    string
 	DisplayName   string
 	PayeeDID      string
 }
 
-// DeveloperByWallet loads a developer row by wallet address.
-func (s *Store) DeveloperByWallet(ctx context.Context, wallet string) (DeveloperRow, error) {
+func (s *Store) developerByQuery(ctx context.Context, predicate, value string) (DeveloperRow, error) {
 	var row DeveloperRow
-	var displayName, payeeDID *string
+	var wallet, payout, accountID, accountDID, displayName, payeeDID *string
 	err := s.pool.QueryRow(ctx, `
-		SELECT id::text, wallet_address, payout_address, display_name, payee_did
-		FROM developers WHERE lower(wallet_address) = lower($1)`, wallet,
-	).Scan(&row.ID, &row.WalletAddress, &row.PayoutAddress, &displayName, &payeeDID)
+		SELECT id::text, wallet_address, payout_address, supabase_user_id, account_did,
+		       display_name, payee_did
+		FROM developers WHERE `+predicate, value,
+	).Scan(&row.ID, &wallet, &payout, &accountID, &accountDID, &displayName, &payeeDID)
 	if err != nil {
 		if err == pgx.ErrNoRows {
 			return DeveloperRow{}, fmt.Errorf("store: developer not found")
 		}
-		return DeveloperRow{}, fmt.Errorf("store: developer by wallet: %w", err)
+		return DeveloperRow{}, fmt.Errorf("store: developer lookup: %w", err)
+	}
+	if wallet != nil {
+		row.WalletAddress = *wallet
+	}
+	if payout != nil {
+		row.PayoutAddress = *payout
+	}
+	if accountID != nil {
+		row.AccountID = *accountID
+	}
+	if accountDID != nil {
+		row.AccountDID = *accountDID
 	}
 	if displayName != nil {
 		row.DisplayName = *displayName
@@ -56,6 +71,11 @@ func (s *Store) DeveloperByWallet(ctx context.Context, wallet string) (Developer
 		row.PayeeDID = *payeeDID
 	}
 	return row, nil
+}
+
+// DeveloperByWallet loads a developer row by wallet address.
+func (s *Store) DeveloperByWallet(ctx context.Context, wallet string) (DeveloperRow, error) {
+	return s.developerByQuery(ctx, `lower(wallet_address) = lower($1)`, wallet)
 }
 
 // UpdateDeveloperPayoutAddress sets a developer's payout address.
@@ -76,23 +96,36 @@ type OwnedServiceRow struct {
 	ServiceRow
 	Invocations int
 	RevenueWei  string
+	RevenueUSDX string
 }
 
 // ListServicesByDeveloperWallet returns the developer's listings (any status)
 // with finalized invocation count and revenue aggregates, newest first.
 func (s *Store) ListServicesByDeveloperWallet(ctx context.Context, wallet string) ([]OwnedServiceRow, error) {
+	dev, err := s.DeveloperByWallet(ctx, wallet)
+	if err != nil {
+		if strings.Contains(err.Error(), "not found") {
+			return []OwnedServiceRow{}, nil
+		}
+		return nil, err
+	}
+	return s.ListServicesByDeveloperID(ctx, dev.ID)
+}
+
+// ListServicesByDeveloperID returns one account's listings and aggregates.
+func (s *Store) ListServicesByDeveloperID(ctx context.Context, developerID string) ([]OwnedServiceRow, error) {
 	rows, err := s.pool.Query(ctx, `
 		SELECT sv.id::text, sv.chain_id, sv.developer_id::text, sv.slug, sv.kind, sv.mode,
 		       sv.display_name, sv.summary, sv.manifest, sv.manifest_hash, sv.status,
 		       sv.confidential, sv.quality_score::text, sv.uptime_bps,
 		       COUNT(i.id) FILTER (WHERE i.outcome = 'ok')::int,
-		       COALESCE(SUM(i.price_wei::numeric) FILTER (WHERE i.outcome = 'ok'), 0)::text
+		       COALESCE(SUM(i.price_wei::numeric) FILTER (WHERE i.outcome = 'ok'), 0)::text,
+		       COALESCE(SUM(NULLIF(i.price_usdx,'')::numeric) FILTER (WHERE i.outcome = 'ok'), 0)::text
 		FROM services sv
-		JOIN developers d ON d.id = sv.developer_id
 		LEFT JOIN invocations i ON i.service_id = sv.id
-		WHERE lower(d.wallet_address) = lower($1)
+		WHERE sv.developer_id = $1
 		GROUP BY sv.id
-		ORDER BY sv.created_at DESC`, wallet,
+		ORDER BY sv.created_at DESC`, developerID,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("store: list services by developer: %w", err)
@@ -107,7 +140,7 @@ func (s *Store) ListServicesByDeveloperWallet(ctx context.Context, wallet string
 			&row.ID, &chainID, &row.DeveloperID, &row.Slug, &row.Kind, &row.Mode,
 			&row.DisplayName, &row.Summary, &row.Manifest, &row.ManifestHash, &row.Status,
 			&row.Confidential, &row.QualityScore, &row.UptimeBPS,
-			&row.Invocations, &row.RevenueWei,
+			&row.Invocations, &row.RevenueWei, &row.RevenueUSDX,
 		); err != nil {
 			return nil, fmt.Errorf("store: scan owned service: %w", err)
 		}
@@ -123,56 +156,60 @@ type SpendEntryRow struct {
 	DisplayName string
 	Invocations int
 	TotalWei    string
+	TotalUSDX   string
 }
 
 // SpendByCaller aggregates a caller's finalized spend grouped by service.
 // Matches on caller DID, falling back to caller wallet when provided.
-func (s *Store) SpendByCaller(ctx context.Context, did, wallet string) (string, []SpendEntryRow, error) {
+func (s *Store) SpendByCaller(ctx context.Context, did, wallet string) (string, string, []SpendEntryRow, error) {
 	rows, err := s.pool.Query(ctx, `
 		SELECT i.service_id::text, sv.display_name,
 		       COUNT(i.id)::int,
-		       COALESCE(SUM(i.price_wei::numeric), 0)::text
+		       COALESCE(SUM(i.price_wei::numeric), 0)::text,
+		       COALESCE(SUM(NULLIF(i.price_usdx,'')::numeric), 0)::text
 		FROM invocations i
 		JOIN services sv ON sv.id = i.service_id
 		WHERE i.outcome = 'ok'
 		  AND (i.caller_did = $1 OR ($2 <> '' AND lower(COALESCE(i.caller_wallet,'')) = lower($2)))
 		GROUP BY i.service_id, sv.display_name
-		ORDER BY SUM(i.price_wei::numeric) DESC`, did, wallet,
+		ORDER BY SUM(NULLIF(i.price_usdx,'')::numeric) DESC NULLS LAST`, did, wallet,
 	)
 	if err != nil {
-		return "", nil, fmt.Errorf("store: spend by caller: %w", err)
+		return "", "", nil, fmt.Errorf("store: spend by caller: %w", err)
 	}
 	defer rows.Close()
 
 	var entries []SpendEntryRow
 	for rows.Next() {
 		var e SpendEntryRow
-		if err := rows.Scan(&e.ServiceID, &e.DisplayName, &e.Invocations, &e.TotalWei); err != nil {
-			return "", nil, fmt.Errorf("store: scan spend entry: %w", err)
+		if err := rows.Scan(&e.ServiceID, &e.DisplayName, &e.Invocations, &e.TotalWei, &e.TotalUSDX); err != nil {
+			return "", "", nil, fmt.Errorf("store: scan spend entry: %w", err)
 		}
 		entries = append(entries, e)
 	}
 	if err := rows.Err(); err != nil {
-		return "", nil, err
+		return "", "", nil, err
 	}
-	var total string
+	var total, totalUSDX string
 	err = s.pool.QueryRow(ctx, `
-		SELECT COALESCE(SUM(price_wei::numeric), 0)::text
+		SELECT COALESCE(SUM(price_wei::numeric), 0)::text,
+		       COALESCE(SUM(NULLIF(price_usdx,'')::numeric), 0)::text
 		FROM invocations
 		WHERE outcome = 'ok'
 		  AND (caller_did = $1 OR ($2 <> '' AND lower(COALESCE(caller_wallet,'')) = lower($2)))`,
 		did, wallet,
-	).Scan(&total)
+	).Scan(&total, &totalUSDX)
 	if err != nil {
-		return "", nil, fmt.Errorf("store: spend total: %w", err)
+		return "", "", nil, fmt.Errorf("store: spend total: %w", err)
 	}
-	return total, entries, nil
+	return total, totalUSDX, entries, nil
 }
 
 // AnalyticsTotals are lifetime aggregates for one service.
 type AnalyticsTotals struct {
 	TotalInvocations int
 	TotalRevenueWei  string
+	TotalRevenueUSDX string
 	AvgLatencyMS     int
 	SuccessRate      float64
 }
@@ -183,13 +220,14 @@ func (s *Store) ServiceAnalyticsTotals(ctx context.Context, serviceID string) (A
 	err := s.pool.QueryRow(ctx, `
 		SELECT COUNT(*) FILTER (WHERE outcome = 'ok')::int,
 		       COALESCE(SUM(price_wei::numeric) FILTER (WHERE outcome = 'ok'), 0)::text,
+		       COALESCE(SUM(NULLIF(price_usdx,'')::numeric) FILTER (WHERE outcome = 'ok'), 0)::text,
 		       COALESCE(AVG(latency_ms) FILTER (WHERE outcome = 'ok'), 0)::int,
 		       CASE WHEN COUNT(*) FILTER (WHERE outcome IN ('ok','error')) = 0 THEN 0
 		            ELSE COUNT(*) FILTER (WHERE outcome = 'ok')::float /
 		                 COUNT(*) FILTER (WHERE outcome IN ('ok','error'))::float
 		       END
 		FROM invocations WHERE service_id = $1`, serviceID,
-	).Scan(&t.TotalInvocations, &t.TotalRevenueWei, &t.AvgLatencyMS, &t.SuccessRate)
+	).Scan(&t.TotalInvocations, &t.TotalRevenueWei, &t.TotalRevenueUSDX, &t.AvgLatencyMS, &t.SuccessRate)
 	if err != nil {
 		return AnalyticsTotals{}, fmt.Errorf("store: analytics totals: %w", err)
 	}
@@ -201,6 +239,7 @@ type AnalyticsDayRow struct {
 	Date         string
 	Invocations  int
 	RevenueWei   string
+	RevenueUSDX  string
 	AvgLatencyMS int
 	SuccessRate  float64
 }
@@ -214,6 +253,7 @@ func (s *Store) ServiceAnalyticsSeries(ctx context.Context, serviceID string, da
 		SELECT to_char(date_trunc('day', created_at), 'YYYY-MM-DD'),
 		       COUNT(*) FILTER (WHERE outcome = 'ok')::int,
 		       COALESCE(SUM(price_wei::numeric) FILTER (WHERE outcome = 'ok'), 0)::text,
+		       COALESCE(SUM(NULLIF(price_usdx,'')::numeric) FILTER (WHERE outcome = 'ok'), 0)::text,
 		       COALESCE(AVG(latency_ms) FILTER (WHERE outcome = 'ok'), 0)::int,
 		       CASE WHEN COUNT(*) FILTER (WHERE outcome IN ('ok','error')) = 0 THEN 0
 		            ELSE COUNT(*) FILTER (WHERE outcome = 'ok')::float /
@@ -231,7 +271,7 @@ func (s *Store) ServiceAnalyticsSeries(ctx context.Context, serviceID string, da
 	var out []AnalyticsDayRow
 	for rows.Next() {
 		var d AnalyticsDayRow
-		if err := rows.Scan(&d.Date, &d.Invocations, &d.RevenueWei, &d.AvgLatencyMS, &d.SuccessRate); err != nil {
+		if err := rows.Scan(&d.Date, &d.Invocations, &d.RevenueWei, &d.RevenueUSDX, &d.AvgLatencyMS, &d.SuccessRate); err != nil {
 			return nil, fmt.Errorf("store: scan analytics day: %w", err)
 		}
 		out = append(out, d)
@@ -244,6 +284,7 @@ type TopOperationRow struct {
 	Operation   string
 	Invocations int
 	RevenueWei  string
+	RevenueUSDX string
 }
 
 // ServiceTopOperations returns the most invoked operations by revenue.
@@ -254,12 +295,13 @@ func (s *Store) ServiceTopOperations(ctx context.Context, serviceID string, limi
 	rows, err := s.pool.Query(ctx, `
 		SELECT e.operation,
 		       COUNT(i.id)::int,
-		       COALESCE(SUM(i.price_wei::numeric), 0)::text
+		       COALESCE(SUM(i.price_wei::numeric), 0)::text,
+		       COALESCE(SUM(NULLIF(i.price_usdx,'')::numeric), 0)::text
 		FROM invocations i
 		JOIN endpoints e ON e.id = i.endpoint_id
 		WHERE i.service_id = $1 AND i.outcome = 'ok'
 		GROUP BY e.operation
-		ORDER BY SUM(i.price_wei::numeric) DESC
+		ORDER BY SUM(NULLIF(i.price_usdx,'')::numeric) DESC NULLS LAST
 		LIMIT $2`, serviceID, limit,
 	)
 	if err != nil {
@@ -270,7 +312,7 @@ func (s *Store) ServiceTopOperations(ctx context.Context, serviceID string, limi
 	var out []TopOperationRow
 	for rows.Next() {
 		var t TopOperationRow
-		if err := rows.Scan(&t.Operation, &t.Invocations, &t.RevenueWei); err != nil {
+		if err := rows.Scan(&t.Operation, &t.Invocations, &t.RevenueWei, &t.RevenueUSDX); err != nil {
 			return nil, fmt.Errorf("store: scan top operation: %w", err)
 		}
 		out = append(out, t)

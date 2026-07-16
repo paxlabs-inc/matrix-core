@@ -11,7 +11,7 @@ type Manifest struct {
 	Description   string   `json:"description,omitempty"`
 	Tags          []string `json:"tags,omitempty"`
 	Owner         string   `json:"owner"`
-	PayoutAddress string   `json:"payout_address"`
+	PayoutAddress string   `json:"payout_address,omitempty"`
 	PayeeDID      string   `json:"payee_did,omitempty"` // LayerX earnings identity (LXP rail)
 	Mode          string   `json:"mode"`
 	// SettlementMode picks the LXP rail flow: "exact" (default — execute, then

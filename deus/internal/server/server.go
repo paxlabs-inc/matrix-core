@@ -38,6 +38,9 @@ type Deps struct {
 	// DeveloperAuthSecret keys SIWE nonces + developer tokens (devauth.go).
 	// Empty disables the SIWE endpoints; owner routes then work only in dev.
 	DeveloperAuthSecret string
+	// MarketplaceAuthSecret verifies short-lived account tokens minted by the
+	// deusmarkets.com Worker. It is distinct from the legacy SIWE secret.
+	MarketplaceAuthSecret string
 	// SIWEDomain, when set, pins the EIP-4361 message domain (the marketplace
 	// host). Empty skips the domain check.
 	SIWEDomain string
@@ -45,16 +48,18 @@ type Deps struct {
 
 // Server hosts HTTP routes.
 type Server struct {
-	deps    Deps
-	devAuth *DeveloperAuth
-	mux     chi.Router
+	deps            Deps
+	devAuth         *DeveloperAuth
+	marketplaceAuth *MarketplaceAuth
+	mux             chi.Router
 }
 
 // New constructs a Server with middleware and routes.
 func New(deps Deps) *Server {
 	s := &Server{
-		deps:    deps,
-		devAuth: NewDeveloperAuth(deps.DeveloperAuthSecret, deps.SIWEDomain),
+		deps:            deps,
+		devAuth:         NewDeveloperAuth(deps.DeveloperAuthSecret, deps.SIWEDomain),
+		marketplaceAuth: NewMarketplaceAuth(deps.MarketplaceAuthSecret),
 	}
 	r := chi.NewRouter()
 	r.Use(middleware.RequestID)

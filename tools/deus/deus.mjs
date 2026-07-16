@@ -15,6 +15,7 @@ const PROTOCOL_VERSION = '2024-11-05'
 const BASE_URL = (process.env.MATRIX_DEUS_URL || 'https://deus.paxeer.app').replace(/\/+$/, '')
 const TIMEOUT_MS = clampInt(process.env.MATRIX_DEUS_TIMEOUT_MS, 60000, 2000, 300000)
 const WRITE_TOOLS = new Set(['deus_invoke'])
+const AUTH_TOOLS = new Set(['deus_quote', 'deus_invoke', 'deus_my_spend'])
 
 const TOOLS_PATH = fileURLToPath(new URL('./deus-tools.json', import.meta.url))
 const tools = JSON.parse(readFileSync(TOOLS_PATH, 'utf8'))
@@ -310,9 +311,9 @@ async function invokeLXP(args, bearer) {
 async function callTool(name, args) {
   if (!BASE_URL) throw new Error('MATRIX_DEUS_URL not configured')
   let bearer = null
-  if (WRITE_TOOLS.has(name)) {
+  if (AUTH_TOOLS.has(name)) {
     bearer = await mintWalletToken()
-    if (!bearer && !AGENT.disabled) throw new Error('agent wallet token required for deus_invoke')
+    if (!bearer && !AGENT.disabled) throw new Error(`agent wallet token required for ${name}`)
   }
   switch (name) {
     case 'deus_discover':
@@ -327,13 +328,13 @@ async function callTool(name, args) {
       return deusFetch('POST', `/v1/quote/${args.service_id}`, {
         operation: args.operation,
         estimated_units: args.estimated_units || '1',
-      }, bearer || (await mintWalletToken()))
+      }, bearer)
     case 'deus_invoke':
       return invokeLXP(args, bearer)
     case 'deus_invocation_status':
       return deusFetch('GET', `/v1/invocations/${args.invocation_id}`, null, bearer)
     case 'deus_my_spend':
-      return { note: 'spend summary endpoint pending', invocations: [] }
+      return deusFetch('GET', '/v1/me/spend', null, bearer)
     default:
       throw new Error(`unknown tool ${name}`)
   }

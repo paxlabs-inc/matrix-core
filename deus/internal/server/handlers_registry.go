@@ -43,9 +43,16 @@ func (s *Server) handleCreateService(w http.ResponseWriter, r *http.Request) {
 		writeAPIError(w, http.StatusBadRequest, "invalid_request", "invalid manifest", nil)
 		return
 	}
+	principal := DeveloperPrincipalFromContext(r.Context())
+	developerID, err := s.ensureAccountDeveloper(r.Context(), principal)
+	if err != nil {
+		writeAPIError(w, http.StatusInternalServerError, "internal_error", err.Error(), nil)
+		return
+	}
 	res, err := s.deps.Registry.Create(r.Context(), registry.CreateInput{
-		Manifest: raw,
-		Owner:    DeveloperWalletFromContext(r.Context()),
+		Manifest:    raw,
+		Owner:       principal.Owner,
+		DeveloperID: developerID,
 	})
 	if err != nil {
 		s.writeRegistryErr(w, err)
@@ -100,9 +107,20 @@ func (s *Server) handlePublishService(w http.ResponseWriter, r *http.Request) {
 		writeAPIError(w, http.StatusInternalServerError, "internal_error", "publish key not configured", nil)
 		return
 	}
+	principal := DeveloperPrincipalFromContext(r.Context())
+	developerID := ""
+	if principal.Kind == DeveloperPrincipalAccount {
+		dev, err := s.developerForPrincipal(r.Context(), principal)
+		if err != nil {
+			writeAPIError(w, http.StatusForbidden, "forbidden", "not your service", nil)
+			return
+		}
+		developerID = dev.ID
+	}
 	res, err := s.deps.Registry.Publish(r.Context(), registry.PublishInput{
 		ServiceID:     id,
-		Owner:         DeveloperWalletFromContext(r.Context()),
+		Owner:         principal.Owner,
+		DeveloperID:   developerID,
 		PrivateKeyHex: key,
 	})
 	if err != nil {

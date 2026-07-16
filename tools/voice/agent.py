@@ -60,7 +60,15 @@ async def handle_request(req: JobRequest) -> None:
     await req.accept(identity=AGENT_IDENTITY, name="Neo Voice")
 
 
-server = AgentServer(setup_fnc=prewarm)
+server = AgentServer(
+    setup_fnc=prewarm,
+    permissions=agents.WorkerPermissions(
+        can_publish=True,
+        can_subscribe=True,
+        can_publish_data=True,
+        can_update_metadata=True,
+    ),
+)
 
 
 @server.rtc_session(on_request=handle_request)
