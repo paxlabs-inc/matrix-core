@@ -1,22 +1,22 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:23d61f145bbae402b195aceb2927fe75128792a628a4170cb104d91217b0a6d8
+# GENERATED gen=codegraph do-not-edit merkle=b3:788b352b7566e1dfc542235e22602001dce46091c8f9ac47e1ddf4fe349a4267
 
 NODE id=matrix/cortex/replay kind=package
-  digest=b3:61ea0bef135aec982f24027c6c46d8013e40e2ad35ba2c89065cb11397bf7561 file=cortex/replay range=0:0 lang=go exported=true
+  digest=b3:3791f66ea66f46586fe522988401c61b73431871d475e80459d082b9de1a04bd file=cortex/replay range=0:0 lang=go exported=true
 EDGES
   contains=matrix/cortex/replay/drop.go,matrix/cortex/replay/rebuild.go,matrix/cortex/replay/replay.go
   ^contains=mod:matrix/cortex
 
 NODE id=matrix/cortex/replay.CountDerived kind=func
-  digest=b3:f8dfe15bbd5f2e7ad117a0fd0e1cfa2d7c00798bbe49c7352b698fc78da30b52 file=cortex/replay/drop.go range=126:154 lang=go exported=true byte_range=4916:5674
+  digest=b3:f8dfe15bbd5f2e7ad117a0fd0e1cfa2d7c00798bbe49c7352b698fc78da30b52 file=cortex/replay/drop.go range=128:156 lang=go exported=true byte_range=5015:5773
   sig=func CountDerived(s *store.Store) (uint64, error)
   doc=CountDerived returns the total number of derived-namespace keys present\nin s. Used by tests to assert that DropDerived left the store empty\nunder indexes/ and by ops dashboards measuring index size.
 EDGES
   ^defines=matrix/cortex/replay/drop.go
 
 NODE id=matrix/cortex/replay.DropDerived kind=func
-  digest=b3:2a540962334ee73ab9d76ff515e8f0af6406a7e4bc7d4b5eef16b3c77b3d8086 file=cortex/replay/drop.go range=79:124 lang=go exported=true byte_range=3320:4914
+  digest=b3:8a2771a53e720dd388ffc18bae3fd4e6c03a5a3806b044a305e9bf2e08ee4f48 file=cortex/replay/drop.go range=81:126 lang=go exported=true byte_range=3413:5013
   sig=func DropDerived(s *store.Store) error
-  doc=DropDerived deletes every key under spec's `indexes/` namespace from s.\nIdempotent — running twice is the same as running once.\n\nAfter this call returns:\n\n	accum/* idx/* salience/* vec/* — empty\n	meta/embed_cursor              — absent\n	meta/embed_vertex_next         — absent\n\nCanonical state is untouched:\n\n	m/* mv/* e/* j/* tomb/* snap/* chk/*  — preserved byte-identical\n	meta/journal_head meta/snapshot_seq    — preserved byte-identical\n\nCallers that hold an open snapshot.State on s must reconstruct its\nin-process MMR + SMT views by calling CurrentRoots after the rebuild\n(the underlying handles read from the persisted accum/+idx/smt/* keys\nevery call, so they auto-pick-up the post-rebuild state).
+  doc=DropDerived deletes every key under spec's `indexes/` namespace from s.\nIdempotent — running twice is the same as running once.\n\nAfter this call returns:\n\n	accum/* idx/* lex/* salience/* vec/* — empty\n	meta/embed_cursor              — absent\n	meta/embed_vertex_next         — absent\n\nCanonical state is untouched:\n\n	m/* mv/* e/* j/* tomb/* snap/* chk/*  — preserved byte-identical\n	meta/journal_head meta/snapshot_seq    — preserved byte-identical\n\nCallers that hold an open snapshot.State on s must reconstruct its\nin-process MMR + SMT views by calling CurrentRoots after the rebuild\n(the underlying handles read from the persisted accum/+idx/smt/* keys\nevery call, so they auto-pick-up the post-rebuild state).
 EDGES
   ^defines=matrix/cortex/replay/drop.go
 
@@ -170,9 +170,9 @@ EDGES
   ^defines=matrix/cortex/replay/rebuild.go
 
 NODE id=matrix/cortex/replay.derivedPrefixes kind=var
-  digest=b3:914092061baaedf6a0b3c4e94e468399c60d022e21eb63d47cd3631e47c15eaf file=cortex/replay/drop.go range=54:77 lang=go exported=false byte_range=2275:3318
+  digest=b3:cdae6738b4b951e092b13883f577687209fe2ddf19bc0d3478fc6c30bc38c56f file=cortex/replay/drop.go range=54:79 lang=go exported=false byte_range=2275:3411
   sig=[][]byte
-  doc=derivedPrefixes lists every key prefix that maps to spec's indexes/ side\nof the §1 architecture. Order is alphabetical for deterministic\niteration in tests; DropDerived doesn't depend on the order.\n\nCitation per prefix:\n\n	vec/         research/04-cortex.md:23 (indexes/vector/)\n	idx/type/    research/04-cortex.md:24 (indexes/predicate/)\n	idx/tag/     research/04-cortex.md:24 (indexes/predicate/)\n	idx/frame/   research/04-cortex.md:24 (indexes/predicate/)\n	idx/actor_obj/ research/04-cortex.md:24 (indexes/predicate/)\n	idx/smt/     sess#7 phase7_locked_design Q3 (anchored-namespace SMT nodes)\n	salience/    research/04-cortex.md:25 (indexes/salience/)\n	accum/       sess#7 phase7_locked_design Q2 (MMR persistence)
+  doc=derivedPrefixes lists every key prefix that maps to spec's indexes/ side\nof the §1 architecture. Order is alphabetical for deterministic\niteration in tests; DropDerived doesn't depend on the order.\n\nCitation per prefix:\n\n	vec/         research/04-cortex.md:23 (indexes/vector/)\n	idx/type/    research/04-cortex.md:24 (indexes/predicate/)\n	idx/tag/     research/04-cortex.md:24 (indexes/predicate/)\n	idx/frame/   research/04-cortex.md:24 (indexes/predicate/)\n	idx/actor_obj/ research/04-cortex.md:24 (indexes/predicate/)\n	idx/smt/     sess#7 phase7_locked_design Q3 (anchored-namespace SMT nodes)\n	salience/    research/04-cortex.md:25 (indexes/salience/)\n	accum/       sess#7 phase7_locked_design Q2 (MMR persistence)\n	lex/         spec/deja-vu req.5.1 (derived transcript lexical index)
 EDGES
   ^defines=matrix/cortex/replay/drop.go
 
@@ -293,7 +293,7 @@ EDGES
   ^defines=matrix/cortex/replay/rebuild.go
 
 NODE id=matrix/cortex/replay/drop.go kind=file
-  digest=b3:46ef9351c1d433209af2266d3eede01c2f2e20859b9e6eedfc1f4e31fe910076 file=cortex/replay/drop.go range=1:156 lang=go exported=true
+  digest=b3:09e80207d6cb1f15d9baa5a2bb8a80f87a71b927447e9afc244d432a3327d6ba file=cortex/replay/drop.go range=1:158 lang=go exported=true
 EDGES
   defines=matrix/cortex/replay.CountDerived,matrix/cortex/replay.DropDerived,matrix/cortex/replay.derivedPrefixes,matrix/cortex/replay.derivedSingleMetaKeys,matrix/cortex/replay.metaEmbedCursor,matrix/cortex/replay.metaEmbedModel,matrix/cortex/replay.metaEmbedVertexNext
   ^contains=matrix/cortex/replay

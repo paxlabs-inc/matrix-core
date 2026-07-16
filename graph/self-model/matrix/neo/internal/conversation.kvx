@@ -1,41 +1,41 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:23d61f145bbae402b195aceb2927fe75128792a628a4170cb104d91217b0a6d8
+# GENERATED gen=codegraph do-not-edit merkle=b3:788b352b7566e1dfc542235e22602001dce46091c8f9ac47e1ddf4fe349a4267
 
 NODE id=matrix/neo/internal/conversation kind=package
-  digest=b3:5e5ef0f42b50ca2a4786da0ed23ebae18c2533acebb8566883c21612c287cff8 file=neo/internal/conversation range=0:0 lang=go exported=true
+  digest=b3:2be46597d130d4979212c966bb44c6b6661adb3be77bc1c1e3df70ac365e02ed file=neo/internal/conversation range=0:0 lang=go exported=true
 EDGES
   contains=matrix/neo/internal/conversation/store.go
   ^contains=mod:matrix/neo
 
 NODE id=matrix/neo/internal/conversation.DefaultRecallTurns kind=const
-  digest=b3:00b986e578edfebe42dfd77a9845af76667baca9afcc26578c14aa75c849da4d file=neo/internal/conversation/store.go range=51:53 lang=go exported=true byte_range=2133:2282
+  digest=b3:00b986e578edfebe42dfd77a9845af76667baca9afcc26578c14aa75c849da4d file=neo/internal/conversation/store.go range=63:65 lang=go exported=true byte_range=2509:2658
   sig=untyped int
   doc=DefaultRecallTurns is how many recent turns are seeded back into a\nresumed conversation's working context by default.
 EDGES
   ^defines=matrix/neo/internal/conversation/store.go
 
 NODE id=matrix/neo/internal/conversation.DefaultRetainedTurns kind=const
-  digest=b3:b71d70d6cc27efce13bcbbca8ae451c0bc9ef6321e87bf31cc84e29f36c798aa file=neo/internal/conversation/store.go range=55:58 lang=go exported=true byte_range=2285:2535
+  digest=b3:b71d70d6cc27efce13bcbbca8ae451c0bc9ef6321e87bf31cc84e29f36c798aa file=neo/internal/conversation/store.go range=67:70 lang=go exported=true byte_range=2661:2911
   sig=untyped int
   doc=DefaultRetainedTurns is the cap on how many turns stay in the hot\n.jsonl before older ones roll to the archive. Bounded so the live file\n(and thus per-append fsync cost) stays small; full history is never lost.
 EDGES
   ^defines=matrix/neo/internal/conversation/store.go
 
 NODE id=matrix/neo/internal/conversation.Dir kind=func
-  digest=b3:4f067014fb6c12a7a899bbd0235694dd5661b7751d2f089fbbaa43bd01910aa4 file=neo/internal/conversation/store.go range=598:610 lang=go exported=true byte_range=18718:19236
+  digest=b3:4f067014fb6c12a7a899bbd0235694dd5661b7751d2f089fbbaa43bd01910aa4 file=neo/internal/conversation/store.go range=771:783 lang=go exported=true byte_range=24594:25112
   sig=func Dir(override, cortexRoot string) string
   doc=Dir resolves Neo's conversation directory. An explicit override wins; else it\nis derived from the cortex root's parent (matching the daemon, so Neo and the\ndaemon share /data/conversations and history is unified). Returns "" when\nneither is available (persistence disabled).
 EDGES
   ^defines=matrix/neo/internal/conversation/store.go
 
 NODE id=matrix/neo/internal/conversation.Open kind=func
-  digest=b3:e62202337d77ce974b5b1d495ebf4c9382b65c629b55f5a1078c803fa27a334b file=neo/internal/conversation/store.go range=103:109 lang=go exported=true byte_range=4063:4437
+  digest=b3:e62202337d77ce974b5b1d495ebf4c9382b65c629b55f5a1078c803fa27a334b file=neo/internal/conversation/store.go range=177:183 lang=go exported=true byte_range=6285:6659
   sig=func Open(dir string) *Store
   doc=Open builds a store rooted at dir. An empty dir yields a disabled store\n(every method is a safe no-op) so dev/CLI runs work unchanged. The\nretained-turn cap defaults to DefaultRetainedTurns and can be overridden via\nthe NEO_CONVERSATION_RETAINED_TURNS env var (read once at Open).
 EDGES
   ^defines=matrix/neo/internal/conversation/store.go
 
 NODE id=matrix/neo/internal/conversation.Record kind=type
-  digest=b3:38140c814e32e80e72da30f60d2958c99b9b5522e333f24fe0117fcdfc43f363 file=neo/internal/conversation/store.go range=70:77 lang=go exported=true byte_range=2856:3159
+  digest=b3:38140c814e32e80e72da30f60d2958c99b9b5522e333f24fe0117fcdfc43f363 file=neo/internal/conversation/store.go range=82:89 lang=go exported=true byte_range=3232:3535
   sig=type Record struct {\n	ConversationID	string		`json:"conversation_id"`\n	Title		string		`json:"title,omitempty"`\n	Turns		[]Turn		`json:"turns"`\n	Updated		time.Time	`json:"updated"`\n}
   doc=Record is the persisted shape: a bounded, append-only turn list for one\nconversation_id.
 EDGES
@@ -43,58 +43,77 @@ EDGES
   ^defines=matrix/neo/internal/conversation/store.go
 
 NODE id=matrix/neo/internal/conversation.Record#ConversationID kind=field
-  digest=b3:d501a5199a4ea4e792828fa77a371aab24b3388af06b995e6e8f7bc435850ffc file=neo/internal/conversation/store.go range=73:73 lang=go exported=true byte_range=2973:3022
+  digest=b3:d501a5199a4ea4e792828fa77a371aab24b3388af06b995e6e8f7bc435850ffc file=neo/internal/conversation/store.go range=85:85 lang=go exported=true byte_range=3349:3398
   sig=string
 EDGES
   ^contains=matrix/neo/internal/conversation.Record
 
 NODE id=matrix/neo/internal/conversation.Record#Title kind=field
-  digest=b3:c342aa76b7fed4976b81101f6cd1f8ab22122086e72b3e93238e6ceb8da961aa file=neo/internal/conversation/store.go range=74:74 lang=go exported=true byte_range=3024:3073
+  digest=b3:c342aa76b7fed4976b81101f6cd1f8ab22122086e72b3e93238e6ceb8da961aa file=neo/internal/conversation/store.go range=86:86 lang=go exported=true byte_range=3400:3449
   sig=string
 EDGES
   ^contains=matrix/neo/internal/conversation.Record
 
 NODE id=matrix/neo/internal/conversation.Record#Turns kind=field
-  digest=b3:38ccd7805aaad665985cf416ee588ad1b4d63d660b229b2bf1af3282720658d9 file=neo/internal/conversation/store.go range=75:75 lang=go exported=true byte_range=3075:3114
+  digest=b3:38ccd7805aaad665985cf416ee588ad1b4d63d660b229b2bf1af3282720658d9 file=neo/internal/conversation/store.go range=87:87 lang=go exported=true byte_range=3451:3490
   sig=[]conversation.Turn
 EDGES
   ^contains=matrix/neo/internal/conversation.Record
 
 NODE id=matrix/neo/internal/conversation.Record#Updated kind=field
-  digest=b3:cb18edf0bc8f21b404fd9dab91c6ad58df1d8bb4c0f47a232388714dc47945f7 file=neo/internal/conversation/store.go range=76:76 lang=go exported=true byte_range=3116:3157
+  digest=b3:cb18edf0bc8f21b404fd9dab91c6ad58df1d8bb4c0f47a232388714dc47945f7 file=neo/internal/conversation/store.go range=88:88 lang=go exported=true byte_range=3492:3533
   sig=time.Time
 EDGES
   ^contains=matrix/neo/internal/conversation.Record
 
 NODE id=matrix/neo/internal/conversation.Store kind=type
-  digest=b3:eddcab9b4b76d85274e42949059f1a2176454f3b752a79ac4e8f2bd80f41e58e file=neo/internal/conversation/store.go range=92:101 lang=go exported=true byte_range=3703:4061
-  sig=type Store struct {\n	mu	sync.Mutex\n	dir	string\n\n	// retainedTurns caps the hot .jsonl turn count; overflow rolls to the\n	// archive. Zero means use DefaultRetainedTurns at append time.\n	retainedTurns	int\n}
+  digest=b3:61ae7284d6764a32aff2d8d2f16cd564c7503062817d46d7bdbd495b4b0c46c0 file=neo/internal/conversation/store.go range=104:121 lang=go exported=true byte_range=4079:4786
+  sig=type Store struct {\n	mu	sync.Mutex\n	dir	string\n\n	// retainedTurns caps the hot .jsonl turn count; overflow rolls to the\n	// archive. Zero means use DefaultRetainedTurns at append time.\n	retainedTurns	int\n\n	// vault seals each JSONL record when encrypting; nil = plaintext dev/CLI.\n	// user is the DID bound into each record's associated data. seqs caches the\n	// next record sequence per file so appends stay O(1) (seeded by one line\n	// count) while binding each ciphertext to its position.\n	vault	*vault.Session\n	user	string\n	seqs	map[string]uint64\n}
   doc=Store is Neo's durable conversation memory. One mutex guards all access;\nconversations are small and Neo serves one user, so this is plenty fast.
 EDGES
-  contains=matrix/neo/internal/conversation.Store#dir,matrix/neo/internal/conversation.Store#mu,matrix/neo/internal/conversation.Store#retainedTurns,matrix/neo/internal/conversation.Store.Append,matrix/neo/internal/conversation.Store.AppendAssistant,matrix/neo/internal/conversation.Store.AppendUser,matrix/neo/internal/conversation.Store.Archived,matrix/neo/internal/conversation.Store.Enabled,matrix/neo/internal/conversation.Store.Get,matrix/neo/internal/conversation.Store.History,matrix/neo/internal/conversation.Store.List,matrix/neo/internal/conversation.Store.Project,matrix/neo/internal/conversation.Store.Recent,matrix/neo/internal/conversation.Store.SetProject,matrix/neo/internal/conversation.Store.archivePathLocked,matrix/neo/internal/conversation.Store.historyLocked,matrix/neo/internal/conversation.Store.legacyPathLocked,matrix/neo/internal/conversation.Store.loadLocked,matrix/neo/internal/conversation.Store.loadMetaLocked,matrix/neo/internal/conversation.Store.metaPathLocked,matrix/neo/internal/conversation.Store.pathLocked,matrix/neo/internal/conversation.Store.rollIfOverCapLocked
+  contains=matrix/neo/internal/conversation.Store#dir,matrix/neo/internal/conversation.Store#mu,matrix/neo/internal/conversation.Store#retainedTurns,matrix/neo/internal/conversation.Store#seqs,matrix/neo/internal/conversation.Store#user,matrix/neo/internal/conversation.Store#vault,matrix/neo/internal/conversation.Store.Append,matrix/neo/internal/conversation.Store.AppendAssistant,matrix/neo/internal/conversation.Store.AppendUser,matrix/neo/internal/conversation.Store.Archived,matrix/neo/internal/conversation.Store.Enabled,matrix/neo/internal/conversation.Store.Get,matrix/neo/internal/conversation.Store.History,matrix/neo/internal/conversation.Store.IsInterview,matrix/neo/internal/conversation.Store.List,matrix/neo/internal/conversation.Store.Project,matrix/neo/internal/conversation.Store.Recent,matrix/neo/internal/conversation.Store.SetInterview,matrix/neo/internal/conversation.Store.SetProject,matrix/neo/internal/conversation.Store.SetVault,matrix/neo/internal/conversation.Store.ad,matrix/neo/internal/conversation.Store.appendTurn,matrix/neo/internal/conversation.Store.archivePathLocked,matrix/neo/internal/conversation.Store.buildJSONL,matrix/neo/internal/conversation.Store.historyLocked,matrix/neo/internal/conversation.Store.legacyPathLocked,matrix/neo/internal/conversation.Store.loadLocked,matrix/neo/internal/conversation.Store.loadMetaLocked,matrix/neo/internal/conversation.Store.metaAD,matrix/neo/internal/conversation.Store.metaPathLocked,matrix/neo/internal/conversation.Store.nextSeqLocked,matrix/neo/internal/conversation.Store.pathLocked,matrix/neo/internal/conversation.Store.readTurns,matrix/neo/internal/conversation.Store.rollIfOverCapLocked,matrix/neo/internal/conversation.Store.saveMetaLocked
   ^defines=matrix/neo/internal/conversation/store.go
 
 NODE id=matrix/neo/internal/conversation.Store#dir kind=field
-  digest=b3:7c4974b33207052e1ad5cbf5d42e280f9267cc0d0077d2de0f7524e692427f50 file=neo/internal/conversation/store.go range=96:96 lang=go exported=false byte_range=3892:3902
+  digest=b3:7c4974b33207052e1ad5cbf5d42e280f9267cc0d0077d2de0f7524e692427f50 file=neo/internal/conversation/store.go range=108:108 lang=go exported=false byte_range=4268:4278
   sig=string
 EDGES
   ^contains=matrix/neo/internal/conversation.Store
 
 NODE id=matrix/neo/internal/conversation.Store#mu kind=field
-  digest=b3:1a708959b007248f2220cf2e77d08f481b8daacea806d7eb1762f37792d66b44 file=neo/internal/conversation/store.go range=95:95 lang=go exported=false byte_range=3876:3890
+  digest=b3:1a708959b007248f2220cf2e77d08f481b8daacea806d7eb1762f37792d66b44 file=neo/internal/conversation/store.go range=107:107 lang=go exported=false byte_range=4252:4266
   sig=sync.Mutex
 EDGES
   ^contains=matrix/neo/internal/conversation.Store
 
 NODE id=matrix/neo/internal/conversation.Store#retainedTurns kind=field
-  digest=b3:c3ff7636f27fcce51003dc3aef2c75e01eed5e4d0eb133d88623604f68433285 file=neo/internal/conversation/store.go range=98:100 lang=go exported=false byte_range=3905:4059
+  digest=b3:c3ff7636f27fcce51003dc3aef2c75e01eed5e4d0eb133d88623604f68433285 file=neo/internal/conversation/store.go range=110:112 lang=go exported=false byte_range=4281:4435
   sig=int
   doc=retainedTurns caps the hot .jsonl turn count; overflow rolls to the\narchive. Zero means use DefaultRetainedTurns at append time.
 EDGES
   ^contains=matrix/neo/internal/conversation.Store
 
+NODE id=matrix/neo/internal/conversation.Store#seqs kind=field
+  digest=b3:64a9690652077689590abdaba766e80d7212e1f583b199eedb85cc7dd77f3177 file=neo/internal/conversation/store.go range=120:120 lang=go exported=false byte_range=4761:4784
+  sig=map[string]uint64
+EDGES
+  ^contains=matrix/neo/internal/conversation.Store
+
+NODE id=matrix/neo/internal/conversation.Store#user kind=field
+  digest=b3:d6e3aa39dcac5194e82f4d88b0e0a05b1aa2e4c600d380e23a30f8afcefb41c5 file=neo/internal/conversation/store.go range=119:119 lang=go exported=false byte_range=4747:4759
+  sig=string
+EDGES
+  ^contains=matrix/neo/internal/conversation.Store
+
+NODE id=matrix/neo/internal/conversation.Store#vault kind=field
+  digest=b3:ff76114bb3dc5c92097b4d10c403ccefd49cb3475a932c1794d16b12b6361b46 file=neo/internal/conversation/store.go range=114:118 lang=go exported=false byte_range=4438:4745
+  sig=*vault.Session
+  doc=vault seals each JSONL record when encrypting; nil = plaintext dev/CLI.\nuser is the DID bound into each record's associated data. seqs caches the\nnext record sequence per file so appends stay O(1) (seeded by one line\ncount) while binding each ciphertext to its position.
+EDGES
+  ^contains=matrix/neo/internal/conversation.Store
+
 NODE id=matrix/neo/internal/conversation.Store.Append kind=method
-  digest=b3:3a94607c89743cf99e4b3099b85f187724b4edd59668cfc84205403432d111b2 file=neo/internal/conversation/store.go range=253:284 lang=go exported=true byte_range=8543:9718
+  digest=b3:c0b8ce70ba5b855c16e7784f6df119311cc5963ff3b5265fb8a5494ee254cf0c file=neo/internal/conversation/store.go range=344:375 lang=go exported=true byte_range=11353:12547
   sig=func (s *Store) Append(convID string, turn Turn)
   doc=Append records one turn and persists it as a single JSONL line append (O(1) in\nthe turn size — no full-file rewrite). Best-effort: IO errors are logged,\nnever fatal. A blank conversation id or text is ignored. When the hot set\nexceeds the retained-turn cap, the overflow rolls to the durable archive\n(rename-based atomic write) — turns are NOT dropped. Crash-atomic: each turn\nis one atomic line append; a torn final line is skipped on load.
 EDGES
@@ -102,14 +121,14 @@ EDGES
   ^defines=matrix/neo/internal/conversation/store.go
 
 NODE id=matrix/neo/internal/conversation.Store.AppendAssistant kind=method
-  digest=b3:c27998f519347c6e0c75ec5af956baf8348ecab2dc8f0847df8ec0ad1d2a91be file=neo/internal/conversation/store.go range=421:423 lang=go exported=true byte_range=13861:14002
+  digest=b3:c27998f519347c6e0c75ec5af956baf8348ecab2dc8f0847df8ec0ad1d2a91be file=neo/internal/conversation/store.go range=594:596 lang=go exported=true byte_range=19691:19832
   sig=func (s *Store) AppendAssistant(convID, intentID, text string)
 EDGES
   ^contains=matrix/neo/internal/conversation.Store
   ^defines=matrix/neo/internal/conversation/store.go
 
 NODE id=matrix/neo/internal/conversation.Store.AppendUser kind=method
-  digest=b3:ffe017ba859a1fc1f4b3e5afd2c75593c583583e98673ce759ec3fd037df8522 file=neo/internal/conversation/store.go range=409:419 lang=go exported=true byte_range=13219:13859
+  digest=b3:ffe017ba859a1fc1f4b3e5afd2c75593c583583e98673ce759ec3fd037df8522 file=neo/internal/conversation/store.go range=582:592 lang=go exported=true byte_range=19049:19689
   sig=func (s *Store) AppendUser(convID, intentID, text string)
   doc=AppendUser / AppendAssistant are thin helpers for the two turn kinds.\n\nintentID is the owning run id minted at dispatch time. Persisting it on the\nuser turn is the durable anchor a reload/relogin uses to reattach the live\nstream — the client (and the GET /conversations/{id} live_run signal) reads\nit back to decide whether the run is still in flight. An empty intent_id is\nfine (omitempty preserves the pre-F1 wire shape exactly for direct replies\nand tests that don't model a run).
 EDGES
@@ -117,7 +136,7 @@ EDGES
   ^defines=matrix/neo/internal/conversation/store.go
 
 NODE id=matrix/neo/internal/conversation.Store.Archived kind=method
-  digest=b3:0682191d7d41b9ac1793140b1e40e8b07fa5059a0a93e9d999e94fd11f557916 file=neo/internal/conversation/store.go range=457:468 lang=go exported=true byte_range=14844:15246
+  digest=b3:7fb66c0b1779cec22ac7e028e2728dcb482648915a27a7a48f39e91c4338fb1c file=neo/internal/conversation/store.go range=630:641 lang=go exported=true byte_range=20674:21099
   sig=func (s *Store) Archived(convID string) []Turn
   doc=Archived returns the rolled (durable) turns for one conversation — the\noverflow that scrolled past the retained cap. Oldest-first, or nil when\nthere are none / persistence is disabled.
 EDGES
@@ -125,7 +144,7 @@ EDGES
   ^defines=matrix/neo/internal/conversation/store.go
 
 NODE id=matrix/neo/internal/conversation.Store.Enabled kind=method
-  digest=b3:7ee9e38ccc8392a851473d2022e1d350a39a14aa9839d862e6605b5c0828361a file=neo/internal/conversation/store.go range=135:136 lang=go exported=true byte_range=5124:5259
+  digest=b3:7ee9e38ccc8392a851473d2022e1d350a39a14aa9839d862e6605b5c0828361a file=neo/internal/conversation/store.go range=209:210 lang=go exported=true byte_range=7346:7481
   sig=func (s *Store) Enabled() bool
   doc=Enabled reports whether persistence is on (a non-empty directory).
 EDGES
@@ -133,7 +152,7 @@ EDGES
   ^defines=matrix/neo/internal/conversation/store.go
 
 NODE id=matrix/neo/internal/conversation.Store.Get kind=method
-  digest=b3:82f8ecde39060b2cbd6d9cb465de130fd4ca3fa7455674d470cf84fdfe8d245c file=neo/internal/conversation/store.go range=441:455 lang=go exported=true byte_range=14445:14842
+  digest=b3:82f8ecde39060b2cbd6d9cb465de130fd4ca3fa7455674d470cf84fdfe8d245c file=neo/internal/conversation/store.go range=614:628 lang=go exported=true byte_range=20275:20672
   sig=func (s *Store) Get(convID string) *Record
   doc=Get returns the hot (bounded) turn log for one conversation, or nil when\nthere are none / persistence is disabled. For the full history including\narchived turns use History.
 EDGES
@@ -141,15 +160,23 @@ EDGES
   ^defines=matrix/neo/internal/conversation/store.go
 
 NODE id=matrix/neo/internal/conversation.Store.History kind=method
-  digest=b3:2dd0ef7bcfd07c30a5586a8f60f305f7f676b5770fa3f22b2d66f9b995aca287 file=neo/internal/conversation/store.go range=470:479 lang=go exported=true byte_range=15248:15573
+  digest=b3:2dd0ef7bcfd07c30a5586a8f60f305f7f676b5770fa3f22b2d66f9b995aca287 file=neo/internal/conversation/store.go range=643:652 lang=go exported=true byte_range=21101:21426
   sig=func (s *Store) History(convID string) []Turn
   doc=History returns the FULL turn log (archive + hot), oldest-first, so no turn\nis ever unreachable. Returns nil when there are none / persistence disabled.
 EDGES
   ^contains=matrix/neo/internal/conversation.Store
   ^defines=matrix/neo/internal/conversation/store.go
 
+NODE id=matrix/neo/internal/conversation.Store.IsInterview kind=method
+  digest=b3:6381e52f1f31f22fb7cd13bfcb19377ef88f805f696839875bf165c40c3df5e0 file=neo/internal/conversation/store.go range=562:570 lang=go exported=true byte_range=18539:18798
+  sig=func (s *Store) IsInterview(convID string) bool
+  doc=IsInterview reports whether a conversation is a personalization interview.
+EDGES
+  ^contains=matrix/neo/internal/conversation.Store
+  ^defines=matrix/neo/internal/conversation/store.go
+
 NODE id=matrix/neo/internal/conversation.Store.List kind=method
-  digest=b3:db3240cd733a85222bd29eb7aeb187efeb1fe13793b2e0cd902f3e7c8afb1522 file=neo/internal/conversation/store.go range=498:563 lang=go exported=true byte_range=16027:17909
+  digest=b3:db3240cd733a85222bd29eb7aeb187efeb1fe13793b2e0cd902f3e7c8afb1522 file=neo/internal/conversation/store.go range=671:736 lang=go exported=true byte_range=21903:23785
   sig=func (s *Store) List() []Summary
   doc=List returns a summary of every persisted conversation, newest-first.\nBest-effort: unreadable files are skipped. Counts cover the FULL history\n(archive + hot) so turn_count reflects every retained turn.
 EDGES
@@ -157,7 +184,7 @@ EDGES
   ^defines=matrix/neo/internal/conversation/store.go
 
 NODE id=matrix/neo/internal/conversation.Store.Project kind=method
-  digest=b3:76436cb708527ebce9dea3fd8f79ccdd1438478b037367fc543ac875ee8c1d4a file=neo/internal/conversation/store.go range=399:407 lang=go exported=true byte_range=12970:13217
+  digest=b3:76436cb708527ebce9dea3fd8f79ccdd1438478b037367fc543ac875ee8c1d4a file=neo/internal/conversation/store.go range=572:580 lang=go exported=true byte_range=18800:19047
   sig=func (s *Store) Project(convID string) string
   doc=Project returns a conversation's workbench project tag ("" untagged).
 EDGES
@@ -165,30 +192,70 @@ EDGES
   ^defines=matrix/neo/internal/conversation/store.go
 
 NODE id=matrix/neo/internal/conversation.Store.Recent kind=method
-  digest=b3:eed5adbc0888e8563f6fcb77876417643c307183f0e74b93d1f40164b4fae92b file=neo/internal/conversation/store.go range=425:439 lang=go exported=true byte_range=14004:14443
+  digest=b3:eed5adbc0888e8563f6fcb77876417643c307183f0e74b93d1f40164b4fae92b file=neo/internal/conversation/store.go range=598:612 lang=go exported=true byte_range=19834:20273
   sig=func (s *Store) Recent(convID string, n int) []Turn
   doc=Recent returns the last n turns (oldest-first) from the full history, or nil\nwhen there are none / persistence is disabled. n spans the hot set AND the\narchive so no turn is unreachable.
 EDGES
   ^contains=matrix/neo/internal/conversation.Store
   ^defines=matrix/neo/internal/conversation/store.go
 
+NODE id=matrix/neo/internal/conversation.Store.SetInterview kind=method
+  digest=b3:c057f2a3af277ed2a31b19014fab600fa0e94240c05df6736370bc384f3d3742 file=neo/internal/conversation/store.go range=546:560 lang=go exported=true byte_range=18175:18537
+  sig=func (s *Store) SetInterview(convID string)
+  doc=SetInterview marks a conversation as a personalization interview (ORACLE\ntask 5.3). Idempotent; atomic sidecar write.
+EDGES
+  ^contains=matrix/neo/internal/conversation.Store
+  ^defines=matrix/neo/internal/conversation/store.go
+
 NODE id=matrix/neo/internal/conversation.Store.SetProject kind=method
-  digest=b3:d944fca68d53e9838e93acff53e716009e27bcb752ac4d23310416141c1a583f file=neo/internal/conversation/store.go range=366:397 lang=go exported=true byte_range=11978:12968
+  digest=b3:18ae0ca68e97a77f99e17c0641982859ed3a5ba7c22bbcf48a4d050cc393f788 file=neo/internal/conversation/store.go range=499:514 lang=go exported=true byte_range=16587:17080
   sig=func (s *Store) SetProject(convID, projectID string)
   doc=SetProject tags a conversation with a workbench project id (idempotent;\natomic tmp+rename sidecar write). Best-effort like Append: IO errors are\nlogged, never fatal.
 EDGES
   ^contains=matrix/neo/internal/conversation.Store
   ^defines=matrix/neo/internal/conversation/store.go
 
+NODE id=matrix/neo/internal/conversation.Store.SetVault kind=method
+  digest=b3:c3d0189d7b6dbd553c6ff039eefea25795429d690c435cad63fa81281c61f041 file=neo/internal/conversation/store.go range=123:134 lang=go exported=true byte_range=4788:5136
+  sig=func (s *Store) SetVault(sess *vault.Session, user string)
+  doc=SetVault wires the fail-closed data-at-rest session and the owning user DID\ninto the store. Called once at engine assembly; a nil session leaves the\nstore writing legacy plaintext (dev/CLI).
+EDGES
+  ^contains=matrix/neo/internal/conversation.Store
+  ^defines=matrix/neo/internal/conversation/store.go
+
+NODE id=matrix/neo/internal/conversation.Store.ad kind=method
+  digest=b3:7b520c977e655ce842e493b3608710acdb5e2874a393de3c5501fd0a3dc8d1d3 file=neo/internal/conversation/store.go range=136:141 lang=go exported=false byte_range=5138:5491
+  sig=func (s *Store) ad(storeType, stream string, seq uint64) vault.AD
+  doc=ad reconstructs the associated data for a record from where it lives — never\nstored, so a record moved between users, stores, conversations, or positions\nfails authentication.
+EDGES
+  ^contains=matrix/neo/internal/conversation.Store
+  ^defines=matrix/neo/internal/conversation/store.go
+
+NODE id=matrix/neo/internal/conversation.Store.appendTurn kind=method
+  digest=b3:0350455acbbd3c9e4150e7c39f1ff8ced33ca22a51c009994f2523dfd74bb7be file=neo/internal/conversation/store.go range=314:342 lang=go exported=false byte_range=10483:11351
+  sig=func (s *Store) appendTurn(storeType, stream, path string, turn Turn) error
+  doc=appendTurn appends one turn as a single (sealed, when encrypting) JSONL line.\nO_APPEND + a single Write makes the line atomically visible (POSIX) — no\nreader sees a half-written line. Crash-atomic: a torn write yields an\nunparseable final line that readTurns skips. Caller MUST hold s.mu.
+EDGES
+  ^contains=matrix/neo/internal/conversation.Store
+  ^defines=matrix/neo/internal/conversation/store.go
+
 NODE id=matrix/neo/internal/conversation.Store.archivePathLocked kind=method
-  digest=b3:5da2810e849105b4a626fc9eeb6054e636d84dd5853bb32e232f0bfb053b9499 file=neo/internal/conversation/store.go range=145:150 lang=go exported=false byte_range=5411:5574
+  digest=b3:5da2810e849105b4a626fc9eeb6054e636d84dd5853bb32e232f0bfb053b9499 file=neo/internal/conversation/store.go range=219:224 lang=go exported=false byte_range=7633:7796
   sig=func (s *Store) archivePathLocked(convID string) string
 EDGES
   ^contains=matrix/neo/internal/conversation.Store
   ^defines=matrix/neo/internal/conversation/store.go
 
+NODE id=matrix/neo/internal/conversation.Store.buildJSONL kind=method
+  digest=b3:3e63259fa75d31f1a938dcc1453c6d74332d2aa0dee75ce35f0e14ed7cb68453 file=neo/internal/conversation/store.go range=427:445 lang=go exported=false byte_range=14389:14950
+  sig=func (s *Store) buildJSONL(storeType, stream string, turns []Turn) ([]byte, error)
+  doc=buildJSONL serializes a turn slice as newline-delimited (sealed, when\nencrypting) JSON, binding each record to its position starting at seq 0.\nCaller MUST hold s.mu.
+EDGES
+  ^contains=matrix/neo/internal/conversation.Store
+  ^defines=matrix/neo/internal/conversation/store.go
+
 NODE id=matrix/neo/internal/conversation.Store.historyLocked kind=method
-  digest=b3:a5c418ac8d62a467bace99d593706ae746f131e12c07ec29b5a149565d4ca57b file=neo/internal/conversation/store.go range=481:496 lang=go exported=false byte_range=15575:16025
+  digest=b3:2424849798e39bd1ebd57b746a2e5b4e29d5f00cd8df713679cc104c0bee20b9 file=neo/internal/conversation/store.go range=654:669 lang=go exported=false byte_range=21428:21901
   sig=func (s *Store) historyLocked(convID string) []Turn
   doc=historyLocked is the full-history read (archive + hot), oldest-first. Caller\nMUST hold s.mu.
 EDGES
@@ -196,7 +263,7 @@ EDGES
   ^defines=matrix/neo/internal/conversation/store.go
 
 NODE id=matrix/neo/internal/conversation.Store.legacyPathLocked kind=method
-  digest=b3:ed19b83bd3fda5f3857bebfc3f0c162321e8d56f8c3afc7804923633403adbd7 file=neo/internal/conversation/store.go range=152:159 lang=go exported=false byte_range=5576:5862
+  digest=b3:ed19b83bd3fda5f3857bebfc3f0c162321e8d56f8c3afc7804923633403adbd7 file=neo/internal/conversation/store.go range=226:233 lang=go exported=false byte_range=7798:8084
   sig=func (s *Store) legacyPathLocked(convID string) string
   doc=legacyPathLocked returns the old single-JSON path (daemon-shaped). Only used\nfor backward-compatible reads of pre-JSONL files.
 EDGES
@@ -204,7 +271,7 @@ EDGES
   ^defines=matrix/neo/internal/conversation/store.go
 
 NODE id=matrix/neo/internal/conversation.Store.loadLocked kind=method
-  digest=b3:4e77335b64c745a9535c0e476d89119028f97139c9764e38be18e6f8429cd268 file=neo/internal/conversation/store.go range=161:191 lang=go exported=false byte_range=5864:6844
+  digest=b3:76ee764bc6e379d3fe3374935f253e1a1a09f5302373d4f4a95e06fa6ee8dd1a file=neo/internal/conversation/store.go range=235:265 lang=go exported=false byte_range=8086:9085
   sig=func (s *Store) loadLocked(convID string) *Record
   doc=loadLocked reads a record's HOT turns (the retained set); a missing/corrupt\nfile yields an empty record (never an error to the caller). It reads the\nJSONL hot file, falling back to the legacy single-JSON .json shape written\nby the daemon / pre-ring-buffer Neo. A partial (crash-truncated) final JSONL\nline is silently skipped — crash-atomic. Caller MUST hold s.mu.
 EDGES
@@ -212,36 +279,68 @@ EDGES
   ^defines=matrix/neo/internal/conversation/store.go
 
 NODE id=matrix/neo/internal/conversation.Store.loadMetaLocked kind=method
-  digest=b3:096f2f208be5efdeca04293778697f207a0c5b71a2c0df67340370aa65c69807 file=neo/internal/conversation/store.go range=352:364 lang=go exported=false byte_range=11734:11976
+  digest=b3:153d583a88b17bb27e84ca542fbcc83e9e3c7d49c6845aaca571213f4f6c01e4 file=neo/internal/conversation/store.go range=465:491 lang=go exported=false byte_range=15638:16282
   sig=func (s *Store) loadMetaLocked(convID string) convMeta
 EDGES
   ^contains=matrix/neo/internal/conversation.Store
   ^defines=matrix/neo/internal/conversation/store.go
 
+NODE id=matrix/neo/internal/conversation.Store.metaAD kind=method
+  digest=b3:0dbcc77b89c260d2fc11ddad3fabbc782e7676f27f9237bca3bf4171e850ea76 file=neo/internal/conversation/store.go range=493:497 lang=go exported=false byte_range=16284:16585
+  sig=func (s *Store) metaAD(convID string) vault.AD
+  doc=metaAD reconstructs the associated data for a conversation's meta sidecar —\nnever stored, so a sidecar moved between users or conversations fails auth.
+EDGES
+  ^contains=matrix/neo/internal/conversation.Store
+  ^defines=matrix/neo/internal/conversation/store.go
+
 NODE id=matrix/neo/internal/conversation.Store.metaPathLocked kind=method
-  digest=b3:a843eb27c539f989e5990aa8dbd39b938a5f7f4bcb8e63bc14753bb48f48cbc4 file=neo/internal/conversation/store.go range=345:350 lang=go exported=false byte_range=11576:11732
+  digest=b3:a843eb27c539f989e5990aa8dbd39b938a5f7f4bcb8e63bc14753bb48f48cbc4 file=neo/internal/conversation/store.go range=458:463 lang=go exported=false byte_range=15480:15636
   sig=func (s *Store) metaPathLocked(convID string) string
 EDGES
   ^contains=matrix/neo/internal/conversation.Store
   ^defines=matrix/neo/internal/conversation/store.go
 
+NODE id=matrix/neo/internal/conversation.Store.nextSeqLocked kind=method
+  digest=b3:5ee49c2f612c97d1503b346d01ba38ba5c7a8c2004ed87036512db1b7e137e15 file=neo/internal/conversation/store.go range=143:156 lang=go exported=false byte_range=5493:5911
+  sig=func (s *Store) nextSeqLocked(path string) uint64
+  doc=nextSeqLocked returns the next record sequence for a file, seeding the cache\nonce by counting existing lines so the seq binds each record to its position\nwhile keeping appends O(1). Caller MUST hold s.mu.
+EDGES
+  ^contains=matrix/neo/internal/conversation.Store
+  ^defines=matrix/neo/internal/conversation/store.go
+
 NODE id=matrix/neo/internal/conversation.Store.pathLocked kind=method
-  digest=b3:71066515dbd9b7cd600e7f151202f5515e528e1ca99e6d82b342dcf5d1ce6f73 file=neo/internal/conversation/store.go range=138:143 lang=go exported=false byte_range=5261:5409
+  digest=b3:71066515dbd9b7cd600e7f151202f5515e528e1ca99e6d82b342dcf5d1ce6f73 file=neo/internal/conversation/store.go range=212:217 lang=go exported=false byte_range=7483:7631
   sig=func (s *Store) pathLocked(convID string) string
 EDGES
   ^contains=matrix/neo/internal/conversation.Store
   ^defines=matrix/neo/internal/conversation/store.go
 
+NODE id=matrix/neo/internal/conversation.Store.readTurns kind=method
+  digest=b3:f26bf5c766cb1fd7a13d8a8f51eb26006447c43f1e458e0d524ac6fce39301cc file=neo/internal/conversation/store.go range=267:312 lang=go exported=false byte_range=9087:10481
+  sig=func (s *Store) readTurns(storeType, stream, path string) ([]Turn, time.Time)
+  doc=readTurns parses a newline-delimited turn file, decrypting each record under\nthe reconstructed associated data (legacy plaintext lines pass through until\nmigrated). A line that fails to decrypt or unmarshal — including a wrong-key,\ntampered, or crash-truncated final line — is skipped; the record sequence\nstill advances so surviving records stay bound to their positions. Returns\n(turns, latestUpdated).
+EDGES
+  ^contains=matrix/neo/internal/conversation.Store
+  ^defines=matrix/neo/internal/conversation/store.go
+
 NODE id=matrix/neo/internal/conversation.Store.rollIfOverCapLocked kind=method
-  digest=b3:7bf166a48bcae9f4b9cfc1e5a1a8421646028d20bd510519004f5465a934363a file=neo/internal/conversation/store.go range=286:325 lang=go exported=false byte_range=9720:11105
+  digest=b3:0063e6737b8d689e68994d4bb348b41ba6fc33d68b3be796a4a88185a8c467ec file=neo/internal/conversation/store.go range=377:425 lang=go exported=false byte_range=12549:14387
   sig=func (s *Store) rollIfOverCapLocked(convID string)
   doc=rollIfOverCapLocked moves the oldest overflow turns from the hot .jsonl to\nthe archive when the hot set exceeds the retained cap. The archive rollup\nuses the rename-based atomic write (tmp+rename) — the ONLY place that path\nis used now. Caller MUST hold s.mu.
 EDGES
   ^contains=matrix/neo/internal/conversation.Store
   ^defines=matrix/neo/internal/conversation/store.go
 
+NODE id=matrix/neo/internal/conversation.Store.saveMetaLocked kind=method
+  digest=b3:6ce4bccf95aead0934fce1bc72a47298731678d9b89f1a55a2dc9eb54c26fa9d file=neo/internal/conversation/store.go range=516:544 lang=go exported=false byte_range=17082:18173
+  sig=func (s *Store) saveMetaLocked(convID string, m convMeta)
+  doc=saveMetaLocked persists a conversation's meta sidecar (atomic tmp+rename,\nsealed at rest when the vault is wired). Caller MUST hold s.mu. Best-effort\nlike Append: IO errors are logged, never fatal.
+EDGES
+  ^contains=matrix/neo/internal/conversation.Store
+  ^defines=matrix/neo/internal/conversation/store.go
+
 NODE id=matrix/neo/internal/conversation.Summary kind=type
-  digest=b3:fdac2850b9acae8823bf4329a14ed59a7ef80658a777b5569ba0dbd637780796 file=neo/internal/conversation/store.go range=79:90 lang=go exported=true byte_range=3161:3701
+  digest=b3:fdac2850b9acae8823bf4329a14ed59a7ef80658a777b5569ba0dbd637780796 file=neo/internal/conversation/store.go range=91:102 lang=go exported=true byte_range=3537:4077
   sig=type Summary struct {\n	ConversationID	string		`json:"conversation_id"`\n	Title		string		`json:"title"`\n	Preview		string		`json:"preview"`\n	TurnCount	int		`json:"turn_count"`\n	Updated		time.Time	`json:"updated"`\n	Project		string		`json:"project,omitempty"`\n}
   doc=Summary is the compact list shape for GET /conversations. Project is the\nworkbench project tag ("" for untagged dashboard threads) — additive\nomitempty, so the pre-workbench wire shape is unchanged for untagged\nconversations.
 EDGES
@@ -249,43 +348,43 @@ EDGES
   ^defines=matrix/neo/internal/conversation/store.go
 
 NODE id=matrix/neo/internal/conversation.Summary#ConversationID kind=field
-  digest=b3:d501a5199a4ea4e792828fa77a371aab24b3388af06b995e6e8f7bc435850ffc file=neo/internal/conversation/store.go range=84:84 lang=go exported=true byte_range=3424:3473
+  digest=b3:d501a5199a4ea4e792828fa77a371aab24b3388af06b995e6e8f7bc435850ffc file=neo/internal/conversation/store.go range=96:96 lang=go exported=true byte_range=3800:3849
   sig=string
 EDGES
   ^contains=matrix/neo/internal/conversation.Summary
 
 NODE id=matrix/neo/internal/conversation.Summary#Preview kind=field
-  digest=b3:c5df3c31d10fe87d454c772585bcfde0c2aaf8cb2d153ccb7492a200cda2c977 file=neo/internal/conversation/store.go range=86:86 lang=go exported=true byte_range=3516:3557
+  digest=b3:c5df3c31d10fe87d454c772585bcfde0c2aaf8cb2d153ccb7492a200cda2c977 file=neo/internal/conversation/store.go range=98:98 lang=go exported=true byte_range=3892:3933
   sig=string
 EDGES
   ^contains=matrix/neo/internal/conversation.Summary
 
 NODE id=matrix/neo/internal/conversation.Summary#Project kind=field
-  digest=b3:5b6e30fd8524f5ac97715d7909d3b970d3ce082b9e73fc61f784865cf007a799 file=neo/internal/conversation/store.go range=89:89 lang=go exported=true byte_range=3648:3699
+  digest=b3:5b6e30fd8524f5ac97715d7909d3b970d3ce082b9e73fc61f784865cf007a799 file=neo/internal/conversation/store.go range=101:101 lang=go exported=true byte_range=4024:4075
   sig=string
 EDGES
   ^contains=matrix/neo/internal/conversation.Summary
 
 NODE id=matrix/neo/internal/conversation.Summary#Title kind=field
-  digest=b3:9f5d67f4ff514e80bb73e22bbc0c95bd9023e383b7ae3be264fc970eb35be88f file=neo/internal/conversation/store.go range=85:85 lang=go exported=true byte_range=3475:3514
+  digest=b3:9f5d67f4ff514e80bb73e22bbc0c95bd9023e383b7ae3be264fc970eb35be88f file=neo/internal/conversation/store.go range=97:97 lang=go exported=true byte_range=3851:3890
   sig=string
 EDGES
   ^contains=matrix/neo/internal/conversation.Summary
 
 NODE id=matrix/neo/internal/conversation.Summary#TurnCount kind=field
-  digest=b3:eb3dd9c1c23f33b540f592309b1913fc76743e7439ac7f98074248e57cf1a1f7 file=neo/internal/conversation/store.go range=87:87 lang=go exported=true byte_range=3559:3603
+  digest=b3:eb3dd9c1c23f33b540f592309b1913fc76743e7439ac7f98074248e57cf1a1f7 file=neo/internal/conversation/store.go range=99:99 lang=go exported=true byte_range=3935:3979
   sig=int
 EDGES
   ^contains=matrix/neo/internal/conversation.Summary
 
 NODE id=matrix/neo/internal/conversation.Summary#Updated kind=field
-  digest=b3:cb18edf0bc8f21b404fd9dab91c6ad58df1d8bb4c0f47a232388714dc47945f7 file=neo/internal/conversation/store.go range=88:88 lang=go exported=true byte_range=3605:3646
+  digest=b3:cb18edf0bc8f21b404fd9dab91c6ad58df1d8bb4c0f47a232388714dc47945f7 file=neo/internal/conversation/store.go range=100:100 lang=go exported=true byte_range=3981:4022
   sig=time.Time
 EDGES
   ^contains=matrix/neo/internal/conversation.Summary
 
 NODE id=matrix/neo/internal/conversation.Turn kind=type
-  digest=b3:cde08f6a1e3990c2acc99f90e173451ca7028312dd63867db616b5b7460c64ad file=neo/internal/conversation/store.go range=61:68 lang=go exported=true byte_range=2539:2854
+  digest=b3:cde08f6a1e3990c2acc99f90e173451ca7028312dd63867db616b5b7460c64ad file=neo/internal/conversation/store.go range=73:80 lang=go exported=true byte_range=2915:3230
   sig=type Turn struct {\n	Role		string		`json:"role"`	// "user" | "assistant"\n	Text		string		`json:"text"`\n	IntentID	string		`json:"intent_id,omitempty"`\n	TS		time.Time	`json:"ts"`\n}
   doc=Turn is one durable line of a conversation. JSON tags match the daemon store\nand the web client's ConversationTurn.
 EDGES
@@ -293,101 +392,129 @@ EDGES
   ^defines=matrix/neo/internal/conversation/store.go
 
 NODE id=matrix/neo/internal/conversation.Turn#IntentID kind=field
-  digest=b3:76a89ff5ce6e3001d9bc10681a9523973933b9638803df57c3ba9b8fef4c48e0 file=neo/internal/conversation/store.go range=66:66 lang=go exported=true byte_range=2773:2820
+  digest=b3:76a89ff5ce6e3001d9bc10681a9523973933b9638803df57c3ba9b8fef4c48e0 file=neo/internal/conversation/store.go range=78:78 lang=go exported=true byte_range=3149:3196
   sig=string
 EDGES
   ^contains=matrix/neo/internal/conversation.Turn
 
 NODE id=matrix/neo/internal/conversation.Turn#Role kind=field
-  digest=b3:b721ba3216a5a9a74f2d61a841e97cc2da7f1382edc3ca04ab9155e11b63c17a file=neo/internal/conversation/store.go range=64:64 lang=go exported=true byte_range=2681:2713
+  digest=b3:b721ba3216a5a9a74f2d61a841e97cc2da7f1382edc3ca04ab9155e11b63c17a file=neo/internal/conversation/store.go range=76:76 lang=go exported=true byte_range=3057:3089
   sig=string
 EDGES
   ^contains=matrix/neo/internal/conversation.Turn
 
 NODE id=matrix/neo/internal/conversation.Turn#TS kind=field
-  digest=b3:269b91bae61b332da73d4d3f12a6e25bed66fc4a3890f37e8c1459193cecb3b9 file=neo/internal/conversation/store.go range=67:67 lang=go exported=true byte_range=2822:2852
+  digest=b3:269b91bae61b332da73d4d3f12a6e25bed66fc4a3890f37e8c1459193cecb3b9 file=neo/internal/conversation/store.go range=79:79 lang=go exported=true byte_range=3198:3228
   sig=time.Time
 EDGES
   ^contains=matrix/neo/internal/conversation.Turn
 
 NODE id=matrix/neo/internal/conversation.Turn#Text kind=field
-  digest=b3:3ea96721511d29857b4014e4766199b14465ef2d5b1308b6f53346a37bc77241 file=neo/internal/conversation/store.go range=65:65 lang=go exported=true byte_range=2739:2771
+  digest=b3:3ea96721511d29857b4014e4766199b14465ef2d5b1308b6f53346a37bc77241 file=neo/internal/conversation/store.go range=77:77 lang=go exported=true byte_range=3115:3147
   sig=string
 EDGES
   ^contains=matrix/neo/internal/conversation.Turn
 
-NODE id=matrix/neo/internal/conversation.appendJSONLTurn kind=func
-  digest=b3:414c342acb0fe792155b60fb7b00a496680a96e1c2f376cc67c7a757164dfb68 file=neo/internal/conversation/store.go range=232:251 lang=go exported=false byte_range=7934:8541
-  sig=func appendJSONLTurn(path string, turn Turn) error
-  doc=appendJSONLTurn appends one turn as a single JSON line to path. O_APPEND +\na single Write makes the line atomically visible (POSIX) — no reader can see\na half-written line. Crash-atomic: a torn write yields an unparseable final\nline that readJSONLTurns skips.
-EDGES
-  ^defines=matrix/neo/internal/conversation/store.go
-
-NODE id=matrix/neo/internal/conversation.buildJSONL kind=func
-  digest=b3:a4ced17b584f40f58541082aa2d81e831638fb10104b3a57ab41144dcd2084d7 file=neo/internal/conversation/store.go range=327:336 lang=go exported=false byte_range=11107:11347
-  sig=func buildJSONL(turns []Turn) []byte
-  doc=buildJSONL serializes a turn slice as newline-delimited JSON.
-EDGES
-  ^defines=matrix/neo/internal/conversation/store.go
-
 NODE id=matrix/neo/internal/conversation.convMeta kind=type
-  digest=b3:d86da4654b94568e372ff6a63c7aada088c00b634d16bd8d1e88b18e07ebdf2f file=neo/internal/conversation/store.go range=338:343 lang=go exported=false byte_range=11349:11574
-  sig=type convMeta struct {\n	Project string `json:"project,omitempty"`\n}
-  doc=convMeta is the per-conversation sidecar (<convID>.meta.json): durable\nmetadata that is not a turn. Today it carries only the workbench project\ntag.
+  digest=b3:d415add40837d3b4077fa5fb32ba09546024a7887881884676003087ff66b8c9 file=neo/internal/conversation/store.go range=447:456 lang=go exported=false byte_range=14952:15478
+  sig=type convMeta struct {\n	Project	string	`json:"project,omitempty"`\n	// Interview marks a personalization-interview conversation: the session\n	// mints the interview agent (guided charter + confirmation-gated save\n	// tool) and writeback extraction is structurally excluded (req 12.3).\n	Interview	bool	`json:"interview,omitempty"`\n}
+  doc=convMeta is the per-conversation sidecar (<convID>.meta.json): durable\nmetadata that is not a turn — the workbench project tag and the\npersonalization-interview flag (ORACLE task 5.3).
 EDGES
-  contains=matrix/neo/internal/conversation.convMeta#Project
+  contains=matrix/neo/internal/conversation.convMeta#Interview,matrix/neo/internal/conversation.convMeta#Project
   ^defines=matrix/neo/internal/conversation/store.go
+
+NODE id=matrix/neo/internal/conversation.convMeta#Interview kind=field
+  digest=b3:70226ae66cd17e7584279cb57489c01366c20660f70161f2a1a7bcc1093965ba file=neo/internal/conversation/store.go range=452:455 lang=go exported=true byte_range=15215:15476
+  sig=bool
+  doc=Interview marks a personalization-interview conversation: the session\nmints the interview agent (guided charter + confirmation-gated save\ntool) and writeback extraction is structurally excluded (req 12.3).
+EDGES
+  ^contains=matrix/neo/internal/conversation.convMeta
 
 NODE id=matrix/neo/internal/conversation.convMeta#Project kind=field
-  digest=b3:b76516a608e3c4597af4cde711a1b12557fad6d5a907ff33c5c78ea930e769e6 file=neo/internal/conversation/store.go range=342:342 lang=go exported=true byte_range=11531:11572
+  digest=b3:b76516a608e3c4597af4cde711a1b12557fad6d5a907ff33c5c78ea930e769e6 file=neo/internal/conversation/store.go range=451:451 lang=go exported=true byte_range=15172:15213
   sig=string
 EDGES
   ^contains=matrix/neo/internal/conversation.convMeta
 
+NODE id=matrix/neo/internal/conversation.countLines kind=func
+  digest=b3:a41278b7b21233d269ec0145f3d0a4fdec5298cc4c11bcf8c0f3edd8989647e6 file=neo/internal/conversation/store.go range=158:175 lang=go exported=false byte_range=5913:6283
+  sig=func countLines(path string) uint64
+  doc=countLines counts non-empty lines in a JSONL file (0 when absent).
+EDGES
+  ^defines=matrix/neo/internal/conversation/store.go
+
 NODE id=matrix/neo/internal/conversation.openWithCap kind=func
-  digest=b3:ad354b27273a68ba660efc05b511d7affa177669d6a18d13e22844ab9f87b226 file=neo/internal/conversation/store.go range=111:119 lang=go exported=false byte_range=4439:4765
+  digest=b3:ad354b27273a68ba660efc05b511d7affa177669d6a18d13e22844ab9f87b226 file=neo/internal/conversation/store.go range=185:193 lang=go exported=false byte_range=6661:6987
   sig=func openWithCap(dir string, cap int) *Store
   doc=openWithCap is the test seam that sets an explicit retained-turn cap. It is\nunexported (test-only); production callers use Open.
 EDGES
   ^defines=matrix/neo/internal/conversation/store.go
 
 NODE id=matrix/neo/internal/conversation.preview kind=func
-  digest=b3:4468486fae4626855fc3f1f8147bbc93fbb32c9f8f218cfb299e40ed90552f7c file=neo/internal/conversation/store.go range=579:586 lang=go exported=false byte_range=18244:18470
+  digest=b3:4468486fae4626855fc3f1f8147bbc93fbb32c9f8f218cfb299e40ed90552f7c file=neo/internal/conversation/store.go range=752:759 lang=go exported=false byte_range=24120:24346
   sig=func preview(rec *Record) string
   doc=preview returns the most recent turn's text, trimmed, for the sidebar.
 EDGES
   ^defines=matrix/neo/internal/conversation/store.go
 
-NODE id=matrix/neo/internal/conversation.readJSONLTurns kind=func
-  digest=b3:b90db5000010068e858b7684b657e26c0f7a00e4883658c781d98c7a4407bfd8 file=neo/internal/conversation/store.go range=193:230 lang=go exported=false byte_range=6846:7932
-  sig=func readJSONLTurns(path string) ([]Turn, time.Time)
-  doc=readJSONLTurns parses a newline-delimited JSON turn file. A line that fails\nto unmarshal (including a crash-truncated final line with no trailing\nnewline) is skipped — crash-atomic. Returns (turns, latestUpdated).
-EDGES
-  ^defines=matrix/neo/internal/conversation/store.go
-
 NODE id=matrix/neo/internal/conversation.retainedTurnsFromEnv kind=func
-  digest=b3:e28a3b68317130bbc4e1cb117ed34cb0d99feb0128a28390b7ac61a716b60d5e file=neo/internal/conversation/store.go range=121:133 lang=go exported=false byte_range=4767:5122
+  digest=b3:e28a3b68317130bbc4e1cb117ed34cb0d99feb0128a28390b7ac61a716b60d5e file=neo/internal/conversation/store.go range=195:207 lang=go exported=false byte_range=6989:7344
   sig=func retainedTurnsFromEnv() int
   doc=retainedTurnsFromEnv reads the NEO_CONVERSATION_RETAINED_TURNS env var; an\nabsent/invalid value yields 0 (Open then applies the default).
 EDGES
   ^defines=matrix/neo/internal/conversation/store.go
 
+NODE id=matrix/neo/internal/conversation.schemaMetaV1 kind=const
+  digest=b3:ec21c203ca6dd5e4a4847583ef41880b0b518677951723ed5c4ce331a7939b82 file=neo/internal/conversation/store.go range=52:59 lang=go exported=false byte_range=2141:2496
+  sig=untyped string
+  doc=Store types and schema bound into each record's associated data, so a sealed\nline cannot be replayed across users, stores, conversations, or positions.
+EDGES
+  ^defines=matrix/neo/internal/conversation/store.go
+
+NODE id=matrix/neo/internal/conversation.schemaTurnV1 kind=const
+  digest=b3:a2b08a6dfe75600f7f580f576a9480d8cb6dfc6e1084de010ce4f8edf3bad37c file=neo/internal/conversation/store.go range=52:58 lang=go exported=false byte_range=2141:2466
+  sig=untyped string
+  doc=Store types and schema bound into each record's associated data, so a sealed\nline cannot be replayed across users, stores, conversations, or positions.
+EDGES
+  ^defines=matrix/neo/internal/conversation/store.go
+
+NODE id=matrix/neo/internal/conversation.storeConvArchive kind=const
+  digest=b3:4a5c06d74e9d942ddb6e2b4fde726b7f87dc61bb45f66f62c043b54a916bd135 file=neo/internal/conversation/store.go range=52:56 lang=go exported=false byte_range=2141:2392
+  sig=untyped string
+  doc=Store types and schema bound into each record's associated data, so a sealed\nline cannot be replayed across users, stores, conversations, or positions.
+EDGES
+  ^defines=matrix/neo/internal/conversation/store.go
+
+NODE id=matrix/neo/internal/conversation.storeConvHot kind=const
+  digest=b3:004e4bbbf7a809fb17043f97e8adee6e71caee63273d0f3e77628b4906525355 file=neo/internal/conversation/store.go range=52:55 lang=go exported=false byte_range=2141:2345
+  sig=untyped string
+  doc=Store types and schema bound into each record's associated data, so a sealed\nline cannot be replayed across users, stores, conversations, or positions.
+EDGES
+  ^defines=matrix/neo/internal/conversation/store.go
+
+NODE id=matrix/neo/internal/conversation.storeConvMeta kind=const
+  digest=b3:8b9ac022bd125deeaced12d24fc8b43ed7fdaeab60f8a683d10aa8f662cff10c file=neo/internal/conversation/store.go range=52:57 lang=go exported=false byte_range=2141:2436
+  sig=untyped string
+  doc=Store types and schema bound into each record's associated data, so a sealed\nline cannot be replayed across users, stores, conversations, or positions.
+EDGES
+  ^defines=matrix/neo/internal/conversation/store.go
+
 NODE id=matrix/neo/internal/conversation.title kind=func
-  digest=b3:faaefa94a90ec414ed46a4de9d4f2f2ce30a90d06219ff13c2a714c506265352 file=neo/internal/conversation/store.go range=565:577 lang=go exported=false byte_range=17911:18242
+  digest=b3:faaefa94a90ec414ed46a4de9d4f2f2ce30a90d06219ff13c2a714c506265352 file=neo/internal/conversation/store.go range=738:750 lang=go exported=false byte_range=23787:24118
   sig=func title(rec *Record) string
   doc=title derives a short human label: the explicit Title, else the first user\nturn trimmed, else a generic fallback.
 EDGES
   ^defines=matrix/neo/internal/conversation/store.go
 
 NODE id=matrix/neo/internal/conversation.truncateLabel kind=func
-  digest=b3:fc47ecfdc854b97aa4225c7f2ed4daa4fb6c2570a78f5ae5e86e0aefa20d194b file=neo/internal/conversation/store.go range=588:596 lang=go exported=false byte_range=18472:18716
+  digest=b3:fc47ecfdc854b97aa4225c7f2ed4daa4fb6c2570a78f5ae5e86e0aefa20d194b file=neo/internal/conversation/store.go range=761:769 lang=go exported=false byte_range=24348:24592
   sig=func truncateLabel(s string, n int) string
   doc=truncateLabel collapses whitespace and clamps to n runes with an ellipsis.
 EDGES
   ^defines=matrix/neo/internal/conversation/store.go
 
 NODE id=matrix/neo/internal/conversation/store.go kind=file
-  digest=b3:d31bd1fc532c127612a9ac02d281d562b5a39f68e2f509664307f10eb13e4654 file=neo/internal/conversation/store.go range=1:610 lang=go exported=true
+  digest=b3:93a5c1d16a33b3c61558c9596b9212e860b1d1c47ff8814731dfa904babd2659 file=neo/internal/conversation/store.go range=1:783 lang=go exported=true
 EDGES
-  defines=matrix/neo/internal/conversation.DefaultRecallTurns,matrix/neo/internal/conversation.DefaultRetainedTurns,matrix/neo/internal/conversation.Dir,matrix/neo/internal/conversation.Open,matrix/neo/internal/conversation.Record,matrix/neo/internal/conversation.Store,matrix/neo/internal/conversation.Store.Append,matrix/neo/internal/conversation.Store.AppendAssistant,matrix/neo/internal/conversation.Store.AppendUser,matrix/neo/internal/conversation.Store.Archived,matrix/neo/internal/conversation.Store.Enabled,matrix/neo/internal/conversation.Store.Get,matrix/neo/internal/conversation.Store.History,matrix/neo/internal/conversation.Store.List,matrix/neo/internal/conversation.Store.Project,matrix/neo/internal/conversation.Store.Recent,matrix/neo/internal/conversation.Store.SetProject,matrix/neo/internal/conversation.Store.archivePathLocked,matrix/neo/internal/conversation.Store.historyLocked,matrix/neo/internal/conversation.Store.legacyPathLocked,matrix/neo/internal/conversation.Store.loadLocked,matrix/neo/internal/conversation.Store.loadMetaLocked,matrix/neo/internal/conversation.Store.metaPathLocked,matrix/neo/internal/conversation.Store.pathLocked,matrix/neo/internal/conversation.Store.rollIfOverCapLocked,matrix/neo/internal/conversation.Summary,matrix/neo/internal/conversation.Turn,matrix/neo/internal/conversation.appendJSONLTurn,matrix/neo/internal/conversation.buildJSONL,matrix/neo/internal/conversation.convMeta,matrix/neo/internal/conversation.openWithCap,matrix/neo/internal/conversation.preview,matrix/neo/internal/conversation.readJSONLTurns,matrix/neo/internal/conversation.retainedTurnsFromEnv,matrix/neo/internal/conversation.title,matrix/neo/internal/conversation.truncateLabel
+  defines=matrix/neo/internal/conversation.DefaultRecallTurns,matrix/neo/internal/conversation.DefaultRetainedTurns,matrix/neo/internal/conversation.Dir,matrix/neo/internal/conversation.Open,matrix/neo/internal/conversation.Record,matrix/neo/internal/conversation.Store,matrix/neo/internal/conversation.Store.Append,matrix/neo/internal/conversation.Store.AppendAssistant,matrix/neo/internal/conversation.Store.AppendUser,matrix/neo/internal/conversation.Store.Archived,matrix/neo/internal/conversation.Store.Enabled,matrix/neo/internal/conversation.Store.Get,matrix/neo/internal/conversation.Store.History,matrix/neo/internal/conversation.Store.IsInterview,matrix/neo/internal/conversation.Store.List,matrix/neo/internal/conversation.Store.Project,matrix/neo/internal/conversation.Store.Recent,matrix/neo/internal/conversation.Store.SetInterview,matrix/neo/internal/conversation.Store.SetProject,matrix/neo/internal/conversation.Store.SetVault,matrix/neo/internal/conversation.Store.ad,matrix/neo/internal/conversation.Store.appendTurn,matrix/neo/internal/conversation.Store.archivePathLocked,matrix/neo/internal/conversation.Store.buildJSONL,matrix/neo/internal/conversation.Store.historyLocked,matrix/neo/internal/conversation.Store.legacyPathLocked,matrix/neo/internal/conversation.Store.loadLocked,matrix/neo/internal/conversation.Store.loadMetaLocked,matrix/neo/internal/conversation.Store.metaAD,matrix/neo/internal/conversation.Store.metaPathLocked,matrix/neo/internal/conversation.Store.nextSeqLocked,matrix/neo/internal/conversation.Store.pathLocked,matrix/neo/internal/conversation.Store.readTurns,matrix/neo/internal/conversation.Store.rollIfOverCapLocked,matrix/neo/internal/conversation.Store.saveMetaLocked,matrix/neo/internal/conversation.Summary,matrix/neo/internal/conversation.Turn,matrix/neo/internal/conversation.convMeta,matrix/neo/internal/conversation.countLines,matrix/neo/internal/conversation.openWithCap,matrix/neo/internal/conversation.preview,matrix/neo/internal/conversation.retainedTurnsFromEnv,matrix/neo/internal/conversation.schemaMetaV1,matrix/neo/internal/conversation.schemaTurnV1,matrix/neo/internal/conversation.storeConvArchive,matrix/neo/internal/conversation.storeConvHot,matrix/neo/internal/conversation.storeConvMeta,matrix/neo/internal/conversation.title,matrix/neo/internal/conversation.truncateLabel
   ^contains=matrix/neo/internal/conversation

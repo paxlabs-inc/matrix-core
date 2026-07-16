@@ -80,6 +80,11 @@ func (s *Server) routes() []routeFact {
 		// daemon, which never saw a Neo conversation.
 		{"/conversations", "GET /conversations — list conversation history from your durable store", s.handleConversations},
 		{"/conversations/", "", s.handleConversations},
+		// Memory reads must come from Neo's pager. The co-located daemon owns a
+		// separate Cortex actor and therefore cannot see Neo's learned memories.
+		{"/memory/recent", "GET /memory/recent — list your learned memories from Neo's durable store", s.handleMemoryRecent},
+		{"/memory/types", "GET /memory/types — count your learned memories by type", s.handleMemoryTypes},
+		{"/memory/search", "POST /memory/search — search your learned memories", s.handleMemorySearch},
 		// Media plane: generated + uploaded images/video/audio live on the
 		// agent's machine volume.
 		{"/media/", "GET /media/{id} — serve a generated or uploaded media artifact from your machine volume", s.handleMedia},
@@ -115,7 +120,7 @@ func (s *Server) routes() []routeFact {
 var (
 	surfaceIs = []string{
 		"You are the conversational agent behind the Matrix daemon's HTTP front: clients send POST /chat and read your streamed replies over SSE GET /events.",
-		"Every route not on your list reverse-proxies to the co-located MCL daemon (healthz, /messages, /memory, /tools, the core_execute plane).",
+		"Every route not on your list reverse-proxies to the co-located MCL daemon (healthz, /messages, /tools, the core_execute plane).",
 	}
 	surfaceIsNot = []string{
 		"You have NO OpenAI-compatible endpoint: /v1/chat/completions, /v1/completions, and /v1/models are NOT served. Nothing can integrate with you as an OpenAI-style API.",

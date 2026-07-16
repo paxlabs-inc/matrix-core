@@ -58,6 +58,10 @@
     - apps/client: render episodic memory.activation excerpts in the existing memory/timeline workspace surface (conversation/date/exactness shown); parse in useChat + buildTaskFromTrace so it survives reopen; i18n x5 locales; house rules
     - Verify: tsc + eslint + vitest green on changed files
     - _Requirements: 8.1, 8.2_
+  - [x] 4.4 Timeline reads Neo's learned-memory actor
+    - Route the client Timeline read endpoints through Neo's live Pager instead of proxying them to the separate executor Cortex actor; preserve recent, type-count, type-filter, semantic-search, and as-of behavior
+    - Regression test on a real Pebble Cortex proves learned Fact and Preference memories are returned from /memory/recent and remain filterable through /memory/search
+    - _Requirements: 8.2_
 
 ## P2 — Proof
 
@@ -74,7 +78,7 @@
     { "id": 1,  "tasks": ["1.1", "1.2"] },
     { "id": 2,  "tasks": ["2.1", "2.2"] },
     { "id": 3,  "tasks": ["3.1", "3.2"] },
-    { "id": 4,  "tasks": ["4.1", "4.2", "4.3"] },
+    { "id": 4,  "tasks": ["4.1", "4.2", "4.3", "4.4"] },
     { "id": 5,  "tasks": ["5.1"] }
   ]
 }
