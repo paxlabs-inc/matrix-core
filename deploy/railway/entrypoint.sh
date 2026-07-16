@@ -169,6 +169,26 @@ start_local_browser() {
     BROWSER_PID=$!
 }
 
+start_voice_controller() {
+    if [[ "${NEO_VOICE_ENABLED:-false}" != "true" ]]; then
+        return 0
+    fi
+    if [[ -z "${MATRIX_LIVEKIT_URL:-}" || -z "${MATRIX_LIVEKIT_KEY:-}" || -z "${MATRIX_LIVEKIT_SECRET:-}" ]]; then
+        echo "entrypoint: voice enabled but LiveKit is not configured; voice stays unavailable" >&2
+        return 0
+    fi
+    export VOICE_CONTROLLER_URL="${VOICE_CONTROLLER_URL:-http://127.0.0.1:8791}"
+    (
+        while true; do
+            /opt/voice-venv/bin/python "${MATRIX_HOME}/tools/voice/controller.py" \
+                >>/tmp/voice-controller.log 2>&1 || true
+            echo "entrypoint: voice controller exited; restarting in 2s" >&2
+            sleep 2
+        done
+    ) &
+    VOICE_CONTROLLER_PID=$!
+}
+
 case "${1:-neo}" in
     neo)
         shift || true
@@ -177,6 +197,7 @@ case "${1:-neo}" in
         # MATRIX_BROWSER_URL is exported before the daemon/neo spawn their
         # browser.mjs bridges (the bridge reads it at spawn).
         start_local_browser
+        start_voice_controller
 
         # Backend: the plumbing daemon on :8081 (background). Neo
         # reverse-proxies every non-conversational route to it (healthz,
@@ -228,7 +249,7 @@ case "${1:-neo}" in
         EXIT=$?
         set -e
         echo "entrypoint: a co-located process exited (status ${EXIT}); stopping the pair" >&2
-        kill "${DAEMON_PID}" "${NEO_PID}" ${BROWSER_PID:+"${BROWSER_PID}"} 2>/dev/null || true
+        kill "${DAEMON_PID}" "${NEO_PID}" ${BROWSER_PID:+"${BROWSER_PID}"} ${VOICE_CONTROLLER_PID:+"${VOICE_CONTROLLER_PID}"} 2>/dev/null || true
         wait 2>/dev/null || true
         exit "${EXIT}"
         ;;

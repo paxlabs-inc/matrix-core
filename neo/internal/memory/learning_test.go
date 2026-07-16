@@ -200,12 +200,12 @@ func TestRejectionCandidatesGuardrails(t *testing.T) {
 
 	const turn = "deploy an erc20 token to base mainnet"
 	surfaced := []Snippet{
-		{URI: "matrix://x/Fact/1", Type: "Fact", Text: "the user's cat is named mittens"}, // off-topic + rejectable → SELECTED
-		{URI: "matrix://x/Fact/2", Type: "Fact", Text: turn},                              // on-topic (identical) → not selected
+		{URI: "matrix://x/Fact/1", Type: "Fact", Text: "the user's cat is named mittens"},   // off-topic + rejectable → SELECTED
+		{URI: "matrix://x/Fact/2", Type: "Fact", Text: turn},                                // on-topic (identical) → not selected
 		{URI: "matrix://x/Constraint/3", Type: "Constraint", Text: "never wipe prod state"}, // pinned type → never
-		{URI: "matrix://x/Preference/4", Type: "Preference", Text: "use tabs not spaces"},    // pinned type → never
-		{URI: "matrix://x/Goal/5", Type: "Goal", Text: "learn to play the cello"},            // pinned type → never
-		{URI: "matrix://x/Pattern/6", Type: "Pattern", Text: "some unrelated recipe"},        // not rejectable → never
+		{URI: "matrix://x/Preference/4", Type: "Preference", Text: "use tabs not spaces"},   // pinned type → never
+		{URI: "matrix://x/Goal/5", Type: "Goal", Text: "learn to play the cello"},           // pinned type → never
+		{URI: "matrix://x/Pattern/6", Type: "Pattern", Text: "some unrelated recipe"},       // not rejectable → never
 	}
 
 	got := p.RejectionCandidates(turn, surfaced)

@@ -133,20 +133,20 @@ func TestActivationTail_FixedSectionOrder(t *testing.T) {
 	tail := a.renderActivationBundle(testActivationBundle()) + a.epistemicTail() + a.budgetTail(42)
 
 	sections := []string{
-		"Reference notes, not a new message",   // reframe (always first)
-		"Standing objective for this conversation", // active goal
-		"Your durable memory",                  // bundle header
-		"Pinned:",                              // pinned tier
-		"pinned identity block",                // pinned content
-		"Story so far:",                        // durable story
-		"Timeline (coarse, older first):",      // T0 tier
-		"epoch: shipped the thing",             // timeline content
+		"Reference notes, not a new message",            // reframe (always first)
+		"Standing objective for this conversation",      // active goal
+		"Your durable memory",                           // bundle header
+		"Pinned:",                                       // pinned tier
+		"pinned identity block",                         // pinned content
+		"Story so far:",                                 // durable story
+		"Timeline (coarse, older first):",               // T0 tier
+		"epoch: shipped the thing",                      // timeline content
 		"Recent activity (page in with memory_recall):", // T1 tier
-		"matrix://cortex/Fact/x#1",             // recent handle
-		"More available on demand",             // reachable note
-		"[premise-ledger-slot]",                // epistemic slot 1
-		"[task-graph-slot]",                    // epistemic slot 2
-		"[context: 42% used]",                  // budget stat (always last)
+		"matrix://cortex/Fact/x#1",                      // recent handle
+		"More available on demand",                      // reachable note
+		"[premise-ledger-slot]",                         // epistemic slot 1
+		"[task-graph-slot]",                             // epistemic slot 2
+		"[context: 42% used]",                           // budget stat (always last)
 	}
 	prev := -1
 	for _, s := range sections {

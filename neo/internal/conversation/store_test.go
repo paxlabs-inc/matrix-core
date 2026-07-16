@@ -324,7 +324,6 @@ func jsonlLineCount(t *testing.T, dir, convID string) int {
 	return count
 }
 
-
 // TestAppendUser_PersistsIntentId pins the F1 contract: the owning intent_id
 // passed at user-turn-append time is durably persisted on the user turn (not
 // only on the assistant turn). The persisted shape is forward-compatible —

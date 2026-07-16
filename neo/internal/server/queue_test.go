@@ -33,8 +33,8 @@ type fakeCall struct {
 
 func newBlockingExec() *fakeExec {
 	return &fakeExec{
-		started: make(chan fakeCall),   // unbuffered: precise sync
-		release: make(chan struct{}),   // unbuffered: precise sync
+		started: make(chan fakeCall), // unbuffered: precise sync
+		release: make(chan struct{}), // unbuffered: precise sync
 	}
 }
 

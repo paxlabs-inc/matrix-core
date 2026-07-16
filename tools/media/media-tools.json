@@ -133,13 +133,26 @@
     }
   },
   {
-    "name": "generate_speech",
-    "description": "Convert text into natural-sounding spoken audio (text-to-speech). Use this when the user wants something read aloud or an audio voiceover. The audio is shown to the user automatically; describe it in your reply, do not paste the URL. Returns JSON {ok, kind:\"audio\", url}. args: text (required, max 512 characters), voice? (Emily, James, Olivia, Michael, Sarah, John; default Emily), language? (en-US, zh-CN, ja-JP; default en-US), speed? (0.8-3.0, default 1.0), volume? (1.0-2.0, default 1.0).",
+    "name": "transcribe_audio",
+    "description": "Transcribe a local wav or mp3 audio attachment with MiMo speech recognition. Use the exact /media reference from the user's message. Returns JSON {ok, transcript, language}. args: audio (required), language? (auto, zh, en; default auto).",
     "inputSchema": {
       "type": "object",
       "properties": {
-        "text": { "type": "string", "description": "The text to speak. UTF-8, maximum 512 characters." },
-        "voice": { "type": "string", "description": "Voice to use. Default Emily.", "enum": ["Emily", "James", "Olivia", "Michael", "Sarah", "John"] },
+        "audio": { "type": "string", "description": "The local wav or mp3 attachment as a /media/<id> reference or base64 data URL." },
+        "language": { "type": "string", "description": "Recognition language. Default auto.", "enum": ["auto", "zh", "en"] }
+      },
+      "required": ["audio"]
+    }
+  },
+  {
+    "name": "generate_speech",
+    "description": "Convert text into natural-sounding spoken audio with MiMo TTS. Use this when the user wants something read aloud or an audio voiceover. The audio is shown automatically; describe it, do not paste the URL. Returns JSON {ok, kind:\"audio\", url}. args: text (required), voice? (MiMo built-in voice), style? (natural-language performance direction). Novita is used only when MiMo is unavailable.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "text": { "type": "string", "description": "The UTF-8 text to speak." },
+        "voice": { "type": "string", "description": "MiMo built-in voice. Default Mia.", "enum": ["mimo_default", "冰糖", "茉莉", "苏打", "白桦", "Mia", "Chloe", "Milo", "Dean"] },
+        "style": { "type": "string", "description": "Optional natural-language direction for tone, emotion, pacing, role, dialect, and delivery style." },
         "language": { "type": "string", "description": "Spoken language. Default en-US.", "enum": ["en-US", "zh-CN", "ja-JP"] },
         "speed": { "type": "number", "description": "Speaking speed, 0.8-3.0. Default 1.0." },
         "volume": { "type": "number", "description": "Output volume, 1.0-2.0. Default 1.0." }

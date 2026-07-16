@@ -445,8 +445,8 @@ func TestDelegate_DrivenBySSEEvents(t *testing.T) {
 			mu.Unlock()
 			_, _ = w.Write(sseData(t, 1, "gate.invoked", "walk", map[string]any{
 				"intent_id": "sse1", "node_id": "n1",
-				"question":  "Approve spend of 5 PAX?",
-				"options":   []string{"yes", "no"},
+				"question": "Approve spend of 5 PAX?",
+				"options":  []string{"yes", "no"},
 			}))
 			fl.Flush()
 			// Hold the stream open until the gate is answered (or the client
@@ -631,8 +631,8 @@ func TestDelegate_NoDuplicateApproval(t *testing.T) {
 			time.Sleep(10 * time.Millisecond)
 			_, _ = w.Write(sseData(t, 1, "gate.invoked", "walk", map[string]any{
 				"intent_id": "dup1", "node_id": "n1",
-				"question":  "Approve spend of 5 PAX?",
-				"options":   []string{"yes", "no"},
+				"question": "Approve spend of 5 PAX?",
+				"options":  []string{"yes", "no"},
 			}))
 			fl.Flush()
 			select {

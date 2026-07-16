@@ -603,6 +603,18 @@ func (a *Agent) effectiveStepBudget(sig effectiveBudgetSignals) int {
 // — prepare → generate → deliberate → act | close — each a named stage with a
 // documented contract. Conversation state persists across calls.
 func (a *Agent) Chat(ctx context.Context, userInput string) error {
+	return a.chat(ctx, userInput, nil)
+}
+
+// ChatAudio runs the same staged turn with one audio-native user message. The
+// ASR result is produced concurrently with the first model generation; before
+// any downstream deliberation/close, the visible user content is replaced by
+// the durable transcript plus sealed media ref and recorded to cortex.
+func (a *Agent) ChatAudio(ctx context.Context, userInput string, audio *AudioTurn) error {
+	return a.chat(ctx, userInput, audio)
+}
+
+func (a *Agent) chat(ctx context.Context, userInput string, audio *AudioTurn) error {
 	userInput = strings.TrimSpace(userInput)
 	if userInput == "" {
 		return nil
@@ -626,7 +638,20 @@ func (a *Agent) Chat(ctx context.Context, userInput string) error {
 			t.overflow.cleanup()
 		}
 	}()
-	cmTail := a.prepareTurn(ctx, userInput)
+	audioIndex := -1
+	if audio != nil {
+		audioIndex = len(a.working)
+	}
+	cmTail := a.prepareTurn(ctx, userInput, audioData(audio))
+	audioFinalized := audio == nil
+	finalizeAudio := func() {
+		if audioFinalized {
+			return
+		}
+		userInput = a.finalizeAudioTurn(ctx, audioIndex, audio)
+		audioFinalized = true
+	}
+	defer finalizeAudio()
 
 	for step := 0; ; step++ {
 		budget := a.effectiveStepBudget(effectiveBudgetSignals{
@@ -645,12 +670,14 @@ func (a *Agent) Chat(ctx context.Context, userInput string) error {
 		window, tail, pct := a.prepareWindow(cmTail)
 		res, streamedReasoning, proceed, err := a.generate(ctx, step, cmTail, window, tail)
 		if err != nil {
+			finalizeAudio()
 			a.consolidateWorking()
 			return fmt.Errorf("neo: model call failed: %w", err)
 		}
 		if !proceed {
 			continue
 		}
+		finalizeAudio()
 		casMod := a.deliberate(step, res, streamedReasoning)
 		if !res.HasToolCalls() {
 			finished, cerr := a.closeTurn(ctx, res, casMod, userInput)
@@ -685,11 +712,17 @@ func (a *Agent) Chat(ctx context.Context, userInput string) error {
 // USER-role tail (the activation snapshot is frozen for the whole turn — the
 // NE-7 discipline). The Q2 first-turn relevance push rides the same tail so
 // the usage-salience attestation loop still learns from what surfaced.
-func (a *Agent) prepareTurn(ctx context.Context, userInput string) string {
-	a.working = append(a.working, llm.UserMessage(userInput))
+func (a *Agent) prepareTurn(ctx context.Context, userInput, audioData string) string {
+	if audioData != "" {
+		a.working = append(a.working, llm.UserAudioMessage(userInput, audioData))
+	} else {
+		a.working = append(a.working, llm.UserMessage(userInput))
+	}
 	// Record the user message to the durable cortex transcript so cortex — not
 	// the in-memory working slice — owns the turn-by-turn record.
-	a.cmRecordUser(userInput)
+	if audioData == "" {
+		a.cmRecordUser(userInput)
+	}
 
 	bundle := a.cmActivate(userInput)
 	a.activationAssemblies++

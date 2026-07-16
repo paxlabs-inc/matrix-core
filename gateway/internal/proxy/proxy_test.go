@@ -383,14 +383,12 @@ func TestEnsureStreamUsage(t *testing.T) {
 	}
 }
 
-// TestProxyXaiUpstreamHop is the successor to the retired Z.ai upstream-hop
-// tests (TestTranslateZaiBody + TestProxyZaiUpstreamHop). The v9 migration off
-// Z.ai GLM removed the last-hop body rewrite: xAI (Grok) is OpenAI-compatible
-// and accepts the bare "grok-*" fleet id verbatim, so a metered grok-* chat
-// call must reach the xAI upstream with (a) the request body BYTE-IDENTICAL
-// (no native-id rewrite, no thinking-block translation), and (b) the gateway's
-// XAI_API_KEY bearer — while the ledger keeps metering.
-func TestProxyXaiUpstreamHop(t *testing.T) {
+// TestProxyXiaomiUpstreamHop pins the only chat upstream in use: Xiaomi MiMo.
+// The gateway forwards a metered mimo chat call to Xiaomi's OpenAI-compatible
+// upstream with (a) the request body BYTE-IDENTICAL (no native-id rewrite, no
+// thinking-block translation on the gateway hop), and (b) the gateway's
+// MIMO_API_KEY bearer — while the ledger keeps metering.
+func TestProxyXiaomiUpstreamHop(t *testing.T) {
 	var gotBody []byte
 	var gotAuth string
 	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -398,7 +396,7 @@ func TestProxyXaiUpstreamHop(t *testing.T) {
 		gotAuth = r.Header.Get("Authorization")
 		w.Header().Set("Content-Type", "application/json")
 		body, _ := json.Marshal(map[string]any{
-			"id": "chatcmpl-xai",
+			"id": "chatcmpl-mimo",
 			"choices": []map[string]any{{
 				"index":         0,
 				"message":       map[string]any{"role": "assistant", "content": "ok"},
@@ -416,7 +414,7 @@ func TestProxyXaiUpstreamHop(t *testing.T) {
 	if err != nil {
 		t.Fatalf("auth.New: %v", err)
 	}
-	router := routing.New(routing.Options{XaiChatURL: upstream.URL})
+	router := routing.New(routing.Options{XiaomiChatURL: upstream.URL})
 	lg := ledger.NewMemory("10")
 	fixedNow := func() time.Time { return time.Date(2026, 5, 27, 0, 0, 0, 0, time.UTC) }
 	lg.SetClock(fixedNow)
@@ -424,7 +422,7 @@ func TestProxyXaiUpstreamHop(t *testing.T) {
 		Auth:           a,
 		Router:         router,
 		Ledger:         lg,
-		Provider:       ProviderKeys{XaiKey: "test_xai_key"},
+		Provider:       ProviderKeys{XiaomiKey: "test_mimo_key"},
 		PreEstimatePax: "0.0001",
 		Now:            fixedNow,
 	})
@@ -432,8 +430,8 @@ func TestProxyXaiUpstreamHop(t *testing.T) {
 		t.Fatalf("proxy.New: %v", err)
 	}
 
-	// A non-streaming grok call: the gateway forwards the body verbatim.
-	reqBody := []byte(`{"model":"xiaomimimo/mimo-v2.5-pro","messages":[{"role":"user","content":"hi"}],"reasoning_effort":"high"}`)
+	// A non-streaming mimo call: the gateway forwards the body verbatim.
+	reqBody := []byte(`{"model":"mimo-v2.5-pro","messages":[{"role":"user","content":"hi"}],"thinking":{"type":"enabled"}}`)
 	r := newGatewayRequest("POST", "/v1/chat/completions", reqBody, map[string]string{
 		types.HeaderSlot: "neo",
 	})
@@ -442,10 +440,10 @@ func TestProxyXaiUpstreamHop(t *testing.T) {
 	if w.Code != http.StatusOK {
 		t.Fatalf("status: %d body=%s", w.Code, w.Body.String())
 	}
-	if gotAuth != "Bearer test_xai_key" {
+	if gotAuth != "Bearer test_mimo_key" {
 		t.Fatalf("upstream auth: %q", gotAuth)
 	}
-	// The whole body must reach xAI byte-identical (no rewrite on the hop).
+	// The whole body must reach Xiaomi byte-identical (no rewrite on the hop).
 	if !bytes.Equal(gotBody, reqBody) {
 		t.Fatalf("upstream body was rewritten:\n want %s\n got  %s", reqBody, gotBody)
 	}
@@ -453,15 +451,12 @@ func TestProxyXaiUpstreamHop(t *testing.T) {
 	if err := json.Unmarshal(gotBody, &sent); err != nil {
 		t.Fatalf("upstream body not JSON: %v (%s)", err, gotBody)
 	}
-	if string(sent["model"]) != `"xiaomimimo/mimo-v2.5-pro"` {
-		t.Fatalf("upstream model: %s (grok id must pass through unchanged)", sent["model"])
+	if string(sent["model"]) != `"mimo-v2.5-pro"` {
+		t.Fatalf("upstream model: %s (mimo id must pass through unchanged)", sent["model"])
 	}
-	// No Z.ai-style `thinking` block is ever synthesized on the hop.
-	if _, ok := sent["thinking"]; ok {
-		t.Fatalf("thinking block must not be synthesized for xAI: %s", gotBody)
-	}
-	if string(sent["reasoning_effort"]) != `"high"` {
-		t.Fatalf("reasoning_effort must survive verbatim: %s", sent["reasoning_effort"])
+	// The MiMo thinking block set by the caller survives the hop verbatim.
+	if string(sent["thinking"]) != `{"type":"enabled"}` {
+		t.Fatalf("thinking block must survive verbatim: %s", gotBody)
 	}
 }
 

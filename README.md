@@ -38,79 +38,112 @@
 
 ## What is Matrix?
 
-Matrix is a cognition layer built for the Machine Economy Vision of the Paxeer Network it extends a language model beyond conversation into real execution: agent-to-agent on-chain financial coordination, high-risk task execution, and the safe handling of critical, confidential work.
+Matrix is an agent framework, built by PaxLabs, that takes an LLM past chat and into real execution: files, code, web, on-chain operations, payments, and smart contracts, all driven by natural language.
 
-The reason most agent stacks break on that class of work is that they carry natural language all the way down. Human language is a leaky channel the biological way we reason, perceive, and approximate bleeds into every sentence we produce. That's fine for chat. It is not fine when an agent is moving funds, performing an irreversible write, or holding something confidential. Matrix gives humans and machines a way to coordinate on exactly that work *without* the ambiguity of human reasoning and human language reaching the parts that must not be ambiguous.
+Two things sit at the **core of the system**: **Neo**, the default agent you talk to, and the **Cortex**, the persistent memory every agent runs on. Everything else — the MCL rigor pipeline, the executor, settlement, scheduling, the tool ecosystem — hangs off that core.
 
-It does this with three layers.
+Most agent stacks break on consequential work because they carry natural language all the way down, and prose is a leaky channel: fine for chat, not fine when an agent is moving funds, performing an irreversible write, or holding something confidential. Matrix keeps everyday reversible work in the Neo loop and escalates — the moment work becomes monetary, irreversible, or compliance-sensitive — to the MCL pipeline, where intents are compiled, typed, signed, and replayed, so ambiguity never reaches the parts that must be exact.
 
-## The Three Layers
+## Neo — where everything starts
 
-### 1 — The Matrix Compiler (MCL)
+Neo is the entry point. You talk to Neo; Neo does the work.
 
-**The top boss of the stack.** MCL is a cohort of three rigorous agents that communicate, plan, and act among themselves over a closed-verb protocol free of the constraints and ambiguity of human language and human input. They coordinate with the exactness of a machine and apply it to real-world, high-risk, sensitive tasks: money, irreversible operations, confidential handling.
+- **Recursive tool-calling loop.** The model emits text and tool-call intents; the harness dispatches tools (shell, code, web search, files, browser, chain reads, media) and feeds results back. Per-turn step budgets, stall detection, and honest partials on exhaustion — never fabricated success.
+- **Persistent memory via Cortex.** Every actor gets an append-only, Merkle-anchored memory graph — facts, preferences, goals, events, procedural patterns — with salience-ranked recall, semantic search via HNSW, and byte-deterministic replay. Neo does not wake up empty.
+- **Agent swarms.** Neo can spawn concurrent sub-agents for parallel work, each with an isolated context window, a restricted tool surface, and a bounded timeout. No recursion, no fork-bombs.
+- **Automatrix.** Autonomous execution: Neo can schedule proactive tasks, wake on timers, and run background work on a restricted surface with no value-moving tools.
+- **Tool transparency.** Every tool call is surfaced as a ToolEvent with its name, arguments, and result — users see the real evidence behind an answer, not just a synthesized paragraph.
 
-When a task crosses the line into the consequential, it goes here. The three agents calculate the outcome space, confirm they hold every input the work requires, ask for clarity when they don't, and execute once, to spec. Nothing runs on a guess.
+## The Cortex — the memory core
 
-### 2 — The Cortex
+The Cortex is what makes an agent continuous. It is a per-actor typed memory graph on Pebble: an append-only journal, salience scoring, an HNSW vector index for semantic recall, and Merkle-anchored snapshots with byte-deterministic replay. Continuity stops being an illusion the model fakes each session — it is real for the user and unbreakable for the agent. Neo, its sub-agents, and the MCL pipeline all read and write the same substrate.
 
-**A full memory, context, and immutable state engine.** Cortex gives every agent persistent, durable memory: a per-actor timeline of events, active attention, and typed state, append-only and byte-deterministically replayable. Continuity stops being an illusion the model has to fake each session it is real for the user and unbreakable for the agent. An agent that runs on Matrix does not wake up empty.
+## Two rails, one substrate
 
-### 3 — The Loop Manager
+Matrix runs two execution rails over the shared Cortex memory and MCP tool substrate:
 
-**A per-agent loop engine.** For each agent, the Loop Manager coordinates the constant inflow and exchange between the user, the LLM, and Cortex and escalates to the MCL pipeline the moment work becomes consequential. It is the runtime that keeps an agent coherent across turns, tools, and time, and knows exactly when to hand a decision up rather than improvise past it.
+- **Neo (conversational).** The default agent. A recursive tool-calling loop with persistent memory, permissive on reversible work — shell, code, web search, file operations, browser, media — that delegates high-stakes work to the MCL rail automatically. The conversation transcript *is* the state; the harness is the only effector.
+- **MCL (rigorous).** Compiles natural language into a typed Intent IR, synthesizes a plan, and walks it deterministically. Every step is signed, journaled, and replayable. Used for on-chain transactions, irreversible operations, and monetary work.
+
+Escalation is a tool call: when a task crosses into the consequential, Neo invokes `core_execute`, which hands it to the co-located MCL daemon and returns a signed, journaled result — then control returns to the conversation. And the loop never fabricates completion: on a stalled or budget-exhausted turn it surfaces an honest partial, and a supervisor respawns a fresh agent over the durable transcript to keep going rather than reporting a fake "done".
 
 ## How It Fits Together
 
 ```
-                        +-----------------------------+
-                        |            User             |
-                        +--------------+--------------+
-                                       |
-                                       v
-                    +------------------+------------------+
-                    |           Loop Manager              |
-                    |     per-agent coordination loop     |
-                    |     user  <->  LLM  <->  Cortex     |
-                    +----+---------------+-----------+----+
-                         |               |           |
-                 reversible work         |       escalation
-                         |               |           |
-                         v               v           v
-                    +---------+    +-----------+  +------------------+
-                    |   LLM   |    |  Cortex   |  |  Matrix Compiler |
-                    | (chat,  |    |  memory   |  |  (MCL)           |
-                    |  tools) |    |  context  |  |  3 rigorous      |
-                    +---------+    |  immutable|  |  closed-verb     |
-                                   +-----------+  |  agents          |
-                                                  +------------------+
-                                                    money / on-chain /
-                                                    irreversible /
-                                                    confidential
+                         +-------------------+
+                         |       User        |
+                         +---------+---------+
+                                   |
+                                   v
+                     +-------------+-------------+
+                     |            Neo            |
+                     |   recursive tool loop     |
+                     |   swarms · Automatrix      |
+                     +----+---------+--------+----+
+                          |         |        |
+                    reversible    memory   escalation
+                       work         |        |
+                          v         v        v
+                     +--------+ +--------+ +-----------+
+                     | Tools  | | Cortex | |    MCL    |
+                     | shell  | | memory | | typed IR  |
+                     | code   | | graph  | | signed    |
+                     | web/fs | | (the   | | replayed  |
+                     | chain  | |  core) | |           |
+                     +--------+ +--------+ +-----------+
 ```
 
-The default conversational agent (**Neo**) runs inside the Loop Manager with shell, code, fetch, and web tools available on reversible work. The instant stakes rise, the Loop Manager escalates to MCL, and control returns to Neo once rigor is no longer required.
+Neo runs the conversation and reversible tools, reads and writes the Cortex on every turn, and escalates to MCL the instant work becomes consequential — control returns to Neo once rigor is no longer required. The Cortex sits under both rails as the single source of durable state.
 
 ## The Modules
 
-The root Makefile drives nine sibling Go modules — each independently `go build` / `go test` able with its own `go.mod`. The three layers above map onto them: **MCL** is the compiler cohort, **cortex** is the memory engine, and the **executor** realises the Loop Manager.
+The root Makefile drives its sibling Go modules — each independently `go build` / `go test` able with its own `go.mod`. At the center are **neo** (the agent) and **cortex** (its memory); **MCL** is the rigor pipeline and the **executor** realises the loop that binds them.
 
 
-  <img src="https://www.readmecodegen.com/api/file-tree-embed?repo=paxlabs-inc%2Fmatrix-core&branch=main&maxDepth=1&foldersOnly=true&transparentBg=true&showHeader=true" alt="Dynamic File Tree" />
-
+```
+📁 matrix-core
+├── 📁 agents
+├── 📁 bridge
+│   └── _..._
+├── 📁 chronos
+│   └── _..._
+├── 📁 client
+│   └── _..._
+├── 📁 codegraph
+│   └── _..._
+├── 📁 construct
+│   └── _..._
+├── 📁 cortex
+│   └── _..._
+├── 📁 dojo
+│   └── _..._
+├── 📁 executor
+│   └── _..._
+├── 📁 gateway
+│   └── _..._
+├── 📁 MCL
+│   └── _..._
+├── 📁 neo
+│   └── _..._
+├── 📁 router
+│   └── _..._
+├── 📁 sandboxd
+│   └── _..._
+└── 📁 tools
+    └── _..._
+```
 
 | Module | Role |
 |--------|------|
+| **neo** | **The core agent** — the entry point you talk to. Recursive tool-calling loop, paged Cortex memory, conversational recall, swarms, Automatrix, writeback consolidation, and a full-duplex voice mode (MiMo-native hearing + streaming synthesis over LiveKit). Escalates to MCL for consequential operations. |
+| **cortex** | **The memory core.** Per-actor typed memory engine on Pebble: append-only journal, salience scoring, HNSW vector index, Merkle-anchored snapshots, byte-deterministic replay. Persistent, immutable, durable. |
 | **MCL** | The Matrix Compiler cohort. Three rigorous closed-verb agents that plan and act on high-risk, sensitive tasks with machine exactness. |
-| **cortex** | Per-actor typed memory engine on Pebble. Append-only journal, Merkle-anchored snapshots, byte-deterministic replay. Persistent, immutable, durable. |
-| **bridge** | MCL-to-cortex adapter. Separate Go module for clean interface boundaries. |
 | **executor** | The Loop Manager. Per-agent loop engine, lifecycle state machine, MCP dispatch, per-user daemon, Liaison narrator, end-to-end test harness. |
-| **neo** | Default conversational agent that runs inside the loop, with automatic escalation to MCL for consequential operations. |
+| **bridge** | MCL-to-cortex adapter. Separate Go module for clean interface boundaries. |
 | **gateway** | Metered LLM proxy with PAX credit ledger, free-tier whitelist, and rate card enforcement. |
 | **router** | Per-user Fly Machine provisioning with wake-then-reverse-proxy front door. |
 | **deus** | Agent-service marketplace: registry, discovery, metered invocation, EIP-712 receipts, hosted execution. |
 | **tachyon** | Agent-native Solidity/EVM engine — compile, test, simulate, deploy. (git submodule) |
-| **uwac** | Universal Web Agent Connector — OAuth vault providing per-user MCP tools. |
 | **layerx** | Settlement fabric and custody spine for agent balances. |
 | **chronos** | Centralised agent scheduler and wake-up system. |
 | **atlas** | Additional infrastructure orchestration layer. |
@@ -118,11 +151,9 @@ The root Makefile drives nine sibling Go modules — each independently `go buil
 | **journal** | Append-only journal subsystem for deterministic state replay. |
 | **knowledge** | Canonical references: matrix.kvx project state, models, and schema definitions. |
 | **skills** | SKILL.mtx capability manifests and SKILL.md prose capability descriptions. |
-| **tools** | MCP servers: paxeer, browser, tachyon, deus, uwac, web-search, media, cortex. |
+| **tools** | MCP servers: paxeer, browser, tachyon, deus, uwac, web-search, media, cortex; plus the per-user LiveKit voice worker. |
 | **agents** | DID-bound agent manifests (default.json, neo.json) plus MCP server templates. |
 | **protocol** | Protocol definitions and wire formats. |
-| **marketplace** | Deus marketplace and developer dashboard (React Router on Cloudflare Workers). |
-| **client** | Matrix consumer application (Next.js / React). |
 | **deploy** | Daemon container image, Fly Machine deploy, shared-service images, box install scripts. |
 
 ## Key Design Decisions
@@ -137,11 +168,20 @@ The root Makefile drives nine sibling Go modules — each independently `go buil
 
 - **Signed receipts**: Every consequential run terminates in an EIP-712 receipt — inputs, outputs, cost, hash — that anyone can verify after the fact.
 
+## Deployment shape
+
+In production Matrix runs **one agent per user**, each in its own isolated machine.
+
+- **One image, two processes.** The per-user container (`deploy/railway`) boots the MCL daemon in the background and `neo serve` as the front. Neo owns `POST /chat` and the SSE event stream; every other route is reverse-proxied to the daemon, which handles `core_execute` and the plumbing (memory / profile stores, snapshots). If either process exits, the pair restarts together under `tini`.
+- **A real dev environment, baked in.** The image ships the toolchain Neo actually uses through its exec tool: git, Node 22 + pnpm, Go, Python 3.12 + uv, Rust, and Foundry; local PostgreSQL / Redis / SQLite as native binaries; the quality toolchain Neo verifies with (golangci-lint, ruff, eslint, prettier, tsc, vitest, clippy); and a per-user headless Chromium (Playwright) for browsing and screenshot filmstrips.
+- **The router is the front door.** `matrix/router` authenticates each request (JWT / Supabase bearer), looks up the caller's machine, wakes it if asleep, and reverse-proxies over the private network. It also mints LiveKit join tokens for voice sessions.
+- **Cost-neutral while idle.** On wake-on-request platforms the machine sleeps when network-quiet; the periodic snapshot ticker is disabled so nothing keeps it awake, and durable state (the Cortex volume) is snapshotted to object storage on boot and shutdown. An agent wakes on the next request with its full memory intact — it never starts empty.
+
 ## Quickstart
 
 ### Prerequisites
 
-- Go 1.22+
+- Go 1.25+ (the `neo` module pins 1.25; the rest build on 1.21+)
 - GNU Make 4.x
 - Node.js 20+
 - Python 3.11+
@@ -154,7 +194,7 @@ The root Makefile drives nine sibling Go modules — each independently `go buil
 git clone https://github.com/paxlabs-inc/matrix-core.git
 cd matrix-core
 
-# Build all nine Go modules
+# Build all Go modules
 make build
 
 # Install runnable CLIs into ./bin
@@ -173,44 +213,50 @@ make ci
 # Copy the example environment file
 cp .env.example .env
 
-# Required for consequential (non-dry-run) execution:
-#   FIREWORKS_API_KEY
-#   TOGETHER_API_KEY
+# LLM access — either a direct provider key or the metered gateway:
+#   MATRIX_GATEWAY_URL + MATRIX_GATEWAY_TOKEN   (metered, PAX credit ledger)
+#   or a provider key (e.g. FIREWORKS_API_KEY)  (direct)
 #
 # Required for authenticated daemon mode:
 #   MATRIX_DAEMON_TOKEN
 ```
 
-### Run an Agent Loop
+### Talk to Neo (CLI)
 
 ```bash
-./bin/mcl-execute walk \
-  -prose "Summarise the README and write it to /tmp/summary.md" \
-  -manifest    agents/default.json \
-  -cortex-root ./runs/dev-cortex \
-  -skills-root ./skills
+# One-shot turn (Neo's recursive tool-calling loop with cortex memory)
+./bin/neo -prompt "Summarise the README and write it to /tmp/summary.md" \
+  -manifest    agents/neo.json \
+  -cortex-root ./runs/dev-cortex
+
+# …or an interactive REPL: ./bin/neo
 ```
 
-### Start the Daemon
+### Run the full stack (Neo front + MCL daemon)
 
 ```bash
-./bin/mcl-execute daemon \
-  -addr        :8080 \
+# The MCL plumbing daemon (core_execute, memory/profile stores) on :8081
+./bin/mcl-execute daemon -addr :8081 \
   -cortex-root ./runs/dev-cortex \
   -manifest    agents/default.json \
   -skills-root ./skills
+
+# Neo as the conversational front on :8080, proxying the rest to the daemon
+./bin/neo serve -addr :8080 -backend http://127.0.0.1:8081 \
+  -manifest agents/neo.json -cortex-root ./runs/dev-cortex -actor neo
 ```
 
 ## API Reference
 
-The daemon exposes a lightweight HTTP API for agent interaction.
+Neo owns `/chat` and `/events`; every other route is served by the co-located
+MCL daemon and reachable through the same front.
 
 | Method | Path | Purpose |
 |--------|------|---------|
+| `POST` | `/chat` | Send a user message — the reply streams back over the SSE event stream (the only way to talk to Neo) |
+| `GET` | `/events` | Server-Sent Events stream: live tokens, tool events, and transcript tailing |
 | `GET` | `/healthz` | Liveness probe + SSE broker statistics |
-| `POST` | `/chat` | Converse with the agent (conversational loop, via Neo) |
-| `GET` | `/events` | Server-Sent Events stream for real-time transcript tailing |
-| `POST` | `/messages` | Submit a consequential message (escalates to the MCL cohort) |
+| `POST` | `/messages` | Submit a consequential message directly to the MCL cohort |
 | `GET` | `/intents/{id}` | Read intent envelope chain by intent ID |
 | `GET` | `/me` | Per-user settings and identity |
 | `POST` | `/shutdown` | Graceful drain and shutdown |

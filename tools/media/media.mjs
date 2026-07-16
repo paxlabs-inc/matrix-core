@@ -35,9 +35,9 @@
 // fed straight into the next tool's image arg — Neo chains them (e.g. remove
 // background, then feed the result into remove text, then present).
 //
-// Auth: XAI_API_KEY (primary, Bearer) and/or NOVITA_API_KEY (fallback lane,
-// Bearer). With neither set the media tools return a structured error rather
-// than bricking daemon boot (spawn stays non-fatal).
+// Auth: XAI_API_KEY (image/video), MIMO_API_KEY (speech), and/or
+// NOVITA_API_KEY (fallback lane, Bearer). With none set the media tools return
+// a structured error rather than bricking daemon boot (spawn stays non-fatal).
 //
 // Models (env-overridable):
 //   MATRIX_MEDIA_XAI_IMAGE_MODEL  default grok-imagine-image-quality (generate/edit)
@@ -74,6 +74,12 @@ const XAI_IMAGE_MODEL = (process.env.MATRIX_MEDIA_XAI_IMAGE_MODEL || 'grok-imagi
 const XAI_VIDEO_MODEL = (process.env.MATRIX_MEDIA_XAI_VIDEO_MODEL || 'grok-imagine-video').trim()
 const XAI_RESOLUTION = (process.env.MATRIX_MEDIA_XAI_RESOLUTION || '1k').trim()
 const XAI_VIDEO_RES = (process.env.MATRIX_MEDIA_XAI_VIDEO_RES || '720p').trim()
+
+const MIMO_BASE = (process.env.MATRIX_MEDIA_MIMO_BASE || 'https://api.xiaomimimo.com/v1').replace(/\/+$/, '')
+const MIMO_KEY = (process.env.MIMO_API_KEY || '').trim()
+const MIMO_ASR_MODEL = (process.env.MATRIX_MEDIA_MIMO_ASR_MODEL || 'mimo-v2.5-asr').trim()
+const MIMO_TTS_MODEL = (process.env.MATRIX_MEDIA_MIMO_TTS_MODEL || 'mimo-v2.5-tts').trim()
+const MIMO_TTS_VOICE = (process.env.MATRIX_MEDIA_MIMO_TTS_VOICE || 'Mia').trim()
 
 const IMAGE_MODEL = (process.env.MATRIX_MEDIA_IMAGE_MODEL || 'sd_xl_base_1.0.safetensors').trim()
 const INPAINT_MODEL = (process.env.MATRIX_MEDIA_INPAINT_MODEL || 'realisticVisionV51_v51VAE-inpainting_94324.safetensors').trim()
@@ -231,6 +237,14 @@ async function xaiGetJSON(path, timeoutMs = HTTP_TIMEOUT_MS) {
     method: 'GET',
     headers: { Authorization: `Bearer ${XAI_KEY}`, Accept: 'application/json' },
   }, timeoutMs, 'xAI')
+}
+
+async function mimoPostJSON(path, body, timeoutMs = HTTP_TIMEOUT_MS) {
+  return doFetch(MIMO_BASE + path, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${MIMO_KEY}`, 'Content-Type': 'application/json', Accept: 'application/json' },
+    body: JSON.stringify(body),
+  }, timeoutMs, 'MiMo')
 }
 
 async function doFetch(url, init, timeoutMs, provider) {
@@ -440,6 +454,53 @@ const TTS_VOICES = new Set(['Emily', 'James', 'Olivia', 'Michael', 'Sarah', 'Joh
 const TTS_LANGS = new Set(['en-US', 'zh-CN', 'ja-JP'])
 function pickVoice(v) { const s = String(v || '').trim(); return TTS_VOICES.has(s) ? s : TTS_VOICE }
 function pickLang(v) { const s = String(v || '').trim(); return TTS_LANGS.has(s) ? s : TTS_LANGUAGE }
+const MIMO_TTS_VOICES = new Set(['mimo_default', '冰糖', '茉莉', '苏打', '白桦', 'Mia', 'Chloe', 'Milo', 'Dean'])
+function pickMimoVoice(v) { const s = String(v || '').trim(); return MIMO_TTS_VOICES.has(s) ? s : MIMO_TTS_VOICE }
+
+const MIMO_ASR_LANGS = new Set(['auto', 'zh', 'en'])
+const MAX_MIMO_AUDIO_B64 = 10 * 1024 * 1024
+
+async function resolveAudioDataURL(ref) {
+  const s = String(ref || '').trim()
+  if (!s) throw new Error("an 'audio' reference is required")
+  let mime
+  let b64
+  if (/^data:/i.test(s)) {
+    const match = /^data:(audio\/(?:wav|mpeg|mp3));base64,([A-Za-z0-9+/=]+)$/i.exec(s)
+    if (!match) throw new Error('audio must be a base64 wav or mp3 data URL')
+    mime = match[1].toLowerCase() === 'audio/mp3' ? 'audio/mpeg' : match[1].toLowerCase()
+    b64 = match[2]
+  } else if (/^https?:\/\//i.test(s)) {
+    throw new Error('transcribe_audio accepts local /media wav or mp3 inputs, not public URLs')
+  } else {
+    const name = localName(s)
+    if (!name) throw new Error(`cannot resolve media reference: ${ref}`)
+    const ext = extOf(name)
+    if (ext !== 'wav' && ext !== 'mp3') throw new Error('transcribe_audio supports wav and mp3 inputs only')
+    const buf = await readFile(join(MEDIA_DIR, name)).catch(() => {
+      throw new Error(`media not found on this machine: ${ref}`)
+    })
+    mime = ext === 'wav' ? 'audio/wav' : 'audio/mpeg'
+    b64 = buf.toString('base64')
+  }
+  if (b64.length > MAX_MIMO_AUDIO_B64) throw new Error('audio exceeds the 10 MB MiMo ASR encoded-input limit')
+  return `data:${mime};base64,${b64}`
+}
+
+async function transcribeAudio(args) {
+  if (!MIMO_KEY) return errResult('transcribe_audio', 'speech recognition is not configured', { hint: 'set MIMO_API_KEY to enable transcribe_audio' })
+  const language = String(args?.language || 'auto').trim().toLowerCase()
+  if (!MIMO_ASR_LANGS.has(language)) return errResult('transcribe_audio', "language must be one of 'auto', 'zh', or 'en'")
+  const data = await resolveAudioDataURL(args?.audio)
+  const res = await mimoPostJSON('/chat/completions', {
+    model: MIMO_ASR_MODEL,
+    messages: [{ role: 'user', content: [{ type: 'input_audio', input_audio: { data } }] }],
+    asr_options: { language },
+  })
+  const transcript = String(res?.choices?.[0]?.message?.content || '').trim()
+  if (!transcript) return errResult('transcribe_audio', 'no transcript in MiMo response')
+  return okResult({ ok: true, tool: 'transcribe_audio', transcript, language, model: MIMO_ASR_MODEL })
+}
 
 function seedOf(args) { return Number.isInteger(args?.seed) ? args.seed : -1 }
 
@@ -695,10 +756,27 @@ async function animateImage(args) {
 async function generateSpeech(args) {
   const text = String(args?.text || '').trim()
   if (!text) return errResult('generate_speech', "a non-empty 'text' is required")
-  if (!API_KEY) {
-    return errResult('generate_speech', 'text-to-speech is not configured', { hint: 'xAI Grok Imagine has no TTS API; set NOVITA_API_KEY to enable generate_speech' })
+  if (MIMO_KEY) {
+    const voice = pickMimoVoice(args?.voice)
+    const style = String(args?.style || '').trim()
+    const messages = []
+    if (style) messages.push({ role: 'user', content: style })
+    messages.push({ role: 'assistant', content: text })
+    const res = await mimoPostJSON('/chat/completions', {
+      model: MIMO_TTS_MODEL,
+      messages,
+      audio: { format: 'wav', voice },
+    })
+    const data = String(res?.choices?.[0]?.message?.audio?.data || '')
+    if (!data) return errResult('generate_speech', 'no audio in MiMo response')
+    const buf = Buffer.from(data.includes(',') ? data.slice(data.indexOf(',') + 1) : data, 'base64')
+    if (!buf.length) return errResult('generate_speech', 'MiMo returned empty audio')
+    const w = await writeOutput(buf, 'wav', 'audio/wav')
+    return okResult({ ok: true, tool: 'generate_speech', kind: 'audio', url: w.url, mime: w.mime, bytes: w.bytes, voice, style, model: MIMO_TTS_MODEL })
   }
-  if (text.length > 512) return errResult('generate_speech', 'text exceeds the 512-character Novita TTS limit')
+  if (!API_KEY) {
+    return errResult('generate_speech', 'text-to-speech is not configured', { hint: 'set MIMO_API_KEY or NOVITA_API_KEY to enable generate_speech' })
+  }
   const voice = pickVoice(args?.voice)
   const language = pickLang(args?.language)
   const request = {
@@ -727,6 +805,7 @@ const impls = {
   merge_faces: mergeFaces,
   generate_video: generateVideo,
   animate_image: animateImage,
+  transcribe_audio: transcribeAudio,
   generate_speech: generateSpeech,
 }
 
@@ -742,8 +821,8 @@ const handlers = {
     const name = params?.name
     const args = params?.arguments || {}
     if (!TOOL_SET.has(name)) return errResult(name, `unknown tool: ${name}`)
-    if (!XAI_KEY && !API_KEY) {
-      return errResult(name, 'media bridge not configured', { hint: 'set XAI_API_KEY (primary) and/or NOVITA_API_KEY (mask ops + TTS) on the machine to enable image/video/audio' })
+    if (!XAI_KEY && !MIMO_KEY && !API_KEY) {
+      return errResult(name, 'media bridge not configured', { hint: 'set XAI_API_KEY, MIMO_API_KEY, and/or NOVITA_API_KEY on the machine to enable media tools' })
     }
     try {
       return await impls[name](args)
@@ -793,7 +872,7 @@ function startStdioServer() {
 // same drift into a non-zero exit at build/CI time. Offline (no network).
 // MATRIX_MEDIA_AGENTS_DIR overrides the manifest dir (used by tests).
 function runSelftest() {
-  console.log(`media: ${tools.length} tools (primary=xai image=${XAI_IMAGE_MODEL} video=${XAI_VIDEO_MODEL} key=${XAI_KEY ? 'set' : 'UNSET'}; fallback=novita inpaint=${INPAINT_MODEL} tts=${TTS_VOICE}/${TTS_LANGUAGE} key=${API_KEY ? 'set' : 'UNSET'})`)
+  console.log(`media: ${tools.length} tools (xai image=${XAI_IMAGE_MODEL} video=${XAI_VIDEO_MODEL} key=${XAI_KEY ? 'set' : 'UNSET'}; mimo asr=${MIMO_ASR_MODEL} tts=${MIMO_TTS_MODEL} key=${MIMO_KEY ? 'set' : 'UNSET'}; novita fallback key=${API_KEY ? 'set' : 'UNSET'})`)
   for (const t of tools) console.log(`  - ${t.name}`)
 
   // Every advertised tool must have an implementation, and vice versa.

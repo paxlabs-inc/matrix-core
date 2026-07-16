@@ -416,4 +416,3 @@ func (g *Gateway) replayLayerX(ctx context.Context, row store.InvocationRow) (In
 		LayerXSeq: row.LayerXSeq,
 	}, nil
 }
-

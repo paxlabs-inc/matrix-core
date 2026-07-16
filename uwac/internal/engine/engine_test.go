@@ -32,8 +32,10 @@ func testEngine(t *testing.T, rec *vault.Record) *Engine {
 			},
 		},
 		Handlers: map[string]connectors.Handler{
-			"echo_read":  func(_ context.Context, _ *vault.Record, args map[string]any) (any, error) { return args, nil },
-			"echo_write": func(_ context.Context, _ *vault.Record, _ map[string]any) (any, error) { return map[string]any{"sent": true}, nil },
+			"echo_read": func(_ context.Context, _ *vault.Record, args map[string]any) (any, error) { return args, nil },
+			"echo_write": func(_ context.Context, _ *vault.Record, _ map[string]any) (any, error) {
+				return map[string]any{"sent": true}, nil
+			},
 		},
 	}
 	if err := reg.Register(conn); err != nil {

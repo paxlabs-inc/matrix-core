@@ -692,19 +692,38 @@ type streamOptions struct {
 // An explicit "content":"" is accepted by every OpenAI-compatible provider.
 type wireMessage struct {
 	Role             string     `json:"role"`
-	Content          string     `json:"content"`
+	Content          any        `json:"content"`
 	ToolCalls        []ToolCall `json:"tool_calls,omitempty"`
 	ToolCallID       string     `json:"tool_call_id,omitempty"`
 	Name             string     `json:"name,omitempty"`
 	ReasoningContent string     `json:"reasoning_content,omitempty"`
 }
 
+type wireContentPart struct {
+	Type       string          `json:"type"`
+	Text       string          `json:"text,omitempty"`
+	InputAudio *wireInputAudio `json:"input_audio,omitempty"`
+}
+
+type wireInputAudio struct {
+	Data string `json:"data"`
+}
+
 func toWireMessages(msgs []Message) []wireMessage {
 	out := make([]wireMessage, len(msgs))
 	for i, m := range msgs {
+		var content any = m.Content
+		if m.Role == RoleUser && m.AudioData != "" {
+			parts := make([]wireContentPart, 0, 2)
+			if m.Content != "" {
+				parts = append(parts, wireContentPart{Type: "text", Text: m.Content})
+			}
+			parts = append(parts, wireContentPart{Type: "input_audio", InputAudio: &wireInputAudio{Data: m.AudioData}})
+			content = parts
+		}
 		out[i] = wireMessage{
 			Role:             m.Role,
-			Content:          m.Content,
+			Content:          content,
 			ToolCalls:        sanitizeToolCalls(m.ToolCalls),
 			ToolCallID:       m.ToolCallID,
 			Name:             m.Name,

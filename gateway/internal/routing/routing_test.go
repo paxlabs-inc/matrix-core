@@ -116,24 +116,25 @@ func TestDecideInvalidSlot(t *testing.T) {
 	}
 }
 
-func TestDecideGrokRoutesToXai(t *testing.T) {
+func TestDecideMimoRoutesToXiaomi(t *testing.T) {
 	d := New(Options{})
 	r := httptest.NewRequest("POST", "/v1/chat/completions", strings.NewReader("{}"))
 	r.Header.Set(types.HeaderSlot, "neo")
 
-	dec, err := d.Decide(r, rates.ModelGrok43, EndpointChat)
+	// MiMo is the only chat model in use; it routes to Xiaomi's
+	// OpenAI-compatible surface.
+	dec, err := d.Decide(r, rates.ModelMimoV25Pro, EndpointChat)
 	if err != nil {
 		t.Fatalf("Decide: %v", err)
 	}
-	if dec.Provider != ProviderXai {
-		t.Fatalf("expected xai for grok-*, got %s", dec.Provider)
+	if dec.Provider != ProviderXiaomi {
+		t.Fatalf("expected xiaomi for mimo, got %s", dec.Provider)
 	}
-	if !strings.Contains(dec.UpstreamURL, "api.x.ai") {
-		t.Fatalf("expected api.x.ai upstream, got %q", dec.UpstreamURL)
+	if !strings.Contains(dec.UpstreamURL, "api.xiaomimimo.com") {
+		t.Fatalf("expected api.xiaomimimo.com upstream, got %q", dec.UpstreamURL)
 	}
-	// The bare "grok-*" fleet id IS xAI's native model code — it passes
-	// through unchanged (no native-id rewrite on the upstream hop).
-	if dec.Model != rates.ModelGrok43 {
+	// The MiMo fleet id passes through unchanged on the upstream hop.
+	if dec.Model != rates.ModelMimoV25Pro {
 		t.Fatalf("Decision.Model must keep the fleet id unchanged, got %q", dec.Model)
 	}
 }

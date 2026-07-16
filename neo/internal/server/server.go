@@ -89,6 +89,7 @@ func (s *Server) routes() []routeFact {
 		// agent's machine volume.
 		{"/media/", "GET /media/{id} — serve a generated or uploaded media artifact from your machine volume", s.handleMedia},
 		{"/upload", "POST /upload — receive a user file onto your machine volume", s.handleUpload},
+		{"/voice/session/", "", s.handleVoiceSession},
 		// Automatrix control surface: per-user opt-in toggle, opportunity
 		// queue, completion inbox.
 		{"/automatrix/", "GET/POST /automatrix/* — the proactive-task (Automatrix) control surface", s.handleAutomatrix},
@@ -261,6 +262,12 @@ func (s *Server) handleChat(w http.ResponseWriter, r *http.Request) {
 	if convID == "" {
 		convID = synthConvID(msg)
 	}
+	dispatchMsg, audio, voiceTurn, voiceErr := s.engine.prepareVoiceInput(r.Context(), msg)
+	if voiceErr != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": voiceErr.Error()})
+		return
+	}
+	msg = dispatchMsg
 	if s.engine.MaybeHandleEpisodicSweep(msg) {
 		writeJSON(w, http.StatusAccepted, map[string]interface{}{
 			"conversation_id": convID,
@@ -313,8 +320,15 @@ func (s *Server) handleChat(w http.ResponseWriter, r *http.Request) {
 		s.engine.conv.SetProject(convID, p)
 	}
 	sess := s.engine.sessions.get(convID)
-	runID, _ := sess.submit(msg)
-	s.engine.conv.AppendUser(convID, runID, msg)
+	var runID string
+	if audio != nil {
+		runID, _ = sess.submitAudio(msg, audio)
+	} else {
+		runID, _ = sess.submit(msg)
+		if !voiceTurn || s.engine.cfg.VoiceMode == "asr_first" {
+			s.engine.conv.AppendUser(convID, runID, msg)
+		}
+	}
 	writeJSON(w, http.StatusAccepted, map[string]interface{}{
 		"conversation_id": convID,
 		"kind":            "dispatch",

@@ -3,28 +3,28 @@ package manifest
 
 // Manifest is the machine-readable service description (docs/03-data-model.md §3.5).
 type Manifest struct {
-	SchemaVersion string      `json:"schema_version"`
-	Slug          string      `json:"slug"`
-	Kind          string      `json:"kind"`
-	DisplayName   string      `json:"display_name"`
-	Summary       string      `json:"summary"`
-	Description   string      `json:"description,omitempty"`
-	Tags          []string    `json:"tags,omitempty"`
-	Owner         string      `json:"owner"`
-	PayoutAddress string      `json:"payout_address"`
-	PayeeDID      string      `json:"payee_did,omitempty"` // LayerX earnings identity (LXP rail)
-	Mode          string      `json:"mode"`
+	SchemaVersion string   `json:"schema_version"`
+	Slug          string   `json:"slug"`
+	Kind          string   `json:"kind"`
+	DisplayName   string   `json:"display_name"`
+	Summary       string   `json:"summary"`
+	Description   string   `json:"description,omitempty"`
+	Tags          []string `json:"tags,omitempty"`
+	Owner         string   `json:"owner"`
+	PayoutAddress string   `json:"payout_address"`
+	PayeeDID      string   `json:"payee_did,omitempty"` // LayerX earnings identity (LXP rail)
+	Mode          string   `json:"mode"`
 	// SettlementMode picks the LXP rail flow: "exact" (default — execute, then
 	// settle the full amount) or "hold" (reserve in the payer's account before
 	// execution, capture on success, release on failure).
-	SettlementMode string `json:"settlement_mode,omitempty"`
-	HoldTTLS       int64  `json:"hold_ttl_s,omitempty"` // hold lifetime seconds (hold mode)
-	Confidential  bool        `json:"confidential,omitempty"`
-	Operations    []Operation `json:"operations"`
-	Pricing       []Pricing   `json:"pricing"`
-	Endpoint      *Endpoint   `json:"endpoint,omitempty"`
-	SLA           *SLA        `json:"sla,omitempty"`
-	Attestation   any         `json:"attestation,omitempty"`
+	SettlementMode string      `json:"settlement_mode,omitempty"`
+	HoldTTLS       int64       `json:"hold_ttl_s,omitempty"` // hold lifetime seconds (hold mode)
+	Confidential   bool        `json:"confidential,omitempty"`
+	Operations     []Operation `json:"operations"`
+	Pricing        []Pricing   `json:"pricing"`
+	Endpoint       *Endpoint   `json:"endpoint,omitempty"`
+	SLA            *SLA        `json:"sla,omitempty"`
+	Attestation    any         `json:"attestation,omitempty"`
 }
 
 // Operation describes one callable operation.

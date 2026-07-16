@@ -85,6 +85,7 @@ func toolShapedToken(stmt string) string {
 	}
 	return ""
 }
+
 // routeTokens extracts the concrete route tokens (/chat, /events, …) from a
 // surface line.
 func routeTokens(line string) []string {

@@ -456,4 +456,3 @@ func TestLogsAndAnalytics(t *testing.T) {
 		t.Fatalf("analytics wrong owner: want 403 got %d", res.StatusCode)
 	}
 }
-

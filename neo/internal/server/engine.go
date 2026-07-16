@@ -57,20 +57,23 @@ type Engine struct {
 	// for background sub-agents (spawn_subagents). Only the user-facing Neo loop
 	// (e.main) and the core MCL pipeline think; background/headless agents run
 	// without thinking to cut latency + token burn. nil falls back to e.main.
-	subMain       *llm.Client
-	tools         *tools.Manager
-	pager         *memory.Pager
-	consolidator  agent.Consolidator
-	conv          *conversation.Store  // durable chat-thread history (per conversation_id)
-	tasks         *task.Store          // durable task-supervision ledger (survives restart/suspend)
-	trace         *trace.Store         // durable per-run workspace timeline ("Neo's Computer"); sidecar, never cortex
-	automatrix    *automatrixlog.Store // durable Automatrix completion inbox (in-app surprise results); sidecar, never cortex
-	briefHistory  *briefhistory.Store  // durable morning-brief recommendation history + feedback (ORACLE task 5.5); sidecar, never cortex
-	telegram      *telegramBridge
-	mediaDir      string         // machine-volume dir for generated + uploaded media ("" disables)
-	workspaceRoot string         // VM workspace root; projects are its subdirectories ("" disables the workbench surface)
-	vault         *vault.Session // fail-closed data-at-rest encryption session (nil = plaintext dev/CLI)
-	vaultUser     string         // user DID bound into sealed objects' associated data
+	subMain            *llm.Client
+	tools              *tools.Manager
+	pager              *memory.Pager
+	consolidator       agent.Consolidator
+	conv               *conversation.Store  // durable chat-thread history (per conversation_id)
+	tasks              *task.Store          // durable task-supervision ledger (survives restart/suspend)
+	trace              *trace.Store         // durable per-run workspace timeline ("Neo's Computer"); sidecar, never cortex
+	automatrix         *automatrixlog.Store // durable Automatrix completion inbox (in-app surprise results); sidecar, never cortex
+	briefHistory       *briefhistory.Store  // durable morning-brief recommendation history + feedback (ORACLE task 5.5); sidecar, never cortex
+	telegram           *telegramBridge
+	mediaDir           string // machine-volume dir for generated + uploaded media ("" disables)
+	voiceASRURL        string
+	voiceASRKey        string
+	voiceControllerURL string
+	workspaceRoot      string         // VM workspace root; projects are its subdirectories ("" disables the workbench surface)
+	vault              *vault.Session // fail-closed data-at-rest encryption session (nil = plaintext dev/CLI)
+	vaultUser          string         // user DID bound into sealed objects' associated data
 
 	// projects is the workbench project registry (lazily built over
 	// workspaceRoot; nil when the workbench surface is disabled).
@@ -197,15 +200,18 @@ type EngineOptions struct {
 	Tools                 *tools.Manager
 	Pager                 *memory.Pager
 	Consolidator          agent.Consolidator
-	ConversationDir       string         // durable conversation store dir ("" disables persistence)
-	TaskDir               string         // durable task-ledger dir ("" disables; reaper needs it to resume after restart)
-	TraceDir              string         // durable workspace-trace dir ("" disables; the reopen-survives-reload store, F3)
-	AutomatrixDir         string         // durable Automatrix completion-inbox dir ("" disables; the in-app surprise-results store)
-	AutomatrixSettingsDir string         // durable Automatrix opt-in settings dir ("" = in-memory only; wiring the production governor)
-	BriefSettingsDir      string         // durable morning-brief schedule sidecar dir ("" = in-memory only; wiring the production brief governor)
-	BriefHistoryDir       string         // durable morning-brief recommendation-history dir ("" disables; the no-repeat + feedback store)
-	TelegramSettingsDir   string         // encrypted per-user Telegram bot/channel state ("" disables the integration)
-	MediaDir              string         // machine-volume media dir ("" disables image/video/audio I/O)
+	ConversationDir       string // durable conversation store dir ("" disables persistence)
+	TaskDir               string // durable task-ledger dir ("" disables; reaper needs it to resume after restart)
+	TraceDir              string // durable workspace-trace dir ("" disables; the reopen-survives-reload store, F3)
+	AutomatrixDir         string // durable Automatrix completion-inbox dir ("" disables; the in-app surprise-results store)
+	AutomatrixSettingsDir string // durable Automatrix opt-in settings dir ("" = in-memory only; wiring the production governor)
+	BriefSettingsDir      string // durable morning-brief schedule sidecar dir ("" = in-memory only; wiring the production brief governor)
+	BriefHistoryDir       string // durable morning-brief recommendation-history dir ("" disables; the no-repeat + feedback store)
+	TelegramSettingsDir   string // encrypted per-user Telegram bot/channel state ("" disables the integration)
+	MediaDir              string // machine-volume media dir ("" disables image/video/audio I/O)
+	VoiceASRURL           string
+	VoiceASRKey           string
+	VoiceControllerURL    string
 	WorkspaceDir          string         // VM workspace root for the coding workbench ("" disables /workspace and /projects)
 	Sandbox               sandbox.Client // Railway sandbox client for previews (nil disables /workspace/preview)
 	PreviewCfg            preview.Config // preview controller config (user id, router door, TTL, image, cap)
@@ -218,27 +224,30 @@ type EngineOptions struct {
 // shared tool manager.
 func NewEngine(o EngineOptions) *Engine {
 	e := &Engine{
-		cfg:           o.Config,
-		main:          o.Main,
-		cheap:         o.Cheap,
-		subMain:       o.SubMain,
-		tools:         o.Tools,
-		pager:         o.Pager,
-		consolidator:  o.Consolidator,
-		conv:          conversation.Open(o.ConversationDir),
-		tasks:         task.Open(o.TaskDir),
-		trace:         trace.Open(o.TraceDir),
-		automatrix:    automatrixlog.Open(o.AutomatrixDir),
-		briefHistory:  briefhistory.Open(o.BriefHistoryDir),
-		mediaDir:      strings.TrimRight(o.MediaDir, "/"),
-		workspaceRoot: strings.TrimRight(o.WorkspaceDir, "/"),
-		vault:         o.Vault,
-		backendURL:    strings.TrimRight(o.BackendURL, "/"),
-		backendToken:  o.BackendToken,
-		warmStop:      make(chan struct{}),
-		broker:        newBroker(),
-		runs:          map[string]*run{},
-		gateClaims:    map[string]bool{},
+		cfg:                o.Config,
+		main:               o.Main,
+		cheap:              o.Cheap,
+		subMain:            o.SubMain,
+		tools:              o.Tools,
+		pager:              o.Pager,
+		consolidator:       o.Consolidator,
+		conv:               conversation.Open(o.ConversationDir),
+		tasks:              task.Open(o.TaskDir),
+		trace:              trace.Open(o.TraceDir),
+		automatrix:         automatrixlog.Open(o.AutomatrixDir),
+		briefHistory:       briefhistory.Open(o.BriefHistoryDir),
+		mediaDir:           strings.TrimRight(o.MediaDir, "/"),
+		voiceASRURL:        strings.TrimSpace(o.VoiceASRURL),
+		voiceASRKey:        strings.TrimSpace(o.VoiceASRKey),
+		voiceControllerURL: strings.TrimRight(o.VoiceControllerURL, "/"),
+		workspaceRoot:      strings.TrimRight(o.WorkspaceDir, "/"),
+		vault:              o.Vault,
+		backendURL:         strings.TrimRight(o.BackendURL, "/"),
+		backendToken:       o.BackendToken,
+		warmStop:           make(chan struct{}),
+		broker:             newBroker(),
+		runs:               map[string]*run{},
+		gateClaims:         map[string]bool{},
 		// Automatrix jitter/skip RNG (task 3.3): seeded from wall-clock so each
 		// process reschedules on its own unpredictable cadence; tests reseed it
 		// (and pin automatrixSkipProb) for determinism.
@@ -848,10 +857,13 @@ var traceWorkspaceTypes = map[string]bool{
 	// Sandbox preview lifecycle (NEO-WORKBENCH req 7.2): durable so reopen
 	// rebuilds the LAST honest preview state. The live-typing tool.delta
 	// channel is deliberately NOT here — deltas are ephemeral by design.
-	"preview.pending": true,
-	"preview.ready":   true,
-	"preview.failed":  true,
-	"preview.expired": true,
+	"preview.pending":     true,
+	"preview.ready":       true,
+	"preview.failed":      true,
+	"preview.expired":     true,
+	"voice.session.start": true,
+	"voice.session.state": true,
+	"voice.session.stop":  true,
 }
 
 // recordTrace is the broker tap (F3): it persists the workspace-relevant slice

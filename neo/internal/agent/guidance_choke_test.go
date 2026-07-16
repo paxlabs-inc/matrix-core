@@ -74,12 +74,12 @@ func (r *chokeReporter) add(t string) {
 	r.mu.Unlock()
 }
 
-func (r *chokeReporter) Say(t string, _ bool)      { r.add(t) }
-func (r *chokeReporter) Status(t string)           { r.add(t) }
-func (r *chokeReporter) Progress(t string)         { r.add(t) }
-func (r *chokeReporter) Notice(t string)           { r.add(t) }
-func (r *chokeReporter) Think(t string)            { r.add(t) }
-func (r *chokeReporter) Delta(_ int, _, t string)  { r.add(t) }
+func (r *chokeReporter) Say(t string, _ bool)     { r.add(t) }
+func (r *chokeReporter) Status(t string)          { r.add(t) }
+func (r *chokeReporter) Progress(t string)        { r.add(t) }
+func (r *chokeReporter) Notice(t string)          { r.add(t) }
+func (r *chokeReporter) Think(t string)           { r.add(t) }
+func (r *chokeReporter) Delta(_ int, _, t string) { r.add(t) }
 
 func (r *chokeReporter) all() []string {
 	r.mu.Lock()

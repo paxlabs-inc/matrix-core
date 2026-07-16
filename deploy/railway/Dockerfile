@@ -263,6 +263,14 @@ RUN set -eux; \
     uv tool install poetry; \
     poetry --version
 
+# Realtime voice worker dependencies live in an isolated runtime environment;
+# the source tree's development venv is never copied into the image.
+COPY tools/voice/requirements.txt /tmp/voice-requirements.txt
+RUN set -eux; \
+    python3 -m venv /opt/voice-venv; \
+    /opt/voice-venv/bin/pip install --no-cache-dir -r /tmp/voice-requirements.txt; \
+    rm -f /tmp/voice-requirements.txt
+
 # Pre-install MCP servers so first cold-start does not hit registries.
 # Versions PINNED to releases whose tools/list exactly matches default.json.
 RUN set -eux; \
@@ -331,6 +339,11 @@ COPY tools/tachyon   /opt/matrix/tools/tachyon
 COPY tools/kindle    /opt/matrix/tools/kindle
 COPY tools/deus      /opt/matrix/tools/deus
 COPY tools/media     /opt/matrix/tools/media
+COPY tools/voice/*.py /opt/matrix/tools/voice/
+COPY tools/voice/requirements.txt /opt/matrix/tools/voice/requirements.txt
+RUN set -eux; \
+    cd /opt/matrix/tools/voice; \
+    /opt/voice-venv/bin/python agent.py download-files
 COPY tools/uwac      /opt/matrix/tools/uwac
 COPY tools/chronos   /opt/matrix/tools/chronos
 COPY tools/layerx    /opt/matrix/tools/layerx

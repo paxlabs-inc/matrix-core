@@ -25,10 +25,10 @@ const (
 	gmailBase    = "https://gmail.googleapis.com/gmail/v1/users/me"
 	calendarBase = "https://www.googleapis.com/calendar/v3"
 
-	scopeGmailReadonly  = "https://www.googleapis.com/auth/gmail.readonly"
-	scopeGmailSend      = "https://www.googleapis.com/auth/gmail.send"
-	scopeCalReadonly    = "https://www.googleapis.com/auth/calendar.readonly"
-	scopeCalEvents      = "https://www.googleapis.com/auth/calendar.events"
+	scopeGmailReadonly = "https://www.googleapis.com/auth/gmail.readonly"
+	scopeGmailSend     = "https://www.googleapis.com/auth/gmail.send"
+	scopeCalReadonly   = "https://www.googleapis.com/auth/calendar.readonly"
+	scopeCalEvents     = "https://www.googleapis.com/auth/calendar.events"
 )
 
 var client = httpx.New(30 * time.Second)
@@ -115,11 +115,11 @@ func Connector() *connectors.Connector {
 	return &connectors.Connector{
 		Spec: spec,
 		Handlers: map[string]connectors.Handler{
-			"gmail_search":           gmailSearch,
-			"gmail_get_message":      gmailGetMessage,
-			"gmail_send":             gmailSend,
-			"calendar_list_events":   calendarListEvents,
-			"calendar_create_event":  calendarCreateEvent,
+			"gmail_search":          gmailSearch,
+			"gmail_get_message":     gmailGetMessage,
+			"gmail_send":            gmailSend,
+			"calendar_list_events":  calendarListEvents,
+			"calendar_create_event": calendarCreateEvent,
 		},
 	}
 }
@@ -244,5 +244,9 @@ func obj(props map[string]any, required ...string) map[string]any {
 	return m
 }
 
-func strProp(desc string) map[string]any { return map[string]any{"type": "string", "description": desc} }
-func numProp(desc string) map[string]any { return map[string]any{"type": "number", "description": desc} }
+func strProp(desc string) map[string]any {
+	return map[string]any{"type": "string", "description": desc}
+}
+func numProp(desc string) map[string]any {
+	return map[string]any{"type": "number", "description": desc}
+}

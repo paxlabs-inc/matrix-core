@@ -253,6 +253,9 @@ func runServe(args []string) {
 		BriefHistoryDir:       briefhistory.Dir(os.Getenv("NEO_BRIEF_DIR"), cfg.CortexRoot),
 		TelegramSettingsDir:   telegramsettings.Dir(os.Getenv("NEO_TELEGRAM_DIR"), cfg.CortexRoot),
 		MediaDir:              mediaPath,
+		VoiceASRURL:           envOrDefault("MATRIX_MIMO_ASR_URL", "https://api.xiaomimimo.com/v1/chat/completions"),
+		VoiceASRKey:           os.Getenv("MIMO_API_KEY"),
+		VoiceControllerURL:    envOrDefault("VOICE_CONTROLLER_URL", "http://127.0.0.1:8791"),
 		WorkspaceDir:          workspaceDir,
 		Sandbox:               sb,
 		PreviewCfg: preview.Config{

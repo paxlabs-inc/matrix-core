@@ -129,6 +129,15 @@ type Config struct {
 	BrowserAutoshotMax  int
 	MediaRetentionHours int
 
+	// --- voice (VOICE; [voice] / NEO_VOICE_*) ---
+	VoiceEnabled        bool
+	VoiceMode           string
+	VoiceASRDeadline    time.Duration
+	VoiceTTSVoice       string
+	VoiceTTSStyle       string
+	VoiceTTSDeadline    time.Duration
+	VoiceIdleDisconnect time.Duration
+
 	// --- task supervisor (durability: a dispatched task runs to completion
 	// across model errors, tool failures, early loop-ends, user disconnects,
 	// and even daemon restart/suspend — at least one agent stays on it until
@@ -307,6 +316,14 @@ func Default() Config {
 		BrowserAutoshot:     true,
 		BrowserAutoshotMax:  40,
 		MediaRetentionHours: 168,
+
+		VoiceEnabled:        false,
+		VoiceMode:           "native",
+		VoiceASRDeadline:    30 * time.Second,
+		VoiceTTSVoice:       "Mia",
+		VoiceTTSStyle:       "Warm, direct, conversational delivery.",
+		VoiceTTSDeadline:    30 * time.Second,
+		VoiceIdleDisconnect: 120 * time.Second,
 
 		// Task durability: ON by default. The ceilings are generous-but-finite
 		// (the user chose "max persistence" — effectively no practical limit —
@@ -507,6 +524,21 @@ func (c *Config) applyDoc(d *kvxDoc) {
 		c.CassandraLoopThreshold = d.intOr("cassandra", "loop_threshold", c.CassandraLoopThreshold)
 		c.CassandraCooldownSteps = d.intOr("cassandra", "cooldown_steps", c.CassandraCooldownSteps)
 	}
+	if d.has("voice") {
+		c.VoiceEnabled = d.boolOr("voice", "enabled", c.VoiceEnabled)
+		c.VoiceMode = voiceModeOr(d.strOr("voice", "mode", c.VoiceMode), c.VoiceMode)
+		if sec := d.intOr("voice", "asr_deadline_seconds", 0); sec > 0 {
+			c.VoiceASRDeadline = time.Duration(sec) * time.Second
+		}
+		c.VoiceTTSVoice = d.strOr("voice", "tts_voice", c.VoiceTTSVoice)
+		c.VoiceTTSStyle = d.strOr("voice", "tts_style", c.VoiceTTSStyle)
+		if sec := d.intOr("voice", "tts_deadline_seconds", 0); sec > 0 {
+			c.VoiceTTSDeadline = time.Duration(sec) * time.Second
+		}
+		if sec := d.intOr("voice", "idle_disconnect_seconds", 0); sec > 0 {
+			c.VoiceIdleDisconnect = time.Duration(sec) * time.Second
+		}
+	}
 	if d.has("epistemic") {
 		c.EpistemicPremises = d.boolOr("epistemic", "premises", c.EpistemicPremises)
 		c.EpistemicPredictions = d.boolOr("epistemic", "predictions", c.EpistemicPredictions)
@@ -570,6 +602,19 @@ func (c *Config) applyEnv() {
 	c.BrowserAutoshot = envBool("NEO_BROWSER_AUTOSHOT", c.BrowserAutoshot)
 	c.BrowserAutoshotMax = envIntNonNeg("NEO_BROWSER_AUTOSHOT_MAX", c.BrowserAutoshotMax)
 	c.MediaRetentionHours = envIntNonNeg("NEO_MEDIA_RETENTION_HOURS", c.MediaRetentionHours)
+	c.VoiceEnabled = envBool("NEO_VOICE_ENABLED", c.VoiceEnabled)
+	c.VoiceMode = voiceModeOr(os.Getenv("NEO_VOICE_MODE"), c.VoiceMode)
+	if sec := envInt("NEO_VOICE_ASR_DEADLINE_SECONDS", 0); sec > 0 {
+		c.VoiceASRDeadline = time.Duration(sec) * time.Second
+	}
+	c.VoiceTTSVoice = envOr("NEO_VOICE_TTS_VOICE", c.VoiceTTSVoice)
+	c.VoiceTTSStyle = envOr("NEO_VOICE_TTS_STYLE", c.VoiceTTSStyle)
+	if sec := envInt("NEO_VOICE_TTS_DEADLINE_SECONDS", 0); sec > 0 {
+		c.VoiceTTSDeadline = time.Duration(sec) * time.Second
+	}
+	if sec := envInt("VOICE_IDLE_DISCONNECT_S", 0); sec > 0 {
+		c.VoiceIdleDisconnect = time.Duration(sec) * time.Second
+	}
 
 	// P2-7: adaptive step budget. StepBudgetMin accepts 0 (adaptation
 	// disabled — the default); StepBudgetMax accepts 0 only to mean "use
@@ -669,6 +714,17 @@ func envOr(key, fallback string) string {
 		return v
 	}
 	return fallback
+}
+
+func voiceModeOr(value, fallback string) string {
+	switch strings.ToLower(strings.TrimSpace(value)) {
+	case "native":
+		return "native"
+	case "asr_first":
+		return "asr_first"
+	default:
+		return fallback
+	}
 }
 
 // envFloat32 overlays a float32 from the environment, keeping the fallback when

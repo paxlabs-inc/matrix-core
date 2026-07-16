@@ -120,4 +120,3 @@ func TestScreenRejectsDoNotTouch(t *testing.T) {
 		t.Fatalf("do-not-touch change not rejected: %q", v)
 	}
 }
-

@@ -49,6 +49,7 @@ import (
 	"matrix/router/internal/provision"
 	"matrix/router/internal/proxy"
 	"matrix/router/internal/railway"
+	"matrix/router/internal/voice"
 )
 
 // version is the build identity; overridden via -ldflags="-X main.version=...".
@@ -189,8 +190,12 @@ func main() {
 			// /etc/matrix/router.env; empty leaves the media tools dormant.
 			// Outputs land on the per-Machine volume at /data/media and are
 			// served by the Neo front at /media.
-			"XAI_API_KEY":    os.Getenv("XAI_API_KEY"),
-			"NOVITA_API_KEY": os.Getenv("NOVITA_API_KEY"),
+			"XAI_API_KEY":           os.Getenv("XAI_API_KEY"),
+			"NOVITA_API_KEY":        os.Getenv("NOVITA_API_KEY"),
+			"MIMO_API_KEY":          os.Getenv("MIMO_API_KEY"),
+			"MATRIX_LIVEKIT_URL":    os.Getenv("MATRIX_LIVEKIT_URL"),
+			"MATRIX_LIVEKIT_KEY":    os.Getenv("MATRIX_LIVEKIT_KEY"),
+			"MATRIX_LIVEKIT_SECRET": os.Getenv("MATRIX_LIVEKIT_SECRET"),
 			// Shared headless browser (tools/browser/browser.mjs stdio proxy in
 			// the daemon image -> the matrix-browser Fly app running
 			// @playwright/mcp over Streamable HTTP). The proxy answers
@@ -373,6 +378,12 @@ func main() {
 	// its private preview target via the internal listener (see below).
 	previewReg := preview.NewRegistry()
 	publicMux.Handle("/preview/", mw.JWT(verifier, logf)(&preview.Handler{Reg: previewReg, Logf: logf}))
+	publicMux.Handle("/voice/token", mw.JWT(verifier, logf)(&voice.Handler{
+		Proxy:     proxyH,
+		ServerURL: os.Getenv("MATRIX_LIVEKIT_URL"),
+		APIKey:    os.Getenv("MATRIX_LIVEKIT_KEY"),
+		Secret:    os.Getenv("MATRIX_LIVEKIT_SECRET"),
+	}))
 
 	// JWT-protected proxy for everything else (/messages, /events, /intents/*).
 	publicMux.Handle("/", mw.JWT(verifier, logf)(proxyH))

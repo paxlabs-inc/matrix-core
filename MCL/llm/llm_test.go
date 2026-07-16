@@ -27,7 +27,8 @@ func TestDetectProvider(t *testing.T) {
 		// opencode). The remaining bare "<vendor>/<model>" shape (including the
 		// retired zai-org/GLM ids) resolves to Baseten; Together is only
 		// reachable via explicit Config.Provider + ProviderSet.
-		{"xiaomimimo/mimo-v2.5-pro", ProviderXai, false},
+		{"xiaomimimo/mimo-v2.5-pro", ProviderXiaomi, false},
+		{"mimo-v2.5-pro", ProviderXiaomi, false},
 		{"grok-build-0.1", ProviderXai, false},
 		{"grok-4.20-0309-non-reasoning", ProviderXai, false},
 		{"zai-org/GLM-5.2", ProviderBaseten, false},
@@ -60,10 +61,11 @@ func TestIsXaiModel(t *testing.T) {
 		in   string
 		want bool
 	}{
-		{"xiaomimimo/mimo-v2.5-pro", true},
+		{"xiaomimimo/mimo-v2.5-pro", false},
+		{"mimo-v2.5-pro", false},
 		{"grok-build-0.1", true},
 		{"grok-4.20-0309-non-reasoning", true},
-		{"xiaomimimo/mimo-v2.5-pro", true}, // case-insensitive prefix
+		{"GROK-4.3", true}, // case-insensitive prefix
 		{"zai-org/GLM-5.2", false},
 		{"deepseek-ai/DeepSeek-V4-Flash", false},
 		{"accounts/fireworks/models/gpt-oss-120b", false},
@@ -96,7 +98,7 @@ func TestXaiModelPassesThroughUnchanged(t *testing.T) {
 	defer server.Close()
 
 	client, err := New(&Config{
-		Model:    "xiaomimimo/mimo-v2.5-pro",
+		Model:    "grok-4.3",
 		APIKey:   "test-key",
 		Endpoint: server.URL,
 	})
@@ -108,16 +110,80 @@ func TestXaiModelPassesThroughUnchanged(t *testing.T) {
 	}, ""); err != nil {
 		t.Fatalf("Decode: %v", err)
 	}
-	if gotModel != "xiaomimimo/mimo-v2.5-pro" {
-		t.Errorf("upstream model = %q, want %q (grok id must pass through unchanged)", gotModel, "xiaomimimo/mimo-v2.5-pro")
+	if gotModel != "grok-4.3" {
+		t.Errorf("upstream model = %q, want %q (grok id must pass through unchanged)", gotModel, "grok-4.3")
+	}
+}
+
+// TestXiaomiModelRewritesToNativeID pins the Xiaomi MiMo send-time contract:
+// the fleet id "xiaomimimo/mimo-v2.5-pro" is rewritten to Xiaomi's native
+// model code "mimo-v2.5-pro" on the wire, the thinking block carries the
+// EnableThinking toggle ("enabled"/"disabled"), and reasoning_effort is
+// never sent (that field is the xAI grok-4.3 contract).
+func TestXiaomiModelRewritesToNativeID(t *testing.T) {
+	tests := []struct {
+		name           string
+		enableThinking bool
+		wantThinking   string
+	}{
+		{"thinking on -> enabled", true, "enabled"},
+		{"thinking off -> disabled", false, "disabled"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var raw map[string]json.RawMessage
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if err := json.NewDecoder(r.Body).Decode(&raw); err != nil {
+					t.Fatalf("decode request: %v", err)
+				}
+				json.NewEncoder(w).Encode(chatResponse{
+					Choices: []chatChoice{{Message: chatMessage{Role: "assistant", Content: "ok"}}},
+				})
+			}))
+			defer server.Close()
+
+			client, err := New(&Config{
+				Model:          "xiaomimimo/mimo-v2.5-pro",
+				APIKey:         "test-key",
+				Endpoint:       server.URL,
+				EnableThinking: tt.enableThinking,
+			})
+			if err != nil {
+				t.Fatalf("New: %v", err)
+			}
+			if _, err := client.Decode(context.Background(), []interpreter.Message{
+				{Role: "user", Content: "hi"},
+			}, ""); err != nil {
+				t.Fatalf("Decode: %v", err)
+			}
+
+			if got := string(raw["model"]); got != `"mimo-v2.5-pro"` {
+				t.Errorf("upstream model = %s, want %q (fleet id must rewrite to the native Xiaomi id)", got, "mimo-v2.5-pro")
+			}
+			rawThinking, present := raw["thinking"]
+			if !present {
+				t.Fatal("thinking block missing from xiaomi request")
+			}
+			var think thinkingConfig
+			if err := json.Unmarshal(rawThinking, &think); err != nil {
+				t.Fatalf("unmarshal thinking: %v", err)
+			}
+			if think.Type != tt.wantThinking {
+				t.Errorf("thinking.type = %q, want %q", think.Type, tt.wantThinking)
+			}
+			if effort, ok := raw["reasoning_effort"]; ok {
+				t.Errorf("reasoning_effort present (%s), want omitted for xiaomi models", effort)
+			}
+		})
 	}
 }
 
 // TestReasoningEffortWire pins the xAI reasoning_effort request contract that
-// replaced the retired Z.ai `thinking` block. Only xiaomimimo/mimo-v2.5-pro carries the field:
+// replaced the retired Z.ai `thinking` block. Only grok-4.3 carries the field:
 // EnableThinking=true maps to "medium", EnableThinking=false maps to "none", and
 // models that do not support reasoning_effort (grok-build-*, the non-reasoning
-// grok, and non-grok models) omit the field entirely (omitempty).
+// grok, non-grok models, and Xiaomi MiMo which uses the thinking block instead)
+// omit the field entirely (omitempty).
 func TestReasoningEffortWire(t *testing.T) {
 	tests := []struct {
 		name           string
@@ -125,11 +191,12 @@ func TestReasoningEffortWire(t *testing.T) {
 		enableThinking bool
 		wantEffort     string // "" means the field must be omitted from the wire
 	}{
-		{"grok43 thinking on -> medium", "xiaomimimo/mimo-v2.5-pro", true, "medium"},
-		{"grok43 thinking off -> none", "xiaomimimo/mimo-v2.5-pro", false, "none"},
+		{"grok43 thinking on -> medium", "grok-4.3", true, "medium"},
+		{"grok43 thinking off -> none", "grok-4.3", false, "none"},
 		{"grok-build omits", "grok-build-0.1", true, ""},
 		{"grok non-reasoning omits", "grok-4.20-0309-non-reasoning", true, ""},
 		{"non-grok omits", "deepseek-ai/DeepSeek-V4-Flash", true, ""},
+		{"xiaomi mimo omits", "xiaomimimo/mimo-v2.5-pro", true, ""},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -183,11 +250,12 @@ func TestReasoningEffortWire(t *testing.T) {
 // both send) so the wire contract is asserted end-to-end.
 func TestMaxCompletionTokensWire(t *testing.T) {
 	tests := []struct {
-		name          string
-		model         string
+		name           string
+		model          string
 		wantCompletion bool // true: expect max_completion_tokens (grok); false: expect max_tokens
 	}{
-		{"grok uses max_completion_tokens", "xiaomimimo/mimo-v2.5-pro", true},
+		{"grok uses max_completion_tokens", "grok-4.3", true},
+		{"mimo uses max_completion_tokens", "xiaomimimo/mimo-v2.5-pro", true},
 		{"non-grok uses max_tokens", "accounts/fireworks/models/deepseek-v4-flash", false},
 	}
 	for _, tt := range tests {

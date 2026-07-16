@@ -64,7 +64,7 @@ func TestTrace_ServedOnReopen(t *testing.T) {
 	e.broker.publish(intentID, "tool.step", "neo", map[string]interface{}{"id": "s1", "surface": "terminal", "title": "Terminal", "running": false, "command": "go build ./..."})
 	e.broker.publish(intentID, "tool.search", "neo", map[string]interface{}{"tool": "web_search", "query": "go embed fs", "results": []map[string]interface{}{{"title": "docs", "url": "https://go.dev"}}})
 	e.broker.publish(intentID, "tool.media", "neo", map[string]interface{}{"kind": "image", "url": "/media/diagram.png"})
-	e.broker.publish(intentID, "chat.assistant", "neo", map[string]interface{}{"text": "Let me check the build first.", "intent_id": intentID})       // non-final narration → kept
+	e.broker.publish(intentID, "chat.assistant", "neo", map[string]interface{}{"text": "Let me check the build first.", "intent_id": intentID})            // non-final narration → kept
 	e.broker.publish(intentID, "chat.delta", "neo", map[string]interface{}{"channel": "content", "text": "typing…"})                                       // transient → dropped
 	e.broker.publish(intentID, "chat.assistant", "neo", map[string]interface{}{"text": "Done — here is your tool.", "final": true, "intent_id": intentID}) // final answer → NOT in trace (conversation store owns it)
 

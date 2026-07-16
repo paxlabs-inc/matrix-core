@@ -21,11 +21,11 @@ type Error struct {
 // Error codes (stable; the planner/agent may branch on these).
 const (
 	CodeInvalidRequest = "invalid_request"
-	CodeUnauthorized   = "unauthorized"    // transport/principal auth failed
-	CodeNotConnected   = "not_connected"   // the owner has not linked this provider
-	CodeScopeMissing   = "scope_missing"   // connected, but the granted scopes do not cover the tool
-	CodeNeedsConfirm   = "needs_confirm"   // irreversible / external-money action awaiting user confirmation
-	CodeProvider       = "provider_error"  // the upstream provider API returned an error
+	CodeUnauthorized   = "unauthorized"   // transport/principal auth failed
+	CodeNotConnected   = "not_connected"  // the owner has not linked this provider
+	CodeScopeMissing   = "scope_missing"  // connected, but the granted scopes do not cover the tool
+	CodeNeedsConfirm   = "needs_confirm"  // irreversible / external-money action awaiting user confirmation
+	CodeProvider       = "provider_error" // the upstream provider API returned an error
 	CodeInternal       = "internal"
 )
 

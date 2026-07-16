@@ -177,7 +177,7 @@ func TestCassandraFoldPreservesOriginalContent(t *testing.T) {
 	// which is preserved verbatim (additive, metacognition-only).
 	a.working = []llm.Message{
 		llm.UserMessage("g"),
-		llm.Message{Role: llm.RoleAssistant, Content: "Checking the balance again.", ToolCalls: []llm.ToolCall{tc("web_search", "{}")}},
+		{Role: llm.RoleAssistant, Content: "Checking the balance again.", ToolCalls: []llm.ToolCall{tc("web_search", "{}")}},
 	}
 	if !a.cassandraStep(loopSig(3, a.casLoopThreshold())) {
 		t.Fatal("expected a mod")

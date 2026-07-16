@@ -638,8 +638,14 @@
           "timeout_ms": 600000
         },
         {
+          "name": "transcribe_audio",
+          "description": "Transcribe a local wav or mp3 attachment with MiMo speech recognition. audio is the exact /media reference from the user's message; language is auto, zh, or en. Returns {ok, transcript, language}.",
+          "side_effect_class": "network",
+          "timeout_ms": 180000
+        },
+        {
           "name": "generate_speech",
-          "description": "Convert text into natural-sounding spoken audio (text-to-speech, Novita fallback lane). text max 512 chars. Returns {ok, kind:\"audio\", url}.",
+          "description": "Convert text into natural-sounding spoken audio with MiMo TTS. Optional voice selects a built-in voice and style gives natural-language performance direction. Novita is used only when MiMo is unavailable. Returns {ok, kind:\"audio\", url}.",
           "side_effect_class": "network",
           "timeout_ms": 180000
         }

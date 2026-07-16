@@ -121,7 +121,9 @@ func createAndPublish(t *testing.T, baseURL, fixture, slug string) {
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("X-Developer-Wallet", "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266")
 	resp, _ := http.DefaultClient.Do(req)
-	var created struct{ ID string `json:"id"` }
+	var created struct {
+		ID string `json:"id"`
+	}
 	_ = json.NewDecoder(resp.Body).Decode(&created)
 	resp.Body.Close()
 	pubReq, _ := http.NewRequest(http.MethodPost, baseURL+"/v1/services/"+created.ID+"/publish", nil)

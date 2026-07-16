@@ -24,10 +24,11 @@ import (
 // wallet enforces custody policy (frozen / read_only / spend caps / allow-lists).
 //
 // Handshake mirrors tools/paxeer/lib/agentauth.mjs and the Go daemon identity:
-//   POST /v1/agent/auth/challenge {did} -> {message, nonce}
-//   ed25519-sign(message)
-//   POST /v1/agent/auth/verify {did, public_key, nonce, signature} -> {token}
-//   POST /v1/agent/sign {tx} (Bearer token) -> {signed_tx, address}
+//
+//	POST /v1/agent/auth/challenge {did} -> {message, nonce}
+//	ed25519-sign(message)
+//	POST /v1/agent/auth/verify {did, public_key, nonce, signature} -> {token}
+//	POST /v1/agent/sign {tx} (Bearer token) -> {signed_tx, address}
 type EmbeddedSigner struct {
 	baseURL string
 	label   string

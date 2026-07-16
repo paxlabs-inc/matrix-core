@@ -47,6 +47,7 @@ type Message struct {
 	ToolCalls  []ToolCall `json:"tool_calls,omitempty"`
 	ToolCallID string     `json:"tool_call_id,omitempty"`
 	Name       string     `json:"name,omitempty"`
+	AudioData  string     `json:"-"`
 
 	// Reasoning carries a reasoning model's chain-of-thought when the
 	// provider surfaces it as a separate channel. Never serialized onto the
@@ -130,6 +131,14 @@ func SystemMessage(content string) Message {
 // UserMessage builds a user-role message.
 func UserMessage(content string) Message {
 	return Message{Role: RoleUser, Content: content}
+}
+
+// UserAudioMessage builds one user turn whose on-wire content contains the
+// visible transcript/marker and one MiMo input_audio part. AudioData is
+// process-only: durable transcript and cortex records store Content plus the
+// sealed media reference, never raw audio bytes.
+func UserAudioMessage(content, dataURL string) Message {
+	return Message{Role: RoleUser, Content: content, AudioData: dataURL}
 }
 
 // AssistantMessage builds an assistant-role text message (no tool calls). Used
@@ -265,7 +274,13 @@ func (r ChatResult) HasToolCalls() bool { return len(r.Message.ToolCalls) > 0 }
 
 // Usage is the provider's token accounting for a call.
 type Usage struct {
-	PromptTokens     int `json:"prompt_tokens"`
-	CompletionTokens int `json:"completion_tokens"`
-	TotalTokens      int `json:"total_tokens"`
+	PromptTokens        int          `json:"prompt_tokens"`
+	CompletionTokens    int          `json:"completion_tokens"`
+	TotalTokens         int          `json:"total_tokens"`
+	PromptTokensDetails TokenDetails `json:"prompt_tokens_details,omitempty"`
+}
+
+// TokenDetails carries provider accounting for non-text prompt modalities.
+type TokenDetails struct {
+	AudioTokens int `json:"audio_tokens,omitempty"`
 }

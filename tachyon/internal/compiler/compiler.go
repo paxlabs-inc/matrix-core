@@ -130,8 +130,8 @@ func (c *Compiler) collectArtifacts(root, projectID string, targets []string) ([
 }
 
 type forgeArtifact struct {
-	ABI              json.RawMessage `json:"abi"`
-	Bytecode         struct {
+	ABI      json.RawMessage `json:"abi"`
+	Bytecode struct {
 		Object string `json:"object"`
 	} `json:"bytecode"`
 	DeployedBytecode struct {
@@ -157,7 +157,7 @@ func parseForgeArtifact(path, sourceFile, name string) (types.Artifact, error) {
 	if len(raw.Metadata) > 0 {
 		var meta struct {
 			Compiler struct {
-				Version string `json:"version"`
+				Version  string `json:"version"`
 				Settings struct {
 					Optimizer struct {
 						Enabled bool `json:"enabled"`

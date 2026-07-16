@@ -63,6 +63,55 @@ git tags.
   (awaiting owner YES), termination guard chain, guidance choke point,
   governor waves.
 
+## [0.5.0] - 2026-07-16 — VOICE: full-duplex speech
+
+### Added
+
+- **VOICE — full-duplex speech for the agent** (`spec/voice/`, 2026-07-16,
+  all six waves complete): a real spoken conversation with barge-in, riding
+  the EXISTING text pipeline — spoken turns ARE chat turns (same `/chat`, same
+  SSE, same cortex record, same thread).
+  - **Coherent speech seams** (`tools/media`): `transcribe_audio` implemented
+    via `mimo-v2.5-asr` and registered at every model-facing site (the phantom
+    tool is gone); `generate_speech` re-pointed MiMo-primary
+    (`mimo-v2.5-tts`, built-in voices, style instruction, no 512-char cap)
+    with Novita fallback; the client `useChat.ts` audio-drop fixed so
+    `tool.media` `kind: audio` renders via `AudioPlayer` live and
+    rebuilt-from-trace.
+  - **Audio-native turns**: `POST /chat` accepts an audio attachment ref;
+    `NEO_VOICE_MODE=native` (default) attaches the utterance as an
+    `input_audio` part on the ONE user turn so the model hears tone, with a
+    bounded async `mimo-v2.5-asr` lane producing the durable transcript that
+    cortex / history / recall / Cassandra / the client thread operate on;
+    `asr_first` mode is byte-identical to a typed turn. Window-law invariants
+    and text-only turns proven byte-identical with the feature enabled; ASR
+    failure fails open to a marker + media ref.
+  - **The voice worker** (`tools/voice`, new): a per-user colocated LiveKit
+    Agents sidecar (Silero VAD + multilingual turn detection, barge-in,
+    agent-state, room `voice:<conversation_id>`) ported from the proven Gideon
+    worker; passthrough-STT node → `NeoBridge` (`/upload` + `/chat` over
+    loopback, `/events` sentence-flush fold) → streaming `mimo-v2.5-tts`
+    (pcm16 24kHz) per flushed sentence, with barge-in cancel and fail-open TTS.
+  - **Transport + auth**: a shared self-hosted `livekit-server` service in the
+    single Railway project; the router mints HS256 LiveKit join tokens behind
+    Supabase auth (room scoped to the requesting user's conversation) — no
+    Python token server; the worker self-mints from machine env and connects
+    ON DEMAND, tearing down after `VOICE_IDLE_DISCONNECT_S` so Railway
+    serverless sleep re-engages.
+  - **Client voice mode**: a mic toggle on the real ChatComposer (router token
+    fetch → `livekit-client` room join → autoplay gesture, `useAudioDevices`
+    device pick), a compact voice strip reading the standard LiveKit
+    agent-state attribute, spoken turns rendered as normal thread messages
+    (transcript + audio chip), voice + base-style settings, degrade-to-text on
+    any failure; i18n ×5 locales, house-rules clean.
+  - **Deploy + proof**: `deploy/railway` bakes the worker (pinned deps, VAD /
+    turn-detector models prefetched, no dev `.venv`), entrypoint supervision
+    gated on `NEO_VOICE_ENABLED` + LiveKit env; `voice.session` broker events
+    + per-turn latency metrics; adversarial E2E + property suite on real
+    components (real worker subprocess vs a real Neo server, `input_audio` on
+    the wire, every failure mode degrading to a completed text turn, idle
+    teardown, live MiMo proofs env-gated — no fakes).
+
 ## [0.35.0] - 2026-07-13 — DEUS-LAYERX: LXP payments + Neo consolidation
 
 ### Added

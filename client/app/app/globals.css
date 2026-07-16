@@ -1,0 +1,694 @@
+@import 'tailwindcss';
+@import 'tw-animate-css';
+@import 'tw-shimmer';
+
+@custom-variant dark (&:is(.dark *));
+
+/* CREAO-style "warm charcoal" aesthetic — warm near-black base, warm-neutral
+   (stone) scale, cream text, sage as the single accent, amber for warning.
+   Every neutral is nudged toward yellow/red rather than blue; elevation is
+   signalled by lightening the warm charcoal in small steps rather than by
+   borders or shadows. Dark is the default surface (set directly on :root).
+
+   Merged design system: the LibreChat-style semantic token set
+   (text-* / surface-* / border-* / header-*) is mapped onto a warm tonal
+   ladder so components written against either system render natively. */
+:root {
+  /* ── Core shadcn tokens — CREAO warm-charcoal aesthetic ── */
+  --background: #252526;
+  --foreground: #e3d9d4;
+
+  --card: #252526;
+  --card-foreground: #e3d9d4;
+  --popover: #222220;
+  --popover-foreground: #e3d9d4;
+
+  /* Primary: warm raised charcoal for CREAO's dark-CTA style
+     (e.g. the "Make a video in chat" button) — cream text on a lifted well. */
+  --primary: #353530;
+  --primary-foreground: #e3d9d4;
+
+  --secondary: #252526;
+  --secondary-foreground: #e3d9d4;
+  --muted: #252526;
+  --muted-foreground: #96918e;
+  --accent: #222220;
+  --accent-foreground: #e3d9d4;
+
+  --destructive: #ef4444;
+  --destructive-foreground: #ffffff;
+
+  --border: #2a2a27;
+  --input: #222220;
+  --ring: #99bd9c;
+
+  /* Warm-neutral chart ramp. */
+  --chart-1: #e3d9d4;
+  --chart-2: #96918e;
+  --chart-3: #6e6a62;
+  --chart-4: #4a463f;
+  --chart-5: #353530;
+
+  --radius: 0.625rem;
+
+  --sidebar: #252526;
+  --sidebar-foreground: #e3d9d4;
+  --sidebar-primary: #353530;
+  --sidebar-primary-foreground: #e3d9d4;
+  --sidebar-accent: #222220;
+  --sidebar-accent-foreground: #e3d9d4;
+  --sidebar-border: #2a2a27;
+  --sidebar-ring: #99bd9c;
+
+  /* ── Semantic system (ported from v3 config), CREAO-toned ── */
+  --brand-purple: #ab68ff; /* out-of-palette brand token — left untouched */
+  --presentation: var(--card);
+
+  /* Single shell accent — SAGE (CREAO's status/nav accent). NOTE: this replaces
+     the previous Paxeer Blue (#004ced) house-rule accent (R13.6). If Paxeer Blue
+     is a hard brand constraint, revert these three lines. Soft tints are derived
+     from the same sage hue for low-emphasis fills (still one accent). */
+  --pax: #99bd9c;
+  --pax-soft: #99bd9c24;
+  --pax-softer: #99bd9c14;
+
+  --text-primary: var(--foreground);
+  --text-secondary: #dbd1cd;
+  --text-secondary-alt: #cbbfb8;
+  --text-tertiary: var(--muted-foreground);
+  --text-warning: #fe9a00; /* CREAO amber (notification / upgrade tint) */
+  --text-destructive: #ef4444;
+
+  --ring-primary: var(--ring);
+
+  --header-primary: #161615;
+  --header-hover: #252526;
+  --header-button-hover: #222220;
+
+  --surface-primary: var(--background);
+  --surface-primary-alt: #161615;
+  --surface-primary-contrast: #222220;
+  --surface-secondary: var(--card);
+  --surface-secondary-alt: #1f1f1d;
+  --surface-tertiary: #252526;
+  --surface-tertiary-alt: #222220;
+  --surface-dialog: #222220;
+  --surface-hover: #2a2a27;
+  --surface-hover-alt: #353530;
+  --surface-active: #2a2a27;
+  --surface-active-alt: #222220;
+  --surface-chat: var(--card);
+  /* Submit stays warm-neutral raised to match CREAO's subtle composer send
+     (swap to var(--pax) if you want the highest-intent action to carry sage). */
+  --surface-submit: #353530;
+  --surface-submit-hover: #4a463f;
+  --surface-destructive: #dc2626;
+  --surface-destructive-hover: #b91c1c;
+
+  --border-light: #252526;
+  --border-medium: #2a2a27;
+  --border-medium-alt: #353530;
+  --border-heavy: #4a463f;
+  --border-xheavy: #5c574e;
+  --border-destructive: var(--destructive);
+
+  --switch-unchecked: #353530;
+}
+
+.dark {
+  --background: #161615;
+  --foreground: #e3d9d4;
+  --card: #252526;
+  --card-foreground: #e3d9d4;
+  --popover: #222220;
+  --popover-foreground: #e3d9d4;
+  --primary: #353530;
+  --primary-foreground: #e3d9d4;
+  --secondary: #252526;
+  --secondary-foreground: #e3d9d4;
+  --muted: #252526;
+  --muted-foreground: #96918e;
+  --accent: #222220;
+  --accent-foreground: #e3d9d4;
+  --destructive: #ef4444;
+  --destructive-foreground: #ffffff;
+  --border: #2a2a27;
+  --input: #222220;
+  --ring: #99bd9c;
+  --chart-1: #e3d9d4;
+  --chart-2: #96918e;
+  --chart-3: #6e6a62;
+  --chart-4: #4a463f;
+  --chart-5: #353530;
+  --sidebar: #252526;
+  --sidebar-foreground: #e3d9d4;
+  --sidebar-primary: #353530;
+  --sidebar-primary-foreground: #e3d9d4;
+  --sidebar-accent: #222220;
+  --sidebar-accent-foreground: #e3d9d4;
+  --sidebar-border: #2a2a27;
+  --sidebar-ring: #99bd9c;
+
+  /* Semantic system mirrors :root (dark is the only theme). */
+  --brand-purple: #ab68ff;
+  --presentation: var(--card);
+  --pax: #99bd9c;
+  --pax-soft: #99bd9c24;
+  --pax-softer: #99bd9c14;
+  --text-primary: var(--foreground);
+  --text-secondary: #dbd1cd;
+  --text-secondary-alt: #cbbfb8;
+  --text-tertiary: var(--muted-foreground);
+  --text-warning: #fe9a00;
+  --text-destructive: #ef4444;
+  --ring-primary: var(--ring);
+  --header-primary: #161615;
+  --header-hover: #252526;
+  --header-button-hover: #222220;
+  --surface-primary: var(--background);
+  --surface-primary-alt: #161615;
+  --surface-primary-contrast: #222220;
+  --surface-secondary: var(--card);
+  --surface-secondary-alt: #1f1f1d;
+  --surface-tertiary: #252526;
+  --surface-tertiary-alt: #222220;
+  --surface-dialog: #222220;
+  --surface-hover: #2a2a27;
+  --surface-hover-alt: #353530;
+  --surface-active: #2a2a27;
+  --surface-active-alt: #222220;
+  --surface-chat: var(--card);
+  --surface-submit: #353530;
+  --surface-submit-hover: #4a463f;
+  --surface-destructive: #dc2626;
+  --surface-destructive-hover: #b91c1c;
+  --border-light: #252526;
+  --border-medium: #2a2a27;
+  --border-medium-alt: #353530;
+  --border-heavy: #4a463f;
+  --border-xheavy: #5c574e;
+  --border-destructive: var(--destructive);
+  --switch-unchecked: #353530;
+}
+
+@theme inline {
+  --font-sans: var(--font-matrix-sans), 'LT Wave Text', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-matrix-mono), 'LT Wave Mono', ui-monospace, monospace;
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+
+  /* ── Semantic utilities (bg-surface-*, text-text-*, border-border-*) ── */
+  --color-brand-purple: var(--brand-purple);
+  --color-presentation: var(--presentation);
+  /* Sage accent utilities for the OS shell (text-pax / bg-pax / outline-pax).
+     The shell's single accent. */
+  --color-pax: var(--pax);
+  --color-pax-soft: var(--pax-soft);
+  --color-pax-softer: var(--pax-softer);
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-secondary-alt: var(--text-secondary-alt);
+  --color-text-tertiary: var(--text-tertiary);
+  --color-text-warning: var(--text-warning);
+  --color-text-destructive: var(--text-destructive);
+  --color-ring-primary: var(--ring-primary);
+  --color-header-primary: var(--header-primary);
+  --color-header-hover: var(--header-hover);
+  --color-header-button-hover: var(--header-button-hover);
+  --color-surface-active: var(--surface-active);
+  --color-surface-active-alt: var(--surface-active-alt);
+  --color-surface-hover: var(--surface-hover);
+  --color-surface-hover-alt: var(--surface-hover-alt);
+  --color-surface-primary: var(--surface-primary);
+  --color-surface-primary-alt: var(--surface-primary-alt);
+  --color-surface-primary-contrast: var(--surface-primary-contrast);
+  --color-surface-secondary: var(--surface-secondary);
+  --color-surface-secondary-alt: var(--surface-secondary-alt);
+  --color-surface-tertiary: var(--surface-tertiary);
+  --color-surface-tertiary-alt: var(--surface-tertiary-alt);
+  --color-surface-dialog: var(--surface-dialog);
+  --color-surface-submit: var(--surface-submit);
+  --color-surface-submit-hover: var(--surface-submit-hover);
+  --color-surface-destructive: var(--surface-destructive);
+  --color-surface-destructive-hover: var(--surface-destructive-hover);
+  --color-surface-chat: var(--surface-chat);
+  --color-border-light: var(--border-light);
+  --color-border-medium: var(--border-medium);
+  --color-border-medium-alt: var(--border-medium-alt);
+  --color-border-heavy: var(--border-heavy);
+  --color-border-xheavy: var(--border-xheavy);
+  --color-border-destructive: var(--border-destructive);
+  --color-switch-unchecked: var(--switch-unchecked);
+
+  --animate-shine: shine 6s linear infinite;
+  --animate-marquee: marquee 36s linear infinite;
+}
+
+@theme {
+  /* ── Static palettes — warm-neutral (stone) scale replacing Cursor zinc ── */
+  --color-gray-50: #faf8f6;
+  --color-gray-100: #f2efeb;
+  --color-gray-200: #e3d9d4;
+  --color-gray-300: #cbbfb8;
+  --color-gray-400: #96918e;
+  --color-gray-500: #6e6a62;
+  --color-gray-600: #4a463f;
+  --color-gray-700: #353530;
+  --color-gray-800: #2a2a27;
+  --color-gray-900: #252526;
+  --color-gray-950: #0a0a0a;
+
+  /* Green ramp retuned toward CREAO sage (RUNNING pill = green-400). */
+  --color-green-50: #f0f4f0;
+  --color-green-100: #dde7dd;
+  --color-green-200: #c3d4c4;
+  --color-green-300: #a9c1ab;
+  --color-green-400: #99bd9c;
+  --color-green-500: #7fa382;
+  --color-green-600: #6a8a6d;
+  --color-green-700: #567056;
+  --color-green-800: #445844;
+  --color-green-900: #333f33;
+
+  /* w-authPageWidth (named spacing token) */
+  --spacing-authPageWidth: 370px;
+
+  /* ── Animations from the v3 system ── */
+  --animate-fade-in: fadeIn 0.5s ease-out forwards;
+  --animate-accordion-down: accordion-down 0.2s ease-out;
+  --animate-accordion-up: accordion-up 0.2s ease-out;
+  --animate-slide-in-right: slide-in-right 300ms cubic-bezier(0.25, 0.1, 0.25, 1);
+  --animate-slide-in-left: slide-in-left 300ms cubic-bezier(0.25, 0.1, 0.25, 1);
+  --animate-slide-out-left: slide-out-left 300ms cubic-bezier(0.25, 0.1, 0.25, 1);
+  --animate-slide-out-right: slide-out-right 300ms cubic-bezier(0.25, 0.1, 0.25, 1);
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+  @keyframes accordion-down {
+    from {
+      height: 0;
+    }
+    to {
+      height: var(--radix-accordion-content-height);
+    }
+  }
+  @keyframes accordion-up {
+    from {
+      height: var(--radix-accordion-content-height);
+    }
+    to {
+      height: 0;
+    }
+  }
+  @keyframes slide-in-right {
+    0% {
+      transform: translateX(100%);
+    }
+    100% {
+      transform: translateX(0);
+    }
+  }
+  @keyframes slide-in-left {
+    0% {
+      transform: translateX(-100%);
+    }
+    100% {
+      transform: translateX(0);
+    }
+  }
+  @keyframes slide-out-left {
+    0% {
+      transform: translateX(0);
+    }
+    100% {
+      transform: translateX(-100%);
+    }
+  }
+  @keyframes slide-out-right {
+    0% {
+      transform: translateX(0);
+    }
+    100% {
+      transform: translateX(100%);
+    }
+  }
+}
+
+@layer base {
+  html {
+    font-size: 120%;
+  }
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  ::selection {
+    background: #e3d9d430;
+  }
+}
+
+/* Mobile only (below Tailwind's `sm` = 640px): scale the root font-size — and
+   therefore the entire rem-based UI — down ~10% (120% × 0.9 = 108%) so phones
+   render at a comfortable density. At the default 120% the mobile UI reads like
+   another app at 120% zoom; this brings it back to a natural 100% feel. Desktop
+   keeps the 120% base. Unlayered so it overrides the @layer base rule above. */
+@media (max-width: 639.98px) {
+  html {
+    font-size: 108%;
+  }
+}
+
+@keyframes shine {
+  0% {
+    background-position: 0% 0%;
+  }
+  100% {
+    background-position: -200% 0%;
+  }
+}
+
+@keyframes marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+/* Subtle dotted "spec sheet" grid used behind hero / sections.
+   Warm low-alpha lines, almost invisible on the warm-charcoal base. */
+.matrix-grid {
+  background-image:
+    linear-gradient(to right, rgba(227, 217, 212, 0.03) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(227, 217, 212, 0.03) 1px, transparent 1px);
+  background-size: 56px 56px;
+}
+
+/* Thermal-receipt zig-zag edge. */
+.receipt-edge {
+  --s: 10px;
+  -webkit-mask: conic-gradient(from -45deg at bottom, #0000 90deg, #000 0) 50% / var(--s) 100%;
+  mask: conic-gradient(from -45deg at bottom, #0000 90deg, #000 0) 50% / var(--s) 100%;
+}
+
+/* Sidebar nav scroll — warm dark thumb on the overflow region. */
+[data-sidebar='content'] {
+  scrollbar-width: thin;
+  scrollbar-color: #222220 transparent;
+}
+[data-sidebar='content']::-webkit-scrollbar {
+  width: 6px;
+}
+[data-sidebar='content']::-webkit-scrollbar-track {
+  background: transparent;
+}
+[data-sidebar='content']::-webkit-scrollbar-thumb {
+  background-color: #222220;
+  border-radius: 9999px;
+}
+[data-sidebar='content']::-webkit-scrollbar-thumb:hover {
+  background-color: #2a2a27;
+}
+
+/* App scrollbars — thin, transparent track, low-contrast warm thumb that blends
+   into the dark surfaces and only lifts on hover. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(227, 217, 212, 0.12) transparent;
+}
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+*::-webkit-scrollbar-thumb {
+  background-color: rgba(227, 217, 212, 0.12);
+  border: 2px solid transparent;
+  border-radius: 9999px;
+  background-clip: padding-box;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(227, 217, 212, 0.24);
+  background-clip: padding-box;
+}
+*::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+/* ─── Accessibility ─────────────────────────────────────────────────────────── */
+
+/* Skip-to-content link: visually hidden until focused by keyboard. */
+.skip-link {
+  position: absolute;
+  left: -9999px;
+  top: auto;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  z-index: 9999;
+}
+.skip-link:focus {
+  position: fixed;
+  left: 1rem;
+  top: 1rem;
+  width: auto;
+  height: auto;
+  overflow: visible;
+  padding: 0.5rem 1rem;
+  border-radius: var(--radius);
+  background: var(--background);
+  /* sage focus border so the skip link stays visible on the dark base
+     (primary is now a dark raised charcoal, not white). */
+  border: 2px solid var(--ring);
+  color: var(--foreground);
+  font-size: 0.875rem;
+  font-weight: 600;
+  outline: none;
+}
+
+/* Respect the user's motion preference. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ─── Focus visible ─────────────────────────────────────────────────────────── */
+:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+/* Neo composer focus suppression */
+.neo-input:focus,
+.neo-input:focus-visible {
+  outline: none;
+}
+
+/* ─── Box loader (components/ui/box-loader.tsx) ──────────────────────────────── */
+.box-loader {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: calc(var(--bl-size, 22px) * 3);
+  height: calc(var(--bl-size, 22px) * 3);
+  overflow: visible;
+  flex: none;
+}
+.box-loader .boxes {
+  --size: var(--bl-size, 22px);
+  margin-top: 0;
+}
+.box-loader--lg {
+  --bl-size: 40px;
+}
+.boxes {
+  --size: 28px;
+  --duration: 800ms;
+  height: calc(var(--size) * 2);
+  width: calc(var(--size) * 3);
+  position: relative;
+  transform-style: preserve-3d;
+  transform-origin: 50% 50%;
+  transform: rotateX(60deg) rotateZ(45deg) rotateY(0deg) translateZ(0px);
+}
+.boxes .box {
+  width: var(--size);
+  height: var(--size);
+  top: 0;
+  left: 0;
+  position: absolute;
+  transform-style: preserve-3d;
+}
+.boxes .box-1 {
+  transform: translate(100%, 0);
+  animation: box-1 var(--duration) linear infinite;
+}
+.boxes .box-2 {
+  transform: translate(0, 100%);
+  animation: box-2 var(--duration) linear infinite;
+}
+.boxes .box-3 {
+  transform: translate(100%, 100%);
+  animation: box-3 var(--duration) linear infinite;
+}
+.boxes .box-4 {
+  transform: translate(200%, 0);
+  animation: box-4 var(--duration) linear infinite;
+}
+.boxes .box .face {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  background: #e3d9d4;
+  top: var(--face-top, auto);
+  right: var(--face-right, auto);
+  bottom: var(--face-bottom, auto);
+  left: var(--face-left, auto);
+  transform: rotateY(var(--face-ry, 0deg)) rotateX(var(--face-rx, 0deg))
+    translateZ(var(--face-tz, calc(var(--size) / 2)));
+}
+.boxes .box .face-front {
+  --face-top: 0;
+  --face-left: 0;
+  background: #e3d9d4;
+}
+.boxes .box .face-right {
+  --face-right: 0;
+  --face-ry: 90deg;
+  background: #96918e;
+}
+.boxes .box .face-top {
+  --face-rx: -90deg;
+  background: #dbd1cd;
+}
+.boxes .box .face-back {
+  --face-top: 0;
+  --face-left: 0;
+  --face-tz: calc(var(--size) * 3 * -1);
+  background: #6e6a62;
+}
+@keyframes box-1 {
+  0% {
+    transform: translate(100%, 0);
+  }
+  50% {
+    transform: translate(100%, 100%);
+  }
+  100% {
+    transform: translate(200%, 100%);
+  }
+}
+@keyframes box-2 {
+  0% {
+    transform: translate(0, 100%);
+  }
+  50% {
+    transform: translate(0, 0);
+  }
+  100% {
+    transform: translate(100%, 0);
+  }
+}
+@keyframes box-3 {
+  0%,
+  50% {
+    transform: translate(100%, 100%);
+  }
+  100% {
+    transform: translate(0, 100%);
+  }
+}
+@keyframes box-4 {
+  0% {
+    transform: translate(200%, 0);
+  }
+  50% {
+    transform: translate(200%, 100%);
+  }
+  100% {
+    transform: translate(100%, 100%);
+  }
+}
+
+/* ─── Shimmer text (Tool UI live-step labels) ───────────────────────────────── */
+.shimmer {
+  background-image: linear-gradient(
+    90deg,
+    var(--muted-foreground) 0%,
+    var(--foreground) 50%,
+    var(--muted-foreground) 100%
+  );
+  background-size: 200% 100%;
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+  animation: shimmer-text 1.8s linear infinite;
+}
+.shimmer-invert {
+  background-image: linear-gradient(
+    90deg,
+    var(--foreground) 0%,
+    var(--muted-foreground) 50%,
+    var(--foreground) 100%
+  );
+}
+@keyframes shimmer-text {
+  0% {
+    background-position: 100% 0;
+  }
+  100% {
+    background-position: -100% 0;
+  }
+}

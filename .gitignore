@@ -50,10 +50,8 @@ go.work.sum
 # --- Runtime data ---------------------------------------------------------
 data/
 tmp/
-temp/
 *.log
 *.pid
-spec/cassandra-silent-voice
 # Cortex Pebble stores (per-actor DBs land under runs/ or user-specified roots).
 **/cortex-data/
 **/MANIFEST-*
@@ -128,7 +126,6 @@ docs/_build/
 site/
 *.bak
 *.orig
-temp/*
 
 # --- Gideon runtime (secrets + local cortex + logs/pids) -----------------
 # gideon.env holds OPENCODE_API_KEY and local config — NEVER commit.
@@ -148,10 +145,6 @@ executor/bin/
 gideon/
 journal/**
 !journal/.gitkeep
-knowledge/HyperPax-OS
-knowledge/core_chats
-knowledge/**
-!knowledge/.gitkeep
 protocol/**
 !protocol/.gitkeep
 runs/**
@@ -163,8 +156,6 @@ deploy/gideon
 deploy/deploy.sh
 .archive/
 .logs/
-research/**
-!research/.gitkeep
 tools/forge/
 skills/gideon-ops
 agents/gideon.json
@@ -175,17 +166,22 @@ deploy/layerx
 construct/IMPLEMENTATION_PLAN.md
 construct/construct.frozen.kvx
 cassandra/CASSANDRA_SESSIONS_GUIDE.md
-spec/neo-onboarding
 .claude/settings.json
-spec/codegraph/*
-spec/cody/*
-spec/cody-client/*
-spec/cody-smoothness/*
-spec/continuous-memory/*
-infra/servers.kvx
-spec/automatrix/*
-spec/self-model/*
-spec/neo-smoothness/*
-spec/neo-execution-reliability/*
 .playwright-mcp
-spec/morpheus
+
+# --- Feature specs --------------------------------------------------------
+# Ignore EVERY working spec directory; only the specgen tooling and the
+# workflow index are tracked. Git does not track empty directories, so the
+# empty spec/ working dirs are ignored implicitly as well.
+spec/*
+!spec/specgen
+!spec/specgen/**
+!spec/workflow.kvx
+
+# --- Empty-directory hygiene ---------------------------------------------
+# Only directories that carry an explicit .gitkeep are tracked; everything
+# else empty stays out of the tree (git never commits empty dirs).
+infra/
+research/
+knowledge/
+temp/

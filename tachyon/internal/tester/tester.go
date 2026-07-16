@@ -55,8 +55,8 @@ func (t *Tester) Test(req types.TestRequest) (types.TestResponse, *types.Error) 
 }
 
 type forgeSuite struct {
-	Duration    string                       `json:"duration"`
-	TestResults map[string]forgeTestResult   `json:"test_results"`
+	Duration    string                     `json:"duration"`
+	TestResults map[string]forgeTestResult `json:"test_results"`
 }
 
 type forgeTestResult struct {

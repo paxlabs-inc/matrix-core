@@ -207,7 +207,7 @@ type EpisodicMemoryEvent struct {
 	Date           string `json:"date"`
 	SeqLo          uint64 `json:"seq_lo"`
 	SeqHi          uint64 `json:"seq_hi"`
-	Exact          bool `json:"exact"`
+	Exact          bool   `json:"exact"`
 	Text           string `json:"text"`
 }
 

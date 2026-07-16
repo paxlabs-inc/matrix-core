@@ -39,7 +39,7 @@ type stateGovernor struct {
 	reschedules  []time.Time
 }
 
-func (g *stateGovernor) Enabled(context.Context) bool  { return g.enabled }
+func (g *stateGovernor) Enabled(context.Context) bool   { return g.enabled }
 func (g *stateGovernor) TasksToday(context.Context) int { return g.tasksToday }
 func (g *stateGovernor) RecordTaskStarted(context.Context) error {
 	g.startedCalls++

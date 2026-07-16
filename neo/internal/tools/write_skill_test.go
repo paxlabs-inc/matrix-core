@@ -38,12 +38,12 @@ func TestWriteSkill_PersistsValidPattern(t *testing.T) {
 	m := &Manager{writeSkill: cap.writeSkill}
 
 	args := map[string]interface{}{
-		"name":              "deploy ERC-20 on Paxeer",
-		"trigger":           "user asks to launch a token",
-		"preconditions":     []interface{}{"FIREWORKS_API_KEY set", "agent wallet funded"},
-		"steps":             []interface{}{"tachyon_compile", "tachyon_test", "tachyon_deploy"},
-		"gotchas":           []interface{}{"pre-Cancun chain -> pin evm_version=shanghai"},
-		"success_criteria":  []interface{}{"receipt status=1", "balanceOf>0"},
+		"name":             "deploy ERC-20 on Paxeer",
+		"trigger":          "user asks to launch a token",
+		"preconditions":    []interface{}{"FIREWORKS_API_KEY set", "agent wallet funded"},
+		"steps":            []interface{}{"tachyon_compile", "tachyon_test", "tachyon_deploy"},
+		"gotchas":          []interface{}{"pre-Cancun chain -> pin evm_version=shanghai"},
+		"success_criteria": []interface{}{"receipt status=1", "balanceOf>0"},
 	}
 
 	out, isErr, err := m.Dispatch(context.Background(), WriteSkillTool, args)

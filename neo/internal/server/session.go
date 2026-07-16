@@ -366,6 +366,18 @@ func (s *session) submit(message string) (runID string, fresh bool) {
 	return s.submitWith(message, nil)
 }
 
+func (s *session) submitAudio(message string, audio *agent.AudioTurn) (runID string, fresh bool) {
+	s.actMu.Lock()
+	defer s.actMu.Unlock()
+	if r := s.active; r != nil && !r.stopped.Load() {
+		s.enqueueInput(message)
+		s.engine.conv.AppendUser(s.id, r.id, message)
+		return r.id, false
+	}
+	r := s.dispatchLocked(message, false, nil, audio)
+	return r.id, true
+}
+
 // submitWith is submit with a terminal observer: when the message dispatches a
 // FRESH run, onFinish is attached to it (invoked once with the run's terminal
 // task status). When the message is queued into an already-live run, no hook is
@@ -378,7 +390,7 @@ func (s *session) submitWith(message string, onFinish func(task.Status)) (runID 
 		s.enqueueInput(message)
 		return r.id, false
 	}
-	r := s.dispatchLocked(message, false, onFinish)
+	r := s.dispatchLocked(message, false, onFinish, nil)
 	return r.id, true
 }
 
@@ -396,14 +408,17 @@ func (s *session) startResume(objective string) *run {
 func (s *session) dispatch(message string, resume bool) *run {
 	s.actMu.Lock()
 	defer s.actMu.Unlock()
-	return s.dispatchLocked(message, resume, nil)
+	return s.dispatchLocked(message, resume, nil, nil)
 }
 
 // dispatchLocked is dispatch's body; the caller MUST hold actMu. It records the
 // run as the conversation's active run synchronously (so submit's active check
 // is race-free), creates the SSE topic before returning, then drives the turn.
-func (s *session) dispatchLocked(message string, resume bool, onFinish func(task.Status)) *run {
+func (s *session) dispatchLocked(message string, resume bool, onFinish func(task.Status), audio *agent.AudioTurn) *run {
 	r := &run{id: synthRunID(message), convID: s.id, sess: s, onFinish: onFinish}
+	if audio != nil {
+		audio.OnTranscript = func(text string) { s.engine.conv.AppendUser(s.id, r.id, text) }
+	}
 	// Mint the task context HERE, before the drive goroutine exists: r.cancel
 	// is then published under actMu together with `active`, so interrupt()
 	// (which reads the run via actMu) always sees a set cancel — no window
@@ -423,7 +438,7 @@ func (s *session) dispatchLocked(message string, resume bool, onFinish func(task
 	// daemon's empty stream. The replay buffer then backfills any events
 	// published between this point and the client's connect.
 	s.engine.broker.ensure(r.id)
-	go s.drive(ctx, r, message, resume)
+	go s.drive(ctx, r, message, resume, audio)
 	return r
 }
 
@@ -458,7 +473,7 @@ func (s *session) drainInput() []string {
 // task, respawning across model errors / tool failures / stalls, until the
 // objective is met to standard or a hard ceiling is hit. (The Task Durability
 // Rule.)
-func (s *session) drive(ctx context.Context, r *run, message string, resume bool) {
+func (s *session) drive(ctx context.Context, r *run, message string, resume bool, audio *agent.AudioTurn) {
 	defer s.engine.unregisterRun(r.id)
 
 	// The wall-clock-bounded ctx and r.cancel were minted in dispatchLocked
@@ -504,7 +519,7 @@ func (s *session) drive(ctx context.Context, r *run, message string, resume bool
 	// supersedes it; a superseded run's later Finish is a CAS no-op).
 	s.engine.tasks.Begin(s.id, r.id, message)
 
-	status := s.superviseTask(ctx, r, message, resume)
+	status := s.superviseTask(ctx, r, message, resume, audio)
 
 	// Barge-in / explicit stop: close quietly as "interrupted" — the user moved
 	// on; the next turn is taking over. Mark the task interrupted so the reaper
@@ -566,7 +581,7 @@ func (s *session) drive(ctx context.Context, r *run, message string, resume bool
 // stuck attempt that timed out — is treated as "not done": it checkpoints, tells
 // the user it is still working (never a fake "done"), backs off, respawns a
 // FRESH agent over durable state, and goes again.
-func (s *session) superviseTask(ctx context.Context, r *run, objective string, resume bool) task.Status {
+func (s *session) superviseTask(ctx context.Context, r *run, objective string, resume bool, audio *agent.AudioTurn) task.Status {
 	cfg := s.engine.cfg
 	maxRespawns := cfg.TaskMaxRespawns
 	if maxRespawns < 0 || !cfg.SuperviseTasks {
@@ -590,7 +605,12 @@ func (s *session) superviseTask(ctx context.Context, r *run, objective string, r
 		}
 
 		actx, acancel := s.attemptContext(ctx)
-		err := s.agent.Chat(withRun(actx, r), prompt)
+		var err error
+		if attempt == 1 && audio != nil {
+			err = s.agent.ChatAudio(withRun(actx, r), prompt, audio)
+		} else {
+			err = s.agent.Chat(withRun(actx, r), prompt)
+		}
 		acancel()
 
 		// The agent carries the shared failure class of this attempt's most
@@ -1054,7 +1074,7 @@ func (s *session) clearActive(r *run) {
 	// is the one exception: the user superseded the task, so queued mid-task
 	// messages are deliberately abandoned (they belonged to the old intent).
 	if leftover := s.drainInput(); len(leftover) > 0 && !r.stopped.Load() && s.engine != nil {
-		s.dispatchLocked(strings.Join(leftover, "\n\n"), false, nil)
+		s.dispatchLocked(strings.Join(leftover, "\n\n"), false, nil, nil)
 	}
 }
 

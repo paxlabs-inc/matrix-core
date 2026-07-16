@@ -149,14 +149,14 @@ func fillBrowser(step map[string]interface{}, bare string, ev agent.ToolEvent, r
 // parseBrowserReport pulls the URL, title, and a readable text rendering out of
 // a Playwright tool result. The result looks like:
 //
-//	- Page URL: https://example.com
-//	- Page Title: Example Domain
-//	- Page Snapshot:
-//	```yaml
-//	- heading "Example Domain" [level=1] [ref=e1]
-//	- paragraph: This domain is for use in examples.
-//	- link "More information..." [ref=e2]
-//	```
+//   - Page URL: https://example.com
+//   - Page Title: Example Domain
+//   - Page Snapshot:
+//     ```yaml
+//   - heading "Example Domain" [level=1] [ref=e1]
+//   - paragraph: This domain is for use in examples.
+//   - link "More information..." [ref=e2]
+//     ```
 //
 // We render the snapshot as the visible text of the page (headings, prose,
 // links, buttons), dropping the YAML scaffolding and [ref=…]/[level=…]

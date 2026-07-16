@@ -112,16 +112,17 @@ func TestRateTableVersionStable(t *testing.T) {
 	}
 }
 
-// TestV9XaiMigration locks the v9 rate card: the fleet moved off Z.ai GLM
-// onto xAI Grok. RateTableVersion is 9, all three grok fleet ids are on the
-// rate card, and the per-slot free-tier whitelist reflects the new lanes.
+// TestV9XaiMigration locks the current rate card: the fleet moved off Z.ai GLM
+// onto xAI Grok (v9), then v10 made Xiaomi MiMo the primary chat model.
+// RateTableVersion is 10, all three grok fleet ids plus MiMo are on the rate
+// card, and the per-slot free-tier whitelist reflects the new lanes.
 func TestV9XaiMigration(t *testing.T) {
-	if RateTableVersion != 9 {
-		t.Fatalf("RateTableVersion = %d, want 9 (xAI migration)", RateTableVersion)
+	if RateTableVersion != 10 {
+		t.Fatalf("RateTableVersion = %d, want 10 (Xiaomi MiMo migration)", RateTableVersion)
 	}
-	for _, m := range []string{ModelGrok43, ModelGrokBuild, ModelGrok420NR} {
+	for _, m := range []string{ModelGrok43, ModelGrokBuild, ModelGrok420NR, ModelMimoV25Pro} {
 		if _, ok := Lookup(m); !ok {
-			t.Fatalf("v9 grok model %q missing from rate card", m)
+			t.Fatalf("rate card model %q missing", m)
 		}
 	}
 	wl := FreeTierWhitelist()

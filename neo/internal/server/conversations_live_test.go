@@ -195,9 +195,9 @@ func TestHandleConversations_NoLiveRunOnceSettled(t *testing.T) {
 // Server + real Engine + real conversation.Store. We simulate the three resume
 // scenarios — refresh, hard-refresh, wipe-cookies-and-relogin — by:
 //
-//   • opening a SECOND, independent net/http client (no shared cookies / state)
+//   - opening a SECOND, independent net/http client (no shared cookies / state)
 //     after each "user action" and reissuing the same GET /conversations/{id}
-//     + GET /events?intent_id=... requests the browser would emit. The Neo
+//   - GET /events?intent_id=... requests the browser would emit. The Neo
 //     daemon's /events route has no auth on the daemon side (Neo runs
 //     per-daemon, the matrix-router fronts auth), so a clean client reattaches
 //     identically to a refreshed one — this matches reality.
