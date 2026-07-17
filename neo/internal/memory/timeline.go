@@ -94,7 +94,16 @@ func (p *Pager) Timeline(spec TimelineQuery) ([]TimelineEntry, int, error) {
 		return nil, 0, err
 	}
 	out := make([]TimelineEntry, 0, len(res.Memories))
+	total := res.Total
 	for i, m := range res.Memories {
+		if hasMemoryTag(m.Head, memoryConsentTag) {
+			// The consent state is an internal control carrier, not a
+			// user-facing memory; never surface it (or its rationale JSON).
+			if total > 0 {
+				total--
+			}
+			continue
+		}
 		entry := TimelineEntry{
 			URI:                string(cortex.BuildURI(m.Head.Type, m.Head.ID, m.Head.CurrentVersion)),
 			Type:               m.Head.Type.String(),
@@ -121,7 +130,7 @@ func (p *Pager) Timeline(spec TimelineQuery) ([]TimelineEntry, int, error) {
 		}
 		out = append(out, entry)
 	}
-	return out, res.Total, nil
+	return out, total, nil
 }
 
 // TimelineTypes reports counts from Neo's own Cortex actor.
@@ -135,7 +144,21 @@ func (p *Pager) TimelineTypes() ([]TimelineTypeCount, error) {
 		if err != nil {
 			return nil, err
 		}
-		out = append(out, TimelineTypeCount{Type: typ.String(), Count: len(ids)})
+		count := len(ids)
+		if typ == cmemory.TypePreference {
+			// The internal consent carrier is a tagged Preference; exclude it
+			// so the count reflects only user-facing memory.
+			for _, id := range ids {
+				mem, rerr := p.cortex.ResolveLatest(id)
+				if rerr != nil || mem == nil {
+					continue
+				}
+				if hasMemoryTag(mem.Head, memoryConsentTag) {
+					count--
+				}
+			}
+		}
+		out = append(out, TimelineTypeCount{Type: typ.String(), Count: count})
 	}
 	sort.SliceStable(out, func(i, j int) bool { return out[i].Count > out[j].Count })
 	return out, nil

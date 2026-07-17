@@ -61,9 +61,10 @@ type closeGuard struct {
 //  2. truncated_answer   — a length-cut generation is never a final answer
 //  3. empty_answer       — nothing produced: steer to act or answer
 //  4. unread_overflow    — the read-full discipline blocks the close (req.4.2)
-//  5. identity_leak      — the compliance canary: audit, scrub, re-anchor
-//  6. cassandra_self_heal— folded doubt must be re-read before delivering
-//  7. deliver            — the terminal guard; always fires
+//  5. source_fetch       — search discovery must be read before factual use
+//  6. identity_leak      — the compliance canary: audit, scrub, re-anchor
+//  7. cassandra_self_heal— folded doubt must be re-read before delivering
+//  8. deliver            — the terminal guard; always fires
 //
 // Evaluation happens at exactly ONE site (closeTurn → evalCloseChain); the
 // first firing guard decides.
@@ -72,6 +73,7 @@ var closeGuardChain = []closeGuard{
 	{name: "truncated_answer", eval: guardTruncatedAnswer},
 	{name: "empty_answer", eval: guardEmptyAnswer},
 	{name: "unread_overflow", eval: guardUnreadOverflow},
+	{name: "source_fetch", eval: guardSourceFetch},
 	{name: "identity_leak", eval: guardIdentityLeak},
 	{name: "cassandra_self_heal", eval: guardCassandraSelfHeal},
 	{name: "deliver", eval: guardDeliver},
@@ -146,6 +148,16 @@ func guardUnreadOverflow(a *Agent, _ *closeContext) (closeDecision, bool) {
 		return closeDecision{}, false
 	}
 	if a.pushGuidanceNudge(a.overflowUnreadNudge(), &a.turn.unproductive) {
+		return closeDecision{verdict: verdictNudge, err: a.escalateGuidance(a.turn.unproductive)}, true
+	}
+	return closeDecision{verdict: verdictNudge}, true
+}
+
+func guardSourceFetch(a *Agent, _ *closeContext) (closeDecision, bool) {
+	if a.webEvidenceReady() {
+		return closeDecision{}, false
+	}
+	if a.pushGuidanceNudge("Search results are source discovery, not evidence. Read at least one relevance-validated result URL with fetch before making a factual claim; if no relevant result exists, say that plainly without substituting another entity or evidence class.", &a.turn.unproductive) {
 		return closeDecision{verdict: verdictNudge, err: a.escalateGuidance(a.turn.unproductive)}, true
 	}
 	return closeDecision{verdict: verdictNudge}, true

@@ -196,10 +196,11 @@ func (a *Agent) cmRelevancePush(ctx context.Context, query string) ([]memory.Sni
 // coarse timeline of past activity. It deliberately carries NO journal / MMR /
 // rollup / snapshot jargon and no raw URIs — only the RESULT a user should see.
 type MemoryEvent struct {
-	StorySoFar   string   // durable rolling summary of this conversation
-	Timeline     []string // coarse timeline short-forms, oldest first
-	TriggerClass string
-	Excerpts     []EpisodicMemoryEvent
+	StorySoFar      string   // durable rolling summary of this conversation
+	Timeline        []string // coarse timeline short-forms, oldest first
+	TriggerClass    string
+	SelectionReason string
+	Excerpts        []EpisodicMemoryEvent
 }
 
 type EpisodicMemoryEvent struct {
@@ -225,8 +226,10 @@ func (a *Agent) emitMemory(b *cortex.ActivationBundle, triggerClass string, exce
 	}
 	var story string
 	var timeline []string
+	var selectionReason string
 	if b != nil {
 		story = strings.TrimSpace(b.StorySoFar)
+		selectionReason = strings.TrimSpace(b.SelectionReason)
 		timeline = make([]string, 0, len(b.Timeline))
 		for _, r := range b.Timeline {
 			if sf := strings.TrimSpace(r.ShortForm); sf != "" {
@@ -234,11 +237,11 @@ func (a *Agent) emitMemory(b *cortex.ActivationBundle, triggerClass string, exce
 			}
 		}
 	}
-	ev := MemoryEvent{StorySoFar: story, Timeline: timeline, TriggerClass: triggerClass}
+	ev := MemoryEvent{StorySoFar: story, Timeline: timeline, TriggerClass: triggerClass, SelectionReason: selectionReason}
 	for _, ex := range excerpts {
 		ev.Excerpts = append(ev.Excerpts, EpisodicMemoryEvent{ConversationID: ex.ConversationID, Date: ex.Date.UTC().Format("2006-01-02"), SeqLo: ex.SeqLo, SeqHi: ex.SeqHi, Exact: ex.Exact, Text: ex.Text})
 	}
-	if ev.StorySoFar == "" && len(ev.Timeline) == 0 && len(ev.Excerpts) == 0 {
+	if ev.StorySoFar == "" && len(ev.Timeline) == 0 && len(ev.Excerpts) == 0 && ev.SelectionReason == "" {
 		return
 	}
 	a.memObserver(ev)
@@ -314,6 +317,11 @@ func (a *Agent) renderActivationBundle(b *cortex.ActivationBundle) string {
 
 	if n := len(b.ReachableURIs); n > 0 {
 		fmt.Fprintf(&sb, "More available on demand — call memory_recall to page in exact specifics (%d further items reachable).\n", n)
+	}
+	if reason := strings.TrimSpace(b.SelectionReason); reason != "" {
+		sb.WriteString("Activation selection: ")
+		sb.WriteString(reason)
+		sb.WriteString(".\n")
 	}
 
 	return sb.String()

@@ -6,7 +6,9 @@ package server
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
@@ -18,6 +20,7 @@ import (
 	"matrix/construct/schema/primitives"
 	cxself "matrix/cortex/self"
 	"matrix/neo/internal/conversation"
+	"matrix/neo/internal/runrecord"
 	"matrix/neo/internal/trace"
 )
 
@@ -85,6 +88,16 @@ func (s *Server) routes() []routeFact {
 		{"/memory/recent", "GET /memory/recent — list your learned memories from Neo's durable store", s.handleMemoryRecent},
 		{"/memory/types", "GET /memory/types — count your learned memories by type", s.handleMemoryTypes},
 		{"/memory/search", "POST /memory/search — search your learned memories", s.handleMemorySearch},
+		{"/memory/mutate", "POST /memory/mutate — create, update, replace, or delete your learned memories through a typed bounded request", s.handleMemoryMutate},
+		// Privacy controls (PRIV-01): default-off durable-memory consent,
+		// full export, and receipt-backed delete-all (fail-closed until ORACLE
+		// erasure lands). Backed by Neo's own pager.
+		{"/memory/consent", "GET/PUT /memory/consent — read or set your default-off durable-memory opt-in", s.handleMemoryConsent},
+		{"/memory/export", "GET /memory/export — export every current learned memory as JSON", s.handleMemoryExport},
+		{"/memory/delete-all", "DELETE /memory/delete-all — request receipt-backed erasure of all your memory", s.handleMemoryDeleteAll},
+		// Personalization profile (PRIV-01/ORACLE req 13) on Neo's own actor.
+		{"/personalization", "GET/PUT/DELETE /personalization — read, save, or delete your single personalization profile", s.handlePersonalization},
+		{"/personalization/", "", s.handlePersonalization},
 		// Media plane: generated + uploaded images/video/audio live on the
 		// agent's machine volume.
 		{"/media/", "GET /media/{id} — serve a generated or uploaded media artifact from your machine volume", s.handleMedia},
@@ -167,7 +180,7 @@ func (s *Server) Handler() http.Handler {
 	// open) triggers a one-shot, non-blocking warm of the embedder + HNSW
 	// substrate so the first message's relevance recall isn't on the cold path.
 	// Engine.Warm is idempotent + async, so this never adds latency to a request.
-	return s.warmOnFirstRequest(mux)
+	return s.observeHTTP(s.warmOnFirstRequest(mux))
 }
 
 // warmOnFirstRequest wraps next so every inbound request first pokes
@@ -240,6 +253,7 @@ type chatRequest struct {
 	Message        string `json:"message"`
 	ConversationID string `json:"conversation_id,omitempty"`
 	Project        string `json:"project,omitempty"`
+	IdempotencyKey string `json:"idempotency_key,omitempty"`
 }
 
 func (s *Server) handleChat(w http.ResponseWriter, r *http.Request) {
@@ -321,11 +335,21 @@ func (s *Server) handleChat(w http.ResponseWriter, r *http.Request) {
 	}
 	sess := s.engine.sessions.get(convID)
 	var runID string
+	duplicate := false
 	if audio != nil {
 		runID, _ = sess.submitAudio(msg, audio)
 	} else {
-		runID, _ = sess.submit(msg)
-		if !voiceTurn || s.engine.cfg.VoiceMode == "asr_first" {
+		var submitErr error
+		runID, _, duplicate, submitErr = sess.submitIdempotent(msg, req.IdempotencyKey, nil)
+		if submitErr != nil {
+			status := http.StatusInternalServerError
+			if errors.Is(submitErr, runrecord.ErrIdempotencyConflict) {
+				status = http.StatusConflict
+			}
+			writeJSON(w, status, map[string]string{"error": submitErr.Error()})
+			return
+		}
+		if !duplicate && (!voiceTurn || s.engine.cfg.VoiceMode == "asr_first") {
 			s.engine.conv.AppendUser(convID, runID, msg)
 		}
 	}
@@ -363,16 +387,33 @@ func (s *Server) handleConversations(w http.ResponseWriter, r *http.Request) {
 		s.handleTrace(w, r, id)
 		return
 	}
+	// CHAT-01: POST /conversations/{id}/fork creates a new conversation from a
+	// chronological prefix of an existing one. Intercepted before the proxy
+	// fallback (a Neo-owned route the daemon never had).
+	if id, ok := parseForkPath(r.URL.Path); ok {
+		s.handleConversationFork(w, r, id)
+		return
+	}
 	if !s.engine.conv.Enabled() {
 		s.proxy.ServeHTTP(w, r)
 		return
 	}
-	if r.Method != http.MethodGet {
-		w.Header().Set("Allow", "GET")
+	id := strings.Trim(strings.TrimPrefix(r.URL.Path, "/conversations"), "/")
+	// CHAT-01: PATCH (rename/archive) and DELETE mutate a single conversation.
+	switch r.Method {
+	case http.MethodGet:
+		// fall through to the read path below
+	case http.MethodPatch:
+		s.handleConversationPatch(w, r, id)
+		return
+	case http.MethodDelete:
+		s.handleConversationDelete(w, r, id)
+		return
+	default:
+		w.Header().Set("Allow", "GET, PATCH, DELETE")
 		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "method not allowed"})
 		return
 	}
-	id := strings.Trim(strings.TrimPrefix(r.URL.Path, "/conversations"), "/")
 	if id == "" {
 		items := s.engine.conv.List()
 		// ?project= scopes the list to one workbench project (server-backed
@@ -402,6 +443,179 @@ func (s *Server) handleConversations(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, conversationDetailEnvelope(rec, s.engine.activeRunForConv(id)))
+}
+
+// handleConversationPatch renames or archives one conversation (CHAT-01).
+// Body: {"title":"…"} to rename (empty clears the override) and/or
+// {"archived":true|false} to archive/unarchive. A missing/deleted conversation
+// yields an explicit 404 rather than a silent create. Returns the refreshed
+// summary so an optimistic client can reconcile.
+func (s *Server) handleConversationPatch(w http.ResponseWriter, r *http.Request, id string) {
+	if id == "" || strings.ContainsAny(id, "/\\") {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "conversation id required"})
+		return
+	}
+	var body struct {
+		Title    *string `json:"title"`
+		Archived *bool   `json:"archived"`
+	}
+	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 1<<16)).Decode(&body); err != nil && err != io.EOF {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid request body"})
+		return
+	}
+	if body.Title == nil && body.Archived == nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "nothing to update: provide title and/or archived"})
+		return
+	}
+	if !s.engine.conv.Exists(id) {
+		writeJSON(w, http.StatusNotFound, map[string]string{"error": "conversation not found"})
+		return
+	}
+	if !s.engine.conv.UpdateMeta(id, body.Title, body.Archived) {
+		if !s.engine.conv.Exists(id) {
+			writeJSON(w, http.StatusNotFound, map[string]string{"error": "conversation not found"})
+		} else {
+			writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "conversation update failed"})
+		}
+		return
+	}
+	writeJSON(w, http.StatusOK, s.conversationSummary(id))
+}
+
+// handleConversationDelete permanently removes one conversation (CHAT-01). It
+// refuses while a run is still in flight (409) so an active task's state is not
+// torn out from under it; the client must stop the run first. On success it
+// removes the durable turn logs and every associated run's workspace trace, and
+// returns a cleanup disclosure of what was purged.
+func (s *Server) handleConversationDelete(w http.ResponseWriter, r *http.Request, id string) {
+	if id == "" || strings.ContainsAny(id, "/\\") {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "conversation id required"})
+		return
+	}
+	if !s.engine.conv.Exists(id) {
+		writeJSON(w, http.StatusNotFound, map[string]string{"error": "conversation not found"})
+		return
+	}
+	if live := s.engine.activeRunForConv(id); live != "" {
+		writeJSON(w, http.StatusConflict, map[string]string{
+			"error":     "conversation has an active run; stop it before deleting",
+			"live_run":  live,
+			"remediate": "POST the stop action for this run, then retry the delete",
+		})
+		return
+	}
+	// Collect the distinct run ids across the full history so each run's durable
+	// workspace trace is purged alongside the turns.
+	runIDs := map[string]struct{}{}
+	for _, t := range s.engine.conv.History(id) {
+		if t.IntentID != "" {
+			runIDs[t.IntentID] = struct{}{}
+		}
+	}
+	if !s.engine.conv.Delete(id) {
+		writeJSON(w, http.StatusNotFound, map[string]string{"error": "conversation not found"})
+		return
+	}
+	tracesRemoved := 0
+	if s.engine.trace != nil {
+		for rid := range runIDs {
+			if s.engine.trace.Remove(rid) {
+				tracesRemoved++
+			}
+		}
+	}
+	writeJSON(w, http.StatusOK, map[string]interface{}{
+		"ok":              true,
+		"conversation_id": id,
+		"cleanup": map[string]interface{}{
+			"turns":  "deleted",
+			"traces": tracesRemoved,
+			// Learned memories, generated media, and derived indexes are governed
+			// by the memory-consent controls (PRIV-01) and ORACLE's deletion
+			// pipeline; deleting a thread does not force-erase durable memories.
+			"memories": "retained (manage under memory controls)",
+			"media":    "retained (manage under memory controls)",
+		},
+	})
+}
+
+// handleConversationFork creates a new conversation from the chronological
+// prefix of an existing one up to a selected turn (CHAT-01). Body:
+// {"up_to_turn": N} — copy the first N turns of the source's full history into a
+// fresh conversation with parent/turn provenance and an independent future. A
+// missing/deleted parent yields an explicit 404; an out-of-range turn a 400.
+func (s *Server) handleConversationFork(w http.ResponseWriter, r *http.Request, id string) {
+	if r.Method != http.MethodPost {
+		w.Header().Set("Allow", "POST")
+		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "method not allowed"})
+		return
+	}
+	if !s.engine.conv.Enabled() {
+		writeJSON(w, http.StatusServiceUnavailable, map[string]string{"error": "conversation persistence disabled"})
+		return
+	}
+	if id == "" || strings.ContainsAny(id, "/\\") {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "conversation id required"})
+		return
+	}
+	var body struct {
+		UpToTurn int `json:"up_to_turn"`
+	}
+	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 1<<16)).Decode(&body); err != nil && err != io.EOF {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid request body"})
+		return
+	}
+	hist := s.engine.conv.History(id)
+	if len(hist) == 0 {
+		writeJSON(w, http.StatusNotFound, map[string]string{"error": "conversation not found"})
+		return
+	}
+	if live := s.engine.activeRunForConv(id); live != "" {
+		writeJSON(w, http.StatusConflict, map[string]string{
+			"error":    "conversation has an active run; wait for it to finish or stop it before forking",
+			"live_run": live,
+		})
+		return
+	}
+	upTo := body.UpToTurn
+	if upTo <= 0 || upTo > len(hist) {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "up_to_turn out of range"})
+		return
+	}
+	newID := synthConvID(id)
+	if !s.engine.conv.Fork(id, newID, upTo) {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "fork failed"})
+		return
+	}
+	writeJSON(w, http.StatusCreated, map[string]interface{}{
+		"conversation_id": newID,
+		"forked_from":     id,
+		"forked_at_turn":  upTo,
+		"summary":         s.conversationSummary(newID),
+	})
+}
+
+// conversationSummary rebuilds the compact list-shape summary for one
+// conversation (used by the PATCH/fork responses so an optimistic client
+// reconciles against authoritative fields). Returns nil when it no longer
+// exists.
+func (s *Server) conversationSummary(id string) *conversation.Summary {
+	for _, it := range s.engine.conv.List() {
+		if it.ConversationID == id {
+			sum := it
+			return &sum
+		}
+	}
+	return nil
+}
+
+// parseForkPath matches POST /conversations/{id}/fork (CHAT-01).
+func parseForkPath(p string) (id string, ok bool) {
+	parts := strings.Split(strings.Trim(p, "/"), "/")
+	if len(parts) != 3 || parts[0] != "conversations" || parts[2] != "fork" {
+		return "", false
+	}
+	return parts[1], true
 }
 
 // conversationDetail is the GET /conversations/<id> wire envelope. The
@@ -461,11 +675,23 @@ func (s *Server) handleTrace(w http.ResponseWriter, r *http.Request, id string) 
 // daemon when the intent_id belongs to a daemon-side run (dashboard dispatch).
 func (s *Server) handleEvents(w http.ResponseWriter, r *http.Request) {
 	id := r.URL.Query().Get("intent_id")
-	if id == "" || !s.engine.broker.has(id) {
+	if id == "" {
 		s.proxy.ServeHTTP(w, r)
 		return
 	}
 	since := atoiSafe(r.URL.Query().Get("since_seq"))
+	if !s.engine.broker.has(id) {
+		if rec, ok, _ := s.engine.getRunRecord(id); ok {
+			if rec.Terminal() {
+				s.streamDurableTerminal(w, r, rec, since)
+				return
+			}
+			s.engine.broker.ensure(id)
+		} else {
+			s.proxy.ServeHTTP(w, r)
+			return
+		}
+	}
 	s.streamSSE(w, r, id, since, true)
 }
 
@@ -474,11 +700,23 @@ func (s *Server) handleEvents(w http.ResponseWriter, r *http.Request) {
 // since_seq. Daemon intents fall through to the proxy.
 func (s *Server) handleReplay(w http.ResponseWriter, r *http.Request) {
 	id := strings.TrimPrefix(r.URL.Path, "/events/replay/")
-	if id == "" || !s.engine.broker.has(id) {
+	if id == "" {
 		s.proxy.ServeHTTP(w, r)
 		return
 	}
 	since := atoiSafe(r.URL.Query().Get("since_seq"))
+	if !s.engine.broker.has(id) {
+		if rec, ok, _ := s.engine.getRunRecord(id); ok {
+			if rec.Terminal() {
+				s.streamDurableTerminal(w, r, rec, since)
+				return
+			}
+			s.engine.broker.ensure(id)
+		} else {
+			s.proxy.ServeHTTP(w, r)
+			return
+		}
+	}
 	s.streamSSE(w, r, id, since, false)
 }
 
@@ -489,7 +727,37 @@ func (s *Server) handleReplay(w http.ResponseWriter, r *http.Request) {
 // async jobs (non-Neo intents) fall through to the proxy unchanged.
 func (s *Server) handleAsyncPoll(w http.ResponseWriter, r *http.Request) {
 	id := strings.TrimPrefix(r.URL.Path, "/messages/async/")
-	if id == "" || !s.engine.broker.has(id) {
+	if id == "" {
+		s.proxy.ServeHTTP(w, r)
+		return
+	}
+	if rec, ok, err := s.engine.getRunRecord(id); err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "run record unavailable"})
+		return
+	} else if ok {
+		body := map[string]interface{}{
+			"intent_id":      rec.IntentID,
+			"status":         rec.Status,
+			"request":        map[string]string{"prose": rec.Request},
+			"created_at":     rec.CreatedAt.Format(time.RFC3339Nano),
+			"last_event_seq": rec.LastEventSeq,
+		}
+		if rec.StartedAt != nil {
+			body["started_at"] = rec.StartedAt.Format(time.RFC3339Nano)
+		}
+		if rec.EndedAt != nil {
+			body["ended_at"] = rec.EndedAt.Format(time.RFC3339Nano)
+		}
+		if rec.Result != "" {
+			body["result"] = map[string]interface{}{"intent_id": rec.IntentID, "status": rec.Status, "text": rec.Result}
+		}
+		if rec.Error != "" {
+			body["error"] = rec.Error
+		}
+		writeJSON(w, http.StatusOK, body)
+		return
+	}
+	if !s.engine.broker.has(id) {
 		s.proxy.ServeHTTP(w, r)
 		return
 	}
@@ -506,6 +774,37 @@ func (s *Server) handleAsyncPoll(w http.ResponseWriter, r *http.Request) {
 		"request":    map[string]string{"prose": ""},
 		"created_at": time.Now().UTC().Format(time.RFC3339Nano),
 	})
+}
+
+func (s *Server) streamDurableTerminal(w http.ResponseWriter, r *http.Request, rec runrecord.Record, since int) {
+	flusher, ok := w.(http.Flusher)
+	if !ok {
+		http.Error(w, "streaming unsupported", http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "text/event-stream")
+	w.Header().Set("Cache-Control", "no-cache")
+	w.Header().Set("Connection", "keep-alive")
+	w.Header().Set("X-Accel-Buffering", "no")
+	w.WriteHeader(http.StatusOK)
+	last := rec.LastEventSeq
+	if last < 2 {
+		last = 2
+	}
+	ts := rec.CreatedAt.Format(time.RFC3339Nano)
+	if rec.EndedAt != nil {
+		ts = rec.EndedAt.Format(time.RFC3339Nano)
+	}
+	events := []Event{
+		{Seq: last - 1, Ts: ts, Phase: "neo", Type: "message.complete", Fields: map[string]interface{}{"status": rec.Status}},
+		{Seq: last, Ts: ts, Phase: "neo", Type: "chat.assistant", Fields: map[string]interface{}{"role": "assistant", "text": rec.Result, "conversation_id": rec.ConversationID, "intent_id": rec.IntentID, "final": true}},
+	}
+	for _, ev := range events {
+		if ev.Seq > since && !writeEvent(w, ev) {
+			return
+		}
+	}
+	flusher.Flush()
 }
 
 // handleHalt is the global kill switch (POST /halt): it interrupts EVERY live
@@ -536,6 +835,7 @@ func (s *Server) handleIntents(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		run.sess.interrupt(run)
+		s.engine.logLifecycle("run.stop", id, run.convID, "interrupting", time.Since(run.started), nil)
 		writeJSON(w, http.StatusOK, map[string]interface{}{"ok": true, "intent_id": id, "status": "interrupting"})
 		return
 	}
@@ -615,7 +915,11 @@ func (s *Server) streamSSE(w http.ResponseWriter, r *http.Request, id string, si
 	w.WriteHeader(http.StatusOK)
 
 	replay, ch, cancel := s.engine.broker.subscribe(id, since)
-	defer cancel()
+	s.engine.logLifecycle("run.attach", id, conversationForRun(s.engine, id), "attached", 0, nil)
+	defer func() {
+		cancel()
+		s.engine.logLifecycle("run.detach", id, conversationForRun(s.engine, id), "detached", 0, nil)
+	}()
 
 	for _, ev := range replay {
 		if !writeEvent(w, ev) {

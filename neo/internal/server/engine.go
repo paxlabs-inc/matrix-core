@@ -38,6 +38,7 @@ import (
 	"matrix/neo/internal/memory"
 	"matrix/neo/internal/notify"
 	"matrix/neo/internal/preview"
+	"matrix/neo/internal/runrecord"
 	"matrix/neo/internal/sandbox"
 	"matrix/neo/internal/task"
 	"matrix/neo/internal/telegramsettings"
@@ -61,8 +62,9 @@ type Engine struct {
 	tools              *tools.Manager
 	pager              *memory.Pager
 	consolidator       agent.Consolidator
-	conv               *conversation.Store  // durable chat-thread history (per conversation_id)
-	tasks              *task.Store          // durable task-supervision ledger (survives restart/suspend)
+	conv               *conversation.Store // durable chat-thread history (per conversation_id)
+	tasks              *task.Store         // durable task-supervision ledger (survives restart/suspend)
+	runRecords         *runrecord.Store
 	trace              *trace.Store         // durable per-run workspace timeline ("Neo's Computer"); sidecar, never cortex
 	automatrix         *automatrixlog.Store // durable Automatrix completion inbox (in-app surprise results); sidecar, never cortex
 	briefHistory       *briefhistory.Store  // durable morning-brief recommendation history + feedback (ORACLE task 5.5); sidecar, never cortex
@@ -202,6 +204,7 @@ type EngineOptions struct {
 	Consolidator          agent.Consolidator
 	ConversationDir       string // durable conversation store dir ("" disables persistence)
 	TaskDir               string // durable task-ledger dir ("" disables; reaper needs it to resume after restart)
+	RunDir                string
 	TraceDir              string // durable workspace-trace dir ("" disables; the reopen-survives-reload store, F3)
 	AutomatrixDir         string // durable Automatrix completion-inbox dir ("" disables; the in-app surprise-results store)
 	AutomatrixSettingsDir string // durable Automatrix opt-in settings dir ("" = in-memory only; wiring the production governor)
@@ -233,6 +236,7 @@ func NewEngine(o EngineOptions) *Engine {
 		consolidator:       o.Consolidator,
 		conv:               conversation.Open(o.ConversationDir),
 		tasks:              task.Open(o.TaskDir),
+		runRecords:         runrecord.Open(o.RunDir),
 		trace:              trace.Open(o.TraceDir),
 		automatrix:         automatrixlog.Open(o.AutomatrixDir),
 		briefHistory:       briefhistory.Open(o.BriefHistoryDir),
@@ -281,6 +285,7 @@ func NewEngine(o EngineOptions) *Engine {
 	// (ORACLE task 2.2): the durable task ledger and the Automatrix completion
 	// inbox. The settings sidecar is sealed where it is opened below.
 	e.tasks.SetVault(o.Vault, vaultUser)
+	e.runRecords.SetVault(o.Vault, vaultUser)
 	e.automatrix.SetVault(o.Vault, vaultUser)
 	e.briefHistory.SetVault(o.Vault, vaultUser)
 	e.sessions = newSessionRegistry(e)
@@ -410,10 +415,23 @@ func (e *Engine) ResumeOrphanedTasks() int {
 		return 0
 	}
 	orphans := e.tasks.Running()
+	resumed := 0
 	for _, t := range orphans {
-		e.sessions.get(t.ConvID).startResume(t.Objective)
+		if rec, ok, _ := e.getRunRecord(t.RunID); ok && rec.Terminal() {
+			status := task.StatusCeiling
+			switch rec.Status {
+			case runrecord.StatusCompleted:
+				status = task.StatusDone
+			case runrecord.StatusInterrupted:
+				status = task.StatusInterrupted
+			}
+			e.tasks.Finish(t.ConvID, t.RunID, status)
+			continue
+		}
+		e.sessions.get(t.ConvID).startResume(t.RunID, t.Objective)
+		resumed++
 	}
-	return len(orphans)
+	return resumed
 }
 
 // Close flushes and stops the engine's durable sidecar stores (today: the
@@ -735,7 +753,7 @@ func (e *Engine) publishMemory(r *run, ev agent.MemoryEvent) {
 	if r == nil {
 		return
 	}
-	if strings.TrimSpace(ev.StorySoFar) == "" && len(ev.Timeline) == 0 && len(ev.Excerpts) == 0 {
+	if strings.TrimSpace(ev.StorySoFar) == "" && len(ev.Timeline) == 0 && len(ev.Excerpts) == 0 && strings.TrimSpace(ev.SelectionReason) == "" {
 		return
 	}
 	e.broker.publish(r.id, "memory.activation", "neo", map[string]interface{}{
@@ -745,6 +763,7 @@ func (e *Engine) publishMemory(r *run, ev agent.MemoryEvent) {
 		"timeline":          ev.Timeline,
 		"episodic_excerpts": ev.Excerpts,
 		"trigger_class":     ev.TriggerClass,
+		"selection_reason":  ev.SelectionReason,
 	})
 }
 
@@ -776,6 +795,13 @@ func (e *Engine) lookupRun(id string) *run {
 	return e.runs[id]
 }
 
+func (e *Engine) getRunRecord(id string) (runrecord.Record, bool, error) {
+	if e == nil || e.runRecords == nil {
+		return runrecord.Record{}, false, nil
+	}
+	return e.runRecords.Get(id)
+}
+
 // activeRunForConv reports the in-flight run id for one conversation, or "" if
 // nothing is live. Unlike broker.has(id) (which stays true for 2 minutes after
 // settlement so late reconnects can replay), this consults the authoritative
@@ -785,6 +811,12 @@ func (e *Engine) lookupRun(id string) *run {
 // post-relogin client can subscribe(replay:true) without waiting for the poll.
 func (e *Engine) activeRunForConv(convID string) string {
 	if e == nil || convID == "" {
+		return ""
+	}
+	if e.runRecords != nil && e.runRecords.Enabled() {
+		if rec, ok := e.runRecords.ActiveForConversation(convID); ok {
+			return rec.IntentID
+		}
 		return ""
 	}
 	e.mu.Lock()
@@ -805,6 +837,7 @@ func (e *Engine) unregisterRun(id string) {
 	go func() {
 		time.Sleep(2 * time.Minute)
 		e.broker.drop(id)
+		e.logLifecycle("run.eviction", id, "", "evicted", 0, nil)
 	}()
 }
 

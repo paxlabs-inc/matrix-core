@@ -85,7 +85,7 @@ func (c *Consolidator) Start() {
 // rots the durable store (cortex stays best-effort + eventually-current; the
 // live transcript is ground truth for the turn anyway).
 func (c *Consolidator) Consolidate(transcript, conv string, seqLo, seqHi uint64) {
-	if c == nil || strings.TrimSpace(transcript) == "" {
+	if c == nil || strings.TrimSpace(transcript) == "" || !c.allowed() {
 		return
 	}
 	job := consolidateJob{transcript: transcript, conv: conv, seqLo: seqLo, seqHi: seqHi}
@@ -110,7 +110,7 @@ func (c *Consolidator) Consolidate(transcript, conv string, seqLo, seqHi uint64)
 // turns. The call respects the context deadline and never panics on a nil
 // receiver. It does NOT touch the async queue (steady-state is unchanged).
 func (c *Consolidator) ConsolidateSync(ctx context.Context, transcript, conv string, seqLo, seqHi uint64) {
-	if c == nil || strings.TrimSpace(transcript) == "" {
+	if c == nil || strings.TrimSpace(transcript) == "" || !c.allowed() {
 		return
 	}
 	// Run the same extraction logic synchronously. We use a bounded sub-context
@@ -257,7 +257,7 @@ func (c *Consolidator) linkProvenance(uri string, job consolidateJob) {
 
 func (c *Consolidator) process(ctx context.Context, job consolidateJob) {
 	transcript := job.transcript
-	if c.extract == nil || c.pager == nil {
+	if c.extract == nil || c.pager == nil || !c.allowed() {
 		return
 	}
 	// The caller may have already bounded the context (ConsolidateSync).
@@ -274,12 +274,18 @@ func (c *Consolidator) process(ctx context.Context, job consolidateJob) {
 	if err != nil || res == nil {
 		return
 	}
+	if !c.allowed() {
+		return
+	}
 	var out extract
 	if err := parseLooseJSON(res.Message.Content, &out); err != nil {
 		return
 	}
 
 	for i, f := range out.Facts {
+		if !c.allowed() {
+			return
+		}
 		if i >= 5 {
 			break
 		}
@@ -289,6 +295,9 @@ func (c *Consolidator) process(ctx context.Context, job consolidateJob) {
 		}
 	}
 	for i, f := range out.UserFacts {
+		if !c.allowed() {
+			return
+		}
 		if i >= 5 {
 			break
 		}
@@ -298,6 +307,9 @@ func (c *Consolidator) process(ctx context.Context, job consolidateJob) {
 		}
 	}
 	for i, pj := range out.Preferences {
+		if !c.allowed() {
+			return
+		}
 		if i >= 5 {
 			break
 		}
@@ -312,6 +324,9 @@ func (c *Consolidator) process(ctx context.Context, job consolidateJob) {
 		c.linkProvenance(uri, job)
 	}
 	for i, corr := range out.Corrections {
+		if !c.allowed() {
+			return
+		}
 		if i >= 5 {
 			break
 		}
@@ -323,6 +338,9 @@ func (c *Consolidator) process(ctx context.Context, job consolidateJob) {
 		}
 	}
 	for i, pj := range out.Patterns {
+		if !c.allowed() {
+			return
+		}
 		if i >= 3 {
 			break
 		}
@@ -349,7 +367,7 @@ func (c *Consolidator) process(ctx context.Context, job consolidateJob) {
 		// dedupes + guards the threshold.
 		c.proposeIfReady(spec, coverage)
 	}
-	if out.Outcome != nil && strings.TrimSpace(out.Outcome.Summary) != "" {
+	if c.allowed() && out.Outcome != nil && strings.TrimSpace(out.Outcome.Summary) != "" {
 		uri, _ := c.pager.RecordOutcome(ctx, out.Outcome.Summary, mapOutcome(out.Outcome.Status), "")
 		c.linkProvenance(uri, job)
 	}
@@ -363,6 +381,9 @@ func (c *Consolidator) process(ctx context.Context, job consolidateJob) {
 	// deterministic fail-closed re-check that hardens this is the gating
 	// path's job, not capture's.
 	for i, oj := range out.Opportunities {
+		if !c.allowed() {
+			return
+		}
 		if i >= 3 {
 			break
 		}
@@ -382,6 +403,10 @@ func (c *Consolidator) process(ctx context.Context, job consolidateJob) {
 		})
 		c.linkProvenance(uri, job)
 	}
+}
+
+func (c *Consolidator) allowed() bool {
+	return c != nil && c.pager != nil && c.pager.MemoryConsentEnabled()
 }
 
 // relationClassifyPrompt drives the cheap-model relation classifier. It is

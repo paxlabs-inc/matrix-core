@@ -131,6 +131,9 @@ var (
 // then matches).
 func expectPredictsFailure(expect string) bool {
 	e := strings.ToLower(expect)
+	if httpErrorRe.MatchString(e) || exitCodeRe.MatchString(e) || errPrefixRe.MatchString(e) {
+		return true
+	}
 	for _, marker := range []string{"404", "403", "401", "500", "error", "fail", "not found", "refus", "non-zero", "nonzero", "empty"} {
 		if strings.Contains(e, marker) {
 			return true

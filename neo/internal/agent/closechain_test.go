@@ -28,6 +28,7 @@ func TestCloseGuardChain_OrderIsTheDocumentedTable(t *testing.T) {
 		"truncated_answer",
 		"empty_answer",
 		"unread_overflow",
+		"source_fetch",
 		"identity_leak",
 		"cassandra_self_heal",
 		"deliver",
@@ -90,6 +91,7 @@ func TestCloseGuardChain_FirstFiringGuardDecides(t *testing.T) {
 		finish      string
 		answer      string
 		overflow    bool
+		sourceGap   bool
 		casMod      bool
 		wantGuard   string
 		wantVerdict closeVerdict
@@ -115,6 +117,11 @@ func TestCloseGuardChain_FirstFiringGuardDecides(t *testing.T) {
 			wantGuard: "unread_overflow", wantVerdict: verdictNudge,
 		},
 		{
+			name:   "source fetch outranks identity and cassandra",
+			finish: "stop", answer: leakAnswer, sourceGap: true, casMod: true,
+			wantGuard: "source_fetch", wantVerdict: verdictNudge,
+		},
+		{
 			name:   "identity leak outranks cassandra",
 			finish: "stop", answer: leakAnswer, casMod: true,
 			wantGuard: "identity_leak", wantVerdict: verdictNudge,
@@ -136,6 +143,9 @@ func TestCloseGuardChain_FirstFiringGuardDecides(t *testing.T) {
 			a := chainAgent(t, nil, tc.inbox)
 			if tc.overflow {
 				unreadOverflow(t, a)
+			}
+			if tc.sourceGap {
+				a.turn.webSourceURLs = map[string]struct{}{"https://example.test/source": {}}
 			}
 			cc := &closeContext{res: bareResult(tc.answer, tc.finish), answer: strings.TrimSpace(tc.answer), casMod: tc.casMod}
 			name, dec := a.evalCloseChain(cc)

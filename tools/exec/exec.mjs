@@ -53,6 +53,7 @@ import {
 import { fileURLToPath } from 'node:url'
 import { join, isAbsolute } from 'node:path'
 import { tmpdir } from 'node:os'
+import { createServer } from 'node:http'
 
 const SERVER_NAME = 'exec'
 const SERVER_VERSION = '0.1.0'
@@ -94,14 +95,16 @@ function resolveDefaultWorkdir() {
 }
 
 // ── result shaping ────────────────────────────────────────────────────────────
+function result(obj, isError = false) {
+  const shaped = { content: [{ type: 'text', text: typeof obj === 'string' ? obj : JSON.stringify(obj) }] }
+  if (isError) shaped.isError = true
+  return shaped
+}
 function ok(obj) {
-  return { content: [{ type: 'text', text: typeof obj === 'string' ? obj : JSON.stringify(obj) }] }
+  return result(obj)
 }
 function fail(tool, error, extra = {}) {
-  return {
-    content: [{ type: 'text', text: JSON.stringify({ ok: false, tool, error, ...extra }) }],
-    isError: true,
-  }
+  return result({ ok: false, tool, error, ...extra }, true)
 }
 
 // ── state dir + registry ───────────────────────────────────────────────────────
@@ -287,7 +290,8 @@ function runShell(args) {
   return new Promise((resolve) => {
     let child
     try {
-      child = spawn('bash', ['-lc', command], { cwd, env, detached: true })
+      const strictCommand = `curl() { command curl --fail-with-body "$@"; }\nexport -f curl\n${command}`
+      child = spawn('bash', ['-lc', strictCommand], { cwd, env, detached: true })
     } catch (e) {
       resolve(fail('shell', `spawn failed: ${e?.message ?? String(e)}`, { cwd }))
       return
@@ -347,7 +351,9 @@ function runShell(args) {
         stdout_truncated: outTrunc,
         stderr_truncated: errTrunc,
       }
-      resolve(ok(result))
+      const statusMatch = result.stderr.match(/requested URL returned error:\s*(\d{3})/i)
+      if (statusMatch) result.http_status = Number.parseInt(statusMatch[1], 10)
+      resolve(result.ok ? ok(result) : fail('shell', timedOut ? 'process timed out' : `process exited ${code}`, result))
     })
   })
 }
@@ -713,6 +719,50 @@ async function runSelftest() {
     process.exit(1)
   }
   console.log('exec: shell smoke OK')
+
+  // b) real loopback HTTP + application-envelope semantics
+  const http = createServer((req, res) => {
+    res.setHeader('content-type', 'application/json')
+    if (req.url === '/http-error') {
+      res.statusCode = 400
+      res.end(JSON.stringify({ ok: false, error: 'bad request' }))
+      return
+    }
+    if (req.url === '/app-error') {
+      res.end(JSON.stringify({ ok: false, error: 'application rejected request' }))
+      return
+    }
+    res.end(JSON.stringify({ ok: true, value: 'real-success' }))
+  })
+  await new Promise((resolve, reject) => {
+    http.once('error', reject)
+    http.listen(0, '127.0.0.1', resolve)
+  })
+  try {
+    const address = http.address()
+    const base = `http://127.0.0.1:${address.port}`
+    const httpFailure = await dispatch('shell', { command: `curl -sS ${base}/http-error`, cwd: probe })
+    const httpEnvelope = JSON.parse(httpFailure.content[0].text)
+    if (httpFailure.isError !== true || httpEnvelope.http_status !== 400 || httpEnvelope.exit_code === 0) {
+      console.error('exec SELFTEST FAILED: HTTP 400 was not a failed shell result:', httpFailure)
+      process.exit(1)
+    }
+    const appResponse = await dispatch('shell', { command: `curl -sS ${base}/app-error`, cwd: probe })
+    const appEnvelope = JSON.parse(appResponse.content[0].text)
+    if (appResponse.isError === true || appEnvelope.exit_code !== 0 || !appEnvelope.stdout.includes('"ok":false')) {
+      console.error('exec SELFTEST FAILED: application envelope transport shape changed:', appResponse)
+      process.exit(1)
+    }
+    const success = await dispatch('shell', { command: `curl -sS ${base}/success`, cwd: probe })
+    const successEnvelope = JSON.parse(success.content[0].text)
+    if (success.isError === true || successEnvelope.exit_code !== 0 || !successEnvelope.stdout.includes('real-success')) {
+      console.error('exec SELFTEST FAILED: genuine HTTP success was not preserved:', success)
+      process.exit(1)
+    }
+  } finally {
+    await new Promise((resolve) => http.close(resolve))
+  }
+  console.log('exec: HTTP/process semantics OK')
 
   // NOTE: the service lifecycle uses module-level STATE_DIR (captured at import
   // before the env override above), so a full in-process service smoke would

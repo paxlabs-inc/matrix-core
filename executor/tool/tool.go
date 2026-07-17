@@ -63,6 +63,26 @@ type Result struct {
 	// "we couldn't even invoke the tool" (transport, capability, etc.).
 	IsError bool `json:"is_error,omitempty"`
 
+	// FailureClass identifies the layer that failed after semantic
+	// normalization. The raw Content remains unchanged as evidence.
+	FailureClass FailureClass `json:"failure_class,omitempty"`
+
+	// FailureMessage is the concise model-facing description derived from the
+	// normalized outcome. It never replaces the raw Content.
+	FailureMessage string `json:"failure_message,omitempty"`
+
+	// Retryable is true only when repeating the same operation may succeed
+	// without changing its strategy (for example a 429 or 5xx response).
+	Retryable bool `json:"retryable,omitempty"`
+
+	// ProcessExitCode, ProcessTimedOut, HTTPStatus, and ApplicationOK preserve
+	// the independently observed outcome layers. Pointer fields distinguish an
+	// observed zero/true value from a layer that was not present.
+	ProcessExitCode *int  `json:"process_exit_code,omitempty"`
+	ProcessTimedOut bool  `json:"process_timed_out,omitempty"`
+	HTTPStatus      int   `json:"http_status,omitempty"`
+	ApplicationOK   *bool `json:"application_ok,omitempty"`
+
 	// CallID is a ULID assigned at dispatch entry by the registry.
 	// Pinned into the Matrix Event memory and the journal logs path
 	// for cross-referencing tool args ↔ tool results.

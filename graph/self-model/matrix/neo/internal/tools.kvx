@@ -1,13 +1,13 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:300859de48ad427722029e8f5ee9018d4284b9e0a5f20dbff6f4869382d2cff3
+# GENERATED gen=codegraph do-not-edit merkle=b3:9377d599b636e20888547d8e541a4be9e9352818da85655402c07df95aba43d0
 
 NODE id=matrix/neo/internal/tools kind=package
-  digest=b3:b3d5ffae026ac0c91dba1fab081e69f13fe0687a7e0e4ec5eba0a66fb1de257f file=neo/internal/tools range=0:0 lang=go exported=true
+  digest=b3:795e69aada59efc5507e7780450862f71191f91655b39ad778f0878ac8d03ce7 file=neo/internal/tools range=0:0 lang=go exported=true
 EDGES
   contains=matrix/neo/internal/tools/automatrix.go,matrix/neo/internal/tools/brief.go,matrix/neo/internal/tools/personalization.go,matrix/neo/internal/tools/surface.go,matrix/neo/internal/tools/tools.go
   ^contains=mod:matrix/neo
 
 NODE id=matrix/neo/internal/tools.AskFunc kind=type
-  digest=b3:ecebaab1db222feab16fe99f64c5637e164191620cbc91ea056f0af37807a845 file=neo/internal/tools/tools.go range=172:177 lang=go exported=true byte_range=8976:9428
+  digest=b3:ecebaab1db222feab16fe99f64c5637e164191620cbc91ea056f0af37807a845 file=neo/internal/tools/tools.go range=181:186 lang=go exported=true byte_range=9486:9938
   sig=type AskFunc func(ctx context.Context, s *schema.Surface) (*primitives.AskResponse, error)
   doc=AskFunc emits a validated Ask surface, PARKS the run on the back-channel\n(invariant i5), and returns the human's typed response once it is posted —\nor an error if the run is cancelled or the ask expires unanswered. Injected\nby the engine wiring (see internal/server); nil leaves construct_render able\nto SHOW an ask but not block for an answer.
 EDGES
@@ -50,7 +50,7 @@ EDGES
   ^defines=matrix/neo/internal/tools/surface.go
 
 NODE id=matrix/neo/internal/tools.ConstructRenderTool kind=const
-  digest=b3:300e50bbb1fd7ebbb0920301e8bfc0d3b1260b0e69f64d76c0e292b65186585f file=neo/internal/tools/tools.go range=56:63 lang=go exported=true byte_range=2325:2940
+  digest=b3:300e50bbb1fd7ebbb0920301e8bfc0d3b1260b0e69f64d76c0e292b65186585f file=neo/internal/tools/tools.go range=61:68 lang=go exported=true byte_range=2569:3184
   sig=untyped string
   doc=ConstructRenderTool is the synthetic function Neo exposes to deliberately\nrender a Construct surface onto the user's screen — the agent-authored ACTIVE\ntier of the Construct projection engine. Neo IS the projector: it chooses one\nof the 8 frozen primitives and fills it, and the handler validates that\nchoice against the frozen schema before emitting (invariant i2 — the agent\nfills a trusted primitive, never emits arbitrary UI). Like core_execute it is\nNOT a real MCP server, so it never enters the manifest tool-bijection check.
 EDGES
@@ -71,7 +71,7 @@ EDGES
   ^defines=matrix/neo/internal/tools/surface.go
 
 NODE id=matrix/neo/internal/tools.DelegateFunc kind=type
-  digest=b3:f9377606bd5ce5777ef32ea9053363159939de9e9ba4759d284e78afa94ebeae file=neo/internal/tools/tools.go range=93:96 lang=go exported=true byte_range=4735:5042
+  digest=b3:f9377606bd5ce5777ef32ea9053363159939de9e9ba4759d284e78afa94ebeae file=neo/internal/tools/tools.go range=98:101 lang=go exported=true byte_range=4979:5286
   sig=type DelegateFunc func(ctx context.Context, proseIntent string) (string, error)
   doc=DelegateFunc runs a prose intent through the MCL pipeline and returns its\nverifiable outcome. Injected by the agent wiring (see internal/delegate);\nnil until wired, in which case core_execute reports it is unavailable.
 EDGES
@@ -98,124 +98,130 @@ EDGES
   ^defines=matrix/neo/internal/tools/automatrix.go
 
 NODE id=matrix/neo/internal/tools.Manager kind=type
-  digest=b3:786db1d30624c803f0487a48bde870c0a6f32ad86b6f02f0581ea5dc4b0a7b63 file=neo/internal/tools/tools.go range=199:225 lang=go exported=true byte_range=10252:11131
-  sig=type Manager struct {\n	manifest	*tool.AgentManifest\n	mcp		*mcp.Manager\n	registry	*tool.Registry\n	classifier	*Classifier\n	delegate	DelegateFunc\n	recall		RecallFunc\n	swarm		SwarmFunc\n	surface		SurfaceFunc\n	ask		AskFunc\n	writeSkill	WriteSkillFunc\n	todo		TodoFunc\n	preview		PreviewFunc\n	media		MediaPersistFunc\n	maxAgents	int\n\n	// personalization persists the user-confirmed personalization profile\n	// (ORACLE task 5.3). Reached only through save_personalization_profile,\n	// which only interview agents advertise.\n	personalization	PersonalizationSaveFunc\n\n	byFunc		map[string]*boundTool\n	order		[]string	// sorted natural func names (advertised)\n	escalated	[]string	// sorted escalate func names (NOT advertised)\n	warnings	[]string	// non-fatal spawn failures\n}
+  digest=b3:a5e574d620dfa9fdd2bceb732011ba72bc8c319b9b9d26a593c3a3740abfc007 file=neo/internal/tools/tools.go range=208:235 lang=go exported=true byte_range=10762:11672
+  sig=type Manager struct {\n	manifest	*tool.AgentManifest\n	mcp		*mcp.Manager\n	registry	*tool.Registry\n	classifier	*Classifier\n	delegate	DelegateFunc\n	recall		RecallFunc\n	mutation	MemoryMutationFunc\n	swarm		SwarmFunc\n	surface		SurfaceFunc\n	ask		AskFunc\n	writeSkill	WriteSkillFunc\n	todo		TodoFunc\n	preview		PreviewFunc\n	media		MediaPersistFunc\n	maxAgents	int\n\n	// personalization persists the user-confirmed personalization profile\n	// (ORACLE task 5.3). Reached only through save_personalization_profile,\n	// which only interview agents advertise.\n	personalization	PersonalizationSaveFunc\n\n	byFunc		map[string]*boundTool\n	order		[]string	// sorted natural func names (advertised)\n	escalated	[]string	// sorted escalate func names (NOT advertised)\n	warnings	[]string	// non-fatal spawn failures\n}
   doc=Manager owns the MCP server pool + registry and the bound tool surface.
 EDGES
-  contains=matrix/neo/internal/tools.Manager#ask,matrix/neo/internal/tools.Manager#byFunc,matrix/neo/internal/tools.Manager#classifier,matrix/neo/internal/tools.Manager#delegate,matrix/neo/internal/tools.Manager#escalated,matrix/neo/internal/tools.Manager#manifest,matrix/neo/internal/tools.Manager#maxAgents,matrix/neo/internal/tools.Manager#mcp,matrix/neo/internal/tools.Manager#media,matrix/neo/internal/tools.Manager#order,matrix/neo/internal/tools.Manager#personalization,matrix/neo/internal/tools.Manager#preview,matrix/neo/internal/tools.Manager#recall,matrix/neo/internal/tools.Manager#registry,matrix/neo/internal/tools.Manager#surface,matrix/neo/internal/tools.Manager#swarm,matrix/neo/internal/tools.Manager#todo,matrix/neo/internal/tools.Manager#warnings,matrix/neo/internal/tools.Manager#writeSkill,matrix/neo/internal/tools.Manager.AutomatrixSchemas,matrix/neo/internal/tools.Manager.BriefSchemas,matrix/neo/internal/tools.Manager.CaptureViewport,matrix/neo/internal/tools.Manager.Close,matrix/neo/internal/tools.Manager.Dispatch,matrix/neo/internal/tools.Manager.DispatchMedia,matrix/neo/internal/tools.Manager.EscalateToolNames,matrix/neo/internal/tools.Manager.MediaPersistEnabled,matrix/neo/internal/tools.Manager.NaturalToolNames,matrix/neo/internal/tools.Manager.PreviewEnabled,matrix/neo/internal/tools.Manager.RecallEnabled,matrix/neo/internal/tools.Manager.Schemas,matrix/neo/internal/tools.Manager.SetAskResponder,matrix/neo/internal/tools.Manager.SetDelegate,matrix/neo/internal/tools.Manager.SetMediaPersist,matrix/neo/internal/tools.Manager.SetPersonalizationSave,matrix/neo/internal/tools.Manager.SetPreview,matrix/neo/internal/tools.Manager.SetRecall,matrix/neo/internal/tools.Manager.SetSurfaceEmitter,matrix/neo/internal/tools.Manager.SetSwarm,matrix/neo/internal/tools.Manager.SetTodo,matrix/neo/internal/tools.Manager.SetWriteSkill,matrix/neo/internal/tools.Manager.SpawnEnabled,matrix/neo/internal/tools.Manager.SubagentSchemas,matrix/neo/internal/tools.Manager.SurfaceEnabled,matrix/neo/internal/tools.Manager.TodoEnabled,matrix/neo/internal/tools.Manager.Warnings,matrix/neo/internal/tools.Manager.WriteSkillEnabled,matrix/neo/internal/tools.Manager.bind,matrix/neo/internal/tools.Manager.dispatch,matrix/neo/internal/tools.Manager.dispatchAsk,matrix/neo/internal/tools.Manager.dispatchConstructRender,matrix/neo/internal/tools.Manager.dispatchCoreExecute,matrix/neo/internal/tools.Manager.dispatchMemoryRecall,matrix/neo/internal/tools.Manager.dispatchPersonalizationSave,matrix/neo/internal/tools.Manager.dispatchPreview,matrix/neo/internal/tools.Manager.dispatchSpawnSubagents,matrix/neo/internal/tools.Manager.dispatchTodo,matrix/neo/internal/tools.Manager.dispatchWriteSkill,matrix/neo/internal/tools.Manager.persistFirstImage
+  contains=matrix/neo/internal/tools.Manager#ask,matrix/neo/internal/tools.Manager#byFunc,matrix/neo/internal/tools.Manager#classifier,matrix/neo/internal/tools.Manager#delegate,matrix/neo/internal/tools.Manager#escalated,matrix/neo/internal/tools.Manager#manifest,matrix/neo/internal/tools.Manager#maxAgents,matrix/neo/internal/tools.Manager#mcp,matrix/neo/internal/tools.Manager#media,matrix/neo/internal/tools.Manager#mutation,matrix/neo/internal/tools.Manager#order,matrix/neo/internal/tools.Manager#personalization,matrix/neo/internal/tools.Manager#preview,matrix/neo/internal/tools.Manager#recall,matrix/neo/internal/tools.Manager#registry,matrix/neo/internal/tools.Manager#surface,matrix/neo/internal/tools.Manager#swarm,matrix/neo/internal/tools.Manager#todo,matrix/neo/internal/tools.Manager#warnings,matrix/neo/internal/tools.Manager#writeSkill,matrix/neo/internal/tools.Manager.AutomatrixSchemas,matrix/neo/internal/tools.Manager.BriefSchemas,matrix/neo/internal/tools.Manager.CaptureViewport,matrix/neo/internal/tools.Manager.Close,matrix/neo/internal/tools.Manager.Dispatch,matrix/neo/internal/tools.Manager.DispatchMedia,matrix/neo/internal/tools.Manager.DispatchMediaClassified,matrix/neo/internal/tools.Manager.EscalateToolNames,matrix/neo/internal/tools.Manager.MediaPersistEnabled,matrix/neo/internal/tools.Manager.MemoryMutationEnabled,matrix/neo/internal/tools.Manager.NaturalToolNames,matrix/neo/internal/tools.Manager.PreviewEnabled,matrix/neo/internal/tools.Manager.RecallEnabled,matrix/neo/internal/tools.Manager.Schemas,matrix/neo/internal/tools.Manager.SetAskResponder,matrix/neo/internal/tools.Manager.SetDelegate,matrix/neo/internal/tools.Manager.SetMediaPersist,matrix/neo/internal/tools.Manager.SetMemoryMutation,matrix/neo/internal/tools.Manager.SetPersonalizationSave,matrix/neo/internal/tools.Manager.SetPreview,matrix/neo/internal/tools.Manager.SetRecall,matrix/neo/internal/tools.Manager.SetSurfaceEmitter,matrix/neo/internal/tools.Manager.SetSwarm,matrix/neo/internal/tools.Manager.SetTodo,matrix/neo/internal/tools.Manager.SetWriteSkill,matrix/neo/internal/tools.Manager.SpawnEnabled,matrix/neo/internal/tools.Manager.SubagentSchemas,matrix/neo/internal/tools.Manager.SurfaceEnabled,matrix/neo/internal/tools.Manager.TodoEnabled,matrix/neo/internal/tools.Manager.Warnings,matrix/neo/internal/tools.Manager.WriteSkillEnabled,matrix/neo/internal/tools.Manager.bind,matrix/neo/internal/tools.Manager.dispatch,matrix/neo/internal/tools.Manager.dispatchAsk,matrix/neo/internal/tools.Manager.dispatchConstructRender,matrix/neo/internal/tools.Manager.dispatchCoreExecute,matrix/neo/internal/tools.Manager.dispatchMemoryMutation,matrix/neo/internal/tools.Manager.dispatchMemoryRecall,matrix/neo/internal/tools.Manager.dispatchPersonalizationSave,matrix/neo/internal/tools.Manager.dispatchPreview,matrix/neo/internal/tools.Manager.dispatchSpawnSubagents,matrix/neo/internal/tools.Manager.dispatchTodo,matrix/neo/internal/tools.Manager.dispatchWriteSkill,matrix/neo/internal/tools.Manager.persistFirstImage
   ^defines=matrix/neo/internal/tools/tools.go
 
 NODE id=matrix/neo/internal/tools.Manager#ask kind=field
-  digest=b3:3d226c289b09cdf5283b5155947faa4b0b070f71642d5d6a4372bebed915a0ba file=neo/internal/tools/tools.go range=209:209 lang=go exported=false byte_range=10552:10570
+  digest=b3:3d226c289b09cdf5283b5155947faa4b0b070f71642d5d6a4372bebed915a0ba file=neo/internal/tools/tools.go range=219:219 lang=go exported=false byte_range=11093:11111
   sig=tools.AskFunc
 EDGES
   ^contains=matrix/neo/internal/tools.Manager
 
 NODE id=matrix/neo/internal/tools.Manager#byFunc kind=field
-  digest=b3:24c9f496757286ca8144a71e6759c82115c71786658f8763eb831fd1f738cd09 file=neo/internal/tools/tools.go range=221:221 lang=go exported=false byte_range=10921:10952
+  digest=b3:24c9f496757286ca8144a71e6759c82115c71786658f8763eb831fd1f738cd09 file=neo/internal/tools/tools.go range=231:231 lang=go exported=false byte_range=11462:11493
   sig=map[string]*tools.boundTool
 EDGES
   ^contains=matrix/neo/internal/tools.Manager
 
 NODE id=matrix/neo/internal/tools.Manager#classifier kind=field
-  digest=b3:950cf5282ab2e9591da1a602169e70646e15df76109381b5174b88d9eef1969f file=neo/internal/tools/tools.go range=204:204 lang=go exported=false byte_range=10434:10456
+  digest=b3:950cf5282ab2e9591da1a602169e70646e15df76109381b5174b88d9eef1969f file=neo/internal/tools/tools.go range=213:213 lang=go exported=false byte_range=10944:10966
   sig=*tools.Classifier
 EDGES
   ^contains=matrix/neo/internal/tools.Manager
 
 NODE id=matrix/neo/internal/tools.Manager#delegate kind=field
-  digest=b3:25d4e2bc9c6bbe0e4e9f0d68c415fc49022fb8c7e590dbb65f0ed4fef9e9340e file=neo/internal/tools/tools.go range=205:205 lang=go exported=false byte_range=10458:10481
+  digest=b3:25d4e2bc9c6bbe0e4e9f0d68c415fc49022fb8c7e590dbb65f0ed4fef9e9340e file=neo/internal/tools/tools.go range=214:214 lang=go exported=false byte_range=10968:10991
   sig=tools.DelegateFunc
 EDGES
   ^contains=matrix/neo/internal/tools.Manager
 
 NODE id=matrix/neo/internal/tools.Manager#escalated kind=field
-  digest=b3:59c8bf2a734fc711eaf3ba47e9aad9261050ab506ffe416b616aa9bf325e986e file=neo/internal/tools/tools.go range=223:223 lang=go exported=false byte_range=11016:11034
+  digest=b3:59c8bf2a734fc711eaf3ba47e9aad9261050ab506ffe416b616aa9bf325e986e file=neo/internal/tools/tools.go range=233:233 lang=go exported=false byte_range=11557:11575
   sig=[]string
 EDGES
   ^contains=matrix/neo/internal/tools.Manager
 
 NODE id=matrix/neo/internal/tools.Manager#manifest kind=field
-  digest=b3:45220c89d1571ce85d0b348e4d6741d2d1fbbdffcc603abf26942e2e9412c41a file=neo/internal/tools/tools.go range=201:201 lang=go exported=false byte_range=10350:10380
+  digest=b3:45220c89d1571ce85d0b348e4d6741d2d1fbbdffcc603abf26942e2e9412c41a file=neo/internal/tools/tools.go range=210:210 lang=go exported=false byte_range=10860:10890
   sig=*tool.AgentManifest
 EDGES
   ^contains=matrix/neo/internal/tools.Manager
 
 NODE id=matrix/neo/internal/tools.Manager#maxAgents kind=field
-  digest=b3:31ca9a7cd92a9adbe3539ab1544d69201174f12a9e1fae7c3b87dbc7ba3c837f file=neo/internal/tools/tools.go range=214:214 lang=go exported=false byte_range=10673:10687
+  digest=b3:31ca9a7cd92a9adbe3539ab1544d69201174f12a9e1fae7c3b87dbc7ba3c837f file=neo/internal/tools/tools.go range=224:224 lang=go exported=false byte_range=11214:11228
   sig=int
 EDGES
   ^contains=matrix/neo/internal/tools.Manager
 
 NODE id=matrix/neo/internal/tools.Manager#mcp kind=field
-  digest=b3:d5c7ba3174b73a9d509f4b27c3c0737303ad42eaea22b3053478dcec1004eea7 file=neo/internal/tools/tools.go range=202:202 lang=go exported=false byte_range=10382:10405
+  digest=b3:d5c7ba3174b73a9d509f4b27c3c0737303ad42eaea22b3053478dcec1004eea7 file=neo/internal/tools/tools.go range=211:211 lang=go exported=false byte_range=10892:10915
   sig=*mcp.Manager
 EDGES
   ^contains=matrix/neo/internal/tools.Manager
 
 NODE id=matrix/neo/internal/tools.Manager#media kind=field
-  digest=b3:0986f1961a2edb1c1951c8150c7280ced27cec0c5dfa3b0341c2542648905d7b file=neo/internal/tools/tools.go range=213:213 lang=go exported=false byte_range=10644:10671
+  digest=b3:0986f1961a2edb1c1951c8150c7280ced27cec0c5dfa3b0341c2542648905d7b file=neo/internal/tools/tools.go range=223:223 lang=go exported=false byte_range=11185:11212
   sig=tools.MediaPersistFunc
 EDGES
   ^contains=matrix/neo/internal/tools.Manager
 
+NODE id=matrix/neo/internal/tools.Manager#mutation kind=field
+  digest=b3:92ab2741fe7ecd6c620064c1d9e13be721c42bcc16d2a5bdec453411e196003f file=neo/internal/tools/tools.go range=216:216 lang=go exported=false byte_range=11016:11045
+  sig=tools.MemoryMutationFunc
+EDGES
+  ^contains=matrix/neo/internal/tools.Manager
+
 NODE id=matrix/neo/internal/tools.Manager#order kind=field
-  digest=b3:94cd589301ea13ffe22d7ba36181bcaf4620aaabbfcbdbb4802840fc45c71dec file=neo/internal/tools/tools.go range=222:222 lang=go exported=false byte_range=10954:10972
+  digest=b3:94cd589301ea13ffe22d7ba36181bcaf4620aaabbfcbdbb4802840fc45c71dec file=neo/internal/tools/tools.go range=232:232 lang=go exported=false byte_range=11495:11513
   sig=[]string
 EDGES
   ^contains=matrix/neo/internal/tools.Manager
 
 NODE id=matrix/neo/internal/tools.Manager#personalization kind=field
-  digest=b3:30ca3b84ebe2bb4ccaa271b09ad5c6e50c37242be05b18f7a0f2bc7dcba5df79 file=neo/internal/tools/tools.go range=216:219 lang=go exported=false byte_range=10690:10918
+  digest=b3:30ca3b84ebe2bb4ccaa271b09ad5c6e50c37242be05b18f7a0f2bc7dcba5df79 file=neo/internal/tools/tools.go range=226:229 lang=go exported=false byte_range=11231:11459
   sig=tools.PersonalizationSaveFunc
   doc=personalization persists the user-confirmed personalization profile\n(ORACLE task 5.3). Reached only through save_personalization_profile,\nwhich only interview agents advertise.
 EDGES
   ^contains=matrix/neo/internal/tools.Manager
 
 NODE id=matrix/neo/internal/tools.Manager#preview kind=field
-  digest=b3:0f9416c4a630a3604aeda7510e8ade3296afe4306820b8956c4b24b6203dd12b file=neo/internal/tools/tools.go range=212:212 lang=go exported=false byte_range=10620:10642
+  digest=b3:0f9416c4a630a3604aeda7510e8ade3296afe4306820b8956c4b24b6203dd12b file=neo/internal/tools/tools.go range=222:222 lang=go exported=false byte_range=11161:11183
   sig=tools.PreviewFunc
 EDGES
   ^contains=matrix/neo/internal/tools.Manager
 
 NODE id=matrix/neo/internal/tools.Manager#recall kind=field
-  digest=b3:ed8f76a66117e16f9535131fdaa9128587bba0555b5c185d44895827eb0b6709 file=neo/internal/tools/tools.go range=206:206 lang=go exported=false byte_range=10483:10504
+  digest=b3:ed8f76a66117e16f9535131fdaa9128587bba0555b5c185d44895827eb0b6709 file=neo/internal/tools/tools.go range=215:215 lang=go exported=false byte_range=10993:11014
   sig=tools.RecallFunc
 EDGES
   ^contains=matrix/neo/internal/tools.Manager
 
 NODE id=matrix/neo/internal/tools.Manager#registry kind=field
-  digest=b3:5d18dac993e1563d700397939ffd082e8a2f7b4ae07d8ed401a7b45a6c366fa0 file=neo/internal/tools/tools.go range=203:203 lang=go exported=false byte_range=10407:10432
+  digest=b3:5d18dac993e1563d700397939ffd082e8a2f7b4ae07d8ed401a7b45a6c366fa0 file=neo/internal/tools/tools.go range=212:212 lang=go exported=false byte_range=10917:10942
   sig=*tool.Registry
 EDGES
   ^contains=matrix/neo/internal/tools.Manager
 
 NODE id=matrix/neo/internal/tools.Manager#surface kind=field
-  digest=b3:b40f8875416490ab5dcfd26a46eddf865412fee7617ae537e40e97bc1dfdb4c3 file=neo/internal/tools/tools.go range=208:208 lang=go exported=false byte_range=10528:10550
+  digest=b3:b40f8875416490ab5dcfd26a46eddf865412fee7617ae537e40e97bc1dfdb4c3 file=neo/internal/tools/tools.go range=218:218 lang=go exported=false byte_range=11069:11091
   sig=tools.SurfaceFunc
 EDGES
   ^contains=matrix/neo/internal/tools.Manager
 
 NODE id=matrix/neo/internal/tools.Manager#swarm kind=field
-  digest=b3:0cce6f8a813e39fedf8f9f3c0ac22f81ce3736dc53851229eda0f00916028976 file=neo/internal/tools/tools.go range=207:207 lang=go exported=false byte_range=10506:10526
+  digest=b3:0cce6f8a813e39fedf8f9f3c0ac22f81ce3736dc53851229eda0f00916028976 file=neo/internal/tools/tools.go range=217:217 lang=go exported=false byte_range=11047:11067
   sig=tools.SwarmFunc
 EDGES
   ^contains=matrix/neo/internal/tools.Manager
 
 NODE id=matrix/neo/internal/tools.Manager#todo kind=field
-  digest=b3:fe5f0ef8833b70fb008c1d278add0ebf36bb997d4e96dc1bd8faba9d6cead8df file=neo/internal/tools/tools.go range=211:211 lang=go exported=false byte_range=10599:10618
+  digest=b3:fe5f0ef8833b70fb008c1d278add0ebf36bb997d4e96dc1bd8faba9d6cead8df file=neo/internal/tools/tools.go range=221:221 lang=go exported=false byte_range=11140:11159
   sig=tools.TodoFunc
 EDGES
   ^contains=matrix/neo/internal/tools.Manager
 
 NODE id=matrix/neo/internal/tools.Manager#warnings kind=field
-  digest=b3:d701f8ecb4079d0660130b333fefe5cc695c02636941ba58b932d42babd396e7 file=neo/internal/tools/tools.go range=224:224 lang=go exported=false byte_range=11083:11101
+  digest=b3:d701f8ecb4079d0660130b333fefe5cc695c02636941ba58b932d42babd396e7 file=neo/internal/tools/tools.go range=234:234 lang=go exported=false byte_range=11624:11642
   sig=[]string
 EDGES
   ^contains=matrix/neo/internal/tools.Manager
 
 NODE id=matrix/neo/internal/tools.Manager#writeSkill kind=field
-  digest=b3:7c46060de5324ee56114e72956301c72efd6990096ea6d49aafcddb317868ecd file=neo/internal/tools/tools.go range=210:210 lang=go exported=false byte_range=10572:10597
+  digest=b3:7c46060de5324ee56114e72956301c72efd6990096ea6d49aafcddb317868ecd file=neo/internal/tools/tools.go range=220:220 lang=go exported=false byte_range=11113:11138
   sig=tools.WriteSkillFunc
 EDGES
   ^contains=matrix/neo/internal/tools.Manager
@@ -237,7 +243,7 @@ EDGES
   ^defines=matrix/neo/internal/tools/brief.go
 
 NODE id=matrix/neo/internal/tools.Manager.CaptureViewport kind=method
-  digest=b3:68355c6718853e1b8a9f90c67a784cafbfa0914ba4b2ec627921bbb2a30282b0 file=neo/internal/tools/tools.go range=501:533 lang=go exported=true byte_range=20683:22028
+  digest=b3:68355c6718853e1b8a9f90c67a784cafbfa0914ba4b2ec627921bbb2a30282b0 file=neo/internal/tools/tools.go range=527:559 lang=go exported=true byte_range=22671:24016
   sig=func (m *Manager) CaptureViewport(ctx context.Context, sourceFunc string) string
   doc=CaptureViewport fires a viewport JPEG screenshot on the SAME browser MCP\nsession that ran sourceFunc, persists it out-of-band, and returns the /media\nURL — the deterministic, model-invisible auto-capture behind the browsing\nfilmstrip (BROWSER-FILMSTRIP req.3). It reuses the browser server the source\ncall already used (derived from the "<alias>__" prefix), so the screenshot is\nof the page the source action just produced. Returns "" when no media sink is\nwired, the browser has no screenshot tool, or capture fails — best-effort:\na screenshot failure never blocks the navigation or the turn (req.3 ac_4).
 EDGES
@@ -245,7 +251,7 @@ EDGES
   ^defines=matrix/neo/internal/tools/tools.go
 
 NODE id=matrix/neo/internal/tools.Manager.Close kind=method
-  digest=b3:d8690a051a88460ea638103ad799de4aa2d49518e770226b651ef51c1385a565 file=neo/internal/tools/tools.go range=959:965 lang=go exported=true byte_range=39895:40032
+  digest=b3:d8690a051a88460ea638103ad799de4aa2d49518e770226b651ef51c1385a565 file=neo/internal/tools/tools.go range=1052:1058 lang=go exported=true byte_range=44251:44388
   sig=func (m *Manager) Close() error
   doc=Close stops every MCP server.
 EDGES
@@ -253,7 +259,7 @@ EDGES
   ^defines=matrix/neo/internal/tools/tools.go
 
 NODE id=matrix/neo/internal/tools.Manager.Dispatch kind=method
-  digest=b3:315c02a0c7484ab9a7a124a87c116ebd19d61df05bf81953d1457f8e89e17a01 file=neo/internal/tools/tools.go range=406:417 lang=go exported=true byte_range=16739:17411
+  digest=b3:c7281f37e49e176019567a46e7ea9959c6f5624f3f3bec2b224531beede2f2c1 file=neo/internal/tools/tools.go range=419:430 lang=go exported=true byte_range=17349:18030
   sig=func (m *Manager) Dispatch(ctx context.Context, funcName string, args map[string]interface{}) (string, bool, error)
   doc=Dispatch executes a tool call by function name.\n\nReturns (content, isError, err): err is a transport/invocation failure that\nfeeds the recovery ladder (retry/adapt); isError=true with err==nil is an\nin-band failure the model should see and adapt to; both empty err means the\ntool ran. Unknown names and escalate-guard rejections come back as\n(message, true, nil) so the model reads and corrects rather than the harness\nretrying a doomed call.
 EDGES
@@ -261,15 +267,23 @@ EDGES
   ^defines=matrix/neo/internal/tools/tools.go
 
 NODE id=matrix/neo/internal/tools.Manager.DispatchMedia kind=method
-  digest=b3:34146e306bde806a6fb64399c3cb4d0c16bb59c656a0a0c0b0750a3ba4aeae9c file=neo/internal/tools/tools.go range=419:427 lang=go exported=true byte_range=17413:18069
+  digest=b3:b8ed3890b32f8160d04b39e3f9f17d9f0eed85f74733da9582b3a74ab6ec0a49 file=neo/internal/tools/tools.go range=432:441 lang=go exported=true byte_range=18032:18729
   sig=func (m *Manager) DispatchMedia(ctx context.Context, funcName string, args map[string]interface{}) (content, shotURL string, isErr bool, err error)
   doc=DispatchMedia is Dispatch plus the out-of-band screenshot URL: when the tool\nreturned an image content block (e.g. browser_take_screenshot), its bytes are\npersisted to the media plane and the /media URL is returned SEPARATELY from\nthe model-facing content string — which stays a terse placeholder so the\nscreenshot never pollutes the transcript (BROWSER-FILMSTRIP req.2). shotURL is\n"" when the tool produced no image or no media sink is wired.
 EDGES
   ^contains=matrix/neo/internal/tools.Manager
   ^defines=matrix/neo/internal/tools/tools.go
 
+NODE id=matrix/neo/internal/tools.Manager.DispatchMediaClassified kind=method
+  digest=b3:4228fde388085a1ad1a13f4e1b94788956c5c0979db57efe7bee769415e59404 file=neo/internal/tools/tools.go range=443:447 lang=go exported=true byte_range=18731:19162
+  sig=func (m *Manager) DispatchMediaClassified(ctx context.Context, funcName string, args map[string]interface{}) (content, shotURL string, isErr bool, failureClass tool.FailureClass, retryable bool, failureMessage string, err error)
+  doc=DispatchMediaClassified is DispatchMedia plus the semantic failure layer and\nconcise model-facing failure text. content always remains the raw evidence.
+EDGES
+  ^contains=matrix/neo/internal/tools.Manager
+  ^defines=matrix/neo/internal/tools/tools.go
+
 NODE id=matrix/neo/internal/tools.Manager.EscalateToolNames kind=method
-  digest=b3:ec2acd6ade63b1ec4294943ca1eb94477ab71f697935dc9ae85a18de1c4e7d9d file=neo/internal/tools/tools.go range=952:954 lang=go exported=true byte_range=39501:39741
+  digest=b3:ec2acd6ade63b1ec4294943ca1eb94477ab71f697935dc9ae85a18de1c4e7d9d file=neo/internal/tools/tools.go range=1045:1047 lang=go exported=true byte_range=43857:44097
   sig=func (m *Manager) EscalateToolNames() []string
   doc=EscalateToolNames returns the escalate-class function names (reachable only\nvia core_execute), for transparency / system-prompt construction.
 EDGES
@@ -277,15 +291,22 @@ EDGES
   ^defines=matrix/neo/internal/tools/tools.go
 
 NODE id=matrix/neo/internal/tools.Manager.MediaPersistEnabled kind=method
-  digest=b3:7dad3cbc67ace4b8159959d547922ec4152645b6f21a449d36a06d416fb84be8 file=neo/internal/tools/tools.go range=866:869 lang=go exported=true byte_range=34884:35158
+  digest=b3:7dad3cbc67ace4b8159959d547922ec4152645b6f21a449d36a06d416fb84be8 file=neo/internal/tools/tools.go range=959:962 lang=go exported=true byte_range=39240:39514
   sig=func (m *Manager) MediaPersistEnabled() bool
   doc=MediaPersistEnabled reports whether a media sink is wired (browser stills can\nbe persisted + surfaced). Used by the agent to skip auto-capture cheaply when\nthere is nowhere to write.
 EDGES
   ^contains=matrix/neo/internal/tools.Manager
   ^defines=matrix/neo/internal/tools/tools.go
 
+NODE id=matrix/neo/internal/tools.Manager.MemoryMutationEnabled kind=method
+  digest=b3:664b85ed88de8d6311c8a5f1e6125eccc8c73fd54a5516b9b3568c0fdc6ad72b file=neo/internal/tools/tools.go range=952:952 lang=go exported=true byte_range=38851:38938
+  sig=func (m *Manager) MemoryMutationEnabled() bool
+EDGES
+  ^contains=matrix/neo/internal/tools.Manager
+  ^defines=matrix/neo/internal/tools/tools.go
+
 NODE id=matrix/neo/internal/tools.Manager.NaturalToolNames kind=method
-  digest=b3:17a92fb4139a77452d86decf0acbbba3dc6a570fb0c4caaa32d4d8a81806d0d4 file=neo/internal/tools/tools.go range=949:950 lang=go exported=true byte_range=39333:39499
+  digest=b3:17a92fb4139a77452d86decf0acbbba3dc6a570fb0c4caaa32d4d8a81806d0d4 file=neo/internal/tools/tools.go range=1042:1043 lang=go exported=true byte_range=43689:43855
   sig=func (m *Manager) NaturalToolNames() []string
   doc=NaturalToolNames returns the advertised (directly-callable) function names.
 EDGES
@@ -293,7 +314,7 @@ EDGES
   ^defines=matrix/neo/internal/tools/tools.go
 
 NODE id=matrix/neo/internal/tools.Manager.PreviewEnabled kind=method
-  digest=b3:e5453140341c918759efb4ba6030c94411c21e27d151aa4d022e7b671a06fbd1 file=neo/internal/tools/tools.go range=778:780 lang=go exported=true byte_range=31808:31974
+  digest=b3:e5453140341c918759efb4ba6030c94411c21e27d151aa4d022e7b671a06fbd1 file=neo/internal/tools/tools.go range=865:867 lang=go exported=true byte_range=35843:36009
   sig=func (m *Manager) PreviewEnabled() bool
   doc=PreviewEnabled reports whether the workbench preview tool is wired this\nsession.
 EDGES
@@ -301,7 +322,7 @@ EDGES
   ^defines=matrix/neo/internal/tools/tools.go
 
 NODE id=matrix/neo/internal/tools.Manager.RecallEnabled kind=method
-  digest=b3:f164dd9450b657ec963fe38eb301f7e686685245204f12f1446bfcdc753b4917 file=neo/internal/tools/tools.go range=937:940 lang=go exported=true byte_range=38548:38863
+  digest=b3:f164dd9450b657ec963fe38eb301f7e686685245204f12f1446bfcdc753b4917 file=neo/internal/tools/tools.go range=1030:1033 lang=go exported=true byte_range=42904:43219
   sig=func (m *Manager) RecallEnabled() bool
   doc=RecallEnabled reports whether the memory_recall tool is wired this session\n(a durable cortex store is connected). The system prompt uses this to teach\nthe model to PULL memory mid-thought (v3 #1) only when it can actually do so.
 EDGES
@@ -309,7 +330,7 @@ EDGES
   ^defines=matrix/neo/internal/tools/tools.go
 
 NODE id=matrix/neo/internal/tools.Manager.Schemas kind=method
-  digest=b3:00d12e42ca57856b17ef310ee24cda7da2858ee3bc61776bab1205c44d8201af file=neo/internal/tools/tools.go range=354:391 lang=go exported=true byte_range=14821:16217
+  digest=b3:af85f0675fafa0e8b6143fc01a962e73c728982e96258fe90c65997d710fea44 file=neo/internal/tools/tools.go range=364:404 lang=go exported=true byte_range=15362:16827
   sig=func (m *Manager) Schemas() []llm.Tool
   doc=Schemas returns the function schemas advertised to the model: every Natural\ntool, plus the synthetic core_execute delegation tool ONLY when it actually\ngates something — at least one tool is classified Escalate AND the MCL\ndelegate is wired. With the wallet write lane carried directly (NEO\nNO-BARRIER: DefaultEscalatePatterns is empty), nothing is walled, so\ncore_execute is NOT advertised — advertising a money tool the prose says\ndoes not exist makes the context window incoherent and the model falls back\nto it under failure (the 2026-07-13 LayerX deposit transcript). Synthetics\n(memory_recall etc.) append when their seams are wired. Deterministic order.
 EDGES
@@ -317,7 +338,7 @@ EDGES
   ^defines=matrix/neo/internal/tools/tools.go
 
 NODE id=matrix/neo/internal/tools.Manager.SetAskResponder kind=method
-  digest=b3:f7c37613409bd690190905909d1e267f9fdebb75ecd70e4e0181c0041c61e743 file=neo/internal/tools/tools.go range=886:889 lang=go exported=true byte_range=35996:36269
+  digest=b3:f7c37613409bd690190905909d1e267f9fdebb75ecd70e4e0181c0041c61e743 file=neo/internal/tools/tools.go range=979:982 lang=go exported=true byte_range=40352:40625
   sig=func (m *Manager) SetAskResponder(f AskFunc)
   doc=SetAskResponder wires the Construct Ask back-channel after construction (it\nneeds the engine + per-run session assembled first). nil leaves\nconstruct_render able to show an ask but not block for an answer.
 EDGES
@@ -325,7 +346,7 @@ EDGES
   ^defines=matrix/neo/internal/tools/tools.go
 
 NODE id=matrix/neo/internal/tools.Manager.SetDelegate kind=method
-  digest=b3:813ae5f73f79e029ee08e28f199947ce5c8ddd9f35e5385c330e1d3be4729fdf file=neo/internal/tools/tools.go range=845:847 lang=go exported=true byte_range=33896:34085
+  digest=b3:813ae5f73f79e029ee08e28f199947ce5c8ddd9f35e5385c330e1d3be4729fdf file=neo/internal/tools/tools.go range=932:934 lang=go exported=true byte_range=37931:38120
   sig=func (m *Manager) SetDelegate(d DelegateFunc)
   doc=SetDelegate wires the MCL delegation function after construction (the\ndelegate often needs the agent assembled first).
 EDGES
@@ -333,9 +354,17 @@ EDGES
   ^defines=matrix/neo/internal/tools/tools.go
 
 NODE id=matrix/neo/internal/tools.Manager.SetMediaPersist kind=method
-  digest=b3:e0dc9e4708d7ecac9ca3b74e25a5ec294072644cae19e77a4d0b7c27f38ada04 file=neo/internal/tools/tools.go range=861:864 lang=go exported=true byte_range=34584:34882
+  digest=b3:e0dc9e4708d7ecac9ca3b74e25a5ec294072644cae19e77a4d0b7c27f38ada04 file=neo/internal/tools/tools.go range=954:957 lang=go exported=true byte_range=38940:39238
   sig=func (m *Manager) SetMediaPersist(f MediaPersistFunc)
   doc=SetMediaPersist wires the media-plane sink for tool-produced images after\nconstruction (the engine owns the served media dir). nil leaves image bytes\nsummarized to a placeholder as before (no persistence, no filmstrip).
+EDGES
+  ^contains=matrix/neo/internal/tools.Manager
+  ^defines=matrix/neo/internal/tools/tools.go
+
+NODE id=matrix/neo/internal/tools.Manager.SetMemoryMutation kind=method
+  digest=b3:c6429e4a0ea5e31311a81778c8737bb2489b4011822dd493b0a4755f49232fc3 file=neo/internal/tools/tools.go range=948:950 lang=go exported=true byte_range=38619:38849
+  sig=func (m *Manager) SetMemoryMutation(f MemoryMutationFunc)
+  doc=SetMemoryMutation wires the typed user-memory mutation surface. When wired,\nthe manager also rejects shell-based memory writes before MCP dispatch.
 EDGES
   ^contains=matrix/neo/internal/tools.Manager
   ^defines=matrix/neo/internal/tools/tools.go
@@ -349,7 +378,7 @@ EDGES
   ^defines=matrix/neo/internal/tools/personalization.go
 
 NODE id=matrix/neo/internal/tools.Manager.SetPreview kind=method
-  digest=b3:ca18f0721bc76810a46f44c7afb396122142a19d59c5fc07a880e6c93f4b6ec3 file=neo/internal/tools/tools.go range=773:776 lang=go exported=true byte_range=31538:31806
+  digest=b3:ca18f0721bc76810a46f44c7afb396122142a19d59c5fc07a880e6c93f4b6ec3 file=neo/internal/tools/tools.go range=860:863 lang=go exported=true byte_range=35573:35841
   sig=func (m *Manager) SetPreview(f PreviewFunc)
   doc=SetPreview wires the workbench preview launcher after construction (the\nlauncher needs the engine's sandbox controller + project registry assembled\nfirst). nil leaves the preview tool unadvertised.
 EDGES
@@ -357,7 +386,7 @@ EDGES
   ^defines=matrix/neo/internal/tools/tools.go
 
 NODE id=matrix/neo/internal/tools.Manager.SetRecall kind=method
-  digest=b3:d71ce56c4f68207ba95290a7f3c8d7910eeb1eac15bbd8e24c1edaae1825523a file=neo/internal/tools/tools.go range=857:859 lang=go exported=true byte_range=34403:34582
+  digest=b3:d71ce56c4f68207ba95290a7f3c8d7910eeb1eac15bbd8e24c1edaae1825523a file=neo/internal/tools/tools.go range=944:946 lang=go exported=true byte_range=38438:38617
   sig=func (m *Manager) SetRecall(r RecallFunc)
   doc=SetRecall wires the durable-memory lookup after construction (the pager\nand tool manager are built independently).
 EDGES
@@ -365,7 +394,7 @@ EDGES
   ^defines=matrix/neo/internal/tools/tools.go
 
 NODE id=matrix/neo/internal/tools.Manager.SetSurfaceEmitter kind=method
-  digest=b3:e4106f504eede7c63203f6b98a5204dfb33743dd532fb6626f0b78fdf402a8f4 file=neo/internal/tools/tools.go range=881:884 lang=go exported=true byte_range=35731:35994
+  digest=b3:e4106f504eede7c63203f6b98a5204dfb33743dd532fb6626f0b78fdf402a8f4 file=neo/internal/tools/tools.go range=974:977 lang=go exported=true byte_range=40087:40350
   sig=func (m *Manager) SetSurfaceEmitter(f SurfaceFunc)
   doc=SetSurfaceEmitter wires the Construct surface emitter after construction (the\nemitter needs the engine + per-run event stream assembled first). nil leaves\nconstruct_render unadvertised.
 EDGES
@@ -373,7 +402,7 @@ EDGES
   ^defines=matrix/neo/internal/tools/tools.go
 
 NODE id=matrix/neo/internal/tools.Manager.SetSwarm kind=method
-  digest=b3:bea6a885fbd35e1d4ea1a79a6f7f0ceaad77696b6c2d8594ecb31ce27799c1fe file=neo/internal/tools/tools.go range=849:855 lang=go exported=true byte_range=34087:34401
+  digest=b3:bea6a885fbd35e1d4ea1a79a6f7f0ceaad77696b6c2d8594ecb31ce27799c1fe file=neo/internal/tools/tools.go range=936:942 lang=go exported=true byte_range=38122:38436
   sig=func (m *Manager) SetSwarm(s SwarmFunc, maxAgents int)
   doc=SetSwarm wires the sub-agent fan-out runner after construction (the runner\nneeds the engine assembled first). maxAgents caps how many sub-agents one\nspawn_subagents call may request; <= 0 leaves it unbounded.
 EDGES
@@ -381,7 +410,7 @@ EDGES
   ^defines=matrix/neo/internal/tools/tools.go
 
 NODE id=matrix/neo/internal/tools.Manager.SetTodo kind=method
-  digest=b3:92f91965b50ef99a3283a9d966c6409a95ce183e3fa1d0b55a991859dfbc01f9 file=neo/internal/tools/tools.go range=765:768 lang=go exported=true byte_range=31152:31383
+  digest=b3:92f91965b50ef99a3283a9d966c6409a95ce183e3fa1d0b55a991859dfbc01f9 file=neo/internal/tools/tools.go range=852:855 lang=go exported=true byte_range=35187:35418
   sig=func (m *Manager) SetTodo(f TodoFunc)
   doc=SetTodo wires the live task-list emitter after construction (the emitter\nneeds the engine + per-run event stream assembled first). nil leaves the todo\ntool unadvertised.
 EDGES
@@ -389,7 +418,7 @@ EDGES
   ^defines=matrix/neo/internal/tools/tools.go
 
 NODE id=matrix/neo/internal/tools.Manager.SetWriteSkill kind=method
-  digest=b3:18d7392a4a1405646969c3a9f9adb25c0c571f7dec051e5c40a66228bb82d898 file=neo/internal/tools/tools.go range=871:875 lang=go exported=true byte_range=35160:35487
+  digest=b3:18d7392a4a1405646969c3a9f9adb25c0c571f7dec051e5c40a66228bb82d898 file=neo/internal/tools/tools.go range=964:968 lang=go exported=true byte_range=39516:39843
   sig=func (m *Manager) SetWriteSkill(f WriteSkillFunc)
   doc=SetWriteSkill wires the skill-writing function after construction (the\npager and tool manager are built independently). When nil, write_skill is\nnot advertised. The func persists a validated PatternSpec as a cortex\nPattern via ReinforcePattern.
 EDGES
@@ -397,7 +426,7 @@ EDGES
   ^defines=matrix/neo/internal/tools/tools.go
 
 NODE id=matrix/neo/internal/tools.Manager.SpawnEnabled kind=method
-  digest=b3:512ee129e22b9bc0430d31e22a630eebaabed4cb8daa15a59f1498d96fabd705 file=neo/internal/tools/tools.go range=942:947 lang=go exported=true byte_range=38865:39331
+  digest=b3:512ee129e22b9bc0430d31e22a630eebaabed4cb8daa15a59f1498d96fabd705 file=neo/internal/tools/tools.go range=1035:1040 lang=go exported=true byte_range=43221:43687
   sig=func (m *Manager) SpawnEnabled() bool
   doc=SpawnEnabled reports whether spawn_subagents is advertised this session (the\nswarm runner is wired) AND, therefore, whether the top-level agent can\ndecompose at all. The self-aware decomposition router (self-model task 4.2)\nsurfaces the agent's own context limits at the decision point only when this\nis true — there is no point teaching a decision the agent cannot act on.
 EDGES
@@ -405,7 +434,7 @@ EDGES
   ^defines=matrix/neo/internal/tools/tools.go
 
 NODE id=matrix/neo/internal/tools.Manager.SubagentSchemas kind=method
-  digest=b3:82e8a61b1a13163ccc0e04c9a81366a21be3592f61e989f92118888562c784e1 file=neo/internal/tools/tools.go range=393:404 lang=go exported=true byte_range=16219:16737
+  digest=b3:82e8a61b1a13163ccc0e04c9a81366a21be3592f61e989f92118888562c784e1 file=neo/internal/tools/tools.go range=406:417 lang=go exported=true byte_range=16829:17347
   sig=func (m *Manager) SubagentSchemas() []llm.Tool
   doc=SubagentSchemas is the tool surface advertised to a SUB-AGENT: every Natural\ntool, but NOT core_execute (money stays with the user-facing parent — a\nbackground sub-agent can't service an inline approval gate), memory_recall,\nor spawn_subagents (no recursion). Deterministic order.
 EDGES
@@ -413,7 +442,7 @@ EDGES
   ^defines=matrix/neo/internal/tools/tools.go
 
 NODE id=matrix/neo/internal/tools.Manager.SurfaceEnabled kind=method
-  digest=b3:d19677a181b8b04e2e67dbc7e4bafdcc30d644c8cf6e561b4a4d247f6769d28b file=neo/internal/tools/tools.go range=933:935 lang=go exported=true byte_range=38324:38546
+  digest=b3:d19677a181b8b04e2e67dbc7e4bafdcc30d644c8cf6e561b4a4d247f6769d28b file=neo/internal/tools/tools.go range=1026:1028 lang=go exported=true byte_range=42680:42902
   sig=func (m *Manager) SurfaceEnabled() bool
   doc=SurfaceEnabled reports whether the Construct render tool is wired this\nsession (the agent-authored ACTIVE projection tier is available).
 EDGES
@@ -421,7 +450,7 @@ EDGES
   ^defines=matrix/neo/internal/tools/tools.go
 
 NODE id=matrix/neo/internal/tools.Manager.TodoEnabled kind=method
-  digest=b3:b238678a5f9e21a85d71da70cfc5be90d3edea90f9bf2069b5717e15147a4c53 file=neo/internal/tools/tools.go range=770:771 lang=go exported=true byte_range=31385:31536
+  digest=b3:b238678a5f9e21a85d71da70cfc5be90d3edea90f9bf2069b5717e15147a4c53 file=neo/internal/tools/tools.go range=857:858 lang=go exported=true byte_range=35420:35571
   sig=func (m *Manager) TodoEnabled() bool
   doc=TodoEnabled reports whether the live task-list tool is wired this session.
 EDGES
@@ -429,7 +458,7 @@ EDGES
   ^defines=matrix/neo/internal/tools/tools.go
 
 NODE id=matrix/neo/internal/tools.Manager.Warnings kind=method
-  digest=b3:d413d4758e89f24cd4c7ae9eebf4a60578003dd7fddd42cc4301f5271e64f13c file=neo/internal/tools/tools.go range=956:957 lang=go exported=true byte_range=39743:39893
+  digest=b3:d413d4758e89f24cd4c7ae9eebf4a60578003dd7fddd42cc4301f5271e64f13c file=neo/internal/tools/tools.go range=1049:1050 lang=go exported=true byte_range=44099:44249
   sig=func (m *Manager) Warnings() []string
   doc=Warnings returns non-fatal MCP server start failures from Spawn.
 EDGES
@@ -437,7 +466,7 @@ EDGES
   ^defines=matrix/neo/internal/tools/tools.go
 
 NODE id=matrix/neo/internal/tools.Manager.WriteSkillEnabled kind=method
-  digest=b3:2d27bf151cc17f0baae9676d7dea4c1fd2bd76c9fc28d347c2ffb2cf279f5152 file=neo/internal/tools/tools.go range=877:879 lang=go exported=true byte_range=35489:35729
+  digest=b3:2d27bf151cc17f0baae9676d7dea4c1fd2bd76c9fc28d347c2ffb2cf279f5152 file=neo/internal/tools/tools.go range=970:972 lang=go exported=true byte_range=39845:40085
   sig=func (m *Manager) WriteSkillEnabled() bool
   doc=WriteSkillEnabled reports whether the write_skill tool is wired this session\n(a durable cortex store is connected and skill authoring is available).
 EDGES
@@ -445,7 +474,7 @@ EDGES
   ^defines=matrix/neo/internal/tools/tools.go
 
 NODE id=matrix/neo/internal/tools.Manager.bind kind=method
-  digest=b3:e83a4ae42ce32754cda6a84f35a318019dd469f02b03e33fef58fe1d29c16571 file=neo/internal/tools/tools.go range=310:352 lang=go exported=false byte_range=13566:14819
+  digest=b3:e83a4ae42ce32754cda6a84f35a318019dd469f02b03e33fef58fe1d29c16571 file=neo/internal/tools/tools.go range=320:362 lang=go exported=false byte_range=14107:15360
   sig=func (m *Manager) bind(spawned map[string]bool)
   doc=bind builds the function-name → tool map for every tool on a server that\nactually spawned, pulling the live JSON schema from the MCP manager.
 EDGES
@@ -453,14 +482,14 @@ EDGES
   ^defines=matrix/neo/internal/tools/tools.go
 
 NODE id=matrix/neo/internal/tools.Manager.dispatch kind=method
-  digest=b3:d2c166ea96a1a932f4f4934b47c7bcd326878af15dc63de75581c219400d4129 file=neo/internal/tools/tools.go range=429:480 lang=go exported=false byte_range=18071:20048
-  sig=func (m *Manager) dispatch(ctx context.Context, funcName string, args map[string]interface{}) (content, shotURL string, isErr bool, err error)
+  digest=b3:30d6d40015a504011f8041e80d387dee4249eebb2340722852fb5465d822075b file=neo/internal/tools/tools.go range=449:506 lang=go exported=false byte_range=19164:22036
+  sig=func (m *Manager) dispatch(ctx context.Context, funcName string, args map[string]interface{}) (content, shotURL string, isErr bool, failureClass tool.FailureClass, retryable bool, failureMessage string, err error)
 EDGES
   ^contains=matrix/neo/internal/tools.Manager
   ^defines=matrix/neo/internal/tools/tools.go
 
 NODE id=matrix/neo/internal/tools.Manager.dispatchAsk kind=method
-  digest=b3:07ab54f68f245b2fec176318b929d77d8e3e743e59bff961dc82ddae3438f500 file=neo/internal/tools/tools.go range=915:931 lang=go exported=false byte_range=37395:38322
+  digest=b3:07ab54f68f245b2fec176318b929d77d8e3e743e59bff961dc82ddae3438f500 file=neo/internal/tools/tools.go range=1008:1024 lang=go exported=false byte_range=41751:42678
   sig=func (m *Manager) dispatchAsk(ctx context.Context, s *schema.Surface) (string, bool, error)
   doc=dispatchAsk emits an Ask surface and parks the tool call until the human\nanswers (or the run is cancelled / the ask expires). The human's typed\nresponse returns to the model as the tool result — an INPUT it reads and\nacts on, exactly like a user message. When no back-channel responder is\nwired (dev/CLI), the ask is still SHOWN, but the model is told it cannot\nblock and should proceed.
 EDGES
@@ -468,7 +497,7 @@ EDGES
   ^defines=matrix/neo/internal/tools/tools.go
 
 NODE id=matrix/neo/internal/tools.Manager.dispatchConstructRender kind=method
-  digest=b3:4f5b9a2428fb7ee5fbfb1cbdcaadeaea5590698fc91eaa38cdc9218854244e14 file=neo/internal/tools/tools.go range=891:913 lang=go exported=false byte_range=36271:37393
+  digest=b3:4f5b9a2428fb7ee5fbfb1cbdcaadeaea5590698fc91eaa38cdc9218854244e14 file=neo/internal/tools/tools.go range=984:1006 lang=go exported=false byte_range=40627:41749
   sig=func (m *Manager) dispatchConstructRender(ctx context.Context, args map[string]interface{}) (string, bool, error)
   doc=dispatchConstructRender is the ACTIVE-tier handler: it maps the model's\nconstruct_render arguments onto a validated Construct surface and emits it.\nA validation error is returned in-band (isError=true, err=nil) so the model\nreads it and corrects the call rather than the harness retrying.
 EDGES
@@ -476,14 +505,21 @@ EDGES
   ^defines=matrix/neo/internal/tools/tools.go
 
 NODE id=matrix/neo/internal/tools.Manager.dispatchCoreExecute kind=method
-  digest=b3:c01578a7dd377311c1b7eeedd1570adee705dbcebf5769512e9d0f48fe79fddc file=neo/internal/tools/tools.go range=535:555 lang=go exported=false byte_range=22030:23069
+  digest=b3:c01578a7dd377311c1b7eeedd1570adee705dbcebf5769512e9d0f48fe79fddc file=neo/internal/tools/tools.go range=561:581 lang=go exported=false byte_range=24018:25057
   sig=func (m *Manager) dispatchCoreExecute(ctx context.Context, args map[string]interface{}) (string, bool, error)
 EDGES
   ^contains=matrix/neo/internal/tools.Manager
   ^defines=matrix/neo/internal/tools/tools.go
 
+NODE id=matrix/neo/internal/tools.Manager.dispatchMemoryMutation kind=method
+  digest=b3:73cf8d1d56699f223c9e3177f3161542193abf4baa175d6c934a4da642f798df file=neo/internal/tools/tools.go range=657:685 lang=go exported=false byte_range=27430:28472
+  sig=func (m *Manager) dispatchMemoryMutation(ctx context.Context, args map[string]interface{}) (string, bool, error)
+EDGES
+  ^contains=matrix/neo/internal/tools.Manager
+  ^defines=matrix/neo/internal/tools/tools.go
+
 NODE id=matrix/neo/internal/tools.Manager.dispatchMemoryRecall kind=method
-  digest=b3:2c2f0730889ca1ef6c2f61545de26ee86a5cfdd3519c16970c1100bb825951cc file=neo/internal/tools/tools.go range=616:629 lang=go exported=false byte_range=24921:25440
+  digest=b3:2c2f0730889ca1ef6c2f61545de26ee86a5cfdd3519c16970c1100bb825951cc file=neo/internal/tools/tools.go range=642:655 lang=go exported=false byte_range=26909:27428
   sig=func (m *Manager) dispatchMemoryRecall(ctx context.Context, args map[string]interface{}) (string, bool, error)
 EDGES
   ^contains=matrix/neo/internal/tools.Manager
@@ -498,7 +534,7 @@ EDGES
   ^defines=matrix/neo/internal/tools/personalization.go
 
 NODE id=matrix/neo/internal/tools.Manager.dispatchPreview kind=method
-  digest=b3:f39e6d0d04128e7c8c61fab7d00934f7eede4c9b3595527c0b85b993a454bb2e file=neo/internal/tools/tools.go range=782:798 lang=go exported=false byte_range=31976:32723
+  digest=b3:f39e6d0d04128e7c8c61fab7d00934f7eede4c9b3595527c0b85b993a454bb2e file=neo/internal/tools/tools.go range=869:885 lang=go exported=false byte_range=36011:36758
   sig=func (m *Manager) dispatchPreview(ctx context.Context) (string, bool, error)
   doc=dispatchPreview launches the active project's sandbox preview. The launcher\nis asynchronous by contract: it kicks provisioning and returns immediately;\nreadiness (or failure) reaches the user through the preview.* events the\nworkbench renders — the model should not poll or wait for the URL.
 EDGES
@@ -506,14 +542,14 @@ EDGES
   ^defines=matrix/neo/internal/tools/tools.go
 
 NODE id=matrix/neo/internal/tools.Manager.dispatchSpawnSubagents kind=method
-  digest=b3:6b8af04a51eb50e6c7fe114a3742b6350537ce2f96607f46ecdc76cc9cc175c1 file=neo/internal/tools/tools.go range=557:576 lang=go exported=false byte_range=23071:24010
+  digest=b3:6b8af04a51eb50e6c7fe114a3742b6350537ce2f96607f46ecdc76cc9cc175c1 file=neo/internal/tools/tools.go range=583:602 lang=go exported=false byte_range=25059:25998
   sig=func (m *Manager) dispatchSpawnSubagents(ctx context.Context, args map[string]interface{}) (string, bool, error)
 EDGES
   ^contains=matrix/neo/internal/tools.Manager
   ^defines=matrix/neo/internal/tools/tools.go
 
 NODE id=matrix/neo/internal/tools.Manager.dispatchTodo kind=method
-  digest=b3:2ad589316eaaadac353bd4e47f32cd47c0819dcb8eebc902f321fc79d672223c file=neo/internal/tools/tools.go range=660:691 lang=go exported=false byte_range=27097:28726
+  digest=b3:2ad589316eaaadac353bd4e47f32cd47c0819dcb8eebc902f321fc79d672223c file=neo/internal/tools/tools.go range=747:778 lang=go exported=false byte_range=31132:32761
   sig=func (m *Manager) dispatchTodo(ctx context.Context, args map[string]interface{}) (string, bool, error)
   doc=dispatchTodo is the live task-list handler (neo-smoothness req.3). It parses\nthe model's ordered plan, ENFORCES the lifecycle invariants — at most one\nitem in_progress at a time (req.3.2) — and surfaces the list through the\ninjected emitter. It no-ops gracefully on a trivial single-step turn (req.3.4)\nso the feature adds visibility on real multi-step work without ceremony.\nValidation failures are returned in-band (isError=true, err=nil) so the model\nreads the steer and corrects rather than the harness retrying.
 EDGES
@@ -521,7 +557,7 @@ EDGES
   ^defines=matrix/neo/internal/tools/tools.go
 
 NODE id=matrix/neo/internal/tools.Manager.dispatchWriteSkill kind=method
-  digest=b3:e153e4e8d00b1b62512701f9ed28640744d5538b42e47383c0a9802c7b45e8ae file=neo/internal/tools/tools.go range=631:658 lang=go exported=false byte_range=25442:27095
+  digest=b3:e153e4e8d00b1b62512701f9ed28640744d5538b42e47383c0a9802c7b45e8ae file=neo/internal/tools/tools.go range=718:745 lang=go exported=false byte_range=29477:31130
   sig=func (m *Manager) dispatchWriteSkill(ctx context.Context, args map[string]interface{}) (string, bool, error)
   doc=dispatchWriteSkill is the P2-2 skill-writing handler: it parses the model's\nwrite_skill arguments into a validated PatternSpec and persists it as a\ncortex Pattern via the injected WriteSkillFunc (which calls\nReinforcePattern). A spec with no usable identity (empty name, trigger, and\nsteps) is rejected in-band so the model reads the error and corrects rather\nthan the harness retrying. On success the cortex URI is returned so the\nagent can cite the persisted skill.
 EDGES
@@ -529,7 +565,7 @@ EDGES
   ^defines=matrix/neo/internal/tools/tools.go
 
 NODE id=matrix/neo/internal/tools.Manager.persistFirstImage kind=method
-  digest=b3:6eb2bead231b3ce73c8ad21be049b738902fefa0bb8ffbc31d34f079cefc0db1 file=neo/internal/tools/tools.go range=482:499 lang=go exported=false byte_range=20050:20681
+  digest=b3:6eb2bead231b3ce73c8ad21be049b738902fefa0bb8ffbc31d34f079cefc0db1 file=neo/internal/tools/tools.go range=508:525 lang=go exported=false byte_range=22038:22669
   sig=func (m *Manager) persistFirstImage(res *tool.Result) string
   doc=persistFirstImage writes the first image content block in a tool result to the\nmedia plane and returns its /media URL, or "" when there is no image, no media\nsink is wired, or the write fails. Best-effort by contract (req.2 ac_3): the\nscreenshot never fails the tool call.
 EDGES
@@ -537,9 +573,23 @@ EDGES
   ^defines=matrix/neo/internal/tools/tools.go
 
 NODE id=matrix/neo/internal/tools.MediaPersistFunc kind=type
-  digest=b3:8b05ce5cee168076139d0a368405a728257cdc88c4e42e41835f730435727987 file=neo/internal/tools/tools.go range=98:107 lang=go exported=true byte_range=5044:5781
+  digest=b3:8b05ce5cee168076139d0a368405a728257cdc88c4e42e41835f730435727987 file=neo/internal/tools/tools.go range=103:112 lang=go exported=true byte_range=5288:6025
   sig=type MediaPersistFunc func(mimeType, base64Data string) (url string, err error)
   doc=MediaPersistFunc writes a tool-produced image (base64 payload + MIME) to the\nserved media plane and returns its /media/<id> URL. It is the seam that keeps\na screenshot's bytes OUT of the model transcript (BROWSER-FILMSTRIP req.2):\nthe URL travels out-of-band to the surfacing layer while the model-facing\ntool result stays a terse placeholder. Injected by the engine wiring (see\ninternal/server); nil until wired, in which case image bytes are simply\nsummarized to a placeholder as before (no persistence, no filmstrip). It is\nbest-effort by contract: an error is swallowed by the caller and never fails\nthe tool call or the turn.
+EDGES
+  ^defines=matrix/neo/internal/tools/tools.go
+
+NODE id=matrix/neo/internal/tools.MemoryMutateTool kind=const
+  digest=b3:5c5b7d65f96b90d7591293622e4c76461347aa8af8f60cd9c26d927dea36601c file=neo/internal/tools/tools.go range=47:50 lang=go exported=true byte_range=1740:1982
+  sig=untyped string
+  doc=MemoryMutateTool is the bounded typed write surface for user-directed\nmemory create, update, supersede, and delete operations. It replaces shell\nor curl discovery of internal memory endpoints.
+EDGES
+  ^defines=matrix/neo/internal/tools/tools.go
+
+NODE id=matrix/neo/internal/tools.MemoryMutationFunc kind=type
+  digest=b3:1996d9a9886502f1ec8e03bd08a0b6a66767bbe5e3a1e0e9f0d5918e1782b308 file=neo/internal/tools/tools.go range=156:158 lang=go exported=true byte_range=8157:8421
+  sig=type MemoryMutationFunc func(ctx context.Context, req memory.MutationRequest) (memory.MutationBatchResult, error)
+  doc=MemoryMutationFunc executes a bounded batch of typed memory mutations.\nInternal Cortex identifiers are never requested by the model-facing tool.
 EDGES
   ^defines=matrix/neo/internal/tools/tools.go
 
@@ -564,7 +614,7 @@ EDGES
   ^defines=matrix/neo/internal/tools/surface.go
 
 NODE id=matrix/neo/internal/tools.Options kind=type
-  digest=b3:6739e489917d224ecc02269eb801e5c4a0dffdca0bb455ffc0e074e82fdd811e file=neo/internal/tools/tools.go range=227:234 lang=go exported=true byte_range=11133:11328
+  digest=b3:6739e489917d224ecc02269eb801e5c4a0dffdca0bb455ffc0e074e82fdd811e file=neo/internal/tools/tools.go range=237:244 lang=go exported=true byte_range=11674:11869
   sig=type Options struct {\n	ManifestPath		string\n	StderrSink		io.Writer\n	SpawnTimeout		time.Duration\n	Delegate		DelegateFunc\n	EscalatePatterns	[]string\n}
   doc=Options configures Spawn.
 EDGES
@@ -572,37 +622,37 @@ EDGES
   ^defines=matrix/neo/internal/tools/tools.go
 
 NODE id=matrix/neo/internal/tools.Options#Delegate kind=field
-  digest=b3:0f56f491a577aa8ae31e55aeda288e9ccc549c52b3959e0b02e093397074a501 file=neo/internal/tools/tools.go range=232:232 lang=go exported=true byte_range=11270:11299
+  digest=b3:0f56f491a577aa8ae31e55aeda288e9ccc549c52b3959e0b02e093397074a501 file=neo/internal/tools/tools.go range=242:242 lang=go exported=true byte_range=11811:11840
   sig=tools.DelegateFunc
 EDGES
   ^contains=matrix/neo/internal/tools.Options
 
 NODE id=matrix/neo/internal/tools.Options#EscalatePatterns kind=field
-  digest=b3:9d8268b754dfce4162e62bddc78a0ef5b915af42f1e4aa1e2a8ac501256dc04f file=neo/internal/tools/tools.go range=233:233 lang=go exported=true byte_range=11301:11326
+  digest=b3:9d8268b754dfce4162e62bddc78a0ef5b915af42f1e4aa1e2a8ac501256dc04f file=neo/internal/tools/tools.go range=243:243 lang=go exported=true byte_range=11842:11867
   sig=[]string
 EDGES
   ^contains=matrix/neo/internal/tools.Options
 
 NODE id=matrix/neo/internal/tools.Options#ManifestPath kind=field
-  digest=b3:59e5e8a5214bdb14671624dc18b5758788ef262a05b60b1de023ec3cfe1ac508 file=neo/internal/tools/tools.go range=229:229 lang=go exported=true byte_range=11185:11208
+  digest=b3:59e5e8a5214bdb14671624dc18b5758788ef262a05b60b1de023ec3cfe1ac508 file=neo/internal/tools/tools.go range=239:239 lang=go exported=true byte_range=11726:11749
   sig=string
 EDGES
   ^contains=matrix/neo/internal/tools.Options
 
 NODE id=matrix/neo/internal/tools.Options#SpawnTimeout kind=field
-  digest=b3:ff599fa5c1211d520ee52b042f38b47c164916b5667059f8ce30485e2d63ebbf file=neo/internal/tools/tools.go range=231:231 lang=go exported=true byte_range=11238:11268
+  digest=b3:ff599fa5c1211d520ee52b042f38b47c164916b5667059f8ce30485e2d63ebbf file=neo/internal/tools/tools.go range=241:241 lang=go exported=true byte_range=11779:11809
   sig=time.Duration
 EDGES
   ^contains=matrix/neo/internal/tools.Options
 
 NODE id=matrix/neo/internal/tools.Options#StderrSink kind=field
-  digest=b3:c6c3bc97bf987cc691b103da421758d92b8e57b0594301d678da2827bcb6ab1e file=neo/internal/tools/tools.go range=230:230 lang=go exported=true byte_range=11210:11236
+  digest=b3:c6c3bc97bf987cc691b103da421758d92b8e57b0594301d678da2827bcb6ab1e file=neo/internal/tools/tools.go range=240:240 lang=go exported=true byte_range=11751:11777
   sig=io.Writer
 EDGES
   ^contains=matrix/neo/internal/tools.Options
 
 NODE id=matrix/neo/internal/tools.ParseTodoItems kind=func
-  digest=b3:2d6e5d33c09875318cff9ed97e6da35dda7d1caa5afbba5671ac3a74c30eb1cb file=neo/internal/tools/tools.go range=693:696 lang=go exported=true byte_range=28728:29037
+  digest=b3:2d6e5d33c09875318cff9ed97e6da35dda7d1caa5afbba5671ac3a74c30eb1cb file=neo/internal/tools/tools.go range=780:783 lang=go exported=true byte_range=32763:33072
   sig=func ParseTodoItems(args map[string]interface{}) []TodoItem
   doc=ParseTodoItems is the exported todo-argument parser: the agent core's task\ngraph consumes the SAME item vocabulary the todo surface renders (one\nvocabulary, no parallel plan state — epistemic-core req.7.3).
 EDGES
@@ -623,21 +673,21 @@ EDGES
   ^defines=matrix/neo/internal/tools/personalization.go
 
 NODE id=matrix/neo/internal/tools.PreviewFunc kind=type
-  digest=b3:d19427d368ac5f986223da9fefa36223a4faeede9d36f52f0245c0db6c631be1 file=neo/internal/tools/tools.go range=134:141 lang=go exported=true byte_range=6837:7384
+  digest=b3:d19427d368ac5f986223da9fefa36223a4faeede9d36f52f0245c0db6c631be1 file=neo/internal/tools/tools.go range=139:146 lang=go exported=true byte_range=7081:7628
   sig=type PreviewFunc func(ctx context.Context) (string, error)
   doc=PreviewFunc launches the workbench preview for the calling run's active\nproject (the engine resolves the conversation's project tag to its workspace\nsubtree and provisions the on-demand sandbox). It returns a short\nmodel-facing status line; the lifecycle itself unfolds on the durable\npreview.pending/ready/failed events the client renders. Injected by the\nengine wiring (see internal/server); nil until wired, in which case the\npreview tool is not advertised at all.
 EDGES
   ^defines=matrix/neo/internal/tools/tools.go
 
 NODE id=matrix/neo/internal/tools.PreviewTool kind=const
-  digest=b3:1432f8db108012244f523a8817a8459aec43797bd7edad1649191398f9abbd86 file=neo/internal/tools/tools.go range=85:91 lang=go exported=true byte_range=4224:4733
+  digest=b3:1432f8db108012244f523a8817a8459aec43797bd7edad1649191398f9abbd86 file=neo/internal/tools/tools.go range=90:96 lang=go exported=true byte_range=4468:4977
   sig=untyped string
   doc=PreviewTool is the synthetic function Neo exposes to launch the workbench\npreview: it provisions the active project's on-demand sandbox and the result\nsurfaces to the user in the workbench Preview pane via the durable preview.*\nevents (NEO-WORKBENCH req 7). Like todo it is NOT a real MCP server, so it\nnever enters the manifest tool-bijection check; it is advertised only when a\npreview launcher is wired (sandbox previews configured on this daemon).
 EDGES
   ^defines=matrix/neo/internal/tools/tools.go
 
 NODE id=matrix/neo/internal/tools.RecallFunc kind=type
-  digest=b3:b49819ed35d3b35671b65e511a6b2943730176c846791a0c8a8f2a9f890716cc file=neo/internal/tools/tools.go range=143:149 lang=go exported=true byte_range=7386:7911
+  digest=b3:b49819ed35d3b35671b65e511a6b2943730176c846791a0c8a8f2a9f890716cc file=neo/internal/tools/tools.go range=148:154 lang=go exported=true byte_range=7630:8155
   sig=type RecallFunc func(ctx context.Context, query string, types []string, k int, asOf *time.Time) (string, error)
   doc=RecallFunc searches the durable memory store and returns a rendered,\nuser-presentable digest. It is the PRIMARY reasoning-time retrieval verb\n(v3 #1): the model calls it iteratively with a narrowing query, an optional\ntype filter, a result cap, and an optional bi-temporal as-of instant\n(nil = now). Injected from the pager; nil until wired, in which case\nmemory_recall is not advertised at all.
 EDGES
@@ -651,21 +701,21 @@ EDGES
   ^defines=matrix/neo/internal/tools/personalization.go
 
 NODE id=matrix/neo/internal/tools.Spawn kind=func
-  digest=b3:b474e20364ef12aed089e7b2955091e3c3ec5208bb79f62aa623ff08b0f05302 file=neo/internal/tools/tools.go range=236:308 lang=go exported=true byte_range=11330:13564
+  digest=b3:b474e20364ef12aed089e7b2955091e3c3ec5208bb79f62aa623ff08b0f05302 file=neo/internal/tools/tools.go range=246:318 lang=go exported=true byte_range=11871:14105
   sig=func Spawn(ctx context.Context, opts Options) (*Manager, error)
   doc=Spawn loads the agent manifest, starts every declared MCP server (a server\nthat fails to start is recorded as a warning and skipped — Neo degrades\ngracefully rather than refusing to boot), and binds the resulting tools.
 EDGES
   ^defines=matrix/neo/internal/tools/tools.go
 
 NODE id=matrix/neo/internal/tools.SpawnSubagentsTool kind=const
-  digest=b3:314239b293840b91e6692f5d46e4e89e11adebbbcdea4f1df60ebc2a1e561d4a file=neo/internal/tools/tools.go range=47:54 lang=go exported=true byte_range=1740:2323
+  digest=b3:314239b293840b91e6692f5d46e4e89e11adebbbcdea4f1df60ebc2a1e561d4a file=neo/internal/tools/tools.go range=52:59 lang=go exported=true byte_range=1984:2567
   sig=untyped string
   doc=SpawnSubagentsTool is the synthetic function Neo exposes to fan a task out\nto several task-scoped sub-agents that run CONCURRENTLY, each in its own\nisolated context window, and to collect their distilled results. It is a\ncontext-conservation strategy as much as a parallelism one: the heavy tool\nwork (reading a repo, crawling pages) happens in the sub-agents' windows and\nonly a compact result returns to Neo's. Reachable only from the top-level\nagent — sub-agents do NOT get this tool (no recursion / fork-bombs).
 EDGES
   ^defines=matrix/neo/internal/tools/tools.go
 
 NODE id=matrix/neo/internal/tools.SubagentSpec kind=type
-  digest=b3:dee4c35768333476d673a19175a5685062ee00acd878adfd7e04445f99a6aba1 file=neo/internal/tools/tools.go range=151:158 lang=go exported=true byte_range=7913:8260
+  digest=b3:dee4c35768333476d673a19175a5685062ee00acd878adfd7e04445f99a6aba1 file=neo/internal/tools/tools.go range=160:167 lang=go exported=true byte_range=8423:8770
   sig=type SubagentSpec struct {\n	Name	string	`json:"name"`\n	Persona	string	`json:"persona"`\n	Task	string	`json:"task"`\n}
   doc=SubagentSpec describes one task-scoped sub-agent the model wants to spawn:\na short human name, a persona/role framing, and the self-contained task it\nshould carry out. Mirrors the model-facing spawn_subagents schema.
 EDGES
@@ -673,19 +723,19 @@ EDGES
   ^defines=matrix/neo/internal/tools/tools.go
 
 NODE id=matrix/neo/internal/tools.SubagentSpec#Name kind=field
-  digest=b3:794a1ede203fe985a48518448e5f8659b78a74b26db55472037cd4f60e2527d8 file=neo/internal/tools/tools.go range=155:155 lang=go exported=true byte_range=8167:8195
+  digest=b3:794a1ede203fe985a48518448e5f8659b78a74b26db55472037cd4f60e2527d8 file=neo/internal/tools/tools.go range=164:164 lang=go exported=true byte_range=8677:8705
   sig=string
 EDGES
   ^contains=matrix/neo/internal/tools.SubagentSpec
 
 NODE id=matrix/neo/internal/tools.SubagentSpec#Persona kind=field
-  digest=b3:5fdb68d4f1cc4275ce5541e2590b66aeb76760dc80f073a742ce690b20f0fd17 file=neo/internal/tools/tools.go range=156:156 lang=go exported=true byte_range=8197:8228
+  digest=b3:5fdb68d4f1cc4275ce5541e2590b66aeb76760dc80f073a742ce690b20f0fd17 file=neo/internal/tools/tools.go range=165:165 lang=go exported=true byte_range=8707:8738
   sig=string
 EDGES
   ^contains=matrix/neo/internal/tools.SubagentSpec
 
 NODE id=matrix/neo/internal/tools.SubagentSpec#Task kind=field
-  digest=b3:23e85488f9a65631522a6492423d67c4c19f17424dc817304021080b030df0b3 file=neo/internal/tools/tools.go range=157:157 lang=go exported=true byte_range=8230:8258
+  digest=b3:23e85488f9a65631522a6492423d67c4c19f17424dc817304021080b030df0b3 file=neo/internal/tools/tools.go range=166:166 lang=go exported=true byte_range=8740:8768
   sig=string
 EDGES
   ^contains=matrix/neo/internal/tools.SubagentSpec
@@ -706,40 +756,40 @@ EDGES
   ^defines=matrix/neo/internal/tools/surface.go
 
 NODE id=matrix/neo/internal/tools.SurfaceFunc kind=type
-  digest=b3:a159e6ef953582c86a38590c34033c4c9c7f65c15938311fa6298a697a299a2e file=neo/internal/tools/tools.go range=166:170 lang=go exported=true byte_range=8625:8974
+  digest=b3:a159e6ef953582c86a38590c34033c4c9c7f65c15938311fa6298a697a299a2e file=neo/internal/tools/tools.go range=175:179 lang=go exported=true byte_range=9135:9484
   sig=type SurfaceFunc func(ctx context.Context, s *schema.Surface) error
   doc=SurfaceFunc emits a validated Construct surface onto the active run's event\nstream as a construct.surface event. Injected by the engine wiring (see\ninternal/server); nil until wired, in which case construct_render reports it\nis unavailable and is not advertised at all.
 EDGES
   ^defines=matrix/neo/internal/tools/tools.go
 
 NODE id=matrix/neo/internal/tools.SwarmFunc kind=type
-  digest=b3:38fbbf946650d516a620f40fc9036744518d02348c4261c75305711a4eb6490f file=neo/internal/tools/tools.go range=160:164 lang=go exported=true byte_range=8262:8623
+  digest=b3:38fbbf946650d516a620f40fc9036744518d02348c4261c75305711a4eb6490f file=neo/internal/tools/tools.go range=169:173 lang=go exported=true byte_range=8772:9133
   sig=type SwarmFunc func(ctx context.Context, specs []SubagentSpec) (string, error)
   doc=SwarmFunc runs a set of sub-agents concurrently and returns an aggregated,\nmodel-readable digest of their results. Injected by the engine wiring (see\ninternal/server); nil until wired, in which case spawn_subagents reports it\nis unavailable and is not advertised at all.
 EDGES
   ^defines=matrix/neo/internal/tools/tools.go
 
 NODE id=matrix/neo/internal/tools.TodoDone kind=const
-  digest=b3:40d61ad59ba0c27804f6ae0e29bcb7b6706167525f480342211b46122fcc15c1 file=neo/internal/tools/tools.go range=117:117 lang=go exported=true byte_range=6123:6157
+  digest=b3:40d61ad59ba0c27804f6ae0e29bcb7b6706167525f480342211b46122fcc15c1 file=neo/internal/tools/tools.go range=122:122 lang=go exported=true byte_range=6367:6401
   sig=tools.TodoStatus
 EDGES
   ^defines=matrix/neo/internal/tools/tools.go
 
 NODE id=matrix/neo/internal/tools.TodoFunc kind=type
-  digest=b3:577d554eb5d34182a63efee9a63b2359dab347a5afb45b41db37b3668f53f62f file=neo/internal/tools/tools.go range=127:132 lang=go exported=true byte_range=6409:6835
+  digest=b3:577d554eb5d34182a63efee9a63b2359dab347a5afb45b41db37b3668f53f62f file=neo/internal/tools/tools.go range=132:137 lang=go exported=true byte_range=6653:7079
   sig=type TodoFunc func(ctx context.Context, items []TodoItem) error
   doc=TodoFunc records the current task list and surfaces it to the user as a live\nchecklist (and persists it through the durable trace). Injected by the engine\nwiring (see internal/server); nil until wired, in which case the todo tool is\nnot advertised at all. The items have already been validated by dispatchTodo\n(non-empty, at most one in_progress).
 EDGES
   ^defines=matrix/neo/internal/tools/tools.go
 
 NODE id=matrix/neo/internal/tools.TodoInProgress kind=const
-  digest=b3:4a04124e29fa36eaa3011a5476b3728238c87c42d604faf9eab3df32003aabb3 file=neo/internal/tools/tools.go range=116:116 lang=go exported=true byte_range=6080:6121
+  digest=b3:4a04124e29fa36eaa3011a5476b3728238c87c42d604faf9eab3df32003aabb3 file=neo/internal/tools/tools.go range=121:121 lang=go exported=true byte_range=6324:6365
   sig=tools.TodoStatus
 EDGES
   ^defines=matrix/neo/internal/tools/tools.go
 
 NODE id=matrix/neo/internal/tools.TodoItem kind=type
-  digest=b3:c22ee994f2e765166d1d5c4b1f8b5beadf0d2ebc185db50d5c6a13515598a2c0 file=neo/internal/tools/tools.go range=120:125 lang=go exported=true byte_range=6161:6407
+  digest=b3:c22ee994f2e765166d1d5c4b1f8b5beadf0d2ebc185db50d5c6a13515598a2c0 file=neo/internal/tools/tools.go range=125:130 lang=go exported=true byte_range=6405:6651
   sig=type TodoItem struct {\n	Text	string		`json:"text"`\n	Status	TodoStatus	`json:"status"`\n}
   doc=TodoItem is one entry in the live task list: a short human description and\nits current status. Order is significant (the plan reads top-to-bottom).
 EDGES
@@ -747,32 +797,32 @@ EDGES
   ^defines=matrix/neo/internal/tools/tools.go
 
 NODE id=matrix/neo/internal/tools.TodoItem#Status kind=field
-  digest=b3:34e6501f3100df10832119dc758aa40bfb997843c4986d9c3377c60fa5d35145 file=neo/internal/tools/tools.go range=124:124 lang=go exported=true byte_range=6372:6405
+  digest=b3:34e6501f3100df10832119dc758aa40bfb997843c4986d9c3377c60fa5d35145 file=neo/internal/tools/tools.go range=129:129 lang=go exported=true byte_range=6616:6649
   sig=tools.TodoStatus
 EDGES
   ^contains=matrix/neo/internal/tools.TodoItem
 
 NODE id=matrix/neo/internal/tools.TodoItem#Text kind=field
-  digest=b3:562320ebc2407e8259ba1871954c6275d264f48524b6dcbee2555c6f85e4d487 file=neo/internal/tools/tools.go range=123:123 lang=go exported=true byte_range=6339:6370
+  digest=b3:562320ebc2407e8259ba1871954c6275d264f48524b6dcbee2555c6f85e4d487 file=neo/internal/tools/tools.go range=128:128 lang=go exported=true byte_range=6583:6614
   sig=string
 EDGES
   ^contains=matrix/neo/internal/tools.TodoItem
 
 NODE id=matrix/neo/internal/tools.TodoPending kind=const
-  digest=b3:4bffd71c0ff5d06c6e4da9049b9b7e2cba2f5435a4a826d364e19508c4ab6e82 file=neo/internal/tools/tools.go range=115:115 lang=go exported=true byte_range=6041:6078
+  digest=b3:4bffd71c0ff5d06c6e4da9049b9b7e2cba2f5435a4a826d364e19508c4ab6e82 file=neo/internal/tools/tools.go range=120:120 lang=go exported=true byte_range=6285:6322
   sig=tools.TodoStatus
 EDGES
   ^defines=matrix/neo/internal/tools/tools.go
 
 NODE id=matrix/neo/internal/tools.TodoStatus kind=type
-  digest=b3:67be080280b55c2014e6e9a13505f2955e135abe8cc6549a268f38d2ad150234 file=neo/internal/tools/tools.go range=109:112 lang=go exported=true byte_range=5783:6030
+  digest=b3:67be080280b55c2014e6e9a13505f2955e135abe8cc6549a268f38d2ad150234 file=neo/internal/tools/tools.go range=114:117 lang=go exported=true byte_range=6027:6274
   sig=type TodoStatus string
   doc=TodoStatus is the lifecycle status of one task-list item. Exactly one item\nmay be TodoInProgress at a time (enforced by dispatchTodo); an item is moved\nto TodoDone the moment it is finished (not batched at the end).
 EDGES
   ^defines=matrix/neo/internal/tools/tools.go
 
 NODE id=matrix/neo/internal/tools.TodoTool kind=const
-  digest=b3:34c622a634cc2944662e5feefc39301cc91559510f8b1f8efd781360c2b1605b file=neo/internal/tools/tools.go range=77:83 lang=go exported=true byte_range=3728:4222
+  digest=b3:34c622a634cc2944662e5feefc39301cc91559510f8b1f8efd781360c2b1605b file=neo/internal/tools/tools.go range=82:88 lang=go exported=true byte_range=3972:4466
   sig=untyped string
   doc=TodoTool is the synthetic function Neo exposes to maintain a short, ordered\ntask plan with per-item status, surfaced to the user as a live checklist that\nticks off in real time (neo-smoothness req.3). Like core_execute it is NOT a\nreal MCP server, so it never enters the manifest tool-bijection check; it is\nadvertised only to the top-level agent (a sub-agent reports through its\ndigest, not the user's checklist) and only when a todo emitter is wired.
 EDGES
@@ -786,48 +836,48 @@ EDGES
   ^defines=matrix/neo/internal/tools/automatrix.go
 
 NODE id=matrix/neo/internal/tools.WriteSkillFunc kind=type
-  digest=b3:fb6bfb61e3820db2878fa5d8aac5d9e379f000cddfb8d73e0d6876577e53ccda file=neo/internal/tools/tools.go range=179:185 lang=go exported=true byte_range=9430:9974
+  digest=b3:fb6bfb61e3820db2878fa5d8aac5d9e379f000cddfb8d73e0d6876577e53ccda file=neo/internal/tools/tools.go range=188:194 lang=go exported=true byte_range=9940:10484
   sig=type WriteSkillFunc func(ctx context.Context, spec memory.PatternSpec) (string, error)
   doc=WriteSkillFunc persists a reusable recipe as a cortex Pattern (P2-2). It\nreceives a validated PatternSpec (non-empty identity) and returns the cortex\nURI of the written/reinforced pattern. Injected from the pager (which calls\nReinforcePattern); nil until wired, in which case write_skill is not\nadvertised at all. The coverage starts low and is reinforced on each repeat\nsuccess, so a single authoring does not overfit (procedural.guards).
 EDGES
   ^defines=matrix/neo/internal/tools/tools.go
 
 NODE id=matrix/neo/internal/tools.WriteSkillTool kind=const
-  digest=b3:e6000867b6fa8eb30d259d5269d2a45ab12f6deb5c622e900c8fdfd9356c91be file=neo/internal/tools/tools.go range=65:75 lang=go exported=true byte_range=2942:3726
+  digest=b3:e6000867b6fa8eb30d259d5269d2a45ab12f6deb5c622e900c8fdfd9356c91be file=neo/internal/tools/tools.go range=70:80 lang=go exported=true byte_range=3186:3970
   sig=untyped string
   doc=WriteSkillTool is the synthetic function Neo exposes for the agent to\nCONSCIOUSLY persist a reusable recipe as a cortex Pattern (P2-2: the\nskill-writing / synthesis loop). After a proven task, the agent authors a\nstructured PatternSpec (name, trigger, preconditions, steps, gotchas,\nsuccess_criteria) and this tool validates it and writes it to the durable\nprocedural store. The spec is validated against PatternSpec (non-empty\nidentity) before the write; coverage starts low and is reinforced on each\nrepeat success, so a single authoring does not overfit (procedural.guards).\nReadable on demand via memory_recall. Like memory_recall it is NOT a real\nMCP server, so it never enters the manifest tool-bijection check.
 EDGES
   ^defines=matrix/neo/internal/tools/tools.go
 
 NODE id=matrix/neo/internal/tools.asInt kind=func
-  digest=b3:61ad45c517834c7b7acb213057e51a927202aa93215879fb7e6df66663599a07 file=neo/internal/tools/tools.go range=816:826 lang=go exported=false byte_range=33135:33397
+  digest=b3:61ad45c517834c7b7acb213057e51a927202aa93215879fb7e6df66663599a07 file=neo/internal/tools/tools.go range=903:913 lang=go exported=false byte_range=37170:37432
   sig=func asInt(v interface{}) int
   doc=asInt coerces a JSON number argument into an int (JSON unmarshals numbers as\nfloat64). Returns 0 for a missing or non-numeric value.
 EDGES
   ^defines=matrix/neo/internal/tools/tools.go
 
 NODE id=matrix/neo/internal/tools.asString kind=func
-  digest=b3:45894b7d770eec585c1651c9b7d58afa17dae5ae0f6df09b3c724f55ebb2b9e8 file=neo/internal/tools/tools.go range=609:614 lang=go exported=false byte_range=24825:24919
+  digest=b3:45894b7d770eec585c1651c9b7d58afa17dae5ae0f6df09b3c724f55ebb2b9e8 file=neo/internal/tools/tools.go range=635:640 lang=go exported=false byte_range=26813:26907
   sig=func asString(v interface{}) string
 EDGES
   ^defines=matrix/neo/internal/tools/tools.go
 
 NODE id=matrix/neo/internal/tools.asStringSlice kind=func
-  digest=b3:1195045519c8912664fc95d839ebf9645a9dbada8330d16cec63e4819a862669 file=neo/internal/tools/tools.go range=800:814 lang=go exported=false byte_range=32725:33133
+  digest=b3:1195045519c8912664fc95d839ebf9645a9dbada8330d16cec63e4819a862669 file=neo/internal/tools/tools.go range=887:901 lang=go exported=false byte_range=36760:37168
   sig=func asStringSlice(v interface{}) []string
   doc=asStringSlice coerces a JSON array argument into a []string, dropping\nnon-string / blank entries. Returns nil for a missing or non-array value.
 EDGES
   ^defines=matrix/neo/internal/tools/tools.go
 
 NODE id=matrix/neo/internal/tools.asTime kind=func
-  digest=b3:1752255b9681153e80e1da0fd5deeaaa7d9645becefc3de0ea9a6906c16b9100 file=neo/internal/tools/tools.go range=828:843 lang=go exported=false byte_range=33399:33894
+  digest=b3:1752255b9681153e80e1da0fd5deeaaa7d9645becefc3de0ea9a6906c16b9100 file=neo/internal/tools/tools.go range=915:930 lang=go exported=false byte_range=37434:37929
   sig=func asTime(v interface{}) *time.Time
   doc=asTime parses an ISO-8601 / RFC3339 (or bare YYYY-MM-DD) string argument into\na UTC instant for bi-temporal as-of queries (v3 #2). Returns nil for a\nmissing or unparseable value (the caller then reads against "now").
 EDGES
   ^defines=matrix/neo/internal/tools/tools.go
 
 NODE id=matrix/neo/internal/tools.boundTool kind=type
-  digest=b3:ff606363f37b06d0140fc91a46f971eb90e80a99e6c0226ee937871cd7402942 file=neo/internal/tools/tools.go range=187:197 lang=go exported=false byte_range=9976:10250
+  digest=b3:ff606363f37b06d0140fc91a46f971eb90e80a99e6c0226ee937871cd7402942 file=neo/internal/tools/tools.go range=196:206 lang=go exported=false byte_range=10486:10760
   sig=type boundTool struct {\n	funcName	string\n	uri		string\n	alias		string\n	name		string\n	sideEffect	string\n	desc		string\n	params		map[string]interface{}\n	surface		Surface\n}
   doc=boundTool is a manifest tool bound to its canonical URI + advertised schema.
 EDGES
@@ -835,49 +885,49 @@ EDGES
   ^defines=matrix/neo/internal/tools/tools.go
 
 NODE id=matrix/neo/internal/tools.boundTool#alias kind=field
-  digest=b3:1ffdb60e43c082fa7c6ed6f47e7c96b28d21d77aaaaddcb7e9ead6548adbd700 file=neo/internal/tools/tools.go range=191:191 lang=go exported=false byte_range=10119:10136
+  digest=b3:1ffdb60e43c082fa7c6ed6f47e7c96b28d21d77aaaaddcb7e9ead6548adbd700 file=neo/internal/tools/tools.go range=200:200 lang=go exported=false byte_range=10629:10646
   sig=string
 EDGES
   ^contains=matrix/neo/internal/tools.boundTool
 
 NODE id=matrix/neo/internal/tools.boundTool#desc kind=field
-  digest=b3:95e563fd4307cc71d5636f39a970bd69cf3eeaa9e49362c1ec85b193d4cba40c file=neo/internal/tools/tools.go range=194:194 lang=go exported=false byte_range=10176:10193
+  digest=b3:95e563fd4307cc71d5636f39a970bd69cf3eeaa9e49362c1ec85b193d4cba40c file=neo/internal/tools/tools.go range=203:203 lang=go exported=false byte_range=10686:10703
   sig=string
 EDGES
   ^contains=matrix/neo/internal/tools.boundTool
 
 NODE id=matrix/neo/internal/tools.boundTool#funcName kind=field
-  digest=b3:8d0fd359233358501e3b71df68ddafebf6d8ea09b7914e4d6132ea93a7d5a6a2 file=neo/internal/tools/tools.go range=189:189 lang=go exported=false byte_range=10081:10098
+  digest=b3:8d0fd359233358501e3b71df68ddafebf6d8ea09b7914e4d6132ea93a7d5a6a2 file=neo/internal/tools/tools.go range=198:198 lang=go exported=false byte_range=10591:10608
   sig=string
 EDGES
   ^contains=matrix/neo/internal/tools.boundTool
 
 NODE id=matrix/neo/internal/tools.boundTool#name kind=field
-  digest=b3:d213f7186bea3585c2559f18b82f55e7450957f3d3755697b2693a057525de33 file=neo/internal/tools/tools.go range=192:192 lang=go exported=false byte_range=10138:10155
+  digest=b3:d213f7186bea3585c2559f18b82f55e7450957f3d3755697b2693a057525de33 file=neo/internal/tools/tools.go range=201:201 lang=go exported=false byte_range=10648:10665
   sig=string
 EDGES
   ^contains=matrix/neo/internal/tools.boundTool
 
 NODE id=matrix/neo/internal/tools.boundTool#params kind=field
-  digest=b3:695d165113e99796be6fa38e2fe15cd3bff6479b5ae533adcb5839c70c94dcde file=neo/internal/tools/tools.go range=195:195 lang=go exported=false byte_range=10195:10228
+  digest=b3:695d165113e99796be6fa38e2fe15cd3bff6479b5ae533adcb5839c70c94dcde file=neo/internal/tools/tools.go range=204:204 lang=go exported=false byte_range=10705:10738
   sig=map[string]interface{}
 EDGES
   ^contains=matrix/neo/internal/tools.boundTool
 
 NODE id=matrix/neo/internal/tools.boundTool#sideEffect kind=field
-  digest=b3:621a6c7f82cb13474b8fff20329d48c2804079271176c5b0a0a6ac20f8760b46 file=neo/internal/tools/tools.go range=193:193 lang=go exported=false byte_range=10157:10174
+  digest=b3:621a6c7f82cb13474b8fff20329d48c2804079271176c5b0a0a6ac20f8760b46 file=neo/internal/tools/tools.go range=202:202 lang=go exported=false byte_range=10667:10684
   sig=string
 EDGES
   ^contains=matrix/neo/internal/tools.boundTool
 
 NODE id=matrix/neo/internal/tools.boundTool#surface kind=field
-  digest=b3:3db9c2e27a2c4822921984ae7ac9e1311af98d7390ae52caf1ddfa13c3f8287b file=neo/internal/tools/tools.go range=196:196 lang=go exported=false byte_range=10230:10248
+  digest=b3:3db9c2e27a2c4822921984ae7ac9e1311af98d7390ae52caf1ddfa13c3f8287b file=neo/internal/tools/tools.go range=205:205 lang=go exported=false byte_range=10740:10758
   sig=tools.Surface
 EDGES
   ^contains=matrix/neo/internal/tools.boundTool
 
 NODE id=matrix/neo/internal/tools.boundTool#uri kind=field
-  digest=b3:51aac9678936b868cceb5b7d053f3d4c5dba78ae31d70311bb3e4a13e268c999 file=neo/internal/tools/tools.go range=190:190 lang=go exported=false byte_range=10100:10117
+  digest=b3:51aac9678936b868cceb5b7d053f3d4c5dba78ae31d70311bb3e4a13e268c999 file=neo/internal/tools/tools.go range=199:199 lang=go exported=false byte_range=10610:10627
   sig=string
 EDGES
   ^contains=matrix/neo/internal/tools.boundTool
@@ -890,111 +940,123 @@ EDGES
   ^defines=matrix/neo/internal/tools/brief.go
 
 NODE id=matrix/neo/internal/tools.constructRenderSchema kind=func
-  digest=b3:d28bb1d0a612c64d16b325441371806f10875e026eb1b18d16b9ba2301ee4dca file=neo/internal/tools/tools.go range=1150:1156 lang=go exported=false byte_range=51565:51905
+  digest=b3:d28bb1d0a612c64d16b325441371806f10875e026eb1b18d16b9ba2301ee4dca file=neo/internal/tools/tools.go range=1299:1305 lang=go exported=false byte_range=58946:59286
   sig=func constructRenderSchema() llm.Tool
   doc=constructRenderSchema advertises the single agent-facing render tool, whose\ncontract is owned by the construct module (projection.RenderTools), so the\nvocabulary stays single-source.
 EDGES
   ^defines=matrix/neo/internal/tools/tools.go
 
 NODE id=matrix/neo/internal/tools.coreExecuteSchema kind=func
-  digest=b3:91a6c88c9f9a887fc52c3188a04676114a523e0891581b1c80779f80825b8c3e file=neo/internal/tools/tools.go range=967:982 lang=go exported=false byte_range=40034:41307
+  digest=b3:91a6c88c9f9a887fc52c3188a04676114a523e0891581b1c80779f80825b8c3e file=neo/internal/tools/tools.go range=1060:1075 lang=go exported=false byte_range=44390:45663
   sig=func coreExecuteSchema() llm.Tool
 EDGES
   ^defines=matrix/neo/internal/tools/tools.go
 
 NODE id=matrix/neo/internal/tools.funcName kind=func
-  digest=b3:fbd19619308c3aa8cdc3b18a47b642f0ef1f219201e1705ccf3586020ef38d63 file=neo/internal/tools/tools.go range=1158:1160 lang=go exported=false byte_range=51907:51997
+  digest=b3:fbd19619308c3aa8cdc3b18a47b642f0ef1f219201e1705ccf3586020ef38d63 file=neo/internal/tools/tools.go range=1307:1309 lang=go exported=false byte_range=59288:59378
   sig=func funcName(alias, name string) string
 EDGES
   ^defines=matrix/neo/internal/tools/tools.go
 
+NODE id=matrix/neo/internal/tools.isShellMemoryMutation kind=func
+  digest=b3:a03342a989acb9a7c1a1ecf14c9af02bfa7c33e0ed98c984c37479540c73b40f file=neo/internal/tools/tools.go range=687:716 lang=go exported=false byte_range=28474:29475
+  sig=func isShellMemoryMutation(bt *boundTool, args map[string]interface{}) bool
+EDGES
+  ^defines=matrix/neo/internal/tools/tools.go
+
+NODE id=matrix/neo/internal/tools.memoryMutateSchema kind=func
+  digest=b3:3763d0c0f22d20bb75cde40c4e075265198c393684bac30d3ca55030cab0c923 file=neo/internal/tools/tools.go range=1112:1166 lang=go exported=false byte_range=48195:51218
+  sig=func memoryMutateSchema() llm.Tool
+EDGES
+  ^defines=matrix/neo/internal/tools/tools.go
+
 NODE id=matrix/neo/internal/tools.memoryRecallSchema kind=func
-  digest=b3:21f3941bfe4d8650d1bf2cfb085921d7b8765209b16a88ff93343b4b11dc27c6 file=neo/internal/tools/tools.go range=984:1017 lang=go exported=false byte_range=41309:43837
+  digest=b3:21f3941bfe4d8650d1bf2cfb085921d7b8765209b16a88ff93343b4b11dc27c6 file=neo/internal/tools/tools.go range=1077:1110 lang=go exported=false byte_range=45665:48193
   sig=func memoryRecallSchema() llm.Tool
 EDGES
   ^defines=matrix/neo/internal/tools/tools.go
 
 NODE id=matrix/neo/internal/tools.normalizeTodoStatus kind=func
-  digest=b3:ca9a61bef20175c21d30ef6421a23169e8037d67f2983682c7af758637f37df2 file=neo/internal/tools/tools.go range=734:745 lang=go exported=false byte_range=30121:30598
+  digest=b3:ca9a61bef20175c21d30ef6421a23169e8037d67f2983682c7af758637f37df2 file=neo/internal/tools/tools.go range=821:832 lang=go exported=false byte_range=34156:34633
   sig=func normalizeTodoStatus(s string) TodoStatus
   doc=normalizeTodoStatus maps the loose status strings models emit onto the three\ncanonical statuses, defaulting to pending for anything unrecognized.
 EDGES
   ^defines=matrix/neo/internal/tools/tools.go
 
 NODE id=matrix/neo/internal/tools.parseSubagentSpecs kind=func
-  digest=b3:fb7007a8faa0b8840ff974973815591b5842f8d1cfb0f0eced1d3511e6e38ddc file=neo/internal/tools/tools.go range=578:607 lang=go exported=false byte_range=24012:24823
+  digest=b3:fb7007a8faa0b8840ff974973815591b5842f8d1cfb0f0eced1d3511e6e38ddc file=neo/internal/tools/tools.go range=604:633 lang=go exported=false byte_range=26000:26811
   sig=func parseSubagentSpecs(args map[string]interface{}) []SubagentSpec
   doc=parseSubagentSpecs reads the model's spawn_subagents arguments into specs,\ntolerating the loose JSON shapes models emit (objects vs. maps, missing\nfields). An entry with no task is dropped.
 EDGES
   ^defines=matrix/neo/internal/tools/tools.go
 
 NODE id=matrix/neo/internal/tools.parseTodoItems kind=func
-  digest=b3:bdc4e33aa035e5bca9f791509f52bf40850de6eb50d6a4a96221689dd93e6797 file=neo/internal/tools/tools.go range=698:732 lang=go exported=false byte_range=29039:30119
+  digest=b3:bdc4e33aa035e5bca9f791509f52bf40850de6eb50d6a4a96221689dd93e6797 file=neo/internal/tools/tools.go range=785:819 lang=go exported=false byte_range=33074:34154
   sig=func parseTodoItems(args map[string]interface{}) []TodoItem
   doc=parseTodoItems reads the model's todo arguments into an ordered item list,\ntolerating the loose JSON shapes models emit (text under text/title/content/\nstep, status synonyms). An entry with no text is dropped. Order is preserved.
 EDGES
   ^defines=matrix/neo/internal/tools/tools.go
 
 NODE id=matrix/neo/internal/tools.previewSchema kind=func
-  digest=b3:138936c279b06b4db67ab7b3fc4dab4ecf5a28142b7742b6b47584089a878e22 file=neo/internal/tools/tools.go range=1100:1113 lang=go exported=false byte_range=48448:49464
+  digest=b3:138936c279b06b4db67ab7b3fc4dab4ecf5a28142b7742b6b47584089a878e22 file=neo/internal/tools/tools.go range=1249:1262 lang=go exported=false byte_range=55829:56845
   sig=func previewSchema() llm.Tool
   doc=previewSchema advertises the workbench preview launcher (NEO-WORKBENCH\nreq 7): fire-and-forget — provisioning is asynchronous and the user watches\nthe Preview pane, so the model calls it once when the project is runnable\nand moves on.
 EDGES
   ^defines=matrix/neo/internal/tools/tools.go
 
 NODE id=matrix/neo/internal/tools.resolveHeaderEnv kind=func
-  digest=b3:6ca8bea58e4ad566dc9f3b1ddb66a0141709736c7de71c5d43b532c16224e535 file=neo/internal/tools/tools.go range=1230:1240 lang=go exported=false byte_range=53628:53878
+  digest=b3:6ca8bea58e4ad566dc9f3b1ddb66a0141709736c7de71c5d43b532c16224e535 file=neo/internal/tools/tools.go range=1379:1389 lang=go exported=false byte_range=61009:61259
   sig=func resolveHeaderEnv(in map[string]string) map[string]string
 EDGES
   ^defines=matrix/neo/internal/tools/tools.go
 
 NODE id=matrix/neo/internal/tools.sanitizeFuncName kind=func
-  digest=b3:c247c3a289058c02089040d7f259a8eac0d41abdea5bcea79b841c3d9106b281 file=neo/internal/tools/tools.go range=1162:1179 lang=go exported=false byte_range=51999:52436
+  digest=b3:c247c3a289058c02089040d7f259a8eac0d41abdea5bcea79b841c3d9106b281 file=neo/internal/tools/tools.go range=1311:1328 lang=go exported=false byte_range=59380:59817
   sig=func sanitizeFuncName(s string) string
   doc=sanitizeFuncName coerces an "<alias>__<tool>" id into the OpenAI function\nname charset (^[A-Za-z0-9_-]{1,64}$).
 EDGES
   ^defines=matrix/neo/internal/tools/tools.go
 
 NODE id=matrix/neo/internal/tools.schemaToParams kind=func
-  digest=b3:124a88df4e090b224650e833b420e690d83ebc353ffc8ef98263daabe5ccde2a file=neo/internal/tools/tools.go range=1181:1197 lang=go exported=false byte_range=52438:52893
+  digest=b3:124a88df4e090b224650e833b420e690d83ebc353ffc8ef98263daabe5ccde2a file=neo/internal/tools/tools.go range=1330:1346 lang=go exported=false byte_range=59819:60274
   sig=func schemaToParams(raw json.RawMessage) map[string]interface{}
 EDGES
   ^defines=matrix/neo/internal/tools/tools.go
 
 NODE id=matrix/neo/internal/tools.spawnSubagentsSchema kind=func
-  digest=b3:f5eeb7c7119f23ceb89b6b3a6fc28a0717ff2e84a3ba695b25bb7a409d09583e file=neo/internal/tools/tools.go range=1115:1148 lang=go exported=false byte_range=49466:51563
+  digest=b3:f5eeb7c7119f23ceb89b6b3a6fc28a0717ff2e84a3ba695b25bb7a409d09583e file=neo/internal/tools/tools.go range=1264:1297 lang=go exported=false byte_range=56847:58944
   sig=func spawnSubagentsSchema() llm.Tool
 EDGES
   ^defines=matrix/neo/internal/tools/tools.go
 
 NODE id=matrix/neo/internal/tools.summarizeNonText kind=func
-  digest=b3:94ca52bcbd74f66228816ed6efcc28c2ad24d6c59a8930a76b3edb602d2c9f0e file=neo/internal/tools/tools.go range=1199:1220 lang=go exported=false byte_range=52895:53468
+  digest=b3:94ca52bcbd74f66228816ed6efcc28c2ad24d6c59a8930a76b3edb602d2c9f0e file=neo/internal/tools/tools.go range=1348:1369 lang=go exported=false byte_range=60276:60849
   sig=func summarizeNonText(res *tool.Result) string
 EDGES
   ^defines=matrix/neo/internal/tools/tools.go
 
 NODE id=matrix/neo/internal/tools.summarizeTodo kind=func
-  digest=b3:e08d9087eea6a1aeda8f63a43f279d8ce78b9b8b1c7151af947b448ff7a97d52 file=neo/internal/tools/tools.go range=747:763 lang=go exported=false byte_range=30600:31150
+  digest=b3:e08d9087eea6a1aeda8f63a43f279d8ce78b9b8b1c7151af947b448ff7a97d52 file=neo/internal/tools/tools.go range=834:850 lang=go exported=false byte_range=34635:35185
   sig=func summarizeTodo(items []TodoItem) string
   doc=summarizeTodo renders a short, plain-language acknowledgment of the recorded\nlist for the model's tool result (the user sees the rich live checklist; this\nis the in-transcript echo).
 EDGES
   ^defines=matrix/neo/internal/tools/tools.go
 
 NODE id=matrix/neo/internal/tools.todoSchema kind=func
-  digest=b3:2af6f4221446a8a00547dadd356427ce34f47789bbf1975e19766574173d949e file=neo/internal/tools/tools.go range=1065:1098 lang=go exported=false byte_range=46638:48446
+  digest=b3:2af6f4221446a8a00547dadd356427ce34f47789bbf1975e19766574173d949e file=neo/internal/tools/tools.go range=1214:1247 lang=go exported=false byte_range=54019:55827
   sig=func todoSchema() llm.Tool
   doc=todoSchema advertises the live task-list tool (neo-smoothness req.3). The\nmodel lays out an ordered, multi-step plan and keeps it updated as it works;\nthe user sees it as a checklist that ticks off in real time.
 EDGES
   ^defines=matrix/neo/internal/tools/tools.go
 
 NODE id=matrix/neo/internal/tools.toolNames kind=func
-  digest=b3:ce8e4c10b3d747f4a4947ac622bc03690fabe3ff123f72f633ba9259b9b2cc13 file=neo/internal/tools/tools.go range=1222:1228 lang=go exported=false byte_range=53470:53626
+  digest=b3:ce8e4c10b3d747f4a4947ac622bc03690fabe3ff123f72f633ba9259b9b2cc13 file=neo/internal/tools/tools.go range=1371:1377 lang=go exported=false byte_range=60851:61007
   sig=func toolNames(list []tool.ToolEntry) []string
 EDGES
   ^defines=matrix/neo/internal/tools/tools.go
 
 NODE id=matrix/neo/internal/tools.writeSkillSchema kind=func
-  digest=b3:e5dcb29fa1875884e5ba0a59c40fba19b1612f711586cb0b322e0b66c6b77fb0 file=neo/internal/tools/tools.go range=1019:1063 lang=go exported=false byte_range=43839:46636
+  digest=b3:e5dcb29fa1875884e5ba0a59c40fba19b1612f711586cb0b322e0b66c6b77fb0 file=neo/internal/tools/tools.go range=1168:1212 lang=go exported=false byte_range=51220:54017
   sig=func writeSkillSchema() llm.Tool
   doc=writeSkillSchema advertises the P2-2 skill-writing tool. The agent authors a\nstructured PatternSpec after a proven task; this tool validates it and\npersists it as a cortex Pattern (the synthesis loop). The spec mirrors\nPatternSpec exactly (name, trigger, preconditions, steps, gotchas,\nsuccess_criteria).
 EDGES
@@ -1025,7 +1087,7 @@ EDGES
   ^contains=matrix/neo/internal/tools
 
 NODE id=matrix/neo/internal/tools/tools.go kind=file
-  digest=b3:4e2679dc656b742c442277d0a31be26d17c07e2dc9bf29e26f25d0671efa5567 file=neo/internal/tools/tools.go range=1:1240 lang=go exported=true
+  digest=b3:42018c6518082c4df2827e39c689c2630ce4f30d64c14b9f36d71dc1a90a40e3 file=neo/internal/tools/tools.go range=1:1389 lang=go exported=true
 EDGES
-  defines=matrix/neo/internal/tools.AskFunc,matrix/neo/internal/tools.ConstructRenderTool,matrix/neo/internal/tools.CoreExecuteTool,matrix/neo/internal/tools.DelegateFunc,matrix/neo/internal/tools.Manager,matrix/neo/internal/tools.Manager.CaptureViewport,matrix/neo/internal/tools.Manager.Close,matrix/neo/internal/tools.Manager.Dispatch,matrix/neo/internal/tools.Manager.DispatchMedia,matrix/neo/internal/tools.Manager.EscalateToolNames,matrix/neo/internal/tools.Manager.MediaPersistEnabled,matrix/neo/internal/tools.Manager.NaturalToolNames,matrix/neo/internal/tools.Manager.PreviewEnabled,matrix/neo/internal/tools.Manager.RecallEnabled,matrix/neo/internal/tools.Manager.Schemas,matrix/neo/internal/tools.Manager.SetAskResponder,matrix/neo/internal/tools.Manager.SetDelegate,matrix/neo/internal/tools.Manager.SetMediaPersist,matrix/neo/internal/tools.Manager.SetPreview,matrix/neo/internal/tools.Manager.SetRecall,matrix/neo/internal/tools.Manager.SetSurfaceEmitter,matrix/neo/internal/tools.Manager.SetSwarm,matrix/neo/internal/tools.Manager.SetTodo,matrix/neo/internal/tools.Manager.SetWriteSkill,matrix/neo/internal/tools.Manager.SpawnEnabled,matrix/neo/internal/tools.Manager.SubagentSchemas,matrix/neo/internal/tools.Manager.SurfaceEnabled,matrix/neo/internal/tools.Manager.TodoEnabled,matrix/neo/internal/tools.Manager.Warnings,matrix/neo/internal/tools.Manager.WriteSkillEnabled,matrix/neo/internal/tools.Manager.bind,matrix/neo/internal/tools.Manager.dispatch,matrix/neo/internal/tools.Manager.dispatchAsk,matrix/neo/internal/tools.Manager.dispatchConstructRender,matrix/neo/internal/tools.Manager.dispatchCoreExecute,matrix/neo/internal/tools.Manager.dispatchMemoryRecall,matrix/neo/internal/tools.Manager.dispatchPreview,matrix/neo/internal/tools.Manager.dispatchSpawnSubagents,matrix/neo/internal/tools.Manager.dispatchTodo,matrix/neo/internal/tools.Manager.dispatchWriteSkill,matrix/neo/internal/tools.Manager.persistFirstImage,matrix/neo/internal/tools.MediaPersistFunc,matrix/neo/internal/tools.MemoryRecallTool,matrix/neo/internal/tools.Options,matrix/neo/internal/tools.ParseTodoItems,matrix/neo/internal/tools.PreviewFunc,matrix/neo/internal/tools.PreviewTool,matrix/neo/internal/tools.RecallFunc,matrix/neo/internal/tools.Spawn,matrix/neo/internal/tools.SpawnSubagentsTool,matrix/neo/internal/tools.SubagentSpec,matrix/neo/internal/tools.SurfaceFunc,matrix/neo/internal/tools.SwarmFunc,matrix/neo/internal/tools.TodoDone,matrix/neo/internal/tools.TodoFunc,matrix/neo/internal/tools.TodoInProgress,matrix/neo/internal/tools.TodoItem,matrix/neo/internal/tools.TodoPending,matrix/neo/internal/tools.TodoStatus,matrix/neo/internal/tools.TodoTool,matrix/neo/internal/tools.WriteSkillFunc,matrix/neo/internal/tools.WriteSkillTool,matrix/neo/internal/tools.asInt,matrix/neo/internal/tools.asString,matrix/neo/internal/tools.asStringSlice,matrix/neo/internal/tools.asTime,matrix/neo/internal/tools.boundTool,matrix/neo/internal/tools.constructRenderSchema,matrix/neo/internal/tools.coreExecuteSchema,matrix/neo/internal/tools.funcName,matrix/neo/internal/tools.memoryRecallSchema,matrix/neo/internal/tools.normalizeTodoStatus,matrix/neo/internal/tools.parseSubagentSpecs,matrix/neo/internal/tools.parseTodoItems,matrix/neo/internal/tools.previewSchema,matrix/neo/internal/tools.resolveHeaderEnv,matrix/neo/internal/tools.sanitizeFuncName,matrix/neo/internal/tools.schemaToParams,matrix/neo/internal/tools.spawnSubagentsSchema,matrix/neo/internal/tools.summarizeNonText,matrix/neo/internal/tools.summarizeTodo,matrix/neo/internal/tools.todoSchema,matrix/neo/internal/tools.toolNames,matrix/neo/internal/tools.writeSkillSchema
+  defines=matrix/neo/internal/tools.AskFunc,matrix/neo/internal/tools.ConstructRenderTool,matrix/neo/internal/tools.CoreExecuteTool,matrix/neo/internal/tools.DelegateFunc,matrix/neo/internal/tools.Manager,matrix/neo/internal/tools.Manager.CaptureViewport,matrix/neo/internal/tools.Manager.Close,matrix/neo/internal/tools.Manager.Dispatch,matrix/neo/internal/tools.Manager.DispatchMedia,matrix/neo/internal/tools.Manager.DispatchMediaClassified,matrix/neo/internal/tools.Manager.EscalateToolNames,matrix/neo/internal/tools.Manager.MediaPersistEnabled,matrix/neo/internal/tools.Manager.MemoryMutationEnabled,matrix/neo/internal/tools.Manager.NaturalToolNames,matrix/neo/internal/tools.Manager.PreviewEnabled,matrix/neo/internal/tools.Manager.RecallEnabled,matrix/neo/internal/tools.Manager.Schemas,matrix/neo/internal/tools.Manager.SetAskResponder,matrix/neo/internal/tools.Manager.SetDelegate,matrix/neo/internal/tools.Manager.SetMediaPersist,matrix/neo/internal/tools.Manager.SetMemoryMutation,matrix/neo/internal/tools.Manager.SetPreview,matrix/neo/internal/tools.Manager.SetRecall,matrix/neo/internal/tools.Manager.SetSurfaceEmitter,matrix/neo/internal/tools.Manager.SetSwarm,matrix/neo/internal/tools.Manager.SetTodo,matrix/neo/internal/tools.Manager.SetWriteSkill,matrix/neo/internal/tools.Manager.SpawnEnabled,matrix/neo/internal/tools.Manager.SubagentSchemas,matrix/neo/internal/tools.Manager.SurfaceEnabled,matrix/neo/internal/tools.Manager.TodoEnabled,matrix/neo/internal/tools.Manager.Warnings,matrix/neo/internal/tools.Manager.WriteSkillEnabled,matrix/neo/internal/tools.Manager.bind,matrix/neo/internal/tools.Manager.dispatch,matrix/neo/internal/tools.Manager.dispatchAsk,matrix/neo/internal/tools.Manager.dispatchConstructRender,matrix/neo/internal/tools.Manager.dispatchCoreExecute,matrix/neo/internal/tools.Manager.dispatchMemoryMutation,matrix/neo/internal/tools.Manager.dispatchMemoryRecall,matrix/neo/internal/tools.Manager.dispatchPreview,matrix/neo/internal/tools.Manager.dispatchSpawnSubagents,matrix/neo/internal/tools.Manager.dispatchTodo,matrix/neo/internal/tools.Manager.dispatchWriteSkill,matrix/neo/internal/tools.Manager.persistFirstImage,matrix/neo/internal/tools.MediaPersistFunc,matrix/neo/internal/tools.MemoryMutateTool,matrix/neo/internal/tools.MemoryMutationFunc,matrix/neo/internal/tools.MemoryRecallTool,matrix/neo/internal/tools.Options,matrix/neo/internal/tools.ParseTodoItems,matrix/neo/internal/tools.PreviewFunc,matrix/neo/internal/tools.PreviewTool,matrix/neo/internal/tools.RecallFunc,matrix/neo/internal/tools.Spawn,matrix/neo/internal/tools.SpawnSubagentsTool,matrix/neo/internal/tools.SubagentSpec,matrix/neo/internal/tools.SurfaceFunc,matrix/neo/internal/tools.SwarmFunc,matrix/neo/internal/tools.TodoDone,matrix/neo/internal/tools.TodoFunc,matrix/neo/internal/tools.TodoInProgress,matrix/neo/internal/tools.TodoItem,matrix/neo/internal/tools.TodoPending,matrix/neo/internal/tools.TodoStatus,matrix/neo/internal/tools.TodoTool,matrix/neo/internal/tools.WriteSkillFunc,matrix/neo/internal/tools.WriteSkillTool,matrix/neo/internal/tools.asInt,matrix/neo/internal/tools.asString,matrix/neo/internal/tools.asStringSlice,matrix/neo/internal/tools.asTime,matrix/neo/internal/tools.boundTool,matrix/neo/internal/tools.constructRenderSchema,matrix/neo/internal/tools.coreExecuteSchema,matrix/neo/internal/tools.funcName,matrix/neo/internal/tools.isShellMemoryMutation,matrix/neo/internal/tools.memoryMutateSchema,matrix/neo/internal/tools.memoryRecallSchema,matrix/neo/internal/tools.normalizeTodoStatus,matrix/neo/internal/tools.parseSubagentSpecs,matrix/neo/internal/tools.parseTodoItems,matrix/neo/internal/tools.previewSchema,matrix/neo/internal/tools.resolveHeaderEnv,matrix/neo/internal/tools.sanitizeFuncName,matrix/neo/internal/tools.schemaToParams,matrix/neo/internal/tools.spawnSubagentsSchema,matrix/neo/internal/tools.summarizeNonText,matrix/neo/internal/tools.summarizeTodo,matrix/neo/internal/tools.todoSchema,matrix/neo/internal/tools.toolNames,matrix/neo/internal/tools.writeSkillSchema
   ^contains=matrix/neo/internal/tools

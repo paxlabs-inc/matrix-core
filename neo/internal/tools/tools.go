@@ -44,6 +44,11 @@ const CoreExecuteTool = "core_execute"
 // query, type filter, and optional as-of instant — instead of being force-fed.
 const MemoryRecallTool = "memory_recall"
 
+// MemoryMutateTool is the bounded typed write surface for user-directed
+// memory create, update, supersede, and delete operations. It replaces shell
+// or curl discovery of internal memory endpoints.
+const MemoryMutateTool = "memory_mutate"
+
 // SpawnSubagentsTool is the synthetic function Neo exposes to fan a task out
 // to several task-scoped sub-agents that run CONCURRENTLY, each in its own
 // isolated context window, and to collect their distilled results. It is a
@@ -148,6 +153,10 @@ type PreviewFunc func(ctx context.Context) (string, error)
 // memory_recall is not advertised at all.
 type RecallFunc func(ctx context.Context, query string, types []string, k int, asOf *time.Time) (string, error)
 
+// MemoryMutationFunc executes a bounded batch of typed memory mutations.
+// Internal Cortex identifiers are never requested by the model-facing tool.
+type MemoryMutationFunc func(ctx context.Context, req memory.MutationRequest) (memory.MutationBatchResult, error)
+
 // SubagentSpec describes one task-scoped sub-agent the model wants to spawn:
 // a short human name, a persona/role framing, and the self-contained task it
 // should carry out. Mirrors the model-facing spawn_subagents schema.
@@ -204,6 +213,7 @@ type Manager struct {
 	classifier *Classifier
 	delegate   DelegateFunc
 	recall     RecallFunc
+	mutation   MemoryMutationFunc
 	swarm      SwarmFunc
 	surface    SurfaceFunc
 	ask        AskFunc
@@ -372,6 +382,9 @@ func (m *Manager) Schemas() []llm.Tool {
 	if m.recall != nil {
 		out = append(out, memoryRecallSchema())
 	}
+	if m.mutation != nil {
+		out = append(out, memoryMutateSchema())
+	}
 	if m.swarm != nil {
 		out = append(out, spawnSubagentsSchema())
 	}
@@ -412,7 +425,7 @@ func (m *Manager) SubagentSchemas() []llm.Tool {
 // (message, true, nil) so the model reads and corrects rather than the harness
 // retrying a doomed call.
 func (m *Manager) Dispatch(ctx context.Context, funcName string, args map[string]interface{}) (string, bool, error) {
-	content, _, isErr, err := m.dispatch(ctx, funcName, args)
+	content, _, isErr, _, _, _, err := m.dispatch(ctx, funcName, args)
 	return content, isErr, err
 }
 
@@ -423,50 +436,63 @@ func (m *Manager) Dispatch(ctx context.Context, funcName string, args map[string
 // screenshot never pollutes the transcript (BROWSER-FILMSTRIP req.2). shotURL is
 // "" when the tool produced no image or no media sink is wired.
 func (m *Manager) DispatchMedia(ctx context.Context, funcName string, args map[string]interface{}) (content, shotURL string, isErr bool, err error) {
+	content, shotURL, isErr, _, _, _, err = m.dispatch(ctx, funcName, args)
+	return
+}
+
+// DispatchMediaClassified is DispatchMedia plus the semantic failure layer and
+// concise model-facing failure text. content always remains the raw evidence.
+func (m *Manager) DispatchMediaClassified(ctx context.Context, funcName string, args map[string]interface{}) (content, shotURL string, isErr bool, failureClass tool.FailureClass, retryable bool, failureMessage string, err error) {
 	return m.dispatch(ctx, funcName, args)
 }
 
-func (m *Manager) dispatch(ctx context.Context, funcName string, args map[string]interface{}) (content, shotURL string, isErr bool, err error) {
+func (m *Manager) dispatch(ctx context.Context, funcName string, args map[string]interface{}) (content, shotURL string, isErr bool, failureClass tool.FailureClass, retryable bool, failureMessage string, err error) {
 	switch funcName {
 	case CoreExecuteTool:
 		c, e, er := m.dispatchCoreExecute(ctx, args)
-		return c, "", e, er
+		return c, "", e, tool.FailureNone, false, "", er
 	case MemoryRecallTool:
 		c, e, er := m.dispatchMemoryRecall(ctx, args)
-		return c, "", e, er
+		return c, "", e, tool.FailureNone, false, "", er
+	case MemoryMutateTool:
+		c, e, er := m.dispatchMemoryMutation(ctx, args)
+		return c, "", e, tool.FailureNone, false, "", er
 	case SpawnSubagentsTool:
 		c, e, er := m.dispatchSpawnSubagents(ctx, args)
-		return c, "", e, er
+		return c, "", e, tool.FailureNone, false, "", er
 	case ConstructRenderTool:
 		c, e, er := m.dispatchConstructRender(ctx, args)
-		return c, "", e, er
+		return c, "", e, tool.FailureNone, false, "", er
 	case WriteSkillTool:
 		c, e, er := m.dispatchWriteSkill(ctx, args)
-		return c, "", e, er
+		return c, "", e, tool.FailureNone, false, "", er
 	case TodoTool:
 		c, e, er := m.dispatchTodo(ctx, args)
-		return c, "", e, er
+		return c, "", e, tool.FailureNone, false, "", er
 	case PreviewTool:
 		c, e, er := m.dispatchPreview(ctx)
-		return c, "", e, er
+		return c, "", e, tool.FailureNone, false, "", er
 	case SavePersonalizationTool:
 		c, e, er := m.dispatchPersonalizationSave(ctx, args)
-		return c, "", e, er
+		return c, "", e, tool.FailureNone, false, "", er
 	}
 	bt, ok := m.byFunc[funcName]
 	if !ok {
-		return fmt.Sprintf("unknown tool %q — it is not available in this session", funcName), "", true, nil
+		return fmt.Sprintf("unknown tool %q — it is not available in this session", funcName), "", true, tool.FailureInvocation, false, "", nil
 	}
 	if bt.surface == Escalate {
-		return fmt.Sprintf("%q moves funds or needs a wallet signature and cannot be called directly; use %q with a clear description of the task so it runs through the secure path under the user's authorization (their inline approval, or a pre-authorized wallet leash).", funcName, CoreExecuteTool), "", true, nil
+		return fmt.Sprintf("%q moves funds or needs a wallet signature and cannot be called directly; use %q with a clear description of the task so it runs through the secure path under the user's authorization (their inline approval, or a pre-authorized wallet leash).", funcName, CoreExecuteTool), "", true, tool.FailureInvocation, false, "", nil
+	}
+	if m.mutation != nil && isShellMemoryMutation(bt, args) {
+		return "memory mutation through shell, curl, or cortex-shell is unavailable; use memory_mutate with an explicit typed operation and bounded target instead", "", true, tool.FailureInvocation, false, "", nil
 	}
 	t, err := m.registry.Get(bt.uri)
 	if err != nil {
-		return fmt.Sprintf("tool %q is unavailable: %v", funcName, err), "", true, nil
+		return fmt.Sprintf("tool %q is unavailable: %v", funcName, err), "", true, tool.FailureClassOf(err), false, "", nil
 	}
 	res, err := t.Call(ctx, args)
 	if err != nil {
-		return "", "", true, err
+		return "", "", true, tool.FailureClassOf(err), false, "", err
 	}
 	text := tool.ExtractText(res)
 	// Persist any image content block out-of-band (req.2): the /media URL rides
@@ -476,7 +502,7 @@ func (m *Manager) dispatch(ctx context.Context, funcName string, args map[string
 	if text == "" {
 		text = summarizeNonText(res)
 	}
-	return text, shotURL, res.IsError, nil
+	return text, shotURL, res.IsError, res.FailureClass, res.Retryable, res.FailureMessage, nil
 }
 
 // persistFirstImage writes the first image content block in a tool result to the
@@ -626,6 +652,67 @@ func (m *Manager) dispatchMemoryRecall(ctx context.Context, args map[string]inte
 		return fmt.Sprintf("memory lookup failed: %v", err), true, nil
 	}
 	return out, false, nil
+}
+
+func (m *Manager) dispatchMemoryMutation(ctx context.Context, args map[string]interface{}) (string, bool, error) {
+	if m.mutation == nil {
+		return "the typed memory mutation surface is not connected in this session.", true, nil
+	}
+	raw, err := json.Marshal(args)
+	if err != nil {
+		return "memory_mutate received invalid arguments.", true, nil
+	}
+	var req memory.MutationRequest
+	if err := json.Unmarshal(raw, &req); err != nil {
+		return fmt.Sprintf("memory_mutate arguments are invalid: %v", err), true, nil
+	}
+	// Model-facing confirmations never expose internal Cortex identifiers.
+	req.IncludeInternalIDs = false
+	result, err := m.mutation(ctx, req)
+	if err != nil {
+		return fmt.Sprintf("memory mutation failed: %v", err), true, nil
+	}
+	lines := make([]string, 0, len(result.Results))
+	for _, item := range result.Results {
+		if text := strings.TrimSpace(item.Description); text != "" {
+			lines = append(lines, text)
+		}
+	}
+	if len(lines) == 0 {
+		return "Memory updated.", false, nil
+	}
+	return strings.Join(lines, " "), false, nil
+}
+
+func isShellMemoryMutation(bt *boundTool, args map[string]interface{}) bool {
+	if bt == nil {
+		return false
+	}
+	toolName := strings.ToLower(bt.funcName + " " + bt.name)
+	if !strings.Contains(toolName, "shell") && !strings.Contains(toolName, "exec") && !strings.Contains(toolName, "terminal") {
+		return false
+	}
+	raw, err := json.Marshal(args)
+	if err != nil {
+		return false
+	}
+	command := strings.ToLower(string(raw))
+	if strings.Contains(command, "cortex-shell") {
+		for _, verb := range []string{" write", " update", " tombstone", " add-edge", " remove-edge"} {
+			if strings.Contains(command, verb) {
+				return true
+			}
+		}
+	}
+	if !strings.Contains(command, "/memory/") && !strings.Contains(command, "/memory\"") {
+		return false
+	}
+	for _, marker := range []string{"-x post", "-x put", "-x patch", "-x delete", "--request post", "--request put", "--request patch", "--request delete", " curl ", "-d ", "--data"} {
+		if strings.Contains(command, marker) {
+			return true
+		}
+	}
+	return false
 }
 
 // dispatchWriteSkill is the P2-2 skill-writing handler: it parses the model's
@@ -858,6 +945,12 @@ func (m *Manager) SetSwarm(s SwarmFunc, maxAgents int) {
 // and tool manager are built independently).
 func (m *Manager) SetRecall(r RecallFunc) { m.recall = r }
 
+// SetMemoryMutation wires the typed user-memory mutation surface. When wired,
+// the manager also rejects shell-based memory writes before MCP dispatch.
+func (m *Manager) SetMemoryMutation(f MemoryMutationFunc) { m.mutation = f }
+
+func (m *Manager) MemoryMutationEnabled() bool { return m != nil && m.mutation != nil }
+
 // SetMediaPersist wires the media-plane sink for tool-produced images after
 // construction (the engine owns the served media dir). nil leaves image bytes
 // summarized to a placeholder as before (no persistence, no filmstrip).
@@ -1012,6 +1105,62 @@ func memoryRecallSchema() llm.Tool {
 					"description": "Optional point in time (RFC3339, e.g. \"2026-01-15T00:00:00Z\", or a date \"2026-01-15\") to ask what was true THEN — memories superseded or expired after that instant are excluded. Omit to read the current truth.",
 				},
 			},
+		},
+	)
+}
+
+func memoryMutateSchema() llm.Tool {
+	value := map[string]interface{}{
+		"type": "object",
+		"properties": map[string]interface{}{
+			"type": map[string]interface{}{
+				"type": "string", "enum": []string{"fact", "preference", "belief", "goal", "constraint"},
+				"description": "Required for create; otherwise it must match the target type.",
+			},
+			"content": map[string]interface{}{
+				"type": "string", "description": "The new fact/belief/goal/constraint statement, or preference topic.",
+			},
+			"subject":   map[string]interface{}{"type": "string", "description": "Optional fact/belief subject override."},
+			"predicate": map[string]interface{}{"type": "string", "description": "Optional fact predicate override."},
+			"polarity":  map[string]interface{}{"type": "string", "description": "Optional preference or constraint polarity."},
+			"strength":  map[string]interface{}{"type": "number", "minimum": 0, "maximum": 1},
+			"rationale": map[string]interface{}{"type": "string"},
+		},
+		"required": []interface{}{"content"},
+	}
+	target := map[string]interface{}{
+		"type": "object",
+		"properties": map[string]interface{}{
+			"uri":   map[string]interface{}{"type": "string", "description": "Exact Cortex URI when already known."},
+			"query": map[string]interface{}{"type": "string", "description": "A narrow semantic description of the one current memory to change."},
+			"types": map[string]interface{}{
+				"type": "array", "items": map[string]interface{}{"type": "string", "enum": []string{"fact", "preference", "belief", "goal", "constraint"}},
+				"description": "Optional semantic-target type filter.",
+			},
+		},
+	}
+	return llm.NewFunctionTool(
+		MemoryMutateTool,
+		"Create, update, replace, or delete durable user memory through one bounded typed operation. Use supersede for corrections: it atomically writes the replacement, records provenance, and makes the old value historical-only. Pass several items to correct several facts in one call. For update/supersede/delete, identify exactly one current record by URI or a narrow semantic target; ambiguous targets fail instead of being guessed. Never use shell, curl, or internal API discovery for memory mutation.",
+		map[string]interface{}{
+			"type": "object",
+			"properties": map[string]interface{}{
+				"items": map[string]interface{}{
+					"type": "array", "minItems": 1, "maxItems": 20,
+					"items": map[string]interface{}{
+						"type": "object",
+						"properties": map[string]interface{}{
+							"operation":       map[string]interface{}{"type": "string", "enum": []string{"create", "update", "supersede", "delete"}},
+							"target":          target,
+							"replacement_uri": map[string]interface{}{"type": "string", "description": "Optional distinct existing record to update as the superseding replacement."},
+							"value":           value,
+							"reason":          map[string]interface{}{"type": "string"},
+						},
+						"required": []interface{}{"operation"},
+					},
+				},
+			},
+			"required": []interface{}{"items"},
 		},
 	)
 }

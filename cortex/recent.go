@@ -142,7 +142,7 @@ func (c *Cortex) RecentEpisodes(n int, now time.Time) ([]Episode, error) {
 				}
 				return nil, rerr
 			}
-			if mem.Head.Tombstoned != nil {
+			if current, _ := memory.CurrentTruthAt(&mem.Head, &mem.Version, now); !current {
 				continue
 			}
 

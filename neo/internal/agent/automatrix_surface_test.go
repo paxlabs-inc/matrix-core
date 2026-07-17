@@ -89,7 +89,7 @@ func TestRestrictedDispatchRejectsUnadvertisedTool(t *testing.T) {
 	if advertises(auto, tools.ConstructRenderTool) {
 		t.Fatalf("precondition: restricted surface must not advertise %q", tools.ConstructRenderTool)
 	}
-	content, _, isErr, class := auto.dispatchWithRetry(t.Context(), tools.ConstructRenderTool, map[string]interface{}{})
+	content, _, _, isErr, class, _ := auto.dispatchWithRetry(t.Context(), tools.ConstructRenderTool, map[string]interface{}{})
 	if !isErr {
 		t.Fatalf("unadvertised tool dispatch must be an in-band error, got content %q", content)
 	}

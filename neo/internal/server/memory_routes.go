@@ -76,6 +76,31 @@ func (s *Server) handleMemorySearch(w http.ResponseWriter, r *http.Request) {
 	s.writeTimeline(w, spec)
 }
 
+func (s *Server) handleMemoryMutate(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		w.Header().Set("Allow", http.MethodPost)
+		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "method not allowed"})
+		return
+	}
+	if s.engine == nil || s.engine.pager == nil {
+		writeJSON(w, http.StatusServiceUnavailable, map[string]string{"error": "memory not available"})
+		return
+	}
+	var req neomemory.MutationRequest
+	dec := json.NewDecoder(http.MaxBytesReader(w, r.Body, 1<<20))
+	dec.DisallowUnknownFields()
+	if err := dec.Decode(&req); err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "decode: " + err.Error()})
+		return
+	}
+	result, err := s.engine.pager.Mutate(r.Context(), req)
+	if err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": err.Error()})
+		return
+	}
+	writeJSON(w, http.StatusOK, result)
+}
+
 func (s *Server) writeTimeline(w http.ResponseWriter, spec neomemory.TimelineQuery) {
 	if s.engine == nil || s.engine.pager == nil {
 		writeJSON(w, http.StatusServiceUnavailable, map[string]string{"error": "memory not available"})

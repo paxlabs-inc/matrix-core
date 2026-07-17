@@ -11,6 +11,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -27,7 +28,7 @@ const (
 	schemaTranscriptV1 = "event.v1"
 )
 
-// transcript writes JSONL events to a file + mirrors to stderr for live
+// transcript writes JSONL events to a file + mirrors redacted structured logs
 // human observation. Implements runtime.EventSink so it can plug
 // straight into the walker.
 //
@@ -44,8 +45,9 @@ type transcript struct {
 	enc *json.Encoder
 	out io.WriteCloser
 
-	mirror io.Writer
-	seq    uint64
+	mirror      io.Writer
+	errorMirror io.Writer
+	seq         uint64
 
 	// Optional live tap. When set, every Event is also published to the
 	// SSE broker for live web-client streaming. nil in CLI mode.
@@ -133,11 +135,15 @@ func (t *transcript) Metrics() *routerMetrics {
 	return t.metrics
 }
 
-// openTranscript opens path for append; "" or "-" writes only to stderr.
+// openTranscript opens path for append. Blank keeps only the redacted live log;
+// "-" emits the full JSONL stream to stdout for explicit CLI use.
 func openTranscript(path string) (*transcript, error) {
-	t := &transcript{mirror: os.Stderr}
-	if path == "" || path == "-" {
-		t.enc = json.NewEncoder(os.Stderr)
+	t := &transcript{mirror: os.Stdout, errorMirror: os.Stderr}
+	if path == "" {
+		return t, nil
+	}
+	if path == "-" {
+		t.enc = json.NewEncoder(os.Stdout)
 		return t, nil
 	}
 	f, err := os.OpenFile(path, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0o600)
@@ -235,12 +241,15 @@ func (t *transcript) Event(eventType, phase string, fields map[string]interface{
 				}
 			}
 		}
-	} else if err := t.enc.Encode(rec); err != nil {
-		fmt.Fprintf(os.Stderr, "transcript: encode: %v\n", err)
+	} else if t.enc != nil {
+		if err := t.enc.Encode(rec); err != nil {
+			fmt.Fprintf(os.Stderr, "transcript: encode: %v\n", err)
+		}
 	}
-	// Mirror a one-liner to stderr for live tail; only when t.out != stderr.
-	if t.out != nil {
-		fmt.Fprintf(t.mirror, "[%s] %s.%s %v\n", rec.TS, phase, eventType, fields)
+	// A file-backed or daemon transcript gets one redacted structured live log.
+	// Explicit path="-" is already the caller-requested full JSONL stream.
+	if t.enc == nil || t.out != nil {
+		t.logEvent(rec.TS, phase, eventType, fields)
 	}
 	// Tap to SSE broker for live web clients. Defensive copy of fields
 	// so subscribers can't mutate the upstream caller's map. Non-blocking
@@ -260,6 +269,36 @@ func (t *transcript) Event(eventType, phase string, fields map[string]interface{
 			Type:   eventType,
 			Fields: fcopy,
 		})
+	}
+}
+
+func (t *transcript) logEvent(ts, phase, eventType string, fields map[string]interface{}) {
+	row := map[string]interface{}{
+		"ts":       ts,
+		"severity": "info",
+		"event":    phase + "." + eventType,
+	}
+	for _, key := range []string{"intent_id", "conversation_id", "request_id", "tenant_correlation", "method", "path", "status", "duration_ms", "outcome", "terminal_outcome"} {
+		if value, ok := fields[key]; ok {
+			row[key] = value
+		}
+	}
+	failure := strings.Contains(strings.ToLower(eventType), "fail") || strings.Contains(strings.ToLower(eventType), "error")
+	if status, ok := fields["status"].(int); ok && status >= 500 {
+		failure = true
+	}
+	if failure {
+		row["severity"] = "error"
+	}
+	w := t.mirror
+	if failure && t.errorMirror != nil {
+		w = t.errorMirror
+	}
+	if w == nil {
+		return
+	}
+	if err := json.NewEncoder(w).Encode(row); err != nil && t.errorMirror != nil {
+		fmt.Fprintf(t.errorMirror, "transcript: log encode: %v\n", err)
 	}
 }
 

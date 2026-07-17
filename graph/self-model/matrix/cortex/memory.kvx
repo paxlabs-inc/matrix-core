@@ -1,9 +1,9 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:300859de48ad427722029e8f5ee9018d4284b9e0a5f20dbff6f4869382d2cff3
+# GENERATED gen=codegraph do-not-edit merkle=b3:9377d599b636e20888547d8e541a4be9e9352818da85655402c07df95aba43d0
 
 NODE id=matrix/cortex/memory kind=package
-  digest=b3:5e92d760f8f71cacf1fd86d4dbffe96e86ee272b897ba524d92a719ebaa66e57 file=cortex/memory range=0:0 lang=go exported=true
+  digest=b3:2acadb4d9cb7b27d12cc1b14a9cdc40038a1a50530bcd431fdbe3525621f01b1 file=cortex/memory range=0:0 lang=go exported=true
 EDGES
-  contains=matrix/cortex/memory/codec.go,matrix/cortex/memory/data.go,matrix/cortex/memory/edge.go,matrix/cortex/memory/types.go,matrix/cortex/memory/validate.go,matrix/cortex/memory/verb.go
+  contains=matrix/cortex/memory/codec.go,matrix/cortex/memory/data.go,matrix/cortex/memory/edge.go,matrix/cortex/memory/truth.go,matrix/cortex/memory/types.go,matrix/cortex/memory/validate.go,matrix/cortex/memory/verb.go
   ^contains=mod:matrix/cortex
 
 NODE id=matrix/cortex/memory.AssetAmount kind=type
@@ -220,6 +220,13 @@ NODE id=matrix/cortex/memory.CountTokens kind=func
   doc=CountTokens returns ceil(utf8_bytes(s) / BytesPerToken). Empty string → 0.\n\nDeterministic and zero-dependency. Public so the forms package and any\nbudget-enforcing caller (Find render, Compact) agree byte-for-byte with\nwrite-time validation. Switching the heuristic is a snapshot-hash-affecting\nchange.
 EDGES
   ^defines=matrix/cortex/memory/validate.go
+
+NODE id=matrix/cortex/memory.CurrentTruthAt kind=func
+  digest=b3:3af28179dd301c40a1b2cff08e53adda58f5640ea4ab960d209b69c8a2d31e23 file=cortex/memory/truth.go range=21:32 lang=go exported=true byte_range=616:1065
+  sig=func CurrentTruthAt(h *Head, v *Version, asOf time.Time) (bool, TruthStatus)
+  doc=CurrentTruthAt applies the canonical current-truth policy shared by every\nretrieval lane. The valid interval is half-open [ValidFrom, ValidUntil),\nwith ValidFrom defaulting to the version transaction time.
+EDGES
+  ^defines=matrix/cortex/memory/truth.go
 
 NODE id=matrix/cortex/memory.DecodeData kind=func
   digest=b3:3c9eaeb63f3b4537f396513bab636e74e82fff4c5f22d318be973550336cf85d file=cortex/memory/codec.go range=51:116 lang=go exported=true byte_range=1394:2943
@@ -1766,6 +1773,49 @@ NODE id=matrix/cortex/memory.Tombstone#Reason kind=field
 EDGES
   ^contains=matrix/cortex/memory.Tombstone
 
+NODE id=matrix/cortex/memory.TruthCurrent kind=const
+  digest=b3:bfb83e41c55c04db07acf29f787ad5557b7e0cde791a44d103c2c4f76dc32453 file=cortex/memory/truth.go range=13:13 lang=go exported=true byte_range=350:390
+  sig=memory.TruthStatus
+EDGES
+  ^defines=matrix/cortex/memory/truth.go
+
+NODE id=matrix/cortex/memory.TruthExpired kind=const
+  digest=b3:233212fed893e694be0c7ac4db6922e2024800f1d04d78d4a6722fc296ea8b2d file=cortex/memory/truth.go range=18:18 lang=go exported=true byte_range=572:612
+  sig=memory.TruthStatus
+EDGES
+  ^defines=matrix/cortex/memory/truth.go
+
+NODE id=matrix/cortex/memory.TruthMissing kind=const
+  digest=b3:c27217a433c65373198290a3bddb4e4dc064b46b0ab9fc761f623f0af1f378b1 file=cortex/memory/truth.go range=14:14 lang=go exported=true byte_range=392:432
+  sig=memory.TruthStatus
+EDGES
+  ^defines=matrix/cortex/memory/truth.go
+
+NODE id=matrix/cortex/memory.TruthNotYetValid kind=const
+  digest=b3:7454c0d1796e2739cf7f8dd6f795a30349802a0799a932389c5ea15cdef1aa12 file=cortex/memory/truth.go range=16:16 lang=go exported=true byte_range=479:525
+  sig=memory.TruthStatus
+EDGES
+  ^defines=matrix/cortex/memory/truth.go
+
+NODE id=matrix/cortex/memory.TruthStatus kind=type
+  digest=b3:1edadf89f820ab1453a8834eff60bf6748945f71744b06ad972960ee95627f4e file=cortex/memory/truth.go range=8:10 lang=go exported=true byte_range=200:339
+  sig=type TruthStatus string
+  doc=TruthStatus is the non-sensitive reason a memory is included or excluded\nfrom a current-truth retrieval lane.
+EDGES
+  ^defines=matrix/cortex/memory/truth.go
+
+NODE id=matrix/cortex/memory.TruthSuperseded kind=const
+  digest=b3:45fed41bdd2e9fe8bc301dee7bbe23938bbf1ed88b64f3740d0e73ed8c7ae1bd file=cortex/memory/truth.go range=17:17 lang=go exported=true byte_range=527:570
+  sig=memory.TruthStatus
+EDGES
+  ^defines=matrix/cortex/memory/truth.go
+
+NODE id=matrix/cortex/memory.TruthTombstoned kind=const
+  digest=b3:085d6ec714a076f1798a724de8193b08e1ab790034ee0d4bb2a38928dea678dc file=cortex/memory/truth.go range=15:15 lang=go exported=true byte_range=434:477
+  sig=memory.TruthStatus
+EDGES
+  ^defines=matrix/cortex/memory/truth.go
+
 NODE id=matrix/cortex/memory.Type kind=type
   digest=b3:a5d7b00151cedc3b7ee1dbe556b0abe815cd8ff955518037ce6b52f2365c28e3 file=cortex/memory/types.go range=22:24 lang=go exported=true byte_range=676:811
   sig=type Type byte
@@ -2140,6 +2190,13 @@ NODE id=matrix/cortex/memory.Version#Version kind=field
 EDGES
   ^contains=matrix/cortex/memory.Version
 
+NODE id=matrix/cortex/memory.VersionCurrentAt kind=func
+  digest=b3:cb2e288d6f446c0d099e5db2b62a3c3e9fc812a69467e5cfabec5ec070b23d7b file=cortex/memory/truth.go range=34:54 lang=go exported=true byte_range=1067:1647
+  sig=func VersionCurrentAt(v *Version, asOf time.Time) (bool, TruthStatus)
+  doc=VersionCurrentAt is the validity-only half of CurrentTruthAt for callers\nthat intentionally audit a head separately.
+EDGES
+  ^defines=matrix/cortex/memory/truth.go
+
 NODE id=matrix/cortex/memory.VisActorPublic kind=const
   digest=b3:ca3bbb1907037f2be112b6bc53f1b6c5a74fbae200d6291dad15b5c072d469e0 file=cortex/memory/types.go range=73:73 lang=go exported=true byte_range=1879:1908
   sig=memory.Visibility
@@ -2227,6 +2284,12 @@ NODE id=matrix/cortex/memory/edge.go kind=file
   digest=b3:b0cbbd9544f4341ab94b5dd8f87004d69d7eea34774035a5e9a50aaad02e4164 file=cortex/memory/edge.go range=1:170 lang=go exported=true
 EDGES
   defines=matrix/cortex/memory.DecodeEdge,matrix/cortex/memory.EdgeAttestedBy,matrix/cortex/memory.EdgeCausedBy,matrix/cortex/memory.EdgeCitedIn,matrix/cortex/memory.EdgeConsentsTo,matrix/cortex/memory.EdgeContradicts,matrix/cortex/memory.EdgeCorroborates,matrix/cortex/memory.EdgeDerivedFrom,matrix/cortex/memory.EdgeDispatchedTo,matrix/cortex/memory.EdgeInstanceOf,matrix/cortex/memory.EdgeObservedBy,matrix/cortex/memory.EdgePartOf,matrix/cortex/memory.EdgeRecord,matrix/cortex/memory.EdgeReferences,matrix/cortex/memory.EdgeSupersedes,matrix/cortex/memory.EdgeTombstones,matrix/cortex/memory.EdgeType,matrix/cortex/memory.EdgeType.String,matrix/cortex/memory.EdgeType.Valid,matrix/cortex/memory.EncodeEdge,matrix/cortex/memory.ErrInvalidEdgeType,matrix/cortex/memory.ErrSelfEdge,matrix/cortex/memory.ParseEdgeType
+  ^contains=matrix/cortex/memory
+
+NODE id=matrix/cortex/memory/truth.go kind=file
+  digest=b3:6d8ff49c4d32d35acf7d97dbe9159ff2e36008022dd014a327883d5b058baba0 file=cortex/memory/truth.go range=1:54 lang=go exported=true
+EDGES
+  defines=matrix/cortex/memory.CurrentTruthAt,matrix/cortex/memory.TruthCurrent,matrix/cortex/memory.TruthExpired,matrix/cortex/memory.TruthMissing,matrix/cortex/memory.TruthNotYetValid,matrix/cortex/memory.TruthStatus,matrix/cortex/memory.TruthSuperseded,matrix/cortex/memory.TruthTombstoned,matrix/cortex/memory.VersionCurrentAt
   ^contains=matrix/cortex/memory
 
 NODE id=matrix/cortex/memory/types.go kind=file

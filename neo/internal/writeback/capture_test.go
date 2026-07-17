@@ -159,6 +159,9 @@ func newCaptureHarness(t *testing.T, client *llm.Client) (*Consolidator, *memory
 		t.Fatalf("memory.Open: %v", err)
 	}
 	t.Cleanup(func() { _ = p.Close() })
+	if _, err := p.SetMemoryConsent(context.Background(), true, "test user"); err != nil {
+		t.Fatalf("SetMemoryConsent: %v", err)
+	}
 	c := New(client, nil, p, cfg)
 	return c, p, cfg
 }

@@ -80,6 +80,18 @@ type turn struct {
 	// the single-threaded result-assembly path.
 	lastFailureClass delegate.FailureClass
 
+	// normalizedFailureKey/count bound repeated deterministic failures by the
+	// invariant probe strategy plus the shared semantic failure layer. Varying
+	// guessed arguments cannot reset this counter.
+	normalizedFailureKey   string
+	normalizedFailureCount int
+
+	// webSourceURLs are the relevance-validated URLs returned by web_search or
+	// web_news this turn; webFetchedURLs records which of those were actually
+	// read through fetch. Search snippets are discovery, never factual evidence.
+	webSourceURLs  map[string]struct{}
+	webFetchedURLs map[string]struct{}
+
 	// curLoop is the live per-turn loop-state snapshot (self-model task 2.2),
 	// refreshed each Chat iteration; lastDeath is the structured record
 	// finalized at a loop-affecting death (nil = the turn did not die in a

@@ -209,7 +209,19 @@ func (p *Pager) writeWithRelations(ctx context.Context, t memory.Type, data memo
 			switch rel {
 			case RelationDuplicate:
 				return "", nil
-			case RelationSupersedes, RelationContradicts, RelationRelates:
+			case RelationSupersedes:
+				if validCandidateURI(targetURI, cands) {
+					uri, err := p.cortex.Supersede(memory.URI(targetURI), data, cortex.SupersedeOptions{
+						Head:      p.head(importance),
+						WriteMeta: p.writeMeta(),
+						EdgeMeta: cortex.AddEdgeMeta{
+							CreatedBy: p.cfg.CortexActor,
+							Data:      []byte(strings.TrimSpace(hint)),
+						},
+					})
+					return string(uri), err
+				}
+			case RelationContradicts, RelationRelates:
 				uri, err := p.cortex.Write(p.head(importance), data, p.writeMeta())
 				if err != nil {
 					return "", err

@@ -164,7 +164,7 @@ func TestDrivePanicBackstopClosesStream(t *testing.T) {
 	r := s.dispatch("trigger the panic", false)
 
 	events := collectUntilClosed(t, e, r.id, 10*time.Second)
-	if !hasTerminal(events, "completed") {
+	if !hasTerminal(events, "failed") {
 		t.Fatalf("the panic backstop must still emit a terminal; events: %+v", events)
 	}
 	text, ok := closingTurn(events)

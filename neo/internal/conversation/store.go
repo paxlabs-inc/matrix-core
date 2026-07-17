@@ -99,6 +99,11 @@ type Summary struct {
 	TurnCount      int       `json:"turn_count"`
 	Updated        time.Time `json:"updated"`
 	Project        string    `json:"project,omitempty"`
+	// Archived hides the thread from the default sidebar (CHAT-01). Additive
+	// omitempty: the pre-CHAT-01 wire shape is unchanged for live threads.
+	Archived bool `json:"archived,omitempty"`
+	// ForkedFrom records fork provenance for the sidebar's "forked from" hint.
+	ForkedFrom string `json:"forked_from,omitempty"`
 }
 
 // Store is Neo's durable conversation memory. One mutex guards all access;
@@ -453,6 +458,16 @@ type convMeta struct {
 	// mints the interview agent (guided charter + confirmation-gated save
 	// tool) and writeback extraction is structurally excluded (req 12.3).
 	Interview bool `json:"interview,omitempty"`
+	// Title is an explicit user rename (CHAT-01). When set it overrides the
+	// derived first-user-turn label everywhere the title surfaces.
+	Title string `json:"title,omitempty"`
+	// Archived hides a conversation from the default sidebar without deleting
+	// it (CHAT-01). Reversible via unarchive.
+	Archived bool `json:"archived,omitempty"`
+	// ForkedFrom / ForkedAtTurn record fork provenance: the parent
+	// conversation id and the (exclusive) turn count copied into this fork.
+	ForkedFrom   string `json:"forked_from,omitempty"`
+	ForkedAtTurn int    `json:"forked_at_turn,omitempty"`
 }
 
 func (s *Store) metaPathLocked(convID string) string {
@@ -510,37 +525,39 @@ func (s *Store) SetProject(convID, projectID string) {
 		return
 	}
 	m.Project = strings.TrimSpace(projectID)
-	s.saveMetaLocked(convID, m)
+	_ = s.saveMetaLocked(convID, m)
 }
 
 // saveMetaLocked persists a conversation's meta sidecar (atomic tmp+rename,
-// sealed at rest when the vault is wired). Caller MUST hold s.mu. Best-effort
-// like Append: IO errors are logged, never fatal.
-func (s *Store) saveMetaLocked(convID string, m convMeta) {
+// sealed at rest when the vault is wired). Caller MUST hold s.mu.
+func (s *Store) saveMetaLocked(convID string, m convMeta) error {
 	if err := os.MkdirAll(s.dir, 0o700); err != nil {
 		fmt.Fprintf(os.Stderr, "neo/conversation: mkdir %s: %v\n", s.dir, err)
-		return
+		return err
 	}
 	data, err := json.Marshal(m)
 	if err != nil {
-		return
+		return err
 	}
 	// Seal the sidecar at rest (fail-closed when the vault is required); nil
 	// session = legacy plaintext. tmp+rename atomicity preserved below.
 	data, err = s.vault.MaybeSealFile(s.metaAD(convID), data)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "neo/conversation: seal meta %s: %v\n", convID, err)
-		return
+		return err
 	}
 	path := s.metaPathLocked(convID)
 	tmp := path + ".tmp"
 	if err := os.WriteFile(tmp, data, 0o600); err != nil {
 		fmt.Fprintf(os.Stderr, "neo/conversation: write %s: %v\n", tmp, err)
-		return
+		return err
 	}
 	if err := os.Rename(tmp, path); err != nil {
 		fmt.Fprintf(os.Stderr, "neo/conversation: rename %s: %v\n", path, err)
+		_ = os.Remove(tmp)
+		return err
 	}
+	return nil
 }
 
 // SetInterview marks a conversation as a personalization interview (ORACLE
@@ -556,7 +573,7 @@ func (s *Store) SetInterview(convID string) {
 		return
 	}
 	m.Interview = true
-	s.saveMetaLocked(convID, m)
+	_ = s.saveMetaLocked(convID, m)
 }
 
 // IsInterview reports whether a conversation is a personalization interview.
@@ -595,6 +612,192 @@ func (s *Store) AppendAssistant(convID, intentID, text string) {
 	s.Append(convID, Turn{Role: "assistant", Text: text, IntentID: intentID})
 }
 
+// Meta is the CHAT-01 read view of a conversation's durable, non-turn state:
+// its explicit title, archived flag, and fork provenance. Zero value when the
+// conversation has no sidecar / persistence is disabled.
+type Meta struct {
+	Title        string
+	Archived     bool
+	ForkedFrom   string
+	ForkedAtTurn int
+}
+
+// Meta returns a conversation's durable metadata (title/archived/provenance).
+func (s *Store) Meta(convID string) Meta {
+	if !s.Enabled() || convID == "" {
+		return Meta{}
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	m := s.loadMetaLocked(convID)
+	return Meta{Title: m.Title, Archived: m.Archived, ForkedFrom: m.ForkedFrom, ForkedAtTurn: m.ForkedAtTurn}
+}
+
+// Exists reports whether a conversation has any persisted turn (hot, archived,
+// or legacy). Used by the CHAT-01 handlers to reject rename/archive/fork of a
+// missing/deleted thread with an explicit error rather than silently creating.
+func (s *Store) Exists(convID string) bool {
+	if !s.Enabled() || convID == "" {
+		return false
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return len(s.historyLocked(convID)) > 0
+}
+
+// Rename sets an explicit durable title for a conversation (CHAT-01). An empty
+// title clears the override, restoring the derived first-user-turn label.
+// Returns false when persistence is disabled or the conversation does not
+// exist (so the caller can answer an explicit not-found).
+func (s *Store) Rename(convID, newTitle string) bool {
+	return s.UpdateMeta(convID, &newTitle, nil)
+}
+
+// SetArchived hides (or restores) a conversation from the default sidebar
+// without deleting it (CHAT-01). Returns false when the conversation does not
+// exist / persistence is disabled.
+func (s *Store) SetArchived(convID string, archived bool) bool {
+	return s.UpdateMeta(convID, nil, &archived)
+}
+
+// UpdateMeta applies a rename and/or archive change with one atomic sidecar
+// replacement, so a combined PATCH cannot leave only half its fields updated.
+func (s *Store) UpdateMeta(convID string, title *string, archived *bool) bool {
+	if !s.Enabled() || convID == "" {
+		return false
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if len(s.historyLocked(convID)) == 0 {
+		return false
+	}
+	m := s.loadMetaLocked(convID)
+	if title != nil {
+		m.Title = strings.TrimSpace(*title)
+	}
+	if archived != nil {
+		m.Archived = *archived
+	}
+	return s.saveMetaLocked(convID, m) == nil
+}
+
+// Delete permanently removes a conversation's turn logs and metadata sidecar
+// (hot, archive, legacy single-JSON, and meta). Returns false when the
+// conversation did not exist. Best-effort per-file; a missing file is not an
+// error. The trace timeline is a sibling store the handler cleans up
+// separately (this store owns only the chat-thread files).
+func (s *Store) Delete(convID string) bool {
+	if !s.Enabled() || convID == "" {
+		return false
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if len(s.historyLocked(convID)) == 0 {
+		return false
+	}
+	paths := []string{
+		s.pathLocked(convID),
+		s.archivePathLocked(convID),
+		s.legacyPathLocked(convID),
+		s.metaPathLocked(convID),
+	}
+	type movedFile struct {
+		from string
+		to   string
+	}
+	var moved []movedFile
+	for _, p := range paths {
+		if p == "" {
+			continue
+		}
+		if _, err := os.Stat(p); os.IsNotExist(err) {
+			continue
+		} else if err != nil {
+			return false
+		}
+		tomb := p + ".delete.tmp"
+		_ = os.Remove(tomb)
+		if err := os.Rename(p, tomb); err != nil {
+			for i := len(moved) - 1; i >= 0; i-- {
+				_ = os.Rename(moved[i].to, moved[i].from)
+			}
+			return false
+		}
+		moved = append(moved, movedFile{from: p, to: tomb})
+		delete(s.seqs, p)
+	}
+	for _, f := range moved {
+		if err := os.Remove(f.to); err != nil && !os.IsNotExist(err) {
+			fmt.Fprintf(os.Stderr, "neo/conversation: delete %s: %v\n", f.to, err)
+		}
+	}
+	return true
+}
+
+// Fork creates a new conversation (newID) containing exactly the chronological
+// prefix of srcID's full history through upToTurn (inclusive), with parent/turn
+// provenance recorded in the fork's meta sidecar. The fork has an independent
+// future: later turns on either thread do not affect the other. Returns false
+// when the source is missing, newID is blank/taken, or upToTurn is out of the
+// 1..len(history) range.
+func (s *Store) Fork(srcID, newID string, upToTurn int) bool {
+	if !s.Enabled() || srcID == "" || strings.TrimSpace(newID) == "" {
+		return false
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if len(s.historyLocked(newID)) > 0 {
+		return false // never clobber an existing conversation
+	}
+	hist := s.historyLocked(srcID)
+	if len(hist) == 0 || upToTurn < 1 || upToTurn > len(hist) {
+		return false
+	}
+	prefix := hist[:upToTurn]
+
+	if err := os.MkdirAll(s.dir, 0o700); err != nil {
+		fmt.Fprintf(os.Stderr, "neo/conversation: mkdir %s: %v\n", s.dir, err)
+		return false
+	}
+	// Write the prefix into the fork's hot file, re-sealed at its new stream +
+	// positions (each fork line is bound to newID, so it cannot be replayed
+	// from the parent).
+	jsonl, err := s.buildJSONL(storeConvHot, newID, prefix)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "neo/conversation: fork seal %s: %v\n", newID, err)
+		return false
+	}
+	path := s.pathLocked(newID)
+	tmp := path + ".fork.tmp"
+	_ = os.Remove(tmp)
+	if err := os.WriteFile(tmp, jsonl, 0o600); err != nil {
+		fmt.Fprintf(os.Stderr, "neo/conversation: fork write %s: %v\n", tmp, err)
+		return false
+	}
+
+	// Record provenance; carry the parent's project tag so the fork stays in
+	// the same workbench context.
+	m := convMeta{
+		Project:      s.loadMetaLocked(srcID).Project,
+		ForkedFrom:   srcID,
+		ForkedAtTurn: upToTurn,
+	}
+	if err := s.saveMetaLocked(newID, m); err != nil {
+		_ = os.Remove(tmp)
+		return false
+	}
+	if err := os.Rename(tmp, path); err != nil {
+		_ = os.Remove(tmp)
+		_ = os.Remove(s.metaPathLocked(newID))
+		return false
+	}
+	if s.seqs == nil {
+		s.seqs = map[string]uint64{}
+	}
+	s.seqs[path] = uint64(len(prefix))
+	return true
+}
+
 // Recent returns the last n turns (oldest-first) from the full history, or nil
 // when there are none / persistence is disabled. n spans the hot set AND the
 // archive so no turn is unreachable.
@@ -623,6 +826,10 @@ func (s *Store) Get(convID string) *Record {
 	rec := s.loadLocked(convID)
 	if len(rec.Turns) == 0 {
 		return nil
+	}
+	// An explicit user rename (CHAT-01) overrides the derived label.
+	if mt := s.loadMetaLocked(convID).Title; mt != "" {
+		rec.Title = mt
 	}
 	return rec
 }
@@ -716,9 +923,14 @@ func (s *Store) List() []Summary {
 		if len(all) == 0 {
 			continue
 		}
+		meta := s.loadMetaLocked(convID)
+		recTitle := hot.Title
+		if meta.Title != "" {
+			recTitle = meta.Title
+		}
 		rec := &Record{
 			ConversationID: convID,
-			Title:          hot.Title,
+			Title:          recTitle,
 			Turns:          all,
 			Updated:        hot.Updated,
 		}
@@ -728,7 +940,9 @@ func (s *Store) List() []Summary {
 			Preview:        preview(rec),
 			TurnCount:      len(all),
 			Updated:        rec.Updated,
-			Project:        s.loadMetaLocked(convID).Project,
+			Project:        meta.Project,
+			Archived:       meta.Archived,
+			ForkedFrom:     meta.ForkedFrom,
 		})
 	}
 	sort.Slice(out, func(i, j int) bool { return out[i].Updated.After(out[j].Updated) })

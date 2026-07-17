@@ -1,77 +1,84 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:300859de48ad427722029e8f5ee9018d4284b9e0a5f20dbff6f4869382d2cff3
+# GENERATED gen=codegraph do-not-edit merkle=b3:9377d599b636e20888547d8e541a4be9e9352818da85655402c07df95aba43d0
 
 NODE id=matrix/cortex kind=package
-  digest=b3:849d4a5b32b4ef566a1e12ac9242cf9d688aef0bce1437e9021818b464f25bbd file=cortex range=0:0 lang=go exported=true
+  digest=b3:72af0f7f270c1385d46e4ce435ba92eafe6c93ad02d611f6d44e1b6d073e76c1 file=cortex range=0:0 lang=go exported=true
 EDGES
-  contains=matrix/cortex/activate.go,matrix/cortex/attest.go,matrix/cortex/cascade.go,matrix/cortex/compact.go,matrix/cortex/context.go,matrix/cortex/cortex.go,matrix/cortex/edges.go,matrix/cortex/embedder.go,matrix/cortex/episodic_backfill.go,matrix/cortex/goal_state.go,matrix/cortex/lexical.go,matrix/cortex/provenance.go,matrix/cortex/ratelimit.go,matrix/cortex/rebuild.go,matrix/cortex/recall.go,matrix/cortex/recent.go,matrix/cortex/repair.go,matrix/cortex/rollup.go,matrix/cortex/rollup_enrich.go,matrix/cortex/scope_enforce.go,matrix/cortex/session.go,matrix/cortex/story.go,matrix/cortex/sweep.go,matrix/cortex/update_head.go
+  contains=matrix/cortex/activate.go,matrix/cortex/attest.go,matrix/cortex/cascade.go,matrix/cortex/compact.go,matrix/cortex/context.go,matrix/cortex/cortex.go,matrix/cortex/edges.go,matrix/cortex/embedder.go,matrix/cortex/episodic_backfill.go,matrix/cortex/goal_state.go,matrix/cortex/lexical.go,matrix/cortex/provenance.go,matrix/cortex/ratelimit.go,matrix/cortex/rebuild.go,matrix/cortex/recall.go,matrix/cortex/recent.go,matrix/cortex/repair.go,matrix/cortex/rollup.go,matrix/cortex/rollup_enrich.go,matrix/cortex/scope_enforce.go,matrix/cortex/session.go,matrix/cortex/story.go,matrix/cortex/supersede.go,matrix/cortex/sweep.go,matrix/cortex/update_head.go
   ^contains=mod:matrix/cortex
 
 NODE id=matrix/cortex.ActivationBundle kind=type
-  digest=b3:e74ab036cddb730582c585fffc7420d8d5f693cc32b54a51c78ce6c817741fb1 file=cortex/activate.go range=112:147 lang=go exported=true byte_range=5391:7115
-  sig=type ActivationBundle struct {\n	// Pinned mirrors Bundle.Pinned: Identity ∪ Constraint{Hard} ∪\n	// Goal{Active}, salience-desc, PinnedFloor-protected.\n	Pinned	[]*memory.Memory\n	// Timeline is the T0 coarse tier: materialized epoch rollups within\n	// DefaultTimelineLookbackNanos of now, ascending window-start order\n	// (survivors after trim).\n	Timeline	[]RollupRecord\n	// Recent is the T1 mid-range tier: c.RecentEpisodes' materialized\n	// hour-rollup-backed episodes, salience-desc (survivors after trim).\n	Recent	[]Episode\n	// Transcript is the T2 slice: the tail of this conversation's own\n	// session-store transcript, ascending seq order (survivors after trim).\n	Transcript	[]Message\n	// StorySoFar is the durable per-conversation rolling summary (task 4.2),\n	// the replacement for Neo's ephemeral a.summary. Empty when the\n	// conversation has no transcript yet.\n	StorySoFar	string\n\n	// ReachableURIs lists tier candidates that were computed but did NOT\n	// survive the budget trim (T3 handles — resolve lazily), capped at\n	// MaxReachableURIs. Transcript members trim to their session URI\n	// (session.go's BuildSessionURI); Timeline/Recent to their rollup /\n	// memory URI; Pinned to its cortex memory URI.\n	ReachableURIs	[]memory.URI\n\n	// TotalTokens is the final post-trim rendered-token sum (including\n	// StorySoFar, which is never itself trimmed — see activationTrim).\n	TotalTokens	int\n	// Trimmed is the count of tier candidates dropped by budget enforcement.\n	Trimmed	int\n	// LatencyMS is wall-clock from the start of Activate to the return\n	// statement (real time.Now(), not c.now() — see file header).\n	LatencyMS	int64\n}
+  digest=b3:8a640be0963b5d63f7ac45eb1f363cbd694fb60b011d3e3fa0786b91318bb16c file=cortex/activate.go range=114:153 lang=go exported=true byte_range=5425:7372
+  sig=type ActivationBundle struct {\n	// Pinned mirrors Bundle.Pinned: Identity ∪ Constraint{Hard} ∪\n	// Goal{Active}, salience-desc, PinnedFloor-protected.\n	Pinned	[]*memory.Memory\n	// Timeline is the T0 coarse tier: materialized epoch rollups within\n	// DefaultTimelineLookbackNanos of now, ascending window-start order\n	// (survivors after trim).\n	Timeline	[]RollupRecord\n	// Recent is the T1 mid-range tier: c.RecentEpisodes' materialized\n	// hour-rollup-backed episodes, salience-desc (survivors after trim).\n	Recent	[]Episode\n	// Transcript is the T2 slice: the tail of this conversation's own\n	// session-store transcript, ascending seq order (survivors after trim).\n	Transcript	[]Message\n	// StorySoFar is the durable per-conversation rolling summary (task 4.2),\n	// the replacement for Neo's ephemeral a.summary. Empty when the\n	// conversation has no transcript yet.\n	StorySoFar	string\n\n	// ReachableURIs lists tier candidates that were computed but did NOT\n	// survive the budget trim (T3 handles — resolve lazily), capped at\n	// MaxReachableURIs. Transcript members trim to their session URI\n	// (session.go's BuildSessionURI); Timeline/Recent to their rollup /\n	// memory URI; Pinned to its cortex memory URI.\n	ReachableURIs	[]memory.URI\n\n	// TotalTokens is the final post-trim rendered-token sum (including\n	// StorySoFar, which is never itself trimmed — see activationTrim).\n	TotalTokens	int\n	// Trimmed is the count of tier candidates dropped by budget enforcement.\n	Trimmed	int\n	// LatencyMS is wall-clock from the start of Activate to the return\n	// statement (real time.Now(), not c.now() — see file header).\n	LatencyMS	int64\n	// SelectionReason explains an empty activation without exposing content or\n	// internal identifiers. It is populated when relevant live memory exists\n	// outside the materialized activation tiers.\n	SelectionReason	string\n}
   doc=ActivationBundle is the response shape from Cortex.Activate (req.7.1).
 EDGES
-  contains=matrix/cortex.ActivationBundle#LatencyMS,matrix/cortex.ActivationBundle#Pinned,matrix/cortex.ActivationBundle#ReachableURIs,matrix/cortex.ActivationBundle#Recent,matrix/cortex.ActivationBundle#StorySoFar,matrix/cortex.ActivationBundle#Timeline,matrix/cortex.ActivationBundle#TotalTokens,matrix/cortex.ActivationBundle#Transcript,matrix/cortex.ActivationBundle#Trimmed
+  contains=matrix/cortex.ActivationBundle#LatencyMS,matrix/cortex.ActivationBundle#Pinned,matrix/cortex.ActivationBundle#ReachableURIs,matrix/cortex.ActivationBundle#Recent,matrix/cortex.ActivationBundle#SelectionReason,matrix/cortex.ActivationBundle#StorySoFar,matrix/cortex.ActivationBundle#Timeline,matrix/cortex.ActivationBundle#TotalTokens,matrix/cortex.ActivationBundle#Transcript,matrix/cortex.ActivationBundle#Trimmed
   ^defines=matrix/cortex/activate.go
 
 NODE id=matrix/cortex.ActivationBundle#LatencyMS kind=field
-  digest=b3:6f3f766d140f392ac5f37ea9225095c5472d7e48dfc888e5c146694e00cdcd3a file=cortex/activate.go range=144:146 lang=go exported=true byte_range=6963:7113
+  digest=b3:6f3f766d140f392ac5f37ea9225095c5472d7e48dfc888e5c146694e00cdcd3a file=cortex/activate.go range=146:148 lang=go exported=true byte_range=6997:7147
   sig=int64
   doc=LatencyMS is wall-clock from the start of Activate to the return\nstatement (real time.Now(), not c.now() — see file header).
 EDGES
   ^contains=matrix/cortex.ActivationBundle
 
 NODE id=matrix/cortex.ActivationBundle#Pinned kind=field
-  digest=b3:a7fa574fe6744ce4cf75527053830771db6b4ee643e3a8f5dac2a63de66cd79d file=cortex/activate.go range=114:116 lang=go exported=true byte_range=5497:5644
+  digest=b3:a7fa574fe6744ce4cf75527053830771db6b4ee643e3a8f5dac2a63de66cd79d file=cortex/activate.go range=116:118 lang=go exported=true byte_range=5531:5678
   sig=[]*memory.Memory
   doc=Pinned mirrors Bundle.Pinned: Identity ∪ Constraint{Hard} ∪\nGoal{Active}, salience-desc, PinnedFloor-protected.
 EDGES
   ^contains=matrix/cortex.ActivationBundle
 
 NODE id=matrix/cortex.ActivationBundle#ReachableURIs kind=field
-  digest=b3:e80cc0669326fd31c6450e4bd92071517041c8e7fb128053f3c5cf3fb7f91a1f file=cortex/activate.go range=132:137 lang=go exported=true byte_range=6361:6715
+  digest=b3:e80cc0669326fd31c6450e4bd92071517041c8e7fb128053f3c5cf3fb7f91a1f file=cortex/activate.go range=134:139 lang=go exported=true byte_range=6395:6749
   sig=[]memory.URI
   doc=ReachableURIs lists tier candidates that were computed but did NOT\nsurvive the budget trim (T3 handles — resolve lazily), capped at\nMaxReachableURIs. Transcript members trim to their session URI\n(session.go's BuildSessionURI); Timeline/Recent to their rollup /\nmemory URI; Pinned to its cortex memory URI.
 EDGES
   ^contains=matrix/cortex.ActivationBundle
 
 NODE id=matrix/cortex.ActivationBundle#Recent kind=field
-  digest=b3:e0328d25a7f555226f36e89f15ab7965a0c12cbf7c287d1b10ef398515de73a1 file=cortex/activate.go range=121:123 lang=go exported=true byte_range=5839:5994
+  digest=b3:e0328d25a7f555226f36e89f15ab7965a0c12cbf7c287d1b10ef398515de73a1 file=cortex/activate.go range=123:125 lang=go exported=true byte_range=5873:6028
   sig=[]cortex.Episode
   doc=Recent is the T1 mid-range tier: c.RecentEpisodes' materialized\nhour-rollup-backed episodes, salience-desc (survivors after trim).
 EDGES
   ^contains=matrix/cortex.ActivationBundle
 
+NODE id=matrix/cortex.ActivationBundle#SelectionReason kind=field
+  digest=b3:6bbf35bbf9461922da60d114cf9e0ad9891cf46a524b8000adf726639f124093 file=cortex/activate.go range=149:152 lang=go exported=true byte_range=7149:7370
+  sig=string
+  doc=SelectionReason explains an empty activation without exposing content or\ninternal identifiers. It is populated when relevant live memory exists\noutside the materialized activation tiers.
+EDGES
+  ^contains=matrix/cortex.ActivationBundle
+
 NODE id=matrix/cortex.ActivationBundle#StorySoFar kind=field
-  digest=b3:9699a5c7f4a7a97aee3e5075c1f0310fb9f8772f7233dd10749be2e6df7cd050 file=cortex/activate.go range=127:130 lang=go exported=true byte_range=6160:6358
+  digest=b3:9699a5c7f4a7a97aee3e5075c1f0310fb9f8772f7233dd10749be2e6df7cd050 file=cortex/activate.go range=129:132 lang=go exported=true byte_range=6194:6392
   sig=string
   doc=StorySoFar is the durable per-conversation rolling summary (task 4.2),\nthe replacement for Neo's ephemeral a.summary. Empty when the\nconversation has no transcript yet.
 EDGES
   ^contains=matrix/cortex.ActivationBundle
 
 NODE id=matrix/cortex.ActivationBundle#Timeline kind=field
-  digest=b3:913f711864492246768acb27075b589bd6b54fa984657b1d126f849cbe9d6671 file=cortex/activate.go range=117:120 lang=go exported=true byte_range=5646:5837
+  digest=b3:913f711864492246768acb27075b589bd6b54fa984657b1d126f849cbe9d6671 file=cortex/activate.go range=119:122 lang=go exported=true byte_range=5680:5871
   sig=[]cortex.RollupRecord
   doc=Timeline is the T0 coarse tier: materialized epoch rollups within\nDefaultTimelineLookbackNanos of now, ascending window-start order\n(survivors after trim).
 EDGES
   ^contains=matrix/cortex.ActivationBundle
 
 NODE id=matrix/cortex.ActivationBundle#TotalTokens kind=field
-  digest=b3:81d24e0f5e147a760c523603a0338d862319be71edd3b35c5c748d5f691b869e file=cortex/activate.go range=139:141 lang=go exported=true byte_range=6718:6873
+  digest=b3:81d24e0f5e147a760c523603a0338d862319be71edd3b35c5c748d5f691b869e file=cortex/activate.go range=141:143 lang=go exported=true byte_range=6752:6907
   sig=int
   doc=TotalTokens is the final post-trim rendered-token sum (including\nStorySoFar, which is never itself trimmed — see activationTrim).
 EDGES
   ^contains=matrix/cortex.ActivationBundle
 
 NODE id=matrix/cortex.ActivationBundle#Transcript kind=field
-  digest=b3:a3eb076c58eae72d26f79b52c976e9280f79930e33db977874fda8309c08270e file=cortex/activate.go range=124:126 lang=go exported=true byte_range=5996:6158
+  digest=b3:a3eb076c58eae72d26f79b52c976e9280f79930e33db977874fda8309c08270e file=cortex/activate.go range=126:128 lang=go exported=true byte_range=6030:6192
   sig=[]cortex.Message
   doc=Transcript is the T2 slice: the tail of this conversation's own\nsession-store transcript, ascending seq order (survivors after trim).
 EDGES
   ^contains=matrix/cortex.ActivationBundle
 
 NODE id=matrix/cortex.ActivationBundle#Trimmed kind=field
-  digest=b3:7c49852ab99b35d4ce3febe55569d84d2bd9c738194e036ab25bb570d2f0c9af file=cortex/activate.go range=142:143 lang=go exported=true byte_range=6875:6961
+  digest=b3:7c49852ab99b35d4ce3febe55569d84d2bd9c738194e036ab25bb570d2f0c9af file=cortex/activate.go range=144:145 lang=go exported=true byte_range=6909:6995
   sig=int
   doc=Trimmed is the count of tier candidates dropped by budget enforcement.
 EDGES
@@ -249,7 +256,7 @@ EDGES
   ^defines=matrix/cortex/attest.go
 
 NODE id=matrix/cortex.Budget kind=type
-  digest=b3:6d2dd7827e0eb7fbf1f1fd2156a13f02aaba14c228708ddcaa27d3eee0c01c89 file=cortex/activate.go range=77:82 lang=go exported=true byte_range=3816:4058
+  digest=b3:6d2dd7827e0eb7fbf1f1fd2156a13f02aaba14c228708ddcaa27d3eee0c01c89 file=cortex/activate.go range=79:84 lang=go exported=true byte_range=3850:4092
   sig=type Budget struct {\n	Tokens int\n}
   doc=Budget bounds the total rendered-token size of an ActivationBundle. Zero\ndefaults to DefaultActivateBudgetTokens; values above\nMaxActivateBudgetTokens are clamped (mirrors ContextOpts.BudgetTokens).
 EDGES
@@ -257,7 +264,7 @@ EDGES
   ^defines=matrix/cortex/activate.go
 
 NODE id=matrix/cortex.Budget#Tokens kind=field
-  digest=b3:84b477cff3a298f2fe6cde68f6dbede5c698999ee67e11815b17d49f33bb6106 file=cortex/activate.go range=81:81 lang=go exported=true byte_range=4046:4056
+  digest=b3:84b477cff3a298f2fe6cde68f6dbede5c698999ee67e11815b17d49f33bb6106 file=cortex/activate.go range=83:83 lang=go exported=true byte_range=4080:4090
   sig=int
 EDGES
   ^contains=matrix/cortex.Budget
@@ -312,7 +319,7 @@ EDGES
   ^defines=matrix/cortex/session.go
 
 NODE id=matrix/cortex.BuildURI kind=func
-  digest=b3:6a5a421b4c32803bb5404d4f9eefec00534632dbadf4d716ffc7253ba3a9d08e file=cortex/cortex.go range=995:998 lang=go exported=true byte_range=33087:33320
+  digest=b3:6a5a421b4c32803bb5404d4f9eefec00534632dbadf4d716ffc7253ba3a9d08e file=cortex/cortex.go range=1014:1017 lang=go exported=true byte_range=33747:33980
   sig=func BuildURI(t memory.Type, id memory.ID, version uint64) memory.URI
   doc=BuildURI returns matrix://cortex/<Type>/<id-base32>#<version>.
 EDGES
@@ -633,7 +640,7 @@ NODE id=matrix/cortex.Cortex kind=type
   sig=type Cortex struct {\n	s	*store.Store\n	now	func() time.Time	// overridable for tests\n	idGen	func() memory.ID\n\n	// embed holds the async embedding worker state when StartEmbedder is\n	// called. Nil when no worker is running (the default). All access\n	// goes through helpers in embedder.go.\n	embed	*embedderState\n\n	// snap holds the journal MMR + per-namespace SMTs (Phase 7). Always\n	// constructed in New; the MMRHook is installed on the underlying\n	// Store so every journal entry contributes a leaf transparently.\n	// SMT updates are staged explicitly by Write/Update/Tombstone/AddEdge/\n	// RemoveEdge and the embedder.\n	snap	*snapshot.State\n\n	// keyResolver is used by Phase 10 scope verification (sub-agent\n	// CortexScope reads/writes). nil means scoped calls are rejected\n	// with ErrNoKeyResolver. Cortex never holds key material itself\n	// (D4); the resolver is plumbed in by the agent runtime.\n	keyResolver	scope.KeyResolver\n\n	// rl holds the Phase 14 token buckets gating\n	// (1) cortex.logScopeViolation journal writes (R5 DoS surface)\n	// (2) cortex.Attest entry (R3b DoS surface).\n	// Always non-nil after New; never persisted (runtime policy state,\n	// not memory data — see ratelimit.go Q4 lock).\n	rl	*rateLimiter\n\n	// pinnedMu/pinnedCache* back the continuous-memory task 4.1 per-turn\n	// Pinned-tier cache consulted by Activate (activate.go), fixing audit\n	// finding NE-7 (the per-step idx/type pinned rescan). PURELY IN-MEMORY\n	// runtime state — like rl above and embed above, it is NEVER persisted\n	// or journaled, so (stronger than "lives in the derived lane") it\n	// cannot perturb ANY lane, anchored or derived. Valid for exactly as\n	// long as c.s.NextSeq() (the journal head) hasn't advanced since it was\n	// computed — any mutating call bumps that seq, so the cache spans\n	// precisely "since the last cortex write", the same window as one turn\n	// in a turn loop that doesn't write to cortex mid-turn.\n	pinnedMu	sync.Mutex\n	pinnedCacheSeq	uint64\n	pinnedCacheIDs	[]memory.ID\n	pinnedCacheOK	bool\n}
   doc=Cortex wraps a per-actor store.Store and exposes the §11–12 API.
 EDGES
-  contains=matrix/cortex.Cortex#embed,matrix/cortex.Cortex#idGen,matrix/cortex.Cortex#keyResolver,matrix/cortex.Cortex#now,matrix/cortex.Cortex#pinnedCacheIDs,matrix/cortex.Cortex#pinnedCacheOK,matrix/cortex.Cortex#pinnedCacheSeq,matrix/cortex.Cortex#pinnedMu,matrix/cortex.Cortex#rl,matrix/cortex.Cortex#s,matrix/cortex.Cortex#snap,matrix/cortex.Cortex.Activate,matrix/cortex.Cortex.AddEdge,matrix/cortex.Cortex.AddSessionProvenance,matrix/cortex.Cortex.AddSessionProvenanceHeuristic,matrix/cortex.Cortex.AppendMessage,matrix/cortex.Cortex.Attest,matrix/cortex.Cortex.BuildRollup,matrix/cortex.Cortex.BuildStorySoFar,matrix/cortex.Cortex.Cascade,matrix/cortex.Cortex.CloseValidity,matrix/cortex.Cortex.Compact,matrix/cortex.Cortex.Context,matrix/cortex.Cortex.DeleteGoalState,matrix/cortex.Cortex.DrainEmbedder,matrix/cortex.Cortex.EmbedText,matrix/cortex.Cortex.EmbedderModel,matrix/cortex.Cortex.EnrichRollup,matrix/cortex.Cortex.EpisodicBackfill,matrix/cortex.Cortex.ExpandToTranscript,matrix/cortex.Cortex.Find,matrix/cortex.Cortex.GetEdge,matrix/cortex.Cortex.Index,matrix/cortex.Cortex.IterEdgesIn,matrix/cortex.Cortex.IterEdgesOut,matrix/cortex.Cortex.ListByType,matrix/cortex.Cortex.ListGoalStates,matrix/cortex.Cortex.LoadCheckpoint,matrix/cortex.Cortex.LoadEnrichment,matrix/cortex.Cortex.LoadRollup,matrix/cortex.Cortex.LoadRollupEnriched,matrix/cortex.Cortex.LoadStorySoFar,matrix/cortex.Cortex.OverallRoot,matrix/cortex.Cortex.Proof,matrix/cortex.Cortex.QueryLexical,matrix/cortex.Cortex.ReadGoalState,matrix/cortex.Cortex.Rebuild,matrix/cortex.Cortex.RebuildLexicalIndex,matrix/cortex.Cortex.RecallDescend,matrix/cortex.Cortex.RecentEpisodes,matrix/cortex.Cortex.RemoveEdge,matrix/cortex.Cortex.RepairRollup,matrix/cortex.Cortex.Resolve,matrix/cortex.Cortex.ResolveLatest,matrix/cortex.Cortex.ResolveScoped,matrix/cortex.Cortex.ResolveToolResult,matrix/cortex.Cortex.Rollups,matrix/cortex.Cortex.Snap,matrix/cortex.Cortex.Snapshot,matrix/cortex.Cortex.StartEmbedder,matrix/cortex.Cortex.StopEmbedder,matrix/cortex.Cortex.Store,matrix/cortex.Cortex.SweepNow,matrix/cortex.Cortex.Tombstone,matrix/cortex.Cortex.Transcript,matrix/cortex.Cortex.Update,matrix/cortex.Cortex.UpdateHead,matrix/cortex.Cortex.Verify,matrix/cortex.Cortex.VerifyScope,matrix/cortex.Cortex.Write,matrix/cortex.Cortex.WriteGoalState,matrix/cortex.Cortex.addSessionProvenance,matrix/cortex.Cortex.backfillMemoryBatch,matrix/cortex.Cortex.backfillSessionBatch,matrix/cortex.Cortex.buildCoarseRollup,matrix/cortex.Cortex.cachedTierPinned,matrix/cortex.Cortex.cascadeCoarse,matrix/cortex.Cortex.cascadeHours,matrix/cortex.Cortex.enforceContextBudget,matrix/cortex.Cortex.enforceRead,matrix/cortex.Cortex.enforceWrite,matrix/cortex.Cortex.findIdxActorObjKey,matrix/cortex.Cortex.findIdxTagKey,matrix/cortex.Cortex.hasSessionProvenance,matrix/cortex.Cortex.isPinnedInCompact,matrix/cortex.Cortex.iterEdges,matrix/cortex.Cortex.loadOrRepairStorySoFar,matrix/cortex.Cortex.logScopeViolation,matrix/cortex.Cortex.notifyEmbedder,matrix/cortex.Cortex.repairCoarseRollup,matrix/cortex.Cortex.repairHourRollup,matrix/cortex.Cortex.resolveNear,matrix/cortex.Cortex.saveEpisodicBackfill,matrix/cortex.Cortex.scanTypePrefix,matrix/cortex.Cortex.stageLexicalMessage,matrix/cortex.Cortex.tierFrameRelevant,matrix/cortex.Cortex.tierOutcomes,matrix/cortex.Cortex.tierPinned,matrix/cortex.Cortex.transcriptSliceApprox,matrix/cortex.Cortex.transcriptSliceExact
+  contains=matrix/cortex.Cortex#embed,matrix/cortex.Cortex#idGen,matrix/cortex.Cortex#keyResolver,matrix/cortex.Cortex#now,matrix/cortex.Cortex#pinnedCacheIDs,matrix/cortex.Cortex#pinnedCacheOK,matrix/cortex.Cortex#pinnedCacheSeq,matrix/cortex.Cortex#pinnedMu,matrix/cortex.Cortex#rl,matrix/cortex.Cortex#s,matrix/cortex.Cortex#snap,matrix/cortex.Cortex.Activate,matrix/cortex.Cortex.AddEdge,matrix/cortex.Cortex.AddSessionProvenance,matrix/cortex.Cortex.AddSessionProvenanceHeuristic,matrix/cortex.Cortex.AppendMessage,matrix/cortex.Cortex.Attest,matrix/cortex.Cortex.BuildRollup,matrix/cortex.Cortex.BuildStorySoFar,matrix/cortex.Cortex.Cascade,matrix/cortex.Cortex.CloseValidity,matrix/cortex.Cortex.Compact,matrix/cortex.Cortex.Context,matrix/cortex.Cortex.DeleteGoalState,matrix/cortex.Cortex.DrainEmbedder,matrix/cortex.Cortex.EmbedText,matrix/cortex.Cortex.EmbedderModel,matrix/cortex.Cortex.EnrichRollup,matrix/cortex.Cortex.EpisodicBackfill,matrix/cortex.Cortex.ExpandToTranscript,matrix/cortex.Cortex.Find,matrix/cortex.Cortex.GetEdge,matrix/cortex.Cortex.Index,matrix/cortex.Cortex.IterEdgesIn,matrix/cortex.Cortex.IterEdgesOut,matrix/cortex.Cortex.ListByType,matrix/cortex.Cortex.ListGoalStates,matrix/cortex.Cortex.LoadCheckpoint,matrix/cortex.Cortex.LoadEnrichment,matrix/cortex.Cortex.LoadRollup,matrix/cortex.Cortex.LoadRollupEnriched,matrix/cortex.Cortex.LoadStorySoFar,matrix/cortex.Cortex.OverallRoot,matrix/cortex.Cortex.Proof,matrix/cortex.Cortex.QueryLexical,matrix/cortex.Cortex.ReadGoalState,matrix/cortex.Cortex.Rebuild,matrix/cortex.Cortex.RebuildLexicalIndex,matrix/cortex.Cortex.RecallDescend,matrix/cortex.Cortex.RecentEpisodes,matrix/cortex.Cortex.RemoveEdge,matrix/cortex.Cortex.RepairRollup,matrix/cortex.Cortex.Resolve,matrix/cortex.Cortex.ResolveLatest,matrix/cortex.Cortex.ResolveScoped,matrix/cortex.Cortex.ResolveToolResult,matrix/cortex.Cortex.Rollups,matrix/cortex.Cortex.Snap,matrix/cortex.Cortex.Snapshot,matrix/cortex.Cortex.StartEmbedder,matrix/cortex.Cortex.StopEmbedder,matrix/cortex.Cortex.Store,matrix/cortex.Cortex.Supersede,matrix/cortex.Cortex.SweepNow,matrix/cortex.Cortex.Tombstone,matrix/cortex.Cortex.Transcript,matrix/cortex.Cortex.Update,matrix/cortex.Cortex.UpdateHead,matrix/cortex.Cortex.Verify,matrix/cortex.Cortex.VerifyScope,matrix/cortex.Cortex.Versions,matrix/cortex.Cortex.Write,matrix/cortex.Cortex.WriteGoalState,matrix/cortex.Cortex.addSessionProvenance,matrix/cortex.Cortex.backfillMemoryBatch,matrix/cortex.Cortex.backfillSessionBatch,matrix/cortex.Cortex.buildCoarseRollup,matrix/cortex.Cortex.cachedTierPinned,matrix/cortex.Cortex.cascadeCoarse,matrix/cortex.Cortex.cascadeHours,matrix/cortex.Cortex.emptyActivationReason,matrix/cortex.Cortex.enforceContextBudget,matrix/cortex.Cortex.enforceRead,matrix/cortex.Cortex.enforceWrite,matrix/cortex.Cortex.findIdxActorObjKey,matrix/cortex.Cortex.findIdxTagKey,matrix/cortex.Cortex.hasSessionProvenance,matrix/cortex.Cortex.isPinnedInCompact,matrix/cortex.Cortex.iterEdges,matrix/cortex.Cortex.loadOrRepairStorySoFar,matrix/cortex.Cortex.logScopeViolation,matrix/cortex.Cortex.notifyEmbedder,matrix/cortex.Cortex.prepareSupersedeReplacement,matrix/cortex.Cortex.prepareSupersedesEdge,matrix/cortex.Cortex.repairCoarseRollup,matrix/cortex.Cortex.repairHourRollup,matrix/cortex.Cortex.resolveNear,matrix/cortex.Cortex.saveEpisodicBackfill,matrix/cortex.Cortex.scanTypePrefix,matrix/cortex.Cortex.stageLexicalMessage,matrix/cortex.Cortex.stageSupersedeReplacement,matrix/cortex.Cortex.stageSupersedesEdge,matrix/cortex.Cortex.tierFrameRelevant,matrix/cortex.Cortex.tierOutcomes,matrix/cortex.Cortex.tierPinned,matrix/cortex.Cortex.transcriptSliceApprox,matrix/cortex.Cortex.transcriptSliceExact
   ^defines=matrix/cortex/cortex.go
 
 NODE id=matrix/cortex.Cortex#embed kind=field
@@ -708,8 +715,8 @@ EDGES
   ^contains=matrix/cortex.Cortex
 
 NODE id=matrix/cortex.Cortex.Activate kind=method
-  digest=b3:454a7bbb839074be10fe24b8b37f675fb6d7474b2355adbdd03edb58b113c010 file=cortex/activate.go range=186:349 lang=go exported=true byte_range=8243:13811
-  sig=func (c *Cortex) Activate(conv, query string, budget Budget) (*ActivationBundle, error)
+  digest=b3:69f11ede90a791b2ece1befcae7da8bec24d5081b18df8cf9c9b60e1fb7cbc26 file=cortex/activate.go range=192:358 lang=go exported=true byte_range=8500:14349
+  sig=func (c *Cortex) Activate(conv, queryText string, budget Budget) (*ActivationBundle, error)
   doc=Activate composes the whole per-turn working set described in req.7.1.\nquery is accepted per the design's call shape but is currently UNUSED: no\nacceptance criterion in req.7 assigns it tier-selection behavior (Pinned/\nTimeline/Recent/Transcript are all query-independent — unlike Context's\nFrame/Outcomes tiers, none of Activate's tiers are verb/object-keyed). It\nis reserved for a future extension rather than guessed at here.
 EDGES
   ^contains=matrix/cortex.Cortex
@@ -779,7 +786,7 @@ EDGES
   ^defines=matrix/cortex/cascade.go
 
 NODE id=matrix/cortex.Cortex.CloseValidity kind=method
-  digest=b3:9af09103da0a83c02dc2770703d295a3b220450ee9fa907a5fe78960237cf56e file=cortex/cortex.go range=665:788 lang=go exported=true byte_range=22321:26369
+  digest=b3:9af09103da0a83c02dc2770703d295a3b220450ee9fa907a5fe78960237cf56e file=cortex/cortex.go range=684:807 lang=go exported=true byte_range=22981:27029
   sig=func (c *Cortex) CloseValidity(uri memory.URI, until time.Time, by string) (memory.URI, error)
   doc=CloseValidity stamps a closing valid-time bound on the memory identified\nby uri, recording that the assertion stopped being true at `until` (v3\n#2). It is the supersession companion to Update: when a newer memory\nsupersedes an older one, the older one's ValidUntil is closed so AsOf\nqueries past `until` no longer surface it, while the version history and\nthe EdgeSupersedes provenance are preserved.\n\nThe close is written as a NEW immutable Version via the Update path,\nnever an in-place Head mutation, so journal replay reproduces it\nbyte-for-byte (v3 §8 lock). The new version reuses the previous version's\nData, Confidence, Provenance, Forms, ExpiresAt and ValidFrom unchanged —\nonly ValidUntil and the version metadata (Version/CreatedAt/CreatedBy)\nmove. Salience is intentionally left untouched: closing validity is not a\n"use" of the memory.\n\nA zero `until` defaults to c.now() — the instant the supersession is\nrecorded, which is the successor's effective valid-from. Idempotent: a\nmemory whose latest version already carries a ValidUntil is returned\nunchanged so repeated supersedes (e.g. an AddEdge revive) don't churn\nversions.
 EDGES
@@ -795,7 +802,7 @@ EDGES
   ^defines=matrix/cortex/compact.go
 
 NODE id=matrix/cortex.Cortex.Context kind=method
-  digest=b3:5df8542eee33c2c871e96f91c2b7811574930452ba30d2dd5067ace57d9d26cd file=cortex/context.go range=240:484 lang=go exported=true byte_range=9889:18659
+  digest=b3:837c60d8547a2016b433e6304f57da60995996812a3f7a2bed740d5a459cb3d7 file=cortex/context.go range=240:484 lang=go exported=true byte_range=9889:18708
   sig=func (c *Cortex) Context(opts ContextOpts) (*Bundle, error)
   doc=Context composes the three-tier cold-start bundle described in\nresearch/03-retrieval-patterns.md §2 and research/04-cortex.md §12.1.\n\nAlgorithm:\n 1. Normalize opts (defaults applied).\n 2. Run each requested tier sequentially:\n    - Pinned: type-scan Identity ∪ Constraint{Hard} ∪ Goal{Active}.\n    - FrameRelevant: idx/frame scan per (verb, kind, obj) tuple.\n    - Outcomes: idx/actor_obj scan per (verb, obj) tuple, top-N.\n 3. Deduplicate across tiers (a memory appears in exactly one tier:\n    earlier tier wins; Pinned > FrameRelevant > Outcomes).\n 4. Load Head + Version + cold salience for every surviving ID.\n 5. Render to opts.Form (default FormMedium).\n 6. Apply PinnedFloor to Pinned-tier members in the scores map.\n 7. Global salience-asc trim to BudgetTokens.\n 8. Trimmed-but-scanned IDs become ReachableURIs.\n\nPure read path: no journal entries, no salience bumps. cortex_\nsnapshot_hash is unchanged across the call.
 EDGES
@@ -858,7 +865,7 @@ EDGES
   ^defines=matrix/cortex/provenance.go
 
 NODE id=matrix/cortex.Cortex.Find kind=method
-  digest=b3:1b66ce9c15ce211e236ede00fb94a68d7c76356dc37b45fea7b414a9cd82c32d file=cortex/cortex.go range=869:899 lang=go exported=true byte_range=28542:29929
+  digest=b3:1b66ce9c15ce211e236ede00fb94a68d7c76356dc37b45fea7b414a9cd82c32d file=cortex/cortex.go range=888:918 lang=go exported=true byte_range=29202:30589
   sig=func (c *Cortex) Find(q query.Query) (*query.Result, error)
   doc=Find runs a typed query against the actor's cortex. Thin facade over\nquery.Run that lives at the cortex package boundary so callers don't\nneed to thread the underlying *store.Store.\n\nSee research/04-cortex.md §12 for the full query model. As of Phase 5\nFind honors Type, Where, OrderBy, Limit, Offset, IncludeTombstoned,\nLateBinding, Form, BudgetTokens, Near, NearURI. Graph traversal\n(From/Follow) still returns query.ErrUnsupported (Phase 6).\n\nNear / NearURI resolution happens here rather than in query.Run because\nthe embedder and the HNSW index are cortex-level state. We translate\nthe sugar fields into (NearVector, NearIndex) before delegating so\nquery.Run remains a pure store→result function (no embedder or vector\nstate in its closure of dependencies).
 EDGES
@@ -898,7 +905,7 @@ EDGES
   ^defines=matrix/cortex/edges.go
 
 NODE id=matrix/cortex.Cortex.ListByType kind=method
-  digest=b3:e287f2fa3ca2c09bb3f7cb558b28e33aae6d08a7df04ebfb029efa294ad1b7c0 file=cortex/cortex.go range=959:989 lang=go exported=true byte_range=31944:32958
+  digest=b3:e287f2fa3ca2c09bb3f7cb558b28e33aae6d08a7df04ebfb029efa294ad1b7c0 file=cortex/cortex.go range=978:1008 lang=go exported=true byte_range=32604:33618
   sig=func (c *Cortex) ListByType(t memory.Type, limit int) ([]memory.ID, error)
   doc=ListByType returns all memory IDs of type t in idx/type insertion order\n(i.e. ascending by CreatedAt). Tombstoned memories are NOT filtered here;\ncallers can filter via ResolveLatest. limit==0 means unlimited.\n\nPhase 2 helper for the cortex-shell CLI and tests; the §12 Find query\nengine subsumes this in Phase 3.
 EDGES
@@ -962,7 +969,7 @@ EDGES
   ^defines=matrix/cortex/cortex.go
 
 NODE id=matrix/cortex.Cortex.Proof kind=method
-  digest=b3:a1ed36e9e4d6e4142417f540ed7fa02f7ea8ca781e74ca07d5facec66f2850fb file=cortex/cortex.go range=447:502 lang=go exported=true byte_range=15354:17716
+  digest=b3:a1ed36e9e4d6e4142417f540ed7fa02f7ea8ca781e74ca07d5facec66f2850fb file=cortex/cortex.go range=466:521 lang=go exported=true byte_range=16014:18376
   sig=func (c *Cortex) Proof(uris []memory.URI, manifest *snapshot.Manifest) (*snapshot.MultiProof, error)
   doc=Proof returns a multi-proof bundle over the memories namespace for\nthe supplied URIs at the manifest's pinned snapshot. Mirrors the\nresearch/04-cortex.md §12 surface ("Proof(actor, keys, manifest) →\nMerkleProof"). Used by sub-dispatch executors that want to ship a\nCortexScope.Proofs payload alongside the dispatch envelope.\n\nBuilds a Snapshot lookup against the pinned manifest's\nStateRoots["memories"] root: for each URI we (a) resolve current\ncanonical Head bytes, (b) compute the SMT key hash via the snapshot\npackage's HashMemoryKey, (c) Prove against the namespace SMT.\n\nCaller-supplied manifest pins the root the proofs MUST verify\nagainst. Cortex does NOT re-snapshot inside Proof — the caller has\nalready chosen the snapshot it wants the scope anchored to (typical\nflow: Snapshot() then Proof()).\n\nReturns ErrManifestRootMismatch (wrapped via snapshot.ErrInvalidProof)\nif the current memories SMT root has drifted away from the\nmanifest's root since manifest was taken — the caller must\nre-Snapshot before re-Proof.
 EDGES
@@ -1008,7 +1015,7 @@ EDGES
   ^defines=matrix/cortex/recall.go
 
 NODE id=matrix/cortex.Cortex.RecentEpisodes kind=method
-  digest=b3:3ec2496d3cc68042eb9f6d6d72853476c8b3cf0004b3ed9d84718a5f31d00df8 file=cortex/recent.go range=72:197 lang=go exported=true byte_range=3477:7279
+  digest=b3:9cd0f1b594f51b35cc352470f1ce24fef90e40f8ba9f7da15c78a821ff513b3b file=cortex/recent.go range=72:197 lang=go exported=true byte_range=3477:7328
   sig=func (c *Cortex) RecentEpisodes(n int, now time.Time) ([]Episode, error)
   doc=RecentEpisodes returns up to n recent episodes across all memory types,\nranked by the salience recency substrate at `now` (req.6.1), served purely\nfrom the materialized hour rollups in the default 24h horizon (req.6.2).\n\nRanking is Salience DESC, then memory ID ASC (idLess) as a stable, total\ntiebreak. Tombstoned members are skipped; a member whose head can no longer\nbe resolved (ErrNotFound) is skipped rather than erroring.
 EDGES
@@ -1048,7 +1055,7 @@ EDGES
   ^defines=matrix/cortex/cortex.go
 
 NODE id=matrix/cortex.Cortex.ResolveScoped kind=method
-  digest=b3:8876432fcddca2f1fe4d08745be640a6efe68f49a8ab408a3433321a8c4e2e25 file=cortex/cortex.go range=414:445 lang=go exported=true byte_range=14207:15352
+  digest=b3:8876432fcddca2f1fe4d08745be640a6efe68f49a8ab408a3433321a8c4e2e25 file=cortex/cortex.go range=433:464 lang=go exported=true byte_range=14867:16012
   sig=func (c *Cortex) ResolveScoped(uri memory.URI, s *scope.Scope, now time.Time) (*memory.Memory, error)
   doc=ResolveScoped is the sub-agent variant of Resolve. It (a) verifies\nthe supplied CortexScope (signature, schema, expiry, snapshot\nresolvability, multi-proof) ONCE and then (b) checks per-target\nscope.Allows on the loaded Head before returning. Single-target\nreads journal a KindScopeViolation entry on Allows miss (unlike\nFind/Context which filter silently — research/06-agents.md §7.2).\n\n`now` is the wall-clock used for scope expiry; pass time.Time{} to\ndefer to c.now().\n\nSpec: research/04-cortex.md §10 + §12 ("Scope *CortexScope on\nQuery"); Phase 10 Q3 lock — Scope rides on read calls, NOT a wrapper\ntype.
 EDGES
@@ -1111,6 +1118,14 @@ EDGES
   ^contains=matrix/cortex.Cortex
   ^defines=matrix/cortex/cortex.go
 
+NODE id=matrix/cortex.Cortex.Supersede kind=method
+  digest=b3:bba709bd70b116cb00a7827113433dc65ef5f2ede873b8f888c521b545bbaca5 file=cortex/supersede.go range=44:133 lang=go exported=true byte_range=1060:3897
+  sig=func (c *Cortex) Supersede(priorURI memory.URI, replacement memory.TypedData, opts SupersedeOptions) (memory.URI, error)
+  doc=Supersede atomically writes or updates a replacement, records the\nreplacement -> prior EdgeSupersedes provenance, and closes the prior\nmemory's valid-time interval. No observable state is committed unless every\npart succeeds.
+EDGES
+  ^contains=matrix/cortex.Cortex
+  ^defines=matrix/cortex/supersede.go
+
 NODE id=matrix/cortex.Cortex.SweepNow kind=method
   digest=b3:2c10dd82df64ebcbb33ebfe8340b91d532d234ae469beda15b51b0f0e93182bb file=cortex/sweep.go range=27:34 lang=go exported=true byte_range=1442:1882
   sig=func (c *Cortex) SweepNow(now int64) error
@@ -1120,7 +1135,7 @@ EDGES
   ^defines=matrix/cortex/sweep.go
 
 NODE id=matrix/cortex.Cortex.Tombstone kind=method
-  digest=b3:77f3138a9e4560bd9b650d947e8c66601265644052b7268cd2f7e5dfc37d4369 file=cortex/cortex.go range=790:867 lang=go exported=true byte_range=26371:28540
+  digest=b3:77f3138a9e4560bd9b650d947e8c66601265644052b7268cd2f7e5dfc37d4369 file=cortex/cortex.go range=809:886 lang=go exported=true byte_range=27031:29200
   sig=func (c *Cortex) Tombstone(uri memory.URI, reason, by string) error
   doc=Tombstone soft-deletes the memory identified by uri. The MemoryHead is\nrewritten with Tombstoned set; mv/<id>/v/* records are retained (audit\ntrail per §6, §11). A tomb/<id> marker is also written.
 EDGES
@@ -1136,7 +1151,7 @@ EDGES
   ^defines=matrix/cortex/session.go
 
 NODE id=matrix/cortex.Cortex.Update kind=method
-  digest=b3:e29f4a3729cdb90c9eb85121299ca664a3402d68c36c4037fdc2b983e17f98a7 file=cortex/cortex.go range=521:663 lang=go exported=true byte_range=18354:22319
+  digest=b3:e29f4a3729cdb90c9eb85121299ca664a3402d68c36c4037fdc2b983e17f98a7 file=cortex/cortex.go range=540:682 lang=go exported=true byte_range=19014:22979
   sig=func (c *Cortex) Update(uri memory.URI, newData memory.TypedData, meta WriteMeta) (memory.URI, error)
   doc=Update creates a new version of an existing memory by replacing its Data\nwith newData. SlotPatch typed-patch compilation (D8 → RFC 6902) lands in\nPhase 3; for now Update takes whole-Data replacement, which is\nsemantically a "patch every field" operation.\n\nReturns the new URI matrix://cortex/<type>/<id>#<n+1>.
 EDGES
@@ -1152,7 +1167,7 @@ EDGES
   ^defines=matrix/cortex/update_head.go
 
 NODE id=matrix/cortex.Cortex.Verify kind=method
-  digest=b3:bcfd56e15e865c8eea5f7b84cea2945c6ea35f29e685316cb7960dcbc4f16473 file=cortex/cortex.go range=504:511 lang=go exported=true byte_range=17718:18125
+  digest=b3:bcfd56e15e865c8eea5f7b84cea2945c6ea35f29e685316cb7960dcbc4f16473 file=cortex/cortex.go range=523:530 lang=go exported=true byte_range=18378:18785
   sig=func (c *Cortex) Verify(s *scope.Scope, now time.Time) error
   doc=Verify is a thin wrapper around scope.Verify that uses this Cortex's\nsnap state and KeyResolver. Reserved for callers (typically\ntools/attest, sub-dispatch verifiers) that want the same chain a\nscoped read would run, without performing a read. Returns nil iff\nthe scope is fully verified at `now`.
 EDGES
@@ -1166,6 +1181,14 @@ NODE id=matrix/cortex.Cortex.VerifyScope kind=method
 EDGES
   ^contains=matrix/cortex.Cortex
   ^defines=matrix/cortex/scope_enforce.go
+
+NODE id=matrix/cortex.Cortex.Versions kind=method
+  digest=b3:107959cbca89cb1b806ad1b07d66b2b841af93e7e9d9c860a1e8ddde76cb4771 file=cortex/cortex.go range=414:431 lang=go exported=true byte_range=14207:14865
+  sig=func (c *Cortex) Versions(id memory.ID) ([]memory.Version, error)
+  doc=Versions returns every immutable version for a memory in ascending version\norder. It is a pure audit/history read used by truth-aware retrieval to keep\nobsolete wording from re-entering through derived transcript indexes.
+EDGES
+  ^contains=matrix/cortex.Cortex
+  ^defines=matrix/cortex/cortex.go
 
 NODE id=matrix/cortex.Cortex.Write kind=method
   digest=b3:8de0226a7f069952acfc7845a573e197b2bd29d74f1b0dbfa0e9be6753905671 file=cortex/cortex.go range=148:326 lang=go exported=true byte_range=5722:11433
@@ -1213,7 +1236,7 @@ EDGES
   ^defines=matrix/cortex/cascade.go
 
 NODE id=matrix/cortex.Cortex.cachedTierPinned kind=method
-  digest=b3:f2dab64bd64bc52593f0d00afdde76715f4293e2a5c0699f52db946ca5fb1cba file=cortex/activate.go range=149:171 lang=go exported=false byte_range=7117:7829
+  digest=b3:f2dab64bd64bc52593f0d00afdde76715f4293e2a5c0699f52db946ca5fb1cba file=cortex/activate.go range=155:177 lang=go exported=false byte_range=7374:8086
   sig=func (c *Cortex) cachedTierPinned() ([]memory.ID, error)
   doc=cachedTierPinned returns the Pinned-tier candidate ID list, served from\nthe in-memory per-turn cache (cortex.go's pinnedCache* fields) when the\njournal head hasn't advanced since it was last computed, or freshly\nscanned (and cached) otherwise. See cortex.go's field doc for the full\ninvalidation rationale (req.7.2, audit NE-7).
 EDGES
@@ -1235,6 +1258,13 @@ NODE id=matrix/cortex.Cortex.cascadeHours kind=method
 EDGES
   ^contains=matrix/cortex.Cortex
   ^defines=matrix/cortex/cascade.go
+
+NODE id=matrix/cortex.Cortex.emptyActivationReason kind=method
+  digest=b3:5e699540ddd9f0eb09009acac64ab2f0300662918d34acb366c6edde86b70762 file=cortex/activate.go range=360:391 lang=go exported=false byte_range=14351:15564
+  sig=func (c *Cortex) emptyActivationReason(queryText string) string
+EDGES
+  ^contains=matrix/cortex.Cortex
+  ^defines=matrix/cortex/activate.go
 
 NODE id=matrix/cortex.Cortex.enforceContextBudget kind=method
   digest=b3:18743ae1b209b248b6b2387df76902241acd2cf032c14e8b30c2ac295dd0df51 file=cortex/scope_enforce.go range=120:131 lang=go exported=false byte_range=4668:5175
@@ -1299,7 +1329,7 @@ EDGES
   ^defines=matrix/cortex/edges.go
 
 NODE id=matrix/cortex.Cortex.loadOrRepairStorySoFar kind=method
-  digest=b3:ae42b20c3a312143301a04b83a572471379b54ca90ebaf64960f0fbce97732c9 file=cortex/activate.go range=351:379 lang=go exported=false byte_range=13813:14676
+  digest=b3:ae42b20c3a312143301a04b83a572471379b54ca90ebaf64960f0fbce97732c9 file=cortex/activate.go range=393:421 lang=go exported=false byte_range=15566:16429
   sig=func (c *Cortex) loadOrRepairStorySoFar(conv string, msgs []Message) (string, error)
   doc=loadOrRepairStorySoFar returns the ShortForm of conv's story-so-far\nrecord, performing the lazy read-repair described in the file header when\nthe persisted record is missing or stale relative to msgs' current head\nseq. Returns "" when the conversation has no transcript yet (req.7.5\ngraceful degradation — never an error).
 EDGES
@@ -1322,6 +1352,20 @@ EDGES
   ^contains=matrix/cortex.Cortex
   ^defines=matrix/cortex/embedder.go
 
+NODE id=matrix/cortex.Cortex.prepareSupersedeReplacement kind=method
+  digest=b3:fe17d16655e856e54ff24632dfa588f1f0a16cbbcc6d1f194457f0a17c08bf95 file=cortex/supersede.go range=135:273 lang=go exported=false byte_range=3899:8337
+  sig=func (c *Cortex) prepareSupersedeReplacement(priorID memory.ID, data memory.TypedData, opts SupersedeOptions, now time.Time) (preparedSupersedeMemory, error)
+EDGES
+  ^contains=matrix/cortex.Cortex
+  ^defines=matrix/cortex/supersede.go
+
+NODE id=matrix/cortex.Cortex.prepareSupersedesEdge kind=method
+  digest=b3:f0ac9a227aec3fe4e5bcf0768d630c2bab8171c186f3e89615a59c5ce8234792 file=cortex/supersede.go range=354:365 lang=go exported=false byte_range=10736:11197
+  sig=func (c *Cortex) prepareSupersedesEdge(src, dst memory.ID, meta AddEdgeMeta, now time.Time) (memory.EdgeRecord, []byte, error)
+EDGES
+  ^contains=matrix/cortex.Cortex
+  ^defines=matrix/cortex/supersede.go
+
 NODE id=matrix/cortex.Cortex.repairCoarseRollup kind=method
   digest=b3:9527479d205a807fcf3230cb43576f2a40a45ada32f50c8c74e5a87500d8a37f file=cortex/repair.go range=83:104 lang=go exported=false byte_range=3584:4600
   sig=func (c *Cortex) repairCoarseRollup(w Window, finer RollupTier) (*RollupRecord, error)
@@ -1339,7 +1383,7 @@ EDGES
   ^defines=matrix/cortex/repair.go
 
 NODE id=matrix/cortex.Cortex.resolveNear kind=method
-  digest=b3:ab6cfbd57f9d76598e37494a74f288861e3c8e75ab7d24458e807160dcc4e3a2 file=cortex/cortex.go range=901:947 lang=go exported=false byte_range=29931:31544
+  digest=b3:ab6cfbd57f9d76598e37494a74f288861e3c8e75ab7d24458e807160dcc4e3a2 file=cortex/cortex.go range=920:966 lang=go exported=false byte_range=30591:32204
   sig=func (c *Cortex) resolveNear(q *query.Query) error
   doc=resolveNear translates Query.Near (text) / Query.NearURI (memory URI)\ninto (Query.NearVector, Query.NearIndex). The original Near / NearURI\nfields are cleared so query.Run treats the call as "already resolved";\nthis avoids accidental double-resolution if the same Query is reused.
 EDGES
@@ -1354,7 +1398,7 @@ EDGES
   ^defines=matrix/cortex/episodic_backfill.go
 
 NODE id=matrix/cortex.Cortex.scanTypePrefix kind=method
-  digest=b3:46076be75a86a3039c91f8c6c2472f3b20748418b222ef81eb8998d86c41c199 file=cortex/context.go range=667:688 lang=go exported=false byte_range=23846:24602
+  digest=b3:46076be75a86a3039c91f8c6c2472f3b20748418b222ef81eb8998d86c41c199 file=cortex/context.go range=667:688 lang=go exported=false byte_range=23895:24651
   sig=func (c *Cortex) scanTypePrefix(t memory.Type) ([]memory.ID, error)
   doc=scanTypePrefix returns every memory ID under idx/type/<t>. Shared by\nthe Pinned-tier helpers (Identity/Constraint/Goal). Distinct from\nthe public ListByType only in that it returns an internal slice\nwithout bounds (the Pinned-tier sizes are inherently small).
 EDGES
@@ -1368,8 +1412,22 @@ EDGES
   ^contains=matrix/cortex.Cortex
   ^defines=matrix/cortex/lexical.go
 
+NODE id=matrix/cortex.Cortex.stageSupersedeReplacement kind=method
+  digest=b3:ab4098d895ebf7002dadef233214fc51bdcac0f262d6820107471762c9bfb99c file=cortex/supersede.go range=304:352 lang=go exported=false byte_range=9052:10734
+  sig=func (c *Cortex) stageSupersedeReplacement(wb *store.WriteBatch, p preparedSupersedeMemory, now time.Time) error
+EDGES
+  ^contains=matrix/cortex.Cortex
+  ^defines=matrix/cortex/supersede.go
+
+NODE id=matrix/cortex.Cortex.stageSupersedesEdge kind=method
+  digest=b3:6c1f08a66f4405cafc7b3c6b09dbe4e724f2ba6bce9b5eef60de50a1a2f6a1ea file=cortex/supersede.go range=367:393 lang=go exported=false byte_range=11199:12145
+  sig=func (c *Cortex) stageSupersedesEdge(wb *store.WriteBatch, rec memory.EdgeRecord, enc []byte, meta AddEdgeMeta, now time.Time) error
+EDGES
+  ^contains=matrix/cortex.Cortex
+  ^defines=matrix/cortex/supersede.go
+
 NODE id=matrix/cortex.Cortex.tierFrameRelevant kind=method
-  digest=b3:71f19db2d32860674b9cf992393f00615550f6bf1b3a05e92614f3414293531a file=cortex/context.go range=578:606 lang=go exported=false byte_range=20999:21968
+  digest=b3:71f19db2d32860674b9cf992393f00615550f6bf1b3a05e92614f3414293531a file=cortex/context.go range=578:606 lang=go exported=false byte_range=21048:22017
   sig=func (c *Cortex) tierFrameRelevant(verb memory.Verb, tuples []objectTuple) ([]memory.ID, error)
   doc=tierFrameRelevant scans idx/frame for each (verb, kind, ref) tuple\nand returns the deduped ID list. Order: idx scan order, which is\nbyte-sort over the trailing memory ULID — equivalent to creation\norder under ULID monotonicity. Caller re-orders by salience.
 EDGES
@@ -1377,7 +1435,7 @@ EDGES
   ^defines=matrix/cortex/context.go
 
 NODE id=matrix/cortex.Cortex.tierOutcomes kind=method
-  digest=b3:8c117ebd7d4f73973541bb6003ce25a7dab2bc94503dd7fa187bba751d5b3845 file=cortex/context.go range=608:665 lang=go exported=false byte_range=21970:23844
+  digest=b3:8c117ebd7d4f73973541bb6003ce25a7dab2bc94503dd7fa187bba751d5b3845 file=cortex/context.go range=608:665 lang=go exported=false byte_range=22019:23893
   sig=func (c *Cortex) tierOutcomes(verb memory.Verb, tuples []objectTuple, limit int) ([]memory.ID, map[memory.ID]int64, error)
   doc=tierOutcomes scans idx/actor_obj for each (verb, ref) tuple, dedups,\nand returns the top-OutcomeLimit IDs ordered by created desc. Also\nreturns a map[id]→createdUnixNano so the caller can sort the Outcomes\nslice deterministically (idx scan order is created asc; we reverse).
 EDGES
@@ -1385,7 +1443,7 @@ EDGES
   ^defines=matrix/cortex/context.go
 
 NODE id=matrix/cortex.Cortex.tierPinned kind=method
-  digest=b3:64c51154b533659dc059c70633194c5b5ea71ae28a5505434fe0a52ef49caa4d file=cortex/context.go range=488:576 lang=go exported=false byte_range=18740:20997
+  digest=b3:64c51154b533659dc059c70633194c5b5ea71ae28a5505434fe0a52ef49caa4d file=cortex/context.go range=488:576 lang=go exported=false byte_range=18789:21046
   sig=func (c *Cortex) tierPinned() ([]memory.ID, error)
   doc=tierPinned returns the union of Identity ∪ Constraint{Strength=Hard}\n∪ Goal{Status=Active} IDs, with tombstoned heads filtered. Ordering\nis the union scan order (caller orders by salience desc downstream).\n\nConstraint and Goal need a Data decode to read StrengthVal / Status;\nthe cost is one Pebble Get per type-scan hit. Acceptable: realistic\npinned populations are O(10s) per actor (one identity, a handful of\nhard constraints, a few active goals).
 EDGES
@@ -1458,7 +1516,7 @@ EDGES
   ^defines=matrix/cortex/story.go
 
 NODE id=matrix/cortex.DefaultActivateBudgetTokens kind=const
-  digest=b3:0a37038fc32fe2e61ffd7a436c98b72b3d19aaeb57ce95d150e6ef837a0b6cd0 file=cortex/activate.go range=85:86 lang=go exported=true byte_range=4069:4189
+  digest=b3:0a37038fc32fe2e61ffd7a436c98b72b3d19aaeb57ce95d150e6ef837a0b6cd0 file=cortex/activate.go range=87:88 lang=go exported=true byte_range=4103:4223
   sig=untyped int
   doc=DefaultActivateBudgetTokens mirrors Context's DefaultBudgetTokens.
 EDGES
@@ -1493,7 +1551,7 @@ EDGES
   ^defines=matrix/cortex/ratelimit.go
 
 NODE id=matrix/cortex.DefaultRecentEpisodesN kind=const
-  digest=b3:635368cb225eef2539252799bfdce5f8f10c121238637f59c1b6be72ac6478d2 file=cortex/activate.go range=104:105 lang=go exported=true byte_range=5143:5238
+  digest=b3:635368cb225eef2539252799bfdce5f8f10c121238637f59c1b6be72ac6478d2 file=cortex/activate.go range=106:107 lang=go exported=true byte_range=5177:5272
   sig=untyped int
   doc=DefaultRecentEpisodesN caps the T1 Recent tier's episode count.
 EDGES
@@ -1514,14 +1572,14 @@ EDGES
   ^defines=matrix/cortex/rollup.go
 
 NODE id=matrix/cortex.DefaultTimelineLookbackNanos kind=const
-  digest=b3:48cc3ae627f5520e00d80e93404e9e3d9b583e0d705a8a1fbd364248b2a08630 file=cortex/activate.go range=95:102 lang=go exported=true byte_range=4639:5140
+  digest=b3:48cc3ae627f5520e00d80e93404e9e3d9b583e0d705a8a1fbd364248b2a08630 file=cortex/activate.go range=97:104 lang=go exported=true byte_range=4673:5174
   sig=int64
   doc=DefaultTimelineLookbackNanos bounds the T0 Timeline tier to the last\nN nanoseconds of epoch rollups. Anchored to salience.HalfLifeNanos\n(90 days) — the same constant this whole system already uses to\ndefine "the recent past" via the recency substrate, so the Timeline\nhorizon and the recency decay this feature ranks everything else by\nare the same 90-day notion of "the general past", not an arbitrary\nsecond number.
 EDGES
   ^defines=matrix/cortex/activate.go
 
 NODE id=matrix/cortex.DefaultTranscriptTailLimit kind=const
-  digest=b3:ffa1fbeaeda37d3f9e9e32b973c05ed55c64b28930911c78f889a7e900338c3f file=cortex/activate.go range=107:109 lang=go exported=true byte_range=5241:5387
+  digest=b3:ffa1fbeaeda37d3f9e9e32b973c05ed55c64b28930911c78f889a7e900338c3f file=cortex/activate.go range=109:111 lang=go exported=true byte_range=5275:5421
   sig=untyped int
   doc=DefaultTranscriptTailLimit caps the T2 Transcript slice to the most\nrecent N messages of the conversation.
 EDGES
@@ -2034,7 +2092,7 @@ EDGES
   ^defines=matrix/cortex/lexical.go
 
 NODE id=matrix/cortex.MaxActivateBudgetTokens kind=const
-  digest=b3:5c15919da05ebfef30096e5b861d473bc48f587ed8d8ccab22a7ce7ec4d8476a file=cortex/activate.go range=87:93 lang=go exported=true byte_range=4191:4636
+  digest=b3:5c15919da05ebfef30096e5b861d473bc48f587ed8d8ccab22a7ce7ec4d8476a file=cortex/activate.go range=89:95 lang=go exported=true byte_range=4225:4670
   sig=untyped int
   doc=MaxActivateBudgetTokens caps a caller-supplied activation budget. It is\ndeliberately DECOUPLED from Context's MaxBudgetTokens (4000): the\nactivation bundle is the agent's whole durable-memory working set, and a\nlarge-window caller (Neo at 1M) legitimately asks for a far richer\nbundle than the legacy Context composer ever serves. The ceiling bounds\npathological requests, not normal ones.
 EDGES
@@ -2161,7 +2219,7 @@ EDGES
   ^defines=matrix/cortex/context.go
 
 NODE id=matrix/cortex.ParseURI kind=func
-  digest=b3:d2a4595a45c1a08142fddcde9f6346ae9ba422605125ee3f836d047a5ae3ef6c file=cortex/cortex.go range=1000:1045 lang=go exported=true byte_range=33322:34930
+  digest=b3:d2a4595a45c1a08142fddcde9f6346ae9ba422605125ee3f836d047a5ae3ef6c file=cortex/cortex.go range=1019:1064 lang=go exported=true byte_range=33982:35590
   sig=func ParseURI(uri memory.URI) (memory.Type, memory.ID, uint64, error)
   doc=ParseURI splits a canonical cortex URI. Format:\n\n	matrix://cortex/<Type>/<crockford-ulid>#<version>\n\nReturns ErrBadURI on any deviation. #latest is rejected; pre-resolution\n(D13) is the compiler's job.
 EDGES
@@ -2696,6 +2754,38 @@ NODE id=matrix/cortex.StorySoFarSchemaVersion kind=const
 EDGES
   ^defines=matrix/cortex/story.go
 
+NODE id=matrix/cortex.SupersedeOptions kind=type
+  digest=b3:2af9f4469162d7bb22c4fe2ada2e1d519fb2c976647749f619b66d455437d6fd file=cortex/supersede.go range=19:27 lang=go exported=true byte_range=366:742
+  sig=type SupersedeOptions struct {\n	ReplacementURI	memory.URI\n	Head		memory.Head\n	WriteMeta	WriteMeta\n	EdgeMeta	AddEdgeMeta\n}
+  doc=SupersedeOptions controls an atomic replacement. ReplacementURI is optional:\nwhen empty a new memory is created from Head; when present that distinct live\nmemory is updated in the same transaction and becomes the replacement.
+EDGES
+  contains=matrix/cortex.SupersedeOptions#EdgeMeta,matrix/cortex.SupersedeOptions#Head,matrix/cortex.SupersedeOptions#ReplacementURI,matrix/cortex.SupersedeOptions#WriteMeta
+  ^defines=matrix/cortex/supersede.go
+
+NODE id=matrix/cortex.SupersedeOptions#EdgeMeta kind=field
+  digest=b3:6aa4f06d52fd8467b42f8c0605dec241bf2375789f1f6981c422ad819fb4b464 file=cortex/supersede.go range=26:26 lang=go exported=true byte_range=714:740
+  sig=cortex.AddEdgeMeta
+EDGES
+  ^contains=matrix/cortex.SupersedeOptions
+
+NODE id=matrix/cortex.SupersedeOptions#Head kind=field
+  digest=b3:cdfd415cc5d85ce2908d15238e238c6756ab640b6856b1d3b9c96447e7066960 file=cortex/supersede.go range=24:24 lang=go exported=true byte_range=660:686
+  sig=memory.Head
+EDGES
+  ^contains=matrix/cortex.SupersedeOptions
+
+NODE id=matrix/cortex.SupersedeOptions#ReplacementURI kind=field
+  digest=b3:61e3ac4ebaa9994dca34617bc6bb97bbaec272a121a01f87cae6e6d646b0786d file=cortex/supersede.go range=23:23 lang=go exported=true byte_range=633:658
+  sig=memory.URI
+EDGES
+  ^contains=matrix/cortex.SupersedeOptions
+
+NODE id=matrix/cortex.SupersedeOptions#WriteMeta kind=field
+  digest=b3:5e62f8a4679625063d109ec75c3143aaa1496d55b8778d2332a549add2ec07b0 file=cortex/supersede.go range=25:25 lang=go exported=true byte_range=688:712
+  sig=cortex.WriteMeta
+EDGES
+  ^contains=matrix/cortex.SupersedeOptions
+
 NODE id=matrix/cortex.Tier kind=type
   digest=b3:56803afcb9709240b94fe14f573a413fe36edb88e24f2f8d3398204f354263f5 file=cortex/context.go range=57:60 lang=go exported=true byte_range=2388:2582
   sig=type Tier byte
@@ -2933,7 +3023,7 @@ EDGES
   ^contains=matrix/cortex.WriteMeta
 
 NODE id=matrix/cortex.activationItem kind=type
-  digest=b3:1b14c91b33c86a9f1851c4340c717d1c18cc52d9237b5589436a85d1f294a4e2 file=cortex/activate.go range=173:184 lang=go exported=false byte_range=7831:8241
+  digest=b3:1b14c91b33c86a9f1851c4340c717d1c18cc52d9237b5589436a85d1f294a4e2 file=cortex/activate.go range=179:190 lang=go exported=false byte_range=8088:8498
   sig=type activationItem struct {\n	tier	string\n	idx	int\n	uri	memory.URI\n	score	float64\n	tokens	int\n}
   doc=activationItem is the internal, tier-agnostic row the single global trim\n(req.7.1) ranks and drops from. tier+idx point back into the per-tier\ncandidate slices assembled before trimming, so survivors can be spliced\nback into ActivationBundle's typed fields in their original per-tier\norder.
 EDGES
@@ -2941,31 +3031,31 @@ EDGES
   ^defines=matrix/cortex/activate.go
 
 NODE id=matrix/cortex.activationItem#idx kind=field
-  digest=b3:d1f67976bc229d7e9831e86031a081654139532a21f7a6bbfa8f77f91c84d722 file=cortex/activate.go range=180:180 lang=go exported=false byte_range=8182:8192
+  digest=b3:d1f67976bc229d7e9831e86031a081654139532a21f7a6bbfa8f77f91c84d722 file=cortex/activate.go range=186:186 lang=go exported=false byte_range=8439:8449
   sig=int
 EDGES
   ^contains=matrix/cortex.activationItem
 
 NODE id=matrix/cortex.activationItem#score kind=field
-  digest=b3:9b0e9e8276ce4b801b2313f2fbabbca50f55cd80a97bea37f50efdf992b89882 file=cortex/activate.go range=182:182 lang=go exported=false byte_range=8213:8227
+  digest=b3:9b0e9e8276ce4b801b2313f2fbabbca50f55cd80a97bea37f50efdf992b89882 file=cortex/activate.go range=188:188 lang=go exported=false byte_range=8470:8484
   sig=float64
 EDGES
   ^contains=matrix/cortex.activationItem
 
 NODE id=matrix/cortex.activationItem#tier kind=field
-  digest=b3:4ab5f8886f1b44df2f68ac0d8d81321238a568c9a9a2aa7e507703496f894208 file=cortex/activate.go range=179:179 lang=go exported=false byte_range=8167:8180
+  digest=b3:4ab5f8886f1b44df2f68ac0d8d81321238a568c9a9a2aa7e507703496f894208 file=cortex/activate.go range=185:185 lang=go exported=false byte_range=8424:8437
   sig=string
 EDGES
   ^contains=matrix/cortex.activationItem
 
 NODE id=matrix/cortex.activationItem#tokens kind=field
-  digest=b3:289cc176b3a2e9204b62bc182742a085f1ff5860659e80164683e33833bfcf68 file=cortex/activate.go range=183:183 lang=go exported=false byte_range=8229:8239
+  digest=b3:289cc176b3a2e9204b62bc182742a085f1ff5860659e80164683e33833bfcf68 file=cortex/activate.go range=189:189 lang=go exported=false byte_range=8486:8496
   sig=int
 EDGES
   ^contains=matrix/cortex.activationItem
 
 NODE id=matrix/cortex.activationItem#uri kind=field
-  digest=b3:366a2db52feba2df0843b390859e091d5fa093c756c4b1851ed6fc74a03eb7eb file=cortex/activate.go range=181:181 lang=go exported=false byte_range=8194:8211
+  digest=b3:366a2db52feba2df0843b390859e091d5fa093c756c4b1851ed6fc74a03eb7eb file=cortex/activate.go range=187:187 lang=go exported=false byte_range=8451:8468
   sig=memory.URI
 EDGES
   ^contains=matrix/cortex.activationItem
@@ -3005,7 +3095,7 @@ EDGES
   ^defines=matrix/cortex/cascade.go
 
 NODE id=matrix/cortex.buildReachableURIs kind=func
-  digest=b3:bf0ec91f8cab87c2d2b437caa72aab95cab55d6f357366a996e3559c18a820c0 file=cortex/context.go range=920:940 lang=go exported=false byte_range=31669:32278
+  digest=b3:bf0ec91f8cab87c2d2b437caa72aab95cab55d6f357366a996e3559c18a820c0 file=cortex/context.go range=920:940 lang=go exported=false byte_range=31718:32327
   sig=func buildReachableURIs(loaded map[memory.ID]*memory.Memory, trimmed []memory.ID) []memory.URI
   doc=buildReachableURIs converts the trimmed-but-loaded IDs into canonical\nmatrix://cortex/... URIs, capped at MaxReachableURIs to keep response\nsize bounded.
 EDGES
@@ -3141,7 +3231,7 @@ EDGES
   ^defines=matrix/cortex/recall.go
 
 NODE id=matrix/cortex.descentState.leaf kind=method
-  digest=b3:bc6c3494750eeb3250628e9b4dcea53cc422dae44c79914a6d67caad6c10c1cf file=cortex/recall.go range=334:407 lang=go exported=false byte_range=11922:14284
+  digest=b3:e89dfd81ab2909d3d1597b5685614c4ada14864d5cc85e919522e334afe3ab5a file=cortex/recall.go range=334:403 lang=go exported=false byte_range=11922:14255
   sig=func (s *descentState) leaf(uri memory.URI, depth int) (RecallHit, bool, error)
   doc=leaf resolves a RefKindMemory member into a RecallHit, applying the\ntype filter, the bi-temporal as_of validity filter (req.8.3), and the\noptional sub-query substring match, and charging the per-descent token\nbudget. Returns ok=false when the member is filtered out or already seen.
 EDGES
@@ -3359,7 +3449,7 @@ EDGES
   ^defines=matrix/cortex/goal_state.go
 
 NODE id=matrix/cortex.errStopIter kind=var
-  digest=b3:d0ef639348e04945e81d6750ce56f70c44df581cc72475b14d7336af3bacbadd file=cortex/cortex.go range=991:991 lang=go exported=false byte_range=32964:33006
+  digest=b3:d0ef639348e04945e81d6750ce56f70c44df581cc72475b14d7336af3bacbadd file=cortex/cortex.go range=1010:1010 lang=go exported=false byte_range=33624:33666
   sig=error
 EDGES
   ^defines=matrix/cortex/cortex.go
@@ -3386,7 +3476,7 @@ EDGES
   ^defines=matrix/cortex/goal_state.go
 
 NODE id=matrix/cortex.hashTag kind=func
-  digest=b3:4cb397d7e8cfa22bc9d2e0ce8f9e202bd9003cd806a7acefffbfd2370c067067 file=cortex/cortex.go range=949:957 lang=go exported=false byte_range=31546:31942
+  digest=b3:4cb397d7e8cfa22bc9d2e0ce8f9e202bd9003cd806a7acefffbfd2370c067067 file=cortex/cortex.go range=968:976 lang=go exported=false byte_range=32206:32602
   sig=func hashTag(tag string) [keys.TagHashSize]byte
   doc=hashTag returns the 8-byte sha256 prefix used as the idx/tag bucket key.\nDefined here in addition to query.HashTag so the cortex package's write\npath doesn't import its own consumer (avoids a needless dependency edge).
 EDGES
@@ -3406,7 +3496,7 @@ EDGES
   ^defines=matrix/cortex/update_head.go
 
 NODE id=matrix/cortex.idLess kind=func
-  digest=b3:608b57cef0177137148dfc72b093ac74c4d3b3fac957b89cc6c23c3b5e2d11c3 file=cortex/context.go range=847:856 lang=go exported=false byte_range=29427:29683
+  digest=b3:608b57cef0177137148dfc72b093ac74c4d3b3fac957b89cc6c23c3b5e2d11c3 file=cortex/context.go range=847:856 lang=go exported=false byte_range=29476:29732
   sig=func idLess(a, b memory.ID) bool
   doc=idLess returns ULID-ascending order; used as the final tiebreak so\nall sort orderings remain deterministic across runs.
 EDGES
@@ -3419,7 +3509,7 @@ EDGES
   ^defines=matrix/cortex/compact.go,matrix/cortex/goal_state.go,matrix/cortex/rollup.go,matrix/cortex/rollup_enrich.go,matrix/cortex/session.go,matrix/cortex/story.go
 
 NODE id=matrix/cortex.intersect kind=func
-  digest=b3:4ea0126314761f60b0e39130ebeb472675f1e5244763e9aee3f359d663273be5 file=cortex/context.go range=907:918 lang=go exported=false byte_range=31234:31667
+  digest=b3:4ea0126314761f60b0e39130ebeb472675f1e5244763e9aee3f359d663273be5 file=cortex/context.go range=907:918 lang=go exported=false byte_range=31283:31716
   sig=func intersect(survivors map[memory.ID]struct{}, ids []memory.ID) []memory.ID
   doc=intersect returns the elements of ids that survive (= are present in\nthe survivor set). Preserves input order so per-tier natural order\nis retained after the cross-tier trim. O(n) in the input slice.
 EDGES
@@ -3558,14 +3648,14 @@ EDGES
   ^defines=matrix/cortex/embedder.go
 
 NODE id=matrix/cortex.makeCreatedDescOrder kind=func
-  digest=b3:ca87e1b7d0b10efe365baf42754474f369432fd5d672862fb439421e3a812259 file=cortex/context.go range=871:887 lang=go exported=false byte_range=30042:30605
+  digest=b3:ca87e1b7d0b10efe365baf42754474f369432fd5d672862fb439421e3a812259 file=cortex/context.go range=871:887 lang=go exported=false byte_range=30091:30654
   sig=func makeCreatedDescOrder(meta map[memory.ID]int64, scores map[memory.ID]float32) orderFn
   doc=makeCreatedDescOrder returns a comparator that ranks by created\ntimestamp descending (most recent first), salience desc as secondary,\nULID ascending as tertiary. Used by the Outcomes tier per\nresearch/04 §12.1 "scan, top-N" with most-recent-first semantics.
 EDGES
   ^defines=matrix/cortex/context.go
 
 NODE id=matrix/cortex.makeSalienceDescOrder kind=func
-  digest=b3:04d511e4f6a4a86012b4dbba1a8cbc953374bc4997ecb5552d665bcddb1a5081 file=cortex/context.go range=858:869 lang=go exported=false byte_range=29685:30040
+  digest=b3:04d511e4f6a4a86012b4dbba1a8cbc953374bc4997ecb5552d665bcddb1a5081 file=cortex/context.go range=858:869 lang=go exported=false byte_range=29734:30089
   sig=func makeSalienceDescOrder(scores map[memory.ID]float32) orderFn
   doc=makeSalienceDescOrder returns a comparator that ranks by salience\ndescending, ULID ascending as tiebreak. Used by Pinned and\nFrameRelevant tiers.
 EDGES
@@ -3620,14 +3710,14 @@ EDGES
   ^defines=matrix/cortex/ratelimit.go
 
 NODE id=matrix/cortex.normalizeIncludeTiers kind=func
-  digest=b3:5ca619d28fea7bb5c936c3e5c344d3e7cac3135ccd6bf9ac228e64d539f9ee06 file=cortex/context.go range=737:756 lang=go exported=false byte_range=25990:26586
+  digest=b3:5ca619d28fea7bb5c936c3e5c344d3e7cac3135ccd6bf9ac228e64d539f9ee06 file=cortex/context.go range=737:756 lang=go exported=false byte_range=26039:26635
   sig=func normalizeIncludeTiers(in []Tier) map[Tier]struct{}
   doc=normalizeIncludeTiers turns the caller-provided IncludeTiers slice\ninto a set. Empty/nil defaults to all three tiers. Unknown tier\nvalues are silently ignored (extension-friendly: a v2 tier added\nhere wouldn't break v1 callers).
 EDGES
   ^defines=matrix/cortex/context.go
 
 NODE id=matrix/cortex.objectTuple kind=type
-  digest=b3:4ddb3118beee4c61dc99f5168c0f1ff53680bd3c3ec41fbf0d01571a34253637 file=cortex/context.go range=692:699 lang=go exported=false byte_range=24683:24948
+  digest=b3:4ddb3118beee4c61dc99f5168c0f1ff53680bd3c3ec41fbf0d01571a34253637 file=cortex/context.go range=692:699 lang=go exported=false byte_range=24732:24997
   sig=type objectTuple struct {\n	kind	memory.ObjKind\n	ref	string\n	hash	[memory.ObjHashSize]byte\n}
   doc=objectTuple is the resolved (kind, ref, hash) form of one entry in\nContextOpts.Objects, computed once at the top of Context so each\ntier scan reuses the same hash.
 EDGES
@@ -3635,53 +3725,53 @@ EDGES
   ^defines=matrix/cortex/context.go
 
 NODE id=matrix/cortex.objectTuple#hash kind=field
-  digest=b3:4f3746a986d128816b98ec7d0b1faf4349b197f18e3957a36485c4e4b270f68e file=cortex/context.go range=698:698 lang=go exported=false byte_range=24917:24946
+  digest=b3:4f3746a986d128816b98ec7d0b1faf4349b197f18e3957a36485c4e4b270f68e file=cortex/context.go range=698:698 lang=go exported=false byte_range=24966:24995
   sig=[16]byte
 EDGES
   ^contains=matrix/cortex.objectTuple
 
 NODE id=matrix/cortex.objectTuple#kind kind=field
-  digest=b3:2fab7f0030054efd8d721a9367a5dfb230e3ddaf53a81f31eff895b3c2a279a4 file=cortex/context.go range=696:696 lang=go exported=false byte_range=24883:24902
+  digest=b3:2fab7f0030054efd8d721a9367a5dfb230e3ddaf53a81f31eff895b3c2a279a4 file=cortex/context.go range=696:696 lang=go exported=false byte_range=24932:24951
   sig=memory.ObjKind
 EDGES
   ^contains=matrix/cortex.objectTuple
 
 NODE id=matrix/cortex.objectTuple#ref kind=field
-  digest=b3:cfded0bd78433e8d542ea8ced67d0cd752f8bc384b2acbe712ac9f8bfc84564b file=cortex/context.go range=697:697 lang=go exported=false byte_range=24904:24915
+  digest=b3:cfded0bd78433e8d542ea8ced67d0cd752f8bc384b2acbe712ac9f8bfc84564b file=cortex/context.go range=697:697 lang=go exported=false byte_range=24953:24964
   sig=string
 EDGES
   ^contains=matrix/cortex.objectTuple
 
 NODE id=matrix/cortex.orderByTier kind=func
-  digest=b3:67be72bde36a6972939403c7bbbe5930e74a86e74410e97ff9aba73a75ca057d file=cortex/context.go range=889:905 lang=go exported=false byte_range=30607:31232
+  digest=b3:67be72bde36a6972939403c7bbbe5930e74a86e74410e97ff9aba73a75ca057d file=cortex/context.go range=889:905 lang=go exported=false byte_range=30656:31281
   sig=func orderByTier(loaded map[memory.ID]*memory.Memory, ids []memory.ID, cmp orderFn) []*memory.Memory
   doc=orderByTier filters and orders a list of survivor IDs into a slice\nof *memory.Memory using the provided comparator. IDs absent from\n`loaded` (rare race with stale idx entries) are silently dropped.
 EDGES
   ^defines=matrix/cortex/context.go
 
 NODE id=matrix/cortex.orderFn kind=type
-  digest=b3:1789b1027e74826bc6525aec1022c980cd71cce99479800f63b4de776fdc6a82 file=cortex/context.go range=843:845 lang=go exported=false byte_range=29261:29425
+  digest=b3:1789b1027e74826bc6525aec1022c980cd71cce99479800f63b4de776fdc6a82 file=cortex/context.go range=843:845 lang=go exported=false byte_range=29310:29474
   sig=type orderFn func(a, b memory.ID) bool
   doc=orderFn returns true if a should sort before b. Mirrors sort.Less\nsemantics so it plugs directly into sort.SliceStable.
 EDGES
   ^defines=matrix/cortex/context.go
 
 NODE id=matrix/cortex.parseObjectTuples kind=func
-  digest=b3:e758c8f25501db76f9947f98e8d460a68385cc0626fc80fda8c07ea6769df3ca file=cortex/context.go range=701:735 lang=go exported=false byte_range=24950:25988
+  digest=b3:e758c8f25501db76f9947f98e8d460a68385cc0626fc80fda8c07ea6769df3ca file=cortex/context.go range=701:735 lang=go exported=false byte_range=24999:26037
   sig=func parseObjectTuples(objs map[string]string) ([]objectTuple, error)
   doc=parseObjectTuples converts the input map (kind name → ref string)\ninto typed objectTuples. Returns memory.ErrInvalidObjKind for any\nunknown kind name (research/03 §8 enforcement discipline: no silent\ndrop).
 EDGES
   ^defines=matrix/cortex/context.go
 
 NODE id=matrix/cortex.parseRollupRef kind=func
-  digest=b3:0bf7f270234fb941c854d618c0c6f7c08b0f4a348ac3d0b515c9e2c897b54e6c file=cortex/recall.go range=441:473 lang=go exported=false byte_range=15157:15992
+  digest=b3:0bf7f270234fb941c854d618c0c6f7c08b0f4a348ac3d0b515c9e2c897b54e6c file=cortex/recall.go range=425:457 lang=go exported=false byte_range=14908:15743
   sig=func parseRollupRef(uri memory.URI) (RollupTier, int64, bool)
   doc=parseRollupRef parses a rollup member URI (matrix://cortex/rollup/<tier>/<start>)\nback into its (tier, start). Returns ok=false for any non-rollup or\nmalformed URI. The inverse of BuildRollupURI.
 EDGES
   ^defines=matrix/cortex/recall.go
 
 NODE id=matrix/cortex.parseTypeName kind=func
-  digest=b3:d477ca432728f247e6b32534851df30fbbc74060bb09aee2b34bd9f8d189a013 file=cortex/cortex.go range=1047:1069 lang=go exported=false byte_range=34932:35414
+  digest=b3:d477ca432728f247e6b32534851df30fbbc74060bb09aee2b34bd9f8d189a013 file=cortex/cortex.go range=1066:1088 lang=go exported=false byte_range=35592:36074
   sig=func parseTypeName(name string) memory.Type
 EDGES
   ^defines=matrix/cortex/cortex.go
@@ -3728,6 +3818,91 @@ NODE id=matrix/cortex.pebbleVectorStore.put kind=method
 EDGES
   ^contains=matrix/cortex.pebbleVectorStore
   ^defines=matrix/cortex/embedder.go
+
+NODE id=matrix/cortex.prepareValidityClose kind=func
+  digest=b3:0790a9f9eb24b539aa0a3103d8259c4408bcecb9ef68688ba33b95f5e55c9435 file=cortex/supersede.go range=275:302 lang=go exported=false byte_range=8339:9050
+  sig=func prepareValidityClose(prev *memory.Memory, until time.Time, by string) (memory.Head, memory.Version, [32]byte, error)
+EDGES
+  ^defines=matrix/cortex/supersede.go
+
+NODE id=matrix/cortex.preparedSupersedeMemory kind=type
+  digest=b3:f561006ac6f7f2585f3775c284259960331fef8b5b83c7724dbd46d1148e95e7 file=cortex/supersede.go range=29:42 lang=go exported=false byte_range=744:1058
+  sig=type preparedSupersedeMemory struct {\n	uri		memory.URI\n	id		memory.ID\n	typ		memory.Type\n	headBytes	[]byte\n	version		uint64\n	versionBytes	[]byte\n	scoreBytes	[]byte\n	created		bool\n	head		memory.Head\n	journalKind	journal.Kind\n	journalBy	string\n	journalHash	[32]byte\n}
+EDGES
+  contains=matrix/cortex.preparedSupersedeMemory#created,matrix/cortex.preparedSupersedeMemory#head,matrix/cortex.preparedSupersedeMemory#headBytes,matrix/cortex.preparedSupersedeMemory#id,matrix/cortex.preparedSupersedeMemory#journalBy,matrix/cortex.preparedSupersedeMemory#journalHash,matrix/cortex.preparedSupersedeMemory#journalKind,matrix/cortex.preparedSupersedeMemory#scoreBytes,matrix/cortex.preparedSupersedeMemory#typ,matrix/cortex.preparedSupersedeMemory#uri,matrix/cortex.preparedSupersedeMemory#version,matrix/cortex.preparedSupersedeMemory#versionBytes
+  ^defines=matrix/cortex/supersede.go
+
+NODE id=matrix/cortex.preparedSupersedeMemory#created kind=field
+  digest=b3:c176b746e4c4bf05faf8ea22e8f51b286e6d0ff334dda62e76c3f2bb802ab431 file=cortex/supersede.go range=37:37 lang=go exported=false byte_range=942:959
+  sig=bool
+EDGES
+  ^contains=matrix/cortex.preparedSupersedeMemory
+
+NODE id=matrix/cortex.preparedSupersedeMemory#head kind=field
+  digest=b3:c7f675bc19e49b0fcd5c1ec8635b19ecd25439efceb2c50269d44fbf38852d7f file=cortex/supersede.go range=38:38 lang=go exported=false byte_range=961:985
+  sig=memory.Head
+EDGES
+  ^contains=matrix/cortex.preparedSupersedeMemory
+
+NODE id=matrix/cortex.preparedSupersedeMemory#headBytes kind=field
+  digest=b3:c7ba922eae9a8b2a8fb9bf68e86a77fca1b7e25c255215499fe5d58236642e4b file=cortex/supersede.go range=33:33 lang=go exported=false byte_range=858:877
+  sig=[]byte
+EDGES
+  ^contains=matrix/cortex.preparedSupersedeMemory
+
+NODE id=matrix/cortex.preparedSupersedeMemory#id kind=field
+  digest=b3:1e5ec27a1ade66ff9bff4c51717a46958d73ab2ca364da4f54d820c8d062ca6c file=cortex/supersede.go range=31:31 lang=go exported=false byte_range=808:830
+  sig=memory.ID
+EDGES
+  ^contains=matrix/cortex.preparedSupersedeMemory
+
+NODE id=matrix/cortex.preparedSupersedeMemory#journalBy kind=field
+  digest=b3:67687794f1326433235987400faf3775c1f43ffd58527fff8dfc3bb1fdac136d file=cortex/supersede.go range=40:40 lang=go exported=false byte_range=1014:1033
+  sig=string
+EDGES
+  ^contains=matrix/cortex.preparedSupersedeMemory
+
+NODE id=matrix/cortex.preparedSupersedeMemory#journalHash kind=field
+  digest=b3:1c35c79e733491f8aed919bd75e93d522b355ee38ce312e839b961cec1c3df65 file=cortex/supersede.go range=41:41 lang=go exported=false byte_range=1035:1056
+  sig=[32]byte
+EDGES
+  ^contains=matrix/cortex.preparedSupersedeMemory
+
+NODE id=matrix/cortex.preparedSupersedeMemory#journalKind kind=field
+  digest=b3:e56798080d40b2d355c95e1c8079789e2e0d8d80d5e6e10de423e306de1d6e2c file=cortex/supersede.go range=39:39 lang=go exported=false byte_range=987:1012
+  sig=journal.Kind
+EDGES
+  ^contains=matrix/cortex.preparedSupersedeMemory
+
+NODE id=matrix/cortex.preparedSupersedeMemory#scoreBytes kind=field
+  digest=b3:e9d21dcca305a191bf8d95d89f09262669d07e3e293d8a5c145543ff5c04effa file=cortex/supersede.go range=36:36 lang=go exported=false byte_range=921:940
+  sig=[]byte
+EDGES
+  ^contains=matrix/cortex.preparedSupersedeMemory
+
+NODE id=matrix/cortex.preparedSupersedeMemory#typ kind=field
+  digest=b3:8d691eb9d727b0862a23d2ae8d849f3da41bce3acfc901bea65752571b32f67c file=cortex/supersede.go range=32:32 lang=go exported=false byte_range=832:856
+  sig=memory.Type
+EDGES
+  ^contains=matrix/cortex.preparedSupersedeMemory
+
+NODE id=matrix/cortex.preparedSupersedeMemory#uri kind=field
+  digest=b3:78cd839f0c440572c6f3dec2e224618fceef0fe4d238f3be10682c79245d0f4c file=cortex/supersede.go range=30:30 lang=go exported=false byte_range=783:806
+  sig=memory.URI
+EDGES
+  ^contains=matrix/cortex.preparedSupersedeMemory
+
+NODE id=matrix/cortex.preparedSupersedeMemory#version kind=field
+  digest=b3:b71292bc0cb8ae35f724df94554515180f40bc00292cdf3019f234b5cfe27534 file=cortex/supersede.go range=34:34 lang=go exported=false byte_range=879:898
+  sig=uint64
+EDGES
+  ^contains=matrix/cortex.preparedSupersedeMemory
+
+NODE id=matrix/cortex.preparedSupersedeMemory#versionBytes kind=field
+  digest=b3:e31804a9c34b659fd158b09f4b72a61a7d2c54fb36537aa5a8f7acac0bfe8c5a file=cortex/supersede.go range=35:35 lang=go exported=false byte_range=900:919
+  sig=[]byte
+EDGES
+  ^contains=matrix/cortex.preparedSupersedeMemory
 
 NODE id=matrix/cortex.rateLimiter kind=type
   digest=b3:93e5d4fe6ecebcab7b95f4d3fad82ff5121c5ce37cddbc0933f1347b5c236bda file=cortex/ratelimit.go range=185:195 lang=go exported=false byte_range=7846:8350
@@ -3834,7 +4009,7 @@ EDGES
   ^contains=matrix/cortex.rebuildEntry
 
 NODE id=matrix/cortex.renderForBundle kind=func
-  digest=b3:090f7b21e1cf0a70c50250a1f1e45a5a85a8093f92bf2d14f8ec30f3bfc476ac file=cortex/context.go range=758:777 lang=go exported=false byte_range=26588:27392
+  digest=b3:090f7b21e1cf0a70c50250a1f1e45a5a85a8093f92bf2d14f8ec30f3bfc476ac file=cortex/context.go range=758:777 lang=go exported=false byte_range=26637:27441
   sig=func renderForBundle(m *memory.Memory, form query.FormKind) (string, error)
   doc=renderForBundle returns the rendered form for the chosen FormKind.\nMirrors query.renderMemory (kept private to avoid the cortex package\nimporting into query for one function). Short and Medium come from\nthe persisted Forms on the Version (byte-stable since write-time\nrender); Full is rendered live from typed Data.
 EDGES
@@ -3988,28 +4163,28 @@ EDGES
   ^defines=matrix/cortex/story.go
 
 NODE id=matrix/cortex.toFixed16 kind=func
-  digest=b3:20fe83ce76ddbecc5aedfb56959f72090b085dba5e1e461c22dd5fc6ff53d5fe file=cortex/cortex.go range=513:519 lang=go exported=false byte_range=18127:18352
+  digest=b3:20fe83ce76ddbecc5aedfb56959f72090b085dba5e1e461c22dd5fc6ff53d5fe file=cortex/cortex.go range=532:538 lang=go exported=false byte_range=18787:19012
   sig=func toFixed16(id memory.ID) [16]byte
   doc=toFixed16 copies a memory.ID into a [16]byte (alias). Both are\n16-byte arrays; the snapshot package keys on [16]byte directly.
 EDGES
   ^defines=matrix/cortex/cortex.go
 
 NODE id=matrix/cortex.toKeysULID kind=func
-  digest=b3:58783c1cd0d7fff12d7e23827d79b191d937dbcdc6869412df52e0b1f2fd7a71 file=cortex/cortex.go range=1071:1077 lang=go exported=false byte_range=35416:35634
+  digest=b3:58783c1cd0d7fff12d7e23827d79b191d937dbcdc6869412df52e0b1f2fd7a71 file=cortex/cortex.go range=1090:1096 lang=go exported=false byte_range=36076:36294
   sig=func toKeysULID(id memory.ID) keys.ULID
   doc=toKeysULID converts memory.ID to keys.ULID (same byte layout, distinct\ntypes so packages don't have to import each other).
 EDGES
   ^defines=matrix/cortex/cortex.go
 
 NODE id=matrix/cortex.trimActivationItems kind=func
-  digest=b3:1b75e8265c2e14b27ac39be409b3ea632b0aa9323fc8ac1615bc3c44aaf58381 file=cortex/activate.go range=381:427 lang=go exported=false byte_range=14678:16150
+  digest=b3:1b75e8265c2e14b27ac39be409b3ea632b0aa9323fc8ac1615bc3c44aaf58381 file=cortex/activate.go range=423:469 lang=go exported=false byte_range=16431:17903
   sig=func trimActivationItems(items []activationItem, storyTokens, budget int) (survive []bool, reachable []memory.URI, total, trimmed int)
   doc=trimActivationItems applies the single global salience-ascending trim\n(req.7.1): if the pooled token total (storyTokens + every item's tokens)\nalready fits budget, nothing is dropped. Otherwise items are dropped\nlowest-score-first (URI ascending as a deterministic tiebreak), always\nkeeping at least one item overall (the same "≥1 relief valve" convention\ntrimContextByBudget/context.go uses), until the total fits or one item\nremains. storyTokens counts toward the total but StorySoFar is never\nitself a drop candidate (it is a single scalar summary, not a list of\nindependent members).
 EDGES
   ^defines=matrix/cortex/activate.go
 
 NODE id=matrix/cortex.trimContextByBudget kind=func
-  digest=b3:b99d773370993e99b0f51b5a33669f4c2182babaa491a1dda7ab9cb2f3d688a7 file=cortex/context.go range=779:839 lang=go exported=false byte_range=27394:29181
+  digest=b3:b99d773370993e99b0f51b5a33669f4c2182babaa491a1dda7ab9cb2f3d688a7 file=cortex/context.go range=779:839 lang=go exported=false byte_range=27443:29230
   sig=func trimContextByBudget(\n	loaded map[memory.ID]*memory.Memory,\n	scores map[memory.ID]float32,\n	tokens map[memory.ID]int,\n	budget int,\n) (survivors map[memory.ID]struct{}, reachable []memory.ID, total int, trimmed int)
   doc=trimContextByBudget drops low-salience memories until the rendered\ntoken sum is ≤ budget. Mirrors query.trimByBudget but returns the\nsurvivor set + reachable set rather than mutating slices in place,\nbecause the bundle composer splits survivors back into per-tier\nslices afterwards.\n\nAlways retains at least one memory when the input is non-empty (the\nFind-engine "≥1 relief valve" convention; matches matrix.ctx\ninvariant). Reachable IDs are returned in trim order (= drop order\n= salience asc), capped at MaxReachableURIs.
 EDGES
@@ -4023,7 +4198,7 @@ EDGES
   ^defines=matrix/cortex/story.go
 
 NODE id=matrix/cortex.typeInSet kind=func
-  digest=b3:a34fb7638dd2f4e28fef10284f1676e3ac077fa05885c24e5f4675870ad2531b file=cortex/recall.go range=409:417 lang=go exported=false byte_range=14286:14486
+  digest=b3:a34fb7638dd2f4e28fef10284f1676e3ac077fa05885c24e5f4675870ad2531b file=cortex/recall.go range=405:413 lang=go exported=false byte_range=14257:14457
   sig=func typeInSet(t memory.Type, allowed []memory.Type) bool
   doc=typeInSet reports whether t is one of the allowed types.
 EDGES
@@ -4037,7 +4212,7 @@ EDGES
   ^defines=matrix/cortex/session.go
 
 NODE id=matrix/cortex.versionValidAt kind=func
-  digest=b3:c971e56ad1bbd603f83a53a44f2950ad5529c19b59d422a15e1bc090e6a5da08 file=cortex/recall.go range=419:439 lang=go exported=false byte_range=14488:15155
+  digest=b3:dd7fd76415c297dc8636c452f6d33c2e02b286e34335a3646aa9ea3f266e6f85 file=cortex/recall.go range=415:423 lang=go exported=false byte_range=14459:14906
   sig=func versionValidAt(v *memory.Version, asOf time.Time) bool
   doc=versionValidAt reports whether v's bi-temporal valid interval + expiry\ncontain asOf. Mirrors query.withinValidity exactly (half-open\n[ValidFrom, ValidUntil); ValidFrom defaults to CreatedAt; ExpiresAt honored\nwith at/after-close semantics) so recall descent and cortex.Find agree on\n"what was true then" (req.8.3).
 EDGES
@@ -4065,9 +4240,9 @@ EDGES
   ^defines=matrix/cortex/embedder.go
 
 NODE id=matrix/cortex/activate.go kind=file
-  digest=b3:cd3db3e4651ff1fc5cae8371d39ad60d78b12cc9f19d54c4d561008663c77e8a file=cortex/activate.go range=1:427 lang=go exported=true
+  digest=b3:44e562a496d87ef9b12b35a30d3f8c4cc6368850106452d40f0148e80f25d672 file=cortex/activate.go range=1:469 lang=go exported=true
 EDGES
-  defines=matrix/cortex.ActivationBundle,matrix/cortex.Budget,matrix/cortex.Cortex.Activate,matrix/cortex.Cortex.cachedTierPinned,matrix/cortex.Cortex.loadOrRepairStorySoFar,matrix/cortex.DefaultActivateBudgetTokens,matrix/cortex.DefaultRecentEpisodesN,matrix/cortex.DefaultTimelineLookbackNanos,matrix/cortex.DefaultTranscriptTailLimit,matrix/cortex.MaxActivateBudgetTokens,matrix/cortex.activationItem,matrix/cortex.trimActivationItems
+  defines=matrix/cortex.ActivationBundle,matrix/cortex.Budget,matrix/cortex.Cortex.Activate,matrix/cortex.Cortex.cachedTierPinned,matrix/cortex.Cortex.emptyActivationReason,matrix/cortex.Cortex.loadOrRepairStorySoFar,matrix/cortex.DefaultActivateBudgetTokens,matrix/cortex.DefaultRecentEpisodesN,matrix/cortex.DefaultTimelineLookbackNanos,matrix/cortex.DefaultTranscriptTailLimit,matrix/cortex.MaxActivateBudgetTokens,matrix/cortex.activationItem,matrix/cortex.trimActivationItems
   ^contains=matrix/cortex
 
 NODE id=matrix/cortex/attest.go kind=file
@@ -4089,15 +4264,15 @@ EDGES
   ^contains=matrix/cortex
 
 NODE id=matrix/cortex/context.go kind=file
-  digest=b3:695c6c072cff1aaba6c1043a3f02838b8f0ce9a7edd90e0c02d328c655a45685 file=cortex/context.go range=1:942 lang=go exported=true
+  digest=b3:a74514f23a6b91157dd70ec371c02c35560184dab003efc9807fe5863469e851 file=cortex/context.go range=1:942 lang=go exported=true
 EDGES
   defines=matrix/cortex.Bundle,matrix/cortex.ContextOpts,matrix/cortex.Cortex.Context,matrix/cortex.Cortex.scanTypePrefix,matrix/cortex.Cortex.tierFrameRelevant,matrix/cortex.Cortex.tierOutcomes,matrix/cortex.Cortex.tierPinned,matrix/cortex.DefaultBudgetTokens,matrix/cortex.DefaultOutcomeLimit,matrix/cortex.ErrNoTiersIncluded,matrix/cortex.MaxBudgetTokens,matrix/cortex.MaxReachableURIs,matrix/cortex.ParseTier,matrix/cortex.Tier,matrix/cortex.Tier.String,matrix/cortex.TierFrameRelevant,matrix/cortex.TierOutcomes,matrix/cortex.TierPinned,matrix/cortex.buildReachableURIs,matrix/cortex.idLess,matrix/cortex.intersect,matrix/cortex.makeCreatedDescOrder,matrix/cortex.makeSalienceDescOrder,matrix/cortex.normalizeIncludeTiers,matrix/cortex.objectTuple,matrix/cortex.orderByTier,matrix/cortex.orderFn,matrix/cortex.parseObjectTuples,matrix/cortex.renderForBundle,matrix/cortex.trimContextByBudget
   ^contains=matrix/cortex
 
 NODE id=matrix/cortex/cortex.go kind=file
-  digest=b3:5a61bde20875c0167a36ff8a7c4bc5f8be65949268d9b5e100224641062483ec file=cortex/cortex.go range=1:1079 lang=go exported=true
+  digest=b3:871e5c7b7e791079f875d923a9771440d9edea22d7923011ed7a0fa0e2a6984a file=cortex/cortex.go range=1:1098 lang=go exported=true
 EDGES
-  defines=matrix/cortex.BuildURI,matrix/cortex.Cortex,matrix/cortex.Cortex.CloseValidity,matrix/cortex.Cortex.Find,matrix/cortex.Cortex.ListByType,matrix/cortex.Cortex.OverallRoot,matrix/cortex.Cortex.Proof,matrix/cortex.Cortex.Resolve,matrix/cortex.Cortex.ResolveLatest,matrix/cortex.Cortex.ResolveScoped,matrix/cortex.Cortex.Snap,matrix/cortex.Cortex.Snapshot,matrix/cortex.Cortex.Store,matrix/cortex.Cortex.Tombstone,matrix/cortex.Cortex.Update,matrix/cortex.Cortex.Verify,matrix/cortex.Cortex.Write,matrix/cortex.Cortex.resolveNear,matrix/cortex.New,matrix/cortex.Option,matrix/cortex.ParseURI,matrix/cortex.WithClock,matrix/cortex.WithIDGen,matrix/cortex.WriteMeta,matrix/cortex.errStopIter,matrix/cortex.hashTag,matrix/cortex.parseTypeName,matrix/cortex.toFixed16,matrix/cortex.toKeysULID
+  defines=matrix/cortex.BuildURI,matrix/cortex.Cortex,matrix/cortex.Cortex.CloseValidity,matrix/cortex.Cortex.Find,matrix/cortex.Cortex.ListByType,matrix/cortex.Cortex.OverallRoot,matrix/cortex.Cortex.Proof,matrix/cortex.Cortex.Resolve,matrix/cortex.Cortex.ResolveLatest,matrix/cortex.Cortex.ResolveScoped,matrix/cortex.Cortex.Snap,matrix/cortex.Cortex.Snapshot,matrix/cortex.Cortex.Store,matrix/cortex.Cortex.Tombstone,matrix/cortex.Cortex.Update,matrix/cortex.Cortex.Verify,matrix/cortex.Cortex.Versions,matrix/cortex.Cortex.Write,matrix/cortex.Cortex.resolveNear,matrix/cortex.New,matrix/cortex.Option,matrix/cortex.ParseURI,matrix/cortex.WithClock,matrix/cortex.WithIDGen,matrix/cortex.WriteMeta,matrix/cortex.errStopIter,matrix/cortex.hashTag,matrix/cortex.parseTypeName,matrix/cortex.toFixed16,matrix/cortex.toKeysULID
   ^contains=matrix/cortex
 
 NODE id=matrix/cortex/edges.go kind=file
@@ -4149,13 +4324,13 @@ EDGES
   ^contains=matrix/cortex
 
 NODE id=matrix/cortex/recall.go kind=file
-  digest=b3:938598a317a9bec84217a30290961657e56345f101ce3d28aa6bac6141a46797 file=cortex/recall.go range=1:473 lang=go exported=true
+  digest=b3:74e95690506968cfe3ad65884865b0f461448a8adac7a6428582939c96dc600a file=cortex/recall.go range=1:457 lang=go exported=true
 EDGES
   defines=matrix/cortex.Cortex.RecallDescend,matrix/cortex.ErrRecallDepthTooDeep,matrix/cortex.RecallDefaultDescentBudgetTokens,matrix/cortex.RecallDefaultK,matrix/cortex.RecallDefaultMaxDepth,matrix/cortex.RecallHit,matrix/cortex.RecallMaxDepthCap,matrix/cortex.RecallOpts,matrix/cortex.RecallResult,matrix/cortex.descentState,matrix/cortex.descentState.descend,matrix/cortex.descentState.leaf,matrix/cortex.parseRollupRef,matrix/cortex.typeInSet,matrix/cortex.versionValidAt
   ^contains=matrix/cortex
 
 NODE id=matrix/cortex/recent.go kind=file
-  digest=b3:1d466ab16b2a2da8d481347098df1cd63cf792904066a6cac1f0a24d8f889c91 file=cortex/recent.go range=1:197 lang=go exported=true
+  digest=b3:8f500ea1e7fa254d9433c41c198a940ffb2f09c25db6750e796ed10e87c21b72 file=cortex/recent.go range=1:197 lang=go exported=true
 EDGES
   defines=matrix/cortex.Cortex.RecentEpisodes,matrix/cortex.DefaultRecentLookbackNanos,matrix/cortex.Episode
   ^contains=matrix/cortex
@@ -4194,6 +4369,12 @@ NODE id=matrix/cortex/story.go kind=file
   digest=b3:93c40013ec1b9747664709b808c2ecba9014a112d69602bae1b6e84296499ffc file=cortex/story.go range=1:281 lang=go exported=true
 EDGES
   defines=matrix/cortex.BuildStorySoFarURI,matrix/cortex.Cortex.BuildStorySoFar,matrix/cortex.Cortex.LoadStorySoFar,matrix/cortex.DecodeStorySoFarRecord,matrix/cortex.EncodeStorySoFarRecord,matrix/cortex.StorySoFarExcerptChars,matrix/cortex.StorySoFarRecord,matrix/cortex.StorySoFarSchemaVersion,matrix/cortex.buildStorySoFarShortForm,matrix/cortex.init,matrix/cortex.storyDec,matrix/cortex.storyEnc,matrix/cortex.truncateDeterministic
+  ^contains=matrix/cortex
+
+NODE id=matrix/cortex/supersede.go kind=file
+  digest=b3:52f8e74f2d21b71034c1351a1a81e668dbc71efe9fed29374a30338a7e27da9c file=cortex/supersede.go range=1:393 lang=go exported=true
+EDGES
+  defines=matrix/cortex.Cortex.Supersede,matrix/cortex.Cortex.prepareSupersedeReplacement,matrix/cortex.Cortex.prepareSupersedesEdge,matrix/cortex.Cortex.stageSupersedeReplacement,matrix/cortex.Cortex.stageSupersedesEdge,matrix/cortex.SupersedeOptions,matrix/cortex.prepareValidityClose,matrix/cortex.preparedSupersedeMemory
   ^contains=matrix/cortex
 
 NODE id=matrix/cortex/sweep.go kind=file

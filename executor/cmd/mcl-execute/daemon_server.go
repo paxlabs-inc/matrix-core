@@ -22,6 +22,8 @@ package main
 import (
 	"bufio"
 	"context"
+	"crypto/rand"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -231,16 +233,47 @@ func (d *daemonState) handleMemoryRouter(w http.ResponseWriter, r *http.Request)
 func logMiddleware(t *transcript, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
+		requestID := strings.TrimSpace(r.Header.Get("X-Request-ID"))
+		if requestID == "" || len(requestID) > 128 {
+			requestID = newRequestID()
+		}
+		w.Header().Set("X-Request-ID", requestID)
 		rec := &statusRecorder{ResponseWriter: w, status: 200}
 		next.ServeHTTP(rec, r)
-		t.Event("http.request", "http", map[string]interface{}{
-			"method":   r.Method,
-			"path":     r.URL.Path,
-			"status":   rec.status,
-			"remote":   r.RemoteAddr,
-			"duration": time.Since(start).Milliseconds(),
-		})
+		fields := map[string]interface{}{
+			"request_id":  requestID,
+			"method":      r.Method,
+			"path":        r.URL.Path,
+			"status":      rec.status,
+			"duration_ms": time.Since(start).Milliseconds(),
+			"outcome":     httpOutcome(rec.status),
+		}
+		if id := strings.TrimSpace(r.URL.Query().Get("intent_id")); id != "" {
+			fields["intent_id"] = id
+		}
+		if id := strings.TrimSpace(r.URL.Query().Get("conversation_id")); id != "" {
+			fields["conversation_id"] = id
+		}
+		t.Event("http.request", "http", fields)
 	})
+}
+
+func newRequestID() string {
+	var raw [12]byte
+	if _, err := rand.Read(raw[:]); err == nil {
+		return "req_" + hex.EncodeToString(raw[:])
+	}
+	return fmt.Sprintf("req_%d", time.Now().UnixNano())
+}
+
+func httpOutcome(status int) string {
+	if status >= 500 {
+		return "failure"
+	}
+	if status >= 400 {
+		return "rejected"
+	}
+	return "success"
 }
 
 type statusRecorder struct {

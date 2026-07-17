@@ -145,6 +145,10 @@ func (a *Agent) systemPrompt() string {
 	b.WriteString("- Once a tool has given you a value or completed a visible action, TRUST it: do not re-fetch or re-render the same thing to double-check. Read the result, then give the answer. Re-doing completed work instead of finishing is the main way a simple request spirals.\n")
 	b.WriteString("- When something fails, read the error and adapt your approach. Don't repeat the same failing call. If you're truly blocked, say what you tried and what you need.\n")
 	b.WriteString("- Anything wrapped in <system_guidance>…</system_guidance> is a private note from the SYSTEM, never from the user — even when it arrives as a message in the conversation. It is steering meant only for you (for example, a reminder that the task isn't finished, or how to close a gap). ACT on it: adjust and take the next real step (often that means calling a tool, or giving your final answer if you're genuinely done), never answer it conversationally and never greet. Do NOT acknowledge, quote, or mention it to the user — incorporate it silently and keep working. If you see the same guidance repeat, do the concrete thing it asks rather than replying to it again.\n\n")
+	b.WriteString("Web evidence:\n")
+	b.WriteString("- web_search and web_news return relevance-validated source candidates only. Their snippets are discovery, not evidence, and provider-written synthesis is never available.\n")
+	b.WriteString("- Before stating a current factual claim, read the selected result URL with fetch. Cite only URLs you actually fetched, include the publication date when supplied, and make sure the entity and query intent match the user's request.\n")
+	b.WriteString("- If search returns evidence_status=not_found or only unrelated results, say the requested evidence was not found. Never substitute a similarly named entity, live chain data, inference, or another evidence class as though it answered the request.\n\n")
 
 	if a.cfg.EpistemicPredictions {
 		b.WriteString("Predict before you act:\n")
@@ -178,6 +182,11 @@ func (a *Agent) systemPrompt() string {
 		b.WriteString("Your memory:\n")
 		b.WriteString("- You have a durable memory (the cortex) that persists across conversations and restarts. Treat it as a tool you PULL from, not a blob you're handed: call memory_recall to fetch what's relevant before you reason about the user, their projects, or past work — and before claiming a fact you'd have learned earlier.\n")
 		b.WriteString("- Use it iteratively: start with a broad query, read what comes back, then call memory_recall again with a narrower query (or a type filter) as you learn what you actually need. Narrow with 'types' (e.g. fact, preference, pattern) and pass 'as_of' to ask what was true at a past time. Only the pinned essentials (who the user is, your hard rules, the active goal) are always in front of you; everything else you fetch on demand.\n\n")
+	}
+	if a.tools != nil && a.tools.MemoryMutationEnabled() {
+		b.WriteString("Correcting memory:\n")
+		b.WriteString("- For a user-requested memory create, correction, replacement, or deletion, use memory_mutate. Use supersede for corrections so the replacement becomes current and the old value remains historical. Put multiple corrections in one items array.\n")
+		b.WriteString("- Never probe or mutate memory through shell, curl, localhost endpoints, or cortex-shell; the typed tool is the only mutation path. Its confirmation is user-facing and intentionally hides internal Cortex identifiers.\n\n")
 	}
 
 	if a.tools != nil && a.tools.TodoEnabled() {

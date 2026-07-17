@@ -26,6 +26,7 @@ import (
 	"sync"
 	"time"
 
+	exectool "matrix/executor/tool"
 	"matrix/neo/internal/config"
 	"matrix/neo/internal/delegate"
 	"matrix/neo/internal/llm"
@@ -76,12 +77,13 @@ type ConvRecaller interface {
 // transparency differentiator: users see the real evidence behind an answer,
 // not just a synthesized paragraph.
 type ToolEvent struct {
-	ID     string                 // tool-call id — stable across the start/end pair so the UI updates one step
-	Name   string                 // function name dispatched (e.g. "web-search__web_search")
-	Args   map[string]interface{} // parsed call arguments
-	Result string                 // tool result content (raw text/JSON the tool returned); empty at start
-	IsErr  bool                   // the tool reported an error result
-	Phase  ToolPhase              // start (dispatched, no result yet) or end (completed)
+	ID           string                 // tool-call id — stable across the start/end pair so the UI updates one step
+	Name         string                 // function name dispatched (e.g. "web-search__web_search")
+	Args         map[string]interface{} // parsed call arguments
+	Result       string                 // tool result content (raw text/JSON the tool returned); empty at start
+	IsErr        bool                   // the tool reported an error result
+	FailureClass string                 // normalized failure layer; empty on success/start
+	Phase        ToolPhase              // start (dispatched, no result yet) or end (completed)
 
 	// ScreenshotURL is the out-of-band /media URL of a page still captured for
 	// this call — either the image a browser_take_screenshot returned, or the
@@ -1080,7 +1082,9 @@ func (a *Agent) act(ctx context.Context, step, pct int, res *llm.ChatResult) err
 	// refuses dependent dispatches while a refuted premise stands
 	// (introspection tools stay allowed — they are the discharge path).
 	allowed, _ := a.checkBeforeAct(res.Message.ToolCalls)
-	a.runToolCalls(ctx, allowed)
+	if err := a.runToolCalls(ctx, allowed); err != nil {
+		return err
+	}
 	// req.8.2 (N2): a plain tool dispatch does NOT reset the unified
 	// unproductive counter — only genuine accepted progress does. This keeps
 	// an interleaved real tool call from silently resetting the loop-discipline
@@ -1406,7 +1410,7 @@ func (a *Agent) chatWithRetry(ctx context.Context, req llm.ChatRequest) (*llm.Ch
 	return nil, lastErr
 }
 
-func (a *Agent) runToolCalls(ctx context.Context, calls []llm.ToolCall) {
+func (a *Agent) runToolCalls(ctx context.Context, calls []llm.ToolCall) error {
 	// P2-5: dispatch INDEPENDENT tool calls in a turn concurrently (bounded
 	// by cfg.ToolDispatchConcurrency), preserving result ordering + per-tool
 	// observer events. When concurrency <=0 or there's a single call, the
@@ -1416,8 +1420,7 @@ func (a *Agent) runToolCalls(ctx context.Context, calls []llm.ToolCall) {
 	// events fire in order so the UI's per-call viewport correlation holds.
 	n := len(calls)
 	if n <= 1 || a.cfg.ToolDispatchConcurrency <= 0 {
-		a.runToolCallsSerial(ctx, calls)
-		return
+		return a.runToolCallsSerial(ctx, calls)
 	}
 
 	conc := a.cfg.ToolDispatchConcurrency
@@ -1426,10 +1429,12 @@ func (a *Agent) runToolCalls(ctx context.Context, calls []llm.ToolCall) {
 	}
 
 	type dispatchResult struct {
-		content string
-		shot    string
-		isErr   bool
-		class   delegate.FailureClass
+		content      string
+		evidence     string
+		shot         string
+		isErr        bool
+		class        delegate.FailureClass
+		failureClass exectool.FailureClass
 	}
 
 	// Fire ALL ToolStart observer events up front, in call order, so the
@@ -1500,8 +1505,8 @@ func (a *Agent) runToolCalls(ctx context.Context, calls []llm.ToolCall) {
 			defer wg.Done()
 			sem <- struct{}{}
 			defer func() { <-sem }()
-			content, shot, isErr, class := a.dispatchWithRetry(ctx, call.Function.Name, args)
-			results[i] = dispatchResult{content: content, shot: shot, isErr: isErr, class: class}
+			content, evidence, shot, isErr, class, failureClass := a.dispatchWithRetry(ctx, call.Function.Name, args)
+			results[i] = dispatchResult{content: content, evidence: evidence, shot: shot, isErr: isErr, class: class, failureClass: failureClass}
 		}(i, call, parsedArgs[i])
 	}
 	wg.Wait()
@@ -1516,18 +1521,23 @@ func (a *Agent) runToolCalls(ctx context.Context, calls []llm.ToolCall) {
 
 	// Append results + fire ToolEnd events in CALL order so the transcript
 	// and the observer stream stay deterministic regardless of completion order.
+	var convergenceErr error
 	for i, call := range calls {
 		if parsedArgs[i] == nil {
 			continue // parse-failed: already appended above
 		}
 		name := call.Function.Name
 		content := results[i].content
+		evidence := results[i].evidence
 		isErr := results[i].isErr
 		// Record the shared class of this dispatch's outcome (a success clears a
 		// prior recorded failure) for the supervisor. Single-threaded here (the
 		// concurrent goroutines only wrote results[i]), so no race on
 		// a.turn.lastFailureClass.
 		a.noteFailureClass(results[i].class, results[i].isErr)
+		if convergenceErr == nil {
+			convergenceErr = a.noteNormalizedFailure(name, parsedArgs[i], results[i].failureClass, results[i].class, isErr)
+		}
 		// Cap the transcript copy: a single oversized tool result can blow
 		// the provider's request-body byte cap on its own. The observer
 		// below still gets the full, untruncated content so the product
@@ -1535,28 +1545,30 @@ func (a *Agent) runToolCalls(ctx context.Context, calls []llm.ToolCall) {
 		a.working = append(a.working, llm.ToolResult(call.ID, name, a.capToolResult(content)))
 		// Continuous-memory (task 6.1): record the FULL tool result to the
 		// durable cortex transcript (cortex spills oversized payloads itself).
-		a.cmRecordToolResult(name, content)
+		a.cmRecordToolResult(name, evidence)
+		a.noteWebEvidence(name, parsedArgs[i], evidence, isErr)
 		// Epistemic-core Mechanisms 3+4 (req.6.2/7.1): the belief-update seam —
 		// the probe's expectation is checked against the real outcome, then the
 		// action links to the task graph and the evidence delta is computed.
-		missed := a.predictionObserve(ctx, name, parsedArgs[i], expects[i], content, isErr)
-		a.graphObserve(name, parsedArgs[i], content, isErr, missed)
+		missed := a.predictionObserve(ctx, name, parsedArgs[i], expects[i], evidence, isErr)
+		a.graphObserve(name, parsedArgs[i], evidence, isErr, missed)
 		if a.observer != nil {
 			// Resolve the browsing filmstrip still for this call (a direct
 			// screenshot's URL, or a deterministic auto-capture after a
 			// view-changing action). Single-threaded here, so the per-turn cap
 			// counter is safe. Best-effort: "" when there is no frame.
 			shot := a.screenshotForCall(ctx, name, results[i].shot, isErr)
-			a.observer(ToolEvent{ID: stepIDs[i], Name: name, Args: parsedArgs[i], Result: content, IsErr: isErr, Phase: ToolEnd, ScreenshotURL: shot})
+			a.observer(ToolEvent{ID: stepIDs[i], Name: name, Args: parsedArgs[i], Result: evidence, IsErr: isErr, FailureClass: string(results[i].failureClass), Phase: ToolEnd, ScreenshotURL: shot})
 		}
 	}
+	return convergenceErr
 }
 
 // runToolCallsSerial is the legacy single-threaded dispatch path. It's
 // kept for the concurrency<=0 config and for single-call batches (where
 // goroutine spin-up would be pure overhead). Behaviour is byte-identical
 // to the pre-P2-5 loop.
-func (a *Agent) runToolCallsSerial(ctx context.Context, calls []llm.ToolCall) {
+func (a *Agent) runToolCallsSerial(ctx context.Context, calls []llm.ToolCall) error {
 	// Batch idempotency (NE-3, req 5.x), serial path: an equivalent
 	// state-touching duplicate (core_execute with the same resolved intent)
 	// joins the canonical call's cached result instead of running again. The
@@ -1564,12 +1576,15 @@ func (a *Agent) runToolCallsSerial(ctx context.Context, calls []llm.ToolCall) {
 	// duplicate is reached.
 	joinTo := dedupStateTouching(calls)
 	type dispatchResult struct {
-		content string
-		shot    string
-		isErr   bool
-		class   delegate.FailureClass
+		content      string
+		evidence     string
+		shot         string
+		isErr        bool
+		class        delegate.FailureClass
+		failureClass exectool.FailureClass
 	}
 	results := make([]dispatchResult, len(calls))
+	var convergenceErr error
 	for i, call := range calls {
 		name := call.Function.Name
 		args, perr := call.ParseArgs()
@@ -1605,21 +1620,25 @@ func (a *Agent) runToolCallsSerial(ctx context.Context, calls []llm.ToolCall) {
 		if a.observer != nil {
 			a.observer(ToolEvent{ID: stepID, Name: name, Args: args, Phase: ToolStart})
 		}
-		var content, shot string
+		var content, evidence, shot string
 		var isErr bool
 		var class delegate.FailureClass
+		var failureClass exectool.FailureClass
 		if joinTo[i] >= 0 {
 			// Deduped duplicate: reuse the canonical call's result; do not
 			// submit the same state-touching work twice.
-			content, shot, isErr, class = results[joinTo[i]].content, results[joinTo[i]].shot, results[joinTo[i]].isErr, results[joinTo[i]].class
+			content, evidence, shot, isErr, class, failureClass = results[joinTo[i]].content, results[joinTo[i]].evidence, results[joinTo[i]].shot, results[joinTo[i]].isErr, results[joinTo[i]].class, results[joinTo[i]].failureClass
 		} else {
-			content, shot, isErr, class = a.dispatchWithRetry(ctx, name, args)
+			content, evidence, shot, isErr, class, failureClass = a.dispatchWithRetry(ctx, name, args)
 		}
-		results[i] = dispatchResult{content: content, shot: shot, isErr: isErr, class: class}
+		results[i] = dispatchResult{content: content, evidence: evidence, shot: shot, isErr: isErr, class: class, failureClass: failureClass}
 		// Record the shared class of this dispatch's outcome (a success clears a
 		// prior recorded failure) so the supervisor reads the SAME
 		// classification (NE-5).
 		a.noteFailureClass(class, isErr)
+		if convergenceErr == nil {
+			convergenceErr = a.noteNormalizedFailure(name, args, failureClass, class, isErr)
+		}
 		// Cap the transcript copy: a single oversized tool result (large
 		// fetch / file read / MCP payload) can blow the provider's request-
 		// body byte cap on its own. The observer below still gets the full,
@@ -1627,11 +1646,12 @@ func (a *Agent) runToolCallsSerial(ctx context.Context, calls []llm.ToolCall) {
 		a.working = append(a.working, llm.ToolResult(call.ID, name, a.capToolResult(content)))
 		// Continuous-memory (task 6.1): record the FULL tool result to the
 		// durable cortex transcript (cortex spills oversized payloads itself).
-		a.cmRecordToolResult(name, content)
+		a.cmRecordToolResult(name, evidence)
+		a.noteWebEvidence(name, args, evidence, isErr)
 		// Epistemic-core Mechanisms 3+4 (req.6.2/7.1): the belief-update seam,
 		// then the task-graph action link + evidence delta.
-		missed := a.predictionObserve(ctx, name, args, expect, content, isErr)
-		a.graphObserve(name, args, content, isErr, missed)
+		missed := a.predictionObserve(ctx, name, args, expect, evidence, isErr)
+		a.graphObserve(name, args, evidence, isErr, missed)
 		// Surface the completed work (command output, fetched page, file
 		// contents, web-search snippets, …) so the product renders real
 		// evidence, not just a synthesized answer.
@@ -1643,9 +1663,10 @@ func (a *Agent) runToolCallsSerial(ctx context.Context, calls []llm.ToolCall) {
 			if joinTo[i] < 0 {
 				shotURL = a.screenshotForCall(ctx, name, shot, isErr)
 			}
-			a.observer(ToolEvent{ID: stepID, Name: name, Args: args, Result: content, IsErr: isErr, Phase: ToolEnd, ScreenshotURL: shotURL})
+			a.observer(ToolEvent{ID: stepID, Name: name, Args: args, Result: evidence, IsErr: isErr, FailureClass: string(failureClass), Phase: ToolEnd, ScreenshotURL: shotURL})
 		}
 	}
+	return convergenceErr
 }
 
 // noteFailureClass records the classified outcome of the most recent tool
@@ -1667,6 +1688,48 @@ func (a *Agent) noteFailureClass(class delegate.FailureClass, isErr bool) {
 	case !isErr:
 		a.turn.lastFailureClass = delegate.ClassNone
 	}
+}
+
+// noteNormalizedFailure bounds repeated deterministic failures by the
+// invariant strategy and semantic failure layer. Changing a guessed URL/path
+// while repeating the same shell/search/fetch strategy cannot reset the bound.
+func (a *Agent) noteNormalizedFailure(name string, args map[string]interface{}, failureClass exectool.FailureClass, recoveryClass delegate.FailureClass, isErr bool) error {
+	t := a.turn
+	// Exact/semantic/cyclic repeats already belong to the unified governor
+	// signal and its hard-stall verdict. This fine-grained key closes only the
+	// gap where varying arguments evade that existing behavioral read.
+	if t.signals != nil && t.signals.repeat {
+		t.normalizedFailureKey = ""
+		t.normalizedFailureCount = 0
+		return nil
+	}
+	if !isErr || recoveryClass != delegate.ClassDeterministic || failureClass == exectool.FailureNone {
+		t.normalizedFailureKey = ""
+		t.normalizedFailureCount = 0
+		return nil
+	}
+	strategy, ok := probeStrategy(name, args)
+	if !ok {
+		strategy = name
+	}
+	key := strategy + "|" + string(failureClass)
+	if key == t.normalizedFailureKey {
+		t.normalizedFailureCount++
+	} else {
+		t.normalizedFailureKey = key
+		t.normalizedFailureCount = 1
+	}
+	bound := a.cfg.NoProgressStall
+	if bound <= 0 {
+		bound = a.cfg.MaxGuidanceNudges
+	}
+	if bound <= 0 || t.normalizedFailureCount < bound {
+		return nil
+	}
+	t.lastFailureClass = delegate.ClassDeterministic
+	t.curLoop.lastTool = name
+	t.curLoop.repeats = t.normalizedFailureCount
+	return a.escalateGuidance(t.normalizedFailureCount)
 }
 
 // LastFailureClass reports the shared FailureClass of the most recent
@@ -1691,16 +1754,17 @@ func (a *Agent) LastFailureClass() delegate.FailureClass { return a.turn.lastFai
 // now they keep the bounded-retry behavior. The returned FailureClass is the
 // class of the failure that ended the dispatch (delegate.ClassNone on success),
 // surfaced so the supervisor reads the SAME classification.
-func (a *Agent) dispatchWithRetry(ctx context.Context, name string, args map[string]interface{}) (string, string, bool, delegate.FailureClass) {
+func (a *Agent) dispatchWithRetry(ctx context.Context, name string, args map[string]interface{}) (content, evidence, shot string, isErr bool, recoveryClass delegate.FailureClass, failureClass exectool.FailureClass) {
 	// read_overflow is synthetic and agent-owned (the overflow store lives on
 	// the agent, not the Manager): page a truncated result back in and mark it
 	// read (the read-full latch). It never retries or routes to the Manager.
 	if name == readOverflowTool {
 		content, isErr := a.readOverflow(args)
-		return content, "", isErr, delegate.ClassNone
+		return content, content, "", isErr, delegate.ClassNone, exectool.FailureNone
 	}
 	if a.tools == nil {
-		return "no tools are available in this session.", "", true, delegate.ClassNone
+		content := "no tools are available in this session."
+		return content, content, "", true, delegate.ClassDeterministic, exectool.FailureInvocation
 	}
 	// Restricted agents are held to their advertised surface: the Manager's
 	// dispatch switch serves synthetic tools regardless of advertisement, so an
@@ -1708,7 +1772,8 @@ func (a *Agent) dispatchWithRetry(ctx context.Context, name string, args map[str
 	// structural rather than advisory.
 	if a.advertised != nil {
 		if _, ok := a.advertised[name]; !ok {
-			return fmt.Sprintf("tool %q is not available in this session — use only the tools you were given.", name), "", true, delegate.ClassNone
+			content := fmt.Sprintf("tool %q is not available in this session — use only the tools you were given.", name)
+			return content, content, "", true, delegate.ClassDeterministic, exectool.FailureInvocation
 		}
 	}
 	var lastErr error
@@ -1718,9 +1783,20 @@ func (a *Agent) dispatchWithRetry(ctx context.Context, name string, args map[str
 				break
 			}
 		}
-		content, shot, isErr, err := a.tools.DispatchMedia(ctx, name, args)
+		raw, shot, isErr, failureClass, retryable, failureMessage, err := a.tools.DispatchMediaClassified(ctx, name, args)
 		if err == nil {
-			return content, shot, isErr, delegate.ClassNone
+			if raw == "" {
+				raw = failureMessage
+			}
+			modelContent := raw
+			recoveryClass := delegate.ClassNone
+			if isErr {
+				if failureMessage != "" {
+					modelContent = fmt.Sprintf("class=%s: %s", failureClass, failureMessage)
+				}
+				recoveryClass = normalizedRecoveryClass(failureClass, retryable)
+			}
+			return modelContent, raw, shot, isErr, recoveryClass, failureClass
 		}
 		lastErr = err
 		if ctx.Err() != nil {
@@ -1732,10 +1808,26 @@ func (a *Agent) dispatchWithRetry(ctx context.Context, name string, args map[str
 		// gateway, re-spending). Mirrors chatWithRetry's ErrProviderRejected
 		// short-circuit.
 		if delegate.ClassOf(err) == delegate.ClassDeterministic {
-			return fmt.Sprintf("tool %q failed and this is a permanent error that will not change on a retry: %v. Don't repeat this call — adjust the approach or ask the user how they'd like to proceed.", name, lastErr), "", true, delegate.ClassDeterministic
+			content := fmt.Sprintf("tool %q failed and this is a permanent error that will not change on a retry: %v. Don't repeat this call — adjust the approach or ask the user how they'd like to proceed.", name, lastErr)
+			return content, lastErr.Error(), "", true, delegate.ClassDeterministic, exectool.FailureClassOf(lastErr)
 		}
 	}
-	return fmt.Sprintf("tool %q failed after %d attempts: %v. Consider a different approach.", name, a.cfg.MaxRetriesPerTool+1, lastErr), "", true, delegate.ClassOf(lastErr)
+	content = fmt.Sprintf("tool %q failed after %d attempts: %v. Consider a different approach.", name, a.cfg.MaxRetriesPerTool+1, lastErr)
+	evidence = content
+	if lastErr != nil {
+		evidence = lastErr.Error()
+	}
+	return content, evidence, "", true, delegate.ClassOf(lastErr), exectool.FailureClassOf(lastErr)
+}
+
+func normalizedRecoveryClass(class exectool.FailureClass, retryable bool) delegate.FailureClass {
+	if class == exectool.FailureNone {
+		return delegate.ClassNone
+	}
+	if retryable || class == exectool.FailureTransport {
+		return delegate.ClassTransient
+	}
+	return delegate.ClassDeterministic
 }
 
 // screenshotForCall resolves the page still to attach to a completed browser

@@ -77,7 +77,7 @@ func TestDeterministicStopIsHonestAndNeverRepastes(t *testing.T) {
 	r := s.dispatch("pick back up on the brand kit site", false)
 	events := collectUntilClosed(t, e, r.id, 20*time.Second)
 
-	if !hasTerminal(events, "completed") {
+	if !hasTerminal(events, "failed") {
 		t.Fatalf("the deterministic stop must still terminate the stream; events: %+v", events)
 	}
 	text, ok := closingTurn(events)

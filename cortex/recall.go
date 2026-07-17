@@ -351,10 +351,6 @@ func (s *descentState) leaf(uri memory.URI, depth int) (RecallHit, bool, error) 
 		}
 		return RecallHit{}, false, rerr
 	}
-	if mem.Head.Tombstoned != nil {
-		return RecallHit{}, false, nil
-	}
-
 	// Type filter (leaf sub-query, mirrors query.Query.Type).
 	if len(s.typeFilter) > 0 && !typeInSet(mem.Head.Type, s.typeFilter) {
 		return RecallHit{}, false, nil
@@ -363,7 +359,7 @@ func (s *descentState) leaf(uri memory.URI, depth int) (RecallHit, bool, error) 
 	// Bi-temporal as_of validity filter, preserved at the leaf (req.8.3). Same
 	// half-open [ValidFrom, ValidUntil) + ExpiresAt semantics as
 	// query.withinValidity — a superseded/expired truth is never surfaced.
-	if !versionValidAt(&mem.Version, s.asOf) {
+	if current, _ := memory.CurrentTruthAt(&mem.Head, &mem.Version, s.asOf); !current {
 		return RecallHit{}, false, nil
 	}
 
@@ -422,20 +418,8 @@ func typeInSet(t memory.Type, allowed []memory.Type) bool {
 // with at/after-close semantics) so recall descent and cortex.Find agree on
 // "what was true then" (req.8.3).
 func versionValidAt(v *memory.Version, asOf time.Time) bool {
-	from := v.CreatedAt
-	if v.ValidFrom != nil {
-		from = *v.ValidFrom
-	}
-	if asOf.Before(from) {
-		return false
-	}
-	if v.ValidUntil != nil && !asOf.Before(*v.ValidUntil) {
-		return false
-	}
-	if v.ExpiresAt != nil && !asOf.Before(*v.ExpiresAt) {
-		return false
-	}
-	return true
+	ok, _ := memory.VersionCurrentAt(v, asOf)
+	return ok
 }
 
 // parseRollupRef parses a rollup member URI (matrix://cortex/rollup/<tier>/<start>)

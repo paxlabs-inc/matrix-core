@@ -411,7 +411,7 @@ func (c *Cortex) Context(opts ContextOpts) (*Bundle, error) {
 		// but FrameRelevant/Outcomes idx entries are not deleted on
 		// tombstone (idx/* derived, see Tombstone in cortex.go), so
 		// we filter here as well. Defensive double-check on Pinned.
-		if mem.Head.Tombstoned != nil {
+		if current, _ := memory.CurrentTruthAt(&mem.Head, &mem.Version, now); !current {
 			delete(dedup, id)
 			continue
 		}

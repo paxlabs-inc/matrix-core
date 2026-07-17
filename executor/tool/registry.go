@@ -410,7 +410,7 @@ func (t *MCPTool) Name() string { return t.name }
 // errors always go to the wire.
 func (t *MCPTool) Call(ctx context.Context, args map[string]interface{}) (*Result, error) {
 	if t.mgr == nil {
-		return nil, errors.New("tool: MCP manager not configured")
+		return nil, failureError(FailureInvocation, errors.New("tool: MCP manager not configured"))
 	}
 
 	// P2-5: cache lookup (only for idempotent read tools). A hit returns
@@ -425,7 +425,7 @@ func (t *MCPTool) Call(ctx context.Context, args map[string]interface{}) (*Resul
 
 	c := t.mgr.Client(t.server)
 	if c == nil {
-		return nil, fmt.Errorf("tool: MCP server %q not running", t.server)
+		return nil, failureError(FailureTransport, fmt.Errorf("tool: MCP server %q not running", t.server))
 	}
 
 	// Apply per-call timeout if not already bounded by ctx.
@@ -442,7 +442,12 @@ func (t *MCPTool) Call(ctx context.Context, args map[string]interface{}) (*Resul
 	mcpResult, err := c.ToolsCall(callCtx, t.name, args)
 	dur := t.clock().Sub(start).Milliseconds()
 	if err != nil {
-		return nil, err
+		class := FailureTransport
+		var rpc *mcp.RPCError
+		if errors.As(err, &rpc) {
+			class = FailureProtocol
+		}
+		return nil, failureError(class, err)
 	}
 
 	out := &Result{
@@ -459,6 +464,7 @@ func (t *MCPTool) Call(ctx context.Context, args map[string]interface{}) (*Resul
 			URI:      embeddedURI(c.Resource),
 		})
 	}
+	NormalizeResult(out)
 
 	// P2-5: store the successful result in the cache for idempotent
 	// read tools. In-band errors (IsError) are never cached so a

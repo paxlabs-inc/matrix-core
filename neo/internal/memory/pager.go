@@ -381,6 +381,9 @@ func (p *Pager) LearnedGuidance(ctx context.Context) []string {
 
 	if res, err := p.cortex.Find(query.Query{Type: []memory.Type{memory.TypePreference}, Limit: 32}); err == nil && res != nil {
 		for _, m := range res.Memories {
+			if hasMemoryTag(m.Head, memoryConsentTag) {
+				continue // internal consent carrier, never a guidance line
+			}
 			data, derr := memory.DecodeData(m.Version.Type, m.Version.Data)
 			if derr != nil {
 				continue
@@ -556,7 +559,17 @@ func (p *Pager) Retrieve(ctx context.Context, queryText string) ([]Snippet, erro
 	// EdgeSupersedes edge that is deliberately retained for provenance. ---
 	kept := cands[:0]
 	for _, c := range cands {
-		if c.validUntil != nil && !c.validUntil.After(now) {
+		if c.id.IsZero() {
+			continue
+		}
+		mem, err := p.cortex.ResolveLatest(c.id)
+		if err != nil {
+			continue
+		}
+		if hasMemoryTag(mem.Head, memoryConsentTag) {
+			continue // internal consent carrier, never surfaced to the model
+		}
+		if current, _ := memory.CurrentTruthAt(&mem.Head, &mem.Version, now); !current {
 			continue
 		}
 		kept = append(kept, c)
@@ -806,6 +819,9 @@ func (p *Pager) RecallHits(_ context.Context, queryText string, types []string, 
 		if headHasOpportunityTag(m.Head) {
 			continue // proactive queue, not recallable memory
 		}
+		if hasMemoryTag(m.Head, memoryConsentTag) {
+			continue // internal consent carrier, not recallable memory
+		}
 		text := ""
 		if i < len(res.Rendered) {
 			text = res.Rendered[i]
@@ -887,12 +903,52 @@ func (p *Pager) recallLexical(queryText string, k int, asOf *time.Time) string {
 		if !ok {
 			continue
 		}
+		at := time.Now().UTC()
+		if asOf != nil {
+			at = asOf.UTC()
+		}
+		if !p.lexicalExcerptMatchesTruth(ex, at) {
+			continue
+		}
 		fmt.Fprintf(&b, "- [%s %s seq %d-%d] %s\n", ex.ConversationID, ex.Date.UTC().Format("2006-01-02"), ex.SeqLo, ex.SeqHi, strings.ReplaceAll(ex.Text, "\n", " | "))
 	}
 	if b.String() == "Verbatim transcript matches:\n" {
 		return ""
 	}
 	return b.String()
+}
+
+// lexicalExcerptMatchesTruth prevents an old transcript sentence from
+// reactivating a fact that the authoritative memory lane has superseded or
+// deleted. Transcript search remains historical evidence, but current recall
+// never presents a verbatim match whose corresponding typed memory is not
+// current at the requested instant.
+func (p *Pager) lexicalExcerptMatchesTruth(ex EpisodicExcerpt, asOf time.Time) bool {
+	res, err := p.cortex.Find(query.Query{
+		Type:              defaultRecallTypes,
+		Limit:             200,
+		IncludeTombstoned: true,
+	})
+	if err != nil || res == nil {
+		return true
+	}
+	excerpt := normalizeMutationText(ex.Text)
+	for _, mem := range res.Memories {
+		if current, _ := memory.CurrentTruthAt(&mem.Head, &mem.Version, asOf); current {
+			continue
+		}
+		versions, err := p.cortex.Versions(mem.Head.ID)
+		if err != nil {
+			versions = []memory.Version{mem.Version}
+		}
+		for _, version := range versions {
+			stale := normalizeMutationText(primaryMutationText(&memory.Memory{Head: mem.Head, Version: version}))
+			if len(stale) >= 8 && strings.Contains(excerpt, stale) {
+				return false
+			}
+		}
+	}
+	return true
 }
 
 // recallRecursive renders the recursive-recall descent (RLM applied to time)

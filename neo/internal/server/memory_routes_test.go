@@ -25,7 +25,8 @@ func TestMemoryRoutesReadNeoPagerMemories(t *testing.T) {
 	}
 	t.Cleanup(func() { _ = pager.Close() })
 
-	if _, err := pager.RememberFact(context.Background(), "The user is building the Matrix Timeline."); err != nil {
+	factURI, err := pager.RememberFact(context.Background(), "The user is building the Matrix Timeline.")
+	if err != nil {
 		t.Fatalf("RememberFact: %v", err)
 	}
 	if _, err := pager.RememberPreference(context.Background(), "answers", "do", 0.9, "Keep them concise."); err != nil {
@@ -80,5 +81,18 @@ func TestMemoryRoutesReadNeoPagerMemories(t *testing.T) {
 	}
 	if len(searched.Items) != 1 || searched.Items[0].Type != "Preference" {
 		t.Fatalf("search items = %#v, want one Preference", searched.Items)
+	}
+
+	mutateReq := httptest.NewRequest(http.MethodPost, "/memory/mutate", strings.NewReader(`{
+		"items":[{"operation":"supersede","target":{"uri":"`+factURI+`"},"value":{"content":"The user shipped the Matrix Timeline."}}]
+	}`))
+	mutateReq.Header.Set("Content-Type", "application/json")
+	mutateRes := httptest.NewRecorder()
+	handler.ServeHTTP(mutateRes, mutateReq)
+	if mutateRes.Code != http.StatusOK || !strings.Contains(mutateRes.Body.String(), "Matrix Timeline") {
+		t.Fatalf("POST /memory/mutate status = %d, body = %s", mutateRes.Code, mutateRes.Body.String())
+	}
+	if strings.Contains(mutateRes.Body.String(), "matrix://cortex/") {
+		t.Fatalf("mutation response exposed internal URI by default: %s", mutateRes.Body.String())
 	}
 }

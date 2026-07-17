@@ -117,6 +117,43 @@ func (b *broker) publish(id, typ, phase string, fields map[string]interface{}) E
 	return ev
 }
 
+func (b *broker) publishTerminal(id, status, phase string, fields map[string]interface{}, before func(lastSeq int) bool) (Event, Event, bool) {
+	ts := b.topic(id)
+	ts.mu.Lock()
+	if ts.closed {
+		ts.mu.Unlock()
+		return Event{}, Event{}, false
+	}
+	now := time.Now().UTC().Format(time.RFC3339Nano)
+	complete := Event{Seq: ts.seq + 1, Ts: now, Phase: phase, Type: "message.complete", Fields: map[string]interface{}{"status": status}}
+	answer := Event{Seq: ts.seq + 2, Ts: now, Phase: phase, Type: "chat.assistant", Fields: fields}
+	if before != nil && !before(answer.Seq) {
+		ts.mu.Unlock()
+		return Event{}, Event{}, false
+	}
+	ts.seq = answer.Seq
+	ts.buf = append(ts.buf, complete, answer)
+	if len(ts.buf) > maxReplayBuf {
+		ts.buf = ts.buf[len(ts.buf)-maxReplayBuf:]
+	}
+	for _, ch := range ts.subs {
+		select {
+		case ch <- complete:
+		default:
+		}
+		select {
+		case ch <- answer:
+		default:
+		}
+	}
+	ts.mu.Unlock()
+	if b.tap != nil {
+		b.tap(id, complete)
+		b.tap(id, answer)
+	}
+	return complete, answer, true
+}
+
 // closeRun marks a topic done and closes all subscriber channels so their SSE
 // handlers return.
 func (b *broker) closeRun(id string) {

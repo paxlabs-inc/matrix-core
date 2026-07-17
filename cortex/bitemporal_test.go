@@ -153,3 +153,62 @@ func TestCloseValidityRejectsTombstoned(t *testing.T) {
 		t.Fatalf("CloseValidity on a tombstoned memory must error")
 	}
 }
+
+func TestSupersedeWritesReplacementEdgeAndValidityInOneBatch(t *testing.T) {
+	c := openCortex(t)
+	clk := time.Unix(1700000000, 0).UTC()
+	c.now = func() time.Time { return clk }
+	oldURI, err := c.Write(memory.Head{ActorScope: "andrew", DeclaredImportance: 7}, memory.FactData{
+		SchemaVersion: 1,
+		Statement:     "The user's favorite number is 7.",
+		Subject:       "matrix://knowledge/user",
+		Predicate:     "profile",
+	}, WriteMeta{CreatedBy: "andrew", Provenance: memory.Provenance{Source: memory.SourceUserInput}})
+	if err != nil {
+		t.Fatalf("write old: %v", err)
+	}
+	oldID := idOf(oldURI)
+	headBefore := c.Store().NextSeq()
+
+	clk = clk.Add(time.Hour)
+	newURI, err := c.Supersede(oldURI, memory.FactData{
+		SchemaVersion: 1,
+		Statement:     "The user's favorite number is 11.",
+		Subject:       "matrix://knowledge/user",
+		Predicate:     "profile",
+	}, SupersedeOptions{
+		Head:      memory.Head{ActorScope: "andrew", DeclaredImportance: 7},
+		WriteMeta: WriteMeta{CreatedBy: "andrew", Provenance: memory.Provenance{Source: memory.SourceUserInput}},
+		EdgeMeta:  AddEdgeMeta{CreatedBy: "andrew"},
+	})
+	if err != nil {
+		t.Fatalf("Supersede: %v", err)
+	}
+	if got := c.Store().NextSeq() - headBefore; got != 3 {
+		t.Fatalf("journal entries = %d, want replacement + edge + validity close", got)
+	}
+	newID := idOf(newURI)
+	edge, err := c.GetEdge(newID, memory.EdgeSupersedes, oldID)
+	if err != nil || edge.Tombstoned {
+		t.Fatalf("supersedes edge: edge=%+v err=%v", edge, err)
+	}
+	old, err := c.ResolveLatest(oldID)
+	if err != nil || old.Version.ValidUntil == nil || !old.Version.ValidUntil.Equal(clk) {
+		t.Fatalf("old validity not closed at transaction instant: old=%+v err=%v", old, err)
+	}
+	current, err := c.Find(query.Query{Type: []memory.Type{memory.TypeFact}, Limit: 10})
+	if err != nil {
+		t.Fatalf("current find: %v", err)
+	}
+	if containsID(current, oldID) || !containsID(current, newID) {
+		t.Fatalf("current truth mismatch: old=%v new=%v", containsID(current, oldID), containsID(current, newID))
+	}
+	asOf := clk.Add(-30 * time.Minute)
+	historical, err := c.Find(query.Query{Type: []memory.Type{memory.TypeFact}, Limit: 10, AsOf: &asOf})
+	if err != nil {
+		t.Fatalf("historical find: %v", err)
+	}
+	if !containsID(historical, oldID) || containsID(historical, newID) {
+		t.Fatalf("historical truth mismatch: old=%v new=%v", containsID(historical, oldID), containsID(historical, newID))
+	}
+}

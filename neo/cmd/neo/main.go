@@ -128,6 +128,7 @@ func runInteractive() {
 	// Explicit memory lookup tool (mirrors serve.go).
 	if tm != nil && pager != nil {
 		tm.SetRecall(pager.Recall)
+		tm.SetMemoryMutation(pager.Mutate)
 	}
 
 	// --- background write-back consolidation (best-effort, needs memory) ---

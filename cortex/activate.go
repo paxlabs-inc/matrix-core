@@ -68,9 +68,11 @@ import (
 	"errors"
 	"fmt"
 	"sort"
+	"strings"
 	"time"
 
 	"matrix/cortex/memory"
+	"matrix/cortex/query"
 	"matrix/cortex/salience"
 )
 
@@ -144,6 +146,10 @@ type ActivationBundle struct {
 	// LatencyMS is wall-clock from the start of Activate to the return
 	// statement (real time.Now(), not c.now() — see file header).
 	LatencyMS int64
+	// SelectionReason explains an empty activation without exposing content or
+	// internal identifiers. It is populated when relevant live memory exists
+	// outside the materialized activation tiers.
+	SelectionReason string
 }
 
 // cachedTierPinned returns the Pinned-tier candidate ID list, served from
@@ -189,7 +195,7 @@ type activationItem struct {
 // Timeline/Recent/Transcript are all query-independent — unlike Context's
 // Frame/Outcomes tiers, none of Activate's tiers are verb/object-keyed). It
 // is reserved for a future extension rather than guessed at here.
-func (c *Cortex) Activate(conv, query string, budget Budget) (*ActivationBundle, error) {
+func (c *Cortex) Activate(conv, queryText string, budget Budget) (*ActivationBundle, error) {
 	start := time.Now()
 
 	if conv == "" {
@@ -225,7 +231,7 @@ func (c *Cortex) Activate(conv, query string, budget Budget) (*ActivationBundle,
 			}
 			return nil, fmt.Errorf("cortex.Activate: resolve pinned %s: %w", id, rerr)
 		}
-		if mem.Head.Tombstoned != nil {
+		if current, _ := memory.CurrentTruthAt(&mem.Head, &mem.Version, now); !current {
 			continue
 		}
 		var score float32
@@ -343,9 +349,45 @@ func (c *Cortex) Activate(conv, query string, budget Budget) (*ActivationBundle,
 		reachable = reachable[:MaxReachableURIs]
 	}
 	bundle.ReachableURIs = reachable
+	if len(bundle.Pinned) == 0 && len(bundle.Timeline) == 0 && len(bundle.Recent) == 0 && len(bundle.Transcript) == 0 && strings.TrimSpace(bundle.StorySoFar) == "" {
+		bundle.SelectionReason = c.emptyActivationReason(queryText)
+	}
 
 	bundle.LatencyMS = time.Since(start).Milliseconds()
 	return bundle, nil
+}
+
+func (c *Cortex) emptyActivationReason(queryText string) string {
+	queryText = strings.TrimSpace(queryText)
+	if queryText == "" {
+		return "no current memory was selected by the materialized activation tiers"
+	}
+	res, err := c.Find(query.Query{Near: queryText, Limit: 1, Form: query.FormMedium})
+	if err == nil && res != nil && len(res.Memories) > 0 {
+		return "relevant current memory exists outside the materialized activation tiers; use memory_recall"
+	}
+	res, err = c.Find(query.Query{
+		Type: []memory.Type{
+			memory.TypeIdentity, memory.TypeFact, memory.TypePreference,
+			memory.TypeBelief, memory.TypeEvent, memory.TypeGoal,
+			memory.TypeConstraint, memory.TypeCapability, memory.TypePattern,
+		},
+		Limit: 64,
+		Form:  query.FormMedium,
+	})
+	if err == nil && res != nil {
+		needle := strings.ToLower(queryText)
+		for i, mem := range res.Memories {
+			text := mem.Version.Forms.Medium
+			if i < len(res.Rendered) && res.Rendered[i] != "" {
+				text = res.Rendered[i]
+			}
+			if strings.Contains(strings.ToLower(text), needle) {
+				return "relevant current memory exists outside the materialized activation tiers; use memory_recall"
+			}
+		}
+	}
+	return "no current memory matched the activation query"
 }
 
 // loadOrRepairStorySoFar returns the ShortForm of conv's story-so-far

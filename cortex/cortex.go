@@ -411,6 +411,25 @@ func (c *Cortex) ResolveLatest(id memory.ID) (*memory.Memory, error) {
 	return &memory.Memory{Head: h, Version: v}, nil
 }
 
+// Versions returns every immutable version for a memory in ascending version
+// order. It is a pure audit/history read used by truth-aware retrieval to keep
+// obsolete wording from re-entering through derived transcript indexes.
+func (c *Cortex) Versions(id memory.ID) ([]memory.Version, error) {
+	out := make([]memory.Version, 0)
+	err := c.s.PrefixIter(keys.MemoryVersionPrefix(toKeysULID(id)), func(_, value []byte) error {
+		var v memory.Version
+		if err := memory.DecodeVersion(value, &v); err != nil {
+			return err
+		}
+		out = append(out, v)
+		return nil
+	})
+	if err != nil {
+		return nil, fmt.Errorf("cortex.Versions: %w", err)
+	}
+	return out, nil
+}
+
 // ResolveScoped is the sub-agent variant of Resolve. It (a) verifies
 // the supplied CortexScope (signature, schema, expiry, snapshot
 // resolvability, multi-proof) ONCE and then (b) checks per-target

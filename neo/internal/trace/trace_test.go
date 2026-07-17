@@ -61,6 +61,27 @@ func TestTrace_PersistsStepsSearchesMediaAsync(t *testing.T) {
 	}
 }
 
+func TestTraceRemoveWaitsForQueuedWrites(t *testing.T) {
+	dir := t.TempDir()
+	st := Open(dir)
+	defer st.Close()
+
+	const runID = "neo_delete"
+	st.Record(runID, Event{Seq: 1, Type: "tool.step"})
+	if !st.Remove(runID) {
+		t.Fatal("remove should report the real file deletion")
+	}
+	if got := st.Load(runID); got != nil {
+		t.Fatalf("removed trace is still readable: %+v", got)
+	}
+	if _, err := os.Stat(filepath.Join(dir, runID+".trace.jsonl")); !os.IsNotExist(err) {
+		t.Fatalf("trace file still exists after synchronous remove: %v", err)
+	}
+	if st.Remove(runID) {
+		t.Fatal("removing a missing trace must not be reported as a deletion")
+	}
+}
+
 // TestTrace_RetainedCapEnforced confirms the per-run JSONL is trimmed to the
 // newest `retain` events (bounded durable record, like the broker's replay
 // buffer but larger) — no unbounded growth on a long task.

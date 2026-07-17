@@ -73,6 +73,7 @@ import (
 	"os"
 	"os/signal"
 	"strconv"
+	"strings"
 	"sync/atomic"
 	"syscall"
 	"time"
@@ -253,7 +254,6 @@ func run(args []string) error {
 func newLogger(format string) func(string, map[string]any) {
 	switch format {
 	case "json":
-		enc := log.New(os.Stderr, "", 0)
 		return func(event string, fields map[string]any) {
 			row := map[string]any{
 				"event": event,
@@ -264,14 +264,22 @@ func newLogger(format string) func(string, map[string]any) {
 			}
 			b, err := json.Marshal(row)
 			if err != nil {
-				enc.Printf(`{"event":"log_marshal_err","error":%q}`, err.Error())
+				log.New(os.Stderr, "", 0).Printf(`{"event":"log_marshal_err","error":%q}`, err.Error())
 				return
 			}
-			enc.Println(string(b))
+			w := os.Stdout
+			if logEventFailed(event, fields) {
+				w = os.Stderr
+			}
+			log.New(w, "", 0).Println(string(b))
 		}
 	default:
-		l := log.New(os.Stderr, "matrix-gateway ", log.LstdFlags|log.LUTC)
 		return func(event string, fields map[string]any) {
+			w := os.Stdout
+			if logEventFailed(event, fields) {
+				w = os.Stderr
+			}
+			l := log.New(w, "matrix-gateway ", log.LstdFlags|log.LUTC)
 			if len(fields) == 0 {
 				l.Println(event)
 				return
@@ -279,6 +287,15 @@ func newLogger(format string) func(string, map[string]any) {
 			l.Printf("%s %v", event, fields)
 		}
 	}
+}
+
+func logEventFailed(event string, fields map[string]any) bool {
+	lower := strings.ToLower(event)
+	if strings.Contains(lower, "error") || strings.Contains(lower, "fail") || strings.Contains(lower, "timeout") {
+		return true
+	}
+	_, hasError := fields["error"]
+	return hasError
 }
 
 // Copyright © 2026 Paxlabs Inc. All rights reserved.

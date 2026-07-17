@@ -22,6 +22,7 @@ import (
 	"matrix/neo/internal/delegate"
 	"matrix/neo/internal/llm"
 	"matrix/neo/internal/recall"
+	"matrix/neo/internal/runrecord"
 	"matrix/neo/internal/task"
 )
 
@@ -102,16 +103,18 @@ type askWaiter struct {
 // run is a single user turn. id doubles as the SSE topic + the intent_id the
 // client subscribes to.
 type run struct {
-	id       string
-	convID   string
-	sess     *session
-	closed   bool // a closing (final) turn has been emitted
-	narrated bool // at least one Status narration turn was persisted this run
+	id             string
+	convID         string
+	idempotencyKey string
+	sess           *session
+	closed         bool // a closing (final) turn has been emitted
+	narrated       bool // at least one Status narration turn was persisted this run
 	// lastText is the most recent DURABLE assistant text shown to the user this
 	// run (a Status narration or a Say). The ceiling / deterministic-stop
 	// closing turns compare BestEffort against it so they never re-paste an
 	// answer that is already the last bubble on screen (the double-render).
 	lastText string
+	started  time.Time
 
 	cancel  context.CancelFunc // cancels this turn's ctx (barge-in / explicit stop)
 	stopped atomic.Bool        // set when interrupted, so drive closes quietly
@@ -363,7 +366,8 @@ func firstUserText(turns []conversation.Turn) string {
 // and the dispatch are atomic under actMu so two near-simultaneous messages
 // never both spawn a run (the second folds into the first).
 func (s *session) submit(message string) (runID string, fresh bool) {
-	return s.submitWith(message, nil)
+	runID, fresh, _, _ = s.submitIdempotent(message, "", nil)
+	return runID, fresh
 }
 
 func (s *session) submitAudio(message string, audio *agent.AudioTurn) (runID string, fresh bool) {
@@ -384,21 +388,46 @@ func (s *session) submitAudio(message string, audio *agent.AudioTurn) (runID str
 // attached (the live run belongs to other work) and fresh=false tells the
 // caller so.
 func (s *session) submitWith(message string, onFinish func(task.Status)) (runID string, fresh bool) {
+	runID, fresh, _, _ = s.submitIdempotent(message, "", onFinish)
+	return runID, fresh
+}
+
+func (s *session) submitIdempotent(message, key string, onFinish func(task.Status)) (runID string, fresh, duplicate bool, err error) {
 	s.actMu.Lock()
 	defer s.actMu.Unlock()
+	key = strings.TrimSpace(key)
+	if key != "" && s.engine.runRecords != nil && s.engine.runRecords.Enabled() {
+		if rec, ok, findErr := s.engine.runRecords.FindByIdempotency(key); findErr != nil {
+			return "", false, false, findErr
+		} else if ok {
+			if rec.ConversationID != s.id || rec.Request != strings.TrimSpace(message) {
+				return rec.IntentID, false, true, runrecord.ErrIdempotencyConflict
+			}
+			return rec.IntentID, false, true, nil
+		}
+	}
 	if r := s.active; r != nil && !r.stopped.Load() {
 		s.enqueueInput(message)
-		return r.id, false
+		return r.id, false, false, nil
 	}
-	r := s.dispatchLocked(message, false, onFinish, nil)
-	return r.id, true
+	r, created, dispatchErr := s.dispatchLockedAs(message, false, onFinish, nil, "", key)
+	if dispatchErr != nil {
+		return "", false, false, dispatchErr
+	}
+	if !created {
+		return r.id, false, true, nil
+	}
+	return r.id, true, false, nil
 }
 
 // startResume re-dispatches an orphaned task (the boot reaper after a restart /
 // Fly suspend): it drives the original objective with the catch-up prime from
 // attempt one, since work may already exist on the volume.
-func (s *session) startResume(objective string) *run {
-	return s.dispatch(objective, true)
+func (s *session) startResume(runID, objective string) *run {
+	s.actMu.Lock()
+	defer s.actMu.Unlock()
+	r, _, _ := s.dispatchLockedAs(objective, true, nil, nil, runID, "")
+	return r
 }
 
 // dispatch mints a run and drives it on a background goroutine. It does NOT
@@ -415,7 +444,30 @@ func (s *session) dispatch(message string, resume bool) *run {
 // run as the conversation's active run synchronously (so submit's active check
 // is race-free), creates the SSE topic before returning, then drives the turn.
 func (s *session) dispatchLocked(message string, resume bool, onFinish func(task.Status), audio *agent.AudioTurn) *run {
-	r := &run{id: synthRunID(message), convID: s.id, sess: s, onFinish: onFinish}
+	r, _, _ := s.dispatchLockedAs(message, resume, onFinish, audio, "", "")
+	return r
+}
+
+func (s *session) dispatchLockedAs(message string, resume bool, onFinish func(task.Status), audio *agent.AudioTurn, forcedRunID, idempotencyKey string) (*run, bool, error) {
+	runID := strings.TrimSpace(forcedRunID)
+	if runID == "" {
+		runID = synthRunID(message)
+	}
+	created := true
+	if s.engine.runRecords != nil && s.engine.runRecords.Enabled() {
+		rec, made, err := s.engine.runRecords.Begin(runID, s.id, idempotencyKey, message)
+		if err != nil {
+			return nil, false, err
+		}
+		if !made && !resume {
+			return &run{id: rec.IntentID, convID: rec.ConversationID, idempotencyKey: rec.IdempotencyKey, sess: s}, false, nil
+		}
+		if rec.Terminal() {
+			return &run{id: rec.IntentID, convID: rec.ConversationID, idempotencyKey: rec.IdempotencyKey, sess: s, closed: true}, false, nil
+		}
+		created = made
+	}
+	r := &run{id: runID, convID: s.id, idempotencyKey: strings.TrimSpace(idempotencyKey), sess: s, onFinish: onFinish, started: time.Now().UTC()}
 	if audio != nil {
 		audio.OnTranscript = func(text string) { s.engine.conv.AppendUser(s.id, r.id, text) }
 	}
@@ -438,8 +490,9 @@ func (s *session) dispatchLocked(message string, resume bool, onFinish func(task
 	// daemon's empty stream. The replay buffer then backfills any events
 	// published between this point and the client's connect.
 	s.engine.broker.ensure(r.id)
+	s.engine.logLifecycle("run.dispatch", r.id, r.convID, "running", 0, nil)
 	go s.drive(ctx, r, message, resume, audio)
-	return r
+	return r, created, nil
 }
 
 // enqueueInput appends a mid-run user message to the session inbox (F5). The
@@ -499,10 +552,7 @@ func (s *session) drive(ctx context.Context, r *run, message string, resume bool
 		}
 		if !r.closed {
 			text := "Something went wrong on my end in the middle of this — I had to stop. Nothing you did; tell me to keep going and I'll pick it back up."
-			s.engine.broker.publish(r.id, "message.complete", "neo", map[string]interface{}{"status": "completed"})
-			s.engine.broker.publish(r.id, "chat.assistant", "neo", s.chatFields(r, text, true))
-			s.engine.conv.AppendAssistant(s.id, r.id, text)
-			r.closed = true
+			s.finishRun(r, runrecord.StatusFailed, text, "run panicked", nil, true)
 		}
 		s.engine.broker.closeRun(r.id)
 	}()
@@ -539,10 +589,7 @@ func (s *session) drive(ctx context.Context, r *run, message string, resume bool
 			// client's grace window expires into the alarming "task stopped,
 			// try again" copy for something the user did on purpose.
 			text := "Stopped. Say the word and I'll pick this back up where it left off."
-			s.engine.broker.publish(r.id, "message.complete", "neo", map[string]interface{}{"status": "interrupted"})
-			s.engine.broker.publish(r.id, "chat.assistant", "neo", s.chatFields(r, text, true))
-			s.engine.conv.AppendAssistant(s.id, r.id, text)
-			r.closed = true
+			s.finishRun(r, runrecord.StatusInterrupted, text, "", nil, true)
 		}
 		s.engine.broker.closeRun(r.id)
 		return
@@ -557,10 +604,7 @@ func (s *session) drive(ctx context.Context, r *run, message string, resume bool
 	// normally true here. Synthesize one only if somehow it isn't, so the
 	// client's stream always terminates deterministically.
 	if !r.closed {
-		s.engine.broker.publish(r.id, "message.complete", "neo", map[string]interface{}{"status": "completed"})
-		s.engine.broker.publish(r.id, "chat.assistant", "neo", s.chatFields(r, "Done.", true))
-		s.engine.conv.AppendAssistant(s.id, r.id, "Done.")
-		r.closed = true
+		s.finishRun(r, runrecord.StatusCompleted, "Done.", "", nil, true)
 	}
 	s.engine.broker.closeRun(r.id)
 
@@ -837,7 +881,7 @@ func (s *session) maybeConsolidateDeaths(ctx context.Context) {
 func (s *session) emitProgress(r *run, attempt int, err error) {
 	msg := "Still on it — that pass hit a snag, so I'm taking another run at it."
 	s.engine.broker.publish(r.id, "chat.assistant", "neo", s.chatFields(r, msg, false))
-	fmt.Fprintf(os.Stderr, "neo/supervisor: conv=%s run=%s attempt=%d not done yet: %v\n", s.id, r.id, attempt, err)
+	s.engine.logLifecycle("run.retry", r.id, s.id, fmt.Sprintf("attempt_%d", attempt+1), time.Since(r.started), err)
 }
 
 // deliverCeiling emits the ONE allowed terminal-without-completion: an honest
@@ -859,10 +903,7 @@ func (s *session) deliverCeiling(r *run, reason string) task.Status {
 		text += " Here's exactly where it stands:\n\n" + best
 	}
 	text += "\n\nTell me how you'd like me to continue and I'll pick it right back up."
-	s.engine.broker.publish(r.id, "message.complete", "neo", map[string]interface{}{"status": "completed"})
-	s.engine.broker.publish(r.id, "chat.assistant", "neo", s.chatFields(r, text, true))
-	s.engine.conv.AppendAssistant(s.id, r.id, text)
-	r.closed = true
+	s.finishRun(r, runrecord.StatusFailed, text, reason, nil, true)
 	return task.StatusCeiling
 }
 
@@ -907,10 +948,7 @@ func (s *session) deliverDeterministicStop(r *run) task.Status {
 		}
 	}
 	text += "\n\nTell me how you'd like to adjust it and I'll pick it right back up."
-	s.engine.broker.publish(r.id, "message.complete", "neo", map[string]interface{}{"status": "completed"})
-	s.engine.broker.publish(r.id, "chat.assistant", "neo", s.chatFields(r, text, true))
-	s.engine.conv.AppendAssistant(s.id, r.id, text)
-	r.closed = true
+	s.finishRun(r, runrecord.StatusFailed, text, "deterministic blocker", nil, true)
 	return task.StatusCeiling
 }
 
@@ -1117,6 +1155,38 @@ func (s *session) chatFields(r *run, text string, final bool) map[string]interfa
 	return f
 }
 
+func (s *session) finishRun(r *run, status, text, failure string, fields map[string]interface{}, persist bool) bool {
+	if r == nil || r.closed {
+		return false
+	}
+	text = strings.TrimSpace(llm.StripGuidance(text))
+	if fields == nil {
+		fields = s.chatFields(r, text, true)
+	}
+	if persist && text != "" {
+		s.engine.conv.AppendAssistant(s.id, r.id, text)
+	}
+	_, _, published := s.engine.broker.publishTerminal(r.id, status, "neo", fields, func(lastSeq int) bool {
+		if s.engine.runRecords == nil || !s.engine.runRecords.Enabled() {
+			return !r.closed
+		}
+		_, transitioned, err := s.engine.runRecords.Finish(r.id, status, text, failure, lastSeq)
+		if err != nil {
+			s.engine.logLifecycle("run.final_persist", r.id, s.id, status, time.Since(r.started), err)
+			return false
+		}
+		s.engine.logLifecycle("run.final_persist", r.id, s.id, status, time.Since(r.started), nil)
+		return transitioned
+	})
+	if !published {
+		return false
+	}
+	r.lastText = text
+	r.closed = true
+	s.engine.logLifecycle("run.terminal", r.id, s.id, status, time.Since(r.started), nil)
+	return true
+}
+
 // --- gate waiters (delegated MCL approval gates) ---
 
 func (s *session) registerGate(nodeID string) chan gateAnswer {
@@ -1278,8 +1348,6 @@ func (r *sseReporter) Say(text string, completion bool) {
 		// path is dormant; message.complete still fires to close the run.
 		fields["completion"] = true
 	}
-	s.engine.broker.publish(run.id, "message.complete", "neo", map[string]interface{}{"status": "completed"})
-	s.engine.broker.publish(run.id, "chat.assistant", "neo", fields)
 	// Persist conversational / ceiling answers (the durable thread content). The
 	// task_complete completion summary is normally NOT persisted: Neo's narration
 	// (Status) is the durable thread now, so persisting the summary too would
@@ -1287,11 +1355,7 @@ func (r *sseReporter) Say(text string, completion bool) {
 	// run that committed NO narration at all (e.g. it went straight to
 	// task_complete) — persisting the summary there is what keeps the reopened
 	// thread from being empty, mirroring the client's live safety net.
-	if !completion || !run.narrated {
-		s.engine.conv.AppendAssistant(s.id, run.id, text)
-	}
-	run.lastText = strings.TrimSpace(text)
-	run.closed = true
+	s.finishRun(run, runrecord.StatusCompleted, text, "", fields, !completion || !run.narrated)
 }
 
 func (r *sseReporter) Status(text string) {

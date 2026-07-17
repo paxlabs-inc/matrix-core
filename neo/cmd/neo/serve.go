@@ -31,6 +31,7 @@ import (
 	"matrix/neo/internal/conversation"
 	"matrix/neo/internal/memory"
 	"matrix/neo/internal/preview"
+	"matrix/neo/internal/runrecord"
 	sbx "matrix/neo/internal/sandbox"
 	"matrix/neo/internal/server"
 	"matrix/neo/internal/task"
@@ -65,7 +66,7 @@ func runServe(args []string) {
 	var err error
 	if *sandbox {
 		cfg = config.Sandbox()
-		fmt.Fprintf(os.Stderr, "neo: sandbox preset active — temp cortex %s, hash embedder stub, no chain RPC, metering off\n", cfg.CortexRoot)
+		fmt.Fprintf(os.Stdout, "neo: sandbox preset active — temp cortex %s, hash embedder stub, no chain RPC, metering off\n", cfg.CortexRoot)
 	} else {
 		cfg, err = config.Load(*configPath)
 		if err != nil {
@@ -112,7 +113,7 @@ func runServe(args []string) {
 		fatal("vault required but unavailable: %v — set VAULT_KEK (64-hex-char key) or VAULT_KEK_FILE and NEO_ACTOR_DID, or set VAULT_REQUIRED=false for plaintext dev/CLI", verr)
 	}
 	if vaultSess.Encrypting() {
-		fmt.Fprintf(os.Stderr, "neo: data-at-rest vault active for %s\n", cfg.ActorDID)
+		fmt.Fprintf(os.Stdout, "neo: data-at-rest vault active for %s\n", cfg.ActorDID)
 	}
 	// Thread the session into cfg so memory.Open seals the cortex store from
 	// its first write (encryption below the hash boundary; vaultseam.go).
@@ -172,6 +173,7 @@ func runServe(args []string) {
 	// model can take, not an apology about missing tools.
 	if tm != nil && pager != nil {
 		tm.SetRecall(pager.Recall)
+		tm.SetMemoryMutation(pager.Mutate)
 	}
 
 	// --- background write-back consolidation ---
@@ -198,6 +200,7 @@ func runServe(args []string) {
 	// in-flight task survives a restart / Fly suspend and the boot reaper can
 	// resume it (the Task Durability Rule).
 	taskDir := task.Dir(os.Getenv("NEO_TASKS_DIR"), cfg.CortexRoot)
+	runDir := runrecord.Dir(os.Getenv("NEO_RUNS_DIR"), cfg.CortexRoot)
 	// Durable workspace trace: "Neo's Computer" (tool steps / search cards /
 	// media / surfaces / swarm windows) persisted per run beside history on the
 	// machine volume, so reopening a thread rebuilds the workspace instead of
@@ -246,6 +249,7 @@ func runServe(args []string) {
 		Consolidator:          cons,
 		ConversationDir:       convDir,
 		TaskDir:               taskDir,
+		RunDir:                runDir,
 		TraceDir:              traceDir,
 		AutomatrixDir:         automatrixDir,
 		AutomatrixSettingsDir: automatrixsettings.Dir(os.Getenv("NEO_AUTOMATRIX_DIR"), cfg.CortexRoot),
@@ -354,7 +358,7 @@ func runServe(args []string) {
 	}
 
 	<-ctx.Done()
-	fmt.Fprintln(os.Stderr, "neo: shutting down…")
+	fmt.Fprintln(os.Stdout, "neo: shutting down…")
 
 	// Graceful, ordered shutdown so Neo's cortex actor flushes before exit
 	// (the daemon snapshots the shared /data tree on ITS shutdown).

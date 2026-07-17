@@ -207,6 +207,9 @@ func TestEpisodicFeedRealChatLoop(t *testing.T) {
 		hi = seq
 	}
 	client := windowLawClient(t, model.URL)
+	if _, err := pager.SetMemoryConsent(context.Background(), true, "test user"); err != nil {
+		t.Fatal(err)
+	}
 	consolidator := writeback.New(client, client, pager, cfg)
 	consolidator.ConsolidateSync(context.Background(), "USER: Zephyr failed after the Buildkite token expired.\nASSISTANT: We rotated the Buildkite token and the canary passed.", convA, lo, hi)
 	deadline := time.Now().Add(2 * time.Second)

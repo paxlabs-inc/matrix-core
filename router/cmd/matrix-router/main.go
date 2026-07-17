@@ -35,6 +35,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -57,7 +58,12 @@ var version = "dev"
 
 func main() {
 	logf := func(format string, args ...interface{}) {
-		fmt.Fprintf(os.Stderr, time.Now().UTC().Format(time.RFC3339Nano)+" "+format+"\n", args...)
+		w := os.Stdout
+		lower := strings.ToLower(format)
+		if strings.Contains(lower, "error") || strings.Contains(lower, "fail") || strings.Contains(lower, "panic") {
+			w = os.Stderr
+		}
+		fmt.Fprintf(w, time.Now().UTC().Format(time.RFC3339Nano)+" "+format+"\n", args...)
 	}
 
 	cfg, err := config.Load()

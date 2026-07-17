@@ -63,5 +63,17 @@ func (e *Engine) savePersonalizationProfile(ctx context.Context, profileJSON []b
 	if err := json.Unmarshal(profileJSON, &prof); err != nil {
 		return "", fmt.Errorf("neo/personalization: decode profile: %w", err)
 	}
-	return e.pager.SavePersonalizationProfile(ctx, prof)
+	uri, err := e.pager.SavePersonalizationProfile(ctx, prof)
+	if err != nil {
+		return "", err
+	}
+	// The guided interview reaches this writer only after its explicit
+	// confirmation gate, which constitutes an affirmative opt-in to durable
+	// personalization (PRIV-01 req 8.1). Enabling consent here keeps the
+	// downstream extraction/writeback gate consistent with the user's
+	// confirmed intent rather than leaving it default-off.
+	if _, cerr := e.pager.SetMemoryConsent(ctx, true, "personalization-interview"); cerr != nil {
+		return "", fmt.Errorf("neo/personalization: record consent: %w", cerr)
+	}
+	return uri, nil
 }

@@ -381,10 +381,6 @@ func Run(s *store.Store, q Query) (*Result, error) {
 			return nil, fmt.Errorf("query: decode head: %w", err)
 		}
 
-		if h.Tombstoned != nil && !q.IncludeTombstoned {
-			continue
-		}
-
 		// Type post-filter: when scanning idx/tag, candidates carry mixed types
 		// and we must respect q.Type.
 		if len(q.Type) > 0 && !typeMatches(h.Type, q.Type) {
@@ -420,7 +416,11 @@ func Run(s *store.Store, q Query) (*Result, error) {
 		// IncludeTombstoned audits bypass this so supersession provenance and
 		// "what changed" answers stay reachable; cortex.Find with a past AsOf
 		// gets deliberate time-travel.
-		if q.From == nil && !q.IncludeTombstoned && !withinValidity(&v, asOf) {
+		if q.From == nil && !q.IncludeTombstoned {
+			if current, _ := memory.CurrentTruthAt(&h, &v, asOf); !current {
+				continue
+			}
+		} else if h.Tombstoned != nil && !q.IncludeTombstoned {
 			continue
 		}
 
@@ -678,20 +678,8 @@ func validatePredicate(p Predicate) error {
 // boundary instant. ExpiresAt — dead since Phase 2 — is finally honored
 // here with the same at/after-close semantics.
 func withinValidity(v *memory.Version, asOf time.Time) bool {
-	from := v.CreatedAt
-	if v.ValidFrom != nil {
-		from = *v.ValidFrom
-	}
-	if asOf.Before(from) {
-		return false
-	}
-	if v.ValidUntil != nil && !asOf.Before(*v.ValidUntil) {
-		return false
-	}
-	if v.ExpiresAt != nil && !asOf.Before(*v.ExpiresAt) {
-		return false
-	}
-	return true
+	ok, _ := memory.VersionCurrentAt(v, asOf)
+	return ok
 }
 
 func typeMatches(t memory.Type, allowed []memory.Type) bool {

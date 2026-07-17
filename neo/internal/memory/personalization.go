@@ -161,6 +161,40 @@ func (p *Pager) PersonalizationProfile(ctx context.Context) (PersonalizationProf
 	return prof, uri, true, nil
 }
 
+// PersonalizationRecord is the profile plus its provenance/version lineage for
+// user data export (req 8.3/13.2).
+type PersonalizationRecord struct {
+	Profile   PersonalizationProfile `json:"profile"`
+	URI       string                 `json:"uri,omitempty"`
+	Version   uint64                 `json:"version,omitempty"`
+	UpdatedAt string                 `json:"updated_at,omitempty"`
+	CreatedBy string                 `json:"created_by,omitempty"`
+	Exists    bool                   `json:"exists"`
+}
+
+// PersonalizationExport returns the single saved profile with its version
+// lineage. A missing record yields Exists=false with an empty profile.
+func (p *Pager) PersonalizationExport(ctx context.Context) (PersonalizationRecord, error) {
+	_ = ctx
+	out := PersonalizationRecord{Profile: PersonalizationProfile{SchemaVersion: personalizationSchemaVersion}}
+	mem, err := p.findPersonalizationMemory()
+	if err != nil {
+		return PersonalizationRecord{}, err
+	}
+	if mem == nil {
+		return out, nil
+	}
+	out.Exists = true
+	out.Profile = decodePersonalizationGoal(mem)
+	out.URI = string(cortex.BuildURI(memory.TypeGoal, mem.Head.ID, mem.Head.CurrentVersion))
+	out.Version = mem.Head.CurrentVersion
+	out.CreatedBy = mem.Version.CreatedBy
+	if !mem.Version.CreatedAt.IsZero() {
+		out.UpdatedAt = mem.Version.CreatedAt.UTC().Format("2006-01-02T15:04:05.000000000Z")
+	}
+	return out, nil
+}
+
 // SavePersonalizationProfile normalizes, validates, and persists the profile as
 // the single authoritative record: a versioned UPDATE when one exists, a fresh
 // pinned record otherwise (req 13.1 — never a second record, never a fragment).
@@ -211,6 +245,36 @@ func (p *Pager) SavePersonalizationProfile(ctx context.Context, prof Personaliza
 		return "", fmt.Errorf("neo/memory: personalization write: %w", werr)
 	}
 	return string(uri), nil
+}
+
+// DeletePersonalization tombstones the single personalization profile record
+// through the existing Cortex tombstone path (the same primitive typed-memory
+// delete uses), removing it from current retrieval, indexes, and caches. It
+// reports whether a record was present; a missing record is a no-op success.
+// The async embedder is drained around the versioned tombstone so a queued
+// embed of the prior version cannot land after the delete.
+func (p *Pager) DeletePersonalization(ctx context.Context) (bool, error) {
+	if p == nil || p.cortex == nil {
+		return false, errors.New("neo/memory: pager unavailable")
+	}
+	if p.hasEmbedder {
+		if err := p.cortex.DrainEmbedder(ctx); err != nil {
+			return false, fmt.Errorf("prepare personalization indexes: %w", err)
+		}
+		defer func() { _ = p.cortex.DrainEmbedder(ctx) }()
+	}
+	mem, err := p.findPersonalizationMemory()
+	if err != nil {
+		return false, err
+	}
+	if mem == nil {
+		return false, nil
+	}
+	uri := cortex.BuildURI(memory.TypeGoal, mem.Head.ID, mem.Head.CurrentVersion)
+	if err := p.cortex.Tombstone(uri, "personalization profile deleted by user", p.cfg.CortexActor); err != nil {
+		return false, fmt.Errorf("neo/memory: personalization delete: %w", err)
+	}
+	return true, nil
 }
 
 // findPersonalizationMemory scans Goal-type memories for the one tagged

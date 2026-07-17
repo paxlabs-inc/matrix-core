@@ -365,6 +365,60 @@ func TestAppendUser_PersistsIntentId(t *testing.T) {
 	}
 }
 
+func TestConversationManagementPersistsAndForksExactPrefix(t *testing.T) {
+	dir := t.TempDir()
+	parent := Open(dir)
+	parent.AppendUser("parent", "run-1", "first")
+	parent.AppendAssistant("parent", "run-1", "answer one")
+	parent.AppendUser("parent", "run-2", "second")
+	parent.AppendAssistant("parent", "run-2", "answer two")
+
+	title := "Renamed thread"
+	archived := true
+	if !parent.UpdateMeta("parent", &title, &archived) {
+		t.Fatal("combined rename/archive failed")
+	}
+
+	reopened := Open(dir)
+	items := reopened.List()
+	if len(items) != 1 || items[0].Title != title || !items[0].Archived {
+		t.Fatalf("metadata did not survive reopen: %+v", items)
+	}
+
+	if !reopened.Fork("parent", "child", 3) {
+		t.Fatal("fork failed")
+	}
+	child := reopened.History("child")
+	if len(child) != 3 {
+		t.Fatalf("fork must contain exactly the selected prefix: got %d turns", len(child))
+	}
+	for i, want := range []string{"first", "answer one", "second"} {
+		if child[i].Text != want {
+			t.Fatalf("fork turn %d = %q, want %q", i, child[i].Text, want)
+		}
+	}
+	meta := reopened.Meta("child")
+	if meta.ForkedFrom != "parent" || meta.ForkedAtTurn != 3 {
+		t.Fatalf("fork provenance mismatch: %+v", meta)
+	}
+
+	reopened.AppendAssistant("child", "run-child", "child future")
+	reopened.AppendUser("parent", "run-parent", "parent future")
+	if got := reopened.History("child"); len(got) != 4 || got[3].Text != "child future" {
+		t.Fatalf("child future is not independent: %+v", got)
+	}
+	if got := reopened.History("parent"); len(got) != 5 || got[4].Text != "parent future" {
+		t.Fatalf("parent future is not independent: %+v", got)
+	}
+
+	if !reopened.Delete("parent") || reopened.Exists("parent") {
+		t.Fatal("parent delete did not remove the durable record")
+	}
+	if !reopened.Exists("child") {
+		t.Fatal("deleting the parent must not delete its fork")
+	}
+}
+
 func TestDir(t *testing.T) {
 	if got := Dir("/explicit", "/data/cortex"); got != "/explicit" {
 		t.Errorf("explicit override should win, got %q", got)

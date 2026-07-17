@@ -82,6 +82,11 @@ type record struct {
 	runID string
 	ev    Event
 	flush chan struct{}
+	// remove marks a deletion sentinel: the writer removes runID's trace file
+	// (and forgets its count) on its own goroutine, so a CHAT-01 conversation
+	// delete cannot race an in-flight append. The result channel makes cleanup
+	// disclosure wait for the real filesystem outcome.
+	remove chan error
 }
 
 // Store is Neo's durable per-run workspace timeline. A single background writer
@@ -200,6 +205,28 @@ func (s *Store) Flush() {
 	}
 }
 
+// Remove deletes one run's durable trace (CHAT-01 conversation delete cleanup).
+// The removal runs on the writer goroutine so it cannot race an in-flight
+// append. It waits for the filesystem result so cleanup is never reported from
+// a merely queued request. A blank run id or disabled store returns false.
+func (s *Store) Remove(runID string) bool {
+	if !s.Enabled() || runID == "" {
+		return false
+	}
+	done := make(chan error, 1)
+	select {
+	case s.ch <- record{runID: runID, remove: done}:
+	case <-s.closed:
+		return false
+	}
+	select {
+	case err := <-done:
+		return err == nil
+	case <-s.closed:
+		return false
+	}
+}
+
 // Close stops the background writer after draining the queue. Idempotent.
 func (s *Store) Close() {
 	if !s.Enabled() {
@@ -242,6 +269,20 @@ func (s *Store) handle(rec record, counts map[string]int) {
 	}
 	path := s.tracePath(rec.runID)
 	if path == "" {
+		if rec.remove != nil {
+			rec.remove <- os.ErrInvalid
+			close(rec.remove)
+		}
+		return
+	}
+	if rec.remove != nil {
+		err := os.Remove(path)
+		if err != nil && !os.IsNotExist(err) {
+			fmt.Fprintf(os.Stderr, "neo/trace: remove %s: %v\n", path, err)
+		}
+		delete(counts, rec.runID)
+		rec.remove <- err
+		close(rec.remove)
 		return
 	}
 	if err := os.MkdirAll(s.dir, 0o700); err != nil {

@@ -2,8 +2,7 @@
 // web-search — MCP stdio bridge giving Matrix agents real internet search.
 //
 // Pairs with the baked-in `fetch` server (URL -> Markdown): web_search/web_news
-// FIND sources, `fetch` READS them. Provider-agnostic — wraps Tavily (built for
-// agents: ranked results + extracted content + optional synthesized answer) or
+// FIND sources, `fetch` READS them. Provider-agnostic — wraps Tavily or
 // the Brave Search API. Selected by WEBSEARCH_PROVIDER, else auto: Tavily if
 // TAVILY_API_KEY is set, otherwise Brave.
 //
@@ -95,7 +94,7 @@ function hostOf(url) { try { return new URL(url).host } catch { return url } }
 function clampResults(n) { return Math.min(MAX_RESULTS_CAP, Math.max(1, Number.parseInt(n ?? '', 10) || 5)) }
 
 // ── Tavily ───────────────────────────────────────────────────────────────────
-async function tavilySearch({ query, max_results, topic, include_answer }) {
+async function tavilySearch({ query, max_results, topic }) {
   const data = await httpJson('POST', 'https://api.tavily.com/search', {
     headers: { Authorization: `Bearer ${process.env.TAVILY_API_KEY}` },
     body: {
@@ -103,7 +102,7 @@ async function tavilySearch({ query, max_results, topic, include_answer }) {
       max_results: clampResults(max_results),
       topic: topic === 'news' ? 'news' : 'general',
       search_depth: 'basic',
-      include_answer: include_answer !== false,
+      include_answer: false,
     },
   })
   const results = (data?.results || []).map((r) => ({
@@ -113,7 +112,7 @@ async function tavilySearch({ query, max_results, topic, include_answer }) {
     score: typeof r.score === 'number' ? r.score : undefined,
     published: r.published_date || undefined,
   }))
-  return { provider: 'tavily', query, answer: data?.answer || undefined, results }
+  return validatedSearch('tavily', query, results)
 }
 
 // ── Brave ────────────────────────────────────────────────────────────────────
@@ -133,9 +132,40 @@ async function braveSearch({ query, max_results, topic }) {
     snippet: stripTags(r.description || r.snippet || '') || null,
     published: r.age || r.page_age || undefined,
   }))
-  return { provider: 'brave', query, results }
+  return validatedSearch('brave', query, results)
 }
 function stripTags(s) { return String(s).replace(/<[^>]*>/g, '').slice(0, 1200) }
+
+const QUERY_STOP = new Set([
+  'a', 'about', 'an', 'and', 'are', 'at', 'by', 'for', 'from', 'how', 'in', 'is',
+  'latest', 'news', 'of', 'on', 'or', 'search', 'the', 'to', 'today', 'what',
+  'when', 'where', 'which', 'who', 'why', 'with',
+])
+function words(value) {
+  return String(value || '').toLowerCase().match(/[\p{L}\p{N}]+/gu) || []
+}
+function queryTerms(query) {
+  return [...new Set(words(query).filter((term) => term.length > 1 && !QUERY_STOP.has(term)))]
+}
+function relevantResult(query, result) {
+  const terms = queryTerms(query)
+  if (terms.length === 0) return false
+  const haystack = new Set(words(`${result?.title || ''} ${result?.url || ''} ${result?.snippet || ''}`))
+  const anchor = terms.find((term) => term.length >= 5) || terms[0]
+  if (!haystack.has(anchor)) return false
+  const matches = terms.reduce((count, term) => count + (haystack.has(term) ? 1 : 0), 0)
+  return matches >= Math.min(terms.length, terms.length > 2 ? 2 : 1)
+}
+function validatedSearch(providerName, query, results) {
+  const relevant = results.filter((result) => relevantResult(query, result))
+  return {
+    provider: providerName,
+    query,
+    evidence_status: relevant.length > 0 ? 'ranked_sources' : 'not_found',
+    rejected_count: results.length - relevant.length,
+    results: relevant,
+  }
+}
 
 // ── dispatch ─────────────────────────────────────────────────────────────────
 async function runSearch(tool, args, topic) {
@@ -143,7 +173,7 @@ async function runSearch(tool, args, topic) {
   if (!query) throw new Error('query is required')
   const p = provider()
   if (p === 'none') return notConfigured(tool)
-  const opts = { query, max_results: args?.max_results, topic, include_answer: args?.include_answer }
+  const opts = { query, max_results: args?.max_results, topic }
   const out = p === 'tavily' ? await tavilySearch(opts) : await braveSearch(opts)
   return ok({ tool, ...out })
 }
@@ -167,8 +197,8 @@ const N = (description) => ({ type: 'number', description })
 export const tools = [
   {
     name: 'web_search',
-    description: 'Search the public web for a query and return ranked results (title, url, snippet) plus an optional synthesized answer. Read-only. Pair with the `fetch` tool to read a result URL in full. args: query (required), max_results?, topic? ("general"|"news"), include_answer?',
-    inputSchema: A({ query: S('search query'), max_results: N('1-20, default 5'), topic: S('"general" (default) or "news"'), include_answer: { type: 'boolean', description: 'synthesize a short answer (Tavily only); default true' } }, ['query']),
+    description: 'Search the public web for query-relevant ranked sources (title, url, snippet, published). Search results are discovery only: read a selected URL with `fetch` before making a factual claim. No provider synthesis is returned. args: query (required), max_results?, topic? ("general"|"news")',
+    inputSchema: A({ query: S('search query'), max_results: N('1-20, default 5'), topic: S('"general" (default) or "news"') }, ['query']),
   },
   {
     name: 'web_news',
@@ -241,6 +271,19 @@ function startStdioServer() {
 function runSelftest() {
   console.log(`web-search: ${tools.length} tools (provider=${provider()})`)
   for (const t of tools) console.log(`  - ${t.name}`)
+
+  const relevanceProbe = validatedSearch('selftest', 'Automatrix Matrix app Paxlabs', [
+    { title: 'PAX Labs launches a cannabis app', url: 'https://example.test/pax', snippet: 'PAX Labs app' },
+    { title: 'Matrix Automatrix app by Paxlabs', url: 'https://example.test/matrix', snippet: 'Automatrix for Matrix' },
+  ])
+  if (relevanceProbe.results.length !== 1 || relevanceProbe.results[0].url !== 'https://example.test/matrix') {
+    console.error('web-search SELFTEST FAILED: relevance validation accepted an entity-substitution result')
+    process.exit(1)
+  }
+  if (tools[0].inputSchema.properties.include_answer || tools[0].description.includes('synthesized answer')) {
+    console.error('web-search SELFTEST FAILED: provider synthesis remains in the advertised schema')
+    process.exit(1)
+  }
 
   const bridge = new Set(TOOL_NAMES)
   const agentsDir = process.env.WEBSEARCH_AGENTS_DIR ?? fileURLToPath(new URL('../../agents/', import.meta.url))
