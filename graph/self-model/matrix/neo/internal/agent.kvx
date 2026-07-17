@@ -1,13 +1,13 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:9377d599b636e20888547d8e541a4be9e9352818da85655402c07df95aba43d0
+# GENERATED gen=codegraph do-not-edit merkle=b3:20e94b7958a1eaf0c52521ccc39e811f0535d49af0218f30c5d69813db35ee84
 
 NODE id=matrix/neo/internal/agent kind=package
-  digest=b3:9be6f88b15dff3c9f8c9cff9afcaa00a86d93eeddde13fb7b0b16cff0f61bb19 file=neo/internal/agent range=0:0 lang=go exported=true
+  digest=b3:99f68e31fb15de35fe12c2c81e6b75df8c3f92a560a6b19802c67f8ba243655f file=neo/internal/agent range=0:0 lang=go exported=true
 EDGES
   contains=matrix/neo/internal/agent/agent.go,matrix/neo/internal/agent/automatrix.go,matrix/neo/internal/agent/automatrix_surface.go,matrix/neo/internal/agent/capability.go,matrix/neo/internal/agent/cassandra.go,matrix/neo/internal/agent/closechain.go,matrix/neo/internal/agent/compaction.go,matrix/neo/internal/agent/continuous.go,matrix/neo/internal/agent/death.go,matrix/neo/internal/agent/decompose.go,matrix/neo/internal/agent/episodic.go,matrix/neo/internal/agent/epistemic.go,matrix/neo/internal/agent/finish.go,matrix/neo/internal/agent/gate.go,matrix/neo/internal/agent/governor.go,matrix/neo/internal/agent/heartbeat.go,matrix/neo/internal/agent/identity.go,matrix/neo/internal/agent/interview.go,matrix/neo/internal/agent/livetype.go,matrix/neo/internal/agent/morningbrief.go,matrix/neo/internal/agent/narrate.go,matrix/neo/internal/agent/overflow.go,matrix/neo/internal/agent/payload.go,matrix/neo/internal/agent/prediction.go,matrix/neo/internal/agent/premise.go,matrix/neo/internal/agent/prompt.go,matrix/neo/internal/agent/reporter.go,matrix/neo/internal/agent/semantic.go,matrix/neo/internal/agent/signals.go,matrix/neo/internal/agent/taskgraph.go,matrix/neo/internal/agent/turn.go,matrix/neo/internal/agent/voice.go,matrix/neo/internal/agent/web_evidence.go
   ^contains=mod:matrix/neo
 
 NODE id=matrix/neo/internal/agent.Agent kind=type
-  digest=b3:757be32d287b2c2d3a48bae6386b17d2786cbfabfa49b28bff768c5ddb68e210 file=neo/internal/agent/agent.go range=128:291 lang=go exported=true byte_range=6294:14472
+  digest=b3:757be32d287b2c2d3a48bae6386b17d2786cbfabfa49b28bff768c5ddb68e210 file=neo/internal/agent/agent.go range=127:290 lang=go exported=true byte_range=6284:14462
   sig=type Agent struct {\n	// Lifetime: construction — wiring set at New.\n	cfg		config.Config\n	main		*llm.Client\n	cheap		*llm.Client\n	tools		*tools.Manager\n	pager		*memory.Pager\n	out		Reporter\n	consolidator	Consolidator\n	recaller	ConvRecaller\n	observer	ToolObserver\n\n	// auditObserver streams Cassandra 2.0 controller audit events (cassandra.mod)\n	// to the harness on a pure observability side-channel; nil discards them.\n	// Lifetime: construction.\n	auditObserver	AuditObserver\n\n	// captureFn overrides the browser viewport auto-capture (default: the tool\n	// manager's real CaptureViewport, which fires a screenshot on the live MCP\n	// browser session). Injected only by tests that exercise the gating/cap/\n	// attachment logic without a live browser; nil in production.\n	// Lifetime: construction (test seam).\n	captureFn	func(ctx context.Context, sourceFunc string) string\n\n	// memObserver receives this turn's continuous-memory activation summary\n	// (durable story-so-far + coarse timeline) so the harness can surface the\n	// memory Neo carries to the user (continuous-memory task 7.1). nil disables\n	// surfacing; the agent loop stays oblivious to the presentation layer\n	// (mirrors auditObserver). Only fires under the continuous-memory collapse.\n	// Lifetime: construction.\n	memObserver		MemoryObserver\n	episodicSurfaced	map[string]struct{}\n\n	// Lifetime: construction — the advertised tool surface, fixed at New.\n	schemas		[]llm.Tool\n	schemaTokens	int\n	schemaBytes	int\n\n	// working is the live transcript (user / assistant / tool messages). The\n	// system block (identity + rules + retrieved memory + budget stat) is\n	// re-derived every turn and never stored here, so it can't drift.\n	// Lifetime: session (append-only across turns; Reset/Seed manage it).\n	working	[]llm.Message\n	// activeGoal is THIS conversation's task, pinned every turn. Held on the\n	// agent (not the pager) so many conversations can share one cortex store\n	// without clobbering each other's goal. Lifetime: session.\n	activeGoal	string\n\n	// persona, when set, frames this agent as a task-scoped SUB-AGENT with a\n	// specific role. Sub-agents run headless (no human in the loop): they get\n	// a restricted tool surface, never ask the user questions, and end by\n	// reporting their findings back to the orchestrating agent.\n	// Lifetime: construction.\n	persona	string\n\n	// capability is the resolved capability-surface material rendered resident\n	// in the byte-stable prefix (epistemic-core req.2): construction-time\n	// state, so the rendered section is byte-identical across a turn's steps.\n	// Lifetime: construction.\n	capability	*CapabilitySurface\n\n	// selfModel is the shared self-model this sub-agent inherited at spawn (the\n	// structural self-summary + relevant how-I-fail patterns), injected into its\n	// charter so it reasons as the same mind on a scoped slice (self-model task\n	// 4.3). Empty on the top-level agent. Lifetime: construction.\n	selfModel	string\n\n	// turn is the turn-scoped handle to the reified run state (MORPHEUS\n	// req.2): everything with turn lifetime — the epistemic mechanisms' state,\n	// the Cassandra controller's per-turn state, the overflow latch, the\n	// autoshot/unproductive counters, the stall bookkeeping, the surfaced-\n	// memory sets, the failure-class scratch, and the loop-death capture —\n	// lives on it. Replaced with a fresh turn at Chat entry — constructing the\n	// turn IS the per-turn reset (zero manual field zeroing). Non-nil from New\n	// on; retained after Chat returns so the supervisor's cross-turn reads\n	// (LastFailureClass, LastDeath) reach this turn's records until the next\n	// turn begins. Lifetime: turn-scoped handle.\n	turn	*turn\n\n	// activationAssemblies counts how many times the per-turn activation\n	// bundle was assembled this session — the NE-7 observable: exactly once\n	// per turn, never per step. Lifetime: session (accumulates across turns).\n	activationAssemblies	int\n\n	// windowAssemblies counts how many times the window was assembled this\n	// session — the MORPHEUS req.3.2 observable: exactly once per step on a\n	// healthy turn (prepareWindow is the ONE assembly site; the 413 recovery\n	// re-enters it, adding one per retry). Lifetime: session.\n	windowAssemblies	int\n\n	// convID scopes the per-turn attestation IntentID for audit; empty on the\n	// CLI path (falls back to "cli"). turnSeq counts user turns this session so\n	// each attest has a distinct, stable IntentID. Lifetime: convID\n	// construction, turnSeq session.\n	convID	string\n	turnSeq	int\n\n	// generation is the per-session command-queue tag for the current turn\n	// (P2-6 lane-based concurrency). Set by the session before each Chat call\n	// so superseded (late) results can be detected and discarded — a result\n	// whose generation is no longer current is stale. Zero when unset (CLI\n	// path, tests). Not goroutine-safe: accessed only from the Chat goroutine.\n	// Lifetime: session.\n	generation	uint64\n\n	// skillIndex is the names-only skill list injected into the STABLE system\n	// prefix (P2-2). Token-bounded: only names, never bodies. Set by the\n	// session/harness from the consolidator's ProposedSkills(). Lives in the\n	// cacheable prefix so it stays byte-identical across turns (consistent\n	// with P1-2). Empty = no skill section emitted. Lifetime: session.\n	skillIndex	[]string\n\n	// inbox, when set, returns user messages queued (by the session) WHILE\n	// this turn is in flight — mid-task messages the user sent without\n	// interrupting (F5). The loop drains it at each tool-call boundary and\n	// appends them to the transcript, so the agent picks them up on its next\n	// step instead of the message cancelling the run. nil on the CLI path.\n	// Lifetime: construction (explicitly cross-turn seam).\n	inbox	func() []string\n\n	// automatrix marks an autonomous Automatrix run (Options.Automatrix): the\n	// user is away, the run must be self-contained, and no screen surface or\n	// question back to the user is appropriate. Lifetime: construction.\n	automatrix	bool\n	// interview marks a personalization-interview conversation (ORACLE task\n	// 5.3): the prompt gains the guided-interview charter and the agent\n	// advertises save_personalization_profile. Lifetime: construction.\n	interview	bool\n	// interviewExisting is the rendered existing-answers block a REPEAT\n	// interview re-enters with (req 12.1); empty on a first interview.\n	// Lifetime: construction.\n	interviewExisting	string\n	// advertised, when non-nil (restricted agents), is the exact advertised\n	// function-name set; dispatch rejects any name outside it so synthetic\n	// tools the Manager would otherwise serve stay structurally unreachable.\n	// Lifetime: construction.\n	advertised	map[string]struct{}\n\n	// userProfile carries the onboarding profile (preferred_name,\n	// expertise_domains) fetched from the daemon's /profile endpoint. It is\n	// per-user-stable (set once at onboarding, rarely changed) so it lives\n	// in the STABLE system prefix (prompt-cache byte-stability invariant).\n	// agent_name flows through cfg.AgentName separately. Empty = no\n	// user-specific identity section (clean fallback to default "Neo").\n	// Lifetime: session (set per session rebuild via SetUserProfile).\n	preferredName		string\n	expertiseDomains	[]string\n\n	// Coding workspace context (NEO-WORKBENCH): the daemon's workspace root\n	// and this conversation's active project, injected per session rebuild\n	// like the user profile. Per-conversation-stable (a conversation's project\n	// tag is fixed), so it lives in the STABLE system prefix. Empty wsRoot =\n	// no workbench on this daemon, no coding-workspace section.\n	// Lifetime: session (set per session rebuild via SetWorkspace).\n	wsRoot		string\n	wsProjectID	string\n	wsProjectName	string\n	wsProjectRoot	string\n}
   doc=Agent wires the model, tools, and memory into one conversational loop.\nEvery field carries a documented lifetime (MORPHEUS req.2.2): construction\n(set at New or by the harness immediately after, then stable), session\n(evolves across turns within one agent), or the turn-scoped handle (the\nreified turn, replaced at Chat entry).
 EDGES
@@ -15,257 +15,257 @@ EDGES
   ^defines=matrix/neo/internal/agent/agent.go
 
 NODE id=matrix/neo/internal/agent.Agent#activationAssemblies kind=field
-  digest=b3:897f44a07a45f6835307cc358e60b63df3b3d4c65e053ed859d5b9d0645c4dfb file=neo/internal/agent/agent.go range=212:215 lang=go exported=false byte_range=10381:10628
+  digest=b3:897f44a07a45f6835307cc358e60b63df3b3d4c65e053ed859d5b9d0645c4dfb file=neo/internal/agent/agent.go range=211:214 lang=go exported=false byte_range=10371:10618
   sig=int
   doc=activationAssemblies counts how many times the per-turn activation\nbundle was assembled this session — the NE-7 observable: exactly once\nper turn, never per step. Lifetime: session (accumulates across turns).
 EDGES
   ^contains=matrix/neo/internal/agent.Agent
 
 NODE id=matrix/neo/internal/agent.Agent#activeGoal kind=field
-  digest=b3:ecf2505a1b368af059367df92a0b480d6aa8235bc4c3ea8157c8c9c0ef7cd647 file=neo/internal/agent/agent.go range=176:179 lang=go exported=false byte_range=8485:8713
+  digest=b3:ecf2505a1b368af059367df92a0b480d6aa8235bc4c3ea8157c8c9c0ef7cd647 file=neo/internal/agent/agent.go range=175:178 lang=go exported=false byte_range=8475:8703
   sig=string
   doc=activeGoal is THIS conversation's task, pinned every turn. Held on the\nagent (not the pager) so many conversations can share one cortex store\nwithout clobbering each other's goal. Lifetime: session.
 EDGES
   ^contains=matrix/neo/internal/agent.Agent
 
 NODE id=matrix/neo/internal/agent.Agent#advertised kind=field
-  digest=b3:5322866659c9b1c32f5a5a582f85113a5f2b0dbf42c7788c53a916709c0ed155 file=neo/internal/agent/agent.go range=265:269 lang=go exported=false byte_range=13133:13413
+  digest=b3:5322866659c9b1c32f5a5a582f85113a5f2b0dbf42c7788c53a916709c0ed155 file=neo/internal/agent/agent.go range=264:268 lang=go exported=false byte_range=13123:13403
   sig=map[string]struct{}
   doc=advertised, when non-nil (restricted agents), is the exact advertised\nfunction-name set; dispatch rejects any name outside it so synthetic\ntools the Manager would otherwise serve stay structurally unreachable.\nLifetime: construction.
 EDGES
   ^contains=matrix/neo/internal/agent.Agent
 
 NODE id=matrix/neo/internal/agent.Agent#auditObserver kind=field
-  digest=b3:b8b846cf7e62538dd30f131d7e2f16483b16194193e11b3834c509553086122a file=neo/internal/agent/agent.go range=145:148 lang=go exported=false byte_range=6950:7161
+  digest=b3:b8b846cf7e62538dd30f131d7e2f16483b16194193e11b3834c509553086122a file=neo/internal/agent/agent.go range=144:147 lang=go exported=false byte_range=6940:7151
   sig=agent.AuditObserver
   doc=auditObserver streams Cassandra 2.0 controller audit events (cassandra.mod)\nto the harness on a pure observability side-channel; nil discards them.\nLifetime: construction.
 EDGES
   ^contains=matrix/neo/internal/agent.Agent
 
 NODE id=matrix/neo/internal/agent.Agent#automatrix kind=field
-  digest=b3:a3b9debb06cc64ca7f1d8247a5fc8eaea83bbc509a36b6783fa56493a0a01988 file=neo/internal/agent/agent.go range=253:256 lang=go exported=false byte_range=12473:12709
+  digest=b3:a3b9debb06cc64ca7f1d8247a5fc8eaea83bbc509a36b6783fa56493a0a01988 file=neo/internal/agent/agent.go range=252:255 lang=go exported=false byte_range=12463:12699
   sig=bool
   doc=automatrix marks an autonomous Automatrix run (Options.Automatrix): the\nuser is away, the run must be self-contained, and no screen surface or\nquestion back to the user is appropriate. Lifetime: construction.
 EDGES
   ^contains=matrix/neo/internal/agent.Agent
 
 NODE id=matrix/neo/internal/agent.Agent#capability kind=field
-  digest=b3:077f2bb782fb6f4fdc4bfd2361603139b269c2eed4b6dd22c830052d74e59294 file=neo/internal/agent/agent.go range=188:192 lang=go exported=false byte_range=9046:9328
+  digest=b3:077f2bb782fb6f4fdc4bfd2361603139b269c2eed4b6dd22c830052d74e59294 file=neo/internal/agent/agent.go range=187:191 lang=go exported=false byte_range=9036:9318
   sig=*agent.CapabilitySurface
   doc=capability is the resolved capability-surface material rendered resident\nin the byte-stable prefix (epistemic-core req.2): construction-time\nstate, so the rendered section is byte-identical across a turn's steps.\nLifetime: construction.
 EDGES
   ^contains=matrix/neo/internal/agent.Agent
 
 NODE id=matrix/neo/internal/agent.Agent#captureFn kind=field
-  digest=b3:c749c850896a3ba9d29cef9bd040662015b6cb82dc68f09b356c7838f77c8c60 file=neo/internal/agent/agent.go range=150:155 lang=go exported=false byte_range=7164:7558
+  digest=b3:c749c850896a3ba9d29cef9bd040662015b6cb82dc68f09b356c7838f77c8c60 file=neo/internal/agent/agent.go range=149:154 lang=go exported=false byte_range=7154:7548
   sig=func(ctx context.Context, sourceFunc string) string
   doc=captureFn overrides the browser viewport auto-capture (default: the tool\nmanager's real CaptureViewport, which fires a screenshot on the live MCP\nbrowser session). Injected only by tests that exercise the gating/cap/\nattachment logic without a live browser; nil in production.\nLifetime: construction (test seam).
 EDGES
   ^contains=matrix/neo/internal/agent.Agent
 
 NODE id=matrix/neo/internal/agent.Agent#cfg kind=field
-  digest=b3:6a9ed457c01e89ca1ae1993a4f77e7d08016da64273b680d7bdf8a8bb7c7f9f1 file=neo/internal/agent/agent.go range=134:135 lang=go exported=false byte_range=6658:6734
+  digest=b3:6a9ed457c01e89ca1ae1993a4f77e7d08016da64273b680d7bdf8a8bb7c7f9f1 file=neo/internal/agent/agent.go range=133:134 lang=go exported=false byte_range=6648:6724
   sig=config.Config
   doc=Lifetime: construction — wiring set at New.
 EDGES
   ^contains=matrix/neo/internal/agent.Agent
 
 NODE id=matrix/neo/internal/agent.Agent#cheap kind=field
-  digest=b3:d80a305fdceef961b1dccf8ce0e793e9c23d6e5624217b7c58de455e7e710d25 file=neo/internal/agent/agent.go range=137:137 lang=go exported=false byte_range=6762:6786
+  digest=b3:d80a305fdceef961b1dccf8ce0e793e9c23d6e5624217b7c58de455e7e710d25 file=neo/internal/agent/agent.go range=136:136 lang=go exported=false byte_range=6752:6776
   sig=*llm.Client
 EDGES
   ^contains=matrix/neo/internal/agent.Agent
 
 NODE id=matrix/neo/internal/agent.Agent#consolidator kind=field
-  digest=b3:6fca433b5122b4b1d0af4ccd6a82c37e6a51a82765a00905f57ec97febdd5c9b file=neo/internal/agent/agent.go range=141:141 lang=go exported=false byte_range=6868:6893
+  digest=b3:6fca433b5122b4b1d0af4ccd6a82c37e6a51a82765a00905f57ec97febdd5c9b file=neo/internal/agent/agent.go range=140:140 lang=go exported=false byte_range=6858:6883
   sig=agent.Consolidator
 EDGES
   ^contains=matrix/neo/internal/agent.Agent
 
 NODE id=matrix/neo/internal/agent.Agent#convID kind=field
-  digest=b3:9e67d966843f9b821f350a7c8382549669f8698a78831d26fe765bbb78d9d5e0 file=neo/internal/agent/agent.go range=223:227 lang=go exported=false byte_range=10938:11207
+  digest=b3:9e67d966843f9b821f350a7c8382549669f8698a78831d26fe765bbb78d9d5e0 file=neo/internal/agent/agent.go range=222:226 lang=go exported=false byte_range=10928:11197
   sig=string
   doc=convID scopes the per-turn attestation IntentID for audit; empty on the\nCLI path (falls back to "cli"). turnSeq counts user turns this session so\neach attest has a distinct, stable IntentID. Lifetime: convID\nconstruction, turnSeq session.
 EDGES
   ^contains=matrix/neo/internal/agent.Agent
 
 NODE id=matrix/neo/internal/agent.Agent#episodicSurfaced kind=field
-  digest=b3:875e23ca30aca8c2fb61d441c07862de7ce4798ba608ea8b1aaf33ada1bf5953 file=neo/internal/agent/agent.go range=164:164 lang=go exported=false byte_range=8000:8036
+  digest=b3:875e23ca30aca8c2fb61d441c07862de7ce4798ba608ea8b1aaf33ada1bf5953 file=neo/internal/agent/agent.go range=163:163 lang=go exported=false byte_range=7990:8026
   sig=map[string]struct{}
 EDGES
   ^contains=matrix/neo/internal/agent.Agent
 
 NODE id=matrix/neo/internal/agent.Agent#expertiseDomains kind=field
-  digest=b3:6f2d79ea3ba7780cded5d4aa2c8c3f1471616060fd9d60cf4ec2dfdd850cdc60 file=neo/internal/agent/agent.go range=279:279 lang=go exported=false byte_range=13929:13954
+  digest=b3:6f2d79ea3ba7780cded5d4aa2c8c3f1471616060fd9d60cf4ec2dfdd850cdc60 file=neo/internal/agent/agent.go range=278:278 lang=go exported=false byte_range=13919:13944
   sig=[]string
 EDGES
   ^contains=matrix/neo/internal/agent.Agent
 
 NODE id=matrix/neo/internal/agent.Agent#generation kind=field
-  digest=b3:bc69923d563c4d9eb8446ae582ef6f1e7cd719c09c0b6f8026db5bc33d5155d6 file=neo/internal/agent/agent.go range=230:236 lang=go exported=false byte_range=11223:11638
+  digest=b3:bc69923d563c4d9eb8446ae582ef6f1e7cd719c09c0b6f8026db5bc33d5155d6 file=neo/internal/agent/agent.go range=229:235 lang=go exported=false byte_range=11213:11628
   sig=uint64
   doc=generation is the per-session command-queue tag for the current turn\n(P2-6 lane-based concurrency). Set by the session before each Chat call\nso superseded (late) results can be detected and discarded — a result\nwhose generation is no longer current is stale. Zero when unset (CLI\npath, tests). Not goroutine-safe: accessed only from the Chat goroutine.\nLifetime: session.
 EDGES
   ^contains=matrix/neo/internal/agent.Agent
 
 NODE id=matrix/neo/internal/agent.Agent#inbox kind=field
-  digest=b3:b35bcf356fb584fbb7318334f89469a4e5553ff89d7c54a5a29f3c82b8740820 file=neo/internal/agent/agent.go range=245:251 lang=go exported=false byte_range=12027:12470
+  digest=b3:b35bcf356fb584fbb7318334f89469a4e5553ff89d7c54a5a29f3c82b8740820 file=neo/internal/agent/agent.go range=244:250 lang=go exported=false byte_range=12017:12460
   sig=func() []string
   doc=inbox, when set, returns user messages queued (by the session) WHILE\nthis turn is in flight — mid-task messages the user sent without\ninterrupting (F5). The loop drains it at each tool-call boundary and\nappends them to the transcript, so the agent picks them up on its next\nstep instead of the message cancelling the run. nil on the CLI path.\nLifetime: construction (explicitly cross-turn seam).
 EDGES
   ^contains=matrix/neo/internal/agent.Agent
 
 NODE id=matrix/neo/internal/agent.Agent#interview kind=field
-  digest=b3:15dabba9ffeb7df4f006edfdd047897817d580e4cd3793b730514a53573a8c49 file=neo/internal/agent/agent.go range=257:260 lang=go exported=false byte_range=12711:12938
+  digest=b3:15dabba9ffeb7df4f006edfdd047897817d580e4cd3793b730514a53573a8c49 file=neo/internal/agent/agent.go range=256:259 lang=go exported=false byte_range=12701:12928
   sig=bool
   doc=interview marks a personalization-interview conversation (ORACLE task\n5.3): the prompt gains the guided-interview charter and the agent\nadvertises save_personalization_profile. Lifetime: construction.
 EDGES
   ^contains=matrix/neo/internal/agent.Agent
 
 NODE id=matrix/neo/internal/agent.Agent#interviewExisting kind=field
-  digest=b3:e1c1266c37de387953aebf466ab7dd8c3c4244e63fbd66ee9e7cb39d04e09699 file=neo/internal/agent/agent.go range=261:264 lang=go exported=false byte_range=12940:13131
+  digest=b3:e1c1266c37de387953aebf466ab7dd8c3c4244e63fbd66ee9e7cb39d04e09699 file=neo/internal/agent/agent.go range=260:263 lang=go exported=false byte_range=12930:13121
   sig=string
   doc=interviewExisting is the rendered existing-answers block a REPEAT\ninterview re-enters with (req 12.1); empty on a first interview.\nLifetime: construction.
 EDGES
   ^contains=matrix/neo/internal/agent.Agent
 
 NODE id=matrix/neo/internal/agent.Agent#main kind=field
-  digest=b3:7ce64406bba62fc8e1d733747c0d2ccb2064a3cd047df35c853b49841d35560b file=neo/internal/agent/agent.go range=136:136 lang=go exported=false byte_range=6736:6760
+  digest=b3:7ce64406bba62fc8e1d733747c0d2ccb2064a3cd047df35c853b49841d35560b file=neo/internal/agent/agent.go range=135:135 lang=go exported=false byte_range=6726:6750
   sig=*llm.Client
 EDGES
   ^contains=matrix/neo/internal/agent.Agent
 
 NODE id=matrix/neo/internal/agent.Agent#memObserver kind=field
-  digest=b3:1bad55e3777fc6ba1e84202f397fee0c44e4a719b531f51487cecdcc2c9199d0 file=neo/internal/agent/agent.go range=157:163 lang=go exported=false byte_range=7561:7998
+  digest=b3:1bad55e3777fc6ba1e84202f397fee0c44e4a719b531f51487cecdcc2c9199d0 file=neo/internal/agent/agent.go range=156:162 lang=go exported=false byte_range=7551:7988
   sig=agent.MemoryObserver
   doc=memObserver receives this turn's continuous-memory activation summary\n(durable story-so-far + coarse timeline) so the harness can surface the\nmemory Neo carries to the user (continuous-memory task 7.1). nil disables\nsurfacing; the agent loop stays oblivious to the presentation layer\n(mirrors auditObserver). Only fires under the continuous-memory collapse.\nLifetime: construction.
 EDGES
   ^contains=matrix/neo/internal/agent.Agent
 
 NODE id=matrix/neo/internal/agent.Agent#observer kind=field
-  digest=b3:28d566ff85454038c31d9c58b62e645a4ca53f8d82c3b1fce3ff82e4f421e1dc file=neo/internal/agent/agent.go range=143:143 lang=go exported=false byte_range=6922:6947
+  digest=b3:28d566ff85454038c31d9c58b62e645a4ca53f8d82c3b1fce3ff82e4f421e1dc file=neo/internal/agent/agent.go range=142:142 lang=go exported=false byte_range=6912:6937
   sig=agent.ToolObserver
 EDGES
   ^contains=matrix/neo/internal/agent.Agent
 
 NODE id=matrix/neo/internal/agent.Agent#out kind=field
-  digest=b3:f28709345579f322a95e2e3ad2c52ff8f53ed5eeee593acbd410bfcd31337f40 file=neo/internal/agent/agent.go range=140:140 lang=go exported=false byte_range=6845:6866
+  digest=b3:f28709345579f322a95e2e3ad2c52ff8f53ed5eeee593acbd410bfcd31337f40 file=neo/internal/agent/agent.go range=139:139 lang=go exported=false byte_range=6835:6856
   sig=agent.Reporter
 EDGES
   ^contains=matrix/neo/internal/agent.Agent
 
 NODE id=matrix/neo/internal/agent.Agent#pager kind=field
-  digest=b3:0aca2a11c532fc7b4e46a3aba9ba6a689e5de97176b3d8f358c488b677cc020c file=neo/internal/agent/agent.go range=139:139 lang=go exported=false byte_range=6817:6843
+  digest=b3:0aca2a11c532fc7b4e46a3aba9ba6a689e5de97176b3d8f358c488b677cc020c file=neo/internal/agent/agent.go range=138:138 lang=go exported=false byte_range=6807:6833
   sig=*memory.Pager
 EDGES
   ^contains=matrix/neo/internal/agent.Agent
 
 NODE id=matrix/neo/internal/agent.Agent#persona kind=field
-  digest=b3:38a84854591ffbe0e9cfdba6922c5994398fb4722b8457a080b16f5c2103c9aa file=neo/internal/agent/agent.go range=181:186 lang=go exported=false byte_range=8716:9043
+  digest=b3:38a84854591ffbe0e9cfdba6922c5994398fb4722b8457a080b16f5c2103c9aa file=neo/internal/agent/agent.go range=180:185 lang=go exported=false byte_range=8706:9033
   sig=string
   doc=persona, when set, frames this agent as a task-scoped SUB-AGENT with a\nspecific role. Sub-agents run headless (no human in the loop): they get\na restricted tool surface, never ask the user questions, and end by\nreporting their findings back to the orchestrating agent.\nLifetime: construction.
 EDGES
   ^contains=matrix/neo/internal/agent.Agent
 
 NODE id=matrix/neo/internal/agent.Agent#preferredName kind=field
-  digest=b3:1daa082ba82048e7fe6593ec17d5ae3ba9921f9e8f9d7758c99a15ddc4435331 file=neo/internal/agent/agent.go range=271:278 lang=go exported=false byte_range=13416:13927
+  digest=b3:1daa082ba82048e7fe6593ec17d5ae3ba9921f9e8f9d7758c99a15ddc4435331 file=neo/internal/agent/agent.go range=270:277 lang=go exported=false byte_range=13406:13917
   sig=string
   doc=userProfile carries the onboarding profile (preferred_name,\nexpertise_domains) fetched from the daemon's /profile endpoint. It is\nper-user-stable (set once at onboarding, rarely changed) so it lives\nin the STABLE system prefix (prompt-cache byte-stability invariant).\nagent_name flows through cfg.AgentName separately. Empty = no\nuser-specific identity section (clean fallback to default "Neo").\nLifetime: session (set per session rebuild via SetUserProfile).
 EDGES
   ^contains=matrix/neo/internal/agent.Agent
 
 NODE id=matrix/neo/internal/agent.Agent#recaller kind=field
-  digest=b3:a99bcd4642df98787b5e9dd69fdd4f85331d19cff4639b8bc434870ccaf2221f file=neo/internal/agent/agent.go range=142:142 lang=go exported=false byte_range=6895:6920
+  digest=b3:a99bcd4642df98787b5e9dd69fdd4f85331d19cff4639b8bc434870ccaf2221f file=neo/internal/agent/agent.go range=141:141 lang=go exported=false byte_range=6885:6910
   sig=agent.ConvRecaller
 EDGES
   ^contains=matrix/neo/internal/agent.Agent
 
 NODE id=matrix/neo/internal/agent.Agent#schemaBytes kind=field
-  digest=b3:46b5df9ea6c47135ec772d2233bf69b227868cbe56b8913125651e8cb82ce98f file=neo/internal/agent/agent.go range=169:169 lang=go exported=false byte_range=8156:8172
+  digest=b3:46b5df9ea6c47135ec772d2233bf69b227868cbe56b8913125651e8cb82ce98f file=neo/internal/agent/agent.go range=168:168 lang=go exported=false byte_range=8146:8162
   sig=int
 EDGES
   ^contains=matrix/neo/internal/agent.Agent
 
 NODE id=matrix/neo/internal/agent.Agent#schemaTokens kind=field
-  digest=b3:d02b95fe4695bccb6614162b6cc4b38db714d90eb0f59e13187b0a2229a20099 file=neo/internal/agent/agent.go range=168:168 lang=go exported=false byte_range=8138:8154
+  digest=b3:d02b95fe4695bccb6614162b6cc4b38db714d90eb0f59e13187b0a2229a20099 file=neo/internal/agent/agent.go range=167:167 lang=go exported=false byte_range=8128:8144
   sig=int
 EDGES
   ^contains=matrix/neo/internal/agent.Agent
 
 NODE id=matrix/neo/internal/agent.Agent#schemas kind=field
-  digest=b3:5e9ed71688f541ec7bd8557888661fac06da5e75d3321f6e4ba7a865238e9b2b file=neo/internal/agent/agent.go range=166:167 lang=go exported=false byte_range=8039:8136
+  digest=b3:5e9ed71688f541ec7bd8557888661fac06da5e75d3321f6e4ba7a865238e9b2b file=neo/internal/agent/agent.go range=165:166 lang=go exported=false byte_range=8029:8126
   sig=[]llm.Tool
   doc=Lifetime: construction — the advertised tool surface, fixed at New.
 EDGES
   ^contains=matrix/neo/internal/agent.Agent
 
 NODE id=matrix/neo/internal/agent.Agent#selfModel kind=field
-  digest=b3:4328759e8427a2dc8a8b0fbdf1f55b310b95ae34f896906f4a23da62847c8d03 file=neo/internal/agent/agent.go range=194:198 lang=go exported=false byte_range=9331:9646
+  digest=b3:4328759e8427a2dc8a8b0fbdf1f55b310b95ae34f896906f4a23da62847c8d03 file=neo/internal/agent/agent.go range=193:197 lang=go exported=false byte_range=9321:9636
   sig=string
   doc=selfModel is the shared self-model this sub-agent inherited at spawn (the\nstructural self-summary + relevant how-I-fail patterns), injected into its\ncharter so it reasons as the same mind on a scoped slice (self-model task\n4.3). Empty on the top-level agent. Lifetime: construction.
 EDGES
   ^contains=matrix/neo/internal/agent.Agent
 
 NODE id=matrix/neo/internal/agent.Agent#skillIndex kind=field
-  digest=b3:4f3e517222074ca4de41e88de4690d577e54797262bf69961c2d2b905594dfc1 file=neo/internal/agent/agent.go range=238:243 lang=go exported=false byte_range=11641:12024
+  digest=b3:4f3e517222074ca4de41e88de4690d577e54797262bf69961c2d2b905594dfc1 file=neo/internal/agent/agent.go range=237:242 lang=go exported=false byte_range=11631:12014
   sig=[]string
   doc=skillIndex is the names-only skill list injected into the STABLE system\nprefix (P2-2). Token-bounded: only names, never bodies. Set by the\nsession/harness from the consolidator's ProposedSkills(). Lives in the\ncacheable prefix so it stays byte-identical across turns (consistent\nwith P1-2). Empty = no skill section emitted. Lifetime: session.
 EDGES
   ^contains=matrix/neo/internal/agent.Agent
 
 NODE id=matrix/neo/internal/agent.Agent#tools kind=field
-  digest=b3:9cfea3a72edca330ad0f081be85122c5e281199d595d6aba54c54037e0c36c10 file=neo/internal/agent/agent.go range=138:138 lang=go exported=false byte_range=6788:6815
+  digest=b3:9cfea3a72edca330ad0f081be85122c5e281199d595d6aba54c54037e0c36c10 file=neo/internal/agent/agent.go range=137:137 lang=go exported=false byte_range=6778:6805
   sig=*tools.Manager
 EDGES
   ^contains=matrix/neo/internal/agent.Agent
 
 NODE id=matrix/neo/internal/agent.Agent#turn kind=field
-  digest=b3:996827b899dc2154f671a555fe6b17bb73ae9335c495eb5e38abdfeff44352cd file=neo/internal/agent/agent.go range=200:210 lang=go exported=false byte_range=9649:10378
+  digest=b3:996827b899dc2154f671a555fe6b17bb73ae9335c495eb5e38abdfeff44352cd file=neo/internal/agent/agent.go range=199:209 lang=go exported=false byte_range=9639:10368
   sig=*agent.turn
   doc=turn is the turn-scoped handle to the reified run state (MORPHEUS\nreq.2): everything with turn lifetime — the epistemic mechanisms' state,\nthe Cassandra controller's per-turn state, the overflow latch, the\nautoshot/unproductive counters, the stall bookkeeping, the surfaced-\nmemory sets, the failure-class scratch, and the loop-death capture —\nlives on it. Replaced with a fresh turn at Chat entry — constructing the\nturn IS the per-turn reset (zero manual field zeroing). Non-nil from New\non; retained after Chat returns so the supervisor's cross-turn reads\n(LastFailureClass, LastDeath) reach this turn's records until the next\nturn begins. Lifetime: turn-scoped handle.
 EDGES
   ^contains=matrix/neo/internal/agent.Agent
 
 NODE id=matrix/neo/internal/agent.Agent#turnSeq kind=field
-  digest=b3:6524e90002aa3e042296ea1a77d78ea2cc3c4afa0bff97a4ace4403da39099fe file=neo/internal/agent/agent.go range=228:228 lang=go exported=false byte_range=11209:11220
+  digest=b3:6524e90002aa3e042296ea1a77d78ea2cc3c4afa0bff97a4ace4403da39099fe file=neo/internal/agent/agent.go range=227:227 lang=go exported=false byte_range=11199:11210
   sig=int
 EDGES
   ^contains=matrix/neo/internal/agent.Agent
 
 NODE id=matrix/neo/internal/agent.Agent#windowAssemblies kind=field
-  digest=b3:3de1ab10cddaf5ac0dd98dc5e4715c9b5472d12b8135a209927a6e79100f61c0 file=neo/internal/agent/agent.go range=217:221 lang=go exported=false byte_range=10631:10935
+  digest=b3:3de1ab10cddaf5ac0dd98dc5e4715c9b5472d12b8135a209927a6e79100f61c0 file=neo/internal/agent/agent.go range=216:220 lang=go exported=false byte_range=10621:10925
   sig=int
   doc=windowAssemblies counts how many times the window was assembled this\nsession — the MORPHEUS req.3.2 observable: exactly once per step on a\nhealthy turn (prepareWindow is the ONE assembly site; the 413 recovery\nre-enters it, adding one per retry). Lifetime: session.
 EDGES
   ^contains=matrix/neo/internal/agent.Agent
 
 NODE id=matrix/neo/internal/agent.Agent#working kind=field
-  digest=b3:b48652aab996a1f43102a42ce173c3e9a15f60e93619dd2cbec0b0f551c948bb file=neo/internal/agent/agent.go range=171:175 lang=go exported=false byte_range=8175:8483
+  digest=b3:b48652aab996a1f43102a42ce173c3e9a15f60e93619dd2cbec0b0f551c948bb file=neo/internal/agent/agent.go range=170:174 lang=go exported=false byte_range=8165:8473
   sig=[]llm.Message
   doc=working is the live transcript (user / assistant / tool messages). The\nsystem block (identity + rules + retrieved memory + budget stat) is\nre-derived every turn and never stored here, so it can't drift.\nLifetime: session (append-only across turns; Reset/Seed manage it).
 EDGES
   ^contains=matrix/neo/internal/agent.Agent
 
 NODE id=matrix/neo/internal/agent.Agent#wsProjectID kind=field
-  digest=b3:a083189b6b1ce34149cdad507ee8c281b00647c7a251bec4770b9c442523cddf file=neo/internal/agent/agent.go range=288:288 lang=go exported=false byte_range=14406:14426
+  digest=b3:a083189b6b1ce34149cdad507ee8c281b00647c7a251bec4770b9c442523cddf file=neo/internal/agent/agent.go range=287:287 lang=go exported=false byte_range=14396:14416
   sig=string
 EDGES
   ^contains=matrix/neo/internal/agent.Agent
 
 NODE id=matrix/neo/internal/agent.Agent#wsProjectName kind=field
-  digest=b3:9141a134302d67d87746fe3120a9f6ce8b81eca61bbd72554853971e0f87ebdc file=neo/internal/agent/agent.go range=289:289 lang=go exported=false byte_range=14428:14448
+  digest=b3:9141a134302d67d87746fe3120a9f6ce8b81eca61bbd72554853971e0f87ebdc file=neo/internal/agent/agent.go range=288:288 lang=go exported=false byte_range=14418:14438
   sig=string
 EDGES
   ^contains=matrix/neo/internal/agent.Agent
 
 NODE id=matrix/neo/internal/agent.Agent#wsProjectRoot kind=field
-  digest=b3:144ae7c095df03fb780208e6bd95eb7b815c707fd9035f0f74e3106dbf98e932 file=neo/internal/agent/agent.go range=290:290 lang=go exported=false byte_range=14450:14470
+  digest=b3:144ae7c095df03fb780208e6bd95eb7b815c707fd9035f0f74e3106dbf98e932 file=neo/internal/agent/agent.go range=289:289 lang=go exported=false byte_range=14440:14460
   sig=string
 EDGES
   ^contains=matrix/neo/internal/agent.Agent
 
 NODE id=matrix/neo/internal/agent.Agent#wsRoot kind=field
-  digest=b3:e53a5b6571fd34a032086f2dbe21a4f11651709d6092eebc343449ab34698288 file=neo/internal/agent/agent.go range=281:287 lang=go exported=false byte_range=13957:14404
+  digest=b3:e53a5b6571fd34a032086f2dbe21a4f11651709d6092eebc343449ab34698288 file=neo/internal/agent/agent.go range=280:286 lang=go exported=false byte_range=13947:14394
   sig=string
   doc=Coding workspace context (NEO-WORKBENCH): the daemon's workspace root\nand this conversation's active project, injected per session rebuild\nlike the user profile. Per-conversation-stable (a conversation's project\ntag is fixed), so it lives in the STABLE system prefix. Empty wsRoot =\nno workbench on this daemon, no coding-workspace section.\nLifetime: session (set per session rebuild via SetWorkspace).
 EDGES
@@ -280,7 +280,7 @@ EDGES
   ^defines=matrix/neo/internal/agent/automatrix_surface.go
 
 NODE id=matrix/neo/internal/agent.Agent.BestEffort kind=method
-  digest=b3:962f80fdc34a6828eb30108f4178685fb7a401b1a0603ca7ab3756a6a3f0339d file=neo/internal/agent/agent.go range=1199:1209 lang=go exported=true byte_range=56685:57223
+  digest=b3:962f80fdc34a6828eb30108f4178685fb7a401b1a0603ca7ab3756a6a3f0339d file=neo/internal/agent/agent.go range=1198:1208 lang=go exported=true byte_range=56675:57213
   sig=func (a *Agent) BestEffort() string
   doc=BestEffort returns the most honest "where things stand" digest the agent can\nproduce WITHOUT having finished — the latest assistant narration, else the\nlast tool summary. The task supervisor uses it to deliver a truthful partial\nwhen a task hits its hard ceiling; it is never a fabricated success. Empty\nwhen there is genuinely nothing to report.
 EDGES
@@ -288,7 +288,7 @@ EDGES
   ^defines=matrix/neo/internal/agent/agent.go
 
 NODE id=matrix/neo/internal/agent.Agent.Chat kind=method
-  digest=b3:e51a11eb33bbed3cbe6ef9be85e4d262f13cade25edbef9737a2faf9e5308a5e file=neo/internal/agent/agent.go range=601:609 lang=go exported=true byte_range=28128:28701
+  digest=b3:e51a11eb33bbed3cbe6ef9be85e4d262f13cade25edbef9737a2faf9e5308a5e file=neo/internal/agent/agent.go range=600:608 lang=go exported=true byte_range=28118:28691
   sig=func (a *Agent) Chat(ctx context.Context, userInput string) error
   doc=Chat runs one user turn through the staged loop (MORPHEUS req.3) until the\nmodel yields a final answer (no tool calls), the loop stalls/exhausts its\nbudget, or it is blocked needing the human. Chat itself is the skeleton: it\nconstructs the reified turn, runs the per-turn prepare, then iterates steps\n— prepare → generate → deliberate → act | close — each a named stage with a\ndocumented contract. Conversation state persists across calls.
 EDGES
@@ -296,7 +296,7 @@ EDGES
   ^defines=matrix/neo/internal/agent/agent.go
 
 NODE id=matrix/neo/internal/agent.Agent.ChatAudio kind=method
-  digest=b3:e3a39a96b3f144c2e3265b52e127df0ad039ce5a2f56a681c6a5f67f1706f746 file=neo/internal/agent/agent.go range=611:617 lang=go exported=true byte_range=28703:29141
+  digest=b3:e3a39a96b3f144c2e3265b52e127df0ad039ce5a2f56a681c6a5f67f1706f746 file=neo/internal/agent/agent.go range=610:616 lang=go exported=true byte_range=28693:29131
   sig=func (a *Agent) ChatAudio(ctx context.Context, userInput string, audio *AudioTurn) error
   doc=ChatAudio runs the same staged turn with one audio-native user message. The\nASR result is produced concurrently with the first model generation; before\nany downstream deliberation/close, the visible user content is replaced by\nthe durable transcript plus sealed media ref and recorded to cortex.
 EDGES
@@ -304,7 +304,7 @@ EDGES
   ^defines=matrix/neo/internal/agent/agent.go
 
 NODE id=matrix/neo/internal/agent.Agent.Generation kind=method
-  digest=b3:bf029073cecf36a75d8ea8338074e3e64b98d1a0a756f6ec8d0529be7af83fa4 file=neo/internal/agent/agent.go range=452:453 lang=go exported=true byte_range=21829:21965
+  digest=b3:bf029073cecf36a75d8ea8338074e3e64b98d1a0a756f6ec8d0529be7af83fa4 file=neo/internal/agent/agent.go range=451:452 lang=go exported=true byte_range=21819:21955
   sig=func (a *Agent) Generation() uint64
   doc=Generation returns the current generation tag (0 = unset, e.g. CLI path).
 EDGES
@@ -320,7 +320,7 @@ EDGES
   ^defines=matrix/neo/internal/agent/death.go
 
 NODE id=matrix/neo/internal/agent.Agent.LastFailureClass kind=method
-  digest=b3:8c5700765be9976e889076130ef6de73f4c0d5f959610eab5c44889a964b7180 file=neo/internal/agent/agent.go range=1735:1740 lang=go exported=true byte_range=79020:79471
+  digest=b3:8c5700765be9976e889076130ef6de73f4c0d5f959610eab5c44889a964b7180 file=neo/internal/agent/agent.go range=1713:1718 lang=go exported=true byte_range=77967:78418
   sig=func (a *Agent) LastFailureClass() delegate.FailureClass
   doc=LastFailureClass reports the shared FailureClass of the most recent\nclassified tool failure in the current turn (delegate.ClassNone when none).\nThe task supervisor reads it after Chat returns to decide whether a\nnon-clean exit is a deterministic blocker (stop-and-ask, no respawn) or a\ntransient/model/stall failure (the existing respawn path).
 EDGES
@@ -328,7 +328,7 @@ EDGES
   ^defines=matrix/neo/internal/agent/agent.go
 
 NODE id=matrix/neo/internal/agent.Agent.Reset kind=method
-  digest=b3:90c58ab07fc12b5d3dd1620cf1910462d0ff9018946c8766f49e03e90abfcf1a file=neo/internal/agent/agent.go range=1192:1197 lang=go exported=true byte_range=56538:56683
+  digest=b3:90c58ab07fc12b5d3dd1620cf1910462d0ff9018946c8766f49e03e90abfcf1a file=neo/internal/agent/agent.go range=1191:1196 lang=go exported=true byte_range=56528:56673
   sig=func (a *Agent) Reset()
   doc=Reset clears the live transcript + goal (new conversation).
 EDGES
@@ -336,7 +336,7 @@ EDGES
   ^defines=matrix/neo/internal/agent/agent.go
 
 NODE id=matrix/neo/internal/agent.Agent.Seed kind=method
-  digest=b3:98e728869e69088390bacc3e02f57989e7dd00c110d1b9b67d8c61005bce5b4a file=neo/internal/agent/agent.go range=1211:1224 lang=go exported=true byte_range=57225:57811
+  digest=b3:98e728869e69088390bacc3e02f57989e7dd00c110d1b9b67d8c61005bce5b4a file=neo/internal/agent/agent.go range=1210:1223 lang=go exported=true byte_range=57215:57801
   sig=func (a *Agent) Seed(history []llm.Message, goal string)
   doc=Seed primes a freshly-minted agent with a resumed conversation's durable\nhistory (user/assistant text turns, oldest-first) and goal, so reopening a\npast thread — or continuing one after a restart — retains context instead of\nstarting blank. No-op once the live transcript has any content, so it never\nclobbers an in-flight conversation.
 EDGES
@@ -344,7 +344,7 @@ EDGES
   ^defines=matrix/neo/internal/agent/agent.go
 
 NODE id=matrix/neo/internal/agent.Agent.SetGeneration kind=method
-  digest=b3:f158d96032c6e666c4831d275e10249c70c8be9a5e083a9f2d090544457ecf79 file=neo/internal/agent/agent.go range=447:450 lang=go exported=true byte_range=21536:21827
+  digest=b3:f158d96032c6e666c4831d275e10249c70c8be9a5e083a9f2d090544457ecf79 file=neo/internal/agent/agent.go range=446:449 lang=go exported=true byte_range=21526:21817
   sig=func (a *Agent) SetGeneration(gen uint64)
   doc=SetGeneration tags this agent's current turn with a generation number from\nthe session's command queue (P2-6). A result whose generation has been\nsuperseded by a newer dispatch is discarded as stale. Call before Chat.
 EDGES
@@ -352,7 +352,7 @@ EDGES
   ^defines=matrix/neo/internal/agent/agent.go
 
 NODE id=matrix/neo/internal/agent.Agent.SetSkillIndex kind=method
-  digest=b3:c7d1d409a428f31f721b410ff4a7d29528dfc6f12672a258ac24a0756540cc9f file=neo/internal/agent/agent.go range=478:485 lang=go exported=true byte_range=22787:23242
+  digest=b3:c7d1d409a428f31f721b410ff4a7d29528dfc6f12672a258ac24a0756540cc9f file=neo/internal/agent/agent.go range=477:484 lang=go exported=true byte_range=22777:23232
   sig=func (a *Agent) SetSkillIndex(names []string)
   doc=SetSkillIndex injects a names-only skill index into the STABLE system prefix\n(P2-2). The index lists available skills by NAME only — never full bodies\n(steps/gotchas/criteria), which are pulled on demand via memory_recall. This\nkeeps the cacheable prefix token-bounded and byte-stable across turns\n(consistent with P1-2). Call after the consolidator proposes skills.
 EDGES
@@ -360,7 +360,7 @@ EDGES
   ^defines=matrix/neo/internal/agent/agent.go
 
 NODE id=matrix/neo/internal/agent.Agent.SetUserProfile kind=method
-  digest=b3:be4830c3c994733ebd631457d07f5a5cbb716d568547147d667bf3f51e501baa file=neo/internal/agent/agent.go range=487:500 lang=go exported=true byte_range=23244:24029
+  digest=b3:be4830c3c994733ebd631457d07f5a5cbb716d568547147d667bf3f51e501baa file=neo/internal/agent/agent.go range=486:499 lang=go exported=true byte_range=23234:24019
   sig=func (a *Agent) SetUserProfile(agentName, preferredName string, expertiseDomains []string)
   doc=SetUserProfile injects the onboarding profile (agent_name, preferred_name,\nexpertise_domains) into the STABLE system prefix. Called after agent\nconstruction (per session rebuild) so a later profile edit is reflected on\nsubsequent turns (req 8.2). The values are per-user-stable so they preserve\nthe prompt-cache byte-stability invariant (req 2.4): a non-empty agentName\noverrides cfg.AgentName, and empty preferredName + nil expertiseDomains\nproduce no identity section (clean fallback to default "Neo").
 EDGES
@@ -368,7 +368,7 @@ EDGES
   ^defines=matrix/neo/internal/agent/agent.go
 
 NODE id=matrix/neo/internal/agent.Agent.SetWorkspace kind=method
-  digest=b3:5a483b9c9f9ddf65946b8fe1f289838d89b33e1cf78872bb5f3b36fee64468e3 file=neo/internal/agent/agent.go range=502:513 lang=go exported=true byte_range=24031:24734
+  digest=b3:5a483b9c9f9ddf65946b8fe1f289838d89b33e1cf78872bb5f3b36fee64468e3 file=neo/internal/agent/agent.go range=501:512 lang=go exported=true byte_range=24021:24724
   sig=func (a *Agent) SetWorkspace(root, projectID, projectName, projectRoot string)
   doc=SetWorkspace injects the coding-workspace context (workspace root + the\nconversation's active project) into the STABLE system prefix. Called after\nagent construction (per session rebuild), mirroring SetUserProfile. The\nvalues are per-conversation-stable (the project tag is fixed for a\nconversation), preserving the prompt-cache byte-stability invariant. An\nempty root disables the section (no workbench on this daemon).
 EDGES
@@ -384,7 +384,7 @@ EDGES
   ^defines=matrix/neo/internal/agent/interview.go
 
 NODE id=matrix/neo/internal/agent.Agent.act kind=method
-  digest=b3:0eee23f7800c1066fc360c116c2152cb299bf249be5f86328426143d53d02465 file=neo/internal/agent/agent.go range=988:1097 lang=go exported=false byte_range=46018:52007
+  digest=b3:0eee23f7800c1066fc360c116c2152cb299bf249be5f86328426143d53d02465 file=neo/internal/agent/agent.go range=987:1096 lang=go exported=false byte_range=46008:51997
   sig=func (a *Agent) act(ctx context.Context, step, pct int, res *llm.ChatResult) error
   doc=act is the act stage (MORPHEUS req.3.1): narration, the governor's outer\nfailsafe commit for this batch, the check-before-act gate, and tool\ndispatch with result assembly. Contract — inputs: the step index, this\nstep's context-fill pct, and the tool-calling model result; mutates: the\nworking transcript (tool results, guidance), the turn's stall bookkeeping\nand counters, the loop snapshot, and the epistemic run state (via the\nobserve seams); returns a terminal error (via governDeath) on a stall death\nor the unproductive-cap escalation, nil otherwise. (The failsafe commit\nstays after the preamble narration for order fidelity; its verdict comes\nfrom the unified signal state computed at deliberate.)
 EDGES
@@ -400,7 +400,7 @@ EDGES
   ^defines=matrix/neo/internal/agent/identity.go
 
 NODE id=matrix/neo/internal/agent.Agent.attestTurn kind=method
-  digest=b3:525f4e85a32da9b4842378c6e32dcb30689f607d3e768a7017c308edd5d11bab file=neo/internal/agent/agent.go range=1334:1375 lang=go exported=false byte_range=61936:63574
+  digest=b3:525f4e85a32da9b4842378c6e32dcb30689f607d3e768a7017c308edd5d11bab file=neo/internal/agent/agent.go range=1312:1353 lang=go exported=false byte_range=60883:62521
   sig=func (a *Agent) attestTurn(ctx context.Context, surfaced map[string]struct{}, surfacedSnips map[string]memory.Snippet, turnInput, answer string)
   doc=attestTurn closes the usage-learning loop for a successful turn. It splits\nthe surfaced set into USED (reinforced) and IGNORED (penalized): a\nsurfaced-but-ignored memory is one the rejection gate flags as off-topic to\nthe produced turn AND of a non-pinned type. The two attests are disjoint so\nno memory is both bumped and decremented in the same turn. Best-effort: a\nnil pager or empty set is a no-op, and neither attest blocks the turn.
 EDGES
@@ -408,7 +408,7 @@ EDGES
   ^defines=matrix/neo/internal/agent/agent.go
 
 NODE id=matrix/neo/internal/agent.Agent.budgetPct kind=method
-  digest=b3:696a8557cb34cbfe5943776d9f2985b1a21a769de984db8f0b8fc59d1d5f64bf file=neo/internal/agent/agent.go range=1916:1928 lang=go exported=false byte_range=87002:87234
+  digest=b3:696a8557cb34cbfe5943776d9f2985b1a21a769de984db8f0b8fc59d1d5f64bf file=neo/internal/agent/agent.go range=1894:1906 lang=go exported=false byte_range=85949:86181
   sig=func (a *Agent) budgetPct(system string) int
 EDGES
   ^contains=matrix/neo/internal/agent.Agent
@@ -431,7 +431,7 @@ EDGES
   ^defines=matrix/neo/internal/agent/cassandra.go
 
 NODE id=matrix/neo/internal/agent.Agent.capExceeded kind=method
-  digest=b3:fc278e9876db1bc0751c1aa80c920b421eee70e241c41435f34e645041bc9883 file=neo/internal/agent/agent.go range=1164:1169 lang=go exported=false byte_range=55187:55516
+  digest=b3:fc278e9876db1bc0751c1aa80c920b421eee70e241c41435f34e645041bc9883 file=neo/internal/agent/agent.go range=1163:1168 lang=go exported=false byte_range=55177:55506
   sig=func (a *Agent) capExceeded(counter int) bool
   doc=capExceeded reports whether the unified unproductive-attempt counter has\npassed its bound (config MaxGuidanceNudges, the shared unproductive-attempt\ncap). A cap of 0 disables the bound (unbounded).
 EDGES
@@ -447,7 +447,7 @@ EDGES
   ^defines=matrix/neo/internal/agent/overflow.go
 
 NODE id=matrix/neo/internal/agent.Agent.captureViewport kind=method
-  digest=b3:cd534c277a5643f0d46340326f5f8a39fddfe30c868e3e65108185914322a9f8 file=neo/internal/agent/agent.go range=1865:1876 lang=go exported=false byte_range=85190:85593
+  digest=b3:cd534c277a5643f0d46340326f5f8a39fddfe30c868e3e65108185914322a9f8 file=neo/internal/agent/agent.go range=1843:1854 lang=go exported=false byte_range=84137:84540
   sig=func (a *Agent) captureViewport(ctx context.Context, sourceFunc string) string
   doc=captureViewport fires the browser viewport auto-capture, dispatching to the\ntest override when set and otherwise to the tool manager's real MCP-session\ncapture.
 EDGES
@@ -508,14 +508,14 @@ EDGES
   ^defines=matrix/neo/internal/agent/cassandra.go
 
 NODE id=matrix/neo/internal/agent.Agent.chat kind=method
-  digest=b3:740776986258a1d3a4118323d5a08a42d3d5e07ab97b761dfe3b20a0f9353554 file=neo/internal/agent/agent.go range=619:704 lang=go exported=false byte_range=29143:31787
+  digest=b3:740776986258a1d3a4118323d5a08a42d3d5e07ab97b761dfe3b20a0f9353554 file=neo/internal/agent/agent.go range=618:703 lang=go exported=false byte_range=29133:31777
   sig=func (a *Agent) chat(ctx context.Context, userInput string, audio *AudioTurn) error
 EDGES
   ^contains=matrix/neo/internal/agent.Agent
   ^defines=matrix/neo/internal/agent/agent.go
 
 NODE id=matrix/neo/internal/agent.Agent.chatWithRetry kind=method
-  digest=b3:ae678b72351e80d32c1a4fb60243d3d58111999034da6f77fdec6cad17475b17 file=neo/internal/agent/agent.go range=1387:1411 lang=go exported=false byte_range=63877:64501
+  digest=b3:ae678b72351e80d32c1a4fb60243d3d58111999034da6f77fdec6cad17475b17 file=neo/internal/agent/agent.go range=1365:1389 lang=go exported=false byte_range=62824:63448
   sig=func (a *Agent) chatWithRetry(ctx context.Context, req llm.ChatRequest) (*llm.ChatResult, error)
 EDGES
   ^contains=matrix/neo/internal/agent.Agent
@@ -538,7 +538,7 @@ EDGES
   ^defines=matrix/neo/internal/agent/identity.go
 
 NODE id=matrix/neo/internal/agent.Agent.closeTurn kind=method
-  digest=b3:c498f980583067445265949a09dd547e50db0832ec93451051bd6800ef04d45a file=neo/internal/agent/agent.go range=957:986 lang=go exported=false byte_range=44346:46016
+  digest=b3:c498f980583067445265949a09dd547e50db0832ec93451051bd6800ef04d45a file=neo/internal/agent/agent.go range=956:985 lang=go exported=false byte_range=44336:46006
   sig=func (a *Agent) closeTurn(ctx context.Context, res *llm.ChatResult, casMod bool, userInput string) (finished bool, err error)
   doc=closeTurn is the close stage (MORPHEUS req.3.1) and the ONE evaluation site\nof the termination guard chain (req.4.1): a bare-answer turn (no tool calls)\nwalks closeGuardChain in table order and the first firing guard decides —\ndeliver | nudge-and-continue | suppress — with finishTurn remaining the\nsingle delivery choke point. Contract — inputs: the model result, whether\nCassandra modified this step, and the turn's user input; mutates: whatever\nthe one firing guard mutates (guidance nudges on the working transcript, the\nunified unproductive counter, the scrubbed answer); returns finished=true\nwhen the turn delivered (Chat returns nil), err on the unproductive-cap\nescalation, and (false, nil) when the loop must re-enter (a nudge or\nsuppression asked the model to continue).\n\nTermination (Cassandra 2.0: the proof-of-work completion gate is retired):\na turn ends when the model emits NO tool calls — the single completion path\n— once no guard in the chain blocks the close. Honesty emerges from the\nagent re-verifying under Cassandra's injected doubt, backstopped by the\nloop-discipline guarantees, not from a terminal adjudicator.
 EDGES
@@ -642,7 +642,7 @@ EDGES
   ^defines=matrix/neo/internal/agent/decompose.go
 
 NODE id=matrix/neo/internal/agent.Agent.deliberate kind=method
-  digest=b3:bd16ad7971575dec348516fe5d799be826a67bad7ebf6cf3879f8034e1442062 file=neo/internal/agent/agent.go range=908:955 lang=go exported=false byte_range=41653:44344
+  digest=b3:bd16ad7971575dec348516fe5d799be826a67bad7ebf6cf3879f8034e1442062 file=neo/internal/agent/agent.go range=907:954 lang=go exported=false byte_range=41643:44334
   sig=func (a *Agent) deliberate(step int, res *llm.ChatResult, streamedReasoning bool) (casMod bool)
   doc=deliberate is the deliberate stage (MORPHEUS req.3.1): the assistant turn\nis committed and the Cassandra controller reads the behavioral signals.\nContract — inputs: the step index, the model result, and whether reasoning\nalready streamed; mutates: the working transcript (appends the assistant\nmessage; Cassandra may edit that message's Content in place) and the\nCassandra per-turn state; returns: whether the controller modified the\nwindow this step (the close self-heal read).
 EDGES
@@ -650,7 +650,7 @@ EDGES
   ^defines=matrix/neo/internal/agent/agent.go
 
 NODE id=matrix/neo/internal/agent.Agent.dispatchWithRetry kind=method
-  digest=b3:35e95ae4ce2d040fa9aea463c02e035854eb9c1b5c45d4624cfc686987b52b74 file=neo/internal/agent/agent.go range=1742:1821 lang=go exported=false byte_range=79473:83573
+  digest=b3:35e95ae4ce2d040fa9aea463c02e035854eb9c1b5c45d4624cfc686987b52b74 file=neo/internal/agent/agent.go range=1720:1799 lang=go exported=false byte_range=78420:82520
   sig=func (a *Agent) dispatchWithRetry(ctx context.Context, name string, args map[string]interface{}) (content, evidence, shot string, isErr bool, recoveryClass delegate.FailureClass, failureClass exectool.FailureClass)
   doc=dispatchWithRetry runs one tool call with the recovery ladder: bounded\nretries for transport/invocation errors (ladder 1); on exhaustion it\nreturns a descriptive failure as the tool result so the model can adapt\n(ladder 2/4) rather than the harness crashing.\n\nIt reads the shared failure taxonomy (delegate.ClassOf): a DETERMINISTIC\nfailure (a 4xx that recurs identically — a denied permission, an invalid or\nunparseable request) is returned as a SINGLE terminal result with no further\nattempts, mirroring chatWithRetry's ErrProviderRejected short-circuit. This\nstops the blind-retry amplifier (NE-1). Conflict (already-in-flight 409) and\npending (structured clarify) are deliberately NOT short-circuited here: they\nare left to their dedicated handlers (attach-to-existing / slot-fill); for\nnow they keep the bounded-retry behavior. The returned FailureClass is the\nclass of the failure that ended the dispatch (delegate.ClassNone on success),\nsurfaced so the supervisor reads the SAME classification.
 EDGES
@@ -658,7 +658,7 @@ EDGES
   ^defines=matrix/neo/internal/agent/agent.go
 
 NODE id=matrix/neo/internal/agent.Agent.drainInbox kind=method
-  digest=b3:779711c69da5e60e3bc50679d3f0ee620ebd572296e392568f727167a08a9a15 file=neo/internal/agent/agent.go range=455:476 lang=go exported=false byte_range=21967:22785
+  digest=b3:779711c69da5e60e3bc50679d3f0ee620ebd572296e392568f727167a08a9a15 file=neo/internal/agent/agent.go range=454:475 lang=go exported=false byte_range=21957:22775
   sig=func (a *Agent) drainInbox() bool
   doc=drainInbox folds any user messages queued while this turn is in flight (F5:\nnon-interrupting mid-task messages) into the working transcript, so the agent\naddresses them on its next step instead of the message cancelling the run.\nDrained at each tool-call boundary; returns true if it injected at least one.\nNo-op when no inbox is wired (CLI path). Injection happens at a clean\nboundary (loop top / pre-finish), where the transcript ends on a tool result\nor assistant turn, so appending a user message keeps it well-formed.
 EDGES
@@ -666,7 +666,7 @@ EDGES
   ^defines=matrix/neo/internal/agent/agent.go
 
 NODE id=matrix/neo/internal/agent.Agent.effectiveStepBudget kind=method
-  digest=b3:15e5554cfec881b007d24f8f8c2e011682bfd209a6cc1e0cbaf9c93b1d515cf5 file=neo/internal/agent/agent.go range=534:599 lang=go exported=false byte_range=25736:28126
+  digest=b3:15e5554cfec881b007d24f8f8c2e011682bfd209a6cc1e0cbaf9c93b1d515cf5 file=neo/internal/agent/agent.go range=533:598 lang=go exported=false byte_range=25726:28116
   sig=func (a *Agent) effectiveStepBudget(sig effectiveBudgetSignals) int
   doc=effectiveStepBudget computes the adaptive per-turn step budget within the\nconfigured [StepBudgetMin, StepBudgetMax] band, derived from observable\nturn-complexity signals (tool-call breadth so far).\n\nWhen adaptation is disabled (StepBudgetMin == 0, the default), it returns\nStepBudgetMax unchanged — today's fixed-budget behavior (no scope creep,\ndefault behavior matches exactly).\n\nWhen enabled (StepBudgetMin > 0), the budget scales UP from the floor\ntoward the ceiling as the turn shows breadth (more distinct tools). The\nscaling is conservative:\n\n  - 0-1 distinct tools → floor (simple turn, no breadth signal).\n  - Each additional distinct tool adds a proportional slice of the\n    [floor, ceiling] range, so 2 tools gets one step up, 3 gets more, etc.\n  - The result is clamped to [floor, ceiling] — never below the floor\n    for simple turns, never above the ceiling.\n\nThe no-progress stall path is independent and unaffected: a stalling turn\nterminates via NoProgressStall regardless of the effective budget (m9).
 EDGES
@@ -742,7 +742,7 @@ EDGES
   ^defines=matrix/neo/internal/agent/epistemic.go
 
 NODE id=matrix/neo/internal/agent.Agent.escalateGuidance kind=method
-  digest=b3:6e2173a1fb62bcb8e2f2dc8f894295b9829d679149e15bafded4974f141157a0 file=neo/internal/agent/agent.go range=1171:1180 lang=go exported=false byte_range=55518:56292
+  digest=b3:6e2173a1fb62bcb8e2f2dc8f894295b9829d679149e15bafded4974f141157a0 file=neo/internal/agent/agent.go range=1170:1179 lang=go exported=false byte_range=55508:56282
   sig=func (a *Agent) escalateGuidance(attempts int) error
   doc=escalateGuidance ends the turn with an honest stop-and-ask once the unified\nunproductive-attempt bound is exceeded (req.1.5, req.8): re-nudging — or\nre-attempting a premature completion — indefinitely is not the answer, so it\nmarks a DETERMINISTIC blocker (the task supervisor then stops-and-asks the\nuser rather than respawning into the same loop) and ends the turn through\nthe governor's terminal verdict with an honest where-it-stands digest.
 EDGES
@@ -818,7 +818,7 @@ EDGES
   ^defines=matrix/neo/internal/agent/gate.go
 
 NODE id=matrix/neo/internal/agent.Agent.generate kind=method
-  digest=b3:b49c475eb032662341651d6b0029e5137cb7533a54b02808e43b739a2e60ae62 file=neo/internal/agent/agent.go range=818:906 lang=go exported=false byte_range=37035:41651
+  digest=b3:b49c475eb032662341651d6b0029e5137cb7533a54b02808e43b739a2e60ae62 file=neo/internal/agent/agent.go range=817:905 lang=go exported=false byte_range=37025:41641
   sig=func (a *Agent) generate(ctx context.Context, step int, cmTail string, window []llm.Message, tail string) (res *llm.ChatResult, streamedReasoning, proceed bool, err error)
   doc=generate is the generate stage (MORPHEUS req.3.1): one model call with live\nstreaming, the forced-revision variant, and the 413 oversize recovery.\nContract — inputs: the step index, the turn-frozen activation tail, and this\nstep's prepared window+tail; mutates: the working transcript only on a\nforced revision (via forcedRevisionStep) or a cut-off tool-call batch (the\ncompact-retry nudge), plus trim/strip during 413 recovery; returns: the\nmodel result, whether reasoning streamed live, and proceed=false when the\nloop must re-enter its next iteration without a result (forced revision ran,\nor the cut-off batch was dropped). err is a terminal model failure.
 EDGES
@@ -882,22 +882,22 @@ EDGES
   ^defines=matrix/neo/internal/agent/interview.go
 
 NODE id=matrix/neo/internal/agent.Agent.lastToolSummary kind=method
-  digest=b3:ca26893cc8954924210f739f806dfd86de1b099db5da26c78281662252a953eb file=neo/internal/agent/agent.go range=1902:1914 lang=go exported=false byte_range=86619:87000
+  digest=b3:ca26893cc8954924210f739f806dfd86de1b099db5da26c78281662252a953eb file=neo/internal/agent/agent.go range=1880:1892 lang=go exported=false byte_range=85566:85947
   sig=func (a *Agent) lastToolSummary() string
 EDGES
   ^contains=matrix/neo/internal/agent.Agent
   ^defines=matrix/neo/internal/agent/agent.go
 
 NODE id=matrix/neo/internal/agent.Agent.nameReasoning kind=method
-  digest=b3:26f69c67cd54990c9adf49b0d8c42bd75b0716331d4abbb4275fc07eb9b45aba file=neo/internal/agent/agent.go range=1272:1302 lang=go exported=false byte_range=59330:60845
+  digest=b3:2832091c93220a7990ff7a2c6e53a34173b359d1507c8d5984201797080cacc5 file=neo/internal/agent/agent.go range=1266:1280 lang=go exported=false byte_range=59035:59792
   sig=func (a *Agent) nameReasoning(text string) string
-  doc=nameReasoning personalises the model's VISIBLE reasoning (Q1): the user can\nread Neo's chain-of-thought, so a generic "the user asked …" reads coldly\nwhere "Andrew asked …" reads like Neo actually knows them. It rewrites the\n"the user" / "the user's" reference to the user's preferred name. This is a\nDISPLAY-only transform on the thinking channel — the model's underlying\nreasoning tokens are untouched and reasoning is never persisted, so there is\nno determinism/replay concern. It only fires when a preferred name is known;\notherwise the text is returned verbatim. The prompt already steers the model\nto name the user in its thinking (systemPrompt), so this is the deterministic\nbackstop for the complete-text (fold-time) reasoning path.
+  doc=nameReasoning applies the identity net to visible reasoning. Preferred-name\ncapitalization is preserved by the prompt, but names are not injected\nmechanically: deterministic replacement made every update sound repetitive.
 EDGES
   ^contains=matrix/neo/internal/agent.Agent
   ^defines=matrix/neo/internal/agent/agent.go
 
 NODE id=matrix/neo/internal/agent.Agent.noteBatch kind=method
-  digest=b3:75d2d7981faa5e3dc96a0e7ef34c3edebba654b465c57f0c8486304f7c8db9ce file=neo/internal/agent/agent.go range=1099:1127 lang=go exported=false byte_range=52009:53393
+  digest=b3:75d2d7981faa5e3dc96a0e7ef34c3edebba654b465c57f0c8486304f7c8db9ce file=neo/internal/agent/agent.go range=1098:1126 lang=go exported=false byte_range=51999:53383
   sig=func (a *Agent) noteBatch(calls []llm.ToolCall) (repeat, stalled bool)
   doc=noteBatch commits the no-progress/stall read for ONE assistant tool-calling\nbatch from the unified per-step signal state (MORPHEUS req.5.1): the repeat\nverdict (byte-identical, SEMANTIC reword, or a rotating A→B→A→B cycle that\nintroduces no new tool — a distinct operation resets it, NE-4) was computed\nONCE in computeStepSignals at deliberate entry; noteBatch advances the\ncommitted stall bookkeeping from it. Sharing one read between the dispatch\npath and the Cassandra controller is what keeps the two from drifting\n(N2/req.8.3 heritage: nothing bypasses stall detection). Contract — mutates\nonly the turn's stall bookkeeping; returns whether the batch was a repeat\nand whether the pure-repeat stall bound (NoProgressStall) is met.
 EDGES
@@ -905,7 +905,7 @@ EDGES
   ^defines=matrix/neo/internal/agent/agent.go
 
 NODE id=matrix/neo/internal/agent.Agent.noteFailureClass kind=method
-  digest=b3:f3f308af9e082f332caa9feaa5637ee85832f5b4e42e0ad038bffe6f71362063 file=neo/internal/agent/agent.go range=1672:1691 lang=go exported=false byte_range=76404:77492
+  digest=b3:f3f308af9e082f332caa9feaa5637ee85832f5b4e42e0ad038bffe6f71362063 file=neo/internal/agent/agent.go range=1650:1669 lang=go exported=false byte_range=75351:76439
   sig=func (a *Agent) noteFailureClass(class delegate.FailureClass, isErr bool)
   doc=noteFailureClass records the classified outcome of the most recent tool\ndispatch this turn so the task supervisor (LastFailureClass) reads the SAME\ntaxonomy the dispatch ladder used. A SUCCESSFUL dispatch CLEARS a prior\nfailure: recovery is real progress, so a turn that later dies did NOT die on\na wall it already got past — without the clear, one recovered exploration\nmiss (a 404 read of a guessed path) converts any later unrelated death into\na false deterministic stop-and-ask (the misleading "permission or limit"\nterminal over a healthy turn). A content-level tool error that carries no\nclassified failure (isErr with ClassNone) leaves the record untouched: the\nagent may still be stuck on the recorded wall. Called only from the\nsingle-threaded result-assembly paths, so it never races the concurrent\ndispatch goroutines.
 EDGES
@@ -913,7 +913,7 @@ EDGES
   ^defines=matrix/neo/internal/agent/agent.go
 
 NODE id=matrix/neo/internal/agent.Agent.noteNormalizedFailure kind=method
-  digest=b3:1de0fb4fe2198dfb3a37e004d14e15de69f78c569a22536c1f80c706b067e47c file=neo/internal/agent/agent.go range=1693:1733 lang=go exported=false byte_range=77494:79018
+  digest=b3:1de0fb4fe2198dfb3a37e004d14e15de69f78c569a22536c1f80c706b067e47c file=neo/internal/agent/agent.go range=1671:1711 lang=go exported=false byte_range=76441:77965
   sig=func (a *Agent) noteNormalizedFailure(name string, args map[string]interface{}, failureClass exectool.FailureClass, recoveryClass delegate.FailureClass, isErr bool) error
   doc=noteNormalizedFailure bounds repeated deterministic failures by the\ninvariant strategy and semantic failure layer. Changing a guessed URL/path\nwhile repeating the same shell/search/fetch strategy cannot reset the bound.
 EDGES
@@ -928,14 +928,14 @@ EDGES
   ^defines=matrix/neo/internal/agent/web_evidence.go
 
 NODE id=matrix/neo/internal/agent.Agent.overHardBudget kind=method
-  digest=b3:1d84f3d70e59dede741341d18dcf15891d64c069f6fbbb095042054a47dba36c file=neo/internal/agent/agent.go range=1942:1944 lang=go exported=false byte_range=87837:87981
+  digest=b3:1d84f3d70e59dede741341d18dcf15891d64c069f6fbbb095042054a47dba36c file=neo/internal/agent/agent.go range=1920:1922 lang=go exported=false byte_range=86784:86928
   sig=func (a *Agent) overHardBudget(system string) bool
 EDGES
   ^contains=matrix/neo/internal/agent.Agent
   ^defines=matrix/neo/internal/agent/agent.go
 
 NODE id=matrix/neo/internal/agent.Agent.overSoftBudget kind=method
-  digest=b3:b6060c3fa3b48547b2e4da3b3184568ece50c219227b5a99c2b4d83b3706af48 file=neo/internal/agent/agent.go range=1934:1940 lang=go exported=false byte_range=87378:87835
+  digest=b3:b6060c3fa3b48547b2e4da3b3184568ece50c219227b5a99c2b4d83b3706af48 file=neo/internal/agent/agent.go range=1912:1918 lang=go exported=false byte_range=86325:86782
   sig=func (a *Agent) overSoftBudget(system string) bool
   doc=overSoftBudget / overHardBudget are the trim/compaction trigger reads: the\nwindow is compared against the headroom-derived token budgets (window minus\ncapped headroom), not a raw percentage, so at 1M scale trimming fires only\nnear true pressure while small-window overrides keep their prior behavior.
 EDGES
@@ -999,7 +999,7 @@ EDGES
   ^defines=matrix/neo/internal/agent/premise.go
 
 NODE id=matrix/neo/internal/agent.Agent.prepareTurn kind=method
-  digest=b3:4bef446e3c7a8f5370c68af8666754a26ec156a8a911eeacde6d97c35cfd3a89 file=neo/internal/agent/agent.go range=706:781 lang=go exported=false byte_range=31789:35327
+  digest=b3:4bef446e3c7a8f5370c68af8666754a26ec156a8a911eeacde6d97c35cfd3a89 file=neo/internal/agent/agent.go range=705:780 lang=go exported=false byte_range=31779:35317
   sig=func (a *Agent) prepareTurn(ctx context.Context, userInput, audioData string) string
   doc=prepareTurn is the turn half of the prepare stage (MORPHEUS req.3.1), run\nONCE at Chat entry. Contract — inputs: the trimmed user input; mutates: the\nworking transcript (appends the user message), the durable cortex transcript\n(records it), the turn's surfaced-memory sets, and activationAssemblies;\nreturns: the rendered activation tail (cmTail) frozen for the whole turn.\n\nThe single memory path (MORPHEUS req.1): the per-turn working set comes\nfrom cortex.Activate, computed ONCE per turn and rendered as the trailing\nUSER-role tail (the activation snapshot is frozen for the whole turn — the\nNE-7 discipline). The Q2 first-turn relevance push rides the same tail so\nthe usage-salience attestation loop still learns from what surfaced.
 EDGES
@@ -1007,7 +1007,7 @@ EDGES
   ^defines=matrix/neo/internal/agent/agent.go
 
 NODE id=matrix/neo/internal/agent.Agent.prepareWindow kind=method
-  digest=b3:22f920b19337734247f20ee1b5912675b3c25233bf3d4c603dd75e0a9dfe29cf file=neo/internal/agent/agent.go range=783:816 lang=go exported=false byte_range=35329:37033
+  digest=b3:22f920b19337734247f20ee1b5912675b3c25233bf3d4c603dd75e0a9dfe29cf file=neo/internal/agent/agent.go range=782:815 lang=go exported=false byte_range=35319:37023
   sig=func (a *Agent) prepareWindow(cmTail string) (window []llm.Message, tail string, pct int)
   doc=prepareWindow is the step half of the prepare stage and the ONE window-\nassembly site per step (MORPHEUS req.3.2) — the oversize-recovery path\nre-enters it rather than assembling its own window. Contract — inputs: the\nturn-frozen activation tail; mutates: the working transcript ONLY via the\ntrim/strip recovery helpers (cmTrimWorking, stripOldImages) when over\nbudget; returns: the assembled window, the full trailing tail, and the\ncontext-fill percentage for the budget stat.\n\nThe single window law (MORPHEUS req.1.3): the byte-stable charter prefix at\nindex 0 + the append-only live transcript + the rendered Activate bundle as\nONE trailing USER-role message (Qwen-template portability). Over-budget\ntrimming is NON-summarizing (cmTrimWorking) because the older turns are\ndurable in cortex and the coarse history rides the durable story-so-far\nalready surfaced in cmTail. The request-body byte cap is independent of the\ntoken budget: the token estimate undercounts the serialized JSON, so a\nwindow within token budget can still 413 — images strip first (cheaper,\nless lossy), then the trim.
 EDGES
@@ -1023,7 +1023,7 @@ EDGES
   ^defines=matrix/neo/internal/agent/continuous.go
 
 NODE id=matrix/neo/internal/agent.Agent.pushGuidance kind=method
-  digest=b3:3071bafc7c5dc2808924c52728132ca38cfb390d638f9f86e1fefe15b0d49bff file=neo/internal/agent/agent.go range=1129:1148 lang=go exported=false byte_range=53395:54458
+  digest=b3:3071bafc7c5dc2808924c52728132ca38cfb390d638f9f86e1fefe15b0d49bff file=neo/internal/agent/agent.go range=1128:1147 lang=go exported=false byte_range=53385:54448
   sig=func (a *Agent) pushGuidance(text string) llm.Message
   doc=pushGuidance is THE guidance choke point (MORPHEUS req.3.3): every\nguidance-channel injection — the close-chain nudges, the legacy converge\nsteer, the self-claim contradiction and forced-revision directives, and the\nprediction-mismatch guidance — flows through this one function. It builds\nthe turn via llm.GuidanceMessage (the Guidance flag + envelope are what keep\nsteering out of the durable cortex transcript — cmRecordAssistant's\nIsGuidance gate — and off every user-facing surface — StripGuidance at the\nharness) and appends it to the working transcript. Contract — mutates: the\nworking transcript only; blank text appends nothing. Returns the built\nmessage (zero when nothing was appended) so a caller that must also thread\nthe steer into an in-flight window copy (forcedRevisionStep) reuses the SAME\nturn instead of minting a second one.
 EDGES
@@ -1031,7 +1031,7 @@ EDGES
   ^defines=matrix/neo/internal/agent/agent.go
 
 NODE id=matrix/neo/internal/agent.Agent.pushGuidanceNudge kind=method
-  digest=b3:9f23d3f95bb19c0e629b1c3f53799f0a6c4aee5869311664c46d33c771827e53 file=neo/internal/agent/agent.go range=1150:1162 lang=go exported=false byte_range=54460:55185
+  digest=b3:9f23d3f95bb19c0e629b1c3f53799f0a6c4aee5869311664c46d33c771827e53 file=neo/internal/agent/agent.go range=1149:1161 lang=go exported=false byte_range=54450:55175
   sig=func (a *Agent) pushGuidanceNudge(text string, counter *int) (capExceeded bool)
   doc=pushGuidanceNudge routes a system-steering nudge through the guidance choke\npoint (req.1.1) and folds it into the ONE unified unproductive-attempt\ncounter (req.8.1): it increments the counter and reports whether the bound is\nnow exceeded. The close-chain guards (truncation/empty/read-full/identity\nsteers) all push through here, so they share ONE bound with the no-progress\nrepeats fed in the loop. The counter is reset ONLY on genuine accepted\nprogress (req.8.2) — never by a plain tool dispatch. A cap of 0 disables the\nbound (unbounded nudging).
 EDGES
@@ -1095,14 +1095,14 @@ EDGES
   ^defines=matrix/neo/internal/agent/premise.go
 
 NODE id=matrix/neo/internal/agent.Agent.runToolCalls kind=method
-  digest=b3:c9b09718ba90f9304b459be2e64904ad4b19681d62251ec40071554a1326812f file=neo/internal/agent/agent.go range=1413:1565 lang=go exported=false byte_range=64503:71246
+  digest=b3:c9b09718ba90f9304b459be2e64904ad4b19681d62251ec40071554a1326812f file=neo/internal/agent/agent.go range=1391:1543 lang=go exported=false byte_range=63450:70193
   sig=func (a *Agent) runToolCalls(ctx context.Context, calls []llm.ToolCall) error
 EDGES
   ^contains=matrix/neo/internal/agent.Agent
   ^defines=matrix/neo/internal/agent/agent.go
 
 NODE id=matrix/neo/internal/agent.Agent.runToolCallsSerial kind=method
-  digest=b3:f79c7b597ae6ecff93d7815295860bf1199593d6cc55b3fd558486c9191d2354 file=neo/internal/agent/agent.go range=1567:1670 lang=go exported=false byte_range=71248:76402
+  digest=b3:f79c7b597ae6ecff93d7815295860bf1199593d6cc55b3fd558486c9191d2354 file=neo/internal/agent/agent.go range=1545:1648 lang=go exported=false byte_range=70195:75349
   sig=func (a *Agent) runToolCallsSerial(ctx context.Context, calls []llm.ToolCall) error
   doc=runToolCallsSerial is the legacy single-threaded dispatch path. It's\nkept for the concurrency<=0 config and for single-call batches (where\ngoroutine spin-up would be pure overhead). Behaviour is byte-identical\nto the pre-P2-5 loop.
 EDGES
@@ -1110,7 +1110,7 @@ EDGES
   ^defines=matrix/neo/internal/agent/agent.go
 
 NODE id=matrix/neo/internal/agent.Agent.screenshotForCall kind=method
-  digest=b3:2a1d0e8997f7da309a3950526a8af553db985dc12b0c040d7437f4049f1c0ebd file=neo/internal/agent/agent.go range=1833:1863 lang=go exported=false byte_range=83869:85188
+  digest=b3:2a1d0e8997f7da309a3950526a8af553db985dc12b0c040d7437f4049f1c0ebd file=neo/internal/agent/agent.go range=1811:1841 lang=go exported=false byte_range=82816:84135
   sig=func (a *Agent) screenshotForCall(ctx context.Context, name, directShot string, isErr bool) string
   doc=screenshotForCall resolves the page still to attach to a completed browser\ncall's observer event (BROWSER-FILMSTRIP). A direct browser_take_screenshot\nalready carries its persisted URL (directShot); otherwise, after a SUCCESSFUL\nview-changing browser action, it fires the deterministic, model-invisible\nauto-capture — gated by NEO_BROWSER_AUTOSHOT and bounded by the per-turn cap.\nBest-effort throughout: it returns "" (no frame) rather than ever disturbing\nthe call's result or the turn. Called only from the single-threaded result-\nassembly paths, so the per-turn counter never races the dispatch goroutines.
 EDGES
@@ -1150,7 +1150,7 @@ EDGES
   ^defines=matrix/neo/internal/agent/payload.go
 
 NODE id=matrix/neo/internal/agent.Agent.systemPrompt kind=method
-  digest=b3:ea5c9a519dd9118cd03e17315c3882c1d41da78f47c9a4c528d34c4fc983130a file=neo/internal/agent/prompt.go range=52:239 lang=go exported=false byte_range=2052:26008
+  digest=b3:192a555e2ba2dd2c8834fb66ce0b6203b69a8eda273e8f90b338a5e210d27855 file=neo/internal/agent/prompt.go range=52:241 lang=go exported=false byte_range=2052:26194
   sig=func (a *Agent) systemPrompt() string
   doc=systemPrompt is Neo's static behavioral charter — the "normal agent" shape.
 EDGES
@@ -1158,7 +1158,7 @@ EDGES
   ^defines=matrix/neo/internal/agent/prompt.go
 
 NODE id=matrix/neo/internal/agent.Agent.turnIntentID kind=method
-  digest=b3:f2545aaacddaa73e54dbfd523573450d9ca7f85f53aac21242704b5c6b3d3358 file=neo/internal/agent/agent.go range=1377:1385 lang=go exported=false byte_range=63576:63875
+  digest=b3:f2545aaacddaa73e54dbfd523573450d9ca7f85f53aac21242704b5c6b3d3358 file=neo/internal/agent/agent.go range=1355:1363 lang=go exported=false byte_range=62523:62822
   sig=func (a *Agent) turnIntentID() string
   doc=turnIntentID is the per-turn attestation IntentID, conversation-scoped for\naudit. Falls back to "cli" when there is no conversation (the CLI path).
 EDGES
@@ -1166,7 +1166,7 @@ EDGES
   ^defines=matrix/neo/internal/agent/agent.go
 
 NODE id=matrix/neo/internal/agent.Agent.usedTokens kind=method
-  digest=b3:707053b376d8173028e62fa1456d44c82f5e85fd96731ca9d3419dcaecc1cd35 file=neo/internal/agent/agent.go range=1930:1932 lang=go exported=false byte_range=87236:87376
+  digest=b3:707053b376d8173028e62fa1456d44c82f5e85fd96731ca9d3419dcaecc1cd35 file=neo/internal/agent/agent.go range=1908:1910 lang=go exported=false byte_range=86183:86323
   sig=func (a *Agent) usedTokens(system string) int
 EDGES
   ^contains=matrix/neo/internal/agent.Agent
@@ -1187,7 +1187,7 @@ EDGES
   ^defines=matrix/neo/internal/agent/web_evidence.go
 
 NODE id=matrix/neo/internal/agent.Agent.windowBytes kind=method
-  digest=b3:f3077244ec67b6325b85bad80e5fff56b42b2e768cae404a7a5bc57c53bce643 file=neo/internal/agent/agent.go range=2066:2081 lang=go exported=false byte_range=92059:92745
+  digest=b3:f3077244ec67b6325b85bad80e5fff56b42b2e768cae404a7a5bc57c53bce643 file=neo/internal/agent/agent.go range=2044:2059 lang=go exported=false byte_range=91006:91692
   sig=func (a *Agent) windowBytes(system string) int
   doc=windowBytes approximates the serialized chat-completions request body in\nBYTES: the system block + every working message's content and tool-call\narguments + the tool schemas. It is a byte proxy (NOT a token estimate)\nbecause the provider's 413 cap is on raw body bytes, which the token budget\ndoes not track. The per-message constant covers JSON structural overhead\n(role/keys/braces/quoting).
 EDGES
@@ -1334,7 +1334,7 @@ EDGES
   ^contains=matrix/neo/internal/agent.CapabilitySurface
 
 NODE id=matrix/neo/internal/agent.Consolidator kind=interface
-  digest=b3:e2ea16bb367e3c251d1dd4b0587234f21e445a4b47c95a398cbb4064bd36ae02 file=neo/internal/agent/agent.go range=48:63 lang=go exported=true byte_range=1870:2892
+  digest=b3:e2ea16bb367e3c251d1dd4b0587234f21e445a4b47c95a398cbb4064bd36ae02 file=neo/internal/agent/agent.go range=47:62 lang=go exported=true byte_range=1860:2882
   sig=type Consolidator interface {\n	// Consolidate enqueues a rendered turn transcript for background\n	// consolidation. conv + [seqLo, seqHi] are the cortex session\n	// conversation id and the (inclusive) session seq span of the turn that\n	// produced the transcript, threaded so every memory the consolidator\n	// writes gets a derived_from provenance edge back to its source\n	// transcript slice (DEJA-VU req 1.1). A blank conv disables provenance\n	// linking (the CLI/bare path with no cortex session state).\n	Consolidate(transcript, conv string, seqLo, seqHi uint64)\n	// ConsolidateSync runs the same extraction synchronously on the caller's\n	// goroutine, carrying the same provenance coordinates as Consolidate.\n	ConsolidateSync(ctx context.Context, transcript, conv string, seqLo, seqHi uint64)\n}
   doc=Consolidator is the background write-back hook: it receives a completed\nturn's transcript and promotes durable learnings to cortex out-of-band.\nImplemented by internal/writeback; optional (nil disables write-back).
 EDGES
@@ -1342,7 +1342,7 @@ EDGES
   ^defines=matrix/neo/internal/agent/agent.go
 
 NODE id=matrix/neo/internal/agent.ConvRecaller kind=interface
-  digest=b3:aad3d2b6d902267f64c2b4566786eee9fc1af8f411e5be147d7049dfe0aeffb5 file=neo/internal/agent/agent.go range=65:72 lang=go exported=true byte_range=2894:3361
+  digest=b3:aad3d2b6d902267f64c2b4566786eee9fc1af8f411e5be147d7049dfe0aeffb5 file=neo/internal/agent/agent.go range=64:71 lang=go exported=true byte_range=2884:3351
   sig=type ConvRecaller interface {\n	Relevant(ctx context.Context, query string) []recall.Hit\n}
   doc=ConvRecaller surfaces the most relevant PAST turns of this conversation\n(beyond the live transcript / resume seed) for a given query. Implemented by\ninternal/recall; optional (nil disables conversational recall). It is the\nadditive read-lane that lets an unbounded thread stay coherent — relevance\nover raw recency — without growing the in-window transcript.
 EDGES
@@ -1414,7 +1414,7 @@ EDGES
   ^contains=matrix/neo/internal/agent.EpisodicMemoryEvent
 
 NODE id=matrix/neo/internal/agent.ErrIncomplete kind=var
-  digest=b3:4e6eed0e72cdf4fd0e9a62f9fd08d93c7fad50b9a32ab9fffabd4d7a56e547db file=neo/internal/agent/agent.go range=38:46 lang=go exported=true byte_range=1226:1868
+  digest=b3:4e6eed0e72cdf4fd0e9a62f9fd08d93c7fad50b9a32ab9fffabd4d7a56e547db file=neo/internal/agent/agent.go range=37:45 lang=go exported=true byte_range=1216:1858
   sig=error
   doc=ErrIncomplete marks a turn that ended WITHOUT completing the task: the loop\nstalled (no progress) or exhausted its step budget. It is distinct from a\nmodel/transport error and from a genuine completion (nil). The task\nsupervisor (internal/server) treats it as "not done — keep going": it\nrespawns a fresh agent over durable state and continues, rather than\nsurfacing a fake "Done" to the user. The wrapped text carries a short,\nhonest where-I-got-stuck digest for the next attempt's catch-up.\nDetect with errors.Is(err, agent.ErrIncomplete).
 EDGES
@@ -1594,7 +1594,7 @@ EDGES
   ^defines=matrix/neo/internal/agent/morningbrief.go
 
 NODE id=matrix/neo/internal/agent.New kind=func
-  digest=b3:f280f9c637e9197ee4cc60e9003a5c03bb83f16e47d56f356d90b35f0f913311 file=neo/internal/agent/agent.go range=371:445 lang=go exported=true byte_range=18686:21534
+  digest=b3:f280f9c637e9197ee4cc60e9003a5c03bb83f16e47d56f356d90b35f0f913311 file=neo/internal/agent/agent.go range=370:444 lang=go exported=true byte_range=18676:21524
   sig=func New(o Options) *Agent
   doc=New assembles an Agent.
 EDGES
@@ -1622,7 +1622,7 @@ EDGES
   ^defines=matrix/neo/internal/agent/morningbrief.go
 
 NODE id=matrix/neo/internal/agent.Options kind=type
-  digest=b3:521c8a5b19a6249fa0c5044a136b705913a0e975eddecae1352e3865c45baa79 file=neo/internal/agent/agent.go range=293:369 lang=go exported=true byte_range=14474:18684
+  digest=b3:521c8a5b19a6249fa0c5044a136b705913a0e975eddecae1352e3865c45baa79 file=neo/internal/agent/agent.go range=292:368 lang=go exported=true byte_range=14464:18674
   sig=type Options struct {\n	Config		config.Config\n	Main		*llm.Client	// required: the conversational tool-calling model\n	Cheap		*llm.Client	// optional: cheap model for compaction (falls back to Main)\n	Tools		*tools.Manager\n	Pager		*memory.Pager\n	Reporter	Reporter\n	Consolidator	Consolidator	// optional: background write-back\n	Recaller	ConvRecaller	// optional: relevant past-turn recall (additive read-lane)\n	Observer	ToolObserver	// optional: per-tool-result surfacing (show the work)\n\n	// AuditObserver streams Cassandra 2.0 controller audit events (cassandra.mod)\n	// to the harness; nil discards them.\n	AuditObserver	AuditObserver\n\n	// MemoryObserver receives this turn's continuous-memory activation summary\n	// (durable story-so-far + coarse timeline) so the harness can surface the\n	// memory Neo carries to the user (continuous-memory task 7.1). nil discards.\n	MemoryObserver	MemoryObserver\n\n	// Persona frames this as a task-scoped sub-agent with a specific role\n	// (empty = the top-level conversational agent).\n	Persona	string\n	// Capability is the resolved capability-surface material (epistemic-core\n	// req.2): the agent's true external API surface, is/is-not architectural\n	// facts, and failure patterns, resolved from the durable self-model. It\n	// renders resident in the byte-stable prefix; nil renders honest UNKNOWN\n	// gaps (never fabricated facts).\n	Capability	*CapabilitySurface\n	// SelfModel is the shared self-model a sub-agent INHERITS from the agent that\n	// spawned it (self-model task 4.3, req.9.1): a compact rendering of the\n	// structural self-summary plus the relevant how-I-fail patterns, injected into\n	// the sub-agent's charter so it acts as the SAME mind (Neo) on a scoped slice\n	// — knowing how it is built and how it tends to fail — rather than a blank\n	// helper. Empty on the top-level agent (which carries its self-model through\n	// its own memory surface) and on any sub-agent spawned before the self-model\n	// is populated.\n	SelfModel	string\n	// ConvID is the conversation this agent serves; stamped on the per-turn\n	// attestation IntentID for audit. Empty on the CLI path.\n	ConvID	string\n	// RestrictTools advertises the SUB-AGENT tool surface (full Natural set,\n	// minus core_execute / memory_recall / spawn_subagents) instead of the\n	// full one. Set for sub-agents so money stays with the parent and a\n	// sub-agent can't spawn its own sub-agents.\n	RestrictTools	bool\n	// Automatrix marks an autonomous Automatrix run: the user is AWAY and did\n	// not initiate this turn. The system prompt gains an autonomous-mode\n	// section (work self-contained, no screen surfaces, no questions back) and\n	// tool calls are held to the advertised restricted surface. Set by\n	// NewAutomatrix, never directly.\n	Automatrix	bool\n	// Brief marks an autonomous MORNING_BRIEF run (ORACLE req 15): like\n	// Automatrix the user is AWAY and did not initiate this turn, but the tool\n	// surface is TIGHTER — a POSITIVE allowlist of read-only information tools\n	// (web_news/web_search/fetch) plus memory_recall only (Manager.BriefSchemas).\n	// Financial, signing, filesystem, deployment, and arbitrary-execution tools\n	// (including core_execute) are structurally absent. Set by NewMorningBrief,\n	// never directly.\n	Brief	bool\n	// Interview marks a personalization-interview conversation (ORACLE task\n	// 5.3, req 12): the system prompt gains the guided-interview charter (five\n	// skippable question groups, one at a time, plain-language summary +\n	// explicit confirmation before saving, no sensitive traits) and the agent\n	// additionally advertises save_personalization_profile — the ONLY surface\n	// that tool is advertised on. Set by NewInterview, never directly.\n	Interview	bool\n	// InterviewExisting is the rendered existing-answers block a REPEAT\n	// interview re-enters with (req 12.1); empty on a first interview.\n	InterviewExisting	string\n\n	// Inbox, when set, returns user messages queued while a turn is in flight\n	// (mid-task messages sent without interrupting). The loop folds them into\n	// the transcript at each tool-call boundary (F5). nil disables (CLI path).\n	Inbox	func() []string\n}
   doc=Options configures New.
 EDGES
@@ -1630,139 +1630,139 @@ EDGES
   ^defines=matrix/neo/internal/agent/agent.go
 
 NODE id=matrix/neo/internal/agent.Options#AuditObserver kind=field
-  digest=b3:c7be1419870e33be08e506d873a1e4fb3d322440fb0103abd6ec3b516215b6bb file=neo/internal/agent/agent.go range=305:307 lang=go exported=true byte_range=15028:15174
+  digest=b3:c7be1419870e33be08e506d873a1e4fb3d322440fb0103abd6ec3b516215b6bb file=neo/internal/agent/agent.go range=304:306 lang=go exported=true byte_range=15018:15164
   sig=agent.AuditObserver
   doc=AuditObserver streams Cassandra 2.0 controller audit events (cassandra.mod)\nto the harness; nil discards them.
 EDGES
   ^contains=matrix/neo/internal/agent.Options
 
 NODE id=matrix/neo/internal/agent.Options#Automatrix kind=field
-  digest=b3:7c57329f55886e9a945af16230994c6b4210bd55d0f9b57370b4fef2930483c0 file=neo/internal/agent/agent.go range=340:345 lang=go exported=true byte_range=16966:17309
+  digest=b3:7c57329f55886e9a945af16230994c6b4210bd55d0f9b57370b4fef2930483c0 file=neo/internal/agent/agent.go range=339:344 lang=go exported=true byte_range=16956:17299
   sig=bool
   doc=Automatrix marks an autonomous Automatrix run: the user is AWAY and did\nnot initiate this turn. The system prompt gains an autonomous-mode\nsection (work self-contained, no screen surfaces, no questions back) and\ntool calls are held to the advertised restricted surface. Set by\nNewAutomatrix, never directly.
 EDGES
   ^contains=matrix/neo/internal/agent.Options
 
 NODE id=matrix/neo/internal/agent.Options#Brief kind=field
-  digest=b3:e14ca412ae0e64cbe734421d2b7548122412150b3962fe26fcd4cbfd79121844 file=neo/internal/agent/agent.go range=346:353 lang=go exported=true byte_range=17311:17803
+  digest=b3:e14ca412ae0e64cbe734421d2b7548122412150b3962fe26fcd4cbfd79121844 file=neo/internal/agent/agent.go range=345:352 lang=go exported=true byte_range=17301:17793
   sig=bool
   doc=Brief marks an autonomous MORNING_BRIEF run (ORACLE req 15): like\nAutomatrix the user is AWAY and did not initiate this turn, but the tool\nsurface is TIGHTER — a POSITIVE allowlist of read-only information tools\n(web_news/web_search/fetch) plus memory_recall only (Manager.BriefSchemas).\nFinancial, signing, filesystem, deployment, and arbitrary-execution tools\n(including core_execute) are structurally absent. Set by NewMorningBrief,\nnever directly.
 EDGES
   ^contains=matrix/neo/internal/agent.Options
 
 NODE id=matrix/neo/internal/agent.Options#Capability kind=field
-  digest=b3:d2352d05b17d15fcfe12dfed7a8b0eebeb213e2483ed317b6efe4349b5928bb5 file=neo/internal/agent/agent.go range=317:322 lang=go exported=true byte_range=15579:15942
+  digest=b3:d2352d05b17d15fcfe12dfed7a8b0eebeb213e2483ed317b6efe4349b5928bb5 file=neo/internal/agent/agent.go range=316:321 lang=go exported=true byte_range=15569:15932
   sig=*agent.CapabilitySurface
   doc=Capability is the resolved capability-surface material (epistemic-core\nreq.2): the agent's true external API surface, is/is-not architectural\nfacts, and failure patterns, resolved from the durable self-model. It\nrenders resident in the byte-stable prefix; nil renders honest UNKNOWN\ngaps (never fabricated facts).
 EDGES
   ^contains=matrix/neo/internal/agent.Options
 
 NODE id=matrix/neo/internal/agent.Options#Cheap kind=field
-  digest=b3:db0cc36e3333713ed0fb8e0cdbbb7aa1527ea4a6bd45fa370ecc3e8aa1a99d2b file=neo/internal/agent/agent.go range=297:297 lang=go exported=true byte_range=14629:14653
+  digest=b3:db0cc36e3333713ed0fb8e0cdbbb7aa1527ea4a6bd45fa370ecc3e8aa1a99d2b file=neo/internal/agent/agent.go range=296:296 lang=go exported=true byte_range=14619:14643
   sig=*llm.Client
 EDGES
   ^contains=matrix/neo/internal/agent.Options
 
 NODE id=matrix/neo/internal/agent.Options#Config kind=field
-  digest=b3:51a50ada7fbf295a358d410734dc5a1f94ce743c155eb774dfd824f5413b6887 file=neo/internal/agent/agent.go range=295:295 lang=go exported=true byte_range=14524:14550
+  digest=b3:51a50ada7fbf295a358d410734dc5a1f94ce743c155eb774dfd824f5413b6887 file=neo/internal/agent/agent.go range=294:294 lang=go exported=true byte_range=14514:14540
   sig=config.Config
 EDGES
   ^contains=matrix/neo/internal/agent.Options
 
 NODE id=matrix/neo/internal/agent.Options#Consolidator kind=field
-  digest=b3:ac497046219452cb3fcbe3851ea7dd1fc360a71a8701c2d2e0f122a2828c0881 file=neo/internal/agent/agent.go range=301:301 lang=go exported=true byte_range=14796:14821
+  digest=b3:ac497046219452cb3fcbe3851ea7dd1fc360a71a8701c2d2e0f122a2828c0881 file=neo/internal/agent/agent.go range=300:300 lang=go exported=true byte_range=14786:14811
   sig=agent.Consolidator
 EDGES
   ^contains=matrix/neo/internal/agent.Options
 
 NODE id=matrix/neo/internal/agent.Options#ConvID kind=field
-  digest=b3:3fa717c5ee02301a6357ac08471356df99b718d51d5a8fe575e08947bcaa62ed file=neo/internal/agent/agent.go range=332:334 lang=go exported=true byte_range=16534:16680
+  digest=b3:3fa717c5ee02301a6357ac08471356df99b718d51d5a8fe575e08947bcaa62ed file=neo/internal/agent/agent.go range=331:333 lang=go exported=true byte_range=16524:16670
   sig=string
   doc=ConvID is the conversation this agent serves; stamped on the per-turn\nattestation IntentID for audit. Empty on the CLI path.
 EDGES
   ^contains=matrix/neo/internal/agent.Options
 
 NODE id=matrix/neo/internal/agent.Options#Inbox kind=field
-  digest=b3:019d636a40d8895d1aa5a4cb3cc6fec7ebc76ba51aa434652eabf2bf1909cf64 file=neo/internal/agent/agent.go range=365:368 lang=go exported=true byte_range=18432:18682
+  digest=b3:019d636a40d8895d1aa5a4cb3cc6fec7ebc76ba51aa434652eabf2bf1909cf64 file=neo/internal/agent/agent.go range=364:367 lang=go exported=true byte_range=18422:18672
   sig=func() []string
   doc=Inbox, when set, returns user messages queued while a turn is in flight\n(mid-task messages sent without interrupting). The loop folds them into\nthe transcript at each tool-call boundary (F5). nil disables (CLI path).
 EDGES
   ^contains=matrix/neo/internal/agent.Options
 
 NODE id=matrix/neo/internal/agent.Options#Interview kind=field
-  digest=b3:ab0d750bd8525ade7c4dc45b8e7cc38c4e72e8ae4854ff8963e48b04711667c4 file=neo/internal/agent/agent.go range=354:360 lang=go exported=true byte_range=17805:18264
+  digest=b3:ab0d750bd8525ade7c4dc45b8e7cc38c4e72e8ae4854ff8963e48b04711667c4 file=neo/internal/agent/agent.go range=353:359 lang=go exported=true byte_range=17795:18254
   sig=bool
   doc=Interview marks a personalization-interview conversation (ORACLE task\n5.3, req 12): the system prompt gains the guided-interview charter (five\nskippable question groups, one at a time, plain-language summary +\nexplicit confirmation before saving, no sensitive traits) and the agent\nadditionally advertises save_personalization_profile — the ONLY surface\nthat tool is advertised on. Set by NewInterview, never directly.
 EDGES
   ^contains=matrix/neo/internal/agent.Options
 
 NODE id=matrix/neo/internal/agent.Options#InterviewExisting kind=field
-  digest=b3:cb18f7b0b953f2ba9dfbd10190b2a3c995dd0f9fea228d3751598fa0c838161e file=neo/internal/agent/agent.go range=361:363 lang=go exported=true byte_range=18266:18429
+  digest=b3:cb18f7b0b953f2ba9dfbd10190b2a3c995dd0f9fea228d3751598fa0c838161e file=neo/internal/agent/agent.go range=360:362 lang=go exported=true byte_range=18256:18419
   sig=string
   doc=InterviewExisting is the rendered existing-answers block a REPEAT\ninterview re-enters with (req 12.1); empty on a first interview.
 EDGES
   ^contains=matrix/neo/internal/agent.Options
 
 NODE id=matrix/neo/internal/agent.Options#Main kind=field
-  digest=b3:7d1714193bfdb0aee63f90d7d5d8bdfa4a222ce1843c99c9b4076e32e6913bf0 file=neo/internal/agent/agent.go range=296:296 lang=go exported=true byte_range=14552:14576
+  digest=b3:7d1714193bfdb0aee63f90d7d5d8bdfa4a222ce1843c99c9b4076e32e6913bf0 file=neo/internal/agent/agent.go range=295:295 lang=go exported=true byte_range=14542:14566
   sig=*llm.Client
 EDGES
   ^contains=matrix/neo/internal/agent.Options
 
 NODE id=matrix/neo/internal/agent.Options#MemoryObserver kind=field
-  digest=b3:c7483649be35934c82f0846b967c69afb3f4ff838db7dfc07ee29c77ee73fc4f file=neo/internal/agent/agent.go range=309:312 lang=go exported=true byte_range=15177:15438
+  digest=b3:c7483649be35934c82f0846b967c69afb3f4ff838db7dfc07ee29c77ee73fc4f file=neo/internal/agent/agent.go range=308:311 lang=go exported=true byte_range=15167:15428
   sig=agent.MemoryObserver
   doc=MemoryObserver receives this turn's continuous-memory activation summary\n(durable story-so-far + coarse timeline) so the harness can surface the\nmemory Neo carries to the user (continuous-memory task 7.1). nil discards.
 EDGES
   ^contains=matrix/neo/internal/agent.Options
 
 NODE id=matrix/neo/internal/agent.Options#Observer kind=field
-  digest=b3:ec45a45036db8a03040ee030089ec829b9180f0524237f17451d95d5d3ff7d72 file=neo/internal/agent/agent.go range=303:303 lang=go exported=true byte_range=14945:14970
+  digest=b3:ec45a45036db8a03040ee030089ec829b9180f0524237f17451d95d5d3ff7d72 file=neo/internal/agent/agent.go range=302:302 lang=go exported=true byte_range=14935:14960
   sig=agent.ToolObserver
 EDGES
   ^contains=matrix/neo/internal/agent.Options
 
 NODE id=matrix/neo/internal/agent.Options#Pager kind=field
-  digest=b3:dc48d0f6d593cfd17b9552187975056929de0abb4f23f1741f358857359c4e02 file=neo/internal/agent/agent.go range=299:299 lang=go exported=true byte_range=14745:14771
+  digest=b3:dc48d0f6d593cfd17b9552187975056929de0abb4f23f1741f358857359c4e02 file=neo/internal/agent/agent.go range=298:298 lang=go exported=true byte_range=14735:14761
   sig=*memory.Pager
 EDGES
   ^contains=matrix/neo/internal/agent.Options
 
 NODE id=matrix/neo/internal/agent.Options#Persona kind=field
-  digest=b3:abfa263e961bb890719dd41115da5075651a257bc5aa6121c78db7c8c2d058f1 file=neo/internal/agent/agent.go range=314:316 lang=go exported=true byte_range=15441:15577
+  digest=b3:abfa263e961bb890719dd41115da5075651a257bc5aa6121c78db7c8c2d058f1 file=neo/internal/agent/agent.go range=313:315 lang=go exported=true byte_range=15431:15567
   sig=string
   doc=Persona frames this as a task-scoped sub-agent with a specific role\n(empty = the top-level conversational agent).
 EDGES
   ^contains=matrix/neo/internal/agent.Options
 
 NODE id=matrix/neo/internal/agent.Options#Recaller kind=field
-  digest=b3:55a3bed77706e3d071eed9d7cde73ab1b57f97fbba010ec734c33b64de05636f file=neo/internal/agent/agent.go range=302:302 lang=go exported=true byte_range=14858:14883
+  digest=b3:55a3bed77706e3d071eed9d7cde73ab1b57f97fbba010ec734c33b64de05636f file=neo/internal/agent/agent.go range=301:301 lang=go exported=true byte_range=14848:14873
   sig=agent.ConvRecaller
 EDGES
   ^contains=matrix/neo/internal/agent.Options
 
 NODE id=matrix/neo/internal/agent.Options#Reporter kind=field
-  digest=b3:c0ffee15b3c22596340a052c4df40250a27ab1e742ced57c021ddd7daa73572b file=neo/internal/agent/agent.go range=300:300 lang=go exported=true byte_range=14773:14794
+  digest=b3:c0ffee15b3c22596340a052c4df40250a27ab1e742ced57c021ddd7daa73572b file=neo/internal/agent/agent.go range=299:299 lang=go exported=true byte_range=14763:14784
   sig=agent.Reporter
 EDGES
   ^contains=matrix/neo/internal/agent.Options
 
 NODE id=matrix/neo/internal/agent.Options#RestrictTools kind=field
-  digest=b3:92af175c3e18b8da8b2a5117b7c5eb64792b981a31d562555f554e15222e3341 file=neo/internal/agent/agent.go range=335:339 lang=go exported=true byte_range=16682:16964
+  digest=b3:92af175c3e18b8da8b2a5117b7c5eb64792b981a31d562555f554e15222e3341 file=neo/internal/agent/agent.go range=334:338 lang=go exported=true byte_range=16672:16954
   sig=bool
   doc=RestrictTools advertises the SUB-AGENT tool surface (full Natural set,\nminus core_execute / memory_recall / spawn_subagents) instead of the\nfull one. Set for sub-agents so money stays with the parent and a\nsub-agent can't spawn its own sub-agents.
 EDGES
   ^contains=matrix/neo/internal/agent.Options
 
 NODE id=matrix/neo/internal/agent.Options#SelfModel kind=field
-  digest=b3:2c8a95f06a698710f0042f2afc4eb87e3fe9c8fe0dd12c4276156e6c8af1b6e5 file=neo/internal/agent/agent.go range=323:331 lang=go exported=true byte_range=15944:16532
+  digest=b3:2c8a95f06a698710f0042f2afc4eb87e3fe9c8fe0dd12c4276156e6c8af1b6e5 file=neo/internal/agent/agent.go range=322:330 lang=go exported=true byte_range=15934:16522
   sig=string
   doc=SelfModel is the shared self-model a sub-agent INHERITS from the agent that\nspawned it (self-model task 4.3, req.9.1): a compact rendering of the\nstructural self-summary plus the relevant how-I-fail patterns, injected into\nthe sub-agent's charter so it acts as the SAME mind (Neo) on a scoped slice\n— knowing how it is built and how it tends to fail — rather than a blank\nhelper. Empty on the top-level agent (which carries its self-model through\nits own memory surface) and on any sub-agent spawned before the self-model\nis populated.
 EDGES
   ^contains=matrix/neo/internal/agent.Options
 
 NODE id=matrix/neo/internal/agent.Options#Tools kind=field
-  digest=b3:d5e888974603dbc63ac2737cf1e26889b62a836bb98af5d4e8ec4b2b04a68c6f file=neo/internal/agent/agent.go range=298:298 lang=go exported=true byte_range=14716:14743
+  digest=b3:d5e888974603dbc63ac2737cf1e26889b62a836bb98af5d4e8ec4b2b04a68c6f file=neo/internal/agent/agent.go range=297:297 lang=go exported=true byte_range=14706:14733
   sig=*tools.Manager
 EDGES
   ^contains=matrix/neo/internal/agent.Options
@@ -1833,13 +1833,13 @@ EDGES
   ^defines=matrix/neo/internal/agent/reporter.go
 
 NODE id=matrix/neo/internal/agent.ToolEnd kind=const
-  digest=b3:3c8eaaa55443d5f189d63cdbd98c85756313a4902b78d39e79229d41f730eca7 file=neo/internal/agent/agent.go range=115:115 lang=go exported=true byte_range=5720:5747
+  digest=b3:3c8eaaa55443d5f189d63cdbd98c85756313a4902b78d39e79229d41f730eca7 file=neo/internal/agent/agent.go range=114:114 lang=go exported=true byte_range=5710:5737
   sig=agent.ToolPhase
 EDGES
   ^defines=matrix/neo/internal/agent/agent.go
 
 NODE id=matrix/neo/internal/agent.ToolEvent kind=type
-  digest=b3:d9d4299e0edb44464cd01e6d2c0826ed092450447f37007713af379113d7ac9a file=neo/internal/agent/agent.go range=74:106 lang=go exported=true byte_range=3363:5427
+  digest=b3:d9d4299e0edb44464cd01e6d2c0826ed092450447f37007713af379113d7ac9a file=neo/internal/agent/agent.go range=73:105 lang=go exported=true byte_range=3353:5417
   sig=type ToolEvent struct {\n	ID		string			// tool-call id — stable across the start/end pair so the UI updates one step\n	Name		string			// function name dispatched (e.g. "web-search__web_search")\n	Args		map[string]interface{}	// parsed call arguments\n	Result		string			// tool result content (raw text/JSON the tool returned); empty at start\n	IsErr		bool			// the tool reported an error result\n	FailureClass	string			// normalized failure layer; empty on success/start\n	Phase		ToolPhase		// start (dispatched, no result yet) or end (completed)\n\n	// ScreenshotURL is the out-of-band /media URL of a page still captured for\n	// this call — either the image a browser_take_screenshot returned, or the\n	// deterministic auto-capture fired after a view-changing browser action\n	// (BROWSER-FILMSTRIP). It NEVER enters the model transcript (that stays a\n	// terse placeholder); it rides only this observer event so the surface can\n	// render the browsing filmstrip. Empty for non-browser / non-captured calls.\n	ScreenshotURL	string\n\n	// Live file-typing channel (NEO-WORKBENCH, Phase==ToolStream only): while\n	// the model is still GENERATING a write_file call, decoded fragments of the\n	// file content stream out so an open editor renders Neo typing. StreamPath\n	// is the target file, StreamDelta the next decoded content fragment, and\n	// StreamOffset the number of decoded bytes that preceded it (gap/order\n	// detection). Best-effort and bounded: a dropped or capped stream degrades\n	// to the final ToolEnd state, never a corrupted buffer.\n	StreamPath	string\n	StreamDelta	string\n	StreamOffset	int\n}
   doc=ToolEvent is a single observed tool call and its result, surfaced to the\nharness so the product can SHOW THE WORK — e.g. render live web-search\nsnippets and source cards, or "fetched <url>" activity. This is the\ntransparency differentiator: users see the real evidence behind an answer,\nnot just a synthesized paragraph.
 EDGES
@@ -1847,95 +1847,95 @@ EDGES
   ^defines=matrix/neo/internal/agent/agent.go
 
 NODE id=matrix/neo/internal/agent.ToolEvent#Args kind=field
-  digest=b3:eaca08db1228ebbe969410111176bad6b8b5633d61fca96d62ceff15a7416c88 file=neo/internal/agent/agent.go range=82:82 lang=go exported=true byte_range=3940:3975
+  digest=b3:eaca08db1228ebbe969410111176bad6b8b5633d61fca96d62ceff15a7416c88 file=neo/internal/agent/agent.go range=81:81 lang=go exported=true byte_range=3930:3965
   sig=map[string]interface{}
 EDGES
   ^contains=matrix/neo/internal/agent.ToolEvent
 
 NODE id=matrix/neo/internal/agent.ToolEvent#FailureClass kind=field
-  digest=b3:e0693efbff7e06fd802a7eea3ed5a99c14369ec0d46d73e358ea8615394c9181 file=neo/internal/agent/agent.go range=85:85 lang=go exported=true byte_range=4186:4205
+  digest=b3:e0693efbff7e06fd802a7eea3ed5a99c14369ec0d46d73e358ea8615394c9181 file=neo/internal/agent/agent.go range=84:84 lang=go exported=true byte_range=4176:4195
   sig=string
 EDGES
   ^contains=matrix/neo/internal/agent.ToolEvent
 
 NODE id=matrix/neo/internal/agent.ToolEvent#ID kind=field
-  digest=b3:a74028411abba5ddf36d594b57611e275176ed5e0e26949d71c51f3fb531ff5d file=neo/internal/agent/agent.go range=80:80 lang=go exported=true byte_range=3726:3745
+  digest=b3:a74028411abba5ddf36d594b57611e275176ed5e0e26949d71c51f3fb531ff5d file=neo/internal/agent/agent.go range=79:79 lang=go exported=true byte_range=3716:3735
   sig=string
 EDGES
   ^contains=matrix/neo/internal/agent.ToolEvent
 
 NODE id=matrix/neo/internal/agent.ToolEvent#IsErr kind=field
-  digest=b3:b7e4a8fe3ff6eb3e41a8ae09a74f2235cb985928bf7dfb7140170f023d906e47 file=neo/internal/agent/agent.go range=84:84 lang=go exported=true byte_range=4112:4129
+  digest=b3:b7e4a8fe3ff6eb3e41a8ae09a74f2235cb985928bf7dfb7140170f023d906e47 file=neo/internal/agent/agent.go range=83:83 lang=go exported=true byte_range=4102:4119
   sig=bool
 EDGES
   ^contains=matrix/neo/internal/agent.ToolEvent
 
 NODE id=matrix/neo/internal/agent.ToolEvent#Name kind=field
-  digest=b3:36c6cdc580cb13874fe8e5a8748f59f4af12da40ec9bef29b2539bb26accf87c file=neo/internal/agent/agent.go range=81:81 lang=go exported=true byte_range=3843:3862
+  digest=b3:36c6cdc580cb13874fe8e5a8748f59f4af12da40ec9bef29b2539bb26accf87c file=neo/internal/agent/agent.go range=80:80 lang=go exported=true byte_range=3833:3852
   sig=string
 EDGES
   ^contains=matrix/neo/internal/agent.ToolEvent
 
 NODE id=matrix/neo/internal/agent.ToolEvent#Phase kind=field
-  digest=b3:28bd1e87c9281c53e5309a4fa2fc91376fe7ed14b571259ac175c368025893ae file=neo/internal/agent/agent.go range=86:86 lang=go exported=true byte_range=4275:4297
+  digest=b3:28bd1e87c9281c53e5309a4fa2fc91376fe7ed14b571259ac175c368025893ae file=neo/internal/agent/agent.go range=85:85 lang=go exported=true byte_range=4265:4287
   sig=agent.ToolPhase
 EDGES
   ^contains=matrix/neo/internal/agent.ToolEvent
 
 NODE id=matrix/neo/internal/agent.ToolEvent#Result kind=field
-  digest=b3:4a11ab684d2f57a69258b0f729e1f3098795f5baacd3134fb84188c5d824da94 file=neo/internal/agent/agent.go range=83:83 lang=go exported=true byte_range=4002:4021
+  digest=b3:4a11ab684d2f57a69258b0f729e1f3098795f5baacd3134fb84188c5d824da94 file=neo/internal/agent/agent.go range=82:82 lang=go exported=true byte_range=3992:4011
   sig=string
 EDGES
   ^contains=matrix/neo/internal/agent.ToolEvent
 
 NODE id=matrix/neo/internal/agent.ToolEvent#ScreenshotURL kind=field
-  digest=b3:7d4f7c6f0fdfe3d02f2406dd26b9cc63b21ae64251f30121911207104ef9a63d file=neo/internal/agent/agent.go range=88:94 lang=go exported=true byte_range=4369:4850
+  digest=b3:7d4f7c6f0fdfe3d02f2406dd26b9cc63b21ae64251f30121911207104ef9a63d file=neo/internal/agent/agent.go range=87:93 lang=go exported=true byte_range=4359:4840
   sig=string
   doc=ScreenshotURL is the out-of-band /media URL of a page still captured for\nthis call — either the image a browser_take_screenshot returned, or the\ndeterministic auto-capture fired after a view-changing browser action\n(BROWSER-FILMSTRIP). It NEVER enters the model transcript (that stays a\nterse placeholder); it rides only this observer event so the surface can\nrender the browsing filmstrip. Empty for non-browser / non-captured calls.
 EDGES
   ^contains=matrix/neo/internal/agent.ToolEvent
 
 NODE id=matrix/neo/internal/agent.ToolEvent#StreamDelta kind=field
-  digest=b3:bc7e1e2c15df39c3bf483a41efe36a5caba84f38e6146e1674483e019102b2c3 file=neo/internal/agent/agent.go range=104:104 lang=go exported=true byte_range=5388:5407
+  digest=b3:bc7e1e2c15df39c3bf483a41efe36a5caba84f38e6146e1674483e019102b2c3 file=neo/internal/agent/agent.go range=103:103 lang=go exported=true byte_range=5378:5397
   sig=string
 EDGES
   ^contains=matrix/neo/internal/agent.ToolEvent
 
 NODE id=matrix/neo/internal/agent.ToolEvent#StreamOffset kind=field
-  digest=b3:cd36f395ce3f4daef47153971e770241f55ebd6f7dd83986912177812694ed56 file=neo/internal/agent/agent.go range=105:105 lang=go exported=true byte_range=5409:5425
+  digest=b3:cd36f395ce3f4daef47153971e770241f55ebd6f7dd83986912177812694ed56 file=neo/internal/agent/agent.go range=104:104 lang=go exported=true byte_range=5399:5415
   sig=int
 EDGES
   ^contains=matrix/neo/internal/agent.ToolEvent
 
 NODE id=matrix/neo/internal/agent.ToolEvent#StreamPath kind=field
-  digest=b3:94be1873552063679870fdc44a1d2297b2f9ffa571304ccb4624e11f86e3b5c3 file=neo/internal/agent/agent.go range=96:103 lang=go exported=true byte_range=4853:5386
+  digest=b3:94be1873552063679870fdc44a1d2297b2f9ffa571304ccb4624e11f86e3b5c3 file=neo/internal/agent/agent.go range=95:102 lang=go exported=true byte_range=4843:5376
   sig=string
   doc=Live file-typing channel (NEO-WORKBENCH, Phase==ToolStream only): while\nthe model is still GENERATING a write_file call, decoded fragments of the\nfile content stream out so an open editor renders Neo typing. StreamPath\nis the target file, StreamDelta the next decoded content fragment, and\nStreamOffset the number of decoded bytes that preceded it (gap/order\ndetection). Best-effort and bounded: a dropped or capped stream degrades\nto the final ToolEnd state, never a corrupted buffer.
 EDGES
   ^contains=matrix/neo/internal/agent.ToolEvent
 
 NODE id=matrix/neo/internal/agent.ToolObserver kind=type
-  digest=b3:691f540eb2409829ede0c943746248cf88924cbf8d94ed76de78e76cce495b1b file=neo/internal/agent/agent.go range=123:126 lang=go exported=true byte_range=6045:6292
+  digest=b3:691f540eb2409829ede0c943746248cf88924cbf8d94ed76de78e76cce495b1b file=neo/internal/agent/agent.go range=122:125 lang=go exported=true byte_range=6035:6282
   sig=type ToolObserver func(ToolEvent)
   doc=ToolObserver receives every tool result as it happens. Optional; nil\ndisables surfacing. The harness (CLI or SSE server) decides how to render —\nthe agent loop stays oblivious to the presentation layer.
 EDGES
   ^defines=matrix/neo/internal/agent/agent.go
 
 NODE id=matrix/neo/internal/agent.ToolPhase kind=type
-  digest=b3:3854de775c0a9320de0dc292550f635cfa6841c297987a231bdbcf784b9d5c31 file=neo/internal/agent/agent.go range=108:111 lang=go exported=true byte_range=5429:5678
+  digest=b3:3854de775c0a9320de0dc292550f635cfa6841c297987a231bdbcf784b9d5c31 file=neo/internal/agent/agent.go range=107:110 lang=go exported=true byte_range=5419:5668
   sig=type ToolPhase string
   doc=ToolPhase distinguishes the two observer callbacks for one tool call: a\nstart (so the surface can paint a live "running" viewport immediately) and\nan end (the result lands). The harness correlates them by ToolEvent.ID.
 EDGES
   ^defines=matrix/neo/internal/agent/agent.go
 
 NODE id=matrix/neo/internal/agent.ToolStart kind=const
-  digest=b3:53252e31124e4018b4aaa6603bd9c9ce4166b7f5913c5824083caf482756b166 file=neo/internal/agent/agent.go range=114:114 lang=go exported=true byte_range=5689:5718
+  digest=b3:53252e31124e4018b4aaa6603bd9c9ce4166b7f5913c5824083caf482756b166 file=neo/internal/agent/agent.go range=113:113 lang=go exported=true byte_range=5679:5708
   sig=agent.ToolPhase
 EDGES
   ^defines=matrix/neo/internal/agent/agent.go
 
 NODE id=matrix/neo/internal/agent.ToolStream kind=const
-  digest=b3:622caddb29014fb536c12cd5bd71b568c0d71beb5704022e55e04a3a4ff8d0ee file=neo/internal/agent/agent.go range=116:120 lang=go exported=true byte_range=5749:6041
+  digest=b3:622caddb29014fb536c12cd5bd71b568c0d71beb5704022e55e04a3a4ff8d0ee file=neo/internal/agent/agent.go range=115:119 lang=go exported=true byte_range=5739:6031
   sig=agent.ToolPhase
   doc=ToolStream is the mid-flight live-typing fragment for a file write the\nmodel is still generating (StreamPath/StreamDelta/StreamOffset). It fires\nBEFORE the call's ToolStart (the model hasn't finished the call yet) and\nnever carries Args/Result.
 EDGES
@@ -1976,7 +1976,7 @@ EDGES
   ^defines=matrix/neo/internal/agent/cassandra.go
 
 NODE id=matrix/neo/internal/agent.backoff kind=func
-  digest=b3:8492109ac115e2ce1e8751f27d21b88642ea96c23e19aafcdf6a5903096fd652 file=neo/internal/agent/agent.go range=2097:2112 lang=go exported=false byte_range=93242:93657
+  digest=b3:8492109ac115e2ce1e8751f27d21b88642ea96c23e19aafcdf6a5903096fd652 file=neo/internal/agent/agent.go range=2075:2090 lang=go exported=false byte_range=92189:92604
   sig=func backoff(ctx context.Context, attempt int) bool
   doc=backoff sleeps a bounded, attempt-scaled interval, honoring ctx\ncancellation. Returns false if the context was canceled during the wait.
 EDGES
@@ -2011,7 +2011,7 @@ EDGES
   ^defines=matrix/neo/internal/agent/cassandra.go
 
 NODE id=matrix/neo/internal/agent.batchSignature kind=func
-  digest=b3:716a10da0a6d838c9df63e5ace05f4dc78a173769080ef14dd36307cb3264a16 file=neo/internal/agent/agent.go range=1994:2001 lang=go exported=false byte_range=89786:90032
+  digest=b3:716a10da0a6d838c9df63e5ace05f4dc78a173769080ef14dd36307cb3264a16 file=neo/internal/agent/agent.go range=1972:1979 lang=go exported=false byte_range=88733:88979
   sig=func batchSignature(calls []llm.ToolCall) string
 EDGES
   ^defines=matrix/neo/internal/agent/agent.go
@@ -2325,14 +2325,14 @@ EDGES
   ^defines=matrix/neo/internal/agent/closechain.go
 
 NODE id=matrix/neo/internal/agent.collectSurfaced kind=func
-  digest=b3:4032b3c533a029a275c4e534373fa8e42f2d6d178f28a492ab9c7aedb4a12817 file=neo/internal/agent/agent.go range=1304:1320 lang=go exported=false byte_range=60847:61460
+  digest=b3:4032b3c533a029a275c4e534373fa8e42f2d6d178f28a492ab9c7aedb4a12817 file=neo/internal/agent/agent.go range=1282:1298 lang=go exported=false byte_range=59794:60407
   sig=func collectSurfaced(set map[string]struct{}, retrieved []memory.Snippet, procedural []memory.Pattern)
   doc=collectSurfaced records the cortex URIs injected into this turn so the loop\ncan attest them as USED on a successful completion — the cortex usage-salience\n+ EMA learning signal. Accumulates across the opening fault and every\nmid-turn refault (a set, so re-surfacing across refaults isn't double-counted\nwithin the turn).
 EDGES
   ^defines=matrix/neo/internal/agent/agent.go
 
 NODE id=matrix/neo/internal/agent.collectSurfacedSnips kind=func
-  digest=b3:21d2f78be9937450c2a41ff4710e3ed868951d3068ae89ba66ebee20d9c66e4d file=neo/internal/agent/agent.go range=1322:1332 lang=go exported=false byte_range=61462:61934
+  digest=b3:21d2f78be9937450c2a41ff4710e3ed868951d3068ae89ba66ebee20d9c66e4d file=neo/internal/agent/agent.go range=1300:1310 lang=go exported=false byte_range=60409:60881
   sig=func collectSurfacedSnips(set map[string]memory.Snippet, retrieved []memory.Snippet)
   doc=collectSurfacedSnips records the retrieved snippets (URI -> text/type) so the\ncompletion's rejection gate can score them for off-topic relevance. Keyed by\nURI so re-surfacing across refaults dedups within the turn. Patterns are\nintentionally excluded: they are coverage-gated and never penalized.
 EDGES
@@ -2346,7 +2346,7 @@ EDGES
   ^defines=matrix/neo/internal/agent/payload.go
 
 NODE id=matrix/neo/internal/agent.dedupStateTouching kind=func
-  digest=b3:1bfebd52d5d97b12634f8ea2c1bcfa5c9757e406af24f5f022366cdcff51b967 file=neo/internal/agent/agent.go range=1970:1992 lang=go exported=false byte_range=89025:89784
+  digest=b3:1bfebd52d5d97b12634f8ea2c1bcfa5c9757e406af24f5f022366cdcff51b967 file=neo/internal/agent/agent.go range=1948:1970 lang=go exported=false byte_range=87972:88731
   sig=func dedupStateTouching(calls []llm.ToolCall) []int
   doc=dedupStateTouching returns, for each call index, the index of an EARLIER call\nin the same batch it is an equivalent duplicate of (-1 when it is canonical\nor not a dedup candidate). Only non-idempotent state-touching calls are\ndeduped; independent reversible calls are always -1 so they keep dispatching\nconcurrently. The canonical (first) occurrence runs once and the duplicates\njoin its result.
 EDGES
@@ -2373,7 +2373,7 @@ EDGES
   ^defines=matrix/neo/internal/agent/voice.go
 
 NODE id=matrix/neo/internal/agent.effectiveBudgetSignals kind=type
-  digest=b3:b3ff115480d4da3e0af1f7a4a875f22d131cf175c5025876ce09301a3d704cd6 file=neo/internal/agent/agent.go range=515:532 lang=go exported=false byte_range=24736:25734
+  digest=b3:b3ff115480d4da3e0af1f7a4a875f22d131cf175c5025876ce09301a3d704cd6 file=neo/internal/agent/agent.go range=514:531 lang=go exported=false byte_range=24726:25724
   sig=type effectiveBudgetSignals struct {\n	// step is the current loop iteration index (0-based).\n	step	int\n	// distinctTools is the number of distinct tool names dispatched so far\n	// this turn. 0 or 1 = simple turn; >1 signals multi-step breadth.\n	distinctTools	int\n	// stallRepeats is the current no-progress repeat count (how many\n	// consecutive identical batches have been seen). Not used to scale the\n	// budget UP — a stalling turn should terminate, not get more room —\n	// but tracked so the signal bundle is self-contained for observability.\n	stallRepeats	int\n}
   doc=effectiveBudgetSignals carries the observable turn-complexity signals the\nadaptive step-budget computation reads. It is populated by the Chat loop as\nthe turn progresses. The primary signal is distinctTools — the count of\nDIFFERENT tool names dispatched so far — which proxies turn breadth: a turn\nusing one tool repeatedly is simple; a turn that fans across many tools is\ncomplex and warrants more steps.
 EDGES
@@ -2381,21 +2381,21 @@ EDGES
   ^defines=matrix/neo/internal/agent/agent.go
 
 NODE id=matrix/neo/internal/agent.effectiveBudgetSignals#distinctTools kind=field
-  digest=b3:c72116299b52b56c13a2ac480473374e20e249d07e1ebd6bf8f1ce6171863125 file=neo/internal/agent/agent.go range=524:526 lang=go exported=false byte_range=25268:25426
+  digest=b3:c72116299b52b56c13a2ac480473374e20e249d07e1ebd6bf8f1ce6171863125 file=neo/internal/agent/agent.go range=523:525 lang=go exported=false byte_range=25258:25416
   sig=int
   doc=distinctTools is the number of distinct tool names dispatched so far\nthis turn. 0 or 1 = simple turn; >1 signals multi-step breadth.
 EDGES
   ^contains=matrix/neo/internal/agent.effectiveBudgetSignals
 
 NODE id=matrix/neo/internal/agent.effectiveBudgetSignals#stallRepeats kind=field
-  digest=b3:0fe9803d1b5adf4439fc8ac56eeb95a6191f388022e14985f8be79b4a7793564 file=neo/internal/agent/agent.go range=527:531 lang=go exported=false byte_range=25428:25732
+  digest=b3:0fe9803d1b5adf4439fc8ac56eeb95a6191f388022e14985f8be79b4a7793564 file=neo/internal/agent/agent.go range=526:530 lang=go exported=false byte_range=25418:25722
   sig=int
   doc=stallRepeats is the current no-progress repeat count (how many\nconsecutive identical batches have been seen). Not used to scale the\nbudget UP — a stalling turn should terminate, not get more room —\nbut tracked so the signal bundle is self-contained for observability.
 EDGES
   ^contains=matrix/neo/internal/agent.effectiveBudgetSignals
 
 NODE id=matrix/neo/internal/agent.effectiveBudgetSignals#step kind=field
-  digest=b3:7e30d5125376cc64f78855ea7b76768dc06836d253c8b82699a0aea02452f6b0 file=neo/internal/agent/agent.go range=522:523 lang=go exported=false byte_range=25202:25266
+  digest=b3:7e30d5125376cc64f78855ea7b76768dc06836d253c8b82699a0aea02452f6b0 file=neo/internal/agent/agent.go range=521:522 lang=go exported=false byte_range=25192:25256
   sig=int
   doc=step is the current loop iteration index (0-based).
 EDGES
@@ -2528,20 +2528,20 @@ EDGES
   ^defines=matrix/neo/internal/agent/prediction.go
 
 NODE id=matrix/neo/internal/agent.estimateMessagesTokens kind=func
-  digest=b3:2e4e41d65e75e53140ab25abaa8ab68c50d2e4ca0db4eabfe18ece085e609df5 file=neo/internal/agent/agent.go range=2083:2095 lang=go exported=false byte_range=92747:93240
+  digest=b3:2e4e41d65e75e53140ab25abaa8ab68c50d2e4ca0db4eabfe18ece085e609df5 file=neo/internal/agent/agent.go range=2061:2073 lang=go exported=false byte_range=91694:92187
   sig=func estimateMessagesTokens(msgs []llm.Message) int
 EDGES
   ^defines=matrix/neo/internal/agent/agent.go
 
 NODE id=matrix/neo/internal/agent.estimateToolBytes kind=func
-  digest=b3:ab71e40bcac3baddc18af0e3ca61be300a94942708b182df311590f7b9577b84 file=neo/internal/agent/agent.go range=2052:2064 lang=go exported=false byte_range=91693:92057
+  digest=b3:ab71e40bcac3baddc18af0e3ca61be300a94942708b182df311590f7b9577b84 file=neo/internal/agent/agent.go range=2030:2042 lang=go exported=false byte_range=90640:91004
   sig=func estimateToolBytes(schemas []llm.Tool) int
   doc=estimateToolBytes returns the serialized byte size of the tool schemas,\nwhich ride along on every chat request. Byte proxy for windowBytes,\ndistinct from estimateToolTokens (token proxy).
 EDGES
   ^defines=matrix/neo/internal/agent/agent.go
 
 NODE id=matrix/neo/internal/agent.estimateToolTokens kind=func
-  digest=b3:20477df6f8f3d56a994f5eedac2cb129853be0e4a00bad6be7fa90932a61cbf9 file=neo/internal/agent/agent.go range=2026:2035 lang=go exported=false byte_range=90646:90840
+  digest=b3:20477df6f8f3d56a994f5eedac2cb129853be0e4a00bad6be7fa90932a61cbf9 file=neo/internal/agent/agent.go range=2004:2013 lang=go exported=false byte_range=89593:89787
   sig=func estimateToolTokens(schemas []llm.Tool) int
 EDGES
   ^defines=matrix/neo/internal/agent/agent.go
@@ -2596,7 +2596,7 @@ EDGES
   ^defines=matrix/neo/internal/agent/gate.go
 
 NODE id=matrix/neo/internal/agent.glimpseReasoning kind=func
-  digest=b3:879ca92a0e573a13a741deece7a21be094a0e655fa0a7f898f4a4a8638f594d4 file=neo/internal/agent/agent.go range=1251:1265 lang=go exported=false byte_range=58502:59043
+  digest=b3:879ca92a0e573a13a741deece7a21be094a0e655fa0a7f898f4a4a8638f594d4 file=neo/internal/agent/agent.go range=1250:1264 lang=go exported=false byte_range=58492:59033
   sig=func glimpseReasoning(reasoning string) string
   doc=glimpseReasoning condenses a turn's chain-of-thought into a short, readable\nglimpse for the "thinking" channel: collapse whitespace, keep the leading\nsubstance, and cap the length. Returns "" when there is nothing worth\nshowing so the surface stays quiet on non-reasoning models.
 EDGES
@@ -2642,7 +2642,7 @@ EDGES
   ^defines=matrix/neo/internal/agent/prompt.go
 
 NODE id=matrix/neo/internal/agent.groundTruthFor kind=func
-  digest=b3:71b47b91c76d437b4ee886a38b17df6e5e9f4128c876eb120ecae82b24991141 file=neo/internal/agent/prompt.go range=241:246 lang=go exported=false byte_range=26010:26361
+  digest=b3:71b47b91c76d437b4ee886a38b17df6e5e9f4128c876eb120ecae82b24991141 file=neo/internal/agent/prompt.go range=243:248 lang=go exported=false byte_range=26196:26547
   sig=func groundTruthFor(name string) string
   doc=groundTruthFor renders the embedded ground truth for the configured agent\nidentity: the {{AGENT_NAME}} placeholder binds the name from config\n(MORPHEUS req.8) so the grounding can never carry a stale hardcoded name.
 EDGES
@@ -2739,7 +2739,7 @@ EDGES
   ^defines=matrix/neo/internal/agent/payload.go
 
 NODE id=matrix/neo/internal/agent.indentBlock kind=func
-  digest=b3:b14e11d3b8dba322852947f9852d02ef3121f1496c16729ef2ad674023c26a5a file=neo/internal/agent/prompt.go range=248:260 lang=go exported=false byte_range=26363:26777
+  digest=b3:b14e11d3b8dba322852947f9852d02ef3121f1496c16729ef2ad674023c26a5a file=neo/internal/agent/prompt.go range=250:262 lang=go exported=false byte_range=26549:26963
   sig=func indentBlock(s, prefix string) string
   doc=indentBlock prefixes every non-empty line of s with prefix, so an inherited\nmulti-line self-model block nests cleanly under its bullet in a sub-agent's\ncharter.
 EDGES
@@ -2774,7 +2774,7 @@ EDGES
   ^defines=matrix/neo/internal/agent/livetype.go
 
 NODE id=matrix/neo/internal/agent.isViewChangingBrowser kind=func
-  digest=b3:aa9a5c4cf5b285d92ce4db6a7abb63f1a5398e3292f0746e10992324ac362dbd file=neo/internal/agent/agent.go range=1878:1900 lang=go exported=false byte_range=85595:86617
+  digest=b3:aa9a5c4cf5b285d92ce4db6a7abb63f1a5398e3292f0746e10992324ac362dbd file=neo/internal/agent/agent.go range=1856:1878 lang=go exported=false byte_range=84542:85564
   sig=func isViewChangingBrowser(name string) bool
   doc=isViewChangingBrowser reports whether a browser tool changed what the page\nshows — a navigation, a back, a click, or a form submit — the moments a fresh\nstill makes the filmstrip feel live (BROWSER-FILMSTRIP req.3 ac_1). Read-only\nbrowser tools (snapshot, console/network reads, waits) and the screenshot\ntool itself are excluded so they neither double-capture nor spend the cap.
 EDGES
@@ -2806,7 +2806,7 @@ EDGES
   ^defines=matrix/neo/internal/agent/cassandra.go
 
 NODE id=matrix/neo/internal/agent.lastAssistantText kind=func
-  digest=b3:27fabd621068fbb426bcddc6740ad061c2486de0ccc4deeadc44d53fe996c06d file=neo/internal/agent/agent.go range=1226:1245 lang=go exported=false byte_range=57813:58326
+  digest=b3:27fabd621068fbb426bcddc6740ad061c2486de0ccc4deeadc44d53fe996c06d file=neo/internal/agent/agent.go range=1225:1244 lang=go exported=false byte_range=57803:58316
   sig=func lastAssistantText(working []llm.Message, maxLen int) string
   doc=lastAssistantText returns the most recent non-empty assistant content in\nthe working transcript, truncated to maxLen bytes — the freshest signal of\nwhat the agent is currently pursuing.
 EDGES
@@ -3041,7 +3041,7 @@ EDGES
   ^defines=matrix/neo/internal/agent/payload.go
 
 NODE id=matrix/neo/internal/agent.maxRequestBodyBytes kind=const
-  digest=b3:c3ac12eda87260ce44914753c286c41a8890a9a2b576c546b9d2a0c094d8ad81 file=neo/internal/agent/agent.go range=2037:2042 lang=go exported=false byte_range=90842:91207
+  digest=b3:c3ac12eda87260ce44914753c286c41a8890a9a2b576c546b9d2a0c094d8ad81 file=neo/internal/agent/agent.go range=2015:2020 lang=go exported=false byte_range=89789:90154
   sig=untyped int
   doc=maxRequestBodyBytes is the approximate serialized request-body ceiling Neo\nkeeps the outgoing window under. It sits below the provider's hard cap\n(Fireworks rejects bodies over 1,048,576 bytes with HTTP 413\n"body_too_large") with headroom for JSON structure + escaping that the byte\nestimate does not model exactly.
 EDGES
@@ -3055,14 +3055,14 @@ EDGES
   ^defines=matrix/neo/internal/agent/gate.go
 
 NODE id=matrix/neo/internal/agent.maxThinkChars kind=const
-  digest=b3:3e8c26d08e0b80d68bc58851f5aca6e8b471c42c678fb6afcfe5d9f2452c1ccc file=neo/internal/agent/agent.go range=1247:1249 lang=go exported=false byte_range=58328:58500
+  digest=b3:3e8c26d08e0b80d68bc58851f5aca6e8b471c42c678fb6afcfe5d9f2452c1ccc file=neo/internal/agent/agent.go range=1246:1248 lang=go exported=false byte_range=58318:58490
   sig=untyped int
   doc=maxThinkChars bounds the reasoning glimpse surfaced to the UI — enough to\nread the gist of the current thought, never the whole monologue.
 EDGES
   ^defines=matrix/neo/internal/agent/agent.go
 
 NODE id=matrix/neo/internal/agent.maxToolResultChars kind=const
-  digest=b3:122dcfa38d20841e6aba787894f90a4a0c9fcb9bb8aa50a9d5fa2b0fd41ea5d4 file=neo/internal/agent/agent.go range=2044:2050 lang=go exported=false byte_range=91209:91691
+  digest=b3:122dcfa38d20841e6aba787894f90a4a0c9fcb9bb8aa50a9d5fa2b0fd41ea5d4 file=neo/internal/agent/agent.go range=2022:2028 lang=go exported=false byte_range=90156:90638
   sig=untyped int
   doc=maxToolResultChars caps how much of a single tool result enters the working\ntranscript. A large fetch / file read / MCP payload appended verbatim can\nblow the provider's request-body byte cap on its own; the MCL walker bounds\ntool output for the same reason (runtime/walker.go). The full, untruncated\nresult is still handed to the observer so the product can show real\nevidence — only the model-facing transcript copy is bounded.
 EDGES
@@ -3195,13 +3195,13 @@ EDGES
   ^defines=matrix/neo/internal/agent/web_evidence.go
 
 NODE id=matrix/neo/internal/agent.normalizedRecoveryClass kind=func
-  digest=b3:9c22a049c088675a04569704124ef1ac26edd6572a4db4eba64f8ecb533c3645 file=neo/internal/agent/agent.go range=1823:1831 lang=go exported=false byte_range=83575:83867
+  digest=b3:9c22a049c088675a04569704124ef1ac26edd6572a4db4eba64f8ecb533c3645 file=neo/internal/agent/agent.go range=1801:1809 lang=go exported=false byte_range=82522:82814
   sig=func normalizedRecoveryClass(class exectool.FailureClass, retryable bool) delegate.FailureClass
 EDGES
   ^defines=matrix/neo/internal/agent/agent.go
 
 NODE id=matrix/neo/internal/agent.oneLine kind=func
-  digest=b3:8d66c772d16a164ed22d915adcb7722fc57e040bed71cbd5808340dae655fc61 file=neo/internal/agent/agent.go range=1182:1190 lang=go exported=false byte_range=56294:56536
+  digest=b3:8d66c772d16a164ed22d915adcb7722fc57e040bed71cbd5808340dae655fc61 file=neo/internal/agent/agent.go range=1181:1189 lang=go exported=false byte_range=56284:56526
   sig=func oneLine(s string) string
   doc=oneLine collapses whitespace and clamps a digest to a single readable line\nfor an error/diagnostic string.
 EDGES
@@ -3449,7 +3449,7 @@ EDGES
   ^defines=matrix/neo/internal/agent/prediction.go
 
 NODE id=matrix/neo/internal/agent.pushWindow kind=func
-  digest=b3:65d4d2a2d94683644fa08dfff33d11d77025287f812deee289c997437bc1ea79 file=neo/internal/agent/agent.go range=2017:2024 lang=go exported=false byte_range=90411:90644
+  digest=b3:65d4d2a2d94683644fa08dfff33d11d77025287f812deee289c997437bc1ea79 file=neo/internal/agent/agent.go range=1995:2002 lang=go exported=false byte_range=89358:89591
   sig=func pushWindow(win []string, sig string, max int) []string
   doc=pushWindow appends sig to the recent-signature ring, capping it at max entries.
 EDGES
@@ -3565,7 +3565,7 @@ EDGES
   ^defines=matrix/neo/internal/agent/cassandra.go
 
 NODE id=matrix/neo/internal/agent.sigInWindow kind=func
-  digest=b3:b8190d624172250d6fd864c222bd4934f0d6daee9d476df39e939fb0b4aa9913 file=neo/internal/agent/agent.go range=2007:2015 lang=go exported=false byte_range=90198:90409
+  digest=b3:b8190d624172250d6fd864c222bd4934f0d6daee9d476df39e939fb0b4aa9913 file=neo/internal/agent/agent.go range=1985:1993 lang=go exported=false byte_range=89145:89356
   sig=func sigInWindow(win []string, sig string) bool
   doc=sigInWindow reports whether sig already appears in the recent-signature window.
 EDGES
@@ -3592,14 +3592,14 @@ EDGES
   ^defines=matrix/neo/internal/agent/semantic.go
 
 NODE id=matrix/neo/internal/agent.stallWindow kind=const
-  digest=b3:1cd633be857a80fdcfe1b3374e937f9d18f23c3b499f902192cda91e43ac0e31 file=neo/internal/agent/agent.go range=2003:2005 lang=go exported=false byte_range=90034:90196
+  digest=b3:1cd633be857a80fdcfe1b3374e937f9d18f23c3b499f902192cda91e43ac0e31 file=neo/internal/agent/agent.go range=1981:1983 lang=go exported=false byte_range=88981:89143
   sig=untyped int
   doc=stallWindow bounds the recent-signature ring the cycle-aware no-progress guard\nscans to catch a rotating (A → B → A → B) spiral.
 EDGES
   ^defines=matrix/neo/internal/agent/agent.go
 
 NODE id=matrix/neo/internal/agent.stateTouchDedupKey kind=func
-  digest=b3:df242b4e0911531ab4b1f2257f63fa5fd98e2a71b1809deb73019df8aae8f1b0 file=neo/internal/agent/agent.go range=1946:1968 lang=go exported=false byte_range=87983:89023
+  digest=b3:df242b4e0911531ab4b1f2257f63fa5fd98e2a71b1809deb73019df8aae8f1b0 file=neo/internal/agent/agent.go range=1924:1946 lang=go exported=false byte_range=86930:87970
   sig=func stateTouchDedupKey(call llm.ToolCall) (string, bool)
   doc=stateTouchDedupKey returns a dedup key for a non-idempotent, state-touching\ntool call (core_execute), keyed on its RESOLVED intent so two equivalent\ncalls in one assistant batch collapse to a single run (NE-3, req 5.1/5.3).\nThe daemon mints a deterministic intent id from the prose, so two\ncore_execute calls with identical intent text would otherwise either both\nsubmit the same work or deterministically 409 against each other. Returns\n("", false) for reversible / independent calls, which always keep their\nconcurrent dispatch (req 5.2 — no latency regression for the common case).
 EDGES
@@ -3804,13 +3804,6 @@ EDGES
   ^contains=matrix/neo/internal/agent.taskGraph
   ^defines=matrix/neo/internal/agent/taskgraph.go
 
-NODE id=matrix/neo/internal/agent.theUserRe kind=var
-  digest=b3:82eab6df105895d686f11e6787274e39e8645e9ea0670eb595818b51b7231a74 file=neo/internal/agent/agent.go range=1267:1270 lang=go exported=false byte_range=59045:59328
-  sig=*regexp.Regexp
-  doc=theUserRe matches the generic third-person reference "the user" (and its\npossessive "the user's"), case-insensitive on the leading "the", with word\nboundaries so "users" (plural) and mid-word matches are left alone.
-EDGES
-  ^defines=matrix/neo/internal/agent/agent.go
-
 NODE id=matrix/neo/internal/agent.toolKind kind=func
   digest=b3:fd13ac590cb63016681befd618de1c83f1647defdb9a87da9f38c2a75d47680c file=neo/internal/agent/cassandra.go range=369:389 lang=go exported=false byte_range=17589:18366
   sig=func toolKind(name string) batchKindT
@@ -3893,7 +3886,7 @@ EDGES
   ^defines=matrix/neo/internal/agent/cassandra.go
 
 NODE id=matrix/neo/internal/agent.truncate kind=func
-  digest=b3:fa889a1906a97a6dfdd149bfff89105f3c005f9843a42f37d300e9afa306d009 file=neo/internal/agent/agent.go range=2114:2119 lang=go exported=false byte_range=93659:93754
+  digest=b3:fa889a1906a97a6dfdd149bfff89105f3c005f9843a42f37d300e9afa306d009 file=neo/internal/agent/agent.go range=2092:2097 lang=go exported=false byte_range=92606:92701
   sig=func truncate(s string, n int) string
 EDGES
   ^defines=matrix/neo/internal/agent/agent.go
@@ -4269,9 +4262,9 @@ EDGES
   ^defines=matrix/neo/internal/agent/livetype.go
 
 NODE id=matrix/neo/internal/agent/agent.go kind=file
-  digest=b3:e52913f0456b48bff55e51da166869be9fcf1e9e75404eef2791a11425048cf5 file=neo/internal/agent/agent.go range=1:2119 lang=go exported=true
+  digest=b3:f5fba338a40d9051fc3fc3342813904b769c1f7ce836927bfef3265ec3d12615 file=neo/internal/agent/agent.go range=1:2097 lang=go exported=true
 EDGES
-  defines=matrix/neo/internal/agent.Agent,matrix/neo/internal/agent.Agent.BestEffort,matrix/neo/internal/agent.Agent.Chat,matrix/neo/internal/agent.Agent.ChatAudio,matrix/neo/internal/agent.Agent.Generation,matrix/neo/internal/agent.Agent.LastFailureClass,matrix/neo/internal/agent.Agent.Reset,matrix/neo/internal/agent.Agent.Seed,matrix/neo/internal/agent.Agent.SetGeneration,matrix/neo/internal/agent.Agent.SetSkillIndex,matrix/neo/internal/agent.Agent.SetUserProfile,matrix/neo/internal/agent.Agent.SetWorkspace,matrix/neo/internal/agent.Agent.act,matrix/neo/internal/agent.Agent.attestTurn,matrix/neo/internal/agent.Agent.budgetPct,matrix/neo/internal/agent.Agent.capExceeded,matrix/neo/internal/agent.Agent.captureViewport,matrix/neo/internal/agent.Agent.chat,matrix/neo/internal/agent.Agent.chatWithRetry,matrix/neo/internal/agent.Agent.closeTurn,matrix/neo/internal/agent.Agent.deliberate,matrix/neo/internal/agent.Agent.dispatchWithRetry,matrix/neo/internal/agent.Agent.drainInbox,matrix/neo/internal/agent.Agent.effectiveStepBudget,matrix/neo/internal/agent.Agent.escalateGuidance,matrix/neo/internal/agent.Agent.generate,matrix/neo/internal/agent.Agent.lastToolSummary,matrix/neo/internal/agent.Agent.nameReasoning,matrix/neo/internal/agent.Agent.noteBatch,matrix/neo/internal/agent.Agent.noteFailureClass,matrix/neo/internal/agent.Agent.noteNormalizedFailure,matrix/neo/internal/agent.Agent.overHardBudget,matrix/neo/internal/agent.Agent.overSoftBudget,matrix/neo/internal/agent.Agent.prepareTurn,matrix/neo/internal/agent.Agent.prepareWindow,matrix/neo/internal/agent.Agent.pushGuidance,matrix/neo/internal/agent.Agent.pushGuidanceNudge,matrix/neo/internal/agent.Agent.runToolCalls,matrix/neo/internal/agent.Agent.runToolCallsSerial,matrix/neo/internal/agent.Agent.screenshotForCall,matrix/neo/internal/agent.Agent.turnIntentID,matrix/neo/internal/agent.Agent.usedTokens,matrix/neo/internal/agent.Agent.windowBytes,matrix/neo/internal/agent.Consolidator,matrix/neo/internal/agent.ConvRecaller,matrix/neo/internal/agent.ErrIncomplete,matrix/neo/internal/agent.New,matrix/neo/internal/agent.Options,matrix/neo/internal/agent.ToolEnd,matrix/neo/internal/agent.ToolEvent,matrix/neo/internal/agent.ToolObserver,matrix/neo/internal/agent.ToolPhase,matrix/neo/internal/agent.ToolStart,matrix/neo/internal/agent.ToolStream,matrix/neo/internal/agent.backoff,matrix/neo/internal/agent.batchSignature,matrix/neo/internal/agent.collectSurfaced,matrix/neo/internal/agent.collectSurfacedSnips,matrix/neo/internal/agent.dedupStateTouching,matrix/neo/internal/agent.effectiveBudgetSignals,matrix/neo/internal/agent.estimateMessagesTokens,matrix/neo/internal/agent.estimateToolBytes,matrix/neo/internal/agent.estimateToolTokens,matrix/neo/internal/agent.glimpseReasoning,matrix/neo/internal/agent.isViewChangingBrowser,matrix/neo/internal/agent.lastAssistantText,matrix/neo/internal/agent.maxRequestBodyBytes,matrix/neo/internal/agent.maxThinkChars,matrix/neo/internal/agent.maxToolResultChars,matrix/neo/internal/agent.normalizedRecoveryClass,matrix/neo/internal/agent.oneLine,matrix/neo/internal/agent.pushWindow,matrix/neo/internal/agent.sigInWindow,matrix/neo/internal/agent.stallWindow,matrix/neo/internal/agent.stateTouchDedupKey,matrix/neo/internal/agent.theUserRe,matrix/neo/internal/agent.truncate
+  defines=matrix/neo/internal/agent.Agent,matrix/neo/internal/agent.Agent.BestEffort,matrix/neo/internal/agent.Agent.Chat,matrix/neo/internal/agent.Agent.ChatAudio,matrix/neo/internal/agent.Agent.Generation,matrix/neo/internal/agent.Agent.LastFailureClass,matrix/neo/internal/agent.Agent.Reset,matrix/neo/internal/agent.Agent.Seed,matrix/neo/internal/agent.Agent.SetGeneration,matrix/neo/internal/agent.Agent.SetSkillIndex,matrix/neo/internal/agent.Agent.SetUserProfile,matrix/neo/internal/agent.Agent.SetWorkspace,matrix/neo/internal/agent.Agent.act,matrix/neo/internal/agent.Agent.attestTurn,matrix/neo/internal/agent.Agent.budgetPct,matrix/neo/internal/agent.Agent.capExceeded,matrix/neo/internal/agent.Agent.captureViewport,matrix/neo/internal/agent.Agent.chat,matrix/neo/internal/agent.Agent.chatWithRetry,matrix/neo/internal/agent.Agent.closeTurn,matrix/neo/internal/agent.Agent.deliberate,matrix/neo/internal/agent.Agent.dispatchWithRetry,matrix/neo/internal/agent.Agent.drainInbox,matrix/neo/internal/agent.Agent.effectiveStepBudget,matrix/neo/internal/agent.Agent.escalateGuidance,matrix/neo/internal/agent.Agent.generate,matrix/neo/internal/agent.Agent.lastToolSummary,matrix/neo/internal/agent.Agent.nameReasoning,matrix/neo/internal/agent.Agent.noteBatch,matrix/neo/internal/agent.Agent.noteFailureClass,matrix/neo/internal/agent.Agent.noteNormalizedFailure,matrix/neo/internal/agent.Agent.overHardBudget,matrix/neo/internal/agent.Agent.overSoftBudget,matrix/neo/internal/agent.Agent.prepareTurn,matrix/neo/internal/agent.Agent.prepareWindow,matrix/neo/internal/agent.Agent.pushGuidance,matrix/neo/internal/agent.Agent.pushGuidanceNudge,matrix/neo/internal/agent.Agent.runToolCalls,matrix/neo/internal/agent.Agent.runToolCallsSerial,matrix/neo/internal/agent.Agent.screenshotForCall,matrix/neo/internal/agent.Agent.turnIntentID,matrix/neo/internal/agent.Agent.usedTokens,matrix/neo/internal/agent.Agent.windowBytes,matrix/neo/internal/agent.Consolidator,matrix/neo/internal/agent.ConvRecaller,matrix/neo/internal/agent.ErrIncomplete,matrix/neo/internal/agent.New,matrix/neo/internal/agent.Options,matrix/neo/internal/agent.ToolEnd,matrix/neo/internal/agent.ToolEvent,matrix/neo/internal/agent.ToolObserver,matrix/neo/internal/agent.ToolPhase,matrix/neo/internal/agent.ToolStart,matrix/neo/internal/agent.ToolStream,matrix/neo/internal/agent.backoff,matrix/neo/internal/agent.batchSignature,matrix/neo/internal/agent.collectSurfaced,matrix/neo/internal/agent.collectSurfacedSnips,matrix/neo/internal/agent.dedupStateTouching,matrix/neo/internal/agent.effectiveBudgetSignals,matrix/neo/internal/agent.estimateMessagesTokens,matrix/neo/internal/agent.estimateToolBytes,matrix/neo/internal/agent.estimateToolTokens,matrix/neo/internal/agent.glimpseReasoning,matrix/neo/internal/agent.isViewChangingBrowser,matrix/neo/internal/agent.lastAssistantText,matrix/neo/internal/agent.maxRequestBodyBytes,matrix/neo/internal/agent.maxThinkChars,matrix/neo/internal/agent.maxToolResultChars,matrix/neo/internal/agent.normalizedRecoveryClass,matrix/neo/internal/agent.oneLine,matrix/neo/internal/agent.pushWindow,matrix/neo/internal/agent.sigInWindow,matrix/neo/internal/agent.stallWindow,matrix/neo/internal/agent.stateTouchDedupKey,matrix/neo/internal/agent.truncate
   ^contains=matrix/neo/internal/agent
 
 NODE id=matrix/neo/internal/agent/automatrix.go kind=file
@@ -4419,7 +4412,7 @@ EDGES
   ^contains=matrix/neo/internal/agent
 
 NODE id=matrix/neo/internal/agent/prompt.go kind=file
-  digest=b3:e091eeff6b4f46036776449a264209bf162785943c8e95d3f28f40b4d3687a4b file=neo/internal/agent/prompt.go range=1:260 lang=go exported=true
+  digest=b3:c17fb5ade151ecd0b19ba572369307b389785503e114ceb45bb39ac3fab016de file=neo/internal/agent/prompt.go range=1:262 lang=go exported=true
 EDGES
   defines=matrix/neo/internal/agent.Agent.stableSystem,matrix/neo/internal/agent.Agent.systemPrompt,matrix/neo/internal/agent.groundTruth,matrix/neo/internal/agent.groundTruthFor,matrix/neo/internal/agent.indentBlock
   ^contains=matrix/neo/internal/agent
