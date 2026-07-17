@@ -14,6 +14,8 @@ git tags.
 
 ## [Unreleased]
 
+## [0.65.0] - 2026-07-17 — Launch readiness
+
 ### Added
 
 - **ORACLE — sealed user data + opt-in personalization** (`spec/oracle/`,
@@ -62,6 +64,23 @@ git tags.
   `act` with exactly ONE window-assembly site. Remaining: sediment deletions
   (awaiting owner YES), termination guard chain, guidance choke point,
   governor waves.
+
+### Changed
+
+- **Paxeer network surface corrected for the current chain**:
+  - Default and alternate EVM RPC endpoints now resolve to
+    `https://stats.paxscan.io`.
+  - Removed the retired Argus portfolio and PaxSpot market-data endpoints.
+  - Removed obsolete agent-economy precompile addresses and the retired
+    PECOR, Sidiora, HyperPax DEX, and perps contract registries.
+  - Removed the corresponding tools from runtime dispatch and from the Neo,
+    default, and Paxeer agent manifests so nonexistent capabilities are no
+    longer advertised.
+  - Retained direct RPC, PaxScan, price reads, wallet transfers and approvals,
+    ERC-20 transaction builders, and caller-specified contract calls.
+- **Release documentation refreshed**: the architecture and README now
+  describe the current unified Neo deployment, encrypted user-data boundary,
+  and reduced Paxeer tool surface.
 
 ## [0.5.0] - 2026-07-16 — VOICE: full-duplex speech
 
@@ -655,7 +674,8 @@ git tags.
 - Initial `research/01-foundations.md` ... `06-agents.md` chapters.
 - Canonical project state at `knowledge/matrix.kvx`.
 
-[Unreleased]: https://github.com/paxlabs-inc/matrix/compare/v0.25.0...HEAD
+[Unreleased]: https://github.com/paxlabs-inc/matrix/compare/v0.65.0...HEAD
+[0.65.0]: https://github.com/paxlabs-inc/matrix/releases/tag/v0.65.0
 [0.25.0]: https://github.com/paxlabs-inc/matrix/releases/tag/v0.25.0
 [0.24.0]: https://github.com/paxlabs-inc/matrix/releases/tag/v0.24.0
 [0.23.0]: https://github.com/paxlabs-inc/matrix/releases/tag/v0.23.0
@@ -681,4 +701,3 @@ git tags.
 [0.3.0]: https://github.com/paxlabs-inc/matrix/releases/tag/v0.3.0
 [0.2.0]: https://github.com/paxlabs-inc/matrix/releases/tag/v0.2.0
 [0.1.0]: https://github.com/paxlabs-inc/matrix/releases/tag/v0.1.0
-

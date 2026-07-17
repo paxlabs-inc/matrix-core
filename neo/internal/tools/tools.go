@@ -95,6 +95,8 @@ const TodoTool = "todo"
 // preview launcher is wired (sandbox previews configured on this daemon).
 const PreviewTool = "workspace_preview"
 
+const maxFileMutationBytes = 16 * 1024
+
 // DelegateFunc runs a prose intent through the MCL pipeline and returns its
 // verifiable outcome. Injected by the agent wiring (see internal/delegate);
 // nil until wired, in which case core_execute reports it is unavailable.
@@ -349,6 +351,9 @@ func (m *Manager) bind(spawned map[string]bool) {
 				params:     schemaToParams(schemas[te.Name]),
 				surface:    m.classifier.Classify(te.Name, te.SideEffectClass),
 			}
+			if s.Alias == "fs" && (te.Name == "write_file" || te.Name == "edit_file") {
+				hardenFileMutationTool(bt)
+			}
 			m.byFunc[fn] = bt
 			if bt.surface == Escalate {
 				m.escalated = append(m.escalated, fn)
@@ -485,6 +490,15 @@ func (m *Manager) dispatch(ctx context.Context, funcName string, args map[string
 	}
 	if m.mutation != nil && isShellMemoryMutation(bt, args) {
 		return "memory mutation through shell, curl, or cortex-shell is unavailable; use memory_mutate with an explicit typed operation and bounded target instead", "", true, tool.FailureInvocation, false, "", nil
+	}
+	if bt.alias == "fs" && (bt.name == "write_file" || bt.name == "edit_file") {
+		if size := fileMutationBytes(args); size > maxFileMutationBytes {
+			return fmt.Sprintf(
+				"file mutation payload is %d bytes; the per-call limit is %d bytes. Write an initial bounded chunk, then continue with anchored edit_file batches until the file is complete",
+				size,
+				maxFileMutationBytes,
+			), "", true, tool.FailureInvocation, false, "", nil
+		}
 	}
 	t, err := m.registry.Get(bt.uri)
 	if err != nil {
@@ -1343,6 +1357,67 @@ func schemaToParams(raw json.RawMessage) map[string]interface{} {
 		p["properties"] = map[string]interface{}{}
 	}
 	return p
+}
+
+func hardenFileMutationTool(bt *boundTool) {
+	if bt == nil {
+		return
+	}
+	bt.desc = strings.TrimSpace(bt.desc) + fmt.Sprintf(
+		" Each call is limited to %d bytes of mutation text. Build large files incrementally: write one bounded initial chunk, then append the remaining content with anchored edit_file batches.",
+		maxFileMutationBytes,
+	)
+	props, _ := bt.params["properties"].(map[string]interface{})
+	if props == nil {
+		props = map[string]interface{}{}
+		bt.params["properties"] = props
+	}
+	if bt.name == "write_file" {
+		content, _ := props["content"].(map[string]interface{})
+		if content == nil {
+			content = map[string]interface{}{"type": "string"}
+			props["content"] = content
+		}
+		content["maxLength"] = maxFileMutationBytes
+		return
+	}
+	edits, _ := props["edits"].(map[string]interface{})
+	items, _ := edits["items"].(map[string]interface{})
+	editProps, _ := items["properties"].(map[string]interface{})
+	for _, key := range []string{"oldText", "newText"} {
+		field, _ := editProps[key].(map[string]interface{})
+		if field != nil {
+			field["maxLength"] = maxFileMutationBytes
+		}
+	}
+}
+
+func fileMutationBytes(v interface{}) int {
+	switch x := v.(type) {
+	case string:
+		return len(x)
+	case []interface{}:
+		total := 0
+		for _, item := range x {
+			total += fileMutationBytes(item)
+		}
+		return total
+	case map[string]interface{}:
+		total := 0
+		for key, item := range x {
+			switch key {
+			case "content", "oldText", "newText":
+				total += fileMutationBytes(item)
+			default:
+				if key == "edits" {
+					total += fileMutationBytes(item)
+				}
+			}
+		}
+		return total
+	default:
+		return 0
+	}
 }
 
 func summarizeNonText(res *tool.Result) string {

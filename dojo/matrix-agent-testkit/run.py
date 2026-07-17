@@ -2,7 +2,7 @@
 #
 # run.py — the live-probe runner. Dispatches the Neo battery against the
 # deployed API, follows each SSE stream, grades the result, classifies any
-# failure as infra | harness | agent, and writes a JSON + a human report.
+# failure as INFRA | HARNESS | PRODUCT, and writes a JSON + a human report.
 #
 # Usage (from inside the testkit directory):
 #   MATRIX_API=<base-url> MATRIX_JWT="<bearer>" python3 run.py
@@ -48,7 +48,7 @@ INFRA_SIGNS = [
 
 
 def classify(res: RunResult, hard_failed: bool) -> str:
-    """infra | harness | agent | ok"""
+    """infra | harness | product | ok"""
     blob = f"{res.transport_error}\n{res.dispatch_body}".lower()
     # Transport / dispatch layer problems.
     if res.transport_error or res.dispatch_status not in (200, 202):
@@ -61,18 +61,38 @@ def classify(res: RunResult, hard_failed: bool) -> str:
         if res.transport_error in ("idle_timeout", "hard_timeout"):
             # Stream stalled with no terminal: agent hung (non-convergence),
             # unless literally zero events arrived (then it's infra).
-            return "agent" if res.events else "infra"
+            return "product" if res.events else "infra"
         return "harness"
     # Dispatched fine but never reached a terminal.
     if not res.had_terminal():
-        return "agent" if res.events else "infra"
+        return "product" if res.events else "infra"
     if res.terminal_status == "failed":
-        return "agent"
-    return "agent" if hard_failed else "ok"
+        return "product"
+    return "product" if hard_failed else "ok"
 
 
 def grade(res: RunResult, case: Case) -> dict:
-    checks = [c(res) for c in case.checks]
+    checks = []
+    for index, check in enumerate(case.checks):
+        try:
+            checks.append(check(res))
+        except Exception as exc:  # a broken grader is never a product failure
+            return {
+                "verdict": "HARNESS",
+                "classification": "harness",
+                "hard_failures": [],
+                "advisory_failures": [],
+                "machine_reason": {
+                    "kind": "grader_exception",
+                    "check_index": index,
+                    "error": f"{type(exc).__name__}: {exc}",
+                },
+                "checks": [
+                    {"name": c.name, "passed": c.passed, "severity": c.severity,
+                     "detail": c.detail}
+                    for c in checks
+                ],
+            }
     hard_fail = [c for c in checks if not c.passed and c.severity == "hard"]
     advisory_fail = [c for c in checks if not c.passed and c.severity == "advisory"]
     hard_failed = len(hard_fail) > 0
@@ -88,6 +108,12 @@ def grade(res: RunResult, case: Case) -> dict:
     return {
         "verdict": verdict,
         "classification": klass,
+        "machine_reason": {
+            "kind": "check_failure" if hard_fail else (
+                "transport_or_protocol" if klass in ("infra", "harness") else "none"
+            ),
+            "hard_checks": [c.name for c in hard_fail],
+        },
         "hard_failures": [c.name for c in hard_fail],
         "advisory_failures": [c.name for c in advisory_fail],
         "checks": [{"name": c.name, "passed": c.passed, "severity": c.severity,

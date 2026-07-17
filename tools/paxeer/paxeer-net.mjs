@@ -1,15 +1,13 @@
 #!/usr/bin/env node
 // paxeer-net — MCP stdio bridge exposing the Paxeer network to Matrix agents.
 //
-// READS (no auth): direct EVM JSON-RPC, PaxScan/Blockscout explorer, the Argus
-// portfolio + PaxSpot market indexers, price feeds, and the agent-economy
-// precompile views (oracle 0x0903, OROB 0x0901, clearing 0x0902, PoFQ 0x0904,
-// streams 0x0906, scheduler 0x0905, staking 0x0800).
+// READS (no auth): direct EVM JSON-RPC, PaxScan/Blockscout explorer, and price
+// feeds.
 //
 // WRITES (embedded-wallet custody, network-side enforcement): transfers,
-// payment streams, scheduled jobs, staking, and generic contract calls
-// (DEX swaps). Signing happens on connect.paxportwallet.com; this bridge never
-// sees key material. See lib/wallet.mjs for headless auth.
+// approvals, and caller-specified contract calls. Signing happens on
+// connect.paxportwallet.com; this bridge never sees key material. See
+// lib/wallet.mjs for headless auth.
 //
 // Wire protocol mirrors tools/gideon/rpc-bridge.mjs (newline-delimited JSON-RPC
 // over stdio). Run `node tools/paxeer/paxeer-net.mjs --selftest` to smoke it.

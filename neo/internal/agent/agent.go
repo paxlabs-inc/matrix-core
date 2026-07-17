@@ -1264,21 +1264,9 @@ func glimpseReasoning(reasoning string) string {
 	return s
 }
 
-// theUserRe matches the generic third-person reference "the user" (and its
-// possessive "the user's"), case-insensitive on the leading "the", with word
-// boundaries so "users" (plural) and mid-word matches are left alone.
-var theUserRe = regexp.MustCompile(`\b[Tt]he user('s)?\b`)
-
-// nameReasoning personalises the model's VISIBLE reasoning (Q1): the user can
-// read Neo's chain-of-thought, so a generic "the user asked …" reads coldly
-// where "Andrew asked …" reads like Neo actually knows them. It rewrites the
-// "the user" / "the user's" reference to the user's preferred name. This is a
-// DISPLAY-only transform on the thinking channel — the model's underlying
-// reasoning tokens are untouched and reasoning is never persisted, so there is
-// no determinism/replay concern. It only fires when a preferred name is known;
-// otherwise the text is returned verbatim. The prompt already steers the model
-// to name the user in its thinking (systemPrompt), so this is the deterministic
-// backstop for the complete-text (fold-time) reasoning path.
+// nameReasoning applies the identity net to visible reasoning. Preferred-name
+// capitalization is preserved by the prompt, but names are not injected
+// mechanically: deterministic replacement made every update sound repetitive.
 func (a *Agent) nameReasoning(text string) string {
 	if text == "" {
 		return text
@@ -1289,16 +1277,7 @@ func (a *Agent) nameReasoning(text string) string {
 	// Scrub it deterministically before anything renders — reasoning is never
 	// persisted, so this display-only rewrite carries no replay concern.
 	text, _ = scrubIdentity(a.agentName(), text)
-	name := strings.TrimSpace(a.preferredName)
-	if name == "" {
-		return text
-	}
-	return theUserRe.ReplaceAllStringFunc(text, func(m string) string {
-		if strings.HasSuffix(m, "'s") {
-			return name + "'s"
-		}
-		return name
-	})
+	return text
 }
 
 // collectSurfaced records the cortex URIs injected into this turn so the loop

@@ -151,7 +151,15 @@ func run() int {
 			log.Error("operator key load failed", "error", err.Error())
 			return 1
 		}
-		ps, err := chain.NewPaxeerSettler(client, op, cfg.VaultAddr, cfg.AnchorAddr)
+		var anchorHistory *chain.BlockscoutAnchorHistory
+		if cfg.AnchorHistoryURL != "" {
+			anchorHistory, err = chain.NewBlockscoutAnchorHistory(cfg.AnchorHistoryURL, nil)
+			if err != nil {
+				log.Error("anchor history init failed", "error", err.Error())
+				return 1
+			}
+		}
+		ps, err := chain.NewPaxeerSettler(client, op, cfg.VaultAddr, cfg.AnchorAddr, anchorHistory)
 		if err != nil {
 			log.Error("paxeer settler init failed", "error", err.Error())
 			return 1

@@ -1,11 +1,16 @@
+<!--
+parent:
+  order: false
+-->
 <p align="center">
-  <img src="https://github.com/paxlabs-inc/matrix-core/blob/main/MATRIX.gif?raw=true" alt="Matrix" />
+<img src="MATRIX.gif" alt="Matrix" >
 </p>
 
 <p align="center">
   <a href="https://labs.paxeer.app"><img src="https://img.shields.io/badge/Project-Matrix-0A0A0A?style=flat-square&logo=data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNiIgaGVpZ2h0PSIxNiIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IiNmZmZmZmYiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIj48Y2lyY2xlIGN4PSIxMiIgY3k9IjEyIiByPSIxMCIvPjxwYXRoIGQ9Ik0xMiAxNnYtNCIvPjxwYXRoIGQ9Ik0xMiA4aC4wMSIvPjwvc3ZnPg==&logoColor=white" alt="Project: Matrix" /></a>
   <a href="https://labs.paxeer.app"><img src="https://img.shields.io/badge/Built%20by-PaxLabs-0A0A0A?style=flat-square&logoColor=white" alt="Built by PaxLabs" /></a>
   <a href="LICENSE.md"><img src="https://img.shields.io/badge/License-Matrix--Protocol-0A0A0A?style=flat-square" alt="License: Matrix-Protocol" /></a>
+  <a href="CHANGELOG.md"><img src="https://img.shields.io/badge/Version-0.65.0-0A0A0A?style=flat-square" alt="Version: 0.65.0" /></a>
   <a href="#"><img src="https://img.shields.io/badge/Status-Active-0A0A0A?style=flat-square" alt="Status: Active" /></a>
   <a href="https://paxeer.app"><img src="https://img.shields.io/badge/Layer-Paxeer%20Network-0A0A0A?style=flat-square" alt="Paxeer Network" /></a>
 </p>
@@ -151,7 +156,7 @@ The root Makefile drives its sibling Go modules — each independently `go build
 | **journal** | Append-only journal subsystem for deterministic state replay. |
 | **knowledge** | Canonical references: matrix.kvx project state, models, and schema definitions. |
 | **skills** | SKILL.mtx capability manifests and SKILL.md prose capability descriptions. |
-| **tools** | MCP servers: paxeer, browser, tachyon, deus, uwac, web-search, media, cortex; plus the per-user LiveKit voice worker. |
+| **tools** | MCP servers: Paxeer RPC/PaxScan/price and wallet operations, browser, tachyon, deus, uwac, web-search, media, cortex; plus the per-user LiveKit voice worker. |
 | **agents** | DID-bound agent manifests (default.json, neo.json) plus MCP server templates. |
 | **protocol** | Protocol definitions and wire formats. |
 | **deploy** | Daemon container image, Fly Machine deploy, shared-service images, box install scripts. |

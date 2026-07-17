@@ -2,7 +2,7 @@
 // through the embedded wallet (network-side custody). A write tool degrades
 // gracefully (returns an explanatory result) when no wallet auth is set.
 
-import { CHAIN, ENDPOINTS, CONTRACTS, TOKENS, resolveToken, LIMITS } from './config.mjs'
+import { CHAIN, ENDPOINTS, TOKENS, resolveToken, LIMITS } from './config.mjs'
 import { ok, toBaseUnits, fromBaseUnits } from './net.mjs'
 import * as rpc from './rpc.mjs'
 import * as paxscan from './paxscan.mjs'
@@ -20,9 +20,7 @@ import { encodeCall, decode } from './abi.mjs'
 const READS_ONLY = process.env.PAXEER_READS_ONLY === '1'
 const WRITE_TOOL_NAMES = new Set([
   'wallet_info', 'sign_message', 'transfer', 'approve',
-  'stream_open', 'stream_settle', 'stream_close', 'stream_update_rate',
-  'schedule_job', 'cancel_job', 'reschedule_job',
-  'delegate', 'undelegate', 'redelegate', 'contract_write',
+  'contract_write',
   // durable high-level intents (server-owned approve→call→verify). wallet_action
   // is a read (polls status) and is intentionally NOT listed here.
   'wallet_layerx_deposit', 'wallet_allowance_and_call',
@@ -144,12 +142,34 @@ export async function dispatch(name, args = {}) {
       return ok({ tool: name, to: args.to, signature: args.signature, result: out })
     }
     case 'encode_call':
-      // Pure ABI encode (no network, no send). Used to build callData for
-      // schedule_job or to inspect calldata before a contract_write.
+      // Pure ABI encode (no network, no send). Used to build or inspect
+      // calldata before a contract_write.
       return ok({ tool: name, to: args.to, signature: args.signature, data: encodeCall(args.signature, args.args || []) })
     case 'chain_info': {
-      const [bn, cid, sync] = await Promise.all([rpc.blockNumber(), rpc.chainId(), rpc.syncing()])
-      return ok({ tool: name, chain: CHAIN, blockNumber: rpc.hexToInt(bn), chainId: rpc.hexToInt(cid), syncing: sync === false ? false : sync, rpc: ENDPOINTS.rpc })
+      const syncing = rpc.syncing()
+        .then((value) => ({ value: value === false ? false : value }))
+        .catch((err) => {
+          const message = err?.message ?? String(err)
+          if (!/method not found|method .* (?:unsupported|not supported)|does not exist|-32601/i.test(message)) {
+            throw err
+          }
+          return {
+            value: null,
+            unavailable: true,
+            note: 'eth_syncing is not supported by this RPC; chain id and head block remain available',
+          }
+        })
+      const [bn, cid, sync] = await Promise.all([rpc.blockNumber(), rpc.chainId(), syncing])
+      return ok({
+        tool: name,
+        chain: CHAIN,
+        blockNumber: rpc.hexToInt(bn),
+        chainId: rpc.hexToInt(cid),
+        syncing: sync.value,
+        capabilities: { eth_syncing: sync.unavailable ? 'unavailable' : 'available' },
+        ...(sync.note ? { capabilityNote: sync.note } : {}),
+        rpc: ENDPOINTS.rpc,
+      })
     }
     case 'get_balance': {
       const addr = await resolveAddr(args.address)
@@ -207,41 +227,9 @@ export async function dispatch(name, args = {}) {
     case 'network_stats':
       return ok({ tool: name, result: await paxscan.stats() })
 
-    // —— markets / portfolio / price ——
-    case 'portfolio': {
-      const a = args.address
-      const [pnl, rank, perf] = await Promise.allSettled([markets.pnl(a, args.days || 30), markets.rank(a), markets.performance(a)])
-      return ok({ tool: name, address: a,
-        pnl: pnl.status === 'fulfilled' ? pnl.value : null,
-        rank: rank.status === 'fulfilled' ? rank.value : null,
-        performance: perf.status === 'fulfilled' ? perf.value : null })
-    }
-    case 'trending':
-      return ok({ tool: name, result: await markets.trending(args.limit || 20) })
+    // —— markets / price ——
     case 'price':
       return ok({ tool: name, result: await markets.price(args.symbol || 'pax') })
-    case 'market_get':
-      return ok({ tool: name, result: await markets.spotGet(args.path, args.params) })
-    case 'points':
-      return ok({ tool: name, result: await markets.pointsBalance(await resolveAddr(args.address)) })
-
-    // —— precompile reads (pricing + reputation) ——
-    case 'oracle_price':
-      return ok({ tool: name, marketId: args.marketId, result: await pc.oracle.getValidatorPrice(args.marketId) })
-    case 'orob_resolve':
-      return ok({ tool: name, result: await pc.orob.resolveOffset(args.oraclePrice, args.offsetBps) })
-    case 'clearing_compute':
-      return ok({ tool: name, result: await pc.clearing.computeClearing(args) })
-    case 'pofq_score':
-      return ok({ tool: name, result: await pc.pofq.scoreFill(args.fillPrice, args.oraclePrice) })
-    case 'stream_status':
-      return ok({ tool: name, streamId: args.streamId, stream: await pc.streams.getStream(args.streamId), accrued: await pc.streams.accrued(args.streamId) })
-    case 'job_status':
-      return ok({ tool: name, jobId: args.jobId, job: await pc.scheduler.getJob(args.jobId) })
-    case 'jobs_pending':
-      return ok({ tool: name, creator: await resolveAddr(args.creator), jobs: await pc.scheduler.pending(await resolveAddr(args.creator)) })
-    case 'delegation':
-      return ok({ tool: name, result: await pc.staking.delegation(await resolveAddr(args.delegator), args.validator) })
 
     // —— wallet / identity ——
     case 'wallet_info': {
@@ -285,52 +273,7 @@ export async function dispatch(name, args = {}) {
       return writeTx(pc.erc20.approve(tokenAddr, args.spender, base), { kind: 'approve', token: tokenAddr, spender: args.spender })
     }
 
-    // —— writes: payment streams 0x0906 ——
-    case 'stream_open': {
-      const tokenAddr = addressFor(args.token)
-      if (!tokenAddr) throw new Error(`stream_open: unknown token ${args.token}`)
-      const dec = unitsFor(args.token)
-      const ratePerSecond = args.ratePerSecondRaw ?? toBaseUnits(args.ratePerSecond, dec)
-      const cap = args.capRaw ?? (args.cap != null ? toBaseUnits(args.cap, dec) : '0')
-      const tx = pc.streams.open({ payee: args.payee, token: tokenAddr, ratePerSecond, startTime: args.startTime || 0, stopTime: args.stopTime || 0, cap })
-      return writeTx(tx, { kind: 'stream_open', payee: args.payee, token: tokenAddr, ratePerSecond, cap })
-    }
-    case 'stream_settle':
-      return writeTx(pc.streams.settle(args.streamId), { kind: 'stream_settle', streamId: args.streamId })
-    case 'stream_close':
-      return writeTx(pc.streams.close(args.streamId), { kind: 'stream_close', streamId: args.streamId })
-    case 'stream_update_rate': {
-      const dec = unitsFor(args.token)
-      const newRate = args.newRateRaw ?? toBaseUnits(args.newRate, dec)
-      return writeTx(pc.streams.updateRate(args.streamId, newRate), { kind: 'stream_update_rate', streamId: args.streamId, newRate })
-    }
-
-    // —— writes: scheduler 0x0905 ——
-    case 'schedule_job': {
-      const value = args.depositWei ?? (args.deposit != null ? toBaseUnits(args.deposit, 18) : undefined)
-      const tx = pc.scheduler.schedule({ target: args.target, callData: args.callData || '0x', executeAtBlock: args.executeAtBlock, gasLimit: args.gasLimit || 200000 }, value)
-      return writeTx(tx, { kind: 'schedule_job', target: args.target, executeAtBlock: args.executeAtBlock })
-    }
-    case 'cancel_job':
-      return writeTx(pc.scheduler.cancel(args.jobId), { kind: 'cancel_job', jobId: args.jobId })
-    case 'reschedule_job':
-      return writeTx(pc.scheduler.reschedule(args.jobId, args.newBlock), { kind: 'reschedule_job', jobId: args.jobId, newBlock: args.newBlock })
-
-    // —— writes: staking 0x0800 ——
-    case 'delegate': {
-      const delegator = await resolveAddr(args.delegator)
-      return writeTx(pc.staking.delegate({ delegator, validator: args.validator, amount: toBaseUnits(args.amount, 18) }), { kind: 'delegate', validator: args.validator, amount: args.amount })
-    }
-    case 'undelegate': {
-      const delegator = await resolveAddr(args.delegator)
-      return writeTx(pc.staking.undelegate({ delegator, validator: args.validator, amount: toBaseUnits(args.amount, 18) }), { kind: 'undelegate', validator: args.validator, amount: args.amount })
-    }
-    case 'redelegate': {
-      const delegator = await resolveAddr(args.delegator)
-      return writeTx(pc.staking.redelegate({ delegator, srcValidator: args.srcValidator, dstValidator: args.dstValidator, amount: toBaseUnits(args.amount, 18) }), { kind: 'redelegate', src: args.srcValidator, dst: args.dstValidator })
-    }
-
-    // —— writes: generic contract call (DEX swaps, any precompile/contract) ——
+    // —— writes: generic contract call ——
     case 'contract_write': {
       const data = args.data ?? encodeCall(args.signature, args.args || [])
       const value = args.value != null ? toBaseUnits(args.value, 18) : (args.valueWei ?? undefined)
@@ -377,14 +320,13 @@ export async function dispatch(name, args = {}) {
 // ── tool descriptors (advertised to the MCP client) ───────────────────────
 const A = (props, required = []) => ({ type: 'object', properties: props, required })
 const S = (description) => ({ type: 'string', description })
-const N = (description) => ({ type: 'number', description })
 
 const ALL_TOOLS = [
   // reads — node
   { name: 'rpc_call', description: 'Direct EVM JSON-RPC call (read-only). args: method, params[].', inputSchema: A({ method: S('JSON-RPC method e.g. eth_getBlockByNumber'), params: { type: 'array' } }, ['method']) },
   { name: 'eth_call', description: 'Read-only eth_call against a contract. Does NOT send a tx.', inputSchema: A({ to: S('contract address'), data: S('0x calldata'), block: S('block tag') }, ['to']) },
   { name: 'contract_read', description: 'Encode+eth_call a method and decode outputs. args: to, signature e.g. "balanceOf(address)", args[], outputs[] e.g. ["uint256"].', inputSchema: A({ to: S('contract'), signature: S('method signature'), args: { type: 'array' }, outputs: { type: 'array' }, block: S('block tag') }, ['to', 'signature']) },
-  { name: 'encode_call', description: 'Pure ABI-encode a method call to 0x calldata (no network, no send). Use to build callData for schedule_job, or to inspect calldata. args: signature e.g. "transfer(address,uint256)", args[], to? (echoed back).', inputSchema: A({ signature: S('method signature'), args: { type: 'array' }, to: S('optional contract address to echo') }, ['signature']) },
+  { name: 'encode_call', description: 'Pure ABI-encode a method call to 0x calldata (no network, no send). Use to build or inspect calldata. args: signature e.g. "transfer(address,uint256)", args[], to? (echoed back).', inputSchema: A({ signature: S('method signature'), args: { type: 'array' }, to: S('optional contract address to echo') }, ['signature']) },
   { name: 'chain_info', description: 'Paxeer chain id, head block, sync status, RPC URL.', inputSchema: A({}) },
   { name: 'get_balance', description: 'Native PAX balance of an address (defaults to the agent wallet).', inputSchema: A({ address: S('0x address; optional') }) },
   { name: 'token_balance', description: 'ERC-20 balance + symbol/decimals. args: token (symbol or 0x), address?', inputSchema: A({ token: S('symbol or 0x'), address: S('holder; optional') }, ['token']) },
@@ -397,40 +339,15 @@ const ALL_TOOLS = [
   { name: 'search', description: 'PaxScan global search (addresses, tokens, txs, blocks).', inputSchema: A({ q: S('query') }, ['q']) },
   { name: 'network_stats', description: 'PaxScan network stats (gas, market, tx counts).', inputSchema: A({}) },
   // reads — markets
-  { name: 'portfolio', description: 'Argus portfolio: pnl + rank + performance for an address.', inputSchema: A({ address: S('0x address'), days: N('pnl window days') }, ['address']) },
-  { name: 'trending', description: 'Trending tokens from the discovery indexer.', inputSchema: A({ limit: N('default 20') }) },
   { name: 'price', description: 'Off-chain price for PAX or a bridged major. args: symbol (pax|sol|eth|bnb|sid).', inputSchema: A({ symbol: S('pax|sol|eth|bnb|sid') }) },
-  { name: 'market_get', description: 'Generic PaxSpot DEX market-data GET passthrough. args: path, params{}.', inputSchema: A({ path: S('spot api path'), params: { type: 'object' } }, ['path']) },
-  { name: 'points', description: 'Sidiora points/rewards balance for an address.', inputSchema: A({ address: S('0x address; optional') }) },
-  // reads — precompiles
-  { name: 'oracle_price', description: 'OracleAggregator 0x0903 validator price for a market. args: marketId (bytes32).', inputSchema: A({ marketId: S('bytes32 market id') }, ['marketId']) },
-  { name: 'orob_resolve', description: 'OROB 0x0901 oracle-relative price: resolveOffset(oraclePrice,int16 offsetBps).', inputSchema: A({ oraclePrice: S('int256'), offsetBps: N('int16 basis points') }, ['oraclePrice', 'offsetBps']) },
-  { name: 'clearing_compute', description: 'BatchClearing 0x0902 uniform-price clearing over buy/sell offset+size arrays.', inputSchema: A({ oraclePrice: S('int256'), buyOffsets: { type: 'array' }, buySizes: { type: 'array' }, sellOffsets: { type: 'array' }, sellSizes: { type: 'array' } }, ['oraclePrice']) },
-  { name: 'pofq_score', description: 'PoFQ 0x0904 fill-quality score: scoreFill(fillPrice,oraclePrice). Reputation grounded in delivery.', inputSchema: A({ fillPrice: S('int256'), oraclePrice: S('int256') }, ['fillPrice', 'oraclePrice']) },
-  { name: 'stream_status', description: 'PaymentStreams 0x0906 stream detail + accrued amount.', inputSchema: A({ streamId: S('uint256 stream id') }, ['streamId']) },
-  { name: 'job_status', description: 'Scheduler 0x0905 job detail.', inputSchema: A({ jobId: S('uint256 job id') }, ['jobId']) },
-  { name: 'jobs_pending', description: 'Scheduler 0x0905 pending job ids for a creator (defaults to agent wallet).', inputSchema: A({ creator: S('0x address; optional') }) },
-  { name: 'delegation', description: 'Staking 0x0800 delegation (shares + balance) for a validator. validator is bech32 paxvaloper...', inputSchema: A({ validator: S('paxvaloper... bech32'), delegator: S('0x address; optional') }, ['validator']) },
   // identity / wallet
   { name: 'wallet_info', description: 'Resolve the agent embedded-wallet address + chain (provisions on first use).', inputSchema: A({}) },
   { name: 'sign_message', description: 'EIP-191 personal_sign a message with the agent wallet (proof of identity).', inputSchema: A({ message: S('message to sign') }, ['message']) },
   // writes — payments
   { name: 'transfer', description: 'Send PAX (token omitted/"PAX") or an ERC-20 to a plain address. args: to, amount (human), token?, nonce?, max_fee_gwei? ONLY for direct wallet-to-wallet sends — NEVER to fund a deposit-style protocol (LayerX, vaults, bridges): those credit from their own deposit function, so a bare transfer to their address strands the funds. LayerX funding starts with layerx_deposit; contract deposits go through contract_write. nonce + max_fee_gwei are for stuck-tx replacement: a 0-amount self-send at the wedged nonce with fees above the stuck tx fills a NONCE GAP and unblocks the queue.', inputSchema: A({ to: S('recipient 0x'), amount: S('human amount e.g. "1.5"'), token: S('symbol or 0x; omit for PAX'), nonce: S('optional explicit nonce — replace/fill a stuck (unmined) tx at that nonce'), max_fee_gwei: S('optional max fee in gwei — set above the stuck tx when replacing') }, ['to', 'amount']) },
   { name: 'approve', description: 'ERC-20 approve. args: token, spender, amount (human or "max").', inputSchema: A({ token: S('symbol or 0x'), spender: S('0x'), amount: S('human or "max"') }, ['token', 'spender', 'amount']) },
-  { name: 'stream_open', description: 'Open a PaymentStream 0x0906. args: payee, token, ratePerSecond (human/sec), cap?, startTime?, stopTime?', inputSchema: A({ payee: S('0x'), token: S('symbol or 0x'), ratePerSecond: S('human per second'), cap: S('human cap'), startTime: N('unix secs, 0=now'), stopTime: N('unix secs, 0=open') }, ['payee', 'token', 'ratePerSecond']) },
-  { name: 'stream_settle', description: 'Settle accrued on a stream (pays the payee).', inputSchema: A({ streamId: S('uint256') }, ['streamId']) },
-  { name: 'stream_close', description: 'Close a stream and refund the remainder.', inputSchema: A({ streamId: S('uint256') }, ['streamId']) },
-  { name: 'stream_update_rate', description: 'Change a stream rate. args: streamId, newRate (human/sec), token (for decimals).', inputSchema: A({ streamId: S('uint256'), newRate: S('human per second'), token: S('symbol or 0x') }, ['streamId', 'newRate']) },
-  // writes — scheduler
-  { name: 'schedule_job', description: 'Schedule a future tx via Scheduler 0x0905. args: target, callData, executeAtBlock, gasLimit?, deposit? (PAX for gas).', inputSchema: A({ target: S('0x'), callData: S('0x calldata'), executeAtBlock: N('block height'), gasLimit: N('default 200000'), deposit: S('human PAX') }, ['target', 'executeAtBlock']) },
-  { name: 'cancel_job', description: 'Cancel a scheduled job and refund the deposit.', inputSchema: A({ jobId: S('uint256') }, ['jobId']) },
-  { name: 'reschedule_job', description: 'Move a scheduled job to a new block.', inputSchema: A({ jobId: S('uint256'), newBlock: N('block height') }, ['jobId', 'newBlock']) },
-  // writes — staking
-  { name: 'delegate', description: 'Stake PAX to a validator (0x0800). args: validator (paxvaloper...), amount (human PAX).', inputSchema: A({ validator: S('paxvaloper...'), amount: S('human PAX'), delegator: S('0x; optional') }, ['validator', 'amount']) },
-  { name: 'undelegate', description: 'Unbond PAX from a validator.', inputSchema: A({ validator: S('paxvaloper...'), amount: S('human PAX'), delegator: S('0x; optional') }, ['validator', 'amount']) },
-  { name: 'redelegate', description: 'Move stake between validators.', inputSchema: A({ srcValidator: S('paxvaloper...'), dstValidator: S('paxvaloper...'), amount: S('human PAX'), delegator: S('0x; optional') }, ['srcValidator', 'dstValidator', 'amount']) },
-  // writes — generic (DEX swaps + any contract/precompile)
-  { name: 'contract_write', description: 'Sign+send a contract/precompile write via the wallet. Provide signature+args (encoded for you) OR raw data. args: to, signature?, args[]?, data?, value? (human PAX). Use for DEX swaps on CONTRACTS.swap routers.', inputSchema: A({ to: S('contract/precompile 0x'), signature: S('method signature'), args: { type: 'array' }, data: S('0x calldata (overrides signature)'), value: S('human PAX to attach'), gas: S('gas limit') }, ['to']) },
+  // writes — generic
+  { name: 'contract_write', description: 'Sign and send a caller-specified contract write via the wallet. Provide signature+args (encoded for you) or raw data. args: to, signature?, args[]?, data?, value? (human PAX).', inputSchema: A({ to: S('contract 0x address'), signature: S('method signature'), args: { type: 'array' }, data: S('0x calldata (overrides signature)'), value: S('human PAX to attach'), gas: S('gas limit') }, ['to']) },
   // writes — durable high-level intents (one call; the WALLET owns the whole
   // approve→confirm→call→confirm→verify sequence, is idempotent, and survives a
   // disconnect). Prefer these over hand-rolling approve + contract_write.
@@ -445,4 +362,4 @@ const ALL_TOOLS = [
 export const tools = READS_ONLY ? ALL_TOOLS.filter((t) => !WRITE_TOOL_NAMES.has(t.name)) : ALL_TOOLS
 
 export const TOOL_NAMES = tools.map((t) => t.name)
-export { CONTRACTS, TOKENS }
+export { TOKENS }

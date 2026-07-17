@@ -10,6 +10,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/paxlabs-inc/layerx/internal/perps/mode"
 )
 
 // Config is the resolved layerxd runtime configuration.
@@ -48,12 +50,13 @@ type Config struct {
 	SequencerSeedHex string
 
 	// Chain / contract knobs (used by the settlement worker + deposit watcher).
-	ChainRPC       string
-	VaultAddr      string
-	AnchorAddr     string
-	DEXRouter      string
-	USDLAddr       string
-	OperatorKeyEnv string // name only — the key value is read at use time, never stored in config logs
+	ChainRPC         string
+	AnchorHistoryURL string
+	VaultAddr        string
+	AnchorAddr       string
+	DEXRouter        string
+	USDLAddr         string
+	OperatorKeyEnv   string // name only — the key value is read at use time, never stored in config logs
 	// OperatorKeyPresent records whether the operator key env was set at boot
 	// (presence only; the secret value is never read into config).
 	OperatorKeyPresent bool
@@ -74,6 +77,13 @@ type Config struct {
 	// MicroThresholdUSDX is the micro-USDX value below which a transfer is a
 	// batched micropayment; at/above it auto-promotes to force-settle.
 	MicroThresholdUSDX int64
+
+	// PerpsMode is the boot-loaded, fail-closed global perps feature mode.
+	// PerpsMarketModes contains explicit symbol overrides; an omitted symbol is
+	// OFF. Runtime mutation is intentionally unavailable until durable perps
+	// mode events land with the perps ledger.
+	PerpsMode        mode.Mode
+	PerpsMarketModes map[string]mode.Mode
 
 	// Application-level rate limiting (defense in depth behind the nginx edge).
 	// RateLimitDisabled turns off the in-process per-client limiter entirely.
@@ -127,6 +137,14 @@ func Load() (*Config, error) {
 	rlDisabled := isTruthy(pick("LAYERX_RATELIMIT_DISABLE", doc.str("ratelimit", "disable"), ""))
 	// Trust the nginx-set client-IP headers by default; opt out explicitly.
 	rlTrustProxy := !isTruthy(pick("LAYERX_RATELIMIT_TRUST_PROXY_OFF", doc.str("ratelimit", "trust_proxy_off"), ""))
+	perpsMode, err := mode.Parse(pick("LAYERX_PERPS_MODE", doc.str("perps", "mode"), string(mode.Off)))
+	if err != nil {
+		return nil, fmt.Errorf("layerx config: %w", err)
+	}
+	perpsMarketModes, err := mode.ParseMarketModes(pick("LAYERX_PERPS_MARKET_MODES", doc.str("perps", "market_modes"), ""))
+	if err != nil {
+		return nil, fmt.Errorf("layerx config: %w", err)
+	}
 
 	cfg := &Config{
 		Port:                int(pickUint("LAYERX_PORT", doc.uint64Or("server", "port", defaultPort), defaultPort)),
@@ -140,6 +158,7 @@ func Load() (*Config, error) {
 		TokenTTL:            time.Duration(doc.uint64Or("auth", "token_ttl_seconds", uint64(defaultTokenTTL/time.Second))) * time.Second,
 		SequencerSeedHex:    pick("LAYERX_SEQUENCER_KEY", doc.str("auth", "sequencer_seed"), ""),
 		ChainRPC:            pick("LAYERX_CHAIN_RPC", doc.str("chain", "rpc"), ""),
+		AnchorHistoryURL:    pick("LAYERX_ANCHOR_HISTORY_URL", doc.str("chain", "anchor_history_url"), ""),
 		VaultAddr:           pick("LAYERX_VAULT_ADDR", doc.str("chain", "vault"), ""),
 		AnchorAddr:          pick("LAYERX_ANCHOR_ADDR", doc.str("chain", "anchor"), ""),
 		DEXRouter:           pick("LAYERX_DEX_ROUTER", doc.str("chain", "dex_router"), ""),
@@ -151,6 +170,8 @@ func Load() (*Config, error) {
 		DepositPollInterval: time.Duration(pickUint("LAYERX_DEPOSIT_POLL_SECONDS", doc.uint64Or("chain", "deposit_poll_seconds", uint64(defaultDepositPoll/time.Second)), uint64(defaultDepositPoll/time.Second))) * time.Second,
 		Window:              time.Duration(pickUint("LAYERX_WINDOW_SECONDS", doc.uint64Or("settlement", "window_seconds", uint64(defaultWindow/time.Second)), uint64(defaultWindow/time.Second))) * time.Second,
 		MicroThresholdUSDX:  int64(pickUint("LAYERX_MICRO_THRESHOLD", doc.uint64Or("settlement", "micro_threshold_micro_usdx", defaultMicroThreshold), defaultMicroThreshold)),
+		PerpsMode:           perpsMode,
+		PerpsMarketModes:    perpsMarketModes,
 		RateLimitDisabled:   rlDisabled,
 		RateLimitTrustProxy: rlTrustProxy,
 		RateLimitReadRPS:    int(pickUint("LAYERX_RATELIMIT_READ_RPS", doc.uint64Or("ratelimit", "read_rps", defaultRLReadRPS), defaultRLReadRPS)),

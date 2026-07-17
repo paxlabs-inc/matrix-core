@@ -34,6 +34,7 @@ type PaxeerSettler struct {
 	client   *Client
 	operator *Operator
 	bind     *bindings
+	history  *BlockscoutAnchorHistory
 	vault    common.Address
 	anchor   common.Address
 	chainID  *big.Int
@@ -42,7 +43,7 @@ type PaxeerSettler struct {
 // NewPaxeerSettler wires the real settler. vaultAddr is the LayerXVault (the
 // operator calls settle there); anchorAddr is the SettlementAnchor (read-back of
 // the recorded root). Both must be non-empty valid addresses.
-func NewPaxeerSettler(c *Client, op *Operator, vaultAddr, anchorAddr string) (*PaxeerSettler, error) {
+func NewPaxeerSettler(c *Client, op *Operator, vaultAddr, anchorAddr string, history *BlockscoutAnchorHistory) (*PaxeerSettler, error) {
 	if c == nil || c.Eth() == nil {
 		return nil, fmt.Errorf("chain: nil client")
 	}
@@ -63,6 +64,7 @@ func NewPaxeerSettler(c *Client, op *Operator, vaultAddr, anchorAddr string) (*P
 		client:   c,
 		operator: op,
 		bind:     b,
+		history:  history,
 		vault:    common.HexToAddress(vaultAddr),
 		anchor:   common.HexToAddress(anchorAddr),
 		chainID:  c.ChainID(),
@@ -107,7 +109,7 @@ func (p *PaxeerSettler) AnchorBatch(ctx context.Context, rootHex string, transfe
 		return "", fmt.Errorf("chain: settle idempotency check: %w", err)
 	}
 	if settled {
-		return p.findAnchorTx(ctx, batch.BatchId)
+		return p.findAnchorTx(ctx, batch)
 	}
 
 	auth, err := p.transactor(ctx)
@@ -234,14 +236,29 @@ func (p *PaxeerSettler) alreadySettled(ctx context.Context, batchID [32]byte) (b
 // findAnchorTx recovers the original anchor tx hash for an already-settled batch
 // by filtering the SettlementAnchored event (batchId is its first indexed
 // topic). Used on the idempotent path so receipts still expose a real anchor tx.
-func (p *PaxeerSettler) findAnchorTx(ctx context.Context, batchID [32]byte) (string, error) {
+func (p *PaxeerSettler) findAnchorTx(ctx context.Context, batch Batch) (string, error) {
 	ev, ok := p.bind.anchor.Events["SettlementAnchored"]
 	if !ok {
 		return "", fmt.Errorf("chain: anchor abi missing SettlementAnchored event")
 	}
+	if p.history != nil {
+		txHash, err := p.history.FindAnchorTx(ctx, p.anchor, ev.ID, batch)
+		if err == nil {
+			return txHash, nil
+		}
+		rpcTx, rpcErr := p.findAnchorTxRPC(ctx, ev.ID, batch.BatchId)
+		if rpcErr == nil {
+			return rpcTx, nil
+		}
+		return "", fmt.Errorf("chain: recover anchor tx: indexed history: %v; rpc: %w", err, rpcErr)
+	}
+	return p.findAnchorTxRPC(ctx, ev.ID, batch.BatchId)
+}
+
+func (p *PaxeerSettler) findAnchorTxRPC(ctx context.Context, eventID common.Hash, batchID [32]byte) (string, error) {
 	q := ethereum.FilterQuery{
 		Addresses: []common.Address{p.anchor},
-		Topics:    [][]common.Hash{{ev.ID}, {common.BytesToHash(batchID[:])}},
+		Topics:    [][]common.Hash{{eventID}, {common.BytesToHash(batchID[:])}},
 	}
 	logs, err := p.client.Eth().FilterLogs(ctx, q)
 	if err != nil {

@@ -1,6 +1,7 @@
 # Matrix Architecture
 
-This is the high-level map for contributors, current as of 2026-07-15. The
+This is the high-level map for contributors, current as of 2026-07-17
+(Matrix `0.65.0`). The
 canonical detailed sources of truth are:
 
 - **How to work in this repo** — `spec/workflow.kvx` (rendered by
@@ -124,7 +125,12 @@ each other) and is independently buildable/testable.
 ## Money
 
 Neo holds no signing keys. Interactive Neo acts directly through the Paxeer
-embedded-wallet tool lane (`paxeer__*`; policy enforced wallet-side).
+embedded-wallet tool lane (`paxeer__*`; policy enforced wallet-side). The
+current Paxeer surface uses `https://stats.paxscan.io` as its default EVM RPC
+and exposes direct RPC, PaxScan, price reads, wallet transfer/approval, and
+caller-specified contract calls. Retired Argus/PaxSpot endpoints, agent-economy
+precompiles, and hard-coded PECOR, Sidiora, HyperPax DEX, and perps registries
+are not part of the advertised surface.
 Value-moving work delegated via `core_execute` runs the signed MCL pipeline in
 the executor daemon with inline approval gates / leashes. Service-to-service
 payments ride LXP against layerxd (exact or hold mode); deus meters and pays

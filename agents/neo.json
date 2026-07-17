@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "agent": "matrix://agent/neo",
-  "description": "Neo front-agent manifest — the FULL tool surface for the Neo conversational agent (matrix/neo). MCL is folded into Neo: there is no core_execute delegation wall on the interactive surface, so Neo carries the complete paxeer-net lane (alias 'paxeer') directly — the whole Paxeer chain data layer (RPC + PaxScan + Argus + PaxSpot + price + agent-economy precompile reads) PLUS the embedded-wallet write lane (wallet_info/sign_message/transfer/approve/stream_*/schedule_*/delegate/contract_write). Custody + key material live network-side in the Paxeer Embedded Wallet, so spend limits and policy are enforced ON THE WALLET at the network layer (PaxeerSpendPolicy / PAXEER_MAX_SPEND_WEI), never trusted to agent code. Autonomous (Automatrix/sub-agent) surfaces still structurally exclude value-moving tools. Also bundles fs + fetch + web-search + browser + git + exec. The exec server's service registry is isolated to /data/neo/services via MATRIX_EXEC_STATE_DIR (exported by the daemon image entrypoint for the Neo process) so it never collides with the co-located MCL daemon's /data/services. PackageDigest values mirror agents/default.json (PLACEHOLDERS where the daemon manifest is placeholder; operators replace before production / chain-anchoring).",
+  "description": "Neo front-agent manifest — the FULL tool surface for the Neo conversational agent (matrix/neo). MCL is folded into Neo: there is no core_execute delegation wall on the interactive surface, so Neo carries the complete paxeer-net lane (alias 'paxeer') directly — Paxeer RPC, PaxScan, price reads, and the embedded-wallet write lane (wallet_info/sign_message/transfer/approve/contract_write). Custody + key material live network-side in the Paxeer Embedded Wallet, so spend limits and policy are enforced ON THE WALLET at the network layer (PaxeerSpendPolicy / PAXEER_MAX_SPEND_WEI), never trusted to agent code. Autonomous (Automatrix/sub-agent) surfaces still structurally exclude value-moving tools. Also bundles fs + fetch + web-search + browser + git + exec. The exec server's service registry is isolated to /data/neo/services via MATRIX_EXEC_STATE_DIR (exported by the daemon image entrypoint for the Neo process) so it never collides with the co-located MCL daemon's /data/services. PackageDigest values mirror agents/default.json (PLACEHOLDERS where the daemon manifest is placeholder; operators replace before production / chain-anchoring).",
   "allowed_side_effects": [
     "read",
     "write",
@@ -509,80 +509,8 @@
           "timeout_ms": 20000
         },
         {
-          "name": "portfolio",
-          "description": "Argus portfolio indexer: pnl + rank + performance for an address. Read-only.",
-          "side_effect_class": "network",
-          "timeout_ms": 20000
-        },
-        {
-          "name": "trending",
-          "description": "Trending tokens from the discovery indexer. Read-only.",
-          "side_effect_class": "network",
-          "timeout_ms": 20000
-        },
-        {
           "name": "price",
           "description": "Off-chain price for PAX or a bridged major (pax|sol|eth|bnb|sid). Read-only.",
-          "side_effect_class": "network",
-          "timeout_ms": 15000
-        },
-        {
-          "name": "market_get",
-          "description": "Generic PaxSpot DEX market-data GET passthrough. Read-only.",
-          "side_effect_class": "network",
-          "timeout_ms": 20000
-        },
-        {
-          "name": "points",
-          "description": "Sidiora points/rewards balance for an address. Read-only.",
-          "side_effect_class": "network",
-          "timeout_ms": 15000
-        },
-        {
-          "name": "oracle_price",
-          "description": "OracleAggregator 0x0903 validator price for a market (bytes32). Read-only.",
-          "side_effect_class": "network",
-          "timeout_ms": 15000
-        },
-        {
-          "name": "orob_resolve",
-          "description": "OROB 0x0901 oracle-relative price from a basis-point offset. Read-only (pure).",
-          "side_effect_class": "network",
-          "timeout_ms": 15000
-        },
-        {
-          "name": "clearing_compute",
-          "description": "BatchClearing 0x0902 uniform-price clearing over buy/sell offset+size arrays. Read-only (pure).",
-          "side_effect_class": "network",
-          "timeout_ms": 15000
-        },
-        {
-          "name": "pofq_score",
-          "description": "PoFQ 0x0904 fill-quality / reputation score (fillPrice vs oraclePrice). Read-only (pure).",
-          "side_effect_class": "network",
-          "timeout_ms": 15000
-        },
-        {
-          "name": "stream_status",
-          "description": "PaymentStreams 0x0906 stream detail + accrued amount. Read-only.",
-          "side_effect_class": "network",
-          "timeout_ms": 15000
-        },
-        {
-          "name": "job_status",
-          "description": "Scheduler 0x0905 job detail. Read-only.",
-          "side_effect_class": "network",
-          "timeout_ms": 15000
-        },
-        {
-          "name": "jobs_pending",
-          "description": "Scheduler 0x0905 pending job ids for a creator. Read-only.",
-          "side_effect_class": "network",
-          "timeout_ms": 15000
-        },
-        {
-          "name": "delegation",
-          "description": "Staking 0x0800 delegation (shares + balance) for a validator. Read-only.",
           "side_effect_class": "network",
           "timeout_ms": 15000
         },
@@ -611,68 +539,8 @@
           "timeout_ms": 30000
         },
         {
-          "name": "stream_open",
-          "description": "Open a PaymentStream 0x0906 (payee, token, ratePerSecond, cap?). WRITE: gated by PaxeerSpendPolicy.",
-          "side_effect_class": "write",
-          "timeout_ms": 30000
-        },
-        {
-          "name": "stream_settle",
-          "description": "Settle accrued on a stream (pays the payee). WRITE.",
-          "side_effect_class": "write",
-          "timeout_ms": 30000
-        },
-        {
-          "name": "stream_close",
-          "description": "Close a stream and refund the remainder. WRITE.",
-          "side_effect_class": "write",
-          "timeout_ms": 30000
-        },
-        {
-          "name": "stream_update_rate",
-          "description": "Change a stream's per-second rate. WRITE.",
-          "side_effect_class": "write",
-          "timeout_ms": 30000
-        },
-        {
-          "name": "schedule_job",
-          "description": "Schedule a future tx via Scheduler 0x0905 (target, callData, executeAtBlock, gasLimit, deposit). WRITE: funds a gas deposit; gated by PaxeerSpendPolicy.",
-          "side_effect_class": "write",
-          "timeout_ms": 30000
-        },
-        {
-          "name": "cancel_job",
-          "description": "Cancel a scheduled job and refund the deposit. WRITE.",
-          "side_effect_class": "write",
-          "timeout_ms": 30000
-        },
-        {
-          "name": "reschedule_job",
-          "description": "Move a scheduled job to a new block. WRITE.",
-          "side_effect_class": "write",
-          "timeout_ms": 30000
-        },
-        {
-          "name": "delegate",
-          "description": "Stake PAX to a validator (0x0800, paxvaloper...). WRITE: gated by PaxeerSpendPolicy.",
-          "side_effect_class": "write",
-          "timeout_ms": 30000
-        },
-        {
-          "name": "undelegate",
-          "description": "Unbond PAX from a validator. WRITE.",
-          "side_effect_class": "write",
-          "timeout_ms": 30000
-        },
-        {
-          "name": "redelegate",
-          "description": "Move stake between validators. WRITE.",
-          "side_effect_class": "write",
-          "timeout_ms": 30000
-        },
-        {
           "name": "contract_write",
-          "description": "Sign+send a generic contract/precompile write — DEX swaps, vault/protocol deposit methods, any function. Provide the Solidity signature + args (e.g. signature \"depositSwap(address,uint256,uint256,uint256,bytes32)\") or raw data, optional native value. WRITE: gated by PaxeerSpendPolicy. For a LayerX USDL deposit prefer wallet_layerx_deposit (one durable, idempotent, confirmed call); use contract_write for depositSwap/depositNative or any other contract whose balance is credited by a function call rather than a bare transfer. ERC-20 amounts need a prior `approve` to the contract.",
+          "description": "Sign and send a caller-specified contract write. Provide the Solidity signature + args or raw data, with optional native value. WRITE: gated by PaxeerSpendPolicy. For a LayerX USDL deposit prefer wallet_layerx_deposit (one durable, idempotent, confirmed call). ERC-20 amounts need a prior `approve` to the contract.",
           "side_effect_class": "write",
           "timeout_ms": 30000
         },

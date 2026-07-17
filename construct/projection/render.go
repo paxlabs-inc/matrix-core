@@ -48,7 +48,7 @@ Only render when you are actually doing a task or have something concrete to sho
 
 Pick ONE primitive per call via "kind" and fill "payload" for that kind:
 - narration: your reasoning/answer text. payload {text, role?: thinking|intent|answer}
-- metric: a single named value. payload {label, value, unit?, magnitude?, scale?: human-readable magnitude hint e.g. "K"|"M"|"B", trend?: up|down|flat, display?: plain|bar|gauge (gauge renders a radial dial — use with magnitude+threshold), threshold?: {warn?, limit?}}
+- metric: a single named value. payload {label, value, unit?, magnitude?, scale?: human-readable magnitude hint e.g. "K"|"M"|"B", trend?: up|down|flat, display?: plain|bar|gauge (gauge renders a radial dial — use with magnitude+threshold), threshold?: {warn?, limit?, direction?: above|below}}
 - entity: a referenceable object (a tx, token, file, account). payload {type, identity, label?, fields?: [{key,value,ref?}], affordances?: [{id,label,kind?: link|copy|ask, href?, ask_ref?}]}
 - structure: a collection. payload {shape: list|table|tree, columns?: [..], records: [{id?,label?,ref?,cells?:{col:val},children?:[..]}]}
 - stream: append-only text (logs, a trace, a code block — set channel:"command" for shell, or a language for code). payload {source?, title?, chunks: [{seq,text,channel?}], closed?}
@@ -58,42 +58,262 @@ Pick ONE primitive per call via "kind" and fill "payload" for that kind:
 
 Reuse the same "id" to UPDATE a surface you already rendered (e.g. flip a timeline step to done). Optional "attributes" decorate any surface: {stakes: fact|hypothesis|decision|irreversible, confidence: 0..1, cost: {amount, unit, cap}, temporality: point|stream|persistent}. Tag an irreversible action with stakes=irreversible so it renders with the right weight.`
 
-// renderToolParams is the JSON-Schema object for the construct_render function
-// arguments. payload is left an open object (its shape depends on kind, taught
-// in the description); the typed contract is enforced by ParseRender +
-// schema.Validate, which is the i2 security gate.
+// renderToolParams is the discriminated JSON-Schema union for construct_render.
+// The model cannot pair a kind with another primitive's payload shape: each
+// oneOf branch fixes kind with const and carries that primitive's required
+// fields. ParseRender + schema.Validate remain the authoritative i2 gate.
 func renderToolParams() map[string]interface{} {
-	kinds := make([]string, 0, len(schema.Kinds))
-	for _, k := range schema.Kinds {
-		kinds = append(kinds, string(k))
+	variants := []interface{}{
+		renderVariant(schema.KindNarration, objectSchema(
+			map[string]interface{}{
+				"text": stringSchema(),
+				"role": enumSchema("thinking", "intent", "answer"),
+			},
+			"text",
+		)),
+		renderVariant(schema.KindMetric, objectSchema(
+			map[string]interface{}{
+				"label":     stringSchema(),
+				"value":     stringSchema(),
+				"unit":      stringSchema(),
+				"magnitude": numberSchema(),
+				"scale":     stringSchema(),
+				"trend":     enumSchema("up", "down", "flat"),
+				"display":   enumSchema("plain", "bar", "gauge"),
+				"threshold": objectSchema(map[string]interface{}{
+					"warn": numberSchema(), "limit": numberSchema(),
+					"direction": enumSchema("above", "below"),
+				}),
+			},
+			"label", "value",
+		)),
+		renderVariant(schema.KindEntity, objectSchema(
+			map[string]interface{}{
+				"type":     stringSchema(),
+				"identity": stringSchema(),
+				"label":    stringSchema(),
+				"fields": arraySchema(objectSchema(
+					map[string]interface{}{
+						"key": stringSchema(), "value": stringSchema(), "ref": stringSchema(),
+					},
+					"key", "value",
+				)),
+				"affordances": arraySchema(objectSchema(
+					map[string]interface{}{
+						"id": stringSchema(), "label": stringSchema(),
+						"kind": enumSchema("link", "copy", "ask"),
+						"href": stringSchema(), "ask_ref": stringSchema(),
+					},
+					"id", "label",
+				)),
+			},
+			"type", "identity",
+		)),
+		renderVariant(schema.KindStructure, objectSchema(
+			map[string]interface{}{
+				"shape":   enumSchema("list", "table", "tree"),
+				"columns": arraySchema(stringSchema()),
+				"records": arraySchema(structureRecordSchema()),
+			},
+			"shape", "records",
+		)),
+		renderVariant(schema.KindStream, objectSchema(
+			map[string]interface{}{
+				"source": stringSchema(), "title": stringSchema(), "closed": boolSchema(),
+				"chunks": arraySchema(objectSchema(
+					map[string]interface{}{
+						"seq": numberSchema(), "text": stringSchema(), "channel": stringSchema(),
+					},
+					"seq", "text",
+				)),
+			},
+			"chunks",
+		)),
+		renderVariant(schema.KindTimeline, objectSchema(
+			map[string]interface{}{
+				"title": stringSchema(),
+				"steps": arraySchema(objectSchema(
+					map[string]interface{}{
+						"id": stringSchema(), "label": stringSchema(),
+						"status": enumSchema("pending", "running", "done", "failed"),
+						"detail": stringSchema(), "ref": stringSchema(),
+					},
+					"id", "label", "status",
+				)),
+			},
+			"steps",
+		)),
+		renderVariant(schema.KindCanvas, canvasPayloadSchema()),
+		renderVariant(schema.KindAsk, objectSchema(
+			map[string]interface{}{
+				"ask_kind": enumSchema("choose", "input", "confirm", "sign", "upload"),
+				"prompt":   stringSchema(),
+				"options": arraySchema(objectSchema(
+					map[string]interface{}{"id": stringSchema(), "label": stringSchema()},
+					"id", "label",
+				)),
+				"expected": stringSchema(), "required": boolSchema(),
+			},
+			"ask_kind", "prompt",
+		)),
 	}
 	return map[string]interface{}{
 		"type": "object",
 		"properties": map[string]interface{}{
-			"kind": map[string]interface{}{
-				"type":        "string",
-				"enum":        kinds,
-				"description": "Which of the 8 surface primitives to render.",
-			},
-			"payload": map[string]interface{}{
-				"type":        "object",
-				"description": "The primitive's content; its shape depends on kind (see the field guide above).",
-			},
-			"id": map[string]interface{}{
-				"type":        "string",
-				"description": "Stable id for this surface. Reuse it to update a surface you already rendered; omit to create a new one.",
-			},
-			"ref": map[string]interface{}{
-				"type":        "string",
-				"description": "Optional id of another surface this one links to.",
-			},
-			"attributes": map[string]interface{}{
-				"type":        "object",
-				"description": "Optional decoration: stakes, confidence (0..1), cost {amount,unit,cap}, temporality.",
-			},
+			"kind":       enumSchema("narration", "metric", "entity", "structure", "stream", "timeline", "canvas", "ask"),
+			"payload":    map[string]interface{}{"type": "object"},
+			"id":         stringSchema(),
+			"ref":        stringSchema(),
+			"attributes": attributesSchema(),
 		},
-		"required": []string{"kind", "payload"},
+		"required":             []string{"kind", "payload"},
+		"additionalProperties": false,
+		"oneOf":                variants,
 	}
+}
+
+func renderVariant(kind schema.Kind, payload map[string]interface{}) map[string]interface{} {
+	return map[string]interface{}{
+		"type": "object",
+		"properties": map[string]interface{}{
+			"kind":       map[string]interface{}{"type": "string", "const": string(kind)},
+			"payload":    payload,
+			"id":         stringSchema(),
+			"ref":        stringSchema(),
+			"attributes": attributesSchema(),
+		},
+		"required":             []string{"kind", "payload"},
+		"additionalProperties": false,
+	}
+}
+
+func attributesSchema() map[string]interface{} {
+	return objectSchema(map[string]interface{}{
+		"stakes": enumSchema("fact", "hypothesis", "decision", "irreversible"),
+		"confidence": map[string]interface{}{
+			"type": "number", "minimum": 0, "maximum": 1,
+		},
+		"cost": objectSchema(
+			map[string]interface{}{
+				"amount": numberSchema(), "unit": stringSchema(), "cap": numberSchema(),
+			},
+			"amount",
+		),
+		"temporality": enumSchema("point", "stream", "persistent"),
+	})
+}
+
+func canvasPayloadSchema() map[string]interface{} {
+	common := map[string]interface{}{
+		"caption": stringSchema(),
+		"regions": arraySchema(objectSchema(
+			map[string]interface{}{
+				"id": stringSchema(), "label": stringSchema(),
+				"x": numberSchema(), "y": numberSchema(),
+				"w": numberSchema(), "h": numberSchema(),
+				"ask_ref": stringSchema(),
+			},
+			"id", "x", "y", "w", "h",
+		)),
+	}
+	mediaProperties := cloneProperties(common)
+	mediaProperties["media"] = objectSchema(
+		map[string]interface{}{
+			"kind": enumSchema("image", "video", "audio", "page"),
+			"url":  stringSchema(), "mime": stringSchema(), "alt": stringSchema(),
+		},
+		"kind", "url",
+	)
+	chartProperties := cloneProperties(common)
+	chartProperties["media"] = objectSchema(
+		map[string]interface{}{"kind": constStringSchema("chart")},
+		"kind",
+	)
+	chartProperties["chart"] = objectSchema(
+		map[string]interface{}{
+			"kind": enumSchema("area", "bar", "line", "pie", "radar", "scatter"),
+			"series": arraySchema(objectSchema(
+				map[string]interface{}{
+					"key": stringSchema(), "name": stringSchema(), "color": stringSchema(),
+				},
+				"key",
+			)),
+			"points": arraySchema(objectSchema(
+				map[string]interface{}{
+					"label": stringSchema(),
+					"values": map[string]interface{}{
+						"type":                 "object",
+						"additionalProperties": numberSchema(),
+					},
+				},
+				"values",
+			)),
+			"x_label": stringSchema(), "y_label": stringSchema(), "stacked": boolSchema(),
+		},
+		"kind", "points",
+	)
+	return map[string]interface{}{
+		"type":  "object",
+		"oneOf": []interface{}{objectSchema(mediaProperties, "media"), objectSchema(chartProperties, "media", "chart")},
+	}
+}
+
+func cloneProperties(in map[string]interface{}) map[string]interface{} {
+	out := make(map[string]interface{}, len(in)+1)
+	for key, value := range in {
+		out[key] = value
+	}
+	return out
+}
+
+func objectSchema(properties map[string]interface{}, required ...string) map[string]interface{} {
+	out := map[string]interface{}{
+		"type":                 "object",
+		"properties":           properties,
+		"additionalProperties": false,
+	}
+	if len(required) > 0 {
+		out["required"] = required
+	}
+	return out
+}
+
+func structureRecordSchema() map[string]interface{} {
+	return structureRecordSchemaAtDepth(6)
+}
+
+func structureRecordSchemaAtDepth(depth int) map[string]interface{} {
+	properties := map[string]interface{}{
+		"id": stringSchema(), "label": stringSchema(), "ref": stringSchema(),
+		"cells": map[string]interface{}{"type": "object", "additionalProperties": scalarSchema()},
+	}
+	if depth > 0 {
+		properties["children"] = arraySchema(structureRecordSchemaAtDepth(depth - 1))
+	}
+	return objectSchema(
+		properties,
+	)
+}
+
+func stringSchema() map[string]interface{} { return map[string]interface{}{"type": "string"} }
+func numberSchema() map[string]interface{} { return map[string]interface{}{"type": "number"} }
+func boolSchema() map[string]interface{}   { return map[string]interface{}{"type": "boolean"} }
+func scalarSchema() map[string]interface{} {
+	return map[string]interface{}{"anyOf": []interface{}{
+		stringSchema(),
+		numberSchema(),
+		boolSchema(),
+		map[string]interface{}{"type": "null"},
+	}}
+}
+func enumSchema(values ...string) map[string]interface{} {
+	return map[string]interface{}{"type": "string", "enum": values}
+}
+func constStringSchema(value string) map[string]interface{} {
+	return map[string]interface{}{"type": "string", "const": value}
+}
+func arraySchema(items map[string]interface{}) map[string]interface{} {
+	return map[string]interface{}{"type": "array", "items": items}
 }
 
 // ParseRender maps a construct_render tool-call's arguments into a validated

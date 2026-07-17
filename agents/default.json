@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "agent": "matrix://agent/default",
-  "description": "Default Matrix agent \u2014 the per-user self/cloud runtime. Bundles filesystem + fetch + git MCP servers (Session 22 baseline) PLUS paxeer-net (the public Paxeer chain surface: 42 tools across RPC + PaxScan + Argus + price + agent-economy precompiles + embedded-wallet writes). READS need no auth; chain WRITES sign through the Paxeer Embedded Wallet (custody network-side, spend-policy enforced at the wallet API) and are additionally pre-gated plan-time by PaxeerSpendPolicy (per-call PAXEER_SPEND_CAP_WEI ceiling) before any side effect. Headless wallet auth via PAXEER_WALLET_TOKEN or PAXEER_WALLET_EMAIL+PAXEER_WALLET_PASSWORD (+PAXEER_SUPABASE_ANON_KEY); without it the chain bridge is read-only. PackageDigest values are PLACEHOLDERS; operators MUST replace with the sha256 digest of the actual installed package before any production / chain-anchoring deployment.",
+  "description": "Default Matrix agent \u2014 the per-user self/cloud runtime. Bundles filesystem + fetch + git MCP servers (Session 22 baseline) PLUS paxeer-net (the public Paxeer chain surface across RPC, PaxScan, price reads, and embedded-wallet writes). READS need no auth; chain WRITES sign through the Paxeer Embedded Wallet (custody network-side, spend-policy enforced at the wallet API) and are additionally pre-gated plan-time by PaxeerSpendPolicy (per-call PAXEER_SPEND_CAP_WEI ceiling) before any side effect. Headless wallet auth via PAXEER_WALLET_TOKEN or PAXEER_WALLET_EMAIL+PAXEER_WALLET_PASSWORD (+PAXEER_SUPABASE_ANON_KEY); without it the chain bridge is read-only. PackageDigest values are PLACEHOLDERS; operators MUST replace with the sha256 digest of the actual installed package before any production / chain-anchoring deployment.",
   "allowed_side_effects": [
     "read",
     "write",
@@ -682,7 +682,7 @@
         },
         {
           "name": "encode_call",
-          "description": "Pure ABI-encode a method call to 0x calldata. No network, no send. Used to build callData for schedule_job.",
+          "description": "Pure ABI-encode a method call to 0x calldata. No network, no send. Used to build or inspect calldata.",
           "side_effect_class": "read",
           "timeout_ms": 5000
         },
@@ -747,80 +747,8 @@
           "timeout_ms": 20000
         },
         {
-          "name": "portfolio",
-          "description": "Argus portfolio indexer: pnl + rank + performance for an address. Read-only.",
-          "side_effect_class": "network",
-          "timeout_ms": 20000
-        },
-        {
-          "name": "trending",
-          "description": "Trending tokens from the discovery indexer. Read-only.",
-          "side_effect_class": "network",
-          "timeout_ms": 20000
-        },
-        {
           "name": "price",
           "description": "Off-chain price for PAX or a bridged major (pax|sol|eth|bnb|sid). Read-only.",
-          "side_effect_class": "network",
-          "timeout_ms": 15000
-        },
-        {
-          "name": "market_get",
-          "description": "Generic PaxSpot DEX market-data GET passthrough. Read-only.",
-          "side_effect_class": "network",
-          "timeout_ms": 20000
-        },
-        {
-          "name": "points",
-          "description": "Sidiora points/rewards balance for an address. Read-only.",
-          "side_effect_class": "network",
-          "timeout_ms": 15000
-        },
-        {
-          "name": "oracle_price",
-          "description": "OracleAggregator 0x0903 validator price for a market (bytes32). Read-only.",
-          "side_effect_class": "network",
-          "timeout_ms": 15000
-        },
-        {
-          "name": "orob_resolve",
-          "description": "OROB 0x0901 oracle-relative price from a basis-point offset. Read-only (pure).",
-          "side_effect_class": "network",
-          "timeout_ms": 15000
-        },
-        {
-          "name": "clearing_compute",
-          "description": "BatchClearing 0x0902 uniform-price clearing over buy/sell offset+size arrays. Read-only (pure).",
-          "side_effect_class": "network",
-          "timeout_ms": 15000
-        },
-        {
-          "name": "pofq_score",
-          "description": "PoFQ 0x0904 fill-quality / reputation score (fillPrice vs oraclePrice). Read-only (pure).",
-          "side_effect_class": "network",
-          "timeout_ms": 15000
-        },
-        {
-          "name": "stream_status",
-          "description": "PaymentStreams 0x0906 stream detail + accrued amount. Read-only.",
-          "side_effect_class": "network",
-          "timeout_ms": 15000
-        },
-        {
-          "name": "job_status",
-          "description": "Scheduler 0x0905 job detail. Read-only.",
-          "side_effect_class": "network",
-          "timeout_ms": 15000
-        },
-        {
-          "name": "jobs_pending",
-          "description": "Scheduler 0x0905 pending job ids for a creator (defaults to agent wallet). Read-only.",
-          "side_effect_class": "network",
-          "timeout_ms": 15000
-        },
-        {
-          "name": "delegation",
-          "description": "Staking 0x0800 delegation (shares + balance) for a validator. Read-only.",
           "side_effect_class": "network",
           "timeout_ms": 15000
         },
@@ -849,68 +777,8 @@
           "timeout_ms": 30000
         },
         {
-          "name": "stream_open",
-          "description": "Open a PaymentStream 0x0906 (payee, token, ratePerSecond, cap?). WRITE: gated by PaxeerSpendPolicy.",
-          "side_effect_class": "write",
-          "timeout_ms": 30000
-        },
-        {
-          "name": "stream_settle",
-          "description": "Settle accrued on a stream (pays the payee). WRITE.",
-          "side_effect_class": "write",
-          "timeout_ms": 30000
-        },
-        {
-          "name": "stream_close",
-          "description": "Close a stream and refund the remainder. WRITE.",
-          "side_effect_class": "write",
-          "timeout_ms": 30000
-        },
-        {
-          "name": "stream_update_rate",
-          "description": "Change a stream's per-second rate. WRITE.",
-          "side_effect_class": "write",
-          "timeout_ms": 30000
-        },
-        {
-          "name": "schedule_job",
-          "description": "Schedule a future tx via Scheduler 0x0905 (target, callData, executeAtBlock, gasLimit, deposit). WRITE: funds a gas deposit; gated by PaxeerSpendPolicy.",
-          "side_effect_class": "write",
-          "timeout_ms": 30000
-        },
-        {
-          "name": "cancel_job",
-          "description": "Cancel a scheduled job and refund the deposit. WRITE.",
-          "side_effect_class": "write",
-          "timeout_ms": 30000
-        },
-        {
-          "name": "reschedule_job",
-          "description": "Move a scheduled job to a new block. WRITE.",
-          "side_effect_class": "write",
-          "timeout_ms": 30000
-        },
-        {
-          "name": "delegate",
-          "description": "Stake PAX to a validator (0x0800, paxvaloper...). WRITE: gated by PaxeerSpendPolicy.",
-          "side_effect_class": "write",
-          "timeout_ms": 30000
-        },
-        {
-          "name": "undelegate",
-          "description": "Unbond PAX from a validator. WRITE.",
-          "side_effect_class": "write",
-          "timeout_ms": 30000
-        },
-        {
-          "name": "redelegate",
-          "description": "Move stake between validators. WRITE: gated by PaxeerSpendPolicy.",
-          "side_effect_class": "write",
-          "timeout_ms": 30000
-        },
-        {
           "name": "contract_write",
-          "description": "Sign+send a generic contract/precompile write (DEX swaps + any method). Provide signature+args or raw data, optional value. WRITE: gated by PaxeerSpendPolicy.",
+          "description": "Sign and send a caller-specified contract write. Provide signature+args or raw data, optional value. WRITE: gated by PaxeerSpendPolicy.",
           "side_effect_class": "write",
           "timeout_ms": 30000
         },

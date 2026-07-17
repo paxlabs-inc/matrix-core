@@ -33,11 +33,11 @@ func TestNewPaxeerSettlerGuards(t *testing.T) {
 	op := testOperator(t)
 	good := "0x1D5f3ac9dE43Dd0665C3F527913dD825f67b3Daa"
 
-	if _, err := NewPaxeerSettler(nil, op, good, good); err == nil {
+	if _, err := NewPaxeerSettler(nil, op, good, good, nil); err == nil {
 		t.Error("nil client must error")
 	}
 	// A client with a nil eth handle is also rejected.
-	if _, err := NewPaxeerSettler(&Client{}, op, good, good); err == nil {
+	if _, err := NewPaxeerSettler(&Client{}, op, good, good, nil); err == nil {
 		t.Error("client without eth handle must error")
 	}
 }
@@ -55,16 +55,16 @@ func TestNewPaxeerSettlerAddressValidation(t *testing.T) {
 	}
 	defer c.Close()
 
-	if _, err := NewPaxeerSettler(c, op, "not-an-address", good); err == nil {
+	if _, err := NewPaxeerSettler(c, op, "not-an-address", good, nil); err == nil {
 		t.Error("invalid vault address must error")
 	}
-	if _, err := NewPaxeerSettler(c, op, good, "also-bad"); err == nil {
+	if _, err := NewPaxeerSettler(c, op, good, "also-bad", nil); err == nil {
 		t.Error("invalid anchor address must error")
 	}
-	if _, err := NewPaxeerSettler(c, nil, good, good); err == nil {
+	if _, err := NewPaxeerSettler(c, nil, good, good, nil); err == nil {
 		t.Error("nil operator must error")
 	}
-	ps, err := NewPaxeerSettler(c, op, good, good)
+	ps, err := NewPaxeerSettler(c, op, good, good, nil)
 	if err != nil {
 		t.Fatalf("valid construction: %v", err)
 	}
