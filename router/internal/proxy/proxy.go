@@ -169,7 +169,11 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				// Public first-run gate: provisioning starts only after the
 				// user has recorded the required disclosure acknowledgement
 				// and an explicit training-data choice.
-				approved, rErr := h.DB.HasCompletedFirstRunApprovals(r.Context(), sub, "public-launch-1")
+				approved, rErr := h.DB.HasCompletedFirstRunApprovals(
+					r.Context(),
+					sub,
+					db.PublicLaunchDisclosureVersion,
+				)
 				if rErr != nil {
 					h.Logf("first-run approval check %s: %v", sub, rErr)
 					http.Error(w, "internal error", http.StatusInternalServerError)

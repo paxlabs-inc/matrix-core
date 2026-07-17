@@ -47,8 +47,6 @@ func (h *Handler) Mount(mux *http.ServeMux) {
 	mux.HandleFunc("/provision/status", h.handleProvisionStatus)
 }
 
-const publicDisclosureVersion = "public-launch-1"
-
 // --- First-run approvals ------------------------------------------------
 
 func (h *Handler) handleOnboardingStart(w http.ResponseWriter, r *http.Request) {
@@ -65,7 +63,7 @@ func (h *Handler) handleOnboardingStart(w http.ResponseWriter, r *http.Request) 
 
 	ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second)
 	defer cancel()
-	approved, err := h.DB.HasCompletedFirstRunApprovals(ctx, sub, publicDisclosureVersion)
+	approved, err := h.DB.HasCompletedFirstRunApprovals(ctx, sub, db.PublicLaunchDisclosureVersion)
 	if err != nil {
 		h.logf("first-run approvals: %v", err)
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "internal error"})
@@ -236,7 +234,7 @@ func (h *Handler) handleSubscriptionClaim(w http.ResponseWriter, r *http.Request
 	}
 	ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second)
 	defer cancel()
-	approved, err := h.DB.HasCompletedFirstRunApprovals(ctx, sub, publicDisclosureVersion)
+	approved, err := h.DB.HasCompletedFirstRunApprovals(ctx, sub, db.PublicLaunchDisclosureVersion)
 	if err != nil {
 		h.logf("claim approvals: %v", err)
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "internal error"})

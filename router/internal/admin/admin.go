@@ -220,18 +220,22 @@ func (h *Handler) StartProvision(userID, email string) {
 		defer h.inflight.Delete(userID)
 		ctx, cancel := context.WithTimeout(context.Background(), h.timeout())
 		defer cancel()
-		// Defense-in-depth invite gate (req 3.5/9.1): the out-of-band
-		// provisioning path refuses to create an environment for a user
-		// with no redeemed invite, even if a caller forgot to pre-check.
+		// Defense-in-depth public-launch gate: the out-of-band provisioning
+		// path requires the same disclosure acknowledgement and explicit
+		// training-data choice enforced by the public proxy.
 		// The operator override (admin POST /admin/users) calls
 		// EnsureMachine directly and is intentionally not gated here.
-		redeemed, err := h.DB.HasRedeemedInvite(ctx, userID)
+		approved, err := h.DB.HasCompletedFirstRunApprovals(
+			ctx,
+			userID,
+			db.PublicLaunchDisclosureVersion,
+		)
 		if err != nil {
-			h.logf("auto-provision %s: invite check: %v", userID, err)
+			h.logf("auto-provision %s: first-run approval check: %v", userID, err)
 			return
 		}
-		if !redeemed {
-			h.logf("auto-provision %s: no redeemed invite; refusing", userID)
+		if !approved {
+			h.logf("auto-provision %s: first-run approvals incomplete; refusing", userID)
 			return
 		}
 		if _, _, err := h.EnsureMachine(ctx, userID, email, "", h.DefaultRegion); err != nil {

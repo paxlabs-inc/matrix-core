@@ -11,6 +11,10 @@ import (
 	"github.com/jackc/pgx/v5"
 )
 
+// PublicLaunchDisclosureVersion is the approval policy required before a
+// self-service user may claim launch access or provision an environment.
+const PublicLaunchDisclosureVersion = "public-launch-1"
+
 // InviteCode mirrors the invite_codes table.
 type InviteCode struct {
 	Code            string
