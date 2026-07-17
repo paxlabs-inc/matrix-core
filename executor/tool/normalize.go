@@ -16,13 +16,18 @@ import (
 type FailureClass string
 
 const (
-	FailureNone        FailureClass = ""
-	FailureInvocation  FailureClass = "invocation"
-	FailureTransport   FailureClass = "transport"
-	FailureProcess     FailureClass = "process"
-	FailureProtocol    FailureClass = "protocol"
-	FailureHTTP        FailureClass = "http"
-	FailureApplication FailureClass = "application"
+	FailureNone          FailureClass = ""
+	FailureInvocation    FailureClass = "invocation"
+	FailureTransport     FailureClass = "transport"
+	FailureProcess       FailureClass = "process"
+	FailureProtocol      FailureClass = "protocol"
+	FailureHTTP          FailureClass = "http"
+	FailureApplication   FailureClass = "application"
+	FailureValidation    FailureClass = "validation"
+	FailurePolicy        FailureClass = "policy"
+	FailureAuthorization FailureClass = "authorization"
+	FailureConflict      FailureClass = "conflict"
+	FailureCancellation  FailureClass = "cancellation"
 )
 
 // FailureError preserves a failure layer across ordinary error wrapping.

@@ -156,6 +156,10 @@ func New(cfg mcllm.Config) (*Client, error) {
 // Model returns the configured model id.
 func (c *Client) Model() string { return c.model }
 
+// Provider returns the configured wire provider identity for protocol
+// conformance. It intentionally exposes no endpoint or credential material.
+func (c *Client) Provider() string { return c.provider.String() }
+
 // Chat performs one round-trip: sends the message list (+ optional tool
 // schemas) and returns the model's single assistant turn, which may contain
 // tool_calls the caller must execute and feed back as tool-role messages.

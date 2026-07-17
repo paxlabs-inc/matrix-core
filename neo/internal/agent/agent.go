@@ -30,6 +30,7 @@ import (
 	"matrix/neo/internal/delegate"
 	"matrix/neo/internal/llm"
 	"matrix/neo/internal/memory"
+	"matrix/neo/internal/o1"
 	"matrix/neo/internal/recall"
 	"matrix/neo/internal/tools"
 )
@@ -162,7 +163,9 @@ type Agent struct {
 	memObserver      MemoryObserver
 	episodicSurfaced map[string]struct{}
 
-	// Lifetime: construction — the advertised tool surface, fixed at New.
+	// allSchemas is the live bound surface fixed at construction. schemas is
+	// the O1 contract-selected subset for the current turn.
+	allSchemas   []llm.Tool
 	schemas      []llm.Tool
 	schemaTokens int
 	schemaBytes  int
@@ -428,15 +431,14 @@ func New(o Options) *Agent {
 	if a.cfg.EpistemicPredictions {
 		a.schemas = injectExpectParam(a.schemas)
 	}
+	a.allSchemas = append([]llm.Tool(nil), a.schemas...)
 	// A restricted agent is held to its ADVERTISED surface at dispatch time
 	// too: the Manager's dispatch switch handles synthetic tools (e.g.
 	// construct_render) whether or not they were advertised, so a model that
 	// guesses an unadvertised name would otherwise reach past the restriction.
-	if o.RestrictTools || o.Brief {
-		a.advertised = make(map[string]struct{}, len(a.schemas))
-		for _, s := range a.schemas {
-			a.advertised[s.Function.Name] = struct{}{}
-		}
+	a.advertised = make(map[string]struct{}, len(a.schemas))
+	for _, s := range a.schemas {
+		a.advertised[s.Function.Name] = struct{}{}
 	}
 	a.schemaTokens = estimateToolTokens(a.schemas)
 	a.schemaBytes = estimateToolBytes(a.schemas)
@@ -469,6 +471,7 @@ func (a *Agent) drainInbox() bool {
 			continue
 		}
 		a.working = append(a.working, llm.UserMessage(m))
+		a.turn.contract = a.turn.contract.Revise(m)
 		injected = true
 	}
 	return injected
@@ -643,7 +646,10 @@ func (a *Agent) chat(ctx context.Context, userInput string, audio *AudioTurn) er
 	if audio != nil {
 		audioIndex = len(a.working)
 	}
-	cmTail := a.prepareTurn(ctx, userInput, audioData(audio))
+	cmTail, err := a.prepareTurn(ctx, userInput, audioData(audio))
+	if err != nil {
+		return err
+	}
 	audioFinalized := audio == nil
 	finalizeAudio := func() {
 		if audioFinalized {
@@ -668,7 +674,10 @@ func (a *Agent) chat(ctx context.Context, userInput string, audio *AudioTurn) er
 		// the tool-call boundary, never cancelling the in-flight run.
 		a.drainInbox()
 
-		window, tail, pct := a.prepareWindow(cmTail)
+		window, tail, pct, windowErr := a.prepareWindow(cmTail)
+		if windowErr != nil {
+			return windowErr
+		}
 		res, streamedReasoning, proceed, err := a.generate(ctx, step, cmTail, window, tail)
 		if err != nil {
 			finalizeAudio()
@@ -713,7 +722,45 @@ func (a *Agent) chat(ctx context.Context, userInput string, audio *AudioTurn) er
 // USER-role tail (the activation snapshot is frozen for the whole turn — the
 // NE-7 discipline). The Q2 first-turn relevance push rides the same tail so
 // the usage-salience attestation loop still learns from what surfaced.
-func (a *Agent) prepareTurn(ctx context.Context, userInput, audioData string) string {
+func (a *Agent) prepareTurn(ctx context.Context, userInput, audioData string) (string, error) {
+	a.turn.contract = o1.Compile(o1.CompileInput{
+		Request: userInput,
+		RepositoryRules: []string{
+			"Preserve unrelated workspace changes.",
+			"Do not use fake, mock, stub, canned, or placeholder implementations or verification.",
+		},
+	})
+	selected, err := o1.CompileRuntimeCapabilities(a.turn.contract, a.allSchemas)
+	if err != nil {
+		return "", fmt.Errorf("o1 capability preflight: %w", err)
+	}
+	if a.tools != nil {
+		names := make([]string, 0, len(selected.Tools))
+		for _, schema := range selected.Tools {
+			if schema.Function.Name == readOverflowTool {
+				continue
+			}
+			names = append(names, schema.Function.Name)
+		}
+		if err := a.tools.Preflight(names); err != nil {
+			return "", fmt.Errorf("o1 live capability preflight: %w", err)
+		}
+	}
+	a.turn.runLedger = o1.NewRunLedger(a.turnIntentID(), a.turn.contract.ID, a.turn.contract.Version)
+	if restored := a.restoreO1State(a.turn.contract.ID); restored != nil {
+		a.turn.runLedger = restored
+	}
+	a.turn.verifiers = o1.CompileVerifiers(a.turn.contract.Criteria)
+	for _, manifest := range selected.Manifests {
+		a.turn.manifests[manifest.Operation] = manifest
+	}
+	a.schemas = selected.Tools
+	a.advertised = make(map[string]struct{}, len(a.schemas))
+	for _, schema := range a.schemas {
+		a.advertised[schema.Function.Name] = struct{}{}
+	}
+	a.schemaTokens = estimateToolTokens(a.schemas)
+	a.schemaBytes = estimateToolBytes(a.schemas)
 	if audioData != "" {
 		a.working = append(a.working, llm.UserAudioMessage(userInput, audioData))
 	} else {
@@ -728,6 +775,7 @@ func (a *Agent) prepareTurn(ctx context.Context, userInput, audioData string) st
 	bundle := a.cmActivate(userInput)
 	a.activationAssemblies++
 	cmTail := a.renderActivationBundle(bundle)
+	cmTail += a.turn.contract.Render()
 	// Q2 first-message relevance push: Activate's tiers are recency-based
 	// + query-independent, so on the OPENING turn also inject a bounded
 	// relevance retrieval keyed on the message — the agent gets
@@ -776,7 +824,7 @@ func (a *Agent) prepareTurn(ctx context.Context, userInput, audioData string) st
 	// memories that were surfaced but demonstrably ignored.
 	collectSurfaced(a.turn.surfaced, retrieved, nil)
 	collectSurfacedSnips(a.turn.surfacedSnips, retrieved)
-	return cmTail
+	return cmTail, nil
 }
 
 // prepareWindow is the step half of the prepare stage and the ONE window-
@@ -796,7 +844,10 @@ func (a *Agent) prepareTurn(ctx context.Context, userInput, audioData string) st
 // token budget: the token estimate undercounts the serialized JSON, so a
 // window within token budget can still 413 — images strip first (cheaper,
 // less lossy), then the trim.
-func (a *Agent) prepareWindow(cmTail string) (window []llm.Message, tail string, pct int) {
+func (a *Agent) prepareWindow(cmTail string) (window []llm.Message, tail string, pct int, err error) {
+	if err := o1.ValidateConversationTruth(a.working); err != nil {
+		return nil, "", 0, fmt.Errorf("o1 context truth: %w", err)
+	}
 	baseSystem := a.stableSystem() + cmTail
 	if a.overHardBudget(baseSystem) {
 		a.cmTrimWorking()
@@ -811,7 +862,7 @@ func (a *Agent) prepareWindow(cmTail string) (window []llm.Message, tail string,
 	tail = cmTail + a.epistemicTail() + a.budgetTail(pct)
 	window = assembleWindowUserTail(a.stableSystem(), a.working, tail)
 	a.windowAssemblies++
-	return window, tail, pct
+	return window, tail, pct, nil
 }
 
 // generate is the generate stage (MORPHEUS req.3.1): one model call with live
@@ -878,12 +929,20 @@ func (a *Agent) generate(ctx context.Context, step int, cmTail string, window []
 		// durable in cortex) and retry once more.
 		if errors.Is(err, llm.ErrRequestTooLarge) {
 			if a.stripOldImages() > 0 {
-				window, _, _ = a.prepareWindow(cmTail)
+				var prepareErr error
+				window, _, _, prepareErr = a.prepareWindow(cmTail)
+				if prepareErr != nil {
+					return nil, streamedReasoning, false, prepareErr
+				}
 				res, err = a.chatWithRetry(ctx, llm.ChatRequest{Messages: window, Tools: a.schemas, OnDelta: onDelta})
 			}
 			if err != nil && errors.Is(err, llm.ErrRequestTooLarge) {
 				a.cmTrimWorking()
-				window, _, _ = a.prepareWindow(cmTail)
+				var prepareErr error
+				window, _, _, prepareErr = a.prepareWindow(cmTail)
+				if prepareErr != nil {
+					return nil, streamedReasoning, false, prepareErr
+				}
 				res, err = a.chatWithRetry(ctx, llm.ChatRequest{Messages: window, Tools: a.schemas, OnDelta: onDelta})
 			}
 		}
@@ -1081,6 +1140,10 @@ func (a *Agent) act(ctx context.Context, step, pct int, res *llm.ChatResult) err
 	// refuses dependent dispatches while a refuted premise stands
 	// (introspection tools stay allowed — they are the discharge path).
 	allowed, _ := a.checkBeforeAct(res.Message.ToolCalls)
+	if !t.contract.ReadyForMutation() {
+		a.pushGuidance("The task contract has an unresolved material input. Do not call tools or mutate state. Ask only for the missing required value recorded in the contract.")
+		return nil
+	}
 	if err := a.runToolCalls(ctx, allowed); err != nil {
 		return err
 	}
@@ -1372,6 +1435,9 @@ func (a *Agent) chatWithRetry(ctx context.Context, req llm.ChatRequest) (*llm.Ch
 		}
 		res, err := a.main.Chat(ctx, req)
 		if err == nil {
+			if conformErr := o1.ConformChatResult(res, o1.DefaultBudget(), o1.DialectForProvider(a.main.Provider())); conformErr != nil {
+				return nil, fmt.Errorf("o1 provider protocol: %w", conformErr)
+			}
 			return res, nil
 		}
 		lastErr = err
@@ -1717,6 +1783,25 @@ func (a *Agent) noteNormalizedFailure(name string, args map[string]interface{}, 
 // transient/model/stall failure (the existing respawn path).
 func (a *Agent) LastFailureClass() delegate.FailureClass { return a.turn.lastFailureClass }
 
+func (a *Agent) LastO1Decision() (o1.SupervisorDecision, bool) {
+	if a.turn == nil || a.turn.runLedger == nil {
+		return o1.SupervisorDecision{}, false
+	}
+	var proof *o1.ProofManifest
+	if a.turn.verifiers.AllClosed() {
+		candidate := a.turn.verifiers.GenerateProofManifest(
+			a.turn.runLedger.RunID, a.turn.contract.ID,
+			len(a.turn.runLedger.Effects) == 0 || a.turn.runLedger.EffectsReconciled,
+			true,
+		)
+		proof = &candidate
+	}
+	decision := (&o1.Supervisor{}).Evaluate(
+		a.turn.contract, a.turn.runLedger, &a.turn.verifiers, proof, a.turn.lastOutcome,
+	)
+	return decision, true
+}
+
 // dispatchWithRetry runs one tool call with the recovery ladder: bounded
 // retries for transport/invocation errors (ladder 1); on exhaustion it
 // returns a descriptive failure as the tool result so the model can adapt
@@ -1738,10 +1823,17 @@ func (a *Agent) dispatchWithRetry(ctx context.Context, name string, args map[str
 	// read (the read-full latch). It never retries or routes to the Manager.
 	if name == readOverflowTool {
 		content, isErr := a.readOverflow(args)
-		return content, content, "", isErr, delegate.ClassNone, exectool.FailureNone
+		class := exectool.FailureNone
+		if isErr {
+			class = exectool.FailureValidation
+		}
+		a.recordO1ToolOutcome(name, args, content, isErr, class, false)
+		return content, content, "", isErr, normalizedRecoveryClass(class, false), class
 	}
 	if a.tools == nil {
 		content := "no tools are available in this session."
+		outcome := a.recordO1ToolOutcome(name, args, content, true, exectool.FailureInvocation, false)
+		a.turn.lastOutcome = &outcome
 		return content, content, "", true, delegate.ClassDeterministic, exectool.FailureInvocation
 	}
 	// Restricted agents are held to their advertised surface: the Manager's
@@ -1751,7 +1843,25 @@ func (a *Agent) dispatchWithRetry(ctx context.Context, name string, args map[str
 	if a.advertised != nil {
 		if _, ok := a.advertised[name]; !ok {
 			content := fmt.Sprintf("tool %q is not available in this session — use only the tools you were given.", name)
+			outcome := a.recordO1ToolOutcome(name, args, content, true, exectool.FailureInvocation, false)
+			a.turn.lastOutcome = &outcome
 			return content, content, "", true, delegate.ClassDeterministic, exectool.FailureInvocation
+		}
+	}
+	manifest := a.o1Manifest(name)
+	if manifest.Effects != o1.EffectReadOnly && a.turn != nil && a.turn.runLedger != nil {
+		argsJSON, _ := json.Marshal(args)
+		preState := o1.ContentHash(argsJSON)
+		if a.turn.runLedger.HasUnreconciledEffect(name, "uncertain:"+preState) {
+			content := fmt.Sprintf("class=%s: prior transport outcome is uncertain; reconcile authoritative state before retrying this operation", exectool.FailureConflict)
+			outcome := a.recordO1ToolOutcome(name, args, content, true, exectool.FailureConflict, false)
+			a.turn.lastOutcome = &outcome
+			return content, content, "", true, delegate.ClassDeterministic, exectool.FailureConflict
+		}
+		if prior, ok := a.turn.runLedger.SuccessfulAttempt(name, preState); ok {
+			outcome := prior.Outcome
+			a.turn.lastOutcome = &outcome
+			return prior.Evidence, prior.Evidence, "", false, delegate.ClassNone, exectool.FailureNone
 		}
 	}
 	var lastErr error
@@ -1774,9 +1884,24 @@ func (a *Agent) dispatchWithRetry(ctx context.Context, name string, args map[str
 				}
 				recoveryClass = normalizedRecoveryClass(failureClass, retryable)
 			}
+			outcome := a.recordO1ToolOutcome(name, args, raw, isErr, failureClass, retryable)
+			if isErr {
+				decision := o1.SelectRecoveryTransition(a.o1Manifest(name), outcome, attempt+1)
+				a.recordO1Recovery(name, decision, attempt+1)
+				if decision.Transition == o1.TransitionRetry && !decision.Terminal {
+					lastErr = fmt.Errorf("%s", failureMessage)
+					continue
+				}
+				if decision.Transition == o1.TransitionReconcile {
+					modelContent = fmt.Sprintf("class=%s: state is uncertain and must be reconciled before retry; %s", failureClass, failureMessage)
+				}
+			}
 			return modelContent, raw, shot, isErr, recoveryClass, failureClass
 		}
 		lastErr = err
+		failureClass = exectool.FailureClassOf(err)
+		retryable = delegate.ClassOf(err) != delegate.ClassDeterministic
+		outcome := a.recordO1ToolOutcome(name, args, err.Error(), true, failureClass, retryable)
 		if ctx.Err() != nil {
 			break
 		}
@@ -1789,6 +1914,11 @@ func (a *Agent) dispatchWithRetry(ctx context.Context, name string, args map[str
 			content := fmt.Sprintf("tool %q failed and this is a permanent error that will not change on a retry: %v. Don't repeat this call — adjust the approach or ask the user how they'd like to proceed.", name, lastErr)
 			return content, lastErr.Error(), "", true, delegate.ClassDeterministic, exectool.FailureClassOf(lastErr)
 		}
+		decision := o1.SelectRecoveryTransition(a.o1Manifest(name), outcome, attempt+1)
+		a.recordO1Recovery(name, decision, attempt+1)
+		if decision.Transition != o1.TransitionRetry || decision.Terminal {
+			break
+		}
 	}
 	content = fmt.Sprintf("tool %q failed after %d attempts: %v. Consider a different approach.", name, a.cfg.MaxRetriesPerTool+1, lastErr)
 	evidence = content
@@ -1796,6 +1926,101 @@ func (a *Agent) dispatchWithRetry(ctx context.Context, name string, args map[str
 		evidence = lastErr.Error()
 	}
 	return content, evidence, "", true, delegate.ClassOf(lastErr), exectool.FailureClassOf(lastErr)
+}
+
+func (a *Agent) recordO1Recovery(name string, decision o1.RecoveryDecision, attempts int) {
+	if a.turn == nil || a.turn.runLedger == nil {
+		return
+	}
+	a.turn.runLedger.RecordRecovery(o1.RecoveryRecord{
+		Operation: name, Transition: decision.Transition, Attempts: attempts,
+		Terminal: decision.Terminal, Reason: decision.Reason,
+	})
+	a.persistO1State()
+}
+
+func (a *Agent) o1Manifest(name string) o1.OperationManifest {
+	if a.turn != nil {
+		if manifest, ok := a.turn.manifests[name]; ok {
+			return manifest
+		}
+	}
+	return o1.OperationManifest{
+		Operation: name, Effects: o1.EffectReadOnly,
+		Recovery: o1.RecoverySpec{Bound: a.cfg.MaxRetriesPerTool + 1},
+	}
+}
+
+func (a *Agent) recordO1ToolOutcome(name string, args map[string]interface{}, evidence string, isErr bool, class exectool.FailureClass, retryable bool) o1.OperationOutcome {
+	builder := o1.NewOutcome(name).Evidence(evidence)
+	if isErr {
+		builder.Fail(o1FailureLayer(class), string(class)).Retryable(retryable)
+		if retryable {
+			if o1FailureLayer(class) == o1.LayerTransport && a.o1Manifest(name).Effects != o1.EffectReadOnly {
+				builder.AllowTransition(o1.TransitionReconcile)
+			} else {
+				builder.AllowTransition(o1.TransitionRetry)
+			}
+		}
+	} else {
+		builder.Success().PostSatisfied("operation returned a normalized successful result")
+	}
+	outcome, err := builder.Build()
+	if err != nil {
+		outcome = o1.NewOutcome(name).Fail(o1.LayerProtocol, "invalid_normalized_outcome").
+			Evidence(err.Error()).MustBuild()
+	}
+	if a.turn == nil || a.turn.runLedger == nil {
+		return outcome
+	}
+	argsJSON, _ := json.Marshal(args)
+	preState := o1.ContentHash(argsJSON)
+	postState := preState
+	if !isErr {
+		postState = o1.ContentHash([]byte(evidence))
+	}
+	_, _ = a.turn.runLedger.RecordAttempt(o1.AttemptRecord{
+		Operation: name, PreState: preState, PostState: postState,
+		Outcome: outcome, Evidence: evidence,
+	})
+	manifest := a.o1Manifest(name)
+	if !isErr && manifest.Effects != o1.EffectReadOnly {
+		effect := "result:" + postState
+		a.turn.runLedger.RecordEffect(name, effect, manifest.Reversibility == o1.Reversible)
+		_ = a.turn.runLedger.ReconcileEffect(name, effect)
+	} else if isErr && outcome.FailureLayer == o1.LayerTransport && manifest.Effects != o1.EffectReadOnly {
+		a.turn.runLedger.RecordEffect(name, "uncertain:"+preState, manifest.Reversibility == o1.Reversible)
+	}
+	a.turn.lastOutcome = &outcome
+	a.persistO1State()
+	return outcome
+}
+
+func o1FailureLayer(class exectool.FailureClass) o1.FailureLayer {
+	switch class {
+	case exectool.FailureInvocation:
+		return o1.LayerInvocation
+	case exectool.FailureProcess:
+		return o1.LayerProcess
+	case exectool.FailureProtocol:
+		return o1.LayerProtocol
+	case exectool.FailureHTTP:
+		return o1.LayerHTTP
+	case exectool.FailureApplication:
+		return o1.LayerApplication
+	case exectool.FailureValidation:
+		return o1.LayerValidation
+	case exectool.FailurePolicy:
+		return o1.LayerPolicy
+	case exectool.FailureAuthorization:
+		return o1.LayerAuthorization
+	case exectool.FailureConflict:
+		return o1.LayerConflict
+	case exectool.FailureCancellation:
+		return o1.LayerCancellation
+	default:
+		return o1.LayerTransport
+	}
 }
 
 func normalizedRecoveryClass(class exectool.FailureClass, retryable bool) delegate.FailureClass {

@@ -8,6 +8,8 @@ import (
 	"fmt"
 	"strings"
 	"testing"
+
+	exectool "matrix/executor/tool"
 )
 
 // NEO-WORKBENCH: the synthetic workspace_preview tool is advertised only when
@@ -26,6 +28,10 @@ func TestPreviewToolWiringAndDispatch(t *testing.T) {
 	content, isErr, err := m.Dispatch(context.Background(), PreviewTool, nil)
 	if err != nil || !isErr || !strings.Contains(content, "not available") {
 		t.Fatalf("unwired dispatch = (%q, %v, %v), want in-band unavailable", content, isErr, err)
+	}
+	_, _, isErr, failureClass, retryable, _, err := m.DispatchMediaClassified(context.Background(), PreviewTool, nil)
+	if err != nil || !isErr || retryable || failureClass != exectool.FailureApplication {
+		t.Fatalf("classified unwired preview = (isErr=%v class=%s retryable=%v err=%v)", isErr, failureClass, retryable, err)
 	}
 
 	called := false

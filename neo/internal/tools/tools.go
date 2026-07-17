@@ -451,35 +451,94 @@ func (m *Manager) DispatchMediaClassified(ctx context.Context, funcName string, 
 	return m.dispatch(ctx, funcName, args)
 }
 
+// Preflight verifies that each selected operation is genuinely bound to its
+// production implementation before it is exposed to the model. MCP operations
+// must resolve through the live registry; synthetic operations must have their
+// owning runtime dependency wired.
+func (m *Manager) Preflight(funcNames []string) error {
+	if m == nil {
+		return fmt.Errorf("tool manager is unavailable")
+	}
+	for _, funcName := range funcNames {
+		switch funcName {
+		case CoreExecuteTool:
+			if m.delegate == nil || len(m.escalated) == 0 {
+				return fmt.Errorf("%s is not connected", funcName)
+			}
+		case MemoryRecallTool:
+			if m.recall == nil {
+				return fmt.Errorf("%s is not connected", funcName)
+			}
+		case MemoryMutateTool:
+			if m.mutation == nil {
+				return fmt.Errorf("%s is not connected", funcName)
+			}
+		case SpawnSubagentsTool:
+			if m.swarm == nil {
+				return fmt.Errorf("%s is not connected", funcName)
+			}
+		case ConstructRenderTool:
+			if m.surface == nil {
+				return fmt.Errorf("%s is not connected", funcName)
+			}
+		case WriteSkillTool:
+			if m.writeSkill == nil {
+				return fmt.Errorf("%s is not connected", funcName)
+			}
+		case TodoTool:
+			if m.todo == nil {
+				return fmt.Errorf("%s is not connected", funcName)
+			}
+		case PreviewTool:
+			if m.preview == nil {
+				return fmt.Errorf("%s is not connected", funcName)
+			}
+		case SavePersonalizationTool:
+			if m.personalization == nil {
+				return fmt.Errorf("%s is not connected", funcName)
+			}
+		default:
+			bt, ok := m.byFunc[funcName]
+			if !ok {
+				return fmt.Errorf("%s has no live binding", funcName)
+			}
+			if _, err := m.registry.Get(bt.uri); err != nil {
+				return fmt.Errorf("%s registry preflight: %w", funcName, err)
+			}
+		}
+	}
+	return nil
+}
+
 func (m *Manager) dispatch(ctx context.Context, funcName string, args map[string]interface{}) (content, shotURL string, isErr bool, failureClass tool.FailureClass, retryable bool, failureMessage string, err error) {
 	switch funcName {
 	case CoreExecuteTool:
 		c, e, er := m.dispatchCoreExecute(ctx, args)
-		return c, "", e, tool.FailureNone, false, "", er
+		return syntheticResult(c, e, er)
 	case MemoryRecallTool:
 		c, e, er := m.dispatchMemoryRecall(ctx, args)
-		return c, "", e, tool.FailureNone, false, "", er
+		return syntheticResult(c, e, er)
 	case MemoryMutateTool:
 		c, e, er := m.dispatchMemoryMutation(ctx, args)
-		return c, "", e, tool.FailureNone, false, "", er
+		return syntheticResult(c, e, er)
 	case SpawnSubagentsTool:
 		c, e, er := m.dispatchSpawnSubagents(ctx, args)
-		return c, "", e, tool.FailureNone, false, "", er
+		return syntheticResult(c, e, er)
 	case ConstructRenderTool:
 		c, e, er := m.dispatchConstructRender(ctx, args)
-		return c, "", e, tool.FailureNone, false, "", er
+		return syntheticResult(c, e, er)
 	case WriteSkillTool:
 		c, e, er := m.dispatchWriteSkill(ctx, args)
-		return c, "", e, tool.FailureNone, false, "", er
+		return syntheticResult(c, e, er)
 	case TodoTool:
 		c, e, er := m.dispatchTodo(ctx, args)
-		return c, "", e, tool.FailureNone, false, "", er
+		return syntheticResult(c, e, er)
 	case PreviewTool:
 		c, e, er := m.dispatchPreview(ctx)
-		return c, "", e, tool.FailureNone, false, "", er
+		return syntheticResult(c, e, er)
 	case SavePersonalizationTool:
 		c, e, er := m.dispatchPersonalizationSave(ctx, args)
-		return c, "", e, tool.FailureNone, false, "", er
+		return syntheticResult(c, e, er)
 	}
 	bt, ok := m.byFunc[funcName]
 	if !ok {
@@ -497,7 +556,26 @@ func (m *Manager) dispatch(ctx context.Context, funcName string, args map[string
 				"file mutation payload is %d bytes; the per-call limit is %d bytes. Write an initial bounded chunk, then continue with anchored edit_file batches until the file is complete",
 				size,
 				maxFileMutationBytes,
-			), "", true, tool.FailureInvocation, false, "", nil
+			), "", true, tool.FailureValidation, false, "", nil
+		}
+		// O1 req.5 ac.2: reject oversized payloads before model generation.
+		// Validate edit_file oldText/newText pairs are non-empty.
+		if bt.name == "edit_file" {
+			if edits, ok := args["edits"].([]interface{}); ok {
+				for i, raw := range edits {
+					edit, ok := raw.(map[string]interface{})
+					if !ok {
+						continue
+					}
+					old, _ := edit["oldText"].(string)
+					if strings.TrimSpace(old) == "" {
+						return fmt.Sprintf(
+							"edit_file edit %d has empty oldText — every edit must specify the exact existing text to replace",
+							i,
+						), "", true, tool.FailureValidation, false, "", nil
+					}
+				}
+			}
 		}
 	}
 	t, err := m.registry.Get(bt.uri)
@@ -517,6 +595,21 @@ func (m *Manager) dispatch(ctx context.Context, funcName string, args map[string
 		text = summarizeNonText(res)
 	}
 	return text, shotURL, res.IsError, res.FailureClass, res.Retryable, res.FailureMessage, nil
+}
+
+func syntheticResult(content string, isErr bool, err error) (string, string, bool, tool.FailureClass, bool, string, error) {
+	if err != nil {
+		class := tool.FailureClassOf(err)
+		return content, "", true, class, class == tool.FailureTransport, err.Error(), err
+	}
+	if isErr {
+		message := strings.Join(strings.Fields(content), " ")
+		if message == "" {
+			message = "The application rejected the operation."
+		}
+		return content, "", true, tool.FailureApplication, false, message, nil
+	}
+	return content, "", false, tool.FailureNone, false, "", nil
 }
 
 // persistFirstImage writes the first image content block in a tool result to the

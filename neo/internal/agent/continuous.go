@@ -27,6 +27,7 @@ import (
 	cmem "matrix/cortex/memory"
 	"matrix/neo/internal/llm"
 	"matrix/neo/internal/memory"
+	"matrix/neo/internal/o1"
 )
 
 // cmConvID scopes the cortex session/transcript store: the agent's conversation
@@ -100,6 +101,51 @@ func (a *Agent) cmRecordToolResult(name, content string) {
 		ToolName:       name,
 		Content:        content,
 	})
+}
+
+func (a *Agent) persistO1State() {
+	if a.pager == nil || a.turn == nil || a.turn.runLedger == nil {
+		return
+	}
+	snapshot, err := a.turn.runLedger.SnapshotJSON()
+	if err != nil {
+		a.turn.runLedger.AddHazard("o1-ledger-snapshot")
+		return
+	}
+	uri, err := a.pager.AppendMessage(cortex.Message{
+		ConversationID: a.cmConvID(),
+		Role:           cortex.RoleToolResult,
+		ToolName:       "o1_state",
+		Content:        string(snapshot),
+	})
+	if err != nil {
+		a.turn.runLedger.AddHazard("o1-ledger-persistence")
+		return
+	}
+	if _, seq, ok := cortex.ParseSessionURI(uri); ok {
+		a.turn.noteSessionSeq(seq)
+	}
+}
+
+func (a *Agent) restoreO1State(contractID string) *o1.RunLedger {
+	if a.pager == nil {
+		return nil
+	}
+	messages, err := a.pager.Transcript(a.cmConvID(), 0, 0)
+	if err != nil {
+		return nil
+	}
+	for i := len(messages) - 1; i >= 0; i-- {
+		message := messages[i]
+		if message.Role != cortex.RoleToolResult || message.ToolName != "o1_state" {
+			continue
+		}
+		ledger, err := o1.RestoreRunLedger([]byte(message.Content))
+		if err == nil && ledger.ContractID == contractID && ledger.TerminalProof == nil {
+			return ledger
+		}
+	}
+	return nil
 }
 
 // cmAppend writes one message to the cortex session store. Best-effort: a

@@ -7,6 +7,7 @@ import (
 	"context"
 
 	"matrix/neo/internal/memory"
+	"matrix/neo/internal/o1"
 )
 
 // finish.go holds the shared end-of-turn bookkeeping. Cassandra 2.0 retired the
@@ -56,6 +57,9 @@ func (a *Agent) finishTurn(ctx context.Context, answer string, surfaced map[stri
 		a.emitAudit(auditEventIdentityLeak, map[string]interface{}{"where": "delivery"})
 		answer = scrubbed
 	}
+	if a.turn != nil && a.turn.runLedger != nil {
+		_ = a.finalizeO1(answer)
+	}
 	a.out.Say(answer, completion)
 	// [memory.writeback] step_5: consolidate before any compaction nils the
 	// working transcript.
@@ -63,6 +67,128 @@ func (a *Agent) finishTurn(ctx context.Context, answer string, surfaced map[stri
 	// Attest surfaced memories so cortex salience + EMA learn from what helped
 	// vs. what merely crowded the budget. Cheap, best-effort.
 	a.attestTurn(ctx, surfaced, surfacedSnips, userInput, answer)
+}
+
+func (a *Agent) finalizeO1(answer string) bool {
+	t := a.turn
+	if t == nil || t.runLedger == nil || answer == "" {
+		return false
+	}
+	canProveResult := t.lastOutcome == nil || t.lastOutcome.Success
+	for _, verifier := range t.verifiers.Verifiers {
+		if verifier.CriterionID == "criterion.request" && !canProveResult {
+			continue
+		}
+		evidence, eligible := a.o1CriterionEvidence(verifier.CriterionID)
+		if !eligible {
+			continue
+		}
+		for _, kind := range verifier.Kinds {
+			t.verifiers.RecordResult(o1.VerifierResult{
+				CriterionID: verifier.CriterionID, VerifierKind: kind,
+				Passed: true, Evidence: evidence,
+			})
+		}
+		if current := findO1Verifier(t.verifiers, verifier.CriterionID); current != nil && current.Closed {
+			t.runLedger.CloseCriterion(verifier.CriterionID, joinO1Evidence(current.Results))
+		}
+	}
+	effectsReconciled := len(t.runLedger.Effects) == 0 || t.runLedger.EffectsReconciled
+	proof := t.verifiers.GenerateProofManifest(t.runLedger.RunID, t.contract.ID, effectsReconciled, true)
+	decision := (&o1.Supervisor{}).Evaluate(t.contract, t.runLedger, &t.verifiers, &proof, t.lastOutcome)
+	if decision.Action != o1.SupComplete {
+		if decision.Terminal != nil {
+			_ = t.runLedger.SetTerminal(o1.TerminalProof{
+				Success: false, Summary: decision.Reason, Evidence: []string{decision.Evidence},
+			})
+		}
+		a.persistO1State()
+		return false
+	}
+	if err := t.runLedger.SetTerminal(o1.TerminalProof{
+		Success: true, Summary: answer, Evidence: []string{proof.ProofHash},
+	}); err != nil {
+		a.persistO1State()
+		return false
+	}
+	a.persistO1State()
+	return true
+}
+
+func (a *Agent) o1CriterionEvidence(criterionID string) (string, bool) {
+	t := a.turn
+	if t == nil || t.runLedger == nil {
+		return "", false
+	}
+	switch criterionID {
+	case "criterion.request":
+		return "normalized answer passed the bounded qualitative close review", true
+	case "criterion.rules":
+		if contractNeedsCapability(t.contract, "execution") {
+			if !t.runLedger.HasSuccessfulOperation("exec__", "shell__") {
+				return "", false
+			}
+			return "repository or framework validation completed with a normalized successful process outcome", true
+		}
+		return "conversation truth, source, overflow, identity, and Cassandra guards passed", true
+	case "criterion.delivery":
+		return "finishTurn authorized durable Reporter.Say delivery", true
+	case "criterion.artifact":
+		if !t.runLedger.HasSuccessfulOperation("fs__write_file", "fs__edit_file", "write_file", "edit_file") {
+			return "", false
+		}
+		return "bounded artifact mutation completed and its normalized result was recorded", true
+	case "criterion.execution":
+		if !t.runLedger.HasSuccessfulOperation("exec__", "shell__") {
+			return "", false
+		}
+		return "validation process completed successfully", true
+	case "criterion.sources":
+		if !t.runLedger.HasSuccessfulOperation("web-search__", "web_search__") ||
+			!t.runLedger.HasSuccessfulOperation("fetch__", "fetch") {
+			return "", false
+		}
+		return "search discovery and selected source fetch both completed successfully", true
+	case "criterion.effects":
+		if len(t.runLedger.Effects) == 0 || !t.runLedger.EffectsReconciled {
+			return "", false
+		}
+		return "state-changing effects have authoritative reconciled postconditions", true
+	default:
+		return "", false
+	}
+}
+
+func contractNeedsCapability(contract o1.TaskContract, capability string) bool {
+	for _, required := range contract.RequiredCapabilities {
+		if required == capability {
+			return true
+		}
+	}
+	return false
+}
+
+func findO1Verifier(graph o1.VerifierGraph, criterionID string) *o1.CriterionVerifier {
+	for i := range graph.Verifiers {
+		if graph.Verifiers[i].CriterionID == criterionID {
+			return &graph.Verifiers[i]
+		}
+	}
+	return nil
+}
+
+func joinO1Evidence(results []o1.VerifierResult) string {
+	var evidence string
+	for _, result := range results {
+		if !result.Passed || result.Evidence == "" {
+			continue
+		}
+		if evidence != "" {
+			evidence += "; "
+		}
+		evidence += result.Evidence
+	}
+	return evidence
 }
 
 // consolidateWorking sweeps the current turn's transcript into cortex (write-

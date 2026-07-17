@@ -12,6 +12,7 @@ import (
 	"matrix/neo/internal/delegate"
 	"matrix/neo/internal/llm"
 	"matrix/neo/internal/memory"
+	"matrix/neo/internal/o1"
 )
 
 // turn owns the run state scoped to ONE Chat turn. Contract: it is created by
@@ -23,6 +24,18 @@ import (
 // (lastFailureClass, lastDeath) stay reachable through Agent.LastFailureClass
 // and Agent.LastDeath until the next turn replaces them.
 type turn struct {
+	// contract is Architect O1's executable, versioned statement of the
+	// complete request. It is compiled before model execution and revised
+	// monotonically when genuine user steering arrives.
+	contract o1.TaskContract
+	// runLedger is Architect O1's authoritative causal state for this turn.
+	// It records real dispatch attempts, effects, verifier evidence, and the
+	// terminal proof consumed by the supervisor.
+	runLedger   *o1.RunLedger
+	verifiers   o1.VerifierGraph
+	manifests   map[string]o1.OperationManifest
+	lastOutcome *o1.OperationOutcome
+
 	// ledger is Mechanism 1's premise ledger — the current plan's load-bearing
 	// factual premises with provenance (epistemic-core req.4). Seeded at plan
 	// formation, nil until the first committing assistant turn, replaced on
@@ -153,6 +166,7 @@ func newTurn() *turn {
 		distinctToolSet: map[string]struct{}{},
 		surfaced:        map[string]struct{}{},
 		surfacedSnips:   map[string]memory.Snippet{},
+		manifests:       map[string]o1.OperationManifest{},
 	}
 }
 

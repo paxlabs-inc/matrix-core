@@ -13,6 +13,7 @@ import (
 
 	"matrix/neo/internal/agent"
 	"matrix/neo/internal/delegate"
+	"matrix/neo/internal/o1"
 )
 
 // TestSuperviseDecision pins the persistent-supervisor policy: any non-clean
@@ -58,6 +59,20 @@ func TestSuperviseDecision(t *testing.T) {
 		if got != c.want {
 			t.Errorf("%s: superviseDecision = %v, want %v", c.name, got, c.want)
 		}
+	}
+}
+
+func TestSuperviseFromO1UsesTypedDecision(t *testing.T) {
+	internal := o1.SupervisorDecision{Action: o1.SupContinue}
+	if got := superviseFromO1(actStop, internal); got != actRespawn {
+		t.Fatalf("typed continue should respawn, got %v", got)
+	}
+	stop := o1.SupervisorDecision{Action: o1.SupStop}
+	if got := superviseFromO1(actRespawn, stop); got != actStop {
+		t.Fatalf("typed stop should stop, got %v", got)
+	}
+	if got := superviseFromO1(actInterrupted, internal); got != actInterrupted {
+		t.Fatalf("user interruption must remain sovereign, got %v", got)
 	}
 }
 

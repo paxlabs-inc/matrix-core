@@ -21,6 +21,7 @@ import (
 	"matrix/neo/internal/conversation"
 	"matrix/neo/internal/delegate"
 	"matrix/neo/internal/llm"
+	"matrix/neo/internal/o1"
 	"matrix/neo/internal/recall"
 	"matrix/neo/internal/runrecord"
 	"matrix/neo/internal/task"
@@ -662,7 +663,14 @@ func (s *session) superviseTask(ctx context.Context, r *run, objective string, r
 		// taxonomy the dispatch ladder used (NE-5) rather than re-guessing.
 		failClass := s.agent.LastFailureClass()
 
-		switch superviseDecision(r.stopped.Load(), err, failClass, ctx.Err(), attempt, maxRespawns) {
+		action := superviseDecision(r.stopped.Load(), err, failClass, ctx.Err(), attempt, maxRespawns)
+		if decision, ok := s.agent.LastO1Decision(); ok && err != nil {
+			action = superviseFromO1(action, decision)
+			if action == actStop {
+				return s.deliverO1Stop(r, decision)
+			}
+		}
+		switch action {
 		case actInterrupted:
 			// User stop / barge-in: drive() emits the interrupted terminal.
 			return task.StatusInterrupted
@@ -695,6 +703,22 @@ func (s *session) superviseTask(ctx context.Context, r *run, objective string, r
 			return s.deliverCeiling(r, "reached the time limit I had for this task")
 		}
 		s.rebuildAgent()
+	}
+}
+
+func superviseFromO1(fallback superviseAction, decision o1.SupervisorDecision) superviseAction {
+	switch decision.Action {
+	case o1.SupRepair, o1.SupReconcile, o1.SupContinue:
+		if fallback == actInterrupted || fallback == actCeiling {
+			return fallback
+		}
+		return actRespawn
+	case o1.SupAskUser, o1.SupStop:
+		return actStop
+	case o1.SupComplete:
+		return actDone
+	default:
+		return fallback
 	}
 }
 
@@ -949,6 +973,33 @@ func (s *session) deliverDeterministicStop(r *run) task.Status {
 	}
 	text += "\n\nTell me how you'd like to adjust it and I'll pick it right back up."
 	s.finishRun(r, runrecord.StatusFailed, text, "deterministic blocker", nil, true)
+	return task.StatusCeiling
+}
+
+func (s *session) deliverO1Stop(r *run, decision o1.SupervisorDecision) task.Status {
+	if r.closed {
+		return task.StatusCeiling
+	}
+	text := o1.RenderTerminalMessage(decision, nil)
+	if decision.Terminal != nil && *decision.Terminal == o1.TermInternalFailure {
+		if death, ok := s.agent.LastDeath(); ok && death.Reason == agent.DeathReasonUnproductive {
+			best := strings.TrimSpace(s.agent.BestEffort())
+			switch {
+			case best != "" && best == r.lastText:
+				text = "I've taken this as far as I can on my own — my last message has where things stand."
+			case best != "":
+				text = "I've taken this as far as I can on my own. Here's where it stands:\n\n" + best
+			default:
+				text = "I've taken this as far as I can on my own."
+			}
+			text += "\n\nTell me how you'd like to adjust it and I'll pick it right back up."
+		}
+	}
+	reason := decision.Reason
+	if decision.Terminal != nil {
+		reason = string(*decision.Terminal)
+	}
+	s.finishRun(r, runrecord.StatusFailed, text, reason, nil, true)
 	return task.StatusCeiling
 }
 

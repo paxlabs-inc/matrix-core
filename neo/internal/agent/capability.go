@@ -90,7 +90,8 @@ func (a *Agent) renderCapabilitySurface() string {
 
 	b.WriteString("Your tools (the complete inventory — a capability not listed here is one you do NOT have):\n")
 	wrote := false
-	for _, s := range a.schemas {
+	schemas := a.schemas
+	for _, s := range schemas {
 		name := strings.TrimSpace(s.Function.Name)
 		if name == "" {
 			continue
