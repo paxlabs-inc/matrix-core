@@ -166,17 +166,17 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		switch {
 		case errors.Is(err, db.ErrUserNotFound):
 			if h.Provision != nil {
-				// Invite gate: refuse auto-provisioning for a user with
-				// no redeemed invite. The admin POST /admin/users path
-				// bypasses this (operator override).
-				redeemed, rErr := h.DB.HasRedeemedInvite(r.Context(), sub)
+				// Public first-run gate: provisioning starts only after the
+				// user has recorded the required disclosure acknowledgement
+				// and an explicit training-data choice.
+				approved, rErr := h.DB.HasCompletedFirstRunApprovals(r.Context(), sub, "public-launch-1")
 				if rErr != nil {
-					h.Logf("invite check %s: %v", sub, rErr)
+					h.Logf("first-run approval check %s: %v", sub, rErr)
 					http.Error(w, "internal error", http.StatusInternalServerError)
 					return
 				}
-				if !redeemed {
-					http.Error(w, "invite required", http.StatusForbidden)
+				if !approved {
+					http.Error(w, "first-run approvals required", http.StatusPreconditionFailed)
 					return
 				}
 				// First authenticated request from a new user: kick off

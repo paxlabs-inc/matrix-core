@@ -43,6 +43,16 @@ type DisclosureAck struct {
 	AckAt             time.Time
 }
 
+// LaunchEntitlement is the authoritative subscription access granted to a user.
+type LaunchEntitlement struct {
+	UserID    string
+	Plan      string
+	Source    string
+	StartsAt  time.Time
+	EndsAt    time.Time
+	ClaimedAt time.Time
+}
+
 // BugReport mirrors the bug_reports table.
 type BugReport struct {
 	ID            int64
@@ -188,6 +198,72 @@ func (d *DB) HasRedeemedInvite(ctx context.Context, userID string) (bool, error)
 		return false, nil
 	}
 	return false, fmt.Errorf("db: has redeemed invite: %w", err)
+}
+
+// HasCompletedFirstRunApprovals returns true only after the user has made a
+// training-data choice and acknowledged the current public-launch disclosure.
+func (d *DB) HasCompletedFirstRunApprovals(ctx context.Context, userID, disclosureVersion string) (bool, error) {
+	const q = `
+		SELECT EXISTS (SELECT 1 FROM beta_consent WHERE user_id = $1)
+		   AND EXISTS (
+		       SELECT 1
+		         FROM beta_disclosure_ack
+		        WHERE user_id = $1 AND disclosure_version = $2
+		   )
+	`
+	var approved bool
+	if err := d.pool.QueryRow(ctx, q, userID, disclosureVersion).Scan(&approved); err != nil {
+		return false, fmt.Errorf("db: first-run approvals: %w", err)
+	}
+	return approved, nil
+}
+
+// ClaimLaunchEntitlement atomically grants the launch promotion once per user.
+// Repeated claims return the original timestamps and never extend the period.
+func (d *DB) ClaimLaunchEntitlement(ctx context.Context, userID string, duration time.Duration) (*LaunchEntitlement, error) {
+	const q = `
+		INSERT INTO launch_entitlements (user_id, plan, source, starts_at, ends_at)
+		VALUES ($1, 'unlimited', 'launch_48h', now(), now() + $2::interval)
+		ON CONFLICT (user_id) DO UPDATE SET user_id = EXCLUDED.user_id
+		RETURNING user_id, plan, source, starts_at, ends_at, claimed_at
+	`
+	var entitlement LaunchEntitlement
+	interval := fmt.Sprintf("%d seconds", int64(duration/time.Second))
+	if err := d.pool.QueryRow(ctx, q, userID, interval).Scan(
+		&entitlement.UserID,
+		&entitlement.Plan,
+		&entitlement.Source,
+		&entitlement.StartsAt,
+		&entitlement.EndsAt,
+		&entitlement.ClaimedAt,
+	); err != nil {
+		return nil, fmt.Errorf("db: claim launch entitlement: %w", err)
+	}
+	return &entitlement, nil
+}
+
+// GetLaunchEntitlement returns nil when a user has not claimed the promotion.
+func (d *DB) GetLaunchEntitlement(ctx context.Context, userID string) (*LaunchEntitlement, error) {
+	const q = `
+		SELECT user_id, plan, source, starts_at, ends_at, claimed_at
+		  FROM launch_entitlements
+		 WHERE user_id = $1
+	`
+	var entitlement LaunchEntitlement
+	if err := d.pool.QueryRow(ctx, q, userID).Scan(
+		&entitlement.UserID,
+		&entitlement.Plan,
+		&entitlement.Source,
+		&entitlement.StartsAt,
+		&entitlement.EndsAt,
+		&entitlement.ClaimedAt,
+	); err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("db: get launch entitlement: %w", err)
+	}
+	return &entitlement, nil
 }
 
 // UpsertConsent writes or updates the training consent for a user.

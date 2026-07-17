@@ -6,10 +6,12 @@
 //
 // Routes:
 //
-//	POST /invite/redeem         validate + consume an invite code
 //	GET  /consent               read training consent
 //	PUT  /consent               update training consent
 //	POST /disclosure/ack        record beta disclosure acknowledgement
+//	POST /onboarding/start      verify approvals and start provisioning
+//	GET  /subscription          read current subscription access
+//	POST /subscription/claim    claim the one-time launch entitlement
 //	POST /reports               submit a bug/feedback report
 //	GET  /provision/status      read the caller's provisioning state
 package beta
@@ -30,26 +32,26 @@ import (
 type Handler struct {
 	DB        *db.DB
 	Log       func(string, ...interface{})
-	Provision proxy.Provisioner // optional: triggers early Fly provisioning on invite redeem
+	Provision proxy.Provisioner // optional: starts provisioning after first-run approvals
 }
 
 // Mount registers the beta user routes on mux. The mux MUST be wrapped
 // by mw.JWT upstream so that proxy.Subject(ctx) is populated.
 func (h *Handler) Mount(mux *http.ServeMux) {
-	mux.HandleFunc("/invite/redeem", h.handleRedeem)
 	mux.HandleFunc("/consent", h.handleConsent)
 	mux.HandleFunc("/disclosure/ack", h.handleDisclosureAck)
+	mux.HandleFunc("/onboarding/start", h.handleOnboardingStart)
+	mux.HandleFunc("/subscription", h.handleSubscription)
+	mux.HandleFunc("/subscription/claim", h.handleSubscriptionClaim)
 	mux.HandleFunc("/reports", h.handleReports)
 	mux.HandleFunc("/provision/status", h.handleProvisionStatus)
 }
 
-// --- Invite redeem ------------------------------------------------------
+const publicDisclosureVersion = "public-launch-1"
 
-type redeemRequest struct {
-	Code string `json:"code"`
-}
+// --- First-run approvals ------------------------------------------------
 
-func (h *Handler) handleRedeem(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) handleOnboardingStart(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		w.Header().Set("Allow", "POST")
 		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "method not allowed"})
@@ -61,41 +63,22 @@ func (h *Handler) handleRedeem(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var req redeemRequest
-	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 4<<10)).Decode(&req); err != nil {
-		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "bad json"})
-		return
-	}
-	code := strings.TrimSpace(req.Code)
-	if code == "" {
-		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "code required"})
-		return
-	}
-
 	ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second)
 	defer cancel()
-
-	err := h.DB.RedeemInviteCode(ctx, code, sub)
+	approved, err := h.DB.HasCompletedFirstRunApprovals(ctx, sub, publicDisclosureVersion)
 	if err != nil {
-		switch {
-		case errors.Is(err, db.ErrInviteNotFound):
-			writeJSON(w, http.StatusForbidden, map[string]string{"error": "invalid code"})
-		case errors.Is(err, db.ErrInviteExpired):
-			writeJSON(w, http.StatusForbidden, map[string]string{"error": "code expired"})
-		case errors.Is(err, db.ErrInviteExhausted):
-			writeJSON(w, http.StatusForbidden, map[string]string{"error": "code no longer available"})
-		case errors.Is(err, db.ErrAlreadyRedeemed):
-			writeJSON(w, http.StatusConflict, map[string]string{"error": "already redeemed"})
-		default:
-			h.logf("redeem: %v", err)
-			writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "internal error"})
-		}
+		h.logf("first-run approvals: %v", err)
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "internal error"})
+		return
+	}
+	if !approved {
+		writeJSON(w, http.StatusPreconditionFailed, map[string]string{"error": "first-run approvals required"})
 		return
 	}
 	if h.Provision != nil {
 		h.Provision.StartProvision(sub, proxy.Email(r.Context()))
 	}
-	writeJSON(w, http.StatusOK, map[string]string{"status": "redeemed"})
+	writeJSON(w, http.StatusOK, map[string]string{"status": "provisioning"})
 }
 
 // --- Consent ------------------------------------------------------------
@@ -214,6 +197,86 @@ func (h *Handler) handleDisclosureAck(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, map[string]string{"status": "acknowledged"})
+}
+
+// --- Subscription -------------------------------------------------------
+
+func (h *Handler) handleSubscription(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		w.Header().Set("Allow", "GET")
+		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "method not allowed"})
+		return
+	}
+	sub := proxy.Subject(r.Context())
+	if sub == "" {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "unauthenticated"})
+		return
+	}
+	ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second)
+	defer cancel()
+	entitlement, err := h.DB.GetLaunchEntitlement(ctx, sub)
+	if err != nil {
+		h.logf("get subscription: %v", err)
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "internal error"})
+		return
+	}
+	writeSubscription(w, sub, entitlement)
+}
+
+func (h *Handler) handleSubscriptionClaim(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		w.Header().Set("Allow", "POST")
+		writeJSON(w, http.StatusMethodNotAllowed, map[string]string{"error": "method not allowed"})
+		return
+	}
+	sub := proxy.Subject(r.Context())
+	if sub == "" {
+		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "unauthenticated"})
+		return
+	}
+	ctx, cancel := context.WithTimeout(r.Context(), 10*time.Second)
+	defer cancel()
+	approved, err := h.DB.HasCompletedFirstRunApprovals(ctx, sub, publicDisclosureVersion)
+	if err != nil {
+		h.logf("claim approvals: %v", err)
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "internal error"})
+		return
+	}
+	if !approved {
+		writeJSON(w, http.StatusPreconditionFailed, map[string]string{"error": "first-run approvals required"})
+		return
+	}
+	entitlement, err := h.DB.ClaimLaunchEntitlement(ctx, sub, 48*time.Hour)
+	if err != nil {
+		h.logf("claim subscription: %v", err)
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "internal error"})
+		return
+	}
+	writeSubscription(w, sub, entitlement)
+}
+
+func writeSubscription(w http.ResponseWriter, userID string, entitlement *db.LaunchEntitlement) {
+	if entitlement == nil {
+		writeJSON(w, http.StatusOK, map[string]any{
+			"user_id": userID,
+			"plan":    "free",
+			"status":  "available",
+		})
+		return
+	}
+	status := "active"
+	if !entitlement.EndsAt.After(time.Now()) {
+		status = "expired"
+	}
+	writeJSON(w, http.StatusOK, map[string]any{
+		"user_id":    entitlement.UserID,
+		"plan":       entitlement.Plan,
+		"source":     entitlement.Source,
+		"status":     status,
+		"starts_at":  entitlement.StartsAt,
+		"ends_at":    entitlement.EndsAt,
+		"claimed_at": entitlement.ClaimedAt,
+	})
 }
 
 // --- Bug reports --------------------------------------------------------

@@ -372,9 +372,11 @@ func main() {
 	}
 	betaMux := http.NewServeMux()
 	betaH.Mount(betaMux)
-	publicMux.Handle("/invite/", mw.JWT(verifier, logf)(betaMux))
 	publicMux.Handle("/consent", mw.JWT(verifier, logf)(betaMux))
 	publicMux.Handle("/disclosure/", mw.JWT(verifier, logf)(betaMux))
+	publicMux.Handle("/onboarding/", mw.JWT(verifier, logf)(betaMux))
+	publicMux.Handle("/subscription", mw.JWT(verifier, logf)(betaMux))
+	publicMux.Handle("/subscription/", mw.JWT(verifier, logf)(betaMux))
 	publicMux.Handle("/reports", mw.JWT(verifier, logf)(betaMux))
 	publicMux.Handle("/provision/", mw.JWT(verifier, logf)(betaMux))
 
