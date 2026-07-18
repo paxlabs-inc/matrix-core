@@ -81,6 +81,10 @@ func (h *CentralProxy) ForwardUser(w http.ResponseWriter, r *http.Request, sub s
 	}
 	rp := httputil.NewSingleHostReverseProxy(target)
 	rp.FlushInterval = -1
+	rp.ModifyResponse = func(resp *http.Response) error {
+		stripCORSResponseHeaders(resp.Header)
+		return nil
+	}
 	director := rp.Director
 	rp.Director = func(q *http.Request) {
 		director(q)

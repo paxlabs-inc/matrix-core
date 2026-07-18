@@ -131,6 +131,10 @@ func New(d *db.DB, p provision.Provisioner, daemonPort string, wakeTimeout, prob
 			// Director is a no-op; we rewrite the request fully in
 			// ServeHTTP before the proxy reaches the wire.
 		},
+		ModifyResponse: func(resp *http.Response) error {
+			stripCORSResponseHeaders(resp.Header)
+			return nil
+		},
 		// FlushInterval = -1 forces an immediate flush after every Write
 		// so SSE chunks reach the client without buffering. JSON bodies
 		// also flush immediately, which is harmless (small bodies).
@@ -154,6 +158,19 @@ func New(d *db.DB, p provision.Provisioner, daemonPort string, wakeTimeout, prob
 	}
 	h.once = rp
 	return h
+}
+
+func stripCORSResponseHeaders(h http.Header) {
+	for _, name := range []string{
+		"Access-Control-Allow-Origin",
+		"Access-Control-Allow-Headers",
+		"Access-Control-Allow-Methods",
+		"Access-Control-Allow-Credentials",
+		"Access-Control-Expose-Headers",
+		"Access-Control-Max-Age",
+	} {
+		h.Del(name)
+	}
 }
 
 // ServeHTTP implements http.Handler.
