@@ -84,6 +84,7 @@ func (h *CentralProxy) ForwardUser(w http.ResponseWriter, r *http.Request, sub s
 	director := rp.Director
 	rp.Director = func(q *http.Request) {
 		director(q)
+		q.Host = target.Host
 		q.Header.Set(headerShardCredential, string(key))
 		q.Header.Set(headerKeyID, keyID)
 		q.Header.Set(headerCentralUser, sub)
