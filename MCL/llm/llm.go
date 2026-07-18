@@ -851,12 +851,12 @@ func reasoningEffort(enabled bool) string {
 // both the native direct-provider id and the retired Novita fleet id.
 func IsXiaomiModel(model string) bool {
 	m := strings.ToLower(strings.TrimSpace(model))
-	return m == "mimo-v2.5-pro-ultraspeed" || m == "xiaomimimo/mimo-v2.5-pro-ultraspeed"
+	return m == "mimo-v2.5-pro" || m == "xiaomimimo/mimo-v2.5-pro"
 }
 
 func XiaomiModelID(model string) string {
 	if IsXiaomiModel(model) {
-		return "mimo-v2.5-pro-ultraspeed"
+		return "mimo-v2.5-pro"
 	}
 	return model
 }

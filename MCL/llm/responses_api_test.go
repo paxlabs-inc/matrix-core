@@ -433,7 +433,7 @@ func TestIsOpencodeModelID(t *testing.T) {
 		// v9: "grok-*" ids (incl. grok-build-*) are xAI, NOT opencode — the
 		// grok prefix is detected before the opencode bare-id check.
 		"grok-build-0.1",
-		"xiaomimimo/mimo-v2.5-pro-ultraspeed",
+		"xiaomimimo/mimo-v2.5-pro",
 		"",                  // empty
 		"some-random-model", // unmatched bare id
 	}

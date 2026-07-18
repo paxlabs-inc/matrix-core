@@ -5,7 +5,7 @@ package llm
 
 import "testing"
 
-// Grok (grok-*) is served by xAI. Only xiaomimimo/mimo-v2.5-pro-ultraspeed honors the native
+// Grok (grok-*) is served by xAI. Only xiaomimimo/mimo-v2.5-pro honors the native
 // `reasoning_effort` field, pinned EXPLICITLY both ways from the per-client
 // flag (ON → "medium", OFF → "none"); other Grok models (grok-build-*) ignore it
 // so it is omitted. Kimi (moonshotai/*) stays Baseten-served with reasoning
@@ -16,9 +16,9 @@ func TestSupportsReasoningEffort(t *testing.T) {
 		model string
 		want  bool
 	}{
-		{"xiaomimimo/mimo-v2.5-pro-ultraspeed", true},
+		{"xiaomimimo/mimo-v2.5-pro", true},
 		{"xiaomimimo/mimo-v2.5-pro-fast", true},
-		{"xiaomimimo/mimo-v2.5-pro-ultraspeed", true},
+		{"xiaomimimo/mimo-v2.5-pro", true},
 		{"grok-build-0.1", false},
 		{"grok-4.20-0309-non-reasoning", false},
 		{"moonshotai/Kimi-K2.6", false},
@@ -48,7 +48,7 @@ func TestEnableThinkingArgs(t *testing.T) {
 	}{
 		{"moonshotai/Kimi-K2.6", true},
 		// Grok uses xAI's native reasoning_effort field — no chat_template_args.
-		{"xiaomimimo/mimo-v2.5-pro-ultraspeed", false},
+		{"xiaomimimo/mimo-v2.5-pro", false},
 		{"grok-build-0.1", false},
 		{"deepseek-ai/DeepSeek-V4-Pro", false},
 		{"openai/gpt-oss-120b", false},

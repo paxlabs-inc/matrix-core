@@ -270,9 +270,9 @@ func Default() Config {
 		SkillsRoot:     "skills",
 		SelfModelGraph: "graph/self-model",
 
-		MainModel:          "mimo-v2.5-pro-ultraspeed",
-		CheapModel:         "mimo-v2.5-pro-ultraspeed",
-		ConsolidationModel: "mimo-v2.5-pro-ultraspeed",
+		MainModel:          "mimo-v2.5-pro",
+		CheapModel:         "mimo-v2.5-pro",
+		ConsolidationModel: "mimo-v2.5-pro",
 		EmbedModel:         "nomic-ai/nomic-embed-text-v1.5",
 		// Cassandra completeness auditor: a cheap/fast primary + a stronger
 		// escalation model, both on the gateway cassandra-slot whitelist

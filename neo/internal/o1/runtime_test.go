@@ -48,6 +48,28 @@ func TestCompileRuntimeCapabilitiesNoRequiredCapabilityExposesNothing(t *testing
 	}
 }
 
+func TestCompileRuntimeCapabilitiesResolvesExplicitLiveProviderIdentity(t *testing.T) {
+	available := []llm.Tool{
+		llm.NewFunctionTool("layerx__layerx_balance", "Your LayerX USDX balance.", map[string]interface{}{"type": "object"}),
+		llm.NewFunctionTool("layerx__layerx_pay", "Pay another agent by DID using USDX.", map[string]interface{}{"type": "object"}),
+		llm.NewFunctionTool("fs__read_file", "read", map[string]interface{}{"type": "object"}),
+	}
+	contract := Compile(CompileInput{
+		Request: "Send thru LayerX 250 USDX to did:matrix:5c841daa-718a-407d-befc-c62da11ecbf1:2f555dcb594a7fb6",
+	})
+	got, err := CompileRuntimeCapabilities(contract, available)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var names []string
+	for _, tool := range got.Tools {
+		names = append(names, tool.Function.Name)
+	}
+	if len(names) != 2 || names[0] != "layerx__layerx_balance" || names[1] != "layerx__layerx_pay" {
+		t.Fatalf("explicit live provider identity selected %v, want only the LayerX surface", names)
+	}
+}
+
 func TestDialectForProviderUsesConfiguredWireIdentity(t *testing.T) {
 	cases := map[string]ProviderDialect{
 		"xiaomi": DialectMimo, "xai": DialectXAI,

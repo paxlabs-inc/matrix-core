@@ -27,8 +27,8 @@ func TestDetectProvider(t *testing.T) {
 		// opencode). The remaining bare "<vendor>/<model>" shape (including the
 		// retired zai-org/GLM ids) resolves to Baseten; Together is only
 		// reachable via explicit Config.Provider + ProviderSet.
-		{"xiaomimimo/mimo-v2.5-pro-ultraspeed", ProviderXiaomi, false},
-		{"mimo-v2.5-pro-ultraspeed", ProviderXiaomi, false},
+		{"xiaomimimo/mimo-v2.5-pro", ProviderXiaomi, false},
+		{"mimo-v2.5-pro", ProviderXiaomi, false},
 		{"grok-build-0.1", ProviderXai, false},
 		{"grok-4.20-0309-non-reasoning", ProviderXai, false},
 		{"zai-org/GLM-5.2", ProviderBaseten, false},
@@ -61,8 +61,8 @@ func TestIsXaiModel(t *testing.T) {
 		in   string
 		want bool
 	}{
-		{"xiaomimimo/mimo-v2.5-pro-ultraspeed", false},
-		{"mimo-v2.5-pro-ultraspeed", false},
+		{"xiaomimimo/mimo-v2.5-pro", false},
+		{"mimo-v2.5-pro", false},
 		{"grok-build-0.1", true},
 		{"grok-4.20-0309-non-reasoning", true},
 		{"GROK-4.3", true}, // case-insensitive prefix
@@ -116,8 +116,8 @@ func TestXaiModelPassesThroughUnchanged(t *testing.T) {
 }
 
 // TestXiaomiModelRewritesToNativeID pins the Xiaomi MiMo send-time contract:
-// the fleet id "xiaomimimo/mimo-v2.5-pro-ultraspeed" is rewritten to Xiaomi's native
-// model code "mimo-v2.5-pro-ultraspeed" on the wire, the thinking block carries the
+// the fleet id "xiaomimimo/mimo-v2.5-pro" is rewritten to Xiaomi's native
+// model code "mimo-v2.5-pro" on the wire, the thinking block carries the
 // EnableThinking toggle ("enabled"/"disabled"), and reasoning_effort is
 // never sent (that field is the xAI grok-4.3 contract).
 func TestXiaomiModelRewritesToNativeID(t *testing.T) {
@@ -143,7 +143,7 @@ func TestXiaomiModelRewritesToNativeID(t *testing.T) {
 			defer server.Close()
 
 			client, err := New(&Config{
-				Model:          "xiaomimimo/mimo-v2.5-pro-ultraspeed",
+				Model:          "xiaomimimo/mimo-v2.5-pro",
 				APIKey:         "test-key",
 				Endpoint:       server.URL,
 				EnableThinking: tt.enableThinking,
@@ -157,8 +157,8 @@ func TestXiaomiModelRewritesToNativeID(t *testing.T) {
 				t.Fatalf("Decode: %v", err)
 			}
 
-			if got := string(raw["model"]); got != `"mimo-v2.5-pro-ultraspeed"` {
-				t.Errorf("upstream model = %s, want %q (fleet id must rewrite to the native Xiaomi id)", got, "mimo-v2.5-pro-ultraspeed")
+			if got := string(raw["model"]); got != `"mimo-v2.5-pro"` {
+				t.Errorf("upstream model = %s, want %q (fleet id must rewrite to the native Xiaomi id)", got, "mimo-v2.5-pro")
 			}
 			rawThinking, present := raw["thinking"]
 			if !present {
@@ -196,7 +196,7 @@ func TestReasoningEffortWire(t *testing.T) {
 		{"grok-build omits", "grok-build-0.1", true, ""},
 		{"grok non-reasoning omits", "grok-4.20-0309-non-reasoning", true, ""},
 		{"non-grok omits", "deepseek-ai/DeepSeek-V4-Flash", true, ""},
-		{"xiaomi mimo omits", "xiaomimimo/mimo-v2.5-pro-ultraspeed", true, ""},
+		{"xiaomi mimo omits", "xiaomimimo/mimo-v2.5-pro", true, ""},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -255,7 +255,7 @@ func TestMaxCompletionTokensWire(t *testing.T) {
 		wantCompletion bool // true: expect max_completion_tokens (grok); false: expect max_tokens
 	}{
 		{"grok uses max_completion_tokens", "grok-4.3", true},
-		{"mimo uses max_completion_tokens", "xiaomimimo/mimo-v2.5-pro-ultraspeed", true},
+		{"mimo uses max_completion_tokens", "xiaomimimo/mimo-v2.5-pro", true},
 		{"non-grok uses max_tokens", "accounts/fireworks/models/deepseek-v4-flash", false},
 	}
 	for _, tt := range tests {

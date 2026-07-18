@@ -64,8 +64,14 @@ func TestSuperviseDecision(t *testing.T) {
 
 func TestSuperviseFromO1UsesTypedDecision(t *testing.T) {
 	internal := o1.SupervisorDecision{Action: o1.SupContinue}
-	if got := superviseFromO1(actStop, internal); got != actRespawn {
-		t.Fatalf("typed continue should respawn, got %v", got)
+	if got := superviseFromO1(actStop, internal); got != actStop {
+		t.Fatalf("typed default continue must not erase a terminal attempt classification, got %v", got)
+	}
+	if got := superviseFromO1(actCeiling, internal); got != actCeiling {
+		t.Fatalf("typed default continue must not erase an exhausted execution ceiling, got %v", got)
+	}
+	if got := superviseFromO1(actRespawn, internal); got != actRespawn {
+		t.Fatalf("typed continue should preserve a valid respawn, got %v", got)
 	}
 	stop := o1.SupervisorDecision{Action: o1.SupStop}
 	if got := superviseFromO1(actRespawn, stop); got != actStop {

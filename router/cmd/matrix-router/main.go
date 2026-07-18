@@ -195,20 +195,20 @@ func main() {
 			"MATRIX_GATEWAY_TOKEN": os.Getenv("MATRIX_GATEWAY_TOKEN"),
 			// Pin the fleet to the gateway free-tier whitelist + rate card
 			// (gateway/internal/rates, RateTableVersion 10). Xiaomi/MiMo pins:
-			//   compiler = mimo-v2.5-pro-ultraspeed, escalating to the same on a
+			//   compiler = mimo-v2.5-pro, escalating to the same on a
 			//              low-confidence frame (MATRIX_COMPILER_ESCALATE_MODEL);
-			//   planner  = mimo-v2.5-pro-ultraspeed (dedicated MATRIX_PLANNER_MODEL
+			//   planner  = mimo-v2.5-pro (dedicated MATRIX_PLANNER_MODEL
 			//              knob, decoupled from the executor knob);
-			//   executor = mimo-v2.5-pro-ultraspeed;
-			//   liaison  = mimo-v2.5-pro-ultraspeed (user-facing conversational
+			//   executor = mimo-v2.5-pro;
+			//   liaison  = mimo-v2.5-pro (user-facing conversational
 			//              narrator; MATRIX_LIAISON_MODEL knob).
 			// Override any of these via /etc/matrix/router.env if the gateway
 			// whitelist changes.
-			"MATRIX_COMPILER_MODEL":          envOr("MATRIX_COMPILER_MODEL", "mimo-v2.5-pro-ultraspeed"),
-			"MATRIX_COMPILER_ESCALATE_MODEL": envOr("MATRIX_COMPILER_ESCALATE_MODEL", "mimo-v2.5-pro-ultraspeed"),
-			"MATRIX_PLANNER_MODEL":           envOr("MATRIX_PLANNER_MODEL", "mimo-v2.5-pro-ultraspeed"),
-			"MATRIX_EXECUTOR_MODEL":          envOr("MATRIX_EXECUTOR_MODEL", "mimo-v2.5-pro-ultraspeed"),
-			"MATRIX_LIAISON_MODEL":           envOr("MATRIX_LIAISON_MODEL", "mimo-v2.5-pro-ultraspeed"),
+			"MATRIX_COMPILER_MODEL":          envOr("MATRIX_COMPILER_MODEL", "mimo-v2.5-pro"),
+			"MATRIX_COMPILER_ESCALATE_MODEL": envOr("MATRIX_COMPILER_ESCALATE_MODEL", "mimo-v2.5-pro"),
+			"MATRIX_PLANNER_MODEL":           envOr("MATRIX_PLANNER_MODEL", "mimo-v2.5-pro"),
+			"MATRIX_EXECUTOR_MODEL":          envOr("MATRIX_EXECUTOR_MODEL", "mimo-v2.5-pro"),
+			"MATRIX_LIAISON_MODEL":           envOr("MATRIX_LIAISON_MODEL", "mimo-v2.5-pro"),
 			"MATRIX_DEFAULT_SKILL":           envOr("MATRIX_DEFAULT_SKILL", "matrix://skill/paxeer-assistant@0.1.0"),
 			// Web search (tools/websearch/web-search.mjs MCP server in the
 			// daemon image). The stdio bridge inherits the Machine env (its

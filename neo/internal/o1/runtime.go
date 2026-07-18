@@ -42,6 +42,11 @@ func CompileRuntimeCapabilities(contract TaskContract, available []llm.Tool) (Ru
 		ms.manifests[name] = manifestFromTool(schema)
 	}
 	selected := ms.SelectMinimal(contract.RequiredCapabilities)
+	for _, manifest := range selectExplicitProvider(contract.Objective.Text, ms) {
+		if !hasManifest(selected, manifest.Operation) {
+			selected = append(selected, manifest)
+		}
+	}
 	for _, name := range []string{"read_overflow", "memory_recall", "todo"} {
 		manifest := ms.Get(name)
 		if manifest == nil || hasManifest(selected, name) {
@@ -72,6 +77,31 @@ func CompileRuntimeCapabilities(contract TaskContract, available []llm.Tool) (Ru
 		result.Tools = append(result.Tools, byName[manifest.Operation])
 	}
 	return result, nil
+}
+
+func selectExplicitProvider(objective string, manifests *ManifestSet) []OperationManifest {
+	if manifests == nil {
+		return nil
+	}
+	lower := strings.ToLower(objective)
+	providers := map[string]bool{}
+	for _, operation := range manifests.Operations() {
+		alias, _, ok := strings.Cut(strings.ToLower(operation), "__")
+		if ok && alias != "" && requestContainsTerm(lower, alias) {
+			providers[alias] = true
+		}
+	}
+	var selected []OperationManifest
+	for _, operation := range manifests.Operations() {
+		alias, _, ok := strings.Cut(strings.ToLower(operation), "__")
+		if !ok || !providers[alias] {
+			continue
+		}
+		if manifest := manifests.Get(operation); manifest != nil {
+			selected = append(selected, *manifest)
+		}
+	}
+	return selected
 }
 
 func hasManifest(manifests []OperationManifest, operation string) bool {

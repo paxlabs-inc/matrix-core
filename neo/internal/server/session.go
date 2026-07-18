@@ -708,11 +708,13 @@ func (s *session) superviseTask(ctx context.Context, r *run, objective string, r
 
 func superviseFromO1(fallback superviseAction, decision o1.SupervisorDecision) superviseAction {
 	switch decision.Action {
-	case o1.SupRepair, o1.SupReconcile, o1.SupContinue:
+	case o1.SupRepair, o1.SupReconcile:
 		if fallback == actInterrupted || fallback == actCeiling {
 			return fallback
 		}
 		return actRespawn
+	case o1.SupContinue:
+		return fallback
 	case o1.SupAskUser, o1.SupStop:
 		return actStop
 	case o1.SupComplete:
