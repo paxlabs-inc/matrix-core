@@ -53,8 +53,11 @@ type Provisioner interface {
 // missing, the handler returns 500 (programmer error: middleware
 // misordered).
 type Handler struct {
-	DB            *db.DB
-	Prov          provision.Provisioner
+	DB             *db.DB
+	Prov           provision.Provisioner
+	ShardProviders interface {
+		Provider(string) (provision.Provisioner, bool)
+	}
 	DaemonPort    string        // backend listen port (e.g. "8080")
 	CodyPort      string        // codyd listen port (e.g. "8090"); "" disables /cody routing
 	WakeTimeout   time.Duration // environment wake deadline
@@ -218,7 +221,16 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.forward(w, r, sub, provision.Ref{UserID: user.ID, EnvID: user.EnvID, VolumeID: user.VolumeID})
+	prov := h.Prov
+	if user.Provider == "railway" && h.ShardProviders != nil {
+		var ok bool
+		prov, ok = h.ShardProviders.Provider(user.RailwayShardID)
+		if !ok {
+			http.Error(w, "assigned shard unavailable", http.StatusServiceUnavailable)
+			return
+		}
+	}
+	h.forwardWith(w, r, sub, provision.Ref{UserID: user.ID, EnvID: user.EnvID, VolumeID: user.VolumeID}, prov)
 }
 
 // forward is the wake-then-proxy core: wake the environment, wait for
@@ -226,13 +238,17 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 // request to it. Split from ServeHTTP so the wake path is exercisable
 // end-to-end without a Postgres row behind it.
 func (h *Handler) forward(w http.ResponseWriter, r *http.Request, sub string, ref provision.Ref) {
+	h.forwardWith(w, r, sub, ref, h.Prov)
+}
+
+func (h *Handler) forwardWith(w http.ResponseWriter, r *http.Request, sub string, ref provision.Ref, prov provision.Provisioner) {
 	// Wake the environment (idempotent if already running). We give the
 	// wake step its own deadline so a stuck provider API call doesn't
 	// pollute the proxy timeout for the body. On wake-on-request
 	// providers Wake returns immediately and the readiness probe below
 	// absorbs the whole cold boot.
 	wakeCtx, cancel := context.WithTimeout(r.Context(), h.WakeTimeout)
-	env, err := h.Prov.Wake(wakeCtx, ref)
+	env, err := prov.Wake(wakeCtx, ref)
 	cancel()
 	if err != nil {
 		switch {
@@ -255,7 +271,7 @@ func (h *Handler) forward(w http.ResponseWriter, r *http.Request, sub string, re
 	// before it binds the daemon port. Reverse-proxying into that gap
 	// connection-refuses and 502s the first request after every cold
 	// wake. Wait for the in-machine HTTP server to accept a connection.
-	if err := h.waitDaemonReady(r.Context(), env); err != nil {
+	if err := h.waitDaemonReadyWith(r.Context(), env, prov); err != nil {
 		h.Logf("daemon readiness %s: %v", ref.EnvID, err)
 		w.Header().Set("Retry-After", "3")
 		http.Error(w, "daemon waking; retry shortly", http.StatusServiceUnavailable)
@@ -361,6 +377,10 @@ const defaultReadyTimeout = 30 * time.Second
 // Explicit-start providers (Fly) keep the any-response semantics
 // unchanged.
 func (h *Handler) waitDaemonReady(ctx context.Context, env *provision.Env) error {
+	return h.waitDaemonReadyWith(ctx, env, h.Prov)
+}
+
+func (h *Handler) waitDaemonReadyWith(ctx context.Context, env *provision.Env, prov provision.Provisioner) error {
 	ready := h.ReadyTimeout
 	if ready <= 0 {
 		ready = defaultReadyTimeout
@@ -380,7 +400,7 @@ func (h *Handler) waitDaemonReady(ctx context.Context, env *provision.Env) error
 	// readyCtx bounds the total wait.
 	client := &http.Client{Timeout: 3 * time.Second}
 
-	wakeOnRequest := h.Prov != nil && h.Prov.WakeOnRequest()
+	wakeOnRequest := prov != nil && prov.WakeOnRequest()
 
 	var lastErr error
 	for {

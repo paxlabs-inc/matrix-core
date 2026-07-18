@@ -26,6 +26,9 @@ var (
 	ErrNotFound = errors.New("provision: environment not found")
 	// ErrUnauthorized: the provider rejected the router's credential.
 	ErrUnauthorized = errors.New("provision: unauthorized (check provider token)")
+	// ErrUncertain means a mutation may have reached the provider but
+	// its response was not observed. Callers must reconcile before retry.
+	ErrUncertain = errors.New("provision: provider outcome uncertain")
 )
 
 // Endpoint is where the environment's daemon HTTP server is reachable
@@ -99,6 +102,23 @@ type Provisioner interface {
 	// absorb the whole cold boot, including gateway 502/503s emitted
 	// while the platform revives the instance).
 	WakeOnRequest() bool
+}
+
+// Recoverable is implemented by providers that can discover and mutate
+// compute and storage independently. It is the durable-operation seam used
+// by the Railway reconciler; discovery must be safe and side-effect free.
+type Recoverable interface {
+	Provisioner
+	ServiceName(userID string) string
+	FindService(ctx context.Context, name string) (*Env, error)
+	FindVolume(ctx context.Context, serviceID, mountPath string) (string, error)
+	CreateService(ctx context.Context, req CreateRequest) (*Env, error)
+	CreateVolume(ctx context.Context, serviceID, mountPath string) (string, error)
+	WaitReady(ctx context.Context, serviceID string) error
+	ServiceAbsent(ctx context.Context, serviceID string) (bool, error)
+	VolumeAbsent(ctx context.Context, volumeID string) (bool, error)
+	DeleteService(ctx context.Context, serviceID string) error
+	DeleteVolume(ctx context.Context, volumeID string) error
 }
 
 // Copyright © 2026 Paxlabs Inc. All rights reserved.

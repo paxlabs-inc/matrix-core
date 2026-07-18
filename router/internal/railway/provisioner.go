@@ -41,6 +41,9 @@ type Provisioner struct {
 }
 
 var _ provision.Provisioner = (*Provisioner)(nil)
+var _ provision.Recoverable = (*Provisioner)(nil)
+
+func (p *Provisioner) ServiceName(userID string) string { return ServiceName(userID) }
 
 // Ensure provisions the per-user service + volume and blocks until the
 // first deployment is live (or ctx expires). The caller's provision
@@ -76,6 +79,69 @@ func (p *Provisioner) Ensure(ctx context.Context, req provision.CreateRequest) (
 	env.Ready = true
 	env.State = "deployed"
 	return env, nil
+}
+
+func (p *Provisioner) FindService(ctx context.Context, name string) (*provision.Env, error) {
+	svc, err := p.Client.FindService(ctx, name)
+	if err != nil {
+		return nil, mapErr(err)
+	}
+	return p.env(svc.ID, svc.Name, ""), nil
+}
+
+func (p *Provisioner) FindVolume(ctx context.Context, serviceID, mountPath string) (string, error) {
+	vol, err := p.Client.FindVolume(ctx, serviceID, mountPath)
+	if err != nil {
+		return "", mapErr(err)
+	}
+	return vol.ID, nil
+}
+
+func (p *Provisioner) CreateService(ctx context.Context, req provision.CreateRequest) (*provision.Env, error) {
+	if p.Image == "" {
+		return nil, errors.New("railway: DaemonImage not configured (set ROUTER_DAEMON_IMAGE env)")
+	}
+	svc, err := p.Client.CreateService(ctx, ServiceName(req.UserID), p.Image, req.Env)
+	if err != nil {
+		return nil, mapErr(err)
+	}
+	return p.env(svc.ID, svc.Name, req.Region), nil
+}
+
+func (p *Provisioner) CreateVolume(ctx context.Context, serviceID, mountPath string) (string, error) {
+	vol, err := p.Client.CreateVolume(ctx, serviceID, mountPath)
+	if err != nil {
+		return "", mapErr(err)
+	}
+	return vol.ID, nil
+}
+
+func (p *Provisioner) WaitReady(ctx context.Context, serviceID string) error {
+	return p.waitDeployed(ctx, serviceID)
+}
+
+func (p *Provisioner) ServiceAbsent(ctx context.Context, serviceID string) (bool, error) {
+	_, err := p.Client.Service(ctx, serviceID)
+	if errors.Is(err, ErrNotFound) {
+		return true, nil
+	}
+	return false, mapErr(err)
+}
+
+func (p *Provisioner) VolumeAbsent(ctx context.Context, volumeID string) (bool, error) {
+	_, err := p.Client.Volume(ctx, volumeID)
+	if errors.Is(err, ErrNotFound) {
+		return true, nil
+	}
+	return false, mapErr(err)
+}
+
+func (p *Provisioner) DeleteService(ctx context.Context, serviceID string) error {
+	return mapErr(p.Client.DeleteService(ctx, serviceID))
+}
+
+func (p *Provisioner) DeleteVolume(ctx context.Context, volumeID string) error {
+	return mapErr(p.Client.DeleteVolume(ctx, volumeID))
 }
 
 // Status reports the latest deployment state; Live (SUCCESS or
@@ -185,6 +251,8 @@ func mapErr(err error) error {
 		return fmt.Errorf("%w: %v", provision.ErrNotFound, err)
 	case errors.Is(err, ErrUnauthorized):
 		return fmt.Errorf("%w: %v", provision.ErrUnauthorized, err)
+	case errors.Is(err, ErrUncertain):
+		return fmt.Errorf("%w: %v", provision.ErrUncertain, err)
 	default:
 		return err
 	}

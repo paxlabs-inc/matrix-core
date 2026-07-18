@@ -28,6 +28,7 @@ import (
 	"sync"
 	"time"
 
+	"matrix/router/internal/db"
 	"matrix/router/internal/proxy"
 )
 
@@ -41,6 +42,7 @@ type Target struct {
 	Host         string
 	Port         string
 	RegisteredAt time.Time
+	ExpiresAt    time.Time
 }
 
 // Registry is a thread-safe map of supabase user id → preview Target.
@@ -78,6 +80,9 @@ func (r *Registry) Get(userID string) (Target, bool) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 	t, ok := r.targets[userID]
+	if ok && !t.ExpiresAt.IsZero() && time.Now().After(t.ExpiresAt) {
+		return Target{}, false
+	}
 	return t, ok
 }
 
@@ -226,6 +231,10 @@ type registerRequest struct {
 //	POST   /internal/preview/register  {"user_id","host","port"}  → register
 //	DELETE /internal/preview/register  ?user_id=... | {"user_id"}  → deregister
 func RegisterHandler(reg *Registry) http.Handler {
+	return RegisterHandlerForShard(reg, nil, "", time.Hour)
+}
+
+func RegisterHandlerForShard(reg *Registry, store *db.DB, shardID string, ttl time.Duration) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
 		case http.MethodPost:
@@ -238,10 +247,21 @@ func RegisterHandler(reg *Registry) http.Handler {
 				http.Error(w, "user_id and host are required", http.StatusBadRequest)
 				return
 			}
+			if store != nil {
+				user, err := store.LookupForRoute(r.Context(), body.UserID)
+				if err != nil || user.RailwayShardID != shardID {
+					http.Error(w, "preview assignment rejected", http.StatusForbidden)
+					return
+				}
+			}
+			if ttl <= 0 {
+				ttl = time.Hour
+			}
 			reg.Register(body.UserID, Target{
 				Host:         body.Host,
 				Port:         body.Port,
 				RegisteredAt: time.Now().UTC(),
+				ExpiresAt:    time.Now().UTC().Add(ttl),
 			})
 			writeOK(w)
 

@@ -50,6 +50,7 @@ import (
 	"matrix/router/internal/provision"
 	"matrix/router/internal/proxy"
 	"matrix/router/internal/railway"
+	"matrix/router/internal/shard"
 	"matrix/router/internal/voice"
 )
 
@@ -106,11 +107,33 @@ func main() {
 	//    deployment (wake-on-request, private networking).
 	daemonImage := os.Getenv("ROUTER_DAEMON_IMAGE")
 	var prov provision.Provisioner
+	var shardRegistry *shard.Registry
 	switch cfg.Provider {
 	case config.ProviderRailway:
-		prov = &railway.Provisioner{
-			Client: railway.New(cfg.RailwayAPIToken, cfg.RailwayProjectID, cfg.RailwayEnvironmentID),
-			Image:  daemonImage,
+		if raw := os.Getenv("ROUTER_RAILWAY_SHARDS"); raw != "" {
+			shardRegistry, err = shard.Load(raw, daemonImage)
+			if err != nil {
+				logf("shard registry: %v", err)
+				os.Exit(2)
+			}
+			if err = shardRegistry.ValidateDB(context.Background(), pool); err != nil {
+				logf("shard registry: %v", err)
+				os.Exit(2)
+			}
+			p, ok := shardRegistry.Provisioner(os.Getenv("ROUTER_SHARD_ID"))
+			if !ok {
+				p, ok = shardRegistry.Provisioner("shard-0")
+			}
+			if !ok {
+				logf("shard registry: no local or shard-0 provisioner")
+				os.Exit(2)
+			}
+			prov = p
+		} else {
+			prov = &railway.Provisioner{
+				Client: railway.New(cfg.RailwayAPIToken, cfg.RailwayProjectID, cfg.RailwayEnvironmentID),
+				Image:  daemonImage,
+			}
 		}
 	default:
 		prov = &fly.Provisioner{
@@ -123,6 +146,7 @@ func main() {
 
 	// 4. Reverse-proxy handler (JWT-protected via mw.JWT).
 	proxyH := proxy.New(pool, prov, cfg.DaemonPort, cfg.WakeTimeout, cfg.ProbeInterval, logf)
+	proxyH.ShardProviders = shardRegistry
 	// Post-wake daemon HTTP-readiness deadline: Fly state=started only
 	// means the VM is up; the daemon still pulls its snapshot + inits git
 	// before binding its port. Without this wait the first post-wake
@@ -131,12 +155,26 @@ func main() {
 	// Route the /cody/* path prefix to the co-located codyd engine on its own
 	// port (default :8090); everything else goes to the Neo front on :8080.
 	proxyH.CodyPort = cfg.CodyPort
+	directProxyH := proxyH
+	if cfg.Provider == config.ProviderRailway && shardRegistry != nil {
+		flyProv := &fly.Provisioner{
+			Client:        fly.New(cfg.FlyAPIToken, cfg.FlyApp),
+			Image:         daemonImage,
+			VolumeSizeGB:  5,
+			ProbeInterval: cfg.ProbeInterval,
+		}
+		directProxyH = proxy.New(pool, flyProv, cfg.DaemonPort, cfg.WakeTimeout, cfg.ProbeInterval, logf)
+		directProxyH.ReadyTimeout = cfg.DaemonReadyTimeout
+		directProxyH.CodyPort = cfg.CodyPort
+		directProxyH.ShardProviders = shardRegistry
+	}
 
 	// 5. Admin handler (admin-token-protected). Daemon image must be
 	//    provider-registry-pushable; passing via env keeps it operator-set.
 	adminH := &admin.Handler{
 		DB:               pool,
 		Prov:             prov,
+		ShardProviders:   shardRegistry,
 		Provider:         cfg.Provider,
 		DefaultRegion:    cfg.FlyRegion,
 		ProvisionTimeout: 90 * time.Second,
@@ -347,9 +385,39 @@ func main() {
 	// provisioning configured keeps returning 404.
 	if daemonImage != "" {
 		proxyH.Provision = adminH
+		directProxyH.Provision = adminH
+	}
+	if cfg.Provider == config.ProviderRailway && shardRegistry != nil {
+		go func() {
+			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+			defer cancel()
+			if err := adminH.ResumeRailwayOperations(ctx); err != nil {
+				logf("railway operation recovery: %v", err)
+			}
+		}()
 	}
 
 	// ---------- public mux ----------
+	routerRole := envOr("ROUTER_ROLE", "central")
+	shardRouteMode := envOr("ROUTER_SHARDING_ROUTE_MODE", "sharded")
+	if shardRouteMode != "sharded" && shardRouteMode != "direct" {
+		logf("ROUTER_SHARDING_ROUTE_MODE must be direct or sharded")
+		os.Exit(2)
+	}
+	var centralProxy *proxy.CentralProxy
+	if routerRole == "central" && shardRegistry != nil && shardRouteMode == "sharded" {
+		centralProxy = &proxy.CentralProxy{DB: pool, Direct: directProxyH, Resolve: func(shardID string) (string, []byte, string, bool) {
+			entry, ok := shardRegistry.Entry(shardID)
+			if !ok {
+				return "", nil, "", false
+			}
+			keyID, key, ok := shardRegistry.CurrentIngress(shardID)
+			return keyID, key, entry.RouterURL, ok
+		}}
+	}
+	if routerRole == "central" && shardRegistry != nil {
+		logf("railway shard routing mode: %s", shardRouteMode)
+	}
 	publicMux := http.NewServeMux()
 	publicMux.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
 		ctx, cancel := context.WithTimeout(r.Context(), 2*time.Second)
@@ -385,23 +453,64 @@ func main() {
 	// preview.Handler), so previews are never world-readable. codyd registers
 	// its private preview target via the internal listener (see below).
 	previewReg := preview.NewRegistry()
-	publicMux.Handle("/preview/", mw.JWT(verifier, logf)(&preview.Handler{Reg: previewReg, Logf: logf}))
+	if centralProxy == nil {
+		publicMux.Handle("/preview/", mw.JWT(verifier, logf)(&preview.Handler{Reg: previewReg, Logf: logf}))
+	}
+	voiceProxy := http.Handler(proxyH)
+	if centralProxy != nil {
+		voiceProxy = centralProxy
+	}
 	publicMux.Handle("/voice/token", mw.JWT(verifier, logf)(&voice.Handler{
-		Proxy:     proxyH,
+		Proxy:     voiceProxy,
 		ServerURL: os.Getenv("MATRIX_LIVEKIT_URL"),
 		APIKey:    os.Getenv("MATRIX_LIVEKIT_KEY"),
 		Secret:    os.Getenv("MATRIX_LIVEKIT_SECRET"),
 	}))
 
 	// JWT-protected proxy for everything else (/messages, /events, /intents/*).
-	publicMux.Handle("/", mw.JWT(verifier, logf)(proxyH))
+	if centralProxy != nil {
+		publicMux.Handle("/", mw.JWT(verifier, logf)(centralProxy))
+	} else {
+		publicMux.Handle("/", mw.JWT(verifier, logf)(proxyH))
+	}
+
+	publicHandler := http.Handler(publicMux)
+	if routerRole == "shard" {
+		shardID := os.Getenv("ROUTER_SHARD_ID")
+		if shardRegistry == nil || shardID == "" {
+			logf("shard role requires ROUTER_RAILWAY_SHARDS and ROUTER_SHARD_ID")
+			os.Exit(2)
+		}
+		keys, ok := shardRegistry.IngressKeys(shardID)
+		if !ok {
+			logf("shard role has no ingress keys for %s", shardID)
+			os.Exit(2)
+		}
+		shardLocal := http.NewServeMux()
+		shardLocal.Handle("/preview/", &preview.Handler{Reg: previewReg, Logf: logf})
+		shardLocal.Handle("/internal/wake", proxyH.WakeHandler())
+		shardLocal.Handle("/", proxyH)
+		shardMux := http.NewServeMux()
+		shardMux.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
+			ctx, cancel := context.WithTimeout(r.Context(), 2*time.Second)
+			defer cancel()
+			if err := pool.Ping(ctx); err != nil {
+				http.Error(w, "database unavailable", http.StatusServiceUnavailable)
+				return
+			}
+			w.Header().Set("Content-Type", "application/json")
+			_, _ = fmt.Fprintf(w, `{"status":"ok","role":"shard","shard_id":%q}`, shardID)
+		})
+		shardMux.Handle("/", &proxy.ShardIngress{DB: pool, ShardID: shardID, Keys: keys, Next: shardLocal, Logf: logf})
+		publicHandler = shardMux
+	}
 
 	// CORS wraps OUTSIDE the mux so a browser preflight (OPTIONS, no token) is
 	// answered before mw.JWT ever runs; the Next.js client is served from a
 	// different origin and cannot reach the API otherwise.
 	publicSrv := &http.Server{
 		Addr:              cfg.PublicAddr,
-		Handler:           mw.AccessLog(logf)(mw.CORS(cfg.CORSOrigins, logf)(publicMux)),
+		Handler:           mw.AccessLog(logf)(mw.CORS(cfg.CORSOrigins, logf)(publicHandler)),
 		ReadHeaderTimeout: 10 * time.Second,
 		// SSE responses can be long-lived; do NOT set WriteTimeout.
 	}
@@ -431,7 +540,11 @@ func main() {
 	// (reuses the proxy's EnsureStarted + waitDaemonReady path). Wake-token
 	// auth (constant-time bearer). Empty token leaves it unmounted.
 	if cfg.WakeToken != "" {
-		internalMux.Handle("/internal/wake", mw.Admin(cfg.WakeToken, logf)(proxyH.WakeHandler()))
+		wakeHandler := http.Handler(proxyH.WakeHandler())
+		if centralProxy != nil {
+			wakeHandler = centralProxy.WakeHandler()
+		}
+		internalMux.Handle("/internal/wake", mw.Admin(cfg.WakeToken, logf)(wakeHandler))
 		logf("wake: enabled at %s/internal/wake", cfg.InternalAddr)
 	} else {
 		logf("wake: DISABLED (ROUTER_WAKE_TOKEN unset)")
@@ -443,7 +556,11 @@ func main() {
 	// auth (constant-time bearer). Empty token leaves it unmounted, and the
 	// public mount serves 404 (no targets ever registered).
 	if cfg.PreviewToken != "" {
-		internalMux.Handle("/internal/preview/", mw.Admin(cfg.PreviewToken, logf)(preview.RegisterHandler(previewReg)))
+		previewHandler := preview.RegisterHandler(previewReg)
+		if routerRole == "shard" {
+			previewHandler = preview.RegisterHandlerForShard(previewReg, pool, os.Getenv("ROUTER_SHARD_ID"), time.Hour)
+		}
+		internalMux.Handle("/internal/preview/", mw.Admin(cfg.PreviewToken, logf)(previewHandler))
 		logf("preview: registration enabled at %s/internal/preview/", cfg.InternalAddr)
 	} else {
 		logf("preview: registration DISABLED (ROUTER_PREVIEW_TOKEN unset)")

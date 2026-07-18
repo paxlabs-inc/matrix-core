@@ -39,8 +39,11 @@ type Logf func(format string, args ...interface{})
 
 // Handler bundles dependencies the admin routes share.
 type Handler struct {
-	DB               *db.DB
-	Prov             provision.Provisioner
+	DB             *db.DB
+	Prov           provision.Provisioner
+	ShardProviders interface {
+		Provider(string) (provision.Provisioner, bool)
+	}
 	Provider         string // 'fly' | 'railway' — recorded on attached rows; empty defaults to 'fly'
 	DefaultRegion    string
 	MachineEnv       map[string]string // baseline env for every environment
@@ -60,6 +63,8 @@ type Handler struct {
 func (h *Handler) Mount(mux *http.ServeMux) {
 	mux.HandleFunc("/admin/users", h.handleUsersCollection)
 	mux.HandleFunc("/admin/users/", h.handleUserItem)
+	mux.HandleFunc("/admin/shards", h.handleShards)
+	mux.HandleFunc("/admin/shards/", h.handleShard)
 	h.MountBeta(mux)
 }
 
@@ -151,6 +156,19 @@ func (h *Handler) EnsureMachine(ctx context.Context, userID, email, handle, regi
 	}
 
 	// 3. Queue a provision_jobs row for the paper trail.
+	prov := h.Prov
+	if h.Provider == "railway" && h.ShardProviders != nil {
+		allocation, reserveErr := h.DB.ReserveRailwayShard(ctx, userID)
+		if reserveErr != nil {
+			return nil, false, reserveErr
+		}
+		var ok bool
+		prov, ok = h.ShardProviders.Provider(allocation.ShardID)
+		if !ok {
+			return nil, false, fmt.Errorf("assigned shard %q is not configured", allocation.ShardID)
+		}
+		_ = h.DB.SetAllocationState(ctx, userID, "provisioning", false)
+	}
 	jobID, err := h.DB.QueueProvisionJob(ctx, userID, "create")
 	if err != nil {
 		return nil, false, fmt.Errorf("db queue: %w", err)
@@ -160,14 +178,33 @@ func (h *Handler) EnsureMachine(ctx context.Context, userID, email, handle, regi
 	//    bakes in MATRIX_USER_ID + MATRIX_S3_* so the daemon's BootPull
 	//    (executor/internal/snapshot) hits the right snapshot prefix on
 	//    first boot.
-	env, provErr := h.Prov.Ensure(ctx, provision.CreateRequest{
+	createReq := provision.CreateRequest{
 		UserID: userID,
 		Region: region,
 		Env:    h.instanceEnv(userID),
-	})
+	}
+	var env *provision.Env
+	var provErr error
+	var railwayOp *db.RailwayOperation
+	if h.Provider == "railway" && h.ShardProviders != nil {
+		railwayOp, provErr = h.DB.BeginRailwayOperation(ctx, userID, "ensure")
+		if provErr == nil {
+			recoverable, ok := prov.(provision.Recoverable)
+			if !ok {
+				provErr = errors.New("assigned Railway provisioner has no recovery surface")
+			} else {
+				env, provErr = h.ensureRailway(ctx, railwayOp, recoverable, createReq)
+			}
+		}
+	} else {
+		env, provErr = prov.Ensure(ctx, createReq)
+	}
 	if provErr != nil {
 		_ = h.DB.FinishProvisionJob(ctx, jobID, "failed", provErr.Error(), nil)
 		_ = h.DB.SetUserState(ctx, userID, db.StateFailed)
+		if h.Provider == "railway" && h.ShardProviders != nil {
+			_ = h.DB.SetAllocationState(ctx, userID, "cleanup_pending", false)
+		}
 		return nil, false, fmt.Errorf("provision: %w", provErr)
 	}
 
@@ -175,6 +212,14 @@ func (h *Handler) EnsureMachine(ctx context.Context, userID, email, handle, regi
 	if err := h.DB.AttachMachine(ctx, userID, h.Provider, env.ID, env.VolumeID, region); err != nil {
 		_ = h.DB.FinishProvisionJob(ctx, jobID, "failed", "attach: "+err.Error(), nil)
 		return nil, false, fmt.Errorf("attach: %w", err)
+	}
+	if h.Provider == "railway" && h.ShardProviders != nil {
+		if err := h.DB.SetAllocationState(ctx, userID, "active", false); err != nil {
+			return nil, false, fmt.Errorf("activate allocation: %w", err)
+		}
+		if err := h.DB.FinishRailwayOperation(ctx, railwayOp.ID, "succeeded", "ready_and_attached", ""); err != nil {
+			return nil, false, err
+		}
 	}
 
 	// 6. Mark the job done with the provider response captured for forensics.
@@ -188,6 +233,127 @@ func (h *Handler) EnsureMachine(ctx context.Context, userID, email, handle, regi
 		return nil, true, fmt.Errorf("post-attach lookup: %w", err)
 	}
 	return user, true, nil
+}
+
+func (h *Handler) ensureRailway(ctx context.Context, op *db.RailwayOperation, p provision.Recoverable, req provision.CreateRequest) (*provision.Env, error) {
+	if err := h.DB.MarkRailwayOperationRunning(ctx, op.ID, "discover_service"); err != nil {
+		return nil, err
+	}
+	service, err := p.FindService(ctx, p.ServiceName(req.UserID))
+	if errors.Is(err, provision.ErrNotFound) {
+		if err := h.DB.ValidateRailwayOperation(ctx, op.ID); err != nil {
+			return nil, err
+		}
+		service, err = p.CreateService(ctx, req)
+		if err == nil {
+			if recErr := h.DB.RecordRailwayService(ctx, op.ID, service.ID); recErr != nil {
+				return nil, recErr
+			}
+		} else if errors.Is(err, provision.ErrUncertain) {
+			service, err = h.discoverService(ctx, p, req.UserID)
+		}
+	}
+	if err != nil {
+		state := "cleanup_pending"
+		if errors.Is(err, provision.ErrUncertain) {
+			state = "unknown"
+		}
+		_ = h.DB.FinishRailwayOperation(ctx, op.ID, state, "service_unresolved", err.Error())
+		return nil, err
+	}
+	if op.ServiceID != "" && op.ServiceID != service.ID {
+		err = fmt.Errorf("deterministic service identity changed from %s to %s", op.ServiceID, service.ID)
+		_ = h.DB.FinishRailwayOperation(ctx, op.ID, "cleanup_pending", "duplicate_service_detected", err.Error())
+		return nil, err
+	}
+	if err := h.DB.RecordRailwayService(ctx, op.ID, service.ID); err != nil {
+		return nil, err
+	}
+
+	if err := h.DB.MarkRailwayOperationRunning(ctx, op.ID, "discover_volume"); err != nil {
+		return nil, err
+	}
+	volumeID, err := p.FindVolume(ctx, service.ID, "/data")
+	if errors.Is(err, provision.ErrNotFound) {
+		if err := h.DB.ValidateRailwayOperation(ctx, op.ID); err != nil {
+			return nil, err
+		}
+		volumeID, err = p.CreateVolume(ctx, service.ID, "/data")
+		if err == nil {
+			if recErr := h.DB.RecordRailwayVolume(ctx, op.ID, volumeID); recErr != nil {
+				return nil, recErr
+			}
+		} else if errors.Is(err, provision.ErrUncertain) {
+			volumeID, err = h.discoverVolume(ctx, p, service.ID)
+		}
+	}
+	if err != nil {
+		state := "cleanup_pending"
+		if errors.Is(err, provision.ErrUncertain) {
+			state = "unknown"
+		}
+		_ = h.DB.FinishRailwayOperation(ctx, op.ID, state, "volume_unresolved", err.Error())
+		return nil, err
+	}
+	if op.VolumeID != "" && op.VolumeID != volumeID {
+		err = fmt.Errorf("deterministic volume identity changed from %s to %s", op.VolumeID, volumeID)
+		_ = h.DB.FinishRailwayOperation(ctx, op.ID, "cleanup_pending", "duplicate_volume_detected", err.Error())
+		return nil, err
+	}
+	if err := h.DB.RecordRailwayVolume(ctx, op.ID, volumeID); err != nil {
+		return nil, err
+	}
+	if err := h.DB.MarkRailwayOperationRunning(ctx, op.ID, "await_readiness"); err != nil {
+		return nil, err
+	}
+	if err := p.WaitReady(ctx, service.ID); err != nil {
+		_ = h.DB.FinishRailwayOperation(ctx, op.ID, "cleanup_pending", "readiness_unproven", err.Error())
+		return nil, err
+	}
+	service.VolumeID = volumeID
+	service.Ready = true
+	service.State = "deployed"
+	return service, nil
+}
+
+func (h *Handler) discoverService(ctx context.Context, p provision.Recoverable, userID string) (*provision.Env, error) {
+	var env *provision.Env
+	err := boundedReconcile(ctx, func() error {
+		var err error
+		env, err = p.FindService(ctx, p.ServiceName(userID))
+		return err
+	})
+	return env, err
+}
+
+func (h *Handler) discoverVolume(ctx context.Context, p provision.Recoverable, serviceID string) (string, error) {
+	var id string
+	err := boundedReconcile(ctx, func() error {
+		var err error
+		id, err = p.FindVolume(ctx, serviceID, "/data")
+		return err
+	})
+	return id, err
+}
+
+func boundedReconcile(ctx context.Context, probe func() error) error {
+	delay := 100 * time.Millisecond
+	var last error
+	for attempt := 0; attempt < 4; attempt++ {
+		if last = probe(); last == nil {
+			return nil
+		}
+		if !errors.Is(last, provision.ErrNotFound) && !errors.Is(last, provision.ErrUncertain) {
+			return last
+		}
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-time.After(delay):
+			delay *= 2
+		}
+	}
+	return fmt.Errorf("%w: reconciliation exhausted: %v", provision.ErrUncertain, last)
 }
 
 // instanceEnv builds the per-instance environment-variable set: the
@@ -242,6 +408,64 @@ func (h *Handler) StartProvision(userID, email string) {
 			h.logf("auto-provision %s: %v", userID, err)
 		}
 	}()
+}
+
+// ResumeRailwayOperations reconciles durable non-terminal provider work after
+// restart. Each operation is retried from provider discovery, never by blindly
+// repeating its last mutation.
+func (h *Handler) ResumeRailwayOperations(ctx context.Context) error {
+	if h.Provider != "railway" || h.ShardProviders == nil {
+		return nil
+	}
+	ops, err := h.DB.NonTerminalRailwayOperations(ctx)
+	if err != nil {
+		return err
+	}
+	for _, op := range ops {
+		prov, ok := h.ShardProviders.Provider(op.ShardID)
+		if !ok {
+			h.logf("reconcile %s: assigned shard %s unavailable", op.OperationKey, op.ShardID)
+			continue
+		}
+		recoverable, ok := prov.(provision.Recoverable)
+		if !ok {
+			h.logf("reconcile %s: provider has no recovery surface", op.OperationKey)
+			continue
+		}
+		switch op.Kind {
+		case "ensure":
+			if user, lookupErr := h.DB.LookupForRoute(ctx, op.UserID); lookupErr == nil && user.EnvID != "" {
+				if user.EnvID != op.ServiceID || user.VolumeID != op.VolumeID {
+					_ = h.DB.FinishRailwayOperation(ctx, op.ID, "cleanup_pending", "attached_resource_evidence_mismatch", "user attachment differs from operation")
+					continue
+				}
+				if readyErr := recoverable.WaitReady(ctx, op.ServiceID); readyErr == nil {
+					_ = h.DB.SetAllocationState(ctx, op.UserID, "active", false)
+					_ = h.DB.FinishRailwayOperation(ctx, op.ID, "succeeded", "restart_ready_and_attached", "")
+					continue
+				}
+			}
+			if _, _, err := h.EnsureMachine(ctx, op.UserID, "", "", h.DefaultRegion); err != nil {
+				h.logf("reconcile %s: %v", op.OperationKey, err)
+			}
+		case "destroy":
+			if op.ServiceID == "" {
+				_ = h.DB.FinishRailwayOperation(ctx, op.ID, "unknown", "destroy_missing_service_evidence", "missing service id")
+				continue
+			}
+			ref := provision.Ref{UserID: op.UserID, EnvID: op.ServiceID, VolumeID: op.VolumeID}
+			if err := h.destroyRailway(ctx, &op, recoverable, ref); err != nil {
+				h.logf("reconcile %s: %v", op.OperationKey, err)
+				continue
+			}
+			if err := h.DB.SetAllocationState(ctx, op.UserID, "released", true); err != nil {
+				h.logf("reconcile %s release: %v", op.OperationKey, err)
+			}
+		default:
+			_ = h.DB.FinishRailwayOperation(ctx, op.ID, "failed", "unsupported_recovery_kind", "no recovery transition")
+		}
+	}
+	return nil
 }
 
 // handleUserItem dispatches /admin/users/{id}[/{action}].
@@ -314,8 +538,44 @@ func (h *Handler) deleteUser(ctx context.Context, w http.ResponseWriter, userID 
 	}
 	if u.EnvID != "" {
 		ref := provision.Ref{UserID: u.ID, EnvID: u.EnvID, VolumeID: u.VolumeID}
-		if err := h.Prov.Destroy(ctx, ref); err != nil && !errors.Is(err, provision.ErrNotFound) {
-			h.logf("destroy environment %s: %v (continuing)", u.EnvID, err)
+		prov := h.Prov
+		if u.Provider == "railway" && h.ShardProviders != nil {
+			var ok bool
+			prov, ok = h.ShardProviders.Provider(u.RailwayShardID)
+			if !ok {
+				http.Error(w, "assigned shard unavailable", http.StatusServiceUnavailable)
+				return
+			}
+		}
+		var destroyErr error
+		if u.Provider == "railway" && h.ShardProviders != nil {
+			op, err := h.DB.BeginRailwayOperation(ctx, userID, "destroy")
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusServiceUnavailable)
+				return
+			}
+			recoverable, ok := prov.(provision.Recoverable)
+			if !ok {
+				destroyErr = errors.New("assigned Railway provisioner has no recovery surface")
+			} else {
+				destroyErr = h.destroyRailway(ctx, op, recoverable, ref)
+			}
+		} else {
+			destroyErr = prov.Destroy(ctx, ref)
+		}
+		if destroyErr != nil && !errors.Is(destroyErr, provision.ErrNotFound) {
+			h.logf("destroy environment %s: %v (continuing)", u.EnvID, destroyErr)
+			if u.Provider == "railway" && h.ShardProviders != nil {
+				_ = h.DB.SetAllocationState(ctx, userID, "cleanup_pending", false)
+			}
+			http.Error(w, "cleanup pending", http.StatusServiceUnavailable)
+			return
+		}
+		if u.Provider == "railway" && h.ShardProviders != nil {
+			if err := h.DB.SetAllocationState(ctx, userID, "released", true); err != nil {
+				http.Error(w, err.Error(), 500)
+				return
+			}
 		}
 	}
 	if err := h.DB.SetUserState(ctx, userID, db.StateDeleted); err != nil {
@@ -325,6 +585,71 @@ func (h *Handler) deleteUser(ctx context.Context, w http.ResponseWriter, userID 
 	writeJSON(w, http.StatusOK, map[string]string{
 		"user_id": userID, "state": db.StateDeleted,
 	})
+}
+
+func (h *Handler) destroyRailway(ctx context.Context, op *db.RailwayOperation, p provision.Recoverable, ref provision.Ref) error {
+	if err := h.DB.MarkRailwayOperationRunning(ctx, op.ID, "destroy_reconcile"); err != nil {
+		return err
+	}
+	if err := h.DB.RecordRailwayService(ctx, op.ID, ref.EnvID); err != nil {
+		return err
+	}
+	if ref.VolumeID != "" {
+		if err := h.DB.RecordRailwayVolume(ctx, op.ID, ref.VolumeID); err != nil {
+			return err
+		}
+		if absent, err := p.VolumeAbsent(ctx, ref.VolumeID); err != nil {
+			_ = h.DB.FinishRailwayOperation(ctx, op.ID, "unknown", "volume_absence_unknown", err.Error())
+			return err
+		} else if !absent {
+			if err := h.DB.ValidateRailwayOperation(ctx, op.ID); err != nil {
+				return err
+			}
+			if err := p.DeleteVolume(ctx, ref.VolumeID); err != nil && !errors.Is(err, provision.ErrNotFound) {
+				_ = h.DB.FinishRailwayOperation(ctx, op.ID, "cleanup_pending", "volume_delete_pending", err.Error())
+				return err
+			}
+		}
+		if err := boundedReconcile(ctx, func() error {
+			absent, err := p.VolumeAbsent(ctx, ref.VolumeID)
+			if err != nil {
+				return err
+			}
+			if !absent {
+				return provision.ErrNotFound
+			}
+			return nil
+		}); err != nil {
+			_ = h.DB.FinishRailwayOperation(ctx, op.ID, "cleanup_pending", "volume_absence_unproven", err.Error())
+			return err
+		}
+	}
+	if absent, err := p.ServiceAbsent(ctx, ref.EnvID); err != nil {
+		_ = h.DB.FinishRailwayOperation(ctx, op.ID, "unknown", "service_absence_unknown", err.Error())
+		return err
+	} else if !absent {
+		if err := h.DB.ValidateRailwayOperation(ctx, op.ID); err != nil {
+			return err
+		}
+		if err := p.DeleteService(ctx, ref.EnvID); err != nil && !errors.Is(err, provision.ErrNotFound) {
+			_ = h.DB.FinishRailwayOperation(ctx, op.ID, "cleanup_pending", "service_delete_pending", err.Error())
+			return err
+		}
+	}
+	if err := boundedReconcile(ctx, func() error {
+		absent, err := p.ServiceAbsent(ctx, ref.EnvID)
+		if err != nil {
+			return err
+		}
+		if !absent {
+			return provision.ErrNotFound
+		}
+		return nil
+	}); err != nil {
+		_ = h.DB.FinishRailwayOperation(ctx, op.ID, "cleanup_pending", "service_absence_unproven", err.Error())
+		return err
+	}
+	return h.DB.FinishRailwayOperation(ctx, op.ID, "succeeded", "service_and_volume_absent", "")
 }
 
 // timeout returns ProvisionTimeout or a 60s default.

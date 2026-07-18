@@ -29,18 +29,19 @@ import (
 // reads at request time. State is one of the closed enum values
 // {provisioning, active, suspended, deleted, failed}.
 type User struct {
-	ID          string
-	Email       string
-	State       string
-	Provider    string // 'fly' | 'railway' — which provisioner owns the environment
-	EnvID       string // provider environment id (fly machine id / railway service id)
-	VolumeID    string
-	Region      string
-	S3AccessKey string
-	DailyBudget int64
-	CreatedAt   time.Time
-	UpdatedAt   time.Time
-	LastSeenAt  *time.Time
+	ID             string
+	Email          string
+	State          string
+	Provider       string // 'fly' | 'railway' — which provisioner owns the environment
+	EnvID          string // provider environment id (fly machine id / railway service id)
+	VolumeID       string
+	RailwayShardID string
+	Region         string
+	S3AccessKey    string
+	DailyBudget    int64
+	CreatedAt      time.Time
+	UpdatedAt      time.Time
+	LastSeenAt     *time.Time
 }
 
 // User states. Keep aligned with the closed enum in schema.sql line 18.
@@ -111,13 +112,14 @@ func (d *DB) LookupForRoute(ctx context.Context, supabaseUserID string) (*User, 
 		   AND state IN ('active','provisioning')
 		RETURNING id, email, state, COALESCE(provider,'fly'),
 		          COALESCE(env_id, fly_machine_id, ''), COALESCE(env_volume_id, fly_volume_id, ''),
+		          COALESCE(railway_shard_id, ''),
 		          COALESCE(fly_region,''), COALESCE(s3_access_key,''), daily_token_budget,
 		          created_at, updated_at, last_seen_at
 	`
 	var u User
 	err := d.pool.QueryRow(ctx, q, supabaseUserID).Scan(
 		&u.ID, &u.Email, &u.State, &u.Provider,
-		&u.EnvID, &u.VolumeID, &u.Region, &u.S3AccessKey,
+		&u.EnvID, &u.VolumeID, &u.RailwayShardID, &u.Region, &u.S3AccessKey,
 		&u.DailyBudget, &u.CreatedAt, &u.UpdatedAt, &u.LastSeenAt,
 	)
 	if err != nil {
@@ -138,6 +140,12 @@ func (d *DB) CreateOrTouchUser(ctx context.Context, supabaseUserID, email, handl
 		ON CONFLICT (id) DO UPDATE
 		   SET email   = COALESCE(NULLIF(EXCLUDED.email,''), users.email),
 		       handle  = COALESCE(NULLIF(EXCLUDED.handle,''), users.handle),
+		       state   = CASE
+		                   WHEN users.state = 'failed'
+		                    AND COALESCE(users.env_id, users.fly_machine_id, '') = ''
+		                   THEN 'provisioning'
+		                   ELSE users.state
+		                 END,
 		       updated_at = now()
 		 RETURNING (xmax = 0) AS inserted
 	`

@@ -47,6 +47,7 @@ var (
 	ErrNotFound     = errors.New("railway: not found")
 	ErrUnauthorized = errors.New("railway: unauthorized (check RAILWAY_API_TOKEN)")
 	ErrUpstream     = errors.New("railway: upstream error")
+	ErrUncertain    = errors.New("railway: mutation outcome uncertain")
 )
 
 // Client makes authenticated calls to the Railway GraphQL API, scoped
@@ -93,6 +94,130 @@ type Service struct {
 type Volume struct {
 	ID   string `json:"id"`
 	Name string `json:"name"`
+}
+
+// FindService returns the uniquely named service in this client's project.
+func (c *Client) FindService(ctx context.Context, name string) (*Service, error) {
+	const q = `query ProjectServices($id: String!) {
+  project(id: $id) { services { edges { node { id name } } } }
+}`
+	var out struct {
+		Project struct {
+			Services struct {
+				Edges []struct {
+					Node Service `json:"node"`
+				} `json:"edges"`
+			} `json:"services"`
+		} `json:"project"`
+	}
+	if err := c.do(ctx, q, map[string]any{"id": c.projectID}, &out); err != nil {
+		return nil, err
+	}
+	var found *Service
+	for _, edge := range out.Project.Services.Edges {
+		if edge.Node.Name != name {
+			continue
+		}
+		if found != nil {
+			return nil, fmt.Errorf("%w: duplicate service name %q", ErrUpstream, name)
+		}
+		svc := edge.Node
+		found = &svc
+	}
+	if found == nil {
+		return nil, fmt.Errorf("%w: service name %q", ErrNotFound, name)
+	}
+	return found, nil
+}
+
+// FindVolume returns the one volume attached to serviceID at mountPath in
+// this client's environment.
+func (c *Client) FindVolume(ctx context.Context, serviceID, mountPath string) (*Volume, error) {
+	const q = `query ProjectVolumes($id: String!) {
+  project(id: $id) {
+    volumes { edges { node {
+      id name
+      volumeInstances { edges { node { environmentId serviceId mountPath } } }
+    } } }
+  }
+}`
+	var out struct {
+		Project struct {
+			Volumes struct {
+				Edges []struct {
+					Node struct {
+						Volume
+						VolumeInstances struct {
+							Edges []struct {
+								Node struct {
+									EnvironmentID string `json:"environmentId"`
+									ServiceID     string `json:"serviceId"`
+									MountPath     string `json:"mountPath"`
+								} `json:"node"`
+							} `json:"edges"`
+						} `json:"volumeInstances"`
+					} `json:"node"`
+				} `json:"edges"`
+			} `json:"volumes"`
+		} `json:"project"`
+	}
+	if err := c.do(ctx, q, map[string]any{"id": c.projectID}, &out); err != nil {
+		return nil, err
+	}
+	var found *Volume
+	for _, volumeEdge := range out.Project.Volumes.Edges {
+		for _, instanceEdge := range volumeEdge.Node.VolumeInstances.Edges {
+			instance := instanceEdge.Node
+			if instance.EnvironmentID != c.environmentID || instance.ServiceID != serviceID || instance.MountPath != mountPath {
+				continue
+			}
+			if found != nil {
+				return nil, fmt.Errorf("%w: multiple volumes for service %s at %s", ErrUpstream, serviceID, mountPath)
+			}
+			volume := volumeEdge.Node.Volume
+			found = &volume
+		}
+	}
+	if found == nil {
+		return nil, fmt.Errorf("%w: volume for service %s at %s", ErrNotFound, serviceID, mountPath)
+	}
+	return found, nil
+}
+
+func (c *Client) Service(ctx context.Context, id string) (*Service, error) {
+	const q = `query Service($id: String!) { service(id: $id) { id name } }`
+	var out struct {
+		Service Service `json:"service"`
+	}
+	if err := c.do(ctx, q, map[string]any{"id": id}, &out); err != nil {
+		return nil, err
+	}
+	return &out.Service, nil
+}
+
+func (c *Client) Volume(ctx context.Context, id string) (*Volume, error) {
+	const q = `query ProjectVolumes($id: String!) {
+  project(id: $id) { volumes { edges { node { id name } } } }
+}`
+	var out struct {
+		Project struct {
+			Volumes struct {
+				Edges []struct {
+					Node Volume `json:"node"`
+				} `json:"edges"`
+			} `json:"volumes"`
+		} `json:"project"`
+	}
+	if err := c.do(ctx, q, map[string]any{"id": c.projectID}, &out); err != nil {
+		return nil, err
+	}
+	for _, edge := range out.Project.Volumes.Edges {
+		if edge.Node.ID == id {
+			v := edge.Node
+			return &v, nil
+		}
+	}
+	return nil, fmt.Errorf("%w: volume %s", ErrNotFound, id)
 }
 
 // Deployment statuses Railway reports (subset the router dispatches on).
@@ -245,7 +370,7 @@ func (c *Client) do(ctx context.Context, query string, variables map[string]any,
 
 	resp, err := c.hc.Do(req)
 	if err != nil {
-		return fmt.Errorf("railway: do: %w", err)
+		return fmt.Errorf("%w: railway request: %v", ErrUncertain, err)
 	}
 	defer resp.Body.Close()
 	respBody, _ := io.ReadAll(io.LimitReader(resp.Body, 1<<20))
@@ -253,6 +378,9 @@ func (c *Client) do(ctx context.Context, query string, variables map[string]any,
 	case resp.StatusCode == http.StatusUnauthorized || resp.StatusCode == http.StatusForbidden:
 		return fmt.Errorf("%w: %s", ErrUnauthorized, http.StatusText(resp.StatusCode))
 	case resp.StatusCode >= 400:
+		if resp.StatusCode >= 500 {
+			return fmt.Errorf("%w: %d %s", ErrUncertain, resp.StatusCode, http.StatusText(resp.StatusCode))
+		}
 		return fmt.Errorf("%w: %d %s: %s", ErrUpstream, resp.StatusCode, http.StatusText(resp.StatusCode), truncate(respBody, 256))
 	}
 
@@ -261,7 +389,7 @@ func (c *Client) do(ctx context.Context, query string, variables map[string]any,
 		Errors []gqlError      `json:"errors"`
 	}
 	if err := json.Unmarshal(respBody, &envelope); err != nil {
-		return fmt.Errorf("railway: decode response: %w", err)
+		return fmt.Errorf("%w: decode response: %v", ErrUncertain, err)
 	}
 	if len(envelope.Errors) > 0 {
 		msg := envelope.Errors[0].Message
