@@ -19,12 +19,12 @@ import (
 )
 
 const (
-	headerCentralUser       = "X-Matrix-Central-User"
-	headerUserAuthorization = "X-Matrix-User-JWT"
-	headerRequestID         = "X-Matrix-Request-ID"
-	headerIssuedAt          = "X-Matrix-Issued-At"
-	headerReplayID          = "X-Matrix-Replay-ID"
-	headerKeyID             = "X-Matrix-Key-ID"
+	headerCentralUser     = "X-Matrix-Central-User"
+	headerShardCredential = "X-Matrix-Shard-Credential"
+	headerRequestID       = "X-Matrix-Request-ID"
+	headerIssuedAt        = "X-Matrix-Issued-At"
+	headerReplayID        = "X-Matrix-Replay-ID"
+	headerKeyID           = "X-Matrix-Key-ID"
 )
 
 type CentralProxy struct {
@@ -84,8 +84,7 @@ func (h *CentralProxy) ForwardUser(w http.ResponseWriter, r *http.Request, sub s
 	director := rp.Director
 	rp.Director = func(q *http.Request) {
 		director(q)
-		q.Header.Set(headerUserAuthorization, r.Header.Get("Authorization"))
-		q.Header.Set("Authorization", "Bearer "+string(key))
+		q.Header.Set(headerShardCredential, string(key))
 		q.Header.Set(headerKeyID, keyID)
 		q.Header.Set(headerCentralUser, sub)
 		q.Header.Set(headerRequestID, requestID)
@@ -130,7 +129,7 @@ func (h *ShardIngress) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		window = 2 * time.Minute
 	}
 	expected, known := h.Keys[r.Header.Get(headerKeyID)]
-	got := strings.TrimPrefix(r.Header.Get("Authorization"), "Bearer ")
+	got := r.Header.Get(headerShardCredential)
 	gotHash, expectedHash := sha256.Sum256([]byte(got)), sha256.Sum256(expected)
 	if !known || subtle.ConstantTimeCompare(gotHash[:], expectedHash[:]) != 1 {
 		h.reject("credential", r.Header.Get(headerKeyID), r)
@@ -157,12 +156,8 @@ func (h *ShardIngress) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	requestID := r.Header.Get(headerRequestID)
-	userAuthorization := r.Header.Get(headerUserAuthorization)
-	for _, name := range []string{"Authorization", headerKeyID, headerCentralUser, headerUserAuthorization, headerRequestID, headerIssuedAt, headerReplayID} {
+	for _, name := range []string{headerShardCredential, headerKeyID, headerCentralUser, headerRequestID, headerIssuedAt, headerReplayID} {
 		r.Header.Del(name)
-	}
-	if userAuthorization != "" {
-		r.Header.Set("Authorization", userAuthorization)
 	}
 	if requestID != "" {
 		r.Header.Set("X-Request-ID", requestID)
