@@ -505,19 +505,23 @@ func main() {
 		publicHandler = shardMux
 	}
 
-	// CORS wraps OUTSIDE the mux so a browser preflight (OPTIONS, no token) is
-	// answered before mw.JWT ever runs; the Next.js client is served from a
-	// different origin and cannot reach the API otherwise.
+	// Only the browser-facing central router emits CORS. Shard responses flow
+	// back through central, so wrapping them too would create duplicate
+	// Access-Control-Allow-Origin headers that browsers reject.
+	publicHTTPHandler := publicHandler
+	if routerRole == "central" {
+		publicHTTPHandler = mw.CORS(cfg.CORSOrigins, logf)(publicHandler)
+		if len(cfg.CORSOrigins) == 0 {
+			logf("cors: allowing ANY origin (set ROUTER_CORS_ORIGINS to restrict)")
+		} else {
+			logf("cors: allow-list %v", cfg.CORSOrigins)
+		}
+	}
 	publicSrv := &http.Server{
 		Addr:              cfg.PublicAddr,
-		Handler:           mw.AccessLog(logf)(mw.CORS(cfg.CORSOrigins, logf)(publicHandler)),
+		Handler:           mw.AccessLog(logf)(publicHTTPHandler),
 		ReadHeaderTimeout: 10 * time.Second,
 		// SSE responses can be long-lived; do NOT set WriteTimeout.
-	}
-	if len(cfg.CORSOrigins) == 0 {
-		logf("cors: allowing ANY origin (set ROUTER_CORS_ORIGINS to restrict)")
-	} else {
-		logf("cors: allow-list %v", cfg.CORSOrigins)
 	}
 
 	// ---------- internal mux ----------
