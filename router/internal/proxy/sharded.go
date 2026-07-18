@@ -20,7 +20,7 @@ import (
 
 const (
 	headerCentralUser       = "X-Matrix-Central-User"
-	headerUserAuthorization = "X-Matrix-User-Authorization"
+	headerUserAuthorization = "X-Matrix-User-JWT"
 	headerRequestID         = "X-Matrix-Request-ID"
 	headerIssuedAt          = "X-Matrix-Issued-At"
 	headerReplayID          = "X-Matrix-Replay-ID"
