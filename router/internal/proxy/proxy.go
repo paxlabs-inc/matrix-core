@@ -304,11 +304,9 @@ func (h *Handler) forwardWith(w http.ResponseWriter, r *http.Request, sub string
 	rew := r.Clone(r.Context())
 	rew.URL = upstream
 	rew.Host = upstream.Host
-	// Strip auth header before forwarding so the daemon can apply its
-	// own bearer-token check via MATRIX_DAEMON_TOKEN if configured.
-	// The daemon's authToken (if set) MUST already be present as
-	// X-Matrix-Daemon-Token from the admin/provisioning step.
-	rew.Header.Del("Authorization")
+	// Preserve the verified user bearer token for the daemon's established
+	// JWT contract. ShardIngress restores it only after authenticating the
+	// central router and confirming the user's shard assignment.
 	// Re-inject the per-user daemon token from DB if the proxy
 	// has been configured with one. v1 takes a global token via
 	// env (TODO: per-user tokens); the env-var pass is upstream
