@@ -19,11 +19,12 @@ import (
 )
 
 const (
-	headerCentralUser = "X-Matrix-Central-User"
-	headerRequestID   = "X-Matrix-Request-ID"
-	headerIssuedAt    = "X-Matrix-Issued-At"
-	headerReplayID    = "X-Matrix-Replay-ID"
-	headerKeyID       = "X-Matrix-Key-ID"
+	headerCentralUser       = "X-Matrix-Central-User"
+	headerUserAuthorization = "X-Matrix-User-Authorization"
+	headerRequestID         = "X-Matrix-Request-ID"
+	headerIssuedAt          = "X-Matrix-Issued-At"
+	headerReplayID          = "X-Matrix-Replay-ID"
+	headerKeyID             = "X-Matrix-Key-ID"
 )
 
 type CentralProxy struct {
@@ -83,6 +84,7 @@ func (h *CentralProxy) ForwardUser(w http.ResponseWriter, r *http.Request, sub s
 	director := rp.Director
 	rp.Director = func(q *http.Request) {
 		director(q)
+		q.Header.Set(headerUserAuthorization, r.Header.Get("Authorization"))
 		q.Header.Set("Authorization", "Bearer "+string(key))
 		q.Header.Set(headerKeyID, keyID)
 		q.Header.Set(headerCentralUser, sub)
@@ -155,8 +157,12 @@ func (h *ShardIngress) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	requestID := r.Header.Get(headerRequestID)
-	for _, name := range []string{"Authorization", headerKeyID, headerCentralUser, headerRequestID, headerIssuedAt, headerReplayID} {
+	userAuthorization := r.Header.Get(headerUserAuthorization)
+	for _, name := range []string{"Authorization", headerKeyID, headerCentralUser, headerUserAuthorization, headerRequestID, headerIssuedAt, headerReplayID} {
 		r.Header.Del(name)
+	}
+	if userAuthorization != "" {
+		r.Header.Set("Authorization", userAuthorization)
 	}
 	if requestID != "" {
 		r.Header.Set("X-Request-ID", requestID)
