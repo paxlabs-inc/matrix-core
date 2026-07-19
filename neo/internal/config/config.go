@@ -202,6 +202,18 @@ type Config struct {
 	// evidence growth count as measured non-convergence (default 4).
 	EpistemicConvergenceWindow int
 
+	// O1ConstrainTools gates Architect O1's closed-world capability narrowing
+	// (req.3 O1-CAP): when true, each turn advertises only the task-contract's
+	// minimal selected tool subset (o1.CompileRuntimeCapabilities). When false
+	// (the DEFAULT) Neo advertises its FULL bound tool surface every turn — the
+	// O1 manifests/verifiers/ledger/preflight still compile over that full
+	// surface, but no tool is hidden from the model. Default off because the
+	// contract's request->capability mapping is a text heuristic that silently
+	// strips essential tools (e.g. fetch) whenever the request does not name
+	// the server alias verbatim, leaving the model unable to act. Config:
+	// [o1] block / env NEO_O1_CONSTRAIN_TOOLS.
+	O1ConstrainTools bool
+
 	// --- heartbeat (P1-4: Chronos-driven proactive turn convention) ---
 	// HeartbeatInterval is the recurring-alarm interval (minutes) for Neo's
 	// proactive self-review of active goals/constraints. 0 = disabled (the
@@ -545,6 +557,9 @@ func (c *Config) applyDoc(d *kvxDoc) {
 		c.EpistemicMismatchLimit = d.intOr("epistemic", "mismatch_limit", c.EpistemicMismatchLimit)
 		c.EpistemicConvergenceWindow = d.intOr("epistemic", "convergence_window", c.EpistemicConvergenceWindow)
 	}
+	if d.has("o1") {
+		c.O1ConstrainTools = d.boolOr("o1", "constrain_tools", c.O1ConstrainTools)
+	}
 	if d.has("heartbeat") {
 		c.HeartbeatInterval = d.intOr("heartbeat", "interval_minutes", c.HeartbeatInterval)
 	}
@@ -683,6 +698,10 @@ func (c *Config) applyEnv() {
 	c.EpistemicPredictions = envBool("NEO_EPISTEMIC_PREDICTIONS", c.EpistemicPredictions)
 	c.EpistemicMismatchLimit = envInt("NEO_EPISTEMIC_MISMATCH_LIMIT", c.EpistemicMismatchLimit)
 	c.EpistemicConvergenceWindow = envInt("NEO_EPISTEMIC_CONVERGENCE_WINDOW", c.EpistemicConvergenceWindow)
+
+	// Architect O1 closed-world tool narrowing is OFF by default (full surface);
+	// NEO_O1_CONSTRAIN_TOOLS=true re-arms the minimal contract selection.
+	c.O1ConstrainTools = envBool("NEO_O1_CONSTRAIN_TOOLS", c.O1ConstrainTools)
 }
 
 // envInt overlays a positive integer from the environment, keeping the

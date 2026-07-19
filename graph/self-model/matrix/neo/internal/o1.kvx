@@ -1,7 +1,7 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:f915877337c9318c5ae2fea4f63ad368dd86f69c7f078279dbcf9551420a1e6b
+# GENERATED gen=codegraph do-not-edit merkle=b3:a9f64c80bdc250814ea611e2c846293db3e18e543c753eb53b52dc8ad182efc9
 
 NODE id=matrix/neo/internal/o1 kind=package
-  digest=b3:004ae009e0901eb8c26665ef818611935573c91412def1a2844b488912c175ee file=neo/internal/o1 range=0:0 lang=go exported=true
+  digest=b3:cb291a51cbeb7f43666f60b18d0bd89132c32edfa38f424958550b737c0a4159 file=neo/internal/o1 range=0:0 lang=go exported=true
 EDGES
   contains=matrix/neo/internal/o1/context.go,matrix/neo/internal/o1/contract.go,matrix/neo/internal/o1/ledger.go,matrix/neo/internal/o1/manifest.go,matrix/neo/internal/o1/mutation.go,matrix/neo/internal/o1/outcome.go,matrix/neo/internal/o1/protocol.go,matrix/neo/internal/o1/qualification.go,matrix/neo/internal/o1/recovery.go,matrix/neo/internal/o1/registry.go,matrix/neo/internal/o1/runtime.go,matrix/neo/internal/o1/supervisor.go,matrix/neo/internal/o1/verifier.go
   ^contains=mod:matrix/neo
@@ -200,6 +200,13 @@ NODE id=matrix/neo/internal/o1.Compile kind=func
 EDGES
   ^defines=matrix/neo/internal/o1/contract.go
 
+NODE id=matrix/neo/internal/o1.CompileAllCapabilities kind=func
+  digest=b3:207e8e1bda096ff202d4a8c2d39c8a65547b6a32ec532859934d8df676de2d24 file=neo/internal/o1/runtime.go range=82:123 lang=go exported=true byte_range=2968:4829
+  sig=func CompileAllCapabilities(available []llm.Tool) (RuntimeCapabilities, error)
+  doc=CompileAllCapabilities is the FULL-SURFACE compilation: it derives an\nOperationManifest for every live, already-bound tool schema and exposes them\nall, without the task-contract minimal narrowing. The O1 evidence machinery\n(typed manifests, deterministic preflight over the whole surface) still runs,\nbut no tool is hidden from the model — the request->capability text heuristic\ncannot silently strip an essential tool (e.g. fetch) it failed to name. Used\nwhen O1ConstrainTools is off (the default). A schema that cannot be\nrepresented as a bounded object is still rejected before it can reach the\nmodel.
+EDGES
+  ^defines=matrix/neo/internal/o1/runtime.go
+
 NODE id=matrix/neo/internal/o1.CompileInput kind=type
   digest=b3:1bf9d420db8e784ca8f8e6ef97f5595423cec2c2567b179ae6ff994083152be9 file=neo/internal/o1/contract.go range=73:77 lang=go exported=true byte_range=2012:2116
   sig=type CompileInput struct {\n	Request		string\n	RepositoryRules	[]string\n	FrameworkRules	[]string\n}
@@ -246,7 +253,7 @@ EDGES
   ^defines=matrix/neo/internal/o1/manifest.go
 
 NODE id=matrix/neo/internal/o1.ConformChatResult kind=func
-  digest=b3:4776894cd5555bf94b9c50f135f0a1b63882008f36ef4c3a366e11909bcb0307 file=neo/internal/o1/runtime.go range=116:145 lang=go exported=true byte_range=3897:5035
+  digest=b3:4776894cd5555bf94b9c50f135f0a1b63882008f36ef4c3a366e11909bcb0307 file=neo/internal/o1/runtime.go range=159:188 lang=go exported=true byte_range=5760:6898
   sig=func ConformChatResult(result *llm.ChatResult, budget RepresentationBudget, dialect ...ProviderDialect) error
   doc=ConformChatResult validates the production provider result against the O1\nnormalized protocol and representation budget before any call can dispatch.
 EDGES
@@ -537,7 +544,7 @@ EDGES
   ^defines=matrix/neo/internal/o1/protocol.go
 
 NODE id=matrix/neo/internal/o1.DialectForProvider kind=func
-  digest=b3:3e397c643520042f96d783c35064ba4ccd6abd4c996cd9613d7f14f0d8b8b739 file=neo/internal/o1/runtime.go range=147:160 lang=go exported=true byte_range=5037:5344
+  digest=b3:3e397c643520042f96d783c35064ba4ccd6abd4c996cd9613d7f14f0d8b8b739 file=neo/internal/o1/runtime.go range=190:203 lang=go exported=true byte_range=6900:7207
   sig=func DialectForProvider(provider string) ProviderDialect
 EDGES
   ^defines=matrix/neo/internal/o1/runtime.go
@@ -3336,7 +3343,7 @@ EDGES
   ^defines=matrix/neo/internal/o1/contract.go
 
 NODE id=matrix/neo/internal/o1.containsAny kind=func
-  digest=b3:bb091454b506e2e60686dca2ed7e90f94f6f7c9422156787752bebbd01dff0c7 file=neo/internal/o1/runtime.go range=229:236 lang=go exported=false byte_range=7925:8092
+  digest=b3:bb091454b506e2e60686dca2ed7e90f94f6f7c9422156787752bebbd01dff0c7 file=neo/internal/o1/runtime.go range=272:279 lang=go exported=false byte_range=9788:9955
   sig=func containsAny(value string, needles ...string) bool
 EDGES
   ^defines=matrix/neo/internal/o1/runtime.go
@@ -3366,7 +3373,7 @@ EDGES
   ^defines=matrix/neo/internal/o1/qualification.go
 
 NODE id=matrix/neo/internal/o1.hasManifest kind=func
-  digest=b3:dbb482f66e20be1197525220417c27ee0524e686aa6f9d20bbe3f8f2fec71000 file=neo/internal/o1/runtime.go range=107:114 lang=go exported=false byte_range=3708:3895
+  digest=b3:dbb482f66e20be1197525220417c27ee0524e686aa6f9d20bbe3f8f2fec71000 file=neo/internal/o1/runtime.go range=150:157 lang=go exported=false byte_range=5571:5758
   sig=func hasManifest(manifests []OperationManifest, operation string) bool
 EDGES
   ^defines=matrix/neo/internal/o1/runtime.go
@@ -3384,7 +3391,7 @@ EDGES
   ^defines=matrix/neo/internal/o1/contract.go
 
 NODE id=matrix/neo/internal/o1.manifestFromTool kind=func
-  digest=b3:63a372da357e0fd20573ad8cf247f73b7a902c7956b9713faa5f01171c667cca file=neo/internal/o1/runtime.go range=175:209 lang=go exported=false byte_range=5918:7403
+  digest=b3:63a372da357e0fd20573ad8cf247f73b7a902c7956b9713faa5f01171c667cca file=neo/internal/o1/runtime.go range=218:252 lang=go exported=false byte_range=7781:9266
   sig=func manifestFromTool(schema llm.Tool) OperationManifest
 EDGES
   ^defines=matrix/neo/internal/o1/runtime.go
@@ -3408,19 +3415,19 @@ EDGES
   ^defines=matrix/neo/internal/o1/contract.go
 
 NODE id=matrix/neo/internal/o1.schemaBounds kind=func
-  digest=b3:8ecad1f159ce52d930eebad1e79b8f4929586b3ae17be4a1cc7cdf5436539c02 file=neo/internal/o1/runtime.go range=211:227 lang=go exported=false byte_range=7405:7923
+  digest=b3:8ecad1f159ce52d930eebad1e79b8f4929586b3ae17be4a1cc7cdf5436539c02 file=neo/internal/o1/runtime.go range=254:270 lang=go exported=false byte_range=9268:9786
   sig=func schemaBounds(parameters map[string]interface{}) map[string]string
 EDGES
   ^defines=matrix/neo/internal/o1/runtime.go
 
 NODE id=matrix/neo/internal/o1.selectExplicitProvider kind=func
-  digest=b3:b84b62d4d98292b2d6353a2fb76a8a2b47e5ecba06527fced7490797ad6f7798 file=neo/internal/o1/runtime.go range=82:105 lang=go exported=false byte_range=2968:3706
+  digest=b3:b84b62d4d98292b2d6353a2fb76a8a2b47e5ecba06527fced7490797ad6f7798 file=neo/internal/o1/runtime.go range=125:148 lang=go exported=false byte_range=4831:5569
   sig=func selectExplicitProvider(objective string, manifests *ManifestSet) []OperationManifest
 EDGES
   ^defines=matrix/neo/internal/o1/runtime.go
 
 NODE id=matrix/neo/internal/o1.validateToolSchema kind=func
-  digest=b3:f2c79361f577c6d43717a1068e760a00d888f1447fa55a7700e89a0c17be68f2 file=neo/internal/o1/runtime.go range=162:173 lang=go exported=false byte_range=5346:5916
+  digest=b3:f2c79361f577c6d43717a1068e760a00d888f1447fa55a7700e89a0c17be68f2 file=neo/internal/o1/runtime.go range=205:216 lang=go exported=false byte_range=7209:7779
   sig=func validateToolSchema(schema llm.Tool) error
 EDGES
   ^defines=matrix/neo/internal/o1/runtime.go
@@ -3492,9 +3499,9 @@ EDGES
   ^contains=matrix/neo/internal/o1
 
 NODE id=matrix/neo/internal/o1/runtime.go kind=file
-  digest=b3:edf6931e2d17ca52a4121794ee7cd1f831b0dea2c05c5b76b91d5110a32adba7 file=neo/internal/o1/runtime.go range=1:236 lang=go exported=true
+  digest=b3:a33dd0e9cb65adf1265740986f7dd305f8a41c09fc5ddf5c191c6a0149fed4ed file=neo/internal/o1/runtime.go range=1:279 lang=go exported=true
 EDGES
-  defines=matrix/neo/internal/o1.CompileRuntimeCapabilities,matrix/neo/internal/o1.ConformChatResult,matrix/neo/internal/o1.DialectForProvider,matrix/neo/internal/o1.RuntimeCapabilities,matrix/neo/internal/o1.containsAny,matrix/neo/internal/o1.hasManifest,matrix/neo/internal/o1.manifestFromTool,matrix/neo/internal/o1.schemaBounds,matrix/neo/internal/o1.selectExplicitProvider,matrix/neo/internal/o1.validateToolSchema
+  defines=matrix/neo/internal/o1.CompileAllCapabilities,matrix/neo/internal/o1.CompileRuntimeCapabilities,matrix/neo/internal/o1.ConformChatResult,matrix/neo/internal/o1.DialectForProvider,matrix/neo/internal/o1.RuntimeCapabilities,matrix/neo/internal/o1.containsAny,matrix/neo/internal/o1.hasManifest,matrix/neo/internal/o1.manifestFromTool,matrix/neo/internal/o1.schemaBounds,matrix/neo/internal/o1.selectExplicitProvider,matrix/neo/internal/o1.validateToolSchema
   ^contains=matrix/neo/internal/o1
 
 NODE id=matrix/neo/internal/o1/supervisor.go kind=file

@@ -43,6 +43,17 @@ var ErrProviderRejected = errors.New("neo/llm: provider rejected request (non-re
 // this to lengthen its respawn backoff. Detect with errors.Is(err, llm.ErrRateLimited).
 var ErrRateLimited = errors.New("neo/llm: provider rate limited (429)")
 
+// ErrProviderUnavailable marks a TRANSPORT-level failure reaching the provider
+// or gateway at all: the HTTP request never got a response (connection refused,
+// DNS failure, TLS error, dropped connection, or a dial timeout — e.g. the
+// metered gateway being down). It IS retryable, but — exactly like ErrRateLimited
+// — a fresh-agent respawn cannot help while the upstream is unreachable, so
+// retrying it fast across many daemons is a self-amplifying connection storm.
+// The task supervisor reads this to back off HARD and to avoid spamming the user
+// a fresh "still working" bubble on every futile respawn. Detect with
+// errors.Is(err, llm.ErrProviderUnavailable).
+var ErrProviderUnavailable = errors.New("neo/llm: provider unreachable (transport)")
+
 // Client is an OpenAI-compatible chat-completions client that speaks native
 // function calling (tools + tool_calls + tool-role results).
 //
@@ -237,7 +248,15 @@ func (c *Client) Chat(ctx context.Context, req ChatRequest) (*ChatResult, error)
 
 	resp, err := c.httpClient.Do(httpReq)
 	if err != nil {
-		return nil, fmt.Errorf("neo/llm: %s POST: %w", c.provider, err)
+		// A Do error means no HTTP response was received at all. When it is a
+		// genuine transport failure (the gateway/provider is unreachable) tag it
+		// so the retry ladder and task supervisor back off HARD instead of
+		// hammering a dead upstream. Context cancellation/deadline (user barge-in
+		// or the attempt timeout) is NOT a provider outage and is left untagged.
+		if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
+			return nil, fmt.Errorf("neo/llm: %s POST: %w", c.provider, err)
+		}
+		return nil, fmt.Errorf("%w: %s POST: %v", ErrProviderUnavailable, c.provider, err)
 	}
 	defer resp.Body.Close()
 

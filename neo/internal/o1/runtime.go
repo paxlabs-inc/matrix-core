@@ -79,6 +79,49 @@ func CompileRuntimeCapabilities(contract TaskContract, available []llm.Tool) (Ru
 	return result, nil
 }
 
+// CompileAllCapabilities is the FULL-SURFACE compilation: it derives an
+// OperationManifest for every live, already-bound tool schema and exposes them
+// all, without the task-contract minimal narrowing. The O1 evidence machinery
+// (typed manifests, deterministic preflight over the whole surface) still runs,
+// but no tool is hidden from the model — the request->capability text heuristic
+// cannot silently strip an essential tool (e.g. fetch) it failed to name. Used
+// when O1ConstrainTools is off (the default). A schema that cannot be
+// represented as a bounded object is still rejected before it can reach the
+// model.
+func CompileAllCapabilities(available []llm.Tool) (RuntimeCapabilities, error) {
+	byName := make(map[string]llm.Tool, len(available))
+	env := PreflightEnvironment{
+		InstalledTools:   make(map[string]bool, len(available)),
+		NetworkReachable: true,
+	}
+	var selected []OperationManifest
+	for _, schema := range available {
+		if err := validateToolSchema(schema); err != nil {
+			return RuntimeCapabilities{}, err
+		}
+		name := schema.Function.Name
+		if _, exists := byName[name]; exists {
+			return RuntimeCapabilities{}, fmt.Errorf("duplicate live tool schema %q", name)
+		}
+		byName[name] = schema
+		env.InstalledTools[name] = true
+		selected = append(selected, manifestFromTool(schema))
+	}
+	sort.Slice(selected, func(i, j int) bool { return selected[i].Operation < selected[j].Operation })
+	for _, manifest := range selected {
+		result := RunPreflight(env, manifest)
+		if !result.OK {
+			return RuntimeCapabilities{}, fmt.Errorf("operation %q failed deterministic preflight: %s",
+				manifest.Operation, strings.Join(result.Failed, ", "))
+		}
+	}
+	result := RuntimeCapabilities{Manifests: selected}
+	for _, manifest := range selected {
+		result.Tools = append(result.Tools, byName[manifest.Operation])
+	}
+	return result, nil
+}
+
 func selectExplicitProvider(objective string, manifests *ManifestSet) []OperationManifest {
 	if manifests == nil {
 		return nil

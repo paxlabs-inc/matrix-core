@@ -730,7 +730,17 @@ func (a *Agent) prepareTurn(ctx context.Context, userInput, audioData string) (s
 			"Do not use fake, mock, stub, canned, or placeholder implementations or verification.",
 		},
 	})
-	selected, err := o1.CompileRuntimeCapabilities(a.turn.contract, a.allSchemas)
+	var selected o1.RuntimeCapabilities
+	var err error
+	if a.cfg.O1ConstrainTools {
+		selected, err = o1.CompileRuntimeCapabilities(a.turn.contract, a.allSchemas)
+	} else {
+		// Default: advertise the FULL bound surface. The O1 manifests/verifiers/
+		// ledger/preflight still compile over every tool, but nothing is hidden
+		// from the model — the contract's request->capability text heuristic must
+		// not silently strip an essential tool (e.g. fetch) it failed to name.
+		selected, err = o1.CompileAllCapabilities(a.allSchemas)
+	}
 	if err != nil {
 		return "", fmt.Errorf("o1 capability preflight: %w", err)
 	}

@@ -120,6 +120,14 @@ type run struct {
 	cancel  context.CancelFunc // cancels this turn's ctx (barge-in / explicit stop)
 	stopped atomic.Bool        // set when interrupted, so drive closes quietly
 
+	// outageNotified is set once the user has been told the run is still working
+	// through a provider OUTAGE streak (an unreachable/rate-limited upstream), so
+	// the reassurance bubble is emitted ONCE per streak instead of on every
+	// futile respawn — a down gateway must not spam a fresh "still working"
+	// message every few seconds. Cleared the moment an attempt fails for any
+	// other reason (real, distinct progress the user should see).
+	outageNotified bool
+
 	// onFinish, when set, is invoked exactly once by drive with the run's
 	// terminal task status, after the durable ledger Finish. Used by the
 	// Automatrix approve path to settle the opportunity that dispatched this
@@ -692,11 +700,18 @@ func (s *session) superviseTask(ctx context.Context, r *run, objective string, r
 		// actRespawn — not done, keep going. Checkpoint, journal the death,
 		// reassure the user (no fake done), back off with jitter, then respawn a
 		// fresh agent over durable state.
+		//
+		// A provider OUTAGE (unreachable/rate-limited upstream) is a special
+		// respawn: a fresh agent cannot reach the same dead gateway, so it must
+		// back off HARD (drain pressure off the recovering upstream, don't join a
+		// connection storm) and reassure the user only ONCE per streak instead of
+		// spamming a "still working" bubble every few seconds.
+		outage := errors.Is(err, llm.ErrRateLimited) || errors.Is(err, llm.ErrProviderUnavailable)
 		s.engine.tasks.Checkpoint(s.id, r.id, attempt+1, friendlyErr(err))
 		s.recordLoopDeath(ctx, objective, attempt, err, failClass)
-		s.emitProgress(r, attempt, err)
+		s.emitProgress(r, attempt, err, outage)
 		lastErr = err
-		if !superviseBackoff(ctx, attempt, errors.Is(err, llm.ErrRateLimited)) {
+		if !superviseBackoff(ctx, attempt, outage) {
 			if r.stopped.Load() {
 				return task.StatusInterrupted
 			}
@@ -904,9 +919,24 @@ func (s *session) maybeConsolidateDeaths(ctx context.Context) {
 // emitProgress tells the user the task is STILL IN PROGRESS after a failed
 // attempt — honest and non-terminal, never a fake completion. The machine
 // detail (the real neo/llm error) goes to the logs for diagnosis.
-func (s *session) emitProgress(r *run, attempt int, err error) {
-	msg := "Still on it — that pass hit a snag, so I'm taking another run at it."
-	s.engine.broker.publish(r.id, "chat.assistant", "neo", s.chatFields(r, msg, false))
+//
+// During a provider OUTAGE streak the user-facing bubble is emitted ONCE: a
+// gateway that is down (or hard rate-limiting) fails every futile respawn in
+// quick succession, and a fresh "still working" message every few seconds is
+// spam, not reassurance. The retry is always logged for diagnosis regardless.
+// Any non-outage failure clears the latch so genuine, distinct progress is
+// always shown.
+func (s *session) emitProgress(r *run, attempt int, err error, outage bool) {
+	if !outage {
+		r.outageNotified = false
+	}
+	if !outage || !r.outageNotified {
+		msg := "Still on it — that pass hit a snag, so I'm taking another run at it."
+		s.engine.broker.publish(r.id, "chat.assistant", "neo", s.chatFields(r, msg, false))
+		if outage {
+			r.outageNotified = true
+		}
+	}
 	s.engine.logLifecycle("run.retry", r.id, s.id, fmt.Sprintf("attempt_%d", attempt+1), time.Since(r.started), err)
 }
 
@@ -1082,7 +1112,7 @@ func (s *session) superviseAutomatrixTask(ctx context.Context, objective string)
 		// and try again. No progress is surfaced to the user (req 5.5).
 		s.recordLoopDeath(ctx, objective, attempt, err, failClass)
 		lastErr = err
-		if !superviseBackoff(ctx, attempt, errors.Is(err, llm.ErrRateLimited)) {
+		if !superviseBackoff(ctx, attempt, errors.Is(err, llm.ErrRateLimited) || errors.Is(err, llm.ErrProviderUnavailable)) {
 			return task.StatusCeiling
 		}
 		s.rebuildAgent()
@@ -1132,7 +1162,7 @@ func (s *session) superviseBriefTask(ctx context.Context, objective string) task
 		// state and try again. Nothing is surfaced to the user (req 15.2).
 		s.recordLoopDeath(ctx, objective, attempt, err, failClass)
 		lastErr = err
-		if !superviseBackoff(ctx, attempt, errors.Is(err, llm.ErrRateLimited)) {
+		if !superviseBackoff(ctx, attempt, errors.Is(err, llm.ErrRateLimited) || errors.Is(err, llm.ErrProviderUnavailable)) {
 			return task.StatusCeiling
 		}
 		s.rebuildAgent()
