@@ -115,7 +115,7 @@ func (s *Server) routes() []routeFact {
 		{"/interview/", "POST /interview/start — start (or repeat) the guided personalization interview", s.handleInterview},
 		// Coding workbench environment surface: project-scoped workspace
 		// tree / file read / atomic write / diff / bounded exec.
-		{"/workspace/", "GET/POST /workspace/* — the coding workbench surface (tree, file read/write, diff, exec)", s.handleWorkspace},
+		{"/workspace/", "GET/POST /workspace/* — the coding workbench surface (tree, file read/write, raw download, upload, diff, exec)", s.handleWorkspace},
 		// Workbench project registry: projects are workspace subdirectories.
 		{"/projects", "GET/POST /projects — the workbench project registry", s.handleProjects},
 		{"/projects/", "", s.handleProject},

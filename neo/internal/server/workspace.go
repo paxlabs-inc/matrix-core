@@ -191,6 +191,10 @@ func (s *Server) handleWorkspace(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Allow", "GET, PUT")
 			http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 		}
+	case "raw":
+		s.handleWorkspaceRaw(w, r)
+	case "upload":
+		s.handleWorkspaceUpload(w, r)
 	case "diff":
 		s.handleWorkspaceDiff(w, r)
 	case "exec":
@@ -296,6 +300,143 @@ func (s *Server) handleWorkspaceFileRead(w http.ResponseWriter, r *http.Request)
 		"hash":      hash,
 		"truncated": info.Size() > int64(n),
 	})
+}
+
+// handleWorkspaceRaw streams one workspace file's exact bytes — the download
+// path of the Files page. Unlike the JSON editor read it is binary-safe and
+// uncapped. Images / video / audio serve inline (thumbnails, previews);
+// everything else downloads as an attachment so user-uploaded markup can
+// never execute on this origin (the /media stored-XSS posture).
+func (s *Server) handleWorkspaceRaw(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet && r.Method != http.MethodHead {
+		w.Header().Set("Allow", "GET, HEAD")
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	rel := r.URL.Query().Get("path")
+	if rel == "" {
+		http.Error(w, "path is required", http.StatusBadRequest)
+		return
+	}
+	root, err := s.engine.reqProjectRoot(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	abs, err := resolveWorkspacePath(root, rel)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	f, err := os.Open(abs)
+	if err != nil {
+		http.Error(w, "not a file", http.StatusNotFound)
+		return
+	}
+	defer f.Close()
+	info, err := f.Stat()
+	if err != nil || info.IsDir() {
+		http.Error(w, "not a file", http.StatusNotFound)
+		return
+	}
+	name := filepath.Base(abs)
+	m := mimeForName(name)
+	w.Header().Set("Content-Type", m)
+	if kindForMIME(m) == "file" {
+		w.Header().Set("X-Content-Type-Options", "nosniff")
+		w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%q", name))
+	}
+	http.ServeContent(w, r, name, info.ModTime(), f)
+}
+
+// handleWorkspaceUpload receives user files onto the REAL workspace — the
+// same root Neo's fs and exec tools mutate (POST multipart, one or more
+// "file" parts, optional "dir" field targeting a workspace subdirectory).
+// Each file lands atomically (temp + rename, the editor-save posture) under
+// its own base name; the response reports the normalized workspace-relative
+// paths so the client can show exactly what Neo will see.
+func (s *Server) handleWorkspaceUpload(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		w.Header().Set("Allow", "POST")
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	root, err := s.engine.reqProjectRoot(r)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	r.Body = http.MaxBytesReader(w, r.Body, uploadMaxBytes+(1<<20))
+	if err := r.ParseMultipartForm(16 << 20); err != nil {
+		http.Error(w, "multipart form required (field 'file')", http.StatusBadRequest)
+		return
+	}
+	defer func() {
+		if r.MultipartForm != nil {
+			_ = r.MultipartForm.RemoveAll()
+		}
+	}()
+	parts := r.MultipartForm.File["file"]
+	if len(parts) == 0 {
+		http.Error(w, "a 'file' part is required", http.StatusBadRequest)
+		return
+	}
+	dirAbs, err := resolveWorkspacePath(root, strings.TrimSpace(r.FormValue("dir")))
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	if err := os.MkdirAll(dirAbs, 0o755); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	type uploaded struct {
+		Path string `json:"path"`
+		Name string `json:"name"`
+		Size int64  `json:"size"`
+	}
+	files := []uploaded{}
+	for _, hdr := range parts {
+		name := safeMediaName(filepath.Base(filepath.FromSlash(hdr.Filename)))
+		if name == "" {
+			http.Error(w, fmt.Sprintf("invalid filename %q", hdr.Filename), http.StatusBadRequest)
+			return
+		}
+		if hdr.Size > uploadMaxBytes {
+			http.Error(w, fmt.Sprintf("%s exceeds the %d-byte upload cap", name, int64(uploadMaxBytes)), http.StatusRequestEntityTooLarge)
+			return
+		}
+		src, err := hdr.Open()
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		tmp, err := os.CreateTemp(dirAbs, ".neo-upload-*")
+		if err != nil {
+			src.Close()
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		tmpName := tmp.Name()
+		written, copyErr := io.Copy(tmp, src)
+		src.Close()
+		closeErr := tmp.Close()
+		if copyErr != nil || closeErr != nil {
+			os.Remove(tmpName)
+			http.Error(w, "failed to write upload", http.StatusInternalServerError)
+			return
+		}
+		_ = os.Chmod(tmpName, 0o644)
+		dst := filepath.Join(dirAbs, name)
+		if err := os.Rename(tmpName, dst); err != nil {
+			os.Remove(tmpName)
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		relOut, _ := workspaceRel(root, dst)
+		files = append(files, uploaded{Path: relOut, Name: name, Size: written})
+	}
+	writeJSON(w, http.StatusCreated, map[string]interface{}{"files": files})
 }
 
 // workspaceWriteRequest is the editable editor's save body. BaseHash, when
