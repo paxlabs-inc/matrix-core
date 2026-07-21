@@ -16,6 +16,7 @@ package tools
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -1147,7 +1148,7 @@ func (m *Manager) RecallEnabled() bool { return m != nil && m.recall != nil }
 func (m *Manager) SpawnEnabled() bool { return m != nil && m.swarm != nil }
 
 func (m *Manager) ConfigureMachineMail(ctx context.Context, apiKey string) error {
-	if m == nil || m.mcp == nil {
+	if m.mcp == nil {
 		return errors.New("MachineMail tool server is unavailable")
 	}
 	client := m.mcp.Client("machine-mail")
@@ -1167,7 +1168,7 @@ func (m *Manager) ConfigureMachineMail(ctx context.Context, apiKey string) error
 }
 
 func (m *Manager) LoadMachineMail(ctx context.Context, apiKey string) error {
-	if m == nil || m.mcp == nil {
+	if m.mcp == nil {
 		return errors.New("MachineMail tool server is unavailable")
 	}
 	client := m.mcp.Client("machine-mail")
@@ -1178,7 +1179,7 @@ func (m *Manager) LoadMachineMail(ctx context.Context, apiKey string) error {
 }
 
 func (m *Manager) ClearMachineMail(ctx context.Context) error {
-	if m == nil || m.mcp == nil {
+	if m.mcp == nil {
 		return errors.New("MachineMail tool server is unavailable")
 	}
 	client := m.mcp.Client("machine-mail")
@@ -1200,7 +1201,7 @@ func (m *Manager) Warnings() []string { return append([]string{}, m.warnings...)
 
 // Close stops every MCP server.
 func (m *Manager) Close() error {
-	if m == nil || m.mcp == nil {
+	if m.mcp == nil {
 		return nil
 	}
 	return m.mcp.Close()
