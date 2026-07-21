@@ -110,6 +110,7 @@ func (s *Server) routes() []routeFact {
 		// length/sections), and pause for the ORACLE personalized brief.
 		{"/brief/", "GET/PUT /brief/settings — the morning-brief schedule + opt-in control surface", s.handleBrief},
 		{"/integrations/telegram", "GET/PUT/DELETE /integrations/telegram — connect a private Telegram chat to this user's Neo", s.handleTelegram},
+		{"/integrations/machinemail", "GET/PUT/DELETE /integrations/machinemail — configure this user's encrypted MachineMail identity key", s.handleMachineMail},
 		// Personalization interview entry (ORACLE task 5.3): mint an interview-
 		// flagged conversation; the interview itself runs in the normal chat.
 		{"/interview/", "POST /interview/start — start (or repeat) the guided personalization interview", s.handleInterview},

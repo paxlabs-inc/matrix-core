@@ -35,6 +35,7 @@ import (
 	"matrix/neo/internal/conversation"
 	"matrix/neo/internal/delegate"
 	"matrix/neo/internal/llm"
+	"matrix/neo/internal/machinemailsettings"
 	"matrix/neo/internal/memory"
 	"matrix/neo/internal/notify"
 	"matrix/neo/internal/preview"
@@ -69,6 +70,7 @@ type Engine struct {
 	automatrix         *automatrixlog.Store // durable Automatrix completion inbox (in-app surprise results); sidecar, never cortex
 	briefHistory       *briefhistory.Store  // durable morning-brief recommendation history + feedback (ORACLE task 5.5); sidecar, never cortex
 	telegram           *telegramBridge
+	machineMail        *machineMailBridge
 	mediaDir           string // machine-volume dir for generated + uploaded media ("" disables)
 	voiceASRURL        string
 	voiceASRKey        string
@@ -211,6 +213,7 @@ type EngineOptions struct {
 	BriefSettingsDir      string // durable morning-brief schedule sidecar dir ("" = in-memory only; wiring the production brief governor)
 	BriefHistoryDir       string // durable morning-brief recommendation-history dir ("" disables; the no-repeat + feedback store)
 	TelegramSettingsDir   string // encrypted per-user Telegram bot/channel state ("" disables the integration)
+	MachineMailSettingsDir string // encrypted per-user MachineMail API key ("" disables the integration)
 	MediaDir              string // machine-volume media dir ("" disables image/video/audio I/O)
 	VoiceASRURL           string
 	VoiceASRKey           string
@@ -382,6 +385,12 @@ func NewEngine(o EngineOptions) *Engine {
 		ts := telegramsettings.Open(o.TelegramSettingsDir)
 		ts.SetVault(o.Vault, vaultUser)
 		e.telegram = newTelegramBridge(e, ts)
+	}
+	if o.MachineMailSettingsDir != "" {
+		ms := machinemailsettings.Open(o.MachineMailSettingsDir)
+		ms.SetVault(o.Vault, vaultUser)
+		e.machineMail = newMachineMailBridge(ms, e.tools)
+		_ = e.machineMail.Restore(context.Background())
 	}
 	return e
 }

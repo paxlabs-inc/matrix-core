@@ -29,6 +29,7 @@ import (
 	"matrix/neo/internal/briefsettings"
 	"matrix/neo/internal/config"
 	"matrix/neo/internal/conversation"
+	"matrix/neo/internal/machinemailsettings"
 	"matrix/neo/internal/memory"
 	"matrix/neo/internal/preview"
 	"matrix/neo/internal/runrecord"
@@ -255,7 +256,8 @@ func runServe(args []string) {
 		AutomatrixSettingsDir: automatrixsettings.Dir(os.Getenv("NEO_AUTOMATRIX_DIR"), cfg.CortexRoot),
 		BriefSettingsDir:      briefsettings.Dir(os.Getenv("NEO_BRIEF_DIR"), cfg.CortexRoot),
 		BriefHistoryDir:       briefhistory.Dir(os.Getenv("NEO_BRIEF_DIR"), cfg.CortexRoot),
-		TelegramSettingsDir:   telegramsettings.Dir(os.Getenv("NEO_TELEGRAM_DIR"), cfg.CortexRoot),
+		TelegramSettingsDir:    telegramsettings.Dir(os.Getenv("NEO_TELEGRAM_DIR"), cfg.CortexRoot),
+		MachineMailSettingsDir: machinemailsettings.Dir(os.Getenv("NEO_MACHINEMAIL_DIR"), cfg.CortexRoot),
 		MediaDir:              mediaPath,
 		VoiceASRURL:           envOrDefault("MATRIX_MIMO_ASR_URL", "https://api.xiaomimimo.com/v1/chat/completions"),
 		VoiceASRKey:           os.Getenv("MIMO_API_KEY"),

@@ -1146,6 +1146,48 @@ func (m *Manager) RecallEnabled() bool { return m != nil && m.recall != nil }
 // is true — there is no point teaching a decision the agent cannot act on.
 func (m *Manager) SpawnEnabled() bool { return m != nil && m.swarm != nil }
 
+func (m *Manager) ConfigureMachineMail(ctx context.Context, apiKey string) error {
+	if m == nil || m.mcp == nil {
+		return errors.New("MachineMail tool server is unavailable")
+	}
+	client := m.mcp.Client("machine-mail")
+	if client == nil {
+		return errors.New("MachineMail tool server is unavailable")
+	}
+	var result struct {
+		Configured bool `json:"configured"`
+	}
+	if err := client.Call(ctx, "machinemail/configure", map[string]string{"api_key": apiKey}, &result); err != nil {
+		return err
+	}
+	if !result.Configured {
+		return errors.New("MachineMail did not accept the API key")
+	}
+	return nil
+}
+
+func (m *Manager) LoadMachineMail(ctx context.Context, apiKey string) error {
+	if m == nil || m.mcp == nil {
+		return errors.New("MachineMail tool server is unavailable")
+	}
+	client := m.mcp.Client("machine-mail")
+	if client == nil {
+		return errors.New("MachineMail tool server is unavailable")
+	}
+	return client.Call(ctx, "machinemail/load", map[string]string{"api_key": apiKey}, nil)
+}
+
+func (m *Manager) ClearMachineMail(ctx context.Context) error {
+	if m == nil || m.mcp == nil {
+		return errors.New("MachineMail tool server is unavailable")
+	}
+	client := m.mcp.Client("machine-mail")
+	if client == nil {
+		return errors.New("MachineMail tool server is unavailable")
+	}
+	return client.Call(ctx, "machinemail/clear", struct{}{}, nil)
+}
+
 // NaturalToolNames returns the advertised (directly-callable) function names.
 func (m *Manager) NaturalToolNames() []string { return append([]string{}, m.order...) }
 

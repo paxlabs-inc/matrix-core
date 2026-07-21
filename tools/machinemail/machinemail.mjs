@@ -5,7 +5,7 @@ import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 
 const API_BASE = (process.env.MACHINEMAIL_API_URL || 'https://api.machinemail.org/v1').replace(/\/$/, '')
-const API_KEY = (process.env.MACHINEMAIL_API_KEY || '').trim()
+let apiKey = (process.env.MACHINEMAIL_API_KEY || '').trim()
 const TIMEOUT_MS = clampInt(process.env.MACHINEMAIL_TIMEOUT_MS, 30000, 1000, 120000)
 const PROTOCOL_VERSION = '2024-11-05'
 
@@ -130,7 +130,7 @@ function classify(status, payload) {
 }
 
 async function invoke(name, args) {
-  if (!API_KEY) return result({ ok: false, tool: name, class: 'precondition', error: 'MACHINEMAIL_API_KEY is not configured' }, true)
+  if (!apiKey) return result({ ok: false, tool: name, class: 'precondition', error: 'MachineMail is not configured' }, true)
   const operation = operations[name]
   if (!operation) return result({ ok: false, tool: name, class: 'protocol', error: `unknown tool: ${name}` }, true)
   const [method, path, body] = operation(args || {})
@@ -141,7 +141,7 @@ async function invoke(name, args) {
     response = await fetch(`${API_BASE}${path}`, {
       method,
       headers: compact({
-        Authorization: `Bearer ${API_KEY}`,
+        Authorization: `Bearer ${apiKey}`,
         Accept: 'application/json',
         'Content-Type': body === undefined ? undefined : 'application/json',
         'Idempotency-Key': args?.idempotency_key,
@@ -165,11 +165,44 @@ async function invoke(name, args) {
   return result({ ok: true, tool: name, status: state, pending_approval: state === 'pending_approval', data: payload })
 }
 
+async function configure(params) {
+  const candidate = String(params?.api_key || '').trim()
+  if (!/^mm_[A-Za-z0-9_-]{20,200}$/.test(candidate)) throw new Error('invalid MachineMail API key format')
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), TIMEOUT_MS)
+  let response
+  try {
+    response = await fetch(`${API_BASE}/mailboxes`, {
+      headers: { Authorization: `Bearer ${candidate}`, Accept: 'application/json' },
+      signal: controller.signal,
+    })
+  } catch (error) {
+    clearTimeout(timer)
+    throw new Error(error?.name === 'AbortError' ? `MachineMail validation timed out after ${TIMEOUT_MS}ms` : `MachineMail validation failed: ${error?.message || error}`)
+  }
+  clearTimeout(timer)
+  const raw = await response.text()
+  let payload
+  try { payload = raw ? JSON.parse(raw) : {} } catch { payload = { raw } }
+  if (!response.ok) throw new Error(`MachineMail rejected the API key (${response.status}): ${payload?.error || payload?.message || response.statusText}`)
+  apiKey = candidate
+  return { configured: true }
+}
+
 const handlers = {
   initialize: (params) => ({ protocolVersion: params?.protocolVersion || PROTOCOL_VERSION, serverInfo: { name: 'machine-mail', version: '0.1.0' }, capabilities: { tools: {} } }),
   'notifications/initialized': () => null,
   'tools/list': () => ({ tools }),
   'tools/call': (params) => invoke(params?.name, params?.arguments || {}),
+  'machinemail/configure': (params) => configure(params),
+  'machinemail/load': (params) => {
+    const candidate = String(params?.api_key || '').trim()
+    if (!/^mm_[A-Za-z0-9_-]{20,200}$/.test(candidate)) throw new Error('invalid MachineMail API key format')
+    apiKey = candidate
+    return { configured: true }
+  },
+  'machinemail/clear': () => { apiKey = ''; return { configured: false } },
+  'machinemail/status': () => ({ configured: apiKey !== '' }),
   ping: () => ({}),
 }
 function send(value) { process.stdout.write(`${JSON.stringify(value)}\n`) }
