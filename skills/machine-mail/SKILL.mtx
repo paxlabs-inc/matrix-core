@@ -1,0 +1,95 @@
+§SKILL
+id=machine-mail
+version=1.0.0
+display="MachineMail"
+author=did:pax:0xMATRIX
+description="Operate Neo's MachineMail identity with complete thread context, stable idempotency, draft approval, and ordered lifecycle events."
+mcl.verbs=find analyze deliver
+determinism=seedable
+seed_policy=per_intent
+
+§INPUTS
+slot target: ArtifactRef
+  required
+  hint="The mailbox, conversation, message, recipient, or email objective."
+
+slot constraints: Constraint[]
+  optional
+  hint="Authorized recipients, approval scope, delivery requirement, attachments, and timing."
+
+§CORTEX
+reads=Identity Fact Constraint Goal Event Pattern
+writes=Event Fact Pattern
+tags=email machinemail mailbox conversation approval
+
+§TOOLS
+matrix://tool/mcp/machine-mail/mail_list_mailboxes@0.1.0
+matrix://tool/mcp/machine-mail/mail_get_mailbox@0.1.0
+matrix://tool/mcp/machine-mail/mail_get_inbox@0.1.0
+matrix://tool/mcp/machine-mail/mail_get_conversation@0.1.0
+matrix://tool/mcp/machine-mail/mail_compose@0.1.0
+matrix://tool/mcp/machine-mail/mail_reply@0.1.0
+matrix://tool/mcp/machine-mail/mail_get_threading_headers@0.1.0
+matrix://tool/mcp/machine-mail/mail_get_pending_approvals@0.1.0
+matrix://tool/mcp/machine-mail/mail_get_approval@0.1.0
+matrix://tool/mcp/machine-mail/mail_search_messages@0.1.0
+matrix://tool/mcp/machine-mail/mail_poll_events@0.1.0
+matrix://tool/mcp/machine-mail/mail_get_usage@0.1.0
+
+§SUB_SKILLS
+none
+
+§PROCEDURE
+on verb=find
+  kind="reason"
+  output_cardinality=1
+  prompt
+    system="You are the Matrix planner running machine-mail in read mode. Output a PlanTree, not prose. List mailboxes, inspect the selected mailbox policy, then use inbox, search, and full conversation reads as needed. Never compose or reply. Finish with exactly one reason step grounded in returned mailbox data."
+    user="Mail request: {slot.target.prose}\n\nConstraints:\n{slots}\n\nContext:\n{cortex.bundle}\n\nProduce the plan_tree@1 now."
+  end
+end
+
+on verb=analyze
+  kind="reason"
+  output_cardinality=1
+  prompt
+    system="You are the Matrix planner running machine-mail in conversation analysis mode. Output a PlanTree, not prose. Read the complete conversation and threading headers when needed. Distinguish received, pending_approval, approved, sent, rejected, and failed from authoritative data. Finish with exactly one reason step and do not create outbound mail."
+    user="Mail analysis request: {slot.target.prose}\n\nConstraints:\n{slots}\n\nContext:\n{cortex.bundle}\n\nProduce the plan_tree@1 now."
+  end
+end
+
+on verb=deliver
+  kind="reason"
+  output_cardinality=1
+  prompt
+    system="You are the Matrix planner running machine-mail for an authorized outbound message. Output a PlanTree, not prose. List and inspect the mailbox, run usage preflight, read the full conversation before any reply, then call mail_reply for an existing thread or mail_compose for a new one. Supply one stable idempotency_key for the logical action. When human approval is required use approval_scope draft. pending_approval is successful parked state and MUST NOT be retried. Poll ordered events from the last cursor only when sent-state evidence is required. Finish with exactly one reason step distinguishing parked, sent, rejected, or failed; never claim delivery from compose success alone."
+    user="Outbound mail request: {slot.target.prose}\n\nAuthorized constraints:\n{slots}\n\nContext:\n{cortex.bundle}\n\nProduce the plan_tree@1 now."
+  end
+end
+
+§OUTPUTS
+slot result: Event
+  required
+  hint="Authoritative mailbox finding, parked approval, or event-proven delivery state."
+
+§FAILURE_MODES
+mailbox_not_found
+  action=fail
+  reason=unknown_information
+
+pending_approval
+  action=succeed
+  reason=unknown_information
+
+authorization_denied
+  action=fail
+  reason=policy_violation
+
+external_failure
+  action=fail
+  reason=external_failure
+
+§HASH
+v=1
+algo=sha256_ast
+digest=

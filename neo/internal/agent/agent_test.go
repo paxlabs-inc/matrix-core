@@ -21,7 +21,7 @@ func TestSystemPromptHasPaxeerGrounding(t *testing.T) {
 	// The grounding must be present so Neo knows Paxeer is real and where to
 	// reach it — instead of denying it exists or blind web-searching.
 	for _, want := range []string{
-		"Paxeer", "125", "api.hyperpax.xyz", "paxscan.io", "paxeer__transfer", "self:",
+		"Paxeer", "125", "api.hyperpax.xyz", "paxscan.io", "browser", "MachineMail", "pending_approval", "self:",
 	} {
 		if !strings.Contains(sp, want) {
 			t.Errorf("system prompt missing grounding fact %q", want)

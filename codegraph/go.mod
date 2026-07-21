@@ -6,7 +6,6 @@ require (
 	golang.org/x/tools v0.47.0
 	lukechampine.com/blake3 v1.3.0
 	matrix/cortex v0.0.0
-	matrix/vault v0.0.0
 	matrix/mcl v0.0.0
 )
 

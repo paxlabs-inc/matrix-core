@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "agent": "matrix://agent/neo",
-  "description": "Neo front-agent manifest — the FULL tool surface for the Neo conversational agent (matrix/neo). MCL is folded into Neo: there is no core_execute delegation wall on the interactive surface, so Neo carries the complete paxeer-net lane (alias 'paxeer') directly — Paxeer RPC, PaxScan, price reads, and the embedded-wallet write lane (wallet_info/sign_message/transfer/approve/contract_write). Custody + key material live network-side in the Paxeer Embedded Wallet, so spend limits and policy are enforced ON THE WALLET at the network layer (PaxeerSpendPolicy / PAXEER_MAX_SPEND_WEI), never trusted to agent code. Autonomous (Automatrix/sub-agent) surfaces still structurally exclude value-moving tools. Also bundles fs + fetch + web-search + browser + git + exec. The exec server's service registry is isolated to /data/neo/services via MATRIX_EXEC_STATE_DIR (exported by the daemon image entrypoint for the Neo process) so it never collides with the co-located MCL daemon's /data/services. PackageDigest values mirror agents/default.json (PLACEHOLDERS where the daemon manifest is placeholder; operators replace before production / chain-anchoring).",
+  "description": "Neo front-agent manifest. Human-facing systems are reached through a stable browser, machine-mail, filesystem, and shell substrate; product procedures are skills rather than dedicated integration schemas. Autonomous surfaces structurally exclude value-moving tools. Machine-mail credentials are inherited only through MACHINEMAIL_API_KEY. The exec server's service registry is isolated to /data/neo/services through MATRIX_EXEC_STATE_DIR.",
   "allowed_side_effects": [
     "read",
     "write",
@@ -91,50 +91,6 @@
           "name": "get_file_info",
           "description": "Stat a file or directory",
           "side_effect_class": "read"
-        }
-      ]
-    },
-    {
-      "alias": "fetch",
-      "transport": "stdio",
-      "command": "uvx",
-      "args": [
-        "mcp-server-fetch"
-      ],
-      "env": [],
-      "package_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
-      "version": "2025.4.7",
-      "tools": [
-        {
-          "name": "fetch",
-          "description": "Fetch a URL and return its content as Markdown",
-          "side_effect_class": "network",
-          "timeout_ms": 30000
-        }
-      ]
-    },
-    {
-      "alias": "web-search",
-      "transport": "stdio",
-      "command": "node",
-      "args": [
-        "/root/matrix/tools/websearch/web-search.mjs"
-      ],
-      "env": [],
-      "package_digest": "sha256:7da2e53ce32872c9ab314f252d71d8109b393cef0e0004c4bc0333c4ecd25c92",
-      "version": "0.1.0",
-      "tools": [
-        {
-          "name": "web_search",
-          "description": "Search the public web for query-relevant ranked sources (title, url, snippet, published). Search is discovery only: read a selected URL with fetch before making a factual claim. No provider synthesis is returned. Read-only. args: query (required), max_results?, topic? (general|news)",
-          "side_effect_class": "network",
-          "timeout_ms": 20000
-        },
-        {
-          "name": "web_news",
-          "description": "Search recent news for query-relevant ranked articles (title, url, snippet, published). Search is discovery only: read a selected URL with fetch before making a factual claim. Read-only. args: query (required), max_results?",
-          "side_effect_class": "network",
-          "timeout_ms": 20000
         }
       ]
     },
@@ -290,77 +246,89 @@
       ]
     },
     {
-      "alias": "git",
+      "alias": "machine-mail",
       "transport": "stdio",
-      "command": "uvx",
+      "command": "node",
       "args": [
-        "mcp-server-git",
-        "--repository",
-        "/workspace"
+        "/root/matrix/tools/machinemail/machinemail.mjs"
       ],
-      "env": [],
-      "package_digest": "sha256:2222222222222222222222222222222222222222222222222222222222222222",
-      "version": "2026.1.14",
+      "env": [
+        "MACHINEMAIL_API_KEY"
+      ],
+      "package_digest": "sha256:704559b7b8c4a9f108ffe80a151abf2262dea3fdfadcf554a727fcdf66a7491e",
+      "version": "0.1.0",
       "tools": [
         {
-          "name": "git_status",
-          "description": "Show the working-tree status",
-          "side_effect_class": "read"
+          "name": "mail_list_mailboxes",
+          "description": "List the mailboxes this MachineMail API key can access.",
+          "side_effect_class": "network",
+          "timeout_ms": 30000
         },
         {
-          "name": "git_diff_unstaged",
-          "description": "Diff unstaged changes",
-          "side_effect_class": "read"
+          "name": "mail_get_mailbox",
+          "description": "Get one mailbox and its approval policy.",
+          "side_effect_class": "network",
+          "timeout_ms": 30000
         },
         {
-          "name": "git_diff_staged",
-          "description": "Diff staged changes",
-          "side_effect_class": "read"
+          "name": "mail_get_inbox",
+          "description": "List recent inbox items with previews.",
+          "side_effect_class": "network",
+          "timeout_ms": 30000
         },
         {
-          "name": "git_diff",
-          "description": "Diff between commits/branches",
-          "side_effect_class": "read"
+          "name": "mail_get_conversation",
+          "description": "Read a complete email conversation before replying.",
+          "side_effect_class": "network",
+          "timeout_ms": 30000
         },
         {
-          "name": "git_log",
-          "description": "Show commit history",
-          "side_effect_class": "read"
+          "name": "mail_compose",
+          "description": "Compose mail with a stable idempotency key. Draft-scoped requests returning pending_approval are successful parked sends and must not be retried.",
+          "side_effect_class": "write",
+          "timeout_ms": 30000
         },
         {
-          "name": "git_show",
-          "description": "Show a specific commit",
-          "side_effect_class": "read"
+          "name": "mail_reply",
+          "description": "Reply in an existing conversation while preserving the thread. Draft-scoped pending_approval is success.",
+          "side_effect_class": "write",
+          "timeout_ms": 30000
         },
         {
-          "name": "git_branch",
-          "description": "List branches",
-          "side_effect_class": "read"
+          "name": "mail_get_threading_headers",
+          "description": "Get threading headers for a conversation when explicit header-level reply construction is required.",
+          "side_effect_class": "network",
+          "timeout_ms": 30000
         },
         {
-          "name": "git_add",
-          "description": "Stage files for commit",
-          "side_effect_class": "write"
+          "name": "mail_get_pending_approvals",
+          "description": "List parked draft-scoped outbound messages awaiting human approval.",
+          "side_effect_class": "network",
+          "timeout_ms": 30000
         },
         {
-          "name": "git_reset",
-          "description": "Reset staged changes",
-          "side_effect_class": "write"
+          "name": "mail_get_approval",
+          "description": "Get one pending approval and its authoritative state.",
+          "side_effect_class": "network",
+          "timeout_ms": 30000
         },
         {
-          "name": "git_commit",
-          "description": "Create a commit from staged changes",
-          "side_effect_class": "write"
+          "name": "mail_search_messages",
+          "description": "Search mailbox messages without scanning the inbox manually.",
+          "side_effect_class": "network",
+          "timeout_ms": 30000
         },
         {
-          "name": "git_create_branch",
-          "description": "Create a new branch",
-          "side_effect_class": "write"
+          "name": "mail_poll_events",
+          "description": "Read the ordered mailbox event log after a cursor and derive outbound lifecycle from events.",
+          "side_effect_class": "network",
+          "timeout_ms": 30000
         },
         {
-          "name": "git_checkout",
-          "description": "Switch branches",
-          "side_effect_class": "write"
+          "name": "mail_get_usage",
+          "description": "Read MachineMail usage and limits for deterministic preflight.",
+          "side_effect_class": "network",
+          "timeout_ms": 30000
         }
       ]
     },
@@ -410,398 +378,6 @@
           "description": "Restart a supervised service from its recorded command and re-enable autostart. args: name (required).",
           "side_effect_class": "shell",
           "timeout_ms": 30000
-        }
-      ]
-    },
-    {
-      "alias": "paxeer",
-      "transport": "stdio",
-      "command": "node",
-      "args": [
-        "/root/matrix/tools/paxeer/paxeer-net.mjs"
-      ],
-      "env": [],
-      "package_digest": "sha256:7777777777777777777777777777777777777777777777777777777777777777",
-      "version": "0.1.0",
-      "tools": [
-        {
-          "name": "rpc_call",
-          "description": "Direct EVM JSON-RPC read against the Paxeer node (PAXEER_RPC_URL, default public-mainnet.rpcpaxeer.online/evm). Read-only.",
-          "side_effect_class": "network",
-          "timeout_ms": 15000
-        },
-        {
-          "name": "eth_call",
-          "description": "Read-only eth_call against a contract. Does NOT send a tx.",
-          "side_effect_class": "network",
-          "timeout_ms": 15000
-        },
-        {
-          "name": "contract_read",
-          "description": "Encode a method + eth_call + decode outputs (signature + outputs[]). Read-only.",
-          "side_effect_class": "network",
-          "timeout_ms": 15000
-        },
-        {
-          "name": "encode_call",
-          "description": "Pure ABI-encode a method call to 0x calldata. No network, no send.",
-          "side_effect_class": "read",
-          "timeout_ms": 5000
-        },
-        {
-          "name": "chain_info",
-          "description": "Paxeer chain id, head block, sync status, RPC URL. Read-only.",
-          "side_effect_class": "network",
-          "timeout_ms": 15000
-        },
-        {
-          "name": "get_balance",
-          "description": "Native PAX balance of an address. Read-only.",
-          "side_effect_class": "network",
-          "timeout_ms": 15000
-        },
-        {
-          "name": "token_balance",
-          "description": "ERC-20 balance + symbol/decimals for a holder. Read-only.",
-          "side_effect_class": "network",
-          "timeout_ms": 15000
-        },
-        {
-          "name": "paxscan_get",
-          "description": "Generic PaxScan/Blockscout v2 GET passthrough (any documented route). Read-only.",
-          "side_effect_class": "network",
-          "timeout_ms": 20000
-        },
-        {
-          "name": "address_overview",
-          "description": "PaxScan address info + counters + token balances in one call. Read-only.",
-          "side_effect_class": "network",
-          "timeout_ms": 20000
-        },
-        {
-          "name": "address_transactions",
-          "description": "PaxScan transaction list for an address. Read-only.",
-          "side_effect_class": "network",
-          "timeout_ms": 20000
-        },
-        {
-          "name": "tx",
-          "description": "PaxScan transaction detail by hash. Read-only.",
-          "side_effect_class": "network",
-          "timeout_ms": 20000
-        },
-        {
-          "name": "token_info",
-          "description": "PaxScan token metadata + top holders. Read-only.",
-          "side_effect_class": "network",
-          "timeout_ms": 20000
-        },
-        {
-          "name": "search",
-          "description": "PaxScan global search (addresses, tokens, txs, blocks). Read-only.",
-          "side_effect_class": "network",
-          "timeout_ms": 20000
-        },
-        {
-          "name": "network_stats",
-          "description": "PaxScan network stats (gas, market, tx counts). Read-only.",
-          "side_effect_class": "network",
-          "timeout_ms": 20000
-        },
-        {
-          "name": "price",
-          "description": "Off-chain price for PAX or a bridged major (pax|sol|eth|bnb|sid). Read-only.",
-          "side_effect_class": "network",
-          "timeout_ms": 15000
-        },
-        {
-          "name": "wallet_info",
-          "description": "Resolve the agent embedded-wallet address + chain (provisions on first use). Network call to the custody API; no value moves.",
-          "side_effect_class": "network",
-          "timeout_ms": 20000
-        },
-        {
-          "name": "sign_message",
-          "description": "EIP-191 personal_sign a message with the agent wallet (proof of identity). Signs network-side; no value moves.",
-          "side_effect_class": "network",
-          "timeout_ms": 20000
-        },
-        {
-          "name": "transfer",
-          "description": "Send native PAX or an ERC-20 to a plain address. args: to (0x address), amount (human units, e.g. \"3000\"), token (symbol or 0x; omit for PAX), nonce (optional explicit nonce), max_fee_gwei (optional fee ceiling). WRITE: signs+broadcasts via the embedded wallet; gated by PaxeerSpendPolicy. ONLY for direct wallet-to-wallet sends. NEVER use this to fund a deposit-style protocol (LayerX, vaults, bridges, staking): those credit balances from their own deposit FUNCTION's event, so a bare transfer to their address strands the funds uncredited. Funding LayerX starts with layerx_deposit; contract deposit calls go through contract_write. A returned tx hash means BROADCAST, not mined - verify with the tx tool before building on it. nonce + max_fee_gwei are for stuck-tx replacement: on a NONCE GAP error, a 0-amount self-send at the wedged nonce with higher fees unblocks the queue.",
-          "side_effect_class": "write",
-          "timeout_ms": 30000
-        },
-        {
-          "name": "approve",
-          "description": "ERC-20 approve a spender (amount or 'max'). WRITE: signs+broadcasts via the embedded wallet.",
-          "side_effect_class": "write",
-          "timeout_ms": 30000
-        },
-        {
-          "name": "contract_write",
-          "description": "Sign and send a caller-specified contract write. Provide the Solidity signature + args or raw data, with optional native value. WRITE: gated by PaxeerSpendPolicy. For a LayerX USDL deposit prefer wallet_layerx_deposit (one durable, idempotent, confirmed call). ERC-20 amounts need a prior `approve` to the contract.",
-          "side_effect_class": "write",
-          "timeout_ms": 30000
-        },
-        {
-          "name": "wallet_layerx_deposit",
-          "description": "Durable one-call LayerX USDL deposit (approve+depositUSDL, confirmed + credit-verified server-side, idempotent). Get did_claim+amount from layerx_deposit first. Returns action_id; poll wallet_action. Supersedes hand-rolling approve+contract_write for USDL funding. WRITE: gated by PaxeerSpendPolicy.",
-          "side_effect_class": "write",
-          "timeout_ms": 30000
-        },
-        {
-          "name": "wallet_allowance_and_call",
-          "description": "Durable one-call approve-then-call (raw base units), each leg wallet-confirmed + idempotent. Returns action_id; poll wallet_action. WRITE: gated by PaxeerSpendPolicy.",
-          "side_effect_class": "write",
-          "timeout_ms": 30000
-        },
-        {
-          "name": "wallet_action",
-          "description": "Poll a durable action by id: status, tx hashes, LayerX credit, and the interpretation-free error envelope. Read-only (never resubmits a broadcast action).",
-          "side_effect_class": "network",
-          "timeout_ms": 30000
-        }
-      ]
-    },
-    {
-      "alias": "kindle-reads",
-      "transport": "stdio",
-      "command": "node",
-      "args": [
-        "/root/matrix/tools/kindle/kindle.mjs"
-      ],
-      "env": [
-        "KINDLE_READS_ONLY=1"
-      ],
-      "package_digest": "sha256:01ffcdc0e548db531ab9126af68e876bd2144584f3ea65cb6613ca9b883ece2a",
-      "version": "0.1.0",
-      "tools": [
-        {
-          "name": "kindle_pools",
-          "description": "List KindleLaunch pools (paginated discovery) on Paxeer chain 125. Read-only. args: offset?, limit? (<=100).",
-          "side_effect_class": "network",
-          "timeout_ms": 20000
-        },
-        {
-          "name": "kindle_market",
-          "description": "Token/market detail: price, market cap, reserves, fee, optical, creator. Read-only. args: pool (or token).",
-          "side_effect_class": "network",
-          "timeout_ms": 20000
-        },
-        {
-          "name": "kindle_quote",
-          "description": "Quote a trade and the quote-bounded minimum out via the Quoter. Read-only. args: pool (or token), amount (human), side (buy|sell), slippageBps?.",
-          "side_effect_class": "network",
-          "timeout_ms": 20000
-        },
-        {
-          "name": "kindle_fees",
-          "description": "Pending/accumulated fees for a pool in USDL (+ airdrop/LP/optical balances) from FeeAccumulator. Read-only. args: pool (or token).",
-          "side_effect_class": "network",
-          "timeout_ms": 20000
-        },
-        {
-          "name": "kindle_optical_info",
-          "description": "Optical detail: name/description/risk + whether it is verified on the OpticalRegistry. Read-only. args: optical (preset name or 0x). Omit to list presets.",
-          "side_effect_class": "network",
-          "timeout_ms": 20000
-        },
-        {
-          "name": "kindle_position",
-          "description": "A wallet's token balance for a pool/token. Read-only. args: token (or pool), address? (defaults to the agent wallet).",
-          "side_effect_class": "network",
-          "timeout_ms": 20000
-        }
-      ]
-    },
-    {
-      "alias": "media",
-      "transport": "stdio",
-      "command": "node",
-      "args": [
-        "/root/matrix/tools/media/media.mjs"
-      ],
-      "env": [],
-      "package_digest": "sha256:9999999999999999999999999999999999999999999999999999999999999999",
-      "version": "0.1.0",
-      "tools": [
-        {
-          "name": "generate_image",
-          "description": "Generate a NEW image from a text description (text-to-image, xAI Grok Imagine). Writes the result to the agent's media volume and returns {ok, kind:\"image\", url}. The url is surfaced to the user automatically.",
-          "side_effect_class": "network",
-          "timeout_ms": 180000
-        },
-        {
-          "name": "edit_image",
-          "description": "Restyle/transform an EXISTING image with a text instruction (image-to-image, xAI Grok Imagine). image is a /data/media reference or public URL. Returns {ok, kind:\"image\", url}.",
-          "side_effect_class": "network",
-          "timeout_ms": 180000
-        },
-        {
-          "name": "inpaint_image",
-          "description": "Repaint a masked region of an image from a prompt (inpainting). Requires image + mask (white = repaint). Returns {ok, kind:\"image\", url}.",
-          "side_effect_class": "network",
-          "timeout_ms": 180000
-        },
-        {
-          "name": "remove_background",
-          "description": "Remove an image's background, leaving the subject on transparency. image is a /data/media reference or public URL. Returns {ok, kind:\"image\", url}.",
-          "side_effect_class": "network",
-          "timeout_ms": 120000
-        },
-        {
-          "name": "replace_background",
-          "description": "Replace an image's background with a new scene from a text prompt, keeping the subject. Returns {ok, kind:\"image\", url}.",
-          "side_effect_class": "network",
-          "timeout_ms": 120000
-        },
-        {
-          "name": "remove_text",
-          "description": "Erase rendered text/captions/watermarks from an image. image is a /data/media reference or public URL. Returns {ok, kind:\"image\", url}.",
-          "side_effect_class": "network",
-          "timeout_ms": 120000
-        },
-        {
-          "name": "cleanup_image",
-          "description": "Erase a masked object from an image and fill the background (object removal). Requires image + mask (white = erase). Returns {ok, kind:\"image\", url}.",
-          "side_effect_class": "network",
-          "timeout_ms": 120000
-        },
-        {
-          "name": "merge_faces",
-          "description": "Swap the face in a base photo with the face from another image. Requires image (base) + face. Returns {ok, kind:\"image\", url}.",
-          "side_effect_class": "network",
-          "timeout_ms": 120000
-        },
-        {
-          "name": "generate_video",
-          "description": "Generate a short video from a text description (text-to-video, xAI Grok Imagine). Async: blocks until ready (minutes). Returns {ok, kind:\"video\", url}.",
-          "side_effect_class": "network",
-          "timeout_ms": 600000
-        },
-        {
-          "name": "animate_image",
-          "description": "Animate an existing still image into a short video (image-to-video, xAI Grok Imagine). Async: blocks until ready (minutes). Returns {ok, kind:\"video\", url}.",
-          "side_effect_class": "network",
-          "timeout_ms": 600000
-        },
-        {
-          "name": "transcribe_audio",
-          "description": "Transcribe a local wav or mp3 attachment with MiMo speech recognition. audio is the exact /media reference from the user's message; language is auto, zh, or en. Returns {ok, transcript, language}.",
-          "side_effect_class": "network",
-          "timeout_ms": 180000
-        },
-        {
-          "name": "generate_speech",
-          "description": "Convert text into natural-sounding spoken audio with MiMo TTS. Optional voice selects a built-in voice and style gives natural-language performance direction. Novita is used only when MiMo is unavailable. Returns {ok, kind:\"audio\", url}.",
-          "side_effect_class": "network",
-          "timeout_ms": 180000
-        }
-      ]
-    },
-    {
-      "alias": "chronos",
-      "transport": "stdio",
-      "command": "node",
-      "args": [
-        "/root/matrix/tools/chronos/chronos.mjs"
-      ],
-      "env": [],
-      "package_digest": "sha256:c40000000000000000000000000000000000000000000000000000000000000c",
-      "version": "0.1.0",
-      "tools": [
-        {
-          "name": "alarm_set",
-          "description": "Schedule a future wake for yourself. kind='once' with delay_seconds (relative) or fire_at (absolute RFC3339); kind='cron' with cron_expr (+ optional IANA timezone) for recurring. wake_message is REQUIRED — the contextful turn delivered to your future self on fire. Optional conversation_id resumes a thread; payload is opaque state echoed back. Durable: survives restarts.",
-          "side_effect_class": "write",
-          "timeout_ms": 30000
-        },
-        {
-          "name": "alarm_list",
-          "description": "List your scheduled alarms (status, next_fire_at, failure info). Read-only.",
-          "side_effect_class": "network",
-          "timeout_ms": 15000
-        },
-        {
-          "name": "alarm_get",
-          "description": "Fetch one of your alarms by id (wake_message, payload, schedule, status). Read-only. args: id.",
-          "side_effect_class": "network",
-          "timeout_ms": 15000
-        },
-        {
-          "name": "alarm_cancel",
-          "description": "Cancel one of your active alarms by id so it never fires. args: id.",
-          "side_effect_class": "write",
-          "timeout_ms": 15000
-        }
-      ]
-    },
-    {
-      "alias": "layerx",
-      "transport": "stdio",
-      "command": "node",
-      "args": [
-        "/root/matrix/tools/layerx/layerx.mjs"
-      ],
-      "env": [],
-      "package_digest": "sha256:1a0000000000000000000000000000000000000000000000000000000000001a",
-      "version": "0.1.0",
-      "tools": [
-        {
-          "name": "layerx_balance",
-          "description": "Your LayerX USDX balance: spendable balance + escrow bound + mapped Paxeer payout address. USDX is USD-denominated, escrow-backed agent money. Read-only (authorized as your agent DID).",
-          "side_effect_class": "network",
-          "timeout_ms": 15000
-        },
-        {
-          "name": "layerx_deposit",
-          "description": "STEP 1 of funding your LayerX USDX balance — call this FIRST, before any on-chain action. Returns vault_address, reserve_asset, and your did_claim (bytes32). The deposit itself is then a contract_write on vault_address: depositUSDL(amount, did_claim) for USDL (1:1), depositSwap(tokenIn, amountIn, minUsdlOut, deadline, did_claim) for USDC/USDT/WPAX9, or depositNative(minUsdlOut, deadline, did_claim) with native PAX value; ERC-20 paths need a prior approve(vault_address, amount). The did_claim argument is how the vault credits YOUR balance — a bare `transfer` to the vault emits no Deposit event and credits NOTHING (the funds strand). Confirm the credit with layerx_balance. This call itself moves no funds. Read-only.",
-          "side_effect_class": "network",
-          "timeout_ms": 15000
-        },
-        {
-          "name": "layerx_pay",
-          "description": "Pay another agent instantly and gaslessly by DID, spending your escrow-backed USDX. Returns a sequencer-signed receipt. args: to_did (did:matrix recipient), amount_usdx (decimal USDX).",
-          "side_effect_class": "write",
-          "timeout_ms": 30000
-        },
-        {
-          "name": "layerx_receipt",
-          "description": "Fetch the signed inclusion receipt for a transfer seq: sequencer signature, Merkle inclusion path, batch root, and the Paxeer anchor tx once settled. Public + independently verifiable. args: seq. Read-only.",
-          "side_effect_class": "network",
-          "timeout_ms": 15000
-        },
-        {
-          "name": "layerx_withdraw",
-          "description": "Burn USDX to release real USDL out of the vault to your mapped Paxeer payout address, optionally swapping out. Bounded by your escrow-backed balance; force-settled. args: amount_usdx, swap_out? (target asset ticker).",
-          "side_effect_class": "write",
-          "timeout_ms": 30000
-        },
-        {
-          "name": "layerx_settle",
-          "description": "Force-settle now: seal the current window and anchor its Merkle root (and queued withdrawal payouts) to Paxeer immediately instead of waiting for the window. Idempotent + crash-safe.",
-          "side_effect_class": "write",
-          "timeout_ms": 60000
-        }
-      ]
-    },
-    {
-      "alias": "sandbox",
-      "transport": "stdio",
-      "command": "node",
-      "args": [
-        "/root/matrix/tools/sandbox/sandbox.mjs"
-      ],
-      "env": [],
-      "package_digest": "sha256:5a0000000000000000000000000000000000000000000000000000000000005a",
-      "version": "0.3.0",
-      "tools": [
-        {
-          "name": "preview_app",
-          "description": "Publish a workspace web app as a live Matrix preview. Pass only app_directory; the system handles detection, upload, all dependencies including dev tools, startup, readiness, public verification, and exact failures. Never modify the app or install dependencies yourself after a failure; report the exact returned error.",
-          "side_effect_class": "network",
-          "timeout_ms": 900000
         }
       ]
     }

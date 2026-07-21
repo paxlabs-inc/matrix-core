@@ -94,6 +94,11 @@ type Server struct {
 
 	events *events.Broker // live SSE fan-out; nil = streaming disabled
 
+	// perps is the optional perps API surface (spec/layerx-perps wave 6);
+	// nil-Engine deployments keep every perps write fail-closed.
+	perps  *PerpsDeps
+	perpsN *perpsNotifier
+
 	rl RateLimit
 }
 
@@ -137,6 +142,10 @@ type Deps struct {
 	// streaming (the endpoint then returns 503).
 	Events *events.Broker
 
+	// Perps wires the perps engine/feed/modes. Optional; omitted keeps the
+	// perps write surface fail-closed (public reads stay store-backed).
+	Perps *PerpsDeps
+
 	RateLimit RateLimit
 }
 
@@ -169,6 +178,8 @@ func New(d Deps) *Server {
 		microThreshold:   d.MicroThreshold,
 		chainConfigured:  d.ChainConfigured,
 		events:           d.Events,
+		perps:            d.Perps,
+		perpsN:           newPerpsNotifier(),
 		rl:               d.RateLimit,
 	}
 }
@@ -206,6 +217,9 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("POST /v1/hold/{id}/release", s.handleHoldRelease)
 	mux.HandleFunc("POST /v1/withdraw", s.handleWithdraw)
 	mux.HandleFunc("POST /v1/settle", s.handleSettle)
+
+	// Perps surface (public market reads + DID-scoped account writes/stream).
+	s.mountPerps(mux)
 	// Rate limit is the OUTERMOST layer (defense in depth behind nginx): it
 	// throttles per client IP before auth so a flood can't even reach the
 	// ledger or the token verifier.
@@ -306,6 +320,12 @@ func isPublicPath(r *http.Request) bool {
 		if strings.HasPrefix(p, "/v1/batch/") || strings.HasPrefix(p, "/v1/anchor/") ||
 			strings.HasPrefix(p, "/v1/receipt/") || strings.HasPrefix(p, "/v1/account/") ||
 			strings.HasPrefix(p, "/v1/hold/") {
+			return true
+		}
+		// Public perps market-data reads (markets/orderbook/trades) stay open;
+		// the authenticated perps surface carries its own DID/principal auth.
+		if p == "/v1/perps/markets" || strings.HasPrefix(p, "/v1/perps/markets/") ||
+			strings.HasPrefix(p, "/v1/perps/orderbook/") || strings.HasPrefix(p, "/v1/perps/trades/") {
 			return true
 		}
 	}

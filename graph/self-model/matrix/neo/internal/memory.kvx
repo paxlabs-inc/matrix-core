@@ -1,7 +1,7 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:692600571e83688a9f5ca7bb8097ec4724d47795ceb20a9fad61155e25645d0f
+# GENERATED gen=codegraph do-not-edit merkle=b3:52999baf9b60aaec805753b76d1e1b50c03eb92a31a0fc3f5f28c8d467cd1ec3
 
 NODE id=matrix/neo/internal/memory kind=package
-  digest=b3:3961ab77725433ce0a88629a63b9d73f3852f4af92c6674b3e5cb0829d42bf75 file=neo/internal/memory range=0:0 lang=go exported=true
+  digest=b3:39192c281828315ceeef6901091826d9d56e154f22eeab63b9be4e1eb7fa06a3 file=neo/internal/memory range=0:0 lang=go exported=true
 EDGES
   contains=matrix/neo/internal/memory/classifier.go,matrix/neo/internal/memory/consent.go,matrix/neo/internal/memory/consolidate.go,matrix/neo/internal/memory/deathjournal.go,matrix/neo/internal/memory/embedder.go,matrix/neo/internal/memory/episodic.go,matrix/neo/internal/memory/mutation.go,matrix/neo/internal/memory/opportunity.go,matrix/neo/internal/memory/pager.go,matrix/neo/internal/memory/pattern.go,matrix/neo/internal/memory/personalization.go,matrix/neo/internal/memory/relation.go,matrix/neo/internal/memory/salience_realism.go,matrix/neo/internal/memory/self_model.go,matrix/neo/internal/memory/timeline.go,matrix/neo/internal/memory/trigger.go,matrix/neo/internal/memory/writeback.go
   ^contains=mod:matrix/neo
@@ -204,7 +204,7 @@ EDGES
   ^contains=matrix/neo/internal/memory.EpisodicTimeWindow
 
 NODE id=matrix/neo/internal/memory.EstimateTokens kind=func
-  digest=b3:1100e8f93e456670efe5155520527ef9fb483d7545f842c43ca218355e12b1ff file=neo/internal/memory/pager.go range=1164:1168 lang=go exported=true byte_range=41167:41420
+  digest=b3:1100e8f93e456670efe5155520527ef9fb483d7545f842c43ca218355e12b1ff file=neo/internal/memory/pager.go range=1164:1168 lang=go exported=true byte_range=40528:40781
   sig=func EstimateTokens(s string) int
   doc=EstimateTokens approximates token count with cortex's bytes/4 heuristic.\nDeterministic and dependency-free; matches the budget math elsewhere.
 EDGES
@@ -963,7 +963,7 @@ EDGES
   ^defines=matrix/neo/internal/memory/writeback.go
 
 NODE id=matrix/neo/internal/memory.Pager.LearnedGuidance kind=method
-  digest=b3:089fd8028b2854dce2a2954ad6386fd023cd81ac5119007f600b9063fd234bfb file=neo/internal/memory/pager.go range=345:410 lang=go exported=true byte_range=13441:15631
+  digest=b3:089fd8028b2854dce2a2954ad6386fd023cd81ac5119007f600b9063fd234bfb file=neo/internal/memory/pager.go range=345:410 lang=go exported=true byte_range=12802:14992
   sig=func (p *Pager) LearnedGuidance(ctx context.Context) []string
   doc=LearnedGuidance returns short behavioral guidance lines Neo has LEARNED:\nnon-hard learned/declared Constraints (hard ones are pinned verbatim by\nhardConstraints) followed by strong durable Preferences. This is the\nstructural fix for "Neo keeps forgetting a learned behavior" — a correction\nor working preference (e.g. "render a Construct surface while working")\nbecomes a line pinned to EVERY turn, changing behavior reliably instead of\ndepending on salience-ranked retrieval luck. Ranked by the Find planner's\nsalience-desc default and bounded by learnedGuidanceMax.
 EDGES
@@ -1055,7 +1055,7 @@ EDGES
   ^defines=matrix/neo/internal/memory/pager.go
 
 NODE id=matrix/neo/internal/memory.Pager.Procedural kind=method
-  digest=b3:335ca8e768bacc067fa17bb038cb91c12ebf8bba58f6ddae7858f9c3e43edd37 file=neo/internal/memory/pager.go range=1070:1112 lang=go exported=true byte_range=38498:39749
+  digest=b3:335ca8e768bacc067fa17bb038cb91c12ebf8bba58f6ddae7858f9c3e43edd37 file=neo/internal/memory/pager.go range=1070:1112 lang=go exported=true byte_range=37859:39110
   sig=func (p *Pager) Procedural(ctx context.Context, goal string) ([]Pattern, error)
   doc=Procedural returns proven how-to patterns whose trigger matches the goal,\ngated by the anti-overfit guard (coverage >= cfg.MinPatternSuccesses).
 EDGES
@@ -1071,7 +1071,7 @@ EDGES
   ^defines=matrix/neo/internal/memory/writeback.go
 
 NODE id=matrix/neo/internal/memory.Pager.Recall kind=method
-  digest=b3:5cbd61c4e2ea3dfbf397a2eadaaf45155e8a1f419b5b8e4f707c3d9ecfbfd888 file=neo/internal/memory/pager.go range=851:885 lang=go exported=true byte_range=30503:32536
+  digest=b3:5cbd61c4e2ea3dfbf397a2eadaaf45155e8a1f419b5b8e4f707c3d9ecfbfd888 file=neo/internal/memory/pager.go range=851:885 lang=go exported=true byte_range=29864:31897
   sig=func (p *Pager) Recall(ctx context.Context, queryText string, types []string, k int, asOf *time.Time) (string, error)
   doc=Recall renders an explicit, user-visible memory lookup: the pinned user\nprofile plus the structured retrieval for the query. This backs Neo's\nmemory_recall tool so "check your memory" is an action, not an apology, and\nis now the PRIMARY reasoning-time retrieval verb (v3 #1) — the model calls\nit iteratively with narrowing queries/type filters instead of being\nforce-fed an ambient blob. Each rendered line carries the memory's type, a\ncontradiction advisory when present, its valid-until when closed (the as-of\ntime-travel signal), and its cortex URI for citation/provenance.\n\nThe tool is pointed at the cortex RECURSIVE-RECALL surface (RecallDescend)\n— the model descends the temporal ladder to page in exact specifics — while\npreserving the AmbientRetrievalTopK pull-over-push philosophy (this is the\npull verb) and the as_of parameter. It falls back to the flat lookup when the\ntimeline yields nothing (pre-cascade / a memory not yet rolled up), so the\ntool never regresses.
 EDGES
@@ -1087,7 +1087,7 @@ EDGES
   ^defines=matrix/neo/internal/memory/pager.go
 
 NODE id=matrix/neo/internal/memory.Pager.RecallHits kind=method
-  digest=b3:a48d70d1ebaf70812215de89ba47858f34220ce1c3f1c63c267a0ebf1e97da5b file=neo/internal/memory/pager.go range=782:849 lang=go exported=true byte_range=28334:30501
+  digest=b3:a48d70d1ebaf70812215de89ba47858f34220ce1c3f1c63c267a0ebf1e97da5b file=neo/internal/memory/pager.go range=782:849 lang=go exported=true byte_range=27695:29862
   sig=func (p *Pager) RecallHits(_ context.Context, queryText string, types []string, k int, asOf *time.Time) ([]RecallHit, error)
   doc=RecallHits runs the structured, parameterized memory lookup behind the\nmemory_recall tool (v3 #1: reasoning-time retrieval). It honours an optional\ntype filter, a result cap k (<=0 = RetrievalTopK), and a bi-temporal as-of\ninstant (nil = now; v3 #2). Results are ranked by utility-keyed salience\n(v3 #4 default) and each hit carries its URI, type, score, closed valid-time,\nand a contradiction advisory when two surfaced hits disagree — the structure\nthe model iterates over and the verification layer surfaces.
 EDGES
@@ -1191,7 +1191,7 @@ EDGES
   ^defines=matrix/neo/internal/memory/writeback.go
 
 NODE id=matrix/neo/internal/memory.Pager.Retrieve kind=method
-  digest=b3:2f4f2e84f6d00ba508840ab96423191db1c911091d525bc1818732e53abe1f6f file=neo/internal/memory/pager.go range=451:619 lang=go exported=true byte_range=16533:22726
+  digest=b3:2f4f2e84f6d00ba508840ab96423191db1c911091d525bc1818732e53abe1f6f file=neo/internal/memory/pager.go range=451:619 lang=go exported=true byte_range=15894:22087
   sig=func (p *Pager) Retrieve(ctx context.Context, queryText string) ([]Snippet, error)
   doc=Retrieve page-faults the top-K records relevant to queryText. Seeds come\nfrom two lanes scored 1.0: semantic (HNSW) results when an embedder is\nrunning, ALWAYS merged with a salience-ranked lane over the durable types\n(the embedding worker is async, so a memory written seconds ago is invisible\nto the vector index — without the salience lane a "remember this" → "what do\nyou know?" round trip inside one session comes back empty).\n\nThe seeds then cascade over the relationship graph (cortex edges, depth 2,\nboth directions) so connected memories surface with a hop-decayed score\n(0.7^hop). A bi-temporal validity filter (v3 #2) drops any candidate whose\nvalid-time has been closed (ValidUntil <= now, stamped on supersession) so\nNeo sees the current version; contradiction edges annotate the conflicting\npair so Neo reconciles before trusting. Sorted by score desc (stable on\nfirst-seen order) and bounded by RetrievalTopK.
 EDGES
@@ -1315,7 +1315,7 @@ EDGES
   ^defines=matrix/neo/internal/memory/mutation.go
 
 NODE id=matrix/neo/internal/memory.Pager.cascadeNeighbors kind=method
-  digest=b3:27253a2a9921e7e67d547afc860fab61ea5c702843984caf23aaff905df8e2cf file=neo/internal/memory/pager.go range=656:702 lang=go exported=false byte_range=24038:25416
+  digest=b3:27253a2a9921e7e67d547afc860fab61ea5c702843984caf23aaff905df8e2cf file=neo/internal/memory/pager.go range=656:702 lang=go exported=false byte_range=23399:24777
   sig=func (p *Pager) cascadeNeighbors(seedURI string) []scoredSnip
   doc=cascadeNeighbors runs a depth-2, both-direction BFS from seedURI over the\nrelationship edges and returns the reachable memories rendered as snippets\nwith a hop-decayed score. Best-effort context: any error or an unparseable\nseed yields no neighbors (cascade is never load-bearing on its own).
 EDGES
@@ -1323,7 +1323,7 @@ EDGES
   ^defines=matrix/neo/internal/memory/pager.go
 
 NODE id=matrix/neo/internal/memory.Pager.contradictsAnyOf kind=method
-  digest=b3:17ae8d7c88523aee087c96c2b82bb66ea3eaa7636c47aa8131a1139ebad26669 file=neo/internal/memory/pager.go range=704:723 lang=go exported=false byte_range=25418:26036
+  digest=b3:17ae8d7c88523aee087c96c2b82bb66ea3eaa7636c47aa8131a1139ebad26669 file=neo/internal/memory/pager.go range=704:723 lang=go exported=false byte_range=24779:25397
   sig=func (p *Pager) contradictsAnyOf(id memory.ID, set map[memory.ID]bool) bool
   doc=contradictsAnyOf reports whether id is joined by a live contradiction edge to\nany OTHER id in set. Contradiction is symmetric, so both directions are\nscanned.
 EDGES
@@ -1370,7 +1370,7 @@ EDGES
   ^defines=matrix/neo/internal/memory/personalization.go
 
 NODE id=matrix/neo/internal/memory.Pager.hardConstraints kind=method
-  digest=b3:743ed4d50cddce1764ace3b8fe7602723266b088c9f065dad6291a948586fefb file=neo/internal/memory/pager.go range=305:334 lang=go exported=false byte_range=12142:13017
+  digest=b3:743ed4d50cddce1764ace3b8fe7602723266b088c9f065dad6291a948586fefb file=neo/internal/memory/pager.go range=305:334 lang=go exported=false byte_range=11503:12378
   sig=func (p *Pager) hardConstraints(ctx context.Context) []string
   doc=hardConstraints reads any hard-strength Constraint memories from cortex so\noperator/user-declared rules are pinned alongside the baked invariants.
 EDGES
@@ -1385,7 +1385,7 @@ EDGES
   ^defines=matrix/neo/internal/memory/writeback.go
 
 NODE id=matrix/neo/internal/memory.Pager.identityDID kind=method
-  digest=b3:6aa315381b5774837c08d5cd9a34774f5e92562215297fae597ebad1822a404e file=neo/internal/memory/pager.go range=429:449 lang=go exported=false byte_range=16086:16531
+  digest=b3:6aa315381b5774837c08d5cd9a34774f5e92562215297fae597ebad1822a404e file=neo/internal/memory/pager.go range=429:449 lang=go exported=false byte_range=15447:15892
   sig=func (p *Pager) identityDID() string
 EDGES
   ^contains=matrix/neo/internal/memory.Pager
@@ -1407,7 +1407,7 @@ EDGES
   ^defines=matrix/neo/internal/memory/episodic.go
 
 NODE id=matrix/neo/internal/memory.Pager.lexicalExcerptMatchesTruth kind=method
-  digest=b3:86adf88f3dd24546c4e8ceda8441e9e85dd71f06e19d27bff7f0a1c8f9728f3c file=neo/internal/memory/pager.go range=921:952 lang=go exported=false byte_range=33413:34561
+  digest=b3:86adf88f3dd24546c4e8ceda8441e9e85dd71f06e19d27bff7f0a1c8f9728f3c file=neo/internal/memory/pager.go range=921:952 lang=go exported=false byte_range=32774:33922
   sig=func (p *Pager) lexicalExcerptMatchesTruth(ex EpisodicExcerpt, asOf time.Time) bool
   doc=lexicalExcerptMatchesTruth prevents an old transcript sentence from\nreactivating a fact that the authoritative memory lane has superseded or\ndeleted. Transcript search remains historical evidence, but current recall\nnever presents a verbatim match whose corresponding typed memory is not\ncurrent at the requested instant.
 EDGES
@@ -1446,7 +1446,7 @@ EDGES
   ^defines=matrix/neo/internal/memory/mutation.go
 
 NODE id=matrix/neo/internal/memory.Pager.recallFlat kind=method
-  digest=b3:ff75e659d5b60002b223b6d331b42ae1b0bac1d744c1bab19183408a74bdf1e5 file=neo/internal/memory/pager.go range=1024:1068 lang=go exported=false byte_range=37133:38496
+  digest=b3:ff75e659d5b60002b223b6d331b42ae1b0bac1d744c1bab19183408a74bdf1e5 file=neo/internal/memory/pager.go range=1024:1068 lang=go exported=false byte_range=36494:37857
   sig=func (p *Pager) recallFlat(ctx context.Context, queryText string, types []string, k int, asOf *time.Time) (string, error)
   doc=recallFlat is the flat (single-index) memory lookup: the pinned user profile\nplus a structured cortex.Find retrieval for the query. It is the legacy\nmemory_recall path (continuous-memory off) and the graceful fallback for the\nrecursive path when the timeline reaches nothing.
 EDGES
@@ -1454,14 +1454,14 @@ EDGES
   ^defines=matrix/neo/internal/memory/pager.go
 
 NODE id=matrix/neo/internal/memory.Pager.recallLexical kind=method
-  digest=b3:6457f34f89c2452958d6232a3b81b17d086740fa950f437056252fc9cc9bb861 file=neo/internal/memory/pager.go range=887:919 lang=go exported=false byte_range=32538:33411
+  digest=b3:6457f34f89c2452958d6232a3b81b17d086740fa950f437056252fc9cc9bb861 file=neo/internal/memory/pager.go range=887:919 lang=go exported=false byte_range=31899:32772
   sig=func (p *Pager) recallLexical(queryText string, k int, asOf *time.Time) string
 EDGES
   ^contains=matrix/neo/internal/memory.Pager
   ^defines=matrix/neo/internal/memory/pager.go
 
 NODE id=matrix/neo/internal/memory.Pager.recallRecursive kind=method
-  digest=b3:793621d919fad349cebd01190bd4f467fff9121dec6007e20b890a6bb146648c file=neo/internal/memory/pager.go range=954:1022 lang=go exported=false byte_range=34563:37131
+  digest=b3:793621d919fad349cebd01190bd4f467fff9121dec6007e20b890a6bb146648c file=neo/internal/memory/pager.go range=954:1022 lang=go exported=false byte_range=33924:36492
   sig=func (p *Pager) recallRecursive(ctx context.Context, queryText string, types []string, k int, asOf *time.Time) (string, error)
   doc=recallRecursive renders the recursive-recall descent (RLM applied to time)\nbehind memory_recall under the continuous-memory collapse (task 6.3). It\ndescends the T0 timeline into the finer tiers to reach the exact memories\npaged in on demand, preserving the type filter and the bi-temporal as_of at\nevery level (req.8.3). Each hit is rendered with its type, text, valid-until,\nand cortex URI — the same shape recallFlat renders — so the model's parsing\nis unchanged. When the descent reaches no leaf (empty/pre-cascade timeline,\nor a memory not yet a rollup member) it falls back to the flat index lookup\nso the tool is never worse than before.
 EDGES
@@ -1749,7 +1749,7 @@ EDGES
   ^contains=matrix/neo/internal/memory.PersonalizationRecord
 
 NODE id=matrix/neo/internal/memory.RecallHit kind=type
-  digest=b3:cca71a0a6312fb703f79b540a360c0d6c9e13d136050c23ba8b05108078fccf3 file=neo/internal/memory/pager.go range=725:738 lang=go exported=true byte_range=26038:26765
+  digest=b3:cca71a0a6312fb703f79b540a360c0d6c9e13d136050c23ba8b05108078fccf3 file=neo/internal/memory/pager.go range=725:738 lang=go exported=true byte_range=25399:26126
   sig=type RecallHit struct {\n	URI		string\n	Type		string\n	Text		string\n	Score		float32\n	ValidUntil	*time.Time	// nil = still valid; set = closed/superseded at this instant\n	Note		string		// reconcile-first advisory (e.g. a live contradiction)\n}
   doc=RecallHit is one structured result from an explicit memory_recall lookup\n(v3 #1). Unlike the ambient Snippet — rendered for silent system-block\ninjection — a RecallHit carries the cortex URI, type, utility-keyed salience\nscore (v3 #4), and closed valid-time (v3 #2) so the model can cite it, judge\nits freshness, and iterate with a narrower follow-up query, and so the\nverification layer (v3 #5) can surface a grounding/provenance marker.
 EDGES
@@ -1757,37 +1757,37 @@ EDGES
   ^defines=matrix/neo/internal/memory/pager.go
 
 NODE id=matrix/neo/internal/memory.RecallHit#Note kind=field
-  digest=b3:4d06415f2d694b828533d04c6067d1dbccd17292ea2f70757257cbfed6965b3f file=neo/internal/memory/pager.go range=737:737 lang=go exported=true byte_range=26686:26703
+  digest=b3:4d06415f2d694b828533d04c6067d1dbccd17292ea2f70757257cbfed6965b3f file=neo/internal/memory/pager.go range=737:737 lang=go exported=true byte_range=26047:26064
   sig=string
 EDGES
   ^contains=matrix/neo/internal/memory.RecallHit
 
 NODE id=matrix/neo/internal/memory.RecallHit#Score kind=field
-  digest=b3:c7e1c8ceffde341995fbe64534bddc0e21d207719058bf73a37ae5f2ff9c681d file=neo/internal/memory/pager.go range=735:735 lang=go exported=true byte_range=26581:26599
+  digest=b3:c7e1c8ceffde341995fbe64534bddc0e21d207719058bf73a37ae5f2ff9c681d file=neo/internal/memory/pager.go range=735:735 lang=go exported=true byte_range=25942:25960
   sig=float32
 EDGES
   ^contains=matrix/neo/internal/memory.RecallHit
 
 NODE id=matrix/neo/internal/memory.RecallHit#Text kind=field
-  digest=b3:a06b3eee7675cfe447ed601fd42a3f8e17bf08feb9e1481c992d0635eef4b9c2 file=neo/internal/memory/pager.go range=734:734 lang=go exported=true byte_range=26562:26579
+  digest=b3:a06b3eee7675cfe447ed601fd42a3f8e17bf08feb9e1481c992d0635eef4b9c2 file=neo/internal/memory/pager.go range=734:734 lang=go exported=true byte_range=25923:25940
   sig=string
 EDGES
   ^contains=matrix/neo/internal/memory.RecallHit
 
 NODE id=matrix/neo/internal/memory.RecallHit#Type kind=field
-  digest=b3:6464a0ffee51c4a125c341e154f6fd5c0e5983dd8dd59fa52bc11d13078f2d69 file=neo/internal/memory/pager.go range=733:733 lang=go exported=true byte_range=26543:26560
+  digest=b3:6464a0ffee51c4a125c341e154f6fd5c0e5983dd8dd59fa52bc11d13078f2d69 file=neo/internal/memory/pager.go range=733:733 lang=go exported=true byte_range=25904:25921
   sig=string
 EDGES
   ^contains=matrix/neo/internal/memory.RecallHit
 
 NODE id=matrix/neo/internal/memory.RecallHit#URI kind=field
-  digest=b3:0a2ab01de6c6b3f138f605903ce4815eefadbb2c8651e155745fe76c31946b6b file=neo/internal/memory/pager.go range=732:732 lang=go exported=true byte_range=26524:26541
+  digest=b3:0a2ab01de6c6b3f138f605903ce4815eefadbb2c8651e155745fe76c31946b6b file=neo/internal/memory/pager.go range=732:732 lang=go exported=true byte_range=25885:25902
   sig=string
 EDGES
   ^contains=matrix/neo/internal/memory.RecallHit
 
 NODE id=matrix/neo/internal/memory.RecallHit#ValidUntil kind=field
-  digest=b3:8a5a74a5164e948c982b759632093e2769d3a2b3e2daeba7d62fe5492b6cfbbf file=neo/internal/memory/pager.go range=736:736 lang=go exported=true byte_range=26601:26622
+  digest=b3:8a5a74a5164e948c982b759632093e2769d3a2b3e2daeba7d62fe5492b6cfbbf file=neo/internal/memory/pager.go range=736:736 lang=go exported=true byte_range=25962:25983
   sig=*time.Time
 EDGES
   ^contains=matrix/neo/internal/memory.RecallHit
@@ -2056,14 +2056,14 @@ EDGES
   ^defines=matrix/neo/internal/memory/opportunity.go
 
 NODE id=matrix/neo/internal/memory.cascadeFollowTypes kind=var
-  digest=b3:521784f87e39fdbb63e08f3f6fd97d90e16d0beeac2b73e497a01b0d30ab53fb file=neo/internal/memory/pager.go range=621:626 lang=go exported=false byte_range=22728:23035
+  digest=b3:521784f87e39fdbb63e08f3f6fd97d90e16d0beeac2b73e497a01b0d30ab53fb file=neo/internal/memory/pager.go range=621:626 lang=go exported=false byte_range=22089:22396
   sig=[]memory.EdgeType
   doc=cascadeFollowTypes are the relationship edges Retrieve traverses out from\neach seed to pull connected context into the candidate pool.
 EDGES
   ^defines=matrix/neo/internal/memory/pager.go
 
 NODE id=matrix/neo/internal/memory.cascadeSeedCap kind=const
-  digest=b3:acc866f39a797bc86cfdfef561cbd43d185a61ad0f8eebd1289cf013f8eb8f76 file=neo/internal/memory/pager.go range=628:630 lang=go exported=false byte_range=23037:23193
+  digest=b3:acc866f39a797bc86cfdfef561cbd43d185a61ad0f8eebd1289cf013f8eb8f76 file=neo/internal/memory/pager.go range=628:630 lang=go exported=false byte_range=22398:22554
   sig=untyped int
   doc=cascadeSeedCap bounds how many seeds we expand so graph fan-out stays cheap\n(risk R4). The hop cap (2) and dedup do the rest.
 EDGES
@@ -2096,7 +2096,7 @@ EDGES
   ^defines=matrix/neo/internal/memory/consolidate.go
 
 NODE id=matrix/neo/internal/memory.contradictionNote kind=const
-  digest=b3:7d8bd5c3c1031ca183fafe8e9249964269276da71285e987e7309ecc59f3e849 file=neo/internal/memory/pager.go range=632:635 lang=go exported=false byte_range=23195:23463
+  digest=b3:7d8bd5c3c1031ca183fafe8e9249964269276da71285e987e7309ecc59f3e849 file=neo/internal/memory/pager.go range=632:635 lang=go exported=false byte_range=22556:22824
   sig=untyped string
   doc=contradictionNote is the reconcile-first advisory attached to a surfaced\nmemory that contradicts another surfaced one. Plain text (no symbols) per the\noutput rules.
 EDGES
@@ -2157,7 +2157,7 @@ EDGES
   ^defines=matrix/neo/internal/memory/mutation.go
 
 NODE id=matrix/neo/internal/memory.defaultRecallTypes kind=var
-  digest=b3:d65a6ab518cc5898decdf2b82efa053f9294390c83579e3a594a521e58b7713f file=neo/internal/memory/pager.go range=756:763 lang=go exported=false byte_range=27384:27825
+  digest=b3:d65a6ab518cc5898decdf2b82efa053f9294390c83579e3a594a521e58b7713f file=neo/internal/memory/pager.go range=756:763 lang=go exported=false byte_range=26745:27186
   sig=[]memory.Type
   doc=defaultRecallTypes is the durable set a non-semantic recall (no embedder or\nempty query) scans when the caller gives no explicit type filter — cortex\nrefuses an unbounded full-store scan, so a type predicate is mandatory there.
 EDGES
@@ -2315,7 +2315,7 @@ EDGES
   ^defines=matrix/neo/internal/memory/opportunity.go
 
 NODE id=matrix/neo/internal/memory.hopDecay kind=func
-  digest=b3:35deb0e39e01f59f86c57eb10050e4def620e40411a1501ac99f1d2d0b9c1583 file=neo/internal/memory/pager.go range=637:645 lang=go exported=false byte_range=23465:23721
+  digest=b3:35deb0e39e01f59f86c57eb10050e4def620e40411a1501ac99f1d2d0b9c1583 file=neo/internal/memory/pager.go range=637:645 lang=go exported=false byte_range=22826:23082
   sig=func hopDecay(hop int) float32
   doc=hopDecay returns the cascade score multiplier at hop distance hop: 0.7^hop\n(hop1 -> 0.7, hop2 -> 0.49). Cheap integer-power loop; hops are 1 or 2.
 EDGES
@@ -2329,21 +2329,21 @@ EDGES
   ^defines=matrix/neo/internal/memory/consolidate.go
 
 NODE id=matrix/neo/internal/memory.invariantRules kind=var
-  digest=b3:9af07c53708d47a4d6411427b1de5879672d55f41965b0571cf9c679e6d23357 file=neo/internal/memory/pager.go range=286:303 lang=go exported=false byte_range=9515:12140
+  digest=b3:066c95c4e0812aec5f5e224deb4e35f9f1650eaa33591f962895c0845c7597a5 file=neo/internal/memory/pager.go range=286:303 lang=go exported=false byte_range=9515:11501
   sig=[]string
   doc=invariantRules are Neo's hard rules, lifted from the frozen spec invariants\n(i1–i6) and phrased for the model in human terms (transparency rule). They\nmust stay TRUE on every surface they are pinned into: the interactive agent\ncarries the paxeer wallet write lane directly (NEO NO-BARRIER, 2026-07-11 —\nthere is no core_execute delegation step on this surface), while restricted\nsurfaces (Automatrix, sub-agents) simply have no money tools advertised at\nall. A pinned rule naming a tool the surface does not advertise sends the\nmodel hunting for a ghost — the 2026-07-12 core_execute circling incident.
 EDGES
   ^defines=matrix/neo/internal/memory/pager.go
 
 NODE id=matrix/neo/internal/memory.learnedGuidanceMax kind=const
-  digest=b3:5942310992f6d5827004f8ff71935dfb8f2871009348c9f8534d8931a27aca63 file=neo/internal/memory/pager.go range=336:338 lang=go exported=false byte_range=13019:13194
+  digest=b3:5942310992f6d5827004f8ff71935dfb8f2871009348c9f8534d8931a27aca63 file=neo/internal/memory/pager.go range=336:338 lang=go exported=false byte_range=12380:12555
   sig=untyped int
   doc=learnedGuidanceMax bounds the pinned learned-guidance block so it can never\ncrowd out the rules/profile/goal inside the pinned token budget.
 EDGES
   ^defines=matrix/neo/internal/memory/pager.go
 
 NODE id=matrix/neo/internal/memory.learnedPrefFloor kind=const
-  digest=b3:1861d40748af2ee8e1f7518221d9adad7ed49db56f7fe6f412af7416591b3db5 file=neo/internal/memory/pager.go range=340:343 lang=go exported=false byte_range=13196:13439
+  digest=b3:1861d40748af2ee8e1f7518221d9adad7ed49db56f7fe6f412af7416591b3db5 file=neo/internal/memory/pager.go range=340:343 lang=go exported=false byte_range=12557:12800
   sig=float32
   doc=learnedPrefFloor is the minimum StrengthVal a learned Preference must carry\nto be pinned — weak preferences stay in salience-ranked retrieval rather\nthan occupying scarce pinned space every turn.
 EDGES
@@ -2571,7 +2571,7 @@ EDGES
   ^defines=matrix/neo/internal/memory/opportunity.go
 
 NODE id=matrix/neo/internal/memory.parseRecallTypes kind=func
-  digest=b3:aea6958e65cb404d32c6875fe6301f14407e755a0cc100c7d24523a59a5ec9d1 file=neo/internal/memory/pager.go range=765:780 lang=go exported=false byte_range=27827:28332
+  digest=b3:aea6958e65cb404d32c6875fe6301f14407e755a0cc100c7d24523a59a5ec9d1 file=neo/internal/memory/pager.go range=765:780 lang=go exported=false byte_range=27188:27693
   sig=func parseRecallTypes(names []string) []memory.Type
   doc=parseRecallTypes resolves the model-supplied type names to cortex types,\ndropping unknowns and duplicates. Returns nil when none resolve.
 EDGES
@@ -2690,7 +2690,7 @@ EDGES
   ^defines=matrix/neo/internal/memory/embedder.go
 
 NODE id=matrix/neo/internal/memory.recallTypeAliases kind=var
-  digest=b3:f658b72d244909ad3898463645b3219afa58d7748e98b3c503c335fd2a11b34c file=neo/internal/memory/pager.go range=740:754 lang=go exported=false byte_range=26767:27382
+  digest=b3:f658b72d244909ad3898463645b3219afa58d7748e98b3c503c335fd2a11b34c file=neo/internal/memory/pager.go range=740:754 lang=go exported=false byte_range=26128:26743
   sig=map[string]memory.Type
   doc=recallTypeAliases maps the lowercase type names the model passes in the\nmemory_recall 'types' filter onto cortex memory types. Unknown names are\nignored so a bad filter degrades to the default durable set rather than\nerroring the lookup.
 EDGES
@@ -2718,14 +2718,14 @@ EDGES
   ^defines=matrix/neo/internal/memory/relation.go
 
 NODE id=matrix/neo/internal/memory.renderPreference kind=func
-  digest=b3:f899c8ddbbc2504d8e372381634fb03bd3b498c0a5cb772571a888a306b9a757 file=neo/internal/memory/pager.go range=412:427 lang=go exported=false byte_range=15633:16084
+  digest=b3:f899c8ddbbc2504d8e372381634fb03bd3b498c0a5cb772571a888a306b9a757 file=neo/internal/memory/pager.go range=412:427 lang=go exported=false byte_range=14994:15445
   sig=func renderPreference(pd memory.PreferenceData) string
   doc=renderPreference turns a stored Preference into a one-line imperative for\nthe pinned guidance block.
 EDGES
   ^defines=matrix/neo/internal/memory/pager.go
 
 NODE id=matrix/neo/internal/memory.renderScoredSnippets kind=func
-  digest=b3:ee7a3007689c28f2898cc81946c78e1218da1f476651dc2c6cf7b7bd02b71287 file=neo/internal/memory/pager.go range=1114:1151 lang=go exported=false byte_range=39751:40931
+  digest=b3:ee7a3007689c28f2898cc81946c78e1218da1f476651dc2c6cf7b7bd02b71287 file=neo/internal/memory/pager.go range=1114:1151 lang=go exported=false byte_range=39112:40292
   sig=func renderScoredSnippets(res *query.Result) []scoredSnip
   doc=renderScoredSnippets renders res into snippets paired with each memory's\ncortex salience score (res.Scores), so the seed lanes rank by utility\ninstead of a flat 1.0 (v3 #4). A memory missing from res.Scores defaults\nto 0 — it sinks to the bottom of the working set, which is the correct\nposture for a memory cortex assigned no utility.
 EDGES
@@ -2738,7 +2738,7 @@ EDGES
   ^defines=matrix/neo/internal/memory/mutation.go
 
 NODE id=matrix/neo/internal/memory.scoredSnip kind=type
-  digest=b3:0fd4bdf8631bd746166e447d5fdd59ba9b1c0a93e25f09c57aaddc03f3b9ec45 file=neo/internal/memory/pager.go range=647:654 lang=go exported=false byte_range=23723:24036
+  digest=b3:0fd4bdf8631bd746166e447d5fdd59ba9b1c0a93e25f09c57aaddc03f3b9ec45 file=neo/internal/memory/pager.go range=647:654 lang=go exported=false byte_range=23084:23397
   sig=type scoredSnip struct {\n	snip		Snippet\n	score		float32\n	validUntil	*time.Time\n}
   doc=scoredSnip pairs a rendered memory with its score and the closed valid-time\n(v3 #2) of its current version (nil = still valid) so the Retrieve filter can\ndrop superseded/expired memories with an O(1) pointer check.
 EDGES
@@ -2746,19 +2746,19 @@ EDGES
   ^defines=matrix/neo/internal/memory/pager.go
 
 NODE id=matrix/neo/internal/memory.scoredSnip#score kind=field
-  digest=b3:9fb1b28882835de3603e3795c5daa8d76bf00fc0e0685c4d03a3440313b36ab3 file=neo/internal/memory/pager.go range=652:652 lang=go exported=false byte_range=23993:24011
+  digest=b3:9fb1b28882835de3603e3795c5daa8d76bf00fc0e0685c4d03a3440313b36ab3 file=neo/internal/memory/pager.go range=652:652 lang=go exported=false byte_range=23354:23372
   sig=float32
 EDGES
   ^contains=matrix/neo/internal/memory.scoredSnip
 
 NODE id=matrix/neo/internal/memory.scoredSnip#snip kind=field
-  digest=b3:015319edeb58b040196b2324735a7f5434ef73d7a1cc72749c1d2f41c8f044b8 file=neo/internal/memory/pager.go range=651:651 lang=go exported=false byte_range=23973:23991
+  digest=b3:015319edeb58b040196b2324735a7f5434ef73d7a1cc72749c1d2f41c8f044b8 file=neo/internal/memory/pager.go range=651:651 lang=go exported=false byte_range=23334:23352
   sig=memory.Snippet
 EDGES
   ^contains=matrix/neo/internal/memory.scoredSnip
 
 NODE id=matrix/neo/internal/memory.scoredSnip#validUntil kind=field
-  digest=b3:c54afb2833e12a69ef57d4595ebd1548522c5a40495dfc3096d9b0a9d9992c75 file=neo/internal/memory/pager.go range=653:653 lang=go exported=false byte_range=24013:24034
+  digest=b3:c54afb2833e12a69ef57d4595ebd1548522c5a40495dfc3096d9b0a9d9992c75 file=neo/internal/memory/pager.go range=653:653 lang=go exported=false byte_range=23374:23395
   sig=*time.Time
 EDGES
   ^contains=matrix/neo/internal/memory.scoredSnip
@@ -2830,7 +2830,7 @@ EDGES
   ^defines=matrix/neo/internal/memory/trigger.go
 
 NODE id=matrix/neo/internal/memory.truncateTokens kind=func
-  digest=b3:421d3373b8ee5e8fc27fda5ba9ddc3ac507ef5b07536b8756de1a97e0ff71604 file=neo/internal/memory/pager.go range=1153:1162 lang=go exported=false byte_range=40933:41165
+  digest=b3:421d3373b8ee5e8fc27fda5ba9ddc3ac507ef5b07536b8756de1a97e0ff71604 file=neo/internal/memory/pager.go range=1153:1162 lang=go exported=false byte_range=40294:40526
   sig=func truncateTokens(s string, maxTokens int) string
 EDGES
   ^defines=matrix/neo/internal/memory/pager.go
@@ -2949,7 +2949,7 @@ EDGES
   ^contains=matrix/neo/internal/memory
 
 NODE id=matrix/neo/internal/memory/pager.go kind=file
-  digest=b3:25cb59fb59dabed85cd8a26a633e423bc33b7076a68b7990a7fdc42a570dc31f file=neo/internal/memory/pager.go range=1:1168 lang=go exported=true
+  digest=b3:9849baf88c849a5f48f02b8f18623a151bc4eb34206803e9a22aebc969b4646d file=neo/internal/memory/pager.go range=1:1168 lang=go exported=true
 EDGES
   defines=matrix/neo/internal/memory.EstimateTokens,matrix/neo/internal/memory.Open,matrix/neo/internal/memory.Pager,matrix/neo/internal/memory.Pager.Activate,matrix/neo/internal/memory.Pager.ActiveGoal,matrix/neo/internal/memory.Pager.AppendMessage,matrix/neo/internal/memory.Pager.Close,matrix/neo/internal/memory.Pager.Embedder,matrix/neo/internal/memory.Pager.EpisodicBackfill,matrix/neo/internal/memory.Pager.HasEmbedder,matrix/neo/internal/memory.Pager.LearnedGuidance,matrix/neo/internal/memory.Pager.Pinned,matrix/neo/internal/memory.Pager.Procedural,matrix/neo/internal/memory.Pager.Recall,matrix/neo/internal/memory.Pager.RecallDescend,matrix/neo/internal/memory.Pager.RecallHits,matrix/neo/internal/memory.Pager.Retrieve,matrix/neo/internal/memory.Pager.SetActiveGoal,matrix/neo/internal/memory.Pager.Transcript,matrix/neo/internal/memory.Pager.UserProfile,matrix/neo/internal/memory.Pager.cascadeNeighbors,matrix/neo/internal/memory.Pager.contradictsAnyOf,matrix/neo/internal/memory.Pager.hardConstraints,matrix/neo/internal/memory.Pager.identityDID,matrix/neo/internal/memory.Pager.lexicalExcerptMatchesTruth,matrix/neo/internal/memory.Pager.recallFlat,matrix/neo/internal/memory.Pager.recallLexical,matrix/neo/internal/memory.Pager.recallRecursive,matrix/neo/internal/memory.RecallHit,matrix/neo/internal/memory.Snippet,matrix/neo/internal/memory.cascadeFollowTypes,matrix/neo/internal/memory.cascadeSeedCap,matrix/neo/internal/memory.contradictionNote,matrix/neo/internal/memory.defaultRecallTypes,matrix/neo/internal/memory.hopDecay,matrix/neo/internal/memory.invariantRules,matrix/neo/internal/memory.learnedGuidanceMax,matrix/neo/internal/memory.learnedPrefFloor,matrix/neo/internal/memory.parseRecallTypes,matrix/neo/internal/memory.recallTypeAliases,matrix/neo/internal/memory.renderPreference,matrix/neo/internal/memory.renderScoredSnippets,matrix/neo/internal/memory.scoredSnip,matrix/neo/internal/memory.truncateTokens,matrix/neo/internal/memory.userProfileMax
   ^contains=matrix/neo/internal/memory

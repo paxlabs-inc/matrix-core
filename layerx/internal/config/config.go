@@ -84,6 +84,23 @@ type Config struct {
 	// mode events land with the perps ledger.
 	PerpsMode        mode.Mode
 	PerpsMarketModes map[string]mode.Mode
+	// CrossverseURL is the Crossverse load-balancer base URL (WSS/REST). Empty
+	// keeps the feed (and therefore every perps risk-increase path) off unless
+	// every per-service base below is configured. The per-service bases let
+	// LayerX speak to the 18 Symbol Services and the Markets Service directly;
+	// {symbol}/{SYMBOL} expand in the symbol templates.
+	CrossverseURL             string
+	CrossverseSymbolRESTBase  string
+	CrossverseSymbolWSBase    string
+	CrossverseMarketsRESTBase string
+	CrossverseMarketsWSBase   string
+	// PerpsCanaryDIDs is the explicit staff owner allowlist admitted while a
+	// market's effective mode is CANARY. Empty denies everyone.
+	PerpsCanaryDIDs []string
+	// PerpsMembership is the internal entitlement resolver map
+	// (owner DID -> membership tier, "did=tier,..."). Empty fails delegated
+	// risk increase closed (MEMBERSHIP_REQUIRED).
+	PerpsMembership map[string]string
 
 	// Application-level rate limiting (defense in depth behind the nginx edge).
 	// RateLimitDisabled turns off the in-process per-client limiter entirely.
@@ -147,40 +164,47 @@ func Load() (*Config, error) {
 	}
 
 	cfg := &Config{
-		Port:                int(pickUint("LAYERX_PORT", doc.uint64Or("server", "port", defaultPort), defaultPort)),
-		BindAddr:            pick("LAYERX_BIND_ADDR", doc.str("server", "bind_addr"), defaultBindAddr),
-		PostgresURI:         pick("LAYERX_POSTGRES_URI", doc.str("store", "postgres_uri"), ""),
-		MigrationsDir:       pick("LAYERX_MIGRATIONS_DIR", doc.str("store", "migrations_dir"), "migrations"),
-		TransportToken:      pick("LAYERX_TOKEN", doc.str("auth", "transport_token"), ""),
-		RequireTransport:    requireTransport,
-		AgentAuthSecret:     pick("LAYERX_AGENT_AUTH_SECRET", doc.str("auth", "agent_secret"), ""),
-		ChallengeTTL:        time.Duration(doc.uint64Or("auth", "challenge_ttl_seconds", uint64(defaultChallengeTTL/time.Second))) * time.Second,
-		TokenTTL:            time.Duration(doc.uint64Or("auth", "token_ttl_seconds", uint64(defaultTokenTTL/time.Second))) * time.Second,
-		SequencerSeedHex:    pick("LAYERX_SEQUENCER_KEY", doc.str("auth", "sequencer_seed"), ""),
-		ChainRPC:            pick("LAYERX_CHAIN_RPC", doc.str("chain", "rpc"), ""),
-		AnchorHistoryURL:    pick("LAYERX_ANCHOR_HISTORY_URL", doc.str("chain", "anchor_history_url"), ""),
-		VaultAddr:           pick("LAYERX_VAULT_ADDR", doc.str("chain", "vault"), ""),
-		AnchorAddr:          pick("LAYERX_ANCHOR_ADDR", doc.str("chain", "anchor"), ""),
-		DEXRouter:           pick("LAYERX_DEX_ROUTER", doc.str("chain", "dex_router"), ""),
-		USDLAddr:            pick("LAYERX_USDL_ADDR", doc.str("chain", "usdl"), ""),
-		OperatorKeyEnv:      "LAYERX_OPERATOR_KEY",
-		OperatorKeyPresent:  os.Getenv("LAYERX_OPERATOR_KEY") != "",
-		DepositStartBlock:   pickUint("LAYERX_DEPOSIT_START_BLOCK", doc.uint64Or("chain", "deposit_start_block", 0), 0),
-		ChainConfirmations:  pickUint("LAYERX_CHAIN_CONFIRMATIONS", doc.uint64Or("chain", "confirmations", 0), 0),
-		DepositPollInterval: time.Duration(pickUint("LAYERX_DEPOSIT_POLL_SECONDS", doc.uint64Or("chain", "deposit_poll_seconds", uint64(defaultDepositPoll/time.Second)), uint64(defaultDepositPoll/time.Second))) * time.Second,
-		Window:              time.Duration(pickUint("LAYERX_WINDOW_SECONDS", doc.uint64Or("settlement", "window_seconds", uint64(defaultWindow/time.Second)), uint64(defaultWindow/time.Second))) * time.Second,
-		MicroThresholdUSDX:  int64(pickUint("LAYERX_MICRO_THRESHOLD", doc.uint64Or("settlement", "micro_threshold_micro_usdx", defaultMicroThreshold), defaultMicroThreshold)),
-		PerpsMode:           perpsMode,
-		PerpsMarketModes:    perpsMarketModes,
-		RateLimitDisabled:   rlDisabled,
-		RateLimitTrustProxy: rlTrustProxy,
-		RateLimitReadRPS:    int(pickUint("LAYERX_RATELIMIT_READ_RPS", doc.uint64Or("ratelimit", "read_rps", defaultRLReadRPS), defaultRLReadRPS)),
-		RateLimitReadBurst:  int(pickUint("LAYERX_RATELIMIT_READ_BURST", doc.uint64Or("ratelimit", "read_burst", defaultRLReadBurst), defaultRLReadBurst)),
-		RateLimitWriteRPS:   int(pickUint("LAYERX_RATELIMIT_WRITE_RPS", doc.uint64Or("ratelimit", "write_rps", defaultRLWriteRPS), defaultRLWriteRPS)),
-		RateLimitWriteBurst: int(pickUint("LAYERX_RATELIMIT_WRITE_BURST", doc.uint64Or("ratelimit", "write_burst", defaultRLWriteBurst), defaultRLWriteBurst)),
-		RateLimitAuthRPS:    int(pickUint("LAYERX_RATELIMIT_AUTH_RPS", doc.uint64Or("ratelimit", "auth_rps", defaultRLAuthRPS), defaultRLAuthRPS)),
-		RateLimitAuthBurst:  int(pickUint("LAYERX_RATELIMIT_AUTH_BURST", doc.uint64Or("ratelimit", "auth_burst", defaultRLAuthBurst), defaultRLAuthBurst)),
-		Dev:                 dev,
+		Port:                      int(pickUint("LAYERX_PORT", doc.uint64Or("server", "port", defaultPort), defaultPort)),
+		BindAddr:                  pick("LAYERX_BIND_ADDR", doc.str("server", "bind_addr"), defaultBindAddr),
+		PostgresURI:               pick("LAYERX_POSTGRES_URI", doc.str("store", "postgres_uri"), ""),
+		MigrationsDir:             pick("LAYERX_MIGRATIONS_DIR", doc.str("store", "migrations_dir"), "migrations"),
+		TransportToken:            pick("LAYERX_TOKEN", doc.str("auth", "transport_token"), ""),
+		RequireTransport:          requireTransport,
+		AgentAuthSecret:           pick("LAYERX_AGENT_AUTH_SECRET", doc.str("auth", "agent_secret"), ""),
+		ChallengeTTL:              time.Duration(doc.uint64Or("auth", "challenge_ttl_seconds", uint64(defaultChallengeTTL/time.Second))) * time.Second,
+		TokenTTL:                  time.Duration(doc.uint64Or("auth", "token_ttl_seconds", uint64(defaultTokenTTL/time.Second))) * time.Second,
+		SequencerSeedHex:          pick("LAYERX_SEQUENCER_KEY", doc.str("auth", "sequencer_seed"), ""),
+		ChainRPC:                  pick("LAYERX_CHAIN_RPC", doc.str("chain", "rpc"), ""),
+		AnchorHistoryURL:          pick("LAYERX_ANCHOR_HISTORY_URL", doc.str("chain", "anchor_history_url"), ""),
+		VaultAddr:                 pick("LAYERX_VAULT_ADDR", doc.str("chain", "vault"), ""),
+		AnchorAddr:                pick("LAYERX_ANCHOR_ADDR", doc.str("chain", "anchor"), ""),
+		DEXRouter:                 pick("LAYERX_DEX_ROUTER", doc.str("chain", "dex_router"), ""),
+		USDLAddr:                  pick("LAYERX_USDL_ADDR", doc.str("chain", "usdl"), ""),
+		OperatorKeyEnv:            "LAYERX_OPERATOR_KEY",
+		OperatorKeyPresent:        os.Getenv("LAYERX_OPERATOR_KEY") != "",
+		DepositStartBlock:         pickUint("LAYERX_DEPOSIT_START_BLOCK", doc.uint64Or("chain", "deposit_start_block", 0), 0),
+		ChainConfirmations:        pickUint("LAYERX_CHAIN_CONFIRMATIONS", doc.uint64Or("chain", "confirmations", 0), 0),
+		DepositPollInterval:       time.Duration(pickUint("LAYERX_DEPOSIT_POLL_SECONDS", doc.uint64Or("chain", "deposit_poll_seconds", uint64(defaultDepositPoll/time.Second)), uint64(defaultDepositPoll/time.Second))) * time.Second,
+		Window:                    time.Duration(pickUint("LAYERX_WINDOW_SECONDS", doc.uint64Or("settlement", "window_seconds", uint64(defaultWindow/time.Second)), uint64(defaultWindow/time.Second))) * time.Second,
+		MicroThresholdUSDX:        int64(pickUint("LAYERX_MICRO_THRESHOLD", doc.uint64Or("settlement", "micro_threshold_micro_usdx", defaultMicroThreshold), defaultMicroThreshold)),
+		PerpsMode:                 perpsMode,
+		PerpsMarketModes:          perpsMarketModes,
+		CrossverseURL:             pick("LAYERX_CROSSVERSE_URL", doc.str("perps", "crossverse_url"), ""),
+		CrossverseSymbolRESTBase:  pick("LAYERX_CROSSVERSE_SYMBOL_REST", doc.str("perps", "crossverse_symbol_rest"), ""),
+		CrossverseSymbolWSBase:    pick("LAYERX_CROSSVERSE_SYMBOL_WS", doc.str("perps", "crossverse_symbol_ws"), ""),
+		CrossverseMarketsRESTBase: pick("LAYERX_CROSSVERSE_MARKETS_REST", doc.str("perps", "crossverse_markets_rest"), ""),
+		CrossverseMarketsWSBase:   pick("LAYERX_CROSSVERSE_MARKETS_WS", doc.str("perps", "crossverse_markets_ws"), ""),
+		PerpsCanaryDIDs:           splitCSV(pick("LAYERX_PERPS_CANARY_DIDS", doc.str("perps", "canary_dids"), "")),
+		PerpsMembership:           parseDIDMap(pick("LAYERX_PERPS_MEMBERSHIP", doc.str("perps", "membership"), "")),
+		RateLimitDisabled:         rlDisabled,
+		RateLimitTrustProxy:       rlTrustProxy,
+		RateLimitReadRPS:          int(pickUint("LAYERX_RATELIMIT_READ_RPS", doc.uint64Or("ratelimit", "read_rps", defaultRLReadRPS), defaultRLReadRPS)),
+		RateLimitReadBurst:        int(pickUint("LAYERX_RATELIMIT_READ_BURST", doc.uint64Or("ratelimit", "read_burst", defaultRLReadBurst), defaultRLReadBurst)),
+		RateLimitWriteRPS:         int(pickUint("LAYERX_RATELIMIT_WRITE_RPS", doc.uint64Or("ratelimit", "write_rps", defaultRLWriteRPS), defaultRLWriteRPS)),
+		RateLimitWriteBurst:       int(pickUint("LAYERX_RATELIMIT_WRITE_BURST", doc.uint64Or("ratelimit", "write_burst", defaultRLWriteBurst), defaultRLWriteBurst)),
+		RateLimitAuthRPS:          int(pickUint("LAYERX_RATELIMIT_AUTH_RPS", doc.uint64Or("ratelimit", "auth_rps", defaultRLAuthRPS), defaultRLAuthRPS)),
+		RateLimitAuthBurst:        int(pickUint("LAYERX_RATELIMIT_AUTH_BURST", doc.uint64Or("ratelimit", "auth_burst", defaultRLAuthBurst), defaultRLAuthBurst)),
+		Dev:                       dev,
 	}
 
 	if cfg.PostgresURI == "" {
@@ -220,6 +244,30 @@ func Load() (*Config, error) {
 
 // ReserveAsset is the canonical reserve symbol (USDL) — fixed by the frozen spec.
 func (c *Config) ReserveAsset() string { return defaultReserveAsset }
+
+// splitCSV splits a comma-separated list, trimming blanks.
+func splitCSV(s string) []string {
+	var out []string
+	for _, item := range strings.Split(s, ",") {
+		if item = strings.TrimSpace(item); item != "" {
+			out = append(out, item)
+		}
+	}
+	return out
+}
+
+// parseDIDMap parses "did=value,did=value" into a map, skipping malformed
+// entries.
+func parseDIDMap(s string) map[string]string {
+	out := map[string]string{}
+	for _, item := range strings.Split(s, ",") {
+		k, v, ok := strings.Cut(strings.TrimSpace(item), "=")
+		if ok && k != "" && v != "" {
+			out[strings.TrimSpace(k)] = strings.TrimSpace(v)
+		}
+	}
+	return out
+}
 
 // isTruthy reports whether a string is an affirmative flag value.
 func isTruthy(s string) bool {

@@ -65,6 +65,13 @@ func IntentMessage(op, did, nonce string, fields ...string) string {
 	return "matrix-layerx-intent:" + op + ":" + did + ":" + strings.Join(fields, ":") + ":" + nonce
 }
 
+// PerpGrantMessage builds the canonical perps delegation grant preimage the
+// owner signs, independent of transport auth. MUST stay in lockstep with the
+// Hyperpax delegation client.
+func PerpGrantMessage(fields ...string) string {
+	return "matrix-layerx-perps-grant:" + strings.Join(fields, ":")
+}
+
 // VerifyIntentSignature verifies an ed25519 signature over message (built by
 // IntentMessage) and that pubHex matches the DID fingerprint.
 func VerifyIntentSignature(didStr, pubHex, sigHex, message string) error {

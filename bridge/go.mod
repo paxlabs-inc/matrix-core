@@ -4,7 +4,6 @@ go 1.21
 
 require (
 	matrix/cortex v0.0.0
-	matrix/vault v0.0.0
 	matrix/mcl v0.0.0
 )
 
@@ -39,6 +38,7 @@ require (
 	golang.org/x/text v0.11.0 // indirect
 	golang.org/x/time v0.5.0 // indirect
 	google.golang.org/protobuf v1.28.1 // indirect
+	matrix/vault v0.0.0 // indirect
 )
 
 replace matrix/cortex => ../cortex

@@ -14,6 +14,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"os"
 	"os/signal"
@@ -27,6 +28,10 @@ import (
 	"github.com/paxlabs-inc/layerx/internal/deposit"
 	"github.com/paxlabs-inc/layerx/internal/events"
 	"github.com/paxlabs-inc/layerx/internal/ledger"
+	"github.com/paxlabs-inc/layerx/internal/marketdata/crossverse"
+	"github.com/paxlabs-inc/layerx/internal/perps/engine"
+	"github.com/paxlabs-inc/layerx/internal/perps/market"
+	"github.com/paxlabs-inc/layerx/internal/perps/mode"
 	"github.com/paxlabs-inc/layerx/internal/ratelimit"
 	"github.com/paxlabs-inc/layerx/internal/server"
 	"github.com/paxlabs-inc/layerx/internal/settle"
@@ -197,6 +202,69 @@ func run() int {
 
 	led := ledger.New(st, signer, cfg.MicroThresholdUSDX)
 
+	// Perps (spec/layerx-perps): the durable market registry always mirrors the
+	// compiled source of truth; the feed/engine/workers start only when a
+	// Crossverse URL is configured AND the boot mode is not OFF. Everything
+	// stays fail-closed otherwise.
+	if err := st.SyncPerpMarkets(ctx, market.All()); err != nil {
+		log.Error("perp market sync failed", "error", err.Error())
+		return 1
+	}
+	perpModes, err := mode.NewRegistry(cfg.PerpsMode, cfg.PerpsMarketModes)
+	if err != nil {
+		log.Error("perps mode registry init failed", "error", err.Error())
+		return 1
+	}
+	perpsDeps := &server.PerpsDeps{Modes: perpModes}
+	crossverseConfigured := cfg.CrossverseURL != "" ||
+		(cfg.CrossverseSymbolRESTBase != "" && cfg.CrossverseSymbolWSBase != "" &&
+			cfg.CrossverseMarketsRESTBase != "" && cfg.CrossverseMarketsWSBase != "")
+	if cfg.PerpsMode != mode.Off && crossverseConfigured {
+		var symbols []string
+		for _, sym := range market.Symbols() {
+			if perpModes.Effective(sym) != mode.Off {
+				symbols = append(symbols, sym)
+			}
+		}
+		if len(symbols) > 0 {
+			mgr, err := crossverse.New(crossverse.Config{
+				BaseURL:         cfg.CrossverseURL,
+				SymbolRESTBase:  cfg.CrossverseSymbolRESTBase,
+				SymbolWSBase:    cfg.CrossverseSymbolWSBase,
+				MarketsRESTBase: cfg.CrossverseMarketsRESTBase,
+				MarketsWSBase:   cfg.CrossverseMarketsWSBase,
+				Symbols:         symbols,
+			})
+			if err != nil {
+				log.Error("crossverse manager init failed", "error", err.Error())
+				return 1
+			}
+			if err := mgr.Start(ctx); err != nil {
+				log.Error("crossverse manager start failed", "error", err.Error())
+				return 1
+			}
+			canary := make(map[string]bool, len(cfg.PerpsCanaryDIDs))
+			for _, did := range cfg.PerpsCanaryDIDs {
+				canary[did] = true
+			}
+			eng := &engine.Engine{
+				Store: st, Feed: mgr, Modes: perpModes, Signer: signer,
+				LiquidatorDID: "did:layerx:perps:liquidator", CanaryDIDs: canary,
+				Entitlements: engine.StaticEntitlements(cfg.PerpsMembership),
+				Rollout:      engine.StoreRolloutAdmission{Store: st, StaffDIDs: canary},
+			}
+			perpsDeps.Engine = eng
+			perpsDeps.Feed = mgr
+			if err := eng.RecoverPerpBatches(ctx, settler); err != nil {
+				log.Error("perp batch recovery failed", "error", err.Error())
+			}
+			go runPerpsWorkers(ctx, eng, settler, log)
+			log.Info("perps enabled", "global_mode", string(cfg.PerpsMode), "symbols", len(symbols), "canary_dids", len(cfg.PerpsCanaryDIDs))
+		}
+	} else if cfg.PerpsMode != mode.Off {
+		log.Warn("perps mode is set but LAYERX_CROSSVERSE_URL is empty: perps stay fail-closed (reads only)")
+	}
+
 	// Application-level rate limiting (defense in depth behind the nginx edge):
 	// per-client token buckets, swept periodically to bound memory.
 	var rl server.RateLimit
@@ -251,6 +319,7 @@ func run() int {
 		MicroThreshold:   cfg.MicroThresholdUSDX,
 		ChainConfigured:  chainConfigured,
 		Events:           broker,
+		Perps:            perpsDeps,
 		RateLimit:        rl,
 	})
 	if cfg.RequireTransport && cfg.TransportToken != "" {
@@ -280,6 +349,49 @@ func run() int {
 	_ = httpSrv.Shutdown(shutdownCtx)
 	log.Info("layerxd shutdown complete")
 	return 0
+}
+
+// runPerpsWorkers drives the restart-safe perps workers: trigger evaluation,
+// liquidation, funding settlement, invariant reconciliation, and perps-root
+// anchoring. Every worker claims work transactionally, so overlapping runs and
+// restarts stay exactly-once.
+func runPerpsWorkers(ctx context.Context, eng *engine.Engine, settler chain.Settler, log *slog.Logger) {
+	trigger := time.NewTicker(time.Second)
+	liquidate := time.NewTicker(2 * time.Second)
+	funding := time.NewTicker(time.Minute)
+	reconcile := time.NewTicker(time.Minute)
+	anchor := time.NewTicker(5 * time.Minute)
+	defer trigger.Stop()
+	defer liquidate.Stop()
+	defer funding.Stop()
+	defer reconcile.Stop()
+	defer anchor.Stop()
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-trigger.C:
+			if _, err := eng.RunTriggerOnce(ctx); err != nil && ctx.Err() == nil {
+				log.Error("perps trigger worker failed", "error", err.Error())
+			}
+		case <-liquidate.C:
+			if _, err := eng.RunLiquidationOnce(ctx); err != nil && ctx.Err() == nil {
+				log.Error("perps liquidation worker failed", "error", err.Error())
+			}
+		case <-funding.C:
+			if _, err := eng.RunFundingOnce(ctx, time.Now().UnixMilli()); err != nil && ctx.Err() == nil {
+				log.Error("perps funding worker failed", "error", err.Error())
+			}
+		case <-reconcile.C:
+			if err := eng.ReconcileOnce(ctx); err != nil && ctx.Err() == nil {
+				log.Error("perps reconciliation failed (markets paused)", "error", err.Error())
+			}
+		case <-anchor.C:
+			if _, err := eng.AnchorPerpJournalOnce(ctx, settler); err != nil && ctx.Err() == nil {
+				log.Error("perps anchoring failed", "error", err.Error())
+			}
+		}
+	}
 }
 
 // moduleRoot resolves the migrations base dir when the path is relative. Honors

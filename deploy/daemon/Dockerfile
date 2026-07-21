@@ -191,6 +191,7 @@ COPY graph/self-model/ /opt/matrix/graph/self-model/
 COPY tools/paxeer    /opt/matrix/tools/paxeer
 COPY tools/websearch /opt/matrix/tools/websearch
 COPY tools/browser   /opt/matrix/tools/browser
+COPY tools/machinemail /opt/matrix/tools/machinemail
 COPY tools/exec      /opt/matrix/tools/exec
 COPY tools/tachyon   /opt/matrix/tools/tachyon
 # kindle stdio MCP bridge (KindleLaunch / Sidiora launchpad on Paxeer chain 125):

@@ -77,6 +77,38 @@ func (l *Ledger) Pay(ctx context.Context, fromDID, toDID string, amountMicro int
 	}, nil
 }
 
+// FundPerpPool moves a caller-authorized ordinary USDX balance into a perps
+// capital bucket. It uses the same canonical transfer leaf, sequencer
+// signature, settlement tier, and receipt shape as Pay; the store additionally
+// journals the amount as protocol capital in the same transaction.
+func (l *Ledger) FundPerpPool(ctx context.Context, fromDID, pool string, amountMicro int64,
+	idempotencyKey, requestHash string) (types.Receipt, bool, error) {
+	toDID := store.PerpPoolDID(pool)
+	tier := l.tierFor(amountMicro)
+	finalize := func(seq int64, ts time.Time) (string, string) {
+		leafHex := accumulator.LeafHashHex(accumulator.CanonicalLeaf(seq, fromDID, toDID, amountMicro, ts.UnixNano()))
+		sigHex := l.signer.Sign(receiptSigningBytes(seq, leafHex))
+		return leafHex, sigHex
+	}
+	res, err := l.st.FundPerpPoolIdempotent(ctx, fromDID, pool, amountMicro, tier,
+		idempotencyKey, requestHash, finalize)
+	if err != nil {
+		return types.Receipt{}, false, err
+	}
+	return types.Receipt{
+		Seq:          res.Seq,
+		FromDID:      fromDID,
+		ToDID:        toDID,
+		AmountUSDX:   types.FormatUSDX(amountMicro),
+		Tier:         res.Tier,
+		TS:           res.TS,
+		LeafHashHex:  res.LeafHex,
+		SequencerSig: res.SigHex,
+		SequencerKey: l.signer.PublicHex(),
+		Settled:      false,
+	}, res.Replayed, nil
+}
+
 // CaptureHold consumes an open hold as its payer-authorized captor: the payee
 // is credited amountMicro through the SAME transfer commitment path as Pay
 // (monotonic seq, Merkle leaf, sequencer signature), any remainder returns to

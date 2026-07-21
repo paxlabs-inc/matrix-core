@@ -261,15 +261,20 @@ type SupplyStats struct {
 	Transfers            int64
 }
 
-// Supply returns the circulating USDX supply and descriptive counts. Open holds
-// are USDX claims that have left balances but not settled, so they count as
-// circulating — the reserve proof (invariant i1) stays exact across every
-// hold/capture/release interleaving.
+// Supply returns the circulating USDX supply and descriptive counts. Open
+// holds, held perps margin reservations, open-position margin, and protocol
+// pool capital are USDX claims that have left spendable balances without
+// leaving the system, so they count as circulating — the reserve proof
+// (invariant i1) and the perps conservation identity stay exact across every
+// hold/capture/release and reserve/fill/funding/close interleaving.
 func (s *Store) Supply(ctx context.Context) (SupplyStats, error) {
 	var st SupplyStats
 	if err := s.pool.QueryRow(ctx, `
 		SELECT COALESCE(SUM(balance_usdx), 0)
-		       + (SELECT COALESCE(SUM(amount_usdx), 0) FROM holds WHERE status = 'open'),
+		       + (SELECT COALESCE(SUM(amount_usdx), 0) FROM holds WHERE status = 'open')
+		       + (SELECT COALESCE(SUM(amount_usdx), 0) FROM perp_margin_reservations WHERE status = 'held')
+		       + (SELECT COALESCE(SUM(margin_usdx), 0) FROM perp_positions WHERE status IN ('OPEN', 'LIQUIDATING'))
+		       + (SELECT COALESCE(SUM(capital_usdx), 0) FROM perp_pools),
 		       COUNT(*) FROM accounts`).
 		Scan(&st.CirculatingMicroUSDX, &st.Accounts); err != nil {
 		return SupplyStats{}, fmt.Errorf("store: supply accounts: %w", err)

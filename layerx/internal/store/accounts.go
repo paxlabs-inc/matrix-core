@@ -79,11 +79,12 @@ func (s *Store) CreditDeposit(ctx context.Context, did, evm, depositTx string, a
 
 // PayResult is what a successful Pay produced.
 type PayResult struct {
-	Seq     int64
-	TS      time.Time
-	LeafHex string
-	SigHex  string
-	Tier    string
+	Seq      int64
+	TS       time.Time
+	LeafHex  string
+	SigHex   string
+	Tier     string
+	Replayed bool
 }
 
 // Pay atomically: locks the sender, enforces the escrow bound, debits sender /
