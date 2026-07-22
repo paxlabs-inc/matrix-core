@@ -865,15 +865,18 @@ func fromWireRespMessage(m wireRespMessage) Message {
 			toolCalls = extracted
 		}
 	}
-	// MiMo (and other Qwen-grammar models) sometimes emit tool calls as inline
-	// tag text (`<tool_call> <function=NAME> <parameter=key>value …`) inside
-	// content instead of the structured tool_calls array. Left in place the
-	// call leaks into the chat as a "final answer" and the intended action
-	// never runs — the turn is then judged as a bare answer by the close
-	// chain. Extract these too, gated on no calls already found.
-	if len(toolCalls) == 0 {
-		if stripped, extracted := extractTagToolCalls(content); len(extracted) > 0 {
-			content = stripped
+	// MiMo (and other Qwen-grammar models) emit tool calls as inline tag text
+	// (`<tool_call> <function=NAME> <parameter=key>value …`) inside content —
+	// sometimes INSTEAD of the structured tool_calls array, sometimes as a
+	// DUPLICATE alongside it (observed live 2026-07-22: provider-parsed
+	// structured calls with the same call re-emitted as content text). The
+	// markup is never legitimate prose, so it is ALWAYS stripped from content;
+	// the extracted calls are promoted to real tool calls only when the
+	// provider returned none, so a well-parsed structured response keeps its
+	// authoritative calls and just loses the duplicated markup.
+	if stripped, extracted := extractTagToolCalls(content); len(extracted) > 0 {
+		content = stripped
+		if len(toolCalls) == 0 {
 			toolCalls = extracted
 		}
 	}

@@ -137,6 +137,30 @@ func TestExtractTagToolCalls(t *testing.T) {
 	}
 }
 
+// TestFromWireRespMessage_DuplicateTagMarkupStripped pins the double-emission
+// case observed live 2026-07-22: MiMo returned provider-parsed structured
+// tool_calls AND re-emitted the same call as tag text inside content. The fold
+// must keep the authoritative structured calls and strip the duplicated markup
+// from content — before this fix the markup leaked into user-facing narration.
+func TestFromWireRespMessage_DuplicateTagMarkupStripped(t *testing.T) {
+	m := wireRespMessage{
+		Role: "assistant",
+		Content: "Let me check the releases.<tool_call>\n<function=exec__shell>\n<parameter=command>\ncurl -sL https://example.test\n</parameter>\n</function>\n</tool_call>",
+		ToolCalls: []ToolCall{{
+			ID:       "call_fb3142a8ef2b4ab28ccd7e98",
+			Type:     "function",
+			Function: FunctionCall{Name: "exec__shell", Arguments: `{"command":"curl -sL https://example.test"}`},
+		}},
+	}
+	got := fromWireRespMessage(m)
+	if got.Content != "Let me check the releases." {
+		t.Errorf("content = %q, want the narration with the tag markup stripped", got.Content)
+	}
+	if len(got.ToolCalls) != 1 || got.ToolCalls[0].ID != "call_fb3142a8ef2b4ab28ccd7e98" {
+		t.Errorf("structured calls must stay authoritative, got %+v", got.ToolCalls)
+	}
+}
+
 // TestExtractTagToolCalls_NoFalsePositives proves ordinary prose — including
 // prose that mentions angle brackets or HTML — is returned untouched.
 func TestExtractTagToolCalls_NoFalsePositives(t *testing.T) {
