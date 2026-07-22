@@ -224,6 +224,51 @@ func TestWorkspaceDiffAndExec(t *testing.T) {
 
 // TestWorkspaceDisabled proves an unconfigured workspace root answers 400
 // (surface disabled) instead of touching the filesystem.
+// TestWorkspaceTreeThroughSymlinkRoot reproduces the prod layout — /workspace
+// is a symlink to the persisted /data/workspace — and proves the tree listing
+// still sees the real files. filepath.WalkDir does not follow a symlink root,
+// so an unresolved root walked zero children and prod's Files page showed an
+// empty workspace over real data.
+func TestWorkspaceTreeThroughSymlinkRoot(t *testing.T) {
+	base := t.TempDir()
+	real := filepath.Join(base, "data", "workspace")
+	if err := os.MkdirAll(filepath.Join(real, "app"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(real, "app", "main.go"), []byte("package main\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	link := filepath.Join(base, "workspace")
+	if err := os.Symlink(real, link); err != nil {
+		t.Skipf("symlink unsupported here: %v", err)
+	}
+
+	root := WorkspaceRoot(link)
+	if resolved, err := filepath.EvalSymlinks(real); err != nil || root != resolved {
+		t.Fatalf("WorkspaceRoot(%q) = %q (%v), want the symlink-resolved %q", link, root, err, resolved)
+	}
+
+	s := &Server{engine: &Engine{workspaceRoot: root}}
+	code, out := wsDo(t, s, http.MethodGet, "/workspace/tree?project=", nil)
+	if code != http.StatusOK {
+		t.Fatalf("tree = %d (%v), want 200", code, out)
+	}
+	entries, _ := out["entries"].([]interface{})
+	paths := make([]string, 0, len(entries))
+	for _, e := range entries {
+		m, _ := e.(map[string]interface{})
+		p, _ := m["path"].(string)
+		paths = append(paths, p)
+	}
+	sort.Strings(paths)
+	if len(paths) != 2 || paths[0] != "app" || paths[1] != "app/main.go" {
+		t.Fatalf("tree through symlink root = %v, want [app app/main.go]", paths)
+	}
+	if out["truncated"] != false {
+		t.Fatalf("truncated = %v, want false", out["truncated"])
+	}
+}
+
 func TestWorkspaceDisabled(t *testing.T) {
 	s := &Server{engine: &Engine{}}
 	code, _ := wsDo(t, s, http.MethodGet, "/workspace/tree", nil)

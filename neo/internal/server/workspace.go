@@ -62,17 +62,30 @@ var errWorkspaceEscape = errors.New("path escapes the workspace")
 
 // WorkspaceRoot resolves the VM workspace root: an explicit override wins,
 // else the persisted /workspace (= /data/workspace in prod, matching the fs
-// and exec tools' default), else "" (workbench surface disabled).
+// and exec tools' default), else "" (workbench surface disabled). The result
+// is always symlink-resolved: prod's /workspace is a symlink to
+// /data/workspace, and filepath.WalkDir does not follow a symlink root — an
+// unresolved root makes every tree listing come back empty.
 func WorkspaceRoot(override string) string {
 	if override = strings.TrimSpace(override); override != "" {
-		return strings.TrimRight(override, "/")
+		return resolveWorkspaceDir(strings.TrimRight(override, "/"))
 	}
 	for _, dir := range []string{"/workspace", "/data/workspace"} {
 		if info, err := os.Stat(dir); err == nil && info.IsDir() {
-			return dir
+			return resolveWorkspaceDir(dir)
 		}
 	}
 	return ""
+}
+
+// resolveWorkspaceDir canonicalizes a workspace root through any symlinks; an
+// unresolvable path passes through unchanged (dev-box overrides may not exist
+// yet).
+func resolveWorkspaceDir(dir string) string {
+	if resolved, err := filepath.EvalSymlinks(dir); err == nil {
+		return strings.TrimRight(resolved, "/")
+	}
+	return dir
 }
 
 // wsTreeEntry is one row of the workspace tree, depth-first.

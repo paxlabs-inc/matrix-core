@@ -247,7 +247,7 @@ func NewEngine(o EngineOptions) *Engine {
 		voiceASRURL:        strings.TrimSpace(o.VoiceASRURL),
 		voiceASRKey:        strings.TrimSpace(o.VoiceASRKey),
 		voiceControllerURL: strings.TrimRight(o.VoiceControllerURL, "/"),
-		workspaceRoot:      strings.TrimRight(o.WorkspaceDir, "/"),
+		workspaceRoot:      resolveWorkspaceDir(strings.TrimRight(o.WorkspaceDir, "/")),
 		vault:              o.Vault,
 		backendURL:         strings.TrimRight(o.BackendURL, "/"),
 		backendToken:       o.BackendToken,

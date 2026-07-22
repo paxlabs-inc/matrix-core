@@ -1,7 +1,7 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:412bb29116bd4a199741a1679afacaa9ca896d23fe7300fa23298fef20a00f64
+# GENERATED gen=codegraph do-not-edit merkle=b3:dcac9c070ede5d7058826b65da3d139874b9067c108587b2f3eb88e09fa4ee64
 
 NODE id=matrix/neo/internal/server kind=package
-  digest=b3:b6bc9d3b832ebc3ebc459eea34f0c12318c3df5536a069c7fc99d69fcbe3f442 file=neo/internal/server range=0:0 lang=go exported=true
+  digest=b3:8270180841b78c44b55689610b1009798ae327ccbfb5ff0c7276dc8f01abb7bd file=neo/internal/server range=0:0 lang=go exported=true
 EDGES
   contains=matrix/neo/internal/server/automatrix_governor.go,matrix/neo/internal/server/automatrix_routes.go,matrix/neo/internal/server/automatrix_run.go,matrix/neo/internal/server/automatrix_wake.go,matrix/neo/internal/server/brief_governor.go,matrix/neo/internal/server/brief_policy.go,matrix/neo/internal/server/brief_routes.go,matrix/neo/internal/server/brief_run.go,matrix/neo/internal/server/brief_wake.go,matrix/neo/internal/server/engine.go,matrix/neo/internal/server/episodic_sweep.go,matrix/neo/internal/server/interview_routes.go,matrix/neo/internal/server/machinemail_bridge.go,matrix/neo/internal/server/machinemail_routes.go,matrix/neo/internal/server/media.go,matrix/neo/internal/server/media_filmstrip.go,matrix/neo/internal/server/media_vault.go,matrix/neo/internal/server/memory_routes.go,matrix/neo/internal/server/observability.go,matrix/neo/internal/server/preview.go,matrix/neo/internal/server/privacy_routes.go,matrix/neo/internal/server/projects.go,matrix/neo/internal/server/queue.go,matrix/neo/internal/server/server.go,matrix/neo/internal/server/session.go,matrix/neo/internal/server/sse.go,matrix/neo/internal/server/surface.go,matrix/neo/internal/server/swarm.go,matrix/neo/internal/server/telegram_api.go,matrix/neo/internal/server/telegram_bridge.go,matrix/neo/internal/server/telegram_routes.go,matrix/neo/internal/server/voice.go,matrix/neo/internal/server/voice_session.go,matrix/neo/internal/server/workspace.go
   ^contains=mod:matrix/neo
@@ -483,7 +483,7 @@ EDGES
   ^contains=matrix/neo/internal/server.Engine
 
 NODE id=matrix/neo/internal/server.Engine.AutomatrixInbox kind=method
-  digest=b3:afa8c71600aac44ec236558f3c36149ef6222945cf6f37c7b3ef0a56d2a6e965 file=neo/internal/server/engine.go range=976:979 lang=go exported=true byte_range=42556:42872
+  digest=b3:afa8c71600aac44ec236558f3c36149ef6222945cf6f37c7b3ef0a56d2a6e965 file=neo/internal/server/engine.go range=976:979 lang=go exported=true byte_range=42577:42893
   sig=func (e *Engine) AutomatrixInbox() *automatrixlog.Store
   doc=AutomatrixInbox exposes the durable Automatrix completion store so the daemon\nroutes can render the in-app inbox / unread badge and mark items read (req\n7.4). Returns the (possibly disabled) store; never nil for a built engine.
 EDGES
@@ -491,7 +491,7 @@ EDGES
   ^defines=matrix/neo/internal/server/engine.go
 
 NODE id=matrix/neo/internal/server.Engine.Close kind=method
-  digest=b3:a383d5964fe9fe92dbeb8223b77050d082aa569d88f87f94ca12bd3944eb5705 file=neo/internal/server/engine.go range=446:470 lang=go exported=true byte_range=22176:23303
+  digest=b3:a383d5964fe9fe92dbeb8223b77050d082aa569d88f87f94ca12bd3944eb5705 file=neo/internal/server/engine.go range=446:470 lang=go exported=true byte_range=22197:23324
   sig=func (e *Engine) Close()
   doc=Close flushes and stops the engine's durable sidecar stores (today: the\nworkspace trace writer). Called on graceful shutdown so any queued workspace\nevents are persisted before exit. Idempotent + safe on a disabled store.
 EDGES
@@ -538,7 +538,7 @@ EDGES
   ^defines=matrix/neo/internal/server/brief_run.go
 
 NODE id=matrix/neo/internal/server.Engine.ResumeOrphanedTasks kind=method
-  digest=b3:aa6c0ddc2cd4a498a021d8ecda91d080765a4bf8e205785d7192072896ac0f09 file=neo/internal/server/engine.go range=414:444 lang=go exported=true byte_range=20952:22174
+  digest=b3:aa6c0ddc2cd4a498a021d8ecda91d080765a4bf8e205785d7192072896ac0f09 file=neo/internal/server/engine.go range=414:444 lang=go exported=true byte_range=20973:22195
   sig=func (e *Engine) ResumeOrphanedTasks() int
   doc=ResumeOrphanedTasks re-dispatches every task left "running" in the durable\nledger — tasks orphaned when the daemon was restarted or Fly-suspended\nmid-work. Each resumes on its own conversation with the catch-up prime, so\nthe Task Durability Rule holds across a process death: a dropped task is\npicked back up and driven to completion rather than silently lost. Called\nonce at boot (cmd/neo serve). Best-effort + idempotent — a task that actually\nfinished is no longer "running" and is skipped, and the ledger's CAS-on-run-id\nkeeps a stale record from clobbering a live one. Returns the count resumed.
 EDGES
@@ -586,7 +586,7 @@ EDGES
   ^defines=matrix/neo/internal/server/automatrix_wake.go
 
 NODE id=matrix/neo/internal/server.Engine.SetBriefGovernor kind=method
-  digest=b3:a520c07a9d97a66164887b2d612ae0d1f437532dc5609661dcee722fa2556cc3 file=neo/internal/server/engine.go range=404:407 lang=go exported=true byte_range=20417:20660
+  digest=b3:a520c07a9d97a66164887b2d612ae0d1f437532dc5609661dcee722fa2556cc3 file=neo/internal/server/engine.go range=404:407 lang=go exported=true byte_range=20438:20681
   sig=func (e *Engine) SetBriefGovernor(g *briefGovernor)
   doc=SetBriefGovernor wires the morning-brief opt-in + alarm bookkeeping seam\n(task 5.2). Safe to leave unset: the control routes + wake handler fail closed\nwithout it.
 EDGES
@@ -610,14 +610,14 @@ EDGES
   ^defines=matrix/neo/internal/server/preview.go
 
 NODE id=matrix/neo/internal/server.Engine.StartTelegram kind=method
-  digest=b3:f03f25ea6c696fae028467157d4ee6b0ef9977c3904b3cddba010cdcd4b07b89 file=neo/internal/server/engine.go range=398:402 lang=go exported=true byte_range=20297:20415
+  digest=b3:f03f25ea6c696fae028467157d4ee6b0ef9977c3904b3cddba010cdcd4b07b89 file=neo/internal/server/engine.go range=398:402 lang=go exported=true byte_range=20318:20436
   sig=func (e *Engine) StartTelegram(ctx context.Context)
 EDGES
   ^contains=matrix/neo/internal/server.Engine
   ^defines=matrix/neo/internal/server/engine.go
 
 NODE id=matrix/neo/internal/server.Engine.Vault kind=method
-  digest=b3:229b4e0625bf2392b407ef4c1c7c483f496f0c1949c1bea8032f5aaa6f44ea3c file=neo/internal/server/engine.go range=409:412 lang=go exported=true byte_range=20662:20950
+  digest=b3:229b4e0625bf2392b407ef4c1c7c483f496f0c1949c1bea8032f5aaa6f44ea3c file=neo/internal/server/engine.go range=409:412 lang=go exported=true byte_range=20683:20971
   sig=func (e *Engine) Vault() *vault.Session
   doc=Vault returns the daemon's fail-closed data-at-rest encryption session, or nil\nin an explicitly-disabled plaintext dev/CLI run. Store wiring consults it to\nseal records/files before write and to open sealed data on read.
 EDGES
@@ -625,7 +625,7 @@ EDGES
   ^defines=matrix/neo/internal/server/engine.go
 
 NODE id=matrix/neo/internal/server.Engine.Warm kind=method
-  digest=b3:dcfdf59ae7579118e27d969982a34e2e138d780c2c2e9db45b98946d104c9a02 file=neo/internal/server/engine.go range=495:533 lang=go exported=true byte_range=24063:25258
+  digest=b3:dcfdf59ae7579118e27d969982a34e2e138d780c2c2e9db45b98946d104c9a02 file=neo/internal/server/engine.go range=495:533 lang=go exported=true byte_range=24084:25279
   sig=func (e *Engine) Warm()
   doc=Warm is the Q2 warm-on-open hook: the FIRST inbound HTTP request kicks a\none-shot, NON-BLOCKING warm of the embedder + HNSW semantic substrate so the\nfirst message's relevance recall (agent.cmRelevancePush) isn't paying the\ncold-start. It returns immediately; the actual warm runs on a background\ngoroutine bounded by warmTimeout. Idempotent via warmOnce, and a no-op when\nWarmOnOpen is off, the pager is nil, or no embedder is running (the salience\nlane needs no warming).
 EDGES
@@ -633,7 +633,7 @@ EDGES
   ^defines=matrix/neo/internal/server/engine.go
 
 NODE id=matrix/neo/internal/server.Engine.Warmed kind=method
-  digest=b3:d37348c3deac1de7a09fe888af7fc6316470db7bb0e678f37c108cf85daec26a file=neo/internal/server/engine.go range=549:554 lang=go exported=true byte_range=25867:26141
+  digest=b3:d37348c3deac1de7a09fe888af7fc6316470db7bb0e678f37c108cf85daec26a file=neo/internal/server/engine.go range=549:554 lang=go exported=true byte_range=25888:26162
   sig=func (e *Engine) Warmed() bool
   doc=Warmed reports whether the background warm has completed. Observability for\ntests + readiness checks; false until the warm goroutine finishes (or forever\nwhen warming is disabled / unavailable).
 EDGES
@@ -641,7 +641,7 @@ EDGES
   ^defines=matrix/neo/internal/server/engine.go
 
 NODE id=matrix/neo/internal/server.Engine.activeRunForConv kind=method
-  digest=b3:7193b16a0b9ab32018676d4a1590e3622d16eb54f8596d0a9d737239e1e12227 file=neo/internal/server/engine.go range=814:839 lang=go exported=false byte_range=35924:36874
+  digest=b3:7193b16a0b9ab32018676d4a1590e3622d16eb54f8596d0a9d737239e1e12227 file=neo/internal/server/engine.go range=814:839 lang=go exported=false byte_range=35945:36895
   sig=func (e *Engine) activeRunForConv(convID string) string
   doc=activeRunForConv reports the in-flight run id for one conversation, or "" if\nnothing is live. Unlike broker.has(id) (which stays true for 2 minutes after\nsettlement so late reconnects can replay), this consults the authoritative\nruns registry: a run is here iff registerRun has fired and unregisterRun has\nNOT — i.e. iff drive() is still executing. handleConversations uses it to\nstamp `live_run` on the GET /conversations/{id} response so a fresh tab /\npost-relogin client can subscribe(replay:true) without waiting for the poll.
 EDGES
@@ -665,7 +665,7 @@ EDGES
   ^defines=matrix/neo/internal/server/automatrix_run.go
 
 NODE id=matrix/neo/internal/server.Engine.approverFor kind=method
-  digest=b3:d46915c0157d321098a63738689256177d7dc81c128e6a90e693b5b2eeebb6af file=neo/internal/server/engine.go range=707:735 lang=go exported=false byte_range=32348:33312
+  digest=b3:d46915c0157d321098a63738689256177d7dc81c128e6a90e693b5b2eeebb6af file=neo/internal/server/engine.go range=707:735 lang=go exported=false byte_range=32369:33333
   sig=func (e *Engine) approverFor(r *run) delegate.Approver
   doc=approverFor surfaces a delegated MCL gate as a gate.invoked event on the\nconversation stream and blocks until the user answers via Neo's gate-answer\nendpoint (or the context is cancelled, which denies).
 EDGES
@@ -705,7 +705,7 @@ EDGES
   ^defines=matrix/neo/internal/server/swarm.go
 
 NODE id=matrix/neo/internal/server.Engine.claimGate kind=method
-  digest=b3:2ffdc2c6eb4bf06d11b4c6cca051bf179d775dcc33d45f75702ddd9bb571c5ae file=neo/internal/server/engine.go range=687:705 lang=go exported=false byte_range=31635:32346
+  digest=b3:2ffdc2c6eb4bf06d11b4c6cca051bf179d775dcc33d45f75702ddd9bb571c5ae file=neo/internal/server/engine.go range=687:705 lang=go exported=false byte_range=31656:32367
   sig=func (e *Engine) claimGate(intentID, nodeID string) bool
   doc=claimGate is the shared cross-attach gate guard handed to every per-call\ndelegate client. The FIRST caller to claim (intentID, nodeID) wins and may\nanswer the gate; later callers (a concurrent attach to the same in-flight\nintent) lose the claim and skip answering, so a single approval gate is\nserviced exactly once even when two core_execute delegations join the same\nrun. Safe for concurrent use.
 EDGES
@@ -713,7 +713,7 @@ EDGES
   ^defines=matrix/neo/internal/server/engine.go
 
 NODE id=matrix/neo/internal/server.Engine.coreExecute kind=method
-  digest=b3:dd427fd2723e3b47d30a8da166a8561672622e2e57421e14b43d213daced7fcc file=neo/internal/server/engine.go range=670:685 lang=go exported=false byte_range=30966:31633
+  digest=b3:dd427fd2723e3b47d30a8da166a8561672622e2e57421e14b43d213daced7fcc file=neo/internal/server/engine.go range=670:685 lang=go exported=false byte_range=30987:31654
   sig=func (e *Engine) coreExecute(ctx context.Context, intent string) (string, error)
   doc=coreExecute is the in-conversation bridge to the MCL pipeline. It reads the\nactive run from ctx so it can surface the delegated run's approval gates and\nstatus onto that conversation's event stream, then delegates over HTTP to\nthe daemon (the only thing that can move funds), servicing gates inline.
 EDGES
@@ -761,7 +761,7 @@ EDGES
   ^defines=matrix/neo/internal/server/brief_run.go
 
 NODE id=matrix/neo/internal/server.Engine.emitAutomatrixComplete kind=method
-  digest=b3:fa2f760cc1e97be4739307ac72bec4d013ee8ac25aeb2146c9838b3b5563dd45 file=neo/internal/server/engine.go range=948:974 lang=go exported=false byte_range=41218:42554
+  digest=b3:fa2f760cc1e97be4739307ac72bec4d013ee8ac25aeb2146c9838b3b5563dd45 file=neo/internal/server/engine.go range=948:974 lang=go exported=false byte_range=41239:42575
   sig=func (e *Engine) emitAutomatrixComplete(convID, opportunitySummary, resultSummary string) automatrixlog.Record
   doc=emitAutomatrixComplete writes the durable in-app completion record and\npublishes the automatrix.complete broker event so a live client surfaces the\nsurprise result immediately. The durable record is the canonical, replayable\nsurface: it is written FIRST so the result is never lost even if no client is\nconnected (and regardless of any out-of-app ntfy/Apprise ping). This is the\nclean writer seam the completion path (5.3) calls on a genuinely-gated pass;\nit never signs, writes cortex, or touches the plan/walk. No secrets are\nrecorded — only the result-not-protocol fields.
 EDGES
@@ -769,7 +769,7 @@ EDGES
   ^defines=matrix/neo/internal/server/engine.go
 
 NODE id=matrix/neo/internal/server.Engine.emitConstructSurface kind=method
-  digest=b3:11bc65f6e509d62400d4a6b9bc848b2403a722d2e0f05ca75e277d919f543864 file=neo/internal/server/engine.go range=569:580 lang=go exported=false byte_range=26575:27208
+  digest=b3:11bc65f6e509d62400d4a6b9bc848b2403a722d2e0f05ca75e277d919f543864 file=neo/internal/server/engine.go range=569:580 lang=go exported=false byte_range=26596:27229
   sig=func (e *Engine) emitConstructSurface(ctx context.Context, s *schema.Surface) error
   doc=emitConstructSurface is the ACTIVE-tier Construct emitter wired into the tool\nmanager: it streams an agent-authored surface onto the active run's event\nstream as a construct.surface event. Pure side-channel — it only publishes a\ntranscript event, exactly like surfaceTool / notifyFor; it never signs,\nwrites cortex, or touches the plan/walk.
 EDGES
@@ -777,7 +777,7 @@ EDGES
   ^defines=matrix/neo/internal/server/engine.go
 
 NODE id=matrix/neo/internal/server.Engine.emitTodo kind=method
-  digest=b3:5711c38506fc1ec7e31ed4853bcabef70a9c79728a9202b386919618ec86926a file=neo/internal/server/engine.go range=582:603 lang=go exported=false byte_range=27210:28186
+  digest=b3:5711c38506fc1ec7e31ed4853bcabef70a9c79728a9202b386919618ec86926a file=neo/internal/server/engine.go range=582:603 lang=go exported=false byte_range=27231:28207
   sig=func (e *Engine) emitTodo(ctx context.Context, items []tools.TodoItem) error
   doc=emitTodo is the live task-list emitter wired into the tool manager\n(neo-smoothness req.3): it streams the agent's ordered checklist onto the\nactive run's event stream as a tool.todo event. Pure side-channel — it only\npublishes a transcript event (like emitConstructSurface / surfaceTool); it\nnever signs, writes cortex, or touches the plan/walk. The trace tap persists\ntool.todo (traceWorkspaceTypes) so the checklist survives reopen + respawn.
 EDGES
@@ -785,7 +785,7 @@ EDGES
   ^defines=matrix/neo/internal/server/engine.go
 
 NODE id=matrix/neo/internal/server.Engine.fetchUserProfile kind=method
-  digest=b3:437fae54aed34b466a64d0ed1695303d6cd4b045703e4f48d89d86f63c02d09e file=neo/internal/server/engine.go range=1238:1286 lang=go exported=false byte_range=51937:53527
+  digest=b3:437fae54aed34b466a64d0ed1695303d6cd4b045703e4f48d89d86f63c02d09e file=neo/internal/server/engine.go range=1238:1286 lang=go exported=false byte_range=51958:53548
   sig=func (e *Engine) fetchUserProfile()
   doc=fetchUserProfile fetches the onboarding profile from the daemon's\n/profile endpoint and caches it on the engine for injection into every\nagent's stable system prompt prefix (req 2.4/2.5). Best-effort: a\nmissing daemon, absent profile, or any error falls back to the default\n"Neo" identity cleanly (empty preferredName + nil expertiseDomains).\nThread-safe: writes the cached fields under profileMu.
 EDGES
@@ -793,14 +793,14 @@ EDGES
   ^defines=matrix/neo/internal/server/engine.go
 
 NODE id=matrix/neo/internal/server.Engine.getRunRecord kind=method
-  digest=b3:d9ebfa24209344598136efa530ce58705eeb339df802765f490cd85418c38893 file=neo/internal/server/engine.go range=807:812 lang=go exported=false byte_range=35736:35922
+  digest=b3:d9ebfa24209344598136efa530ce58705eeb339df802765f490cd85418c38893 file=neo/internal/server/engine.go range=807:812 lang=go exported=false byte_range=35757:35943
   sig=func (e *Engine) getRunRecord(id string) (runrecord.Record, bool, error)
 EDGES
   ^contains=matrix/neo/internal/server.Engine
   ^defines=matrix/neo/internal/server/engine.go
 
 NODE id=matrix/neo/internal/server.Engine.haltAll kind=method
-  digest=b3:0e6a773bc24686b8a732ebf5a7ecb7b75c362968f6cd191d07ac2427b6f2e95e file=neo/internal/server/engine.go range=853:875 lang=go exported=false byte_range=37170:38120
+  digest=b3:0e6a773bc24686b8a732ebf5a7ecb7b75c362968f6cd191d07ac2427b6f2e95e file=neo/internal/server/engine.go range=853:875 lang=go exported=false byte_range=37191:38141
   sig=func (e *Engine) haltAll() int
   doc=haltAll interrupts EVERY live run this daemon is driving — the global kill\nswitch behind the client's "Stop all" control. Each daemon is single-tenant,\nso this halts exactly the calling user's own in-flight Neos (their runaway\nrespawns / parallel conversations) and nothing else. It mirrors the per-run\nPOST /intents/{id}/stop path: interrupt() marks each run stopped + cancels its\ncontext, so drive() closes it quietly as StatusInterrupted and the reaper\nnever resumes it. Returns the number of runs signalled. The run snapshot is\ntaken under e.mu and released BEFORE interrupt() (which takes the session's\nactMu) to avoid any lock-ordering coupling with the dispatch path.
 EDGES
@@ -832,7 +832,7 @@ EDGES
   ^defines=matrix/neo/internal/server/automatrix_run.go
 
 NODE id=matrix/neo/internal/server.Engine.latestRunForConv kind=method
-  digest=b3:7fd3cbacb7502ae126b509977516dfeeefbc5d2b10c99499ea584d13ffae8837 file=neo/internal/server/engine.go range=981:1002 lang=go exported=false byte_range=42874:43517
+  digest=b3:7fd3cbacb7502ae126b509977516dfeeefbc5d2b10c99499ea584d13ffae8837 file=neo/internal/server/engine.go range=981:1002 lang=go exported=false byte_range=42895:43538
   sig=func (e *Engine) latestRunForConv(convID string) string
   doc=latestRunForConv resolves the run id whose workspace trace a reopened thread\nshould rebuild: the in-flight run if one is live, else the most recent run on\nthe conversation (the last persisted turn carrying an intent_id). Returns ""\nwhen the conversation has no run-bearing turn.
 EDGES
@@ -854,14 +854,14 @@ EDGES
   ^defines=matrix/neo/internal/server/observability.go
 
 NODE id=matrix/neo/internal/server.Engine.lookupRun kind=method
-  digest=b3:3a615bdcd23277f363648c2f20a785928ed5ed1259b69b9eb91a0da094e474fb file=neo/internal/server/engine.go range=801:805 lang=go exported=false byte_range=35635:35734
+  digest=b3:3a615bdcd23277f363648c2f20a785928ed5ed1259b69b9eb91a0da094e474fb file=neo/internal/server/engine.go range=801:805 lang=go exported=false byte_range=35656:35755
   sig=func (e *Engine) lookupRun(id string) *run
 EDGES
   ^contains=matrix/neo/internal/server.Engine
   ^defines=matrix/neo/internal/server/engine.go
 
 NODE id=matrix/neo/internal/server.Engine.maybeRefreshProfile kind=method
-  digest=b3:38f827ad315d025ba4a1529761f306103fcba73641072dc9c96ed0e0e3fc51cf file=neo/internal/server/engine.go range=1288:1299 lang=go exported=false byte_range=53529:54004
+  digest=b3:38f827ad315d025ba4a1529761f306103fcba73641072dc9c96ed0e0e3fc51cf file=neo/internal/server/engine.go range=1288:1299 lang=go exported=false byte_range=53550:54025
   sig=func (e *Engine) maybeRefreshProfile()
   doc=maybeRefreshProfile re-fetches the onboarding profile if the cached copy\nis older than profileRefreshTTL. Called at session rebuild so a profile\nedited in Settings (req 8.2) takes effect on subsequent conversations/\nturns without a process restart.
 EDGES
@@ -909,7 +909,7 @@ EDGES
   ^defines=matrix/neo/internal/server/session.go
 
 NODE id=matrix/neo/internal/server.Engine.notifyFor kind=method
-  digest=b3:d476ca2c36f20adbab38529283e6e3d765efb97fee65c87950dbe239d96249ff file=neo/internal/server/engine.go range=779:791 lang=go exported=false byte_range=35103:35415
+  digest=b3:d476ca2c36f20adbab38529283e6e3d765efb97fee65c87950dbe239d96249ff file=neo/internal/server/engine.go range=779:791 lang=go exported=false byte_range=35124:35436
   sig=func (e *Engine) notifyFor(r *run) func(string)
 EDGES
   ^contains=matrix/neo/internal/server.Engine
@@ -931,7 +931,7 @@ EDGES
   ^defines=matrix/neo/internal/server/voice.go
 
 NODE id=matrix/neo/internal/server.Engine.profileSnapshot kind=method
-  digest=b3:fabf75ea3cf875d126b5498d1bb1642927c593aa369ade6ab1ca2125bc49c38f file=neo/internal/server/engine.go range=1301:1307 lang=go exported=false byte_range=54006:54340
+  digest=b3:fabf75ea3cf875d126b5498d1bb1642927c593aa369ade6ab1ca2125bc49c38f file=neo/internal/server/engine.go range=1301:1307 lang=go exported=false byte_range=54027:54361
   sig=func (e *Engine) profileSnapshot() (agentName, preferredName string, expertiseDomains []string)
   doc=profileSnapshot returns the current cached profile under lock, for safe\ninjection into a freshly rebuilt agent.
 EDGES
@@ -947,7 +947,7 @@ EDGES
   ^defines=matrix/neo/internal/server/projects.go
 
 NODE id=matrix/neo/internal/server.Engine.projectRoot kind=method
-  digest=b3:d1484c6d5cbd4302abdd27d7d706b01f0a761e816db1f31e26271942f0f84ca0 file=neo/internal/server/workspace.go range=126:142 lang=go exported=false byte_range=4100:4716
+  digest=b3:d1484c6d5cbd4302abdd27d7d706b01f0a761e816db1f31e26271942f0f84ca0 file=neo/internal/server/workspace.go range=139:155 lang=go exported=false byte_range=4693:5309
   sig=func (e *Engine) projectRoot(project string) (string, error)
   doc=projectRoot resolves the request's project (a workspace subdirectory) to an\nabsolute directory inside the workspace root, through the same escape seam.\nAn empty project addresses the workspace root itself (the default project).
 EDGES
@@ -963,7 +963,7 @@ EDGES
   ^defines=matrix/neo/internal/server/projects.go
 
 NODE id=matrix/neo/internal/server.Engine.publishAudit kind=method
-  digest=b3:c02d10c13c8da2f51ad44bdac2a1888c533335ea88a3433618c6e4096d9cec08 file=neo/internal/server/engine.go range=737:751 lang=go exported=false byte_range=33314:33909
+  digest=b3:c02d10c13c8da2f51ad44bdac2a1888c533335ea88a3433618c6e4096d9cec08 file=neo/internal/server/engine.go range=737:751 lang=go exported=false byte_range=33335:33930
   sig=func (e *Engine) publishAudit(r *run, ev agent.AuditEvent)
   doc=publishAudit streams a Cassandra audit event onto the run's event stream as\na cassandra.* event (cassandra.frozen.kvx [audit].events). Pure observability\nside-channel — it only publishes a transcript event, exactly like surfaceTool\n/ notifyFor; the adjudicator signs nothing and writes no cortex (i_cass_4,\ni_cass_6).
 EDGES
@@ -971,7 +971,7 @@ EDGES
   ^defines=matrix/neo/internal/server/engine.go
 
 NODE id=matrix/neo/internal/server.Engine.publishMemory kind=method
-  digest=b3:052d27cd0ab34e0218c470a716dc65ac6a93e39fa74d8c7008392a2e2f129e7e file=neo/internal/server/engine.go range=753:777 lang=go exported=false byte_range=33911:35101
+  digest=b3:052d27cd0ab34e0218c470a716dc65ac6a93e39fa74d8c7008392a2e2f129e7e file=neo/internal/server/engine.go range=753:777 lang=go exported=false byte_range=33932:35122
   sig=func (e *Engine) publishMemory(r *run, ev agent.MemoryEvent)
   doc=publishMemory streams the turn's continuous-memory activation summary onto\nthe run's event stream as a memory.activation event (continuous-memory task\n7.1). Pure observability side-channel — like publishAudit / surfaceTool it\nonly publishes a transcript event; cortex composed the bundle read-only and\nnothing here signs, writes cortex, or touches the plan/walk. It surfaces the\nRESULT (the durable story-so-far + a coarse memory timeline), never the\nprotocol (no journal / MMR / rollup / snapshot jargon). Empty payloads are\ndropped so a turn with nothing to remember emits nothing.
 EDGES
@@ -1010,7 +1010,7 @@ EDGES
   ^defines=matrix/neo/internal/server/projects.go
 
 NODE id=matrix/neo/internal/server.Engine.recordTrace kind=method
-  digest=b3:ae8ce90b4b0e8532cfab4bcaac59319be255a4dc99004fe2909ab4f0a9860cef file=neo/internal/server/engine.go range=911:938 lang=go exported=false byte_range=39619:40715
+  digest=b3:ae8ce90b4b0e8532cfab4bcaac59319be255a4dc99004fe2909ab4f0a9860cef file=neo/internal/server/engine.go range=911:938 lang=go exported=false byte_range=39640:40736
   sig=func (e *Engine) recordTrace(id string, ev Event)
   doc=recordTrace is the broker tap (F3): it persists the workspace-relevant slice\nof the live event stream to the durable sidecar trace store so "Neo's\nComputer" can be rebuilt when a thread is reopened — after the run settles,\nscrolls past the 512-event broker buffer, or the topic is reclaimed. It runs\non every publish, so it stays cheap: a map lookup, then a NON-BLOCKING\nenqueue (trace.Record drops rather than blocks). It never signs, never writes\ncortex, never touches plan/walk (pure sidecar — m9/i_trace).
 EDGES
@@ -1018,7 +1018,7 @@ EDGES
   ^defines=matrix/neo/internal/server/engine.go
 
 NODE id=matrix/neo/internal/server.Engine.registerRun kind=method
-  digest=b3:8a16e463dda22f89af3e75dfd633e8a3f8333be274a04c5da9eddb535c70fdb4 file=neo/internal/server/engine.go range=793:799 lang=go exported=false byte_range=35417:35633
+  digest=b3:8a16e463dda22f89af3e75dfd633e8a3f8333be274a04c5da9eddb535c70fdb4 file=neo/internal/server/engine.go range=793:799 lang=go exported=false byte_range=35438:35654
   sig=func (e *Engine) registerRun(r *run)
   doc=registerRun / lookupRun / unregisterRun index active runs so the gate-answer\nroute can find the waiting approver by run id.
 EDGES
@@ -1026,7 +1026,7 @@ EDGES
   ^defines=matrix/neo/internal/server/engine.go
 
 NODE id=matrix/neo/internal/server.Engine.reqProjectRoot kind=method
-  digest=b3:9fda01eef3dfc515cef63389f5f34db8c17df4983b527c1474aa7473358cb9b6 file=neo/internal/server/workspace.go range=144:156 lang=go exported=false byte_range=4718:5152
+  digest=b3:9fda01eef3dfc515cef63389f5f34db8c17df4983b527c1474aa7473358cb9b6 file=neo/internal/server/workspace.go range=157:169 lang=go exported=false byte_range=5311:5745
   sig=func (e *Engine) reqProjectRoot(r *http.Request) (string, error)
   doc=reqProjectRoot resolves ?project= to the project root and requires it to be\nan existing directory (writes create files, never projects).
 EDGES
@@ -1042,7 +1042,7 @@ EDGES
   ^defines=matrix/neo/internal/server/projects.go
 
 NODE id=matrix/neo/internal/server.Engine.respondAsk kind=method
-  digest=b3:6c2188394c60a10d47534faaa544abcebfb806c8ba0e92e0003e4f9a63a89ac3 file=neo/internal/server/engine.go range=611:668 lang=go exported=false byte_range=28534:30964
+  digest=b3:6c2188394c60a10d47534faaa544abcebfb806c8ba0e92e0003e4f9a63a89ac3 file=neo/internal/server/engine.go range=611:668 lang=go exported=false byte_range=28555:30985
   sig=func (e *Engine) respondAsk(ctx context.Context, s *schema.Surface) (*primitives.AskResponse, error)
   doc=respondAsk is the ACTIVE-tier Construct back-channel (invariant i5): it shows\nan Ask surface, PARKS the agent's construct_render tool call on a per-ask\nwaiter keyed by the surface id, and returns the human's typed response once\nit is posted to /intents/{id}/asks/{ask_id}/answer. It mirrors approverFor\n(the in-walk gate) exactly — register the waiter FIRST so a fast answer can't\nrace the park, then emit; on answer, patch the Ask surface to its settled\nstate so the rendered control resolves. Pure side-channel: it publishes\ntranscript events and returns the answer as a tool result (an agent INPUT);\nit never signs, writes cortex, or touches the plan/walk.
 EDGES
@@ -1130,7 +1130,7 @@ EDGES
   ^defines=matrix/neo/internal/server/swarm.go
 
 NODE id=matrix/neo/internal/server.Engine.surfaceTool kind=method
-  digest=b3:041f9e15451f88a27919c82a74e9aa29e56c27d5e7874689fb41b89708d10cf8 file=neo/internal/server/engine.go range=1004:1090 lang=go exported=false byte_range=43519:47113
+  digest=b3:041f9e15451f88a27919c82a74e9aa29e56c27d5e7874689fb41b89708d10cf8 file=neo/internal/server/engine.go range=1004:1090 lang=go exported=false byte_range=43540:47134
   sig=func (e *Engine) surfaceTool(r *run, ev agent.ToolEvent)
   doc=surfaceTool turns a tool call into the live "Neo Workspace" — a single\n`tool.step` event the client renders as an ANIMATED VIEWPORT of the action\nitself: a terminal when Neo runs a command, a browser window when it\nbrowses, an editor when it reads/writes files. The same step id is updated\nfrom running→done across the start/end pair, so the viewport fills in place\nrather than appending a new card. Web-search results and generated media ALSO\nkeep their dedicated rich events (cards / media grid) on completion.
 EDGES
@@ -1153,14 +1153,14 @@ EDGES
   ^defines=matrix/neo/internal/server/voice.go
 
 NODE id=matrix/neo/internal/server.Engine.unregisterRun kind=method
-  digest=b3:7d8a3eac12b68682fac273cde79414ca98178314a3e648c388237d05466ff412 file=neo/internal/server/engine.go range=841:851 lang=go exported=false byte_range=36876:37168
+  digest=b3:7d8a3eac12b68682fac273cde79414ca98178314a3e648c388237d05466ff412 file=neo/internal/server/engine.go range=841:851 lang=go exported=false byte_range=36897:37189
   sig=func (e *Engine) unregisterRun(id string)
 EDGES
   ^contains=matrix/neo/internal/server.Engine
   ^defines=matrix/neo/internal/server/engine.go
 
 NODE id=matrix/neo/internal/server.Engine.warmBody kind=method
-  digest=b3:7659f1c76c9e889af5c0f0d2d13c33e46d890ad957f3f59d2e01a766c6df6215 file=neo/internal/server/engine.go range=535:547 lang=go exported=false byte_range=25260:25865
+  digest=b3:7659f1c76c9e889af5c0f0d2d13c33e46d890ad957f3f59d2e01a766c6df6215 file=neo/internal/server/engine.go range=535:547 lang=go exported=false byte_range=25281:25886
   sig=func (e *Engine) warmBody(ctx context.Context)
   doc=warmBody performs the actual substrate warm synchronously: one relevance\nretrieval that loads the embedding model + opens the HNSW index. The result\nis discarded — the point is the side effect of spinning up the cold path.\nSplit out from Warm so tests can exercise it deterministically without the\nonce/goroutine wrapper. Best-effort: any error is swallowed (a failed warm\njust means the first real recall pays what it would have anyway).
 EDGES
@@ -1390,7 +1390,7 @@ EDGES
   ^defines=matrix/neo/internal/server/server.go
 
 NODE id=matrix/neo/internal/server.NewEngine kind=func
-  digest=b3:0290c1863f6ce6b6aaf3e454352f2666bf8e43fb7c9446101e95e451b5fafe74 file=neo/internal/server/engine.go range=229:396 lang=go exported=true byte_range=11833:20295
+  digest=b3:bb3a51ded5d0085705b017854a4faf6100b74cb0b7edcc4e2f441c822c65199d file=neo/internal/server/engine.go range=229:396 lang=go exported=true byte_range=11833:20316
   sig=func NewEngine(o EngineOptions) *Engine
   doc=NewEngine assembles the engine and wires core_execute delegation through the\nshared tool manager.
 EDGES
@@ -1836,7 +1836,7 @@ EDGES
   ^defines=matrix/neo/internal/server/voice_session.go
 
 NODE id=matrix/neo/internal/server.Server.handleWorkspace kind=method
-  digest=b3:2752dd4349fc1807d8f4109dc8364c64125c1c3f46f3db67c0fe52ae80fe09ba file=neo/internal/server/workspace.go range=179:207 lang=go exported=false byte_range=5670:6488
+  digest=b3:2752dd4349fc1807d8f4109dc8364c64125c1c3f46f3db67c0fe52ae80fe09ba file=neo/internal/server/workspace.go range=192:220 lang=go exported=false byte_range=6263:7081
   sig=func (s *Server) handleWorkspace(w http.ResponseWriter, r *http.Request)
   doc=handleWorkspace routes the workbench environment surface.
 EDGES
@@ -1844,7 +1844,7 @@ EDGES
   ^defines=matrix/neo/internal/server/workspace.go
 
 NODE id=matrix/neo/internal/server.Server.handleWorkspaceDiff kind=method
-  digest=b3:5b2066a2fe3bec5f0c17a72eaa999f9215c40335f13e60de58c4db53debc0397 file=neo/internal/server/workspace.go range=530:572 lang=go exported=false byte_range=16435:17936
+  digest=b3:5b2066a2fe3bec5f0c17a72eaa999f9215c40335f13e60de58c4db53debc0397 file=neo/internal/server/workspace.go range=543:585 lang=go exported=false byte_range=17028:18529
   sig=func (s *Server) handleWorkspaceDiff(w http.ResponseWriter, r *http.Request)
   doc=handleWorkspaceDiff serves the real `git diff` over the project — read-only\ninspection, the diff pane's ground truth. A non-git project returns an empty\ndiff, not an error.
 EDGES
@@ -1852,7 +1852,7 @@ EDGES
   ^defines=matrix/neo/internal/server/workspace.go
 
 NODE id=matrix/neo/internal/server.Server.handleWorkspaceExec kind=method
-  digest=b3:99e051207d4ffc2e4f9e298450d67b60a5a0b29be29dca9bd442e9ac5e1e81d8 file=neo/internal/server/workspace.go range=574:624 lang=go exported=false byte_range=17938:19621
+  digest=b3:99e051207d4ffc2e4f9e298450d67b60a5a0b29be29dca9bd442e9ac5e1e81d8 file=neo/internal/server/workspace.go range=587:637 lang=go exported=false byte_range=18531:20214
   sig=func (s *Server) handleWorkspaceExec(w http.ResponseWriter, r *http.Request)
   doc=handleWorkspaceExec runs one bounded shell command in the project root — the\nlive terminal. Output is capped; the exit code is always reported honestly.
 EDGES
@@ -1860,7 +1860,7 @@ EDGES
   ^defines=matrix/neo/internal/server/workspace.go
 
 NODE id=matrix/neo/internal/server.Server.handleWorkspaceFileRead kind=method
-  digest=b3:1e34ad12ed546b3b69a44f4a708d82619b4d8b9017dc75caf0983dc487b93b26 file=neo/internal/server/workspace.go range=259:303 lang=go exported=false byte_range=7809:9077
+  digest=b3:1e34ad12ed546b3b69a44f4a708d82619b4d8b9017dc75caf0983dc487b93b26 file=neo/internal/server/workspace.go range=272:316 lang=go exported=false byte_range=8402:9670
   sig=func (s *Server) handleWorkspaceFileRead(w http.ResponseWriter, r *http.Request)
   doc=handleWorkspaceFileRead serves one file's content (capped) plus its full\nversion hash — the base the editable editor saves against.
 EDGES
@@ -1868,7 +1868,7 @@ EDGES
   ^defines=matrix/neo/internal/server/workspace.go
 
 NODE id=matrix/neo/internal/server.Server.handleWorkspaceFileWrite kind=method
-  digest=b3:6e727d6e4716fe6d04660179cb1a06b0c75e510a76905b2c603332f521d54db0 file=neo/internal/server/workspace.go range=452:528 lang=go exported=false byte_range=14026:16433
+  digest=b3:6e727d6e4716fe6d04660179cb1a06b0c75e510a76905b2c603332f521d54db0 file=neo/internal/server/workspace.go range=465:541 lang=go exported=false byte_range=14619:17026
   sig=func (s *Server) handleWorkspaceFileWrite(w http.ResponseWriter, r *http.Request)
   doc=handleWorkspaceFileWrite is the atomic editor save: write-then-rename in the\ntarget dir, returning the resulting version hash.
 EDGES
@@ -1884,7 +1884,7 @@ EDGES
   ^defines=matrix/neo/internal/server/preview.go
 
 NODE id=matrix/neo/internal/server.Server.handleWorkspaceRaw kind=method
-  digest=b3:ee827e8475bf59798fbd4c45518cca669d702b3688f1192bc834d119a7427526 file=neo/internal/server/workspace.go range=305:350 lang=go exported=false byte_range=9079:10629
+  digest=b3:ee827e8475bf59798fbd4c45518cca669d702b3688f1192bc834d119a7427526 file=neo/internal/server/workspace.go range=318:363 lang=go exported=false byte_range=9672:11222
   sig=func (s *Server) handleWorkspaceRaw(w http.ResponseWriter, r *http.Request)
   doc=handleWorkspaceRaw streams one workspace file's exact bytes — the download\npath of the Files page. Unlike the JSON editor read it is binary-safe and\nuncapped. Images / video / audio serve inline (thumbnails, previews);\neverything else downloads as an attachment so user-uploaded markup can\nnever execute on this origin (the /media stored-XSS posture).
 EDGES
@@ -1892,7 +1892,7 @@ EDGES
   ^defines=matrix/neo/internal/server/workspace.go
 
 NODE id=matrix/neo/internal/server.Server.handleWorkspaceTree kind=method
-  digest=b3:23b7d6c450b6a0eef0bda60a58d979464909519a89be511617ecd3f600ff99d8 file=neo/internal/server/workspace.go range=209:257 lang=go exported=false byte_range=6490:7807
+  digest=b3:23b7d6c450b6a0eef0bda60a58d979464909519a89be511617ecd3f600ff99d8 file=neo/internal/server/workspace.go range=222:270 lang=go exported=false byte_range=7083:8400
   sig=func (s *Server) handleWorkspaceTree(w http.ResponseWriter, r *http.Request)
   doc=handleWorkspaceTree serves the depth-first project listing.
 EDGES
@@ -1900,7 +1900,7 @@ EDGES
   ^defines=matrix/neo/internal/server/workspace.go
 
 NODE id=matrix/neo/internal/server.Server.handleWorkspaceUpload kind=method
-  digest=b3:c4fb056fab2b80fd561d253c43de0dd345d1f067272ba9703e752d4d97d66899 file=neo/internal/server/workspace.go range=352:440 lang=go exported=false byte_range=10631:13632
+  digest=b3:c4fb056fab2b80fd561d253c43de0dd345d1f067272ba9703e752d4d97d66899 file=neo/internal/server/workspace.go range=365:453 lang=go exported=false byte_range=11224:14225
   sig=func (s *Server) handleWorkspaceUpload(w http.ResponseWriter, r *http.Request)
   doc=handleWorkspaceUpload receives user files onto the REAL workspace — the\nsame root Neo's fs and exec tools mutate (POST multipart, one or more\n"file" parts, optional "dir" field targeting a workspace subdirectory).\nEach file lands atomically (temp + rename, the editor-save posture) under\nits own base name; the response reports the normalized workspace-relative\npaths so the client can show exactly what Neo will see.
 EDGES
@@ -1961,9 +1961,9 @@ EDGES
   ^defines=matrix/neo/internal/server/memory_routes.go
 
 NODE id=matrix/neo/internal/server.WorkspaceRoot kind=func
-  digest=b3:73d4e09d9ed1b34d7f10345b82bc674bfcead4aaa89a0c5983364d0a270ace68 file=neo/internal/server/workspace.go range=63:76 lang=go exported=true byte_range=2069:2599
+  digest=b3:c37401eddafc70ce934c9c973b1c931c6adb9a494c60b1c32390ee3fa35d2aad file=neo/internal/server/workspace.go range=63:79 lang=go exported=true byte_range=2069:2857
   sig=func WorkspaceRoot(override string) string
-  doc=WorkspaceRoot resolves the VM workspace root: an explicit override wins,\nelse the persisted /workspace (= /data/workspace in prod, matching the fs\nand exec tools' default), else "" (workbench surface disabled).
+  doc=WorkspaceRoot resolves the VM workspace root: an explicit override wins,\nelse the persisted /workspace (= /data/workspace in prod, matching the fs\nand exec tools' default), else "" (workbench surface disabled). The result\nis always symlink-resolved: prod's /workspace is a symlink to\n/data/workspace, and filepath.WalkDir does not follow a symlink root — an\nunresolved root makes every tree listing come back empty.
 EDGES
   ^defines=matrix/neo/internal/server/workspace.go
 
@@ -2047,7 +2047,7 @@ EDGES
   ^defines=matrix/neo/internal/server/surface.go
 
 NODE id=matrix/neo/internal/server.artifactEnvelope kind=type
-  digest=b3:b9c8eb89d81bc450f5d3ebd1a71c870adaf227bd191f288a6f675b1029d079ec file=neo/internal/server/engine.go range=1168:1174 lang=go exported=false byte_range=49403:49731
+  digest=b3:b9c8eb89d81bc450f5d3ebd1a71c870adaf227bd191f288a6f675b1029d079ec file=neo/internal/server/engine.go range=1168:1174 lang=go exported=false byte_range=49424:49752
   sig=type artifactEnvelope struct {\n	OK		bool			`json:"ok"`\n	Artifact	*artifactPayload	`json:"artifact"`\n}
   doc=artifactEnvelope lets a tool advertise its artifact either at the top level\n({ok,kind,url,...}) or nested under an "artifact" key ({ok:true,artifact:{…}}),\nmatching the two shapes tools actually emit.
 EDGES
@@ -2055,19 +2055,19 @@ EDGES
   ^defines=matrix/neo/internal/server/engine.go
 
 NODE id=matrix/neo/internal/server.artifactEnvelope#Artifact kind=field
-  digest=b3:a74f0d77d80ab88bbb749186d9818c89a08d119b6b5690723b5ef434c548661d file=neo/internal/server/engine.go range=1173:1173 lang=go exported=true byte_range=49686:49729
+  digest=b3:a74f0d77d80ab88bbb749186d9818c89a08d119b6b5690723b5ef434c548661d file=neo/internal/server/engine.go range=1173:1173 lang=go exported=true byte_range=49707:49750
   sig=*server.artifactPayload
 EDGES
   ^contains=matrix/neo/internal/server.artifactEnvelope
 
 NODE id=matrix/neo/internal/server.artifactEnvelope#OK kind=field
-  digest=b3:398515341a4f4ea638e198608998d7a5ede29ea08aacf7630067a3d20db3c7e5 file=neo/internal/server/engine.go range=1172:1172 lang=go exported=true byte_range=49647:49684
+  digest=b3:398515341a4f4ea638e198608998d7a5ede29ea08aacf7630067a3d20db3c7e5 file=neo/internal/server/engine.go range=1172:1172 lang=go exported=true byte_range=49668:49705
   sig=bool
 EDGES
   ^contains=matrix/neo/internal/server.artifactEnvelope
 
 NODE id=matrix/neo/internal/server.artifactPayload kind=type
-  digest=b3:3bc41ab3d8c83f1d4e173e55544b0b486ef9540f5861a5a2e380e76a46936621 file=neo/internal/server/engine.go range=1154:1166 lang=go exported=false byte_range=48845:49401
+  digest=b3:3bc41ab3d8c83f1d4e173e55544b0b486ef9540f5861a5a2e380e76a46936621 file=neo/internal/server/engine.go range=1154:1166 lang=go exported=false byte_range=48866:49422
   sig=type artifactPayload struct {\n	OK	bool	`json:"ok"`\n	Kind	string	`json:"kind"`\n	URL	string	`json:"url"`\n	MIME	string	`json:"mime"`\n	Name	string	`json:"name"`\n	Size	int64	`json:"size"`\n	Preview	string	`json:"preview"`\n}
   doc=artifactPayload is a deliverable hand-off (F6): a downloadable file/archive\nor a deployed-site URL the client renders as an in-app card. Kind is one of\n"file" | "archive" | "site" (image/video stay on the media plane). URL is a\ncontent-addressed / public ref into object storage — never inline bytes.
 EDGES
@@ -2075,49 +2075,49 @@ EDGES
   ^defines=matrix/neo/internal/server/engine.go
 
 NODE id=matrix/neo/internal/server.artifactPayload#Kind kind=field
-  digest=b3:13314b26776e3f881eaa28d4b3b597a33435571c07a49725f8ed1040a4c9b161 file=neo/internal/server/engine.go range=1160:1160 lang=go exported=true byte_range=49219:49247
+  digest=b3:13314b26776e3f881eaa28d4b3b597a33435571c07a49725f8ed1040a4c9b161 file=neo/internal/server/engine.go range=1160:1160 lang=go exported=true byte_range=49240:49268
   sig=string
 EDGES
   ^contains=matrix/neo/internal/server.artifactPayload
 
 NODE id=matrix/neo/internal/server.artifactPayload#MIME kind=field
-  digest=b3:980d15a7a860baee8994ae208df26c8f9f5f128913be4de8a3f2170edf4dd3d2 file=neo/internal/server/engine.go range=1162:1162 lang=go exported=true byte_range=49278:49306
+  digest=b3:980d15a7a860baee8994ae208df26c8f9f5f128913be4de8a3f2170edf4dd3d2 file=neo/internal/server/engine.go range=1162:1162 lang=go exported=true byte_range=49299:49327
   sig=string
 EDGES
   ^contains=matrix/neo/internal/server.artifactPayload
 
 NODE id=matrix/neo/internal/server.artifactPayload#Name kind=field
-  digest=b3:794a1ede203fe985a48518448e5f8659b78a74b26db55472037cd4f60e2527d8 file=neo/internal/server/engine.go range=1163:1163 lang=go exported=true byte_range=49308:49336
+  digest=b3:794a1ede203fe985a48518448e5f8659b78a74b26db55472037cd4f60e2527d8 file=neo/internal/server/engine.go range=1163:1163 lang=go exported=true byte_range=49329:49357
   sig=string
 EDGES
   ^contains=matrix/neo/internal/server.artifactPayload
 
 NODE id=matrix/neo/internal/server.artifactPayload#OK kind=field
-  digest=b3:71812a315d3003723003baf616f1bb0bff6f7b9be4c48752ab74c116bae038c8 file=neo/internal/server/engine.go range=1159:1159 lang=go exported=true byte_range=49191:49217
+  digest=b3:71812a315d3003723003baf616f1bb0bff6f7b9be4c48752ab74c116bae038c8 file=neo/internal/server/engine.go range=1159:1159 lang=go exported=true byte_range=49212:49238
   sig=bool
 EDGES
   ^contains=matrix/neo/internal/server.artifactPayload
 
 NODE id=matrix/neo/internal/server.artifactPayload#Preview kind=field
-  digest=b3:e1c4ec0752b9b7e9d95bd21ce019ffcb73fafd27b088c6f81330b73f60012c28 file=neo/internal/server/engine.go range=1165:1165 lang=go exported=true byte_range=49368:49399
+  digest=b3:e1c4ec0752b9b7e9d95bd21ce019ffcb73fafd27b088c6f81330b73f60012c28 file=neo/internal/server/engine.go range=1165:1165 lang=go exported=true byte_range=49389:49420
   sig=string
 EDGES
   ^contains=matrix/neo/internal/server.artifactPayload
 
 NODE id=matrix/neo/internal/server.artifactPayload#Size kind=field
-  digest=b3:b5cf874e46051f2acb5027f601d7b7c7d32376b75184cbb4729788b3732367d5 file=neo/internal/server/engine.go range=1164:1164 lang=go exported=true byte_range=49338:49366
+  digest=b3:b5cf874e46051f2acb5027f601d7b7c7d32376b75184cbb4729788b3732367d5 file=neo/internal/server/engine.go range=1164:1164 lang=go exported=true byte_range=49359:49387
   sig=int64
 EDGES
   ^contains=matrix/neo/internal/server.artifactPayload
 
 NODE id=matrix/neo/internal/server.artifactPayload#URL kind=field
-  digest=b3:456d11d92dd5ecc1d9c161724fe7cc6c6396185aead5eabf2a4b6df964210f36 file=neo/internal/server/engine.go range=1161:1161 lang=go exported=true byte_range=49249:49276
+  digest=b3:456d11d92dd5ecc1d9c161724fe7cc6c6396185aead5eabf2a4b6df964210f36 file=neo/internal/server/engine.go range=1161:1161 lang=go exported=true byte_range=49270:49297
   sig=string
 EDGES
   ^contains=matrix/neo/internal/server.artifactPayload
 
 NODE id=matrix/neo/internal/server.askWaitTimeout kind=const
-  digest=b3:e19cee83cf65df3bab843a12956a1404fcaf3517c3c461d21f0da87e5cf754db file=neo/internal/server/engine.go range=605:609 lang=go exported=false byte_range=28188:28532
+  digest=b3:e19cee83cf65df3bab843a12956a1404fcaf3517c3c461d21f0da87e5cf754db file=neo/internal/server/engine.go range=605:609 lang=go exported=false byte_range=28209:28553
   sig=time.Duration
   doc=askWaitTimeout bounds how long a parked Ask waits for a human answer before\nit expires and the agent is told to proceed without it (still inside the\nrun's own 20-minute ceiling). Long enough for a deliberate human decision\n(read a tx, pick an option), short enough not to wedge a run forever.
 EDGES
@@ -2175,7 +2175,7 @@ EDGES
   ^defines=matrix/neo/internal/server/automatrix_wake.go
 
 NODE id=matrix/neo/internal/server.automatrixCompleteEvent kind=const
-  digest=b3:f3bc720663c1fd36f629543b84df7db1a88cdef3cbeea126d6b9865368d1ce00 file=neo/internal/server/engine.go range=940:946 lang=go exported=false byte_range=40717:41216
+  digest=b3:f3bc720663c1fd36f629543b84df7db1a88cdef3cbeea126d6b9865368d1ce00 file=neo/internal/server/engine.go range=940:946 lang=go exported=false byte_range=40738:41237
   sig=untyped string
   doc=automatrixCompleteEvent is the broker event type announcing that Neo finished\nan unprompted opportunity (req 6.1). It carries the RESULT, not the protocol\n(no Chronos/alarm/marker/cortex jargon — the consumer rule, req 6.5): the\nopportunity summary, a result summary, the conversation it belongs to, the\ncreated_at, the unread flag, and the durable record id. The client renders it\nas an Automatrix inbox item / unread badge.
 EDGES
@@ -3711,21 +3711,21 @@ EDGES
   ^defines=matrix/neo/internal/server/surface.go
 
 NODE id=matrix/neo/internal/server.hashBytes kind=func
-  digest=b3:8003935207859021c71fc1caa72bc666e85231b08e6ab9188b35ffe4fe1dddde file=neo/internal/server/workspace.go range=158:162 lang=go exported=false byte_range=5154:5322
+  digest=b3:8003935207859021c71fc1caa72bc666e85231b08e6ab9188b35ffe4fe1dddde file=neo/internal/server/workspace.go range=171:175 lang=go exported=false byte_range=5747:5915
   sig=func hashBytes(b []byte) string
   doc=hashBytes is the file version stamp: sha256 hex over the exact bytes.
 EDGES
   ^defines=matrix/neo/internal/server/workspace.go
 
 NODE id=matrix/neo/internal/server.hashFile kind=func
-  digest=b3:46d4bf1c2f3cc8cf7b668f8bccd24ab8291ed618460dd0f4c3ed9f10ece8a88e file=neo/internal/server/workspace.go range=164:177 lang=go exported=false byte_range=5324:5668
+  digest=b3:46d4bf1c2f3cc8cf7b668f8bccd24ab8291ed618460dd0f4c3ed9f10ece8a88e file=neo/internal/server/workspace.go range=177:190 lang=go exported=false byte_range=5917:6261
   sig=func hashFile(abs string) (string, error)
   doc=hashFile stamps the file's CURRENT full content; ("", os.ErrNotExist) for a\nmissing file.
 EDGES
   ^defines=matrix/neo/internal/server/workspace.go
 
 NODE id=matrix/neo/internal/server.humanizeTool kind=func
-  digest=b3:d608eafc8ce644864a775912fb123a896df298ff0816507977446621dd9576c5 file=neo/internal/server/engine.go range=1224:1229 lang=go exported=false byte_range=51363:51515
+  digest=b3:d608eafc8ce644864a775912fb123a896df298ff0816507977446621dd9576c5 file=neo/internal/server/engine.go range=1224:1229 lang=go exported=false byte_range=51384:51536
   sig=func humanizeTool(name string) string
 EDGES
   ^defines=matrix/neo/internal/server/engine.go
@@ -3743,7 +3743,7 @@ EDGES
   ^defines=matrix/neo/internal/server/surface.go
 
 NODE id=matrix/neo/internal/server.isSearchTool kind=func
-  digest=b3:5d16320317b6745de38f98d8647043328b82fa30c00eefe615d570b30dca8955 file=neo/internal/server/engine.go range=1092:1094 lang=go exported=false byte_range=47115:47239
+  digest=b3:5d16320317b6745de38f98d8647043328b82fa30c00eefe615d570b30dca8955 file=neo/internal/server/engine.go range=1092:1094 lang=go exported=false byte_range=47136:47260
   sig=func isSearchTool(name string) bool
 EDGES
   ^defines=matrix/neo/internal/server/engine.go
@@ -3946,7 +3946,7 @@ EDGES
   ^defines=matrix/neo/internal/server/media_filmstrip.go
 
 NODE id=matrix/neo/internal/server.mediaPayload kind=type
-  digest=b3:79edb0fbb11690ebe2a13c47c98f5554f5c4cefd76cda70a2389ccd0d9aa6a7f file=neo/internal/server/engine.go range=1129:1136 lang=go exported=false byte_range=48155:48408
+  digest=b3:79edb0fbb11690ebe2a13c47c98f5554f5c4cefd76cda70a2389ccd0d9aa6a7f file=neo/internal/server/engine.go range=1129:1136 lang=go exported=false byte_range=48176:48429
   sig=type mediaPayload struct {\n	OK	bool	`json:"ok"`\n	Kind	string	`json:"kind"`\n	URL	string	`json:"url"`\n	MIME	string	`json:"mime"`\n	Prompt	string	`json:"prompt"`\n}
   doc=mediaPayload mirrors the media MCP tool's JSON result for image/video output.
 EDGES
@@ -3954,31 +3954,31 @@ EDGES
   ^defines=matrix/neo/internal/server/engine.go
 
 NODE id=matrix/neo/internal/server.mediaPayload#Kind kind=field
-  digest=b3:53d674b04434eee799fb7f8902418d38f732797ac9a5cc27e4f4ddba9b0760e3 file=neo/internal/server/engine.go range=1132:1132 lang=go exported=true byte_range=48291:48318
+  digest=b3:53d674b04434eee799fb7f8902418d38f732797ac9a5cc27e4f4ddba9b0760e3 file=neo/internal/server/engine.go range=1132:1132 lang=go exported=true byte_range=48312:48339
   sig=string
 EDGES
   ^contains=matrix/neo/internal/server.mediaPayload
 
 NODE id=matrix/neo/internal/server.mediaPayload#MIME kind=field
-  digest=b3:a8088e8dcfe27b3c05ca45710b88e22427f47181afb8f260e238f9097c7b1a5b file=neo/internal/server/engine.go range=1134:1134 lang=go exported=true byte_range=48348:48375
+  digest=b3:a8088e8dcfe27b3c05ca45710b88e22427f47181afb8f260e238f9097c7b1a5b file=neo/internal/server/engine.go range=1134:1134 lang=go exported=true byte_range=48369:48396
   sig=string
 EDGES
   ^contains=matrix/neo/internal/server.mediaPayload
 
 NODE id=matrix/neo/internal/server.mediaPayload#OK kind=field
-  digest=b3:14520141200ddedef77bce80a268db45090e465eb2262eabc69449b91ec0394e file=neo/internal/server/engine.go range=1131:1131 lang=go exported=true byte_range=48264:48289
+  digest=b3:14520141200ddedef77bce80a268db45090e465eb2262eabc69449b91ec0394e file=neo/internal/server/engine.go range=1131:1131 lang=go exported=true byte_range=48285:48310
   sig=bool
 EDGES
   ^contains=matrix/neo/internal/server.mediaPayload
 
 NODE id=matrix/neo/internal/server.mediaPayload#Prompt kind=field
-  digest=b3:8dda2331c1a7427bcf635278a8118e6c80275cff8fdd556de919edfb993194c0 file=neo/internal/server/engine.go range=1135:1135 lang=go exported=true byte_range=48377:48406
+  digest=b3:8dda2331c1a7427bcf635278a8118e6c80275cff8fdd556de919edfb993194c0 file=neo/internal/server/engine.go range=1135:1135 lang=go exported=true byte_range=48398:48427
   sig=string
 EDGES
   ^contains=matrix/neo/internal/server.mediaPayload
 
 NODE id=matrix/neo/internal/server.mediaPayload#URL kind=field
-  digest=b3:91f2b0f2e9a23da2c3dc404bf5cf29e11b56506c40f2d40c8d7a443aa7aa5ece file=neo/internal/server/engine.go range=1133:1133 lang=go exported=true byte_range=48320:48346
+  digest=b3:91f2b0f2e9a23da2c3dc404bf5cf29e11b56506c40f2d40c8d7a443aa7aa5ece file=neo/internal/server/engine.go range=1133:1133 lang=go exported=true byte_range=48341:48367
   sig=string
 EDGES
   ^contains=matrix/neo/internal/server.mediaPayload
@@ -4016,7 +4016,7 @@ EDGES
   ^defines=matrix/neo/internal/server/media.go
 
 NODE id=matrix/neo/internal/server.neoSurfaceSink kind=type
-  digest=b3:a79eb0ef8b9d65b2cd145f939110d6d317d1fc7e406f0f872451e33543d9833e file=neo/internal/server/engine.go range=556:563 lang=go exported=false byte_range=26143:26439
+  digest=b3:a79eb0ef8b9d65b2cd145f939110d6d317d1fc7e406f0f872451e33543d9833e file=neo/internal/server/engine.go range=556:563 lang=go exported=false byte_range=26164:26460
   sig=type neoSurfaceSink struct {\n	e	*Engine\n	runID	string\n}
   doc=neoSurfaceSink adapts the engine's per-run event broker to the construct\ntransport EventSink interface, so the Construct emit logic stays\nsingle-source (transport.EmitSurface validates the surface + builds the\nevent fields).
 EDGES
@@ -4024,19 +4024,19 @@ EDGES
   ^defines=matrix/neo/internal/server/engine.go
 
 NODE id=matrix/neo/internal/server.neoSurfaceSink#e kind=field
-  digest=b3:a848e6ae1b48b868162971a283307a0cdb8ca6d8662e17282828cb8ea9f89b05 file=neo/internal/server/engine.go range=561:561 lang=go exported=false byte_range=26410:26423
+  digest=b3:a848e6ae1b48b868162971a283307a0cdb8ca6d8662e17282828cb8ea9f89b05 file=neo/internal/server/engine.go range=561:561 lang=go exported=false byte_range=26431:26444
   sig=*server.Engine
 EDGES
   ^contains=matrix/neo/internal/server.neoSurfaceSink
 
 NODE id=matrix/neo/internal/server.neoSurfaceSink#runID kind=field
-  digest=b3:124a615d153742899c42f110e4d3dbf87cee53a12b8696f08c49aa2e3ee4b984 file=neo/internal/server/engine.go range=562:562 lang=go exported=false byte_range=26425:26437
+  digest=b3:124a615d153742899c42f110e4d3dbf87cee53a12b8696f08c49aa2e3ee4b984 file=neo/internal/server/engine.go range=562:562 lang=go exported=false byte_range=26446:26458
   sig=string
 EDGES
   ^contains=matrix/neo/internal/server.neoSurfaceSink
 
 NODE id=matrix/neo/internal/server.neoSurfaceSink.Event kind=method
-  digest=b3:c82eb0ea4416304943bd89554b1f077a6c2e556feb636a4c3282e6e949e6ab22 file=neo/internal/server/engine.go range=565:567 lang=go exported=true byte_range=26441:26573
+  digest=b3:c82eb0ea4416304943bd89554b1f077a6c2e556feb636a4c3282e6e949e6ab22 file=neo/internal/server/engine.go range=565:567 lang=go exported=true byte_range=26462:26594
   sig=func (s neoSurfaceSink) Event(typ, phase string, fields map[string]interface{})
 EDGES
   ^contains=matrix/neo/internal/server.neoSurfaceSink
@@ -4186,7 +4186,7 @@ EDGES
   ^defines=matrix/neo/internal/server/automatrix_governor.go
 
 NODE id=matrix/neo/internal/server.parseArtifact kind=func
-  digest=b3:c61e78ca3d7c4db26f93f9135169cc1ce2bfefd2f35f24abc7a65ea4142cb39f file=neo/internal/server/engine.go range=1182:1209 lang=go exported=false byte_range=49974:51043
+  digest=b3:c61e78ca3d7c4db26f93f9135169cc1ce2bfefd2f35f24abc7a65ea4142cb39f file=neo/internal/server/engine.go range=1182:1209 lang=go exported=false byte_range=49995:51064
   sig=func parseArtifact(raw string) (artifactPayload, bool)
   doc=parseArtifact recognises a successful artifact-tool result. It accepts both\nthe nested ({ok:true,artifact:{kind,url,…}}) and the flat ({ok,kind,url,…})\nshapes, requires a deliverable kind + a URL ref, and never matches a media or\nsearch result (kind gating). Returns (payload, false) on any other shape so\nthe additive event is emitted ONLY for genuine deliverables.
 EDGES
@@ -4221,14 +4221,14 @@ EDGES
   ^defines=matrix/neo/internal/server/server.go
 
 NODE id=matrix/neo/internal/server.parseMedia kind=func
-  digest=b3:8cdd8132b13acc81244cdf3a536733113dd51eb8892bd72f71965fcd5b8b6c35 file=neo/internal/server/engine.go range=1138:1152 lang=go exported=false byte_range=48410:48843
+  digest=b3:8cdd8132b13acc81244cdf3a536733113dd51eb8892bd72f71965fcd5b8b6c35 file=neo/internal/server/engine.go range=1138:1152 lang=go exported=false byte_range=48431:48864
   sig=func parseMedia(raw string) (mediaPayload, bool)
   doc=parseMedia recognises a successful media-tool result ({ok:true, kind, url}).
 EDGES
   ^defines=matrix/neo/internal/server/engine.go
 
 NODE id=matrix/neo/internal/server.parseSearch kind=func
-  digest=b3:8c44cd93ef399bdcc7bd54dc1a82814f5f72e489c2edf7574f33efd69eb45f46 file=neo/internal/server/engine.go range=1111:1127 lang=go exported=false byte_range=47716:48153
+  digest=b3:8c44cd93ef399bdcc7bd54dc1a82814f5f72e489c2edf7574f33efd69eb45f46 file=neo/internal/server/engine.go range=1111:1127 lang=go exported=false byte_range=47737:48174
   sig=func parseSearch(raw string) (searchPayload, bool)
 EDGES
   ^defines=matrix/neo/internal/server/engine.go
@@ -4254,7 +4254,7 @@ EDGES
   ^defines=matrix/neo/internal/server/server.go
 
 NODE id=matrix/neo/internal/server.profileRefreshTTL kind=const
-  digest=b3:31b033a726a60c5d207365117126da0e50383c303e21cee20e6c4f5b1b8275f6 file=neo/internal/server/engine.go range=1231:1236 lang=go exported=false byte_range=51517:51935
+  digest=b3:31b033a726a60c5d207365117126da0e50383c303e21cee20e6c4f5b1b8275f6 file=neo/internal/server/engine.go range=1231:1236 lang=go exported=false byte_range=51538:51956
   sig=time.Duration
   doc=profileRefreshTTL bounds how long a fetched profile is reused before a\nsession rebuild re-fetches it. Short enough that a Settings edit (req 8.2)\nreflects on the next conversation/respawn; long enough that a burst of\nrespawns doesn't hammer the daemon. A failed fetch also stamps the clock,\nso an unreachable daemon backs off instead of retrying every rebuild.
 EDGES
@@ -4456,8 +4456,15 @@ NODE id=matrix/neo/internal/server.requestIntentID kind=func
 EDGES
   ^defines=matrix/neo/internal/server/observability.go
 
+NODE id=matrix/neo/internal/server.resolveWorkspaceDir kind=func
+  digest=b3:501f74f56d4e4f71dbd3b9d3a6b573a8f35e128089c2cedf5104d3ff0758bae8 file=neo/internal/server/workspace.go range=81:89 lang=go exported=false byte_range=2859:3192
+  sig=func resolveWorkspaceDir(dir string) string
+  doc=resolveWorkspaceDir canonicalizes a workspace root through any symlinks; an\nunresolvable path passes through unchanged (dev-box overrides may not exist\nyet).
+EDGES
+  ^defines=matrix/neo/internal/server/workspace.go
+
 NODE id=matrix/neo/internal/server.resolveWorkspacePath kind=func
-  digest=b3:a790b1adf19259e47a06b888cb9287be6e2af05fd8137b55849811cd1bde034e file=neo/internal/server/workspace.go range=85:105 lang=go exported=false byte_range=2782:3556
+  digest=b3:a790b1adf19259e47a06b888cb9287be6e2af05fd8137b55849811cd1bde034e file=neo/internal/server/workspace.go range=98:118 lang=go exported=false byte_range=3375:4149
   sig=func resolveWorkspacePath(root, path string) (string, error)
   doc=resolveWorkspacePath is the ONE path seam every workspace handler routes\nthrough (the cody edit.Rel posture): it joins a workspace-relative OR\nabsolute path against root and refuses anything that resolves outside it,\nso `../`, absolute out-of-root, and symlink-free traversal games never\nreach the filesystem beyond the project root.
 EDGES
@@ -4625,7 +4632,7 @@ EDGES
   ^defines=matrix/neo/internal/server/media_vault.go
 
 NODE id=matrix/neo/internal/server.searchPayload kind=type
-  digest=b3:a70c5b5ec865f120cd80de09efe1dd769118bddbf1fdbf0a86b1a6df84e0147a file=neo/internal/server/engine.go range=1096:1109 lang=go exported=false byte_range=47241:47714
+  digest=b3:a70c5b5ec865f120cd80de09efe1dd769118bddbf1fdbf0a86b1a6df84e0147a file=neo/internal/server/engine.go range=1096:1109 lang=go exported=false byte_range=47262:47735
   sig=type searchPayload struct {\n	Tool		string	`json:"tool"`\n	Provider	string	`json:"provider"`\n	Query		string	`json:"query"`\n	Answer		string	`json:"answer"`\n	Results		[]struct {\n		Title		string	`json:"title"`\n		URL		string	`json:"url"`\n		Snippet		string	`json:"snippet"`\n		Published	string	`json:"published"`\n	}	`json:"results"`\n	OK	*bool	`json:"ok"`	// present (false) only on a structured error\n}
   doc=searchPayload mirrors the web-search MCP tool's JSON result.
 EDGES
@@ -4633,43 +4640,43 @@ EDGES
   ^defines=matrix/neo/internal/server/engine.go
 
 NODE id=matrix/neo/internal/server.searchPayload#Answer kind=field
-  digest=b3:f65a05d7d46b7464cf3a33a2f5bfda9a68664d6b39581df52b5ba921714fd0aa file=neo/internal/server/engine.go range=1101:1101 lang=go exported=true byte_range=47432:47463
+  digest=b3:f65a05d7d46b7464cf3a33a2f5bfda9a68664d6b39581df52b5ba921714fd0aa file=neo/internal/server/engine.go range=1101:1101 lang=go exported=true byte_range=47453:47484
   sig=string
 EDGES
   ^contains=matrix/neo/internal/server.searchPayload
 
 NODE id=matrix/neo/internal/server.searchPayload#OK kind=field
-  digest=b3:fc1015f9edf7094fb60fe9d2cb85bb932e99bb6847595c4e5e739c3124f96f26 file=neo/internal/server/engine.go range=1108:1108 lang=go exported=true byte_range=47646:47666
+  digest=b3:fc1015f9edf7094fb60fe9d2cb85bb932e99bb6847595c4e5e739c3124f96f26 file=neo/internal/server/engine.go range=1108:1108 lang=go exported=true byte_range=47667:47687
   sig=*bool
 EDGES
   ^contains=matrix/neo/internal/server.searchPayload
 
 NODE id=matrix/neo/internal/server.searchPayload#Provider kind=field
-  digest=b3:be63380a971617a23b2a802f7fba2bb096e4fedb0264c05c916e1f8f6b40f580 file=neo/internal/server/engine.go range=1099:1099 lang=go exported=true byte_range=47365:47398
+  digest=b3:be63380a971617a23b2a802f7fba2bb096e4fedb0264c05c916e1f8f6b40f580 file=neo/internal/server/engine.go range=1099:1099 lang=go exported=true byte_range=47386:47419
   sig=string
 EDGES
   ^contains=matrix/neo/internal/server.searchPayload
 
 NODE id=matrix/neo/internal/server.searchPayload#Query kind=field
-  digest=b3:14fe9f8059db74c55411f6754d6b17507f418f942461142c2762abb46e27ac0e file=neo/internal/server/engine.go range=1100:1100 lang=go exported=true byte_range=47400:47430
+  digest=b3:14fe9f8059db74c55411f6754d6b17507f418f942461142c2762abb46e27ac0e file=neo/internal/server/engine.go range=1100:1100 lang=go exported=true byte_range=47421:47451
   sig=string
 EDGES
   ^contains=matrix/neo/internal/server.searchPayload
 
 NODE id=matrix/neo/internal/server.searchPayload#Results kind=field
-  digest=b3:7890e012da68f7a6ddab6a75e4a94af0b1a450cea402e64404d22955be04c8f1 file=neo/internal/server/engine.go range=1102:1107 lang=go exported=true byte_range=47465:47644
+  digest=b3:7890e012da68f7a6ddab6a75e4a94af0b1a450cea402e64404d22955be04c8f1 file=neo/internal/server/engine.go range=1102:1107 lang=go exported=true byte_range=47486:47665
   sig=[]struct{Title string "json:\\"title\\""; URL string "json:\\"url\\""; Snippet string "json:\\"snippet\\""; Published string "json:\\"published\\""}
 EDGES
   ^contains=matrix/neo/internal/server.searchPayload
 
 NODE id=matrix/neo/internal/server.searchPayload#Tool kind=field
-  digest=b3:49a25aced35b23a8545624d52b9b0f037294ce26d13224a25b79497b1a53c04f file=neo/internal/server/engine.go range=1098:1098 lang=go exported=true byte_range=47334:47363
+  digest=b3:49a25aced35b23a8545624d52b9b0f037294ce26d13224a25b79497b1a53c04f file=neo/internal/server/engine.go range=1098:1098 lang=go exported=true byte_range=47355:47384
   sig=string
 EDGES
   ^contains=matrix/neo/internal/server.searchPayload
 
 NODE id=matrix/neo/internal/server.searchPayload.cards kind=method
-  digest=b3:a7cf3f4f8f316717d909e8252abccf7490092be192f320051575c9d6bae7e2a4 file=neo/internal/server/engine.go range=1211:1222 lang=go exported=false byte_range=51045:51361
+  digest=b3:a7cf3f4f8f316717d909e8252abccf7490092be192f320051575c9d6bae7e2a4 file=neo/internal/server/engine.go range=1211:1222 lang=go exported=false byte_range=51066:51382
   sig=func (s searchPayload) cards() []map[string]interface{}
 EDGES
   ^contains=matrix/neo/internal/server.searchPayload
@@ -6407,7 +6414,7 @@ EDGES
   ^contains=matrix/neo/internal/server.topicState
 
 NODE id=matrix/neo/internal/server.traceWorkspaceTypes kind=var
-  digest=b3:bd80f942da83c0cbbd068d6973ba1befb4f6c141460b496087625750138197c1 file=neo/internal/server/engine.go range=877:909 lang=go exported=false byte_range=38122:39617
+  digest=b3:bd80f942da83c0cbbd068d6973ba1befb4f6c141460b496087625750138197c1 file=neo/internal/server/engine.go range=877:909 lang=go exported=false byte_range=38143:39638
   sig=map[string]bool
   doc=traceWorkspaceTypes is the set of event types that make up the durable "Neo's\nComputer" workspace timeline (F3). Only these are persisted to the sidecar\ntrace store; transient channels (chat.delta, chat.thinking), gate/ask control\nevents, and terminals are NOT — they are either re-derived on reopen or\nirrelevant to the rebuilt workspace. chat.assistant is handled specially in\nrecordTrace (only the non-final "thinking out loud" narration is persisted;\nthe final answer + bubbles come from the durable conversation store).
 EDGES
@@ -6435,7 +6442,7 @@ EDGES
   ^contains=matrix/neo/internal/server.uriBody
 
 NODE id=matrix/neo/internal/server.validArtifactKind kind=func
-  digest=b3:18c730f0621d54342d5cbb791ae37c196bb81f1143b8ba6fb2b0acfd0066021a file=neo/internal/server/engine.go range=1176:1180 lang=go exported=false byte_range=49733:49972
+  digest=b3:18c730f0621d54342d5cbb791ae37c196bb81f1143b8ba6fb2b0acfd0066021a file=neo/internal/server/engine.go range=1176:1180 lang=go exported=false byte_range=49754:49993
   sig=func validArtifactKind(k string) bool
   doc=validArtifactKind gates the deliverable kinds so an artifact result never\ncollides with the media plane (image/video) or a search payload.
 EDGES
@@ -6523,21 +6530,21 @@ EDGES
   ^contains=matrix/neo/internal/server.voiceSessionRequest
 
 NODE id=matrix/neo/internal/server.waitBounded kind=func
-  digest=b3:450481b0d85de3369aedb3b7ae7e710b94fff2c0cfe0040324bfe25e12c811c1 file=neo/internal/server/engine.go range=472:484 lang=go exported=false byte_range=23305:23645
+  digest=b3:450481b0d85de3369aedb3b7ae7e710b94fff2c0cfe0040324bfe25e12c811c1 file=neo/internal/server/engine.go range=472:484 lang=go exported=false byte_range=23326:23666
   sig=func waitBounded(wg *sync.WaitGroup, d time.Duration)
   doc=waitBounded waits for wg up to d, returning early when it drains. Used only\non the shutdown path, where a hung background goroutine must not wedge Close.
 EDGES
   ^defines=matrix/neo/internal/server/engine.go
 
 NODE id=matrix/neo/internal/server.warmScope kind=const
-  digest=b3:f4905dd9a252f89bde475897af3a4999c1fa7aefd4e40f8c351da724d70e8605 file=neo/internal/server/engine.go range=486:489 lang=go exported=false byte_range=23647:23891
+  digest=b3:f4905dd9a252f89bde475897af3a4999c1fa7aefd4e40f8c351da724d70e8605 file=neo/internal/server/engine.go range=486:489 lang=go exported=false byte_range=23668:23912
   sig=untyped string
   doc=warmScope is the sentinel conversation id used only for the warm-on-open\nretrieval. It never becomes a real session (the actor-scoped semantic lanes\nthe warm exercises are conversation-independent).
 EDGES
   ^defines=matrix/neo/internal/server/engine.go
 
 NODE id=matrix/neo/internal/server.warmTimeout kind=const
-  digest=b3:67916b93ff9c71d1627c2dca7f64be039cf19a16c33869f7ebba15077dcf2445 file=neo/internal/server/engine.go range=491:493 lang=go exported=false byte_range=23893:24061
+  digest=b3:67916b93ff9c71d1627c2dca7f64be039cf19a16c33869f7ebba15077dcf2445 file=neo/internal/server/engine.go range=491:493 lang=go exported=false byte_range=23914:24082
   sig=time.Duration
   doc=warmTimeout bounds the background warm so a slow/hung embedder or index load\ncan't leak a goroutine for the process lifetime.
 EDGES
@@ -6556,14 +6563,14 @@ EDGES
   ^defines=matrix/neo/internal/server/swarm.go
 
 NODE id=matrix/neo/internal/server.workspaceRel kind=func
-  digest=b3:29557b554eef507215a6f75c002dea8de58fa2bda2499a2ad1d99e614c3cc976 file=neo/internal/server/workspace.go range=107:124 lang=go exported=false byte_range=3558:4098
+  digest=b3:29557b554eef507215a6f75c002dea8de58fa2bda2499a2ad1d99e614c3cc976 file=neo/internal/server/workspace.go range=120:137 lang=go exported=false byte_range=4151:4691
   sig=func workspaceRel(root, path string) (string, error)
   doc=workspaceRel normalizes path to the clean slash-separated workspace-relative\nform (an absolute in-root path and its relative form normalize identically),\nrejecting escapes via the same seam.
 EDGES
   ^defines=matrix/neo/internal/server/workspace.go
 
 NODE id=matrix/neo/internal/server.workspaceWriteRequest kind=type
-  digest=b3:76e0e03fcfddac37276bf89015108a2620b862f3959a2d53186070d33d2e6bf6 file=neo/internal/server/workspace.go range=442:450 lang=go exported=false byte_range=13634:14024
+  digest=b3:76e0e03fcfddac37276bf89015108a2620b862f3959a2d53186070d33d2e6bf6 file=neo/internal/server/workspace.go range=455:463 lang=go exported=false byte_range=14227:14617
   sig=type workspaceWriteRequest struct {\n	Path		string	`json:"path"`\n	Content		string	`json:"content"`\n	BaseHash	string	`json:"base_hash,omitempty"`\n}
   doc=workspaceWriteRequest is the editable editor's save body. BaseHash, when\nset, is the version the buffer was loaded from: a mismatching current file\nis a 409 (stale) so a concurrent Neo write is DETECTED, never clobbered\nsilently.
 EDGES
@@ -6571,19 +6578,19 @@ EDGES
   ^defines=matrix/neo/internal/server/workspace.go
 
 NODE id=matrix/neo/internal/server.workspaceWriteRequest#BaseHash kind=field
-  digest=b3:a11b4dbe5dbb9dc0ae709558185d5d5a492bbacad8028d0f832e07300e07852f file=neo/internal/server/workspace.go range=449:449 lang=go exported=true byte_range=13978:14022
+  digest=b3:a11b4dbe5dbb9dc0ae709558185d5d5a492bbacad8028d0f832e07300e07852f file=neo/internal/server/workspace.go range=462:462 lang=go exported=true byte_range=14571:14615
   sig=string
 EDGES
   ^contains=matrix/neo/internal/server.workspaceWriteRequest
 
 NODE id=matrix/neo/internal/server.workspaceWriteRequest#Content kind=field
-  digest=b3:68cd68e3b055b8454f2bbd5ea2fbdefba75a3e4d1aa7307568690d29bd9de199 file=neo/internal/server/workspace.go range=448:448 lang=go exported=true byte_range=13944:13976
+  digest=b3:68cd68e3b055b8454f2bbd5ea2fbdefba75a3e4d1aa7307568690d29bd9de199 file=neo/internal/server/workspace.go range=461:461 lang=go exported=true byte_range=14537:14569
   sig=string
 EDGES
   ^contains=matrix/neo/internal/server.workspaceWriteRequest
 
 NODE id=matrix/neo/internal/server.workspaceWriteRequest#Path kind=field
-  digest=b3:873bd65fac82693eb673b98609ba5b01f040afaa740f65499ec7141db553228f file=neo/internal/server/workspace.go range=447:447 lang=go exported=true byte_range=13913:13942
+  digest=b3:873bd65fac82693eb673b98609ba5b01f040afaa740f65499ec7141db553228f file=neo/internal/server/workspace.go range=460:460 lang=go exported=true byte_range=14506:14535
   sig=string
 EDGES
   ^contains=matrix/neo/internal/server.workspaceWriteRequest
@@ -6656,7 +6663,7 @@ EDGES
   ^defines=matrix/neo/internal/server/workspace.go
 
 NODE id=matrix/neo/internal/server.wsTreeEntry kind=type
-  digest=b3:28f138a8bde1a0295f75e4a24f4871727917b930eb4aa2db7a99aed6ce7e5b3b file=neo/internal/server/workspace.go range=78:83 lang=go exported=false byte_range=2601:2780
+  digest=b3:28f138a8bde1a0295f75e4a24f4871727917b930eb4aa2db7a99aed6ce7e5b3b file=neo/internal/server/workspace.go range=91:96 lang=go exported=false byte_range=3194:3373
   sig=type wsTreeEntry struct {\n	Path	string	`json:"path"`\n	Dir	bool	`json:"dir"`\n	Size	int64	`json:"size,omitempty"`\n}
   doc=wsTreeEntry is one row of the workspace tree, depth-first.
 EDGES
@@ -6664,19 +6671,19 @@ EDGES
   ^defines=matrix/neo/internal/server/workspace.go
 
 NODE id=matrix/neo/internal/server.wsTreeEntry#Dir kind=field
-  digest=b3:932eb081647a19d6d6f69b9293b166c9c44c27bcc9a9bedefcc0e1db024ec8a0 file=neo/internal/server/workspace.go range=81:81 lang=go exported=true byte_range=2717:2741
+  digest=b3:932eb081647a19d6d6f69b9293b166c9c44c27bcc9a9bedefcc0e1db024ec8a0 file=neo/internal/server/workspace.go range=94:94 lang=go exported=true byte_range=3310:3334
   sig=bool
 EDGES
   ^contains=matrix/neo/internal/server.wsTreeEntry
 
 NODE id=matrix/neo/internal/server.wsTreeEntry#Path kind=field
-  digest=b3:5dbb695d2bfd17814db36cff0b4ff87a24889546e87d7070a46f4d0da13e0018 file=neo/internal/server/workspace.go range=80:80 lang=go exported=true byte_range=2690:2715
+  digest=b3:5dbb695d2bfd17814db36cff0b4ff87a24889546e87d7070a46f4d0da13e0018 file=neo/internal/server/workspace.go range=93:93 lang=go exported=true byte_range=3283:3308
   sig=string
 EDGES
   ^contains=matrix/neo/internal/server.wsTreeEntry
 
 NODE id=matrix/neo/internal/server.wsTreeEntry#Size kind=field
-  digest=b3:bd1830bc5b0e4409ba49238988b9796572e25b6658ecb04ca7d3a73a8d5f804e file=neo/internal/server/workspace.go range=82:82 lang=go exported=true byte_range=2743:2778
+  digest=b3:bd1830bc5b0e4409ba49238988b9796572e25b6658ecb04ca7d3a73a8d5f804e file=neo/internal/server/workspace.go range=95:95 lang=go exported=true byte_range=3336:3371
   sig=int64
 EDGES
   ^contains=matrix/neo/internal/server.wsTreeEntry
@@ -6743,7 +6750,7 @@ EDGES
   ^contains=matrix/neo/internal/server
 
 NODE id=matrix/neo/internal/server/engine.go kind=file
-  digest=b3:27195df65238e1f363975d5363adf80fa5db7573db35df7baa9f04565b5177b7 file=neo/internal/server/engine.go range=1:1307 lang=go exported=true
+  digest=b3:ed794429fe1450c7f9c8a47f6022c7e144617f8c08da92d4c22d7eb5a6f31209 file=neo/internal/server/engine.go range=1:1307 lang=go exported=true
 EDGES
   defines=matrix/neo/internal/server.Engine,matrix/neo/internal/server.Engine.AutomatrixInbox,matrix/neo/internal/server.Engine.Close,matrix/neo/internal/server.Engine.ResumeOrphanedTasks,matrix/neo/internal/server.Engine.SetBriefGovernor,matrix/neo/internal/server.Engine.StartTelegram,matrix/neo/internal/server.Engine.Vault,matrix/neo/internal/server.Engine.Warm,matrix/neo/internal/server.Engine.Warmed,matrix/neo/internal/server.Engine.activeRunForConv,matrix/neo/internal/server.Engine.approverFor,matrix/neo/internal/server.Engine.claimGate,matrix/neo/internal/server.Engine.coreExecute,matrix/neo/internal/server.Engine.emitAutomatrixComplete,matrix/neo/internal/server.Engine.emitConstructSurface,matrix/neo/internal/server.Engine.emitTodo,matrix/neo/internal/server.Engine.fetchUserProfile,matrix/neo/internal/server.Engine.getRunRecord,matrix/neo/internal/server.Engine.haltAll,matrix/neo/internal/server.Engine.latestRunForConv,matrix/neo/internal/server.Engine.lookupRun,matrix/neo/internal/server.Engine.maybeRefreshProfile,matrix/neo/internal/server.Engine.notifyFor,matrix/neo/internal/server.Engine.profileSnapshot,matrix/neo/internal/server.Engine.publishAudit,matrix/neo/internal/server.Engine.publishMemory,matrix/neo/internal/server.Engine.recordTrace,matrix/neo/internal/server.Engine.registerRun,matrix/neo/internal/server.Engine.respondAsk,matrix/neo/internal/server.Engine.surfaceTool,matrix/neo/internal/server.Engine.unregisterRun,matrix/neo/internal/server.Engine.warmBody,matrix/neo/internal/server.EngineOptions,matrix/neo/internal/server.NewEngine,matrix/neo/internal/server.artifactEnvelope,matrix/neo/internal/server.artifactPayload,matrix/neo/internal/server.askWaitTimeout,matrix/neo/internal/server.automatrixCompleteEvent,matrix/neo/internal/server.humanizeTool,matrix/neo/internal/server.isSearchTool,matrix/neo/internal/server.mediaPayload,matrix/neo/internal/server.neoSurfaceSink,matrix/neo/internal/server.neoSurfaceSink.Event,matrix/neo/internal/server.parseArtifact,matrix/neo/internal/server.parseMedia,matrix/neo/internal/server.parseSearch,matrix/neo/internal/server.profileRefreshTTL,matrix/neo/internal/server.searchPayload,matrix/neo/internal/server.searchPayload.cards,matrix/neo/internal/server.traceWorkspaceTypes,matrix/neo/internal/server.validArtifactKind,matrix/neo/internal/server.waitBounded,matrix/neo/internal/server.warmScope,matrix/neo/internal/server.warmTimeout
   ^contains=matrix/neo/internal/server
@@ -6887,7 +6894,7 @@ EDGES
   ^contains=matrix/neo/internal/server
 
 NODE id=matrix/neo/internal/server/workspace.go kind=file
-  digest=b3:85b60e3898fa123909d6e077cf45130c5000661c9e8ee2a31156e873e816713d file=neo/internal/server/workspace.go range=1:624 lang=go exported=true
+  digest=b3:7131a1d1b4edf7d8c4e4e31dc3652da9a7e4ea3bedbee42aa747c8f719a8c9e8 file=neo/internal/server/workspace.go range=1:637 lang=go exported=true
 EDGES
-  defines=matrix/neo/internal/server.Engine.projectRoot,matrix/neo/internal/server.Engine.reqProjectRoot,matrix/neo/internal/server.Server.handleWorkspace,matrix/neo/internal/server.Server.handleWorkspaceDiff,matrix/neo/internal/server.Server.handleWorkspaceExec,matrix/neo/internal/server.Server.handleWorkspaceFileRead,matrix/neo/internal/server.Server.handleWorkspaceFileWrite,matrix/neo/internal/server.Server.handleWorkspaceRaw,matrix/neo/internal/server.Server.handleWorkspaceTree,matrix/neo/internal/server.Server.handleWorkspaceUpload,matrix/neo/internal/server.WorkspaceRoot,matrix/neo/internal/server.errWorkspaceEscape,matrix/neo/internal/server.hashBytes,matrix/neo/internal/server.hashFile,matrix/neo/internal/server.resolveWorkspacePath,matrix/neo/internal/server.workspaceRel,matrix/neo/internal/server.workspaceWriteRequest,matrix/neo/internal/server.wsDiffOutputCap,matrix/neo/internal/server.wsExecDefaultTimeout,matrix/neo/internal/server.wsExecMaxTimeoutSecs,matrix/neo/internal/server.wsExecOutputCap,matrix/neo/internal/server.wsFileReadCap,matrix/neo/internal/server.wsFileWriteCap,matrix/neo/internal/server.wsSkipDirs,matrix/neo/internal/server.wsTreeEntry,matrix/neo/internal/server.wsTreeMaxEntries
+  defines=matrix/neo/internal/server.Engine.projectRoot,matrix/neo/internal/server.Engine.reqProjectRoot,matrix/neo/internal/server.Server.handleWorkspace,matrix/neo/internal/server.Server.handleWorkspaceDiff,matrix/neo/internal/server.Server.handleWorkspaceExec,matrix/neo/internal/server.Server.handleWorkspaceFileRead,matrix/neo/internal/server.Server.handleWorkspaceFileWrite,matrix/neo/internal/server.Server.handleWorkspaceRaw,matrix/neo/internal/server.Server.handleWorkspaceTree,matrix/neo/internal/server.Server.handleWorkspaceUpload,matrix/neo/internal/server.WorkspaceRoot,matrix/neo/internal/server.errWorkspaceEscape,matrix/neo/internal/server.hashBytes,matrix/neo/internal/server.hashFile,matrix/neo/internal/server.resolveWorkspaceDir,matrix/neo/internal/server.resolveWorkspacePath,matrix/neo/internal/server.workspaceRel,matrix/neo/internal/server.workspaceWriteRequest,matrix/neo/internal/server.wsDiffOutputCap,matrix/neo/internal/server.wsExecDefaultTimeout,matrix/neo/internal/server.wsExecMaxTimeoutSecs,matrix/neo/internal/server.wsExecOutputCap,matrix/neo/internal/server.wsFileReadCap,matrix/neo/internal/server.wsFileWriteCap,matrix/neo/internal/server.wsSkipDirs,matrix/neo/internal/server.wsTreeEntry,matrix/neo/internal/server.wsTreeMaxEntries
   ^contains=matrix/neo/internal/server
