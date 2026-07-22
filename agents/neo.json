@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "agent": "matrix://agent/neo",
-  "description": "Neo front-agent manifest. Human-facing systems are reached through a stable browser, machine-mail, filesystem, and shell substrate; product procedures are skills rather than dedicated integration schemas — except the essential paxeer-net chain/wallet lane (embedded-wallet custody network-side, writes gated by PaxeerSpendPolicy), which is not browser-replaceable and stays a direct tool surface. Autonomous surfaces still structurally exclude value-moving tools. Machine-mail credentials are injected from the encrypted per-user settings vault or inherited from MACHINEMAIL_API_KEY. The exec server's service registry is isolated to /data/neo/services through MATRIX_EXEC_STATE_DIR.",
+  "description": "Neo front-agent manifest. Human-facing systems are reached through a stable browser, machine-mail, filesystem, and shell substrate; product procedures are skills rather than dedicated integration schemas — except the essential paxeer-net chain/wallet lane (embedded-wallet custody network-side, writes gated by PaxeerSpendPolicy) and the media generation lane (image/video/speech through the media bridge, xAI Grok Imagine primary), neither of which is browser-replaceable; both stay direct tool surfaces. Autonomous surfaces still structurally exclude value-moving tools. Machine-mail credentials are injected from the encrypted per-user settings vault or inherited from MACHINEMAIL_API_KEY. The exec server's service registry is isolated to /data/neo/services through MATRIX_EXEC_STATE_DIR.",
   "allowed_side_effects": [
     "read",
     "write",
@@ -376,6 +376,91 @@
           "description": "Restart a supervised service from its recorded command and re-enable autostart. args: name (required).",
           "side_effect_class": "shell",
           "timeout_ms": 30000
+        }
+      ]
+    },
+    {
+      "alias": "media",
+      "transport": "stdio",
+      "command": "node",
+      "args": [
+        "/root/matrix/tools/media/media.mjs"
+      ],
+      "env": [],
+      "package_digest": "sha256:9999999999999999999999999999999999999999999999999999999999999999",
+      "version": "0.1.0",
+      "tools": [
+        {
+          "name": "generate_image",
+          "description": "Generate a NEW image from a text description (text-to-image, xAI Grok Imagine). Writes the result to the agent's media volume and returns {ok, kind:\"image\", url}. The url is surfaced to the user automatically.",
+          "side_effect_class": "network",
+          "timeout_ms": 180000
+        },
+        {
+          "name": "edit_image",
+          "description": "Restyle/transform an EXISTING image with a text instruction (image-to-image, xAI Grok Imagine). image is a /data/media reference or public URL. Returns {ok, kind:\"image\", url}.",
+          "side_effect_class": "network",
+          "timeout_ms": 180000
+        },
+        {
+          "name": "inpaint_image",
+          "description": "Repaint a masked region of an image from a prompt (inpainting). Requires image + mask (white = repaint). Returns {ok, kind:\"image\", url}.",
+          "side_effect_class": "network",
+          "timeout_ms": 180000
+        },
+        {
+          "name": "remove_background",
+          "description": "Remove an image's background, leaving the subject on transparency. image is a /data/media reference or public URL. Returns {ok, kind:\"image\", url}.",
+          "side_effect_class": "network",
+          "timeout_ms": 120000
+        },
+        {
+          "name": "replace_background",
+          "description": "Replace an image's background with a new scene from a text prompt, keeping the subject. Returns {ok, kind:\"image\", url}.",
+          "side_effect_class": "network",
+          "timeout_ms": 120000
+        },
+        {
+          "name": "remove_text",
+          "description": "Erase rendered text/captions/watermarks from an image. image is a /data/media reference or public URL. Returns {ok, kind:\"image\", url}.",
+          "side_effect_class": "network",
+          "timeout_ms": 120000
+        },
+        {
+          "name": "cleanup_image",
+          "description": "Erase a masked object from an image and fill the background (object removal). Requires image + mask (white = erase). Returns {ok, kind:\"image\", url}.",
+          "side_effect_class": "network",
+          "timeout_ms": 120000
+        },
+        {
+          "name": "merge_faces",
+          "description": "Swap the face in a base photo with the face from another image. Requires image (base) + face. Returns {ok, kind:\"image\", url}.",
+          "side_effect_class": "network",
+          "timeout_ms": 120000
+        },
+        {
+          "name": "generate_video",
+          "description": "Generate a short video from a text description (text-to-video, xAI Grok Imagine). Async: blocks until ready (minutes). Returns {ok, kind:\"video\", url}.",
+          "side_effect_class": "network",
+          "timeout_ms": 600000
+        },
+        {
+          "name": "animate_image",
+          "description": "Animate an existing still image into a short video (image-to-video, xAI Grok Imagine). Async: blocks until ready (minutes). Returns {ok, kind:\"video\", url}.",
+          "side_effect_class": "network",
+          "timeout_ms": 600000
+        },
+        {
+          "name": "transcribe_audio",
+          "description": "Transcribe a local wav or mp3 attachment with MiMo speech recognition. audio is the exact /media reference from the user's message; language is auto, zh, or en. Returns {ok, transcript, language}.",
+          "side_effect_class": "network",
+          "timeout_ms": 180000
+        },
+        {
+          "name": "generate_speech",
+          "description": "Convert text into natural-sounding spoken audio with MiMo TTS. Optional voice selects a built-in voice and style gives natural-language performance direction. Novita is used only when MiMo is unavailable. Returns {ok, kind:\"audio\", url}.",
+          "side_effect_class": "network",
+          "timeout_ms": 180000
         }
       ]
     },
