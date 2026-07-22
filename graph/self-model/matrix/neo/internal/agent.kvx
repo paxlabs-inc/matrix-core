@@ -1,7 +1,7 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:5ac81fdac892be34d28825023239c3a50615f11128e72e03399beab71021a727
+# GENERATED gen=codegraph do-not-edit merkle=b3:baa381c1b365d1bf6cfdbddb08fe49e740248e2c003632b70ea72d7d82f25355
 
 NODE id=matrix/neo/internal/agent kind=package
-  digest=b3:c1659302278e4beff52c8f145f6c0715f72c9f537b175de6c8919cefd477fcad file=neo/internal/agent range=0:0 lang=go exported=true
+  digest=b3:56974ad2bad8c7b43cda60c82e63a286042dafe7589c960a80b79bae427cbd85 file=neo/internal/agent range=0:0 lang=go exported=true
 EDGES
   contains=matrix/neo/internal/agent/agent.go,matrix/neo/internal/agent/automatrix.go,matrix/neo/internal/agent/automatrix_surface.go,matrix/neo/internal/agent/capability.go,matrix/neo/internal/agent/cassandra.go,matrix/neo/internal/agent/closechain.go,matrix/neo/internal/agent/compaction.go,matrix/neo/internal/agent/continuous.go,matrix/neo/internal/agent/death.go,matrix/neo/internal/agent/decompose.go,matrix/neo/internal/agent/episodic.go,matrix/neo/internal/agent/epistemic.go,matrix/neo/internal/agent/finish.go,matrix/neo/internal/agent/gate.go,matrix/neo/internal/agent/governor.go,matrix/neo/internal/agent/heartbeat.go,matrix/neo/internal/agent/identity.go,matrix/neo/internal/agent/interview.go,matrix/neo/internal/agent/livetype.go,matrix/neo/internal/agent/morningbrief.go,matrix/neo/internal/agent/narrate.go,matrix/neo/internal/agent/overflow.go,matrix/neo/internal/agent/payload.go,matrix/neo/internal/agent/prediction.go,matrix/neo/internal/agent/premise.go,matrix/neo/internal/agent/prompt.go,matrix/neo/internal/agent/reporter.go,matrix/neo/internal/agent/semantic.go,matrix/neo/internal/agent/signals.go,matrix/neo/internal/agent/taskgraph.go,matrix/neo/internal/agent/turn.go,matrix/neo/internal/agent/voice.go,matrix/neo/internal/agent/web_evidence.go
   ^contains=mod:matrix/neo
@@ -607,7 +607,7 @@ EDGES
   ^defines=matrix/neo/internal/agent/continuous.go
 
 NODE id=matrix/neo/internal/agent.Agent.cmRelevancePush kind=method
-  digest=b3:d714095221e388e4687fe8acd0a316bf23aaa42f5b5900ee413311f48642b48e file=neo/internal/agent/continuous.go range=200:238 lang=go exported=false byte_range=6326:8016
+  digest=b3:a5a74d85b329d2241165a0e5895900006bccecb54a5f79d56a438b3fbfa804e9 file=neo/internal/agent/continuous.go range=200:238 lang=go exported=false byte_range=6326:8229
   sig=func (a *Agent) cmRelevancePush(ctx context.Context, query string) ([]memory.Snippet, string)
   doc=cmRelevancePush is the Q2 first-message relevance push. cortex.Activate's\npushed tiers (Pinned/Timeline/Recent) are recency-based and query-INDEPENDENT\n(activate.go: the query arg is unused), so on the OPENING message the agent\ncarries recency but nothing matched to what the user actually asked unless it\nreactively calls memory_recall. This runs the pager's relevance retrieval\n(semantic HNSW + the always-on salience lane + edge cascade) ONCE, on turn 1\nonly, and returns both the retrieved snippets (so the caller can fold them\ninto the turn's surfaced set for the usage-salience learning loop) and a\nrendered block to append to the activation tail. After turn 1 the pull-not-\npush philosophy resumes (the model pages in the rest via memory_recall).\n\nReturns (nil, "") when disabled, off the first turn, without a pager, or when\nretrieval yields nothing — a pure read, no durable state is touched.
 EDGES
@@ -615,7 +615,7 @@ EDGES
   ^defines=matrix/neo/internal/agent/continuous.go
 
 NODE id=matrix/neo/internal/agent.Agent.cmTrimWorking kind=method
-  digest=b3:2b153071e4ad4ca2a0fde4e72d5f05611a1e9e5898715b41ec37942d7f79c311 file=neo/internal/agent/continuous.go range=398:416 lang=go exported=false byte_range=14224:15029
+  digest=b3:2b153071e4ad4ca2a0fde4e72d5f05611a1e9e5898715b41ec37942d7f79c311 file=neo/internal/agent/continuous.go range=398:416 lang=go exported=false byte_range=14437:15242
   sig=func (a *Agent) cmTrimWorking()
   doc=cmTrimWorking is the continuous-memory replacement for a.compact (retired,\nreq.9.3): it bounds the live in-memory window WITHOUT an LLM summarization\npass, because the older turns are already durable in cortex (task 6.1) and\nthe coarse history is carried by the durable story-so-far (task 4.2), which\nActivate re-surfaces every turn. It keeps the most recent user turns verbatim\nand drops older ones; when the window is a single long turn (no older section\nto carve), it strips dead-weight inline images and keeps a provider-safe tail.
 EDGES
@@ -694,7 +694,7 @@ EDGES
   ^defines=matrix/neo/internal/agent/cassandra.go
 
 NODE id=matrix/neo/internal/agent.Agent.emitMemory kind=method
-  digest=b3:8f1db327d26cbda70ee1f76f86b786112c9f87088bcdd9a55b2e9be097b9fe77 file=neo/internal/agent/continuous.go range=265:294 lang=go exported=false byte_range=9078:10391
+  digest=b3:8f1db327d26cbda70ee1f76f86b786112c9f87088bcdd9a55b2e9be097b9fe77 file=neo/internal/agent/continuous.go range=265:294 lang=go exported=false byte_range=9291:10604
   sig=func (a *Agent) emitMemory(b *cortex.ActivationBundle, triggerClass string, excerpts []memory.EpisodicExcerpt)
   doc=emitMemory hands the harness a legible summary of this turn's activation\nbundle so the client can show the memory Neo carries (task 7.1). Pure\nside-channel: it reads the already-computed read-only bundle, mutates nothing,\nand is a no-op when no observer is wired or there is nothing to show.
 EDGES
@@ -1118,7 +1118,7 @@ EDGES
   ^defines=matrix/neo/internal/agent/agent.go
 
 NODE id=matrix/neo/internal/agent.Agent.renderActivationBundle kind=method
-  digest=b3:775e5d1545f423b2fd31549f1c391b703dbf23c43733f22de9fafdec2acde88c file=neo/internal/agent/continuous.go range=296:374 lang=go exported=false byte_range=10393:13268
+  digest=b3:775e5d1545f423b2fd31549f1c391b703dbf23c43733f22de9fafdec2acde88c file=neo/internal/agent/continuous.go range=296:374 lang=go exported=false byte_range=10606:13481
   sig=func (a *Agent) renderActivationBundle(b *cortex.ActivationBundle) string
   doc=renderActivationBundle renders the cortex.Activate bundle into the trailing\nworking-memory block — the single window law's memory tail (MORPHEUS req.1.3).\nIt frames the block as in-progress reference (never a new instruction — the\nleading line tells the model to continue, not restart), then surfaces the\nstanding objective as background, the Pinned tier (identity, hard constraints,\nactive cortex goals), the durable story-so-far, the T0 timeline and T1 recent\ntiers, and a note that exact specifics page in on demand via memory_recall\n(T3 handles — the pull-over-push philosophy, req.9.5). The transcript slice is\nNOT re-rendered here: the live transcript is the window's middle already.\n\nThe block is delivered by the caller as a USER-role trailing message\n(assembleWindowUserTail) so strict Qwen-derived chat templates accept it (the\nprompt-window portability fix), keeping the byte-stable system prefix at\nindex 0.
 EDGES
@@ -1212,7 +1212,7 @@ EDGES
   ^defines=matrix/neo/internal/agent/payload.go
 
 NODE id=matrix/neo/internal/agent.Agent.systemPrompt kind=method
-  digest=b3:9d28ee3f916d3d3be06e5fbdfa002c77dbbfdc2d4a11fc4abd560f223a81c753 file=neo/internal/agent/prompt.go range=52:241 lang=go exported=false byte_range=2052:26165
+  digest=b3:4a9138157f645dc68e8f0ffffe4b668beb45f7a8756ea104ae6364ae55adf5df file=neo/internal/agent/prompt.go range=52:246 lang=go exported=false byte_range=2052:27688
   sig=func (a *Agent) systemPrompt() string
   doc=systemPrompt is Neo's static behavioral charter — the "normal agent" shape.
 EDGES
@@ -1433,44 +1433,44 @@ EDGES
   ^defines=matrix/neo/internal/agent/death.go
 
 NODE id=matrix/neo/internal/agent.EpisodicMemoryEvent kind=type
-  digest=b3:17b02d1364502d364bdbae56b17b96e51aeaa5812616b579471d6d68e27907b9 file=neo/internal/agent/continuous.go range=252:259 lang=go exported=true byte_range=8602:8875
+  digest=b3:17b02d1364502d364bdbae56b17b96e51aeaa5812616b579471d6d68e27907b9 file=neo/internal/agent/continuous.go range=252:259 lang=go exported=true byte_range=8815:9088
   sig=type EpisodicMemoryEvent struct {\n	ConversationID	string	`json:"conversation_id"`\n	Date		string	`json:"date"`\n	SeqLo		uint64	`json:"seq_lo"`\n	SeqHi		uint64	`json:"seq_hi"`\n	Exact		bool	`json:"exact"`\n	Text		string	`json:"text"`\n}
 EDGES
   contains=matrix/neo/internal/agent.EpisodicMemoryEvent#ConversationID,matrix/neo/internal/agent.EpisodicMemoryEvent#Date,matrix/neo/internal/agent.EpisodicMemoryEvent#Exact,matrix/neo/internal/agent.EpisodicMemoryEvent#SeqHi,matrix/neo/internal/agent.EpisodicMemoryEvent#SeqLo,matrix/neo/internal/agent.EpisodicMemoryEvent#Text
   ^defines=matrix/neo/internal/agent/continuous.go
 
 NODE id=matrix/neo/internal/agent.EpisodicMemoryEvent#ConversationID kind=field
-  digest=b3:eb0907bb2f144c917e76210dd4183af03e8aa1eb70b1476b84e87ca9c49b406a file=neo/internal/agent/continuous.go range=253:253 lang=go exported=true byte_range=8637:8683
+  digest=b3:eb0907bb2f144c917e76210dd4183af03e8aa1eb70b1476b84e87ca9c49b406a file=neo/internal/agent/continuous.go range=253:253 lang=go exported=true byte_range=8850:8896
   sig=string
 EDGES
   ^contains=matrix/neo/internal/agent.EpisodicMemoryEvent
 
 NODE id=matrix/neo/internal/agent.EpisodicMemoryEvent#Date kind=field
-  digest=b3:914c4725cf7a3a016000ccd9ff01bba9cc1a0a36280417af80211c5acdefbf19 file=neo/internal/agent/continuous.go range=254:254 lang=go exported=true byte_range=8685:8720
+  digest=b3:914c4725cf7a3a016000ccd9ff01bba9cc1a0a36280417af80211c5acdefbf19 file=neo/internal/agent/continuous.go range=254:254 lang=go exported=true byte_range=8898:8933
   sig=string
 EDGES
   ^contains=matrix/neo/internal/agent.EpisodicMemoryEvent
 
 NODE id=matrix/neo/internal/agent.EpisodicMemoryEvent#Exact kind=field
-  digest=b3:816e01be575f4f72315413c7dd725462ddc7fd39c3720833b85044b3a0649de1 file=neo/internal/agent/continuous.go range=257:257 lang=go exported=true byte_range=8800:8836
+  digest=b3:816e01be575f4f72315413c7dd725462ddc7fd39c3720833b85044b3a0649de1 file=neo/internal/agent/continuous.go range=257:257 lang=go exported=true byte_range=9013:9049
   sig=bool
 EDGES
   ^contains=matrix/neo/internal/agent.EpisodicMemoryEvent
 
 NODE id=matrix/neo/internal/agent.EpisodicMemoryEvent#SeqHi kind=field
-  digest=b3:fd3bfa603dcf012ddf5f0ef763abdeb947b420c06e0b0a0a386de3248f05363d file=neo/internal/agent/continuous.go range=256:256 lang=go exported=true byte_range=8761:8798
+  digest=b3:fd3bfa603dcf012ddf5f0ef763abdeb947b420c06e0b0a0a386de3248f05363d file=neo/internal/agent/continuous.go range=256:256 lang=go exported=true byte_range=8974:9011
   sig=uint64
 EDGES
   ^contains=matrix/neo/internal/agent.EpisodicMemoryEvent
 
 NODE id=matrix/neo/internal/agent.EpisodicMemoryEvent#SeqLo kind=field
-  digest=b3:f7185d96cf4ea5f5164a6e69944ff26465944e67f2883d750b913cff3f21e176 file=neo/internal/agent/continuous.go range=255:255 lang=go exported=true byte_range=8722:8759
+  digest=b3:f7185d96cf4ea5f5164a6e69944ff26465944e67f2883d750b913cff3f21e176 file=neo/internal/agent/continuous.go range=255:255 lang=go exported=true byte_range=8935:8972
   sig=uint64
 EDGES
   ^contains=matrix/neo/internal/agent.EpisodicMemoryEvent
 
 NODE id=matrix/neo/internal/agent.EpisodicMemoryEvent#Text kind=field
-  digest=b3:74e6444b0e9df106496d55efabd786cb0bce2863feea6d0eca0e13a35217d805 file=neo/internal/agent/continuous.go range=258:258 lang=go exported=true byte_range=8838:8873
+  digest=b3:74e6444b0e9df106496d55efabd786cb0bce2863feea6d0eca0e13a35217d805 file=neo/internal/agent/continuous.go range=258:258 lang=go exported=true byte_range=9051:9086
   sig=string
 EDGES
   ^contains=matrix/neo/internal/agent.EpisodicMemoryEvent
@@ -1597,7 +1597,7 @@ EDGES
   ^defines=matrix/neo/internal/agent/death.go
 
 NODE id=matrix/neo/internal/agent.MemoryEvent kind=type
-  digest=b3:ae4a0e4754a916b97d0d859d8e7c38eaf9b23044484d1057da5c241b0f5a5da1 file=neo/internal/agent/continuous.go range=240:250 lang=go exported=true byte_range=8018:8600
+  digest=b3:ae4a0e4754a916b97d0d859d8e7c38eaf9b23044484d1057da5c241b0f5a5da1 file=neo/internal/agent/continuous.go range=240:250 lang=go exported=true byte_range=8231:8813
   sig=type MemoryEvent struct {\n	StorySoFar	string		// durable rolling summary of this conversation\n	Timeline	[]string	// coarse timeline short-forms, oldest first\n	TriggerClass	string\n	SelectionReason	string\n	Excerpts	[]EpisodicMemoryEvent\n}
   doc=MemoryEvent is the legible, protocol-free view of the memory Neo carries into\na turn (continuous-memory task 7.1, req.10): the durable story-so-far and a\ncoarse timeline of past activity. It deliberately carries NO journal / MMR /\nrollup / snapshot jargon and no raw URIs — only the RESULT a user should see.
 EDGES
@@ -1605,37 +1605,37 @@ EDGES
   ^defines=matrix/neo/internal/agent/continuous.go
 
 NODE id=matrix/neo/internal/agent.MemoryEvent#Excerpts kind=field
-  digest=b3:8ca42e9ec82ae89ebf225f91bcbb4f9ddcd2daa0d846588b37a051e3631441d4 file=neo/internal/agent/continuous.go range=249:249 lang=go exported=true byte_range=8561:8598
+  digest=b3:8ca42e9ec82ae89ebf225f91bcbb4f9ddcd2daa0d846588b37a051e3631441d4 file=neo/internal/agent/continuous.go range=249:249 lang=go exported=true byte_range=8774:8811
   sig=[]agent.EpisodicMemoryEvent
 EDGES
   ^contains=matrix/neo/internal/agent.MemoryEvent
 
 NODE id=matrix/neo/internal/agent.MemoryEvent#SelectionReason kind=field
-  digest=b3:f31fa77d8a32b0086d1e60cdb526fc48b5c440b51809a704f2f1f21199af41f6 file=neo/internal/agent/continuous.go range=248:248 lang=go exported=true byte_range=8537:8559
+  digest=b3:f31fa77d8a32b0086d1e60cdb526fc48b5c440b51809a704f2f1f21199af41f6 file=neo/internal/agent/continuous.go range=248:248 lang=go exported=true byte_range=8750:8772
   sig=string
 EDGES
   ^contains=matrix/neo/internal/agent.MemoryEvent
 
 NODE id=matrix/neo/internal/agent.MemoryEvent#StorySoFar kind=field
-  digest=b3:6f5744a07e69c094b7c42db5c9254493ae2f93dab3d86b024cffe982d1ed2cb5 file=neo/internal/agent/continuous.go range=245:245 lang=go exported=true byte_range=8368:8390
+  digest=b3:6f5744a07e69c094b7c42db5c9254493ae2f93dab3d86b024cffe982d1ed2cb5 file=neo/internal/agent/continuous.go range=245:245 lang=go exported=true byte_range=8581:8603
   sig=string
 EDGES
   ^contains=matrix/neo/internal/agent.MemoryEvent
 
 NODE id=matrix/neo/internal/agent.MemoryEvent#Timeline kind=field
-  digest=b3:f7a3e9ff96badb2685ea468248fa1eebc7a54451d2a2eab127031b5c36e23ae7 file=neo/internal/agent/continuous.go range=246:246 lang=go exported=true byte_range=8442:8466
+  digest=b3:f7a3e9ff96badb2685ea468248fa1eebc7a54451d2a2eab127031b5c36e23ae7 file=neo/internal/agent/continuous.go range=246:246 lang=go exported=true byte_range=8655:8679
   sig=[]string
 EDGES
   ^contains=matrix/neo/internal/agent.MemoryEvent
 
 NODE id=matrix/neo/internal/agent.MemoryEvent#TriggerClass kind=field
-  digest=b3:b603190599023eb1bdeb6a07f94b6c993108b4459491ed41e68f338b70672a9a file=neo/internal/agent/continuous.go range=247:247 lang=go exported=true byte_range=8513:8535
+  digest=b3:b603190599023eb1bdeb6a07f94b6c993108b4459491ed41e68f338b70672a9a file=neo/internal/agent/continuous.go range=247:247 lang=go exported=true byte_range=8726:8748
   sig=string
 EDGES
   ^contains=matrix/neo/internal/agent.MemoryEvent
 
 NODE id=matrix/neo/internal/agent.MemoryObserver kind=type
-  digest=b3:c072419f66bc2e6fc82eaea3b642140f3f27d899ea1b9b3bec0a193adb2177dd file=neo/internal/agent/continuous.go range=261:263 lang=go exported=true byte_range=8877:9076
+  digest=b3:c072419f66bc2e6fc82eaea3b642140f3f27d899ea1b9b3bec0a193adb2177dd file=neo/internal/agent/continuous.go range=261:263 lang=go exported=true byte_range=9090:9289
   sig=type MemoryObserver func(MemoryEvent)
   doc=MemoryObserver receives the per-turn MemoryEvent. nil disables surfacing; the\nagent loop stays oblivious to the presentation layer (mirrors AuditObserver).
 EDGES
@@ -2011,7 +2011,7 @@ EDGES
   ^defines=matrix/neo/internal/agent/overflow.go
 
 NODE id=matrix/neo/internal/agent.assembleWindowUserTail kind=func
-  digest=b3:d4284180fa04716c69c79e07381803c36f9a06da9ffee896ebd28cbb857c598e file=neo/internal/agent/continuous.go range=389:396 lang=go exported=false byte_range=13646:14222
+  digest=b3:d4284180fa04716c69c79e07381803c36f9a06da9ffee896ebd28cbb857c598e file=neo/internal/agent/continuous.go range=389:396 lang=go exported=false byte_range=13859:14435
   sig=func assembleWindowUserTail(stableSystem string, transcript []llm.Message, tail string) []llm.Message
   doc=assembleWindowUserTail is the continuous-memory window assembly: the\nbyte-stable system prefix at index 0, the append-only live transcript, then\nthe rendered Activate bundle as ONE trailing USER-role message (req.9.4 — the\nQwen-template portability fix). The transcript slice is never mutated (the\ninner append allocates a fresh backing array).
 EDGES
@@ -2716,7 +2716,7 @@ EDGES
   ^defines=matrix/neo/internal/agent/prompt.go
 
 NODE id=matrix/neo/internal/agent.groundTruthFor kind=func
-  digest=b3:71b47b91c76d437b4ee886a38b17df6e5e9f4128c876eb120ecae82b24991141 file=neo/internal/agent/prompt.go range=243:248 lang=go exported=false byte_range=26167:26518
+  digest=b3:71b47b91c76d437b4ee886a38b17df6e5e9f4128c876eb120ecae82b24991141 file=neo/internal/agent/prompt.go range=248:253 lang=go exported=false byte_range=27690:28041
   sig=func groundTruthFor(name string) string
   doc=groundTruthFor renders the embedded ground truth for the configured agent\nidentity: the {{AGENT_NAME}} placeholder binds the name from config\n(MORPHEUS req.8) so the grounding can never carry a stale hardcoded name.
 EDGES
@@ -2813,7 +2813,7 @@ EDGES
   ^defines=matrix/neo/internal/agent/payload.go
 
 NODE id=matrix/neo/internal/agent.indentBlock kind=func
-  digest=b3:b14e11d3b8dba322852947f9852d02ef3121f1496c16729ef2ad674023c26a5a file=neo/internal/agent/prompt.go range=250:262 lang=go exported=false byte_range=26520:26934
+  digest=b3:b14e11d3b8dba322852947f9852d02ef3121f1496c16729ef2ad674023c26a5a file=neo/internal/agent/prompt.go range=255:267 lang=go exported=false byte_range=28043:28457
   sig=func indentBlock(s, prefix string) string
   doc=indentBlock prefixes every non-empty line of s with prefix, so an inherited\nmulti-line self-model block nests cleanly under its bullet in a sub-agent's\ncharter.
 EDGES
@@ -3583,7 +3583,7 @@ EDGES
   ^defines=matrix/neo/internal/agent/episodic.go
 
 NODE id=matrix/neo/internal/agent.renderPinnedMemory kind=func
-  digest=b3:1b74df0075eb807eaefa3f929765139e4bd462fb6b9a998e93a64ebbe06da2d8 file=neo/internal/agent/continuous.go range=376:387 lang=go exported=false byte_range=13270:13644
+  digest=b3:1b74df0075eb807eaefa3f929765139e4bd462fb6b9a998e93a64ebbe06da2d8 file=neo/internal/agent/continuous.go range=376:387 lang=go exported=false byte_range=13483:13857
   sig=func renderPinnedMemory(m *cmem.Memory) string
   doc=renderPinnedMemory renders one Pinned-tier cortex memory to a single line,\npreferring the medium then short rendered form. Empty when neither form has\ncontent.
 EDGES
@@ -4443,7 +4443,7 @@ EDGES
   ^contains=matrix/neo/internal/agent
 
 NODE id=matrix/neo/internal/agent/continuous.go kind=file
-  digest=b3:8bd6581ff84e4e13343bb4f070ff1c2fbcd9851cd799929fefb16478394b79df file=neo/internal/agent/continuous.go range=1:416 lang=go exported=true
+  digest=b3:11a41ea76c1ff768568acc5feb723c970f8afbcddefee66ffefef0662dc7ecb7 file=neo/internal/agent/continuous.go range=1:416 lang=go exported=true
 EDGES
   defines=matrix/neo/internal/agent.Agent.cmActivate,matrix/neo/internal/agent.Agent.cmAppend,matrix/neo/internal/agent.Agent.cmConvID,matrix/neo/internal/agent.Agent.cmRecordAssistant,matrix/neo/internal/agent.Agent.cmRecordToolResult,matrix/neo/internal/agent.Agent.cmRecordUser,matrix/neo/internal/agent.Agent.cmRelevancePush,matrix/neo/internal/agent.Agent.cmTrimWorking,matrix/neo/internal/agent.Agent.emitMemory,matrix/neo/internal/agent.Agent.persistO1State,matrix/neo/internal/agent.Agent.provenanceRange,matrix/neo/internal/agent.Agent.renderActivationBundle,matrix/neo/internal/agent.Agent.restoreO1State,matrix/neo/internal/agent.EpisodicMemoryEvent,matrix/neo/internal/agent.MemoryEvent,matrix/neo/internal/agent.MemoryObserver,matrix/neo/internal/agent.assembleWindowUserTail,matrix/neo/internal/agent.renderPinnedMemory
   ^contains=matrix/neo/internal/agent
@@ -4551,7 +4551,7 @@ EDGES
   ^contains=matrix/neo/internal/agent
 
 NODE id=matrix/neo/internal/agent/prompt.go kind=file
-  digest=b3:4909e72a1fab5b1194658018bffc5f0a9a2fa56ca62938584fbc9b54b83259dd file=neo/internal/agent/prompt.go range=1:262 lang=go exported=true
+  digest=b3:97797ed827e7422ef03ebce44865189498eb7ad52c35b8148a9152a95718c20e file=neo/internal/agent/prompt.go range=1:267 lang=go exported=true
 EDGES
   defines=matrix/neo/internal/agent.Agent.stableSystem,matrix/neo/internal/agent.Agent.systemPrompt,matrix/neo/internal/agent.groundTruth,matrix/neo/internal/agent.groundTruthFor,matrix/neo/internal/agent.indentBlock
   ^contains=matrix/neo/internal/agent

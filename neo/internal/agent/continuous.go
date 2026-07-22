@@ -219,7 +219,7 @@ func (a *Agent) cmRelevancePush(ctx context.Context, query string) ([]memory.Sni
 		return nil, ""
 	}
 	var b strings.Builder
-	b.WriteString("\nRelevant to your message (auto-recalled from memory; call memory_recall for more — may be stale, the live conversation wins):\n")
+	b.WriteString("\nRelevant to your message (auto-recalled from memory; call memory_recall for more — may be stale, the live conversation wins). One exception: an exact operational identifier here that you established before (a host, base URL, endpoint, credential, account id, or address) is AUTHORITATIVE — use it verbatim instead of guessing a variant:\n")
 	for _, s := range snips {
 		line := strings.TrimSpace(s.Text)
 		if line == "" {
