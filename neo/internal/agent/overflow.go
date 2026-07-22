@@ -12,6 +12,7 @@ import (
 	"sync"
 
 	"matrix/neo/internal/llm"
+	"matrix/neo/internal/tools"
 )
 
 // overflow.go implements the truncation overflow-file (neo-smoothness req.4):
@@ -159,13 +160,22 @@ func (s *overflowStore) cleanup() {
 	}
 }
 
+// overflowGateExempt lists tools whose oversized results never gate the close:
+// memory recall is prior context the model consults, not task evidence, so an
+// unread recall dump must not hold a finished answer hostage (the 2026-07-22
+// loopty-loop was armed by exactly that). The overflow file is still written
+// and readable via read_overflow; its entry just starts in the read state.
+var overflowGateExempt = map[string]bool{tools.MemoryRecallTool: true}
+
 // capToolResult bounds a single tool result for the working transcript. Within
 // budget it is returned verbatim. When it exceeds maxToolResultChars the FULL
 // output is persisted to a run-scoped overflow file and the transcript keeps a
 // head + tail plus a truncation notice carrying the overflow token and how to
 // read the remainder (req.4.1) — never a silent cut. If the file cannot be
 // written it degrades to plain head+tail truncation (capToolResultPlain).
-func (a *Agent) capToolResult(content string) string {
+// name is the producing tool: gate-exempt tools spill without arming the
+// unread-overflow close guard.
+func (a *Agent) capToolResult(name, content string) string {
 	if len(content) <= maxToolResultChars {
 		return content
 	}
@@ -175,6 +185,9 @@ func (a *Agent) capToolResult(content string) string {
 	token, path, ok := a.turn.overflow.put(content)
 	if !ok {
 		return capToolResultPlain(content)
+	}
+	if overflowGateExempt[name] {
+		a.turn.overflow.markRead(token)
 	}
 	head := maxToolResultChars * 3 / 4
 	tail := maxToolResultChars - head
@@ -216,7 +229,7 @@ func (a *Agent) overflowUnreadNudge() string {
 		return ""
 	}
 	return fmt.Sprintf(
-		"Don't finish yet: a tool result was too large to show in full and was saved to an overflow file (unread: %s). Read it with the read_overflow tool before you answer, so you don't reason over a truncated result.",
+		"Your answer was NOT delivered — the user has not seen it. It is being held back because a tool result was too large to show in full and was saved to an overflow file (unread: %s). Read each with the read_overflow tool (one call per token), then give your final answer again — reuse your held-back text if it still holds.",
 		strings.Join(toks, ", "),
 	)
 }

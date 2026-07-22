@@ -983,11 +983,19 @@ func (a *Agent) generate(ctx context.Context, step int, cmTail string, window []
 func (a *Agent) deliberate(step int, res *llm.ChatResult, streamedReasoning bool) (casMod bool) {
 	t := a.turn
 	a.working = append(a.working, res.Message)
-	// Continuous-memory (task 6.1): record the assistant turn (content +
-	// tool calls) to the durable cortex transcript. No-op when off. The
+	// Continuous-memory (task 6.1): record a TOOL-CALLING assistant turn
+	// (content + calls) to the durable cortex transcript. No-op when off. The
 	// ORIGINAL content is recorded here BEFORE the Cassandra controller may
-	// edit the in-window copy, so cortex stays ground truth (req.7.1).
-	a.cmRecordAssistant(res.Message)
+	// edit the in-window copy, so cortex stays ground truth (req.7.1). A BARE
+	// answer is NOT recorded here: its fate is decided by the close chain, and
+	// recording it before the verdict wrote guard-rejected, never-delivered
+	// answers into durable memory as if the user had seen them — the model
+	// then believed it had already answered and dismissed every steer (the
+	// 2026-07-22 loopty-loop incident). Bare answers are recorded at the
+	// delivery choke point in closeTurn instead.
+	if res.HasToolCalls() {
+		a.cmRecordAssistant(res.Message)
+	}
 
 	// The unified per-step signal state (MORPHEUS req.5.1): computed ONCE
 	// here — the one behavioral read every self-correction consumer shares.
@@ -1049,6 +1057,11 @@ func (a *Agent) closeTurn(ctx context.Context, res *llm.ChatResult, casMod bool,
 	if dec.verdict != verdictDeliver {
 		return false, nil
 	}
+	// The answer is really shipping: record the ORIGINAL bare-answer turn to
+	// the durable cortex transcript now (deliberate defers bare answers to
+	// this delivery verdict so a rejected close never poisons durable memory
+	// with an answer the user was never shown).
+	a.cmRecordAssistant(res.Message)
 	a.finishTurn(ctx, cc.answer, t.surfaced, t.surfacedSnips, userInput, false)
 	return true, nil
 }
@@ -1596,7 +1609,7 @@ func (a *Agent) runToolCalls(ctx context.Context, calls []llm.ToolCall) error {
 		// the provider's request-body byte cap on its own. The observer
 		// below still gets the full, untruncated content so the product
 		// shows real evidence.
-		a.working = append(a.working, llm.ToolResult(call.ID, name, a.capToolResult(content)))
+		a.working = append(a.working, llm.ToolResult(call.ID, name, a.capToolResult(name, content)))
 		// Continuous-memory (task 6.1): record the FULL tool result to the
 		// durable cortex transcript (cortex spills oversized payloads itself).
 		a.cmRecordToolResult(name, evidence)
@@ -1697,7 +1710,7 @@ func (a *Agent) runToolCallsSerial(ctx context.Context, calls []llm.ToolCall) er
 		// fetch / file read / MCP payload) can blow the provider's request-
 		// body byte cap on its own. The observer below still gets the full,
 		// untruncated content so the product shows real evidence.
-		a.working = append(a.working, llm.ToolResult(call.ID, name, a.capToolResult(content)))
+		a.working = append(a.working, llm.ToolResult(call.ID, name, a.capToolResult(name, content)))
 		// Continuous-memory (task 6.1): record the FULL tool result to the
 		// durable cortex transcript (cortex spills oversized payloads itself).
 		a.cmRecordToolResult(name, evidence)

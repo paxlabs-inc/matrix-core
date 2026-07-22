@@ -117,7 +117,7 @@ func guardTruncatedAnswer(a *Agent, cc *closeContext) (closeDecision, bool) {
 	if cc.res.FinishReason != "length" {
 		return closeDecision{}, false
 	}
-	if a.pushGuidanceNudge("Your last message was cut off by the output limit — don't inline large payloads in prose; call a tool with compact arguments, or give a concise final answer.", &a.turn.unproductive) {
+	if a.pushGuidanceNudge("Your last message was cut off by the output limit and was NOT delivered to the user — don't inline large payloads in prose; call a tool with compact arguments, or give a concise final answer.", &a.turn.unproductive) {
 		return closeDecision{verdict: verdictNudge, err: a.escalateGuidance(a.turn.unproductive)}, true
 	}
 	return closeDecision{verdict: verdictNudge}, true
@@ -137,16 +137,30 @@ func guardEmptyAnswer(a *Agent, cc *closeContext) (closeDecision, bool) {
 	return closeDecision{verdict: verdictNudge}, true
 }
 
+// overflowNudgeCap bounds how many closes the unread-overflow guard may block
+// per turn before it stands down and lets the composed answer deliver.
+const overflowNudgeCap = 2
+
 // guardUnreadOverflow: read-full discipline (req.4.2) — a tool result too
 // large to show inline was spilled to an overflow file. Don't let the turn end
 // on a bare answer while that output is still unread; steer (via the guidance
 // channel) to read it first, so the answer can't be drawn from a truncated
-// result. Contract — mutates: the working transcript (guidance) and the
-// unified unproductive counter.
+// result. The steer is honest about non-delivery (the held-back answer is in
+// the window but the user never saw it) and BOUNDED: past overflowNudgeCap the
+// guard stands down and the answer delivers — the identity-leak posture. The
+// unbounded form drove the 2026-07-22 loopty-loop death spiral: complete
+// answers were silently withheld until the unified cap killed the turn.
+// Contract — mutates: the working transcript (guidance), the per-turn overflow
+// nudge counter, and the unified unproductive counter; fires only while under
+// its own cap.
 func guardUnreadOverflow(a *Agent, _ *closeContext) (closeDecision, bool) {
 	if !a.overflowUnread() {
 		return closeDecision{}, false
 	}
+	if a.turn.overflowNudges >= overflowNudgeCap {
+		return closeDecision{}, false
+	}
+	a.turn.overflowNudges++
 	if a.pushGuidanceNudge(a.overflowUnreadNudge(), &a.turn.unproductive) {
 		return closeDecision{verdict: verdictNudge, err: a.escalateGuidance(a.turn.unproductive)}, true
 	}
@@ -157,7 +171,7 @@ func guardSourceFetch(a *Agent, _ *closeContext) (closeDecision, bool) {
 	if a.webEvidenceReady() {
 		return closeDecision{}, false
 	}
-	if a.pushGuidanceNudge("Search results are source discovery, not evidence. Read at least one relevance-validated result URL with fetch before making a factual claim; if no relevant result exists, say that plainly without substituting another entity or evidence class.", &a.turn.unproductive) {
+	if a.pushGuidanceNudge("Your answer was NOT delivered to the user — it is being held back. Search results are source discovery, not evidence. Read at least one relevance-validated result URL with fetch before making a factual claim; if no relevant result exists, say that plainly without substituting another entity or evidence class. Then give your final answer again.", &a.turn.unproductive) {
 		return closeDecision{verdict: verdictNudge, err: a.escalateGuidance(a.turn.unproductive)}, true
 	}
 	return closeDecision{verdict: verdictNudge}, true

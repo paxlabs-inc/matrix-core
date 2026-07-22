@@ -140,7 +140,7 @@ func TestCapToolResult(t *testing.T) {
 	}()
 
 	small := strings.Repeat("x", 100)
-	if a.capToolResult(small) != small {
+	if a.capToolResult("fetch", small) != small {
 		t.Error("under-limit tool result must be unchanged")
 	}
 
@@ -148,7 +148,7 @@ func TestCapToolResult(t *testing.T) {
 	// output is spilled to a run-scoped overflow file and the transcript keeps a
 	// bounded head+tail plus a truncation notice carrying the overflow token.
 	big := strings.Repeat("y", maxToolResultChars*3)
-	got := a.capToolResult(big)
+	got := a.capToolResult("fetch", big)
 	if len(got) >= len(big) {
 		t.Errorf("oversized result not bounded: got %d of %d", len(got), len(big))
 	}

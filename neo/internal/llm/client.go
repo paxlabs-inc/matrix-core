@@ -865,6 +865,18 @@ func fromWireRespMessage(m wireRespMessage) Message {
 			toolCalls = extracted
 		}
 	}
+	// MiMo (and other Qwen-grammar models) sometimes emit tool calls as inline
+	// tag text (`<tool_call> <function=NAME> <parameter=key>value …`) inside
+	// content instead of the structured tool_calls array. Left in place the
+	// call leaks into the chat as a "final answer" and the intended action
+	// never runs — the turn is then judged as a bare answer by the close
+	// chain. Extract these too, gated on no calls already found.
+	if len(toolCalls) == 0 {
+		if stripped, extracted := extractTagToolCalls(content); len(extracted) > 0 {
+			content = stripped
+			toolCalls = extracted
+		}
+	}
 	content, inlineReasoning := splitInlineThink(content)
 	reasoning := m.ReasoningContent
 	if reasoning == "" {
@@ -1094,6 +1106,145 @@ func jsonArgs(s string) string {
 		}
 	}
 	return "{}"
+}
+
+// Tag grammar MiMo (Qwen-family) models fall back to when the provider does
+// not parse their tool calls server-side: a `<tool_call>` wrapper, a
+// `<function=NAME>` header, then one `<parameter=key>value` span per argument.
+// Closing tags (`</parameter>`, `</function>`, `</tool_call>`) are frequently
+// omitted or lost to truncation, so the parser treats every closer as optional.
+const (
+	tagToolCallOpen  = "<tool_call>"
+	tagToolCallClose = "</tool_call>"
+	tagFunctionOpen  = "<function="
+	tagFunctionClose = "</function>"
+	tagParamOpen     = "<parameter="
+	tagParamClose    = "</parameter>"
+)
+
+// extractTagToolCalls pulls tag-grammar tool calls out of content and returns
+// the content with those spans removed plus the structured calls. Parameter
+// values run to the next parameter/closer (or end of content on truncation);
+// each value is kept as a raw string unless it parses as standalone JSON.
+// Returns (content, nil) when there is nothing to extract.
+func extractTagToolCalls(content string) (string, []ToolCall) {
+	if !strings.Contains(content, tagFunctionOpen) {
+		return content, nil
+	}
+	var b strings.Builder
+	var calls []ToolCall
+	rest := content
+	for {
+		fi := strings.Index(rest, tagFunctionOpen)
+		if fi < 0 {
+			b.WriteString(rest)
+			break
+		}
+		start := fi
+		// Fold a preceding `<tool_call>` wrapper (only whitespace between it
+		// and the function header) into the stripped span.
+		if ti := strings.LastIndex(rest[:fi], tagToolCallOpen); ti >= 0 &&
+			strings.TrimSpace(rest[ti+len(tagToolCallOpen):fi]) == "" {
+			start = ti
+		}
+		b.WriteString(rest[:start])
+		after := rest[fi+len(tagFunctionOpen):]
+		gt := strings.IndexByte(after, '>')
+		if gt < 0 {
+			// Truncated open tag: drop everything from the tag onward.
+			break
+		}
+		name := strings.TrimSpace(strings.TrimSuffix(after[:gt], "/"))
+		body := after[gt+1:]
+		argEnd := len(body)
+		fnEnd := strings.Index(body, tagFunctionClose)
+		tcEnd := strings.Index(body, tagToolCallClose)
+		if fnEnd >= 0 {
+			argEnd = fnEnd
+		}
+		if tcEnd >= 0 && tcEnd < argEnd {
+			argEnd = tcEnd
+		}
+		if name != "" {
+			calls = append(calls, ToolCall{
+				ID:       "call_" + strconv.Itoa(len(calls)),
+				Type:     "function",
+				Function: FunctionCall{Name: name, Arguments: tagParamArgs(body[:argEnd])},
+			})
+		}
+		switch {
+		case tcEnd >= 0:
+			rest = body[tcEnd+len(tagToolCallClose):]
+		case fnEnd >= 0:
+			rest = body[fnEnd+len(tagFunctionClose):]
+		default:
+			// Unterminated call (truncated generation): consume the remainder.
+			rest = ""
+		}
+		if rest == "" {
+			break
+		}
+	}
+	if len(calls) == 0 {
+		return content, nil
+	}
+	return strings.TrimSpace(b.String()), calls
+}
+
+// tagParamArgs parses the `<parameter=key>value` spans of one tag-grammar call
+// body into a JSON-object argument string. Values are trimmed raw strings; a
+// value that is itself standalone JSON (object/array/number/bool/null) is kept
+// typed so numeric and structured arguments survive the round trip.
+func tagParamArgs(body string) string {
+	args := map[string]interface{}{}
+	rest := body
+	for {
+		i := strings.Index(rest, tagParamOpen)
+		if i < 0 {
+			break
+		}
+		after := rest[i+len(tagParamOpen):]
+		gt := strings.IndexByte(after, '>')
+		if gt < 0 {
+			break
+		}
+		key := strings.TrimSpace(strings.TrimSuffix(after[:gt], "/"))
+		val := after[gt+1:]
+		end := len(val)
+		if j := strings.Index(val, tagParamClose); j >= 0 && j < end {
+			end = j
+		}
+		if j := strings.Index(val, tagParamOpen); j >= 0 && j < end {
+			end = j
+		}
+		if j := strings.Index(val, tagFunctionClose); j >= 0 && j < end {
+			end = j
+		}
+		if j := strings.Index(val, tagToolCallClose); j >= 0 && j < end {
+			end = j
+		}
+		if key != "" {
+			args[key] = tagParamValue(strings.TrimSpace(val[:end]))
+		}
+		rest = val[end:]
+	}
+	out, err := json.Marshal(args)
+	if err != nil {
+		return "{}"
+	}
+	return string(out)
+}
+
+// tagParamValue keeps a parameter value as its raw string unless the whole
+// value parses as standalone JSON, in which case the typed value is preserved.
+func tagParamValue(raw string) interface{} {
+	var v interface{}
+	if err := json.Unmarshal([]byte(raw), &v); err == nil {
+		if _, isString := v.(string); !isString {
+			return v
+		}
+	}
+	return raw
 }
 
 // splitInlineThink moves a provider-inlined chain-of-thought block out of the

@@ -1,7 +1,7 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:dcac9c070ede5d7058826b65da3d139874b9067c108587b2f3eb88e09fa4ee64
+# GENERATED gen=codegraph do-not-edit merkle=b3:843bc6ca846c14bb6ca14f1901c8cce394f2556ed854b25825bb1168c6b1cccd
 
 NODE id=matrix/neo/internal/llm kind=package
-  digest=b3:d583544506379547cb8e0f399546761164afac7e9ea736003b7dd27601d2f41f file=neo/internal/llm range=0:0 lang=go exported=true
+  digest=b3:89ba9cebc65df50891fc1a4a97796705abf5f7bd9db0566daa51d0c89bd1d3e0 file=neo/internal/llm range=0:0 lang=go exported=true
 EDGES
   contains=matrix/neo/internal/llm/client.go,matrix/neo/internal/llm/message.go,matrix/neo/internal/llm/stream_idle.go
   ^contains=mod:matrix/neo
@@ -629,26 +629,26 @@ EDGES
   ^defines=matrix/neo/internal/llm/client.go
 
 NODE id=matrix/neo/internal/llm.chatErrorBody kind=type
-  digest=b3:cdbb9021e2cd96f47067b1fe2afb670c0fff4f394fabf240a5f7e01a644bd280 file=neo/internal/llm/client.go range=1121:1125 lang=go exported=false byte_range=39871:39993
+  digest=b3:cdbb9021e2cd96f47067b1fe2afb670c0fff4f394fabf240a5f7e01a644bd280 file=neo/internal/llm/client.go range=1272:1276 lang=go exported=false byte_range=44671:44793
   sig=type chatErrorBody struct {\n	Message	string	`json:"message"`\n	Type	string	`json:"type"`\n	Code	string	`json:"code"`\n}
 EDGES
   contains=matrix/neo/internal/llm.chatErrorBody#Code,matrix/neo/internal/llm.chatErrorBody#Message,matrix/neo/internal/llm.chatErrorBody#Type
   ^defines=matrix/neo/internal/llm/client.go
 
 NODE id=matrix/neo/internal/llm.chatErrorBody#Code kind=field
-  digest=b3:988ae0e9269d84021f6b4ead29b7474a294a15d3d1386ade8bb5725dc3a7e3cc file=neo/internal/llm/client.go range=1124:1124 lang=go exported=true byte_range=39963:39991
+  digest=b3:988ae0e9269d84021f6b4ead29b7474a294a15d3d1386ade8bb5725dc3a7e3cc file=neo/internal/llm/client.go range=1275:1275 lang=go exported=true byte_range=44763:44791
   sig=string
 EDGES
   ^contains=matrix/neo/internal/llm.chatErrorBody
 
 NODE id=matrix/neo/internal/llm.chatErrorBody#Message kind=field
-  digest=b3:d7a0704d4d1cdf051b9f61d5a005f6a0c1ada9b90dd901fab6b0e03fad711a42 file=neo/internal/llm/client.go range=1122:1122 lang=go exported=true byte_range=39900:39931
+  digest=b3:d7a0704d4d1cdf051b9f61d5a005f6a0c1ada9b90dd901fab6b0e03fad711a42 file=neo/internal/llm/client.go range=1273:1273 lang=go exported=true byte_range=44700:44731
   sig=string
 EDGES
   ^contains=matrix/neo/internal/llm.chatErrorBody
 
 NODE id=matrix/neo/internal/llm.chatErrorBody#Type kind=field
-  digest=b3:b4acdad19614b4e3d6b78180ed5bc07c3fd14a3a1589be9294c8c1eff85d23aa file=neo/internal/llm/client.go range=1123:1123 lang=go exported=true byte_range=39933:39961
+  digest=b3:b4acdad19614b4e3d6b78180ed5bc07c3fd14a3a1589be9294c8c1eff85d23aa file=neo/internal/llm/client.go range=1274:1274 lang=go exported=true byte_range=44733:44761
   sig=string
 EDGES
   ^contains=matrix/neo/internal/llm.chatErrorBody
@@ -817,22 +817,29 @@ NODE id=matrix/neo/internal/llm.envKey kind=func
 EDGES
   ^defines=matrix/neo/internal/llm/client.go
 
+NODE id=matrix/neo/internal/llm.extractTagToolCalls kind=func
+  digest=b3:e16b309431952188ea2574ff1bb10d3818861ae8d2f0d877e85ea9a8eef31327 file=neo/internal/llm/client.go range=1125:1192 lang=go exported=false byte_range=40136:42188
+  sig=func extractTagToolCalls(content string) (string, []ToolCall)
+  doc=extractTagToolCalls pulls tag-grammar tool calls out of content and returns\nthe content with those spans removed plus the structured calls. Parameter\nvalues run to the next parameter/closer (or end of content on truncation);\neach value is kept as a raw string unless it parses as standalone JSON.\nReturns (content, nil) when there is nothing to extract.
+EDGES
+  ^defines=matrix/neo/internal/llm/client.go
+
 NODE id=matrix/neo/internal/llm.extractTokenToolCalls kind=func
-  digest=b3:2af4cd98ee4abf55df255de812a958fb2f37ec3215b4192cc4d585e2607ae046 file=neo/internal/llm/client.go range=893:940 lang=go exported=false byte_range=32880:34516
+  digest=b3:2af4cd98ee4abf55df255de812a958fb2f37ec3215b4192cc4d585e2607ae046 file=neo/internal/llm/client.go range=905:952 lang=go exported=false byte_range=33476:35112
   sig=func extractTokenToolCalls(content string) (string, []ToolCall)
   doc=extractTokenToolCalls pulls any token-grammar tool calls out of content and\nreturns the content with those spans removed plus the structured calls. It\ntolerates a missing section wrapper and an unterminated section (truncated\ngeneration): everything from the first marker onward is consumed so nothing\nleaks. Returns (content, nil) when there is nothing to extract.
 EDGES
   ^defines=matrix/neo/internal/llm/client.go
 
 NODE id=matrix/neo/internal/llm.extractXMLToolCalls kind=func
-  digest=b3:7d3523b46b52489986cef55a78617ce958936fe344adec47766b5323116672fc file=neo/internal/llm/client.go range=995:1049 lang=go exported=false byte_range=36184:37869
+  digest=b3:7d3523b46b52489986cef55a78617ce958936fe344adec47766b5323116672fc file=neo/internal/llm/client.go range=1007:1061 lang=go exported=false byte_range=36780:38465
   sig=func extractXMLToolCalls(content string) (string, []ToolCall)
   doc=extractXMLToolCalls pulls any `<function_call name="NAME">ARGS</function_call>`\nspans out of content and returns the content with those spans removed plus the\nstructured calls. ARGS is normalized to a JSON object (the first {...} span, or\n"{}" when absent/unparseable) so downstream dispatch always receives valid\narguments. It tolerates a missing/truncated close tag (everything from the\nopen tag onward is consumed so nothing leaks). Returns (content, nil) when\nthere is nothing to extract.
 EDGES
   ^defines=matrix/neo/internal/llm/client.go
 
 NODE id=matrix/neo/internal/llm.fromWireRespMessage kind=func
-  digest=b3:266a4a9b186999326c29130ebb2558d7e7a3cc7f0d949015657b2c0d2b6e89b0 file=neo/internal/llm/client.go range=837:879 lang=go exported=false byte_range=30769:32380
+  digest=b3:b6da801d7875a9ade91e693278ac45fc951bdc2b74c9de9e43ba5ae183e92033 file=neo/internal/llm/client.go range=837:891 lang=go exported=false byte_range=30769:32976
   sig=func fromWireRespMessage(m wireRespMessage) Message
 EDGES
   ^defines=matrix/neo/internal/llm/client.go
@@ -887,42 +894,42 @@ EDGES
   ^defines=matrix/neo/internal/llm/stream_idle.go
 
 NODE id=matrix/neo/internal/llm.jsonArgs kind=func
-  digest=b3:f9f37fa574b414448b0ad5c13883ab873e1d1acab8333e369756d75a469534f4 file=neo/internal/llm/client.go range=1072:1097 lang=go exported=false byte_range=38323:38935
+  digest=b3:f9f37fa574b414448b0ad5c13883ab873e1d1acab8333e369756d75a469534f4 file=neo/internal/llm/client.go range=1084:1109 lang=go exported=false byte_range=38919:39531
   sig=func jsonArgs(s string) string
   doc=jsonArgs normalizes an improvised tool-call argument blob to a JSON object\nstring: it returns the first balanced {...} span if present, else "{}". This\nkeeps dispatch robust when a model emits prose or partial JSON around the args.
 EDGES
   ^defines=matrix/neo/internal/llm/client.go
 
 NODE id=matrix/neo/internal/llm.kimiArgBegin kind=const
-  digest=b3:da1a6e647c06a72ccdc510e97fbdba870180569f3038d8273858206c31e0c31e file=neo/internal/llm/client.go range=881:889 lang=go exported=false byte_range=32382:32836
+  digest=b3:da1a6e647c06a72ccdc510e97fbdba870180569f3038d8273858206c31e0c31e file=neo/internal/llm/client.go range=893:901 lang=go exported=false byte_range=32978:33432
   sig=untyped string
   doc=Special-token grammar Kimi/Moonshot K2 models use to emit tool calls inside\n`content`. A section wraps one or more calls; each call is a\n`functions.<name>:<index>` header, an argument-begin marker, the JSON\narguments, then a call-end marker.
 EDGES
   ^defines=matrix/neo/internal/llm/client.go
 
 NODE id=matrix/neo/internal/llm.kimiCallBegin kind=const
-  digest=b3:b866dbd7480f4ffb1fc47ebf5a247de0cb7eac312985d4865e10d4dc1dc1bd0a file=neo/internal/llm/client.go range=881:888 lang=go exported=false byte_range=32382:32785
+  digest=b3:b866dbd7480f4ffb1fc47ebf5a247de0cb7eac312985d4865e10d4dc1dc1bd0a file=neo/internal/llm/client.go range=893:900 lang=go exported=false byte_range=32978:33381
   sig=untyped string
   doc=Special-token grammar Kimi/Moonshot K2 models use to emit tool calls inside\n`content`. A section wraps one or more calls; each call is a\n`functions.<name>:<index>` header, an argument-begin marker, the JSON\narguments, then a call-end marker.
 EDGES
   ^defines=matrix/neo/internal/llm/client.go
 
 NODE id=matrix/neo/internal/llm.kimiCallEnd kind=const
-  digest=b3:55ffccfa978c9e0b338c04c43b059c1274b286ae9aff698ddad2bd91b9b10cf5 file=neo/internal/llm/client.go range=881:890 lang=go exported=false byte_range=32382:32876
+  digest=b3:55ffccfa978c9e0b338c04c43b059c1274b286ae9aff698ddad2bd91b9b10cf5 file=neo/internal/llm/client.go range=893:902 lang=go exported=false byte_range=32978:33472
   sig=untyped string
   doc=Special-token grammar Kimi/Moonshot K2 models use to emit tool calls inside\n`content`. A section wraps one or more calls; each call is a\n`functions.<name>:<index>` header, an argument-begin marker, the JSON\narguments, then a call-end marker.
 EDGES
   ^defines=matrix/neo/internal/llm/client.go
 
 NODE id=matrix/neo/internal/llm.kimiSectionBegin kind=const
-  digest=b3:995c086680f034219ee4463b8364180c1b0809f5c24e5d70f323c9b8099d4e77 file=neo/internal/llm/client.go range=881:886 lang=go exported=false byte_range=32382:32694
+  digest=b3:995c086680f034219ee4463b8364180c1b0809f5c24e5d70f323c9b8099d4e77 file=neo/internal/llm/client.go range=893:898 lang=go exported=false byte_range=32978:33290
   sig=untyped string
   doc=Special-token grammar Kimi/Moonshot K2 models use to emit tool calls inside\n`content`. A section wraps one or more calls; each call is a\n`functions.<name>:<index>` header, an argument-begin marker, the JSON\narguments, then a call-end marker.
 EDGES
   ^defines=matrix/neo/internal/llm/client.go
 
 NODE id=matrix/neo/internal/llm.kimiSectionEnd kind=const
-  digest=b3:31ec40c924254af135b52bb0bc04a07a7394667541a23cca4830b66b691739bf file=neo/internal/llm/client.go range=881:887 lang=go exported=false byte_range=32382:32743
+  digest=b3:31ec40c924254af135b52bb0bc04a07a7394667541a23cca4830b66b691739bf file=neo/internal/llm/client.go range=893:899 lang=go exported=false byte_range=32978:33339
   sig=untyped string
   doc=Special-token grammar Kimi/Moonshot K2 models use to emit tool calls inside\n`content`. A section wraps one or more calls; each call is a\n`functions.<name>:<index>` header, an argument-begin marker, the JSON\narguments, then a call-end marker.
 EDGES
@@ -936,7 +943,7 @@ EDGES
   ^defines=matrix/neo/internal/llm/stream_idle.go
 
 NODE id=matrix/neo/internal/llm.parseTokenSection kind=func
-  digest=b3:1f20ca1d7d9e563dfc6e6a48aae4676ca17ebfd3fd9c495cc6371aa57b94e142 file=neo/internal/llm/client.go range=942:971 lang=go exported=false byte_range=34518:35460
+  digest=b3:1f20ca1d7d9e563dfc6e6a48aae4676ca17ebfd3fd9c495cc6371aa57b94e142 file=neo/internal/llm/client.go range=954:983 lang=go exported=false byte_range=35114:36056
   sig=func parseTokenSection(section string, base int) []ToolCall
   doc=parseTokenSection decodes the calls inside one token-grammar section. base is\nthe running call count, used to synthesize stable call IDs.
 EDGES
@@ -964,7 +971,7 @@ EDGES
   ^defines=matrix/neo/internal/llm/client.go
 
 NODE id=matrix/neo/internal/llm.splitInlineThink kind=func
-  digest=b3:3e85ebcb5a24c19aaf8d88ecac57497759a185816b6f78186724d3afabb545fb file=neo/internal/llm/client.go range=1099:1119 lang=go exported=false byte_range=38937:39869
+  digest=b3:3e85ebcb5a24c19aaf8d88ecac57497759a185816b6f78186724d3afabb545fb file=neo/internal/llm/client.go range=1250:1270 lang=go exported=false byte_range=43737:44669
   sig=func splitInlineThink(content string) (visible, reasoning string)
   doc=splitInlineThink moves a provider-inlined chain-of-thought block out of the\nvisible content and into the reasoning channel. Some providers/models emit\n`<think>…</think>` (or `<thinking>…</thinking>`) inside `content` instead of\nthe separate `reasoning_content` field; leaving it in place leaks internal\nmonologue into the chat. An unterminated opening tag (truncated generation)\nmeans the WHOLE remainder is reasoning.
 EDGES
@@ -1053,6 +1060,62 @@ NODE id=matrix/neo/internal/llm.supportsReasoningEffort kind=func
 EDGES
   ^defines=matrix/neo/internal/llm/client.go
 
+NODE id=matrix/neo/internal/llm.tagFunctionClose kind=const
+  digest=b3:0f2551353992edb6de6b38827e7709ad7cf23fa0597fd8f0c3c5157665af9f49 file=neo/internal/llm/client.go range=1111:1120 lang=go exported=false byte_range=39533:40063
+  sig=untyped string
+  doc=Tag grammar MiMo (Qwen-family) models fall back to when the provider does\nnot parse their tool calls server-side: a `<tool_call>` wrapper, a\n`<function=NAME>` header, then one `<parameter=key>value` span per argument.\nClosing tags (`</parameter>`, `</function>`, `</tool_call>`) are frequently\nomitted or lost to truncation, so the parser treats every closer as optional.
+EDGES
+  ^defines=matrix/neo/internal/llm/client.go
+
+NODE id=matrix/neo/internal/llm.tagFunctionOpen kind=const
+  digest=b3:e84a8da49b1d196721555b51fca58e740d889e3e1dcf4f169ff7e9372c767760 file=neo/internal/llm/client.go range=1111:1119 lang=go exported=false byte_range=39533:40029
+  sig=untyped string
+  doc=Tag grammar MiMo (Qwen-family) models fall back to when the provider does\nnot parse their tool calls server-side: a `<tool_call>` wrapper, a\n`<function=NAME>` header, then one `<parameter=key>value` span per argument.\nClosing tags (`</parameter>`, `</function>`, `</tool_call>`) are frequently\nomitted or lost to truncation, so the parser treats every closer as optional.
+EDGES
+  ^defines=matrix/neo/internal/llm/client.go
+
+NODE id=matrix/neo/internal/llm.tagParamArgs kind=func
+  digest=b3:2c6957a9bb29f5215697353611d37ae3d4cd8cc9b6e8744b853be5f9b2c7da54 file=neo/internal/llm/client.go range=1194:1236 lang=go exported=false byte_range=42190:43380
+  sig=func tagParamArgs(body string) string
+  doc=tagParamArgs parses the `<parameter=key>value` spans of one tag-grammar call\nbody into a JSON-object argument string. Values are trimmed raw strings; a\nvalue that is itself standalone JSON (object/array/number/bool/null) is kept\ntyped so numeric and structured arguments survive the round trip.
+EDGES
+  ^defines=matrix/neo/internal/llm/client.go
+
+NODE id=matrix/neo/internal/llm.tagParamClose kind=const
+  digest=b3:3aeb018ac12220e9d1532501c1025b0b1c1a4432bf24aac345a862a4f33b5db2 file=neo/internal/llm/client.go range=1111:1122 lang=go exported=false byte_range=39533:40132
+  sig=untyped string
+  doc=Tag grammar MiMo (Qwen-family) models fall back to when the provider does\nnot parse their tool calls server-side: a `<tool_call>` wrapper, a\n`<function=NAME>` header, then one `<parameter=key>value` span per argument.\nClosing tags (`</parameter>`, `</function>`, `</tool_call>`) are frequently\nomitted or lost to truncation, so the parser treats every closer as optional.
+EDGES
+  ^defines=matrix/neo/internal/llm/client.go
+
+NODE id=matrix/neo/internal/llm.tagParamOpen kind=const
+  digest=b3:dbb69aa1a24a2b7472e626edc2e68ac74b444293240ae8524ba18644b1cd65b7 file=neo/internal/llm/client.go range=1111:1121 lang=go exported=false byte_range=39533:40097
+  sig=untyped string
+  doc=Tag grammar MiMo (Qwen-family) models fall back to when the provider does\nnot parse their tool calls server-side: a `<tool_call>` wrapper, a\n`<function=NAME>` header, then one `<parameter=key>value` span per argument.\nClosing tags (`</parameter>`, `</function>`, `</tool_call>`) are frequently\nomitted or lost to truncation, so the parser treats every closer as optional.
+EDGES
+  ^defines=matrix/neo/internal/llm/client.go
+
+NODE id=matrix/neo/internal/llm.tagParamValue kind=func
+  digest=b3:ea32892b06b961ebdddc0379de3508f5c923076ea9e3969335c4c046b7cc3778 file=neo/internal/llm/client.go range=1238:1248 lang=go exported=false byte_range=43382:43735
+  sig=func tagParamValue(raw string) interface{}
+  doc=tagParamValue keeps a parameter value as its raw string unless the whole\nvalue parses as standalone JSON, in which case the typed value is preserved.
+EDGES
+  ^defines=matrix/neo/internal/llm/client.go
+
+NODE id=matrix/neo/internal/llm.tagToolCallClose kind=const
+  digest=b3:814e0de449f00607e4203c13706c5d7f498ac703a0e6c2d4f3a3abc52c1feadf file=neo/internal/llm/client.go range=1111:1118 lang=go exported=false byte_range=39533:39996
+  sig=untyped string
+  doc=Tag grammar MiMo (Qwen-family) models fall back to when the provider does\nnot parse their tool calls server-side: a `<tool_call>` wrapper, a\n`<function=NAME>` header, then one `<parameter=key>value` span per argument.\nClosing tags (`</parameter>`, `</function>`, `</tool_call>`) are frequently\nomitted or lost to truncation, so the parser treats every closer as optional.
+EDGES
+  ^defines=matrix/neo/internal/llm/client.go
+
+NODE id=matrix/neo/internal/llm.tagToolCallOpen kind=const
+  digest=b3:ca5341e005eb3e3228206ba44aa0c4337deaa15ea776169b0547dfb57af9eeb9 file=neo/internal/llm/client.go range=1111:1117 lang=go exported=false byte_range=39533:39961
+  sig=untyped string
+  doc=Tag grammar MiMo (Qwen-family) models fall back to when the provider does\nnot parse their tool calls server-side: a `<tool_call>` wrapper, a\n`<function=NAME>` header, then one `<parameter=key>value` span per argument.\nClosing tags (`</parameter>`, `</function>`, `</tool_call>`) are frequently\nomitted or lost to truncation, so the parser treats every closer as optional.
+EDGES
+  ^defines=matrix/neo/internal/llm/client.go
+
 NODE id=matrix/neo/internal/llm.thinkingConfig kind=type
   digest=b3:f0679d45067e2c17a737fb6e79d50b3e5fbdeab66e67963acc6ea4131ccc79a6 file=neo/internal/llm/client.go range=698:700 lang=go exported=false byte_range=25654:25711
   sig=type thinkingConfig struct {\n	Type string `json:"type"`\n}
@@ -1073,7 +1136,7 @@ EDGES
   ^defines=matrix/neo/internal/llm/client.go
 
 NODE id=matrix/neo/internal/llm.tokenFuncName kind=func
-  digest=b3:1d0805b050b12816cdd15711941c613493d8a04cfa969f0823f803bc4d42a468 file=neo/internal/llm/client.go range=973:985 lang=go exported=false byte_range=35462:35909
+  digest=b3:1d0805b050b12816cdd15711941c613493d8a04cfa969f0823f803bc4d42a468 file=neo/internal/llm/client.go range=985:997 lang=go exported=false byte_range=36058:36505
   sig=func tokenFuncName(header string) string
   doc=tokenFuncName turns a `functions.<name>:<index>` header into the bare tool\nname. The `functions.` prefix and a trailing `:<int>` index are both\noptional in observed emissions.
 EDGES
@@ -1213,30 +1276,30 @@ EDGES
   ^defines=matrix/neo/internal/llm/client.go
 
 NODE id=matrix/neo/internal/llm.xmlAttr kind=func
-  digest=b3:6f0af8df4d0dea0d4aa56ef2c0cc78eb167a8a639e39a53e9557c76751685b7c file=neo/internal/llm/client.go range=1051:1070 lang=go exported=false byte_range=37871:38321
+  digest=b3:6f0af8df4d0dea0d4aa56ef2c0cc78eb167a8a639e39a53e9557c76751685b7c file=neo/internal/llm/client.go range=1063:1082 lang=go exported=false byte_range=38467:38917
   sig=func xmlAttr(attrs, key string) string
   doc=xmlAttr extracts a double- or single-quoted attribute value from an XML-ish\nattribute string (e.g. ` name="foo"` → "foo").
 EDGES
   ^defines=matrix/neo/internal/llm/client.go
 
 NODE id=matrix/neo/internal/llm.xmlToolCallClose kind=const
-  digest=b3:296659fc0ec2303e1e2fc684c2db40f84871c502455f4f4df9fe4e29ecaadd38 file=neo/internal/llm/client.go range=987:992 lang=go exported=false byte_range=35911:36180
+  digest=b3:296659fc0ec2303e1e2fc684c2db40f84871c502455f4f4df9fe4e29ecaadd38 file=neo/internal/llm/client.go range=999:1004 lang=go exported=false byte_range=36507:36776
   sig=untyped string
   doc=xmlToolCallOpen / xmlToolCallClose bound the inline XML-ish tool-call form\nthat grok/xAI reasoning models improvise inside `content` instead of the\nstructured tool_calls array.
 EDGES
   ^defines=matrix/neo/internal/llm/client.go
 
 NODE id=matrix/neo/internal/llm.xmlToolCallOpen kind=const
-  digest=b3:86d85a953662428877216b9857bb663edb668ccc8ea4d9ed3612c9d7edac1b7d file=neo/internal/llm/client.go range=987:991 lang=go exported=false byte_range=35911:36141
+  digest=b3:86d85a953662428877216b9857bb663edb668ccc8ea4d9ed3612c9d7edac1b7d file=neo/internal/llm/client.go range=999:1003 lang=go exported=false byte_range=36507:36737
   sig=untyped string
   doc=xmlToolCallOpen / xmlToolCallClose bound the inline XML-ish tool-call form\nthat grok/xAI reasoning models improvise inside `content` instead of the\nstructured tool_calls array.
 EDGES
   ^defines=matrix/neo/internal/llm/client.go
 
 NODE id=matrix/neo/internal/llm/client.go kind=file
-  digest=b3:c26f64e5b73b51e4e8e91e37058e15cbe11ab4ba54b171e25af28746547e3023 file=neo/internal/llm/client.go range=1:1125 lang=go exported=true
+  digest=b3:052cae4a76ca168ac8e7cd8fbb86edb3755a314dbe2984b00df7bcf4fc9f8ec9 file=neo/internal/llm/client.go range=1:1276 lang=go exported=true
 EDGES
-  defines=matrix/neo/internal/llm.Client,matrix/neo/internal/llm.Client.Chat,matrix/neo/internal/llm.Client.Model,matrix/neo/internal/llm.Client.Provider,matrix/neo/internal/llm.Client.newHTTPRequest,matrix/neo/internal/llm.ErrProviderRejected,matrix/neo/internal/llm.ErrProviderUnavailable,matrix/neo/internal/llm.ErrRateLimited,matrix/neo/internal/llm.ErrRequestTooLarge,matrix/neo/internal/llm.New,matrix/neo/internal/llm.aggregateStream,matrix/neo/internal/llm.aggregateStreamReader,matrix/neo/internal/llm.chatErrorBody,matrix/neo/internal/llm.chatRequestWire,matrix/neo/internal/llm.chatResponseWire,matrix/neo/internal/llm.chatStreamChunk,matrix/neo/internal/llm.defaultChatEndpoint,matrix/neo/internal/llm.deltaFlushChars,matrix/neo/internal/llm.enableThinkingArgs,matrix/neo/internal/llm.envKey,matrix/neo/internal/llm.extractTokenToolCalls,matrix/neo/internal/llm.extractXMLToolCalls,matrix/neo/internal/llm.fromWireRespMessage,matrix/neo/internal/llm.holdbackPartial,matrix/neo/internal/llm.jsonArgs,matrix/neo/internal/llm.kimiArgBegin,matrix/neo/internal/llm.kimiCallBegin,matrix/neo/internal/llm.kimiCallEnd,matrix/neo/internal/llm.kimiSectionBegin,matrix/neo/internal/llm.kimiSectionEnd,matrix/neo/internal/llm.parseTokenSection,matrix/neo/internal/llm.previewVisible,matrix/neo/internal/llm.reasoningEffort,matrix/neo/internal/llm.sanitizeToolCalls,matrix/neo/internal/llm.splitInlineThink,matrix/neo/internal/llm.streamDelta,matrix/neo/internal/llm.streamOptions,matrix/neo/internal/llm.streamToolDelta,matrix/neo/internal/llm.supportsReasoningEffort,matrix/neo/internal/llm.thinkingConfig,matrix/neo/internal/llm.toWireMessages,matrix/neo/internal/llm.tokenFuncName,matrix/neo/internal/llm.toolDeltaFlushChars,matrix/neo/internal/llm.truncate,matrix/neo/internal/llm.wireContentPart,matrix/neo/internal/llm.wireInputAudio,matrix/neo/internal/llm.wireMessage,matrix/neo/internal/llm.wireRespMessage,matrix/neo/internal/llm.xiaomiThinkingType,matrix/neo/internal/llm.xmlAttr,matrix/neo/internal/llm.xmlToolCallClose,matrix/neo/internal/llm.xmlToolCallOpen
+  defines=matrix/neo/internal/llm.Client,matrix/neo/internal/llm.Client.Chat,matrix/neo/internal/llm.Client.Model,matrix/neo/internal/llm.Client.Provider,matrix/neo/internal/llm.Client.newHTTPRequest,matrix/neo/internal/llm.ErrProviderRejected,matrix/neo/internal/llm.ErrProviderUnavailable,matrix/neo/internal/llm.ErrRateLimited,matrix/neo/internal/llm.ErrRequestTooLarge,matrix/neo/internal/llm.New,matrix/neo/internal/llm.aggregateStream,matrix/neo/internal/llm.aggregateStreamReader,matrix/neo/internal/llm.chatErrorBody,matrix/neo/internal/llm.chatRequestWire,matrix/neo/internal/llm.chatResponseWire,matrix/neo/internal/llm.chatStreamChunk,matrix/neo/internal/llm.defaultChatEndpoint,matrix/neo/internal/llm.deltaFlushChars,matrix/neo/internal/llm.enableThinkingArgs,matrix/neo/internal/llm.envKey,matrix/neo/internal/llm.extractTagToolCalls,matrix/neo/internal/llm.extractTokenToolCalls,matrix/neo/internal/llm.extractXMLToolCalls,matrix/neo/internal/llm.fromWireRespMessage,matrix/neo/internal/llm.holdbackPartial,matrix/neo/internal/llm.jsonArgs,matrix/neo/internal/llm.kimiArgBegin,matrix/neo/internal/llm.kimiCallBegin,matrix/neo/internal/llm.kimiCallEnd,matrix/neo/internal/llm.kimiSectionBegin,matrix/neo/internal/llm.kimiSectionEnd,matrix/neo/internal/llm.parseTokenSection,matrix/neo/internal/llm.previewVisible,matrix/neo/internal/llm.reasoningEffort,matrix/neo/internal/llm.sanitizeToolCalls,matrix/neo/internal/llm.splitInlineThink,matrix/neo/internal/llm.streamDelta,matrix/neo/internal/llm.streamOptions,matrix/neo/internal/llm.streamToolDelta,matrix/neo/internal/llm.supportsReasoningEffort,matrix/neo/internal/llm.tagFunctionClose,matrix/neo/internal/llm.tagFunctionOpen,matrix/neo/internal/llm.tagParamArgs,matrix/neo/internal/llm.tagParamClose,matrix/neo/internal/llm.tagParamOpen,matrix/neo/internal/llm.tagParamValue,matrix/neo/internal/llm.tagToolCallClose,matrix/neo/internal/llm.tagToolCallOpen,matrix/neo/internal/llm.thinkingConfig,matrix/neo/internal/llm.toWireMessages,matrix/neo/internal/llm.tokenFuncName,matrix/neo/internal/llm.toolDeltaFlushChars,matrix/neo/internal/llm.truncate,matrix/neo/internal/llm.wireContentPart,matrix/neo/internal/llm.wireInputAudio,matrix/neo/internal/llm.wireMessage,matrix/neo/internal/llm.wireRespMessage,matrix/neo/internal/llm.xiaomiThinkingType,matrix/neo/internal/llm.xmlAttr,matrix/neo/internal/llm.xmlToolCallClose,matrix/neo/internal/llm.xmlToolCallOpen
   ^contains=matrix/neo/internal/llm
 
 NODE id=matrix/neo/internal/llm/message.go kind=file

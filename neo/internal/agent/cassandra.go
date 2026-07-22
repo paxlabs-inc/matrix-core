@@ -190,9 +190,11 @@ func (a *Agent) cassandraStep(sig cassandraSignals) bool {
 // it as the agent's next thought), so guardrail 2 (metacognition-only, never a
 // rewrite of facts) holds by construction. The dual-record + audit event
 // (guardrail 3) are written BEFORE the mutation, and the durable cortex
-// transcript is NOT rewritten (cmRecordAssistant already stored the original), so
-// cortex stays ground truth (req.7.1). Returns false (no-op) if the target is out
-// of range or is not an assistant message.
+// transcript is NOT rewritten — a tool-calling turn's original was already
+// recorded at deliberate, and a bare answer's original is recorded from the
+// untouched res.Message only if it delivers (closeTurn) — so cortex stays
+// ground truth (req.7.1). Returns false (no-op) if the target is out of range
+// or is not an assistant message.
 func (a *Agent) cassandraEdit(target int, mod string, trig modTrigger, side modSide, step int) bool {
 	if target < 0 || target >= len(a.working) {
 		return false

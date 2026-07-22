@@ -117,6 +117,13 @@ type turn struct {
 	// repeats all feed it; it is never reset by a plain tool dispatch.
 	unproductive int
 
+	// overflowNudges counts how many times the unread-overflow close guard has
+	// steered THIS turn. Past overflowNudgeCap the guard stands down and the
+	// composed answer delivers: the read-full discipline exists to stop
+	// reasoning over truncated data, never to discard finished work (the
+	// 2026-07-22 loopty-loop incident).
+	overflowNudges int
+
 	// signals is the unified per-step signal state (MORPHEUS req.5.1),
 	// computed ONCE at deliberate entry and replaced every step. All
 	// self-correction consumers — the stall commit (noteBatch), the Cassandra
