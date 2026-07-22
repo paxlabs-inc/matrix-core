@@ -16,7 +16,7 @@ import (
 // instead of the structured tool_calls array. Left unparsed, the call leaked
 // into the chat as a "final answer" and the intended action never ran (the
 // 2026-07-22 loopty-loop incident: an intended call judged as a bare answer by
-// the close chain). extractTagToolCalls pulls those spans out, builds a JSON
+// the close chain). parseMimoToolCalls pulls those spans out, builds a JSON
 // argument object, strips the markup from the visible content, and tolerates
 // every closing tag being absent (truncated generation).
 func TestExtractTagToolCalls(t *testing.T) {
@@ -111,7 +111,7 @@ func TestExtractTagToolCalls(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gotContent, gotCalls := extractTagToolCalls(tt.content)
+			gotContent, gotCalls := parseMimoToolCalls(tt.content)
 			if gotContent != tt.wantContent {
 				t.Errorf("content = %q, want %q", gotContent, tt.wantContent)
 			}
@@ -170,9 +170,67 @@ func TestExtractTagToolCalls_NoFalsePositives(t *testing.T) {
 		"the operator < compares and > redirects",
 		"",
 	} {
-		got, calls := extractTagToolCalls(content)
+		got, calls := parseMimoToolCalls(content)
 		if got != content || calls != nil {
-			t.Errorf("extractTagToolCalls(%q) = (%q, %v), want unchanged and nil", content, got, calls)
+			t.Errorf("parseMimoToolCalls(%q) = (%q, %v), want unchanged and nil", content, got, calls)
 		}
 	}
+}
+
+// TestMimoReasoningWirePassthrough pins the request-side half of the native
+// MiMo adapter: MiMo uses DeepSeek-compatible thinking, so every assistant
+// turn in a multi-turn tool conversation must carry reasoning_content VERBATIM
+// — including the empty string "" — while user/tool turns never do. A non-MiMo
+// request omits reasoning_content unless a message actually carries reasoning.
+func TestMimoReasoningWirePassthrough(t *testing.T) {
+	msgs := []Message{
+		SystemMessage("sys"),
+		UserMessage("do the thing"),
+		{Role: RoleAssistant, Reasoning: "let me plan", ToolCalls: []ToolCall{{ID: "1", Type: "function", Function: FunctionCall{Name: "f", Arguments: "{}"}}}},
+		ToolResult("1", "f", "ok"),
+		{Role: RoleAssistant, Content: "done"}, // no reasoning captured on this turn
+	}
+
+	t.Run("mimo: assistant turns always carry reasoning_content, others never", func(t *testing.T) {
+		w := toWireMessages(msgs, true)
+		if w[0].ReasoningContent != nil || w[1].ReasoningContent != nil || w[3].ReasoningContent != nil {
+			t.Fatal("system/user/tool turns must not carry reasoning_content")
+		}
+		if w[2].ReasoningContent == nil || *w[2].ReasoningContent != "let me plan" {
+			t.Fatalf("assistant reasoning lost: %v", w[2].ReasoningContent)
+		}
+		// The critical case: an assistant tool-chain turn with no reasoning must
+		// still ship reasoning_content:"" verbatim, not omit the field.
+		if w[4].ReasoningContent == nil {
+			t.Fatal("MiMo assistant turn must carry reasoning_content even when empty")
+		}
+		if *w[4].ReasoningContent != "" {
+			t.Fatalf("want empty-string reasoning_content, got %q", *w[4].ReasoningContent)
+		}
+		// And it must serialize as an explicit "" (omitempty would drop a string).
+		b, err := json.Marshal(w[4])
+		if err != nil {
+			t.Fatal(err)
+		}
+		if !strings.Contains(string(b), `"reasoning_content":""`) {
+			t.Fatalf("empty reasoning_content must serialize verbatim, got %s", b)
+		}
+	})
+
+	t.Run("non-mimo: reasoning_content only when present, else omitted", func(t *testing.T) {
+		w := toWireMessages(msgs, false)
+		if w[2].ReasoningContent == nil || *w[2].ReasoningContent != "let me plan" {
+			t.Fatalf("a captured reasoning must still ride for non-mimo: %v", w[2].ReasoningContent)
+		}
+		if w[4].ReasoningContent != nil {
+			t.Fatal("non-mimo must omit reasoning_content when the turn has none")
+		}
+		b, err := json.Marshal(w[0])
+		if err != nil {
+			t.Fatal(err)
+		}
+		if strings.Contains(string(b), "reasoning_content") {
+			t.Fatalf("non-mimo system turn must omit reasoning_content entirely, got %s", b)
+		}
+	})
 }

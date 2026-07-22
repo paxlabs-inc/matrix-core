@@ -55,7 +55,7 @@ func TestToWireMessagesNeverEmitsInvalidToolArguments(t *testing.T) {
 		}},
 		ToolResult("c1", "fs_write", "could not parse arguments (unexpected end of JSON input)."),
 	}
-	for _, w := range toWireMessages(msgs) {
+	for _, w := range toWireMessages(msgs, false) {
 		for _, tc := range w.ToolCalls {
 			if !json.Valid([]byte(tc.Function.Arguments)) {
 				t.Fatalf("replayed tool_call arguments not valid JSON: %q", tc.Function.Arguments)

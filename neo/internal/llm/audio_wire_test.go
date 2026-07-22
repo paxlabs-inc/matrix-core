@@ -10,7 +10,7 @@ import (
 
 func TestAudioWireShape(t *testing.T) {
 	t.Run("ordinary text remains a string", func(t *testing.T) {
-		got, err := json.Marshal(toWireMessages([]Message{UserMessage("hello")}))
+		got, err := json.Marshal(toWireMessages([]Message{UserMessage("hello")}, false))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -21,7 +21,7 @@ func TestAudioWireShape(t *testing.T) {
 	})
 
 	t.Run("user audio emits exactly one input audio part", func(t *testing.T) {
-		got := toWireMessages([]Message{UserAudioMessage("voice turn", "data:audio/wav;base64,AA==")})
+		got := toWireMessages([]Message{UserAudioMessage("voice turn", "data:audio/wav;base64,AA==")}, false)
 		parts, ok := got[0].Content.([]wireContentPart)
 		if !ok {
 			t.Fatalf("content type = %T, want []wireContentPart", got[0].Content)
@@ -37,7 +37,7 @@ func TestAudioWireShape(t *testing.T) {
 	t.Run("non user audio data never emits input audio", func(t *testing.T) {
 		msg := AssistantMessage("answer")
 		msg.AudioData = "data:audio/wav;base64,AA=="
-		got := toWireMessages([]Message{msg})
+		got := toWireMessages([]Message{msg}, false)
 		if content, ok := got[0].Content.(string); !ok || content != "answer" {
 			t.Fatalf("content = %#v, want string answer", got[0].Content)
 		}

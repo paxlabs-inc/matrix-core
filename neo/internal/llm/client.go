@@ -177,7 +177,7 @@ func (c *Client) Provider() string { return c.provider.String() }
 func (c *Client) Chat(ctx context.Context, req ChatRequest) (*ChatResult, error) {
 	wire := chatRequestWire{
 		Model:       mcllm.XiaomiModelID(c.model),
-		Messages:    toWireMessages(req.Messages),
+		Messages:    toWireMessages(req.Messages, mcllm.IsXiaomiModel(c.model)),
 		Temperature: c.temperature,
 		Tools:       req.Tools,
 		// Stream unconditionally: some providers (e.g. Together's Qwen3.7-Max)
@@ -714,12 +714,17 @@ type streamOptions struct {
 // non-retryable 422 ("missing field `content`") when the key is absent.
 // An explicit "content":"" is accepted by every OpenAI-compatible provider.
 type wireMessage struct {
-	Role             string     `json:"role"`
-	Content          any        `json:"content"`
-	ToolCalls        []ToolCall `json:"tool_calls,omitempty"`
-	ToolCallID       string     `json:"tool_call_id,omitempty"`
-	Name             string     `json:"name,omitempty"`
-	ReasoningContent string     `json:"reasoning_content,omitempty"`
+	Role       string     `json:"role"`
+	Content    any        `json:"content"`
+	ToolCalls  []ToolCall `json:"tool_calls,omitempty"`
+	ToolCallID string     `json:"tool_call_id,omitempty"`
+	Name       string     `json:"name,omitempty"`
+	// ReasoningContent is a pointer so an explicit empty string "" can ride the
+	// wire that `omitempty` would otherwise drop: MiMo/DeepSeek-compatible
+	// thinking requires reasoning_content PRESENT (even "") on assistant turns
+	// in a tool-call chain. nil = omit the field entirely (non-MiMo, or
+	// non-assistant roles). See mimoReasoningContent (mimo.go).
+	ReasoningContent *string `json:"reasoning_content,omitempty"`
 }
 
 type wireContentPart struct {
@@ -732,7 +737,13 @@ type wireInputAudio struct {
 	Data string `json:"data"`
 }
 
-func toWireMessages(msgs []Message) []wireMessage {
+// toWireMessages converts the transcript to the request-side shape. When mimo
+// is set (the model is a MiMo variant) every assistant turn carries
+// reasoning_content verbatim — including "" — per the DeepSeek-compatible
+// thinking protocol MiMo uses (see mimoReasoningContent). Otherwise
+// reasoning_content rides only when a message actually carries reasoning, and
+// is omitted (nil) elsewhere so a non-MiMo provider never sees an empty field.
+func toWireMessages(msgs []Message, mimo bool) []wireMessage {
 	out := make([]wireMessage, len(msgs))
 	for i, m := range msgs {
 		var content any = m.Content
@@ -744,13 +755,21 @@ func toWireMessages(msgs []Message) []wireMessage {
 			parts = append(parts, wireContentPart{Type: "input_audio", InputAudio: &wireInputAudio{Data: m.AudioData}})
 			content = parts
 		}
+		var reasoning *string
+		switch {
+		case mimo:
+			reasoning = mimoReasoningContent(m.Role, m.Reasoning)
+		case m.Reasoning != "":
+			r := m.Reasoning
+			reasoning = &r
+		}
 		out[i] = wireMessage{
 			Role:             m.Role,
 			Content:          content,
 			ToolCalls:        sanitizeToolCalls(m.ToolCalls),
 			ToolCallID:       m.ToolCallID,
 			Name:             m.Name,
-			ReasoningContent: m.Reasoning,
+			ReasoningContent: reasoning,
 		}
 	}
 	return out
@@ -865,16 +884,17 @@ func fromWireRespMessage(m wireRespMessage) Message {
 			toolCalls = extracted
 		}
 	}
-	// MiMo (and other Qwen-grammar models) emit tool calls as inline tag text
+	// MiMo emits tool calls as inline qwen3_xml tag text
 	// (`<tool_call> <function=NAME> <parameter=key>value …`) inside content —
 	// sometimes INSTEAD of the structured tool_calls array, sometimes as a
 	// DUPLICATE alongside it (observed live 2026-07-22: provider-parsed
 	// structured calls with the same call re-emitted as content text). The
-	// markup is never legitimate prose, so it is ALWAYS stripped from content;
-	// the extracted calls are promoted to real tool calls only when the
-	// provider returned none, so a well-parsed structured response keeps its
-	// authoritative calls and just loses the duplicated markup.
-	if stripped, extracted := extractTagToolCalls(content); len(extracted) > 0 {
+	// native MiMo parser (mimo.go, the `--tool-call-parser mimo` counterpart)
+	// pulls them out. The markup is never legitimate prose, so it is ALWAYS
+	// stripped from content; the extracted calls are promoted to real tool
+	// calls only when the provider returned none, so a well-parsed structured
+	// response keeps its authoritative calls and just loses the duplicated markup.
+	if stripped, extracted := parseMimoToolCalls(content); len(extracted) > 0 {
 		content = stripped
 		if len(toolCalls) == 0 {
 			toolCalls = extracted
@@ -1109,145 +1129,6 @@ func jsonArgs(s string) string {
 		}
 	}
 	return "{}"
-}
-
-// Tag grammar MiMo (Qwen-family) models fall back to when the provider does
-// not parse their tool calls server-side: a `<tool_call>` wrapper, a
-// `<function=NAME>` header, then one `<parameter=key>value` span per argument.
-// Closing tags (`</parameter>`, `</function>`, `</tool_call>`) are frequently
-// omitted or lost to truncation, so the parser treats every closer as optional.
-const (
-	tagToolCallOpen  = "<tool_call>"
-	tagToolCallClose = "</tool_call>"
-	tagFunctionOpen  = "<function="
-	tagFunctionClose = "</function>"
-	tagParamOpen     = "<parameter="
-	tagParamClose    = "</parameter>"
-)
-
-// extractTagToolCalls pulls tag-grammar tool calls out of content and returns
-// the content with those spans removed plus the structured calls. Parameter
-// values run to the next parameter/closer (or end of content on truncation);
-// each value is kept as a raw string unless it parses as standalone JSON.
-// Returns (content, nil) when there is nothing to extract.
-func extractTagToolCalls(content string) (string, []ToolCall) {
-	if !strings.Contains(content, tagFunctionOpen) {
-		return content, nil
-	}
-	var b strings.Builder
-	var calls []ToolCall
-	rest := content
-	for {
-		fi := strings.Index(rest, tagFunctionOpen)
-		if fi < 0 {
-			b.WriteString(rest)
-			break
-		}
-		start := fi
-		// Fold a preceding `<tool_call>` wrapper (only whitespace between it
-		// and the function header) into the stripped span.
-		if ti := strings.LastIndex(rest[:fi], tagToolCallOpen); ti >= 0 &&
-			strings.TrimSpace(rest[ti+len(tagToolCallOpen):fi]) == "" {
-			start = ti
-		}
-		b.WriteString(rest[:start])
-		after := rest[fi+len(tagFunctionOpen):]
-		gt := strings.IndexByte(after, '>')
-		if gt < 0 {
-			// Truncated open tag: drop everything from the tag onward.
-			break
-		}
-		name := strings.TrimSpace(strings.TrimSuffix(after[:gt], "/"))
-		body := after[gt+1:]
-		argEnd := len(body)
-		fnEnd := strings.Index(body, tagFunctionClose)
-		tcEnd := strings.Index(body, tagToolCallClose)
-		if fnEnd >= 0 {
-			argEnd = fnEnd
-		}
-		if tcEnd >= 0 && tcEnd < argEnd {
-			argEnd = tcEnd
-		}
-		if name != "" {
-			calls = append(calls, ToolCall{
-				ID:       "call_" + strconv.Itoa(len(calls)),
-				Type:     "function",
-				Function: FunctionCall{Name: name, Arguments: tagParamArgs(body[:argEnd])},
-			})
-		}
-		switch {
-		case tcEnd >= 0:
-			rest = body[tcEnd+len(tagToolCallClose):]
-		case fnEnd >= 0:
-			rest = body[fnEnd+len(tagFunctionClose):]
-		default:
-			// Unterminated call (truncated generation): consume the remainder.
-			rest = ""
-		}
-		if rest == "" {
-			break
-		}
-	}
-	if len(calls) == 0 {
-		return content, nil
-	}
-	return strings.TrimSpace(b.String()), calls
-}
-
-// tagParamArgs parses the `<parameter=key>value` spans of one tag-grammar call
-// body into a JSON-object argument string. Values are trimmed raw strings; a
-// value that is itself standalone JSON (object/array/number/bool/null) is kept
-// typed so numeric and structured arguments survive the round trip.
-func tagParamArgs(body string) string {
-	args := map[string]interface{}{}
-	rest := body
-	for {
-		i := strings.Index(rest, tagParamOpen)
-		if i < 0 {
-			break
-		}
-		after := rest[i+len(tagParamOpen):]
-		gt := strings.IndexByte(after, '>')
-		if gt < 0 {
-			break
-		}
-		key := strings.TrimSpace(strings.TrimSuffix(after[:gt], "/"))
-		val := after[gt+1:]
-		end := len(val)
-		if j := strings.Index(val, tagParamClose); j >= 0 && j < end {
-			end = j
-		}
-		if j := strings.Index(val, tagParamOpen); j >= 0 && j < end {
-			end = j
-		}
-		if j := strings.Index(val, tagFunctionClose); j >= 0 && j < end {
-			end = j
-		}
-		if j := strings.Index(val, tagToolCallClose); j >= 0 && j < end {
-			end = j
-		}
-		if key != "" {
-			args[key] = tagParamValue(strings.TrimSpace(val[:end]))
-		}
-		rest = val[end:]
-	}
-	out, err := json.Marshal(args)
-	if err != nil {
-		return "{}"
-	}
-	return string(out)
-}
-
-// tagParamValue keeps a parameter value as its raw string unless the whole
-// value parses as standalone JSON, in which case the typed value is preserved.
-func tagParamValue(raw string) interface{} {
-	var v interface{}
-	if err := json.Unmarshal([]byte(raw), &v); err == nil {
-		if _, isString := v.(string); !isString {
-			return v
-		}
-	}
-	return raw
 }
 
 // splitInlineThink moves a provider-inlined chain-of-thought block out of the

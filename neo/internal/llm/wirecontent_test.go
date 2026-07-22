@@ -23,7 +23,7 @@ func TestWireMessagesAlwaysCarryContentKey(t *testing.T) {
 		}}},
 		{Role: "tool", ToolCallID: "c1", Content: ""},
 	}
-	data, err := json.Marshal(toWireMessages(msgs))
+	data, err := json.Marshal(toWireMessages(msgs, false))
 	if err != nil {
 		t.Fatalf("marshal: %v", err)
 	}

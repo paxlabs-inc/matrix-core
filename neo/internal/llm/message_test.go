@@ -71,7 +71,7 @@ func TestWireRoundTrip(t *testing.T) {
 		{Role: RoleAssistant, ToolCalls: []ToolCall{{ID: "c1", Type: "function", Function: FunctionCall{Name: "f", Arguments: "{}"}}}},
 		ToolResult("c1", "f", "ok"),
 	}
-	w := toWireMessages(in)
+	w := toWireMessages(in, false)
 	if len(w) != len(in) {
 		t.Fatalf("wire length mismatch")
 	}
