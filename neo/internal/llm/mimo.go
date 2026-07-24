@@ -7,6 +7,8 @@ import (
 	"encoding/json"
 	"strconv"
 	"strings"
+
+	mcllm "matrix/mcl/llm"
 )
 
 // mimo.go is Neo's native adapter for Xiaomi MiMo (MiMo-V2.5-Pro, the current
@@ -23,6 +25,23 @@ import (
 // multi-turn tool conversation — dropping it (or omitting the empty string on a
 // tool-call turn) degrades or 400s the next turn. This file owns both halves so
 // MiMo compatibility lives in one legible place instead of scattered fallbacks.
+
+// isMimoFamily reports whether the model is any MiMo v2.5 variant — the text
+// planner (mimo-v2.5-pro, matched by mcllm.IsXiaomiModel) OR the omni vision id
+// (mimo-v2.5, used only for DOJO desktop_look grounding). Both take Xiaomi's
+// thinking control and the max_completion_tokens field, so the omni grounder's
+// visible JSON is never starved by a reasoning burst (wave-1 empty-content
+// gotcha). It deliberately does NOT feed XiaomiModelID (which would rewrite the
+// omni id to the planner id) or the multi-turn reasoning_content replay flag
+// (omni is a stateless single-turn call).
+func isMimoFamily(model string) bool {
+	if mcllm.IsXiaomiModel(model) {
+		return true
+	}
+	m := strings.ToLower(strings.TrimSpace(model))
+	m = strings.TrimPrefix(m, "xiaomimimo/")
+	return strings.HasPrefix(m, "mimo-v2.5")
+}
 
 // The qwen3_xml tag grammar MiMo uses when the server does not parse tool calls:
 // a `<tool_call>` wrapper, a `<function=NAME>` header, then one

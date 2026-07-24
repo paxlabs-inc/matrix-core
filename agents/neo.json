@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "agent": "matrix://agent/neo",
-  "description": "Neo front-agent manifest. Human-facing systems are reached through a stable browser, machine-mail, filesystem, and shell substrate; product procedures are skills rather than dedicated integration schemas — except the essential paxeer-net chain/wallet lane (embedded-wallet custody network-side, writes gated by PaxeerSpendPolicy) and the media generation lane (image/video/speech through the media bridge, xAI Grok Imagine primary), neither of which is browser-replaceable; both stay direct tool surfaces. Autonomous surfaces still structurally exclude value-moving tools. Machine-mail credentials are injected from the encrypted per-user settings vault or inherited from MACHINEMAIL_API_KEY. The exec server's service registry is isolated to /data/neo/services through MATRIX_EXEC_STATE_DIR.",
+  "description": "Neo front-agent manifest. Human-facing systems are reached through a stable browser, machine-mail, filesystem, and shell substrate; product procedures are skills rather than dedicated integration schemas — except the essential paxeer-net chain/wallet lane (embedded-wallet custody network-side, writes gated by PaxeerSpendPolicy) and the media generation lane (image/video/speech through the media bridge, xAI Grok Imagine primary), neither of which is browser-replaceable; both stay direct tool surfaces. The desktop lane drives a disposable Railway-sandbox desktop (DOJO) over bytebotd via the daemon's /dojo proxy; it is reached only while a desktop session is live, is grounded by the desktop_look (omni vision) and desktop_a11y (AT-SPI) synthetic tools, and — being a human-shared surface that can log in and spend — is excluded from every autonomous (Automatrix/sub-agent) surface. Autonomous surfaces still structurally exclude value-moving tools and the desktop lane. Machine-mail credentials are injected from the encrypted per-user settings vault or inherited from MACHINEMAIL_API_KEY. The exec server's service registry is isolated to /data/neo/services through MATRIX_EXEC_STATE_DIR.",
   "allowed_side_effects": [
     "read",
     "write",
@@ -649,6 +649,103 @@
           "description": "Poll a durable action by id: status, tx hashes, LayerX credit, and the interpretation-free error envelope. Read-only (never resubmits a broadcast action).",
           "side_effect_class": "network",
           "timeout_ms": 30000
+        }
+      ]
+    },
+    {
+      "alias": "desktop",
+      "transport": "stdio",
+      "command": "node",
+      "args": [
+        "/root/matrix/tools/desktop/desktop.mjs"
+      ],
+      "env": [],
+      "package_digest": "sha256:3cc370589e8ec0e746754cdfa1931859f9473330786ea129e2c4bf0ada2aa79b",
+      "version": "0.1.0",
+      "tools": [
+        {
+          "name": "desktop_move_mouse",
+          "description": "Move the mouse to an absolute screen pixel on the disposable desktop. Pass coordinates straight from desktop_look or desktop_a11y.",
+          "side_effect_class": "network",
+          "timeout_ms": 60000
+        },
+        {
+          "name": "desktop_click_mouse",
+          "description": "Click a mouse button at an absolute screen pixel on the disposable desktop. A logged-in desktop click can submit forms and confirm purchases — an external, irreversible action.",
+          "side_effect_class": "network",
+          "timeout_ms": 60000
+        },
+        {
+          "name": "desktop_press_mouse",
+          "description": "Press or release a mouse button at an absolute screen pixel on the disposable desktop (for custom drags).",
+          "side_effect_class": "network",
+          "timeout_ms": 60000
+        },
+        {
+          "name": "desktop_drag_mouse",
+          "description": "Drag the mouse along a path of absolute screen pixels on the disposable desktop.",
+          "side_effect_class": "network",
+          "timeout_ms": 60000
+        },
+        {
+          "name": "desktop_scroll",
+          "description": "Scroll the mouse wheel at an absolute screen pixel on the disposable desktop.",
+          "side_effect_class": "network",
+          "timeout_ms": 60000
+        },
+        {
+          "name": "desktop_type_text",
+          "description": "Type text into the focused element on the disposable desktop. Click the target field first.",
+          "side_effect_class": "network",
+          "timeout_ms": 60000
+        },
+        {
+          "name": "desktop_paste_text",
+          "description": "Paste text into the focused element on the disposable desktop in one shot.",
+          "side_effect_class": "network",
+          "timeout_ms": 60000
+        },
+        {
+          "name": "desktop_type_keys",
+          "description": "Press keys together as a chord on the disposable desktop (ctrl+c, Return, alt+Tab). Use X keysym names.",
+          "side_effect_class": "network",
+          "timeout_ms": 60000
+        },
+        {
+          "name": "desktop_screenshot",
+          "description": "Capture a screenshot of the disposable desktop. Shown to the user automatically; prefer desktop_a11y or desktop_look to act on elements.",
+          "side_effect_class": "read",
+          "timeout_ms": 60000
+        },
+        {
+          "name": "desktop_cursor_position",
+          "description": "Read the current mouse cursor position on the disposable desktop. A cheap responsiveness check.",
+          "side_effect_class": "read",
+          "timeout_ms": 30000
+        },
+        {
+          "name": "desktop_wait",
+          "description": "Wait a fixed number of milliseconds for the disposable desktop to settle before the next action.",
+          "side_effect_class": "read",
+          "timeout_ms": 60000
+        },
+        {
+          "name": "desktop_application",
+          "description": "Bring an application to the foreground on the disposable desktop (firefox, 1password, thunderbird, vscode, terminal, desktop, directory).",
+          "side_effect_class": "network",
+          "timeout_ms": 60000
+        },
+        {
+          "name": "desktop_read_file",
+          "description": "Read a file from inside the disposable desktop's filesystem (base64).",
+          "side_effect_class": "read",
+          "timeout_ms": 60000
+        },
+        {
+          "name": "desktop_write_file",
+          "description": "Write a base64-encoded file into the disposable desktop's filesystem.",
+          "side_effect_class": "write",
+          "timeout_ms": 60000
         }
       ]
     }

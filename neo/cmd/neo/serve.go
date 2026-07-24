@@ -12,12 +12,15 @@ package main
 
 import (
 	"context"
+	"crypto/rand"
+	"encoding/hex"
 	"flag"
 	"fmt"
 	"net/http"
 	"os"
 	"os/signal"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"syscall"
 	"time"
@@ -29,6 +32,7 @@ import (
 	"matrix/neo/internal/briefsettings"
 	"matrix/neo/internal/config"
 	"matrix/neo/internal/conversation"
+	"matrix/neo/internal/dojo"
 	"matrix/neo/internal/machinemailsettings"
 	"matrix/neo/internal/memory"
 	"matrix/neo/internal/preview"
@@ -153,12 +157,42 @@ func runServe(args []string) {
 	if err != nil {
 		subMain = nil
 	}
+	// Stateless MiMo v2.5 omni vision grounder for DOJO desktop_look — invoked
+	// ONLY inside the tool, never the session model. Generous max_tokens so a
+	// reasoning-heavy grounding pass still leaves room for the JSON answer
+	// (wave-1 empty-content gotcha); thinking OFF. nil disables desktop_look.
+	omni, oerr := newOmniClient(envOrDefault("NEO_OMNI_MODEL", "mimo-v2.5"))
+	if oerr != nil {
+		omni = nil
+	}
 
 	// --- memory (own cortex actor; separate Pebble DB under the shared root) ---
 	pager, err := memory.Open(cfg)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "neo: memory unavailable (%v) — continuing without persistent recall\n", err)
 		pager = nil
+	}
+
+	// --- disposable-desktop bridge env (DOJO wave 2) ---
+	// The desktop bridge (tools/desktop/desktop.mjs) posts bytebotd actions to
+	// the daemon's own loopback /dojo/computer-use proxy. Wire its endpoint +
+	// shared token into the environment BEFORE spawning tools, so the bridge
+	// subprocess inherits them; the same token gates the proxy. Only when the
+	// dojo lane is actually configured (Railway credential present).
+	var dojoBridgeToken string
+	if os.Getenv("RAILWAY_API_TOKEN") != "" {
+		dojoBridgeToken = os.Getenv("MATRIX_DOJO_TOKEN")
+		if dojoBridgeToken == "" {
+			dojoBridgeToken = randomToken()
+			_ = os.Setenv("MATRIX_DOJO_TOKEN", dojoBridgeToken)
+		}
+		if os.Getenv("MATRIX_DOJO_URL") == "" {
+			host := *addr
+			if strings.HasPrefix(host, ":") {
+				host = "127.0.0.1" + host
+			}
+			_ = os.Setenv("MATRIX_DOJO_URL", "http://"+host+"/dojo")
+		}
 	}
 
 	// --- tools (Neo's natural surface; escalate-class reachable only via core_execute) ---
@@ -239,31 +273,63 @@ func runServe(args []string) {
 			previewTTL = d
 		}
 	}
+	// Disposable dojo desktops (DOJO req 1): the lane exists only while a
+	// session is alive — no standing per-user desktop service. Credentials
+	// enter through the same Railway environment references as previews; the
+	// caps are env-configured and enforced server-side (req 1.4).
+	var dojoRW dojo.RailwayClient
+	if tok := os.Getenv("RAILWAY_API_TOKEN"); tok != "" {
+		dojoRW = dojo.NewRailway(dojo.RailwayConfig{
+			Token:         tok,
+			EnvironmentID: os.Getenv("RAILWAY_ENVIRONMENT_ID"),
+		})
+	}
+	dojoCfg := dojo.Config{Image: os.Getenv("NEO_DOJO_IMAGE")}
+	if v := os.Getenv("NEO_DOJO_IDLE_TIMEOUT"); v != "" {
+		if d, perr := time.ParseDuration(v); perr == nil {
+			dojoCfg.IdleTimeout = d
+		}
+	}
+	if v := os.Getenv("NEO_DOJO_MAX_LIFETIME"); v != "" {
+		if d, perr := time.ParseDuration(v); perr == nil {
+			dojoCfg.MaxLifetime = d
+		}
+	}
+	if v := os.Getenv("NEO_DOJO_PROVISION_TIMEOUT"); v != "" {
+		if d, perr := time.ParseDuration(v); perr == nil {
+			dojoCfg.ProvisionTimeout = d
+		}
+	}
+	if v := os.Getenv("NEO_DOJO_MAX_ACTIVE"); v != "" {
+		if n, perr := strconv.Atoi(v); perr == nil {
+			dojoCfg.MaxActive = n
+		}
+	}
 
 	engine := server.NewEngine(server.EngineOptions{
-		Config:                cfg,
-		Main:                  main,
-		Cheap:                 cheap,
-		SubMain:               subMain,
-		Tools:                 tm,
-		Pager:                 pager,
-		Consolidator:          cons,
-		ConversationDir:       convDir,
-		TaskDir:               taskDir,
-		RunDir:                runDir,
-		TraceDir:              traceDir,
-		AutomatrixDir:         automatrixDir,
-		AutomatrixSettingsDir: automatrixsettings.Dir(os.Getenv("NEO_AUTOMATRIX_DIR"), cfg.CortexRoot),
-		BriefSettingsDir:      briefsettings.Dir(os.Getenv("NEO_BRIEF_DIR"), cfg.CortexRoot),
-		BriefHistoryDir:       briefhistory.Dir(os.Getenv("NEO_BRIEF_DIR"), cfg.CortexRoot),
+		Config:                 cfg,
+		Main:                   main,
+		Cheap:                  cheap,
+		SubMain:                subMain,
+		Tools:                  tm,
+		Pager:                  pager,
+		Consolidator:           cons,
+		ConversationDir:        convDir,
+		TaskDir:                taskDir,
+		RunDir:                 runDir,
+		TraceDir:               traceDir,
+		AutomatrixDir:          automatrixDir,
+		AutomatrixSettingsDir:  automatrixsettings.Dir(os.Getenv("NEO_AUTOMATRIX_DIR"), cfg.CortexRoot),
+		BriefSettingsDir:       briefsettings.Dir(os.Getenv("NEO_BRIEF_DIR"), cfg.CortexRoot),
+		BriefHistoryDir:        briefhistory.Dir(os.Getenv("NEO_BRIEF_DIR"), cfg.CortexRoot),
 		TelegramSettingsDir:    telegramsettings.Dir(os.Getenv("NEO_TELEGRAM_DIR"), cfg.CortexRoot),
 		MachineMailSettingsDir: machinemailsettings.Dir(os.Getenv("NEO_MACHINEMAIL_DIR"), cfg.CortexRoot),
-		MediaDir:              mediaPath,
-		VoiceASRURL:           envOrDefault("MATRIX_MIMO_ASR_URL", "https://api.xiaomimimo.com/v1/chat/completions"),
-		VoiceASRKey:           os.Getenv("MIMO_API_KEY"),
-		VoiceControllerURL:    envOrDefault("VOICE_CONTROLLER_URL", "http://127.0.0.1:8791"),
-		WorkspaceDir:          workspaceDir,
-		Sandbox:               sb,
+		MediaDir:               mediaPath,
+		VoiceASRURL:            envOrDefault("MATRIX_MIMO_ASR_URL", "https://api.xiaomimimo.com/v1/chat/completions"),
+		VoiceASRKey:            os.Getenv("MIMO_API_KEY"),
+		VoiceControllerURL:     envOrDefault("VOICE_CONTROLLER_URL", "http://127.0.0.1:8791"),
+		WorkspaceDir:           workspaceDir,
+		Sandbox:                sb,
 		PreviewCfg: preview.Config{
 			UserID:            previewUserID,
 			RouterInternalURL: os.Getenv("ROUTER_INTERNAL_URL"),
@@ -271,7 +337,11 @@ func runServe(args []string) {
 			TTL:               previewTTL,
 			Image:             os.Getenv("NEO_PREVIEW_IMAGE"),
 		},
-		BackendURL:   backendURL,
+		DojoRailway:     dojoRW,
+		DojoCfg:         dojoCfg,
+		Omni:            omni,
+		DojoBridgeToken: dojoBridgeToken,
+		BackendURL:      backendURL,
 		BackendToken: os.Getenv("NEO_DAEMON_TOKEN"),
 		Vault:        vaultSess,
 	})
@@ -312,6 +382,8 @@ func runServe(args []string) {
 
 	// Idle sandbox previews are torn down on a TTL (req 7.4).
 	engine.StartPreviewReaper(ctx)
+	// Idle / over-lifetime dojo desktops are torn down server-side (DOJO req 1.4).
+	engine.StartDojoReaper(ctx)
 	engine.StartTelegram(ctx)
 
 	srv, err := server.New(engine, backendURL)
@@ -386,6 +458,16 @@ func envOrDefault(key, def string) string {
 		return v
 	}
 	return def
+}
+
+// randomToken mints a 32-hex shared secret for the loopback desktop-bridge
+// proxy when the deployment did not pin MATRIX_DOJO_TOKEN.
+func randomToken() string {
+	var b [16]byte
+	if _, err := rand.Read(b[:]); err != nil {
+		return fmt.Sprintf("dojo-%d", time.Now().UnixNano())
+	}
+	return hex.EncodeToString(b[:])
 }
 
 func fatal(format string, a ...interface{}) {

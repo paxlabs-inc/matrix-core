@@ -1,0 +1,197 @@
+[
+  {
+    "name": "desktop_move_mouse",
+    "description": "Move the mouse pointer to an absolute screen pixel (x, y). Grounding comes from desktop_look or desktop_a11y — pass their coordinates straight through.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "x": { "type": "integer", "description": "Absolute screen x pixel." },
+        "y": { "type": "integer", "description": "Absolute screen y pixel." }
+      },
+      "required": ["x", "y"],
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "desktop_click_mouse",
+    "description": "Click a mouse button at an absolute screen pixel (x, y). button is left|right|middle (default left); clickCount 2 for a double-click. A logged-in desktop click can submit forms and confirm purchases — treat it as an external, irreversible action.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "x": { "type": "integer", "description": "Absolute screen x pixel." },
+        "y": { "type": "integer", "description": "Absolute screen y pixel." },
+        "button": { "type": "string", "enum": ["left", "right", "middle"], "description": "Mouse button (default left)." },
+        "clickCount": { "type": "integer", "description": "Number of clicks (2 = double-click). Default 1." }
+      },
+      "required": ["x", "y"],
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "desktop_press_mouse",
+    "description": "Press or release a mouse button at an absolute screen pixel, for building custom drags. press is down|up. button is left|right|middle (default left).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "x": { "type": "integer", "description": "Absolute screen x pixel." },
+        "y": { "type": "integer", "description": "Absolute screen y pixel." },
+        "press": { "type": "string", "enum": ["down", "up"], "description": "Whether to press down or release." },
+        "button": { "type": "string", "enum": ["left", "right", "middle"], "description": "Mouse button (default left)." }
+      },
+      "required": ["x", "y", "press"],
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "desktop_drag_mouse",
+    "description": "Drag the mouse along a path of absolute screen pixels with a button held. path is an array of {x, y} points from start to end. button is left|right|middle (default left).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "array",
+          "description": "Ordered points to drag through.",
+          "items": {
+            "type": "object",
+            "properties": {
+              "x": { "type": "integer" },
+              "y": { "type": "integer" }
+            },
+            "required": ["x", "y"],
+            "additionalProperties": false
+          }
+        },
+        "button": { "type": "string", "enum": ["left", "right", "middle"], "description": "Mouse button (default left)." }
+      },
+      "required": ["path"],
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "desktop_scroll",
+    "description": "Scroll the mouse wheel at an absolute screen pixel. direction is up|down|left|right; scrollCount is the number of wheel steps (default 3).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "x": { "type": "integer", "description": "Absolute screen x pixel." },
+        "y": { "type": "integer", "description": "Absolute screen y pixel." },
+        "direction": { "type": "string", "enum": ["up", "down", "left", "right"], "description": "Scroll direction." },
+        "scrollCount": { "type": "integer", "description": "Number of wheel steps (default 3)." }
+      },
+      "required": ["x", "y", "direction"],
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "desktop_type_text",
+    "description": "Type a string of text into the focused element, character by character. Click the target field first so it holds focus.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "text": { "type": "string", "description": "The text to type." },
+        "delay": { "type": "integer", "description": "Optional per-key delay in milliseconds." }
+      },
+      "required": ["text"],
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "desktop_paste_text",
+    "description": "Paste a string of text into the focused element in one shot (faster than typing for long text).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "text": { "type": "string", "description": "The text to paste." }
+      },
+      "required": ["text"],
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "desktop_type_keys",
+    "description": "Press one or more keys together as a chord (e.g. [\"ctrl\",\"c\"] to copy, [\"Return\"] to submit, [\"alt\",\"Tab\"] to switch windows). Use X keysym names.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "keys": {
+          "type": "array",
+          "description": "Keys to press together (X keysym names).",
+          "items": { "type": "string" }
+        }
+      },
+      "required": ["keys"],
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "desktop_screenshot",
+    "description": "Capture a screenshot of the whole desktop. The image is shown to the user automatically. For acting on elements prefer desktop_a11y (deterministic) or desktop_look (grounded coordinates) — a raw screenshot is for viewing.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {},
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "desktop_cursor_position",
+    "description": "Read the current mouse cursor position as absolute screen pixels {x, y}. A cheap read used to confirm the desktop is responsive.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {},
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "desktop_wait",
+    "description": "Wait a fixed number of milliseconds for the desktop to settle (a page to load, an animation to finish) before the next action.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "ms": { "type": "integer", "description": "Milliseconds to wait." }
+      },
+      "required": ["ms"],
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "desktop_application",
+    "description": "Bring an application to the foreground on the desktop (launching it if needed). application is one of firefox, 1password, thunderbird, vscode, terminal, desktop, directory (file manager).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "application": {
+          "type": "string",
+          "enum": ["firefox", "1password", "thunderbird", "vscode", "terminal", "desktop", "directory"],
+          "description": "The application to focus."
+        }
+      },
+      "required": ["application"],
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "desktop_read_file",
+    "description": "Read a file from inside the desktop's filesystem and return its contents (base64). Use for pulling a file the desktop produced (a download, a saved document).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "path": { "type": "string", "description": "Absolute path inside the desktop (e.g. /home/user/Downloads/report.pdf)." }
+      },
+      "required": ["path"],
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "desktop_write_file",
+    "description": "Write a file into the desktop's filesystem. data is base64-encoded content. Use to place a file the desktop needs (an upload, a document to open).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "path": { "type": "string", "description": "Absolute path inside the desktop to write." },
+        "data": { "type": "string", "description": "Base64-encoded file contents." }
+      },
+      "required": ["path", "data"],
+      "additionalProperties": false
+    }
+  }
+]

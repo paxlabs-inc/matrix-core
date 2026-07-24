@@ -195,6 +195,31 @@ func newClient(model string, temp float64, maxTok int, enableThinking bool, cfg 
 	return newSlotClient(model, temp, maxTok, "neo", enableThinking, cfg)
 }
 
+// newOmniClient builds the stateless MiMo v2.5 omni vision grounder used only
+// inside DOJO's desktop_look. The omni id ("mimo-v2.5") is not the Xiaomi text
+// planner id ("mimo-v2.5-pro"), so the provider is pinned explicitly and the
+// client talks DIRECTLY to api.xiaomimimo.com with the MiMo key — the same
+// direct posture VOICE uses for ASR — rather than riding the gateway. Returns
+// nil when no MiMo key is configured (desktop_look then stays unadvertised).
+func newOmniClient(model string) (*neollm.Client, error) {
+	key := strings.TrimSpace(os.Getenv("MIMO_API_KEY"))
+	if key == "" {
+		key = strings.TrimSpace(os.Getenv("XIAOMI_API_KEY"))
+	}
+	if key == "" {
+		return nil, fmt.Errorf("no MIMO_API_KEY/XIAOMI_API_KEY for omni grounding")
+	}
+	return neollm.New(mcllm.Config{
+		Model:       model,
+		Provider:    mcllm.ProviderXiaomi,
+		ProviderSet: true,
+		Endpoint:    envOrDefault("NEO_OMNI_URL", "https://api.xiaomimimo.com/v1/chat/completions"),
+		APIKey:      key,
+		Temperature: 0.1,
+		MaxTokens:   2048,
+	})
+}
+
 // newSlotClient builds a gateway-metered chat client tagged with the given
 // slot label, so spend is attributed correctly (Neo's own "neo" slot, or
 // Cassandra's dedicated "cassandra" slot for completeness audits). enableThinking

@@ -34,6 +34,7 @@ import (
 	"matrix/neo/internal/config"
 	"matrix/neo/internal/conversation"
 	"matrix/neo/internal/delegate"
+	"matrix/neo/internal/dojo"
 	"matrix/neo/internal/llm"
 	"matrix/neo/internal/machinemailsettings"
 	"matrix/neo/internal/memory"
@@ -88,6 +89,20 @@ type Engine struct {
 	// unconfigured — the route answers 503 and the workbench renders the
 	// honest empty state).
 	preview *preview.Manager
+
+	// dojo is the disposable-desktop session lifecycle manager (nil when
+	// unconfigured — no standing desktop service ever exists; DOJO req 1).
+	dojo *dojo.Manager
+
+	// omni is the stateless MiMo v2.5 omni vision client used ONLY inside
+	// desktop_look grounding (DOJO req 3.2); the session model is never swapped
+	// to it. nil disables desktop_look (a11y + DOM still ground the desktop).
+	omni *llm.Client
+
+	// dojoBridgeToken gates the loopback /dojo/computer-use proxy the desktop
+	// bridge posts to, so only the co-located bridge can drive the desktop
+	// (external router-forwarded traffic is rejected). "" disables the proxy.
+	dojoBridgeToken string
 
 	backendURL   string // co-located MCL daemon (core_execute + reverse proxy)
 	backendToken string // optional bearer for the daemon
@@ -197,33 +212,37 @@ type Engine struct {
 // EngineOptions configures NewEngine. Main + Tools are required; the rest are
 // optional (a nil pager/consolidator degrades gracefully).
 type EngineOptions struct {
-	Config                config.Config
-	Main                  *llm.Client
-	Cheap                 *llm.Client
-	SubMain               *llm.Client // main-capability model, thinking OFF, for background sub-agents (nil falls back to Main)
-	Tools                 *tools.Manager
-	Pager                 *memory.Pager
-	Consolidator          agent.Consolidator
-	ConversationDir       string // durable conversation store dir ("" disables persistence)
-	TaskDir               string // durable task-ledger dir ("" disables; reaper needs it to resume after restart)
-	RunDir                string
-	TraceDir              string // durable workspace-trace dir ("" disables; the reopen-survives-reload store, F3)
-	AutomatrixDir         string // durable Automatrix completion-inbox dir ("" disables; the in-app surprise-results store)
-	AutomatrixSettingsDir string // durable Automatrix opt-in settings dir ("" = in-memory only; wiring the production governor)
-	BriefSettingsDir      string // durable morning-brief schedule sidecar dir ("" = in-memory only; wiring the production brief governor)
-	BriefHistoryDir       string // durable morning-brief recommendation-history dir ("" disables; the no-repeat + feedback store)
-	TelegramSettingsDir   string // encrypted per-user Telegram bot/channel state ("" disables the integration)
+	Config                 config.Config
+	Main                   *llm.Client
+	Cheap                  *llm.Client
+	SubMain                *llm.Client // main-capability model, thinking OFF, for background sub-agents (nil falls back to Main)
+	Tools                  *tools.Manager
+	Pager                  *memory.Pager
+	Consolidator           agent.Consolidator
+	ConversationDir        string // durable conversation store dir ("" disables persistence)
+	TaskDir                string // durable task-ledger dir ("" disables; reaper needs it to resume after restart)
+	RunDir                 string
+	TraceDir               string // durable workspace-trace dir ("" disables; the reopen-survives-reload store, F3)
+	AutomatrixDir          string // durable Automatrix completion-inbox dir ("" disables; the in-app surprise-results store)
+	AutomatrixSettingsDir  string // durable Automatrix opt-in settings dir ("" = in-memory only; wiring the production governor)
+	BriefSettingsDir       string // durable morning-brief schedule sidecar dir ("" = in-memory only; wiring the production brief governor)
+	BriefHistoryDir        string // durable morning-brief recommendation-history dir ("" disables; the no-repeat + feedback store)
+	TelegramSettingsDir    string // encrypted per-user Telegram bot/channel state ("" disables the integration)
 	MachineMailSettingsDir string // encrypted per-user MachineMail API key ("" disables the integration)
-	MediaDir              string // machine-volume media dir ("" disables image/video/audio I/O)
-	VoiceASRURL           string
-	VoiceASRKey           string
-	VoiceControllerURL    string
-	WorkspaceDir          string         // VM workspace root for the coding workbench ("" disables /workspace and /projects)
-	Sandbox               sandbox.Client // Railway sandbox client for previews (nil disables /workspace/preview)
-	PreviewCfg            preview.Config // preview controller config (user id, router door, TTL, image, cap)
-	BackendURL            string
-	BackendToken          string
-	Vault                 *vault.Session // fail-closed encryption session for data-at-rest ("" nil = plaintext dev/CLI)
+	MediaDir               string // machine-volume media dir ("" disables image/video/audio I/O)
+	VoiceASRURL            string
+	VoiceASRKey            string
+	VoiceControllerURL     string
+	WorkspaceDir           string             // VM workspace root for the coding workbench ("" disables /workspace and /projects)
+	Sandbox                sandbox.Client     // Railway sandbox client for previews (nil disables /workspace/preview)
+	PreviewCfg             preview.Config     // preview controller config (user id, router door, TTL, image, cap)
+	DojoRailway            dojo.RailwayClient // live-schema Railway sandbox client for dojo desktops (nil disables the dojo lane)
+	DojoCfg                dojo.Config        // dojo session manager config (pinned image, idle/lifetime caps)
+	Omni                   *llm.Client        // stateless MiMo v2.5 omni vision client for desktop_look grounding (nil disables desktop_look)
+	DojoBridgeToken        string             // shared secret gating the loopback /dojo/computer-use proxy the desktop bridge posts to ("" disables the proxy)
+	BackendURL             string
+	BackendToken           string
+	Vault                  *vault.Session // fail-closed encryption session for data-at-rest ("" nil = plaintext dev/CLI)
 }
 
 // NewEngine assembles the engine and wires core_execute delegation through the
@@ -298,6 +317,14 @@ func NewEngine(o EngineOptions) *Engine {
 	if o.Sandbox != nil {
 		e.preview = preview.New(o.Sandbox, e.publishPreview, o.PreviewCfg)
 	}
+	// Disposable desktop sessions (DOJO req 1): built only when the live
+	// Railway sandbox client is configured; lifecycle events flow through
+	// publishDojo onto the conversation's run topic (live + durable trace).
+	if o.DojoRailway != nil {
+		e.dojo = dojo.New(o.DojoRailway, e.publishDojo, o.DojoCfg)
+	}
+	e.omni = o.Omni
+	e.dojoBridgeToken = o.DojoBridgeToken
 	// Fetch the onboarding profile from the daemon so it can be injected
 	// into every agent's stable system prompt prefix (req 2.4/2.5).
 	// Best-effort: a missing daemon or absent profile falls back to the
@@ -340,6 +367,17 @@ func NewEngine(o EngineOptions) *Engine {
 		// unadvertised and the prompt omits it.
 		if e.preview != nil && e.preview.Enabled() {
 			e.tools.SetPreview(e.agentPreview)
+		}
+		// Disposable-desktop grounding (DOJO req 3): the deterministic AT-SPI
+		// rung (desktop_a11y) needs only the session manager; the vision rung
+		// (desktop_look) additionally needs the omni client. Wire whichever is
+		// available so the driving ladder degrades cleanly.
+		if e.dojo != nil && e.dojo.Enabled() {
+			var look tools.DesktopLookFunc
+			if e.omni != nil {
+				look = e.desktopLook
+			}
+			e.tools.SetDesktop(look, e.desktopA11y)
 		}
 		// Browser filmstrip (BROWSER-FILMSTRIP req.2): persist tool-produced
 		// images (browser screenshots) to the served media plane so a still can
@@ -899,10 +937,20 @@ var traceWorkspaceTypes = map[string]bool{
 	// Sandbox preview lifecycle (NEO-WORKBENCH req 7.2): durable so reopen
 	// rebuilds the LAST honest preview state. The live-typing tool.delta
 	// channel is deliberately NOT here — deltas are ephemeral by design.
-	"preview.pending":     true,
-	"preview.ready":       true,
-	"preview.failed":      true,
-	"preview.expired":     true,
+	"preview.pending": true,
+	"preview.ready":   true,
+	"preview.failed":  true,
+	"preview.expired": true,
+	// Dojo desktop lifecycle (DOJO req 1.3): durable so reopen rebuilds the
+	// LAST honest desktop state.
+	"dojo.provisioning":   true,
+	"dojo.ready":          true,
+	"dojo.active":         true,
+	"dojo.takeover":       true,
+	"dojo.handback":       true,
+	"dojo.shipping":       true,
+	"dojo.destroyed":      true,
+	"dojo.failed":         true,
 	"voice.session.start": true,
 	"voice.session.state": true,
 	"voice.session.stop":  true,

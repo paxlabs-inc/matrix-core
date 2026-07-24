@@ -5,6 +5,7 @@ package tools
 
 import (
 	"fmt"
+	"strings"
 
 	"matrix/neo/internal/llm"
 )
@@ -34,16 +35,35 @@ var ValueTransferPatterns = []string{
 	"fund", "mint", "withdraw", "stake", "invoke", "bridge",
 }
 
+// DesktopLanePrefix marks the disposable-desktop actuation lane. A desktop that
+// can log into sites and click Buy is a money/reputation surface (DOJO
+// guard_surface); like the wallet lane it must never appear on an autonomous
+// (Automatrix / sub-agent) surface — the desktop is human-shared, driven only
+// by the top-level user-facing agent.
+const DesktopLanePrefix = "desktop"
+
 // IsValueTransferTool reports whether an advertised function name is a
 // value-moving / signing tool that must never appear on an autonomous surface:
-// the synthetic core_execute money/chain delegate, or any name matching
-// ValueTransferPatterns (send/transfer/swap/…). It is the predicate the
+// the synthetic core_execute money/chain delegate, any name matching
+// ValueTransferPatterns (send/transfer/swap/…), or any disposable-desktop lane
+// tool (DOJO — a desktop can spend and log in). It is the predicate the
 // Automatrix guard asserts the advertised surface against.
 func IsValueTransferTool(name string) bool {
 	if name == CoreExecuteTool {
 		return true
 	}
+	if IsDesktopTool(name) {
+		return true
+	}
 	return NewClassifier(ValueTransferPatterns).Classify(name, "") == Escalate
+}
+
+// IsDesktopTool reports whether a function name belongs to the disposable-
+// desktop lane: the bytebotd actuation bridge (desktop__…) or the grounding
+// synthetics (desktop_look / desktop_a11y).
+func IsDesktopTool(name string) bool {
+	return strings.HasPrefix(name, funcName(DesktopLanePrefix, "")) ||
+		name == DesktopLookTool || name == DesktopA11yTool
 }
 
 // AssertNoValueTransferTools returns an error naming the first value-moving /

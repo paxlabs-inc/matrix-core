@@ -1,0 +1,70 @@
+§SKILL
+id=using-the-desktop
+version=1.0.0
+display="Disposable Desktop"
+author=did:pax:0xMATRIX
+description="Operate a real Linux desktop the way a person would — mouse, keyboard, and a driving ladder (browser DOM, then AT-SPI accessibility tree, then omni vision) on a disposable Railway-sandbox computer that exists only while in use."
+mcl.verbs=deliver
+determinism=seedable
+seed_policy=per_intent
+
+§INPUTS
+slot target: ArtifactRef
+  required
+  hint="The desktop task to carry out (a native app to drive, a login-walled flow, a file GUI, a visual check)."
+
+slot constraints: Constraint[]
+  optional
+  hint="Scope, the specific application, and any irreversible-action limits the user set."
+
+§CORTEX
+reads=Identity Fact Capability Constraint Goal Event Pattern
+tags=desktop dojo bytebotd accessibility grounding
+
+§TOOLS
+matrix://tool/mcp/desktop/desktop_a11y@0.1.0
+matrix://tool/mcp/desktop/desktop_look@0.1.0
+matrix://tool/mcp/desktop/desktop_screenshot@0.1.0
+matrix://tool/mcp/desktop/desktop_move_mouse@0.1.0
+matrix://tool/mcp/desktop/desktop_click_mouse@0.1.0
+matrix://tool/mcp/desktop/desktop_type_text@0.1.0
+matrix://tool/mcp/desktop/desktop_type_keys@0.1.0
+matrix://tool/mcp/desktop/desktop_scroll@0.1.0
+matrix://tool/mcp/desktop/desktop_application@0.1.0
+matrix://tool/mcp/desktop/desktop_wait@0.1.0
+
+§SUB_SKILLS
+none
+
+§PROCEDURE
+on verb=deliver
+  kind="reason"
+  output_cardinality=1
+  prompt
+    system="You are the Matrix planner running using-the-desktop on a disposable Linux desktop driven through bytebotd. Output a PlanTree, not prose. Drive by a ladder, cheapest rung first: for web pages use the browser tools (the DOM is text); for a native app window call desktop_a11y to read exact roles, labels, and coordinates; only when the accessibility tree is empty (a canvas, a game, an Electron app, or a visual check) call desktop_look to ground the screen with vision. Both grounding tools return absolute screen pixels — pass them straight to desktop_click_mouse and desktop_move_mouse. Click a field before typing so it holds focus, and use desktop_wait after an action that loads or animates. The desktop can log into sites and spend money exactly as a person could: confirm the amount, recipient, and target before any irreversible action, and never commit one the user did not authorize. The desktop exists only while in use: your first desktop action turns the computer on, and a desktop_booting result means it is still starting — retry shortly or do other useful work first, never abandon the task over a boot. If the human takes control, wait; after they hand back, re-observe with a fresh desktop_a11y or desktop_look before acting. Finish with exactly one reason step grounded in what the desktop actually showed."
+    user="Desktop task: {slot.target.prose}\n\nResolved scope:\n{slots}\n\nRelevant context:\n{cortex.bundle}\n\nProduce the plan_tree@1 now."
+  end
+end
+
+§OUTPUTS
+slot report: Event
+  required
+  hint="The outcome grounded in what the desktop actually showed."
+
+§FAILURE_MODES
+desktop_unavailable
+  action=fail
+  reason=external_failure
+
+human_holds_controls
+  action=fail
+  reason=external_failure
+
+unauthorized_irreversible_action
+  action=fail
+  reason=policy_violation
+
+§HASH
+v=1
+algo=sha256_ast
+digest=

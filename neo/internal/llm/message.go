@@ -48,6 +48,11 @@ type Message struct {
 	ToolCallID string     `json:"tool_call_id,omitempty"`
 	Name       string     `json:"name,omitempty"`
 	AudioData  string     `json:"-"`
+	// ImageData is a data: URI (data:image/png;base64,…) carried as one MiMo
+	// image_url part on a user turn — the stateless vision-grounding input for
+	// DOJO's desktop_look. Process-only (never serialized to the durable
+	// transcript); the durable record keeps Content plus a media reference.
+	ImageData string `json:"-"`
 
 	// Reasoning carries a reasoning model's chain-of-thought when the
 	// provider surfaces it as a separate channel. Never serialized onto the
@@ -139,6 +144,14 @@ func UserMessage(content string) Message {
 // sealed media reference, never raw audio bytes.
 func UserAudioMessage(content, dataURL string) Message {
 	return Message{Role: RoleUser, Content: content, AudioData: dataURL}
+}
+
+// UserImageMessage builds one user turn whose on-wire content contains the
+// instruction text and one MiMo image_url part. ImageData is a data: URI and is
+// process-only: it is the stateless grounding input for desktop_look, never
+// stored in the durable transcript.
+func UserImageMessage(content, dataURL string) Message {
+	return Message{Role: RoleUser, Content: content, ImageData: dataURL}
 }
 
 // AssistantMessage builds an assistant-role text message (no tool calls). Used

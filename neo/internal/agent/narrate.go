@@ -103,6 +103,37 @@ func narratePhrase(call llm.ToolCall) string {
 		return "putting that on your screen"
 	case tools.WriteSkillTool:
 		return "saving this approach for next time"
+	case tools.DesktopLookTool:
+		if t := salientArg(args, "target"); t != "" {
+			return "looking on the desktop for " + t
+		}
+		return "looking at the desktop"
+	case tools.DesktopA11yTool:
+		return "reading the desktop's elements"
+	}
+
+	// The disposable-desktop actuation lane (desktop__…) reads as plain
+	// computer use, never internal machinery.
+	if strings.HasPrefix(name, "desktop__") {
+		switch {
+		case strings.Contains(name, "click"), strings.Contains(name, "mouse"), strings.Contains(name, "scroll"):
+			return "clicking on the desktop"
+		case strings.Contains(name, "type"), strings.Contains(name, "paste"), strings.Contains(name, "keys"):
+			if t := salientArg(args, "text"); t != "" {
+				return "typing " + t
+			}
+			return "typing on the desktop"
+		case strings.Contains(name, "screenshot"):
+			return "taking a screenshot of the desktop"
+		case strings.Contains(name, "application"):
+			if app := salientArg(args, "application"); app != "" {
+				return "opening " + app + " on the desktop"
+			}
+			return "switching apps on the desktop"
+		case strings.Contains(name, "read_file"), strings.Contains(name, "write_file"):
+			return "moving a file on the desktop"
+		}
+		return "using the desktop"
 	}
 
 	// MCP / natural tools: strip any "server__tool" namespace, classify by

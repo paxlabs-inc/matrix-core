@@ -191,7 +191,7 @@ func (c *Client) Chat(ctx context.Context, req ChatRequest) (*ChatResult, error)
 	// bounds ONLY the visible output (reasoning + tool-call tokens are excluded),
 	// so a reasoning turn cannot starve the answer down to a stub. Every other
 	// provider keeps the legacy max_tokens field.
-	if mcllm.IsXaiModel(c.model) || mcllm.IsXiaomiModel(c.model) {
+	if mcllm.IsXaiModel(c.model) || isMimoFamily(c.model) {
 		wire.MaxCompletionTokens = c.maxTokens
 	} else {
 		wire.MaxTokens = c.maxTokens
@@ -209,7 +209,7 @@ func (c *Client) Chat(ctx context.Context, req ChatRequest) (*ChatResult, error)
 	switch {
 	case mcllm.IsXaiModel(c.model) && supportsReasoningEffort(c.model):
 		wire.ReasoningEffort = reasoningEffort(c.enableThinking)
-	case mcllm.IsXiaomiModel(c.model):
+	case isMimoFamily(c.model):
 		wire.Thinking = &thinkingConfig{Type: xiaomiThinkingType(c.enableThinking)}
 	case c.enableThinking:
 		if args := enableThinkingArgs(c.model); args != nil {
@@ -731,10 +731,15 @@ type wireContentPart struct {
 	Type       string          `json:"type"`
 	Text       string          `json:"text,omitempty"`
 	InputAudio *wireInputAudio `json:"input_audio,omitempty"`
+	ImageURL   *wireImageURL   `json:"image_url,omitempty"`
 }
 
 type wireInputAudio struct {
 	Data string `json:"data"`
+}
+
+type wireImageURL struct {
+	URL string `json:"url"`
 }
 
 // toWireMessages converts the transcript to the request-side shape. When mimo
@@ -747,12 +752,17 @@ func toWireMessages(msgs []Message, mimo bool) []wireMessage {
 	out := make([]wireMessage, len(msgs))
 	for i, m := range msgs {
 		var content any = m.Content
-		if m.Role == RoleUser && m.AudioData != "" {
+		if m.Role == RoleUser && (m.AudioData != "" || m.ImageData != "") {
 			parts := make([]wireContentPart, 0, 2)
 			if m.Content != "" {
 				parts = append(parts, wireContentPart{Type: "text", Text: m.Content})
 			}
-			parts = append(parts, wireContentPart{Type: "input_audio", InputAudio: &wireInputAudio{Data: m.AudioData}})
+			if m.AudioData != "" {
+				parts = append(parts, wireContentPart{Type: "input_audio", InputAudio: &wireInputAudio{Data: m.AudioData}})
+			}
+			if m.ImageData != "" {
+				parts = append(parts, wireContentPart{Type: "image_url", ImageURL: &wireImageURL{URL: m.ImageData}})
+			}
 			content = parts
 		}
 		var reasoning *string

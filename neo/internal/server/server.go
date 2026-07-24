@@ -117,6 +117,22 @@ func (s *Server) routes() []routeFact {
 		// Coding workbench environment surface: project-scoped workspace
 		// tree / file read / atomic write / diff / bounded exec.
 		{"/workspace/", "GET/POST /workspace/* — the coding workbench surface (tree, file read/write, raw download, upload, diff, exec)", s.handleWorkspace},
+		// Disposable-desktop actuation proxy (DOJO wave 2): the loopback
+		// endpoint the co-located desktop bridge posts bytebotd actions to; it
+		// rides exec-curl into the live session's sandbox. Token-gated, not a
+		// model/client surface (no semantic entry).
+		{"/dojo/computer-use", "", s.handleDojoComputerUse},
+		// Disposable-desktop client surface (DOJO wave 3): session state for
+		// panel seeding, and the polled live-view frame. Frames are passive —
+		// watching never keeps a sandbox alive.
+		{"/dojo/session", "GET /dojo/session — the disposable desktop's live session state for a conversation (the user watches its boot and lifecycle in their Computer panel)", s.handleDojoSession},
+		{"/dojo/frame", "", s.handleDojoFrame},
+		// Control-lease takeover (DOJO req 4.2/4.3): while the user holds the
+		// lease your desktop actions are refused with takeover_active; after
+		// handback you must re-observe before acting.
+		{"/dojo/takeover", "POST /dojo/takeover — the user takes control of your disposable desktop (your desktop actions are refused until they hand back)", s.handleDojoTakeover},
+		{"/dojo/handback", "POST /dojo/handback — the user hands the desktop controls back to you (re-observe before your next action)", s.handleDojoHandback},
+		{"/dojo/input", "", s.handleDojoInput},
 		// Workbench project registry: projects are workspace subdirectories.
 		{"/projects", "GET/POST /projects — the workbench project registry", s.handleProjects},
 		{"/projects/", "", s.handleProject},

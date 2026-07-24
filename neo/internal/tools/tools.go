@@ -96,6 +96,17 @@ const TodoTool = "todo"
 // preview launcher is wired (sandbox previews configured on this daemon).
 const PreviewTool = "workspace_preview"
 
+// DesktopLookTool / DesktopA11yTool are the disposable-desktop grounding
+// synthetics (DOJO req 3). They are Neo-owned (they call the omni vision client
+// and the AT-SPI exec through the dojo session manager), so they never enter
+// the desktop bridge's tool-bijection check; each is advertised only when the
+// desktop session manager is wired on this daemon. Like the bridge lane they
+// are excluded from every autonomous surface (IsDesktopTool).
+const (
+	DesktopLookTool = "desktop_look"
+	DesktopA11yTool = "desktop_a11y"
+)
+
 const maxFileMutationBytes = 16 * 1024
 
 // DelegateFunc runs a prose intent through the MCL pipeline and returns its
@@ -147,6 +158,20 @@ type TodoFunc func(ctx context.Context, items []TodoItem) error
 // engine wiring (see internal/server); nil until wired, in which case the
 // preview tool is not advertised at all.
 type PreviewFunc func(ctx context.Context) (string, error)
+
+// DesktopLookFunc grounds the disposable desktop with the stateless MiMo v2.5
+// omni vision call (DOJO req 3.2): it captures the desktop, invokes omni with a
+// fixed grounding prompt and the given target, and returns structured text
+// (interactive elements + a best click point, coordinates already rescaled to
+// screen pixels). It is the LAST rung of the driving ladder. Injected by the
+// engine wiring; nil until a desktop session manager + omni client are wired.
+type DesktopLookFunc func(ctx context.Context, target string) (string, error)
+
+// DesktopA11yFunc dumps the disposable desktop's AT-SPI accessibility tree
+// (DOJO req 3.3): the deterministic MIDDLE rung — roles, labels, and
+// screen-pixel coordinates with no vision model involved. Injected by the
+// engine wiring; nil until a desktop session manager is wired.
+type DesktopA11yFunc func(ctx context.Context) (string, error)
 
 // RecallFunc searches the durable memory store and returns a rendered,
 // user-presentable digest. It is the PRIMARY reasoning-time retrieval verb
@@ -221,10 +246,12 @@ type Manager struct {
 	surface    SurfaceFunc
 	ask        AskFunc
 	writeSkill WriteSkillFunc
-	todo       TodoFunc
-	preview    PreviewFunc
-	media      MediaPersistFunc
-	maxAgents  int
+	todo        TodoFunc
+	preview     PreviewFunc
+	desktopLook DesktopLookFunc
+	desktopA11y DesktopA11yFunc
+	media       MediaPersistFunc
+	maxAgents   int
 
 	// personalization persists the user-confirmed personalization profile
 	// (ORACLE task 5.3). Reached only through save_personalization_profile,
@@ -406,6 +433,12 @@ func (m *Manager) Schemas() []llm.Tool {
 	if m.preview != nil {
 		out = append(out, previewSchema())
 	}
+	if m.desktopLook != nil {
+		out = append(out, desktopLookSchema())
+	}
+	if m.desktopA11y != nil {
+		out = append(out, desktopA11ySchema())
+	}
 	return out
 }
 
@@ -416,6 +449,12 @@ func (m *Manager) Schemas() []llm.Tool {
 func (m *Manager) SubagentSchemas() []llm.Tool {
 	out := make([]llm.Tool, 0, len(m.order))
 	for _, fn := range m.order {
+		// The disposable-desktop lane is a human-shared, spend-capable surface
+		// (DOJO guard_surface): it is driven only by the top-level user-facing
+		// agent, never advertised to an autonomous sub-agent / Automatrix run.
+		if IsDesktopTool(fn) {
+			continue
+		}
 		bt := m.byFunc[fn]
 		out = append(out, llm.NewFunctionTool(fn, bt.desc, bt.params))
 	}
@@ -494,6 +533,14 @@ func (m *Manager) Preflight(funcNames []string) error {
 			if m.preview == nil {
 				return fmt.Errorf("%s is not connected", funcName)
 			}
+		case DesktopLookTool:
+			if m.desktopLook == nil {
+				return fmt.Errorf("%s is not connected", funcName)
+			}
+		case DesktopA11yTool:
+			if m.desktopA11y == nil {
+				return fmt.Errorf("%s is not connected", funcName)
+			}
 		case SavePersonalizationTool:
 			if m.personalization == nil {
 				return fmt.Errorf("%s is not connected", funcName)
@@ -536,6 +583,12 @@ func (m *Manager) dispatch(ctx context.Context, funcName string, args map[string
 		return syntheticResult(c, e, er)
 	case PreviewTool:
 		c, e, er := m.dispatchPreview(ctx)
+		return syntheticResult(c, e, er)
+	case DesktopLookTool:
+		c, e, er := m.dispatchDesktopLook(ctx, args)
+		return syntheticResult(c, e, er)
+	case DesktopA11yTool:
+		c, e, er := m.dispatchDesktopA11y(ctx)
 		return syntheticResult(c, e, er)
 	case SavePersonalizationTool:
 		c, e, er := m.dispatchPersonalizationSave(ctx, args)
@@ -974,6 +1027,47 @@ func (m *Manager) SetPreview(f PreviewFunc) { m.preview = f }
 // session.
 func (m *Manager) PreviewEnabled() bool { return m != nil && m.preview != nil }
 
+// SetDesktop wires the disposable-desktop grounding synthetics (DOJO req 3)
+// after construction (they need the engine's dojo session manager + omni vision
+// client assembled first). Passing nil for either leaves that tool unadvertised.
+func (m *Manager) SetDesktop(look DesktopLookFunc, a11y DesktopA11yFunc) {
+	if m == nil {
+		return
+	}
+	m.desktopLook = look
+	m.desktopA11y = a11y
+}
+
+// DesktopEnabled reports whether the desktop grounding lane is wired this
+// session (at least desktop_look).
+func (m *Manager) DesktopEnabled() bool { return m != nil && m.desktopLook != nil }
+
+// dispatchDesktopLook grounds the desktop with the stateless omni vision call.
+func (m *Manager) dispatchDesktopLook(ctx context.Context, args map[string]interface{}) (string, bool, error) {
+	if m.desktopLook == nil {
+		return "the disposable desktop is not available in this environment", true, nil
+	}
+	target := strings.TrimSpace(asString(args["target"]))
+	out, err := m.desktopLook(ctx, target)
+	if err != nil {
+		return fmt.Sprintf("could not ground the desktop: %v", err), true, nil
+	}
+	return out, false, nil
+}
+
+// dispatchDesktopA11y dumps the desktop's accessibility tree (deterministic
+// middle rung).
+func (m *Manager) dispatchDesktopA11y(ctx context.Context) (string, bool, error) {
+	if m.desktopA11y == nil {
+		return "the disposable desktop is not available in this environment", true, nil
+	}
+	out, err := m.desktopA11y(ctx)
+	if err != nil {
+		return fmt.Sprintf("could not read the desktop accessibility tree: %v", err), true, nil
+	}
+	return out, false, nil
+}
+
 // dispatchPreview launches the active project's sandbox preview. The launcher
 // is asynchronous by contract: it kicks provisioning and returns immediately;
 // readiness (or failure) reaches the user through the preview.* events the
@@ -1404,6 +1498,33 @@ func previewSchema() llm.Tool {
 	return llm.NewFunctionTool(
 		PreviewTool,
 		"Start (or restart) the live preview of the active project in the user's workbench: it provisions an isolated sandbox, runs the project's dev command there, and the running app appears in the workbench Preview pane. Call it ONCE when the project is in a runnable state (after your file writes and any install/build steps) so the user can see the app live — this is how you show working software; never deploy anywhere just to show work. It returns immediately: readiness or failure reaches the user through the Preview pane, so do not poll, wait for a URL, or call it repeatedly.",
+		map[string]interface{}{
+			"type":       "object",
+			"properties": map[string]interface{}{},
+		},
+	)
+}
+
+func desktopLookSchema() llm.Tool {
+	return llm.NewFunctionTool(
+		DesktopLookTool,
+		"Look at the disposable desktop and get grounded, clickable coordinates. Captures the screen and returns the interactive elements with their exact screen-pixel positions, plus the single best click point for a named target. This is the LAST rung of the driving ladder — reach for it only when the browser DOM (for web pages) and desktop_a11y (for native apps) can't locate what you need, e.g. a canvas UI, an icon, or a visual check. Pass the coordinates it returns straight to desktop_click_mouse / desktop_move_mouse.",
+		map[string]interface{}{
+			"type": "object",
+			"properties": map[string]interface{}{
+				"target": map[string]interface{}{
+					"type":        "string",
+					"description": "What you are looking for (e.g. \"the Submit button\", \"the search box\"). Leave empty to list all interactive elements on screen.",
+				},
+			},
+		},
+	)
+}
+
+func desktopA11ySchema() llm.Tool {
+	return llm.NewFunctionTool(
+		DesktopA11yTool,
+		"Read the disposable desktop's accessibility tree: the interactive elements of native (XFCE/GTK) apps with their roles, labels, and exact screen-pixel coordinates — deterministic, no vision needed. This is the MIDDLE rung of the driving ladder: prefer it over desktop_look for native application windows (menus, dialogs, buttons, fields). If it returns no elements (a canvas or Electron UI), fall back to desktop_look. Pass the coordinates it returns straight to desktop_click_mouse / desktop_move_mouse.",
 		map[string]interface{}{
 			"type":       "object",
 			"properties": map[string]interface{}{},
