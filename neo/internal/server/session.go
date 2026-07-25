@@ -937,6 +937,24 @@ func (s *session) emitProgress(r *run, attempt int, err error, outage bool) {
 			r.outageNotified = true
 		}
 	}
+	// The user-facing bubble stays a calm progress line, but the death itself
+	// must be VISIBLE on the diagnostic side-channel. Sub-agent deaths already
+	// publish subagent.status=failed; a main-run death published nothing, so a
+	// silent respawn was indistinguishable from an agent that simply kept
+	// working — the 2026-07-25 research task burned two lives and a full user
+	// session before the real reason (an O1 budget rejection) was recoverable
+	// at all, and only from a memory-activation seed. Same broker as every
+	// other event, so it lands in the durable trace.
+	fields := map[string]interface{}{
+		"conversation_id": s.id,
+		"intent_id":       r.id,
+		"attempt":         attempt + 1,
+		"outage":          outage,
+	}
+	if err != nil {
+		fields["error"] = clip(strings.Join(strings.Fields(err.Error()), " "), 400)
+	}
+	s.engine.broker.publish(r.id, "run.retry", "neo", fields)
 	s.engine.logLifecycle("run.retry", r.id, s.id, fmt.Sprintf("attempt_%d", attempt+1), time.Since(r.started), err)
 }
 

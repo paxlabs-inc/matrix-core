@@ -171,10 +171,26 @@ func guardUnreadOverflow(a *Agent, _ *closeContext) (closeDecision, bool) {
 	return closeDecision{verdict: verdictNudge}, true
 }
 
+// sourceFetchNudgeCap bounds how many closes the source-fetch guard may block
+// per turn before it stands down and lets the composed answer deliver. It
+// mirrors overflowNudgeCap for the same reason: the guard's precondition is not
+// always ACHIEVABLE. When every fetch of a discovered URL fails (paywall, bot
+// wall, dead host), no amount of steering can make webEvidenceReady true, and
+// an unbounded guard then withholds a finished answer until the shared
+// unproductive cap kills the turn — the 2026-07-22 loopty-loop shape, which was
+// closed for the overflow guard and left open here. Standing down is honest:
+// the model is told the answer was held back and why, so a delivered answer
+// carries its own caveat about unread sources.
+const sourceFetchNudgeCap = 2
+
 func guardSourceFetch(a *Agent, _ *closeContext) (closeDecision, bool) {
 	if a.webEvidenceReady() {
 		return closeDecision{}, false
 	}
+	if a.turn.sourceFetchNudges >= sourceFetchNudgeCap {
+		return closeDecision{}, false
+	}
+	a.turn.sourceFetchNudges++
 	if a.pushGuidanceNudge("Your answer was NOT delivered to the user — it is being held back. Search results are source discovery, not evidence. Read at least one relevance-validated result URL with fetch before making a factual claim; if no relevant result exists, say that plainly without substituting another entity or evidence class. Then give your final answer again.", &a.turn.unproductive) {
 		return closeDecision{verdict: verdictNudge, err: a.escalateGuidance(a.turn.unproductive)}, true
 	}

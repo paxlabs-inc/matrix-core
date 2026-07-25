@@ -79,9 +79,7 @@ func (a *Agent) governDeath(reason, message string) error {
 		outcome := o1.NewOutcome("agent_turn").Fail(o1.LayerApplication, "internal_convergence_failure").
 			Retryable(true).AllowTransition(o1.TransitionRetry).
 			Evidence(string(reason) + ": " + oneLine(digest)).MustBuild()
-		if a.turn.lastOutcome == nil || a.turn.lastOutcome.Success || !a.turn.lastOutcome.IsTerminal() {
-			a.turn.lastOutcome = &outcome
-		}
+		a.turn.commitOutcomeIfStandingIsNotTerminal(outcome)
 		_, _ = a.turn.runLedger.RecordAttempt(o1.AttemptRecord{
 			Operation: "agent_turn", PreState: a.turn.runLedger.RunID,
 			PostState: a.turn.runLedger.RunID, Outcome: outcome, Evidence: outcome.Evidence,

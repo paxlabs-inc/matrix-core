@@ -1,7 +1,7 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:f8cf40ae8d7bafd942bea8c578e50c0c233fc5f6124c8680764f19f41a6b8196
+# GENERATED gen=codegraph do-not-edit merkle=b3:b0ed2224e61918e847ac3288dd4d83f0cfa30864579a01464e3f1e4c988637e8
 
 NODE id=matrix/neo/internal/o1 kind=package
-  digest=b3:cb291a51cbeb7f43666f60b18d0bd89132c32edfa38f424958550b737c0a4159 file=neo/internal/o1 range=0:0 lang=go exported=true
+  digest=b3:3482cdb5e0592ddea6d56d01f07ebff141002fe74622e97237e962f72ada86d2 file=neo/internal/o1 range=0:0 lang=go exported=true
 EDGES
   contains=matrix/neo/internal/o1/context.go,matrix/neo/internal/o1/contract.go,matrix/neo/internal/o1/ledger.go,matrix/neo/internal/o1/manifest.go,matrix/neo/internal/o1/mutation.go,matrix/neo/internal/o1/outcome.go,matrix/neo/internal/o1/protocol.go,matrix/neo/internal/o1/qualification.go,matrix/neo/internal/o1/recovery.go,matrix/neo/internal/o1/registry.go,matrix/neo/internal/o1/runtime.go,matrix/neo/internal/o1/supervisor.go,matrix/neo/internal/o1/verifier.go
   ^contains=mod:matrix/neo
@@ -506,9 +506,9 @@ EDGES
   ^contains=matrix/neo/internal/o1.CriterionVerifier
 
 NODE id=matrix/neo/internal/o1.DefaultBudget kind=func
-  digest=b3:dffe4cf01f065d15449a99cb8fdb786fa3ef6db2a43e50ad6fd4756ec014f4f2 file=neo/internal/o1/protocol.go range=146:153 lang=go exported=true byte_range=5539:5793
+  digest=b3:8b7955caaab882b801bb085304951d5659f1a41689efee83398518dc90972735 file=neo/internal/o1/protocol.go range=159:178 lang=go exported=true byte_range=6304:7334
   sig=func DefaultBudget() RepresentationBudget
-  doc=DefaultBudget returns the default representation budget.
+  doc=DefaultBudget returns the default representation budget.\n\nThe ceilings are deliberately generous: this budget exists to catch a\nrunaway representation, NOT to cap how long a legitimate answer may be. The\nprior 4096-token ceiling sat BELOW the main conversational client's own\n8192-token request cap (cmd/neo/main.go), so every generation in the\n4097..8192 range — which is where a real report or synthesis lands — was\nrejected by our own conformer after the provider had already produced it.\nThe token ceiling now matches the agent's answer-budget escalation ceiling\n(agent.answerTokenCeiling, 64K) so the two ladders agree; argument bytes sit\nwell above the tools layer's own 16KB file-mutation limit, which returns a\ngraceful "write a bounded chunk" tool result and must be the surface that\nenforces payload size, not this one.
 EDGES
   ^defines=matrix/neo/internal/o1/protocol.go
 
@@ -526,19 +526,19 @@ EDGES
   ^defines=matrix/neo/internal/o1/registry.go
 
 NODE id=matrix/neo/internal/o1.DialectBaseten kind=const
-  digest=b3:af02a442a1d461ace8ed4942acbacfbdf44074ae77e2be752c8dbb581622bc5d file=neo/internal/o1/protocol.go range=22:22 lang=go exported=true byte_range=607:651
+  digest=b3:af02a442a1d461ace8ed4942acbacfbdf44074ae77e2be752c8dbb581622bc5d file=neo/internal/o1/protocol.go range=35:35 lang=go exported=true byte_range=1372:1416
   sig=o1.ProviderDialect
 EDGES
   ^defines=matrix/neo/internal/o1/protocol.go
 
 NODE id=matrix/neo/internal/o1.DialectDeepSeek kind=const
-  digest=b3:15635681dbc159be2035c34a3b8e205fd8295c3fbaf2b360b5279453d179a506 file=neo/internal/o1/protocol.go range=20:20 lang=go exported=true byte_range=518:563
+  digest=b3:15635681dbc159be2035c34a3b8e205fd8295c3fbaf2b360b5279453d179a506 file=neo/internal/o1/protocol.go range=33:33 lang=go exported=true byte_range=1283:1328
   sig=o1.ProviderDialect
 EDGES
   ^defines=matrix/neo/internal/o1/protocol.go
 
 NODE id=matrix/neo/internal/o1.DialectFireworks kind=const
-  digest=b3:29a5d91876e6630a227bce220a2a8ccc02ebb05f5cd4c504cfa85a367a9e6135 file=neo/internal/o1/protocol.go range=18:18 lang=go exported=true byte_range=427:473
+  digest=b3:29a5d91876e6630a227bce220a2a8ccc02ebb05f5cd4c504cfa85a367a9e6135 file=neo/internal/o1/protocol.go range=31:31 lang=go exported=true byte_range=1192:1238
   sig=o1.ProviderDialect
 EDGES
   ^defines=matrix/neo/internal/o1/protocol.go
@@ -550,25 +550,25 @@ EDGES
   ^defines=matrix/neo/internal/o1/runtime.go
 
 NODE id=matrix/neo/internal/o1.DialectGeneric kind=const
-  digest=b3:63041080ad7c5da6b951a5e8286e083dfba314e0b0e3edd28e4b04d1806eaa3b file=neo/internal/o1/protocol.go range=23:23 lang=go exported=true byte_range=653:697
+  digest=b3:63041080ad7c5da6b951a5e8286e083dfba314e0b0e3edd28e4b04d1806eaa3b file=neo/internal/o1/protocol.go range=36:36 lang=go exported=true byte_range=1418:1462
   sig=o1.ProviderDialect
 EDGES
   ^defines=matrix/neo/internal/o1/protocol.go
 
 NODE id=matrix/neo/internal/o1.DialectMimo kind=const
-  digest=b3:7f808118400a1350d3a543ce01482ab6ddaa6ad53dc45294605f4544bb4e015a file=neo/internal/o1/protocol.go range=19:19 lang=go exported=true byte_range=475:516
+  digest=b3:7f808118400a1350d3a543ce01482ab6ddaa6ad53dc45294605f4544bb4e015a file=neo/internal/o1/protocol.go range=32:32 lang=go exported=true byte_range=1240:1281
   sig=o1.ProviderDialect
 EDGES
   ^defines=matrix/neo/internal/o1/protocol.go
 
 NODE id=matrix/neo/internal/o1.DialectOpenAI kind=const
-  digest=b3:73b462abba57f8e6ed0ab9ffa8b37638f4a34ce2bc05b908124e79596e37dc69 file=neo/internal/o1/protocol.go range=17:17 lang=go exported=true byte_range=382:425
+  digest=b3:73b462abba57f8e6ed0ab9ffa8b37638f4a34ce2bc05b908124e79596e37dc69 file=neo/internal/o1/protocol.go range=30:30 lang=go exported=true byte_range=1147:1190
   sig=o1.ProviderDialect
 EDGES
   ^defines=matrix/neo/internal/o1/protocol.go
 
 NODE id=matrix/neo/internal/o1.DialectXAI kind=const
-  digest=b3:f4355c3b7547bdbf3166333bbd765daf4c896aaac05213a7f6dca3d1b7ef1408 file=neo/internal/o1/protocol.go range=21:21 lang=go exported=true byte_range=565:605
+  digest=b3:f4355c3b7547bdbf3166333bbd765daf4c896aaac05213a7f6dca3d1b7ef1408 file=neo/internal/o1/protocol.go range=34:34 lang=go exported=true byte_range=1330:1370
   sig=o1.ProviderDialect
 EDGES
   ^defines=matrix/neo/internal/o1/protocol.go
@@ -653,6 +653,13 @@ NODE id=matrix/neo/internal/o1.EffectWrite kind=const
   sig=o1.EffectClass
 EDGES
   ^defines=matrix/neo/internal/o1/manifest.go
+
+NODE id=matrix/neo/internal/o1.ErrBudgetExceeded kind=var
+  digest=b3:e4bb86210501d00285bee9b4b77d55be9fd3730faef574cba2c11c0a62faa1d3 file=neo/internal/o1/protocol.go range=13:23 lang=go exported=true byte_range=238:991
+  sig=error
+  doc=ErrBudgetExceeded marks a representation-budget overage (too many completion\ntokens, tool calls, or argument bytes). Every BudgetCheck error wraps it so\ncallers can tell a SIZE verdict apart from a protocol violation.\n\nThe distinction is load-bearing. A malformed or reasoning-only generation is\nunusable — the model produced nothing to act on. An oversized generation is\nthe opposite: it is complete and correct, merely long. Conflating the two let\na finished 4098-token answer be discarded as a "model call failed" and killed\nthe run (2026-07-25 research-task incident), so a budget verdict must never\nbe the reason a usable generation is thrown away.
+EDGES
+  ^defines=matrix/neo/internal/o1/protocol.go
 
 NODE id=matrix/neo/internal/o1.EvaluateFailureReplay kind=func
   digest=b3:579d61af1281e60a65cb55b576ce39d9f9f23e4b82ed4310ffbd6e5b48787c7e file=neo/internal/o1/qualification.go range=128:155 lang=go exported=true byte_range=6436:7437
@@ -1327,7 +1334,7 @@ EDGES
   ^defines=matrix/neo/internal/o1/outcome.go
 
 NODE id=matrix/neo/internal/o1.NewProviderConformer kind=func
-  digest=b3:0fc5633ecac872e9e04bbf0e8daa662afccbe1bcc13a8ac52ef27dbed9a3a476 file=neo/internal/o1/protocol.go range=66:78 lang=go exported=true byte_range=2459:2959
+  digest=b3:0fc5633ecac872e9e04bbf0e8daa662afccbe1bcc13a8ac52ef27dbed9a3a476 file=neo/internal/o1/protocol.go range=79:91 lang=go exported=true byte_range=3224:3724
   sig=func NewProviderConformer(dialect ProviderDialect) *ProviderConformer
   doc=NewProviderConformer creates a conformer for the given dialect.
 EDGES
@@ -1348,7 +1355,7 @@ EDGES
   ^defines=matrix/neo/internal/o1/ledger.go
 
 NODE id=matrix/neo/internal/o1.NormalizedGeneration kind=type
-  digest=b3:4cffef92e6d8fbedd338264dc59ca803c5c15ad883f8020a98586df10c70c62c file=neo/internal/o1/protocol.go range=36:49 lang=go exported=true byte_range=1115:1943
+  digest=b3:4cffef92e6d8fbedd338264dc59ca803c5c15ad883f8020a98586df10c70c62c file=neo/internal/o1/protocol.go range=49:62 lang=go exported=true byte_range=1880:2708
   sig=type NormalizedGeneration struct {\n	Content		string			`json:"content"`\n	Reasoning	string			`json:"reasoning,omitempty"`\n	ToolCalls	[]NormalizedToolCall	`json:"tool_calls,omitempty"`\n	FinishReason	string			`json:"finish_reason"`\n	Usage		Usage			`json:"usage"`\n	Dialect		ProviderDialect		`json:"dialect"`\n	ControlTokens	[]string		`json:"control_tokens,omitempty"`\n	Malformed	bool			`json:"malformed,omitempty"`\n	MalformedReason	string			`json:"malformed_reason,omitempty"`\n}
   doc=NormalizedGeneration is the provider-independent result of a model turn.\nPer O1 req.4 ac.1 and ac.2: streaming content, reasoning, structured calls,\nfragmented arguments, finish reasons, and usage are captured.
 EDGES
@@ -1356,61 +1363,61 @@ EDGES
   ^defines=matrix/neo/internal/o1/protocol.go
 
 NODE id=matrix/neo/internal/o1.NormalizedGeneration#Content kind=field
-  digest=b3:ae3006d23ac192301d541d2219792c2e75f77fa43c025e824b698701c4e0f71c file=neo/internal/o1/protocol.go range=40:40 lang=go exported=true byte_range=1371:1424
+  digest=b3:ae3006d23ac192301d541d2219792c2e75f77fa43c025e824b698701c4e0f71c file=neo/internal/o1/protocol.go range=53:53 lang=go exported=true byte_range=2136:2189
   sig=string
 EDGES
   ^contains=matrix/neo/internal/o1.NormalizedGeneration
 
 NODE id=matrix/neo/internal/o1.NormalizedGeneration#ControlTokens kind=field
-  digest=b3:d98f9cf25a64548c84653f337326f4185538175e318779c8ff9ff3f0f974ebf6 file=neo/internal/o1/protocol.go range=46:46 lang=go exported=true byte_range=1730:1800
+  digest=b3:d98f9cf25a64548c84653f337326f4185538175e318779c8ff9ff3f0f974ebf6 file=neo/internal/o1/protocol.go range=59:59 lang=go exported=true byte_range=2495:2565
   sig=[]string
 EDGES
   ^contains=matrix/neo/internal/o1.NormalizedGeneration
 
 NODE id=matrix/neo/internal/o1.NormalizedGeneration#Dialect kind=field
-  digest=b3:92670e711b7c67b0169058aab7bba344387856aa7276383436e3a46f20b456be file=neo/internal/o1/protocol.go range=45:45 lang=go exported=true byte_range=1675:1728
+  digest=b3:92670e711b7c67b0169058aab7bba344387856aa7276383436e3a46f20b456be file=neo/internal/o1/protocol.go range=58:58 lang=go exported=true byte_range=2440:2493
   sig=o1.ProviderDialect
 EDGES
   ^contains=matrix/neo/internal/o1.NormalizedGeneration
 
 NODE id=matrix/neo/internal/o1.NormalizedGeneration#FinishReason kind=field
-  digest=b3:452d2da053e6c808f2c2c7ce40145986d038572c1371584cf9c72502bac95289 file=neo/internal/o1/protocol.go range=43:43 lang=go exported=true byte_range=1561:1620
+  digest=b3:452d2da053e6c808f2c2c7ce40145986d038572c1371584cf9c72502bac95289 file=neo/internal/o1/protocol.go range=56:56 lang=go exported=true byte_range=2326:2385
   sig=string
 EDGES
   ^contains=matrix/neo/internal/o1.NormalizedGeneration
 
 NODE id=matrix/neo/internal/o1.NormalizedGeneration#Malformed kind=field
-  digest=b3:7197826f2b1d30c48c7100ffd82da0ed0a6f963b56718aad83961951300c75b9 file=neo/internal/o1/protocol.go range=47:47 lang=go exported=true byte_range=1802:1867
+  digest=b3:7197826f2b1d30c48c7100ffd82da0ed0a6f963b56718aad83961951300c75b9 file=neo/internal/o1/protocol.go range=60:60 lang=go exported=true byte_range=2567:2632
   sig=bool
 EDGES
   ^contains=matrix/neo/internal/o1.NormalizedGeneration
 
 NODE id=matrix/neo/internal/o1.NormalizedGeneration#MalformedReason kind=field
-  digest=b3:4c7f5ba09609fede07e8ab021220271123725833f321c08fc8564214e11e3a72 file=neo/internal/o1/protocol.go range=48:48 lang=go exported=true byte_range=1869:1941
+  digest=b3:4c7f5ba09609fede07e8ab021220271123725833f321c08fc8564214e11e3a72 file=neo/internal/o1/protocol.go range=61:61 lang=go exported=true byte_range=2634:2706
   sig=string
 EDGES
   ^contains=matrix/neo/internal/o1.NormalizedGeneration
 
 NODE id=matrix/neo/internal/o1.NormalizedGeneration#Reasoning kind=field
-  digest=b3:98cdfbad232d8fe3d34a4aca78d7a5652fee7835641bdf3de82dcd95fba10206 file=neo/internal/o1/protocol.go range=41:41 lang=go exported=true byte_range=1426:1491
+  digest=b3:98cdfbad232d8fe3d34a4aca78d7a5652fee7835641bdf3de82dcd95fba10206 file=neo/internal/o1/protocol.go range=54:54 lang=go exported=true byte_range=2191:2256
   sig=string
 EDGES
   ^contains=matrix/neo/internal/o1.NormalizedGeneration
 
 NODE id=matrix/neo/internal/o1.NormalizedGeneration#ToolCalls kind=field
-  digest=b3:dc5ec99fe77588c16c5b6bb1a095db39fe77e56d6482e8a35bc62dda77a9713c file=neo/internal/o1/protocol.go range=42:42 lang=go exported=true byte_range=1493:1559
+  digest=b3:dc5ec99fe77588c16c5b6bb1a095db39fe77e56d6482e8a35bc62dda77a9713c file=neo/internal/o1/protocol.go range=55:55 lang=go exported=true byte_range=2258:2324
   sig=[]o1.NormalizedToolCall
 EDGES
   ^contains=matrix/neo/internal/o1.NormalizedGeneration
 
 NODE id=matrix/neo/internal/o1.NormalizedGeneration#Usage kind=field
-  digest=b3:60ebe91c2648ea7529e801fb10a5c259ad7cb83f0a590d3d956eb0d717b4dd2e file=neo/internal/o1/protocol.go range=44:44 lang=go exported=true byte_range=1622:1673
+  digest=b3:60ebe91c2648ea7529e801fb10a5c259ad7cb83f0a590d3d956eb0d717b4dd2e file=neo/internal/o1/protocol.go range=57:57 lang=go exported=true byte_range=2387:2438
   sig=o1.Usage
 EDGES
   ^contains=matrix/neo/internal/o1.NormalizedGeneration
 
 NODE id=matrix/neo/internal/o1.NormalizedToolCall kind=type
-  digest=b3:b2d537796a1a4d18ac832a85078a447399c7ea9498079e696992f306db8466de file=neo/internal/o1/protocol.go range=26:34 lang=go exported=true byte_range=701:1113
+  digest=b3:b2d537796a1a4d18ac832a85078a447399c7ea9498079e696992f306db8466de file=neo/internal/o1/protocol.go range=39:47 lang=go exported=true byte_range=1466:1878
   sig=type NormalizedToolCall struct {\n	ID		string		`json:"id"`\n	Name		string		`json:"name"`\n	Arguments	json.RawMessage	`json:"arguments"`\n	RawDialect	ProviderDialect	`json:"raw_dialect"`\n}
   doc=NormalizedToolCall is the provider-independent internal representation\nof a model-authored tool call. Per O1 req.4 ac.2: all supported forms\nnormalize into one typed internal representation.
 EDGES
@@ -1418,25 +1425,25 @@ EDGES
   ^defines=matrix/neo/internal/o1/protocol.go
 
 NODE id=matrix/neo/internal/o1.NormalizedToolCall#Arguments kind=field
-  digest=b3:936c2a5b72c10e97a8aec9875e536ad409ea9e9470f49656fd07e7c9906462f1 file=neo/internal/o1/protocol.go range=32:32 lang=go exported=true byte_range=1017:1062
+  digest=b3:936c2a5b72c10e97a8aec9875e536ad409ea9e9470f49656fd07e7c9906462f1 file=neo/internal/o1/protocol.go range=45:45 lang=go exported=true byte_range=1782:1827
   sig=json.RawMessage
 EDGES
   ^contains=matrix/neo/internal/o1.NormalizedToolCall
 
 NODE id=matrix/neo/internal/o1.NormalizedToolCall#ID kind=field
-  digest=b3:6d5ef4a3653a8ffb25486ed2b8404841836f76fb2a236351e337635a50674dc2 file=neo/internal/o1/protocol.go range=30:30 lang=go exported=true byte_range=935:973
+  digest=b3:6d5ef4a3653a8ffb25486ed2b8404841836f76fb2a236351e337635a50674dc2 file=neo/internal/o1/protocol.go range=43:43 lang=go exported=true byte_range=1700:1738
   sig=string
 EDGES
   ^contains=matrix/neo/internal/o1.NormalizedToolCall
 
 NODE id=matrix/neo/internal/o1.NormalizedToolCall#Name kind=field
-  digest=b3:f75397a971f805f0faa9760054832f53577d4b9a3d67b299694c9ceeae3ff347 file=neo/internal/o1/protocol.go range=31:31 lang=go exported=true byte_range=975:1015
+  digest=b3:f75397a971f805f0faa9760054832f53577d4b9a3d67b299694c9ceeae3ff347 file=neo/internal/o1/protocol.go range=44:44 lang=go exported=true byte_range=1740:1780
   sig=string
 EDGES
   ^contains=matrix/neo/internal/o1.NormalizedToolCall
 
 NODE id=matrix/neo/internal/o1.NormalizedToolCall#RawDialect kind=field
-  digest=b3:f8a2a7eb2b95edd54bb38df6f1e8ba386073d11db60a2673b2fd7e0a88afbb99 file=neo/internal/o1/protocol.go range=33:33 lang=go exported=true byte_range=1064:1111
+  digest=b3:f8a2a7eb2b95edd54bb38df6f1e8ba386073d11db60a2673b2fd7e0a88afbb99 file=neo/internal/o1/protocol.go range=46:46 lang=go exported=true byte_range=1829:1876
   sig=o1.ProviderDialect
 EDGES
   ^contains=matrix/neo/internal/o1.NormalizedToolCall
@@ -1918,7 +1925,7 @@ EDGES
   ^defines=matrix/neo/internal/o1/contract.go
 
 NODE id=matrix/neo/internal/o1.ProviderConformer kind=type
-  digest=b3:eaf124204fdd6ab1a2b62f16b17b8956e9e5be442510919d7daa58ce87bf52b0 file=neo/internal/o1/protocol.go range=58:64 lang=go exported=true byte_range=2152:2457
+  digest=b3:eaf124204fdd6ab1a2b62f16b17b8956e9e5be442510919d7daa58ce87bf52b0 file=neo/internal/o1/protocol.go range=71:77 lang=go exported=true byte_range=2917:3222
   sig=type ProviderConformer struct {\n	dialect		ProviderDialect\n	controlMarkers	[]string\n}
   doc=ProviderConformer validates and normalizes provider output.\nPer O1 req.4 ac.2: raw tool markup, guidance, control tokens, malformed\npartial calls, and reasoning-only calls SHALL never execute accidentally.
 EDGES
@@ -1926,19 +1933,19 @@ EDGES
   ^defines=matrix/neo/internal/o1/protocol.go
 
 NODE id=matrix/neo/internal/o1.ProviderConformer#controlMarkers kind=field
-  digest=b3:a4316fcd7807300ac4f1a7530b4d4c526f037d283227498311e3381607c86e46 file=neo/internal/o1/protocol.go range=63:63 lang=go exported=false byte_range=2432:2455
+  digest=b3:a4316fcd7807300ac4f1a7530b4d4c526f037d283227498311e3381607c86e46 file=neo/internal/o1/protocol.go range=76:76 lang=go exported=false byte_range=3197:3220
   sig=[]string
 EDGES
   ^contains=matrix/neo/internal/o1.ProviderConformer
 
 NODE id=matrix/neo/internal/o1.ProviderConformer#dialect kind=field
-  digest=b3:659351b1e636267f42c49cd7c4bae13a0460d0837fe0ce4ae189b69b1e05de06 file=neo/internal/o1/protocol.go range=62:62 lang=go exported=false byte_range=2400:2430
+  digest=b3:659351b1e636267f42c49cd7c4bae13a0460d0837fe0ce4ae189b69b1e05de06 file=neo/internal/o1/protocol.go range=75:75 lang=go exported=false byte_range=3165:3195
   sig=o1.ProviderDialect
 EDGES
   ^contains=matrix/neo/internal/o1.ProviderConformer
 
 NODE id=matrix/neo/internal/o1.ProviderConformer.StripControlTokens kind=method
-  digest=b3:9c621c0aa47e1bacf0b587d0e33a1c4dd1a87afbf96e6163b34a4847c9147bf7 file=neo/internal/o1/protocol.go range=128:135 lang=go exported=true byte_range=4819:5154
+  digest=b3:9c621c0aa47e1bacf0b587d0e33a1c4dd1a87afbf96e6163b34a4847c9147bf7 file=neo/internal/o1/protocol.go range=141:148 lang=go exported=true byte_range=5584:5919
   sig=func (pc *ProviderConformer) StripControlTokens(content string) string
   doc=StripControlTokens removes provider-specific control syntax from content\nso it never reaches users or assistant history.
 EDGES
@@ -1946,7 +1953,7 @@ EDGES
   ^defines=matrix/neo/internal/o1/protocol.go
 
 NODE id=matrix/neo/internal/o1.ProviderConformer.Validate kind=method
-  digest=b3:84d15d9b676344b0d9a421c307eaee9b2cdf19703931442736d49001cc583e66 file=neo/internal/o1/protocol.go range=80:126 lang=go exported=true byte_range=2961:4817
+  digest=b3:84d15d9b676344b0d9a421c307eaee9b2cdf19703931442736d49001cc583e66 file=neo/internal/o1/protocol.go range=93:139 lang=go exported=true byte_range=3726:5582
   sig=func (pc *ProviderConformer) Validate(gen *NormalizedGeneration) error
   doc=Validate checks a NormalizedGeneration for structural integrity before\nexecution. Per O1 req.4 ac.3: raw tool markup, guidance, control tokens,\nmalformed partial calls, and reasoning-only calls are caught here.
 EDGES
@@ -1954,7 +1961,7 @@ EDGES
   ^defines=matrix/neo/internal/o1/protocol.go
 
 NODE id=matrix/neo/internal/o1.ProviderDialect kind=type
-  digest=b3:19f227f7dad6fcea3c11ae832f498c70b9bf8330d5919b8657e4485641a42720 file=neo/internal/o1/protocol.go range=12:14 lang=go exported=true byte_range=228:371
+  digest=b3:19f227f7dad6fcea3c11ae832f498c70b9bf8330d5919b8657e4485641a42720 file=neo/internal/o1/protocol.go range=25:27 lang=go exported=true byte_range=993:1136
   sig=type ProviderDialect string
   doc=ProviderDialect identifies a provider's wire format for tool calls,\nreasoning, streaming, and control syntax.
 EDGES
@@ -2378,7 +2385,7 @@ EDGES
   ^defines=matrix/neo/internal/o1/contract.go
 
 NODE id=matrix/neo/internal/o1.RepresentationBudget kind=type
-  digest=b3:fe2369450083381a1953e30b14fccde355fef49a769fc1003afb4529e06d99d2 file=neo/internal/o1/protocol.go range=137:144 lang=go exported=true byte_range=5156:5537
+  digest=b3:fe2369450083381a1953e30b14fccde355fef49a769fc1003afb4529e06d99d2 file=neo/internal/o1/protocol.go range=150:157 lang=go exported=true byte_range=5921:6302
   sig=type RepresentationBudget struct {\n	MaxTokens	int	`json:"max_tokens"`\n	MaxToolCalls	int	`json:"max_tool_calls"`\n	MaxArgumentSize	int	`json:"max_argument_bytes"`\n}
   doc=RepresentationBudget estimates the token cost of representing an operation\nbefore generation. Per O1 req.4 ac.4: operations whose representation\ncannot fit the budget are decomposed deterministically.
 EDGES
@@ -2386,25 +2393,25 @@ EDGES
   ^defines=matrix/neo/internal/o1/protocol.go
 
 NODE id=matrix/neo/internal/o1.RepresentationBudget#MaxArgumentSize kind=field
-  digest=b3:b98d56833022c4b5137b19f81102ae4d7a17c3200723925e9b1e02ecae55c16e file=neo/internal/o1/protocol.go range=143:143 lang=go exported=true byte_range=5488:5535
+  digest=b3:b98d56833022c4b5137b19f81102ae4d7a17c3200723925e9b1e02ecae55c16e file=neo/internal/o1/protocol.go range=156:156 lang=go exported=true byte_range=6253:6300
   sig=int
 EDGES
   ^contains=matrix/neo/internal/o1.RepresentationBudget
 
 NODE id=matrix/neo/internal/o1.RepresentationBudget#MaxTokens kind=field
-  digest=b3:942851f499b04b1ff370c0950048a389bde13cd91eac5b1b180907c4287cee49 file=neo/internal/o1/protocol.go range=141:141 lang=go exported=true byte_range=5402:5441
+  digest=b3:942851f499b04b1ff370c0950048a389bde13cd91eac5b1b180907c4287cee49 file=neo/internal/o1/protocol.go range=154:154 lang=go exported=true byte_range=6167:6206
   sig=int
 EDGES
   ^contains=matrix/neo/internal/o1.RepresentationBudget
 
 NODE id=matrix/neo/internal/o1.RepresentationBudget#MaxToolCalls kind=field
-  digest=b3:cb24a9dd0592595f82e1d7c9f3872172f54b0f17727bf166b2284434bff12b1b file=neo/internal/o1/protocol.go range=142:142 lang=go exported=true byte_range=5443:5486
+  digest=b3:cb24a9dd0592595f82e1d7c9f3872172f54b0f17727bf166b2284434bff12b1b file=neo/internal/o1/protocol.go range=155:155 lang=go exported=true byte_range=6208:6251
   sig=int
 EDGES
   ^contains=matrix/neo/internal/o1.RepresentationBudget
 
 NODE id=matrix/neo/internal/o1.RepresentationBudget.BudgetCheck kind=method
-  digest=b3:a5a63b186bb9a4d5e0f6edde926558c643623ba8f0c82a3540d193a7b803c1ff file=neo/internal/o1/protocol.go range=155:189 lang=go exported=true byte_range=5795:7257
+  digest=b3:34bb1211cd0bd666f36965ad13e335bef3026c4fd389340264d4eb24d89a2644 file=neo/internal/o1/protocol.go range=180:214 lang=go exported=true byte_range=7336:8890
   sig=func (b RepresentationBudget) BudgetCheck(gen *NormalizedGeneration) error
   doc=BudgetCheck verifies that a generation fits within the budget.\nReturns an error if the operation should be decomposed instead of generated.
 EDGES
@@ -3100,7 +3107,7 @@ EDGES
   ^defines=matrix/neo/internal/o1/registry.go
 
 NODE id=matrix/neo/internal/o1.Usage kind=type
-  digest=b3:3572566677c3411a2fdad61f7b7fcd4f1ca8213d53d35f1b786b5f2720c0d218 file=neo/internal/o1/protocol.go range=51:56 lang=go exported=true byte_range=1945:2150
+  digest=b3:3572566677c3411a2fdad61f7b7fcd4f1ca8213d53d35f1b786b5f2720c0d218 file=neo/internal/o1/protocol.go range=64:69 lang=go exported=true byte_range=2710:2915
   sig=type Usage struct {\n	PromptTokens		int	`json:"prompt_tokens"`\n	CompletionTokens	int	`json:"completion_tokens"`\n	TotalTokens		int	`json:"total_tokens"`\n}
   doc=Usage captures token consumption per turn.
 EDGES
@@ -3108,19 +3115,19 @@ EDGES
   ^defines=matrix/neo/internal/o1/protocol.go
 
 NODE id=matrix/neo/internal/o1.Usage#CompletionTokens kind=field
-  digest=b3:385f157d9209d2545cebfd6b275db5accd3edf91f5acba8ac46482ed70353c44 file=neo/internal/o1/protocol.go range=54:54 lang=go exported=true byte_range=2057:2104
+  digest=b3:385f157d9209d2545cebfd6b275db5accd3edf91f5acba8ac46482ed70353c44 file=neo/internal/o1/protocol.go range=67:67 lang=go exported=true byte_range=2822:2869
   sig=int
 EDGES
   ^contains=matrix/neo/internal/o1.Usage
 
 NODE id=matrix/neo/internal/o1.Usage#PromptTokens kind=field
-  digest=b3:9e4f9a486a583f8c75a0a633d958f277121387f72956bb23de3f409344ad3349 file=neo/internal/o1/protocol.go range=53:53 lang=go exported=true byte_range=2012:2055
+  digest=b3:9e4f9a486a583f8c75a0a633d958f277121387f72956bb23de3f409344ad3349 file=neo/internal/o1/protocol.go range=66:66 lang=go exported=true byte_range=2777:2820
   sig=int
 EDGES
   ^contains=matrix/neo/internal/o1.Usage
 
 NODE id=matrix/neo/internal/o1.Usage#TotalTokens kind=field
-  digest=b3:d3816eb4124cfec18f63d6f01937f9ae39d1ba09baf369d45b84f2d312083cdf file=neo/internal/o1/protocol.go range=55:55 lang=go exported=true byte_range=2106:2148
+  digest=b3:d3816eb4124cfec18f63d6f01937f9ae39d1ba09baf369d45b84f2d312083cdf file=neo/internal/o1/protocol.go range=68:68 lang=go exported=true byte_range=2871:2913
   sig=int
 EDGES
   ^contains=matrix/neo/internal/o1.Usage
@@ -3475,9 +3482,9 @@ EDGES
   ^contains=matrix/neo/internal/o1
 
 NODE id=matrix/neo/internal/o1/protocol.go kind=file
-  digest=b3:d6f3a691b2a913ccafc4fe38ca5387c8cebaa97b00ec43378effcb085162340b file=neo/internal/o1/protocol.go range=1:189 lang=go exported=true
+  digest=b3:1018385444f8b6d1c3ec0982c70ad5ac890486da150e7e2e26df0cef01a773fc file=neo/internal/o1/protocol.go range=1:214 lang=go exported=true
 EDGES
-  defines=matrix/neo/internal/o1.DefaultBudget,matrix/neo/internal/o1.DialectBaseten,matrix/neo/internal/o1.DialectDeepSeek,matrix/neo/internal/o1.DialectFireworks,matrix/neo/internal/o1.DialectGeneric,matrix/neo/internal/o1.DialectMimo,matrix/neo/internal/o1.DialectOpenAI,matrix/neo/internal/o1.DialectXAI,matrix/neo/internal/o1.NewProviderConformer,matrix/neo/internal/o1.NormalizedGeneration,matrix/neo/internal/o1.NormalizedToolCall,matrix/neo/internal/o1.ProviderConformer,matrix/neo/internal/o1.ProviderConformer.StripControlTokens,matrix/neo/internal/o1.ProviderConformer.Validate,matrix/neo/internal/o1.ProviderDialect,matrix/neo/internal/o1.RepresentationBudget,matrix/neo/internal/o1.RepresentationBudget.BudgetCheck,matrix/neo/internal/o1.Usage
+  defines=matrix/neo/internal/o1.DefaultBudget,matrix/neo/internal/o1.DialectBaseten,matrix/neo/internal/o1.DialectDeepSeek,matrix/neo/internal/o1.DialectFireworks,matrix/neo/internal/o1.DialectGeneric,matrix/neo/internal/o1.DialectMimo,matrix/neo/internal/o1.DialectOpenAI,matrix/neo/internal/o1.DialectXAI,matrix/neo/internal/o1.ErrBudgetExceeded,matrix/neo/internal/o1.NewProviderConformer,matrix/neo/internal/o1.NormalizedGeneration,matrix/neo/internal/o1.NormalizedToolCall,matrix/neo/internal/o1.ProviderConformer,matrix/neo/internal/o1.ProviderConformer.StripControlTokens,matrix/neo/internal/o1.ProviderConformer.Validate,matrix/neo/internal/o1.ProviderDialect,matrix/neo/internal/o1.RepresentationBudget,matrix/neo/internal/o1.RepresentationBudget.BudgetCheck,matrix/neo/internal/o1.Usage
   ^contains=matrix/neo/internal/o1
 
 NODE id=matrix/neo/internal/o1/qualification.go kind=file

@@ -74,7 +74,8 @@ func (a *Agent) finalizeO1(answer string) bool {
 	if t == nil || t.runLedger == nil || answer == "" {
 		return false
 	}
-	canProveResult := t.lastOutcome == nil || t.lastOutcome.Success
+	standing := t.outcome()
+	canProveResult := standing == nil || standing.Success
 	for _, verifier := range t.verifiers.Verifiers {
 		if verifier.CriterionID == "criterion.request" && !canProveResult {
 			continue
@@ -95,7 +96,7 @@ func (a *Agent) finalizeO1(answer string) bool {
 	}
 	effectsReconciled := len(t.runLedger.Effects) == 0 || t.runLedger.EffectsReconciled
 	proof := t.verifiers.GenerateProofManifest(t.runLedger.RunID, t.contract.ID, effectsReconciled, true)
-	decision := (&o1.Supervisor{}).Evaluate(t.contract, t.runLedger, &t.verifiers, &proof, t.lastOutcome)
+	decision := (&o1.Supervisor{}).Evaluate(t.contract, t.runLedger, &t.verifiers, &proof, t.outcome())
 	if decision.Action != o1.SupComplete {
 		if decision.Terminal != nil {
 			_ = t.runLedger.SetTerminal(o1.TerminalProof{

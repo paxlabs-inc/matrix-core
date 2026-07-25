@@ -1536,6 +1536,12 @@ const (
 	maxAnswerTokenBumps = 3
 )
 
+// auditEventBudgetOverage records a generation that exceeded the O1
+// representation budget. It is observability ONLY — the generation is still
+// used — so an oversized-but-complete answer is visible for diagnosis without
+// being destroyed.
+const auditEventBudgetOverage = "o1.budget_overage"
+
 // bumpAnswerBudget raises this turn's per-request output-token budget one rung.
 // The bumped budget rides every subsequent generate call this turn (turn.answer
 // TokenBudget threads into the ChatRequest); 0 leaves the client default. Bounded
@@ -1568,7 +1574,18 @@ func (a *Agent) chatWithRetry(ctx context.Context, req llm.ChatRequest) (*llm.Ch
 		res, err := a.main.Chat(ctx, req)
 		if err == nil {
 			if conformErr := o1.ConformChatResult(res, o1.DefaultBudget(), o1.DialectForProvider(a.main.Provider())); conformErr != nil {
-				return nil, fmt.Errorf("o1 provider protocol: %w", conformErr)
+				// A SIZE verdict is not a failure: the generation is complete and
+				// usable, merely long. Discarding it here destroyed finished
+				// answers and killed the run (2026-07-25) — the length ladder in
+				// the close chain (guardTruncatedAnswer) and the tools layer's own
+				// graceful payload limit are the surfaces that handle size, and
+				// neither can act on a generation this function threw away. Audit
+				// it and hand the result on.
+				if errors.Is(conformErr, o1.ErrBudgetExceeded) {
+					a.emitAudit(auditEventBudgetOverage, map[string]interface{}{"detail": oneLine(conformErr.Error())})
+				} else {
+					return nil, fmt.Errorf("o1 provider protocol: %w", conformErr)
+				}
 			}
 			return res, nil
 		}
@@ -1620,6 +1637,9 @@ func (a *Agent) runToolCalls(ctx context.Context, calls []llm.ToolCall) error {
 	stepIDs := make([]string, n)
 	parsedArgs := make([]map[string]interface{}, n)
 	expects := make([]string, n)
+	// One verdict per strategy per BATCH, so a call and its deduped duplicate
+	// are never split by the bounded expectation gate.
+	batchRefused := map[string]bool{}
 	for i, call := range calls {
 		name := call.Function.Name
 		args, perr := call.ParseArgs()
@@ -1635,16 +1655,13 @@ func (a *Agent) runToolCalls(ctx context.Context, calls []llm.ToolCall) error {
 		// A probe with NO expectation is a guess — refused at the seam with
 		// the ground-or-hypothesize directive (req.6.1), never dispatched.
 		expects[i] = popExpect(args)
-		if a.epistemicPredictionsOn() && expects[i] == "" {
-			if _, isProbe := probeStrategy(name, args); isProbe {
-				directive := refuseGuess(name, args)
-				a.working = append(a.working, llm.ToolResult(call.ID, name, directive))
-				a.cmRecordToolResult(name, directive)
-				a.turn.stepRefused = true
-				parsedArgs[i] = nil
-				stepIDs[i] = ""
-				continue
-			}
+		if directive, refused := a.refuseUnstatedExpectation(name, args, expects[i], batchRefused); refused {
+			a.working = append(a.working, llm.ToolResult(call.ID, name, directive))
+			a.cmRecordToolResult(name, directive)
+			a.turn.stepRefused = true
+			parsedArgs[i] = nil
+			stepIDs[i] = ""
+			continue
 		}
 		parsedArgs[i] = args
 		stepID := call.ID
@@ -1765,6 +1782,7 @@ func (a *Agent) runToolCallsSerial(ctx context.Context, calls []llm.ToolCall) er
 	}
 	results := make([]dispatchResult, len(calls))
 	var convergenceErr error
+	batchRefused := map[string]bool{}
 	for i, call := range calls {
 		name := call.Function.Name
 		args, perr := call.ParseArgs()
@@ -1777,14 +1795,11 @@ func (a *Agent) runToolCallsSerial(ctx context.Context, calls []llm.ToolCall) er
 		// A probe with NO expectation is a guess — refused at the seam with
 		// the ground-or-hypothesize directive (req.6.1), never dispatched.
 		expect := popExpect(args)
-		if a.epistemicPredictionsOn() && expect == "" {
-			if _, isProbe := probeStrategy(name, args); isProbe {
-				directive := refuseGuess(name, args)
-				a.working = append(a.working, llm.ToolResult(call.ID, name, directive))
-				a.cmRecordToolResult(name, directive)
-				a.turn.stepRefused = true
-				continue
-			}
+		if directive, refused := a.refuseUnstatedExpectation(name, args, expect, batchRefused); refused {
+			a.working = append(a.working, llm.ToolResult(call.ID, name, directive))
+			a.cmRecordToolResult(name, directive)
+			a.turn.stepRefused = true
+			continue
 		}
 		a.turn.stepDispatched = true // dispatched here: real step progress (item 1c)
 		// Stable surface id for this call: some providers omit tool_call ids, so
@@ -1935,7 +1950,7 @@ func (a *Agent) LastO1Decision() (o1.SupervisorDecision, bool) {
 		proof = &candidate
 	}
 	decision := (&o1.Supervisor{}).Evaluate(
-		a.turn.contract, a.turn.runLedger, &a.turn.verifiers, proof, a.turn.lastOutcome,
+		a.turn.contract, a.turn.runLedger, &a.turn.verifiers, proof, a.turn.outcome(),
 	)
 	return decision, true
 }
@@ -1970,8 +1985,7 @@ func (a *Agent) dispatchWithRetry(ctx context.Context, name string, args map[str
 	}
 	if a.tools == nil {
 		content := "no tools are available in this session."
-		outcome := a.recordO1ToolOutcome(name, args, content, true, exectool.FailureInvocation, false)
-		a.turn.lastOutcome = &outcome
+		a.recordO1ToolOutcome(name, args, content, true, exectool.FailureInvocation, false)
 		return content, content, "", true, delegate.ClassDeterministic, exectool.FailureInvocation
 	}
 	// Restricted agents are held to their advertised surface: the Manager's
@@ -1981,8 +1995,7 @@ func (a *Agent) dispatchWithRetry(ctx context.Context, name string, args map[str
 	if a.advertised != nil {
 		if _, ok := a.advertised[name]; !ok {
 			content := fmt.Sprintf("tool %q is not available in this session — use only the tools you were given.", name)
-			outcome := a.recordO1ToolOutcome(name, args, content, true, exectool.FailureInvocation, false)
-			a.turn.lastOutcome = &outcome
+			a.recordO1ToolOutcome(name, args, content, true, exectool.FailureInvocation, false)
 			return content, content, "", true, delegate.ClassDeterministic, exectool.FailureInvocation
 		}
 	}
@@ -1992,13 +2005,11 @@ func (a *Agent) dispatchWithRetry(ctx context.Context, name string, args map[str
 		preState := o1.ContentHash(argsJSON)
 		if a.turn.runLedger.HasUnreconciledEffect(name, "uncertain:"+preState) {
 			content := fmt.Sprintf("class=%s: prior transport outcome is uncertain; reconcile authoritative state before retrying this operation", exectool.FailureConflict)
-			outcome := a.recordO1ToolOutcome(name, args, content, true, exectool.FailureConflict, false)
-			a.turn.lastOutcome = &outcome
+			a.recordO1ToolOutcome(name, args, content, true, exectool.FailureConflict, false)
 			return content, content, "", true, delegate.ClassDeterministic, exectool.FailureConflict
 		}
 		if prior, ok := a.turn.runLedger.SuccessfulAttempt(name, preState); ok {
-			outcome := prior.Outcome
-			a.turn.lastOutcome = &outcome
+			a.turn.commitOutcome(prior.Outcome)
 			return prior.Evidence, prior.Evidence, "", false, delegate.ClassNone, exectool.FailureNone
 		}
 	}
@@ -2129,7 +2140,7 @@ func (a *Agent) recordO1ToolOutcome(name string, args map[string]interface{}, ev
 	} else if isErr && outcome.FailureLayer == o1.LayerTransport && manifest.Effects != o1.EffectReadOnly {
 		a.turn.runLedger.RecordEffect(name, "uncertain:"+preState, manifest.Reversibility == o1.Reversible)
 	}
-	a.turn.lastOutcome = &outcome
+	a.turn.commitOutcome(outcome)
 	a.persistO1State()
 	return outcome
 }

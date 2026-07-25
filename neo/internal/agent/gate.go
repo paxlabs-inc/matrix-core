@@ -213,6 +213,52 @@ func (a *Agent) forcedRevisionStep(ctx context.Context, window []llm.Message, on
 	return nil
 }
 
+// maxExpectRefusals bounds how many times ONE probe strategy may be refused
+// for a missing `expect` field in a single turn before the gate stands down and
+// lets the call through. One refusal teaches the fix; repeating it past that
+// only burns the shared unproductive budget — the identity-leak / unread-
+// overflow posture, applied to the dispatch seam.
+const maxExpectRefusals = 1
+
+// refuseUnstatedExpectation decides whether a probe-class call carrying no
+// stated expectation is refused at the dispatch seam, and returns the directive
+// to hand back in its place. It is the BOUNDED form of req.6.1: the first BATCH
+// to issue a given strategy without `expect` is refused with the corrected-call
+// skeleton, and if the model still omits it the call DISPATCHES anyway — an
+// unstated expectation degrades the epistemic signal for that step
+// (predictionObserve simply has nothing to update), which is strictly better
+// than killing a turn over a field the tool itself never wanted.
+//
+// batchRefused keeps the verdict CONSISTENT within one batch: a call and its
+// deduped duplicate must produce the same result, so once a strategy is refused
+// in this batch every sibling call of that strategy is refused too, without
+// spending another rung of the bound. Contract — mutates: the per-turn
+// per-strategy refusal counter and batchRefused; called only from the serial
+// pre-dispatch pass.
+func (a *Agent) refuseUnstatedExpectation(name string, args map[string]interface{}, expect string, batchRefused map[string]bool) (string, bool) {
+	if !a.epistemicPredictionsOn() || strings.TrimSpace(expect) != "" {
+		return "", false
+	}
+	strategy, isProbe := probeStrategy(name, args)
+	if !isProbe {
+		return "", false
+	}
+	if batchRefused[strategy] {
+		return refuseGuess(name, args), true
+	}
+	if a.turn.expectRefusals == nil {
+		a.turn.expectRefusals = map[string]int{}
+	}
+	if a.turn.expectRefusals[strategy] >= maxExpectRefusals {
+		return "", false
+	}
+	a.turn.expectRefusals[strategy]++
+	if batchRefused != nil {
+		batchRefused[strategy] = true
+	}
+	return refuseGuess(name, args), true
+}
+
 // refuseGuess is the ground-or-hypothesize refusal (req.6.1): a probe-class
 // call with NO stated expectation is a guess by definition — it is refused at
 // the dispatch seam with a directive to ground the action or state the

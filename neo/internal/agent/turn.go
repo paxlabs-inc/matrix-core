@@ -9,6 +9,8 @@
 package agent
 
 import (
+	"sync"
+
 	"matrix/neo/internal/delegate"
 	"matrix/neo/internal/llm"
 	"matrix/neo/internal/memory"
@@ -31,9 +33,18 @@ type turn struct {
 	// runLedger is Architect O1's authoritative causal state for this turn.
 	// It records real dispatch attempts, effects, verifier evidence, and the
 	// terminal proof consumed by the supervisor.
-	runLedger   *o1.RunLedger
-	verifiers   o1.VerifierGraph
-	manifests   map[string]o1.OperationManifest
+	runLedger *o1.RunLedger
+	verifiers o1.VerifierGraph
+	manifests map[string]o1.OperationManifest
+
+	// lastOutcome is the only piece of turn state written from the CONCURRENT
+	// tool-dispatch goroutines (runToolCalls fans out up to
+	// ToolDispatchConcurrency calls, each reaching recordO1ToolOutcome), so it
+	// is the one field that needs its own lock — o1.RunLedger already carries
+	// an internal mutex, and every other turn field is touched only by the loop
+	// goroutine. Always go through commitOutcome/outcome; a bare field access
+	// from dispatch is the 2026-07-25 data race.
+	outcomeMu   sync.Mutex
 	lastOutcome *o1.OperationOutcome
 
 	// ledger is Mechanism 1's premise ledger — the current plan's load-bearing
@@ -47,6 +58,16 @@ type turn struct {
 	// strategy's live hypothesis premise on the ledger. Lazily allocated.
 	mismatchMeter map[string]int
 	hypotheses    map[string]*Premise
+
+	// expectRefusals bounds the ground-or-hypothesize refusal (req.6.1) per
+	// probe strategy per turn. The refusal TEACHES — it hands back a corrected
+	// call skeleton — but a model that does not take the lesson must not be
+	// refused forever: each refusal is an unproductive step, so an unbounded
+	// gate spends the whole nudge budget and kills the turn on a tool that was
+	// never actually broken (2026-07-25: sub-agent 1 died after four
+	// consecutive web_search refusals). Keyed by probeStrategy, which ignores
+	// the varying argument, so re-wording the same query is the same strategy.
+	expectRefusals map[string]int
 
 	// graph is Mechanism 4's reified task graph (epistemic-core req.7): goal →
 	// subgoals → evidence, with convergence computed as evidence-set delta.
@@ -123,6 +144,13 @@ type turn struct {
 	// reasoning over truncated data, never to discard finished work (the
 	// 2026-07-22 loopty-loop incident).
 	overflowNudges int
+
+	// sourceFetchNudges counts how many times the source-fetch close guard has
+	// steered THIS turn. Past sourceFetchNudgeCap it stands down for the same
+	// reason as overflowNudges: when every fetch of a discovered URL fails, the
+	// guard's precondition is unachievable and holding the answer hostage only
+	// spends the turn.
+	sourceFetchNudges int
 
 	// stepRefused/stepDispatched are the per-STEP dispatch-gate read (reset at act
 	// entry): stepRefused is set when the check-before-act gate or the missing-
@@ -232,5 +260,47 @@ func (t *turn) noteSessionSeq(seq uint64) {
 	}
 	if seq > t.seqHi {
 		t.seqHi = seq
+	}
+}
+
+// commitOutcome records the most recent O1 operation outcome. It is safe to
+// call from the concurrent tool-dispatch goroutines. Semantics are unchanged
+// from the single-threaded form — last writer wins — so a serial sequence of
+// calls still ends on the last call's outcome; under concurrent dispatch "last"
+// means last to COMPLETE, which is why the supervisor reads the run ledger (a
+// complete, ordered record) for anything order-sensitive and treats this field
+// only as the most recent signal.
+func (t *turn) commitOutcome(outcome o1.OperationOutcome) {
+	if t == nil {
+		return
+	}
+	t.outcomeMu.Lock()
+	t.lastOutcome = &outcome
+	t.outcomeMu.Unlock()
+}
+
+// outcome reads the most recent O1 operation outcome under the same lock, so a
+// read racing an in-flight dispatch is safe.
+func (t *turn) outcome() *o1.OperationOutcome {
+	if t == nil {
+		return nil
+	}
+	t.outcomeMu.Lock()
+	defer t.outcomeMu.Unlock()
+	return t.lastOutcome
+}
+
+// commitOutcomeIfStandingIsNotTerminal records an outcome unless a TERMINAL
+// failure is already standing, so the synthetic turn-death outcome never
+// masks the real tool failure that caused the death. Same precedence rule the
+// governor has always applied, moved under the lock with it.
+func (t *turn) commitOutcomeIfStandingIsNotTerminal(outcome o1.OperationOutcome) {
+	if t == nil {
+		return
+	}
+	t.outcomeMu.Lock()
+	defer t.outcomeMu.Unlock()
+	if t.lastOutcome == nil || t.lastOutcome.Success || !t.lastOutcome.IsTerminal() {
+		t.lastOutcome = &outcome
 	}
 }

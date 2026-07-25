@@ -5,9 +5,22 @@ package o1
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strings"
 )
+
+// ErrBudgetExceeded marks a representation-budget overage (too many completion
+// tokens, tool calls, or argument bytes). Every BudgetCheck error wraps it so
+// callers can tell a SIZE verdict apart from a protocol violation.
+//
+// The distinction is load-bearing. A malformed or reasoning-only generation is
+// unusable — the model produced nothing to act on. An oversized generation is
+// the opposite: it is complete and correct, merely long. Conflating the two let
+// a finished 4098-token answer be discarded as a "model call failed" and killed
+// the run (2026-07-25 research-task incident), so a budget verdict must never
+// be the reason a usable generation is thrown away.
+var ErrBudgetExceeded = errors.New("representation budget exceeded")
 
 // ProviderDialect identifies a provider's wire format for tool calls,
 // reasoning, streaming, and control syntax.
@@ -144,11 +157,23 @@ type RepresentationBudget struct {
 }
 
 // DefaultBudget returns the default representation budget.
+//
+// The ceilings are deliberately generous: this budget exists to catch a
+// runaway representation, NOT to cap how long a legitimate answer may be. The
+// prior 4096-token ceiling sat BELOW the main conversational client's own
+// 8192-token request cap (cmd/neo/main.go), so every generation in the
+// 4097..8192 range — which is where a real report or synthesis lands — was
+// rejected by our own conformer after the provider had already produced it.
+// The token ceiling now matches the agent's answer-budget escalation ceiling
+// (agent.answerTokenCeiling, 64K) so the two ladders agree; argument bytes sit
+// well above the tools layer's own 16KB file-mutation limit, which returns a
+// graceful "write a bounded chunk" tool result and must be the surface that
+// enforces payload size, not this one.
 func DefaultBudget() RepresentationBudget {
 	return RepresentationBudget{
-		MaxTokens:       4096,
-		MaxToolCalls:    10,
-		MaxArgumentSize: 16 * 1024, // 16KB, matching file mutation limit
+		MaxTokens:       65536,
+		MaxToolCalls:    32,
+		MaxArgumentSize: 256 * 1024,
 	}
 }
 
@@ -162,17 +187,17 @@ func (b RepresentationBudget) BudgetCheck(gen *NormalizedGeneration) error {
 		return fmt.Errorf("invalid representation budget")
 	}
 	if gen.Usage.CompletionTokens > b.MaxTokens {
-		return fmt.Errorf("generation used %d completion tokens; budget allows %d — decompose deterministically",
-			gen.Usage.CompletionTokens, b.MaxTokens)
+		return fmt.Errorf("%w: generation used %d completion tokens; budget allows %d — decompose deterministically",
+			ErrBudgetExceeded, gen.Usage.CompletionTokens, b.MaxTokens)
 	}
 	if len(gen.ToolCalls) > b.MaxToolCalls {
-		return fmt.Errorf("generation has %d tool calls; budget allows %d — decompose deterministically",
-			len(gen.ToolCalls), b.MaxToolCalls)
+		return fmt.Errorf("%w: generation has %d tool calls; budget allows %d — decompose deterministically",
+			ErrBudgetExceeded, len(gen.ToolCalls), b.MaxToolCalls)
 	}
 	for i, tc := range gen.ToolCalls {
 		if len(tc.Arguments) > b.MaxArgumentSize {
-			return fmt.Errorf("tool call %d (%s) arguments are %d bytes; budget allows %d — decompose deterministically",
-				i, tc.Name, len(tc.Arguments), b.MaxArgumentSize)
+			return fmt.Errorf("%w: tool call %d (%s) arguments are %d bytes; budget allows %d — decompose deterministically",
+				ErrBudgetExceeded, i, tc.Name, len(tc.Arguments), b.MaxArgumentSize)
 		}
 	}
 	if gen.Usage.CompletionTokens == 0 {
@@ -181,8 +206,8 @@ func (b RepresentationBudget) BudgetCheck(gen *NormalizedGeneration) error {
 			estimated += (len(tc.Name) + len(tc.Arguments) + 3) / 4
 		}
 		if estimated > b.MaxTokens {
-			return fmt.Errorf("generation representation is approximately %d tokens; budget allows %d — decompose deterministically",
-				estimated, b.MaxTokens)
+			return fmt.Errorf("%w: generation representation is approximately %d tokens; budget allows %d — decompose deterministically",
+				ErrBudgetExceeded, estimated, b.MaxTokens)
 		}
 	}
 	return nil
