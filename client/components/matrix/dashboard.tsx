@@ -28,7 +28,7 @@ import { PanelSkeleton } from '@/components/matrix/panel-skeleton'
 import { Shell } from '@/components/matrix/shell/shell'
 import { useSurfaceFeed } from '@/lib/construct/use-surface-feed'
 import { useDescent } from '@/lib/construct/use-descent'
-import { useChat } from '@/hooks/api/useChat'
+import { useChat, EMPTY_TASK } from '@/hooks/api/useChat'
 
 const NeoSurface = dynamic(
   () => import('@/components/matrix/neo/neo-surface').then((m) => ({ default: m.NeoSurface })),
@@ -100,20 +100,20 @@ export function Dashboard() {
   // unavailable in plain language and leaves the focus stack unchanged (R4.5).
   const descent = useDescent(workspace, setWorkspace, { rehydrate })
 
-  // Neo's legacy NeoStep work (terminal / browser / sources / agents / media)
-  // is not yet projected as typed Construct surfaces, so it has no home in the
-  // environment-stage feed. When a run produces any, we mount the relocated
-  // "Neo's Computer" as the stage centerpiece (legacyOnly, so it never re-renders
-  // the typed surfaces the feed already shows). Narration-only steps don't count
-  // — those are now permanent chat bubbles in the narration panel.
-  const t = chat.task
-  const hasLegacyWork =
-    !!t &&
-    (t.searches.length > 0 ||
-      t.media.length > 0 ||
-      t.artifacts.length > 0 ||
-      !!t.swarm ||
-      t.steps.some((s) => s.kind !== 'narration'))
+  // The Computer is FIRST-CLASS (DOJO req 4): the stage is ALWAYS mounted —
+  // "Neo's Computer" is the environment centerpiece from the first paint, not
+  // something that appears only after a run produced tool work. Its Desktop
+  // screen carries the disposable desktop's power button, so the user can turn
+  // the computer on at any moment with zero agent involvement; the legacy
+  // NeoStep work (terminal / browser / sources / agents / media) joins it as
+  // screens whenever a run produces any (legacyOnly, so the typed Construct
+  // surfaces the feed renders are never doubled).
+  //
+  // The desktop binds to a conversation; before the first message mints one,
+  // the reserved 'desktop' key stands in — the daemon is single-tenant with
+  // one computer (MaxActive=1), and every conversation's panel resolves THE
+  // live session server-side regardless of which key booted it.
+  const dojoConversation = chat.conversationId ?? 'desktop'
 
   return (
     <>
@@ -125,19 +125,18 @@ export function Dashboard() {
         descentNotice={descent.notice}
         onDismissNotice={descent.clearNotice}
         environment={
-          hasLegacyWork && chat.task ? (
-            <PanelErrorBoundary label="Neo's work">
-              <NeoComputer
-                task={chat.task}
-                phase={chat.phase}
-                reduce={false}
-                showMedia
-                legacyOnly
-                onRespond={chat.respondAsk}
-                className="h-full w-full"
-              />
-            </PanelErrorBoundary>
-          ) : undefined
+          <PanelErrorBoundary label="Neo's work">
+            <NeoComputer
+              task={chat.task ?? EMPTY_TASK}
+              phase={chat.phase}
+              reduce={false}
+              showMedia
+              legacyOnly
+              onRespond={chat.respondAsk}
+              conversationId={dojoConversation}
+              className="h-full w-full"
+            />
+          </PanelErrorBoundary>
         }
         narration={
           <PanelErrorBoundary label="Chat">
@@ -157,6 +156,10 @@ export function Dashboard() {
               conversationId={chat.conversationId}
               onVoiceIntent={chat.attachVoiceIntent}
               onSelectConversation={chat.selectConversation}
+              onArchiveConversation={chat.archiveConversation}
+              onRenameConversation={chat.renameConversation}
+              onDeleteConversation={chat.deleteConversation}
+              onForkConversation={chat.forkConversation}
               onNewChat={() => chat.reset()}
               onOpenHistory={() => {
                 chat.refreshConversations()
@@ -181,7 +184,7 @@ export function Dashboard() {
         onNewChat={() => chat.reset()}
       />
       <NeoTimeline open={timelineOpen} onClose={() => setTimelineOpen(false)} />
-      <NeoFiles open={filesOpen} onClose={() => setFilesOpen(false)} task={chat.task} />
+      <NeoFiles open={filesOpen} onClose={() => setFilesOpen(false)} />
       <NeoSelfModel open={selfModelOpen} onClose={() => setSelfModelOpen(false)} />
       <AgentWalletSheet
         open={walletOpen}

@@ -98,36 +98,3 @@ export async function downloadMediaRef(ref: string, filename?: string): Promise<
     return false
   }
 }
-
-/** One file on the agent's per-user machine volume, as listed by the workspace. */
-export interface WorkspaceFile {
-  /** Relative reference, e.g. "/media/2026..ab12.png". */
-  url: string
-  name: string
-  kind: MediaKind
-  mime?: string
-  bytes?: number
-  /** ISO timestamp the file was created/modified, when the daemon reports it. */
-  modified?: string
-  /** Where the file came from: uploaded by the user, or produced by Neo. */
-  source?: 'upload' | 'generated' | 'artifact'
-}
-
-interface WorkspaceListEnvelope {
-  items?: WorkspaceFile[]
-}
-
-/**
- * List the files on the agent's machine volume (GET /files).
- *
- * Durable, cross-conversation view of Neo's workspace. Degrades gracefully
- * to an empty list (404/501/503/network) rather than throwing.
- */
-export async function listWorkspaceFiles(signal?: AbortSignal): Promise<WorkspaceFile[]> {
-  try {
-    const data = await apiFetch<WorkspaceListEnvelope>('/files', { signal, retries: 1 })
-    return data.items ?? []
-  } catch {
-    return []
-  }
-}

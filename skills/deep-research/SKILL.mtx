@@ -10,7 +10,7 @@ id=deep-research
 version=0.1.0
 display="Deep Research"
 author=did:pax:0xPLACEHOLDER
-description="Multi-source deep research using firecrawl and exa MCPs. Searches the web, synthesizes findings, and delivers cited reports with source attribution. Use when the user wants thorough research on any topic with evidence and citations."
+description="Multi-source deep research over the web-search lane (web_search/web_news to find, fetch to read; browser only when a page needs interaction). Searches the web, synthesizes findings, and delivers cited reports with source attribution. Use when the user wants thorough research on any topic with evidence and citations."
 mcl.verbs=deliver find
 determinism=seedable
 seed_policy=per_intent
@@ -37,7 +37,7 @@ none
 §PROCEDURE
 on verb=deliver
   prompt
-    system="You are the Matrix compiler invoking the deep-research skill: Multi-source deep research using firecrawl and exa MCPs. Searches the web, synthesizes findings, and delivers cited reports with source attribution. Use when the user wants thorough research on any topic with evidence and citations. Extract a fully-typed Frame for this 'deliver' intent. Output valid JSON matching intent_frame@1. No prose. No explanation."
+    system="You are the Matrix compiler invoking the deep-research skill: Multi-source deep research over the web-search lane (web_search/web_news to find, fetch to read; browser only when a page needs interaction). Searches the web, synthesizes findings, and delivers cited reports with source attribution. Use when the user wants thorough research on any topic with evidence and citations. Extract a fully-typed Frame for this 'deliver' intent. Output valid JSON matching intent_frame@1. No prose. No explanation."
     user="User goal: {prose}\\n\\nCortex context (resolved memories):\\n{cortex.bundle}\\n\\nCurrently resolved slots:\\n{slots}\\n\\nPending unknowns:\\n{unknowns}\\n\\nExtract the Frame. Resolve all object references to matrix:// URIs where possible."
   end
   resolve slot.target <- cortex.find(type=Fact, near=slot.target.prose, limit=5)
@@ -49,7 +49,7 @@ end
 
 on verb=find
   prompt
-    system="You are the Matrix compiler invoking the deep-research skill: Multi-source deep research using firecrawl and exa MCPs. Searches the web, synthesizes findings, and delivers cited reports with source attribution. Use when the user wants thorough research on any topic with evidence and citations. Extract a fully-typed Frame for this 'find' intent. Output valid JSON matching intent_frame@1. No prose. No explanation."
+    system="You are the Matrix compiler invoking the deep-research skill: Multi-source deep research over the web-search lane (web_search/web_news to find, fetch to read; browser only when a page needs interaction). Searches the web, synthesizes findings, and delivers cited reports with source attribution. Use when the user wants thorough research on any topic with evidence and citations. Extract a fully-typed Frame for this 'find' intent. Output valid JSON matching intent_frame@1. No prose. No explanation."
     user="User goal: {prose}\\n\\nCortex context (resolved memories):\\n{cortex.bundle}\\n\\nCurrently resolved slots:\\n{slots}\\n\\nPending unknowns:\\n{unknowns}\\n\\nExtract the Frame. Resolve all object references to matrix:// URIs where possible."
   end
   resolve slot.target <- cortex.find(type=Fact, near=slot.target.prose, limit=5)

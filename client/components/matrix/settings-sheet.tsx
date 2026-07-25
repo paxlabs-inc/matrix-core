@@ -36,6 +36,7 @@ import { ONBOARDED_KEY, STORAGE_KEY } from '@/components/matrix/onboarding/onboa
 import { AutomatrixSection } from '@/components/matrix/automatrix-section'
 import { BriefSection } from '@/components/matrix/brief-section'
 import { TelegramSection } from '@/components/matrix/telegram-section'
+import { MachineMailSection } from '@/components/matrix/machinemail-section'
 
 const VOICE_OPTIONS = [
   'Mia',
@@ -245,6 +246,8 @@ export function SettingsSheet({
               </section>
 
               <TelegramSection />
+
+              <MachineMailSection />
 
               {/* Automatrix — proactive surprise tasks */}
               <AutomatrixSection />

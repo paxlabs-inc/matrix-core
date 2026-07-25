@@ -47,13 +47,18 @@ export function useAutomatrixQueue(enabled = true) {
   })
 }
 
-/** The completion inbox + unread badge. */
+/** The completion inbox + unread badge. Polls every 30s when the page is
+ *  visible so new completions surface promptly without a dedicated SSE
+ *  subscription. Also refetches on window focus. */
 export function useAutomatrixInbox(enabled = true) {
   return useQuery<AutomatrixInbox>({
     queryKey: qk.automatrixInbox(),
     queryFn: ({ signal }) => getAutomatrixInbox(signal),
     enabled,
     staleTime: 15_000,
+    refetchInterval: (query) => (query.state.status === 'success' ? 30_000 : false),
+    refetchIntervalInBackground: false,
+    refetchOnWindowFocus: true,
   })
 }
 

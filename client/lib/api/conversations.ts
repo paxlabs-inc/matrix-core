@@ -10,7 +10,7 @@
  *
  * Mirrors executor/cmd/mcl-execute/daemon_conversations_routes.go.
  */
-import { apiFetch } from '@/lib/api/client'
+import { apiFetch, apiSend } from '@/lib/api/client'
 
 /** One turn of a conversation as persisted by the daemon. */
 export interface ConversationTurn {
@@ -47,6 +47,12 @@ export interface ConversationSummary {
   updated: string
   /** Workbench project tag (absent for untagged dashboard threads). */
   project?: string
+  /** CHAT-01 — durable archive flag; archived threads are hidden from the
+   *  default sidebar but remain reachable via an "archived" view. */
+  archived?: boolean
+  /** CHAT-01 — fork provenance: the parent conversation id (absent for
+   *  non-forked threads). */
+  forked_from?: string
 }
 
 interface ListResponse {
@@ -113,4 +119,73 @@ export async function getConversationTrace(
   signal?: AbortSignal,
 ): Promise<ConversationTrace> {
   return apiFetch<ConversationTrace>(`/conversations/${encodeURIComponent(id)}/trace`, { signal })
+}
+
+/* ── CHAT-01 durable conversation management ─────────────────────────────── */
+
+/** PATCH /conversations/:id — set an explicit durable title (rename). An empty
+ *  title clears the override and restores the derived first-user-turn label.
+ *  Returns the refreshed summary. */
+export async function renameConversation(id: string, title: string): Promise<ConversationSummary> {
+  return apiSend<ConversationSummary>(
+    `/conversations/${encodeURIComponent(id)}`,
+    { title },
+    { method: 'PATCH' },
+  )
+}
+
+/** PATCH /conversations/:id — archive/unarchive (hide from the default sidebar
+ *  without deleting). Returns the refreshed summary. */
+export async function setConversationArchived(
+  id: string,
+  archived: boolean,
+): Promise<ConversationSummary> {
+  return apiSend<ConversationSummary>(
+    `/conversations/${encodeURIComponent(id)}`,
+    { archived },
+    { method: 'PATCH' },
+  )
+}
+
+/** Cleanup disclosure returned by DELETE, so the UI can tell the user what was
+ *  purged versus retained (memories/media are governed by memory controls). */
+export interface ConversationDeleteResult {
+  ok: boolean
+  conversation_id: string
+  cleanup: {
+    turns: string
+    traces: number
+    memories: string
+    media: string
+  }
+}
+
+/** DELETE /conversations/:id — permanently remove one thread and its per-run
+ *  workspace traces. Refuses (409) while a run is still in flight. */
+export async function deleteConversation(id: string): Promise<ConversationDeleteResult> {
+  return apiSend<ConversationDeleteResult>(`/conversations/${encodeURIComponent(id)}`, undefined, {
+    method: 'DELETE',
+  })
+}
+
+/** Result of forking a thread at a selected turn. */
+export interface ConversationForkResult {
+  conversation_id: string
+  forked_from: string
+  forked_at_turn: number
+  summary: ConversationSummary
+}
+
+/** POST /conversations/:id/fork — create a new conversation from the first
+ *  `upToTurn` turns of an existing one, with parent/turn provenance and an
+ *  independent future. */
+export async function forkConversation(
+  id: string,
+  upToTurn: number,
+): Promise<ConversationForkResult> {
+  return apiSend<ConversationForkResult>(
+    `/conversations/${encodeURIComponent(id)}/fork`,
+    { up_to_turn: upToTurn },
+    { method: 'POST' },
+  )
 }

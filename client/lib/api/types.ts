@@ -147,7 +147,7 @@ export interface AsyncStartResponse {
 /** GET /messages/async/:id terminal poll. */
 export interface AsyncJob {
   intent_id: string
-  status: 'queued' | 'running' | 'completed' | 'failed' | 'cancelled'
+  status: 'queued' | 'running' | 'completed' | 'failed' | 'cancelled' | 'interrupted'
   request: { prose: string; verb?: string; skill?: string; goal_id?: string }
   created_at: string
   started_at?: string
@@ -155,13 +155,15 @@ export interface AsyncJob {
   result?: {
     intent_id: string
     intent_hash: string
-    status: 'completed' | 'failed'
+    status: 'completed' | 'failed' | 'interrupted'
     walk_errors: number
     node_count: number
     duration_ms: number
     error?: string
+    text?: string
   }
   error?: string
+  last_event_seq?: number
 }
 
 /** GET /events SSE event row (mirrors transcript JSONL). */

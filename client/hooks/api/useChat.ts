@@ -11,6 +11,7 @@
  */
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useTranslations } from 'next-intl'
+import { useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { nanoid } from 'nanoid'
 import { sendChat, type ChatResponse } from '@/lib/api/chat'
@@ -19,6 +20,10 @@ import {
   listConversations,
   getConversation,
   getConversationTrace,
+  renameConversation as apiRenameConversation,
+  setConversationArchived as apiSetConversationArchived,
+  deleteConversation as apiDeleteConversation,
+  forkConversation as apiForkConversation,
   type ConversationSummary,
   type TraceEvent,
 } from '@/lib/api/conversations'
@@ -39,13 +44,25 @@ import {
 
 export type ChatRole = 'user' | 'assistant'
 
-/** A generated/edited media artifact (image or video) surfaced from a
+/** A generated/edited media artifact surfaced from a
  *  tool.media event and rendered inline in the thread + surface. */
 export interface ChatMedia {
   url: string
-  kind: 'image' | 'video'
+  kind: 'image' | 'video' | 'audio'
   mime?: string
   prompt?: string
+}
+
+export function mediaFromFields(fields: Record<string, unknown>): ChatMedia | null {
+  const kind = asString(fields.kind)
+  const url = asString(fields.url)
+  if ((kind !== 'image' && kind !== 'video' && kind !== 'audio') || !url) return null
+  return {
+    url,
+    kind,
+    mime: asString(fields.mime) || undefined,
+    prompt: asString(fields.prompt) || undefined,
+  }
 }
 
 /** A deliverable artifact (F6) surfaced from a tool.artifact event: a
@@ -82,6 +99,55 @@ export interface ChatMessage {
 /** idle = composer ready; thinking = awaiting /chat; working = a run is
  *  executing and being narrated. */
 export type ChatPhase = 'idle' | 'thinking' | 'working'
+
+// ── UI-layer replay dedup ─────────────────────────────────────────────────────
+// Last-line defense against every server-side re-emission shape at once
+// (supervisor respawn re-narration, replay-after-reconnect, double-persisted
+// turns): an assistant bubble whose trimmed text VERBATIM matches a recent
+// assistant bubble in the same thread is a replay artifact, not a new answer —
+// a model does not reproduce long prose byte-identical by chance. Substantial
+// texts only: short confirmations ("Done.", "On it.") legitimately repeat
+// across turns. The window is bounded so a genuinely re-asked question far up
+// the thread can still get the same answer again.
+export const ASSISTANT_DEDUP_MIN_CHARS = 40
+export const ASSISTANT_DEDUP_WINDOW = 12
+
+/** True when `text` is a verbatim replay of a recent assistant bubble. */
+export function isDuplicateAssistantText(messages: ChatMessage[], text: string): boolean {
+  const t = text.trim()
+  if (t.length < ASSISTANT_DEDUP_MIN_CHARS) return false
+  const from = Math.max(0, messages.length - ASSISTANT_DEDUP_WINDOW)
+  for (let i = messages.length - 1; i >= from; i--) {
+    const m = messages[i]
+    if (m.role === 'assistant' && m.text.trim() === t) return true
+  }
+  return false
+}
+
+/** Strip a reasoning block that verbatim-repeats the previous assistant
+ *  bubble's reasoning — the same thought re-attached to a new turn is a
+ *  replay artifact; rendering it twice reads as the model stuttering. */
+export function dedupeReasoning(messages: ChatMessage[], reasoning?: string): string | undefined {
+  const r = (reasoning ?? '').trim()
+  if (r.length < ASSISTANT_DEDUP_MIN_CHARS) return reasoning || undefined
+  for (let i = messages.length - 1; i >= 0; i--) {
+    const m = messages[i]
+    if (m.role !== 'assistant') continue
+    return (m.reasoning ?? '').trim() === r ? undefined : reasoning
+  }
+  return reasoning
+}
+
+/** Fold a loaded (durable) thread through the same guard, so a
+ *  double-persisted turn never renders twice on reopen. */
+export function dedupeThread(loaded: ChatMessage[]): ChatMessage[] {
+  const out: ChatMessage[] = []
+  for (const m of loaded) {
+    if (m.role === 'assistant' && isDuplicateAssistantText(out, m.text)) continue
+    out.push(m)
+  }
+  return out
+}
 
 export interface PendingGate {
   intentId: string
@@ -136,6 +202,10 @@ export interface NeoStep {
   target?: string
   typed?: string
   screenshotUrl?: string
+  /** browser — when the frame was captured, for the truthful
+   *  "Neo viewed · <time>" label (BROWSER-FILMSTRIP: every still is a faithful
+   *  capture at its timestamp, never an implied live video feed). */
+  ts?: string
   excerpt?: string
   /** editor — the file path, language, and a bounded content/diff preview. */
   path?: string
@@ -172,6 +242,19 @@ export interface NeoTodoItem {
   status: NeoTodoStatus
 }
 
+/** Extended profile for a sub-agent — role, backstory, visual identity.
+ *  Optional; when absent the agent renders with the default compact row. */
+export interface NeoSubAgentProfile {
+  /** Role title, e.g. "Pro Designer", "Backend Engineer". */
+  role?: string
+  /** One-line personality motto or backstory. */
+  backstory?: string
+  /** Seed for the procedural geometric avatar (defaults to agent name). */
+  avatarSeed?: string
+  /** Accent color for the card strip and avatar pattern. */
+  color?: string
+}
+
 /** One task-scoped sub-agent in a concurrent Agent Swarm, surfaced from the
  *  swarm.* / subagent.* events. Each runs in its OWN context with the full
  *  reversible toolset, so it carries its own workspace timeline (`steps`) —
@@ -188,6 +271,9 @@ export interface NeoSubAgent {
   steps: NeoStep[]
   /** Last activity line (a tool step title or narration note) for the row. */
   activity?: string
+  /** Visual profile — role, backstory, avatar accent. When present the agent
+   *  renders as a premium profile card instead of a compact row. */
+  profile?: NeoSubAgentProfile
 }
 
 /** A live Agent Swarm: several sub-agents spawned from one spawn_subagents
@@ -251,6 +337,153 @@ export interface NeoTask {
    *  persisted to the durable trace, so it survives reopen. Result, not
    *  protocol: no journal / rollup / snapshot jargon. */
   memory?: NeoMemory
+  /** Live file-typing buffers (NEO-WORKBENCH req 6): per-path progressive
+   *  content streamed over tool.delta while Neo is mid-write. LIVE-ONLY —
+   *  never persisted, never authoritative; a contiguity break drops the
+   *  buffer (the editor then converges on the workspace file / final step,
+   *  never a corrupted splice). Cleared when the file's write step settles. */
+  typing?: Record<string, NeoTyping>
+  /** The sandbox preview lifecycle (NEO-WORKBENCH req 7): folded from the
+   *  durable preview.* events, so reopen rebuilds the LAST honest state —
+   *  the pane never presents a stale frame as live. */
+  preview?: NeoPreview
+  /** The disposable desktop lifecycle (DOJO req 4.1): folded from the durable
+   *  dojo.* events; the Computer surface renders its boot / live view /
+   *  takeover states from this. */
+  dojo?: NeoDojo
+  /** Cassandra 2.0 silent-voice controller audit trail. Each entry records
+   *  an in-place edit Cassandra made to an assistant message (doubt/assurance
+   *  injection) or an identity-leak detection. Surfaced for transparency —
+   *  the user can see what the self-healing loop actually changed. */
+  audit?: CassandraAuditEntry[]
+}
+
+/** One Cassandra silent-voice modification or identity-leak detection. */
+export interface CassandraAuditEntry {
+  /** 'mod' = message edit, 'identity_leak' = model self-identification caught. */
+  kind: 'mod' | 'identity_leak'
+  /** The agent-loop step number (mod only). */
+  step?: number
+  /** The behavioral drift that armed the modification (mod only). */
+  trigger?: string
+  /** 'doubt' or 'assurance' (mod only). */
+  side?: string
+  /** The message content BEFORE Cassandra folded in its edit (mod only). */
+  originalContent?: string
+  /** The first-person metacognitive text Cassandra appended (mod only). */
+  cassandraMod?: string
+  /** Where the leak was caught: 'answer' or 'delivery' (identity_leak only). */
+  where?: string
+  /** ISO timestamp. */
+  ts?: string
+}
+
+/** The sandbox preview's last-known lifecycle state. */
+export interface NeoPreview {
+  state: 'pending' | 'ready' | 'failed' | 'expired'
+  /** The serving sandbox URL (ready only). */
+  url?: string
+  /** Plain-language failure reason (failed only). */
+  reason?: string
+}
+
+/** Fold one preview.* event into the task's preview state. Pure — shared by
+ *  the live reducer and the trace rebuild so reopen matches live exactly. */
+export function foldPreviewEvent(
+  type: string,
+  fields: Record<string, unknown> | undefined,
+): NeoPreview | null {
+  switch (type) {
+    case 'preview.pending':
+      return { state: 'pending' }
+    case 'preview.ready':
+      return { state: 'ready', url: typeof fields?.url === 'string' ? fields.url : undefined }
+    case 'preview.failed':
+      return {
+        state: 'failed',
+        reason: typeof fields?.reason === 'string' ? fields.reason : undefined,
+      }
+    case 'preview.expired':
+      return { state: 'expired' }
+    default:
+      return null
+  }
+}
+
+/** The disposable desktop's last-known lifecycle state (DOJO wave 3), folded
+ *  from the durable dojo.* events so reopen rebuilds the LAST honest state —
+ *  provisioning renders as the computer turning on, never a spinner-error. */
+export interface NeoDojo {
+  /** 'off' is client-synthesized only (no session exists / never booted);
+   *  the event fold never emits it. */
+  state: 'provisioning' | 'ready' | 'active' | 'takeover' | 'shipping' | 'destroyed' | 'failed' | 'off'
+  sessionId?: string
+  conversationId?: string
+  /** Teardown / failure reason (idle_timeout, max_lifetime, provision_failed, …). */
+  reason?: string
+  /** Honest ship failure surfaced on destroy (req 5.1: never silently dropped). */
+  shipError?: string
+}
+
+/** Fold one dojo.* event into the task's desktop state. Pure — shared by the
+ *  live reducer and the trace rebuild so reopen matches live exactly. */
+export function foldDojoEvent(
+  type: string,
+  fields: Record<string, unknown> | undefined,
+): NeoDojo | null {
+  const states: Record<string, NeoDojo['state']> = {
+    'dojo.provisioning': 'provisioning',
+    'dojo.ready': 'ready',
+    'dojo.active': 'active',
+    'dojo.takeover': 'takeover',
+    'dojo.handback': 'active',
+    'dojo.shipping': 'shipping',
+    'dojo.destroyed': 'destroyed',
+    'dojo.failed': 'failed',
+  }
+  const state = states[type]
+  if (!state) return null
+  const dojo: NeoDojo = { state }
+  if (typeof fields?.session_id === 'string') dojo.sessionId = fields.session_id
+  if (typeof fields?.conversation_id === 'string') dojo.conversationId = fields.conversation_id
+  if (typeof fields?.reason === 'string') dojo.reason = fields.reason
+  if (typeof fields?.ship_error === 'string') dojo.shipError = fields.ship_error
+  return dojo
+}
+
+/** One in-flight live-typed file buffer. */
+export interface NeoTyping {
+  /** Content decoded so far (grows append-only while contiguous). */
+  content: string
+  /** The next expected byte offset (the daemon's offsets count UTF-8 bytes,
+   *  not UTF-16 code units, so contiguity is tracked in bytes). */
+  nextOffset: number
+  /** True once a gap was detected — the buffer is no longer authoritative
+   *  and the editor must fall back to the final content. */
+  dropped?: boolean
+}
+
+/** Fold one tool.delta fragment into the task's live-typing buffers. Pure —
+ *  exported for the workbench tests. A non-contiguous fragment marks the
+ *  buffer dropped (honest degrade) rather than splicing at a guess. */
+export function foldTypingDelta(
+  typing: Record<string, NeoTyping> | undefined,
+  path: string,
+  delta: string,
+  offset: number,
+): Record<string, NeoTyping> {
+  const next = { ...(typing ?? {}) }
+  const cur = next[path]
+  if (cur?.dropped) return next
+  const deltaBytes = new TextEncoder().encode(delta).length
+  if (offset === 0) {
+    next[path] = { content: delta, nextOffset: deltaBytes }
+  } else if (cur && offset === cur.nextOffset) {
+    next[path] = { content: cur.content + delta, nextOffset: cur.nextOffset + deltaBytes }
+  } else {
+    next[path] = { content: cur?.content ?? '', nextOffset: cur?.nextOffset ?? 0, dropped: true }
+  }
+  return next
 }
 
 /** Neo's activated working memory for a run — the human-readable recap it is
@@ -261,6 +494,17 @@ export interface NeoMemory {
   storySoFar: string
   /** Coarse, oldest-first beats of what has happened. */
   timeline: string[]
+  triggerClass?: string
+  excerpts: NeoMemoryExcerpt[]
+}
+
+export interface NeoMemoryExcerpt {
+  conversationId: string
+  date?: string
+  seqLo: number
+  seqHi: number
+  exact: boolean
+  text: string
 }
 
 /** Mark any in-flight ('running') narration steps as done — a new step
@@ -291,8 +535,10 @@ function upsertStep(steps: NeoStep[], step: NeoStep): NeoStep[] {
   return [...settleActive(steps), step]
 }
 
-/** Build a NeoStep from a `tool.step` event's fields. */
-function parseToolStep(fields: Record<string, unknown>): NeoStep | null {
+/** Build a NeoStep from a `tool.step` event's fields. `ts` is the event
+ *  envelope timestamp — the moment the frame was captured — carried onto the
+ *  step for the truthful "Neo viewed · <time>" label. */
+function parseToolStep(fields: Record<string, unknown>, ts?: string): NeoStep | null {
   const id = asString(fields.id)
   const kind = asString(fields.surface) as NeoStepKind
   if (!id || !kind) return null
@@ -311,6 +557,7 @@ function parseToolStep(fields: Record<string, unknown>): NeoStep | null {
     target: asString(fields.target) || undefined,
     typed: asString(fields.text) || undefined,
     screenshotUrl: asString(fields.screenshot_url) || undefined,
+    ts: ts || undefined,
     excerpt: asString(fields.excerpt) || undefined,
     path: asString(fields.path) || undefined,
     language: asString(fields.language) || undefined,
@@ -405,7 +652,7 @@ function applyDelta(prev: NeoTask, turn: number, channel: string, text: string):
   }
 }
 
-const EMPTY_TASK: NeoTask = {
+export const EMPTY_TASK: NeoTask = {
   intentId: '',
   steps: [],
   searches: [],
@@ -425,8 +672,32 @@ function memoryFromFields(fields: Record<string, unknown>): NeoMemory | null {
   const timeline = Array.isArray(fields.timeline)
     ? fields.timeline.map((t) => asString(t).trim()).filter(Boolean)
     : []
-  if (!storySoFar && timeline.length === 0) return null
-  return { storySoFar, timeline }
+  const excerpts: NeoMemoryExcerpt[] = Array.isArray(fields.episodic_excerpts)
+    ? fields.episodic_excerpts.flatMap((raw) => {
+        if (!raw || typeof raw !== 'object') return []
+        const row = raw as Record<string, unknown>
+        const text = asString(row.text).trim()
+        const conversationId = asString(row.conversation_id).trim()
+        if (!text || !conversationId) return []
+        return [
+          {
+            conversationId,
+            date: asString(row.date).trim() || undefined,
+            seqLo: Number(row.seq_lo) || 0,
+            seqHi: Number(row.seq_hi) || 0,
+            exact: row.exact === true,
+            text,
+          },
+        ]
+      })
+    : []
+  if (!storySoFar && timeline.length === 0 && excerpts.length === 0) return null
+  return {
+    storySoFar,
+    timeline,
+    triggerClass: asString(fields.trigger_class) || undefined,
+    excerpts,
+  }
 }
 
 /** artifactFromFields parses a tool.artifact event's fields into a ChatArtifact
@@ -477,8 +748,28 @@ export function buildTaskFromTrace(
     const fields = (ev.fields ?? {}) as Record<string, unknown>
     switch (ev.type) {
       case 'tool.step': {
-        const step = parseToolStep(fields)
+        const step = parseToolStep(fields, ev.ts)
         if (step) task = { ...task, steps: upsertStep(task.steps, step) }
+        break
+      }
+      case 'preview.pending':
+      case 'preview.ready':
+      case 'preview.failed':
+      case 'preview.expired': {
+        const preview = foldPreviewEvent(ev.type, fields)
+        if (preview) task = { ...task, preview }
+        break
+      }
+      case 'dojo.provisioning':
+      case 'dojo.ready':
+      case 'dojo.active':
+      case 'dojo.takeover':
+      case 'dojo.handback':
+      case 'dojo.shipping':
+      case 'dojo.destroyed':
+      case 'dojo.failed': {
+        const dojo = foldDojoEvent(ev.type, fields)
+        if (dojo) task = { ...task, dojo }
         break
       }
       case 'tool.search': {
@@ -498,20 +789,11 @@ export function buildTaskFromTrace(
         break
       }
       case 'tool.media': {
-        const kind = asString(fields.kind)
-        const url = asString(fields.url)
-        if ((kind === 'image' || kind === 'video') && url) {
+        const item = mediaFromFields(fields)
+        if (item) {
           task = {
             ...task,
-            media: [
-              ...task.media,
-              {
-                url,
-                kind,
-                mime: asString(fields.mime) || undefined,
-                prompt: asString(fields.prompt) || undefined,
-              },
-            ],
+            media: [...task.media, item],
           }
         }
         break
@@ -533,6 +815,28 @@ export function buildTaskFromTrace(
         // survives reopen. Read-only; never editable by a human.
         const mem = memoryFromFields(fields)
         if (mem) task = { ...task, memory: mem }
+        break
+      }
+      case 'cassandra.mod': {
+        const entry: CassandraAuditEntry = {
+          kind: 'mod',
+          step: typeof fields.step === 'number' ? fields.step : undefined,
+          trigger: asString(fields.trigger) || undefined,
+          side: asString(fields.side) || undefined,
+          originalContent: asString(fields.original_content) || undefined,
+          cassandraMod: asString(fields.cassandra_mod) || undefined,
+          ts: ev.ts,
+        }
+        task = { ...task, audit: [...(task.audit ?? []), entry] }
+        break
+      }
+      case 'identity.leak': {
+        const entry: CassandraAuditEntry = {
+          kind: 'identity_leak',
+          where: asString(fields.where) || undefined,
+          ts: ev.ts,
+        }
+        task = { ...task, audit: [...(task.audit ?? []), entry] }
         break
       }
       case CONSTRUCT_SURFACE:
@@ -562,7 +866,7 @@ export function buildTaskFromTrace(
       }
       case 'subagent.step': {
         const index = Number(fields.agent_index) || 0
-        const step = parseToolStep(fields)
+        const step = parseToolStep(fields, ev.ts)
         if (step) {
           task =
             patchAgent(task, index, (a) => ({
@@ -623,6 +927,13 @@ export function buildTaskFromTrace(
   return { ...task, steps: settleActive(task.steps) }
 }
 
+export interface UseChatOptions {
+  /** Workbench project scope (NEO-WORKBENCH req 1.3): dispatched chats are
+   *  tagged with this project id and the conversation list is scoped to it
+   *  server-side. Omit for the dashboard (unscoped) surface. */
+  project?: string
+}
+
 export interface UseChatResult {
   messages: ChatMessage[]
   phase: ChatPhase
@@ -658,6 +969,19 @@ export interface UseChatResult {
   selectConversation: (id: string) => void
   /** Re-fetch the conversation list from the DB. */
   refreshConversations: () => void
+  /** CHAT-01 — set a durable title (empty restores the derived label). */
+  renameConversation: (id: string, title: string) => void
+  /** CHAT-01 — archive/unarchive a thread (hide without deleting). */
+  archiveConversation: (id: string, archived: boolean) => void
+  /** CHAT-01 — permanently delete a thread (refused server-side while a run
+   *  is still in flight). */
+  deleteConversation: (id: string) => void
+  /** CHAT-01 — fork a thread at a selected turn into a new conversation and
+   *  open it. */
+  forkConversation: (id: string, upToTurn: number) => void
+  /** Attach a voice-created run to this browser, loading its durable spoken
+   *  user turn before following the normal live event stream. */
+  attachVoiceIntent?: (intentId: string) => void
   answerGate: (approved: boolean, answer?: string) => void
   /** Answer a parked Construct Ask (the bidirectional back-channel): POST the
    *  typed response for the surface id; the run resumes with it. */
@@ -680,13 +1004,20 @@ const CLOSING_TURN_GRACE_MS = 40_000
 // CLOSING_TURN_GRACE_MS.
 const SETTLE_AFTER_LAST_TURN_MS = 8_000
 
-export function useChat(): UseChatResult {
+export function useChat(options: UseChatOptions = {}): UseChatResult {
+  // The workbench project scope, read through a ref so the long-lived
+  // send/refresh callbacks never close over a stale value.
+  const projectRef = useRef(options.project)
+  useEffect(() => {
+    projectRef.current = options.project
+  }, [options.project])
   // User-facing copy is translated. Because the closing/error strings are
   // produced inside long-lived SSE callbacks (stable across renders), we
   // read the translator through a ref so those callbacks never close over
   // a stale `t` and never need to be re-created when the locale changes.
   const t = useTranslations('agentChat')
   const tRef = useRef(t)
+  const qc = useQueryClient()
   useEffect(() => {
     tRef.current = t
   }, [t])
@@ -710,7 +1041,14 @@ export function useChat(): UseChatResult {
   const convRef = useRef<string | null>(null)
   const subRef = useRef<{ close: () => void } | null>(null)
   const seenRef = useRef<Set<string>>(new Set())
+  // Defense-in-depth against server re-emission: a supervisor respawn can
+  // re-narrate already-shown turns on the SAME run id with FRESH seqs, which
+  // the seq-keyed dedup above cannot catch. This set keys non-final narration
+  // by run + exact text so a verbatim re-emitted bubble is dropped instead of
+  // rendering the whole prior turn twice. Final turns are never suppressed.
+  const seenTextRef = useRef<Set<string>>(new Set())
   const hydratedRef = useRef(false)
+  const submissionKeysRef = useRef<Map<string, string>>(new Map())
 
   // Mirror the live run id + phase into refs so the abort/interrupt
   // primitives (dismiss, redirect) can read them without re-creating the
@@ -754,7 +1092,7 @@ export function useChat(): UseChatResult {
   }, [])
 
   const refreshConversations = useCallback(() => {
-    listConversations()
+    listConversations(undefined, projectRef.current)
       .then(setConversations)
       .catch(() => {
         /* non-fatal: the history list just stays as-is */
@@ -763,19 +1101,26 @@ export function useChat(): UseChatResult {
 
   const pushAssistant = useCallback(
     (text: string, intentId?: string, seq?: number, reasoning?: string, media?: ChatMedia[]) => {
-      setMessages((m) => [
-        ...m,
-        {
-          id: nanoid(),
-          role: 'assistant',
-          text,
-          intentId,
-          seq,
-          reasoning,
-          media: media && media.length ? media : undefined,
-          ts: Date.now(),
-        },
-      ])
+      setMessages((m) => {
+        // UI-layer replay guard: a verbatim repeat of a recent bubble never
+        // renders twice, whatever server-side path re-emitted it. Media-
+        // carrying turns are exempt — the attachment is new content even if
+        // the caption text repeats.
+        if (!(media && media.length) && isDuplicateAssistantText(m, text)) return m
+        return [
+          ...m,
+          {
+            id: nanoid(),
+            role: 'assistant',
+            text,
+            intentId,
+            seq,
+            reasoning: dedupeReasoning(m, reasoning),
+            media: media && media.length ? media : undefined,
+            ts: Date.now(),
+          },
+        ]
+      })
     },
     [],
   )
@@ -788,10 +1133,17 @@ export function useChat(): UseChatResult {
   // delay timer + the latest retry token live here so a new external subscribe
   // (a fresh send / a fresh selectConversation) cancels any pending retry.
   const retryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const pollTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const cancelRetryTimer = useCallback(() => {
     if (retryTimerRef.current) {
       clearTimeout(retryTimerRef.current)
       retryTimerRef.current = null
+    }
+  }, [])
+  const cancelPollTimer = useCallback(() => {
+    if (pollTimerRef.current) {
+      clearTimeout(pollTimerRef.current)
+      pollTimerRef.current = null
     }
   }, [])
   // F2 — break the self-reference cycle between subscribe and its bounded
@@ -823,6 +1175,7 @@ export function useChat(): UseChatResult {
     ) => {
       closeSub()
       cancelRetryTimer()
+      cancelPollTimer()
       seenRef.current = new Set(opts?.seedSeen ?? [])
       runMediaRef.current = []
       setActiveIntentId(intentId)
@@ -858,11 +1211,61 @@ export function useChat(): UseChatResult {
       // bubble's collapsible subfield. Reset when the turn index advances.
       let liveReasoning = ''
       let liveReasoningTurn = -1
+      // rAF-coalesced live "typing" flush. Streaming tokens arrive far faster
+      // than the eye needs; batching them to ONE state update per animation
+      // frame keeps Streamdown re-parsing (and the stick-to-bottom reflow that
+      // reads scrollHeight) at <=60fps instead of once per token — the source
+      // of the streaming jank. Buffers are per-channel; a turn boundary inside
+      // a frame flushes synchronously so text is never misattributed across
+      // segments. `liveReasoning` above stays unbatched (it feeds the durable
+      // bubble) — only the transient render cadence is throttled here.
+      let pendingContent = ''
+      let pendingReasoning = ''
+      let pendingTurn = 0
+      let deltaRaf: number | null = null
+      const flushDeltas = () => {
+        deltaRaf = null
+        const c = pendingContent
+        const r = pendingReasoning
+        const t = pendingTurn
+        pendingContent = ''
+        pendingReasoning = ''
+        if (!c && !r) return
+        setTask((prev) => {
+          if (!prev) return prev
+          let next = prev
+          if (r) next = applyDelta(next, t, 'reasoning', r)
+          if (c) next = applyDelta(next, t, 'content', c)
+          return next
+        })
+      }
+      const cancelDeltas = () => {
+        if (deltaRaf != null) {
+          cancelAnimationFrame(deltaRaf)
+          deltaRaf = null
+        }
+        pendingContent = ''
+        pendingReasoning = ''
+      }
+      const enqueueDelta = (turn: number, channel: string, text: string) => {
+        if ((pendingContent || pendingReasoning) && turn !== pendingTurn) {
+          if (deltaRaf != null) {
+            cancelAnimationFrame(deltaRaf)
+            deltaRaf = null
+          }
+          flushDeltas()
+        }
+        pendingTurn = turn
+        if (channel === 'reasoning') pendingReasoning += text
+        else pendingContent += text
+        if (deltaRaf == null) deltaRaf = requestAnimationFrame(flushDeltas)
+      }
       let graceTimer: ReturnType<typeof setTimeout> | null = null
       let settleTimer: ReturnType<typeof setTimeout> | null = null
       const attempt = opts?.retryAttempt ?? 0
 
       const finish = () => {
+        cancelDeltas()
         if (graceTimer) {
           clearTimeout(graceTimer)
           graceTimer = null
@@ -872,6 +1275,7 @@ export function useChat(): UseChatResult {
           settleTimer = null
         }
         cancelRetryTimer()
+        cancelPollTimer()
         setPhase('idle')
         setActiveIntentId(null)
         setResuming(false)
@@ -889,15 +1293,26 @@ export function useChat(): UseChatResult {
         if (graceTimer) return
         graceTimer = setTimeout(() => {
           // The closing turn never arrived. If the run didn't succeed,
-          // tell the user plainly instead of silently stopping.
+          // tell the user plainly instead of silently stopping. A user-driven
+          // stop ("interrupted") is NOT a failure: it gets calm copy and no
+          // failed styling — the alarming "task stopped, try again" is
+          // reserved for runs that genuinely died.
           if (!closingTurnSeen && terminalStatus && terminalStatus !== 'completed') {
-            const reason = failReason
-              ? tRef.current('taskFailed', { reason: failReason })
-              : tRef.current('taskStopped')
-            pushAssistant(reason)
-            setTask((prev) =>
-              prev ? { ...prev, answer: prev.answer || reason, done: true, failed: true } : prev,
-            )
+            if (terminalStatus === 'interrupted') {
+              const note = tRef.current('taskInterrupted')
+              pushAssistant(note)
+              setTask((prev) =>
+                prev ? { ...prev, answer: prev.answer || note, done: true } : prev,
+              )
+            } else {
+              const reason = failReason
+                ? tRef.current('taskFailed', { reason: failReason })
+                : tRef.current('taskStopped')
+              pushAssistant(reason)
+              setTask((prev) =>
+                prev ? { ...prev, answer: prev.answer || reason, done: true, failed: true } : prev,
+              )
+            }
           }
           finish()
         }, CLOSING_TURN_GRACE_MS)
@@ -926,7 +1341,7 @@ export function useChat(): UseChatResult {
             // working in the background. Keep the visible retrying state,
             // tear down the dead subscription, and re-subscribe with
             // replay:true after a bounded backoff. After 3 exhausted retries
-            // (1s, 2s, 4s), fall back to the legacy toast + finish.
+            // (1s, 2s, 4s), visibly detach and poll the durable run record.
             if (terminalSeen) {
               finish()
               return
@@ -934,14 +1349,33 @@ export function useChat(): UseChatResult {
             const nextAttempt = attempt + 1
             const MAX_RETRY = 3
             if (nextAttempt > MAX_RETRY) {
-              toast.error(tRef.current('connectionLost'))
-              finish()
+              setConnectionRetrying(true)
+              const poll = () => {
+                getAsyncJob(intentId)
+                  .then((job) => {
+                    if (job.status === 'running' || job.status === 'queued') {
+                      pollTimerRef.current = setTimeout(poll, 2_000)
+                      return
+                    }
+                    pollTimerRef.current = null
+                    subscribeRef.current?.(intentId, {
+                      replay: true,
+                      seedSeen: Array.from(seenRef.current),
+                      resuming: true,
+                    })
+                  })
+                  .catch(() => {
+                    pollTimerRef.current = setTimeout(poll, 5_000)
+                  })
+              }
+              poll()
               return
             }
             // Show the visible retrying state; tear down the current sub but
             // do NOT call finish() (that would flip phase to idle and clear
             // the task). Schedule a replay re-subscribe after backoff.
             setConnectionRetrying(true)
+            cancelDeltas()
             subRef.current?.close()
             subRef.current = null
             cancelRetryTimer()
@@ -998,7 +1432,7 @@ export function useChat(): UseChatResult {
                   liveReasoning += text
                 }
               }
-              setTask((prev) => (prev ? applyDelta(prev, turn, channel, text) : prev))
+              enqueueDelta(turn, channel, text)
             }
             return
           }
@@ -1046,21 +1480,17 @@ export function useChat(): UseChatResult {
             // conversational / ceiling final answer (final without the
             // completion flag) — those ARE the content the user reads.
             const isCompletionSummary = isFinal && ev.fields?.completion === true
-            // The synthetic narrate-before-act intent stub (e.g. "Layerx
-            // deposit.") is flagged `ephemeral:true`: it is shown live so the
-            // user can follow along, but it is NOT durable thread content and
-            // must NEVER count toward durableProduced. Letting it count was the
-            // bug where a straight-to-task_complete turn looked "already
-            // narrated" and the real summary got hidden — the user saw only the
-            // stub. The server never persists it either, so it drops away on
-            // reopen while the real answer remains.
-            const isEphemeral = ev.fields?.ephemeral === true
+            // Respawn re-emission guard: a non-final narration bubble whose
+            // exact text already rendered for this run is a duplicate stream
+            // (new seq, same content) — count it as seen but do not re-render.
+            const textKey = `${intentId}:t:${text}`
+            const isDupNarration = !isFinal && !!text && seenTextRef.current.has(textKey)
+            if (text && !isFinal) seenTextRef.current.add(textKey)
             if (text && !isCompletionSummary) {
-              pushAssistant(text, intentId, ev.seq, reasoning || undefined)
-              // A non-final GENUINE narration turn is durable thread content;
-              // once one lands, the closing summary is a safe-to-hide redundant
-              // recap. An ephemeral stub is not narration and does not qualify.
-              if (!isFinal && !isEphemeral) durableProduced = true
+              if (!isDupNarration) pushAssistant(text, intentId, ev.seq, reasoning || undefined)
+              // A non-final narration turn is durable thread content; once one
+              // lands, the closing summary is a safe-to-hide redundant recap.
+              if (!isFinal) durableProduced = true
             } else if (text && isCompletionSummary && !durableProduced) {
               // Safety net: the run produced no durable narration or surface, so
               // hiding the summary would empty the thread. Show it — it is the
@@ -1072,7 +1502,10 @@ export function useChat(): UseChatResult {
               // narration turn is now its durable bubble (pushed above), and the
               // hidden final reply must not linger as a streaming ghost. The
               // final reply still settles the task (answer/done) so the surface
-              // and the work centerpiece flip to their finished state.
+              // and the work centerpiece flip to their finished state. Drop any
+              // in-flight coalesced delta first so a late rAF flush can't revive
+              // the streaming text after the durable bubble has replaced it.
+              cancelDeltas()
               setTask((prev) =>
                 prev
                   ? isFinal
@@ -1145,14 +1578,57 @@ export function useChat(): UseChatResult {
           // browser / editor / action). Same id upserts running→done so the
           // viewport fills in place instead of stacking duplicate cards.
           if (ev.type === 'tool.step') {
-            const step = parseToolStep(ev.fields ?? {})
+            const step = parseToolStep(ev.fields ?? {}, ev.ts)
             if (step) {
               // A tool call means this turn's streamed content was a preamble,
               // not the answer — clear the live buffer as work takes over.
-              setTask((prev) =>
-                prev ? { ...prev, steps: upsertStep(prev.steps, step), streamingAnswer: '' } : prev,
-              )
+              setTask((prev) => {
+                if (!prev) return prev
+                let typing = prev.typing
+                // A settled editor write ends its live-typing buffer: the
+                // editor converges on the authoritative final content.
+                if (typing && step.kind === 'editor' && !step.running && step.path) {
+                  const rest = { ...typing }
+                  for (const key of Object.keys(rest)) {
+                    if (key === step.path || key.endsWith('/' + step.path)) delete rest[key]
+                  }
+                  typing = rest
+                }
+                return { ...prev, steps: upsertStep(prev.steps, step), streamingAnswer: '', typing }
+              })
             }
+            return
+          }
+
+          // Sandbox preview lifecycle (NEO-WORKBENCH req 7): pending → ready
+          // {url} / failed {reason} / expired. Durable — the same fold runs
+          // in buildTaskFromTrace on reopen.
+          if (ev.type.startsWith('preview.')) {
+            const preview = foldPreviewEvent(ev.type, ev.fields ?? undefined)
+            if (preview) setTask((prev) => (prev ? { ...prev, preview } : prev))
+            return
+          }
+
+          // Disposable desktop lifecycle (DOJO req 4.1): boot / ready / active
+          // / takeover / shipping / destroyed / failed. Durable — the same
+          // fold runs in buildTaskFromTrace on reopen.
+          if (ev.type.startsWith('dojo.')) {
+            const dojo = foldDojoEvent(ev.type, ev.fields ?? undefined)
+            if (dojo) setTask((prev) => (prev ? { ...prev, dojo } : prev))
+            return
+          }
+
+          // Live file typing (NEO-WORKBENCH req 6): a mid-write content
+          // fragment for the editor. Live-only — never durable, never
+          // authoritative over the workspace file.
+          if (ev.type === 'tool.delta') {
+            const path = asString(ev.fields?.path)
+            const delta = asString(ev.fields?.delta)
+            const offset = typeof ev.fields?.offset === 'number' ? ev.fields.offset : -1
+            if (!path || offset < 0) return
+            setTask((prev) =>
+              prev ? { ...prev, typing: foldTypingDelta(prev.typing, path, delta, offset) } : prev,
+            )
             return
           }
 
@@ -1174,15 +1650,8 @@ export function useChat(): UseChatResult {
           // turn) the answer bubble. The `media` workspace step (tool.step)
           // is the running indicator.
           if (ev.type === 'tool.media') {
-            const kind = asString(ev.fields?.kind)
-            const url = asString(ev.fields?.url)
-            if ((kind === 'image' || kind === 'video') && url) {
-              const item: ChatMedia = {
-                url,
-                kind,
-                mime: asString(ev.fields?.mime) || undefined,
-                prompt: asString(ev.fields?.prompt) || undefined,
-              }
+            const item = mediaFromFields((ev.fields ?? {}) as Record<string, unknown>)
+            if (item) {
               runMediaRef.current = [...runMediaRef.current, item]
               setTask((prev) => (prev ? { ...prev, media: [...prev.media, item] } : prev))
             }
@@ -1218,6 +1687,44 @@ export function useChat(): UseChatResult {
             return
           }
 
+          // Cassandra 2.0 audit trail: silent-voice controller modifications
+          // and identity-leak detections. Accumulated for transparency.
+          if (ev.type === 'cassandra.mod') {
+            const f = ev.fields ?? {}
+            const entry: CassandraAuditEntry = {
+              kind: 'mod',
+              step: typeof f.step === 'number' ? f.step : undefined,
+              trigger: asString(f.trigger) || undefined,
+              side: asString(f.side) || undefined,
+              originalContent: asString(f.original_content) || undefined,
+              cassandraMod: asString(f.cassandra_mod) || undefined,
+              ts: ev.ts,
+            }
+            setTask((prev) => (prev ? { ...prev, audit: [...(prev.audit ?? []), entry] } : prev))
+            return
+          }
+          if (ev.type === 'identity.leak') {
+            const entry: CassandraAuditEntry = {
+              kind: 'identity_leak',
+              where: asString(ev.fields?.where) || undefined,
+              ts: ev.ts,
+            }
+            setTask((prev) => (prev ? { ...prev, audit: [...(prev.audit ?? []), entry] } : prev))
+            return
+          }
+
+          // Automatrix completion: invalidate the inbox query so the badge
+          // and inbox list update immediately when a proactive task finishes
+          // on this conversation.
+          if (ev.type === 'automatrix.complete') {
+            const summary = asString(ev.fields?.opportunity_summary)
+            qc.invalidateQueries({ queryKey: ['automatrix', 'inbox'] })
+            if (summary) {
+              toast.success(`Neo finished: ${summary}`)
+            }
+            return
+          }
+
           // Agent Swarm: task-scoped sub-agents fanned out to run concurrently.
           // Each sub-agent reports its OWN workspace steps (same shape as Neo's
           // tool.step), so it renders its own animated "Agent's Window".
@@ -1248,7 +1755,7 @@ export function useChat(): UseChatResult {
           }
           if (ev.type === 'subagent.step') {
             const index = Number(ev.fields?.agent_index) || 0
-            const step = parseToolStep(ev.fields ?? {})
+            const step = parseToolStep(ev.fields ?? {}, ev.ts)
             if (step) {
               setTask((prev) =>
                 patchAgent(prev, index, (a) => ({
@@ -1304,12 +1811,36 @@ export function useChat(): UseChatResult {
         },
       })
     },
-    [closeSub, pushAssistant, refreshConversations, cancelRetryTimer],
+    [closeSub, pushAssistant, refreshConversations, cancelRetryTimer, cancelPollTimer, qc],
   )
   // F2 — keep the ref in sync so the bounded-retry timeout can re-enter.
   useEffect(() => {
     subscribeRef.current = subscribe
   }, [subscribe])
+
+  const attachVoiceIntent = useCallback(
+    (intentId: string) => {
+      const id = convRef.current
+      if (!id || !intentId) return
+      getConversation(id)
+        .then((rec) => {
+          if (convRef.current !== id) return
+          const loaded: ChatMessage[] = rec.turns
+            .filter((turn) => turn.role === 'user' || turn.intent_id !== intentId)
+            .map((turn) => ({
+              id: nanoid(),
+              role: turn.role,
+              text: turn.text,
+              intentId: turn.intent_id,
+              ts: turn.ts ? Date.parse(turn.ts) || Date.now() : Date.now(),
+            }))
+          setMessages(dedupeThread(loaded))
+          subscribe(intentId, { replay: true })
+        })
+        .catch(() => subscribe(intentId, { replay: true }))
+    },
+    [subscribe],
+  )
 
   // Reopen a past thread by id: load its durable turns from the DB and,
   // if its most recent run is still in flight, reconnect the live stream
@@ -1350,7 +1881,7 @@ export function useChat(): UseChatResult {
               intentId: turn.intent_id,
               ts: turn.ts ? Date.parse(turn.ts) || Date.now() : Date.now(),
             }))
-          setMessages(loaded)
+          setMessages(dedupeThread(loaded))
           setLoadingThread(false)
           // F1 — durable live-run resume. The server stamps the authoritative
           // in-flight run id on the conversation record's `live_run` field
@@ -1408,15 +1939,16 @@ export function useChat(): UseChatResult {
     [closeSub, subscribe],
   )
 
-  // On first mount, load the conversation list from the DB and reopen
-  // the most recent thread so the user lands back where they left off.
+  // On first mount, load the conversation list from the DB for the sidebar,
+  // but DO NOT auto-open the most recent thread — the user always lands on the
+  // idle hero and chooses a past task or a new one manually. (Durable live runs
+  // keep executing on the daemon and are reachable from the tasks list.)
   useEffect(() => {
     if (hydratedRef.current) return
     hydratedRef.current = true
-    listConversations()
+    listConversations(undefined, projectRef.current)
       .then((items) => {
         setConversations(items)
-        if (items.length > 0) selectConversation(items[0].conversation_id)
       })
       .catch(() => {
         /* no history yet (or daemon offline) — start with a blank thread */
@@ -1430,15 +1962,30 @@ export function useChat(): UseChatResult {
       if (!trimmed) return
       setError(null)
       const midRun = !!activeIntentRef.current && phaseRef.current === 'working'
-      setMessages((m) => [...m, { id: nanoid(), role: 'user', text: trimmed, ts: Date.now() }])
+      const submissionFingerprint = `${convRef.current ?? ''}\u0000${trimmed}`
+      let idempotencyKey = submissionKeysRef.current.get(submissionFingerprint)
+      const retryingSubmission = !!idempotencyKey
+      if (!idempotencyKey) {
+        idempotencyKey = `chat_${nanoid()}`
+        submissionKeysRef.current.set(submissionFingerprint, idempotencyKey)
+      }
+      if (!retryingSubmission) {
+        setMessages((m) => [...m, { id: nanoid(), role: 'user', text: trimmed, ts: Date.now() }])
+      }
       // F5: a send mid-run is NOT an interrupt. The daemon folds the message
       // into the live agent at its next tool-call boundary (POST /chat returns
       // the SAME active run id), so the existing live stream + workspace keep
       // going — we never cancel the run, reset the surface, or re-subscribe.
       // The explicit Stop control is the only interrupt.
       if (midRun) {
-        sendChat({ message: trimmed, conversationId: convRef.current ?? undefined })
+        sendChat({
+          message: trimmed,
+          conversationId: convRef.current ?? undefined,
+          project: projectRef.current,
+          idempotencyKey,
+        })
           .then((res: ChatResponse) => {
+            submissionKeysRef.current.delete(submissionFingerprint)
             convRef.current = res.conversation_id
             setConversationId(res.conversation_id)
           })
@@ -1467,8 +2014,14 @@ export function useChat(): UseChatResult {
           },
         ],
       })
-      sendChat({ message: trimmed, conversationId: convRef.current ?? undefined })
+      sendChat({
+        message: trimmed,
+        conversationId: convRef.current ?? undefined,
+        project: projectRef.current,
+        idempotencyKey,
+      })
         .then((res: ChatResponse) => {
+          submissionKeysRef.current.delete(submissionFingerprint)
           convRef.current = res.conversation_id
           setConversationId(res.conversation_id)
           if (res.kind === 'reply') {
@@ -1506,8 +2059,10 @@ export function useChat(): UseChatResult {
   const reset = useCallback(() => {
     closeSub()
     cancelRetryTimer()
+    cancelPollTimer()
     convRef.current = null
     seenRef.current = new Set()
+    seenTextRef.current = new Set()
     setMessages([])
     setPhase('idle')
     setActiveIntentId(null)
@@ -1517,7 +2072,7 @@ export function useChat(): UseChatResult {
     setError(null)
     setResuming(false)
     setConnectionRetrying(false)
-  }, [closeSub, cancelRetryTimer])
+  }, [closeSub, cancelRetryTimer, cancelPollTimer])
 
   // Collapse the active surface back to the idle pill, aborting the run.
   // Blocked while a money/approval gate is pending — the consent gate is the
@@ -1531,20 +2086,96 @@ export function useChat(): UseChatResult {
     }
     closeSub()
     cancelRetryTimer()
+    cancelPollTimer()
     setTask(null)
     setPhase('idle')
     setActiveIntentId(null)
     setResuming(false)
     setConnectionRetrying(false)
-  }, [pendingGate, closeSub, cancelRetryTimer])
+  }, [pendingGate, closeSub, cancelRetryTimer, cancelPollTimer])
+
+  // ── CHAT-01 durable conversation management ──────────────────────────────
+  // Each action updates the local list optimistically and reconciles against
+  // the server's authoritative response; a failure rolls back by re-listing.
+
+  const renameConversation = useCallback(
+    (id: string, title: string) => {
+      const clean = title.trim()
+      setConversations((prev) =>
+        prev.map((c) => (c.conversation_id === id ? { ...c, title: clean || c.title } : c)),
+      )
+      apiRenameConversation(id, clean)
+        .then((sum) =>
+          setConversations((prev) => prev.map((c) => (c.conversation_id === id ? sum : c))),
+        )
+        .catch((e: Error) => {
+          toast.error(e.message || 'Could not rename')
+          refreshConversations()
+        })
+    },
+    [refreshConversations],
+  )
+
+  const archiveConversation = useCallback(
+    (id: string, archived: boolean) => {
+      setConversations((prev) =>
+        prev.map((c) => (c.conversation_id === id ? { ...c, archived } : c)),
+      )
+      apiSetConversationArchived(id, archived)
+        .then((sum) =>
+          setConversations((prev) => prev.map((c) => (c.conversation_id === id ? sum : c))),
+        )
+        .catch((e: Error) => {
+          toast.error(e.message || 'Could not update')
+          refreshConversations()
+        })
+    },
+    [refreshConversations],
+  )
+
+  const deleteConversation = useCallback(
+    (id: string) => {
+      setConversations((prev) => prev.filter((c) => c.conversation_id !== id))
+      apiDeleteConversation(id)
+        .then((result) => {
+          // Clear an open thread only after the server confirms the durable
+          // delete; a refused active-run delete must leave the thread intact.
+          if (convRef.current === id) reset()
+          toast.success(
+            `Conversation deleted. ${result.cleanup.traces} trace${result.cleanup.traces === 1 ? '' : 's'} removed; memories and media retained.`,
+          )
+        })
+        .catch((e: Error) => {
+          toast.error(e.message || 'Could not delete')
+          refreshConversations()
+        })
+    },
+    [refreshConversations, reset],
+  )
+
+  const forkConversation = useCallback(
+    (id: string, upToTurn: number) => {
+      apiForkConversation(id, upToTurn)
+        .then((res) => {
+          setConversations((prev) => [
+            res.summary,
+            ...prev.filter((c) => c.conversation_id !== res.conversation_id),
+          ])
+          selectConversation(res.conversation_id)
+        })
+        .catch((e: Error) => toast.error(e.message || 'Could not fork'))
+    },
+    [selectConversation],
+  )
 
   // Tear down the SSE stream if the surface unmounts mid-run.
   useEffect(
     () => () => {
       closeSub()
       cancelRetryTimer()
+      cancelPollTimer()
     },
-    [closeSub, cancelRetryTimer],
+    [closeSub, cancelRetryTimer, cancelPollTimer],
   )
 
   return {
@@ -1564,6 +2195,11 @@ export function useChat(): UseChatResult {
     reset,
     selectConversation,
     refreshConversations,
+    renameConversation,
+    archiveConversation,
+    deleteConversation,
+    forkConversation,
+    attachVoiceIntent,
     answerGate,
     respondAsk,
   }

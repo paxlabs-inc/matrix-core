@@ -30,7 +30,6 @@ import {
   ChevronDown,
   ChevronRight,
   Code,
-  Coins,
   Cpu,
   EyeOffIcon,
   FileIcon,
@@ -38,11 +37,13 @@ import {
   ImageIcon,
   MessageSquare,
   Monitor,
+  MoreHorizontal,
   PanelLeftIcon,
   Plus,
   Search,
   Settings,
   SquareIcon,
+  Trash2Icon,
   Wallet,
 } from '@/lib/matrix-icons'
 import { cn } from '@/lib/utils'
@@ -53,6 +54,7 @@ import { getSession } from '@/lib/auth/session'
 import { usePrefs } from '@/lib/prefs'
 import { useVoiceSession } from '@/hooks/api/useVoiceSession'
 import type { ConversationSummary } from '@/lib/api/conversations'
+import { EMPTY_TASK } from '@/hooks/api/useChat'
 import type { ChatMessage, ChatPhase, NeoTask, PendingGate } from '@/hooks/api/useChat'
 import type { AskResponse } from '@/lib/construct/types.gen'
 import { PixelGrid, WaveBars } from '@/components/matrix/cody/loaders'
@@ -60,6 +62,12 @@ import { NeoComputer } from '@/components/matrix/neo/neo-computer'
 import { WalletApproval } from '@/components/matrix/neo/wallet-approval'
 import { NeoComposer, composeNeoMessage, type NeoMode } from '@/components/matrix/neo/neo-composer'
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import {
   NeoAssistantMessage,
   NeoLiveTurn,
@@ -72,11 +80,22 @@ const DONE_COLOR = 'oklch(0.72 0.14 155)' // the surface's "ready/success" green
 // Idle quick actions — one tap arms a real composer tool (or pre-fills a
 // real prompt) and focuses the input, so the user reviews then sends. These
 // map 1:1 onto NeoComposer's actual modes; nothing here is decorative.
-const NEO_QUICK: { label: string; icon: typeof Globe; mode?: NeoMode; prompt?: string }[] = [
-  { label: 'Code', icon: Code, mode: 'code' },
-  { label: 'Research', icon: Globe, mode: 'web' },
-  { label: 'Images', icon: ImageIcon, mode: 'image' },
-  { label: 'PAX', icon: Coins, mode: 'price' },
+const NEO_QUICK: {
+  label: string
+  icon: typeof Globe
+  image: string
+  mode?: NeoMode
+  prompt?: string
+}[] = [
+  { label: 'Code', icon: Code, image: '/code.png', mode: 'code' },
+  { label: 'Research', icon: Globe, image: '/report.png', mode: 'web' },
+  { label: 'Images', icon: ImageIcon, image: '/images.png', mode: 'image' },
+  {
+    label: 'Brief',
+    icon: FileIcon,
+    image: '/brief.png',
+    prompt: 'Put together a concise brief on ',
+  },
 ]
 
 function NeoMark({ className }: { className?: string }) {
@@ -211,6 +230,12 @@ type SidebarNavProps = {
   activeConversationId?: string | null
   onNewChat: () => void
   onSelectConversation?: (id: string) => void
+  /** CHAT-01 — durable archive/unarchive of a thread. */
+  onArchiveConversation?: (id: string, archived: boolean) => void
+  /** CHAT-01 — durable rename of a thread. */
+  onRenameConversation?: (id: string, title: string) => void
+  /** CHAT-01 — permanent delete of a thread. */
+  onDeleteConversation?: (id: string) => void
   onOpenHistory?: () => void
   /** Open the Timeline page (Neo's exposed, read-only memory). */
   onOpenTimeline?: () => void
@@ -234,6 +259,9 @@ function SidebarInner({
   activeConversationId,
   onNewChat,
   onSelectConversation,
+  onArchiveConversation,
+  onRenameConversation,
+  onDeleteConversation,
   onOpenHistory,
   onOpenTimeline,
   onOpenFiles,
@@ -243,10 +271,12 @@ function SidebarInner({
   onNavigate,
 }: SidebarNavProps & { onNavigate?: () => void }) {
   const [email, setEmail] = useState<string | null>(null)
-  // Locally archived (hidden) conversation ids — soft-delete, UI only.
-  const [archivedIds, setArchivedIds] = useState<Set<string>>(() => new Set())
   // Whether the Tasks section is collapsed.
   const [tasksCollapsed, setTasksCollapsed] = useState(false)
+  // CHAT-01 — inline rename target + two-tap delete confirm target.
+  const [renamingId, setRenamingId] = useState<string | null>(null)
+  const [renameDraft, setRenameDraft] = useState('')
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
 
   // Real account identity — the signed-in user's email (or null when auth is
   // not configured / anonymous dev). Never a placeholder.
@@ -268,14 +298,16 @@ function SidebarInner({
     fn?.()
     onNavigate?.()
   }
-  const toggleArchive = (id: string) =>
-    setArchivedIds((prev) => {
-      const next = new Set(prev)
-      if (next.has(id)) next.delete(id)
-      else next.add(id)
-      return next
-    })
-  const visibleConversations = conversations.filter((c) => !archivedIds.has(c.conversation_id))
+  // CHAT-01 — the sidebar shows live (non-archived) threads; archived ones are
+  // hidden here but remain durable and reachable from Search/History.
+  const visibleConversations = conversations.filter((c) => !c.archived)
+  const hasArchived = conversations.some((c) => c.archived)
+
+  const commitRename = (id: string) => {
+    const next = renameDraft.trim()
+    setRenamingId(null)
+    if (next) onRenameConversation?.(id, next)
+  }
 
   return (
     <>
@@ -356,13 +388,15 @@ function SidebarInner({
             {visibleConversations.length === 0 ? (
               <div className="text-muted-foreground/60 flex flex-col items-center gap-2 px-2 py-8 text-center">
                 <MessageSquare className="size-5 opacity-60" />
-                <p className="text-xs">
-                  {archivedIds.size > 0 ? 'All tasks archived' : 'No tasks yet'}
-                </p>
-                {archivedIds.size > 0 && (
+                <p className="text-xs">{hasArchived ? 'All tasks archived' : 'No tasks yet'}</p>
+                {hasArchived && (
                   <button
                     type="button"
-                    onClick={() => setArchivedIds(new Set())}
+                    onClick={() => {
+                      conversations
+                        .filter((c) => c.archived)
+                        .forEach((c) => onArchiveConversation?.(c.conversation_id, false))
+                    }}
                     className="text-muted-foreground hover:text-foreground text-[0.7rem] underline underline-offset-2"
                   >
                     Restore all
@@ -373,36 +407,106 @@ function SidebarInner({
               <ul className="flex flex-col gap-0.5">
                 {visibleConversations.map((c) => {
                   const on = c.conversation_id === activeConversationId
+                  const deleting = confirmDeleteId === c.conversation_id
                   return (
-                    <li key={c.conversation_id} className="group/task relative">
-                      <button
-                        type="button"
-                        onClick={go(() => onSelectConversation?.(c.conversation_id))}
-                        title={c.title || 'Untitled task'}
-                        className={cn(
-                          'flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-[0.8125rem] transition-colors',
-                          on
-                            ? 'bg-muted text-foreground'
-                            : 'text-muted-foreground hover:bg-muted/60 hover:text-foreground',
-                        )}
-                      >
-                        <MessageSquare className="size-4 shrink-0 opacity-70" />
-                        <span className="min-w-0 flex-1 truncate">
-                          {c.title || 'Untitled task'}
-                        </span>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          toggleArchive(c.conversation_id)
-                        }}
-                        title="Archive task"
-                        aria-label="Archive task"
-                        className="text-muted-foreground/50 hover:text-foreground hover:bg-muted/60 absolute top-1 right-1 grid size-6 place-items-center rounded-md opacity-0 transition group-hover/task:opacity-100"
-                      >
-                        <EyeOffIcon className="size-3" />
-                      </button>
+                    <li key={c.conversation_id} className="group/task">
+                      {deleting ? (
+                        <div className="bg-muted/60 rounded-lg px-2.5 py-2 text-[0.7rem]">
+                          <p className="text-foreground">
+                            Delete turns and traces? Memories and media stay under Memory controls.
+                          </p>
+                          <div className="mt-2 flex justify-end gap-2">
+                            <button
+                              type="button"
+                              onClick={() => setConfirmDeleteId(null)}
+                              className="text-muted-foreground hover:text-foreground min-h-8 px-2"
+                            >
+                              Cancel
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setConfirmDeleteId(null)
+                                onDeleteConversation?.(c.conversation_id)
+                              }}
+                              className="text-destructive hover:bg-destructive/10 min-h-8 rounded-md px-2"
+                            >
+                              Delete
+                            </button>
+                          </div>
+                        </div>
+                      ) : renamingId === c.conversation_id ? (
+                        <input
+                          autoFocus
+                          value={renameDraft}
+                          onChange={(e) => setRenameDraft(e.target.value)}
+                          onBlur={() => commitRename(c.conversation_id)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') commitRename(c.conversation_id)
+                            if (e.key === 'Escape') setRenamingId(null)
+                          }}
+                          aria-label="Task name"
+                          className="bg-muted text-foreground h-9 w-full rounded-lg px-2.5 text-[0.8125rem] outline-none"
+                        />
+                      ) : (
+                        <div className="relative flex items-center">
+                          <button
+                            type="button"
+                            onClick={go(() => onSelectConversation?.(c.conversation_id))}
+                            onDoubleClick={(e) => {
+                              e.preventDefault()
+                              setRenameDraft(c.title || '')
+                              setRenamingId(c.conversation_id)
+                            }}
+                            title={c.title || 'Untitled task'}
+                            className={cn(
+                              'flex min-w-0 flex-1 items-center gap-2 rounded-lg py-1.5 pr-9 pl-2.5 text-left text-[0.8125rem] transition-colors',
+                              on
+                                ? 'bg-muted text-foreground'
+                                : 'text-muted-foreground hover:bg-muted/60 hover:text-foreground',
+                            )}
+                          >
+                            <MessageSquare className="size-4 shrink-0 opacity-70" />
+                            <span className="min-w-0 flex-1 truncate">
+                              {c.title || 'Untitled task'}
+                            </span>
+                          </button>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <button
+                                type="button"
+                                aria-label={`Manage ${c.title || 'Untitled task'}`}
+                                className="text-muted-foreground hover:bg-muted hover:text-foreground absolute right-0 grid size-9 place-items-center rounded-lg opacity-100 transition md:opacity-0 md:group-hover/task:opacity-100 md:focus:opacity-100"
+                              >
+                                <MoreHorizontal className="size-4" />
+                              </button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem
+                                onSelect={() => {
+                                  setRenameDraft(c.title || '')
+                                  setRenamingId(c.conversation_id)
+                                }}
+                              >
+                                Rename
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onSelect={() => onArchiveConversation?.(c.conversation_id, true)}
+                              >
+                                <EyeOffIcon />
+                                Archive
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                variant="destructive"
+                                onSelect={() => setConfirmDeleteId(c.conversation_id)}
+                              >
+                                <Trash2Icon />
+                                Delete…
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
+                      )}
                     </li>
                   )
                 })}
@@ -596,6 +700,10 @@ export function NeoSurface({
   conversationId,
   onVoiceIntent,
   onSelectConversation,
+  onArchiveConversation,
+  onRenameConversation,
+  onDeleteConversation,
+  onForkConversation,
   onNewChat,
   onOpenHistory,
   onOpenTimeline,
@@ -619,6 +727,11 @@ export function NeoSurface({
   onVoiceIntent?: (intentId: string) => void
   /** Reopen a past thread from the sidebar tasks list. */
   onSelectConversation?: (id: string) => void
+  /** Durable conversation management (CHAT-01). */
+  onArchiveConversation?: (id: string, archived: boolean) => void
+  onRenameConversation?: (id: string, title: string) => void
+  onDeleteConversation?: (id: string) => void
+  onForkConversation?: (id: string, upToTurn: number) => void
   /** F2 — durable live-run resume visible state: surface renders
    *  "Reconnecting to your task…" until the first event lands. */
   resuming?: boolean
@@ -878,6 +991,7 @@ export function NeoSurface({
       task.media.length > 0 ||
       task.artifacts.length > 0 ||
       !!task.swarm ||
+      !!task.dojo ||
       (task.todos?.length ?? 0) > 0 ||
       task.steps.some((s) => s.kind !== 'narration') ||
       task.surfaces.some((s) => s.kind !== 'narration'))
@@ -958,6 +1072,9 @@ export function NeoSurface({
         activeConversationId={conversationId}
         onNewChat={handleNewChat}
         onSelectConversation={onSelectConversation}
+        onArchiveConversation={onArchiveConversation}
+        onRenameConversation={onRenameConversation}
+        onDeleteConversation={onDeleteConversation}
         onOpenHistory={onOpenHistory}
         onOpenTimeline={onOpenTimeline}
         onOpenFiles={onOpenFiles}
@@ -974,6 +1091,9 @@ export function NeoSurface({
         activeConversationId={conversationId}
         onNewChat={handleNewChat}
         onSelectConversation={onSelectConversation}
+        onArchiveConversation={onArchiveConversation}
+        onRenameConversation={onRenameConversation}
+        onDeleteConversation={onDeleteConversation}
         onOpenHistory={onOpenHistory}
         onOpenTimeline={onOpenTimeline}
         onOpenFiles={onOpenFiles}
@@ -1041,7 +1161,7 @@ export function NeoSurface({
                 Stop all
               </button>
             )}
-            {showComputer && meaningfulWork && (
+            {showComputer && (meaningfulWork || !!conversationId) && (
               <ChromeButton
                 onClick={() => setComputerOpen((v) => !v)}
                 label={computerOpen ? "Hide Neo's Computer" : "Show Neo's Computer"}
@@ -1074,8 +1194,11 @@ export function NeoSurface({
           available space as a full-height chat column */}
         <div
           className={cn(
-            'relative z-10 flex flex-1 flex-col items-center overflow-hidden px-4 pb-[max(env(safe-area-inset-bottom),0.75rem)] sm:px-5',
-            conversation ? '' : 'justify-center',
+            'relative z-10 flex flex-1 flex-col items-center px-4 pb-[max(env(safe-area-inset-bottom),0.75rem)] sm:px-5',
+            // Idle content may outgrow a phone viewport (greeting + composer +
+            // quick-action cards) — let it scroll instead of clipping; the
+            // conversation branch manages its own inner scroll region.
+            conversation ? 'overflow-hidden' : 'overflow-y-auto overscroll-contain',
           )}
         >
           {conversation ? (
@@ -1088,14 +1211,27 @@ export function NeoSurface({
                   onScroll={onBodyScroll}
                   className="flex-1 space-y-6 overflow-x-hidden overflow-y-auto overscroll-contain py-5 sm:py-8"
                 >
-                  {thread.map((m) =>
+                  {thread.map((m, index) =>
                     m.role === 'user' ? (
-                      <NeoUserMessage key={m.id} message={m} />
+                      <NeoUserMessage
+                        key={m.id}
+                        message={m}
+                        onFork={
+                          conversationId && !live
+                            ? () => onForkConversation?.(conversationId, index + 1)
+                            : undefined
+                        }
+                      />
                     ) : (
                       <NeoAssistantMessage
                         key={m.id}
                         message={m}
                         onMediaAction={(instruction) => send(instruction)}
+                        onFork={
+                          conversationId && !live
+                            ? () => onForkConversation?.(conversationId, index + 1)
+                            : undefined
+                        }
                       />
                     ),
                   )}
@@ -1137,6 +1273,11 @@ export function NeoSurface({
                       message={lastMessage}
                       failed={task?.failed}
                       onMediaAction={(instruction) => send(instruction)}
+                      onFork={
+                        conversationId && !live
+                          ? () => onForkConversation?.(conversationId, messages.length)
+                          : undefined
+                      }
                     />
                   )}
 
@@ -1215,27 +1356,30 @@ export function NeoSurface({
                 lg+, a full-bleed overlay drawer below it. Openable / closable;
                 closing is NOT an abort (the run keeps going). */}
               <AnimatePresence>
-                {showComputer && meaningfulWork && computerOpen && task && (
+                {showComputer && computerOpen && (meaningfulWork || !!conversationId) && (
                   <NeoComputer
                     key="neo-computer"
-                    task={task}
+                    task={task ?? EMPTY_TASK}
                     phase={phase}
                     reduce={!!reduce}
                     showMedia={!lastIsTaskAnswer}
                     onRespond={respondAsk}
                     onMediaAction={(instruction) => send(instruction)}
                     onClose={() => setComputerOpen(false)}
+                    conversationId={conversationId}
                     className="fixed inset-0 z-40 rounded-none lg:static lg:z-auto lg:my-6 lg:w-[44%] lg:rounded-2xl xl:w-[46%]"
                   />
                 )}
               </AnimatePresence>
             </div>
           ) : (
-            <div className="flex w-full max-w-[760px] flex-col items-center">
+            // my-auto centers the idle stack when it fits and degrades to a
+            // normal scrolling block when it does not (small phones).
+            <div className="my-auto flex w-full max-w-[760px] flex-col items-center py-4 sm:py-6">
               {/* headline — personalized time-based greeting */}
-              <div className="mb-8 flex w-full flex-col items-center gap-5 px-2 text-center sm:px-8">
-                <NeoMark className="size-9" />
-                <h1 className="text-foreground text-[1.75rem] leading-[1.15] font-normal tracking-[-0.015em] sm:text-[2.05rem]">
+              <div className="mb-6 flex w-full flex-col items-center gap-4 px-2 text-center sm:mb-8 sm:gap-5 sm:px-8">
+                <NeoMark className="size-8 sm:size-9" />
+                <h1 className="text-foreground text-[1.55rem] leading-[1.15] font-normal tracking-[-0.015em] sm:text-[2.05rem]">
                   {(() => {
                     const hour = new Date().getHours()
                     const greeting =
@@ -1273,8 +1417,9 @@ export function NeoSurface({
 
               {/* quick actions — the ONE row under the composer. Each arms a
                 REAL composer tool / prompt, then focuses the input for review.
-                Tone-only chips, no borders. */}
-              <div className="mt-5 flex w-full items-center justify-center gap-2">
+                Image cards (tone-only, no borders): thumbnail + icon badge with
+                the label underneath — 2-up on phones, 4-up from sm. */}
+              <div className="mt-5 grid w-full grid-cols-2 gap-3 sm:mt-6 sm:grid-cols-4 sm:gap-4">
                 {NEO_QUICK.map((q) => {
                   const Icon = q.icon
                   return (
@@ -1282,10 +1427,23 @@ export function NeoSurface({
                       key={q.label}
                       type="button"
                       onClick={() => applyQuickAction(q)}
-                      className="bg-card text-muted-foreground hover:bg-surface-hover hover:text-foreground flex items-center gap-2 rounded-full px-3 py-1.5 text-[0.8125rem] font-medium whitespace-nowrap transition-colors"
+                      className="group flex flex-col gap-2 text-left"
                     >
-                      <Icon className="size-[0.9rem] opacity-70" />
-                      {q.label}
+                      <span className="bg-card relative block w-full overflow-hidden rounded-xl">
+                        <Image
+                          src={q.image}
+                          alt=""
+                          width={360}
+                          height={225}
+                          className="aspect-[16/10] w-full object-cover transition-transform duration-300 ease-out group-hover:scale-[1.04]"
+                        />
+                        <span className="bg-background/70 absolute top-2 left-2 grid size-6 place-items-center rounded-full backdrop-blur-sm">
+                          <Icon className="text-foreground size-3.5" />
+                        </span>
+                      </span>
+                      <span className="text-muted-foreground group-hover:text-foreground text-[0.8125rem] font-medium transition-colors">
+                        {q.label}
+                      </span>
                     </button>
                   )
                 })}

@@ -47,8 +47,8 @@ export function WorkbenchSlider({
           onClick={() => onViewChange(v.id)}
           className={
             view === v.id
-              ? 'bg-surface-hover-alt text-foreground rounded-full px-3 py-1 text-xs font-medium'
-              : 'text-muted-foreground hover:text-foreground rounded-full px-3 py-1 text-xs'
+              ? 'bg-surface-hover-alt text-foreground min-h-11 rounded-full px-2 text-xs font-medium sm:px-3'
+              : 'text-muted-foreground hover:text-foreground min-h-11 rounded-full px-2 text-xs sm:px-3'
           }
         >
           <span className="flex items-center gap-1.5">
@@ -101,12 +101,14 @@ export function NeoWorkbench({
       className={
         // The slide: width collapses on desktop; under 1024px the panel is a
         // full-width overlay translated off-screen when closed.
-        'bg-surface-secondary-alt flex h-full min-h-0 flex-col overflow-hidden rounded-l-xl ' +
-        'transition-all duration-300 ease-out' +
-        (open ? ' w-full translate-x-0 lg:w-[52%]' : ' w-0 translate-x-full lg:translate-x-0')
+        'bg-surface-secondary-alt absolute inset-0 z-20 flex h-full min-h-0 w-full flex-col overflow-hidden ' +
+        'transition-all duration-300 ease-out lg:relative lg:inset-auto lg:z-auto lg:rounded-l-xl' +
+        (open
+          ? ' translate-x-0 lg:w-[52%]'
+          : ' pointer-events-none invisible translate-x-full lg:visible lg:w-0 lg:translate-x-0')
       }
     >
-      <div className="flex h-12 shrink-0 items-center gap-2 px-3">
+      <div className="flex h-12 shrink-0 items-center gap-1 px-2 sm:gap-2 sm:px-3">
         <WorkbenchSlider view={view} onViewChange={onViewChange} previewReady={previewReady} />
         <div className="ml-auto flex items-center gap-1">
           {header}
@@ -115,16 +117,17 @@ export function NeoWorkbench({
             onClick={onToggleTerminal}
             className={
               terminalOpen
-                ? 'bg-surface-hover text-foreground rounded-md px-2 py-1 font-mono text-xs'
-                : 'text-muted-foreground hover:text-foreground rounded-md px-2 py-1 font-mono text-xs'
+                ? 'bg-surface-hover text-foreground min-h-11 rounded-md px-3 font-mono text-xs'
+                : 'text-muted-foreground hover:text-foreground min-h-11 rounded-md px-3 font-mono text-xs'
             }
           >
-            Terminal
+            <span className="hidden min-[420px]:inline">Terminal</span>
+            <span className="min-[420px]:hidden">Term</span>
           </button>
           <button
             aria-label="Close workbench"
             onClick={onClose}
-            className="text-muted-foreground hover:text-foreground rounded-md px-2 py-1 text-xs"
+            className="text-muted-foreground hover:text-foreground min-h-11 rounded-md px-3 text-xs"
           >
             Close
           </button>

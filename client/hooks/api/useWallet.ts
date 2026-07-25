@@ -10,7 +10,9 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { qk } from '@/lib/query/keys'
 import {
   addAgentBudget,
+  addAgentRule,
   deactivateAgentBudget,
+  deleteAgentRule,
   freezeAgent,
   fundAgent,
   getAgent,
@@ -22,6 +24,7 @@ import {
   unfreezeAgent,
   updateAgentPolicy,
   type AddAgentBudgetInput,
+  type AddAgentRuleInput,
 } from '@/lib/paxeer/wallet-client'
 import {
   getWalletPortfolio,
@@ -235,6 +238,20 @@ export function useSweepAgent(
       if (primaryAddress) qc.invalidateQueries({ queryKey: qk.walletPortfolio(primaryAddress) })
     },
   })
+}
+
+/** Add or remove an allow/deny rule on the agent leash. */
+export function useAgentRules(did: string) {
+  const qc = useQueryClient()
+  const add = useMutation({
+    mutationFn: (input: AddAgentRuleInput) => addAgentRule(did, input),
+    onSettled: () => qc.invalidateQueries({ queryKey: qk.agentWallet(did) }),
+  })
+  const remove = useMutation({
+    mutationFn: (ruleId: string) => deleteAgentRule(did, ruleId),
+    onSettled: () => qc.invalidateQueries({ queryKey: qk.agentWallet(did) }),
+  })
+  return { add, remove }
 }
 
 /** Grant or revoke a time-boxed agent spend budget. */

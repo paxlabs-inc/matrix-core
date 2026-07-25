@@ -18,6 +18,7 @@ import {
 } from '@/components/matrix/neo/neo-message'
 import { NeoComposer, type NeoMode } from '@/components/matrix/neo/neo-composer'
 import { ArtifactCards } from '@/components/matrix/cody/artifact-card'
+import { isNearBottom } from '@/lib/cody/scroll'
 
 const STARTERS = [
   {
@@ -47,7 +48,7 @@ function EmptyHero({
   onPick: (draft: string) => void
 }) {
   return (
-    <div className="flex flex-col items-center gap-6 pt-24 text-center">
+    <div className="flex flex-col items-center gap-4 pt-10 text-center sm:gap-5 sm:pt-16">
       <div>
         <h2 className="text-2xl font-medium">What should Neo build?</h2>
         <p className="text-muted-foreground mx-auto mt-2 max-w-md text-sm">
@@ -61,7 +62,7 @@ function EmptyHero({
           <button
             key={s.label}
             onClick={() => onPick(s.prompt)}
-            className="bg-surface-secondary hover:bg-surface-hover rounded-full px-3.5 py-1.5 text-xs"
+            className="bg-surface-secondary hover:bg-surface-hover min-h-11 rounded-full px-3.5 py-2 text-xs"
           >
             {s.label}
           </button>
@@ -69,7 +70,7 @@ function EmptyHero({
       </div>
       <Link
         href="/code"
-        className="text-muted-foreground hover:text-foreground text-xs underline underline-offset-2"
+        className="text-muted-foreground hover:text-foreground inline-flex min-h-11 items-center text-xs underline underline-offset-2"
       >
         Browse 140+ design templates
       </Link>
@@ -93,36 +94,84 @@ export function ChatRail({
   const [draft, setDraft] = useState('')
   const [mode, setMode] = useState<NeoMode>('auto')
   const scrollRef = useRef<HTMLDivElement>(null)
+  // Whether new content should auto-scroll into view. Starts true; flips off
+  // when the user scrolls up to read, back on when they return near the bottom.
+  const followRef = useRef(true)
 
   const { messages, task, phase, resuming, connectionRetrying } = chat
   const working = phase === 'working' || phase === 'thinking'
 
-  // Follow the conversation: keep the rail pinned to the newest turn.
+  // Track intentional reader position: only follow while near the bottom.
+  const onScroll = () => {
+    const el = scrollRef.current
+    if (el) followRef.current = isNearBottom(el)
+  }
+
+  // Follow the conversation, but never yank the view while the user is reading
+  // older turns — resume following only once they return near the bottom.
   useEffect(() => {
     const el = scrollRef.current
-    if (el) el.scrollTop = el.scrollHeight
+    if (el && followRef.current) el.scrollTop = el.scrollHeight
   }, [messages.length, task?.steps.length, task?.streamingAnswer])
+
+  // Switching conversations jumps to the newest turn and re-arms following.
+  useEffect(() => {
+    followRef.current = true
+    const el = scrollRef.current
+    if (el) el.scrollTop = el.scrollHeight
+  }, [chat.conversationId])
 
   const submit = () => {
     const text = draft.trim()
     if (!text) return
+    // Sending is an intentional return to the live tail: re-arm following.
+    followRef.current = true
     chat.send(text)
     setDraft('')
   }
 
   return (
     <div className="flex h-full min-h-0 flex-1 flex-col">
-      <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto px-4 py-4">
-        <div className="mx-auto flex w-full max-w-2xl flex-col gap-4">
-          {messages.length === 0 && !working ? (
+      <div
+        ref={scrollRef}
+        onScroll={onScroll}
+        className="min-h-0 flex-1 overflow-y-auto px-3 py-3 sm:px-4"
+      >
+        <div className="mx-auto flex w-full max-w-2xl flex-col gap-3">
+          {messages.length === 0 && !working && !chat.error ? (
             <EmptyHero projectName={projectName} onPick={setDraft} />
           ) : null}
 
-          {messages.map((m) =>
+          {chat.error ? (
+            <div
+              role="alert"
+              className="bg-destructive/10 text-destructive rounded-lg px-3 py-2 text-sm"
+            >
+              {chat.error}
+            </div>
+          ) : null}
+
+          {messages.map((m, index) =>
             m.role === 'user' ? (
-              <NeoUserMessage key={m.id} message={m} />
+              <NeoUserMessage
+                key={m.id}
+                message={m}
+                onFork={
+                  chat.conversationId && !working
+                    ? () => chat.forkConversation(chat.conversationId!, index + 1)
+                    : undefined
+                }
+              />
             ) : (
-              <NeoAssistantMessage key={m.id} message={m} />
+              <NeoAssistantMessage
+                key={m.id}
+                message={m}
+                onFork={
+                  chat.conversationId && !working
+                    ? () => chat.forkConversation(chat.conversationId!, index + 1)
+                    : undefined
+                }
+              />
             ),
           )}
 
@@ -152,7 +201,7 @@ export function ChatRail({
         </div>
       </div>
 
-      <div className="shrink-0 px-4 pb-4">
+      <div className="shrink-0 px-3 pb-3 sm:px-4 sm:pb-4">
         <div className="mx-auto w-full max-w-2xl">
           <NeoComposer
             value={draft}

@@ -195,14 +195,20 @@ function QueueRow({
   return (
     <li className="bg-card rounded-lg p-3">
       <div className="flex items-start gap-2">
-        <p className="text-foreground min-w-0 flex-1 text-sm font-medium">{item.summary}</p>
+        <p className="text-foreground min-w-0 flex-1 text-sm font-medium [overflow-wrap:anywhere]">
+          {item.summary}
+        </p>
         {item.financial && (
           <Badge variant="secondary" className="shrink-0">
             {t('financial')}
           </Badge>
         )}
       </div>
-      {item.rationale && <p className="text-muted-foreground mt-1 text-xs">{item.rationale}</p>}
+      {item.rationale && (
+        <p className="text-muted-foreground mt-1 text-xs [overflow-wrap:anywhere]">
+          {item.rationale}
+        </p>
+      )}
       <div className="mt-2.5 flex items-center gap-2">
         {item.financial && (
           <Button size="sm" variant="secondary" onClick={onApprove} disabled={busy}>
@@ -249,13 +255,15 @@ function InboxRow({ item, onOpen }: { item: AutomatrixInboxItem; onOpen: () => v
       onMouseEnter={onOpen}
     >
       <div className="flex items-start gap-2">
-        <p className="text-foreground min-w-0 flex-1 text-sm font-medium">
+        <p className="text-foreground min-w-0 flex-1 text-sm font-medium [overflow-wrap:anywhere]">
           {item.opportunity_summary}
         </p>
         {!item.read && <span className="bg-primary mt-1.5 size-1.5 shrink-0 rounded-full" />}
       </div>
       {item.result_summary && (
-        <p className="text-muted-foreground mt-1 text-xs">{item.result_summary}</p>
+        <p className="text-muted-foreground mt-1 text-xs [overflow-wrap:anywhere]">
+          {item.result_summary}
+        </p>
       )}
       {item.created_at && (
         <p className="text-muted-foreground mt-1.5 text-[11px]">{formatWhen(item.created_at)}</p>

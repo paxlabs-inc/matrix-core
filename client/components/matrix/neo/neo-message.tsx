@@ -14,7 +14,15 @@
  * re-renders.
  */
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
-import { Check, ChevronDown, Copy, Download, BrainIcon, Music2Icon } from '@/lib/matrix-icons'
+import {
+  BrainIcon,
+  Check,
+  ChevronDown,
+  Copy,
+  CornerDownLeftIcon,
+  Download,
+  Music2Icon,
+} from '@/lib/matrix-icons'
 import { WaveSpinner } from '@/components/ui/wave-spinner'
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible'
 import { MessageResponse } from '@/components/ai-elements/message'
@@ -123,7 +131,7 @@ export function NeoReasoning({ reasoning }: { reasoning: string }) {
 }
 
 /** Per-message actions: copy, export as Markdown, read aloud. */
-function NeoMessageActions({ text }: { text: string }) {
+function NeoMessageActions({ text, onFork }: { text: string; onFork?: () => void }) {
   const [copied, setCopied] = useState(false)
   const [speaking, setSpeaking] = useState(false)
   const copyTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -183,6 +191,11 @@ function NeoMessageActions({ text }: { text: string }) {
       <TooltipIconButton tooltip={speaking ? 'Stop' : 'Read aloud'} onClick={onSpeak}>
         <Music2Icon className={cn('size-4', speaking && 'text-primary')} />
       </TooltipIconButton>
+      {onFork && (
+        <TooltipIconButton tooltip="Fork conversation here" onClick={onFork}>
+          <CornerDownLeftIcon className="size-4" />
+        </TooltipIconButton>
+      )}
     </div>
   )
 }
@@ -194,11 +207,14 @@ export function NeoAssistantMessage({
   message,
   failed,
   onMediaAction,
+  onFork,
 }: {
   message: ChatMessage
   failed?: boolean
   /** Post-generation image actions (tweak / variations / suggestions) → Neo. */
   onMediaAction?: (instruction: string) => void
+  /** Create an independent conversation containing this chronological prefix. */
+  onFork?: () => void
 }) {
   return (
     <div className="flex w-full min-w-0 flex-col gap-1">
@@ -213,17 +229,17 @@ export function NeoAssistantMessage({
         </div>
       )}
       <NeoMediaGrid media={message.media} onAction={onMediaAction} />
-      {message.text && <NeoMessageActions text={message.text} />}
+      {message.text && <NeoMessageActions text={message.text} onFork={onFork} />}
     </div>
   )
 }
 
 /** A user turn: a right-aligned accent bubble, no avatar. Uploaded
  *  attachments render as thumbnails; their raw markers are stripped from text. */
-export function NeoUserMessage({ message }: { message: ChatMessage }) {
+export function NeoUserMessage({ message, onFork }: { message: ChatMessage; onFork?: () => void }) {
   const { clean, items } = parseAttachments(message.text)
   return (
-    <div className="flex w-full justify-end">
+    <div className="flex w-full flex-col items-end gap-1">
       <div className="bg-accent text-foreground max-w-[85%] min-w-0 rounded-2xl rounded-br-md px-4 py-2.5 text-[0.925rem] leading-relaxed [overflow-wrap:anywhere]">
         {items.length > 0 && (
           <div className="mb-2 flex flex-col gap-2">
@@ -234,6 +250,11 @@ export function NeoUserMessage({ message }: { message: ChatMessage }) {
         )}
         {clean && <span className="whitespace-pre-wrap">{clean}</span>}
       </div>
+      {onFork && (
+        <TooltipIconButton tooltip="Fork conversation here" onClick={onFork}>
+          <CornerDownLeftIcon className="size-4" />
+        </TooltipIconButton>
+      )}
     </div>
   )
 }

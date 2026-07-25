@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "agent": "matrix://agent/neo",
-  "description": "Neo front-agent manifest. Human-facing systems are reached through a stable browser, machine-mail, filesystem, and shell substrate; product procedures are skills rather than dedicated integration schemas — except the essential paxeer-net chain/wallet lane (embedded-wallet custody network-side, writes gated by PaxeerSpendPolicy) and the media generation lane (image/video/speech through the media bridge, xAI Grok Imagine primary), neither of which is browser-replaceable; both stay direct tool surfaces. The desktop lane drives a disposable Railway-sandbox desktop (DOJO) over bytebotd via the daemon's /dojo proxy; it is reached only while a desktop session is live, is grounded by the desktop_look (omni vision) and desktop_a11y (AT-SPI) synthetic tools, and — being a human-shared surface that can log in and spend — is excluded from every autonomous (Automatrix/sub-agent) surface. Autonomous surfaces still structurally exclude value-moving tools and the desktop lane. Machine-mail credentials are injected from the encrypted per-user settings vault or inherited from MACHINEMAIL_API_KEY. The exec server's service registry is isolated to /data/neo/services through MATRIX_EXEC_STATE_DIR.",
+  "description": "Neo front-agent manifest. Human-facing systems are reached through a stable browser, machine-mail, filesystem, and shell substrate. Open-web LOOKUP defaults to the web-search lane (Tavily-backed web_search/web_news + fetch: API search and page reads with no captchas or bot walls — research never stalls on a challenge page); the browser is for site-specific interactive workflows or when the user asks for it; product procedures are skills rather than dedicated integration schemas — except the essential paxeer-net chain/wallet lane (embedded-wallet custody network-side, writes gated by PaxeerSpendPolicy) and the media generation lane (image/video/speech through the media bridge, xAI Grok Imagine primary), neither of which is browser-replaceable; both stay direct tool surfaces. The desktop lane drives a disposable Railway-sandbox desktop (DOJO) over bytebotd via the daemon's /dojo proxy; it is reached only while a desktop session is live, is grounded by the desktop_look (omni vision) and desktop_a11y (AT-SPI) synthetic tools, and — being a human-shared surface that can log in and spend — is excluded from every autonomous (Automatrix/sub-agent) surface. Autonomous surfaces still structurally exclude value-moving tools and the desktop lane. Machine-mail credentials are injected from the encrypted per-user settings vault or inherited from MACHINEMAIL_API_KEY. The exec server's service registry is isolated to /data/neo/services through MATRIX_EXEC_STATE_DIR.",
   "allowed_side_effects": [
     "read",
     "write",
@@ -241,6 +241,50 @@
           "name": "browser_run_code_unsafe",
           "description": "Run an arbitrary Playwright code snippet in the server process. UNSAFE: RCE-equivalent on the shared browser host.",
           "side_effect_class": "shell",
+          "timeout_ms": 30000
+        }
+      ]
+    },
+    {
+      "alias": "web-search",
+      "transport": "stdio",
+      "command": "node",
+      "args": [
+        "/root/matrix/tools/websearch/web-search.mjs"
+      ],
+      "env": [],
+      "package_digest": "sha256:7da2e53ce32872c9ab314f252d71d8109b393cef0e0004c4bc0333c4ecd25c92",
+      "version": "0.1.0",
+      "tools": [
+        {
+          "name": "web_search",
+          "description": "THE DEFAULT way to look anything up on the open web (research, facts, docs, prices, background for a report): API search with no captchas or bot walls. Returns query-relevant ranked sources (title, url, snippet, published). Discovery only: read a selected URL with fetch before making a factual claim; no provider synthesis is returned. Reach for the browser only when a workflow needs a SPECIFIC site driven interactively. Read-only. args: query (required), max_results?, topic? (general|news)",
+          "side_effect_class": "network",
+          "timeout_ms": 20000
+        },
+        {
+          "name": "web_news",
+          "description": "Search recent news for query-relevant ranked articles (title, url, snippet, published) — the default for news lookups, no captchas. Discovery only: read a selected URL with fetch before making a factual claim. Read-only. args: query (required), max_results?",
+          "side_effect_class": "network",
+          "timeout_ms": 20000
+        }
+      ]
+    },
+    {
+      "alias": "fetch",
+      "transport": "stdio",
+      "command": "uvx",
+      "args": [
+        "mcp-server-fetch"
+      ],
+      "env": [],
+      "package_digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+      "version": "2025.4.7",
+      "tools": [
+        {
+          "name": "fetch",
+          "description": "Fetch a URL and return its content as Markdown — the default way to READ a page found via web_search (no captchas, no browser session). Use the browser instead only when the page needs interaction (login, forms, dynamic apps).",
+          "side_effect_class": "network",
           "timeout_ms": 30000
         }
       ]

@@ -151,6 +151,82 @@ export async function getDiff(project?: string, signal?: AbortSignal): Promise<W
   return { git: !!data.git, diff: data.diff ?? '', untracked: data.untracked ?? [] }
 }
 
+function rawPath(project: string | undefined, path: string): string {
+  return `/workspace/raw?${projQS(project)}&path=${encodeURIComponent(path)}`
+}
+
+/**
+ * GET /workspace/raw — one file's exact bytes as an authed blob object URL
+ * (image thumbnails / previews). Returns null on failure; the caller owns
+ * revoking the URL.
+ */
+export async function loadWorkspaceFileURL(
+  project: string | undefined,
+  path: string,
+): Promise<string | null> {
+  try {
+    const res = await apiFetch<Response>(rawPath(project, path), { raw: true, timeoutMs: 60_000 })
+    const blob = await res.blob()
+    return URL.createObjectURL(blob)
+  } catch {
+    return null
+  }
+}
+
+/**
+ * Download one workspace file to the user's device. Fetches the authed bytes
+ * (an <a download> cannot carry the bearer), then triggers a transient
+ * object-URL download. Returns false on failure so the caller can surface it.
+ */
+export async function downloadWorkspaceFile(
+  project: string | undefined,
+  path: string,
+  filename?: string,
+): Promise<boolean> {
+  try {
+    const res = await apiFetch<Response>(rawPath(project, path), { raw: true, timeoutMs: 300_000 })
+    const blob = await res.blob()
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = filename || path.split('/').pop() || 'download'
+    document.body.appendChild(a)
+    a.click()
+    a.remove()
+    setTimeout(() => URL.revokeObjectURL(url), 0)
+    return true
+  } catch {
+    return false
+  }
+}
+
+/** One uploaded file as the daemon recorded it. */
+export interface WorkspaceUpload {
+  path: string
+  name: string
+  size: number
+}
+
+/**
+ * POST /workspace/upload — put real files into the workspace (optionally
+ * under a subdirectory). Uploads are not idempotent and can be large: no
+ * retries, generous timeout.
+ */
+export async function uploadWorkspaceFiles(
+  project: string | undefined,
+  dir: string,
+  files: File[],
+): Promise<WorkspaceUpload[]> {
+  const form = new FormData()
+  if (dir) form.append('dir', dir)
+  for (const f of files) form.append('file', f, f.name)
+  const res = await apiFetch<{ files?: WorkspaceUpload[] }>(
+    `/workspace/upload?${projQS(project)}`,
+    { method: 'POST', body: form, retries: 0, timeoutMs: 300_000 },
+  )
+  return res.files ?? []
+}
+
 export interface ExecResult {
   cmd: string
   exit: number

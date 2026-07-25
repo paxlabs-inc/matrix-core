@@ -12,13 +12,13 @@ import { useTranslations } from 'next-intl'
 import { Button } from '@/components/ui/button'
 import { Switch } from '@/components/ui/switch'
 import { toast } from 'sonner'
-import { useAckDisclosure, usePutConsent } from '@/hooks/api/useOnboarding'
+import { useAckDisclosure, usePutConsent, useStartOnboarding } from '@/hooks/api/useOnboarding'
 
-const DISCLOSURE_VERSION = '1'
+const DISCLOSURE_VERSION = 'public-launch-1'
 
 interface Props {
   onNext: () => void
-  onBack: () => void
+  onBack?: () => void
 }
 
 export function DisclosureScreen({ onNext, onBack }: Props) {
@@ -28,6 +28,7 @@ export function DisclosureScreen({ onNext, onBack }: Props) {
   const [submitting, setSubmitting] = useState(false)
   const ackDisclosure = useAckDisclosure()
   const putConsent = usePutConsent()
+  const startOnboarding = useStartOnboarding()
 
   const handleSubmit = async () => {
     if (!acknowledged) {
@@ -44,6 +45,7 @@ export function DisclosureScreen({ onNext, onBack }: Props) {
         ackDisclosure.mutateAsync(DISCLOSURE_VERSION),
         putConsent.mutateAsync({ optIn: trainingOptIn, policyVersion: DISCLOSURE_VERSION }),
       ])
+      await startOnboarding.mutateAsync()
       onNext()
     } catch {
       toast.error(t('consentError'))
@@ -108,10 +110,12 @@ export function DisclosureScreen({ onNext, onBack }: Props) {
       </div>
 
       <div className="mt-auto flex items-center gap-3 pt-8">
-        <Button variant="ghost" size="lg" onClick={onBack}>
-          <ArrowLeft data-icon="inline-start" />
-          {t('back')}
-        </Button>
+        {onBack && (
+          <Button variant="ghost" size="lg" onClick={onBack}>
+            <ArrowLeft data-icon="inline-start" />
+            {t('back')}
+          </Button>
+        )}
         <Button
           size="lg"
           className="flex-1"
@@ -123,7 +127,7 @@ export function DisclosureScreen({ onNext, onBack }: Props) {
           ) : (
             <ArrowRight data-icon="inline-end" />
           )}
-          {t('continue')}
+          {t('approveAndContinue')}
         </Button>
       </div>
     </div>

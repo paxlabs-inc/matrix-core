@@ -45,4 +45,5 @@ export const qk = {
   briefSettings: () => ['brief', 'settings'] as const,
   personalization: () => ['personalization'] as const,
   telegram: () => ['integrations', 'telegram'] as const,
+  machineMail: () => ['integrations', 'machinemail'] as const,
 } as const

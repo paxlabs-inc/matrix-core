@@ -154,7 +154,7 @@ export function CodyWorkspace({
   }, [chat])
 
   return (
-    <div className="flex h-full min-h-0 flex-1 overflow-hidden">
+    <div className="relative flex h-full min-h-0 flex-1 overflow-hidden">
       <div className="flex h-full min-h-0 min-w-0 flex-1 flex-col">
         <ChatRail
           chat={chat}
@@ -171,7 +171,7 @@ export function CodyWorkspace({
         <button
           aria-label="Open workbench"
           onClick={() => setOpen(true)}
-          className="text-muted-foreground hover:text-foreground bg-surface-secondary my-4 shrink-0 rounded-l-lg px-1.5 font-mono text-xs"
+          className="text-muted-foreground hover:text-foreground bg-surface-secondary my-2 grid min-h-11 min-w-11 shrink-0 place-items-center rounded-l-lg font-mono text-sm"
         >
           ‹
         </button>

@@ -19,6 +19,7 @@
  * "ready/success" green the surface uses, rounded brand font for chrome.
  */
 import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { useTranslations } from 'next-intl'
 import { AnimatePresence, motion } from 'motion/react'
 import {
   BrainIcon,
@@ -47,6 +48,7 @@ import { NeoSearchResults } from '@/components/matrix/neo/neo-search'
 import { NeoMediaGrid } from '@/components/matrix/neo/neo-media'
 import { NeoArtifacts } from '@/components/matrix/neo/neo-artifacts'
 import { NeoMemoryCard } from '@/components/matrix/neo/neo-memory'
+import { DojoDesktopScreen } from '@/components/matrix/neo/neo-desktop'
 import { NeoAuditTrail } from '@/components/matrix/neo/neo-audit'
 import { ConstructSurfaces } from '@/components/matrix/construct'
 
@@ -62,6 +64,11 @@ function statusFor(
   if (phase === 'working') return { label: 'Working…', live: true }
   if (task.failed) return { label: 'Stopped', color: 'oklch(0.62 0.2 25)', live: false }
   if (task.done) return { label: 'Done', color: DONE_COLOR, live: false }
+  // An empty shell (the panel opened with no run — e.g. just the desktop
+  // screen) is idle, not "working".
+  if (task.steps.length === 0 && task.surfaces.length === 0 && !task.thinking) {
+    return { label: 'Idle', live: false }
+  }
   return { label: 'Working…', live: true }
 }
 
@@ -126,6 +133,7 @@ function buildScreens(
   onRespond?: (surfaceId: string, response: AskResponse) => void,
   legacyOnly = false,
   onMediaAction?: (instruction: string) => void,
+  desktop?: Screen,
 ): Screen[] {
   const list: Screen[] = []
   const live = phase === 'thinking' || phase === 'working'
@@ -146,6 +154,11 @@ function buildScreens(
       node: <NeoMemoryCard memory={task.memory} />,
     })
   }
+
+  // The disposable desktop (DOJO req 4.1): one persistent screen for the
+  // shared computer — boot, live view, takeover, and the honest off state.
+  // Present on both the typed-surface and legacy paths.
+  if (desktop) list.push(desktop)
 
   // Construct projection path: one screen per typed surface. Skipped when this
   // computer is the shell's centerpiece (legacyOnly): there the Construct
@@ -258,10 +271,15 @@ export function NeoComputer({
   onClose,
   legacyOnly = false,
   className,
+  conversationId,
 }: {
   task: NeoTask
   phase: ChatPhase
   reduce: boolean
+  /** The active conversation — enables the disposable-desktop screen's power
+   *  button even before any dojo.* event exists (the desktop is the USER's
+   *  computer too; they can turn it on without the agent). */
+  conversationId?: string | null
   /** Suppress live media once the closing turn carries it, to avoid doubling. */
   showMedia: boolean
   /** Answer a parked Construct Ask (the bidirectional back-channel). */
@@ -279,7 +297,24 @@ export function NeoComputer({
   className?: string
 }) {
   const status = statusFor(task, phase)
-  const screens = buildScreens(task, phase, showMedia, onRespond, legacyOnly, onMediaAction)
+  const tDesktop = useTranslations('dojoDesktop')
+  // The desktop screen is present whenever it CAN exist — a folded dojo.*
+  // state OR just a conversation to power a desktop on for. The user's
+  // computer is never gated on the agent having touched it.
+  const desktop: Screen | undefined =
+    task.dojo || conversationId
+      ? {
+          id: 'desktop',
+          label: tDesktop('tab'),
+          icon: Monitor,
+          running:
+            task.dojo?.state === 'provisioning' ||
+            task.dojo?.state === 'active' ||
+            task.dojo?.state === 'takeover',
+          node: <DojoDesktopScreen dojo={task.dojo} conversationId={conversationId} />,
+        }
+      : undefined
+  const screens = buildScreens(task, phase, showMedia, onRespond, legacyOnly, onMediaAction, desktop)
 
   // Single-viewport navigation. By default Neo "drives" — the newest screen is
   // shown as work streams in. The user can click a tab to inspect an earlier

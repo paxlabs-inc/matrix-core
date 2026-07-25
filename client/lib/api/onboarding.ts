@@ -1,22 +1,17 @@
 /**
- * Onboarding + beta-launch API — mirrors the JWT-authed router endpoints
- * (POST /invite/redeem, GET/PUT /consent, POST /disclosure/ack,
- * POST /reports, GET /provision/status) and the daemon profile endpoint
+ * Onboarding + public-launch API — mirrors the JWT-authed router endpoints
+ * (GET/PUT /consent, POST /disclosure/ack, POST /onboarding/start,
+ * GET/POST /subscription, POST /reports, GET /provision/status) and the daemon profile endpoint
  * (GET/PUT /profile). All calls go through the router origin via apiFetch,
  * which attaches the Supabase Bearer token automatically.
  */
 import { apiFetch } from '@/lib/api/client'
 
-// --- Invite ---------------------------------------------------------------
+// --- First-run approvals ---------------------------------------------------
 
-export interface RedeemResponse {
-  status: string
-}
-
-export async function redeemInvite(code: string, signal?: AbortSignal): Promise<RedeemResponse> {
-  return apiFetch<RedeemResponse>('/invite/redeem', {
+export async function startOnboarding(signal?: AbortSignal): Promise<{ status: string }> {
+  return apiFetch<{ status: string }>('/onboarding/start', {
     method: 'POST',
-    body: JSON.stringify({ code }),
     signal,
     retries: 0,
   })
@@ -98,6 +93,30 @@ export interface ProvisionStatusResponse {
 
 export async function getProvisionStatus(signal?: AbortSignal): Promise<ProvisionStatusResponse> {
   return apiFetch<ProvisionStatusResponse>('/provision/status', { signal })
+}
+
+// --- Subscription ----------------------------------------------------------
+
+export interface SubscriptionResponse {
+  user_id: string
+  plan: 'free' | 'unlimited' | string
+  status: 'available' | 'active' | 'expired' | string
+  source?: string
+  starts_at?: string
+  ends_at?: string
+  claimed_at?: string
+}
+
+export async function getSubscription(signal?: AbortSignal): Promise<SubscriptionResponse> {
+  return apiFetch<SubscriptionResponse>('/subscription', { signal })
+}
+
+export async function claimLaunchSubscription(signal?: AbortSignal): Promise<SubscriptionResponse> {
+  return apiFetch<SubscriptionResponse>('/subscription/claim', {
+    method: 'POST',
+    signal,
+    retries: 0,
+  })
 }
 
 // --- Profile (daemon, proxied through router) ------------------------------

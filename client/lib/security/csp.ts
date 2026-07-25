@@ -12,6 +12,16 @@ export function routerOrigin(): string {
   return toOrigin(process.env.NEXT_PUBLIC_MATRIX_ROUTER_URL || 'https://api.paxlabs.app')
 }
 
+function addHttpAndWebSocketOrigins(origins: Set<string>, origin: string): void {
+  if (!origin) return
+  origins.add(origin)
+  if (/^https?:/i.test(origin)) {
+    origins.add(origin.replace(/^http/i, 'ws'))
+  } else if (/^wss?:/i.test(origin)) {
+    origins.add(origin.replace(/^ws/i, 'http'))
+  }
+}
+
 /**
  * Build frame-src allow-list. The Cody preview pane embeds the running app in
  * an <iframe> served by the router's /preview/{user} proxy, so the router
@@ -30,10 +40,7 @@ export function buildConnectSrc(): string {
   const origins = new Set<string>(["'self'"])
 
   const router = routerOrigin()
-  if (router) {
-    origins.add(router)
-    origins.add(router.replace(/^http/i, 'ws'))
-  }
+  addHttpAndWebSocketOrigins(origins, router)
 
   for (const raw of [
     process.env.NEXT_PUBLIC_PAXEER_WALLET_API || 'https://connect.paxportwallet.com',
@@ -41,11 +48,16 @@ export function buildConnectSrc(): string {
     process.env.NEXT_PUBLIC_SUPABASE_URL,
   ]) {
     const o = toOrigin(raw)
-    if (o) {
-      origins.add(o)
-      origins.add(o.replace(/^https?/i, (m) => (m === 'https' ? 'wss' : 'ws')))
-    }
+    addHttpAndWebSocketOrigins(origins, o)
   }
+
+  const livekit = toOrigin(
+    process.env.NEXT_PUBLIC_LIVEKIT_URL ||
+      process.env.MATRIX_LIVEKIT_URL ||
+      process.env.LIVEKIT_URL ||
+      'wss://matrix-c94fehr4.livekit.cloud',
+  )
+  addHttpAndWebSocketOrigins(origins, livekit)
 
   const dsn = process.env.NEXT_PUBLIC_SENTRY_DSN
   if (dsn) {

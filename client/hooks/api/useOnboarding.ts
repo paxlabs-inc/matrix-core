@@ -8,24 +8,44 @@
  */
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
-  redeemInvite,
+  startOnboarding,
   getConsent,
   putConsent,
   ackDisclosure,
   getProvisionStatus,
   getProfile,
   putProfile,
+  getSubscription,
+  claimLaunchSubscription,
   type ProfileRequest,
 } from '@/lib/api/onboarding'
 
 const POLL_INTERVAL = 3000
 
-export function useRedeemInvite() {
+export function useStartOnboarding() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: (code: string) => redeemInvite(code),
+    mutationFn: () => startOnboarding(),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['provision-status'] })
+    },
+  })
+}
+
+export function useSubscription() {
+  return useQuery({
+    queryKey: ['subscription'],
+    queryFn: ({ signal }) => getSubscription(signal),
+    staleTime: 30_000,
+  })
+}
+
+export function useClaimLaunchSubscription() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: () => claimLaunchSubscription(),
+    onSuccess: (subscription) => {
+      qc.setQueryData(['subscription'], subscription)
     },
   })
 }

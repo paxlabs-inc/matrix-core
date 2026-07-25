@@ -4,7 +4,7 @@
  * OnboardingFlow — the guided three-screen onboarding that replaces the
  * old blank loading wait. The flow is:
  *
- *   invite gate → Screen 1 Identity → Screen 2 Disclosure+Consent → Screen 3 Wallet → done
+ *   approvals → identity → wallet permissions → launch subscription → done
  *
  * Provisioning is triggered at invite redemption (server-side) and polled
  * throughout via useProvisionStatus. Screens 1-2 hit only the central router
@@ -18,7 +18,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useAuth } from '@/lib/auth/AuthProvider'
 import { useProvisionStatus, usePutProfile } from '@/hooks/api/useOnboarding'
-import { InviteGate } from '@/components/matrix/onboarding/invite-gate'
 import {
   IdentityScreen,
   clearPending as clearPendingProfile,
@@ -26,30 +25,31 @@ import {
 } from '@/components/matrix/onboarding/identity-screen'
 import { DisclosureScreen } from '@/components/matrix/onboarding/disclosure-screen'
 import { WalletScreen } from '@/components/matrix/onboarding/wallet-screen'
+import { SubscriptionScreen } from '@/components/matrix/onboarding/subscription-screen'
 import { MatrixLogo } from '@/components/matrix/matrix-logo'
 import { cn } from '@/lib/utils'
 
 const STORAGE_KEY = 'mx-onboarding-step'
 const ONBOARDED_KEY = 'mx-onboarded'
 
-export type OnboardingStep = 'invite' | 'identity' | 'disclosure' | 'wallet' | 'done'
+export type OnboardingStep = 'disclosure' | 'identity' | 'wallet' | 'subscription' | 'done'
 
 const STEP_INDEX: Record<OnboardingStep, number> = {
-  invite: 0,
+  disclosure: 0,
   identity: 1,
-  disclosure: 2,
-  wallet: 3,
+  wallet: 2,
+  subscription: 3,
   done: 4,
 }
 
 function loadStep(): OnboardingStep {
-  if (typeof window === 'undefined') return 'invite'
+  if (typeof window === 'undefined') return 'disclosure'
   if (window.localStorage.getItem(ONBOARDED_KEY) === '1') return 'done'
   const saved = window.localStorage.getItem(STORAGE_KEY)
   if (saved && STEP_INDEX[saved as OnboardingStep] !== undefined) {
     return saved as OnboardingStep
   }
-  return 'invite'
+  return 'disclosure'
 }
 
 function saveStep(step: OnboardingStep) {
@@ -132,23 +132,22 @@ export function OnboardingFlow({ onComplete }: { onComplete: () => void }) {
   if (step === 'done') return null
 
   const currentIdx = STEP_INDEX[step]
-  const totalSteps = 3
+  const totalSteps = 4
 
   return (
     <main className="bg-background fixed inset-0 z-50 flex flex-col items-center overflow-y-auto">
       <div className="flex w-full max-w-md flex-1 flex-col px-6 py-8">
         <div className="mb-8 flex items-center justify-between">
           <MatrixLogo size="sm" />
-          {currentIdx > 0 && currentIdx <= totalSteps && (
+          {currentIdx < totalSteps && (
             <div className="flex items-center gap-1.5">
               {Array.from({ length: totalSteps }, (_, i) => (
                 <span
                   key={i}
                   className={cn(
                     'h-1.5 w-6 rounded-full transition-colors',
-                    i < currentIdx && 'bg-primary',
-                    i === currentIdx - 1 && 'bg-primary',
-                    i > currentIdx - 1 && 'bg-muted',
+                    i <= currentIdx && 'bg-primary',
+                    i > currentIdx && 'bg-muted',
                   )}
                 />
               ))}
@@ -157,7 +156,7 @@ export function OnboardingFlow({ onComplete }: { onComplete: () => void }) {
         </div>
 
         <div className="flex flex-1 flex-col">
-          {step === 'invite' && <InviteGate onRedeemed={() => goTo('identity')} />}
+          {step === 'disclosure' && <DisclosureScreen onNext={() => goTo('identity')} />}
 
           {step === 'identity' && (
             <IdentityScreen
@@ -165,32 +164,30 @@ export function OnboardingFlow({ onComplete }: { onComplete: () => void }) {
               initialData={profileData}
               onNext={(data) => {
                 setProfileData(data)
-                goTo('disclosure')
+                goTo('wallet')
               }}
-              onBack={() => goTo('invite')}
+              onBack={() => goTo('disclosure')}
             />
-          )}
-
-          {step === 'disclosure' && (
-            <DisclosureScreen onNext={() => goTo('wallet')} onBack={() => goTo('identity')} />
           )}
 
           {step === 'wallet' && (
             <WalletScreen
               isActive={isActive}
-              onNext={() => handleComplete()}
-              onBack={() => goTo('disclosure')}
+              onNext={() => goTo('subscription')}
+              onBack={() => goTo('identity')}
             />
+          )}
+
+          {step === 'subscription' && (
+            <SubscriptionScreen onNext={handleComplete} onBack={() => goTo('wallet')} />
           )}
         </div>
 
-        {step !== 'invite' && (
-          <div className="mt-6 flex items-center justify-center gap-2 text-xs">
-            <ReadinessIndicator state={readiness} />
-          </div>
-        )}
+        <div className="mt-6 flex items-center justify-center gap-2 text-xs">
+          <ReadinessIndicator state={readiness} />
+        </div>
 
-        {isFailed && step !== 'invite' && (
+        {isFailed && (
           <div className="bg-destructive/10 mt-4 rounded-lg p-3 text-center">
             <p className="text-destructive text-xs">
               Your agent runtime couldn&apos;t start. You can continue and retry from Settings.

@@ -23,6 +23,34 @@ import { useChat } from '@/hooks/api/useChat'
 import { createProject, listProjects, type NeoProject } from '@/lib/api/workspace'
 import { getPresetBySlug } from '@/lib/data/presets'
 
+const CONVERSATION_QUERY = 'conversation'
+const PROJECT_QUERY = 'project'
+
+function conversationFromLocation(): string | null {
+  return new URL(window.location.href).searchParams.get(CONVERSATION_QUERY)
+}
+
+function projectFromLocation(): string | null {
+  return new URL(window.location.href).searchParams.get(PROJECT_QUERY)
+}
+
+function writeConversationLocation(
+  id: string | null,
+  mode: 'push' | 'replace',
+  project?: string | null,
+) {
+  const url = new URL(window.location.href)
+  if (id) url.searchParams.set(CONVERSATION_QUERY, id)
+  else url.searchParams.delete(CONVERSATION_QUERY)
+  if (project) url.searchParams.set(PROJECT_QUERY, project)
+  else url.searchParams.delete(PROJECT_QUERY)
+  window.history[mode === 'push' ? 'pushState' : 'replaceState'](
+    window.history.state,
+    '',
+    url.toString(),
+  )
+}
+
 export function CodyApp({ initialPreset }: { initialPreset?: string }) {
   const [projects, setProjects] = useState<NeoProject[]>([])
   const [projectsLoaded, setProjectsLoaded] = useState(false)
@@ -41,6 +69,12 @@ export function CodyApp({ initialPreset }: { initialPreset?: string }) {
   // ONE reducer: the same Neo conversation model the dashboard uses, scoped
   // to the active project (tagged sends + filtered history).
   const chat = useChat({ project: activeProjectId ?? undefined })
+  const activeConversationRef = useRef(chat.conversationId)
+  const selectConversationRef = useRef(chat.selectConversation)
+  const resetConversationRef = useRef(chat.reset)
+  activeConversationRef.current = chat.conversationId
+  selectConversationRef.current = chat.selectConversation
+  resetConversationRef.current = chat.reset
 
   // Load the project registry once.
   useEffect(() => {
@@ -80,7 +114,10 @@ export function CodyApp({ initialPreset }: { initialPreset?: string }) {
   // Switching projects starts a fresh thread scope and re-reads history.
   const selectProject = useCallback(
     (id: string) => {
-      if (id !== activeProjectId) chat.reset()
+      if (id !== activeProjectId) {
+        writeConversationLocation(null, 'push', id)
+        chat.reset()
+      }
       setActiveProjectId(id)
       setPage('workspace')
     },
@@ -91,21 +128,54 @@ export function CodyApp({ initialPreset }: { initialPreset?: string }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeProjectId])
 
-  const onCreateProject = useCallback(async (input: { name: string }) => {
-    setCreating(true)
-    setCreateError(null)
-    try {
-      const created = await createProject(input)
-      setProjects((list) => [...list.filter((p) => p.id !== created.id), created])
-      setActiveProjectId(created.id)
-      setPage('workspace')
-      setNewProjectOpen(false)
-    } catch (e) {
-      setCreateError(e instanceof Error ? e.message : 'Could not create the project.')
-    } finally {
-      setCreating(false)
+  // A selected task is browser state as well as reducer state. Deep links,
+  // refresh, Back, and Forward must all reopen the exact durable discussion.
+  useEffect(() => {
+    if (!projectsLoaded) return
+    const restoreLocation = () => {
+      const projectID = projectFromLocation()
+      const conversationID = conversationFromLocation()
+      if (projectID) setActiveProjectId(projectID)
+      if (conversationID) {
+        selectConversationRef.current(conversationID)
+        setPage('workspace')
+      } else if (activeConversationRef.current) {
+        resetConversationRef.current()
+      }
     }
-  }, [])
+    restoreLocation()
+    window.addEventListener('popstate', restoreLocation)
+    return () => window.removeEventListener('popstate', restoreLocation)
+  }, [projectsLoaded])
+
+  // New conversations receive their durable id after submit. Record it in the
+  // current history entry so a hard refresh resumes the same task.
+  useEffect(() => {
+    if (chat.conversationId && conversationFromLocation() !== chat.conversationId) {
+      writeConversationLocation(chat.conversationId, 'replace', activeProjectId)
+    }
+  }, [activeProjectId, chat.conversationId])
+
+  const onCreateProject = useCallback(
+    async (input: { name: string }) => {
+      setCreating(true)
+      setCreateError(null)
+      try {
+        const created = await createProject(input)
+        setProjects((list) => [...list.filter((p) => p.id !== created.id), created])
+        writeConversationLocation(null, 'push', created.id)
+        chat.reset()
+        setActiveProjectId(created.id)
+        setPage('workspace')
+        setNewProjectOpen(false)
+      } catch (e) {
+        setCreateError(e instanceof Error ? e.message : 'Could not create the project.')
+      } finally {
+        setCreating(false)
+      }
+    },
+    [chat],
+  )
 
   const onProjectChanged = useCallback((updated: NeoProject) => {
     setProjects((list) => list.map((p) => (p.id === updated.id ? updated : p)))
@@ -140,10 +210,11 @@ export function CodyApp({ initialPreset }: { initialPreset?: string }) {
 
   const onOpenConversation = useCallback(
     (convID: string) => {
+      writeConversationLocation(convID, 'push', activeProjectId)
       chat.selectConversation(convID)
       setPage('workspace')
     },
-    [chat],
+    [activeProjectId, chat],
   )
 
   return (
@@ -170,7 +241,13 @@ export function CodyApp({ initialPreset }: { initialPreset?: string }) {
               projectName={activeProject?.name}
             />
           ) : page === 'history' ? (
-            <CodyHistory conversations={chat.conversations} onOpen={onOpenConversation} />
+            <CodyHistory
+              conversations={chat.conversations}
+              onOpen={onOpenConversation}
+              onRename={chat.renameConversation}
+              onArchive={chat.archiveConversation}
+              onDelete={chat.deleteConversation}
+            />
           ) : (
             <CodySettings
               project={activeProject}
