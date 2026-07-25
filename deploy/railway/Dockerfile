@@ -349,6 +349,11 @@ COPY tools/uwac      /opt/matrix/tools/uwac
 COPY tools/chronos   /opt/matrix/tools/chronos
 COPY tools/layerx    /opt/matrix/tools/layerx
 COPY tools/sandbox   /opt/matrix/tools/sandbox
+# DOJO disposable-desktop actuation bridge (wave 2): agents/neo.json spawns it
+# at /root/matrix/tools/desktop/desktop.mjs (the symlink below); it needs no
+# credentials — MATRIX_DOJO_URL/MATRIX_DOJO_TOKEN are injected by the daemon's
+# serve wiring at runtime.
+COPY tools/desktop   /opt/matrix/tools/desktop
 # Scaffolder suite (scaffold-<stack>.sh): Neo runs these via exec for
 # greenfield project structure instead of hand-writing boilerplate.
 COPY tools/scaffold  /opt/matrix/tools/scaffold
