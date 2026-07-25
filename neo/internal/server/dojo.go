@@ -275,6 +275,69 @@ func (s *Server) handleDojoFrame(w http.ResponseWriter, r *http.Request) {
 	_, _ = w.Write(png)
 }
 
+// handleDojoBoot serves POST /dojo/boot {conversation_id}: the USER turns the
+// disposable desktop on — the power button, fully independent of the agent
+// (req 4.2: the human's control of the shared computer includes its power).
+// Reattaches the live session when one exists; otherwise registers a fresh one
+// and boots it in the background while the panel renders the turning-on state.
+func (s *Server) handleDojoBoot(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	e := s.engine
+	if e.dojo == nil {
+		writeJSON(w, http.StatusServiceUnavailable, map[string]interface{}{"error": "the disposable desktop is not configured"})
+		return
+	}
+	var req struct {
+		ConversationID string `json:"conversation_id"`
+	}
+	if err := json.NewDecoder(io.LimitReader(r.Body, 1<<20)).Decode(&req); err != nil || strings.TrimSpace(req.ConversationID) == "" {
+		writeJSON(w, http.StatusBadRequest, map[string]interface{}{"error": "conversation_id is required"})
+		return
+	}
+	snap, err := e.dojo.EnsureSession(strings.TrimSpace(req.ConversationID))
+	if err != nil {
+		writeJSON(w, http.StatusBadGateway, map[string]interface{}{"error": err.Error()})
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]interface{}{"session": snap})
+}
+
+// handleDojoShutdown serves POST /dojo/shutdown {conversation_id}: the USER
+// turns the desktop off. This is the normal teardown pipeline — work ships
+// home first (req 5.1); it is NOT a discard. Idempotent: shutting down an
+// already-off desktop answers 200 with a null session.
+func (s *Server) handleDojoShutdown(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	e := s.engine
+	if e.dojo == nil {
+		writeJSON(w, http.StatusServiceUnavailable, map[string]interface{}{"error": "the disposable desktop is not configured"})
+		return
+	}
+	var req struct {
+		ConversationID string `json:"conversation_id"`
+	}
+	if err := json.NewDecoder(io.LimitReader(r.Body, 1<<20)).Decode(&req); err != nil || strings.TrimSpace(req.ConversationID) == "" {
+		writeJSON(w, http.StatusBadRequest, map[string]interface{}{"error": "conversation_id is required"})
+		return
+	}
+	snap, ok := e.dojo.SessionForConv(strings.TrimSpace(req.ConversationID))
+	if !ok {
+		writeJSON(w, http.StatusOK, map[string]interface{}{"session": nil})
+		return
+	}
+	if err := e.dojo.Teardown(r.Context(), snap.ID, "user_shutdown"); err != nil {
+		writeJSON(w, http.StatusBadGateway, map[string]interface{}{"error": err.Error()})
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]interface{}{"session": nil})
+}
+
 // handleDojoTakeover serves POST /dojo/takeover {conversation_id}: the human
 // takes the control lease (req 4.2). While held, agent desktop calls are
 // rejected with takeover_active; the human's input passes through /dojo/input.

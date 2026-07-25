@@ -130,6 +130,8 @@ func (s *Server) routes() []routeFact {
 		// Control-lease takeover (DOJO req 4.2/4.3): while the user holds the
 		// lease your desktop actions are refused with takeover_active; after
 		// handback you must re-observe before acting.
+		{"/dojo/boot", "POST /dojo/boot — the user turns the disposable desktop on themselves (it is their computer too; it can be running before you ever touch it)", s.handleDojoBoot},
+		{"/dojo/shutdown", "POST /dojo/shutdown — the user turns the desktop off; work ships home first", s.handleDojoShutdown},
 		{"/dojo/takeover", "POST /dojo/takeover — the user takes control of your disposable desktop (your desktop actions are refused until they hand back)", s.handleDojoTakeover},
 		{"/dojo/handback", "POST /dojo/handback — the user hands the desktop controls back to you (re-observe before your next action)", s.handleDojoHandback},
 		{"/dojo/input", "", s.handleDojoInput},
