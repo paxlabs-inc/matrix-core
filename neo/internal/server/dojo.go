@@ -222,7 +222,7 @@ func (s *Server) handleDojoSession(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusBadRequest, map[string]interface{}{"error": "conversation is required"})
 		return
 	}
-	snap, ok := e.dojo.SessionForConv(conv)
+	snap, ok := e.dojo.SessionForConvOrLive(conv)
 	if !ok {
 		writeJSON(w, http.StatusOK, map[string]interface{}{"session": nil})
 		return
@@ -297,7 +297,15 @@ func (s *Server) handleDojoBoot(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusBadRequest, map[string]interface{}{"error": "conversation_id is required"})
 		return
 	}
-	snap, err := e.dojo.EnsureSession(strings.TrimSpace(req.ConversationID))
+	conv := strings.TrimSpace(req.ConversationID)
+	// One computer (MaxActive=1): turning it "on" when it is already running —
+	// even under another conversation — reattaches it, never evict-and-reboot.
+	if snap, ok := e.dojo.SessionForConvOrLive(conv); ok {
+		e.dojo.Touch(snap.ID)
+		writeJSON(w, http.StatusOK, map[string]interface{}{"session": snap})
+		return
+	}
+	snap, err := e.dojo.EnsureSession(conv)
 	if err != nil {
 		writeJSON(w, http.StatusBadGateway, map[string]interface{}{"error": err.Error()})
 		return
@@ -326,7 +334,7 @@ func (s *Server) handleDojoShutdown(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusBadRequest, map[string]interface{}{"error": "conversation_id is required"})
 		return
 	}
-	snap, ok := e.dojo.SessionForConv(strings.TrimSpace(req.ConversationID))
+	snap, ok := e.dojo.SessionForConvOrLive(strings.TrimSpace(req.ConversationID))
 	if !ok {
 		writeJSON(w, http.StatusOK, map[string]interface{}{"session": nil})
 		return

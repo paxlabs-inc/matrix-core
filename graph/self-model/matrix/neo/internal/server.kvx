@@ -1,7 +1,7 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:af8e5eadd8ab2be4c668964f9a6d35e443e13ba739c23daa7047ac969570eb44
+# GENERATED gen=codegraph do-not-edit merkle=b3:fa92f9d8f5d390c1d3a5dc4ab13216db811f804ea2e08d1299e9614464f128be
 
 NODE id=matrix/neo/internal/server kind=package
-  digest=b3:661af75855dae3980f6f5cc0e3bb73c11e56d1a991b622d31bafe76cb316d85e file=neo/internal/server range=0:0 lang=go exported=true
+  digest=b3:106b9de9136c28c3cdd52dc43626e395e1b0968b6729f9ae0267e5c781d79a0a file=neo/internal/server range=0:0 lang=go exported=true
 EDGES
   contains=matrix/neo/internal/server/automatrix_governor.go,matrix/neo/internal/server/automatrix_routes.go,matrix/neo/internal/server/automatrix_run.go,matrix/neo/internal/server/automatrix_wake.go,matrix/neo/internal/server/brief_governor.go,matrix/neo/internal/server/brief_policy.go,matrix/neo/internal/server/brief_routes.go,matrix/neo/internal/server/brief_run.go,matrix/neo/internal/server/brief_wake.go,matrix/neo/internal/server/dojo.go,matrix/neo/internal/server/engine.go,matrix/neo/internal/server/episodic_sweep.go,matrix/neo/internal/server/interview_routes.go,matrix/neo/internal/server/machinemail_bridge.go,matrix/neo/internal/server/machinemail_routes.go,matrix/neo/internal/server/media.go,matrix/neo/internal/server/media_filmstrip.go,matrix/neo/internal/server/media_vault.go,matrix/neo/internal/server/memory_routes.go,matrix/neo/internal/server/observability.go,matrix/neo/internal/server/preview.go,matrix/neo/internal/server/privacy_routes.go,matrix/neo/internal/server/projects.go,matrix/neo/internal/server/queue.go,matrix/neo/internal/server/server.go,matrix/neo/internal/server/session.go,matrix/neo/internal/server/sse.go,matrix/neo/internal/server/surface.go,matrix/neo/internal/server/swarm.go,matrix/neo/internal/server/telegram_api.go,matrix/neo/internal/server/telegram_bridge.go,matrix/neo/internal/server/telegram_routes.go,matrix/neo/internal/server/voice.go,matrix/neo/internal/server/voice_session.go,matrix/neo/internal/server/workspace.go
   ^contains=mod:matrix/neo
@@ -1752,7 +1752,7 @@ EDGES
   ^defines=matrix/neo/internal/server/server.go
 
 NODE id=matrix/neo/internal/server.Server.handleDojoBoot kind=method
-  digest=b3:9a8407e9352d90371fb8217b85e4e7f4fcf6c7998ff4925e15e5d0e9305835a5 file=neo/internal/server/dojo.go range=278:306 lang=go exported=false byte_range=9985:11310
+  digest=b3:e4f6840b52fab5741d7cff6075d70f1d15ad215baf0ac805c9cb6b2983854509 file=neo/internal/server/dojo.go range=278:314 lang=go exported=false byte_range=9991:11651
   sig=func (s *Server) handleDojoBoot(w http.ResponseWriter, r *http.Request)
   doc=handleDojoBoot serves POST /dojo/boot {conversation_id}: the USER turns the\ndisposable desktop on — the power button, fully independent of the agent\n(req 4.2: the human's control of the shared computer includes its power).\nReattaches the live session when one exists; otherwise registers a fresh one\nand boots it in the background while the panel renders the turning-on state.
 EDGES
@@ -1760,7 +1760,7 @@ EDGES
   ^defines=matrix/neo/internal/server/dojo.go
 
 NODE id=matrix/neo/internal/server.Server.handleDojoComputerUse kind=method
-  digest=b3:186368b7e96b1e0260d2e1cd1d37eca76945566d4b753dcadf5a7b5367311471 file=neo/internal/server/dojo.go range=456:524 lang=go exported=false byte_range=17358:20726
+  digest=b3:186368b7e96b1e0260d2e1cd1d37eca76945566d4b753dcadf5a7b5367311471 file=neo/internal/server/dojo.go range=464:532 lang=go exported=false byte_range=17705:21073
   sig=func (s *Server) handleDojoComputerUse(w http.ResponseWriter, r *http.Request)
   doc=handleDojoComputerUse is the loopback proxy the desktop bridge posts to\n(MATRIX_DOJO_URL/computer-use). It resolves the user's live disposable-desktop\nsession and rides the exec-curl carrier into the appliance's localhost:9990,\nrelaying the bytebotd response verbatim. It is gated on the shared bridge\ntoken so only the co-located bridge — never external router-forwarded\ntraffic — can drive the desktop (DOJO guard_surface).
 EDGES
@@ -1768,7 +1768,7 @@ EDGES
   ^defines=matrix/neo/internal/server/dojo.go
 
 NODE id=matrix/neo/internal/server.Server.handleDojoFrame kind=method
-  digest=b3:479fc50e201f21d33027c7c6aabbd5dd89d690a76eaa47350c0b23f0b1b55af3 file=neo/internal/server/dojo.go range=233:276 lang=go exported=false byte_range=8191:9983
+  digest=b3:479fc50e201f21d33027c7c6aabbd5dd89d690a76eaa47350c0b23f0b1b55af3 file=neo/internal/server/dojo.go range=233:276 lang=go exported=false byte_range=8197:9989
   sig=func (s *Server) handleDojoFrame(w http.ResponseWriter, r *http.Request)
   doc=handleDojoFrame serves GET /dojo/frame?conversation={id}: one live-view\nframe of the conversation's desktop, JPEG-encoded for the wire. This is the\nwave-3 live-view transport: the client polls it while the panel is visible —\nplain request/response over the existing exec-curl carrier, no held stream\nto keepalive (the 2026-07-11 browser-heartbeat failure class cannot occur).\nFrames are passive: they never bump the session's idle clock.
 EDGES
@@ -1776,7 +1776,7 @@ EDGES
   ^defines=matrix/neo/internal/server/dojo.go
 
 NODE id=matrix/neo/internal/server.Server.handleDojoHandback kind=method
-  digest=b3:835dbd66eaa7d0930e783bc0fa3f75471191daa95d93af3cc9b629310cb743a8 file=neo/internal/server/dojo.go range=350:357 lang=go exported=false byte_range=13119:13507
+  digest=b3:835dbd66eaa7d0930e783bc0fa3f75471191daa95d93af3cc9b629310cb743a8 file=neo/internal/server/dojo.go range=358:365 lang=go exported=false byte_range=13466:13854
   sig=func (s *Server) handleDojoHandback(w http.ResponseWriter, r *http.Request)
   doc=handleDojoHandback serves POST /dojo/handback {conversation_id}: the human\nreturns the controls (req 4.3). The manager arms the re-observation gate so\nthe agent looks before it acts.
 EDGES
@@ -1784,7 +1784,7 @@ EDGES
   ^defines=matrix/neo/internal/server/dojo.go
 
 NODE id=matrix/neo/internal/server.Server.handleDojoInput kind=method
-  digest=b3:74429a8ae50d26749ec6795c25e12e66fabee3731ad27aed1f6f6ab1451ee213 file=neo/internal/server/dojo.go range=393:435 lang=go exported=false byte_range=14925:16778
+  digest=b3:74429a8ae50d26749ec6795c25e12e66fabee3731ad27aed1f6f6ab1451ee213 file=neo/internal/server/dojo.go range=401:443 lang=go exported=false byte_range=15272:17125
   sig=func (s *Server) handleDojoInput(w http.ResponseWriter, r *http.Request)
   doc=handleDojoInput serves POST /dojo/input {conversation_id, request}: one\nhuman input action passed through to the desktop WHILE the control lease is\nheld — refused in every other state, so the passthrough exists only under an\nexplicit takeover.
 EDGES
@@ -1792,14 +1792,14 @@ EDGES
   ^defines=matrix/neo/internal/server/dojo.go
 
 NODE id=matrix/neo/internal/server.Server.handleDojoLease kind=method
-  digest=b3:608f4c2b380d86de720accb6009dbfadbda620a80811d8fdc201bd70575bfe55 file=neo/internal/server/dojo.go range=359:391 lang=go exported=false byte_range=13509:14923
+  digest=b3:608f4c2b380d86de720accb6009dbfadbda620a80811d8fdc201bd70575bfe55 file=neo/internal/server/dojo.go range=367:399 lang=go exported=false byte_range=13856:15270
   sig=func (s *Server) handleDojoLease(w http.ResponseWriter, r *http.Request, move func(string) (dojo.Session, error))
 EDGES
   ^contains=matrix/neo/internal/server.Server
   ^defines=matrix/neo/internal/server/dojo.go
 
 NODE id=matrix/neo/internal/server.Server.handleDojoSession kind=method
-  digest=b3:2b9a46f2936399ff031591ab7f4b29f0bbc519986200d1fc7bf89233be73008d file=neo/internal/server/dojo.go range=207:231 lang=go exported=false byte_range=7215:8189
+  digest=b3:d3e2fb3a533aa77a558fe035b93b72f89a0bc75806040f18da0d7f0a05bffd5d file=neo/internal/server/dojo.go range=207:231 lang=go exported=false byte_range=7215:8195
   sig=func (s *Server) handleDojoSession(w http.ResponseWriter, r *http.Request)
   doc=handleDojoSession serves GET /dojo/session?conversation={id}: the live dojo\nsession snapshot for a conversation (or null), so a freshly opened client can\nseed its desktop panel without replaying the whole trace.
 EDGES
@@ -1807,7 +1807,7 @@ EDGES
   ^defines=matrix/neo/internal/server/dojo.go
 
 NODE id=matrix/neo/internal/server.Server.handleDojoShutdown kind=method
-  digest=b3:21042bc4f1ce76213c5dc8e4e38057de7fb3f2bed577fdf3d8e664f81f35f096 file=neo/internal/server/dojo.go range=308:339 lang=go exported=false byte_range=11312:12687
+  digest=b3:4f22e9e6668cf195dc14e74dea3e84d1ecb6e2867bfc97768fdc373ac6495814 file=neo/internal/server/dojo.go range=316:347 lang=go exported=false byte_range=11653:13034
   sig=func (s *Server) handleDojoShutdown(w http.ResponseWriter, r *http.Request)
   doc=handleDojoShutdown serves POST /dojo/shutdown {conversation_id}: the USER\nturns the desktop off. This is the normal teardown pipeline — work ships\nhome first (req 5.1); it is NOT a discard. Idempotent: shutting down an\nalready-off desktop answers 200 with a null session.
 EDGES
@@ -1815,7 +1815,7 @@ EDGES
   ^defines=matrix/neo/internal/server/dojo.go
 
 NODE id=matrix/neo/internal/server.Server.handleDojoTakeover kind=method
-  digest=b3:61cb097d687665fca6f975c9a00a5a854740e2317762d69fd18bf7297302c683 file=neo/internal/server/dojo.go range=341:348 lang=go exported=false byte_range=12689:13117
+  digest=b3:61cb097d687665fca6f975c9a00a5a854740e2317762d69fd18bf7297302c683 file=neo/internal/server/dojo.go range=349:356 lang=go exported=false byte_range=13036:13464
   sig=func (s *Server) handleDojoTakeover(w http.ResponseWriter, r *http.Request)
   doc=handleDojoTakeover serves POST /dojo/takeover {conversation_id}: the human\ntakes the control lease (req 4.2). While held, agent desktop calls are\nrejected with takeover_active; the human's input passes through /dojo/input.
 EDGES
@@ -2681,7 +2681,7 @@ EDGES
   ^contains=matrix/neo/internal/server.automatrixWakeInput
 
 NODE id=matrix/neo/internal/server.bearerEquals kind=func
-  digest=b3:cf2497ba74846713158c5334fe144e761d5ac6bd99d12d4efe6f41f51464d9a0 file=neo/internal/server/dojo.go range=526:531 lang=go exported=false byte_range=20728:21032
+  digest=b3:cf2497ba74846713158c5334fe144e761d5ac6bd99d12d4efe6f41f51464d9a0 file=neo/internal/server/dojo.go range=534:539 lang=go exported=false byte_range=21075:21379
   sig=func bearerEquals(r *http.Request, want string) bool
   doc=bearerEquals reports whether the request's Authorization: Bearer token equals\nwant.
 EDGES
@@ -4447,7 +4447,7 @@ EDGES
   ^defines=matrix/neo/internal/server/server.go
 
 NODE id=matrix/neo/internal/server.pngDecode kind=func
-  digest=b3:64ae7df3b734a40ad161c33ca44151fdb123bc1a1ef9ae69a12e4b156d6433b5 file=neo/internal/server/dojo.go range=452:454 lang=go exported=false byte_range=17268:17356
+  digest=b3:64ae7df3b734a40ad161c33ca44151fdb123bc1a1ef9ae69a12e4b156d6433b5 file=neo/internal/server/dojo.go range=460:462 lang=go exported=false byte_range=17615:17703
   sig=func pngDecode(b []byte) (image.Image, error)
 EDGES
   ^defines=matrix/neo/internal/server/dojo.go
@@ -4644,7 +4644,7 @@ EDGES
   ^defines=matrix/neo/internal/server/telegram_api.go
 
 NODE id=matrix/neo/internal/server.reencodeJPEG kind=func
-  digest=b3:0606295e40280f2114cacf8b46454a248773c9532e035f5b68a2e470a23f94e3 file=neo/internal/server/dojo.go range=437:450 lang=go exported=false byte_range=16780:17266
+  digest=b3:0606295e40280f2114cacf8b46454a248773c9532e035f5b68a2e470a23f94e3 file=neo/internal/server/dojo.go range=445:458 lang=go exported=false byte_range=17127:17613
   sig=func reencodeJPEG(png []byte) ([]byte, error)
   doc=reencodeJPEG transcodes a PNG frame to JPEG for the client wire — a desktop\nframe shrinks roughly 10x, and the poll cadence makes that the dominant\nbandwidth cost. The sandbox-side read cost is unchanged either way.
 EDGES
@@ -6956,7 +6956,7 @@ EDGES
   ^contains=matrix/neo/internal/server
 
 NODE id=matrix/neo/internal/server/dojo.go kind=file
-  digest=b3:714294c75e8f567c6c8ed95217de2da5b0e0d2fd259addcbf4a553596c28a787 file=neo/internal/server/dojo.go range=1:533 lang=go exported=true
+  digest=b3:8bc9dd54d6f71d03deefe2a2e45a0bcfeb22db5aca76bf6a647b9e6b3215bcfa file=neo/internal/server/dojo.go range=1:541 lang=go exported=true
 EDGES
   defines=matrix/neo/internal/server.Engine.Dojo,matrix/neo/internal/server.Engine.StartDojoReaper,matrix/neo/internal/server.Engine.activeConvID,matrix/neo/internal/server.Engine.desktopA11y,matrix/neo/internal/server.Engine.desktopLook,matrix/neo/internal/server.Engine.dojoBoot,matrix/neo/internal/server.Engine.publishDojo,matrix/neo/internal/server.Server.handleDojoBoot,matrix/neo/internal/server.Server.handleDojoComputerUse,matrix/neo/internal/server.Server.handleDojoFrame,matrix/neo/internal/server.Server.handleDojoHandback,matrix/neo/internal/server.Server.handleDojoInput,matrix/neo/internal/server.Server.handleDojoLease,matrix/neo/internal/server.Server.handleDojoSession,matrix/neo/internal/server.Server.handleDojoShutdown,matrix/neo/internal/server.Server.handleDojoTakeover,matrix/neo/internal/server.bearerEquals,matrix/neo/internal/server.desktopBootingMessage,matrix/neo/internal/server.dojoBootWait,matrix/neo/internal/server.pngDecode,matrix/neo/internal/server.reencodeJPEG
   ^contains=matrix/neo/internal/server

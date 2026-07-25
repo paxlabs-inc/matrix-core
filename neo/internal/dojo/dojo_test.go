@@ -760,6 +760,29 @@ func TestEnsureSessionFailedBootDestroysAndReports(t *testing.T) {
 	}
 }
 
+// TestSessionForConvOrLive: with MaxActive=1 (one computer) every conversation
+// resolves THE live session; with a larger cap bindings stay per-conversation.
+func TestSessionForConvOrLive(t *testing.T) {
+	f := &railwayFixture{}
+	m, _ := newTestManager(t, f, Config{})
+	s, err := m.Provision(context.Background(), Request{ConvID: "conv-a"})
+	if err != nil {
+		t.Fatalf("Provision: %v", err)
+	}
+	got, ok := m.SessionForConvOrLive("some-other-conversation")
+	if !ok || got.ID != s.ID {
+		t.Fatalf("OrLive(other) = %+v %v, want the one computer %s", got, ok, s.ID)
+	}
+
+	multi, _ := newTestManager(t, f, Config{MaxActive: 2})
+	if _, err := multi.Provision(context.Background(), Request{ConvID: "conv-a"}); err != nil {
+		t.Fatalf("Provision multi: %v", err)
+	}
+	if _, ok := multi.SessionForConvOrLive("some-other-conversation"); ok {
+		t.Fatal("OrLive fallback must be disabled when MaxActive > 1")
+	}
+}
+
 // TestWaitReadyFollowsBoot: WaitReady blocks through the background boot and
 // returns the ready snapshot.
 func TestWaitReadyFollowsBoot(t *testing.T) {

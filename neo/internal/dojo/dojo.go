@@ -475,6 +475,25 @@ func (m *Manager) SessionForConv(convID string) (Session, bool) {
 	return s.snapshot(), true
 }
 
+// SessionForConvOrLive resolves a conversation's session, falling back to THE
+// live session when the conversation has none bound. With MaxActive=1 (the
+// default) the user has exactly one computer — every conversation's panel
+// shows and controls it, whichever conversation booted it. With a larger cap
+// the fallback is disabled and bindings stay strictly per-conversation.
+func (m *Manager) SessionForConvOrLive(convID string) (Session, bool) {
+	if s, ok := m.SessionForConv(convID); ok {
+		return s, true
+	}
+	if m == nil || m.cfg.MaxActive != 1 {
+		return Session{}, false
+	}
+	s, err := m.liveSession()
+	if err != nil {
+		return Session{}, false
+	}
+	return s, true
+}
+
 // Reattach verifies a session's sandbox is still alive, bumps its idle clock,
 // and returns it. A dead sandbox is torn down honestly and reported as
 // ErrDestroyed — the caller re-provisions rather than acting on a corpse.
@@ -594,7 +613,7 @@ func (m *Manager) Handback(id string) (Session, error) {
 // session. Grabbing a booted-but-idle desktop (ready) first marks it active so
 // the machine's edges stay closed.
 func (m *Manager) TakeoverConv(convID string) (Session, error) {
-	snap, ok := m.SessionForConv(convID)
+	snap, ok := m.SessionForConvOrLive(convID)
 	if !ok {
 		return Session{}, ErrNoSession
 	}
@@ -611,7 +630,7 @@ func (m *Manager) TakeoverConv(convID string) (Session, error) {
 
 // HandbackConv returns control to the agent for a conversation's live session.
 func (m *Manager) HandbackConv(convID string) (Session, error) {
-	snap, ok := m.SessionForConv(convID)
+	snap, ok := m.SessionForConvOrLive(convID)
 	if !ok {
 		return Session{}, ErrNoSession
 	}

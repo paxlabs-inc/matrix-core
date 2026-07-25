@@ -144,8 +144,9 @@ func TestDojoLeaseRoutes(t *testing.T) {
 }
 
 // TestDojoSessionAndFrameRoutes covers the panel's pull side without a
-// transport: session state for a live conversation, null for an unknown one,
-// and the frame's typed no-desktop result.
+// transport: session state for a live conversation, THE live session surfaced
+// to every other conversation (one computer, MaxActive=1), and the typed
+// no-desktop results when nothing runs.
 func TestDojoSessionAndFrameRoutes(t *testing.T) {
 	e := &Engine{dojo: wave3Manager(t)}
 	s := &Server{engine: e}
@@ -156,16 +157,24 @@ func TestDojoSessionAndFrameRoutes(t *testing.T) {
 		t.Fatalf("session = %d: %s", w.Code, w.Body.String())
 	}
 
+	// The user has ONE computer: another conversation's panel sees it too.
 	w = httptest.NewRecorder()
 	s.handleDojoSession(w, httptest.NewRequest("GET", "/dojo/session?conversation=other", nil))
-	if w.Code != 200 || !strings.Contains(w.Body.String(), `"session":null`) {
-		t.Fatalf("session(other) = %d: %s", w.Code, w.Body.String())
+	if w.Code != 200 || !strings.Contains(w.Body.String(), `"state":"active"`) {
+		t.Fatalf("session(other) = %d, want the live session: %s", w.Code, w.Body.String())
 	}
 
+	// With nothing live, session is null and the frame is typed 404.
+	empty := &Server{engine: &Engine{dojo: dojo.New(noRailway{}, nil, dojo.Config{})}}
 	w = httptest.NewRecorder()
-	s.handleDojoFrame(w, httptest.NewRequest("GET", "/dojo/frame?conversation=other", nil))
+	empty.handleDojoSession(w, httptest.NewRequest("GET", "/dojo/session?conversation=x", nil))
+	if w.Code != 200 || !strings.Contains(w.Body.String(), `"session":null`) {
+		t.Fatalf("session(empty) = %d: %s", w.Code, w.Body.String())
+	}
+	w = httptest.NewRecorder()
+	empty.handleDojoFrame(w, httptest.NewRequest("GET", "/dojo/frame?conversation=x", nil))
 	if w.Code != 404 {
-		t.Fatalf("frame(other) = %d: %s", w.Code, w.Body.String())
+		t.Fatalf("frame(empty) = %d: %s", w.Code, w.Body.String())
 	}
 
 	// Not configured → typed 503 on every dojo client route.
@@ -174,5 +183,26 @@ func TestDojoSessionAndFrameRoutes(t *testing.T) {
 	bare.handleDojoSession(w, httptest.NewRequest("GET", "/dojo/session?conversation=x", nil))
 	if w.Code != 503 {
 		t.Fatalf("unconfigured session = %d", w.Code)
+	}
+}
+
+// TestDojoBootReattachesTheOneComputer: booting from a conversation that has
+// no bound session while the user's computer is already running reattaches it
+// — never evict-and-reboot, never a second sandbox.
+func TestDojoBootReattachesTheOneComputer(t *testing.T) {
+	e := &Engine{dojo: wave3Manager(t)}
+	s := &Server{engine: e}
+	w := postJSON(t, s, "/dojo/boot", `{"conversation_id":"a-fresh-chat"}`)
+	if w.Code != 200 {
+		t.Fatalf("boot = %d: %s", w.Code, w.Body.String())
+	}
+	var br struct {
+		Session dojo.Session `json:"session"`
+	}
+	if err := json.Unmarshal(w.Body.Bytes(), &br); err != nil {
+		t.Fatalf("boot body: %v", err)
+	}
+	if br.Session.State != dojo.StateActive || br.Session.ConvID != "contract" {
+		t.Fatalf("boot did not reattach the live computer: %+v", br.Session)
 	}
 }

@@ -162,7 +162,7 @@ func (m *Manager) clearReobserve(id string) {
 // — the passthrough exists only under an explicit takeover, and holding the
 // mouse never widens anyone's authority.
 func (m *Manager) TakeoverInput(ctx context.Context, convID string, body []byte) ([]byte, error) {
-	snap, ok := m.SessionForConv(convID)
+	snap, ok := m.SessionForConvOrLive(convID)
 	if !ok {
 		return nil, ErrNoSession
 	}
@@ -229,7 +229,7 @@ func (m *Manager) A11yDump(ctx context.Context) (A11yTree, error) {
 // the session, and works in every attached state including takeover (the human
 // watches themselves drive).
 func (m *Manager) Frame(ctx context.Context, convID string) ([]byte, error) {
-	snap, ok := m.SessionForConv(convID)
+	snap, ok := m.SessionForConvOrLive(convID)
 	if !ok {
 		return nil, ErrNoSession
 	}
