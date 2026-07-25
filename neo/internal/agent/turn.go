@@ -124,6 +124,48 @@ type turn struct {
 	// 2026-07-22 loopty-loop incident).
 	overflowNudges int
 
+	// stepRefused/stepDispatched are the per-STEP dispatch-gate read (reset at act
+	// entry): stepRefused is set when the check-before-act gate or the missing-
+	// prediction gate refuses a call this step; stepDispatched is set when any call
+	// actually reached the tool. refusalRun is the CROSS-step counter of
+	// consecutive wholly-refused steps that were NOT already a batch-repeat — the
+	// gap every existing stall read misses (a step that refused a call and
+	// dispatched nothing produces no dispatched failure, and under varied arguments
+	// no batch-repeat either). An IDENTICAL refused batch is excluded (it is a
+	// repeat, owned by the stall path, so those spirals still die via
+	// no_progress_stall); a genuine dispatch resets the run. At the stall bound it
+	// escalates to an honest stop-and-ask — the research.txt failure: the same
+	// ungrounded probe re-issued with a new query every step, each refused before
+	// dispatch, previously never escalating.
+	stepRefused    bool
+	stepDispatched bool
+	refusalRun     int
+
+	// closeChurn/lastCloseContent are the reasoning-churn read across consecutive
+	// bare-answer (non-dispatching) closes: the tool-batch repeat detectors compare
+	// only tool calls, so a close attempt that re-loops and re-derives the same
+	// prose is invisible to them and to the evidence-convergence meter. closeTurn
+	// counts consecutive re-looped closes whose answers repeat substantially the
+	// same content and escalates past the stall bound. Reset on a delivered answer.
+	closeChurn       int
+	lastCloseContent string
+
+	// answerTokenBudget/answerTokenBumps drive the truncated-answer output-limit
+	// escalation (synthesis-survives-death): a generation cut off by the output
+	// limit (finish_reason=length) bumps the per-request output-token budget one
+	// rung (doubling from the floor toward the ceiling) so a long final synthesis
+	// can actually finish instead of re-truncating at the same limit. answerToken
+	// Budget=0 means "use the client default"; bumps are bounded by maxAnswerToken
+	// Bumps. Applied to every generate call this turn once bumped.
+	answerTokenBudget int
+	answerTokenBumps  int
+
+	// curStep/stepBudget carry this step's index and the effective step budget so
+	// the budget tail can surface steps-remaining to the model (start writing
+	// before the cliff, not after it). Set at the top of each Chat iteration.
+	curStep    int
+	stepBudget int
+
 	// signals is the unified per-step signal state (MORPHEUS req.5.1),
 	// computed ONCE at deliberate entry and replaced every step. All
 	// self-correction consumers — the stall commit (noteBatch), the Cassandra

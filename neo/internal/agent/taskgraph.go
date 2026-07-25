@@ -168,5 +168,20 @@ func (a *Agent) renderGraphTail() {
 	} else {
 		b.WriteString("Convergence: evidence is growing.\n")
 	}
+	// Knowledge-fallback disclosure (item 4): the graph already knows which
+	// subgoals are evidence-backed and which are only assumed. Thread that into
+	// the answer framing so an answer that leans on an unverified part says so —
+	// a peer says "here's my best understanding, unverified", never presenting a
+	// guess with the confidence of a checked fact.
+	hasUnverified := assumptions > 0
+	for _, s := range g.Subgoals {
+		if s.Actions > 0 && len(s.Evidence) == 0 {
+			hasUnverified = true
+			break
+		}
+	}
+	if hasUnverified {
+		b.WriteString("Disclosure: if your final answer rests on any ASSUMED or unverified item (a subgoal above with no evidence, or an unchecked premise), label that part plainly as \"my best understanding, not yet verified\" — never present it with the same confidence as an evidence-backed finding.\n")
+	}
 	a.turn.graphTail = b.String()
 }

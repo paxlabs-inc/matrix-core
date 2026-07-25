@@ -15,6 +15,7 @@ package agent
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"strings"
 
@@ -215,8 +216,31 @@ func (a *Agent) forcedRevisionStep(ctx context.Context, window []llm.Message, on
 // refuseGuess is the ground-or-hypothesize refusal (req.6.1): a probe-class
 // call with NO stated expectation is a guess by definition — it is refused at
 // the dispatch seam with a directive to ground the action or state the
-// hypothesis it tests. Returns the directive to append as the call's result.
-func refuseGuess(name string) string {
+// hypothesis it tests. The directive carries a copy-pasteable corrected-call
+// skeleton (the call's OWN arguments plus the missing `expect` field) so the
+// refusal teaches the exact fix rather than describing it — a refusal that only
+// restates the rule is the one the model re-issues unchanged four times in a
+// row. Returns the directive to append as the call's result.
+func refuseGuess(name string, args map[string]interface{}) string {
+	skeleton := correctedCallSkeleton(args, "expect", "<one line: the outcome shape you predict, e.g. 200 with a JSON array of results>")
 	return "not dispatched (no expectation stated): a probe with no predicted outcome is a guess. Re-issue " + name +
-		" with an `expect` argument — one line stating the outcome shape you predict — or ground the action first (docs, your capability surface, memory) and cite what you learned."
+		" with an `expect` field ADDED to the same arguments — exactly like this: " + skeleton +
+		" — or ground the action first (docs, your capability surface, memory) and cite what you learned. Do not re-send the call without `expect`."
+}
+
+// correctedCallSkeleton renders a copy-pasteable argument object: the call's own
+// arguments plus one field the model omitted, so a refusal shows the exact fix
+// instead of describing it (errors that teach). Best-effort — on a marshal error
+// it falls back to a minimal skeleton naming just the field.
+func correctedCallSkeleton(args map[string]interface{}, field, placeholder string) string {
+	fixed := make(map[string]interface{}, len(args)+1)
+	for k, v := range args {
+		fixed[k] = v
+	}
+	fixed[field] = placeholder
+	b, err := json.Marshal(fixed)
+	if err != nil {
+		return fmt.Sprintf("{%q: %q, ...your other arguments}", field, placeholder)
+	}
+	return string(b)
 }

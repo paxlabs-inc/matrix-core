@@ -669,6 +669,11 @@ func (a *Agent) chat(ctx context.Context, userInput string, audio *AudioTurn) er
 		if step >= budget {
 			break
 		}
+		// Surface this step's position in the budget to the model (via budgetTail)
+		// so it starts writing its final answer BEFORE the step cliff, not after —
+		// the synthesis-survives-death discipline at the tail.
+		t.curStep = step
+		t.stepBudget = budget
 		// F5: fold in any messages the user queued mid-task (sent without
 		// interrupting) so the agent picks them up on THIS step — delivered at
 		// the tool-call boundary, never cancelling the in-flight run.
@@ -944,7 +949,7 @@ func (a *Agent) generate(ctx context.Context, step int, cmTail string, window []
 				if prepareErr != nil {
 					return nil, streamedReasoning, false, prepareErr
 				}
-				res, err = a.chatWithRetry(ctx, llm.ChatRequest{Messages: window, Tools: a.schemas, OnDelta: onDelta})
+				res, err = a.chatWithRetry(ctx, llm.ChatRequest{Messages: window, Tools: a.schemas, OnDelta: onDelta, MaxTokens: a.turn.answerTokenBudget})
 			}
 			if err != nil && errors.Is(err, llm.ErrRequestTooLarge) {
 				a.cmTrimWorking()
@@ -953,7 +958,7 @@ func (a *Agent) generate(ctx context.Context, step int, cmTail string, window []
 				if prepareErr != nil {
 					return nil, streamedReasoning, false, prepareErr
 				}
-				res, err = a.chatWithRetry(ctx, llm.ChatRequest{Messages: window, Tools: a.schemas, OnDelta: onDelta})
+				res, err = a.chatWithRetry(ctx, llm.ChatRequest{Messages: window, Tools: a.schemas, OnDelta: onDelta, MaxTokens: a.turn.answerTokenBudget})
 			}
 		}
 		if err != nil {
@@ -967,6 +972,9 @@ func (a *Agent) generate(ctx context.Context, step int, cmTail string, window []
 	// strict provider 400s the malformed function, wedging the whole
 	// conversation. Drop the cut-off turn and nudge for a compact retry.
 	if res.FinishReason == "length" && res.HasToolCalls() {
+		// Raise the output-token budget one rung so the retried call has room to
+		// finish (Claude Code's 8K→64K escalation), then drop the cut-off batch.
+		a.bumpAnswerBudget()
 		a.working = append(a.working, llm.UserMessage("(your last tool call was cut off by the output limit before its arguments finished — don't inline large content as a tool argument. Write large files in chunks/appends, or call the tool with compact arguments.)"))
 		return nil, streamedReasoning, false, nil
 	}
@@ -1055,8 +1063,23 @@ func (a *Agent) closeTurn(ctx context.Context, res *llm.ChatResult, casMod bool,
 		return false, dec.err
 	}
 	if dec.verdict != verdictDeliver {
+		// Reasoning-churn fold (item 2): this close is re-looping (a guard nudged
+		// or suppressed it). If its prose substantially repeats the previous
+		// re-looped close, the model is re-deriving the same answer without acting
+		// or progressing — invisible to the tool-batch repeat reads (a bare-answer
+		// step carries no tool calls to compare) and to the evidence-convergence
+		// meter. Past the stall bound it escalates to an honest stop through the
+		// SAME terminal funnel as every other unproductive death (escalateGuidance
+		// → governDeath), adding no new terminal site. A dedicated counter keeps it
+		// from double-counting with the guard nudges that share t.unproductive.
+		if a.noteCloseChurn(cc.answer) {
+			return false, a.escalateGuidance(t.closeChurn)
+		}
 		return false, nil
 	}
+	// Delivered: genuine progress resets the reasoning-churn read.
+	t.closeChurn = 0
+	t.lastCloseContent = ""
 	// The answer is really shipping: record the ORIGINAL bare-answer turn to
 	// the durable cortex transcript now (deliberate defers bare answers to
 	// this delivery verdict so a rejected close never poisons durable memory
@@ -1064,6 +1087,29 @@ func (a *Agent) closeTurn(ctx context.Context, res *llm.ChatResult, casMod bool,
 	a.cmRecordAssistant(res.Message)
 	a.finishTurn(ctx, cc.answer, t.surfaced, t.surfacedSnips, userInput, false)
 	return true, nil
+}
+
+// noteCloseChurn tracks reasoning churn across consecutive re-looped bare-answer
+// closes (item 2): a close that re-loops and whose prose substantially repeats
+// the previous re-looped close is the model re-deriving the same answer without
+// progressing. The tool-batch repeat detectors miss it — a bare answer carries no
+// tool calls to compare. It counts consecutive such closes and reports whether
+// the count met the no-progress stall bound. The empty-answer case is owned by
+// guardEmptyAnswer and skipped here; distinct prose resets the run.
+func (a *Agent) noteCloseChurn(answer string) bool {
+	t := a.turn
+	answer = strings.TrimSpace(answer)
+	if answer == "" {
+		return false
+	}
+	if t.lastCloseContent != "" && a.contentChurn(t.lastCloseContent, answer) {
+		t.closeChurn++
+	} else {
+		t.closeChurn = 0
+	}
+	t.lastCloseContent = answer
+	bound := a.cfg.NoProgressStall
+	return bound > 0 && t.closeChurn >= bound
 }
 
 // act is the act stage (MORPHEUS req.3.1): narration, the governor's outer
@@ -1078,6 +1124,11 @@ func (a *Agent) closeTurn(ctx context.Context, res *llm.ChatResult, casMod bool,
 // from the unified signal state computed at deliberate.)
 func (a *Agent) act(ctx context.Context, step, pct int, res *llm.ChatResult) error {
 	t := a.turn
+	// Per-step dispatch-gate read (item 1c): reset before the gates run this step,
+	// so the end-of-act fold can tell a wholly-refused step (refused a call, then
+	// dispatched nothing) from a step that made real tool progress.
+	t.stepRefused = false
+	t.stepDispatched = false
 	for _, call := range res.Message.ToolCalls {
 		if call.Function.Name == tools.MemoryRecallTool {
 			t.episodicGrounded()
@@ -1162,13 +1213,38 @@ func (a *Agent) act(ctx context.Context, step, pct int, res *llm.ChatResult) err
 	// plan's self-claims against the resident capability surface and
 	// refuses dependent dispatches while a refuted premise stands
 	// (introspection tools stay allowed — they are the discharge path).
-	allowed, _ := a.checkBeforeAct(res.Message.ToolCalls)
+	allowed, refusedByGate := a.checkBeforeAct(res.Message.ToolCalls)
+	if refusedByGate {
+		t.stepRefused = true
+	}
 	if !t.contract.ReadyForMutation() {
 		a.pushGuidance("The task contract has an unresolved material input. Do not call tools or mutate state. Ask only for the missing required value recorded in the contract.")
 		return nil
 	}
 	if err := a.runToolCalls(ctx, allowed); err != nil {
 		return err
+	}
+	// A step whose calls were wholly refused at a dispatch gate (a missing-
+	// prediction probe refusal or a refuted-premise dependent refusal) and that
+	// dispatched NOTHING makes no progress, yet produces no dispatched failure and
+	// — when the model varies the guessed argument each time — no batch-repeat, so
+	// it evades every existing stall read. Count it on the dedicated refusal run so
+	// a refusal LOOP escalates to an honest stop-and-ask instead of running
+	// silently to the step budget. An IDENTICAL refused batch is EXCLUDED (!repeat):
+	// it is a byte/semantic/cyclic repeat the stall path already counts and dies on
+	// at NoProgressStall, so this owns only the gap that path misses — varied-
+	// argument refusals — and never races the stall verdict for identical spirals.
+	// A genuine dispatch resets the run (real progress). It is kept off the shared
+	// t.unproductive counter so it never interacts with the repeat/guard-nudge
+	// bookkeeping.
+	switch {
+	case t.stepRefused && !t.stepDispatched && !repeat:
+		t.refusalRun++
+		if a.cfg.NoProgressStall > 0 && t.refusalRun >= a.cfg.NoProgressStall {
+			return a.escalateGuidance(t.refusalRun)
+		}
+	case t.stepDispatched:
+		t.refusalRun = 0
 	}
 	// req.8.2 (N2): a plain tool dispatch does NOT reset the unified
 	// unproductive counter — only genuine accepted progress does. This keeps
@@ -1448,6 +1524,39 @@ func (a *Agent) turnIntentID() string {
 	return fmt.Sprintf("neo-turn:%s:%d", cid, a.turnSeq)
 }
 
+// Output-token escalation ladder for a truncated generation (synthesis-survives-
+// death): a generation cut off by the output limit (finish_reason=length) is
+// re-attempted with a higher per-request output-token budget so a long final
+// synthesis converges instead of re-truncating at the same limit — Claude Code's
+// 8K→64K posture. The floor matches the client's own default; each bump doubles
+// toward the ceiling, bounded so a pathologically long turn can't grow unbounded.
+const (
+	answerTokenFloor    = 8192
+	answerTokenCeiling  = 65536
+	maxAnswerTokenBumps = 3
+)
+
+// bumpAnswerBudget raises this turn's per-request output-token budget one rung.
+// The bumped budget rides every subsequent generate call this turn (turn.answer
+// TokenBudget threads into the ChatRequest); 0 leaves the client default. Bounded
+// by maxAnswerTokenBumps so a model that keeps getting cut off escalates through
+// the truncated-answer guard rather than growing the budget forever.
+func (a *Agent) bumpAnswerBudget() {
+	if a.turn.answerTokenBumps >= maxAnswerTokenBumps {
+		return
+	}
+	a.turn.answerTokenBumps++
+	next := a.turn.answerTokenBudget
+	if next < answerTokenFloor {
+		next = answerTokenFloor
+	}
+	next *= 2
+	if next > answerTokenCeiling {
+		next = answerTokenCeiling
+	}
+	a.turn.answerTokenBudget = next
+}
+
 func (a *Agent) chatWithRetry(ctx context.Context, req llm.ChatRequest) (*llm.ChatResult, error) {
 	var lastErr error
 	for attempt := 0; attempt <= 2; attempt++ {
@@ -1528,9 +1637,10 @@ func (a *Agent) runToolCalls(ctx context.Context, calls []llm.ToolCall) error {
 		expects[i] = popExpect(args)
 		if a.epistemicPredictionsOn() && expects[i] == "" {
 			if _, isProbe := probeStrategy(name, args); isProbe {
-				directive := refuseGuess(name)
+				directive := refuseGuess(name, args)
 				a.working = append(a.working, llm.ToolResult(call.ID, name, directive))
 				a.cmRecordToolResult(name, directive)
+				a.turn.stepRefused = true
 				parsedArgs[i] = nil
 				stepIDs[i] = ""
 				continue
@@ -1593,6 +1703,9 @@ func (a *Agent) runToolCalls(ctx context.Context, calls []llm.ToolCall) error {
 		if parsedArgs[i] == nil {
 			continue // parse-failed: already appended above
 		}
+		// A call reaching here was dispatched (not parse-failed, not gate-refused):
+		// the step made real progress, so it is not a wholly-refused step (item 1c).
+		a.turn.stepDispatched = true
 		name := call.Function.Name
 		content := results[i].content
 		evidence := results[i].evidence
@@ -1666,12 +1779,14 @@ func (a *Agent) runToolCallsSerial(ctx context.Context, calls []llm.ToolCall) er
 		expect := popExpect(args)
 		if a.epistemicPredictionsOn() && expect == "" {
 			if _, isProbe := probeStrategy(name, args); isProbe {
-				directive := refuseGuess(name)
+				directive := refuseGuess(name, args)
 				a.working = append(a.working, llm.ToolResult(call.ID, name, directive))
 				a.cmRecordToolResult(name, directive)
+				a.turn.stepRefused = true
 				continue
 			}
 		}
+		a.turn.stepDispatched = true // dispatched here: real step progress (item 1c)
 		// Stable surface id for this call: some providers omit tool_call ids, so
 		// fall back to a per-turn index. Shared across the start/end pair below
 		// so the UI updates ONE viewport (running→done) instead of dropping the

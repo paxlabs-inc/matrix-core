@@ -190,11 +190,17 @@ func (c *Client) Chat(ctx context.Context, req ChatRequest) (*ChatResult, error)
 	// xAI/grok deprecates max_tokens in favor of max_completion_tokens, which
 	// bounds ONLY the visible output (reasoning + tool-call tokens are excluded),
 	// so a reasoning turn cannot starve the answer down to a stub. Every other
-	// provider keeps the legacy max_tokens field.
+	// provider keeps the legacy max_tokens field. A per-request MaxTokens override
+	// (>0) wins over the client default for this call — the agent raises it on a
+	// truncated generation so a long synthesis can finish (synthesis-survives-death).
+	maxTok := c.maxTokens
+	if req.MaxTokens > 0 {
+		maxTok = req.MaxTokens
+	}
 	if mcllm.IsXaiModel(c.model) || isMimoFamily(c.model) {
-		wire.MaxCompletionTokens = c.maxTokens
+		wire.MaxCompletionTokens = maxTok
 	} else {
-		wire.MaxTokens = c.maxTokens
+		wire.MaxTokens = maxTok
 	}
 	// On the direct path we ask for a usage chunk ourselves; on the gateway
 	// path the gateway injects stream_options.include_usage for us (and may

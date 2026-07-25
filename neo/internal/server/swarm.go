@@ -7,12 +7,14 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"strings"
 	"sync"
 	"time"
 
 	"matrix/neo/internal/agent"
+	"matrix/neo/internal/llm"
 	"matrix/neo/internal/tools"
 )
 
@@ -27,6 +29,19 @@ const subagentTurnTimeout = 12 * time.Minute
 // fresh window and another go, so a transient provider hiccup no longer wastes
 // the whole sub-agent.
 const subagentMaxAttempts = 2
+
+// subagentMaxTransientAttempts is the retry ceiling for a leg that died on a
+// PROVIDER-transient failure (rate-limited / unreachable upstream), higher than
+// the default so a transient MiMo storm under concurrency — several legs hitting
+// the provider at once — no longer kills a researcher after a single recovery
+// try. A deterministic provider rejection still dies fast (a retry sends the same
+// body), and a leg that produced ANY usable text is still never retried.
+const subagentMaxTransientAttempts = 4
+
+// staggerStep spreads concurrent leg starts so N legs don't hit the provider in
+// the same instant and self-amplify a transient rate-limit storm — cheaper to not
+// trigger the storm than to recover from it.
+const staggerStep = 150 * time.Millisecond
 
 // swarmActiveKey marks a context as already running inside a swarm, so a
 // sub-agent that somehow reaches spawn_subagents is refused (no recursion /
@@ -155,12 +170,19 @@ func (e *Engine) runOneSubagent(ctx context.Context, r *run, swarmID string, ind
 		cfg.StepBudget = e.cfg.SubagentStepBudget
 	}
 
+	// Stagger this leg's start so concurrent legs don't hit the provider in the
+	// same instant and self-amplify a transient rate-limit storm. Bounded so a
+	// high index can't over-delay; honors parent cancellation.
+	if !swarmStagger(ctx, index) {
+		return subResult{index: index, name: spec.Name, persona: spec.Persona, text: "cancelled before starting", ok: false}
+	}
+
 	var (
 		text    string
 		ok      bool
 		lastErr error
 	)
-	for attempt := 1; attempt <= subagentMaxAttempts; attempt++ {
+	for attempt := 1; attempt <= subagentMaxTransientAttempts; attempt++ {
 		// Each attempt is a brand-new headless agent over a clean window, so a
 		// retry never inherits the corrupted state that failed the last one.
 		rep := &captureReporter{engine: e, run: r, swarmID: swarmID, index: index, name: spec.Name}
@@ -194,18 +216,22 @@ func (e *Engine) runOneSubagent(ctx context.Context, r *run, swarmID string, ind
 		if ok {
 			break
 		}
-		if !shouldRetrySubagent(attempt, subagentMaxAttempts, err, text != "", ctx.Err()) {
+		// Classify the leg's terminal error to pick its retry ceiling: a
+		// provider-transient failure (storm) gets more tries with hard backoff, a
+		// deterministic rejection dies fast, everything else keeps the default.
+		if !shouldRetrySubagent(attempt, subagentEffectiveMax(err), err, text != "", ctx.Err()) {
 			break
 		}
-		// Transient hard failure with no usable output: announce the retry, back
-		// off briefly (honoring parent cancellation), then rebuild a fresh window.
+		// Hard failure with no usable output: announce the retry, back off
+		// (harder for a provider storm so N legs don't re-collide the instant they
+		// retry), honoring parent cancellation, then rebuild a fresh window.
 		e.publishSubagent(r, swarmID, index, "subagent.status", map[string]interface{}{
 			"name":    spec.Name,
 			"status":  "retrying",
 			"attempt": attempt + 1,
 			"reason":  clip(friendlyErr(err), 200),
 		})
-		if !swarmBackoff(ctx, attempt) {
+		if !swarmBackoff(ctx, attempt, subagentFailureTransient(err)) {
 			break
 		}
 	}
@@ -241,11 +267,19 @@ func shouldRetrySubagent(attempt, maxAttempts int, err error, haveText bool, ctx
 }
 
 // swarmBackoff sleeps a bounded, attempt-scaled interval before a sub-agent
-// retry, returning false if the parent context is cancelled during the wait.
-func swarmBackoff(ctx context.Context, attempt int) bool {
-	d := time.Duration(attempt) * 500 * time.Millisecond
-	if d > 3*time.Second {
-		d = 3 * time.Second
+// retry, returning false if the parent context is cancelled during the wait. A
+// provider storm (hard=true) backs off harder and longer so N recovering legs
+// don't re-collide on the recovering upstream the instant they retry.
+func swarmBackoff(ctx context.Context, attempt int, hard bool) bool {
+	step := 500 * time.Millisecond
+	maxD := 3 * time.Second
+	if hard {
+		step = 1500 * time.Millisecond
+		maxD = 8 * time.Second
+	}
+	d := time.Duration(attempt) * step
+	if d > maxD {
+		d = maxD
 	}
 	t := time.NewTimer(d)
 	defer t.Stop()
@@ -255,6 +289,52 @@ func swarmBackoff(ctx context.Context, attempt int) bool {
 	case <-t.C:
 		return true
 	}
+}
+
+// swarmStagger delays leg `index` by (index-1)*staggerStep before its first
+// attempt so concurrent legs don't start in lockstep, capped so a high index
+// can't over-delay. Returns false if the parent context is cancelled during the
+// wait. Leg 1 never waits.
+func swarmStagger(ctx context.Context, index int) bool {
+	if index <= 1 {
+		return true
+	}
+	d := time.Duration(index-1) * staggerStep
+	if d > 2*time.Second {
+		d = 2 * time.Second
+	}
+	t := time.NewTimer(d)
+	defer t.Stop()
+	select {
+	case <-ctx.Done():
+		return false
+	case <-t.C:
+		return true
+	}
+}
+
+// subagentEffectiveMax classifies a leg's terminal error to pick its retry
+// ceiling: a deterministic provider rejection won't change on retry (die fast — a
+// single attempt); a provider-transient failure (rate-limited / unreachable) gets
+// the higher transient ceiling with hard backoff; everything else keeps the
+// default recovery budget.
+func subagentEffectiveMax(err error) int {
+	switch {
+	case errors.Is(err, llm.ErrProviderRejected):
+		return 1
+	case subagentFailureTransient(err):
+		return subagentMaxTransientAttempts
+	default:
+		return subagentMaxAttempts
+	}
+}
+
+// subagentFailureTransient reports whether a leg's error is a provider-transient
+// failure — an upstream that is rate-limiting or unreachable, where a fresh leg
+// after a hard backoff can succeed (the transient MiMo storm the extra attempts
+// exist to ride out).
+func subagentFailureTransient(err error) bool {
+	return errors.Is(err, llm.ErrRateLimited) || errors.Is(err, llm.ErrProviderUnavailable)
 }
 
 // surfaceSubagentStep mirrors surfaceTool for a sub-agent: the same animated

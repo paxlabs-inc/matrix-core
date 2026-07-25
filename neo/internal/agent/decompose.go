@@ -12,6 +12,18 @@ import "fmt"
 // never disturb the prompt-cache invariant.
 func (a *Agent) budgetTail(pct int) string {
 	tail := fmt.Sprintf("\n\n[context: %d%% used]\n", pct)
+	// Steps-remaining (synthesis-survives-death): surface how much of the step
+	// budget is left so the model starts writing its final answer BEFORE the
+	// cliff, not after it — a long synthesis attempted on the last step dies
+	// truncated. Only meaningful when a real budget is set for this turn (0 in the
+	// bare-agent / test path leaves this line off, preserving prior behavior).
+	if a.turn != nil && a.turn.stepBudget > 0 {
+		remaining := a.turn.stepBudget - a.turn.curStep
+		if remaining < 0 {
+			remaining = 0
+		}
+		tail += fmt.Sprintf("[budget: step %d of %d, %d left — if little remains and you already have enough to answer, STOP gathering and write your final answer NOW rather than starting new work you can't finish.]\n", a.turn.curStep+1, a.turn.stepBudget, remaining)
+	}
 	if sk := a.decompositionSelfKnowledge(pct); sk != "" {
 		tail += sk + "\n"
 	}

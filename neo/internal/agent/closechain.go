@@ -117,6 +117,10 @@ func guardTruncatedAnswer(a *Agent, cc *closeContext) (closeDecision, bool) {
 	if cc.res.FinishReason != "length" {
 		return closeDecision{}, false
 	}
+	// Raise the output-token budget one rung so the regenerated answer has room
+	// to finish a long synthesis instead of re-truncating at the same limit
+	// (synthesis-survives-death). Bounded by maxAnswerTokenBumps.
+	a.bumpAnswerBudget()
 	if a.pushGuidanceNudge("Your last message was cut off by the output limit and was NOT delivered to the user — don't inline large payloads in prose; call a tool with compact arguments, or give a concise final answer.", &a.turn.unproductive) {
 		return closeDecision{verdict: verdictNudge, err: a.escalateGuidance(a.turn.unproductive)}, true
 	}

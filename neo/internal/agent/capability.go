@@ -42,8 +42,9 @@ func capabilityUnknown(what string) string {
 
 // renderCapabilitySurface renders the resident capability-surface section of
 // the stable prefix. Byte-stable per agent: it reads only construction-time
-// state (a.capability, a.schemas), so it is byte-identical across every step
-// of a turn (req.2.4).
+// state (a.capability, a.allSchemas — the full bound surface fixed at New, never
+// the per-turn O1-selected a.schemas), so it is byte-identical across every step
+// AND every turn, even under O1ConstrainTools (req.2.4).
 func (a *Agent) renderCapabilitySurface() string {
 	cs := a.capability
 	if cs == nil {
@@ -90,7 +91,17 @@ func (a *Agent) renderCapabilitySurface() string {
 
 	b.WriteString("Your tools (the complete inventory — a capability not listed here is one you do NOT have):\n")
 	wrote := false
-	schemas := a.schemas
+	// Render the CONSTRUCTION-TIME full surface (allSchemas), not the per-turn O1-
+	// selected subset (schemas): under O1ConstrainTools the selected subset varies
+	// turn to turn, which would silently break the byte-stable-prefix prompt-cache
+	// invariant this section lives in. The full inventory is also the more honest
+	// answer to "what can I do" — the per-turn narrowing is a routing optimization,
+	// not a change to the agent's real capabilities. Falls back to the per-turn set
+	// only for a bare struct-literal agent that never populated allSchemas.
+	schemas := a.allSchemas
+	if len(schemas) == 0 {
+		schemas = a.schemas
+	}
 	for _, s := range schemas {
 		name := strings.TrimSpace(s.Function.Name)
 		if name == "" {

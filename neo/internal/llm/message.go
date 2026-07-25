@@ -235,6 +235,12 @@ type ChatRequest struct {
 	Tools    []Tool
 	// ToolChoice is "auto" (default when Tools present), "none", or "required".
 	ToolChoice string
+	// MaxTokens, when > 0, overrides the client's configured output-token limit
+	// for THIS request only (0 keeps the client default). The agent raises it on a
+	// truncated generation so a long final synthesis can finish instead of
+	// re-truncating at the same limit. For MiMo/xAI it maps to max_completion_tokens
+	// (visible output only); for every other provider to max_tokens.
+	MaxTokens int
 	// OnDelta, when set, is invoked with incremental fragments of the model's
 	// CURRENT turn as they stream from the provider, BEFORE the folded turn is
 	// returned. It lets the caller surface a live "typing" channel (the visible

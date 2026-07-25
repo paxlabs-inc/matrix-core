@@ -87,6 +87,36 @@ func opProfile(calls []llm.ToolCall) (string, map[string]struct{}, map[string]st
 	return strings.Join(names, ",") + "|" + strings.Join(structParts, ","), targets, words
 }
 
+// contentChurnSimilarityPct is the word-overlap bar at which two consecutive
+// bare-answer prose turns count as the same answer re-derived. It is HIGHER than
+// the tool-argument reword bar (SemanticStallSimilarityPct) because prose turns
+// naturally share far more common words than terse tool arguments, so the
+// threshold for "this is the same answer again" must be stricter to avoid
+// flagging two genuinely different answers on the same topic.
+const contentChurnSimilarityPct = 80
+
+// contentChurn reports whether two consecutive non-dispatching (bare-answer)
+// turns repeat substantially the same prose — the reasoning-churn read the
+// tool-batch repeat detectors miss (they compare only tool calls). It reuses the
+// significant-word extraction and overlap coefficient of the semantic-repeat
+// path. Gated on the same semantic-detection switch so disabling one disables
+// both; both texts must carry real content (short answers are too collision-prone
+// to judge by word overlap).
+func (a *Agent) contentChurn(prev, cur string) bool {
+	if a.cfg.SemanticStallSimilarityPct <= 0 {
+		return false
+	}
+	if len(prev) < 40 || len(cur) < 40 {
+		return false
+	}
+	discard := map[string]struct{}{}
+	pWords := map[string]struct{}{}
+	cWords := map[string]struct{}{}
+	classifyTokens(prev, discard, pWords)
+	classifyTokens(cur, discard, cWords)
+	return overlapPct(pWords, cWords) >= contentChurnSimilarityPct
+}
+
 // classifyTokens splits s on non-alphanumeric boundaries and routes each token
 // into targets (identifier-like) or words (significant free text).
 func classifyTokens(s string, targets, words map[string]struct{}) {

@@ -1,7 +1,7 @@
-# GENERATED gen=codegraph do-not-edit merkle=b3:fa92f9d8f5d390c1d3a5dc4ab13216db811f804ea2e08d1299e9614464f128be
+# GENERATED gen=codegraph do-not-edit merkle=b3:f8cf40ae8d7bafd942bea8c578e50c0c233fc5f6124c8680764f19f41a6b8196
 
 NODE id=matrix/neo/internal/server kind=package
-  digest=b3:106b9de9136c28c3cdd52dc43626e395e1b0968b6729f9ae0267e5c781d79a0a file=neo/internal/server range=0:0 lang=go exported=true
+  digest=b3:a2fc361d2891a730f8f22b1f56e29407f9209ce2406d92aa4db6dfc9fa248df4 file=neo/internal/server range=0:0 lang=go exported=true
 EDGES
   contains=matrix/neo/internal/server/automatrix_governor.go,matrix/neo/internal/server/automatrix_routes.go,matrix/neo/internal/server/automatrix_run.go,matrix/neo/internal/server/automatrix_wake.go,matrix/neo/internal/server/brief_governor.go,matrix/neo/internal/server/brief_policy.go,matrix/neo/internal/server/brief_routes.go,matrix/neo/internal/server/brief_run.go,matrix/neo/internal/server/brief_wake.go,matrix/neo/internal/server/dojo.go,matrix/neo/internal/server/engine.go,matrix/neo/internal/server/episodic_sweep.go,matrix/neo/internal/server/interview_routes.go,matrix/neo/internal/server/machinemail_bridge.go,matrix/neo/internal/server/machinemail_routes.go,matrix/neo/internal/server/media.go,matrix/neo/internal/server/media_filmstrip.go,matrix/neo/internal/server/media_vault.go,matrix/neo/internal/server/memory_routes.go,matrix/neo/internal/server/observability.go,matrix/neo/internal/server/preview.go,matrix/neo/internal/server/privacy_routes.go,matrix/neo/internal/server/projects.go,matrix/neo/internal/server/queue.go,matrix/neo/internal/server/server.go,matrix/neo/internal/server/session.go,matrix/neo/internal/server/sse.go,matrix/neo/internal/server/surface.go,matrix/neo/internal/server/swarm.go,matrix/neo/internal/server/telegram_api.go,matrix/neo/internal/server/telegram_bridge.go,matrix/neo/internal/server/telegram_routes.go,matrix/neo/internal/server/voice.go,matrix/neo/internal/server/voice_session.go,matrix/neo/internal/server/workspace.go
   ^contains=mod:matrix/neo
@@ -742,7 +742,7 @@ EDGES
   ^defines=matrix/neo/internal/server/brief_run.go
 
 NODE id=matrix/neo/internal/server.Engine.capabilitySurface kind=method
-  digest=b3:eeba673e6bfadb13ead5efddb5c894f1d7a2df37fc37259623209162a9efb022 file=neo/internal/server/swarm.go range=339:365 lang=go exported=false byte_range=11717:12788
+  digest=b3:eeba673e6bfadb13ead5efddb5c894f1d7a2df37fc37259623209162a9efb022 file=neo/internal/server/swarm.go range=419:445 lang=go exported=false byte_range=15041:16112
   sig=func (e *Engine) capabilitySurface(ctx context.Context) *agent.CapabilitySurface
   doc=capabilitySurface resolves the resident capability-surface material\n(epistemic-core req.2) from the durable self-model: the derived external API\nsurface + is/is-not facts (written by the serving layer from its live route\ntable), the self-authored failure patterns, and the structural summary. nil\nwhen no pager is wired — the agent then renders honest UNKNOWN gaps, never\nfabricated facts (req.2.3).
 EDGES
@@ -1064,7 +1064,7 @@ EDGES
   ^defines=matrix/neo/internal/server/preview.go
 
 NODE id=matrix/neo/internal/server.Engine.publishSubagent kind=method
-  digest=b3:d0aecc53bb19deccaffdf7e2bcf1433ba2db5f5748449b375bb40d69eabf173f file=neo/internal/server/swarm.go range=276:289 lang=go exported=false byte_range=9634:10097
+  digest=b3:d0aecc53bb19deccaffdf7e2bcf1433ba2db5f5748449b375bb40d69eabf173f file=neo/internal/server/swarm.go range=356:369 lang=go exported=false byte_range=12958:13421
   sig=func (e *Engine) publishSubagent(r *run, swarmID string, index int, typ string, fields map[string]interface{})
   doc=publishSubagent emits a swarm lifecycle event tagged with the swarm + agent\nindex, carrying the supplied fields.
 EDGES
@@ -1127,7 +1127,7 @@ EDGES
   ^defines=matrix/neo/internal/server/engine.go
 
 NODE id=matrix/neo/internal/server.Engine.runOneSubagent kind=method
-  digest=b3:36a2c6135517b49134743067d880b4f0c6d086617eb8a06cb79f39258950a6c3 file=neo/internal/server/swarm.go range=145:231 lang=go exported=false byte_range=4974:7980
+  digest=b3:8d6c879eb831256c62e67b50f53ce9e13452e1500f008d897aca09fccb1ca681 file=neo/internal/server/swarm.go range=160:257 lang=go exported=false byte_range=5788:9497
   sig=func (e *Engine) runOneSubagent(ctx context.Context, r *run, swarmID string, index int, spec tools.SubagentSpec, selfModel string) subResult
   doc=runOneSubagent builds and runs a single headless sub-agent to completion,\nstreaming its workspace activity onto the parent stream tagged with its\nindex, and returns its distilled report. A hard failure with no usable output\nis retried with a fresh window (bounded by subagentMaxAttempts) so a\ntransient provider error doesn't kill the sub-agent outright.
 EDGES
@@ -1135,7 +1135,7 @@ EDGES
   ^defines=matrix/neo/internal/server/swarm.go
 
 NODE id=matrix/neo/internal/server.Engine.runSwarm kind=method
-  digest=b3:3222ebde754a43475d958ef49befcf5e0f55d37c1909ef3efbe6e98f5abe7f22 file=neo/internal/server/swarm.go range=55:143 lang=go exported=false byte_range=1709:4972
+  digest=b3:3222ebde754a43475d958ef49befcf5e0f55d37c1909ef3efbe6e98f5abe7f22 file=neo/internal/server/swarm.go range=70:158 lang=go exported=false byte_range=2523:5786
   sig=func (e *Engine) runSwarm(ctx context.Context, specs []tools.SubagentSpec) (string, error)
   doc=runSwarm is the SwarmFunc wired into the tool manager. It fans a set of\ntask-scoped sub-agents out to run CONCURRENTLY — each its own headless agent\nloop over a fresh, isolated context window with the restricted (full Natural,\nno money, no recursion) tool surface — streams their progress onto the parent\nconversation's event stream as a live Agent Swarm, and returns an aggregated,\nmodel-readable digest of their findings. Heavy tool work stays in the\nsub-agents' windows; only the distilled results return to the parent's.
 EDGES
@@ -1191,7 +1191,7 @@ EDGES
   ^defines=matrix/neo/internal/server/media_filmstrip.go
 
 NODE id=matrix/neo/internal/server.Engine.subagentSelfModelBrief kind=method
-  digest=b3:9ac387477520a5db22aef392f4bbd6d3afe4d0c3affc3b93b3e84108ea3f3095 file=neo/internal/server/swarm.go range=296:337 lang=go exported=false byte_range=10370:11715
+  digest=b3:9ac387477520a5db22aef392f4bbd6d3afe4d0c3affc3b93b3e84108ea3f3095 file=neo/internal/server/swarm.go range=376:417 lang=go exported=false byte_range=13694:15039
   sig=func (e *Engine) subagentSelfModelBrief(ctx context.Context) string
   doc=subagentSelfModelBrief renders the shared self-model each sub-agent inherits\nat spawn (self-model task 4.3, req.9.1): the structural self-summary (how the\nagent is built) plus the most salient how-I-fail patterns (what to avoid). It\nis resolved once per swarm from the shared cortex pager. Returns "" when no\npager is wired or the self-model is empty (a fresh install before the\nself-graph is loaded) — the sub-agent then runs on its persona + bounds alone,\nnever blocked on the self-model.
 EDGES
@@ -1199,7 +1199,7 @@ EDGES
   ^defines=matrix/neo/internal/server/swarm.go
 
 NODE id=matrix/neo/internal/server.Engine.surfaceSubagentStep kind=method
-  digest=b3:693908ae6fafeb2f7623e7fc7d1bd3b1dfe72a2b09488c1271cf95b9a97e84d3 file=neo/internal/server/swarm.go range=260:274 lang=go exported=false byte_range=9041:9632
+  digest=b3:693908ae6fafeb2f7623e7fc7d1bd3b1dfe72a2b09488c1271cf95b9a97e84d3 file=neo/internal/server/swarm.go range=340:354 lang=go exported=false byte_range=12365:12956
   sig=func (e *Engine) surfaceSubagentStep(r *run, swarmID string, index int, name string, ev agent.ToolEvent)
   doc=surfaceSubagentStep mirrors surfaceTool for a sub-agent: the same animated\nworkspace step (terminal / browser / editor / …), tagged with the swarm +\nagent index so the client routes it into that sub-agent's own window.
 EDGES
@@ -2177,7 +2177,7 @@ EDGES
   ^defines=matrix/neo/internal/server/surface.go
 
 NODE id=matrix/neo/internal/server.aggregateResults kind=func
-  digest=b3:9f94b2ff16c58b9ab88517c61abe1857d3a4ab01b31c442a8e64c22cc96f3862 file=neo/internal/server/swarm.go range=367:392 lang=go exported=false byte_range=12790:13767
+  digest=b3:9f94b2ff16c58b9ab88517c61abe1857d3a4ab01b31c442a8e64c22cc96f3862 file=neo/internal/server/swarm.go range=447:472 lang=go exported=false byte_range=16114:17091
   sig=func aggregateResults(results []subResult) string
   doc=aggregateResults distils the swarm's outcomes into one model-readable block\nthe parent agent reads to compose its answer. Index-ordered (stable), each\nsection labelled with the sub-agent's name + role so the parent can cite it.
 EDGES
@@ -2528,7 +2528,7 @@ EDGES
   ^defines=matrix/neo/internal/server/automatrix_wake.go
 
 NODE id=matrix/neo/internal/server.automatrixReporter kind=type
-  digest=b3:465a17d8ad0b523ced8364c815da6088084b91f34a9e312cb2af87ce0a36d53b file=neo/internal/server/session.go range=1369:1382 lang=go exported=false byte_range=55924:56774
+  digest=b3:465a17d8ad0b523ced8364c815da6088084b91f34a9e312cb2af87ce0a36d53b file=neo/internal/server/session.go range=1388:1401 lang=go exported=false byte_range=57114:57964
   sig=type automatrixReporter struct {\n	mu	sync.Mutex\n	result	string\n}
   doc=automatrixReporter is the QUIET reporter for an autonomous Automatrix run. It\nsurfaces NOTHING to the user (req 5.5: a proactive run has no live SSE/thread\npresence — the surprise result is delivered out of band by the completion\npath, task 5.3) but CAPTURES the agent's final user-facing answer so that\npath can use it as the result-not-protocol summary of what Neo produced. Only\nthe latest Say text is retained; on a genuine gate-passed completion that is\nthe finished result, and on a partial/ceiling terminal the captured text is\nnever used (settle announces nothing). Guarded by a mutex because the\nsupervisor may rebuild the agent (and thus Say from a fresh attempt) while\nthe runner goroutine reads the captured result after the run returns.
 EDGES
@@ -2537,61 +2537,61 @@ EDGES
   ^defines=matrix/neo/internal/server/session.go
 
 NODE id=matrix/neo/internal/server.automatrixReporter#mu kind=field
-  digest=b3:104dc836435d5ef8442f9bfbde658e9de40c6f0a6a782ec8db1f57575a3b03f9 file=neo/internal/server/session.go range=1380:1380 lang=go exported=false byte_range=56740:56757
+  digest=b3:104dc836435d5ef8442f9bfbde658e9de40c6f0a6a782ec8db1f57575a3b03f9 file=neo/internal/server/session.go range=1399:1399 lang=go exported=false byte_range=57930:57947
   sig=sync.Mutex
 EDGES
   ^contains=matrix/neo/internal/server.automatrixReporter
 
 NODE id=matrix/neo/internal/server.automatrixReporter#result kind=field
-  digest=b3:aefa2804f811d1d5ec2a5286e34726f542f5d7b0494795e6f13c69df94f1f49b file=neo/internal/server/session.go range=1381:1381 lang=go exported=false byte_range=56759:56772
+  digest=b3:aefa2804f811d1d5ec2a5286e34726f542f5d7b0494795e6f13c69df94f1f49b file=neo/internal/server/session.go range=1400:1400 lang=go exported=false byte_range=57949:57962
   sig=string
 EDGES
   ^contains=matrix/neo/internal/server.automatrixReporter
 
 NODE id=matrix/neo/internal/server.automatrixReporter.Delta kind=method
-  digest=b3:ae0130329e1e1ff7290d1f4afe6f47e637d55f8c48b3f989cb6aa1c765bf663c file=neo/internal/server/session.go range=1398:1398 lang=go exported=true byte_range=57196:57254
+  digest=b3:ae0130329e1e1ff7290d1f4afe6f47e637d55f8c48b3f989cb6aa1c765bf663c file=neo/internal/server/session.go range=1417:1417 lang=go exported=true byte_range=58386:58444
   sig=func (r *automatrixReporter) Delta(int, string, string)
 EDGES
   ^contains=matrix/neo/internal/server.automatrixReporter
   ^defines=matrix/neo/internal/server/session.go
 
 NODE id=matrix/neo/internal/server.automatrixReporter.Notice kind=method
-  digest=b3:41a80b2c5b0cb7b28a0164c9a201790392aa85b5b4454f302724ab1bc644b2b7 file=neo/internal/server/session.go range=1396:1396 lang=go exported=true byte_range=57078:57136
+  digest=b3:41a80b2c5b0cb7b28a0164c9a201790392aa85b5b4454f302724ab1bc644b2b7 file=neo/internal/server/session.go range=1415:1415 lang=go exported=true byte_range=58268:58326
   sig=func (r *automatrixReporter) Notice(string)
 EDGES
   ^contains=matrix/neo/internal/server.automatrixReporter
   ^defines=matrix/neo/internal/server/session.go
 
 NODE id=matrix/neo/internal/server.automatrixReporter.Progress kind=method
-  digest=b3:2396970bd01c0dc398eb75a7a6a23aff7610fb79b402758090b84654131b0bc8 file=neo/internal/server/session.go range=1395:1395 lang=go exported=true byte_range=57019:57077
+  digest=b3:2396970bd01c0dc398eb75a7a6a23aff7610fb79b402758090b84654131b0bc8 file=neo/internal/server/session.go range=1414:1414 lang=go exported=true byte_range=58209:58267
   sig=func (r *automatrixReporter) Progress(string)
 EDGES
   ^contains=matrix/neo/internal/server.automatrixReporter
   ^defines=matrix/neo/internal/server/session.go
 
 NODE id=matrix/neo/internal/server.automatrixReporter.Say kind=method
-  digest=b3:8bee134e561b1ae036d640876f53f3942ca9410e3cc27b501895cc76cd80b82f file=neo/internal/server/session.go range=1384:1392 lang=go exported=true byte_range=56776:56958
+  digest=b3:8bee134e561b1ae036d640876f53f3942ca9410e3cc27b501895cc76cd80b82f file=neo/internal/server/session.go range=1403:1411 lang=go exported=true byte_range=57966:58148
   sig=func (r *automatrixReporter) Say(text string, _ bool)
 EDGES
   ^contains=matrix/neo/internal/server.automatrixReporter
   ^defines=matrix/neo/internal/server/session.go
 
 NODE id=matrix/neo/internal/server.automatrixReporter.Status kind=method
-  digest=b3:c8b69d56bd20ecdd66d5036c2fc07e1c9baaeeb7990acddfacd2acf2b0e00209 file=neo/internal/server/session.go range=1394:1394 lang=go exported=true byte_range=56960:57018
+  digest=b3:c8b69d56bd20ecdd66d5036c2fc07e1c9baaeeb7990acddfacd2acf2b0e00209 file=neo/internal/server/session.go range=1413:1413 lang=go exported=true byte_range=58150:58208
   sig=func (r *automatrixReporter) Status(string)
 EDGES
   ^contains=matrix/neo/internal/server.automatrixReporter
   ^defines=matrix/neo/internal/server/session.go
 
 NODE id=matrix/neo/internal/server.automatrixReporter.Think kind=method
-  digest=b3:3b58be71065bf43d0b6216e610bc40990e36966014b7c4ab019f0e6e1dc1639f file=neo/internal/server/session.go range=1397:1397 lang=go exported=true byte_range=57137:57195
+  digest=b3:3b58be71065bf43d0b6216e610bc40990e36966014b7c4ab019f0e6e1dc1639f file=neo/internal/server/session.go range=1416:1416 lang=go exported=true byte_range=58327:58385
   sig=func (r *automatrixReporter) Think(string)
 EDGES
   ^contains=matrix/neo/internal/server.automatrixReporter
   ^defines=matrix/neo/internal/server/session.go
 
 NODE id=matrix/neo/internal/server.automatrixReporter.lastResult kind=method
-  digest=b3:2b338d43010e72a6f09bcb6399b6b52c76b5633ef83a76d2438e810f8cf49faa file=neo/internal/server/session.go range=1400:1405 lang=go exported=false byte_range=57256:57433
+  digest=b3:2b338d43010e72a6f09bcb6399b6b52c76b5633ef83a76d2438e810f8cf49faa file=neo/internal/server/session.go range=1419:1424 lang=go exported=false byte_range=58446:58623
   sig=func (r *automatrixReporter) lastResult() string
   doc=lastResult returns the most recent captured final answer ("" if none).
 EDGES
@@ -3307,7 +3307,7 @@ EDGES
   ^defines=matrix/neo/internal/server/brief_run.go
 
 NODE id=matrix/neo/internal/server.captureReporter kind=type
-  digest=b3:60179101d1ae731ff5841f87db0d1887a4b9fcd22992832252827b257ca39090 file=neo/internal/server/swarm.go range=394:407 lang=go exported=false byte_range=13769:14226
+  digest=b3:60179101d1ae731ff5841f87db0d1887a4b9fcd22992832252827b257ca39090 file=neo/internal/server/swarm.go range=474:487 lang=go exported=false byte_range=17093:17550
   sig=type captureReporter struct {\n	engine	*Engine\n	run	*run\n	swarmID	string\n	index	int\n	name	string\n\n	mu	sync.Mutex\n	lastSay	string\n}
   doc=captureReporter is a sub-agent's output sink: it captures the sub-agent's\nFINAL answer (Reporter.Say) for the aggregated digest, and forwards genuine\nnarration / reasoning as lightweight notes onto that sub-agent's window so\nthe user sees it working — without ever creating a top-level chat bubble.
 EDGES
@@ -3316,49 +3316,49 @@ EDGES
   ^defines=matrix/neo/internal/server/swarm.go
 
 NODE id=matrix/neo/internal/server.captureReporter#engine kind=field
-  digest=b3:f0ab6c4114de500941aebfa8790ded93bae7c043b8a30f51702dba8a3598ca3d file=neo/internal/server/swarm.go range=399:399 lang=go exported=false byte_range=14113:14128
+  digest=b3:f0ab6c4114de500941aebfa8790ded93bae7c043b8a30f51702dba8a3598ca3d file=neo/internal/server/swarm.go range=479:479 lang=go exported=false byte_range=17437:17452
   sig=*server.Engine
 EDGES
   ^contains=matrix/neo/internal/server.captureReporter
 
 NODE id=matrix/neo/internal/server.captureReporter#index kind=field
-  digest=b3:65575847c124efcb20ebe224bec86515fb8856e0ae9e5eec17de1c132fc9bfb4 file=neo/internal/server/swarm.go range=402:402 lang=go exported=false byte_range=14160:14171
+  digest=b3:65575847c124efcb20ebe224bec86515fb8856e0ae9e5eec17de1c132fc9bfb4 file=neo/internal/server/swarm.go range=482:482 lang=go exported=false byte_range=17484:17495
   sig=int
 EDGES
   ^contains=matrix/neo/internal/server.captureReporter
 
 NODE id=matrix/neo/internal/server.captureReporter#lastSay kind=field
-  digest=b3:27abdea9430d5ad437affffd7d76c4c04316c50aa2c8535fdf469ba11c57df6d file=neo/internal/server/swarm.go range=406:406 lang=go exported=false byte_range=14210:14224
+  digest=b3:27abdea9430d5ad437affffd7d76c4c04316c50aa2c8535fdf469ba11c57df6d file=neo/internal/server/swarm.go range=486:486 lang=go exported=false byte_range=17534:17548
   sig=string
 EDGES
   ^contains=matrix/neo/internal/server.captureReporter
 
 NODE id=matrix/neo/internal/server.captureReporter#mu kind=field
-  digest=b3:8fb472e3c101ddbe82de3f6e4339791010616cf667662d8f80f5b138ddbd790f file=neo/internal/server/swarm.go range=405:405 lang=go exported=false byte_range=14190:14208
+  digest=b3:8fb472e3c101ddbe82de3f6e4339791010616cf667662d8f80f5b138ddbd790f file=neo/internal/server/swarm.go range=485:485 lang=go exported=false byte_range=17514:17532
   sig=sync.Mutex
 EDGES
   ^contains=matrix/neo/internal/server.captureReporter
 
 NODE id=matrix/neo/internal/server.captureReporter#name kind=field
-  digest=b3:32c874ad26049f94833214403a5a074cd7e4ec02d654cfe3b856d692fef22684 file=neo/internal/server/swarm.go range=403:403 lang=go exported=false byte_range=14173:14187
+  digest=b3:32c874ad26049f94833214403a5a074cd7e4ec02d654cfe3b856d692fef22684 file=neo/internal/server/swarm.go range=483:483 lang=go exported=false byte_range=17497:17511
   sig=string
 EDGES
   ^contains=matrix/neo/internal/server.captureReporter
 
 NODE id=matrix/neo/internal/server.captureReporter#run kind=field
-  digest=b3:30f7f356ca2e523254267478c3f4c4e44fca8f1e116e96b20f2f4b6173ce6567 file=neo/internal/server/swarm.go range=400:400 lang=go exported=false byte_range=14130:14142
+  digest=b3:30f7f356ca2e523254267478c3f4c4e44fca8f1e116e96b20f2f4b6173ce6567 file=neo/internal/server/swarm.go range=480:480 lang=go exported=false byte_range=17454:17466
   sig=*server.run
 EDGES
   ^contains=matrix/neo/internal/server.captureReporter
 
 NODE id=matrix/neo/internal/server.captureReporter#swarmID kind=field
-  digest=b3:925b5f4081916aec995c878a7968769fc0d79b6f4173cc6bbd9b702b926026b2 file=neo/internal/server/swarm.go range=401:401 lang=go exported=false byte_range=14144:14158
+  digest=b3:925b5f4081916aec995c878a7968769fc0d79b6f4173cc6bbd9b702b926026b2 file=neo/internal/server/swarm.go range=481:481 lang=go exported=false byte_range=17468:17482
   sig=string
 EDGES
   ^contains=matrix/neo/internal/server.captureReporter
 
 NODE id=matrix/neo/internal/server.captureReporter.Delta kind=method
-  digest=b3:fdf2d36a37a81bf82a825edf45683b236252012307239b204831f1d32289a998 file=neo/internal/server/swarm.go range=442:444 lang=go exported=true byte_range=15129:15344
+  digest=b3:fdf2d36a37a81bf82a825edf45683b236252012307239b204831f1d32289a998 file=neo/internal/server/swarm.go range=522:524 lang=go exported=true byte_range=18453:18668
   sig=func (c *captureReporter) Delta(int, string, string)
   doc=Delta is a no-op for sub-agents: a swarm member reports through its distilled\nnotes + final summary, not a live token stream (it has no own chat thread).
 EDGES
@@ -3366,14 +3366,14 @@ EDGES
   ^defines=matrix/neo/internal/server/swarm.go
 
 NODE id=matrix/neo/internal/server.captureReporter.Notice kind=method
-  digest=b3:7c74e625350f8cd375f7787f3473eac1629ee9ac336bef58b188855a6a1dceaa file=neo/internal/server/swarm.go range=439:439 lang=go exported=true byte_range=14980:15052
+  digest=b3:7c74e625350f8cd375f7787f3473eac1629ee9ac336bef58b188855a6a1dceaa file=neo/internal/server/swarm.go range=519:519 lang=go exported=true byte_range=18304:18376
   sig=func (c *captureReporter) Notice(text string)
 EDGES
   ^contains=matrix/neo/internal/server.captureReporter
   ^defines=matrix/neo/internal/server/swarm.go
 
 NODE id=matrix/neo/internal/server.captureReporter.Progress kind=method
-  digest=b3:06b2e1e12ade711f2be7cdf0b5a14003d3d0345cb1ed14da8a1df439ebcec131 file=neo/internal/server/swarm.go range=434:437 lang=go exported=true byte_range=14739:14978
+  digest=b3:06b2e1e12ade711f2be7cdf0b5a14003d3d0345cb1ed14da8a1df439ebcec131 file=neo/internal/server/swarm.go range=514:517 lang=go exported=true byte_range=18063:18302
   sig=func (c *captureReporter) Progress(string)
   doc=Progress is a no-op for sub-agents: the synthetic narrate-before-act intent\nstub is ephemeral, not a durable distilled note (only genuine narration via\nStatus becomes a captured note).
 EDGES
@@ -3381,35 +3381,35 @@ EDGES
   ^defines=matrix/neo/internal/server/swarm.go
 
 NODE id=matrix/neo/internal/server.captureReporter.Say kind=method
-  digest=b3:0938798b1802bc398f1e47988c3a6cce15fadc714626aeccd8cdc49cb142d666 file=neo/internal/server/swarm.go range=409:417 lang=go exported=true byte_range=14228:14389
+  digest=b3:0938798b1802bc398f1e47988c3a6cce15fadc714626aeccd8cdc49cb142d666 file=neo/internal/server/swarm.go range=489:497 lang=go exported=true byte_range=17552:17713
   sig=func (c *captureReporter) Say(text string, _ bool)
 EDGES
   ^contains=matrix/neo/internal/server.captureReporter
   ^defines=matrix/neo/internal/server/swarm.go
 
 NODE id=matrix/neo/internal/server.captureReporter.Status kind=method
-  digest=b3:236ba2bd59ff4b815915f8e8d27dc1f1963d34ae6eaee0993a2159a4234c560a file=neo/internal/server/swarm.go range=425:432 lang=go exported=true byte_range=14489:14737
+  digest=b3:236ba2bd59ff4b815915f8e8d27dc1f1963d34ae6eaee0993a2159a4234c560a file=neo/internal/server/swarm.go range=505:512 lang=go exported=true byte_range=17813:18061
   sig=func (c *captureReporter) Status(text string)
 EDGES
   ^contains=matrix/neo/internal/server.captureReporter
   ^defines=matrix/neo/internal/server/swarm.go
 
 NODE id=matrix/neo/internal/server.captureReporter.Think kind=method
-  digest=b3:c2d6f0f0cd100203c603f4397883a5991ecc7f4c6adf56588edc0d3493066ed0 file=neo/internal/server/swarm.go range=440:440 lang=go exported=true byte_range=15053:15127
+  digest=b3:c2d6f0f0cd100203c603f4397883a5991ecc7f4c6adf56588edc0d3493066ed0 file=neo/internal/server/swarm.go range=520:520 lang=go exported=true byte_range=18377:18451
   sig=func (c *captureReporter) Think(text string)
 EDGES
   ^contains=matrix/neo/internal/server.captureReporter
   ^defines=matrix/neo/internal/server/swarm.go
 
 NODE id=matrix/neo/internal/server.captureReporter.final kind=method
-  digest=b3:39172eaf38f84e8117ece1a2077f4ebe26f81ac958f244a17f7c83726dcc0603 file=neo/internal/server/swarm.go range=419:423 lang=go exported=false byte_range=14391:14487
+  digest=b3:39172eaf38f84e8117ece1a2077f4ebe26f81ac958f244a17f7c83726dcc0603 file=neo/internal/server/swarm.go range=499:503 lang=go exported=false byte_range=17715:17811
   sig=func (c *captureReporter) final() string
 EDGES
   ^contains=matrix/neo/internal/server.captureReporter
   ^defines=matrix/neo/internal/server/swarm.go
 
 NODE id=matrix/neo/internal/server.captureReporter.note kind=method
-  digest=b3:07e6c0db34ff544e12049e8f5301fa08e11946ea89d557a651466a1bd5fd5410 file=neo/internal/server/swarm.go range=446:456 lang=go exported=false byte_range=15346:15619
+  digest=b3:07e6c0db34ff544e12049e8f5301fa08e11946ea89d557a651466a1bd5fd5410 file=neo/internal/server/swarm.go range=526:536 lang=go exported=false byte_range=18670:18943
   sig=func (c *captureReporter) note(text, kind string)
 EDGES
   ^contains=matrix/neo/internal/server.captureReporter
@@ -3672,14 +3672,14 @@ EDGES
   ^defines=matrix/neo/internal/server/session.go
 
 NODE id=matrix/neo/internal/server.deathDigest kind=func
-  digest=b3:b56868100030aaae0d42a9c6191f8600a8a68568956d98046674dd3eaec2c2e6 file=neo/internal/server/session.go range=813:827 lang=go exported=false byte_range=34340:34913
+  digest=b3:b56868100030aaae0d42a9c6191f8600a8a68568956d98046674dd3eaec2c2e6 file=neo/internal/server/session.go range=813:827 lang=go exported=false byte_range=34569:35142
   sig=func deathDigest(prev error) string
   doc=deathDigest extracts a concise, model-readable reason a prior supervised\nattempt ended, for the successor's catch-up prime. It strips the ErrIncomplete\nsentinel prefix so only the where-it-got-stuck digest remains. Returns "" when\nthere is no prior failure (the first attempt).
 EDGES
   ^defines=matrix/neo/internal/server/session.go
 
 NODE id=matrix/neo/internal/server.deathEntry kind=type
-  digest=b3:93fdcdb5af2fe8ea89971e12bf6302db2400c7f24072933ea70c31d407074029 file=neo/internal/server/session.go range=829:841 lang=go exported=false byte_range=34915:35631
+  digest=b3:93fdcdb5af2fe8ea89971e12bf6302db2400c7f24072933ea70c31d407074029 file=neo/internal/server/session.go range=829:841 lang=go exported=false byte_range=35144:35860
   sig=type deathEntry struct {\n	Objective	string\n	Attempt		int\n	Class		delegate.FailureClass\n	Digest		string	// where-it-got-stuck, ErrIncomplete sentinel already stripped\n	State		string	// the agent's rich loop-state line ("" when unavailable)\n}
   doc=deathEntry is the SINGLE description of one supervised-attempt death — the\nshared source for BOTH death-journal read paths (self-model task 3.1,\nreq.4.3), so the immediate successor-prime digest and the durable cortex\nrecord cannot describe the same death differently. The where-it-got-stuck\nDigest is the same deathDigest(err) both paths read; Class and State live on\nthe durable record (the richer surface), while the prime folds in the Digest.
 EDGES
@@ -3687,37 +3687,37 @@ EDGES
   ^defines=matrix/neo/internal/server/session.go
 
 NODE id=matrix/neo/internal/server.deathEntry#Attempt kind=field
-  digest=b3:e3ced9bea67a88b20d32924c585f8f483147bfe9368d2515ddf3876941f726f1 file=neo/internal/server/session.go range=837:837 lang=go exported=true byte_range=35426:35439
+  digest=b3:e3ced9bea67a88b20d32924c585f8f483147bfe9368d2515ddf3876941f726f1 file=neo/internal/server/session.go range=837:837 lang=go exported=true byte_range=35655:35668
   sig=int
 EDGES
   ^contains=matrix/neo/internal/server.deathEntry
 
 NODE id=matrix/neo/internal/server.deathEntry#Class kind=field
-  digest=b3:e14a96d50ddcade0b0b0f164cf044a93dfe14fb2f51a32b5952f7fcf78fa791b file=neo/internal/server/session.go range=838:838 lang=go exported=true byte_range=35441:35472
+  digest=b3:e14a96d50ddcade0b0b0f164cf044a93dfe14fb2f51a32b5952f7fcf78fa791b file=neo/internal/server/session.go range=838:838 lang=go exported=true byte_range=35670:35701
   sig=delegate.FailureClass
 EDGES
   ^contains=matrix/neo/internal/server.deathEntry
 
 NODE id=matrix/neo/internal/server.deathEntry#Digest kind=field
-  digest=b3:97724f2f003b7c0b37884772d84aa35db0b57c268f6fbf187756cfaf56642730 file=neo/internal/server/session.go range=839:839 lang=go exported=true byte_range=35474:35490
+  digest=b3:97724f2f003b7c0b37884772d84aa35db0b57c268f6fbf187756cfaf56642730 file=neo/internal/server/session.go range=839:839 lang=go exported=true byte_range=35703:35719
   sig=string
 EDGES
   ^contains=matrix/neo/internal/server.deathEntry
 
 NODE id=matrix/neo/internal/server.deathEntry#Objective kind=field
-  digest=b3:4d6bb789124aeb0e4142738a2ee044f93e2fd50ab578fd3ba54d302e7cc71bbf file=neo/internal/server/session.go range=836:836 lang=go exported=true byte_range=35408:35424
+  digest=b3:4d6bb789124aeb0e4142738a2ee044f93e2fd50ab578fd3ba54d302e7cc71bbf file=neo/internal/server/session.go range=836:836 lang=go exported=true byte_range=35637:35653
   sig=string
 EDGES
   ^contains=matrix/neo/internal/server.deathEntry
 
 NODE id=matrix/neo/internal/server.deathEntry#State kind=field
-  digest=b3:6db57a92bdcbdc7bb6a2a74a3b70516e619fb55f72c5798c8f4cfb61ce8a3ebf file=neo/internal/server/session.go range=840:840 lang=go exported=true byte_range=35555:35571
+  digest=b3:6db57a92bdcbdc7bb6a2a74a3b70516e619fb55f72c5798c8f4cfb61ce8a3ebf file=neo/internal/server/session.go range=840:840 lang=go exported=true byte_range=35784:35800
   sig=string
 EDGES
   ^contains=matrix/neo/internal/server.deathEntry
 
 NODE id=matrix/neo/internal/server.deathEntry.durableSummary kind=method
-  digest=b3:56290381dd67899aa75d443b0825e8a2eb4d22e99ce54c9512b18d0ab79f710b file=neo/internal/server/session.go range=861:870 lang=go exported=false byte_range=36253:36775
+  digest=b3:56290381dd67899aa75d443b0825e8a2eb4d22e99ce54c9512b18d0ab79f710b file=neo/internal/server/session.go range=861:870 lang=go exported=false byte_range=36482:37004
   sig=func (e deathEntry) durableSummary() string
   doc=durableSummary renders the entry as the durable cortex death-journal line: the\nunchanged prefix from last session (objective, attempt, class, digest) plus\nthe agent's rich loop-state suffix (self-model task 2.2), so the record\ncarries the actual failure MODE, not just a sentence.
 EDGES
@@ -3872,7 +3872,7 @@ EDGES
   ^defines=matrix/neo/internal/server/session.go
 
 NODE id=matrix/neo/internal/server.friendlyErr kind=func
-  digest=b3:05e0e7abfe243d860aded821c018d32dd8130d5fa4c67dadf1146a0e6fea907a file=neo/internal/server/session.go range=1560:1583 lang=go exported=false byte_range=63136:64225
+  digest=b3:05e0e7abfe243d860aded821c018d32dd8130d5fa4c67dadf1146a0e6fea907a file=neo/internal/server/session.go range=1579:1602 lang=go exported=false byte_range=64326:65415
   sig=func friendlyErr(err error) string
 EDGES
   ^defines=matrix/neo/internal/server/session.go
@@ -4269,7 +4269,7 @@ EDGES
   ^defines=matrix/neo/internal/server/queue.go
 
 NODE id=matrix/neo/internal/server.newDeathEntry kind=func
-  digest=b3:558067b1a8341c904f44eaf1feed38c08aa24c0041b59094e8a2bfb4a867f4fb file=neo/internal/server/session.go range=843:859 lang=go exported=false byte_range=35633:36251
+  digest=b3:558067b1a8341c904f44eaf1feed38c08aa24c0041b59094e8a2bfb4a867f4fb file=neo/internal/server/session.go range=843:859 lang=go exported=false byte_range=35862:36480
   sig=func newDeathEntry(objective string, attempt int, err error, class delegate.FailureClass, state string) deathEntry
   doc=newDeathEntry builds the shared death descriptor from one attempt's outcome.\nThe Digest is exactly the deathDigest(err) the successor's resume prime folds\nin; when that is empty (a non-ErrIncomplete death) it falls back to the\nfriendly error so the durable record is never blank.
 EDGES
@@ -4677,7 +4677,7 @@ EDGES
   ^defines=matrix/neo/internal/server/workspace.go
 
 NODE id=matrix/neo/internal/server.resumePrime kind=func
-  digest=b3:26e757195173a718c728bd676b28a77388b17aac59278e59a6d88d701e64d119 file=neo/internal/server/session.go range=791:811 lang=go exported=false byte_range=32802:34338
+  digest=b3:3d811157960229331aac6e5aba033165869b31c9cfbb5d1cbf79551a2e5eb241 file=neo/internal/server/session.go range=791:811 lang=go exported=false byte_range=32802:34567
   sig=func resumePrime(objective string, attempt int, prev error) string
   doc=resumePrime is the catch-up instruction for a respawned / resumed agent: the\nobjective is unchanged, prior work may already be on the volume, build on it,\nand keep going until it is genuinely done. When the predecessor died with a\nwhere-it-got-stuck digest (prev != nil), that is folded in so the successor is\nborn knowing how the last attempt failed and is told not to repeat it — the\nimmediate death-journal read path. After a few stuck attempts it also nudges\ndecomposition / delegation.
 EDGES
@@ -4981,7 +4981,7 @@ NODE id=matrix/neo/internal/server.session kind=type
   sig=type session struct {\n	id	string	// conversation_id\n	engine	*Engine\n	agent	*agent.Agent\n\n	// automatrix marks this as an ephemeral session driving an autonomous\n	// Automatrix opportunity (task 4.1). It changes exactly two things: the\n	// agent is built on the RESTRICTED (no-money) tool surface via\n	// agent.NewAutomatrix (so a proactive run physically cannot reach the\n	// signing path, req 3.2), and the run is driven by the quiet\n	// superviseAutomatrixTask loop (no SSE/broker surfacing — req 5.5 surfaces\n	// NOTHING; the surprise result is delivered out of band by task 5.3). A\n	// normal session leaves this false and is byte-identical to before.\n	automatrix	bool\n\n	// automatrixOut is the quiet capture reporter for an Automatrix run (set\n	// only when automatrix is true). It surfaces NOTHING to the user (req 5.5)\n	// but retains the agent's final user-facing answer so the completion path\n	// (task 5.3) can use it as the result-not-protocol summary of what Neo\n	// produced. Reused across supervisor respawns so the last attempt's answer\n	// is the captured result.\n	automatrixOut	*automatrixReporter\n\n	// brief marks this as an ephemeral session driving an autonomous\n	// MORNING_BRIEF run (ORACLE task 5.4). Like automatrix it surfaces NOTHING\n	// live and reuses automatrixOut for quiet result capture, but its agent is\n	// built on the TIGHTER read-only brief surface (agent.NewMorningBrief:\n	// web_news/web_search/fetch + memory_recall only — money/signing/fs/deploy/\n	// exec structurally absent, req 15.1) rather than the automatrix restricted\n	// surface. A normal session leaves this false.\n	brief	bool\n\n	mu	sync.Mutex	// serializes turns in this conversation\n	cur	*run		// the in-flight turn (read by the reporter/observer)\n\n	actMu	sync.Mutex	// guards active; held only briefly (never across a turn)\n	active	*run		// the in-flight run for this conversation (one at a time)\n\n	// inbox holds user messages received WHILE a turn is in flight (F5):\n	// mid-task messages the user sent without interrupting. The live agent\n	// drains it at each tool-call boundary (agent.Options.Inbox -> drainInput),\n	// so a mid-task message is delivered on the agent's next step instead of\n	// cancelling the run. Guarded by inboxMu (a distinct, briefly-held lock).\n	inboxMu	sync.Mutex\n	inbox	[]string\n\n	gatesMu	sync.Mutex\n	gates	map[string]chan gateAnswer	// node_id -> waiter, for delegated MCL gates\n\n	asksMu	sync.Mutex\n	asks	map[string]*askWaiter	// ask surface id -> waiter, for Construct Ask back-channel\n\n	// deathsSinceConsolidate counts loop deaths recorded since the last\n	// self-authoring consolidation pass (self-model task 3.2). When it reaches\n	// cfg.DeathConsolidateEvery the pass runs and the counter resets, so\n	// consolidation happens on a bounded cadence — never every turn (req.5.2).\n	// Mutated only under the serialized turn path (drive holds s.mu), so it needs\n	// no separate lock.\n	deathsSinceConsolidate	int\n}
   doc=A session is one conversation thread: its own agent loop (transcript +\nsummary + goal) over the engine's shared models, tools, pager, and\nconsolidator. Turns within a conversation are serialized; distinct\nconversations run concurrently and share one cortex store safely (the goal\nlives on the agent, not the pager).
 EDGES
-  contains=matrix/neo/internal/server.session#actMu,matrix/neo/internal/server.session#active,matrix/neo/internal/server.session#agent,matrix/neo/internal/server.session#asks,matrix/neo/internal/server.session#asksMu,matrix/neo/internal/server.session#automatrix,matrix/neo/internal/server.session#automatrixOut,matrix/neo/internal/server.session#brief,matrix/neo/internal/server.session#cur,matrix/neo/internal/server.session#deathsSinceConsolidate,matrix/neo/internal/server.session#engine,matrix/neo/internal/server.session#gates,matrix/neo/internal/server.session#gatesMu,matrix/neo/internal/server.session#id,matrix/neo/internal/server.session#inbox,matrix/neo/internal/server.session#inboxMu,matrix/neo/internal/server.session#mu,matrix/neo/internal/server.session.answerAsk,matrix/neo/internal/server.session.answerGate,matrix/neo/internal/server.session.attemptContext,matrix/neo/internal/server.session.automatrixResult,matrix/neo/internal/server.session.chatFields,matrix/neo/internal/server.session.clearActive,matrix/neo/internal/server.session.clearAsk,matrix/neo/internal/server.session.clearGate,matrix/neo/internal/server.session.deliverCeiling,matrix/neo/internal/server.session.deliverDeterministicStop,matrix/neo/internal/server.session.deliverO1Stop,matrix/neo/internal/server.session.dispatch,matrix/neo/internal/server.session.dispatchLocked,matrix/neo/internal/server.session.dispatchLockedAs,matrix/neo/internal/server.session.drainInput,matrix/neo/internal/server.session.drive,matrix/neo/internal/server.session.emitProgress,matrix/neo/internal/server.session.enqueueInput,matrix/neo/internal/server.session.finishRun,matrix/neo/internal/server.session.interrupt,matrix/neo/internal/server.session.interruptActive,matrix/neo/internal/server.session.maybeConsolidateDeaths,matrix/neo/internal/server.session.pendingAsk,matrix/neo/internal/server.session.rebuildAgent,matrix/neo/internal/server.session.recordLoopDeath,matrix/neo/internal/server.session.registerAsk,matrix/neo/internal/server.session.registerGate,matrix/neo/internal/server.session.setActive,matrix/neo/internal/server.session.startResume,matrix/neo/internal/server.session.submit,matrix/neo/internal/server.session.submitAudio,matrix/neo/internal/server.session.submitIdempotent,matrix/neo/internal/server.session.submitWith,matrix/neo/internal/server.session.superviseAutomatrixTask,matrix/neo/internal/server.session.superviseBriefTask,matrix/neo/internal/server.session.superviseTask
+  contains=matrix/neo/internal/server.session#actMu,matrix/neo/internal/server.session#active,matrix/neo/internal/server.session#agent,matrix/neo/internal/server.session#asks,matrix/neo/internal/server.session#asksMu,matrix/neo/internal/server.session#automatrix,matrix/neo/internal/server.session#automatrixOut,matrix/neo/internal/server.session#brief,matrix/neo/internal/server.session#cur,matrix/neo/internal/server.session#deathsSinceConsolidate,matrix/neo/internal/server.session#engine,matrix/neo/internal/server.session#gates,matrix/neo/internal/server.session#gatesMu,matrix/neo/internal/server.session#id,matrix/neo/internal/server.session#inbox,matrix/neo/internal/server.session#inboxMu,matrix/neo/internal/server.session#mu,matrix/neo/internal/server.session.answerAsk,matrix/neo/internal/server.session.answerGate,matrix/neo/internal/server.session.attemptContext,matrix/neo/internal/server.session.automatrixResult,matrix/neo/internal/server.session.chatFields,matrix/neo/internal/server.session.clearActive,matrix/neo/internal/server.session.clearAsk,matrix/neo/internal/server.session.clearGate,matrix/neo/internal/server.session.deliverCeiling,matrix/neo/internal/server.session.deliverDeterministicStop,matrix/neo/internal/server.session.deliverO1Stop,matrix/neo/internal/server.session.dispatch,matrix/neo/internal/server.session.dispatchLocked,matrix/neo/internal/server.session.dispatchLockedAs,matrix/neo/internal/server.session.drainInput,matrix/neo/internal/server.session.drive,matrix/neo/internal/server.session.emitProgress,matrix/neo/internal/server.session.enqueueInput,matrix/neo/internal/server.session.finishRun,matrix/neo/internal/server.session.interrupt,matrix/neo/internal/server.session.interruptActive,matrix/neo/internal/server.session.maybeConsolidateDeaths,matrix/neo/internal/server.session.pendingAsk,matrix/neo/internal/server.session.progressMessage,matrix/neo/internal/server.session.rebuildAgent,matrix/neo/internal/server.session.recordLoopDeath,matrix/neo/internal/server.session.registerAsk,matrix/neo/internal/server.session.registerGate,matrix/neo/internal/server.session.setActive,matrix/neo/internal/server.session.startResume,matrix/neo/internal/server.session.submit,matrix/neo/internal/server.session.submitAudio,matrix/neo/internal/server.session.submitIdempotent,matrix/neo/internal/server.session.submitWith,matrix/neo/internal/server.session.superviseAutomatrixTask,matrix/neo/internal/server.session.superviseBriefTask,matrix/neo/internal/server.session.superviseTask
   ^defines=matrix/neo/internal/server/session.go
 
 NODE id=matrix/neo/internal/server.session#actMu kind=field
@@ -5092,7 +5092,7 @@ EDGES
   ^contains=matrix/neo/internal/server.session
 
 NODE id=matrix/neo/internal/server.session.answerAsk kind=method
-  digest=b3:0c43cb5974dabdd306bdd84942d13edae07b1eebc25b5b4bbe3067450ef78155 file=neo/internal/server/session.go range=1335:1353 lang=go exported=false byte_range=55054:55501
+  digest=b3:0c43cb5974dabdd306bdd84942d13edae07b1eebc25b5b4bbe3067450ef78155 file=neo/internal/server/session.go range=1354:1372 lang=go exported=false byte_range=56244:56691
   sig=func (s *session) answerAsk(askID string, resp *primitives.AskResponse) bool
   doc=answerAsk delivers a validated response to the parked tool call and retires\nthe waiter. Reports whether a waiter was actually waiting (so a stale or\nduplicate post is rejected).
 EDGES
@@ -5100,7 +5100,7 @@ EDGES
   ^defines=matrix/neo/internal/server/session.go
 
 NODE id=matrix/neo/internal/server.session.answerGate kind=method
-  digest=b3:5c636d904afed65d1d5938f4c3fe9a7fa4bd5029b860f40f362f9445ae8a07bc file=neo/internal/server/session.go range=1283:1298 lang=go exported=false byte_range=53661:53909
+  digest=b3:5c636d904afed65d1d5938f4c3fe9a7fa4bd5029b860f40f362f9445ae8a07bc file=neo/internal/server/session.go range=1302:1317 lang=go exported=false byte_range=54851:55099
   sig=func (s *session) answerGate(nodeID string, a gateAnswer) bool
 EDGES
   ^contains=matrix/neo/internal/server.session
@@ -5115,7 +5115,7 @@ EDGES
   ^defines=matrix/neo/internal/server/session.go
 
 NODE id=matrix/neo/internal/server.session.automatrixResult kind=method
-  digest=b3:39cd57d2240e010442bced7f350b6c915f5a3c35fbb28227e7e0e6d9f86af28f file=neo/internal/server/session.go range=1407:1415 lang=go exported=false byte_range=57435:57753
+  digest=b3:39cd57d2240e010442bced7f350b6c915f5a3c35fbb28227e7e0e6d9f86af28f file=neo/internal/server/session.go range=1426:1434 lang=go exported=false byte_range=58625:58943
   sig=func (s *session) automatrixResult() string
   doc=automatrixResult returns the final user-facing answer captured by the quiet\nAutomatrix reporter for this session ("" for a non-Automatrix session or a\nrun that produced no answer).
 EDGES
@@ -5123,35 +5123,35 @@ EDGES
   ^defines=matrix/neo/internal/server/session.go
 
 NODE id=matrix/neo/internal/server.session.chatFields kind=method
-  digest=b3:def6c1831e98bf3d328a58abe61152c2e6830f1c1256e22f7282172950d0eeda file=neo/internal/server/session.go range=1228:1239 lang=go exported=false byte_range=52062:52362
+  digest=b3:def6c1831e98bf3d328a58abe61152c2e6830f1c1256e22f7282172950d0eeda file=neo/internal/server/session.go range=1247:1258 lang=go exported=false byte_range=53252:53552
   sig=func (s *session) chatFields(r *run, text string, final bool) map[string]interface{}
 EDGES
   ^contains=matrix/neo/internal/server.session
   ^defines=matrix/neo/internal/server/session.go
 
 NODE id=matrix/neo/internal/server.session.clearActive kind=method
-  digest=b3:e8fea22fdd046c024b689e5dd7c282a16e54492f8eb0f006b99c75a2861746f0 file=neo/internal/server/session.go range=1183:1200 lang=go exported=false byte_range=50623:51440
+  digest=b3:e8fea22fdd046c024b689e5dd7c282a16e54492f8eb0f006b99c75a2861746f0 file=neo/internal/server/session.go range=1202:1219 lang=go exported=false byte_range=51813:52630
   sig=func (s *session) clearActive(r *run)
 EDGES
   ^contains=matrix/neo/internal/server.session
   ^defines=matrix/neo/internal/server/session.go
 
 NODE id=matrix/neo/internal/server.session.clearAsk kind=method
-  digest=b3:f6ae464e4ae667f2d240fb5e1c08aba63698cea6b00c2c3d40b73181175ac3da file=neo/internal/server/session.go range=1355:1359 lang=go exported=false byte_range=55503:55606
+  digest=b3:f6ae464e4ae667f2d240fb5e1c08aba63698cea6b00c2c3d40b73181175ac3da file=neo/internal/server/session.go range=1374:1378 lang=go exported=false byte_range=56693:56796
   sig=func (s *session) clearAsk(askID string)
 EDGES
   ^contains=matrix/neo/internal/server.session
   ^defines=matrix/neo/internal/server/session.go
 
 NODE id=matrix/neo/internal/server.session.clearGate kind=method
-  digest=b3:425424b615b405fd50d0504e4877c8889b849c9908896b49472b5c07cfba7c1f file=neo/internal/server/session.go range=1300:1304 lang=go exported=false byte_range=53911:54020
+  digest=b3:425424b615b405fd50d0504e4877c8889b849c9908896b49472b5c07cfba7c1f file=neo/internal/server/session.go range=1319:1323 lang=go exported=false byte_range=55101:55210
   sig=func (s *session) clearGate(nodeID string)
 EDGES
   ^contains=matrix/neo/internal/server.session
   ^defines=matrix/neo/internal/server/session.go
 
 NODE id=matrix/neo/internal/server.session.deliverCeiling kind=method
-  digest=b3:80ea3975c00f6d7db91a978a364219b4c97f7973986817dc33dc3bf626163b7c file=neo/internal/server/session.go range=943:964 lang=go exported=false byte_range=40025:41055
+  digest=b3:80ea3975c00f6d7db91a978a364219b4c97f7973986817dc33dc3bf626163b7c file=neo/internal/server/session.go range=962:983 lang=go exported=false byte_range=41215:42245
   sig=func (s *session) deliverCeiling(r *run, reason string) task.Status
   doc=deliverCeiling emits the ONE allowed terminal-without-completion: an honest\npartial at the hard ceiling. It hands the user the best real work so far\n(never fabricated) and invites them to continue. Idempotent if already closed.
 EDGES
@@ -5159,7 +5159,7 @@ EDGES
   ^defines=matrix/neo/internal/server/session.go
 
 NODE id=matrix/neo/internal/server.session.deliverDeterministicStop kind=method
-  digest=b3:fe35195abab75d67bf75eba365339579b7cccb7829640d1601a5b3f5679d8442 file=neo/internal/server/session.go range=966:1009 lang=go exported=false byte_range=41057:43287
+  digest=b3:fe35195abab75d67bf75eba365339579b7cccb7829640d1601a5b3f5679d8442 file=neo/internal/server/session.go range=985:1028 lang=go exported=false byte_range=42247:44477
   sig=func (s *session) deliverDeterministicStop(r *run) task.Status
   doc=deliverDeterministicStop emits the terminal for a task blocked by a\nDETERMINISTIC failure — one that recurs identically (a denied permission, a\nlimit, an invalid request, a detail only the user can change). A fresh agent\nwould hit the same wall, so the supervisor does NOT respawn and does NOT\nconsume the respawn budget. Unlike the generic "still on it, taking another\nrun at it" progress copy, this states plainly that the task is blocked and\nhands the user the next step, with the best real work so far.\n\nThe copy tells the truth about WHY it stopped: an unproductive-cap death\n(the agent spun without closing — often because what it has for the user is\na question, not a completion) reads as "I need your direction", never as a\npermission/limit wall that doesn't exist. And a best-effort digest that IS\nthe last bubble already on screen is referenced, not re-pasted (the\ndouble-render). Idempotent if already closed.
 EDGES
@@ -5167,7 +5167,7 @@ EDGES
   ^defines=matrix/neo/internal/server/session.go
 
 NODE id=matrix/neo/internal/server.session.deliverO1Stop kind=method
-  digest=b3:30be046a072a40bdb299d64cb212b368b3a4e48ef8be41bbab39132412ab5ec6 file=neo/internal/server/session.go range=1011:1036 lang=go exported=false byte_range=43289:44314
+  digest=b3:30be046a072a40bdb299d64cb212b368b3a4e48ef8be41bbab39132412ab5ec6 file=neo/internal/server/session.go range=1030:1055 lang=go exported=false byte_range=44479:45504
   sig=func (s *session) deliverO1Stop(r *run, decision o1.SupervisorDecision) task.Status
 EDGES
   ^contains=matrix/neo/internal/server.session
@@ -5213,7 +5213,7 @@ EDGES
   ^defines=matrix/neo/internal/server/session.go
 
 NODE id=matrix/neo/internal/server.session.emitProgress kind=method
-  digest=b3:2ecd7c57424fe9291d2f31bb4dd851380e336f3136c02baf0321330d38ec9b12 file=neo/internal/server/session.go range=919:941 lang=go exported=false byte_range=38907:40023
+  digest=b3:4e5c3aa0254606f24669d10c423eb968be607eb7e6152f0c92f0f9e05168300f file=neo/internal/server/session.go range=919:941 lang=go exported=false byte_range=39136:40200
   sig=func (s *session) emitProgress(r *run, attempt int, err error, outage bool)
   doc=emitProgress tells the user the task is STILL IN PROGRESS after a failed\nattempt — honest and non-terminal, never a fake completion. The machine\ndetail (the real neo/llm error) goes to the logs for diagnosis.\n\nDuring a provider OUTAGE streak the user-facing bubble is emitted ONCE: a\ngateway that is down (or hard rate-limiting) fails every futile respawn in\nquick succession, and a fresh "still working" message every few seconds is\nspam, not reassurance. The retry is always logged for diagnosis regardless.\nAny non-outage failure clears the latch so genuine, distinct progress is\nalways shown.
 EDGES
@@ -5229,14 +5229,14 @@ EDGES
   ^defines=matrix/neo/internal/server/session.go
 
 NODE id=matrix/neo/internal/server.session.finishRun kind=method
-  digest=b3:f124587ad2087125befd3cafa11c3960ae8e5b3691295368b96d78062f982320 file=neo/internal/server/session.go range=1241:1271 lang=go exported=false byte_range=52364:53433
+  digest=b3:f124587ad2087125befd3cafa11c3960ae8e5b3691295368b96d78062f982320 file=neo/internal/server/session.go range=1260:1290 lang=go exported=false byte_range=53554:54623
   sig=func (s *session) finishRun(r *run, status, text, failure string, fields map[string]interface{}, persist bool) bool
 EDGES
   ^contains=matrix/neo/internal/server.session
   ^defines=matrix/neo/internal/server/session.go
 
 NODE id=matrix/neo/internal/server.session.interrupt kind=method
-  digest=b3:4bc3229bedbdc44afce9ab304bd7bfbc6786f2c018dd9ea046ac96b96174f7be file=neo/internal/server/session.go range=1215:1226 lang=go exported=false byte_range=51713:52060
+  digest=b3:4bc3229bedbdc44afce9ab304bd7bfbc6786f2c018dd9ea046ac96b96174f7be file=neo/internal/server/session.go range=1234:1245 lang=go exported=false byte_range=52903:53250
   sig=func (s *session) interrupt(r *run)
   doc=interrupt marks a specific run stopped and cancels its context, so its agent\nloop unwinds at the next cancellation checkpoint and drive closes it quietly.\nSafe on a nil run or a run whose cancel is not yet set.
 EDGES
@@ -5244,7 +5244,7 @@ EDGES
   ^defines=matrix/neo/internal/server/session.go
 
 NODE id=matrix/neo/internal/server.session.interruptActive kind=method
-  digest=b3:b750f8a9e0076051dbd3b105d8931b2cfd7a06440f8af4e222411887301c7524 file=neo/internal/server/session.go range=1202:1213 lang=go exported=false byte_range=51442:51711
+  digest=b3:b750f8a9e0076051dbd3b105d8931b2cfd7a06440f8af4e222411887301c7524 file=neo/internal/server/session.go range=1221:1232 lang=go exported=false byte_range=52632:52901
   sig=func (s *session) interruptActive() string
   doc=interruptActive stops the latest dispatched turn (if any). Returns its id, or\n"" when nothing was in flight.
 EDGES
@@ -5252,7 +5252,7 @@ EDGES
   ^defines=matrix/neo/internal/server/session.go
 
 NODE id=matrix/neo/internal/server.session.maybeConsolidateDeaths kind=method
-  digest=b3:10988ab8ea78815dc034c34e69b985087ff1f65039b6a106623caf9e2003d411 file=neo/internal/server/session.go range=898:917 lang=go exported=false byte_range=38039:38905
+  digest=b3:10988ab8ea78815dc034c34e69b985087ff1f65039b6a106623caf9e2003d411 file=neo/internal/server/session.go range=898:917 lang=go exported=false byte_range=38268:39134
   sig=func (s *session) maybeConsolidateDeaths(ctx context.Context)
   doc=maybeConsolidateDeaths runs the self-authoring consolidation pass (self-model\ntask 3.2) on a bounded cadence: every cfg.DeathConsolidateEvery recorded loop\ndeaths, the agent reads its death journal and writes/reinforces durable\nhow-I-fail failure-pattern memories, then the counter resets. It runs NEVER\nevery turn (req.5.2) and is a pure observability + reasoning side-channel\n(req.5.4). Best-effort: a store error is swallowed so it can never block the\nrespawn (Task-Durability preserved). cfg.DeathConsolidateEvery <= 0 disables\nthe pass.
 EDGES
@@ -5260,9 +5260,17 @@ EDGES
   ^defines=matrix/neo/internal/server/session.go
 
 NODE id=matrix/neo/internal/server.session.pendingAsk kind=method
-  digest=b3:f6e74cf8604e03a576cb7817e5fb8d54019cb6c44ff2d0e200c95d4cf080bea2 file=neo/internal/server/session.go range=1323:1333 lang=go exported=false byte_range=54717:55052
+  digest=b3:f6e74cf8604e03a576cb7817e5fb8d54019cb6c44ff2d0e200c95d4cf080bea2 file=neo/internal/server/session.go range=1342:1352 lang=go exported=false byte_range=55907:56242
   sig=func (s *session) pendingAsk(askID string) (*primitives.Ask, bool)
   doc=pendingAsk returns the Ask a waiter is parked on, so the receiver can\nvalidate a posted response against its contract before delivering it.
+EDGES
+  ^contains=matrix/neo/internal/server.session
+  ^defines=matrix/neo/internal/server/session.go
+
+NODE id=matrix/neo/internal/server.session.progressMessage kind=method
+  digest=b3:95503cfc1889dd4a78f9928199fc3209f52d13566d6c1f2b1571ea38a1d77452 file=neo/internal/server/session.go range=943:960 lang=go exported=false byte_range=40202:41213
+  sig=func (s *session) progressMessage(r *run) string
+  doc=progressMessage builds a SUBSTANTIVE still-working update (item 6b): instead of\na contentless "hit a snag, taking another run", it tells the user where things\nactually stand — the agent's honest best-effort digest so far, clipped — then\nthat it is continuing from there. When that digest IS the message already on\nscreen it references it rather than re-pasting (the double-render), and when\nthere is nothing concrete yet it falls back to a plain, honest line. This is\nhow a peer reports progress: what's done, and what's next.
 EDGES
   ^contains=matrix/neo/internal/server.session
   ^defines=matrix/neo/internal/server/session.go
@@ -5276,7 +5284,7 @@ EDGES
   ^defines=matrix/neo/internal/server/session.go
 
 NODE id=matrix/neo/internal/server.session.recordLoopDeath kind=method
-  digest=b3:ffb808f30bd295362e87b2726e06f6de83835bdca64f5eae947235d7783c32d8 file=neo/internal/server/session.go range=872:896 lang=go exported=false byte_range=36777:38037
+  digest=b3:ffb808f30bd295362e87b2726e06f6de83835bdca64f5eae947235d7783c32d8 file=neo/internal/server/session.go range=872:896 lang=go exported=false byte_range=37006:38266
   sig=func (s *session) recordLoopDeath(ctx context.Context, objective string, attempt int, err error, failClass delegate.FailureClass)
   doc=recordLoopDeath persists a structured death-journal entry to cortex when a\nsupervised attempt died and forced a respawn — the DURABLE read path of the\ndeath journal (the immediate path is the successor's resume prime). It is\nbuilt from the shared deathEntry so it describes the SAME death the successor's\nprime folds in (req.4.3). Best-effort: a nil pager, a clean exit, or a write\nerror never blocks the respawn.
 EDGES
@@ -5284,21 +5292,21 @@ EDGES
   ^defines=matrix/neo/internal/server/session.go
 
 NODE id=matrix/neo/internal/server.session.registerAsk kind=method
-  digest=b3:268bf595441886604ed3f41d61324b2fce452d58863ab9b4b1b06ca244693513 file=neo/internal/server/session.go range=1315:1321 lang=go exported=false byte_range=54478:54715
+  digest=b3:268bf595441886604ed3f41d61324b2fce452d58863ab9b4b1b06ca244693513 file=neo/internal/server/session.go range=1334:1340 lang=go exported=false byte_range=55668:55905
   sig=func (s *session) registerAsk(askID string, ask *primitives.Ask) <-chan *primitives.AskResponse
 EDGES
   ^contains=matrix/neo/internal/server.session
   ^defines=matrix/neo/internal/server/session.go
 
 NODE id=matrix/neo/internal/server.session.registerGate kind=method
-  digest=b3:c2cc783ec40aac13f0e237714e7557e2598986d366d08f35514696ba4517e265 file=neo/internal/server/session.go range=1275:1281 lang=go exported=false byte_range=53491:53659
+  digest=b3:c2cc783ec40aac13f0e237714e7557e2598986d366d08f35514696ba4517e265 file=neo/internal/server/session.go range=1294:1300 lang=go exported=false byte_range=54681:54849
   sig=func (s *session) registerGate(nodeID string) chan gateAnswer
 EDGES
   ^contains=matrix/neo/internal/server.session
   ^defines=matrix/neo/internal/server/session.go
 
 NODE id=matrix/neo/internal/server.session.setActive kind=method
-  digest=b3:005663a57b1013e679ee5105f52ac25d0a3138effee4ca028f1cc4167f3e4300 file=neo/internal/server/session.go range=1172:1181 lang=go exported=false byte_range=50172:50621
+  digest=b3:005663a57b1013e679ee5105f52ac25d0a3138effee4ca028f1cc4167f3e4300 file=neo/internal/server/session.go range=1191:1200 lang=go exported=false byte_range=51362:51811
   sig=func (s *session) setActive(r *run)
   doc=setActive / clearActive / interruptActive coordinate barge-in. active is the\nlatest dispatched run; interruptActive cancels it (LIFO), so each new message\nsupersedes the one before whether it is running or still queued. clearActive\nonly nils active when it still points at r, so a turn that has already been\nsuperseded never clears its successor.
 EDGES
@@ -5344,7 +5352,7 @@ EDGES
   ^defines=matrix/neo/internal/server/session.go
 
 NODE id=matrix/neo/internal/server.session.superviseAutomatrixTask kind=method
-  digest=b3:468136c64feb3f64a52e1401637f7165fdf84e2d38c8ac1e6a490d16d16b0116 file=neo/internal/server/session.go range=1068:1120 lang=go exported=false byte_range=45478:47963
+  digest=b3:468136c64feb3f64a52e1401637f7165fdf84e2d38c8ac1e6a490d16d16b0116 file=neo/internal/server/session.go range=1087:1139 lang=go exported=false byte_range=46668:49153
   sig=func (s *session) superviseAutomatrixTask(ctx context.Context, objective string) task.Status
   doc=superviseAutomatrixTask is the QUIET sibling of superviseTask for an\nautonomous Automatrix run (task 4.1, req 5.1/5.3/5.4/5.5). It mirrors the\nreal supervisor's policy EXACTLY — the same pure superviseDecision over the\nagent's clean finish / failure class / wall-clock, the same jittered backoff,\nthe same FRESH-agent respawn over durable state across a non-clean exit — so\na proactive run is held to the SAME loop discipline (inside agent.Chat:\nno-progress stall / step budget / the unified unproductive counter, plus the\nCassandra 2.0 silent-voice controller) as any interactive turn. The two\ndifferences from superviseTask are deliberate: (1) the agent is the\nRESTRICTED no-money surface (the session was minted with automatrix=true), and\n(2) it surfaces NOTHING — no SSE/broker terminals, no honest-partial bubble in\nthe thread (req 5.5: a partial/failed proactive attempt is silent, never\nfailed-surprise spam). It returns the terminal task.Status so the runner can\nsettle the opportunity (done vs pending+attempts). A user stop cannot happen\nhere (no live run / no barge-in), so actInterrupted is unreachable.
 EDGES
@@ -5352,7 +5360,7 @@ EDGES
   ^defines=matrix/neo/internal/server/session.go
 
 NODE id=matrix/neo/internal/server.session.superviseBriefTask kind=method
-  digest=b3:7730f19fba5325512f3bc22c93d1fb45386b508963a5a9f9590c7a1109ab2903 file=neo/internal/server/session.go range=1122:1170 lang=go exported=false byte_range=47965:50170
+  digest=b3:7730f19fba5325512f3bc22c93d1fb45386b508963a5a9f9590c7a1109ab2903 file=neo/internal/server/session.go range=1141:1189 lang=go exported=false byte_range=49155:51360
   sig=func (s *session) superviseBriefTask(ctx context.Context, objective string) task.Status
   doc=superviseBriefTask is the QUIET sibling of superviseTask for an autonomous\nMORNING_BRIEF run (ORACLE task 5.4, req 15.1/15.2). It mirrors the real\nsupervisor's policy EXACTLY — the same pure superviseDecision over the agent's\nclean finish / failure class / wall-clock, the same jittered backoff, the same\nFRESH-agent respawn over durable state across a non-clean exit — so a brief is\nheld to the SAME loop discipline as any interactive turn. The two differences\nare deliberate: (1) the agent is the TIGHT read-only brief surface (the\nsession was minted with brief=true, so it physically cannot reach money /\nsigning / filesystem / deploy / exec tools, req 15.1), and (2) it surfaces\nNOTHING live — the composed brief is delivered out of band as a durable\nconversation turn + inbox record before any notification (req 15.2). It\nreturns the terminal task.Status so the runner can settle the ledger (done vs\nceiling). A user stop cannot happen here (no live run / no barge-in).
 EDGES
@@ -5427,7 +5435,7 @@ EDGES
   ^contains=matrix/neo/internal/server.settingsResponse
 
 NODE id=matrix/neo/internal/server.shouldRetrySubagent kind=func
-  digest=b3:b4973643d5afdea103fc92690b9a5d190bd29a3aa876d3c1294bfba9a91410a1 file=neo/internal/server/swarm.go range=233:241 lang=go exported=false byte_range=7982:8605
+  digest=b3:b4973643d5afdea103fc92690b9a5d190bd29a3aa876d3c1294bfba9a91410a1 file=neo/internal/server/swarm.go range=259:267 lang=go exported=false byte_range=9499:10122
   sig=func shouldRetrySubagent(attempt, maxAttempts int, err error, haveText bool, ctxErr error) bool
   doc=shouldRetrySubagent decides whether a failed sub-agent attempt warrants a\nfresh retry. Retry ONLY when the agent hard-failed (err != nil) and produced\nNO usable output, the parent context is still alive (ctxErr == nil), and\nattempts remain. A clean finish or any partial findings are accepted as-is —\nwe never burn a retry on a sub-agent that already returned something useful,\nand a cancelled/timed-out parent stops immediately.
 EDGES
@@ -5454,7 +5462,7 @@ EDGES
   ^defines=matrix/neo/internal/server/telegram_bridge.go
 
 NODE id=matrix/neo/internal/server.sseReporter kind=type
-  digest=b3:cb5ae9eb118347e310a5f2bdce3938962dfe428405373ad55208316cf9a718ab file=neo/internal/server/session.go range=1361:1367 lang=go exported=false byte_range=55608:55922
+  digest=b3:cb5ae9eb118347e310a5f2bdce3938962dfe428405373ad55208316cf9a718ab file=neo/internal/server/session.go range=1380:1386 lang=go exported=false byte_range=56798:57112
   sig=type sseReporter struct {\n	sess *session\n}
   doc=sseReporter maps the agent's Reporter calls onto the conversation's event\nstream. Say is always the closing turn (the agent only Says to end), so it\nemits the terminal sequence; Status is progress; Notice is a visible spoken\npromise (compaction / escalation).
 EDGES
@@ -5463,13 +5471,13 @@ EDGES
   ^defines=matrix/neo/internal/server/session.go
 
 NODE id=matrix/neo/internal/server.sseReporter#sess kind=field
-  digest=b3:d91196cc50550f9c7d244c3cdd488ac088a3d8612477e4ef9267ea1fbf76ebc3 file=neo/internal/server/session.go range=1366:1366 lang=go exported=false byte_range=55907:55920
+  digest=b3:d91196cc50550f9c7d244c3cdd488ac088a3d8612477e4ef9267ea1fbf76ebc3 file=neo/internal/server/session.go range=1385:1385 lang=go exported=false byte_range=57097:57110
   sig=*server.session
 EDGES
   ^contains=matrix/neo/internal/server.sseReporter
 
 NODE id=matrix/neo/internal/server.sseReporter.Delta kind=method
-  digest=b3:c54f081c0d27db143714c861ca3566bed34afa9ae3477418c0d9b58369596a4f file=neo/internal/server/session.go range=1523:1548 lang=go exported=true byte_range=61771:62795
+  digest=b3:c54f081c0d27db143714c861ca3566bed34afa9ae3477418c0d9b58369596a4f file=neo/internal/server/session.go range=1542:1567 lang=go exported=true byte_range=62961:63985
   sig=func (r *sseReporter) Delta(turn int, channel, text string)
   doc=Delta streams an incremental fragment of the CURRENT turn as it generates —\nthe live "typing" channel. channel is "content" (the visible answer being\ntyped) or "reasoning" (the live thinking). turn is the agent-loop step index\nso the client can reset its per-channel buffer when a new turn begins. It is\nNEVER persisted (the durable thread is written from Say); the authoritative\nfinal text always follows as a chat.assistant turn that the client commits.
 EDGES
@@ -5477,14 +5485,14 @@ EDGES
   ^defines=matrix/neo/internal/server/session.go
 
 NODE id=matrix/neo/internal/server.sseReporter.Notice kind=method
-  digest=b3:c7b5f375bb430ac0ed4e70fb95b8bff26a17404a912300b4c4b744cfa1780ab6 file=neo/internal/server/session.go range=1493:1500 lang=go exported=true byte_range=60971:61162
+  digest=b3:c7b5f375bb430ac0ed4e70fb95b8bff26a17404a912300b4c4b744cfa1780ab6 file=neo/internal/server/session.go range=1512:1519 lang=go exported=true byte_range=62161:62352
   sig=func (r *sseReporter) Notice(text string)
 EDGES
   ^contains=matrix/neo/internal/server.sseReporter
   ^defines=matrix/neo/internal/server/session.go
 
 NODE id=matrix/neo/internal/server.sseReporter.Progress kind=method
-  digest=b3:c70b5d3a552437d02ade43f87924107b3bbb94428add3cf8f62360647542243c file=neo/internal/server/session.go range=1470:1491 lang=go exported=true byte_range=59986:60969
+  digest=b3:c70b5d3a552437d02ade43f87924107b3bbb94428add3cf8f62360647542243c file=neo/internal/server/session.go range=1489:1510 lang=go exported=true byte_range=61176:62159
   sig=func (r *sseReporter) Progress(text string)
   doc=Progress surfaces the SYNTHETIC narrate-before-act intent stub (e.g. "Layerx\ndeposit.") — Neo generated it from the tool name, so it is EPHEMERAL: shown\nlive (flagged ephemeral:true so the client renders it transiently and never\ncounts it as durable thread content) but NEVER persisted and NEVER marking\nrun.narrated. That distinction is load-bearing: run.narrated gates whether the\naccepted task_complete summary is hidden as a redundant recap, so letting a\nsynthetic stub set it was exactly the bug where a straight-to-task_complete\nturn dropped the real answer (the user saw only "Layerx deposit.").
 EDGES
@@ -5492,26 +5500,33 @@ EDGES
   ^defines=matrix/neo/internal/server/session.go
 
 NODE id=matrix/neo/internal/server.sseReporter.Say kind=method
-  digest=b3:b133cfeb8f7a68d43cd608e21fdd739df3de5327f03fb8593ace5e91cd098d93 file=neo/internal/server/session.go range=1417:1442 lang=go exported=true byte_range=57755:59054
+  digest=b3:b133cfeb8f7a68d43cd608e21fdd739df3de5327f03fb8593ace5e91cd098d93 file=neo/internal/server/session.go range=1436:1461 lang=go exported=true byte_range=58945:60244
   sig=func (r *sseReporter) Say(text string, completion bool)
 EDGES
   ^contains=matrix/neo/internal/server.sseReporter
   ^defines=matrix/neo/internal/server/session.go
 
 NODE id=matrix/neo/internal/server.sseReporter.Status kind=method
-  digest=b3:32da0275f632eae950ea385c282992c42d409c85b43e41f361b6a6c1515fa9c6 file=neo/internal/server/session.go range=1444:1468 lang=go exported=true byte_range=59056:59984
+  digest=b3:32da0275f632eae950ea385c282992c42d409c85b43e41f361b6a6c1515fa9c6 file=neo/internal/server/session.go range=1463:1487 lang=go exported=true byte_range=60246:61174
   sig=func (r *sseReporter) Status(text string)
 EDGES
   ^contains=matrix/neo/internal/server.sseReporter
   ^defines=matrix/neo/internal/server/session.go
 
 NODE id=matrix/neo/internal/server.sseReporter.Think kind=method
-  digest=b3:ca50948fa25e386b8e7c80a49655f0f1506f86e8ad4cacbbb410f872b96c8112 file=neo/internal/server/session.go range=1502:1521 lang=go exported=true byte_range=61164:61769
+  digest=b3:ca50948fa25e386b8e7c80a49655f0f1506f86e8ad4cacbbb410f872b96c8112 file=neo/internal/server/session.go range=1521:1540 lang=go exported=true byte_range=62354:62959
   sig=func (r *sseReporter) Think(text string)
   doc=Think surfaces a glimpse of the model's reasoning as a dedicated, secondary\n"thinking" channel. It is NEVER persisted to the durable thread (unlike Say)\nand carries no role — the client renders it as a dismissible thought, not an\nanswer turn.
 EDGES
   ^contains=matrix/neo/internal/server.sseReporter
   ^defines=matrix/neo/internal/server/session.go
+
+NODE id=matrix/neo/internal/server.staggerStep kind=const
+  digest=b3:9edebe4ffd230336fcdba49d148420cb0808e374f5e22c48c0449e69cfd7686c file=neo/internal/server/swarm.go range=41:44 lang=go exported=false byte_range=1545:1799
+  sig=time.Duration
+  doc=staggerStep spreads concurrent leg starts so N legs don't hit the provider in\nthe same instant and self-amplify a transient rate-limit storm — cheaper to not\ntrigger the storm than to recover from it.
+EDGES
+  ^defines=matrix/neo/internal/server/swarm.go
 
 NODE id=matrix/neo/internal/server.storeMedia kind=const
   digest=b3:0e4dbba6643b8f18c11adb01462422d57bab5f05e154b6d66dcf38a80078b458 file=neo/internal/server/media_vault.go range=33:33 lang=go exported=false byte_range=1216:1242
@@ -5557,7 +5572,7 @@ EDGES
   ^defines=matrix/neo/internal/server/sse.go
 
 NODE id=matrix/neo/internal/server.subResult kind=type
-  digest=b3:a7d43f6d5953887e32e121318168b382d4d517177096db49a65aa7775b22ec74 file=neo/internal/server/swarm.go range=45:53 lang=go exported=false byte_range=1469:1707
+  digest=b3:a7d43f6d5953887e32e121318168b382d4d517177096db49a65aa7775b22ec74 file=neo/internal/server/swarm.go range=60:68 lang=go exported=false byte_range=2283:2521
   sig=type subResult struct {\n	index	int\n	name	string\n	persona	string\n	text	string\n	ok	bool\n}
   doc=subResult is one sub-agent's outcome, collected for the aggregated digest\nreturned to the parent agent's spawn_subagents tool call.
 EDGES
@@ -5565,51 +5580,72 @@ EDGES
   ^defines=matrix/neo/internal/server/swarm.go
 
 NODE id=matrix/neo/internal/server.subResult#index kind=field
-  digest=b3:65575847c124efcb20ebe224bec86515fb8856e0ae9e5eec17de1c132fc9bfb4 file=neo/internal/server/swarm.go range=48:48 lang=go exported=false byte_range=1632:1643
+  digest=b3:65575847c124efcb20ebe224bec86515fb8856e0ae9e5eec17de1c132fc9bfb4 file=neo/internal/server/swarm.go range=63:63 lang=go exported=false byte_range=2446:2457
   sig=int
 EDGES
   ^contains=matrix/neo/internal/server.subResult
 
 NODE id=matrix/neo/internal/server.subResult#name kind=field
-  digest=b3:32c874ad26049f94833214403a5a074cd7e4ec02d654cfe3b856d692fef22684 file=neo/internal/server/swarm.go range=49:49 lang=go exported=false byte_range=1645:1659
+  digest=b3:32c874ad26049f94833214403a5a074cd7e4ec02d654cfe3b856d692fef22684 file=neo/internal/server/swarm.go range=64:64 lang=go exported=false byte_range=2459:2473
   sig=string
 EDGES
   ^contains=matrix/neo/internal/server.subResult
 
 NODE id=matrix/neo/internal/server.subResult#ok kind=field
-  digest=b3:1345d1ac1435afd4eda051b41f9115fdd99aa497a700d56261fed7ea42cfdfb3 file=neo/internal/server/swarm.go range=52:52 lang=go exported=false byte_range=1693:1705
+  digest=b3:1345d1ac1435afd4eda051b41f9115fdd99aa497a700d56261fed7ea42cfdfb3 file=neo/internal/server/swarm.go range=67:67 lang=go exported=false byte_range=2507:2519
   sig=bool
 EDGES
   ^contains=matrix/neo/internal/server.subResult
 
 NODE id=matrix/neo/internal/server.subResult#persona kind=field
-  digest=b3:958e227d48e1c6d1c58f7882a7c1af9bc5f032afbf3ed4d6dfaf10ab6b9fc829 file=neo/internal/server/swarm.go range=50:50 lang=go exported=false byte_range=1661:1675
+  digest=b3:958e227d48e1c6d1c58f7882a7c1af9bc5f032afbf3ed4d6dfaf10ab6b9fc829 file=neo/internal/server/swarm.go range=65:65 lang=go exported=false byte_range=2475:2489
   sig=string
 EDGES
   ^contains=matrix/neo/internal/server.subResult
 
 NODE id=matrix/neo/internal/server.subResult#text kind=field
-  digest=b3:8770fb9c02d02f98baa3f7b2d0bdd34b4e9c50fb8d6f9e2a4526044b375aafc8 file=neo/internal/server/swarm.go range=51:51 lang=go exported=false byte_range=1677:1691
+  digest=b3:8770fb9c02d02f98baa3f7b2d0bdd34b4e9c50fb8d6f9e2a4526044b375aafc8 file=neo/internal/server/swarm.go range=66:66 lang=go exported=false byte_range=2491:2505
   sig=string
 EDGES
   ^contains=matrix/neo/internal/server.subResult
 
+NODE id=matrix/neo/internal/server.subagentEffectiveMax kind=func
+  digest=b3:b16a628cee134b31b6d22d3a8d6f8c4f495ac0e9432e7f7a3c231659735517fc file=neo/internal/server/swarm.go range=316:330 lang=go exported=false byte_range=11376:11954
+  sig=func subagentEffectiveMax(err error) int
+  doc=subagentEffectiveMax classifies a leg's terminal error to pick its retry\nceiling: a deterministic provider rejection won't change on retry (die fast — a\nsingle attempt); a provider-transient failure (rate-limited / unreachable) gets\nthe higher transient ceiling with hard backoff; everything else keeps the\ndefault recovery budget.
+EDGES
+  ^defines=matrix/neo/internal/server/swarm.go
+
+NODE id=matrix/neo/internal/server.subagentFailureTransient kind=func
+  digest=b3:31cdc60b10583931d2100d37302047646638c56a98ad6f7580762d74e86f2ab7 file=neo/internal/server/swarm.go range=332:338 lang=go exported=false byte_range=11956:12363
+  sig=func subagentFailureTransient(err error) bool
+  doc=subagentFailureTransient reports whether a leg's error is a provider-transient\nfailure — an upstream that is rate-limiting or unreachable, where a fresh leg\nafter a hard backoff can succeed (the transient MiMo storm the extra attempts\nexist to ride out).
+EDGES
+  ^defines=matrix/neo/internal/server/swarm.go
+
 NODE id=matrix/neo/internal/server.subagentMaxAttempts kind=const
-  digest=b3:a5f9f07680eeba944009c909ae97c242a7293cd5a218c6e2bf852963e7f8445a file=neo/internal/server/swarm.go range=23:29 lang=go exported=false byte_range=536:985
+  digest=b3:a5f9f07680eeba944009c909ae97c242a7293cd5a218c6e2bf852963e7f8445a file=neo/internal/server/swarm.go range=25:31 lang=go exported=false byte_range=573:1022
   sig=untyped int
   doc=subagentMaxAttempts is how many times a sub-agent's whole task is attempted\nbefore giving up: one initial run plus bounded recovery retries. A sub-agent\nwhose loop hard-fails (a model/transport error that survives the in-loop\nretry ladder) used to die on the spot with an empty report; instead it gets a\nfresh window and another go, so a transient provider hiccup no longer wastes\nthe whole sub-agent.
 EDGES
   ^defines=matrix/neo/internal/server/swarm.go
 
 NODE id=matrix/neo/internal/server.subagentMaxInheritedPatterns kind=const
-  digest=b3:922be55dbc1a4ddae653f8f41dfce29b3a09f03380f2f040ef61764e06965ddb file=neo/internal/server/swarm.go range=291:294 lang=go exported=false byte_range=10099:10368
+  digest=b3:922be55dbc1a4ddae653f8f41dfce29b3a09f03380f2f040ef61764e06965ddb file=neo/internal/server/swarm.go range=371:374 lang=go exported=false byte_range=13423:13692
   sig=untyped int
   doc=subagentMaxInheritedPatterns caps how many how-I-fail patterns a sub-agent\ninherits, so the alignment context stays compact against the sub-agent's\nsmaller window while still carrying the recurring failure modes to avoid.
 EDGES
   ^defines=matrix/neo/internal/server/swarm.go
 
+NODE id=matrix/neo/internal/server.subagentMaxTransientAttempts kind=const
+  digest=b3:5ab4d4d522826f2fb08e96241456e17e8367f6f30e84ea514d0a830523cdedd0 file=neo/internal/server/swarm.go range=33:39 lang=go exported=false byte_range=1024:1543
+  sig=untyped int
+  doc=subagentMaxTransientAttempts is the retry ceiling for a leg that died on a\nPROVIDER-transient failure (rate-limited / unreachable upstream), higher than\nthe default so a transient MiMo storm under concurrency — several legs hitting\nthe provider at once — no longer kills a researcher after a single recovery\ntry. A deterministic provider rejection still dies fast (a retry sends the same\nbody), and a leg that produced ANY usable text is still never retried.
+EDGES
+  ^defines=matrix/neo/internal/server/swarm.go
+
 NODE id=matrix/neo/internal/server.subagentTurnTimeout kind=const
-  digest=b3:e22991142254e3a3434841028871e2eb5d652b94ff20e87ba40e318231275ada file=neo/internal/server/swarm.go range=19:21 lang=go exported=false byte_range=334:534
+  digest=b3:e22991142254e3a3434841028871e2eb5d652b94ff20e87ba40e318231275ada file=neo/internal/server/swarm.go range=21:23 lang=go exported=false byte_range=371:571
   sig=time.Duration
   doc=subagentTurnTimeout bounds a single sub-agent's whole run, independent of the\nparent turn's budget, so one stuck sub-agent can't hold the swarm open.
 EDGES
@@ -5623,7 +5659,7 @@ EDGES
   ^defines=matrix/neo/internal/server/session.go
 
 NODE id=matrix/neo/internal/server.superviseBackoff kind=func
-  digest=b3:561076244aa811988ff1c9c378f9b24f33c498073b09b492c64d9bd70b0a2ecf file=neo/internal/server/session.go range=1038:1066 lang=go exported=false byte_range=44316:45476
+  digest=b3:561076244aa811988ff1c9c378f9b24f33c498073b09b492c64d9bd70b0a2ecf file=neo/internal/server/session.go range=1057:1085 lang=go exported=false byte_range=45506:46666
   sig=func superviseBackoff(ctx context.Context, attempt int, rateLimited bool) bool
   doc=superviseBackoff sleeps an attempt-scaled, jittered interval before a\nrespawn, honoring task cancellation. Jitter avoids a synchronized retry\nstampede when many users' daemons hit the same upstream hiccup at once.\n\nrateLimited stretches the interval hard: an upstream 429 means the provider\nis overloaded, so respawning quickly across many daemons is a self-amplifying\nrequest storm. On a 429 the base grows to ~15s/attempt (cap 90s) with a full\n15s of jitter, draining pressure off the upstream instead of adding to it,\nwhile still eventually retrying (the Task Durability Rule is preserved — we\nkeep going, just far more slowly).
 EDGES
@@ -5657,39 +5693,46 @@ EDGES
   ^defines=matrix/neo/internal/server/server.go
 
 NODE id=matrix/neo/internal/server.swarmActive kind=func
-  digest=b3:10f45fb9142110e696534b48d8568f5dfec62ca58b269f5597ec4010ebe5f8f2 file=neo/internal/server/swarm.go range=40:43 lang=go exported=false byte_range=1367:1467
+  digest=b3:10f45fb9142110e696534b48d8568f5dfec62ca58b269f5597ec4010ebe5f8f2 file=neo/internal/server/swarm.go range=55:58 lang=go exported=false byte_range=2181:2281
   sig=func swarmActive(ctx context.Context) bool
 EDGES
   ^defines=matrix/neo/internal/server/swarm.go
 
 NODE id=matrix/neo/internal/server.swarmActiveKey kind=type
-  digest=b3:bb05259f016415e7511ac2c99a6566a835043b1e95031e1ecd295b3e51c1b1bc file=neo/internal/server/swarm.go range=31:34 lang=go exported=false byte_range=987:1247
+  digest=b3:bb05259f016415e7511ac2c99a6566a835043b1e95031e1ecd295b3e51c1b1bc file=neo/internal/server/swarm.go range=46:49 lang=go exported=false byte_range=1801:2061
   sig=type swarmActiveKey struct{}
   doc=swarmActiveKey marks a context as already running inside a swarm, so a\nsub-agent that somehow reaches spawn_subagents is refused (no recursion /\nfork-bombs). Sub-agents are never advertised the tool, so this is a backstop.
 EDGES
   ^defines=matrix/neo/internal/server/swarm.go
 
 NODE id=matrix/neo/internal/server.swarmBackoff kind=func
-  digest=b3:b37525655b417b9e61f7595b5703d6c490d0fca6c3f1d10f675c13a4fe70891a file=neo/internal/server/swarm.go range=243:258 lang=go exported=false byte_range=8607:9039
-  sig=func swarmBackoff(ctx context.Context, attempt int) bool
-  doc=swarmBackoff sleeps a bounded, attempt-scaled interval before a sub-agent\nretry, returning false if the parent context is cancelled during the wait.
+  digest=b3:09a624213d1b7ecd8a50975fafb77933ed37effc8a3f228b7ad4ba94faa9c00e file=neo/internal/server/swarm.go range=269:292 lang=go exported=false byte_range=10124:10810
+  sig=func swarmBackoff(ctx context.Context, attempt int, hard bool) bool
+  doc=swarmBackoff sleeps a bounded, attempt-scaled interval before a sub-agent\nretry, returning false if the parent context is cancelled during the wait. A\nprovider storm (hard=true) backs off harder and longer so N recovering legs\ndon't re-collide on the recovering upstream the instant they retry.
+EDGES
+  ^defines=matrix/neo/internal/server/swarm.go
+
+NODE id=matrix/neo/internal/server.swarmStagger kind=func
+  digest=b3:a7367142ff8e07fdd2b15e26ebfff67245011e0a1e3f9a2c06cfe5efc8d85c99 file=neo/internal/server/swarm.go range=294:314 lang=go exported=false byte_range=10812:11374
+  sig=func swarmStagger(ctx context.Context, index int) bool
+  doc=swarmStagger delays leg `index` by (index-1)*staggerStep before its first\nattempt so concurrent legs don't start in lockstep, capped so a high index\ncan't over-delay. Returns false if the parent context is cancelled during the\nwait. Leg 1 never waits.
 EDGES
   ^defines=matrix/neo/internal/server/swarm.go
 
 NODE id=matrix/neo/internal/server.synthConvID kind=func
-  digest=b3:76091e15710a9fd6a3be5fcfbf07f8d1e0d5b1a0d4debf7d0763a39c52ff432e file=neo/internal/server/session.go range=1555:1558 lang=go exported=false byte_range=62965:63134
+  digest=b3:76091e15710a9fd6a3be5fcfbf07f8d1e0d5b1a0d4debf7d0763a39c52ff432e file=neo/internal/server/session.go range=1574:1577 lang=go exported=false byte_range=64155:64324
   sig=func synthConvID(seed string) string
 EDGES
   ^defines=matrix/neo/internal/server/session.go
 
 NODE id=matrix/neo/internal/server.synthRunID kind=func
-  digest=b3:74a4dff812cd16dc8e1fdd31c437b3a92f80bdd1ff7f817e9a7b03b86833c0dd file=neo/internal/server/session.go range=1550:1553 lang=go exported=false byte_range=62797:62963
+  digest=b3:74a4dff812cd16dc8e1fdd31c437b3a92f80bdd1ff7f817e9a7b03b86833c0dd file=neo/internal/server/session.go range=1569:1572 lang=go exported=false byte_range=63987:64153
   sig=func synthRunID(seed string) string
 EDGES
   ^defines=matrix/neo/internal/server/session.go
 
 NODE id=matrix/neo/internal/server.synthSwarmID kind=func
-  digest=b3:59dc243955552a0be1a15e223d967d3a363387e1bbb3d1f6608c6498fd4c50e6 file=neo/internal/server/swarm.go range=458:461 lang=go exported=false byte_range=15621:15792
+  digest=b3:59dc243955552a0be1a15e223d967d3a363387e1bbb3d1f6608c6498fd4c50e6 file=neo/internal/server/swarm.go range=538:541 lang=go exported=false byte_range=18945:19116
   sig=func synthSwarmID(seed string) string
 EDGES
   ^defines=matrix/neo/internal/server/swarm.go
@@ -6763,7 +6806,7 @@ EDGES
   ^defines=matrix/neo/internal/server/session.go
 
 NODE id=matrix/neo/internal/server.withSwarmActive kind=func
-  digest=b3:2f005dfe77743ef9aebb85372ccb5f60cf47820943c1be93a18644f3f2b34130 file=neo/internal/server/swarm.go range=36:38 lang=go exported=false byte_range=1249:1365
+  digest=b3:2f005dfe77743ef9aebb85372ccb5f60cf47820943c1be93a18644f3f2b34130 file=neo/internal/server/swarm.go range=51:53 lang=go exported=false byte_range=2063:2179
   sig=func withSwarmActive(ctx context.Context) context.Context
 EDGES
   ^defines=matrix/neo/internal/server/swarm.go
@@ -7052,9 +7095,9 @@ EDGES
   ^contains=matrix/neo/internal/server
 
 NODE id=matrix/neo/internal/server/session.go kind=file
-  digest=b3:e27f1fbc9962c770e5bdd8399e235c01c95c7de5b6dd4aae7c78d465a5a04fb5 file=neo/internal/server/session.go range=1:1583 lang=go exported=true
+  digest=b3:06a3c12231e0bc01f6911e7356579f59f738185d4b9e6b6c6e1eae20eb78d150 file=neo/internal/server/session.go range=1:1602 lang=go exported=true
 EDGES
-  defines=matrix/neo/internal/server.Engine.newSession,matrix/neo/internal/server.actCeiling,matrix/neo/internal/server.actDone,matrix/neo/internal/server.actInterrupted,matrix/neo/internal/server.actRespawn,matrix/neo/internal/server.actStop,matrix/neo/internal/server.askWaiter,matrix/neo/internal/server.automatrixReporter,matrix/neo/internal/server.automatrixReporter.Delta,matrix/neo/internal/server.automatrixReporter.Notice,matrix/neo/internal/server.automatrixReporter.Progress,matrix/neo/internal/server.automatrixReporter.Say,matrix/neo/internal/server.automatrixReporter.Status,matrix/neo/internal/server.automatrixReporter.Think,matrix/neo/internal/server.automatrixReporter.lastResult,matrix/neo/internal/server.ctxKey,matrix/neo/internal/server.deathDigest,matrix/neo/internal/server.deathEntry,matrix/neo/internal/server.deathEntry.durableSummary,matrix/neo/internal/server.dropRunNarration,matrix/neo/internal/server.firstUserText,matrix/neo/internal/server.friendlyErr,matrix/neo/internal/server.gateAnswer,matrix/neo/internal/server.newDeathEntry,matrix/neo/internal/server.newSessionRegistry,matrix/neo/internal/server.resumePrime,matrix/neo/internal/server.run,matrix/neo/internal/server.runCtxKey,matrix/neo/internal/server.runFromContext,matrix/neo/internal/server.seedMessages,matrix/neo/internal/server.session,matrix/neo/internal/server.session.answerAsk,matrix/neo/internal/server.session.answerGate,matrix/neo/internal/server.session.attemptContext,matrix/neo/internal/server.session.automatrixResult,matrix/neo/internal/server.session.chatFields,matrix/neo/internal/server.session.clearActive,matrix/neo/internal/server.session.clearAsk,matrix/neo/internal/server.session.clearGate,matrix/neo/internal/server.session.deliverCeiling,matrix/neo/internal/server.session.deliverDeterministicStop,matrix/neo/internal/server.session.deliverO1Stop,matrix/neo/internal/server.session.dispatch,matrix/neo/internal/server.session.dispatchLocked,matrix/neo/internal/server.session.dispatchLockedAs,matrix/neo/internal/server.session.drainInput,matrix/neo/internal/server.session.drive,matrix/neo/internal/server.session.emitProgress,matrix/neo/internal/server.session.enqueueInput,matrix/neo/internal/server.session.finishRun,matrix/neo/internal/server.session.interrupt,matrix/neo/internal/server.session.interruptActive,matrix/neo/internal/server.session.maybeConsolidateDeaths,matrix/neo/internal/server.session.pendingAsk,matrix/neo/internal/server.session.rebuildAgent,matrix/neo/internal/server.session.recordLoopDeath,matrix/neo/internal/server.session.registerAsk,matrix/neo/internal/server.session.registerGate,matrix/neo/internal/server.session.setActive,matrix/neo/internal/server.session.startResume,matrix/neo/internal/server.session.submit,matrix/neo/internal/server.session.submitAudio,matrix/neo/internal/server.session.submitIdempotent,matrix/neo/internal/server.session.submitWith,matrix/neo/internal/server.session.superviseAutomatrixTask,matrix/neo/internal/server.session.superviseBriefTask,matrix/neo/internal/server.session.superviseTask,matrix/neo/internal/server.sessionRegistry,matrix/neo/internal/server.sessionRegistry.get,matrix/neo/internal/server.sseReporter,matrix/neo/internal/server.sseReporter.Delta,matrix/neo/internal/server.sseReporter.Notice,matrix/neo/internal/server.sseReporter.Progress,matrix/neo/internal/server.sseReporter.Say,matrix/neo/internal/server.sseReporter.Status,matrix/neo/internal/server.sseReporter.Think,matrix/neo/internal/server.superviseAction,matrix/neo/internal/server.superviseBackoff,matrix/neo/internal/server.superviseDecision,matrix/neo/internal/server.superviseFromO1,matrix/neo/internal/server.synthConvID,matrix/neo/internal/server.synthRunID,matrix/neo/internal/server.withRun
+  defines=matrix/neo/internal/server.Engine.newSession,matrix/neo/internal/server.actCeiling,matrix/neo/internal/server.actDone,matrix/neo/internal/server.actInterrupted,matrix/neo/internal/server.actRespawn,matrix/neo/internal/server.actStop,matrix/neo/internal/server.askWaiter,matrix/neo/internal/server.automatrixReporter,matrix/neo/internal/server.automatrixReporter.Delta,matrix/neo/internal/server.automatrixReporter.Notice,matrix/neo/internal/server.automatrixReporter.Progress,matrix/neo/internal/server.automatrixReporter.Say,matrix/neo/internal/server.automatrixReporter.Status,matrix/neo/internal/server.automatrixReporter.Think,matrix/neo/internal/server.automatrixReporter.lastResult,matrix/neo/internal/server.ctxKey,matrix/neo/internal/server.deathDigest,matrix/neo/internal/server.deathEntry,matrix/neo/internal/server.deathEntry.durableSummary,matrix/neo/internal/server.dropRunNarration,matrix/neo/internal/server.firstUserText,matrix/neo/internal/server.friendlyErr,matrix/neo/internal/server.gateAnswer,matrix/neo/internal/server.newDeathEntry,matrix/neo/internal/server.newSessionRegistry,matrix/neo/internal/server.resumePrime,matrix/neo/internal/server.run,matrix/neo/internal/server.runCtxKey,matrix/neo/internal/server.runFromContext,matrix/neo/internal/server.seedMessages,matrix/neo/internal/server.session,matrix/neo/internal/server.session.answerAsk,matrix/neo/internal/server.session.answerGate,matrix/neo/internal/server.session.attemptContext,matrix/neo/internal/server.session.automatrixResult,matrix/neo/internal/server.session.chatFields,matrix/neo/internal/server.session.clearActive,matrix/neo/internal/server.session.clearAsk,matrix/neo/internal/server.session.clearGate,matrix/neo/internal/server.session.deliverCeiling,matrix/neo/internal/server.session.deliverDeterministicStop,matrix/neo/internal/server.session.deliverO1Stop,matrix/neo/internal/server.session.dispatch,matrix/neo/internal/server.session.dispatchLocked,matrix/neo/internal/server.session.dispatchLockedAs,matrix/neo/internal/server.session.drainInput,matrix/neo/internal/server.session.drive,matrix/neo/internal/server.session.emitProgress,matrix/neo/internal/server.session.enqueueInput,matrix/neo/internal/server.session.finishRun,matrix/neo/internal/server.session.interrupt,matrix/neo/internal/server.session.interruptActive,matrix/neo/internal/server.session.maybeConsolidateDeaths,matrix/neo/internal/server.session.pendingAsk,matrix/neo/internal/server.session.progressMessage,matrix/neo/internal/server.session.rebuildAgent,matrix/neo/internal/server.session.recordLoopDeath,matrix/neo/internal/server.session.registerAsk,matrix/neo/internal/server.session.registerGate,matrix/neo/internal/server.session.setActive,matrix/neo/internal/server.session.startResume,matrix/neo/internal/server.session.submit,matrix/neo/internal/server.session.submitAudio,matrix/neo/internal/server.session.submitIdempotent,matrix/neo/internal/server.session.submitWith,matrix/neo/internal/server.session.superviseAutomatrixTask,matrix/neo/internal/server.session.superviseBriefTask,matrix/neo/internal/server.session.superviseTask,matrix/neo/internal/server.sessionRegistry,matrix/neo/internal/server.sessionRegistry.get,matrix/neo/internal/server.sseReporter,matrix/neo/internal/server.sseReporter.Delta,matrix/neo/internal/server.sseReporter.Notice,matrix/neo/internal/server.sseReporter.Progress,matrix/neo/internal/server.sseReporter.Say,matrix/neo/internal/server.sseReporter.Status,matrix/neo/internal/server.sseReporter.Think,matrix/neo/internal/server.superviseAction,matrix/neo/internal/server.superviseBackoff,matrix/neo/internal/server.superviseDecision,matrix/neo/internal/server.superviseFromO1,matrix/neo/internal/server.synthConvID,matrix/neo/internal/server.synthRunID,matrix/neo/internal/server.withRun
   ^contains=matrix/neo/internal/server
 
 NODE id=matrix/neo/internal/server/sse.go kind=file
@@ -7070,9 +7113,9 @@ EDGES
   ^contains=matrix/neo/internal/server
 
 NODE id=matrix/neo/internal/server/swarm.go kind=file
-  digest=b3:c03b08a4fd4ff5446dab463aae4386b91806c85c5568f900adc8690a8a64641e file=neo/internal/server/swarm.go range=1:461 lang=go exported=true
+  digest=b3:554873f724a66b24c2bafc459c6d2e3207d73bd4fe5388515f969fa5de7a145d file=neo/internal/server/swarm.go range=1:541 lang=go exported=true
 EDGES
-  defines=matrix/neo/internal/server.Engine.capabilitySurface,matrix/neo/internal/server.Engine.publishSubagent,matrix/neo/internal/server.Engine.runOneSubagent,matrix/neo/internal/server.Engine.runSwarm,matrix/neo/internal/server.Engine.subagentSelfModelBrief,matrix/neo/internal/server.Engine.surfaceSubagentStep,matrix/neo/internal/server.aggregateResults,matrix/neo/internal/server.captureReporter,matrix/neo/internal/server.captureReporter.Delta,matrix/neo/internal/server.captureReporter.Notice,matrix/neo/internal/server.captureReporter.Progress,matrix/neo/internal/server.captureReporter.Say,matrix/neo/internal/server.captureReporter.Status,matrix/neo/internal/server.captureReporter.Think,matrix/neo/internal/server.captureReporter.final,matrix/neo/internal/server.captureReporter.note,matrix/neo/internal/server.shouldRetrySubagent,matrix/neo/internal/server.subResult,matrix/neo/internal/server.subagentMaxAttempts,matrix/neo/internal/server.subagentMaxInheritedPatterns,matrix/neo/internal/server.subagentTurnTimeout,matrix/neo/internal/server.swarmActive,matrix/neo/internal/server.swarmActiveKey,matrix/neo/internal/server.swarmBackoff,matrix/neo/internal/server.synthSwarmID,matrix/neo/internal/server.withSwarmActive
+  defines=matrix/neo/internal/server.Engine.capabilitySurface,matrix/neo/internal/server.Engine.publishSubagent,matrix/neo/internal/server.Engine.runOneSubagent,matrix/neo/internal/server.Engine.runSwarm,matrix/neo/internal/server.Engine.subagentSelfModelBrief,matrix/neo/internal/server.Engine.surfaceSubagentStep,matrix/neo/internal/server.aggregateResults,matrix/neo/internal/server.captureReporter,matrix/neo/internal/server.captureReporter.Delta,matrix/neo/internal/server.captureReporter.Notice,matrix/neo/internal/server.captureReporter.Progress,matrix/neo/internal/server.captureReporter.Say,matrix/neo/internal/server.captureReporter.Status,matrix/neo/internal/server.captureReporter.Think,matrix/neo/internal/server.captureReporter.final,matrix/neo/internal/server.captureReporter.note,matrix/neo/internal/server.shouldRetrySubagent,matrix/neo/internal/server.staggerStep,matrix/neo/internal/server.subResult,matrix/neo/internal/server.subagentEffectiveMax,matrix/neo/internal/server.subagentFailureTransient,matrix/neo/internal/server.subagentMaxAttempts,matrix/neo/internal/server.subagentMaxInheritedPatterns,matrix/neo/internal/server.subagentMaxTransientAttempts,matrix/neo/internal/server.subagentTurnTimeout,matrix/neo/internal/server.swarmActive,matrix/neo/internal/server.swarmActiveKey,matrix/neo/internal/server.swarmBackoff,matrix/neo/internal/server.swarmStagger,matrix/neo/internal/server.synthSwarmID,matrix/neo/internal/server.withSwarmActive
   ^contains=matrix/neo/internal/server
 
 NODE id=matrix/neo/internal/server/telegram_api.go kind=file

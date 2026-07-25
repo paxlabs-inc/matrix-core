@@ -803,7 +803,7 @@ func resumePrime(objective string, attempt int, prev error) string {
 		b.WriteString("\n\nHow the previous attempt ended (learn from this — do NOT repeat the same move that got it stuck): ")
 		b.WriteString(d)
 	}
-	b.WriteString("\n\nWork from a previous attempt may already exist — check your workspace (list/read the relevant files, re-run a quick status check) and BUILD ON what is already done instead of restarting from scratch. Keep going until the objective is fully achieved to a high standard, then give your final answer with honest coverage and the real evidence behind it.")
+	b.WriteString("\n\nWork from a previous attempt may already exist — check your workspace (list/read the relevant files, re-run a quick status check) and BUILD ON what is already done instead of restarting from scratch. If the prior work ALREADY gathered what the task needs and only the write-up or delivery remains, do NOT re-run the research or re-do the gathering — synthesize and deliver the final answer directly from what you already have. Keep going until the objective is fully achieved to a high standard, then give your final answer with honest coverage and the real evidence behind it.")
 	if attempt >= 3 {
 		b.WriteString(" If you keep getting stuck on one piece, break it into smaller concrete steps, or delegate parallel parts with spawn_subagents.")
 	}
@@ -931,13 +931,32 @@ func (s *session) emitProgress(r *run, attempt int, err error, outage bool) {
 		r.outageNotified = false
 	}
 	if !outage || !r.outageNotified {
-		msg := "Still on it — that pass hit a snag, so I'm taking another run at it."
+		msg := s.progressMessage(r)
 		s.engine.broker.publish(r.id, "chat.assistant", "neo", s.chatFields(r, msg, false))
 		if outage {
 			r.outageNotified = true
 		}
 	}
 	s.engine.logLifecycle("run.retry", r.id, s.id, fmt.Sprintf("attempt_%d", attempt+1), time.Since(r.started), err)
+}
+
+// progressMessage builds a SUBSTANTIVE still-working update (item 6b): instead of
+// a contentless "hit a snag, taking another run", it tells the user where things
+// actually stand — the agent's honest best-effort digest so far, clipped — then
+// that it is continuing from there. When that digest IS the message already on
+// screen it references it rather than re-pasting (the double-render), and when
+// there is nothing concrete yet it falls back to a plain, honest line. This is
+// how a peer reports progress: what's done, and what's next.
+func (s *session) progressMessage(r *run) string {
+	best := strings.TrimSpace(s.agent.BestEffort())
+	switch {
+	case best == "":
+		return "Still on it — I hit a snag on that pass and I'm picking it straight back up now."
+	case best == r.lastText:
+		return "Still on it — my last message has where things stand; I'm continuing from there now."
+	default:
+		return "Still on it. Where I've gotten to: " + clip(best, 320) + "\n\nContinuing from here now."
+	}
 }
 
 // deliverCeiling emits the ONE allowed terminal-without-completion: an honest

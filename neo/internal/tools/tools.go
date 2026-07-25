@@ -235,17 +235,17 @@ type boundTool struct {
 
 // Manager owns the MCP server pool + registry and the bound tool surface.
 type Manager struct {
-	manifest   *tool.AgentManifest
-	mcp        *mcp.Manager
-	registry   *tool.Registry
-	classifier *Classifier
-	delegate   DelegateFunc
-	recall     RecallFunc
-	mutation   MemoryMutationFunc
-	swarm      SwarmFunc
-	surface    SurfaceFunc
-	ask        AskFunc
-	writeSkill WriteSkillFunc
+	manifest    *tool.AgentManifest
+	mcp         *mcp.Manager
+	registry    *tool.Registry
+	classifier  *Classifier
+	delegate    DelegateFunc
+	recall      RecallFunc
+	mutation    MemoryMutationFunc
+	swarm       SwarmFunc
+	surface     SurfaceFunc
+	ask         AskFunc
+	writeSkill  WriteSkillFunc
 	todo        TodoFunc
 	preview     PreviewFunc
 	desktopLook DesktopLookFunc
@@ -631,6 +631,15 @@ func (m *Manager) dispatch(ctx context.Context, funcName string, args map[string
 				}
 			}
 		}
+	}
+	// Validate the arguments against the tool's advertised JSON Schema BEFORE the
+	// round-trip (errors that teach): a missing required field or a wrong-typed
+	// field becomes an exact, corrective message naming the field and the expected
+	// shape, caught here instead of surfacing as an opaque downstream server error
+	// the model can't act on. Deterministic (identical args fail identically), so
+	// it is not retried — the model must correct the call.
+	if msg, ok := validateToolArgs(funcName, bt.params, args); !ok {
+		return msg, "", true, tool.FailureValidation, false, msg, nil
 	}
 	t, err := m.registry.Get(bt.uri)
 	if err != nil {
@@ -1614,6 +1623,187 @@ func schemaToParams(raw json.RawMessage) map[string]interface{} {
 		p["properties"] = map[string]interface{}{}
 	}
 	return p
+}
+
+// validateToolArgs checks a call's arguments against the tool's advertised JSON
+// Schema before dispatch (errors that teach). It validates only the two mistakes
+// an LLM actually makes — omitting a REQUIRED field, and passing a value whose
+// JSON category clearly contradicts the declared type — and returns a corrective
+// message that NAMES the field, its expected type, and a copy-pasteable example.
+// It is deliberately conservative on types (only clear object/array/scalar
+// category mismatches, never scalar coercions a server would accept) so it never
+// rejects a well-formed call over a constraint the model couldn't know from the
+// schema. Returns ("", true) when the arguments are acceptable. The message
+// carries NO "class=" prefix — the dispatch ladder adds the failure-class prefix.
+func validateToolArgs(funcName string, params map[string]interface{}, args map[string]interface{}) (string, bool) {
+	if params == nil {
+		return "", true
+	}
+	props, _ := params["properties"].(map[string]interface{})
+	if required, ok := params["required"].([]interface{}); ok {
+		for _, r := range required {
+			field, _ := r.(string)
+			if field == "" {
+				continue
+			}
+			if v, present := args[field]; !present || isEmptyArg(v) {
+				msg := fmt.Sprintf(
+					"%s is missing required argument %q. Re-issue the call with every required field: %s.",
+					funcName, field, requiredFieldList(props, required),
+				)
+				if ex := exampleForSchema(props, required); ex != "" {
+					msg += " " + ex
+				}
+				return msg, false
+			}
+		}
+	}
+	for k, v := range args {
+		spec, ok := props[k].(map[string]interface{})
+		if !ok {
+			continue // unknown/extra field or a non-object property spec: don't reject
+		}
+		want, _ := spec["type"].(string)
+		if want == "" || jsonTypeMatches(want, v) {
+			continue
+		}
+		return fmt.Sprintf(
+			"argument %q of %s must be %s, but a %s was passed. Re-issue the call with %q as %s.",
+			k, funcName, want, jsonTypeName(v), k, want,
+		), false
+	}
+	return "", true
+}
+
+// isEmptyArg reports whether a decoded argument is effectively absent — nil, or a
+// blank/whitespace-only string. A missing-vs-empty required field is the same
+// mistake to teach, so both trip the required check.
+func isEmptyArg(v interface{}) bool {
+	if v == nil {
+		return true
+	}
+	if s, ok := v.(string); ok {
+		return strings.TrimSpace(s) == ""
+	}
+	return false
+}
+
+// jsonTypeMatches reports whether a decoded JSON value is compatible with a JSON
+// Schema type. Conservative by design: it rejects only clear CATEGORY mismatches
+// (an object/array where a scalar is expected, or vice versa) and accepts scalar
+// forms a tool server routinely coerces, so a valid call is never rejected.
+func jsonTypeMatches(want string, v interface{}) bool {
+	switch want {
+	case "object":
+		_, ok := v.(map[string]interface{})
+		return ok
+	case "array":
+		_, ok := v.([]interface{})
+		return ok
+	case "string":
+		switch v.(type) {
+		case map[string]interface{}, []interface{}:
+			return false
+		}
+		return true
+	case "number", "integer":
+		switch v.(type) {
+		case map[string]interface{}, []interface{}, bool:
+			return false
+		}
+		return true
+	case "boolean":
+		switch v.(type) {
+		case map[string]interface{}, []interface{}:
+			return false
+		}
+		return true
+	default:
+		return true // union types, "null", unknown: don't reject
+	}
+}
+
+// jsonTypeName names a decoded JSON value's type for a corrective message.
+func jsonTypeName(v interface{}) string {
+	switch v.(type) {
+	case nil:
+		return "null"
+	case string:
+		return "string"
+	case float64:
+		return "number"
+	case bool:
+		return "boolean"
+	case []interface{}:
+		return "array"
+	case map[string]interface{}:
+		return "object"
+	default:
+		return "value"
+	}
+}
+
+// requiredFieldList renders the required fields with their declared types for a
+// corrective message, e.g. `query (string), max_results (integer)`.
+func requiredFieldList(props map[string]interface{}, required []interface{}) string {
+	parts := make([]string, 0, len(required))
+	for _, r := range required {
+		field, _ := r.(string)
+		if field == "" {
+			continue
+		}
+		parts = append(parts, field+" ("+fieldType(props, field)+")")
+	}
+	return strings.Join(parts, ", ")
+}
+
+// exampleForSchema renders a compact, copy-pasteable JSON object of the required
+// fields with typed placeholders, so the corrective message shows the shape of a
+// valid call. Empty when there are no required fields.
+func exampleForSchema(props map[string]interface{}, required []interface{}) string {
+	ex := make(map[string]interface{}, len(required))
+	for _, r := range required {
+		field, _ := r.(string)
+		if field == "" {
+			continue
+		}
+		ex[field] = placeholderForType(fieldType(props, field))
+	}
+	if len(ex) == 0 {
+		return ""
+	}
+	b, err := json.Marshal(ex)
+	if err != nil {
+		return ""
+	}
+	return "Example: " + string(b)
+}
+
+// fieldType returns a property's declared JSON Schema type, or "any" when the
+// schema does not pin one (a union or absent type).
+func fieldType(props map[string]interface{}, field string) string {
+	if spec, ok := props[field].(map[string]interface{}); ok {
+		if t, ok := spec["type"].(string); ok && t != "" {
+			return t
+		}
+	}
+	return "any"
+}
+
+// placeholderForType returns a typed placeholder value for an example call.
+func placeholderForType(t string) interface{} {
+	switch t {
+	case "number", "integer":
+		return 0
+	case "boolean":
+		return false
+	case "array":
+		return []interface{}{}
+	case "object":
+		return map[string]interface{}{}
+	default:
+		return "..."
+	}
 }
 
 func hardenFileMutationTool(bt *boundTool) {
