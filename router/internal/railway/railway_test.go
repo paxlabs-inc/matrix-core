@@ -35,8 +35,7 @@ func gqlServer(t *testing.T, handle func(t *testing.T, op string, vars map[strin
 		}
 		op := ""
 		for _, name := range []string{
-			"variableCollectionUpsert", "variables", "serviceCreate", "volumeCreate",
-			"deployments", "serviceDelete", "volumeDelete",
+			"serviceCreate", "volumeCreate", "deployments", "serviceDelete", "volumeDelete",
 		} {
 			if strings.Contains(req.Query, name+"(") {
 				op = name
@@ -199,97 +198,6 @@ func TestRailwayEnsureRequiresImage(t *testing.T) {
 	p := &Provisioner{Client: New("T", "proj-1", "env-1")}
 	if _, err := p.Ensure(context.Background(), provision.CreateRequest{UserID: "u"}); err == nil {
 		t.Fatalf("expected image-not-configured error")
-	}
-}
-
-func TestRailwayConfigureEnvironmentIsNoOpWhenBaselineMatches(t *testing.T) {
-	calls := 0
-	srv := gqlServer(t, func(t *testing.T, op string, vars map[string]any) (any, string) {
-		calls++
-		if op != "variables" {
-			t.Fatalf("unexpected op %q", op)
-		}
-		if vars["projectId"] != "proj-1" || vars["environmentId"] != "env-1" || vars["serviceId"] != "svc-1" {
-			t.Fatalf("variable scope: %+v", vars)
-		}
-		return map[string]any{"variables": map[string]string{
-			"MATRIX_USER_ID": "alice", "MATRIX_FINANCE_URL": "http://router/internal/finance",
-		}}, ""
-	})
-	defer srv.Close()
-
-	changed, err := testProvisioner(srv.URL).ConfigureEnvironment(context.Background(), provision.Ref{
-		UserID: "alice", EnvID: "svc-1",
-	}, map[string]string{
-		"MATRIX_USER_ID": "alice", "MATRIX_FINANCE_URL": "http://router/internal/finance",
-	})
-	if err != nil {
-		t.Fatalf("ConfigureEnvironment: %v", err)
-	}
-	if changed {
-		t.Fatal("matching environment must not deploy")
-	}
-	if calls != 1 {
-		t.Fatalf("calls = %d, want one read", calls)
-	}
-}
-
-func TestRailwayConfigureEnvironmentUpsertsChangesAndWaitsForNewDeployment(t *testing.T) {
-	deploymentReads := 0
-	upserts := 0
-	srv := gqlServer(t, func(t *testing.T, op string, vars map[string]any) (any, string) {
-		switch op {
-		case "variables":
-			return map[string]any{"variables": map[string]string{
-				"MATRIX_USER_ID": "alice",
-			}}, ""
-		case "variableCollectionUpsert":
-			upserts++
-			input, _ := vars["input"].(map[string]any)
-			if input["projectId"] != "proj-1" || input["environmentId"] != "env-1" || input["serviceId"] != "svc-1" {
-				t.Fatalf("upsert scope: %+v", input)
-			}
-			if input["replace"] != false || input["skipDeploys"] != false {
-				t.Fatalf("upsert deployment contract: %+v", input)
-			}
-			got, _ := input["variables"].(map[string]any)
-			if len(got) != 2 || got["MATRIX_FINANCE_TOKEN"] != "finance-token" || got["RAILWAY_API_TOKEN"] != "railway-token" {
-				t.Fatalf("changed variables = %+v", got)
-			}
-			return map[string]any{"variableCollectionUpsert": true}, ""
-		case "deployments":
-			deploymentReads++
-			id, status := "deploy-old", DeployStatusSuccess
-			if deploymentReads == 2 {
-				id, status = "deploy-new", "BUILDING"
-			}
-			if deploymentReads >= 3 {
-				id, status = "deploy-new", DeployStatusSuccess
-			}
-			return map[string]any{"deployments": map[string]any{
-				"edges": []map[string]any{{"node": Deployment{ID: id, Status: status}}},
-			}}, ""
-		default:
-			t.Fatalf("unexpected op %q", op)
-			return nil, "unexpected"
-		}
-	})
-	defer srv.Close()
-
-	changed, err := testProvisioner(srv.URL).ConfigureEnvironment(context.Background(), provision.Ref{
-		UserID: "alice", EnvID: "svc-1",
-	}, map[string]string{
-		"MATRIX_USER_ID": "alice", "MATRIX_FINANCE_TOKEN": "finance-token",
-		"RAILWAY_API_TOKEN": "railway-token",
-	})
-	if err != nil {
-		t.Fatalf("ConfigureEnvironment: %v", err)
-	}
-	if !changed || upserts != 1 {
-		t.Fatalf("changed=%v upserts=%d, want true/1", changed, upserts)
-	}
-	if deploymentReads < 3 {
-		t.Fatalf("deployment reads = %d, want old plus new readiness", deploymentReads)
 	}
 }
 

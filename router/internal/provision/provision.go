@@ -121,12 +121,4 @@ type Recoverable interface {
 	DeleteVolume(ctx context.Context, volumeID string) error
 }
 
-// EnvironmentConfigurer reconciles an existing environment's service-owned
-// baseline after an authenticated request reaches a newly deployed router.
-// Implementations apply only changed values and wait for readiness. The bool
-// reports whether a provider mutation was required.
-type EnvironmentConfigurer interface {
-	ConfigureEnvironment(ctx context.Context, ref Ref, env map[string]string) (bool, error)
-}
-
 // Copyright © 2026 Paxlabs Inc. All rights reserved.
