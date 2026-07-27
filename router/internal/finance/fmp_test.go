@@ -155,6 +155,31 @@ func TestFMPQuoteNormalizesTheDocumentedPayload(t *testing.T) {
 	}
 }
 
+func TestFMPQuoteListUsesOneBoundedMultiSymbolRequest(t *testing.T) {
+	var gotSymbol string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotSymbol = r.URL.Query().Get("symbol")
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`[
+			{"symbol":"^GSPC","price":7521.25,"change":73.75,"volume":0,"exchange":"INDEX"},
+			{"symbol":"^VIX","price":16.37,"change":-0.93,"volume":0,"exchange":"INDEX"}
+		]`))
+	}))
+	defer srv.Close()
+	c := NewFMP("test-key", srv.URL, srv.Client())
+
+	quotes, err := c.QuoteList(context.Background(), []string{"^GSPC", "^VIX"}, ClassIndex)
+	if err != nil {
+		t.Fatalf("QuoteList: %v", err)
+	}
+	if gotSymbol != "^GSPC,^VIX" {
+		t.Fatalf("symbol query = %q, want one comma-separated request", gotSymbol)
+	}
+	if len(quotes) != 2 || quotes[0].Class != ClassIndex || quotes[1].Class != ClassIndex {
+		t.Fatalf("quotes = %+v", quotes)
+	}
+}
+
 // An index carries no market cap. The vendor says so with 0, and 0 must not
 // reach the UI as a real figure.
 func TestFMPZeroMarketCapIsAbsentNotZero(t *testing.T) {

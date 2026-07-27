@@ -391,7 +391,7 @@ func TestServiceSeriesTierFollowsResolution(t *testing.T) {
 
 func TestServiceBoardAndNewsAndFundamentalsRideTheSameLane(t *testing.T) {
 	svc, _, _, _ := newTestService(t, map[string]string{
-		"batch-index-quotes":     `[{"symbol":"^GSPC","price":7521.25,"change":73.75,"volume":0}]`,
+		"quote":                  `[{"symbol":"^GSPC","price":7521.25,"change":73.75,"volume":0}]`,
 		"news/general-latest":    `[{"symbol":null,"publishedDate":"2026-06-06 12:40:12","publisher":"Reuters","title":"Oil plunges","image":"","site":"reuters.com","text":"Crude tumbled.","url":"https://example.test/oil"}]`,
 		"key-metrics-ttm":        `[{"symbol":"AAPL","marketCap":3149833928000,"returnOnEquityTTM":1.45}]`,
 		"ratios-ttm":             `[{"symbol":"AAPL","priceToEarningsRatioTTM":32.88,"dividendYieldTTM":0.0036}]`,
@@ -431,5 +431,25 @@ func TestServiceBoardAndNewsAndFundamentalsRideTheSameLane(t *testing.T) {
 	}
 	if sum.Consensus.TargetMedian == nil || *sum.Consensus.TargetMedian != 325 {
 		t.Fatalf("price target missing: %+v", sum.Consensus)
+	}
+}
+
+func TestServiceBoardCoversEveryClientMarketClassWithoutBulkEndpoints(t *testing.T) {
+	svc, fmp, _, _ := newTestService(t, map[string]string{
+		"quote": `[{"symbol":"AAPL","price":232.8,"change":4.79,"volume":44489128,"exchange":"NASDAQ"}]`,
+	}, nil)
+
+	classes := []AssetClass{ClassEquity, ClassIndex, ClassCrypto, ClassForex, ClassCommodity}
+	for _, class := range classes {
+		board, err := svc.Board(context.Background(), "u", class)
+		if err != nil {
+			t.Fatalf("Board(%s): %v", class, err)
+		}
+		if len(board.Quotes) != 1 || board.Quotes[0].Class != class {
+			t.Fatalf("Board(%s) = %+v", class, board.Quotes)
+		}
+	}
+	if got := fmp.Hits(); got != int64(len(classes)) {
+		t.Fatalf("FMP calls = %d, want one bounded quote call per market class", got)
 	}
 }

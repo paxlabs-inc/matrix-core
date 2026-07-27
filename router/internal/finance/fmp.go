@@ -239,6 +239,34 @@ func (c *FMP) Quote(ctx context.Context, symbol string) (*Quote, error) {
 	return &q, nil
 }
 
+// QuoteList reads a deliberately bounded set of symbols through FMP's
+// documented quote endpoint. FMP accepts comma-separated symbols here, which
+// lets a market board stay one upstream request without downloading the
+// provider's entire global batch universe.
+func (c *FMP) QuoteList(ctx context.Context, symbols []string, class AssetClass) ([]Quote, error) {
+	joined := strings.Join(symbols, ",")
+	if strings.TrimSpace(joined) == "" {
+		return nil, &Failure{
+			Kind: FailureBadRequest, Provider: ProviderFMP, Endpoint: "quote",
+			Message: "No symbols were requested.",
+		}
+	}
+	rows, err := fmpList[fmpQuote](ctx, c, "quote", "quote", map[string]string{"symbol": joined})
+	if err != nil {
+		return nil, err
+	}
+	src := c.source()
+	out := make([]Quote, 0, len(rows))
+	for _, row := range rows {
+		q := row.normalize(src)
+		if class != "" {
+			q.Class = class
+		}
+		out = append(out, q)
+	}
+	return out, nil
+}
+
 // BatchQuote reads many instruments in one upstream call — the shape the index
 // strip, the watchlist and the per-market lists all want.
 func (c *FMP) BatchQuote(ctx context.Context, symbols []string) ([]Quote, error) {

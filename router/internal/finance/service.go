@@ -353,20 +353,40 @@ func (s *Service) Sectors(ctx context.Context, user, date, exchange string) (*Se
 	return &out, nil
 }
 
-// Board reads a whole asset class in one call: indexes, crypto or commodities.
-func (s *Service) Board(ctx context.Context, user string, class AssetClass) (*QuoteBoard, error) {
-	var fetch func(context.Context) (any, error)
+// boardSymbols is the bounded, reader-facing universe for each market tab.
+// The UI renders at most twelve rows, so asking FMP's bulk endpoints for every
+// instrument wastes bandwidth and makes an ordinary page load depend on the
+// vendor's bulk-delivery tier.
+func boardSymbols(class AssetClass) []string {
 	switch class {
+	case ClassEquity:
+		return []string{"AAPL", "MSFT", "NVDA", "AMZN", "GOOGL", "META", "TSLA", "BRK-B", "JPM", "LLY", "AVGO", "WMT"}
 	case ClassIndex:
-		fetch = func(ctx context.Context) (any, error) { return s.FMP.IndexBoard(ctx) }
+		return []string{"^GSPC", "^IXIC", "^DJI", "^RUT", "^VIX", "^FTSE", "^GDAXI", "^FCHI", "^N225", "^HSI", "^STOXX50E", "^AXJO"}
 	case ClassCrypto:
-		fetch = func(ctx context.Context) (any, error) { return s.FMP.CryptoBoard(ctx) }
+		return []string{"BTCUSD", "ETHUSD", "SOLUSD", "XRPUSD", "BNBUSD", "DOGEUSD", "ADAUSD", "AVAXUSD", "LINKUSD", "DOTUSD", "LTCUSD", "BCHUSD"}
+	case ClassForex:
+		return []string{"EURUSD", "GBPUSD", "USDJPY", "USDCHF", "AUDUSD", "USDCAD", "NZDUSD", "EURGBP", "EURJPY", "GBPJPY", "USDSEK", "USDNOK"}
 	case ClassCommodity:
-		fetch = func(ctx context.Context) (any, error) { return s.FMP.CommodityBoard(ctx) }
+		return []string{"GCUSD", "SIUSD", "CLUSD", "NGUSD", "HGUSD", "ZCUSD", "ZWUSD", "ZSUSD", "KCUSD", "CTUSD", "SBUSD", "CCUSD"}
 	default:
+		return nil
+	}
+}
+
+// Board reads the curated top instruments for one asset class in one quote
+// call. The provider-specific all-market batch clients remain available for
+// workflows that genuinely need the full universe, but they are intentionally
+// not on this latency- and bandwidth-sensitive page path.
+func (s *Service) Board(ctx context.Context, user string, class AssetClass) (*QuoteBoard, error) {
+	symbols := boardSymbols(class)
+	if len(symbols) == 0 {
 		return nil, &Failure{Kind: FailureBadRequest, Endpoint: "board", Message: "That market is not available as a board."}
 	}
-	value, src, err := s.serve(ctx, req{User: user, Class: ClassQuote, Endpoint: "board", Key: key("board", string(class))}, fetch, nil)
+	value, src, err := s.serve(ctx, req{User: user, Class: ClassQuote, Endpoint: "board", Key: key("board", string(class))},
+		func(ctx context.Context) (any, error) { return s.FMP.QuoteList(ctx, symbols, class) },
+		nil,
+	)
 	if err != nil {
 		return nil, err
 	}
