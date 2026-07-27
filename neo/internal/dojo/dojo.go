@@ -305,7 +305,7 @@ func (m *Manager) EnsureSession(convID string) (Session, error) {
 func (m *Manager) WaitReady(ctx context.Context, convID string, wait time.Duration) (Session, error) {
 	deadline := m.now().Add(wait)
 	for {
-		snap, ok := m.SessionForConv(convID)
+		snap, ok := m.SessionResultForConv(convID)
 		if !ok {
 			return Session{}, ErrNotFound
 		}
@@ -342,6 +342,7 @@ func (m *Manager) ensureRecord(convID string) (*session, bool, error) {
 			return s, true, nil
 		}
 		delete(m.byConv, convID)
+		delete(m.sessions, id)
 	}
 	m.mu.Unlock()
 
@@ -362,6 +363,7 @@ func (m *Manager) ensureRecord(convID string) (*session, bool, error) {
 			m.mu.Unlock()
 			return prev, true, nil
 		}
+		delete(m.sessions, id)
 	}
 	m.sessions[s.id] = s
 	m.byConv[convID] = s.id
@@ -371,7 +373,7 @@ func (m *Manager) ensureRecord(convID string) (*session, bool, error) {
 }
 
 // settleProvision runs the bounded provision for a freshly registered record
-// and settles it to ready, or destroys it with a typed failure.
+// and settles it to ready, or records a typed failure after cleanup.
 func (m *Manager) settleProvision(ctx context.Context, s *session) error {
 	pctx, cancel := context.WithTimeout(ctx, m.cfg.ProvisionTimeout)
 	defer cancel()
@@ -383,17 +385,24 @@ func (m *Manager) settleProvision(ctx context.Context, s *session) error {
 			terr = fmt.Errorf("%w: %v", ErrProvision, err)
 		}
 		// Never leak a half-provisioned sandbox.
-		if s.sandboxID != "" {
-			if derr := m.rw.DestroySandbox(context.Background(), s.sandboxID); derr != nil {
-				m.logf("dojo: cleanup destroy %s: %v", s.sandboxID, derr)
+		m.mu.Lock()
+		sandboxID := s.sandboxID
+		m.mu.Unlock()
+		if sandboxID != "" {
+			if derr := m.rw.DestroySandbox(context.Background(), sandboxID); derr != nil {
+				m.logf("dojo: cleanup destroy %s: %v", sandboxID, derr)
+			} else {
+				m.mu.Lock()
+				s.sandboxID = ""
+				m.mu.Unlock()
 			}
 		}
 		m.mu.Lock()
 		s.state = StateFailed
-		s.reason = terr.Error()
+		s.reason = boundedProvisionReason(terr)
 		snap := s.snapshot()
 		m.mu.Unlock()
-		m.emit(s.convID, EvtFailed, m.eventFields(snap, map[string]interface{}{"reason": terr.Error()}))
+		m.emit(s.convID, EvtFailed, m.eventFields(snap, map[string]interface{}{"reason": snap.Reason}))
 		return terr
 	}
 	return m.transition(s, StateReady, EvtReady, nil)
@@ -479,6 +488,23 @@ func (m *Manager) SessionForConv(convID string) (Session, bool) {
 	}
 	s := m.sessions[id]
 	if s == nil || s.state == StateDestroyed || s.state == StateFailed {
+		return Session{}, false
+	}
+	return s.snapshot(), true
+}
+
+// SessionResultForConv returns a conversation's latest non-destroyed result,
+// including a failed boot so clients can render its bounded reason. A retry
+// still replaces the failed record through ensureRecord.
+func (m *Manager) SessionResultForConv(convID string) (Session, bool) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	id, ok := m.byConv[convID]
+	if !ok {
+		return Session{}, false
+	}
+	s := m.sessions[id]
+	if s == nil || s.state == StateDestroyed {
 		return Session{}, false
 	}
 	return s.snapshot(), true
@@ -785,6 +811,24 @@ func (m *Manager) eventFields(snap Session, extra map[string]interface{}) map[st
 		f[k] = v
 	}
 	return f
+}
+
+func boundedProvisionReason(err error) string {
+	message := strings.TrimSpace(err.Error())
+	for _, replacement := range [][2]string{
+		{"RAILWAY_API_TOKEN", "service credential"},
+		{"Railway", "computer service"},
+		{"railway", "computer service"},
+	} {
+		message = strings.ReplaceAll(message, replacement[0], replacement[1])
+	}
+	if len(message) > 300 {
+		message = message[:300]
+	}
+	if message == "" {
+		return "The computer service could not create the sandbox."
+	}
+	return message
 }
 
 // evictForCap tears down least-recently-touched sessions (through the ship

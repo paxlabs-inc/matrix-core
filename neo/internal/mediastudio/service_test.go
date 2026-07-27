@@ -2,6 +2,7 @@ package mediastudio
 
 import (
 	"context"
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"strings"
@@ -10,6 +11,20 @@ import (
 
 	"matrix/neo/internal/tools"
 )
+
+func TestJobJSONAlwaysUsesAssetArray(t *testing.T) {
+	job := cloneJob(Job{ID: "legacy-null-assets"})
+	if job.Assets == nil {
+		t.Fatal("clone retained nil assets")
+	}
+	data, err := json.Marshal(job)
+	if err != nil {
+		t.Fatalf("marshal job: %v", err)
+	}
+	if !strings.Contains(string(data), `"assets":[]`) {
+		t.Fatalf("job assets were not encoded as an array: %s", data)
+	}
+}
 
 func TestOpenRecoversInterruptedJobsWithoutRepeatingThem(t *testing.T) {
 	mediaDir := filepath.Join(t.TempDir(), "media")

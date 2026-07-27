@@ -103,6 +103,9 @@ func (e *Engine) dojoBoot(ctx context.Context) error {
 	if snap.State == dojo.StateProvisioning {
 		return dojo.ErrBooting
 	}
+	if snap.State == dojo.StateFailed {
+		return fmt.Errorf("%w: %s", dojo.ErrProvision, snap.Reason)
+	}
 	return nil
 }
 
@@ -222,7 +225,10 @@ func (s *Server) handleDojoSession(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusBadRequest, map[string]interface{}{"error": "conversation is required"})
 		return
 	}
-	snap, ok := e.dojo.SessionForConvOrLive(conv)
+	snap, ok := e.dojo.SessionResultForConv(conv)
+	if !ok {
+		snap, ok = e.dojo.SessionForConvOrLive(conv)
+	}
 	if !ok {
 		writeJSON(w, http.StatusOK, map[string]interface{}{"session": nil})
 		return

@@ -145,9 +145,9 @@ func (p *Provisioner) DeleteVolume(ctx context.Context, volumeID string) error {
 	return mapErr(p.Client.DeleteVolume(ctx, volumeID))
 }
 
-// ConfigureEnvironment reconciles the operator-owned baseline for an existing
-// user service. It is called only by the explicit admin ensure action, never
-// from the request proxy hot path.
+// ConfigureEnvironment reconciles the service-owned baseline for an existing
+// user service. Callers deduplicate it per user and run it out of band from
+// request forwarding.
 func (p *Provisioner) ConfigureEnvironment(ctx context.Context, ref provision.Ref, desired map[string]string) (bool, error) {
 	current, err := p.Client.ServiceVariables(ctx, ref.EnvID)
 	if err != nil {

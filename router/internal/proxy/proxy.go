@@ -35,11 +35,9 @@ import (
 	"matrix/router/internal/provision"
 )
 
-// Provisioner triggers out-of-band provisioning of a user's environment
-// on their first authenticated request. Implemented by *admin.Handler
-// and wired in main; the proxy stays decoupled from the admin package
-// via this interface. (Environment lifecycle — wake/status/destroy — is
-// the separate provision.Provisioner seam.)
+// Provisioner triggers out-of-band provisioning for a new user and one-time
+// environment reconciliation for an active Railway user. Implemented by
+// *admin.Handler and wired in main; the proxy stays decoupled from admin.
 type Provisioner interface {
 	StartProvision(userID, email string)
 }
@@ -65,9 +63,8 @@ type Handler struct {
 	ReadyTimeout  time.Duration // deadline for the daemon HTTP server to accept connections post-wake
 	Logf          func(format string, args ...interface{})
 
-	// Provision, when non-nil, auto-provisions an environment for an
-	// authenticated user with no row yet (first-request onboarding).
-	// Nil preserves the legacy 404 "not provisioned" response.
+	// Provision, when non-nil, auto-provisions a new environment and reconciles
+	// an active Railway environment once after router startup.
 	Provision Provisioner
 
 	// once holds the assembled httputil.ReverseProxy so per-request work
@@ -219,7 +216,9 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	switch user.State {
 	case db.StateActive:
-		// continue
+		if user.Provider == "railway" && h.Provision != nil {
+			h.Provision.StartProvision(sub, Email(r.Context()))
+		}
 	case db.StateProvisioning:
 		http.Error(w, "user provisioning; retry shortly", http.StatusServiceUnavailable)
 		return

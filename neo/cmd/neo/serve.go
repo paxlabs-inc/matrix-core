@@ -285,6 +285,9 @@ func runServe(args []string) {
 		})
 	}
 	dojoCfg := dojo.Config{Image: os.Getenv("NEO_DOJO_IMAGE")}
+	dojoCfg.Logf = func(format string, args ...interface{}) {
+		fmt.Fprintf(os.Stderr, "neo: "+format+"\n", args...)
+	}
 	if v := os.Getenv("NEO_DOJO_IDLE_TIMEOUT"); v != "" {
 		if d, perr := time.ParseDuration(v); perr == nil {
 			dojoCfg.IdleTimeout = d

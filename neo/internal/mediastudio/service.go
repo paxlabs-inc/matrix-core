@@ -606,7 +606,11 @@ func mediaName(reference string) (string, bool) {
 }
 
 func cloneJob(job Job) Job {
-	job.Assets = append([]Asset(nil), job.Assets...)
+	if job.Assets == nil {
+		job.Assets = []Asset{}
+	} else {
+		job.Assets = append([]Asset(nil), job.Assets...)
+	}
 	return job
 }
 
@@ -656,7 +660,7 @@ func (service *Service) load() error {
 		return fmt.Errorf("media studio: decode state: %w", err)
 	}
 	for _, stored := range state.Jobs {
-		job := stored.Job
+		job := cloneJob(stored.Job)
 		job.IdempotencyKey = stored.IdempotencyKey
 		if job.ID == "" || job.IdempotencyKey == "" {
 			return fmt.Errorf("media studio: stored job is incomplete")

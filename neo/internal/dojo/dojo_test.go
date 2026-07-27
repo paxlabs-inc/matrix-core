@@ -439,12 +439,23 @@ func TestProvisionFailureIsTypedAndLeaksNothing(t *testing.T) {
 		t.Fatalf("err = %v, want ErrProvision", err)
 	}
 	types := rec.types()
-	want := []string{EvtProvisioning, EvtFailed, EvtDestroyed}
+	want := []string{EvtProvisioning, EvtFailed}
 	if strings.Join(types, ",") != strings.Join(want, ",") {
 		t.Fatalf("events = %v, want %v", types, want)
 	}
 	if _, ok := m.SessionForConv("conv-1"); ok {
-		t.Fatal("failed session still indexed")
+		t.Fatal("failed session reported as live")
+	}
+	failed, ok := m.SessionResultForConv("conv-1")
+	if !ok || failed.State != StateFailed || failed.Reason == "" {
+		t.Fatalf("failed result = %+v ok=%v", failed, ok)
+	}
+}
+
+func TestProvisionFailureReasonHidesInfrastructureLabels(t *testing.T) {
+	reason := boundedProvisionReason(errors.New("dojo: Railway rejected RAILWAY_API_TOKEN"))
+	if strings.Contains(strings.ToLower(reason), "railway") || strings.Contains(reason, "RAILWAY_API_TOKEN") {
+		t.Fatalf("infrastructure label escaped: %q", reason)
 	}
 }
 
@@ -478,7 +489,7 @@ func TestProvisionTimeoutNeverHangsTheTurn(t *testing.T) {
 		t.Fatalf("destroy calls = %d, want 1 (half-provisioned sandbox reclaimed)", f.opCount("destroy"))
 	}
 	types := rec.types()
-	if types[len(types)-2] != EvtFailed {
+	if types[len(types)-1] != EvtFailed {
 		t.Fatalf("events = %v, want a typed dojo.failed", types)
 	}
 }
@@ -731,8 +742,7 @@ func TestEnsureSessionConcurrentConvergesOnOneSession(t *testing.T) {
 }
 
 // TestEnsureSessionFailedBootDestroysAndReports: a background boot failure
-// settles honestly — dojo.failed + dojo.destroyed(provision_failed), the
-// session unindexed so the next ensure boots fresh.
+// settles honestly, remains visible with a reason, and the next ensure retries.
 func TestEnsureSessionFailedBootDestroysAndReports(t *testing.T) {
 	f := &railwayFixture{failCreate: true}
 	m, rec := newTestManager(t, f, Config{})
@@ -741,22 +751,34 @@ func TestEnsureSessionFailedBootDestroysAndReports(t *testing.T) {
 		t.Fatalf("EnsureSession: %v", err)
 	}
 	deadline := time.Now().Add(5 * time.Second)
+	var failed Session
 	for {
-		if _, ok := m.SessionForConv("conv-1"); !ok {
+		if current, ok := m.SessionResultForConv("conv-1"); ok && current.State == StateFailed {
+			failed = current
 			break
 		}
 		if time.Now().After(deadline) {
-			t.Fatalf("failed boot never unindexed; events = %v", rec.types())
+			t.Fatalf("failed boot never settled; events = %v", rec.types())
 		}
 		time.Sleep(5 * time.Millisecond)
 	}
 	types := rec.types()
-	if len(types) < 3 || types[0] != EvtProvisioning || types[1] != EvtFailed || types[2] != EvtDestroyed {
-		t.Fatalf("events = %v, want provisioning, failed, destroyed", types)
+	if len(types) != 2 || types[0] != EvtProvisioning || types[1] != EvtFailed {
+		t.Fatalf("events = %v, want provisioning, failed", types)
 	}
-	last := rec.last()
-	if reason, _ := last.fields["reason"].(string); reason != "provision_failed" {
-		t.Fatalf("destroyed reason = %v", last.fields)
+	if failed.Reason == "" {
+		t.Fatal("failed boot reason was discarded")
+	}
+
+	f.mu.Lock()
+	f.failCreate = false
+	f.mu.Unlock()
+	retry, err := m.EnsureSession("conv-1")
+	if err != nil {
+		t.Fatalf("retry EnsureSession: %v", err)
+	}
+	if retry.ID == failed.ID || retry.State != StateProvisioning {
+		t.Fatalf("retry session = %+v, failed session = %+v", retry, failed)
 	}
 }
 

@@ -52,7 +52,8 @@ type Handler struct {
 
 	// inflight dedupes concurrent StartProvision calls per user id so a
 	// burst of first requests provisions exactly one environment.
-	inflight sync.Map
+	inflight   sync.Map
+	reconciled sync.Map
 }
 
 // Mount registers the admin routes onto mux under "/admin/".
@@ -146,17 +147,18 @@ func (h *Handler) EnsureMachine(ctx context.Context, userID, email, handle, regi
 		return nil, false, fmt.Errorf("db upsert: %w", err)
 	}
 
-	// 2. An attached environment still needs its operator-owned capability
-	//    environment reconciled. This route is an explicit admin mutation, so
-	//    the provider may deploy changed variables here; the public proxy never
-	//    mutates provider configuration.
+	// 2. An attached Railway environment still needs its service-owned
+	//    capability environment reconciled once after a router deployment.
 	user, err := h.DB.LookupForRoute(ctx, userID)
 	if err != nil {
 		return nil, false, fmt.Errorf("db lookup: %w", err)
 	}
 	if user.EnvID != "" {
+		if user.Provider != h.Provider {
+			return user, false, nil
+		}
 		prov := h.Prov
-		if h.Provider == "railway" && h.ShardProviders != nil && user.RailwayShardID != "" {
+		if user.Provider == "railway" && h.ShardProviders != nil && user.RailwayShardID != "" {
 			var ok bool
 			prov, ok = h.ShardProviders.Provider(user.RailwayShardID)
 			if !ok {
@@ -170,6 +172,7 @@ func (h *Handler) EnsureMachine(ctx context.Context, userID, email, handle, regi
 				return nil, false, fmt.Errorf("reconcile environment: %w", err)
 			}
 		}
+		h.reconciled.Store(userID, struct{}{})
 		return user, false, nil
 	}
 
@@ -250,6 +253,7 @@ func (h *Handler) EnsureMachine(ctx context.Context, userID, email, handle, regi
 	if err != nil {
 		return nil, true, fmt.Errorf("post-attach lookup: %w", err)
 	}
+	h.reconciled.Store(userID, struct{}{})
 	return user, true, nil
 }
 
@@ -397,6 +401,9 @@ func (h *Handler) instanceEnv(userID string) map[string]string {
 // for the same user are deduplicated via inflight, so a burst of first
 // requests provisions exactly one environment.
 func (h *Handler) StartProvision(userID, email string) {
+	if _, ok := h.reconciled.Load(userID); ok {
+		return
+	}
 	if _, busy := h.inflight.LoadOrStore(userID, struct{}{}); busy {
 		return
 	}

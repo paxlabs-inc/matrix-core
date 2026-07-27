@@ -121,11 +121,10 @@ type Recoverable interface {
 	DeleteVolume(ctx context.Context, volumeID string) error
 }
 
-// EnvironmentConfigurer is the explicit operator-driven reconciliation seam
-// for an environment that already exists. Implementations compare the desired
-// service environment with provider truth, apply only changed values, and wait
-// for the resulting deployment to become ready. The bool reports whether a
-// provider mutation was required.
+// EnvironmentConfigurer reconciles an existing environment's service-owned
+// baseline after an authenticated request reaches a newly deployed router.
+// Implementations apply only changed values and wait for readiness. The bool
+// reports whether a provider mutation was required.
 type EnvironmentConfigurer interface {
 	ConfigureEnvironment(ctx context.Context, ref Ref, env map[string]string) (bool, error)
 }
