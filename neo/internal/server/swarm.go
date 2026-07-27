@@ -199,6 +199,7 @@ func (e *Engine) runOneSubagent(ctx context.Context, r *run, swarmID string, ind
 			Cheap:         e.cheap,
 			Tools:         e.tools,
 			Pager:         e.pager, // shared cortex READ lane; no consolidator (no write-back noise)
+			Runtime:       e.runtime,
 			Reporter:      rep,
 			Observer:      func(ev agent.ToolEvent) { e.surfaceSubagentStep(r, swarmID, index, spec.Name, ev) },
 			Persona:       spec.Persona,

@@ -1227,6 +1227,7 @@ export function NeoSurface({
                         key={m.id}
                         message={m}
                         onMediaAction={(instruction) => send(instruction)}
+                        onResume={m.resumable ? () => send(t('resumeRequest')) : undefined}
                         onFork={
                           conversationId && !live
                             ? () => onForkConversation?.(conversationId, index + 1)
@@ -1273,6 +1274,7 @@ export function NeoSurface({
                       message={lastMessage}
                       failed={task?.failed}
                       onMediaAction={(instruction) => send(instruction)}
+                      onResume={lastMessage.resumable ? () => send(t('resumeRequest')) : undefined}
                       onFork={
                         conversationId && !live
                           ? () => onForkConversation?.(conversationId, messages.length)

@@ -1,5 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { act, renderHook, waitFor } from '@testing-library/react'
+import { createElement, type ReactNode } from 'react'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import type { ConversationRecord, ConversationSummary } from '@/lib/api/conversations'
 import type { SSEUpdate } from '@/lib/realtime/sse'
 
@@ -76,6 +78,15 @@ vi.mock('sonner', () => ({
 
 import { useChat } from '@/hooks/api/useChat'
 
+function queryWrapper() {
+  const client = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  })
+  return function QueryWrapper({ children }: { children: ReactNode }) {
+    return createElement(QueryClientProvider, { client }, children)
+  }
+}
+
 const SETTLED_SUMMARY: ConversationSummary = {
   conversation_id: 'conv_settled',
   title: 'old thread',
@@ -143,7 +154,13 @@ describe('useChat — F1 durable live-run resume', () => {
     conversationsApi.listConversations.mockResolvedValue([LIVE_SUMMARY])
     conversationsApi.getConversation.mockResolvedValue(liveRecord())
 
-    const { result } = renderHook(() => useChat())
+    const { result } = renderHook(() => useChat(), { wrapper: queryWrapper() })
+    await waitFor(() => {
+      expect(conversationsApi.listConversations).toHaveBeenCalled()
+    })
+    act(() => {
+      result.current.selectConversation('conv_live')
+    })
 
     await waitFor(() => {
       expect(eventsApi.subscribeEvents).toHaveBeenCalledTimes(1)
@@ -175,7 +192,13 @@ describe('useChat — F1 durable live-run resume', () => {
     conversationsApi.listConversations.mockResolvedValue([SETTLED_SUMMARY])
     conversationsApi.getConversation.mockResolvedValue(settledRecord())
 
-    renderHook(() => useChat())
+    const { result } = renderHook(() => useChat(), { wrapper: queryWrapper() })
+    await waitFor(() => {
+      expect(conversationsApi.listConversations).toHaveBeenCalled()
+    })
+    act(() => {
+      result.current.selectConversation('conv_settled')
+    })
 
     // Give the hook a tick to land the GET and decide.
     await waitFor(() => {

@@ -320,6 +320,22 @@ func (m *MMR) Root() ([32]byte, error) {
 	if err != nil {
 		return [32]byte{}, err
 	}
+	return m.RootAt(n)
+}
+
+// RootAt returns the canonical MMR root over the first n leaves, read from
+// the persisted accumulator rather than from the current leaf count. MMR
+// node positions are write-once — appending leaf n+1 only writes positions
+// above mmrSize(n) — so every peak position for n stays byte-identical for
+// the life of the journal. That makes a historical root derivable in
+// O(log n) reads after any number of later appends, and lets a caller pin
+// the root for exactly the prefix it committed without racing a concurrent
+// writer (the async embedder journals KindEmbed entries on its own
+// goroutine; Root() alone would fold those in).
+//
+// Returns EmptyMMRRoot for n == 0. Returns ErrNodeMissing (wrapped) when n
+// exceeds the leaves actually persisted.
+func (m *MMR) RootAt(n uint64) ([32]byte, error) {
 	if n == 0 {
 		return EmptyMMRRoot, nil
 	}
@@ -341,6 +357,36 @@ func (m *MMR) Root() ([32]byte, error) {
 		acc = hashMMRBag(hashes[i], acc)
 	}
 	return hashMMRRoot(n, acc), nil
+}
+
+// RootForLeaves computes the canonical MMR root for an ordered leaf prefix
+// without touching persisted accumulator state. Citation verification uses it
+// to prove a historical journal root after later leaves have been appended.
+func RootForLeaves(leaves [][32]byte) [32]byte {
+	if len(leaves) == 0 {
+		return EmptyMMRRoot
+	}
+	type peak struct {
+		height uint
+		hash   [32]byte
+	}
+	peaks := make([]peak, 0, bits.Len(uint(len(leaves))))
+	for _, leaf := range leaves {
+		current := peak{hash: leaf}
+		for len(peaks) > 0 &&
+			peaks[len(peaks)-1].height == current.height {
+			left := peaks[len(peaks)-1]
+			peaks = peaks[:len(peaks)-1]
+			current.hash = hashMMRNode(left.hash, current.hash)
+			current.height++
+		}
+		peaks = append(peaks, current)
+	}
+	acc := peaks[len(peaks)-1].hash
+	for index := len(peaks) - 2; index >= 0; index-- {
+		acc = hashMMRBag(peaks[index].hash, acc)
+	}
+	return hashMMRRoot(uint64(len(leaves)), acc)
 }
 
 // Reset clears the persisted MMR state (leafcount + every accum/mmr/n/

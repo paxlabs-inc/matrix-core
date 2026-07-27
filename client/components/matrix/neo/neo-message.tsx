@@ -14,6 +14,7 @@
  * re-renders.
  */
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
+import { useTranslations } from 'next-intl'
 import {
   BrainIcon,
   Check,
@@ -208,6 +209,7 @@ export function NeoAssistantMessage({
   failed,
   onMediaAction,
   onFork,
+  onResume,
 }: {
   message: ChatMessage
   failed?: boolean
@@ -215,11 +217,36 @@ export function NeoAssistantMessage({
   onMediaAction?: (instruction: string) => void
   /** Create an independent conversation containing this chronological prefix. */
   onFork?: () => void
+  /** Continue from a server-confirmed resumable checkpoint. */
+  onResume?: () => void
 }) {
+  const t = useTranslations('agentChat')
+  const deliveryLabel =
+    message.deliveryStatus === 'honest_partial'
+      ? t('honestPartialLabel')
+      : message.deliveryStatus === 'incomplete'
+        ? t('incompleteLabel')
+        : ''
   return (
     <div className="flex w-full min-w-0 flex-col gap-1">
       {message.reasoning && <NeoReasoning reasoning={message.reasoning} />}
-      {failed ? (
+      {deliveryLabel ? (
+        <div className="bg-muted/70 text-foreground rounded-xl px-3 py-2.5 text-sm">
+          <p className="text-muted-foreground mb-1 font-medium">{deliveryLabel}</p>
+          <div className={NEO_PROSE_CLASS}>
+            <Prose text={message.text} />
+          </div>
+          {message.resumable && onResume ? (
+            <button
+              type="button"
+              onClick={onResume}
+              className="bg-background/80 hover:bg-background text-foreground mt-3 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors"
+            >
+              {t('resume')}
+            </button>
+          ) : null}
+        </div>
+      ) : failed ? (
         <div className="bg-destructive/10 text-destructive rounded-lg px-3 py-2 text-sm">
           <Prose text={message.text} />
         </div>

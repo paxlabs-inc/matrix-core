@@ -208,11 +208,12 @@ func (s *session) rebuildAgent() {
 		}
 	}
 	opts := agent.Options{
-		Config: e.cfg,
-		Main:   e.main,
-		Cheap:  e.cheap,
-		Tools:  e.tools,
-		Pager:  e.pager,
+		Config:  e.cfg,
+		Main:    e.main,
+		Cheap:   e.cheap,
+		Tools:   e.tools,
+		Pager:   e.pager,
+		Runtime: e.runtime,
 		// Epistemic-core req.2: the resolved capability surface renders
 		// resident in the agent's byte-stable prefix.
 		Capability:   e.capabilitySurface(context.Background()),
@@ -996,7 +997,13 @@ func (s *session) deliverCeiling(r *run, reason string) task.Status {
 		text += " Here's exactly where it stands:\n\n" + best
 	}
 	text += "\n\nTell me how you'd like me to continue and I'll pick it right back up."
-	s.finishRun(r, runrecord.StatusFailed, text, reason, nil, true)
+	fields := s.chatFields(r, text, true)
+	fields["honest_partial"] = true
+	fields["incomplete"] = true
+	fields["resumable"] = true
+	s.finishRun(
+		r, runrecord.StatusFailed, text, reason, fields, true,
+	)
 	return task.StatusCeiling
 }
 
@@ -1041,7 +1048,16 @@ func (s *session) deliverDeterministicStop(r *run) task.Status {
 		}
 	}
 	text += "\n\nTell me how you'd like to adjust it and I'll pick it right back up."
-	s.finishRun(r, runrecord.StatusFailed, text, "deterministic blocker", nil, true)
+	fields := s.chatFields(r, text, true)
+	fields["incomplete"] = true
+	fields["resumable"] = true
+	if best != "" {
+		fields["honest_partial"] = true
+	}
+	s.finishRun(
+		r, runrecord.StatusFailed, text,
+		"deterministic blocker", fields, true,
+	)
 	return task.StatusCeiling
 }
 
@@ -1068,7 +1084,16 @@ func (s *session) deliverO1Stop(r *run, decision o1.SupervisorDecision) task.Sta
 	if decision.Terminal != nil {
 		reason = string(*decision.Terminal)
 	}
-	s.finishRun(r, runrecord.StatusFailed, text, reason, nil, true)
+	fields := s.chatFields(r, text, true)
+	fields["incomplete"] = true
+	fields["resumable"] = true
+	if decision.Terminal != nil &&
+		*decision.Terminal == o1.TermSafePartial {
+		fields["honest_partial"] = true
+	}
+	s.finishRun(
+		r, runrecord.StatusFailed, text, reason, fields, true,
+	)
 	return task.StatusCeiling
 }
 
@@ -1401,6 +1426,15 @@ func (s *session) clearAsk(askID string) {
 // promise (compaction / escalation).
 type sseReporter struct {
 	sess *session
+
+	mu        sync.Mutex
+	attempts  map[int]*streamedAttempt
+	committed string
+}
+
+type streamedAttempt struct {
+	content   strings.Builder
+	reasoning strings.Builder
 }
 
 // automatrixReporter is the QUIET reporter for an autonomous Automatrix run. It
@@ -1468,6 +1502,11 @@ func (r *sseReporter) Say(text string, completion bool) {
 		// path is dormant; message.complete still fires to close the run.
 		fields["completion"] = true
 	}
+	r.mu.Lock()
+	alreadyPersisted := strings.TrimSpace(text) != "" &&
+		strings.TrimSpace(text) == r.committed
+	r.committed = ""
+	r.mu.Unlock()
 	// Persist conversational / ceiling answers (the durable thread content). The
 	// task_complete completion summary is normally NOT persisted: Neo's narration
 	// (Status) is the durable thread now, so persisting the summary too would
@@ -1475,7 +1514,35 @@ func (r *sseReporter) Say(text string, completion bool) {
 	// run that committed NO narration at all (e.g. it went straight to
 	// task_complete) — persisting the summary there is what keeps the reopened
 	// thread from being empty, mirroring the client's live safety net.
-	s.finishRun(run, runrecord.StatusCompleted, text, "", fields, !completion || !run.narrated)
+	s.finishRun(
+		run, runrecord.StatusCompleted, text, "", fields,
+		(!completion || !run.narrated) && !alreadyPersisted,
+	)
+}
+
+func (r *sseReporter) SayHonestPartial(text string) {
+	s := r.sess
+	run := s.cur
+	if run == nil {
+		return
+	}
+	text = strings.TrimSpace(llm.StripGuidance(text))
+	if text == "" {
+		return
+	}
+	fields := s.chatFields(run, text, true)
+	fields["honest_partial"] = true
+	fields["incomplete"] = true
+	fields["resumable"] = true
+	r.mu.Lock()
+	alreadyPersisted := text == r.committed
+	r.committed = ""
+	r.mu.Unlock()
+	s.finishRun(
+		run, runrecord.StatusFailed, text,
+		"saved partial work is ready to resume", fields,
+		!alreadyPersisted,
+	)
 }
 
 func (r *sseReporter) Status(text string) {
@@ -1564,17 +1631,78 @@ func (r *sseReporter) Think(text string) {
 // NEVER persisted (the durable thread is written from Say); the authoritative
 // final text always follows as a chat.assistant turn that the client commits.
 func (r *sseReporter) Delta(turn int, channel, text string) {
+	s := r.sess
+	run := s.cur
+	if run == nil {
+		return
+	}
+	switch channel {
+	case "retraction":
+		r.mu.Lock()
+		delete(r.attempts, turn)
+		r.mu.Unlock()
+		s.engine.broker.publish(
+			run.id, "chat.retraction", "neo",
+			map[string]interface{}{
+				"intent_id":       run.id,
+				"conversation_id": s.id,
+				"turn":            turn,
+			},
+		)
+		return
+	case "commit":
+		r.mu.Lock()
+		attempt := r.attempts[turn]
+		delete(r.attempts, turn)
+		content, reasoning := "", ""
+		if attempt != nil {
+			content = strings.TrimSpace(attempt.content.String())
+			reasoning = strings.TrimSpace(attempt.reasoning.String())
+		}
+		r.committed = content
+		r.mu.Unlock()
+		fields := map[string]interface{}{
+			"intent_id":       run.id,
+			"conversation_id": s.id,
+			"turn":            turn,
+		}
+		if content != "" {
+			fields["text"] = content
+		}
+		if reasoning != "" {
+			fields["reasoning"] = reasoning
+		}
+		s.engine.broker.publish(
+			run.id, "chat.attempt.commit", "neo", fields,
+		)
+		if content != "" {
+			s.engine.conv.AppendAssistant(s.id, run.id, content)
+			run.narrated = true
+			run.lastText = content
+		}
+		return
+	}
 	// Defense-in-depth (req.1.3): strip any guidance-channel envelope the model
 	// echoed before it streams to the live reasoning/content channel.
 	text = llm.StripGuidance(text)
 	if text == "" {
 		return
 	}
-	s := r.sess
-	run := s.cur
-	if run == nil {
-		return
+	r.mu.Lock()
+	if r.attempts == nil {
+		r.attempts = make(map[int]*streamedAttempt)
 	}
+	attempt := r.attempts[turn]
+	if attempt == nil {
+		attempt = &streamedAttempt{}
+		r.attempts[turn] = attempt
+	}
+	if channel == "reasoning" {
+		attempt.reasoning.WriteString(text)
+	} else if channel == "content" {
+		attempt.content.WriteString(text)
+	}
+	r.mu.Unlock()
 	s.engine.broker.publish(run.id, "chat.delta", "neo", map[string]interface{}{
 		"intent_id":       run.id,
 		"conversation_id": s.id,

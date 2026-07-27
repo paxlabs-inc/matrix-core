@@ -96,6 +96,58 @@ func TestMMRSize(t *testing.T) {
 	}
 }
 
+func TestRootForLeavesMatchesPersistedMMRAtEveryPrefix(t *testing.T) {
+	s := openTestStore(t, "prefix-root")
+	mmr := NewMMR(s)
+	var leaves [][32]byte
+	if got := RootForLeaves(nil); got != EmptyMMRRoot {
+		t.Fatalf("empty prefix root=%x want=%x", got, EmptyMMRRoot)
+	}
+	for index := uint64(1); index <= 64; index++ {
+		leaf := fakeLeaf(index)
+		wb := s.BeginWrite()
+		if err := mmr.StageAppend(wb, leaf); err != nil {
+			wb.Abort()
+			t.Fatal(err)
+		}
+		if err := wb.AppendJournal(&journal.Entry{
+			Kind: journal.KindRaw, Payload: []byte{byte(index)},
+		}); err != nil {
+			wb.Abort()
+			t.Fatal(err)
+		}
+		if err := wb.Commit(); err != nil {
+			t.Fatal(err)
+		}
+		leaves = append(leaves, leaf)
+		persisted, err := mmr.Root()
+		if err != nil {
+			t.Fatal(err)
+		}
+		if prefix := RootForLeaves(leaves); prefix != persisted {
+			t.Fatalf("prefix %d root=%x persisted=%x",
+				index, prefix, persisted)
+		}
+	}
+	// Historical roots must stay derivable from the persisted accumulator
+	// after every later append — the property tool-event citations rely on.
+	if got, err := mmr.RootAt(0); err != nil || got != EmptyMMRRoot {
+		t.Fatalf("RootAt(0)=%x err=%v want=%x", got, err, EmptyMMRRoot)
+	}
+	for count := 1; count <= len(leaves); count++ {
+		historical, err := mmr.RootAt(uint64(count))
+		if err != nil {
+			t.Fatal(err)
+		}
+		if want := RootForLeaves(leaves[:count]); historical != want {
+			t.Fatalf("RootAt(%d)=%x want=%x", count, historical, want)
+		}
+	}
+	if _, err := mmr.RootAt(uint64(len(leaves)) + 1); err == nil {
+		t.Fatal("RootAt beyond the persisted leaves must fail")
+	}
+}
+
 func TestMMRAppendOneLeafRootIsLeafWrappedWithCount(t *testing.T) {
 	s := openTestStore(t, "actorA")
 	mmr := NewMMR(s)

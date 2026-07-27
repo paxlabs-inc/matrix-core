@@ -9,6 +9,11 @@ export default defineConfig({
     globals: true,
     setupFiles: ['./tests/setup.ts'],
     include: ['tests/**/*.{test,spec}.{ts,tsx}', 'components/**/*.{test,spec}.{ts,tsx}'],
+    server: {
+      deps: {
+        inline: [/next-intl/, /use-intl/],
+      },
+    },
     coverage: {
       provider: 'v8',
       reporter: ['text', 'lcov'],
@@ -24,6 +29,7 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': path.resolve(__dirname, '.'),
+      'next/navigation': path.resolve(__dirname, 'node_modules/next/navigation.js'),
     },
   },
 })

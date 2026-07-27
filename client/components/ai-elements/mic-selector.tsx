@@ -48,7 +48,13 @@ export const useAudioDevices = () => {
       setLoading(true)
       setError(null)
 
-      const deviceList = await navigator.mediaDevices.enumerateDevices()
+      const mediaDevices = navigator.mediaDevices
+      if (!mediaDevices?.enumerateDevices) {
+        setDevices([])
+        return
+      }
+
+      const deviceList = await mediaDevices.enumerateDevices()
       const audioInputs = deviceList.filter((device) => device.kind === 'audioinput')
 
       setDevices(audioInputs)
@@ -68,7 +74,14 @@ export const useAudioDevices = () => {
       setLoading(true)
       setError(null)
 
-      const tempStream = await navigator.mediaDevices.getUserMedia({
+      const mediaDevices = navigator.mediaDevices
+      if (!mediaDevices?.getUserMedia || !mediaDevices.enumerateDevices) {
+        setDevices([])
+        setError('Audio devices are unavailable in this browser')
+        return
+      }
+
+      const tempStream = await mediaDevices.getUserMedia({
         audio: true,
       })
 
@@ -76,7 +89,7 @@ export const useAudioDevices = () => {
         track.stop()
       }
 
-      const deviceList = await navigator.mediaDevices.enumerateDevices()
+      const deviceList = await mediaDevices.enumerateDevices()
       const audioInputs = deviceList.filter((device) => device.kind === 'audioinput')
 
       setDevices(audioInputs)
@@ -97,6 +110,9 @@ export const useAudioDevices = () => {
   }, [loadDevicesWithoutPermission])
 
   useEffect(() => {
+    const mediaDevices = navigator.mediaDevices
+    if (!mediaDevices?.addEventListener) return
+
     const handleDeviceChange = () => {
       if (hasPermission) {
         loadDevicesWithPermission()
@@ -105,10 +121,10 @@ export const useAudioDevices = () => {
       }
     }
 
-    navigator.mediaDevices.addEventListener('devicechange', handleDeviceChange)
+    mediaDevices.addEventListener('devicechange', handleDeviceChange)
 
     return () => {
-      navigator.mediaDevices.removeEventListener('devicechange', handleDeviceChange)
+      mediaDevices.removeEventListener('devicechange', handleDeviceChange)
     }
   }, [hasPermission, loadDevicesWithPermission, loadDevicesWithoutPermission])
 

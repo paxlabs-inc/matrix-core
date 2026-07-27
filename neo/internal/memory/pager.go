@@ -136,6 +136,13 @@ func (p *Pager) Embedder() embed.Embedder {
 	return p.embedder
 }
 
+func (p *Pager) Cortex() *cortex.Cortex {
+	if p == nil {
+		return nil
+	}
+	return p.cortex
+}
+
 // AppendMessage records one conversation message durably in the cortex
 // session/transcript store (continuous-memory task 6.1). It is a thin delegate
 // to cortex.AppendMessage — under the continuous-memory collapse the pager is
@@ -882,6 +889,14 @@ func (p *Pager) Recall(ctx context.Context, queryText string, types []string, k 
 		return lexical, nil
 	}
 	return strings.TrimSpace(base) + "\n" + lexical, nil
+}
+
+func (p *Pager) Lexical(
+	queryText string,
+	k int,
+	asOf *time.Time,
+) string {
+	return p.recallLexical(queryText, k, asOf)
 }
 
 func (p *Pager) recallLexical(queryText string, k int, asOf *time.Time) string {

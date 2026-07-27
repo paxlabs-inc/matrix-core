@@ -43,6 +43,7 @@ import {
 } from '@/lib/construct/store'
 
 export type ChatRole = 'user' | 'assistant'
+export type ChatDeliveryStatus = 'honest_partial' | 'incomplete'
 
 /** A generated/edited media artifact surfaced from a
  *  tool.media event and rendered inline in the thread + surface. */
@@ -93,6 +94,10 @@ export interface ChatMessage {
   /** The model's reasoning (chain-of-thought) for this turn, surfaced as a
    *  separate collapsible channel — NEVER part of the answer text. */
   reasoning?: string
+  /** Plain-language delivery treatment supplied by the server. */
+  deliveryStatus?: ChatDeliveryStatus
+  /** The saved work can be continued without starting over. */
+  resumable?: boolean
   ts: number
 }
 
@@ -331,6 +336,10 @@ export interface NeoTask {
   done: boolean
   /** Set when the run ended without a clean answer. */
   failed?: boolean
+  /** The terminal answer contains useful saved work but is not a success. */
+  deliveryStatus?: ChatDeliveryStatus
+  /** The terminal checkpoint can be resumed. */
+  resumable?: boolean
   /** What Neo is carrying forward from its own memory for this run — a plain
    *  "story so far" recap plus a coarse, oldest-first timeline of what has
    *  happened. Surfaced once per turn via the memory.activation event and
@@ -416,7 +425,15 @@ export function foldPreviewEvent(
 export interface NeoDojo {
   /** 'off' is client-synthesized only (no session exists / never booted);
    *  the event fold never emits it. */
-  state: 'provisioning' | 'ready' | 'active' | 'takeover' | 'shipping' | 'destroyed' | 'failed' | 'off'
+  state:
+    | 'provisioning'
+    | 'ready'
+    | 'active'
+    | 'takeover'
+    | 'shipping'
+    | 'destroyed'
+    | 'failed'
+    | 'off'
   sessionId?: string
   conversationId?: string
   /** Teardown / failure reason (idle_timeout, max_lifetime, provision_failed, …). */
@@ -649,6 +666,18 @@ function applyDelta(prev: NeoTask, turn: number, channel: string, text: string):
     streamingAnswer: (newSeg ? '' : (prev.streamingAnswer ?? '')) + text,
     thinking: newSeg ? '' : prev.thinking,
     streamTurn: turn,
+  }
+}
+
+/** Erase only the streamed attempt the runtime rejected. Earlier committed
+ * commentary is already a durable message and is deliberately untouched. */
+export function retractTaskAttempt(prev: NeoTask, turn: number): NeoTask {
+  if (prev.streamTurn !== turn) return prev
+  return {
+    ...prev,
+    thinking: '',
+    streamingAnswer: '',
+    streamTurn: undefined,
   }
 }
 
@@ -1100,7 +1129,14 @@ export function useChat(options: UseChatOptions = {}): UseChatResult {
   }, [])
 
   const pushAssistant = useCallback(
-    (text: string, intentId?: string, seq?: number, reasoning?: string, media?: ChatMedia[]) => {
+    (
+      text: string,
+      intentId?: string,
+      seq?: number,
+      reasoning?: string,
+      media?: ChatMedia[],
+      delivery?: { status?: ChatDeliveryStatus; resumable?: boolean },
+    ) => {
       setMessages((m) => {
         // UI-layer replay guard: a verbatim repeat of a recent bubble never
         // renders twice, whatever server-side path re-emitted it. Media-
@@ -1117,6 +1153,8 @@ export function useChat(options: UseChatOptions = {}): UseChatResult {
             seq,
             reasoning: dedupeReasoning(m, reasoning),
             media: media && media.length ? media : undefined,
+            deliveryStatus: delivery?.status,
+            resumable: delivery?.resumable,
             ts: Date.now(),
           },
         ]
@@ -1211,6 +1249,7 @@ export function useChat(options: UseChatOptions = {}): UseChatResult {
       // bubble's collapsible subfield. Reset when the turn index advances.
       let liveReasoning = ''
       let liveReasoningTurn = -1
+      let lastCommittedText = ''
       // rAF-coalesced live "typing" flush. Streaming tokens arrive far faster
       // than the eye needs; batching them to ONE state update per animation
       // frame keeps Streamdown re-parsing (and the stick-to-bottom reflow that
@@ -1404,6 +1443,42 @@ export function useChat(options: UseChatOptions = {}): UseChatResult {
           setConnectionRetrying(false)
           const ev = u.event
 
+          if (ev.type === 'chat.retraction') {
+            const turn =
+              typeof ev.fields?.turn === 'number' ? ev.fields.turn : Number(ev.fields?.turn) || 0
+            cancelDeltas()
+            setTask((prev) => (prev ? retractTaskAttempt(prev, turn) : prev))
+            if (liveReasoningTurn === turn) {
+              liveReasoning = ''
+              liveReasoningTurn = -1
+            }
+            return
+          }
+
+          if (ev.type === 'chat.attempt.commit') {
+            const text = asString(ev.fields?.text).trim()
+            const reasoning = asString(ev.fields?.reasoning).trim()
+            cancelDeltas()
+            if (text) {
+              pushAssistant(text, intentId, ev.seq, reasoning || undefined)
+              durableProduced = true
+              lastCommittedText = text
+            }
+            setTask((prev) =>
+              prev
+                ? {
+                    ...prev,
+                    streamingAnswer: '',
+                    thinking: '',
+                    streamTurn: undefined,
+                  }
+                : prev,
+            )
+            liveReasoning = ''
+            liveReasoningTurn = -1
+            return
+          }
+
           // Thinking channel → the secondary, dismissible "thinking" glimpse.
           // Never a bubble, never persisted; just the latest thought on the
           // surface so the user sees how Neo is reasoning.
@@ -1471,6 +1546,13 @@ export function useChat(options: UseChatOptions = {}): UseChatResult {
             // instead of vanishing with the live turn.
             const reasoning = asString(ev.fields?.reasoning) || liveReasoning
             const isFinal = ev.fields?.final === true
+            const deliveryStatus: ChatDeliveryStatus | undefined =
+              ev.fields?.honest_partial === true
+                ? 'honest_partial'
+                : ev.fields?.incomplete === true
+                  ? 'incomplete'
+                  : undefined
+            const resumable = ev.fields?.resumable === true
             // The validated task_complete summary is flagged `completion:true` —
             // a redundant recap layered on top of the narration the user already
             // read and the rendered Construct centerpiece. It is HIDDEN from the
@@ -1480,14 +1562,44 @@ export function useChat(options: UseChatOptions = {}): UseChatResult {
             // conversational / ceiling final answer (final without the
             // completion flag) — those ARE the content the user reads.
             const isCompletionSummary = isFinal && ev.fields?.completion === true
+            const isCommittedEcho = isFinal && !!text && text.trim() === lastCommittedText
             // Respawn re-emission guard: a non-final narration bubble whose
             // exact text already rendered for this run is a duplicate stream
             // (new seq, same content) — count it as seen but do not re-render.
             const textKey = `${intentId}:t:${text}`
             const isDupNarration = !isFinal && !!text && seenTextRef.current.has(textKey)
             if (text && !isFinal) seenTextRef.current.add(textKey)
+            if (isCommittedEcho && deliveryStatus) {
+              setMessages((current) => {
+                let index = -1
+                for (let i = current.length - 1; i >= 0; i--) {
+                  const message = current[i]
+                  if (
+                    message.role === 'assistant' &&
+                    message.intentId === intentId &&
+                    message.text.trim() === text.trim()
+                  ) {
+                    index = i
+                    break
+                  }
+                }
+                if (index < 0) return current
+                const next = current.slice()
+                next[index] = {
+                  ...next[index],
+                  deliveryStatus,
+                  resumable,
+                }
+                return next
+              })
+            }
             if (text && !isCompletionSummary) {
-              if (!isDupNarration) pushAssistant(text, intentId, ev.seq, reasoning || undefined)
+              if (!isDupNarration && !isCommittedEcho) {
+                pushAssistant(text, intentId, ev.seq, reasoning || undefined, undefined, {
+                  status: deliveryStatus,
+                  resumable,
+                })
+              }
               // A non-final narration turn is durable thread content; once one
               // lands, the closing summary is a safe-to-hide redundant recap.
               if (!isFinal) durableProduced = true
@@ -1515,6 +1627,8 @@ export function useChat(options: UseChatOptions = {}): UseChatResult {
                         reasoning: reasoning || prev.reasoning,
                         done: true,
                         streamingAnswer: '',
+                        deliveryStatus,
+                        resumable,
                       }
                     : { ...prev, streamingAnswer: '' }
                   : prev,

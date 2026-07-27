@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 )
 
 func TestDefaultsMatchFrozenSpec(t *testing.T) {
@@ -171,6 +172,52 @@ natural_allow = ["shell", "git"]
 	}
 	if c2.MainModel != "accounts/fireworks/routers/from-env" {
 		t.Errorf("env should beat kvx, got %q", c2.MainModel)
+	}
+}
+
+func TestRuntimeProviderConfigIsSingleGatewayLane(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "neo.kvx")
+	doc := `
+[runtime]
+actor_did = "did:matrix:test"
+
+[runtime.provider]
+gateway_url = "https://gateway.example"
+bearer_env = "TEST_GATEWAY_TOKEN"
+max_attempts = 4
+backoff_initial_ms = 20
+backoff_max_ms = 80
+idle_timeout_seconds = 9
+`
+	if err := os.WriteFile(path, []byte(doc), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	config, err := Load(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	provider := config.RuntimeProvider
+	if provider.GatewayURL != "https://gateway.example" ||
+		provider.BearerEnv != "TEST_GATEWAY_TOKEN" ||
+		provider.MaxAttempts != 4 ||
+		provider.BackoffInitial != 20*time.Millisecond ||
+		provider.BackoffMax != 80*time.Millisecond ||
+		provider.IdleTimeout != 9*time.Second {
+		t.Fatalf("RuntimeProvider = %+v", provider)
+	}
+
+	t.Setenv("MATRIX_GATEWAY_URL", "https://gateway.env")
+	t.Setenv("NEO_RUNTIME_PROVIDER_MAX_ATTEMPTS", "2")
+	t.Setenv("NEO_RUNTIME", "resurrection")
+	fromEnv, err := Load(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if fromEnv.RuntimeProvider.GatewayURL != "https://gateway.env" ||
+		fromEnv.RuntimeProvider.MaxAttempts != 2 ||
+		fromEnv.AgentRuntime != "resurrection" {
+		t.Fatalf("env RuntimeProvider = %+v", fromEnv.RuntimeProvider)
 	}
 }
 

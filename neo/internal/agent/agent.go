@@ -132,15 +132,20 @@ type ToolObserver func(ToolEvent)
 // reified turn, replaced at Chat entry).
 type Agent struct {
 	// Lifetime: construction — wiring set at New.
-	cfg          config.Config
-	main         *llm.Client
-	cheap        *llm.Client
-	tools        *tools.Manager
-	pager        *memory.Pager
-	out          Reporter
-	consolidator Consolidator
-	recaller     ConvRecaller
-	observer     ToolObserver
+	cfg            config.Config
+	main           *llm.Client
+	cheap          *llm.Client
+	tools          *tools.Manager
+	pager          *memory.Pager
+	runtime        *ResurrectionRuntime
+	runtimeMode    string
+	runtimeErr     error
+	runtimeLast    string
+	runtimeFailure delegate.FailureClass
+	out            Reporter
+	consolidator   Consolidator
+	recaller       ConvRecaller
+	observer       ToolObserver
 
 	// auditObserver streams Cassandra 2.0 controller audit events (cassandra.mod)
 	// to the harness on a pure observability side-channel; nil discards them.
@@ -303,6 +308,7 @@ type Options struct {
 	Consolidator Consolidator // optional: background write-back
 	Recaller     ConvRecaller // optional: relevant past-turn recall (additive read-lane)
 	Observer     ToolObserver // optional: per-tool-result surfacing (show the work)
+	Runtime      *ResurrectionRuntime
 
 	// AuditObserver streams Cassandra 2.0 controller audit events (cassandra.mod)
 	// to the harness; nil discards them.
@@ -382,6 +388,8 @@ func New(o Options) *Agent {
 		cheap:            o.Cheap,
 		tools:            o.Tools,
 		pager:            o.Pager,
+		runtime:          o.Runtime,
+		runtimeMode:      strings.TrimSpace(o.Config.AgentRuntime),
 		out:              out,
 		consolidator:     o.Consolidator,
 		recaller:         o.Recaller,
@@ -397,6 +405,19 @@ func New(o Options) *Agent {
 		automatrix:       o.Automatrix,
 		interview:        o.Interview,
 		turn:             newTurn(),
+	}
+	if a.runtimeMode == "" {
+		a.runtimeMode = "legacy"
+	}
+	if a.runtimeMode == "resurrection" && a.runtime == nil {
+		a.runtimeErr = fmt.Errorf(
+			"neo: resurrection runtime is selected but unavailable",
+		)
+	} else if a.runtimeMode != "legacy" &&
+		a.runtimeMode != "resurrection" {
+		a.runtimeErr = fmt.Errorf(
+			"neo: unsupported runtime %q", a.runtimeMode,
+		)
 	}
 	if a.interview {
 		a.interviewExisting = strings.TrimSpace(o.InterviewExisting)
@@ -607,6 +628,9 @@ func (a *Agent) effectiveStepBudget(sig effectiveBudgetSignals) int {
 // — prepare → generate → deliberate → act | close — each a named stage with a
 // documented contract. Conversation state persists across calls.
 func (a *Agent) Chat(ctx context.Context, userInput string) error {
+	if a.runtimeMode == "resurrection" || a.runtimeErr != nil {
+		return a.chatResurrection(ctx, userInput)
+	}
 	return a.chat(ctx, userInput, nil)
 }
 
@@ -615,6 +639,9 @@ func (a *Agent) Chat(ctx context.Context, userInput string) error {
 // any downstream deliberation/close, the visible user content is replaced by
 // the durable transcript plus sealed media ref and recorded to cortex.
 func (a *Agent) ChatAudio(ctx context.Context, userInput string, audio *AudioTurn) error {
+	if a.runtimeMode == "resurrection" || a.runtimeErr != nil {
+		return a.chatAudioResurrection(ctx, userInput, audio)
+	}
 	return a.chat(ctx, userInput, audio)
 }
 
@@ -1354,6 +1381,8 @@ func oneLine(s string) string {
 func (a *Agent) Reset() {
 	a.working = nil
 	a.activeGoal = ""
+	a.runtimeLast = ""
+	a.runtimeFailure = delegate.ClassNone
 	a.episodicReset()
 }
 
@@ -1363,6 +1392,9 @@ func (a *Agent) Reset() {
 // when a task hits its hard ceiling; it is never a fabricated success. Empty
 // when there is genuinely nothing to report.
 func (a *Agent) BestEffort() string {
+	if a.runtimeMode == "resurrection" {
+		return strings.TrimSpace(a.runtimeLast)
+	}
 	if s := strings.TrimSpace(lastAssistantText(a.working, 1600)); s != "" {
 		return s
 	}
@@ -1934,9 +1966,17 @@ func (a *Agent) noteNormalizedFailure(name string, args map[string]interface{}, 
 // The task supervisor reads it after Chat returns to decide whether a
 // non-clean exit is a deterministic blocker (stop-and-ask, no respawn) or a
 // transient/model/stall failure (the existing respawn path).
-func (a *Agent) LastFailureClass() delegate.FailureClass { return a.turn.lastFailureClass }
+func (a *Agent) LastFailureClass() delegate.FailureClass {
+	if a.runtimeMode == "resurrection" {
+		return a.runtimeFailure
+	}
+	return a.turn.lastFailureClass
+}
 
 func (a *Agent) LastO1Decision() (o1.SupervisorDecision, bool) {
+	if a.runtimeMode == "resurrection" {
+		return o1.SupervisorDecision{}, false
+	}
 	if a.turn == nil || a.turn.runLedger == nil {
 		return o1.SupervisorDecision{}, false
 	}

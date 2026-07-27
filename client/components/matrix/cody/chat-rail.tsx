@@ -8,6 +8,7 @@
  * beside it.
  */
 import { useEffect, useRef, useState } from 'react'
+import { useTranslations } from 'next-intl'
 
 import { Link } from '@/i18n/navigation'
 import type { UseChatResult } from '@/hooks/api/useChat'
@@ -91,6 +92,7 @@ export function ChatRail({
   onRevealTerminal: () => void
   onStop: () => void
 }) {
+  const t = useTranslations('agentChat')
   const [draft, setDraft] = useState('')
   const [mode, setMode] = useState<NeoMode>('auto')
   const scrollRef = useRef<HTMLDivElement>(null)
@@ -166,6 +168,7 @@ export function ChatRail({
               <NeoAssistantMessage
                 key={m.id}
                 message={m}
+                onResume={m.resumable ? () => chat.send(t('resumeRequest')) : undefined}
                 onFork={
                   chat.conversationId && !working
                     ? () => chat.forkConversation(chat.conversationId!, index + 1)

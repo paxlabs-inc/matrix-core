@@ -63,6 +63,7 @@ type Engine struct {
 	subMain            *llm.Client
 	tools              *tools.Manager
 	pager              *memory.Pager
+	runtime            *agent.ResurrectionRuntime
 	consolidator       agent.Consolidator
 	conv               *conversation.Store // durable chat-thread history (per conversation_id)
 	tasks              *task.Store         // durable task-supervision ledger (survives restart/suspend)
@@ -218,6 +219,7 @@ type EngineOptions struct {
 	SubMain                *llm.Client // main-capability model, thinking OFF, for background sub-agents (nil falls back to Main)
 	Tools                  *tools.Manager
 	Pager                  *memory.Pager
+	Runtime                *agent.ResurrectionRuntime
 	Consolidator           agent.Consolidator
 	ConversationDir        string // durable conversation store dir ("" disables persistence)
 	TaskDir                string // durable task-ledger dir ("" disables; reaper needs it to resume after restart)
@@ -255,6 +257,7 @@ func NewEngine(o EngineOptions) *Engine {
 		subMain:            o.SubMain,
 		tools:              o.Tools,
 		pager:              o.Pager,
+		runtime:            o.Runtime,
 		consolidator:       o.Consolidator,
 		conv:               conversation.Open(o.ConversationDir),
 		tasks:              task.Open(o.TaskDir),
@@ -504,6 +507,13 @@ func (e *Engine) Close() {
 	// a brief that outlives the bound stays durably running in the task ledger
 	// and resumes on the restricted brief surface at next boot.
 	waitBounded(&e.briefWG, 30*time.Second)
+	if e.runtime != nil {
+		ctx, cancel := context.WithTimeout(
+			context.Background(), 10*time.Second,
+		)
+		_ = e.runtime.Close(ctx)
+		cancel()
+	}
 	e.trace.Close()
 }
 

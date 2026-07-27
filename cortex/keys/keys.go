@@ -17,6 +17,7 @@
 package keys
 
 import (
+	"crypto/sha256"
 	"encoding/binary"
 	"errors"
 	"fmt"
@@ -50,6 +51,12 @@ var (
 	PrefixLexical       = []byte("lex/")      // lex/{doc,term}/... — DEJA-VU derived transcript lexical index
 	PrefixLexicalDoc    = []byte("lex/doc/")
 	PrefixLexicalTerm   = []byte("lex/term/")
+	// PrefixToolEventIdem maps a runtime idempotency key to the journal seq
+	// of the KindToolEvent entry that recorded it — tev/idem/<sha256:32> →
+	// <seq:8>. Written in the same atomic batch as the journal entry it
+	// points at, so a replayed tool execution resolves to the existing leaf
+	// with one point lookup instead of a journal scan.
+	PrefixToolEventIdem = []byte("tev/idem/")
 )
 
 // MetaJournalHead is the meta-namespace key holding the next-to-allocate
@@ -392,6 +399,19 @@ func ParseJournalKey(k []byte) (uint64, error) {
 		return 0, ErrBadPrefix
 	}
 	return binary.BigEndian.Uint64(k[len(PrefixJournal):]), nil
+}
+
+// ToolEventIdemKey returns tev/idem/<sha256(key):32>, the point-lookup key
+// mapping a runtime idempotency key to the seq of the KindToolEvent journal
+// entry that already recorded it. The idempotency key is hashed rather than
+// embedded so tool names and argument digests never appear in a key (store
+// keys are not sealed), and so the key stays fixed-width.
+func ToolEventIdemKey(key string) []byte {
+	sum := sha256.Sum256([]byte(key))
+	out := make([]byte, 0, len(PrefixToolEventIdem)+len(sum))
+	out = append(out, PrefixToolEventIdem...)
+	out = append(out, sum[:]...)
+	return out
 }
 
 // PrefixRange returns [prefix, upper) such that every Pebble key beginning

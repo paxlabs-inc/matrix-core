@@ -306,6 +306,26 @@ func runServe(args []string) {
 		}
 	}
 
+	var resurrection *agent.ResurrectionRuntime
+	switch cfg.AgentRuntime {
+	case "", "legacy":
+		cfg.AgentRuntime = "legacy"
+	case "resurrection":
+		statePath := strings.TrimSpace(os.Getenv("NEO_TURNSTATE_PATH"))
+		if statePath == "" {
+			statePath = filepath.Join(vaultDataDir, "neo-turnstate.db")
+		}
+		resurrection, err = agent.OpenResurrectionRuntime(
+			ctx, cfg, tm, pager, statePath,
+		)
+		if err != nil {
+			fatal("cannot start resurrection runtime: %v", err)
+		}
+		fmt.Printf("  runtime: resurrection (%s)\n", statePath)
+	default:
+		fatal("unsupported NEO_RUNTIME %q (expected legacy or resurrection)", cfg.AgentRuntime)
+	}
+
 	engine := server.NewEngine(server.EngineOptions{
 		Config:                 cfg,
 		Main:                   main,
@@ -313,6 +333,7 @@ func runServe(args []string) {
 		SubMain:                subMain,
 		Tools:                  tm,
 		Pager:                  pager,
+		Runtime:                resurrection,
 		Consolidator:           cons,
 		ConversationDir:        convDir,
 		TaskDir:                taskDir,
@@ -342,8 +363,8 @@ func runServe(args []string) {
 		Omni:            omni,
 		DojoBridgeToken: dojoBridgeToken,
 		BackendURL:      backendURL,
-		BackendToken: os.Getenv("NEO_DAEMON_TOKEN"),
-		Vault:        vaultSess,
+		BackendToken:    os.Getenv("NEO_DAEMON_TOKEN"),
+		Vault:           vaultSess,
 	})
 	if convDir != "" {
 		fmt.Printf("  history: %s\n", convDir)

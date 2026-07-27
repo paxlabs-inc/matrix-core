@@ -261,13 +261,24 @@ type Config struct {
 	EscalateActions []string // actions that cross into MCL (require a user wallet signature)
 
 	// --- LLM transport ---
-	GatewayURL string // optional metered-LLM gateway (empty = direct provider)
-	ActorDID   string // actor DID stamped on gateway calls
+	GatewayURL      string // optional metered-LLM gateway (empty = direct provider)
+	ActorDID        string // actor DID stamped on gateway calls
+	AgentRuntime    string
+	RuntimeProvider RuntimeProviderConfig
 
 	// --- data-at-rest vault (set programmatically by runServe after
 	// vault.Boot, never from env; nil = legacy plaintext dev/CLI) ---
 	Vault     *vault.Session // fail-closed sealing session for every store incl. cortex
 	VaultUser string         // user DID bound into sealed objects' associated data
+}
+
+type RuntimeProviderConfig struct {
+	GatewayURL     string
+	BearerEnv      string
+	MaxAttempts    int
+	BackoffInitial time.Duration
+	BackoffMax     time.Duration
+	IdleTimeout    time.Duration
 }
 
 // Default returns Neo's defaults, encoding the frozen spec's locked
@@ -388,6 +399,15 @@ func Default() Config {
 		// 0 would mean serial (legacy); 4 matches MaxConcurrentSubagents.
 		ToolDispatchConcurrency: 4,
 
+		RuntimeProvider: RuntimeProviderConfig{
+			BearerEnv:      "MATRIX_GATEWAY_TOKEN",
+			MaxAttempts:    3,
+			BackoffInitial: 250 * time.Millisecond,
+			BackoffMax:     2 * time.Second,
+			IdleTimeout:    120 * time.Second,
+		},
+		AgentRuntime: "legacy",
+
 		NaturalAllow: []string{
 			"web_search", "git", "fetch_data", "write_code", "write_docs",
 			"image_video_generation", "non_monetary_workflows",
@@ -438,6 +458,7 @@ func Sandbox() Config {
 	// requires GatewayURL + token + ActorDID; the direct provider branch
 	// requires BASETEN_API_KEY env — both absent in a sandbox run).
 	c.GatewayURL = ""
+	c.RuntimeProvider.GatewayURL = ""
 	c.ActorDID = ""
 	// Sentinel embed model so callers/tests can confirm the stub was
 	// selected. pickEmbedder() maps this to the Hash embedder because the
@@ -478,6 +499,20 @@ func (c *Config) applyDoc(d *kvxDoc) {
 		c.SelfModelGraph = d.strOr("runtime", "self_model_graph", c.SelfModelGraph)
 		c.GatewayURL = d.strOr("runtime", "gateway_url", c.GatewayURL)
 		c.ActorDID = d.strOr("runtime", "actor_did", c.ActorDID)
+	}
+	if d.has("runtime.provider") {
+		c.RuntimeProvider.GatewayURL = d.strOr("runtime.provider", "gateway_url", c.RuntimeProvider.GatewayURL)
+		c.RuntimeProvider.BearerEnv = d.strOr("runtime.provider", "bearer_env", c.RuntimeProvider.BearerEnv)
+		c.RuntimeProvider.MaxAttempts = d.intOr("runtime.provider", "max_attempts", c.RuntimeProvider.MaxAttempts)
+		if milliseconds := d.intOr("runtime.provider", "backoff_initial_ms", 0); milliseconds > 0 {
+			c.RuntimeProvider.BackoffInitial = time.Duration(milliseconds) * time.Millisecond
+		}
+		if milliseconds := d.intOr("runtime.provider", "backoff_max_ms", 0); milliseconds > 0 {
+			c.RuntimeProvider.BackoffMax = time.Duration(milliseconds) * time.Millisecond
+		}
+		if seconds := d.intOr("runtime.provider", "idle_timeout_seconds", 0); seconds > 0 {
+			c.RuntimeProvider.IdleTimeout = time.Duration(seconds) * time.Second
+		}
 	}
 	if d.has("models") {
 		c.MainModel = d.strOr("models", "main", c.MainModel)
@@ -600,6 +635,21 @@ func (c *Config) applyEnv() {
 	c.ActorDID = envOr("NEO_ACTOR_DID", c.ActorDID)
 	// MATRIX_GATEWAY_URL matches the daemon/router env key (router MachineEnv).
 	c.GatewayURL = envOr("MATRIX_GATEWAY_URL", envOr("NEO_GATEWAY_URL", c.GatewayURL))
+	c.AgentRuntime = strings.ToLower(
+		strings.TrimSpace(envOr("NEO_RUNTIME", c.AgentRuntime)),
+	)
+	c.RuntimeProvider.GatewayURL = envOr("MATRIX_GATEWAY_URL", c.RuntimeProvider.GatewayURL)
+	c.RuntimeProvider.BearerEnv = envOr("NEO_RUNTIME_PROVIDER_BEARER_ENV", c.RuntimeProvider.BearerEnv)
+	c.RuntimeProvider.MaxAttempts = envInt("NEO_RUNTIME_PROVIDER_MAX_ATTEMPTS", c.RuntimeProvider.MaxAttempts)
+	if milliseconds := envInt("NEO_RUNTIME_PROVIDER_BACKOFF_INITIAL_MS", 0); milliseconds > 0 {
+		c.RuntimeProvider.BackoffInitial = time.Duration(milliseconds) * time.Millisecond
+	}
+	if milliseconds := envInt("NEO_RUNTIME_PROVIDER_BACKOFF_MAX_MS", 0); milliseconds > 0 {
+		c.RuntimeProvider.BackoffMax = time.Duration(milliseconds) * time.Millisecond
+	}
+	if seconds := envInt("NEO_RUNTIME_PROVIDER_IDLE_TIMEOUT_SECONDS", 0); seconds > 0 {
+		c.RuntimeProvider.IdleTimeout = time.Duration(seconds) * time.Second
+	}
 
 	if v := os.Getenv("NEO_CONTEXT_WINDOW_TOKENS"); v != "" {
 		if n, err := strconv.Atoi(strings.TrimSpace(v)); err == nil && n > 0 {

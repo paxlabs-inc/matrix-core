@@ -131,6 +131,10 @@ function chatWith(task: NeoTask | null): UseChatResult {
     reset: () => {},
     selectConversation: () => {},
     refreshConversations: () => {},
+    renameConversation: () => {},
+    archiveConversation: () => {},
+    deleteConversation: () => {},
+    forkConversation: () => {},
     answerGate: () => {},
     respondAsk: () => {},
   }

@@ -170,7 +170,13 @@ export function AgentChat({
               description={t('emptyDescription')}
             />
           ) : (
-            messages.map((m) => <ChatBubble key={m.id} message={m} />)
+            messages.map((m) => (
+              <ChatBubble
+                key={m.id}
+                message={m}
+                onResume={m.resumable ? () => send(t('resumeRequest')) : undefined}
+              />
+            ))
           )}
 
           {pendingGate && (
@@ -280,8 +286,15 @@ function parseUserMedia(text: string): { clean: string; items: RenderMedia[] } {
   return { clean, items }
 }
 
-function ChatBubble({ message: m }: { message: ChatMessage }) {
+function ChatBubble({ message: m, onResume }: { message: ChatMessage; onResume?: () => void }) {
+  const t = useTranslations('agentChat')
   if (m.role === 'assistant') {
+    const statusLabel =
+      m.deliveryStatus === 'honest_partial'
+        ? t('honestPartialLabel')
+        : m.deliveryStatus === 'incomplete'
+          ? t('incompleteLabel')
+          : ''
     return (
       <Message from="assistant">
         <MessageContent>
@@ -291,7 +304,19 @@ function ChatBubble({ message: m }: { message: ChatMessage }) {
               <ReasoningContent>{m.reasoning}</ReasoningContent>
             </Reasoning>
           ) : null}
-          {m.text ? <MessageResponse>{m.text}</MessageResponse> : null}
+          {statusLabel ? (
+            <div className="bg-muted/70 rounded-xl px-3 py-2.5">
+              <p className="text-muted-foreground mb-1 text-sm font-medium">{statusLabel}</p>
+              {m.text ? <MessageResponse>{m.text}</MessageResponse> : null}
+              {m.resumable && onResume ? (
+                <Button size="sm" variant="secondary" className="mt-3" onClick={onResume}>
+                  {t('resume')}
+                </Button>
+              ) : null}
+            </div>
+          ) : m.text ? (
+            <MessageResponse>{m.text}</MessageResponse>
+          ) : null}
           <MediaList media={m.media} />
         </MessageContent>
       </Message>

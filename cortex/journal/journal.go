@@ -193,6 +193,12 @@ const (
 	// sess/<conv>/* transcript up to UpToSeq (deterministic and rebuildable
 	// regardless of when BuildStorySoFar runs).
 	KindStorySoFar Kind = "story"
+	// KindToolEvent is appended by the runtime after one real tool
+	// execution. It carries the call identity, a digest of the result,
+	// prediction verdict, and owning subgoal. The entry itself is the
+	// integrity anchor: the journal hook commits its canonical plaintext
+	// leaf into the MMR in the same atomic batch.
+	KindToolEvent Kind = "tool_event"
 )
 
 // WritePayload is the canonical shape carried by KindWrite and KindUpdate
@@ -456,6 +462,34 @@ func EncodeStorySoFarPayload(p *StorySoFarPayload) ([]byte, error) {
 
 // DecodeStorySoFarPayload parses canonical CBOR into out.
 func DecodeStorySoFarPayload(b []byte, out *StorySoFarPayload) error {
+	return canonicalDec.Unmarshal(b, out)
+}
+
+// ToolEventPayload is the canonical execution-evidence record carried by
+// KindToolEvent. Result bodies are represented by ResultDigest so large or
+// sensitive tool output is not duplicated into the journal. Arguments remain
+// part of the call identity and are sealed below the journal hash boundary.
+type ToolEventPayload struct {
+	SchemaVersion  uint8    `cbor:"0,keyasint"`
+	CallID         string   `cbor:"1,keyasint"`
+	ToolName       string   `cbor:"2,keyasint"`
+	Arguments      []byte   `cbor:"3,keyasint"`
+	ResultDigest   [32]byte `cbor:"4,keyasint"`
+	Error          string   `cbor:"5,keyasint,omitempty"`
+	Expect         string   `cbor:"6,keyasint"`
+	MatchVerdict   string   `cbor:"7,keyasint"`
+	SubgoalID      string   `cbor:"8,keyasint"`
+	IdempotencyKey string   `cbor:"9,keyasint,omitempty"`
+}
+
+func EncodeToolEventPayload(p *ToolEventPayload) ([]byte, error) {
+	if p == nil {
+		return nil, fmt.Errorf("journal: nil ToolEventPayload")
+	}
+	return canonicalEnc.Marshal(p)
+}
+
+func DecodeToolEventPayload(b []byte, out *ToolEventPayload) error {
 	return canonicalDec.Unmarshal(b, out)
 }
 

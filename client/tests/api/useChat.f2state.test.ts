@@ -1,5 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { act, renderHook, waitFor } from '@testing-library/react'
+import { createElement, type ReactNode } from 'react'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import type { ConversationRecord, ConversationSummary } from '@/lib/api/conversations'
 import type { SSEUpdate } from '@/lib/realtime/sse'
 
@@ -76,6 +78,15 @@ vi.mock('sonner', () => ({
 
 import { useChat } from '@/hooks/api/useChat'
 
+function queryWrapper() {
+  const client = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  })
+  return function QueryWrapper({ children }: { children: ReactNode }) {
+    return createElement(QueryClientProvider, { client }, children)
+  }
+}
+
 const LIVE_SUMMARY: ConversationSummary = {
   conversation_id: 'conv_live',
   title: 'live thread',
@@ -133,10 +144,16 @@ describe('useChat — F2 explicit resuming / connection-retrying state', () => {
     conversationsApi.listConversations.mockResolvedValue([LIVE_SUMMARY])
     conversationsApi.getConversation.mockResolvedValue(liveRecord())
 
-    const { result } = renderHook(() => useChat())
+    const { result } = renderHook(() => useChat(), { wrapper: queryWrapper() })
+    await vi.waitFor(() => {
+      expect(conversationsApi.listConversations).toHaveBeenCalled()
+    })
+    act(() => {
+      result.current.selectConversation('conv_live')
+    })
 
-    // After mount-hydration auto-selects the live conversation, useChat
-    // subscribes with replay:true and asserts the visible resuming state.
+    // Selecting the live conversation subscribes with replay:true and asserts
+    // the visible resuming state.
     await waitFor(() => {
       expect(eventsApi.subscribeEvents).toHaveBeenCalledTimes(1)
     })
@@ -182,7 +199,13 @@ describe('useChat — F2 explicit resuming / connection-retrying state', () => {
     conversationsApi.listConversations.mockResolvedValue([LIVE_SUMMARY])
     conversationsApi.getConversation.mockResolvedValue(liveRecord())
 
-    const { result } = renderHook(() => useChat())
+    const { result } = renderHook(() => useChat(), { wrapper: queryWrapper() })
+    await vi.waitFor(() => {
+      expect(conversationsApi.listConversations).toHaveBeenCalled()
+    })
+    act(() => {
+      result.current.selectConversation('conv_live')
+    })
 
     await vi.waitFor(() => {
       expect(eventsApi.subscribeEvents).toHaveBeenCalledTimes(1)
@@ -223,7 +246,13 @@ describe('useChat — F2 explicit resuming / connection-retrying state', () => {
     conversationsApi.listConversations.mockResolvedValue([LIVE_SUMMARY])
     conversationsApi.getConversation.mockResolvedValue(liveRecord())
 
-    const { result } = renderHook(() => useChat())
+    const { result } = renderHook(() => useChat(), { wrapper: queryWrapper() })
+    await waitFor(() => {
+      expect(conversationsApi.listConversations).toHaveBeenCalled()
+    })
+    act(() => {
+      result.current.selectConversation('conv_live')
+    })
     await waitFor(() => {
       expect(eventsApi.subscribeEvents).toHaveBeenCalledTimes(1)
     })

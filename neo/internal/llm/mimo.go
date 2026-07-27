@@ -4,11 +4,10 @@
 package llm
 
 import (
-	"encoding/json"
-	"strconv"
 	"strings"
 
 	mcllm "matrix/mcl/llm"
+	runtimeprovider "matrix/neo/internal/runtime/provider"
 )
 
 // mimo.go is Neo's native adapter for Xiaomi MiMo (MiMo-V2.5-Pro, the current
@@ -43,144 +42,29 @@ func isMimoFamily(model string) bool {
 	return strings.HasPrefix(m, "mimo-v2.5")
 }
 
-// The qwen3_xml tag grammar MiMo uses when the server does not parse tool calls:
-// a `<tool_call>` wrapper, a `<function=NAME>` header, then one
-// `<parameter=key>value` span per argument. Closing tags (`</parameter>`,
-// `</function>`, `</tool_call>`) are frequently omitted or lost to truncation,
-// so the parser treats every closer as optional.
-const (
-	mimoToolCallOpen  = "<tool_call>"
-	mimoToolCallClose = "</tool_call>"
-	mimoFunctionOpen  = "<function="
-	mimoFunctionClose = "</function>"
-	mimoParamOpen     = "<parameter="
-	mimoParamClose    = "</parameter>"
-)
-
-// parseMimoToolCalls is the native MiMo (qwen3_xml) tool-call parser: it pulls
-// tag-grammar tool calls out of content and returns the content with those
-// spans removed plus the structured calls. Parameter values run to the next
-// parameter/closer (or end of content on truncation); each value is kept as a
-// raw string unless it parses as standalone JSON. Returns (content, nil) when
-// there is nothing to extract, so a server-parsed response is never disturbed.
 func parseMimoToolCalls(content string) (string, []ToolCall) {
-	if !strings.Contains(content, mimoFunctionOpen) {
-		return content, nil
-	}
-	var b strings.Builder
-	var calls []ToolCall
-	rest := content
-	for {
-		fi := strings.Index(rest, mimoFunctionOpen)
-		if fi < 0 {
-			b.WriteString(rest)
-			break
-		}
-		start := fi
-		// Fold a preceding `<tool_call>` wrapper (only whitespace between it
-		// and the function header) into the stripped span.
-		if ti := strings.LastIndex(rest[:fi], mimoToolCallOpen); ti >= 0 &&
-			strings.TrimSpace(rest[ti+len(mimoToolCallOpen):fi]) == "" {
-			start = ti
-		}
-		b.WriteString(rest[:start])
-		after := rest[fi+len(mimoFunctionOpen):]
-		gt := strings.IndexByte(after, '>')
-		if gt < 0 {
-			// Truncated open tag: drop everything from the tag onward.
-			break
-		}
-		name := strings.TrimSpace(strings.TrimSuffix(after[:gt], "/"))
-		body := after[gt+1:]
-		argEnd := len(body)
-		fnEnd := strings.Index(body, mimoFunctionClose)
-		tcEnd := strings.Index(body, mimoToolCallClose)
-		if fnEnd >= 0 {
-			argEnd = fnEnd
-		}
-		if tcEnd >= 0 && tcEnd < argEnd {
-			argEnd = tcEnd
-		}
-		if name != "" {
-			calls = append(calls, ToolCall{
-				ID:       "call_" + strconv.Itoa(len(calls)),
-				Type:     "function",
-				Function: FunctionCall{Name: name, Arguments: mimoParamArgs(body[:argEnd])},
-			})
-		}
-		switch {
-		case tcEnd >= 0:
-			rest = body[tcEnd+len(mimoToolCallClose):]
-		case fnEnd >= 0:
-			rest = body[fnEnd+len(mimoFunctionClose):]
-		default:
-			// Unterminated call (truncated generation): consume the remainder.
-			rest = ""
-		}
-		if rest == "" {
-			break
-		}
-	}
-	if len(calls) == 0 {
-		return content, nil
-	}
-	return strings.TrimSpace(b.String()), calls
-}
-
-// mimoParamArgs parses the `<parameter=key>value` spans of one call body into a
-// JSON-object argument string. Values are trimmed raw strings; a value that is
-// itself standalone JSON (object/array/number/bool/null) is kept typed so
-// numeric and structured arguments survive the round trip.
-func mimoParamArgs(body string) string {
-	args := map[string]interface{}{}
-	rest := body
-	for {
-		i := strings.Index(rest, mimoParamOpen)
-		if i < 0 {
-			break
-		}
-		after := rest[i+len(mimoParamOpen):]
-		gt := strings.IndexByte(after, '>')
-		if gt < 0 {
-			break
-		}
-		key := strings.TrimSpace(strings.TrimSuffix(after[:gt], "/"))
-		val := after[gt+1:]
-		end := len(val)
-		if j := strings.Index(val, mimoParamClose); j >= 0 && j < end {
-			end = j
-		}
-		if j := strings.Index(val, mimoParamOpen); j >= 0 && j < end {
-			end = j
-		}
-		if j := strings.Index(val, mimoFunctionClose); j >= 0 && j < end {
-			end = j
-		}
-		if j := strings.Index(val, mimoToolCallClose); j >= 0 && j < end {
-			end = j
-		}
-		if key != "" {
-			args[key] = mimoParamValue(strings.TrimSpace(val[:end]))
-		}
-		rest = val[end:]
-	}
-	out, err := json.Marshal(args)
+	cleaned, normalized, _, err := runtimeprovider.ParseMiMoToolCalls(content)
 	if err != nil {
-		return "{}"
-	}
-	return string(out)
-}
-
-// mimoParamValue keeps a parameter value as its raw string unless the whole
-// value parses as standalone JSON, in which case the typed value is preserved.
-func mimoParamValue(raw string) interface{} {
-	var v interface{}
-	if err := json.Unmarshal([]byte(raw), &v); err == nil {
-		if _, isString := v.(string); !isString {
-			return v
+		if marker := strings.Index(content, "<tool_call>"); marker >= 0 {
+			return strings.TrimSpace(content[:marker]), nil
 		}
+		return content, nil
 	}
-	return raw
+	if len(normalized) == 0 {
+		return cleaned, nil
+	}
+	calls := make([]ToolCall, 0, len(normalized))
+	for _, call := range normalized {
+		calls = append(calls, ToolCall{
+			ID:   call.ID,
+			Type: "function",
+			Function: FunctionCall{
+				Name:      call.Name,
+				Arguments: string(call.Arguments),
+			},
+		})
+	}
+	return cleaned, calls
 }
 
 // mimoReasoningContent is the request-side half of the MiMo reasoning adapter

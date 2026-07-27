@@ -79,4 +79,12 @@ func TestCoreExecuteSchema(t *testing.T) {
 	if _, ok := props["intent"]; !ok {
 		t.Error("core_execute must declare an 'intent' parameter")
 	}
+	if class, ok := (&Manager{}).ToolSideEffectClass(
+		CoreExecuteTool,
+	); !ok || class != "write" {
+		t.Fatalf(
+			"core_execute effect metadata = %q, %t; want write, true",
+			class, ok,
+		)
+	}
 }
