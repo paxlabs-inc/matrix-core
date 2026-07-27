@@ -61,6 +61,30 @@ func TestHandlerServesTheNormalizedQuote(t *testing.T) {
 	}
 }
 
+func TestHandlerServesEveryClientAssetClassBoard(t *testing.T) {
+	h, _ := newTestHandler(t, map[string]string{
+		"batch-quote": `[{"symbol":"AAPL","price":232.8,"change":4.79,"volume":44489128,"exchange":"NASDAQ"}]`,
+	}, nil)
+
+	for _, class := range []AssetClass{ClassEquity, ClassIndex, ClassCrypto, ClassForex, ClassCommodity} {
+		t.Run(string(class), func(t *testing.T) {
+			w := get(t, h, "/finance/board?class="+string(class), "user-1")
+			if w.Code != http.StatusOK {
+				t.Fatalf("status = %d: %s", w.Code, w.Body.String())
+			}
+
+			var board QuoteBoard
+			decode(t, w, &board)
+			if len(board.Quotes) != 1 {
+				t.Fatalf("quotes = %+v", board.Quotes)
+			}
+			if board.Quotes[0].Class != class {
+				t.Fatalf("quote class = %q, want %q", board.Quotes[0].Class, class)
+			}
+		})
+	}
+}
+
 // The lane is read-only. Nothing about market data should accept a write.
 func TestHandlerRefusesNonGET(t *testing.T) {
 	h, _ := newTestHandler(t, map[string]string{"quote": docQuoteAAPL}, nil)
