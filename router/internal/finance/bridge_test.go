@@ -77,6 +77,37 @@ func startBridge(t *testing.T, laneURL, token string) *mcpBridge {
 	return &mcpBridge{cmd: cmd, stdin: stdin, stdout: bufio.NewReader(stdout), t: t}
 }
 
+func startBridgeWithRouterEnv(t *testing.T, routerURL, token string) *mcpBridge {
+	t.Helper()
+	path := bridgePath(t)
+	cmd := exec.Command("node", path)
+	cmd.Env = append(os.Environ(),
+		"ROUTER_INTERNAL_URL="+routerURL,
+		"ROUTER_FINANCE_TOKEN="+token,
+		"MATRIX_FINANCE_URL=",
+		"MATRIX_FINANCE_TOKEN=",
+		"MATRIX_USER_ID=user-under-test",
+	)
+	stdin, err := cmd.StdinPipe()
+	if err != nil {
+		t.Fatalf("stdin: %v", err)
+	}
+	stdout, err := cmd.StdoutPipe()
+	if err != nil {
+		t.Fatalf("stdout: %v", err)
+	}
+	cmd.Stderr = os.Stderr
+	if err := cmd.Start(); err != nil {
+		t.Fatalf("start bridge: %v", err)
+	}
+	t.Cleanup(func() {
+		_ = stdin.Close()
+		_ = cmd.Process.Kill()
+		_, _ = cmd.Process.Wait()
+	})
+	return &mcpBridge{cmd: cmd, stdin: stdin, stdout: bufio.NewReader(stdout), t: t}
+}
+
 // callTool performs one tools/call and returns the decoded result payload the
 // bridge put in its text content — exactly what the model would read.
 func (b *mcpBridge) callTool(name string, args map[string]any) map[string]any {
@@ -177,6 +208,18 @@ func TestBridgeReadsMarketDataThroughTheRouterLane(t *testing.T) {
 	}
 	if up.Hits() != 1 {
 		t.Fatalf("upstream hits = %d, want 1", up.Hits())
+	}
+}
+
+func TestBridgeReadsRouterLevelFinanceConfiguration(t *testing.T) {
+	svc, _, _, _ := newTestService(t, map[string]string{"quote": docQuoteAAPL}, nil)
+	lane := laneServer(t, svc, "router-token")
+	bridge := startBridgeWithRouterEnv(t, lane.URL, "router-token")
+
+	payload := bridge.callTool("market_quote", map[string]any{"symbol": "AAPL"})
+	quote, ok := payload["quote"].(map[string]any)
+	if !ok || quote["symbol"] != "AAPL" || quote["price"] != 232.8 {
+		t.Fatalf("router-level finance wiring failed: %+v", payload)
 	}
 }
 

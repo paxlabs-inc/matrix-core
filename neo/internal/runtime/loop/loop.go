@@ -1265,9 +1265,14 @@ func requestMessages(
 			Role: protocol.RoleSystem, Content: prompt,
 		})
 	}
+	// Retrieved memory rides the SYSTEM role, never the user role. It is the
+	// last message in the clone and is rebuilt every step, so in the user role
+	// it would occupy the most recent user turn for the whole turn — recalled
+	// text from an unrelated session then reads as the live request and the
+	// model attributes it to the user.
 	if tail := strings.TrimSpace(activation); tail != "" {
 		result = append(result, protocol.Message{
-			Role: protocol.RoleUser, Content: tail,
+			Role: protocol.RoleSystem, Content: tail,
 		})
 	}
 	return result

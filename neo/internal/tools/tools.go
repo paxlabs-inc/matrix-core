@@ -1635,6 +1635,13 @@ func funcName(alias, name string) string {
 	return sanitizeFuncName(alias + "__" + name)
 }
 
+// FunctionName returns the canonical function name used by Neo's registry for
+// one server-local MCP operation. Product-owned direct callers must use the
+// same name as the model-facing registry rather than guessing the local name.
+func FunctionName(alias, name string) string {
+	return funcName(alias, name)
+}
+
 // sanitizeFuncName coerces an "<alias>__<tool>" id into the OpenAI function
 // name charset (^[A-Za-z0-9_-]{1,64}$).
 func sanitizeFuncName(s string) string {

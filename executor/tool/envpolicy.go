@@ -38,7 +38,7 @@ var protectedEnvironment = stringSet(
 	"NEO_VOICE_ENABLED", "NEO_VOICE_MODE", "NEO_VOICE_TTS_STYLE",
 	"NEO_VOICE_TTS_VOICE", "NEO_VOICE_ASR_DEADLINE_SECONDS",
 	"NEO_VOICE_TTS_DEADLINE_SECONDS", "ALPHAVANTAGE_API_KEY", "FMP_API_KEY",
-	"ROUTER_FINANCE_TOKEN",
+	"ROUTER_FINANCE_TOKEN", "MATRIX_FINANCE_TOKEN", "MATRIX_FINANCE_URL",
 	// The root data-encryption key cannot be agent-visible without defeating
 	// the vault, even though it was initially listed as ordinary config.
 	"VAULT_KEK", "VAULT_KEK_FILE", "MATRIX_VAULT_KEK", "MATRIX_VAULT_KEK_ID",
@@ -75,6 +75,8 @@ var protectedEnvironmentOwner = map[string]string{
 	"ALPHAVANTAGE_API_KEY":           "finance",
 	"FMP_API_KEY":                    "finance",
 	"ROUTER_FINANCE_TOKEN":           "finance",
+	"MATRIX_FINANCE_TOKEN":           "finance",
+	"MATRIX_FINANCE_URL":             "finance",
 	"VAULT_KEK":                      "vault-bootstrap",
 	"VAULT_KEK_FILE":                 "vault-bootstrap",
 	"MATRIX_VAULT_KEK":               "vault-bootstrap",
@@ -99,7 +101,9 @@ var credentialedMCPEnvironment = map[string][]string{
 		"MATRIX_MEDIA_TIMEOUT_MS", "MATRIX_MEDIA_TASK_POLL_MS", "MATRIX_MEDIA_TASK_MAX_WAIT_MS",
 	},
 	"finance": {
-		"MATRIX_FINANCE_URL", "MATRIX_FINANCE_TOKEN", "MATRIX_FINANCE_TIMEOUT_MS",
+		"MATRIX_FINANCE_URL", "MATRIX_FINANCE_TOKEN",
+		"ROUTER_INTERNAL_URL", "ROUTER_FINANCE_TOKEN",
+		"MATRIX_FINANCE_TIMEOUT_MS",
 		"MATRIX_FINANCE_MAX_RESPONSE_BYTES",
 	},
 	"sandbox": {

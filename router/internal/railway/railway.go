@@ -268,6 +268,49 @@ func (c *Client) CreateService(ctx context.Context, name, image string, env map[
 	return &out.ServiceCreate, nil
 }
 
+// ServiceVariables returns the resolved variable collection for one service
+// instance in this client's project/environment.
+func (c *Client) ServiceVariables(ctx context.Context, serviceID string) (map[string]string, error) {
+	const q = `query Variables($projectId: String!, $environmentId: String!, $serviceId: String!) {
+  variables(projectId: $projectId, environmentId: $environmentId, serviceId: $serviceId)
+}`
+	var out struct {
+		Variables map[string]string `json:"variables"`
+	}
+	if err := c.do(ctx, q, map[string]any{
+		"projectId": c.projectID, "environmentId": c.environmentID, "serviceId": serviceID,
+	}, &out); err != nil {
+		return nil, err
+	}
+	if out.Variables == nil {
+		out.Variables = map[string]string{}
+	}
+	return out.Variables, nil
+}
+
+// UpsertServiceVariables merges a bounded variable collection into one
+// service. replace=false preserves provider-managed and unrelated variables;
+// skipDeploys=false makes the changed environment take effect.
+func (c *Client) UpsertServiceVariables(ctx context.Context, serviceID string, variables map[string]string) error {
+	const q = `mutation VariableCollectionUpsert($input: VariableCollectionUpsertInput!) {
+  variableCollectionUpsert(input: $input)
+}`
+	var out struct {
+		VariableCollectionUpsert bool `json:"variableCollectionUpsert"`
+	}
+	if err := c.do(ctx, q, map[string]any{"input": map[string]any{
+		"projectId": c.projectID, "environmentId": c.environmentID,
+		"serviceId": serviceID, "variables": variables,
+		"replace": false, "skipDeploys": false,
+	}}, &out); err != nil {
+		return err
+	}
+	if !out.VariableCollectionUpsert {
+		return fmt.Errorf("%w: variable collection was not accepted", ErrUpstream)
+	}
+	return nil
+}
+
 // CreateVolume attaches a fresh persistent volume to the service at
 // mountPath. Railway allows exactly ONE volume mount per service.
 func (c *Client) CreateVolume(ctx context.Context, serviceID, mountPath string) (*Volume, error) {

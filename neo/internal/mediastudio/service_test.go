@@ -7,6 +7,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"matrix/neo/internal/tools"
 )
 
 func TestOpenRecoversInterruptedJobsWithoutRepeatingThem(t *testing.T) {
@@ -107,5 +109,58 @@ func TestNormalizeUsesOwnedMediaReferencesAndDeleteRemovesOnlyOutput(t *testing.
 	}
 	if _, err := os.Stat(source); err != nil {
 		t.Fatalf("source upload was removed: %v", err)
+	}
+}
+
+func TestToolCallUsesBoundMediaFunctionNames(t *testing.T) {
+	tests := []struct {
+		kind Kind
+		want string
+	}{
+		{KindTextToImage, "media__generate_image"},
+		{KindImageToImage, "media__edit_image"},
+		{KindTextToVideo, "media__generate_video"},
+		{KindImageToVideo, "media__animate_image"},
+		{KindInpainting, "media__inpaint_image"},
+		{KindCleanup, "media__cleanup_image"},
+		{KindRemoveBackground, "media__remove_background"},
+		{KindReplaceBackground, "media__replace_background"},
+		{KindRemoveText, "media__remove_text"},
+		{KindMergeFace, "media__merge_faces"},
+		{KindUpscale, "media__upscale_image"},
+	}
+	for _, tc := range tests {
+		t.Run(string(tc.kind), func(t *testing.T) {
+			got, _ := toolCall(Request{Kind: tc.kind})
+			if got != tc.want {
+				t.Fatalf("tool = %q, want %q", got, tc.want)
+			}
+		})
+	}
+}
+
+func TestDecodeMediaResultPreservesTypedFailuresAndSuccess(t *testing.T) {
+	success, err := decodeMediaResult(tools.DirectResult{
+		Content: `{"ok":true,"kind":"image","url":"/media/generated.png","mime":"image/png","bytes":42}`,
+	})
+	if err != nil || success.URL != "/media/generated.png" || success.Bytes != 42 {
+		t.Fatalf("success decode = %+v err=%v", success, err)
+	}
+
+	_, err = decodeMediaResult(tools.DirectResult{
+		Content:        `unknown tool "generate_image"`,
+		IsError:        true,
+		FailureMessage: "The media operation is unavailable.",
+	})
+	if err == nil || err.Error() != "The media operation is unavailable." {
+		t.Fatalf("typed plain-text failure lost: %v", err)
+	}
+
+	_, err = decodeMediaResult(tools.DirectResult{
+		Content: `{"ok":false,"error":"The provider rejected this prompt."}`,
+		IsError: true,
+	})
+	if err == nil || err.Error() != "The provider rejected this prompt." {
+		t.Fatalf("structured provider failure lost: %v", err)
 	}
 }

@@ -34,7 +34,8 @@ func TestAgentEnvironmentOwnerClassification(t *testing.T) {
 		"NEO_VOICE_ENABLED", "NEO_VOICE_MODE", "NEO_VOICE_TTS_STYLE",
 		"NEO_VOICE_TTS_VOICE", "NEO_VOICE_ASR_DEADLINE_SECONDS",
 		"NEO_VOICE_TTS_DEADLINE_SECONDS", "ALPHAVANTAGE_API_KEY", "FMP_API_KEY",
-		"ROUTER_FINANCE_TOKEN", "VAULT_KEK", "VAULT_KEK_FILE",
+		"ROUTER_FINANCE_TOKEN", "MATRIX_FINANCE_TOKEN", "MATRIX_FINANCE_URL",
+		"VAULT_KEK", "VAULT_KEK_FILE",
 	}
 	for _, name := range visible {
 		if !AgentEnvironmentVisible(name) {
@@ -103,6 +104,38 @@ func TestMCPEnvironmentUsesFixedCredentialProfiles(t *testing.T) {
 	}
 	if privileged || strings.Contains(strings.Join(env, "\n"), "sentinel") {
 		t.Fatalf("generic exec server received privileged environment: %v", env)
+	}
+}
+
+func TestFinanceMCPEnvironmentAcceptsRouterOwnedConfiguration(t *testing.T) {
+	source := []string{
+		"PATH=/bin",
+		"MATRIX_USER_ID=user-1",
+		"ROUTER_INTERNAL_URL=http://router.internal:8088",
+		"ROUTER_FINANCE_TOKEN=finance-sentinel",
+		"FMP_API_KEY=vendor-sentinel",
+		"UNREVIEWED_TOKEN=unknown-sentinel",
+	}
+	env, privileged, err := MCPEnvironment("finance", source, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !privileged {
+		t.Fatal("finance broker was not kept in the privileged service boundary")
+	}
+	for _, want := range []string{
+		"ROUTER_INTERNAL_URL=http://router.internal:8088",
+		"ROUTER_FINANCE_TOKEN=finance-sentinel",
+	} {
+		if !slices.Contains(env, want) {
+			t.Fatalf("finance broker missing %q: %v", want, env)
+		}
+	}
+	joined := strings.Join(env, "\n")
+	for _, forbidden := range []string{"vendor-sentinel", "unknown-sentinel"} {
+		if strings.Contains(joined, forbidden) {
+			t.Fatalf("unrelated secret reached finance broker: %v", env)
+		}
 	}
 }
 

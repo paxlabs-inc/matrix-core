@@ -465,13 +465,15 @@ func TestCortexActivationRefreshAndSingleDeliveryChoke(t *testing.T) {
 				index+1, request.Messages,
 			)
 		}
+		// Retrieved memory rides the system role: in the user role it would
+		// stand as the most recent user turn and be read as the live request.
 		tail := request.Messages[len(request.Messages)-1]
-		if tail.Role != "user" ||
+		if tail.Role != "system" ||
 			!strings.Contains(tail.Content, "Active premises:") ||
 			len([]rune(tail.Content)) >
 				cortexAdapter.budgetTokens*4 {
 			t.Fatalf(
-				"iteration %d missing activation user tail: %+v",
+				"iteration %d missing activation system tail: %+v",
 				index+1, tail,
 			)
 		}

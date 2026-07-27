@@ -42,6 +42,7 @@ type Provisioner struct {
 
 var _ provision.Provisioner = (*Provisioner)(nil)
 var _ provision.Recoverable = (*Provisioner)(nil)
+var _ provision.EnvironmentConfigurer = (*Provisioner)(nil)
 
 func (p *Provisioner) ServiceName(userID string) string { return ServiceName(userID) }
 
@@ -144,6 +145,39 @@ func (p *Provisioner) DeleteVolume(ctx context.Context, volumeID string) error {
 	return mapErr(p.Client.DeleteVolume(ctx, volumeID))
 }
 
+// ConfigureEnvironment reconciles the operator-owned baseline for an existing
+// user service. It is called only by the explicit admin ensure action, never
+// from the request proxy hot path.
+func (p *Provisioner) ConfigureEnvironment(ctx context.Context, ref provision.Ref, desired map[string]string) (bool, error) {
+	current, err := p.Client.ServiceVariables(ctx, ref.EnvID)
+	if err != nil {
+		return false, mapErr(fmt.Errorf("read service variables: %w", err))
+	}
+	changed := make(map[string]string)
+	for name, value := range desired {
+		if current[name] != value {
+			changed[name] = value
+		}
+	}
+	if len(changed) == 0 {
+		return false, nil
+	}
+
+	previousID := ""
+	if deployment, derr := p.Client.LatestDeployment(ctx, ref.EnvID); derr == nil {
+		previousID = deployment.ID
+	} else if !errors.Is(derr, ErrNotFound) {
+		return false, mapErr(fmt.Errorf("read current deployment: %w", derr))
+	}
+	if err := p.Client.UpsertServiceVariables(ctx, ref.EnvID, changed); err != nil {
+		return false, mapErr(fmt.Errorf("upsert service variables: %w", err))
+	}
+	if err := p.waitDeployedAfter(ctx, ref.EnvID, previousID); err != nil {
+		return true, fmt.Errorf("await reconciled deployment: %w", err)
+	}
+	return true, nil
+}
+
 // Status reports the latest deployment state; Live (SUCCESS or
 // SLEEPING) counts as ready — a slept service revives on the first
 // inbound packet.
@@ -194,6 +228,10 @@ func (p *Provisioner) WakeOnRequest() bool { return true }
 // terminal failure, or ctx expiry. A service created moments ago may
 // briefly report no deployments — treated as not-ready, not an error.
 func (p *Provisioner) waitDeployed(ctx context.Context, serviceID string) error {
+	return p.waitDeployedAfter(ctx, serviceID, "")
+}
+
+func (p *Provisioner) waitDeployedAfter(ctx context.Context, serviceID, previousID string) error {
 	interval := p.ProbeInterval
 	if interval <= 0 {
 		interval = 2 * time.Second
@@ -207,9 +245,9 @@ func (p *Provisioner) waitDeployed(ctx context.Context, serviceID string) error 
 			// no deployment registered yet — keep waiting
 		case err != nil:
 			return mapErr(err)
-		case d.Live():
+		case d.ID != previousID && d.Live():
 			return nil
-		case d.Status == DeployStatusFailed || d.Status == DeployStatusCrashed:
+		case d.ID != previousID && (d.Status == DeployStatusFailed || d.Status == DeployStatusCrashed):
 			return fmt.Errorf("railway: deployment %s is %s", d.ID, d.Status)
 		}
 		select {

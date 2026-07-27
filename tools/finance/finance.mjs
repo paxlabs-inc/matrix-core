@@ -9,10 +9,11 @@
 // that symbol in /finance share ONE cache entry, ONE vendor quota and ONE bill —
 // and no vendor key is ever copied into a per-user machine.
 //
-// Wiring (injected at the daemon process env by the router):
-//   MATRIX_FINANCE_URL    — the internal lane, e.g.
-//                           http://matrix-router.railway.internal:8088/internal/finance
-//   MATRIX_FINANCE_TOKEN  — the service token for that lane
+// Wiring:
+//   ROUTER_INTERNAL_URL    — the router's internal base URL
+//   ROUTER_FINANCE_TOKEN  — the service token for the finance lane
+// MATRIX_FINANCE_URL and MATRIX_FINANCE_TOKEN remain accepted for compatibility
+// with machines provisioned by older routers.
 // Optional: MATRIX_FINANCE_TIMEOUT_MS (default 20000).
 //
 // No API key required to BOOT: the server always starts and advertises its
@@ -48,10 +49,15 @@ function clampInt(v, def, min, max) {
 }
 
 function laneURL() {
-  return (process.env.MATRIX_FINANCE_URL || '').trim().replace(/\/+$/, '')
+  const explicit = (process.env.MATRIX_FINANCE_URL || '').trim().replace(/\/+$/, '')
+  if (explicit) return explicit
+  const router = (process.env.ROUTER_INTERNAL_URL || 'http://matrix-router.railway.internal:8088')
+    .trim()
+    .replace(/\/+$/, '')
+  return router ? `${router}/internal/finance` : ''
 }
 function laneToken() {
-  return (process.env.MATRIX_FINANCE_TOKEN || '').trim()
+  return (process.env.MATRIX_FINANCE_TOKEN || process.env.ROUTER_FINANCE_TOKEN || '').trim()
 }
 function configured() {
   return laneURL() !== '' && laneToken() !== ''
@@ -68,7 +74,7 @@ function fail(tool, error, extra = {}) {
 }
 function notConfigured(tool) {
   return fail(tool, 'market data is not configured', {
-    hint: 'the router injects MATRIX_FINANCE_URL and MATRIX_FINANCE_TOKEN into the daemon env; the vendor keys live in the router, never here',
+    hint: 'the internal market-data service token is unavailable to the finance broker',
   })
 }
 

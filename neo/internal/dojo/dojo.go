@@ -23,6 +23,7 @@ const (
 	StateActive       State = "active"
 	StateTakeover     State = "takeover"
 	StateShipping     State = "shipping"
+	StateFailed       State = "failed"
 	StateDestroyed    State = "destroyed"
 )
 
@@ -30,11 +31,12 @@ const (
 // terminal; ready/active/takeover may go straight to destroyed ONLY on the
 // explicit-discard path (req 5.4) — normal teardown passes through shipping.
 var transitions = map[State]map[State]bool{
-	StateProvisioning: {StateReady: true, StateDestroyed: true},
+	StateProvisioning: {StateReady: true, StateFailed: true, StateDestroyed: true},
 	StateReady:        {StateActive: true, StateShipping: true, StateDestroyed: true},
 	StateActive:       {StateTakeover: true, StateShipping: true, StateDestroyed: true},
 	StateTakeover:     {StateActive: true, StateShipping: true, StateDestroyed: true},
 	StateShipping:     {StateDestroyed: true},
+	StateFailed:       {},
 	StateDestroyed:    {},
 }
 
@@ -145,6 +147,7 @@ type Session struct {
 	Image     string    `json:"image"`
 	CreatedAt time.Time `json:"created_at"`
 	TouchedAt time.Time `json:"touched_at"`
+	Reason    string    `json:"reason,omitempty"`
 }
 
 // session is the Manager-owned mutable record behind a Session snapshot.
@@ -156,6 +159,7 @@ type session struct {
 	image     string
 	createdAt time.Time
 	touchedAt time.Time
+	reason    string
 	// needsReobserve is set on handback (req 4.3): the agent must land a fresh
 	// observation before its next mutating action, because the human may have
 	// changed anything.
@@ -165,7 +169,7 @@ type session struct {
 func (s *session) snapshot() Session {
 	return Session{
 		ID: s.id, ConvID: s.convID, State: s.state, SandboxID: s.sandboxID,
-		Image: s.image, CreatedAt: s.createdAt, TouchedAt: s.touchedAt,
+		Image: s.image, CreatedAt: s.createdAt, TouchedAt: s.touchedAt, Reason: s.reason,
 	}
 }
 
@@ -332,11 +336,12 @@ func (m *Manager) ensureRecord(convID string) (*session, bool, error) {
 	}
 	m.mu.Lock()
 	if id, ok := m.byConv[convID]; ok {
-		if s := m.sessions[id]; s != nil && s.state != StateDestroyed {
+		if s := m.sessions[id]; s != nil && s.state != StateDestroyed && s.state != StateFailed {
 			s.touchedAt = m.now()
 			m.mu.Unlock()
 			return s, true, nil
 		}
+		delete(m.byConv, convID)
 	}
 	m.mu.Unlock()
 
@@ -352,7 +357,7 @@ func (m *Manager) ensureRecord(convID string) (*session, bool, error) {
 	}
 	m.mu.Lock()
 	if id, ok := m.byConv[convID]; ok {
-		if prev := m.sessions[id]; prev != nil && prev.state != StateDestroyed {
+		if prev := m.sessions[id]; prev != nil && prev.state != StateDestroyed && prev.state != StateFailed {
 			prev.touchedAt = m.now()
 			m.mu.Unlock()
 			return prev, true, nil
@@ -377,14 +382,18 @@ func (m *Manager) settleProvision(ctx context.Context, s *session) error {
 		} else if !errors.Is(err, ErrProvisionTimeout) {
 			terr = fmt.Errorf("%w: %v", ErrProvision, err)
 		}
-		m.emitState(s, EvtFailed, map[string]interface{}{"reason": terr.Error()})
 		// Never leak a half-provisioned sandbox.
 		if s.sandboxID != "" {
 			if derr := m.rw.DestroySandbox(context.Background(), s.sandboxID); derr != nil {
 				m.logf("dojo: cleanup destroy %s: %v", s.sandboxID, derr)
 			}
 		}
-		m.finish(s, "provision_failed", "")
+		m.mu.Lock()
+		s.state = StateFailed
+		s.reason = terr.Error()
+		snap := s.snapshot()
+		m.mu.Unlock()
+		m.emit(s.convID, EvtFailed, m.eventFields(snap, map[string]interface{}{"reason": terr.Error()}))
 		return terr
 	}
 	return m.transition(s, StateReady, EvtReady, nil)
@@ -469,7 +478,7 @@ func (m *Manager) SessionForConv(convID string) (Session, bool) {
 		return Session{}, false
 	}
 	s := m.sessions[id]
-	if s == nil || s.state == StateDestroyed {
+	if s == nil || s.state == StateDestroyed || s.state == StateFailed {
 		return Session{}, false
 	}
 	return s.snapshot(), true
@@ -504,7 +513,7 @@ func (m *Manager) Reattach(ctx context.Context, id string) (Session, error) {
 		m.mu.Unlock()
 		return Session{}, ErrNotFound
 	}
-	if s.state == StateDestroyed {
+	if s.state == StateDestroyed || s.state == StateFailed {
 		m.mu.Unlock()
 		return Session{}, ErrDestroyed
 	}
@@ -591,7 +600,7 @@ func (m *Manager) Handback(id string) (Session, error) {
 		m.mu.Unlock()
 		return Session{}, ErrNotFound
 	}
-	if s.state == StateDestroyed {
+	if s.state == StateDestroyed || s.state == StateFailed {
 		m.mu.Unlock()
 		return Session{}, ErrDestroyed
 	}
@@ -644,7 +653,7 @@ func (m *Manager) step(id string, from, to State, evt string) (Session, error) {
 		m.mu.Unlock()
 		return Session{}, ErrNotFound
 	}
-	if s.state == StateDestroyed {
+	if s.state == StateDestroyed || s.state == StateFailed {
 		m.mu.Unlock()
 		return Session{}, ErrDestroyed
 	}
@@ -672,7 +681,7 @@ func (m *Manager) Teardown(ctx context.Context, id, reason string) error {
 		m.mu.Unlock()
 		return nil
 	}
-	if s.state == StateShipping || s.state == StateDestroyed {
+	if s.state == StateShipping || s.state == StateDestroyed || s.state == StateFailed {
 		m.mu.Unlock()
 		return nil
 	}
@@ -706,7 +715,7 @@ func (m *Manager) Discard(ctx context.Context, id string) error {
 		m.mu.Unlock()
 		return nil
 	}
-	if s.state == StateDestroyed {
+	if s.state == StateDestroyed || s.state == StateFailed {
 		m.mu.Unlock()
 		return nil
 	}
@@ -786,7 +795,7 @@ func (m *Manager) evictForCap(ctx context.Context) {
 		live := 0
 		var oldest *session
 		for _, s := range m.sessions {
-			if s.state == StateDestroyed || s.state == StateShipping {
+			if s.state == StateDestroyed || s.state == StateShipping || s.state == StateFailed {
 				continue
 			}
 			live++
@@ -825,7 +834,7 @@ func (m *Manager) reapOnce(ctx context.Context) {
 	var victims []victim
 	m.mu.Lock()
 	for _, s := range m.sessions {
-		if s.state == StateDestroyed || s.state == StateShipping || s.state == StateProvisioning {
+		if s.state == StateDestroyed || s.state == StateShipping || s.state == StateProvisioning || s.state == StateFailed {
 			continue
 		}
 		switch {
@@ -847,7 +856,7 @@ func (m *Manager) Close() {
 	m.mu.Lock()
 	var ids []string
 	for id, s := range m.sessions {
-		if s.state != StateDestroyed {
+		if s.state != StateDestroyed && s.state != StateFailed {
 			ids = append(ids, id)
 		}
 	}

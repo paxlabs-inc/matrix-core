@@ -334,27 +334,9 @@ func (service *Service) run(id string) {
 		service.fail(id, err)
 		return
 	}
-	var payload struct {
-		OK    bool   `json:"ok"`
-		Error string `json:"error"`
-		Kind  string `json:"kind"`
-		URL   string `json:"url"`
-		MIME  string `json:"mime"`
-		Bytes int64  `json:"bytes"`
-	}
-	if decodeErr := json.Unmarshal([]byte(result.Content), &payload); decodeErr != nil {
-		service.fail(id, fmt.Errorf("media provider returned an unreadable result"))
-		return
-	}
-	if result.IsError || !payload.OK {
-		message := strings.TrimSpace(payload.Error)
-		if message == "" {
-			message = strings.TrimSpace(result.FailureMessage)
-		}
-		if message == "" {
-			message = "The media engine could not complete the job"
-		}
-		service.fail(id, errors.New(message))
+	payload, decodeErr := decodeMediaResult(result)
+	if decodeErr != nil {
+		service.fail(id, decodeErr)
 		return
 	}
 	name, valid := mediaName(payload.URL)
@@ -496,6 +478,41 @@ func (service *Service) validateReference(reference, label string) error {
 	return nil
 }
 
+type mediaResult struct {
+	OK    bool   `json:"ok"`
+	Error string `json:"error"`
+	Kind  string `json:"kind"`
+	URL   string `json:"url"`
+	MIME  string `json:"mime"`
+	Bytes int64  `json:"bytes"`
+}
+
+func decodeMediaResult(result tools.DirectResult) (mediaResult, error) {
+	var payload mediaResult
+	decodeErr := json.Unmarshal([]byte(strings.TrimSpace(result.Content)), &payload)
+	if result.IsError {
+		message := strings.TrimSpace(payload.Error)
+		if message == "" {
+			message = strings.TrimSpace(result.FailureMessage)
+		}
+		if message == "" {
+			message = "The media engine could not complete the job"
+		}
+		return mediaResult{}, errors.New(message)
+	}
+	if decodeErr != nil {
+		return mediaResult{}, fmt.Errorf("media bridge returned an invalid response")
+	}
+	if !payload.OK {
+		message := strings.TrimSpace(payload.Error)
+		if message == "" {
+			message = "The media engine could not complete the job"
+		}
+		return mediaResult{}, errors.New(message)
+	}
+	return payload, nil
+}
+
 func toolCall(request Request) (string, map[string]interface{}) {
 	args := map[string]interface{}{"provider": "novita", "seed": request.Seed}
 	if request.Prompt != "" {
@@ -509,37 +526,37 @@ func toolCall(request Request) (string, map[string]interface{}) {
 	}
 	switch request.Kind {
 	case KindTextToImage:
-		return "generate_image", args
+		return tools.FunctionName("media", "generate_image"), args
 	case KindImageToImage:
 		args["image"], args["strength"] = request.Image, request.Strength
-		return "edit_image", args
+		return tools.FunctionName("media", "edit_image"), args
 	case KindTextToVideo:
 		args["frames"] = request.Frames
-		return "generate_video", args
+		return tools.FunctionName("media", "generate_video"), args
 	case KindImageToVideo:
 		args["image"], args["frames"], args["fps"] = request.Image, request.Frames, request.FPS
-		return "animate_image", args
+		return tools.FunctionName("media", "animate_image"), args
 	case KindInpainting:
 		args["image"], args["mask"], args["strength"] = request.Image, request.Mask, request.Strength
-		return "inpaint_image", args
+		return tools.FunctionName("media", "inpaint_image"), args
 	case KindCleanup:
 		args["image"], args["mask"] = request.Image, request.Mask
-		return "cleanup_image", args
+		return tools.FunctionName("media", "cleanup_image"), args
 	case KindRemoveBackground:
 		args["image"] = request.Image
-		return "remove_background", args
+		return tools.FunctionName("media", "remove_background"), args
 	case KindReplaceBackground:
 		args["image"] = request.Image
-		return "replace_background", args
+		return tools.FunctionName("media", "replace_background"), args
 	case KindRemoveText:
 		args["image"] = request.Image
-		return "remove_text", args
+		return tools.FunctionName("media", "remove_text"), args
 	case KindMergeFace:
 		args["image"], args["face"] = request.Image, request.Face
-		return "merge_faces", args
+		return tools.FunctionName("media", "merge_faces"), args
 	case KindUpscale:
 		args["image"], args["scale"] = request.Image, request.Scale
-		return "upscale_image", args
+		return tools.FunctionName("media", "upscale_image"), args
 	default:
 		return "", args
 	}

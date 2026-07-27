@@ -146,12 +146,30 @@ func (h *Handler) EnsureMachine(ctx context.Context, userID, email, handle, regi
 		return nil, false, fmt.Errorf("db upsert: %w", err)
 	}
 
-	// 2. Idempotent: an environment already attached -> return it.
+	// 2. An attached environment still needs its operator-owned capability
+	//    environment reconciled. This route is an explicit admin mutation, so
+	//    the provider may deploy changed variables here; the public proxy never
+	//    mutates provider configuration.
 	user, err := h.DB.LookupForRoute(ctx, userID)
 	if err != nil {
 		return nil, false, fmt.Errorf("db lookup: %w", err)
 	}
 	if user.EnvID != "" {
+		prov := h.Prov
+		if h.Provider == "railway" && h.ShardProviders != nil && user.RailwayShardID != "" {
+			var ok bool
+			prov, ok = h.ShardProviders.Provider(user.RailwayShardID)
+			if !ok {
+				return nil, false, fmt.Errorf("assigned shard %q is not configured", user.RailwayShardID)
+			}
+		}
+		if configurable, ok := prov.(provision.EnvironmentConfigurer); ok {
+			if _, err := configurable.ConfigureEnvironment(ctx, provision.Ref{
+				UserID: userID, EnvID: user.EnvID, VolumeID: user.VolumeID,
+			}, h.instanceEnv(userID)); err != nil {
+				return nil, false, fmt.Errorf("reconcile environment: %w", err)
+			}
+		}
 		return user, false, nil
 	}
 

@@ -27,9 +27,9 @@ const (
 	// DefaultMinStep, DefaultMaxModsPerTurn, and DefaultCooldownSteps are the
 	// matrix Cassandra 2.0 cadence bounds, preserved verbatim from
 	// neo/internal/agent casMinStep / casMaxMods / casCooldownSteps.
-	DefaultMinStep       = 2
+	DefaultMinStep        = 2
 	DefaultMaxModsPerTurn = 3
-	DefaultCooldownSteps = 2
+	DefaultCooldownSteps  = 2
 	// UndoWindow is ion's bounded undo window for a recorded edit.
 	UndoWindow = 72 * time.Hour
 )
@@ -91,15 +91,15 @@ type Signals struct {
 // Mod is the dual record for one silent modification: what the model actually
 // said, what the controller folded in, and the evidence that armed it.
 type Mod struct {
-	ID        string                    `json:"id"`
-	Step      int                       `json:"step"`
-	Line      string                    `json:"line"`
-	Trigger   Trigger                   `json:"trigger"`
-	Side      Side                      `json:"side"`
-	Citation  *cortex.ToolEventCitation `json:"citation,omitempty"`
-	At        time.Time                 `json:"at"`
-	State     EditState                 `json:"state"`
-	UndoneAt  *time.Time                `json:"undone_at,omitempty"`
+	ID       string                    `json:"id"`
+	Step     int                       `json:"step"`
+	Line     string                    `json:"line"`
+	Trigger  Trigger                   `json:"trigger"`
+	Side     Side                      `json:"side"`
+	Citation *cortex.ToolEventCitation `json:"citation,omitempty"`
+	At       time.Time                 `json:"at"`
+	State    EditState                 `json:"state"`
+	UndoneAt *time.Time                `json:"undone_at,omitempty"`
 }
 
 // Auditor durably records every controller action. Optional: a nil auditor
