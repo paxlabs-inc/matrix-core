@@ -86,16 +86,28 @@ func newInfra(ctx context.Context, opts infraOpts, t *transcript) (*infra, error
 		StderrSink: opts.StderrSink,
 	})
 	for _, s := range manifest.Servers {
-		var subEnv []string
 		// Q18 lock: $env: refs resolve to host process env at spawn time.
 		resolved, _, rerr := tool.ResolveEnvList(s.Env, os.LookupEnv)
 		if rerr != nil {
 			cleanupOnError()
 			return nil, fmt.Errorf("infra: env resolve for %q: %w", s.Alias, rerr)
 		}
-		if len(resolved) > 0 || len(s.Env) > 0 {
-			// Inherit parent env (PATH/HOME etc.) plus manifest overrides.
-			subEnv = append(append([]string{}, os.Environ()...), resolved...)
+		subEnv, privileged, rerr := tool.MCPEnvironment(s.Alias, os.Environ(), resolved)
+		if rerr != nil {
+			cleanupOnError()
+			return nil, fmt.Errorf("infra: env policy for %q: %w", s.Alias, rerr)
+		}
+		var runAs *mcp.ProcessIdentity
+		if !privileged {
+			if identity, configured, ierr := tool.AgentIdentityFromEnv(); ierr != nil {
+				cleanupOnError()
+				return nil, fmt.Errorf("infra: agent identity for %q: %w", s.Alias, ierr)
+			} else if configured {
+				runAs = &mcp.ProcessIdentity{
+					UID: identity.UID, GID: identity.GID,
+					Home: identity.Home, User: identity.User,
+				}
+			}
 		}
 		spec := mcp.ServerSpec{
 			Alias:         s.Alias,
@@ -103,6 +115,7 @@ func newInfra(ctx context.Context, opts infraOpts, t *transcript) (*infra, error
 			Command:       s.Command,
 			Args:          s.Args,
 			Env:           subEnv,
+			RunAs:         runAs,
 			Endpoint:      s.Endpoint,
 			Headers:       resolveHeaderEnv(s.Headers),
 			PackageDigest: s.PackageDigest,

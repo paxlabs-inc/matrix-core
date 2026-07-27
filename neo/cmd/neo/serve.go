@@ -346,6 +346,7 @@ func runServe(args []string) {
 		TelegramSettingsDir:    telegramsettings.Dir(os.Getenv("NEO_TELEGRAM_DIR"), cfg.CortexRoot),
 		MachineMailSettingsDir: machinemailsettings.Dir(os.Getenv("NEO_MACHINEMAIL_DIR"), cfg.CortexRoot),
 		MediaDir:               mediaPath,
+		NovitaAPIKey:           os.Getenv("NOVITA_API_KEY"),
 		VoiceASRURL:            envOrDefault("MATRIX_MIMO_ASR_URL", "https://api.xiaomimimo.com/v1/chat/completions"),
 		VoiceASRKey:            os.Getenv("MIMO_API_KEY"),
 		VoiceControllerURL:     envOrDefault("VOICE_CONTROLLER_URL", "http://127.0.0.1:8791"),

@@ -55,6 +55,16 @@ test('transcribe_audio rejects an unknown language before provider dispatch', as
   assert.match(payload(result).error, /auto.*zh.*en/)
 })
 
+test('an explicit Novita studio call never falls through to xAI', async () => {
+  const result = await callTool(
+    'generate_image',
+    { prompt: 'A precise studio lighting test', provider: 'novita' },
+    { XAI_API_KEY: 'must-not-be-used', NOVITA_API_KEY: '' },
+  )
+  assert.equal(result.isError, true)
+  assert.match(payload(result).error, /Media generation is not configured/)
+})
+
 test('transcribe_audio rejects an input whose encoded form exceeds 10 MB', async () => {
   const dir = await mkdtemp(join(tmpdir(), 'matrix-media-asr-'))
   await writeFile(join(dir, 'large.wav'), Buffer.alloc(7_864_321))

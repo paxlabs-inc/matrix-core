@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"sync"
 )
 
 // bridge.go — the desktop actuation carrier (DOJO wave 2, req 2). bytebotd
@@ -57,11 +58,15 @@ const applianceContainer = "dojo"
 // a11yTimeoutSec bounds the AT-SPI walk.
 const a11yTimeoutSec = 30
 
-// execMaxOutput bounds a single exec's captured output before the carrier
-// treats it as potentially truncated and reads the remainder in chunks. Railway
-// caps sandboxExec stdout; a 1280×960 PNG screenshot base64s to ~3.5 MB, well
-// over any single-exec cap, so the screenshot path always chunk-reads.
-const execChunkBytes = 512 * 1024
+// Railway caps sandboxExec stdout at 80,000 encoded bytes in production. Each
+// raw chunk is base64-expanded before crossing that boundary, so 48 KiB leaves
+// enough headroom for the complete encoded chunk. Large responses are read
+// with bounded parallelism so a multi-megabyte screenshot still lands inside
+// the client's 30-second frame budget.
+const (
+	execChunkBytes  = 48 * 1024
+	execReadWorkers = 8
+)
 
 // bytebotdCurlTimeoutSec bounds the in-sandbox curl itself; the exec wrapping
 // it gets a slightly larger budget so the exec never times out before curl
@@ -363,33 +368,95 @@ func (t *execCurlTransport) Call(ctx context.Context, s Session, body []byte) ([
 
 // readFile reads a sandbox file back in truncation-safe base64 chunks until the
 // full byte count is recovered. Small responses (clicks, cursor reads) come
-// back in one chunk; a screenshot spans several.
+// back in one chunk; a screenshot spans several bounded-parallel reads.
 func (t *execCurlTransport) readFile(ctx context.Context, sandboxID, path string, total int) ([]byte, error) {
-	out := make([]byte, 0, total)
-	for off := 0; off < total; off += execChunkBytes {
-		n := execChunkBytes
-		if off+n > total {
-			n = total - off
-		}
-		cmd := fmt.Sprintf("tail -c +%d %s | head -c %d | base64 -w0", off+1, path, n)
-		res, err := t.rw.ExecSandbox(ctx, sandboxID, cmd, bytebotdExecTimeoutSec)
-		if err != nil {
-			return nil, err
-		}
-		if res.ExitCode != 0 {
-			return nil, fmt.Errorf("read chunk exit=%d: %s", res.ExitCode, strings.TrimSpace(res.Stderr))
-		}
-		chunk, err := base64.StdEncoding.DecodeString(strings.TrimSpace(res.Stdout))
-		if err != nil {
-			return nil, fmt.Errorf("decode chunk at %d: %w", off, err)
-		}
-		out = append(out, chunk...)
-		if len(chunk) == 0 {
-			break
+	if total < 0 {
+		return nil, fmt.Errorf("read %s: invalid byte count %d", path, total)
+	}
+	if total == 0 {
+		return []byte{}, nil
+	}
+
+	partCount := (total + execChunkBytes - 1) / execChunkBytes
+	parts := make([][]byte, partCount)
+	jobs := make(chan int, partCount)
+	for i := 0; i < partCount; i++ {
+		jobs <- i
+	}
+	close(jobs)
+
+	readCtx, cancel := context.WithCancel(ctx)
+	defer cancel()
+	errs := make(chan error, 1)
+	fail := func(err error) {
+		select {
+		case errs <- err:
+			cancel()
+		default:
 		}
 	}
+
+	workers := execReadWorkers
+	if partCount < workers {
+		workers = partCount
+	}
+	var wg sync.WaitGroup
+	wg.Add(workers)
+	for range workers {
+		go func() {
+			defer wg.Done()
+			for index := range jobs {
+				if readCtx.Err() != nil {
+					return
+				}
+				off := index * execChunkBytes
+				n := execChunkBytes
+				if off+n > total {
+					n = total - off
+				}
+				cmd := fmt.Sprintf("tail -c +%d %s | head -c %d | base64 -w0", off+1, path, n)
+				res, err := t.rw.ExecSandbox(readCtx, sandboxID, cmd, bytebotdExecTimeoutSec)
+				if err != nil {
+					fail(fmt.Errorf("read chunk at %d: %w", off, err))
+					return
+				}
+				if res.ExitCode != 0 || res.TimedOut {
+					fail(fmt.Errorf("read chunk at %d exit=%d timedOut=%v: %s", off, res.ExitCode, res.TimedOut, strings.TrimSpace(res.Stderr)))
+					return
+				}
+				if res.Truncated {
+					fail(fmt.Errorf("read chunk at %d was truncated after requesting %d bytes", off, n))
+					return
+				}
+				chunk, err := base64.StdEncoding.DecodeString(strings.TrimSpace(res.Stdout))
+				if err != nil {
+					fail(fmt.Errorf("decode chunk at %d: %w", off, err))
+					return
+				}
+				if len(chunk) != n {
+					fail(fmt.Errorf("read chunk at %d recovered %d of %d bytes", off, len(chunk), n))
+					return
+				}
+				parts[index] = chunk
+			}
+		}()
+	}
+	wg.Wait()
+	select {
+	case err := <-errs:
+		return nil, err
+	default:
+	}
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+
+	out := make([]byte, 0, total)
+	for _, part := range parts {
+		out = append(out, part...)
+	}
 	if len(out) != total {
-		return out, fmt.Errorf("%w: recovered %d of %d bytes from %s", ErrTransport, len(out), total, path)
+		return out, fmt.Errorf("recovered %d of %d bytes from %s", len(out), total, path)
 	}
 	return out, nil
 }

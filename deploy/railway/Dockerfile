@@ -308,6 +308,16 @@ RUN set -eux; \
     curl -fsSL "https://dl.min.io/client/mc/release/${mc_arch}/mc" -o /usr/local/bin/mc; \
     chmod +x /usr/local/bin/mc
 
+# Agent-controlled shells and generic MCP servers run under a dedicated uid.
+# Secret-bearing services remain root and are reachable only through bounded
+# product operations.
+RUN set -eux; \
+    groupadd --gid 10001 matrix-agent; \
+    useradd --uid 10001 --gid 10001 --create-home --shell /bin/bash matrix-agent; \
+    chmod 0711 /root
+ENV MATRIX_AGENT_UID=10001 \
+    MATRIX_AGENT_GID=10001
+
 WORKDIR /opt/matrix
 
 # Copy the static binaries first. mcl-execute = the co-located plumbing daemon
@@ -364,9 +374,8 @@ RUN chmod +x /opt/matrix/tools/scaffold/*.sh
 COPY tools/paxeer-cloud /opt/matrix/tools/paxeer-cloud
 RUN chmod +x /opt/matrix/tools/paxeer-cloud/paxc \
     && ln -sfn /opt/matrix/tools/paxeer-cloud/paxc /usr/local/bin/paxc
-# agents/default.json hard-codes /root/matrix/tools/paxeer/paxeer-net.mjs
-# (matches the dev-box layout). Symlink /root/matrix → /opt/matrix so the
-# baked-in path resolves inside the container without templating.
+# /root is traverse-only for matrix-agent; known baked manifest paths resolve
+# while the root service home cannot be listed.
 RUN mkdir -p /root && ln -sfn /opt/matrix /root/matrix
 
 # Entrypoint: prep volume layout + exec daemon (Railway variant — adds the

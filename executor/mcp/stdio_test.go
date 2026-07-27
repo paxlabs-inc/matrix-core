@@ -147,6 +147,31 @@ func TestStdioRejectsBadCommand(t *testing.T) {
 	}
 }
 
+func TestStdioDropsGenericServerIdentity(t *testing.T) {
+	if os.Geteuid() != 0 {
+		t.Skip("credential transition requires root")
+	}
+	tr, err := NewStdioTransport(StdioParams{
+		Command: "/usr/bin/id",
+		Args:    []string{"-u"},
+		Env:     []string{"PATH=/usr/bin:/bin", "HOME=/root", "USER=root"},
+		RunAs: &ProcessIdentity{
+			UID: 65534, GID: 65534, Home: "/tmp", User: "nobody",
+		},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer tr.Close()
+	line, err := tr.stdout.ReadString('\n')
+	if err != nil && err != io.EOF {
+		t.Fatal(err)
+	}
+	if strings.TrimSpace(line) != "65534" {
+		t.Fatalf("stdio child uid = %q, want 65534", line)
+	}
+}
+
 func TestStdioCloseIsIdempotent(t *testing.T) {
 	exe, err := os.Executable()
 	if err != nil {

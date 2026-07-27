@@ -155,19 +155,23 @@ func TestChooseShell_Precedence(t *testing.T) {
 	}
 }
 
-// TestShellEnv_StripsToken redacts MATRIX_DAEMON_TOKEN from the child
-// env so it doesn't land in shell history / process listings.
-func TestShellEnv_StripsToken(t *testing.T) {
+// TestShellEnvUsesExactAllowlist proves the shell keeps approved configuration
+// while denying protected and unknown daemon variables.
+func TestShellEnvUsesExactAllowlist(t *testing.T) {
 	t.Setenv("MATRIX_DAEMON_TOKEN", "secret-do-not-leak")
+	t.Setenv("TAVILY_API_KEY", "search-secret-do-not-leak")
 	t.Setenv("MATRIX_FOO", "yes")
+	t.Setenv("MATRIX_USER_ID", "visible-user")
 	env := shellEnv("/tmp")
 	for _, e := range env {
-		if strings.HasPrefix(e, "MATRIX_DAEMON_TOKEN=") {
-			t.Errorf("MATRIX_DAEMON_TOKEN must be stripped from child env; got %s", e)
+		if strings.HasPrefix(e, "MATRIX_DAEMON_TOKEN=") ||
+			strings.HasPrefix(e, "TAVILY_API_KEY=") ||
+			strings.HasPrefix(e, "MATRIX_FOO=") {
+			t.Errorf("unapproved variable reached child env: %s", e)
 		}
 	}
-	if !envHas(env, "MATRIX_FOO") {
-		t.Errorf("MATRIX_FOO should have been propagated")
+	if !envHas(env, "MATRIX_USER_ID") {
+		t.Errorf("approved MATRIX_USER_ID was not propagated")
 	}
 	if !envHas(env, "PWD") || !envHas(env, "TERM") {
 		t.Errorf("baseline PWD/TERM missing from child env: %v", env)

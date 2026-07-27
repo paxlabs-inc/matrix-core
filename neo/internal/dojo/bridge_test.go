@@ -19,6 +19,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 )
@@ -30,9 +31,14 @@ import (
 // docker-exec desktop wrapper. The real NewRailway client + real Manager +
 // real execCurlTransport run against it end to end — no carrier logic is faked.
 type shellFixture struct {
-	bytebotBody []byte // canned bytebotd response body
-	bytebotCode int    // canned bytebotd HTTP status
-	a11yOut     string // canned a11y dumper stdout
+	bytebotBody       []byte // canned bytebotd response body
+	bytebotCode       int    // canned bytebotd HTTP status
+	a11yOut           string // canned a11y dumper stdout
+	execOutputCap     int    // Railway's sandboxExec stdout cap; 0 means unlimited
+	chunkDelay        time.Duration
+	mu                sync.Mutex
+	chunksInFlight    int
+	maxChunksInFlight int
 }
 
 var (
@@ -55,9 +61,28 @@ func (f *shellFixture) server(t *testing.T) *httptest.Server {
 			return
 		}
 		cmd, _ := body.Variables["command"].(string)
+		if chunkRe.MatchString(cmd) {
+			f.mu.Lock()
+			f.chunksInFlight++
+			if f.chunksInFlight > f.maxChunksInFlight {
+				f.maxChunksInFlight = f.chunksInFlight
+			}
+			f.mu.Unlock()
+			defer func() {
+				f.mu.Lock()
+				f.chunksInFlight--
+				f.mu.Unlock()
+			}()
+			time.Sleep(f.chunkDelay)
+		}
 		stdout := f.run(cmd)
+		truncated := false
+		if f.execOutputCap > 0 && len(stdout) > f.execOutputCap {
+			stdout = stdout[:f.execOutputCap]
+			truncated = true
+		}
 		out, _ := json.Marshal(stdout)
-		fmt.Fprintf(w, `{"data":{"sandboxExec":{"stdout":%s,"stderr":"","exitCode":0,"timedOut":false,"truncated":false}}}`, out)
+		fmt.Fprintf(w, `{"data":{"sandboxExec":{"stdout":%s,"stderr":"","exitCode":0,"timedOut":false,"truncated":%t}}}`, out, truncated)
 	}))
 	t.Cleanup(srv.Close)
 	return srv
@@ -95,6 +120,12 @@ func (f *shellFixture) run(cmd string) string {
 		return fmt.Sprintf("%d\n%d", code, len(f.bytebotBody))
 	}
 	return ""
+}
+
+func (f *shellFixture) maxConcurrentChunks() int {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	return f.maxChunksInFlight
 }
 
 func managerOverShell(t *testing.T, f *shellFixture) *Manager {
@@ -137,7 +168,10 @@ func TestCallBytebotdLargeChunked(t *testing.T) {
 	}
 	payload := append([]byte(`{"image":"`), big...)
 	payload = append(payload, []byte(`"}`)...)
-	f := &shellFixture{bytebotBody: payload, bytebotCode: 201}
+	f := &shellFixture{
+		bytebotBody: payload, bytebotCode: 201, execOutputCap: 80_000,
+		chunkDelay: 5 * time.Millisecond,
+	}
 	m := managerOverShell(t, f)
 	resp, err := m.CallBytebotd(context.Background(), []byte(`{"action":"screenshot"}`))
 	if err != nil {
@@ -148,6 +182,9 @@ func TestCallBytebotdLargeChunked(t *testing.T) {
 	}
 	if string(resp) != string(payload) {
 		t.Fatal("reassembled bytes differ from source")
+	}
+	if got := f.maxConcurrentChunks(); got < 2 || got > execReadWorkers {
+		t.Fatalf("concurrent chunk reads = %d, want 2..%d", got, execReadWorkers)
 	}
 }
 

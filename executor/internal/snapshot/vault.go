@@ -23,6 +23,7 @@ import (
 	"io"
 	"os"
 
+	"github.com/minio/minio-go/v7"
 	"matrix/vault"
 )
 
@@ -107,8 +108,10 @@ func (m *Manager) pushKeyfile(ctx context.Context) error {
 	if _, err := os.Stat(path); err != nil {
 		return fmt.Errorf("snapshot: keyfile %s: %w", path, err)
 	}
-	if _, stderr, err := m.runMC(ctx, "cp", "--quiet", path, m.remotePath(m.keyfileKey())); err != nil {
-		return fmt.Errorf("snapshot: mc cp keyfile: %w (stderr=%q)", err, stderr)
+	if _, err := m.s3.FPutObject(
+		ctx, m.cfg.Bucket, m.keyfileKey(), path, minio.PutObjectOptions{},
+	); err != nil {
+		return fmt.Errorf("snapshot: S3 keyfile push: %w", err)
 	}
 	return nil
 }
@@ -122,8 +125,10 @@ func (m *Manager) ensureKeyfile(ctx context.Context) error {
 		return nil
 	}
 	tmp := path + ".pull"
-	if _, stderr, err := m.runMC(ctx, "cp", "--quiet", m.remotePath(m.keyfileKey()), tmp); err != nil {
-		return fmt.Errorf("snapshot: sealed snapshot but keyfile sidecar unavailable: %w (stderr=%q)", err, stderr)
+	if err := m.s3.FGetObject(
+		ctx, m.cfg.Bucket, m.keyfileKey(), tmp, minio.GetObjectOptions{},
+	); err != nil {
+		return fmt.Errorf("snapshot: sealed snapshot but keyfile sidecar unavailable: %w", err)
 	}
 	if err := os.Chmod(tmp, 0o600); err != nil {
 		return err

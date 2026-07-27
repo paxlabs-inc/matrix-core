@@ -217,11 +217,11 @@ async function postJSON(path, body, timeoutMs = HTTP_TIMEOUT_MS) {
     method: 'POST',
     headers: authHeaders({ 'Content-Type': 'application/json', Accept: 'application/json' }),
     body: JSON.stringify(body),
-  }, timeoutMs, 'Novita')
+  }, timeoutMs, 'media provider')
 }
 
 async function getJSON(path, timeoutMs = HTTP_TIMEOUT_MS) {
-  return doFetch(API_BASE + path, { method: 'GET', headers: authHeaders({ Accept: 'application/json' }) }, timeoutMs, 'Novita')
+  return doFetch(API_BASE + path, { method: 'GET', headers: authHeaders({ Accept: 'application/json' }) }, timeoutMs, 'media provider')
 }
 
 async function xaiPostJSON(path, body, timeoutMs = HTTP_TIMEOUT_MS) {
@@ -503,12 +503,14 @@ async function transcribeAudio(args) {
 }
 
 function seedOf(args) { return Number.isInteger(args?.seed) ? args.seed : -1 }
+function forceNovita(args) { return String(args?.provider || '').trim().toLowerCase() === 'novita' }
+function useXAI(args) { return Boolean(XAI_KEY) && !forceNovita(args) }
 
 // ── tool implementations ──────────────────────────────────────────────────────
 async function generateImage(args) {
   const prompt = String(args?.prompt || '').trim()
   if (!prompt) return errResult('generate_image', "a non-empty 'prompt' is required")
-  if (XAI_KEY) {
+  if (useXAI(args)) {
     const body = { model: XAI_IMAGE_MODEL, prompt: foldNegative(prompt, args), n: 1, resolution: XAI_RESOLUTION, response_format: 'b64_json' }
     const ar = xaiAspect(args?.aspect_ratio)
     if (ar) body.aspect_ratio = ar
@@ -548,7 +550,7 @@ async function editImage(args) {
   const prompt = String(args?.prompt || '').trim()
   if (!prompt) return errResult('edit_image', "a non-empty 'prompt' is required")
   if (!args?.image) return errResult('edit_image', "an 'image' reference is required")
-  if (XAI_KEY) return xaiEdit('edit_image', args.image, foldNegative(prompt, args), { prompt })
+  if (useXAI(args)) return xaiEdit('edit_image', args.image, foldNegative(prompt, args), { prompt })
   const image_base64 = await resolveBase64(args.image)
   const { width, height } = dimsFor(args?.aspect_ratio)
   const request = {
@@ -579,10 +581,10 @@ async function inpaintImage(args) {
   if (!args?.mask) return errResult('inpaint_image', "a 'mask' reference is required (white = area to repaint)")
   // Novita is the true masked-inpainting path; xAI Grok Imagine has no mask
   // input, so without a Novita key we approximate with a prompt-based edit.
-  if (!API_KEY && XAI_KEY) {
+  if (!API_KEY && useXAI(args)) {
     return xaiEdit('inpaint_image', args.image,
       foldNegative(`Change ONLY the region described, leave everything else pixel-identical: ${prompt}`, args),
-      { prompt, note: 'mask ignored: approximated via prompt-based edit (xAI has no mask input; set NOVITA_API_KEY for true inpainting)' })
+      { prompt, note: 'mask ignored: the dedicated mask pipeline is not configured' })
   }
   const image_base64 = await resolveBase64(args.image)
   const mask_image_base64 = await resolveBase64(args.mask)
@@ -616,10 +618,10 @@ async function removeBackground(args) {
   if (!args?.image) return errResult('remove_background', "an 'image' reference is required")
   // Novita returns true alpha transparency; xAI edits can only paint a plain
   // background in. Prefer Novita when available.
-  if (!API_KEY && XAI_KEY) {
+  if (!API_KEY && useXAI(args)) {
     return xaiEdit('remove_background', args.image,
       'Remove the background entirely: keep the foreground subject exactly as-is on a flat, uniform, pure white background with no shadows',
-      { note: 'no alpha channel: xAI paints a plain white background (set NOVITA_API_KEY for true transparency)' })
+      { note: 'no alpha channel: the transparency pipeline is not configured' })
   }
   const image_file = await resolveBase64(args.image)
   const out = await postJSON('/v3/remove-background', { image_file })
@@ -630,7 +632,7 @@ async function replaceBackground(args) {
   if (!args?.image) return errResult('replace_background', "an 'image' reference is required")
   const prompt = String(args?.prompt || '').trim()
   if (!prompt) return errResult('replace_background', "a non-empty 'prompt' (the new background to place) is required")
-  if (XAI_KEY) {
+  if (useXAI(args)) {
     return xaiEdit('replace_background', args.image,
       `Replace the background with: ${prompt}. Keep the foreground subject exactly as-is — same pose, lighting on the subject, and framing`,
       { prompt })
@@ -642,7 +644,7 @@ async function replaceBackground(args) {
 
 async function removeText(args) {
   if (!args?.image) return errResult('remove_text', "an 'image' reference is required")
-  if (XAI_KEY) {
+  if (useXAI(args)) {
     return xaiEdit('remove_text', args.image,
       'Erase ALL rendered text, captions, subtitles, logos with lettering, and watermarks from this image, reconstructing the background behind them naturally. Change nothing else')
   }
@@ -656,7 +658,7 @@ async function cleanupImage(args) {
   if (!args?.mask) return errResult('cleanup_image', "a 'mask' reference is required (white = object to erase)")
   // Novita's mask-based cleanup is the real path. Without it, approximate via
   // xAI multi-reference editing: hand the mask over as a second image.
-  if (!API_KEY && XAI_KEY) {
+  if (!API_KEY && useXAI(args)) {
     const image = await resolveImageDataURL(args.image)
     const mask = await resolveImageDataURL(args.mask)
     const res = await xaiPostJSON('/v1/images/edits', {
@@ -665,7 +667,7 @@ async function cleanupImage(args) {
       images: [{ url: image }, { url: mask }],
       n: 1, resolution: XAI_RESOLUTION, response_format: 'b64_json',
     })
-    return xaiImageOut('cleanup_image', res, { note: 'mask applied via multi-reference edit (set NOVITA_API_KEY for pixel-exact mask cleanup)' })
+    return xaiImageOut('cleanup_image', res, { note: 'mask applied via multi-reference edit because the pixel-exact cleanup pipeline is not configured' })
   }
   const image_file = await resolveBase64(args.image)
   const mask_file = await resolveBase64(args.mask)
@@ -676,7 +678,7 @@ async function cleanupImage(args) {
 async function mergeFaces(args) {
   if (!args?.image) return errResult('merge_faces', "an 'image' reference (the base photo) is required")
   if (!args?.face) return errResult('merge_faces', "a 'face' reference (the face to swap in) is required")
-  if (XAI_KEY) {
+  if (useXAI(args)) {
     const image = await resolveImageDataURL(args.image)
     const face = await resolveImageDataURL(args.face)
     const res = await xaiPostJSON('/v1/images/edits', {
@@ -696,7 +698,7 @@ async function mergeFaces(args) {
 async function generateVideo(args) {
   const prompt = String(args?.prompt || '').trim()
   if (!prompt) return errResult('generate_video', "a non-empty 'prompt' is required")
-  if (XAI_KEY) {
+  if (useXAI(args)) {
     const body = { prompt: foldNegative(prompt, args), duration: xaiDuration(args) }
     const ar = xaiAspect(args?.aspect_ratio)
     if (ar && ar !== 'auto' && ar !== '1:2' && ar !== '2:1') body.aspect_ratio = ar
@@ -726,7 +728,7 @@ async function generateVideo(args) {
 
 async function animateImage(args) {
   if (!args?.image) return errResult('animate_image', "an 'image' reference is required")
-  if (XAI_KEY) {
+  if (useXAI(args)) {
     const body = { image: { url: await resolveImageDataURL(args.image) }, duration: xaiDuration(args) }
     const prompt = String(args?.prompt || '').trim()
     if (prompt) body.prompt = prompt
@@ -753,6 +755,27 @@ async function animateImage(args) {
   return okResult({ ok: true, tool: 'animate_image', kind: 'video', url: w.url, mime: w.mime, bytes: w.bytes, model: IMG2VIDEO_MODEL })
 }
 
+async function upscaleImage(args) {
+  if (!args?.image) return errResult('upscale_image', "an 'image' reference is required")
+  const image_base64 = await resolveBase64(args.image)
+  const scale = clampFloat(args?.scale, 2, 1.1, 4)
+  const res = await runAsyncTask('/v3/async/upscale', {
+    request: {
+      model_name: 'RealESRNet_x4plus',
+      image_base64,
+      scale_factor: scale,
+    },
+    extra: { response_image_type: 'png' },
+  })
+  const url = firstImageURL(res)
+  if (!url) return errResult('upscale_image', 'no image in task result', { keys: Object.keys(res || {}) })
+  const w = await storeImageString(url)
+  return okResult({
+    ok: true, tool: 'upscale_image', kind: 'image', url: w.url,
+    mime: w.mime, bytes: w.bytes, model: 'RealESRNet_x4plus', scale,
+  })
+}
+
 async function generateSpeech(args) {
   const text = String(args?.text || '').trim()
   if (!text) return errResult('generate_speech', "a non-empty 'text' is required")
@@ -775,7 +798,7 @@ async function generateSpeech(args) {
     return okResult({ ok: true, tool: 'generate_speech', kind: 'audio', url: w.url, mime: w.mime, bytes: w.bytes, voice, style, model: MIMO_TTS_MODEL })
   }
   if (!API_KEY) {
-    return errResult('generate_speech', 'text-to-speech is not configured', { hint: 'set MIMO_API_KEY or NOVITA_API_KEY to enable generate_speech' })
+    return errResult('generate_speech', 'text-to-speech is not configured', { hint: 'configure speech provider credentials to enable generate_speech' })
   }
   const voice = pickVoice(args?.voice)
   const language = pickLang(args?.language)
@@ -805,6 +828,7 @@ const impls = {
   merge_faces: mergeFaces,
   generate_video: generateVideo,
   animate_image: animateImage,
+  upscale_image: upscaleImage,
   transcribe_audio: transcribeAudio,
   generate_speech: generateSpeech,
 }
@@ -821,8 +845,11 @@ const handlers = {
     const name = params?.name
     const args = params?.arguments || {}
     if (!TOOL_SET.has(name)) return errResult(name, `unknown tool: ${name}`)
+    if (forceNovita(args) && !API_KEY) {
+      return errResult(name, 'Media generation is not configured', { hint: 'configure the private media provider on the machine' })
+    }
     if (!XAI_KEY && !MIMO_KEY && !API_KEY) {
-      return errResult(name, 'media bridge not configured', { hint: 'set XAI_API_KEY, MIMO_API_KEY, and/or NOVITA_API_KEY on the machine to enable media tools' })
+      return errResult(name, 'media bridge not configured', { hint: 'configure media provider credentials on the machine to enable media tools' })
     }
     try {
       return await impls[name](args)
@@ -872,7 +899,7 @@ function startStdioServer() {
 // same drift into a non-zero exit at build/CI time. Offline (no network).
 // MATRIX_MEDIA_AGENTS_DIR overrides the manifest dir (used by tests).
 function runSelftest() {
-  console.log(`media: ${tools.length} tools (xai image=${XAI_IMAGE_MODEL} video=${XAI_VIDEO_MODEL} key=${XAI_KEY ? 'set' : 'UNSET'}; mimo asr=${MIMO_ASR_MODEL} tts=${MIMO_TTS_MODEL} key=${MIMO_KEY ? 'set' : 'UNSET'}; novita fallback key=${API_KEY ? 'set' : 'UNSET'})`)
+  console.log(`media: ${tools.length} tools (image=${XAI_IMAGE_MODEL} video=${XAI_VIDEO_MODEL} primary=${XAI_KEY ? 'set' : 'UNSET'}; speech=${MIMO_KEY ? 'set' : 'UNSET'}; private media=${API_KEY ? 'set' : 'UNSET'})`)
   for (const t of tools) console.log(`  - ${t.name}`)
 
   // Every advertised tool must have an implementation, and vice versa.

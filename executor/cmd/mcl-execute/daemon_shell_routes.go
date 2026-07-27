@@ -60,6 +60,7 @@ import (
 
 	"github.com/creack/pty"
 	"github.com/gorilla/websocket"
+	"matrix/executor/tool"
 )
 
 // shellDebug prints internal lifecycle messages to stderr when the
@@ -247,9 +248,13 @@ func (d *daemonState) handleForgeShellExec(w http.ResponseWriter, r *http.Reques
 	cmd := exec.Command(shell, "-i") //nolint:gosec — shell is operator-controlled (env / config), not user input
 	cmd.Dir = resolvedCwd
 	cmd.Env = shellEnv(resolvedCwd)
-	// pty.Start sets Setsid+Setctty internally; setting Setsid here too
-	// would conflict on Linux (multiple Setsid is fine but the pty
-	// helper assumes it owns the SysProcAttr). Skip our own value.
+	if err := tool.ConfigureAgentCommand(cmd); err != nil {
+		_ = writeShellControl(conn, shellExitMessage{
+			Type: "error", Code: 1, Reason: "shell identity unavailable",
+		})
+		return
+	}
+	// pty.Start preserves the credential above while adding Setsid+Setctty.
 
 	shellDebug("upgrading: shell=%s cwd=%s", shell, resolvedCwd)
 	ptmx, err := pty.Start(cmd)
@@ -461,39 +466,31 @@ func chooseShell(cfg *ForgeShellConfig) string {
 	return "/bin/bash"
 }
 
-// shellEnv returns the env the PTY-backed shell inherits. We pass
-// HOME, PATH, TERM, LANG, USER, plus MATRIX_* vars (operator-controlled
-// daemon config) and PWD set to the resolved cwd. We strip
-// MATRIX_DAEMON_TOKEN to avoid leaking it into shell history.
+// shellEnv returns the exact environment the PTY-backed user shell may see.
+// Unknown and protected daemon variables are denied by the shared policy.
 func shellEnv(cwd string) []string {
-	keep := map[string]bool{
-		"HOME": true, "USER": true, "LANG": true, "LC_ALL": true,
-		"TERM": true, "PATH": true, "TZ": true,
-	}
-	out := []string{
-		"PWD=" + cwd,
-		"TERM=xterm-256color",
-		"MATRIX_FORGE_SESSION=1",
-	}
-	for _, e := range os.Environ() {
-		k := e
-		if i := strings.IndexByte(e, '='); i >= 0 {
-			k = e[:i]
-		}
-		if k == "MATRIX_DAEMON_TOKEN" {
-			continue
-		}
-		if keep[k] || strings.HasPrefix(k, "MATRIX_") || strings.HasPrefix(k, "OPENCODE_") {
-			out = append(out, e)
-		}
-	}
+	out := tool.AgentEnvironment(os.Environ())
+	out = setEnv(out, "PWD", cwd)
+	out = setEnv(out, "TERM", "xterm-256color")
+	out = setEnv(out, "MATRIX_FORGE_SESSION", "1")
 	if !envHas(out, "PATH") {
 		out = append(out, "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin")
 	}
 	if !envHas(out, "HOME") {
-		out = append(out, "HOME=/root")
+		out = append(out, "HOME=/workspace")
 	}
 	return out
+}
+
+func setEnv(env []string, key, value string) []string {
+	prefix := key + "="
+	for i := range env {
+		if strings.HasPrefix(env[i], prefix) {
+			env[i] = prefix + value
+			return env
+		}
+	}
+	return append(env, prefix+value)
 }
 
 func envHas(env []string, k string) bool {

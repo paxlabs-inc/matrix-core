@@ -60,8 +60,7 @@ const SERVER_VERSION = '0.1.0'
 
 // ── config (env-overridable) ──────────────────────────────────────────────────
 const DATA_DIR = process.env.MATRIX_DATA_DIR || '/data'
-const STATE_DIR = process.env.MATRIX_EXEC_STATE_DIR || join(DATA_DIR, 'services')
-const REGISTRY_PATH = join(STATE_DIR, 'registry.json')
+const DEFAULT_STATE_DIR = join(DATA_DIR, 'services')
 
 // Default cwd: the persisted, git-initialised workspace. Falls back sensibly
 // when neither /workspace nor /data/workspace exists (dev box / selftest).
@@ -94,6 +93,14 @@ function resolveDefaultWorkdir() {
   return process.cwd()
 }
 
+function stateDir() {
+  return process.env.MATRIX_EXEC_STATE_DIR || DEFAULT_STATE_DIR
+}
+
+function registryPath() {
+  return join(stateDir(), 'registry.json')
+}
+
 // ── result shaping ────────────────────────────────────────────────────────────
 function result(obj, isError = false) {
   const shaped = { content: [{ type: 'text', text: typeof obj === 'string' ? obj : JSON.stringify(obj) }] }
@@ -110,7 +117,7 @@ function fail(tool, error, extra = {}) {
 // ── state dir + registry ───────────────────────────────────────────────────────
 function ensureStateDir() {
   try {
-    mkdirSync(STATE_DIR, { recursive: true })
+    mkdirSync(stateDir(), { recursive: true })
   } catch {
     /* best effort; falls back to tmp on write failure */
   }
@@ -118,7 +125,7 @@ function ensureStateDir() {
 
 function loadRegistry() {
   try {
-    return JSON.parse(readFileSync(REGISTRY_PATH, 'utf8')) || {}
+    return JSON.parse(readFileSync(registryPath(), 'utf8')) || {}
   } catch {
     return {}
   }
@@ -126,9 +133,10 @@ function loadRegistry() {
 
 function saveRegistry(reg) {
   ensureStateDir()
-  const tmp = REGISTRY_PATH + '.tmp'
+  const path = registryPath()
+  const tmp = path + '.tmp'
   writeFileSync(tmp, JSON.stringify(reg, null, 2))
-  renameSync(tmp, REGISTRY_PATH)
+  renameSync(tmp, path)
 }
 
 // ── helpers ─────────────────────────────────────────────────────────────────
@@ -143,11 +151,51 @@ function resolveCwd(cwd) {
   return abs
 }
 
+const VISIBLE_PARENT_ENV = new Set([
+  'HOME', 'USER', 'LOGNAME', 'SHELL', 'PATH', 'PWD', 'OLDPWD',
+  'LANG', 'LANGUAGE', 'LC_ALL', 'LC_CTYPE', 'TERM', 'COLORTERM', 'TZ', 'TMPDIR',
+  'CODY_USER_ID', 'MATRIX_USER_ID', 'CODY_PREVIEW_IMAGE',
+  'KINDLE_FRONTEND_URL', 'KINDLE_MEDIA_GATEWAY', 'KINDLE_METADATA_URL', 'KINDLE_RPC_URL',
+  'MATRIX_BROWSER_URL', 'MATRIX_CHRONOS_TOKEN', 'MATRIX_CHRONOS_URL',
+  'MATRIX_COMPILER_ESCALATE_MODEL', 'MATRIX_COMPILER_MODEL', 'MATRIX_DATA_DIR',
+  'MATRIX_DEFAULT_SKILL', 'MATRIX_DEUS_TIMEOUT_MS', 'MATRIX_DEUS_URL',
+  'MATRIX_EXECUTOR_MODEL', 'MATRIX_GATEWAY_TOKEN', 'MATRIX_GATEWAY_URL',
+  'MATRIX_LAYERX_TOKEN', 'MATRIX_LAYERX_URL', 'MATRIX_LIAISON_MODEL',
+  'MATRIX_PLANNER_MODEL', 'MATRIX_SEARXNG_TOKEN', 'MATRIX_SEARXNG_URL',
+  'MATRIX_SNAPSHOT_INTERVAL', 'MATRIX_TACHYON_TOKEN', 'MATRIX_TACHYON_URL',
+  'MATRIX_UWAC_TOKEN', 'MATRIX_UWAC_URL', 'PAXC_API', 'PAXC_TOKEN',
+  'WEBSEARCH_PROVIDER', 'NEO_AUTOMATRIX_ENABLED', 'NEO_AUTOMATRIX_INTERVAL',
+  'NEO_AUTOMATRIX_JITTER', 'NEO_AUTOMATRIX_MAX_PER_DAY',
+  'NEO_AUTOMATRIX_MIN_CONFIDENCE', 'MATRIX_MEDIA_XAI_VIDEO_MODEL',
+  'NEO_CONTINUOUS_MEMORY', 'VAULT_REQUIRED', 'VOICE_IDLE_DISCONNECT_S', 'NEO_RUNTIME',
+  'MATRIX_EXEC_STATE_DIR', 'MATRIX_EXEC_WORKDIR', 'MATRIX_EXEC_TIMEOUT_MS',
+  'MATRIX_EXEC_MAX_OUTPUT_BYTES', 'MATRIX_EXEC_MAX_SERVICES', 'MATRIX_EXEC_MAX_LOG_LINES',
+])
+
+const PROTECTED_ENV = new Set([
+  'BRAVE_API_KEY', 'MATRIX_BROWSER_TOKEN',
+  'MATRIX_S3_BUCKET', 'MATRIX_S3_ENDPOINT', 'MATRIX_S3_KEY', 'MATRIX_S3_SECRET',
+  'NOVITA_API_KEY', 'RAILWAY_API_TOKEN', 'RAILWAY_ENVIRONMENT_ID',
+  'RAILWAY_PROJECT_ID', 'ROUTER_INTERNAL_URL', 'ROUTER_PREVIEW_TOKEN',
+  'TAVILY_API_KEY', 'XAI_API_KEY', 'MIMO_API_KEY', 'XIAOMI_API_KEY',
+  'MATRIX_LIVEKIT_KEY', 'MATRIX_LIVEKIT_SECRET', 'MATRIX_LIVEKIT_URL',
+  'MATRIX_SANDBOX_TOKEN', 'MATRIX_SANDBOX_URL',
+  'NEO_VOICE_ENABLED', 'NEO_VOICE_MODE', 'NEO_VOICE_TTS_STYLE',
+  'NEO_VOICE_TTS_VOICE', 'NEO_VOICE_ASR_DEADLINE_SECONDS',
+  'NEO_VOICE_TTS_DEADLINE_SECONDS', 'ALPHAVANTAGE_API_KEY', 'FMP_API_KEY',
+  'ROUTER_FINANCE_TOKEN', 'VAULT_KEK', 'VAULT_KEK_FILE',
+  'MATRIX_VAULT_KEK', 'MATRIX_VAULT_KEK_ID',
+])
+
 function mergedEnv(extra) {
-  const env = { ...process.env }
+  const env = {}
+  for (const [key, value] of Object.entries(process.env)) {
+    if (VISIBLE_PARENT_ENV.has(key)) env[key] = value
+  }
   if (extra && typeof extra === 'object') {
     for (const [k, v] of Object.entries(extra)) {
       if (v === null || v === undefined) continue
+      if (!VISIBLE_PARENT_ENV.has(k)) throw new Error(`environment override ${k} is not permitted`)
       env[k] = String(v)
     }
   }
@@ -166,7 +214,7 @@ function isAlive(pid) {
 }
 
 function logPathFor(name) {
-  return join(STATE_DIR, `${name}.log`)
+  return join(stateDir(), `${name}.log`)
 }
 
 // Tail the last `lines` lines of a file without loading the whole thing when
@@ -285,7 +333,12 @@ function runShell(args) {
   const cwd = resolveCwd(args?.cwd)
   if (!existsSync(cwd)) return Promise.resolve(fail('shell', `cwd does not exist: ${cwd}`))
   const timeout = clampInt(args?.timeout_ms, SHELL_TIMEOUT_MS, 1_000, 3_600_000)
-  const env = mergedEnv(args?.env)
+  let env
+  try {
+    env = mergedEnv(args?.env)
+  } catch (e) {
+    return Promise.resolve(fail('shell', e?.message ?? String(e), { cwd }))
+  }
 
   return new Promise((resolve) => {
     let child
@@ -707,15 +760,41 @@ async function runSelftest() {
   mkdirSync(probe, { recursive: true })
   process.env.MATRIX_EXEC_STATE_DIR = join(probe, 'services')
   process.env.MATRIX_EXEC_WORKDIR = probe
-  // Re-derive paths from the overridden env for the smoke (module-level consts
-  // captured the originals; the smoke calls the funcs which read STATE_DIR via
-  // closures, so spawn a child instead for an honest end-to-end check).
+  process.env.TAVILY_API_KEY = 'exec-hidden-sentinel'
+  process.env.UNREVIEWED_TOKEN = 'exec-unknown-sentinel'
+  process.env.MATRIX_USER_ID = 'exec-visible-sentinel'
 
   // a) shell echo
-  const sh = await dispatch('shell', { command: 'echo matrix-exec-ok && pwd', cwd: probe })
+  const sh = await dispatch('shell', { command: 'echo matrix-exec-ok && pwd && env', cwd: probe })
   const shText = sh.content[0].text
-  if (!shText.includes('matrix-exec-ok')) {
+  if (
+    !shText.includes('matrix-exec-ok') ||
+    !shText.includes('MATRIX_USER_ID=exec-visible-sentinel') ||
+    shText.includes('exec-hidden-sentinel') ||
+    shText.includes('exec-unknown-sentinel')
+  ) {
     console.error('exec SELFTEST FAILED: shell did not return expected output:', shText)
+    process.exit(1)
+  }
+  const protectedOverride = await dispatch('shell', {
+    command: 'true',
+    cwd: probe,
+    env: { TAVILY_API_KEY: 'exec-override-sentinel' },
+  })
+  const protectedText = protectedOverride.content[0].text
+  if (protectedOverride.isError !== true || protectedText.includes('exec-override-sentinel')) {
+    console.error('exec SELFTEST FAILED: protected environment override was accepted')
+    process.exit(1)
+  }
+
+  const unknownOverride = await dispatch('shell', {
+    command: 'true',
+    cwd: probe,
+    env: { UNREVIEWED_TOKEN: 'exec-unknown-override-sentinel' },
+  })
+  const unknownText = JSON.stringify(unknownOverride)
+  if (unknownOverride.isError !== true || unknownText.includes('exec-unknown-override-sentinel')) {
+    console.error('exec SELFTEST FAILED: unknown environment override was accepted')
     process.exit(1)
   }
   console.log('exec: shell smoke OK')
@@ -764,11 +843,45 @@ async function runSelftest() {
   }
   console.log('exec: HTTP/process semantics OK')
 
-  // NOTE: the service lifecycle uses module-level STATE_DIR (captured at import
-  // before the env override above), so a full in-process service smoke would
-  // write to the real /data path. We therefore only assert the shell path here
-  // and leave service supervision to the daemon-boot integration test. This
-  // keeps --selftest hermetic and side-effect-free on the build host.
+  // c) long-lived service environment and override policy
+  const service = serviceStart({
+    name: 'env-probe',
+    command: 'env; sleep 5',
+    cwd: probe,
+    autostart: false,
+  })
+  if (service.isError === true) {
+    console.error('exec SELFTEST FAILED: service did not start:', service)
+    process.exit(1)
+  }
+  let serviceText = ''
+  for (let i = 0; i < 40; i++) {
+    await new Promise((resolve) => setTimeout(resolve, 25))
+    const logs = serviceLogs({ name: 'env-probe', lines: 200 })
+    serviceText = logs.content[0].text
+    if (serviceText.includes('MATRIX_USER_ID=exec-visible-sentinel')) break
+  }
+  serviceStop({ name: 'env-probe' })
+  if (
+    !serviceText.includes('MATRIX_USER_ID=exec-visible-sentinel') ||
+    serviceText.includes('exec-hidden-sentinel') ||
+    serviceText.includes('exec-unknown-sentinel')
+  ) {
+    console.error('exec SELFTEST FAILED: supervised service environment was not isolated')
+    process.exit(1)
+  }
+  const unknownServiceOverride = serviceStart({
+    name: 'bad-env-probe',
+    command: 'true',
+    cwd: probe,
+    env: { UNREVIEWED_TOKEN: 'exec-service-override-sentinel' },
+  })
+  const unknownServiceText = JSON.stringify(unknownServiceOverride)
+  if (unknownServiceOverride.isError !== true || unknownServiceText.includes('exec-service-override-sentinel')) {
+    console.error('exec SELFTEST FAILED: supervised service accepted an unknown environment override')
+    process.exit(1)
+  }
+  console.log('exec: service environment smoke OK')
 
   console.log(`exec OK (${checked} manifest${checked === 1 ? '' : 's'} verified)`)
   process.exit(0)

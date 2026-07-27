@@ -40,6 +40,8 @@ import (
 	"os/exec"
 	"strings"
 	"time"
+
+	"matrix/executor/tool"
 )
 
 // Notification is a single outbound ping. It carries the RESULT, not the
@@ -247,6 +249,7 @@ func (b *appriseBackend) notifyCLI(ctx context.Context, n Notification) error {
 		}
 	}
 	cmd := exec.CommandContext(ctx, "apprise", args...)
+	cmd.Env = tool.AgentEnvironment(os.Environ())
 	if out, err := cmd.CombinedOutput(); err != nil {
 		return fmt.Errorf("apprise cli: %w (%s)", err, strings.TrimSpace(string(out)))
 	}

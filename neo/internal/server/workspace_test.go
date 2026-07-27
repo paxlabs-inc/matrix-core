@@ -206,9 +206,13 @@ func TestWorkspaceDiffAndExec(t *testing.T) {
 		t.Fatalf("non-git diff = %d (%v), want 200 git:false", code, out)
 	}
 
-	// Exec: real command, real exit code, cwd = the project root.
+	// Exec: real command, real exit code, cwd = the project root, and an exact
+	// child environment that excludes protected and unknown parent values.
+	t.Setenv("TAVILY_API_KEY", "workbench-hidden-sentinel")
+	t.Setenv("UNREVIEWED_TOKEN", "workbench-unknown-sentinel")
+	t.Setenv("MATRIX_USER_ID", "workbench-visible-sentinel")
 	code, out = wsDo(t, s, http.MethodPost, "/workspace/exec?project=app", map[string]interface{}{
-		"cmd": "pwd; cat a.txt; exit 3",
+		"cmd": "pwd; cat a.txt; env; exit 3",
 	})
 	if code != http.StatusOK {
 		t.Fatalf("exec = %d, want 200", code)
@@ -216,6 +220,11 @@ func TestWorkspaceDiffAndExec(t *testing.T) {
 	output, _ := out["output"].(string)
 	if !strings.Contains(output, "new") {
 		t.Fatalf("exec output = %q, want the project file content", output)
+	}
+	if !strings.Contains(output, "MATRIX_USER_ID=workbench-visible-sentinel") ||
+		strings.Contains(output, "workbench-hidden-sentinel") ||
+		strings.Contains(output, "workbench-unknown-sentinel") {
+		t.Fatalf("exec environment policy failed: %q", output)
 	}
 	if out["exit"] != float64(3) || out["timed_out"] != false {
 		t.Fatalf("exec exit = %v timed_out = %v, want 3/false", out["exit"], out["timed_out"])

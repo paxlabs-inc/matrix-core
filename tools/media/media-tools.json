@@ -133,6 +133,18 @@
     }
   },
   {
+    "name": "upscale_image",
+    "description": "Increase an image's resolution with the private super-resolution pipeline. Use this when the user wants a larger, sharper version of an existing image without changing its composition. Returns JSON {ok, kind:\"image\", url}. args: image (required, /media reference or public URL), scale? (1.1-4, default 2).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "image": { "type": "string", "description": "The image to upscale: a /media/<id> reference or a public https image URL." },
+        "scale": { "type": "number", "description": "Resolution scale factor from 1.1 to 4. Default 2." }
+      },
+      "required": ["image"]
+    }
+  },
+  {
     "name": "transcribe_audio",
     "description": "Transcribe a local wav or mp3 audio attachment with MiMo speech recognition. Use the exact /media reference from the user's message. Returns JSON {ok, transcript, language}. args: audio (required), language? (auto, zh, en; default auto).",
     "inputSchema": {
@@ -146,7 +158,7 @@
   },
   {
     "name": "generate_speech",
-    "description": "Convert text into natural-sounding spoken audio with MiMo TTS. Use this when the user wants something read aloud or an audio voiceover. The audio is shown automatically; describe it, do not paste the URL. Returns JSON {ok, kind:\"audio\", url}. args: text (required), voice? (MiMo built-in voice), style? (natural-language performance direction). Novita is used only when MiMo is unavailable.",
+    "description": "Convert text into natural-sounding spoken audio. Use this when the user wants something read aloud or an audio voiceover. The audio is shown automatically; describe it, do not paste the URL. Returns JSON {ok, kind:\"audio\", url}. args: text (required), voice? (built-in voice), style? (natural-language performance direction).",
     "inputSchema": {
       "type": "object",
       "properties": {

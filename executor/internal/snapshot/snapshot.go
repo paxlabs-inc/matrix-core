@@ -19,11 +19,9 @@
 // open via WAL replay. Final on-shutdown push happens AFTER server
 // drain so cortex is quiescent (the gold-standard consistency point).
 //
-// Implementation: shells out to `mc` (already baked into deploy/daemon/
-// Dockerfile) for S3 transport and `tar -I zstd` for archive creation.
-// mc receives credentials via the MC_HOST_<alias> env-var pattern so
-// no on-disk alias config is written. This package adds zero new Go
-// module dependencies.
+// Implementation: S3 operations use an in-process client so endpoint, bucket,
+// and credentials never appear in subprocess environments or command lines.
+// Archive creation still uses tar + zstd with a scrubbed child environment.
 package snapshot
 
 import (
@@ -39,6 +37,9 @@ import (
 	"sync"
 	"time"
 
+	"github.com/minio/minio-go/v7"
+	"github.com/minio/minio-go/v7/pkg/credentials"
+	"matrix/executor/tool"
 	"matrix/vault"
 )
 
@@ -98,10 +99,6 @@ const DefaultPushInterval = 5 * time.Minute
 // a previous snapshot lands in seeded state.
 const SeededSentinel = ".matrix/seeded"
 
-// mcAlias is the in-process alias name used for MC_HOST_<alias>; chosen
-// to avoid collision with anything an operator might define.
-const mcAlias = "matrixsnap"
-
 // ErrIncomplete is returned by New when required Config fields are
 // missing. The error wraps a list of the missing fields.
 var ErrIncomplete = errors.New("snapshot: config incomplete")
@@ -115,7 +112,7 @@ var ErrNoSnapshot = errors.New("snapshot: no prior snapshot for user")
 // Use New to construct, BootPull at boot, Start to launch the periodic
 // ticker, Push for ad-hoc pushes, and Stop to halt the ticker and run
 // a final push. Manager methods are safe to call concurrently; the
-// underlying mc subprocess is serialized via pushMu.
+// underlying S3 operations are serialized via pushMu.
 type Manager struct {
 	cfg Config
 
@@ -133,9 +130,7 @@ type Manager struct {
 	// stopOnce guards Stop similarly.
 	stopOnce sync.Once
 
-	// mcEnv is the MC_HOST_<alias> value passed to every mc subprocess.
-	// Computed once in New.
-	mcEnv string
+	s3 *minio.Client
 
 	// vault + sealUser seal the snapshot tarball before it leaves the
 	// machine (vault.go). Wired via SetVault after the daemon's vault
@@ -175,16 +170,16 @@ func New(cfg Config) (*Manager, error) {
 		return nil, fmt.Errorf("snapshot: endpoint missing scheme or host: %q", cfg.Endpoint)
 	}
 
-	// Build MC_HOST_<alias>=scheme://key:secret@host
-	// Empty creds are rendered as "@host" which mc accepts for
-	// anonymous endpoints.
-	credPart := ""
-	if cfg.AccessKey != "" || cfg.SecretKey != "" {
-		credPart = url.QueryEscape(cfg.AccessKey) + ":" + url.QueryEscape(cfg.SecretKey) + "@"
-	}
-	mcEnv := fmt.Sprintf("%s://%s%s", u.Scheme, credPart, u.Host)
 	if u.Path != "" && u.Path != "/" {
-		mcEnv += u.Path
+		return nil, fmt.Errorf("snapshot: endpoint paths are not supported")
+	}
+	creds := credentials.NewStaticV4(cfg.AccessKey, cfg.SecretKey, "")
+	s3, err := minio.New(u.Host, &minio.Options{
+		Creds: creds, Secure: u.Scheme == "https",
+		BucketLookup: minio.BucketLookupPath,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("snapshot: create S3 client: %w", err)
 	}
 
 	if cfg.Now == nil {
@@ -193,15 +188,10 @@ func New(cfg Config) (*Manager, error) {
 
 	return &Manager{
 		cfg:    cfg,
-		mcEnv:  mcEnv,
+		s3:     s3,
 		stopCh: make(chan struct{}),
 		doneCh: make(chan struct{}),
 	}, nil
-}
-
-// remotePath returns the mc-style path "<alias>/<bucket>/<key>".
-func (m *Manager) remotePath(key string) string {
-	return mcAlias + "/" + m.cfg.Bucket + "/" + key
 }
 
 // userPrefix returns "users/<UserID>".
@@ -219,23 +209,6 @@ func (m *Manager) log(event string, fields map[string]interface{}) {
 		fields = map[string]interface{}{}
 	}
 	m.cfg.Logf(event, fields)
-}
-
-// runMC invokes the mc binary with the configured MC_HOST env. Returns
-// (stdout, stderr, error). Errors carry the combined output for log
-// inspection.
-func (m *Manager) runMC(ctx context.Context, args ...string) (string, string, error) {
-	cmd := exec.CommandContext(ctx, "mc", args...)
-	cmd.Env = append(os.Environ(),
-		"MC_HOST_"+mcAlias+"="+m.mcEnv,
-		// Suppress mc's update-check + update-prompt noise.
-		"MC_DISABLE_PAGER=1",
-	)
-	var stdout, stderr strings.Builder
-	cmd.Stdout = &stdout
-	cmd.Stderr = &stderr
-	err := cmd.Run()
-	return stdout.String(), stderr.String(), err
 }
 
 // SeededPath is the absolute path to the sentinel file.
@@ -298,11 +271,10 @@ func (m *Manager) BootPull(ctx context.Context) (bool, error) {
 	m.log("snapshot.pull.start", map[string]interface{}{
 		"key": latestKey,
 	})
-	_, stderr, err := m.runMC(ctx, "cp", "--quiet", m.remotePath(latestKey), tmpPath)
+	err = m.s3.FGetObject(ctx, m.cfg.Bucket, latestKey, tmpPath, minio.GetObjectOptions{})
 	if err != nil {
-		// mc returns non-zero for "object not found" on cp; differentiate
-		// by stderr inspection so we don't leak that as a hard error.
-		if strings.Contains(stderr, "Object does not exist") || strings.Contains(stderr, "does not exist") || strings.Contains(stderr, "NoSuchKey") {
+		response := minio.ToErrorResponse(err)
+		if response.StatusCode == 404 || response.Code == "NoSuchKey" || response.Code == "NoSuchObject" {
 			if mErr := m.markSeeded(); mErr != nil {
 				return false, mErr
 			}
@@ -311,7 +283,7 @@ func (m *Manager) BootPull(ctx context.Context) (bool, error) {
 			})
 			return false, ErrNoSnapshot
 		}
-		return false, fmt.Errorf("snapshot: mc cp pull: %w (stderr=%q)", err, stderr)
+		return false, fmt.Errorf("snapshot: S3 pull: %w", err)
 	}
 
 	// Validate non-zero size. mc would have errored on missing object,
@@ -413,16 +385,19 @@ func (m *Manager) Push(ctx context.Context) (string, error) {
 		"size_bytes": st.Size(),
 		"sealed":     uploadPath != tmpPath,
 	})
-	if _, stderr, err := m.runMC(ctx, "cp", "--quiet", uploadPath, m.remotePath(snapKey)); err != nil {
-		return "", fmt.Errorf("snapshot: mc cp push: %w (stderr=%q)", err, stderr)
+	if _, err := m.s3.FPutObject(
+		ctx, m.cfg.Bucket, snapKey, uploadPath, minio.PutObjectOptions{},
+	); err != nil {
+		return "", fmt.Errorf("snapshot: S3 push: %w", err)
 	}
 
-	// Server-side copy: write latest.tar.zst from snapshots/<ts>.tar.zst.
-	// mc cp <remote-src> <remote-dst> performs a server-side COPY rather
-	// than re-uploading; this keeps "latest" pointer-update atomic from
-	// the user's perspective.
-	if _, stderr, err := m.runMC(ctx, "cp", "--quiet", m.remotePath(snapKey), m.remotePath(latestKey)); err != nil {
-		return "", fmt.Errorf("snapshot: mc cp alias-update: %w (stderr=%q)", err, stderr)
+	_, err = m.s3.CopyObject(
+		ctx,
+		minio.CopyDestOptions{Bucket: m.cfg.Bucket, Object: latestKey},
+		minio.CopySrcOptions{Bucket: m.cfg.Bucket, Object: snapKey},
+	)
+	if err != nil {
+		return "", fmt.Errorf("snapshot: S3 alias update: %w", err)
 	}
 
 	m.log("snapshot.push.done", map[string]interface{}{
@@ -510,6 +485,7 @@ func (m *Manager) Stop(ctx context.Context) error {
 // runtime (verified in deploy/daemon/Dockerfile).
 func tarZst(ctx context.Context, src, dst string) error {
 	cmd := exec.CommandContext(ctx, "tar", "-I", "zstd", "-cf", dst, "-C", src, ".")
+	cmd.Env = tool.AgentEnvironment(os.Environ())
 	stderr := &strings.Builder{}
 	cmd.Stderr = stderr
 	cmd.Stdout = io.Discard
@@ -524,6 +500,7 @@ func tarZst(ctx context.Context, src, dst string) error {
 // `tar -I zstd -xf <src> -C <dst>`.
 func untarZst(ctx context.Context, src, dst string) error {
 	cmd := exec.CommandContext(ctx, "tar", "-I", "zstd", "-xf", src, "-C", dst)
+	cmd.Env = tool.AgentEnvironment(os.Environ())
 	stderr := &strings.Builder{}
 	cmd.Stderr = stderr
 	cmd.Stdout = io.Discard

@@ -99,15 +99,13 @@ func TestSeededSentinelLifecycle(t *testing.T) {
 	}
 }
 
-// TestMCEnvComposition verifies the MC_HOST_<alias> wire format used
-// to pass credentials to the mc subprocess. URL-special chars in
-// secrets must be escaped so they don't break the URL parser.
-func TestMCEnvComposition(t *testing.T) {
+// TestS3ClientConfiguration verifies endpoint and credential shapes are
+// accepted without ever rendering credentials into a subprocess environment
+// or command line.
+func TestS3ClientConfiguration(t *testing.T) {
 	cases := []struct {
-		name     string
-		cfg      Config
-		wantEnv  string
-		excludes []string
+		name string
+		cfg  Config
 	}{
 		{
 			"with creds",
@@ -116,8 +114,6 @@ func TestMCEnvComposition(t *testing.T) {
 				Bucket: "b", UserID: "u",
 				AccessKey: "alice", SecretKey: "s3cr3t",
 			},
-			"http://alice:s3cr3t@example:9000",
-			nil,
 		},
 		{
 			"anonymous",
@@ -125,11 +121,6 @@ func TestMCEnvComposition(t *testing.T) {
 				DataDir: "/d", Endpoint: "https://example:9001/",
 				Bucket: "b", UserID: "u",
 			},
-			// Trailing root "/" is intentionally stripped by New so
-			// the env var is the canonical scheme://host[:port] form
-			// mc accepts; no creds were supplied so no '@'.
-			"https://example:9001",
-			[]string{"@"},
 		},
 		{
 			"escaped @ in secret",
@@ -138,9 +129,6 @@ func TestMCEnvComposition(t *testing.T) {
 				Bucket: "b", UserID: "u",
 				AccessKey: "alice", SecretKey: "p@ss/w0rd",
 			},
-			// url.QueryEscape: '@' -> %40 ; '/' -> %2F
-			"http://alice:p%40ss%2Fw0rd@example:9000",
-			nil,
 		},
 	}
 	for _, tc := range cases {
@@ -149,13 +137,8 @@ func TestMCEnvComposition(t *testing.T) {
 			if err != nil {
 				t.Fatalf("New: %v", err)
 			}
-			if mgr.mcEnv != tc.wantEnv {
-				t.Fatalf("mcEnv: got %q want %q", mgr.mcEnv, tc.wantEnv)
-			}
-			for _, ex := range tc.excludes {
-				if strings.Contains(mgr.mcEnv, ex) {
-					t.Fatalf("mcEnv should not contain %q: %q", ex, mgr.mcEnv)
-				}
+			if mgr.s3 == nil {
+				t.Fatal("S3 client was not initialized")
 			}
 		})
 	}
@@ -175,11 +158,6 @@ func TestRemotePathLayout(t *testing.T) {
 	gotPrefix := mgr.userPrefix()
 	if gotPrefix != "users/supabase|abc123" {
 		t.Fatalf("userPrefix: got %q", gotPrefix)
-	}
-	got := mgr.remotePath(gotPrefix + "/latest.tar.zst")
-	want := mcAlias + "/matrix-state/users/supabase|abc123/latest.tar.zst"
-	if got != want {
-		t.Fatalf("remotePath: got %q want %q", got, want)
 	}
 }
 

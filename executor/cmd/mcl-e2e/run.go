@@ -119,12 +119,22 @@ func RunOnce(ctx context.Context, cfg RunConfig, assert *AssertCtx) (*RunReport,
 
 	for i := range manifest.Servers {
 		s := &manifest.Servers[i]
-		// Inherit parent process env when manifest declares no overrides.
-		// Empty slice in stdio.go is treated as "blank env" (no PATH, no
-		// HOME) which kills npx/uvx; nil tells exec.Cmd to inherit.
-		var subEnv []string
-		if len(s.Env) > 0 {
-			subEnv = append(append([]string{}, os.Environ()...), s.Env...)
+		subEnv, privileged, envErr := tool.MCPEnvironment(s.Alias, os.Environ(), s.Env)
+		assert.NoError(fmt.Sprintf("environment policy (%s)", s.Alias), envErr)
+		if envErr != nil {
+			continue
+		}
+		var runAs *mcp.ProcessIdentity
+		if !privileged {
+			if identity, configured, identityErr := tool.AgentIdentityFromEnv(); identityErr != nil {
+				assert.NoError(fmt.Sprintf("agent identity (%s)", s.Alias), identityErr)
+				continue
+			} else if configured {
+				runAs = &mcp.ProcessIdentity{
+					UID: identity.UID, GID: identity.GID,
+					Home: identity.Home, User: identity.User,
+				}
+			}
 		}
 		spec := mcp.ServerSpec{
 			Alias:         s.Alias,
@@ -132,6 +142,7 @@ func RunOnce(ctx context.Context, cfg RunConfig, assert *AssertCtx) (*RunReport,
 			Command:       s.Command,
 			Args:          s.Args,
 			Env:           subEnv,
+			RunAs:         runAs,
 			PackageDigest: s.PackageDigest,
 			ExpectedTools: toolNames(s.Tools),
 		}

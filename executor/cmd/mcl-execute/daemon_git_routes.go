@@ -36,6 +36,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"matrix/executor/tool"
 )
 
 // gitStatusEntry is one row in `git status --porcelain=v2 -z` output.
@@ -599,6 +601,9 @@ func runGit(ctx context.Context, cwd string, args ...string) (string, error) {
 		"HOME=" + safeHOME(),
 		"GIT_TERMINAL_PROMPT=0", // never prompt for credentials
 		"LC_ALL=C",
+	}
+	if err := tool.ConfigureAgentCommand(cmd); err != nil {
+		return "", fmt.Errorf("git child identity: %w", err)
 	}
 	out, err := cmd.CombinedOutput()
 	return string(out), err

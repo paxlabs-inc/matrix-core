@@ -55,6 +55,56 @@ mkdir -p \
     "${DATA_DIR}/neo/services" \
     "${DATA_DIR}/.matrix"
 
+# Agent-owned mutable paths are migrated once, then kept owned by the dedicated
+# uid. Secret-bearing state remains root-only behind daemon APIs.
+AGENT_UID="${MATRIX_AGENT_UID:-10001}"
+AGENT_GID="${MATRIX_AGENT_GID:-10001}"
+OWNER_MARKER="${DATA_DIR}/.matrix/agent-owner-v1"
+AGENT_ENV=(
+    "HOME=/home/matrix-agent"
+    "USER=matrix-agent"
+    "LOGNAME=matrix-agent"
+    "SHELL=/bin/bash"
+    "PATH=${PATH}"
+    "PWD=${DATA_DIR}/workspace"
+    "TERM=${TERM:-xterm-256color}"
+    "LANG=${LANG:-C.UTF-8}"
+)
+for name in \
+    CODY_USER_ID MATRIX_USER_ID CODY_PREVIEW_IMAGE \
+    KINDLE_FRONTEND_URL KINDLE_MEDIA_GATEWAY KINDLE_METADATA_URL KINDLE_RPC_URL \
+    MATRIX_BROWSER_URL MATRIX_CHRONOS_TOKEN MATRIX_CHRONOS_URL \
+    MATRIX_COMPILER_ESCALATE_MODEL MATRIX_COMPILER_MODEL MATRIX_DATA_DIR \
+    MATRIX_DEFAULT_SKILL MATRIX_DEUS_TIMEOUT_MS MATRIX_DEUS_URL \
+    MATRIX_EXECUTOR_MODEL MATRIX_GATEWAY_TOKEN MATRIX_GATEWAY_URL \
+    MATRIX_LAYERX_TOKEN MATRIX_LAYERX_URL MATRIX_LIAISON_MODEL MATRIX_PLANNER_MODEL \
+    MATRIX_SEARXNG_TOKEN MATRIX_SEARXNG_URL MATRIX_SNAPSHOT_INTERVAL \
+    MATRIX_TACHYON_TOKEN MATRIX_TACHYON_URL MATRIX_UWAC_TOKEN MATRIX_UWAC_URL \
+    PAXC_API PAXC_TOKEN WEBSEARCH_PROVIDER NEO_AUTOMATRIX_ENABLED \
+    NEO_AUTOMATRIX_INTERVAL NEO_AUTOMATRIX_JITTER NEO_AUTOMATRIX_MAX_PER_DAY \
+    NEO_AUTOMATRIX_MIN_CONFIDENCE MATRIX_MEDIA_XAI_VIDEO_MODEL \
+    NEO_CONTINUOUS_MEMORY VAULT_REQUIRED VOICE_IDLE_DISCONNECT_S NEO_RUNTIME \
+    MATRIX_EXEC_STATE_DIR MATRIX_EXEC_WORKDIR MATRIX_EXEC_TIMEOUT_MS \
+    MATRIX_EXEC_MAX_OUTPUT_BYTES MATRIX_EXEC_MAX_SERVICES MATRIX_EXEC_MAX_LOG_LINES
+do
+    if [[ -v "${name}" ]]; then
+        AGENT_ENV+=("${name}=${!name}")
+    fi
+done
+if [[ ! -f "${OWNER_MARKER}" ]]; then
+    chown -R "${AGENT_UID}:${AGENT_GID}" \
+        "${DATA_DIR}/workspace" \
+        "${DATA_DIR}/services" \
+        "${DATA_DIR}/neo/services"
+    touch "${OWNER_MARKER}"
+fi
+chown "${AGENT_UID}:${AGENT_GID}" \
+    "${DATA_DIR}/workspace" \
+    "${DATA_DIR}/services" \
+    "${DATA_DIR}/neo/services"
+chmod 0750 "${DATA_DIR}/workspace" "${DATA_DIR}/services" "${DATA_DIR}/neo/services"
+chmod 0700 "${DATA_DIR}/cortex" "${DATA_DIR}/journal" "${DATA_DIR}/transcripts" "${DATA_DIR}/.matrix"
+
 # 1b. Media plane. Generated + uploaded images/video/audio live on the volume
 #     at /data/media and are served by the Neo front at /media. Export the dir
 #     (and URL base) so BOTH the MCL daemon (agents/default.json) and the Neo
@@ -80,9 +130,12 @@ fi
 #     refuses to start unless /workspace is a valid working tree, and the
 #     daemon's strict spawn check would then kill the process.
 if [[ ! -d "${DATA_DIR}/workspace/.git" ]]; then
-    git -C "${DATA_DIR}/workspace" init -q -b main
-    git -C "${DATA_DIR}/workspace" config user.email "matrix-daemon@${MATRIX_USER_ID:-unknown}.matrix.local"
-    git -C "${DATA_DIR}/workspace" config user.name "matrix-daemon"
+    env -i "${AGENT_ENV[@]}" setpriv --reuid="${AGENT_UID}" --regid="${AGENT_GID}" --init-groups --no-new-privs -- \
+        git -C "${DATA_DIR}/workspace" init -q -b main
+    env -i "${AGENT_ENV[@]}" setpriv --reuid="${AGENT_UID}" --regid="${AGENT_GID}" --init-groups --no-new-privs -- \
+        git -C "${DATA_DIR}/workspace" config user.email "matrix-daemon@${MATRIX_USER_ID:-unknown}.matrix.local"
+    env -i "${AGENT_ENV[@]}" setpriv --reuid="${AGENT_UID}" --regid="${AGENT_GID}" --init-groups --no-new-privs -- \
+        git -C "${DATA_DIR}/workspace" config user.name "matrix-daemon"
 fi
 
 # 3 / 3b. Snapshot (MinIO) + paxeer-net wallet env are inherited by the MCL
@@ -109,8 +162,6 @@ build_daemon_argv() {
         -snapshot-data-dir "${DATA_DIR}"
         -workspace-root "${MATRIX_WORKSPACE_ROOT:-${DATA_DIR}/workspace}"
     )
-    [[ -n "${MATRIX_S3_ENDPOINT:-}" ]]             && DAEMON_ARGV+=( -snapshot-endpoint "${MATRIX_S3_ENDPOINT}" )
-    [[ -n "${MATRIX_S3_BUCKET:-}" ]]               && DAEMON_ARGV+=( -snapshot-bucket "${MATRIX_S3_BUCKET}" )
     [[ -n "${MATRIX_USER_ID:-}" ]]                 && DAEMON_ARGV+=( -snapshot-user-id "${MATRIX_USER_ID}" )
     # Snapshot cadence knob. Unset → flag absent → daemon default (byte-compat
     # with the pre-knob image). A negative duration (e.g. "-1s") disables the
@@ -148,8 +199,9 @@ wait_for_health() {
 # still booting (or crashed) never bricks daemon boot — browser_* calls just
 # return a structured error until it is up. A tiny restart loop revives a
 # crashed chromium without taking the daemon trio down. --isolated hands each
-# MCP session a fresh context; --no-sandbox is required for root-in-container.
-# Loopback-only traffic keeps the service outbound-quiet for Serverless sleep.
+# MCP session a fresh context. Chromium runs under the dedicated agent uid with
+# its sandbox enabled. Loopback-only traffic keeps the service outbound-quiet
+# for Serverless sleep.
 BROWSER_PORT="${MATRIX_BROWSER_PORT:-8931}"
 start_local_browser() {
     command -v mcp-server-playwright >/dev/null 2>&1 || npm ls -g @playwright/mcp >/dev/null 2>&1 || {
@@ -159,7 +211,9 @@ start_local_browser() {
     export MATRIX_BROWSER_URL="http://127.0.0.1:${BROWSER_PORT}/mcp"
     (
         while true; do
-            npx @playwright/mcp --headless --isolated --browser chromium --no-sandbox \
+            env -i "${AGENT_ENV[@]}" "PLAYWRIGHT_BROWSERS_PATH=${PLAYWRIGHT_BROWSERS_PATH}" \
+                setpriv --reuid="${AGENT_UID}" --regid="${AGENT_GID}" --init-groups --no-new-privs -- \
+                npx @playwright/mcp --headless --isolated --browser chromium \
                 --host 127.0.0.1 --port "${BROWSER_PORT}" --allowed-hosts '*' \
                 >>/tmp/pwmcp.log 2>&1 || true
             echo "entrypoint: local browser exited; restarting in 2s" >&2
@@ -264,10 +318,12 @@ case "${1:-neo}" in
         exec "${MATRIX_HOME}/bin/mcl-execute" "$@"
         ;;
     sh|bash)
-        exec "$@"
+        exec env -i "${AGENT_ENV[@]}" \
+            setpriv --reuid="${AGENT_UID}" --regid="${AGENT_GID}" --init-groups --no-new-privs -- "$@"
         ;;
     *)
-        # Custom command — exec it.
-        exec "$@"
+        # Custom commands never receive the root service identity.
+        exec env -i "${AGENT_ENV[@]}" \
+            setpriv --reuid="${AGENT_UID}" --regid="${AGENT_GID}" --init-groups --no-new-privs -- "$@"
         ;;
 esac

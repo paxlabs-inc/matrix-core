@@ -12,6 +12,7 @@ import (
 	"os"
 	"os/exec"
 	"sync"
+	"syscall"
 )
 
 // StdioTransport runs an MCP server as a subprocess and exchanges
@@ -53,6 +54,10 @@ type StdioParams struct {
 	// (Q18: credential boundary).
 	Env []string
 
+	// RunAs drops generic agent-facing servers to a dedicated unprivileged
+	// identity. Credentialed fixed-operation brokers leave this nil.
+	RunAs *ProcessIdentity
+
 	// Dir is the working directory for the subprocess. Empty = inherit.
 	Dir string
 
@@ -78,8 +83,18 @@ func NewStdioTransport(p StdioParams) (*StdioTransport, error) {
 	if p.Dir != "" {
 		cmd.Dir = p.Dir
 	}
-	if p.Env != nil {
-		cmd.Env = p.Env
+	// A nil Cmd.Env inherits the entire parent environment. MCP callers must
+	// opt in to every value, so nil means an intentionally empty environment.
+	cmd.Env = append([]string{}, p.Env...)
+	if p.RunAs != nil {
+		cmd.Env = setProcessEnvironment(cmd.Env, "HOME", p.RunAs.Home)
+		cmd.Env = setProcessEnvironment(cmd.Env, "USER", p.RunAs.User)
+		cmd.Env = setProcessEnvironment(cmd.Env, "LOGNAME", p.RunAs.User)
+		cmd.SysProcAttr = &syscall.SysProcAttr{
+			Credential: &syscall.Credential{
+				Uid: p.RunAs.UID, Gid: p.RunAs.GID, NoSetGroups: true,
+			},
+		}
 	}
 
 	stdin, err := cmd.StdinPipe()
@@ -118,6 +133,20 @@ func NewStdioTransport(p StdioParams) (*StdioTransport, error) {
 	go t.drainStderr()
 
 	return t, nil
+}
+
+func setProcessEnvironment(env []string, key, value string) []string {
+	if value == "" {
+		return env
+	}
+	prefix := key + "="
+	for i := range env {
+		if len(env[i]) >= len(prefix) && env[i][:len(prefix)] == prefix {
+			env[i] = prefix + value
+			return env
+		}
+	}
+	return append(env, prefix+value)
 }
 
 // Send writes one JSON-RPC frame followed by a newline to the

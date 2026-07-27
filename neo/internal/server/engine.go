@@ -37,6 +37,7 @@ import (
 	"matrix/neo/internal/dojo"
 	"matrix/neo/internal/llm"
 	"matrix/neo/internal/machinemailsettings"
+	"matrix/neo/internal/mediastudio"
 	"matrix/neo/internal/memory"
 	"matrix/neo/internal/notify"
 	"matrix/neo/internal/preview"
@@ -74,6 +75,8 @@ type Engine struct {
 	telegram           *telegramBridge
 	machineMail        *machineMailBridge
 	mediaDir           string // machine-volume dir for generated + uploaded media ("" disables)
+	mediaStudio        *mediastudio.Service
+	mediaStudioErr     error
 	voiceASRURL        string
 	voiceASRKey        string
 	voiceControllerURL string
@@ -232,6 +235,7 @@ type EngineOptions struct {
 	TelegramSettingsDir    string // encrypted per-user Telegram bot/channel state ("" disables the integration)
 	MachineMailSettingsDir string // encrypted per-user MachineMail API key ("" disables the integration)
 	MediaDir               string // machine-volume media dir ("" disables image/video/audio I/O)
+	NovitaAPIKey           string
 	VoiceASRURL            string
 	VoiceASRKey            string
 	VoiceControllerURL     string
@@ -433,6 +437,15 @@ func NewEngine(o EngineOptions) *Engine {
 		e.machineMail = newMachineMailBridge(ms, e.tools)
 		_ = e.machineMail.Restore(context.Background())
 	}
+	if e.mediaDir != "" {
+		e.mediaStudio, e.mediaStudioErr = mediastudio.Open(
+			context.Background(),
+			mediastudio.Config{
+				MediaDir: e.mediaDir, APIKey: o.NovitaAPIKey, Tools: o.Tools,
+				Vault: o.Vault, VaultUser: vaultUser,
+			},
+		)
+	}
 	return e
 }
 
@@ -493,6 +506,9 @@ func (e *Engine) Close() {
 	}
 	if e.telegram != nil {
 		e.telegram.Stop()
+	}
+	if e.mediaStudio != nil {
+		e.mediaStudio.Close()
 	}
 	// Stop the warm-on-open goroutine and wait it out BEFORE returning, so a
 	// caller that closes the pager next never races an in-flight warm read.

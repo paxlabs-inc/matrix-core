@@ -240,15 +240,30 @@ func findServerSpec(m *tool.AgentManifest, alias string) (mcp.ServerSpec, bool) 
 		for _, t := range s.Tools {
 			expected = append(expected, t.Name)
 		}
-		// Inherit the executor process environment so tools that look at
-		// PATH / HOME / etc continue to work.
-		fullEnv := append(append([]string(nil), os.Environ()...), env...)
+		fullEnv, privileged, err := tool.MCPEnvironment(s.Alias, os.Environ(), env)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "warn: env policy for %s: %v\n", s.Alias, err)
+			return mcp.ServerSpec{}, false
+		}
+		var runAs *mcp.ProcessIdentity
+		if !privileged {
+			if identity, configured, identityErr := tool.AgentIdentityFromEnv(); identityErr != nil {
+				fmt.Fprintf(os.Stderr, "warn: agent identity for %s: %v\n", s.Alias, identityErr)
+				return mcp.ServerSpec{}, false
+			} else if configured {
+				runAs = &mcp.ProcessIdentity{
+					UID: identity.UID, GID: identity.GID,
+					Home: identity.Home, User: identity.User,
+				}
+			}
+		}
 		return mcp.ServerSpec{
 			Alias:         s.Alias,
 			Transport:     s.Transport,
 			Command:       s.Command,
 			Args:          s.Args,
 			Env:           fullEnv,
+			RunAs:         runAs,
 			Endpoint:      s.Endpoint,
 			Headers:       hdr,
 			PackageDigest: s.PackageDigest,

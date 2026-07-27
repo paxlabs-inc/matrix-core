@@ -23,6 +23,7 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"syscall"
@@ -336,8 +337,8 @@ func runDaemon(args []string) {
 		// optional; when -snapshot-endpoint is empty the daemon runs
 		// without snapshot pull/push (local-dev posture).
 		snapDataDir      = fs.String("snapshot-data-dir", "", "snapshot tarball root (default: parent of -cortex-root)")
-		snapEndpoint     = fs.String("snapshot-endpoint", "", "S3-compatible endpoint (e.g. http://[fdaa:75:8960:...]:9000)")
-		snapBucket       = fs.String("snapshot-bucket", "matrix-state", "S3 bucket name")
+		snapEndpoint     = fs.String("snapshot-endpoint", os.Getenv("MATRIX_S3_ENDPOINT"), "S3-compatible endpoint; defaults to MATRIX_S3_ENDPOINT")
+		snapBucket       = fs.String("snapshot-bucket", envOrDefault("MATRIX_S3_BUCKET", "matrix-state"), "S3 bucket name; defaults to MATRIX_S3_BUCKET")
 		snapUserID       = fs.String("snapshot-user-id", "", "snapshot key namespace under users/<id>/ (default: -cortex-actor)")
 		snapInterval     = fs.Duration("snapshot-interval", snapshot.DefaultPushInterval, "periodic push interval; <0 disables ticker (boot+shutdown only)")
 		snapKeyEnv       = fs.String("snapshot-access-key-env", "MATRIX_S3_KEY", "env var holding the S3 access key")
@@ -796,6 +797,13 @@ func runDaemon(args []string) {
 		cancelStop()
 	}
 	// in.Close() runs via deferred call above.
+}
+
+func envOrDefault(name, fallback string) string {
+	if value := strings.TrimSpace(os.Getenv(name)); value != "" {
+		return value
+	}
+	return fallback
 }
 
 // Copyright © 2026 Paxlabs Inc. All rights reserved.

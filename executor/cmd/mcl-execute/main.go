@@ -37,6 +37,8 @@ package main
 import (
 	"fmt"
 	"os"
+
+	"matrix/executor/tool"
 )
 
 func main() {
@@ -52,6 +54,9 @@ func main() {
 	case "loader":
 		runLoader(os.Args[2:])
 	case "daemon":
+		if err := tool.DisableProcessDump(); err != nil {
+			fatalf("secure process boundary: %v", err)
+		}
 		runDaemon(os.Args[2:])
 	case "-h", "--help", "help":
 		usage()

@@ -4,7 +4,10 @@
 package main
 
 import (
+	"os"
 	"os/exec"
+
+	"matrix/executor/tool"
 )
 
 // newSysCmd is a thin wrapper isolated in its own file so test fakes
@@ -12,6 +15,10 @@ import (
 func newSysCmd(dir, name string, args ...string) *exec.Cmd {
 	cmd := exec.Command(name, args...)
 	cmd.Dir = dir
+	cmd.Env = tool.AgentEnvironment(os.Environ())
+	if err := tool.ConfigureAgentCommand(cmd); err != nil {
+		cmd.Err = err
+	}
 	return cmd
 }
 

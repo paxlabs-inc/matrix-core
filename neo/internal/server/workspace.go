@@ -19,6 +19,8 @@ import (
 	"sort"
 	"strings"
 	"time"
+
+	"matrix/executor/tool"
 )
 
 // The workbench's environment surface on the Neo daemon: a project-scoped view
@@ -562,6 +564,10 @@ func (s *Server) handleWorkspaceDiff(w http.ResponseWriter, r *http.Request) {
 	run := func(args ...string) string {
 		cmd := exec.CommandContext(ctx, "git", args...)
 		cmd.Dir = root
+		cmd.Env = tool.AgentEnvironment(os.Environ())
+		if err := tool.ConfigureAgentCommand(cmd); err != nil {
+			return ""
+		}
 		out, _ := cmd.CombinedOutput()
 		if len(out) > wsDiffOutputCap {
 			out = append(out[:wsDiffOutputCap], []byte("\n[diff truncated]")...)
@@ -616,6 +622,12 @@ func (s *Server) handleWorkspaceExec(w http.ResponseWriter, r *http.Request) {
 	defer cancel()
 	cmd := exec.CommandContext(ctx, "sh", "-c", req.Cmd)
 	cmd.Dir = root
+	cmd.Env = tool.AgentEnvironment(os.Environ())
+	cmd.Env = append(cmd.Env, "PWD="+root)
+	if err := tool.ConfigureAgentCommand(cmd); err != nil {
+		http.Error(w, "workspace execution identity unavailable", http.StatusInternalServerError)
+		return
+	}
 	out, err := cmd.CombinedOutput()
 	exit := 0
 	if err != nil {

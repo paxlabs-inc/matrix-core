@@ -102,6 +102,7 @@ func (s *Server) routes() []routeFact {
 		// agent's machine volume.
 		{"/media/", "GET /media/{id} — serve a generated or uploaded media artifact from your machine volume", s.handleMedia},
 		{"/upload", "POST /upload — receive a user file onto your machine volume", s.handleUpload},
+		{"/studio/media/", "GET/POST/DELETE /studio/media/* — create and manage durable image and video jobs in your private Studio", s.handleMediaStudio},
 		{"/voice/session/", "", s.handleVoiceSession},
 		// Automatrix control surface: per-user opt-in toggle, opportunity
 		// queue, completion inbox.

@@ -70,6 +70,9 @@ type ServerSpec struct {
 	Command string
 	Args    []string
 	Env     []string
+	// RunAs is set only for generic, agent-controlled subprocesses. A zero
+	// value keeps the privileged service identity for fixed credential brokers.
+	RunAs *ProcessIdentity
 
 	// Endpoint applies when Transport=="http". Headers carries any
 	// auth tokens (Q18 — never logged).
@@ -85,6 +88,13 @@ type ServerSpec struct {
 	// ExpectedTools is the manifest-declared tool list. Manager calls
 	// tools/list at startup and rejects on drift (Q21).
 	ExpectedTools []string
+}
+
+type ProcessIdentity struct {
+	UID  uint32
+	GID  uint32
+	Home string
+	User string
 }
 
 // ManagerParams configures a Manager.
@@ -271,6 +281,7 @@ func (m *Manager) buildTransport(spec ServerSpec) (Transport, error) {
 			Command:    spec.Command,
 			Args:       spec.Args,
 			Env:        spec.Env,
+			RunAs:      spec.RunAs,
 			StderrSink: m.stderrSink,
 		})
 	case "http":

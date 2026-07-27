@@ -21,6 +21,7 @@ import (
 	"os/signal"
 	"strings"
 
+	"matrix/executor/tool"
 	mcllm "matrix/mcl/llm"
 
 	"matrix/neo/internal/agent"
@@ -34,6 +35,10 @@ import (
 
 func main() {
 	if len(os.Args) > 1 && os.Args[1] == "serve" {
+		if err := tool.DisableProcessDump(); err != nil {
+			fmt.Fprintf(os.Stderr, "neo: secure process boundary: %v\n", err)
+			os.Exit(1)
+		}
 		runServe(os.Args[2:])
 		return
 	}

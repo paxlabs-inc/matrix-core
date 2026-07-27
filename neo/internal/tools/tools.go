@@ -264,6 +264,39 @@ type Manager struct {
 	warnings  []string // non-fatal spawn failures
 }
 
+// DirectResult is the bounded application-facing result of one real tool call.
+// It deliberately exposes the same validation and dispatch path used by Neo's
+// model loop without exposing the MCP manager or registry themselves.
+type DirectResult struct {
+	Content        string
+	MediaURL       string
+	IsError        bool
+	FailureClass   tool.FailureClass
+	Retryable      bool
+	FailureMessage string
+}
+
+// CallDirect runs a named tool through the manager's normal registry,
+// validation, side-effect classification, and MCP transport. Product surfaces
+// use this only when the human has already selected an explicit operation; it
+// is not a bypass around escalated tools.
+func (m *Manager) CallDirect(
+	ctx context.Context,
+	funcName string,
+	args map[string]interface{},
+) (DirectResult, error) {
+	if m == nil {
+		return DirectResult{}, errors.New("tool manager is unavailable")
+	}
+	content, mediaURL, isErr, class, retryable, failureMessage, err :=
+		m.dispatch(ctx, funcName, args)
+	return DirectResult{
+		Content: content, MediaURL: mediaURL, IsError: isErr,
+		FailureClass: class, Retryable: retryable,
+		FailureMessage: failureMessage,
+	}, err
+}
+
 // Options configures Spawn.
 type Options struct {
 	ManifestPath     string
@@ -303,9 +336,22 @@ func Spawn(ctx context.Context, opts Options) (*Manager, error) {
 			warnings = append(warnings, fmt.Sprintf("mcp server %q skipped (env: %v)", s.Alias, rerr))
 			continue
 		}
-		var subEnv []string
-		if len(resolved) > 0 || len(s.Env) > 0 {
-			subEnv = append(append([]string{}, os.Environ()...), resolved...)
+		subEnv, privileged, rerr := tool.MCPEnvironment(s.Alias, os.Environ(), resolved)
+		if rerr != nil {
+			warnings = append(warnings, fmt.Sprintf("mcp server %q skipped (env: %v)", s.Alias, rerr))
+			continue
+		}
+		var runAs *mcp.ProcessIdentity
+		if !privileged {
+			if identity, configured, ierr := tool.AgentIdentityFromEnv(); ierr != nil {
+				warnings = append(warnings, fmt.Sprintf("mcp server %q skipped (identity: %v)", s.Alias, ierr))
+				continue
+			} else if configured {
+				runAs = &mcp.ProcessIdentity{
+					UID: identity.UID, GID: identity.GID,
+					Home: identity.Home, User: identity.User,
+				}
+			}
 		}
 		spec := mcp.ServerSpec{
 			Alias:         s.Alias,
@@ -313,6 +359,7 @@ func Spawn(ctx context.Context, opts Options) (*Manager, error) {
 			Command:       s.Command,
 			Args:          s.Args,
 			Env:           subEnv,
+			RunAs:         runAs,
 			Endpoint:      s.Endpoint,
 			Headers:       resolveHeaderEnv(s.Headers),
 			PackageDigest: s.PackageDigest,
