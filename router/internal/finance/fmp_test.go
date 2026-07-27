@@ -158,7 +158,10 @@ func TestFMPQuoteNormalizesTheDocumentedPayload(t *testing.T) {
 func TestFMPQuoteListUsesOneBoundedMultiSymbolRequest(t *testing.T) {
 	var gotSymbol string
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		gotSymbol = r.URL.Query().Get("symbol")
+		if r.URL.Path != "/batch-quote" {
+			t.Errorf("path = %q, want /batch-quote", r.URL.Path)
+		}
+		gotSymbol = r.URL.Query().Get("symbols")
 		w.Header().Set("Content-Type", "application/json")
 		_, _ = w.Write([]byte(`[
 			{"symbol":"^GSPC","price":7521.25,"change":73.75,"volume":0,"exchange":"INDEX"},
@@ -173,7 +176,7 @@ func TestFMPQuoteListUsesOneBoundedMultiSymbolRequest(t *testing.T) {
 		t.Fatalf("QuoteList: %v", err)
 	}
 	if gotSymbol != "^GSPC,^VIX" {
-		t.Fatalf("symbol query = %q, want one comma-separated request", gotSymbol)
+		t.Fatalf("symbols query = %q, want one comma-separated request", gotSymbol)
 	}
 	if len(quotes) != 2 || quotes[0].Class != ClassIndex || quotes[1].Class != ClassIndex {
 		t.Fatalf("quotes = %+v", quotes)
